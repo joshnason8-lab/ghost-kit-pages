@@ -145,8 +145,8 @@ func _surface_mat(kind: String) -> StandardMaterial3D:
 			m.uv1_scale = Vector3(3, 3, 3)
 		"sand":
 			var g2 := Gradient.new()
-			g2.set_color(0, Color("b99b68"))
-			g2.set_color(1, Color("d6bd8c"))
+			g2.set_color(0, Color("a8834f"))
+			g2.set_color(1, Color("c9a874"))
 			m.albedo_texture = _noise_tex(0.03, true, false, 1.0, g2)
 			m.roughness = 0.97
 			m.normal_enabled = true
@@ -633,7 +633,9 @@ func _rain() -> void:
 
 func _build_beach(hc: Color, ac: Color) -> void:
 	barefoot = true
-	_environment(Color("2f7fd8"), Color("9fd0ec"), Color("c9ad7c"), 1.35, 0.5, 0.003, Color("cfe8f5"))
+	_environment(Color("1f6fd0"), Color("8cc4e6"), Color("b59866"), 1.05, 0.32, 0.002, Color("cfe8f5"))
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.adjustment_saturation = 1.2
 	sun.rotation = Vector3(deg_to_rad(-48), deg_to_rad(140), 0)
 	sun.light_color = Color("fff1d6")
 	_court("sand", Color.WHITE, Color("1d6fd1"), Color.WHITE)

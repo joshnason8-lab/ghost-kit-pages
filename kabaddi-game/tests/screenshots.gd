@@ -3,12 +3,15 @@ extends Node
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /out/dir
 
 var out := "user://shots"
+var args_only := ""
 
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0:
 		out = args[0]
+	if args.size() > 1:
+		args_only = args[1]
 	DirAccess.make_dir_recursive_absolute(out)
 	Game.main = self
 	Game.settings.sound = false
@@ -30,6 +33,9 @@ func shot(name: String) -> void:
 
 
 func _tour() -> void:
+	if args_only != "":
+		await _grounds()
+		return
 	Game.show_screen("res://ui/main_menu.gd")
 	await frames(40)
 	await shot("01_menu")
@@ -49,8 +55,14 @@ func _tour() -> void:
 	Game.show_screen("res://ui/cup_screen.gd")
 	await frames(5)
 	await shot("05_cup")
+	await _grounds()
+
+
+func _grounds() -> void:
 
 	var cams := {"dome": [0, 1, 2], "village": [0], "stadium": [2], "monsoon": [0], "beach": [0]}
+	if args_only != "":
+		cams = {args_only: [0]}
 	var pairs := {"dome": ["MUM", "CHD"], "village": ["PAT", "HYD"], "stadium": ["IND", "IRN"], "monsoon": ["KOL", "BLR"], "beach": ["CHE", "JAI"]}
 	var i := 6
 	for arena in cams.keys():
@@ -67,6 +79,8 @@ func _tour() -> void:
 			await frames(25)
 			await shot("%02d_%s_cam%d" % [i, arena, c])
 			i += 1
+	if args_only != "":
+		return
 	Game.settings.language = "hi"
 	TranslationServer.set_locale("hi")
 	Game.show_screen("res://ui/main_menu.gd")
