@@ -85,7 +85,7 @@ def main():
             # Knees only bend one way; clamp camera-angle noise that reads as hyperextension.
             "knee_l": round(min(0.0, -(thigh_l - shin_l)), 3), "knee_r": round(min(0.0, -(thigh_r - shin_r)), 3),
             "sh_l": round(arm_l - spine, 3), "sh_r": round(arm_r - spine, 3),
-            "el_l": round(max(0.0, fore_l - arm_l), 3), "el_r": round(max(0.0, fore_r - arm_r), 3),
+            "el_l": round(min(2.4, max(0.0, fore_l - arm_l)), 3), "el_r": round(min(2.4, max(0.0, fore_r - arm_r)), 3),
         })
     stand = max(heights) or 1.0
     for fr, hgt in zip(frames, heights):

@@ -47,6 +47,32 @@ python court_map.py runs/match1 --corners "412,233 1508,240 1830,690 95,682"
 `topdown.mp4` replays everyone as dots on a court diagram. The camera must stay still for
 the whole clip: a tripod, or a broadcast segment with no camera moves.
 
+### Moving camera (broadcast footage)
+
+When the camera pans or zooms, run two more steps before `court_map.py`:
+
+```sh
+# Follow the camera. Mask on-screen graphics (scorebug, logo, watermark) as x0,y0,x1,y1.
+python camera_track.py clip.mov runs/clip --ref 0 --mask "110,655,300,785 640,590,900,630" --crop "50,28,1446,815"
+# Lock the court to every frame using the visible lines. Give 4+ known points from frame 0:
+python court_lock.py clip.mov runs/clip --points "699,306=-5,0 711,597=5,0 1077,308=-5,3.75 1202,597=5,3.75" \
+    --crop "50,28,1446,815" --mask "110,655,300,785 640,590,900,630"
+python court_map.py runs/clip --video clip.mov     # --video splits teams by jersey colour
+```
+
+`--points` lets you use whichever lines are in shot (midline and baulk-line ends, for
+example) when the field corners aren't visible. Court x runs across (far side −5, near side
++5) and z runs along (midline 0).
+
+### Analysis video
+
+```sh
+python render_analysis.py clip.mov runs/clip --raider 5 --labels "left=Iran right=India"
+```
+
+This draws the locked court lines, team-coloured skeletons, the raider with live depth and
+speed, and a bird's-eye mini-map with trails.
+
 ## 3. Stats for the game AI
 
 ```sh

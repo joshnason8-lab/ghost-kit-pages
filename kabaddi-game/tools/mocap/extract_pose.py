@@ -68,7 +68,9 @@ def main():
         ok, frame = cap.read()
         if not ok:
             break
-        t = args.start + idx / fps
+        # Real timestamps: phone and screen recordings often have a variable frame rate.
+        pos = cap.get(cv2.CAP_PROP_POS_MSEC)
+        t = pos / 1000.0 if pos > 0 or idx == 0 else args.start + idx / fps
         if args.end >= 0 and t > args.end:
             break
         if idx == 0:

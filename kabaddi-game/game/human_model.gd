@@ -463,7 +463,11 @@ func _animate(delta: float) -> void:
 
 ## Blend captured joint angles over the hand-made pose.
 func _apply_clip(delta: float) -> void:
-	clip_weight = move_toward(clip_weight, 1.0 if clip else 0.0, delta * 8.0)
+	# Looping stance clips give way to the run cycle when the player is moving fast.
+	var want := 0.0
+	if clip:
+		want = 1.0 if not clip_loop else clampf(1.0 - (speed - 0.8) / 2.0, 0.0, 1.0)
+	clip_weight = move_toward(clip_weight, want, delta * 6.0)
 	if clip == null or clip_weight <= 0.0:
 		return
 	clip_time += delta
@@ -487,4 +491,5 @@ func play_clip(c: MocapClip, loop: bool) -> void:
 		return
 	clip = c
 	clip_loop = loop
-	clip_time = 0.0
+	# Start loops at a random point so a whole team never moves in lockstep.
+	clip_time = randf() * c.length if (c and loop) else 0.0
