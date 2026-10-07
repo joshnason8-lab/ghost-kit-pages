@@ -57,6 +57,12 @@ debug APK. To install it:
 The debug build is signed with a throwaway debug key. Shipping to the Play Store needs a release keystore. See
 [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## Moving it to its own repository
+
+This folder is self-contained. To give the game its own repo, make a new repo, copy everything inside
+`kabaddi-game/` to its root (including the hidden `.github/` folder), and push. `.github/workflows/android.yml`
+is already set up for that layout and builds the APK on every push.
+
 ## Run it on a computer
 
 1. Install Godot 4.7 (standard build, not .NET).
