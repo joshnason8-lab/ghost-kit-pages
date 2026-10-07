@@ -99,6 +99,10 @@ func set_state(s: String, length := 0.0) -> void:
 	state = s
 	st_t = 0.0
 	st_len = length
+	if model:
+		# Real captured motion for this move, if any has been recorded.
+		var c = MocapClip.for_state(s)
+		model.play_clip(c, MocapClip.loops(s))
 
 
 func busy() -> bool:

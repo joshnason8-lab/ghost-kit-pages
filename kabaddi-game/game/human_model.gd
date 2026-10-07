@@ -21,6 +21,10 @@ var fallen := 0.0           # lying on the mat, 0..1
 var struggle := 0.0         # dragging defenders toward the line, 0..1
 var celebrate := 0.0        # arms up, 0..1
 var hold_arms := 0.0        # grabbing the raider, 0..1
+var clip: MocapClip = null  # captured motion that overrides the hand-made pose
+var clip_time := 0.0
+var clip_loop := true
+var clip_weight := 0.0
 
 var skin := Color("c68863")
 var hair := Color("1a1410")
@@ -361,6 +365,7 @@ func _process(delta: float) -> void:
 	if pelvis == null:
 		return
 	_animate(delta)
+	_apply_clip(delta)
 
 
 func _animate(delta: float) -> void:
@@ -454,3 +459,32 @@ func _animate(delta: float) -> void:
 	sh_r.rotation = Vector3(rarm, 0, spread + celebrate * 0.25)
 	el_l.rotation.x = lel
 	el_r.rotation.x = rel
+
+
+## Blend captured joint angles over the hand-made pose.
+func _apply_clip(delta: float) -> void:
+	clip_weight = move_toward(clip_weight, 1.0 if clip else 0.0, delta * 8.0)
+	if clip == null or clip_weight <= 0.0:
+		return
+	clip_time += delta
+	var f := clip.sample(clip_time, clip_loop)
+	var w := clip_weight
+	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
+	if f.has("height"):
+		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(f.height), w)
+	if f.has("spine"):
+		spine.rotation.x = lerpf(spine.rotation.x, float(f.spine), w)
+	for pair in [["hip_l", hip_l], ["hip_r", hip_r], ["sh_l", sh_l], ["sh_r", sh_r]]:
+		if f.has(pair[0]):
+			pair[1].rotation.x = lerpf(pair[1].rotation.x, float(f[pair[0]]), w)
+	for pair in [["knee_l", kn_l], ["knee_r", kn_r], ["el_l", el_l], ["el_r", el_r]]:
+		if f.has(pair[0]):
+			pair[1].rotation.x = lerpf(pair[1].rotation.x, float(f[pair[0]]), w)
+
+
+func play_clip(c: MocapClip, loop: bool) -> void:
+	if c == clip:
+		return
+	clip = c
+	clip_loop = loop
+	clip_time = 0.0

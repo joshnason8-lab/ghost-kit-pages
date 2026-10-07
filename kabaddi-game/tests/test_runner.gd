@@ -127,7 +127,21 @@ func _run() -> void:
 		check(ar.get_child_count() > 5, "arena builds: " + a.id)
 		ar.queue_free()
 
-	# 8. A full AI-vs-AI match, quick length, knockout rules.
+	# 8. Captured motion clips load and play on an athlete.
+	var clip := MocapClip.load_file("res://tests/fixtures/walk_clip.json")
+	check(clip != null and clip.frames.size() > 10, "mocap clip loads")
+	if clip:
+		var smp := clip.sample(1.3, true)
+		check(smp.has("hip_l") and smp.has("knee_r") and smp.has("height"), "mocap clip samples joints")
+		var a := Athlete.new()
+		a.setup(DB.team("MUM").squad[0], 0, Color.TEAL, Color.WHITE, false)
+		add_child(a)
+		a.model.play_clip(clip, true)
+		await frames(20)
+		check(a.model.clip_weight > 0.5, "athlete plays mocap clip")
+		a.queue_free()
+
+	# 9. A full AI-vs-AI match, quick length, knockout rules.
 	var m: Node = null
 	Game.start_match({"home": "MUM", "away": "DEL", "arena": "village", "mode": "quick", "autoplay": true, "length": 0, "difficulty": 1, "knockout": true})
 	m = Game.current

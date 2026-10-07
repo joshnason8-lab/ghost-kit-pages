@@ -11,6 +11,7 @@ var look_pitch := -0.08
 var _t := 0.0
 var _hidden_head: Athlete = null
 var _last_focus: Athlete = null
+var frozen := false      # hold the camera still (used when recording test footage)
 
 
 func _ready() -> void:
@@ -40,6 +41,8 @@ func input_to_world(v: Vector2) -> Vector3:
 
 
 func follow(m, dt: float) -> void:
+	if frozen:
+		return
 	_t += dt
 	var look: Vector2 = m.controls.take_look()
 	var a: Athlete = m.focus_athlete()
