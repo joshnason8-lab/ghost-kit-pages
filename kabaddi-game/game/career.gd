@@ -50,8 +50,7 @@ static func create(p: Dictionary) -> Career:
 			pl.build = 1.02
 	# The speciality picked at creation becomes his signature move or tackle.
 	DB.moves(pl, String(p.get("signature", "")))
-	if String(p.get("style", "")) != "":
-		pl.style = String(p.style)
+	DB.def_moves(pl, String(p.get("style", "")))
 	c.player = pl
 	return c
 
@@ -354,10 +353,10 @@ func standings() -> Array:
 func train(attr: String) -> bool:
 	if skill_points <= 0:
 		return false
-	if attr.begins_with("move:"):
-		# Practising a raiding move.
-		var mv := attr.substr(5)
-		var m := DB.moves(player)
+	if attr.begins_with("move:") or attr.begins_with("dmove:"):
+		# Practising a raiding move or a defensive skill.
+		var mv := attr.get_slice(":", 1)
+		var m := DB.moves(player) if attr.begins_with("move:") else DB.def_moves(player)
 		if int(m[mv]) >= 99:
 			return false
 		m[mv] = int(m[mv]) + 2

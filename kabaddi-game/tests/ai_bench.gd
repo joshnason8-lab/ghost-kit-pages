@@ -4,6 +4,7 @@ extends Node
 
 var _done := false
 var _result := {}
+var _all_logs := []
 
 
 func _ready() -> void:
@@ -14,6 +15,7 @@ func _ready() -> void:
 	var landed := {}
 	var tried := {}
 	var caught := 0
+	var dmv := {}
 	var raids := 0
 	var secs := 0.0
 	var pairs := [["MUM", "DEL"], ["PAT", "BLR"], ["IND", "IRN"], ["KOL", "JAI"]]
@@ -29,6 +31,7 @@ func _ready() -> void:
 		while not _done:
 			await get_tree().process_frame
 		print("match %d: %s %d - %d %s" % [i + 1, pr[0], _result.score[0], _result.score[1], pr[1]])
+		_all_logs.append_array(_result.raid_log)
 		for r in _result.raid_log:
 			var k: String = r.kind
 			if k == "return":
@@ -38,6 +41,13 @@ func _ready() -> void:
 			secs += float(r.t)
 			if r.get("chain_caught", false):
 				caught += 1
+			if String(r.get("first_hold", "")) != "":
+				dmv["held_" + k] = dmv.get("held_" + k, 0) + 1
+			if k == "tackle":
+				var fh: String = r.get("first_hold", "")
+				dmv["T:" + fh] = dmv.get("T:" + fh, 0) + 1
+			for mv in r.get("def_moves", []):
+				dmv[mv] = dmv.get(mv, 0) + 1
 			for mv in r.get("moves", []):
 				landed[mv] = landed.get(mv, 0) + 1
 		for k in _result.get("move_tries", {}):
@@ -48,4 +58,10 @@ func _ready() -> void:
 	print("caught crossing a chain %d" % caught)
 	print("moves landed %s" % str(landed))
 	print("moves tried %s" % str(tried))
+	print("defensive grips %s" % str(dmv))
+	var rows := []
+	for r in _all_logs:
+		if String(r.get("first_hold", "")) != "":
+			rows.append("%s d%.1f t%.1f h%d" % [r.kind, float(r.hold_depth), float(r.held_for), int(r.holders_end)])
+	print("holds: ", ", ".join(rows.slice(0, 40)))
 	get_tree().quit()

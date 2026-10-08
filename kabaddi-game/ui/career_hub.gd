@@ -118,6 +118,37 @@ func _player_card(with_training: bool) -> PanelContainer:
 					_reload())
 			mg.add_child(mplus)
 	v.add_child(mg)
+	# Defensive skills, the same way.
+	var dg := GridContainer.new()
+	dg.columns = 4 if with_training else 3
+	dg.add_theme_constant_override("h_separation", 14)
+	dg.add_theme_constant_override("v_separation", 4)
+	var d_ratings := DB.def_moves(p)
+	var dsig := DB.def_signature(p)
+	for dm in DB.STYLES:
+		var dkey: String = dm
+		dg.add_child(UI.label(("★ " if dkey == dsig else "") + tr(DB.STYLE_KEYS[dkey]), "MutedLabel", 18))
+		var dbar := ProgressBar.new()
+		dbar.custom_minimum_size = Vector2(150, 12)
+		dbar.max_value = 99
+		dbar.value = int(d_ratings[dkey])
+		dbar.show_percentage = false
+		dbar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		dg.add_child(dbar)
+		dg.add_child(UI.label(str(int(d_ratings[dkey])), "SubLabel", 18))
+		if with_training:
+			var dplus := Button.new()
+			dplus.text = "+"
+			dplus.custom_minimum_size = Vector2(44, 40)
+			dplus.disabled = career.skill_points <= 0
+			dplus.pressed.connect(func():
+				if career.train("dmove:" + dkey):
+					Sfx.click()
+					Game.save_career()
+					_reload())
+			dg.add_child(dplus)
+	v.add_child(UI.label(tr("DEF_SKILLS").to_upper(), "EyebrowLabel", 15, Game.C_MAGENTA.lightened(0.3)))
+	v.add_child(dg)
 	return card
 
 

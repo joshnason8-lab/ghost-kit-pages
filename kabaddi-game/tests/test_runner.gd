@@ -55,10 +55,11 @@ func _run() -> void:
 	for id in DB.league_ids:
 		for p in DB.team(id).squad:
 			sigs[DB.signature(p)] = sigs.get(DB.signature(p), 0) + 1
-			styles[DB.style(p)] = styles.get(DB.style(p), 0) + 1
-	print("      signature moves %s, tackle styles %s" % [str(sigs), str(styles)])
+			styles[DB.def_signature(p)] = styles.get(DB.def_signature(p), 0) + 1
+	print("      signature moves %s, signature tackles %s" % [str(sigs), str(styles)])
 	check(sigs.size() == DB.MOVES.size(), "every move is someone's signature")
-	check(styles.size() == DB.STYLES.size(), "every tackle style is used")
+	check(styles.size() == DB.STYLES.size(), "every defensive skill is someone's signature")
+	check(DB.HOLDS.has(DB.style(DB.team("MUM").squad[6])), "default tackle is a hold")
 	var p0: Dictionary = DB.team("MUM").squad[0].duplicate(true)
 	p0.erase("moves")
 	check(DB.moves(p0) == DB.team("MUM").squad[0].moves, "move ratings are stable for a player")
@@ -209,6 +210,20 @@ func _run() -> void:
 		check(a.model.clip_weight > 0.5, "athlete plays mocap clip")
 		a.queue_free()
 
+	# 8a. Realistic rigged body follows the placeholder skeleton.
+	if RiggedBody.available():
+		Game.settings.models = 1
+		var ra := Athlete.new()
+		ra.setup(DB.team("MUM").squad[0], 0, Color.TEAL, Color.WHITE, true)
+		add_child(ra)
+		check(ra.model.rig != null and ra.model.rig.skeleton.get_bone_count() == 17, "rigged body built with 17 bones")
+		ra.set_state("dubki", 1000.0)
+		ra.st_t = 500.0
+		await frames(20)
+		var q: Quaternion = ra.model.rig.skeleton.get_bone_pose_rotation(ra.model.rig._bone["thigh_l"])
+		check(not q.is_equal_approx(Quaternion.IDENTITY), "rigged body bends with the pose")
+		ra.queue_free()
+
 	# 8b. Cant, chain, reactions: drive a user match by hand.
 	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0, "autoplay_no_report": true})
 	var um: Node = Game.current
@@ -291,7 +306,7 @@ func _run() -> void:
 		for h in mm.raid.holders.duplicate():
 			mm._release(h, false)
 		# Lion jump over a dive at the ankles.
-		d0.style = "ankle"
+		d0.tackle_kind = "ankle"
 		d0.position = rd.position + Vector3(0.3, 0, 0)
 		d0.set_state("dive", mm.DIVE_TIME)
 		rd.set_state("jump", mm.JUMP_TIME)
@@ -312,6 +327,44 @@ func _run() -> void:
 		rd.st_t = mm.BACKKICK_TIME * 0.45
 		mm._check_contacts(mm.defenders())
 		check(d1.touched and mm.raid.moves.has("backkick"), "back kick touches him")
+		# Waist hold plucks a jumping raider out of the air.
+		rd.st_t = 99.0
+		rd.set_state("jump", mm.JUMP_TIME)
+		rd.st_t = mm.JUMP_TIME * 0.4
+		var dw: Athlete = defs[2]
+		dw.tackle_kind = "waist"
+		dw.dmoves["waist"] = 95
+		dw.position = rd.position + Vector3(0.3, 0, 0)
+		dw.set_state("dive", mm.DIVE_TIME)
+		var caught := 0
+		for k in 20:
+			for h in mm.raid.holders.duplicate():
+				mm._release(h, false)
+			dw.position = rd.position + Vector3(0.3, 0, 0)
+			dw.set_state("dive", mm.DIVE_TIME)
+			rd.set_state("jump", mm.JUMP_TIME)
+			rd.st_t = mm.JUMP_TIME * 0.4
+			mm._check_contacts(mm.defenders())
+			if mm.raid.holders.has(dw):
+				caught += 1
+		check(caught >= 12, "waist hold catches a lion jump most of the time (%d/20)" % caught)
+		for h in mm.raid.holders.duplicate():
+			mm._release(h, false)
+		# Dash near the side line shoves him out (no struggle yet, so the lobby is out).
+		mm.raid.struggle = false
+		rd.set_state("raid")
+		rd.position = mm.pos_in(opp, 4.3 * mm.side(opp), 2.5)
+		rd.position.x = 4.3
+		var dd: Athlete = defs[3]
+		dd.position = rd.position + Vector3(-0.5, 0, 0)
+		dd.dmoves["dash"] = 95
+		dd.cooldown = 0.0
+		dd.set_state("ready")
+		mm._defender_tackle(dd, "dash")
+		mm._check_contacts(mm.defenders())
+		check(rd.state == "shoved", "dash shoves the raider")
+		check(mm.raid.dashed_by == dd and rd.dive_dir.x > 0.5, "dash pushes toward the near side line")
+		check(mm.defend_hint() == "dash" or mm._line_gap() < 1.2, "dash is the hint near the line")
 	mm.queue_free()
 	await frames(3)
 	Sfx.stop_all()

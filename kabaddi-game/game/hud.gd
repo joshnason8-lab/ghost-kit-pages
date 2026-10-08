@@ -482,8 +482,8 @@ func refresh() -> void:
 		controls.beat_k = ph
 	controls.chain_on = m.controlled != null and m.controlled.chain_partner != null
 	var hint_now := ""
-	if m.phase == "raid" and m.raider == m.controlled and m.difficulty <= 1:
-		hint_now = m.escape_hint()
+	if m.phase == "raid" and m.controlled and m.difficulty <= 1:
+		hint_now = m.escape_hint() if m.raider == m.controlled else m.defend_hint()
 	if hint_now != controls.read_hint:
 		controls.read_hint = hint_now
 		controls.queue_redraw()

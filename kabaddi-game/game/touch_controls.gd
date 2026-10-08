@@ -2,8 +2,9 @@ class_name TouchControls
 extends Control
 ## Multi-touch controls drawn and hit-tested by hand, because Godot's GUI only tracks one
 ## touch at a time. Left: a floating joystick. Right: context buttons. Anywhere else: drag to
-## look. Keyboard works too: WASD/arrows, J hand touch, K kick, L dodge, U dubki, I lion jump,
-## Space cant or tackle, G chain, Tab switch, C camera, Esc pause.
+## look. Keyboard works too: WASD/arrows. Raiding: J hand touch, K kick, L dodge, U dubki,
+## I lion jump, Space cant. Defending: J ankle, K thigh, L waist, U dash, Space your usual
+## tackle, G chain, Tab switch. C camera, Esc pause.
 
 signal action(id: String)
 
@@ -86,10 +87,18 @@ func _buttons() -> Array:
 				"col": Game.C_GOLD if read_hint == "jump" else esc, "lit": read_hint == "jump"})
 		"defend":
 			var dx2 := -1.0 if not lh else 1.0
-			list.append({"id": "tackle", "label": tr("BTN_TACKLE"), "pos": main, "r": 82.0, "col": Game.C_MAGENTA})
-			list.append({"id": "switch", "label": tr("BTN_SWITCH"), "pos": main + Vector2(60 * dx2, -175), "r": 54.0, "col": Game.C_INK})
-			list.append({"id": "chain", "label": tr("BTN_UNCHAIN") if chain_on else tr("BTN_CHAIN"), "pos": main + Vector2(190 * dx2, 10), "r": 58.0,
-				"col": Game.C_GOLD if chain_on else Color(Game.C_INK, 0.6), "lit": chain_on})
+			# The grips nearest the thumb; dash, chain and switch above them.
+			var hint_col := func(id: String, base: Color) -> Color: return Game.C_GOLD if read_hint == id else base
+			var grip := Game.C_MAGENTA.lightened(0.15)
+			list.append({"id": "ankle", "label": tr("BTN_ANKLE"), "pos": main, "r": 78.0, "col": Game.C_MAGENTA})
+			list.append({"id": "thigh", "label": tr("BTN_THIGH"), "pos": main + Vector2(185 * dx2, 22), "r": 58.0, "col": grip})
+			list.append({"id": "waist", "label": tr("BTN_WAIST"), "pos": main + Vector2(152 * dx2, -128), "r": 50.0,
+				"col": hint_col.call("waist", grip), "lit": read_hint == "waist"})
+			list.append({"id": "dash", "label": tr("BTN_DASH"), "pos": main + Vector2(15 * dx2, -195), "r": 47.0,
+				"col": hint_col.call("dash", Color("6b3b5b")), "lit": read_hint == "dash"})
+			list.append({"id": "chain", "label": tr("BTN_UNCHAIN") if chain_on else tr("BTN_CHAIN"), "pos": main + Vector2(-100 * dx2, -165), "r": 42.0,
+				"col": Game.C_GOLD if chain_on else Color("3b4f6b"), "lit": chain_on})
+			list.append({"id": "switch", "label": tr("BTN_SWITCH"), "pos": main + Vector2(70 * dx2, -330), "r": 46.0, "col": Game.C_INK})
 	return list
 
 
@@ -111,9 +120,9 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_J:
-				_fire("touch")
+				_fire("ankle" if context == "defend" else "touch")
 			KEY_K:
-				_fire("kick")
+				_fire("thigh" if context == "defend" else "kick")
 			KEY_SPACE:
 				if context == "defend":
 					_fire("tackle")
@@ -122,9 +131,9 @@ func _input(event: InputEvent) -> void:
 				else:
 					_fire("cant" if cant_mode else "dodge")
 			KEY_L:
-				_fire("tackle" if context == "defend" else "dodge")
+				_fire("waist" if context == "defend" else "dodge")
 			KEY_U:
-				_fire("dubki")
+				_fire("dash" if context == "defend" else "dubki")
 			KEY_I:
 				_fire("jump")
 			KEY_G:

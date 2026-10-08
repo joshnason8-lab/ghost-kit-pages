@@ -8,10 +8,13 @@ const ATTRS := ["speed", "agility", "strength", "reach", "tackle", "stamina"]
 # AI uses a move more often the better he is at it.
 const MOVES := ["hand", "toe", "kick", "dubki", "lion"]
 const MOVE_KEYS := {"hand": "MOVE_HAND", "toe": "MOVE_TOE", "kick": "MOVE_KICK", "dubki": "MOVE_DUBKI", "lion": "MOVE_LION"}
-# How a defender likes to tackle. Ankle holds go low (a lion jump clears them); thigh holds
-# and blocks go high (a dubki ducks under them).
-const STYLES := ["ankle", "thigh", "block"]
-const STYLE_KEYS := {"ankle": "STYLE_ANKLE", "thigh": "STYLE_THIGH", "block": "STYLE_BLOCK"}
+# Defensive skills, rated the same way. Ankle holds go low (a lion jump clears them); thigh
+# and waist holds go high (a dubki ducks under them); a waist hold lifts the raider, even
+# mid-jump; a block stops a raider who runs into you; a dash shoves him over a line; chain
+# rating makes linked hands hold.
+const STYLES := ["ankle", "thigh", "waist", "block", "dash", "chain"]
+const STYLE_KEYS := {"ankle": "STYLE_ANKLE", "thigh": "STYLE_THIGH", "waist": "STYLE_WAIST", "block": "STYLE_BLOCK", "dash": "STYLE_DASH", "chain": "STYLE_CHAIN"}
+const HOLDS := ["ankle", "thigh", "waist"]   # tackles that end in a grip
 
 # Defensive positions, left to right from the defenders' own point of view.
 const POSITIONS := ["POS_LEFT_CORNER", "POS_LEFT_COVER", "POS_LEFT_IN", "POS_CENTRE", "POS_RIGHT_IN", "POS_RIGHT_COVER", "POS_RIGHT_CORNER"]
@@ -259,23 +262,68 @@ static func moves(p: Dictionary, favourite := "") -> Dictionary:
 			m[k] -= 12
 		m[k] = clampi(int(round(m[k])), 20, 99)
 	p["moves"] = m
-	if not p.has("style"):
-		var w := {"ankle": 1.0 + (1.79 - h) * 8.0 + (a.agility - 60.0) * 0.02, "thigh": 1.0, "block": 0.8 + (a.strength - 60.0) * 0.03}
-		var roll := r.randf() * (maxf(w.ankle, 0.1) + maxf(w.thigh, 0.1) + maxf(w.block, 0.1))
-		var style := "block"
-		for k in ["ankle", "thigh"]:
-			roll -= maxf(w[k], 0.1)
-			if roll < 0.0:
-				style = k
-				break
-		p["style"] = style
 	return m
 
 
+## Defensive skill ratings (0-99), made and kept the same way as moves().
+static func def_moves(p: Dictionary, favourite := "") -> Dictionary:
+	if p.has("dmoves") and favourite == "":
+		return p.dmoves
+	var r := RandomNumberGenerator.new()
+	r.seed = hash("%s|%s|defence" % [p.get("name", ""), p.get("id", "")])
+	var a: Dictionary = p.attrs
+	var h := float(p.get("height", 1.78))
+	var b := float(p.get("build", 1.0))
+	var m := {
+		"ankle": a.tackle * 0.6 + a.agility * 0.25 + a.speed * 0.15 + (1.79 - h) * 40.0,
+		"thigh": a.tackle * 0.6 + a.strength * 0.4 - 2.0,
+		"waist": a.tackle * 0.4 + a.strength * 0.6 + (h - 1.79) * 40.0 - 5.0,
+		"block": a.strength * 0.6 + a.tackle * 0.4 + (b - 1.0) * 60.0 - 3.0,
+		"dash": a.strength * 0.5 + a.speed * 0.5 - 5.0,
+		"chain": a.tackle * 0.5 + a.agility * 0.3 + a.stamina * 0.2 - 2.0,
+	}
+	for k in STYLES:
+		m[k] += r.randi_range(-6, 6)
+	var order: Array = STYLES.duplicate()
+	for i in range(order.size() - 1, 0, -1):
+		var j := r.randi_range(0, i)
+		var tmp = order[i]
+		order[i] = order[j]
+		order[j] = tmp
+	if favourite != "":
+		order.erase(favourite)
+		order.push_front(favourite)
+	m[order[0]] += 15
+	if r.randf() < 0.5:
+		m[order[1]] += 7
+	m[order[5]] -= 14
+	var role := String(p.get("role", "raider"))
+	for k in STYLES:
+		if role == "raider":
+			m[k] -= 12
+		m[k] = clampi(int(round(m[k])), 20, 99)
+	p["dmoves"] = m
+	return m
+
+
+## The grip this player goes for by default: his best of ankle, thigh and waist hold.
 static func style(p: Dictionary) -> String:
-	if not p.has("style"):
-		moves(p)
-	return String(p.style)
+	var m := def_moves(p)
+	var best := "ankle"
+	for k in HOLDS:
+		if int(m[k]) > int(m[best]):
+			best = k
+	return best
+
+
+## His best defensive skill of all six.
+static func def_signature(p: Dictionary) -> String:
+	var m := def_moves(p)
+	var best := "ankle"
+	for k in STYLES:
+		if int(m[k]) > int(m[best]):
+			best = k
+	return best
 
 
 static func signature(p: Dictionary) -> String:
@@ -287,12 +335,16 @@ static func signature(p: Dictionary) -> String:
 	return best
 
 
-## One line for player cards: "Signature: Dubki · Ankle hold".
+## One line for player cards: "Signature: Dubki", "Signature: Waist hold", or both for an
+## all-rounder.
 static func moves_line(p: Dictionary) -> String:
-	var line := "%s: %s" % [TranslationServer.translate("SIGNATURE"), TranslationServer.translate(MOVE_KEYS[signature(p)])]
-	if String(p.get("role", "")) != "raider":
-		line += " · " + TranslationServer.translate(STYLE_KEYS[style(p)])
-	return line
+	var role := String(p.get("role", ""))
+	var parts := []
+	if role != "defender":
+		parts.append(TranslationServer.translate(MOVE_KEYS[signature(p)]))
+	if role != "raider":
+		parts.append(TranslationServer.translate(STYLE_KEYS[def_signature(p)]))
+	return "%s: %s" % [TranslationServer.translate("SIGNATURE"), " · ".join(parts)]
 
 
 # ---------------------------------------------------------------- queries

@@ -30,6 +30,7 @@ const DODGE_TIME := 0.26
 const BACKKICK_TIME := 0.46
 const DUBKI_TIME := 0.42
 const JUMP_TIME := 0.62
+const SHOVE_TIME := 0.42
 const DIVE_TIME := 0.3
 
 var config := {}
@@ -112,6 +113,7 @@ func _ready() -> void:
 			a.setup(seven[i], t, tm.kit, tm.trim, arena.barefoot)
 			if String(config.get("style", "")) != "":
 				a.style = String(config.style)
+				a.dmoves[a.style] = 90
 			a.slot = i
 			a.is_career = (String(seven[i].id) == career_pid)
 			add_child(a)
@@ -300,7 +302,7 @@ func _begin_setup() -> void:
 		"ai_mode": "approach", "ai_lane": rng.randf_range(-3.0, 3.0), "ai_t": 0.0, "ai_target": null,
 		"ai_bonus": false, "ai_dodge_cd": 0.0, "user_raids": raiding == 0 and _user_controls_raider(),
 		"breath": 1.0, "beat_t": 0.0, "last_beat": -99, "chant_t": 0.0, "cant_tap": false,
-		"shouted": false, "taunts": 0, "cross_cd": 0.0, "moves": [], "chain_caught": false, "kicks": 0,
+		"shouted": false, "taunts": 0, "cross_cd": 0.0, "moves": [], "chain_caught": false, "kicks": 0, "def_moves": [], "dashed_by": null, "dash_t": 0.0,
 	}
 	controlled = null
 	if raiding == 0 and _user_controls_raider():
@@ -422,6 +424,7 @@ func _tick_raid(dt: float) -> void:
 	clock = maxf(0.0, clock - dt * clock_speed)
 	raid.ai_dodge_cd = maxf(0.0, raid.ai_dodge_cd - dt)
 	raid.cross_cd = maxf(0.0, float(raid.cross_cd) - dt)
+	raid.dash_t = maxf(0.0, float(raid.dash_t) - dt)
 	_tick_cant(dt)
 	if phase != "raid":
 		return
@@ -430,7 +433,7 @@ func _tick_raid(dt: float) -> void:
 	var holders: Array = raid.holders
 
 	# Raider movement.
-	if raider.state in ["touch", "kick", "backkick"] and raider.st_t >= raider.st_len:
+	if raider.state in ["touch", "kick", "backkick", "shoved"] and raider.st_t >= raider.st_len:
 		raider.set_state("raid")
 	if raider.state in ["dubki", "jump"] and raider.st_t >= raider.st_len:
 		# Land and plant: the burst does not carry on.
@@ -479,6 +482,8 @@ func _move_raider(move: Vector3, dt: float) -> void:
 	var mid_dir := Vector3(0, 0, side(raiding))   # toward the raider's own half
 	if raider.state == "dodge":
 		raider.drive(raider.dive_dir * raider.max_speed * 1.9, dt)
+	elif raider.state == "shoved":
+		raider.drive(raider.dive_dir * raid.get("shove_speed", 4.0) + move * 0.8, dt)
 	elif raider.state == "dubki" and holders.is_empty():
 		raider.drive(raider.dive_dir * raider.max_speed * 1.5, dt)
 	elif raider.state == "jump" and holders.is_empty():
@@ -491,9 +496,12 @@ func _move_raider(move: Vector3, dt: float) -> void:
 		# Struggle: push toward the midline against the holders.
 		var hold_power := 0.0
 		for h in holders:
-			hold_power += h.tackle * (0.8 + 0.4 * float(h.data.attrs.strength) / 100.0)
+			# A waist hold lifts him off his feet; a block or thigh hold pins him.
+			var grip: float = {"waist": 1.35, "thigh": 1.1, "block": 1.15, "chain": 1.1}.get(h.kind(), 1.0)
+			hold_power += h.tackle * grip * (0.8 + 0.4 * float(h.data.attrs.strength) / 100.0)
 		var push := maxf(0.0, move.dot(mid_dir))
-		var net := raider.strength * raider.energy * push - hold_power * 0.85
+		# One defender can be dragged to the line; two or three usually win.
+		var net := raider.strength * raider.energy * push * 1.4 - hold_power * 0.5
 		var v := mid_dir * net * 1.3
 		if net < 0.0:
 			v = mid_dir * net * 0.5
@@ -501,7 +509,7 @@ func _move_raider(move: Vector3, dt: float) -> void:
 		raider.vel = v
 		raider.position += v * dt
 		raider.face_toward(raider.position + mid_dir, dt)
-		var rate := 0.22 + 0.42 * hold_power - 0.18 * raider.strength * push
+		var rate := 0.16 + 0.32 * hold_power - 0.2 * raider.strength * push
 		raid.progress = clampf(raid.progress + maxf(0.05, rate) * dt, 0.0, 1.0)
 	else:
 		raider.drive(move * raider.max_speed * (0.55 + 0.45 * raider.energy), dt)
@@ -580,6 +588,8 @@ func _on_action(id: String) -> void:
 		match id:
 			"tackle", "dodge":
 				_defender_tackle(controlled)
+			"ankle", "thigh", "waist", "dash":
+				_defender_tackle(controlled, id)
 			"switch":
 				_unchain(controlled)
 				_switch_defender()
@@ -673,7 +683,7 @@ func _raider_back_kick(target: Athlete) -> void:
 
 ## Dubki (duck under the arms) or lion jump (leap over a low tackle).
 func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
-	if raider.state in ["touch", "kick", "backkick", "dodge", "dubki", "jump"] or raider.cooldown > 0.0:
+	if raider.state in ["touch", "kick", "backkick", "dodge", "dubki", "jump", "shoved"] or raider.cooldown > 0.0:
 		return
 	var holders: Array = raid.holders
 	var move := cam.input_to_world(controls.move_vec()) if raider == controlled else dir
@@ -696,7 +706,7 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 		# Slipping a hold: a dubki slides out of a high grip, a jump kicks free of an ankle
 		# hold. The wrong move against the grip rarely works.
 		var h: Athlete = holders[rng.randi() % holders.size()]
-		var right_move := (kind == "dubki") != (h.style == "ankle")
+		var right_move := (kind == "dubki") != (h.kind() == "ankle")
 		var chance := (0.62 if right_move else 0.2) * (0.4 + raider.move_skill(kind)) * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
 		if rng.randf() < chance:
 			_release(h, true)
@@ -723,11 +733,11 @@ func escape_hint() -> String:
 				bd = dist
 				best = d
 	if best:
-		return "jump" if best.style == "ankle" else "dubki"
+		return "jump" if best.kind() == "ankle" else "dubki"
 	if raid.holders.size() > 0:
 		var low := 0
 		for h in raid.holders:
-			if h.style == "ankle":
+			if h.kind() == "ankle":
 				low += 1
 		return "jump" if low * 2 >= raid.holders.size() else "dubki"
 	var home := Vector3(0, 0, side(raiding))
@@ -765,7 +775,7 @@ func _move_moment(move: String) -> void:
 
 
 func _raider_dodge(dir: Vector3) -> void:
-	if raider.state in ["touch", "kick", "backkick", "dodge", "dubki", "jump"] or raider.cooldown > 0.0:
+	if raider.state in ["touch", "kick", "backkick", "dodge", "dubki", "jump", "shoved"] or raider.cooldown > 0.0:
 		return
 	var holders: Array = raid.holders
 	var move := cam.input_to_world(controls.move_vec()) if raider == controlled else dir
@@ -809,9 +819,13 @@ func _release(h: Athlete, knocked: bool) -> void:
 		raider.set_state("raid")
 
 
-func _defender_tackle(d: Athlete) -> void:
-	if d.state in ["dive", "recover", "holding", "telegraph"] or d.cooldown > 0.0:
+func _defender_tackle(d: Athlete, kind := "") -> void:
+	if d.state in ["dive", "recover", "holding"] or (d.state == "telegraph" and d == controlled) or d.cooldown > 0.0:
 		return
+	if kind != "":
+		d.tackle_kind = kind
+	elif d.tackle_kind == "" or d == controlled:
+		d.tackle_kind = d.style
 	var to := raider.position - d.position
 	to.y = 0
 	var dist := to.length()
@@ -836,7 +850,7 @@ func _defender_tackle(d: Athlete) -> void:
 		_unchain(d)
 		d.chain_dive = true
 		if p.state in ["ready", "idle"] and p.position.distance_to(raider.position) < 3.0:
-			_defender_tackle(p)
+			_defender_tackle(p, p.style)
 			p.chain_dive = true
 
 
@@ -927,7 +941,7 @@ func _ai_raider(dt: float) -> Vector3:
 			raid.ai_dodge_cd = rng.randf_range(0.6, 1.1)
 			var low := 0
 			for h in holders:
-				if h.style == "ankle":
+				if h.kind() == "ankle":
 					low += 1
 			_ai_escape(low * 2 >= holders.size(), skill, Vector3(0, 0, side(raiding)))
 		return Vector3(0, 0, side(raiding))
@@ -946,7 +960,7 @@ func _ai_raider(dt: float) -> Vector3:
 		away.y = 0
 		var sidestep := away.normalized().cross(Vector3.UP) * (1.0 if rng.randf() < 0.5 else -1.0)
 		var homeward := Vector3(0, 0, side(raiding))
-		_ai_escape(threat.style == "ankle", skill, (sidestep + homeward * 0.8 + away.normalized() * 0.5).normalized())
+		_ai_escape(threat.kind() == "ankle", skill, (sidestep + homeward * 0.8 + away.normalized() * 0.5).normalized())
 
 	# Linked hands across the way home: duck under, leap, or go round.
 	if raid.ai_mode == "return" and raid.ai_dodge_cd <= 0.0:
@@ -993,7 +1007,7 @@ func _ai_raider(dt: float) -> Vector3:
 			target = pos_in(opp, lane * side(opp), 2.6)
 			if my_depth > 2.2:
 				raid.ai_mode = "baulk" if not raid.baulk else "probe"
-				raid.ai_bonus = defs.size() >= 6 and rng.randf() < 0.35
+				raid.ai_bonus = (defs.size() >= 6 and rng.randf() < 0.35) or bool(config.get("wide", false))
 		"baulk":
 			# Cross the baulk line through the widest gap in the chain.
 			target = pos_in(opp, _gap_x(defs, opp), Arena.BAULK + 0.35)
@@ -1048,6 +1062,70 @@ func _ai_raider(dt: float) -> Vector3:
 	if not raid.struggle and absf(raider.position.x) > 4.5:
 		dir.x = -signf(raider.position.x) * 0.8
 	return dir * speed
+
+
+## A dash connects: no grip, just a shove toward the nearest line. Near the line it puts the
+## raider out; in open court it only knocks him off his stride.
+func _dash_hit(d: Athlete) -> void:
+	var bound := Arena.HALF_W + (Arena.LOBBY if raid.struggle else 0.0)
+	var side_gap := bound - absf(raider.position.x)
+	var end_gap := Arena.HALF_L - depth_in(1 - raiding, raider.position)
+	var push := Vector3(signf(raider.position.x + 0.001), 0, 0)
+	if end_gap < side_gap:
+		push = Vector3(0, 0, -side(raiding))
+	push = (push * 0.75 + d.dive_dir * 0.25).normalized()
+	var power := 3.2 + 3.0 * d.dskill("dash") + 1.5 * (d.strength - raider.strength)
+	raid["shove_speed"] = clampf(power, 2.0, 7.5)
+	raider.dive_dir = push
+	raider.set_state("shoved", SHOVE_TIME)
+	raider.cooldown = SHOVE_TIME
+	raid.dashed_by = d
+	raid.dash_t = 1.2
+	raid.alarm = true
+	d.set_state("recover", 0.8)
+	hud.event(tr("EV_DASH"), Game.C_MAGENTA)
+	Sfx.play("thud", -2.0, 1.2)
+	arena.excite(0.6)
+	Game.vibrate(40)
+
+
+## Metres from the raider to the nearest line he can be pushed over.
+func _line_gap() -> float:
+	if raider == null:
+		return 99.0
+	var bound := Arena.HALF_W + (Arena.LOBBY if raid.get("struggle", false) else 0.0)
+	return minf(bound - absf(raider.position.x), Arena.HALF_L - depth_in(1 - raiding, raider.position))
+
+
+## Which tackle an AI defender goes in with: his strong skills far more than his weak ones,
+## a dash only when the raider is near a line, and a sharp defender reads the raider.
+func _ai_pick_tackle(d: Athlete) -> String:
+	var forced := String(config.get("style", ""))
+	if forced != "":
+		return forced
+	var w := {}
+	for k in ["ankle", "thigh", "waist"]:
+		w[k] = pow(d.dskill(k), 3.0) * 3.0
+	if _line_gap() < 1.4:
+		w["dash"] = pow(d.dskill("dash"), 3.0) * 6.0
+	if raider.vel.dot(Vector3(0, 0, -side(d.team))) > 1.0:
+		w.ankle *= 1.3      # ankle holds are the classic answer to a raider turning for home
+	if rng.randf() < float(prof.react) * 0.5:
+		w.ankle *= 1.3 - raider.move_skill("lion")
+		w.thigh *= 1.3 - raider.move_skill("dubki")
+		w.waist *= 1.3 - raider.move_skill("dubki")
+	return _pick(w)
+
+
+## The tackle that suits the moment, for the defend buttons on easier levels.
+func defend_hint() -> String:
+	if raider == null or phase != "raid":
+		return ""
+	if raider.airborne():
+		return "waist"
+	if _line_gap() < 1.2 and depth_in(1 - raiding, raider.position) > 0.3:
+		return "dash"
+	return ""
 
 
 ## How much this raider likes a move: strong moves get used far more than weak ones.
@@ -1222,6 +1300,9 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		return
 	if not inside or d.cooldown > 0.0 or raider.state == "dodge":
 		return
+	# Once he is held, team-mates join the struggle rather than dive in.
+	if holders.size() > 0:
+		return
 	var engaging := 0
 	for o in defenders():
 		if o.state in ["telegraph", "dive"]:
@@ -1232,8 +1313,10 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	var rng_range := 1.45 + 0.3 * react
 	if dist > rng_range:
 		return
-	var p := 0.55 * diff * (0.6 + d.tackle)
+	var p := 0.06 * diff * (0.6 + d.tackle)
 	var heading_home := raider.vel.dot(Vector3(0, 0, -side(d.team))) > 1.0
+	if _line_gap() < 1.4 and d.dskill("dash") > 0.55:
+		p *= 1.5
 	if heading_home:
 		p *= 2.2
 	if raider.state in ["touch", "kick"]:
@@ -1243,7 +1326,8 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	if d.touched:
 		p *= 1.5
 	if rng.randf() < p * dt:
-		d.set_state("telegraph", float(prof.telegraph))
+		d.tackle_kind = _ai_pick_tackle(d)
+		d.set_state("telegraph", float(prof.telegraph) * (1.15 if d.tackle_kind == "waist" else 1.0))
 		d.cooldown = 0.2
 
 
@@ -1251,6 +1335,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 
 func _check_contacts(defs: Array) -> void:
 	var opp := 1 - raiding
+	var piling := []
 	var in_half := depth_in(opp, raider.position) > -0.1
 	for d in defs:
 		if d.state == "holding":
@@ -1281,23 +1366,32 @@ func _check_contacts(defs: Array) -> void:
 				_touch(d, via)
 				# A defender touched while set may grab straight back.
 				if d != controlled and d.state in ["ready", "telegraph"] and raider.state not in ["dodge", "dubki", "jump"] and not bool(config.get("passive", false)):
-					var counter = 0.16 + 0.25 * d.tackle + 0.08 * float(prof.tackle)
+					var counter = 0.08 + 0.2 * d.tackle + 0.08 * float(prof.tackle)
 					if d.state == "telegraph":
 						counter += 0.3
+					# Running straight into a set defender: he blocks.
+					var into := raider.vel.dot((d.position - raider.position).normalized()) > 1.2 and via == ""
+					if into:
+						counter += 0.1 + 0.35 * (d.dskill("block") - 0.4)
 					# A leg at full stretch is hard to grab from a set position.
 					if via in ["toe", "backkick", "sidekick"]:
 						counter *= 0.45
 					if rng.randf() < counter:
-						_attach(d)
+						d.tackle_kind = "block" if into else d.style
+						_attach(d, into)
 						continue
 		# Tackles.
-		var catch_r: float = {"ankle": 0.9, "block": 0.72}.get(d.style, 0.8)
-		if d.state == "dive" and dist < catch_r:
+		var kind = d.kind()
+		var catch_r: float = {"ankle": 0.9, "waist": 0.75, "dash": 0.85}.get(kind, 0.8)
+		if d.state == "dive" and dist < catch_r and raider.state != "shoved":
 			if raider.state == "dodge" and rng.randf() < 0.75 * raider.agility:
 				continue
-			var low = d.style == "ankle"
-			# Lion jump: sail over a dive at the ankles. Dubki: duck under a high one.
-			if raider.airborne() and rng.randf() < (0.55 + 0.45 * raider.move_skill("lion") if low else 0.25 * raider.move_skill("lion")):
+			var low = kind == "ankle"
+			# Lion jump: sail over a dive at the ankles (a waist hold can pluck him out of
+			# the air). Dubki: duck under a high one.
+			var clear: float = {"ankle": 0.55 + 0.45 * raider.move_skill("lion"), "waist": 0.12 * raider.move_skill("lion"),
+				"dash": 0.4 * raider.move_skill("lion")}.get(kind, 0.25 * raider.move_skill("lion"))
+			if raider.airborne() and rng.randf() < clear:
 				d.set_state("recover", 1.1)
 				_move_moment("lion")
 				continue
@@ -1305,29 +1399,46 @@ func _check_contacts(defs: Array) -> void:
 				d.set_state("recover", 1.1)
 				_move_moment("dubki")
 				continue
-			var hold_chance = 0.55 + 0.35 * d.tackle - 0.25 * (raider.agility - 1.0)
-			hold_chance += {"block": 0.05}.get(d.style, 0.0) as float
+			if kind == "dash":
+				_dash_hit(d)
+				continue
+			var hold_chance = 0.4 + 0.35 * d.tackle - 0.25 * (raider.agility - 1.0)
+			hold_chance += {"thigh": 0.04, "waist": 0.06}.get(kind, 0.0) as float
+			hold_chance += 0.3 * (d.dskill(kind) - 0.6)
 			if raider.state == "dubki" and low:
 				hold_chance += 0.15
-			if raider.airborne() and not low:
-				hold_chance += 0.1
+			if raider.airborne():
+				hold_chance += 0.3 if kind == "waist" else (0.1 if not low else 0.0)
 			if raider.state in ["kick", "backkick"]:
 				hold_chance += 0.12
 			var behind := raider.facing.dot((d.position - raider.position).normalized()) < -0.2
 			if behind:
 				hold_chance += 0.2
 			if d.chain_dive:
-				hold_chance += 0.2
+				hold_chance += 0.1 + 0.2 * d.dskill("chain")
 			if d == controlled:
 				hold_chance *= float(prof.user_hold)
 			if rng.randf() < hold_chance:
 				_attach(d)
 			else:
 				d.set_state("recover", 1.0)
-		elif raid.holders.size() > 0 and d.state in ["ready", "idle"] and dist < 0.85 and d != controlled:
-			_attach(d)
+		elif raid.holders.size() > 0 and raid.holders.size() < 4 and d.state in ["ready", "idle"] and dist < 0.85 and d != controlled:
+			piling.append(d)
 		elif raid.holders.size() > 0 and d == controlled and dist < 0.75 and d.state != "recover":
+			d.tackle_kind = "thigh"
 			_attach(d)
+	_pile_on(piling)
+
+
+func _pile_on(piling: Array) -> void:
+	# Team-mates pile in one at a time, a little faster the more of them are close.
+	if piling.is_empty() or raid.holders.is_empty():
+		return
+	var rate := (0.45 + 0.2 * piling.size()) * float(prof.tackle)
+	if rng.randf() < get_process_delta_time() * rate:
+		var d: Athlete = piling[rng.randi() % piling.size()]
+		d.tackle_kind = "thigh"
+		_attach(d)
 
 
 func _touch(d: Athlete, via := "") -> void:
@@ -1345,10 +1456,10 @@ func _touch(d: Athlete, via := "") -> void:
 	Game.vibrate(25)
 
 
-func _attach(d: Athlete) -> void:
+func _attach(d: Athlete, block := false) -> void:
 	if raid.holders.has(d):
 		return
-	var was_dive := d.state == "dive"
+	var was_dive := d.state == "dive" or block
 	var first: bool = raid.holders.is_empty()
 	raid.holders.append(d)
 	raid.struggle = true
@@ -1362,7 +1473,14 @@ func _attach(d: Athlete) -> void:
 	raider.set_state("held")
 	Sfx.play("thud", -2.0)
 	var chained := d.chain_dive and not first
-	var hold_key: String = {"ankle": "EV_HOLD", "thigh": "EV_THIGH", "block": "EV_BLOCK"}.get(d.style, "EV_HOLD") if was_dive else "EV_HOLD"
+	var hold_key: String = {"ankle": "EV_HOLD", "thigh": "EV_THIGH", "waist": "EV_WAIST", "block": "EV_BLOCK"}.get(d.kind(), "EV_HOLD") if was_dive else "EV_HOLD"
+	raid.def_moves.append(d.kind() if was_dive else "pile")
+	if first:
+		raid["first_hold"] = (d.kind() if was_dive else "counter") + ("_chain" if d.tackle_kind == "chain" else "")
+		raid["hold_depth"] = depth_in(1 - raiding, raider.position)
+		raid["hold_t"] = float(raid.t)
+	if d == controlled and was_dive:
+		tutorial_event.emit(d.kind() + "_hold")
 	hud.event(tr("EV_CHAIN") if (chained or not first) else tr(hold_key), Game.C_MAGENTA)
 	if first and rng.randf() < 0.6:
 		hud.bubble(d, tr("BUBBLE_PAKAD"), Game.C_MAGENTA.lightened(0.3))
@@ -1409,7 +1527,7 @@ func _check_end(dt: float) -> void:
 			# Stretched out and touched the midline while held.
 			_end_raid("return")
 			return
-	if holders.size() >= 3 and raid.progress > 0.25:
+	if holders.size() >= 3 and raid.progress > 0.5:
 		_end_raid("tackle")
 		return
 	if raid.progress >= 1.0:
@@ -1474,6 +1592,13 @@ func _end_raid(kind: String) -> void:
 			def_pts = 1
 			raid_pts = bonus
 			msg = tr("EV_OUT_OF_BOUNDS")
+			var dasher = raid.get("dashed_by")
+			if dasher != null and float(raid.dash_t) > 0.0:
+				msg = tr("EV_DASHED_OUT")
+				stats[dasher.pid()].tackle += 1
+				raid.def_moves.append("dash")
+				if dasher == controlled:
+					tutorial_event.emit("dash_out")
 			col = Game.C_DANGER
 		"time":
 			raider_out = true
@@ -1514,7 +1639,7 @@ func _end_raid(kind: String) -> void:
 	_revive(atk, raid_pts - bonus)
 	_revive(dfn, 1 if def_pts > 0 else 0)
 
-	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": RAID_TIME - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught})
+	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": RAID_TIME - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size()})
 	_post_messages = [[msg, col]]
 	# All outs.
 	for t in 2:
@@ -1694,7 +1819,7 @@ func _check_chain_cross() -> void:
 				return
 		if bool(config.get("passive", false)):
 			return
-		var catch = 0.5 + 0.15 * (d.tackle + p.tackle) * float(prof.tackle)
+		var catch = 0.4 + 0.15 * (d.tackle + p.tackle) * float(prof.tackle) + 0.25 * (d.dskill("chain") + p.dskill("chain") - 1.0)
 		if raider.state == "dodge":
 			catch *= 0.6
 		if rng.randf() < catch:
@@ -1702,6 +1827,8 @@ func _check_chain_cross() -> void:
 			raid.chain_caught = true
 			d.chain_dive = true
 			p.chain_dive = true
+			d.tackle_kind = "chain"
+			p.tackle_kind = "chain"
 			_attach(d)
 			_attach(p)
 		else:

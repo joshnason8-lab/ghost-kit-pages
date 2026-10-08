@@ -5,6 +5,13 @@ code: run cycle, defensive crouch, raider stance, hand touch, toe touch, dive, s
 They exist so the game is playable now. Realistic players come from a **rigged character model plus motion
 capture**, and the code already has a slot for both.
 
+## Generated models (what the game uses now)
+
+`assets/characters/rigged_athlete.json` is a generated player model (Meshy, image to 3D), shrunk to 14,000
+triangles and auto-rigged by `tools/rig`. `game/rigged_body.gd` builds it as a skinned mesh and turns its bones to
+follow the code-built skeleton every frame, so it needs no animation clips. To try another model, follow
+[tools/rig/README.md](../tools/rig/README.md). A model with its texture can add face and skin detail later.
+
 ## Drop-in slot
 
 If any of these files exists, every athlete uses it instead of the placeholder body:

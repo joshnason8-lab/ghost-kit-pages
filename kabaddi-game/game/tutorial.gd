@@ -24,6 +24,10 @@ const LESSONS := [
 		["TUT_TACKLE_1", "tackle", 1]]},
 	{"id": "chain", "title": "TUT_CHAIN_T", "raid": false, "passive": false, "steps": [
 		["TUT_CHAIN_1", "chain", 1], ["TUT_CHAIN_2", "tackle", 1]]},
+	{"id": "waist", "title": "TUT_WAIST_T", "raid": false, "passive": false, "steps": [
+		["TUT_WAIST_1", "waist_hold", 1]]},
+	{"id": "dash", "title": "TUT_DASH_T", "raid": false, "passive": false, "wide": true, "steps": [
+		["TUT_DASH_1", "dash_out", 1]]},
 ]
 
 var m
@@ -46,7 +50,7 @@ static func match_config(id: String) -> Dictionary:
 	return {
 		"home": "MUM", "away": "DEL", "arena": "dome", "mode": "tutorial", "lesson": id, "control": "all",
 		"difficulty": 0, "length": 0, "passive": l.passive, "first_raider": 0 if l.raid else 1,
-		"chains": l.get("chains", false), "style": l.get("style", ""),
+		"chains": l.get("chains", false), "style": l.get("style", ""), "wide": l.get("wide", false),
 	}
 
 

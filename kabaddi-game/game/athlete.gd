@@ -29,7 +29,9 @@ var chain_offset := Vector3.ZERO     # where to stand relative to that partner
 var chain_dive := false              # this dive is part of a chain tackle
 var shove_target: Athlete = null
 var moves := {}                      # raiding move ratings, see DB.moves
-var style := "thigh"                 # how this player tackles: ankle, thigh or block
+var dmoves := {}                     # defensive skill ratings, see DB.def_moves
+var style := "ankle"                 # his default grip: ankle, thigh or waist hold
+var tackle_kind := ""                # the tackle he is going in with right now
 var kick_back := 0.0                 # back/side kick: how far behind the target is (0..1)
 var kick_side := 0.0                 # ... and how far to the side (-1 left .. 1 right)
 var kick_dir := Vector3.ZERO         # world direction of the kick
@@ -58,6 +60,7 @@ func setup(p_data: Dictionary, p_team: int, kit: Color, trim: Color, barefoot: b
 	tackle = 0.55 + (float(a.tackle) - 50.0) * 0.01
 	agility = 1.0 + (float(a.agility) - 60.0) * 0.015
 	moves = DB.moves(data)
+	dmoves = DB.def_moves(data)
 	style = DB.style(data)
 	model = HumanModel.new()
 	model.setup(Color(DB.SKIN_TONES[int(data.skin)]), Color(DB.HAIR_COLORS[int(data.hair)]), kit, trim, int(data.number), float(data.height), float(data.build), barefoot)
@@ -117,12 +120,22 @@ func set_state(s: String, length := 0.0) -> void:
 
 
 func busy() -> bool:
-	return state in ["touch", "kick", "backkick", "dubki", "jump", "telegraph", "dive", "recover", "fallen", "held", "holding"]
+	return state in ["touch", "kick", "backkick", "dubki", "jump", "shoved", "telegraph", "dive", "recover", "fallen", "held", "holding"]
 
 
 ## 0..1 skill at a raiding move.
 func move_skill(move: String) -> float:
 	return float(moves.get(move, 50)) / 100.0
+
+
+## 0..1 skill at a defensive skill.
+func dskill(kind: String) -> float:
+	return float(dmoves.get(kind, 50)) / 100.0
+
+
+## The tackle being made now, or his usual one.
+func kind() -> String:
+	return tackle_kind if tackle_kind != "" else style
 
 
 ## Airborne part of a lion jump.
@@ -209,22 +222,29 @@ func _pose(delta: float) -> void:
 		"telegraph":
 			# The wind-up shows how he will tackle: low for an ankle hold, upright and wide
 			# for a thigh hold or a block.
-			match style:
+			match kind():
 				"ankle":
 					want_crouch = 1.0
 					want_lean = -0.35
 					want_hold = 0.35
-				"block":
-					want_crouch = 0.5
+				"waist":
+					want_crouch = 0.45
 					want_hold = 1.0
+				"dash":
+					want_crouch = 0.55
+					want_lean = -0.3
+					want.shove = 0.5
 				_:
 					want_crouch = 0.75
 					want_hold = 0.7
 		"dive":
-			var depth := {"ankle": 1.0, "thigh": 0.72, "block": 0.5}.get(style, 0.8) as float
+			var depth := {"ankle": 1.0, "thigh": 0.72, "waist": 0.45, "dash": 0.3}.get(kind(), 0.8) as float
 			want_dive = clampf(p * 2.5, 0.0, 1.0) * depth
-			if style == "block":
-				want.shove = 0.8
+			if kind() in ["dash", "waist"]:
+				want.shove = 1.0 if kind() == "dash" else 0.4
+		"shoved":
+			want_struggle = 0.6
+			want_lean = 0.25
 		"recover":
 			want_fallen = 1.0 - clampf((p - 0.55) * 2.2, 0.0, 1.0)
 		"fallen":

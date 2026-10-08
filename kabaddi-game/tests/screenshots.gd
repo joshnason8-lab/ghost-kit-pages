@@ -90,7 +90,7 @@ func _moves() -> void:
 	var defs: Array = m.defenders()
 	# Buttons, with a defender winding up low so Lion jump lights.
 	rd.position = m.pos_in(opp, 0.0, 2.0)
-	defs[3].style = "ankle"
+	defs[3].tackle_kind = "ankle"
 	defs[3].position = m.pos_in(opp, 0.3, 3.2)
 	defs[3].set_state("telegraph", 99.0)
 	m.cam.mode = Game.CAM_THIRD
@@ -134,7 +134,7 @@ func _moves() -> void:
 	m._unchain(defs[1])
 	m._update_chain_links()
 	# Lion jump over an ankle dive.
-	defs[1].style = "ankle"
+	defs[1].tackle_kind = "ankle"
 	defs[1].position = c + Vector3(0, 0, 0.9 * m.side(m.raiding))
 	defs[1].facing = Vector3(0, 0, -m.side(m.raiding))
 	hold.call(defs[1], "dive", 0.9)
@@ -161,20 +161,35 @@ func _moves() -> void:
 	cam.look_at(c + Vector3(0, 0.7, -0.9))
 	await frames(30)
 	await shot("23_move_kicks")
-	# Tackle styles: ankle, thigh, block winding up.
-	var row := [defs[0], defs[1], defs[2]]
-	var styles := ["ankle", "thigh", "block"]
-	for i in 3:
+	# Tackles winding up: ankle, thigh, waist, dash.
+	var row := [defs[0], defs[1], defs[2], defs[3]]
+	var styles := ["ankle", "thigh", "waist", "dash"]
+	for i in 4:
 		var d: Athlete = row[i]
-		d.style = styles[i]
-		d.position = c + Vector3(-1.4 + 1.4 * i, 0, 0)
+		d.tackle_kind = styles[i]
+		d.position = c + Vector3(-2.1 + 1.4 * i, 0, 0)
 		d.facing = Vector3(0, 0, 1)
 		hold.call(d, "telegraph", 0.5)
 	hide_far.call(row)
-	cam.position = c + Vector3(0, 1.2, 4.2)
+	cam.position = c + Vector3(0, 1.2, 4.8)
 	cam.look_at(c + Vector3(0, 0.7, 0))
 	await frames(30)
 	await shot("24_tackle_styles")
+	m.queue_free()
+	await frames(3)
+	# Defending: the tackle buttons, with the raider near the side line so Dash lights.
+	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 0, "first_raider": 1, "passive": true})
+	var m2: Node = Game.current
+	var g2 := 0
+	while m2.phase != "raid" and g2 < 600:
+		await get_tree().process_frame
+		g2 += 1
+	await frames(40)
+	m2.raider.position = m2.pos_in(0, 0.0, 2.5)
+	m2.raider.position.x = 4.3
+	m2.cam.mode = Game.CAM_THIRD
+	await frames(8)
+	await shot("25_defend_buttons")
 
 
 func _grounds() -> void:

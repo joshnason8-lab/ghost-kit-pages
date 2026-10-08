@@ -50,6 +50,7 @@ var barefoot := false
 var _phase := 0.0
 var _t := 0.0
 var _custom: Node3D = null
+var rig: RiggedBody = null
 var _anim: AnimationPlayer = null
 var _clips := {}
 var _current_clip := ""
@@ -92,12 +93,33 @@ func _ready() -> void:
 			_build_custom(path)
 			return
 	_build_procedural()
+	if RiggedBody.available() and int(Game.settings.get("models", 1)) == 1:
+		_use_rigged_body()
+
+
+## Swap the placeholder look for the realistic rigged body. The placeholder joints stay and
+## keep animating (hidden); the rigged body copies them every frame.
+func _use_rigged_body() -> void:
+	for n in pelvis.find_children("*", "", true, false):
+		if n is GeometryInstance3D:
+			(n as GeometryInstance3D).visible = false
+	rig = RiggedBody.new()
+	add_child(rig)
+	rig.setup(skin, jersey, shorts, hair, height)
+	rig.add_number(number, trim, jersey.darkened(0.4))
+
+
+## Standing pelvis height of the placeholder, for scaling the rigged body's hips.
+func leg_length() -> float:
+	return 0.06 + 0.88 * height / 1.78 + 0.04
 
 
 ## Hide the head when the camera sits inside it (first person).
 func set_head_visible(v: bool) -> void:
 	for n in head_parts:
-		n.visible = v
+		n.visible = v and rig == null
+	if rig:
+		rig.set_head_visible(v)
 
 
 # ---------------------------------------------------------------- procedural body
@@ -381,6 +403,8 @@ func _process(delta: float) -> void:
 		return
 	_animate(delta)
 	_apply_clip(delta)
+	if rig:
+		rig.drive(self)
 
 
 func _animate(delta: float) -> void:

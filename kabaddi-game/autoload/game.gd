@@ -48,6 +48,7 @@ var settings := {
 	"length": 0,
 	"seen_howto": false,
 	"cant": 0,              # 0 tap the cant button on the beat, 1 automatic
+	"models": 1,            # 0 classic code-built players, 1 realistic rigged players
 	"tutorial_done": [],
 }
 
@@ -89,7 +90,7 @@ func load_settings() -> void:
 			if settings.has(k):
 				settings[k] = data[k]
 	# JSON gives floats; keep ints as ints.
-	for k in ["camera", "graphics", "difficulty", "length", "cant"]:
+	for k in ["camera", "graphics", "difficulty", "length", "cant", "models"]:
 		settings[k] = int(settings[k])
 
 

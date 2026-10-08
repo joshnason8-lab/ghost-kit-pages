@@ -26,6 +26,10 @@ func _ready() -> void:
 	body.add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")], int(Game.settings.graphics), func(i):
 		Game.settings.graphics = i
 		Game.save_settings())))
+	if RiggedBody.available():
+		body.add_child(UI.field(tr("SET_MODELS"), UI.chips([tr("MODELS_CLASSIC"), tr("MODELS_REAL")], int(Game.settings.get("models", 1)), func(i):
+			Game.settings.models = i
+			Game.save_settings())))
 	body.add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_THIRD"), tr("CAM_FIRST"), tr("CAM_TV")], int(Game.settings.camera), func(i):
 		Game.settings.camera = i
 		Game.save_settings())))
