@@ -44,9 +44,9 @@ func _ready() -> void:
 
 	var toggles := HBoxContainer.new()
 	toggles.add_theme_constant_override("separation", 40)
-	for key in ["sound", "vibration", "left_handed"]:
+	for key in ["sound", "vibration", "left_handed", "auto_gfx"]:
 		var k: String = key
-		var title = {"sound": "SOUND", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[k]
+		var title = {"sound": "SOUND", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED", "auto_gfx": "GFX_AUTO"}[k]
 		toggles.add_child(UI.field(tr(title), UI.chips([tr("ON"), tr("OFF")], 0 if Game.settings[k] else 1, func(i):
 			Game.settings[k] = i == 0
 			Game.save_settings()

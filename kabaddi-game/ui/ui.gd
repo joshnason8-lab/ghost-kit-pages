@@ -52,6 +52,7 @@ static func page(owner: Control, title: String, back: Callable = Callable(), eye
 	head.add_theme_constant_override("separation", 18)
 	v.add_child(head)
 	if back.is_valid():
+		owner.set_meta("back", back)   # the phone's back button does the same
 		var b := button("‹  " + owner.tr("BACK"))
 		b.custom_minimum_size = Vector2(130, 56)
 		b.pressed.connect(back)

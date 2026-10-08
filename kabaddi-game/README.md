@@ -14,15 +14,16 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 |---|---|
 | **Match** | 7 v 7, two 20-minute halves of alternating 30-second raids. You raid, then you defend. The clock can run at 6× (about 7 minutes), 3× (about 14 minutes) or real time. |
 | **Raid rule** (Settings) | **30-second clock** (the Pro rule: no chant) or the traditional **cant**: no clock, the raider chants "kabaddi" on one breath (longer for fitter, fresher raiders). Tap the pulsing **Cant** button on the beat; if the chant breaks or the breath runs out in their half, you're out. The cant can also be automatic. Each tap is voiced. |
-| **Rules** | Touch points; bonus line with 6+ defenders on the mat, including the airborne bonus (a leg stretched over the line); baulk line; out of bounds, with the lobbies live only after contact; defenders crossing the midline, or diving or dashing out, are out; tackles and super tackles (3 or fewer defenders); chain holds; empty raids and do-or-die; revival in order of dismissal; all outs (+2, everyone back). Drawn knockouts use the Pro tie-breaker: five raids each by different raiders, then a coin toss and golden raids with the baulk line as the bonus line. |
+| **Rules** | Touch points; bonus line with 6+ defenders on the mat, including the airborne bonus (a leg stretched over the line); baulk line; out of bounds, with the lobbies live only after contact; defenders crossing the midline, or diving or dashing out, are out; tackles and super tackles (3 or fewer defenders); chain holds; empty raids and do-or-die; revival in order of dismissal; all outs (+2, everyone back); the 5-second rule to start a raid; green and yellow cards for rough play (a yellow is two minutes off and a technical point). Super 10 and High 5 are called out. Drawn knockouts use the Pro tie-breaker: five raids each by different raiders, then a coin toss and golden raids with the baulk line as the bonus line. |
 | **Energy and time outs** | Raids, dives and holds tire players; they recover between raids, faster on the bench and at half time. Two 30-second time outs per team per half: call yours from the pause menu, and the AI calls one when tired or after a run of points. Team energy and time outs left show on the scoreboard. |
-| **Officials** | Referee and scorers' table at the midline, an umpire on each side line, a line judge at each end line. They follow the raid and signal points. |
+| **Officials** | Referee and scorers' table at the midline, an umpire on each side line, a line judge at each end line. They follow the raid and make the hand signals: points (with the number), bonus, out, all out, time out, half time, match end and cards. See [docs/KABADDI.md](docs/KABADDI.md). |
 | **Raiding** | Cant, Hand touch (with aim assist), **Kick** (a toe touch to the front, or a back or side kick at a defender behind or beside you), Dodge, **Dubki** (duck under high tackles and linked hands) and **Lion jump** (leap a dive at your ankles). When grabbed, push for the midline; the right escape breaks the hold more often. |
 | **Moves and tendencies** | Every player has a rating for each raiding move. His best is his **signature**, and AI raiders use their strong moves far more than their weak ones. Every player also has ratings for the six **defensive skills** (ankle, thigh and waist hold, block, dash, chain) and a signature tackle; AI defenders pick their tackle by those ratings and by the moment (a dash only near a line, an ankle hold on a raider turning for home), and sharp ones read the raider's strengths. Ankle holds go low (beat them with a lion jump); thigh and waist holds go high (beat them with a dubki). You can read it in the wind-up. On Rookie and Pro the right escape button lights up when you raid, and Dash or Waist hold light up when you defend. Linked hands now catch a raider who runs into them. |
-| **Defending** | Choose your tackle: **Ankle hold** (low), **Thigh hold**, **Waist hold** (lifts the raider so he can't push, and catches him even mid-jump) or **Dash** (shoves him over the side or end line, so use it near a line). Stand set in his path and he runs into a **block**. **Chain**: link hands with the nearest team-mate. You move slower together, but you both go in and hold on harder, and a raider who runs into linked hands gets caught. **Switch** jumps to the defender nearest the raider. Team-mates pile into a struggle one at a time; one defender can be dragged to the line, while two or three usually win. |
-| **Emotion** | Raiders slap their thighs before a raid and taunt the chain ("Aaja!"). Defenders call "Pakad!". Winners roar, the beaten slump with hands on heads, players dispute touches ("Touch tha!" / "No touch!"), and there's the occasional shove after a tackle. Shouts are voiced and shown as speech bubbles in your language. |
+| **Defending** | Choose your tackle: **Ankle hold** (low), **Thigh hold**, **Waist hold** (lifts the raider so he can't push, and catches him even mid-jump) or **Dash** (shoves him over the side or end line, so use it near a line). Stand set in his path and he runs into a **block**. **Chain**: link hands with the nearest team-mate. You move slower together, but you both go in and hold on harder, and a raider who runs into linked hands gets caught. **Switch** jumps to the defender nearest the raider, and again to the next; or tap any of your defenders to take him over. Defenders keep their eyes on the raider, shuffling and backpedalling rather than turning their backs, and sharp ones pull back out of reach of a touch. Team-mates pile into a struggle one at a time; one defender can be dragged to the line, while two or three usually win. |
+| **AI** | Raiders work the cover: light quick steps just outside a defender's reach, the odd feint to draw a dive, toe taps at a foot left in range, and they go for corners and isolated or weaker tacklers when there is an opening, or take an empty raid against a tight cover. Defenders hold their shape, go in as the raider strikes or turns for home, and catch a raider who turns his back. |
+| **Emotion** | Raiders slap their thighs before a raid and taunt the chain ("Aaja!"). Defenders call "Pakad!". Celebrations vary and don't come every time: roars, fist pumps, claps, chest thumps, pointing to the crowd, and team-mates jogging over for a high five. Out players sit on the bench in the sitting block. Winners roar, the beaten slump with hands on heads, players dispute touches ("Touch tha!" / "No touch!"), and there's the occasional shove after a tackle. Shouts are voiced and shown as speech bubbles in your language. |
 | **Difficulty** | Rookie, Pro, Star and Legend change defender timing and aggression, AI raider skill, aim assist and how strict the cant rhythm is. |
-| **Players** | Realistic bodies from a generated model, auto-rigged and driven by the game's animation, with team kit colours, skin tones and shirt numbers. Switch to the classic code-built bodies in Settings. |
+| **Players** | Realistic bodies from a generated model, auto-rigged and driven by the game's animation, with team kit colours, skin tones and shirt numbers. Strides match running speed; players side-shuffle, backpedal, shift their weight and look around. Switch to the classic code-built bodies in Settings. |
 | **Cameras** | Third person, first person (drag to look), broadcast. |
 | **Grounds** | Mumbai Dome, Gaon Maidan (village mud court), National Stadium (floodlit), Monsoon Ground (rain), Puri Beach (sand). |
 | **Quick Match** | Any two league teams or countries, any ground. |
@@ -33,7 +34,7 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 | **Training** | Twelve lessons with on-screen objectives: cant, hand touch, toe touch, back and side kicks, dubki, lion jump, bonus, breaking a hold, tackling, chain tackle, waist hold, dash. |
 | **Start menu** | A live AI match plays behind the menu on a rotating ground. |
 | **Languages** | English, हिन्दी, मराठी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা, ਪੰਜਾਬੀ. |
-| **Audio** | Whistle, dhol, crowd, crowd chant, the raider's chant, and players' shouts. Voices are placeholder text-to-speech: drop real recordings into `assets/audio/` with the same file names. |
+| **Audio** | A home crowd that builds as the raider goes deep, cheers, "ooh"s at a near miss, groans and applause; players grunt in a struggle, gasp when tackled and breathe hard after a raid; whistle, dhol, crowd chant, the raider's chant and players' shouts. All are placeholders (synthesised by `tools/audio/make_sounds.py`, voices by text-to-speech): drop real recordings into `assets/audio/` with the same file names. |
 
 Points tables use Pro-style scoring: win 5, tie 3, loss by 7 or fewer 1.
 
@@ -57,11 +58,13 @@ On a keyboard (for testing in the editor):
 - **Space.** Cant when raiding, your usual tackle when defending.
 - **L.** Dodge (defending: waist hold).
 - **G.** Chain (link hands with the nearest team-mate).
-- **Tab.** Switch defender.
+- **Tab.** Switch defender (or click a defender).
 - **C.** Change camera.
 - **Esc.** Pause.
 
 ## Get it on your phone
+
+The beta guide, [docs/BETA.md](docs/BETA.md), covers installing, updating, what to test and how to report.
 
 Every push that touches `kabaddi-game/` runs the **Android build** GitHub Action. It runs the tests, then exports a
 debug APK. To install it:
@@ -95,9 +98,10 @@ ui/         main menu, quick match setup, settings, how to play, Nations Cup, ca
             create player, auction, result screen
 i18n/       src/*.json (one file per language), strings.csv (generated)
 fonts/      Noto Sans (Latin, Devanagari, Bengali, Tamil, Telugu, Kannada, Gurmukhi) and Teko. All SIL OFL.
-tests/      compile_check, test_runner (headless smoke test), screenshots (renders a visual tour)
-tools/      build_i18n.py
-docs/       ASSETS.md (how to drop in real humans), ROADMAP.md
+tests/      compile_check, test_runner (headless smoke test), screenshots (renders a visual tour),
+            ai_bench (AI v AI balance), motion_view (gaits, celebrations, signals), play_video (a bot that plays)
+tools/      build_i18n.py, rig/ (auto-rigging the player model), audio/ (crowd and player sounds)
+docs/       ASSETS.md (how to drop in real humans), KABADDI.md (the rules), BETA.md (testing on a phone), ROADMAP.md
 ```
 
 ## Tests

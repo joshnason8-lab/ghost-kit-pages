@@ -411,5 +411,7 @@
   "FIVE_SECONDS": "5-second rule",
   "HOW_FIVE": "A raider must start his raid within 5 seconds of the whistle, or the other side gets a technical point.",
   "MILESTONES": "Super 10 and High 5",
-  "HOW_MILESTONES": "Ten raid points in a match is a Super 10. Five tackle points is a High 5."
+  "HOW_MILESTONES": "Ten raid points in a match is a Super 10. Five tackle points is a High 5.",
+  "GFX_AUTO": "Auto graphics",
+  "GFX_LOWERED": "Graphics set to {level} for smoother play"
 }

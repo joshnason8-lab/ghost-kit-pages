@@ -53,6 +53,9 @@ const DIVE_TIME := 0.3
 var config := {}
 var arena: Arena
 var cam: CameraRig
+var _fps_frames := 0
+var _fps_time := 0.0
+var _fps_done := false
 var _switch_ms := 0
 var hud: MatchHud
 var controls: TouchControls
@@ -285,6 +288,7 @@ func _process(delta: float) -> void:
 	if paused:
 		return
 	var dt := minf(delta, 0.05)
+	_check_frame_rate(delta)
 	phase_t += dt
 	match phase:
 		"intro":
@@ -749,6 +753,36 @@ func _on_action(id: String) -> void:
 				_switch_defender()
 			"chain":
 				_toggle_chain(controlled)
+
+
+## The phone's back button: pause, or resume from the pause menu.
+func on_back() -> void:
+	if phase != "fulltime":
+		set_paused(not paused)
+
+
+## Lower the graphics by itself if the first raids run slowly on this phone.
+func _check_frame_rate(delta: float) -> void:
+	if _fps_done or phase != "raid":
+		return
+	if not bool(Game.settings.get("auto_gfx", true)) or bool(config.get("autoplay", false)) \
+			or DisplayServer.get_name() == "headless" or OS.get_cmdline_args().has("--write-movie"):
+		_fps_done = true
+		return
+	_fps_frames += 1
+	_fps_time += delta
+	if _fps_time < 6.0:
+		return
+	_fps_done = true
+	var fps := _fps_frames / _fps_time
+	var g := int(Game.settings.graphics)
+	if fps < 36.0 and g > Game.GFX_LOW:
+		Game.settings.graphics = g - 1
+		Game.save_settings()
+		Game.apply_graphics(get_viewport())
+		if arena.sun:
+			arena.sun.shadow_enabled = Game.shadows_enabled()
+		hud.event(tr("GFX_LOWERED").format({"level": tr(["GFX_LOW", "GFX_MEDIUM", "GFX_HIGH"][g - 1])}), Game.C_MUTED)
 
 
 func set_paused(p: bool) -> void:

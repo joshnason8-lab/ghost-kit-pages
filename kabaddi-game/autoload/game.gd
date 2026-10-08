@@ -50,6 +50,7 @@ var settings := {
 	"raid_rule": 1,         # 0 Pro 30-second clock, 1 traditional cant (tap), 2 traditional cant (automatic)
 	"models": 1,            # 0 classic code-built players, 1 realistic rigged players
 	"tutorial_done": [],
+	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
 }
 
 var main: Node = null
@@ -71,6 +72,32 @@ func _ready() -> void:
 	_build_theme()
 	get_tree().root.theme = theme
 	get_tree().root.get_viewport().gui_embed_subwindows = true
+
+
+## The phone's back button and the app going into the background.
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			go_back()
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT:
+			# Leaving the app mid-raid pauses the match.
+			if current and is_instance_valid(current) and current.has_method("set_paused") and not bool(current.get("paused")):
+				current.set_paused(true)
+
+
+## Back: pause or resume a match, leave a screen the way its Back button does, and quit
+## from the main menu.
+func go_back() -> void:
+	if current == null or not is_instance_valid(current):
+		return
+	if current.has_method("on_back"):
+		current.on_back()
+	elif current.has_meta("back"):
+		(current.get_meta("back") as Callable).call()
+	elif String(current.get_script().resource_path).ends_with("main_menu.gd"):
+		get_tree().quit()
+	else:
+		goto_menu()
 
 
 func _guess_language() -> String:

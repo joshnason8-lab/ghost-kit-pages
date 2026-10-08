@@ -370,8 +370,17 @@ func _run() -> void:
 	rm._post_messages = []
 	rm._milestones()
 	check(rm.raider.has_meta("super10"), "ten raid points is a Super 10")
+	Game.go_back()
+	check(rm.paused, "the phone's back button pauses a match")
+	Game.go_back()
+	check(not rm.paused, "... and resumes it")
 	rm.queue_free()
 	await frames(3)
+	Game.show_screen("res://ui/settings_screen.gd")
+	await frames(2)
+	Game.go_back()
+	await frames(2)
+	check(String(Game.current.get_script().resource_path).ends_with("main_menu.gd"), "back from a screen returns to the menu")
 	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0})
 	var lm: Node = Game.current
 	var g14 := 0
