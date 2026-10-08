@@ -54,8 +54,11 @@ var phase_t := 0.0
 var half := 1
 var clock := 180.0
 var half_len := 180.0
-var golden := false
+var golden := false           # golden raid: sudden death after a drawn tie-breaker
 var golden_raids := 0
+var tiebreak := false         # five raids each by different raiders, for drawn knockouts
+var tb_raids := [0, 0]
+var tb_used := [[], []]       # raiders who have had their tie-breaker raid
 var difficulty := 1
 var prof: Dictionary = PROFILES[1]
 var clock_speed := 6.0
@@ -294,6 +297,9 @@ func _begin_setup() -> void:
 	_set_phase("setup")
 	raider = _pick_raider(raiding)
 	raider.raids_made += 1
+	if tiebreak:
+		tb_used[raiding].append(raider)
+		tb_raids[raiding] += 1
 	for a in athletes:
 		a.touched = false
 		a.set_ring(Color(0, 0, 0, 0))
@@ -305,7 +311,7 @@ func _begin_setup() -> void:
 	var tm: Dictionary = teams[raiding]
 	raid = {
 		"t": RAID_TIME, "entered": false, "baulk": false, "bonus": false, "touched": [], "holders": [],
-		"progress": 0.0, "struggle": false, "dod": tm.empty >= 2, "alarm": false,
+		"progress": 0.0, "struggle": false, "dod": tm.empty >= 2 and not tiebreak and not golden, "alarm": false,
 		"ai_mode": "approach", "ai_lane": rng.randf_range(-3.0, 3.0), "ai_t": 0.0, "ai_target": null,
 		"ai_bonus": false, "ai_dodge_cd": 0.0, "user_raids": raiding == 0 and _user_controls_raider(),
 		"breath": 1.0, "beat_t": 0.0, "last_beat": -99, "chant_t": 0.0, "cant_tap": false, "last_ok": 0.0, "air_max": RAID_TIME,
@@ -371,6 +377,10 @@ func _default_user_defender() -> Athlete:
 
 func _pick_raider(t: int) -> Athlete:
 	var pool := on_mat(t)
+	if tiebreak:
+		var fresh := pool.filter(func(a): return not tb_used[t].has(a))
+		if not fresh.is_empty():
+			pool = fresh
 	if t == 0 and control_mode == "career":
 		for a in pool:
 			if a.is_career and a.is_raider_type():
@@ -916,8 +926,17 @@ func _user_defender(d: Athlete, dt: float) -> void:
 	if d.state != "holding" and (absf(d.position.x) > bound + 0.2 or depth_in(d.team, d.position) > Arena.HALF_L + 0.2):
 		_defender_out_of_bounds(d)
 		return
-	if depth_in(d.team, d.position) < 0.2:
-		d.position.z = side(d.team) * 0.2
+	# Crossing the midline into the raider's half during a raid is out.
+	if depth_in(d.team, d.position) < -0.12 and d.state != "holding":
+		hud.event(tr("EV_CROSSED_MIDLINE"), Game.C_DANGER)
+		_put_out(d)
+		teams[raiding].score += 1
+		teams[raiding].pts.extra += 1
+		_revive(raiding, 1)
+		_switch_defender_after_loss()
+		if on_mat(1 - raiding).is_empty():
+			_end_raid("all_out_lobby")
+		return
 
 
 func _defender_out_of_bounds(d: Athlete) -> void:
@@ -1028,8 +1047,12 @@ func _ai_raider(dt: float) -> Vector3:
 				raid.ai_mode = "bonus" if raid.ai_bonus else "probe"
 		"bonus":
 			var bx := 4.3 if raider.position.x * side(opp) > 0.0 else -4.3
-			target = pos_in(opp, bx, Arena.BONUS + 0.35)
+			target = pos_in(opp, bx, Arena.BONUS - 0.45)
 			speed = 0.95
+			if my_depth > Arena.BONUS - 0.75 and raider.cooldown <= 0.0 and raider.state == "raid":
+				# Plant one foot and stretch the other across the line.
+				raider.facing = Vector3(0, 0, -side(raiding))
+				_raider_touch(true)
 			if raid.bonus or raid.t < 14.0:
 				raid.ai_mode = "probe"
 		"probe":
@@ -1080,7 +1103,8 @@ func _ai_raider(dt: float) -> Vector3:
 ## A dash connects: no grip, just a shove toward the nearest line. Near the line it puts the
 ## raider out; in open court it only knocks him off his stride.
 func _dash_hit(d: Athlete) -> void:
-	var bound := Arena.HALF_W + (Arena.LOBBY if raid.struggle else 0.0)
+	raid.struggle = true   # contact: the lobby is now in play
+	var bound := Arena.HALF_W + Arena.LOBBY
 	var side_gap := bound - absf(raider.position.x)
 	var end_gap := Arena.HALF_L - depth_in(1 - raiding, raider.position)
 	var push := Vector3(signf(raider.position.x + 0.001), 0, 0)
@@ -1106,7 +1130,8 @@ func _dash_hit(d: Athlete) -> void:
 func _line_gap() -> float:
 	if raider == null:
 		return 99.0
-	var bound := Arena.HALF_W + (Arena.LOBBY if raid.get("struggle", false) else 0.0)
+	# After a dash the lobby is live, so it is the outer lobby line that counts.
+	var bound := Arena.HALF_W + Arena.LOBBY
 	return minf(bound - absf(raider.position.x), Arena.HALF_L - depth_in(1 - raiding, raider.position))
 
 
@@ -1119,7 +1144,7 @@ func _ai_pick_tackle(d: Athlete) -> String:
 	var w := {}
 	for k in ["ankle", "thigh", "waist"]:
 		w[k] = pow(d.dskill(k), 3.0) * 3.0
-	if _line_gap() < 1.4:
+	if _line_gap() < 2.0:
 		w["dash"] = pow(d.dskill("dash"), 3.0) * 6.0
 	if raider.vel.dot(Vector3(0, 0, -side(d.team))) > 1.0:
 		w.ankle *= 1.3      # ankle holds are the classic answer to a raider turning for home
@@ -1136,7 +1161,7 @@ func defend_hint() -> String:
 		return ""
 	if raider.airborne():
 		return "waist"
-	if _line_gap() < 1.2 and depth_in(1 - raiding, raider.position) > 0.3:
+	if _line_gap() < 1.8 and depth_in(1 - raiding, raider.position) > 0.3:
 		return "dash"
 	return ""
 
@@ -1264,6 +1289,12 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 			d.drive(d.dive_dir * 8.0, dt)
 			if d.st_t >= d.st_len:
 				d.set_state("recover", 1.15 - 0.25 * react)
+			# A dive that carries him over a boundary line (the lobby only counts once
+			# there has been contact) puts him out.
+			var bound := Arena.HALF_W + (Arena.LOBBY if raid.struggle else 0.0)
+			if absf(d.position.x) > bound + 0.2 or depth_in(d.team, d.position) > Arena.HALF_L + 0.2:
+				_defender_out_of_bounds(d)
+				return
 			_clamp_defender(d)
 			return
 		"recover":
@@ -1328,7 +1359,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		return
 	var p := 0.06 * diff * (0.6 + d.tackle)
 	var heading_home := raider.vel.dot(Vector3(0, 0, -side(d.team))) > 1.0
-	if _line_gap() < 1.4 and d.dskill("dash") > 0.55:
+	if _line_gap() < 2.0 and d.dskill("dash") > 0.55:
 		p *= 1.5
 	if heading_home:
 		p *= 2.2
@@ -1517,9 +1548,21 @@ func _check_lines() -> void:
 		raid.baulk = true
 		if raider == controlled:
 			tutorial_event.emit("baulk")
-	if not raid.bonus and dep > Arena.BONUS and on_mat(opp).size() >= 6 and raid.holders.is_empty():
+	# Bonus: one foot over the bonus line while the other is in the air, so a leg stretched
+	# across it (a toe touch toward the end line) counts as well as stepping over. In a
+	# golden raid the baulk line counts as the bonus line, whatever the numbers.
+	var line := Arena.BAULK if golden else Arena.BONUS
+	var foot := dep
+	var airborne := false
+	if raider.state == "kick":
+		var p := raider.st_t / maxf(raider.st_len, 0.01)
+		var into := Vector3(0, 0, -side(raiding))
+		if p > 0.2 and p < 0.8 and raider.facing.dot(into) > 0.5:
+			foot = dep + raider.facing.dot(into) * (raider.reach + 0.5)
+			airborne = foot > line and dep <= line
+	if not raid.bonus and foot > line and (golden or on_mat(opp).size() >= 6) and raid.holders.is_empty():
 		raid.bonus = true
-		hud.event(tr("EV_BONUS"), Game.C_GOLD)
+		hud.event(tr("EV_BONUS_AIR") if airborne else tr("EV_BONUS"), Game.C_GOLD)
 		if raider == controlled:
 			tutorial_event.emit("bonus")
 		Sfx.play("slap", 0.0, 0.8)
@@ -1584,7 +1627,8 @@ func _end_raid(kind: String) -> void:
 					msg = tr("EV_DOD_FAIL")
 					col = Game.C_DANGER
 				else:
-					tm_atk.empty += 1
+					if not tiebreak and not golden:
+						tm_atk.empty += 1
 					msg = tr("EV_EMPTY")
 			else:
 				raid_pts = touched.size() + bonus
@@ -2028,9 +2072,17 @@ func _next_raid() -> void:
 		_begin_setup()
 		return
 	if golden:
+		# Sudden death: the first raid that scores (either way) settles it.
 		golden_raids += 1
-		if golden_raids % 2 == 0 and teams[0].score != teams[1].score:
+		if teams[0].score != teams[1].score:
 			_end_match()
+			return
+	elif tiebreak:
+		if tb_raids[0] >= 5 and tb_raids[1] >= 5:
+			if teams[0].score != teams[1].score:
+				_end_match()
+				return
+			_start_golden()
 			return
 	elif clock <= 0.0:
 		if half == 1:
@@ -2039,14 +2091,49 @@ func _next_raid() -> void:
 			Sfx.play("buzzer", -4.0)
 			return
 		if teams[0].score == teams[1].score and bool(config.get("knockout", false)):
-			golden = true
-			golden_raids = 0
-			hud.banner(tr("HUD_DOD"))
-		else:
-			_end_match()
+			_start_tiebreak()
 			return
+		_end_match()
+		return
 	raiding = 1 - raiding
 	_begin_setup()
+
+
+## Drawn knockout: all seven back on each side, then five raids each by five different
+## raiders, alternating. Points count as normal.
+func _start_tiebreak() -> void:
+	tiebreak = true
+	tb_raids = [0, 0]
+	tb_used = [[], []]
+	_all_back()
+	hud.banner(tr("TIEBREAK"))
+	Sfx.play("buzzer", -4.0)
+	raiding = first_raider
+	_begin_setup()
+
+
+## Still level after the tie-breaker: a coin toss, then golden raids until one scores. The
+## baulk line counts as the bonus line.
+func _start_golden() -> void:
+	tiebreak = false
+	golden = true
+	golden_raids = 0
+	_all_back()
+	raiding = rng.randi() % 2
+	hud.banner(tr("GOLDEN_RAID"))
+	hud.event(tr("EV_TOSS").format({"team": String(teams[raiding].id)}), Game.C_GOLD)
+	Sfx.play("buzzer", -4.0)
+	_begin_setup()
+
+
+func _all_back() -> void:
+	for t in 2:
+		for a in teams[t].players:
+			if not a.on_mat:
+				a.on_mat = true
+				a.set_state("walk")
+		teams[t].out_queue.clear()
+		teams[t].empty = 0
 
 
 func _end_match() -> void:

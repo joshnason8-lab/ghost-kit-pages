@@ -267,6 +267,47 @@ func _run() -> void:
 	# Traditional: the raid lasts one breath, longer for fitter raiders.
 	check(um_air > 14.0 and um_air < 33.0, "cant rule: one breath of %.0fs" % um_air)
 
+	# 8b3. Knockout rules: tie-breaker, golden raid, airborne bonus.
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "autoplay": true, "autoplay_no_report": true, "length": 0, "difficulty": 1, "knockout": true})
+	var km: Node = Game.current
+	var g10 := 0
+	while km.phase != "raid" and g10 < 600:
+		await get_tree().process_frame
+		g10 += 1
+	km.set_process(false)
+	# Airborne bonus: a leg stretched over the bonus line, the other foot still short of it.
+	var kr: Athlete = km.raider
+	kr.position = km.pos_in(1 - km.raiding, 0.0, 4.2)
+	kr.facing = Vector3(0, 0, -km.side(km.raiding))
+	kr.set_state("kick", 1.0)
+	kr.st_t = 0.5
+	km.raid.holders = []
+	km._check_lines()
+	check(km.raid.bonus, "airborne bonus: a stretched leg over the bonus line counts")
+	km._end_raid("return")
+	km.half = 2
+	km.clock = 0.0
+	km.teams[0].score = 20
+	km.teams[1].score = 20
+	km._next_raid()
+	check(km.tiebreak and km.on_mat(0).size() == 7 and km.on_mat(1).size() == 7, "drawn knockout goes to a tie-breaker with all seven back")
+	var first_tb: Athlete = km.raider
+	km._end_raid("return")
+	km._next_raid()
+	km._end_raid("return")
+	km._next_raid()
+	check(km.raider != first_tb and km.tb_raids[km.raiding] == 2, "tie-breaker raiders are all different")
+	km.tb_raids = [5, 5]
+	km._end_raid("return")
+	km._next_raid()
+	check(km.golden and not km.tiebreak, "still level after five raids each: golden raid")
+	km.teams[km.raiding].score += 1
+	km._end_raid("return")
+	km._next_raid()
+	check(km.phase == "fulltime", "the first score in the golden raid wins")
+	km.queue_free()
+	await frames(3)
+
 	# 8c. Tutorial lesson starts and shows its objective.
 	Game.start_match(Tutorial.match_config("cant"))
 	await frames(260)

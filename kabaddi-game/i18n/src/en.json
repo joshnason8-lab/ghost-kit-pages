@@ -186,7 +186,7 @@
   "HOW_TITLE": "How to play",
   "HOW_RAID": "Raiding: run into their half, cross the baulk line and touch defenders with a hand or toe touch. Get back over the midline before the 30-second raid clock ends. Every defender you touched is out.",
   "HOW_DEFEND": "Defending: move your highlighted defender and choose your tackle when the raider is close: Ankle hold, Thigh hold or Waist hold. Team-mates pile in. Stop the raider reaching the midline.",
-  "HOW_BONUS": "Bonus: cross the bonus line while six or more defenders are on the mat for an extra point.",
+  "HOW_BONUS": "Bonus: with six or more defenders on the mat, get a foot over the bonus line while the other foot is off the ground. Stepping over counts, and so does stretching a leg across with Kick (an airborne bonus).",
   "HOW_DOD": "Do or die: after two empty raids in a row, the next raid must score or the raider is out.",
   "HOW_ALLOUT": "All out: put the whole opposing team out for two extra points. They all come back.",
   "HOW_REVIVE": "Revival: each point you score brings one of your out players back, in the order they went out.",
@@ -371,5 +371,14 @@
   "RAID_RULE_NOTE": "30-second clock is the Pro rule: no chant, just beat the raid clock. The cant is the traditional rule: the raider chants “kabaddi” on one breath, with no clock, and is out if the chant breaks in the other half.",
   "HUD_BREATH_OTHER": "Raider's breath",
   "HINT_RAID_CLOCK": "Cross the baulk line, touch defenders, then get back over the midline before the 30-second clock runs out.",
-  "HINT_RAID_AUTO": "Your raider chants on one breath. Cross the baulk line, touch defenders, and get back before the breath runs out."
+  "HINT_RAID_AUTO": "Your raider chants on one breath. Cross the baulk line, touch defenders, and get back before the breath runs out.",
+  "EV_BONUS_AIR": "Airborne bonus!",
+  "EV_CROSSED_MIDLINE": "Crossed the midline: out",
+  "TIEBREAK": "Tie-breaker: five raids each",
+  "GOLDEN_RAID": "Golden raid",
+  "HUD_TIEBREAK": "Tie-breaker {n}/5",
+  "EV_TOSS": "{team} win the toss",
+  "HOW_TIEBREAK": "Drawn knockouts: all seven players come back and each team gets five raids by five different raiders. Still level? A coin toss, then golden raids: the baulk line counts as the bonus line, and the first raid that scores wins it.",
+  "HOW_LINES": "Lines and lobbies: step out of the court before any contact and you're out; once there's been contact the lobbies (side strips) are in play. Defenders who cross the midline into the raider's half are out, and so is a defender whose dive or dash carries him out.",
+  "LOBBY": "Lines and lobbies"
 }

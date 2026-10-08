@@ -448,8 +448,12 @@ func refresh() -> void:
 		dots[t].on = m.on_mat(t).size()
 		dots[t].queue_redraw()
 	clock_l.text = m.clock_text()
-	var half_txt: String = tr("HUD_DOD") if m.golden else tr("HUD_HALF").format({"n": m.half})
-	if m.clock_speed > 1.0 and not m.golden:
+	var half_txt: String = tr("HUD_HALF").format({"n": m.half})
+	if m.golden:
+		half_txt = tr("GOLDEN_RAID")
+	elif m.tiebreak:
+		half_txt = tr("HUD_TIEBREAK").format({"n": maxi(1, maxi(m.tb_raids[0], m.tb_raids[1]))})
+	if m.clock_speed > 1.0 and not m.golden and not m.tiebreak:
 		half_txt += "  ·  %d×" % int(m.clock_speed)
 	half_l.text = half_txt.to_upper()
 	var raiding_now: bool = m.phase in ["setup", "raid"]
