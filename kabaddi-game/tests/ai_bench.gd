@@ -55,6 +55,33 @@ func _ready() -> void:
 		m.queue_free()
 		await get_tree().process_frame
 	print("raids %d, avg %.1fs, outcomes %s" % [raids, secs / maxf(1, raids), str(kinds)])
+	var rp := 0
+	var dp := 0
+	var multi := 0
+	for r in _all_logs:
+		rp += int(r.raid_pts)
+		dp += int(r.def_pts)
+		if int(r.raid_pts) >= 2:
+			multi += 1
+	print("raid points %d, defence points %d, raids with 2+ points %d" % [rp, dp, multi])
+	var held_pts := 0
+	var held_n := 0
+	var clean_pts := 0
+	var clean_n := 0
+	for r in _all_logs:
+		if r.kind == "return" and int(r.raid_pts) > 0:
+			if String(r.get("first_hold", "")) != "":
+				held_pts += int(r.raid_pts)
+				held_n += 1
+			else:
+				clean_pts += int(r.raid_pts)
+				clean_n += 1
+	var vias := {}
+	for r in _all_logs:
+		for v in r.get("vias", []):
+			vias[v] = vias.get(v, 0) + 1
+	print("touches by kind ", vias)
+	print("successful raids: held %d (%d pts), clean %d (%d pts)" % [held_n, held_pts, clean_n, clean_pts])
 	print("caught crossing a chain %d" % caught)
 	print("moves landed %s" % str(landed))
 	print("moves tried %s" % str(tried))

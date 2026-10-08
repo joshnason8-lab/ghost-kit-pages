@@ -13,6 +13,8 @@ signal tutorial_event(name: String)
 
 const RAID_TIME := 30.0
 const RAID_GAP := 5.0          # seconds between raids (scaled by the clock speed)
+const TIMEOUTS_PER_HALF := 2   # Pro rule: two 30-second timeouts per team per half
+const TIMEOUT_TIME := 5.0      # real seconds the huddle lasts on screen
 const HALF_LEN := 1200.0       # 20-minute halves, as in the pro game
 const CLOCK_SPEEDS := [6.0, 3.0, 1.0]   # quick (about 7 min), fast (about 14 min), real time (40 min)
 const BEAT := 0.6              # cant rhythm: one "kabaddi" per beat
@@ -57,6 +59,7 @@ var half_len := 180.0
 var golden := false           # golden raid: sudden death after a drawn tie-breaker
 var golden_raids := 0
 var tiebreak := false         # five raids each by different raiders, for drawn knockouts
+var timeout_team := -1
 var tb_raids := [0, 0]
 var tb_used := [[], []]       # raiders who have had their tie-breaker raid
 var difficulty := 1
@@ -177,6 +180,7 @@ func _make_team(t: int, id: String, kit: Color) -> void:
 	teams.append({
 		"id": id, "kit": kit, "trim": trim, "players": [], "score": 0, "out_queue": [], "empty": 0,
 		"pts": {"raid": 0, "tackle": 0, "allout": 0, "extra": 0},
+		"timeouts": TIMEOUTS_PER_HALF, "timeout_pending": false, "run_against": 0,
 	})
 
 
@@ -277,9 +281,15 @@ func _process(delta: float) -> void:
 			_tick_raid(dt)
 		"post":
 			_tick_post(dt)
+		"timeout":
+			_tick_timeout(dt)
 		"halftime":
 			_walk_to_positions(dt, false)
 			if phase_t > 4.0:
+				for a in athletes:
+					_rest(a, 0.3)
+				for tm in teams:
+					tm.timeouts = TIMEOUTS_PER_HALF
 				half = 2
 				clock = half_len
 				raiding = 1 - first_raider
@@ -297,6 +307,7 @@ func _begin_setup() -> void:
 	_set_phase("setup")
 	raider = _pick_raider(raiding)
 	raider.raids_made += 1
+	_tire(raider, 0.04)
 	if tiebreak:
 		tb_used[raiding].append(raider)
 		tb_raids[raiding] += 1
@@ -389,7 +400,9 @@ func _pick_raider(t: int) -> Athlete:
 	if cands.is_empty():
 		cands = pool
 	# Lean on the best raider but rotate a little.
-	cands.sort_custom(func(x, y): return DB.overall(x.data) - x.raids_made * 3 > DB.overall(y.data) - y.raids_made * 3)
+	# Best raider first, but tired legs and recent raids count against him.
+	var score := func(a: Athlete) -> float: return DB.overall(a.data) - a.raids_made * 3 - (1.0 - a.energy) * 30.0
+	cands.sort_custom(func(x, y): return score.call(x) > score.call(y))
 	if cands.size() > 1 and rng.randf() < 0.25:
 		return cands[1]
 	return cands[0]
@@ -489,6 +502,7 @@ func _tick_raid(dt: float) -> void:
 			_ai_defender(d, dt)
 	_separate(defs, dt)
 	for h in holders:
+		_tire(h, 0.02 * dt)
 		h.position = raider.position + h.hold_offset
 		h.vel = raider.vel
 		h.face_toward(raider.position, dt, 20.0)
@@ -547,6 +561,15 @@ func _move_raider(move: Vector3, dt: float) -> void:
 
 
 func _separate(defs: Array, dt: float) -> void:
+	# Set defenders give the raider room rather than bumping into him.
+	if raid.holders.is_empty():
+		for d in defs:
+			if d.state in ["ready", "idle"] and d != controlled:
+				var off: Vector3 = d.position - raider.position
+				off.y = 0
+				var l := off.length()
+				if l < 0.55 and l > 0.001:
+					d.position += off / l * (0.55 - l) * 0.6
 	for i in defs.size():
 		var a: Athlete = defs[i]
 		if a.state == "holding":
@@ -865,6 +888,7 @@ func _defender_tackle(d: Athlete, kind := "") -> void:
 	d.facing = dir
 	d.set_state("dive", DIVE_TIME)
 	d.cooldown = 1.4
+	_tire(d, 0.035)
 	d.chain_dive = false
 	Sfx.play("whoosh", -8.0, 0.8)
 	# A chained pair goes in together.
@@ -1017,7 +1041,8 @@ func _ai_raider(dt: float) -> Vector3:
 				continue
 			var dd = d.position.distance_to(raider.position)
 			if dd < _reach_for("kick") and raider.facing.angle_to((d.position - raider.position).normalized()) > 1.5 \
-					and rng.randf() < dt * (0.1 + 1.2 * _tend("kick")) * skill:
+					and rng.randf() < dt * (0.05 + 0.5 * _tend("kick")) * skill \
+					and (raid.touched.is_empty() or raid.get("ai_greedy", false)):
 				_raider_back_kick(d)
 				break
 
@@ -1028,7 +1053,11 @@ func _ai_raider(dt: float) -> Vector3:
 		if d.position.distance_to(raider.position) < 1.7:
 			crowded += 1
 	if raid.ai_mode != "return":
-		if raid.t < time_home + 1.5 or (touched_n > 0 and (crowded >= 2 or rng.randf() < dt * 1.2)) or (touched_n >= 2) or (raid.bonus and rng.randf() < dt * 2.0):
+		# Most raiders take the point and go; a greedy few hunt a second touch.
+		if touched_n > 0 and not raid.has("ai_greedy"):
+			raid["ai_greedy"] = rng.randf() < 0.2 + 0.25 * _tend("kick")
+		var greedy: bool = raid.get("ai_greedy", false)
+		if raid.t < time_home + 1.5 or (touched_n > 0 and (not greedy or crowded >= 2 or rng.randf() < dt * 1.2)) or (touched_n >= 2) or (raid.bonus and rng.randf() < dt * 2.0):
 			raid.ai_mode = "return"
 
 	var target: Vector3
@@ -1387,7 +1416,10 @@ func _check_contacts(defs: Array) -> void:
 		var dist = d.position.distance_to(raider.position)
 		# Raider's touches.
 		if in_half and not d.touched:
-			var hit = dist < 0.55
+			# Body contact: a raider running into a defender, or a defender who is going for
+			# him. Defenders standing their ground keep out of reach (see _separate).
+			var to_d: Vector3 = (d.position - raider.position).normalized() if dist > 0.01 else raider.facing
+			var hit = dist < 0.42 and (d.state in ["dive", "telegraph", "recover"] or raider.vel.dot(to_d) > 1.0)
 			var via := ""
 			if raider.state in ["touch", "kick"]:
 				var p := raider.st_t / maxf(raider.st_len, 0.01)
@@ -1416,7 +1448,7 @@ func _check_contacts(defs: Array) -> void:
 					# Running straight into a set defender: he blocks.
 					var into := raider.vel.dot((d.position - raider.position).normalized()) > 1.2 and via == ""
 					if into:
-						counter += 0.1 + 0.35 * (d.dskill("block") - 0.4)
+						counter += 0.3 + 0.4 * (d.dskill("block") - 0.4)
 					# A leg at full stretch is hard to grab from a set position.
 					if via in ["toe", "backkick", "sidekick"]:
 						counter *= 0.45
@@ -1460,6 +1492,7 @@ func _check_contacts(defs: Array) -> void:
 				hold_chance += 0.2
 			if d.chain_dive:
 				hold_chance += 0.1 + 0.2 * d.dskill("chain")
+			hold_chance *= 0.75 + 0.25 * d.energy
 			if d == controlled:
 				hold_chance *= float(prof.user_hold)
 			if rng.randf() < hold_chance:
@@ -1487,6 +1520,7 @@ func _pile_on(piling: Array) -> void:
 
 func _touch(d: Athlete, via := "") -> void:
 	d.touched = true
+	raid["vias"] = raid.get("vias", []) + [via if via != "" else ("contact_" + d.state)]
 	raid.touched.append(d)
 	raid.alarm = true
 	d.set_ring(Color(Game.C_SAFFRON, 0.9))
@@ -1678,6 +1712,13 @@ func _end_raid(kind: String) -> void:
 	if raider_out:
 		tm_atk.empty = 0
 
+	# Runs of points against, for timeout calls.
+	if raid_pts > def_pts:
+		tm_def.run_against = int(tm_def.run_against) + raid_pts
+		tm_atk.run_against = 0
+	elif def_pts > 0:
+		tm_atk.run_against = int(tm_atk.run_against) + def_pts
+		tm_def.run_against = 0
 	# Apply points.
 	tm_atk.score += raid_pts
 	tm_atk.pts.raid += raid_pts
@@ -1696,7 +1737,7 @@ func _end_raid(kind: String) -> void:
 	_revive(atk, raid_pts - bonus)
 	_revive(dfn, 1 if def_pts > 0 else 0)
 
-	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": float(raid.air_max) - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size()})
+	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": float(raid.air_max) - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size(), "vias": raid.get("vias", [])})
 	_post_messages = [[msg, col]]
 	# All outs.
 	for t in 2:
@@ -2063,10 +2104,17 @@ func _tick_post(dt: float) -> void:
 		_next_raid()
 
 
-func _next_raid() -> void:
+func _next_raid(after_timeout := false) -> void:
 	for a in athletes:
 		if a.state in ["celebrate", "roar", "slump", "shove", "argue", "slap"]:
 			a.set_state("idle")
+	if not after_timeout:
+		# Get some breath back between raids; more on the bench.
+		for a in athletes:
+			if a != raider:
+				_rest(a, 0.012 if a.on_mat else 0.035)
+		if _maybe_timeout():
+			return
 	if tutorial:
 		raiding = tutorial.next_raiding_team(raiding)
 		_begin_setup()
@@ -2097,6 +2145,87 @@ func _next_raid() -> void:
 		return
 	raiding = 1 - raiding
 	_begin_setup()
+
+
+## Tire a player. Fitter players tire more slowly; nobody drops below a third of his legs.
+func _tire(a: Athlete, amount: float) -> void:
+	var stam := float(a.data.attrs.stamina)
+	a.energy = maxf(0.35, a.energy - amount * clampf(1.35 - stam / 100.0, 0.4, 1.0))
+
+
+func _rest(a: Athlete, amount: float) -> void:
+	a.energy = minf(1.0, a.energy + amount)
+
+
+func team_energy(t: int) -> float:
+	var mat := on_mat(t)
+	if mat.is_empty():
+		return 1.0
+	var s := 0.0
+	for a in mat:
+		s += a.energy
+	return s / mat.size()
+
+
+## A timeout the user asked for, or one the AI wants: tired legs, or a run of points
+## against. Only between raids, never in the tie-breaker or golden raid.
+func _maybe_timeout() -> bool:
+	if tiebreak or golden or tutorial or clock <= 0.0 or attract:
+		return false
+	for t in 2:
+		var tm: Dictionary = teams[t]
+		if int(tm.timeouts) <= 0:
+			tm.timeout_pending = false
+			continue
+		var ai_team := t == 1 or bool(config.get("autoplay", false))
+		var wants: bool = tm.timeout_pending
+		if ai_team and not wants:
+			wants = team_energy(t) < 0.6 or int(tm.run_against) >= 6
+		if wants:
+			_start_timeout(t)
+			return true
+	return false
+
+
+func request_timeout() -> bool:
+	if int(teams[0].timeouts) <= 0 or tiebreak or golden:
+		return false
+	teams[0].timeout_pending = true
+	return true
+
+
+func _start_timeout(t: int) -> void:
+	var tm: Dictionary = teams[t]
+	tm.timeouts = int(tm.timeouts) - 1
+	tm.timeout_pending = false
+	tm.run_against = 0
+	timeout_team = t
+	_set_phase("timeout")
+	hud.banner(tr("TIMEOUT_BY").format({"team": String(tm.id)}))
+	Sfx.play("whistle", -4.0)
+	for a in athletes:
+		if a.on_mat:
+			a.set_state("walk")
+	# A 30-second timeout off the match clock... the clock stops, so nothing to take off.
+
+
+func _tick_timeout(dt: float) -> void:
+	# Each team huddles near its own end line.
+	for t in 2:
+		var mat := on_mat(t)
+		for i in mat.size():
+			var a: Athlete = mat[i]
+			var ang := TAU * float(i) / maxf(1.0, mat.size())
+			var spot := pos_in(t, cos(ang) * 0.9, Arena.HALF_L - 1.6 + sin(ang) * 0.9)
+			a.seek(spot, 2.2, dt)
+			if a.position.distance_to(spot) < 0.3:
+				a.face_toward(pos_in(t, 0.0, Arena.HALF_L - 1.6), dt)
+				if a.state != "idle":
+					a.set_state("idle")
+	if phase_t > TIMEOUT_TIME:
+		for a in athletes:
+			_rest(a, 0.22 if a.team == timeout_team else 0.08)
+		_next_raid(true)
 
 
 ## Drawn knockout: all seven back on each side, then five raids each by five different

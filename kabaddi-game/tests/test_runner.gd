@@ -308,6 +308,28 @@ func _run() -> void:
 	km.queue_free()
 	await frames(3)
 
+	# 8b4. Energy and time outs.
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "autoplay": true, "autoplay_no_report": true, "length": 0, "difficulty": 1})
+	var tmm: Node = Game.current
+	var g11 := 0
+	while tmm.phase != "raid" and g11 < 600:
+		await get_tree().process_frame
+		g11 += 1
+	for a in tmm.on_mat(1):
+		a.energy = 0.45
+	tmm._end_raid("return")
+	tmm._next_raid()
+	check(tmm.phase == "timeout" and int(tmm.teams[1].timeouts) == 1, "a tired AI side calls a time out")
+	var before: float = tmm.team_energy(1)
+	var g12 := 0
+	while tmm.phase == "timeout" and g12 < 400:
+		await get_tree().process_frame
+		g12 += 1
+	check(tmm.team_energy(1) > before + 0.1 and tmm.phase == "setup", "the time out restores energy and play resumes")
+	check(tmm.request_timeout(), "you can call a time out")
+	tmm.queue_free()
+	await frames(3)
+
 	# 8c. Tutorial lesson starts and shows its objective.
 	Game.start_match(Tutorial.match_config("cant"))
 	await frames(260)

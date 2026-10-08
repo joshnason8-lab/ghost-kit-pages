@@ -380,5 +380,11 @@
   "EV_TOSS": "{team} win the toss",
   "HOW_TIEBREAK": "Drawn knockouts: all seven players come back and each team gets five raids by five different raiders. Still level? A coin toss, then golden raids: the baulk line counts as the bonus line, and the first raid that scores wins it.",
   "HOW_LINES": "Lines and lobbies: step out of the court before any contact and you're out; once there's been contact the lobbies (side strips) are in play. Defenders who cross the midline into the raider's half are out, and so is a defender whose dive or dash carries him out.",
-  "LOBBY": "Lines and lobbies"
+  "LOBBY": "Lines and lobbies",
+  "TIMEOUT_BY": "Time out · {team}",
+  "CALL_TIMEOUT": "Call a time out ({n} left)",
+  "TIMEOUT_CALLED": "Time out called: it starts after this raid",
+  "HUD_TIMEOUTS": "TO {n}",
+  "TEAM_ENERGY": "Team energy",
+  "HOW_ENERGY": "Energy and time outs: raids, dives and struggles tire players; they recover between raids, faster on the bench, and at half time. Tired raiders are slower and tired defenders hold less well. Each team has two 30-second time outs per half (the bar and TO count under each team's name). Call yours from the pause menu; it happens after the current raid."
 }

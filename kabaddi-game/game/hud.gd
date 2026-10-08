@@ -20,6 +20,9 @@ var chant_l: Label
 var breath_box: Control
 var breath_bar: ProgressBar
 var breath_l: Label
+var timeout_btn: Button
+var energy_bars: Array = []
+var to_l: Array = []
 var objective: PanelContainer
 var objective_title: Label
 var objective_text: Label
@@ -120,6 +123,26 @@ func _build_scoreboard() -> void:
 		dots.append(dot)
 		col.add_child(nm)
 		col.add_child(dot)
+		var erow := HBoxContainer.new()
+		erow.add_theme_constant_override("separation", 6)
+		erow.alignment = BoxContainer.ALIGNMENT_END if t == 1 else BoxContainer.ALIGNMENT_BEGIN
+		var eb := ProgressBar.new()
+		eb.custom_minimum_size = Vector2(92, 5)
+		eb.max_value = 1.0
+		eb.step = 0.01
+		eb.show_percentage = false
+		eb.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		eb.tooltip_text = tr("TEAM_ENERGY")
+		energy_bars.append(eb)
+		var tl := _label("", "MutedLabel", 12)
+		to_l.append(tl)
+		if t == 0:
+			erow.add_child(eb)
+			erow.add_child(tl)
+		else:
+			erow.add_child(tl)
+			erow.add_child(eb)
+		col.add_child(erow)
 		var sc := _label("0", "ScoreLabel", 56)
 		score_l.append(sc)
 		if t == 0:
@@ -288,6 +311,13 @@ func _build_pause() -> void:
 		Game.save_settings()
 		_update_cam_btn())
 	v.add_child(cam_btn)
+	timeout_btn = Button.new()
+	timeout_btn.pressed.connect(func():
+		if m.request_timeout():
+			_update_timeout_btn()
+			m.set_paused(false)
+			hint(tr("TIMEOUT_CALLED")))
+	v.add_child(timeout_btn)
 	var quit := Button.new()
 	quit.text = tr("QUIT_MATCH")
 	quit.pressed.connect(func(): m.quit_match())
@@ -300,8 +330,17 @@ func _update_cam_btn() -> void:
 	cam_btn.text = "%s: %s" % [tr("CAMERA"), tr(["CAM_THIRD", "CAM_FIRST", "CAM_TV"][m.cam.mode])]
 
 
+func _update_timeout_btn() -> void:
+	var left := int(m.teams[0].timeouts)
+	timeout_btn.text = tr("CALL_TIMEOUT").format({"n": left})
+	timeout_btn.disabled = left <= 0 or bool(m.teams[0].timeout_pending) or m.tiebreak or m.golden
+	if bool(m.teams[0].timeout_pending):
+		timeout_btn.text = tr("TIMEOUT_CALLED")
+
+
 func show_pause(p: bool) -> void:
 	_update_cam_btn()
+	_update_timeout_btn()
 	pause_panel.visible = p
 	controls.enabled = not p
 	controls.visible = not p
@@ -445,6 +484,8 @@ func refresh() -> void:
 	_t += dt
 	for t in 2:
 		score_l[t].text = str(m.teams[t].score)
+		energy_bars[t].value = m.team_energy(t)
+		to_l[t].text = tr("HUD_TIMEOUTS").format({"n": int(m.teams[t].timeouts)})
 		dots[t].on = m.on_mat(t).size()
 		dots[t].queue_redraw()
 	clock_l.text = m.clock_text()
