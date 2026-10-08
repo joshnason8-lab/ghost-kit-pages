@@ -35,7 +35,7 @@ Points tables use Pro-style scoring: win 5, tie 3, loss by 7 or fewer 1.
 On a phone:
 
 - **Left thumb.** Touch anywhere on the left side for a floating joystick.
-- **Right thumb.** Use the action buttons. Raiding: *Hand touch*, *Toe touch*, *Dodge*. Defending: *Tackle*, *Switch*.
+- **Right thumb.** Use the action buttons. Raiding: the pulsing *Cant*, *Hand touch*, *Toe touch*, *Dodge*. Defending: *Tackle*, *Switch*, *Chain*.
 - **Drag anywhere else** to look around. Use it to aim in first person or to orbit the third-person camera.
 - **Top right.** Camera and pause.
 - **Left-handed layout.** Turn it on in Settings.
@@ -45,7 +45,9 @@ On a keyboard (for testing in the editor):
 - **Move.** WASD or arrow keys.
 - **J.** Hand touch.
 - **K.** Toe touch.
-- **Space.** Dodge when raiding, Tackle when defending.
+- **Space.** Cant when raiding, Tackle when defending.
+- **L.** Dodge.
+- **G.** Chain (link hands with the nearest team-mate).
 - **Tab.** Switch defender.
 - **C.** Change camera.
 - **Esc.** Pause.
