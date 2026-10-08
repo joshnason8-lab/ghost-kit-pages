@@ -14,8 +14,10 @@ here to a store release, roughly in order.
 - [ ] Raider moves: *dubki* (duck under a chain), frog jump over an ankle hold, running hand touch, scorpion kick.
 - [ ] Defender moves: ankle hold vs thigh hold vs block vs chain, each with its own timing window.
 - [ ] Choose your raider before each raid and pick defensive formations (2-2-3, umbrella).
-- [ ] Stamina that carries across raids, plus substitutions and time-outs.
-- [ ] Review system (challenge a touch call) and technical points.
+- [x] Stamina that carries across raids, and time-outs.
+- [ ] Substitutions (see docs/KABADDI.md).
+- [x] Technical points: 5-second rule, cards.
+- [ ] Review system (challenge a touch call).
 - [ ] Tune the AI per difficulty against real PKL averages: raid success near 35–40%, tackle success near 35%,
       empty raids near 25%.
 

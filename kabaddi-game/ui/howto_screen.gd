@@ -13,7 +13,7 @@ func _ready() -> void:
 	body.add_theme_constant_override("separation", 16)
 	v.add_child(UI.scroll(body))
 	var items := [
-		["MENU_QUICK", "HOW_RAID"], ["CANT", "HOW_CANT"], ["MOVES", "HOW_MOVES"], ["HUD_DEFEND", "HOW_DEFEND"], ["DEF_SKILLS", "HOW_STYLES"], ["BTN_CHAIN", "HOW_CHAIN"], ["EV_BONUS", "HOW_BONUS"], ["LOBBY", "HOW_LINES"], ["TEAM_ENERGY", "HOW_ENERGY"], ["GOLDEN_RAID", "HOW_TIEBREAK"],
+		["MENU_QUICK", "HOW_RAID"], ["CANT", "HOW_CANT"], ["MOVES", "HOW_MOVES"], ["HUD_DEFEND", "HOW_DEFEND"], ["DEF_SKILLS", "HOW_STYLES"], ["BTN_CHAIN", "HOW_CHAIN"], ["BTN_SWITCH", "HOW_SWITCH"], ["EV_BONUS", "HOW_BONUS"], ["LOBBY", "HOW_LINES"], ["TEAM_ENERGY", "HOW_ENERGY"], ["GOLDEN_RAID", "HOW_TIEBREAK"], ["FIVE_SECONDS", "HOW_FIVE"], ["CARDS", "HOW_CARDS"], ["MILESTONES", "HOW_MILESTONES"],
 		["HUD_DOD", "HOW_DOD"], ["EV_ALL_OUT", "HOW_ALLOUT"], ["EV_REVIVED", "HOW_REVIVE"], ["CAMERA", "HOW_CONTROLS"],
 	]
 	for it in items:

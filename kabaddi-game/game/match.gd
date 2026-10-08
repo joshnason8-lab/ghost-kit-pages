@@ -31,6 +31,10 @@ const PROFILES := [
 	{"tackle": 1.15, "telegraph": 0.29, "raider_skill": 0.92, "react": 1.00, "cant_window": 0.10, "miss_beats": 2.5, "assist": 1.2, "user_hold": 1.0},
 	{"tackle": 1.45, "telegraph": 0.23, "raider_skill": 1.10, "react": 1.15, "cant_window": 0.075, "miss_beats": 2.0, "assist": 1.0, "user_hold": 0.9},
 ]
+const SUSPEND_TIME := 120.0   # yellow card: two minutes of match time
+const START_LIMIT := 5.0      # seconds to start a raid after the whistle
+const C_GREEN_CARD := Color("3fbf6a")
+const C_YELLOW_CARD := Color("ffd23f")
 const CELE_ARMS := 0
 const CELE_FIST := 1
 const CELE_CLAP := 2
@@ -49,6 +53,7 @@ const DIVE_TIME := 0.3
 var config := {}
 var arena: Arena
 var cam: CameraRig
+var _switch_ms := 0
 var hud: MatchHud
 var controls: TouchControls
 var rng := RandomNumberGenerator.new()
@@ -154,6 +159,7 @@ func _ready() -> void:
 	hud.setup(self)
 	controls = hud.controls
 	controls.action.connect(_on_action)
+	controls.tapped.connect(_on_tap)
 
 	if attract:
 		hud.visible = false
@@ -317,6 +323,7 @@ func _process(delta: float) -> void:
 
 func _begin_setup() -> void:
 	_set_phase("setup")
+	_end_suspensions()
 	raider = _pick_raider(raiding)
 	raider.raids_made += 1
 	_tire(raider, 0.04)
@@ -475,6 +482,14 @@ func _tick_raid(dt: float) -> void:
 	_tick_cant(dt)
 	if phase != "raid":
 		return
+	# The raider has five seconds from the whistle to start his raid.
+	if not raid.entered and config.get("mode", "") != "tutorial":
+		if phase_t > START_LIMIT - 2.0 and raider == controlled and not raid.get("late_warned", false):
+			raid["late_warned"] = true
+			hud.hint(tr("HINT_FIVE_SECONDS"))
+		if phase_t > START_LIMIT:
+			_end_raid("late")
+			return
 	_tick_shouts(dt)
 	# The crowd builds as the raider goes deep and roars through a struggle.
 	var tension := clampf(depth_in(1 - raiding, raider.position) / Arena.BONUS, 0.0, 1.0)
@@ -702,6 +717,11 @@ func _on_action(id: String) -> void:
 			if phase == "intro":
 				_begin_setup()
 			return
+		"switch":
+			# Pick your defender before the raid starts, too.
+			if not paused and phase == "setup" and controlled != null and controlled != raider:
+				_switch_defender()
+				return
 	if paused or phase != "raid" or controlled == null:
 		return
 	if controlled == raider:
@@ -1003,24 +1023,55 @@ func _defender_tackle(d: Athlete, kind := "") -> void:
 			p.chain_dive = true
 
 
+## Switch: the defender nearest the raider; pressed again soon after, the next nearest,
+## and so on round the cover.
 func _switch_defender() -> void:
+	if control_mode == "career":
+		return
+	var cands := defenders().filter(func(a): return a.state != "holding")
+	if cands.is_empty():
+		return
+	cands.sort_custom(func(x, y): return x.position.distance_to(raider.position) < y.position.distance_to(raider.position))
+	var now := Time.get_ticks_msec()
+	var i := cands.find(controlled)
+	var pick: Athlete = cands[0]
+	if i >= 0 and (i == 0 or now - _switch_ms < 1500):
+		pick = cands[(i + 1) % cands.size()]
+	_switch_ms = now
+	_select_defender(pick)
+
+
+func _select_defender(a: Athlete) -> void:
+	if a == null or a == controlled:
+		return
+	if controlled:
+		_unchain(controlled)
+		controlled.set_ring(Color(0, 0, 0, 0))
+		controlled.is_user = false
+	controlled = a
+	controlled.is_user = true
+	controlled.set_ring(Game.C_SAFFRON)
+	Sfx.click()
+
+
+## Tap a defender to take him over.
+func _on_tap(pos: Vector2) -> void:
+	if paused or control_mode == "career" or controlled == null or controlled == raider or phase not in ["setup", "raid"]:
+		return
+	var c: Camera3D = cam.cam
 	var best: Athlete = null
-	var bd := 1e9
-	for a in defenders():
-		if a == controlled or a.state == "holding":
+	var bd := 80.0
+	for a in on_mat(controlled.team):
+		if a == raider or a.state == "holding":
 			continue
-		var d = a.position.distance_to(raider.position)
+		var p: Vector3 = a.global_position + Vector3(0, 0.9, 0)
+		if c.is_position_behind(p):
+			continue
+		var d := c.unproject_position(p).distance_to(pos)
 		if d < bd:
 			bd = d
 			best = a
-	if best:
-		if controlled:
-			controlled.set_ring(Color(0, 0, 0, 0))
-			controlled.is_user = false
-		controlled = best
-		controlled.is_user = true
-		controlled.set_ring(Game.C_SAFFRON)
-		Sfx.click()
+	_select_defender(best)
 
 
 func _user_defender(d: Athlete, dt: float) -> void:
@@ -1951,6 +2002,11 @@ func _end_raid(kind: String) -> void:
 			col = Game.C_DANGER
 		"all_out_lobby":
 			pass
+		"late":
+			# Too slow to start the raid: a technical point to the defence.
+			def_pts = 1
+			msg = tr("EV_LATE_RAID")
+			col = Game.C_DANGER
 	if raid_pts > 0 or def_pts > 0:
 		tm_atk.empty = 0
 	elif kind == "return" and not raider_out:
@@ -1985,6 +2041,7 @@ func _end_raid(kind: String) -> void:
 
 	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": float(raid.air_max) - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size(), "vias": raid.get("vias", []), "probe_t": float(raid.get("probe_t", 0.0))})
 	_post_messages = [[msg, col]]
+	var all_out := false
 	# All outs.
 	for t in 2:
 		if on_mat(t).is_empty():
@@ -1992,12 +2049,13 @@ func _end_raid(kind: String) -> void:
 			teams[other].score += 2
 			teams[other].pts.allout += 2
 			_post_messages.append([tr("EV_ALL_OUT"), Game.C_GOLD])
+			all_out = true
 			for a in teams[t].players:
-				if not a.on_mat:
+				if not a.on_mat and a.suspended < 0.0:
 					a.on_mat = true
 					a.set_state("walk")
 			teams[t].out_queue.clear()
-	var all_out := _post_messages.size() > 1
+	_milestones()
 	if raid_pts > def_pts:
 		officials.signal_points(atk, all_out, raid_pts + (2 if all_out else 0), bonus > 0)
 	elif def_pts > 0:
@@ -2136,6 +2194,8 @@ func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched
 			var pusher: Athlete = holders_were[rng.randi() % holders_were.size()]
 			pusher.set_state("shove")
 			pusher.shove_target = raider
+			if rng.randf() < 0.4:
+				_card(pusher)
 			raider.set_state("argue")
 			hud.bubble(raider, tr("BUBBLE_TOUCH"), Game.C_INK)
 			Sfx.yell("touch", -5.0)
@@ -2398,6 +2458,56 @@ func _put_out(a: Athlete) -> void:
 		a.set_state("walk")
 
 
+## Rough play: a green card is a warning; a second offence is a yellow card, two
+## minutes off and a technical point to the other side.
+func _card(a: Athlete) -> void:
+	a.cards += 1
+	Sfx.play("whistle", -4.0, 1.15)
+	if a.cards == 1:
+		officials.show_card(C_GREEN_CARD)
+		_post_messages.append([tr("EV_GREEN_CARD").format({"name": a.display_name()}), C_GREEN_CARD])
+		return
+	officials.show_card(C_YELLOW_CARD)
+	var opp := 1 - a.team
+	teams[opp].score += 1
+	teams[opp].pts.extra += 1
+	_post_messages.append([tr("EV_YELLOW_CARD").format({"name": a.display_name()}), C_YELLOW_CARD])
+	# Off he goes, unless he is the last man on the mat.
+	if a.on_mat and on_mat(a.team).size() > 1:
+		a.on_mat = false
+		a.suspended = maxf(0.0, clock - SUSPEND_TIME)
+		a.suspended_half = half
+		teams[a.team].out_queue.erase(a)
+		if a.state != "shove":
+			a.set_state("walk")
+
+
+## Suspended players come back once their two minutes are up (or at half time).
+func _end_suspensions() -> void:
+	for a in athletes:
+		if a.suspended >= 0.0 and (clock <= a.suspended or half != a.suspended_half):
+			a.suspended = -1.0
+			a.on_mat = true
+			a.set_state("walk")
+			hud.event(tr("EV_SUSPENSION_OVER").format({"name": a.display_name()}), Game.C_GOOD)
+
+
+## Super 10 (ten raid points in a match) and High 5 (five tackle points).
+func _milestones() -> void:
+	for a in athletes:
+		var st: Dictionary = stats.get(a.pid(), {})
+		if st.is_empty():
+			continue
+		if int(st.raid) >= 10 and not a.has_meta("super10"):
+			a.set_meta("super10", true)
+			_post_messages.append([tr("EV_SUPER_10").format({"name": a.display_name()}), Game.C_GOLD])
+			Sfx.react("cheer", -5.0)
+		if int(st.tackle) >= 5 and not a.has_meta("high5"):
+			a.set_meta("high5", true)
+			_post_messages.append([tr("EV_HIGH_5").format({"name": a.display_name()}), Game.C_GOLD])
+			Sfx.react("cheer", -5.0)
+
+
 func _revive(t: int, n: int) -> void:
 	var revived := 0
 	for i in n:
@@ -2608,7 +2718,7 @@ func _start_golden() -> void:
 func _all_back() -> void:
 	for t in 2:
 		for a in teams[t].players:
-			if not a.on_mat:
+			if not a.on_mat and a.suspended < 0.0:
 				a.on_mat = true
 				a.set_state("walk")
 		teams[t].out_queue.clear()

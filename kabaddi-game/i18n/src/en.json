@@ -397,5 +397,19 @@
   "ARJUNA_YOURS": "Yours! The Arjuna Award comes home.",
   "AWARDS_LINE": "Arjuna Award: {name} ({team})",
   "SEE_AWARDS": "Season awards",
-  "ARJUNA_NOTE": "Points count from every match of the season, playoffs included. In real life the Arjuna Award is India's national sports honour, given by the sports ministry for years of excellence; here it crowns the season's best player."
+  "ARJUNA_NOTE": "Points count from every match of the season, playoffs included. In real life the Arjuna Award is India's national sports honour, given by the sports ministry for years of excellence; here it crowns the season's best player.",
+  "HINT_FIVE_SECONDS": "Go! A raid must start within 5 seconds of the whistle.",
+  "EV_LATE_RAID": "Too slow to start: technical point",
+  "EV_GREEN_CARD": "Green card: {name}",
+  "EV_YELLOW_CARD": "Yellow card: {name}, 2 minutes off",
+  "EV_SUSPENSION_OVER": "{name} is back on",
+  "EV_SUPER_10": "Super 10! {name}",
+  "EV_HIGH_5": "High 5! {name}",
+  "HOW_SWITCH": "Switch takes you to the defender nearest the raider; press it again quickly for the next one. You can also tap any of your defenders to take him over, before or during a raid.",
+  "CARDS": "Cards",
+  "HOW_CARDS": "Rough play costs you. A green card is a warning. A second offence is a yellow card: two minutes off the mat and a technical point to the other side.",
+  "FIVE_SECONDS": "5-second rule",
+  "HOW_FIVE": "A raider must start his raid within 5 seconds of the whistle, or the other side gets a technical point.",
+  "MILESTONES": "Super 10 and High 5",
+  "HOW_MILESTONES": "Ten raid points in a match is a Super 10. Five tackle points is a High 5."
 }

@@ -336,6 +336,54 @@ func _run() -> void:
 	tmm.queue_free()
 	await frames(3)
 
+	# 8b5. Cards, the 5-second rule, Super 10, choosing your defender.
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 1})
+	var rm: Node = Game.current
+	var g13 := 0
+	while rm.phase != "setup" and g13 < 600:
+		await get_tree().process_frame
+		g13 += 1
+	var first_d: Athlete = rm.controlled
+	check(first_d != null and first_d.team == 0, "you defend first")
+	rm._on_action("switch")
+	var second_d: Athlete = rm.controlled
+	rm._on_action("switch")
+	check(second_d != first_d and rm.controlled != second_d and rm.controlled.team == 0, "Switch cycles through your defenders")
+	var pick: Athlete = rm.on_mat(0).filter(func(a): return a != rm.controlled)[0]
+	await frames(2)
+	rm._on_tap(rm.cam.cam.unproject_position(pick.global_position + Vector3(0, 0.9, 0)))
+	check(rm.controlled == pick, "tapping a defender takes him over")
+	while rm.phase != "raid" and g13 < 900:
+		await get_tree().process_frame
+		g13 += 1
+	var rough: Athlete = rm.on_mat(0)[0]
+	var away_before: int = rm.teams[1].score
+	rm._post_messages = []
+	rm._card(rough)
+	check(rough.cards == 1 and rough.on_mat and rm.teams[1].score == away_before, "a first offence is a green card")
+	rm._card(rough)
+	check(not rough.on_mat and rough.suspended >= 0.0 and rm.teams[1].score == away_before + 1, "a second is a yellow card: off, and a point to the other side")
+	rm.clock = rough.suspended - 1.0
+	rm._end_suspensions()
+	check(rough.on_mat and rough.suspended < 0.0, "back on after two minutes")
+	rm.stats[rm.raider.pid()].raid = 10
+	rm._post_messages = []
+	rm._milestones()
+	check(rm.raider.has_meta("super10"), "ten raid points is a Super 10")
+	rm.queue_free()
+	await frames(3)
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0})
+	var lm: Node = Game.current
+	var g14 := 0
+	while lm.phase != "raid" and g14 < 600:
+		await get_tree().process_frame
+		g14 += 1
+	var def_before: int = lm.teams[1].score
+	await frames(int(lm.START_LIMIT * 60) + 30)
+	check(lm.raid_log.size() > 0 and String(lm.raid_log[0].kind) == "late" and lm.teams[1].score == def_before + 1, "a raider who does not go within 5 seconds gives away a point")
+	lm.queue_free()
+	await frames(3)
+
 	# 8c. Tutorial lesson starts and shows its objective.
 	Game.start_match(Tutorial.match_config("cant"))
 	await frames(260)

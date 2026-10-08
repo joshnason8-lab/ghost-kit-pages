@@ -145,6 +145,27 @@ func signal_points(team_scored: int, all_out := false, points := 0, bonus := fal
 		show_signal(watching, "out", 1 - team_scored)
 
 
+## A card for rough play, held up by the referee.
+func show_card(col: Color) -> void:
+	show_signal(referee, "card", -1, 2.0)
+	var card := MeshInstance3D.new()
+	var q := QuadMesh.new()
+	q.size = Vector2(0.09, 0.13)
+	card.mesh = q
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = col
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	card.material_override = mat
+	add_child(card)
+	var right := referee.facing.cross(Vector3.UP).normalized()
+	card.global_position = referee.global_position + Vector3(0, 2.3 * referee.data.get("height", 1.75) / 1.75, 0) + right * 0.2
+	var tw := create_tween()
+	tw.tween_interval(2.0)
+	tw.tween_callback(card.queue_free)
+
+
 ## Time out, half time and the end of the match: the referee's signal.
 func signal_call(kind: String) -> void:
 	show_signal(referee, kind, -1, 2.2)

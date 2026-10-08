@@ -7,6 +7,7 @@ extends Control
 ## tackle, G chain, Tab switch. C camera, Esc pause.
 
 signal action(id: String)
+signal tapped(pos: Vector2)   # a quick tap that was not on a button (to pick a defender)
 
 var context := "none"   # none, intro, raid, defend
 var enabled := true
@@ -25,6 +26,7 @@ var _look_last := Vector2.ZERO
 var _look_acc := Vector2.ZERO
 var _pressed := {}       # button id -> time left lit
 var _button_touch := {}  # touch index -> button id
+var _touch_start := {}   # touch index -> [position, time], to tell taps from drags
 
 const STICK_R := 92.0
 
@@ -148,6 +150,14 @@ func _input(event: InputEvent) -> void:
 	var s := get_viewport_rect().size
 	var lh: bool = Game.settings.left_handed
 	if event is InputEventScreenTouch:
+		if event.pressed:
+			_touch_start[event.index] = [event.position, Time.get_ticks_msec()]
+		elif _touch_start.has(event.index) and not _button_touch.has(event.index):
+			var st: Array = _touch_start[event.index]
+			if (event.position - st[0]).length() < 22.0 and Time.get_ticks_msec() - int(st[1]) < 350:
+				tapped.emit(event.position)
+		if not event.pressed:
+			_touch_start.erase(event.index)
 		if event.pressed:
 			var id := _hit(event.position)
 			if id != "":
