@@ -19,6 +19,7 @@ var struggle_box: Control
 var chant_l: Label
 var breath_box: Control
 var breath_bar: ProgressBar
+var breath_l: Label
 var objective: PanelContainer
 var objective_title: Label
 var objective_text: Label
@@ -233,6 +234,7 @@ func _build_center() -> void:
 	breath_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bl := _label(tr("HUD_BREATH").to_upper(), "EyebrowLabel", 15, Game.C_GOLD)
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	breath_l = bl
 	breath_bar = ProgressBar.new()
 	breath_bar.custom_minimum_size = Vector2(340, 14)
 	breath_bar.max_value = 1.0
@@ -452,7 +454,7 @@ func refresh() -> void:
 	half_l.text = half_txt.to_upper()
 	var raiding_now: bool = m.phase in ["setup", "raid"]
 	raid_l.visible = raiding_now
-	raid_clock_l.visible = m.phase == "raid"
+	raid_clock_l.visible = m.phase == "raid" and m.raid_rule == m.RULE_CLOCK
 	dod_l.visible = raiding_now and m.raid.get("dod", false)
 	if raiding_now and m.raider:
 		var mine: bool = m.raider == m.controlled
@@ -468,8 +470,10 @@ func refresh() -> void:
 		struggle.value = m.raid.progress
 	chant_l.visible = _chant_on and m.phase == "raid"
 	var tapping: bool = m.phase in ["raid", "setup"] and m.raid.get("cant_tap", false)
-	breath_box.visible = tapping and m.phase == "raid"
+	# Traditional rules: no clock; the raider's breath is the clock, for every raider.
+	breath_box.visible = m.phase == "raid" and m.raid_rule != m.RULE_CLOCK
 	if breath_box.visible:
+		breath_l.text = (tr("HUD_BREATH") if tapping else tr("HUD_BREATH_OTHER")).to_upper()
 		breath_bar.value = float(m.raid.breath)
 		var low: bool = float(m.raid.breath) < 0.3
 		var sb := StyleBoxFlat.new()

@@ -47,7 +47,7 @@ var settings := {
 	"difficulty": 1,
 	"length": 0,
 	"seen_howto": false,
-	"cant": 0,              # 0 tap the cant button on the beat, 1 automatic
+	"raid_rule": 1,         # 0 Pro 30-second clock, 1 traditional cant (tap), 2 traditional cant (automatic)
 	"models": 1,            # 0 classic code-built players, 1 realistic rigged players
 	"tutorial_done": [],
 }
@@ -89,8 +89,11 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
+		if data.has("cant") and not data.has("raid_rule"):
+			# Older saves had a cant switch (tap or automatic); keep what the player chose.
+			settings.raid_rule = 1 if int(data.cant) == 0 else 2
 	# JSON gives floats; keep ints as ints.
-	for k in ["camera", "graphics", "difficulty", "length", "cant", "models"]:
+	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models"]:
 		settings[k] = int(settings[k])
 
 

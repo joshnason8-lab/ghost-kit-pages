@@ -314,7 +314,7 @@
   "TUT_CHAIN_T": "Chain tackle",
   "TUT_CHAIN_1": "Press Chain to link hands with the team-mate next to you.",
   "TUT_CHAIN_2": "Linked defenders go in together. Tackle the raider.",
-  "HOW_CANT": "The cant: a raider must chant “kabaddi, kabaddi” for the whole raid. Tap Cant in rhythm to keep your breath up; run out in their half and you're out. You can switch to an automatic cant in Settings.",
+  "HOW_CANT": "Raid rules (Settings). 30-second clock, the Pro rule: no chant; get back before the raid clock runs out. The cant, the traditional rule: the raider chants “kabaddi, kabaddi” on a single breath with no clock. Tap Cant in rhythm; if the chant breaks while you're in their half, or your breath runs out there, you're out. Fitter raiders hold a longer breath.",
   "HOW_CHAIN": "Chains: defenders link hands to make tackles stronger. Press Chain to join the nearest team-mate; you move slower together but hit harder.",
   "BTN_LEG": "Kick",
   "BTN_DUBKI": "Dubki",
@@ -363,5 +363,13 @@
   "TUT_DASH_1": "This raider loves the bonus line out wide. When he's near the side line, press Dash to shove him out.",
   "SET_MODELS": "Players",
   "MODELS_CLASSIC": "Classic",
-  "MODELS_REAL": "Realistic"
+  "MODELS_REAL": "Realistic",
+  "RAID_RULE": "Raid rule",
+  "RULE_CLOCK": "30-second clock",
+  "RULE_CANT_TAP": "Cant: tap",
+  "RULE_CANT_AUTO": "Cant: automatic",
+  "RAID_RULE_NOTE": "30-second clock is the Pro rule: no chant, just beat the raid clock. The cant is the traditional rule: the raider chants “kabaddi” on one breath, with no clock, and is out if the chant breaks in the other half.",
+  "HUD_BREATH_OTHER": "Raider's breath",
+  "HINT_RAID_CLOCK": "Cross the baulk line, touch defenders, then get back over the midline before the 30-second clock runs out.",
+  "HINT_RAID_AUTO": "Your raider chants on one breath. Cross the baulk line, touch defenders, and get back before the breath runs out."
 }

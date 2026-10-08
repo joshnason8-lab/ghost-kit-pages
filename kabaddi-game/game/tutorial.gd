@@ -50,6 +50,7 @@ static func match_config(id: String) -> Dictionary:
 	return {
 		"home": "MUM", "away": "DEL", "arena": "dome", "mode": "tutorial", "lesson": id, "control": "all",
 		"difficulty": 0, "length": 0, "passive": l.passive, "first_raider": 0 if l.raid else 1,
+		"raid_rule": 1 if id == "cant" else int(Game.settings.get("raid_rule", 1)),
 		"chains": l.get("chains", false), "style": l.get("style", ""), "wide": l.get("wide", false),
 	}
 

@@ -232,6 +232,7 @@ func _run() -> void:
 		await get_tree().process_frame
 		g5 += 1
 	check(um.raid.cant_tap, "your raid uses the tap cant")
+	var um_air: float = float(um.raid.air_max)
 	# Walk into their half without chanting: breath drains and the cant is lost.
 	var g6 := 0
 	while um.phase == "raid" and g6 < 30 * 25:
@@ -252,6 +253,19 @@ func _run() -> void:
 		check(um.controlled.chain_partner == null, "chain unlinks")
 	um.queue_free()
 	await frames(3)
+
+	# 8b2. Pro raid rule: a 30-second clock and no cant.
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0, "autoplay_no_report": true, "raid_rule": 0})
+	var pm: Node = Game.current
+	var g9 := 0
+	while pm.phase != "raid" and g9 < 600:
+		await get_tree().process_frame
+		g9 += 1
+	check(not pm.raid.cant_tap and absf(float(pm.raid.t) - 30.0) < 1.0 and pm.hud.raid_clock_l.visible, "30-second clock rule: clock shown, no cant")
+	pm.queue_free()
+	await frames(3)
+	# Traditional: the raid lasts one breath, longer for fitter raiders.
+	check(um_air > 14.0 and um_air < 33.0, "cant rule: one breath of %.0fs" % um_air)
 
 	# 8c. Tutorial lesson starts and shows its objective.
 	Game.start_match(Tutorial.match_config("cant"))

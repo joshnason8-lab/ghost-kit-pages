@@ -16,13 +16,18 @@ const RAID_GAP := 5.0          # seconds between raids (scaled by the clock spee
 const HALF_LEN := 1200.0       # 20-minute halves, as in the pro game
 const CLOCK_SPEEDS := [6.0, 3.0, 1.0]   # quick (about 7 min), fast (about 14 min), real time (40 min)
 const BEAT := 0.6              # cant rhythm: one "kabaddi" per beat
+# Raid rules. Pro: a 30-second raid clock and no chant. Traditional: no clock; the raider
+# chants "kabaddi" on one breath, and the raid lasts as long as that breath.
+const RULE_CLOCK := 0
+const RULE_CANT_TAP := 1
+const RULE_CANT_AUTO := 2
 
 # Difficulty profiles: how sharp the AI is and how forgiving the cant is.
 const PROFILES := [
-	{"tackle": 0.55, "telegraph": 0.48, "raider_skill": 0.45, "react": 0.55, "cant_window": 0.17, "breath_drain": 0.065, "assist": 1.6, "user_hold": 1.3},
-	{"tackle": 0.85, "telegraph": 0.36, "raider_skill": 0.70, "react": 0.80, "cant_window": 0.13, "breath_drain": 0.085, "assist": 1.4, "user_hold": 1.1},
-	{"tackle": 1.15, "telegraph": 0.29, "raider_skill": 0.92, "react": 1.00, "cant_window": 0.10, "breath_drain": 0.105, "assist": 1.2, "user_hold": 1.0},
-	{"tackle": 1.45, "telegraph": 0.23, "raider_skill": 1.10, "react": 1.15, "cant_window": 0.075, "breath_drain": 0.125, "assist": 1.0, "user_hold": 0.9},
+	{"tackle": 0.55, "telegraph": 0.48, "raider_skill": 0.45, "react": 0.55, "cant_window": 0.17, "miss_beats": 4.0, "assist": 1.6, "user_hold": 1.3},
+	{"tackle": 0.85, "telegraph": 0.36, "raider_skill": 0.70, "react": 0.80, "cant_window": 0.13, "miss_beats": 3.0, "assist": 1.4, "user_hold": 1.1},
+	{"tackle": 1.15, "telegraph": 0.29, "raider_skill": 0.92, "react": 1.00, "cant_window": 0.10, "miss_beats": 2.5, "assist": 1.2, "user_hold": 1.0},
+	{"tackle": 1.45, "telegraph": 0.23, "raider_skill": 1.10, "react": 1.15, "cant_window": 0.075, "miss_beats": 2.0, "assist": 1.0, "user_hold": 0.9},
 ]
 const TOUCH_TIME := 0.34
 const KICK_TIME := 0.5
@@ -70,6 +75,7 @@ var _pending_end := ""
 var _post_messages: Array = []
 var _hints_shown := 0
 var raid_log: Array = []      # one entry per raid, for stats and tuning
+var raid_rule := RULE_CANT_TAP
 var move_tries := {}          # move -> attempts, for tuning
 
 
@@ -77,6 +83,7 @@ func _ready() -> void:
 	rng.randomize()
 	difficulty = clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, PROFILES.size() - 1)
 	prof = PROFILES[difficulty]
+	raid_rule = int(config.get("raid_rule", Game.settings.get("raid_rule", RULE_CANT_TAP)))
 	half_len = HALF_LEN
 	clock_speed = CLOCK_SPEEDS[clampi(int(config.get("length", Game.settings.length)), 0, 2)]
 	attract = bool(config.get("attract", false))
@@ -301,7 +308,7 @@ func _begin_setup() -> void:
 		"progress": 0.0, "struggle": false, "dod": tm.empty >= 2, "alarm": false,
 		"ai_mode": "approach", "ai_lane": rng.randf_range(-3.0, 3.0), "ai_t": 0.0, "ai_target": null,
 		"ai_bonus": false, "ai_dodge_cd": 0.0, "user_raids": raiding == 0 and _user_controls_raider(),
-		"breath": 1.0, "beat_t": 0.0, "last_beat": -99, "chant_t": 0.0, "cant_tap": false,
+		"breath": 1.0, "beat_t": 0.0, "last_beat": -99, "chant_t": 0.0, "cant_tap": false, "last_ok": 0.0, "air_max": RAID_TIME,
 		"shouted": false, "taunts": 0, "cross_cd": 0.0, "moves": [], "chain_caught": false, "kicks": 0, "def_moves": [], "dashed_by": null, "dash_t": 0.0,
 	}
 	controlled = null
@@ -313,14 +320,20 @@ func _begin_setup() -> void:
 		a.is_user = (a == controlled)
 	for a in athletes:
 		a.chain_partner = null
-	raid.cant_tap = raider == controlled and int(Game.settings.get("cant", 0)) == 0
+	raid.cant_tap = raider == controlled and raid_rule == RULE_CANT_TAP
+	if raid_rule != RULE_CLOCK:
+		# One breath: longer for fitter, fresher raiders.
+		var stam := float(raider.data.attrs.stamina)
+		raid.air_max = clampf(19.0 + 12.0 * (stam - 50.0) / 50.0, 15.0, 32.0) * (0.75 + 0.25 * raider.energy)
+		raid.t = raid.air_max
 	if controlled:
 		controlled.set_ring(Game.C_SAFFRON)
 	raider.set_ring(Game.C_SAFFRON if raider == controlled else Color(1, 1, 1, 0.65))
 	hud.on_raid_setup()
 	if _hints_shown < 2 and controlled:
 		_hints_shown += 1
-		hud.hint(tr("HINT_RAID") if controlled == raider else tr("HINT_DEFEND"))
+		var raid_hint := "HINT_RAID_CLOCK" if raid_rule == RULE_CLOCK else ("HINT_RAID" if raid.cant_tap else "HINT_RAID_AUTO")
+		hud.hint(tr(raid_hint) if controlled == raider else tr("HINT_DEFEND"))
 	if raid.dod:
 		hud.hint(tr("HINT_DOD"))
 	if not attract:
@@ -414,7 +427,7 @@ func _begin_raid() -> void:
 	raider.set_state("raid")
 	Sfx.play("whistle", -4.0)
 	arena.excite(0.3)
-	hud.chant(true)
+	hud.chant(raid_rule != RULE_CLOCK)
 
 
 # ---------------------------------------------------------------- the raid
@@ -1534,7 +1547,7 @@ func _check_end(dt: float) -> void:
 		_end_raid("tackle")
 		return
 	if raid.t <= 0.0:
-		_end_raid("time")
+		_end_raid("time" if raid_rule == RULE_CLOCK else "cant")
 
 
 # ---------------------------------------------------------------- scoring
@@ -1639,7 +1652,7 @@ func _end_raid(kind: String) -> void:
 	_revive(atk, raid_pts - bonus)
 	_revive(dfn, 1 if def_pts > 0 else 0)
 
-	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": RAID_TIME - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size()})
+	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": float(raid.air_max) - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size()})
 	_post_messages = [[msg, col]]
 	# All outs.
 	for t in 2:
@@ -1741,12 +1754,16 @@ func _tick_shouts(dt: float) -> void:
 
 func _tick_cant(dt: float) -> void:
 	raid.beat_t += dt
+	if raid_rule == RULE_CLOCK:
+		return
 	var in_half := depth_in(1 - raiding, raider.position) > 0.0
+	raid.breath = clampf(float(raid.t) / float(raid.air_max), 0.0, 1.0)
 	if raid.cant_tap:
-		if in_half:
-			raid.breath = maxf(0.0, raid.breath - float(prof.breath_drain) * dt)
-			if raid.breath <= 0.0:
-				_end_raid("cant")
+		# The chant must not stop: miss a few beats in their half and the cant is broken.
+		if not in_half:
+			raid.last_ok = maxf(float(raid.last_ok), float(raid.beat_t) - BEAT)
+		elif float(raid.beat_t) - float(raid.last_ok) > float(prof.miss_beats) * BEAT:
+			_end_raid("cant")
 	else:
 		# AI raiders, and auto-cant mode, keep the chant going on their own.
 		raid.chant_t -= dt
@@ -1764,20 +1781,22 @@ func _cant_tap() -> void:
 	var gain := 0.0
 	var kind := ""
 	if b == int(raid.last_beat):
-		gain = -0.05
+		gain = -0.6
 		kind = "fast"
 	elif d < w * 0.6:
-		gain = 0.16
 		kind = "perfect"
 	elif d < w:
-		gain = 0.08
 		kind = "good"
 	else:
-		gain = -0.05
+		gain = -0.6
 		kind = "off"
 	raid.last_beat = b
-	raid.breath = clampf(raid.breath + gain, 0.0, 1.0)
-	if gain > 0.0:
+	# A clean "kabaddi" keeps the cant alive; a ragged one wastes breath.
+	if gain >= 0.0:
+		raid.last_ok = raid.beat_t
+	else:
+		raid.t = float(raid.t) + gain
+	if gain >= 0.0:
 		Sfx.chant_word(-3.0)
 		tutorial_event.emit("cant")
 	hud.cant_feedback(kind)
