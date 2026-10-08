@@ -209,6 +209,7 @@ func _pose(delta: float) -> void:
 	var want_jump := 0.0
 	var want_seated := 0.0
 	var want_signal := 0.0
+	var want_bounce := 0.0
 	var p := clampf(st_t / maxf(st_len, 0.01), 0.0, 1.0)
 	match state:
 		"ready":
@@ -216,6 +217,7 @@ func _pose(delta: float) -> void:
 		"raid":
 			want_crouch = 0.35
 			want_lean = -0.15
+			want_bounce = 1.0
 		"touch":
 			want_reach = sin(p * PI)
 			want_crouch = 0.3
@@ -225,6 +227,10 @@ func _pose(delta: float) -> void:
 			want_back_kick = sin(p * PI)
 		"dodge":
 			want_crouch = 0.5
+		"evade":
+			# Pulling back from a touch: hips back, stomach in.
+			want_crouch = 0.6
+			want_lean = 0.25
 		"dubki":
 			want_dubki = clampf(sin(p * PI) * 1.6, 0.0, 1.0)
 		"jump":
@@ -300,6 +306,7 @@ func _pose(delta: float) -> void:
 	m.dubki = lerpf(m.dubki, want_dubki, clampf(delta * 16.0, 0.0, 1.0))
 	m.jump = want_jump
 	m.cele = cele_kind
+	m.bounce = lerpf(m.bounce, want_bounce, k)
 	m.ref_sig = sig_kind
 	m.ref_amt = lerpf(m.ref_amt, want_signal, clampf(delta * 9.0, 0.0, 1.0))
 	m.seated = lerpf(m.seated, want_seated, clampf(delta * 4.0, 0.0, 1.0))

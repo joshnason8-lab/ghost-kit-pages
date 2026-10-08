@@ -336,6 +336,7 @@ func _begin_setup() -> void:
 		"t": RAID_TIME, "entered": false, "baulk": false, "bonus": false, "touched": [], "holders": [],
 		"progress": 0.0, "struggle": false, "dod": tm.empty >= 2 and not tiebreak and not golden, "alarm": false,
 		"ai_mode": "approach", "ai_lane": rng.randf_range(-3.0, 3.0), "ai_t": 0.0, "ai_target": null,
+		"probe_t": 0.0, "ai_step": "work", "ai_step_t": rng.randf_range(0.8, 1.6), "feint_on": null, "feint_t": 0.0, "feint_bit": false,
 		"ai_bonus": false, "ai_dodge_cd": 0.0, "user_raids": raiding == 0 and _user_controls_raider(),
 		"breath": 1.0, "beat_t": 0.0, "last_beat": -99, "chant_t": 0.0, "cant_tap": false, "last_ok": 0.0, "air_max": RAID_TIME,
 		"shouted": false, "taunts": 0, "cross_cd": 0.0, "moves": [], "chain_caught": false, "kicks": 0, "def_moves": [], "dashed_by": null, "dash_t": 0.0,
@@ -768,6 +769,16 @@ func _raider_touch(toe: bool) -> void:
 			best = d
 	if best:
 		raider.facing = (best.position - raider.position).normalized()
+	# Sharp defenders see it coming and pull back out of reach.
+	for d in defenders():
+		if d == controlled or d.touched or d.state not in ["ready", "idle"] or d.cooldown > 0.0:
+			continue
+		var off = d.position - raider.position
+		off.y = 0
+		if off.length() < r + 0.3 and raider.facing.angle_to(off.normalized()) < 1.0:
+			var p_ev = (0.06 + 0.24 * float(prof.react)) * (0.5 + 0.5 * d.agility) * (0.6 if toe else 1.0)
+			if rng.randf() < p_ev:
+				_evade(d)
 	raider.set_state("kick" if toe else "touch", KICK_TIME if toe else TOUCH_TIME)
 	raider.cooldown = (KICK_TIME if toe else TOUCH_TIME) + 0.15
 	raid.touch_hit = false
@@ -1105,7 +1116,7 @@ func _ai_raider(dt: float) -> Vector3:
 		if d.state in ["telegraph", "dive"] and dist < 2.4 and dist < td:
 			threat = d
 			td = dist
-	if threat and raid.ai_dodge_cd <= 0.0 and rng.randf() < clampf(skill * 0.85, 0.2, 0.95):
+	if threat and raid.ai_dodge_cd <= 0.0 and rng.randf() < clampf(skill * 0.6, 0.15, 0.8):
 		raid.ai_dodge_cd = rng.randf_range(0.7, 1.4)
 		var away := (raider.position - threat.position)
 		away.y = 0
@@ -1135,7 +1146,9 @@ func _ai_raider(dt: float) -> Vector3:
 			if d.touched or d.state == "holding":
 				continue
 			var dd = d.position.distance_to(raider.position)
-			if dd < _reach_for("kick") and raider.facing.angle_to((d.position - raider.position).normalized()) > 1.5 \
+			# Only at a defender coming at him, not at one standing off.
+			var closing: bool = d.state == "telegraph" or d.vel.dot((raider.position - d.position).normalized()) > 0.8
+			if closing and dd < _reach_for("kick") and raider.facing.angle_to((d.position - raider.position).normalized()) > 1.5 \
 					and rng.randf() < dt * (0.05 + 0.5 * _tend("kick")) * skill \
 					and (raid.touched.is_empty() or raid.get("ai_greedy", false)):
 				_raider_back_kick(d)
@@ -1180,21 +1193,9 @@ func _ai_raider(dt: float) -> Vector3:
 			if raid.bonus or raid.t < 14.0:
 				raid.ai_mode = "probe"
 		"probe":
-			var mark := _ai_mark(defs)
-			if mark:
-				var to := mark.position - raider.position
-				to.y = 0
-				var dist := to.length()
-				# Hover just outside reach from the midline side, then strike.
-				var stand := mark.position + Vector3(0, 0, side(raiding)) * 1.1 + to.normalized().cross(Vector3.UP) * sin(raid.t * 3.0) * 0.6
-				target = stand
-				if dist < _reach_for("toe") - 0.25 and raider.cooldown <= 0.0 and mark.state not in ["telegraph", "dive"] and rng.randf() < dt * (2.0 + skill * 3.0):
-					raider.facing = to.normalized()
-					# Hand or toe, by taste and by distance.
-					var hand_ok := dist < _reach_for("hand") - 0.1
-					var w := {"hand": _tend("hand") * (1.0 if hand_ok else 0.05), "toe": _tend("toe")}
-					_raider_touch(_pick(w) == "toe")
-			else:
+			target = _ai_probe(defs, skill, dt)
+			speed = float(raid.get("ai_speed", 0.6))
+			if raid.ai_mark == null:
 				target = home
 		_:
 			target = home
@@ -1210,7 +1211,10 @@ func _ai_raider(dt: float) -> Vector3:
 		var l := off.length()
 		if l < 1.6 and l > 0.01 and raid.ai_mode != "probe":
 			steer += off / l * (1.6 - l) * 1.2
-	if raid.ai_mode != "return":
+		elif l < 1.5 and l > 0.01 and raid.ai_mode == "probe" and d != raid.get("ai_mark") and raid.get("ai_step") == "work":
+			# Working the cover: keep clear of everyone but the man he is testing.
+			steer += off / l * (1.5 - l) * 1.5
+	if raid.ai_mode not in ["return", "probe"]:
 		steer.z = 0.0
 		steer *= 0.6
 	target.x = clampf(target.x, -4.3, 4.3)
@@ -1372,6 +1376,112 @@ func _gap_x(defs: Array, opp: int) -> float:
 	return clampf(best, -4.2, 4.2)
 
 
+## Working the cover. A good raider takes his time: light steps side to side just outside
+## a defender's reach, the odd feint to draw a dive, a toe tap at a foot left in range, and
+## he goes in when there is an opening (an isolated or out-of-position defender, a thin
+## defence) or when the clock says he must.
+func _ai_probe(defs: Array, skill: float, dt: float) -> Vector3:
+	raid.probe_t = float(raid.probe_t) + dt
+	raid.ai_step_t = float(raid.ai_step_t) - dt
+	raid.feint_t = maxf(0.0, float(raid.feint_t) - dt)
+	var mark: Athlete = raid.get("ai_mark") if raid.get("ai_step") == "strike" else null
+	if mark == null or mark.touched or not mark.on_mat:
+		mark = _ai_mark(defs)
+	raid["ai_mark"] = mark
+	if mark == null:
+		return raider.position
+	var to := mark.position - raider.position
+	to.y = 0
+	var dist := to.length()
+	var home_dir := Vector3(0, 0, side(raiding))
+	var across := to.normalized().cross(Vector3.UP) if dist > 0.01 else Vector3.RIGHT
+	var open := _opening(mark, defs)
+	var urgency := clampf(float(raid.probe_t) / (7.0 + 7.0 * skill), 0.0, 1.0)
+	var target := raider.position
+	match String(raid.ai_step):
+		"feint":
+			# A sharp step at him, then straight back out.
+			target = mark.position
+			raid.ai_speed = 1.0
+			if float(raid.ai_step_t) <= 0.0:
+				raid.ai_step = "work"
+				raid.ai_step_t = rng.randf_range(0.8, 2.2)
+		"strike":
+			target = mark.position + home_dir * 0.4
+			raid.ai_speed = 1.0
+			var toe: bool = raid.get("strike_toe", false)
+			if dist < _reach_for("toe" if toe else "hand") - 0.15 and raider.cooldown <= 0.0 and raider.state == "raid":
+				raider.facing = to.normalized()
+				_raider_touch(toe)
+				raid.ai_step = "work"
+				raid.ai_step_t = rng.randf_range(0.6, 1.4)
+			elif float(raid.ai_step_t) <= 0.0:
+				raid.ai_step = "work"
+				raid.ai_step_t = rng.randf_range(0.6, 1.4)
+		_:
+			# Light steps side to side, just outside his reach.
+			var sway := sin(float(raid.probe_t) * (1.0 + 0.6 * skill) + float(raid.ai_lane)) * 0.9
+			target = mark.position + home_dir * (2.0 - 0.4 * urgency) + across * sway
+			raid.ai_speed = 0.3 + 0.1 * skill
+			if float(raid.ai_step_t) <= 0.0 and raider.cooldown <= 0.0:
+				var go := (0.05 + 0.45 * open) * (0.2 + 0.8 * urgency) + urgency * urgency * 0.4
+				var r := rng.randf()
+				# A tight cover and the clock running down: a careful raider takes the empty raid.
+				if urgency >= 0.75 and open < 0.4 and not raid.dod and rng.randf() < 0.4:
+					raid.ai_mode = "return"
+					return raider.position + home_dir
+				if r < go:
+					raid.ai_step = "strike"
+					raid.ai_step_t = 1.1
+					raid["strike_toe"] = _pick({"hand": _tend("hand") * 1.6, "toe": _tend("toe")}) == "toe"
+				elif r < go + 0.35 * skill and dist < 2.6:
+					raid.ai_step = "feint"
+					raid.ai_step_t = 0.26
+					raid.feint_on = mark
+					raid.feint_t = 0.45
+					raid.feint_bit = false
+				else:
+					raid.ai_step_t = rng.randf_range(0.5, 1.3)
+			# A toe tap at a foot left in range: little risk, so take it.
+			elif float(raid.probe_t) > 2.0 and dist < _reach_for("toe") - 0.1 and raider.cooldown <= 0.0 and raider.state == "raid" \
+					and mark.state not in ["telegraph", "dive"] and rng.randf() < dt * (0.05 + 0.2 * _tend("toe")) * (0.3 + open):
+				raider.facing = to.normalized()
+				_raider_touch(true)
+	return target
+
+
+## 0..1: how much of an opening this defender offers.
+func _opening(d: Athlete, defs: Array) -> float:
+	if d.state in ["recover", "dive", "fallen"]:
+		return 1.0
+	var near := 9.0
+	var depth_sum := 0.0
+	for o in defs:
+		depth_sum += depth_in(d.team, o.position)
+		if o != d:
+			near = minf(near, o.position.distance_to(d.position))
+	var v := clampf((near - 1.1) / 1.6, 0.0, 1.0) * 0.6
+	if defs.size() <= 3:
+		v += 0.3
+	# Stepped up in front of the others.
+	if depth_in(d.team, d.position) < depth_sum / maxf(1.0, defs.size()) - 0.5:
+		v += 0.25
+	if d.chain_partner != null:
+		v -= 0.3
+	return clampf(v, 0.0, 1.0)
+
+
+## A defender sees the touch coming and pulls back out of reach, eyes on the raider.
+func _evade(d: Athlete) -> void:
+	var away := d.position - raider.position
+	away.y = 0
+	away = away.normalized() if away.length() > 0.01 else Vector3(0, 0, side(d.team))
+	var sidestep := away.cross(Vector3.UP) * (0.6 if rng.randf() < 0.5 else -0.6)
+	d.dive_dir = (away + sidestep).normalized()
+	d.set_state("evade", 0.34)
+	d.cooldown = 0.35
+
+
 func _ai_mark(defs: Array) -> Athlete:
 	# Prefer an isolated defender who is not already winding up.
 	var best: Athlete = null
@@ -1384,6 +1494,15 @@ func _ai_mark(defs: Array) -> Athlete:
 			if o != d:
 				iso += minf(2.5, o.position.distance_to(d.position))
 		var score: float = iso - d.position.distance_to(raider.position) * 1.5
+		# Corners (the ends of the cover) and weak tacklers are the usual targets.
+		var lat := absf(d.position.x)
+		var widest := true
+		for o in defs:
+			if absf(o.position.x) > lat + 0.3 and signf(o.position.x) == signf(d.position.x):
+				widest = false
+		if widest:
+			score += 0.8
+		score += (1.0 - d.dskill(d.style)) * 1.5
 		if d.state in ["recover", "dive"]:
 			score += 3.0
 		if score > bs:
@@ -1430,8 +1549,16 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 			return
 		"holding":
 			return
+		"evade":
+			d.lock_facing = true
+			d.drive(d.dive_dir * d.max_speed * 1.2, dt)
+			d.face_toward(raider.position, dt, 14.0)
+			if d.st_t >= d.st_len:
+				d.set_state("ready")
+			_clamp_defender(d)
+			return
 	var inside = raid.entered and opp_depth > 0.0
-	var alarm: bool = raid.alarm or (inside and opp_depth > Arena.BAULK + 0.2)
+	var alarm: bool = raid.alarm or (inside and opp_depth > Arena.BONUS + 0.3)
 	var target := formation_spot(d)
 	var spd := 2.4
 	if holders.size() > 0 and dist < 3.2:
@@ -1483,6 +1610,14 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	if engaging >= max_engage:
 		return
 	var rng_range := 1.45 + 0.3 * react
+	# A feint at him: a jumpy defender bites and goes in early.
+	if raid.feint_on == d and float(raid.feint_t) > 0.0 and not raid.feint_bit and dist < rng_range + 0.4:
+		raid.feint_bit = true
+		if rng.randf() < 0.6 - 0.4 * react:
+			d.tackle_kind = _ai_pick_tackle(d)
+			d.set_state("telegraph", float(prof.telegraph) * 0.8)
+			d.cooldown = 0.2
+			return
 	if dist > rng_range:
 		return
 	var p := 0.06 * diff * (0.6 + d.tackle)
@@ -1493,6 +1628,16 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		p *= 2.2
 	if raider.state in ["touch", "kick"]:
 		p *= 2.0
+	# The raider stepping in to strike is the moment to go.
+	var stepping_in: bool = raid.baulk and dist < 1.7 and dist > 0.01 and raider.vel.dot(-to.normalized()) > 1.6
+	var striking: bool = raid.get("ai_step") == "strike" and raid.get("ai_mark") == d
+	if stepping_in or striking or raider.state in ["touch", "kick"]:
+		p = maxf(p, 2.2 * diff * (0.6 + d.tackle) * react)
+	elif heading_home and not raid.touched.is_empty():
+		p = maxf(p, 1.8 * diff * (0.6 + d.tackle) * react)
+	# Behind his back: a raider looking the other way is there to be caught.
+	if dist > 0.01 and dist < 2.0 and raid.baulk and raider.facing.dot(-to.normalized()) < -0.3:
+		p = maxf(p, 1.2 * diff * (0.6 + d.tackle) * react)
 	if alarm:
 		p *= 1.6
 	if d.touched:
@@ -1559,7 +1704,7 @@ func _check_contacts(defs: Array) -> void:
 		var kind = d.kind()
 		var catch_r: float = {"ankle": 0.9, "waist": 0.75, "dash": 0.85}.get(kind, 0.8)
 		if d.state == "dive" and dist < catch_r and raider.state != "shoved":
-			if raider.state == "dodge" and rng.randf() < 0.75 * raider.agility:
+			if raider.state == "dodge" and rng.randf() < 0.6 * raider.agility:
 				continue
 			var low = kind == "ankle"
 			# Lion jump: sail over a dive at the ankles (a waist hold can pluck him out of
@@ -1577,7 +1722,7 @@ func _check_contacts(defs: Array) -> void:
 			if kind == "dash":
 				_dash_hit(d)
 				continue
-			var hold_chance = 0.4 + 0.35 * d.tackle - 0.25 * (raider.agility - 1.0)
+			var hold_chance = 0.5 + 0.35 * d.tackle - 0.25 * (raider.agility - 1.0)
 			hold_chance += {"thigh": 0.04, "waist": 0.06}.get(kind, 0.0) as float
 			hold_chance += 0.3 * (d.dskill(kind) - 0.6)
 			if raider.state == "dubki" and low:
@@ -1838,7 +1983,7 @@ func _end_raid(kind: String) -> void:
 	_revive(atk, raid_pts - bonus)
 	_revive(dfn, 1 if def_pts > 0 else 0)
 
-	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": float(raid.air_max) - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size(), "vias": raid.get("vias", [])})
+	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": float(raid.air_max) - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size(), "vias": raid.get("vias", []), "probe_t": float(raid.get("probe_t", 0.0))})
 	_post_messages = [[msg, col]]
 	# All outs.
 	for t in 2:

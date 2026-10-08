@@ -18,6 +18,7 @@ func _ready() -> void:
 	var dmv := {}
 	var raids := 0
 	var secs := 0.0
+	var probe_secs := 0.0
 	var pairs := [["MUM", "DEL"], ["PAT", "BLR"], ["IND", "IRN"], ["KOL", "JAI"]]
 	for i in n:
 		var pr: Array = pairs[i % pairs.size()]
@@ -39,6 +40,7 @@ func _ready() -> void:
 			kinds[k] = kinds.get(k, 0) + 1
 			raids += 1
 			secs += float(r.t)
+			probe_secs += float(r.get("probe_t", 0.0))
 			if r.get("chain_caught", false):
 				caught += 1
 			if String(r.get("first_hold", "")) != "":
@@ -54,7 +56,7 @@ func _ready() -> void:
 			tried[k] = tried.get(k, 0) + int(_result.move_tries[k])
 		m.queue_free()
 		await get_tree().process_frame
-	print("raids %d, avg %.1fs, outcomes %s" % [raids, secs / maxf(1, raids), str(kinds)])
+	print("raids %d, avg %.1fs (%.1fs working the cover), outcomes %s" % [raids, secs / maxf(1, raids), probe_secs / maxf(1, raids), str(kinds)])
 	var rp := 0
 	var dp := 0
 	var multi := 0

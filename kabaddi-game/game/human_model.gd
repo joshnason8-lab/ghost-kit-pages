@@ -20,6 +20,8 @@ var dive := 0.0             # tackle dive, 0..1
 var fallen := 0.0           # lying on the mat, 0..1
 var struggle := 0.0         # dragging defenders toward the line, 0..1
 var celebrate := 0.0        # celebrating, 0..1
+var bounce := 0.0           # a raider's light, quick steps on the spot, 0..1
+var _tap := 0.0
 var ref_sig := 0            # an official's hand signal, see SIGNALS
 var ref_amt := 0.0          # ... how far into it, 0..1
 var cele := 0               # how: 0 arms up, 1 fist pump, 2 clap, 3 high five, 4 point to the crowd, 5 chest thump
@@ -489,6 +491,16 @@ func _animate(delta: float) -> void:
 	var rthigh := -sw * amp + c * 0.75
 	var lknee := -(0.08 * minf(1.0, speed) + fold * pow(maxf(0.0, cw), 1.5)) - c * 1.35
 	var rknee := -(0.08 * minf(1.0, speed) + fold * pow(maxf(0.0, -cw), 1.5)) - c * 1.35
+	# A raider on his toes: quick light steps on the spot while he works the cover.
+	var tap := bounce * clampf(1.0 - speed * 0.7, 0.0, 1.0) * (1.0 - lie)
+	if tap > 0.01:
+		_tap = fmod(_tap + delta * TAU * 2.4, TAU)
+		var ts := sin(_tap)
+		lthigh += 0.16 * tap * maxf(0.0, ts)
+		rthigh += 0.16 * tap * maxf(0.0, -ts)
+		lknee -= 0.32 * tap * maxf(0.0, ts)
+		rknee -= 0.32 * tap * maxf(0.0, -ts)
+		pelvis.position.y += 0.018 * tap * absf(ts)
 	# Side-shuffle: sit into it, the leading leg steps out, the trailing leg closes up.
 	var lead_r := move_side > 0.0
 	var step_w := 0.32 * side_w * minf(1.0, speed * 1.2)
