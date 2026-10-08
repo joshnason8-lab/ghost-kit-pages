@@ -230,12 +230,25 @@ func _season() -> void:
 
 
 func _season_over() -> void:
+	var award_args := {"awards": career.awards, "label": tr("SEASON").format({"n": career.season}), "back": "res://ui/career_hub.gd", "mine": "CAREER"}
+	if not career.awards.is_empty() and not bool(Game.settings.get("career_awards_seen_%d" % career.season, false)):
+		Game.settings["career_awards_seen_%d" % career.season] = true
+		Game.save_settings()
+		Game.show_screen("res://ui/awards_screen.gd", award_args)
+		return
 	var v := UI.page(self, tr("SEASON_OVER"), func(): Game.goto_menu(), tr("SEASON").format({"n": career.season}))
 	var champ: String = career.champion()
 	var title := tr("CHAMPIONS") if champ == career.team else tr("TEAM_WINS").format({"team": DB.team_name(champ)})
 	v.add_child(UI.label(title, "TitleLabel", 72, Game.C_GOLD if champ == career.team else Game.C_INK))
 	var ss: Dictionary = career.season_stats
 	v.add_child(UI.label("%s: %s %d · %s %d · %s %d" % [tr("YOUR_SEASON"), tr("MATCHES"), ss.matches, tr("STAT_RAID_PTS"), ss.raid, tr("STAT_TACKLE_PTS"), ss.tackle], "SubLabel", 24))
+	var mvp: Dictionary = career.awards.get("mvp", {})
+	if not mvp.is_empty():
+		var arow := HBoxContainer.new()
+		arow.add_theme_constant_override("separation", 14)
+		arow.add_child(UI.label(tr("AWARDS_LINE").format({"name": mvp.name, "team": DB.team_name(String(mvp.team))}), "SubLabel", 22, Game.C_GOLD))
+		arow.add_child(UI.button(tr("SEE_AWARDS"), false, func(): Game.show_screen("res://ui/awards_screen.gd", award_args)))
+		v.add_child(arow)
 	v.add_child(_player_card(true))
 	var go := UI.button(tr("NEXT_SEASON"), true, func():
 		career.next_season()

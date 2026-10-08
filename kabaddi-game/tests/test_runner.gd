@@ -114,6 +114,7 @@ func _run() -> void:
 		else:
 			c.simulate_user_match()
 	check(c.phase == "over", "season completes (champion %s)" % c.champion())
+	check(not c.awards.get("mvp", {}).is_empty() and int(c.awards.mvp.raid) + int(c.awards.mvp.tackle) > 20, "career season names an Arjuna Award winner: %s" % c.awards.get("mvp", {}).get("name", "?"))
 	check(c.skill_points > 0, "skill points earned: %d" % c.skill_points)
 	check(c.train("speed"), "training spends a point")
 	Game.save_career()
@@ -171,6 +172,11 @@ func _run() -> void:
 	for f in se.fixtures:
 		stages[f.stage] = stages.get(f.stage, 0) + 1
 	check(se.phase == "done" and se.champion != "", "season champion: %s" % se.champion)
+	var aw: Dictionary = se.awards
+	check(not aw.get("mvp", {}).is_empty() and not aw.get("raider", {}).is_empty() and not aw.get("defender", {}).is_empty(), "season awards: Arjuna Award %s (%s), best raider %s, best defender %s" % [aw.mvp.name, aw.mvp.team, aw.raider.name, aw.defender.name])
+	Game.show_screen("res://ui/awards_screen.gd", {"awards": aw, "label": "Season 1", "back": "res://ui/main_menu.gd", "mine": se.team})
+	await frames(5)
+	check(Game.current != null and Game.current.get_script().resource_path.ends_with("awards_screen.gd"), "awards screen opens")
 	check(stages.get("eliminator", 0) == 2 and stages.get("semi", 0) == 2 and stages.get("final", 0) == 1, "playoffs: 2 eliminators, 2 semis, final")
 	Game.save_season()
 	Game.season = null

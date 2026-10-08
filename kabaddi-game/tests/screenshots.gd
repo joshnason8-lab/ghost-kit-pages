@@ -36,6 +36,15 @@ func _tour() -> void:
 	if args_only == "moves":
 		await _moves()
 		return
+	if args_only == "awards":
+		var sq: Array = DB.team("PAT").squad
+		var aw := {"mvp": {"pid": sq[0].id, "name": sq[0].name, "team": "PAT", "raid": 212, "tackle": 14},
+			"raider": {"pid": sq[0].id, "name": sq[0].name, "team": "PAT", "raid": 212, "tackle": 14},
+			"defender": {"pid": "DEL_6", "name": DB.team("DEL").squad[6].name, "team": "DEL", "raid": 3, "tackle": 71}}
+		Game.show_screen("res://ui/awards_screen.gd", {"awards": aw, "label": "Season 1", "mine": "PAT"})
+		await frames(40)
+		await shot("30_awards")
+		return
 	if args_only != "":
 		await _grounds()
 		return

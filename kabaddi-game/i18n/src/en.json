@@ -387,5 +387,15 @@
   "HUD_TIMEOUTS": "TO {n}",
   "TEAM_ENERGY": "Team energy",
   "HOW_ENERGY": "Energy and time outs: raids, dives and struggles tire players; they recover between raids, faster on the bench, and at half time. Tired raiders are slower and tired defenders hold less well. Each team has two 30-second time outs per half (the bar and TO count under each team's name). Call yours from the pause menu; it happens after the current raid.",
-  "SCORERS": "SCORERS"
+  "SCORERS": "SCORERS",
+  "SEASON_AWARDS": "Season awards",
+  "ARJUNA_AWARD": "Arjuna Award",
+  "ARJUNA_SUB": "Most valuable player of the season",
+  "BEST_RAIDER": "Best raider",
+  "BEST_DEFENDER": "Best defender",
+  "POINTS_TOTAL": "points",
+  "ARJUNA_YOURS": "Yours! The Arjuna Award comes home.",
+  "AWARDS_LINE": "Arjuna Award: {name} ({team})",
+  "SEE_AWARDS": "Season awards",
+  "ARJUNA_NOTE": "Points count from every match of the season, playoffs included. In real life the Arjuna Award is India's national sports honour, given by the sports ministry for years of excellence; here it crowns the season's best player."
 }

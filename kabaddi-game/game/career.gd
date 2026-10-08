@@ -21,6 +21,8 @@ var fixtures: Array = []   # league and playoff fixtures for this season
 var season_stats := {"matches": 0, "raid": 0, "tackle": 0}
 var totals := {"matches": 0, "raid": 0, "tackle": 0, "titles": 0}
 var history: Array = []
+var player_stats := {}     # the league's players this season (yours is in season_stats)
+var awards := {}
 var seed_value := 0
 
 
@@ -78,6 +80,8 @@ static func from_dict(d: Dictionary) -> Career:
 		for k in dict.keys():
 			dict[k] = int(dict[k])
 	c.history = d.get("history", [])
+	c.player_stats = d.get("player_stats", {})
+	c.awards = d.get("awards", {})
 	c.seed_value = int(d.get("seed", 0))
 	return c
 
@@ -87,6 +91,7 @@ func to_dict() -> Dictionary:
 		"profile": profile, "player": player, "season": season, "team": team, "price": price,
 		"skill_points": skill_points, "phase": phase, "fixtures": fixtures,
 		"season_stats": season_stats, "totals": totals, "history": history, "seed": seed_value,
+		"player_stats": player_stats, "awards": awards,
 	}
 
 
@@ -206,6 +211,7 @@ func record_user_result(result: Dictionary) -> void:
 	else:
 		f.score = [int(s[1]), int(s[0])]
 	f.played = true
+	Awards.add_match(player_stats, result.get("player_stats", {}), "CAREER")
 	var cs: Dictionary = result.get("career_stats", {"raid": 0, "tackle": 0})
 	_add_stats(int(cs.raid), int(cs.tackle), int(result.get("winner", -1)) == 0)
 	_after_user_match(f)
@@ -224,6 +230,9 @@ func simulate_user_match() -> void:
 	var share := 0.22 if player.role == "raider" else (0.15 if player.role == "allrounder" else 0.06)
 	var raid := int(round(mine * share * rng.randf_range(0.6, 1.4) * overall() / 70.0))
 	var tackle := int(round(rng.randf_range(0.0, 4.0) * (1.0 if player.role != "raider" else 0.3)))
+	var opp: String = f.away if f.home == team else f.home
+	Awards.sim_team(player_stats, DB.team(team).squad, team, maxi(0, mine - raid - tackle), rng)
+	Awards.sim_team(player_stats, DB.team(opp).squad, opp, theirs, rng)
 	_add_stats(raid, tackle, mine > theirs)
 	_after_user_match(f)
 
@@ -256,6 +265,8 @@ func _sim(f: Dictionary) -> void:
 	var rng := _rng(fixtures.find(f) + 31)
 	f.score = DB.simulate(_rating(f.home), _rating(f.away), rng, f.stage != "league")
 	f.played = true
+	Awards.sim_team(player_stats, DB.team(f.home).squad, f.home, int(f.score[0]), rng)
+	Awards.sim_team(player_stats, DB.team(f.away).squad, f.away, int(f.score[1]), rng)
 
 
 func _advance() -> void:
@@ -312,7 +323,17 @@ func _end_season() -> void:
 	for i in table.size():
 		if table[i].id == team:
 			pos = i + 1
-	history.append({"season": season, "team": team, "price": price, "raid": season_stats.raid, "tackle": season_stats.tackle, "finish": pos, "champion": champ == team})
+	# Season awards, with you in the running.
+	var league := player_stats.duplicate(true)
+	league["CAREER"] = {"name": String(player.name), "team": team, "raid": int(season_stats.raid), "tackle": int(season_stats.tackle), "matches": int(season_stats.matches)}
+	awards = Awards.leaders(league)
+	var won := []
+	for k in ["mvp", "raider", "defender"]:
+		if String(awards.get(k, {}).get("pid", "")) == "CAREER":
+			won.append(k)
+	if won.has("mvp"):
+		totals["arjuna"] = int(totals.get("arjuna", 0)) + 1
+	history.append({"season": season, "team": team, "price": price, "raid": season_stats.raid, "tackle": season_stats.tackle, "finish": pos, "champion": champ == team, "awards": won})
 
 
 func next_season() -> void:
@@ -322,6 +343,8 @@ func next_season() -> void:
 	player.team = ""
 	fixtures = []
 	phase = "auction"
+	player_stats = {}
+	awards = {}
 
 
 func standings() -> Array:

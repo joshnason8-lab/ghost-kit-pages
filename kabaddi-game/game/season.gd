@@ -13,7 +13,9 @@ var squads := {}                # team id -> Array of player dictionaries
 var purses := {}                # lakhs left after the auction
 var fixtures: Array = []        # {stage, round, home, away, played, score}
 var champion := ""
-var history: Array = []         # {year, finish, champion}
+var history: Array = []         # {year, finish, champion, mvp}
+var player_stats := {}          # pid -> {name, team, raid, tackle, matches}, this season
+var awards := {}                # Awards.leaders() once the season is done
 var seed_value := 0
 
 
@@ -46,6 +48,8 @@ static func from_dict(d: Dictionary) -> Season:
 	s.champion = d.get("champion", "")
 	s.history = d.get("history", [])
 	s.seed_value = int(d.get("seed", 0))
+	s.player_stats = d.get("player_stats", {})
+	s.awards = d.get("awards", {})
 	if s.squads.is_empty():
 		for id in DB.league_ids:
 			s.squads[id] = DB.team(id).squad.duplicate(true)
@@ -54,7 +58,8 @@ static func from_dict(d: Dictionary) -> Season:
 
 func to_dict() -> Dictionary:
 	return {"team": team, "year": year, "phase": phase, "squads": squads, "purses": purses,
-		"fixtures": fixtures, "champion": champion, "history": history, "seed": seed_value}
+		"fixtures": fixtures, "champion": champion, "history": history, "seed": seed_value,
+		"player_stats": player_stats, "awards": awards}
 
 
 func _rng(salt: int) -> RandomNumberGenerator:
@@ -180,6 +185,7 @@ func record_user_result(result: Dictionary) -> void:
 	var s: Array = result.score
 	f.score = [int(s[0]), int(s[1])] if f.home == team else [int(s[1]), int(s[0])]
 	f.played = true
+	Awards.add_match(player_stats, result.get("player_stats", {}))
 	_after(f)
 
 
@@ -195,6 +201,8 @@ func _sim(f: Dictionary) -> void:
 	var rng := _rng(fixtures.find(f) + 31)
 	f.score = DB.simulate(rating(f.home), rating(f.away), rng, f.stage != "league")
 	f.played = true
+	Awards.sim_team(player_stats, squads[f.home], f.home, int(f.score[0]), rng)
+	Awards.sim_team(player_stats, squads[f.away], f.away, int(f.score[1]), rng)
 
 
 func _after(f: Dictionary) -> void:
@@ -261,7 +269,8 @@ func _advance() -> void:
 			for i in t.size():
 				if t[i].id == team:
 					pos = i + 1
-			history.append({"year": year, "finish": pos, "champion": champion})
+			awards = Awards.leaders(player_stats)
+			history.append({"year": year, "finish": pos, "champion": champion, "mvp": awards.get("mvp", {})})
 			return
 
 
@@ -305,3 +314,5 @@ func next_year() -> void:
 	phase = "auction"
 	fixtures = []
 	champion = ""
+	player_stats = {}
+	awards = {}

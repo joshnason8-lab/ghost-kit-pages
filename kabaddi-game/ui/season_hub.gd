@@ -171,11 +171,24 @@ func _season_done() -> void:
 		Game.save_settings()
 		Game.show_screen("res://ui/trophy_screen.gd", {"team": season.team, "title": tr("LEAGUE_NAME"), "back": "res://ui/season_hub.gd"})
 		return
+	var award_args := {"awards": season.awards, "label": tr("SEASON").format({"n": season.year}), "back": "res://ui/season_hub.gd", "mine": season.team}
+	if not season.awards.is_empty() and not bool(Game.settings.get("awards_seen_%d" % season.year, false)):
+		Game.settings["awards_seen_%d" % season.year] = true
+		Game.save_settings()
+		Game.show_screen("res://ui/awards_screen.gd", award_args)
+		return
 	var v := UI.page(self, tr("SEASON_OVER"), func(): Game.goto_menu(), tr("SEASON").format({"n": season.year}))
 	var champ: String = season.champion
 	v.add_child(UI.label(tr("CHAMPIONS") if champ == season.team else tr("TEAM_WINS").format({"team": DB.team_name(champ)}), "TitleLabel", 72, Game.C_GOLD if champ == season.team else Game.C_INK))
 	if champ == season.team:
 		v.add_child(UI.button(tr("SEE_TROPHY"), false, func(): Game.show_screen("res://ui/trophy_screen.gd", {"team": season.team, "title": tr("LEAGUE_NAME"), "back": "res://ui/season_hub.gd"})))
+	var mvp: Dictionary = season.awards.get("mvp", {})
+	if not mvp.is_empty():
+		var arow := HBoxContainer.new()
+		arow.add_theme_constant_override("separation", 14)
+		arow.add_child(UI.label(tr("AWARDS_LINE").format({"name": mvp.name, "team": DB.team_name(String(mvp.team))}), "SubLabel", 22, Game.C_GOLD))
+		arow.add_child(UI.button(tr("SEE_AWARDS"), false, func(): Game.show_screen("res://ui/awards_screen.gd", award_args)))
+		v.add_child(arow)
 	v.add_child(UI.scroll(UI.table(self, season.standings(), season.team)))
 	var go := UI.button(tr("NEXT_SEASON"), true, func():
 		season.next_year()

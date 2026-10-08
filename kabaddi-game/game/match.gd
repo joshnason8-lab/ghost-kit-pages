@@ -2318,7 +2318,13 @@ func _finish() -> void:
 	var career_stats := {"raid": 0, "tackle": 0}
 	if career_pid != "" and stats.has(career_pid):
 		career_stats = stats[career_pid]
+	var player_stats := {}
+	for t in 2:
+		for a in teams[t].players:
+			var st: Dictionary = stats[a.pid()]
+			player_stats[a.pid()] = {"name": a.display_name(), "team": String(teams[t].id), "raid": int(st.raid), "tackle": int(st.tackle)}
 	var result := {
+		"player_stats": player_stats,
 		"config": config,
 		"home": teams[0].id,
 		"away": teams[1].id,
