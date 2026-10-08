@@ -28,6 +28,9 @@ var chain_partner: Athlete = null   # team-mate whose hand this defender is hold
 var chain_offset := Vector3.ZERO     # where to stand relative to that partner
 var chain_dive := false              # this dive is part of a chain tackle
 var shove_target: Athlete = null
+var sig_kind := 0                    # an official's signal, see HumanModel.SIGNALS
+var cele_kind := 0                   # how he celebrates, see HumanModel.cele
+var cele_partner: Athlete = null     # team-mate he is going to high-five
 var moves := {}                      # raiding move ratings, see DB.moves
 var dmoves := {}                     # defensive skill ratings, see DB.def_moves
 var style := "ankle"                 # his default grip: ankle, thigh or waist hold
@@ -138,6 +141,11 @@ func kind() -> String:
 	return tackle_kind if tackle_kind != "" else style
 
 
+## Pitch of his voice, the same every time for the same player.
+func voice_pitch() -> float:
+	return 0.88 + float(absi(hash(String(data.get("id", name)))) % 1000) / 1000.0 * 0.26
+
+
 ## Airborne part of a lion jump.
 func airborne() -> bool:
 	if state != "jump":
@@ -199,6 +207,8 @@ func _pose(delta: float) -> void:
 	var want_back_kick := 0.0
 	var want_dubki := 0.0
 	var want_jump := 0.0
+	var want_seated := 0.0
+	var want_signal := 0.0
 	var p := clampf(st_t / maxf(st_len, 0.01), 0.0, 1.0)
 	match state:
 		"ready":
@@ -254,10 +264,15 @@ func _pose(delta: float) -> void:
 		"holding":
 			want_dive = 0.55
 			want_hold = 1.0
+		"signal":
+			want_signal = 1.0
 		"celebrate":
 			want_celebrate = 1.0
+			# A high five waits until the two of them meet.
+			if cele_partner != null and position.distance_to(cele_partner.position) > 1.15:
+				want_celebrate = 0.0
 		"sit":
-			want_crouch = 0.9
+			want_seated = 1.0
 		"roar", "slump", "shove", "argue":
 			want[state] = 1.0
 			if state == "slump":
@@ -284,3 +299,19 @@ func _pose(delta: float) -> void:
 	m.kick_side = kick_side
 	m.dubki = lerpf(m.dubki, want_dubki, clampf(delta * 16.0, 0.0, 1.0))
 	m.jump = want_jump
+	m.cele = cele_kind
+	m.ref_sig = sig_kind
+	m.ref_amt = lerpf(m.ref_amt, want_signal, clampf(delta * 9.0, 0.0, 1.0))
+	m.seated = lerpf(m.seated, want_seated, clampf(delta * 4.0, 0.0, 1.0))
+	# Which way he is moving relative to where he faces: forward, backpedalling or sideways.
+	var flat := Vector3(vel.x, 0, vel.z)
+	if flat.length() > 0.3:
+		var dir := flat.normalized()
+		var right := facing.cross(Vector3.UP).normalized()
+		m.move_fwd = lerpf(m.move_fwd, dir.dot(facing), k)
+		m.move_side = lerpf(m.move_side, dir.dot(right), k)
+	else:
+		m.move_fwd = lerpf(m.move_fwd, 1.0, k)
+		m.move_side = lerpf(m.move_side, 0.0, k)
+	# Players with nothing to do look around; players in the action keep their eyes on it.
+	m.look_around = 1.0 if state in ["idle", "sit", "walk"] or not on_mat else 0.25

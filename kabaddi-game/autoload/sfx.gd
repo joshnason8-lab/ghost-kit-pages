@@ -4,6 +4,7 @@ extends Node
 ## (for example assets/audio/whistle.ogg or assets/audio/crowd_loop.ogg).
 
 const RATE := 22050
+const VOICES := {"grunt": 5, "oof": 3, "exhale": 2, "hup": 2}
 
 var streams := {}
 var _pool: Array[AudioStreamPlayer] = []
@@ -59,6 +60,19 @@ func chant_word(volume_db := -6.0) -> void:
 	play("chant_word_%d" % (1 + randi() % 2), volume_db, randf_range(0.95, 1.08))
 
 
+## A player's effort, impact or breath: voice("grunt"), "oof", "exhale" or "hup". Pitch
+## gives each player his own voice.
+func voice(kind: String, volume_db := -8.0, pitch := 1.0) -> void:
+	var n := int(VOICES.get(kind, 0))
+	if n > 0:
+		play("%s_%d" % [kind, 1 + randi() % n], volume_db, pitch * randf_range(0.95, 1.05))
+
+
+## The crowd reacting: "cheer", "ooh", "groan" or "applause".
+func react(kind: String, volume_db := -6.0) -> void:
+	play("crowd_" + kind if kind != "applause" else kind, volume_db, randf_range(0.96, 1.04))
+
+
 func click() -> void:
 	play("click", -8.0)
 
@@ -68,7 +82,7 @@ func crowd(intensity: float) -> void:
 	if intensity < 0.0 or not enabled():
 		_crowd.stop()
 		return
-	_crowd_target = lerpf(-26.0, -8.0, clampf(intensity, 0.0, 1.0))
+	_crowd_target = lerpf(-24.0, -5.0, clampf(intensity, 0.0, 1.0))
 	if not _crowd.playing:
 		_crowd.volume_db = -40.0
 		_crowd.play()
@@ -105,8 +119,13 @@ func _build() -> void:
 	streams.bid = _tone_env(0.08, func(t): return sin(TAU * 880.0 * t) * 0.4 + sin(TAU * 1320.0 * t) * 0.2, 0.002, 0.07)
 	# Recorded voices that have no synthesised stand-in: chants and players shouting.
 	for k in ["chant_raider", "crowd_chant", "chant_word_1", "chant_word_2", "yell_aaja", "yell_pakad",
-			"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch"]:
+			"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch",
+			"crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap"]:
 		streams[k] = null
+	# Players' efforts and breaths (see tools/audio/make_sounds.py).
+	for kind in VOICES:
+		for i in int(VOICES[kind]):
+			streams["%s_%d" % [kind, i + 1]] = null
 	for k in streams.keys():
 		for ext in ["ogg", "wav", "mp3"]:
 			var path := "res://assets/audio/%s.%s" % [k, ext]
@@ -116,6 +135,9 @@ func _build() -> void:
 	for k in streams.keys():
 		if streams[k] == null:
 			streams.erase(k)
+	for k in ["crowd_loop", "dhol_loop"]:
+		if streams.get(k) is AudioStreamOggVorbis:
+			(streams[k] as AudioStreamOggVorbis).loop = true
 
 
 func _to_stream(samples: PackedFloat32Array, loop := false) -> AudioStreamWAV:

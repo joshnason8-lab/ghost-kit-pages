@@ -31,6 +31,12 @@ const PROFILES := [
 	{"tackle": 1.15, "telegraph": 0.29, "raider_skill": 0.92, "react": 1.00, "cant_window": 0.10, "miss_beats": 2.5, "assist": 1.2, "user_hold": 1.0},
 	{"tackle": 1.45, "telegraph": 0.23, "raider_skill": 1.10, "react": 1.15, "cant_window": 0.075, "miss_beats": 2.0, "assist": 1.0, "user_hold": 0.9},
 ]
+const CELE_ARMS := 0
+const CELE_FIST := 1
+const CELE_CLAP := 2
+const CELE_FIVE := 3
+const CELE_POINT := 4
+const CELE_THUMP := 5
 const TOUCH_TIME := 0.34
 const KICK_TIME := 0.5
 const DODGE_TIME := 0.26
@@ -265,6 +271,8 @@ func _place_all_instant() -> void:
 func _set_phase(p: String) -> void:
 	phase = p
 	phase_t = 0.0
+	for a in athletes:
+		a.lock_facing = false
 
 
 func _process(delta: float) -> void:
@@ -418,11 +426,7 @@ func _walk_to_positions(dt: float, with_raider: bool) -> void:
 		var k := 0
 		for a in teams[t].players:
 			if not a.on_mat:
-				a.seek(bench_spot(t, teams[t].out_queue.find(a)), 3.0, dt)
-				if a.vel.length() < 0.2:
-					if a.state != "sit":
-						a.set_state("sit")
-					a.face_toward(Vector3.ZERO, dt)
+				_to_bench(a, dt)
 				continue
 			if with_raider and a == raider:
 				a.seek(pos_in(t, 0.0, 1.4), 3.0, dt)
@@ -444,6 +448,8 @@ func _walk_to_positions(dt: float, with_raider: bool) -> void:
 			else:
 				a.seek(formation_spot(a), 3.2, dt)
 				a.face_toward(Vector3(0, 0, 0), dt)
+				if a.state == "celebrate" and a.st_t < 1.7:
+					continue
 				if a.state in ["idle", "walk", "celebrate", "sit"]:
 					a.set_state("ready")
 			k += 1
@@ -469,6 +475,9 @@ func _tick_raid(dt: float) -> void:
 	if phase != "raid":
 		return
 	_tick_shouts(dt)
+	# The crowd builds as the raider goes deep and roars through a struggle.
+	var tension := clampf(depth_in(1 - raiding, raider.position) / Arena.BONUS, 0.0, 1.0)
+	Sfx.crowd(0.3 + 0.35 * tension + (0.35 if raid.struggle and not raid.holders.is_empty() else 0.0))
 	var defs := defenders()
 	var holders: Array = raid.holders
 
@@ -484,17 +493,20 @@ func _tick_raid(dt: float) -> void:
 		raider.set_state("held")
 
 	var move := Vector3.ZERO
+	var watch := _raider_watch()
 	if raider == controlled:
 		move = cam.input_to_world(controls.move_vec())
 		if cam.mode == Game.CAM_FIRST:
 			raider.lock_facing = true
 			raider.facing = cam.flat_forward()
 		else:
-			raider.lock_facing = false
+			raider.lock_facing = watch != null
 	else:
-		raider.lock_facing = false
+		raider.lock_facing = watch != null
 		move = _ai_raider(dt)
 	_move_raider(move, dt)
+	if watch != null and not (raider == controlled and cam.mode == Game.CAM_FIRST):
+		raider.face_toward(watch.position, dt, 9.0)
 
 	# Defenders.
 	for d in defs:
@@ -505,6 +517,7 @@ func _tick_raid(dt: float) -> void:
 		else:
 			_ai_defender(d, dt)
 	_separate(defs, dt)
+	_tick_bystanders(dt)
 	for h in holders:
 		_tire(h, 0.02 * dt)
 		h.position = raider.position + h.hold_offset
@@ -550,6 +563,9 @@ func _move_raider(move: Vector3, dt: float) -> void:
 		raider.vel = v
 		raider.position += v * dt
 		raider.face_toward(raider.position + mid_dir, dt)
+		if rng.randf() < dt * 1.4:
+			var who: Athlete = raider if rng.randf() < 0.55 else holders[rng.randi() % holders.size()]
+			Sfx.voice("grunt", -7.0 if who == raider else -10.0, who.voice_pitch())
 		var rate := 0.16 + 0.32 * hold_power - 0.2 * raider.strength * push
 		raid.progress = clampf(raid.progress + maxf(0.05, rate) * dt, 0.0, 1.0)
 	else:
@@ -562,6 +578,73 @@ func _move_raider(move: Vector3, dt: float) -> void:
 	raider.position.z = clampf(raider.position.z, -Arena.HALF_L - 1.0, Arena.HALF_L + 1.0)
 	if depth_in(1 - raiding, raider.position) > 0.0:
 		raider.energy = maxf(0.4, raider.energy - dt * 0.004)
+
+
+## While he is stepping sideways or backing off with defenders close, the raider keeps his
+## eyes on the nearest one rather than turning his back. Returns that defender, or null
+## when he should just face where he is running (going for a touch, or racing home).
+func _raider_watch() -> Athlete:
+	if raider.state != "raid" or not raid.holders.is_empty():
+		return null
+	if depth_in(1 - raiding, raider.position) < 1.2:
+		return null
+	var near: Athlete = null
+	var nd := 2.8
+	for d in defenders():
+		var off = d.position - raider.position
+		off.y = 0
+		if off.length() < nd:
+			nd = off.length()
+			near = d
+	if near == null:
+		return null
+	var to := near.position - raider.position
+	to.y = 0
+	var v := Vector3(raider.vel.x, 0, raider.vel.z)
+	# Running at him (to touch) or a defender right on his heels after a touch: run.
+	if v.length() > 0.5 and v.normalized().dot(to.normalized()) > 0.4:
+		return null
+	if raid.touched.size() > 0 and nd < 1.3:
+		return null
+	return near
+
+
+## Everyone not in the raid: the raider's team-mates watch from their half, and out
+## players sit in the sitting block in the order they went out.
+func _tick_bystanders(dt: float) -> void:
+	for t in 2:
+		for a in teams[t].players:
+			if a == raider or (t != raiding and a.on_mat):
+				continue
+			if not a.on_mat:
+				_to_bench(a, dt)
+				continue
+			a.drive(Vector3.ZERO, dt)
+			a.face_toward(raider.position, dt, 3.0)
+
+
+## Walk to his place in the sitting block and sit down; get up and shuffle along when the
+## queue moves.
+func _to_bench(a: Athlete, dt: float) -> void:
+	if a.state in ["fallen", "recover", "roar", "slump", "argue", "shove", "celebrate"]:
+		a.drive(Vector3.ZERO, dt)
+		return
+	var spot := bench_spot(a.team, teams[a.team].out_queue.find(a))
+	var off := spot - a.position
+	off.y = 0
+	if a.state == "sit":
+		a.vel = Vector3.ZERO
+		if off.length() > 0.35:
+			a.set_state("walk")
+		else:
+			a.position += off * minf(1.0, dt * 2.0)
+			a.face_toward(Vector3(spot.x, 0, 0), dt, 4.0)
+		return
+	a.lock_facing = false
+	a.seek(spot, 2.6, dt, 0.5)
+	if off.length() < 0.2:
+		a.vel = Vector3.ZERO
+		a.set_state("sit")
 
 
 func _separate(defs: Array, dt: float) -> void:
@@ -747,11 +830,13 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 		raider.cooldown = DUBKI_TIME + 0.5
 		raider.energy = maxf(0.4, raider.energy - 0.02)
 		Sfx.play("whoosh", -6.0, 0.8)
+		Sfx.voice("grunt", -10.0, raider.voice_pitch())
 	else:
 		raider.set_state("jump", JUMP_TIME)
 		raider.cooldown = JUMP_TIME + 0.6
 		raider.energy = maxf(0.4, raider.energy - 0.035)
 		Sfx.play("whoosh", -4.0, 0.6)
+		Sfx.voice("hup", -8.0, raider.voice_pitch())
 	if holders.size() > 0:
 		# Slipping a hold: a dubki slides out of a high grip, a jump kicks free of an ankle
 		# hold. The wrong move against the grip rarely works.
@@ -763,6 +848,7 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 			raider.set_state("dubki" if kind == "dubki" else "jump", DUBKI_TIME if kind == "dubki" else JUMP_TIME)
 			_move_moment(kind)
 			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true)
+			_ooh()
 			if raider == controlled:
 				tutorial_event.emit("broke_free")
 			if holders.is_empty():
@@ -895,6 +981,7 @@ func _defender_tackle(d: Athlete, kind := "") -> void:
 	_tire(d, 0.035)
 	d.chain_dive = false
 	Sfx.play("whoosh", -8.0, 0.8)
+	Sfx.voice("grunt", -9.0, d.voice_pitch())
 	# A chained pair goes in together.
 	var p: Athlete = d.chain_partner
 	if p != null:
@@ -943,9 +1030,13 @@ func _user_defender(d: Athlete, dt: float) -> void:
 				d.lock_facing = true
 				d.facing = cam.flat_forward()
 			else:
-				d.lock_facing = move.length() < 0.1
+				# Keep him in view: shuffle and backpedal rather than turn your back,
+				# unless you are running a long way.
+				var gap := raider.position - d.position
+				gap.y = 0
+				d.lock_facing = move.length() < 0.1 or gap.length() < 4.5
 				if d.lock_facing:
-					d.face_toward(raider.position, dt)
+					d.face_toward(raider.position, dt, 10.0)
 			d.drive(move * d.max_speed * (0.78 if d.chain_partner else 0.92), dt)
 			if d.state not in ["ready", "idle"]:
 				d.set_state("ready")
@@ -1322,6 +1413,8 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 			d.drive(d.dive_dir * 8.0, dt)
 			if d.st_t >= d.st_len:
 				d.set_state("recover", 1.15 - 0.25 * react)
+				if not raid.holders.has(d) and raid.holders.is_empty() and d.position.distance_to(raider.position) < 2.2:
+					_ooh()
 			# A dive that carries him over a boundary line (the lobby only counts once
 			# there has been contact) puts him out.
 			var bound := Arena.HALF_W + (Arena.LOBBY if raid.struggle else 0.0)
@@ -1358,8 +1451,10 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		target.x += raider.position.x * 0.28
 		if inside and dist < 1.9 and dist > 0.01:
 			target -= to / dist * (1.9 - dist) * 1.2
+	# Defenders never turn their back on the raider: they shuffle and backpedal.
+	d.lock_facing = true
 	d.seek(target, spd, dt)
-	d.face_toward(raider.position, dt)
+	d.face_toward(raider.position, dt, 10.0)
 	if d.state not in ["ready"]:
 		d.set_state("ready")
 	_clamp_defender(d)
@@ -1554,6 +1649,7 @@ func _attach(d: Athlete, block := false) -> void:
 	d.set_state("holding")
 	raider.set_state("held")
 	Sfx.play("thud", -2.0)
+	Sfx.voice("oof" if first else "grunt", -6.0, raider.voice_pitch())
 	var chained := d.chain_dive and not first
 	var hold_key: String = {"ankle": "EV_HOLD", "thigh": "EV_THIGH", "waist": "EV_WAIST", "block": "EV_BLOCK"}.get(d.kind(), "EV_HOLD") if was_dive else "EV_HOLD"
 	raid.def_moves.append(d.kind() if was_dive else "pile")
@@ -1682,6 +1778,7 @@ func _end_raid(kind: String) -> void:
 				stats[h.pid()].tackle += 1
 			raider.set_state("fallen")
 			Sfx.play("thud", 2.0, 0.8)
+			Sfx.voice("oof", -4.0, raider.voice_pitch())
 		"out_of_bounds":
 			raider_out = true
 			def_pts = 1
@@ -1755,10 +1852,11 @@ func _end_raid(kind: String) -> void:
 					a.on_mat = true
 					a.set_state("walk")
 			teams[t].out_queue.clear()
+	var all_out := _post_messages.size() > 1
 	if raid_pts > def_pts:
-		officials.signal_points(atk, _post_messages.size() > 1)
+		officials.signal_points(atk, all_out, raid_pts + (2 if all_out else 0), bonus > 0)
 	elif def_pts > 0:
-		officials.signal_points(dfn, _post_messages.size() > 1)
+		officials.signal_points(dfn, all_out, def_pts + (2 if all_out else 0))
 	var holders_were := holders_copy()
 	for h in holders_were:
 		h.set_state("ready")
@@ -1771,7 +1869,19 @@ func _end_raid(kind: String) -> void:
 	var good_for_cpu := (raid_pts > 0 and atk == 1) or (def_pts > 0 and dfn == 1)
 	if good_for_user or good_for_cpu:
 		arena.excite(1.0 if good_for_user else 0.6)
-		Sfx.play("roar", -6.0 if good_for_user else -12.0)
+		# The crowd is behind the home side (on the left of the scoreboard).
+		var pts := raid_pts + def_pts
+		var home_scored := (raid_pts > 0 and atk == 0) or (def_pts > 0 and dfn == 0)
+		if home_scored:
+			Sfx.react("cheer", -6.0 if pts >= 2 else -9.0)
+			Sfx.react("applause", -10.0)
+			if pts >= 3:
+				Sfx.play("roar", -6.0)
+		else:
+			Sfx.react("groan", -10.0)
+			Sfx.react("applause", -18.0)
+	if kind == "return" and not raider_out:
+		Sfx.voice("exhale", -9.0, raider.voice_pitch())
 	Sfx.play("whistle", -6.0)
 	for m in _post_messages:
 		hud.event(m[0], m[1])
@@ -1780,31 +1890,98 @@ func _end_raid(kind: String) -> void:
 	clock = maxf(0.0, clock - RAID_GAP * clock_speed)
 
 
-## Players react: roars, slumps, appeals to the referee, the odd shove.
+## Celebrate one way or another (see HumanModel.cele).
+func _celebrate(a: Athlete, how := -1) -> void:
+	a.cele_partner = null
+	a.cele_kind = how if how >= 0 else [CELE_ARMS, CELE_FIST, CELE_CLAP, CELE_POINT, CELE_THUMP][rng.randi() % 5]
+	a.set_state("celebrate")
+	if a.cele_kind == CELE_POINT:
+		a.face_toward(Vector3(signf(a.position.x + 0.01) * 20.0, 0, a.position.z), 1.0, 100.0)
+
+
+## Two team-mates jog together and slap hands.
+func _high_five(a: Athlete, b: Athlete) -> void:
+	for pair in [[a, b], [b, a]]:
+		var p: Athlete = pair[0]
+		p.set_state("celebrate")
+		p.cele_kind = CELE_FIVE
+		p.cele_partner = pair[1]
+
+
+## The team-mate nearest a player, among those standing around.
+func _nearest_mate(a: Athlete, pool: Array) -> Athlete:
+	var best: Athlete = null
+	var bd := 1e9
+	for o in pool:
+		if o == a or o.state not in ["idle", "ready", "walk"]:
+			continue
+		var dd: float = o.position.distance_to(a.position)
+		if dd < bd:
+			bd = dd
+			best = o
+	return best
+
+
+## The crowd gasps at a near thing: a dive that just misses, a raider breaking a hold.
+func _ooh() -> void:
+	if raid.has("ooh_t") and float(raid.ooh_t) - float(raid.t) < 2.0:
+		return
+	raid["ooh_t"] = float(raid.t)
+	Sfx.react("ooh", -7.0)
+
+
+## Players react: roars, slumps, appeals to the referee, the odd shove. Not every point
+## gets a celebration, and no two look the same: roars, fist pumps, claps, high fives,
+## pointing to the crowd. Big moments bring the whole team in.
 func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched: Array, holders_were: Array) -> void:
 	var atk: int = raiding
 	var dfn := 1 - raiding
 	if raid_pts > 0 and not raider_out:
-		raider.set_state("roar")
-		hud.bubble(raider, tr("BUBBLE_HAAN") if rng.randf() < 0.5 else tr("BUBBLE_AAJA"), Game.C_GOLD)
-		Sfx.yell("haan" if rng.randf() < 0.5 else "aaja", -2.0)
-		for a in on_mat(atk):
-			if a != raider and a.state in ["idle", "ready"]:
-				a.set_state("celebrate")
+		var big := raid_pts >= 3 or on_mat(dfn).is_empty()
+		var mates := on_mat(atk)
+		var buddy := _nearest_mate(raider, mates)
+		var r := rng.randf()
+		if buddy != null and r < (0.45 if big else 0.25):
+			_high_five(raider, buddy)
+		elif big or r < 0.55:
+			raider.set_state("roar")
+		elif r < 0.75:
+			_celebrate(raider, CELE_FIST)
+		elif r < 0.85:
+			_celebrate(raider, CELE_POINT)
+		# Otherwise he just jogs back: job done.
+		if raider.state in ["roar", "celebrate"] or rng.randf() < 0.4:
+			hud.bubble(raider, tr("BUBBLE_HAAN") if rng.randf() < 0.5 else tr("BUBBLE_AAJA"), Game.C_GOLD)
+			Sfx.yell("haan" if rng.randf() < 0.5 else "aaja", -2.0)
+		for a in mates:
+			if a != raider and a.state in ["idle", "ready"] and rng.randf() < (0.8 if big else 0.3):
+				_celebrate(a, [CELE_ARMS, CELE_CLAP, CELE_FIST, CELE_CLAP][rng.randi() % 4] if not big else -1)
 		for d in touched:
 			d.set_state("slump")
 		# Sometimes the defence disputes the touch.
-		var mates := on_mat(dfn)
-		if not mates.is_empty() and rng.randf() < 0.35:
-			var who: Athlete = mates[rng.randi() % mates.size()]
+		var defs := on_mat(dfn)
+		if not defs.is_empty() and rng.randf() < 0.35:
+			var who: Athlete = defs[rng.randi() % defs.size()]
 			who.set_state("argue")
 			who.face_toward(Vector3(Arena.HALF_W + 3.0, 0, 0), 1.0, 100.0)
 			hud.bubble(who, tr("BUBBLE_NO_TOUCH"), Game.C_INK)
 			Sfx.yell("nahi", -6.0)
 	elif def_pts > 0:
-		var stars: Array = holders_were if not holders_were.is_empty() else on_mat(dfn)
+		var big := def_pts >= 2
+		var stars: Array = holders_were.duplicate()
+		if stars.size() >= 2 and rng.randf() < 0.45:
+			_high_five(stars[0], stars[1])
+		for d in stars:
+			if d.state == "celebrate":
+				continue
+			var r := rng.randf()
+			if big or r < 0.5:
+				d.set_state("roar")
+			elif r < 0.8:
+				_celebrate(d, CELE_FIST if r < 0.68 else CELE_THUMP)
 		for d in on_mat(dfn):
-			d.set_state("roar" if stars.has(d) else "celebrate")
+			if not stars.has(d) and rng.randf() < (0.85 if big else 0.3):
+				_celebrate(d, -1 if big else [CELE_CLAP, CELE_FIST, CELE_ARMS][rng.randi() % 3])
 		if not stars.is_empty():
 			var lead: Athlete = stars[0]
 			hud.bubble(lead, tr("BUBBLE_SHABASH"), Game.C_MAGENTA.lightened(0.3))
@@ -2002,8 +2179,9 @@ func _chained_follow(d: Athlete, dt: float) -> void:
 		if d.position.distance_to(lead.position) > 1.9:
 			_unchain(d)
 		return
+	d.lock_facing = true
 	d.seek(lead.position + d.chain_offset, d.max_speed, dt, 0.3)
-	d.face_toward(raider.position, dt)
+	d.face_toward(raider.position, dt, 10.0)
 	if d.state != "ready":
 		d.set_state("ready")
 	_clamp_defender(d)
@@ -2100,7 +2278,22 @@ func _tick_post(dt: float) -> void:
 				a.shove_target.position += push.normalized() * 1.6 * dt
 		if a.state in ["roar", "slump", "shove", "argue"] and phase_t > 2.0:
 			a.set_state("walk" if not a.on_mat else "idle")
-		if a.state == "celebrate":
+		if a.state == "celebrate" and a.cele_partner != null:
+			# Jog over to the team-mate and slap hands.
+			var p: Athlete = a.cele_partner
+			var gap = p.position - a.position
+			gap.y = 0
+			a.lock_facing = true
+			a.face_toward(p.position, dt, 10.0)
+			if gap.length() > 0.95:
+				a.drive(gap.normalized() * 3.2, dt)
+			else:
+				a.drive(Vector3.ZERO, dt)
+				if not a.has_meta("fived"):
+					a.set_meta("fived", true)
+					p.set_meta("fived", true)
+					Sfx.play("clap", -6.0)
+		elif a.state == "celebrate":
 			a.drive(Vector3.ZERO, dt)
 		elif a.state in ["walk", "sit"] or not a.on_mat:
 			pass
@@ -2114,6 +2307,8 @@ func _tick_post(dt: float) -> void:
 
 func _next_raid(after_timeout := false) -> void:
 	for a in athletes:
+		a.cele_partner = null
+		a.remove_meta("fived")
 		if a.state in ["celebrate", "roar", "slump", "shove", "argue", "slap"]:
 			a.set_state("idle")
 	if not after_timeout:
@@ -2143,6 +2338,7 @@ func _next_raid(after_timeout := false) -> void:
 	elif clock <= 0.0:
 		if half == 1:
 			_set_phase("halftime")
+			officials.signal_call("half")
 			hud.banner(tr("HALF_TIME"))
 			Sfx.play("buzzer", -4.0)
 			return
@@ -2209,6 +2405,7 @@ func _start_timeout(t: int) -> void:
 	tm.run_against = 0
 	timeout_team = t
 	_set_phase("timeout")
+	officials.signal_call("timeout")
 	hud.banner(tr("TIMEOUT_BY").format({"team": String(tm.id)}))
 	Sfx.play("whistle", -4.0)
 	for a in athletes:
@@ -2275,15 +2472,22 @@ func _all_back() -> void:
 
 func _end_match() -> void:
 	_set_phase("fulltime")
+	officials.signal_call("end")
 	Sfx.play("buzzer", -2.0)
 	Sfx.drums(false)
 	var w := _winner()
 	hud.banner(tr("FULL_TIME"))
 	arena.excite(1.0)
 	if w >= 0:
-		for a in teams[w].players:
+		var ps: Array = teams[w].players
+		for a in ps:
 			a.on_mat = true
-			a.set_state("celebrate")
+			_celebrate(a, CELE_ARMS if rng.randf() < 0.5 else -1)
+		for i in range(0, ps.size() - 1, 3):
+			_high_five(ps[i], ps[i + 1])
+		for a in teams[1 - w].players:
+			if rng.randf() < 0.6:
+				a.set_state("slump")
 
 
 func _winner() -> int:
@@ -2296,7 +2500,12 @@ func _winner() -> int:
 
 func _tick_celebrate(dt: float) -> void:
 	for a in athletes:
-		a.drive(Vector3.ZERO, dt)
+		if a.state == "celebrate" and a.cele_partner != null and a.position.distance_to(a.cele_partner.position) > 0.95:
+			a.lock_facing = true
+			a.face_toward(a.cele_partner.position, dt, 10.0)
+			a.drive((a.cele_partner.position - a.position).normalized() * 3.0, dt)
+		else:
+			a.drive(Vector3.ZERO, dt)
 
 
 func _finish() -> void:

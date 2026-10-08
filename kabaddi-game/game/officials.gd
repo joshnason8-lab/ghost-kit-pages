@@ -96,7 +96,7 @@ func _process(delta: float) -> void:
 
 
 func _step(a: Athlete, target: Vector3, look: Vector3, dt: float) -> void:
-	if a.state in ["argue", "celebrate"] and a.st_t < a.st_len:
+	if a.state == "signal" and a.st_t < a.st_len:
 		a.drive(Vector3.ZERO, dt)
 		return
 	a.seek(target, 2.0, dt, 0.4)
@@ -107,11 +107,61 @@ func _step(a: Athlete, target: Vector3, look: Vector3, dt: float) -> void:
 		a.set_state(want)
 
 
-## Points awarded: the referee and the umpire on that side point to the scoring team.
-func signal_points(team_scored: int, all_out := false) -> void:
+const SIG := {"points": 1, "bonus": 2, "out": 3, "technical": 4, "timeout": 5, "half": 6, "end": 7, "lona": 8, "card": 9}
+
+
+## One official makes a signal toward a team (-1: to the court). Signals made with an arm
+## out to the side turn him side-on so the arm points at that team.
+func show_signal(a: Athlete, kind: String, team := -1, length := 1.6) -> void:
+	if a == null:
+		return
+	var dir := Vector3.ZERO
+	if team >= 0 and m != null:
+		dir = m.pos_in(team, 0.0, Arena.HALF_L * 0.5) - a.position
+	else:
+		dir = -a.position
+	dir.y = 0
+	if dir.length() > 0.01:
+		dir = dir.normalized()
+		a.facing = Vector3.UP.cross(dir) if kind in ["bonus", "technical"] else dir
+	a.sig_kind = int(SIG.get(kind, 1))
+	a.set_state("signal", length)
+	a.vel = Vector3.ZERO
+
+
+## Points awarded. The referee points to the scoring team with the other hand up (both up
+## for an all out), and a number over his head shows how many, as his fingers would. The
+## umpire watching that half signals a bonus first, or the out.
+func signal_points(team_scored: int, all_out := false, points := 0, bonus := false) -> void:
 	if m == null:
 		return
-	var toward: Vector3 = m.pos_in(team_scored, 0.0, Arena.HALF_L * 0.5)
-	for a in [referee, umpires[0] if team_scored == 0 else umpires[1]]:
-		a.face_toward(toward, 1.0, 1000.0)
-		a.set_state("celebrate" if all_out else "argue", 1.4)
+	show_signal(referee, "lona" if all_out else "points", team_scored)
+	if points > 0:
+		_float_number(referee, "+%d" % points)
+	var watching: Athlete = umpires[0] if m.raiding == 1 else umpires[1]
+	if bonus:
+		show_signal(watching, "bonus", team_scored)
+	else:
+		show_signal(watching, "out", 1 - team_scored)
+
+
+## Time out, half time and the end of the match: the referee's signal.
+func signal_call(kind: String) -> void:
+	show_signal(referee, kind, -1, 2.2)
+
+
+func _float_number(a: Athlete, text: String) -> void:
+	var l := Label3D.new()
+	l.text = text
+	l.font_size = 96
+	l.pixel_size = 0.005
+	l.outline_size = 18
+	l.modulate = Color("ffd27a")
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.no_depth_test = true
+	add_child(l)
+	l.global_position = a.global_position + Vector3(0, 2.35, 0)
+	var tw := create_tween()
+	tw.tween_property(l, "global_position:y", l.global_position.y + 0.45, 1.6)
+	tw.parallel().tween_property(l, "modulate:a", 0.0, 1.6).set_delay(0.8)
+	tw.tween_callback(l.queue_free)

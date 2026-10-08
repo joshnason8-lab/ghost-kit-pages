@@ -215,6 +215,14 @@ func _court(surface: String, lobby_tint: Color, line_color: Color, surround: Col
 		# Earth and sand courts are the ground itself, marked out.
 		_plane(court, Vector2(HALF_W * 2 + 2 * LOBBY + 0.6, HALF_L * 2 + 0.6), Vector3(0, 0.004, 0), field_mat)
 
+	# A bench in each sitting block for players who are out.
+	var bench_mat := _mat(Color("3a4a5c") if surface.begins_with("mat") else Color("6b4a2e"), 0.7)
+	for sgn in [-1.0, 1.0]:
+		var bz: float = sgn * (HALF_L + 2.62)
+		_box(court, Vector3(7.8, 0.06, 0.4), Vector3(0, 0.39, bz), bench_mat)
+		for bx in [-3.7, -1.25, 1.25, 3.7]:
+			_box(court, Vector3(0.06, 0.36, 0.34), Vector3(bx, 0.18, bz), bench_mat)
+
 	var lm := _mat(line_color, 0.7, 0.15)
 	var y := 0.009
 	var full_w := (HALF_W + LOBBY) * 2

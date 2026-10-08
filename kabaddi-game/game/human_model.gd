@@ -19,7 +19,10 @@ var kick := 0.0             # toe touch leg extension, 0..1
 var dive := 0.0             # tackle dive, 0..1
 var fallen := 0.0           # lying on the mat, 0..1
 var struggle := 0.0         # dragging defenders toward the line, 0..1
-var celebrate := 0.0        # arms up, 0..1
+var celebrate := 0.0        # celebrating, 0..1
+var ref_sig := 0            # an official's hand signal, see SIGNALS
+var ref_amt := 0.0          # ... how far into it, 0..1
+var cele := 0               # how: 0 arms up, 1 fist pump, 2 clap, 3 high five, 4 point to the crowd, 5 chest thump
 var hold_arms := 0.0        # grabbing the raider, 0..1
 # Emotions, 0..1 each.
 var roar := 0.0             # arms flung wide, chest out, head back
@@ -32,6 +35,11 @@ var kick_back := 1.0        # direction of that kick: 1 straight back ..
 var kick_side := 0.0        # .. and -1 left / 1 right
 var dubki := 0.0            # ducking low under the defenders' arms, 0..1
 var jump := 0.0             # lion jump: height of the leap, 0..1
+var move_fwd := 1.0         # direction of travel relative to facing: 1 forward, -1 backward
+var move_side := 0.0        # ... -1 left, 1 right (a side-shuffle)
+var seated := 0.0           # sitting in the sitting block, 0..1
+var look_around := 0.25     # how much an idle player turns his head about
+var _life := 0.0            # per-player offset so idle movement is never in step
 var clip: MocapClip = null  # captured motion that overrides the hand-made pose
 var clip_time := 0.0
 var clip_loop := true
@@ -396,6 +404,20 @@ func _custom_pose() -> void:
 
 # ---------------------------------------------------------------- animation
 
+## Officials' hand signals: left arm, right arm, left elbow, right elbow, and how far each
+## arm comes in across the body (negative: out to the side).
+const SIGNALS := {
+	1: [2.95, 1.5, 0.15, 0.05, -0.15, 0.0],    # points: one hand up, the other at the scoring team
+	2: [0.15, 0.2, 0.3, 0.05, 0.0, -1.45],     # bonus: arm out at shoulder height, thumb up
+	3: [0.2, 2.2, 0.4, 0.1, 0.0, 0.0],         # out: pointing up at the side with players out
+	4: [0.15, 0.1, 0.3, 0.05, 0.0, -1.25],     # technical point: arm out, thumb down
+	5: [1.45, 1.55, 0.25, 1.6, 0.85, -0.05],   # time out: a T with the hands
+	6: [1.25, 1.25, 1.1, 1.1, 0.75, 0.75],     # half time: arms crossed in front of the chest
+	7: [1.57, 1.57, 0.05, 0.05, 0.08, 0.08],   # end of the match: both arms straight ahead
+	8: [2.95, 2.95, 0.1, 0.1, -0.2, -0.2],     # all out (lona): both hands up
+	9: [0.15, 3.05, 0.3, 0.0, 0.0, 0.0],       # card: held straight up
+}
+
 func _process(delta: float) -> void:
 	_t += delta
 	if _custom:
@@ -410,18 +432,27 @@ func _process(delta: float) -> void:
 
 
 func _animate(delta: float) -> void:
+	if _life == 0.0:
+		_life = randf() * TAU
 	var run := clampf(speed / 3.5, 0.0, 1.0)
-	var stride_hz := 1.2 + speed * 0.28
-	_phase = fmod(_phase + delta * stride_hz * TAU, TAU)
+	# Gait. A full cycle is two steps, and its length grows with speed, so each step covers
+	# the ground the body moves and the feet do not skate. Moving sideways is a crouched
+	# shuffle; moving away from where he is looking is a backpedal.
+	var cycle_len := clampf(0.9 + 0.48 * speed, 0.9, 3.2)
+	var side_w := clampf(absf(move_side) * 1.4 - 0.25, 0.0, 1.0) if speed > 0.25 else 0.0
+	var back := move_fwd < -0.3 and side_w < 0.6
+	var fwd_w := 1.0 - side_w
+	_phase = fmod(_phase + delta * speed / cycle_len * TAU * (-1.0 if back else 1.0) + TAU, TAU)
 	var sw := sin(_phase)
 	var cw := cos(_phase)
 
-	var c := crouch * (1.0 - run * 0.5)
+	var c := crouch * (1.0 - run * 0.5 * fwd_w)
 	var lie := maxf(dive, fallen)
 
-	# Pelvis height: crouch lowers it, running bobs it, diving and falling drop it to the mat.
+	# Pelvis height: crouch lowers it, each step dips it (lowest at mid-stance), diving and
+	# falling drop it to the mat.
 	var hip_h := (0.06 + 0.88 * height / 1.78 + 0.04)
-	var y := hip_h - c * 0.26 - absf(sw) * 0.035 * run - struggle * 0.12
+	var y := hip_h - c * 0.26 - absf(cw) * 0.045 * run * fwd_w - struggle * 0.12 - side_w * 0.08 * minf(1.0, speed)
 	y = lerpf(y, 0.28, lie)
 	# Dubki: drop nearly to the mat. Lion jump: up and over.
 	y -= dubki * 0.5 * height / 1.78
@@ -429,7 +460,12 @@ func _animate(delta: float) -> void:
 	pelvis.position.y = y
 	# Whole-body pitch for dives (face down toward the target) and falls.
 	pelvis.rotation.x = lerpf(0.0, -1.35, dive) + lerpf(0.0, -1.5, fallen * (1.0 - dive))
-	pelvis.rotation.z = sw * 0.04 * run
+	pelvis.rotation.z = sw * 0.04 * run * fwd_w
+	pelvis.rotation.y = sw * 0.12 * run * fwd_w
+	# Idle life: weight shifting from foot to foot and breathing.
+	var still := clampf(1.0 - speed * 2.0, 0.0, 1.0) * (1.0 - lie)
+	pelvis.position.x = sin(_t * 0.55 + _life) * 0.025 * still
+	pelvis.rotation.z += sin(_t * 0.55 + _life) * 0.035 * still
 	# A side kick tips the body away from the kicking leg.
 	var kick_leg := 1.0 if kick_side >= 0.0 else -1.0
 	var kb := back_kick * clampf(kick_back, 0.0, 1.0)
@@ -439,61 +475,37 @@ func _animate(delta: float) -> void:
 	# Spine lean: forward for running, crouching, struggling and toe touches.
 	var lean_total := lean - c * 0.5 - run * 0.22 - struggle * 0.55 + kick * 0.3 - reach * 0.25 - kb * 0.75 - dubki * 1.35 - jump * 0.35
 	spine.rotation.x = lean_total * (1.0 - lie * 0.7)
-	spine.rotation.y = -reach * 0.35 + sw * 0.08 * run
+	spine.rotation.y = -reach * 0.35 - sw * 0.16 * run * fwd_w
 	chest.rotation.x = 0.0
 	head.rotation.x = -lean_total * 0.7 * (1.0 - lie * 0.4) - lie * 0.7
+	head.rotation.y = (sin(_t * 0.31 + _life * 1.7) * 0.6 + sin(_t * 0.83 + _life) * 0.25) * look_around * still
 	chest.scale = Vector3.ONE * (1.0 + sin(_t * 2.2) * 0.012 * (1.0 - run))
 
-	# Legs.
-	var thigh_swing := 0.75 * run
-	var lthigh := sw * thigh_swing + c * 0.75
-	var rthigh := -sw * thigh_swing + c * 0.75
-	var lknee := -(0.25 + maxf(0.0, -sw) * 1.25) * run - c * 1.35
-	var rknee := -(0.25 + maxf(0.0, sw) * 1.25) * run - c * 1.35
-	# Toe touch: right leg stretches forward along the mat toward a defender's foot,
-	# the left leg bends to take the weight.
-	rthigh = lerpf(rthigh, 1.3, kick)
-	rknee = lerpf(rknee, -0.05, kick)
-	lthigh = lerpf(lthigh, 0.45, kick)
-	lknee = lerpf(lknee, -1.0, kick)
-	pelvis.position.y -= kick * 0.16
-	# Back/side kick: one leg lashes out behind or to the side, the other takes the weight.
-	if back_kick > 0.0:
-		var hx := -1.35 * kb
-		if kick_leg > 0.0:
-			rthigh = lerpf(rthigh, hx, back_kick)
-			rknee = lerpf(rknee, -0.1, back_kick)
-			lthigh = lerpf(lthigh, 0.35, back_kick)
-			lknee = lerpf(lknee, -0.6, back_kick)
-		else:
-			lthigh = lerpf(lthigh, hx, back_kick)
-			lknee = lerpf(lknee, -0.1, back_kick)
-			rthigh = lerpf(rthigh, 0.35, back_kick)
-			rknee = lerpf(rknee, -0.6, back_kick)
-	# Dubki: deep squat, head down under the arms.
-	lthigh = lerpf(lthigh, 1.5, dubki)
-	rthigh = lerpf(rthigh, 1.2, dubki)
-	lknee = lerpf(lknee, -2.1, dubki)
-	rknee = lerpf(rknee, -1.8, dubki)
-	# Lion jump: knees tucked to the chest.
-	lthigh = lerpf(lthigh, 1.7, jump)
-	rthigh = lerpf(rthigh, 1.5, jump)
-	lknee = lerpf(lknee, -2.2, jump)
-	rknee = lerpf(rknee, -2.0, jump)
-	# Struggle: short, fast driving steps.
-	if struggle > 0.0:
-		var ss := sin(_t * 14.0)
-		lthigh = lerpf(lthigh, 0.55 + ss * 0.3, struggle)
-		rthigh = lerpf(rthigh, 0.55 - ss * 0.3, struggle)
-		lknee = lerpf(lknee, -0.9, struggle)
-		rknee = lerpf(rknee, -0.9, struggle)
-	# Lying down: legs straight behind.
-	lthigh = lerpf(lthigh, 0.05, lie)
-	rthigh = lerpf(rthigh, -0.05, lie)
-	lknee = lerpf(lknee, -0.1, lie)
-	rknee = lerpf(rknee, -0.25, lie)
-	var side_l := 1.15 * ks if kick_leg < 0.0 else 0.0
-	var side_r := 1.15 * ks if kick_leg > 0.0 else 0.0
+	# Legs. The thigh swings with the stride; the knee folds while that leg swings through
+	# toward the next step and is nearly straight as the foot lands.
+	var amp := clampf(0.2 + 0.13 * speed, 0.0, 0.8) * fwd_w * (0.6 if back else 1.0) * minf(1.0, speed * 2.0)
+	var fold := clampf(0.35 + 0.28 * speed, 0.35, 1.6) * fwd_w * minf(1.0, speed * 1.5)
+	var lthigh := sw * amp + c * 0.75
+	var rthigh := -sw * amp + c * 0.75
+	var lknee := -(0.08 * minf(1.0, speed) + fold * pow(maxf(0.0, cw), 1.5)) - c * 1.35
+	var rknee := -(0.08 * minf(1.0, speed) + fold * pow(maxf(0.0, -cw), 1.5)) - c * 1.35
+	# Side-shuffle: sit into it, the leading leg steps out, the trailing leg closes up.
+	var lead_r := move_side > 0.0
+	var step_w := 0.32 * side_w * minf(1.0, speed * 1.2)
+	var out_lead := step_w * maxf(0.0, sw)
+	var out_trail := step_w * 0.55 * maxf(0.0, -sw)
+	var side_l := out_trail if lead_r else out_lead
+	var side_r := out_lead if lead_r else out_trail
+	lthigh += side_w * 0.35
+	rthigh += side_w * 0.35
+	lknee -= side_w * 0.5
+	rknee -= side_w * 0.5
+	# Seated in the sitting block.
+	lthigh = lerpf(lthigh, 1.45, seated)
+	rthigh = lerpf(rthigh, 1.4, seated)
+	lknee = lerpf(lknee, -1.45, seated)
+	rknee = lerpf(rknee, -1.5, seated)
+	pelvis.position.y = lerpf(pelvis.position.y, 0.47 * height / 1.78, seated)
 	hip_l.rotation = Vector3(lthigh, 0, -0.06 - c * 0.12 - side_l - dubki * 0.25)
 	hip_r.rotation = Vector3(rthigh, 0, 0.06 + c * 0.12 + kick * 0.12 + side_r + dubki * 0.25)
 	kn_l.rotation.x = lknee
@@ -501,11 +513,16 @@ func _animate(delta: float) -> void:
 
 	# Arms: counter-swing when running, forward and ready when crouched.
 	var arm_ready := maxf(c, hold_arms)
-	var larm := -sw * 0.7 * run + arm_ready * 1.0
-	var rarm := sw * 0.7 * run + arm_ready * 1.0
-	var lel := 0.35 + run * 0.9 + arm_ready * 0.5
-	var rel := 0.35 + run * 0.9 + arm_ready * 0.5
-	var spread := 0.12 + arm_ready * 0.25
+	var larm := -sw * 0.7 * run * fwd_w + arm_ready * 1.0 + side_w * 0.5
+	var rarm := sw * 0.7 * run * fwd_w + arm_ready * 1.0 + side_w * 0.5
+	var lel := 0.35 + run * 0.9 * fwd_w + arm_ready * 0.5 + side_w * 0.4
+	var rel := 0.35 + run * 0.9 * fwd_w + arm_ready * 0.5 + side_w * 0.4
+	var spread := 0.12 + arm_ready * 0.25 + side_w * 0.2
+	# Seated: hands resting on the knees.
+	larm = lerpf(larm, 0.55, seated)
+	rarm = lerpf(rarm, 0.55, seated)
+	lel = lerpf(lel, 0.6, seated)
+	rel = lerpf(rel, 0.6, seated)
 	# Hand touch: right arm whips out straight.
 	rarm = lerpf(rarm, 1.75, reach)
 	rel = lerpf(rel, 0.05, reach)
@@ -534,13 +551,37 @@ func _animate(delta: float) -> void:
 	rarm = lerpf(rarm, 2.9, lie)
 	lel = lerpf(lel, 0.1, lie)
 	rel = lerpf(rel, 0.1, lie)
-	# Celebrate: both arms up, a little bounce.
-	larm = lerpf(larm, 2.9, celebrate)
-	rarm = lerpf(rarm, 2.9, celebrate)
-	lel = lerpf(lel, 0.3, celebrate)
-	rel = lerpf(rel, 0.3, celebrate)
+	# Celebrate, in one of several ways.
+	var c_out := 0.0
+	var c_in := 0.0
 	if celebrate > 0.0:
-		pelvis.position.y += absf(sin(_t * 7.0)) * 0.08 * celebrate
+		var ca := [2.9, 2.9, 0.3, 0.3]   # left arm, right arm, left elbow, right elbow
+		var bounce := 0.0
+		match cele:
+			1:  # Fist pump: the right fist punches the air.
+				var pump := maxf(0.0, sin(_t * 8.0 + _life))
+				ca = [0.5, 2.2 + pump * 0.7, 1.7, 1.7 - pump * 1.4]
+				bounce = 0.03
+			2:  # Clap: hands meet in front.
+				ca = [0.9, 0.9, 1.35, 1.35]
+				c_in = 0.42 + 0.16 * sin(_t * 15.0 + _life)
+			3:  # High five: right hand up and forward to meet a team-mate's.
+				ca = [0.35, 2.55, 0.5, 0.15]
+			4:  # Pointing out to the crowd.
+				ca = [0.6, 2.05, 1.8, 0.05]
+				c_out = -0.35
+			5:  # Thumping his chest.
+				var th := maxf(0.0, sin(_t * 6.5 + _life))
+				ca = [0.4, 1.05 + th * 0.35, 0.5, 2.25]
+				c_in = 0.25
+			_:  # Both arms up, bouncing.
+				c_out = 0.25
+				bounce = 0.08
+		larm = lerpf(larm, ca[0], celebrate)
+		rarm = lerpf(rarm, ca[1], celebrate)
+		lel = lerpf(lel, ca[2], celebrate)
+		rel = lerpf(rel, ca[3], celebrate)
+		pelvis.position.y += absf(sin(_t * 7.0 + _life)) * bounce * celebrate
 	# Roar: arms wide and up.
 	larm = lerpf(larm, 1.9, roar)
 	rarm = lerpf(rarm, 1.9, roar)
@@ -568,8 +609,18 @@ func _animate(delta: float) -> void:
 		rarm = lerpf(rarm, 0.3 + maxf(0.0, -sw2) * 0.55, slap)
 		lel = lerpf(lel, 0.5, slap)
 		rel = lerpf(rel, 0.5, slap)
-	sh_l.rotation = Vector3(larm, 0, -spread - kick * 0.8 - celebrate * 0.25 - roar * 0.9 - argue * 0.3 - slump * 0.5)
-	sh_r.rotation = Vector3(rarm, 0, spread + celebrate * 0.25 + roar * 0.9 + slump * 0.5)
+	# Officials' hand signals.
+	if ref_amt > 0.0:
+		var sa: Array = SIGNALS.get(ref_sig, [0.0, 0.0, 0.3, 0.3, 0.0, 0.0])
+		larm = lerpf(larm, sa[0], ref_amt)
+		rarm = lerpf(rarm, sa[1], ref_amt)
+		lel = lerpf(lel, sa[2], ref_amt)
+		rel = lerpf(rel, sa[3], ref_amt)
+		spread = lerpf(spread, 0.0, ref_amt)
+	var sig_l: float = (SIGNALS.get(ref_sig, [0, 0, 0, 0, 0.0, 0.0])[4] as float) * ref_amt
+	var sig_r: float = (SIGNALS.get(ref_sig, [0, 0, 0, 0, 0.0, 0.0])[5] as float) * ref_amt
+	sh_l.rotation = Vector3(larm, 0, sig_l - spread - kick * 0.8 - celebrate * (c_out - c_in) - roar * 0.9 - argue * 0.3 - slump * 0.5)
+	sh_r.rotation = Vector3(rarm, 0, -sig_r + spread + celebrate * (c_out - c_in) + roar * 0.9 + slump * 0.5)
 	spine.rotation.x += roar * 0.3 - slump * 0.3 - shove * 0.45 - slap * 0.35 - argue * 0.1
 	head.rotation.x += roar * 0.45 - slump * 0.35 + dubki * 0.6
 	el_l.rotation.x = lel
