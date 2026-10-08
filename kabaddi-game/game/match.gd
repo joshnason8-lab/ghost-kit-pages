@@ -60,6 +60,7 @@ var golden := false           # golden raid: sudden death after a drawn tie-brea
 var golden_raids := 0
 var tiebreak := false         # five raids each by different raiders, for drawn knockouts
 var timeout_team := -1
+var officials: Officials
 var tb_raids := [0, 0]
 var tb_used := [[], []]       # raiders who have had their tie-breaker raid
 var difficulty := 1
@@ -134,6 +135,9 @@ func _ready() -> void:
 			athletes.append(a)
 			stats[a.pid()] = {"raid": 0, "tackle": 0}
 	_order_slots()
+	officials = Officials.new()
+	add_child(officials)
+	officials.setup(self)
 
 	cam = CameraRig.new()
 	add_child(cam)
@@ -1751,6 +1755,10 @@ func _end_raid(kind: String) -> void:
 					a.on_mat = true
 					a.set_state("walk")
 			teams[t].out_queue.clear()
+	if raid_pts > def_pts:
+		officials.signal_points(atk, _post_messages.size() > 1)
+	elif def_pts > 0:
+		officials.signal_points(dfn, _post_messages.size() > 1)
 	var holders_were := holders_copy()
 	for h in holders_were:
 		h.set_state("ready")

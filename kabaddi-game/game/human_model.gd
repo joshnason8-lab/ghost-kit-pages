@@ -106,7 +106,8 @@ func _use_rigged_body() -> void:
 	rig = RiggedBody.new()
 	add_child(rig)
 	rig.setup(skin, jersey, shorts, hair, height)
-	rig.add_number(number, trim, jersey.darkened(0.4))
+	if number > 0:
+		rig.add_number(number, trim, jersey.darkened(0.4))
 
 
 ## Standing pelvis height of the placeholder, for scaling the rigged body's hips.
@@ -214,6 +215,7 @@ func _build_procedural() -> void:
 	# Shirt number on the back.
 	var num := Label3D.new()
 	num.text = str(number)
+	num.visible = number > 0
 	num.font_size = 96
 	num.pixel_size = 0.0022
 	num.outline_size = 8

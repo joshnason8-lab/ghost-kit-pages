@@ -386,5 +386,6 @@
   "TIMEOUT_CALLED": "Time out called: it starts after this raid",
   "HUD_TIMEOUTS": "TO {n}",
   "TEAM_ENERGY": "Team energy",
-  "HOW_ENERGY": "Energy and time outs: raids, dives and struggles tire players; they recover between raids, faster on the bench, and at half time. Tired raiders are slower and tired defenders hold less well. Each team has two 30-second time outs per half (the bar and TO count under each team's name). Call yours from the pause menu; it happens after the current raid."
+  "HOW_ENERGY": "Energy and time outs: raids, dives and struggles tire players; they recover between raids, faster on the bench, and at half time. Tired raiders are slower and tired defenders hold less well. Each team has two 30-second time outs per half (the bar and TO count under each team's name). Call yours from the pause menu; it happens after the current raid.",
+  "SCORERS": "SCORERS"
 }
