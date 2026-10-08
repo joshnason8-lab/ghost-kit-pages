@@ -11,7 +11,7 @@ var vel := Vector3.ZERO
 var facing := Vector3(0, 0, -1)
 var lock_facing := false
 
-# state: idle, ready, raid, touch, kick, dodge, telegraph, dive, recover, held, holding, fallen, walk, sit, celebrate
+# state: idle, ready, raid, touch, kick, backkick, dodge, dubki, jump, telegraph, dive, recover, held, holding, fallen, walk, sit, celebrate
 var state := "idle"
 var st_t := 0.0
 var st_len := 0.0
@@ -28,6 +28,11 @@ var chain_partner: Athlete = null   # team-mate whose hand this defender is hold
 var chain_offset := Vector3.ZERO     # where to stand relative to that partner
 var chain_dive := false              # this dive is part of a chain tackle
 var shove_target: Athlete = null
+var moves := {}                      # raiding move ratings, see DB.moves
+var style := "thigh"                 # how this player tackles: ankle, thigh or block
+var kick_back := 0.0                 # back/side kick: how far behind the target is (0..1)
+var kick_side := 0.0                 # ... and how far to the side (-1 left .. 1 right)
+var kick_dir := Vector3.ZERO         # world direction of the kick
 
 var _ring: MeshInstance3D
 var _ring_mat: StandardMaterial3D
@@ -52,6 +57,8 @@ func setup(p_data: Dictionary, p_team: int, kit: Color, trim: Color, barefoot: b
 	strength = 1.0 + (float(a.strength) - 60.0) * 0.015
 	tackle = 0.55 + (float(a.tackle) - 50.0) * 0.01
 	agility = 1.0 + (float(a.agility) - 60.0) * 0.015
+	moves = DB.moves(data)
+	style = DB.style(data)
 	model = HumanModel.new()
 	model.setup(Color(DB.SKIN_TONES[int(data.skin)]), Color(DB.HAIR_COLORS[int(data.hair)]), kit, trim, int(data.number), float(data.height), float(data.build), barefoot)
 	add_child(model)
@@ -110,7 +117,20 @@ func set_state(s: String, length := 0.0) -> void:
 
 
 func busy() -> bool:
-	return state in ["touch", "kick", "telegraph", "dive", "recover", "fallen", "held", "holding"]
+	return state in ["touch", "kick", "backkick", "dubki", "jump", "telegraph", "dive", "recover", "fallen", "held", "holding"]
+
+
+## 0..1 skill at a raiding move.
+func move_skill(move: String) -> float:
+	return float(moves.get(move, 50)) / 100.0
+
+
+## Airborne part of a lion jump.
+func airborne() -> bool:
+	if state != "jump":
+		return false
+	var p := st_t / maxf(st_len, 0.01)
+	return p > 0.12 and p < 0.88
 
 
 ## Accelerate toward a desired ground velocity and integrate.
@@ -163,6 +183,9 @@ func _pose(delta: float) -> void:
 	var want_celebrate := 0.0
 	var want_hold := 0.0
 	var want := {"roar": 0.0, "slump": 0.0, "shove": 0.0, "argue": 0.0, "slap": 0.0}
+	var want_back_kick := 0.0
+	var want_dubki := 0.0
+	var want_jump := 0.0
 	var p := clampf(st_t / maxf(st_len, 0.01), 0.0, 1.0)
 	match state:
 		"ready":
@@ -175,13 +198,33 @@ func _pose(delta: float) -> void:
 			want_crouch = 0.3
 		"kick":
 			want_kick = sin(p * PI)
+		"backkick":
+			want_back_kick = sin(p * PI)
 		"dodge":
 			want_crouch = 0.5
+		"dubki":
+			want_dubki = clampf(sin(p * PI) * 1.6, 0.0, 1.0)
+		"jump":
+			want_jump = sin(p * PI)
 		"telegraph":
-			want_crouch = 1.0
-			want_hold = 0.6
+			# The wind-up shows how he will tackle: low for an ankle hold, upright and wide
+			# for a thigh hold or a block.
+			match style:
+				"ankle":
+					want_crouch = 1.0
+					want_lean = -0.35
+					want_hold = 0.35
+				"block":
+					want_crouch = 0.5
+					want_hold = 1.0
+				_:
+					want_crouch = 0.75
+					want_hold = 0.7
 		"dive":
-			want_dive = clampf(p * 2.5, 0.0, 1.0)
+			var depth := {"ankle": 1.0, "thigh": 0.72, "block": 0.5}.get(style, 0.8) as float
+			want_dive = clampf(p * 2.5, 0.0, 1.0) * depth
+			if style == "block":
+				want.shove = 0.8
 		"recover":
 			want_fallen = 1.0 - clampf((p - 0.55) * 2.2, 0.0, 1.0)
 		"fallen":
@@ -216,3 +259,8 @@ func _pose(delta: float) -> void:
 	m.shove = lerpf(m.shove, want.shove, clampf(delta * 16.0, 0.0, 1.0))
 	m.argue = lerpf(m.argue, want.argue, k)
 	m.slap = lerpf(m.slap, want.slap, k)
+	m.back_kick = lerpf(m.back_kick, want_back_kick, clampf(delta * 18.0, 0.0, 1.0))
+	m.kick_back = kick_back
+	m.kick_side = kick_side
+	m.dubki = lerpf(m.dubki, want_dubki, clampf(delta * 16.0, 0.0, 1.0))
+	m.jump = want_jump

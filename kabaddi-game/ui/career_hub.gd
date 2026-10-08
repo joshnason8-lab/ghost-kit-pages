@@ -87,6 +87,37 @@ func _player_card(with_training: bool) -> PanelContainer:
 					_reload())
 			grid.add_child(plus)
 	v.add_child(grid)
+	# Raiding moves: the signature is starred, and each can be practised.
+	v.add_child(UI.label(DB.moves_line(p), "EyebrowLabel", 15, Game.C_GOLD))
+	var mg := GridContainer.new()
+	mg.columns = 4 if with_training else 3
+	mg.add_theme_constant_override("h_separation", 14)
+	mg.add_theme_constant_override("v_separation", 4)
+	var mv_ratings := DB.moves(p)
+	var sig := DB.signature(p)
+	for mv in DB.MOVES:
+		var mkey: String = mv
+		mg.add_child(UI.label(("★ " if mkey == sig else "") + tr(DB.MOVE_KEYS[mkey]), "MutedLabel", 18))
+		var mbar := ProgressBar.new()
+		mbar.custom_minimum_size = Vector2(150, 12)
+		mbar.max_value = 99
+		mbar.value = int(mv_ratings[mkey])
+		mbar.show_percentage = false
+		mbar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mg.add_child(mbar)
+		mg.add_child(UI.label(str(int(mv_ratings[mkey])), "SubLabel", 18))
+		if with_training:
+			var mplus := Button.new()
+			mplus.text = "+"
+			mplus.custom_minimum_size = Vector2(44, 40)
+			mplus.disabled = career.skill_points <= 0
+			mplus.pressed.connect(func():
+				if career.train("move:" + mkey):
+					Sfx.click()
+					Game.save_career()
+					_reload())
+			mg.add_child(mplus)
+	v.add_child(mg)
 	return card
 
 

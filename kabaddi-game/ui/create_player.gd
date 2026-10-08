@@ -1,7 +1,7 @@
 extends Control
 ## Career: create your player, with a live 3D preview.
 
-var profile := {"name": "", "state": "STATE_HARYANA", "role": "raider", "skin": 2, "hair": 0, "build": 1, "number": 10, "height": 1.80}
+var profile := {"name": "", "state": "STATE_HARYANA", "role": "raider", "signature": "hand", "style": "ankle", "skin": 2, "hair": 0, "build": 1, "number": 10, "height": 1.80}
 var _preview_root: Node3D
 var _athlete: Athlete
 var _cam: Camera3D
@@ -46,6 +46,14 @@ func _ready() -> void:
 		profile.role = roles[i]
 		role_hint.text = tr("CAREER_HINT_DEFENDER") if roles[i] == "defender" else tr("CAREER_HINT_RAIDER"))))
 	form.add_child(role_hint)
+	var move_labels := []
+	for mv in DB.MOVES:
+		move_labels.append(tr(DB.MOVE_KEYS[mv]))
+	form.add_child(UI.field(tr("SPECIALITY"), UI.chips(move_labels, 0, func(i): profile.signature = DB.MOVES[i])))
+	var style_labels := []
+	for st in DB.STYLES:
+		style_labels.append(tr(DB.STYLE_KEYS[st]))
+	form.add_child(UI.field(tr("TACKLE_STYLE"), UI.chips(style_labels, 0, func(i): profile.style = DB.STYLES[i])))
 	form.add_child(UI.field(tr("BUILD"), UI.chips([tr("BUILD_LEAN"), tr("BUILD_ATHLETIC"), tr("BUILD_POWER")], 1, func(i):
 		profile.build = i
 		_refresh_preview())))

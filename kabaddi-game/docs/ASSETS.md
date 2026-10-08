@@ -28,7 +28,9 @@ The model must:
   | crouch | `defend_idle` | Defender's low ready stance, hands forward |
   | raid | `raid_idle` | Raider's bent-forward stance |
   | reach | `hand_touch` | Quick one-arm lunge to tag |
-  | kick | `toe_touch` | Leg stretched along the mat to tag a foot |
+  | kick | `toe_touch` | Leg stretched along the mat to tag a foot (also used for back and side kicks) |
+  | dubki | `dubki` | Ducking low under the defenders' linked hands |
+  | jump | `lion_jump` | Leaping over a defender diving at the ankles |
   | dive | `tackle_dive` | Defender dives for the ankle or thigh |
   | hold | `hold` | Defender clinging on |
   | struggle | `struggle` | Raider dragging defenders toward the midline |

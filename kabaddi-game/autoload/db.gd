@@ -4,6 +4,15 @@ extends Node
 
 const ATTRS := ["speed", "agility", "strength", "reach", "tackle", "stamina"]
 
+# Raiding moves. Every player has a rating for each; the highest is his signature, and the
+# AI uses a move more often the better he is at it.
+const MOVES := ["hand", "toe", "kick", "dubki", "lion"]
+const MOVE_KEYS := {"hand": "MOVE_HAND", "toe": "MOVE_TOE", "kick": "MOVE_KICK", "dubki": "MOVE_DUBKI", "lion": "MOVE_LION"}
+# How a defender likes to tackle. Ankle holds go low (a lion jump clears them); thigh holds
+# and blocks go high (a dubki ducks under them).
+const STYLES := ["ankle", "thigh", "block"]
+const STYLE_KEYS := {"ankle": "STYLE_ANKLE", "thigh": "STYLE_THIGH", "block": "STYLE_BLOCK"}
+
 # Defensive positions, left to right from the defenders' own point of view.
 const POSITIONS := ["POS_LEFT_CORNER", "POS_LEFT_COVER", "POS_LEFT_IN", "POS_CENTRE", "POS_RIGHT_IN", "POS_RIGHT_COVER", "POS_RIGHT_CORNER"]
 
@@ -207,6 +216,83 @@ func make_player(rng: RandomNumberGenerator, role: String, level: int, pname: St
 		"build": rng.randf_range(0.92, 1.1),
 		"height": rng.randf_range(1.70, 1.88),
 	}
+
+
+# ---------------------------------------------------------------- moves
+
+## Move ratings (0-99) for a player. Worked out once from his ratings, build and a seed of
+## his own, then kept on the player so saves and transfers carry them. Squad generation
+## is untouched, so older saves pick them up too.
+static func moves(p: Dictionary, favourite := "") -> Dictionary:
+	if p.has("moves") and favourite == "":
+		return p.moves
+	var r := RandomNumberGenerator.new()
+	r.seed = hash("%s|%s|moves" % [p.get("name", ""), p.get("id", "")])
+	var a: Dictionary = p.attrs
+	var h := float(p.get("height", 1.78))
+	var m := {
+		"hand": a.agility * 0.5 + a.reach * 0.5,
+		"toe": a.reach * 0.6 + a.agility * 0.4 - 3.0,
+		"kick": a.agility * 0.5 + a.speed * 0.3 + a.reach * 0.2 - 5.0,
+		"dubki": a.agility * 0.7 + a.strength * 0.3 + (1.79 - h) * 70.0 - 4.0,
+		"lion": a.speed * 0.5 + a.strength * 0.3 + a.agility * 0.2 + (h - 1.79) * 50.0 - 7.0,
+	}
+	for k in MOVES:
+		m[k] += r.randi_range(-6, 6)
+	# Tendencies: a favourite move, sometimes a second, and one he hardly ever tries.
+	var order: Array = MOVES.duplicate()
+	for i in range(order.size() - 1, 0, -1):
+		var j := r.randi_range(0, i)
+		var tmp = order[i]
+		order[i] = order[j]
+		order[j] = tmp
+	if favourite != "":
+		order.erase(favourite)
+		order.push_front(favourite)
+	m[order[0]] += 15
+	if r.randf() < 0.5:
+		m[order[1]] += 7
+	m[order[4]] -= 14
+	var role := String(p.get("role", "raider"))
+	for k in MOVES:
+		if role == "defender":
+			m[k] -= 12
+		m[k] = clampi(int(round(m[k])), 20, 99)
+	p["moves"] = m
+	if not p.has("style"):
+		var w := {"ankle": 1.0 + (1.79 - h) * 8.0 + (a.agility - 60.0) * 0.02, "thigh": 1.0, "block": 0.8 + (a.strength - 60.0) * 0.03}
+		var roll := r.randf() * (maxf(w.ankle, 0.1) + maxf(w.thigh, 0.1) + maxf(w.block, 0.1))
+		var style := "block"
+		for k in ["ankle", "thigh"]:
+			roll -= maxf(w[k], 0.1)
+			if roll < 0.0:
+				style = k
+				break
+		p["style"] = style
+	return m
+
+
+static func style(p: Dictionary) -> String:
+	if not p.has("style"):
+		moves(p)
+	return String(p.style)
+
+
+static func signature(p: Dictionary) -> String:
+	var m := moves(p)
+	var best := "hand"
+	for k in MOVES:
+		if int(m[k]) > int(m[best]):
+			best = k
+	return best
+
+
+## One line for player cards: "Signature: Dubki · Ankle hold".
+static func moves_line(p: Dictionary) -> String:
+	var line := "%s: %s" % [TranslationServer.translate("SIGNATURE"), TranslationServer.translate(MOVE_KEYS[signature(p)])]
+	if String(p.get("role", "")) != "raider":
+		line += " · " + TranslationServer.translate(STYLE_KEYS[style(p)])
+	return line
 
 
 # ---------------------------------------------------------------- queries

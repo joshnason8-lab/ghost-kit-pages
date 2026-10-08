@@ -33,6 +33,9 @@ func shot(name: String) -> void:
 
 
 func _tour() -> void:
+	if args_only == "moves":
+		await _moves()
+		return
 	if args_only != "":
 		await _grounds()
 		return
@@ -71,6 +74,107 @@ func _tour() -> void:
 	await frames(5)
 	await shot("05_cup")
 	await _grounds()
+
+
+## Raid moves: the raid buttons, then dubki, lion jump and kicks frozen mid-move.
+func _moves() -> void:
+	Game.settings.difficulty = 0
+	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 0, "first_raider": 0, "passive": true})
+	var m: Node = Game.current
+	var guard := 0
+	while m.phase != "raid" and guard < 600:
+		await get_tree().process_frame
+		guard += 1
+	var rd: Athlete = m.raider
+	var opp: int = 1 - m.raiding
+	var defs: Array = m.defenders()
+	# Buttons, with a defender winding up low so Lion jump lights.
+	rd.position = m.pos_in(opp, 0.0, 2.0)
+	defs[3].style = "ankle"
+	defs[3].position = m.pos_in(opp, 0.3, 3.2)
+	defs[3].set_state("telegraph", 99.0)
+	m.cam.mode = Game.CAM_THIRD
+	for k in 4:
+		m._on_action("cant")
+		await frames(18)
+	await shot("20_raid_buttons")
+	m.set_process(false)
+	m.hud.visible = false
+	m.controls.visible = false
+	var cam := Camera3D.new()
+	cam.fov = 40
+	m.add_child(cam)
+	cam.current = true
+	var hide_far := func(keep: Array):
+		for a in m.athletes:
+			a.visible = keep.has(a)
+	var hold := func(a: Athlete, st: String, k: float):
+		a.set_state(st, 1000.0)
+		a.st_t = 1000.0 * k
+	# Dubki under linked hands.
+	var c = m.pos_in(opp, 0.0, 3.0)
+	for d in defs:
+		m._unchain(d)
+	defs[1].position = c + Vector3(-0.55, 0, 0)
+	defs[2].position = c + Vector3(0.55, 0, 0)
+	for d in [defs[1], defs[2]]:
+		d.facing = Vector3(0, 0, signf(m.side(m.raiding)))
+		hold.call(d, "ready", 0.5)
+	m._link(defs[1], defs[2])
+	m.phase = "raid"
+	m._update_chain_links()
+	rd.position = c + Vector3(0, 0, 0.1)
+	rd.facing = Vector3(0, 0, m.side(m.raiding))
+	hold.call(rd, "dubki", 0.5)
+	hide_far.call([rd, defs[1], defs[2]])
+	cam.position = c + Vector3(1.3, 1.25, 3.3 * m.side(m.raiding))
+	cam.look_at(c + Vector3(0, 0.6, 0))
+	await frames(30)
+	await shot("21_move_dubki")
+	m._unchain(defs[1])
+	m._update_chain_links()
+	# Lion jump over an ankle dive.
+	defs[1].style = "ankle"
+	defs[1].position = c + Vector3(0, 0, 0.9 * m.side(m.raiding))
+	defs[1].facing = Vector3(0, 0, -m.side(m.raiding))
+	hold.call(defs[1], "dive", 0.9)
+	hold.call(rd, "jump", 0.5)
+	hide_far.call([rd, defs[1]])
+	cam.position = c + Vector3(4.2, 1.2, 0.4 * m.side(m.raiding))
+	cam.look_at(c + Vector3(0, 0.8, 0.4 * m.side(m.raiding)))
+	await frames(30)
+	await shot("22_move_lion_jump")
+	# Back kick and side kick.
+	hold.call(rd, "backkick", 0.5)
+	rd.kick_back = 1.0
+	rd.kick_side = 0.15
+	defs[2].position = c - Vector3(0, 0, 1.3 * m.side(m.raiding))
+	hold.call(defs[2], "ready", 0.5)
+	var rd2: Athlete = defs[4]
+	rd2.position = c + Vector3(0, 0, -2.2)
+	rd2.facing = Vector3(0, 0, 1)
+	hold.call(rd2, "backkick", 0.5)
+	rd2.kick_back = 0.1
+	rd2.kick_side = 1.0
+	hide_far.call([rd, defs[2], rd2])
+	cam.position = c + Vector3(4.2, 1.4, -0.9)
+	cam.look_at(c + Vector3(0, 0.7, -0.9))
+	await frames(30)
+	await shot("23_move_kicks")
+	# Tackle styles: ankle, thigh, block winding up.
+	var row := [defs[0], defs[1], defs[2]]
+	var styles := ["ankle", "thigh", "block"]
+	for i in 3:
+		var d: Athlete = row[i]
+		d.style = styles[i]
+		d.position = c + Vector3(-1.4 + 1.4 * i, 0, 0)
+		d.facing = Vector3(0, 0, 1)
+		hold.call(d, "telegraph", 0.5)
+	hide_far.call(row)
+	cam.position = c + Vector3(0, 1.2, 4.2)
+	cam.look_at(c + Vector3(0, 0.7, 0))
+	await frames(30)
+	await shot("24_tackle_styles")
 
 
 func _grounds() -> void:

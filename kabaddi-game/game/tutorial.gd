@@ -12,6 +12,12 @@ const LESSONS := [
 		["TUT_TOE_1", "toe_touch", 1], ["TUT_TOUCH_2", "raid_point", 1]]},
 	{"id": "bonus", "title": "TUT_BONUS_T", "raid": true, "passive": true, "steps": [
 		["TUT_BONUS_1", "bonus", 1], ["TUT_TOUCH_2", "raid_point", 1]]},
+	{"id": "kick", "title": "TUT_KICK_T", "raid": true, "passive": true, "steps": [
+		["TUT_KICK_1", "back_kick", 1], ["TUT_TOUCH_2", "raid_point", 1]]},
+	{"id": "dubki", "title": "TUT_DUBKI_T", "raid": true, "passive": true, "chains": true, "steps": [
+		["TUT_DUBKI_1", "dubki", 1], ["TUT_TOUCH_2", "raid_point", 1]]},
+	{"id": "lion", "title": "TUT_LION_T", "raid": true, "passive": false, "style": "ankle", "steps": [
+		["TUT_LION_1", "lion_jump", 1]]},
 	{"id": "escape", "title": "TUT_ESCAPE_T", "raid": true, "passive": false, "steps": [
 		["TUT_ESCAPE_1", "broke_free", 1]]},
 	{"id": "tackle", "title": "TUT_TACKLE_T", "raid": false, "passive": false, "steps": [
@@ -40,6 +46,7 @@ static func match_config(id: String) -> Dictionary:
 	return {
 		"home": "MUM", "away": "DEL", "arena": "dome", "mode": "tutorial", "lesson": id, "control": "all",
 		"difficulty": 0, "length": 0, "passive": l.passive, "first_raider": 0 if l.raid else 1,
+		"chains": l.get("chains", false), "style": l.get("style", ""),
 	}
 
 

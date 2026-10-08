@@ -481,6 +481,12 @@ func refresh() -> void:
 		var ph = fmod(float(m.raid.beat_t), m.BEAT) / m.BEAT
 		controls.beat_k = ph
 	controls.chain_on = m.controlled != null and m.controlled.chain_partner != null
+	var hint_now := ""
+	if m.phase == "raid" and m.raider == m.controlled and m.difficulty <= 1:
+		hint_now = m.escape_hint()
+	if hint_now != controls.read_hint:
+		controls.read_hint = hint_now
+		controls.queue_redraw()
 	if chant_l.visible:
 		chant_l.modulate.a = 0.55 + 0.45 * absf(sin(_t * 3.3))
 	if _hint_t > 0.0:

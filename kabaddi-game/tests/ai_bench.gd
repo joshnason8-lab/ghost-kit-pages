@@ -1,0 +1,51 @@
+extends Node
+## Plays AI-vs-AI matches headless and prints raid outcomes and move use, for tuning.
+## godot --headless --path . --fixed-fps 30 res://tests/ai_bench.tscn -- [matches] [difficulty]
+
+var _done := false
+var _result := {}
+
+
+func _ready() -> void:
+	var args := OS.get_cmdline_user_args()
+	var n := int(args[0]) if args.size() > 0 else 2
+	var diff := int(args[1]) if args.size() > 1 else 1
+	var kinds := {}
+	var landed := {}
+	var tried := {}
+	var caught := 0
+	var raids := 0
+	var secs := 0.0
+	var pairs := [["MUM", "DEL"], ["PAT", "BLR"], ["IND", "IRN"], ["KOL", "JAI"]]
+	for i in n:
+		var pr: Array = pairs[i % pairs.size()]
+		var m: Node = load("res://game/match.gd").new()
+		m.config = {"home": pr[0], "away": pr[1], "arena": "dome", "mode": "quick", "autoplay": true, "autoplay_no_report": true, "length": 0, "difficulty": diff}
+		_done = false
+		m.finished.connect(func(r):
+			_result = r
+			_done = true)
+		add_child(m)
+		while not _done:
+			await get_tree().process_frame
+		print("match %d: %s %d - %d %s" % [i + 1, pr[0], _result.score[0], _result.score[1], pr[1]])
+		for r in _result.raid_log:
+			var k: String = r.kind
+			if k == "return":
+				k = "success" if r.raid_pts > 0 else ("empty" if not r.raider_out else "out_rule")
+			kinds[k] = kinds.get(k, 0) + 1
+			raids += 1
+			secs += float(r.t)
+			if r.get("chain_caught", false):
+				caught += 1
+			for mv in r.get("moves", []):
+				landed[mv] = landed.get(mv, 0) + 1
+		for k in _result.get("move_tries", {}):
+			tried[k] = tried.get(k, 0) + int(_result.move_tries[k])
+		m.queue_free()
+		await get_tree().process_frame
+	print("raids %d, avg %.1fs, outcomes %s" % [raids, secs / maxf(1, raids), str(kinds)])
+	print("caught crossing a chain %d" % caught)
+	print("moves landed %s" % str(landed))
+	print("moves tried %s" % str(tried))
+	get_tree().quit()

@@ -48,6 +48,10 @@ static func create(p: Dictionary) -> Career:
 			pl.attrs.speed = clampi(pl.attrs.speed - 3, 30, 99)
 		_:
 			pl.build = 1.02
+	# The speciality picked at creation becomes his signature move or tackle.
+	DB.moves(pl, String(p.get("signature", "")))
+	if String(p.get("style", "")) != "":
+		pl.style = String(p.style)
 	c.player = pl
 	return c
 
@@ -348,7 +352,18 @@ func standings() -> Array:
 
 
 func train(attr: String) -> bool:
-	if skill_points <= 0 or int(player.attrs[attr]) >= 99:
+	if skill_points <= 0:
+		return false
+	if attr.begins_with("move:"):
+		# Practising a raiding move.
+		var mv := attr.substr(5)
+		var m := DB.moves(player)
+		if int(m[mv]) >= 99:
+			return false
+		m[mv] = int(m[mv]) + 2
+		skill_points -= 1
+		return true
+	if int(player.attrs[attr]) >= 99:
 		return false
 	player.attrs[attr] = int(player.attrs[attr]) + 1
 	skill_points -= 1

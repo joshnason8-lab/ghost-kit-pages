@@ -49,6 +49,19 @@ func _run() -> void:
 	# 2. Data.
 	check(DB.league_ids.size() == 12, "12 league teams")
 	check(DB.country_ids.size() == 12, "12 countries")
+	# Move ratings and tendencies: every player has them, and they vary.
+	var sigs := {}
+	var styles := {}
+	for id in DB.league_ids:
+		for p in DB.team(id).squad:
+			sigs[DB.signature(p)] = sigs.get(DB.signature(p), 0) + 1
+			styles[DB.style(p)] = styles.get(DB.style(p), 0) + 1
+	print("      signature moves %s, tackle styles %s" % [str(sigs), str(styles)])
+	check(sigs.size() == DB.MOVES.size(), "every move is someone's signature")
+	check(styles.size() == DB.STYLES.size(), "every tackle style is used")
+	var p0: Dictionary = DB.team("MUM").squad[0].duplicate(true)
+	p0.erase("moves")
+	check(DB.moves(p0) == DB.team("MUM").squad[0].moves, "move ratings are stable for a player")
 	for id in DB.teams:
 		check(DB.starting_seven(DB.team(id).squad).size() == 7, "starting seven for " + id)
 
@@ -234,6 +247,75 @@ func _run() -> void:
 	await frames(2)
 	Sfx.stop_all()
 
+	# 8d. Raid moves: dubki under linked hands, lion jump over an ankle dive, back kick.
+	Game.start_match(Tutorial.match_config("dubki"))
+	var mm: Node = Game.current
+	var g8 := 0
+	while mm.phase != "raid" and g8 < 900:
+		await get_tree().process_frame
+		g8 += 1
+	check(mm.phase == "raid", "move lesson reaches a raid")
+	if mm.phase == "raid":
+		mm.set_process(false)
+		mm.rng.seed = 7
+		var ids := []
+		mm.controls.set_context("raid")
+		for b in mm.controls._buttons():
+			ids.append(b.id)
+		check(ids.has("dubki") and ids.has("jump") and ids.has("kick"), "raid buttons include Kick, Dubki and Lion jump")
+		var rd: Athlete = mm.raider
+		var defs: Array = mm.defenders()
+		var d0: Athlete = defs[0]
+		var d1: Athlete = defs[1]
+		var opp: int = 1 - mm.raiding
+		for d in defs:
+			mm._unchain(d)
+			d.set_state("ready")
+			d.position = mm.pos_in(opp, 4.0 * (defs.find(d) - 3), 6.0)
+		d0.position = mm.pos_in(opp, -0.5, 2.5)
+		d1.position = mm.pos_in(opp, 0.5, 2.5)
+		mm._link(d0, d1)
+		rd.moves["dubki"] = 99
+		rd.moves["lion"] = 99
+		rd.position = mm.pos_in(opp, 0.0, 2.5)
+		rd.set_state("dubki", mm.DUBKI_TIME)
+		mm.raid.cross_cd = 0.0
+		mm._check_chain_cross()
+		check(mm.raid.moves.has("dubki"), "dubki ducks under linked hands")
+		# Without the dubki, linked hands catch or come apart.
+		mm.config.passive = false
+		mm.raid.cross_cd = 0.0
+		rd.set_state("raid")
+		mm._check_chain_cross()
+		check(d0.chain_partner == null, "running into a chain gets you caught or breaks it")
+		for h in mm.raid.holders.duplicate():
+			mm._release(h, false)
+		# Lion jump over a dive at the ankles.
+		d0.style = "ankle"
+		d0.position = rd.position + Vector3(0.3, 0, 0)
+		d0.set_state("dive", mm.DIVE_TIME)
+		rd.set_state("jump", mm.JUMP_TIME)
+		rd.st_t = mm.JUMP_TIME * 0.4
+		mm._check_contacts(mm.defenders())
+		check(d0.state == "recover" and mm.raid.holders.is_empty(), "lion jump clears an ankle dive")
+		check(mm.raid.moves.has("lion"), "lion jump is counted")
+		# Back kick at a defender behind.
+		rd.set_state("raid")
+		rd.cooldown = 0.0
+		rd.facing = Vector3(0, 0, -mm.side(mm.raiding))
+		d1.touched = false
+		d1.set_state("ready")
+		d1.position = rd.position - rd.facing * 1.2
+		mm.raid.touch_hit = false
+		mm._raider_kick()
+		check(rd.state == "backkick", "Kick at a defender behind is a back kick")
+		rd.st_t = mm.BACKKICK_TIME * 0.45
+		mm._check_contacts(mm.defenders())
+		check(d1.touched and mm.raid.moves.has("backkick"), "back kick touches him")
+	mm.queue_free()
+	await frames(3)
+	Sfx.stop_all()
+
 	# 9. A full AI-vs-AI match, quick length, knockout rules.
 	var m: Node = null
 	Game.start_match({"home": "MUM", "away": "DEL", "arena": "village", "mode": "quick", "autoplay": true, "length": 0, "difficulty": 1, "knockout": true})
@@ -268,6 +350,16 @@ func _run() -> void:
 			kinds[k] = kinds.get(k, 0) + 1
 			tot_t += float(r.t)
 		print("      raid outcomes %s, avg raid %.1fs" % [str(kinds), tot_t / maxf(1, _match_result.raid_log.size())])
+		var used := {}
+		for r in _match_result.raid_log:
+			for mv in r.get("moves", []):
+				used[mv] = used.get(mv, 0) + 1
+		var cc := 0
+		for r in _match_result.raid_log:
+			if r.get("chain_caught", false):
+				cc += 1
+		print("      moves landed %s, tried %s, caught crossing a chain %d" % [str(used), str(_match_result.get("move_tries", {})), cc])
+		check(used.size() >= 3, "raiders land a mix of moves (%d kinds)" % used.size())
 	await frames(5)
 
 	print("")

@@ -27,6 +27,11 @@ var slump := 0.0            # hands on head, dejected
 var shove := 0.0            # both arms driving forward
 var argue := 0.0            # pointing and appealing to the referee
 var slap := 0.0             # slapping the thighs before a raid
+var back_kick := 0.0        # back or side kick, 0..1
+var kick_back := 1.0        # direction of that kick: 1 straight back ..
+var kick_side := 0.0        # .. and -1 left / 1 right
+var dubki := 0.0            # ducking low under the defenders' arms, 0..1
+var jump := 0.0             # lion jump: height of the leap, 0..1
 var clip: MocapClip = null  # captured motion that overrides the hand-made pose
 var clip_time := 0.0
 var clip_loop := true
@@ -278,7 +283,7 @@ func _build_custom(path: String) -> void:
 		return
 	add_child(_custom)
 	_anim = _find_anim(_custom)
-	_clips = {"idle": "idle", "run": "run", "crouch": "defend_idle", "raid": "raid_idle", "reach": "hand_touch", "kick": "toe_touch", "dive": "tackle_dive", "struggle": "struggle", "fallen": "fallen", "celebrate": "celebrate", "hold": "hold"}
+	_clips = {"idle": "idle", "run": "run", "crouch": "defend_idle", "raid": "raid_idle", "reach": "hand_touch", "kick": "toe_touch", "dive": "tackle_dive", "struggle": "struggle", "fallen": "fallen", "celebrate": "celebrate", "hold": "hold", "jump": "lion_jump", "dubki": "dubki"}
 	if FileAccess.file_exists(CLIP_MAP_PATH):
 		var parsed = JSON.parse_string(FileAccess.get_file_as_string(CLIP_MAP_PATH))
 		if parsed is Dictionary:
@@ -337,7 +342,11 @@ func _custom_pose() -> void:
 		want = "struggle"
 	elif celebrate > 0.3:
 		want = "celebrate"
-	elif kick > 0.3:
+	elif jump > 0.3:
+		want = "jump"
+	elif dubki > 0.3:
+		want = "dubki"
+	elif kick > 0.3 or back_kick > 0.3:
 		want = "kick"
 	elif reach > 0.3:
 		want = "reach"
@@ -388,13 +397,21 @@ func _animate(delta: float) -> void:
 	var hip_h := (0.06 + 0.88 * height / 1.78 + 0.04)
 	var y := hip_h - c * 0.26 - absf(sw) * 0.035 * run - struggle * 0.12
 	y = lerpf(y, 0.28, lie)
+	# Dubki: drop nearly to the mat. Lion jump: up and over.
+	y -= dubki * 0.5 * height / 1.78
+	y += jump * 0.32 * height / 1.78
 	pelvis.position.y = y
 	# Whole-body pitch for dives (face down toward the target) and falls.
 	pelvis.rotation.x = lerpf(0.0, -1.35, dive) + lerpf(0.0, -1.5, fallen * (1.0 - dive))
 	pelvis.rotation.z = sw * 0.04 * run
+	# A side kick tips the body away from the kicking leg.
+	var kick_leg := 1.0 if kick_side >= 0.0 else -1.0
+	var kb := back_kick * clampf(kick_back, 0.0, 1.0)
+	var ks := back_kick * absf(kick_side)
+	pelvis.rotation.z += -kick_leg * ks * 0.45
 
 	# Spine lean: forward for running, crouching, struggling and toe touches.
-	var lean_total := lean - c * 0.5 - run * 0.22 - struggle * 0.55 + kick * 0.3 - reach * 0.25
+	var lean_total := lean - c * 0.5 - run * 0.22 - struggle * 0.55 + kick * 0.3 - reach * 0.25 - kb * 0.75 - dubki * 1.35 - jump * 0.35
 	spine.rotation.x = lean_total * (1.0 - lie * 0.7)
 	spine.rotation.y = -reach * 0.35 + sw * 0.08 * run
 	chest.rotation.x = 0.0
@@ -414,6 +431,29 @@ func _animate(delta: float) -> void:
 	lthigh = lerpf(lthigh, 0.45, kick)
 	lknee = lerpf(lknee, -1.0, kick)
 	pelvis.position.y -= kick * 0.16
+	# Back/side kick: one leg lashes out behind or to the side, the other takes the weight.
+	if back_kick > 0.0:
+		var hx := -1.35 * kb
+		if kick_leg > 0.0:
+			rthigh = lerpf(rthigh, hx, back_kick)
+			rknee = lerpf(rknee, -0.1, back_kick)
+			lthigh = lerpf(lthigh, 0.35, back_kick)
+			lknee = lerpf(lknee, -0.6, back_kick)
+		else:
+			lthigh = lerpf(lthigh, hx, back_kick)
+			lknee = lerpf(lknee, -0.1, back_kick)
+			rthigh = lerpf(rthigh, 0.35, back_kick)
+			rknee = lerpf(rknee, -0.6, back_kick)
+	# Dubki: deep squat, head down under the arms.
+	lthigh = lerpf(lthigh, 1.5, dubki)
+	rthigh = lerpf(rthigh, 1.2, dubki)
+	lknee = lerpf(lknee, -2.1, dubki)
+	rknee = lerpf(rknee, -1.8, dubki)
+	# Lion jump: knees tucked to the chest.
+	lthigh = lerpf(lthigh, 1.7, jump)
+	rthigh = lerpf(rthigh, 1.5, jump)
+	lknee = lerpf(lknee, -2.2, jump)
+	rknee = lerpf(rknee, -2.0, jump)
 	# Struggle: short, fast driving steps.
 	if struggle > 0.0:
 		var ss := sin(_t * 14.0)
@@ -426,8 +466,10 @@ func _animate(delta: float) -> void:
 	rthigh = lerpf(rthigh, -0.05, lie)
 	lknee = lerpf(lknee, -0.1, lie)
 	rknee = lerpf(rknee, -0.25, lie)
-	hip_l.rotation = Vector3(lthigh, 0, -0.06 - c * 0.12)
-	hip_r.rotation = Vector3(rthigh, 0, 0.06 + c * 0.12 + kick * 0.12)
+	var side_l := 1.15 * ks if kick_leg < 0.0 else 0.0
+	var side_r := 1.15 * ks if kick_leg > 0.0 else 0.0
+	hip_l.rotation = Vector3(lthigh, 0, -0.06 - c * 0.12 - side_l - dubki * 0.25)
+	hip_r.rotation = Vector3(rthigh, 0, 0.06 + c * 0.12 + kick * 0.12 + side_r + dubki * 0.25)
 	kn_l.rotation.x = lknee
 	kn_r.rotation.x = rknee
 
@@ -444,6 +486,18 @@ func _animate(delta: float) -> void:
 	# Toe touch: arms out for balance.
 	larm = lerpf(larm, -0.5, kick)
 	rarm = lerpf(rarm, 0.6, kick)
+	# Back kick: arms forward for balance. Dubki: arms tucked back. Lion jump: arms
+	# thrown up and forward.
+	larm = lerpf(larm, 1.1, back_kick)
+	rarm = lerpf(rarm, 0.9, back_kick)
+	larm = lerpf(larm, -0.5, dubki)
+	rarm = lerpf(rarm, -0.5, dubki)
+	lel = lerpf(lel, 0.6, dubki)
+	rel = lerpf(rel, 0.6, dubki)
+	larm = lerpf(larm, 2.5, jump)
+	rarm = lerpf(rarm, 2.5, jump)
+	lel = lerpf(lel, 0.3, jump)
+	rel = lerpf(rel, 0.3, jump)
 	# Struggle: both arms clawing toward the line.
 	larm = lerpf(larm, 2.2, struggle)
 	rarm = lerpf(rarm, 2.4, struggle)
@@ -491,7 +545,7 @@ func _animate(delta: float) -> void:
 	sh_l.rotation = Vector3(larm, 0, -spread - kick * 0.8 - celebrate * 0.25 - roar * 0.9 - argue * 0.3 - slump * 0.5)
 	sh_r.rotation = Vector3(rarm, 0, spread + celebrate * 0.25 + roar * 0.9 + slump * 0.5)
 	spine.rotation.x += roar * 0.3 - slump * 0.3 - shove * 0.45 - slap * 0.35 - argue * 0.1
-	head.rotation.x += roar * 0.45 - slump * 0.35
+	head.rotation.x += roar * 0.45 - slump * 0.35 + dubki * 0.6
 	el_l.rotation.x = lel
 	el_r.rotation.x = rel
 

@@ -205,6 +205,7 @@ func _open() -> void:
 	_lot_meta.text = "%s · %s %d · %s %s" % [tr(role_key), tr("OVERALL"), int(lot.ovr), tr("BASE_PRICE"), Game.fmt_money(lot.base)]
 	for c in _lot_tags.get_children():
 		c.queue_free()
+	_lot_tags.add_child(UI.label(DB.moves_line(p), "EyebrowLabel", 15, Game.C_GOLD))
 	if String(lot.former) != "":
 		_lot_tags.add_child(UI.label(tr("AUC_FORMER").format({"team": String(lot.former)}), "EyebrowLabel", 15, DB.team(lot.former).c1.lightened(0.3)))
 	_price.text = Game.fmt_money(lot.base)

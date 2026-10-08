@@ -2,8 +2,8 @@ class_name TouchControls
 extends Control
 ## Multi-touch controls drawn and hit-tested by hand, because Godot's GUI only tracks one
 ## touch at a time. Left: a floating joystick. Right: context buttons. Anywhere else: drag to
-## look. Keyboard works too: WASD/arrows, J hand touch, K toe touch, Space dodge or tackle,
-## Tab switch, C camera, Esc pause.
+## look. Keyboard works too: WASD/arrows, J hand touch, K kick, L dodge, U dubki, I lion jump,
+## Space cant or tackle, G chain, Tab switch, C camera, Esc pause.
 
 signal action(id: String)
 
@@ -12,6 +12,7 @@ var enabled := true
 var cant_mode := false  # raid with the tap-to-chant cant
 var beat_k := 0.0       # 0 right after a beat .. 1 just before the next one
 var chain_on := false
+var read_hint := ""     # escape button to light up for the tackle coming in (easier levels)
 var _flash := ""        # last cant tap result, for colour feedback
 var _flash_t := 0.0
 
@@ -68,15 +69,21 @@ func _buttons() -> Array:
 			list.append({"id": "skip", "label": tr("BTN_SKIP"), "pos": main, "r": 62.0, "col": Color(Game.C_INK, 0.85)})
 		"raid":
 			var dx := -1.0 if not lh else 1.0
+			# Scoring moves sit nearest the thumb; the escapes (dodge, dubki, lion jump)
+			# make an arc above them.
+			var esc := Color("3b4f6b")
 			if cant_mode:
-				list.append({"id": "cant", "label": tr("BTN_CANT"), "pos": main, "r": 80.0, "col": Game.C_SAFFRON, "pulse": true})
-				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main + Vector2(185 * dx, 20), "r": 60.0, "col": Game.C_GOLD})
-				list.append({"id": "kick", "label": tr("BTN_KICK"), "pos": main + Vector2(150 * dx, -150), "r": 52.0, "col": Game.C_GOLD.darkened(0.15)})
-				list.append({"id": "dodge", "label": tr("BTN_DODGE"), "pos": main + Vector2(-10 * dx, -195), "r": 52.0, "col": Game.C_INK})
+				list.append({"id": "cant", "label": tr("BTN_CANT"), "pos": main, "r": 78.0, "col": Game.C_SAFFRON, "pulse": true})
+				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main + Vector2(185 * dx, 22), "r": 58.0, "col": Game.C_GOLD})
+				list.append({"id": "kick", "label": tr("BTN_LEG"), "pos": main + Vector2(152 * dx, -128), "r": 50.0, "col": Game.C_GOLD.darkened(0.15)})
 			else:
-				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main, "r": 78.0, "col": Game.C_SAFFRON})
-				list.append({"id": "kick", "label": tr("BTN_KICK"), "pos": main + Vector2(170 * dx, 50), "r": 58.0, "col": Game.C_GOLD})
-				list.append({"id": "dodge", "label": tr("BTN_DODGE"), "pos": main + Vector2(40 * dx, -170), "r": 58.0, "col": Game.C_INK})
+				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main, "r": 76.0, "col": Game.C_SAFFRON})
+				list.append({"id": "kick", "label": tr("BTN_LEG"), "pos": main + Vector2(180 * dx, 30), "r": 56.0, "col": Game.C_GOLD})
+			list.append({"id": "dodge", "label": tr("BTN_DODGE"), "pos": main + Vector2(15 * dx, -195), "r": 47.0, "col": Game.C_INK})
+			list.append({"id": "dubki", "label": tr("BTN_DUBKI"), "pos": main + Vector2(-100 * dx, -165), "r": 42.0,
+				"col": Game.C_GOLD if read_hint == "dubki" else esc, "lit": read_hint == "dubki"})
+			list.append({"id": "jump", "label": tr("BTN_JUMP"), "pos": main + Vector2(70 * dx, -330), "r": 46.0,
+				"col": Game.C_GOLD if read_hint == "jump" else esc, "lit": read_hint == "jump"})
 		"defend":
 			var dx2 := -1.0 if not lh else 1.0
 			list.append({"id": "tackle", "label": tr("BTN_TACKLE"), "pos": main, "r": 82.0, "col": Game.C_MAGENTA})
@@ -116,6 +123,10 @@ func _input(event: InputEvent) -> void:
 					_fire("cant" if cant_mode else "dodge")
 			KEY_L:
 				_fire("tackle" if context == "defend" else "dodge")
+			KEY_U:
+				_fire("dubki")
+			KEY_I:
+				_fire("jump")
 			KEY_G:
 				_fire("chain")
 			KEY_TAB, KEY_Q:
