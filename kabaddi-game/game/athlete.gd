@@ -24,6 +24,10 @@ var energy := 1.0
 var raids_made := 0
 var is_user := false
 var is_career := false
+var chain_partner: Athlete = null   # team-mate whose hand this defender is holding
+var chain_offset := Vector3.ZERO     # where to stand relative to that partner
+var chain_dive := false              # this dive is part of a chain tackle
+var shove_target: Athlete = null
 
 var _ring: MeshInstance3D
 var _ring_mat: StandardMaterial3D
@@ -158,6 +162,7 @@ func _pose(delta: float) -> void:
 	var want_struggle := 0.0
 	var want_celebrate := 0.0
 	var want_hold := 0.0
+	var want := {"roar": 0.0, "slump": 0.0, "shove": 0.0, "argue": 0.0, "slap": 0.0}
 	var p := clampf(st_t / maxf(st_len, 0.01), 0.0, 1.0)
 	match state:
 		"ready":
@@ -190,6 +195,13 @@ func _pose(delta: float) -> void:
 			want_celebrate = 1.0
 		"sit":
 			want_crouch = 0.9
+		"roar", "slump", "shove", "argue":
+			want[state] = 1.0
+			if state == "slump":
+				want_crouch = 0.25
+		"slap":
+			want.slap = 1.0
+			want_crouch = 0.45
 	m.crouch = lerpf(m.crouch, want_crouch, k)
 	m.lean = lerpf(m.lean, want_lean, k)
 	m.reach = lerpf(m.reach, want_reach, clampf(delta * 20.0, 0.0, 1.0))
@@ -199,3 +211,8 @@ func _pose(delta: float) -> void:
 	m.struggle = lerpf(m.struggle, want_struggle, k)
 	m.celebrate = lerpf(m.celebrate, want_celebrate, k)
 	m.hold_arms = lerpf(m.hold_arms, want_hold, k)
+	m.roar = lerpf(m.roar, want.roar, k)
+	m.slump = lerpf(m.slump, want.slump, k)
+	m.shove = lerpf(m.shove, want.shove, clampf(delta * 16.0, 0.0, 1.0))
+	m.argue = lerpf(m.argue, want.argue, k)
+	m.slap = lerpf(m.slap, want.slap, k)

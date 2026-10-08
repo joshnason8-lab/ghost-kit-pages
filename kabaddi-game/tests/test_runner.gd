@@ -81,20 +81,15 @@ func _run() -> void:
 	# 6. Career: auction, a full season, next season.
 	Game.delete_career()
 	var c = Game.new_career({"name": "Test Raider", "state": "STATE_HARYANA", "role": "raider", "skin": 2, "hair": 0, "build": 1})
-	var auction: Dictionary = c.build_auction()
-	check(auction.lots.size() == 24, "auction has 24 lots")
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1
-	for lot in auction.lots:
-		var st := {"price": float(lot.base), "leader": "", "salt": 3}
-		var guard := 0
-		while Career.bid_step(lot, auction.purses, st, rng) and guard < 300:
-			guard += 1
-		if st.leader != "":
-			lot.sold_to = st.leader
-			lot.price = st.price
-			auction.purses[st.leader] -= st.price
-	c.finish_auction(auction)
+	var eng: AuctionEngine = c.make_auction()
+	check(eng.lots.size() == 25, "career auction has 25 lots")
+	eng.resolve_all(false)
+	var mine_found := false
+	for lot in eng.lots:
+		if lot.mine:
+			mine_found = true
+	check(mine_found, "your lot is in the auction")
+	c.finish_auction(eng)
 	check(c.team != "" and c.phase == "season", "career signed with " + String(c.team))
 	check(c.fixtures.size() == 66, "league has 66 fixtures")
 	var guard2 := 0
@@ -114,9 +109,69 @@ func _run() -> void:
 	check(Game.get_career().phase == "auction", "next season starts at auction")
 	Game.show_screen("res://ui/career_hub.gd")
 	await frames(3)
-	Game.show_screen("res://ui/auction_screen.gd")
+	Game.show_screen("res://ui/auction_screen.gd", {"mode": "career"})
 	await frames(30)
 	Game.delete_career()
+
+	# 6b. League Season: owner auction with paddles and FBM, league, playoffs, champion.
+	Game.delete_season()
+	var se = Game.new_season("PAT")
+	var oe: AuctionEngine = se.make_auction()
+	check(oe.lots.size() == 34, "owner auction has 34 lots")
+	check(oe.lots[0].cat == "A" and oe.lots[-1].cat == "NYP", "lots run A first, young players last")
+	# The user bids on the first lot, then lets the rest play out.
+	oe.open_lot()
+	var first_bid := oe.place_bid("PAT")
+	check(not first_bid.is_empty() and oe.leader == "PAT", "you can raise the paddle")
+	var spent0: float = oe.teams.PAT.purse
+	var guard3 := 0
+	while oe.stage != "done" and guard3 < 400:
+		guard3 += 1
+		if oe.stage == "fbm_offer":
+			oe.answer_fbm(false)
+			break
+		oe.step(0.5)
+	check(oe.current().status in ["sold", "unsold"], "first lot hammered: %s" % String(oe.current().sold_to))
+	oe.next_lot()
+	oe.resolve_all(false)
+	var sold := 0
+	for lot in oe.lots:
+		if lot.status == "sold":
+			sold += 1
+	check(sold >= 15, "most lots sell (%d), record %s" % [sold, Game.fmt_money(oe.record)])
+	se.finish_auction(oe)
+	var ok_sizes := true
+	for id in se.squads:
+		if se.squads[id].size() < 10 or se.squads[id].size() > 12:
+			ok_sizes = false
+	check(ok_sizes, "every franchise ends with 10-12 players")
+	check(se.phase == "league" and se.fixtures.size() == 66, "league fixtures made")
+	var guard4 := 0
+	while se.phase != "done" and guard4 < 60:
+		guard4 += 1
+		if se.next_user_fixture() == null:
+			se._advance()
+		else:
+			se.simulate_user_match()
+	var stages := {}
+	for f in se.fixtures:
+		stages[f.stage] = stages.get(f.stage, 0) + 1
+	check(se.phase == "done" and se.champion != "", "season champion: %s" % se.champion)
+	check(stages.get("eliminator", 0) == 2 and stages.get("semi", 0) == 2 and stages.get("final", 0) == 1, "playoffs: 2 eliminators, 2 semis, final")
+	Game.save_season()
+	Game.season = null
+	check(Game.get_season() != null and Game.get_season().champion == se.champion, "season save round-trips")
+	Game.show_screen("res://ui/season_hub.gd")
+	await frames(3)
+	Game.show_screen("res://ui/trophy_screen.gd", {"team": "PAT", "title": "TEST", "back": "res://ui/main_menu.gd"})
+	await frames(10)
+	Game.get_season().next_year()
+	Game.show_screen("res://ui/auction_screen.gd", {"mode": "owner"})
+	await frames(40)
+	Game.delete_season()
+	Game.show_screen("res://ui/tutorial_menu.gd")
+	await frames(3)
+	check(Flags.texture("IND").get_width() == 60, "flags render")
 
 	# 7. Every ground builds.
 	for a in DB.ARENAS:
@@ -140,6 +195,44 @@ func _run() -> void:
 		await frames(20)
 		check(a.model.clip_weight > 0.5, "athlete plays mocap clip")
 		a.queue_free()
+
+	# 8b. Cant, chain, reactions: drive a user match by hand.
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0, "autoplay_no_report": true})
+	var um: Node = Game.current
+	var g5 := 0
+	while um.phase != "raid" and g5 < 600:
+		await get_tree().process_frame
+		g5 += 1
+	check(um.raid.cant_tap, "your raid uses the tap cant")
+	# Walk into their half without chanting: breath drains and the cant is lost.
+	var g6 := 0
+	while um.phase == "raid" and g6 < 30 * 25:
+		um.raider.position.z = move_toward(um.raider.position.z, -1.5, 0.05)
+		await get_tree().process_frame
+		g6 += 1
+	check(um.raid_log.size() > 0 and um.raid_log[-1].kind == "cant", "silent raider loses the cant (%s)" % (um.raid_log[-1].kind if um.raid_log.size() > 0 else "none"))
+	# Next raid is the CPU's: link a chain.
+	var g7 := 0
+	while not (um.phase == "raid" and um.raiding == 1) and g7 < 900:
+		await get_tree().process_frame
+		g7 += 1
+	if um.controlled:
+		um._toggle_chain(um.controlled)
+		check(um.controlled.chain_partner != null, "chain links your defender to a team-mate")
+		await frames(10)
+		um._toggle_chain(um.controlled)
+		check(um.controlled.chain_partner == null, "chain unlinks")
+	um.queue_free()
+	await frames(3)
+
+	# 8c. Tutorial lesson starts and shows its objective.
+	Game.start_match(Tutorial.match_config("cant"))
+	await frames(260)
+	var tm: Node = Game.current
+	check(tm.tutorial != null and tm.hud.objective.visible, "tutorial lesson runs")
+	tm.tutorial_event.emit("cant")
+	await frames(2)
+	Sfx.stop_all()
 
 	# 9. A full AI-vs-AI match, quick length, knockout rules.
 	var m: Node = null

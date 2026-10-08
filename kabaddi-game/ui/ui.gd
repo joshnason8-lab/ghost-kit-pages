@@ -149,6 +149,38 @@ static func swatch(c: Color, size := Vector2(14, 34)) -> ColorRect:
 	return r
 
 
+## Difficulty chips with a line explaining what each level changes.
+static func difficulty_field(owner: Control) -> VBoxContainer:
+	var keys := ["DIFF_EASY", "DIFF_NORMAL", "DIFF_PRO", "DIFF_LEGEND"]
+	var desc := label(owner.tr(keys[int(Game.settings.difficulty)] + "_DESC"), "MutedLabel", 17)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var names := []
+	for k in keys:
+		names.append(owner.tr(k))
+	var box := field(owner.tr("DIFFICULTY"), chips(names, int(Game.settings.difficulty), func(i):
+		Game.settings.difficulty = i
+		Game.save_settings()
+		desc.text = owner.tr(keys[i] + "_DESC")))
+	box.add_child(desc)
+	return box
+
+
+## A team's badge: the flag for a country, colour bars for a franchise.
+static func badge(id: String, size := Vector2(30, 20)) -> Control:
+	var t := DB.team(id)
+	if not t.is_empty() and t.kind == "country":
+		var tr_ := TextureRect.new()
+		tr_.texture = Flags.texture(id, int(size.x * 2), int(size.y * 2))
+		tr_.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr_.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tr_.custom_minimum_size = size
+		tr_.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return tr_
+	var c := swatch(t.c1 if not t.is_empty() else Color.GRAY, Vector2(maxf(6, size.x * 0.25), size.y))
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return c
+
+
 ## Team picker built on OptionButton with colour icons.
 static func team_picker(ids: Array, selected: String, on_pick: Callable) -> OptionButton:
 	var o := OptionButton.new()
@@ -156,9 +188,14 @@ static func team_picker(ids: Array, selected: String, on_pick: Callable) -> Opti
 	o.fit_to_longest_item = false
 	for i in ids.size():
 		var t := DB.team(ids[i])
-		var img := Image.create(28, 28, false, Image.FORMAT_RGBA8)
-		img.fill(t.c1)
-		o.add_icon_item(ImageTexture.create_from_image(img), DB.team_name(ids[i]), i)
+		var icon: Texture2D
+		if t.kind == "country":
+			icon = Flags.texture(ids[i], 42, 28)
+		else:
+			var img := Image.create(28, 28, false, Image.FORMAT_RGBA8)
+			img.fill(t.c1)
+			icon = ImageTexture.create_from_image(img)
+		o.add_icon_item(icon, DB.team_name(ids[i]), i)
 		if ids[i] == selected:
 			o.select(i)
 	o.item_selected.connect(func(i): on_pick.call(ids[i]))
@@ -181,7 +218,7 @@ static func table(owner: Control, rows: Array, highlight: String) -> GridContain
 		g.add_child(label(str(i + 1), "", 20, Game.C_MUTED))
 		var nm := HBoxContainer.new()
 		nm.add_theme_constant_override("separation", 8)
-		nm.add_child(swatch(DB.team(r.id).c1, Vector2(6, 24)))
+		nm.add_child(badge(r.id, Vector2(30, 20)) if DB.team(r.id).kind == "country" else swatch(DB.team(r.id).c1, Vector2(6, 24)))
 		var name_l := label(DB.team_name(r.id), "SubLabel" if hl else "", 20, col)
 		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nm.add_child(name_l)
@@ -201,7 +238,7 @@ static func fixture_line(owner: Control, f: Dictionary, highlight: String) -> HB
 	h.add_theme_constant_override("separation", 10)
 	var mine: bool = f.home == highlight or f.away == highlight
 	var col := Game.C_INK if mine else Game.C_MUTED
-	h.add_child(swatch(DB.team(f.home).c1, Vector2(5, 22)))
+	h.add_child(badge(f.home, Vector2(30, 20)) if DB.team(f.home).kind == "country" else swatch(DB.team(f.home).c1, Vector2(5, 22)))
 	var a := label(DB.team_name(f.home), "", 19, col)
 	a.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	a.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -213,5 +250,5 @@ static func fixture_line(owner: Control, f: Dictionary, highlight: String) -> HB
 	var b := label(DB.team_name(f.away), "", 19, col)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(b)
-	h.add_child(swatch(DB.team(f.away).c1, Vector2(5, 22)))
+	h.add_child(badge(f.away, Vector2(30, 20)) if DB.team(f.away).kind == "country" else swatch(DB.team(f.away).c1, Vector2(5, 22)))
 	return h

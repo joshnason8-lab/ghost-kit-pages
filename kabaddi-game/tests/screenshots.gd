@@ -37,8 +37,23 @@ func _tour() -> void:
 		await _grounds()
 		return
 	Game.show_screen("res://ui/main_menu.gd")
-	await frames(40)
+	await frames(240)
 	await shot("01_menu")
+	Game.delete_season()
+	Game.show_screen("res://ui/season_hub.gd")
+	await frames(5)
+	await shot("01b_season_pick")
+	Game.new_season("PAT")
+	Game.show_screen("res://ui/auction_screen.gd", {"mode": "owner"})
+	await frames(200)
+	await shot("01c_owner_auction")
+	Game.delete_season()
+	Game.show_screen("res://ui/tutorial_menu.gd")
+	await frames(5)
+	await shot("01d_training")
+	Game.show_screen("res://ui/trophy_screen.gd", {"team": "IND", "title": "Nations Cup", "back": "res://ui/main_menu.gd"})
+	await frames(90)
+	await shot("01e_trophy")
 	Game.show_screen("res://ui/quick_setup.gd")
 	await frames(5)
 	await shot("02_quick_setup")
@@ -66,7 +81,7 @@ func _grounds() -> void:
 	var pairs := {"dome": ["MUM", "CHD"], "village": ["PAT", "HYD"], "stadium": ["IND", "IRN"], "monsoon": ["KOL", "BLR"], "beach": ["CHE", "JAI"]}
 	var i := 6
 	for arena in cams.keys():
-		Game.start_match({"home": pairs[arena][0], "away": pairs[arena][1], "arena": arena, "mode": "quick", "control": "all", "length": 0, "difficulty": 1})
+		Game.start_match({"home": pairs[arena][0], "away": pairs[arena][1], "arena": arena, "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0 if arena != "village" else 1})
 		var m: Node = Game.current
 		# Let the intro run, then wait for the raid to get going.
 		var guard := 0
@@ -74,10 +89,28 @@ func _grounds() -> void:
 			await get_tree().process_frame
 			guard += 1
 		await frames(70)
+		if m.raid.get("cant_tap", false):
+			for k in 6:
+				m._on_action("cant")
+				await frames(18)
+		if m.raiding == 1 and m.controlled:
+			m._toggle_chain(m.controlled)
+			await frames(20)
 		for c in cams[arena]:
 			m.cam.mode = c
 			await frames(25)
 			await shot("%02d_%s_cam%d" % [i, arena, c])
+			i += 1
+		if arena == "dome":
+			# Catch the reactions after a raid ends.
+			m.cam.mode = Game.CAM_TV
+			m.config["autoplay"] = true
+			var g := 0
+			while m.phase != "post" and g < 1500:
+				await get_tree().process_frame
+				g += 1
+			await frames(14)
+			await shot("%02d_reactions" % i)
 			i += 1
 	if args_only != "":
 		return

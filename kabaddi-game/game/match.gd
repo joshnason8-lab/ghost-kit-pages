@@ -9,10 +9,21 @@ extends Node3D
 ## Team 0 is always the player's side. It defends the z > 0 half and raids toward -z.
 
 signal finished(result: Dictionary)
+signal tutorial_event(name: String)
 
 const RAID_TIME := 30.0
-const RAID_GAP := 5.0          # match clock seconds used up between raids
-const HALF_LENGTHS := [180.0, 420.0, 1200.0]
+const RAID_GAP := 5.0          # seconds between raids (scaled by the clock speed)
+const HALF_LEN := 1200.0       # 20-minute halves, as in the pro game
+const CLOCK_SPEEDS := [6.0, 3.0, 1.0]   # quick (about 7 min), fast (about 14 min), real time (40 min)
+const BEAT := 0.6              # cant rhythm: one "kabaddi" per beat
+
+# Difficulty profiles: how sharp the AI is and how forgiving the cant is.
+const PROFILES := [
+	{"tackle": 0.55, "telegraph": 0.48, "raider_skill": 0.45, "react": 0.55, "cant_window": 0.17, "breath_drain": 0.065, "assist": 1.6, "user_hold": 1.3},
+	{"tackle": 0.85, "telegraph": 0.36, "raider_skill": 0.70, "react": 0.80, "cant_window": 0.13, "breath_drain": 0.085, "assist": 1.4, "user_hold": 1.1},
+	{"tackle": 1.15, "telegraph": 0.29, "raider_skill": 0.92, "react": 1.00, "cant_window": 0.10, "breath_drain": 0.105, "assist": 1.2, "user_hold": 1.0},
+	{"tackle": 1.45, "telegraph": 0.23, "raider_skill": 1.10, "react": 1.15, "cant_window": 0.075, "breath_drain": 0.125, "assist": 1.0, "user_hold": 0.9},
+]
 const TOUCH_TIME := 0.34
 const KICK_TIME := 0.5
 const DODGE_TIME := 0.26
@@ -37,6 +48,11 @@ var half_len := 180.0
 var golden := false
 var golden_raids := 0
 var difficulty := 1
+var prof: Dictionary = PROFILES[1]
+var clock_speed := 6.0
+var attract := false           # AI match running behind the main menu
+var tutorial: Node = null
+var _links: Array = []         # mesh pool for chain hand-holds
 var control_mode := "all"      # "all" (quick, cup) or "career" (only your player)
 var career_pid := ""
 var paused := false
@@ -54,8 +70,13 @@ var raid_log: Array = []      # one entry per raid, for stats and tuning
 
 func _ready() -> void:
 	rng.randomize()
-	difficulty = int(config.get("difficulty", Game.settings.difficulty))
-	half_len = HALF_LENGTHS[clampi(int(config.get("length", Game.settings.length)), 0, 2)]
+	difficulty = clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, PROFILES.size() - 1)
+	prof = PROFILES[difficulty]
+	half_len = HALF_LEN
+	clock_speed = CLOCK_SPEEDS[clampi(int(config.get("length", Game.settings.length)), 0, 2)]
+	attract = bool(config.get("attract", false))
+	if String(config.get("mode", "")) == "tutorial":
+		clock_speed = 0.0
 	clock = half_len
 	control_mode = String(config.get("control", "all"))
 	if bool(config.get("autoplay", false)):
@@ -76,7 +97,10 @@ func _ready() -> void:
 
 	for t in 2:
 		var tm: Dictionary = teams[t]
-		var seven := DB.starting_seven(DB.team(tm.id).squad.duplicate())
+		var squad: Array = config.get("home_squad" if t == 0 else "away_squad", DB.team(tm.id).squad)
+		var seven := DB.starting_seven(squad.duplicate())
+		var limit: Array = config.get("players", [7, 7])
+		seven = seven.slice(0, int(limit[t]))
 		if t == 0 and cp is Dictionary:
 			seven = _insert_career_player(seven, cp)
 		for i in seven.size():
@@ -100,13 +124,24 @@ func _ready() -> void:
 	controls = hud.controls
 	controls.action.connect(_on_action)
 
+	if attract:
+		hud.visible = false
+		controls.enabled = false
+		cam.mode = Game.CAM_TV
+	if String(config.get("mode", "")) == "tutorial":
+		tutorial = Tutorial.new()
+		add_child(tutorial)
+		tutorial.setup(self, String(config.get("lesson", "cant")))
 	first_raider = rng.randi() % 2
+	if config.has("first_raider"):
+		first_raider = int(config.first_raider)
 	raiding = first_raider
 	_place_all_instant()
 	Sfx.crowd(0.35)
 	Sfx.drums(true)
 	_set_phase("intro")
-	hud.show_intro(DB.team_name(teams[0].id), DB.team_name(teams[1].id), tr(_arena_name()))
+	if not attract:
+		hud.show_intro(DB.team_name(teams[0].id), DB.team_name(teams[1].id), tr(_arena_name()))
 
 
 func _arena_name() -> String:
@@ -235,6 +270,7 @@ func _process(delta: float) -> void:
 			_tick_celebrate(dt)
 			if phase_t > 4.5:
 				_finish()
+	_update_chain_links()
 	cam.follow(self, dt)
 	hud.refresh()
 
@@ -248,7 +284,7 @@ func _begin_setup() -> void:
 		a.set_ring(Color(0, 0, 0, 0))
 		if a.on_mat and a.state != "walk":
 			a.set_state("idle")
-	raider.position = pos_in(raiding, 0.0, -1.6)
+	raider.position = pos_in(raiding, 0.0, 1.4)
 	raider.facing = Vector3(0, 0, -side(raiding))
 	raider.set_state("raid")
 	var tm: Dictionary = teams[raiding]
@@ -257,6 +293,8 @@ func _begin_setup() -> void:
 		"progress": 0.0, "struggle": false, "dod": tm.empty >= 2, "alarm": false,
 		"ai_mode": "approach", "ai_lane": rng.randf_range(-3.0, 3.0), "ai_t": 0.0, "ai_target": null,
 		"ai_bonus": false, "ai_dodge_cd": 0.0, "user_raids": raiding == 0 and _user_controls_raider(),
+		"breath": 1.0, "beat_t": 0.0, "last_beat": -99, "chant_t": 0.0, "cant_tap": false,
+		"shouted": false, "taunts": 0,
 	}
 	controlled = null
 	if raiding == 0 and _user_controls_raider():
@@ -265,6 +303,9 @@ func _begin_setup() -> void:
 		controlled = _default_user_defender()
 	for a in athletes:
 		a.is_user = (a == controlled)
+	for a in athletes:
+		a.chain_partner = null
+	raid.cant_tap = raider == controlled and int(Game.settings.get("cant", 0)) == 0
 	if controlled:
 		controlled.set_ring(Game.C_SAFFRON)
 	raider.set_ring(Game.C_SAFFRON if raider == controlled else Color(1, 1, 1, 0.65))
@@ -332,8 +373,13 @@ func _walk_to_positions(dt: float, with_raider: bool) -> void:
 					a.face_toward(Vector3.ZERO, dt)
 				continue
 			if with_raider and a == raider:
-				a.seek(pos_in(t, 0.0, -1.6), 3.0, dt)
+				a.seek(pos_in(t, 0.0, 1.4), 3.0, dt)
 				a.face_toward(Vector3(0, 0, -side(t) * 5.0), dt)
+				# The raider slaps his thighs before going in.
+				if phase_t > 0.6 and phase_t < 1.9 and a.state != "slap":
+					a.set_state("slap")
+				elif phase_t >= 1.9 and a.state == "slap":
+					a.set_state("raid")
 				continue
 			if t == raiding and phase == "setup":
 				# Raider's team-mates wait deep in their own half.
@@ -353,6 +399,7 @@ func _walk_to_positions(dt: float, with_raider: bool) -> void:
 
 func _begin_raid() -> void:
 	_set_phase("raid")
+	raider.set_state("raid")
 	Sfx.play("whistle", -4.0)
 	arena.excite(0.3)
 	hud.chant(true)
@@ -362,8 +409,12 @@ func _begin_raid() -> void:
 
 func _tick_raid(dt: float) -> void:
 	raid.t -= dt
-	clock = maxf(0.0, clock - dt)
+	clock = maxf(0.0, clock - dt * clock_speed)
 	raid.ai_dodge_cd = maxf(0.0, raid.ai_dodge_cd - dt)
+	_tick_cant(dt)
+	if phase != "raid":
+		return
+	_tick_shouts(dt)
 	var defs := defenders()
 	var holders: Array = raid.holders
 
@@ -392,6 +443,8 @@ func _tick_raid(dt: float) -> void:
 	for d in defs:
 		if d == controlled:
 			_user_defender(d, dt)
+		elif d.chain_partner != null and d.state in ["ready", "idle"]:
+			_chained_follow(d, dt)
 		else:
 			_ai_defender(d, dt)
 	_separate(defs, dt)
@@ -495,12 +548,17 @@ func _on_action(id: String) -> void:
 				_raider_touch(true)
 			"dodge", "tackle":
 				_raider_dodge(Vector3.ZERO)
+			"cant":
+				_cant_tap()
 	else:
 		match id:
 			"tackle", "dodge":
 				_defender_tackle(controlled)
 			"switch":
+				_unchain(controlled)
 				_switch_defender()
+			"chain":
+				_toggle_chain(controlled)
 
 
 func set_paused(p: bool) -> void:
@@ -523,7 +581,9 @@ func _raider_touch(toe: bool) -> void:
 			continue
 		var dist = d.position.distance_to(raider.position)
 		var ang := raider.facing.angle_to((d.position - raider.position).normalized())
-		var limit := 1.4 if cam.mode != Game.CAM_FIRST or raider != controlled else 1.0
+		var limit: float = float(prof.assist) if raider == controlled else 1.4
+		if cam.mode == Game.CAM_FIRST and raider == controlled:
+			limit = 1.0
 		if dist < bd and ang < limit:
 			bd = dist
 			best = d
@@ -563,6 +623,8 @@ func _raider_dodge(dir: Vector3) -> void:
 		if rng.randf() < chance:
 			_release(h, true)
 			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD)
+			if raider == controlled:
+				tutorial_event.emit("broke_free")
 			if holders.is_empty():
 				raid.progress = maxf(0.0, raid.progress - 0.35)
 
@@ -597,7 +659,16 @@ func _defender_tackle(d: Athlete) -> void:
 	d.facing = dir
 	d.set_state("dive", DIVE_TIME)
 	d.cooldown = 1.4
+	d.chain_dive = false
 	Sfx.play("whoosh", -8.0, 0.8)
+	# A chained pair goes in together.
+	var p: Athlete = d.chain_partner
+	if p != null:
+		_unchain(d)
+		d.chain_dive = true
+		if p.state in ["ready", "idle"] and p.position.distance_to(raider.position) < 3.0:
+			_defender_tackle(p)
+			p.chain_dive = true
 
 
 func _switch_defender() -> void:
@@ -641,7 +712,7 @@ func _user_defender(d: Athlete, dt: float) -> void:
 				d.lock_facing = move.length() < 0.1
 				if d.lock_facing:
 					d.face_toward(raider.position, dt)
-			d.drive(move * d.max_speed * 0.92, dt)
+			d.drive(move * d.max_speed * (0.78 if d.chain_partner else 0.92), dt)
 			if d.state not in ["ready", "idle"]:
 				d.set_state("ready")
 	# Stepping out before a struggle puts you out.
@@ -678,7 +749,7 @@ func _ai_raider(dt: float) -> Vector3:
 	var defs := defenders()
 	var opp := 1 - raiding
 	var my_depth := depth_in(opp, raider.position)
-	var skill := 0.55 + 0.2 * difficulty + (float(raider.data.attrs.agility) - 60.0) * 0.006
+	var skill: float = float(prof.raider_skill) + (float(raider.data.attrs.agility) - 60.0) * 0.006
 	var holders: Array = raid.holders
 	var home := pos_in(opp, raider.position.x * 0.8 * side(opp), -1.2)
 
@@ -819,7 +890,8 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	to.y = 0
 	var dist := to.length()
 	var holders: Array = raid.holders
-	var diff := 0.75 + 0.25 * difficulty
+	var diff: float = float(prof.tackle)
+	var react: float = float(prof.react)
 	match d.state:
 		"telegraph":
 			d.drive(Vector3.ZERO, dt)
@@ -830,7 +902,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		"dive":
 			d.drive(d.dive_dir * 8.0, dt)
 			if d.st_t >= d.st_len:
-				d.set_state("recover", 1.0 - 0.15 * difficulty)
+				d.set_state("recover", 1.15 - 0.25 * react)
 			_clamp_defender(d)
 			return
 		"recover":
@@ -855,7 +927,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		if depth_in(d.team, cut) < 0.35:
 			cut.z = side(d.team) * 0.35
 		target = cut
-		spd = 2.8 + 0.5 * difficulty
+		spd = 2.6 + 0.8 * react
 	else:
 		# Chain slides with the raider and gives ground when he gets close.
 		target.x += raider.position.x * 0.28
@@ -867,7 +939,16 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		d.set_state("ready")
 	_clamp_defender(d)
 
+	# Neighbours link hands while the raider is in their half.
+	if inside and not alarm and d.chain_partner == null and rng.randf() < dt * 0.6:
+		for o in on_mat(d.team):
+			if o != d and o != controlled and o.chain_partner == null and absi(o.slot - d.slot) == 1 \
+					and o.state in ["ready", "idle"] and o.position.distance_to(d.position) < 1.6:
+				_link(d, o)
+				break
 	# Tackle decision.
+	if bool(config.get("passive", false)):
+		return
 	if not inside or d.cooldown > 0.0 or raider.state == "dodge":
 		return
 	var engaging := 0
@@ -877,7 +958,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	var max_engage := 2 if alarm else 1
 	if engaging >= max_engage:
 		return
-	var rng_range := 1.5 + 0.25 * difficulty
+	var rng_range := 1.45 + 0.3 * react
 	if dist > rng_range:
 		return
 	var p := 0.55 * diff * (0.6 + d.tackle)
@@ -891,7 +972,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	if d.touched:
 		p *= 1.5
 	if rng.randf() < p * dt:
-		d.set_state("telegraph", 0.34 - 0.06 * difficulty)
+		d.set_state("telegraph", float(prof.telegraph))
 		d.cooldown = 0.2
 
 
@@ -917,8 +998,8 @@ func _check_contacts(defs: Array) -> void:
 			if hit:
 				_touch(d)
 				# A defender touched while set may grab straight back.
-				if d != controlled and d.state in ["ready", "telegraph"] and raider.state != "dodge":
-					var counter = 0.18 + 0.25 * d.tackle + 0.06 * difficulty
+				if d != controlled and d.state in ["ready", "telegraph"] and raider.state != "dodge" and not bool(config.get("passive", false)):
+					var counter = 0.16 + 0.25 * d.tackle + 0.08 * float(prof.tackle)
 					if d.state == "telegraph":
 						counter += 0.3
 					if rng.randf() < counter:
@@ -932,6 +1013,10 @@ func _check_contacts(defs: Array) -> void:
 			var behind := raider.facing.dot((d.position - raider.position).normalized()) < -0.2
 			if behind:
 				hold_chance += 0.2
+			if d.chain_dive:
+				hold_chance += 0.2
+			if d == controlled:
+				hold_chance *= float(prof.user_hold)
 			if rng.randf() < hold_chance:
 				_attach(d)
 			else:
@@ -948,6 +1033,10 @@ func _touch(d: Athlete) -> void:
 	raid.alarm = true
 	d.set_ring(Color(Game.C_SAFFRON, 0.9))
 	Sfx.play("slap", -2.0)
+	if raider == controlled:
+		tutorial_event.emit("touch")
+		if raider.state == "kick":
+			tutorial_event.emit("toe_touch")
 	hud.float_points(d, "+1")
 	arena.excite(0.5)
 	Game.vibrate(25)
@@ -968,7 +1057,15 @@ func _attach(d: Athlete) -> void:
 	d.set_state("holding")
 	raider.set_state("held")
 	Sfx.play("thud", -2.0)
-	hud.event(tr("EV_HOLD") if first else tr("EV_CHAIN"), Game.C_MAGENTA)
+	var chained := d.chain_dive and not first
+	hud.event(tr("EV_CHAIN") if (chained or not first) else tr("EV_HOLD"), Game.C_MAGENTA)
+	if first and rng.randf() < 0.6:
+		hud.bubble(d, tr("BUBBLE_PAKAD"), Game.C_MAGENTA.lightened(0.3))
+		Sfx.yell("pakad", -6.0)
+	if d == controlled:
+		tutorial_event.emit("tackle")
+	if chained and (d == controlled or (d.chain_partner == null and raid.holders.any(func(h): return h == controlled))):
+		tutorial_event.emit("chain_tackle")
 	arena.excite(0.7)
 	Game.vibrate(40)
 
@@ -976,13 +1073,19 @@ func _attach(d: Athlete) -> void:
 func _check_lines() -> void:
 	var opp := 1 - raiding
 	var dep := depth_in(opp, raider.position)
-	if dep > 0.4:
+	if dep > 0.4 and not raid.entered:
 		raid.entered = true
+		if raider == controlled:
+			tutorial_event.emit("entered")
 	if not raid.baulk and dep > Arena.BAULK:
 		raid.baulk = true
+		if raider == controlled:
+			tutorial_event.emit("baulk")
 	if not raid.bonus and dep > Arena.BONUS and on_mat(opp).size() >= 6 and raid.holders.is_empty():
 		raid.bonus = true
 		hud.event(tr("EV_BONUS"), Game.C_GOLD)
+		if raider == controlled:
+			tutorial_event.emit("bonus")
 		Sfx.play("slap", 0.0, 0.8)
 		arena.excite(0.6)
 
@@ -1073,6 +1176,12 @@ func _end_raid(kind: String) -> void:
 			raid_pts = bonus
 			msg = tr("EV_TIME_UP")
 			col = Game.C_DANGER
+		"cant":
+			raider_out = true
+			def_pts = 1
+			raid_pts = bonus
+			msg = tr("EV_CANT_LOST")
+			col = Game.C_DANGER
 		"all_out_lobby":
 			pass
 	if raid_pts > 0 or def_pts > 0:
@@ -1114,9 +1223,13 @@ func _end_raid(kind: String) -> void:
 					a.on_mat = true
 					a.set_state("walk")
 			teams[t].out_queue.clear()
-	for h in holders_copy():
+	var holders_were := holders_copy()
+	for h in holders_were:
 		h.set_state("ready")
 	raid.holders = []
+	_react(kind, raid_pts, def_pts, raider_out, touched, holders_were)
+	if raid_pts > 0 and not raider_out and raider == controlled:
+		tutorial_event.emit("raid_point")
 
 	var good_for_user := (raid_pts > 0 and atk == 0) or (def_pts > 0 and dfn == 0)
 	var good_for_cpu := (raid_pts > 0 and atk == 1) or (def_pts > 0 and dfn == 1)
@@ -1128,14 +1241,228 @@ func _end_raid(kind: String) -> void:
 		hud.event(m[0], m[1])
 	if raid_pts + def_pts > 0:
 		hud.event(tr("EV_POINTS").format({"n": raid_pts + def_pts}), Game.C_INK, true)
-	# Celebrate whoever won the raid.
+	clock = maxf(0.0, clock - RAID_GAP * clock_speed)
+
+
+## Players react: roars, slumps, appeals to the referee, the odd shove.
+func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched: Array, holders_were: Array) -> void:
+	var atk: int = raiding
+	var dfn := 1 - raiding
 	if raid_pts > 0 and not raider_out:
-		raider.set_state("celebrate")
+		raider.set_state("roar")
+		hud.bubble(raider, tr("BUBBLE_HAAN") if rng.randf() < 0.5 else tr("BUBBLE_AAJA"), Game.C_GOLD)
+		Sfx.yell("haan" if rng.randf() < 0.5 else "aaja", -2.0)
+		for a in on_mat(atk):
+			if a != raider and a.state in ["idle", "ready"]:
+				a.set_state("celebrate")
+		for d in touched:
+			d.set_state("slump")
+		# Sometimes the defence disputes the touch.
+		var mates := on_mat(dfn)
+		if not mates.is_empty() and rng.randf() < 0.35:
+			var who: Athlete = mates[rng.randi() % mates.size()]
+			who.set_state("argue")
+			who.face_toward(Vector3(Arena.HALF_W + 3.0, 0, 0), 1.0, 100.0)
+			hud.bubble(who, tr("BUBBLE_NO_TOUCH"), Game.C_INK)
+			Sfx.yell("nahi", -6.0)
 	elif def_pts > 0:
+		var stars: Array = holders_were if not holders_were.is_empty() else on_mat(dfn)
 		for d in on_mat(dfn):
-			if d.state != "holding":
-				d.set_state("celebrate")
-	clock = maxf(0.0, clock - RAID_GAP)
+			d.set_state("roar" if stars.has(d) else "celebrate")
+		if not stars.is_empty():
+			var lead: Athlete = stars[0]
+			hud.bubble(lead, tr("BUBBLE_SHABASH"), Game.C_MAGENTA.lightened(0.3))
+			Sfx.yell("shabash", -3.0)
+		if kind == "tackle" and not holders_were.is_empty() and rng.randf() < 0.35:
+			# A shove as the raider gets up; he claims he got a touch.
+			var pusher: Athlete = holders_were[rng.randi() % holders_were.size()]
+			pusher.set_state("shove")
+			pusher.shove_target = raider
+			raider.set_state("argue")
+			hud.bubble(raider, tr("BUBBLE_TOUCH"), Game.C_INK)
+			Sfx.yell("touch", -5.0)
+		elif kind != "tackle":
+			raider.set_state("slump")
+		for a in on_mat(atk):
+			if a != raider and rng.randf() < 0.5:
+				a.set_state("slump")
+
+
+func _tick_shouts(dt: float) -> void:
+	# Defenders call for the catch when the raider goes deep.
+	if not raid.shouted and (raid.alarm or depth_in(1 - raiding, raider.position) > Arena.BAULK):
+		raid.shouted = true
+		var defs := defenders()
+		if not defs.is_empty():
+			var who: Athlete = defs[rng.randi() % defs.size()]
+			hud.bubble(who, tr("BUBBLE_PAKAD") if rng.randf() < 0.6 else tr("BUBBLE_CHAIN"), Game.C_MAGENTA.lightened(0.35))
+			Sfx.yell("pakad", -8.0)
+	# The raider taunts the chain.
+	if raid.taunts < 1 and raid.touched.is_empty() and rng.randf() < dt * 0.35:
+		for d in defenders():
+			if d.position.distance_to(raider.position) < 2.4:
+				raid.taunts += 1
+				hud.bubble(raider, tr("BUBBLE_AAJA"), Game.C_GOLD)
+				Sfx.yell("aaja", -7.0)
+				break
+
+
+# ---------------------------------------------------------------- the cant
+
+func _tick_cant(dt: float) -> void:
+	raid.beat_t += dt
+	var in_half := depth_in(1 - raiding, raider.position) > 0.0
+	if raid.cant_tap:
+		if in_half:
+			raid.breath = maxf(0.0, raid.breath - float(prof.breath_drain) * dt)
+			if raid.breath <= 0.0:
+				_end_raid("cant")
+	else:
+		# AI raiders, and auto-cant mode, keep the chant going on their own.
+		raid.chant_t -= dt
+		if raid.chant_t <= 0.0:
+			raid.chant_t = 0.42
+			Sfx.chant_word(-9.0 if raider == controlled else -15.0)
+
+
+func _cant_tap() -> void:
+	if not raid.cant_tap:
+		return
+	var b := int(round(raid.beat_t / BEAT))
+	var d := absf(raid.beat_t - b * BEAT)
+	var w: float = float(prof.cant_window)
+	var gain := 0.0
+	var kind := ""
+	if b == int(raid.last_beat):
+		gain = -0.05
+		kind = "fast"
+	elif d < w * 0.6:
+		gain = 0.16
+		kind = "perfect"
+	elif d < w:
+		gain = 0.08
+		kind = "good"
+	else:
+		gain = -0.05
+		kind = "off"
+	raid.last_beat = b
+	raid.breath = clampf(raid.breath + gain, 0.0, 1.0)
+	if gain > 0.0:
+		Sfx.chant_word(-3.0)
+		tutorial_event.emit("cant")
+	hud.cant_feedback(kind)
+
+
+# ---------------------------------------------------------------- chains
+
+func _link(a: Athlete, b: Athlete) -> void:
+	a.chain_partner = b
+	b.chain_partner = a
+	var off := b.position - a.position
+	off.y = 0
+	b.chain_offset = off.normalized() * 0.9 if off.length() > 0.05 else Vector3(0.9, 0, 0)
+	a.chain_offset = -b.chain_offset
+
+
+func _unchain(a: Athlete) -> void:
+	if a == null:
+		return
+	var p: Athlete = a.chain_partner
+	a.chain_partner = null
+	if p:
+		p.chain_partner = null
+
+
+func _toggle_chain(d: Athlete) -> void:
+	if d.chain_partner:
+		_unchain(d)
+		Sfx.click()
+		return
+	var best: Athlete = null
+	var bd := 2.6
+	for o in defenders():
+		if o == d or o.chain_partner != null or o.state not in ["ready", "idle"]:
+			continue
+		var dist = o.position.distance_to(d.position)
+		if dist < bd:
+			bd = dist
+			best = o
+	if best:
+		_link(d, best)
+		hud.bubble(d, tr("BUBBLE_CHAIN"), Game.C_SAFFRON)
+		Sfx.yell("chal", -6.0)
+		tutorial_event.emit("chain")
+	else:
+		hud.hint(tr("HINT_NO_PARTNER"))
+
+
+## A defender holding hands with the user's defender moves with them.
+func _chained_follow(d: Athlete, dt: float) -> void:
+	var lead: Athlete = d.chain_partner
+	if lead == null or not lead.on_mat or lead.state in ["dive", "recover", "holding"]:
+		_unchain(d)
+		return
+	if lead != controlled:
+		# AI pairs: each keeps its own place, the link just shows.
+		_ai_defender(d, dt)
+		if d.position.distance_to(lead.position) > 1.9:
+			_unchain(d)
+		return
+	d.seek(lead.position + d.chain_offset, d.max_speed, dt, 0.3)
+	d.face_toward(raider.position, dt)
+	if d.state != "ready":
+		d.set_state("ready")
+	_clamp_defender(d)
+
+
+func _update_chain_links() -> void:
+	var pairs := []
+	if phase == "raid":
+		for a in defenders():
+			var b: Athlete = a.chain_partner
+			if b != null and b.on_mat and a.get_instance_id() < b.get_instance_id():
+				pairs.append([a, b])
+	while _links.size() < pairs.size():
+		var mi := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.035
+		cyl.bottom_radius = 0.035
+		cyl.height = 1.0
+		cyl.radial_segments = 8
+		mi.mesh = cyl
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.albedo_color = Game.C_GOLD
+		mi.material_override = mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
+		_links.append(mi)
+	for i in _links.size():
+		var mi: MeshInstance3D = _links[i]
+		mi.visible = i < pairs.size()
+		if not mi.visible:
+			continue
+		var a: Athlete = pairs[i][0]
+		var b: Athlete = pairs[i][1]
+		var pa := a.position + Vector3(0, 0.95, 0)
+		var pb := b.position + Vector3(0, 0.95, 0)
+		var mid := (pa + pb) * 0.5
+		var length := maxf(0.05, pa.distance_to(pb) - 0.35)
+		mi.position = mid
+		mi.basis = _align_y((pb - pa).normalized(), length)
+		var user_pair := a == controlled or b == controlled
+		(mi.material_override as StandardMaterial3D).albedo_color = Game.C_SAFFRON if user_pair else Color(1, 1, 1, 0.9)
+
+
+func _align_y(dir: Vector3, length: float) -> Basis:
+	# Basis whose Y axis points along dir (cylinders are built along Y).
+	var y := dir.normalized()
+	var x := y.cross(Vector3.UP)
+	if x.length() < 0.01:
+		x = Vector3.RIGHT
+	x = x.normalized()
+	var z := x.cross(y).normalized()
+	return Basis(x, y * length, z)
 
 
 func holders_copy() -> Array:
@@ -1172,6 +1499,13 @@ func _tick_post(dt: float) -> void:
 	for a in athletes:
 		if a.state == "fallen" and phase_t > 1.2:
 			a.set_state("walk")
+		if a.state == "shove" and a.shove_target != null and a.st_t < 0.35:
+			var push: Vector3 = a.shove_target.position - a.position
+			push.y = 0
+			if push.length() > 0.01:
+				a.shove_target.position += push.normalized() * 1.6 * dt
+		if a.state in ["roar", "slump", "shove", "argue"] and phase_t > 2.0:
+			a.set_state("walk" if not a.on_mat else "idle")
 		if a.state == "celebrate":
 			a.drive(Vector3.ZERO, dt)
 		elif a.state in ["walk", "sit"] or not a.on_mat:
@@ -1186,8 +1520,12 @@ func _tick_post(dt: float) -> void:
 
 func _next_raid() -> void:
 	for a in athletes:
-		if a.state == "celebrate":
+		if a.state in ["celebrate", "roar", "slump", "shove", "argue", "slap"]:
 			a.set_state("idle")
+	if tutorial:
+		raiding = tutorial.next_raiding_team(raiding)
+		_begin_setup()
+		return
 	if golden:
 		golden_raids += 1
 		if golden_raids % 2 == 0 and teams[0].score != teams[1].score:
@@ -1268,14 +1606,19 @@ func _finish() -> void:
 		"quit": false,
 	}
 	finished.emit(result)
+	if attract or bool(config.get("autoplay_no_report", false)):
+		return
 	Game.on_match_finished(result)
 
 
 func quit_match() -> void:
 	Sfx.stop_all()
 	get_tree().paused = false
-	if String(config.get("mode", "quick")) == "quick":
-		Game.goto_menu()
+	if String(config.get("mode", "quick")) in ["quick", "tutorial"]:
+		if String(config.get("mode", "")) == "tutorial":
+			Game.show_screen("res://ui/tutorial_menu.gd")
+		else:
+			Game.goto_menu()
 		return
 	# In a tournament or career, quitting forfeits: record a result from the score so far,
 	# with the user's side losing if level.

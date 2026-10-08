@@ -35,13 +35,7 @@ func _pick_country() -> void:
 		h.offset_right = -12
 		h.add_theme_constant_override("separation", 14)
 		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var flag := VBoxContainer.new()
-		flag.add_theme_constant_override("separation", 0)
-		flag.alignment = BoxContainer.ALIGNMENT_CENTER
-		flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		flag.add_child(UI.swatch(t.c1, Vector2(34, 18)))
-		flag.add_child(UI.swatch(t.c2, Vector2(34, 18)))
-		h.add_child(flag)
+		h.add_child(UI.badge(id, Vector2(54, 36)))
 		var col := VBoxContainer.new()
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
 		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,6 +87,8 @@ func _hub(cup) -> void:
 		var champ := UI.wrap(tr("CUP_WINNER").format({"team": DB.team_name(cup.champion)}), "HeaderLabel", 40)
 		champ.add_theme_color_override("font_color", Game.C_GOLD if cup.champion == cup.user else Game.C_INK)
 		cv2.add_child(champ)
+		if cup.champion == cup.user:
+			cv2.add_child(UI.button(tr("SEE_TROPHY"), false, func(): Game.show_screen("res://ui/trophy_screen.gd", {"team": cup.user, "title": tr("MENU_CUP"), "back": "res://ui/cup_screen.gd"})))
 		cv2.add_child(UI.button(tr("CUP_RESTART"), true, func():
 			Game.delete_cup()
 			Game.show_screen("res://ui/cup_screen.gd")))

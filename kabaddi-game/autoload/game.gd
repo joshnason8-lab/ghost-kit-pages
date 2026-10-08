@@ -4,6 +4,7 @@ extends Node
 const SETTINGS_PATH := "user://settings.json"
 const CAREER_PATH := "user://career.json"
 const CUP_PATH := "user://cup.json"
+const SEASON_PATH := "user://season.json"
 
 const LANGUAGES := [
 	["en", "English"],
@@ -46,6 +47,8 @@ var settings := {
 	"difficulty": 1,
 	"length": 0,
 	"seen_howto": false,
+	"cant": 0,              # 0 tap the cant button on the beat, 1 automatic
+	"tutorial_done": [],
 }
 
 var main: Node = null
@@ -56,6 +59,7 @@ var font_bold: Font
 var font_display: Font
 var career = null  # Career (RefCounted), loaded lazily
 var cup = null     # Cup (RefCounted), loaded lazily
+var season = null  # Season (RefCounted), loaded lazily
 
 
 func _ready() -> void:
@@ -85,7 +89,7 @@ func load_settings() -> void:
 			if settings.has(k):
 				settings[k] = data[k]
 	# JSON gives floats; keep ints as ints.
-	for k in ["camera", "graphics", "difficulty", "length"]:
+	for k in ["camera", "graphics", "difficulty", "length", "cant"]:
 		settings[k] = int(settings[k])
 
 
@@ -170,6 +174,30 @@ func delete_cup() -> void:
 	delete_file(CUP_PATH)
 
 
+func get_season():
+	if season == null:
+		var data = _read_json(SEASON_PATH)
+		if data is Dictionary:
+			season = Season.from_dict(data)
+	return season
+
+
+func new_season(team_id: String):
+	season = Season.create(team_id)
+	save_season()
+	return season
+
+
+func save_season() -> void:
+	if season:
+		_write_json(SEASON_PATH, season.to_dict())
+
+
+func delete_season() -> void:
+	season = null
+	delete_file(SEASON_PATH)
+
+
 # ---------------------------------------------------------------- navigation
 
 func _swap(node: Node) -> void:
@@ -210,6 +238,9 @@ func on_match_finished(result: Dictionary) -> void:
 		"career":
 			get_career().record_user_result(result)
 			save_career()
+		"season":
+			get_season().record_user_result(result)
+			save_season()
 	show_screen("res://ui/result_screen.gd", {"result": result})
 
 

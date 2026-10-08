@@ -9,6 +9,11 @@ signal action(id: String)
 
 var context := "none"   # none, intro, raid, defend
 var enabled := true
+var cant_mode := false  # raid with the tap-to-chant cant
+var beat_k := 0.0       # 0 right after a beat .. 1 just before the next one
+var chain_on := false
+var _flash := ""        # last cant tap result, for colour feedback
+var _flash_t := 0.0
 
 var _stick_id := -1
 var _stick_origin := Vector2.ZERO
@@ -62,12 +67,22 @@ func _buttons() -> Array:
 		"intro":
 			list.append({"id": "skip", "label": tr("BTN_SKIP"), "pos": main, "r": 62.0, "col": Color(Game.C_INK, 0.85)})
 		"raid":
-			list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main, "r": 78.0, "col": Game.C_SAFFRON})
-			list.append({"id": "kick", "label": tr("BTN_KICK"), "pos": main + Vector2(-170 if not lh else 170, 50), "r": 58.0, "col": Game.C_GOLD})
-			list.append({"id": "dodge", "label": tr("BTN_DODGE"), "pos": main + Vector2(-40 if not lh else 40, -170), "r": 58.0, "col": Game.C_INK})
+			var dx := -1.0 if not lh else 1.0
+			if cant_mode:
+				list.append({"id": "cant", "label": tr("BTN_CANT"), "pos": main, "r": 80.0, "col": Game.C_SAFFRON, "pulse": true})
+				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main + Vector2(185 * dx, 20), "r": 60.0, "col": Game.C_GOLD})
+				list.append({"id": "kick", "label": tr("BTN_KICK"), "pos": main + Vector2(150 * dx, -150), "r": 52.0, "col": Game.C_GOLD.darkened(0.15)})
+				list.append({"id": "dodge", "label": tr("BTN_DODGE"), "pos": main + Vector2(-10 * dx, -195), "r": 52.0, "col": Game.C_INK})
+			else:
+				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main, "r": 78.0, "col": Game.C_SAFFRON})
+				list.append({"id": "kick", "label": tr("BTN_KICK"), "pos": main + Vector2(170 * dx, 50), "r": 58.0, "col": Game.C_GOLD})
+				list.append({"id": "dodge", "label": tr("BTN_DODGE"), "pos": main + Vector2(40 * dx, -170), "r": 58.0, "col": Game.C_INK})
 		"defend":
+			var dx2 := -1.0 if not lh else 1.0
 			list.append({"id": "tackle", "label": tr("BTN_TACKLE"), "pos": main, "r": 82.0, "col": Game.C_MAGENTA})
-			list.append({"id": "switch", "label": tr("BTN_SWITCH"), "pos": main + Vector2(-60 if not lh else 60, -175), "r": 56.0, "col": Game.C_INK})
+			list.append({"id": "switch", "label": tr("BTN_SWITCH"), "pos": main + Vector2(60 * dx2, -175), "r": 54.0, "col": Game.C_INK})
+			list.append({"id": "chain", "label": tr("BTN_UNCHAIN") if chain_on else tr("BTN_CHAIN"), "pos": main + Vector2(190 * dx2, 10), "r": 58.0,
+				"col": Game.C_GOLD if chain_on else Color(Game.C_INK, 0.6), "lit": chain_on})
 	return list
 
 
@@ -92,8 +107,17 @@ func _input(event: InputEvent) -> void:
 				_fire("touch")
 			KEY_K:
 				_fire("kick")
-			KEY_SPACE, KEY_L:
-				_fire("tackle" if context == "defend" else ("skip" if context == "intro" else "dodge"))
+			KEY_SPACE:
+				if context == "defend":
+					_fire("tackle")
+				elif context == "intro":
+					_fire("skip")
+				else:
+					_fire("cant" if cant_mode else "dodge")
+			KEY_L:
+				_fire("tackle" if context == "defend" else "dodge")
+			KEY_G:
+				_fire("chain")
 			KEY_TAB, KEY_Q:
 				_fire("switch")
 			KEY_C:
@@ -143,7 +167,16 @@ func _input(event: InputEvent) -> void:
 			_look_last = event.position
 
 
+func flash(kind: String) -> void:
+	_flash = kind
+	_flash_t = 0.18
+	queue_redraw()
+
+
 func _process(delta: float) -> void:
+	_flash_t = maxf(0.0, _flash_t - delta)
+	if cant_mode and context == "raid":
+		queue_redraw()
 	var lit := false
 	for k in _pressed.keys():
 		_pressed[k] -= delta
@@ -170,8 +203,15 @@ func _draw() -> void:
 		var pos: Vector2 = b.pos
 		var r: float = b.r
 		var col: Color = b.col
-		var lit: bool = _pressed.has(b.id)
+		var lit: bool = _pressed.has(b.id) or bool(b.get("lit", false))
 		var fill := Color(col, 0.92 if lit else (0.78 if col.a > 0.5 else col.a))
+		if b.get("pulse", false):
+			# Cant: a ring closes in on the button; tap as it lands.
+			var k := clampf(beat_k, 0.0, 1.0)
+			draw_arc(pos, r * (1.0 + 0.75 * (1.0 - k)), 0, TAU, 48, Color(Game.C_SAFFRON, 0.25 + 0.7 * k), 4.0, true)
+			if _flash_t > 0.0:
+				var fc: Color = {"perfect": Game.C_GOLD, "good": Game.C_INK, "off": Game.C_DANGER, "fast": Game.C_DANGER}.get(_flash, Game.C_INK)
+				fill = fc
 		if b.id in ["pause", "camera"]:
 			fill = Color(0.03, 0.07, 0.12, 0.55 if not lit else 0.85)
 		draw_circle(pos, r, fill)

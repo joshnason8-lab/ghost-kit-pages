@@ -21,6 +21,12 @@ var fallen := 0.0           # lying on the mat, 0..1
 var struggle := 0.0         # dragging defenders toward the line, 0..1
 var celebrate := 0.0        # arms up, 0..1
 var hold_arms := 0.0        # grabbing the raider, 0..1
+# Emotions, 0..1 each.
+var roar := 0.0             # arms flung wide, chest out, head back
+var slump := 0.0            # hands on head, dejected
+var shove := 0.0            # both arms driving forward
+var argue := 0.0            # pointing and appealing to the referee
+var slap := 0.0             # slapping the thighs before a raid
 var clip: MocapClip = null  # captured motion that overrides the hand-made pose
 var clip_time := 0.0
 var clip_loop := true
@@ -455,8 +461,37 @@ func _animate(delta: float) -> void:
 	rel = lerpf(rel, 0.3, celebrate)
 	if celebrate > 0.0:
 		pelvis.position.y += absf(sin(_t * 7.0)) * 0.08 * celebrate
-	sh_l.rotation = Vector3(larm, 0, -spread - kick * 0.8 - celebrate * 0.25)
-	sh_r.rotation = Vector3(rarm, 0, spread + celebrate * 0.25)
+	# Roar: arms wide and up.
+	larm = lerpf(larm, 1.9, roar)
+	rarm = lerpf(rarm, 1.9, roar)
+	lel = lerpf(lel, 0.6, roar)
+	rel = lerpf(rel, 0.6, roar)
+	# Shove: both arms straight out in front.
+	larm = lerpf(larm, 1.5, shove)
+	rarm = lerpf(rarm, 1.5, shove)
+	lel = lerpf(lel, 0.05, shove)
+	rel = lerpf(rel, 0.05, shove)
+	# Argue: right arm points at the line, left arm open.
+	rarm = lerpf(rarm, 1.6, argue)
+	rel = lerpf(rel, 0.1, argue)
+	larm = lerpf(larm, 0.7, argue)
+	lel = lerpf(lel, 1.2, argue)
+	# Slump: hands on the head.
+	larm = lerpf(larm, 2.7, slump)
+	rarm = lerpf(rarm, 2.7, slump)
+	lel = lerpf(lel, 2.3, slump)
+	rel = lerpf(rel, 2.3, slump)
+	# Thigh slap: hands drop to the thighs in turn.
+	if slap > 0.0:
+		var sw2 := sin(_t * 9.0)
+		larm = lerpf(larm, 0.3 + maxf(0.0, sw2) * 0.55, slap)
+		rarm = lerpf(rarm, 0.3 + maxf(0.0, -sw2) * 0.55, slap)
+		lel = lerpf(lel, 0.5, slap)
+		rel = lerpf(rel, 0.5, slap)
+	sh_l.rotation = Vector3(larm, 0, -spread - kick * 0.8 - celebrate * 0.25 - roar * 0.9 - argue * 0.3 - slump * 0.5)
+	sh_r.rotation = Vector3(rarm, 0, spread + celebrate * 0.25 + roar * 0.9 + slump * 0.5)
+	spine.rotation.x += roar * 0.3 - slump * 0.3 - shove * 0.45 - slap * 0.35 - argue * 0.1
+	head.rotation.x += roar * 0.45 - slump * 0.35
 	el_l.rotation.x = lel
 	el_r.rotation.x = rel
 

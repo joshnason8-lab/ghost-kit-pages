@@ -17,6 +17,11 @@ var dod_l: Label
 var struggle: ProgressBar
 var struggle_box: Control
 var chant_l: Label
+var breath_box: Control
+var breath_bar: ProgressBar
+var objective: PanelContainer
+var objective_title: Label
+var objective_text: Label
 var hint_l: Label
 var banner_l: Label
 var events_box: VBoxContainer
@@ -93,9 +98,15 @@ func _build_scoreboard() -> void:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 12)
 		panel.add_child(row)
-		var stripe := ColorRect.new()
-		stripe.color = m.teams[t].kit
-		stripe.custom_minimum_size = Vector2(8, 0)
+		var stripe: Control
+		if DB.team(m.teams[t].id).kind == "country":
+			stripe = UI.badge(String(m.teams[t].id), Vector2(42, 28))
+			stripe.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		else:
+			var cr := ColorRect.new()
+			cr.color = m.teams[t].kit
+			cr.custom_minimum_size = Vector2(8, 0)
+			stripe = cr
 		var col := VBoxContainer.new()
 		col.add_theme_constant_override("separation", 2)
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -214,6 +225,42 @@ func _build_center() -> void:
 	chant_l.visible = false
 	root.add_child(chant_l)
 
+	# Breath for the cant: tap Cant on the beat to keep it up.
+	breath_box = VBoxContainer.new()
+	breath_box.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	breath_box.position = Vector2(-170, -140)
+	breath_box.custom_minimum_size = Vector2(340, 0)
+	breath_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bl := _label(tr("HUD_BREATH").to_upper(), "EyebrowLabel", 15, Game.C_GOLD)
+	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	breath_bar = ProgressBar.new()
+	breath_bar.custom_minimum_size = Vector2(340, 14)
+	breath_bar.max_value = 1.0
+	breath_bar.step = 0.001
+	breath_bar.show_percentage = false
+	breath_box.add_child(bl)
+	breath_box.add_child(breath_bar)
+	breath_box.visible = false
+	root.add_child(breath_box)
+
+	# Tutorial objective.
+	objective = PanelContainer.new()
+	objective.theme_type_variation = "GlassPanel"
+	objective.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	objective.position = Vector2(20, 120)
+	objective.custom_minimum_size = Vector2(380, 0)
+	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ov := VBoxContainer.new()
+	objective_title = _label("", "SubLabel", 22, Game.C_SAFFRON)
+	objective_text = _label("", "", 19)
+	objective_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	objective_text.custom_minimum_size = Vector2(350, 0)
+	ov.add_child(objective_title)
+	ov.add_child(objective_text)
+	objective.add_child(ov)
+	objective.visible = false
+	root.add_child(objective)
+
 
 func _build_pause() -> void:
 	pause_panel = PanelContainer.new()
@@ -285,6 +332,33 @@ func on_raid_setup() -> void:
 	banner_l.visible = false
 
 
+func set_objective(title: String, text: String) -> void:
+	objective.visible = title != ""
+	objective_title.text = title
+	objective_text.text = text
+
+
+func cant_feedback(kind: String) -> void:
+	controls.flash(kind)
+	if kind == "perfect" and m.raider:
+		var l := Label3D.new()
+		l.text = tr("HUD_KABADDI_WORD")
+		l.font = Game.font_display
+		l.font_size = 64
+		l.pixel_size = 0.004
+		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		l.no_depth_test = true
+		l.modulate = Game.C_GOLD
+		l.outline_size = 12
+		l.outline_modulate = Color(0, 0, 0, 0.8)
+		m.add_child(l)
+		l.global_position = m.raider.global_position + Vector3(randf_range(-0.3, 0.3), 2.1, 0)
+		var tw := l.create_tween()
+		tw.tween_property(l, "position:y", l.position.y + 0.6, 0.6)
+		tw.parallel().tween_property(l, "modulate:a", 0.0, 0.6)
+		tw.tween_callback(l.queue_free)
+
+
 func hint(text: String) -> void:
 	hint_l.text = text
 	hint_l.modulate.a = 1.0
@@ -342,6 +416,28 @@ func float_points(a: Node3D, text: String) -> void:
 	tw.tween_callback(l.queue_free)
 
 
+## A shout above a player's head, like "Pakad!".
+func bubble(a: Node3D, text: String, color := Color.WHITE) -> void:
+	var l := Label3D.new()
+	l.text = text
+	l.font = Game.font_display
+	l.font_size = 88
+	l.pixel_size = 0.004
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.no_depth_test = true
+	l.modulate = color
+	l.outline_size = 16
+	l.outline_modulate = Color(0, 0, 0, 0.85)
+	m.add_child(l)
+	l.global_position = a.global_position + Vector3(randf_range(-0.2, 0.2), 2.35, 0)
+	l.scale = Vector3.ONE * 0.6
+	var tw := l.create_tween()
+	tw.tween_property(l, "scale", Vector3.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(l, "position:y", l.position.y + 0.5, 1.1)
+	tw.parallel().tween_property(l, "modulate:a", 0.0, 0.5).set_delay(0.6)
+	tw.tween_callback(l.queue_free)
+
+
 func refresh() -> void:
 	var dt := get_process_delta_time()
 	_t += dt
@@ -350,7 +446,10 @@ func refresh() -> void:
 		dots[t].on = m.on_mat(t).size()
 		dots[t].queue_redraw()
 	clock_l.text = m.clock_text()
-	half_l.text = (tr("HUD_DOD") if m.golden else tr("HUD_HALF").format({"n": m.half})).to_upper()
+	var half_txt: String = tr("HUD_DOD") if m.golden else tr("HUD_HALF").format({"n": m.half})
+	if m.clock_speed > 1.0 and not m.golden:
+		half_txt += "  ·  %d×" % int(m.clock_speed)
+	half_l.text = half_txt.to_upper()
 	var raiding_now: bool = m.phase in ["setup", "raid"]
 	raid_l.visible = raiding_now
 	raid_clock_l.visible = m.phase == "raid"
@@ -368,6 +467,20 @@ func refresh() -> void:
 	if struggle_box.visible:
 		struggle.value = m.raid.progress
 	chant_l.visible = _chant_on and m.phase == "raid"
+	var tapping: bool = m.phase in ["raid", "setup"] and m.raid.get("cant_tap", false)
+	breath_box.visible = tapping and m.phase == "raid"
+	if breath_box.visible:
+		breath_bar.value = float(m.raid.breath)
+		var low: bool = float(m.raid.breath) < 0.3
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Game.C_DANGER if low else Game.C_GOLD
+		sb.set_corner_radius_all(99)
+		breath_bar.add_theme_stylebox_override("fill", sb)
+	controls.cant_mode = tapping
+	if m.phase == "raid":
+		var ph = fmod(float(m.raid.beat_t), m.BEAT) / m.BEAT
+		controls.beat_k = ph
+	controls.chain_on = m.controlled != null and m.controlled.chain_partner != null
 	if chant_l.visible:
 		chant_l.modulate.a = 0.55 + 0.45 * absf(sin(_t * 3.3))
 	if _hint_t > 0.0:

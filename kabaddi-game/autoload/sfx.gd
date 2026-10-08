@@ -49,6 +49,16 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	p.play()
 
 
+## A player shouting, e.g. yell("pakad"). Slight pitch variation per call.
+func yell(word: String, volume_db := -4.0) -> void:
+	play("yell_" + word, volume_db, randf_range(0.92, 1.12))
+
+
+## One "kabaddi!" from the raider's chant.
+func chant_word(volume_db := -6.0) -> void:
+	play("chant_word_%d" % (1 + randi() % 2), volume_db, randf_range(0.95, 1.08))
+
+
 func click() -> void:
 	play("click", -8.0)
 
@@ -93,12 +103,19 @@ func _build() -> void:
 	streams.crowd_loop = _crowd_loop()
 	streams.dhol_loop = _dhol_loop()
 	streams.bid = _tone_env(0.08, func(t): return sin(TAU * 880.0 * t) * 0.4 + sin(TAU * 1320.0 * t) * 0.2, 0.002, 0.07)
+	# Recorded voices that have no synthesised stand-in: chants and players shouting.
+	for k in ["chant_raider", "crowd_chant", "chant_word_1", "chant_word_2", "yell_aaja", "yell_pakad",
+			"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch"]:
+		streams[k] = null
 	for k in streams.keys():
 		for ext in ["ogg", "wav", "mp3"]:
 			var path := "res://assets/audio/%s.%s" % [k, ext]
 			if ResourceLoader.exists(path):
 				streams[k] = load(path)
 				break
+	for k in streams.keys():
+		if streams[k] == null:
+			streams.erase(k)
 
 
 func _to_stream(samples: PackedFloat32Array, loop := false) -> AudioStreamWAV:

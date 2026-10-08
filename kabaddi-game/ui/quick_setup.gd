@@ -44,15 +44,10 @@ func _ready() -> void:
 		arena_desc.text = tr(DB.ARENAS[i].desc))))
 	_body.add_child(arena_desc)
 
-	var opts := HBoxContainer.new()
-	opts.add_theme_constant_override("separation", 40)
-	opts.add_child(UI.field(tr("MATCH_LENGTH"), UI.chips([tr("LENGTH_SHORT"), tr("LENGTH_MEDIUM"), tr("LENGTH_FULL")], int(Game.settings.length), func(i):
+	_body.add_child(UI.field(tr("MATCH_LENGTH"), UI.chips([tr("LENGTH_SHORT"), tr("LENGTH_MEDIUM"), tr("LENGTH_FULL")], int(Game.settings.length), func(i):
 		Game.settings.length = i
 		Game.save_settings())))
-	opts.add_child(UI.field(tr("DIFFICULTY"), UI.chips([tr("DIFF_EASY"), tr("DIFF_NORMAL"), tr("DIFF_PRO")], int(Game.settings.difficulty), func(i):
-		Game.settings.difficulty = i
-		Game.save_settings())))
-	_body.add_child(opts)
+	_body.add_child(UI.difficulty_field(self))
 	_body.add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_THIRD"), tr("CAM_FIRST"), tr("CAM_TV")], int(Game.settings.camera), func(i):
 		Game.settings.camera = i
 		Game.save_settings())))

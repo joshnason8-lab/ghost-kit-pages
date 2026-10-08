@@ -29,8 +29,12 @@ func _ready() -> void:
 	body.add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_THIRD"), tr("CAM_FIRST"), tr("CAM_TV")], int(Game.settings.camera), func(i):
 		Game.settings.camera = i
 		Game.save_settings())))
-	body.add_child(UI.field(tr("DIFFICULTY"), UI.chips([tr("DIFF_EASY"), tr("DIFF_NORMAL"), tr("DIFF_PRO")], int(Game.settings.difficulty), func(i):
-		Game.settings.difficulty = i
+	body.add_child(UI.difficulty_field(self))
+	body.add_child(UI.field(tr("MATCH_LENGTH"), UI.chips([tr("LENGTH_SHORT"), tr("LENGTH_MEDIUM"), tr("LENGTH_FULL")], int(Game.settings.length), func(i):
+		Game.settings.length = i
+		Game.save_settings())))
+	body.add_child(UI.field(tr("CANT"), UI.chips([tr("CANT_TAP"), tr("CANT_AUTO")], int(Game.settings.get("cant", 0)), func(i):
+		Game.settings.cant = i
 		Game.save_settings())))
 
 	var toggles := HBoxContainer.new()

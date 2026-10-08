@@ -110,38 +110,29 @@ func category() -> String:
 
 # ---------------------------------------------------------------- auction
 
-## Lots for this season's auction, with the user's lot somewhere in the middle.
-func build_auction() -> Dictionary:
+## This season's auction. You are one of the lots; franchises bid with their purses.
+func make_auction() -> AuctionEngine:
+	var eng := AuctionEngine.new()
+	eng.rng.seed = seed_value + season
 	var rng := _rng(1)
-	var lots := []
-	var used := {}
-	for i in 23:
-		var role: String = ["raider", "defender", "defender", "allrounder", "raider"][i % 5]
-		var level := rng.randi_range(58, 86)
-		var pname := _lot_name(rng, used)
-		var p := DB.make_player(rng, role, level, pname)
-		p.id = "LOT_%d_%d" % [season, i]
-		lots.append(_lot(p))
-	var mine := _lot(player)
-	mine.mine = true
-	lots.sort_custom(func(a, b): return a.base > b.base)
-	lots.insert(clampi(9 + rng.randi_range(-2, 3), 0, lots.size()), mine)
-	var purses := {}
 	for id in DB.league_ids:
-		purses[id] = snappedf(rng.randf_range(PURSE_MIN, PURSE_MAX), 0.5)
-	return {"lots": lots, "purses": purses, "index": 0}
-
-
-func _lot(p: Dictionary) -> Dictionary:
-	var o := DB.overall(p)
-	var cat := "D"
-	if o >= 80:
-		cat = "A"
-	elif o >= 72:
-		cat = "B"
-	elif o >= 64:
-		cat = "C"
-	return {"player": p, "base": CATEGORIES[cat], "cat": cat, "ovr": o, "mine": false, "sold_to": "", "price": 0.0}
+		var sq: Array = DB.team(id).squad.duplicate()
+		sq.sort_custom(func(a, b): return DB.overall(a) > DB.overall(b))
+		eng.teams[id] = {"purse": snappedf(rng.randf_range(PURSE_MIN, PURSE_MAX), 0.5), "squad": sq.slice(0, 9), "fbm": 1}
+	var used := {}
+	for i in 21:
+		var role: String = ["raider", "defender", "defender", "allrounder", "raider"][i % 5]
+		var p := DB.make_player(rng, role, rng.randi_range(58, 86), _lot_name(rng, used))
+		p.id = "LOT_%d_%d" % [season, i]
+		var former: String = DB.league_ids[rng.randi() % DB.league_ids.size()] if rng.randf() < 0.6 else ""
+		eng.add_lot(p, former, false)
+	for i in 3:
+		var p2 := DB.make_player(rng, ["raider", "defender", "allrounder"][i], rng.randi_range(56, 66), _lot_name(rng, used))
+		p2.id = "NYP_%d_%d" % [season, i]
+		eng.add_lot(p2, "", true)
+	eng.add_lot(player, team if season > 1 else "", false, true)
+	eng.sort_lots()
+	return eng
 
 
 func _lot_name(rng: RandomNumberGenerator, used: Dictionary) -> String:
@@ -155,45 +146,18 @@ func _lot_name(rng: RandomNumberGenerator, used: Dictionary) -> String:
 	return "Player %d" % rng.randi_range(100, 999)
 
 
-## What a franchise would pay for a player, in lakhs.
-static func valuation(lot: Dictionary, team_id: String, salt: int) -> float:
-	var r := RandomNumberGenerator.new()
-	r.seed = hash(team_id) + salt
-	var o: float = lot.ovr
-	var v := pow(maxf(0.0, o - 50.0), 1.6) * 0.95
-	v *= r.randf_range(0.7, 1.35)
-	return clampf(v, 0.0, 260.0)
-
-
-## One bidding step. Returns false when bidding has finished.
-static func bid_step(lot: Dictionary, purses: Dictionary, state: Dictionary, rng: RandomNumberGenerator) -> bool:
-	var price: float = state.price
-	var leader: String = state.leader
-	var next_price := price if leader == "" else price + (5.0 if price < 100.0 else 10.0)
-	var keen := []
-	for id in purses.keys():
-		if id == leader:
-			continue
-		if float(purses[id]) >= next_price and valuation(lot, id, state.salt) >= next_price:
-			keen.append(id)
-	if keen.is_empty():
-		return false
-	state.leader = keen[rng.randi() % keen.size()]
-	state.price = next_price
-	return true
-
-
-func finish_auction(auction: Dictionary) -> void:
-	for lot in auction.lots:
-		if lot.mine:
+func finish_auction(eng: AuctionEngine) -> void:
+	team = ""
+	price = 0.0
+	for lot in eng.lots:
+		if lot.mine and lot.status == "sold":
 			team = lot.sold_to
 			price = lot.price
-			player.team = team
 	if team == "":
 		var r := _rng(5)
 		team = DB.league_ids[r.randi() % DB.league_ids.size()]
 		price = CATEGORIES[category()]
-		player.team = team
+	player.team = team
 	_start_season()
 
 

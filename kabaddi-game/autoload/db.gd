@@ -24,18 +24,18 @@ const LEAGUE := [
 ]
 
 const COUNTRIES := [
-	{"id": "IND", "name": "COUNTRY_IND", "c1": "1d4ed8", "c2": "ff9933", "base": 86, "names": "in"},
-	{"id": "IRN", "name": "COUNTRY_IRN", "c1": "239f40", "c2": "f3efe6", "base": 84, "names": "ir"},
-	{"id": "KOR", "name": "COUNTRY_KOR", "c1": "c60c30", "c2": "f3efe6", "base": 78, "names": "kr"},
-	{"id": "PAK", "name": "COUNTRY_PAK", "c1": "01411c", "c2": "f3efe6", "base": 76, "names": "pk"},
+	{"id": "IND", "name": "COUNTRY_IND", "c1": "1f4fa3", "c2": "ff9933", "base": 86, "names": "in"},
+	{"id": "IRN", "name": "COUNTRY_IRN", "c1": "f4f4f4", "c2": "239f40", "base": 84, "names": "ir"},
+	{"id": "KOR", "name": "COUNTRY_KOR", "c1": "cd2e3a", "c2": "0047a0", "base": 78, "names": "kr"},
+	{"id": "PAK", "name": "COUNTRY_PAK", "c1": "01411c", "c2": "f4f4f4", "base": 76, "names": "pk"},
 	{"id": "BAN", "name": "COUNTRY_BAN", "c1": "006a4e", "c2": "f42a41", "base": 73, "names": "bd"},
 	{"id": "KEN", "name": "COUNTRY_KEN", "c1": "bb0000", "c2": "006600", "base": 69, "names": "ke"},
-	{"id": "JPN", "name": "COUNTRY_JPN", "c1": "1b3a8c", "c2": "f3efe6", "base": 68, "names": "jp"},
-	{"id": "ARG", "name": "COUNTRY_ARG", "c1": "75aadb", "c2": "f3efe6", "base": 63, "names": "ar"},
+	{"id": "JPN", "name": "COUNTRY_JPN", "c1": "bc002d", "c2": "f4f4f4", "base": 68, "names": "jp"},
+	{"id": "ARG", "name": "COUNTRY_ARG", "c1": "74acdf", "c2": "f4f4f4", "base": 63, "names": "ar"},
 	{"id": "NEP", "name": "COUNTRY_NEP", "c1": "dc143c", "c2": "003893", "base": 66, "names": "np"},
 	{"id": "SRI", "name": "COUNTRY_SRI", "c1": "8d153a", "c2": "ffbe29", "base": 67, "names": "lk"},
 	{"id": "THA", "name": "COUNTRY_THA", "c1": "2d2a4a", "c2": "a51931", "base": 64, "names": "th"},
-	{"id": "POL", "name": "COUNTRY_POL", "c1": "f3efe6", "c2": "dc143c", "base": 61, "names": "pl"},
+	{"id": "POL", "name": "COUNTRY_POL", "c1": "f4f4f4", "c2": "dc143c", "base": 61, "names": "pl"},
 ]
 
 const ARENAS := [

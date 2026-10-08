@@ -86,5 +86,7 @@ func _continue(mode: String) -> void:
 			Game.show_screen("res://ui/cup_screen.gd")
 		"career":
 			Game.show_screen("res://ui/career_hub.gd")
+		"season":
+			Game.show_screen("res://ui/season_hub.gd")
 		_:
 			Game.goto_menu()

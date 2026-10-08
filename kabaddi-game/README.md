@@ -10,18 +10,23 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 
 | Area | What works today |
 |---|---|
-| **Match** | 7 v 7, two halves, alternating 30-second raids. You raid, then you defend. |
-| **Rules** | Touch points, bonus line (6+ defenders on the mat), baulk line, raid clock, out of bounds, lobbies (live only after a struggle), tackles, super tackles (≤3 defenders), chain holds, empty raids and do-or-die, revival in order of dismissal, all outs (+2), golden raid for tied knockouts. |
-| **Raiding** | Hand touch (with aim assist), toe touch, dodge. When grabbed, push for the midline and dodge to break holds. The raider chants automatically (no chant button). |
-| **Defending** | Control one defender and **Tackle** when the raider is close. Teammates hold the chain, cut off the midline, and pile on for a chain tackle. **Switch** jumps to the defender nearest the raider. |
-| **Cameras** | Third person (behind your player), first person (from your player's eyes, drag to look), and broadcast (side-on TV view). Change any time from the HUD. |
-| **Grounds** | Mumbai Dome (indoor pro arena), Gaon Maidan (village mud court at golden hour), National Stadium (floodlit, international), Monsoon Ground (rain, wet mat), Puri Beach (sand court by the sea). |
-| **Quick Match** | Any two league teams or any two countries, on any ground, at three lengths and difficulties. |
-| **Nations Cup** | 8 countries, two groups of four, semi-finals and a final. Play or simulate each match. |
-| **Career** | Create a player (name, home state, role, build, skin tone, hair), go into the **player auction** (franchises bid live, in lakhs and crores), play an 11-match league season and top-four playoffs, earn skill points, train, then do it again next season. |
-| **League** | The Premier Raid League (PRL): 12 invented franchises with generated squads. |
-| **Languages** | English, हिन्दी, मराठी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা, ਪੰਜਾਬੀ. Picks the phone's language on first launch. |
-| **Audio** | Whistle, dhol loop, crowd bed and roars, impacts. All synthesised in code. Replace any of them by dropping a file into `assets/audio/`. |
+| **Match** | 7 v 7, two 20-minute halves of alternating 30-second raids. You raid, then you defend. The clock can run at 6× (about 7 minutes), 3× (about 14 minutes) or real time. |
+| **The cant** | Raiders must chant "kabaddi" all raid. Tap the pulsing **Cant** button as its ring closes to keep your breath up. Run out of breath in their half and you're out. You can switch to an automatic cant in Settings. Each tap is voiced. |
+| **Rules** | Touch points, bonus line (6+ defenders on the mat), baulk line, raid clock, out of bounds, lobbies (live only after a struggle), tackles, super tackles (3 or fewer defenders), chain holds, empty raids and do-or-die, revival in order of dismissal, all outs (+2), golden raid for tied knockouts. |
+| **Raiding** | Cant, Hand touch (with aim assist), Toe touch, Dodge. When grabbed, push for the midline and dodge to break holds. |
+| **Defending** | **Tackle**. **Chain**: link hands with the nearest team-mate. You move slower together, but you both go in and hold on harder. **Switch** jumps to the defender nearest the raider. AI defenders link hands in pairs and make chain tackles too. |
+| **Emotion** | Raiders slap their thighs before a raid and taunt the chain ("Aaja!"). Defenders call "Pakad!". Winners roar, the beaten slump with hands on heads, players dispute touches ("Touch tha!" / "No touch!"), and there's the occasional shove after a tackle. Shouts are voiced and shown as speech bubbles in your language. |
+| **Difficulty** | Rookie, Pro, Star and Legend change defender timing and aggression, AI raider skill, aim assist and how strict the cant rhythm is. |
+| **Cameras** | Third person, first person (drag to look), broadcast. |
+| **Grounds** | Mumbai Dome, Gaon Maidan (village mud court), National Stadium (floodlit), Monsoon Ground (rain), Puri Beach (sand). |
+| **Quick Match** | Any two league teams or countries, any ground. |
+| **League Season** | Own a franchise. Retain your best six, then **bid at the auction**: categories A–D and New Young Players, paddles, "going once, going twice", bidding wars, record buys, **Final Bid Match cards**, and an accelerated round. Then play 11 rounds and the playoffs (top six, two eliminators, semis, final) and **lift the trophy**. |
+| **Nations Cup** | 8 countries, two groups, semis, final. Real flags and flag-accurate kits for 12 countries. |
+| **Career** | Create a player, get auctioned (with the same live auction), play seasons, train. |
+| **Training** | Seven lessons with on-screen objectives: cant, hand touch, toe touch, bonus, breaking a hold, tackling, chain tackle. |
+| **Start menu** | A live AI match plays behind the menu on a rotating ground. |
+| **Languages** | English, हिन्दी, मराठी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা, ਪੰਜਾਬੀ. |
+| **Audio** | Whistle, dhol, crowd, crowd chant, the raider's chant, and players' shouts. Voices are placeholder text-to-speech: drop real recordings into `assets/audio/` with the same file names. |
 
 Points tables use Pro-style scoring: win 5, tie 3, loss by 7 or fewer 1.
 
