@@ -45,6 +45,36 @@ func _tour() -> void:
 		await frames(40)
 		await shot("30_awards")
 		return
+	if args_only.begins_with("screen:"):
+		# One screen: screen:res://ui/main_menu.gd
+		Game.show_screen(args_only.substr(7))
+		await frames(200 if args_only.ends_with("main_menu.gd") else 30)
+		await shot("one")
+		return
+	if args_only == "thumbs":
+		# Ground pictures for the Quick Match screen (tools/ui_art makes the JPEGs).
+		for a in DB.ARENAS:
+			Game.start_match({"home": "MUM", "away": "CHD", "arena": a.id, "mode": "quick", "autoplay": true, "attract": true, "length": 0, "difficulty": 2})
+			var mt: Node = Game.current
+			await frames(150)
+			mt.cam.mode = Game.CAM_TV
+			await frames(60)
+			await shot("ground_" + String(a.id))
+		return
+	if args_only == "demos":
+		Game.show_screen("res://ui/tutorial_menu.gd")
+		await frames(10)
+		var tm: Node = Game.current
+		for pair in [["cant", 1.2], ["touch", 1.7], ["toe", 1.75], ["bonus", 2.7], ["kick", 2.05], ["dubki", 1.45],
+				["lion", 1.45], ["escape", 1.0], ["tackle", 2.4], ["chain", 2.4], ["waist", 2.4], ["dash", 1.85]]:
+			tm._select(pair[0])
+			tm._demo._t = float(pair[1]) - 0.35
+			await frames(21)
+			await shot("demo_" + String(pair[0]))
+		return
+	if args_only == "menus":
+		await _menus()
+		return
 	if args_only != "":
 		await _grounds()
 		return
@@ -83,6 +113,58 @@ func _tour() -> void:
 	await frames(5)
 	await shot("05_cup")
 	await _grounds()
+
+
+## Every menu screen, for checking layouts at phone shapes (run with --resolution 1560x720
+## for a 19.5:9 phone such as a Galaxy A16).
+func _menus() -> void:
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(240)
+	await shot("m01_menu")
+	Game.show_screen("res://ui/quick_setup.gd")
+	await frames(8)
+	await shot("m02_quick")
+	Game.show_screen("res://ui/settings_screen.gd")
+	await frames(8)
+	await shot("m03_settings")
+	Game.show_screen("res://ui/howto_screen.gd")
+	await frames(8)
+	await shot("m04_howto")
+	Game.show_screen("res://ui/tutorial_menu.gd")
+	await frames(30)
+	await shot("m05_training")
+	Game.delete_season()
+	Game.show_screen("res://ui/season_hub.gd")
+	await frames(8)
+	await shot("m06_season_pick")
+	Game.new_season("PAT")
+	Game.show_screen("res://ui/auction_screen.gd", {"mode": "owner"})
+	await frames(200)
+	await shot("m07_auction")
+	var au: Node = Game.current
+	if au.has_method("_finish_all"):
+		au._finish_all()
+		await frames(30)
+		await shot("m08_auction_done")
+	var se = Game.get_season()
+	if String(se.phase) == "auction":
+		var eng = se.make_auction()
+		eng.resolve_all(false)
+		se.finish_auction(eng)
+		Game.save_season()
+	Game.show_screen("res://ui/season_hub.gd")
+	await frames(8)
+	await shot("m09_season_hub")
+	Game.delete_season()
+	Game.delete_cup()
+	Game.new_cup("IND")
+	Game.show_screen("res://ui/cup_screen.gd")
+	await frames(8)
+	await shot("m10_cup")
+	Game.show_screen("res://ui/trophy_screen.gd", {"team": "IND", "title": "Nations Cup", "back": "res://ui/main_menu.gd"})
+	await frames(90)
+	await shot("m11_trophy")
+	Game.delete_cup()
 
 
 ## Raid moves: the raid buttons, then dubki, lion jump and kicks frozen mid-move.

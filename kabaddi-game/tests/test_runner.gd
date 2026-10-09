@@ -231,7 +231,44 @@ func _run() -> void:
 		ra.queue_free()
 
 	# 8b. Cant, chain, reactions: drive a user match by hand.
-	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0, "autoplay_no_report": true})
+	# Breath (the default cant): moves and sprinting cost breath.
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0, "autoplay_no_report": true, "raid_rule": 2})
+	var bm: Node = Game.current
+	var gb := 0
+	while bm.phase != "raid" and gb < 600:
+		await get_tree().process_frame
+		gb += 1
+	check(not bm.raid.cant_tap and not bm.raid.cant_voice, "Breath mode needs no tapping")
+	var before_breath: float = float(bm.raid.t)
+	bm._spend_breath("lion")
+	check(float(bm.raid.t) < before_breath - 1.0, "a lion jump costs breath")
+	bm.queue_free()
+	await frames(3)
+	# Voice: chanting keeps the cant; going quiet in their half loses it.
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0, "autoplay_no_report": true, "raid_rule": 3})
+	var vm: Node = Game.current
+	var gv := 0
+	while vm.phase != "raid" and gv < 600:
+		await get_tree().process_frame
+		gv += 1
+	check(vm.voice != null and vm.raid.cant_voice, "your raid listens for the chant")
+	vm.voice.fake_level(0.3)
+	var gv2 := 0
+	while vm.phase == "raid" and gv2 < 60:
+		vm.raider.position.z = move_toward(vm.raider.position.z, -1.5, 0.05)
+		await get_tree().process_frame
+		gv2 += 1
+	check(vm.phase == "raid", "chanting out loud keeps the raid going")
+	vm.voice.fake_level(0.0)
+	var gv3 := 0
+	while vm.phase == "raid" and gv3 < 90:
+		await get_tree().process_frame
+		gv3 += 1
+	check(vm.raid_log.size() > 0 and vm.raid_log[-1].kind == "cant", "going quiet in their half breaks the cant")
+	vm.queue_free()
+	await frames(3)
+	# Tap: the old way, every move counts as a beat.
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0, "autoplay_no_report": true, "raid_rule": 1})
 	var um: Node = Game.current
 	var g5 := 0
 	while um.phase != "raid" and g5 < 600:

@@ -29,53 +29,36 @@ func _reload() -> void:
 
 func _pick_team() -> void:
 	var v := UI.page(self, tr("SEASON_PICK"), func(): Game.goto_menu(), tr("MENU_SEASON"))
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 14)
-	for id in DB.league_ids:
-		var t := DB.team(id)
-		var b := Button.new()
-		b.custom_minimum_size = Vector2(360, 86)
-		b.pressed.connect(func():
-			Sfx.click()
-			Game.new_season(id)
-			_reload())
-		var h := HBoxContainer.new()
-		h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		h.offset_left = 14
-		h.offset_right = -12
-		h.add_theme_constant_override("separation", 12)
-		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var stripes := VBoxContainer.new()
-		stripes.add_theme_constant_override("separation", 0)
-		stripes.alignment = BoxContainer.ALIGNMENT_CENTER
-		stripes.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stripes.add_child(UI.swatch(t.c1, Vector2(30, 26)))
-		stripes.add_child(UI.swatch(t.c2, Vector2(30, 10)))
-		h.add_child(stripes)
-		var col := VBoxContainer.new()
-		col.alignment = BoxContainer.ALIGNMENT_CENTER
-		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var nm := UI.label(String(t.name), "SubLabel", 21)
-		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var rt := UI.label("%s %d · %s" % [tr("RATING"), DB.team_rating(t.squad), tr(t.state)], "MutedLabel", 16)
-		rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		col.add_child(nm)
-		col.add_child(rt)
-		h.add_child(col)
-		b.add_child(h)
-		grid.add_child(b)
-	v.add_child(UI.scroll(grid))
+	v.add_child(UI.team_grid(self, DB.league_ids, 4, func(id):
+		Game.new_season(id)
+		_reload()))
 
 
 func _team_header(v: VBoxContainer) -> void:
 	var t := DB.team(season.team)
+	var c1: Color = t.c1
+	var p := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(c1.darkened(0.7).lerp(Game.C_PANEL, 0.3), 0.95)
+	sb.set_corner_radius_all(18)
+	sb.border_color = c1
+	sb.border_width_left = 6
+	sb.content_margin_left = 18
+	sb.content_margin_right = 18
+	sb.content_margin_top = 10
+	sb.content_margin_bottom = 10
+	p.add_theme_stylebox_override("panel", sb)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	row.add_child(UI.swatch(t.c1, Vector2(10, 34)))
-	row.add_child(UI.label("%s · %s %d" % [t.name, tr("RATING"), season.rating(season.team)], "SubLabel", 24))
-	v.add_child(row)
+	row.add_theme_constant_override("separation", 16)
+	p.add_child(row)
+	row.add_child(Crest.make(season.team, 64))
+	var col := VBoxContainer.new()
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override("separation", -4)
+	col.add_child(UI.label(String(t.name), "HeaderLabel", 38))
+	col.add_child(UI.label("%s %d · %s" % [tr("RATING"), season.rating(season.team), tr(String(t.state))], "MutedLabel", 17))
+	row.add_child(col)
+	v.add_child(p)
 
 
 func _auction_gate() -> void:
@@ -83,7 +66,7 @@ func _auction_gate() -> void:
 	_team_header(v)
 	v.add_child(UI.wrap(tr("SEASON_AUCTION_INTRO"), "", 22))
 	var go := UI.button(tr("ENTER_AUCTION_OWNER"), true, func(): Game.show_screen("res://ui/auction_screen.gd", {"mode": "owner"}))
-	go.custom_minimum_size = Vector2(380, 70)
+	go.custom_minimum_size = Vector2(420, 76)
 	go.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	v.add_child(go)
 	var spacer := Control.new()

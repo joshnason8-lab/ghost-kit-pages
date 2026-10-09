@@ -50,13 +50,13 @@ func _start_attract() -> void:
 
 
 func _shade() -> void:
-	# Darken the left so the menu reads, and the bottom for the footer.
+	# Darken the left so the title reads, lightly everywhere else so the tiles do.
 	var shade := TextureRect.new()
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var g := Gradient.new()
-	g.set_color(0, Color(Game.C_BG, 0.95))
-	g.set_color(1, Color(Game.C_BG, 0.05))
-	g.add_point(0.42, Color(Game.C_BG, 0.78))
+	g.set_color(0, Color(Game.C_BG, 0.92))
+	g.set_color(1, Color(Game.C_BG, 0.45))
+	g.add_point(0.38, Color(Game.C_BG, 0.55))
 	var gt := GradientTexture2D.new()
 	gt.gradient = g
 	gt.fill_from = Vector2(0, 0)
@@ -69,70 +69,161 @@ func _shade() -> void:
 
 
 func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 56)
-	margin.add_theme_constant_override("margin_top", 26)
-	margin.add_theme_constant_override("margin_bottom", 24)
-	margin.add_theme_constant_override("margin_right", 40)
-	add_child(margin)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 10)
-	col.custom_minimum_size = Vector2(560, 0)
-	col.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	margin.add_child(col)
+	var margin := UI.frame(self, 44)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 36)
+	margin.add_child(row)
 
-	col.add_child(UI.label(tr("LEAGUE_NAME").to_upper() + "  ·  " + tr("MENU_CUP").to_upper(), "EyebrowLabel"))
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 18)
-	_title = UI.label(tr("GAME_TITLE"), "TitleLabel", 100)
-	_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	# Left: the title, and the small links at the foot.
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 6)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_stretch_ratio = 0.8
+	row.add_child(col)
+	var top := Control.new()
+	top.custom_minimum_size = Vector2(0, 18)
+	col.add_child(top)
+	col.add_child(UI.label(tr("LEAGUE_NAME").to_upper() + "  ·  " + tr("MENU_CUP").to_upper(), "EyebrowLabel", 16, Game.C_SAFFRON))
+	_title = UI.label(tr("GAME_TITLE"), "TitleLabel", 112)
+	_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.55))
 	_title.add_theme_constant_override("outline_size", 10)
-	title_row.add_child(_title)
-	_hi = UI.label("कबड्डी", "TitleLabel", 54, Game.C_SAFFRON)
-	_hi.size_flags_vertical = Control.SIZE_SHRINK_END
+	_title.add_theme_constant_override("line_spacing", -30)
+	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(_title)
+	_hi = UI.label("कबड्डी", "TitleLabel", 64, Game.C_SAFFRON)
 	if TranslationServer.get_locale().begins_with("hi") or TranslationServer.get_locale().begins_with("mr"):
 		_hi.text = "KABADDI"
-	title_row.add_child(_hi)
-	col.add_child(title_row)
-	col.add_child(UI.label(tr("TAGLINE"), "SubLabel", 24, Game.C_GOLD))
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 4)
-	col.add_child(gap)
-
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 12)
-	grid.add_theme_constant_override("v_separation", 12)
-	col.add_child(grid)
-	var modes := [
-		["MENU_QUICK", "MENU_QUICK_DESC", "res://ui/quick_setup.gd", Game.C_SAFFRON],
-		["MENU_SEASON", "MENU_SEASON_DESC", "res://ui/season_hub.gd", Game.C_GOOD],
-		["MENU_CUP", "MENU_CUP_DESC", "res://ui/cup_screen.gd", Color("5aa9ff")],
-		["MENU_CAREER", "MENU_CAREER_DESC", "res://ui/career_hub.gd", Game.C_MAGENTA],
-	]
-	for md in modes:
-		var c := _mode_card(md[0], md[1], md[2], md[3])
-		grid.add_child(c)
-		_cards.append(c)
-
+	col.add_child(_hi)
+	col.add_child(UI.label(tr("TAGLINE"), "SubLabel", 26, Game.C_GOLD))
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(spacer)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	for item in [["MENU_TRAINING", "res://ui/tutorial_menu.gd"], ["MENU_SETTINGS", "res://ui/settings_screen.gd"], ["MENU_HOWTO", "res://ui/howto_screen.gd"]]:
-		var path: String = item[1]
-		var b := UI.button(tr(item[0]), false, func(): _go(path))
-		b.custom_minimum_size = Vector2(178, 54)
-		row.add_child(b)
+	var cont := _continue_card()
+	if cont:
+		col.add_child(cont)
+		_cards.append(cont)
+	var links := HBoxContainer.new()
+	links.add_theme_constant_override("separation", 12)
+	for item in [["MENU_HOWTO", "book", "res://ui/howto_screen.gd"], ["MENU_SETTINGS", "gear", "res://ui/settings_screen.gd"]]:
+		var path: String = item[2]
+		var b := _link(tr(item[0]), item[1], func(): _go(path))
+		links.add_child(b)
 		_cards.append(b)
-	col.add_child(row)
+	col.add_child(links)
+	var ver := UI.label("v" + String(ProjectSettings.get_setting("application/config/version", "0.1")), "MutedLabel", 14)
+	col.add_child(ver)
 
-	var note := UI.label("v" + String(ProjectSettings.get_setting("application/config/version", "0.1")), "MutedLabel", 15)
-	note.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	note.position = Vector2(-90, -34)
-	add_child(note)
+	# Right: the modes, as big tiles.
+	var tiles := HBoxContainer.new()
+	tiles.add_theme_constant_override("separation", 14)
+	tiles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tiles.size_flags_stretch_ratio = 1.25
+	row.add_child(tiles)
+	var hero := UI.tile(tr("MENU_QUICK"), tr("MENU_QUICK_DESC"), Game.C_SAFFRON, "quick", func(): _go("res://ui/quick_setup.gd"), true)
+	var play_tag := UI.pill(tr("PLAY").to_upper(), Game.C_SAFFRON, true)
+	play_tag.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	play_tag.position = Vector2(64, -52)
+	hero.add_child(play_tag)
+	hero.size_flags_stretch_ratio = 0.9
+	tiles.add_child(hero)
+	_cards.append(hero)
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 14)
+	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tiles.add_child(stack)
+	for md in [["MENU_SEASON", "MENU_SEASON_DESC", "res://ui/season_hub.gd", Game.C_GOOD, "league"],
+			["MENU_CUP", "MENU_CUP_DESC", "res://ui/cup_screen.gd", Color("5aa9ff"), "cup"],
+			["MENU_TRAINING", "TRAINING_EYEBROW", "res://ui/tutorial_menu.gd", Game.C_MAGENTA.lightened(0.1), "dubki"]]:
+		var path2: String = md[2]
+		var t := UI.tile(tr(md[0]), tr(md[1]), md[3], md[4], func(): _go(path2))
+		stack.add_child(t)
+		_cards.append(t)
+
+
+## Pick up where you left off: a season or cup in progress.
+func _continue_card() -> Control:
+	var what := ""
+	var path := ""
+	var team := ""
+	var s = Game.get_season()
+	if s != null and String(s.phase) != "done":
+		what = "%s · %s" % [tr("MENU_SEASON"), tr("SEASON").format({"n": s.year})]
+		path = "res://ui/season_hub.gd"
+		team = s.team
+	else:
+		var c = Game.get_cup()
+		if c != null and String(c.stage) != "done":
+			what = "%s · %s" % [tr("MENU_CUP"), c.stage_name()]
+			path = "res://ui/cup_screen.gd"
+			team = c.user
+	if path == "":
+		return null
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(0, 84)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(Game.C_PANEL, 0.88)
+	sb.set_corner_radius_all(16)
+	sb.border_color = Color(Game.C_GOLD, 0.5)
+	sb.set_border_width_all(1)
+	var sbh: StyleBoxFlat = sb.duplicate()
+	sbh.bg_color = Game.C_PANEL_HI
+	sbh.border_color = Game.C_GOLD
+	b.add_theme_stylebox_override("normal", sb)
+	b.add_theme_stylebox_override("hover", sbh)
+	b.add_theme_stylebox_override("pressed", sbh)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var h := HBoxContainer.new()
+	h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	h.offset_left = 16
+	h.offset_right = -16
+	h.add_theme_constant_override("separation", 14)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var cr := Crest.make(team, 46)
+	cr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(cr)
+	var v := VBoxContainer.new()
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_theme_constant_override("separation", -2)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(UI.label(tr("CONTINUE").to_upper(), "EyebrowLabel", 14, Game.C_GOLD))
+	v.add_child(UI.label(what, "SubLabel", 22))
+	h.add_child(v)
+	var ic := Icon.make("play", 28, Game.C_GOLD)
+	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(ic)
+	b.add_child(h)
+	b.pressed.connect(Sfx.click)
+	b.pressed.connect(func(): _go(path))
+	return b
+
+
+## A quiet text link with an icon, for How to play and Settings.
+func _link(text: String, icon_kind: String, cb: Callable) -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(0, 54)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(Game.C_PANEL, 0.75)
+	sb.set_corner_radius_all(99)
+	sb.content_margin_left = 54
+	sb.content_margin_right = 22
+	sb.border_color = Color(1, 1, 1, 0.1)
+	sb.set_border_width_all(1)
+	var sbh: StyleBoxFlat = sb.duplicate()
+	sbh.bg_color = Game.C_PANEL_HI
+	sbh.border_color = Game.C_SAFFRON
+	b.add_theme_stylebox_override("normal", sb)
+	b.add_theme_stylebox_override("hover", sbh)
+	b.add_theme_stylebox_override("pressed", sbh)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.text = text
+	var ic = Icon.make(icon_kind, 26, Game.C_GOLD)
+	ic.position = Vector2(18, 14)
+	ic.size = Vector2(26, 26)
+	b.add_child(ic)
+	b.pressed.connect(Sfx.click)
+	b.pressed.connect(cb)
+	return b
 
 
 func _go(path: String) -> void:
@@ -143,43 +234,8 @@ func _go(path: String) -> void:
 	Game.show_screen(path)
 
 
-func _mode_card(title_key: String, desc_key: String, path: String, accent: Color) -> Button:
-	var b := Button.new()
-	b.custom_minimum_size = Vector2(274, 118)
-	b.pressed.connect(Sfx.click)
-	b.pressed.connect(func(): _go(path))
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(Game.C_PANEL, 0.88)
-	sb.border_color = accent
-	sb.border_width_top = 4
-	sb.set_corner_radius_all(12)
-	var sbh: StyleBoxFlat = sb.duplicate()
-	sbh.bg_color = Color(Game.C_PANEL_HI, 0.95)
-	b.add_theme_stylebox_override("normal", sb)
-	b.add_theme_stylebox_override("hover", sbh)
-	b.add_theme_stylebox_override("pressed", sbh)
-	var v := VBoxContainer.new()
-	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	v.offset_left = 18
-	v.offset_top = 6
-	v.offset_bottom = -6
-	v.offset_right = -12
-	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.add_theme_constant_override("separation", 0)
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var t := UI.label(tr(title_key), "HeaderLabel", 33)
-	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var d := UI.label(tr(desc_key), "MutedLabel", 15)
-	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(t)
-	v.add_child(d)
-	b.add_child(v)
-	return b
-
-
 func _animate_in() -> void:
-	_title.pivot_offset = Vector2(0, 60)
+	_title.pivot_offset = Vector2(0, 70)
 	_title.scale = Vector2(1.6, 1.6)
 	_title.modulate.a = 0.0
 	_hi.modulate.a = 0.0

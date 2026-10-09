@@ -17,38 +17,9 @@ func _ready() -> void:
 
 func _pick_country() -> void:
 	var v := UI.page(self, tr("CUP_PICK"), func(): Game.goto_menu(), tr("MENU_CUP"))
-	var grid := GridContainer.new()
-	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 14)
-	for id in DB.country_ids:
-		var t := DB.team(id)
-		var b := Button.new()
-		b.custom_minimum_size = Vector2(270, 86)
-		b.pressed.connect(func():
-			Sfx.click()
-			Game.new_cup(id)
-			Game.show_screen("res://ui/cup_screen.gd"))
-		var h := HBoxContainer.new()
-		h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		h.offset_left = 16
-		h.offset_right = -12
-		h.add_theme_constant_override("separation", 14)
-		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		h.add_child(UI.badge(id, Vector2(54, 36)))
-		var col := VBoxContainer.new()
-		col.alignment = BoxContainer.ALIGNMENT_CENTER
-		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var nm := UI.label(DB.team_name(id), "SubLabel", 22)
-		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var rt := UI.label("%s %d" % [tr("RATING"), DB.team_rating(t.squad)], "MutedLabel", 17)
-		rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		col.add_child(nm)
-		col.add_child(rt)
-		h.add_child(col)
-		b.add_child(h)
-		grid.add_child(b)
-	v.add_child(UI.scroll(grid))
+	v.add_child(UI.team_grid(self, DB.country_ids, 4, func(id):
+		Game.new_cup(id)
+		Game.show_screen("res://ui/cup_screen.gd")))
 
 
 func _hub(cup) -> void:

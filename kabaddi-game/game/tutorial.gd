@@ -50,9 +50,24 @@ static func match_config(id: String) -> Dictionary:
 	return {
 		"home": "MUM", "away": "DEL", "arena": "dome", "mode": "tutorial", "lesson": id, "control": "all",
 		"difficulty": 0, "length": 0, "passive": l.passive, "first_raider": 0 if l.raid else 1,
-		"raid_rule": 1 if id == "cant" else int(Game.settings.get("raid_rule", 1)),
+		"raid_rule": _lesson_rule(id),
 		"chains": l.get("chains", false), "style": l.get("style", ""), "wide": l.get("wide", false),
 	}
+
+
+## The cant lesson teaches the cant you play with (Breath if you play with the clock).
+static func _lesson_rule(id: String) -> int:
+	var r := int(Game.settings.get("raid_rule", 2))
+	if id == "cant" and r == 0:
+		return 2
+	return r
+
+
+## The text for a step: the cant's first step depends on how you chant.
+static func step_key(key: String, rule: int) -> String:
+	if key == "TUT_CANT_1":
+		return ["TUT_CANT_1", "TUT_CANT_1", "TUT_CANT_1_BREATH", "TUT_CANT_1_VOICE"][clampi(rule, 0, 3)]
+	return key
 
 
 func setup(p_match, id: String) -> void:
@@ -70,7 +85,8 @@ func _show() -> void:
 	if done:
 		return
 	var st: Array = lesson.steps[step]
-	var text: String = tr(st[0])
+	var key := step_key(String(st[0]), int(m.raid_rule))
+	var text: String = tr(key)
 	if int(st[2]) > 1:
 		text += "  (%d/%d)" % [count, int(st[2])]
 	m.hud.set_objective(tr(lesson.title), text)

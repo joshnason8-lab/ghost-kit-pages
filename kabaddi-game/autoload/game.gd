@@ -47,7 +47,8 @@ var settings := {
 	"difficulty": 1,
 	"length": 0,
 	"seen_howto": false,
-	"raid_rule": 1,         # 0 Pro 30-second clock, 1 traditional cant (tap), 2 traditional cant (automatic)
+	"raid_rule": 2,         # 0 Pro 30-second clock, 1 cant by tapping, 2 Breath (cant runs by itself), 3 cant said out loud
+	"rules_v": 2,           # settings version: 2 made Breath the default
 	"models": 1,            # 0 classic code-built players, 1 realistic rigged players
 	"tutorial_done": [],
 	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
@@ -122,6 +123,13 @@ func load_settings() -> void:
 	# JSON gives floats; keep ints as ints.
 	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models"]:
 		settings[k] = int(settings[k])
+	if data is Dictionary and int(data.get("rules_v", 1)) < 2:
+		# Tapping the cant was the old default and it tied up the thumb: move to Breath.
+		if settings.raid_rule == 1:
+			settings.raid_rule = 2
+		settings.rules_v = 2
+	if settings.camera == CAM_FIRST:
+		settings.camera = CAM_THIRD
 
 
 func save_settings() -> void:
