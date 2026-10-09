@@ -1,8 +1,8 @@
 extends Control
 ## Settings, grouped into cards: the game, the raid rule, the screen, sound and controls.
 
-const RULE_KEYS := ["RULE_CLOCK", "RULE_CANT_TAP", "RULE_CANT_AUTO", "RULE_CANT_VOICE"]
-const RULE_NOTES := ["RULE_CLOCK_NOTE", "RULE_TAP_NOTE", "RULE_BREATH_NOTE", "RULE_VOICE_NOTE"]
+const RULE_KEYS := ["RULE_CLOCK", "RULE_CANT_TAP", "RULE_CANT_AUTO"]
+const RULE_NOTES := ["RULE_CLOCK_NOTE", "RULE_TAP_NOTE", "RULE_BREATH_NOTE"]
 
 var _rule_note: Label
 
@@ -49,13 +49,11 @@ func _ready() -> void:
 	var rnames := []
 	for k in RULE_KEYS:
 		rnames.append(tr(k))
-	var cur := clampi(int(Game.settings.get("raid_rule", 2)), 0, 3)
+	var cur := clampi(int(Game.settings.get("raid_rule", 2)), 0, 2)
 	rule[1].add_child(UI.chips(rnames, cur, func(i):
 		Game.settings.raid_rule = i
 		Game.save_settings()
-		_rule_note.text = tr(RULE_NOTES[i])
-		if i == 3:
-			VoiceCant.request_permission()))
+		_rule_note.text = tr(RULE_NOTES[i])))
 	_rule_note = UI.wrap(tr(RULE_NOTES[cur]), "MutedLabel", 17)
 	rule[1].add_child(_rule_note)
 	left.move_child(rule[0], 0)   # the raid rule matters most: put it first

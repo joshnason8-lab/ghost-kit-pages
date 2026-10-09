@@ -9,7 +9,7 @@ international rules (IKF/AKFI) differ, the difference is noted.
 | Rule | How the game plays it |
 |---|---|
 | Court | 10 m × 13 m, midline, baulk lines 3.75 m from it, bonus lines 1 m further, 1 m lobbies, sitting blocks behind each end line. |
-| Raid | 30-second clock (PKL), or the traditional cant on one breath: by itself (Breath), said out loud into the mic (Say it), or tapped on the beat (Tap). Touches score one point each; the raider must cross the baulk line. |
+| Raid | 30-second clock (PKL), or the traditional cant on one breath: by itself (Breath) or tapped on the beat (Tap). Touches score one point each; the raider must cross the baulk line. |
 | 5-second rule | The raider must start the raid within 5 seconds of the whistle, or the other side gets a technical point. |
 | Bonus | With 6 or more defenders on the mat, a foot over the bonus line, or a leg stretched over it with the other foot in the air. It does not revive anyone. |
 | Lobby | The lobbies are part of the court only after contact. Before that, a raider who steps out is out, and the raid ends at once. This matches the PKL rule since season 9. Under the IKF rule the raid also ends, but defenders who follow the raider into the lobby are out too. |

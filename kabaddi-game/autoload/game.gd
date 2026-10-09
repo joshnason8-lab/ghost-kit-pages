@@ -47,7 +47,7 @@ var settings := {
 	"difficulty": 1,
 	"length": 0,
 	"seen_howto": false,
-	"raid_rule": 2,         # 0 Pro 30-second clock, 1 cant by tapping, 2 Breath (cant runs by itself), 3 cant said out loud
+	"raid_rule": 2,         # 0 Pro 30-second clock, 1 cant by tapping, 2 Breath (cant runs by itself)
 	"rules_v": 2,           # settings version: 2 made Breath the default
 	"models": 1,            # 0 classic code-built players, 1 realistic rigged players
 	"tutorial_done": [],
@@ -128,6 +128,8 @@ func load_settings() -> void:
 		if settings.raid_rule == 1:
 			settings.raid_rule = 2
 		settings.rules_v = 2
+	if settings.raid_rule > 2:
+		settings.raid_rule = 2   # the spoken cant (3) is gone
 	if settings.camera == CAM_FIRST:
 		settings.camera = CAM_THIRD
 

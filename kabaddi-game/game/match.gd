@@ -23,8 +23,6 @@ const BEAT := 0.6              # cant rhythm: one "kabaddi" per beat
 const RULE_CLOCK := 0
 const RULE_CANT_TAP := 1
 const RULE_CANT_AUTO := 2     # "Breath": the chant runs by itself; effort costs breath
-const RULE_CANT_VOICE := 3    # say "kabaddi" out loud into the mic
-const VOICE_SILENCE := 1.1    # seconds of silence in their half that break a spoken cant
 ## Breath each move costs (seconds of the one breath), and the extra drain per second of
 ## sprinting or struggling in a hold.
 const BREATH_COST := {"touch": 0.35, "toe": 0.6, "backkick": 0.6, "dodge": 0.5, "dubki": 0.9, "lion": 1.2}
@@ -104,7 +102,6 @@ var _post_messages: Array = []
 var _hints_shown := 0
 var raid_log: Array = []      # one entry per raid, for stats and tuning
 var raid_rule := RULE_CANT_AUTO
-var voice: VoiceCant = null    # the microphone, when the cant is said out loud
 var move_tries := {}          # move -> attempts, for tuning
 
 
@@ -176,11 +173,6 @@ func _ready() -> void:
 		hud.visible = false
 		controls.enabled = false
 		cam.mode = Game.CAM_TV
-	elif raid_rule == RULE_CANT_VOICE and control_mode != "none":
-		voice = VoiceCant.new()
-		add_child(voice)
-		VoiceCant.request_permission()
-		voice.start()
 	if String(config.get("mode", "")) == "tutorial":
 		tutorial = Tutorial.new()
 		add_child(tutorial)
@@ -362,7 +354,7 @@ func _begin_setup() -> void:
 		"ai_mode": "approach", "ai_lane": rng.randf_range(-3.0, 3.0), "ai_t": 0.0, "ai_target": null,
 		"probe_t": 0.0, "ai_step": "work", "ai_step_t": rng.randf_range(0.8, 1.6), "feint_on": null, "feint_t": 0.0, "feint_bit": false,
 		"ai_bonus": false, "ai_dodge_cd": 0.0, "user_raids": raiding == 0 and _user_controls_raider(),
-		"breath": 1.0, "beat_t": 0.0, "last_beat": -99, "chant_t": 0.0, "cant_tap": false, "cant_voice": false, "last_ok": 0.0, "air_max": RAID_TIME,
+		"breath": 1.0, "beat_t": 0.0, "last_beat": -99, "chant_t": 0.0, "cant_tap": false, "last_ok": 0.0, "air_max": RAID_TIME,
 		"shouted": false, "taunts": 0, "cross_cd": 0.0, "moves": [], "chain_caught": false, "kicks": 0, "def_moves": [], "dashed_by": null, "dash_t": 0.0,
 	}
 	controlled = null
@@ -375,7 +367,6 @@ func _begin_setup() -> void:
 	for a in athletes:
 		a.chain_partner = null
 	raid.cant_tap = raider == controlled and raid_rule == RULE_CANT_TAP
-	raid.cant_voice = raider == controlled and raid_rule == RULE_CANT_VOICE and voice != null
 	if raid_rule != RULE_CLOCK:
 		# One breath: longer for fitter, fresher raiders.
 		var stam := float(raider.data.attrs.stamina)
@@ -387,7 +378,7 @@ func _begin_setup() -> void:
 	hud.on_raid_setup()
 	if _hints_shown < 2 and controlled:
 		_hints_shown += 1
-		var raid_hint := "HINT_RAID_CLOCK" if raid_rule == RULE_CLOCK else ("HINT_RAID" if raid.cant_tap else ("HINT_RAID_VOICE" if raid.cant_voice else "HINT_RAID_AUTO"))
+		var raid_hint := "HINT_RAID_CLOCK" if raid_rule == RULE_CLOCK else ("HINT_RAID" if raid.cant_tap else "HINT_RAID_AUTO")
 		hud.hint(tr(raid_hint) if controlled == raider else tr("HINT_DEFEND"))
 	if raid.dod:
 		hud.hint(tr("HINT_DOD"))
@@ -511,10 +502,7 @@ func _tick_raid(dt: float) -> void:
 	_tick_shouts(dt)
 	# The crowd builds as the raider goes deep and roars through a struggle.
 	var tension := clampf(depth_in(1 - raiding, raider.position) / Arena.BONUS, 0.0, 1.0)
-	if raid.cant_voice:
-		Sfx.crowd(0.12)   # keep the crowd down so the mic hears you, not the speaker
-	else:
-		Sfx.crowd(0.3 + 0.35 * tension + (0.35 if raid.struggle and not raid.holders.is_empty() else 0.0))
+	Sfx.crowd(0.3 + 0.35 * tension + (0.35 if raid.struggle and not raid.holders.is_empty() else 0.0))
 	var defs := defenders()
 	var holders: Array = raid.holders
 
@@ -2303,19 +2291,6 @@ func _tick_cant(dt: float) -> void:
 		if not in_half or raider.state in ["touch", "kick", "backkick", "dodge", "dubki", "jump", "held", "shoved"]:
 			raid.last_ok = maxf(float(raid.last_ok), float(raid.beat_t) - BEAT)
 		elif float(raid.beat_t) - float(raid.last_ok) > float(prof.miss_beats) * BEAT:
-			_end_raid("cant")
-	elif raid.cant_voice:
-		# Said out loud: silence in their half breaks it. Until the mic has heard anything
-		# at all, the breath alone counts (a muted or missing mic is not a broken cant).
-		if voice.voiced and float(raid.get("voice_word", 0.0)) <= 0.0:
-			raid.voice_word = 0.45
-			tutorial_event.emit("cant")
-		raid.voice_word = float(raid.get("voice_word", 0.0)) - dt
-		if not voice.has_heard():
-			if phase_t > 4.0 and not raid.get("voice_warned", false):
-				raid.voice_warned = true
-				hud.hint(tr("HINT_NO_MIC"))
-		elif in_half and voice.silence() > VOICE_SILENCE:
 			_end_raid("cant")
 	else:
 		# AI raiders, and Breath mode, keep the chant going on their own.

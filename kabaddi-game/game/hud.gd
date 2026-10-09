@@ -20,7 +20,6 @@ var chant_l: Label
 var breath_box: Control
 var breath_bar: ProgressBar
 var breath_l: Label
-var voice_bar: ProgressBar    # how loud you are chanting, when the cant is said out loud
 var timeout_btn: Button
 var energy_bars: Array = []
 var to_l: Array = []
@@ -266,13 +265,6 @@ func _build_center() -> void:
 	breath_bar.show_percentage = false
 	breath_box.add_child(bl)
 	breath_box.add_child(breath_bar)
-	voice_bar = ProgressBar.new()
-	voice_bar.custom_minimum_size = Vector2(340, 8)
-	voice_bar.max_value = 1.0
-	voice_bar.step = 0.001
-	voice_bar.show_percentage = false
-	voice_bar.visible = false
-	breath_box.add_child(voice_bar)
 	breath_box.visible = false
 	root.add_child(breath_box)
 
@@ -526,16 +518,8 @@ func refresh() -> void:
 	# Traditional rules: no clock; the raider's breath is the clock, for every raider.
 	breath_box.visible = m.phase == "raid" and m.raid_rule != m.RULE_CLOCK
 	if breath_box.visible:
-		var speaking: bool = m.raid.get("cant_voice", false)
 		var mine_raid: bool = m.raider == m.controlled
-		breath_l.text = (tr("HUD_VOICE") if speaking else (tr("HUD_BREATH") if tapping else (tr("HUD_BREATH_MINE") if mine_raid else tr("HUD_BREATH_OTHER")))).to_upper()
-		voice_bar.visible = speaking
-		if speaking and m.voice:
-			voice_bar.value = m.voice.level
-			var vsb := StyleBoxFlat.new()
-			vsb.bg_color = Game.C_GOOD if m.voice.voiced else Game.C_MUTED
-			vsb.set_corner_radius_all(99)
-			voice_bar.add_theme_stylebox_override("fill", vsb)
+		breath_l.text = (tr("HUD_BREATH") if tapping else (tr("HUD_BREATH_MINE") if mine_raid else tr("HUD_BREATH_OTHER"))).to_upper()
 		breath_bar.value = float(m.raid.breath)
 		var low: bool = float(m.raid.breath) < 0.3
 		var sb := StyleBoxFlat.new()

@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.7.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.7.1-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.7.0-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.7.1-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-debug-apk`
      artifact. It is a zip; unzip it on the phone or on a computer.
 2. Open the `.apk` file on the phone. Android asks you to allow installs from that app (Files, Chrome or Drive).
@@ -33,10 +33,8 @@ saves (career, season, cup).
   to start.
 - **Settings → Graphics** starts on Medium. If the first raids of a match run slowly, the game drops a level by
   itself and says so. Turn that off with **Auto graphics**. On a fast phone, try High.
-- **Settings → Raid rule**: how the cant works. **Breath** (the default) leaves both thumbs free.
-  **Say it** has you chant "kabaddi, kabaddi" out loud; Android asks for the microphone the first time, and
-  the game listens only during your raids. **Tap** is the old pulsing button. **30-second clock** is the Pro
-  rule with no chant.
+- **Settings → Raid rule**: how the cant works. **Breath** (the default) leaves both thumbs free. **Tap** is
+  the pulsing button. **30-second clock** is the Pro rule with no chant.
 
 ## Things to try
 
@@ -49,7 +47,7 @@ saves (career, season, cup).
   menu it closes the game.
 - Leave the app mid-raid (home button or a call), then come back. The match should be paused.
 - A **League Season** through the auction and a few rounds.
-- Each **raid rule**, especially **Say it**: does it hear you over the crowd? (Headphones help.)
+- Each **raid rule**: Breath, Tap and the 30-second clock.
 - **Training**: watch each move's demo, then the lesson.
 
 ## Reporting

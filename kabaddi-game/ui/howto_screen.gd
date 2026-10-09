@@ -6,8 +6,7 @@ const TOPICS := [
 	{"title": "HT_RAIDING", "icon": "play", "pose": "quick", "sections": [
 		["H_RAID", "HOW_RAID"], ["MOVES", "HOW_MOVES"], ["H_BONUS", "HOW_BONUS"]]},
 	{"title": "HT_CANT", "icon": "mic", "pose": "cup", "sections": [
-		["RULE_CANT_AUTO", "RULE_BREATH_NOTE"], ["RULE_CANT_VOICE", "RULE_VOICE_NOTE"],
-		["RULE_CANT_TAP", "RULE_TAP_NOTE"], ["RULE_CLOCK", "RULE_CLOCK_NOTE"]]},
+		["RULE_CANT_AUTO", "RULE_BREATH_NOTE"], ["RULE_CANT_TAP", "RULE_TAP_NOTE"], ["RULE_CLOCK", "RULE_CLOCK_NOTE"]]},
 	{"title": "HT_DEFENDING", "icon": "people", "pose": "defend", "sections": [
 		["HUD_DEFEND", "HOW_DEFEND"], ["DEF_SKILLS", "HOW_STYLES"], ["BTN_CHAIN", "HOW_CHAIN"], ["BTN_SWITCH", "HOW_SWITCH"]]},
 	{"title": "HT_RULES", "icon": "whistle", "pose": "howto", "sections": [

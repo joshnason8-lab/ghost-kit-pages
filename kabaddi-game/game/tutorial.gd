@@ -66,7 +66,7 @@ static func _lesson_rule(id: String) -> int:
 ## The text for a step: the cant's first step depends on how you chant.
 static func step_key(key: String, rule: int) -> String:
 	if key == "TUT_CANT_1":
-		return ["TUT_CANT_1", "TUT_CANT_1", "TUT_CANT_1_BREATH", "TUT_CANT_1_VOICE"][clampi(rule, 0, 3)]
+		return ["TUT_CANT_1", "TUT_CANT_1", "TUT_CANT_1_BREATH"][clampi(rule, 0, 2)]
 	return key
 
 
