@@ -1,12 +1,16 @@
 extends Node3D
 ## Orthographic front, right and left renders of res://model.glb for joint detection
 ## (see tools/rig/README.md). Run in a scratch project, not the game. The image height
-## covers EXTENT metres, centred 0.75 m up; autorig.py assumes the same numbers.
+## covers EXTENT metres, centred 0.75 m up unless a second argument gives the centre (use
+## about half the model's height); pass the same centre to autorig.py as --center-y.
 const EXTENT := 2.0
 
 
 func _ready() -> void:
 	var out: String = OS.get_cmdline_user_args()[0]
+	var cy := 0.75
+	if OS.get_cmdline_user_args().size() > 1:
+		cy = float(OS.get_cmdline_user_args()[1])
 	var m: Node3D = load("res://model.glb").instantiate()
 	add_child(m)
 	var mat := StandardMaterial3D.new()
@@ -27,7 +31,7 @@ func _ready() -> void:
 	cam.size = EXTENT
 	add_child(cam)
 	# Front: camera on -Z looking toward +Z (the model faces -Z). Side: from +X looking -X.
-	var views := [["front", Vector3(0, 0.75, -5), Vector3(0, 0.75, 0)], ["side", Vector3(5, 0.75, 0), Vector3(0, 0.75, 0)], ["left", Vector3(-5, 0.75, 0), Vector3(0, 0.75, 0)]]
+	var views := [["front", Vector3(0, cy, -5), Vector3(0, cy, 0)], ["side", Vector3(5, cy, 0), Vector3(0, cy, 0)], ["left", Vector3(-5, cy, 0), Vector3(0, cy, 0)]]
 	for v in views:
 		cam.position = v[1]
 		cam.look_at(v[2])

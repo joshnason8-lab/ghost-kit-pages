@@ -12,7 +12,8 @@ mesh a skeleton that code can drive:
 4. Mark regions (skin, jersey, shorts, hair) so each team's kit colours can be applied.
 
 Output: assets/characters/rigged_athlete.json, which game/rigged_body.gd turns into a
-skinned mesh at load time.
+skinned mesh at load time. A textured model keeps its UVs ("uvs", origin at the top left as
+Godot and glTF use); kit_texture.py makes the textures that go with them.
 
 Usage:
   python autorig.py MESH.glb JOINTS2D.json OUT.json [--px 1024 --extent 2.0 --center-y 0.75]
@@ -23,6 +24,8 @@ import json
 
 import numpy as np
 import trimesh
+
+from prepare import file_normals
 
 KP = ["nose", "l_eye", "r_eye", "l_ear", "r_ear", "l_sh", "r_sh", "l_el", "r_el", "l_wr", "r_wr",
       "l_hip", "r_hip", "l_kn", "r_kn", "l_an", "r_an"]
@@ -87,12 +90,26 @@ def main():
     ap.add_argument("--px", type=float, default=1024)
     ap.add_argument("--extent", type=float, default=2.0)
     ap.add_argument("--center-y", type=float, default=0.75)
+    ap.add_argument("--hem", type=float, default=None,
+                    help="height of the shirt's hem in metres (default: a little above the hips)")
     a = ap.parse_args()
 
     m = trimesh.load(a.mesh, force="mesh", process=False)
     V = np.asarray(m.vertices, dtype=np.float64)
     F = np.asarray(m.faces, dtype=np.int64)
-    N = np.asarray(m.vertex_normals, dtype=np.float64)
+    try:
+        N = file_normals(a.mesh)   # the model's own normals; trimesh recomputes them on load
+    except (KeyError, SystemExit):
+        N = np.asarray(m.vertex_normals, dtype=np.float64)
+    uv = getattr(m.visual, "uv", None)
+    # Textured models split vertices along UV seams. Rig the welded mesh, so the copies of a
+    # vertex get the same bones and weights and the seams never open, then copy back.
+    V_all, F_all = V, F
+    key = np.round(V / 1e-5).astype(np.int64)
+    _, first, weld = np.unique(key, axis=0, return_index=True, return_inverse=True)
+    weld = weld.reshape(-1)
+    V = V_all[first]
+    F = weld[F_all]
     J = joints_3d(json.load(open(a.joints2d)), a.px, a.extent, a.center_y)
 
     # Pull limb joints onto the middle of the limb: average the vertices in a thin slice
@@ -144,7 +161,7 @@ def main():
     label = np.argmin(D, axis=1)
 
     # Stray islands: a small connected piece of one bone's vertices surrounded by another's.
-    edges = m.edges_unique
+    edges = trimesh.Trimesh(vertices=V, faces=F, process=False).edges_unique
     adj = [[] for _ in range(len(V))]
     for u, v in edges:
         adj[u].append(v)
@@ -194,6 +211,7 @@ def main():
             weights4[vi, j] = w / tot
 
     # Regions for kit colours.
+    hem = a.hem if a.hem is not None else J["spine1"][1] + 0.02
     region = np.full(len(V), REGION["skin"], dtype=np.int32)
     for vi in range(len(V)):
         n = names[label[vi]]
@@ -207,7 +225,7 @@ def main():
         elif n.startswith("upperarm") and t < 0.42:
             region[vi] = REGION["jersey"]
         elif n == "hips":
-            region[vi] = REGION["shorts"] if V[vi, 1] < J["spine1"][1] + 0.02 else REGION["jersey"]
+            region[vi] = REGION["shorts"] if V[vi, 1] < hem else REGION["jersey"]
         elif n.startswith("thigh") and t < 0.6:
             region[vi] = REGION["shorts"]
         elif n == "head":
@@ -220,14 +238,16 @@ def main():
         "source": a.mesh.split("/")[-1],
         "bones": [{"name": n, "parent": parent[i], "head": heads[i].round(4).tolist(), "tail": tails[i].round(4).tolist()}
                   for i, n in enumerate(names)],
-        "vertices": V.astype(np.float32).round(4).flatten().tolist(),
+        "vertices": V_all.astype(np.float32).round(4).flatten().tolist(),
         "normals": N.astype(np.float32).round(3).flatten().tolist(),
-        "indices": F.flatten().tolist(),
-        "bones4": bones4.flatten().tolist(),
-        "weights4": weights4.round(3).flatten().tolist(),
-        "region": region.tolist(),
+        "indices": F_all.flatten().tolist(),
+        "bones4": bones4[weld].flatten().tolist(),
+        "weights4": weights4[weld].round(3).flatten().tolist(),
+        "region": region[weld].tolist(),
         "height": float(V[:, 1].max()),
     }
+    if uv is not None and len(uv) == len(V_all):
+        out["uvs"] = np.column_stack([uv[:, 0], 1.0 - uv[:, 1]]).astype(np.float32).round(5).flatten().tolist()
     json.dump(out, open(a.out, "w"), separators=(",", ":"))
     counts = np.bincount(label, minlength=len(BONES))
     print("bones:", {n: int(c) for n, c in zip(names, counts)})

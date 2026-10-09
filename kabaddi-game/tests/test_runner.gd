@@ -223,6 +223,11 @@ func _run() -> void:
 		ra.setup(DB.team("MUM").squad[0], 0, Color.TEAL, Color.WHITE, true)
 		add_child(ra)
 		check(ra.model.rig != null and ra.model.rig.skeleton.get_bone_count() == 17, "rigged body built with 17 bones")
+		var rmat: ShaderMaterial = ra.model.rig.material
+		check(rmat.get_shader_parameter("albedo_tex") is Texture2D and rmat.get_shader_parameter("kit_tex") is Texture2D,
+			"the realistic body wears its texture, with the kit map for team colours")
+		var sr: Vector3 = rmat.get_shader_parameter("skin_ratio")
+		check(sr.x > 0.0 and sr.x < 3.0 and sr.z > 0.0, "skin tone ratio is sane: %s" % sr)
 		ra.set_state("dubki", 1000.0)
 		ra.st_t = 500.0
 		await frames(20)

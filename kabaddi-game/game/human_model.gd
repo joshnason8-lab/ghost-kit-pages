@@ -115,7 +115,7 @@ func _use_rigged_body() -> void:
 			(n as GeometryInstance3D).visible = false
 	rig = RiggedBody.new()
 	add_child(rig)
-	rig.setup(skin, jersey, shorts, hair, height)
+	rig.setup(skin, jersey, shorts, hair, height, trim)
 	if number > 0:
 		rig.add_number(number, trim, jersey.darkened(0.4))
 

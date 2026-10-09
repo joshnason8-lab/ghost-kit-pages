@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.7.2-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.7.3-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.7.2-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.7.3-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-debug-apk`
      artifact. It is a zip; unzip it on the phone or on a computer.
 2. Open the `.apk` file on the phone. Android asks you to allow installs from that app (Files, Chrome or Drive).

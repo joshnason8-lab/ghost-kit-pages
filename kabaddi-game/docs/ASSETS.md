@@ -7,10 +7,14 @@ capture**, and the code already has a slot for both.
 
 ## Generated models (what the game uses now)
 
-`assets/characters/rigged_athlete.json` is a generated player model (Meshy, image to 3D), shrunk to 14,000
-triangles and auto-rigged by `tools/rig`. `game/rigged_body.gd` builds it as a skinned mesh and turns its bones to
-follow the code-built skeleton every frame, so it needs no animation clips. To try another model, follow
-[tools/rig/README.md](../tools/rig/README.md). A model with its texture can add face and skin detail later.
+`assets/characters/rigged_athlete.json` is a generated player model (Meshy's game-ready export, about 10,400
+triangles) auto-rigged by `tools/rig`. `game/rigged_body.gd` builds it as a skinned mesh and turns its bones to
+follow the code-built skeleton every frame, so it needs no animation clips.
+
+Its texture (`athlete_albedo.webp`) gives the face, skin, knee pads and the kit's folds. The kit map
+(`athlete_kit.webp`) marks the kit's main colour and trim, so each team's colours replace the model's own; its
+logos and numbers were painted out, and the shirt number is added by the game. Skin is tinted to each player's
+tone. To try another model, follow [tools/rig/README.md](../tools/rig/README.md).
 
 ## Drop-in slot
 

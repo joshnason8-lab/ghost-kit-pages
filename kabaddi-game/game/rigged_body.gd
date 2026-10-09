@@ -3,7 +3,9 @@ extends Node3D
 ## A realistic body (a rigged mesh made by tools/rig/autorig.py) that follows the code-built
 ## placeholder skeleton in HumanModel. The placeholder keeps animating as before, just
 ## hidden; every frame each bone of this mesh is turned to match the matching limb, torso or
-## head of the placeholder. Kit colours come from regions painted by the rig tool.
+## head of the placeholder. Kit colours come from regions painted by the rig tool or, for a
+## textured model, from its kit map (tools/rig/kit_texture.py): the texture gives the face,
+## skin and the kit's folds, and the team's colours replace the kit's own.
 
 const PATH := "res://assets/characters/rigged_athlete.json"
 const SHADER := """
@@ -30,10 +32,38 @@ void fragment() {
 	SPECULAR = 0.35;
 }
 """
+const SHADER_TEXTURED := """
+shader_type spatial;
+uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D kit_tex : filter_linear_mipmap, repeat_disable;   // r main, g trim, b shading / 2
+uniform vec3 skin_ratio = vec3(1.0);   // this player's skin over the texture's, in linear light
+uniform vec3 jersey_col : source_color = vec3(0.1, 0.4, 0.8);
+uniform vec3 shorts_col : source_color = vec3(0.05, 0.1, 0.16);
+uniform vec3 trim_col : source_color = vec3(1.0);
+varying vec3 region;
+void vertex() {
+	region = COLOR.rgb;   // r jersey, g shorts, b hair
+}
+void fragment() {
+	vec3 t = texture(albedo_tex, UV).rgb;
+	vec3 k = texture(kit_tex, UV).rgb;
+	vec3 body = t * mix(skin_ratio, vec3(1.0), region.b);   // hair keeps its colour
+	// Sharp edges: a little kit bleeding in from a neighbouring piece of the texture (or a
+	// little skin into the kit) is dropped.
+	float amount = smoothstep(0.3, 0.7, k.r + k.g);
+	vec3 kit_col = (mix(jersey_col, shorts_col, region.g) * k.r + trim_col * k.g) / max(k.r + k.g, 0.001);
+	ALBEDO = mix(body, kit_col * k.b * 2.0, amount);
+	ROUGHNESS = mix(0.6, 0.85, amount);
+	SPECULAR = 0.35;
+}
+"""
 
 static var _data = null
 static var _mesh: ArrayMesh = null
 static var _shader: Shader = null
+static var _albedo: Texture2D = null
+static var _kit: Texture2D = null
+static var _skin_ref := Color(1, 1, 1)
 static var _rest_dirs := {}
 static var _rest_frames := {}
 static var _leg_len := 0.9
@@ -71,6 +101,18 @@ static func _load() -> void:
 	norms.resize(n)
 	cols.resize(n)
 	var region: Array = _data.region
+	# A textured model: its UVs, its cleaned texture and kit map.
+	var uvs := PackedVector2Array()
+	var tex: Dictionary = _data.get("texture", {})
+	if _data.has("uvs") and ResourceLoader.exists(String(tex.get("albedo", ""))) and ResourceLoader.exists(String(tex.get("kit", ""))):
+		_albedo = load(String(tex.albedo))
+		_kit = load(String(tex.kit))
+		var r: Array = tex.get("skin_ref", [1, 1, 1])
+		_skin_ref = Color(float(r[0]), float(r[1]), float(r[2]))
+		var us: Array = _data.uvs
+		uvs.resize(n)
+		for i in n:
+			uvs[i] = Vector2(us[i * 2], us[i * 2 + 1])
 	for i in n:
 		verts[i] = Vector3(vs[i * 3], vs[i * 3 + 1], vs[i * 3 + 2])
 		norms[i] = Vector3(ns[i * 3], ns[i * 3 + 1], ns[i * 3 + 2])
@@ -95,13 +137,15 @@ static func _load() -> void:
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_NORMAL] = norms
 	arrays[Mesh.ARRAY_COLOR] = cols
+	if not uvs.is_empty():
+		arrays[Mesh.ARRAY_TEX_UV] = uvs
 	arrays[Mesh.ARRAY_BONES] = bones
 	arrays[Mesh.ARRAY_WEIGHTS] = weights
 	arrays[Mesh.ARRAY_INDEX] = idx
 	_mesh = ArrayMesh.new()
 	_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	_shader = Shader.new()
-	_shader.code = SHADER
+	_shader.code = SHADER_TEXTURED if _albedo else SHADER
 
 	# Rest directions and frames, for turning bones to match the placeholder.
 	var j := {}
@@ -144,7 +188,7 @@ static func _frame(up: Vector3, side: Vector3) -> Basis:
 	return Basis(x, y, z)
 
 
-func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float) -> void:
+func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float, trim := Color.WHITE) -> void:
 	_load()
 	if _mesh == null:
 		return
@@ -177,6 +221,13 @@ func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float
 	material.set_shader_parameter("jersey_col", jersey)
 	material.set_shader_parameter("shorts_col", shorts)
 	material.set_shader_parameter("hair_col", hair)
+	if _albedo:
+		material.set_shader_parameter("albedo_tex", _albedo)
+		material.set_shader_parameter("kit_tex", _kit)
+		material.set_shader_parameter("trim_col", trim)
+		var a := skin.srgb_to_linear()
+		var b := _skin_ref.srgb_to_linear()
+		material.set_shader_parameter("skin_ratio", Vector3(a.r / b.r, a.g / b.g, a.b / b.b))
 	mesh_instance.material_override = material
 	scale = Vector3.ONE * (height / _stand_h)
 
