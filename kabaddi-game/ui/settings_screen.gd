@@ -29,12 +29,12 @@ func _ready() -> void:
 	# The game.
 	var game: Array = UI.section(tr("SET_GAME"), "flag")
 	left.add_child(game[0])
-	var names := []
-	var codes := []
+	var names := [tr("LANG_PHONE")]
+	var codes := [""]   # "" follows the phone
 	for pair in Game.LANGUAGES:
 		codes.append(pair[0])
 		names.append(pair[1])
-	game[1].add_child(UI.field(tr("LANGUAGE"), UI.chips(names, codes.find(Game.settings.language), func(i):
+	game[1].add_child(UI.field(tr("LANGUAGE"), UI.chips(names, codes.find(String(Game.settings.language)), func(i):
 		Game.set_language(codes[i])
 		# Rebuild so every label picks up the new language.
 		Game.show_screen("res://ui/settings_screen.gd"))))

@@ -45,6 +45,22 @@ func _tour() -> void:
 		await frames(40)
 		await shot("30_awards")
 		return
+	if args_only == "language":
+		# The main menu's language picker, then the menu rebuilt in Tamil.
+		var menu := Game.show_screen("res://ui/main_menu.gd")
+		await frames(120)
+		menu._open_language()
+		await frames(20)
+		await shot("lang_1_picker")
+		var tamil: Button = menu._picker.find_children("*", "Button", true, false)[5]
+		tamil.pressed.emit()
+		await frames(40)
+		await shot("lang_2_menu_ta")
+		menu._open_language()
+		await frames(20)
+		await shot("lang_3_picker_ta")
+		Game.set_language("")
+		return
 	if args_only.begins_with("hi:"):
 		TranslationServer.set_locale("hi")
 		args_only = args_only.substr(3)

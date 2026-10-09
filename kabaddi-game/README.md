@@ -32,7 +32,7 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 | **Nations Cup** | 8 countries, two groups, semis, final. Real flags and flag-accurate kits for 12 countries. |
 | **Training** | Each move acted out on a loop before you try it, then twelve lessons with on-screen objectives: cant, hand touch, toe touch, back and side kicks, dubki, lion jump, bonus, breaking a hold, tackling, chain tackle, waist hold, dash. |
 | **Menus** | Built for wide phone screens: big mode tiles over a live AI match, teams facing off in Quick Match, a full-screen player auction, How to play in short sections. |
-| **Languages** | English, हिन्दी, मराठी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা, ਪੰਜਾਬੀ. |
+| **Languages** | English, हिन्दी, मराठी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা, ਪੰਜਾਬੀ. The game starts in the phone's language when it has it; the globe button on the main menu and Settings both change it. |
 | **Audio** | A home crowd that builds as the raider goes deep, cheers, "ooh"s at a near miss, groans and applause; players grunt in a struggle, gasp when tackled and breathe hard after a raid; whistle, dhol, crowd chant, the raider's chant and players' shouts. All are placeholders (crowd and efforts synthesised by `tools/audio/make_sounds.py`; the chant and shouts from MBROLA Hindi voices by `tools/audio/make_voices.py`): drop real recordings into `assets/audio/` with the same file names. |
 
 Points tables use Pro-style scoring: win 5, tie 3, loss by 7 or fewer 1.

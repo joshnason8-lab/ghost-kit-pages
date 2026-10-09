@@ -6,15 +6,16 @@ const CAREER_PATH := "user://career.json"
 const CUP_PATH := "user://cup.json"
 const SEASON_PATH := "user://season.json"
 
+## Code, name in the language itself, name in English.
 const LANGUAGES := [
-	["en", "English"],
-	["hi", "हिन्दी"],
-	["mr", "मराठी"],
-	["ta", "தமிழ்"],
-	["te", "తెలుగు"],
-	["kn", "ಕನ್ನಡ"],
-	["bn", "বাংলা"],
-	["pa", "ਪੰਜਾਬੀ"],
+	["en", "English", "English"],
+	["hi", "हिन्दी", "Hindi"],
+	["mr", "मराठी", "Marathi"],
+	["ta", "தமிழ்", "Tamil"],
+	["te", "తెలుగు", "Telugu"],
+	["kn", "ಕನ್ನಡ", "Kannada"],
+	["bn", "বাংলা", "Bengali"],
+	["pa", "ਪੰਜਾਬੀ", "Punjabi"],
 ]
 
 const CAM_THIRD := 0
@@ -38,7 +39,8 @@ const C_GOOD := Color("4cd38a")
 const C_DANGER := Color("ff5a5a")
 
 var settings := {
-	"language": "",
+	"language": "",         # "" follows the phone's language
+	"lang_v": 2,            # settings version: 2 stopped pinning the phone's language on first run
 	"camera": CAM_THIRD,
 	"graphics": GFX_MEDIUM,
 	"sound": true,
@@ -67,9 +69,7 @@ var season = null  # Season (RefCounted), loaded lazily
 
 func _ready() -> void:
 	load_settings()
-	if settings.language == "":
-		settings.language = _guess_language()
-	TranslationServer.set_locale(settings.language)
+	TranslationServer.set_locale(language())
 	_build_theme()
 	get_tree().root.theme = theme
 	get_tree().root.get_viewport().gui_embed_subwindows = true
@@ -101,12 +101,26 @@ func go_back() -> void:
 		goto_menu()
 
 
-func _guess_language() -> String:
+## The language in use: the player's pick, or else the phone's.
+func language() -> String:
+	return String(settings.language) if String(settings.language) != "" else phone_language()
+
+
+## The phone's language if the game has it, else English.
+func phone_language() -> String:
 	var os_lang := OS.get_locale_language()
 	for pair in LANGUAGES:
 		if pair[0] == os_lang:
 			return os_lang
 	return "en"
+
+
+## A language's own name ("हिन्दी"), and its English name.
+func language_names(code: String) -> Array:
+	for pair in LANGUAGES:
+		if pair[0] == code:
+			return [pair[1], pair[2]]
+	return [code, code]
 
 
 # ---------------------------------------------------------------- settings
@@ -128,6 +142,11 @@ func load_settings() -> void:
 		if settings.raid_rule == 1:
 			settings.raid_rule = 2
 		settings.rules_v = 2
+	if data is Dictionary and int(data.get("lang_v", 1)) < 2:
+		# The first run used to save the phone's language as if picked; follow the phone instead.
+		if String(settings.language) == phone_language():
+			settings.language = ""
+		settings.lang_v = 2
 	if settings.raid_rule > 2:
 		settings.raid_rule = 2   # the spoken cant (3) is gone
 	if settings.camera == CAM_FIRST:
@@ -138,9 +157,10 @@ func save_settings() -> void:
 	_write_json(SETTINGS_PATH, settings)
 
 
+## Pick a language; "" goes back to following the phone.
 func set_language(code: String) -> void:
 	settings.language = code
-	TranslationServer.set_locale(code)
+	TranslationServer.set_locale(language())
 	save_settings()
 
 

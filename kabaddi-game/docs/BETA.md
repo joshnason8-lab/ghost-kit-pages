@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.7.1-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.7.2-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.7.1-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.7.2-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-debug-apk`
      artifact. It is a zip; unzip it on the phone or on a computer.
 2. Open the `.apk` file on the phone. Android asks you to allow installs from that app (Files, Chrome or Drive).
@@ -29,8 +29,10 @@ saves (career, season, cup).
 
 ## First run
 
-- Pick a language, then try **Training** for the controls. The *Cant* and *Hand touch* lessons are the place
-  to start.
+- The game starts in your phone's language if it has it, and in English if not. To change it, tap the
+  **globe** button at the top left of the main menu (it shows the current language), or go to
+  **Settings → Language**. **Phone language** goes back to following the phone.
+- Try **Training** for the controls. The *Cant* and *Hand touch* lessons are the place to start.
 - **Settings → Graphics** starts on Medium. If the first raids of a match run slowly, the game drops a level by
   itself and says so. Turn that off with **Auto graphics**. On a fast phone, try High.
 - **Settings → Raid rule**: how the cant works. **Breath** (the default) leaves both thumbs free. **Tap** is

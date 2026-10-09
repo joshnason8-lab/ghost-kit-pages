@@ -12,6 +12,8 @@ var _title: Label
 var _hi: Label
 var _cards: Array = []
 var _t := 0.0
+var _ui: Control
+var _picker: LanguagePicker = null
 
 
 func _ready() -> void:
@@ -70,6 +72,7 @@ func _shade() -> void:
 
 func _build_ui() -> void:
 	var margin := UI.frame(self, 44)
+	_ui = margin
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 36)
 	margin.add_child(row)
@@ -80,8 +83,14 @@ func _build_ui() -> void:
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.size_flags_stretch_ratio = 0.8
 	row.add_child(col)
+	# The language, at the top where anyone can find it, whatever language the menu is in.
+	var lang_row := HBoxContainer.new()
+	col.add_child(lang_row)
+	var lang := _link(Game.language_names(Game.language())[0], "globe", _open_language, 48)
+	lang_row.add_child(lang)
+	_cards.append(lang)
 	var top := Control.new()
-	top.custom_minimum_size = Vector2(0, 18)
+	top.custom_minimum_size = Vector2(0, 6)
 	col.add_child(top)
 	col.add_child(UI.label(tr("LEAGUE_NAME").to_upper() + "  ·  " + tr("MENU_CUP").to_upper(), "EyebrowLabel", 16, Game.C_SAFFRON))
 	# The title as big as the left column allows, on one line on 16:9 and wider screens.
@@ -200,10 +209,10 @@ func _continue_card() -> Control:
 	return b
 
 
-## A quiet text link with an icon, for How to play and Settings.
-func _link(text: String, icon_kind: String, cb: Callable) -> Button:
+## A quiet text link with an icon, for How to play, Settings and the language.
+func _link(text: String, icon_kind: String, cb: Callable, height := 54) -> Button:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(0, 54)
+	b.custom_minimum_size = Vector2(0, height)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(Game.C_PANEL, 0.75)
 	sb.set_corner_radius_all(99)
@@ -220,12 +229,37 @@ func _link(text: String, icon_kind: String, cb: Callable) -> Button:
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	b.text = text
 	var ic = Icon.make(icon_kind, 26, Game.C_GOLD)
-	ic.position = Vector2(18, 14)
+	ic.position = Vector2(18, (height - 26) / 2.0)
 	ic.size = Vector2(26, 26)
 	b.add_child(ic)
 	b.pressed.connect(Sfx.click)
 	b.pressed.connect(cb)
 	return b
+
+
+func _open_language() -> void:
+	if _picker and is_instance_valid(_picker) and not _picker.is_queued_for_deletion():
+		return
+	_picker = LanguagePicker.new()
+	_picker.picked.connect(_relabel)
+	add_child(_picker)
+
+
+## A new language: build the menu again in it, leaving the match behind playing.
+func _relabel() -> void:
+	_ui.queue_free()
+	_cards.clear()
+	_build_ui()
+	_animate_in()
+	move_child(_picker, -1)
+
+
+## The phone's back button: close the language picker if it is open, else leave the game.
+func on_back() -> void:
+	if _picker and is_instance_valid(_picker) and not _picker.is_queued_for_deletion():
+		_picker.close()
+	else:
+		get_tree().quit()
 
 
 func _go(path: String) -> void:

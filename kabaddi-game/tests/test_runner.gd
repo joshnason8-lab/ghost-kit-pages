@@ -395,6 +395,26 @@ func _run() -> void:
 	Game.go_back()
 	await frames(2)
 	check(String(Game.current.get_script().resource_path).ends_with("main_menu.gd"), "back from a screen returns to the menu")
+	# The language button on the main menu, and following the phone.
+	var menu: Node = Game.current
+	menu._open_language()
+	await frames(2)
+	check(is_instance_valid(menu._picker), "the menu opens the language picker")
+	Game.go_back()
+	await frames(2)
+	check(Game.current == menu and not is_instance_valid(menu._picker), "back closes the language picker, not the game")
+	menu._open_language()
+	await frames(2)
+	(menu._picker.find_children("*", "Button", true, false)[3] as Button).pressed.emit()   # ✕, phone, English, Hindi
+	await frames(3)
+	check(Game.settings.language == "hi" and TranslationServer.get_locale() == "hi", "picking Hindi on the menu switches to it")
+	check(not is_instance_valid(menu._picker) and Game.current == menu, "the picker closes and the menu stays")
+	Game.set_language("")
+	check(Game.language() == Game.phone_language() and TranslationServer.get_locale() == Game.phone_language(), "Phone language follows the phone")
+	Game._write_json(Game.SETTINGS_PATH, {"language": Game.phone_language(), "rules_v": 2, "raid_rule": int(Game.settings.raid_rule)})
+	Game.load_settings()
+	check(Game.settings.language == "" and int(Game.settings.lang_v) == 2, "an old save's first-run language goes back to following the phone")
+	Game.save_settings()
 	Game.start_match({"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0, "difficulty": 1, "first_raider": 0})
 	var lm: Node = Game.current
 	var g14 := 0
