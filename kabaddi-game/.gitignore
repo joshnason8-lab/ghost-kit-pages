@@ -3,3 +3,4 @@ build/
 *.translation
 export_credentials.cfg
 *.keystore
+__pycache__/
