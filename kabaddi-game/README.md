@@ -13,7 +13,7 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 | Area | What works today |
 |---|---|
 | **Match** | 7 v 7, two 20-minute halves of alternating 30-second raids. You raid, then you defend. The clock can run at 6× (about 7 minutes), 3× (about 14 minutes) or real time. |
-| **Raid rule** (Settings) | **30-second clock** (the Pro rule: no chant) or the traditional **cant**: no clock, the raider chants "kabaddi" on one breath (longer for fitter, fresher raiders). Tap the pulsing **Cant** button on the beat; if the chant breaks or the breath runs out in their half, you're out. The cant can also be automatic. Each tap is voiced. |
+| **Raid rule** (Settings) | The traditional **cant**, three ways: **Breath** (the default, hands free: the raider chants on one breath, longer for fitter, fresher raiders; sprinting, moves and struggling in a hold use it up faster), **Say it** (chant "kabaddi, kabaddi" out loud into the phone's mic; go quiet in their half and you're out) or **Tap** (tap Cant on the beat; every move counts as a beat). Or the **30-second clock**, the Pro rule with no chant. |
 | **Rules** | Touch points; bonus line with 6+ defenders on the mat, including the airborne bonus (a leg stretched over the line); baulk line; out of bounds, with the lobbies live only after contact; defenders crossing the midline, or diving or dashing out, are out; tackles and super tackles (3 or fewer defenders); chain holds; empty raids and do-or-die; revival in order of dismissal; all outs (+2, everyone back); the 5-second rule to start a raid; green and yellow cards for rough play (a yellow is two minutes off and a technical point). Super 10 and High 5 are called out. Drawn knockouts use the Pro tie-breaker: five raids each by different raiders, then a coin toss and golden raids with the baulk line as the bonus line. |
 | **Energy and time outs** | Raids, dives and holds tire players; they recover between raids, faster on the bench and at half time. Two 30-second time outs per team per half: call yours from the pause menu, and the AI calls one when tired or after a run of points. Team energy and time outs left show on the scoreboard. |
 | **Officials** | Referee and scorers' table at the midline, an umpire on each side line, a line judge at each end line. They follow the raid and make the hand signals: points (with the number), bonus, out, all out, time out, half time, match end and cards. See [docs/KABADDI.md](docs/KABADDI.md). |
@@ -24,17 +24,16 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 | **Emotion** | Raiders slap their thighs before a raid and taunt the chain ("Aaja!"). Defenders call "Pakad!". Celebrations vary and don't come every time: roars, fist pumps, claps, chest thumps, pointing to the crowd, and team-mates jogging over for a high five. Out players sit on the bench in the sitting block. Winners roar, the beaten slump with hands on heads, players dispute touches ("Touch tha!" / "No touch!"), and there's the occasional shove after a tackle. Shouts are voiced and shown as speech bubbles in your language. |
 | **Difficulty** | Rookie, Pro, Star and Legend change defender timing and aggression, AI raider skill, aim assist and how strict the cant rhythm is. |
 | **Players** | Realistic bodies from a generated model, auto-rigged and driven by the game's animation, with team kit colours, skin tones and shirt numbers. Strides match running speed; players side-shuffle, backpedal, shift their weight and look around. Switch to the classic code-built bodies in Settings. |
-| **Cameras** | Third person, first person (drag to look), broadcast. |
+| **Cameras** | Third person and broadcast. |
 | **Grounds** | Mumbai Dome, Gaon Maidan (village mud court), National Stadium (floodlit), Monsoon Ground (rain), Puri Beach (sand). |
 | **Quick Match** | Any two league teams or countries, any ground. |
-| **Season awards** | Every player's raid and tackle points are kept all season (simulated matches share each team's score by ability). At the end: best raider, best defender, and the **Arjuna Award** for the most valuable player, presented with a bronze statuette. In Career you are in the running. |
+| **Season awards** | Every player's raid and tackle points are kept all season (simulated matches share each team's score by ability). At the end: best raider, best defender, and the **Arjuna Award** for the most valuable player, presented with a bronze statuette. |
 | **League Season** | Own a franchise. Retain your best six, then **bid at the auction**: categories A–D and New Young Players, paddles, "going once, going twice", bidding wars, record buys, **Final Bid Match cards**, and an accelerated round. Then play 11 rounds and the playoffs (top six, two eliminators, semis, final) and **lift the trophy**. |
 | **Nations Cup** | 8 countries, two groups, semis, final. Real flags and flag-accurate kits for 12 countries. |
-| **Career** | Create a player and pick his signature raiding move and signature tackle, get auctioned (with the same live auction), play seasons, train ratings and moves. |
-| **Training** | Twelve lessons with on-screen objectives: cant, hand touch, toe touch, back and side kicks, dubki, lion jump, bonus, breaking a hold, tackling, chain tackle, waist hold, dash. |
-| **Start menu** | A live AI match plays behind the menu on a rotating ground. |
+| **Training** | Each move acted out on a loop before you try it, then twelve lessons with on-screen objectives: cant, hand touch, toe touch, back and side kicks, dubki, lion jump, bonus, breaking a hold, tackling, chain tackle, waist hold, dash. |
+| **Menus** | Built for wide phone screens: big mode tiles over a live AI match, teams facing off in Quick Match, a full-screen player auction, How to play in short sections. |
 | **Languages** | English, हिन्दी, मराठी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা, ਪੰਜਾਬੀ. |
-| **Audio** | A home crowd that builds as the raider goes deep, cheers, "ooh"s at a near miss, groans and applause; players grunt in a struggle, gasp when tackled and breathe hard after a raid; whistle, dhol, crowd chant, the raider's chant and players' shouts. All are placeholders (synthesised by `tools/audio/make_sounds.py`, voices by text-to-speech): drop real recordings into `assets/audio/` with the same file names. |
+| **Audio** | A home crowd that builds as the raider goes deep, cheers, "ooh"s at a near miss, groans and applause; players grunt in a struggle, gasp when tackled and breathe hard after a raid; whistle, dhol, crowd chant, the raider's chant and players' shouts. All are placeholders (crowd and efforts synthesised by `tools/audio/make_sounds.py`; the chant and shouts from MBROLA Hindi voices by `tools/audio/make_voices.py`): drop real recordings into `assets/audio/` with the same file names. |
 
 Points tables use Pro-style scoring: win 5, tie 3, loss by 7 or fewer 1.
 
@@ -44,7 +43,7 @@ On a phone:
 
 - **Left thumb.** Touch anywhere on the left side for a floating joystick.
 - **Right thumb.** Use the action buttons. Raiding: the pulsing *Cant*, *Hand touch*, *Kick*, *Dodge*, *Dubki*, *Lion jump*. Defending: *Ankle hold*, *Thigh hold*, *Waist hold*, *Dash*, *Chain*, *Switch*.
-- **Drag anywhere else** to look around. Use it to aim in first person or to orbit the third-person camera.
+- **Drag anywhere else** to look around (orbit the third-person camera).
 - **Top right.** Camera and pause.
 - **Left-handed layout.** Turn it on in Settings.
 

@@ -158,7 +158,8 @@ func _section(head: String, body: String) -> VBoxContainer:
 func _points(body: String) -> Array:
 	var text := body.strip_edges()
 	var colon := text.find(":")
-	if colon > 0 and colon < 32 and text.find(".") > colon:
+	var stop := maxi(text.find("."), text.find("।"))
+	if colon > 0 and colon < 32 and stop > colon:
 		text = text.substr(colon + 1).strip_edges()
 		text = text.substr(0, 1).to_upper() + text.substr(1)
 	var out := []

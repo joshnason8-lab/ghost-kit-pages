@@ -45,6 +45,9 @@ func _tour() -> void:
 		await frames(40)
 		await shot("30_awards")
 		return
+	if args_only.begins_with("hi:"):
+		TranslationServer.set_locale("hi")
+		args_only = args_only.substr(3)
 	if args_only.begins_with("screen:"):
 		# One screen: screen:res://ui/main_menu.gd
 		Game.show_screen(args_only.substr(7))
@@ -164,6 +167,11 @@ func _menus() -> void:
 	Game.show_screen("res://ui/trophy_screen.gd", {"team": "IND", "title": "Nations Cup", "back": "res://ui/main_menu.gd"})
 	await frames(90)
 	await shot("m11_trophy")
+	Game.show_screen("res://ui/result_screen.gd", {"result": {"config": {"mode": "quick"}, "home": "MUM", "away": "DEL", "score": [38, 31], "winner": 0,
+		"breakdown": [{"raid": 22, "tackle": 10, "allout": 4, "extra": 2}, {"raid": 19, "tackle": 9, "allout": 2, "extra": 1}],
+		"mvp": {"name": "Karthik Rao", "team": "MUM", "pts": 14}}})
+	await frames(10)
+	await shot("m12_result")
 	Game.delete_cup()
 
 

@@ -84,7 +84,9 @@ func _build_ui() -> void:
 	top.custom_minimum_size = Vector2(0, 18)
 	col.add_child(top)
 	col.add_child(UI.label(tr("LEAGUE_NAME").to_upper() + "  ·  " + tr("MENU_CUP").to_upper(), "EyebrowLabel", 16, Game.C_SAFFRON))
-	_title = UI.label(tr("GAME_TITLE"), "TitleLabel", 112)
+	# The title as big as the left column allows, on one line on 16:9 and wider screens.
+	var tsize := int(clampf(get_viewport_rect().size.x * 0.066, 78.0, 116.0))
+	_title = UI.label(tr("GAME_TITLE"), "TitleLabel", tsize)
 	_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.55))
 	_title.add_theme_constant_override("outline_size", 10)
 	_title.add_theme_constant_override("line_spacing", -30)

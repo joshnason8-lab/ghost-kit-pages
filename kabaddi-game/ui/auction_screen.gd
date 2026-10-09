@@ -136,7 +136,7 @@ func _block_panel() -> PanelContainer:
 	v.add_child(_lot_pills)
 	# The player's likeness on a turning stand (a pictogram on Low graphics).
 	var stand := Control.new()
-	stand.custom_minimum_size = Vector2(0, 120)
+	stand.custom_minimum_size = Vector2(0, 90)
 	stand.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(stand)
 	if int(Game.settings.graphics) != Game.GFX_LOW:
@@ -164,13 +164,13 @@ func _block_panel() -> PanelContainer:
 	var ncol := VBoxContainer.new()
 	ncol.add_theme_constant_override("separation", -6)
 	ncol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_lot_name = UI.label("", "HeaderLabel", 36)
+	_lot_name = UI.label("", "HeaderLabel", 32)
 	_lot_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_lot_meta = UI.label("", "MutedLabel", 17)
 	ncol.add_child(_lot_name)
 	ncol.add_child(_lot_meta)
 	nrow.add_child(ncol)
-	_ovr = UI.label("", "TitleLabel", 58, Game.C_GOLD)
+	_ovr = UI.label("", "TitleLabel", 50, Game.C_GOLD)
 	_ovr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	nrow.add_child(_ovr)
 	v.add_child(nrow)
@@ -245,15 +245,15 @@ func _stage_panel() -> PanelContainer:
 	var pv: Array = _panel(1.15)
 	var v: VBoxContainer = pv[1]
 	v.add_child(UI.label(tr("CURRENT_BID").to_upper(), "EyebrowLabel", 15))
-	_price = UI.label("—", "TitleLabel", 104, Game.C_SAFFRON)
+	_price = UI.label("—", "TitleLabel", 88, Game.C_SAFFRON)
 	_price.pivot_offset = Vector2(0, 60)
 	v.add_child(_price)
 	v.add_child(UI.label(tr("LEADING").to_upper(), "EyebrowLabel", 15))
 	_leader_box = HBoxContainer.new()
 	_leader_box.add_theme_constant_override("separation", 12)
-	_leader_box.custom_minimum_size = Vector2(0, 62)
+	_leader_box.custom_minimum_size = Vector2(0, 56)
 	v.add_child(_leader_box)
-	_hammer = UI.label("", "HeaderLabel", 44, Game.C_GOLD)
+	_hammer = UI.label("", "HeaderLabel", 38, Game.C_GOLD)
 	_hammer.pivot_offset = Vector2(60, 30)
 	v.add_child(_hammer)
 	_record = UI.label("", "SubLabel", 19, Game.C_GOLD)
@@ -280,7 +280,15 @@ func _stage_panel() -> PanelContainer:
 	fv.add_child(fh)
 	_feed = VBoxContainer.new()
 	_feed.add_theme_constant_override("separation", 2)
-	fv.add_child(_feed)
+	_feed.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Lines that do not fit are clipped rather than pushing the Bid button off screen.
+	var fs := ScrollContainer.new()
+	fs.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	fs.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	fs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	fs.add_child(_feed)
+	fv.add_child(fs)
+	fv.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	feed_card.add_child(fv)
 	feed_card.clip_contents = true
 	v.add_child(feed_card)
@@ -399,7 +407,7 @@ func _build_fbm() -> void:
 # ---------------------------------------------------------------- the auction
 
 func _say(text: String, color := Game.C_INK) -> void:
-	var l := UI.label(text, "", 18, color)
+	var l := UI.label(text, "", 17, color)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_feed.add_child(l)
 	_feed.move_child(l, 0)

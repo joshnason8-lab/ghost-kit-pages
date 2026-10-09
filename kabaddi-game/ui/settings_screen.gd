@@ -58,6 +58,7 @@ func _ready() -> void:
 			VoiceCant.request_permission()))
 	_rule_note = UI.wrap(tr(RULE_NOTES[cur]), "MutedLabel", 17)
 	rule[1].add_child(_rule_note)
+	left.move_child(rule[0], 0)   # the raid rule matters most: put it first
 
 	# The screen.
 	var disp: Array = UI.section(tr("SET_DISPLAY"), "display")
