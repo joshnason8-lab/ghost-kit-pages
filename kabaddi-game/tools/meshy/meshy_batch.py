@@ -8,7 +8,9 @@ For each asset in tools/meshy/assets.json:
 4. Download NAME.glb (textured), NAME_rigged.glb and NAME.png (Meshy's thumbnail) to the output folder.
 
 Progress is kept in OUT/manifest.json, so a run that stops resumes where it left off, and a step
-that already worked is never paid for twice. Delete an asset's entry there to make it again.
+that already worked is never paid for twice. Delete an asset's entry there to make it again. The
+downloads themselves are not committed (assets/meshy/.gitignore) and Godot skips the folder
+(.gdignore); with the manifest, running the script again fetches them without spending credits.
 
 The API key: in a cloud session, store it as a network secret on the environment for api.meshy.ai
 (Authorization header, Bearer prefix); the agent proxy adds it to each request and the script sends
