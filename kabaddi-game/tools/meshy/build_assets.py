@@ -13,16 +13,14 @@ HERE = pathlib.Path(__file__).resolve().parent
 BRIEF = HERE.parent.parent / "docs" / "MESHY_BRIEF.md"
 OUT = HERE / "assets.json"
 
-KIT = ("Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red "
-       "collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi "
-       "shoes, no logos, no text, no numbers.")
-# Hands: palms down in the A-pose (the rigging standard) hang palms-to-thighs when the arms drop; the first test's
-# palms faced up and its fingers were fused.
-# The A-pose was not held: two of the first three players came back with bent or raised arms. A T-pose
-# (Meshy's pose_mode "t-pose") is the other rigging standard; with palms down, lowered arms hang palms-in.
-HANDS = "palms down, realistic hands with five separate fingers slightly spread"
-POSE = f"Full body T-pose, arms out sideways, {HANDS}, feet flat, neutral face, mouth closed."
-CROWD_END = f"Full body, T-pose, arms out sideways, {HANDS}, feet flat, neutral face, mouth closed, no logos, no text."
+KIT = ("Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and "
+       "side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text.")
+# The pose comes first. Meshy did not hold the pose asked for at the end of the prompt, nor its pose_mode setting
+# alone: the first players came back with bent, raised or flexing arms ("powerful" seemed to invite a flex). Put
+# first, as the kit was after the first test came back shirtless, it carries more weight. Palms down in a T-pose
+# hang palms-in once the game lowers the arms; separate fingers for realistic hands.
+POSE_FIRST = "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers."
+POSE_END = "Feet flat, neutral face, mouth closed."
 TEXTURE = {
     "player": ("Photorealistic skin with pores and natural tone variation, realistic short hair, matte stretch sports "
                "fabric with fine stitching, flat solid royal blue and red kit, no logos, no text, no numbers, even "
@@ -59,23 +57,21 @@ def main():
         cells = [c.strip() for c in m.group(2).split("|")]
         name = m.group(1)
         if section.startswith("## Players"):
-            kind, height, prompt = "player", cells[1], f"{KIT} He is {cells[-1]} {POSE}"
+            kind, height, prompt = "player", cells[1], f"{POSE_FIRST} {KIT} He is {cells[-1]} {POSE_END}"
         elif section.startswith("## Pads"):
             kind, height, prompt = "gear", None, cells[-1]
         elif section.startswith("## Referees"):
-            kind, height, prompt = "referee", cells[0], cells[-1].replace("open hands", HANDS)
+            kind, height, prompt = "referee", cells[0], f"{POSE_FIRST} {cells[-1].split(' Full body')[0]} {POSE_END}"
         elif section.startswith("## Crowd"):
-            kind, height, prompt = "crowd", cells[0], f"{cells[-1]} {CROWD_END}"
+            kind, height, prompt = "crowd", cells[0], f"{POSE_FIRST} {cells[-1].rstrip(', ')}. {POSE_END}"
         else:
             continue
         if kind == "player":
             texture = f"{KIT_TEXTURE} Player: {cells[-1]} {QUALITY}"
         elif kind in ("referee", "crowd"):
-            texture = f"{prompt.split(' Full body')[0].rstrip(', .')}. {QUALITY}"
+            texture = f"{prompt[len(POSE_FIRST) + 1:].split(' ' + POSE_END)[0].rstrip(', .')}. {QUALITY}"
         else:
             texture = TEXTURE[kind]
-        if kind in ("player", "referee", "crowd"):
-            prompt = prompt.replace("Full body A-pose, palms down", "Full body T-pose, arms out sideways, palms down")
         a = {"name": name, "kind": kind, "prompt": prompt, "texture_prompt": texture, "faces": FACES[kind]}
         if kind != "gear":
             a["pose"] = "t-pose"
