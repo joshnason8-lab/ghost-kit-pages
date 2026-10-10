@@ -1,6 +1,6 @@
 name: Kabaddi Raid · Android build
 
-# Builds the Godot project in kabaddi-game/ into a debug APK you can sideload,
+# Builds the Godot project in kabaddi-game/ into the beta APK you can sideload,
 # after running the headless test suite.
 
 on:
@@ -95,19 +95,28 @@ jobs:
           } >> "$SETTINGS"
           grep android "$SETTINGS"
 
-      - name: Export debug APK
+      - name: Export APK
         working-directory: ${{ env.PROJECT_DIR }}
-        env:
-          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /home/runner/debug.keystore
-          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
-          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          # The same build as the beta APKs sent in the chat: release, 64-bit ARM only, signed in the next step.
+          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
           mkdir -p build
-          godot --headless --path . --export-debug "Android" build/kabaddi-raid-debug.apk
+          godot --headless --path . --export-release "Android" build/unsigned.apk
           ls -la build
+
+      # Signed with uber-apk-signer's built-in debug key, the key the chat APKs use, so either installs over
+      # the other and keeps the player's saves.
+      - name: Sign APK
+        run: |
+          curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
+          java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed
+          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/kabaddi-raid-${VERSION}.apk
+          ls -la ${PROJECT_DIR}/build
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kabaddi-raid-debug-apk
-          path: ${{ env.PROJECT_DIR }}/build/kabaddi-raid-debug.apk
+          name: kabaddi-raid-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build/kabaddi-raid-${{ env.VERSION }}.apk
           if-no-files-found: error

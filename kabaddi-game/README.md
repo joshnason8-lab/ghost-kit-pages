@@ -65,15 +65,15 @@ On a keyboard (for testing in the editor):
 
 The beta guide, [docs/BETA.md](docs/BETA.md), covers installing, updating, what to test and how to report.
 
-Every push that touches `kabaddi-game/` runs the **Android build** GitHub Action. It runs the tests, then exports a
-debug APK. To install it:
+Every push that touches `kabaddi-game/` runs the **Android build** GitHub Action. It runs the tests, then exports the
+beta APK (64-bit ARM). To install it:
 
-1. Open the workflow run on GitHub and download the `kabaddi-raid-debug-apk` artifact.
+1. Open the workflow run on GitHub and download the `kabaddi-raid-VERSION-apk` artifact.
 2. Unzip it and copy the `.apk` to your Android phone.
 3. Open it and allow "install unknown apps" when Android asks.
 
-The debug build is signed with a throwaway debug key. Shipping to the Play Store needs a release keystore. See
-[docs/ROADMAP.md](docs/ROADMAP.md).
+The APK is signed with uber-apk-signer's public debug key, the same as the beta APKs sent by hand, so each
+installs over the other. Shipping to the Play Store needs a release keystore. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Moving it to its own repository
 

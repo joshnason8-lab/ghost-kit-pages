@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.7.3-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.7.4-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,9 +12,10 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.7.3-beta.apk` from the chat, or
-   - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-debug-apk`
-     artifact. It is a zip; unzip it on the phone or on a computer.
+   - Download `kabaddi-raid-0.7.4-beta.apk` from the chat, or
+   - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
+     artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
+     chat come this way.
 2. Open the `.apk` file on the phone. Android asks you to allow installs from that app (Files, Chrome or Drive).
    Allow it, go back and tap **Install**.
 3. If Play Protect warns about an unknown app, tap **More details**, then **Install anyway**. The beta is signed
@@ -23,9 +24,10 @@ what you find.
 ### Updating to a newer beta
 
 Android only installs an update over the top if both builds were signed with the same key. The APKs sent in
-the chat share one key; the GitHub Actions builds use a different one. If Android says **App not installed**
-or **package conflicts**, uninstall Kabaddi Raid first, then install the new APK. Uninstalling clears your
-saves (career, season, cup).
+the chat and the GitHub Actions builds from 0.7.4 on share one key, so either installs over the other and keeps
+your saves. Actions builds from before 0.7.4 used a different key: if Android says **App not installed** or
+**package conflicts**, uninstall Kabaddi Raid first, then install the new APK. Uninstalling clears your saves
+(career, season, cup).
 
 ## First run
 
