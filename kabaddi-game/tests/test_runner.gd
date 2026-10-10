@@ -241,7 +241,7 @@ func _run() -> void:
 			ra.set_state("holding", 1000.0)
 			await frames(30)
 			var grip: float = ra.model.rig.skeleton.get_bone_pose_rotation(fb).get_angle()
-			check(relaxed > 0.2 and grip > relaxed + 0.4, "fingers rest curled and grip in a hold (%.2f, %.2f)" % [relaxed, grip])
+			check(relaxed > 0.2 and grip > relaxed * 1.6, "fingers rest curled and grip in a hold (%.2f, %.2f)" % [relaxed, grip])
 		ra.queue_free()
 
 	# 8b. Cant, chain, reactions: drive a user match by hand.

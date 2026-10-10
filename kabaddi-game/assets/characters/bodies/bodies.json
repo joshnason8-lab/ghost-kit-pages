@@ -1,0 +1,90 @@
+[
+ {
+  "file": "player_01.krb",
+  "kind": "player",
+  "build": 0.95,
+  "skin": [
+   0.7451,
+   0.4863,
+   0.3451
+  ],
+  "source": "player_01_raider_haryana.glb"
+ },
+ {
+  "file": "player_03.krb",
+  "kind": "player",
+  "build": 1.08,
+  "skin": [
+   0.6039,
+   0.3922,
+   0.2941
+  ],
+  "source": "player_03_corner_haryana.glb"
+ },
+ {
+  "file": "player_04.krb",
+  "kind": "player",
+  "build": 1.06,
+  "skin": [
+   0.6902,
+   0.4431,
+   0.3176
+  ],
+  "source": "player_04_cover_tamil.glb"
+ },
+ {
+  "file": "player_07.krb",
+  "kind": "player",
+  "build": 1.04,
+  "skin": [
+   0.7569,
+   0.498,
+   0.3529
+  ],
+  "source": "player_07_defender_iran.glb"
+ },
+ {
+  "file": "player_08.krb",
+  "kind": "player",
+  "build": 0.95,
+  "skin": [
+   0.7098,
+   0.4627,
+   0.349
+  ],
+  "source": "player_08_raider_korea.glb"
+ },
+ {
+  "file": "player_09.krb",
+  "kind": "player",
+  "build": 1.0,
+  "skin": [
+   0.6824,
+   0.4431,
+   0.3451
+  ],
+  "source": "player_09_allrounder_kenya.glb"
+ },
+ {
+  "file": "referee_01.krb",
+  "kind": "referee",
+  "build": 1.0,
+  "skin": [
+   0.6784,
+   0.4745,
+   0.3431
+  ],
+  "source": "referee_01_man.glb"
+ },
+ {
+  "file": "referee_02.krb",
+  "kind": "referee",
+  "build": 0.95,
+  "skin": [
+   0.5922,
+   0.451,
+   0.3843
+  ],
+  "source": "referee_02_woman.glb"
+ }
+]

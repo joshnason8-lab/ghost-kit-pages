@@ -86,6 +86,8 @@ def main():
     ap.add_argument("--yolo", required=True, help="YOLO pose weights (yolo11m-pose.pt)")
     ap.add_argument("--godot", default="godot")
     ap.add_argument("--work", default=None)
+    ap.add_argument("--keep-joints", action="store_true",
+                    help="reuse the joints found in --work last time (after changing only the rig or textures)")
     a = ap.parse_args()
 
     work = pathlib.Path(a.work or tempfile.mkdtemp(prefix=f"body_{a.name}_"))
@@ -104,10 +106,11 @@ def main():
     (proj / "render_views.tscn").write_text(SCENE)
     views = work / "views"
     views.mkdir(exist_ok=True)
-    run([a.godot, "--headless", "--path", proj, "--import"])
-    run(["xvfb-run", "-a", "-s", "-screen 0 1024x1024x24", a.godot, "--path", proj, "--rendering-driver", "opengl3",
-         "--resolution", "1024x1024", "res://render_views.tscn", "--", views, f"{height / 2:.3f}"])
-    run([py, HERE / "joints2d.py", a.yolo, views])
+    if not (a.keep_joints and (views / "joints2d.json").exists()):
+        run([a.godot, "--headless", "--path", proj, "--import"])
+        run(["xvfb-run", "-a", "-s", "-screen 0 1024x1024x24", a.godot, "--path", proj, "--rendering-driver",
+             "opengl3", "--resolution", "1024x1024", "res://render_views.tscn", "--", views, f"{height / 2:.3f}"])
+        run([py, HERE / "joints2d.py", a.yolo, views])
 
     rigged = work / "rigged.json"
     print(run([py, HERE / "autorig.py", prep, views / "joints2d.json", rigged,

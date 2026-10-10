@@ -85,8 +85,8 @@ def main():
     names = [b["name"] for b in rig["bones"]]
     top_bone = np.array(rig["bones4"], dtype=np.int64).reshape(-1, 4)[:, 0]
     # Never kit: the head, the forearms and the hands (pink palms and fingertips read as red trim otherwise;
-    # the shirts have short sleeves).
-    never = ("head", "neck", "forearm_l", "forearm_r", "hand_l", "hand_r", "fingers_l", "fingers_r",
+    # the shirts have short sleeves). The neck is left to the colours, for the collar.
+    never = ("head", "forearm_l", "forearm_r", "hand_l", "hand_r", "fingers_l", "fingers_r",
              "fingertips_l", "fingertips_r")
     head_v = np.isin(top_bone, [names.index(n) for n in never if n in names])
 
@@ -106,7 +106,9 @@ def main():
         hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV_FULL).astype(np.float32)
         h, s, v = hsv[..., 0] * 360.0 / 256.0, hsv[..., 1] / 255.0, hsv[..., 2] / 255.0
         main = used & ~head & hue_near(h, a.main_hue, 35) & (s > 0.35)
-        trim = used & ~head & hue_near(h, a.trim_hue, 22) & (s > 0.5) & (v > 0.25)
+        # Red trim, and its shadows, which turn crimson (no skin is that hue).
+        trim = used & ~head & (v > 0.25) & ((hue_near(h, a.trim_hue, 22) & (s > 0.5)) |
+                                            (hue_near(h, a.trim_hue - 35, 20) & (s > 0.4)))
         return h, s, v, main, trim
 
     h, s, v, main, trim = classes(img)
@@ -115,7 +117,7 @@ def main():
     kitness = cv2.blur((main | trim).astype(np.float32), (17, 17))
     skinness = cv2.blur((used & ~main & ~trim & skin_like).astype(np.float32), (17, 17))
     light = (s < 0.3) & (v > 0.5)
-    orange = hue_near(h, 30, 18) & (s > 0.6)
+    orange = hue_near(h, 30, 18) & (s > 0.6) & (v > 0.6)   # bright: darker skin is as saturated
     marks = used & ~head & (light | orange) & (kitness > 0.35) & (skinness < 0.25)
     marks = cv2.dilate(marks.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
     # Whatever else is in and around a mark (a crest's red, outlines) goes with it.

@@ -71,6 +71,7 @@ func setup(p_data: Dictionary, p_team: int, kit: Color, trim: Color, barefoot: b
 	model = HumanModel.new()
 	model.body_kind = "referee" if team == 2 else "player"
 	model.body_seed = hash(String(data.get("id", data.get("name", ""))))
+	model.body_file = String(data.get("body", ""))
 	model.setup(Color(DB.SKIN_TONES[int(data.skin)]), Color(DB.HAIR_COLORS[int(data.hair)]), kit, trim, int(data.number), float(data.height), float(data.build), barefoot)
 	add_child(model)
 	_make_ring()

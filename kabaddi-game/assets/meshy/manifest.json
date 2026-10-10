@@ -120,16 +120,27 @@
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a1275f-cf96-7770-8723-fe97c63b5f7c",
   "credits": {
-   "model": 20
+   "model": 20,
+   "texture": 10,
+   "rig": 5
   },
-  "refine_id": "01a1276e-d149-7633-b5c7-09a9e85be97a"
+  "refine_id": "01a1276e-d149-7633-b5c7-09a9e85be97a",
+  "textured": "player_09_allrounder_kenya.glb",
+  "rig_id": "01a1276f-e3f7-7659-ad35-5e9cecd9ed22",
+  "rigged": "player_09_allrounder_kenya_rigged.glb"
  },
  "referee_02_woman": {
-  "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Feet flat, neutral face, mouth closed.",
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a12762-a62e-7112-8f8e-7fe8b162dd8f",
   "credits": {
-   "model": 20
-  }
+   "model": 20,
+   "texture": 10,
+   "rig": 5
+  },
+  "refine_id": "01a12771-3552-7334-9ab0-2ab24efd94a2",
+  "textured": "referee_02_woman.glb",
+  "rig_id": "01a12772-4115-7424-9a56-d407d580bfce",
+  "rigged": "referee_02_woman_rigged.glb"
  },
  "player_03_corner_haryana": {
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky strong build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Feet flat, neutral face, mouth closed.",
@@ -161,19 +172,101 @@
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a12767-751d-715e-84c0-efa657ad8e89",
   "credits": {
-   "model": 20
-  }
+   "model": 20,
+   "texture": 10,
+   "rig": 5
+  },
+  "refine_id": "01a12770-177e-7381-9f20-e6ccbb90fef6",
+  "textured": "referee_01_man.glb",
+  "rig_id": "01a12771-0387-7574-83dc-11169e1be16d",
+  "rigged": "referee_01_man_rigged.glb"
  },
  "player_04_cover_tamil": {
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall broad-shouldered build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a12769-b334-70ae-a52f-e50eb870b51a",
   "credits": {
-   "model": 20
+   "model": 20,
+   "texture": 10,
+   "rig": 5
   },
-  "refine_id": "01a1276e-6e64-76c4-8d23-6ebced40ad4b"
+  "refine_id": "01a1276e-6e64-76c4-8d23-6ebced40ad4b",
+  "textured": "player_04_cover_tamil.glb",
+  "rig_id": "01a1276f-8327-70f0-bb9f-d126757c1e7c",
+  "rigged": "player_04_cover_tamil_rigged.glb"
  },
  "crowd_01_man_tshirt": {
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian man in his 30s, medium-brown skin, short black hair, plain mustard-yellow t-shirt, blue jeans, sandals. Feet flat, neutral face, mouth closed.",
-  "preview_id": "01a1276e-9500-7028-9abf-c036c31864c1"
+  "preview_id": "01a1276e-9500-7028-9abf-c036c31864c1",
+  "credits": {
+   "model": 20,
+   "texture": 10,
+   "rig": 5
+  },
+  "refine_id": "01a1277b-17f8-7543-920e-f053cb8b8e7e",
+  "textured": "crowd_01_man_tshirt.glb",
+  "rig_id": "01a1277d-4547-737a-85ca-f4188734d549",
+  "rigged": "crowd_01_man_tshirt_rigged.glb"
+ },
+ "crowd_02_man_fan_jersey": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic young Indian man, kabaddi fan, light-brown skin, plain royal blue fan jersey with red trim, black track pants, sneakers, plain red cap. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a1276f-a5b2-7564-aaf9-4bd63e0e551a",
+  "credits": {
+   "model": 20,
+   "texture": 10,
+   "rig": 5
+  },
+  "refine_id": "01a1277d-96a3-71a6-985f-dafa7d215f25",
+  "textured": "crowd_02_man_fan_jersey.glb",
+  "rig_id": "01a1277f-4511-74ff-87ba-bf8b585904ed",
+  "rigged": "crowd_02_man_fan_jersey_rigged.glb"
+ },
+ "crowd_03_sikh_man": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Sikh man in his 40s, navy blue turban, full black beard, light-brown skin, plain white kurta, grey trousers, sandals. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12770-9283-7484-aedd-f3439d0612c3",
+  "credits": {
+   "model": 20,
+   "texture": 10,
+   "rig": 5
+  },
+  "refine_id": "01a1277f-9484-7110-99ec-4f304095730b",
+  "textured": "crowd_03_sikh_man.glb",
+  "rig_id": "01a12781-4238-722a-9125-9f1f3b2a04c7",
+  "rigged": "crowd_03_sikh_man_rigged.glb"
+ },
+ "crowd_04_old_man": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic elderly Indian man about 70, thin build, dark-brown skin, short white hair, white moustache, round glasses, plain white kurta pyjama, brown sandals. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12771-a110-7393-9a3b-def36cdcdcff",
+  "credits": {
+   "model": 20
+  },
+  "refine_id": "01a12781-9456-722f-a1a4-e0c8eaff8800"
+ },
+ "crowd_05_woman_salwar": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic young Indian woman in her 20s, medium-brown skin, long black hair in a braid, plain teal salwar kameez with a cream dupatta, flat sandals. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12772-af12-75a8-bba4-abc4ea8238f9",
+  "credits": {
+   "model": 20
+  }
+ },
+ "crowd_06_woman_saree": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian woman in her 40s, dark-brown skin, black hair in a bun, maroon cotton saree with a gold border, flat sandals. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12773-bb30-769d-a554-d24de7c4735f",
+  "credits": {
+   "model": 20
+  }
+ },
+ "crowd_09_boy": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian boy about 10 years old, medium-brown skin, short black hair, plain orange t-shirt, navy shorts, sneakers. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12774-ca23-7624-9370-61e05140db4e",
+  "credits": {
+   "model": 20
+  }
+ },
+ "crowd_10_girl": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian girl about 8 years old, light-brown skin, black hair in two braids, plain pink cotton dress, sandals. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12775-d6ba-71fb-8d37-fdd04a7dca96",
+  "credits": {
+   "model": 20
+  }
  }
 }

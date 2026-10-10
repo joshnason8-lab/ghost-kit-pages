@@ -58,6 +58,7 @@ var build := 1.0
 var barefoot := false
 var body_kind := "player"   # which realistic bodies to choose from: "player" or "referee"
 var body_seed := 0          # varies the choice between people alike
+var body_file := ""         # a particular body from bodies.json instead of choosing one
 
 var _phase := 0.0
 var _t := 0.0
@@ -118,7 +119,8 @@ func _use_rigged_body() -> void:
 	rig = RiggedBody.new()
 	add_child(rig)
 	var seed := body_seed if body_seed != 0 else hash([number, height, build, skin.to_html()])
-	rig.setup(skin, jersey, shorts, hair, height, trim, RiggedBody.pick(body_kind, skin, build, seed))
+	var file := body_file if body_file != "" else RiggedBody.pick(body_kind, skin, build, seed)
+	rig.setup(skin, jersey, shorts, hair, height, trim, file)
 	if number > 0:
 		rig.add_number(number, trim, jersey.darkened(0.4))
 

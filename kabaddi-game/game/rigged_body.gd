@@ -46,6 +46,7 @@ uniform bool skin_mask = false;        // the kit map's alpha is 0 on skin (olde
 uniform vec3 jersey_col : source_color = vec3(0.1, 0.4, 0.8);
 uniform vec3 shorts_col : source_color = vec3(0.05, 0.1, 0.16);
 uniform vec3 trim_col : source_color = vec3(1.0);
+uniform float recolour = 1.0;          // 0 keeps the texture's own clothes (referees)
 varying vec3 region;
 void vertex() {
 	region = COLOR.rgb;   // r jersey, g shorts, b hair
@@ -58,7 +59,7 @@ void fragment() {
 	vec3 body = t * mix(vec3(1.0), skin_ratio, skin);
 	// Sharp edges: a little kit bleeding in from a neighbouring piece of the texture (or a
 	// little skin into the kit) is dropped.
-	float amount = smoothstep(0.3, 0.7, k.r + k.g);
+	float amount = smoothstep(0.3, 0.7, k.r + k.g) * recolour;
 	vec3 kit_col = (mix(jersey_col, shorts_col, region.g) * k.r + trim_col * k.g) / max(k.r + k.g, 0.001);
 	ALBEDO = mix(body, kit_col * k.b * 2.0, amount);
 	ROUGHNESS = mix(0.6, 0.85, amount);
@@ -356,6 +357,12 @@ func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float
 		material.set_shader_parameter("kit_tex", body.kit)
 		material.set_shader_parameter("trim_col", trim)
 		material.set_shader_parameter("skin_mask", body.get("skin_mask", false))
+		# Referees come dressed for the job; only players wear their team's colours.
+		var kind := "player"
+		for e in bodies():
+			if String(e.file) == file:
+				kind = String(e.kind)
+		material.set_shader_parameter("recolour", 0.0 if kind == "referee" else 1.0)
 		var a := skin.srgb_to_linear()
 		var b: Color = (body.skin_ref as Color).srgb_to_linear()
 		material.set_shader_parameter("skin_ratio", Vector3(a.r / b.r, a.g / b.g, a.b / b.b))

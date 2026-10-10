@@ -57,10 +57,15 @@ def joints_3d(j2d, px, extent, cy):
     s = extent / px
     c = px / 2.0
     f = {n: np.array(p) for n, p in zip(KP, j2d["front"]["xy"])}
-    # The pose model sometimes swaps left and right for the lower legs or arms alone. Keep each knee
-    # and ankle on its hip's side of the body, and each elbow and wrist on its shoulder's.
+    # The pose model sometimes takes the front view of a faceless render for a back view and swaps left
+    # and right, or swaps them for the lower legs or arms alone. The model faces the camera, so its left
+    # is on the right of the picture: put the shoulders and hips there, then keep each knee and ankle on
+    # its hip's side of the body, and each elbow and wrist on its shoulder's.
     for anchor, parts in (("hip", ("kn", "an")), ("sh", ("el", "wr"))):
-        side = np.sign(f["l_" + anchor][0] - f["r_" + anchor][0])
+        if f["l_" + anchor][0] < f["r_" + anchor][0]:
+            f["l_" + anchor], f["r_" + anchor] = f["r_" + anchor], f["l_" + anchor]
+            print("swapped left and right", anchor, "in the front view")
+        side = 1.0
         for part in parts:
             if np.sign(f["l_" + part][0] - f["r_" + part][0]) == -side:
                 f["l_" + part], f["r_" + part] = f["r_" + part], f["l_" + part]
@@ -82,6 +87,41 @@ def joints_3d(j2d, px, extent, cy):
             y2 = y
         out[n] = np.array([x, 0.5 * (y + y2), z])
     return out
+
+
+def arms_from_mesh(J, V):
+    """With the arms held out, the pose model sometimes loses them (both wrists on one side, or elbows by
+    the chest). Each arm then comes from the mesh: the hand is the far end of the body on that side, the
+    shoulder sits a tenth of the height out from the middle, and elbow and wrist go where an average arm
+    has them (upper arm 0.186, forearm 0.146 and hand 0.108 of the height), on the middle of the arm."""
+    H = V[:, 1].max() - V[:, 1].min()
+    mid = 0.5 * (J["l_sh"] + J["r_sh"])
+    hip_y = 0.5 * (J["l_hip"][1] + J["r_hip"][1])
+    for side in "lr":
+        sgn = np.sign(J[f"{side}_sh"][0] - mid[0]) or (1.0 if side == "l" else -1.0)
+        lat = (V[:, 0] - mid[0]) * sgn
+        reach = lat.max()
+        if reach < 0.3 * H:
+            continue   # arms down by the sides: the pose model finds those well
+        sh, el, wr = (J[f"{side}_{k}"] for k in ("sh", "el", "wr"))
+        sh_lat, el_lat, wr_lat = ((p[0] - mid[0]) * sgn for p in (sh, el, wr))
+        if wr_lat > reach - 0.2 * H and sh_lat < el_lat < wr_lat:
+            continue
+        sh_lat = max(sh_lat, 0.1 * H)
+        arm = V[(lat > sh_lat + 0.04) & (V[:, 1] > hip_y + 0.1)]
+        arm_lat = (arm[:, 0] - mid[0]) * sgn
+
+        def centre(t):
+            near = arm[np.abs(arm_lat - t) < 0.012]
+            return near.mean(axis=0) if len(near) else None
+
+        span = reach - sh_lat
+        J[f"{side}_sh"] = np.array([mid[0] + sgn * sh_lat, sh[1], sh[2]])
+        for k, frac in (("el", 0.186 / 0.44), ("wr", 0.332 / 0.44)):
+            c = centre(sh_lat + span * frac)
+            if c is not None:
+                J[f"{side}_{k}"] = c
+        print(f"{side} arm from the mesh: elbow {J[f'{side}_el'].round(3)}, wrist {J[f'{side}_wr'].round(3)}")
 
 
 def palm_normal(P, wr, tip, side):
@@ -165,6 +205,7 @@ def main():
     V = V_all[first]
     F = weld[F_all]
     J = joints_3d(json.load(open(a.joints2d)), a.px, a.extent, a.center_y)
+    arms_from_mesh(J, V)
 
     # Pull limb joints onto the middle of the limb: average the vertices in a thin slice
     # around each joint, so a keypoint on the silhouette edge does not leave the bone outside.
@@ -255,6 +296,13 @@ def main():
         if n == "head":
             D[:, i] -= 0.03
     label = np.argmin(D, axis=1)
+    # The face, jaw and any beard turn with the head, all of them: whatever is well in front of the neck
+    # and above the shoulders is the head's, so a beard does not stay behind and stretch when the head turns.
+    head_i, nk = names.index("head"), J["neck"]
+    face = ((V[:, 1] > nk[1] + 0.01) & (V[:, 2] < nk[2] - 0.07) & (np.abs(V[:, 0] - nk[0]) < 0.09)
+            & np.isin(label, [names.index("neck"), names.index("chest")]))
+    label[face] = head_i
+    print(f"face: {int(face.sum())} vertices in front of the neck go with the head")
 
     # Stray islands: a small connected piece of one bone's vertices surrounded by another's.
     edges = trimesh.Trimesh(vertices=V, faces=F, process=False).edges_unique
@@ -290,6 +338,8 @@ def main():
         b = label[vi]
         t = T[vi, b]
         ws = {b: 1.0}
+        if face[vi] or (names[b] == "head" and (V[vi, 1] > J["head"][1] or V[vi, 2] < nk[2] - 0.03)):
+            t = 0.5   # wholly the head's: the face never lags behind a turning head; only the neck blends
         if t < 0.22 and parent[b] >= 0 and names[b] not in ("upperarm_l", "upperarm_r", "thigh_l", "thigh_r") or \
                 (t < 0.12 and parent[b] >= 0):
             k = 0.5 * (1.0 - t / (0.22 if t < 0.22 else 0.12))
