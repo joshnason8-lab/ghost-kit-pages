@@ -78,7 +78,8 @@ def main():
     tri = np.array(rig["indices"], dtype=np.int64).reshape(-1, 3)
     names = [b["name"] for b in rig["bones"]]
     top_bone = np.array(rig["bones4"], dtype=np.int64).reshape(-1, 4)[:, 0]
-    head_v = np.isin(top_bone, [names.index("head"), names.index("neck")])
+    # Never kit: the head and the hands (pink palms and fingertips read as red trim otherwise).
+    head_v = np.isin(top_bone, [names.index(n) for n in ("head", "neck", "hand_l", "hand_r")])
 
     # Which texels the mesh uses, and which belong to the head.
     px = np.round(uv * np.array([W, H]) * 16).astype(np.int32)   # 4 bits of sub-pixel precision

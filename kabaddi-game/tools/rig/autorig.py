@@ -57,6 +57,14 @@ def joints_3d(j2d, px, extent, cy):
     s = extent / px
     c = px / 2.0
     f = {n: np.array(p) for n, p in zip(KP, j2d["front"]["xy"])}
+    # The pose model sometimes swaps left and right for the lower legs or arms alone. Keep each knee
+    # and ankle on its hip's side of the body, and each elbow and wrist on its shoulder's.
+    for anchor, parts in (("hip", ("kn", "an")), ("sh", ("el", "wr"))):
+        side = np.sign(f["l_" + anchor][0] - f["r_" + anchor][0])
+        for part in parts:
+            if np.sign(f["l_" + part][0] - f["r_" + part][0]) == -side:
+                f["l_" + part], f["r_" + part] = f["r_" + part], f["l_" + part]
+                print("swapped left and right", part, "in the front view")
     r = {n: np.array(p) for n, p in zip(KP, j2d["side"]["xy"])}   # camera on +X: sees the right side
     lft = {n: np.array(p) for n, p in zip(KP, j2d["left"]["xy"])}  # camera on -X: sees the left side
     out = {}

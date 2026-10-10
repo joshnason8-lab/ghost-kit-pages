@@ -1,7 +1,8 @@
 """Get a generated GLB model ready for rigging: bake its node transform, face it the way the rig
 tools expect, and keep its own normals and UVs.
 
-1. Applies the scene's node transforms and, with --turn, turns the model 180 degrees about Y
+1. Applies the scene's node transforms, stands the model on the floor (its lowest point at y = 0;
+   Meshy's own downloads are centred on the origin) and, with --turn, turns it 180 degrees about Y
    (the rig tools expect it to face -Z; glTF models usually face +Z).
 2. Keeps the file's normals. trimesh recomputes its own on load, which loses any smoothing
    the model came with, so they are read from the file.
@@ -61,6 +62,7 @@ def main():
     if a.turn:
         V = V * np.array([-1.0, 1.0, -1.0])
         N = N * np.array([-1.0, 1.0, -1.0])
+    V = V - np.array([0.0, V[:, 1].min(), 0.0])   # feet on the floor
 
     fn = np.cross(V[F[:, 1]] - V[F[:, 0]], V[F[:, 2]] - V[F[:, 0]])
     flip = (fn * N[F].mean(axis=1)).sum(axis=1) < 0.0
