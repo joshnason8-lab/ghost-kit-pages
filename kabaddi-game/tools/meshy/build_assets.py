@@ -28,6 +28,12 @@ TEXTURE = {
     "crowd": "Photorealistic skin, hair and everyday fabrics, even studio lighting, no baked shadows, no logos, no text.",
     "gear": "Realistic product materials, matte fabric and neoprene, even studio lighting, no baked shadows, no logos, no text.",
 }
+# The texture step paints by its own prompt, not the shape: a generic one gave a sleeveless vest on a t-shirt.
+# So each texture prompt spells out the outfit and the person.
+KIT_TEXTURE = ("Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder "
+               "panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; "
+               "plain black kabaddi shoes; no logos, no text, no numbers.")
+QUALITY = "Photorealistic skin, face and fabric, even studio lighting, no baked shadows."
 FACES = {"player": 6000, "referee": 6000, "gear": 2000, "crowd": 30000}
 PICTURE = "Full-body studio photo, front view, plain light-grey background,"
 
@@ -55,11 +61,18 @@ def main():
             kind, height, prompt = "crowd", cells[0], f"{cells[-1]} {CROWD_END}"
         else:
             continue
-        a = {"name": name, "kind": kind, "prompt": prompt, "texture_prompt": TEXTURE[kind], "faces": FACES[kind]}
+        if kind == "player":
+            texture = f"{KIT_TEXTURE} Player: {cells[-1]} {QUALITY}"
+        elif kind in ("referee", "crowd"):
+            texture = f"{prompt.split(' Full body')[0].rstrip(', .')}. {QUALITY}"
+        else:
+            texture = TEXTURE[kind]
+        a = {"name": name, "kind": kind, "prompt": prompt, "texture_prompt": texture, "faces": FACES[kind]}
         if height:
             a["height_m"] = float(height.split()[0])
-        if len(prompt) > 600:
-            raise SystemExit(f"{name}: prompt is {len(prompt)} characters; Meshy takes 600")
+        for label, t in (("prompt", prompt), ("texture prompt", texture)):
+            if len(t) > 600:
+                raise SystemExit(f"{name}: {label} is {len(t)} characters; Meshy takes 600")
         assets.append(a)
     first = re.search(r"## First batch.*?(?=\n## )", body, re.S)
     names_first = set(re.findall(r"`([a-z0-9_]+)`", first.group(0))) if first else set()

@@ -7,6 +7,13 @@
    "textured": "player_01_raider_haryana.glb",
    "rig_id": "01a1273d-cac1-74b1-bbd3-5649c6518bf8",
    "rigged": "player_01_raider_haryana_rigged.glb"
+  },
+  {
+   "name": "player_01_raider_haryana",
+   "refine_id": "01a12742-5eb3-774f-9315-0fac3cf591b1",
+   "textured": "player_01_raider_haryana.glb",
+   "rig_id": "01a12742-e4d3-71ed-8e14-4ecc75be3855",
+   "rigged": "player_01_raider_haryana_rigged.glb"
   }
  ],
  "player_01_raider_haryana": {
@@ -14,10 +21,9 @@
   "preview_id": "01a12740-8f32-77fa-8c8c-cdac6617581e",
   "credits": {
    "model": 20,
-   "texture": 10
+   "texture": 10,
+   "rig": 5
   },
-  "refine_id": "01a12742-5eb3-774f-9315-0fac3cf591b1",
-  "textured": "player_01_raider_haryana.glb",
-  "rig_id": "01a12742-e4d3-71ed-8e14-4ecc75be3855"
+  "refine_id": "01a12744-22ba-74b3-8ab9-b69dc78440f5"
  }
 }

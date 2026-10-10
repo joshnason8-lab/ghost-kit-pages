@@ -193,6 +193,7 @@ def main():
     ap.add_argument("--no-rig", action="store_true")
     ap.add_argument("--stage", choices=["preview", "all"], default="all")
     ap.add_argument("--redo", action="store_true", help="start the chosen assets again; their old records move to history")
+    ap.add_argument("--retexture", action="store_true", help="keep the model, redo its texture and rig")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--check", action="store_true", help="check the connection and show the credit balance")
     a = ap.parse_args()
@@ -231,6 +232,15 @@ def main():
                 state.setdefault("_history", []).append({"name": x["name"], **old})
                 for f in out.glob(x["name"] + "*"):
                     f.rename(out / ("old_" + f.name))
+        save_state(out, state)
+    if a.retexture:
+        for x in assets:
+            s = state.get(x["name"], {})
+            old = {k: s.pop(k) for k in ("refine_id", "textured", "rig_id", "rigged") if k in s}
+            if old:
+                state.setdefault("_history", []).append({"name": x["name"], **old})
+            for f in list(out.glob(x["name"] + ".*")) + list(out.glob(x["name"] + "_rigged.*")):
+                f.rename(out / ("old_" + f.name))
         save_state(out, state)
     print("credits before:", balance(key), flush=True)
     failed = []

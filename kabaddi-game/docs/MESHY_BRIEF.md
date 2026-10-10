@@ -92,9 +92,13 @@ came back shirtless in socks and trainers:
 > bare feet without shoes or socks, no logos, no text, no numbers.* **He is** *[the player below].* *Full body
 > A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.*
 
-**Texture prompt (all players):** *Photorealistic skin with pores and natural tone variation, realistic short hair,
-matte stretch sports fabric with fine stitching, flat solid royal blue and red kit, no logos, no text, no numbers,
-even studio lighting, no baked shadows, no ambient occlusion.*
+**Texture prompt:** the texture step paints from its own prompt, not from the shape, so it must describe the
+outfit again: with a generic one, the first test came back with a sleeveless vest painted on a t-shirt. Each
+player's texture prompt is: *Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar,
+cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower
+legs; plain black kabaddi shoes; no logos, no text, no numbers.* **Player:** *[the player below]* *Photorealistic
+skin, face and fabric, even studio lighting, no baked shadows.* Referees and crowd use their own prompt plus that
+last sentence.
 
 | File | Who | Height | The player |
 |---|---|---|---|
