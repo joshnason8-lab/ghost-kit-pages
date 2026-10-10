@@ -200,7 +200,14 @@ func _run() -> void:
 		ar.build(a.id, Color.RED, Color.BLUE, "TEST")
 		await frames(2)
 		check(ar.get_child_count() > 5, "arena builds: " + a.id)
+		if not Arena.crowd_sheet().is_empty():
+			var cards := ar.find_children("*", "MultiMeshInstance3D", false, false).filter(
+				func(n): return n.material_override is ShaderMaterial and n.material_override.get_shader_parameter("atlas") is Texture2D)
+			check(not cards.is_empty() and cards[0].multimesh.instance_count > 20, "the crowd is people from the sprite sheet: " + a.id)
 		ar.queue_free()
+	var sheet := Arena.crowd_sheet()
+	check(not sheet.is_empty() and (sheet.info.people as Array).size() >= 8 and (sheet.info.frames as Array).size() == 8,
+		"crowd sprite sheet: eight people in eight poses")
 
 	# 8. Captured motion clips load and play on an athlete.
 	var clip := MocapClip.load_file("res://tests/fixtures/walk_clip.json")

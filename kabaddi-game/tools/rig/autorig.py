@@ -11,8 +11,8 @@ mesh a skeleton that code can drive:
    stray islands (a hand touching a thigh, say) are handed to the bone around them.
 4. Mark regions (skin, jersey, shorts, hair) so each team's kit colours can be applied.
 
-Output: assets/characters/rigged_athlete.json, which game/rigged_body.gd turns into a
-skinned mesh at load time. A textured model keeps its UVs ("uvs", origin at the top left as
+Output: a rigged body as JSON, which pack_body.py packs for the game (assets/characters/bodies/) and
+game/rigged_body.gd turns into a skinned mesh at load time (make_body.py runs the whole chain). A textured model keeps its UVs ("uvs", origin at the top left as
 Godot and glTF use); kit_texture.py makes the textures that go with them.
 
 Usage:

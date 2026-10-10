@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c21ushpa5ootk"
-path="res://.godot/imported/athlete_kit.webp-5a93eb8cef7acbc8d0ed9027d5397b99.ctex"
+uid="uid://dd3nremcqd2bq"
+path="res://.godot/imported/crowd_atlas.webp-84e80fcbcad95d4becc03557cd4f4e33.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/athlete_kit.webp"
-dest_files=["res://.godot/imported/athlete_kit.webp-5a93eb8cef7acbc8d0ed9027d5397b99.ctex"]
+source_file="res://assets/crowd/crowd_atlas.webp"
+dest_files=["res://.godot/imported/crowd_atlas.webp-84e80fcbcad95d4becc03557cd4f4e33.ctex"]
 
 [params]
 

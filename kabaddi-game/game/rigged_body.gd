@@ -11,7 +11,6 @@ extends Node3D
 ## the one nearest his skin tone and build, and officials get the referees'. Bodies are packed
 ## (.krb, tools/rig/pack_body.py); the older JSON form still loads.
 
-const LEGACY := "res://assets/characters/rigged_athlete.json"
 const BODIES := "res://assets/characters/bodies/"
 const SHADER := """
 shader_type spatial;
@@ -81,8 +80,7 @@ var _hidden_head := false
 var _curl := {"l": 0.7, "r": 0.7}
 
 
-## The bodies on offer: [{file, kind ("player" or "referee"), build, skin}], from bodies.json, or the
-## single older body.
+## The bodies on offer: [{file, kind ("player" or "referee"), build, skin}], from bodies.json.
 static func bodies() -> Array:
 	if _index == null:
 		_index = []
@@ -93,8 +91,6 @@ static func bodies() -> Array:
 				for e in d:
 					if FileAccess.file_exists(BODIES + String(e.file)):
 						_index.append(e)
-		if _index.is_empty() and FileAccess.file_exists(LEGACY):
-			_index.append({"file": "", "kind": "player", "build": 1.0, "skin": [0.75, 0.55, 0.42]})
 	return _index
 
 
@@ -125,7 +121,7 @@ static func pick(kind: String, skin: Color, build: float, seed: int) -> String:
 
 
 static func _path(file: String) -> String:
-	return LEGACY if file == "" else BODIES + file
+	return BODIES + file
 
 
 ## Load a body once: its mesh, textures and the rest-pose measures used to drive it.

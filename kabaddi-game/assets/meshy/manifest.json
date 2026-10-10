@@ -237,36 +237,65 @@
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic elderly Indian man about 70, thin build, dark-brown skin, short white hair, white moustache, round glasses, plain white kurta pyjama, brown sandals. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a12771-a110-7393-9a3b-def36cdcdcff",
   "credits": {
-   "model": 20
+   "model": 20,
+   "texture": 10,
+   "rig": 5
   },
-  "refine_id": "01a12781-9456-722f-a1a4-e0c8eaff8800"
+  "refine_id": "01a12781-9456-722f-a1a4-e0c8eaff8800",
+  "textured": "crowd_04_old_man.glb",
+  "rig_id": "01a12782-8326-739e-94de-89c9a1115166",
+  "rigged": "crowd_04_old_man_rigged.glb"
  },
  "crowd_05_woman_salwar": {
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic young Indian woman in her 20s, medium-brown skin, long black hair in a braid, plain teal salwar kameez with a cream dupatta, flat sandals. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a12772-af12-75a8-bba4-abc4ea8238f9",
   "credits": {
-   "model": 20
-  }
+   "model": 20,
+   "texture": 10,
+   "rig": 5
+  },
+  "refine_id": "01a12782-d355-7575-b3ee-2dfda2956da0",
+  "textured": "crowd_05_woman_salwar.glb",
+  "rig_id": "01a12783-9fe9-72f1-90dc-8c716c251ae6",
+  "rigged": "crowd_05_woman_salwar_rigged.glb"
  },
  "crowd_06_woman_saree": {
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian woman in her 40s, dark-brown skin, black hair in a bun, maroon cotton saree with a gold border, flat sandals. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a12773-bb30-769d-a554-d24de7c4735f",
   "credits": {
-   "model": 20
-  }
+   "model": 20,
+   "texture": 10,
+   "rig": 5
+  },
+  "refine_id": "01a12783-f004-74c5-b18f-e8fc1e3f5155",
+  "textured": "crowd_06_woman_saree.glb",
+  "rig_id": "01a12784-bc3d-70fa-8fb6-bd083dba878f",
+  "rigged": "crowd_06_woman_saree_rigged.glb"
  },
  "crowd_09_boy": {
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian boy about 10 years old, medium-brown skin, short black hair, plain orange t-shirt, navy shorts, sneakers. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a12774-ca23-7624-9370-61e05140db4e",
   "credits": {
-   "model": 20
-  }
+   "model": 20,
+   "texture": 10,
+   "rig": 5
+  },
+  "refine_id": "01a12785-0cdf-73e6-8e22-c031ecabecf5",
+  "textured": "crowd_09_boy.glb",
+  "rig_id": "01a12785-ba47-762e-9fc5-e6bc50b52bc8",
+  "rigged": "crowd_09_boy_rigged.glb"
  },
  "crowd_10_girl": {
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian girl about 8 years old, light-brown skin, black hair in two braids, plain pink cotton dress, sandals. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a12775-d6ba-71fb-8d37-fdd04a7dca96",
   "credits": {
-   "model": 20
-  }
+   "model": 20,
+   "texture": 10,
+   "rig": 5
+  },
+  "refine_id": "01a12786-09a8-7562-a5f6-1a05c9f81f7b",
+  "textured": "crowd_10_girl.glb",
+  "rig_id": "01a12786-d5b1-76a8-8a46-2736b37186b5",
+  "rigged": "crowd_10_girl_rigged.glb"
  }
 }

@@ -1,18 +1,40 @@
 # Rigging a generated player model
 
 These tools turn a static humanoid mesh, such as a model made with Meshy or another
-image-to-3D service, into the realistic player body the game uses
-(`assets/characters/rigged_athlete.json`). The model needs no skeleton or animations. The game drives it
-from its own code-built skeleton (`game/rigged_body.gd`), so every move (crouch, dubki, lion
-jump, holds, dives) works straight away.
+image-to-3D service, into one of the realistic bodies the game uses
+(`assets/characters/bodies/`, listed in `bodies.json`). The model needs no skeleton or animations.
+The game drives it from its own code-built skeleton (`game/rigged_body.gd`), so every move (crouch,
+dubki, lion jump, holds, dives) works straight away, and gives each player the body nearest his skin
+tone and build; officials get the referee bodies.
 
 A model in a clear pose works best: arms and legs apart from the body, both feet on the floor.
-An A-pose or T-pose is ideal.
+A T-pose is ideal.
 
 A textured model keeps its texture: the face, skin and the kit's folds come from it, and the
-game paints the kit in each team's colours and tints the skin to each player's tone.
+game paints the kit in each team's colours and tints the skin to each player's tone. Referees keep
+their own outfit colours.
 
-## Steps
+## One command
+
+`make_body.py` runs every step below and adds the body to the game:
+
+```sh
+python make_body.py player_10 ../../assets/meshy/player_10_x.glb --kind player --build 1.0 \
+    --yolo yolo11m-pose.pt --work /tmp/body_player_10
+```
+
+`--kind referee` for officials. `--build` is the body's build on the game's scale (0.92 lean to
+1.1 stocky). It writes `NAME.krb` (the packed rig), `NAME_albedo.webp` and `NAME_kit.webp` with
+their import settings, and lists the body in `bodies.json`. After changing only the rig or texture
+scripts, `--keep-joints` reuses the joints found last time in `--work`.
+
+Then check every body side by side (full figure, a raid stance, the face, the hand gripping):
+
+```sh
+xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 384x384 res://tests/body_gallery.tscn -- /tmp/gallery.png
+```
+
+## The steps, one by one
 
 You need Python with `trimesh fast-simplification ultralytics opencv-python pillow` (the mocap
 venv from `tools/mocap` works) and Godot 4.7.
@@ -55,18 +77,21 @@ venv from `tools/mocap` works) and Godot 4.7.
    below the default (a little above the hips):
 
    ```sh
-   python autorig.py model_prep.glb OUT_DIR/joints2d.json ../../assets/characters/rigged_athlete.json --center-y 0.95 --hem 1.0
+   python autorig.py model_prep.glb OUT_DIR/joints2d.json rigged.json --center-y 0.95 --hem 1.0
    ```
 
    It prints how many vertices each bone got and the region counts (skin, jersey, shorts,
-   hair). Vertices split along UV seams are rigged together, so the seams stay closed.
+   hair). Vertices split along UV seams are rigged together, so the seams stay closed. If the
+   pose model swapped left and right (it can take a faceless front render for a back view) or
+   lost the arms of a wide T-pose, it says so and puts them right; palms are turned down, two
+   finger bones are added to each hand, and the face and beard go wholly with the head.
 
 6. **Make the kit textures** (textured models only). Give it the original file, which holds
    the texture:
 
    ```sh
-   python kit_texture.py model.glb ../../assets/characters/rigged_athlete.json \
-       ../../assets/characters/athlete_albedo.webp ../../assets/characters/athlete_kit.webp
+   python kit_texture.py model.glb rigged.json NAME_albedo.webp NAME_kit.webp \
+       --res-path res://assets/characters/bodies/
    ```
 
    It paints out the kit's logos and numbers, marks the kit's main colour (blue by default,
@@ -74,7 +99,14 @@ venv from `tools/mocap` works) and Godot 4.7.
    Godot, import both textures as **Lossy** with **mipmaps** on and **Detect 3D** off (see
    their `.import` files); this keeps the APK small.
 
-Check the result with `res://tests/rig_view.tscn` (see the comment at its top), and in a match
+7. **Pack it** for the phone, and list it in `assets/characters/bodies/bodies.json`
+   (`{"file", "kind", "build", "skin"}`; `skin` is the texture entry's `skin_ref`):
+
+   ```sh
+   python pack_body.py rigged.json ../../assets/characters/bodies/NAME.krb
+   ```
+
+Check the result with `res://tests/body_gallery.tscn` or `res://tests/rig_view.tscn` (see the comments at their tops), and in a match
 with `res://tests/screenshots.tscn -- OUT dome`.
 
 Players can switch between these bodies and the classic code-built ones in Settings →

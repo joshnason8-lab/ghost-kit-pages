@@ -7,14 +7,24 @@ capture**, and the code already has a slot for both.
 
 ## Generated models (what the game uses now)
 
-`assets/characters/rigged_athlete.json` is a generated player model (Meshy's game-ready export, about 10,400
-triangles) auto-rigged by `tools/rig`. `game/rigged_body.gd` builds it as a skinned mesh and turns its bones to
-follow the code-built skeleton every frame, so it needs no animation clips.
+`assets/characters/bodies/` holds eight generated bodies made with Meshy (see
+[MESHY_BRIEF.md](MESHY_BRIEF.md)): six players of different builds, skin tones and faces (Haryana raider
+and corner, Tamil cover, Iranian defender, Korean raider, Kenyan all-rounder) and two referees, a man and a
+woman. Each is about 15,000 triangles with a 1024 px texture, auto-rigged by `tools/rig` with two finger
+bones a hand, and packed (`.krb`). `game/rigged_body.gd` builds each as a skinned mesh and turns its bones
+to follow the code-built skeleton every frame, so it needs no animation clips. Every player gets the body
+nearest his skin tone and build (`bodies.json`), officials the referees'.
 
-Its texture (`athlete_albedo.webp`) gives the face, skin, knee pads and the kit's folds. The kit map
-(`athlete_kit.webp`) marks the kit's main colour and trim, so each team's colours replace the model's own; its
-logos and numbers were painted out, and the shirt number is added by the game. Skin is tinted to each player's
-tone. To try another model, follow [tools/rig/README.md](../tools/rig/README.md).
+Each body's texture (`NAME_albedo.webp`) gives the face, skin, knee and ankle supports and the kit's folds.
+The kit map (`NAME_kit.webp`) marks the kit's main colour and trim, so each team's colours replace the
+model's own; logos and numbers were painted out, and the shirt number is added by the game. Skin is tinted
+to each player's tone; referees keep their own outfits. To add a body, run `tools/rig/make_body.py` (see
+[tools/rig/README.md](../tools/rig/README.md)).
+
+The crowd is eight generated people (men, women, an older man, a Sikh man, children) rendered into a
+sprite sheet in eight poses (sitting, clapping, standing, arms up) by `tools/crowd/render_crowd.gd`
+(`assets/crowd/`). The stands draw each spectator as one camera-facing card; fans in shirts wear the teams'
+colours, and the crowd claps and stands with the match's excitement.
 
 ## Drop-in slot
 

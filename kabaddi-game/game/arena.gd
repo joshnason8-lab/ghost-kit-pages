@@ -42,6 +42,70 @@ void fragment() {
 }
 """
 
+## The crowd as cards cut from a sprite sheet of real people (tools/crowd/render_crowd.gd): each card turns
+## to face the camera, and picks its frame (sitting, clapping, standing to cheer) from the crowd's
+## excitement. Fans in shirts wear their instance's colour, shaded by the shirt's own folds.
+const CROWD_CARD_SHADER := """
+shader_type spatial;
+render_mode cull_disabled;
+uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D top_mask : filter_linear_mipmap, repeat_disable;
+uniform float people = 8.0;
+uniform float frames = 8.0;
+uniform bool standing = false;
+uniform float excitement = 0.0;
+uniform float top_lum[16];   // each person's shirt brightness, linear; 0 keeps their own clothes
+varying flat vec2 cell;
+varying flat float mirror;
+varying flat vec3 tint;
+varying flat float lum;
+void vertex() {
+	// Face the camera, turning about the vertical only.
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(normalize(cross(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[2].xyz)), 0.0),
+		vec4(0.0, 1.0, 0.0, 0.0), vec4(normalize(cross(INV_VIEW_MATRIX[0].xyz, vec3(0.0, 1.0, 0.0))), 0.0), MODEL_MATRIX[3]);
+	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0),
+		vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+	MODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);
+	float slot = INSTANCE_CUSTOM.a * 16.0;   // person index + a random phase
+	float person = floor(slot);
+	float ph = fract(slot);
+	float keen = fract(ph * 3.71);
+	float beat = step(0.5, fract(TIME * (1.4 + excitement * 1.6) + ph * 5.0));
+	float base = standing ? 3.0 : 0.0;
+	float frame = base;
+	if (excitement > 0.5 + 0.45 * keen) {
+		frame = 6.0 + step(0.65, fract(TIME * 0.35 + ph * 3.0));   // on their feet, arms up or a fist
+		VERTEX.y += max(0.0, sin(TIME * 6.0 + ph * 40.0)) * 0.07 * excitement;
+	} else if (excitement > 0.2 + 0.4 * keen || fract(TIME * 0.03 + ph * 9.1) < 0.05) {
+		frame = base + 1.0 + beat;   // clapping
+	}
+	cell = vec2(person, frame);
+	mirror = step(0.5, fract(ph * 7.77));
+	tint = INSTANCE_CUSTOM.rgb;
+	lum = top_lum[int(person)];
+}
+void fragment() {
+	vec2 uv = vec2(mix(UV.x, 1.0 - UV.x, mirror), UV.y);
+	uv = (cell + uv) / vec2(people, frames);
+	vec4 c = texture(atlas, uv);
+	vec3 col = c.rgb;
+	if (lum > 0.0 && tint.r + tint.g + tint.b > 0.003) {
+		float m = texture(top_mask, uv).r;
+		float l = dot(col, vec3(0.2126, 0.7152, 0.0722)) / lum;
+		col = mix(col, tint * clamp(l, 0.2, 1.5), m);
+	}
+	ALBEDO = col;
+	ALPHA = c.a;
+	ALPHA_SCISSOR_THRESHOLD = 0.5;
+	ROUGHNESS = 0.95;
+	SPECULAR = 0.2;
+	// Lit a little from above as well as from the front, like the heads and shoulders they are.
+	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(0.0, 0.8, 0.0, 0.0)).xyz);
+}
+"""
+const CROWD_DIR := "res://assets/crowd/"
+static var _crowd_sheet = null   # the crowd's sprite sheet once loaded: {} when the game has none
+
 const WATER_SHADER := """
 shader_type spatial;
 uniform vec3 deep : source_color = vec3(0.04, 0.23, 0.36);
@@ -345,6 +409,11 @@ func _crowd(positions: Array, palette: Array, skin: Color, facing: Vector3 = Vec
 			chosen.append(p)
 	if chosen.is_empty():
 		return
+	if not crowd_sheet().is_empty():
+		# People on tiers sit; people on the ground stand.
+		_crowd_cards(chosen.filter(func(p): return p.y > 0.2), palette, false, rng)
+		_crowd_cards(chosen.filter(func(p): return p.y <= 0.2), palette, true, rng)
+		return
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
@@ -373,6 +442,92 @@ func _crowd(positions: Array, palette: Array, skin: Color, facing: Vector3 = Vec
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	crowd_mats.append(sm)
 	add_child(mmi)
+
+
+static func crowd_sheet() -> Dictionary:
+	if _crowd_sheet == null:
+		_crowd_sheet = {}
+		var f := FileAccess.open(CROWD_DIR + "crowd_atlas.json", FileAccess.READ)
+		if f and ResourceLoader.exists(CROWD_DIR + "crowd_atlas.webp"):
+			var info = JSON.parse_string(f.get_as_text())
+			if info is Dictionary:
+				_crowd_sheet = {"info": info, "atlas": load(CROWD_DIR + "crowd_atlas.webp"),
+					"mask": load(CROWD_DIR + "crowd_mask.png")}
+	return _crowd_sheet
+
+
+## Spectators as camera-facing cards. Fans in shirts are picked more often than the rest, and most wear
+## a colour from the palette (the teams' colours among them); children are fewer.
+func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumberGenerator) -> void:
+	if spots.is_empty():
+		return
+	var sheet := crowd_sheet()
+	var info: Dictionary = sheet.info
+	var people: Array = info.people
+	var cell: Array = info.cell
+	var h := float(info.cell_height_m)
+	var w := h * float(cell[0]) / float(cell[1])
+	var weights := []
+	var lums := PackedFloat32Array()
+	lums.resize(16)
+	var total := 0.0
+	for i in people.size():
+		var file := String(people[i].file)
+		var wt := 3.0 if float(people[i].top_luminance) > 0.0 else 1.5
+		if file.contains("boy") or file.contains("girl"):
+			wt = 0.8
+		weights.append(wt)
+		total += wt
+		lums[i] = float(people[i].top_luminance)
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_custom_data = true
+	mm.mesh = _card_mesh(w, h)
+	mm.instance_count = spots.size()
+	for i in spots.size():
+		var pos: Vector3 = spots[i]
+		# Feet on the ground, or on the tier below the seat; the sheet has 2 cm under the feet.
+		var feet := pos - Vector3(0, (0.0 if standing else 0.45) + 0.02, 0)
+		var s := rng.randf_range(0.93, 1.06)
+		mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(s, s, s)), feet))
+		var pick := rng.randf() * total
+		var person := 0
+		while person < people.size() - 1 and pick > weights[person]:
+			pick -= weights[person]
+			person += 1
+		var tint := Color(0, 0, 0)
+		if rng.randf() < 0.8:
+			var c: Color = palette[rng.randi() % palette.size()]
+			tint = c.lerp(Color(rng.randf(), rng.randf(), rng.randf()), 0.1).srgb_to_linear()
+		mm.set_instance_custom_data(i, Color(tint.r, tint.g, tint.b, (person + rng.randf_range(0.0, 0.999)) / 16.0))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	var sm := ShaderMaterial.new()
+	var sh := Shader.new()
+	sh.code = CROWD_CARD_SHADER
+	sm.shader = sh
+	sm.set_shader_parameter("atlas", sheet.atlas)
+	sm.set_shader_parameter("top_mask", sheet.mask)
+	sm.set_shader_parameter("people", float(people.size()))
+	sm.set_shader_parameter("frames", float((info.frames as Array).size()))
+	sm.set_shader_parameter("standing", standing)
+	sm.set_shader_parameter("top_lum", lums)
+	mmi.material_override = sm
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	crowd_mats.append(sm)
+	add_child(mmi)
+
+
+func _card_mesh(w: float, h: float) -> ArrayMesh:
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(-w * 0.5, 0, 0), Vector3(w * 0.5, 0, 0), Vector3(w * 0.5, h, 0), Vector3(-w * 0.5, h, 0)])
+	arrays[Mesh.ARRAY_NORMAL] = PackedVector3Array([Vector3.BACK, Vector3.BACK, Vector3.BACK, Vector3.BACK])
+	arrays[Mesh.ARRAY_TEX_UV] = PackedVector2Array([Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
+	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 2, 1, 0, 3, 2])
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
 ## Tiered stands on all four sides. Returns spectator seat positions.
