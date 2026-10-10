@@ -52,7 +52,7 @@ process/channel_remap/red=0
 process/channel_remap/green=1
 process/channel_remap/blue=2
 process/channel_remap/alpha=3
-process/fix_alpha_border=true
+process/fix_alpha_border=false
 process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
@@ -93,7 +93,7 @@ def main():
     py = sys.executable
     model = pathlib.Path(a.model).resolve()
     prep = work / "model_prep.glb"
-    out = run([py, "-I", HERE / "prepare.py", model, prep, "--turn"])
+    out = run([py, HERE / "prepare.py", model, prep, "--turn"])
     height = json.loads(out.strip().split("bounds ")[-1])[1][1]
 
     proj = work / "views_project"
@@ -107,17 +107,17 @@ def main():
     run([a.godot, "--headless", "--path", proj, "--import"])
     run(["xvfb-run", "-a", "-s", "-screen 0 1024x1024x24", a.godot, "--path", proj, "--rendering-driver", "opengl3",
          "--resolution", "1024x1024", "res://render_views.tscn", "--", views, f"{height / 2:.3f}"])
-    run([py, "-I", HERE / "joints2d.py", a.yolo, views])
+    run([py, HERE / "joints2d.py", a.yolo, views])
 
     rigged = work / "rigged.json"
-    print(run([py, "-I", HERE / "autorig.py", prep, views / "joints2d.json", rigged,
+    print(run([py, HERE / "autorig.py", prep, views / "joints2d.json", rigged,
                "--center-y", f"{height / 2:.3f}", "--hem", f"{a.hem * height:.3f}"]))
     BODIES.mkdir(parents=True, exist_ok=True)
     albedo, kit = f"{a.name}_albedo.webp", f"{a.name}_kit.webp"
-    print(run([py, "-I", HERE / "kit_texture.py", model, rigged, work / albedo, work / kit,
+    print(run([py, HERE / "kit_texture.py", model, rigged, work / albedo, work / kit,
                "--res-path", "res://assets/characters/bodies/", "--size", "1024"]))
     krb = f"{a.name}.krb"
-    print(run([py, "-I", HERE / "pack_body.py", rigged, BODIES / krb]))
+    print(run([py, HERE / "pack_body.py", rigged, BODIES / krb]))
     for f, q in ((albedo, 0.85), (kit, 0.9)):
         shutil.copy(work / f, BODIES / f)
         (BODIES / (f + ".import")).write_text(IMPORT.format(name=f, quality=q))

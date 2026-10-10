@@ -10,8 +10,10 @@ included. This script:
 3. Pads the texture's islands so mipmaps don't bleed the black gaps between them.
 
 It writes ALBEDO (the cleaned texture) and KIT (red: main colour, green: trim, blue: the kit's
-shading as a multiplier, halved, in linear light; alpha: skin, the only part tinted to each player's
-skin tone, so shirts, shoes and hair keep their colours) and adds a "texture" entry to the rigged
+shading as a multiplier, halved, in linear light; alpha: 0 on skin, the only part tinted to each
+player's skin tone, so shirts, shoes and hair keep their colours. Skin is the transparent part because
+encoders may drop the colour under transparent texels, and skin carries no kit colour to lose) and adds
+a "texture" entry to the rigged
 model's JSON with the files and the texture's skin colour. game/rigged_body.gd then paints
 the kit in the team's colours, keeping its folds, and tints the skin to each player's tone.
 Use .webp names: the albedo is saved lossy, the kit map lossless.
@@ -51,7 +53,7 @@ def to_linear(c):
 def save(path, arr, lossless):
     im = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
     if path.endswith(".webp"):
-        im.save(path, lossless=lossless, quality=100 if lossless else 92, method=6)
+        im.save(path, lossless=lossless, quality=100 if lossless else 92, method=6, exact=True)
     else:
         im.save(path, optimize=True)
 
@@ -82,9 +84,11 @@ def main():
     tri = np.array(rig["indices"], dtype=np.int64).reshape(-1, 3)
     names = [b["name"] for b in rig["bones"]]
     top_bone = np.array(rig["bones4"], dtype=np.int64).reshape(-1, 4)[:, 0]
-    # Never kit: the head and the hands (pink palms and fingertips read as red trim otherwise).
-    head_v = np.isin(top_bone, [names.index(n) for n in ("head", "neck", "hand_l", "hand_r", "fingers_l", "fingers_r")
-                                if n in names])
+    # Never kit: the head, the forearms and the hands (pink palms and fingertips read as red trim otherwise;
+    # the shirts have short sleeves).
+    never = ("head", "neck", "forearm_l", "forearm_r", "hand_l", "hand_r", "fingers_l", "fingers_r",
+             "fingertips_l", "fingertips_r")
+    head_v = np.isin(top_bone, [names.index(n) for n in never if n in names])
 
     # Which texels the mesh uses, and which belong to the head.
     px = np.round(uv * np.array([W, H]) * 16).astype(np.int32)   # 4 bits of sub-pixel precision
@@ -185,7 +189,7 @@ def main():
     kit[..., 0] = main
     kit[..., 1] = trim
     kit[..., 2] = shade8 / 255.0
-    kit[..., 3] = skin_mask
+    kit[..., 3] = 1.0 - skin_mask
 
     # Pad the islands outwards so filtering never reaches the black gaps.
     def pad(im, mask, steps=12):
@@ -208,6 +212,7 @@ def main():
         "albedo": a.res_path + a.albedo_out.split("/")[-1],
         "kit": a.res_path + a.kit_out.split("/")[-1],
         "skin_ref": ref["skin"],
+        "skin_mask": True,
     }
     json.dump(rig, open(a.rigged, "w"), separators=(",", ":"))
     print("wrote", a.albedo_out, a.kit_out, "and the texture entry in", a.rigged)

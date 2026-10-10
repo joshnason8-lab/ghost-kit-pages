@@ -40,8 +40,9 @@ void fragment() {
 const SHADER_TEXTURED := """
 shader_type spatial;
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_disable;
-uniform sampler2D kit_tex : filter_linear_mipmap, repeat_disable;   // r main, g trim, b shading / 2, a skin
+uniform sampler2D kit_tex : filter_linear_mipmap, repeat_disable;   // r main, g trim, b shading / 2, a not skin
 uniform vec3 skin_ratio = vec3(1.0);   // this player's skin over the texture's, in linear light
+uniform bool skin_mask = false;        // the kit map's alpha is 0 on skin (older maps have none)
 uniform vec3 jersey_col : source_color = vec3(0.1, 0.4, 0.8);
 uniform vec3 shorts_col : source_color = vec3(0.05, 0.1, 0.16);
 uniform vec3 trim_col : source_color = vec3(1.0);
@@ -53,7 +54,8 @@ void fragment() {
 	vec3 t = texture(albedo_tex, UV).rgb;
 	vec4 k = texture(kit_tex, UV);
 	// Only skin takes the player's tone: shirts, shoes and hair keep theirs.
-	vec3 body = t * mix(vec3(1.0), skin_ratio, k.a * (1.0 - region.b));
+	float skin = skin_mask ? 1.0 - k.a : 1.0 - region.b;
+	vec3 body = t * mix(vec3(1.0), skin_ratio, skin);
 	// Sharp edges: a little kit bleeding in from a neighbouring piece of the texture (or a
 	// little skin into the kit) is dropped.
 	float amount = smoothstep(0.3, 0.7, k.r + k.g);
@@ -182,6 +184,7 @@ static func _texture_part(d: Dictionary, tex: Dictionary) -> void:
 		d.kit = load(String(tex.kit))
 		var r: Array = tex.get("skin_ref", [1, 1, 1])
 		d.skin_ref = Color(float(r[0]), float(r[1]), float(r[2]))
+		d.skin_mask = bool(tex.get("skin_mask", false))
 
 
 static func _build_mesh(d: Dictionary, verts: PackedVector3Array, norms: PackedVector3Array, uvs: PackedVector2Array,
@@ -352,6 +355,7 @@ func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float
 		material.set_shader_parameter("albedo_tex", body.albedo)
 		material.set_shader_parameter("kit_tex", body.kit)
 		material.set_shader_parameter("trim_col", trim)
+		material.set_shader_parameter("skin_mask", body.get("skin_mask", false))
 		var a := skin.srgb_to_linear()
 		var b: Color = (body.skin_ref as Color).srgb_to_linear()
 		material.set_shader_parameter("skin_ratio", Vector3(a.r / b.r, a.g / b.g, a.b / b.b))
