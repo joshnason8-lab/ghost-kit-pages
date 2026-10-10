@@ -24,6 +24,9 @@
    "texture": 10,
    "rig": 5
   },
-  "refine_id": "01a12744-22ba-74b3-8ab9-b69dc78440f5"
+  "refine_id": "01a12744-22ba-74b3-8ab9-b69dc78440f5",
+  "textured": "player_01_raider_haryana.glb",
+  "rig_id": "01a12745-0e93-72a7-a9e0-a9374e82e641",
+  "rigged": "player_01_raider_haryana_rigged.glb"
  }
 }
