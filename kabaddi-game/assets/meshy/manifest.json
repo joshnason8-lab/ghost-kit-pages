@@ -117,11 +117,12 @@
   "rigged": "player_07_defender_iran_rigged.glb"
  },
  "player_09_allrounder_kenya": {
-  "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Feet flat, neutral face, mouth closed.",
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a1275f-cf96-7770-8723-fe97c63b5f7c",
   "credits": {
    "model": 20
-  }
+  },
+  "refine_id": "01a1276e-d149-7633-b5c7-09a9e85be97a"
  },
  "referee_02_woman": {
   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Feet flat, neutral face, mouth closed.",
@@ -147,9 +148,14 @@
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a South Korean kabaddi raider, 25-year-old man, lean athletic build about 72 kg, light skin, straight short black hair, clean-shaven. Feet flat, neutral face, mouth closed.",
   "preview_id": "01a12766-88d3-7797-bc4f-7adc027626a7",
   "credits": {
-   "model": 20
+   "model": 20,
+   "texture": 10,
+   "rig": 5
   },
-  "refine_id": "01a1276d-6ea8-710f-acc7-21e053e8c421"
+  "refine_id": "01a1276d-6ea8-710f-acc7-21e053e8c421",
+  "textured": "player_08_raider_korea.glb",
+  "rig_id": "01a1276e-9ebc-71ce-b1ac-d328fea6098a",
+  "rigged": "player_08_raider_korea_rigged.glb"
  },
  "referee_01_man": {
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Feet flat, neutral face, mouth closed.",
@@ -163,6 +169,11 @@
   "preview_id": "01a12769-b334-70ae-a52f-e50eb870b51a",
   "credits": {
    "model": 20
-  }
+  },
+  "refine_id": "01a1276e-6e64-76c4-8d23-6ebced40ad4b"
+ },
+ "crowd_01_man_tshirt": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian man in his 30s, medium-brown skin, short black hair, plain mustard-yellow t-shirt, blue jeans, sandals. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a1276e-9500-7028-9abf-c036c31864c1"
  }
 }
