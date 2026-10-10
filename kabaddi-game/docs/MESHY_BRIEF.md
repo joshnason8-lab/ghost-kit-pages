@@ -39,7 +39,7 @@ common in real matches, so trainers are accepted rather than paid for again.
 | Pose | **A-pose** | Rigs cleanly; arms clear of the body |
 | Symmetry | On | Even shoulders and limbs |
 | Topology | **Quad** | Bends better at knees, elbows and shoulders |
-| Face count | Players and referees **6,000 quads** (about 11,000 triangles); crowd 30,000 | 17 people on court must run on a Galaxy A16. The crowd is rendered into pictures beforehand, so it can be detailed |
+| Face count | Players and referees **8,000 quads** (about 16,000 triangles, for separate fingers; the game uses a lighter version far from the camera); crowd 30,000 | 17 people on court must run on a Galaxy A16. The crowd is rendered into pictures beforehand, so it can be detailed |
 | Texture | On, **PBR on**, 2048 px | The game shrinks it to 1024 for the phone |
 | Height for rigging | Per character, below | So the rig matches real proportions |
 
@@ -74,7 +74,7 @@ patterns, make clean edges.
 
 ### Reject if
 
-- Extra, missing or fused fingers or toes; hands like mittens.
+- Extra, missing or fused fingers or toes; hands like mittens; palms facing up or forward in the A-pose.
 - Legs or arms joined to the body; armpits filled in.
 - Any logo, letters, numbers or crest on the kit.
 - Shadows painted into the texture (dark armpits, dark under the chin).
@@ -87,10 +87,16 @@ All are adult professional kabaddi players: very fit, strong thighs and core, sh
 kit first, then the player, then the pose. The kit comes first because the first test, with the kit at the end,
 came back shirtless in socks and trainers:
 
-> *Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and
-> shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes,
-> bare feet without shoes or socks, no logos, no text, no numbers.* **He is** *[the player below].* *Full body
-> A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.*
+> *Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar,
+> shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos,
+> no text, no numbers.* **He is** *[the player below].* *Full body A-pose, arms 45 degrees out, palms down,
+> realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.*
+
+**Hands.** The first test's fingers were fused into a mitten and its palms faced up, so they would face forward
+with the arms down. Every person's prompt now asks for palms facing down (the standard rigging pose: with the arms
+lowered the palms face the thighs) and five separate, slightly spread fingers. Players and referees get 8,000
+quads (about 16,000 triangles) so the fingers have the detail to stay apart, and each preview's hands are checked
+close up before the texture is paid for.
 
 **Texture prompt:** the texture step paints from its own prompt, not from the shape, so it must describe the
 outfit again: with a generic one, the first test came back with a sleeveless vest painted on a t-shirt. Each
@@ -240,13 +246,13 @@ Built from the tables above by `tools/meshy/build_assets.py`. For players and re
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 **player_02_allrounder_maharashtra** (rig height 1.80 m)
@@ -254,13 +260,13 @@ Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey sh
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi all-rounder, 27-year-old man from Maharashtra, athletic muscular build, broad chest, medium-brown skin, short wavy black hair, clean-shaven. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi all-rounder, 27-year-old man from Maharashtra, athletic muscular build, broad chest, medium-brown skin, short wavy black hair, clean-shaven. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi all-rounder, 27-year-old man from Maharashtra, athletic muscular build, broad chest, medium-brown skin, short wavy black hair, clean-shaven. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi all-rounder, 27-year-old man from Maharashtra, athletic muscular build, broad chest, medium-brown skin, short wavy black hair, clean-shaven. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 **player_03_corner_haryana** (rig height 1.78 m)
@@ -268,13 +274,13 @@ Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey sh
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky powerful build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky powerful build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky powerful build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky powerful build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 **player_04_cover_tamil** (rig height 1.85 m)
@@ -282,13 +288,13 @@ Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey sh
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 **player_05_veteran_punjab** (rig height 1.79 m)
@@ -296,13 +302,13 @@ Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey sh
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi team captain, 34-year-old man from Punjab, solid muscular build about 88 kg, medium-brown skin, short salt-and-pepper hair, short salt-and-pepper beard, calm face. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi team captain, 34-year-old man from Punjab, solid muscular build about 88 kg, medium-brown skin, short salt-and-pepper hair, short salt-and-pepper beard, calm face. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi team captain, 34-year-old man from Punjab, solid muscular build about 88 kg, medium-brown skin, short salt-and-pepper hair, short salt-and-pepper beard, calm face. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi team captain, 34-year-old man from Punjab, solid muscular build about 88 kg, medium-brown skin, short salt-and-pepper hair, short salt-and-pepper beard, calm face. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 **player_06_raider_bengal** (rig height 1.72 m)
@@ -310,13 +316,13 @@ Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey sh
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is a kabaddi raider from Bangladesh, 22-year-old man, small light quick build about 68 kg, medium-brown skin, short side-parted black hair, thin black moustache. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is a kabaddi raider from Bangladesh, 22-year-old man, small light quick build about 68 kg, medium-brown skin, short side-parted black hair, thin black moustache. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is a kabaddi raider from Bangladesh, 22-year-old man, small light quick build about 68 kg, medium-brown skin, short side-parted black hair, thin black moustache. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is a kabaddi raider from Bangladesh, 22-year-old man, small light quick build about 68 kg, medium-brown skin, short side-parted black hair, thin black moustache. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 **player_07_defender_iran** (rig height 1.83 m)
@@ -324,13 +330,13 @@ Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey sh
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Iranian kabaddi defender, 28-year-old man, powerful muscular build about 90 kg, light olive skin, short dark-brown hair, full short dark beard. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Iranian kabaddi defender, 28-year-old man, powerful muscular build about 90 kg, light olive skin, short dark-brown hair, full short dark beard. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Iranian kabaddi defender, 28-year-old man, powerful muscular build about 90 kg, light olive skin, short dark-brown hair, full short dark beard. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Iranian kabaddi defender, 28-year-old man, powerful muscular build about 90 kg, light olive skin, short dark-brown hair, full short dark beard. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 **player_08_raider_korea** (rig height 1.74 m)
@@ -338,13 +344,13 @@ Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey sh
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is a South Korean kabaddi raider, 25-year-old man, lean athletic build about 72 kg, light skin, straight short black hair, clean-shaven. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is a South Korean kabaddi raider, 25-year-old man, lean athletic build about 72 kg, light skin, straight short black hair, clean-shaven. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is a South Korean kabaddi raider, 25-year-old man, lean athletic build about 72 kg, light skin, straight short black hair, clean-shaven. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is a South Korean kabaddi raider, 25-year-old man, lean athletic build about 72 kg, light skin, straight short black hair, clean-shaven. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 **player_09_allrounder_kenya** (rig height 1.82 m)
@@ -352,13 +358,13 @@ Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey sh
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 **player_10_raider_japan** (rig height 1.73 m)
@@ -366,13 +372,13 @@ Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey sh
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is a Japanese kabaddi raider, 23-year-old man, compact athletic build about 70 kg, light skin, short spiky black hair, clean-shaven. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is a Japanese kabaddi raider, 23-year-old man, compact athletic build about 70 kg, light skin, short spiky black hair, clean-shaven. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is a Japanese kabaddi raider, 23-year-old man, compact athletic build about 70 kg, light skin, short spiky black hair, clean-shaven. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.
+Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is a Japanese kabaddi raider, 23-year-old man, compact athletic build about 70 kg, light skin, short spiky black hair, clean-shaven. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.
 ```
 
 ### Pads and wraps
@@ -414,13 +420,13 @@ A plain red elastic sports headband on its own, a thin ring of fabric, realistic
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Full body A-pose, open hands, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Full body A-pose, palms down, realistic hands with five separate fingers slightly spread, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Full body A-pose, open hands, neutral face, mouth closed.
+Photorealistic kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Full body A-pose, palms down, realistic hands with five separate fingers slightly spread, neutral face, mouth closed.
 ```
 
 **referee_02_woman** (rig height 1.65 m)
@@ -428,13 +434,13 @@ Photorealistic kabaddi match referee, 45-year-old Indian man, average fit build,
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Full body A-pose, open hands, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Full body A-pose, palms down, realistic hands with five separate fingers slightly spread, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Full body A-pose, open hands, neutral face, mouth closed.
+Photorealistic kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Full body A-pose, palms down, realistic hands with five separate fingers slightly spread, neutral face, mouth closed.
 ```
 
 **referee_03_senior** (rig height 1.72 m)
@@ -442,13 +448,13 @@ Photorealistic kabaddi match referee, 38-year-old Indian woman, fit build, mediu
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, senior kabaddi umpire, 55-year-old Indian man, slightly heavy build, light-brown skin, short grey hair, grey moustache, thin glasses, plain white short-sleeve collared polo shirt tucked into black trousers, black sports shoes, whistle on a black cord, no logos, no text. Full body A-pose, open hands, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, senior kabaddi umpire, 55-year-old Indian man, slightly heavy build, light-brown skin, short grey hair, grey moustache, thin glasses, plain white short-sleeve collared polo shirt tucked into black trousers, black sports shoes, whistle on a black cord, no logos, no text. Full body A-pose, palms down, realistic hands with five separate fingers slightly spread, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Photorealistic senior kabaddi umpire, 55-year-old Indian man, slightly heavy build, light-brown skin, short grey hair, grey moustache, thin glasses, plain white short-sleeve collared polo shirt tucked into black trousers, black sports shoes, whistle on a black cord, no logos, no text. Full body A-pose, open hands, neutral face, mouth closed.
+Photorealistic senior kabaddi umpire, 55-year-old Indian man, slightly heavy build, light-brown skin, short grey hair, grey moustache, thin glasses, plain white short-sleeve collared polo shirt tucked into black trousers, black sports shoes, whistle on a black cord, no logos, no text. Full body A-pose, palms down, realistic hands with five separate fingers slightly spread, neutral face, mouth closed.
 ```
 
 ### Crowd
@@ -456,95 +462,95 @@ Photorealistic senior kabaddi umpire, 55-year-old Indian man, slightly heavy bui
 **crowd_01_man_tshirt** (rig height 1.72 m)
 
 ```text
-Photorealistic Indian man in his 30s, medium-brown skin, short black hair, plain mustard-yellow t-shirt, blue jeans, sandals, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic Indian man in his 30s, medium-brown skin, short black hair, plain mustard-yellow t-shirt, blue jeans, sandals, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_02_man_fan_jersey** (rig height 1.75 m)
 
 ```text
-Photorealistic young Indian man, kabaddi fan, light-brown skin, plain royal blue fan jersey with red trim, black track pants, sneakers, plain red cap, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic young Indian man, kabaddi fan, light-brown skin, plain royal blue fan jersey with red trim, black track pants, sneakers, plain red cap, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_03_sikh_man** (rig height 1.80 m)
 
 ```text
-Photorealistic Sikh man in his 40s, navy blue turban, full black beard, light-brown skin, plain white kurta, grey trousers, sandals, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic Sikh man in his 40s, navy blue turban, full black beard, light-brown skin, plain white kurta, grey trousers, sandals, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_04_old_man** (rig height 1.68 m)
 
 ```text
-Photorealistic elderly Indian man about 70, thin build, dark-brown skin, short white hair, white moustache, round glasses, plain white kurta pyjama, brown sandals, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic elderly Indian man about 70, thin build, dark-brown skin, short white hair, white moustache, round glasses, plain white kurta pyjama, brown sandals, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_05_woman_salwar** (rig height 1.60 m)
 
 ```text
-Photorealistic young Indian woman in her 20s, medium-brown skin, long black hair in a braid, plain teal salwar kameez with a cream dupatta, flat sandals, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic young Indian woman in her 20s, medium-brown skin, long black hair in a braid, plain teal salwar kameez with a cream dupatta, flat sandals, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_06_woman_saree** (rig height 1.58 m)
 
 ```text
-Photorealistic Indian woman in her 40s, dark-brown skin, black hair in a bun, maroon cotton saree with a gold border, flat sandals, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic Indian woman in her 40s, dark-brown skin, black hair in a bun, maroon cotton saree with a gold border, flat sandals, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_07_woman_jeans** (rig height 1.63 m)
 
 ```text
-Photorealistic young Indian woman, college student, light-brown skin, black hair in a ponytail, plain white t-shirt, blue jeans, white sneakers, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic young Indian woman, college student, light-brown skin, black hair in a ponytail, plain white t-shirt, blue jeans, white sneakers, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_08_old_woman** (rig height 1.55 m)
 
 ```text
-Photorealistic elderly Indian woman about 65, medium-brown skin, grey hair in a bun, plain light-blue cotton saree, flat sandals, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic elderly Indian woman about 65, medium-brown skin, grey hair in a bun, plain light-blue cotton saree, flat sandals, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_09_boy** (rig height 1.35 m)
 
 ```text
-Photorealistic Indian boy about 10 years old, medium-brown skin, short black hair, plain orange t-shirt, navy shorts, sneakers, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic Indian boy about 10 years old, medium-brown skin, short black hair, plain orange t-shirt, navy shorts, sneakers, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_10_girl** (rig height 1.25 m)
 
 ```text
-Photorealistic Indian girl about 8 years old, light-brown skin, black hair in two braids, plain pink cotton dress, sandals, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic Indian girl about 8 years old, light-brown skin, black hair in two braids, plain pink cotton dress, sandals, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_11_teen_facepaint** (rig height 1.65 m)
 
 ```text
-Photorealistic Indian teenage boy, medium-brown skin, short black hair, saffron white and green stripes painted on both cheeks, plain white t-shirt, jeans, sneakers, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic Indian teenage boy, medium-brown skin, short black hair, saffron white and green stripes painted on both cheeks, plain white t-shirt, jeans, sneakers, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_12_man_hoodie** (rig height 1.78 m)
 
 ```text
-Photorealistic young Indian man, light-brown skin, short styled black hair, plain grey hoodie, black joggers, white sneakers, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic young Indian man, light-brown skin, short styled black hair, plain grey hoodie, black joggers, white sneakers, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_13_man_office** (rig height 1.70 m)
 
 ```text
-Photorealistic Indian man in his 50s, slightly heavy build, medium-brown skin, balding with short grey hair, thick moustache, plain light-blue shirt, dark trousers, black shoes, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic Indian man in his 50s, slightly heavy build, medium-brown skin, balding with short grey hair, thick moustache, plain light-blue shirt, dark trousers, black shoes, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_14_woman_hijab** (rig height 1.62 m)
 
 ```text
-Photorealistic young woman, light-brown skin, plain black hijab, plain olive-green long tunic, black trousers, flat shoes, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic young woman, light-brown skin, plain black hijab, plain olive-green long tunic, black trousers, flat shoes, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_15_woman_fan** (rig height 1.60 m)
 
 ```text
-Photorealistic young Indian woman, kabaddi fan, dark-brown skin, black hair in a ponytail, plain royal blue fan jersey with red trim, black leggings, sneakers, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic young Indian woman, kabaddi fan, dark-brown skin, black hair in a ponytail, plain royal blue fan jersey with red trim, black leggings, sneakers, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```
 
 **crowd_16_man_kurta_jacket** (rig height 1.74 m)
 
 ```text
-Photorealistic Indian man in his 60s, light-brown skin, short white hair, white beard, plain white kurta under a brown sleeveless jacket, sandals, Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, no logos, no text.
+Photorealistic Indian man in his 60s, light-brown skin, short white hair, white beard, plain white kurta under a brown sleeveless jacket, sandals, Full body, A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed, no logos, no text.
 ```

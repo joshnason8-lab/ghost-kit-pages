@@ -13,12 +13,14 @@ HERE = pathlib.Path(__file__).resolve().parent
 BRIEF = HERE.parent.parent / "docs" / "MESHY_BRIEF.md"
 OUT = HERE / "assets.json"
 
-KIT = ("Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and "
-       "shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side "
-       "stripes, bare feet without shoes or socks, no logos, no text, no numbers.")
-POSE = "Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed."
-CROWD_END = ("Full body, A-pose, arms 45 degrees from the body, open hands, feet flat, neutral face, mouth closed, "
-             "no logos, no text.")
+KIT = ("Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red "
+       "collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi "
+       "shoes, no logos, no text, no numbers.")
+# Hands: palms down in the A-pose (the rigging standard) hang palms-to-thighs when the arms drop; the first test's
+# palms faced up and its fingers were fused.
+HANDS = "palms down, realistic hands with five separate fingers slightly spread"
+POSE = f"Full body A-pose, arms 45 degrees out, {HANDS}, feet flat, neutral face, mouth closed."
+CROWD_END = f"Full body, A-pose, arms 45 degrees out, {HANDS}, feet flat, neutral face, mouth closed, no logos, no text."
 TEXTURE = {
     "player": ("Photorealistic skin with pores and natural tone variation, realistic short hair, matte stretch sports "
                "fabric with fine stitching, flat solid royal blue and red kit, no logos, no text, no numbers, even "
@@ -33,8 +35,11 @@ TEXTURE = {
 KIT_TEXTURE = ("Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder "
                "panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; "
                "plain black kabaddi shoes; no logos, no text, no numbers.")
-QUALITY = "Photorealistic skin, face and fabric, even studio lighting, no baked shadows."
-FACES = {"player": 6000, "referee": 6000, "gear": 2000, "crowd": 30000}
+QUALITY = ("Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even "
+           "lighting, no baked shadows.")
+# About 16,000 triangles for players and referees: enough for separate fingers. The game shows a lighter
+# version of players far from the camera.
+FACES = {"player": 8000, "referee": 8000, "gear": 2000, "crowd": 30000}
 PICTURE = "Full-body studio photo, front view, plain light-grey background,"
 
 
@@ -56,7 +61,7 @@ def main():
         elif section.startswith("## Pads"):
             kind, height, prompt = "gear", None, cells[-1]
         elif section.startswith("## Referees"):
-            kind, height, prompt = "referee", cells[0], cells[-1]
+            kind, height, prompt = "referee", cells[0], cells[-1].replace("open hands", HANDS)
         elif section.startswith("## Crowd"):
             kind, height, prompt = "crowd", cells[0], f"{cells[-1]} {CROWD_END}"
         else:
