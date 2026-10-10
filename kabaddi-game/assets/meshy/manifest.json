@@ -1,6 +1,8 @@
 {
  "player_01_raider_haryana": {
   "preview_id": "01a1273c-14e3-73cf-9af6-071758efa80c",
-  "refine_id": "01a1273c-f8a1-7465-b91a-96461e362c5a"
+  "refine_id": "01a1273c-f8a1-7465-b91a-96461e362c5a",
+  "textured": "player_01_raider_haryana.glb",
+  "rig_id": "01a1273d-cac1-74b1-bbd3-5649c6518bf8"
  }
 }
