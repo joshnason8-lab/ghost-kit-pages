@@ -120,7 +120,7 @@ last sentence.
 | `player_01_raider_haryana` | Lean raider | 1.76 m | an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. |
 | `player_02_allrounder_maharashtra` | All-rounder | 1.80 m | an Indian kabaddi all-rounder, 27-year-old man from Maharashtra, athletic muscular build, broad chest, medium-brown skin, short wavy black hair, clean-shaven. |
 | `player_03_corner_haryana` | Stocky corner defender | 1.78 m | an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky strong build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. |
-| `player_04_cover_tamil` | Tall cover defender | 1.85 m | an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. |
+| `player_04_cover_tamil` | Tall cover defender | 1.85 m | an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall broad-shouldered build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. |
 | `player_05_veteran_punjab` | Veteran captain | 1.79 m | an Indian kabaddi team captain, 34-year-old man from Punjab, solid muscular build about 88 kg, medium-brown skin, short salt-and-pepper hair, short salt-and-pepper beard, calm face. |
 | `player_06_raider_bengal` | Small quick raider | 1.72 m | a kabaddi raider from Bangladesh, 22-year-old man, small light quick build about 68 kg, medium-brown skin, short side-parted black hair, thin black moustache. |
 | `player_07_defender_iran` | Iranian defender | 1.83 m | an Iranian kabaddi defender, 28-year-old man, strong muscular build about 90 kg, light olive skin, short dark-brown hair, full short dark beard. |
@@ -297,13 +297,13 @@ Standing in a T-pose, arms straight out to the sides at shoulder height, palms d
 Picture:
 
 ```text
-Full-body studio photo, front view, plain light-grey background, Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Feet flat, neutral face, mouth closed.
+Full-body studio photo, front view, plain light-grey background, Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall broad-shouldered build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Feet flat, neutral face, mouth closed.
 ```
 
 3D:
 
 ```text
-Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Feet flat, neutral face, mouth closed.
+Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall broad-shouldered build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Feet flat, neutral face, mouth closed.
 ```
 
 **player_05_veteran_punjab** (rig height 1.79 m)
