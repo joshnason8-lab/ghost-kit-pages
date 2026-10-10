@@ -18,9 +18,11 @@ KIT = ("Photorealistic kabaddi player wearing a fitted royal blue short-sleeve j
        "shoes, no logos, no text, no numbers.")
 # Hands: palms down in the A-pose (the rigging standard) hang palms-to-thighs when the arms drop; the first test's
 # palms faced up and its fingers were fused.
+# The A-pose was not held: two of the first three players came back with bent or raised arms. A T-pose
+# (Meshy's pose_mode "t-pose") is the other rigging standard; with palms down, lowered arms hang palms-in.
 HANDS = "palms down, realistic hands with five separate fingers slightly spread"
-POSE = f"Full body A-pose, arms 45 degrees out, {HANDS}, feet flat, neutral face, mouth closed."
-CROWD_END = f"Full body, A-pose, arms 45 degrees out, {HANDS}, feet flat, neutral face, mouth closed, no logos, no text."
+POSE = f"Full body T-pose, arms out sideways, {HANDS}, feet flat, neutral face, mouth closed."
+CROWD_END = f"Full body, T-pose, arms out sideways, {HANDS}, feet flat, neutral face, mouth closed, no logos, no text."
 TEXTURE = {
     "player": ("Photorealistic skin with pores and natural tone variation, realistic short hair, matte stretch sports "
                "fabric with fine stitching, flat solid royal blue and red kit, no logos, no text, no numbers, even "
@@ -72,7 +74,11 @@ def main():
             texture = f"{prompt.split(' Full body')[0].rstrip(', .')}. {QUALITY}"
         else:
             texture = TEXTURE[kind]
+        if kind in ("player", "referee", "crowd"):
+            prompt = prompt.replace("Full body A-pose, palms down", "Full body T-pose, arms out sideways, palms down")
         a = {"name": name, "kind": kind, "prompt": prompt, "texture_prompt": texture, "faces": FACES[kind]}
+        if kind != "gear":
+            a["pose"] = "t-pose"
         if height:
             a["height_m"] = float(height.split()[0])
         for label, t in (("prompt", prompt), ("texture prompt", texture)):

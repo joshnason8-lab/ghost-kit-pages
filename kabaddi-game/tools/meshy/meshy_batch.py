@@ -110,7 +110,7 @@ def preview_body(a, model):
         "symmetry_mode": "on" if person else "auto",
     }
     if person:
-        body["pose_mode"] = "a-pose"
+        body["pose_mode"] = a.get("pose", "a-pose")
     return body
 
 
