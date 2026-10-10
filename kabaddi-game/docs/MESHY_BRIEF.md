@@ -187,7 +187,17 @@ such as Character Creator, and would be hard to see from the match camera on a p
 
 Put the downloads in a folder named `meshy/` with the file names above (`.glb`; FBX not needed), zip it, and attach
 it here, or add `api.meshy.ai` and `assets.meshy.ai` to the cloud environment's allowed domains and a Meshy API key
-as an environment secret named `MESHY_API_KEY`, and a new session can run this whole list itself.
+as an environment secret named `MESHY_API_KEY`, and a new session can run this whole list itself:
+
+```sh
+python3 tools/meshy/meshy_batch.py --dry-run                            # what would be sent
+python3 tools/meshy/meshy_batch.py --only player_01_raider_haryana      # one test player first
+python3 tools/meshy/meshy_batch.py --kind player                        # then each group
+```
+
+`tools/meshy/assets.json` holds the same prompts as this page. The script was written from Meshy's API documentation
+before any live call could be made, so the first run is the test: if Meshy rejects a field (HTTP 400), the script
+stops and prints Meshy's message.
 
 For each model the game's tools then: turn and check it (`tools/rig/prepare.py`), map Meshy's rig onto the game's
 skeleton (or rig it with `tools/rig/autorig.py`), make the kit map (`tools/rig/kit_texture.py`), add the face bones,
