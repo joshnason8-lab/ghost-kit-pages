@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Make the assets in docs/MESHY_BRIEF.md with Meshy's API: model, texture, rig, download.
 
-For each asset in tools/meshy/assets.json:
-1. Text to 3D preview (realistic, quad topology, the asset's face count, A-pose for people).
-2. Refine: PBR texture with the asset's texture prompt.
+For each asset in tools/meshy/assets.json (built from the brief by build_assets.py):
+1. Text to 3D preview (realistic, quad topology, the asset's face count, A-pose for people). With
+   --stage preview the script stops here, saving NAME_preview.glb and .png: check the shape and clothes
+   before paying for the texture and rig.
+2. Refine: texture with the asset's texture prompt.
 3. Rig people (not gear) at their height.
 4. Download NAME.glb (textured), NAME_rigged.glb and NAME.png (Meshy's thumbnail) to the output folder.
+The credits each step took are recorded in the manifest.
 
 Progress is kept in OUT/manifest.json, so a run that stops resumes where it left off, and a step
 that already worked is never paid for twice. Delete an asset's entry there to make it again. The
@@ -21,7 +24,9 @@ Usage:
   python3 tools/meshy/meshy_batch.py --check                   # can we reach Meshy, and the credit balance
   python3 tools/meshy/meshy_batch.py --dry-run                 # print what would be sent
   python3 tools/meshy/meshy_batch.py --only player_01_raider_haryana
+  python3 tools/meshy/meshy_batch.py --kind player --stage preview   # untextured previews to check
   python3 tools/meshy/meshy_batch.py --kind player             # all players
+  python3 tools/meshy/meshy_batch.py --redo --only NAME        # start NAME again (old record kept)
   python3 tools/meshy/meshy_batch.py                           # everything
 """
 
@@ -110,20 +115,50 @@ def preview_body(a, model):
 
 
 def refine_body(a, preview_id):
-    return {"mode": "refine", "preview_task_id": preview_id, "enable_pbr": True, "texture_prompt": a["texture_prompt"]}
+    # The game uses the base colour only, so no PBR maps.
+    return {"mode": "refine", "preview_task_id": preview_id, "enable_pbr": False, "texture_prompt": a["texture_prompt"]}
 
 
-def make(a, out, state, key, model, rig):
+def balance(key):
+    try:
+        return call("GET", "/openapi/v1/balance", key=key).get("balance")
+    except MeshyError:
+        return None
+
+
+def step(s, out, state, key, field, start, poll_path, label):
+    """Start a task once (its id kept in the manifest), wait for it, and note what it cost."""
+    if not s.get(field):
+        before = balance(key)
+        s[field] = start()
+        save_state(out, state)
+    else:
+        before = None
+    t = wait(poll_path(s[field]), key, label)
+    if before is not None:
+        after = balance(key)
+        if after is not None:
+            s.setdefault("credits", {})[label] = before - after
+            save_state(out, state)
+    return t
+
+
+def make(a, out, state, key, model, rig, stage):
     name = a["name"]
     s = state.setdefault(name, {})
-    if not s.get("preview_id"):
-        s["preview_id"] = call("POST", "/openapi/v2/text-to-3d", preview_body(a, model), key)["result"]
-        save_state(out, state)
-    wait(f"/openapi/v2/text-to-3d/{s['preview_id']}", key, "model")
-    if not s.get("refine_id"):
-        s["refine_id"] = call("POST", "/openapi/v2/text-to-3d", refine_body(a, s["preview_id"]), key)["result"]
-        save_state(out, state)
-    t = wait(f"/openapi/v2/text-to-3d/{s['refine_id']}", key, "texture")
+    s["prompt"] = a["prompt"]
+    t = step(s, out, state, key, "preview_id",
+             lambda: call("POST", "/openapi/v2/text-to-3d", preview_body(a, model), key)["result"],
+             lambda i: f"/openapi/v2/text-to-3d/{i}", "model")
+    if stage == "preview":
+        for kind, url in (("glb", (t.get("model_urls") or {}).get("glb")), ("png", t.get("thumbnail_url"))):
+            dest = out / f"{name}_preview.{kind}"
+            if url and not dest.exists():
+                download(url, dest)
+        return
+    t = step(s, out, state, key, "refine_id",
+             lambda: call("POST", "/openapi/v2/text-to-3d", refine_body(a, s["preview_id"]), key)["result"],
+             lambda i: f"/openapi/v2/text-to-3d/{i}", "texture")
     glb = out / f"{name}.glb"
     if not glb.exists():
         download(t["model_urls"]["glb"], glb)
@@ -133,11 +168,9 @@ def make(a, out, state, key, model, rig):
     save_state(out, state)
     if not rig or a["kind"] == "gear":
         return
-    if not s.get("rig_id"):
-        body = {"input_task_id": s["refine_id"], "height_meters": a.get("height_m", 1.75)}
-        s["rig_id"] = call("POST", "/openapi/v1/rigging", body, key)["result"]
-        save_state(out, state)
-    t = wait(f"/openapi/v1/rigging/{s['rig_id']}", key, "rig")
+    body = {"input_task_id": s["refine_id"], "height_meters": a.get("height_m", 1.75)}
+    t = step(s, out, state, key, "rig_id", lambda: call("POST", "/openapi/v1/rigging", body, key)["result"],
+             lambda i: f"/openapi/v1/rigging/{i}", "rig")
     res = t.get("result") or {}
     rigged = out / f"{name}_rigged.glb"
     if not rigged.exists():
@@ -157,6 +190,8 @@ def main():
     ap.add_argument("--out", default=str(ROOT / "assets" / "meshy"))
     ap.add_argument("--model", default="latest", help="Meshy ai_model (default: latest)")
     ap.add_argument("--no-rig", action="store_true")
+    ap.add_argument("--stage", choices=["preview", "all"], default="all")
+    ap.add_argument("--redo", action="store_true", help="start the chosen assets again; their old records move to history")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--check", action="store_true", help="check the connection and show the credit balance")
     a = ap.parse_args()
@@ -186,18 +221,28 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     mf = out / "manifest.json"
     state = json.loads(mf.read_text()) if mf.exists() else {}
+    if a.redo:
+        for x in assets:
+            old = state.pop(x["name"], None)
+            if old:
+                state.setdefault("_history", []).append({"name": x["name"], **old})
+                for f in out.glob(x["name"] + "*"):
+                    f.rename(out / ("old_" + f.name))
+        save_state(out, state)
+    print("credits before:", balance(key), flush=True)
     failed = []
     for i, x in enumerate(assets, 1):
         print(f"[{i}/{len(assets)}] {x['name']}", flush=True)
         try:
-            make(x, out, state, key, a.model, not a.no_rig)
+            make(x, out, state, key, a.model, not a.no_rig, a.stage)
         except MeshyError as e:
             print("    FAILED:", e, flush=True)
             failed.append(x["name"])
             if "HTTP 400" in str(e) or "HTTP 401" in str(e) or "HTTP 402" in str(e):
                 # A bad request, a bad key or no credits: the rest would fail the same way.
                 break
-    print("done;", len(assets) - len(failed), "ok", ("; failed: " + ", ".join(failed)) if failed else "")
+    print("done;", len(assets) - len(failed), "ok", ("; failed: " + ", ".join(failed)) if failed else "",
+          "; credits left:", balance(key))
     sys.exit(1 if failed else 0)
 
 
