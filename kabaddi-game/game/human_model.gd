@@ -56,6 +56,8 @@ var number := 7
 var height := 1.78
 var build := 1.0
 var barefoot := false
+var body_kind := "player"   # which realistic bodies to choose from: "player" or "referee"
+var body_seed := 0          # varies the choice between people alike
 
 var _phase := 0.0
 var _t := 0.0
@@ -115,7 +117,8 @@ func _use_rigged_body() -> void:
 			(n as GeometryInstance3D).visible = false
 	rig = RiggedBody.new()
 	add_child(rig)
-	rig.setup(skin, jersey, shorts, hair, height, trim)
+	var seed := body_seed if body_seed != 0 else hash([number, height, build, skin.to_html()])
+	rig.setup(skin, jersey, shorts, hair, height, trim, RiggedBody.pick(body_kind, skin, build, seed))
 	if number > 0:
 		rig.add_number(number, trim, jersey.darkened(0.4))
 

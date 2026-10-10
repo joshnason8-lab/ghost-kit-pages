@@ -126,20 +126,21 @@ def balance(key):
         return None
 
 
-def step(s, out, state, key, field, start, poll_path, label):
+def step(s, out, state, key, field, start, poll_path, label, name):
     """Start a task once (its id kept in the manifest), wait for it, and note what it cost."""
     if not s.get(field):
         before = balance(key)
         s[field] = start()
-        save_state(out, state)
+        save_state(out, state, name)
     else:
         before = None
     t = wait(poll_path(s[field]), key, label)
     if before is not None:
         after = balance(key)
         if after is not None:
-            s.setdefault("credits", {})[label] = before - after
-            save_state(out, state)
+            # Another run may spend at the same time; Meshy's own figure is on the task.
+            s.setdefault("credits", {})[label] = t.get("consumed_credits", before - after)
+            save_state(out, state, name)
     return t
 
 
@@ -149,7 +150,7 @@ def make(a, out, state, key, model, rig, stage):
     s["prompt"] = a["prompt"]
     t = step(s, out, state, key, "preview_id",
              lambda: call("POST", "/openapi/v2/text-to-3d", preview_body(a, model), key)["result"],
-             lambda i: f"/openapi/v2/text-to-3d/{i}", "model")
+             lambda i: f"/openapi/v2/text-to-3d/{i}", "model", name)
     if stage == "preview":
         for kind, url in (("glb", (t.get("model_urls") or {}).get("glb")), ("png", t.get("thumbnail_url"))):
             dest = out / f"{name}_preview.{kind}"
@@ -158,29 +159,38 @@ def make(a, out, state, key, model, rig, stage):
         return
     t = step(s, out, state, key, "refine_id",
              lambda: call("POST", "/openapi/v2/text-to-3d", refine_body(a, s["preview_id"]), key)["result"],
-             lambda i: f"/openapi/v2/text-to-3d/{i}", "texture")
+             lambda i: f"/openapi/v2/text-to-3d/{i}", "texture", name)
     glb = out / f"{name}.glb"
     if not glb.exists():
         download(t["model_urls"]["glb"], glb)
     if t.get("thumbnail_url") and not (out / f"{name}.png").exists():
         download(t["thumbnail_url"], out / f"{name}.png")
     s["textured"] = glb.name
-    save_state(out, state)
+    save_state(out, state, name)
     if not rig or a["kind"] == "gear":
         return
     body = {"input_task_id": s["refine_id"], "height_meters": a.get("height_m", 1.75)}
     t = step(s, out, state, key, "rig_id", lambda: call("POST", "/openapi/v1/rigging", body, key)["result"],
-             lambda i: f"/openapi/v1/rigging/{i}", "rig")
+             lambda i: f"/openapi/v1/rigging/{i}", "rig", name)
     res = t.get("result") or {}
     rigged = out / f"{name}_rigged.glb"
     if not rigged.exists():
         download(res["rigged_character_glb_url"], rigged)
     s["rigged"] = rigged.name
-    save_state(out, state)
+    save_state(out, state, name)
 
 
-def save_state(out, state):
-    (out / "manifest.json").write_text(json.dumps(state, indent=1))
+def save_state(out, state, only=None):
+    """Write the manifest. With only, merge just that asset's entry into what is on disk, so two runs on
+    different assets can share the file."""
+    path = out / "manifest.json"
+    if only is not None and path.exists():
+        disk = json.loads(path.read_text())
+        disk[only] = state[only]
+        state = disk
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(state, indent=1))
+    tmp.replace(path)
 
 
 def main():

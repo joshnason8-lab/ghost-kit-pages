@@ -1,13 +1,18 @@
 class_name RiggedBody
 extends Node3D
-## A realistic body (a rigged mesh made by tools/rig/autorig.py) that follows the code-built
-## placeholder skeleton in HumanModel. The placeholder keeps animating as before, just
-## hidden; every frame each bone of this mesh is turned to match the matching limb, torso or
-## head of the placeholder. Kit colours come from regions painted by the rig tool or, for a
-## textured model, from its kit map (tools/rig/kit_texture.py): the texture gives the face,
-## skin and the kit's folds, and the team's colours replace the kit's own.
+## A realistic body (a rigged mesh made by tools/rig) that follows the code-built placeholder
+## skeleton in HumanModel. The placeholder keeps animating as before, just hidden; every frame each
+## bone of this mesh is turned to match the matching limb, torso or head of the placeholder. Kit
+## colours come from regions painted by the rig tool or, for a textured model, from its kit map
+## (tools/rig/kit_texture.py): the texture gives the face, skin and the kit's folds, and the team's
+## colours replace the kit's own.
+##
+## There can be several bodies (assets/characters/bodies/, listed in bodies.json): each player gets
+## the one nearest his skin tone and build, and officials get the referees'. Bodies are packed
+## (.krb, tools/rig/pack_body.py); the older JSON form still loads.
 
-const PATH := "res://assets/characters/rigged_athlete.json"
+const LEGACY := "res://assets/characters/rigged_athlete.json"
+const BODIES := "res://assets/characters/bodies/"
 const SHADER := """
 shader_type spatial;
 uniform vec3 skin_col : source_color = vec3(0.78, 0.55, 0.4);
@@ -35,7 +40,7 @@ void fragment() {
 const SHADER_TEXTURED := """
 shader_type spatial;
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_disable;
-uniform sampler2D kit_tex : filter_linear_mipmap, repeat_disable;   // r main, g trim, b shading / 2
+uniform sampler2D kit_tex : filter_linear_mipmap, repeat_disable;   // r main, g trim, b shading / 2, a skin
 uniform vec3 skin_ratio = vec3(1.0);   // this player's skin over the texture's, in linear light
 uniform vec3 jersey_col : source_color = vec3(0.1, 0.4, 0.8);
 uniform vec3 shorts_col : source_color = vec3(0.05, 0.1, 0.16);
@@ -46,8 +51,9 @@ void vertex() {
 }
 void fragment() {
 	vec3 t = texture(albedo_tex, UV).rgb;
-	vec3 k = texture(kit_tex, UV).rgb;
-	vec3 body = t * mix(skin_ratio, vec3(1.0), region.b);   // hair keeps its colour
+	vec4 k = texture(kit_tex, UV);
+	// Only skin takes the player's tone: shirts, shoes and hair keep theirs.
+	vec3 body = t * mix(vec3(1.0), skin_ratio, k.a * (1.0 - region.b));
 	// Sharp edges: a little kit bleeding in from a neighbouring piece of the texture (or a
 	// little skin into the kit) is dropped.
 	float amount = smoothstep(0.3, 0.7, k.r + k.g);
@@ -58,22 +64,13 @@ void fragment() {
 }
 """
 
-static var _data = null
-static var _mesh: ArrayMesh = null
-static var _shader: Shader = null
-static var _albedo: Texture2D = null
-static var _kit: Texture2D = null
-static var _skin_ref := Color(1, 1, 1)
-static var _rest_dirs := {}
-static var _rest_frames := {}
-static var _leg_len := 0.9
-static var _stand_h := 1.8
-static var _back_offset := Vector3(0, 0, 0.14)
-static var _curl_axis := {}   # "l"/"r": the axis the fingers curl about, in the rest pose (models with finger bones)
+static var _bodies := {}   # path -> the loaded body (see _load)
+static var _index = null
 
 var skeleton: Skeleton3D
 var mesh_instance: MeshInstance3D
 var material: ShaderMaterial
+var body := {}        # the loaded body this one wears
 var _bone := {}       # name -> index
 var _parent := []     # index -> parent index
 var _rest_head := []  # index -> rest position of the bone head (model space)
@@ -81,105 +78,229 @@ var _hidden_head := false
 var _curl := {"l": 0.7, "r": 0.7}
 
 
+## The bodies on offer: [{file, kind ("player" or "referee"), build, skin}], from bodies.json, or the
+## single older body.
+static func bodies() -> Array:
+	if _index == null:
+		_index = []
+		var path := BODIES + "bodies.json"
+		if FileAccess.file_exists(path):
+			var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+			if d is Array:
+				for e in d:
+					if FileAccess.file_exists(BODIES + String(e.file)):
+						_index.append(e)
+		if _index.is_empty() and FileAccess.file_exists(LEGACY):
+			_index.append({"file": "", "kind": "player", "build": 1.0, "skin": [0.75, 0.55, 0.42]})
+	return _index
+
+
 static func available() -> bool:
-	return FileAccess.file_exists(PATH)
+	return not bodies().is_empty()
 
 
-static func _load() -> void:
-	if _data != null:
-		return
-	_data = JSON.parse_string(FileAccess.get_file_as_string(PATH))
-	if not (_data is Dictionary):
-		push_warning("rigged body: could not read " + PATH)
-		_data = {}
-		return
-	var vs: Array = _data.vertices
-	var ns: Array = _data.normals
+## The body for a person: the nearest in skin tone and build among those of his kind, with a little
+## of the seed so team-mates alike don't all look the same. Officials fall back to players' bodies.
+static func pick(kind: String, skin: Color, build: float, seed: int) -> String:
+	var options := bodies().filter(func(e): return String(e.kind) == kind)
+	if options.is_empty():
+		options = bodies().filter(func(e): return String(e.kind) == "player")
+	if options.is_empty():
+		return ""
+	var best := ""
+	var best_score := INF
+	for i in options.size():
+		var e: Dictionary = options[i]
+		var sk: Array = e.get("skin", [0.75, 0.55, 0.42])
+		var tone := Color(float(sk[0]), float(sk[1]), float(sk[2]))
+		var score := absf(tone.get_luminance() - skin.get_luminance()) * 2.0 + absf(float(e.get("build", 1.0)) - build) * 3.0
+		score += float(hash(seed * 31 + i) % 1000) / 1000.0 * 0.25
+		if score < best_score:
+			best_score = score
+			best = String(e.file)
+	return best
+
+
+static func _path(file: String) -> String:
+	return LEGACY if file == "" else BODIES + file
+
+
+## Load a body once: its mesh, textures and the rest-pose measures used to drive it.
+static func _load(file: String) -> Dictionary:
+	if _bodies.has(file):
+		return _bodies[file]
+	var path := _path(file)
+	var d := _read_krb(path) if path.ends_with(".krb") else _read_json(path)
+	_bodies[file] = d
+	if d.is_empty():
+		push_warning("rigged body: could not read " + path)
+		return d
+	var verts: PackedVector3Array = d.verts
+	d.shader = Shader.new()
+	d.shader.code = SHADER_TEXTURED if d.get("albedo") else SHADER
+	var j := {}
+	for b in d.bones:
+		j[b.name] = [_v(b.head), _v(b.tail)]
+	var rest_dirs := {}
+	for name in j:
+		rest_dirs[name] = (j[name][1] - j[name][0]).normalized()
+	var curl_axis := {}
+	for b in d.bones:
+		if b.has("palm") and String(b.name).begins_with("fingers_"):
+			curl_axis[String(b.name).right(1)] = (rest_dirs[b.name] as Vector3).cross(_v(b.palm)).normalized()
+	var across: Vector3 = j.upperarm_r[0] - j.upperarm_l[0]
+	var hips_across: Vector3 = j.thigh_r[0] - j.thigh_l[0]
+	var frames := {}
+	frames["hips"] = _frame(rest_dirs.hips, hips_across)
+	for name in ["spine", "chest", "neck", "head"]:
+		frames[name] = _frame(rest_dirs[name], across)
+	var leg := 0.0
+	for s in ["l", "r"]:
+		leg += (j["thigh_" + s][1] - j["thigh_" + s][0]).length() + (j["shin_" + s][1] - j["shin_" + s][0]).length() + j["foot_" + s][0].y
+	d.leg_len = leg * 0.5
+	# How far behind the chest bone the back surface is, along the rest chest's back axis.
+	var chest: Basis = frames.chest
+	var back: Vector3 = chest.z
+	var best := 0.0
+	var head_c: Vector3 = j.chest[0]
+	for v in verts:
+		var dv := v - head_c
+		if absf(dv.dot(chest.y)) < 0.08 and absf(dv.dot(chest.x)) < 0.08:
+			best = maxf(best, dv.dot(back))
+	d.back_offset = back * (best + 0.012)
+	d.stand_h = d.leg_len + (j.thigh_l[0].distance_to(j.hips[0]) * 0.3) + j.hips[0].distance_to(j.neck[0]) + j.neck[0].distance_to(j.head[1])
+	d.rest_dirs = rest_dirs
+	d.rest_frames = frames
+	d.curl_axis = curl_axis
+	d.erase("verts")
+	return d
+
+
+static func _texture_part(d: Dictionary, tex: Dictionary) -> void:
+	if ResourceLoader.exists(String(tex.get("albedo", ""))) and ResourceLoader.exists(String(tex.get("kit", ""))):
+		d.albedo = load(String(tex.albedo))
+		d.kit = load(String(tex.kit))
+		var r: Array = tex.get("skin_ref", [1, 1, 1])
+		d.skin_ref = Color(float(r[0]), float(r[1]), float(r[2]))
+
+
+static func _build_mesh(d: Dictionary, verts: PackedVector3Array, norms: PackedVector3Array, uvs: PackedVector2Array,
+		region: PackedByteArray, bones: PackedInt32Array, weights: PackedFloat32Array, idx: PackedInt32Array) -> void:
+	var cols := PackedColorArray()
+	cols.resize(verts.size())
+	for i in verts.size():
+		var r := region[i]
+		cols[i] = Color(1.0 if r == 1 else 0.0, 1.0 if r == 2 else 0.0, 1.0 if r == 3 else 0.0)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = norms
+	arrays[Mesh.ARRAY_COLOR] = cols
+	if d.get("albedo") and not uvs.is_empty():
+		arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_BONES] = bones
+	arrays[Mesh.ARRAY_WEIGHTS] = weights
+	arrays[Mesh.ARRAY_INDEX] = idx
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	d.mesh = mesh
+	d.verts = verts
+
+
+## The packed form (tools/rig/pack_body.py).
+static func _read_krb(path: String) -> Dictionary:
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null or f.get_buffer(4).get_string_from_ascii() != "KRB1":
+		return {}
+	var meta = JSON.parse_string(f.get_buffer(f.get_32()).get_string_from_utf8())
+	if not (meta is Dictionary):
+		return {}
+	var n := int(meta.vertices)
+	var pad := func(x: int) -> int: return x + (4 - x % 4) % 4
+	var pos := f.get_buffer(pad.call(n * 6))
+	var nrm := f.get_buffer(pad.call(n * 3))
+	var uvb := f.get_buffer(pad.call(n * 4)) if meta.has_uv else PackedByteArray()
+	var bb := f.get_buffer(pad.call(n * 4))
+	var wb := f.get_buffer(pad.call(n * 4))
+	var region := f.get_buffer(pad.call(n))
+	var u32 := bool(meta.index_u32)
+	var ib := f.get_buffer(int(meta.indices) * (4 if u32 else 2))
+	var lo := _v(meta.pos_min)
+	var span := _v(meta.pos_span) / 65535.0
+	var verts := PackedVector3Array()
+	var norms := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	verts.resize(n)
+	norms.resize(n)
+	if meta.has_uv:
+		uvs.resize(n)
+	for i in n:
+		verts[i] = lo + Vector3(pos.decode_u16(i * 6), pos.decode_u16(i * 6 + 2), pos.decode_u16(i * 6 + 4)) * span
+		norms[i] = Vector3(nrm.decode_s8(i * 3), nrm.decode_s8(i * 3 + 1), nrm.decode_s8(i * 3 + 2)).normalized()
+		if meta.has_uv:
+			uvs[i] = Vector2(uvb.decode_u16(i * 4), uvb.decode_u16(i * 4 + 2)) / 65535.0
+	var bones := PackedInt32Array()
+	var weights := PackedFloat32Array()
+	bones.resize(n * 4)
+	weights.resize(n * 4)
+	for i in n * 4:
+		bones[i] = bb[i]
+		weights[i] = wb[i] / 255.0
+	var count := int(meta.indices)
+	var idx := PackedInt32Array()
+	idx.resize(count)
+	# glTF and trimesh wind front faces counter-clockwise; Godot wants clockwise.
+	for t in count / 3:
+		for c in 3:
+			var k = t * 3 + [0, 2, 1][c]
+			idx[t * 3 + c] = ib.decode_u32(k * 4) if u32 else ib.decode_u16(k * 2)
+	var d := {"bones": meta.bones, "height": float(meta.height)}
+	_texture_part(d, meta.get("texture", {}))
+	_build_mesh(d, verts, norms, uvs, region.slice(0, n), bones, weights, idx)
+	return d
+
+
+## The older JSON form.
+static func _read_json(path: String) -> Dictionary:
+	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not (data is Dictionary):
+		return {}
+	var vs: Array = data.vertices
+	var ns: Array = data.normals
 	var n := vs.size() / 3
 	var verts := PackedVector3Array()
 	var norms := PackedVector3Array()
-	var cols := PackedColorArray()
 	verts.resize(n)
 	norms.resize(n)
-	cols.resize(n)
-	var region: Array = _data.region
-	# A textured model: its UVs, its cleaned texture and kit map.
-	var uvs := PackedVector2Array()
-	var tex: Dictionary = _data.get("texture", {})
-	if _data.has("uvs") and ResourceLoader.exists(String(tex.get("albedo", ""))) and ResourceLoader.exists(String(tex.get("kit", ""))):
-		_albedo = load(String(tex.albedo))
-		_kit = load(String(tex.kit))
-		var r: Array = tex.get("skin_ref", [1, 1, 1])
-		_skin_ref = Color(float(r[0]), float(r[1]), float(r[2]))
-		var us: Array = _data.uvs
-		uvs.resize(n)
-		for i in n:
-			uvs[i] = Vector2(us[i * 2], us[i * 2 + 1])
 	for i in n:
 		verts[i] = Vector3(vs[i * 3], vs[i * 3 + 1], vs[i * 3 + 2])
 		norms[i] = Vector3(ns[i * 3], ns[i * 3 + 1], ns[i * 3 + 2])
-		var r := int(region[i])
-		cols[i] = Color(1.0 if r == 1 else 0.0, 1.0 if r == 2 else 0.0, 1.0 if r == 3 else 0.0)
+	var uvs := PackedVector2Array()
+	if data.has("uvs"):
+		var us: Array = data.uvs
+		uvs.resize(n)
+		for i in n:
+			uvs[i] = Vector2(us[i * 2], us[i * 2 + 1])
+	var region := PackedByteArray()
+	for r in data.region:
+		region.append(int(r))
+	var src: Array = data.indices
 	var idx := PackedInt32Array()
-	var src: Array = _data.indices
 	idx.resize(src.size())
-	# glTF and trimesh wind front faces counter-clockwise; Godot wants clockwise.
 	for t in src.size() / 3:
 		idx[t * 3] = int(src[t * 3])
 		idx[t * 3 + 1] = int(src[t * 3 + 2])
 		idx[t * 3 + 2] = int(src[t * 3 + 1])
 	var bones := PackedInt32Array()
 	var weights := PackedFloat32Array()
-	for b in _data.bones4:
+	for b in data.bones4:
 		bones.append(int(b))
-	for w in _data.weights4:
+	for w in data.weights4:
 		weights.append(float(w))
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = verts
-	arrays[Mesh.ARRAY_NORMAL] = norms
-	arrays[Mesh.ARRAY_COLOR] = cols
-	if not uvs.is_empty():
-		arrays[Mesh.ARRAY_TEX_UV] = uvs
-	arrays[Mesh.ARRAY_BONES] = bones
-	arrays[Mesh.ARRAY_WEIGHTS] = weights
-	arrays[Mesh.ARRAY_INDEX] = idx
-	_mesh = ArrayMesh.new()
-	_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	_shader = Shader.new()
-	_shader.code = SHADER_TEXTURED if _albedo else SHADER
-
-	# Rest directions and frames, for turning bones to match the placeholder.
-	var j := {}
-	for b in _data.bones:
-		j[b.name] = [_v(b.head), _v(b.tail)]
-	for name in j:
-		_rest_dirs[name] = (j[name][1] - j[name][0]).normalized()
-	for b in _data.bones:
-		if b.has("palm") and String(b.name).begins_with("fingers_"):
-			var side := String(b.name).right(1)
-			_curl_axis[side] = (_rest_dirs[b.name] as Vector3).cross(_v(b.palm)).normalized()
-	var across: Vector3 = j.upperarm_r[0] - j.upperarm_l[0]
-	var hips_across: Vector3 = j.thigh_r[0] - j.thigh_l[0]
-	_rest_frames["hips"] = _frame(_rest_dirs.hips, hips_across)
-	_rest_frames["spine"] = _frame(_rest_dirs.spine, across)
-	_rest_frames["chest"] = _frame(_rest_dirs.chest, across)
-	_rest_frames["neck"] = _frame(_rest_dirs.neck, across)
-	_rest_frames["head"] = _frame(_rest_dirs.head, across)
-	var leg := 0.0
-	for s in ["l", "r"]:
-		leg += (j["thigh_" + s][1] - j["thigh_" + s][0]).length() + (j["shin_" + s][1] - j["shin_" + s][0]).length() + j["foot_" + s][0].y
-	_leg_len = leg * 0.5
-	# How far behind the chest bone the back surface is, along the rest chest's back axis.
-	var back: Vector3 = (_rest_frames.chest as Basis).z
-	var best := 0.0
-	var head_c: Vector3 = j.chest[0]
-	for i in n:
-		var d := verts[i] - head_c
-		if absf(d.dot((_rest_frames.chest as Basis).y)) < 0.08 and absf(d.dot((_rest_frames.chest as Basis).x)) < 0.08:
-			best = maxf(best, d.dot(back))
-	_back_offset = back * (best + 0.012)
-	_stand_h = _leg_len + (j.thigh_l[0].distance_to(j.hips[0]) * 0.3) + j.hips[0].distance_to(j.neck[0]) + j.neck[0].distance_to(j.head[1])
+	var d := {"bones": data.bones, "height": float(data.height)}
+	_texture_part(d, data.get("texture", {}))
+	_build_mesh(d, verts, norms, uvs, region, bones, weights, idx)
+	return d
 
 
 static func _v(a: Array) -> Vector3:
@@ -194,14 +315,14 @@ static func _frame(up: Vector3, side: Vector3) -> Basis:
 	return Basis(x, y, z)
 
 
-func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float, trim := Color.WHITE) -> void:
-	_load()
-	if _mesh == null:
+func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float, trim := Color.WHITE, file := "") -> void:
+	body = _load(file)
+	if body.is_empty():
 		return
 	skeleton = Skeleton3D.new()
 	add_child(skeleton)
 	var skin_res := Skin.new()
-	for b in _data.bones:
+	for b in body.bones:
 		var i := skeleton.get_bone_count()
 		skeleton.add_bone(String(b.name))
 		_bone[String(b.name)] = i
@@ -217,25 +338,25 @@ func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float
 		skin_res.add_named_bind(String(b.name), Transform3D(Basis(), head).affine_inverse())
 	skeleton.reset_bone_poses()
 	mesh_instance = MeshInstance3D.new()
-	mesh_instance.mesh = _mesh
+	mesh_instance.mesh = body.mesh
 	mesh_instance.skin = skin_res
 	skeleton.add_child(mesh_instance)
 	mesh_instance.skeleton = NodePath("..")
 	material = ShaderMaterial.new()
-	material.shader = _shader
+	material.shader = body.shader
 	material.set_shader_parameter("skin_col", skin)
 	material.set_shader_parameter("jersey_col", jersey)
 	material.set_shader_parameter("shorts_col", shorts)
 	material.set_shader_parameter("hair_col", hair)
-	if _albedo:
-		material.set_shader_parameter("albedo_tex", _albedo)
-		material.set_shader_parameter("kit_tex", _kit)
+	if body.get("albedo"):
+		material.set_shader_parameter("albedo_tex", body.albedo)
+		material.set_shader_parameter("kit_tex", body.kit)
 		material.set_shader_parameter("trim_col", trim)
 		var a := skin.srgb_to_linear()
-		var b := _skin_ref.srgb_to_linear()
+		var b: Color = (body.skin_ref as Color).srgb_to_linear()
 		material.set_shader_parameter("skin_ratio", Vector3(a.r / b.r, a.g / b.g, a.b / b.b))
 	mesh_instance.material_override = material
-	scale = Vector3.ONE * (height / _stand_h)
+	scale = Vector3.ONE * (height / float(body.stand_h))
 
 
 ## The shirt number, stuck to the back of the chest bone.
@@ -255,8 +376,8 @@ func add_number(n: int, col: Color, outline: Color) -> void:
 	lab.double_sided = false
 	# The attachment sits at the bone head, turned with the bone; place the label on the
 	# back surface in the rest pose's frame.
-	var f: Basis = _rest_frames.chest
-	lab.transform = Transform3D(f, f * Vector3(0, 0.02, 0) + _back_offset)
+	var f: Basis = body.rest_frames.chest
+	lab.transform = Transform3D(f, f * Vector3(0, 0.02, 0) + body.back_offset)
 	att.add_child(lab)
 
 
@@ -290,11 +411,12 @@ func drive(h: Node3D) -> void:
 		var kb := _basis_of(kn, inv)
 		g["shin_" + s] = _swing("shin_" + s, kb * Vector3.DOWN)
 		g["foot_" + s] = _swing("foot_" + s, kb * Vector3(0, -0.35, -1.0))
-		if _curl_axis.has(s):
+		if body.curl_axis.has(s):
+			var axis: Vector3 = body.curl_axis[s]
 			_curl[s] = lerpf(_curl[s], _finger_curl(h, s), 0.25)
-			g["fingers_" + s] = g["hand_" + s] * Basis(_curl_axis[s], _curl[s] * (0.55 if _bone.has("fingertips_" + s) else 1.0))
+			g["fingers_" + s] = g["hand_" + s] * Basis(axis, _curl[s] * (0.55 if _bone.has("fingertips_" + s) else 1.0))
 			if _bone.has("fingertips_" + s):
-				g["fingertips_" + s] = g["fingers_" + s] * Basis(_curl_axis[s], _curl[s] * 0.75)
+				g["fingertips_" + s] = g["fingers_" + s] * Basis(axis, _curl[s] * 0.75)
 	for name in g:
 		var i: int = _bone[name]
 		var p: int = _parent[i]
@@ -302,7 +424,7 @@ func drive(h: Node3D) -> void:
 		skeleton.set_bone_pose_rotation(i, local.get_rotation_quaternion())
 	# Hips height: the placeholder's pelvis, scaled to this body's legs.
 	var pel: Vector3 = inv * h.pelvis.global_position
-	var k := _leg_len / maxf(0.5, h.leg_length())
+	var k := float(body.leg_len) / maxf(0.5, h.leg_length())
 	skeleton.set_bone_pose_position(0, Vector3(pel.x * k, pel.y * k, pel.z * k))
 	if _hidden_head:
 		skeleton.set_bone_pose_scale(_bone.head, Vector3.ONE * 0.001)
@@ -348,12 +470,12 @@ func _basis_of(n: Node3D, inv: Transform3D) -> Basis:
 
 ## Global rotation that takes the rest frame of a torso bone onto the placeholder's frame.
 func _match(name: String, target: Basis) -> Basis:
-	return target * (_rest_frames[name] as Basis).inverse()
+	return target * (body.rest_frames[name] as Basis).inverse()
 
 
 ## Global rotation that swings a limb bone from its rest direction onto dir.
 func _swing(name: String, dir: Vector3) -> Basis:
-	var from: Vector3 = _rest_dirs[name]
+	var from: Vector3 = body.rest_dirs[name]
 	var to := dir.normalized()
 	if to.length_squared() < 0.5:
 		return Basis()

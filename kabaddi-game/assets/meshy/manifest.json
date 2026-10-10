@@ -110,6 +110,30 @@
  },
  "player_03_corner_haryana": {
   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky strong build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Feet flat, neutral face, mouth closed.",
-  "preview_id": "01a12764-8b9b-7308-9b57-1dfa9a211725"
+  "preview_id": "01a12764-8b9b-7308-9b57-1dfa9a211725",
+  "credits": {
+   "model": 20
+  }
+ },
+ "player_04_cover_tamil": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12765-9a67-76ac-9565-3fcf077b3e0a",
+  "credits": {
+   "model": 20
+  }
+ },
+ "player_08_raider_korea": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a South Korean kabaddi raider, 25-year-old man, lean athletic build about 72 kg, light skin, straight short black hair, clean-shaven. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12766-88d3-7797-bc4f-7adc027626a7",
+  "credits": {
+   "model": 20
+  }
+ },
+ "referee_01_man": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12767-751d-715e-84c0-efa657ad8e89",
+  "credits": {
+   "model": 20
+  }
  }
 }

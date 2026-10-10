@@ -10,7 +10,8 @@ included. This script:
 3. Pads the texture's islands so mipmaps don't bleed the black gaps between them.
 
 It writes ALBEDO (the cleaned texture) and KIT (red: main colour, green: trim, blue: the kit's
-shading as a multiplier, halved, in linear light) and adds a "texture" entry to the rigged
+shading as a multiplier, halved, in linear light; alpha: skin, the only part tinted to each player's
+skin tone, so shirts, shoes and hair keep their colours) and adds a "texture" entry to the rigged
 model's JSON with the files and the texture's skin colour. game/rigged_body.gd then paints
 the kit in the team's colours, keeping its folds, and tints the skin to each player's tone.
 Use .webp names: the albedo is saved lossy, the kit map lossless.
@@ -69,9 +70,12 @@ def main():
     ap.add_argument("--main-hue", type=float, default=230.0)
     ap.add_argument("--trim-hue", type=float, default=355.0)
     ap.add_argument("--res-path", default="res://assets/characters/")
+    ap.add_argument("--size", type=int, default=1024, help="texture size for the phone (0: keep the model's)")
     a = ap.parse_args()
 
     img = base_color_image(a.model)
+    if a.size and img.shape[0] > a.size:
+        img = cv2.resize(img, (a.size, a.size), interpolation=cv2.INTER_AREA)
     H, W = img.shape[:2]
     rig = json.load(open(a.rigged))
     uv = np.array(rig["uvs"], dtype=np.float64).reshape(-1, 2)
@@ -174,10 +178,14 @@ def main():
     print("kit pieces joined to the kit around them:", walls)
 
     clean = cv2.inpaint(img, marks.astype(np.uint8), 5, cv2.INPAINT_TELEA)   # under the kit colour
-    kit = np.zeros((H, W, 3), np.float32)
+    h2, s2, v2, _, _ = classes(clean)
+    skin_mask = used & ~main & ~trim & hue_near(h2, 25, 22) & (s2 > 0.12) & (s2 < 0.7) & (v2 > 0.2)
+    skin_mask = cv2.GaussianBlur(skin_mask.astype(np.float32), (3, 3), 0.7)
+    kit = np.zeros((H, W, 4), np.float32)
     kit[..., 0] = main
     kit[..., 1] = trim
     kit[..., 2] = shade8 / 255.0
+    kit[..., 3] = skin_mask
 
     # Pad the islands outwards so filtering never reaches the black gaps.
     def pad(im, mask, steps=12):
