@@ -61,6 +61,11 @@ def main():
         if len(prompt) > 600:
             raise SystemExit(f"{name}: prompt is {len(prompt)} characters; Meshy takes 600")
         assets.append(a)
+    first = re.search(r"## First batch.*?(?=\n## )", body, re.S)
+    names_first = set(re.findall(r"`([a-z0-9_]+)`", first.group(0))) if first else set()
+    for a in assets:
+        if a["name"] in names_first:
+            a["batch"] = 1
     OUT.write_text(json.dumps({"note": "Built from docs/MESHY_BRIEF.md by tools/meshy/build_assets.py.",
                                "assets": assets}, indent=1, ensure_ascii=False) + "\n")
 

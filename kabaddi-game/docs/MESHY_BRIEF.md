@@ -13,6 +13,23 @@ does with each model afterwards. Every prompt is under Meshy's 600-character lim
 - Every generation is a new person. Bodies and faces can't be mixed afterwards, so each combination we want is
   its own generation. Skin tone can still be shifted a little in the game, as it is now.
 
+## First batch (October 2026)
+
+The account had 1,240 credits after the first test. A full model costs about 70 (the preview is 20 of that), so the
+list is trimmed to the models that give the most variety, with room for a few redos. The rest wait for more credits.
+
+- **Players (6):** `player_01_raider_haryana`, `player_03_corner_haryana`, `player_04_cover_tamil`,
+  `player_07_defender_iran`, `player_08_raider_korea`, `player_09_allrounder_kenya`. These cover lean, stocky, tall
+  and athletic builds, and light to deep skin tones; the game tints skin further.
+- **Referees (2):** `referee_01_man`, `referee_02_woman`.
+- **Crowd (8):** `crowd_01_man_tshirt`, `crowd_02_man_fan_jersey`, `crowd_03_sikh_man`, `crowd_04_old_man`,
+  `crowd_05_woman_salwar`, `crowd_06_woman_saree`, `crowd_09_boy`, `crowd_10_girl`. Mirrored and recoloured, these
+  fill the stands with men, women, children and elderly fans.
+- **Pads and wraps:** later. The game can make simple ones itself in the meantime.
+
+Shoes: the first tests came back in trainers however the prompt asked for bare feet. Grippy kabaddi shoes are
+common in real matches, so trainers are accepted rather than paid for again.
+
 ## Settings for every character
 
 | Setting | Value | Why |

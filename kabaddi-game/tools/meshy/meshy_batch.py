@@ -25,7 +25,7 @@ Usage:
   python3 tools/meshy/meshy_batch.py --dry-run                 # print what would be sent
   python3 tools/meshy/meshy_batch.py --only player_01_raider_haryana
   python3 tools/meshy/meshy_batch.py --kind player --stage preview   # untextured previews to check
-  python3 tools/meshy/meshy_batch.py --kind player             # all players
+  python3 tools/meshy/meshy_batch.py --batch 1 --kind player   # the first batch's players
   python3 tools/meshy/meshy_batch.py --redo --only NAME        # start NAME again (old record kept)
   python3 tools/meshy/meshy_batch.py                           # everything
 """
@@ -187,6 +187,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", nargs="*", help="asset names")
     ap.add_argument("--kind", choices=["player", "gear", "referee", "crowd"])
+    ap.add_argument("--batch", type=int, help="only assets in this batch (the brief's First batch is 1)")
     ap.add_argument("--out", default=str(ROOT / "assets" / "meshy"))
     ap.add_argument("--model", default="latest", help="Meshy ai_model (default: latest)")
     ap.add_argument("--no-rig", action="store_true")
@@ -201,6 +202,8 @@ def main():
         assets = [x for x in assets if x["name"] in a.only]
     if a.kind:
         assets = [x for x in assets if x["kind"] == a.kind]
+    if a.batch:
+        assets = [x for x in assets if x.get("batch") == a.batch]
     if not assets:
         sys.exit("no assets match")
     if a.dry_run:
