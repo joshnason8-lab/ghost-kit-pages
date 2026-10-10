@@ -78,7 +78,7 @@ var _bone := {}       # name -> index
 var _parent := []     # index -> parent index
 var _rest_head := []  # index -> rest position of the bone head (model space)
 var _hidden_head := false
-var _curl := {"l": 0.45, "r": 0.45}
+var _curl := {"l": 0.7, "r": 0.7}
 
 
 static func available() -> bool:
@@ -156,7 +156,7 @@ static func _load() -> void:
 	for name in j:
 		_rest_dirs[name] = (j[name][1] - j[name][0]).normalized()
 	for b in _data.bones:
-		if b.has("palm"):
+		if b.has("palm") and String(b.name).begins_with("fingers_"):
 			var side := String(b.name).right(1)
 			_curl_axis[side] = (_rest_dirs[b.name] as Vector3).cross(_v(b.palm)).normalized()
 	var across: Vector3 = j.upperarm_r[0] - j.upperarm_l[0]
@@ -292,7 +292,9 @@ func drive(h: Node3D) -> void:
 		g["foot_" + s] = _swing("foot_" + s, kb * Vector3(0, -0.35, -1.0))
 		if _curl_axis.has(s):
 			_curl[s] = lerpf(_curl[s], _finger_curl(h, s), 0.25)
-			g["fingers_" + s] = g["hand_" + s] * Basis(_curl_axis[s], _curl[s])
+			g["fingers_" + s] = g["hand_" + s] * Basis(_curl_axis[s], _curl[s] * (0.55 if _bone.has("fingertips_" + s) else 1.0))
+			if _bone.has("fingertips_" + s):
+				g["fingertips_" + s] = g["fingers_" + s] * Basis(_curl_axis[s], _curl[s] * 0.75)
 	for name in g:
 		var i: int = _bone[name]
 		var p: int = _parent[i]
@@ -315,25 +317,25 @@ func _finger_curl(h: Node3D, s: String) -> float:
 	var st := String(ath.get("state")) if ath != null and ath.get("state") != null else ""
 	match st:
 		"holding", "held", "dive", "shove", "shoved":
-			return 1.15
+			return 1.4
 		"roar":
-			return 1.5
+			return 1.9
 		"celebrate":
 			match int(h.cele):
 				1, 5:
-					return 1.5   # fist pump, chest thump
+					return 1.9   # fist pump, chest thump
 				2:
 					return 0.15  # clap
 				3:
-					return 0.05 if s == "r" else 0.45   # high five
+					return 0.05 if s == "r" else 0.7   # high five
 			return 0.3
 		"signal", "slap":
 			return 0.12
 	if s == "r" and h.reach > 0.15:
-		return lerpf(0.45, 0.05, clampf(h.reach, 0.0, 1.0))
+		return lerpf(0.7, 0.05, clampf(h.reach, 0.0, 1.0))
 	if h.ref_sig != 0:
 		return 0.12
-	return 0.45
+	return 0.7   # relaxed: a gentle curl
 
 
 func _name_of(i: int) -> String:

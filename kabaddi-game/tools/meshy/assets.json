@@ -4,7 +4,7 @@
   {
    "name": "player_01_raider_haryana",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -14,7 +14,7 @@
   {
    "name": "player_02_allrounder_maharashtra",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi all-rounder, 27-year-old man from Maharashtra, athletic muscular build, broad chest, medium-brown skin, short wavy black hair, clean-shaven. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi all-rounder, 27-year-old man from Maharashtra, athletic muscular build, broad chest, medium-brown skin, short wavy black hair, clean-shaven. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: an Indian kabaddi all-rounder, 27-year-old man from Maharashtra, athletic muscular build, broad chest, medium-brown skin, short wavy black hair, clean-shaven. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -23,7 +23,7 @@
   {
    "name": "player_03_corner_haryana",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky strong build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky strong build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky strong build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -33,7 +33,7 @@
   {
    "name": "player_04_cover_tamil",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -43,7 +43,7 @@
   {
    "name": "player_05_veteran_punjab",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi team captain, 34-year-old man from Punjab, solid muscular build about 88 kg, medium-brown skin, short salt-and-pepper hair, short salt-and-pepper beard, calm face. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Indian kabaddi team captain, 34-year-old man from Punjab, solid muscular build about 88 kg, medium-brown skin, short salt-and-pepper hair, short salt-and-pepper beard, calm face. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: an Indian kabaddi team captain, 34-year-old man from Punjab, solid muscular build about 88 kg, medium-brown skin, short salt-and-pepper hair, short salt-and-pepper beard, calm face. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -52,7 +52,7 @@
   {
    "name": "player_06_raider_bengal",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a kabaddi raider from Bangladesh, 22-year-old man, small light quick build about 68 kg, medium-brown skin, short side-parted black hair, thin black moustache. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a kabaddi raider from Bangladesh, 22-year-old man, small light quick build about 68 kg, medium-brown skin, short side-parted black hair, thin black moustache. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: a kabaddi raider from Bangladesh, 22-year-old man, small light quick build about 68 kg, medium-brown skin, short side-parted black hair, thin black moustache. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -61,7 +61,7 @@
   {
    "name": "player_07_defender_iran",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Iranian kabaddi defender, 28-year-old man, strong muscular build about 90 kg, light olive skin, short dark-brown hair, full short dark beard. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is an Iranian kabaddi defender, 28-year-old man, strong muscular build about 90 kg, light olive skin, short dark-brown hair, full short dark beard. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: an Iranian kabaddi defender, 28-year-old man, strong muscular build about 90 kg, light olive skin, short dark-brown hair, full short dark beard. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -71,7 +71,7 @@
   {
    "name": "player_08_raider_korea",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a South Korean kabaddi raider, 25-year-old man, lean athletic build about 72 kg, light skin, straight short black hair, clean-shaven. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a South Korean kabaddi raider, 25-year-old man, lean athletic build about 72 kg, light skin, straight short black hair, clean-shaven. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: a South Korean kabaddi raider, 25-year-old man, lean athletic build about 72 kg, light skin, straight short black hair, clean-shaven. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -81,7 +81,7 @@
   {
    "name": "player_09_allrounder_kenya",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: a Kenyan kabaddi all-rounder, 26-year-old man, long lean muscular build about 82 kg, deep dark-brown skin, shaved head, clean-shaven. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -91,7 +91,7 @@
   {
    "name": "player_10_raider_japan",
    "kind": "player",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a Japanese kabaddi raider, 23-year-old man, compact athletic build about 70 kg, light skin, short spiky black hair, clean-shaven. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey with red collar, shoulder panels and side stripes, royal blue shorts with red side stripes, black kabaddi shoes, no logos or text. He is a Japanese kabaddi raider, 23-year-old man, compact athletic build about 70 kg, light skin, short spiky black hair, clean-shaven. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Royal blue short-sleeve jersey covering the whole torso and upper arms, red collar, cuffs, shoulder panels and side stripes; royal blue shorts to above the knee with red side stripes; bare lower legs; plain black kabaddi shoes; no logos, no text, no numbers. Player: a Japanese kabaddi raider, 23-year-old man, compact athletic build about 70 kg, light skin, short spiky black hair, clean-shaven. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -135,7 +135,7 @@
   {
    "name": "referee_01_man",
    "kind": "referee",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic kabaddi match referee, 45-year-old Indian man, average fit build, medium-brown skin, short neat black hair greying at the temples, trimmed moustache, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord around the neck, no logos, no text. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -145,7 +145,7 @@
   {
    "name": "referee_02_woman",
    "kind": "referee",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic kabaddi match referee, 38-year-old Indian woman, fit build, medium-brown skin, black hair tied in a low bun, plain white short-sleeve collared polo shirt tucked into black trousers, black belt, black sports shoes, silver whistle on a black cord, no logos, no text. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -155,7 +155,7 @@
   {
    "name": "referee_03_senior",
    "kind": "referee",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic senior kabaddi umpire, 55-year-old Indian man, slightly heavy build, light-brown skin, short grey hair, grey moustache, thin glasses, plain white short-sleeve collared polo shirt tucked into black trousers, black sports shoes, whistle on a black cord, no logos, no text. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic senior kabaddi umpire, 55-year-old Indian man, slightly heavy build, light-brown skin, short grey hair, grey moustache, thin glasses, plain white short-sleeve collared polo shirt tucked into black trousers, black sports shoes, whistle on a black cord, no logos, no text. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic senior kabaddi umpire, 55-year-old Indian man, slightly heavy build, light-brown skin, short grey hair, grey moustache, thin glasses, plain white short-sleeve collared polo shirt tucked into black trousers, black sports shoes, whistle on a black cord, no logos, no text. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 8000,
    "pose": "t-pose",
@@ -164,7 +164,7 @@
   {
    "name": "crowd_01_man_tshirt",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic Indian man in his 30s, medium-brown skin, short black hair, plain mustard-yellow t-shirt, blue jeans, sandals. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian man in his 30s, medium-brown skin, short black hair, plain mustard-yellow t-shirt, blue jeans, sandals. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic Indian man in his 30s, medium-brown skin, short black hair, plain mustard-yellow t-shirt, blue jeans, sandals. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -174,7 +174,7 @@
   {
    "name": "crowd_02_man_fan_jersey",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic young Indian man, kabaddi fan, light-brown skin, plain royal blue fan jersey with red trim, black track pants, sneakers, plain red cap. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic young Indian man, kabaddi fan, light-brown skin, plain royal blue fan jersey with red trim, black track pants, sneakers, plain red cap. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic young Indian man, kabaddi fan, light-brown skin, plain royal blue fan jersey with red trim, black track pants, sneakers, plain red cap. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -184,7 +184,7 @@
   {
    "name": "crowd_03_sikh_man",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic Sikh man in his 40s, navy blue turban, full black beard, light-brown skin, plain white kurta, grey trousers, sandals. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Sikh man in his 40s, navy blue turban, full black beard, light-brown skin, plain white kurta, grey trousers, sandals. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic Sikh man in his 40s, navy blue turban, full black beard, light-brown skin, plain white kurta, grey trousers, sandals. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -194,7 +194,7 @@
   {
    "name": "crowd_04_old_man",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic elderly Indian man about 70, thin build, dark-brown skin, short white hair, white moustache, round glasses, plain white kurta pyjama, brown sandals. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic elderly Indian man about 70, thin build, dark-brown skin, short white hair, white moustache, round glasses, plain white kurta pyjama, brown sandals. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic elderly Indian man about 70, thin build, dark-brown skin, short white hair, white moustache, round glasses, plain white kurta pyjama, brown sandals. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -204,7 +204,7 @@
   {
    "name": "crowd_05_woman_salwar",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic young Indian woman in her 20s, medium-brown skin, long black hair in a braid, plain teal salwar kameez with a cream dupatta, flat sandals. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic young Indian woman in her 20s, medium-brown skin, long black hair in a braid, plain teal salwar kameez with a cream dupatta, flat sandals. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic young Indian woman in her 20s, medium-brown skin, long black hair in a braid, plain teal salwar kameez with a cream dupatta, flat sandals. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -214,7 +214,7 @@
   {
    "name": "crowd_06_woman_saree",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic Indian woman in her 40s, dark-brown skin, black hair in a bun, maroon cotton saree with a gold border, flat sandals. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian woman in her 40s, dark-brown skin, black hair in a bun, maroon cotton saree with a gold border, flat sandals. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic Indian woman in her 40s, dark-brown skin, black hair in a bun, maroon cotton saree with a gold border, flat sandals. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -224,7 +224,7 @@
   {
    "name": "crowd_07_woman_jeans",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic young Indian woman, college student, light-brown skin, black hair in a ponytail, plain white t-shirt, blue jeans, white sneakers. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic young Indian woman, college student, light-brown skin, black hair in a ponytail, plain white t-shirt, blue jeans, white sneakers. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic young Indian woman, college student, light-brown skin, black hair in a ponytail, plain white t-shirt, blue jeans, white sneakers. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -233,7 +233,7 @@
   {
    "name": "crowd_08_old_woman",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic elderly Indian woman about 65, medium-brown skin, grey hair in a bun, plain light-blue cotton saree, flat sandals. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic elderly Indian woman about 65, medium-brown skin, grey hair in a bun, plain light-blue cotton saree, flat sandals. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic elderly Indian woman about 65, medium-brown skin, grey hair in a bun, plain light-blue cotton saree, flat sandals. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -242,7 +242,7 @@
   {
    "name": "crowd_09_boy",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic Indian boy about 10 years old, medium-brown skin, short black hair, plain orange t-shirt, navy shorts, sneakers. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian boy about 10 years old, medium-brown skin, short black hair, plain orange t-shirt, navy shorts, sneakers. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic Indian boy about 10 years old, medium-brown skin, short black hair, plain orange t-shirt, navy shorts, sneakers. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -252,7 +252,7 @@
   {
    "name": "crowd_10_girl",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic Indian girl about 8 years old, light-brown skin, black hair in two braids, plain pink cotton dress, sandals. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian girl about 8 years old, light-brown skin, black hair in two braids, plain pink cotton dress, sandals. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic Indian girl about 8 years old, light-brown skin, black hair in two braids, plain pink cotton dress, sandals. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -262,7 +262,7 @@
   {
    "name": "crowd_11_teen_facepaint",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic Indian teenage boy, medium-brown skin, short black hair, saffron white and green stripes painted on both cheeks, plain white t-shirt, jeans, sneakers. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian teenage boy, medium-brown skin, short black hair, saffron white and green stripes painted on both cheeks, plain white t-shirt, jeans, sneakers. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic Indian teenage boy, medium-brown skin, short black hair, saffron white and green stripes painted on both cheeks, plain white t-shirt, jeans, sneakers. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -271,7 +271,7 @@
   {
    "name": "crowd_12_man_hoodie",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic young Indian man, light-brown skin, short styled black hair, plain grey hoodie, black joggers, white sneakers. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic young Indian man, light-brown skin, short styled black hair, plain grey hoodie, black joggers, white sneakers. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic young Indian man, light-brown skin, short styled black hair, plain grey hoodie, black joggers, white sneakers. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -280,7 +280,7 @@
   {
    "name": "crowd_13_man_office",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic Indian man in his 50s, slightly heavy build, medium-brown skin, balding with short grey hair, thick moustache, plain light-blue shirt, dark trousers, black shoes. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian man in his 50s, slightly heavy build, medium-brown skin, balding with short grey hair, thick moustache, plain light-blue shirt, dark trousers, black shoes. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic Indian man in his 50s, slightly heavy build, medium-brown skin, balding with short grey hair, thick moustache, plain light-blue shirt, dark trousers, black shoes. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -289,7 +289,7 @@
   {
    "name": "crowd_14_woman_hijab",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic young woman, light-brown skin, plain black hijab, plain olive-green long tunic, black trousers, flat shoes. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic young woman, light-brown skin, plain black hijab, plain olive-green long tunic, black trousers, flat shoes. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic young woman, light-brown skin, plain black hijab, plain olive-green long tunic, black trousers, flat shoes. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -298,7 +298,7 @@
   {
    "name": "crowd_15_woman_fan",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic young Indian woman, kabaddi fan, dark-brown skin, black hair in a ponytail, plain royal blue fan jersey with red trim, black leggings, sneakers. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic young Indian woman, kabaddi fan, dark-brown skin, black hair in a ponytail, plain royal blue fan jersey with red trim, black leggings, sneakers. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic young Indian woman, kabaddi fan, dark-brown skin, black hair in a ponytail, plain royal blue fan jersey with red trim, black leggings, sneakers. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",
@@ -307,7 +307,7 @@
   {
    "name": "crowd_16_man_kurta_jacket",
    "kind": "crowd",
-   "prompt": "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers. Photorealistic Indian man in his 60s, light-brown skin, short white hair, white beard, plain white kurta under a brown sleeveless jacket, sandals. Feet flat, neutral face, mouth closed.",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic Indian man in his 60s, light-brown skin, short white hair, white beard, plain white kurta under a brown sleeveless jacket, sandals. Feet flat, neutral face, mouth closed.",
    "texture_prompt": "Photorealistic Indian man in his 60s, light-brown skin, short white hair, white beard, plain white kurta under a brown sleeveless jacket, sandals. Photorealistic skin, face and hands with natural smooth palms and fingernails, matte fabric, even lighting, no baked shadows.",
    "faces": 30000,
    "pose": "t-pose",

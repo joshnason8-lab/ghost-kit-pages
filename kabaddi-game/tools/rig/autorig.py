@@ -84,6 +84,52 @@ def joints_3d(j2d, px, extent, cy):
     return out
 
 
+def palm_normal(P, wr, tip, side):
+    """Which way a hand's palm faces, from where its thumb is: across the hand the thumb sticks out near the
+    base on one side, and the palm faces follow from that side and which hand it is (the model faces -Z)."""
+    length = np.linalg.norm(tip - wr)
+    d = (tip - wr) / length
+    Q = P - wr
+    along = Q @ d
+    perp = Q - np.outer(along, d)
+    lateral = np.linalg.svd(perp - perp.mean(axis=0), full_matrices=False)[2][0]
+    lateral = lateral - d * (lateral @ d)
+    lateral /= np.linalg.norm(lateral)
+    base = (along > 0.12 * length) & (along < 0.55 * length)
+    reach = perp[base] @ lateral if base.any() else perp @ lateral
+    thumb = lateral if reach.max() > -reach.min() else -lateral
+    n = np.cross(thumb, d) if side == "r" else np.cross(d, thumb)
+    return n / np.linalg.norm(n)
+
+
+def rotate(points, origin, axis, angles):
+    """Rotate each point about the line through origin along axis by its own angle (Rodrigues)."""
+    v = points - origin
+    c, s_ = np.cos(angles)[:, None], np.sin(angles)[:, None]
+    k = axis[None, :]
+    return origin + v * c + np.cross(k, v) * s_ + k * (v @ axis)[:, None] * (1 - c)
+
+
+def smoothstep(x, a, b):
+    w = float(np.clip((x - a) / (b - a), 0.0, 1.0))
+    return w * w * (3 - 2 * w)
+
+
+def move_weight(bones4, weights4, vi, src, dst, frac):
+    """Move frac of vertex vi's weight on bone src to bone dst (into a free slot of the four)."""
+    if frac <= 0.0:
+        return
+    for j in range(4):
+        if bones4[vi, j] == src and weights4[vi, j] > 0:
+            moved = weights4[vi, j] * frac
+            free = [k for k in range(4) if weights4[vi, k] == 0 and k != j]
+            if free:
+                weights4[vi, j] -= moved
+                bones4[vi, free[0]] = dst
+                weights4[vi, free[0]] = moved
+            return
+
+
 def seg_dist(p, a, b):
     ab = b - a
     t = np.clip(((p - a) @ ab) / max(ab @ ab, 1e-9), 0.0, 1.0)
@@ -149,6 +195,48 @@ def main():
         near = V[(np.linalg.norm(V - an, axis=1) < 0.3) & (V[:, 1] < an[1] + 0.02)]
         fwd = near[np.argmin(near[:, 2])]   # model faces -Z
         J[f"{side}_toe"] = np.array([fwd[0], max(0.03, fwd[1]), fwd[2]])
+
+    # Palms down. Generated models usually hold their palms up or forward, which would leave the palms facing
+    # forward when the game lowers the arms. Turn each forearm the way a real one turns (nothing at the
+    # elbow, the full turn at the wrist) and the hand with it, until the palm faces down: lowered, the arms
+    # then hang palms-in.
+    for side in "lr":
+        el, wr, tip = J[f"{side}_el"], J[f"{side}_wr"], J[f"{side}_hand"]
+        axis = (wr - el) / np.linalg.norm(wr - el)
+        fore_len = np.linalg.norm(wr - el)
+        d_fore, _ = seg_dist(V, el, wr)
+        d_hand, t_hand = seg_dist(V, wr, tip)
+        others = np.full(len(V), np.inf)
+        for b in BONES:
+            if b[0] not in (f"forearm_{side}", f"hand_{side}"):
+                others = np.minimum(others, seg_dist(V, J[b[2]], J[b[3]])[0])
+        hand = (d_hand < others) & (d_hand <= d_fore)
+        fore = (d_fore < others) & ~hand
+        if hand.sum() < 30:
+            continue
+        n = palm_normal(V[hand], wr, tip, side)
+        n_p = n - axis * (n @ axis)
+        want = np.array([0.0, -1.0, 0.0])
+        want = want - axis * (want @ axis)
+        if np.linalg.norm(n_p) < 1e-3 or np.linalg.norm(want) < 1e-3:
+            continue
+        n_p /= np.linalg.norm(n_p)
+        want /= np.linalg.norm(want)
+        phi = float(np.arctan2(axis @ np.cross(n_p, want), n_p @ want))
+        if abs(phi) < np.radians(20):
+            continue
+        s_along = np.clip(((V - el) @ axis) / fore_len, 0.0, 1.0)
+        ramp = np.clip((s_along - 0.1) / 0.9, 0.0, 1.0)
+        ramp = ramp * ramp * (3 - 2 * ramp)
+        ang = np.where(hand, phi, np.where(fore, phi * ramp, 0.0))
+        moved = ang != 0.0
+        V[moved] = rotate(V[moved], el, axis, ang[moved])
+        ang_all = ang[weld]
+        moved_all = ang_all != 0.0
+        V_all[moved_all] = rotate(V_all[moved_all], el, axis, ang_all[moved_all])
+        N[moved_all] = rotate(N[moved_all], np.zeros(3), axis, ang_all[moved_all])
+        J[f"{side}_hand"] = rotate(tip[None, :], el, axis, np.array([phi]))[0]
+        print(f"turned the {side} forearm {np.degrees(phi):.0f} degrees to bring the palm down")
 
     names = [b[0] for b in BONES]
     heads = np.array([J[b[2]] for b in BONES])
@@ -220,41 +308,29 @@ def main():
 
     # Fingers: a bone from the knuckles to the fingertips of each hand, so the game can curl them. The
     # hand's vertices past the knuckles move with it, blending in across the knuckles. Its "palm" is the
-    # way the fingers curl: the hand's flattest direction, taken as down (the prompts ask for palms down).
+    # way the fingers curl. It comes from the thumb: across the hand, the thumb sticks out near the base on
+    # one side, and which way the palm faces follows from that side and which hand it is (the model faces -Z).
     palms = {}
     for side in "lr":
         hi = names.index(f"hand_{side}")
         wr, tip = heads[hi], tails[hi]
-        d = (tip - wr) / np.linalg.norm(tip - wr)
         sel = label == hi
-        P = V[sel] - V[sel].mean(axis=0)
-        n = np.linalg.svd(P, full_matrices=False)[2][2]
-        n = n - d * (n @ d)
-        n /= np.linalg.norm(n)
-        if n[1] > 0:
-            n = -n
+        n = palm_normal(V[sel], wr, tip, side)
+        print(f"hand_{side}: palm faces {'down' if n[1] < -0.5 else 'up' if n[1] > 0.5 else 'sideways'} {n.round(2).tolist()}")
+        # Two finger bones, knuckles to mid-finger and mid-finger to the tips, so a curl rounds the
+        # fingers rather than bending them stiffly at the knuckles.
         fi = len(names)
-        names.append(f"fingers_{side}")
-        parent.append(hi)
-        heads = np.vstack([heads, wr + (tip - wr) * 0.45])
-        tails = np.vstack([tails, tip])
+        names += [f"fingers_{side}", f"fingertips_{side}"]
+        parent += [hi, fi]
+        mid = wr + (tip - wr) * 0.72
+        heads = np.vstack([heads, wr + (tip - wr) * 0.45, mid])
+        tails = np.vstack([tails, mid, tip])
         palms[fi] = n
+        palms[fi + 1] = n
         for vi in np.where(sel)[0]:
-            w = float(np.clip((T[vi, hi] - 0.38) / (0.55 - 0.38), 0.0, 1.0))
-            w = w * w * (3 - 2 * w)
-            if w <= 0.0:
-                continue
-            for j in range(4):
-                if bones4[vi, j] == hi and weights4[vi, j] > 0:
-                    moved = weights4[vi, j] * w
-                    weights4[vi, j] -= moved
-                    free = [k for k in range(4) if weights4[vi, k] == 0 and k != j]
-                    if free:
-                        bones4[vi, free[0]] = fi
-                        weights4[vi, free[0]] = moved
-                    else:
-                        weights4[vi, j] += moved   # no free slot: leave it on the hand
-                    break
+            t = T[vi, hi]
+            move_weight(bones4, weights4, vi, hi, fi, smoothstep(t, 0.38, 0.55))
+            move_weight(bones4, weights4, vi, fi, fi + 1, smoothstep(t, 0.66, 0.80))
     print("palms:", {names[k]: v.round(2).tolist() for k, v in palms.items()})
 
     # Regions for kit colours.

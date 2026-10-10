@@ -19,7 +19,9 @@ KIT = ("Photorealistic kabaddi player in a fitted royal blue short-sleeve jersey
 # alone: the first players came back with bent, raised or flexing arms ("powerful" seemed to invite a flex). Put
 # first, as the kit was after the first test came back shirtless, it carries more weight. Palms down in a T-pose
 # hang palms-in once the game lowers the arms; separate fingers for realistic hands.
-POSE_FIRST = "Relaxed T-pose, arms straight out to the sides, palms down, hands with five separate fingers."
+# "Relaxed" invited casual stances (a referee came back with his hands in his pockets).
+POSE_FIRST = ("Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with "
+              "five separate fingers.")
 POSE_END = "Feet flat, neutral face, mouth closed."
 TEXTURE = {
     "player": ("Photorealistic skin with pores and natural tone variation, realistic short hair, matte stretch sports "
