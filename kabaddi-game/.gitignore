@@ -4,3 +4,5 @@ build/
 export_credentials.cfg
 *.keystore
 __pycache__/
+# Raw Meshy downloads (tools/meshy/meshy_batch.py); the game uses the processed files in assets/characters/
+assets/meshy/
