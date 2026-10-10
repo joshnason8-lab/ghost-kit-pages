@@ -69,6 +69,7 @@ static var _rest_frames := {}
 static var _leg_len := 0.9
 static var _stand_h := 1.8
 static var _back_offset := Vector3(0, 0, 0.14)
+static var _curl_axis := {}   # "l"/"r": the axis the fingers curl about, in the rest pose (models with finger bones)
 
 var skeleton: Skeleton3D
 var mesh_instance: MeshInstance3D
@@ -77,6 +78,7 @@ var _bone := {}       # name -> index
 var _parent := []     # index -> parent index
 var _rest_head := []  # index -> rest position of the bone head (model space)
 var _hidden_head := false
+var _curl := {"l": 0.45, "r": 0.45}
 
 
 static func available() -> bool:
@@ -153,6 +155,10 @@ static func _load() -> void:
 		j[b.name] = [_v(b.head), _v(b.tail)]
 	for name in j:
 		_rest_dirs[name] = (j[name][1] - j[name][0]).normalized()
+	for b in _data.bones:
+		if b.has("palm"):
+			var side := String(b.name).right(1)
+			_curl_axis[side] = (_rest_dirs[b.name] as Vector3).cross(_v(b.palm)).normalized()
 	var across: Vector3 = j.upperarm_r[0] - j.upperarm_l[0]
 	var hips_across: Vector3 = j.thigh_r[0] - j.thigh_l[0]
 	_rest_frames["hips"] = _frame(_rest_dirs.hips, hips_across)
@@ -284,6 +290,9 @@ func drive(h: Node3D) -> void:
 		var kb := _basis_of(kn, inv)
 		g["shin_" + s] = _swing("shin_" + s, kb * Vector3.DOWN)
 		g["foot_" + s] = _swing("foot_" + s, kb * Vector3(0, -0.35, -1.0))
+		if _curl_axis.has(s):
+			_curl[s] = lerpf(_curl[s], _finger_curl(h, s), 0.25)
+			g["fingers_" + s] = g["hand_" + s] * Basis(_curl_axis[s], _curl[s])
 	for name in g:
 		var i: int = _bone[name]
 		var p: int = _parent[i]
@@ -297,6 +306,34 @@ func drive(h: Node3D) -> void:
 		skeleton.set_bone_pose_scale(_bone.head, Vector3.ONE * 0.001)
 	else:
 		skeleton.set_bone_pose_scale(_bone.head, Vector3.ONE)
+
+
+## How far the fingers curl at the knuckles, in radians: relaxed, open to reach or signal, a grip in holds
+## and tackles, a fist to celebrate.
+func _finger_curl(h: Node3D, s: String) -> float:
+	var ath := h.get_parent()
+	var st := String(ath.get("state")) if ath != null and ath.get("state") != null else ""
+	match st:
+		"holding", "held", "dive", "shove", "shoved":
+			return 1.15
+		"roar":
+			return 1.5
+		"celebrate":
+			match int(h.cele):
+				1, 5:
+					return 1.5   # fist pump, chest thump
+				2:
+					return 0.15  # clap
+				3:
+					return 0.05 if s == "r" else 0.45   # high five
+			return 0.3
+		"signal", "slap":
+			return 0.12
+	if s == "r" and h.reach > 0.15:
+		return lerpf(0.45, 0.05, clampf(h.reach, 0.0, 1.0))
+	if h.ref_sig != 0:
+		return 0.12
+	return 0.45
 
 
 func _name_of(i: int) -> String:

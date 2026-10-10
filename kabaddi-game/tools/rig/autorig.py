@@ -218,6 +218,45 @@ def main():
             bones4[vi, j] = bi
             weights4[vi, j] = w / tot
 
+    # Fingers: a bone from the knuckles to the fingertips of each hand, so the game can curl them. The
+    # hand's vertices past the knuckles move with it, blending in across the knuckles. Its "palm" is the
+    # way the fingers curl: the hand's flattest direction, taken as down (the prompts ask for palms down).
+    palms = {}
+    for side in "lr":
+        hi = names.index(f"hand_{side}")
+        wr, tip = heads[hi], tails[hi]
+        d = (tip - wr) / np.linalg.norm(tip - wr)
+        sel = label == hi
+        P = V[sel] - V[sel].mean(axis=0)
+        n = np.linalg.svd(P, full_matrices=False)[2][2]
+        n = n - d * (n @ d)
+        n /= np.linalg.norm(n)
+        if n[1] > 0:
+            n = -n
+        fi = len(names)
+        names.append(f"fingers_{side}")
+        parent.append(hi)
+        heads = np.vstack([heads, wr + (tip - wr) * 0.45])
+        tails = np.vstack([tails, tip])
+        palms[fi] = n
+        for vi in np.where(sel)[0]:
+            w = float(np.clip((T[vi, hi] - 0.38) / (0.55 - 0.38), 0.0, 1.0))
+            w = w * w * (3 - 2 * w)
+            if w <= 0.0:
+                continue
+            for j in range(4):
+                if bones4[vi, j] == hi and weights4[vi, j] > 0:
+                    moved = weights4[vi, j] * w
+                    weights4[vi, j] -= moved
+                    free = [k for k in range(4) if weights4[vi, k] == 0 and k != j]
+                    if free:
+                        bones4[vi, free[0]] = fi
+                        weights4[vi, free[0]] = moved
+                    else:
+                        weights4[vi, j] += moved   # no free slot: leave it on the hand
+                    break
+    print("palms:", {names[k]: v.round(2).tolist() for k, v in palms.items()})
+
     # Regions for kit colours.
     hem = a.hem if a.hem is not None else J["spine1"][1] + 0.02
     region = np.full(len(V), REGION["skin"], dtype=np.int32)
@@ -244,7 +283,8 @@ def main():
 
     out = {
         "source": a.mesh.split("/")[-1],
-        "bones": [{"name": n, "parent": parent[i], "head": heads[i].round(4).tolist(), "tail": tails[i].round(4).tolist()}
+        "bones": [dict({"name": n, "parent": parent[i], "head": heads[i].round(4).tolist(), "tail": tails[i].round(4).tolist()},
+                       **({"palm": palms[i].round(4).tolist()} if i in palms else {}))
                   for i, n in enumerate(names)],
         "vertices": V_all.astype(np.float32).round(4).flatten().tolist(),
         "normals": N.astype(np.float32).round(3).flatten().tolist(),

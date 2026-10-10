@@ -14,19 +14,38 @@
    "textured": "player_01_raider_haryana.glb",
    "rig_id": "01a12742-e4d3-71ed-8e14-4ecc75be3855",
    "rigged": "player_01_raider_haryana_rigged.glb"
+  },
+  {
+   "name": "player_01_raider_haryana",
+   "prompt": "Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.",
+   "preview_id": "01a12740-8f32-77fa-8c8c-cdac6617581e",
+   "credits": {
+    "model": 20,
+    "texture": 10,
+    "rig": 5
+   },
+   "refine_id": "01a12744-22ba-74b3-8ab9-b69dc78440f5",
+   "textured": "player_01_raider_haryana.glb",
+   "rig_id": "01a12745-0e93-72a7-a9e0-a9374e82e641",
+   "rigged": "player_01_raider_haryana_rigged.glb"
   }
  ],
  "player_01_raider_haryana": {
-  "prompt": "Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey shirt covering his chest and shoulders, red collar, red shoulder panels and red side stripes, fitted royal blue shorts with red side stripes, bare feet without shoes or socks, no logos, no text, no numbers. He is an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Full body A-pose, arms 45 degrees out, open hands, feet flat, neutral face, mouth closed.",
-  "preview_id": "01a12740-8f32-77fa-8c8c-cdac6617581e",
+  "prompt": "Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi raider, 24-year-old man from Haryana, lean wiry athletic build, long limbs, defined calves, wheatish light-brown skin, short black hair faded at the sides, light stubble, sharp jaw. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12758-5405-74df-b4f5-f2b6ab1a1e62",
   "credits": {
-   "model": 20,
-   "texture": 10,
-   "rig": 5
-  },
-  "refine_id": "01a12744-22ba-74b3-8ab9-b69dc78440f5",
-  "textured": "player_01_raider_haryana.glb",
-  "rig_id": "01a12745-0e93-72a7-a9e0-a9374e82e641",
-  "rigged": "player_01_raider_haryana_rigged.glb"
+   "model": 20
+  }
+ },
+ "player_03_corner_haryana": {
+  "prompt": "Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky powerful build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.",
+  "preview_id": "01a12759-e534-77a1-b64b-e0c4943ed6d2",
+  "credits": {
+   "model": 20
+  }
+ },
+ "player_04_cover_tamil": {
+  "prompt": "Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Full body A-pose, arms 45 degrees out, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.",
+  "preview_id": "01a1275a-d0c4-7247-8b70-458b6120dd67"
  }
 }

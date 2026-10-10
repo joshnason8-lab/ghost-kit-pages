@@ -222,7 +222,7 @@ func _run() -> void:
 		var ra := Athlete.new()
 		ra.setup(DB.team("MUM").squad[0], 0, Color.TEAL, Color.WHITE, true)
 		add_child(ra)
-		check(ra.model.rig != null and ra.model.rig.skeleton.get_bone_count() == 17, "rigged body built with 17 bones")
+		check(ra.model.rig != null and ra.model.rig.skeleton.get_bone_count() >= 17, "rigged body built with its bones")
 		var rmat: ShaderMaterial = ra.model.rig.material
 		check(rmat.get_shader_parameter("albedo_tex") is Texture2D and rmat.get_shader_parameter("kit_tex") is Texture2D,
 			"the realistic body wears its texture, with the kit map for team colours")
@@ -233,6 +233,15 @@ func _run() -> void:
 		await frames(20)
 		var q: Quaternion = ra.model.rig.skeleton.get_bone_pose_rotation(ra.model.rig._bone["thigh_l"])
 		check(not q.is_equal_approx(Quaternion.IDENTITY), "rigged body bends with the pose")
+		if ra.model.rig._bone.has("fingers_r"):
+			var fb: int = ra.model.rig._bone["fingers_r"]
+			ra.set_state("idle", 1000.0)
+			await frames(30)
+			var relaxed: float = ra.model.rig.skeleton.get_bone_pose_rotation(fb).get_angle()
+			ra.set_state("holding", 1000.0)
+			await frames(30)
+			var grip: float = ra.model.rig.skeleton.get_bone_pose_rotation(fb).get_angle()
+			check(relaxed > 0.2 and grip > relaxed + 0.4, "fingers rest curled and grip in a hold (%.2f, %.2f)" % [relaxed, grip])
 		ra.queue_free()
 
 	# 8b. Cant, chain, reactions: drive a user match by hand.
