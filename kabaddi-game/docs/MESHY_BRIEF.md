@@ -186,10 +186,12 @@ such as Character Creator, and would be hard to see from the match camera on a p
 ## Hand-over
 
 Put the downloads in a folder named `meshy/` with the file names above (`.glb`; FBX not needed), zip it, and attach
-it here, or add `api.meshy.ai` and `assets.meshy.ai` to the cloud environment's allowed domains and a Meshy API key
-as an environment secret named `MESHY_API_KEY`, and a new session can run this whole list itself:
+it here. Or let a cloud session run this whole list itself: in the environment's settings, set **Network access** to
+**Custom** with `assets.meshy.ai` allowed (and the default package list included), and add a **network secret** for
+`api.meshy.ai` (header `Authorization`, prefix `Bearer`, value: the Meshy API key). Then, in a new session:
 
 ```sh
+python3 tools/meshy/meshy_batch.py --check                              # reaches Meshy? credit balance
 python3 tools/meshy/meshy_batch.py --dry-run                            # what would be sent
 python3 tools/meshy/meshy_batch.py --only player_01_raider_haryana      # one test player first
 python3 tools/meshy/meshy_batch.py --kind player                        # then each group

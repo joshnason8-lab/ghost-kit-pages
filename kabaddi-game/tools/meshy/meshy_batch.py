@@ -10,10 +10,13 @@ For each asset in tools/meshy/assets.json:
 Progress is kept in OUT/manifest.json, so a run that stops resumes where it left off, and a step
 that already worked is never paid for twice. Delete an asset's entry there to make it again.
 
-Needs MESHY_API_KEY in the environment, and api.meshy.ai and assets.meshy.ai reachable.
+The API key: in a cloud session, store it as a network secret on the environment for api.meshy.ai
+(Authorization header, Bearer prefix); the agent proxy adds it to each request and the script sends
+none. Elsewhere, set MESHY_API_KEY. Downloads come from assets.meshy.ai, which must be reachable.
 Standard library only.
 
 Usage:
+  python3 tools/meshy/meshy_batch.py --check                   # can we reach Meshy, and the credit balance
   python3 tools/meshy/meshy_batch.py --dry-run                 # print what would be sent
   python3 tools/meshy/meshy_batch.py --only player_01_raider_haryana
   python3 tools/meshy/meshy_batch.py --kind player             # all players
@@ -43,7 +46,8 @@ class MeshyError(Exception):
 def call(method, path, body=None, key=None):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(API + path, data=data, method=method)
-    req.add_header("Authorization", "Bearer " + key)
+    if key:   # otherwise the environment's network secret supplies it
+        req.add_header("Authorization", "Bearer " + key)
     if data is not None:
         req.add_header("Content-Type", "application/json")
     try:
@@ -152,6 +156,7 @@ def main():
     ap.add_argument("--model", default="latest", help="Meshy ai_model (default: latest)")
     ap.add_argument("--no-rig", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--check", action="store_true", help="check the connection and show the credit balance")
     a = ap.parse_args()
 
     assets = json.loads((HERE / "assets.json").read_text())["assets"]
@@ -169,8 +174,12 @@ def main():
                 print("  rig", json.dumps({"input_task_id": "<refine id>", "height_meters": x.get("height_m", 1.75)}))
         return
     key = os.environ.get("MESHY_API_KEY", "")
-    if not key:
-        sys.exit("MESHY_API_KEY is not set")
+    if a.check:
+        try:
+            print("Meshy credits:", call("GET", "/openapi/v1/balance", key=key).get("balance"))
+        except (MeshyError, urllib.error.URLError) as e:
+            sys.exit(f"can't reach Meshy: {e}")
+        return
     out = pathlib.Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     mf = out / "manifest.json"
