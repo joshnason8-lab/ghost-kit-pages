@@ -25,8 +25,9 @@ func _ready() -> void:
 	Game.main = self
 	Game.settings.graphics = Game.GFX_HIGH
 	Game.settings.camera = Game.CAM_THIRD
+	Game.settings.models = 1
 	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all",
-		"length": 0, "difficulty": 1, "first_raider": 0, "raid_rule": 1, "autoplay_no_report": true})
+		"length": 0, "difficulty": 1, "first_raider": 0, "raid_rule": 2, "autoplay_no_report": true})
 	m = Game.current
 
 
