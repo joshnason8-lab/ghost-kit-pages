@@ -59,6 +59,13 @@
  },
  "player_03_corner_haryana": {
   "prompt": "Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi corner defender, 29-year-old man from Haryana, stocky powerful build about 92 kg, thick neck, very strong thighs, light-brown skin, black buzz cut, thick black moustache. Full body T-pose, arms out sideways, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.",
-  "preview_id": "01a1275c-c601-778c-964e-92cf91920fae"
+  "preview_id": "01a1275c-c601-778c-964e-92cf91920fae",
+  "credits": {
+   "model": 20
+  }
+ },
+ "player_04_cover_tamil": {
+  "prompt": "Photorealistic kabaddi player wearing a fitted royal blue short-sleeve jersey covering his torso, red collar, shoulder panels and side stripes, fitted royal blue shorts with red side stripes, black kabaddi shoes, no logos, no text, no numbers. He is an Indian kabaddi cover defender, 26-year-old man from Tamil Nadu, tall heavy muscular build about 95 kg, dark-brown skin, short tight curly black hair, short trimmed beard. Full body T-pose, arms out sideways, palms down, realistic hands with five separate fingers slightly spread, feet flat, neutral face, mouth closed.",
+  "preview_id": "01a1275d-b518-7661-84c8-7325a172f17e"
  }
 }
