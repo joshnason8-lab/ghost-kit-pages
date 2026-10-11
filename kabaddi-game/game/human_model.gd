@@ -677,7 +677,7 @@ func _apply_clip(delta: float) -> void:
 
 func _play_frame(c: MocapClip, t: float, loop: bool, w: float) -> void:
 	if c.version >= 2:
-		_apply_pose(c.sample_pose(t, loop), w)
+		_apply_pose(c.sample_pose(t, loop), w, false, c.arms == "r")   # the move's clip drives the arms too
 		return
 	var f := c.sample(t, loop)
 	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
@@ -774,13 +774,14 @@ func _apply_moves(delta: float) -> void:
 	_apply_pose(pose, move_weight)
 
 
-## Lay a captured pose over the hand-made one, by weight w. Arms busy reaching or grabbing keep theirs.
-func _apply_pose(pose: Dictionary, w: float) -> void:
+## Lay a captured pose over the hand-made one, by weight w. With keep_arms (a running clip), arms busy
+## reaching or grabbing keep theirs.
+func _apply_pose(pose: Dictionary, w: float, keep_arms := true, right_only := false) -> void:
 	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
 	if pose.has("h"):
 		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(pose.h), w)
-	var arm_l := w * (1.0 - hold_arms)
-	var arm_r := w * (1.0 - maxf(hold_arms, reach))
+	var arm_l := w * (1.0 - hold_arms) if keep_arms else (0.0 if right_only else w)
+	var arm_r := w * (1.0 - maxf(hold_arms, reach)) if keep_arms else w
 	for pair in [["pelvis", pelvis, w], ["spine", spine, w], ["chest", chest, w], ["neck", neck, w * 0.6],
 			["head", head, w * 0.6], ["sh_l", sh_l, arm_l], ["el_l", el_l, arm_l], ["sh_r", sh_r, arm_r],
 			["el_r", el_r, arm_r], ["hip_l", hip_l, w], ["kn_l", kn_l, w], ["hip_r", hip_r, w], ["kn_r", kn_r, w]]:

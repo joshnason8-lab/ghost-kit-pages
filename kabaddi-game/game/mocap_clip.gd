@@ -14,6 +14,7 @@ const FOR_STATE := {
 	"ready": ["ready_", "loop"],
 	"raid": ["raid_", "loop"],
 	"idle": ["idle_", "loop"],
+	"touch": ["touch_", "fit"],
 	"kick": ["kick_", "fit"],
 	"backkick": ["backkick_", "fit"],
 	"dodge": ["dodge_", "fit"],
@@ -40,6 +41,7 @@ var quats: Array[PackedFloat32Array] = []   # per frame: x, y, z, w for each joi
 var speed := 0.0                       # m/s a 1.78 m player travels at in this clip (0: on the spot)
 var dir := Vector2.ZERO                # which way: x to his right, y forward
 var low := false                       # crouched all through (a defender's shuffle)
+var arms := "both"                     # "r": only the right arm is the clip's, the left keeps the game's pose
 
 static var _library := {}
 static var _scanned := false
@@ -110,6 +112,7 @@ static func load_file(path: String) -> MocapClip:
 		var d: Array = parsed.get("dir", [0, 0])
 		c.dir = Vector2(float(d[0]), float(d[1]))
 		c.low = float(parsed.get("h_max", 1.0)) < 0.9
+		c.arms = String(parsed.get("arms", "both"))
 	else:
 		c.frames = parsed.frames
 	c.length = float(parsed.get("length", float(parsed.frames[-1].t)))

@@ -20,7 +20,8 @@ import os
 import sys
 
 LOOP, ONCE = True, False
-# game clip, converted source, from (s), to (s), loops, mirrored
+# game clip, converted source, from (s), to (s), loops, mirrored[, extra keys: "arms": "r" plays only the
+# right arm, leaving the left to the game's own pose]
 SET = [
     # Running set: whenever a player travels (move_*).
     ("move_jog", "jog_forward", None, None, LOOP, False),
@@ -36,6 +37,11 @@ SET = [
     ("idle_breathing", "breathing_idle", None, None, LOOP, False),
     ("idle_plain", "idle", None, None, LOOP, False),
     # Raider's moves, fitted to the move's length in the game.
+    # Hand touches from punches, centred on the arm's full reach: the body's lunge and the right arm only
+    # (the other fist's boxing guard stays out); the left-handed one is flipped.
+    ("touch_jab", "punching_copy", 0.12, 0.57, ONCE, False, {"arms": "r"}),
+    ("touch_lunge", "punching", 0.27, 0.82, ONCE, True, {"arms": "r"}),
+    ("touch_hook", "right_hook", 0.05, 0.55, ONCE, False, {"arms": "r"}),
     ("kick_pontera", "pontera", 0.37, 0.97, ONCE, False),
     ("kick_bencao", "bencao", 0.33, 0.93, ONCE, False),
     ("kick_low", "low_kick", 0.53, 1.13, ONCE, False),
@@ -97,7 +103,9 @@ def mirror(clip, frames):
 
 def main():
     src, dst = sys.argv[1], sys.argv[2]
-    for name, source, t0, t1, loop, flip in SET:
+    for row in SET:
+        name, source, t0, t1, loop, flip = row[:6]
+        extra = row[6] if len(row) > 6 else {}
         path = os.path.join(src, source + ".json")
         if not os.path.exists(path):
             print("missing", path)
@@ -106,7 +114,7 @@ def main():
         frames, length = cut(clip, t0, t1, loop)
         if flip:
             frames = mirror(clip, frames)
-        out = dict(clip, name=name, frames=frames, length=length, loop=loop, source=clip.get("source", source))
+        out = dict(clip, name=name, frames=frames, length=length, loop=loop, source=clip.get("source", source), **extra)
         if flip:
             out["dir"] = [-clip["dir"][0], clip["dir"][1]]
         if t0 is not None and clip["speed"] > 0:
