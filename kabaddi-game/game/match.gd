@@ -116,6 +116,7 @@ var lab := false
 var lab_move := Vector3.ZERO
 var lab_force := {}
 var grapple: Grapple = null   # the raider in defenders' hands (see Grapple)
+var defence: DefenceCoach      # the defending team's roles and places (see DefenceCoach)
 var event_log: Array = []      # the last gameplay events: [match seconds, raid number, kind, info]
 var _event_n := 0
 
@@ -129,6 +130,9 @@ func _ready() -> void:
 	clock_speed = CLOCK_SPEEDS[clampi(int(config.get("length", Game.settings.length)), 0, 2)]
 	attract = bool(config.get("attract", false))
 	lab = bool(config.get("lab", false))
+	defence = DefenceCoach.new(self)
+	if bool(config.get("debug_draw", false)):
+		add_child(DebugDraw.new(self))
 	if String(config.get("mode", "")) == "tutorial":
 		clock_speed = 0.0
 	clock = half_len
@@ -354,6 +358,7 @@ func _begin_setup() -> void:
 	if grapple:
 		grapple.clear()
 		grapple = null
+	defence.reset()
 	_end_suspensions()
 	raider = _pick_raider(raiding)
 	raider.raids_made += 1
@@ -565,7 +570,8 @@ func _tick_raid(dt: float) -> void:
 	if watch != null and not (raider == controlled and cam.mode == Game.CAM_FIRST):
 		raider.face_toward(watch.position, dt, 9.0)
 
-	# Defenders.
+	# Defenders: the team's plan first, then each one at it.
+	defence.update(dt)
 	for d in defs:
 		if d == controlled:
 			_user_defender(d, dt)
@@ -1752,31 +1758,19 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		return
 	var inside = raid.entered and opp_depth > 0.0
 	var alarm: bool = raid.alarm or (inside and opp_depth > Arena.BONUS + 0.3)
-	var target := formation_spot(d)
+	# Where to be comes from the team's plan (DefenceCoach): a role and a place of his own, so they cover the
+	# raider between them instead of all going for the same spot. Help runs in flat out (from the deeper line
+	# that takes about the 0.65-1.15 s help took in the footage); the way home is cut at a run.
+	var order: Array = defence.order(d)
+	var target: Vector3 = order[0]
 	var spd := 2.4
-	var slot := grapple.claim(d) if holders.size() > 0 and dist < 4.2 and grapple else ""
-	if slot != "":
-		# A team-mate has him: help, at a hold of his own (Grapple.claim), so helpers do not all run at the same
-		# spot. From the deeper line the run in takes about the 0.65-1.15 s help took in the footage.
-		target = grapple.approach(slot, d)
-		spd = d.max_speed
-	elif holders.size() > 0 and dist < 4.2:
-		# Every hold taken: block his way home instead.
-		target = raider.position + Vector3(0, 0, -side(d.team) * 1.0)
-		spd = d.max_speed
-	elif alarm and inside:
-		# Cut off the way home: get between the raider and the midline.
-		var lat := (formation_spot(d).x - raider.position.x) * 0.35
-		var cut := raider.position + Vector3(lat, 0, -side(d.team) * 1.15)
-		if depth_in(d.team, cut) < 0.35:
-			cut.z = side(d.team) * 0.35
-		target = cut
-		spd = 2.6 + 0.8 * react
-	else:
-		# Chain slides with the raider and gives ground when he gets close.
-		target.x += raider.position.x * 0.28
-		if inside and dist < 1.9 and dist > 0.01:
-			target -= to / dist * (1.9 - dist) * 1.2
+	match String(order[2]):
+		"help":
+			spd = d.max_speed
+		"lane":
+			spd = d.max_speed   # cutting him off: flat out
+		"contain":
+			spd = 2.6 + 0.8 * react
 	# Defenders never turn their back on the raider: they shuffle and backpedal.
 	d.lock_facing = true
 	d.seek(target, spd, dt)
@@ -1798,8 +1792,9 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		return
 	if not inside or d.cooldown > 0.0 or raider.state == "dodge":
 		return
-	# Once he is held, team-mates join the struggle rather than dive in.
-	if holders.size() > 0:
+	# Once he is held, team-mates join the struggle rather than dive in; and the ones standing off in his way
+	# home are there to stop him, not to dive at him from out there.
+	if holders.size() > 0 or defence.role_of(d) == "contain":
 		return
 	var engaging := 0
 	for o in defenders():

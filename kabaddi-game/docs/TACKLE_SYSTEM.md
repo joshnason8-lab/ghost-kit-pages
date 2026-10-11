@@ -189,6 +189,65 @@ Still open after milestone C:
 - Helpers still run in as fast as they can from wherever they are. Choosing who helps, who blocks the way
   home and who stays in shape is milestone D.
 
+## Milestone D: the defence as a team
+
+As found (`_ai_defender`), each defender decided for himself every frame:
+
+- his place in the line, sliding with the raider and giving ground as he came close;
+- once the raid was on (a touch, or the raider deep), everyone ran for a point just in front of the raider,
+  between him and the midline;
+- once he was held, everyone within 4.2 m ran at the raider himself (milestone C gave each helper a hold of
+  his own).
+
+The set line was already well spread (each defender's nearest team-mate about 1.4 m away, pairs closer than
+0.9 m rare). The weakness was the way home: as a raider ran for the midline after a touch, someone stood in
+his way only 12-18% of the time. Everyone ran for the same point a fixed distance in front of him, which
+defenders behind him could not reach in time.
+
+What changed:
+
+- **A team plan** (`game/defence.gd`, `DefenceCoach`), worked out once a frame for all the free defenders
+  (not the ones diving, holding or getting up, nor the player's own). Each gets a role and a place:
+  - **line**: his place in the line, sliding with the raider and giving ground when he comes close;
+  - **mark**: the man the raider is working on, who holds his ground and is the one who goes for him;
+  - **cover**: the two either side of the mark, a little in toward him, near enough to tackle or help;
+  - **lane**: once the raid is on, the two best placed to stand in his way home;
+  - **contain**: the rest once the raid is on, and anyone left over while he is held, spread round his
+    way home further off;
+  - **help**: once he is held, to a hold of his own (milestone C's slots).
+- **Utility**: places are given out best placed first, by how quickly each defender can get there. Running
+  past the raider to get there costs extra, and lanes favour fresh, strong tacklers. No two places are
+  closer than 1.05 m (linked pairs aside).
+- **Cutting him off**: a raider running for home is met where he can be caught. Each free defender works
+  out where he would meet him on his run, still in his own half (`_intercept`), and the two who would meet
+  him soonest go there flat out.
+- **Reaction time**: each defender takes up a new role or a new place only after his own reaction time,
+  0.12-0.38 s, quicker for agile players and a little different each time, so the shape moves like people
+  and not like one machine.
+- Players standing off in his way home do not dive at him from out there. Who dives, and when, is
+  otherwise unchanged.
+- **Debug overlay** (`game/debug_draw.gd`, `config.debug_draw`; on in `tests/defence_view.tscn` and in
+  `tackle_check`'s view): each defender's place in the plan as a ring in his role's colour with a line to
+  it, the holds' hand targets and held feet, and planted feet.
+
+Before (milestone C) and after, `tests/ai_bench.tscn -- 4 1`, 12 matches each:
+
+| | Before | After |
+|---|---|---|
+| Way home covered as he runs for it | 12-18% | 16-20% |
+| Help after the first hold (footage 0.65-1.15 s) | 0.60-0.83 s | 0.80-0.97 s |
+| A set defender's nearest team-mate | 1.40-1.64 m | 1.40-1.41 m |
+| Pairs closer than 0.9 m (mean, unlinked) | 0.04-0.10 | 0.07-0.09 |
+| Defenders within 2 m of the raider while he works | 0.56-0.63 | 0.53-0.57 |
+| Raids successful / tackled / empty | 69% / 17% / 8% | 65% / 18.5% / 9% |
+| Every match's points add up | (not checked) | yes |
+
+Still open after milestone D:
+
+- The way home is still open most of the time: a raider who touches and turns is usually quicker home than
+  anyone behind him, as in the footage, where defenders went for him as he stepped in rather than chasing.
+- The line's own shape (depth, spread) is the formation tuned to the footage in 0.7.5 and is unchanged.
+
 ## Measuring
 
 ```sh

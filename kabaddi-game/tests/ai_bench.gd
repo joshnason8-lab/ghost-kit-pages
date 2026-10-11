@@ -15,6 +15,7 @@ var _style := {"first_attempt": [], "between": [], "attempt_gap": [], "dive_gap"
 var _shape := {"mate_gap": [], "bunched": [], "near_raider": [], "home_covered": [], "helpers_near": []}
 var _cur = null
 var _rs := {}
+var _score_errors := []   # matches whose points do not add up
 
 
 func _ready() -> void:
@@ -44,6 +45,7 @@ func _ready() -> void:
 			_sample(m, 1.0 / 30.0)
 		_close_raid()
 		print("match %d: %s %d - %d %s" % [i + 1, pr[0], _result.score[0], _result.score[1], pr[1]])
+		_check_points(i + 1, _result)
 		_all_logs.append_array(_result.raid_log)
 		for r in _result.raid_log:
 			var k: String = r.kind
@@ -69,6 +71,7 @@ func _ready() -> void:
 		m.queue_free()
 		await get_tree().process_frame
 	print("raids %d, avg %.1fs (%.1fs working the cover), outcomes %s" % [raids, secs / maxf(1, raids), probe_secs / maxf(1, raids), str(kinds)])
+	print("points accounted for: %s" % ("every match" if _score_errors.is_empty() else "NOT in " + str(_score_errors)))
 	var rp := 0
 	var dp := 0
 	var multi := 0
@@ -107,6 +110,29 @@ func _ready() -> void:
 	print("holds: ", ", ".join(rows.slice(0, 40)))
 	_print_style()
 	get_tree().quit()
+
+
+## Every point given once: each team's score is its breakdown (raids, tackles, all outs, extras), and its raid
+## and tackle points are what its raids and its defence earned, raid by raid, as logged.
+func _check_points(n: int, res: Dictionary) -> void:
+	var ok := true
+	var rsum := [0, 0]
+	var dsum := [0, 0]
+	var teams_known := true
+	for r in res.raid_log:
+		if not r.has("team"):
+			teams_known = false
+			continue
+		rsum[int(r.team)] += int(r.raid_pts)
+		dsum[1 - int(r.team)] += int(r.def_pts)
+	for t in 2:
+		var b: Dictionary = res.breakdown[t]
+		if int(res.score[t]) != int(b.raid) + int(b.tackle) + int(b.allout) + int(b.extra):
+			ok = false
+		if teams_known and (rsum[t] != int(b.raid) or dsum[t] != int(b.tackle)):
+			ok = false
+	if not ok:
+		_score_errors.append(n)
 
 
 ## One frame of the running match: raider attempts, defenders' dives, holds and spacing.

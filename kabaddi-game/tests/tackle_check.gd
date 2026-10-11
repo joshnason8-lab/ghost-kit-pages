@@ -87,7 +87,7 @@ func _run(sc: String) -> Dictionary:
 	var m: Node = load("res://game/match.gd").new()
 	m.config = {"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "autoplay": true,
 		"autoplay_no_report": true, "length": 0, "difficulty": 1, "players": [7, styles.size()], "style": styles[0],
-		"first_raider": 0, "lab": true, "raid_rule": 0, "passive": bool(setup.get("passive", false))}
+		"first_raider": 0, "lab": true, "raid_rule": 0, "passive": bool(setup.get("passive", false)), "debug_draw": _view}
 	add_child(m)
 	m.rng.seed = 11
 	while m.phase != "raid":
