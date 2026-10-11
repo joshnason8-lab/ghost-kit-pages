@@ -222,6 +222,22 @@ func _run() -> void:
 		await frames(20)
 		check(a.model.clip_weight > 0.5, "athlete plays mocap clip")
 		a.queue_free()
+	# 8b. Captured running carries a moving player.
+	if not MocapClip.moves().is_empty():
+		var run: MocapClip = MocapClip.moves()[0]
+		check(run.version == 2 and run.speed > 0.5 and run.quats.size() > 5, "captured running clips load: " + run.name)
+		var ra := Athlete.new()
+		ra.setup(DB.team("MUM").squad[1], 0, Color.TEAL, Color.WHITE, true)
+		add_child(ra)
+		ra.facing = Vector3(0, 0, -1)
+		ra.set_state("idle", 1000.0)
+		ra.vel = ra.facing * 4.5
+		ra.set_process(false)
+		for f in 30:
+			ra._pose(1.0 / 30.0)
+			ra.model._process(1.0 / 30.0)
+		check(ra.model.move_weight > 0.9, "a running player is carried by the captured run (%.2f)" % ra.model.move_weight)
+		ra.queue_free()
 
 	# 8a. Realistic rigged body follows the placeholder skeleton.
 	if RiggedBody.available():

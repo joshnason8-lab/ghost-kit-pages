@@ -46,6 +46,13 @@ var clip: MocapClip = null  # captured motion that overrides the hand-made pose
 var clip_time := 0.0
 var clip_loop := true
 var clip_weight := 0.0
+var move_weight := 0.0      # how much a captured running clip carries him now, 0..1
+var _moves = null           # the captured running set (MocapClip.moves()), once looked up
+var _move: MocapClip = null
+var _move_t := 0.0
+var _move_prev: MocapClip = null
+var _move_prev_t := 0.0
+var _move_fade := 1.0
 
 var skin := Color("c68863")
 var hair := Color("1a1410")
@@ -433,6 +440,7 @@ func _process(delta: float) -> void:
 	if pelvis == null:
 		return
 	_animate(delta)
+	_apply_moves(delta)
 	_apply_clip(delta)
 	if rig:
 		rig.drive(self)
@@ -654,8 +662,11 @@ func _apply_clip(delta: float) -> void:
 	if clip == null or clip_weight <= 0.0:
 		return
 	clip_time += delta
-	var f := clip.sample(clip_time, clip_loop)
 	var w := clip_weight
+	if clip.version >= 2:
+		_apply_pose(clip.sample_pose(clip_time, clip_loop), w)
+		return
+	var f := clip.sample(clip_time, clip_loop)
 	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
 	if f.has("height"):
 		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(f.height), w)
@@ -667,6 +678,75 @@ func _apply_clip(delta: float) -> void:
 	for pair in [["knee_l", kn_l], ["knee_r", kn_r], ["el_l", el_l], ["el_r", el_r]]:
 		if f.has(pair[0]):
 			pair[1].rotation.x = lerpf(pair[1].rotation.x, float(f[pair[0]]), w)
+
+
+## Captured running: whenever he travels, the running clip nearest his direction and speed carries the
+## body, played at the rate that keeps the planted foot still. Moves that need the body for themselves
+## (dives, dubki, jumps, kicks, holds, celebrations) and a deep crouch keep the hand-made pose; the right
+## arm stays free to reach for a touch.
+func _apply_moves(delta: float) -> void:
+	if _moves == null:
+		_moves = MocapClip.moves()
+	if (_moves as Array).is_empty():
+		return
+	var busy := maxf(maxf(dive, fallen), maxf(maxf(struggle, dubki), maxf(jump, maxf(kick, back_kick))))
+	busy = maxf(busy, maxf(seated, maxf(celebrate, shove)))
+	var want := clampf((speed - 0.35) / 0.6, 0.0, 1.0) * (1.0 - busy) * (1.0 - 0.7 * crouch)
+	var way := Vector2(move_side, move_fwd)
+	way = way.normalized() if way.length() > 0.1 else Vector2(0, 1)
+	var s178 := speed * 1.78 / height   # his speed as a 1.78 m player's
+	var best: MocapClip = null
+	var best_score := INF
+	for c in _moves:
+		var align: float = (c as MocapClip).dir.normalized().dot(way)
+		if align < 0.6:
+			continue
+		var score := (1.0 - align) * 3.0 + absf(log(maxf(s178, 0.3) / (c as MocapClip).speed))
+		if score < best_score:
+			best = c
+			best_score = score
+	if best == null:
+		want = 0.0
+	move_weight = move_toward(move_weight, want, delta * 5.0)
+	if best != null and best != _move:
+		# Switch clips through a quick cross-fade, starting the new one at the same point of its stride.
+		_move_prev = _move
+		_move_prev_t = _move_t
+		_move_fade = 0.0 if _move != null else 1.0
+		_move_t = (fposmod(_move_t, _move.length) / _move.length * best.length) if _move != null else randf() * best.length
+		_move = best
+	if _move == null or move_weight <= 0.0:
+		return
+	_move_t += delta * clampf(s178 / _move.speed, 0.5, 1.8)
+	var pose := _move.sample_pose(_move_t, true)
+	if _move_prev != null and _move_fade < 1.0:
+		_move_fade = minf(1.0, _move_fade + delta * 5.0)
+		_move_prev_t += delta * clampf(s178 / _move_prev.speed, 0.5, 1.8)
+		var old := _move_prev.sample_pose(_move_prev_t, true)
+		for k in pose:
+			if not old.has(k):
+				continue
+			if k == "h":
+				pose[k] = lerpf(float(old[k]), float(pose[k]), _move_fade)
+			else:
+				var qo: Quaternion = old[k]
+				pose[k] = qo.slerp(pose[k], _move_fade)
+	_apply_pose(pose, move_weight)
+
+
+## Lay a captured pose over the hand-made one, by weight w. Arms busy reaching or grabbing keep theirs.
+func _apply_pose(pose: Dictionary, w: float) -> void:
+	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
+	if pose.has("h"):
+		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(pose.h), w)
+	var arm_l := w * (1.0 - hold_arms)
+	var arm_r := w * (1.0 - maxf(hold_arms, reach))
+	for pair in [["pelvis", pelvis, w], ["spine", spine, w], ["chest", chest, w], ["neck", neck, w * 0.6],
+			["head", head, w * 0.6], ["sh_l", sh_l, arm_l], ["el_l", el_l, arm_l], ["sh_r", sh_r, arm_r],
+			["el_r", el_r, arm_r], ["hip_l", hip_l, w], ["kn_l", kn_l, w], ["hip_r", hip_r, w], ["kn_r", kn_r, w]]:
+		if pose.has(pair[0]) and pair[2] > 0.0:
+			var node: Node3D = pair[1]
+			node.quaternion = node.quaternion.slerp(pose[pair[0]], pair[2])
 
 
 func play_clip(c: MocapClip, loop: bool) -> void:

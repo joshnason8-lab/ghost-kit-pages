@@ -146,3 +146,19 @@ To ship pose tracking *inside* the app, switch to an Apache-licensed model such 
   drive a rigged character directly.
 - **Corner picking.** Click the court corners in a small viewer instead of typing coordinates.
 - **Moving cameras.** Find the court lines automatically, so broadcast shots with camera moves can be used.
+
+## Animations from Mixamo or Meshy
+
+`fbx_to_clip.gd` turns a ready-made animation into a clip: a Mixamo download (FBX Binary, Without Skin,
+30 fps, no keyframe reduction, In Place ticked for moves that travel) or one of Meshy's rig animations (FBX
+or GLB). It matches the skeleton to the game's joints by bone name, keeps each joint's full 3D rotation
+(clip version 2), and measures how fast and which way a travelling move goes.
+
+```sh
+godot --headless --path . res://tools/mocap/fbx_to_clip.tscn -- Running.fbx assets/mocap/move_run.json move_run --loop
+```
+
+Name a clip `move_*` to add it to the running set (run, jog, walk, strafes, backpedal): whenever a player
+travels, the clip nearest his direction and speed carries the body, at the rate that keeps the planted foot
+still, and the right arm stays free for a hand touch. A clip named in `MocapClip.FOR_STATE` (for example
+`celebrate` or `tackle_dive`) plays for that move instead.
