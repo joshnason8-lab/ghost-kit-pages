@@ -54,6 +54,7 @@ const DUBKI_TIME := 0.42
 const JUMP_TIME := 0.62
 const SHOVE_TIME := 0.42
 const DIVE_TIME := 0.3
+const LUNGE := 0.45            # how much further an AI raider's touch starts, stepping in as it goes
 
 var config := {}
 var arena: Arena
@@ -257,15 +258,18 @@ func _order_slots() -> void:
 
 
 ## Defensive shape: on-mat defenders in slot order, spread across the court in a shallow arc.
+## As in match footage (tools/mocap/footage): the line stands 4.4-4.9 m from the midline, a metre
+## behind the baulk line, so a raider has to come in to touch it; three defenders still cover
+## most of the width.
 func formation_spot(a: Athlete) -> Vector3:
 	var t := a.team
 	var mates := on_mat(t)
 	mates.sort_custom(func(x, y): return x.slot < y.slot)
 	var n := mates.size()
 	var i := mates.find(a)
-	var width := minf(4.2, 0.75 * (n - 1))
+	var width := minf(4.2, 1.3 * (n - 1))
 	var lat := 0.0 if n <= 1 else lerpf(-width, width, float(i) / (n - 1))
-	var d := 3.35 + 0.5 * (absf(lat) / 4.2)
+	var d := 4.35 + 0.35 * (absf(lat) / 4.2)
 	return pos_in(t, lat, d)
 
 
@@ -484,6 +488,8 @@ func _begin_raid() -> void:
 
 func _tick_raid(dt: float) -> void:
 	raid.t -= dt
+	if not raid.holders.is_empty():
+		raid["hold_age"] = float(raid.get("hold_age", 0.0)) + dt
 	clock = maxf(0.0, clock - dt * clock_speed)
 	raid.ai_dodge_cd = maxf(0.0, raid.ai_dodge_cd - dt)
 	raid.cross_cd = maxf(0.0, float(raid.cross_cd) - dt)
@@ -570,7 +576,10 @@ func _move_raider(move: Vector3, dt: float) -> void:
 	elif raider.state == "backkick":
 		raider.drive(move * raider.max_speed * 0.6, dt)
 	elif raider.state in ["touch", "kick"]:
-		raider.drive(move * raider.max_speed * 0.35, dt)
+		if raid.get("lunge", false) and raider.st_t < raider.st_len * 0.6:
+			raider.drive(raider.facing * raider.max_speed * 0.95, dt)
+		else:
+			raider.drive(move * raider.max_speed * 0.35, dt)
 	elif holders.size() > 0:
 		# Struggle: push toward the midline against the holders.
 		var hold_power := 0.0
@@ -584,6 +593,9 @@ func _move_raider(move: Vector3, dt: float) -> void:
 		var v := mid_dir * net * 1.3
 		if net < 0.0:
 			v = mid_dir * net * 0.5
+		else:
+			# The hit stops him dead; he gets going again about a second later, while help runs in.
+			v *= clampf(float(raid.get("hold_age", 0.0)) / 1.0, 0.2, 1.0)
 		v.x += move.x * 0.4 * maxf(0.2, 1.0 - hold_power)
 		raider.vel = v
 		raider.position += v * dt
@@ -807,9 +819,10 @@ func _reach_for(move: String) -> float:
 	return raider.reach + 0.35 + 0.25 * (raider.move_skill("hand") - 0.6)
 
 
-func _raider_touch(toe: bool) -> void:
+func _raider_touch(toe: bool, lunge := false) -> void:
 	if raider.state not in ["raid", "dodge"] or raider.cooldown > 0.0:
 		return
+	raid["lunge"] = lunge
 	if depth_in(1 - raiding, raider.position) < -0.3:
 		return
 	# Aim assist: turn toward the nearest untouched defender within reach.
@@ -835,7 +848,7 @@ func _raider_touch(toe: bool) -> void:
 			continue
 		var off = d.position - raider.position
 		off.y = 0
-		if off.length() < r + 0.3 and raider.facing.angle_to(off.normalized()) < 1.0:
+		if off.length() < r + 0.3 + (LUNGE if lunge else 0.0) and raider.facing.angle_to(off.normalized()) < 1.0:
 			var p_ev = (0.06 + 0.24 * float(prof.react)) * (0.5 + 0.5 * d.agility) * (0.6 if toe else 1.0)
 			if rng.randf() < p_ev:
 				_evade(d)
@@ -1307,9 +1320,9 @@ func _ai_raider(dt: float) -> Vector3:
 		var l := off.length()
 		if l < 1.6 and l > 0.01 and raid.ai_mode != "probe":
 			steer += off / l * (1.6 - l) * 1.2
-		elif l < 1.5 and l > 0.01 and raid.ai_mode == "probe" and d != raid.get("ai_mark") and raid.get("ai_step") == "work":
+		elif l < 1.8 and l > 0.01 and raid.ai_mode == "probe" and d != raid.get("ai_mark") and raid.get("ai_step") == "work":
 			# Working the cover: keep clear of everyone but the man he is testing.
-			steer += off / l * (1.5 - l) * 1.5
+			steer += off / l * (1.8 - l) * 1.5
 	if raid.ai_mode not in ["return", "probe"]:
 		steer.z = 0.0
 		steer *= 0.6
@@ -1506,9 +1519,10 @@ func _ai_probe(defs: Array, skill: float, dt: float) -> Vector3:
 			target = mark.position + home_dir * 0.4
 			raid.ai_speed = 1.0
 			var toe: bool = raid.get("strike_toe", false)
-			if dist < _reach_for("toe" if toe else "hand") - 0.15 and raider.cooldown <= 0.0 and raider.state == "raid":
+			# Real raiders go for the touch from about 2 m, a lunge step carrying the hand or foot in.
+			if dist < _reach_for("toe" if toe else "hand") + LUNGE and raider.cooldown <= 0.0 and raider.state == "raid":
 				raider.facing = to.normalized()
-				_raider_touch(toe)
+				_raider_touch(toe, true)
 				raid.ai_step = "work"
 				raid.ai_step_t = rng.randf_range(0.6, 1.4)
 			elif float(raid.ai_step_t) <= 0.0:
@@ -1517,7 +1531,7 @@ func _ai_probe(defs: Array, skill: float, dt: float) -> Vector3:
 		_:
 			# Light steps side to side, just outside his reach.
 			var sway := sin(float(raid.probe_t) * (1.0 + 0.6 * skill) + float(raid.ai_lane)) * 0.9
-			target = mark.position + home_dir * (2.0 - 0.4 * urgency) + across * sway
+			target = mark.position + home_dir * (2.4 - 0.5 * urgency) + across * sway
 			raid.ai_speed = 0.3 + 0.1 * skill
 			if float(raid.ai_step_t) <= 0.0 and raider.cooldown <= 0.0:
 				var go := (0.05 + 0.45 * open) * (0.2 + 0.8 * urgency) + urgency * urgency * 0.4
@@ -1540,7 +1554,7 @@ func _ai_probe(defs: Array, skill: float, dt: float) -> Vector3:
 					raid.ai_step_t = rng.randf_range(0.5, 1.3)
 			# A toe tap at a foot left in range: little risk, so take it.
 			elif float(raid.probe_t) > 2.0 and dist < _reach_for("toe") - 0.1 and raider.cooldown <= 0.0 and raider.state == "raid" \
-					and mark.state not in ["telegraph", "dive"] and rng.randf() < dt * (0.05 + 0.2 * _tend("toe")) * (0.3 + open):
+					and mark.state not in ["telegraph", "dive"] and rng.randf() < dt * (0.025 + 0.1 * _tend("toe")) * (0.3 + open):
 				raider.facing = to.normalized()
 				_raider_touch(true)
 	return target
@@ -1657,8 +1671,9 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	var alarm: bool = raid.alarm or (inside and opp_depth > Arena.BONUS + 0.3)
 	var target := formation_spot(d)
 	var spd := 2.4
-	if holders.size() > 0 and dist < 3.2:
-		# A team-mate has him: pile on.
+	if holders.size() > 0 and dist < 4.2:
+		# A team-mate has him: pile on. From the deeper line the run in takes about the 0.65-1.15 s help
+		# took in the footage.
 		target = raider.position
 		spd = d.max_speed
 	elif alarm and inside:
@@ -1705,7 +1720,8 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	var max_engage := 2 if alarm else 1
 	if engaging >= max_engage:
 		return
-	var rng_range := 1.45 + 0.3 * react
+	# In the footage defenders went for the raider from 1.4-3 m (median 1.8), as he stepped in.
+	var rng_range := 1.75 + 0.3 * react
 	# A feint at him: a jumpy defender bites and goes in early.
 	if raid.feint_on == d and float(raid.feint_t) > 0.0 and not raid.feint_bit and dist < rng_range + 0.4:
 		raid.feint_bit = true
@@ -1766,8 +1782,9 @@ func _check_contacts(defs: Array) -> void:
 				var active := p > 0.2 and p < 0.75
 				var r := _reach_for("toe" if raider.state == "kick" else "hand")
 				var ang := raider.facing.angle_to((d.position - raider.position).normalized())
-				# A leg tags one defender; a hand can sweep two.
-				if active and dist < r and ang < 1.2 and not (raider.state == "kick" and raid.get("touch_hit", false)):
+				# A leg tags one defender; a hand can sweep two, but not on a lunge, which goes for one man.
+				var one: bool = raider.state == "kick" or raid.get("lunge", false)
+				if active and dist < r and ang < 1.2 and not (one and raid.get("touch_hit", false)):
 					hit = true
 					via = "toe" if raider.state == "kick" else "hand"
 					raid.touch_hit = true
@@ -1785,6 +1802,10 @@ func _check_contacts(defs: Array) -> void:
 					var counter = 0.08 + 0.2 * d.tackle + 0.08 * float(prof.tackle)
 					if d.state == "telegraph":
 						counter += 0.3
+					# A lunge commits him: the step that carries the hand in puts him within the defender's grasp
+					# (in the footage, raiders were caught on the step in).
+					if raid.get("lunge", false):
+						counter += 0.15
 					# Running straight into a set defender: he blocks.
 					var into := raider.vel.dot((d.position - raider.position).normalized()) > 1.2 and via == ""
 					if into:
