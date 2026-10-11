@@ -52,6 +52,7 @@ func _ready() -> void:
 			a.sig_kind = int(r[3].get("sig", 0))
 			var right := a.facing.cross(Vector3.UP)
 			a.vel = right * r[2].x + a.facing * r[2].z
+			a.move_vel = a.vel   # on the spot here: give the legs the speed (they follow measured motion)
 			a.set_process(false)
 			row.append(a)
 		# Warm each copy up to its own moment.

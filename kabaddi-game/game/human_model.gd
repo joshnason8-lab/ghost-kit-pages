@@ -60,6 +60,18 @@ var _move_t := 0.0
 var _move_prev: MocapClip = null
 var _move_prev_t := 0.0
 var _move_fade := 1.0
+var _move_held := 0.0       # seconds since the running clip last changed
+var _low_gait := false      # running crouched (shuffle clips): with hysteresis so it does not flicker
+# The final pose stage: when a clip changes, the step between last frame's pose and the new one is kept as
+# an offset that fades out, so every transition starts from the pose on screen (see _settle).
+const SETTLE_TIME := 0.18
+var _joints: Array[Node3D] = []
+var _last_q: Array[Quaternion] = []
+var _last_h := 0.0
+var _off_q: Array[Quaternion] = []
+var _off_h := 0.0
+var _off_t := SETTLE_TIME
+var _settle_pending := false
 
 var skin := Color("c68863")
 var hair := Color("1a1410")
@@ -450,6 +462,7 @@ func _process(delta: float) -> void:
 	air = jump * 0.32 * height / 1.78   # a hand-made lion jump leaves the floor by as much as it lifts the hips
 	_apply_moves(delta)
 	_apply_clip(delta)
+	_settle(delta)
 	if rig:
 		rig.drive(self)
 	else:
@@ -483,27 +496,32 @@ func _animate(delta: float) -> void:
 	y -= dubki * 0.5 * height / 1.78
 	y += jump * 0.32 * height / 1.78
 	pelvis.position.y = y
+	# Every joint's whole rotation is set afresh each frame, here and below, before any clip is laid over
+	# it: setting one Euler angle alone keeps the other two from the last frame's blended pose, so a clip
+	# would leak into later frames (and an angle past 90 degrees flips the others round).
 	# Whole-body pitch for dives (face down toward the target) and falls.
-	pelvis.rotation.x = lerpf(0.0, -1.35, dive) + lerpf(0.0, -1.5, fallen * (1.0 - dive))
-	pelvis.rotation.z = sw * 0.04 * run * fwd_w
-	pelvis.rotation.y = sw * 0.12 * run * fwd_w
+	var pel_x := lerpf(0.0, -1.35, dive) + lerpf(0.0, -1.5, fallen * (1.0 - dive))
+	var pel_z := sw * 0.04 * run * fwd_w
+	var pel_y := sw * 0.12 * run * fwd_w
 	# Idle life: weight shifting from foot to foot and breathing.
 	var still := clampf(1.0 - speed * 2.0, 0.0, 1.0) * (1.0 - lie)
 	pelvis.position.x = sin(_t * 0.55 + _life) * 0.025 * still
-	pelvis.rotation.z += sin(_t * 0.55 + _life) * 0.035 * still
+	pel_z += sin(_t * 0.55 + _life) * 0.035 * still
 	# A side kick tips the body away from the kicking leg.
 	var kick_leg := 1.0 if kick_side >= 0.0 else -1.0
 	var kb := back_kick * clampf(kick_back, 0.0, 1.0)
 	var ks := back_kick * absf(kick_side)
-	pelvis.rotation.z += -kick_leg * ks * 0.45
+	pel_z += -kick_leg * ks * 0.45
+	pelvis.rotation = Vector3(pel_x, pel_y, pel_z)
 
 	# Spine lean: forward for running, crouching, struggling and toe touches.
 	var lean_total := lean - c * 0.5 - run * 0.22 - struggle * 0.55 + kick * 0.3 - reach * 0.25 - kb * 0.75 - dubki * 1.35 - jump * 0.35
-	spine.rotation.x = lean_total * (1.0 - lie * 0.7)
-	spine.rotation.y = -reach * 0.35 - sw * 0.16 * run * fwd_w
-	chest.rotation.x = 0.0
-	head.rotation.x = -lean_total * 0.7 * (1.0 - lie * 0.4) - lie * 0.7
-	head.rotation.y = (sin(_t * 0.31 + _life * 1.7) * 0.6 + sin(_t * 0.83 + _life) * 0.25) * look_around * still
+	var spine_x := lean_total * (1.0 - lie * 0.7)
+	var spine_y := -reach * 0.35 - sw * 0.16 * run * fwd_w
+	var head_x := -lean_total * 0.7 * (1.0 - lie * 0.4) - lie * 0.7
+	var head_y := (sin(_t * 0.31 + _life * 1.7) * 0.6 + sin(_t * 0.83 + _life) * 0.25) * look_around * still
+	chest.rotation = Vector3.ZERO
+	neck.rotation = Vector3.ZERO
 	chest.scale = Vector3.ONE * (1.0 + sin(_t * 2.2) * 0.012 * (1.0 - run))
 
 	# Legs. The thigh swings with the stride; the knee folds while that leg swings through
@@ -543,8 +561,8 @@ func _animate(delta: float) -> void:
 	pelvis.position.y = lerpf(pelvis.position.y, 0.47 * height / 1.78, seated)
 	hip_l.rotation = Vector3(lthigh, 0, -0.06 - c * 0.12 - side_l - dubki * 0.25)
 	hip_r.rotation = Vector3(rthigh, 0, 0.06 + c * 0.12 + kick * 0.12 + side_r + dubki * 0.25)
-	kn_l.rotation.x = lknee
-	kn_r.rotation.x = rknee
+	kn_l.rotation = Vector3(lknee, 0, 0)
+	kn_r.rotation = Vector3(rknee, 0, 0)
 
 	# Arms: counter-swing when running, forward and ready when crouched.
 	var arm_ready := maxf(c, hold_arms)
@@ -656,10 +674,12 @@ func _animate(delta: float) -> void:
 	var sig_r: float = (SIGNALS.get(ref_sig, [0, 0, 0, 0, 0.0, 0.0])[5] as float) * ref_amt
 	sh_l.rotation = Vector3(larm, 0, sig_l - spread - kick * 0.8 - celebrate * (c_out - c_in) - roar * 0.9 - argue * 0.3 - slump * 0.5)
 	sh_r.rotation = Vector3(rarm, 0, -sig_r + spread + celebrate * (c_out - c_in) + roar * 0.9 + slump * 0.5)
-	spine.rotation.x += roar * 0.3 - slump * 0.3 - shove * 0.45 - slap * 0.35 - argue * 0.1
-	head.rotation.x += roar * 0.45 - slump * 0.35 + dubki * 0.6
-	el_l.rotation.x = lel
-	el_r.rotation.x = rel
+	spine_x += roar * 0.3 - slump * 0.3 - shove * 0.45 - slap * 0.35 - argue * 0.1
+	head_x += roar * 0.45 - slump * 0.35 + dubki * 0.6
+	spine.rotation = Vector3(spine_x, spine_y, 0)
+	head.rotation = Vector3(head_x, head_y, 0)
+	el_l.rotation = Vector3(lel, 0, 0)
+	el_r.rotation = Vector3(rel, 0, 0)
 
 
 ## Blend captured motion over the hand-made pose: the state's clip, and the one before it fading out.
@@ -680,21 +700,28 @@ func _apply_clip(delta: float) -> void:
 
 
 func _play_frame(c: MocapClip, t: float, loop: bool, w: float) -> void:
+	# A stance (a looping clip) gives the legs up to the running set while he moves: legs from both take
+	# different strides and the feet slide. Its trunk, head and arms stay.
+	var legs := w * (1.0 - move_weight) if loop else w
 	if c.version >= 2:
-		_apply_pose(c.sample_pose(t, loop), w, false, c.arms == "r")   # the move's clip drives the arms too
+		_apply_pose(c.sample_pose(t, loop), legs, false, c.arms == "r", w)   # the move's clip drives the arms too
 		return
+	# Footage clips (version 1) give one bend per joint. Applied as rotations (not by setting one Euler
+	# angle, which can flip the others round): knees and elbows are hinges; hips, shoulders and the spine
+	# keep their sideways and twisting angles from the pose underneath.
 	var f := c.sample(t, loop)
 	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
 	if f.has("height"):
-		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(f.height), w)
-	if f.has("spine"):
-		spine.rotation.x = lerpf(spine.rotation.x, float(f.spine), w)
-	for pair in [["hip_l", hip_l], ["hip_r", hip_r], ["sh_l", sh_l], ["sh_r", sh_r]]:
-		if f.has(pair[0]):
-			pair[1].rotation.x = lerpf(pair[1].rotation.x, float(f[pair[0]]), w)
-	for pair in [["knee_l", kn_l], ["knee_r", kn_r], ["el_l", el_l], ["el_r", el_r]]:
-		if f.has(pair[0]):
-			pair[1].rotation.x = lerpf(pair[1].rotation.x, float(f[pair[0]]), w)
+		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(f.height), legs)
+	for item in [["spine", spine, w], ["hip_l", hip_l, legs], ["hip_r", hip_r, legs], ["sh_l", sh_l, w], ["sh_r", sh_r, w]]:
+		if f.has(item[0]) and item[2] > 0.0:
+			var node: Node3D = item[1]
+			var e := node.rotation
+			node.quaternion = node.quaternion.slerp(Quaternion.from_euler(Vector3(float(f[item[0]]), e.y, e.z)), item[2])
+	for item in [["knee_l", kn_l, legs], ["knee_r", kn_r, legs], ["el_l", el_l, w], ["el_r", el_r, w]]:
+		if f.has(item[0]) and item[2] > 0.0:
+			var node: Node3D = item[1]
+			node.quaternion = node.quaternion.slerp(Quaternion(Vector3.RIGHT, float(f[item[0]])), item[2])
 
 
 ## Captured motion for an athlete's state (MocapClip.FOR_STATE), if there is any; none hands back to the
@@ -732,28 +759,44 @@ func _apply_moves(delta: float) -> void:
 	var busy := maxf(maxf(dive, fallen), maxf(maxf(struggle, dubki), maxf(jump, maxf(kick, back_kick))))
 	busy = maxf(busy, maxf(seated, maxf(celebrate, shove)))
 	var want := clampf((speed - 0.35) / 0.6, 0.0, 1.0) * (1.0 - busy)
-	var crouched := 1.0 if crouch > 0.5 else 0.0
+	# Crouched or upright gait, with a gap between going down and coming up so it does not flicker.
+	if crouch > 0.55:
+		_low_gait = true
+	elif crouch < 0.4:
+		_low_gait = false
+	var crouched := 1.0 if _low_gait else 0.0
 	var way := Vector2(move_side, move_fwd)
 	way = way.normalized() if way.length() > 0.1 else Vector2(0, 1)
 	var s178 := speed * 1.78 / height   # his speed as a 1.78 m player's
 	var best: MocapClip = null
 	var best_score := INF
+	var cur_score := INF
 	for c in _moves:
 		var align: float = (c as MocapClip).dir.normalized().dot(way)
-		if align < 0.6:
+		if align < (0.45 if c == _move else 0.6):
 			continue
 		var score := (1.0 - align) * 3.0 + absf(log(maxf(s178, 0.3) / (c as MocapClip).speed))
 		score += absf(crouched - (1.0 if (c as MocapClip).low else 0.0)) * 1.5   # a crouched player shuffles low
+		if c == _move:
+			cur_score = score
 		if score < best_score:
 			best = c
 			best_score = score
+	# Hysteresis: keep the clip he is in unless another fits clearly better, and give each clip a moment.
+	_move_held += delta
+	if _move != null and cur_score < INF and (best_score > cur_score - 0.3 or _move_held < 0.3):
+		best = _move
 	if best == null:
 		want = 0.0
-	elif not best.low:
-		want *= 1.0 - 0.7 * crouch   # an upright clip for a crouching player: mostly his own crouch
+	# An upright clip for a crouching player: his own crouch in the body and arms, but the clip's legs in
+	# full. Legs half from a clip and half hand-made take different strides and the feet slide.
+	var upper := 1.0 if best == null or best.low else 1.0 - 0.7 * crouch
 	move_weight = move_toward(move_weight, want, delta * 5.0)
 	if best != null and best != _move:
 		# Switch clips through a quick cross-fade, starting the new one at the same point of its stride.
+		if _move != null and _move_fade < 1.0:
+			_settle_pending = true   # switched again mid-fade: the final pose stage carries over the step
+		_move_held = 0.0
 		_move_prev = _move
 		_move_prev_t = _move_t
 		_move_fade = 0.0 if _move != null else 1.0
@@ -775,25 +818,72 @@ func _apply_moves(delta: float) -> void:
 			else:
 				var qo: Quaternion = old[k]
 				pose[k] = qo.slerp(pose[k], _move_fade)
-	_apply_pose(pose, move_weight)
+	_apply_pose(pose, move_weight, true, false, move_weight * upper)
 
 
 ## Lay a captured pose over the hand-made one, by weight w. With keep_arms (a running clip), arms busy
 ## reaching or grabbing keep theirs.
-func _apply_pose(pose: Dictionary, w: float, keep_arms := true, right_only := false) -> void:
+func _apply_pose(pose: Dictionary, w: float, keep_arms := true, right_only := false, upper := -1.0) -> void:
 	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
 	if pose.has("h"):
 		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(pose.h), w)
 	if pose.has("a"):
 		air = lerpf(air, float(pose.a) * height / 1.78, w)
-	var arm_l := w * (1.0 - hold_arms) if keep_arms else (0.0 if right_only else w)
-	var arm_r := w * (1.0 - maxf(hold_arms, reach)) if keep_arms else w
-	for pair in [["pelvis", pelvis, w], ["spine", spine, w], ["chest", chest, w], ["neck", neck, w * 0.6],
-			["head", head, w * 0.6], ["sh_l", sh_l, arm_l], ["el_l", el_l, arm_l], ["sh_r", sh_r, arm_r],
+	# upper: a separate weight for the trunk, head and arms (the legs, pelvis and hip height take w).
+	var u := w if upper < 0.0 else upper
+	var arm_l := u * (1.0 - hold_arms) if keep_arms else (0.0 if right_only else u)
+	var arm_r := u * (1.0 - maxf(hold_arms, reach)) if keep_arms else u
+	for pair in [["pelvis", pelvis, w], ["spine", spine, u], ["chest", chest, u], ["neck", neck, u * 0.6],
+			["head", head, u * 0.6], ["sh_l", sh_l, arm_l], ["el_l", el_l, arm_l], ["sh_r", sh_r, arm_r],
 			["el_r", el_r, arm_r], ["hip_l", hip_l, w], ["kn_l", kn_l, w], ["hip_r", hip_r, w], ["kn_r", kn_r, w]]:
 		if pose.has(pair[0]) and pair[2] > 0.0:
 			var node: Node3D = pair[1]
 			node.quaternion = node.quaternion.slerp(pose[pair[0]], pair[2])
+
+
+## The final pose stage, after the hand-made pose and the clips are laid over it. A transition (a clip let
+## go mid-fade, a running clip switched mid-fade) or any joint jumping further in one frame than a body can
+## swing it (1200 deg/s: 40 degrees a frame at 30 fps, 20 at 60) keeps last frame's pose as an offset that
+## fades out over SETTLE_TIME, so nothing on screen snaps.
+func _settle(delta: float) -> void:
+	if _joints.is_empty():
+		_joints = [pelvis, spine, chest, neck, head, sh_l, sh_r, el_l, el_r, hip_l, hip_r, kn_l, kn_r]
+		for j in _joints:
+			_last_q.append(j.quaternion)
+			_off_q.append(Quaternion.IDENTITY)
+		_last_h = pelvis.position.y
+		return
+	var w := _settle_weight(_off_t)
+	if not _settle_pending:
+		var jump := deg_to_rad(1200.0) * clampf(delta, 1.0 / 120.0, 1.0 / 20.0)
+		for i in _joints.size():
+			var q := Quaternion.IDENTITY.slerp(_off_q[i], w) * _joints[i].quaternion if w > 0.0 else _joints[i].quaternion
+			if _last_q[i].angle_to(q) > jump:
+				_settle_pending = true
+				break
+	if _settle_pending:
+		# Whatever offset is still fading is folded in, so the pose stays where it was on screen.
+		for i in _joints.size():
+			_off_q[i] = (_last_q[i] * _joints[i].quaternion.inverse()).normalized()
+		_off_h = _last_h - pelvis.position.y
+		_off_t = 0.0
+		w = 1.0
+		_settle_pending = false
+	if w > 0.0:
+		for i in _joints.size():
+			_joints[i].quaternion = (Quaternion.IDENTITY.slerp(_off_q[i], w) * _joints[i].quaternion).normalized()
+		pelvis.position.y += _off_h * w
+	_off_t += delta
+	for i in _joints.size():
+		_last_q[i] = _joints[i].quaternion
+	_last_h = pelvis.position.y
+
+
+func _settle_weight(t: float) -> float:
+	if t >= SETTLE_TIME:
+		return 0.0
+	var x := t / SETTLE_TIME
+	return 1.0 - x * x * (3.0 - 2.0 * x)   # smooth: full at the transition, nothing at the end
 
 
 ## The classic body on the floor: its lowest point (soles, knees, hands, head, back) as high as air says.
@@ -816,6 +906,9 @@ func _ground() -> void:
 func play_clip(c: MocapClip, loop: bool, fit := 0.0) -> void:
 	if c == clip and c != null and loop and clip_loop:
 		return
+	# A clip still fading out under this one is let go; the final pose stage carries its share over.
+	if _prev_clip and _prev_weight > 0.0 and clip and clip_weight > 0.0:
+		_settle_pending = true
 	# The clip playing now fades out under the new one.
 	if clip and clip_weight > 0.0:
 		_prev_clip = clip

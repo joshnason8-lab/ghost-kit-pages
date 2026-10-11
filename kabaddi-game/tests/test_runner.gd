@@ -231,10 +231,11 @@ func _run() -> void:
 		add_child(ra)
 		ra.facing = Vector3(0, 0, -1)
 		ra.set_state("idle", 1000.0)
-		ra.vel = ra.facing * 4.5
 		ra.set_process(false)
+		# The legs follow how far he really moves (Athlete._track_motion), so he has to move.
 		for f in 30:
-			ra._pose(1.0 / 30.0)
+			ra.drive(ra.facing * 4.5, 1.0 / 30.0)
+			ra._process(1.0 / 30.0)
 			ra.model._process(1.0 / 30.0)
 		check(ra.model.move_weight > 0.9, "a running player is carried by the captured run (%.2f)" % ra.model.move_weight)
 		ra.queue_free()

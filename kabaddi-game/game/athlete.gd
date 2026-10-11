@@ -49,6 +49,15 @@ var _ring_color := Color(0, 0, 0, 0)
 # Ratings converted to physical numbers.
 var max_speed := 4.6
 var accel := 18.0
+# What the body on screen does, kept apart from the gameplay values above it (vel, facing): the legs follow
+# how fast he really moves over the floor, whatever moved him (his own running, a team-mate's hold, a
+# shove, the spacing that keeps players apart), and the body turns toward facing no faster than a person
+# can, quicker standing than at a sprint.
+const TURN_STILL := 900.0    # deg/s, pivoting on the spot
+const TURN_SPRINT := 420.0   # deg/s at 5 m/s
+var move_vel := Vector3.ZERO
+var _vis_yaw := INF
+var _last_pos := Vector3.INF
 var reach := 1.0
 var strength := 1.0
 var tackle := 1.0
@@ -197,16 +206,41 @@ func face_toward(p: Vector3, dt: float, rate := 8.0) -> void:
 func _process(delta: float) -> void:
 	st_t += delta
 	cooldown = maxf(0.0, cooldown - delta)
-	rotation.y = atan2(-facing.x, -facing.z)
+	_track_motion(delta)
+	rotation.y = _vis_yaw
 	_pose(delta)
 	if _ring.visible:
 		_ring.rotation.y += delta * 1.5
 
 
+## Measured ground velocity and the body's turn on screen. A move of more than a metre in one frame is a
+## placement (the start of a raid, back to the bench), not running: the body is simply put there.
+func _track_motion(delta: float) -> void:
+	var dt := maxf(delta, 0.0001)
+	var flat := Vector3.ZERO if _last_pos == Vector3.INF else Vector3(position.x - _last_pos.x, 0.0, position.z - _last_pos.z)
+	var placed := _last_pos == Vector3.INF or flat.length() > 1.0
+	_last_pos = position
+	if placed:
+		move_vel = Vector3(vel.x, 0.0, vel.z)
+	else:
+		move_vel = move_vel.lerp(flat / dt, 1.0 - exp(-dt * 30.0))
+	var target := atan2(-facing.x, -facing.z)
+	if placed or _vis_yaw == INF:
+		_vis_yaw = target
+		return
+	var cap := deg_to_rad(lerpf(TURN_STILL, TURN_SPRINT, clampf(move_vel.length() / 5.0, 0.0, 1.0))) * dt
+	_vis_yaw = wrapf(_vis_yaw + clampf(wrapf(target - _vis_yaw, -PI, PI) * (1.0 - exp(-dt * 20.0)), -cap, cap), -PI, PI)
+
+
+## The way his body faces on screen (see _track_motion).
+func body_facing() -> Vector3:
+	return Vector3(-sin(_vis_yaw), 0.0, -cos(_vis_yaw)) if _vis_yaw != INF else facing
+
+
 func _pose(delta: float) -> void:
 	var m := model
 	var k := clampf(delta * 10.0, 0.0, 1.0)
-	m.speed = Vector2(vel.x, vel.z).length()
+	m.speed = move_vel.length()
 	var want_crouch := 0.0
 	var want_lean := 0.0
 	var want_reach := 0.0
@@ -323,12 +357,13 @@ func _pose(delta: float) -> void:
 	m.ref_sig = sig_kind
 	m.ref_amt = lerpf(m.ref_amt, want_signal, clampf(delta * 9.0, 0.0, 1.0))
 	m.seated = lerpf(m.seated, want_seated, clampf(delta * 4.0, 0.0, 1.0))
-	# Which way he is moving relative to where he faces: forward, backpedalling or sideways.
-	var flat := Vector3(vel.x, 0, vel.z)
+	# Which way he is moving relative to where his body faces: forward, backpedalling or sideways.
+	var flat := move_vel
 	if flat.length() > 0.3:
 		var dir := flat.normalized()
-		var right := facing.cross(Vector3.UP).normalized()
-		m.move_fwd = lerpf(m.move_fwd, dir.dot(facing), k)
+		var fwd := body_facing()
+		var right := fwd.cross(Vector3.UP).normalized()
+		m.move_fwd = lerpf(m.move_fwd, dir.dot(fwd), k)
 		m.move_side = lerpf(m.move_side, dir.dot(right), k)
 	else:
 		m.move_fwd = lerpf(m.move_fwd, 1.0, k)

@@ -80,6 +80,14 @@ var _rest_head := []  # index -> rest position of the bone head (model space)
 var _names := []      # index -> bone name
 var _leg_bones := {}  # indices of the thighs, shins and feet: all that can touch the floor standing up
 var _hidden_head := false
+# Planted feet: a foot flat on the floor keeps its place in the world until it lifts (see _plant_feet).
+const PLANT_DOWN := 0.03     # m: heel and toe this close to the floor and the foot is planted
+const PLANT_SLIP := 0.2      # m: furthest a planted foot is held from where the motion puts it
+const STEP_LIFT := 0.05      # m: a foot let go at the slip limit lifts this high as it steps on
+var _plant := {}             # side -> [world position of the held sole point, how firmly held 0..1, which point,
+                             #          let go at the slip limit (stepping)]
+var _replant := {}           # side -> seconds before a foot let go at the slip limit may be held again
+var _plant_t := -1.0         # the motion's clock at the last frame, for the time step
 var _curl := {"l": 0.7, "r": 0.7}
 
 
@@ -538,12 +546,16 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	var target := float(h.air) / scale.y
 	var up: Vector3 = (g.get("chest", Basis()) as Basis) * (body.rest_dirs.chest as Vector3)
 	var standing := hips.y > 0.7 * float(body.leg_len) and up.y > 0.75
+	var dt := clampf(float(h._t) - _plant_t, 0.0, 0.1) if _plant_t >= 0.0 else 0.0
+	_plant_t = float(h._t)
 	hips.y += target - _lowest(_fk(g, hips), standing)
 	if target > 0.02:
+		_plant.clear()
 		return hips   # in the air: nothing to stand on
 	var fk := _fk(g, hips)
 	for s in body.soles:
 		_flatten(g, fk, s)
+	# fk's bone positions still hold after laying the feet flat (only the feet turned, read from g below).
 	var still := float(h.speed) < 1.2 and float(h.kick) + float(h.back_kick) + float(h.jump) + float(h.dubki) < 0.1
 	if standing and still:
 		fk = _fk(g, hips)
@@ -555,7 +567,92 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 			var d: float = absf(float(lows.l) - float(lows.r))
 			if d > 0.005 and d < 0.12:
 				_reach_down(g, fk, hi, d)
+				fk = _fk(g, hips)
+	# On his feet, crouched or not (lying, diving and sprawling are not): the feet are planted.
+	if up.y > 0.4 and hips.y > 0.35 * float(body.leg_len):
+		_plant_feet(g, fk, dt)
+	else:
+		_plant.clear()
 	return Vector3(hips.x, hips.y + target - _lowest(_fk(g, hips), standing), hips.z)
+
+
+## A foot on the floor stays where it is in the world while the body moves over it: the point of the sole
+## touching the floor (heel, ball or toe) is held, and the leg reaches for it (two-bone IK on thigh and shin)
+## instead of letting the motion slide it along. As the foot rolls onto another point (heel to toe), that
+## point is held where it is, so the roll stays natural. The hold is firm at once (it starts where the foot
+## touches down) and lets go over a few hundredths of a second as the foot lifts. A foot the motion would
+## carry more than PLANT_SLIP away is let go and steps on with a small lift; one suddenly far away (a player
+## placed somewhere new) is let go at once.
+func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
+	var xf := skeleton.global_transform
+	var inv := xf.affine_inverse()
+	# Heights from the lowest sole, which is where the floor ends up (the body is set down on it after
+	# this): laying a foot flat can lift the whole sole before that. The feet's turn is read from g, as
+	# fk was worked out before they were laid flat.
+	var floor_y := INF
+	for s in body.soles:
+		var fb: Basis = g.get("foot_" + s, fk[1][body.soles[s][0]])
+		for q in (body.soles[s][1] as PackedVector3Array):
+			floor_y = minf(floor_y, (fk[0][body.soles[s][0]] as Vector3).y + (fb * q).y)
+	var down := PLANT_DOWN / scale.y
+	var slip := PLANT_SLIP / scale.y
+	for s in body.soles:
+		if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+			continue
+		var bi: int = body.soles[s][0]
+		var b: Basis = g.get("foot_" + s, fk[1][bi])
+		var pts: PackedVector3Array = body.soles[s][1]
+		var ankle: Vector3 = fk[0][_bone["foot_" + s]]
+		var lo := INF
+		var lo_i := 0
+		for i in pts.size():
+			var y := (fk[0][bi] as Vector3).y - floor_y + (b * pts[i]).y
+			if y < lo:
+				lo = y
+				lo_i = i
+		var st = _plant.get(s)
+		_replant[s] = maxf(0.0, float(_replant.get(s, 0.0)) - dt)
+		if lo < down and (st != null or float(_replant[s]) <= 0.0):
+			if st == null:
+				st = [xf * ((fk[0][bi] as Vector3) + b * pts[lo_i]), 1.0, lo_i, false]
+				_plant[s] = st
+			if not st[3]:
+				st[1] = minf(1.0, float(st[1]) + dt / 0.06)
+		elif st != null:
+			st[1] = float(st[1]) - dt / 0.08
+		if st != null and st[3]:
+			st[1] = float(st[1]) - dt / 0.12   # stepping on after being let go at the slip limit
+		if st == null:
+			continue
+		if float(st[1]) <= 0.0:
+			_plant.erase(s)
+			continue
+		var held: Vector3 = (fk[0][bi] as Vector3) + b * pts[int(st[2])]
+		var at: Vector3 = inv * (st[0] as Vector3)
+		var off := Vector3(at.x - held.x, 0.0, at.z - held.z)
+		if off.length() > 3.0 * slip:
+			_plant.erase(s)
+			continue
+		if off.length() > slip:
+			# The motion carries this foot on while it stays down (a shuffle's trailing foot slides along
+			# the floor in the clip): let it go and step, rather than drag it at the limit.
+			off = off.normalized() * slip
+			st[0] = xf * (held + off)
+			if not st[3]:
+				st[3] = true
+				_replant[s] = 0.15
+		if lo_i != int(st[2]) and lo < down:
+			# Rolled onto another point of the sole: hold that one, where it is now.
+			st[0] = xf * ((fk[0][bi] as Vector3) + b * pts[lo_i] + off)
+			st[2] = lo_i
+		var hold := float(st[1])
+		if st[3]:
+			# A step, not a slide: the foot comes up at once and only then swings across.
+			hold = hold * hold * (3.0 - 2.0 * hold)
+		var goal := ankle + off * hold
+		if st[3]:
+			goal.y += STEP_LIFT / scale.y * sin(PI * sqrt(clampf(1.0 - float(st[1]), 0.0, 1.0)))
+		_ik_leg(g, fk, s, goal)
 
 
 ## Every bone's head position and orientation for the pose in g (bones not in g keep their parent's).
@@ -626,12 +723,18 @@ func _flatten(g: Dictionary, fk: Array, s: String) -> void:
 func _reach_down(g: Dictionary, fk: Array, s: String, d: float) -> void:
 	if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
 		return
+	_ik_leg(g, fk, s, (fk[0][_bone["foot_" + s]] as Vector3) - Vector3(0.0, d, 0.0))
+
+
+## Two-bone IK: turn the thigh and shin so the ankle reaches `goal`, keeping the knee bent the way it was.
+## The foot keeps its own orientation (its basis in g is absolute).
+func _ik_leg(g: Dictionary, fk: Array, s: String, goal: Vector3) -> void:
 	var hp: Vector3 = fk[0][_bone["thigh_" + s]]
 	var kp: Vector3 = fk[0][_bone["shin_" + s]]
 	var ap: Vector3 = fk[0][_bone["foot_" + s]]
 	var l1 := hp.distance_to(kp)
 	var l2 := kp.distance_to(ap)
-	var to := ap - Vector3(0.0, d, 0.0) - hp
+	var to := goal - hp
 	var dist := clampf(to.length(), absf(l1 - l2) + 0.001, l1 + l2 - 0.001)
 	var u := to.normalized()
 	var bend := (kp - hp) - u * (kp - hp).dot(u)

@@ -29,6 +29,7 @@ func _ready() -> void:
 			if m[0] == "ready":
 				a.tackle_kind = "ankle"
 			a.vel = Vector3.ZERO
+			a.move_vel = Vector3.ZERO
 			a.set_state(m[0], m[1])
 			var r := _run(a, m[1] + 0.3)
 			line += " %s %+.1f/%+.1f" % [m[0], r.x * 100, r.y * 100]
@@ -37,6 +38,7 @@ func _ready() -> void:
 			a.set_state("ready" if m[0] == "shuffle" else "idle", 1000.0)
 			var right := a.facing.cross(Vector3.UP)
 			a.vel = (right * m[2].x + a.facing * m[2].y) * m[1]
+			a.move_vel = a.vel   # on the spot here: give the legs the speed (they follow measured motion)
 			var r := _run(a, 1.5)
 			line += " %s %+.1f/%+.1f" % [m[0], r.x * 100, r.y * 100]
 			worst = maxf(worst, maxf(absf(r.x), absf(r.y)))

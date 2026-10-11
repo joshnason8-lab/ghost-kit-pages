@@ -348,7 +348,9 @@ func _begin_setup() -> void:
 		a.set_ring(Color(0, 0, 0, 0))
 		if a.on_mat and a.state != "walk":
 			a.set_state("idle")
-	raider.position = pos_in(raiding, 0.0, 1.4)
+	# He walks to the start spot through the setup (_walk_to_positions); only from far off is he put there.
+	if raider.position.distance_to(pos_in(raiding, 0.0, 1.4)) > 7.0:
+		raider.position = pos_in(raiding, 0.0, 1.4)
 	raider.facing = Vector3(0, 0, -side(raiding))
 	raider.set_state("raid")
 	var tm: Dictionary = teams[raiding]
@@ -551,6 +553,8 @@ func _tick_raid(dt: float) -> void:
 	_tick_bystanders(dt)
 	for h in holders:
 		_tire(h, 0.02 * dt)
+		# A new holder closes in to arm's length over a few frames rather than appearing there.
+		h.hold_offset = h.hold_offset.move_toward(h.hold_offset.normalized() * 0.55, 3.0 * dt)
 		h.position = raider.position + h.hold_offset
 		h.vel = raider.vel
 		h.face_toward(raider.position, dt, 20.0)
@@ -1035,7 +1039,11 @@ func _raider_dodge(dir: Vector3) -> void:
 
 func _release(h: Athlete, knocked: bool) -> void:
 	raid.holders.erase(h)
-	h.position = raider.position + h.hold_offset * 1.8
+	# Thrown off: he staggers back from the raider over a few frames (rather than appearing further off),
+	# about as far as he used to be put, and needs a moment before he can grab on again.
+	var away := h.hold_offset.normalized() if h.hold_offset.length() > 0.01 else -h.facing
+	h.vel = Vector3(away.x, 0.0, away.z) * 4.0
+	h.cooldown = maxf(h.cooldown, 0.15)
 	if knocked:
 		h.set_state("recover", 1.1)
 	else:
@@ -1860,7 +1868,8 @@ func _check_contacts(defs: Array) -> void:
 				_attach(d)
 			else:
 				d.set_state("recover", 1.0)
-		elif raid.holders.size() > 0 and raid.holders.size() < 4 and d.state in ["ready", "idle"] and dist < 0.85 and d != controlled:
+		elif raid.holders.size() > 0 and raid.holders.size() < 4 and d.state in ["ready", "idle"] and dist < 0.85 and d != controlled \
+				and d.cooldown <= 0.0:
 			piling.append(d)
 		elif raid.holders.size() > 0 and d == controlled and dist < 0.75 and d.state != "recover":
 			d.tackle_kind = "thigh"
@@ -1906,8 +1915,8 @@ func _attach(d: Athlete, block := false) -> void:
 	var off := d.position - raider.position
 	off.y = 0
 	if off.length() < 0.05:
-		off = -raider.facing
-	d.hold_offset = off.normalized() * 0.55
+		off = -raider.facing * 0.55
+	d.hold_offset = off   # where he is; closes in to the hold (see _tick_raid)
 	d.set_state("holding")
 	raider.set_state("held")
 	Sfx.play("thud", -2.0)
