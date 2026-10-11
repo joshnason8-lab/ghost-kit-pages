@@ -284,8 +284,10 @@ Still open:
 ```sh
 godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json out.json] [--log]
 xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie catch.avi \
-    --fixed-fps 30 res://tests/tackle_check.tscn -- view catch
+    --fixed-fps 30 res://tests/tackle_check.tscn -- view catch [plain]
 ```
+
+`view` records one scenario from the side with the debug overlay on; `plain` leaves the overlay off.
 
 Each scenario is a scripted raid in the match's lab mode (`config.lab`). The raider moves as told, defenders go
 in when told, and team-mates help once he is held. A chance (hold, escape, piling on) can be forced one way,

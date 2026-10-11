@@ -19,10 +19,11 @@ extends Node
 ## "touch" (a hand touch and home: the points given once, the score up by exactly them) and "flurry" (a touch,
 ## the touched defender grabbing straight back, another diving in, help, a takedown, all within a second or
 ## two: every event in order, the raid scored once).
-## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording:
+## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording ("plain" leaves
+## the debug overlay off):
 ##   godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json FILE] [--log]
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie out.avi \
-##       --fixed-fps 30 res://tests/tackle_check.tscn -- view catch
+##       --fixed-fps 30 res://tests/tackle_check.tscn -- view catch [plain]
 
 const SCENARIOS := ["miss", "catch", "escape", "whiff", "thigh", "waist", "chain", "join", "committed", "crowd", "touch", "flurry"]
 const JUMP_SPEED := 10.0        # m/s in one frame
@@ -47,6 +48,7 @@ var _chosen := []
 var _json := ""
 var _log := false
 var _view := false
+var _plain := false
 var _results := {}
 var _cam: Camera3D
 
@@ -58,6 +60,8 @@ func _ready() -> void:
 			_chosen.append(args[i])
 		elif args[i] == "view":
 			_view = true
+		elif args[i] == "plain":
+			_plain = true
 		elif args[i] == "--json" and i + 1 < args.size():
 			_json = args[i + 1]
 		elif args[i] == "--log":
@@ -87,7 +91,7 @@ func _run(sc: String) -> Dictionary:
 	var m: Node = load("res://game/match.gd").new()
 	m.config = {"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "autoplay": true,
 		"autoplay_no_report": true, "length": 0, "difficulty": 1, "players": [7, styles.size()], "style": styles[0],
-		"first_raider": 0, "lab": true, "raid_rule": 0, "passive": bool(setup.get("passive", false)), "debug_draw": _view}
+		"first_raider": 0, "lab": true, "raid_rule": 0, "passive": bool(setup.get("passive", false)), "debug_draw": _view and not _plain}
 	add_child(m)
 	m.rng.seed = 11
 	while m.phase != "raid":
