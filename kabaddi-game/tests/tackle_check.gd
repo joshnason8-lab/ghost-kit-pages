@@ -1,22 +1,47 @@
 extends Node
-## Tackle scenarios: one raider against one defender in the match's lab mode (scripted, the same every run),
-## measuring whether a hold is real contact and stays real:
-##   - contact gap: how far the holder's hands are from the raider's lower leg when the hold is given;
-##   - grip error: while he holds, how far his hands are from the leg he holds (median, 90th percentile, worst);
-##   - holder jumps: the holder moving faster than any body can in one frame while he holds;
-##   - overlap: the two bodies' middles closer than two people can be;
-##   - what happened: each player's states over time, the messages put up, how the raid ended.
-## Scenarios (as in the realism plan): "miss" (an ankle dive whose grip fails), "catch" (an ankle hold that
-## brings the raider down), "escape" (a raider jumping out of an ankle hold), "whiff" (a dive from too far:
-## no hand reaches him, so no hold may be given). --json writes the numbers; "view SCENARIO" plays one on
-## screen, from the side, for recording:
+## Tackle scenarios in the match's lab mode (a scripted raid, the same every run), measuring whether holds
+## are real contact and stay real:
+##   - contact gap: how far the diver's hand was from the part he grabbed when contact was made (the game's own
+##     check), and the first frame's grip (his hands, after reaching, from the part he holds);
+##   - grip error: while they hold, how far the holders' hands are from what they hold (the lower leg for an
+##     ankle hold, the thigh for a thigh hold, the raider's middle for a waist hold or a block), every holder,
+##     every frame: median, 90th percentile, worst;
+##   - holder jumps: a holder moving faster than any body can in one frame;
+##   - overlap: a holder's middle closer to the raider's than two people can be; and holders' middles to each
+##     other, when there are several;
+##   - what happened: each player's states over time, the messages put up, the gameplay events, the end.
+## Scenarios (after the realism plan's list): "miss" (an ankle dive whose grip fails), "catch" (an ankle hold
+## that brings the raider down), "escape" (a lion jump out of an ankle hold), "whiff" (a dive from too far: no
+## hand reaches him, so no hold may be given), "thigh" and "waist" (those holds, bringing him down), "chain"
+## (a hold, then team-mates coming to help, each to a hold of his own), "join" (the raider going down as a
+## team-mate runs in to help: one takedown, no hold after it), "committed" (a holder told to tackle again:
+## refused), "crowd" (three team-mates helping at once: no two on the same hold, nobody inside anybody),
+## "touch" (a hand touch and home: the points given once, the score up by exactly them) and "flurry" (a touch,
+## the touched defender grabbing straight back, another diving in, help, a takedown, all within a second or
+## two: every event in order, the raid scored once).
+## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording:
 ##   godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json FILE] [--log]
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie out.avi \
 ##       --fixed-fps 30 res://tests/tackle_check.tscn -- view catch
 
-const SCENARIOS := ["miss", "catch", "escape", "whiff"]
+const SCENARIOS := ["miss", "catch", "escape", "whiff", "thigh", "waist", "chain", "join", "committed", "crowd", "touch", "flurry"]
 const JUMP_SPEED := 10.0        # m/s in one frame
-const OVERLAP := 0.25           # m between the two bodies' middles
+const BODY_R := 0.12            # m: the raider's middle is this thick, for measuring holds round it
+# Per scenario: defenders (style each; the first dives), where the first starts (metres in front), helpers.
+const SETUP := {
+	"miss": {"styles": ["ankle"], "hold": false},
+	"catch": {"styles": ["ankle"]},
+	"escape": {"styles": ["ankle"]},
+	"whiff": {"styles": ["ankle"]},
+	"thigh": {"styles": ["thigh"]},
+	"waist": {"styles": ["waist"]},
+	"chain": {"styles": ["ankle", "thigh", "waist"], "help": true},
+	"join": {"styles": ["ankle", "thigh"], "help": true},
+	"committed": {"styles": ["ankle"]},
+	"crowd": {"styles": ["ankle", "thigh", "thigh", "waist"], "help": true},
+	"touch": {"styles": ["thigh", "thigh"], "touch": true, "no_dive": true, "passive": true},
+	"flurry": {"styles": ["thigh", "ankle", "waist"], "touch": true, "help": true},
+}
 
 var _chosen := []
 var _json := ""
@@ -56,39 +81,68 @@ func _ready() -> void:
 
 
 func _run(sc: String) -> Dictionary:
+	var setup: Dictionary = SETUP[sc]
+	var styles: Array = setup.styles
+	seed(11)   # the bodies' own small variations (idle sway, which clip) come from the global generator
 	var m: Node = load("res://game/match.gd").new()
 	m.config = {"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "autoplay": true,
-		"autoplay_no_report": true, "length": 0, "difficulty": 1, "players": [7, 1], "style": "ankle",
-		"first_raider": 0, "lab": true, "raid_rule": 0}
+		"autoplay_no_report": true, "length": 0, "difficulty": 1, "players": [7, styles.size()], "style": styles[0],
+		"first_raider": 0, "lab": true, "raid_rule": 0, "passive": bool(setup.get("passive", false))}
 	add_child(m)
 	m.rng.seed = 11
 	while m.phase != "raid":
 		await get_tree().process_frame
 	var r: Athlete = m.raider
-	var d: Athlete = m.defenders()[0]
+	var defs: Array = m.defenders()
+	var d: Athlete = defs[0]
+	for i in defs.size():
+		var a: Athlete = defs[i]
+		a.style = String(styles[i])
+		a.tackle_kind = ""
+		a.dmoves[a.style] = 90
 	var home := Vector3(0, 0, m.side(m.raiding))
 	var into := -home
-	# Set the scene: the raider working the cover past the baulk line, the defender in front of him.
+	# Set the scene: the raider working the cover past the baulk line, the diver in front of him, any
+	# team-mates spread across the line behind.
 	r.position = m.pos_in(1, 0.0, 2.6 if sc == "whiff" else 3.9)
 	r.facing = into
-	d.position = m.pos_in(1, 0.3, 5.2)
+	# The diver close enough for his dive to reach the part it goes for (a waist dive has to get in closer).
+	d.position = m.pos_in(1, 0.0 if styles.size() > 1 else 0.3, 3.9 + {"ankle": 1.6, "thigh": 1.2, "waist": 1.1}.get(d.style, 1.3))
 	d.facing = -into
+	var touched_one: Athlete = null
+	if bool(setup.get("touch", false)):
+		# The first defender stands within the raider's hand's reach, to be touched; the diver is the next.
+		touched_one = d
+		d.position = m.pos_in(1, 0.6, 3.9 + 0.95)
+		if defs.size() > 1:
+			d = defs[1]
+	for i in range(1, defs.size()):
+		var a: Athlete = defs[i]
+		if a == d and touched_one != null:
+			a.position = m.pos_in(1, -0.3, 3.9 + 1.6)
+		else:
+			a.position = m.pos_in(1, [-2.2, 2.4, -0.6][(i - 1) % 3], [5.6, 5.4, 6.1][(i - 1) % 3])
+		a.facing = -into
+	var score0: Array = [int(m.teams[0].score), int(m.teams[1].score)]
 	# lab_move is a share of his top speed, as a stick would give: about 0.8 m/s sideways.
 	m.lab_move = Vector3(0.2, 0, 0)
-	if sc != "whiff":
-		m.lab_force = {"hold": sc != "miss"}
-	else:
-		m.lab_force = {"hold": true}   # a hold would be given if there were contact: there must not be
+	m.lab_force = {"hold": bool(setup.get("hold", true))}
+	var touch_t := 0.4 if touched_one != null else -1.0
+	var touched := false
 	if _view:
 		_stage(m)
-	var out := {"scenario": sc, "attached": false, "attach_t": -1.0, "contact_gap": -1.0, "centre_gap": -1.0,
-		"grip": [], "jumps": 0, "max_holder_speed": 0.0, "min_overlap": INF, "states_r": [], "states_d": [],
-		"shown": [], "end": "", "t_end": -1.0}
+	var out := {"scenario": sc, "attached": false, "attach_t": -1.0, "contact_gap": -1.0, "first_grip": -1.0,
+		"grip": [], "jumps": 0, "max_holder_speed": 0.0, "min_overlap": INF, "min_holder_gap": INF, "states_r": [],
+		"states_d": [], "shown": [], "end": "", "t_end": -1.0, "refused": true}
 	var t := 0.0
 	var dived := false
 	var escaped := false
+	var forced := false
+	var retried := false
 	var ended_t := -1.0
-	var last_d := d.position
+	var last := {}
+	for a in defs:
+		last[a] = a.position
 	var last_r_state := ""
 	var last_d_state := ""
 	var shown_n: int = m.hud.shown.size()
@@ -98,21 +152,39 @@ func _run(sc: String) -> Dictionary:
 		var dt := get_process_delta_time()
 		dt = dt if dt > 0.0005 else 1.0 / 30.0
 		# The script.
-		if not dived and t >= 0.5:
+		if touch_t >= 0.0 and not touched and t >= touch_t:
+			touched = true
+			m._raider_touch(false)
+		if sc == "touch" and touched and t > 0.9:
+			m.lab_move = home * 1.0
+		if not dived and t >= 0.5 and not bool(setup.get("no_dive", false)):
 			dived = true
-			m._defender_tackle(d, "ankle")
+			m._defender_tackle(d, d.style)
 		var holding: bool = m.raid.get("holders", []).has(d)
 		if holding and not out.attached:
 			out.attached = true
 			out.attach_t = snappedf(t, 0.01)
 			m.lab_move = home * 0.5
+			if bool(setup.get("help", false)):
+				m.lab_force["help"] = true
+				m.lab_force["pile"] = true   # a helper within reach takes hold at once
 		if sc == "escape" and holding and not escaped and t > float(out.attach_t) + 0.9:
 			escaped = true
 			m.lab_force["escape"] = true
 			m._raider_escape("lion", home)
 			m.lab_move = home * 1.0
+		if sc == "join" and holding and not forced and t > float(out.attach_t) + 0.35:
+			forced = true
+			m.raid.progress = 1.0   # he goes down now, as the team-mate is still on his way
+		if sc == "committed" and holding and not retried and t > float(out.attach_t) + 0.3:
+			retried = true
+			var n_before: int = m.event_log.size()
+			m._defender_tackle(d, "waist")
+			out.refused = m.event_log.size() == n_before and d.state == "holding"
 		if sc in ["miss", "whiff"] and dived and t > 1.6:
 			m.lab_move = home * 1.0
+		if sc == "touch" and t > 6.0 and m.phase == "raid":
+			break
 		await get_tree().process_frame
 		t += dt
 		if _view:
@@ -127,25 +199,31 @@ func _run(sc: String) -> Dictionary:
 		while shown_n < m.hud.shown.size():
 			out.shown.append([snappedf(t, 0.01), String(m.hud.shown[shown_n])])
 			shown_n += 1
-		var step := Vector2(d.position.x - last_d.x, d.position.z - last_d.z).length() / dt
-		last_d = d.position
-		holding = m.raid.get("holders", []).has(d)
-		if holding and not placed:
-			out.max_holder_speed = maxf(out.max_holder_speed, step)
-			if step > JUMP_SPEED:
-				out.jumps += 1
+		var holders: Array = m.raid.get("holders", []).duplicate()
+		if m.phase == "post":
+			holders = defs.filter(func(a): return a.state == "holding")
+		for a in defs:
+			var step := Vector2(a.position.x - last[a].x, a.position.z - last[a].z).length() / dt
+			last[a] = a.position
+			if holders.has(a) and not placed:
+				out.max_holder_speed = maxf(out.max_holder_speed, step)
+				if step > JUMP_SPEED:
+					out.jumps += 1
 		placed = false
-		if holding:
-			var e := _grip(d, r)
-			if float(out.contact_gap) < 0.0:
-				out.contact_gap = snappedf(e.y, 0.001)
-				out.centre_gap = snappedf(Vector2(d.position.x - r.position.x, d.position.z - r.position.z).length(), 0.01)
-			out.grip.append(e.x)
-			var w1: Vector3 = d.model.anchor("waist")
+		for a in holders:
+			var e := _grip(a, r)
+			if a == d and float(out.first_grip) < 0.0:
+				out.first_grip = snappedf(e, 0.001)
+			out.grip.append(e)
+			var w1: Vector3 = a.model.anchor("waist")
 			var w2: Vector3 = r.model.anchor("waist")
 			out.min_overlap = minf(out.min_overlap, Vector2(w1.x - w2.x, w1.z - w2.z).length())
+			for b in holders:
+				if b != a:
+					var w3: Vector3 = b.model.anchor("waist")
+					out.min_holder_gap = minf(out.min_holder_gap, Vector2(w1.x - w3.x, w1.z - w3.z).length())
 			if _log:
-				print("%5.2f %s grip %.3f  d %s r %s" % [t, sc, e.x, d.state, r.state])
+				print("%5.2f %s %s grip %.3f  %s r %s" % [t, sc, a.style, e, a.state, r.state])
 		if m.phase != "raid" and ended_t < 0.0:
 			ended_t = t
 			out.t_end = snappedf(t, 0.01)
@@ -156,47 +234,109 @@ func _run(sc: String) -> Dictionary:
 		if ended_t < 0.0 and sc in ["miss", "whiff"] and t > 9.0:
 			break
 	out.events = []
+	out.slots = []
+	out.in_order = true
+	var last_n := 0
+	var after_down := false
+	out.hold_after_takedown = 0
 	for e in m.event_log.slice(ev0):
-		out.events.append(String(e[2]))
+		var k := String(e[2])
+		out.events.append(k)
+		var info: Dictionary = e[3]
+		if int(info.get("n", 0)) <= last_n:
+			out.in_order = false
+		last_n = int(info.get("n", 0))
+		# The hand's distance from the part it grabbed, as the hold was given (the game's own contact check).
+		if k == "tackle_contact" and float(out.contact_gap) < 0.0:
+			out.contact_gap = snappedf(float(info.get("gap", -1.0)), 0.001)
+		if k == "hold":
+			out.slots.append(String(info.get("slot", info.get("part", ""))))
+			if after_down:
+				out.hold_after_takedown += 1
+		if k == "takedown":
+			after_down = true
 	var g: Array = out.grip
 	out.grip_median = snappedf(_pct(g, 50), 0.001)
 	out.grip_p90 = snappedf(_pct(g, 90), 0.001)
 	out.grip_max = snappedf(_pct(g, 100), 0.001)
 	out.hold_frames = g.size()
 	out.erase("grip")
-	if out.min_overlap == INF:
-		out.min_overlap = -1.0
-	out.min_overlap = snappedf(out.min_overlap, 0.01)
+	for k in ["min_overlap", "min_holder_gap"]:
+		out[k] = -1.0 if out[k] == INF else snappedf(out[k], 0.01)
 	out.max_holder_speed = snappedf(out.max_holder_speed, 0.1)
-	# What each scenario must do.
-	# One hold, given once; a takedown only for a tackle; nothing held after a miss.
+	# What each scenario must do: holds given once each, on different parts of him; one takedown, and only
+	# for a tackle; nothing held after a miss or after the takedown.
 	var holds: int = out.events.count("hold")
+	var downs: int = out.events.count("takedown")
+	# The score moved once, by exactly what the raid gave (plus an all out's two).
+	out.scored_once = true
+	if not m.raid_log.is_empty() and out.events.count("raid_end") == 1:
+		var rl: Dictionary = m.raid_log[-1]
+		var atk_gain: int = int(m.teams[0].score) - int(score0[0])
+		var def_gain: int = int(m.teams[1].score) - int(score0[1])
+		var allout := 2 if m.hud.shown.any(func(x): return String(x) == tr("EV_ALL_OUT")) else 0
+		out.score_gain = [atk_gain, def_gain]
+		out.raid_pts = [int(rl.raid_pts), int(rl.def_pts)]
+		out.scored_once = atk_gain - int(rl.raid_pts) in [0, allout] and def_gain - int(rl.def_pts) in [0, allout]
+	elif out.events.count("raid_end") > 1:
+		out.scored_once = false
+	var distinct := true
+	for s in out.slots:
+		if out.slots.count(s) > 1:
+			distinct = false
 	match sc:
-		"catch":
-			out.ok = out.attached and out.end == "tackle" and holds == 1 and out.events.count("takedown") == 1
+		"catch", "thigh", "waist":
+			out.ok = out.attached and out.end == "tackle" and holds == 1 and downs == 1
 		"escape":
-			out.ok = out.attached and out.end == "return" and holds == 1 and out.events.count("release") == 1 and out.events.count("escape") == 1 \
-				and out.events.count("takedown") == 0
+			out.ok = out.attached and out.end == "return" and holds == 1 and out.events.count("release") == 1 \
+				and out.events.count("escape") == 1 and downs == 0
 		"miss", "whiff":
-			out.ok = not out.attached and holds == 0 and out.events.count("takedown") == 0
+			out.ok = not out.attached and holds == 0 and downs == 0
+		"chain":
+			out.ok = out.attached and holds >= 2 and distinct and downs == 1 and out.end == "tackle"
+		"join":
+			out.ok = out.attached and downs == 1 and out.hold_after_takedown == 0 and out.end == "tackle"
+		"committed":
+			out.ok = out.attached and out.refused and out.events.count("tackle_attempt") == 1
+		"crowd":
+			out.ok = out.attached and holds >= 3 and distinct and downs == 1 and float(out.min_holder_gap) > 0.25
+		"touch":
+			out.ok = out.events.count("touch") == 1 and out.events.count("raid_end") == 1 and out.end == "return" and holds == 0 \
+				and out.scored_once and out.in_order
+		"flurry":
+			out.ok = out.events.count("touch") == 1 and holds >= 1 and downs == 1 and out.events.count("raid_end") == 1 \
+				and out.end == "tackle" and out.scored_once and out.in_order and out.hold_after_takedown == 0
 	m.queue_free()
 	await get_tree().process_frame
 	return out
 
 
-## Grip error (x): how far, on average, the holder's two hands are from the nearest of the raider's lower
-## legs (ankle to mid shin). Contact gap (y): the nearer hand's distance.
-func _grip(d: Athlete, r: Athlete) -> Vector2:
-	var best := Vector2(INF, INF)
-	for s in ["l", "r"]:
-		var a: Vector3 = r.model.anchor("ankle_" + s)
-		var b: Vector3 = r.model.anchor("shin_" + s)
-		var e1 := _seg_dist(d.model.anchor("hand_l"), a, b)
-		var e2 := _seg_dist(d.model.anchor("hand_r"), a, b)
-		var v := Vector2((e1 + e2) * 0.5, minf(e1, e2))
-		if v.x < best.x:
-			best = v
-	return best
+## How far, on average, a holder's two hands are from what he holds: the lower leg (ankle to mid shin) for an
+## ankle hold, the thigh (mid thigh to above the knee) for a thigh hold, the raider's middle for the rest. The
+## nearer leg counts.
+func _grip(d: Athlete, r: Athlete) -> float:
+	var k: String = d.get("hold_style") if d.get("hold_style") else ""
+	if k == "":
+		k = d.kind()
+	k = {"chain": "thigh", "block": "waist"}.get(k, k)
+	var hands: Array = [d.model.anchor("hand_l"), d.model.anchor("hand_r")]
+	if k in ["ankle", "thigh"]:
+		var best := INF
+		for s in ["l", "r"]:
+			var a: Vector3
+			var b: Vector3
+			if k == "ankle":
+				a = r.model.anchor("ankle_" + s)
+				b = r.model.anchor("shin_" + s)
+			else:
+				a = r.model.anchor("thigh_" + s)
+				b = r.model.anchor("knee_" + s)
+				if b == r.model.rig.global_position:   # a body that knows no "knee"
+					b = a.lerp(r.model.anchor("shin_" + s), 0.6)
+			best = minf(best, (_seg_dist(hands[0], a, b) + _seg_dist(hands[1], a, b)) * 0.5)
+		return best
+	var w: Vector3 = r.model.anchor("waist")
+	return (maxf(0.0, (hands[0] as Vector3).distance_to(w) - BODY_R) + maxf(0.0, (hands[1] as Vector3).distance_to(w) - BODY_R)) * 0.5
 
 
 func _seg_dist(p: Vector3, a: Vector3, b: Vector3) -> float:
@@ -215,16 +355,17 @@ func _pct(v: Array, q: float) -> float:
 
 func _print(sc: String, r: Dictionary) -> void:
 	print("== %s  %s" % [sc, "as expected" if r.ok else "NOT AS EXPECTED"])
-	for k in ["attached", "attach_t", "contact_gap", "centre_gap", "hold_frames", "grip_median", "grip_p90", "grip_max",
-			"jumps", "max_holder_speed", "min_overlap", "end", "t_end"]:
-		print("  %-20s %s" % [k, str(r[k])])
+	for k in ["attached", "attach_t", "contact_gap", "first_grip", "hold_frames", "grip_median", "grip_p90", "grip_max",
+			"jumps", "max_holder_speed", "min_overlap", "min_holder_gap", "slots", "end", "t_end", "in_order", "scored_once",
+			"score_gain", "raid_pts"]:
+		print("  %-20s %s" % [k, str(r.get(k, "-"))])
 	print("  raider   %s" % [str(r.states_r)])
 	print("  defender %s" % [str(r.states_d)])
 	print("  shown    %s" % [str(r.shown)])
 	print("  events   %s" % [str(r.events)])
 
 
-## Keep both players in view, from the side.
+## Keep the raider and the first defender in view, from the side.
 func _follow(r: Athlete, d: Athlete, dt: float) -> void:
 	var mid := (r.position + d.position) * 0.5
 	var at := _cam.position - Vector3(5.2, 1.6, 0.0)

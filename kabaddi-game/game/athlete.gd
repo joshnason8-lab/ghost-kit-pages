@@ -17,7 +17,9 @@ var st_t := 0.0
 var st_len := 0.0
 var cooldown := 0.0
 var reach_t := 0.0          # a dive has landed and his arms are still out: seconds he can still grip
-var fall_kind := ""         # how a tackled raider goes down ("trip": caught by the ankle)
+var hands_prev: Array = []  # a diving defender's hands last frame (world), for the contact check
+var fall_kind := ""         # how a tackled raider goes down ("trip": caught by a leg; "takedown")
+var hold_style := ""        # how he is holding the raider (Grapple: "ankle", "thigh", "waist", "block")
 var touched := false
 var hold_offset := Vector3.ZERO
 var dive_dir := Vector3.ZERO
@@ -130,6 +132,8 @@ func ground_pos() -> Vector3:
 
 
 func set_state(s: String, length := 0.0) -> void:
+	if s != "holding":
+		hold_style = ""
 	state = s
 	st_t = 0.0
 	st_len = length
@@ -143,6 +147,11 @@ func set_state(s: String, length := 0.0) -> void:
 				variant = "right" if dive_dir.dot(facing.cross(Vector3.UP)) > 0.0 else "left"
 			"dive":
 				variant = kind()
+				if variant == "ankle":
+					# The only captured dive is a flying tackle at thigh height; an ankle dive goes in low, arms
+					# out along the floor, as the hand-made dive does.
+					model.play_state("", length)
+					return
 			"fallen":
 				variant = fall_kind
 		model.play_state(s, length, variant)
@@ -320,13 +329,27 @@ func _pose(delta: float) -> void:
 		"held":
 			want_struggle = 1.0
 		"holding":
-			# An ankle hold is made lying on the floor, arms out to the leg (they reach it: RiggedBody); the
-			# other holds are made on his feet, arms round the raider.
-			if kind() == "ankle":
-				want_dive = 1.0
-			else:
-				want_dive = 0.55
-				want_hold = 1.0
+			# Each hold drawn its own way (Grapple), the arms reaching the rest of the way (RiggedBody): an ankle
+			# hold lying on the floor, arms out; a thigh hold down low, bent over the leg; round the waist bent
+			# into his back; a block upright, chest to chest.
+			match hold_style:
+				"ankle":
+					want_dive = 1.0
+				"thigh":
+					want_dive = 0.72
+					want_crouch = 1.0
+					want_hold = 1.0
+				"waist":
+					want_dive = 0.38
+					want_crouch = 0.7
+					want_hold = 1.0
+				"block":
+					want_dive = 0.22
+					want_crouch = 0.75
+					want_hold = 1.0
+				_:
+					want_dive = 0.55
+					want_hold = 1.0
 		"signal":
 			want_signal = 1.0
 		"celebrate":

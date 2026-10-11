@@ -35,7 +35,7 @@ Measured with the ankle dive scenarios below, before (0.7.5) and after:
 
 | | Before | After |
 |---|---|---|
-| Hand to leg when the hold is given ("contact gap") | 0.66-0.74 m | 0.05-0.12 m |
+| When the hold is given | the two middles within 0.9 m; the nearer hand 0.66-0.74 m from the leg | a hand within 0.3 m of the leg; 0.12 m after the first frame's reach |
 | Hands to the held leg while holding, median | 1.01-1.23 m | 0.03-0.04 m |
 | ... 90th percentile | 1.17-1.27 m | 0.04-0.05 m |
 | ... worst frame | 1.30 m | 0.12 m |
@@ -89,7 +89,10 @@ Kept as is, on purpose: the hold chances, the struggle and its progress bar, the
 every other tackle (thigh, waist, block, dash, piling on, chain), which still go by distance and are drawn
 the old way. Those are milestone C.
 
-**Gameplay.** `tests/ai_bench.tscn -- 4 1`, AI matches at normal difficulty: being measured.
+**Gameplay.** `tests/ai_bench.tscn -- 4 1`, AI matches at normal difficulty: 70% of raids successful, 18%
+tackled, 8% empty (391 raids, 12 matches), against 72%, 19% and 6% before (267 raids, 8 matches): within
+the noise of a few matches. Help still arrives about when it did in the footage (0.7-0.8 s after the first
+hold, footage 0.65-1.15 s).
 
 **Checks.** `tests/tackle_check.tscn`: all four scenarios as expected. `tests/test_runner.tscn` passes
 (182 checks; the lion jump check now lays the diver's hands at the raider's feet, as contact needs).
@@ -105,17 +108,120 @@ Still open after milestone B:
 - The dive aims at the raider's middle and leads him a little, not at the leg it will grab.
 - A lying holder is a body on the floor that team-mates running in to help can pass through.
 
+## Milestone C: every hold, on its own part of him
+
+Measured with the scenarios below on milestone B's code (before) and now (after):
+
+| | Before | After |
+|---|---|---|
+| Thigh hold: hands to the thigh, median / 90th percentile | 0.91 / 0.96 m | 0.07 / 0.09 m |
+| Waist hold: hands to his middle, median / 90th percentile | 0.41 / 0.46 m | 0.01 / 0.03 m |
+| When a thigh or waist hold is given | the two middles within 0.75-0.8 m | a hand within 0.3 m of the thigh or his middle |
+| Team-mates helping: hands to what they hold, 90th percentile | 0.65 m | 0.16 m |
+| Two holders on the same part of him | possible: every helper pinned 0.55 m from his middle | never: one defender a part |
+| Closest a holder's middle comes to the raider's | 0.48 m (arms round thin air) | 0.30 m (bodies touching, not inside one another) |
+| Closest two holders' middles come | 0.40 m | 0.33-0.43 m |
+| Four defenders going in together | (the dive at the ankles missed) | four holds on four parts, one takedown |
+| "Chain tackle!" for one hold with two helpers | twice | once |
+
+What changed:
+
+- **Slots** (`Grapple.SLOTS`): a hold is on a part of the raider, one defender each. There is a leg each
+  (`leg_l`, `leg_r`), his middle from behind (`back`) and from the front (`front`). Four slots, the same
+  limit of four holders as before.
+- **Hold styles**, drawn and reached for differently (`Grapple.HANDS`, `Athlete._pose`):
+  - **ankle**: lying on the floor, hands round the ankle and lower shin;
+  - **thigh**: bent right down at his hip, arms round the thigh above the knee;
+  - **waist**: bent into his back or side, arms round his middle;
+  - **block**: chest to chest, arms round him.
+
+  The tackle sets the style, and the slot can adjust it: a helper on a leg makes a thigh hold, and one on
+  the raider's front makes a block. The foot of a held leg is kept where it was caught, for thigh holds as
+  for ankle holds.
+- **Contact for every dive** (`Grapple.contact`): thigh dives need a hand on the thigh, and waist dives a
+  hand on his middle, like ankle dives on the lower leg. Dives now aim at the part they go for
+  (`_aim_point`), the nearer ankle or thigh or his middle, rather than his centre. The dash is a shoulder
+  charge, not a hold, and still goes by distance.
+- **How far each dive reaches**, measured from a standing raider (`tests/tackle_reach.tscn`, the furthest start
+  from which the dive still makes contact). Two things came out of it:
+  - Every dive used the one captured dive, a flying tackle at thigh height. Its hands never got below
+    0.6 m, so an ankle dive could not reach a standing raider's ankles at all. Ankle dives now go in low with
+    the hand-made dive, made flatter and with the arms angled down along the floor (`HumanModel._animate`).
+  - With hands checked against the thigh or his middle, thigh and waist dives reached further than they used
+    to: 2.1 m and more for a thigh dive against 1.6 m. A dive now also needs the two bodies within its stretch
+    (thigh 0.75 m, waist and block 0.7 m, middle to middle), which brings them back to about the old reach.
+    An ankle dive's stretch is a body's length (1.25 m): its hands are a whole body out along the floor.
+- **Contact along the hand's path** since the last frame, not just where it is: at 30 frames a second a
+  diving hand moves 15 cm a frame and could pass through a leg unseen.
+- **Helpers** (`Grapple.claim`, `approach`, `can_reach`, `_ai_defender`, `_check_contacts`):
+  - Each team-mate coming to help claims a free slot and runs to that slot's side of the raider, so they no
+    longer all run at his middle. A leg is taken from its side, his middle from behind or in front.
+  - He takes hold once the slot is within his reach, facing it, at the same rate as before.
+  - With every slot held or claimed, he blocks the way home instead.
+  - A counter-grab (a defender the raider touched) and a chain closing on him take the free slot nearest each
+    of them. A defender with no slot left does not hold.
+- **Holders' bodies**: each is placed so his shoulders are within arm's reach of his slot (an arm's length
+  off it on the floor, closer when the slot is lower than his shoulders), coming at it the way he is. A
+  holder's middle stays at least 0.34 m from the raider's and 0.42 m from another holder's.
+- **How he goes down**: tripped (`fall_trip`) if anyone has a leg, taken down (`fall_takedown`) otherwise.
+  Holders on the floor get up before they celebrate; standing holders celebrate when they let go.
+- **Messages**: the first hold's own name, then "Chain tackle!" once when help first arrives, then nothing
+  more for the same hold. A hold's name is the hold actually made: a defender grabbing back at the raider who
+  touched him, on his thigh, used to be announced as "Ankle hold!".
+
+**Gameplay.** `tests/ai_bench.tscn -- 4 1`, 12 AI matches at normal difficulty (391 raids): 69% of raids
+successful, 17% tackled, 8% empty, 6% out of bounds, against 71%, 17%, 6% and 6% for 0.7.5. Per 100 raids
+there are now 24 ankle holds (12 in 0.7.5), 11 thigh holds (8.5) and 8 waist holds (12.5). Help still
+arrives 0.6-0.8 s after the first hold (footage 0.65-1.15 s). The first try at the dives' stretch (0.75 m for a
+thigh dive, 0.7 m for waist) halved thigh holds and tackles fell to 14%; the values above put them back.
+
+Kept as is: the chances (hold, pile-on rate, escapes), the struggle and what each hold kind adds to it, and
+four holders at most.
+
+**Checks.** `tests/tackle_check.tscn`: all twelve scenarios as expected; `tests/test_runner.tscn` passes (183
+checks: the waist-hold-in-the-air check now lays the diver's hands at the raider's middle first, as contact
+needs); `tests/tackle_reach.tscn` gives each dive's reach.
+
+Still open after milestone C:
+
+- A holder pushed aside by another loses some reach: the team-mates' grip is looser than the first
+  holder's (90th percentile 0.16 m against 0.05-0.09 m).
+- Helpers still run in as fast as they can from wherever they are. Choosing who helps, who blocks the way
+  home and who stays in shape is milestone D.
+
 ## Measuring
 
 ```sh
-godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [miss catch escape whiff] [--json out.json] [--log]
+godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json out.json] [--log]
 xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie catch.avi \
     --fixed-fps 30 res://tests/tackle_check.tscn -- view catch
 ```
 
-The scenarios: **miss** (an ankle dive that reaches the leg but whose grip fails), **catch** (an ankle hold
-that brings the raider down), **escape** (a lion jump out of an ankle hold), **whiff** (a dive from 3 m:
-no hand reaches him, so no hold may be given, even with the hold chance forced). Each prints the contact
-gap, the grip error while holding, holder jumps, how close the two bodies' middles came, each player's
-states over time, the HUD messages and the gameplay events, and fails if the events are not what the
-scenario must produce (one hold, a takedown only for a tackle, nothing held after a miss).
+Each scenario is a scripted raid in the match's lab mode (`config.lab`). The raider moves as told, defenders go
+in when told, and team-mates help once he is held. A chance (hold, escape, piling on) can be forced one way,
+but contact never is. The scenarios:
+
+- **miss**: an ankle dive reaches the leg, but its grip fails.
+- **catch**: an ankle hold brings the raider down.
+- **escape**: a lion jump out of an ankle hold.
+- **whiff**: a dive from 2.6 m. No hand reaches him, so no hold may be given, even with the hold chance
+  forced.
+- **thigh**, **waist**: those holds bring him down.
+- **chain**: a hold, then two team-mates come to help, each to a part of his own.
+- **join**: he goes down while a team-mate is still running in. One takedown, no hold after it.
+- **committed**: a holder is told to tackle again, and is refused.
+- **crowd**: three team-mates help at once. No two on the same part, nobody inside anybody.
+- **touch**: a hand touch and home. The points are given once, and the score goes up by exactly them.
+- **flurry**: within a second or two, a touch, the touched defender grabbing straight back, another diving
+  in, help, and a takedown. Every event comes in order, and the raid is scored once.
+
+Each scenario prints:
+
+- the contact gap and the first frame's grip;
+- the grip error of every holder while holding;
+- holder jumps;
+- how close the bodies' middles come, to the raider's and to each other;
+- each player's states over time;
+- the HUD messages and the gameplay events.
+
+A scenario fails if the events are not what it must produce.

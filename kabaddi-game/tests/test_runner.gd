@@ -552,17 +552,28 @@ func _run() -> void:
 		rd.st_t = 99.0
 		rd.set_state("jump", mm.JUMP_TIME)
 		rd.st_t = mm.JUMP_TIME * 0.4
+		# Contact is checked on the bodies as drawn, so the diver is laid out with his hands at the raider's
+		# middle first.
 		var dw: Athlete = defs[2]
 		dw.tackle_kind = "waist"
 		dw.dmoves["waist"] = 95
-		dw.position = rd.position + Vector3(0.3, 0, 0)
-		dw.set_state("dive", mm.DIVE_TIME)
+		dw.position = rd.position + Vector3(1.0, 0, 0)
+		dw.facing = Vector3(-1, 0, 0)
+		dw.set_state("dive", 9.0)
+		rd.set_state("jump", 9.0)
+		await frames(6)
+		var wr: Vector3 = (dw.model.anchor("hand_l") + dw.model.anchor("hand_r")) * 0.5 - dw.position
+		var wt: Vector3 = rd.model.anchor("waist") - rd.position
+		var dw_at: Vector3 = rd.position + Vector3(wt.x - wr.x, 0, wt.z - wr.z)
+		dw.position = dw_at
+		await frames(3)
 		var caught := 0
 		for k in 20:
 			for h in mm.raid.holders.duplicate():
 				mm._release(h, false)
-			dw.position = rd.position + Vector3(0.3, 0, 0)
+			dw.position = dw_at
 			dw.set_state("dive", mm.DIVE_TIME)
+			dw.st_t = mm.DIVE_TIME * 0.6
 			rd.set_state("jump", mm.JUMP_TIME)
 			rd.st_t = mm.JUMP_TIME * 0.4
 			mm._check_contacts(mm.defenders())

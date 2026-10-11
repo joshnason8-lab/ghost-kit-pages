@@ -109,12 +109,13 @@ var raid_log: Array = []      # one entry per raid, for stats and tuning
 var raid_rule := RULE_CANT_AUTO
 var move_tries := {}          # move -> attempts, for tuning
 # Lab (tests/tackle_check): a scripted raid. The raider moves as lab_move says and makes only the moves he is
-# told to; defenders keep their place and go in only when told; lab_force settles a chance ("hold", "escape")
-# one way or the other so a scenario plays out the same every time. Contact itself is never forced.
+# told to; defenders keep their place and go in only when told (with lab_force.help, team-mates come to help
+# once he is held); lab_force settles a chance ("hold", "escape", "pile") one way or the other so a scenario plays
+# out the same every time. Contact itself is never forced.
 var lab := false
 var lab_move := Vector3.ZERO
 var lab_force := {}
-var grapple: Grapple = null   # the raider in defenders' hands (ankle holds so far; see Grapple)
+var grapple: Grapple = null   # the raider in defenders' hands (see Grapple)
 var event_log: Array = []      # the last gameplay events: [match seconds, raid number, kind, info]
 var _event_n := 0
 
@@ -579,7 +580,7 @@ func _tick_raid(dt: float) -> void:
 	for h in holders:
 		_tire(h, 0.02 * dt)
 		if grapple and grapple.has(h):
-			continue   # placed by the grapple, his hands on the leg he holds
+			continue   # placed by the grapple, his hands on the part he holds
 		# A new holder closes in to arm's length over a few frames rather than appearing there.
 		h.hold_offset = h.hold_offset.move_toward(h.hold_offset.normalized() * 0.55, 3.0 * dt)
 		h.position = raider.position + h.hold_offset
@@ -1071,11 +1072,11 @@ func _release(h: Athlete, knocked: bool) -> void:
 	# about as far as he used to be put, and needs a moment before he can grab on again. A man holding an
 	# ankle is on the floor already: the leg is pulled out of his hands and he stays where he is.
 	var away := h.hold_offset.normalized() if h.hold_offset.length() > 0.01 else -h.facing
-	var on_floor := grapple != null and grapple.has(h)
-	if on_floor:
+	var style := grapple.style_of_hold(h) if grapple else ""
+	if style != "":
 		grapple.release(h)
 		_event("release", {"who": h.pid(), "grapple": grapple.id})
-	h.vel = Vector3(away.x, 0.0, away.z) * (0.6 if on_floor else 4.0)
+	h.vel = Vector3(away.x, 0.0, away.z) * {"ankle": 0.6, "thigh": 1.5, "waist": 3.0, "block": 3.0}.get(style, 4.0)
 	h.cooldown = maxf(h.cooldown, 0.15)
 	if knocked:
 		h.set_state("recover", 1.1)
@@ -1099,8 +1100,9 @@ func _defender_tackle(d: Athlete, kind := "") -> void:
 	if dist > 2.6:
 		# Too far: a short lunge forward that wastes time.
 		dir = d.facing
+	# Aim at what the tackle goes for (the nearer ankle or thigh, his middle), leading him a little.
 	var lead := raider.vel * 0.12
-	var aim := (raider.position + lead - d.position)
+	var aim := (_aim_point(d) + lead - d.position)
 	aim.y = 0
 	if aim.length() > 0.01 and dist <= 2.6:
 		dir = aim.normalized()
@@ -1125,6 +1127,20 @@ func _defender_tackle(d: Athlete, kind := "") -> void:
 			p.chain_dive = true
 
 
+## The point on the raider a defender's tackle goes for (the ground under it).
+func _aim_point(d: Athlete) -> Vector3:
+	var style := Grapple.style_of(d.tackle_kind if d.tackle_kind != "" else d.style)
+	if raider.model == null or style == "":
+		return raider.position
+	var p: Vector3 = raider.model.anchor("waist")
+	if style in ["ankle", "thigh"]:
+		var part := "ankle_" if style == "ankle" else "thigh_"
+		var l: Vector3 = raider.model.anchor(part + "l")
+		var r: Vector3 = raider.model.anchor(part + "r")
+		p = l if Vector2(l.x - d.position.x, l.z - d.position.z).length() < Vector2(r.x - d.position.x, r.z - d.position.z).length() else r
+	return Vector3(p.x, 0.0, p.z)
+
+
 ## A dive: off the mark at once from the crouch, slowing through the air, landing with little left to slide.
 ## (It used to start from a standstill at running acceleration, so most of its ground was covered sliding
 ## on the floor after it.)
@@ -1134,10 +1150,10 @@ func _dive_motion(d: Athlete, dt: float) -> void:
 	d.position += d.vel * dt
 
 
-## A dive comes down: on the floor, getting up. An ankle diver's arms are still out for a moment.
+## A dive comes down: on the floor, getting up. His arms are still out for a moment.
 func _land(d: Athlete, getup: float) -> void:
 	d.set_state("recover", getup)
-	if d.kind() == "ankle":
+	if Grapple.style_of(d.kind()) != "":
 		d.reach_t = ARMS_OUT_AFTER
 
 
@@ -1727,7 +1743,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 				d.set_state("ready")
 			_clamp_defender(d)
 			return
-	if lab:
+	if lab and not (bool(lab_force.get("help", false)) and not holders.is_empty()):
 		d.lock_facing = true
 		d.drive(Vector3.ZERO, dt)
 		d.face_toward(raider.position, dt, 10.0)
@@ -1738,10 +1754,15 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	var alarm: bool = raid.alarm or (inside and opp_depth > Arena.BONUS + 0.3)
 	var target := formation_spot(d)
 	var spd := 2.4
-	if holders.size() > 0 and dist < 4.2:
-		# A team-mate has him: pile on. From the deeper line the run in takes about the 0.65-1.15 s help
-		# took in the footage.
-		target = raider.position
+	var slot := grapple.claim(d) if holders.size() > 0 and dist < 4.2 and grapple else ""
+	if slot != "":
+		# A team-mate has him: help, at a hold of his own (Grapple.claim), so helpers do not all run at the same
+		# spot. From the deeper line the run in takes about the 0.65-1.15 s help took in the footage.
+		target = grapple.approach(slot, d)
+		spd = d.max_speed
+	elif holders.size() > 0 and dist < 4.2:
+		# Every hold taken: block his way home instead.
+		target = raider.position + Vector3(0, 0, -side(d.team) * 1.0)
 		spd = d.max_speed
 	elif alarm and inside:
 		# Cut off the way home: get between the raider and the midline.
@@ -1884,16 +1905,24 @@ func _check_contacts(defs: Array) -> void:
 						d.tackle_kind = "block" if into else d.style
 						_attach(d, into)
 						continue
-		# Tackles. An ankle dive needs a hand on the raider's lower leg while the arms are out (checked on
-		# the bodies as drawn, see Grapple); the other tackles still go by the distance between the two.
+		# Tackles. A dive holds only with a hand on the part it goes for (the lower leg, the thigh, his middle)
+		# while the arms are out, checked on the bodies as drawn (Grapple.contact). The dash is a shoulder,
+		# not a hold, and still goes by the distance between the two.
 		var kind = d.kind()
 		var catch_r: float = {"ankle": 0.9, "waist": 0.75, "dash": 0.85}.get(kind, 0.8)
+		var style := Grapple.style_of(kind)
 		var contact := {}
 		var reached := false
-		if kind == "ankle":
+		if style != "":
 			if (d.state == "dive" or d.reach_t > 0.0) and raider.state not in ["shoved", "fallen"]:
-				contact = Grapple.ankle_contact(d, raider, grapple.sides_taken() if grapple else [], raider.airborne())
+				# Hands on him (along their path since the last frame, so a fast hand cannot pass through a leg
+				# between frames), and the bodies no further apart than the dive's stretch: about the reach tackles
+				# had before contact was checked. An ankle dive's hands are a whole body's length out along the
+				# floor, so it reaches from further than the others, and nearer than that they go past his feet.
+				var stretch: float = {"ankle": 1.25, "thigh": 0.9, "waist": 0.85, "block": 0.85}.get(style, catch_r)
+				contact = Grapple.contact(d, raider, style, grapple.taken() if grapple else [], raider.airborne(), stretch, d.hands_prev)
 				reached = not contact.is_empty()
+			d.hands_prev = [d.model.anchor("hand_l"), d.model.anchor("hand_r")] if d.model and d.state in ["dive", "recover"] else []
 		else:
 			reached = d.state == "dive" and dist < catch_r and raider.state != "shoved"
 		if reached:
@@ -1935,17 +1964,22 @@ func _check_contacts(defs: Array) -> void:
 			if d == controlled:
 				hold_chance *= float(prof.user_hold)
 			if bool(lab_force.get("hold", rng.randf() < hold_chance)):
-				_attach(d, false, String(contact.get("side", "")))
+				_attach(d, false, String(contact.get("slot", "")), true)
 			else:
 				# Touched him but the grip would not hold: down he goes, empty-handed.
 				_event("grip_lost", {"who": d.pid(), "kind": kind})
 				d.set_state("recover", 1.0)
-		elif raid.holders.size() > 0 and raid.holders.size() < 4 and d.state in ["ready", "idle"] and dist < 0.85 and d != controlled \
-				and d.cooldown <= 0.0:
-			piling.append(d)
-		elif raid.holders.size() > 0 and d == controlled and dist < 0.75 and d.state != "recover":
-			d.tackle_kind = "thigh"
-			_attach(d)
+		elif raid.holders.size() > 0 and raid.holders.size() < 4 and d.state in ["ready", "idle"] and d != controlled \
+				and d.cooldown <= 0.0 and grapple:
+			# Helping: each helper takes the hold he ran to (Grapple.claim), once it is within his reach.
+			var slot := grapple.claim(d)
+			if slot != "" and grapple.can_reach(d, slot):
+				piling.append([d, slot])
+		elif raid.holders.size() > 0 and d == controlled and d.state in ["ready", "idle"] and grapple:
+			var slot := grapple.claim(d)
+			if slot != "" and grapple.can_reach(d, slot):
+				d.tackle_kind = "thigh"
+				_attach(d, false, slot)
 	_pile_on(piling)
 
 
@@ -1954,10 +1988,11 @@ func _pile_on(piling: Array) -> void:
 	if piling.is_empty() or raid.holders.is_empty():
 		return
 	var rate := (0.45 + 0.2 * piling.size()) * float(prof.tackle)
-	if rng.randf() < get_process_delta_time() * rate:
-		var d: Athlete = piling[rng.randi() % piling.size()]
+	if bool(lab_force.get("pile", rng.randf() < get_process_delta_time() * rate)):
+		var pick: Array = piling[rng.randi() % piling.size()]
+		var d: Athlete = pick[0]
 		d.tackle_kind = "thigh"
-		_attach(d)
+		_attach(d, false, String(pick[1]))
 
 
 func _touch(d: Athlete, via := "") -> void:
@@ -1977,9 +2012,27 @@ func _touch(d: Athlete, via := "") -> void:
 	Game.vibrate(25)
 
 
-func _attach(d: Athlete, block := false, side := "") -> void:
+func _attach(d: Athlete, block := false, slot := "", reached := false) -> void:
 	if raid.holders.has(d):
 		return
+	# Every hold is made on a slot of the raider's body, one defender each (Grapple). A hold that did not come
+	# from a dive's hands (a counter-grab, piling on, a chain) takes the slot nearest him, if one is free.
+	if grapple == null or grapple.state == "done":
+		grapple = Grapple.new(raider)
+	var style := Grapple.style_of(d.kind())
+	if style == "":
+		style = "thigh"
+	if slot == "":
+		var want := Grapple.slot_for(style, d, raider)
+		var free := grapple.free_slots(d)
+		slot = want if free.has(want) else grapple.claim(d)
+		if slot == "" or not free.has(slot):
+			grapple.unclaim(d)
+			return   # nowhere left to hold him
+	if slot.begins_with("leg_") and style not in ["ankle", "thigh"]:
+		style = "thigh"
+	elif not slot.begins_with("leg_") and style in ["ankle", "thigh"]:
+		style = "waist" if slot == "back" else "block"
 	var was_dive := d.state in ["dive", "recover"] or block
 	var first: bool = raid.holders.is_empty()
 	raid.holders.append(d)
@@ -1991,18 +2044,15 @@ func _attach(d: Athlete, block := false, side := "") -> void:
 		off = -raider.facing * 0.55
 	d.hold_offset = off   # where he is; closes in to the hold (see _tick_raid)
 	d.set_state("holding")
-	if side != "":
-		# A hold on a leg he really reached: the grapple keeps his hands on it.
-		if grapple == null or grapple.state == "done":
-			grapple = Grapple.new(raider)
-		grapple.add(d, d.kind(), side)
-	_event("hold", {"who": d.pid(), "kind": d.kind() if was_dive else "pile", "part": side, "grapple": grapple.id if grapple else 0,
+	grapple.add(d, style, slot, reached)
+	_event("hold", {"who": d.pid(), "kind": d.kind() if was_dive else "pile", "style": style, "slot": slot, "grapple": grapple.id,
 		"holders": raid.holders.size()})
 	raider.set_state("held")
 	Sfx.play("thud", -2.0)
 	Sfx.voice("oof" if first else "grunt", -6.0, raider.voice_pitch())
 	var chained := d.chain_dive and not first
-	var hold_key: String = {"ankle": "EV_HOLD", "thigh": "EV_THIGH", "waist": "EV_WAIST", "block": "EV_BLOCK"}.get(d.kind(), "EV_HOLD") if was_dive else "EV_HOLD"
+	# The message names the hold actually made (a counter-grab on a thigh is a thigh hold, not an ankle hold).
+	var hold_key: String = {"ankle": "EV_HOLD", "thigh": "EV_THIGH", "waist": "EV_WAIST", "block": "EV_BLOCK"}.get(style, "EV_HOLD")
 	raid.def_moves.append(d.kind() if was_dive else "pile")
 	if first:
 		raid["first_hold"] = (d.kind() if was_dive else "counter") + ("_chain" if d.tackle_kind == "chain" else "")
@@ -2010,7 +2060,12 @@ func _attach(d: Athlete, block := false, side := "") -> void:
 		raid["hold_t"] = float(raid.t)
 	if d == controlled and was_dive:
 		tutorial_event.emit(d.kind() + "_hold")
-	hud.event(tr("EV_CHAIN") if (chained or not first) else tr(hold_key), Game.C_MAGENTA)
+	# One message per hold on him: the first hold's own, "Chain tackle!" when help first arrives, then none.
+	if first:
+		hud.event(tr(hold_key), Game.C_MAGENTA)
+	elif not grapple.chain_called:
+		grapple.chain_called = true
+		hud.event(tr("EV_CHAIN"), Game.C_MAGENTA)
 	if first and rng.randf() < 0.6:
 		hud.bubble(d, tr("BUBBLE_PAKAD"), Game.C_MAGENTA.lightened(0.3))
 		Sfx.yell("pakad", -6.0)
@@ -2129,7 +2184,7 @@ func _end_raid(kind: String) -> void:
 				stats[h.pid()].tackle += 1
 			# Caught by the ankle, he trips and goes down with the foot still held; the holders keep hold
 			# until he is down (Grapple.takedown).
-			raider.fall_kind = "trip" if grapple and not grapple.holds.is_empty() else ""
+			raider.fall_kind = grapple.fall_kind() if grapple and not grapple.holds.is_empty() else ""
 			raider.set_state("fallen")
 			if grapple and not grapple.holds.is_empty():
 				grapple.takedown()
@@ -2228,9 +2283,13 @@ func _end_raid(kind: String) -> void:
 		if grapple and grapple.has(h):
 			if kind == "tackle":
 				continue   # still holding as he goes down; up after (_tick_post)
-			# The raid is over with him on the floor holding a leg: he lets go and gets up.
+			# The raid is over with him holding on: he lets go (and gets up, if he was down holding a leg).
+			var low := grapple.style_of_hold(h) in ["ankle", "thigh"]
 			grapple.release(h)
-			h.set_state("recover", 0.8)
+			if low:
+				h.set_state("recover", 0.8)
+			else:
+				h.set_state("ready")
 		else:
 			h.set_state("ready")
 	raid.holders = []
@@ -2736,7 +2795,10 @@ func _tick_post(dt: float) -> void:
 	for a in athletes:
 		# Holders whose takedown is done let go and get up; the tackled raider gets up after.
 		if a.state == "holding" and (grapple == null or not grapple.has(a)):
-			a.set_state("recover", 0.9)
+			if a.hold_style in ["ankle", "thigh"]:
+				a.set_state("recover", 0.9)
+			else:
+				a.set_state("recover", 0.0)   # on his feet already: straight to his cheer below
 		if a.state == "fallen" and phase_t > 1.2:
 			a.set_state("recover", 0.9)
 			a.set_meta("cheer", -4)   # just walks off

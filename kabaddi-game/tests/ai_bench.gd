@@ -8,6 +8,11 @@ var _all_logs := []
 # Footage-comparable measures (tools/mocap/raid_events.py reads the same things off match video).
 var _style := {"first_attempt": [], "between": [], "attempt_gap": [], "dive_gap": [], "help": [], "near": [],
 		"probe_speed": [], "top_speed": [], "def_depth": [], "def_width": [], "tackle_after": []}
+# The defence's shape (no footage numbers; for the team defence work, docs/TACKLE_SYSTEM.md): each set
+# defender's nearest team-mate, pairs closer than two people stand (linked pairs aside), defenders within 2 m
+# of the raider while he works, whether anyone is in his way home as he runs for it, and how many team-mates
+# were near enough to help when he was first held.
+var _shape := {"mate_gap": [], "bunched": [], "near_raider": [], "home_covered": [], "helpers_near": []}
 var _cur = null
 var _rs := {}
 
@@ -139,6 +144,11 @@ func _sample(m: Node, dt: float) -> void:
 	if held and _rs.hold < 0.0:
 		_rs.hold = t
 		_style.tackle_after.append(t)
+		var close := 0
+		for d in defs:
+			if not r.holders.has(d) and d.position.distance_to(m.raider.position) < 4.2:
+				close += 1
+		_shape.helpers_near.append(close)
 	if _rs.hold >= 0.0 and r.holders.size() > _rs.holders:
 		if _rs.holders > 0:
 			_style.help.append(t - _rs.hold)
@@ -152,6 +162,7 @@ func _sample(m: Node, dt: float) -> void:
 	if r.get("ai_mode", "") == "probe" and not held:
 		_style.probe_speed.append(sp)
 	if not held and int(_rs.t * 30.0) % 10 == 0:
+		_sample_shape(m, defs)
 		var ds := []
 		var xs := []
 		for d in defs:
@@ -162,6 +173,39 @@ func _sample(m: Node, dt: float) -> void:
 			ds.sort()
 			_style.def_depth.append(ds[ds.size() / 2])
 			_style.def_width.append(xs.max() - xs.min())
+
+
+func _sample_shape(m: Node, defs: Array) -> void:
+	var set := defs.filter(func(d): return d.state in ["ready", "idle"])
+	var bunched := 0
+	var near := 0
+	for d in set:
+		var best := 99.0
+		for o in defs:
+			if o == d:
+				continue
+			var g := Vector2(o.position.x - d.position.x, o.position.z - d.position.z).length()
+			best = minf(best, g)
+			if set.has(o) and o.get_instance_id() > d.get_instance_id() and g < 0.9 and d.chain_partner != o:
+				bunched += 1
+		if best < 99.0:
+			_shape.mate_gap.append(best)
+		if d.position.distance_to(m.raider.position) < 2.0:
+			near += 1
+	_shape.bunched.append(bunched)
+	if m.raid.get("ai_mode", "") in ["probe", "approach"]:
+		_shape.near_raider.append(near)
+	# Running home after a touch: is anyone between him and the midline, in his lane?
+	var home := Vector3(0, 0, m.side(m.raiding))
+	var dep: float = m.depth_in(1 - m.raiding, m.raider.position)
+	if not m.raid.touched.is_empty() and m.raider.vel.dot(home) > 1.0 and dep > 0.8:
+		var covered := 0.0
+		for d in defs:
+			if d.state in ["ready", "idle", "telegraph", "dive"]:
+				var dd: float = m.depth_in(1 - m.raiding, d.position)
+				if dd > 0.0 and dd < dep and absf(d.position.x - m.raider.position.x) < 1.2:
+					covered = 1.0
+		_shape.home_covered.append(covered)
 
 
 func _close_raid() -> void:
@@ -207,3 +251,18 @@ func _print_style() -> void:
 	for row in rows:
 		var v: Array = _style[row[1]]
 		print("  %-40s game %s [%s..%s] n%d   footage %s" % [row[0], _pct(v, 50), _pct(v, 10), _pct(v, 90), v.size(), str(ref.get(row[2], "-"))])
+	print("defence shape")
+	print("  %-40s %s [%s..%s]" % ["set defender's nearest team-mate (m)", _pct(_shape.mate_gap, 50), _pct(_shape.mate_gap, 10), _pct(_shape.mate_gap, 90)])
+	print("  %-40s %.2f" % ["pairs closer than 0.9 m (unlinked, mean)", _mean(_shape.bunched)])
+	print("  %-40s %.2f" % ["defenders within 2 m of the raider (mean)", _mean(_shape.near_raider)])
+	print("  %-40s %.0f%%" % ["way home covered as he runs for it", 100.0 * _mean(_shape.home_covered)])
+	print("  %-40s %.2f" % ["team-mates within 4.2 m at the first hold", _mean(_shape.helpers_near)])
+
+
+func _mean(v: Array) -> float:
+	if v.is_empty():
+		return 0.0
+	var t := 0.0
+	for x in v:
+		t += float(x)
+	return t / v.size()

@@ -1,31 +1,47 @@
 class_name Grapple
 extends RefCounted
 ## A raider in defenders' hands, from the first real contact to the end of the takedown or the escape: who
-## holds him and where, what the hold does to both bodies, and the hands and feet that have to meet.
+## holds him and where, what each hold does to both bodies, and the hands and feet that have to meet.
 ##
 ## Its states follow the players' own (Athlete.state) rather than duplicating them: a defender goes
 ## "telegraph" (winding up) -> "dive" (attempting) -> contact, checked here on the bodies as drawn ->
 ## "holding"; the raider goes "held". It ends in a takedown (the raider "fallen", the holders getting up
-## before they celebrate) or an escape (the hold let go, the holder "recover"ing on the floor).
+## before they celebrate) or an escape (the hold let go).
 ##
-## An ankle hold: the defender's hands close round the lower leg they actually reached. That foot stays where
-## it was caught, so the raider has to stretch away from it, and only when his leg is at full stretch does
-## he drag the holder (and the foot) along the floor. The holder's body is brought in, no faster than a body
-## slides, to keep his reach on the leg, and his arms reach the rest of the way (RiggedBody.hand_target).
+## Holds are made on slots of the raider's body, one defender each: a leg each ("leg_l", "leg_r"), round his
+## middle from behind ("back") and from the front ("front"). How a hold is drawn (its style) follows the
+## tackle: "ankle" (lying on the floor, hands round the ankle and lower shin), "thigh" (down low, arms round
+## the thigh above the knee), "waist" (arms round his middle) and "block" (chest to chest, arms round him).
+## A held leg's foot stays where it was caught, so the raider has to stretch away from it, and only at full
+## stretch does he drag it (and the holder) along the floor. Each holder's body is brought in, no faster
+## than a body is dragged, to keep his reach on his slot, and his arms reach the rest of the way
+## (RiggedBody.hand_target). Team-mates coming to help claim a free slot first, so no two go for the same.
 
-const CONTACT_R := 0.3         # m: a hand this close to the raider's lower leg (ankle to mid shin) grips it
+const SLOTS := ["leg_l", "leg_r", "back", "front"]
+const CONTACT_R := 0.3         # m: a hand this close to the part a dive goes for grips it
+const BODY_R := 0.12           # m: the raider's middle is this thick round its centre line, for waist holds
 const LEG_REACH := 0.55        # m from the hips (flat) to a held foot: further and he drags it
 const BODY_FOLLOW := 2.5       # m/s the holder's body may be moved, beyond the drag itself, to keep his reach
 const LET_GO := 0.15           # s for the hands to come off when a hold breaks
 const TRIP_HOLD := 0.7         # s the holders keep hold while a tackled raider goes down
 const ARMS_OUT := 0.3          # share of a dive after which the arms are out and can grip
+const CLOSE_IN := 0.2          # s for a helper's hands to close on his slot as he takes hold
+const MIN_GAP := 0.34          # m: no holder's middle (pelvis to lower back) comes closer to the raider's
+const HOLDER_GAP := 0.42       # m: nor to another holder's
+const CLAIM_TIME := 2.0        # s a claimed slot is kept for a helper on his way
+# Where each style's hands go: [right hand part, left hand part]. Waist and block hands go round the sides.
+const HANDS := {"ankle": ["ankle", "shin"], "thigh": ["thigh", "knee"], "waist": ["waist", "waist"], "block": ["waist", "waist"]}
+# A helper can take hold from this far (his middle to the part, flat), facing it.
+const REACH := {"ankle": 1.05, "thigh": 0.8, "waist": 0.62, "block": 0.62}
 
 static var _next_id := 1
 
 var id := 0
 var raider: Athlete
-var holds: Array = []          # {who, kind, side, at (world: where the held ankle joint is kept), since}
-var state := "holding"         # "holding" -> "takedown" -> "done"; or "holding" -> "done" by escapes
+var holds: Array = []          # {who, style, slot, at (world: where a held foot is kept), since, w (hands, 0..1)}
+var claims := {}               # slot -> [Athlete on his way to it, seconds left]
+var state := "holding"         # "holding" -> "takedown" -> "done"; or "holding" -> "done" when the last hold breaks
+var chain_called := false      # "Chain tackle!" has been put up for this one
 var t := 0.0
 
 
@@ -33,42 +49,85 @@ func _init(r: Athlete) -> void:
 	id = _next_id
 	_next_id += 1
 	raider = r
-	# The held raider is posed first each frame, so holders reach for where his legs are now.
+	# The held raider is posed first each frame, so holders reach for where he is now.
 	_priority(r, -1)
 
 
-## The hand of a diving defender that is on the raider's lower leg, if any: {"side", "gap"}. Only during the
-## part of the dive with the arms out (or just after he lands, still reaching), only going at the raider, and
-## only on a leg no one else holds. With flat (the raider is in the air), heights are left out: hands
-## passing under his feet are what he has to clear, and whether he does is the lion jump's business.
-static func ankle_contact(d: Athlete, r: Athlete, taken: Array, flat := false) -> Dictionary:
+## The style of hold a tackle makes ("" for a tackle that does not hold, the dash).
+static func style_of(kind: String) -> String:
+	match kind:
+		"ankle":
+			return "ankle"
+		"thigh", "chain":
+			return "thigh"
+		"waist":
+			return "waist"
+		"block":
+			return "block"
+	return ""
+
+
+## Which slot a defender at d's place would hold for a style: the nearer leg for leg holds; for holds round
+## the middle, "front" if he is in front of the raider, else "back".
+static func slot_for(style: String, d: Athlete, r: Athlete) -> String:
+	if style in ["ankle", "thigh"]:
+		var dl := _flat(r.model.anchor("ankle_l")).distance_to(_flat(d.position))
+		var dr := _flat(r.model.anchor("ankle_r")).distance_to(_flat(d.position))
+		return "leg_l" if dl < dr else "leg_r"
+	var to := _flat(d.position - r.position)
+	return "front" if to.dot(r.facing) > 0.0 else "back"
+
+
+## A diving defender's hand on the part his tackle goes for, if any: {"slot", "gap"}. Only during the part of
+## the dive with the arms out (or just after he lands, still reaching), only going at the raider, only on a
+## slot no one holds, and only with the two middles within max_centre (how far a body stretches in that
+## dive). Each hand is checked along its path since the last frame (prev), so a fast one cannot pass through
+## a leg between frames. With flat (the raider is in the air), heights are left out: hands passing under his
+## feet are what he has to clear, and whether he does is the lion jump's business.
+static func contact(d: Athlete, r: Athlete, style: String, taken: Array, flat := false, max_centre := INF, prev: Array = []) -> Dictionary:
 	var reaching := false
 	if d.state == "dive":
 		reaching = d.st_t / maxf(d.st_len, 0.01) >= ARMS_OUT
 	elif d.state == "recover":
 		reaching = d.reach_t > 0.0
-	if not reaching or d.model == null or r.model == null:
+	if not reaching or style == "" or d.model == null or r.model == null:
 		return {}
+	if _flat(d.position - r.position).length() > max_centre:
+		return {}
+	var hands: Array = [d.model.anchor("hand_l"), d.model.anchor("hand_r")]
+	var from: Array = prev if prev.size() == 2 else hands
 	var best := {}
 	var gap := CONTACT_R
-	for s in ["l", "r"]:
-		if taken.has(s):
-			continue
-		var a: Vector3 = r.model.anchor("ankle_" + s)
-		var b: Vector3 = r.model.anchor("shin_" + s)
-		if flat:
-			a.y = 0.0
-			b.y = 0.0
-		for hs in ["l", "r"]:
-			var h: Vector3 = d.model.anchor("hand_" + hs)
+	if style in ["ankle", "thigh"]:
+		for s in ["l", "r"]:
+			if taken.has("leg_" + s):
+				continue
+			var parts: Array = HANDS[style]
+			var a: Vector3 = r.model.anchor(String(parts[0]) + "_" + s)
+			var b: Vector3 = r.model.anchor(String(parts[1]) + "_" + s)
 			if flat:
-				h.y = 0.0
-			var e := _seg_dist(h, a, b)
-			# Going at him: the leg is in front of the defender, not behind him.
-			var ahead := Vector3(a.x - d.position.x, 0.0, a.z - d.position.z)
-			if e < gap and ahead.dot(d.facing) > 0.0:
+				a.y = 0.0
+				b.y = 0.0
+			for k in 2:
+				var hp: Vector3 = hands[k]
+				var h0: Vector3 = from[k]
+				if flat:
+					hp.y = 0.0
+					h0.y = 0.0
+				var e := _seg_seg(h0, hp, a, b)
+				if e < gap and _ahead(d, a):
+					gap = e
+					best = {"slot": "leg_" + s, "gap": e}
+	else:
+		var slot := slot_for(style, d, r)
+		if taken.has(slot):
+			return {}
+		var w: Vector3 = r.model.anchor("waist")
+		for k in 2:
+			var e := maxf(0.0, _seg_dist(w, from[k], hands[k]) - BODY_R)
+			if e < gap and _ahead(d, w):
 				gap = e
-				best = {"side": s, "gap": e}
+				best = {"slot": slot, "gap": e}
 	return best
 
 
@@ -76,74 +135,181 @@ func has(d: Athlete) -> bool:
 	return _find(d) >= 0
 
 
-func sides_taken() -> Array:
+func style_of_hold(d: Athlete) -> String:
+	var i := _find(d)
+	return String(holds[i].style) if i >= 0 else ""
+
+
+## Slots held now.
+func taken() -> Array:
 	var out := []
 	for h in holds:
-		out.append(h.side)
+		out.append(h.slot)
 	return out
 
 
-## A hold confirmed: d has the raider's leg on side s.
-func add(d: Athlete, kind: String, s: String) -> void:
-	var at: Vector3 = raider.model.anchor("foot_" + s)
-	holds.append({"who": d, "kind": kind, "side": s, "at": at, "since": t})
+## Slots neither held nor claimed by someone else on his way.
+func free_slots(for_who: Athlete = null) -> Array:
+	var out := []
+	var held := taken()
+	for s in SLOTS:
+		if held.has(s):
+			continue
+		if claims.has(s) and claims[s][0] != for_who:
+			continue
+		out.append(s)
+	return out
+
+
+## A team-mate coming to help: the free slot nearest him (the slot he already claimed, if it is still free),
+## kept for him while he runs in. "" when there is none (he contains instead).
+func claim(d: Athlete) -> String:
+	for s in claims:
+		if claims[s][0] == d:
+			claims[s][1] = CLAIM_TIME
+			return s
+	var best := ""
+	var bd := INF
+	for s in free_slots(d):
+		var p := approach(s, d)
+		var dist := _flat(p).distance_to(_flat(d.position))
+		if dist < bd:
+			bd = dist
+			best = s
+	if best != "":
+		claims[best] = [d, CLAIM_TIME]
+	return best
+
+
+func unclaim(d: Athlete) -> void:
+	for s in claims.keys():
+		if claims[s][0] == d:
+			claims.erase(s)
+
+
+## Where a helper goes to take a slot: just out of the raider's body, on that slot's side.
+func approach(slot: String, d: Athlete) -> Vector3:
+	var st := _style_for_slot(slot)
+	var at := _slot_point(slot)
+	var side := _flat(d.position - at)
+	match slot:
+		"front":
+			side = raider.facing
+		"back":
+			side = -raider.facing
+		"leg_l", "leg_r":
+			# From that leg's side, a little behind (behind him is the waist hold's way in).
+			var right := raider.facing.cross(Vector3.UP).normalized()
+			side = -raider.facing * 0.4 + right * (0.9 if slot == "leg_r" else -0.9)
+	side = side.normalized() if side.length() > 0.01 else -raider.facing
+	return _flat(at) + side * (float(REACH[st]) - 0.15)
+
+
+## Close enough, and facing it, to take hold of a slot (a helper piling on).
+func can_reach(d: Athlete, slot: String) -> bool:
+	var at := _flat(_slot_point(slot))
+	var to := at - _flat(d.position)
+	return to.length() < float(REACH[_style_for_slot(slot)]) and (to.length() < 0.2 or to.normalized().dot(d.facing) > 0.3)
+
+
+## A hold confirmed: d holds slot in the given style. With reach (a dive that got a hand on him) the hands
+## are on at once; a helper's close on it as he bends into the hold.
+func add(d: Athlete, style: String, slot: String, reached := false) -> void:
+	unclaim(d)
+	var at := Vector3.ZERO
+	if slot.begins_with("leg_"):
+		var s := slot.substr(4)
+		at = raider.model.anchor("foot_" + s)
+		at.y = raider.model.rig.ankle_height() if raider.model.rig else 0.08   # on the floor
+	var h := {"who": d, "style": style, "slot": slot, "at": at, "since": t, "w": 1.0 if reached else 0.0}
+	holds.append(h)
+	d.hold_style = style
 	_priority(d, 1)
-	_reach(d, s, 1.0)
-	_pin(s, at, 1.0)
+	_targets(h)
 
 
-## A hold broken (an escape, a dubki, the hold given up): the foot comes free at once, the hands open on
-## the spot where the leg was over LET_GO.
+## A hold broken (an escape, a dubki, the hold given up): a held foot comes free at once, the hands open on
+## the spot where they held over LET_GO.
 func release(d: Athlete) -> void:
 	var i := _find(d)
 	if i < 0:
 		return
 	var h: Dictionary = holds[i]
 	holds.remove_at(i)
-	_pin(String(h.side), Vector3.ZERO, 0.0)
+	if String(h.slot).begins_with("leg_"):
+		_pin(String(h.slot).substr(4), Vector3.ZERO, 0.0)
 	_open_hands(d)
 	_priority(d, 0)
 	if holds.is_empty() and state == "holding":
 		_end()
 
 
-## The raider goes down: the holders keep hold, the held foot stays caught as he falls (a trip), then they
-## let go and get up (see update).
+## The raider goes down: the holders keep hold, a held foot stays caught as he falls (a trip), then they let
+## go (see update).
 func takedown() -> void:
 	state = "takedown"
 	t = 0.0
+	claims.clear()
 
 
-## Every frame: the held foot kept where it was caught, dragged only when he stretches past his leg; the
-## holders' bodies kept within reach of it and their hands on it.
+## How the raider goes down: tripped if anyone has a leg, taken down otherwise.
+func fall_kind() -> String:
+	for h in holds:
+		if String(h.slot).begins_with("leg_"):
+			return "trip"
+	return "takedown"
+
+
+## Every frame: held feet kept where they were caught (dragged only when he stretches past his leg), each
+## holder's body kept within reach of his slot and his hands on it, claims timed out.
 func update(dt: float) -> void:
 	t += dt
+	for s in claims.keys():
+		claims[s][1] = float(claims[s][1]) - dt
+		var who: Athlete = claims[s][0]
+		if float(claims[s][1]) <= 0.0 or not is_instance_valid(who) or who.state not in ["ready", "idle"]:
+			claims.erase(s)
 	if state == "done":
 		return
+	var right := raider.facing.cross(Vector3.UP).normalized()
 	for h in holds:
 		var d: Athlete = h.who
-		var s: String = h.side
-		var at: Vector3 = h.at
-		if state == "holding":
-			var hip := Vector3(raider.position.x, 0.0, raider.position.z)
-			var flat := Vector3(at.x, 0.0, at.z)
+		var slot: String = h.slot
+		var style: String = h.style
+		h.w = minf(1.0, float(h.w) + dt / CLOSE_IN)
+		if slot.begins_with("leg_") and state == "holding":
+			var at: Vector3 = h.at
+			var hip := _flat(raider.position)
+			var flat := _flat(at)
 			if flat.distance_to(hip) > LEG_REACH:
 				flat = hip + (flat - hip).normalized() * LEG_REACH
-				at = Vector3(flat.x, at.y, flat.z)
-				h.at = at
-			_pin(s, at, 1.0)
-		else:
-			# Going down: the foot is let go of gradually as he falls past it.
-			_pin(s, at, clampf(1.0 - t / TRIP_HOLD, 0.0, 1.0))
-		# The holder's body: where his hands, as his own pose puts them, would be on the leg.
-		var goal: Vector3 = raider.model.anchor("ankle_" + s)
-		var rig: RiggedBody = d.model.rig if d.model else null
-		var free: Vector3 = rig.hands_free if rig and rig.hands_free != Vector3.INF else d.position
-		var want := d.position + Vector3(goal.x - free.x, 0.0, goal.z - free.z)
-		var step := want - d.position
+				h.at = Vector3(flat.x, at.y, flat.z)
+		_targets(h)
+		# The holder's body: his shoulders within reach of his slot, coming at it the way he is (an arm's
+		# length off it for a hold on the floor, closer when the slot is lower than his shoulders).
+		var goal := _slot_point(slot)
+		var sh := (d.model.anchor("shoulder_l") + d.model.anchor("shoulder_r")) * 0.5
+		var arm := d.model.rig.arm_length() if d.model.rig else 0.6
+		var dy := sh.y - goal.y
+		var across := sqrt(maxf(0.0, pow(arm * 0.88, 2.0) - dy * dy))
+		var dir := _flat(goal - sh)
+		dir = dir.normalized() if dir.length() > 0.01 else d.facing
+		var step := _flat(goal - dir * across - sh)
 		var lim := (BODY_FOLLOW + raider.vel.length()) * dt
 		if step.length() > lim:
 			step = step.normalized() * lim
+		# Not inside one another: holders' middles at least HOLDER_GAP apart, each giving way half.
+		var mid := _flat(d.model.anchor("waist") + step)
+		for o in holds:
+			if o.who == d:
+				continue
+			var away := mid - _flat((o.who as Athlete).model.anchor("waist"))
+			if away.length() < HOLDER_GAP:
+				step += (away.normalized() if away.length() > 0.01 else right) * (HOLDER_GAP - away.length()) * 0.5
+		# Never inside him: the two middles (pelvis and lower back) at least MIN_GAP apart.
+		var to := _flat(d.model.anchor("waist") + step - raider.model.anchor("waist"))
+		if to.length() < MIN_GAP:
+			step += (to.normalized() if to.length() > 0.01 else -right) * (MIN_GAP - to.length())
 		d.position += step
 		d.vel = step / maxf(dt, 0.0001)
 		d.hold_offset = d.position - raider.position
@@ -156,13 +322,43 @@ func update(dt: float) -> void:
 		_end()
 
 
+## A hold's targets: the held foot kept where it was caught (let go of gradually as a tackled raider falls
+## past it), and the holder's hands on his slot, round the middle to either side of it.
+func _targets(h: Dictionary) -> void:
+	var d: Athlete = h.who
+	var slot: String = h.slot
+	if slot.begins_with("leg_"):
+		var w := 1.0 if state == "holding" else clampf(1.0 - t / TRIP_HOLD, 0.0, 1.0)
+		_pin(slot.substr(4), h.at, w)
+	var parts: Array = HANDS[h.style]
+	var side := d.facing.cross(Vector3.UP).normalized()
+	var suffix := "_" + slot.substr(4) if slot.begins_with("leg_") else ""
+	var off_r := Vector3.ZERO if slot.begins_with("leg_") else side * BODY_R * 1.1
+	_reach(d, "r", String(parts[0]) + suffix, off_r, float(h.w))
+	_reach(d, "l", String(parts[1]) + suffix, -off_r, float(h.w))
+
+
 ## Take every hand and foot target off (the raid is over or reset).
 func clear() -> void:
 	for h in holds:
 		_open_hands(h.who, true)
 		_priority(h.who, 0)
 	holds.clear()
+	claims.clear()
 	_end()
+
+
+## Where each of d's hands should be now (world), for measuring: [[side, point], ...].
+func hand_goals(d: Athlete) -> Array:
+	var i := _find(d)
+	if i < 0 or d.model == null or d.model.rig == null:
+		return []
+	var out := []
+	for hs in d.model.rig.hand_target:
+		var ht: Dictionary = d.model.rig.hand_target[hs]
+		if ht.get("model") != null and is_instance_valid(ht.model):
+			out.append([hs, (ht.model as HumanModel).anchor(String(ht.part)) + (ht.get("offset", Vector3.ZERO) as Vector3)])
+	return out
 
 
 func _end() -> void:
@@ -179,6 +375,23 @@ func _find(d: Athlete) -> int:
 	return -1
 
 
+func _style_for_slot(slot: String) -> String:
+	return "thigh" if slot.begins_with("leg_") else ("block" if slot == "front" else "waist")
+
+
+## The middle of where a slot's hands go.
+func _slot_point(slot: String) -> Vector3:
+	match slot:
+		"leg_l", "leg_r":
+			var s := slot.substr(4)
+			for h in holds:
+				if h.slot == slot:
+					var parts: Array = HANDS[h.style]
+					return (raider.model.anchor(String(parts[0]) + "_" + s) + raider.model.anchor(String(parts[1]) + "_" + s)) * 0.5
+			return (raider.model.anchor("thigh_" + s) + raider.model.anchor("knee_" + s)) * 0.5
+	return raider.model.anchor("waist")
+
+
 func _pin(s: String, at: Vector3, w: float) -> void:
 	var rig: RiggedBody = raider.model.rig if raider.model else null
 	if rig == null:
@@ -189,13 +402,11 @@ func _pin(s: String, at: Vector3, w: float) -> void:
 		rig.foot_goal[s] = [at, w]
 
 
-## Both hands round the held leg: one at the ankle, one a hand's width up the shin.
-func _reach(d: Athlete, s: String, w: float) -> void:
+func _reach(d: Athlete, hs: String, part: String, offset: Vector3, w: float) -> void:
 	var rig: RiggedBody = d.model.rig if d.model else null
 	if rig == null:
 		return
-	rig.hand_target["r"] = {"model": raider.model, "part": "ankle_" + s, "w": w, "fade": 0.0}
-	rig.hand_target["l"] = {"model": raider.model, "part": "shin_" + s, "w": w, "fade": 0.0}
+	rig.hand_target[hs] = {"model": raider.model, "part": part, "offset": offset, "w": w, "fade": 0.0}
 
 
 func _open_hands(d: Athlete, now := false) -> void:
@@ -206,12 +417,21 @@ func _open_hands(d: Athlete, now := false) -> void:
 		if now:
 			rig.hand_target.erase(hs)
 		else:
-			# Stay where the leg was and fade out.
+			# Stay where they held and fade out.
 			var ht: Dictionary = rig.hand_target[hs]
 			if ht.get("model") != null and is_instance_valid(ht.model):
-				ht["point"] = (ht.model as HumanModel).anchor(String(ht.part))
+				ht["point"] = (ht.model as HumanModel).anchor(String(ht.part)) + (ht.get("offset", Vector3.ZERO) as Vector3)
 			ht["model"] = null
+			ht["offset"] = Vector3.ZERO
 			ht["fade"] = 1.0 / LET_GO
+
+
+static func _ahead(d: Athlete, p: Vector3) -> bool:
+	return _flat(p - d.position).dot(d.facing) > 0.0
+
+
+static func _flat(v: Vector3) -> Vector3:
+	return Vector3(v.x, 0.0, v.z)
 
 
 static func _priority(a: Athlete, p: int) -> void:
@@ -220,6 +440,35 @@ static func _priority(a: Athlete, p: int) -> void:
 	a.process_priority = p
 	if a.model:
 		a.model.process_priority = p
+
+
+## Closest distance between segments p0-p1 and q0-q1.
+static func _seg_seg(p0: Vector3, p1: Vector3, q0: Vector3, q1: Vector3) -> float:
+	var u := p1 - p0
+	var v := q1 - q0
+	var w := p0 - q0
+	var a := u.dot(u)
+	var b := u.dot(v)
+	var c := v.dot(v)
+	var d := u.dot(w)
+	var e := v.dot(w)
+	var den := a * c - b * b
+	var s := 0.0
+	var t := 0.0
+	if a < 0.000001:
+		return _seg_dist(p0, q0, q1)
+	if c < 0.000001:
+		return _seg_dist(q0, p0, p1)
+	if den > 0.000001:
+		s = clampf((b * e - c * d) / den, 0.0, 1.0)
+	t = (b * s + e) / c
+	if t < 0.0:
+		t = 0.0
+		s = clampf(-d / a, 0.0, 1.0)
+	elif t > 1.0:
+		t = 1.0
+		s = clampf((b - d) / a, 0.0, 1.0)
+	return (p0 + u * s).distance_to(q0 + v * t)
 
 
 static func _seg_dist(p: Vector3, a: Vector3, b: Vector3) -> float:

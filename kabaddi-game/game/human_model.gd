@@ -503,7 +503,7 @@ func _animate(delta: float) -> void:
 	# it: setting one Euler angle alone keeps the other two from the last frame's blended pose, so a clip
 	# would leak into later frames (and an angle past 90 degrees flips the others round).
 	# Whole-body pitch for dives (face down toward the target) and falls.
-	var pel_x := lerpf(0.0, -1.35, dive) + lerpf(0.0, -1.5, fallen * (1.0 - dive))
+	var pel_x := lerpf(0.0, -1.5, dive) + lerpf(0.0, -1.5, fallen * (1.0 - dive))
 	var pel_z := sw * 0.04 * run * fwd_w
 	var pel_y := sw * 0.12 * run * fwd_w
 	# Idle life: weight shifting from foot to foot and breathing.
@@ -602,9 +602,11 @@ func _animate(delta: float) -> void:
 	rarm = lerpf(rarm, 2.4, struggle)
 	lel = lerpf(lel, 0.3, struggle)
 	rel = lerpf(rel, 0.2, struggle)
-	# Dive: arms out in front, reaching for the ankle.
-	larm = lerpf(larm, 2.9, lie)
-	rarm = lerpf(rarm, 2.9, lie)
+	# Dive: arms out in front, reaching for the ankle: the further he goes down, the lower they reach, so a
+	# full dive's hands go along the floor where the ankles are.
+	var arm_out := lerpf(2.9, 2.45, dive)
+	larm = lerpf(larm, arm_out, lie)
+	rarm = lerpf(rarm, arm_out, lie)
 	lel = lerpf(lel, 0.1, lie)
 	rel = lerpf(rel, 0.1, lie)
 	# Celebrate, in one of several ways.
@@ -859,11 +861,13 @@ func anchor(part: String) -> Vector3:
 			var kn: Node3D = kn_l if side == "l" else kn_r
 			var down := {"foot": 0.44, "ankle": 0.39, "shin": 0.29}[part.substr(0, part.length() - 2)] as float
 			return kn.global_transform * Vector3(0, -down * s, 0)
-		"thigh":
+		"thigh", "knee":
 			var hip: Node3D = hip_l if side == "l" else hip_r
-			return hip.global_transform * Vector3(0, -0.24 * s, 0)
+			return hip.global_transform * Vector3(0, -(0.24 if part.begins_with("thigh") else 0.37) * s, 0)
 		"waist":
 			return spine.global_transform * Vector3(0, -0.04 * s, 0)
+		"shoulder":
+			return (sh_l if side == "l" else sh_r).global_position
 	return global_position
 
 

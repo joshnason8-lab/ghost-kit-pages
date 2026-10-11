@@ -90,7 +90,8 @@ var _replant := {}           # side -> seconds before a foot let go at the slip 
 var _plant_t := -1.0         # the motion's clock at the last frame, for the time step
 # Holds (see Grapple): hands reaching for a point on another player's body, and a foot kept where a
 # defender holds it. hands_free is where this body's hands are before they reach (world, last frame).
-var hand_target := {}        # side -> {model: HumanModel or null, part, point (world, when model is null), w, fade}
+var hand_target := {}        # side -> {model: HumanModel or null, part, offset (world), point (world, when model
+                             #          is null), w, fade}
 var foot_goal := {}          # side -> [world position of the ankle joint, weight]
 var hands_free := Vector3.INF
 var _hand_t := -1.0
@@ -674,8 +675,8 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 
 ## A point on the body as drawn now, in world space, for holds and contact checks: "hand_l"/"hand_r" (the
 ## middle of the grip), "ankle_l"/"ankle_r" (just above the ankle joint, where a hand closes round the
-## leg), "shin_l"/"shin_r" (a hand's width higher), "thigh_l"/"thigh_r" (mid thigh), "waist" (the small of
-## the back). Bone poses are relative to the skeleton, so they are taken through its global transform.
+## leg), "shin_l"/"shin_r" (a hand's width higher), "foot_l"/"foot_r" (the ankle joint), "thigh_l"/"thigh_r"
+## (mid thigh), "knee_l"/"knee_r" (just above the knee), "waist" (the small of the back). Bone poses are relative to the skeleton, so they are taken through its global transform.
 func anchor(part: String) -> Vector3:
 	if skeleton == null:
 		return global_position
@@ -697,9 +698,30 @@ func anchor(part: String) -> Vector3:
 			return xf * _bone_head("foot_" + side).lerp(_bone_head("shin_" + side), 0.35)
 		"thigh":
 			return xf * _bone_head("thigh_" + side).lerp(_bone_head("shin_" + side), 0.55)
+		"knee":
+			return xf * _bone_head("thigh_" + side).lerp(_bone_head("shin_" + side), 0.85)
+		"shoulder":
+			return xf * _bone_head("upperarm_" + side)
 		"waist":
 			return xf * _bone_head("hips").lerp(_bone_head("spine"), 0.7)
 	return global_position
+
+
+## Shoulder to the middle of the grip, arm straight (world).
+func arm_length() -> float:
+	if not (_bone.has("upperarm_l") and _bone.has("forearm_l") and _bone.has("hand_l")):
+		return 0.6
+	var a: Vector3 = _rest_head[_bone.upperarm_l]
+	var b: Vector3 = _rest_head[_bone.forearm_l]
+	var c: Vector3 = _rest_head[_bone.hand_l]
+	return (a.distance_to(b) + b.distance_to(c)) * scale.y + _hand_len("l") * scale.y * 0.6
+
+
+## How high the ankle joint is off the floor standing (world).
+func ankle_height() -> float:
+	if not _bone.has("foot_l"):
+		return 0.08
+	return (_rest_head[_bone["foot_l"]] as Vector3).y * scale.y
 
 
 func _bone_head(name: String) -> Vector3:
@@ -803,7 +825,7 @@ func _reach_hands(g: Dictionary, hips: Vector3, now: float) -> void:
 				continue
 		var goal_w: Vector3
 		if ht.get("model") != null and is_instance_valid(ht.model):
-			goal_w = (ht.model as HumanModel).anchor(String(ht.part))
+			goal_w = (ht.model as HumanModel).anchor(String(ht.part)) + (ht.get("offset", Vector3.ZERO) as Vector3)
 		elif ht.has("point"):
 			goal_w = ht.point
 		else:
