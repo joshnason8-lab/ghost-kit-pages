@@ -7,7 +7,8 @@ animation clips the game plays. All of it runs on a normal computer, no GPU need
 video ─► extract_pose.py ─► poses.json + overlay.mp4 (stick figures with player IDs)
                 │
                 ├─► court_map.py ─► tracks.json + topdown.mp4 (positions in metres)
-                │        └─► analyze.py ─► motion_stats.json (numbers for the game AI)
+                │        ├─► analyze.py ─► motion_stats.json (numbers for the game AI)
+                │        └─► raid_events.py ─► raid_events.json (a raid moment by moment)
                 │
                 └─► to_clip.py ─► assets/mocap/<move>.json (animation the game plays)
 ```
@@ -62,7 +63,16 @@ python court_map.py runs/clip --video clip.mov     # --video splits teams by jer
 
 `--points` lets you use whichever lines are in shot (midline and baulk-line ends, for
 example) when the field corners aren't visible. Court x runs across (far side −5, near side
-+5) and z runs along (midline 0).
++5, lobby edges ±6) and z runs along (midline 0, baulk ±3.75, bonus ±4.75, end ±6.5). Read the
+points where two lines cross, from a zoomed-in frame: a few pixels out near the far side is
+half a metre on the court. The lock starts at `--ref` and works outwards both ways, so pick a
+reference frame after any cut.
+
+For a dark-lined mat with blue lobbies (most international halls) add `--lines dark --lobby blue`.
+
+`court_map.py --video` reads each player's jersey colour frame by frame too, and splits a track
+where it changes for good: the tracker can swap two ids when a raider brushes past a defender,
+and the pieces are named `12`, `12.1` and so on.
 
 ### Analysis video
 
@@ -91,6 +101,25 @@ This finds raids (one player alone in the other half) and measures:
 These replace the guessed numbers in `game/match.gd` (`formation_spot`, tackle range,
 `max_speed`).
 
+### A raid moment by moment
+
+```sh
+python live_segments.py clip.mov runs/clip      # frozen stretches and cuts (paused screen recordings)
+python raid_events.py runs/c1 runs/c2 runs/c3 runs/c4 --out footage/style.json
+```
+
+`raid_events.py` follows the raider (joining his track's pieces) and measures his speeds probing and
+escaping, the gap he keeps, and the defence's depth and spread. The moments that matter (a hand touch,
+a toe touch, a kick, a defender's dive or block, the help arriving) are read off the video by eye
+into `<run>/events.json`, and the script measures each from the tracking: the gap to the nearest
+defender, the raider's depth and speed, the time since he came in. Without an events file it falls
+back on reading attempts from the skeleton, which misses many. Times are play time: frozen stretches
+found by `live_segments.py` don't count.
+
+`footage/` holds the events and results for the India v Pakistan Asian Games clips (used with
+permission). `res://tests/ai_bench.tscn` measures the game's AI raids the same way and prints them
+next to these numbers.
+
 ## 4. Animation clips
 
 Pick one player and the seconds where they do the move:
@@ -114,7 +143,9 @@ Any clip in `assets/mocap/` replaces the hand-made animation for that move:
 | `celebrate` | after winning a point (loops) |
 
 Clips store joint angles measured in the camera's plane, so **side-on footage gives the
-best clips.** Moves toward or away from the camera come out flattened.
+best clips.** Moves toward or away from the camera come out flattened. `--pingpong` plays a
+stance forward and back so it loops without a seam. `raid_crouch_hunt` (a raider's low standoff)
+came from the Asian Games footage this way; `res://tests/clip_sheet.tscn` shows a clip on the body.
 
 ## Filming tips
 

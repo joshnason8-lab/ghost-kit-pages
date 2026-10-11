@@ -5,7 +5,7 @@ team, the raider highlighted with live depth and speed, and a bird's-eye mini-ma
 Needs poses.json and tracks.json (and court_lock.json for a moving camera).
 
 Usage:
-  python render_analysis.py match.mp4 runs/match1 --raider 5 [--team-colors "left=255,255,255 right=255,150,40"] [--labels "left=Iran right=India"]
+  python render_analysis.py match.mp4 runs/match1 --raider 5,12.1 [--team-colors "left=255,255,255 right=255,150,40"] [--labels "left=Iran right=India"]
 """
 import argparse
 import json
@@ -24,7 +24,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("video")
     ap.add_argument("run")
-    ap.add_argument("--raider", help="track id of the raider to highlight")
+    ap.add_argument("--raider", help="track id(s) of the raider to highlight, comma separated (pieces like 12.1 too)")
     ap.add_argument("--team-colors", default="left=255,255,255 right=255,150,40", help="BGR per team")
     ap.add_argument("--labels", default="", help='e.g. "left=Iran right=India"')
     args = ap.parse_args()
@@ -39,9 +39,12 @@ def main():
     raider_col = (200, 60, 255)  # magenta (BGR)
 
     pos_at = {}
+    pieces = {}   # pose id -> its track keys (court_map.py splits a track where the jersey changes: 12, 12.1 ...)
     for pid, tr in tracks.items():
+        pieces.setdefault(pid.split(".")[0], []).append(pid)
         for p in tr["points"]:
             pos_at.setdefault(pid, {})[round(p["t"], 3)] = (p["x"], p["z"])
+    raiders = set(args.raider.split(",")) if args.raider else set()
 
     cap = cv2.VideoCapture(args.video)
     fps = poses["fps"]
@@ -68,16 +71,16 @@ def main():
                 pr = cv2.perspectiveTransform(pts, M).astype(int).reshape(-1, 2)
                 cv2.polylines(frame, [pr], False, (0, 230, 255), 2, cv2.LINE_AA)
         for p in f["people"]:
-            pid = str(p["id"])
-            if pid not in tracks:
+            pid = next((k for k in pieces.get(str(p["id"]), []) if t in pos_at.get(k, {})), None)
+            if pid is None:
                 continue
-            col = raider_col if pid == args.raider else team_col.get(tracks[pid]["team"], (200, 200, 200))
+            col = raider_col if pid in raiders else team_col.get(tracks[pid]["team"], (200, 200, 200))
             kp = p["kp"]
-            thick = 4 if pid == args.raider else 2
+            thick = 4 if pid in raiders else 2
             for a, b in SKELETON:
                 if kp[a][2] > 0.3 and kp[b][2] > 0.3:
                     cv2.line(frame, (int(kp[a][0]), int(kp[a][1])), (int(kp[b][0]), int(kp[b][1])), col, thick, cv2.LINE_AA)
-            if pid == args.raider:
+            if pid in raiders:
                 x1, y1 = int(p["box"][0]), int(p["box"][1])
                 cv2.putText(frame, "RAIDER", (x1, max(20, y1 - 8)), cv2.FONT_HERSHEY_DUPLEX, 0.7, raider_col, 2, cv2.LINE_AA)
         # Mini-map (bottom right).
@@ -94,18 +97,19 @@ def main():
             if t in d:
                 trails.setdefault(pid, []).append(d[t])
                 trails[pid] = trails[pid][-45:]
-                col = raider_col if pid == args.raider else team_col.get(tracks[pid]["team"], (200, 200, 200))
+                col = raider_col if pid in raiders else team_col.get(tracks[pid]["team"], (200, 200, 200))
                 tr = [px(x, z) for x, z in trails[pid]]
                 if len(tr) > 1:
                     cv2.polylines(mm, [np.int32(tr)], False, col, 1, cv2.LINE_AA)
-                cv2.circle(mm, tr[-1], 5 if pid == args.raider else 4, col, -1, cv2.LINE_AA)
+                cv2.circle(mm, tr[-1], 5 if pid in raiders else 4, col, -1, cv2.LINE_AA)
         oy, ox = h - mh - 40, w - mw - 90
         frame[oy:oy + mh, ox:ox + mw] = cv2.addWeighted(frame[oy:oy + mh, ox:ox + mw], 0.25, mm, 0.75, 0)
         cv2.rectangle(frame, (ox, oy), (ox + mw, oy + mh), (235, 235, 235), 1)
         # Raider readout.
-        if args.raider and args.raider in pos_at and t in pos_at[args.raider]:
-            x, z = pos_at[args.raider][t]
-            team = tracks[args.raider]["team"]
+        rid = next((k for k in raiders if t in pos_at.get(k, {})), None)
+        if rid is not None:
+            x, z = pos_at[rid][t]
+            team = tracks[rid]["team"]
             depth = z if team == "left" else -z
             if raider_prev is not None and t > raider_prev[0]:
                 inst = math.hypot(x - raider_prev[1], z - raider_prev[2]) / (t - raider_prev[0])

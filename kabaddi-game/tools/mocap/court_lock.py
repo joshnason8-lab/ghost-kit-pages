@@ -12,6 +12,7 @@ x, z -> pixels). court_map.py uses it automatically when present.
 Usage:
   python court_lock.py match.mp4 runs/match1 --points "699,306=-5,0 711,597=5,0 1077,308=-5,3.75 1202,597=5,3.75" \
       --crop "50,28,1446,815" --mask "110,655,300,785"
+  (--lines dark --lobby blue for dark lines on an orange mat with blue lobbies)
 """
 import argparse
 import json
@@ -48,6 +49,9 @@ def main():
     ap.add_argument("--points", required=True, help='"u,v=x,z ..." court points in the reference frame')
     ap.add_argument("--crop", default="")
     ap.add_argument("--mask", default="")
+    ap.add_argument("--lines", choices=["white", "dark"], default="white",
+                    help="court line colour: white lines, or dark lines on a bright mat")
+    ap.add_argument("--lobby", choices=["red", "blue"], default="red", help="lobby colour, for its edges")
     args = ap.parse_args()
     run = pathlib.Path(args.run)
     cam = json.loads((run / "camera.json").read_text())
@@ -60,13 +64,8 @@ def main():
     H_ref, _ = cv2.findHomography(np.float32(court), np.float32(img), 0)   # court -> reference pixels
     white_pts, edge_pts = court_samples()
 
-    cap = cv2.VideoCapture(args.video)
-    out, prev_M, prev_cam = [], None, None
-    i = 0
-    while True:
-        ok, fr = cap.read()
-        if not ok:
-            break
+    def lock_frame(i, fr, M0):
+        """Nudges M0 (court -> this frame's pixels) until the court lines sit on the lines in the picture."""
         h, w = fr.shape[:2]
         valid = np.zeros((h, w), np.uint8)
         if args.crop:
@@ -80,22 +79,23 @@ def main():
             x0, y0, x1, y1 = [int(v) for v in p["box"]]
             valid[max(0, y0 - 8):y1 + 8, max(0, x0 - 8):x1 + 8] = 0
         hsv = cv2.cvtColor(fr, cv2.COLOR_BGR2HSV)
-        white = ((hsv[..., 1] < 70) & (hsv[..., 2] > 175)).astype(np.uint8) * 255
-        red = (((hsv[..., 0] < 10) | (hsv[..., 0] > 165)) & (hsv[..., 1] > 70) & (hsv[..., 2] > 90)).astype(np.uint8) * 255
+        if args.lines == "white":
+            white = ((hsv[..., 1] < 70) & (hsv[..., 2] > 175)).astype(np.uint8) * 255
+        else:
+            # Dark lines on a bright mat: much darker than the mat around them (the mat's typical brightness).
+            mat_v = np.median(hsv[..., 2][valid > 0]) if (valid > 0).any() else 200
+            white = (hsv[..., 2] < 0.68 * mat_v).astype(np.uint8) * 255
+            white = cv2.morphologyEx(white, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
+        if args.lobby == "red":
+            red = (((hsv[..., 0] < 10) | (hsv[..., 0] > 165)) & (hsv[..., 1] > 70) & (hsv[..., 2] > 90)).astype(np.uint8) * 255
+        else:
+            red = ((hsv[..., 0] > 90) & (hsv[..., 0] < 130) & (hsv[..., 1] > 60) & (hsv[..., 2] > 80)).astype(np.uint8) * 255
         red = cv2.morphologyEx(red, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
         edges = cv2.morphologyEx(red, cv2.MORPH_GRADIENT, np.ones((3, 3), np.uint8))
         white &= valid
         edges &= valid
         dw = np.minimum(cv2.distanceTransform(255 - white, cv2.DIST_L2, 3), 30.0)
         de = np.minimum(cv2.distanceTransform(255 - edges, cv2.DIST_L2, 3), 30.0)
-
-        Hc = cam["frames"][i]["H"]
-        if prev_M is None or Hc is None or prev_cam is None:
-            M0 = (np.linalg.inv(np.array(Hc)) if Hc is not None else np.eye(3)) @ H_ref
-        else:
-            # Carry the previous lock forward by this frame's camera motion.
-            F = np.linalg.inv(np.array(Hc)) @ np.array(prev_cam)
-            M0 = F @ prev_M
         M0 = M0 / M0[2, 2]
 
         def project(M, pts):
@@ -124,9 +124,41 @@ def main():
         M = np.append(sol.x, 1.0).reshape(3, 3)
         before = float(np.mean(np.abs(residuals(M0.flatten()[:8])[:len(white_pts) + len(edge_pts)])))
         after = float(np.mean(np.abs(sol.fun[:len(white_pts) + len(edge_pts)])))
-        out.append({"M": M.tolist(), "fit_before": round(before, 2), "fit_after": round(after, 2)})
-        prev_M, prev_cam = M, Hc
+        return {"M": M.tolist(), "fit_before": round(before, 2), "fit_after": round(after, 2)}
+
+    def start_from(i):
+        Hc = cam["frames"][i]["H"]
+        return (np.linalg.inv(np.array(Hc)) if Hc is not None else np.eye(3)) @ H_ref
+
+    def carry(i, j, M_j):
+        """Frame j's lock moved to neighbouring frame i by the camera motion between them."""
+        Hi, Hj = cam["frames"][i]["H"], cam["frames"][j]["H"]
+        if Hi is None or Hj is None:
+            return start_from(i)
+        return np.linalg.inv(np.array(Hi)) @ np.array(Hj) @ M_j
+
+    # Anchored at the reference frame (where the points were read) and carried outwards both ways, so a
+    # cut or a bad stretch before the reference cannot leak into it.
+    ref = int(cam.get("ref", 0))
+    cap = cv2.VideoCapture(args.video)
+    early = []
+    n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    out = [None] * n
+    i = 0
+    prev = None
+    while True:
+        ok, fr = cap.read()
+        if not ok:
+            break
+        if i < ref:
+            early.append(fr)
+        else:
+            M0 = start_from(i) if prev is None else carry(i, i - 1, np.array(prev["M"]))
+            prev = out[i] = lock_frame(i, fr, M0)
         i += 1
+    out = out[:i]
+    for k in range(len(early) - 1, -1, -1):
+        out[k] = lock_frame(k, early[k], carry(k, k + 1, np.array(out[k + 1]["M"])))
     (run / "court_lock.json").write_text(json.dumps({"frames": out}))
     fb = [f["fit_before"] for f in out]
     fa = [f["fit_after"] for f in out]

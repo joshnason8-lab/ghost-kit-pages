@@ -42,6 +42,8 @@ def main():
     ap.add_argument("--end", type=float, required=True)
     ap.add_argument("--name", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--source", help="what the footage is, for the clip's record (default: the video path)")
+    ap.add_argument("--pingpong", action="store_true", help="play forward then back, so a looping stance has no seam")
     args = ap.parse_args()
     data = json.loads((pathlib.Path(args.run) / "poses.json").read_text())
 
@@ -59,14 +61,17 @@ def main():
     nose_dx = np.median([kp[0][0] - (kp[L_HIP][0] + kp[R_HIP][0]) / 2 for _, kp in rows if kp[0][2] > 0.3] or [1.0])
     facing = 1.0 if nose_dx >= 0 else -1.0
 
+    # Leg length from the frames where it shows longest (the camera only ever shortens a limb), so a clip
+    # that stays crouched throughout still reads as crouched.
+    leg = float(np.percentile([np.linalg.norm(kp[h][:2] - kp[k][:2]) + np.linalg.norm(kp[k][:2] - kp[a][:2])
+                               for _, kp in rows for h, k, a in ((L_HIP, L_KN, L_AN), (R_HIP, R_KN, R_AN))], 90))
     heights = []
     frames = []
     for t, kp in rows:
         hip = (kp[L_HIP][:2] + kp[R_HIP][:2]) / 2
         sh = (kp[L_SH][:2] + kp[R_SH][:2]) / 2
         ank = (kp[L_AN][:2] + kp[R_AN][:2]) / 2
-        trunk = np.linalg.norm(sh - hip) or 1.0
-        heights.append((ank[1] - hip[1]) / trunk)
+        heights.append((ank[1] - hip[1]) / leg)
         # Model conventions (human_model.gd): positive hip/shoulder = limb swings forward,
         # knee is negative when bent, elbow positive when bent, spine negative = lean forward.
         thigh_l = angle_from_down(kp[L_HIP], kp[L_KN], facing)
@@ -87,9 +92,8 @@ def main():
             "sh_l": round(arm_l - spine, 3), "sh_r": round(arm_r - spine, 3),
             "el_l": round(min(2.4, max(0.0, fore_l - arm_l)), 3), "el_r": round(min(2.4, max(0.0, fore_r - arm_r)), 3),
         })
-    stand = max(heights) or 1.0
     for fr, hgt in zip(frames, heights):
-        fr["height"] = round(max(0.15, hgt / stand), 3)  # 1 = standing hip height, lower = crouched/diving
+        fr["height"] = round(min(1.0, max(0.15, hgt / 0.97)), 3)  # 1 = standing hip height, lower = crouched/diving
 
     # Light smoothing across frames.
     keys = [k for k in frames[0] if k != "t"]
@@ -98,7 +102,11 @@ def main():
         sm = np.convolve(np.pad(vals, (1, 1), mode="edge"), np.ones(3) / 3, mode="valid")
         for f, v in zip(frames, sm):
             f[k] = round(float(v), 3)
-    clip = {"name": args.name, "source": data["video"], "player": args.id, "fps": data["fps"],
+    if args.pingpong:
+        step = frames[-1]["t"] - frames[-2]["t"]
+        end = frames[-1]["t"]
+        frames += [dict(f, t=round(end + step * (k + 1), 3)) for k, f in enumerate(reversed(frames[1:-1]))]
+    clip = {"name": args.name, "source": args.source or data["video"], "player": args.id, "fps": data["fps"],
             "length": frames[-1]["t"], "frames": frames}
     out = pathlib.Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

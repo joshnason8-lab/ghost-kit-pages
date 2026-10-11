@@ -1,0 +1,8 @@
+{"raider": ["3", "86"], "from": 0.0, "to": 17.15, "outcome": "escaped",
+ "note": "India raider (orange) v 7 Pakistan defenders. Walks the baulk area upright, crouches about 2 m from the chain, one reaching hand touch, sprints home; comes back for a second look.",
+ "events": [
+  {"t": 9.0, "kind": "stance"},
+  {"t": 11.2, "kind": "hand"},
+  {"t": 11.45, "kind": "escape"},
+  {"t": 16.0, "kind": "approach"}
+ ]}

@@ -1,6 +1,6 @@
 extends Node3D
 ## Strips of captured clips on the game's body: six moments through each clip, seen from three quarters,
-## one PNG per clip. For choosing and checking clips (tools/mocap/fbx_to_clip.gd).
+## one PNG per clip. For choosing and checking clips (tools/mocap/fbx_to_clip.gd, to_clip.py).
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 256x320 res://tests/clip_sheet.tscn -- OUT_DIR CLIP.json...
 
 const CELL := Vector2i(256, 320)
@@ -42,13 +42,16 @@ func _ready() -> void:
 	a.model._moves = []
 	for path in args.slice(1):
 		var clip := MocapClip.load_file(path)
-		if clip == null or clip.version < 2:
+		if clip == null:
 			continue
 		var sheet := Image.create(CELL.x * N, CELL.y, false, Image.FORMAT_RGB8)
 		for k in N:
 			var t := clip.length * k / float(N - 1)
 			a.model._animate(1.0 / 30.0)
-			a.model._apply_pose(clip.sample_pose(t, false), 1.0)
+			if clip.version >= 2:
+				a.model._apply_pose(clip.sample_pose(t, false), 1.0)
+			else:
+				a.model._play_frame(clip, t, false, 1.0)   # footage clips (to_clip.py): joint bends
 			if a.model.rig:
 				a.model.rig.drive(a.model)
 			for f in 2:

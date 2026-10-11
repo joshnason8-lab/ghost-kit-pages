@@ -134,49 +134,82 @@ def main():
 
 
 def assign_teams_by_colour(video, data, tracks):
-    """Clusters players into two teams by torso colour, then names each team by the half it defends."""
-    cols = {pid: [] for pid in tracks}
+    """Clusters players into two teams by torso colour, then names each team by the half it defends.
+
+    The tracker can swap two ids when players cross (a raider brushing past a defender), so each track's
+    colour is also read frame by frame, and a track whose jersey changes colour for good is split there: the
+    raider's path then never runs on into a defender's."""
+    cols = {pid: [] for pid in tracks}       # (t, Lab) per frame
     cap = cv2.VideoCapture(video)
     fi = 0
     while True:
         ok, frame = cap.read()
         if not ok or fi >= len(data["frames"]):
             break
-        if fi % 3 == 0:
-            lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
-            for p in data["frames"][fi]["people"]:
-                pid = str(p["id"])
-                if pid not in cols:
-                    continue
-                kp = p["kp"]
-                torso = [kp[i] for i in (5, 6, 11, 12) if kp[i][2] > 0.3]
-                if len(torso) < 4:
-                    continue
-                xs = [k[0] for k in torso]
-                ys = [k[1] for k in torso]
-                x0, x1 = int(min(xs)), int(max(xs))
-                y0, y1 = int(min(ys)), int(max(ys))
-                # Inner part of the torso: the jersey, not the background.
-                dx, dy = (x1 - x0) // 4, (y1 - y0) // 5
-                patch = lab[y0 + dy:y1 - dy, x0 + dx:x1 - dx]
-                if patch.size > 30:
-                    cols[pid].append(np.median(patch.reshape(-1, 3), axis=0))
+        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        f = data["frames"][fi]
+        for p in f["people"]:
+            pid = str(p["id"])
+            if pid not in cols:
+                continue
+            kp = p["kp"]
+            torso = [kp[i] for i in (5, 6, 11, 12) if kp[i][2] > 0.3]
+            if len(torso) < 4:
+                continue
+            xs = [k[0] for k in torso]
+            ys = [k[1] for k in torso]
+            x0, x1 = int(min(xs)), int(max(xs))
+            y0, y1 = int(min(ys)), int(max(ys))
+            # Inner part of the torso: the jersey, not the background.
+            dx, dy = (x1 - x0) // 4, (y1 - y0) // 5
+            patch = lab[y0 + dy:y1 - dy, x0 + dx:x1 - dx]
+            if patch.size > 30:
+                cols[pid].append((f["t"], np.median(patch.reshape(-1, 3), axis=0)))
         fi += 1
-    ids = [pid for pid in tracks if len(cols[pid]) >= 3]
+    ids = [pid for pid in tracks if len(cols[pid]) >= 9]
     if len(ids) < 2:
         return
-    feats = np.float32([np.median(cols[pid], axis=0) for pid in ids])
-    _, labels, _ = cv2.kmeans(feats, 2, None, (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.1), 8, cv2.KMEANS_PP_CENTERS)
-    labels = labels.ravel()
-    # A team's home half is where most of its players stand; raiders are the exception.
-    halves = []
-    for k in (0, 1):
-        zs = [np.median([p["z"] for p in tracks[pid]["points"]]) for pid, l in zip(ids, labels) if l == k]
-        halves.append(np.median([np.sign(z) for z in zs]) if zs else 0)
+    feats = np.float32([np.median([c for _, c in cols[pid]], axis=0) for pid in ids])
+    _, labels, centres = cv2.kmeans(feats, 2, None, (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.1), 8,
+                                    cv2.KMEANS_PP_CENTERS)
+    # Split tracks where the jersey changes: per-frame team by nearest centre, smoothed over 9 frames, and
+    # only runs of 10 frames (half a second) or more count.
+    pieces = {}
+    for pid in ids:
+        ts = [t for t, _ in cols[pid]]
+        lab = np.array([int(np.argmin([np.linalg.norm(c - k) for k in centres])) for _, c in cols[pid]])
+        sm = np.array([int(np.round(np.mean(lab[max(0, i - 4):i + 5]))) for i in range(len(lab))])
+        runs = []
+        for i, l in enumerate(sm):
+            if runs and runs[-1][0] == l:
+                runs[-1][2] = i
+            else:
+                runs.append([l, i, i])
+        runs = [r for r in runs if r[2] - r[1] + 1 >= 10] or [max(runs, key=lambda r: r[2] - r[1])]
+        merged = []
+        for r in runs:
+            if merged and merged[-1][0] == r[0]:
+                merged[-1][2] = r[2]
+            else:
+                merged.append(list(r))
+        if len(merged) == 1:
+            pieces[pid] = (merged[0][0], tracks[pid]["points"], np.median([c for _, c in cols[pid]], axis=0))
+            continue
+        for k, (l, i0, i1) in enumerate(merged):
+            lo = -1e9 if k == 0 else (ts[merged[k - 1][2]] + ts[i0]) / 2
+            hi = 1e9 if k == len(merged) - 1 else (ts[i1] + ts[merged[k + 1][1]]) / 2
+            pts = [p for p in tracks[pid]["points"] if lo <= p["t"] < hi]
+            if len(pts) >= 5:
+                pieces[pid if k == 0 else f"{pid}.{k}"] = (l, pts, np.median([c for _, c in cols[pid][i0:i1 + 1]], axis=0))
+        del tracks[pid]
+    # A team's home half is where most of its players stand; raiders are the exception. Summed rather than
+    # averaged, so a clip showing only one half still works: there the seven defenders outweigh the raider.
+    halves = [0.0, 0.0]
+    for l, pts, _ in pieces.values():
+        halves[l] += float(np.sign(np.median([p["z"] for p in pts])))
     names = {0: "left" if halves[0] <= halves[1] else "right", 1: "right" if halves[0] <= halves[1] else "left"}
-    for pid, l in zip(ids, labels):
-        tracks[pid]["team"] = names[int(l)]
-        tracks[pid]["jersey_lab"] = [round(float(v), 1) for v in feats[ids.index(pid)]]
+    for pid, (l, pts, c) in pieces.items():
+        tracks[pid] = {"team": names[l], "points": pts, "jersey_lab": [round(float(v), 1) for v in c]}
 
 
 def render_topdown(run, data, tracks):
