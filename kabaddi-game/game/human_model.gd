@@ -53,6 +53,7 @@ var _prev_rate := 1.0
 var _prev_loop := true
 var _prev_weight := 0.0
 var move_weight := 0.0      # how much a captured running clip carries him now, 0..1
+var air := 0.0              # how high his lowest point should be off the floor now (m): 0 standing or lying
 var _moves = null           # the captured running set (MocapClip.moves()), once looked up
 var _move: MocapClip = null
 var _move_t := 0.0
@@ -446,10 +447,13 @@ func _process(delta: float) -> void:
 	if pelvis == null:
 		return
 	_animate(delta)
+	air = jump * 0.32 * height / 1.78   # a hand-made lion jump leaves the floor by as much as it lifts the hips
 	_apply_moves(delta)
 	_apply_clip(delta)
 	if rig:
 		rig.drive(self)
+	else:
+		_ground()
 
 
 func _animate(delta: float) -> void:
@@ -766,7 +770,7 @@ func _apply_moves(delta: float) -> void:
 		for k in pose:
 			if not old.has(k):
 				continue
-			if k == "h":
+			if k == "h" or k == "a":
 				pose[k] = lerpf(float(old[k]), float(pose[k]), _move_fade)
 			else:
 				var qo: Quaternion = old[k]
@@ -780,6 +784,8 @@ func _apply_pose(pose: Dictionary, w: float, keep_arms := true, right_only := fa
 	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
 	if pose.has("h"):
 		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(pose.h), w)
+	if pose.has("a"):
+		air = lerpf(air, float(pose.a) * height / 1.78, w)
 	var arm_l := w * (1.0 - hold_arms) if keep_arms else (0.0 if right_only else w)
 	var arm_r := w * (1.0 - maxf(hold_arms, reach)) if keep_arms else w
 	for pair in [["pelvis", pelvis, w], ["spine", spine, w], ["chest", chest, w], ["neck", neck, w * 0.6],
@@ -788,6 +794,23 @@ func _apply_pose(pose: Dictionary, w: float, keep_arms := true, right_only := fa
 		if pose.has(pair[0]) and pair[2] > 0.0:
 			var node: Node3D = pair[1]
 			node.quaternion = node.quaternion.slerp(pose[pair[0]], pair[2])
+
+
+## The classic body on the floor: its lowest point (soles, knees, hands, head, back) as high as air says.
+func _ground() -> void:
+	var s := height / 1.78
+	var low := INF
+	for kn in [kn_l, kn_r]:
+		# Sole: heel and toe under the shin.
+		low = minf(low, (kn as Node3D).to_global(Vector3(0, -0.44 * s - 0.045, 0.03)).y)
+		low = minf(low, (kn as Node3D).to_global(Vector3(0, -0.44 * s - 0.045, -0.17)).y)
+		low = minf(low, (kn as Node3D).global_position.y - 0.06)
+	for el in [el_l, el_r]:
+		low = minf(low, (el as Node3D).to_global(Vector3(0, -0.3 * s, 0)).y - 0.04)
+	low = minf(low, head.to_global(Vector3(0, 0.07, 0)).y - 0.12)
+	low = minf(low, chest.global_position.y - 0.15)
+	low = minf(low, pelvis.global_position.y - 0.15)
+	pelvis.global_position.y += global_position.y + air - low
 
 
 func play_clip(c: MocapClip, loop: bool, fit := 0.0) -> void:

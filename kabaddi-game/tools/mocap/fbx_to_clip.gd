@@ -124,6 +124,37 @@ func _convert(anim: Animation, map: Dictionary, name: String, loop: bool) -> Dic
 	for b in _sk.get_bone_count():
 		floor_y = minf(floor_y, (turn * (rest[b] as Transform3D).origin).y)
 	var body_h := top - floor_y   # head-top joint over the lowest joint (the toes), about 0.97 of standing height
+	# The body's surface around each joint, for how high off the floor the body is: a foot's joints are as
+	# far above the sole as they stand at rest, the rest as thick as a person is there.
+	var radius := {}
+	for b in _sk.get_bone_count():
+		var n := String(_sk.get_bone_name(b)).to_lower()
+		var y := (turn * (rest[b] as Transform3D).origin).y - floor_y
+		var r := 0.03
+		if "foot" in n or "toe" in n:
+			r = y
+		elif "headtop" in n or "head_end" in n:
+			r = 0.0
+		elif "head" in n:
+			r = 0.1
+		elif "neck" in n:
+			r = 0.06
+		elif "spine" in n or "hips" in n:
+			r = 0.12
+		elif "shoulder" in n:
+			r = 0.07
+		elif "forearm" in n:
+			r = 0.045
+		elif "arm" in n:
+			r = 0.055
+		elif "hand" in n:
+			r = 0.03
+		elif "upleg" in n:
+			r = 0.09
+		elif "leg" in n:
+			r = 0.055
+		radius[b] = r
+	var scale := 1.78 * 0.97 / body_h
 	# Per joint: source rotation (in the game's frame) at rest, and the offset that lines the rest poses up.
 	var offset := {}
 	for j in JOINTS:
@@ -171,7 +202,12 @@ func _convert(anim: Animation, map: Dictionary, name: String, loop: bool) -> Dic
 		var lf: int = _bone.get("leftfoot", hips)
 		var rf: int = _bone.get("rightfoot", hips)
 		feet.append([turn * (g[lf] as Transform3D).origin, turn * (g[rf] as Transform3D).origin])
-		frames.append({"t": snappedf(t, 0.0001), "h": snappedf(h, 0.0001), "q": q})
+		# Off the floor: the lowest point of the body's surface over the floor (0 standing or lying).
+		var low := INF
+		for b in _sk.get_bone_count():
+			low = minf(low, (turn * (g[b] as Transform3D).origin).y - floor_y - float(radius[b]))
+		var air := maxf(0.0, low) * scale
+		frames.append({"t": snappedf(t, 0.0001), "h": snappedf(h, 0.0001), "a": snappedf(air, 0.001), "q": q})
 
 	# How fast and which way the move travels, scaled to a 1.78 m player.
 	var vel := Vector3.ZERO
@@ -193,7 +229,6 @@ func _convert(anim: Animation, map: Dictionary, name: String, loop: bool) -> Dic
 			samples.sort_custom(func(x, y): return Vector2(x.x, x.z).length() < Vector2(y.x, y.z).length())
 			vel = samples[samples.size() / 2]   # median
 		vel.y = 0.0
-	var scale := 1.78 * 0.97 / body_h
 	var speed := vel.length() * scale
 	var dir := Vector3.ZERO if speed < 0.2 else vel.normalized()
 	# The game's "forward" is -Z: report the direction as [side, forward].

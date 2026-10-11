@@ -37,6 +37,7 @@ var version := 1
 var joints := PackedStringArray()     # version 2: the joints, in the order of each frame's rotations
 var times := PackedFloat32Array()
 var heights := PackedFloat32Array()    # hips' height against standing, per frame
+var airs := PackedFloat32Array()       # how high the body's lowest point is off the floor (m, 1.78 m player)
 var quats: Array[PackedFloat32Array] = []   # per frame: x, y, z, w for each joint
 var speed := 0.0                       # m/s a 1.78 m player travels at in this clip (0: on the spot)
 var dir := Vector2.ZERO                # which way: x to his right, y forward
@@ -107,6 +108,7 @@ static func load_file(path: String) -> MocapClip:
 		for f in parsed.frames:
 			c.times.append(float(f.t))
 			c.heights.append(float(f.h))
+			c.airs.append(float(f.get("a", 0.0)))
 			c.quats.append(PackedFloat32Array(f.q))
 		c.speed = float(parsed.get("speed", 0.0))
 		var d: Array = parsed.get("dir", [0, 0])
@@ -119,7 +121,8 @@ static func load_file(path: String) -> MocapClip:
 	return c
 
 
-## Version 2: the pose at time t: {"h": hips' height against standing, joint name: Quaternion}.
+## Version 2: the pose at time t: {"h": hips' height against standing, "a": the body's lowest point off the
+## floor, joint name: Quaternion}.
 func sample_pose(t: float, loop: bool) -> Dictionary:
 	var n := times.size()
 	t = fposmod(t, length) if loop and length > 0.0 else clampf(t, 0.0, length)
@@ -141,7 +144,7 @@ func sample_pose(t: float, loop: bool) -> Dictionary:
 		k = clampf((t - times[lo]) / (times[hi] - times[lo]), 0.0, 1.0)
 	var a := quats[lo]
 	var b := quats[hi]
-	var out := {"h": lerpf(heights[lo], heights[hi], k)}
+	var out := {"h": lerpf(heights[lo], heights[hi], k), "a": lerpf(airs[lo], airs[hi], k)}
 	for j in joints.size():
 		var i := j * 4
 		var qa := Quaternion(a[i], a[i + 1], a[i + 2], a[i + 3]).normalized()

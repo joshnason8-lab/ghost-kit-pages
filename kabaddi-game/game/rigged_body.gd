@@ -67,6 +67,7 @@ void fragment() {
 """
 
 static var _bodies := {}   # path -> the loaded body (see _load)
+static var grounding := true   # put bodies on the floor (off only to compare, in tests/ground_check)
 static var _index = null
 
 var skeleton: Skeleton3D
@@ -76,6 +77,8 @@ var body := {}        # the loaded body this one wears
 var _bone := {}       # name -> index
 var _parent := []     # index -> parent index
 var _rest_head := []  # index -> rest position of the bone head (model space)
+var _names := []      # index -> bone name
+var _leg_bones := {}  # indices of the thighs, shins and feet: all that can touch the floor standing up
 var _hidden_head := false
 var _curl := {"l": 0.7, "r": 0.7}
 
@@ -171,8 +174,80 @@ static func _load(file: String) -> Dictionary:
 	d.rest_dirs = rest_dirs
 	d.rest_frames = frames
 	d.curl_axis = curl_axis
+	_contacts(d, j)
 	d.erase("verts")
+	d.erase("top_bone")
 	return d
+
+
+## Points on the body's surface that can meet the floor, per bone, as offsets from the bone's head at rest:
+## the furthest each way (front, back, sides, top, bottom) of the skin the bone carries, and on each foot its
+## sole, heel to toe and side to side.
+static func _contacts(d: Dictionary, _j: Dictionary) -> void:
+	var verts: PackedVector3Array = d.verts
+	var top: PackedInt32Array = d.get("top_bone", PackedInt32Array())
+	d.contacts = []
+	d.soles = {}
+	if top.is_empty():
+		return
+	var nb: int = d.bones.size()
+	var heads := []
+	var feet := {}
+	for bi in nb:
+		heads.append(_v(d.bones[bi].head))
+		if String(d.bones[bi].name).begins_with("foot_"):
+			feet[bi] = String(d.bones[bi].name).right(1)
+	# One pass: each bone's furthest skin along +-x, +-y, +-z and the eight diagonals between them, and
+	# each foot's lowest skin.
+	var dirs := [Vector3.RIGHT, Vector3.LEFT, Vector3.UP, Vector3.DOWN, Vector3.FORWARD, Vector3.BACK]
+	for x in [-1.0, 1.0]:
+		for y in [-1.0, 1.0]:
+			for z in [-1.0, 1.0]:
+				dirs.append(Vector3(x, y, z).normalized())
+	var nd := dirs.size()
+	var score := PackedFloat32Array()
+	score.resize(nb * nd)
+	score.fill(-INF)
+	var best := PackedVector3Array()
+	best.resize(nb * nd)
+	var foot_low := {}
+	for i in verts.size():
+		var bi := top[i]
+		var v := verts[i] - (heads[bi] as Vector3)
+		for k in nd:
+			var c: float = v.dot(dirs[k])
+			if c > score[bi * nd + k]:
+				score[bi * nd + k] = c
+				best[bi * nd + k] = v
+		if feet.has(bi):
+			foot_low[bi] = minf(foot_low.get(bi, INF), verts[i].y)
+	# The soles: the lowest skin of each foot at the heel, the toe and either side.
+	var sole_score := {}
+	var sole_best := {}
+	for i in verts.size():
+		var bi := top[i]
+		if not feet.has(bi) or verts[i].y > float(foot_low[bi]) + 0.025:
+			continue
+		var v := verts[i] - (heads[bi] as Vector3)
+		var c := [v.x, -v.x, -v.z, v.z]
+		for k in 4:
+			var key := bi * 4 + k
+			if not sole_score.has(key) or c[k] > sole_score[key]:
+				sole_score[key] = c[k]
+				sole_best[key] = v
+	for bi in nb:
+		var pts := PackedVector3Array()
+		for k in nd:
+			if score[bi * nd + k] > -INF:
+				pts.append(best[bi * nd + k])
+		if feet.has(bi):
+			var sole := PackedVector3Array()
+			for k in 4:
+				if sole_best.has(bi * 4 + k):
+					sole.append(sole_best[bi * 4 + k])
+			pts.append_array(sole)
+			d.soles[feet[bi]] = [bi, sole]   # heel is index 3, toe index 2 (when every side was found)
+		d.contacts.append(pts)
 
 
 static func _texture_part(d: Dictionary, tex: Dictionary) -> void:
@@ -205,6 +280,16 @@ static func _build_mesh(d: Dictionary, verts: PackedVector3Array, norms: PackedV
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	d.mesh = mesh
 	d.verts = verts
+	# Each vertex's main bone, for the contact points (see _contacts).
+	var top := PackedInt32Array()
+	top.resize(verts.size())
+	for i in verts.size():
+		var best := 0
+		for k in range(1, 4):
+			if weights[i * 4 + k] > weights[i * 4 + best]:
+				best = k
+		top[i] = bones[i * 4 + best]
+	d.top_bone = top
 
 
 ## The packed form (tools/rig/pack_body.py).
@@ -326,6 +411,9 @@ func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float
 		var i := skeleton.get_bone_count()
 		skeleton.add_bone(String(b.name))
 		_bone[String(b.name)] = i
+		_names.append(String(b.name))
+		if String(b.name).begins_with("shin_") or String(b.name).begins_with("foot_"):
+			_leg_bones[i] = true
 		var p := int(b.parent)
 		_parent.append(p)
 		var head := _v(b.head)
@@ -424,19 +512,135 @@ func drive(h: Node3D) -> void:
 			g["fingers_" + s] = g["hand_" + s] * Basis(axis, _curl[s] * (0.55 if _bone.has("fingertips_" + s) else 1.0))
 			if _bone.has("fingertips_" + s):
 				g["fingertips_" + s] = g["fingers_" + s] * Basis(axis, _curl[s] * 0.75)
+	# Hips: the placeholder's pelvis, scaled to this body's legs, then the body put on the floor.
+	var pel: Vector3 = inv * h.pelvis.global_position
+	var k := float(body.leg_len) / maxf(0.5, h.leg_length())
+	var hips := _ground(g, Vector3(pel.x * k, pel.y * k, pel.z * k), h)
 	for name in g:
 		var i: int = _bone[name]
 		var p: int = _parent[i]
 		var local: Basis = g[name] if p < 0 else (g[_name_of(p)].inverse() * g[name])
 		skeleton.set_bone_pose_rotation(i, local.get_rotation_quaternion())
-	# Hips height: the placeholder's pelvis, scaled to this body's legs.
-	var pel: Vector3 = inv * h.pelvis.global_position
-	var k := float(body.leg_len) / maxf(0.5, h.leg_length())
-	skeleton.set_bone_pose_position(0, Vector3(pel.x * k, pel.y * k, pel.z * k))
+	skeleton.set_bone_pose_position(0, hips)
 	if _hidden_head:
 		skeleton.set_bone_pose_scale(_bone.head, Vector3.ONE * 0.001)
 	else:
 		skeleton.set_bone_pose_scale(_bone.head, Vector3.ONE)
+
+
+## Put the body on the floor: its lowest point (a sole standing, the back or a shoulder lying down) as high
+## as the motion means it to be (h.air: off the floor in a jump or a running stride, else on it). Feet near
+## the floor are laid flat on it, and a player standing still has his higher foot brought down onto it too.
+## Returns the hips' position; turns the feet and legs in g.
+func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
+	if not grounding or (body.get("contacts", []) as Array).is_empty():
+		return hips
+	var target := float(h.air) / scale.y
+	var up: Vector3 = (g.get("chest", Basis()) as Basis) * (body.rest_dirs.chest as Vector3)
+	var standing := hips.y > 0.7 * float(body.leg_len) and up.y > 0.75
+	hips.y += target - _lowest(_fk(g, hips), standing)
+	if target > 0.02:
+		return hips   # in the air: nothing to stand on
+	var fk := _fk(g, hips)
+	for s in body.soles:
+		_flatten(g, fk, s)
+	var still := float(h.speed) < 1.2 and float(h.kick) + float(h.back_kick) + float(h.jump) + float(h.dubki) < 0.1
+	if standing and still:
+		fk = _fk(g, hips)
+		var lows := {}
+		for s in body.soles:
+			lows[s] = _sole_low(fk, s)
+		if lows.size() == 2:
+			var hi: String = "l" if lows.l > lows.r else "r"
+			var d: float = absf(float(lows.l) - float(lows.r))
+			if d > 0.005 and d < 0.12:
+				_reach_down(g, fk, hi, d)
+	return Vector3(hips.x, hips.y + target - _lowest(_fk(g, hips), standing), hips.z)
+
+
+## Every bone's head position and orientation for the pose in g (bones not in g keep their parent's).
+func _fk(g: Dictionary, hips: Vector3) -> Array:
+	var n := _parent.size()
+	var pos := []
+	var rot := []
+	pos.resize(n)
+	rot.resize(n)
+	for i in n:
+		var p: int = _parent[i]
+		if p < 0:
+			pos[i] = hips
+			rot[i] = g.get(_names[i], Basis())
+		else:
+			pos[i] = (pos[p] as Vector3) + (rot[p] as Basis) * ((_rest_head[i] as Vector3) - (_rest_head[p] as Vector3))
+			rot[i] = g.get(_names[i], rot[p])
+	return [pos, rot]
+
+
+## The lowest of the contact points (standing: only the legs' and feet's).
+func _lowest(fk: Array, legs_only: bool) -> float:
+	var low := INF
+	var contacts: Array = body.contacts
+	for i in contacts.size():
+		if legs_only and not _leg_bones.has(i):
+			continue
+		var b: Basis = fk[1][i]
+		var row := Vector3(b.x.y, b.y.y, b.z.y)
+		var y: float = (fk[0][i] as Vector3).y
+		for q in (contacts[i] as PackedVector3Array):
+			low = minf(low, y + row.dot(q))
+	return low
+
+
+func _sole_low(fk: Array, s: String) -> float:
+	var bi: int = body.soles[s][0]
+	var b: Basis = fk[1][bi]
+	var row := Vector3(b.x.y, b.y.y, b.z.y)
+	var low := INF
+	for q in (body.soles[s][1] as PackedVector3Array):
+		low = minf(low, (fk[0][bi] as Vector3).y + row.dot(q))
+	return low
+
+
+## A foot near the floor turns about its ankle until its sole lies flat: heel level with toe, side with side.
+func _flatten(g: Dictionary, fk: Array, s: String) -> void:
+	var sole: PackedVector3Array = body.soles[s][1]
+	if sole.size() < 4 or not g.has("foot_" + s):
+		return
+	var bi: int = body.soles[s][0]
+	var b: Basis = fk[1][bi]
+	var w := clampf(1.0 - _sole_low(fk, s) / 0.07, 0.0, 1.0)
+	if w <= 0.0:
+		return
+	var along := b * (sole[2] - sole[3])    # heel to toe
+	var across := b * (sole[0] - sole[1])   # left to right
+	var turn := Quaternion.IDENTITY
+	if Vector2(along.x, along.z).length() > 0.01:
+		turn = Quaternion(along.normalized(), Vector3(along.x, 0.0, along.z).normalized())
+	across = turn * across
+	if Vector2(across.x, across.z).length() > 0.01:
+		turn = Quaternion(across.normalized(), Vector3(across.x, 0.0, across.z).normalized()) * turn
+	g["foot_" + s] = Basis(Quaternion.IDENTITY.slerp(turn, w)) * (g["foot_" + s] as Basis)
+
+
+## Bring a foot down by d with the thigh and shin, keeping the knee bent the way it was.
+func _reach_down(g: Dictionary, fk: Array, s: String, d: float) -> void:
+	if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+		return
+	var hp: Vector3 = fk[0][_bone["thigh_" + s]]
+	var kp: Vector3 = fk[0][_bone["shin_" + s]]
+	var ap: Vector3 = fk[0][_bone["foot_" + s]]
+	var l1 := hp.distance_to(kp)
+	var l2 := kp.distance_to(ap)
+	var to := ap - Vector3(0.0, d, 0.0) - hp
+	var dist := clampf(to.length(), absf(l1 - l2) + 0.001, l1 + l2 - 0.001)
+	var u := to.normalized()
+	var bend := (kp - hp) - u * (kp - hp).dot(u)
+	bend = bend.normalized() if bend.length() > 0.0001 else Vector3.FORWARD
+	var ca := clampf((l1 * l1 + dist * dist - l2 * l2) / (2.0 * l1 * dist), -1.0, 1.0)
+	var knee := hp + (u * ca + bend * sqrt(1.0 - ca * ca)) * l1
+	var ankle := hp + u * dist
+	g["thigh_" + s] = Basis(Quaternion((kp - hp).normalized(), (knee - hp).normalized())) * (g["thigh_" + s] as Basis)
+	g["shin_" + s] = Basis(Quaternion((ap - kp).normalized(), (ankle - knee).normalized())) * (g["shin_" + s] as Basis)
 
 
 ## How far the fingers curl at the knuckles, in radians: relaxed, open to reach or signal, a grip in holds
