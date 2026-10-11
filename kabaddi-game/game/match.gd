@@ -10,6 +10,7 @@ extends Node3D
 
 signal finished(result: Dictionary)
 signal tutorial_event(name: String)
+signal game_event(kind: String, info: Dictionary)   # see _event
 
 const RAID_TIME := 30.0
 const RAID_GAP := 5.0          # seconds between raids (scaled by the clock speed)
@@ -54,6 +55,9 @@ const DUBKI_TIME := 0.42
 const JUMP_TIME := 0.62
 const SHOVE_TIME := 0.42
 const DIVE_TIME := 0.3
+const DIVE_LAUNCH := 4.2       # m/s: a dive leaves the crouch at once ...
+const DIVE_LAND := 1.5         # ... and has this much left as he lands (no long slide on the floor)
+const ARMS_OUT_AFTER := 0.15   # s a landed ankle dive can still grip, arms out
 const LUNGE := 0.45            # how much further an AI raider's touch starts, stepping in as it goes
 
 var config := {}
@@ -104,6 +108,15 @@ var _hints_shown := 0
 var raid_log: Array = []      # one entry per raid, for stats and tuning
 var raid_rule := RULE_CANT_AUTO
 var move_tries := {}          # move -> attempts, for tuning
+# Lab (tests/tackle_check): a scripted raid. The raider moves as lab_move says and makes only the moves he is
+# told to; defenders keep their place and go in only when told; lab_force settles a chance ("hold", "escape")
+# one way or the other so a scenario plays out the same every time. Contact itself is never forced.
+var lab := false
+var lab_move := Vector3.ZERO
+var lab_force := {}
+var grapple: Grapple = null   # the raider in defenders' hands (ankle holds so far; see Grapple)
+var event_log: Array = []      # the last gameplay events: [match seconds, raid number, kind, info]
+var _event_n := 0
 
 
 func _ready() -> void:
@@ -114,6 +127,7 @@ func _ready() -> void:
 	half_len = HALF_LEN
 	clock_speed = CLOCK_SPEEDS[clampi(int(config.get("length", Game.settings.length)), 0, 2)]
 	attract = bool(config.get("attract", false))
+	lab = bool(config.get("lab", false))
 	if String(config.get("mode", "")) == "tutorial":
 		clock_speed = 0.0
 	clock = half_len
@@ -336,6 +350,9 @@ func _process(delta: float) -> void:
 
 func _begin_setup() -> void:
 	_set_phase("setup")
+	if grapple:
+		grapple.clear()
+		grapple = null
 	_end_suspensions()
 	raider = _pick_raider(raiding)
 	raider.raids_made += 1
@@ -378,6 +395,9 @@ func _begin_setup() -> void:
 		var stam := float(raider.data.attrs.stamina)
 		raid.air_max = clampf(19.0 + 12.0 * (stam - 50.0) / 50.0, 15.0, 32.0) * (0.75 + 0.25 * raider.energy)
 		raid.t = raid.air_max
+	if lab:
+		raid.t = 999.0
+		raid.air_max = 999.0
 	if controlled:
 		controlled.set_ring(Game.C_SAFFRON)
 	raider.set_ring(Game.C_SAFFRON if raider == controlled else Color(1, 1, 1, 0.65))
@@ -450,6 +470,9 @@ func _walk_to_positions(dt: float, with_raider: bool) -> void:
 		for a in teams[t].players:
 			if not a.on_mat:
 				_to_bench(a, dt)
+				continue
+			if a.state in ["holding", "recover", "fallen"]:
+				a.drive(Vector3.ZERO, dt)   # getting up first
 				continue
 			if with_raider and a == raider:
 				a.seek(pos_in(t, 0.0, 1.4), 3.0, dt)
@@ -536,7 +559,7 @@ func _tick_raid(dt: float) -> void:
 			raider.lock_facing = watch != null
 	else:
 		raider.lock_facing = watch != null
-		move = _ai_raider(dt)
+		move = lab_move if lab else _ai_raider(dt)
 	_move_raider(move, dt)
 	if watch != null and not (raider == controlled and cam.mode == Game.CAM_FIRST):
 		raider.face_toward(watch.position, dt, 9.0)
@@ -551,8 +574,12 @@ func _tick_raid(dt: float) -> void:
 			_ai_defender(d, dt)
 	_separate(defs, dt)
 	_tick_bystanders(dt)
+	if grapple:
+		grapple.update(dt)
 	for h in holders:
 		_tire(h, 0.02 * dt)
+		if grapple and grapple.has(h):
+			continue   # placed by the grapple, his hands on the leg he holds
 		# A new holder closes in to arm's length over a few frames rather than appearing there.
 		h.hold_offset = h.hold_offset.move_toward(h.hold_offset.normalized() * 0.55, 3.0 * dt)
 		h.position = raider.position + h.hold_offset
@@ -935,7 +962,8 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 		var h: Athlete = holders[rng.randi() % holders.size()]
 		var right_move := (kind == "dubki") != (h.kind() == "ankle")
 		var chance := (0.62 if right_move else 0.2) * (0.4 + raider.move_skill(kind)) * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
-		if rng.randf() < chance:
+		if bool(lab_force.get("escape", rng.randf() < chance)):
+			_event("escape", {"how": kind, "from": h.pid(), "kind": h.kind()})
 			_release(h, true)
 			raider.set_state("dubki" if kind == "dubki" else "jump", DUBKI_TIME if kind == "dubki" else JUMP_TIME)
 			_move_moment(kind)
@@ -1040,9 +1068,14 @@ func _raider_dodge(dir: Vector3) -> void:
 func _release(h: Athlete, knocked: bool) -> void:
 	raid.holders.erase(h)
 	# Thrown off: he staggers back from the raider over a few frames (rather than appearing further off),
-	# about as far as he used to be put, and needs a moment before he can grab on again.
+	# about as far as he used to be put, and needs a moment before he can grab on again. A man holding an
+	# ankle is on the floor already: the leg is pulled out of his hands and he stays where he is.
 	var away := h.hold_offset.normalized() if h.hold_offset.length() > 0.01 else -h.facing
-	h.vel = Vector3(away.x, 0.0, away.z) * 4.0
+	var on_floor := grapple != null and grapple.has(h)
+	if on_floor:
+		grapple.release(h)
+		_event("release", {"who": h.pid(), "grapple": grapple.id})
+	h.vel = Vector3(away.x, 0.0, away.z) * (0.6 if on_floor else 4.0)
 	h.cooldown = maxf(h.cooldown, 0.15)
 	if knocked:
 		h.set_state("recover", 1.1)
@@ -1074,7 +1107,10 @@ func _defender_tackle(d: Athlete, kind := "") -> void:
 	d.dive_dir = dir
 	d.facing = dir
 	d.set_state("dive", DIVE_TIME)
+	d.vel = dir * DIVE_LAUNCH
+	d.reach_t = 0.0
 	d.cooldown = 1.4
+	_event("tackle_attempt", {"who": d.pid(), "kind": d.kind(), "gap": snappedf(dist, 0.01)})
 	_tire(d, 0.035)
 	d.chain_dive = false
 	Sfx.play("whoosh", -8.0, 0.8)
@@ -1087,6 +1123,22 @@ func _defender_tackle(d: Athlete, kind := "") -> void:
 		if p.state in ["ready", "idle"] and p.position.distance_to(raider.position) < 3.0:
 			_defender_tackle(p, p.style)
 			p.chain_dive = true
+
+
+## A dive: off the mark at once from the crouch, slowing through the air, landing with little left to slide.
+## (It used to start from a standstill at running acceleration, so most of its ground was covered sliding
+## on the floor after it.)
+func _dive_motion(d: Athlete, dt: float) -> void:
+	var p := clampf(d.st_t / maxf(d.st_len, 0.01), 0.0, 1.0)
+	d.vel = d.dive_dir * lerpf(DIVE_LAUNCH, DIVE_LAND, p)
+	d.position += d.vel * dt
+
+
+## A dive comes down: on the floor, getting up. An ankle diver's arms are still out for a moment.
+func _land(d: Athlete, getup: float) -> void:
+	d.set_state("recover", getup)
+	if d.kind() == "ankle":
+		d.reach_t = ARMS_OUT_AFTER
 
 
 ## Switch: the defender nearest the raider; pressed again soon after, the next nearest,
@@ -1143,9 +1195,9 @@ func _on_tap(pos: Vector2) -> void:
 func _user_defender(d: Athlete, dt: float) -> void:
 	match d.state:
 		"dive":
-			d.drive(d.dive_dir * 8.0, dt)
+			_dive_motion(d, dt)
 			if d.st_t >= d.st_len:
-				d.set_state("recover", 0.9)
+				_land(d, 0.9)
 		"recover":
 			d.drive(Vector3.ZERO, dt)
 			if d.st_t >= d.st_len:
@@ -1647,9 +1699,9 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 				_defender_tackle(d)
 			return
 		"dive":
-			d.drive(d.dive_dir * 8.0, dt)
+			_dive_motion(d, dt)
 			if d.st_t >= d.st_len:
-				d.set_state("recover", 1.15 - 0.25 * react)
+				_land(d, 1.15 - 0.25 * react)
 				if not raid.holders.has(d) and raid.holders.is_empty() and d.position.distance_to(raider.position) < 2.2:
 					_ooh()
 			# A dive that carries him over a boundary line (the lobby only counts once
@@ -1675,6 +1727,13 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 				d.set_state("ready")
 			_clamp_defender(d)
 			return
+	if lab:
+		d.lock_facing = true
+		d.drive(Vector3.ZERO, dt)
+		d.face_toward(raider.position, dt, 10.0)
+		if d.state != "ready":
+			d.set_state("ready")
+		return
 	var inside = raid.entered and opp_depth > 0.0
 	var alarm: bool = raid.alarm or (inside and opp_depth > Arena.BONUS + 0.3)
 	var target := formation_spot(d)
@@ -1825,10 +1884,21 @@ func _check_contacts(defs: Array) -> void:
 						d.tackle_kind = "block" if into else d.style
 						_attach(d, into)
 						continue
-		# Tackles.
+		# Tackles. An ankle dive needs a hand on the raider's lower leg while the arms are out (checked on
+		# the bodies as drawn, see Grapple); the other tackles still go by the distance between the two.
 		var kind = d.kind()
 		var catch_r: float = {"ankle": 0.9, "waist": 0.75, "dash": 0.85}.get(kind, 0.8)
-		if d.state == "dive" and dist < catch_r and raider.state != "shoved":
+		var contact := {}
+		var reached := false
+		if kind == "ankle":
+			if (d.state == "dive" or d.reach_t > 0.0) and raider.state not in ["shoved", "fallen"]:
+				contact = Grapple.ankle_contact(d, raider, grapple.sides_taken() if grapple else [], raider.airborne())
+				reached = not contact.is_empty()
+		else:
+			reached = d.state == "dive" and dist < catch_r and raider.state != "shoved"
+		if reached:
+			d.reach_t = 0.0   # the grip is taken or lost now
+			_event("tackle_contact", {"who": d.pid(), "kind": kind, "gap": snappedf(float(contact.get("gap", dist)), 0.001)})
 			if raider.state == "dodge" and rng.randf() < 0.6 * raider.agility:
 				continue
 			var low = kind == "ankle"
@@ -1864,9 +1934,11 @@ func _check_contacts(defs: Array) -> void:
 			hold_chance *= 0.75 + 0.25 * d.energy
 			if d == controlled:
 				hold_chance *= float(prof.user_hold)
-			if rng.randf() < hold_chance:
-				_attach(d)
+			if bool(lab_force.get("hold", rng.randf() < hold_chance)):
+				_attach(d, false, String(contact.get("side", "")))
 			else:
+				# Touched him but the grip would not hold: down he goes, empty-handed.
+				_event("grip_lost", {"who": d.pid(), "kind": kind})
 				d.set_state("recover", 1.0)
 		elif raid.holders.size() > 0 and raid.holders.size() < 4 and d.state in ["ready", "idle"] and dist < 0.85 and d != controlled \
 				and d.cooldown <= 0.0:
@@ -1889,6 +1961,7 @@ func _pile_on(piling: Array) -> void:
 
 
 func _touch(d: Athlete, via := "") -> void:
+	_event("touch", {"who": d.pid(), "via": via if via != "" else "contact"})
 	d.touched = true
 	raid["vias"] = raid.get("vias", []) + [via if via != "" else ("contact_" + d.state)]
 	raid.touched.append(d)
@@ -1904,10 +1977,10 @@ func _touch(d: Athlete, via := "") -> void:
 	Game.vibrate(25)
 
 
-func _attach(d: Athlete, block := false) -> void:
+func _attach(d: Athlete, block := false, side := "") -> void:
 	if raid.holders.has(d):
 		return
-	var was_dive := d.state == "dive" or block
+	var was_dive := d.state in ["dive", "recover"] or block
 	var first: bool = raid.holders.is_empty()
 	raid.holders.append(d)
 	raid.struggle = true
@@ -1918,6 +1991,13 @@ func _attach(d: Athlete, block := false) -> void:
 		off = -raider.facing * 0.55
 	d.hold_offset = off   # where he is; closes in to the hold (see _tick_raid)
 	d.set_state("holding")
+	if side != "":
+		# A hold on a leg he really reached: the grapple keeps his hands on it.
+		if grapple == null or grapple.state == "done":
+			grapple = Grapple.new(raider)
+		grapple.add(d, d.kind(), side)
+	_event("hold", {"who": d.pid(), "kind": d.kind() if was_dive else "pile", "part": side, "grapple": grapple.id if grapple else 0,
+		"holders": raid.holders.size()})
 	raider.set_state("held")
 	Sfx.play("thud", -2.0)
 	Sfx.voice("oof" if first else "grunt", -6.0, raider.voice_pitch())
@@ -2047,7 +2127,15 @@ func _end_raid(kind: String) -> void:
 			col = Game.C_MAGENTA
 			for h in holders_copy():
 				stats[h.pid()].tackle += 1
+			# Caught by the ankle, he trips and goes down with the foot still held; the holders keep hold
+			# until he is down (Grapple.takedown).
+			raider.fall_kind = "trip" if grapple and not grapple.holds.is_empty() else ""
 			raider.set_state("fallen")
+			if grapple and not grapple.holds.is_empty():
+				grapple.takedown()
+				raid["post_extra"] = 0.9
+			_event("takedown", {"raider": raider.pid(), "holders": holders_copy().map(func(h): return h.pid()),
+				"grapple": grapple.id if grapple else 0})
 			Sfx.play("thud", 2.0, 0.8)
 			Sfx.voice("oof", -4.0, raider.voice_pitch())
 		"out_of_bounds":
@@ -2137,8 +2225,16 @@ func _end_raid(kind: String) -> void:
 		officials.signal_points(dfn, all_out, def_pts + (2 if all_out else 0))
 	var holders_were := holders_copy()
 	for h in holders_were:
-		h.set_state("ready")
+		if grapple and grapple.has(h):
+			if kind == "tackle":
+				continue   # still holding as he goes down; up after (_tick_post)
+			# The raid is over with him on the floor holding a leg: he lets go and gets up.
+			grapple.release(h)
+			h.set_state("recover", 0.8)
+		else:
+			h.set_state("ready")
 	raid.holders = []
+	_event("raid_end", {"kind": kind, "raid_pts": raid_pts, "def_pts": def_pts, "raider_out": raider_out})
 	_react(kind, raid_pts, def_pts, raider_out, touched, holders_were)
 	if raid_pts > 0 and not raider_out and raider == controlled:
 		tutorial_event.emit("raid_point")
@@ -2211,6 +2307,23 @@ func _ooh() -> void:
 ## Players react: roars, slumps, appeals to the referee, the odd shove. Not every point
 ## gets a celebration, and no two look the same: roars, fist pumps, claps, high fives,
 ## pointing to the crowd. Big moments bring the whole team in.
+## Lying on the floor holding the raider (or getting up from it): cheering waits until he is on his feet.
+func _on_floor(a: Athlete) -> bool:
+	return a.state in ["holding", "recover"]
+
+
+## A gameplay event, as it really happened (the HUD's messages follow these): "tackle_attempt" (a dive),
+## "tackle_contact" (a hand or body reached him), "grip_lost", "hold" (a hold confirmed; "pile" for help),
+## "release", "escape", "takedown", "touch", "raid_end". Each gets a number, in order.
+func _event(kind: String, info := {}) -> void:
+	_event_n += 1
+	info["n"] = _event_n
+	event_log.append([snappedf(half_len - clock, 0.01), raid_log.size() + 1, kind, info])
+	if event_log.size() > 400:
+		event_log.pop_front()
+	game_event.emit(kind, info)
+
+
 func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched: Array, holders_were: Array) -> void:
 	var atk: int = raiding
 	var dfn := 1 - raiding
@@ -2247,16 +2360,19 @@ func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched
 	elif def_pts > 0:
 		var big := def_pts >= 2
 		var stars: Array = holders_were.duplicate()
-		if stars.size() >= 2 and rng.randf() < 0.45:
+		if stars.size() >= 2 and rng.randf() < 0.45 and not _on_floor(stars[0]) and not _on_floor(stars[1]):
 			_high_five(stars[0], stars[1])
 		for d in stars:
 			if d.state == "celebrate":
 				continue
 			var r := rng.randf()
-			if big or r < 0.5:
+			var how := -2 if big or r < 0.5 else (CELE_FIST if r < 0.68 else CELE_THUMP) if r < 0.8 else -3
+			if _on_floor(d):
+				d.set_meta("cheer", how)   # once he is up (_tick_post)
+			elif how == -2:
 				d.set_state("roar")
-			elif r < 0.8:
-				_celebrate(d, CELE_FIST if r < 0.68 else CELE_THUMP)
+			elif how >= 0:
+				_celebrate(d, how)
 		for d in on_mat(dfn):
 			if not stars.has(d) and rng.randf() < (0.85 if big else 0.3):
 				_celebrate(d, -1 if big else [CELE_CLAP, CELE_FIST, CELE_ARMS][rng.randi() % 3])
@@ -2264,9 +2380,10 @@ func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched
 			var lead: Athlete = stars[0]
 			hud.bubble(lead, tr("BUBBLE_SHABASH"), Game.C_MAGENTA.lightened(0.3))
 			Sfx.yell("shabash", -3.0)
-		if kind == "tackle" and not holders_were.is_empty() and rng.randf() < 0.35:
+		var standing := holders_were.filter(func(h): return not _on_floor(h))
+		if kind == "tackle" and not standing.is_empty() and rng.randf() < 0.35:
 			# A shove as the raider gets up; he claims he got a touch.
-			var pusher: Athlete = holders_were[rng.randi() % holders_were.size()]
+			var pusher: Athlete = standing[rng.randi() % standing.size()]
 			pusher.set_state("shove")
 			pusher.shove_target = raider
 			if rng.randf() < 0.4:
@@ -2614,9 +2731,27 @@ func _revive(t: int, n: int) -> void:
 
 func _tick_post(dt: float) -> void:
 	# Let the moment breathe, then reset.
+	if grapple:
+		grapple.update(dt)
 	for a in athletes:
+		# Holders whose takedown is done let go and get up; the tackled raider gets up after.
+		if a.state == "holding" and (grapple == null or not grapple.has(a)):
+			a.set_state("recover", 0.9)
 		if a.state == "fallen" and phase_t > 1.2:
-			a.set_state("walk")
+			a.set_state("recover", 0.9)
+			a.set_meta("cheer", -4)   # just walks off
+		if a.state == "recover" and a.st_t >= a.st_len:
+			var how: int = a.get_meta("cheer", -3)
+			a.remove_meta("cheer")
+			match how:
+				-2:
+					a.set_state("roar")
+				-4:
+					a.set_state("walk")
+				-3:
+					a.set_state("idle")
+				_:
+					_celebrate(a, how)
 		if a.state == "shove" and a.shove_target != null and a.st_t < 0.35:
 			var push: Vector3 = a.shove_target.position - a.position
 			push.y = 0
@@ -2647,7 +2782,7 @@ func _tick_post(dt: float) -> void:
 			a.drive(Vector3.ZERO, dt)
 	if phase_t > 1.0:
 		_walk_to_positions(dt, false)
-	if phase_t > 2.6:
+	if phase_t > 2.6 + float(raid.get("post_extra", 0.0)):
 		_next_raid()
 
 

@@ -3,6 +3,7 @@ extends CanvasLayer
 ## Broadcast-style scoreboard, raid clock, on-mat dots, event banners, struggle meter,
 ## pause menu, and the touch controls.
 
+var shown: Array = []     # every event message put up, in order (tests read it)
 var m  # Match
 var controls: TouchControls
 var root: Control
@@ -421,6 +422,7 @@ func banner(text: String) -> void:
 func event(text: String, color: Color, small := false) -> void:
 	if text == "":
 		return
+	shown.append(text)
 	var l := _label(text, "TitleLabel", 44 if small else 72, color)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))

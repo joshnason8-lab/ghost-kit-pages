@@ -16,6 +16,8 @@ var state := "idle"
 var st_t := 0.0
 var st_len := 0.0
 var cooldown := 0.0
+var reach_t := 0.0          # a dive has landed and his arms are still out: seconds he can still grip
+var fall_kind := ""         # how a tackled raider goes down ("trip": caught by the ankle)
 var touched := false
 var hold_offset := Vector3.ZERO
 var dive_dir := Vector3.ZERO
@@ -141,6 +143,8 @@ func set_state(s: String, length := 0.0) -> void:
 				variant = "right" if dive_dir.dot(facing.cross(Vector3.UP)) > 0.0 else "left"
 			"dive":
 				variant = kind()
+			"fallen":
+				variant = fall_kind
 		model.play_state(s, length, variant)
 
 
@@ -206,6 +210,7 @@ func face_toward(p: Vector3, dt: float, rate := 8.0) -> void:
 func _process(delta: float) -> void:
 	st_t += delta
 	cooldown = maxf(0.0, cooldown - delta)
+	reach_t = maxf(0.0, reach_t - delta)
 	_track_motion(delta)
 	rotation.y = _vis_yaw
 	_pose(delta)
@@ -315,8 +320,13 @@ func _pose(delta: float) -> void:
 		"held":
 			want_struggle = 1.0
 		"holding":
-			want_dive = 0.55
-			want_hold = 1.0
+			# An ankle hold is made lying on the floor, arms out to the leg (they reach it: RiggedBody); the
+			# other holds are made on his feet, arms round the raider.
+			if kind() == "ankle":
+				want_dive = 1.0
+			else:
+				want_dive = 0.55
+				want_hold = 1.0
 		"signal":
 			want_signal = 1.0
 		"celebrate":

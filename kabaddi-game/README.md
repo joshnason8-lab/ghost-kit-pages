@@ -99,12 +99,13 @@ i18n/       src/*.json (one file per language), strings.csv (generated)
 fonts/      Noto Sans (Latin, Devanagari, Bengali, Tamil, Telugu, Kannada, Gurmukhi) and Teko. All SIL OFL.
 tests/      compile_check, test_runner (headless smoke test), screenshots (renders a visual tour),
             ai_bench (AI v AI balance, and its raids beside match footage), locomotion_check (foot skate, pops, snaps:
-            see docs/MOTION_REALISM.md), motion_view (gaits, celebrations, signals), play_video (a bot that plays)
+            see docs/MOTION_REALISM.md), tackle_check (holds made on contact: docs/TACKLE_SYSTEM.md),
+            motion_view (gaits, celebrations, signals), play_video (a bot that plays)
 tools/      build_i18n.py, rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
             mocap/ (animation clips, and movement measured from match video)
 docs/       ASSETS.md (how to drop in real humans), KABADDI.md (the rules), BETA.md (testing on a phone), ROADMAP.md,
             FOOTAGE_STYLE.md (how real raids play, measured from match video), MOTION_REALISM.md (movement and
-            animation fixes, measured)
+            animation fixes, measured), TACKLE_SYSTEM.md (tackles and holds, measured)
 ```
 
 ## Tests
@@ -118,6 +119,7 @@ godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /tmp/shots
 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /tmp/shots moves   # raid moves
 godot --headless --path . --fixed-fps 30 res://tests/ai_bench.tscn -- 4 1   # AI v AI balance: 4 matches on Pro
+godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn      # tackle scenarios: contact, grip, events
 ```
 
 The smoke test does five things:

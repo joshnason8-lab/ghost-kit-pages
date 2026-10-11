@@ -472,15 +472,18 @@ func _process(delta: float) -> void:
 func _animate(delta: float) -> void:
 	if _life == 0.0:
 		_life = randf() * TAU
-	var run := clampf(speed / 3.5, 0.0, 1.0)
-	# Gait. A full cycle is two steps, and its length grows with speed, so each step covers
+	# The stride follows how fast he moves over the floor, but a body lying on it (diving, holding a leg,
+	# fallen) is slid along, not running: no stride.
+	var gait := speed * (1.0 - clampf(maxf(dive, fallen), 0.0, 1.0))
+	var run := clampf(gait / 3.5, 0.0, 1.0)
+	# Gait. A full cycle is two steps, and its length grows with gait, so each step covers
 	# the ground the body moves and the feet do not skate. Moving sideways is a crouched
 	# shuffle; moving away from where he is looking is a backpedal.
-	var cycle_len := clampf(0.9 + 0.48 * speed, 0.9, 3.2)
-	var side_w := clampf(absf(move_side) * 1.4 - 0.25, 0.0, 1.0) if speed > 0.25 else 0.0
+	var cycle_len := clampf(0.9 + 0.48 * gait, 0.9, 3.2)
+	var side_w := clampf(absf(move_side) * 1.4 - 0.25, 0.0, 1.0) if gait > 0.25 else 0.0
 	var back := move_fwd < -0.3 and side_w < 0.6
 	var fwd_w := 1.0 - side_w
-	_phase = fmod(_phase + delta * speed / cycle_len * TAU * (-1.0 if back else 1.0) + TAU, TAU)
+	_phase = fmod(_phase + delta * gait / cycle_len * TAU * (-1.0 if back else 1.0) + TAU, TAU)
 	var sw := sin(_phase)
 	var cw := cos(_phase)
 
@@ -490,7 +493,7 @@ func _animate(delta: float) -> void:
 	# Pelvis height: crouch lowers it, each step dips it (lowest at mid-stance), diving and
 	# falling drop it to the mat.
 	var hip_h := (0.06 + 0.88 * height / 1.78 + 0.04)
-	var y := hip_h - c * 0.26 - absf(cw) * 0.045 * run * fwd_w - struggle * 0.12 - side_w * 0.08 * minf(1.0, speed)
+	var y := hip_h - c * 0.26 - absf(cw) * 0.045 * run * fwd_w - struggle * 0.12 - side_w * 0.08 * minf(1.0, gait)
 	y = lerpf(y, 0.28, lie)
 	# Dubki: drop nearly to the mat. Lion jump: up and over.
 	y -= dubki * 0.5 * height / 1.78
@@ -504,7 +507,7 @@ func _animate(delta: float) -> void:
 	var pel_z := sw * 0.04 * run * fwd_w
 	var pel_y := sw * 0.12 * run * fwd_w
 	# Idle life: weight shifting from foot to foot and breathing.
-	var still := clampf(1.0 - speed * 2.0, 0.0, 1.0) * (1.0 - lie)
+	var still := clampf(1.0 - gait * 2.0, 0.0, 1.0) * (1.0 - lie)
 	pelvis.position.x = sin(_t * 0.55 + _life) * 0.025 * still
 	pel_z += sin(_t * 0.55 + _life) * 0.035 * still
 	# A side kick tips the body away from the kicking leg.
@@ -526,14 +529,14 @@ func _animate(delta: float) -> void:
 
 	# Legs. The thigh swings with the stride; the knee folds while that leg swings through
 	# toward the next step and is nearly straight as the foot lands.
-	var amp := clampf(0.2 + 0.13 * speed, 0.0, 0.8) * fwd_w * (0.6 if back else 1.0) * minf(1.0, speed * 2.0)
-	var fold := clampf(0.35 + 0.28 * speed, 0.35, 1.6) * fwd_w * minf(1.0, speed * 1.5)
+	var amp := clampf(0.2 + 0.13 * gait, 0.0, 0.8) * fwd_w * (0.6 if back else 1.0) * minf(1.0, gait * 2.0)
+	var fold := clampf(0.35 + 0.28 * gait, 0.35, 1.6) * fwd_w * minf(1.0, gait * 1.5)
 	var lthigh := sw * amp + c * 0.75
 	var rthigh := -sw * amp + c * 0.75
-	var lknee := -(0.08 * minf(1.0, speed) + fold * pow(maxf(0.0, cw), 1.5)) - c * 1.35
-	var rknee := -(0.08 * minf(1.0, speed) + fold * pow(maxf(0.0, -cw), 1.5)) - c * 1.35
+	var lknee := -(0.08 * minf(1.0, gait) + fold * pow(maxf(0.0, cw), 1.5)) - c * 1.35
+	var rknee := -(0.08 * minf(1.0, gait) + fold * pow(maxf(0.0, -cw), 1.5)) - c * 1.35
 	# A raider on his toes: quick light steps on the spot while he works the cover.
-	var tap := bounce * clampf(1.0 - speed * 0.7, 0.0, 1.0) * (1.0 - lie)
+	var tap := bounce * clampf(1.0 - gait * 0.7, 0.0, 1.0) * (1.0 - lie)
 	if tap > 0.01:
 		_tap = fmod(_tap + delta * TAU * 2.4, TAU)
 		var ts := sin(_tap)
@@ -544,7 +547,7 @@ func _animate(delta: float) -> void:
 		pelvis.position.y += 0.018 * tap * absf(ts)
 	# Side-shuffle: sit into it, the leading leg steps out, the trailing leg closes up.
 	var lead_r := move_side > 0.0
-	var step_w := 0.32 * side_w * minf(1.0, speed * 1.2)
+	var step_w := 0.32 * side_w * minf(1.0, gait * 1.2)
 	var out_lead := step_w * maxf(0.0, sw)
 	var out_trail := step_w * 0.55 * maxf(0.0, -sw)
 	var side_l := out_trail if lead_r else out_lead
@@ -839,6 +842,29 @@ func _apply_pose(pose: Dictionary, w: float, keep_arms := true, right_only := fa
 		if pose.has(pair[0]) and pair[2] > 0.0:
 			var node: Node3D = pair[1]
 			node.quaternion = node.quaternion.slerp(pose[pair[0]], pair[2])
+
+
+## A point on the body as drawn now, in world space (see RiggedBody.anchor for the parts). The classic
+## body works it out from its own joints.
+func anchor(part: String) -> Vector3:
+	if rig:
+		return rig.anchor(part)
+	var s := height / 1.78
+	var side := part.substr(part.length() - 1)
+	match part.substr(0, part.length() - 2) if part != "waist" else part:
+		"hand":
+			var el: Node3D = el_l if side == "l" else el_r
+			return el.global_transform * Vector3(0, -0.29 * s, 0)
+		"foot", "ankle", "shin":
+			var kn: Node3D = kn_l if side == "l" else kn_r
+			var down := {"foot": 0.44, "ankle": 0.39, "shin": 0.29}[part.substr(0, part.length() - 2)] as float
+			return kn.global_transform * Vector3(0, -down * s, 0)
+		"thigh":
+			var hip: Node3D = hip_l if side == "l" else hip_r
+			return hip.global_transform * Vector3(0, -0.24 * s, 0)
+		"waist":
+			return spine.global_transform * Vector3(0, -0.04 * s, 0)
+	return global_position
 
 
 ## The final pose stage, after the hand-made pose and the clips are laid over it. A transition (a clip let

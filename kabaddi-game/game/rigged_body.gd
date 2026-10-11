@@ -88,6 +88,12 @@ var _plant := {}             # side -> [world position of the held sole point, h
                              #          let go at the slip limit (stepping)]
 var _replant := {}           # side -> seconds before a foot let go at the slip limit may be held again
 var _plant_t := -1.0         # the motion's clock at the last frame, for the time step
+# Holds (see Grapple): hands reaching for a point on another player's body, and a foot kept where a
+# defender holds it. hands_free is where this body's hands are before they reach (world, last frame).
+var hand_target := {}        # side -> {model: HumanModel or null, part, point (world, when model is null), w, fade}
+var foot_goal := {}          # side -> [world position of the ankle joint, weight]
+var hands_free := Vector3.INF
+var _hand_t := -1.0
 var _curl := {"l": 0.7, "r": 0.7}
 
 
@@ -524,6 +530,7 @@ func drive(h: Node3D) -> void:
 	var pel: Vector3 = inv * h.pelvis.global_position
 	var k := float(body.leg_len) / maxf(0.5, h.leg_length())
 	var hips := _ground(g, Vector3(pel.x * k, pel.y * k, pel.z * k), h)
+	_reach_hands(g, hips, float(h._t))
 	for name in g:
 		var i: int = _bone[name]
 		var p: int = _parent[i]
@@ -573,6 +580,16 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 		_plant_feet(g, fk, dt)
 	else:
 		_plant.clear()
+	# A foot a defender holds stays where he holds it.
+	if not foot_goal.is_empty():
+		var inv := skeleton.global_transform.affine_inverse()
+		for s in foot_goal:
+			if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+				continue
+			_plant.erase(s)
+			var fg: Array = foot_goal[s]
+			var ankle: Vector3 = fk[0][_bone["foot_" + s]]
+			_ik_two(g, fk, "thigh_" + s, "shin_" + s, "foot_" + s, ankle.lerp(inv * (fg[0] as Vector3), clampf(float(fg[1]), 0.0, 1.0)))
 	return Vector3(hips.x, hips.y + target - _lowest(_fk(g, hips), standing), hips.z)
 
 
@@ -655,6 +672,40 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 		_ik_leg(g, fk, s, goal)
 
 
+## A point on the body as drawn now, in world space, for holds and contact checks: "hand_l"/"hand_r" (the
+## middle of the grip), "ankle_l"/"ankle_r" (just above the ankle joint, where a hand closes round the
+## leg), "shin_l"/"shin_r" (a hand's width higher), "thigh_l"/"thigh_r" (mid thigh), "waist" (the small of
+## the back). Bone poses are relative to the skeleton, so they are taken through its global transform.
+func anchor(part: String) -> Vector3:
+	if skeleton == null:
+		return global_position
+	var xf := skeleton.global_transform
+	var side := part.substr(part.length() - 1)
+	match part.substr(0, part.length() - 2) if part != "waist" else part:
+		"hand":
+			var wrist := _bone_head("hand_" + side)
+			var tip := _bone_head("fingers_" + side) if _bone.has("fingers_" + side) else wrist
+			if tip == wrist:
+				var hb := skeleton.get_bone_global_pose(int(_bone["hand_" + side])).basis
+				tip = wrist + hb * (body.rest_dirs["hand_" + side] as Vector3) * 0.08
+			return xf * wrist.lerp(tip, 0.6)
+		"foot":
+			return xf * _bone_head("foot_" + side)
+		"ankle":
+			return xf * _bone_head("foot_" + side).lerp(_bone_head("shin_" + side), 0.12)
+		"shin":
+			return xf * _bone_head("foot_" + side).lerp(_bone_head("shin_" + side), 0.35)
+		"thigh":
+			return xf * _bone_head("thigh_" + side).lerp(_bone_head("shin_" + side), 0.55)
+		"waist":
+			return xf * _bone_head("hips").lerp(_bone_head("spine"), 0.7)
+	return global_position
+
+
+func _bone_head(name: String) -> Vector3:
+	return skeleton.get_bone_global_pose(int(_bone[name])).origin
+
+
 ## Every bone's head position and orientation for the pose in g (bones not in g keep their parent's).
 func _fk(g: Dictionary, hips: Vector3) -> Array:
 	var n := _parent.size()
@@ -726,12 +777,63 @@ func _reach_down(g: Dictionary, fk: Array, s: String, d: float) -> void:
 	_ik_leg(g, fk, s, (fk[0][_bone["foot_" + s]] as Vector3) - Vector3(0.0, d, 0.0))
 
 
-## Two-bone IK: turn the thigh and shin so the ankle reaches `goal`, keeping the knee bent the way it was.
-## The foot keeps its own orientation (its basis in g is absolute).
 func _ik_leg(g: Dictionary, fk: Array, s: String, goal: Vector3) -> void:
-	var hp: Vector3 = fk[0][_bone["thigh_" + s]]
-	var kp: Vector3 = fk[0][_bone["shin_" + s]]
-	var ap: Vector3 = fk[0][_bone["foot_" + s]]
+	_ik_two(g, fk, "thigh_" + s, "shin_" + s, "foot_" + s, goal)
+
+
+## Hands reaching for their targets (hand_target): each arm turned at shoulder and elbow so the middle of
+## the grip lands on the target point, the hand and fingers turning with the forearm. A target that has
+## been let go of fades out where it was. Also notes where the hands would be without reaching.
+func _reach_hands(g: Dictionary, hips: Vector3, now: float) -> void:
+	if hand_target.is_empty() or not (_bone.has("hand_l") and _bone.has("hand_r")):
+		hands_free = Vector3.INF
+		return
+	var dt := clampf(now - _hand_t, 0.0, 0.1) if _hand_t >= 0.0 else 0.0
+	_hand_t = now
+	var fk := _fk(g, hips)
+	var xf := skeleton.global_transform
+	var inv := xf.affine_inverse()
+	hands_free = xf * (((fk[0][_bone.hand_l] as Vector3) + (fk[0][_bone.hand_r] as Vector3)) * 0.5)
+	for s in hand_target.keys():
+		var ht: Dictionary = hand_target[s]
+		if float(ht.get("fade", 0.0)) > 0.0:
+			ht.w = float(ht.w) - float(ht.fade) * dt
+			if float(ht.w) <= 0.0:
+				hand_target.erase(s)
+				continue
+		var goal_w: Vector3
+		if ht.get("model") != null and is_instance_valid(ht.model):
+			goal_w = (ht.model as HumanModel).anchor(String(ht.part))
+		elif ht.has("point"):
+			goal_w = ht.point
+		else:
+			continue
+		var wrist: Vector3 = fk[0][_bone["hand_" + s]]
+		var hb: Basis = fk[1][_bone["hand_" + s]]
+		var grip := wrist + hb * (body.rest_dirs["hand_" + s] as Vector3) * _hand_len(s) * 0.6
+		var goal := (inv * goal_w) - (grip - wrist)
+		var carry := ["hand_" + s]
+		for f in ["fingers_" + s, "fingertips_" + s]:
+			if g.has(f):
+				carry.append(f)
+		_ik_two(g, fk, "upperarm_" + s, "forearm_" + s, "hand_" + s, wrist.lerp(goal, clampf(float(ht.w), 0.0, 1.0)), carry)
+
+
+func _hand_len(s: String) -> float:
+	if _bone.has("fingers_" + s):
+		return ((_rest_head[_bone["fingers_" + s]] as Vector3) - (_rest_head[_bone["hand_" + s]] as Vector3)).length() * 1.6
+	return 0.09 / scale.y
+
+
+## Two-bone IK: turn the upper and lower bones so the end joint reaches `goal` (skeleton space), keeping
+## the middle joint bent the way it was. The end bone keeps its own orientation (its basis in g is absolute)
+## unless it is listed in carry, whose bones turn with the lower one.
+func _ik_two(g: Dictionary, fk: Array, upper: String, lower: String, end: String, goal: Vector3, carry := []) -> void:
+	if not (g.has(upper) and g.has(lower)):
+		return
+	var hp: Vector3 = fk[0][_bone[upper]]
+	var kp: Vector3 = fk[0][_bone[lower]]
+	var ap: Vector3 = fk[0][_bone[end]]
 	var l1 := hp.distance_to(kp)
 	var l2 := kp.distance_to(ap)
 	var to := goal - hp
@@ -742,8 +844,13 @@ func _ik_leg(g: Dictionary, fk: Array, s: String, goal: Vector3) -> void:
 	var ca := clampf((l1 * l1 + dist * dist - l2 * l2) / (2.0 * l1 * dist), -1.0, 1.0)
 	var knee := hp + (u * ca + bend * sqrt(1.0 - ca * ca)) * l1
 	var ankle := hp + u * dist
-	g["thigh_" + s] = Basis(Quaternion((kp - hp).normalized(), (knee - hp).normalized())) * (g["thigh_" + s] as Basis)
-	g["shin_" + s] = Basis(Quaternion((ap - kp).normalized(), (ankle - knee).normalized())) * (g["shin_" + s] as Basis)
+	# Bases in g are whole (model space), so each bone turns from where it points to where it must.
+	g[upper] = Basis(Quaternion((kp - hp).normalized(), (knee - hp).normalized())) * (g[upper] as Basis)
+	var r2 := Basis(Quaternion((ap - kp).normalized(), (ankle - knee).normalized()))
+	g[lower] = r2 * (g[lower] as Basis)
+	for c in carry:
+		if g.has(c):
+			g[c] = r2 * (g[c] as Basis)
 
 
 ## How far the fingers curl at the knuckles, in radians: relaxed, open to reach or signal, a grip in holds

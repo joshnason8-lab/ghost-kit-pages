@@ -517,11 +517,20 @@ func _run() -> void:
 		check(d0.chain_partner == null, "running into a chain gets you caught or breaks it")
 		for h in mm.raid.holders.duplicate():
 			mm._release(h, false)
-		# Lion jump over a dive at the ankles.
+		# Lion jump over a dive at the ankles. An ankle dive grips only with its hands on his legs (checked
+		# on the bodies as drawn), so the diver is laid out with his hands at the raider's feet first.
 		d0.tackle_kind = "ankle"
-		d0.position = rd.position + Vector3(0.3, 0, 0)
-		d0.set_state("dive", mm.DIVE_TIME)
-		rd.set_state("jump", mm.JUMP_TIME)
+		d0.position = rd.position + Vector3(1.0, 0, 0)
+		d0.facing = Vector3(-1, 0, 0)
+		d0.set_state("dive", 9.0)
+		rd.set_state("jump", 9.0)
+		await frames(6)
+		var reach: Vector3 = (d0.model.anchor("hand_l") + d0.model.anchor("hand_r")) * 0.5 - d0.position
+		d0.position = rd.position - Vector3(reach.x, 0, reach.z)
+		await frames(3)
+		d0.st_len = mm.DIVE_TIME
+		d0.st_t = mm.DIVE_TIME * 0.6
+		rd.st_len = mm.JUMP_TIME
 		rd.st_t = mm.JUMP_TIME * 0.4
 		mm._check_contacts(mm.defenders())
 		check(d0.state == "recover" and mm.raid.holders.is_empty(), "lion jump clears an ankle dive")
