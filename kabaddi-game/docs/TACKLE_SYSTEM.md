@@ -1,8 +1,8 @@
 # Tackles and holds
 
 Milestones B to E of the realism plan (see `MOTION_REALISM.md` for milestone A, movement): making a hold
-real contact between two bodies, then building every tackle, the team's defence and the match's events on
-it. Each milestone is measured before and after with `tests/tackle_check.tscn` (see "Measuring").
+real contact between two bodies (B), then building every tackle (C), the team's defence (D) and the match's
+events and scoring (E) on it. Each milestone is measured before and after (see "Measuring").
 
 ## How a tackle worked (as found)
 
@@ -247,6 +247,37 @@ Still open after milestone D:
 - The way home is still open most of the time: a raider who touches and turns is usually quicker home than
   anyone behind him, as in the footage, where defenders went for him as he stepped in rather than chasing.
 - The line's own shape (depth, spread) is the formation tuned to the footage in 0.7.5 and is unchanged.
+
+## Milestone E: events, scoring and the last transitions
+
+- **Every message has an event behind it** (`_event`). Each HUD message about play now goes up where a
+  gameplay event is recorded, in the same place, so the record and the screen cannot disagree: holds,
+  escapes (lion jump, dubki, dodge), a chain broken through, defenders out over a line, the dash, bonus
+  points, named moves (`move`), touches and the raid's end.
+- **Points given once, checked.** Each raid's log now says which team raided, and `ai_bench` checks every
+  match:
+  - each team's score equals its breakdown (raids, tackles, all outs, extras);
+  - its raid points are the sum of its raids';
+  - its tackle points are the sum of its defence's.
+
+  The **touch** and **flurry** scenarios check one raid at a time: the score goes up by exactly what the raid
+  gave, once, with every event in order.
+- **Names that match**: a hold's message names the hold actually made (milestone C), and "Chain tackle!"
+  comes once per hold.
+- **Transitions**:
+  - a standing holder (waist, block) knocked off by an escape staggers back on his feet instead of
+    playing the get-up from the floor;
+  - holders on the floor get up before they celebrate, and a tackled raider gets up before he walks off
+    (milestone B).
+
+**Checks.** `tests/test_runner.tscn` passes (184 checks); `tests/tackle_check.tscn` all twelve scenarios as
+expected; `ai_bench`: points add up in every match (8 matches, 245 raids).
+
+Still open:
+
+- "Broke free!" goes up when a raider slips one of several holds, though the others may still bring him down
+  ("Broke free!" then "Tackle!").
+- Nothing new on screen marks a hold's slot or a defender's role outside the debug overlay.
 
 ## Measuring
 

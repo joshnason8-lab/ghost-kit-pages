@@ -1026,6 +1026,7 @@ func _safe_dir(move: Vector3, dist: float) -> Vector3:
 
 ## A named move came off: shout it, count it, and tell the tutorial.
 func _move_moment(move: String) -> void:
+	_event("move", {"move": move})
 	raid.moves.append(move)
 	var key: String = {"dubki": "EV_DUBKI", "lion": "EV_LION", "backkick": "EV_BACK_KICK", "sidekick": "EV_SIDE_KICK", "toe": "EV_TOE"}.get(move, "")
 	if key != "":
@@ -1064,6 +1065,7 @@ func _raider_dodge(dir: Vector3) -> void:
 		var h: Athlete = holders[rng.randi() % holders.size()]
 		var chance := 0.5 * raider.agility * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
 		if rng.randf() < chance:
+			_event("escape", {"how": "dodge", "from": h.pid(), "kind": h.kind()})
 			_release(h, true)
 			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD)
 			if raider == controlled:
@@ -1084,7 +1086,8 @@ func _release(h: Athlete, knocked: bool) -> void:
 		_event("release", {"who": h.pid(), "grapple": grapple.id})
 	h.vel = Vector3(away.x, 0.0, away.z) * {"ankle": 0.6, "thigh": 1.5, "waist": 3.0, "block": 3.0}.get(style, 4.0)
 	h.cooldown = maxf(h.cooldown, 0.15)
-	if knocked:
+	# Knocked off: a man on the floor (an ankle or thigh hold) gets up; one on his feet staggers back.
+	if knocked and style not in ["waist", "block"]:
 		h.set_state("recover", 1.1)
 	else:
 		h.set_state("ready")
@@ -1249,6 +1252,7 @@ func _user_defender(d: Athlete, dt: float) -> void:
 		return
 	# Crossing the midline into the raider's half during a raid is out.
 	if depth_in(d.team, d.position) < -0.12 and d.state != "holding":
+		_event("defender_out", {"who": d.pid(), "why": "midline"})
 		hud.event(tr("EV_CROSSED_MIDLINE"), Game.C_DANGER)
 		_put_out(d)
 		teams[raiding].score += 1
@@ -1261,6 +1265,7 @@ func _user_defender(d: Athlete, dt: float) -> void:
 
 
 func _defender_out_of_bounds(d: Athlete) -> void:
+	_event("defender_out", {"who": d.pid(), "why": "bounds"})
 	hud.event(tr("EV_OUT_OF_BOUNDS"), Game.C_DANGER)
 	_put_out(d)
 	teams[raiding].score += 1
@@ -1439,6 +1444,7 @@ func _dash_hit(d: Athlete) -> void:
 	raid.dash_t = 1.2
 	raid.alarm = true
 	d.set_state("recover", 0.8)
+	_event("dash", {"who": d.pid()})
 	hud.event(tr("EV_DASH"), Game.C_MAGENTA)
 	Sfx.play("thud", -2.0, 1.2)
 	arena.excite(0.6)
@@ -2097,6 +2103,7 @@ func _check_lines() -> void:
 			airborne = foot > line and dep <= line
 	if not raid.bonus and foot > line and (golden or on_mat(opp).size() >= 6) and raid.holders.is_empty():
 		raid.bonus = true
+		_event("bonus", {"airborne": airborne})
 		hud.event(tr("EV_BONUS_AIR") if airborne else tr("EV_BONUS"), Game.C_GOLD)
 		if raider == controlled:
 			tutorial_event.emit("bonus")
@@ -2252,7 +2259,7 @@ func _end_raid(kind: String) -> void:
 	_revive(atk, raid_pts - bonus)
 	_revive(dfn, 1 if def_pts > 0 else 0)
 
-	raid_log.append({"kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": float(raid.air_max) - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size(), "vias": raid.get("vias", []), "probe_t": float(raid.get("probe_t", 0.0))})
+	raid_log.append({"team": atk, "kind": kind, "raider_out": raider_out, "raid_pts": raid_pts, "def_pts": def_pts, "touches": touched.size(), "bonus": bonus, "t": float(raid.air_max) - float(raid.t), "moves": raid.moves.duplicate(), "chain_caught": raid.chain_caught, "def_moves": raid.def_moves.duplicate(), "first_hold": raid.get("first_hold", ""), "hold_depth": raid.get("hold_depth", -1.0), "held_for": float(raid.get("hold_t", raid.t)) - float(raid.t), "holders_end": raid.holders.size(), "vias": raid.get("vias", []), "probe_t": float(raid.get("probe_t", 0.0))})
 	_post_messages = [[msg, col]]
 	var all_out := false
 	# All outs.
@@ -2590,6 +2597,7 @@ func _check_chain_cross() -> void:
 		else:
 			# Barged through: the hands come apart.
 			_unchain(d)
+			_event("chain_broken", {"who": [d.pid(), p.pid()]})
 			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true)
 		return
 
