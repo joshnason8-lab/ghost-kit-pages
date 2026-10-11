@@ -46,6 +46,12 @@ var clip: MocapClip = null  # captured motion that overrides the hand-made pose
 var clip_time := 0.0
 var clip_loop := true
 var clip_weight := 0.0
+var clip_rate := 1.0         # clip seconds per second: a fitted move plays over the move's length
+var _prev_clip: MocapClip = null   # the clip before, fading out
+var _prev_time := 0.0
+var _prev_rate := 1.0
+var _prev_loop := true
+var _prev_weight := 0.0
 var move_weight := 0.0      # how much a captured running clip carries him now, 0..1
 var _moves = null           # the captured running set (MocapClip.moves()), once looked up
 var _move: MocapClip = null
@@ -652,21 +658,28 @@ func _animate(delta: float) -> void:
 	el_r.rotation.x = rel
 
 
-## Blend captured joint angles over the hand-made pose.
+## Blend captured motion over the hand-made pose: the state's clip, and the one before it fading out.
 func _apply_clip(delta: float) -> void:
 	# Looping stance clips give way to the run cycle when the player is moving fast.
 	var want := 0.0
 	if clip:
 		want = 1.0 if not clip_loop else clampf(1.0 - (speed - 0.8) / 2.0, 0.0, 1.0)
-	clip_weight = move_toward(clip_weight, want, delta * 6.0)
-	if clip == null or clip_weight <= 0.0:
+	# A quick move comes in fast: its clip already starts from the run-up.
+	clip_weight = move_toward(clip_weight, want, delta * (6.0 if clip_loop else 14.0))
+	if _prev_clip and _prev_weight > 0.0:
+		_prev_weight = move_toward(_prev_weight, 0.0, delta * 6.0)
+		_prev_time += delta * _prev_rate
+		_play_frame(_prev_clip, _prev_time, _prev_loop, _prev_weight)
+	if clip and clip_weight > 0.0:
+		clip_time += delta * clip_rate
+		_play_frame(clip, clip_time, clip_loop, clip_weight)
+
+
+func _play_frame(c: MocapClip, t: float, loop: bool, w: float) -> void:
+	if c.version >= 2:
+		_apply_pose(c.sample_pose(t, loop), w)
 		return
-	clip_time += delta
-	var w := clip_weight
-	if clip.version >= 2:
-		_apply_pose(clip.sample_pose(clip_time, clip_loop), w)
-		return
-	var f := clip.sample(clip_time, clip_loop)
+	var f := c.sample(t, loop)
 	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
 	if f.has("height"):
 		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(f.height), w)
@@ -680,6 +693,29 @@ func _apply_clip(delta: float) -> void:
 			pair[1].rotation.x = lerpf(pair[1].rotation.x, float(f[pair[0]]), w)
 
 
+## Captured motion for an athlete's state (MocapClip.FOR_STATE), if there is any; none hands back to the
+## hand-made pose. Of several clips, he takes the one that starts nearest the pose he is in (so a player
+## lying on his back gets up the way people do from their back), with a little of his own taste.
+func play_state(state: String, length := 0.0, variant := "") -> void:
+	var opts := MocapClip.options(state, variant) if state != "" else []
+	if opts.is_empty():
+		play_clip(null, true)
+		return
+	var how := MocapClip.how(state)
+	var best: MocapClip = null
+	var best_score := INF
+	for i in opts.size():
+		var c: MocapClip = opts[i]
+		var score := float(hash([_life, c.name]) % 1000) / 1000.0 * 0.6
+		if c.version >= 2:
+			var first := c.sample_pose(0.0, false)
+			score += pelvis.quaternion.angle_to(first.pelvis) + absf(pelvis.position.y / (0.98 * height / 1.78) - float(first.h)) * 2.0
+		if score < best_score:
+			best = c
+			best_score = score
+	play_clip(best, how == "loop", length if how == "fit" else 0.0)
+
+
 ## Captured running: whenever he travels, the running clip nearest his direction and speed carries the
 ## body, played at the rate that keeps the planted foot still. Moves that need the body for themselves
 ## (dives, dubki, jumps, kicks, holds, celebrations) and a deep crouch keep the hand-made pose; the right
@@ -691,7 +727,8 @@ func _apply_moves(delta: float) -> void:
 		return
 	var busy := maxf(maxf(dive, fallen), maxf(maxf(struggle, dubki), maxf(jump, maxf(kick, back_kick))))
 	busy = maxf(busy, maxf(seated, maxf(celebrate, shove)))
-	var want := clampf((speed - 0.35) / 0.6, 0.0, 1.0) * (1.0 - busy) * (1.0 - 0.7 * crouch)
+	var want := clampf((speed - 0.35) / 0.6, 0.0, 1.0) * (1.0 - busy)
+	var crouched := 1.0 if crouch > 0.5 else 0.0
 	var way := Vector2(move_side, move_fwd)
 	way = way.normalized() if way.length() > 0.1 else Vector2(0, 1)
 	var s178 := speed * 1.78 / height   # his speed as a 1.78 m player's
@@ -702,11 +739,14 @@ func _apply_moves(delta: float) -> void:
 		if align < 0.6:
 			continue
 		var score := (1.0 - align) * 3.0 + absf(log(maxf(s178, 0.3) / (c as MocapClip).speed))
+		score += absf(crouched - (1.0 if (c as MocapClip).low else 0.0)) * 1.5   # a crouched player shuffles low
 		if score < best_score:
 			best = c
 			best_score = score
 	if best == null:
 		want = 0.0
+	elif not best.low:
+		want *= 1.0 - 0.7 * crouch   # an upright clip for a crouching player: mostly his own crouch
 	move_weight = move_toward(move_weight, want, delta * 5.0)
 	if best != null and best != _move:
 		# Switch clips through a quick cross-fade, starting the new one at the same point of its stride.
@@ -749,10 +789,19 @@ func _apply_pose(pose: Dictionary, w: float) -> void:
 			node.quaternion = node.quaternion.slerp(pose[pair[0]], pair[2])
 
 
-func play_clip(c: MocapClip, loop: bool) -> void:
-	if c == clip:
+func play_clip(c: MocapClip, loop: bool, fit := 0.0) -> void:
+	if c == clip and c != null and loop and clip_loop:
 		return
+	# The clip playing now fades out under the new one.
+	if clip and clip_weight > 0.0:
+		_prev_clip = clip
+		_prev_time = clip_time
+		_prev_rate = clip_rate
+		_prev_loop = clip_loop
+		_prev_weight = clip_weight
+		clip_weight = 0.0
 	clip = c
 	clip_loop = loop
+	clip_rate = c.length / fit if (c and fit > 0.0) else 1.0
 	# Start loops at a random point so a whole team never moves in lockstep.
 	clip_time = randf() * c.length if (c and loop) else 0.0

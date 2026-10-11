@@ -44,9 +44,15 @@ func _ready() -> void:
 	var root: Node3D = doc.generate_scene(state)
 	add_child(root)
 	_sk = root.find_children("*", "Skeleton3D", true, false)[0]
+	# "mixamorig:LeftArm", imported as "mixamorig_LeftArm" -> "leftarm"
+	var prefix := RegEx.create_from_string("^mixamorig\\d*[:_]")
 	for b in _sk.get_bone_count():
 		var n := String(_sk.get_bone_name(b)).to_lower()
-		_bone[n.substr(n.rfind(":") + 1)] = b   # "mixamorig:LeftArm" -> "leftarm"
+		_bone[prefix.sub(n.substr(n.rfind(":") + 1) if not n.begins_with("mixamorig") else n, "")] = b
+	if not _bone.has("hips"):
+		push_error("no Hips bone in " + src + ": not a Mixamo or Meshy skeleton")
+		get_tree().quit(1)
+		return
 	var map: Dictionary = MESHY if _bone.has("spine02") else MIXAMO
 	var anim := _longest(root.find_children("*", "AnimationPlayer", true, false))
 	if anim == null:

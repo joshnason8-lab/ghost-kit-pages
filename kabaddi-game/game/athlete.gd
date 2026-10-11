@@ -123,9 +123,16 @@ func set_state(s: String, length := 0.0) -> void:
 	st_t = 0.0
 	st_len = length
 	if model:
-		# Real captured motion for this move, if any has been recorded.
-		var c = MocapClip.for_state(s)
-		model.play_clip(c, MocapClip.loops(s))
+		# Real captured motion for this move, if there is any: which celebration, which way a dodge goes.
+		var variant := ""
+		match s:
+			"celebrate":
+				variant = str(cele_kind)
+			"dodge":
+				variant = "right" if dive_dir.dot(facing.cross(Vector3.UP)) > 0.0 else "left"
+			"dive":
+				variant = kind()
+		model.play_state(s, length, variant)
 
 
 func busy() -> bool:

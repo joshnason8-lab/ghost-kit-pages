@@ -158,7 +158,16 @@ or GLB). It matches the skeleton to the game's joints by bone name, keeps each j
 godot --headless --path . res://tools/mocap/fbx_to_clip.tscn -- Running.fbx assets/mocap/move_run.json move_run --loop
 ```
 
-Name a clip `move_*` to add it to the running set (run, jog, walk, strafes, backpedal): whenever a player
-travels, the clip nearest his direction and speed carries the body, at the rate that keeps the planted foot
-still, and the right arm stays free for a hand touch. A clip named in `MocapClip.FOR_STATE` (for example
-`celebrate` or `tackle_dive`) plays for that move instead.
+Name a clip `move_*` to add it to the running set (run, jog, walk, strafes, backpedal, crouched shuffle):
+whenever a player travels, the clip nearest his direction, speed and crouch carries the body, at the rate
+that keeps the planted foot still, and the right arm stays free for a hand touch. Other clips serve a move
+by their name's prefix (`MocapClip.FOR_STATE`): `kick_*`, `backkick_*`, `dodge_left_*`/`dodge_right_*`,
+`evade_*`, `dubki_*`, `jump_*`, `dive_<tackle>_*`, `held_*`, `fall_*`, `getup_*`, `ready_*`, `idle_*`,
+`cele_<kind>_*`, `slump_*`. A move with several clips gives each player his own, and of the get-ups he takes
+the one that starts nearest the way he is lying. Quick moves are cut to their action and stretched over the
+move's length in the game.
+
+`mixamo_set.py` builds the game's set from the Mixamo downloads: which part of which animation serves each
+move (and left-right flips of one-sided ones). `clip_events.py` finds those parts: it poses the game's
+skeleton through a clip and reports when a foot reaches furthest, the hips are lowest or highest, and so on.
+`res://tests/clip_sheet.tscn` draws clips as strips of poses on the game's body, for choosing and checking.

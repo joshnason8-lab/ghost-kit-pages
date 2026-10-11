@@ -7,16 +7,25 @@ extends RefCounted
 ## move_* are the running set (run, jog, walk, strafes, backpedal), played whenever a player moves the way
 ## and about the speed they were captured at, at the rate that keeps the feet planted.
 
-# Athlete state -> clip name, and whether the clip loops.
+## Athlete state -> which clips can play for it (every clip whose name starts so; each player gets his own
+## pick) and how: "loop" round and round, "fit" stretched over the move's length in the game, "once" at its
+## own speed, holding the last pose.
 const FOR_STATE := {
-	"dive": ["tackle_dive", false],
-	"held": ["struggle", true],
-	"touch": ["hand_touch", false],
-	"kick": ["toe_touch", false],
-	"ready": ["defend_idle", true],
-	"raid": ["raid_idle", true],
-	"holding": ["hold", true],
-	"celebrate": ["celebrate", true],
+	"ready": ["ready_", "loop"],
+	"raid": ["raid_", "loop"],
+	"idle": ["idle_", "loop"],
+	"kick": ["kick_", "fit"],
+	"backkick": ["backkick_", "fit"],
+	"dodge": ["dodge_", "fit"],
+	"evade": ["evade_", "fit"],
+	"dubki": ["dubki_", "fit"],
+	"jump": ["jump_", "fit"],
+	"dive": ["dive_", "fit"],
+	"held": ["held_", "loop"],
+	"fallen": ["fall_", "once"],
+	"recover": ["getup_", "fit"],
+	"celebrate": ["cele_", "loop"],
+	"slump": ["slump_", "once"],
 }
 const DIR := "res://assets/mocap"
 
@@ -30,6 +39,7 @@ var heights := PackedFloat32Array()    # hips' height against standing, per fram
 var quats: Array[PackedFloat32Array] = []   # per frame: x, y, z, w for each joint
 var speed := 0.0                       # m/s a 1.78 m player travels at in this clip (0: on the spot)
 var dir := Vector2.ZERO                # which way: x to his right, y forward
+var low := false                       # crouched all through (a defender's shuffle)
 
 static var _library := {}
 static var _scanned := false
@@ -46,16 +56,29 @@ static func moves() -> Array:
 	return out
 
 
-static func for_state(state: String):
+## The clips that can play for a state; variant narrows them (a celebration's kind, a dodge's side).
+static func options(state: String, variant := "") -> Array:
 	if not _scanned:
 		_scan()
 	if not FOR_STATE.has(state):
-		return null
-	return _library.get(FOR_STATE[state][0], null)
+		return []
+	var prefix: String = FOR_STATE[state][0]
+	var out := []
+	var narrowed := []
+	for c in _library.values():
+		var n: String = (c as MocapClip).name
+		if n.begins_with(prefix) and not n.begins_with("move_"):
+			out.append(c)
+			if variant != "" and n.begins_with(prefix + variant):
+				narrowed.append(c)
+	if state in ["celebrate", "dive"]:
+		return narrowed   # only the kind asked for: a celebration's, a tackle's
+	return narrowed if not narrowed.is_empty() else out
 
 
-static func loops(state: String) -> bool:
-	return FOR_STATE.has(state) and bool(FOR_STATE[state][1])
+## "loop", "fit" or "once" (see FOR_STATE).
+static func how(state: String) -> String:
+	return String(FOR_STATE[state][1]) if FOR_STATE.has(state) else "loop"
 
 
 static func _scan() -> void:
@@ -86,6 +109,7 @@ static func load_file(path: String) -> MocapClip:
 		c.speed = float(parsed.get("speed", 0.0))
 		var d: Array = parsed.get("dir", [0, 0])
 		c.dir = Vector2(float(d[0]), float(d[1]))
+		c.low = float(parsed.get("h_max", 1.0)) < 0.9
 	else:
 		c.frames = parsed.frames
 	c.length = float(parsed.get("length", float(parsed.frames[-1].t)))
