@@ -64,6 +64,7 @@ var _life := 0.0            # per-player offset so idle movement is never in ste
 var _rng := RandomNumberGenerator.new()
 var clip: MocapClip = null  # captured motion that overrides the hand-made pose
 var clip_time := 0.0
+var _wait_shown := false        # a clip waiting to play (clip_time < 0) holds its first frame on show (play_state)
 var clip_loop := true
 var clip_weight := 0.0
 var clip_rate := 1.0         # clip seconds per second: a fitted move plays over the move's length
@@ -840,7 +841,7 @@ func _turn(n: Node3D, axis: Vector3, a: float) -> void:
 func _apply_clip(delta: float) -> void:
 	# Looping stance clips give way to the run cycle when the player is moving fast.
 	var want := 0.0
-	if clip:
+	if clip and (clip_time >= 0.0 or _wait_shown):
 		want = 1.0 if not clip_loop else clampf(1.0 - (speed - 0.8) / 2.0, 0.0, 1.0)
 	# A quick move comes in fast: its clip already starts from the run-up.
 	clip_weight = move_toward(clip_weight, want, delta * (6.0 if clip_loop else 14.0))
@@ -880,8 +881,10 @@ func _play_frame(c: MocapClip, t: float, loop: bool, w: float) -> void:
 
 ## Captured motion for an athlete's state (MocapClip.FOR_STATE), if there is any; none hands back to the
 ## hand-made pose. Of several clips, he takes the one that starts nearest the pose he is in (so a player
-## lying on his back gets up the way people do from their back), with a little of his own taste.
-func play_state(state: String, length := 0.0, variant := "") -> void:
+## lying on his back gets up the way people do from their back), with a little of his own taste. With wait, a
+## move's clip waits that long before it plays: a jump holds its first frame (gathering himself for it), anything
+## else is not shown until then (the pose underneath carries on).
+func play_state(state: String, length := 0.0, variant := "", wait := 0.0) -> void:
 	var opts := MocapClip.options(state, variant) if state != "" else []
 	if opts.is_empty():
 		play_clip(null, true)
@@ -898,7 +901,8 @@ func play_state(state: String, length := 0.0, variant := "") -> void:
 		if score < best_score:
 			best = c
 			best_score = score
-	play_clip(best, how == "loop", length if how == "fit" else 0.0)
+	play_clip(best, how == "loop", length if how == "fit" else 0.0, wait)
+	_wait_shown = state == "jump"
 	if how == "once" and best.version >= 2:
 		# A fall goes on from the frame nearest the pose he is in: a raider already toppling over a held leg
 		# carries on from there, rather than from the clip's upright start.
@@ -1104,7 +1108,14 @@ func _ground() -> void:
 	pelvis.global_position.y += global_position.y + air - low
 
 
-func play_clip(c: MocapClip, loop: bool, fit := 0.0) -> void:
+## Seconds from now until the clip playing leaves the floor (a jump's takeoff, MocapClip.takeoff), or -1.
+func takeoff_in() -> float:
+	if clip == null or clip_loop or clip.takeoff() < 0.0:
+		return -1.0
+	return maxf(0.0, (clip.takeoff() - clip_time) / maxf(clip_rate, 0.01))
+
+
+func play_clip(c: MocapClip, loop: bool, fit := 0.0, wait := 0.0) -> void:
 	if c == clip and c != null and loop and clip_loop:
 		return
 	# A clip still fading out under this one is let go; the final pose stage carries its share over.
@@ -1124,3 +1135,5 @@ func play_clip(c: MocapClip, loop: bool, fit := 0.0) -> void:
 	clip_rate = c.length / fit if (c and fit > 0.0) else 1.0
 	# Start loops at a random point so a whole team never moves in lockstep.
 	clip_time = _rng.randf() * c.length if (c and loop) else 0.0
+	if c and not loop and wait > 0.0:
+		clip_time = -wait * clip_rate   # its first frame held (sample_pose clamps) until the wait is over

@@ -727,6 +727,55 @@ standing team-mate who had helped got up the same way as one who had been undern
 | Grip, 90th percentile, all through: ankle, thigh, waist, block | 0.112, 0.081, 0.103, 0.142 m | 0.079, 0.082, 0.010, 0.021 m |
 | The raider moving along the floor while down (fastest) | 0.77 m/s | 0.00 m/s |
 
+### The lion jump out of an ankle hold (2:52-2:54)
+
+**Seen:** the escape was announced, but the bodies did not show how he got free: the hold let go when the
+button was pressed, before he had left the floor, and the holder was already getting up.
+
+**What was doing it:**
+- `Match._raider_escape` decided the escape and let go of the hold (`_release`) in the frame the jump was called
+  for. The jump clip had only just started (its crouch, both feet on the floor), so the held foot came free
+  before the jump could have pulled it out of the holder's hands.
+- `Match._release` set the holder getting up (`recover`) in the same frame, and `Grapple._open_hands` left his
+  hands where they had held. He was pushing himself up before the raider had left the floor, with nothing to
+  show that the leg had been torn out of his hands.
+- "Lion jump!" and "Broke free!" went up at the press too.
+- When the last hold went, `_release` set the raider back to "raid", and `_raider_escape` then started the jump
+  again. A dodge out of a hold was cut off the same way, and not started again.
+- In the air, his body sped up from 0.8 to 6.9 m/s: `Match._move_raider` drove him toward the jump's speed all
+  through it.
+
+**What it is now:**
+- **Decided at the press, done with the body.** `_raider_escape` rolls for the escape when the jump is called
+  for, as before. Out of a hold, the raider first gathers himself for `JUMP_GATHER` (0.18 s):
+  - he sinks on his free leg (`Grapple.GATHER_SINK`), the held foot still in the holder's hands;
+  - the jump clip holds its first frame, the crouch it springs from (`HumanModel.play_state` with a wait).
+- **The hold lets go as he springs** (`Match._tick_escape`): halfway from the end of the gather to the jump
+  clip's own takeoff (`MocapClip.takeoff`, the first frame its lowest point is 3 cm off the floor).
+  - The held foot comes out of the hands over `Grapple.TORN_FREE` (0.07 s), as the push-off lifts him.
+  - His speed over the floor is set then and kept through the air.
+- **The holder** keeps his hands on the leg as it is torn out of them, losing it over `TORN_GO` (0.3 s;
+  `Grapple.release`, torn), so his arms are pulled out after it. He lies where it left him, reaching after it,
+  for `LOST_GRIP` (0.3 s), then gets up. The get-up clip waits, unseen, until then.
+- **"Lion jump!" and "Broke free!"** go up when the hold lets go, not at the press.
+- **A jump that does not slip the hold** (the roll failed, or another hold is still on him) goes no further
+  than the push-off: the hold stops him leaving the floor, and he comes back down onto his free foot, jolted,
+  still held.
+- `_release` no longer resets a raider in the middle of the move that freed him (a jump, a dubki or a dodge).
+
+| Lion jump out of an ankle hold, `escape` | V2 | Now |
+|---|---|---|
+| From the jump called for to the hold letting go | 0.03 s (the next frame) | 0.23 s (0.18 s gathering, then the push-off) |
+| Free foot off the floor when the hold lets go | 0.03 m | 0.06 m |
+| From the hold letting go to both feet off the floor | 0.03 s | 0.03 s |
+| His speed over the floor, landing against taking off | 5.1 m/s faster | the same |
+| The holder's hands out from his shoulders, the 0.3 s after (median) | 0.42 m | 0.55 m |
+| The holder lying where the leg left him, before getting up | 0.03 s | 0.30 s |
+| "Lion jump!" and "Broke free!" | at the press | when the hold lets go |
+
+A new scenario, `stopped`, is a lion jump that does not slip the hold. There is no escape and nothing is let go.
+He is held again 0.20 s after the jump was called for, and brought down later.
+
 ## Measuring
 
 ```sh
@@ -760,6 +809,8 @@ but contact never is. The scenarios:
 - **duck**: held only at the ankle, a dubki slips nothing.
 - **drag**: the `catch` hold with the raider driving for the line as hard as he can, as the AI does. He drags
   the holder a little at a time and is brought down.
+- **stopped**: a lion jump out of the ankle hold that does not slip it. The hold stops him leaving the floor;
+  he is held still, and brought down.
 
 Each scenario prints:
 
@@ -782,7 +833,11 @@ Each scenario prints:
   - how much of the raider's travel was sliding rather than hopping, and the number of hops;
   - how soon he answers the hold;
   - which way he lies once down, against the way the hold pulls him;
-- each holder's grip all through, and while the raider is still on his feet (`grip_each`, "held").
+- each holder's grip all through, and while the raider is still on his feet (`grip_each`, "held");
+- after a takedown, when each holder let go, how he got up and when he was up (`recovery`);
+- a lion jump out of the hold (`escape_timing`): when the hold lets go after the jump is called for, the free
+  foot's height then, when both feet leave the floor, how much his speed changes in the air, how far out the
+  holder's hands reach after the leg, and how long he lies before getting up.
 
 A scenario fails if the events are not what it must produce. The motion numbers are measured, not checked:
 they are for comparing a change, alongside looking at a recording.

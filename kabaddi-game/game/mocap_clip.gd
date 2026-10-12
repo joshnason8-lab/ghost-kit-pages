@@ -45,6 +45,7 @@ var low := false                       # crouched all through (a defender's shuf
 var arms := "both"                     # "r": only the right arm is the clip's, the left keeps the game's pose
 
 var _landing := -2.0                   # see landing()
+var _takeoff := -2.0                   # see takeoff()
 
 static var _library := {}
 static var _scanned := false
@@ -141,6 +142,21 @@ func landing() -> float:
 			_landing = times[i]
 			break
 	return _landing
+
+
+## When a jump leaves the floor (s): the first frame the body's lowest point is more than 3 cm off it. -1 for a
+## clip that never leaves it, or starts off it.
+func takeoff() -> float:
+	if _takeoff > -2.0:
+		return _takeoff
+	_takeoff = -1.0
+	if version < 2 or airs.is_empty() or airs[0] > 0.03:
+		return _takeoff
+	for i in airs.size():
+		if airs[i] > 0.03:
+			_takeoff = times[i]
+			break
+	return _takeoff
 
 
 ## Version 2: the pose at time t: {"h": hips' height against standing, "a": the body's lowest point off the

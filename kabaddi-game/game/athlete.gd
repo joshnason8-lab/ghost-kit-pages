@@ -16,6 +16,8 @@ var lock_facing := false
 var state := "idle"
 var st_t := 0.0
 var st_len := 0.0
+var wait := 0.0             # s at the start of the state before its move plays (gathering for a lion jump out of a
+                            # hold; lying a moment, the leg torn from his hands, before getting up)
 var cooldown := 0.0
 var reach_t := 0.0          # a dive has landed and his arms are still out: seconds he can still grip
 var hands_prev: Array = []  # a diving defender's hands last frame (world), for the contact check
@@ -149,7 +151,7 @@ func ground_pos() -> Vector3:
 	return Vector3(position.x, 0, position.z)
 
 
-func set_state(s: String, length := 0.0) -> void:
+func set_state(s: String, length := 0.0, wait_first := 0.0) -> void:
 	if s != "holding":
 		hold_style = ""
 		haul = 0.0
@@ -163,6 +165,7 @@ func set_state(s: String, length := 0.0) -> void:
 	state = s
 	st_t = 0.0
 	st_len = length
+	wait = wait_first
 	if model:
 		# Real captured motion for this move, if there is any: which celebration, which way a dodge goes.
 		var variant := ""
@@ -180,7 +183,7 @@ func set_state(s: String, length := 0.0) -> void:
 					return
 			"fallen":
 				variant = fall_kind
-		model.play_state(s, length, variant)
+		model.play_state(s, length - wait, variant, wait)
 
 
 func busy() -> bool:
@@ -207,11 +210,11 @@ func voice_pitch() -> float:
 	return 0.88 + float(absi(hash(String(data.get("id", name)))) % 1000) / 1000.0 * 0.26
 
 
-## Airborne part of a lion jump.
+## Airborne part of a lion jump (after any gathering for it).
 func airborne() -> bool:
 	if state != "jump":
 		return false
-	var p := st_t / maxf(st_len, 0.01)
+	var p := (st_t - wait) / maxf(st_len - wait, 0.01)
 	return p > 0.12 and p < 0.88
 
 
@@ -299,7 +302,8 @@ func _pose(delta: float) -> void:
 	var want_seated := 0.0
 	var want_signal := 0.0
 	var want_bounce := 0.0
-	var p := clampf(st_t / maxf(st_len, 0.01), 0.0, 1.0)
+	var p := clampf((st_t - wait) / maxf(st_len - wait, 0.01), 0.0, 1.0)
+	var waiting := st_t < wait
 	match state:
 		"ready":
 			want_crouch = 0.85
@@ -324,6 +328,9 @@ func _pose(delta: float) -> void:
 			want_dubki = clampf(sin(p * PI) * 1.6, 0.0, 1.0)
 		"jump":
 			want_jump = sin(p * PI)
+			if waiting:
+				# Gathering himself on the free leg to spring out of the hold.
+				want_crouch = clampf(st_t / maxf(wait, 0.01) * 1.5, 0.0, 1.0)
 		"telegraph":
 			# The wind-up shows how he will tackle: low for an ankle hold, upright and wide
 			# for a thigh hold or a block.
@@ -352,6 +359,10 @@ func _pose(delta: float) -> void:
 			want_lean = 0.25
 		"recover":
 			want_fallen = 1.0 - clampf((p - 0.55) * 2.2, 0.0, 1.0)
+			if waiting:
+				# Flat on the floor where the leg was torn from his hands, reaching after it, before he gets up.
+				want_dive = 1.0
+				want_fallen = 0.0
 		"rise":
 			# Up off his knees, or out of the bend he went down with the raider in: the crouch and the reach for
 			# the hold come out of him as he comes up (an ease, slow at both ends).
@@ -437,7 +448,7 @@ func _pose(delta: float) -> void:
 	m.haul_drive = hold_style == "block"
 	m.strain = lerpf(m.strain, strain if state == "holding" else 0.0, clampf(delta * 10.0, 0.0, 1.0))
 	# On one leg, the other held by the ankle: in quickly as the foot is caught, out as he goes down or gets free.
-	var one := 1.0 if state == "held" and held_leg != 0.0 else 0.0
+	var one := 1.0 if (state == "held" or (state == "jump" and waiting)) and held_leg != 0.0 else 0.0
 	m.one_leg = move_toward(m.one_leg, one, delta * (8.0 if one > 0.0 else (2.5 if state == "fallen" else 6.0)))
 	if held_leg != 0.0:
 		m.held_leg = held_leg

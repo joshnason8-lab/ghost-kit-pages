@@ -53,6 +53,8 @@ const DODGE_TIME := 0.26
 const BACKKICK_TIME := 0.46
 const DUBKI_TIME := 0.42
 const JUMP_TIME := 0.62
+const JUMP_GATHER := 0.18      # s a held raider gathers himself on his free leg before a lion jump out of the hold
+const LOST_GRIP := 0.3         # s a holder lies reaching after a leg torn out of his hands before he gets up
 const SHOVE_TIME := 0.42
 const DIVE_TIME := 0.3
 const DIVE_LAUNCH := 4.2       # m/s: a dive leaves the crouch at once ...
@@ -566,6 +568,7 @@ func _tick_raid(dt: float) -> void:
 		raider.set_state("held" if holders.size() > 0 else "raid")
 	if holders.size() > 0 and raider.state == "raid":
 		raider.set_state("held")
+	_tick_escape(dt)
 
 	var move := Vector3.ZERO
 	var watch := _raider_watch()
@@ -623,7 +626,12 @@ func _move_raider(move: Vector3, dt: float) -> void:
 	elif raider.state == "dubki" and holders.is_empty():
 		raider.drive(raider.dive_dir * raider.max_speed * 1.5, dt)
 	elif raider.state == "jump" and holders.is_empty():
-		raider.drive(raider.dive_dir * raider.max_speed * (1.15 + 0.3 * raider.move_skill("lion")), dt)
+		if raider.wait > 0.0:
+			# Sprung out of a hold: his speed was set as he left the floor (_tick_escape), and in the air it stays.
+			raider.position += raider.vel * dt
+			raider.face_toward(raider.position + raider.vel, dt, 10.0)
+		else:
+			raider.drive(raider.dive_dir * _jump_speed(), dt)
 	elif raider.state == "backkick":
 		raider.drive(move * raider.max_speed * 0.6, dt)
 	elif raider.state in ["touch", "kick"]:
@@ -995,8 +1003,10 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 		Sfx.play("whoosh", -6.0, 0.8)
 		Sfx.voice("grunt", -10.0, raider.voice_pitch())
 	else:
-		raider.set_state("jump", JUMP_TIME)
-		raider.cooldown = JUMP_TIME + 0.6
+		# Out of a hold he gathers himself on the free leg first, and springs from there.
+		var gather := JUMP_GATHER if holders.size() > 0 else 0.0
+		raider.set_state("jump", JUMP_TIME + gather, gather)
+		raider.cooldown = JUMP_TIME + gather + 0.6
 		raider.energy = maxf(0.4, raider.energy - 0.035)
 		_spend_breath("lion")
 		Sfx.play("whoosh", -4.0, 0.6)
@@ -1009,12 +1019,19 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 		var h: Athlete = pick[0]
 		var fit: float = pick[1]
 		var chance := 0.62 * fit * (0.4 + raider.move_skill(kind)) * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
-		if fit > 0.0 and bool(lab_force.get("escape", rng.randf() < chance)):
+		var slips := fit > 0.0 and bool(lab_force.get("escape", rng.randf() < chance))
+		if kind == "lion":
+			# Decided now, done as he springs (_tick_escape): halfway from the end of the gather to the jump clip's
+			# own takeoff, so the foot is out of the holder's hands (Grapple.TORN_FREE) as he leaves the floor.
+			var up: float = raider.model.takeoff_in() if raider.model else -1.0
+			var at := JUMP_GATHER + (up - JUMP_GATHER) * 0.5 if up >= JUMP_GATHER else JUMP_GATHER + JUMP_TIME * 0.06
+			raid.escape = {"kind": kind, "from": h if slips else null, "at": at}
+			return
+		if slips:
 			var free := holders.size() == 1
 			_event("escape", {"how": kind, "from": h.pid(), "kind": h.kind(),
 				"hold": grapple.style_of_hold(h) if grapple else "", "free": free})
 			_release(h, true)
-			raider.set_state("dubki" if kind == "dubki" else "jump", DUBKI_TIME if kind == "dubki" else JUMP_TIME)
 			_move_moment(kind)
 			# "Broke free!" only when he is: slipping one of several holds is not getting away.
 			if free:
@@ -1024,6 +1041,49 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 					tutorial_event.emit("broke_free")
 			if holders.is_empty():
 				raid.progress = maxf(0.0, raid.progress - 0.35)
+
+
+## A lion jump out of a hold comes off when the body does it, not when it is called for (_raider_escape): the leg
+## comes out of the holder's hands as the raider leaves the floor, and that is when it is shown. A jump the holds
+## keep (it did not slip the hold, or another hold is still on him) goes no further: they stop him leaving the
+## floor, and he comes back down onto his free foot, jolted.
+func _tick_escape(dt: float) -> void:
+	if not raid.has("escape"):
+		return
+	var e: Dictionary = raid.escape
+	if raider.state != "jump":
+		raid.erase("escape")   # taken down as he gathered himself, or the raid is over
+		return
+	if raider.st_t + dt < float(e.at):
+		return   # (his body is posed this frame at st_t + dt: the match runs first)
+	raid.erase("escape")
+	var h: Athlete = e.get("from")
+	if h != null and raid.holders.has(h):
+		var free: bool = raid.holders.size() == 1
+		_event("escape", {"how": e.kind, "from": h.pid(), "kind": h.kind(),
+			"hold": grapple.style_of_hold(h) if grapple else "", "free": free})
+		_release(h, true, true)
+		_move_moment(String(e.kind))
+		# "Broke free!" only when he is: slipping one of several holds is not getting away.
+		if free:
+			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true)
+			_ooh()
+			if raider == controlled:
+				tutorial_event.emit("broke_free")
+		if raid.holders.is_empty():
+			raid.progress = maxf(0.0, raid.progress - 0.35)
+	if raid.holders.is_empty():
+		raider.vel = raider.dive_dir * _jump_speed() * 0.75   # the spring off the free leg
+	else:
+		raider.set_state("held")
+		if grapple:
+			grapple.jolt = 1.0
+		Sfx.voice("grunt", -8.0, raider.voice_pitch())
+
+
+## How fast a lion jump carries him (m/s).
+func _jump_speed() -> float:
+	return raider.max_speed * (1.15 + 0.3 * raider.move_skill("lion"))
 
 
 ## The escape that beats what is coming: "jump" for a low tackle, "dubki" for a high one
@@ -1131,7 +1191,7 @@ func _raider_dodge(dir: Vector3) -> void:
 				raid.progress = maxf(0.0, raid.progress - 0.35)
 
 
-func _release(h: Athlete, knocked: bool) -> void:
+func _release(h: Athlete, knocked: bool, torn := false) -> void:
 	raid.holders.erase(h)
 	# Thrown off: he staggers back from the raider over a few frames (rather than appearing further off),
 	# about as far as he used to be put, and needs a moment before he can grab on again. A man holding an
@@ -1139,16 +1199,22 @@ func _release(h: Athlete, knocked: bool) -> void:
 	var away := h.hold_offset.normalized() if h.hold_offset.length() > 0.01 else -h.facing
 	var style := grapple.style_of_hold(h) if grapple else ""
 	if style != "":
-		grapple.release(h)
+		grapple.release(h, torn)
 		_event("release", {"who": h.pid(), "grapple": grapple.id})
 	h.vel = Vector3(away.x, 0.0, away.z) * {"ankle": 0.6, "thigh": 1.5, "waist": 3.0, "block": 3.0}.get(style, 4.0)
 	h.cooldown = maxf(h.cooldown, 0.15)
-	# Knocked off: a man on the floor (an ankle or thigh hold) gets up; one on his feet staggers back.
-	if knocked and style not in ["waist", "block"]:
+	# Knocked off: a man on the floor (an ankle or thigh hold) gets up; one on his feet staggers back. A leg torn
+	# out of his hands (a lion jump) pulls him after it rather than throwing him back: he lies a moment where it
+	# left him, reaching after it, before he gets up.
+	if torn and style in ["ankle", "thigh"]:
+		h.vel = Vector3.ZERO
+		h.set_state("recover", 1.1 + LOST_GRIP, LOST_GRIP)
+	elif knocked and style not in ["waist", "block"]:
 		h.set_state("recover", 1.1)
 	else:
 		h.set_state("ready")
-	if raid.holders.is_empty():
+	# Free of every hold: he raids on, or carries on with the move that freed him.
+	if raid.holders.is_empty() and raider.state not in ["jump", "dubki", "dodge"]:
 		raider.set_state("raid")
 
 

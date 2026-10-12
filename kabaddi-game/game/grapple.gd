@@ -39,6 +39,8 @@ const BODY_R := 0.12           # m: the raider's middle is this thick round its 
 const LEG_REACH := 0.55        # m from the hips (flat) to a held foot: further and he drags it
 const BODY_FOLLOW := 2.5       # m/s the holder's body may be moved, beyond the drag itself, to keep his reach
 const LET_GO := 0.15           # s for the hands to come off when a hold breaks
+const TORN_GO := 0.3           # s a holder's hands follow a leg torn out of them (a lion jump) as they come off it ...
+const TORN_FREE := 0.07        # ... and the s it takes the foot to come out of them
 const TRIP_HOLD := 0.7         # s the holders keep hold while a tackled raider goes down (when his fall's landing is
                                # not known); otherwise each lets go at his own moment after it (takedown, LET_AFTER)
 const LET_GO_MAX := 1.6        # s after the takedown by which every holder has let go
@@ -73,6 +75,7 @@ const HOP_TIME := 0.26         # s in the air
 const HOP_HEIGHT := 0.06       # m off the floor
 const HOP_GAP := 0.3           # s on the free foot between hops (longer as his balance goes)
 const HOP_BACK := 0.03         # m: pulled further than the held leg reaches, he hops back to stay on his feet
+const GATHER_SINK := 0.2       # how much lower (share of his leg) he sinks on the free leg gathering for a lion jump
 const DRAG_MAX := 0.12         # m one hop can drag a holder along the floor
 const TAKEDOWN_DRAG := 1.2     # m/s a falling raider's leg can pull the ankle holder after it
 # How long after the raider lands each hold lets go (takedown): hands round a leg as it reaches the floor, an ankle
@@ -368,8 +371,9 @@ func add(d: Athlete, style: String, slot: String, reached := false) -> void:
 
 
 ## A hold broken (an escape, a dubki, the hold given up): a held foot comes free at once, the hands open on
-## the spot where they held over LET_GO.
-func release(d: Athlete) -> void:
+## the spot where they held over LET_GO. A leg torn out of the hands (torn: a lion jump) takes them with it a
+## little way as they lose it (TORN_GO).
+func release(d: Athlete, torn := false) -> void:
 	var i := _find(d)
 	if i < 0:
 		return
@@ -378,8 +382,8 @@ func release(d: Athlete) -> void:
 	d.haul = 0.0
 	d.strain = 0.0
 	if String(h.slot).begins_with("leg_"):
-		_unpin(String(h.slot).substr(4))   # the leg swings free of where it was held, not in one frame
-	_open_hands(d)
+		_unpin(String(h.slot).substr(4), TORN_FREE if torn else LET_GO)   # the leg swings free, not in one frame
+	_open_hands(d, false, torn)
 	_priority(d, 0)
 	if holds.is_empty() and state == "holding":
 		_end()
@@ -712,7 +716,7 @@ func _footwork(dt: float) -> void:
 			# Down on the free foot: he faces the way his body has got round to; the rest of a turn waits for the
 			# next hop (turning on the spot would drag the planted foot round).
 			raider.facing = raider.body_facing()
-	elif legs < 2:
+	elif legs < 2 and raider.state != "jump":   # gathering himself for a lion jump, he stays on the free foot
 		if float(pulled.get("tension", 0.0)) > HOP_BACK:
 			# Pulled back further than the held leg reaches: a quick hop back toward the hold.
 			var s := String(pulled.slot).substr(4)
@@ -792,6 +796,10 @@ func _footwork_pose() -> void:
 	var l := leg * LEG_SPAN
 	var rise := sqrt(maxf(0.0, l * l - dist * dist)) + at.y - floor_y
 	raider.stance = clampf(rise / leg, LOW_HIP, STAND_HIP)
+	if raider.state == "jump" and raider.wait > 0.0:
+		# Gathering himself for a lion jump out of the hold (Match._raider_escape): down on the free leg to spring.
+		var g := clampf(raider.st_t / raider.wait, 0.0, 1.0)
+		raider.stance = maxf(LOW_HIP, raider.stance - GATHER_SINK * g * g * (3.0 - 2.0 * g))
 	if hop >= 0.0:
 		var p := clampf(hop / hop_len, 0.0, 1.0)
 		raider.hop = minf(p, 0.999)
@@ -929,13 +937,15 @@ func _pin(s: String, at: Vector3, w: float) -> void:
 		rig.foot_goal[s] = [at, w]
 
 
-## A held foot let go of: the leg swings back from where it was held over LET_GO, not in one frame.
-func _unpin(s: String) -> void:
+## A held foot let go of: the leg swings back from where it was held over LET_GO (or the time given), not in one
+## frame.
+func _unpin(s: String, time := LET_GO) -> void:
 	var rig: RiggedBody = raider.model.rig if raider.model else null
 	if rig == null or not rig.foot_goal.has(s):
 		return
 	var fg: Array = rig.foot_goal[s]
-	rig.foot_goal[s] = [fg[0], minf(1.0, float(fg[1])), 1.0 / LET_GO]
+	var fade := maxf(1.0 / time, float(fg[2]) if fg.size() > 2 else 0.0)   # one coming free faster already keeps on
+	rig.foot_goal[s] = [fg[0], minf(1.0, float(fg[1])), fade]
 
 
 func _reach(d: Athlete, hs: String, part: String, offset: Vector3, w: float) -> void:
@@ -945,13 +955,16 @@ func _reach(d: Athlete, hs: String, part: String, offset: Vector3, w: float) -> 
 	rig.hand_target[hs] = {"model": raider.model, "part": part, "offset": offset, "w": w, "fade": 0.0}
 
 
-func _open_hands(d: Athlete, now := false) -> void:
+func _open_hands(d: Athlete, now := false, torn := false) -> void:
 	var rig: RiggedBody = d.model.rig if d.model else null
 	if rig == null:
 		return
 	for hs in rig.hand_target.keys():
 		if now:
 			rig.hand_target.erase(hs)
+		elif torn:
+			# Still on the part as it goes, losing it.
+			rig.hand_target[hs]["fade"] = 1.0 / TORN_GO
 		else:
 			# Stay where they held and fade out.
 			var ht: Dictionary = rig.hand_target[hs]

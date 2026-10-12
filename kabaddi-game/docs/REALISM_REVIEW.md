@@ -65,6 +65,24 @@ With four holders (`crowd`) they let go together at 0.70 s in V2, and over 0.77-
 own (1.57-2.17 s), not the two leg holders together. The raider no longer moves along the floor once he is down
 (fastest 0.77 m/s in V2, 0 now).
 
+### The lion jump out of an ankle hold (2:52-2:54)
+
+| | |
+|---|---|
+| Functions found responsible | `Match._raider_escape` let go of the hold in the frame the jump was called for, while the jump clip was still in its crouch with both feet on the floor. `Match._release` had the holder getting up in that same frame, his hands opened where they had held (`Grapple._open_hands`), and "Lion jump!" and "Broke free!" went up at the press. `_release` also reset the raider to "raid", so the jump was started over. In the air `Match._move_raider` kept speeding him up. |
+| Fix | The escape is still decided at the press, but done with the body (`Match._tick_escape`). The raider gathers himself on his free leg for 0.18 s, still held. The hold lets go as he springs, halfway to the jump clip's own takeoff (`MocapClip.takeoff`). The foot comes out of the hands in 0.07 s, and his speed is set as he leaves the floor. The holder's hands stay on the leg as it is torn out of them, so his arms are pulled after it. He lies there 0.3 s, then gets up. The messages go up as the hold lets go. A jump that does not slip the hold is stopped by it: he comes back down on his free foot, still held. |
+| Tests | `tackle_check` `escape` with a new `escape_timing` measure, and a new `stopped` scenario (a jump the hold keeps); all 16 scenarios; `test_runner` |
+| Recording | `escape`, V2 and now side by side, close up and from the side |
+
+| `escape` | V2 | Now |
+|---|---|---|
+| From the jump called for to the hold letting go | 0.03 s | 0.23 s (gathering 0.18 s, then the push-off) |
+| From the hold letting go to both feet off the floor | 0.03 s | 0.03 s |
+| His speed over the floor, landing against taking off | 5.1 m/s faster | the same |
+| The holder's hands out from his shoulders, the 0.3 s after | 0.42 m | 0.55 m (reaching after the leg) |
+| The holder lying where the leg left him | 0.03 s | 0.30 s |
+| "Lion jump!", "Broke free!" | at the press | as the hold lets go |
+
 ## First review (the 0.7.5 recording): five fixes, and where milestones A-E stand
 
 A review of the 0.7.5 gameplay recording (11 Oct 2026) named five problems. This page answers it: for each, the
