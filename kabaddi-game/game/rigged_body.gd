@@ -85,11 +85,19 @@ var _hidden_head := false
 const PLANT_DOWN := 0.03     # m: heel and toe this close to the floor and the foot is planted
 const PLANT_SLIP := 0.2      # m: furthest a planted foot is held from where the motion puts it
 const STEP_LIFT := 0.05      # m: a foot let go at the slip limit lifts this high as it steps on
-const MAX_SINK := 0.3        # m the hips may come down for a held leg to reach its hold (_sink_to_hold)
+const MAX_SINK := 0.3        # m the hips may come down for a held leg to reach its hold (_sink_to_hold) ...
+const SINK_RISE := 2.5       # ... and m/s they come back up at, the hold let go (a foot torn out of the hands as he springs)
+const SETTLE_DROP := 3.0     # m/s a body held by the leg it stood on comes down onto the other (_ground)
+const TURN_MAX := 1200.0     # deg/s any bone of the drawn body may turn, whatever turns it (_limit_turns)
 var _plant := {}             # side -> [world position of the held sole point, how firmly held 0..1, which point,
                              #          let go at the slip limit (stepping)]
 var _replant := {}           # side -> seconds before a foot let go at the slip limit may be held again
 var _plant_t := -1.0         # the motion's clock at the last frame, for the time step
+var _sunk := 0.0             # how far _sink_to_hold had the hips down last frame (skeleton space)
+var _held_out := {}          # sides _held_legs left out of what he stands on last frame
+var _rejoined := {}          # bones of a leg back in what he stands on this frame, let go of (_ground)
+var _newly_held := {}        # sides newly left out of what he stands on this frame, held (_ground)
+var _lifted := 0.0           # how far _ground still holds the hips up over the leg he now stands on (skeleton space)
 var _standing := true        # on his feet, as far as what touches the floor goes (_ground)
 # Holds (see Grapple): hands reaching for a point on another player's body, and a foot kept where a
 # defender holds it. hands_free is where this body's hands are before they reach (world, last frame).
@@ -99,6 +107,9 @@ var foot_goal := {}          # side -> [world position of the ankle joint, weigh
 var hands_free := Vector3.INF
 var _hand_t := -1.0
 var _curl := {"l": 0.7, "r": 0.7}
+var _turns := {}             # bone -> how it was turned last frame, as drawn (skeleton space; _limit_turns)
+var _turn_t := -1.0
+var limited := 0             # bones _limit_turns has held back, all told (for tests)
 
 
 ## The bodies on offer: [{file, kind ("player" or "referee"), build, skin}], from bodies.json.
@@ -539,6 +550,7 @@ func drive(h: Node3D) -> void:
 	var k := float(body.leg_len) / maxf(0.5, h.leg_length())
 	var hips := _ground(g, Vector3(pel.x * k, pel.y * k, pel.z * k), h)
 	_reach_hands(g, hips, float(h._t))
+	_limit_turns(g, float(h._t))
 	for name in g:
 		var i: int = _bone[name]
 		var p: int = _parent[i]
@@ -549,6 +561,28 @@ func drive(h: Node3D) -> void:
 		skeleton.set_bone_pose_scale(_bone.head, Vector3.ONE * 0.001)
 	else:
 		skeleton.set_bone_pose_scale(_bone.head, Vector3.ONE)
+
+
+## The last word on the pose: no bone of the drawn body turns faster than TURN_MAX, whatever turned it (a limb
+## swung onto the placeholder's where its direction flips, a foot planted or let go, a hand reaching for a hold). A
+## bone that would turn further in one frame goes as far as it may now and the rest of the way over the next
+## frames, so nothing on screen snaps. The hand-made pose has a stage like it of its own (HumanModel._settle), but
+## that comes before the limbs are swung onto this body and the feet and hands are placed.
+func _limit_turns(g: Dictionary, now: float) -> void:
+	var dt := clampf(now - _turn_t, 0.0, 0.1) if _turn_t >= 0.0 else 0.0
+	_turn_t = now
+	var cap := deg_to_rad(TURN_MAX) * dt
+	for name in g:
+		var b: Basis = g[name]
+		var q := b.get_rotation_quaternion()
+		if dt > 0.0 and _turns.has(name):
+			var q0: Quaternion = _turns[name]
+			var a := q0.angle_to(q)
+			if a > cap:
+				q = q0.slerp(q, cap / a)
+				g[name] = Basis(q).scaled_local(b.get_scale())
+				limited += 1
+		_turns[name] = q
 
 
 ## Put the body on the floor: its lowest point (a sole standing, the back or a shoulder lying down) as high
@@ -572,10 +606,24 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	var dt := clampf(float(h._t) - _plant_t, 0.0, 0.1) if _plant_t >= 0.0 else 0.0
 	_plant_t = float(h._t)
 	var held := _held_legs(dt)
-	hips.y += target - _lowest(_fk(g, hips), standing, held)
+	var low := _lowest(_fk(g, hips), standing, held)
+	if not _rejoined.is_empty():
+		# A leg let go of, back in what he stands on (it was left out of it while held): he comes up onto it no faster
+		# than SINK_RISE (_sink_to_hold), the leg bending under him meanwhile, rather than in a frame.
+		_sunk = maxf(_sunk, _lowest(_fk(g, hips), standing, held.merged(_rejoined)) - low)
+	# Held by the leg he was standing on (a back kick caught, say): he comes down onto the other leg no faster than
+	# SETTLE_DROP, rather than dropping onto it in a frame.
+	_lifted = maxf(0.0, _lifted - SETTLE_DROP / scale.y * dt)
+	if not _newly_held.is_empty():
+		var with := held.duplicate()
+		for s in _newly_held:
+			for b in _side_bones[s]:
+				with.erase(b)
+		_lifted = maxf(_lifted, low - _lowest(_fk(g, hips), standing, with))
+	hips.y += target - low + _lifted
 	if target > 0.02:
 		_plant.clear()
-		hips = _sink_to_hold(g, hips, target)
+		hips = _sink_to_hold(g, hips, target, dt)
 		_hold_feet(g, _fk(g, hips))
 		return hips   # in the air: nothing to stand on
 	var fk := _fk(g, hips)
@@ -605,9 +653,9 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 		_plant.clear()
 	# Back on the floor after the feet were laid flat and planted, then down for a held leg to reach its hold,
 	# and the held leg reaching for it last of all, so nothing moves it off the hold afterwards.
-	hips = Vector3(hips.x, hips.y + target - _lowest(_fk(g, hips), standing, held), hips.z)
-	if not foot_goal.is_empty():
-		hips = _sink_to_hold(g, hips, 0.0)
+	hips = Vector3(hips.x, hips.y + target - _lowest(_fk(g, hips), standing, held) + _lifted, hips.z)
+	if not foot_goal.is_empty() or _sunk > 0.0:
+		hips = _sink_to_hold(g, hips, 0.0, dt)
 	_hold_feet(g, _fk(g, hips))
 	return hips
 
@@ -615,14 +663,17 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 ## A held foot the leg cannot reach from where the hips are: the hips come down until it can, as a person held
 ## by the ankle sinks on the other leg (no further than MAX_SINK). Standing, the free leg bends to keep its foot
 ## where it is on the floor; in the air (a hop, air above the floor), the free leg tucks up to stay off it, so
-## a hop is as high as the held leg lets the hips go and no higher. Returns the hips.
-func _sink_to_hold(g: Dictionary, hips: Vector3, air: float) -> Vector3:
+## a hop is as high as the held leg lets the hips go and no higher. The hold let go, the hips come back up no
+## faster than SINK_RISE: he straightens as he springs or steps away, not in a frame. Returns the hips.
+func _sink_to_hold(g: Dictionary, hips: Vector3, air: float, dt: float) -> Vector3:
 	var inv := skeleton.global_transform.affine_inverse()
 	var fk := _fk(g, hips)
 	var drop := 0.0
 	for s in foot_goal:
 		var fg: Array = foot_goal[s]
-		if float(fg[1]) < 0.5 or not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+		# A foot being let go of (its hold fading) pulls him down no further: the sink he had lets him up (below).
+		if float(fg[1]) < 0.5 or (fg.size() > 2 and float(fg[2]) > 0.0) \
+				or not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
 			continue
 		var hip: Vector3 = fk[0][_bone["thigh_" + s]]
 		var goal: Vector3 = inv * (fg[0] as Vector3)
@@ -632,12 +683,19 @@ func _sink_to_hold(g: Dictionary, hips: Vector3, air: float) -> Vector3:
 		var dy := sqrt(maxf(0.0, l * l - flat * flat))
 		drop = maxf(drop, hip.y - goal.y - dy)
 	drop = minf(drop, MAX_SINK / scale.y)
+	drop = maxf(drop, _sunk - SINK_RISE / scale.y * dt)
+	_sunk = maxf(drop, 0.0)
 	if drop <= 0.0:
 		return hips
 	var keep := {}
 	for s in body.soles:
 		if not (foot_goal.has(s) and float(foot_goal[s][1]) >= 0.5) and _bone.has("foot_" + s):
-			keep[s] = fk[0][_bone["foot_" + s]]
+			# Where it is: on the floor it stays there; off it (the body lifted onto a leg back under him) it goes down
+			# with the hips, as far as the floor.
+			var at: Vector3 = fk[0][_bone["foot_" + s]]
+			if air <= 0.0:
+				at.y -= clampf(_sole_low(fk, s), 0.0, drop)
+			keep[s] = at
 	hips.y -= drop
 	for s in keep:
 		var fk2 := _fk(g, hips)
@@ -655,7 +713,7 @@ func _sink_to_hold(g: Dictionary, hips: Vector3, air: float) -> Vector3:
 ## body stands on. Both legs held, he stands on both: there is nothing else to stand on.
 func _held_legs(dt: float) -> Dictionary:
 	var out := {}
-	var n := 0
+	var sides := {}
 	for s in foot_goal.keys():
 		var fg: Array = foot_goal[s]
 		if fg.size() > 2 and float(fg[2]) > 0.0:
@@ -665,8 +723,22 @@ func _held_legs(dt: float) -> Dictionary:
 				continue
 		if float(fg[1]) > 0.5 and _side_bones.has(s):
 			out.merge(_side_bones[s])
-			n += 1
-	return out if n < 2 else {}
+			sides[s] = true
+	if sides.size() >= 2:
+		out = {}
+		sides = {}
+	# A leg left out last frame and not now is back in what he stands on; one left out now and not then has just been
+	# taken from under him (_ground).
+	_rejoined = {}
+	for s in _held_out:
+		if not sides.has(s):
+			_rejoined.merge(_side_bones[s])
+	_newly_held = {}
+	for s in sides:
+		if not _held_out.has(s):
+			_newly_held[s] = true
+	_held_out = sides
+	return out
 
 
 ## A foot a defender holds stays where he holds it: the leg reaches for it (two-bone IK), by the hold's weight.

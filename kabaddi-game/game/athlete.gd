@@ -218,10 +218,11 @@ func airborne() -> bool:
 	return p > 0.12 and p < 0.88
 
 
-## Accelerate toward a desired ground velocity and integrate.
-func drive(desired: Vector3, dt: float) -> void:
+## Accelerate toward a desired ground velocity and integrate: no faster than his acceleration, or than rate (m/s²)
+## for a hard step.
+func drive(desired: Vector3, dt: float, rate := -1.0) -> void:
 	desired.y = 0
-	vel = vel.move_toward(desired, accel * dt)
+	vel = vel.move_toward(desired, (accel if rate < 0.0 else rate) * dt)
 	position += vel * dt
 	if not lock_facing and vel.length() > 0.4:
 		facing = facing.slerp(vel.normalized(), clampf(dt * 10.0, 0.0, 1.0)).normalized()
@@ -243,6 +244,16 @@ func face_toward(p: Vector3, dt: float, rate := 8.0) -> void:
 	to.y = 0
 	if to.length() > 0.05:
 		facing = facing.slerp(to.normalized(), clampf(dt * rate, 0.0, 1.0)).normalized()
+
+
+## Turn toward p no faster than max_rate (rad/s): a body that cannot spin freely (held round the middle).
+func turn_toward(p: Vector3, dt: float, max_rate: float) -> void:
+	var to := p - position
+	to.y = 0
+	if to.length() <= 0.05:
+		return
+	var a := facing.signed_angle_to(to.normalized(), Vector3.UP)
+	facing = facing.rotated(Vector3.UP, clampf(a, -max_rate * dt, max_rate * dt)).normalized()
 
 
 func _process(delta: float) -> void:

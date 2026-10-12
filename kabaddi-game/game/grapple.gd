@@ -518,6 +518,10 @@ func update(dt: float) -> void:
 	raider_vel = Vector3.ZERO
 	if footwork():
 		_footwork(dt)
+	elif hop >= 0.0:
+		# Another hold on him in the middle of a hop: the struggle moves him now (Match._move_raider), and the hop is not
+		# taken up again where it was if he is back to the ankle hold alone (it would yank him along its old path).
+		hop = -1.0
 	# Arms round his middle swing round with him as his body turns.
 	var bf := raider.body_facing()
 	var yaw := atan2(-bf.x, -bf.z)

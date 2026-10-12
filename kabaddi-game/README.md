@@ -100,9 +100,11 @@ fonts/      Noto Sans (Latin, Devanagari, Bengali, Tamil, Telugu, Kannada, Gurmu
 tests/      compile_check, test_runner (headless smoke test), screenshots (renders a visual tour),
             ai_bench (AI v AI balance, its raids beside match footage, and checks on the events), locomotion_check
             (foot skate, pops, snaps: see docs/MOTION_REALISM.md), tackle_check (holds made on contact, how
-            the holds and falls move, and a held leg against its hold: docs/TACKLE_SYSTEM.md), tackle_reach
-            (how far each dive reaches), defence_view (a match with the debug overlay), motion_view (gaits,
-            celebrations, signals), play_video (a bot that plays)
+            the holds and falls move, and a held leg against its hold: docs/TACKLE_SYSTEM.md), raid_audit
+            (ordinary AI raids from fixed seeds, every frame: contacts, grips, corrections, conflicting states,
+            events, tackle phases, bodies inside one another, softlocks), tackle_reach (how far each dive
+            reaches), defence_view (a match with the debug overlay), motion_view (gaits, celebrations,
+            signals), play_video (a bot that plays)
 tools/      build_i18n.py, rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
             mocap/ (animation clips, and movement measured from match video)
 docs/       ASSETS.md (how to drop in real humans), KABADDI.md (the rules), BETA.md (testing on a phone), ROADMAP.md,
@@ -123,6 +125,7 @@ xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.ts
 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /tmp/shots moves   # raid moves
 godot --headless --path . --fixed-fps 30 res://tests/ai_bench.tscn -- 4 1   # AI v AI balance: 4 matches on Pro
 godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn      # tackle scenarios: contact, grip, motion, events
+godot --headless --path . --fixed-fps 30 res://tests/raid_audit.tscn -- 4 1 --digest /tmp/d.json   # 4 AI matches audited (run twice: the same)
 ```
 
 The smoke test does five things:

@@ -69,6 +69,16 @@ const GETUP_HOLDER := 1.2      # s a holder lying on the floor takes to get up a
 const RISE_KNEES := 0.75       # ... one down on his knees or crouched over a leg, to come up off them ...
 const RISE_BENT := 0.4         # ... and one still on his feet, bent over the raider, to straighten up
 const RISE_SLIPPED := 0.55     # s a holder whose arms a dubki slipped takes to straighten up from his lunge
+const SEPARATE := 0.6          # m between two players' middles (along the floor) who do not hold one another ...
+const NUDGE := 3.0             # ... kept apart no faster than this (m/s): out of each other's way, not put there
+const DOWN_STATES := ["holding", "dive", "recover", "rise", "fallen"]   # on the floor, or in the grapple: not pushed
+const HELD_TURN := 1.5         # rad/s a raider held other than by the ankle turns toward home at most
+const PLANT := 40.0            # m/s² a raider sheds a dubki's or a jump's burst at, landing and planting ...
+const PLANT_TIME := 0.15       # ... over this long, then runs on as usual
+# Down, getting up, or in the middle of a move: a reaction to the end of the raid waits until he is up or down from it
+# (_react_as). Cutting in would snap him from the floor, or out of the air, to his feet in a frame.
+const BUSY := ["fallen", "holding", "recover", "rise", "dive", "jump", "dubki", "dodge", "kick", "backkick", "touch",
+	"shoved", "evade"]
 
 var config := {}
 var arena: Arena
@@ -132,7 +142,11 @@ var _event_n := 0
 
 
 func _ready() -> void:
-	rng.randomize()
+	# A seed in the config plays the same match every time (tests); otherwise each match is its own.
+	if config.has("seed"):
+		rng.seed = int(config.seed)
+	else:
+		rng.randomize()
 	difficulty = clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, PROFILES.size() - 1)
 	prof = PROFILES[difficulty]
 	raid_rule = int(config.get("raid_rule", Game.settings.get("raid_rule", RULE_CANT_AUTO)))
@@ -387,6 +401,8 @@ func _begin_setup() -> void:
 		a.set_ring(Color(0, 0, 0, 0))
 		if a.on_mat and a.state != "walk":
 			a.set_state("idle")
+		elif not a.on_mat and a.state in BUSY:
+			a.set_state("walk")   # out, and still down or in a move as the next raid is set up: off he goes
 	# He walks to the start spot through the setup (_walk_to_positions); only from far off is he put there.
 	if raider.position.distance_to(pos_in(raiding, 0.0, 1.4)) > 7.0:
 		raider.position = pos_in(raiding, 0.0, 1.4)
@@ -563,8 +579,8 @@ func _tick_raid(dt: float) -> void:
 	if raider.state in ["touch", "kick", "backkick", "shoved"] and raider.st_t >= raider.st_len:
 		raider.set_state("raid")
 	if raider.state in ["dubki", "jump"] and raider.st_t >= raider.st_len:
-		# Land and plant: the burst does not carry on.
-		raider.vel *= 0.35
+		# Land and plant: the burst does not carry on. He sheds it over a step (_move_raider), not in a frame.
+		raid["plant"] = raider.vel * 0.35
 	if raider.state in ["dodge", "dubki", "jump"] and raider.st_t >= raider.st_len:
 		raider.set_state("held" if holders.size() > 0 else "raid")
 	if holders.size() > 0 and raider.state == "raid":
@@ -682,7 +698,9 @@ func _move_raider(move: Vector3, dt: float) -> void:
 			raider.vel = v
 			# A held ankle checks him (or is dragged along with its holder): Grapple.leg_limit.
 			raider.position += grapple.leg_limit(v * dt, dt) if grapple else v * dt
-			raider.face_toward(raider.position + mid_dir, dt)
+			# Held round the middle or by a leg, he cannot spin round to face home: he turns no faster than the holds let
+			# him (his holders round his middle swing round with him: Grapple.update).
+			raider.turn_toward(raider.position + mid_dir, dt, HELD_TURN)
 		if rng.randf() < dt * 1.4:
 			var who: Athlete = raider if rng.randf() < 0.55 else holders[rng.randi() % holders.size()]
 			Sfx.voice("grunt", -7.0 if who == raider else -10.0, who.voice_pitch())
@@ -690,7 +708,10 @@ func _move_raider(move: Vector3, dt: float) -> void:
 		raid.progress = clampf(raid.progress + maxf(0.05, rate) * pace * dt, 0.0, 1.0)
 		if grapple:
 			grapple.progress = raid.progress
+	elif raid.has("plant") and raider.state == "raid" and raider.st_t < PLANT_TIME:
+		raider.drive(raid.plant, dt, PLANT)   # planting out of a dubki or a jump
 	else:
+		raid.erase("plant")
 		raider.drive(move * raider.max_speed * (0.55 + 0.45 * raider.energy), dt)
 	# The court: lobbies come into play only once there has been a struggle.
 	var bound := Arena.HALF_W + (Arena.LOBBY if raid.struggle else 0.0)
@@ -748,7 +769,13 @@ func _tick_bystanders(dt: float) -> void:
 ## Walk to his place in the sitting block and sit down; get up and shuffle along when the
 ## queue moves.
 func _to_bench(a: Athlete, dt: float) -> void:
-	if a.state in ["fallen", "recover", "rise", "roar", "slump", "argue", "shove", "celebrate"] or a.has_meta("walk_at"):
+	# Put out while down or in the middle of a move, he finishes it where he is first: a dive lands and he gets up, a
+	# move runs its course (_after_getup). Then he walks off.
+	if a.state == "dive" and a.st_t >= a.st_len:
+		_land(a, 0.9)
+	elif a.state in BUSY and a.state not in ["fallen", "holding", "dive"] and a.st_len > 0.0 and a.st_t >= a.st_len:
+		_after_getup(a)
+	if a.state in BUSY or a.state in ["roar", "slump", "argue", "shove", "celebrate"] or a.has_meta("walk_at"):
 		a.drive(Vector3.ZERO, dt)
 		return
 	var spot := bench_spot(a.team, teams[a.team].out_queue.find(a))
@@ -763,6 +790,8 @@ func _to_bench(a: Athlete, dt: float) -> void:
 			a.face_toward(Vector3(spot.x, 0, 0), dt, 4.0)
 		return
 	a.lock_facing = false
+	if a.state != "walk":
+		a.set_state("walk")
 	a.seek(spot, 2.6, dt, 0.5)
 	if off.length() < 0.2:
 		a.vel = Vector3.ZERO
@@ -770,30 +799,46 @@ func _to_bench(a: Athlete, dt: float) -> void:
 
 
 func _separate(defs: Array, dt: float) -> void:
-	# Set defenders give the raider room rather than bumping into him.
-	if raid.holders.is_empty():
-		for d in defs:
-			if d.state in ["ready", "idle"] and d != controlled:
-				var off: Vector3 = d.position - raider.position
-				off.y = 0
-				var l := off.length()
-				if l < 0.55 and l > 0.001:
-					d.position += off / l * (0.55 - l) * 0.6
-	for i in defs.size():
-		var a: Athlete = defs[i]
-		if a.state == "holding":
+	# Defenders give the raider room rather than bumping into him: set defenders always, and with holds on him
+	# anyone on his feet who is not holding him (a helper waiting to get a hand on, a defender closing round). A body
+	# on the floor or in the grapple is not pushed about: those on their feet step off it. Nudged out of the way,
+	# never put there in one frame.
+	var held: bool = not raid.holders.is_empty()
+	var down := defs.filter(func(a): return a.state in DOWN_STATES)
+	var up := defs.filter(func(a): return a.state not in DOWN_STATES)
+	for d in up:
+		if d == controlled:
 			continue
-		for j in range(i + 1, defs.size()):
-			var b: Athlete = defs[j]
-			if b.state == "holding":
-				continue
+		if held or d.state in ["ready", "idle"]:
+			_nudge(d, raider.position, 0.55, dt)
+		for o in down:
+			_nudge(d, o.position, SEPARATE, dt)
+	_apart(up, dt)
+
+
+## Players who do not hold one another kept a body's width apart (SEPARATE), each giving way half, no faster
+## than NUDGE.
+func _apart(list: Array, dt: float) -> void:
+	for i in list.size():
+		var a: Athlete = list[i]
+		for j in range(i + 1, list.size()):
+			var b: Athlete = list[j]
 			var d := b.position - a.position
 			d.y = 0
 			var l := d.length()
-			if l < 0.6 and l > 0.001:
-				var push := d / l * (0.6 - l) * 0.5
+			if l < SEPARATE and l > 0.001:
+				var push := d / l * minf((SEPARATE - l) * 0.5, NUDGE * dt)
 				a.position -= push
 				b.position += push
+
+
+## a moved out of the way of a body at p, to at least gap from it (along the floor), no faster than NUDGE.
+func _nudge(a: Athlete, p: Vector3, gap: float, dt: float) -> void:
+	var off := a.position - p
+	off.y = 0
+	var l := off.length()
+	if l < gap and l > 0.001:
+		a.position += off / l * minf(gap - l, NUDGE * dt)
 
 
 func _clamp_defender(d: Athlete) -> void:
@@ -2073,7 +2118,11 @@ func _check_contacts(defs: Array) -> void:
 				_move_moment("dubki")
 				continue
 			if kind == "dash":
-				_dash_hit(d)
+				if raid.holders.is_empty():
+					_dash_hit(d)
+				else:
+					# Held, he goes nowhere a shove would put him: the dash only bumps into the struggle.
+					d.set_state("recover", 0.8)
 				continue
 			var hold_chance = 0.5 + 0.35 * d.tackle - 0.25 * (raider.agility - 1.0)
 			hold_chance += {"thigh": 0.04, "waist": 0.06}.get(kind, 0.0) as float
@@ -2485,6 +2534,14 @@ func _end_raid(kind: String) -> void:
 	clock = maxf(0.0, clock - RAID_GAP * clock_speed)
 
 
+## A reaction to the end of the raid (the codes _after_getup takes): now if he is on his feet and between moves, else
+## once he is up or down from the move (BUSY; _tick_post, _after_getup).
+func _react_as(a: Athlete, how: int) -> void:
+	a.set_meta("cheer", how)
+	if a.state not in BUSY:
+		_after_getup(a)
+
+
 ## Celebrate one way or another (see HumanModel.cele).
 func _celebrate(a: Athlete, how := -1) -> void:
 	a.cele_partner = null
@@ -2554,14 +2611,14 @@ func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched
 		var mates := on_mat(atk)
 		var buddy := _nearest_mate(raider, mates)
 		var r := rng.randf()
-		if buddy != null and r < (0.45 if big else 0.25):
+		if buddy != null and r < (0.45 if big else 0.25) and raider.state not in BUSY:
 			_high_five(raider, buddy)
 		elif big or r < 0.55:
-			raider.set_state("roar")
+			_react_as(raider, -2)
 		elif r < 0.75:
-			_celebrate(raider, CELE_FIST)
+			_react_as(raider, CELE_FIST)
 		elif r < 0.85:
-			_celebrate(raider, CELE_POINT)
+			_react_as(raider, CELE_POINT)
 		# Otherwise he just jogs back: job done.
 		if raider.state in ["roar", "celebrate"] or rng.randf() < 0.4:
 			hud.bubble(raider, tr("BUBBLE_HAAN") if rng.randf() < 0.5 else tr("BUBBLE_AAJA"), Game.C_GOLD)
@@ -2570,15 +2627,16 @@ func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched
 			if a != raider and a.state in ["idle", "ready"] and rng.randf() < (0.8 if big else 0.3):
 				_celebrate(a, [CELE_ARMS, CELE_CLAP, CELE_FIST, CELE_CLAP][rng.randi() % 4] if not big else -1)
 		for d in touched:
-			d.set_state("slump")
-		# Sometimes the defence disputes the touch.
+			_react_as(d, -5)
+		# Sometimes the defence disputes the touch (one on his feet).
 		var defs := on_mat(dfn)
 		if not defs.is_empty() and rng.randf() < 0.35:
 			var who: Athlete = defs[rng.randi() % defs.size()]
-			who.set_state("argue")
-			who.face_toward(Vector3(Arena.HALF_W + 3.0, 0, 0), 1.0, 100.0)
-			hud.bubble(who, tr("BUBBLE_NO_TOUCH"), Game.C_INK)
-			Sfx.yell("nahi", -6.0)
+			if who.state not in BUSY:
+				who.set_state("argue")
+				who.face_toward(Vector3(Arena.HALF_W + 3.0, 0, 0), 1.0, 100.0)
+				hud.bubble(who, tr("BUBBLE_NO_TOUCH"), Game.C_INK)
+				Sfx.yell("nahi", -6.0)
 	elif def_pts > 0:
 		var big := def_pts >= 2
 		var stars: Array = holders_were.duplicate()
@@ -2597,7 +2655,7 @@ func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched
 				_celebrate(d, how)
 		for d in on_mat(dfn):
 			if not stars.has(d) and rng.randf() < (0.85 if big else 0.3):
-				_celebrate(d, -1 if big else [CELE_CLAP, CELE_FIST, CELE_ARMS][rng.randi() % 3])
+				_react_as(d, -1 if big else [CELE_CLAP, CELE_FIST, CELE_ARMS][rng.randi() % 3])
 		if not stars.is_empty():
 			var lead: Athlete = stars[0]
 			hud.bubble(lead, tr("BUBBLE_SHABASH"), Game.C_MAGENTA.lightened(0.3))
@@ -2610,14 +2668,14 @@ func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched
 			pusher.shove_target = raider
 			if rng.randf() < 0.4:
 				_card(pusher)
-			raider.set_state("argue")
+			_react_as(raider, -6)   # once he is up
 			hud.bubble(raider, tr("BUBBLE_TOUCH"), Game.C_INK)
 			Sfx.yell("touch", -5.0)
 		elif kind != "tackle":
-			raider.set_state("slump")
+			_react_as(raider, -5)
 		for a in on_mat(atk):
 			if a != raider and rng.randf() < 0.5:
-				a.set_state("slump")
+				_react_as(a, -5)
 
 
 func _tick_shouts(dt: float) -> void:
@@ -2885,8 +2943,8 @@ func _put_out(a: Athlete) -> void:
 	a.set_ring(Color(0, 0, 0, 0))
 	if not teams[a.team].out_queue.has(a):
 		teams[a.team].out_queue.append(a)
-	if a.state != "fallen":
-		a.set_state("walk")
+	if a.state not in BUSY:
+		a.set_state("walk")   # down or in a move, he gets up or lands first, then walks off (_to_bench)
 
 
 ## Rough play: a green card is a warning; a second offence is a yellow card, two
@@ -2957,6 +3015,15 @@ func _tick_post(dt: float) -> void:
 	if grapple:
 		grapple.update(dt)
 	for a in athletes:
+		# Caught in the middle of a move as the raid ended, a player finishes it as he would have: a dive lands and
+		# he gets up; a wind-up comes to nothing; any other move (the raider's jump or dubki over the line, a kick, a
+		# sidestep) runs its course and he stands, rather than walking back held in its last frame.
+		if a.state == "dive" and a.st_t >= a.st_len:
+			_land(a, 0.9)
+		elif a.state == "telegraph":
+			a.set_state("ready")
+		elif a.state in ["touch", "kick", "backkick", "shoved", "dodge", "dubki", "jump", "evade"] and a.st_t >= a.st_len:
+			_after_getup(a)   # stands, or the reaction waiting for him (_react_as)
 		# Holders let go once he is down, each at his own moment (Grapple.takedown), and get up from where they are;
 		# one under the man on the floor waits for him to get off first. Then they cheer.
 		if a.state == "holding" and (grapple == null or not grapple.has(a)):
@@ -2974,7 +3041,8 @@ func _tick_post(dt: float) -> void:
 				Sfx.play("thud", 2.0, 0.8)
 			if down >= LIE_TIME or phase_t > 3.0:
 				a.set_state("recover", GETUP_RAIDER)
-				a.set_meta("cheer", -4)
+				if not a.has_meta("cheer"):
+					a.set_meta("cheer", -4)
 		if a.state in ["recover", "rise"] and a.st_t >= a.st_len:
 			_after_getup(a)
 		if a.has_meta("cheer_at") and phase_t >= float(a.get_meta("cheer_at")):
@@ -3016,12 +3084,20 @@ func _tick_post(dt: float) -> void:
 					Sfx.play("clap", -6.0)
 		elif a.state == "celebrate":
 			a.drive(Vector3.ZERO, dt)
-		elif a.state in ["walk", "sit"] or not a.on_mat:
+		elif not a.on_mat:
+			# Out: off to the bench (or slowing to a stop where he is first, slumping or arguing) from the moment the raid
+			# ends, not stood still and then sliding off on the speed he had. From a second in, _walk_to_positions.
+			if phase_t <= 1.0:
+				_to_bench(a, dt)
+		elif a.state in ["walk", "sit"]:
 			pass
 		elif a.state == "holding":
 			pass   # the grapple moves him (driving him as well would move him twice)
 		else:
 			a.drive(Vector3.ZERO, dt)
+	# Walking back and cheering, players do not walk through one another (the raider and anyone holding or getting
+	# up aside).
+	_apart(athletes.filter(func(a): return a.on_mat and a != raider and a.state in ["ready", "idle", "celebrate", "roar", "slump", "walk"]), dt)
 	if phase_t > 1.0:
 		_walk_to_positions(dt, false)
 	if phase_t > 2.6 + float(raid.get("post_extra", 0.0)):
@@ -3058,6 +3134,10 @@ func _after_getup(a: Athlete) -> void:
 	match how:
 		-2:
 			a.set_state("roar")
+		-5:
+			a.set_state("slump")
+		-6:
+			a.set_state("argue")
 		-4:
 			a.set_state("idle")
 			a.set_meta("walk_at", phase_t + 0.5)   # a breath on his feet, then off he walks
@@ -3071,6 +3151,7 @@ func _next_raid(after_timeout := false) -> void:
 	for a in athletes:
 		a.cele_partner = null
 		a.remove_meta("fived")
+		a.remove_meta("cheer")
 		a.remove_meta("cheer_at")
 		a.remove_meta("grab_at")
 		a.remove_meta("under")

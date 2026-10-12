@@ -23,7 +23,7 @@ a side-by-side video, and measured results.
 | Free foot on the floor while not hopping | 40% | 98% |
 | Raider's travel made sliding rather than hopping | 100% | 2% |
 | Hops on the free foot | 0 | 5 |
-| Planted foot's speed along the floor (90th percentile / worst) | 0.24 / 1.72 m/s | 0.15 / 0.27 m/s |
+| Planted foot's speed along the floor (90th percentile / worst) | 0.24 / 1.72 m/s | 0.15 / 0.22 m/s |
 | Raider's lean: early, halfway, end of the hold | 17°, 37°, 58° | 18°, 32°, 62° |
 | Lies once down, against the way the hold pulls him | 5° | 5° |
 
@@ -56,10 +56,10 @@ defence.
 
 | `chain` | V2 | Now |
 |---|---|---|
-| Holders let go (s after the takedown) | 0.70, 0.70, 0.70 | 0.77-0.97 |
-| Holders up again (s after the takedown) | 1.90, 1.90 (in step), 0.73 | 1.57, 1.77, 2.17 |
+| Holders let go (s after the takedown) | 0.70, 0.70, 0.70 | 0.87-1.07 |
+| Holders up again (s after the takedown) | 1.90, 1.90 (in step), 0.73 | 1.67, 1.87, 2.27 |
 | How the kneeling thigh holder gets up | from lying on the floor | off his knees |
-| Grip all through the fall, 90th percentile (ankle, thigh, block) | 0.069, 0.119, 0.195 m | 0.072, 0.080, 0.026 m |
+| Grip all through the fall, 90th percentile (ankle, thigh, block) | 0.069, 0.119, 0.195 m | 0.074, 0.079, 0.018 m |
 
 With four holders (`crowd`) they let go together at 0.70 s in V2, and over 0.77-1.07 s now. Each is up on his
 own (1.57-2.17 s), not the two leg holders together. The raider no longer moves along the floor once he is down
@@ -101,6 +101,49 @@ own (1.57-2.17 s), not the two leg holders together. The raider no longer moves 
 | `slip`: held ankle from its hold, the whole hold (worst) | 0.451 m | 0.000 m |
 | `duck` (ankle only): middle's drop / free foot planted | 0.35 m / 8% | 0.06 m / 100% |
 | `sidestep` (ankle only): body moved / held foot off its hold | 0.71 m / 0.136 m | 0.00 m / 0.000 m |
+
+### Ordinary AI matches, audited
+
+| | |
+|---|---|
+| Asked | Proof that the corrections hold in ordinary AI matches, not only in the scripted close-ups: 100 or more deterministic AI-v-AI raids, with the distributions and worst cases of contacts, contact-anchor errors, unexplained corrections, conflicting states, sharp speed changes, duplicate events, tackle phases, bodies inside one another and softlocks, checking the gameplay logic and what is drawn alike. |
+| How | A new `tests/raid_audit`: four whole AI-v-AI matches on Pro from fixed seeds (about 120 raids), every frame of every raid, every player who was on the mat when it began. Run on the V2 build and on this one. A match now takes its seed from its config (`Match._ready`). The defence coach's reaction times now come from numbers of its own: `DefenceCoach._react` drew on the engine's global ones, which the sounds and the HUD use too. So the same seed plays the same match in any process. |
+| Functions found responsible | `Match._tick_post` ended neither a wind-up nor a dive that the raid's end caught, nor the raider's own move: 57 softlocks in V2, players frozen in a pose until the next raid. `Match._check_contacts` let a dash shove a held raider out from among his holders. `Match._separate` kept no one off a held raider and no one apart after the raid; it moved players 60% of an overlap in a frame and pushed bodies lying on the floor. Joint pops came from limbs swung onto the rig where the placeholder limb's direction flips. Found after the first four tasks: a held raider turned at a free raider's 8 rad/s, swinging his waist holders round at 9-12 m/s. `RiggedBody._sink_to_hold` and `_held_legs` moved the hips in one frame when a hold let go or a held leg was the one he stood on (a lion jump out of a hold threw his middle up 0.3-0.6 m; a caught back kick dropped it 0.75 m). `Grapple._footwork` took up a hop frozen by a second hold, yanking him 0.42 m in a frame. The plant after a dubki cut his speed to a third in a frame. `Match._put_out` and `_react` cut get-ups, falls and moves short at the raid's end, and a raider put out stood frozen, then slid to the bench. |
+| Fix | `_tick_post` finishes each move the raid's end caught, and reactions to the end of the raid wait until the player is up (`_react_as`). A dash into a held raider only bumps into the struggle. `_separate` keeps standing players off a held raider and off bodies on the floor, never pushes a body on the floor or in the grapple, and never moves anyone faster than 3 m/s; players keep apart after the raid too. A last pose stage, `RiggedBody._limit_turns`: no bone turns faster than 1,200°/s. A held raider turns at most 1.5 rad/s (`HELD_TURN`). The hips come up out of a sink, or onto a leg let go of, at 2.5 m/s at most (`SINK_RISE`), and down onto the other leg at 3 m/s (`SETTLE_DROP`). A hop is dropped when another hold comes on. The plant sheds a burst over a step (`PLANT`). Players put out finish what they are doing, then walk off. |
+| Tests | `raid_audit` on V2 and now. Two runs of it in separate processes give the same events and scores in all four matches; one match traced, the same place and state for every player in every frame. `tackle_check`, all 17 scenarios; `test_runner` at a fixed 30 fps, as CI runs it; `compile_check`. |
+| Recording | A new AI-v-AI match (seed 3), not scripted: the TV camera all the way through, then passages from the follow camera |
+
+| Four AI matches on Pro, every frame of every raid | V2 | Now |
+|---|---|---|
+| Raids (tackles, escapes) | 118 (20, 28) | 120 (27, 23) |
+| Holds checked: valid / invalid | 89 / 0 | 103 / 0 |
+| Grip, hands from the part held: median / 99th percentile / worst | 0.061 / 0.231 / 0.674 m | 0.066 / 0.123 / 0.212 m |
+| Held foot from its hold: 90th / 99th percentile / worst | 0.474 / 1.343 / 1.506 m | 0.000 / 0.000 / 0.078 m |
+| Speed changes over 40 m/s² (frames; share of holders' frames) | 3,740; 48% | 1,575; 4% |
+| Sharpest speed change | 410 m/s² | 261 m/s² |
+| A body's middle moving over 0.2 m beyond the body in a frame: frames / worst | 124 / 0.46 m | 132 / 0.32 m |
+| Joint pops, bone-frames over 40° in a 30th of a second / worst | 12,673 / 180° | 8,891 / 40° |
+| Bodies inside one another, frames over 5 cm | 4,783 | 3,621 |
+| A held raider shoved (episodes) | 3 | 0 |
+| Duplicate or impossible events; points not adding up | 0; 0 | 0; 0 |
+| Softlocks | 57 | 0 |
+| Each holder letting go / up again after a takedown (median, worst) | 0.73, 0.73 / 1.93, 1.93 s (all alike) | 0.93, 1.23 / 1.77, 2.37 s |
+
+The full tables, with every tackle phase, are in `docs/TACKLE_SYSTEM.md` ("Ordinary AI matches, audited").
+
+**Still not right:**
+
+- **Middles jumping.** About as many frames as in V2 have a body's middle jumping over 0.2 m (132 against 124),
+  though the worst is lower (0.32 m against 0.46 m). About half are the hand-made ankle dive, grounded on the
+  diver's chest as he goes down; the rest are mostly getting up, and coming out of a lion jump's gather.
+- **Speed changes.** A dive's launch and a defender being nudged aside still change speed in a frame.
+- **Bodies inside one another.** Still 3,621 frames over 5 cm, mostly round a held raider, where bodies are meant
+  to touch.
+- **Joint turns.** The last pose stage hides joint flips (0.65% of bone-frames) rather than removing their cause.
+- **With other holds on him**, the raider is still carried along by the struggle rather than stepping (as in the
+  first task).
+- **The audit's own effect.** Its reads of the skeletons can change the match a little against one played without
+  it. An audited match is repeatable, but the recording is not the same match frame for frame.
 
 ## First review (the 0.7.5 recording): five fixes, and where milestones A-E stand
 

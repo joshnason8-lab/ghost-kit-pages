@@ -37,6 +37,7 @@ const DRIFT := 0.3             # m each defender's depth drifts by, slowly, abou
 
 var m   # the Match
 var plan := {}                 # Athlete -> {role, at, next_role, next_at, wait}
+var _rng: RandomNumberGenerator = null   # reaction times (_react): its own numbers, from the match's seed
 
 
 func _init(p_match) -> void:
@@ -285,7 +286,12 @@ func _own_depth(d: Athlete) -> float:
 	return DRIFT * sin(float(m.raid.get("t", 0.0)) * 0.45 + k * TAU)
 
 
-## A defender's reaction time: quicker for agile players, a little different every time.
+## A defender's reaction time: quicker for agile players, a little different every time. Drawn from numbers of its
+## own, seeded from the match's the first time (after a test has seeded the match), so that a match played from the
+## same seed plays the same: not from the global ones, which sounds and the HUD draw on too.
 func _react(d: Athlete) -> float:
+	if _rng == null:
+		_rng = RandomNumberGenerator.new()
+		_rng.seed = hash(["react", m.rng.seed])
 	var q := clampf((d.agility - 0.7) / 0.6, 0.0, 1.0)
-	return lerpf(REACT.y, REACT.x, q) * randf_range(0.8, 1.2)
+	return lerpf(REACT.y, REACT.x, q) * _rng.randf_range(0.8, 1.2)
