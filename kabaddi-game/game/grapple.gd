@@ -45,6 +45,13 @@ const ESTABLISH := 0.6         # s a hold needs before it can take part in bring
 const HANDS := {"ankle": ["ankle", "shin"], "thigh": ["thigh", "knee"], "waist": ["waist", "waist"], "block": ["waist", "waist"]}
 # A helper can take hold from this far (his middle to the part, flat), facing it.
 const REACH := {"ankle": 1.05, "thigh": 0.8, "waist": 0.62, "block": 0.62}
+# How well each escape slips each hold (Match._raider_escape, _raider_dodge): a dubki ducks out of arms round
+# his middle and can twist out of a thigh hold, but does nothing for a held ankle; a lion jump kicks free of an
+# ankle hold and sometimes a thigh hold, but cannot clear arms locked round his middle; a sidestep twists out
+# of a grip on his thigh or round him, not out of hands on his ankle.
+const ESCAPES := {"dubki": {"waist": 1.0, "block": 1.0, "thigh": 0.35, "ankle": 0.0},
+	"lion": {"ankle": 1.0, "thigh": 0.35, "waist": 0.0, "block": 0.0},
+	"dodge": {"thigh": 1.0, "waist": 0.8, "block": 0.8, "ankle": 0.0}}
 
 static var _next_id := 1
 
@@ -78,6 +85,36 @@ static func style_of(kind: String) -> String:
 		"block":
 			return "block"
 	return ""
+
+
+## A defender could take hold of the raider in this style now: his middle within that style's reach of the part
+## (along the floor), plus a step (step, m), facing it. For a grab that is not a dive (grabbing back at a
+## touch), whose hands have to get there from where he stands.
+static func reachable(d: Athlete, r: Athlete, style: String, step := 0.0) -> bool:
+	if d.model == null or r.model == null or not REACH.has(style):
+		return false
+	var at: Vector3
+	if style in ["ankle", "thigh"]:
+		var s := slot_for(style, d, r).substr(4)
+		at = (r.model.anchor("thigh_" + s) + r.model.anchor("knee_" + s)) * 0.5 if style == "thigh" \
+			else r.model.anchor("ankle_" + s)
+	else:
+		at = r.model.anchor("waist")
+	var to := _flat(at - d.position)
+	return to.length() < float(REACH[style]) + step and (to.length() < 0.2 or to.normalized().dot(d.facing) > 0.2)
+
+
+## Of the holders, the one a move slips best, and how well: [holder, 0..1] (ESCAPES); [null, 0] for none.
+func best_escape(move: String, holders: Array) -> Array:
+	var fits: Dictionary = ESCAPES.get(move, {})
+	var best: Athlete = null
+	var fit := 0.0
+	for x in holders:
+		var f := float(fits.get(style_of_hold(x), 0.0))
+		if best == null or f > fit:
+			best = x
+			fit = f
+	return [best, fit]
 
 
 ## Which slot a defender at d's place would hold for a style: the nearer leg for leg holds; for holds round
@@ -177,8 +214,11 @@ func free_slots(for_who: Athlete = null) -> Array:
 ## A team-mate coming to help: the free slot nearest him (the slot he already claimed, if it is still free),
 ## kept for him while he runs in. "" when there is none (he contains instead).
 func claim(d: Athlete) -> String:
-	for s in claims:
+	for s in claims.keys():
 		if claims[s][0] == d:
+			if taken().has(s):
+				claims.erase(s)   # someone's hands got there first (a dive): he looks for another
+				break
 			claims[s][1] = CLAIM_TIME
 			return s
 	var best := ""

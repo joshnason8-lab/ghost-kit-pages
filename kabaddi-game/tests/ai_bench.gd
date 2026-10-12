@@ -16,6 +16,12 @@ var _shape := {"mate_gap": [], "bunched": [], "near_raider": [], "home_covered":
 var _cur = null
 var _rs := {}
 var _score_errors := []   # matches whose points do not add up
+var _evs := []            # every gameplay event: [seconds, kind, info] (see _event_checks)
+var _clock := 0.0
+# Which hold each escape can slip (as Grapple.ESCAPES; kept here so the bench measures older builds too).
+const FITS := {"dubki": {"waist": 1.0, "block": 1.0, "thigh": 0.35, "ankle": 0.0},
+	"lion": {"ankle": 1.0, "thigh": 0.35, "waist": 0.0, "block": 0.0},
+	"dodge": {"thigh": 1.0, "waist": 0.8, "block": 0.8, "ankle": 0.0}}
 
 
 func _ready() -> void:
@@ -40,8 +46,10 @@ func _ready() -> void:
 			_result = r
 			_done = true)
 		add_child(m)
+		m.game_event.connect(func(kind, info): _evs.append([_clock, String(kind), (info as Dictionary).duplicate()]))
 		while not _done:
 			await get_tree().process_frame
+			_clock += 1.0 / 30.0
 			_sample(m, 1.0 / 30.0)
 		_close_raid()
 		print("match %d: %s %d - %d %s" % [i + 1, pr[0], _result.score[0], _result.score[1], pr[1]])
@@ -109,6 +117,7 @@ func _ready() -> void:
 			rows.append("%s d%.1f t%.1f h%d" % [r.kind, float(r.hold_depth), float(r.held_for), int(r.holders_end)])
 	print("holds: ", ", ".join(rows.slice(0, 40)))
 	_print_style()
+	_event_checks()
 	get_tree().quit()
 
 
@@ -133,6 +142,80 @@ func _check_points(n: int, res: Dictionary) -> void:
 			ok = false
 	if not ok:
 		_score_errors.append(n)
+
+
+## Whether the gameplay events make sense together, over every raid played:
+##   a touched defender's grab back (a hold not from a dive): how long after the touch (in the same frame is
+##   no reaction at all);
+##   a takedown: how long after the newest hold still on him (under 0.6 s, the hold had no time to be one);
+##   an escape: whether it left him still held (then "Broke free!" is wrong), and whether the move could slip
+##   that hold at all (a dubki out of an ankle hold, a jump out of arms round his middle);
+##   a hold: on a part of him someone else already holds (one defender a part).
+func _event_checks() -> void:
+	var grab := []
+	var same_frame := 0
+	var downs := []
+	var quick := 0
+	var escapes := 0
+	var partial := 0
+	var misfit := 0
+	var doubled := 0
+	var holds := 0
+	var holders := {}
+	var slots := {}
+	var since := {}
+	var touched := {}
+	for e in _evs:
+		var t: float = e[0]
+		var k: String = e[1]
+		var info: Dictionary = e[2]
+		var who := String(info.get("who", info.get("from", "")))
+		match k:
+			"touch":
+				touched[who] = t
+			"hold":
+				holds += 1
+				var slot := String(info.get("slot", ""))
+				if slot != "" and slots.values().has(slot):
+					doubled += 1
+				slots[who] = slot
+				holders[who] = String(info.get("style", ""))
+				since[who] = t
+				if touched.has(who) and t - float(touched[who]) < 1.0 and String(info.get("kind", "")) == "pile":
+					grab.append(snappedf(t - float(touched[who]), 0.01))
+					if t - float(touched[who]) < 0.02:
+						same_frame += 1
+					touched.erase(who)
+			"release":
+				holders.erase(who)
+				slots.erase(who)
+				since.erase(who)
+			"escape":
+				escapes += 1
+				if holders.size() > 1:
+					partial += 1
+				var how := String(info.get("how", ""))
+				if not FITS.has(how):
+					how = "lion"
+				if float(FITS[how].get(String(holders.get(who, "")), 1.0)) <= 0.0:
+					misfit += 1
+			"takedown":
+				if not since.is_empty():
+					var newest: float = since.values().max()
+					downs.append(t - newest)
+					if t - newest < 0.59:
+						quick += 1
+			"raid_end":
+				holders.clear()
+				slots.clear()
+				since.clear()
+				touched.clear()
+	print("event checks")
+	print("  %-40s %d, %d in the same frame as the touch; after %s s (median)" % ["grabs back at a touch", grab.size(), same_frame, _pct(grab, 50)])
+	print("  %-40s %d of %d (newest hold to takedown, median %s s)" % ["takedowns within 0.6 s of a new hold", quick, downs.size(), _pct(downs, 50)])
+	print("  %-40s %d of %d" % ["escapes that left him still held", partial, escapes])
+	print("  %-40s %d of %d" % ["escapes the move could not make", misfit, escapes])
+	print("  %-40s %d of %d" % ["holds on a part already held", doubled, holds])
 
 
 ## One frame of the running match: raider attempts, defenders' dives, holds and spacing.

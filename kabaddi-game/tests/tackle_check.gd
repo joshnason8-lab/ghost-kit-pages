@@ -16,16 +16,19 @@ extends Node
 ## (a hold, then team-mates coming to help, each to a hold of his own), "join" (the raider going down as a
 ## team-mate runs in to help: one takedown, no hold after it), "committed" (a holder told to tackle again:
 ## refused), "crowd" (three team-mates helping at once: no two on the same hold, nobody inside anybody),
-## "touch" (a hand touch and home: the points given once, the score up by exactly them) and "flurry" (a touch,
+## "touch" (a hand touch and home: the points given once, the score up by exactly them), "flurry" (a touch,
 ## the touched defender grabbing straight back, another diving in, help, a takedown, all within a second or
-## two: every event in order, the raid scored once).
+## two: every event in order, the raid scored once), "slip" (held at the ankle and round the middle, a dubki
+## slips only the arms round him: still held, no "Broke free!", taken down) and "duck" (held only at the ankle,
+## a dubki slips nothing).
 ## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording ("plain" leaves
 ## the debug overlay off; "high" looks down from above, three-quarters on, to see every hold in a pile):
 ##   godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json FILE] [--log]
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie out.avi \
 ##       --fixed-fps 30 res://tests/tackle_check.tscn -- view catch [plain]
 
-const SCENARIOS := ["miss", "catch", "escape", "whiff", "thigh", "waist", "chain", "join", "committed", "crowd", "touch", "flurry"]
+const SCENARIOS := ["miss", "catch", "escape", "whiff", "thigh", "waist", "chain", "join", "committed", "crowd", "touch", "flurry",
+	"slip", "duck"]
 const JUMP_SPEED := 10.0        # m/s in one frame
 const BODY_R := 0.12            # m: the raider's middle is this thick, for measuring holds round it
 # Per scenario: defenders (style each; the first dives), where the first starts (metres in front), helpers.
@@ -42,6 +45,8 @@ const SETUP := {
 	"crowd": {"styles": ["ankle", "thigh", "thigh", "waist"], "help": true},
 	"touch": {"styles": ["thigh", "thigh"], "touch": true, "no_dive": true, "passive": true},
 	"flurry": {"styles": ["thigh", "ankle", "waist"], "touch": true, "help": true},
+	"slip": {"styles": ["ankle", "waist"], "help": true},
+	"duck": {"styles": ["ankle"]},
 }
 
 var _chosen := []
@@ -118,9 +123,11 @@ func _run(sc: String) -> Dictionary:
 	d.facing = -into
 	var touched_one: Athlete = null
 	if bool(setup.get("touch", false)):
-		# The first defender stands within the raider's hand's reach, to be touched; the diver is the next.
+		# The first defender stands within the raider's hand's reach, to be touched; the diver is the next. In the
+		# flurry he is close enough to grab straight back (a grab back is made only within reach of a defender's
+		# hands, after his reaction: Match._counter_grabs).
 		touched_one = d
-		d.position = m.pos_in(1, 0.6, 3.9 + 0.95)
+		d.position = m.pos_in(1, 0.6, 3.9 + (0.75 if sc == "flurry" else 0.95))
 		if defs.size() > 1:
 			d = defs[1]
 	for i in range(1, defs.size()):
@@ -183,6 +190,13 @@ func _run(sc: String) -> Dictionary:
 			if bool(setup.get("help", false)):
 				m.lab_force["help"] = true
 				m.lab_force["pile"] = true   # a helper within reach takes hold at once
+		# Slip: held at the ankle and round the middle, he ducks: the dubki slips the arms round him, not the
+		# ankle, so he is still held. Duck: held only at the ankle, a dubki slips nothing.
+		if sc in ["slip", "duck"] and holding and not escaped and m.raid.holders.size() == (2 if sc == "slip" else 1) \
+				and t > float(out.attach_t) + 0.9:
+			escaped = true
+			m.lab_force["escape"] = true
+			m._raider_escape("dubki", home)
 		if sc == "escape" and holding and not escaped and t > float(out.attach_t) + 0.9:
 			escaped = true
 			m.lab_force["escape"] = true
@@ -361,6 +375,12 @@ func _run(sc: String) -> Dictionary:
 		"flurry":
 			out.ok = out.events.count("touch") == 1 and holds >= 1 and downs == 1 and out.events.count("raid_end") == 1 \
 				and out.end == "tackle" and out.scored_once and out.in_order and out.hold_after_takedown == 0
+		"slip":
+			# One hold slipped, the other kept: still held, no "Broke free!", taken down.
+			out.ok = out.events.count("escape") == 1 and out.events.count("release") == 1 and downs == 1 \
+				and out.end == "tackle" and not out.shown.any(func(x): return String(x[1]) == tr("EV_BROKE_FREE"))
+		"duck":
+			out.ok = out.events.count("escape") == 0 and downs == 1 and out.end == "tackle"
 	m.queue_free()
 	await get_tree().process_frame
 	return out

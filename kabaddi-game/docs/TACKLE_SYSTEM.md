@@ -431,6 +431,104 @@ Visual check on the `flurry` recording, before against after:
 - the holder goes down on him, gets up first and steps off;
 - the raider lies still, then rises through his knees over about a second and a half, and only then walks.
 
+### 4. The defence's shape
+
+**Seen** (recording 12-16 s and 45-53 s): defenders stood in an unnaturally straight line.
+
+**Cause**: while the raider works the cover, `DefenceCoach.update` put every defender on his formation spot
+(`Match.formation_spot`: evenly spaced, all at one depth) and slid the whole line sideways with the raider. It
+was a wall at one depth that moved as a unit. The raiding side's players waiting in their own half stood the
+same way.
+
+**Footage**: `tools/mocap/raid_events.py` now also measures how far apart defenders stand front to back (the
+standard deviation of their depths). In the four clips it is 0.89-1.12 m: real defenders are not in a line.
+
+**Fix** (`DefenceCoach.update`, "working the cover"; `Match.formation_spot`):
+- The line curves round where the raider is about to be (`ANTICIPATE`, 0.35 s ahead). Those straight in
+  front of him give a little ground (`WRAP_BACK`), and those well out to his sides come up (`WRAP_FWD`), so he
+  is in the mouth of a curve. The curve deepens the further in he is.
+- Every player has a place of his own in the line: a little deeper or shallower, a little to one side
+  (`formation_spot`, both teams). A defender's depth drifts slowly about it (`DRIFT`).
+- Roles, reaction times, spacing (no two places closer than 1.05 m) and lanes are unchanged.
+
+`ai_bench`, four matches each:
+
+| | Before | After | Footage |
+|---|---|---|---|
+| Defenders' depths, front to back (sd) | 0.12 m | 0.50 m | 0.89-1.12 m |
+| Line depth (median) | 4.58 m | 4.44 m | 4.43-4.93 m |
+| Nearest defender while he raids (median) | 1.90 m | 2.08 m | 2.26-2.51 m |
+| Way home covered as he runs for it | 13% | 24% | |
+| Pairs closer than 0.9 m (unlinked, mean) | 0.08 | 0.05 | |
+| Defenders within 2 m of him (mean) | 0.53 | 0.45 | |
+| Raids successful / tackled / empty / out of bounds | 64 / 19 / 11 / 6% | 63 / 20 / 7 / 9% | |
+
+The `after` column is before each player's own place moved into `formation_spot`. A two-match check after
+that move: 0.49 m front to back, way home covered 22%.
+
+On the TV recording the defenders now make an arc with the raider in its mouth, rather than a ruled line.
+
+Still open:
+- They are still more regular than the footage (0.5 m against about 1 m front to back).
+- Raids ending out of bounds went from 6% to 9%: with the corners further up there is less room along the
+  sides. This needs watching.
+
+### 5. Events that happen close together
+
+**Seen** (recording at 80-83 s and 155-157 s, the follow-camera match at 73-76 s and 148-150 s): a hold, a
+chain tackle, a dubki escape and a tackle within a second or two. The events were checked against the event
+log and the code:
+
+| Match time | Events | What was wrong |
+|---|---|---|
+| 72.60 | touch; thigh hold by the touched defender | the hold was given in the same frame as the touch, with no reaction and no check that his hands could reach |
+| 73.60 | dubki escape releases the thigh holder; ankle hold kept | judged on the defender's tackle name, not the hold; "Broke free!" shown though he was still held |
+| 74.37 | block hold; takedown; raid end, all in one frame | the newest hold had no time to be a hold |
+| 147.30-148.57 | touch and thigh hold in one frame; block; dubki escape; thigh hold | as at 72.60 and 73.60 |
+
+**Cause**:
+- A touched defender's grab back (`Match._check_contacts`) called `_attach` there and then. It skipped the
+  contact check every other hold goes through.
+- An escape (`Match._raider_escape`) picked a random holder and judged the move by his tackle's name
+  (`kind()`), not by the hold the grapple had made. A "wrong" move still succeeded 20% of the time (a dubki
+  out of an ankle hold, a jump out of arms round the waist).
+- "Broke free!" went up on every escape, even with other holds still on him.
+- A takedown could come in the frame a new hold was made (fixed by 2).
+
+**Fix**:
+- A grab back is a committed reaction. The touched defender winds up (`telegraph`) and after `COUNTER_REACT`
+  (0.18 s) takes hold only if the raider is still within reach of his hands plus a step
+  (`Grapple.reachable`, `COUNTER_STEP` 0.5 m). Otherwise the event is `grab_missed` and his wind-up carries
+  on into a tackle, whose dive is checked like any other.
+- An escape is judged on the grapple's holds (`Grapple.ESCAPES`). A dubki ducks out of arms round his middle
+  and sometimes a thigh hold, but never a held ankle. A lion jump kicks free of an ankle and sometimes a
+  thigh, never arms round his middle. A move goes against the hold it suits best, and a move that suits none
+  slips none.
+- The escape event says which hold was slipped and whether he is free. "Broke free!" goes up only when he is.
+- The AI raider and the escape hint read the holds the same way (`Match._held_low`).
+- A sidestep out of a hold (`Match._raider_dodge`) had the same faults, and is judged the same way.
+- No defender is given a part of the raider someone already holds. A helper's claim on a part was kept after
+  a diver's hands took it, and a hold given a part did not check it was free (`Grapple.claim`,
+  `Match._attach`); a recording showed two defenders on the same leg.
+- New scenarios: `slip` (held at the ankle and round the waist, a dubki slips only the waist: still held, no
+  "Broke free!", taken down) and `duck` (held only at the ankle, a dubki slips nothing). In `flurry` the
+  touched defender now stands close enough to grab back: at the old 0.95 m his grab back is out of reach,
+  so he dives instead.
+
+`ai_bench` now checks the events of every raid it plays (`_event_checks`). Two matches each, before these
+fixes (the chain and fall fixes already in) and after:
+
+| | Before | After |
+|---|---|---|
+| Grabs back at a touch made in the same frame as the touch | 15 of 16 | 0 of 14 (after 0.20 s, median) |
+| Escapes a move could not make (a dubki out of an ankle hold, a jump out of arms round him) | 3 of 23 | 0 of 15 |
+| Escapes that left him still held, each with "Broke free!" | 8 of 23 | 5 of 15, with no message |
+| Takedowns within 0.6 s of the newest hold still on him | 0 of 12 | 0 of 12 |
+| Holds on a part already held | 0 of 59 | 0 of 57 (seen once on a recording before the fix) |
+
+Visual check: the `slip` recording, from above. A dubki leaves the waist holder behind while the ankle holder,
+lying on the floor, keeps hold throughout. The team-mate gets back on him and he goes down.
+
 ### 6. The HUD's messages over the play
 
 The play-by-play messages ("Ankle hold!", "Chain tackle!", "Super tackle!") were drawn in the middle of the

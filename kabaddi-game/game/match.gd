@@ -60,6 +60,8 @@ const DIVE_LAND := 1.5         # ... and has this much left as he lands (no long
 const ARMS_OUT_AFTER := 0.15   # s a landed ankle dive can still grip, arms out
 const LUNGE := 0.45            # how much further an AI raider's touch starts, stepping in as it goes
 const LIE_TIME := 0.9          # s a tackled raider stays down once he hits the floor
+const COUNTER_REACT := 0.18    # s a touched defender takes to grab back ...
+const COUNTER_STEP := 0.5      # ... with a step in toward him (m)
 const GETUP_RAIDER := 1.4      # s he takes to get up (the get-up clips' own pace)
 const GETUP_HOLDER := 1.2      # s a holder off the floor takes to get up after a takedown
 
@@ -979,20 +981,26 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 		Sfx.play("whoosh", -4.0, 0.6)
 		Sfx.voice("hup", -8.0, raider.voice_pitch())
 	if holders.size() > 0:
-		# Slipping a hold: a dubki slides out of a high grip, a jump kicks free of an ankle
-		# hold. The wrong move against the grip rarely works.
-		var h: Athlete = holders[rng.randi() % holders.size()]
-		var right_move := (kind == "dubki") != (h.kind() == "ankle")
-		var chance := (0.62 if right_move else 0.2) * (0.4 + raider.move_skill(kind)) * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
-		if bool(lab_force.get("escape", rng.randf() < chance)):
-			_event("escape", {"how": kind, "from": h.pid(), "kind": h.kind()})
+		# Slipping a hold, judged on the hold he is actually in (the grapple's): the move goes against the grip
+		# it suits best (a dubki against arms round his middle, a jump against a held ankle), and a move that
+		# cannot slip any of them (a dubki with only his ankle held) slips none (Grapple.ESCAPES).
+		var pick: Array = grapple.best_escape("dubki" if kind == "dubki" else "lion", holders) if grapple else [holders[0], 0.0]
+		var h: Athlete = pick[0]
+		var fit: float = pick[1]
+		var chance := 0.62 * fit * (0.4 + raider.move_skill(kind)) * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
+		if fit > 0.0 and bool(lab_force.get("escape", rng.randf() < chance)):
+			var free := holders.size() == 1
+			_event("escape", {"how": kind, "from": h.pid(), "kind": h.kind(),
+				"hold": grapple.style_of_hold(h) if grapple else "", "free": free})
 			_release(h, true)
 			raider.set_state("dubki" if kind == "dubki" else "jump", DUBKI_TIME if kind == "dubki" else JUMP_TIME)
 			_move_moment(kind)
-			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true)
-			_ooh()
-			if raider == controlled:
-				tutorial_event.emit("broke_free")
+			# "Broke free!" only when he is: slipping one of several holds is not getting away.
+			if free:
+				hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true)
+				_ooh()
+				if raider == controlled:
+					tutorial_event.emit("broke_free")
 			if holders.is_empty():
 				raid.progress = maxf(0.0, raid.progress - 0.35)
 
@@ -1015,13 +1023,19 @@ func escape_hint() -> String:
 	if raid.holders.size() > 0:
 		var low := 0
 		for h in raid.holders:
-			if h.kind() == "ankle":
+			if _held_low(h):
 				low += 1
 		return "jump" if low * 2 >= raid.holders.size() else "dubki"
 	var home := Vector3(0, 0, side(raiding))
 	if raider.vel.dot(home) > 0.5 and _link_ahead(home) != null:
 		return "dubki"
 	return ""
+
+
+## Whether h holds him low (an ankle), by the hold he actually has (the grapple's), not his tackle's name.
+func _held_low(h: Athlete) -> bool:
+	var st: String = grapple.style_of_hold(h) if grapple and grapple.has(h) else Grapple.style_of(h.kind())
+	return st == "ankle"
 
 
 ## AI escapes never carry the raider over a line it cannot cross.
@@ -1077,14 +1091,21 @@ func _raider_dodge(dir: Vector3) -> void:
 	raider.energy = maxf(0.4, raider.energy - 0.015)
 	Sfx.play("whoosh", -6.0)
 	if holders.size() > 0:
-		var h: Athlete = holders[rng.randi() % holders.size()]
-		var chance := 0.5 * raider.agility * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
-		if rng.randf() < chance:
-			_event("escape", {"how": "dodge", "from": h.pid(), "kind": h.kind()})
+		# A sidestep twists out of the hold it suits best, judged on the holds he is in (Grapple.ESCAPES): not out
+		# of hands on his ankle. "Broke free!" only when he is.
+		var pick: Array = grapple.best_escape("dodge", holders) if grapple else [holders[0], 0.0]
+		var h: Athlete = pick[0]
+		var fit: float = pick[1]
+		var chance := 0.5 * fit * raider.agility * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
+		if fit > 0.0 and rng.randf() < chance:
+			var free := holders.size() == 1
+			_event("escape", {"how": "dodge", "from": h.pid(), "kind": h.kind(), "hold": grapple.style_of_hold(h),
+				"free": free})
 			_release(h, true)
-			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD)
-			if raider == controlled:
-				tutorial_event.emit("broke_free")
+			if free:
+				hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD)
+				if raider == controlled:
+					tutorial_event.emit("broke_free")
 			if holders.is_empty():
 				raid.progress = maxf(0.0, raid.progress - 0.35)
 
@@ -1314,7 +1335,7 @@ func _ai_raider(dt: float) -> Vector3:
 			raid.ai_dodge_cd = rng.randf_range(0.6, 1.1)
 			var low := 0
 			for h in holders:
-				if h.kind() == "ankle":
+				if _held_low(h):
 					low += 1
 			_ai_escape(low * 2 >= holders.size(), skill, Vector3(0, 0, side(raiding)))
 		return Vector3(0, 0, side(raiding))
@@ -1867,6 +1888,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 # ---------------------------------------------------------------- contacts and lines
 
 func _check_contacts(defs: Array) -> void:
+	_counter_grabs(defs)
 	var opp := 1 - raiding
 	var piling := []
 	var in_half := depth_in(opp, raider.position) > -0.1
@@ -1918,8 +1940,14 @@ func _check_contacts(defs: Array) -> void:
 					if via in ["toe", "backkick", "sidekick"]:
 						counter *= 0.45
 					if rng.randf() < counter:
+						# He grabs back after a moment's reaction, and only if the raider is still in his reach then
+						# (see _counter_grabs), not in the same instant as the touch.
 						d.tackle_kind = "block" if into else d.style
-						_attach(d, into)
+						d.set_meta("grab_at", phase_t + COUNTER_REACT)
+						d.set_meta("grab_block", into)
+						# Committed: he winds up to grab (and, if the raider is out of his reach by then, carries on
+						# into a tackle at him) rather than pulling away from the touch.
+						d.set_state("telegraph", COUNTER_REACT + float(prof.telegraph) * 0.6)
 						continue
 		# Tackles. A dive holds only with a hand on the part it goes for (the lower leg, the thigh, his middle)
 		# while the arms are out, checked on the bodies as drawn (Grapple.contact). The dash is a shoulder,
@@ -1999,6 +2027,26 @@ func _check_contacts(defs: Array) -> void:
 	_pile_on(piling)
 
 
+## Touched defenders grabbing back (see the touch in _check_contacts): when his reaction is up, he takes hold
+## if the raider is still within reach of his hands and a step (Grapple.reachable, COUNTER_STEP; the grapple
+## then brings him in, which is the step), and not in the middle of a move that takes him out of it.
+## Otherwise the moment has gone, and his wind-up carries on into a tackle.
+func _counter_grabs(defs: Array) -> void:
+	for d in defs:
+		if not d.has_meta("grab_at") or phase_t < float(d.get_meta("grab_at")):
+			continue
+		var block: bool = d.get_meta("grab_block", false)
+		d.remove_meta("grab_at")
+		d.remove_meta("grab_block")
+		if d.state not in ["ready", "idle", "telegraph", "evade"] or raider.state in ["dodge", "dubki", "jump", "fallen"]:
+			continue
+		var styles := ["block"] if block else ["thigh", "waist"]
+		if styles.any(func(st): return Grapple.reachable(d, raider, st, COUNTER_STEP)):
+			_attach(d, block)
+		else:
+			_event("grab_missed", {"who": d.pid()})
+
+
 func _pile_on(piling: Array) -> void:
 	# Team-mates pile in one at a time, a little faster the more of them are close.
 	if piling.is_empty() or raid.holders.is_empty():
@@ -2038,6 +2086,8 @@ func _attach(d: Athlete, block := false, slot := "", reached := false) -> void:
 	var style := Grapple.style_of(d.kind())
 	if style == "":
 		style = "thigh"
+	if slot != "" and grapple.taken().has(slot):
+		slot = ""   # held already (one defender a slot): the nearest free one, if any
 	if slot == "":
 		var want := Grapple.slot_for(style, d, raider)
 		var free := grapple.free_slots(d)
@@ -2394,7 +2444,8 @@ func _on_floor(a: Athlete) -> bool:
 
 ## A gameplay event, as it really happened (the HUD's messages follow these): "tackle_attempt" (a dive),
 ## "tackle_contact" (a hand or body reached him), "grip_lost", "hold" (a hold confirmed; "pile" for help),
-## "release", "escape", "takedown", "touch", "raid_end". Each gets a number, in order.
+## "grab_missed" (a touched defender's grab back, out of reach by then), "release", "escape" (with the hold it
+## slipped and whether he is free), "takedown", "touch", "raid_end". Each gets a number, in order.
 func _event(kind: String, info := {}) -> void:
 	_event_n += 1
 	info["n"] = _event_n
@@ -2905,6 +2956,7 @@ func _next_raid(after_timeout := false) -> void:
 		a.cele_partner = null
 		a.remove_meta("fived")
 		a.remove_meta("cheer_at")
+		a.remove_meta("grab_at")
 		if a.has_meta("walk_at"):
 			a.remove_meta("walk_at")
 			if a.state == "idle" and not a.on_mat:
