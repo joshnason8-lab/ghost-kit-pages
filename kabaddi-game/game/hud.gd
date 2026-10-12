@@ -201,9 +201,10 @@ func _build_scoreboard() -> void:
 
 
 func _build_center() -> void:
+	# Play-by-play messages under the raid strip, clear of the middle of the screen where the play is.
 	events_box = VBoxContainer.new()
-	events_box.set_anchors_preset(Control.PRESET_CENTER)
-	events_box.position = Vector2(-400, -120)
+	events_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	events_box.position = Vector2(-400, 150)
 	events_box.custom_minimum_size = Vector2(800, 0)
 	events_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	events_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -423,14 +424,14 @@ func event(text: String, color: Color, small := false) -> void:
 	if text == "":
 		return
 	shown.append(text)
-	var l := _label(text, "TitleLabel", 44 if small else 72, color)
+	var l := _label(text, "TitleLabel", 36 if small else 54, color)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))
 	l.add_theme_constant_override("outline_size", 12)
-	l.pivot_offset = Vector2(400, 40)
+	l.pivot_offset = Vector2(400, 30)
 	l.scale = Vector2(0.6, 0.6)
 	events_box.add_child(l)
-	while events_box.get_child_count() > 3:
+	while events_box.get_child_count() > 2:
 		events_box.get_child(0).queue_free()
 		events_box.remove_child(events_box.get_child(0))
 	var tw := create_tween()
