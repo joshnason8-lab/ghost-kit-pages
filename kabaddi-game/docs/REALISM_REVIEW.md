@@ -83,6 +83,25 @@ own (1.57-2.17 s), not the two leg holders together. The raider no longer moves 
 | The holder lying where the leg left him | 0.03 s | 0.30 s |
 | "Lion jump!", "Broke free!" | at the press | as the hold lets go |
 
+### A dubki with the ankle still held (3:19-3:24)
+
+| | |
+|---|---|
+| Mechanics, checked | A dubki is meant to slip arms round the middle, sometimes a thigh hold, never a held ankle (`Grapple.ESCAPES`, `best_escape`), so the ankle holding on is right. But the recorded `slip` raid had no waist hold when he ducked: the helper sent for the waist took the free leg (a thigh hold), the dubki slipped that, and he took the waist only afterwards. The scenario now brings him in from behind, so it is the ankle and arms round the middle. |
+| Functions found responsible | `Match._raider_escape` let the arms go at the press; `Match._release` threw the holder back at 3 m/s. `Athlete._pose` kept the one-leg stance only in "held", so the dubki's clip and squat took both legs: he squatted 0.36 m on a held foot. `Match._move_raider` drove a held raider's sidestep 0.71 m across the floor. |
+| Fix | The arms slip as he is down under them (`Match._tick_escape`, `MocapClip.ducked`). The holder's arms slide off the trunk and he straightens up where he was (`rise`). A move made with the ankle held (a dubki, a sidestep, gathering to jump) is made on the free leg: the one-leg stance stays, he ducks his top half and dips on the free leg (`Grapple.DUCK_SINK`), no hop starts mid-move, and a held sidestep is not driven across the floor. |
+| Tests | `tackle_check` `slip` (now ankle and arms round the middle, which hold slipped checked), `duck`, a new `sidestep`, with a new `dubki_held` measure; all 17 scenarios; `test_runner` |
+| Recording | `slip`, V2 and now side by side, close up and from above |
+
+| | V2 | Now |
+|---|---|---|
+| `slip`: arms let go after the dubki is called for | 0.03 s | 0.13 s (as he is down under them) |
+| `slip`: his middle's drop in the duck | 0.36 m | 0.09 m, on the free leg all through |
+| `slip`: the slipped holder, the frame after | thrown back at 1.77 m/s | straightening up where he was |
+| `slip`: held ankle from its hold, the whole hold (worst) | 0.451 m | 0.000 m |
+| `duck` (ankle only): middle's drop / free foot planted | 0.35 m / 8% | 0.06 m / 100% |
+| `sidestep` (ankle only): body moved / held foot off its hold | 0.71 m / 0.136 m | 0.00 m / 0.000 m |
+
 ## First review (the 0.7.5 recording): five fixes, and where milestones A-E stand
 
 A review of the 0.7.5 gameplay recording (11 Oct 2026) named five problems. This page answers it: for each, the

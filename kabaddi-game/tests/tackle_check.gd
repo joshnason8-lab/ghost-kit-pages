@@ -21,8 +21,9 @@ extends Node
 ## two: every event in order, the raid scored once), "slip" (held at the ankle and round the middle, a dubki
 ## slips only the arms round him: still held, no "Broke free!", taken down), "duck" (held only at the ankle,
 ## a dubki slips nothing), "drag" (the "catch" hold with the raider driving for the line as hard as he can,
-## as the AI does: he drags the holder a little at a time and is brought down) and "stopped" (a lion jump out of
-## the ankle hold that does not slip it: the hold stops him leaving the floor, he is held still and brought down).
+## as the AI does: he drags the holder a little at a time and is brought down), "stopped" (a lion jump out of
+## the ankle hold that does not slip it: the hold stops him leaving the floor, he is held still and brought down)
+## and "sidestep" (held only at the ankle, a sidestep slips nothing: he twists on the free leg where he is held).
 ## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording ("plain" leaves
 ## the debug overlay off; "high" looks down from above, three-quarters on, to see every hold in a pile; "close"
 ## comes in closer, a little in front, to see the bodies' detail):
@@ -31,7 +32,7 @@ extends Node
 ##       --fixed-fps 30 res://tests/tackle_check.tscn -- view catch [plain]
 
 const SCENARIOS := ["miss", "catch", "escape", "whiff", "thigh", "waist", "chain", "join", "committed", "crowd", "touch", "flurry",
-	"slip", "duck", "drag", "stopped"]
+	"slip", "duck", "drag", "stopped", "sidestep"]
 const JUMP_SPEED := 10.0        # m/s in one frame
 const BODY_R := 0.12            # m: the raider's middle is this thick, for measuring holds round it
 # Per scenario: defenders (style each; the first dives), where the first starts (metres in front), helpers.
@@ -48,10 +49,11 @@ const SETUP := {
 	"crowd": {"styles": ["ankle", "thigh", "thigh", "waist"], "help": true},
 	"touch": {"styles": ["thigh", "thigh"], "touch": true, "no_dive": true, "passive": true},
 	"flurry": {"styles": ["thigh", "ankle", "waist"], "touch": true, "help": true},
-	"slip": {"styles": ["ankle", "waist"], "help": true},
+	"slip": {"styles": ["ankle", "waist"], "help": true, "behind": true},
 	"duck": {"styles": ["ankle"]},
 	"drag": {"styles": ["ankle"], "push": 1.0},
 	"stopped": {"styles": ["ankle"]},
+	"sidestep": {"styles": ["ankle"]},
 }
 
 var _chosen := []
@@ -143,9 +145,14 @@ func _run(sc: String) -> Dictionary:
 		var a: Athlete = defs[i]
 		if a == d and touched_one != null:
 			a.position = m.pos_in(1, -0.3, 3.9 + 1.6)
+			a.facing = -into
+		elif bool(setup.get("behind", false)):
+			# Coming in from behind him: round his middle from the back, the free leg further off.
+			a.position = m.pos_in(1, -0.4, 3.9 - 1.5)
+			a.facing = into
 		else:
 			a.position = m.pos_in(1, [-2.2, 2.4, -0.6][(i - 1) % 3], [5.6, 5.4, 6.1][(i - 1) % 3])
-		a.facing = -into
+			a.facing = -into
 	var score0: Array = [int(m.teams[0].score), int(m.teams[1].score)]
 	# lab_move is a share of his top speed, as a stick would give: about 0.8 m/s sideways.
 	m.lab_move = Vector3(0.2, 0, 0)
@@ -183,6 +190,7 @@ func _run(sc: String) -> Dictionary:
 	var rec := {}          # holder -> [let go (s after the takedown), how he got up, up (s after the takedown)]
 	var down_at := -1.0
 	var esc := {}          # a lion jump out of the hold: when it was called for, let go, off the floor (see _escape)
+	var duck := {}         # a dubki held at the ankle: the hold through it, and the arms it slips (see _duck)
 	while t < 12.0:
 		var dt := get_process_delta_time()
 		dt = dt if dt > 0.0005 else 1.0 / 30.0
@@ -209,7 +217,20 @@ func _run(sc: String) -> Dictionary:
 				and t > float(out.attach_t) + 0.9:
 			escaped = true
 			m.lab_force["escape"] = true
+			duck = {"press": t, "holders": m.raid.holders.duplicate(), "waist0": r.model.anchor("waist").y, "one": 1.0,
+				"off": 0.0, "low": INF, "frames": 0, "planted": 0, "side": ""}
+			for hh in m.grapple.holds:
+				if String(hh.style) == "ankle":
+					duck.side = String(hh.slot).substr(4)
 			m._raider_escape("dubki", home)
+		if sc == "sidestep" and holding and not escaped and t > float(out.attach_t) + 0.9:
+			escaped = true
+			duck = {"press": t, "holders": m.raid.holders.duplicate(), "waist0": r.model.anchor("waist").y, "one": 1.0,
+				"off": 0.0, "low": INF, "frames": 0, "planted": 0, "side": "", "move": "dodge", "at0": r.position}
+			for hh in m.grapple.holds:
+				if String(hh.style) == "ankle":
+					duck.side = String(hh.slot).substr(4)
+			m._raider_dodge(r.facing.cross(Vector3.UP))
 		if sc in ["escape", "stopped"] and holding and not escaped and t > float(out.attach_t) + 0.9:
 			escaped = true
 			m.lab_force["escape"] = sc == "escape"
@@ -285,6 +306,8 @@ func _run(sc: String) -> Dictionary:
 		mo.append(_sample(m, r, d, pts_last, t, dt, holders))
 		if esc.has("press") and r.model.rig:
 			_escape_frame(esc, r, d, t, dt)
+		if duck.has("press") and not duck.has("end") and r.model.rig:
+			_duck_frame(duck, m, r, t)
 		# After the takedown: each holder's letting go and getting up.
 		if r.state == "fallen" and down_at < 0.0:
 			down_at = t
@@ -318,6 +341,7 @@ func _run(sc: String) -> Dictionary:
 			break
 	out.events = []
 	out.slots = []
+	out.slipped = []       # the holds escapes slipped, by style
 	out.in_order = true
 	var last_n := 0
 	var after_down := false
@@ -338,6 +362,8 @@ func _run(sc: String) -> Dictionary:
 				out.hold_after_takedown += 1
 		if k == "takedown":
 			after_down = true
+		if k == "escape":
+			out.slipped.append(String(info.get("hold", "")))
 	var g: Array = out.grip
 	out.grip_median = snappedf(_pct(g, 50), 0.001)
 	out.grip_p90 = snappedf(_pct(g, 90), 0.001)
@@ -374,6 +400,8 @@ func _run(sc: String) -> Dictionary:
 	_getup(out, mo)
 	if esc.has("release") and float(esc.release) - float(esc.press) < 1.0:   # let go by the jump, not a takedown later
 		_escape(out, esc)
+	if duck.has("end"):
+		_duck(out, duck)
 	# The holders after the takedown: when each let go and how and when he was up, and how far apart they were.
 	if not rec.is_empty():
 		out.recovery = []
@@ -431,15 +459,23 @@ func _run(sc: String) -> Dictionary:
 			out.ok = out.events.count("touch") == 1 and holds >= 1 and downs == 1 and out.events.count("raid_end") == 1 \
 				and out.end == "tackle" and out.scored_once and out.in_order and out.hold_after_takedown == 0
 		"slip":
-			# One hold slipped, the other kept: still held, no "Broke free!", taken down.
+			# Held at the ankle and round the middle: the arms round his middle slipped, the ankle kept; still held, no
+			# "Broke free!", taken down.
 			out.ok = out.events.count("escape") == 1 and out.events.count("release") == 1 and downs == 1 \
-				and out.end == "tackle" and not out.shown.any(func(x): return String(x[1]) == tr("EV_BROKE_FREE"))
+				and out.slipped.size() == 1 and String(out.slipped[0]) in ["waist", "block"] and out.slots.size() >= 2 \
+				and String(out.slots[0]).begins_with("leg_") and String(out.slots[1]) in ["back", "front"] and out.end == "tackle" \
+				and not out.shown.any(func(x): return String(x[1]) == tr("EV_BROKE_FREE"))
 		"duck":
 			out.ok = out.events.count("escape") == 0 and downs == 1 and out.end == "tackle"
 		"drag":
 			# Driving for the line as hard as he can against one ankle holder: he drags him a little at a time,
 			# hop by hop, and is brought down.
 			out.ok = out.attached and holds == 1 and downs == 1 and out.end == "tackle"
+		"sidestep":
+			# Held only at the ankle, a sidestep slips nothing: no escape, nothing let go, he stays where the hold has him
+			# (Grapple.leg_limit, the hops), and is brought down.
+			out.ok = out.attached and out.events.count("escape") == 0 and out.events.count("release") == 0 and downs == 1 \
+				and out.end == "tackle" and out.has("dubki_held") and float(out.dubki_held.travel) < 0.3
 		"stopped":
 			# A lion jump the hold keeps: no escape and nothing let go; the jump ends where the hold stops it (held
 			# again, never in the air) and he is brought down.
@@ -787,6 +823,55 @@ func _escape(out: Dictionary, esc: Dictionary) -> void:
 		"holder_lies": snappedf(float(esc.get("lies", -1.0)), 0.01)}
 
 
+## A dubki (or a sidestep) made while held at the ankle, each frame of it: the one-leg stance (HumanModel.one_leg),
+## the held foot from its hold, how low his middle goes, whether his free foot stays planted, how far his body
+## travels; and the holder whose arms it slips, when he lets go, what he does then and how fast his body moves the
+## frame after.
+func _duck_frame(duck: Dictionary, m: Node, r: Athlete, t: float) -> void:
+	var rig: RiggedBody = r.model.rig
+	if r.state != String(duck.get("move", "dubki")):
+		if int(duck.frames) > 0:
+			duck.end = t
+		return
+	duck.moved = maxf(float(duck.get("moved", 0.0)), Vector2(r.position.x - duck.get("at0", r.position).x,
+		r.position.z - duck.get("at0", r.position).z).length())
+	duck.frames = int(duck.frames) + 1
+	var one = r.model.get("one_leg")
+	if one != null:
+		duck.one = minf(float(duck.one), float(one))
+	else:
+		duck.one = -1.0
+	duck.low = minf(float(duck.low), r.model.anchor("waist").y)
+	var s := String(duck.side)
+	if s != "":
+		var fg: Array = rig.foot_goal.get(s, [])
+		if fg.size() >= 2 and float(fg[1]) >= 0.99:
+			duck.off = maxf(float(duck.off), (fg[0] as Vector3).distance_to(_joint(rig, "foot_" + s)))
+		var fs := "r" if s == "l" else "l"
+		if rig._plant.has(fs) and float(rig._plant[fs][1]) >= 0.99:
+			duck.planted = int(duck.planted) + 1
+	for a in duck.holders:
+		if not duck.has("slipped") and not m.raid.holders.has(a):
+			duck.slipped = a
+			duck.release = t
+			duck.last = Vector3(a.position.x, 0.0, a.position.z)
+		elif duck.get("slipped") == a and not duck.has("after"):
+			duck.after = [a.state, snappedf(Vector3(a.position.x, 0.0, a.position.z).distance_to(duck.last) * 30.0, 0.01)]
+
+
+## dubki_held: from the dubki (or sidestep) called for to the arms round him slipping (s); the one-leg stance's lowest
+## through it (1: on the free leg all through; -: the body has none); the held foot's furthest from its hold (m); how
+## far his middle dropped (m); how much of it the free foot stayed planted; how far his body travelled (m, along the
+## floor, sidestep only); the slipped holder's state and speed (m/s) the frame after he let go.
+func _duck(out: Dictionary, duck: Dictionary) -> void:
+	out.dubki_held = {"press_to_release": snappedf(float(duck.release) - float(duck.press), 0.01) if duck.has("release") else "-",
+		"travel": snappedf(float(duck.get("moved", 0.0)), 0.01) if duck.has("at0") else "-",
+		"one_leg_min": snappedf(float(duck.one), 0.01) if float(duck.one) >= 0.0 else "-",
+		"held_foot_off": snappedf(float(duck.off), 0.001), "hips_drop": snappedf(float(duck.waist0) - float(duck.low), 0.01),
+		"free_foot_planted": snappedf(float(duck.planted) / maxf(1.0, float(duck.frames)), 0.01),
+		"slipped_holder": duck.get("after", "-")}
+
+
 ## A tackled raider from the floor to walking off:
 ##   on_floor          s from his waist reaching the floor to starting to get up;
 ##   getting_up        s getting up;
@@ -880,7 +965,7 @@ func _print(sc: String, r: Dictionary) -> void:
 			"held_foot_moved", "free_foot_slide", "fall_to_floor", "fall_lean_rate", "fall_drop_rate", "holder_slide",
 			"holder_jitter", "root_accel_max", "anchor_err", "leg_stretch_max", "free_foot_down", "glide", "hops", "planted_slide",
 			"react_raider",
-			"fall_dir_err", "grip_each", "recovery", "recovery_spread", "escape_timing",
+			"fall_dir_err", "grip_each", "recovery", "recovery_spread", "escape_timing", "dubki_held", "slipped",
 			"last_hold_to_down", "on_floor", "getting_up", "up_to_walk", "moved_while_down", "stood_by_him"]:
 		print("  %-20s %s" % [k, str(r.get(k, "-"))])
 	print("  raider   %s" % [str(r.states_r)])

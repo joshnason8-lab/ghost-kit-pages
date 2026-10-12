@@ -46,6 +46,7 @@ var arms := "both"                     # "r": only the right arm is the clip's, 
 
 var _landing := -2.0                   # see landing()
 var _takeoff := -2.0                   # see takeoff()
+var _ducked := -2.0                    # see ducked()
 
 static var _library := {}
 static var _scanned := false
@@ -157,6 +158,26 @@ func takeoff() -> float:
 			_takeoff = times[i]
 			break
 	return _takeoff
+
+
+## When a duck is down (s): the first frame its hips are within 0.02 of their lowest (a dubki under the arms
+## round him). -1 for a clip that does not go down.
+func ducked() -> float:
+	if _ducked > -2.0:
+		return _ducked
+	_ducked = -1.0
+	if version < 2 or heights.is_empty():
+		return _ducked
+	var lo := INF
+	for h in heights:
+		lo = minf(lo, h)
+	if heights[0] - lo < 0.08:
+		return _ducked
+	for i in heights.size():
+		if heights[i] <= lo + 0.02:
+			_ducked = times[i]
+			break
+	return _ducked
 
 
 ## Version 2: the pose at time t: {"h": hips' height against standing, "a": the body's lowest point off the

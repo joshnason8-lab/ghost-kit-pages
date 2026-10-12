@@ -1110,9 +1110,18 @@ func _ground() -> void:
 
 ## Seconds from now until the clip playing leaves the floor (a jump's takeoff, MocapClip.takeoff), or -1.
 func takeoff_in() -> float:
-	if clip == null or clip_loop or clip.takeoff() < 0.0:
+	return _clip_in(clip.takeoff()) if clip else -1.0
+
+
+## Seconds from now until the clip playing is down at its lowest (a dubki, MocapClip.ducked), or -1.
+func ducked_in() -> float:
+	return _clip_in(clip.ducked()) if clip else -1.0
+
+
+func _clip_in(mark: float) -> float:
+	if clip == null or clip_loop or mark < 0.0:
 		return -1.0
-	return maxf(0.0, (clip.takeoff() - clip_time) / maxf(clip_rate, 0.01))
+	return maxf(0.0, (mark - clip_time) / maxf(clip_rate, 0.01))
 
 
 func play_clip(c: MocapClip, loop: bool, fit := 0.0, wait := 0.0) -> void:

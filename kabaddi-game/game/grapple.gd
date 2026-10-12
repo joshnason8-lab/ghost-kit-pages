@@ -76,6 +76,7 @@ const HOP_HEIGHT := 0.06       # m off the floor
 const HOP_GAP := 0.3           # s on the free foot between hops (longer as his balance goes)
 const HOP_BACK := 0.03         # m: pulled further than the held leg reaches, he hops back to stay on his feet
 const GATHER_SINK := 0.2       # how much lower (share of his leg) he sinks on the free leg gathering for a lion jump
+const DUCK_SINK := 0.16        # ... and ducking (a dubki) with the ankle held
 const DRAG_MAX := 0.12         # m one hop can drag a holder along the floor
 const TAKEDOWN_DRAG := 1.2     # m/s a falling raider's leg can pull the ankle holder after it
 # How long after the raider lands each hold lets go (takedown): hands round a leg as it reaches the floor, an ankle
@@ -716,7 +717,7 @@ func _footwork(dt: float) -> void:
 			# Down on the free foot: he faces the way his body has got round to; the rest of a turn waits for the
 			# next hop (turning on the spot would drag the planted foot round).
 			raider.facing = raider.body_facing()
-	elif legs < 2 and raider.state != "jump":   # gathering himself for a lion jump, he stays on the free foot
+	elif legs < 2 and raider.state == "held":   # in the middle of a move (a dubki, gathering to jump) he stays put
 		if float(pulled.get("tension", 0.0)) > HOP_BACK:
 			# Pulled back further than the held leg reaches: a quick hop back toward the hold.
 			var s := String(pulled.slot).substr(4)
@@ -800,6 +801,9 @@ func _footwork_pose() -> void:
 		# Gathering himself for a lion jump out of the hold (Match._raider_escape): down on the free leg to spring.
 		var g := clampf(raider.st_t / raider.wait, 0.0, 1.0)
 		raider.stance = maxf(LOW_HIP, raider.stance - GATHER_SINK * g * g * (3.0 - 2.0 * g))
+	elif raider.state == "dubki":
+		# Ducking with the ankle held: down on the free leg and up again, the held leg staying where it is held.
+		raider.stance = maxf(LOW_HIP, raider.stance - DUCK_SINK * sin(PI * clampf(raider.st_t / maxf(raider.st_len, 0.01), 0.0, 1.0)))
 	if hop >= 0.0:
 		var p := clampf(hop / hop_len, 0.0, 1.0)
 		raider.hop = minf(p, 0.999)

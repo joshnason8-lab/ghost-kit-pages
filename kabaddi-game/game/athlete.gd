@@ -447,8 +447,10 @@ func _pose(delta: float) -> void:
 	m.haul = lerpf(m.haul, braced if state == "holding" else 0.0, clampf(delta * 18.0, 0.0, 1.0))
 	m.haul_drive = hold_style == "block"
 	m.strain = lerpf(m.strain, strain if state == "holding" else 0.0, clampf(delta * 10.0, 0.0, 1.0))
-	# On one leg, the other held by the ankle: in quickly as the foot is caught, out as he goes down or gets free.
-	var one := 1.0 if (state == "held" or (state == "jump" and waiting)) and held_leg != 0.0 else 0.0
+	# On one leg, the other held by the ankle: in quickly as the foot is caught, out as he goes down or gets free. A
+	# move made while it is held (a dubki or a sidestep, gathering for a jump) is made on the free leg: the hold
+	# does not go away for it.
+	var one := 1.0 if (state in ["held", "dubki", "dodge"] or (state == "jump" and waiting)) and held_leg != 0.0 else 0.0
 	m.one_leg = move_toward(m.one_leg, one, delta * (8.0 if one > 0.0 else (2.5 if state == "fallen" else 6.0)))
 	if held_leg != 0.0:
 		m.held_leg = held_leg

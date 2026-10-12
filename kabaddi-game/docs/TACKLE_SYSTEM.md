@@ -776,6 +776,71 @@ button was pressed, before he had left the floor, and the holder was already get
 A new scenario, `stopped`, is a lion jump that does not slip the hold. There is no escape and nothing is let go.
 He is held again 0.20 s after the jump was called for, and brought down later.
 
+### A dubki with the ankle still held (3:19-3:24)
+
+**Seen:** the waist hold seemed to come off while the ankle hold went on, and the raider did not look held by
+the ankle while he ducked.
+
+**The mechanics, checked in the code:**
+- Which hold a move can slip is `Grapple.ESCAPES`:
+  - a dubki slips arms round his middle (a waist hold or a block), sometimes a thigh hold, never a held ankle;
+  - `Grapple.best_escape` picks the hold the move suits best.
+
+  Ducking out of the arms round him while the ankle stays held is meant to happen.
+- The recorded `slip` raid was not what its caption said:
+  - The second defender, sent in to hold round the waist, took the free leg instead. A helper claims the
+    nearest free slot, and the hold's style follows the slot (a thigh hold).
+  - The dubki slipped that thigh hold, and he took the raider round the waist only afterwards.
+  - The scenario now brings him in from behind. It is the ankle and arms round the middle: a block in front, as
+    the raider has turned away from the ankle hold.
+
+**What was doing it:**
+- `Match._raider_escape` let go of the arms at the press, before he had ducked.
+- `Match._release` threw the holder back (3 m/s for a hold round the middle) and stood him up ("ready").
+- The dubki took the whole body. `Athlete._pose` kept the one-leg stance only in the "held" state, so in the
+  "dubki" state the dubki clip's legs and the hand-made squat came back. With one foot held:
+  - he squatted on both legs, his hips dropping 0.36 m;
+  - the free foot slid (planted half the time);
+  - the held foot was pulled 4 cm off its hold.
+- A sidestep did the same. `Match._move_raider` drove a dodging raider sideways at 1.9 times his top speed,
+  held or not. Held at the ankle, he travelled 0.71 m in a quarter of a second, the held foot 0.14 m off its hold.
+  The AI sidesteps when held as often as it ducks or jumps.
+
+**What it is now:**
+- **The arms slip as he ducks under them** (`Match._tick_escape`), when the dubki clip is at its lowest
+  (`MocapClip.ducked`). "Dubki!" goes up then.
+- **The holder's arms slide off his trunk** as it goes down (his hands go with it, as with a lion jump). He is
+  left bent over where the raider was, and straightens up (`rise`, `RISE_SLIPPED`) rather than being thrown back.
+- **A move made with the ankle held is made on the free leg.** The one-leg stance stays through a dubki, a
+  sidestep and the gather for a lion jump (`Athlete._pose`).
+  - He ducks his top half and dips on the free leg (`Grapple.DUCK_SINK`).
+  - No hop starts in the middle of a move (`Grapple._footwork`).
+- **A held raider's sidestep is not driven across the floor** (`Match._move_raider`): the holds move him as they
+  do whenever he is held.
+- `rise` ends during a raid as `recover` does (`Match._ai_defender`, `_user_defender`).
+
+| Held at the ankle and round the middle, a dubki: `slip` | V2 | Now |
+|---|---|---|
+| Arms round his middle let go, after the dubki is called for | 0.03 s (at the press) | 0.13 s (as he is down under them) |
+| On the free leg all through the duck | no | yes |
+| His middle's drop in the duck | 0.36 m | 0.09 m |
+| Held foot off its hold, through the duck (furthest) | 0.04 m | 0.00 m |
+| Free foot planted through the duck | 50% | 69% |
+| The slipped holder, the frame after | thrown back at 1.77 m/s | straightening up where he was, 0 m/s |
+| Held ankle from its hold, the whole hold (worst) | 0.451 m | 0.000 m |
+
+V2 and now have the same set-up. In V2 the helper took the waist from behind; now he takes a block from in
+front, because the raider has turned away from the ankle hold.
+
+| Held at the ankle only | V2 | Now |
+|---|---|---|
+| A dubki (`duck`): his middle's drop | 0.35 m | 0.06 m |
+| ... free foot planted through it | 8% | 100% |
+| ... held foot off its hold (furthest) | 0.031 m | 0.000 m |
+| A sidestep (`sidestep`, new): his body moved along the floor | 0.71 m | 0.00 m |
+| ... held foot off its hold (furthest) | 0.136 m | 0.000 m |
+| ... free foot planted through it | 43% | 100% |
+
 ## Measuring
 
 ```sh
@@ -804,13 +869,15 @@ but contact never is. The scenarios:
 - **touch**: a hand touch and home. The points are given once, and the score goes up by exactly them.
 - **flurry**: within a second or two, a touch, the touched defender grabbing straight back, another diving
   in, help, and a takedown. Every event comes in order, and the raid is scored once.
-- **slip**: held at the ankle and round the middle, a dubki slips only the arms round him: still held, no
-  "Broke free!", taken down.
+- **slip**: held at the ankle and round the middle (the helper comes in from behind), a dubki slips only the
+  arms round him: still held, no "Broke free!", taken down.
 - **duck**: held only at the ankle, a dubki slips nothing.
 - **drag**: the `catch` hold with the raider driving for the line as hard as he can, as the AI does. He drags
   the holder a little at a time and is brought down.
 - **stopped**: a lion jump out of the ankle hold that does not slip it. The hold stops him leaving the floor;
   he is held still, and brought down.
+- **sidestep**: held only at the ankle, a sidestep slips nothing. He twists on his free leg where the hold has
+  him, and is brought down.
 
 Each scenario prints:
 
@@ -837,7 +904,11 @@ Each scenario prints:
 - after a takedown, when each holder let go, how he got up and when he was up (`recovery`);
 - a lion jump out of the hold (`escape_timing`): when the hold lets go after the jump is called for, the free
   foot's height then, when both feet leave the floor, how much his speed changes in the air, how far out the
-  holder's hands reach after the leg, and how long he lies before getting up.
+  holder's hands reach after the leg, and how long he lies before getting up;
+- a dubki or a sidestep with the ankle held (`dubki_held`): when the arms round him slip, whether he stays on
+  the free leg, the held foot from its hold, how far his middle drops, how much of it the free foot is planted,
+  how far his body travels, and what the slipped holder does;
+- which holds the escapes slipped (`slipped`).
 
 A scenario fails if the events are not what it must produce. The motion numbers are measured, not checked:
 they are for comparing a change, alongside looking at a recording.
