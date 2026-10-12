@@ -32,6 +32,14 @@ var tug := 0.0              # ... how hard he is pulled back now, 0..1
 var tug_side := 0.0         # ... by which leg: -1 left, 1 right (0: round the middle)
 var haul := 0.0             # a holder hauling now, 0..1
 var haul_drive := false     # ... driving into him (a block, chest to chest) rather than pulling back
+var strain := 0.0           # ... the raider pulling against him, 0..1: arms out straight, digging in
+# Standing on one leg, the other held by the ankle (Athlete.held_leg and the rest; see _apply_footwork).
+var one_leg := 0.0          # how much, 0..1
+var held_leg := 1.0         # which leg is held: -1 left, 1 right
+var stance := 0.95          # how high his hips are over the free foot, against his leg's length
+var hop := -1.0             # a hop on the free foot: 0..1 in the air, 1..2 coming down onto it (-1: none)
+var hop_air := 0.0          # ... how high off the floor (m)
+var jolt := 0.0             # a pull through the held leg he did not expect, 0..1
 var down_for := -1.0        # s since a fall reached the floor (its clip's landing; -1: not down)
 var impact := -1.0          # s since hitting the floor, while the body gives with it (see _apply_impact; -1: not)
 const IMPACT_TIME := 0.3
@@ -51,6 +59,9 @@ var move_side := 0.0        # ... -1 left, 1 right (a side-shuffle)
 var seated := 0.0           # sitting in the sitting block, 0..1
 var look_around := 0.25     # how much an idle player turns his head about
 var _life := 0.0            # per-player offset so idle movement is never in step
+# Each body's own chance (its idle offset, where its loops start), seeded from the player: the same every time he
+# plays, whatever else ran before (the engine's shared generator is drawn on by everything else as well).
+var _rng := RandomNumberGenerator.new()
 var clip: MocapClip = null  # captured motion that overrides the hand-made pose
 var clip_time := 0.0
 var clip_loop := true
@@ -136,6 +147,7 @@ func setup(p_skin: Color, p_hair: Color, p_jersey: Color, p_trim: Color, p_numbe
 
 
 func _ready() -> void:
+	_rng.seed = hash([body_seed, number, height, build, skin.to_html()])
 	for path in CUSTOM_MODEL_PATHS:
 		if ResourceLoader.exists(path):
 			_build_custom(path)
@@ -483,7 +495,7 @@ func _process(delta: float) -> void:
 
 func _animate(delta: float) -> void:
 	if _life == 0.0:
-		_life = randf() * TAU
+		_life = _rng.randf() * TAU
 	# The stride follows how fast he moves over the floor, but a body lying on it (diving, holding a leg,
 	# fallen) is slid along, not running: no stride.
 	var gait := speed * (1.0 - clampf(maxf(dive, fallen), 0.0, 1.0))
@@ -707,7 +719,7 @@ func _animate(delta: float) -> void:
 ## chest (a block) he drives into him.
 func _apply_struggle() -> void:
 	var b := balance
-	if b > 0.001 or tug > 0.001:
+	if b > 0.001 or tug > 0.001 or jolt > 0.001 or one_leg > 0.001:
 		# Held by a leg he goes right over it; held round the middle, less.
 		var leg := lerpf(0.5, 1.0, absf(tug_side))
 		var over := (0.08 * minf(1.0, b * 6.0) + 0.55 * b * b + 0.3 * tug * (0.4 + 0.6 * b)) * leg
@@ -717,14 +729,19 @@ func _apply_struggle() -> void:
 		_turn(chest, Vector3.RIGHT, -over * 0.4)
 		_turn(head, Vector3.RIGHT, over * 0.6)   # his eyes stay on the line
 		pelvis.position.y -= (0.1 * b + 0.035 * tug) * height / 1.78
-		var f := clampf(b * 2.5 + tug * 0.5, 0.0, 1.0) * 0.85
+		# Arms out for balance, flailing the more he loses it; thrown up as he hops and forward when a pull
+		# through the held leg catches him out.
+		var air_up := sin(PI * clampf(hop, 0.0, 1.0)) if hop >= 0.0 and hop < 1.0 else 0.0
+		var f := clampf(b * 2.5 + tug * 0.5 + jolt * 0.8 + air_up * 0.5 * one_leg, 0.0, 1.0) * 0.85
 		if f > 0.0:
 			var wl := sin(_t * 6.5 + _life)
 			var wr := sin(_t * 5.6 + _life * 1.7)
-			sh_l.quaternion = sh_l.quaternion.slerp(Quaternion.from_euler(Vector3(1.2 + 0.45 * wl, 0, -0.95 - 0.35 * wr)), f)
-			sh_r.quaternion = sh_r.quaternion.slerp(Quaternion.from_euler(Vector3(1.2 + 0.45 * wr, 0, 0.95 + 0.35 * wl)), f)
+			var lift := 0.5 * air_up + 0.6 * jolt
+			sh_l.quaternion = sh_l.quaternion.slerp(Quaternion.from_euler(Vector3(1.2 + 0.45 * wl + lift, 0, -0.95 - 0.35 * wr + 0.3 * jolt)), f)
+			sh_r.quaternion = sh_r.quaternion.slerp(Quaternion.from_euler(Vector3(1.2 + 0.45 * wr + lift, 0, 0.95 + 0.35 * wl - 0.3 * jolt)), f)
 			el_l.quaternion = el_l.quaternion.slerp(Quaternion(Vector3.RIGHT, 0.5 + 0.25 * wr), f)
 			el_r.quaternion = el_r.quaternion.slerp(Quaternion(Vector3.RIGHT, 0.5 + 0.25 * wl), f)
+	_apply_footwork()
 	if haul > 0.001:
 		var low := clampf((dive - 0.75) / 0.25, 0.0, 1.0)   # lying on the floor (an ankle hold)
 		var back := -1.0 if haul_drive else 1.0
@@ -736,6 +753,56 @@ func _apply_struggle() -> void:
 		_turn(kn_l, Vector3.RIGHT, -haul * lerpf(0.35, 1.15, low))
 		_turn(kn_r, Vector3.RIGHT, -haul * lerpf(0.25, 0.8, low))
 		pelvis.position.y -= haul * 0.05 * (1.0 - low) * height / 1.78
+	if strain > 0.001:
+		# Pulled toward the raider by what he holds: his arms go out straight (the arm IK), his chest and head go
+		# down to the floor and his knees dig in.
+		var low2 := clampf((dive - 0.75) / 0.25, 0.0, 1.0)
+		_turn(spine, Vector3.RIGHT, -0.14 * strain * low2)
+		_turn(chest, Vector3.RIGHT, -0.08 * strain)
+		_turn(head, Vector3.RIGHT, -0.18 * strain)
+		_turn(hip_l, Vector3.RIGHT, 0.3 * strain * low2)
+		_turn(hip_r, Vector3.RIGHT, 0.22 * strain * low2)
+		_turn(kn_l, Vector3.RIGHT, -0.35 * strain * low2)
+		_turn(kn_r, Vector3.RIGHT, -0.25 * strain * low2)
+
+
+## Standing on one leg, the other held by the ankle (Grapple._footwork). He sinks on the free leg as low as the
+## held one needs to reach back to the hold (stance: the foot under his hips, the thigh forward half the
+## knee's bend), his hips over the free foot and turned with the held leg back toward the hold; the body's leg
+## IK puts the held foot where it is held. A hop drives off the free leg (the knee straightens), tucks it a
+## little in the air and gives at the knee coming down. A pull through the held leg he did not expect (jolt)
+## throws his trunk forward over the free leg, his head coming up.
+func _apply_footwork() -> void:
+	var w := one_leg
+	if w <= 0.001:
+		return
+	var free_l := held_leg > 0.0
+	var side := -1.0 if free_l else 1.0   # the free foot's side (x)
+	var hf: Node3D = hip_l if free_l else hip_r
+	var kf: Node3D = kn_l if free_l else kn_r
+	var hh: Node3D = hip_r if free_l else hip_l
+	var kh: Node3D = kn_r if free_l else kn_l
+	var k := 2.0 * acos(clampf(stance, 0.3, 0.999))
+	if hop >= 0.0 and hop < 1.0:
+		var drive := sin(PI * clampf(hop / 0.4, 0.0, 1.0)) if hop < 0.4 else 0.0
+		k = k - 0.5 * drive + 0.18 * sin(PI * hop)
+	elif hop >= 1.0:
+		k += 0.4 * sin(PI * clampf(hop - 1.0, 0.0, 1.0))
+	k = maxf(0.1, k)
+	pelvis.position.x += side * 0.06 * w
+	_turn(pelvis, Vector3.UP, side * 0.16 * w)
+	_turn(spine, Vector3.UP, -side * 0.12 * w)
+	# The legs are set against the body as a whole, not the hips: leaning over (the hips tipping forward, turning
+	# with a haul) bends him at the hip over a leg that stays where it is, rather than swinging the leg back.
+	var to_hips := pelvis.quaternion.inverse()
+	hf.quaternion = hf.quaternion.slerp(to_hips * Quaternion.from_euler(Vector3(0.55 * k + 0.05, 0.0, side * 0.06)), w)
+	kf.quaternion = kf.quaternion.slerp(Quaternion(Vector3.RIGHT, -k), w)
+	hh.quaternion = hh.quaternion.slerp(to_hips * Quaternion.from_euler(Vector3(-0.45, 0.0, -side * 0.08)), w)
+	kh.quaternion = kh.quaternion.slerp(Quaternion(Vector3.RIGHT, -0.35), w)
+	_turn(spine, Vector3.RIGHT, -0.35 * jolt * w)
+	_turn(chest, Vector3.RIGHT, -0.15 * jolt * w)
+	_turn(head, Vector3.RIGHT, 0.3 * jolt * w)
+	air = maxf(air, hop_air * w)
 
 
 ## When a fall reaches the floor: its clip's landing (MocapClip.landing), or a hand-made fall all the way down.
@@ -907,7 +974,7 @@ func _apply_moves(delta: float) -> void:
 		_move_prev = _move
 		_move_prev_t = _move_t
 		_move_fade = 0.0 if _move != null else 1.0
-		_move_t = (fposmod(_move_t, _move.length) / _move.length * best.length) if _move != null else randf() * best.length
+		_move_t = (fposmod(_move_t, _move.length) / _move.length * best.length) if _move != null else _rng.randf() * best.length
 		_move = best
 	if _move == null or move_weight <= 0.0:
 		return
@@ -966,6 +1033,8 @@ func anchor(part: String) -> Vector3:
 		"thigh", "knee":
 			var hip: Node3D = hip_l if side == "l" else hip_r
 			return hip.global_transform * Vector3(0, -(0.24 if part.begins_with("thigh") else 0.37) * s, 0)
+		"hip":
+			return (hip_l if side == "l" else hip_r).global_position
 		"waist":
 			return spine.global_transform * Vector3(0, -0.04 * s, 0)
 		"shoulder":
@@ -1054,4 +1123,4 @@ func play_clip(c: MocapClip, loop: bool, fit := 0.0) -> void:
 	down_for = -1.0
 	clip_rate = c.length / fit if (c and fit > 0.0) else 1.0
 	# Start loops at a random point so a whole team never moves in lockstep.
-	clip_time = randf() * c.length if (c and loop) else 0.0
+	clip_time = _rng.randf() * c.length if (c and loop) else 0.0

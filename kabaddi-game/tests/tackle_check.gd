@@ -19,16 +19,18 @@ extends Node
 ## "touch" (a hand touch and home: the points given once, the score up by exactly them), "flurry" (a touch,
 ## the touched defender grabbing straight back, another diving in, help, a takedown, all within a second or
 ## two: every event in order, the raid scored once), "slip" (held at the ankle and round the middle, a dubki
-## slips only the arms round him: still held, no "Broke free!", taken down) and "duck" (held only at the ankle,
-## a dubki slips nothing).
+## slips only the arms round him: still held, no "Broke free!", taken down), "duck" (held only at the ankle,
+## a dubki slips nothing) and "drag" (the "catch" hold with the raider driving for the line as hard as he can,
+## as the AI does: he drags the holder a little at a time and is brought down).
 ## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording ("plain" leaves
-## the debug overlay off; "high" looks down from above, three-quarters on, to see every hold in a pile):
+## the debug overlay off; "high" looks down from above, three-quarters on, to see every hold in a pile; "close"
+## comes in closer, a little in front, to see the bodies' detail):
 ##   godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json FILE] [--log]
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie out.avi \
 ##       --fixed-fps 30 res://tests/tackle_check.tscn -- view catch [plain]
 
 const SCENARIOS := ["miss", "catch", "escape", "whiff", "thigh", "waist", "chain", "join", "committed", "crowd", "touch", "flurry",
-	"slip", "duck"]
+	"slip", "duck", "drag"]
 const JUMP_SPEED := 10.0        # m/s in one frame
 const BODY_R := 0.12            # m: the raider's middle is this thick, for measuring holds round it
 # Per scenario: defenders (style each; the first dives), where the first starts (metres in front), helpers.
@@ -47,6 +49,7 @@ const SETUP := {
 	"flurry": {"styles": ["thigh", "ankle", "waist"], "touch": true, "help": true},
 	"slip": {"styles": ["ankle", "waist"], "help": true},
 	"duck": {"styles": ["ankle"]},
+	"drag": {"styles": ["ankle"], "push": 1.0},
 }
 
 var _chosen := []
@@ -70,6 +73,8 @@ func _ready() -> void:
 			_plain = true
 		elif args[i] == "high":
 			_cam_off = Vector3(3.4, 3.6, 2.4)
+		elif args[i] == "close":
+			_cam_off = Vector3(3.1, 1.15, 0.9)
 		elif args[i] == "--json" and i + 1 < args.size():
 			_json = args[i + 1]
 		elif args[i] == "--log":
@@ -111,6 +116,8 @@ func _run(sc: String) -> Dictionary:
 		var a: Athlete = defs[i]
 		a.style = String(styles[i])
 		a.tackle_kind = ""
+		# His own copy: the ratings are the player's (DB) and would carry over into the next scenario.
+		a.dmoves = a.dmoves.duplicate()
 		a.dmoves[a.style] = 90
 	var home := Vector3(0, 0, m.side(m.raiding))
 	var into := -home
@@ -167,6 +174,7 @@ func _run(sc: String) -> Dictionary:
 	var mo := []
 	var pts_last := {}
 	var grips := {}        # holder -> his grip each frame
+	var grips_held := {}   # ... while the raider is still on his feet (not going down)
 	var labels := {}       # holder -> "style slot"
 	var join_t := -1.0     # when the last holder took hold
 	var n_holders := 0
@@ -186,7 +194,7 @@ func _run(sc: String) -> Dictionary:
 		if holding and not out.attached:
 			out.attached = true
 			out.attach_t = snappedf(t, 0.01)
-			m.lab_move = home * 0.5
+			m.lab_move = home * float(setup.get("push", 0.5))
 			if bool(setup.get("help", false)):
 				m.lab_force["help"] = true
 				m.lab_force["pile"] = true   # a helper within reach takes hold at once
@@ -245,6 +253,8 @@ func _run(sc: String) -> Dictionary:
 		for a in holders:
 			var e := _grip(a, r)
 			grips[a] = grips.get(a, []) + [e]
+			if r.state == "held":
+				grips_held[a] = grips_held.get(a, []) + [e]
 			if not labels.has(a) and m.grapple:
 				for h in m.grapple.holds:
 					if h.who == a:
@@ -258,7 +268,12 @@ func _run(sc: String) -> Dictionary:
 			for b in holders:
 				if b != a:
 					var w3: Vector3 = b.model.anchor("waist")
-					out.min_holder_gap = minf(out.min_holder_gap, Vector2(w1.x - w3.x, w1.z - w3.z).length())
+					var gap := Vector2(w1.x - w3.x, w1.z - w3.z).length()
+					if _log and gap < 0.3:
+						var fa := Vector2(a.position.x - r.position.x, a.position.z - r.position.z).dot(Vector2(r.facing.x, r.facing.z))
+						var fb := Vector2(b.position.x - r.position.x, b.position.z - r.position.z).dot(Vector2(r.facing.x, r.facing.z))
+						print("%5.2f GAP %.2f %s(%s, ahead %.2f) - %s(%s, ahead %.2f) r %s facing %s" % [t, gap, a.hold_style, a.state, fa, b.hold_style, b.state, fb, r.state, r.facing])
+					out.min_holder_gap = minf(out.min_holder_gap, gap)
 			if _log:
 				print("%5.2f %s %s grip %.3f  %s r %s" % [t, sc, a.style, e, a.state, r.state])
 		mo.append(_sample(m, r, d, pts_last, t, dt, holders))
@@ -314,7 +329,8 @@ func _run(sc: String) -> Dictionary:
 	if out.has("stood_by_him"):
 		out.stood_by_him = snappedf(float(out.stood_by_him), 0.01)
 	# Each holder's own grip: how long his hands took to close on his part (under 0.1 m) and how close they
-	# kept after that (90th percentile); and whether his hold had time to be one before the takedown.
+	# kept after that (90th percentile), all through and while the raider was still on his feet ("held"); and
+	# whether his hold had time to be one before the takedown.
 	out.grip_each = []
 	for a in grips:
 		var g2: Array = grips[a]
@@ -323,8 +339,9 @@ func _run(sc: String) -> Dictionary:
 			if float(g2[i]) < 0.1:
 				on = i
 				break
+		var gh: Array = grips_held.get(a, [])
 		out.grip_each.append([String(labels.get(a, a.style)), "on in %.2f s" % [on / 30.0],
-			snappedf(_pct(g2.slice(on), 90), 0.001)])
+			snappedf(_pct(g2.slice(on), 90), 0.001), "held %.3f" % _pct(gh.slice(mini(on, gh.size())), 90)])
 	var down_t := -1.0
 	for st in out.states_r:
 		if String(st[1]) == "fallen":
@@ -381,6 +398,10 @@ func _run(sc: String) -> Dictionary:
 				and out.end == "tackle" and not out.shown.any(func(x): return String(x[1]) == tr("EV_BROKE_FREE"))
 		"duck":
 			out.ok = out.events.count("escape") == 0 and downs == 1 and out.end == "tackle"
+		"drag":
+			# Driving for the line as hard as he can against one ankle holder: he drags him a little at a time,
+			# hop by hop, and is brought down.
+			out.ok = out.attached and holds == 1 and downs == 1 and out.end == "tackle"
 	m.queue_free()
 	await get_tree().process_frame
 	return out
@@ -414,8 +435,39 @@ func _sample(m: Node, r: Athlete, d: Athlete, pts_last: Dictionary, t: float, dt
 		var p: Vector3 = pts_last["raider_at"]
 		step = Vector2(r.position.x - p.x, r.position.z - p.z).length() / maxf(dt, 0.001)
 	pts_last["raider_at"] = r.position
+	# The held leg against its hold: the hold's goal for the ankle (while held firmly), the ankle as drawn, how
+	# stretched the leg is (hip joint to ankle joint over the leg's length), the free foot's height over standing.
+	var pin := Vector3.INF
+	var stretch := -1.0
+	var free_up := -1.0
+	var planted := false
+	var rig: RiggedBody = r.model.rig
+	if held_side != "" and rig != null:
+		var fg: Array = rig.foot_goal.get(held_side, [])
+		if fg.size() >= 2 and float(fg[1]) >= 0.99:
+			pin = fg[0]
+		var hip := _joint(rig, "thigh_" + held_side)
+		stretch = hip.distance_to(_joint(rig, "foot_" + held_side)) / _leg_len(rig)
+		var fs := "r" if held_side == "l" else "l"
+		free_up = _joint(rig, "foot_" + fs).y - rig.ankle_height()
+		planted = rig._plant.has(fs) and float(rig._plant[fs][1]) >= 0.99
 	return [t, r.state, lean, w.y, held_foot, free_foot, _body_speed(r, pts_last, dt), _body_speed(d, pts_last, dt, true),
-		d.state, helpers, step]
+		d.state, helpers, step, Vector3(d.position.x, 0.0, d.position.z), pin, stretch, free_up,
+		Vector3(r.position.x, 0.0, r.position.z), w, planted, _joint(rig, "thigh_" + held_side) if held_side != "" and rig else Vector3.INF,
+		_joint(rig, "foot_" + held_side) if held_side != "" and rig else Vector3.INF, float(r.model.air), sh]
+
+
+## A joint of the rigged body (the head of a bone), in the world.
+func _joint(rig: RiggedBody, bone: String) -> Vector3:
+	return rig.skeleton.global_transform * rig.skeleton.get_bone_global_pose(int(rig._bone[bone])).origin
+
+
+## Hip joint to ankle joint, the leg straight (world).
+func _leg_len(rig: RiggedBody) -> float:
+	var a: Vector3 = rig._rest_head[rig._bone.thigh_l]
+	var b: Vector3 = rig._rest_head[rig._bone.shin_l]
+	var c: Vector3 = rig._rest_head[rig._bone.foot_l]
+	return (a.distance_to(b) + b.distance_to(c)) * rig.scale.y
 
 
 func _body_speed(a: Athlete, pts_last: Dictionary, dt: float, again := false) -> float:
@@ -445,7 +497,27 @@ func _body_speed(a: Athlete, pts_last: Dictionary, dt: float, again := false) ->
 ##   fall_to_floor    s from the takedown to his waist below 0.35 m;
 ##   fall_lean_rate, fall_drop_rate   the fastest the torso tips (deg/s) and the waist drops (m/s) from 0.3 s
 ##                    before the takedown to 1.2 s after: how sudden the fall is.
+## A leg hold as one interaction between two bodies (see _restraint):
+##   holder_slide     how far the holder's body (his root) went along the floor while he held (m), and its
+##                    90th-percentile speed (m/s): a body dragged along like a sled reads high;
+##   holder_jitter    frames the holder's body turned back on itself at over 0.5 m/s each way;
+##   root_accel_max   the sharpest change of speed from one frame to the next (m/s per s): raider, holder;
+##   anchor_err       the held ankle as drawn from where the hold has it (m): 90th percentile, worst;
+##   leg_stretch_max  the held leg's hip joint to ankle joint over the leg's length (over 1: further than it goes);
+##   free_foot_down   share of the hold, standing (not in a hop), that his free foot is on the floor (within 3 cm):
+##                    under 1, he is standing on the held foot with the free one in the air;
+##   glide            how far his body went along the floor while he was not in the air (m), and that as a share
+##                    of all he travelled: a body that gets about only by hopping reads near 0;
+##   hops             times his body left the floor (a hop on the free foot) and came down again;
+##   planted_slide    how fast his free foot moves along the floor while it is planted on it (m/s): 90th
+##                    percentile, worst (a planted foot should not move at all);
+##   react_raider     s from the hold to the raider's first visible answer to it (his trunk turning 4 degrees, a
+##                    hop, or his body's speed changing by 0.5 m/s);
+##   fall_dir_err     the angle (deg) between the way he lies once down (hips to shoulders, a moment after his waist
+##                    reaches the floor) and the way the hold pulls him over (from the held ankle to his hip, as he
+##                    goes down): 0 is fallen straight away from it.
 func _motion(out: Dictionary, mo: Array) -> void:
+	_restraint(out, mo)
 	var held := mo.filter(func(x): return String(x[1]) == "held")
 	var down_i := -1
 	for i in mo.size():
@@ -508,6 +580,117 @@ func _motion(out: Dictionary, mo: Array) -> void:
 		dr = maxf(dr, (float(mo[i - 1][3]) - float(mo[i][3])) / dt)
 	out.fall_lean_rate = snappedf(lr, 1.0)
 	out.fall_drop_rate = snappedf(dr, 0.01)
+
+
+func _restraint(out: Dictionary, mo: Array) -> void:
+	# The holder from his first frame holding to letting go (the takedown included); the raider while held.
+	var holding := mo.filter(func(x): return String(x[8]) == "holding")
+	var held := mo.filter(func(x): return String(x[1]) == "held" and String(x[8]) == "holding")
+	if held.size() < 3:
+		return
+	var slide := 0.0
+	var sp := []
+	var jitter := 0
+	var acc_d := 0.0
+	var lv_d := Vector3.ZERO
+	for i in range(1, holding.size()):
+		var a: Array = holding[i - 1]
+		var b: Array = holding[i]
+		var dt: float = float(b[0]) - float(a[0])
+		if dt <= 0.0 or dt > 0.1:
+			continue
+		var vd: Vector3 = ((b[11] as Vector3) - (a[11] as Vector3)) / dt
+		slide += (b[11] as Vector3).distance_to(a[11])
+		sp.append(vd.length())
+		if i > 1:
+			if vd.length() > 0.5 and lv_d.length() > 0.5 and vd.dot(lv_d) < 0.0:
+				jitter += 1
+			acc_d = maxf(acc_d, (vd - lv_d).length() / dt)
+		lv_d = vd
+	var acc_r := 0.0
+	var errs := []
+	var stretch := 0.0
+	var down := 0
+	var standing := 0
+	var glide := 0.0
+	var travel := 0.0
+	var hops := 0
+	var up := false
+	var lv_r := Vector3.ZERO
+	var plant_slide := []
+	for i in range(1, held.size()):
+		var a: Array = held[i - 1]
+		var b: Array = held[i]
+		var dt: float = float(b[0]) - float(a[0])
+		if dt <= 0.0 or dt > 0.1:
+			continue
+		var vr: Vector3 = ((b[15] as Vector3) - (a[15] as Vector3)) / dt
+		if i > 1:
+			acc_r = maxf(acc_r, (vr - lv_r).length() / dt)
+		lv_r = vr
+		var moved := (b[15] as Vector3).distance_to(a[15])
+		travel += moved
+		# In the air (a hop: the body off the floor) or standing; standing, on the free foot or not.
+		var air := float(b[20]) > 0.01 or float(a[20]) > 0.01
+		if float(b[20]) > 0.02:
+			up = true
+		elif up and float(b[20]) <= 0.01:
+			up = false
+			hops += 1
+		if not air:
+			glide += moved
+			if float(b[14]) >= -0.5:
+				standing += 1
+				if float(b[14]) < 0.03:
+					down += 1
+		if b[12] != Vector3.INF and b[19] != Vector3.INF:
+			errs.append((b[12] as Vector3).distance_to(b[19]))
+		stretch = maxf(stretch, float(b[13]))
+		# The free foot, planted on the floor in this frame and the last: how fast it moves along it.
+		if bool(a[17]) and bool(b[17]) and a[5] != Vector3.INF and b[5] != Vector3.INF:
+			plant_slide.append(Vector2((b[5] as Vector3).x - (a[5] as Vector3).x, (b[5] as Vector3).z - (a[5] as Vector3).z).length() / dt)
+	out.holder_slide = [snappedf(slide, 0.01), snappedf(_pct(sp, 90), 0.01)]
+	out.holder_jitter = jitter
+	out.root_accel_max = [snappedf(acc_r, 0.1), snappedf(acc_d, 0.1)]
+	if not errs.is_empty():
+		out.anchor_err = [snappedf(_pct(errs, 90), 0.001), snappedf(_pct(errs, 100), 0.001)]
+	out.leg_stretch_max = snappedf(stretch, 0.01)
+	out.free_foot_down = snappedf(float(down) / maxf(1.0, standing), 0.01)
+	out.glide = [snappedf(glide, 0.01), snappedf(glide / maxf(travel, 0.001), 0.01)]
+	out.hops = hops
+	out.planted_slide = [snappedf(_pct(plant_slide, 90), 0.01), snappedf(_pct(plant_slide, 100), 0.01)]
+	# The first visible answer to the hold.
+	var t0: float = held[0][0]
+	var lean0: float = held[0][2]
+	var v0 := -1.0
+	for i in range(1, held.size()):
+		var x: Array = held[i]
+		var v := float(x[10])
+		if v0 < 0.0:
+			v0 = v
+		if absf(float(x[2]) - lean0) > 4.0 or float(x[20]) > 0.01 or absf(v - v0) > 0.5:
+			out.react_raider = snappedf(float(x[0]) - t0, 0.01)
+			break
+	# The way he fell against the way the hold pulls him over.
+	var td := -1
+	for i in mo.size():
+		if String(mo[i][1]) == "fallen":
+			td = i
+			break
+	if td > 0 and mo[td - 1][12] != Vector3.INF and mo[td - 1][18] != Vector3.INF:
+		var pin: Vector3 = mo[td - 1][12]
+		var hip: Vector3 = mo[td - 1][18]
+		var away := Vector3(hip.x - pin.x, 0.0, hip.z - pin.z)
+		for i in range(td, mo.size()):
+			var wi: Vector3 = mo[i][16]
+			if wi.y < 0.35:
+				# Down: which way he lies, from his hips to his shoulders.
+				var shi: Vector3 = mo[mini(i + 5, mo.size() - 1)][21]
+				var wl: Vector3 = mo[mini(i + 5, mo.size() - 1)][16]
+				var lies := Vector3(shi.x - wl.x, 0.0, shi.z - wl.z)
+				if lies.length() > 0.05 and away.length() > 0.01:
+					out.fall_dir_err = snappedf(rad_to_deg(lies.angle_to(away)), 1.0)
+				break
 
 
 ## A tackled raider from the floor to walking off:
@@ -597,7 +780,10 @@ func _print(sc: String, r: Dictionary) -> void:
 	for k in ["attached", "attach_t", "contact_gap", "first_grip", "hold_frames", "grip_median", "grip_p90", "grip_max",
 			"jumps", "max_holder_speed", "min_overlap", "min_holder_gap", "slots", "end", "t_end", "in_order", "scored_once",
 			"score_gain", "raid_pts", "hold_time", "raider_motion", "holder_motion", "helpers_motion", "lean_while_held",
-			"held_foot_moved", "free_foot_slide", "fall_to_floor", "fall_lean_rate", "fall_drop_rate", "grip_each",
+			"held_foot_moved", "free_foot_slide", "fall_to_floor", "fall_lean_rate", "fall_drop_rate", "holder_slide",
+			"holder_jitter", "root_accel_max", "anchor_err", "leg_stretch_max", "free_foot_down", "glide", "hops", "planted_slide",
+			"react_raider",
+			"fall_dir_err", "grip_each",
 			"last_hold_to_down", "on_floor", "getting_up", "up_to_walk", "moved_while_down", "stood_by_him"]:
 		print("  %-20s %s" % [k, str(r.get(k, "-"))])
 	print("  raider   %s" % [str(r.states_r)])

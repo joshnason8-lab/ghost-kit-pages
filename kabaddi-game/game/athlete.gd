@@ -27,6 +27,16 @@ var tug := 0.0
 var tug_side := 0.0
 var haul := 0.0
 var bear := 0.0             # a holder going down with the raider he takes down, 0..1 (Grapple)
+# Held by the ankle (Grapple._footwork): which leg (-1 left, 1 right; 0 neither or both), how low he sinks on the
+# free leg for the held one to reach back (hip height over his leg's length), how far into a hop on the free
+# foot (0..1 in the air, 1..2 coming down onto it; -1 on the floor) and how high off the floor (m), and a pull
+# through the held leg he did not expect (0..1). A holder: how hard the raider pulls against him (0..1).
+var held_leg := 0.0
+var stance := 0.95
+var hop := -1.0
+var hop_air := 0.0
+var jolt := 0.0
+var strain := 0.0
 var touched := false
 var hold_offset := Vector3.ZERO
 var dive_dir := Vector3.ZERO
@@ -143,6 +153,12 @@ func set_state(s: String, length := 0.0) -> void:
 		hold_style = ""
 		haul = 0.0
 		bear = 0.0
+		strain = 0.0
+	if s != "held":
+		held_leg = 0.0
+		hop = -1.0
+		hop_air = 0.0
+		jolt = 0.0
 	state = s
 	st_t = 0.0
 	st_len = length
@@ -404,8 +420,21 @@ func _pose(delta: float) -> void:
 		m.balance = move_toward(m.balance, 0.0, delta * (1.6 if state == "fallen" else 4.0))
 	m.tug = lerpf(m.tug, tug if state == "held" else 0.0, clampf(delta * 18.0, 0.0, 1.0))
 	m.tug_side = tug_side
-	m.haul = lerpf(m.haul, haul if state == "holding" else 0.0, clampf(delta * 18.0, 0.0, 1.0))
+	# An ankle holder on the floor stays braced between hauls (head and chest up off the mat, knees a little
+	# drawn up), rather than lying flat until the next one.
+	var braced := maxf(haul, 0.3 * clampf(st_t / 0.4, 0.0, 1.0)) if hold_style == "ankle" else haul
+	m.haul = lerpf(m.haul, braced if state == "holding" else 0.0, clampf(delta * 18.0, 0.0, 1.0))
 	m.haul_drive = hold_style == "block"
+	m.strain = lerpf(m.strain, strain if state == "holding" else 0.0, clampf(delta * 10.0, 0.0, 1.0))
+	# On one leg, the other held by the ankle: in quickly as the foot is caught, out as he goes down or gets free.
+	var one := 1.0 if state == "held" and held_leg != 0.0 else 0.0
+	m.one_leg = move_toward(m.one_leg, one, delta * (8.0 if one > 0.0 else (2.5 if state == "fallen" else 6.0)))
+	if held_leg != 0.0:
+		m.held_leg = held_leg
+	m.stance = lerpf(m.stance, stance, clampf(delta * 12.0, 0.0, 1.0))
+	m.hop = hop
+	m.hop_air = hop_air
+	m.jolt = jolt
 	m.jump = want_jump
 	m.cele = cele_kind
 	m.bounce = lerpf(m.bounce, want_bounce, k)

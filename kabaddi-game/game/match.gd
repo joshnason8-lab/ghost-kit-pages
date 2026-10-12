@@ -171,6 +171,8 @@ func _ready() -> void:
 			a.setup(seven[i], t, tm.kit, tm.trim, arena.barefoot)
 			if String(config.get("style", "")) != "":
 				a.style = String(config.style)
+				# His own copy: the ratings are the player's, and a lesson's tackle must not carry into later matches.
+				a.dmoves = a.dmoves.duplicate()
 				a.dmoves[a.style] = 90
 			a.slot = i
 			a.is_career = (String(seven[i].id) == career_pid)
@@ -635,24 +637,41 @@ func _move_raider(move: Vector3, dt: float) -> void:
 			var grip: float = {"waist": 1.35, "thigh": 1.1, "block": 1.15, "chain": 1.1}.get(h.kind(), 1.0)
 			hold_power += h.tackle * grip * (0.8 + 0.4 * float(h.data.attrs.strength) / 100.0)
 		var push := maxf(0.0, move.dot(mid_dir))
-		# One defender can be dragged to the line; two or three usually win.
-		var net := raider.strength * raider.energy * push * 1.4 - hold_power * 0.5
-		var v := mid_dir * net * 1.3
-		if net < 0.0:
-			v = mid_dir * net * 0.5
-		else:
-			# The hit stops him dead; he gets going again about a second later, while help runs in.
-			v *= clampf(float(raid.get("hold_age", 0.0)) / 1.0, 0.2, 1.0)
-		v.x += move.x * 0.4 * maxf(0.2, 1.0 - hold_power)
+		# Where he is trying to go and how hard, against how hard they hold him: the grapple works its ankle holds
+		# and his footwork with these.
+		if grapple:
+			grapple.want = move.limit_length(1.0)
+			grapple.force = raider.strength * raider.energy * 1.4
+			grapple.resist = hold_power * 0.5
 		# Every haul (Grapple) pulls him back a little, and that is when his balance goes: over a whole haul the
 		# pace is the same, but it comes in heaves rather than evenly.
 		var pace := 1.0
 		if grapple and not grapple.holds.is_empty():
-			v -= mid_dir * grapple.tug_total() * 0.6
 			pace = 0.4 + 1.2 * grapple.tug_mean()
-		raider.vel = v
-		raider.position += v * dt
-		raider.face_toward(raider.position + mid_dir, dt)
+		if grapple and grapple.footwork():
+			# Held only by the ankle: he hops on his free foot against the held leg, and the grapple moves him
+			# (Grapple._footwork). He faces between where he is trying to go and away from the hold, the held
+			# leg out behind him, turning as he hops (on the spot he would drag his planted foot round).
+			if grapple.turn:
+				var go := (move if move.length() > 0.2 else mid_dir).normalized()
+				var away := grapple.away_from_hold()
+				raider.face_toward(raider.position + (go + away).normalized() if (go + away).length() > 0.1 else raider.position + go, dt, 7.0)
+		else:
+			# One defender can be dragged to the line; two or three usually win.
+			var net := raider.strength * raider.energy * push * 1.4 - hold_power * 0.5
+			var v := mid_dir * net * 1.3
+			if net < 0.0:
+				v = mid_dir * net * 0.5
+			else:
+				# The hit stops him dead; he gets going again about a second later, while help runs in.
+				v *= clampf(float(raid.get("hold_age", 0.0)) / 1.0, 0.2, 1.0)
+			v.x += move.x * 0.4 * maxf(0.2, 1.0 - hold_power)
+			if grapple and not grapple.holds.is_empty():
+				v -= mid_dir * grapple.tug_total() * 0.6
+			raider.vel = v
+			# A held ankle checks him (or is dragged along with its holder): Grapple.leg_limit.
+			raider.position += grapple.leg_limit(v * dt, dt) if grapple else v * dt
+			raider.face_toward(raider.position + mid_dir, dt)
 		if rng.randf() < dt * 1.4:
 			var who: Athlete = raider if rng.randf() < 0.55 else holders[rng.randi() % holders.size()]
 			Sfx.voice("grunt", -7.0 if who == raider else -10.0, who.voice_pitch())
@@ -2255,6 +2274,11 @@ func _end_raid(kind: String) -> void:
 			# Caught by the ankle, he trips and goes down with the foot still held; the holders keep hold
 			# until he is down (Grapple.takedown).
 			raider.fall_kind = grapple.fall_kind() if grapple and not grapple.holds.is_empty() else ""
+			# Held only by the ankle, he goes down forward, away from the hold (the leg pulled out from under him);
+			# with arms round him as well he goes down the way they hold him.
+			var away := grapple.away_from_hold() if grapple and grapple.footwork() else Vector3.ZERO
+			if away != Vector3.ZERO:
+				raider.facing = away
 			raider.set_state("fallen")
 			raider.remove_meta("landed")
 			if grapple and not grapple.holds.is_empty():

@@ -615,7 +615,7 @@ func _palm(pos: Vector3, scale_f: float, lean: float) -> void:
 	var t := Node3D.new()
 	t.position = pos
 	t.scale = Vector3.ONE * scale_f
-	t.rotation = Vector3(lean, randf() * TAU, 0)
+	t.rotation = Vector3(lean, fposmod(pos.x * 12.9898 + pos.z * 78.233, TAU), 0)   # its own turn, the same every time
 	add_child(t)
 	var trunk_mat := _mat(Color("7a6046"), 0.9)
 	for k in 6:

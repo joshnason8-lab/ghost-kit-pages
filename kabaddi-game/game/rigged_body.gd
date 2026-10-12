@@ -79,11 +79,13 @@ var _parent := []     # index -> parent index
 var _rest_head := []  # index -> rest position of the bone head (model space)
 var _names := []      # index -> bone name
 var _leg_bones := {}  # indices of the thighs, shins and feet: all that can touch the floor standing up
+var _side_bones := {"l": {}, "r": {}}   # side -> indices of that leg's thigh, shin and foot
 var _hidden_head := false
 # Planted feet: a foot flat on the floor keeps its place in the world until it lifts (see _plant_feet).
 const PLANT_DOWN := 0.03     # m: heel and toe this close to the floor and the foot is planted
 const PLANT_SLIP := 0.2      # m: furthest a planted foot is held from where the motion puts it
 const STEP_LIFT := 0.05      # m: a foot let go at the slip limit lifts this high as it steps on
+const MAX_SINK := 0.3        # m the hips may come down for a held leg to reach its hold (_sink_to_hold)
 var _plant := {}             # side -> [world position of the held sole point, how firmly held 0..1, which point,
                              #          let go at the slip limit (stepping)]
 var _replant := {}           # side -> seconds before a foot let go at the slip limit may be held again
@@ -92,7 +94,7 @@ var _plant_t := -1.0         # the motion's clock at the last frame, for the tim
 # defender holds it. hands_free is where this body's hands are before they reach (world, last frame).
 var hand_target := {}        # side -> {model: HumanModel or null, part, offset (world), point (world, when model
                              #          is null), w, fade}
-var foot_goal := {}          # side -> [world position of the ankle joint, weight]
+var foot_goal := {}          # side -> [world position of the ankle joint, weight, weight lost per second (0: held)]
 var hands_free := Vector3.INF
 var _hand_t := -1.0
 var _curl := {"l": 0.7, "r": 0.7}
@@ -429,6 +431,10 @@ func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float
 		_names.append(String(b.name))
 		if String(b.name).begins_with("shin_") or String(b.name).begins_with("foot_"):
 			_leg_bones[i] = true
+		for part in ["thigh_", "shin_", "foot_"]:
+			for sd in ["l", "r"]:
+				if String(b.name) == part + sd:
+					_side_bones[sd][i] = true
 		var p := int(b.parent)
 		_parent.append(p)
 		var head := _v(b.head)
@@ -547,6 +553,8 @@ func drive(h: Node3D) -> void:
 ## Put the body on the floor: its lowest point (a sole standing, the back or a shoulder lying down) as high
 ## as the motion means it to be (h.air: off the floor in a jump or a running stride, else on it). Feet near
 ## the floor are laid flat on it, and a player standing still has his higher foot brought down onto it too.
+## A foot a defender holds (foot_goal) is where the defender holds it, not something to stand on: the body
+## stands on the other one, and the held leg reaches for the hold, in the air too.
 ## Returns the hips' position; turns the feet and legs in g.
 func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	if not grounding or (body.get("contacts", []) as Array).is_empty():
@@ -556,16 +564,19 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	var standing := hips.y > 0.7 * float(body.leg_len) and up.y > 0.75
 	var dt := clampf(float(h._t) - _plant_t, 0.0, 0.1) if _plant_t >= 0.0 else 0.0
 	_plant_t = float(h._t)
-	hips.y += target - _lowest(_fk(g, hips), standing)
+	var held := _held_legs(dt)
+	hips.y += target - _lowest(_fk(g, hips), standing, held)
 	if target > 0.02:
 		_plant.clear()
+		hips = _sink_to_hold(g, hips, target)
+		_hold_feet(g, _fk(g, hips))
 		return hips   # in the air: nothing to stand on
 	var fk := _fk(g, hips)
 	for s in body.soles:
 		_flatten(g, fk, s)
 	# fk's bone positions still hold after laying the feet flat (only the feet turned, read from g below).
 	var still := float(h.speed) < 1.2 and float(h.kick) + float(h.back_kick) + float(h.jump) + float(h.dubki) < 0.1
-	if standing and still:
+	if standing and still and held.is_empty():
 		fk = _fk(g, hips)
 		var lows := {}
 		for s in body.soles:
@@ -576,22 +587,93 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 			if d > 0.005 and d < 0.12:
 				_reach_down(g, fk, hi, d)
 				fk = _fk(g, hips)
-	# On his feet, crouched or not (lying, diving and sprawling are not): the feet are planted.
-	if up.y > 0.4 and hips.y > 0.35 * float(body.leg_len):
+	# On his feet, crouched or not (lying, diving and sprawling are not): the feet are planted. On one leg, the
+	# other held, he may be bent right over it and still be standing on it: judged by his hips, not his chest.
+	var on_feet := up.y > 0.4
+	if not on_feet and float(h.get("one_leg")) > 0.5:
+		on_feet = ((g.get("hips", Basis()) as Basis) * (body.rest_dirs.hips as Vector3)).y > 0.5
+	if on_feet and hips.y > 0.35 * float(body.leg_len):
 		_plant_feet(g, fk, dt)
 	else:
 		_plant.clear()
-	# A foot a defender holds stays where he holds it.
+	# Back on the floor after the feet were laid flat and planted, then down for a held leg to reach its hold,
+	# and the held leg reaching for it last of all, so nothing moves it off the hold afterwards.
+	hips = Vector3(hips.x, hips.y + target - _lowest(_fk(g, hips), standing, held), hips.z)
 	if not foot_goal.is_empty():
-		var inv := skeleton.global_transform.affine_inverse()
-		for s in foot_goal:
-			if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+		hips = _sink_to_hold(g, hips, 0.0)
+	_hold_feet(g, _fk(g, hips))
+	return hips
+
+
+## A held foot the leg cannot reach from where the hips are: the hips come down until it can, as a person held
+## by the ankle sinks on the other leg (no further than MAX_SINK). Standing, the free leg bends to keep its foot
+## where it is on the floor; in the air (a hop, air above the floor), the free leg tucks up to stay off it, so
+## a hop is as high as the held leg lets the hips go and no higher. Returns the hips.
+func _sink_to_hold(g: Dictionary, hips: Vector3, air: float) -> Vector3:
+	var inv := skeleton.global_transform.affine_inverse()
+	var fk := _fk(g, hips)
+	var drop := 0.0
+	for s in foot_goal:
+		var fg: Array = foot_goal[s]
+		if float(fg[1]) < 0.5 or not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+			continue
+		var hip: Vector3 = fk[0][_bone["thigh_" + s]]
+		var goal: Vector3 = inv * (fg[0] as Vector3)
+		var l := ((_rest_head[_bone["thigh_" + s]] as Vector3).distance_to(_rest_head[_bone["shin_" + s]]) \
+			+ (_rest_head[_bone["shin_" + s]] as Vector3).distance_to(_rest_head[_bone["foot_" + s]])) * 0.995
+		var flat := Vector2(goal.x - hip.x, goal.z - hip.z).length()
+		var dy := sqrt(maxf(0.0, l * l - flat * flat))
+		drop = maxf(drop, hip.y - goal.y - dy)
+	drop = minf(drop, MAX_SINK / scale.y)
+	if drop <= 0.0:
+		return hips
+	var keep := {}
+	for s in body.soles:
+		if not (foot_goal.has(s) and float(foot_goal[s][1]) >= 0.5) and _bone.has("foot_" + s):
+			keep[s] = fk[0][_bone["foot_" + s]]
+	hips.y -= drop
+	for s in keep:
+		var fk2 := _fk(g, hips)
+		if air <= 0.0:
+			_ik_leg(g, fk2, s, keep[s])
+		else:
+			# In the air: the free foot tucks up rather than go down through the floor with the hips.
+			var under := air * 1.2 - _sole_low(fk2, s)
+			if under > 0.0:
+				_ik_leg(g, fk2, s, (fk2[0][_bone["foot_" + s]] as Vector3) + Vector3(0.0, under, 0.0))
+	return hips
+
+
+## The bones of the leg a defender holds now (fading holds let go of over their fade), to leave out of what the
+## body stands on. Both legs held, he stands on both: there is nothing else to stand on.
+func _held_legs(dt: float) -> Dictionary:
+	var out := {}
+	var n := 0
+	for s in foot_goal.keys():
+		var fg: Array = foot_goal[s]
+		if fg.size() > 2 and float(fg[2]) > 0.0:
+			fg[1] = float(fg[1]) - float(fg[2]) * dt
+			if float(fg[1]) <= 0.0:
+				foot_goal.erase(s)
 				continue
-			_plant.erase(s)
-			var fg: Array = foot_goal[s]
-			var ankle: Vector3 = fk[0][_bone["foot_" + s]]
-			_ik_two(g, fk, "thigh_" + s, "shin_" + s, "foot_" + s, ankle.lerp(inv * (fg[0] as Vector3), clampf(float(fg[1]), 0.0, 1.0)))
-	return Vector3(hips.x, hips.y + target - _lowest(_fk(g, hips), standing), hips.z)
+		if float(fg[1]) > 0.5 and _side_bones.has(s):
+			out.merge(_side_bones[s])
+			n += 1
+	return out if n < 2 else {}
+
+
+## A foot a defender holds stays where he holds it: the leg reaches for it (two-bone IK), by the hold's weight.
+func _hold_feet(g: Dictionary, fk: Array) -> void:
+	if foot_goal.is_empty():
+		return
+	var inv := skeleton.global_transform.affine_inverse()
+	for s in foot_goal:
+		if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+			continue
+		_plant.erase(s)
+		var fg: Array = foot_goal[s]
+		var ankle: Vector3 = fk[0][_bone["foot_" + s]]
+		_ik_two(g, fk, "thigh_" + s, "shin_" + s, "foot_" + s, ankle.lerp(inv * (fg[0] as Vector3), clampf(float(fg[1]), 0.0, 1.0)))
 
 
 ## A foot on the floor stays where it is in the world while the body moves over it: the point of the sole
@@ -616,6 +698,9 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 	var slip := PLANT_SLIP / scale.y
 	for s in body.soles:
 		if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+			continue
+		if foot_goal.has(s) and float(foot_goal[s][1]) > 0.5:
+			_plant.erase(s)   # held: where the hold has it (_hold_feet)
 			continue
 		var bi: int = body.soles[s][0]
 		var b: Basis = g.get("foot_" + s, fk[1][bi])
@@ -676,7 +761,8 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 ## A point on the body as drawn now, in world space, for holds and contact checks: "hand_l"/"hand_r" (the
 ## middle of the grip), "ankle_l"/"ankle_r" (just above the ankle joint, where a hand closes round the
 ## leg), "shin_l"/"shin_r" (a hand's width higher), "foot_l"/"foot_r" (the ankle joint), "thigh_l"/"thigh_r"
-## (mid thigh), "knee_l"/"knee_r" (just above the knee), "waist" (the small of the back). Bone poses are relative to the skeleton, so they are taken through its global transform.
+## (mid thigh), "knee_l"/"knee_r" (just above the knee), "hip_l"/"hip_r" (the hip joint), "waist" (the small of
+## the back). Bone poses are relative to the skeleton, so they are taken through its global transform.
 func anchor(part: String) -> Vector3:
 	if skeleton == null:
 		return global_position
@@ -700,6 +786,8 @@ func anchor(part: String) -> Vector3:
 			return xf * _bone_head("thigh_" + side).lerp(_bone_head("shin_" + side), 0.55)
 		"knee":
 			return xf * _bone_head("thigh_" + side).lerp(_bone_head("shin_" + side), 0.85)
+		"hip":
+			return xf * _bone_head("thigh_" + side)
 		"shoulder":
 			return xf * _bone_head("upperarm_" + side)
 		"waist":
@@ -715,6 +803,16 @@ func arm_length() -> float:
 	var b: Vector3 = _rest_head[_bone.forearm_l]
 	var c: Vector3 = _rest_head[_bone.hand_l]
 	return (a.distance_to(b) + b.distance_to(c)) * scale.y + _hand_len("l") * scale.y * 0.6
+
+
+## Hip joint to ankle joint, leg straight (world).
+func leg_reach() -> float:
+	if not (_bone.has("thigh_l") and _bone.has("shin_l") and _bone.has("foot_l")):
+		return 0.88
+	var a: Vector3 = _rest_head[_bone.thigh_l]
+	var b: Vector3 = _rest_head[_bone.shin_l]
+	var c: Vector3 = _rest_head[_bone.foot_l]
+	return (a.distance_to(b) + b.distance_to(c)) * scale.y
 
 
 ## How high the ankle joint is off the floor standing (world).
@@ -746,12 +844,12 @@ func _fk(g: Dictionary, hips: Vector3) -> Array:
 	return [pos, rot]
 
 
-## The lowest of the contact points (standing: only the legs' and feet's).
-func _lowest(fk: Array, legs_only: bool) -> float:
+## The lowest of the contact points (standing: only the legs' and feet's), leaving out the bones in skip.
+func _lowest(fk: Array, legs_only: bool, skip := {}) -> float:
 	var low := INF
 	var contacts: Array = body.contacts
 	for i in contacts.size():
-		if legs_only and not _leg_bones.has(i):
+		if (legs_only and not _leg_bones.has(i)) or skip.has(i):
 			continue
 		var b: Basis = fk[1][i]
 		var row := Vector3(b.x.y, b.y.y, b.z.y)

@@ -535,6 +535,143 @@ The play-by-play messages ("Ankle hold!", "Chain tackle!", "Super tackle!") were
 screen (`Hud.events_box`), which is where the play is: on the recordings they covered the very holds they
 named. They now sit under the raid strip at the top, a little smaller, two at most at a time.
 
+## Second review (the V2 recording): the ankle hold as one interaction
+
+The second review watched the ankle hold again (2:43-2:49 in the V2 video, the `catch` scenario) and asked for
+it to be fixed as one interaction between two bodies before anything else. It saw a defender lying flat and
+apparently being dragged behind the raider, and a raider who stayed steady too long before he fell.
+
+**What was doing it** (measured with the new restraint numbers in `tests/tackle_check`, see Measuring):
+
+- **The holder was a sled.** Every frame `Grapple.update` moved the holder's whole body (his root) to keep his
+  shoulders 0.88 of an arm from the ankle. It moved him at up to 2.5 m/s plus the raider's speed, with his pose
+  fixed as the lying dive (`Athlete._pose`, "holding": `want_dive = 1.0`). Over one hold he slid 3.8 m along the
+  floor. At the takedown the same correction overshot every frame and he shook back and forth by 15 cm a
+  frame: 16 reversals, and speed changes of 261 m/s².
+- **The raider glided.** `Match._move_raider` slid his root toward the line all the time: up to 0.64 m/s at
+  half push, more at full push. `Grapple.update` dragged the held foot along with him once it was 0.55 m from
+  his root. Meanwhile `RiggedBody._plant_feet` held his free foot to the floor against that slide until it
+  slipped and stepped.
+- **He stood on the held foot.** `RiggedBody._ground` set the body on the floor by the lowest point of either
+  leg, so he stood on the held leg's pose, and the leg IK then moved that foot to the hold. His free foot hung
+  3 to 12 cm above the floor and was on it only 40% of the hold. The held-foot IK was skipped altogether in
+  the air. The last re-grounding came after the held-foot IK and moved the foot off its hold: 8.8 cm at the
+  90th percentile.
+- **A frame behind.** The held raider was posed (process priority -1) before the match moved him that
+  frame, so anything fixed in the world, like his planted foot or his held foot, lagged his body by a frame.
+
+**What it is now.** An ankle hold is two bodies joined at the ankle (`Grapple._ankle`, `Grapple._footwork`):
+
+- **Contact.** Both react at once. The diver's chest meets the floor (the body's impact give), and what is left
+  of his dive dies away in his arms (`SETTLE`), never past the ankle. The raider's foot is caught while the rest
+  of him carries on: he lurches onto the free foot (a jolt). If he was moving, he stumbles a hop the way he was
+  going, and the held leg stops him.
+- **The holder** lies where his dive put him. He turns on the floor to keep the ankle in front of him. Between
+  hauls he stays braced: head and chest up off the mat, knees a little drawn up. He moves along the floor only
+  when the raider drags him.
+- **The ankle** is where both of them have it:
+  - Between hauls the raider draws the foot back in under him (`LEG_REST`, `LEG_DRAW`), as far as the holder's
+    arms let it go, and the holder's arms straighten.
+  - On each haul the holder pulls it back out toward himself (`ARM_HAUL`, `HAUL_SPEED`) and lifts it
+    (`ANKLE_LIFT`). His elbows bend, his chest comes up and his knees draw up.
+  - The foot is never further from the raider's hip than his leg reaches with his hips as low as they go
+    (`Grapple._span`). Whatever the haul pulls past that becomes tension on the raider.
+- **The raider** stands on his free foot and sinks on it as low as the held leg needs to reach back
+  (`Athlete.stance`, drawn by `HumanModel._apply_footwork`). He gets about only by hopping on the free foot
+  (`HOP_*`), never by sliding:
+  - A hop past the leg's reach stops short: the leg snaps taut and jolts him.
+  - If he drives harder than the holder holds (`force` against `resist`, from `Match._move_raider`), the holder
+    is instead dragged a little way with each hop (`DRAG_MAX`) and strains against it: arms out straight,
+    chest and head down, knees dug in.
+  - A haul that pulls the leg past its reach pulls him back, and he hops back toward the hold to stay up.
+  - He turns only in the air. Turning on the spot would drag his planted foot round.
+  - The longer the struggle goes, the shorter his hops, the deeper his lunge, the further he leans and the
+    more his arms flail.
+- **The takedown.** He goes down forward, away from the hold (`Grapple.away_from_hold`), with the foot still in
+  the holder's hands. The holder keeps the ankle until the raider is down, and is pulled a little after it if
+  the fall takes it past his reach (`TAKEDOWN_DRAG`).
+- **A failed hold** (an escape, or the raid ending with him held) lets go without a takedown. The holder's
+  hands open where they were, and the leg swings free of the hold over `LET_GO` (`Grapple._unpin`) rather than
+  in one frame.
+
+**The body behind it** (`RiggedBody._ground`):
+
+- He stands on the free foot: a held leg is left out of what the body stands on, unless both legs are held.
+- If the held leg cannot reach its hold, the hips come down until it can (`_sink_to_hold`). Standing, the free
+  knee bends to keep its foot planted. In the air, the free leg tucks up, so a hop is only as high as the held
+  leg allows.
+- The held leg reaches for its hold last of all, so nothing moves it off afterwards.
+- His legs are set against the body as a whole, not the hips. Leaning over bends him at the hip over a planted
+  leg instead of swinging the leg back.
+- His feet stay planted while he is bent right over one leg.
+- He is posed after the match has moved him (priority 1), and his holders after him (priority 2).
+
+**Order of the pose stages, and who moves what.** Only one system translates each body. In a hold that is:
+
+- the raider: `Grapple._footwork` (hops), or `Match._move_raider` with `Grapple.leg_limit` when other holds are on
+  him;
+- the holders: `Grapple`.
+
+Each frame the body is built in this order:
+
+1. The pose is built in `HumanModel._process`: `_animate`, the running clips, the state clip, `_apply_struggle`
+   with `_apply_footwork`, `_apply_impact`, then `_settle`.
+2. `RiggedBody.drive` copies it to the skeleton, then grounds it: lowest free point to the floor, feet laid
+   flat, planted feet (`_plant_feet`), the hips sunk for a held leg, and the held foot's IK last.
+3. The hands reach their holds (`_reach_hands`).
+
+No two of these move the same bone for different ends any more, and none of them moves the root.
+
+**Smaller fixes found on the way:**
+
+- Each holder's haul rhythm came from the engine's object id, so it changed with whatever was created before.
+  It now comes from the player.
+- Each body has its own random generator, seeded from the player, for its idle sway and where its loops start.
+  The engine's shared generator is drawn on by everything else as well.
+- A match given a fixed tackle style (the Training Ground's lion-jump lesson) wrote the rating into the
+  player's shared data. So did `tackle_check`. Both now change a copy.
+- Holders round the middle swing round with the raider as his body turns.
+- A front or back hold can only be taken from that side of him.
+- Holders give way in full to an ankle holder, who stays where he is.
+
+| Ankle hold, `catch` (half push) | V2 | Now |
+|---|---|---|
+| Holder's body slid along the floor while holding (total, 90th-percentile speed) | 3.80 m, 4.35 m/s | 0.26 m, 0.03 m/s |
+| Holder's body turning back on itself (frames) / sharpest change of speed | 16 / 261 m/s² | 0 / 22 m/s² |
+| Held ankle from its hold (90th percentile / worst) | 0.088 / 0.111 m | 0.000 / 0.000 m |
+| Free foot on the floor while not hopping | 40% | 98% |
+| Raider's travel made sliding rather than hopping | 1.07 m (100%) | 0.01 m (2%) |
+| Hops on the free foot | 0 | 5 |
+| Planted foot's speed along the floor (90th percentile / worst) | 0.24 / 1.72 m/s | 0.15 / 0.27 m/s |
+| Raider's lean from upright: early, halfway, end | 17°, 37°, 58° | 18°, 32°, 62° |
+| Hold to takedown | 3.53 s | 3.43 s |
+| Lies once down, against the way the hold pulls him (0 is straight away from it) | 5° | 5° |
+
+| Ankle hold, `drag` (driving for the line as hard as he can, as the AI does) | V2 | Now |
+|---|---|---|
+| How it ends | reaches the line, 2.3 s into the hold | taken down, 6.2 s into the hold |
+| Holder's body moved along the floor | 2.52 m, smoothly (90th percentile 1.88 m/s) | 0.51 m, a few cm at a time (0.37 m/s) |
+| Held ankle from its hold (90th percentile / worst) | 0.132 / 0.153 m | 0.000 / 0.000 m |
+| Free foot on the floor while not hopping | 49% | 99% |
+| Raider's travel made sliding rather than hopping | 2.68 m (100%) | 0.01 m (1%) |
+| Planted foot's speed along the floor (90th percentile / worst) | 1.07 / 2.01 m/s | 0.14 / 0.39 m/s |
+
+The holder's own body still moves while holding: it is now his arms, chest and legs, as the haul,
+the brace and the strain move them.
+
+**Still not right:**
+
+- With other holds on him as well (`chain`, `crowd`), the raider is still carried along by the struggle
+  rather than stepping. The ankle holder lies still and the leg holds him.
+- In those piles the other holders' hands come off as he falls. During the hold their grips are as before
+  (90th percentile within a few centimetres of V2); in the last 0.3 s of the fall they open up to 0.3 m. That
+  is the chain tackle's recovery, the next fix.
+- A raider who reaches far forward, or is pulled far back, can only be met by the hips sinking 0.3 m at most
+  (`MAX_SINK`). Past that the held leg falls short of its hold, although no scenario has needed it yet.
+- A single ankle holder now stops a driving raider rather than being dragged to the line. That is what an
+  ankle hold should do, but it changes how often raids end with the raider getting home held. The AI bench
+  measures it (`docs/REALISM_REVIEW.md`).
+
 ## Measuring
 
 ```sh
@@ -543,7 +680,8 @@ xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --wri
     --fixed-fps 30 res://tests/tackle_check.tscn -- view catch [plain]
 ```
 
-`view` records one scenario from the side with the debug overlay on; `plain` leaves the overlay off.
+`view` records one scenario from the side with the debug overlay on; `plain` leaves the overlay off; `high`
+looks down from above, three-quarters on; `close` comes in closer, a little in front.
 
 Each scenario is a scripted raid in the match's lab mode (`config.lab`). The raider moves as told, defenders go
 in when told, and team-mates help once he is held. A chance (hold, escape, piling on) can be forced one way,
@@ -562,6 +700,11 @@ but contact never is. The scenarios:
 - **touch**: a hand touch and home. The points are given once, and the score goes up by exactly them.
 - **flurry**: within a second or two, a touch, the touched defender grabbing straight back, another diving
   in, help, and a takedown. Every event comes in order, and the raid is scored once.
+- **slip**: held at the ankle and round the middle, a dubki slips only the arms round him: still held, no
+  "Broke free!", taken down.
+- **duck**: held only at the ankle, a dubki slips nothing.
+- **drag**: the `catch` hold with the raider driving for the line as hard as he can, as the AI does. He drags
+  the holder a little at a time and is brought down.
 
 Each scenario prints:
 
@@ -574,7 +717,17 @@ Each scenario prints:
 - the motion of the hold and the fall (`_motion`): hold time, the raider's and the holder's body motion,
   the raider's lean early, halfway and at the end of the hold, how far the held foot moves, how fast the
   free foot slides, and, for a takedown, the time to the floor and the fastest the torso tips and the waist
-  drops.
+  drops;
+- a leg hold as one interaction between two bodies (`_restraint`):
+  - how far the holder's body slid along the floor, how often it turned back on itself, and the sharpest
+    change of speed of either body;
+  - the held ankle from its hold;
+  - how far the held leg is stretched;
+  - how much of the hold the free foot is on the floor, and how fast it moves while planted;
+  - how much of the raider's travel was sliding rather than hopping, and the number of hops;
+  - how soon he answers the hold;
+  - which way he lies once down, against the way the hold pulls him;
+- each holder's grip all through, and while the raider is still on his feet (`grip_each`, "held").
 
 A scenario fails if the events are not what it must produce. The motion numbers are measured, not checked:
 they are for comparing a change, alongside looking at a recording.
