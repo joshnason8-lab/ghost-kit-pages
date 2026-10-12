@@ -336,6 +336,50 @@ Visual check, frame by frame on the new recording:
 The grip is a little looser than before (it is now a moving target), and the last part of the drop is
 quicker (the fall starts further on).
 
+### 2. The chain tackle: every holder holding, together
+
+**Seen**: the defenders were apart, but did not look as if each held and kept hold of the raider.
+
+**Cause**:
+- A raider held by three was down as soon as the struggle passed half (`Match._check_end`), whatever the
+  holds' age. In the `chain` scenario the last helper's hands had been on him 0.23 s when he went down: the
+  hold had no time to be seen.
+- Each holder hauled on his own (fix 1), so a pile of three was three separate rhythms, and only the
+  strongest haul moved the raider.
+- A block (chest to chest, in front) hauled like the rest, leaning back, where it should drive into him.
+
+**Fix**:
+- A team-mate who takes hold falls in with the first holder's haul (`Grapple.add`). They heave together, his
+  first haul with the next of theirs his hands are closed for.
+- The raider is pulled back by all the hauls together (`Grapple.tug_total`), not only the strongest.
+- He goes down only once every hold on him has been a hold for `ESTABLISH` (0.6 s, `Grapple.established`).
+- A block drives into him as it hauls (`HumanModel.haul_drive`).
+
+Measured with `tests/tackle_check`; the per-holder grip is the 90th percentile once his hands are on (under
+0.1 m), after the time they took to close:
+
+| Chain (`chain`, three holders) | Before | After |
+|---|---|---|
+| From the last helper's hold to the takedown | 0.23 s | 0.60 s |
+| The whole hold | 1.00 s | 1.37 s |
+| First holder's body motion while holding | 0.08 m/s | 0.50 m/s |
+| Raider's lean: early, halfway, end | 19°, 17°, 17° | 20°, 28°, 32° |
+| Ankle hold's grip | 0.125 m | 0.067 m |
+| Thigh hold's grip (hands on in 0.13 s) | 0.121 m | 0.140 m |
+| Block's grip (hands on in 0.10 s) | 0.230 m | 0.245 m |
+
+| Four holders (`crowd`) | Before | After |
+|---|---|---|
+| From the last helper's hold to the takedown | 0.10 s | 0.60 s |
+| Grips: ankle, thigh, waist, block | 0.15, 0.13, 0.17, 0.24 m | 0.08, 0.12, 0.05, 0.11 m |
+
+A recording from above (`view chain plain high`) shows each holder on his own part of the raider. It also
+showed the HUD's messages ("Ankle hold!", "Chain tackle!") drawn right over the pile, hiding it; see fix 6.
+
+Still open: a block's hands are the loosest (about 0.25 m at the 90th percentile in `chain`). In the `join`
+scenario the takedown now waits for the first hold to be established, so the team-mate running in gets hold
+of him first; the scenario still checks that no hold is made after the takedown.
+
 ## Measuring
 
 ```sh

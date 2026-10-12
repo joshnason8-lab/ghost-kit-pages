@@ -399,6 +399,7 @@ func _pose(delta: float) -> void:
 	m.tug = lerpf(m.tug, tug if state == "held" else 0.0, clampf(delta * 18.0, 0.0, 1.0))
 	m.tug_side = tug_side
 	m.haul = lerpf(m.haul, haul if state == "holding" else 0.0, clampf(delta * 18.0, 0.0, 1.0))
+	m.haul_drive = hold_style == "block"
 	m.jump = want_jump
 	m.cele = cele_kind
 	m.bounce = lerpf(m.bounce, want_bounce, k)

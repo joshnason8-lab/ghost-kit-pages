@@ -40,6 +40,7 @@ const PULL_UP := 0.3           # share of each cycle spent hauling; the rest eas
 const PULL_START := 0.25       # s after taking hold before the first haul
 const PULL_IN := 0.16          # m a haul draws a held leg back toward the holder, at full struggle
 const PULL_LIFT := 0.09        # m a haul lifts a held foot off the floor, at full struggle
+const ESTABLISH := 0.6         # s a hold needs before it can take part in bringing him down
 # Where each style's hands go: [right hand part, left hand part]. Waist and block hands go round the sides.
 const HANDS := {"ankle": ["ankle", "shin"], "thigh": ["thigh", "knee"], "waist": ["waist", "waist"], "block": ["waist", "waist"]}
 # A helper can take hold from this far (his middle to the part, flat), facing it.
@@ -233,10 +234,20 @@ func add(d: Athlete, style: String, slot: String, reached := false) -> void:
 		var s := slot.substr(4)
 		at = raider.model.anchor("foot_" + s)
 		at.y = raider.model.rig.ankle_height() if raider.model.rig else 0.08   # on the floor
-	# Each holder's own rhythm: a little quicker or slower, the first haul a moment after he takes hold.
+	# Each holder's own rhythm: a little quicker or slower, the first haul a moment after he takes hold. A
+	# team-mate joining falls in with the first holder's: they heave together, his first with the next of
+	# theirs that his hands are on for.
 	var period := PULL_PERIOD * (0.88 + 0.24 * float(d.get_instance_id() % 97) / 96.0)
+	var ph := -PULL_START / period
+	if not holds.is_empty():
+		var lead: Dictionary = holds[0]
+		period = float(lead.period)
+		var wait := (ceilf(float(lead.ph)) - float(lead.ph)) * period
+		while wait < CLOSE_IN + 0.1:
+			wait += period
+		ph = -wait / period
 	var h := {"who": d, "style": style, "slot": slot, "at": at, "since": t, "w": 1.0 if reached else 0.0,
-		"period": period, "ph": -PULL_START / period, "pull": 0.0}
+		"period": period, "ph": ph, "pull": 0.0}
 	holds.append(h)
 	d.hold_style = style
 	_priority(d, 1)
@@ -282,6 +293,22 @@ func tug() -> float:
 	for h in holds:
 		out = maxf(out, float(h.pull))
 	return out
+
+
+## The holders' hauls together: each adds his own (up to 1.6 with several heaving at once).
+func tug_total() -> float:
+	var sum := 0.0
+	for h in holds:
+		sum += float(h.pull)
+	return minf(1.6, sum)
+
+
+## Every hold on him has been held long enough (ESTABLISH) to take part in bringing him down.
+func established() -> bool:
+	for h in holds:
+		if t - float(h.since) < ESTABLISH:
+			return false
+	return true
 
 
 ## The holders' hauls on average, 0..1 (over a whole cycle it is about half, however many hold him).

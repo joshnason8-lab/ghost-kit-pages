@@ -31,6 +31,7 @@ var balance := 0.0          # a held raider's balance going, 0..1
 var tug := 0.0              # ... how hard he is pulled back now, 0..1
 var tug_side := 0.0         # ... by which leg: -1 left, 1 right (0: round the middle)
 var haul := 0.0             # a holder hauling now, 0..1
+var haul_drive := false     # ... driving into him (a block, chest to chest) rather than pulling back
 # Emotions, 0..1 each.
 var roar := 0.0             # arms flung wide, chest out, head back
 var slump := 0.0            # hands on head, dejected
@@ -697,7 +698,8 @@ func _animate(delta: float) -> void:
 ## frozen poses). The held raider topples a little more as his balance goes: his trunk goes over away from
 ## the pull, his hips sink, his arms go out for balance and flail more the worse it gets, and every haul jerks
 ## him back and twists him toward the leg it pulls. A holder hauls: lying on the floor (an ankle hold) his
-## chest comes up off the mat and his knees draw up to drive back; higher up he sits back into it.
+## chest comes up off the mat and his knees draw up to drive back; higher up he sits back into it; chest to
+## chest (a block) he drives into him.
 func _apply_struggle() -> void:
 	var b := balance
 	if b > 0.001 or tug > 0.001:
@@ -720,8 +722,9 @@ func _apply_struggle() -> void:
 			el_r.quaternion = el_r.quaternion.slerp(Quaternion(Vector3.RIGHT, 0.5 + 0.25 * wl), f)
 	if haul > 0.001:
 		var low := clampf((dive - 0.75) / 0.25, 0.0, 1.0)   # lying on the floor (an ankle hold)
-		_turn(spine, Vector3.RIGHT, haul * lerpf(0.22, 0.4, low))
-		_turn(chest, Vector3.RIGHT, haul * 0.15)
+		var back := -1.0 if haul_drive else 1.0
+		_turn(spine, Vector3.RIGHT, haul * lerpf(0.22, 0.4, low) * back)
+		_turn(chest, Vector3.RIGHT, haul * 0.15 * back)
 		_turn(head, Vector3.RIGHT, haul * 0.2 * low)
 		_turn(hip_l, Vector3.RIGHT, haul * lerpf(0.25, 0.75, low))
 		_turn(hip_r, Vector3.RIGHT, haul * lerpf(0.15, 0.5, low))

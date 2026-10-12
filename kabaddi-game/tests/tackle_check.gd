@@ -20,7 +20,7 @@ extends Node
 ## the touched defender grabbing straight back, another diving in, help, a takedown, all within a second or
 ## two: every event in order, the raid scored once).
 ## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording ("plain" leaves
-## the debug overlay off):
+## the debug overlay off; "high" looks down from above, three-quarters on, to see every hold in a pile):
 ##   godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json FILE] [--log]
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie out.avi \
 ##       --fixed-fps 30 res://tests/tackle_check.tscn -- view catch [plain]
@@ -49,6 +49,7 @@ var _json := ""
 var _log := false
 var _view := false
 var _plain := false
+var _cam_off := Vector3(5.2, 1.6, 0.0)   # the camera from what it looks at: from the side; "high": above, three-quarters
 var _results := {}
 var _cam: Camera3D
 
@@ -62,6 +63,8 @@ func _ready() -> void:
 			_view = true
 		elif args[i] == "plain":
 			_plain = true
+		elif args[i] == "high":
+			_cam_off = Vector3(3.4, 3.6, 2.4)
 		elif args[i] == "--json" and i + 1 < args.size():
 			_json = args[i + 1]
 		elif args[i] == "--log":
@@ -156,6 +159,10 @@ func _run(sc: String) -> Dictionary:
 	# raider body motion, first holder's body motion].
 	var mo := []
 	var pts_last := {}
+	var grips := {}        # holder -> his grip each frame
+	var labels := {}       # holder -> "style slot"
+	var join_t := -1.0     # when the last holder took hold
+	var n_holders := 0
 	while t < 12.0:
 		var dt := get_process_delta_time()
 		dt = dt if dt > 0.0005 else 1.0 / 30.0
@@ -218,8 +225,16 @@ func _run(sc: String) -> Dictionary:
 				if step > JUMP_SPEED:
 					out.jumps += 1
 		placed = false
+		if holders.size() > n_holders and m.phase == "raid":
+			join_t = t
+		n_holders = holders.size()
 		for a in holders:
 			var e := _grip(a, r)
+			grips[a] = grips.get(a, []) + [e]
+			if not labels.has(a) and m.grapple:
+				for h in m.grapple.holds:
+					if h.who == a:
+						labels[a] = "%s %s" % [h.style, h.slot]
 			if a == d and float(out.first_grip) < 0.0:
 				out.first_grip = snappedf(e, 0.001)
 			out.grip.append(e)
@@ -232,7 +247,7 @@ func _run(sc: String) -> Dictionary:
 					out.min_holder_gap = minf(out.min_holder_gap, Vector2(w1.x - w3.x, w1.z - w3.z).length())
 			if _log:
 				print("%5.2f %s %s grip %.3f  %s r %s" % [t, sc, a.style, e, a.state, r.state])
-		mo.append(_sample(m, r, d, pts_last, t, dt))
+		mo.append(_sample(m, r, d, pts_last, t, dt, holders))
 		if m.phase != "raid" and ended_t < 0.0:
 			ended_t = t
 			out.t_end = snappedf(t, 0.01)
@@ -274,6 +289,25 @@ func _run(sc: String) -> Dictionary:
 		out[k] = -1.0 if out[k] == INF else snappedf(out[k], 0.01)
 	out.max_holder_speed = snappedf(out.max_holder_speed, 0.1)
 	_motion(out, mo)
+	# Each holder's own grip: how long his hands took to close on his part (under 0.1 m) and how close they
+	# kept after that (90th percentile); and whether his hold had time to be one before the takedown.
+	out.grip_each = []
+	for a in grips:
+		var g2: Array = grips[a]
+		var on := g2.size()
+		for i in g2.size():
+			if float(g2[i]) < 0.1:
+				on = i
+				break
+		out.grip_each.append([String(labels.get(a, a.style)), "on in %.2f s" % [on / 30.0],
+			snappedf(_pct(g2.slice(on), 90), 0.001)])
+	var down_t := -1.0
+	for st in out.states_r:
+		if String(st[1]) == "fallen":
+			down_t = float(st[0])
+			break
+	if down_t >= 0.0 and join_t >= 0.0:
+		out.last_hold_to_down = snappedf(down_t - join_t, 0.01)
 	# What each scenario must do: holds given once each, on different parts of him; one takedown, and only
 	# for a tackle; nothing held after a miss or after the takedown.
 	var holds: int = out.events.count("hold")
@@ -323,7 +357,7 @@ func _run(sc: String) -> Dictionary:
 
 ## One frame's motion sample. Body motion: how fast the hands, shoulders, waist and feet move against the
 ## player's own root (m/s, averaged over the points): a held pose with nothing moving reads near 0.
-func _sample(m: Node, r: Athlete, d: Athlete, pts_last: Dictionary, t: float, dt: float) -> Array:
+func _sample(m: Node, r: Athlete, d: Athlete, pts_last: Dictionary, t: float, dt: float, holders: Array) -> Array:
 	var sh: Vector3 = (r.model.anchor("shoulder_l") + r.model.anchor("shoulder_r")) * 0.5
 	var w: Vector3 = r.model.anchor("waist")
 	var up := sh - w
@@ -338,16 +372,25 @@ func _sample(m: Node, r: Athlete, d: Athlete, pts_last: Dictionary, t: float, dt
 	if held_side != "":
 		held_foot = r.model.anchor("ankle_" + held_side)
 		free_foot = r.model.anchor("ankle_" + ("r" if held_side == "l" else "l"))
-	return [t, r.state, lean, w.y, held_foot, free_foot, _body_speed(r, pts_last, dt), _body_speed(d, pts_last, dt),
-		d.state]
+	# The team-mates who came to help, holding now: their body motion.
+	var helpers := []
+	for a in m.defenders():
+		var sp := _body_speed(a, pts_last, dt)
+		if a != d and holders.has(a) and a.state == "holding":
+			helpers.append(sp)
+	return [t, r.state, lean, w.y, held_foot, free_foot, _body_speed(r, pts_last, dt), _body_speed(d, pts_last, dt, true),
+		d.state, helpers]
 
 
-func _body_speed(a: Athlete, pts_last: Dictionary, dt: float) -> float:
+func _body_speed(a: Athlete, pts_last: Dictionary, dt: float, again := false) -> float:
 	var pts := []
 	for part in ["hand_l", "hand_r", "shoulder_l", "shoulder_r", "waist", "foot_l", "foot_r"]:
 		pts.append(a.model.anchor(part) - a.position)
-	var last: Array = pts_last.get(a, [])
-	pts_last[a] = pts
+	# again: worked out already this frame (the defenders all are): the same answer.
+	var last: Array = pts_last.get([a, "prev"], []) if again else pts_last.get(a, [])
+	if not again:
+		pts_last[[a, "prev"]] = last
+		pts_last[a] = pts
 	if last.size() != pts.size():
 		return 0.0
 	var sum := 0.0
@@ -386,6 +429,10 @@ func _motion(out: Dictionary, mo: Array) -> void:
 			hm.append(x[7])
 	out.raider_motion = snappedf(_pct(rm, 50), 0.01)
 	out.holder_motion = snappedf(_pct(hm, 50), 0.01)
+	var helpers := []
+	for x in held:
+		helpers.append_array(x[9])
+	out.helpers_motion = snappedf(_pct(helpers, 50), 0.01)
 	var early: Array = held[mini(9, held.size() - 1)]
 	var mid: Array = held[held.size() / 2]
 	out.lean_while_held = [snappedf(float(early[2]), 0.1), snappedf(float(mid[2]), 0.1), snappedf(float(held[-1][2]), 0.1)]
@@ -473,8 +520,9 @@ func _print(sc: String, r: Dictionary) -> void:
 	print("== %s  %s" % [sc, "as expected" if r.ok else "NOT AS EXPECTED"])
 	for k in ["attached", "attach_t", "contact_gap", "first_grip", "hold_frames", "grip_median", "grip_p90", "grip_max",
 			"jumps", "max_holder_speed", "min_overlap", "min_holder_gap", "slots", "end", "t_end", "in_order", "scored_once",
-			"score_gain", "raid_pts", "hold_time", "raider_motion", "holder_motion", "lean_while_held", "held_foot_moved",
-			"free_foot_slide", "fall_to_floor", "fall_lean_rate", "fall_drop_rate"]:
+			"score_gain", "raid_pts", "hold_time", "raider_motion", "holder_motion", "helpers_motion", "lean_while_held",
+			"held_foot_moved", "free_foot_slide", "fall_to_floor", "fall_lean_rate", "fall_drop_rate", "grip_each",
+			"last_hold_to_down"]:
 		print("  %-20s %s" % [k, str(r.get(k, "-"))])
 	print("  raider   %s" % [str(r.states_r)])
 	print("  defender %s" % [str(r.states_d)])
@@ -485,9 +533,9 @@ func _print(sc: String, r: Dictionary) -> void:
 ## Keep the raider and the first defender in view, from the side.
 func _follow(r: Athlete, d: Athlete, dt: float) -> void:
 	var mid := (r.position + d.position) * 0.5
-	var at := _cam.position - Vector3(5.2, 1.6, 0.0)
+	var at := _cam.position - _cam_off
 	at = at.lerp(Vector3(mid.x, 0.0, mid.z), clampf(dt * 3.0, 0.0, 1.0))
-	_cam.position = at + Vector3(5.2, 1.6, 0.0)
+	_cam.position = at + _cam_off
 	_cam.look_at(at + Vector3(0, 0.5, 0), Vector3.UP)
 
 
@@ -498,7 +546,7 @@ func _stage(m: Node) -> void:
 		add_child(_cam)
 		_cam.fov = 40.0
 	var mid: Vector3 = m.pos_in(1, 0.2, 4.6)
-	_cam.position = mid + Vector3(5.2, 1.6, 0.0)
+	_cam.position = mid + _cam_off
 	_cam.look_at(mid + Vector3(0, 0.5, 0), Vector3.UP)
 	_cam.current = true
 	m.hud.visible = true

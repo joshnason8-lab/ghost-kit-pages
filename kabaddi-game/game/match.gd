@@ -639,7 +639,7 @@ func _move_raider(move: Vector3, dt: float) -> void:
 		# pace is the same, but it comes in heaves rather than evenly.
 		var pace := 1.0
 		if grapple and not grapple.holds.is_empty():
-			v -= mid_dir * grapple.tug() * 0.6
+			v -= mid_dir * grapple.tug_total() * 0.6
 			pace = 0.4 + 1.2 * grapple.tug_mean()
 		raider.vel = v
 		raider.position += v * dt
@@ -2133,10 +2133,13 @@ func _check_end(dt: float) -> void:
 			# Stretched out and touched the midline while held.
 			_end_raid("return")
 			return
-	if holders.size() >= 3 and raid.progress > 0.5:
+	# Down he goes once the struggle is won, but only when every hold on him is a hold (Grapple.established):
+	# a team-mate who has just got his hands on him heaves with the rest first.
+	var holds_set: bool = grapple == null or grapple.established()
+	if holders.size() >= 3 and raid.progress > 0.5 and holds_set:
 		_end_raid("tackle")
 		return
-	if raid.progress >= 1.0:
+	if raid.progress >= 1.0 and holds_set:
 		_end_raid("tackle")
 		return
 	if raid.t <= 0.0:
