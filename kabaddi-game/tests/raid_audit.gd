@@ -464,7 +464,7 @@ func _conflicts(m: Node, r: Athlete, g, mat: Array) -> void:
 			speed = (_last[a][2] as Vector3).length()
 		var lying: bool = float(a.model.fallen) > 0.7 or (float(a.model.dive) > 0.7 and a.state not in ["dive", "holding"])
 		if lying and speed > 2.5:
-			seen["lying on the floor, moving %.0f+ m/s" % 2.5] = a
+			seen["lying on the floor, moving over 2.5 m/s"] = a
 	var one = r.model.get("one_leg")
 	var ankle := false
 	if g != null:

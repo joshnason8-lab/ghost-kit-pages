@@ -890,7 +890,7 @@ when the raid began. The same audit ran on the V2 build for comparison.
   - kept defenders apart from each other, but set defenders off the raider only while no one held him;
   - kept no one apart after the raid;
   - pushed players apart by 60% of the overlap in one frame, so they jumped (up to 9.7 m/s);
-  - pushed bodies lying on the floor about too (lying down and moving 2 m/s or more: 4 episodes).
+  - pushed bodies lying on the floor about too (lying down and moving faster than 2.5 m/s: 4 episodes).
 - **Joint pops** (12,673 bone-frames turning more than 40° in a 30th of a second, the worst 180°), mostly
   forearms and feet:
   - a limb is swung onto the rig from the hand-made placeholder's limb, and where that direction flips, the
@@ -964,7 +964,7 @@ when the raid began. The same audit ran on the V2 build for comparison.
 | A body's middle moving more than 0.2 m beyond the body in a frame: frames / worst | 124 / 0.46 m | 132 / 0.32 m |
 | Joint pops, bone-frames over 40° in a 30th of a second / worst | 12,673 / 180° | 8,891 / 40° |
 | Bodies inside one another, frames over 5 cm / 99th percentile depth | 4,783 / 0.23 m | 3,621 / 0.21 m |
-| Conflicting states, episodes: a held raider shoved / lying on the floor and moving 2+ m/s | 3 / 4 | 0 / 3 (a frame each) |
+| Conflicting states, episodes: a held raider shoved / lying on the floor and moving over 2.5 m/s | 3 / 4 | 0 / 3 (a frame each) |
 | Duplicate or impossible events / matches whose points do not add up | 0 / 0 | 0 / 0 |
 | Softlocks | 57 | 0 |
 
