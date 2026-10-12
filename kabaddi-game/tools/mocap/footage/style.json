@@ -77,7 +77,8 @@
    "defenders_seen": 8,
    "defender_depth_m": 4.43,
    "defender_width_m": 6.97,
-   "linked_pairs": []
+   "linked_pairs": [],
+   "defender_stagger_m": 0.94
   },
   "c2": {
    "note": "India raider (#12) v 3 Pakistan defenders (a linked pair and #3). Low and busy: an attempt every second or so, a long standoff, then steps in and is held at the thigh; #3 joins.",
@@ -207,7 +208,8 @@
    "defenders_seen": 4,
    "defender_depth_m": 4.93,
    "defender_width_m": 5.73,
-   "linked_pairs": []
+   "linked_pairs": [],
+   "defender_stagger_m": 0.98
   },
   "c3": {
    "note": "Pakistan raider (green) v India's chain. A toe kick, then hand reaches every 2-3 s that the chain answers with a reach of its own; steps in deep and is blocked at the waist, then swarmed.",
@@ -347,7 +349,8 @@
    "defenders_seen": 8,
    "defender_depth_m": 4.48,
    "defender_width_m": 9.41,
-   "linked_pairs": []
+   "linked_pairs": [],
+   "defender_stagger_m": 1.12
   },
   "c4": {
    "note": "India raider (#12) v two linked Pakistan pairs. Long probe between the pairs, hops over a dive, low hand reaches; caught at the ankle by a dive from the far pair, then piled on.",
@@ -479,7 +482,8 @@
    "defenders_seen": 5,
    "defender_depth_m": 4.9,
    "defender_width_m": 5.95,
-   "linked_pairs": []
+   "linked_pairs": [],
+   "defender_stagger_m": 0.89
   }
  },
  "combined": {
@@ -596,6 +600,12 @@
    4,
    8,
    5
+  ],
+  "defender_stagger_m": [
+   0.94,
+   0.98,
+   1.12,
+   0.89
   ]
  }
 }

@@ -292,7 +292,11 @@ func formation_spot(a: Athlete) -> Vector3:
 	var width := minf(4.2, 1.3 * (n - 1))
 	var lat := 0.0 if n <= 1 else lerpf(-width, width, float(i) / (n - 1))
 	var d := 4.35 + 0.35 * (absf(lat) / 4.2)
-	return pos_in(t, lat, d)
+	# Each player's own place in it: a little deeper or shallower, a little to one side (people do not stand
+	# on a ruled line).
+	var k := float(hash(a.pid()) % 1000) / 1000.0
+	var k2 := float(hash(a.pid() + "x") % 1000) / 1000.0
+	return pos_in(t, lat + 0.2 * (k2 * 2.0 - 1.0), d + 0.45 * (k * 2.0 - 1.0))
 
 
 func bench_spot(t: int, k: int) -> Vector3:

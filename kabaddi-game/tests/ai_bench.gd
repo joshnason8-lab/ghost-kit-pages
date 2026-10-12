@@ -7,7 +7,7 @@ var _result := {}
 var _all_logs := []
 # Footage-comparable measures (tools/mocap/raid_events.py reads the same things off match video).
 var _style := {"first_attempt": [], "between": [], "attempt_gap": [], "dive_gap": [], "help": [], "near": [],
-		"probe_speed": [], "top_speed": [], "def_depth": [], "def_width": [], "tackle_after": []}
+		"probe_speed": [], "top_speed": [], "def_depth": [], "def_width": [], "def_stagger": [], "tackle_after": []}
 # The defence's shape (no footage numbers; for the team defence work, docs/TACKLE_SYSTEM.md): each set
 # defender's nearest team-mate, pairs closer than two people stand (linked pairs aside), defenders within 2 m
 # of the raider while he works, whether anyone is in his way home as he runs for it, and how many team-mates
@@ -196,6 +196,14 @@ func _sample(m: Node, dt: float) -> void:
 				ds.append(m.depth_in(d.team, d.position))
 				xs.append(d.position.x)
 		if ds.size() >= 3:
+			# How far apart front to back: the standard deviation of their depths (0 for a straight line).
+			var mean := 0.0
+			for x in ds:
+				mean += float(x) / ds.size()
+			var var_sum := 0.0
+			for x in ds:
+				var_sum += pow(float(x) - mean, 2.0) / ds.size()
+			_style.def_stagger.append(snappedf(sqrt(var_sum), 0.01))
 			ds.sort()
 			_style.def_depth.append(ds[ds.size() / 2])
 			_style.def_width.append(xs.max() - xs.min())
@@ -273,6 +281,7 @@ func _print_style() -> void:
 		["raider top speed (m/s)", "top_speed", "raider_top_ms"],
 		["defenders' line depth (m)", "def_depth", "defender_depth_m"],
 		["defenders' spread across (m)", "def_width", "defender_width_m"],
+		["defenders' depths, front to back (sd, m)", "def_stagger", "defender_stagger_m"],
 	]
 	for row in rows:
 		var v: Array = _style[row[1]]

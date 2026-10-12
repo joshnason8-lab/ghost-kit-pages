@@ -368,7 +368,7 @@ def analyze_run(run, raider=None, t0v=None, t1v=None):
             stance_gaps += [g for g in (nearest(t) for t in rt if e["t"] <= t <= nxt) if g is not None]
     # The defence's shape while he works: median depth of the line from the midline and its spread across,
     # over moments with three or more defenders in view (a camera on part of the court shows fewer).
-    form_depth, form_width = [], []
+    form_depth, form_width, form_stagger = [], [], []
     for t in rt[::5]:
         if tackle and t >= tackle["t"]:
             break
@@ -377,6 +377,8 @@ def analyze_run(run, raider=None, t0v=None, t1v=None):
         if len(pts) >= 3:
             form_depth.append(float(np.median([-home * p_[1] for p_ in pts])))
             form_width.append(float(max(p_[0] for p_ in pts) - min(p_[0] for p_ in pts)))
+            # How far apart front to back: the standard deviation of their depths (0 for a straight line).
+            form_stagger.append(float(np.std([-home * p_[1] for p_ in pts])))
     before_tackle = [a for a in attempts if tackle and a["t"] < tackle["t"]]
     probe = [v for t, v in zip(rt, speed) if not tackle or t < tackle["t"] - 0.3]
     first = attempts[0]["t"] - start if attempts else None
@@ -412,6 +414,7 @@ def analyze_run(run, raider=None, t0v=None, t1v=None):
         "defender_speed_near_ms": {"median": pct(def_speed, 50), "p90": pct(def_speed, 90)},
         "defenders_seen": max((len([1 for s_ in def_series.values() if at(s_[0], s_[1], t) is not None]) for t in rt), default=0),
         "defender_depth_m": pct(form_depth, 50),
+        "defender_stagger_m": pct(form_stagger, 50),
         "defender_width_m": pct(form_width, 50),
         "step_backs": backs,
         "linked_pairs": sorted(linked),
@@ -471,6 +474,7 @@ def main():
         "counter_reach_after_attempt_s": flat("counter_reach_after_attempt_s"),
         "defender_speed_near_ms": sub("defender_speed_near_ms", "median"),
         "defender_depth_m": one("defender_depth_m"),
+        "defender_stagger_m": one("defender_stagger_m"),
         "defender_width_m": one("defender_width_m"),
         "defenders_seen": one("defenders_seen"),
     }

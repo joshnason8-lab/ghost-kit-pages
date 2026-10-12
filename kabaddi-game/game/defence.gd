@@ -16,6 +16,11 @@ extends RefCounted
 ## places nearest the raider), the best placed first. No two places are closer than SPOT_GAP (linked pairs
 ## aside). Each defender changes role or place only after his own reaction time (REACT, quicker for agile
 ## players), so the shape moves like people and not like one machine.
+##
+## While he works the cover the line is not a wall: it curves round where he is about to be (ANTICIPATE), those
+## in front of him giving a little ground and those out to his sides coming up (WRAP_BACK, WRAP_FWD), and each
+## defender keeps a depth of his own (Match.formation_spot) that drifts a little (DRIFT). The footage's defenders stand
+## about a metre apart front to back (standard deviation of their depths, tools/mocap/raid_events.py).
 
 const SPOT_GAP := 1.05         # m: no two defenders' places closer than this
 const LANE_AHEAD := 1.4        # m: lanes are this far from the raider toward the midline ...
@@ -24,6 +29,11 @@ const CONTAIN_R := 2.4         # m: contain places round the raider on his way h
 const HELP_R := 4.2            # m: team-mates this close come to help when he is held
 const REACT := Vector2(0.12, 0.38)   # s: reaction time, agile to slow
 const SPEED := {"line": 2.4, "mark": 2.0, "cover": 2.4, "lane": 4.0, "contain": 3.2, "help": 9.0}
+const ANTICIPATE := 0.35       # s ahead of the raider the line shapes itself to
+const WRAP_BACK := 0.6         # m the ones straight in front of him give ...
+const WRAP_FWD := 1.0          # ... and the ones well out to his sides come up
+const WRAP_HELD := 0.3         # m the whole line stands back, so the curve keeps the line's depth on average
+const DRIFT := 0.3             # m each defender's depth drifts by, slowly, about his own (Match.formation_spot)
 
 var m   # the Match
 var plan := {}                 # Athlete -> {role, at, next_role, next_at, wait}
@@ -101,9 +111,18 @@ func update(dt: float) -> void:
 		var mark: Athlete = m.raid.get("ai_mark")
 		if mark == null or not left.has(mark):
 			mark = _nearest(left, r.position)
+		var t: int = 1 - m.raiding
+		var lead := r.position + Vector3(r.vel.x, 0, r.vel.z).limit_length(3.0) * ANTICIPATE
+		var lead_in := clampf(m.depth_in(t, lead) / Arena.BAULK, 0.0, 1.0)   # how far in he is: the curve deepens
 		for d in left:
 			var at: Vector3 = m.formation_spot(d)
-			at.x += r.position.x * 0.28
+			at.x += lead.x * 0.28
+			# Round him: straight in front of him a little back, out to his sides up; and his own depth.
+			var dx := absf(at.x - lead.x)
+			var dd := WRAP_BACK * exp(-pow(dx / 1.4, 2.0)) - WRAP_FWD * clampf((dx - 1.0) / 2.5, 0.0, 1.0) + WRAP_HELD
+			dd *= 0.4 + 0.6 * lead_in
+			dd += _own_depth(d)
+			at.z += dd * m.side(t)
 			var role := "line"
 			if d == mark:
 				role = "mark"
@@ -258,6 +277,12 @@ func _nearest(pool: Array, p: Vector3) -> Athlete:
 			bd = g
 			best = d
 	return best
+
+
+## A defender's depth drifting slowly about his own place (m, + deeper).
+func _own_depth(d: Athlete) -> float:
+	var k := float(hash(d.pid()) % 1000) / 1000.0
+	return DRIFT * sin(float(m.raid.get("t", 0.0)) * 0.45 + k * TAU)
 
 
 ## A defender's reaction time: quicker for agile players, a little different every time.
