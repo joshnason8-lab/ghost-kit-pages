@@ -279,6 +279,63 @@ Still open:
   ("Broke free!" then "Tackle!").
 - Nothing new on screen marks a hold's slot or a defender's role outside the debug overlay.
 
+## Review fixes (after the 0.7.5 gameplay recording)
+
+A review of the recorded gameplay picked out five problems. Each fix below names the cause found in the code,
+and is measured with `tests/tackle_check` (whose motion numbers were added for this, see Measuring) and
+checked on a new recording of the same scenario.
+
+### 1. The ankle hold: a struggle, not two still poses
+
+**Seen**: the defender lay stretched out and still while the raider stood almost still for over three
+seconds, then dropped all at once.
+
+**Cause**:
+- While held, the raider's struggle was one number, `raid.progress` (`Match._move_raider`). It rose evenly
+  until it reached 1, and `_check_end` then ended the raid in a tackle.
+- Nothing drew that number. The raider played one looping clip (`held_pull`), and the holder kept a fixed
+  lying pose (`Athlete._pose`, "holding": `want_dive = 1.0`).
+- The fall clip (`fall_trip`) then started from its own first, upright frame.
+
+**Fix**:
+- Each holder now hauls in his own rhythm (`Grapple.haul`, `PULL_PERIOD` about 0.9 s). A haul draws a held
+  leg back toward him and lifts the foot a little (`Grapple._pulled`). His arms bend because his body does
+  not follow the foot in (`_pull_in`).
+- Each haul pulls the raider back (`Match._move_raider`). The struggle advances mostly during hauls; its
+  pace over a whole haul is unchanged.
+- The struggle is drawn (`HumanModel._apply_struggle`, on top of the clip):
+  - the raider topples further over the free leg as his balance goes;
+  - his hips sink and his arms go out for balance;
+  - each haul jerks him back and twists him toward the held leg;
+  - the lying holder's chest lifts and his knees draw up as he hauls.
+- A fall clip starts from the frame nearest the pose he is in (`HumanModel.play_state`), but only from the
+  part before the drop. A raider already toppling carries on from there.
+
+| Ankle hold (`catch`) | Before | After |
+|---|---|---|
+| Holder's body motion while holding (median) | 0.10 m/s | 0.43 m/s |
+| Raider's body motion while held (median) | 0.33 m/s | 0.58 m/s |
+| Raider's lean from upright: early, halfway, end of the hold | 16°, 14°, 18° | 17°, 38°, 58° |
+| Held foot dragged along the floor over the hold | 1.41 m | 0.45 m |
+| Free foot sliding while down (90th percentile) | 1.02 m/s | 0.70 m/s |
+| Hands to the held leg (median / 90th percentile) | 0.048 / 0.051 m | 0.056 / 0.075 m |
+| Hold to takedown | 3.40 s | 3.57 s |
+| Takedown to his waist on the floor | 0.70 s | 0.60 s |
+| Fastest the torso tips / the waist drops, around the takedown | 201 deg/s / 2.65 m/s | 194 deg/s / 3.66 m/s |
+
+Body motion is how fast the hands, shoulders, waist and feet move against the player's own root, so a
+frozen pose reads near zero.
+
+Visual check, frame by frame on the new recording:
+- the raider bends further over the held leg on every haul;
+- the held leg is drawn out behind him toward the holder's hands;
+- the holder's chest lifts and his knees come up as he hauls;
+- at the takedown the raider goes on down onto his hands from the bent-over pose, rather than dropping out
+  of an upright one.
+
+The grip is a little looser than before (it is now a moving target), and the last part of the drop is
+quicker (the fall starts further on).
+
 ## Measuring
 
 ```sh
@@ -314,6 +371,11 @@ Each scenario prints:
 - holder jumps;
 - how close the bodies' middles come, to the raider's and to each other;
 - each player's states over time;
-- the HUD messages and the gameplay events.
+- the HUD messages and the gameplay events;
+- the motion of the hold and the fall (`_motion`): hold time, the raider's and the holder's body motion,
+  the raider's lean early, halfway and at the end of the hold, how far the held foot moves, how fast the
+  free foot slides, and, for a takedown, the time to the floor and the fastest the torso tips and the waist
+  drops.
 
-A scenario fails if the events are not what it must produce.
+A scenario fails if the events are not what it must produce. The motion numbers are measured, not checked:
+they are for comparing a change, alongside looking at a recording.

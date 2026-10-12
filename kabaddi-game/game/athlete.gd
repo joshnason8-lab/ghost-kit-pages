@@ -20,6 +20,12 @@ var reach_t := 0.0          # a dive has landed and his arms are still out: seco
 var hands_prev: Array = []  # a diving defender's hands last frame (world), for the contact check
 var fall_kind := ""         # how a tackled raider goes down ("trip": caught by a leg; "takedown")
 var hold_style := ""        # how he is holding the raider (Grapple: "ankle", "thigh", "waist", "block")
+# A hold being worked (set by Grapple every frame): the held raider's balance going (0..1) and how hard he is
+# being pulled back now (0..1) and by which leg (-1 left, 1 right); a holder's haul now (0..1).
+var balance := 0.0
+var tug := 0.0
+var tug_side := 0.0
+var haul := 0.0
 var touched := false
 var hold_offset := Vector3.ZERO
 var dive_dir := Vector3.ZERO
@@ -384,6 +390,15 @@ func _pose(delta: float) -> void:
 	m.kick_back = kick_back
 	m.kick_side = kick_side
 	m.dubki = lerpf(m.dubki, want_dubki, clampf(delta * 16.0, 0.0, 1.0))
+	# A hold being worked: the raider's balance goes as the struggle does and stays gone as he falls (the fall
+	# takes over from it); the hauls come and go quickly.
+	if state == "held":
+		m.balance = move_toward(m.balance, balance, delta * 2.0)
+	else:
+		m.balance = move_toward(m.balance, 0.0, delta * (1.6 if state == "fallen" else 4.0))
+	m.tug = lerpf(m.tug, tug if state == "held" else 0.0, clampf(delta * 18.0, 0.0, 1.0))
+	m.tug_side = tug_side
+	m.haul = lerpf(m.haul, haul if state == "holding" else 0.0, clampf(delta * 18.0, 0.0, 1.0))
 	m.jump = want_jump
 	m.cele = cele_kind
 	m.bounce = lerpf(m.bounce, want_bounce, k)

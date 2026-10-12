@@ -635,6 +635,12 @@ func _move_raider(move: Vector3, dt: float) -> void:
 			# The hit stops him dead; he gets going again about a second later, while help runs in.
 			v *= clampf(float(raid.get("hold_age", 0.0)) / 1.0, 0.2, 1.0)
 		v.x += move.x * 0.4 * maxf(0.2, 1.0 - hold_power)
+		# Every haul (Grapple) pulls him back a little, and that is when his balance goes: over a whole haul the
+		# pace is the same, but it comes in heaves rather than evenly.
+		var pace := 1.0
+		if grapple and not grapple.holds.is_empty():
+			v -= mid_dir * grapple.tug() * 0.6
+			pace = 0.4 + 1.2 * grapple.tug_mean()
 		raider.vel = v
 		raider.position += v * dt
 		raider.face_toward(raider.position + mid_dir, dt)
@@ -642,7 +648,9 @@ func _move_raider(move: Vector3, dt: float) -> void:
 			var who: Athlete = raider if rng.randf() < 0.55 else holders[rng.randi() % holders.size()]
 			Sfx.voice("grunt", -7.0 if who == raider else -10.0, who.voice_pitch())
 		var rate := 0.16 + 0.32 * hold_power - 0.2 * raider.strength * push
-		raid.progress = clampf(raid.progress + maxf(0.05, rate) * dt, 0.0, 1.0)
+		raid.progress = clampf(raid.progress + maxf(0.05, rate) * pace * dt, 0.0, 1.0)
+		if grapple:
+			grapple.progress = raid.progress
 	else:
 		raider.drive(move * raider.max_speed * (0.55 + 0.45 * raider.energy), dt)
 	# The court: lobbies come into play only once there has been a struggle.

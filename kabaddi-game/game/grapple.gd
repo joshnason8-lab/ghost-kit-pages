@@ -16,6 +16,12 @@ extends RefCounted
 ## stretch does he drag it (and the holder) along the floor. Each holder's body is brought in, no faster
 ## than a body is dragged, to keep his reach on his slot, and his arms reach the rest of the way
 ## (RiggedBody.hand_target). Team-mates coming to help claim a free slot first, so no two go for the same.
+##
+## A hold is worked, not just kept: each holder hauls in his own rhythm (PULL_PERIOD), each haul drawing a held
+## leg back toward him and lifting it a little, his arms bending as he pulls. The raider is pulled back on
+## each haul and loses his balance a little more (progress, the struggle the match keeps, raid.progress): the
+## bodies show both (Athlete.balance, tug, haul; HumanModel._apply_struggle), so the takedown is where the
+## struggle was going, not a fall out of a still pose.
 
 const SLOTS := ["leg_l", "leg_r", "back", "front"]
 const CONTACT_R := 0.3         # m: a hand this close to the part a dive goes for grips it
@@ -29,6 +35,11 @@ const CLOSE_IN := 0.2          # s for a helper's hands to close on his slot as 
 const MIN_GAP := 0.34          # m: no holder's middle (pelvis to lower back) comes closer to the raider's
 const HOLDER_GAP := 0.42       # m: nor to another holder's
 const CLAIM_TIME := 2.0        # s a claimed slot is kept for a helper on his way
+const PULL_PERIOD := 0.9       # s from one haul to the next (each holder a little quicker or slower)
+const PULL_UP := 0.3           # share of each cycle spent hauling; the rest easing off and taking a new grip
+const PULL_START := 0.25       # s after taking hold before the first haul
+const PULL_IN := 0.16          # m a haul draws a held leg back toward the holder, at full struggle
+const PULL_LIFT := 0.09        # m a haul lifts a held foot off the floor, at full struggle
 # Where each style's hands go: [right hand part, left hand part]. Waist and block hands go round the sides.
 const HANDS := {"ankle": ["ankle", "shin"], "thigh": ["thigh", "knee"], "waist": ["waist", "waist"], "block": ["waist", "waist"]}
 # A helper can take hold from this far (his middle to the part, flat), facing it.
@@ -43,6 +54,7 @@ var claims := {}               # slot -> [Athlete on his way to it, seconds left
 var state := "holding"         # "holding" -> "takedown" -> "done"; or "holding" -> "done" when the last hold breaks
 var chain_called := false      # "Chain tackle!" has been put up for this one
 var t := 0.0
+var progress := 0.0            # how far the struggle has gone, 0..1 (raid.progress, set by the match)
 
 
 func _init(r: Athlete) -> void:
@@ -221,7 +233,10 @@ func add(d: Athlete, style: String, slot: String, reached := false) -> void:
 		var s := slot.substr(4)
 		at = raider.model.anchor("foot_" + s)
 		at.y = raider.model.rig.ankle_height() if raider.model.rig else 0.08   # on the floor
-	var h := {"who": d, "style": style, "slot": slot, "at": at, "since": t, "w": 1.0 if reached else 0.0}
+	# Each holder's own rhythm: a little quicker or slower, the first haul a moment after he takes hold.
+	var period := PULL_PERIOD * (0.88 + 0.24 * float(d.get_instance_id() % 97) / 96.0)
+	var h := {"who": d, "style": style, "slot": slot, "at": at, "since": t, "w": 1.0 if reached else 0.0,
+		"period": period, "ph": -PULL_START / period, "pull": 0.0}
 	holds.append(h)
 	d.hold_style = style
 	_priority(d, 1)
@@ -236,6 +251,7 @@ func release(d: Athlete) -> void:
 		return
 	var h: Dictionary = holds[i]
 	holds.remove_at(i)
+	d.haul = 0.0
 	if String(h.slot).begins_with("leg_"):
 		_pin(String(h.slot).substr(4), Vector3.ZERO, 0.0)
 	_open_hands(d)
@@ -260,6 +276,36 @@ func fall_kind() -> String:
 	return "takedown"
 
 
+## How hard he is being pulled back now, 0..1: the strongest haul on him.
+func tug() -> float:
+	var out := 0.0
+	for h in holds:
+		out = maxf(out, float(h.pull))
+	return out
+
+
+## The holders' hauls on average, 0..1 (over a whole cycle it is about half, however many hold him).
+func tug_mean() -> float:
+	if holds.is_empty():
+		return 0.0
+	var sum := 0.0
+	for h in holds:
+		sum += float(h.pull)
+	return sum / holds.size()
+
+
+## A haul's strength through its cycle (ph in cycles): a quick heave, then easing off to take a new grip.
+static func haul(ph: float) -> float:
+	if ph < 0.0:
+		return 0.0
+	var x := fposmod(ph, 1.0)
+	if x < PULL_UP:
+		var a := x / PULL_UP
+		return a * a * (3.0 - 2.0 * a)
+	var b := (x - PULL_UP) / (1.0 - PULL_UP)
+	return 1.0 - b * b * (3.0 - 2.0 * b)
+
+
 ## Every frame: held feet kept where they were caught (dragged only when he stretches past his leg), each
 ## holder's body kept within reach of his slot and his hands on it, claims timed out.
 func update(dt: float) -> void:
@@ -272,11 +318,23 @@ func update(dt: float) -> void:
 	if state == "done":
 		return
 	var right := raider.facing.cross(Vector3.UP).normalized()
+	var side := 0.0        # which leg is pulled hardest: -1 left, 1 right
+	var side_pull := 0.0
 	for h in holds:
 		var d: Athlete = h.who
 		var slot: String = h.slot
 		var style: String = h.style
 		h.w = minf(1.0, float(h.w) + dt / CLOSE_IN)
+		# The haul: in rhythm while he holds; as the raider goes down, the last one eases off.
+		if state == "holding":
+			h.ph = float(h.ph) + dt / float(h.period)
+			h.pull = haul(float(h.ph)) * float(h.w)
+		else:
+			h.pull = maxf(0.0, float(h.pull) - dt * 3.0)
+		d.haul = float(h.pull)
+		if slot.begins_with("leg_") and float(h.pull) >= side_pull:
+			side_pull = float(h.pull)
+			side = -1.0 if slot == "leg_l" else 1.0
 		if slot.begins_with("leg_") and state == "holding":
 			var at: Vector3 = h.at
 			var hip := _flat(raider.position)
@@ -292,6 +350,8 @@ func update(dt: float) -> void:
 		var arm := d.model.rig.arm_length() if d.model.rig else 0.6
 		var dy := sh.y - goal.y
 		var across := sqrt(maxf(0.0, pow(arm * 0.88, 2.0) - dy * dy))
+		# Hauling, he draws what he holds in toward him: his arms bend, his body stays.
+		across = maxf(0.15, across - _pull_in(h))
 		var dir := _flat(goal - sh)
 		dir = dir.normalized() if dir.length() > 0.01 else d.facing
 		var step := _flat(goal - dir * across - sh)
@@ -314,6 +374,10 @@ func update(dt: float) -> void:
 		d.vel = step / maxf(dt, 0.0001)
 		d.hold_offset = d.position - raider.position
 		d.face_toward(goal, dt, 12.0)
+	# The raider: how badly he is off balance, how hard he is pulled back now, and which leg it is pulled by.
+	raider.balance = 1.0 if state == "takedown" else progress
+	raider.tug = tug()
+	raider.tug_side = side
 	if state == "takedown" and t >= TRIP_HOLD:
 		for h in holds.duplicate():
 			_open_hands(h.who)
@@ -329,7 +393,7 @@ func _targets(h: Dictionary) -> void:
 	var slot: String = h.slot
 	if slot.begins_with("leg_"):
 		var w := 1.0 if state == "holding" else clampf(1.0 - t / TRIP_HOLD, 0.0, 1.0)
-		_pin(slot.substr(4), h.at, w)
+		_pin(slot.substr(4), _pulled(h), w)
 	var parts: Array = HANDS[h.style]
 	var side := d.facing.cross(Vector3.UP).normalized()
 	var suffix := "_" + slot.substr(4) if slot.begins_with("leg_") else ""
@@ -338,11 +402,32 @@ func _targets(h: Dictionary) -> void:
 	_reach(d, "l", String(parts[1]) + suffix, -off_r, float(h.w))
 
 
+## How far a hold's haul draws the part in toward the holder now (m): more as the struggle goes on.
+func _pull_in(h: Dictionary) -> float:
+	return PULL_IN * float(h.get("pull", 0.0)) * (0.45 + 0.55 * progress)
+
+
+## Where a held foot is now: where it was caught (h.at, dragged with him), drawn back toward the holder and
+## lifted off the floor by each haul.
+func _pulled(h: Dictionary) -> Vector3:
+	var at: Vector3 = h.at
+	var pull := float(h.get("pull", 0.0))
+	if pull <= 0.0:
+		return at
+	var d: Athlete = h.who
+	var sh := (d.model.anchor("shoulder_l") + d.model.anchor("shoulder_r")) * 0.5
+	var back := _flat(sh - at)
+	back = back.normalized() if back.length() > 0.01 else -raider.facing
+	var lift := PULL_LIFT * pull * progress * (1.0 if String(h.style) == "ankle" else 0.5)
+	return at + back * _pull_in(h) + Vector3.UP * lift
+
+
 ## Take every hand and foot target off (the raid is over or reset).
 func clear() -> void:
 	for h in holds:
 		_open_hands(h.who, true)
 		_priority(h.who, 0)
+		(h.who as Athlete).haul = 0.0
 	holds.clear()
 	claims.clear()
 	_end()
@@ -363,6 +448,7 @@ func hand_goals(d: Athlete) -> Array:
 
 func _end() -> void:
 	state = "done"
+	raider.tug = 0.0
 	for s in ["l", "r"]:
 		_pin(s, Vector3.ZERO, 0.0)
 	_priority(raider, 0)

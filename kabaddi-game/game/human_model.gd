@@ -26,6 +26,11 @@ var ref_sig := 0            # an official's hand signal, see SIGNALS
 var ref_amt := 0.0          # ... how far into it, 0..1
 var cele := 0               # how: 0 arms up, 1 fist pump, 2 clap, 3 high five, 4 point to the crowd, 5 chest thump
 var hold_arms := 0.0        # grabbing the raider, 0..1
+# A hold being worked (Athlete.balance, tug, haul; see _apply_struggle).
+var balance := 0.0          # a held raider's balance going, 0..1
+var tug := 0.0              # ... how hard he is pulled back now, 0..1
+var tug_side := 0.0         # ... by which leg: -1 left, 1 right (0: round the middle)
+var haul := 0.0             # a holder hauling now, 0..1
 # Emotions, 0..1 each.
 var roar := 0.0             # arms flung wide, chest out, head back
 var slump := 0.0            # hands on head, dejected
@@ -462,6 +467,7 @@ func _process(delta: float) -> void:
 	air = jump * 0.32 * height / 1.78   # a hand-made lion jump leaves the floor by as much as it lifts the hips
 	_apply_moves(delta)
 	_apply_clip(delta)
+	_apply_struggle()
 	_settle(delta)
 	if rig:
 		rig.drive(self)
@@ -687,6 +693,49 @@ func _animate(delta: float) -> void:
 	el_r.rotation = Vector3(rel, 0, 0)
 
 
+## A hold being worked, laid over whatever the hand-made pose and the clips made (so a hold is never two
+## frozen poses). The held raider topples a little more as his balance goes: his trunk goes over away from
+## the pull, his hips sink, his arms go out for balance and flail more the worse it gets, and every haul jerks
+## him back and twists him toward the leg it pulls. A holder hauls: lying on the floor (an ankle hold) his
+## chest comes up off the mat and his knees draw up to drive back; higher up he sits back into it.
+func _apply_struggle() -> void:
+	var b := balance
+	if b > 0.001 or tug > 0.001:
+		# Held by a leg he goes right over it; held round the middle, less.
+		var leg := lerpf(0.5, 1.0, absf(tug_side))
+		var over := (0.08 * minf(1.0, b * 6.0) + 0.55 * b * b + 0.3 * tug * (0.4 + 0.6 * b)) * leg
+		_turn(pelvis, Vector3.RIGHT, -0.12 * b - 0.08 * tug)
+		_turn(pelvis, Vector3.UP, -tug_side * (0.1 * b + 0.14 * tug))
+		_turn(spine, Vector3.RIGHT, -over * 0.6)
+		_turn(chest, Vector3.RIGHT, -over * 0.4)
+		_turn(head, Vector3.RIGHT, over * 0.6)   # his eyes stay on the line
+		pelvis.position.y -= (0.1 * b + 0.035 * tug) * height / 1.78
+		var f := clampf(b * 2.5 + tug * 0.5, 0.0, 1.0) * 0.85
+		if f > 0.0:
+			var wl := sin(_t * 6.5 + _life)
+			var wr := sin(_t * 5.6 + _life * 1.7)
+			sh_l.quaternion = sh_l.quaternion.slerp(Quaternion.from_euler(Vector3(1.2 + 0.45 * wl, 0, -0.95 - 0.35 * wr)), f)
+			sh_r.quaternion = sh_r.quaternion.slerp(Quaternion.from_euler(Vector3(1.2 + 0.45 * wr, 0, 0.95 + 0.35 * wl)), f)
+			el_l.quaternion = el_l.quaternion.slerp(Quaternion(Vector3.RIGHT, 0.5 + 0.25 * wr), f)
+			el_r.quaternion = el_r.quaternion.slerp(Quaternion(Vector3.RIGHT, 0.5 + 0.25 * wl), f)
+	if haul > 0.001:
+		var low := clampf((dive - 0.75) / 0.25, 0.0, 1.0)   # lying on the floor (an ankle hold)
+		_turn(spine, Vector3.RIGHT, haul * lerpf(0.22, 0.4, low))
+		_turn(chest, Vector3.RIGHT, haul * 0.15)
+		_turn(head, Vector3.RIGHT, haul * 0.2 * low)
+		_turn(hip_l, Vector3.RIGHT, haul * lerpf(0.25, 0.75, low))
+		_turn(hip_r, Vector3.RIGHT, haul * lerpf(0.15, 0.5, low))
+		_turn(kn_l, Vector3.RIGHT, -haul * lerpf(0.35, 1.15, low))
+		_turn(kn_r, Vector3.RIGHT, -haul * lerpf(0.25, 0.8, low))
+		pelvis.position.y -= haul * 0.05 * (1.0 - low) * height / 1.78
+
+
+## Turn a joint by angle a about its parent's axis, on top of its pose.
+func _turn(n: Node3D, axis: Vector3, a: float) -> void:
+	if absf(a) > 0.00001:
+		n.quaternion = (Quaternion(axis, a) * n.quaternion).normalized()
+
+
 ## Blend captured motion over the hand-made pose: the state's clip, and the one before it fading out.
 func _apply_clip(delta: float) -> void:
 	# Looping stance clips give way to the run cycle when the player is moving fast.
@@ -750,6 +799,25 @@ func play_state(state: String, length := 0.0, variant := "") -> void:
 			best = c
 			best_score = score
 	play_clip(best, how == "loop", length if how == "fit" else 0.0)
+	if how == "once" and best.version >= 2:
+		# A fall goes on from the frame nearest the pose he is in: a raider already toppling over a held leg
+		# carries on from there, rather than from the clip's upright start.
+		var at := 0.0
+		var at_score := INF
+		var tt := 0.0
+		var h0 := float(best.sample_pose(0.0, false).h)
+		while tt <= best.length * 0.5:
+			var f := best.sample_pose(tt, false)
+			if float(f.h) < h0 * 0.86:
+				break   # only from the part before he drops: the drop itself always plays in full
+			var sc := pelvis.quaternion.angle_to(f.pelvis) + absf(pelvis.position.y / (0.98 * height / 1.78) - float(f.h)) * 2.0
+			if f.has("spine"):
+				sc += spine.quaternion.angle_to(f.spine) * 0.7
+			if sc < at_score - 0.02:
+				at = tt
+				at_score = sc
+			tt += 1.0 / 30.0
+		clip_time = at
 
 
 ## Captured running: whenever he travels, the running clip nearest his direction and speed carries the

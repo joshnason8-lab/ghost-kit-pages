@@ -152,6 +152,10 @@ func _run(sc: String) -> Dictionary:
 	var shown_n: int = m.hud.shown.size()
 	var ev0: int = m.event_log.size()
 	var placed := true
+	# Motion samples (see _motion): [t, raider state, torso lean (deg), waist height, held foot, free foot,
+	# raider body motion, first holder's body motion].
+	var mo := []
+	var pts_last := {}
 	while t < 12.0:
 		var dt := get_process_delta_time()
 		dt = dt if dt > 0.0005 else 1.0 / 30.0
@@ -228,6 +232,7 @@ func _run(sc: String) -> Dictionary:
 					out.min_holder_gap = minf(out.min_holder_gap, Vector2(w1.x - w3.x, w1.z - w3.z).length())
 			if _log:
 				print("%5.2f %s %s grip %.3f  %s r %s" % [t, sc, a.style, e, a.state, r.state])
+		mo.append(_sample(m, r, d, pts_last, t, dt))
 		if m.phase != "raid" and ended_t < 0.0:
 			ended_t = t
 			out.t_end = snappedf(t, 0.01)
@@ -268,6 +273,7 @@ func _run(sc: String) -> Dictionary:
 	for k in ["min_overlap", "min_holder_gap"]:
 		out[k] = -1.0 if out[k] == INF else snappedf(out[k], 0.01)
 	out.max_holder_speed = snappedf(out.max_holder_speed, 0.1)
+	_motion(out, mo)
 	# What each scenario must do: holds given once each, on different parts of him; one takedown, and only
 	# for a tackle; nothing held after a miss or after the takedown.
 	var holds: int = out.events.count("hold")
@@ -313,6 +319,112 @@ func _run(sc: String) -> Dictionary:
 	m.queue_free()
 	await get_tree().process_frame
 	return out
+
+
+## One frame's motion sample. Body motion: how fast the hands, shoulders, waist and feet move against the
+## player's own root (m/s, averaged over the points): a held pose with nothing moving reads near 0.
+func _sample(m: Node, r: Athlete, d: Athlete, pts_last: Dictionary, t: float, dt: float) -> Array:
+	var sh: Vector3 = (r.model.anchor("shoulder_l") + r.model.anchor("shoulder_r")) * 0.5
+	var w: Vector3 = r.model.anchor("waist")
+	var up := sh - w
+	var lean := rad_to_deg(up.angle_to(Vector3.UP)) if up.length() > 0.01 else 0.0
+	var held_side := ""
+	if m.grapple:
+		for h in m.grapple.holds:
+			if h.who == d and String(h.slot).begins_with("leg_"):
+				held_side = String(h.slot).substr(4)
+	var held_foot := Vector3.INF
+	var free_foot := Vector3.INF
+	if held_side != "":
+		held_foot = r.model.anchor("ankle_" + held_side)
+		free_foot = r.model.anchor("ankle_" + ("r" if held_side == "l" else "l"))
+	return [t, r.state, lean, w.y, held_foot, free_foot, _body_speed(r, pts_last, dt), _body_speed(d, pts_last, dt),
+		d.state]
+
+
+func _body_speed(a: Athlete, pts_last: Dictionary, dt: float) -> float:
+	var pts := []
+	for part in ["hand_l", "hand_r", "shoulder_l", "shoulder_r", "waist", "foot_l", "foot_r"]:
+		pts.append(a.model.anchor(part) - a.position)
+	var last: Array = pts_last.get(a, [])
+	pts_last[a] = pts
+	if last.size() != pts.size():
+		return 0.0
+	var sum := 0.0
+	for i in pts.size():
+		sum += (pts[i] as Vector3).distance_to(last[i]) / maxf(dt, 0.001)
+	return sum / pts.size()
+
+
+## The hold and fall in numbers, from the motion samples:
+##   hold_time        s from the first hold to the takedown (or the end of the hold);
+##   raider_motion, holder_motion   body motion while held (m/s, median): near 0 is a frozen pose;
+##   lean_while_held  the raider's torso lean from upright (deg) early in the hold, halfway and at the end:
+##                    rising means he is losing his balance;
+##   held_foot_moved  how far the held foot went over the hold (m, along the floor);
+##   free_foot_slide  the free foot's speed along the floor while it is down (m/s, 90th percentile);
+##   fall_to_floor    s from the takedown to his waist below 0.35 m;
+##   fall_lean_rate, fall_drop_rate   the fastest the torso tips (deg/s) and the waist drops (m/s) from 0.3 s
+##                    before the takedown to 1.2 s after: how sudden the fall is.
+func _motion(out: Dictionary, mo: Array) -> void:
+	var held := mo.filter(func(x): return String(x[1]) == "held")
+	var down_i := -1
+	for i in mo.size():
+		if String(mo[i][1]) == "fallen":
+			down_i = i
+			break
+	if held.is_empty():
+		return
+	var t0: float = held[0][0]
+	var t1: float = mo[down_i][0] if down_i >= 0 else float(held[-1][0])
+	out.hold_time = snappedf(t1 - t0, 0.01)
+	var rm := []
+	var hm := []
+	for x in held:
+		rm.append(x[6])
+		if String(x[8]) == "holding":
+			hm.append(x[7])
+	out.raider_motion = snappedf(_pct(rm, 50), 0.01)
+	out.holder_motion = snappedf(_pct(hm, 50), 0.01)
+	var early: Array = held[mini(9, held.size() - 1)]
+	var mid: Array = held[held.size() / 2]
+	out.lean_while_held = [snappedf(float(early[2]), 0.1), snappedf(float(mid[2]), 0.1), snappedf(float(held[-1][2]), 0.1)]
+	var feet := held.filter(func(x): return x[4] != Vector3.INF)
+	if feet.size() > 1:
+		var a: Vector3 = feet[0][4]
+		var b: Vector3 = feet[-1][4]
+		out.held_foot_moved = snappedf(Vector2(b.x - a.x, b.z - a.z).length(), 0.01)
+		var slide := []
+		var floor_y := INF
+		for x in feet:
+			floor_y = minf(floor_y, (x[5] as Vector3).y)
+		for i in range(1, feet.size()):
+			var p: Vector3 = feet[i][5]
+			var q: Vector3 = feet[i - 1][5]
+			var dt: float = float(feet[i][0]) - float(feet[i - 1][0])
+			if p.y < floor_y + 0.03 and q.y < floor_y + 0.03 and dt > 0.0:
+				slide.append(Vector2(p.x - q.x, p.z - q.z).length() / dt)
+		out.free_foot_slide = snappedf(_pct(slide, 90), 0.01)
+	if down_i < 0:
+		return
+	var td: float = mo[down_i][0]
+	for i in range(down_i, mo.size()):
+		if float(mo[i][3]) < 0.35:
+			out.fall_to_floor = snappedf(float(mo[i][0]) - td, 0.01)
+			break
+	var lr := 0.0
+	var dr := 0.0
+	for i in range(1, mo.size()):
+		var tt: float = mo[i][0]
+		if tt < td - 0.3 or tt > td + 1.2:
+			continue
+		var dt: float = tt - float(mo[i - 1][0])
+		if dt <= 0.0:
+			continue
+		lr = maxf(lr, absf(float(mo[i][2]) - float(mo[i - 1][2])) / dt)
+		dr = maxf(dr, (float(mo[i - 1][3]) - float(mo[i][3])) / dt)
+	out.fall_lean_rate = snappedf(lr, 1.0)
+	out.fall_drop_rate = snappedf(dr, 0.01)
 
 
 ## How far, on average, a holder's two hands are from what he holds: the lower leg (ankle to mid shin) for an
@@ -361,7 +473,8 @@ func _print(sc: String, r: Dictionary) -> void:
 	print("== %s  %s" % [sc, "as expected" if r.ok else "NOT AS EXPECTED"])
 	for k in ["attached", "attach_t", "contact_gap", "first_grip", "hold_frames", "grip_median", "grip_p90", "grip_max",
 			"jumps", "max_holder_speed", "min_overlap", "min_holder_gap", "slots", "end", "t_end", "in_order", "scored_once",
-			"score_gain", "raid_pts"]:
+			"score_gain", "raid_pts", "hold_time", "raider_motion", "holder_motion", "lean_while_held", "held_foot_moved",
+			"free_foot_slide", "fall_to_floor", "fall_lean_rate", "fall_drop_rate"]:
 		print("  %-20s %s" % [k, str(r.get(k, "-"))])
 	print("  raider   %s" % [str(r.states_r)])
 	print("  defender %s" % [str(r.states_d)])
