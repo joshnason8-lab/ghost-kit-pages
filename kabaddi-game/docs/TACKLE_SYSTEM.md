@@ -380,6 +380,63 @@ Still open: a block's hands are the loosest (about 0.25 m at the 90th percentile
 scenario the takedown now waits for the first hold to be established, so the team-mate running in gets hold
 of him first; the scenario still checks that no hold is made after the takedown.
 
+### 3. Falls and getting up
+
+**Seen**: the fall and the recovery were abrupt; players stood or ran while still finishing a fall.
+
+**Cause** (`Match._tick_post`, `Match._end_raid`):
+- A tackled raider was told to get up 1.2 s after the takedown, however long his fall took. The falls take
+  0.53-0.87 s to reach the floor, so he lay there about half a second.
+- His get-up clip (1.4 s long) was squeezed into 0.9 s.
+- He walked off the moment it ended.
+- A holder on his feet (waist, block) went from holding to his cheer in the same frame (`recover` with no
+  length), standing straight up while the raider fell.
+- The thud played at the takedown, not when the body hit the floor.
+- Holders got up where they had fallen, on top of the raider, and stood inside him.
+
+**Fix**:
+- A fall clip knows when it reaches the floor (`MocapClip.landing`). The body knows how long it has been
+  down (`HumanModel.down_for`).
+- The raider stays down `LIE_TIME` (0.9 s) from then, gets up over the clip's own length
+  (`GETUP_RAIDER`, 1.4 s), and stands a moment (0.5 s) before he walks off (`Match._after_getup`).
+- The thud plays as he hits the floor. The body gives with the impact for 0.3 s (`_apply_impact`).
+- A holder on his feet goes down with the raider as he takes him down (`Athlete.bear`, set by the
+  grapple), comes up out of the bend, then cheers. Holders off the floor get up over 1.2 s
+  (`GETUP_HOLDER`).
+- Anyone getting up next to the man on the floor steps off him.
+- A fall starts from the frame nearest the pose he is in (fix 1), but always with at least half a second to
+  go before it lands.
+
+| Tackled raider, `catch` / `flurry` | Before | After |
+|---|---|---|
+| Takedown to his waist on the floor | 0.70 / 0.70 s | 0.60 / 0.60 s |
+| On the floor before getting up | 0.50 / 0.50 s | 1.07 / 1.06 s |
+| Getting up | 0.94 / 0.93 s | 1.40 / 1.40 s |
+| On his feet before walking off | 0 / 0 s | 0.53 / 0.54 s |
+| Fastest he moves along the floor while down or getting up | 0.76 / 0.76 m/s | 0.00 / 0.02 m/s |
+
+| After the holds let go, while he is down: nearest a defender on his feet stands to him | Before | After |
+|---|---|---|
+| `thigh` | 0.14 m | 0.64 m |
+| `chain` | 0.36 m | 0.53 m |
+| `flurry` | 0.25 m | 0.33 m |
+| `waist` | 0.37 m | 0.37 m |
+
+The waist-hold fall reaches the floor in 0.43 s (0.53 s before), because it now starts from a toppling
+pose. The waist holder's grip while the raider falls, 0.14 m at the 90th percentile, is looser than before
+(0.06 m). He bends down with the raider rather than holding his body still.
+
+Visual check on the `flurry` recording, before against after:
+- the raider goes down onto his hands from the toppling pose;
+- the holder goes down on him, gets up first and steps off;
+- the raider lies still, then rises through his knees over about a second and a half, and only then walks.
+
+### 6. The HUD's messages over the play
+
+The play-by-play messages ("Ankle hold!", "Chain tackle!", "Super tackle!") were drawn in the middle of the
+screen (`Hud.events_box`), which is where the play is: on the recordings they covered the very holds they
+named. They now sit under the raid strip at the top, a little smaller, two at most at a time.
+
 ## Measuring
 
 ```sh

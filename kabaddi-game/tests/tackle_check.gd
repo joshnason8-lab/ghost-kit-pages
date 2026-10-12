@@ -248,12 +248,20 @@ func _run(sc: String) -> Dictionary:
 			if _log:
 				print("%5.2f %s %s grip %.3f  %s r %s" % [t, sc, a.style, e, a.state, r.state])
 		mo.append(_sample(m, r, d, pts_last, t, dt, holders))
+		# After the takedown, once every hold has let go and while he is still down: the nearest a defender on his
+		# feet stands to him (waist to waist, along the floor). Under about 0.35 m is one body inside the other.
+		if m.phase == "post" and r.state in ["fallen", "recover"] and not defs.any(func(x): return x.state == "holding"):
+			var rw: Vector3 = r.model.anchor("waist")
+			for a in defs:
+				var aw: Vector3 = a.model.anchor("waist")
+				if aw.y > 0.6:
+					out.stood_by_him = minf(float(out.get("stood_by_him", INF)), Vector2(aw.x - rw.x, aw.z - rw.z).length())
 		if m.phase != "raid" and ended_t < 0.0:
 			ended_t = t
 			out.t_end = snappedf(t, 0.01)
 			if not m.raid_log.is_empty():
 				out.end = String(m.raid_log[-1].kind)
-		if ended_t >= 0.0 and t > ended_t + 3.0:
+		if ended_t >= 0.0 and t > ended_t + 4.5:
 			break
 		if ended_t < 0.0 and sc in ["miss", "whiff"] and t > 9.0:
 			break
@@ -289,6 +297,8 @@ func _run(sc: String) -> Dictionary:
 		out[k] = -1.0 if out[k] == INF else snappedf(out[k], 0.01)
 	out.max_holder_speed = snappedf(out.max_holder_speed, 0.1)
 	_motion(out, mo)
+	if out.has("stood_by_him"):
+		out.stood_by_him = snappedf(float(out.stood_by_him), 0.01)
 	# Each holder's own grip: how long his hands took to close on his part (under 0.1 m) and how close they
 	# kept after that (90th percentile); and whether his hold had time to be one before the takedown.
 	out.grip_each = []
@@ -308,6 +318,7 @@ func _run(sc: String) -> Dictionary:
 			break
 	if down_t >= 0.0 and join_t >= 0.0:
 		out.last_hold_to_down = snappedf(down_t - join_t, 0.01)
+	_getup(out, mo)
 	# What each scenario must do: holds given once each, on different parts of him; one takedown, and only
 	# for a tackle; nothing held after a miss or after the takedown.
 	var holds: int = out.events.count("hold")
@@ -378,8 +389,13 @@ func _sample(m: Node, r: Athlete, d: Athlete, pts_last: Dictionary, t: float, dt
 		var sp := _body_speed(a, pts_last, dt)
 		if a != d and holders.has(a) and a.state == "holding":
 			helpers.append(sp)
+	var step := 0.0
+	if pts_last.has("raider_at"):
+		var p: Vector3 = pts_last["raider_at"]
+		step = Vector2(r.position.x - p.x, r.position.z - p.z).length() / maxf(dt, 0.001)
+	pts_last["raider_at"] = r.position
 	return [t, r.state, lean, w.y, held_foot, free_foot, _body_speed(r, pts_last, dt), _body_speed(d, pts_last, dt, true),
-		d.state, helpers]
+		d.state, helpers, step]
 
 
 func _body_speed(a: Athlete, pts_last: Dictionary, dt: float, again := false) -> float:
@@ -474,6 +490,46 @@ func _motion(out: Dictionary, mo: Array) -> void:
 	out.fall_drop_rate = snappedf(dr, 0.01)
 
 
+## A tackled raider from the floor to walking off:
+##   on_floor          s from his waist reaching the floor to starting to get up;
+##   getting_up        s getting up;
+##   up_to_walk        s on his feet before he walks off;
+##   moved_while_down  his fastest along the floor (m/s) from just after the takedown to the end of getting up: a body
+##                     still falling or getting up should not be travelling.
+func _getup(out: Dictionary, mo: Array) -> void:
+	var st: Array = out.states_r
+	var fallen := -1.0
+	var rec := -1.0
+	var after := -1.0
+	var walk := -1.0
+	for x in st:
+		var k := String(x[1])
+		if k == "fallen" and fallen < 0.0:
+			fallen = float(x[0])
+		elif k == "recover" and fallen >= 0.0 and rec < 0.0:
+			rec = float(x[0])
+		elif rec >= 0.0 and after < 0.0:
+			after = float(x[0])
+		if k == "walk" and rec >= 0.0 and walk < 0.0:
+			walk = float(x[0])
+	if fallen < 0.0 or rec < 0.0:
+		return
+	if out.has("fall_to_floor"):
+		out.on_floor = snappedf(rec - fallen - float(out.fall_to_floor), 0.01)
+	if after >= 0.0:
+		out.getting_up = snappedf(after - rec, 0.01)
+	if walk >= 0.0 and after >= 0.0:
+		out.up_to_walk = snappedf(walk - after, 0.01)
+	var fast := 0.0
+	var end := after if after >= 0.0 else INF
+	for i in range(1, mo.size()):
+		var tt: float = mo[i][0]
+		if tt < fallen + 0.1 or tt > end:
+			continue   # from the frame after the takedown (that one still carries the struggle's last step)
+		fast = maxf(fast, float(mo[i][10]))
+	out.moved_while_down = snappedf(fast, 0.01)
+
+
 ## How far, on average, a holder's two hands are from what he holds: the lower leg (ankle to mid shin) for an
 ## ankle hold, the thigh (mid thigh to above the knee) for a thigh hold, the raider's middle for the rest. The
 ## nearer leg counts.
@@ -522,7 +578,7 @@ func _print(sc: String, r: Dictionary) -> void:
 			"jumps", "max_holder_speed", "min_overlap", "min_holder_gap", "slots", "end", "t_end", "in_order", "scored_once",
 			"score_gain", "raid_pts", "hold_time", "raider_motion", "holder_motion", "helpers_motion", "lean_while_held",
 			"held_foot_moved", "free_foot_slide", "fall_to_floor", "fall_lean_rate", "fall_drop_rate", "grip_each",
-			"last_hold_to_down"]:
+			"last_hold_to_down", "on_floor", "getting_up", "up_to_walk", "moved_while_down", "stood_by_him"]:
 		print("  %-20s %s" % [k, str(r.get(k, "-"))])
 	print("  raider   %s" % [str(r.states_r)])
 	print("  defender %s" % [str(r.states_d)])

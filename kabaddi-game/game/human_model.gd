@@ -32,6 +32,9 @@ var tug := 0.0              # ... how hard he is pulled back now, 0..1
 var tug_side := 0.0         # ... by which leg: -1 left, 1 right (0: round the middle)
 var haul := 0.0             # a holder hauling now, 0..1
 var haul_drive := false     # ... driving into him (a block, chest to chest) rather than pulling back
+var down_for := -1.0        # s since a fall reached the floor (its clip's landing; -1: not down)
+var impact := -1.0          # s since hitting the floor, while the body gives with it (see _apply_impact; -1: not)
+const IMPACT_TIME := 0.3
 # Emotions, 0..1 each.
 var roar := 0.0             # arms flung wide, chest out, head back
 var slump := 0.0            # hands on head, dejected
@@ -468,7 +471,9 @@ func _process(delta: float) -> void:
 	air = jump * 0.32 * height / 1.78   # a hand-made lion jump leaves the floor by as much as it lifts the hips
 	_apply_moves(delta)
 	_apply_clip(delta)
+	_track_fall(delta)
 	_apply_struggle()
+	_apply_impact()
 	_settle(delta)
 	if rig:
 		rig.drive(self)
@@ -733,6 +738,31 @@ func _apply_struggle() -> void:
 		pelvis.position.y -= haul * 0.05 * (1.0 - low) * height / 1.78
 
 
+## When a fall reaches the floor: its clip's landing (MocapClip.landing), or a hand-made fall all the way down.
+func _track_fall(delta: float) -> void:
+	if impact >= 0.0:
+		impact = impact + delta if impact + delta < IMPACT_TIME else -1.0
+	if down_for >= 0.0:
+		down_for += delta
+		return
+	var lands := clip.landing() if clip else -1.0
+	if (lands >= 0.0 and clip_time >= lands) or (clip == null and fallen > 0.95):
+		down_for = 0.0
+		impact = 0.0
+
+
+## Hitting the floor: the body gives with it for a moment (arms buckling, trunk and head going on down a
+## little), then settles, rather than stopping dead on the floor.
+func _apply_impact() -> void:
+	if impact < 0.0:
+		return
+	var k := sin(PI * impact / IMPACT_TIME)   # in quickly and out again
+	_turn(spine, Vector3.RIGHT, -0.12 * k)
+	_turn(head, Vector3.RIGHT, -0.3 * k)
+	_turn(el_l, Vector3.RIGHT, 0.5 * k)
+	_turn(el_r, Vector3.RIGHT, 0.5 * k)
+
+
 ## Turn a joint by angle a about its parent's axis, on top of its pose.
 func _turn(n: Node3D, axis: Vector3, a: float) -> void:
 	if absf(a) > 0.00001:
@@ -809,10 +839,11 @@ func play_state(state: String, length := 0.0, variant := "") -> void:
 		var at_score := INF
 		var tt := 0.0
 		var h0 := float(best.sample_pose(0.0, false).h)
+		var lands := best.landing()
 		while tt <= best.length * 0.5:
 			var f := best.sample_pose(tt, false)
-			if float(f.h) < h0 * 0.86:
-				break   # only from the part before he drops: the drop itself always plays in full
+			if float(f.h) < h0 * 0.86 or (lands >= 0.0 and lands - tt < 0.5):
+				break   # only from the part before he drops, with half a second to go down: the drop plays in full
 			var sc := pelvis.quaternion.angle_to(f.pelvis) + absf(pelvis.position.y / (0.98 * height / 1.78) - float(f.h)) * 2.0
 			if f.has("spine"):
 				sc += spine.quaternion.angle_to(f.spine) * 0.7
@@ -1020,6 +1051,7 @@ func play_clip(c: MocapClip, loop: bool, fit := 0.0) -> void:
 		clip_weight = 0.0
 	clip = c
 	clip_loop = loop
+	down_for = -1.0
 	clip_rate = c.length / fit if (c and fit > 0.0) else 1.0
 	# Start loops at a random point so a whole team never moves in lockstep.
 	clip_time = randf() * c.length if (c and loop) else 0.0

@@ -44,6 +44,8 @@ var dir := Vector2.ZERO                # which way: x to his right, y forward
 var low := false                       # crouched all through (a defender's shuffle)
 var arms := "both"                     # "r": only the right arm is the clip's, the left keeps the game's pose
 
+var _landing := -2.0                   # see landing()
+
 static var _library := {}
 static var _scanned := false
 
@@ -119,6 +121,26 @@ static func load_file(path: String) -> MocapClip:
 		c.frames = parsed.frames
 	c.length = float(parsed.get("length", float(parsed.frames[-1].t)))
 	return c
+
+
+## When a fall reaches the floor (s): the first frame its hips are within 0.04 of their lowest. -1 for a clip
+## that does not come down (it starts on the floor, or never gets low).
+func landing() -> float:
+	if _landing > -2.0:
+		return _landing
+	_landing = -1.0
+	if version < 2 or heights.is_empty():
+		return _landing
+	var lo := INF
+	for h in heights:
+		lo = minf(lo, h)
+	if heights[0] - lo < 0.3:
+		return _landing
+	for i in heights.size():
+		if heights[i] <= lo + 0.04:
+			_landing = times[i]
+			break
+	return _landing
 
 
 ## Version 2: the pose at time t: {"h": hips' height against standing, "a": the body's lowest point off the

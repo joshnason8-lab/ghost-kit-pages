@@ -26,6 +26,7 @@ var balance := 0.0
 var tug := 0.0
 var tug_side := 0.0
 var haul := 0.0
+var bear := 0.0             # a holder going down with the raider he takes down, 0..1 (Grapple)
 var touched := false
 var hold_offset := Vector3.ZERO
 var dive_dir := Vector3.ZERO
@@ -140,6 +141,8 @@ func ground_pos() -> Vector3:
 func set_state(s: String, length := 0.0) -> void:
 	if s != "holding":
 		hold_style = ""
+		haul = 0.0
+		bear = 0.0
 	state = s
 	st_t = 0.0
 	st_len = length
@@ -356,6 +359,9 @@ func _pose(delta: float) -> void:
 				_:
 					want_dive = 0.55
 					want_hold = 1.0
+			# Taking him down from on his feet, he goes down with him, bending right over.
+			want_dive = maxf(want_dive, bear * 0.75)
+			want_crouch = maxf(want_crouch, bear)
 		"signal":
 			want_signal = 1.0
 		"celebrate":

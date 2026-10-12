@@ -359,6 +359,8 @@ func update(dt: float) -> void:
 		else:
 			h.pull = maxf(0.0, float(h.pull) - dt * 3.0)
 		d.haul = float(h.pull)
+		if state == "takedown" and not slot.begins_with("leg_"):
+			d.bear = clampf(t / TRIP_HOLD, 0.0, 1.0)
 		if slot.begins_with("leg_") and float(h.pull) >= side_pull:
 			side_pull = float(h.pull)
 			side = -1.0 if slot == "leg_l" else 1.0

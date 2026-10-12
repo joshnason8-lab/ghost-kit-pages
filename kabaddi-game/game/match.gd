@@ -59,6 +59,9 @@ const DIVE_LAUNCH := 4.2       # m/s: a dive leaves the crouch at once ...
 const DIVE_LAND := 1.5         # ... and has this much left as he lands (no long slide on the floor)
 const ARMS_OUT_AFTER := 0.15   # s a landed ankle dive can still grip, arms out
 const LUNGE := 0.45            # how much further an AI raider's touch starts, stepping in as it goes
+const LIE_TIME := 0.9          # s a tackled raider stays down once he hits the floor
+const GETUP_RAIDER := 1.4      # s he takes to get up (the get-up clips' own pace)
+const GETUP_HOLDER := 1.2      # s a holder off the floor takes to get up after a takedown
 
 var config := {}
 var arena: Arena
@@ -709,7 +712,7 @@ func _tick_bystanders(dt: float) -> void:
 ## Walk to his place in the sitting block and sit down; get up and shuffle along when the
 ## queue moves.
 func _to_bench(a: Athlete, dt: float) -> void:
-	if a.state in ["fallen", "recover", "roar", "slump", "argue", "shove", "celebrate"]:
+	if a.state in ["fallen", "recover", "roar", "slump", "argue", "shove", "celebrate"] or a.has_meta("walk_at"):
 		a.drive(Vector3.ZERO, dt)
 		return
 	var spot := bench_spot(a.team, teams[a.team].out_queue.find(a))
@@ -2199,12 +2202,13 @@ func _end_raid(kind: String) -> void:
 			# until he is down (Grapple.takedown).
 			raider.fall_kind = grapple.fall_kind() if grapple and not grapple.holds.is_empty() else ""
 			raider.set_state("fallen")
+			raider.remove_meta("landed")
 			if grapple and not grapple.holds.is_empty():
 				grapple.takedown()
-				raid["post_extra"] = 0.9
+			# Time to go down, lie there a moment and get up at a person's pace (_tick_post).
+			raid["post_extra"] = 1.8
 			_event("takedown", {"raider": raider.pid(), "holders": holders_copy().map(func(h): return h.pid()),
 				"grapple": grapple.id if grapple else 0})
-			Sfx.play("thud", 2.0, 0.8)
 			Sfx.voice("oof", -4.0, raider.voice_pitch())
 		"out_of_bounds":
 			raider_out = true
@@ -2807,27 +2811,41 @@ func _tick_post(dt: float) -> void:
 	if grapple:
 		grapple.update(dt)
 	for a in athletes:
-		# Holders whose takedown is done let go and get up; the tackled raider gets up after.
+		# Holders whose takedown is done let go: down on the floor (a leg hold), they get up; on their feet,
+		# they come up out of the bend first. Then they cheer.
 		if a.state == "holding" and (grapple == null or not grapple.has(a)):
 			if a.hold_style in ["ankle", "thigh"]:
-				a.set_state("recover", 0.9)
+				a.set_state("recover", GETUP_HOLDER)
 			else:
-				a.set_state("recover", 0.0)   # on his feet already: straight to his cheer below
-		if a.state == "fallen" and phase_t > 1.2:
-			a.set_state("recover", 0.9)
-			a.set_meta("cheer", -4)   # just walks off
+				a.set_state("ready")
+				a.set_meta("cheer_at", phase_t + 0.45)
+		# The tackled raider: once he is down (the floor, not the takedown, is the thud), a moment there, then up
+		# at a person's pace (the get-up clip's own length), and a breath on his feet before he walks off.
+		if a.state == "fallen":
+			var down: float = a.model.down_for if a.model else -1.0
+			if down >= 0.0 and not a.has_meta("landed"):
+				a.set_meta("landed", true)
+				Sfx.play("thud", 2.0, 0.8)
+			if down >= LIE_TIME or phase_t > 3.0:
+				a.set_state("recover", GETUP_RAIDER)
+				a.set_meta("cheer", -4)
 		if a.state == "recover" and a.st_t >= a.st_len:
-			var how: int = a.get_meta("cheer", -3)
-			a.remove_meta("cheer")
-			match how:
-				-2:
-					a.set_state("roar")
-				-4:
-					a.set_state("walk")
-				-3:
-					a.set_state("idle")
-				_:
-					_celebrate(a, how)
+			_after_getup(a)
+		if a.has_meta("cheer_at") and phase_t >= float(a.get_meta("cheer_at")):
+			a.remove_meta("cheer_at")
+			_after_getup(a)
+		if a.has_meta("walk_at") and phase_t >= float(a.get_meta("walk_at")):
+			a.remove_meta("walk_at")
+			if a.state == "idle":
+				a.set_state("walk")
+		# Getting up next to the man on the floor (a holder who went down on him), he steps off him rather than
+		# standing up inside him.
+		if raider and a != raider and raider.state in ["fallen", "recover"] and (a.state in ["ready", "idle", "roar", "celebrate", "slump"] \
+				or (a.state == "recover" and a.st_t > a.st_len * 0.5)):
+			var off := Vector3(a.position.x - raider.position.x, 0, a.position.z - raider.position.z)
+			if off.length() < 0.7:
+				var away := off.normalized() if off.length() > 0.01 else -raider.facing
+				a.position += away * minf(0.7 - off.length(), 1.2 * dt)
 		if a.state == "shove" and a.shove_target != null and a.st_t < 0.35:
 			var push: Vector3 = a.shove_target.position - a.position
 			push.y = 0
@@ -2862,10 +2880,31 @@ func _tick_post(dt: float) -> void:
 		_next_raid()
 
 
+## Up off the floor (or out of a bend): what he does next, as _react decided (meta "cheer").
+func _after_getup(a: Athlete) -> void:
+	var how: int = a.get_meta("cheer", -3)
+	a.remove_meta("cheer")
+	match how:
+		-2:
+			a.set_state("roar")
+		-4:
+			a.set_state("idle")
+			a.set_meta("walk_at", phase_t + 0.5)   # a breath on his feet, then off he walks
+		-3:
+			a.set_state("idle")
+		_:
+			_celebrate(a, how)
+
+
 func _next_raid(after_timeout := false) -> void:
 	for a in athletes:
 		a.cele_partner = null
 		a.remove_meta("fived")
+		a.remove_meta("cheer_at")
+		if a.has_meta("walk_at"):
+			a.remove_meta("walk_at")
+			if a.state == "idle" and not a.on_mat:
+				a.set_state("walk")
 		if a.state in ["celebrate", "roar", "slump", "shove", "argue", "slap"]:
 			a.set_state("idle")
 	if not after_timeout:
