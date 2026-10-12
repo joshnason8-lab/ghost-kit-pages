@@ -663,14 +663,69 @@ the brace and the strain move them.
 
 - With other holds on him as well (`chain`, `crowd`), the raider is still carried along by the struggle
   rather than stepping. The ankle holder lies still and the leg holds him.
-- In those piles the other holders' hands come off as he falls. During the hold their grips are as before
-  (90th percentile within a few centimetres of V2); in the last 0.3 s of the fall they open up to 0.3 m. That
-  is the chain tackle's recovery, the next fix.
 - A raider who reaches far forward, or is pulled far back, can only be met by the hips sinking 0.3 m at most
   (`MAX_SINK`). Past that the held leg falls short of its hold, although no scenario has needed it yet.
 - A single ankle holder now stops a driving raider rather than being dragged to the line. That is what an
   ankle hold should do, but it changes how often raids end with the raider getting home held. The AI bench
   measures it (`docs/REALISM_REVIEW.md`).
+
+### The chain tackle's fall and getting up (2:59-3:03)
+
+**Seen:** the ground contact and the getting up in a chain tackle were too synchronised and mechanical. A
+standing team-mate who had helped got up the same way as one who had been underneath.
+
+**What was doing it:**
+- Every holder let go in the same frame, `TRIP_HOLD` (0.7 s) after the takedown
+  (`Grapple.update`). That was before the raider was even down.
+- `Match._tick_post` then gave every leg holder the same 1.2 s get-up from lying on the floor, the kneeling
+  thigh holder included. Every other holder was simply stood up ("ready").
+- So the ankle and thigh holders rose in step, landmark for landmark, and the rest popped upright.
+- On the way down, two things moved the holders:
+  - The grapple's body-follow moved them all the way to their place each frame, and overshot.
+  - After the raid, `Match._tick_post` also drove every player with his last velocity, holders included. Each
+    was moved twice a frame, by two systems.
+- The grapple's moves also fed back into the holder's pose: his running gait came from how fast he was moved.
+  So the body shook back and forth by up to 0.2 m a frame, and the hands came 0.2-0.4 m off what they held
+  in the last part of the fall.
+
+**What it is now:**
+- **Letting go.** Each holder lets go at his own moment, keyed to when the raider actually reaches the floor
+  (the fall clip's landing; `Grapple.takedown`, `LET_AFTER`):
+  - hands round a leg as it comes down;
+  - an ankle a moment later;
+  - arms round his middle once they have ridden him down.
+
+  Each holder is a little sooner or later than the next, and all have let go by `LET_GO_MAX`.
+- **Riding him down.** Every holder but the ankle holder goes down with him as he falls (`bear`), so the hold
+  stays a hold until it is let go.
+- **Getting up** depends on where each holder actually is when he lets go (`Match._get_up_from_hold`), at his
+  own pace:
+  - lying on the floor: the full get-up;
+  - on his knees or crouched over a leg: up off his knees (`rise`, `RISE_KNEES`);
+  - still on his feet, bent over the raider: straighten up (`rise`, `RISE_BENT`);
+  - lying under the raider's trunk: he stays down until the raider gets off him.
+- **Moving the holders' bodies:**
+  - The body-follow takes up only part of the way each frame (`FOLLOW_TIME`), and a shove out of the way is
+    spread over frames.
+  - Holders still in the grapple are moved by the grapple alone.
+  - A holder is not given a stride for being moved, and his own velocity is cleared when he lets go.
+  - A tackled raider's velocity is cleared as he goes down.
+- **The floor.** A body bent right over no longer flips between "standing" and "not standing" frame to frame
+  (`RiggedBody._standing`).
+
+| Chain tackle, `chain` (ankle, thigh, block) | V2 | Now |
+|---|---|---|
+| Let go after the takedown: ankle, thigh, block | 0.70, 0.70, 0.70 s | 0.90, 0.77, 0.97 s |
+| How each got up | from the floor, from the floor, stood straight up | from the floor, off his knees, off his knees after riding him down |
+| Up again: ankle, thigh, block | 1.90, 1.90, 0.73 s | 2.17, 1.57, 1.77 s |
+| Grip, 90th percentile, all through (the fall included): ankle, thigh, block | 0.069, 0.119, 0.195 m | 0.072, 0.080, 0.026 m |
+
+| Four holders, `crowd` | V2 | Now |
+|---|---|---|
+| Let go after the takedown | all at 0.70 s | 0.77-1.07 s |
+| Up again | 0.73-1.90 s, the two leg holders together | 1.57-2.17 s, each on his own |
+| Grip, 90th percentile, all through: ankle, thigh, waist, block | 0.112, 0.081, 0.103, 0.142 m | 0.079, 0.082, 0.010, 0.021 m |
+| The raider moving along the floor while down (fastest) | 0.77 m/s | 0.00 m/s |
 
 ## Measuring
 

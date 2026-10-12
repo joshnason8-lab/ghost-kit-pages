@@ -63,7 +63,9 @@ const LIE_TIME := 0.9          # s a tackled raider stays down once he hits the 
 const COUNTER_REACT := 0.18    # s a touched defender takes to grab back ...
 const COUNTER_STEP := 0.5      # ... with a step in toward him (m)
 const GETUP_RAIDER := 1.4      # s he takes to get up (the get-up clips' own pace)
-const GETUP_HOLDER := 1.2      # s a holder off the floor takes to get up after a takedown
+const GETUP_HOLDER := 1.2      # s a holder lying on the floor takes to get up after a takedown ...
+const RISE_KNEES := 0.75       # ... one down on his knees or crouched over a leg, to come up off them ...
+const RISE_BENT := 0.4         # ... and one still on his feet, bent over the raider, to straighten up
 
 var config := {}
 var arena: Arena
@@ -488,7 +490,7 @@ func _walk_to_positions(dt: float, with_raider: bool) -> void:
 			if not a.on_mat:
 				_to_bench(a, dt)
 				continue
-			if a.state in ["holding", "recover", "fallen"]:
+			if a.state in ["holding", "recover", "rise", "fallen"]:
 				a.drive(Vector3.ZERO, dt)   # getting up first
 				continue
 			if with_raider and a == raider:
@@ -737,7 +739,7 @@ func _tick_bystanders(dt: float) -> void:
 ## Walk to his place in the sitting block and sit down; get up and shuffle along when the
 ## queue moves.
 func _to_bench(a: Athlete, dt: float) -> void:
-	if a.state in ["fallen", "recover", "roar", "slump", "argue", "shove", "celebrate"] or a.has_meta("walk_at"):
+	if a.state in ["fallen", "recover", "rise", "roar", "slump", "argue", "shove", "celebrate"] or a.has_meta("walk_at"):
 		a.drive(Vector3.ZERO, dt)
 		return
 	var spot := bench_spot(a.team, teams[a.team].out_queue.find(a))
@@ -2279,6 +2281,7 @@ func _end_raid(kind: String) -> void:
 			var away := grapple.away_from_hold() if grapple and grapple.footwork() else Vector3.ZERO
 			if away != Vector3.ZERO:
 				raider.facing = away
+			raider.vel = Vector3.ZERO   # going down: the struggle's push is spent, not carried along the floor
 			raider.set_state("fallen")
 			raider.remove_meta("landed")
 			if grapple and not grapple.holds.is_empty():
@@ -2463,7 +2466,7 @@ func _ooh() -> void:
 ## pointing to the crowd. Big moments bring the whole team in.
 ## Lying on the floor holding the raider (or getting up from it): cheering waits until he is on his feet.
 func _on_floor(a: Athlete) -> bool:
-	return a.state in ["holding", "recover"]
+	return a.state in ["holding", "recover", "rise"]
 
 
 ## A gameplay event, as it really happened (the HUD's messages follow these): "tackle_attempt" (a dive),
@@ -2890,14 +2893,14 @@ func _tick_post(dt: float) -> void:
 	if grapple:
 		grapple.update(dt)
 	for a in athletes:
-		# Holders whose takedown is done let go: down on the floor (a leg hold), they get up; on their feet,
-		# they come up out of the bend first. Then they cheer.
+		# Holders let go once he is down, each at his own moment (Grapple.takedown), and get up from where they are;
+		# one under the man on the floor waits for him to get off first. Then they cheer.
 		if a.state == "holding" and (grapple == null or not grapple.has(a)):
-			if a.hold_style in ["ankle", "thigh"]:
-				a.set_state("recover", GETUP_HOLDER)
-			else:
-				a.set_state("ready")
-				a.set_meta("cheer_at", phase_t + 0.45)
+			if not a.has_meta("under"):
+				_get_up_from_hold(a)
+			elif raider == null or raider.state != "fallen":
+				a.remove_meta("under")
+				_get_up_from_hold(a)
 		# The tackled raider: once he is down (the floor, not the takedown, is the thud), a moment there, then up
 		# at a person's pace (the get-up clip's own length), and a breath on his feet before he walks off.
 		if a.state == "fallen":
@@ -2908,7 +2911,7 @@ func _tick_post(dt: float) -> void:
 			if down >= LIE_TIME or phase_t > 3.0:
 				a.set_state("recover", GETUP_RAIDER)
 				a.set_meta("cheer", -4)
-		if a.state == "recover" and a.st_t >= a.st_len:
+		if a.state in ["recover", "rise"] and a.st_t >= a.st_len:
 			_after_getup(a)
 		if a.has_meta("cheer_at") and phase_t >= float(a.get_meta("cheer_at")):
 			a.remove_meta("cheer_at")
@@ -2920,7 +2923,7 @@ func _tick_post(dt: float) -> void:
 		# Getting up next to the man on the floor (a holder who went down on him), he steps off him rather than
 		# standing up inside him.
 		if raider and a != raider and raider.state in ["fallen", "recover"] and (a.state in ["ready", "idle", "roar", "celebrate", "slump"] \
-				or (a.state == "recover" and a.st_t > a.st_len * 0.5)):
+				or (a.state in ["recover", "rise"] and a.st_t > a.st_len * 0.5)):
 			var off := Vector3(a.position.x - raider.position.x, 0, a.position.z - raider.position.z)
 			if off.length() < 0.7:
 				var away := off.normalized() if off.length() > 0.01 else -raider.facing
@@ -2951,12 +2954,37 @@ func _tick_post(dt: float) -> void:
 			a.drive(Vector3.ZERO, dt)
 		elif a.state in ["walk", "sit"] or not a.on_mat:
 			pass
+		elif a.state == "holding":
+			pass   # the grapple moves him (driving him as well would move him twice)
 		else:
 			a.drive(Vector3.ZERO, dt)
 	if phase_t > 1.0:
 		_walk_to_positions(dt, false)
 	if phase_t > 2.6 + float(raid.get("post_extra", 0.0)):
 		_next_raid()
+
+
+## A holder who has let go after a takedown gets up from where he is, at his own pace: lying on the floor (an ankle
+## hold, or ridden down flat), all the way up (the get-up clips); down on his knees or crouched over a leg, up off
+## his knees; still on his feet, bent over the raider, he straightens up. One lying under the man on the floor (his
+## middle within a body's width of the raider's trunk) stays down until the raider gets off him.
+func _get_up_from_hold(a: Athlete) -> void:
+	a.vel = Vector3.ZERO   # what the grapple last moved him by is not his own running
+	var low: float = a.model.anchor("waist").y if a.model else 1.0
+	var pace := 0.9 + 0.25 * float(absi(hash(a.pid())) % 100) / 100.0
+	if low < 0.42 and raider and raider.state == "fallen" and raider.model and a.model:
+		var rw: Vector3 = raider.model.anchor("waist")
+		var rs: Vector3 = (raider.model.anchor("shoulder_l") + raider.model.anchor("shoulder_r")) * 0.5
+		var aw: Vector3 = a.model.anchor("waist")
+		if Grapple._seg_dist(Vector3(aw.x, 0.0, aw.z), Vector3(rw.x, 0.0, rw.z), Vector3(rs.x, 0.0, rs.z)) < 0.3:
+			a.set_meta("under", true)
+			return
+	if low < 0.42:
+		a.set_state("recover", GETUP_HOLDER * pace)
+	elif low < 0.75:
+		a.set_state("rise", RISE_KNEES * pace)
+	else:
+		a.set_state("rise", RISE_BENT * pace)
 
 
 ## Up off the floor (or out of a bend): what he does next, as _react decided (meta "cheer").
@@ -2981,6 +3009,7 @@ func _next_raid(after_timeout := false) -> void:
 		a.remove_meta("fived")
 		a.remove_meta("cheer_at")
 		a.remove_meta("grab_at")
+		a.remove_meta("under")
 		if a.has_meta("walk_at"):
 			a.remove_meta("walk_at")
 			if a.state == "idle" and not a.on_mat:

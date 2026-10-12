@@ -34,13 +34,36 @@ a side-by-side video, and measured results.
 | Held ankle from its hold (worst) | 0.153 m | 0.000 m |
 | Free foot on the floor while not hopping | 49% | 99% |
 
+AI bench, four matches each (V2 and now): tackles 23 and 27 of about 120 raids; holds ending in a takedown 15
+and 20 of 40; raids where the raider got home still held 6 and 7; raid points 137 and 130. A lone ankle holder
+now stops a driving raider instead of being slid to the line, and that moves the game a little toward the
+defence.
+
 **Remaining limitations:**
 
 - With other holds on him as well, the raider is still carried along by the struggle rather than stepping.
-- In a pile, the other holders' hands come off in the last 0.3 s of the fall. During the hold their grips
-  are as before. Both belong to the chain tackle, which is next.
 - The hips sink at most 0.3 m for a held leg. A raider pulled further than that would show the held leg short
   of its hold (no scenario reaches it).
+
+### The chain tackle's fall and getting up (2:59-3:03)
+
+| | |
+|---|---|
+| Functions found responsible | `Grapple.update` let every holder go in the same frame, 0.7 s after the takedown, before the raider was down. `Match._tick_post` then gave every leg holder the same 1.2 s get-up from lying (a kneeling holder too) and stood the rest straight up, so they rose in step. On the way down, the grapple's body-follow overshot, `_tick_post` drove the holders a second time with their last velocity, and the grapple's moves fed the holder's running gait. The bodies shook by up to 0.2 m a frame and the hands came 0.2-0.4 m off. |
+| Fix | Each holder lets go at his own moment after the raider lands (`Grapple.takedown`): leg first, ankle a moment later, arms round the middle last. Each rides him down until he lets go. Each gets up from where he is at his own pace (`Match._get_up_from_hold`): from the floor, up off his knees, or straightening from a bend, and waiting if he is under the raider. Only the grapple moves a holder, and only part of the way each frame. |
+| Tests | `tackle_check`, all 15 scenarios (`chain`, `crowd`, `join`, `thigh` and `waist` most of all), with a new `recovery` measure: when each holder let go, how and when he was up. `test_runner` at a fixed 30 fps, as CI runs it. `locomotion_check` (the course and a 60 s match within their usual range). |
+| Recording | `chain` from above, V2 and now side by side |
+
+| `chain` | V2 | Now |
+|---|---|---|
+| Holders let go (s after the takedown) | 0.70, 0.70, 0.70 | 0.77-0.97 |
+| Holders up again (s after the takedown) | 1.90, 1.90 (in step), 0.73 | 1.57, 1.77, 2.17 |
+| How the kneeling thigh holder gets up | from lying on the floor | off his knees |
+| Grip all through the fall, 90th percentile (ankle, thigh, block) | 0.069, 0.119, 0.195 m | 0.072, 0.080, 0.026 m |
+
+With four holders (`crowd`) they let go together at 0.70 s in V2, and over 0.77-1.07 s now. Each is up on his
+own (1.57-2.17 s), not the two leg holders together. The raider no longer moves along the floor once he is down
+(fastest 0.77 m/s in V2, 0 now).
 
 ## First review (the 0.7.5 recording): five fixes, and where milestones A-E stand
 

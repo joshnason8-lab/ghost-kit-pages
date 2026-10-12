@@ -90,6 +90,7 @@ var _plant := {}             # side -> [world position of the held sole point, h
                              #          let go at the slip limit (stepping)]
 var _replant := {}           # side -> seconds before a foot let go at the slip limit may be held again
 var _plant_t := -1.0         # the motion's clock at the last frame, for the time step
+var _standing := true        # on his feet, as far as what touches the floor goes (_ground)
 # Holds (see Grapple): hands reaching for a point on another player's body, and a foot kept where a
 # defender holds it. hands_free is where this body's hands are before they reach (world, last frame).
 var hand_target := {}        # side -> {model: HumanModel or null, part, offset (world), point (world, when model
@@ -561,7 +562,13 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 		return hips
 	var target := float(h.air) / scale.y
 	var up: Vector3 = (g.get("chest", Basis()) as Basis) * (body.rest_dirs.chest as Vector3)
-	var standing := hips.y > 0.7 * float(body.leg_len) and up.y > 0.75
+	# Standing (only the legs can be the lowest point) or not, with a gap between the two so a body bent right over
+	# does not flip between them from one frame to the next (and jump up and down with it).
+	if _standing:
+		_standing = hips.y > 0.66 * float(body.leg_len) and up.y > 0.7
+	else:
+		_standing = hips.y > 0.74 * float(body.leg_len) and up.y > 0.8
+	var standing := _standing
 	var dt := clampf(float(h._t) - _plant_t, 0.0, 0.1) if _plant_t >= 0.0 else 0.0
 	_plant_t = float(h._t)
 	var held := _held_legs(dt)

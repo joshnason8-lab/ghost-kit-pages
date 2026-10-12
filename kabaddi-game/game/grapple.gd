@@ -39,7 +39,11 @@ const BODY_R := 0.12           # m: the raider's middle is this thick round its 
 const LEG_REACH := 0.55        # m from the hips (flat) to a held foot: further and he drags it
 const BODY_FOLLOW := 2.5       # m/s the holder's body may be moved, beyond the drag itself, to keep his reach
 const LET_GO := 0.15           # s for the hands to come off when a hold breaks
-const TRIP_HOLD := 0.7         # s the holders keep hold while a tackled raider goes down
+const TRIP_HOLD := 0.7         # s the holders keep hold while a tackled raider goes down (when his fall's landing is
+                               # not known); otherwise each lets go at his own moment after it (takedown, LET_AFTER)
+const LET_GO_MAX := 1.6        # s after the takedown by which every holder has let go
+const FOLLOW_TIME := 0.07      # s: a holder's body takes up this much of the way to his place each frame (no faster:
+                               # a body that jumps all the way there each frame overshoots and shakes)
 const ARMS_OUT := 0.3          # share of a dive after which the arms are out and can grip
 const CLOSE_IN := 0.2          # s for a helper's hands to close on his slot as he takes hold
 const MIN_GAP := 0.34          # m: no holder's middle (pelvis to lower back) comes closer to the raider's
@@ -71,6 +75,9 @@ const HOP_GAP := 0.3           # s on the free foot between hops (longer as his 
 const HOP_BACK := 0.03         # m: pulled further than the held leg reaches, he hops back to stay on his feet
 const DRAG_MAX := 0.12         # m one hop can drag a holder along the floor
 const TAKEDOWN_DRAG := 1.2     # m/s a falling raider's leg can pull the ankle holder after it
+# How long after the raider lands each hold lets go (takedown): hands round a leg as it reaches the floor, an ankle
+# a moment later, arms round his middle once they have ridden him down. Each holder a little sooner or later.
+const LET_AFTER := {"thigh": 0.0, "ankle": 0.12, "block": 0.2, "waist": 0.3}
 # Where each style's hands go: [right hand part, left hand part]. Waist and block hands go round the sides.
 const HANDS := {"ankle": ["ankle", "shin"], "thigh": ["thigh", "knee"], "waist": ["waist", "waist"], "block": ["waist", "waist"]}
 # A helper can take hold from this far (his middle to the part, flat), facing it.
@@ -107,6 +114,7 @@ var landed := -1.0             # s since he came down from a hop (-1: a while ag
 var jolt := 0.0                # a pull through the held leg he did not expect, 0..1 (fading)
 var raider_vel := Vector3.ZERO # how fast his body moves over the floor now (the hops)
 var turn := false              # he can turn now: in the air (turning on the spot would drag his planted foot)
+var land := TRIP_HOLD          # s from the takedown to his reaching the floor (takedown)
 var _yaw := INF                # which way his body faced last frame (radians), to swing his holders round with him
 
 
@@ -377,12 +385,22 @@ func release(d: Athlete) -> void:
 		_end()
 
 
-## The raider goes down: the holders keep hold, a held foot stays caught as he falls (a trip), then they let
-## go (see update).
+## The raider goes down: the holders keep hold and go down with him, a held foot stays caught as he falls (a
+## trip), and each lets go at his own moment once he has reached the floor (update): a hold round a leg first,
+## arms round his middle last, each holder a little sooner or later than the next, so they do not all come
+## off him at once.
 func takedown() -> void:
 	state = "takedown"
 	t = 0.0
 	claims.clear()
+	# When he will be on the floor: the fall clip's own landing, from where it starts.
+	land = TRIP_HOLD
+	var m := raider.model
+	if m and m.clip and m.clip.landing() >= 0.0:
+		land = maxf(0.3, (m.clip.landing() - m.clip_time) / maxf(m.clip_rate, 0.01))
+	for h in holds:
+		var own := 0.15 * float(absi(hash((h.who as Athlete).pid())) % 100) / 100.0
+		h.let_go = minf(LET_GO_MAX, land + float(LET_AFTER.get(String(h.style), 0.15)) + own)
 
 
 ## How the raider goes down: tripped if anyone has a leg, taken down otherwise.
@@ -485,8 +503,9 @@ func update(dt: float) -> void:
 		else:
 			h.pull = maxf(0.0, float(h.pull) - dt * 3.0)
 		d.haul = float(h.pull)
-		if state == "takedown" and not String(h.slot).begins_with("leg_"):
-			d.bear = clampf(t / TRIP_HOLD, 0.0, 1.0)
+		if state == "takedown" and String(h.style) != "ankle":
+			# Going down with him as he falls (a thigh holder only a little: he is down already).
+			d.bear = clampf(t / land, 0.0, 1.0) * (0.6 if String(h.style) == "thigh" else 1.0)
 		if String(h.slot).begins_with("leg_") and float(h.pull) >= side_pull:
 			side_pull = float(h.pull)
 			side = -1.0 if h.slot == "leg_l" else 1.0
@@ -529,7 +548,7 @@ func update(dt: float) -> void:
 		across = maxf(0.15, across - _pull_in(h))
 		var dir := _flat(goal - sh)
 		dir = dir.normalized() if dir.length() > 0.01 else d.facing
-		var step := _flat(goal - dir * across - sh)
+		var step := _flat(goal - dir * across - sh) * (1.0 - exp(-dt / FOLLOW_TIME))
 		var lim := (BODY_FOLLOW + raider.vel.length()) * dt
 		if step.length() > lim:
 			step = step.normalized() * lim
@@ -547,6 +566,9 @@ func update(dt: float) -> void:
 		var to := _flat(d.model.anchor("waist") + step - raider.model.anchor("waist"))
 		if to.length() < MIN_GAP:
 			step += (to.normalized() if to.length() > 0.01 else -right) * (MIN_GAP - to.length())
+		# Pushed out of the way no faster than a body is shoved (a falling raider coming down next to him): over a
+		# few frames, not in one.
+		step = step.limit_length((BODY_FOLLOW + raider.vel.length() + 1.0) * dt)
 		d.position += step
 		d.vel = step / maxf(dt, 0.0001)
 		d.hold_offset = d.position - raider.position
@@ -557,13 +579,25 @@ func update(dt: float) -> void:
 	raider.tug = tug()
 	raider.tug_side = side
 	_footwork_pose()
-	if state == "takedown" and t >= TRIP_HOLD:
+	if state == "takedown":
 		for h in holds.duplicate():
-			_open_hands(h.who)
-			_priority(h.who, 0)
-			(h.who as Athlete).strain = 0.0
-		holds.clear()
-		_end()
+			if t >= float(h.get("let_go", TRIP_HOLD)):
+				_let_go(h)
+		if holds.is_empty():
+			_end()
+
+
+## A holder lets go once the raider is down (takedown): his hands open where they held, a held foot comes free.
+## What he does next (getting up from where he is) is the match's (Match._get_up_from_hold).
+func _let_go(h: Dictionary) -> void:
+	var d: Athlete = h.who
+	holds.erase(h)
+	_open_hands(d)
+	_priority(d, 0)
+	d.strain = 0.0
+	d.haul = 0.0
+	if String(h.slot).begins_with("leg_"):
+		_unpin(String(h.slot).substr(4))
 
 
 ## An ankle hold, each frame (after the raider's footwork). The holder: what is left of his dive's slide
@@ -790,7 +824,7 @@ func _targets(h: Dictionary) -> void:
 	if slot.begins_with("leg_"):
 		# An ankle holder keeps the foot as the raider falls (a trip) and lets go once he is down (_end); a
 		# held foot higher up comes free as he falls past it.
-		var w := 1.0 if state == "holding" or String(h.style) == "ankle" else clampf(1.0 - t / TRIP_HOLD, 0.0, 1.0)
+		var w := 1.0 if state == "holding" or String(h.style) == "ankle" else clampf(1.0 - t / float(h.get("let_go", TRIP_HOLD)), 0.0, 1.0)
 		_pin(slot.substr(4), h.at if String(h.style) == "ankle" else _pulled(h), w)
 	var parts: Array = HANDS[h.style]
 	var side := d.facing.cross(Vector3.UP).normalized()

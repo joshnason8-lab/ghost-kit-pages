@@ -11,7 +11,8 @@ var vel := Vector3.ZERO
 var facing := Vector3(0, 0, -1)
 var lock_facing := false
 
-# state: idle, ready, raid, touch, kick, backkick, dodge, dubki, jump, telegraph, dive, recover, held, holding, fallen, walk, sit, celebrate
+# state: idle, ready, raid, touch, kick, backkick, dodge, dubki, jump, telegraph, dive, recover, rise, held, holding, fallen, walk, sit,
+# celebrate
 var state := "idle"
 var st_t := 0.0
 var st_len := 0.0
@@ -183,7 +184,7 @@ func set_state(s: String, length := 0.0) -> void:
 
 
 func busy() -> bool:
-	return state in ["touch", "kick", "backkick", "dubki", "jump", "shoved", "telegraph", "dive", "recover", "fallen", "held", "holding"]
+	return state in ["touch", "kick", "backkick", "dubki", "jump", "shoved", "telegraph", "dive", "recover", "rise", "fallen", "held", "holding"]
 
 
 ## 0..1 skill at a raiding move.
@@ -279,7 +280,9 @@ func body_facing() -> Vector3:
 func _pose(delta: float) -> void:
 	var m := model
 	var k := clampf(delta * 10.0, 0.0, 1.0)
-	m.speed = move_vel.length()
+	# A holder is moved by the grapple to keep his hold, not running: no stride for that (it would feed back into
+	# where the grapple puts him next frame).
+	m.speed = 0.0 if state == "holding" else move_vel.length()
 	var want_crouch := 0.0
 	var want_lean := 0.0
 	var want_reach := 0.0
@@ -349,6 +352,13 @@ func _pose(delta: float) -> void:
 			want_lean = 0.25
 		"recover":
 			want_fallen = 1.0 - clampf((p - 0.55) * 2.2, 0.0, 1.0)
+		"rise":
+			# Up off his knees, or out of the bend he went down with the raider in: the crouch and the reach for
+			# the hold come out of him as he comes up (an ease, slow at both ends).
+			var q := 1.0 - p * p * (3.0 - 2.0 * p)
+			want_crouch = q
+			want_dive = 0.55 * q * q
+			want_hold = 0.4 * q
 		"fallen":
 			want_fallen = 1.0
 		"held":

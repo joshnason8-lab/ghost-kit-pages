@@ -178,6 +178,8 @@ func _run(sc: String) -> Dictionary:
 	var labels := {}       # holder -> "style slot"
 	var join_t := -1.0     # when the last holder took hold
 	var n_holders := 0
+	var rec := {}          # holder -> [let go (s after the takedown), how he got up, up (s after the takedown)]
+	var down_at := -1.0
 	while t < 12.0:
 		var dt := get_process_delta_time()
 		dt = dt if dt > 0.0005 else 1.0 / 30.0
@@ -277,6 +279,20 @@ func _run(sc: String) -> Dictionary:
 			if _log:
 				print("%5.2f %s %s grip %.3f  %s r %s" % [t, sc, a.style, e, a.state, r.state])
 		mo.append(_sample(m, r, d, pts_last, t, dt, holders))
+		# After the takedown: each holder's letting go and getting up.
+		if r.state == "fallen" and down_at < 0.0:
+			down_at = t
+			for a in defs:
+				if a.state == "holding":
+					rec[a] = [-1.0, "", -1.0]
+		if down_at >= 0.0:
+			for a in rec:
+				var x: Array = rec[a]
+				if float(x[0]) < 0.0 and a.state != "holding":
+					x[0] = t - down_at
+					x[1] = a.state
+				elif float(x[0]) >= 0.0 and float(x[2]) < 0.0 and a.state not in ["holding", "recover", "rise"]:
+					x[2] = t - down_at
 		# After the takedown, once every hold has let go and while he is still down: the nearest a defender on his
 		# feet stands to him (waist to waist, along the floor). Under about 0.35 m is one body inside the other.
 		if m.phase == "post" and r.state in ["fallen", "recover"] and not defs.any(func(x): return x.state == "holding"):
@@ -350,6 +366,20 @@ func _run(sc: String) -> Dictionary:
 	if down_t >= 0.0 and join_t >= 0.0:
 		out.last_hold_to_down = snappedf(down_t - join_t, 0.01)
 	_getup(out, mo)
+	# The holders after the takedown: when each let go and how and when he was up, and how far apart they were.
+	if not rec.is_empty():
+		out.recovery = []
+		var lets := []
+		var ups := []
+		for a in rec:
+			var x: Array = rec[a]
+			out.recovery.append([String(labels.get(a, a.style)), snappedf(float(x[0]), 0.01), String(x[1]), snappedf(float(x[2]), 0.01)])
+			if float(x[0]) >= 0.0:
+				lets.append(float(x[0]))
+			if float(x[2]) >= 0.0:
+				ups.append(float(x[2]))
+		if lets.size() > 1:
+			out.recovery_spread = [snappedf(_pct(lets, 100) - _pct(lets, 0), 0.01), snappedf(_pct(ups, 100) - _pct(ups, 0), 0.01) if ups.size() > 1 else -1.0]
 	# What each scenario must do: holds given once each, on different parts of him; one takedown, and only
 	# for a tackle; nothing held after a miss or after the takedown.
 	var holds: int = out.events.count("hold")
@@ -697,6 +727,9 @@ func _restraint(out: Dictionary, mo: Array) -> void:
 ##   on_floor          s from his waist reaching the floor to starting to get up;
 ##   getting_up        s getting up;
 ##   up_to_walk        s on his feet before he walks off;
+##   recovery          each holder after the takedown: when he let go (s after it), how he got up ("recover": from
+##                     the floor; "rise": off his knees or out of a bend; "ready": on his feet) and when he was up;
+##   recovery_spread   how far apart the holders let go, and were up (s): 0 is all at once;
 ##   moved_while_down  his fastest along the floor (m/s) from just after the takedown to the end of getting up: a body
 ##                     still falling or getting up should not be travelling.
 func _getup(out: Dictionary, mo: Array) -> void:
@@ -783,7 +816,7 @@ func _print(sc: String, r: Dictionary) -> void:
 			"held_foot_moved", "free_foot_slide", "fall_to_floor", "fall_lean_rate", "fall_drop_rate", "holder_slide",
 			"holder_jitter", "root_accel_max", "anchor_err", "leg_stretch_max", "free_foot_down", "glide", "hops", "planted_slide",
 			"react_raider",
-			"fall_dir_err", "grip_each",
+			"fall_dir_err", "grip_each", "recovery", "recovery_spread",
 			"last_hold_to_down", "on_floor", "getting_up", "up_to_walk", "moved_while_down", "stood_by_him"]:
 		print("  %-20s %s" % [k, str(r.get(k, "-"))])
 	print("  raider   %s" % [str(r.states_r)])
