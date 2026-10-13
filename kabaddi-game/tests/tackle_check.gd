@@ -211,6 +211,13 @@ func _run(sc: String) -> Dictionary:
 			if bool(setup.get("help", false)):
 				m.lab_force["help"] = true
 				m.lab_force["pile"] = true   # a helper within reach takes hold at once
+			if sc == "slip" and m.grapple:
+				# His help goes for his middle from behind, whichever ankle the diver has: the back is kept for him
+				# (as a helper running in keeps the slot he makes for), not the free leg he drifts past.
+				for a in defs:
+					if a != d:
+						m.grapple.unclaim(a)
+						m.grapple.claims["back"] = [a, Grapple.CLAIM_TIME]
 		# Slip: held at the ankle and round the middle, he ducks: the dubki slips the arms round him, not the
 		# ankle, so he is still held. Duck: held only at the ankle, a dubki slips nothing.
 		if sc in ["slip", "duck"] and holding and not escaped and m.raid.holders.size() == (2 if sc == "slip" else 1) \
@@ -539,7 +546,14 @@ func _sample(m: Node, r: Athlete, d: Athlete, pts_last: Dictionary, t: float, dt
 	return [t, r.state, lean, w.y, held_foot, free_foot, _body_speed(r, pts_last, dt), _body_speed(d, pts_last, dt, true),
 		d.state, helpers, step, Vector3(d.position.x, 0.0, d.position.z), pin, stretch, free_up,
 		Vector3(r.position.x, 0.0, r.position.z), w, planted, _joint(rig, "thigh_" + held_side) if held_side != "" and rig else Vector3.INF,
-		_joint(rig, "foot_" + held_side) if held_side != "" and rig else Vector3.INF, float(r.model.air), sh]
+		_joint(rig, "foot_" + held_side) if held_side != "" and rig else Vector3.INF, float(r.model.air), sh,
+		_joint(rig, "foot_l") if rig else Vector3.INF, _joint(rig, "foot_r") if rig else Vector3.INF,
+		rig.ankle_height() if rig else 0.08, rig != null and _held_by(rig, "l"), rig != null and _held_by(rig, "r")]
+
+
+## A foot a defender holds (where the hold has it), not one of his to stand or step on.
+func _held_by(rig: RiggedBody, s: String) -> bool:
+	return rig.foot_goal.has(s) and float(rig.foot_goal[s][1]) > 0.5
 
 
 ## A joint of the rigged body (the head of a bone), in the world.
@@ -596,6 +610,10 @@ func _body_speed(a: Athlete, pts_last: Dictionary, dt: float, again := false) ->
 ##   hops             times his body left the floor (a hop on the free foot) and came down again;
 ##   planted_slide    how fast his free foot moves along the floor while it is planted on it (m/s): 90th
 ##                    percentile, worst (a planted foot should not move at all);
+##   feet_slide       held, however he is held: how fast a foot of his on the floor (within 3 cm) moves along it, either
+##                    foot not held (m/s, 90th percentile): a body carried along with its feet on the floor reads high,
+##                    one that steps or hops near 0;
+##   foot_lifts       held: times a foot of his not held left the floor (a step, or the free foot in a hop);
 ##   react_raider     s from the hold to the raider's first visible answer to it (his trunk turning 4 degrees, a
 ##                    hop, or his body's speed changing by 0.5 m/s);
 ##   fall_dir_err     the angle (deg) between the way he lies once down (hips to shoulders, a moment after his waist
@@ -626,6 +644,27 @@ func _motion(out: Dictionary, mo: Array) -> void:
 	for x in held:
 		helpers.append_array(x[9])
 	out.helpers_motion = snappedf(_pct(helpers, 50), 0.01)
+	# His feet while held, either of them: how fast one on the floor moves along it, and how often one leaves it.
+	var fslide := []
+	var lifts := 0
+	for k in [22, 23]:
+		var was_down := false
+		for i in range(1, held.size()):
+			var a: Array = held[i - 1]
+			var b: Array = held[i]
+			if a[k] == Vector3.INF or b[k] == Vector3.INF or bool(a[k + 3]) or bool(b[k + 3]):
+				was_down = false
+				continue
+			var dt: float = float(b[0]) - float(a[0])
+			var down_a := (a[k] as Vector3).y - float(a[24]) < 0.03
+			var down_b := (b[k] as Vector3).y - float(b[24]) < 0.03
+			if down_a and down_b and dt > 0.0 and dt <= 0.1:
+				fslide.append(Vector2((b[k] as Vector3).x - (a[k] as Vector3).x, (b[k] as Vector3).z - (a[k] as Vector3).z).length() / dt)
+			if was_down and not down_b:
+				lifts += 1
+			was_down = down_b
+	out.feet_slide = snappedf(_pct(fslide, 90), 0.01) if not fslide.is_empty() else -1.0
+	out.foot_lifts = lifts
 	var early: Array = held[mini(9, held.size() - 1)]
 	var mid: Array = held[held.size() / 2]
 	out.lean_while_held = [snappedf(float(early[2]), 0.1), snappedf(float(mid[2]), 0.1), snappedf(float(held[-1][2]), 0.1)]
@@ -964,7 +1003,7 @@ func _print(sc: String, r: Dictionary) -> void:
 			"score_gain", "raid_pts", "hold_time", "raider_motion", "holder_motion", "helpers_motion", "lean_while_held",
 			"held_foot_moved", "free_foot_slide", "fall_to_floor", "fall_lean_rate", "fall_drop_rate", "holder_slide",
 			"holder_jitter", "root_accel_max", "anchor_err", "leg_stretch_max", "free_foot_down", "glide", "hops", "planted_slide",
-			"react_raider",
+			"feet_slide", "foot_lifts", "react_raider",
 			"fall_dir_err", "grip_each", "recovery", "recovery_spread", "escape_timing", "dubki_held", "slipped",
 			"last_hold_to_down", "on_floor", "getting_up", "up_to_walk", "moved_while_down", "stood_by_him"]:
 		print("  %-20s %s" % [k, str(r.get(k, "-"))])

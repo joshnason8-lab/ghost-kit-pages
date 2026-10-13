@@ -43,7 +43,12 @@ var strain := 0.0
 var touched := false
 var hold_offset := Vector3.ZERO
 var dive_dir := Vector3.ZERO
+var dive_from := Vector3.ZERO      # his velocity as his dive began: he drives off from it (Match._dive_motion)
+var push := Vector3.ZERO           # how fast he is being moved out of someone's way (Match._push_all) ...
+var avoid := Vector3.ZERO          # ... or, steering himself, how he steers round them: added to where he means to go
+var drove := false                 # he steered himself this frame (drive)
 var walk_target := Vector3.ZERO
+var evade_to := Vector3.INF       # where an evasion pulls up, a line in its way (Match._evade); INF: none
 var energy := 1.0
 var raids_made := 0
 var is_user := false
@@ -222,6 +227,12 @@ func airborne() -> bool:
 ## for a hard step.
 func drive(desired: Vector3, dt: float, rate := -1.0) -> void:
 	desired.y = 0
+	if avoid != Vector3.ZERO:
+		# Round anyone he is about to walk into (Match._push_all): no further toward them, and out of their way.
+		var away := avoid.normalized()
+		desired -= away * minf(0.0, desired.dot(away))
+		desired += avoid
+	drove = true
 	vel = vel.move_toward(desired, (accel if rate < 0.0 else rate) * dt)
 	position += vel * dt
 	if not lock_facing and vel.length() > 0.4:
@@ -295,8 +306,12 @@ func _pose(delta: float) -> void:
 	var m := model
 	var k := clampf(delta * 10.0, 0.0, 1.0)
 	# A holder is moved by the grapple to keep his hold, not running: no stride for that (it would feed back into
-	# where the grapple puts him next frame).
-	m.speed = 0.0 if state == "holding" else move_vel.length()
+	# where the grapple puts him next frame). Nor for a raider held round the middle, who steps a foot at a time
+	# (Grapple._steps, RiggedBody.step), or held by both legs, who cannot step at all.
+	m.speed = 0.0 if state == "holding" or (state == "held" and held_leg == 0.0) else move_vel.length()
+	# The held clip's own leg work would fight his steps (its feet lifting and shifting under a planted foot): his legs
+	# are the braced stance underneath while he steps or is held by both legs.
+	m.clip_legs = move_toward(m.clip_legs, 0.0 if state == "held" and held_leg == 0.0 else 1.0, delta * 4.0)
 	var want_crouch := 0.0
 	var want_lean := 0.0
 	var want_reach := 0.0

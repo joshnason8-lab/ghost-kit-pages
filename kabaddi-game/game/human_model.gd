@@ -74,6 +74,8 @@ var _prev_rate := 1.0
 var _prev_loop := true
 var _prev_weight := 0.0
 var move_weight := 0.0      # how much a captured running clip carries him now, 0..1
+var clip_legs := 1.0        # how much a looping stance clip has of the legs, 0..1 (none: the feet are worked from outside,
+                            # a held raider's steps; see Athlete._pose)
 var air := 0.0              # how high his lowest point should be off the floor now (m): 0 standing or lying
 var _moves = null           # the captured running set (MocapClip.moves()), once looked up
 var _move: MocapClip = null
@@ -857,7 +859,7 @@ func _apply_clip(delta: float) -> void:
 func _play_frame(c: MocapClip, t: float, loop: bool, w: float) -> void:
 	# A stance (a looping clip) gives the legs up to the running set while he moves: legs from both take
 	# different strides and the feet slide. Its trunk, head and arms stay.
-	var legs := w * (1.0 - move_weight) if loop else w
+	var legs := w * (1.0 - move_weight) * clip_legs if loop else w
 	if c.version >= 2:
 		_apply_pose(c.sample_pose(t, loop), legs, false, c.arms == "r", w)   # the move's clip drives the arms too
 		return

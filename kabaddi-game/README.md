@@ -102,7 +102,8 @@ tests/      compile_check, test_runner (headless smoke test), screenshots (rende
             (foot skate, pops, snaps: see docs/MOTION_REALISM.md), tackle_check (holds made on contact, how
             the holds and falls move, and a held leg against its hold: docs/TACKLE_SYSTEM.md), raid_audit
             (ordinary AI raids from fixed seeds, every frame: contacts, grips, corrections, conflicting states,
-            events, tackle phases, bodies inside one another, softlocks), tackle_reach (how far each dive
+            events, tackle phases, bodies inside one another, softlocks), match_record (an AI match to record,
+            or to check against the audited one, frame for frame), tackle_reach (how far each dive
             reaches), defence_view (a match with the debug overlay), motion_view (gaits, celebrations,
             signals), play_video (a bot that plays)
 tools/      build_i18n.py, rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
@@ -126,6 +127,7 @@ xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.ts
 godot --headless --path . --fixed-fps 30 res://tests/ai_bench.tscn -- 4 1   # AI v AI balance: 4 matches on Pro
 godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn      # tackle scenarios: contact, grip, motion, events
 godot --headless --path . --fixed-fps 30 res://tests/raid_audit.tscn -- 4 1 --digest /tmp/d.json   # 4 AI matches audited (run twice: the same)
+godot --headless --path . --fixed-fps 30 res://tests/match_record.tscn -- 600 seed=1 trace=/tmp/r.json   # the audit's first match, unaudited
 ```
 
 The smoke test does five things:

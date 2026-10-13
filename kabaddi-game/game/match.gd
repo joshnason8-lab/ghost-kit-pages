@@ -57,7 +57,8 @@ const JUMP_GATHER := 0.18      # s a held raider gathers himself on his free leg
 const LOST_GRIP := 0.3         # s a holder lies reaching after a leg torn out of his hands before he gets up
 const SHOVE_TIME := 0.42
 const DIVE_TIME := 0.3
-const DIVE_LAUNCH := 4.2       # m/s: a dive leaves the crouch at once ...
+const DIVE_PUSH := 0.14        # s a dive drives off the floor for, from the speed he had ...
+const DIVE_LAUNCH := 4.5       # ... to this (m/s) ...
 const DIVE_LAND := 1.5         # ... and has this much left as he lands (no long slide on the floor)
 const ARMS_OUT_AFTER := 0.15   # s a landed ankle dive can still grip, arms out
 const LUNGE := 0.45            # how much further an AI raider's touch starts, stepping in as it goes
@@ -70,9 +71,15 @@ const RISE_KNEES := 0.75       # ... one down on his knees or crouched over a le
 const RISE_BENT := 0.4         # ... and one still on his feet, bent over the raider, to straighten up
 const RISE_SLIPPED := 0.55     # s a holder whose arms a dubki slipped takes to straighten up from his lunge
 const SEPARATE := 0.6          # m between two players' middles (along the floor) who do not hold one another ...
-const NUDGE := 3.0             # ... kept apart no faster than this (m/s): out of each other's way, not put there
+const NUDGE := 3.0             # ... kept apart no faster than this (m/s): out of each other's way, not put there ...
+const NUDGE_ACCEL := 15.0      # ... and getting up to that speed, or off it, no quicker (m/s²): eased aside, not knocked
+const SEPARATE_LOOK := 0.2     # s ahead keeping apart looks, at how players are going: aside before they meet, not after
+const AVOID_TIME := 0.15       # s a player steering round another means to be clear of him in
+const SHUFFLE := 0.6           # m/s a player getting up off the floor shuffles out from under another body at, at most
 const DOWN_STATES := ["holding", "dive", "recover", "rise", "fallen"]   # on the floor, or in the grapple: not pushed
 const HELD_TURN := 1.5         # rad/s a raider held other than by the ankle turns toward home at most
+const SPRING := 35.0           # m/s² a lion jump out of a hold drives off the free leg at, up to the spring's speed
+const EVADE_REACH := 1.4       # m an evading defender can cover (_evade: 0.34 s from a standstill), and a little more
 const PLANT := 40.0            # m/s² a raider sheds a dubki's or a jump's burst at, landing and planting ...
 const PLANT_TIME := 0.15       # ... over this long, then runs on as usual
 # Down, getting up, or in the middle of a move: a reaction to the end of the raid waits until he is up or down from it
@@ -113,6 +120,7 @@ var clock_speed := 6.0
 var attract := false           # AI match running behind the main menu
 var tutorial: Node = null
 var _links: Array = []         # mesh pool for chain hand-holds
+var _push_want := {}           # Athlete -> how far keeping players apart would move him this frame (_push_all)
 var control_mode := "all"      # "all" (quick, cup) or "career" (only your player)
 var career_pid := ""
 var paused := false
@@ -378,6 +386,8 @@ func _process(delta: float) -> void:
 			_tick_celebrate(dt)
 			if phase_t > 4.5:
 				_finish()
+	if phase not in ["raid", "post"]:
+		_push_all(dt)   # no one is kept apart now: whoever was still being moved aside eases off
 	_update_chain_links()
 	cam.follow(self, dt)
 	hud.refresh()
@@ -612,7 +622,8 @@ func _tick_raid(dt: float) -> void:
 			_chained_follow(d, dt)
 		else:
 			_ai_defender(d, dt)
-	_separate(defs, dt)
+	_separate(defs)
+	_push_all(dt)
 	_tick_bystanders(dt)
 	if grapple:
 		grapple.update(dt)
@@ -644,7 +655,9 @@ func _move_raider(move: Vector3, dt: float) -> void:
 		raider.drive(raider.dive_dir * raider.max_speed * 1.5, dt)
 	elif raider.state == "jump" and holders.is_empty():
 		if raider.wait > 0.0:
-			# Sprung out of a hold: his speed was set as he left the floor (_tick_escape), and in the air it stays.
+			# Sprung out of a hold: he drives off the free leg up to the spring's speed (_tick_escape) over his first
+			# frames off the floor rather than having it in one, and in the air it stays.
+			raider.vel = raider.vel.move_toward(raid.get("spring", raider.vel), SPRING * dt)
 			raider.position += raider.vel * dt
 			raider.face_toward(raider.position + raider.vel, dt, 10.0)
 		else:
@@ -676,13 +689,21 @@ func _move_raider(move: Vector3, dt: float) -> void:
 		if grapple and not grapple.holds.is_empty():
 			pace = 0.4 + 1.2 * grapple.tug_mean()
 		if grapple and grapple.footwork():
-			# Held only by the ankle: he hops on his free foot against the held leg, and the grapple moves him
-			# (Grapple._footwork). He faces between where he is trying to go and away from the hold, the held
+			# One leg held (at the ankle or the thigh): he hops on his free foot against the held leg, and the grapple
+			# moves him (Grapple._footwork). He faces between where he is trying to go and away from the hold, the held
 			# leg out behind him, turning as he hops (on the spot he would drag his planted foot round).
 			if grapple.turn:
 				var go := (move if move.length() > 0.2 else mid_dir).normalized()
 				var away := grapple.away_from_hold()
-				raider.face_toward(raider.position + (go + away).normalized() if (go + away).length() > 0.1 else raider.position + go, dt, 7.0)
+				var to := raider.position + (go + away).normalized() if (go + away).length() > 0.1 else raider.position + go
+				if grapple.held_round():
+					raider.turn_toward(to, dt, HELD_TURN)   # arms round his middle too: they swing round with him
+				else:
+					raider.face_toward(to, dt, 7.0)
+		elif grapple and grapple.pinned():
+			# Both legs held: he cannot take a step, nor turn on the spot. He stays where he is and fights the holds
+			# with his trunk (the struggle goes on, below). He used to be slid along by it, legs and all.
+			raider.vel = Vector3.ZERO
 		else:
 			# One defender can be dragged to the line; two or three usually win.
 			var net := raider.strength * raider.energy * push * 1.4 - hold_power * 0.5
@@ -695,12 +716,16 @@ func _move_raider(move: Vector3, dt: float) -> void:
 			v.x += move.x * 0.4 * maxf(0.2, 1.0 - hold_power)
 			if grapple and not grapple.holds.is_empty():
 				v -= mid_dir * grapple.tug_total() * 0.6
-			raider.vel = v
-			# A held ankle checks him (or is dragged along with its holder): Grapple.leg_limit.
-			raider.position += grapple.leg_limit(v * dt, dt) if grapple else v * dt
-			# Held round the middle or by a leg, he cannot spin round to face home: he turns no faster than the holds let
-			# him (his holders round his middle swing round with him: Grapple.update).
-			raider.turn_toward(raider.position + mid_dir, dt, HELD_TURN)
+				# Held only round the middle: he steps that ground, a foot at a time (Grapple._steps), rather than being
+				# slid over it, and turns only as he steps: no faster than the holds let him (his holders round his
+				# middle swing round with him: Grapple.update).
+				grapple.drive_vel = v
+				if grapple.turn:
+					raider.turn_toward(raider.position + mid_dir, dt, HELD_TURN * 0.5)   # pivoting on the planted foot
+			else:
+				raider.vel = v
+				raider.position += v * dt
+				raider.turn_toward(raider.position + mid_dir, dt, HELD_TURN)
 		if rng.randf() < dt * 1.4:
 			var who: Athlete = raider if rng.randf() < 0.55 else holders[rng.randi() % holders.size()]
 			Sfx.voice("grunt", -7.0 if who == raider else -10.0, who.voice_pitch())
@@ -798,47 +823,91 @@ func _to_bench(a: Athlete, dt: float) -> void:
 		a.set_state("sit")
 
 
-func _separate(defs: Array, dt: float) -> void:
+func _separate(defs: Array) -> void:
 	# Defenders give the raider room rather than bumping into him: set defenders always, and with holds on him
 	# anyone on his feet who is not holding him (a helper waiting to get a hand on, a defender closing round). A body
-	# on the floor or in the grapple is not pushed about: those on their feet step off it. Nudged out of the way,
-	# never put there in one frame.
+	# on the floor or in the grapple is not pushed about: those on their feet step off it. Eased out of the way
+	# (_push_all), never put there in one frame.
 	var held: bool = not raid.holders.is_empty()
 	var down := defs.filter(func(a): return a.state in DOWN_STATES)
 	var up := defs.filter(func(a): return a.state not in DOWN_STATES)
+	# Getting up off the floor next to another body down there (two divers landed together, a holder): he shuffles out
+	# from under it as he gets up (_push_all, no faster than SHUFFLE), rather than rising inside it.
+	for d in down:
+		if d.state in ["recover", "rise"]:
+			for o in down:
+				if o != d:
+					_nudge(d, _ahead(o), SEPARATE)
 	for d in up:
 		if d == controlled:
 			continue
 		if held or d.state in ["ready", "idle"]:
-			_nudge(d, raider.position, 0.55, dt)
+			# (A free raider is where he is: no one gives way to where he is going, which would take a touch away.)
+			_nudge(d, _ahead(raider) if held else raider.position, 0.55)
 		for o in down:
-			_nudge(d, o.position, SEPARATE, dt)
-	_apart(up, dt)
+			_nudge(d, _ahead(o), SEPARATE)
+	_apart(up)
 
 
-## Players who do not hold one another kept a body's width apart (SEPARATE), each giving way half, no faster
-## than NUDGE.
-func _apart(list: Array, dt: float) -> void:
+## Players who do not hold one another kept a body's width apart (SEPARATE), each giving way half (_push_all), where
+## they are about to be (_ahead): eased aside as they come together, so they are apart by the time they would meet.
+func _apart(list: Array) -> void:
 	for i in list.size():
 		var a: Athlete = list[i]
 		for j in range(i + 1, list.size()):
 			var b: Athlete = list[j]
-			var d := b.position - a.position
+			var d := _ahead(b) - _ahead(a)
 			d.y = 0
 			var l := d.length()
 			if l < SEPARATE and l > 0.001:
-				var push := d / l * minf((SEPARATE - l) * 0.5, NUDGE * dt)
-				a.position -= push
-				b.position += push
+				var push := d / l * (SEPARATE - l) * 0.5
+				_push_want[a] = (_push_want.get(a, Vector3.ZERO) as Vector3) - push
+				_push_want[b] = (_push_want.get(b, Vector3.ZERO) as Vector3) + push
 
 
-## a moved out of the way of a body at p, to at least gap from it (along the floor), no faster than NUDGE.
-func _nudge(a: Athlete, p: Vector3, gap: float, dt: float) -> void:
-	var off := a.position - p
+## a moved out of the way of a body at p, to at least gap from it (along the floor), from where he is about to be
+## (_push_all).
+func _nudge(a: Athlete, p: Vector3, gap: float) -> void:
+	var off := _ahead(a) - p
 	off.y = 0
 	var l := off.length()
 	if l < gap and l > 0.001:
-		a.position += off / l * minf(gap - l, NUDGE * dt)
+		_push_want[a] = (_push_want.get(a, Vector3.ZERO) as Vector3) + off / l * (gap - l)
+
+
+## Where a player is about to be (SEPARATE_LOOK ahead, going as he is), for keeping players apart.
+func _ahead(a: Athlete) -> Vector3:
+	return a.position + Vector3(a.vel.x + a.push.x, 0.0, a.vel.z + a.push.z) * SEPARATE_LOOK
+
+
+## The frame's keeping apart (_separate, _apart). A player who steers himself (Athlete.drive) steers round the bodies
+## he is about to walk into, at his own pace, clear of them in AVOID_TIME (Athlete.avoid): the way he goes is what
+## keeps him apart, rather than a push against it. One standing still is eased aside: as far as asked, no faster than
+## NUDGE, getting up to that speed and off it no quicker than NUDGE_ACCEL. Pushed aside in one frame, as it used to
+## be (nothing to NUDGE at once, 90 m/s²), a player was knocked; pushed against his own steering, he was pushed late
+## and walked into the other first. A body on the floor or in the grapple, and a diver (who drives off with what he
+## had, _defender_tackle), is not moved.
+func _push_all(dt: float) -> void:
+	for a in athletes:
+		if (a.state in DOWN_STATES and a.state not in ["recover", "rise"]) or a.state == "held":
+			a.push = Vector3.ZERO
+			a.avoid = Vector3.ZERO
+			a.drove = false
+			continue
+		var want: Vector3 = _push_want.get(a, Vector3.ZERO)
+		var l := want.length()
+		var v := Vector3.ZERO
+		a.avoid = Vector3.ZERO
+		if l > 0.0001:
+			var most := SHUFFLE if a.state in ["recover", "rise"] else NUDGE
+			if a.drove:
+				a.avoid = want / l * minf(most, l / AVOID_TIME)
+			else:
+				v = want / l * minf(minf(most, sqrt(2.0 * NUDGE_ACCEL * l)), l / maxf(dt, 0.0001))
+		a.push = a.push.move_toward(v, NUDGE_ACCEL * dt)
+		a.position += a.push * dt
+		a.drove = false
+	_push_want.clear()
 
 
 func _clamp_defender(d: Athlete) -> void:
@@ -1112,7 +1181,7 @@ func _tick_escape(dt: float) -> void:
 	if e.kind != "lion":
 		return
 	if raid.holders.is_empty():
-		raider.vel = raider.dive_dir * _jump_speed() * 0.75   # the spring off the free leg
+		raid["spring"] = raider.dive_dir * _jump_speed() * 0.75   # the spring off the free leg (_move_raider)
 	else:
 		raider.set_state("held")
 		if grapple:
@@ -1284,7 +1353,8 @@ func _defender_tackle(d: Athlete, kind := "") -> void:
 	d.dive_dir = dir
 	d.facing = dir
 	d.set_state("dive", DIVE_TIME)
-	d.vel = dir * DIVE_LAUNCH
+	d.dive_from = d.move_vel   # how he is moving over the floor now, pushed or not (his vel can be stale: kept in a chain)
+	d.push = Vector3.ZERO
 	d.reach_t = 0.0
 	d.cooldown = 1.4
 	_event("tackle_attempt", {"who": d.pid(), "kind": d.kind(), "gap": snappedf(dist, 0.01)})
@@ -1316,12 +1386,16 @@ func _aim_point(d: Athlete) -> Vector3:
 	return Vector3(p.x, 0.0, p.z)
 
 
-## A dive: off the mark at once from the crouch, slowing through the air, landing with little left to slide.
-## (It used to start from a standstill at running acceleration, so most of its ground was covered sliding
-## on the floor after it.)
+## A dive: driven off the floor from the crouch (DIVE_PUSH), slowing through the air, landing with little left to
+## slide. (It used to start from a standstill at running acceleration, so most of its ground was covered sliding on
+## the floor after it; then it left the crouch at full speed in one frame, a change of speed of 120 m/s². Driven off
+## over four frames it covers the same ground in the same time, the sharpest change about 32 m/s².)
 func _dive_motion(d: Athlete, dt: float) -> void:
-	var p := clampf(d.st_t / maxf(d.st_len, 0.01), 0.0, 1.0)
-	d.vel = d.dive_dir * lerpf(DIVE_LAUNCH, DIVE_LAND, p)
+	if d.st_t < DIVE_PUSH:
+		d.vel = d.dive_from.lerp(d.dive_dir * DIVE_LAUNCH, d.st_t / DIVE_PUSH)
+	else:
+		var p := clampf((d.st_t - DIVE_PUSH) / maxf(d.st_len - DIVE_PUSH, 0.01), 0.0, 1.0)
+		d.vel = d.dive_dir * lerpf(DIVE_LAUNCH, DIVE_LAND, p)
 	d.position += d.vel * dt
 
 
@@ -1841,7 +1915,18 @@ func _evade(d: Athlete) -> void:
 	away.y = 0
 	away = away.normalized() if away.length() > 0.01 else Vector3(0, 0, side(d.team))
 	var sidestep := away.cross(Vector3.UP) * (0.6 if rng.randf() < 0.5 else -0.6)
-	d.dive_dir = (away + sidestep).normalized()
+	# On the court: a sidestep toward a line he is near goes the other way, and nothing takes him back over the end
+	# line or forward over the midline (the court's edge would stop him dead: _clamp_defender).
+	var bound := Arena.HALF_W + (Arena.LOBBY if raid.struggle else 0.0) - 0.25
+	if absf(d.position.x + (away + sidestep).normalized().x * EVADE_REACH) > bound:
+		sidestep = -sidestep
+	var to := d.position + (away + sidestep).normalized() * EVADE_REACH
+	var inside := Vector3(clampf(to.x, -bound, bound), 0.0,
+		side(d.team) * clampf(depth_in(d.team, to), 0.25, Arena.HALF_L - 0.25))
+	# A line within his reach: he pulls up at it (the evade's seek), rather than running into the court's edge.
+	d.evade_to = inside if Vector2(inside.x - to.x, inside.z - to.z).length() > 0.01 else Vector3.INF
+	var dir := Vector3(inside.x - d.position.x, 0.0, inside.z - d.position.z)
+	d.dive_dir = dir.normalized() if dir.length() > 0.1 else Vector3.ZERO
 	d.set_state("evade", 0.34)
 	d.cooldown = 0.35
 
@@ -1915,7 +2000,10 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 			return
 		"evade":
 			d.lock_facing = true
-			d.drive(d.dive_dir * d.max_speed * 1.2, dt)
+			if d.evade_to != Vector3.INF:
+				d.seek(d.evade_to, d.max_speed * 1.2, dt, 0.9)   # pulling up short of a line
+			else:
+				d.drive(d.dive_dir * d.max_speed * 1.2, dt)
 			d.face_toward(raider.position, dt, 14.0)
 			if d.st_t >= d.st_len:
 				d.set_state("ready")
@@ -2391,7 +2479,7 @@ func _end_raid(kind: String) -> void:
 			raider.fall_kind = grapple.fall_kind() if grapple and not grapple.holds.is_empty() else ""
 			# Held only by the ankle, he goes down forward, away from the hold (the leg pulled out from under him);
 			# with arms round him as well he goes down the way they hold him.
-			var away := grapple.away_from_hold() if grapple and grapple.footwork() else Vector3.ZERO
+			var away := grapple.away_from_hold() if grapple and grapple.ankle_only() else Vector3.ZERO
 			if away != Vector3.ZERO:
 				raider.facing = away
 			raider.vel = Vector3.ZERO   # going down: the struggle's push is spent, not carried along the floor
@@ -3097,7 +3185,8 @@ func _tick_post(dt: float) -> void:
 			a.drive(Vector3.ZERO, dt)
 	# Walking back and cheering, players do not walk through one another (the raider and anyone holding or getting
 	# up aside).
-	_apart(athletes.filter(func(a): return a.on_mat and a != raider and a.state in ["ready", "idle", "celebrate", "roar", "slump", "walk"]), dt)
+	_apart(athletes.filter(func(a): return a.on_mat and a != raider and a.state in ["ready", "idle", "celebrate", "roar", "slump", "walk"]))
+	_push_all(dt)
 	if phase_t > 1.0:
 		_walk_to_positions(dt, false)
 	if phase_t > 2.6 + float(raid.get("post_extra", 0.0)):

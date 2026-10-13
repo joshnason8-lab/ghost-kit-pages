@@ -85,13 +85,18 @@ var _hidden_head := false
 const PLANT_DOWN := 0.03     # m: heel and toe this close to the floor and the foot is planted
 const PLANT_SLIP := 0.2      # m: furthest a planted foot is held from where the motion puts it
 const STEP_LIFT := 0.05      # m: a foot let go at the slip limit lifts this high as it steps on
+const SWING_LIFT := 0.07     # m: a foot stepping on purpose (step) lifts this high as it comes through
 const MAX_SINK := 0.3        # m the hips may come down for a held leg to reach its hold (_sink_to_hold) ...
 const SINK_RISE := 2.5       # ... and m/s they come back up at, the hold let go (a foot torn out of the hands as he springs)
 const SETTLE_DROP := 3.0     # m/s a body held by the leg it stood on comes down onto the other (_ground)
+const RISE_MAX := 4.0        # m/s the hips may rise against the body's root, whatever lifts them (_limit_height) ...
+const FALL_MAX := 5.0        # ... and come down
 const TURN_MAX := 1200.0     # deg/s any bone of the drawn body may turn, whatever turns it (_limit_turns)
 var _plant := {}             # side -> [world position of the held sole point, how firmly held 0..1, which point,
                              #          let go at the slip limit (stepping)]
 var _replant := {}           # side -> seconds before a foot let go at the slip limit may be held again
+var _stepping := {}          # side -> [where the foot left the floor (world, the ankle), the clock then, how long the step
+                             #          takes]: a step on purpose (step)
 var _plant_t := -1.0         # the motion's clock at the last frame, for the time step
 var _sunk := 0.0             # how far _sink_to_hold had the hips down last frame (skeleton space)
 var _held_out := {}          # sides _held_legs left out of what he stands on last frame
@@ -99,6 +104,7 @@ var _rejoined := {}          # bones of a leg back in what he stands on this fra
 var _newly_held := {}        # sides newly left out of what he stands on this frame, held (_ground)
 var _lifted := 0.0           # how far _ground still holds the hips up over the leg he now stands on (skeleton space)
 var _standing := true        # on his feet, as far as what touches the floor goes (_ground)
+var _hip_y := INF            # the hips' height last frame (skeleton space; _limit_height)
 # Holds (see Grapple): hands reaching for a point on another player's body, and a foot kept where a
 # defender holds it. hands_free is where this body's hands are before they reach (world, last frame).
 var hand_target := {}        # side -> {model: HumanModel or null, part, offset (world), point (world, when model
@@ -531,14 +537,14 @@ func drive(h: Node3D) -> void:
 		var el: Node3D = h.el_l if s == "l" else h.el_r
 		var hip: Node3D = h.hip_l if s == "l" else h.hip_r
 		var kn: Node3D = h.kn_l if s == "l" else h.kn_r
-		g["upperarm_" + s] = _swing("upperarm_" + s, inv * el.global_position - inv * sh.global_position)
+		g["upperarm_" + s] = _swing("upperarm_" + s, inv * el.global_position - inv * sh.global_position, g)
 		var fore := _basis_of(el, inv) * Vector3.DOWN
-		g["forearm_" + s] = _swing("forearm_" + s, fore)
-		g["hand_" + s] = _swing("hand_" + s, fore)
-		g["thigh_" + s] = _swing("thigh_" + s, inv * kn.global_position - inv * hip.global_position)
+		g["forearm_" + s] = _swing("forearm_" + s, fore, g)
+		g["hand_" + s] = _swing("hand_" + s, fore, g)
+		g["thigh_" + s] = _swing("thigh_" + s, inv * kn.global_position - inv * hip.global_position, g)
 		var kb := _basis_of(kn, inv)
-		g["shin_" + s] = _swing("shin_" + s, kb * Vector3.DOWN)
-		g["foot_" + s] = _swing("foot_" + s, kb * Vector3(0, -0.35, -1.0))
+		g["shin_" + s] = _swing("shin_" + s, kb * Vector3.DOWN, g)
+		g["foot_" + s] = _swing("foot_" + s, kb * Vector3(0, -0.35, -1.0), g)
 		if body.curl_axis.has(s):
 			var axis: Vector3 = body.curl_axis[s]
 			_curl[s] = lerpf(_curl[s], _finger_curl(h, s), 0.25)
@@ -593,6 +599,7 @@ func _limit_turns(g: Dictionary, now: float) -> void:
 ## Returns the hips' position; turns the feet and legs in g.
 func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	if not grounding or (body.get("contacts", []) as Array).is_empty():
+		_hip_y = INF
 		return hips
 	var target := float(h.air) / scale.y
 	var up: Vector3 = (g.get("chest", Basis()) as Basis) * (body.rest_dirs.chest as Vector3)
@@ -624,6 +631,7 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	if target > 0.02:
 		_plant.clear()
 		hips = _sink_to_hold(g, hips, target, dt)
+		hips = _limit_height(g, hips, dt, false)
 		_hold_feet(g, _fk(g, hips))
 		return hips   # in the air: nothing to stand on
 	var fk := _fk(g, hips)
@@ -656,7 +664,46 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	hips = Vector3(hips.x, hips.y + target - _lowest(_fk(g, hips), standing, held) + _lifted, hips.z)
 	if not foot_goal.is_empty() or _sunk > 0.0:
 		hips = _sink_to_hold(g, hips, 0.0, dt)
+	hips = _limit_height(g, hips, dt, standing)
 	_hold_feet(g, _fk(g, hips))
+	return hips
+
+
+## The hips rise no faster than RISE_MAX and come down no faster than FALL_MAX against the body's root, whatever
+## moves them: the body set down on whatever is lowest (a dive coming down onto the chest as that goes lower than the
+## feet), a clip blended in over a few frames (a get-up from the floor), a hold's sink, a spring out of a crouch.
+## Each was a jump of the body's middle of 0.2 to 0.3 m in a frame, now spread over the frames a body would take.
+## Held down, a foot that would go through the floor is lifted out of it (the knee bends); held up, standing, a foot
+## that was on the floor reaches down to it as far as the leg goes. Returns the hips.
+func _limit_height(g: Dictionary, hips: Vector3, dt: float, standing: bool) -> Vector3:
+	var y := hips.y
+	if _hip_y != INF and dt > 0.0:
+		y = clampf(y, _hip_y - FALL_MAX / scale.y * dt, _hip_y + RISE_MAX / scale.y * dt)
+	_hip_y = y
+	if y == hips.y:
+		return hips
+	var was := {}
+	var fk := _fk(g, hips)
+	for s in body.soles:
+		was[s] = _sole_low(fk, s)
+	var off := y - hips.y
+	hips.y = y
+	fk = _fk(g, hips)
+	var down := PLANT_DOWN / scale.y
+	for s in body.soles:
+		if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+			continue
+		if foot_goal.has(s) and float(foot_goal[s][1]) > 0.5:
+			continue   # held: where the hold has it (_hold_feet)
+		var now := float(was[s]) + off
+		var lift := 0.0
+		if now < 0.0:
+			lift = -now
+		elif off > 0.0 and standing and float(was[s]) < down:
+			lift = -off
+		if lift != 0.0:
+			_ik_leg(g, fk, s, (fk[0][_bone["foot_" + s]] as Vector3) + Vector3(0.0, lift, 0.0))
+			fk = _fk(g, hips)
 	return hips
 
 
@@ -780,11 +827,24 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 			continue
 		if foot_goal.has(s) and float(foot_goal[s][1]) > 0.5:
 			_plant.erase(s)   # held: where the hold has it (_hold_feet)
+			_stepping.erase(s)
 			continue
 		var bi: int = body.soles[s][0]
 		var b: Basis = g.get("foot_" + s, fk[1][bi])
 		var pts: PackedVector3Array = body.soles[s][1]
 		var ankle: Vector3 = fk[0][_bone["foot_" + s]]
+		if _stepping.has(s):
+			# Stepping on purpose: from where it left the floor to where the motion has it now, lifted on the way.
+			# It comes up before it goes across and is over the spot before it comes down.
+			var sw: Array = _stepping[s]
+			var p := clampf((_plant_t - float(sw[1])) / maxf(float(sw[2]), 0.01), 0.0, 1.0)
+			var q := clampf((p - 0.2) / 0.6, 0.0, 1.0)
+			var goal := (inv * (sw[0] as Vector3)).lerp(ankle, q * q * (3.0 - 2.0 * q))
+			goal.y += SWING_LIFT / scale.y * sin(PI * p)
+			_ik_leg(g, fk, s, goal)
+			if p >= 1.0:
+				_stepping.erase(s)   # down: planted where it lands (below, next frame)
+			continue
 		var lo := INF
 		var lo_i := 0
 		for i in pts.size():
@@ -835,6 +895,15 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 		if st[3]:
 			goal.y += STEP_LIFT / scale.y * sin(PI * sqrt(clampf(1.0 - float(st[1]), 0.0, 1.0)))
 		_ik_leg(g, fk, s, goal)
+
+
+## A step the body takes on purpose (Grapple._steps): the foot s leaves the floor where it is and comes through to
+## where the motion has it, over length s, lifted off the floor on the way, and is planted again where it lands.
+func step(s: String, length: float) -> void:
+	if not _bone.has("foot_" + s):
+		return
+	_plant.erase(s)
+	_stepping[s] = [anchor("foot_" + s), _plant_t, length]
 
 
 ## A point on the body as drawn now, in world space, for holds and contact checks: "hand_l"/"hand_r" (the
@@ -960,6 +1029,11 @@ func _flatten(g: Dictionary, fk: Array, s: String) -> void:
 		return
 	var along := b * (sole[2] - sole[3])    # heel to toe
 	var across := b * (sole[0] - sole[1])   # left to right
+	# A foot pointing nearly straight down (on its toes) is left as it is: laid flat from there, the way it would lie
+	# flips end for end as it passes the vertical, half a turn of the foot in a frame.
+	w *= clampf((Vector2(along.x, along.z).length() / maxf(along.length(), 0.0001) - 0.2) / 0.3, 0.0, 1.0)
+	if w <= 0.0:
+		return
 	var turn := Quaternion.IDENTITY
 	if Vector2(along.x, along.z).length() > 0.01:
 		turn = Quaternion(along.normalized(), Vector3(along.x, 0.0, along.z).normalized())
@@ -1093,10 +1167,16 @@ func _match(name: String, target: Basis) -> Basis:
 	return target * (body.rest_frames[name] as Basis).inverse()
 
 
-## Global rotation that swings a limb bone from its rest direction onto dir.
-func _swing(name: String, dir: Vector3) -> Basis:
-	var from: Vector3 = body.rest_dirs[name]
+## Global rotation that swings a limb bone onto dir from where its parent (already turned, in g) carries it: the
+## shortest turn from the bone's rest direction, as the parent holds it, to dir. The bone keeps its parent's twist,
+## an elbow or a knee folding about its own axis, and only a joint folded right back on itself, which none is, would
+## leave the turn undecided. (Swung from the rest pose instead, a limb's twist flipped half a turn whenever it pointed
+## near the opposite of its rest direction: a forearm across a body held round the middle, the foot of a man lying
+## face down.)
+func _swing(name: String, dir: Vector3, g: Dictionary) -> Basis:
+	var parent: Basis = g.get(_name_of(_parent[_bone[name]]), Basis())
 	var to := dir.normalized()
 	if to.length_squared() < 0.5:
-		return Basis()
-	return Basis(Quaternion(from, to))
+		return parent
+	var from := (parent * (body.rest_dirs[name] as Vector3)).normalized()
+	return Basis(Quaternion(from, to)) * parent

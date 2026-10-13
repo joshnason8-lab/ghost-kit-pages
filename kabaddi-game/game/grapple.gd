@@ -32,6 +32,11 @@ extends RefCounted
 ## The exception is when he drives harder than the holder holds: then the holder is dragged a little way with
 ## the ankle (strain). A haul that pulls the leg further back than it reaches pulls him back, and he hops back
 ## to stay on his feet. When he goes down it is forward, away from the hold, with the foot still held.
+##
+## However many hold him, he gets about only as his legs let him (footwork, _footwork, _steps). With one leg held,
+## at the ankle or the thigh, he hops on the other, the shorter the more arms there are round him as well. With
+## both legs held he cannot step at all: he stays where he is, fighting the holds with his trunk. Held only round
+## the middle he steps, a foot at a time, as far as the struggle lets him go, both feet down between steps.
 
 const SLOTS := ["leg_l", "leg_r", "back", "front"]
 const CONTACT_R := 0.3         # m: a hand this close to the part a dive goes for grips it
@@ -75,6 +80,12 @@ const HOP_TIME := 0.26         # s in the air
 const HOP_HEIGHT := 0.06       # m off the floor
 const HOP_GAP := 0.3           # s on the free foot between hops (longer as his balance goes)
 const HOP_BACK := 0.03         # m: pulled further than the held leg reaches, he hops back to stay on his feet
+const HOP_HELD := 0.6          # each hold round his middle as well shortens his hops by this share of a hop
+const CARRY_STOP := 35.0       # m/s²: the speed he was caught at carries him on into the hold, dying away this fast
+const HOLD_ACCEL := 35.0       # m/s²: a holder's body comes round to its place no quicker (a diver turned holder)
+const STEP_TIME := 0.32        # s a step takes, held only round the middle (_steps) ...
+const STEP_GAP := 0.1          # ... both feet down this long between steps ...
+const STEP_MAX := 0.15         # ... and the furthest a step carries his body (m: the trailing foot stays planted)
 const GATHER_SINK := 0.2       # how much lower (share of his leg) he sinks on the free leg gathering for a lion jump
 const DUCK_SINK := 0.16        # ... and ducking (a dubki) with the ankle held
 const DRAG_MAX := 0.12         # m one hop can drag a holder along the floor
@@ -113,11 +124,18 @@ var hop := -1.0                # s into a hop on his free foot (-1: on the floor
 var hop_len := HOP_TIME
 var hop_from := Vector3.ZERO
 var hop_to := Vector3.ZERO
+var hop_out := false           # a hop that starts at the speed he had and dies away (the stumble as he is caught)
 var hop_wait := 0.0            # s before he can hop again
 var landed := -1.0             # s since he came down from a hop (-1: a while ago)
 var jolt := 0.0                # a pull through the held leg he did not expect, 0..1 (fading)
 var raider_vel := Vector3.ZERO # how fast his body moves over the floor now (the hops)
-var turn := false              # he can turn now: in the air (turning on the spot would drag his planted foot)
+var turn := false              # he can turn now: in the air, or stepping (turning on the spot would drag his planted foot)
+var drive_vel := Vector3.ZERO  # how fast the struggle would carry him, held only round the middle (Match._move_raider)
+var step_t := -1.0             # s into a step (-1: both feet down) (_steps)
+var step_from := Vector3.ZERO
+var step_to := Vector3.ZERO
+var step_wait := 0.0           # s before he can step again
+var carry := Vector3.ZERO      # what is left of the speed he was caught at, other than by the ankle (update)
 var land := TRIP_HOLD          # s from the takedown to his reaching the floor (takedown)
 var _yaw := INF                # which way his body faced last frame (radians), to swing his holders round with him
 
@@ -352,6 +370,9 @@ func add(d: Athlete, style: String, slot: String, reached := false) -> void:
 		ph = -wait / period
 	var h := {"who": d, "style": style, "slot": slot, "at": at, "since": t, "w": 1.0 if reached else 0.0,
 		"period": period, "ph": ph, "pull": 0.0}
+	if holds.is_empty() and style != "ankle":
+		# Caught on the move: he carries on into the hold, his speed dying away (update), not cut to nothing in a frame.
+		carry = _flat(raider.move_vel)
 	holds.append(h)
 	d.hold_style = style
 	_priority(d, 2)
@@ -365,9 +386,11 @@ func add(d: Athlete, style: String, slot: String, reached := false) -> void:
 			d.model.impact = 0.0
 		# The raider: his foot caught, the rest of him carries on and he lurches onto the free foot.
 		jolt = maxf(jolt, 0.7)
-		var v := Vector3(raider.vel.x, 0.0, raider.vel.z)
+		# The stumble starts at the speed he had and dies away, rather than from a standstill (his speed cut to nothing
+		# in a frame); the held leg stops it at its reach (leg_limit).
+		var v := _flat(raider.move_vel)
 		if v.length() > 0.4 and hop < 0.0:
-			_start_hop(v.normalized(), minf(0.3, v.length() * 0.12), 0.2)
+			_start_hop(v.normalized(), minf(0.5, v.length() * 0.1), 0.2, true)
 	_targets(h)
 
 
@@ -440,15 +463,43 @@ func established() -> bool:
 	return true
 
 
-## Held only by the ankle (one leg or both): he can only hop on a free foot, the holders lying where they are
-## (_footwork). With any other hold on him, he is carried along by the struggle (Match._move_raider).
+## One leg held, at the ankle or the thigh, whatever else holds him: he can only hop on the free foot (_footwork).
+## (Both legs held, he cannot step at all: pinned; held only round the middle, he steps: _steps.)
 func footwork() -> bool:
+	return state == "holding" and held_legs().size() == 1
+
+
+## Held only by the ankle (one leg or both), nothing else on him: he goes down forward, away from the hold, when he
+## is taken down (Match._end_raid).
+func ankle_only() -> bool:
 	if state != "holding" or holds.is_empty():
 		return false
 	for h in holds:
 		if String(h.style) != "ankle":
 			return false
 	return true
+
+
+## Both legs held: he cannot step at all, nor turn (Match._move_raider).
+func pinned() -> bool:
+	return state == "holding" and held_legs().size() >= 2
+
+
+## Arms round his middle (a waist hold or a block, from behind or in front).
+func held_round() -> bool:
+	for h in holds:
+		if not String(h.slot).begins_with("leg_"):
+			return true
+	return false
+
+
+## The slots of the legs held now ("leg_l", "leg_r").
+func held_legs() -> Array:
+	var out := []
+	for h in holds:
+		if String(h.slot).begins_with("leg_") and not out.has(h.slot):
+			out.append(h.slot)
+	return out
 
 
 ## Which way the ankle holds pull him over: from the held ankle to his hip, along the floor (zero for none).
@@ -514,14 +565,26 @@ func update(dt: float) -> void:
 		if String(h.slot).begins_with("leg_") and float(h.pull) >= side_pull:
 			side_pull = float(h.pull)
 			side = -1.0 if h.slot == "leg_l" else 1.0
-	# The raider's hops on his free foot (held only by the ankle), then each hold with what they did.
+	# The raider's footwork (hops on his free foot, one leg held; steps, held only round the middle; both legs held,
+	# none), what is left of the speed he was caught at, then each hold with what they did.
 	raider_vel = Vector3.ZERO
+	turn = false
 	if footwork():
 		_footwork(dt)
 	elif hop >= 0.0:
-		# Another hold on him in the middle of a hop: the struggle moves him now (Match._move_raider), and the hop is not
-		# taken up again where it was if he is back to the ankle hold alone (it would yank him along its old path).
+		# His other leg caught in the middle of a hop, or the held one let go: the hop is dropped, not taken up again
+		# where it was if he is back to one leg held (it would yank him along its old path).
 		hop = -1.0
+	if state == "holding" and not holds.is_empty() and held_legs().is_empty():
+		_steps(dt)
+	elif step_t >= 0.0:
+		step_t = -1.0   # a leg caught mid-step: he stays where the step had got him
+	if carry.length() > 0.01:
+		var c := leg_limit(carry * dt, dt) if state == "holding" else carry * dt   # a held leg stops it at its reach
+		raider.position += c
+		raider_vel += c / maxf(dt, 0.0001)
+		raider.vel = raider_vel
+		carry = carry.move_toward(Vector3.ZERO, CARRY_STOP * dt)
 	# Arms round his middle swing round with him as his body turns.
 	var bf := raider.body_facing()
 	var yaw := atan2(-bf.x, -bf.z)
@@ -561,6 +624,9 @@ func update(dt: float) -> void:
 		var lim := (BODY_FOLLOW + raider.vel.length()) * dt
 		if step.length() > lim:
 			step = step.normalized() * lim
+		# Coming round to it no quicker than HOLD_ACCEL: a diver who has just taken hold is slowed and brought back
+		# over a few frames, not turned round in one. (Keeping clear of the raider and the others, below, is not.)
+		step = _flat(d.vel).move_toward(step / maxf(dt, 0.0001), HOLD_ACCEL * dt) * dt
 		# Not inside one another: holders' middles at least HOLDER_GAP apart, each giving way half (all of it to an
 		# ankle holder, who lies where his dive put him).
 		var mid := _flat(d.model.anchor("waist") + step)
@@ -689,15 +755,20 @@ func _ankle(h: Dictionary, dt: float) -> void:
 	d.strain = float(h.strain)
 
 
-## The raider's footwork, held only by the ankle: he gets about by hopping on his free foot, never by sliding.
+## The raider's footwork, one leg held (at the ankle or the thigh, whatever else holds him): he gets about by
+## hopping on his free foot, never by sliding.
 ## On the floor, his weight over the free foot, he hops the way he is trying to go (as far as he can push off
 ## one leg, less as his balance goes) once he has gathered himself from the last; pulled back by a haul further
 ## than the held leg reaches, he hops back toward the hold to stay on his feet. In the air his body travels
 ## the hop (the leg checks every step of it: leg_limit). Both legs held, he cannot hop at all.
 func _footwork(dt: float) -> void:
 	var legs := 0
+	var round := 0   # holds round his middle as well
 	var pulled: Dictionary = {}
 	for h in holds:
+		if not String(h.slot).begins_with("leg_"):
+			round += 1
+			continue
 		legs += 1
 		if pulled.is_empty() or float(h.get("tension", 0.0)) > float(pulled.get("tension", 0.0)):
 			pulled = h
@@ -711,7 +782,7 @@ func _footwork(dt: float) -> void:
 	if hop >= 0.0:
 		hop += dt
 		var p := clampf(hop / hop_len, 0.0, 1.0)
-		var e := p * p * (3.0 - 2.0 * p)
+		var e := 1.0 - (1.0 - p) * (1.0 - p) if hop_out else p * p * (3.0 - 2.0 * p)
 		var goal := hop_from.lerp(hop_to, e)
 		raider.position += leg_limit(_flat(goal - raider.position), dt)
 		if p >= 1.0:
@@ -729,19 +800,51 @@ func _footwork(dt: float) -> void:
 			if back.length() > 0.01:
 				_start_hop(back.normalized(), float(pulled.tension) + 0.04, 0.2)
 				jolt = maxf(jolt, 0.5 + 0.4 * tug())
-		elif hop_wait <= 0.0 and want.length() > 0.15:
-			var dist := HOP_DIST * minf(1.0, want.length()) * (1.0 - 0.55 * progress) * clampf(raider.energy, 0.6, 1.0)
+		elif hop_wait <= 0.0 and want.length() > 0.15 and carry.length() < 0.3:
+			var dist := HOP_DIST * minf(1.0, want.length()) * (1.0 - 0.55 * progress) * clampf(raider.energy, 0.6, 1.0) \
+				/ (1.0 + HOP_HELD * round)
 			_start_hop(want.normalized(), dist, HOP_TIME)
 	raider_vel = _flat(raider.position - before) / maxf(dt, 0.0001)
 	raider.vel = raider_vel
 	turn = hop >= 0.0 or legs >= 2
 
 
-func _start_hop(dir: Vector3, dist: float, length: float) -> void:
+func _start_hop(dir: Vector3, dist: float, length: float, out := false) -> void:
 	hop = 0.0
 	hop_len = length
+	hop_out = out
 	hop_from = raider.position
 	hop_to = raider.position + _flat(dir) * dist
+
+
+## Held only round the middle (a waist hold, a block, no leg held): he gets about by stepping, never by sliding. The
+## struggle sets how fast he could go (drive_vel, Match._move_raider), and he covers that ground a step at a time: his
+## trailing foot comes through (RiggedBody.step) while his body goes over the other, planted, and both feet are down
+## between steps. He turns only as he steps.
+func _steps(dt: float) -> void:
+	var before := raider.position
+	step_wait = maxf(0.0, step_wait - dt)
+	if step_t >= 0.0:
+		step_t += dt
+		var p := clampf(step_t / STEP_TIME, 0.0, 1.0)
+		var e := p * p * (3.0 - 2.0 * p)
+		raider.position += _flat(step_from.lerp(step_to, e) - raider.position)
+		if p >= 1.0:
+			step_t = -1.0
+			step_wait = STEP_GAP
+	elif step_wait <= 0.0 and raider.state == "held" and drive_vel.length() > 0.12 and carry.length() < 0.3:
+		var dir := _flat(drive_vel).normalized()
+		step_t = 0.0
+		step_from = raider.position
+		step_to = raider.position + dir * minf(STEP_MAX, drive_vel.length() * (STEP_TIME + STEP_GAP))
+		if raider.model and raider.model.rig:
+			# The foot further behind, the way he steps, comes through.
+			var back_l := _flat(raider.model.anchor("foot_l") - raider.position).dot(dir)
+			var back_r := _flat(raider.model.anchor("foot_r") - raider.position).dot(dir)
+			raider.model.rig.step("l" if back_l < back_r else "r", STEP_TIME)
+	raider_vel = _flat(raider.position - before) / maxf(dt, 0.0001)
+	raider.vel = raider_vel
+	turn = step_t >= 0.0
 
 
 ## One step of the raider's body against the held ankles: his hip no further from a held ankle than the leg
@@ -750,12 +853,17 @@ func _start_hop(dir: Vector3, dist: float, length: float) -> void:
 ## otherwise the step stops where the leg does, and the leg snapping taut jolts him. Returns the step he makes.
 func leg_limit(step: Vector3, dt: float) -> Vector3:
 	for h in holds:
-		if String(h.style) != "ankle":
+		var style := String(h.style)
+		if style != "ankle" and style != "thigh":
 			continue
 		var s := String(h.slot).substr(4)
 		var hip := _flat(raider.model.anchor("hip_" + s)) + step
 		var f := _flat(h.at)
 		var span := _span(float(h.at.y))
+		if style == "thigh":
+			# Held at the thigh, the foot hanging from the holder's hands: his middle no further from it than LEG_REACH.
+			hip = _flat(raider.position) + step
+			span = LEG_REACH
 		var dist := hip.distance_to(f)
 		if dist <= span or dist < 0.001:
 			continue
@@ -785,7 +893,7 @@ func _footwork_pose() -> void:
 	for h in holds:
 		if String(h.slot).begins_with("leg_"):
 			legs.append(h)
-	if state != "holding" or legs.size() != 1 or String(legs[0].style) != "ankle":
+	if state != "holding" or legs.size() != 1 or String(legs[0].style) not in ["ankle", "thigh"]:
 		raider.held_leg = 0.0
 		raider.hop = -1.0
 		raider.hop_air = 0.0

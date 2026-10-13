@@ -25,9 +25,10 @@ extends Node
 ## Prints each measure's distribution (median, 90th and 99th percentile, worst) and the worst cases with where
 ## they happened (match, raid, seconds into it, player, state). --json writes it all. --digest FILE checks the run
 ## is the same, event for event, as an earlier run in another process (the first such run writes FILE): the same
-## seeds play the same matches. --again plays the first match a second time in the same process (that can part by a
-## millimetre after a while: something Godot keeps between matches in one process); --trace adds every player's place
-## and state, every frame, to what is compared.
+## seeds play the same matches. --again plays the first match a second time in the same process, to be the same
+## again; --trace adds every player's place and state, every frame, to what is compared. Each match is begun once
+## the engine's frame steps are steady (_steady), as tests/match_record begins one to record: a recording of a seed
+## is then the audited match, frame for frame (the audit's reads of the bodies change nothing).
 ##   godot --headless --path . --fixed-fps 30 res://tests/raid_audit.tscn -- [matches] [first seed] [--json FILE]
 ##       [--digest FILE] [--again] [--trace]
 
@@ -184,6 +185,7 @@ func _ready() -> void:
 
 
 func _play(pair: Array) -> void:
+	await _steady()
 	seed(_seed)
 	_digest = []
 	_rn0 = _rn
@@ -195,7 +197,6 @@ func _play(pair: Array) -> void:
 		_result = r
 		_done = true)
 	add_child(m)
-	m.rng.seed = _seed
 	m.game_event.connect(_on_event)
 	_m = m
 	_cur = null
@@ -215,6 +216,21 @@ func _play(pair: Array) -> void:
 	_digest.append(["final", _result.get("score", [])])
 	m.queue_free()
 	await get_tree().process_frame
+
+
+## Until the engine's frame steps have been a 30th of a second for a few frames running. Its first half-dozen frames
+## are not, even at a fixed frame rate (0.025, 0.042, 0.029 s...: its physics sync settling in), and a match begun
+## among them plays its first moments on those steps, the bodies' clips and footing with them: it then parts from the
+## same match begun at any other time (the same seed again in this process, or recorded in another) by a fraction of
+## a millimetre, and that grows. Begun once the steps are steady, the same seed plays the same match frame for frame
+## wherever it is begun. (No more than two seconds' wait, for a run without a fixed frame rate.)
+func _steady() -> void:
+	var run := 0
+	for i in 60:
+		await get_tree().process_frame
+		run = run + 1 if is_equal_approx(get_process_delta_time(), 1.0 / 30.0) else 0
+		if run >= 5:
+			return
 
 
 func _on_event(kind: String, info: Dictionary) -> void:
@@ -243,7 +259,7 @@ func _frame(dt: float) -> void:
 		var row := []
 		for a in m.athletes:
 			if a.on_mat:
-				row.append("%s %.4f %.4f %s %.3f" % [a.pid(), a.position.x, a.position.z, a.state, a.st_t])
+				row.append("%s %.6f %.6f %s %.4f" % [a.pid(), a.position.x, a.position.z, a.state, a.st_t])
 		_digest.append(["frame", _rn - _rn0, snappedf(_rt, 0.001), row])
 	var g = m.grapple
 	# Everyone on the mat, and everyone who was when the raid began: a raider tackled or a defender put out is out
@@ -466,12 +482,12 @@ func _conflicts(m: Node, r: Athlete, g, mat: Array) -> void:
 		if lying and speed > 2.5:
 			seen["lying on the floor, moving over 2.5 m/s"] = a
 	var one = r.model.get("one_leg")
-	var ankle := false
+	var leg := false   # a leg held (at the ankle or the thigh): he stands on the other (Grapple._footwork)
 	if g != null:
 		for h in g.holds:
-			if String(h.style) == "ankle":
-				ankle = true
-	if one != null and float(one) > 0.5 and not ankle:
+			if String(h.slot).begins_with("leg_"):
+				leg = true
+	if one != null and float(one) > 0.5 and not leg:
 		_one_leg += 1
 		if _one_leg > 9:
 			seen["on one leg, no leg held (over 0.3 s)"] = r
