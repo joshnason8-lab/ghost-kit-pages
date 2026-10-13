@@ -1016,13 +1016,205 @@ longer, now that a lone ankle holder stops a driving raider rather than being sl
 - **With two holds on him**, the raider is still carried along by the struggle between hops: in `slip`, 0.57 m
   of his travel slid.
 - **What the audit sees:**
-  - Its reads of the skeletons bring the drawn poses up to date earlier in the frame than the game does on its
-    own, and the game's own reads (where a hand is, for a hold) can then see a fresher pose. So an audited match
-    is repeatable, but it is not, frame for frame, the match the same seed plays without the audit (the
-    recording).
-  - A replay of the first match in the same process (`--again`) parts by a millimetre after the first hold:
-    something the engine keeps between matches in one process. Separate processes give the same match.
+  - An audited match is repeatable, but it was not, frame for frame, the match the same seed played as a
+    recording, and a replay of the first match in the same process (`--again`) parted from it by a millimetre.
+    This was put down here to the audit's reads of the skeletons. It was not them: see "What the audit left,
+    fixed" below.
   - It does not sample the setup between raids, or a player put out in an earlier raid walking to the bench.
+
+### What the audit left, fixed
+
+**Asked:** fix what the audit of ordinary matches still found (the "Still not right" list above): bodies' middles
+jumping in a frame; speed changing in a frame (a dive's launch, defenders nudged aside); joint flips that the last
+pose stage only hid; a raider with two or more holds on him carried along by the struggle rather than stepping;
+and the audit's own effect on the match it watched.
+
+**The audit's own effect: there was none.** An audited match and the same seed played without the audit's reads of
+the bodies are the same, frame for frame (`--digest` and `--trace`, a run with the reads against one without). Two
+other things made the audited match differ from the recording of the same seed:
+
+- **The audit re-seeded the match** (`m.rng.seed` set after `add_child`), after `Match._ready` had already drawn
+  the coin toss from its seed. Every other run (the recording, the game) takes the seed from the config only, so
+  the audit played a different match from the same seed. It no longer re-seeds.
+- **The engine's first frames are not a 30th of a second**, even at a fixed frame rate: 0.025, 0.033, 0.042,
+  0.029, 0.030 and 0.0325 s, then steady (its physics sync settling in). A match begun in them, the first in any
+  process, plays its first moments on those steps: the bodies' clip times and footing come out a fraction of a
+  millimetre different from the same match begun later, and the difference grows (a replay in the same process
+  parted from the first at the third raid). The audit and the recording script (`tests/match_record`) now begin
+  a match only once the steps are steady (`raid_audit._steady`).
+
+The explanation given above (the reads bringing the poses up to date early) was wrong.
+
+**Joint turns.** `RiggedBody._swing` turned each limb bone onto the hand-made placeholder's limb by the shortest
+turn from the bone's rest direction. That turn is undecided when the limb points nearly opposite its rest
+direction, and its twist flips half a turn as the limb passes it: a forearm held up in front of the chest (its rest
+is down at the side), the foot of a man lying face down. The last pose stage then spread the flip over a few
+frames rather than removing it.
+
+- Each bone is now swung from where its parent, already turned, carries it. An elbow or a knee folds about its own
+  axis; the turn would be undecided only for a joint folded right back on itself, which none is.
+- A foot laid flat on the floor (`_flatten`) is left alone while it points nearly straight down (on its toes):
+  laid flat from there, which way it lies flipped end for end as it passed the vertical.
+
+**Middles jumping.** The body is put on the floor by its lowest point every frame (`RiggedBody._ground`). When what
+is lowest changed (a diver's chest going lower than his feet), or the pose changed quickly (a get-up clip blended
+in over three frames, a hold's sink, a spring out of a crouch), the hips moved 0.2-0.35 m in a frame.
+
+- `RiggedBody._limit_height`, after the grounding and the sink: the hips rise no faster than 4 m/s (`RISE_MAX`) and
+  come down no faster than 5 m/s (`FALL_MAX`) against the body's root. Held down, a foot that would go through the
+  floor is lifted out of it (the knee bends); held up while standing, a foot that was on the floor reaches down to
+  it, as far as the leg goes.
+
+**Speed changes.**
+
+- **The dive** drives off the floor over its first 0.14 s (`DIVE_PUSH`), from the speed the diver had (`move_vel`,
+  how he was moving over the floor) up to 4.5 m/s, then slows to land as before. It covers the same ground (0.8 m)
+  in the same time; its sharpest change is about 32 m/s² instead of 117 m/s².
+- **Keeping players apart** (`Match._separate`, `_apart`, `_nudge`, `_push_all`). A player who steers himself steers
+  round anyone he is about to walk into (`Athlete.avoid`, added to where he means to go in `Athlete.drive`): no
+  further toward them, and out of their way within 0.15 s (`AVOID_TIME`), at his own pace. It looks 0.2 s ahead at
+  how players are going (`SEPARATE_LOOK`), so they turn aside before they meet; a free raider is taken where he is,
+  not where he is going, so no one gives way to a touch. A player standing still is eased aside instead: no faster
+  than 3 m/s, and getting up to that speed no quicker than 15 m/s² (`NUDGE_ACCEL`). Players getting up off the
+  floor next to another body there shuffle out from under it, no faster than 0.6 m/s (`SHUFFLE`). Pushed aside in
+  one frame, as before, a player was knocked (90 m/s²); pushed against his own steering, he walked into the other
+  first.
+- **The lion jump out of a hold** drives off the free leg up to its speed at 35 m/s² (`SPRING`), not in a frame.
+- **Caught on the move** (any hold but the ankle), the raider carries on into the hold, his speed dying away at
+  35 m/s² (`Grapple.carry`, `CARRY_STOP`), rather than stopping dead. Caught by the ankle, his stumble onto the free
+  foot starts at the speed he had and dies away.
+- **A holder's body** is brought round to his place no quicker than 35 m/s² (`HOLD_ACCEL`): a diver who has just
+  taken hold is slowed and brought back over a few frames, not turned round in one. Keeping clear of the raider
+  and the other holders is not limited.
+- **An evasion** that would reach a line pulls up short of it (`Match._evade`, `evade_to`) instead of running into
+  the court's edge, which stopped him dead.
+- **Taken down with arms round him** as well as an ankle held, the raider no longer turns to fall away from the
+  ankle (`Grapple.ankle_only`): his drawn body turned at up to 900°/s, and the arms round his middle were swung
+  round with it at 11-12 m/s.
+
+**Held by more than one, he gets about only as his legs let him** (`Grapple.footwork`, `pinned`, `_steps`;
+`Match._move_raider`):
+
+- **One leg held**, at the ankle or the thigh, whatever else holds him: he hops on the free foot (`_footwork`). Each
+  hold round his middle as well shortens his hops (`HOP_HELD`), and he turns no faster than the holds let him
+  (`HELD_TURN`), the arms round him swinging round with him.
+- **Both legs held:** he cannot take a step, nor turn on the spot. He stays where he is and fights the holds with
+  his trunk; the struggle goes on to the takedown as before.
+- **Held only round the middle** (a waist hold, a block): he steps (`_steps`). The struggle sets how far he could go;
+  he covers it a step at a time (`STEP_TIME`, `STEP_MAX`), his trailing foot coming through (`RiggedBody.step`: up,
+  across, down, planted where it lands) while his body goes over the planted one, both feet down between steps. He
+  turns only as he steps, at half the held rate (pivoting on the planted foot). The held clip's own leg work would
+  fight the steps, so his legs are the braced stance underneath (`HumanModel.clip_legs`), with no running stride.
+
+**In numbers.** `raid_audit` on the last round's build ("Before": the build the list above was written for, run
+with this round's audit) and now, four matches each from the same seeds. A change anywhere plays the matches
+differently, so the counts move with how many tackles and dives a run happens to have; rates per frame of the
+state they belong to compare better.
+
+| Four AI matches on Pro, every frame of every raid | Before | Now |
+|---|---|---|
+| Raids (tackles, escapes) | 122 (23, 34) | 120 (21, 30) |
+| Holds checked: valid / invalid | 94 / 0 | 83 / 0 |
+| Grip, hands from the part held: median / 99th percentile / worst | 0.059 / 0.122 / 0.157 m | 0.062 / 0.122 / 0.146 m |
+| Held foot from where the hold has it: 99th percentile / worst | 0.000 / 0.054 m | 0.000 / 0.102 m |
+| A body's middle moving more than 0.2 m beyond the body in a frame: frames / worst | 113 / 0.35 m | 4 / 0.20 m |
+| Frames with a speed change over 40 m/s² (per 1,000 body-frames) / sharpest | 1,490 (3.21) / 231 m/s² | 408 (0.91) / 243 m/s² |
+|   of them defenders standing ready (nudged aside): frames over / share of that state's frames | 576 / 0.3% | 88 / 0.0% |
+|   of them diving: frames over / share of that state's frames | 342 / 12.2% | 109 / 4.1% |
+|   of them holding: frames over / share of that state's frames | 218 / 3.9% | 36 / 0.7% |
+|   of them the held raider: frames over / share of that state's frames | 42 / 1.8% | 6 / 0.3% |
+|   of them winding up: frames over / share of that state's frames | 67 / 2.0% | 49 / 1.5% |
+|   of them evading a touch: frames over / share of that state's frames | 25 / 7.1% | 1 / 0.3% |
+|   of them the raider, free: frames over / share of that state's frames | 133 / 0.5% | 96 / 0.3% |
+| Joint pops (bone-frames turning 40° in a 30th of a second, all at the last stage's cap) | 8,554 | 5,297 |
+| Bone turns the last pose stage held back (share of bone-frames) | 42,267 (0.65%) | 18,801 (0.30%) |
+| Bodies inside one another, frames over 5 cm | 2,922 | 2,374 |
+|   the raider and a defender (per held frame) | 0.45 | 0.42 |
+|   the raider and his holder; two holders (per holder's frame) | 0.158; 0.042 | 0.110; 0.032 |
+|   anyone else (per 1,000 body-frames) | 1.53 | 1.77 |
+| A body moving over 9 m/s in a frame | 2 | 14 |
+| Conflicting states (episodes) | lying on the floor, moving over 2.5 m/s: 6 | lying on the floor, moving over 2.5 m/s: 2 |
+| Duplicate or impossible events / matches whose points do not add up | 0 / 0 | 0 / 0 |
+| Softlocks | 0 | 0 |
+
+| Tackle phase (s): median, 90th percentile, worst (how many) | Before | Now |
+|---|---|---|
+| Winding up | 0.37, 0.43, 0.67 (320) | 0.37, 0.43, 0.43 (308) |
+| The dive | 0.30, 0.30, 0.30 (329) | 0.30, 0.30, 0.30 (318) |
+| The hold, first hold to the takedown or the last let go | 1.90, 2.87, 4.97 (51) | 1.53, 3.13, 4.80 (45) |
+| Takedown to his middle at the floor | 0.57, 0.67, 1.17 (22) | 0.67, 0.77, 1.23 (21) |
+| On the floor | 1.10, 1.10, 1.17 (22) | 1.07, 1.10, 1.10 (21) |
+| Getting up | 1.40, 1.40, 1.40 (22) | 1.40, 1.40, 1.40 (21) |
+| Each holder letting go, after the takedown | 0.93, 1.07, 1.23 (60) | 0.93, 1.17, 1.23 (51) |
+| Each holder up again, after the takedown | 1.80, 2.20, 2.33 (60) | 1.80, 2.37, 2.43 (51) |
+| A lion jump's gather out of a hold | 0.17, 0.17, 0.17 (13) | 0.17, 0.17, 0.17 (8) |
+
+The joint turns the last pose stage still holds back are almost all turns just over its 1,200°/s, which it slows a
+little: a clap, a foot rolling through a step. Counted over a whole match (seed 1), every body on the mat and off
+it, by how far the bone was asked to turn in a 30th of a second:
+
+| One match, every body: bone turns the last pose stage held back | Before | Now |
+|---|---|---|
+| All | 16,116 | 7,656 |
+| Asked to turn 80° or more in a 30th of a second | 2,444 | 168 |
+| Asked to turn 120° or more (a flip) | 565 | 0 |
+
+Held, in the scripted scenarios (`tackle_check`). "Free foot" is a foot not held by anyone:
+
+| Held by | How he gets about | A free foot on the floor sliding along it (m/s, 90th percentile) | Times a free foot leaves the floor |
+|---|---|---|---|
+| A thigh hold (`thigh`) | slid 0.84 m → 4 hops (0.03 m slid) | 1.05 → 0.23 | 3 → 5 |
+| Arms round his middle, a block in front (`waist`) | slid 0.50 m → 0.42 m in steps | 0.72 → 0.09 | 4 → 6 |
+| The ankle, and arms round him (`slip`) | 0.37 m slid between hops → 0.03 m | 0.57 → 0.09 | 3 → 4 |
+| Both legs (`join`), and a block (`chain`), and arms behind (`crowd`) | slid 0.24, 0.71, 0.85 m → stays where he is (0.03 m) | | |
+| The ankle alone (`catch`, as before) | hops (5) | 0.15 → 0.25 | 4 → 5 |
+
+| | Before | Now |
+|---|---|---|
+| Sharpest change of speed of the first holder: `thigh`, `waist`, `chain` (m/s²) | 60, 68, 39 | 35, 37, 31 |
+| Sharpest change of speed of the raider: `thigh`, `waist`, `chain` (m/s²) | 3, 3, 12 | 31, 31, 5 |
+| Hold to takedown: `catch`, `chain`, `thigh`, `waist`, `slip` (s) | 3.43, 1.63, 3.23, 2.60, 2.93 | 3.43, 1.90, 3.23, 2.60, 2.93 |
+
+(The raider's sharpest change under a thigh or a waist hold is now his speed dying away into the hold, 31 m/s²;
+before, he slid on at the struggle's pace.)
+
+**Checks.**
+
+- The audit with all its reads and the same audit with none (its per-frame work cut to the state bookkeeping),
+  in separate processes: byte-identical traces, every player's place to a micrometre, state and timer, every frame
+  of four matches (43,468 frames), and the same 894 events.
+- The first match played again in the same process (`--again --trace`): the same, frame for frame.
+- A recording (`tests/match_record`, rendered with the movie writer) against the audit's trace of the same seed:
+  the same match, every player's place, state and timer identical in all 10,506 frames of its 32 raids, through
+  to the final whistle.
+- `tackle_check`: all 17 scenarios as expected; `test_runner` at a fixed 30 fps, as CI runs it: all checks pass;
+  `compile_check`: no broken scripts.
+
+**The game itself.** `ai_bench`, eight matches on Pro each (random seeds), before and now: more raids end in a
+tackle (35 of 237, 15%, against 53 of 247, 21%) and fewer out of bounds (30, 13%, against 20, 8%); the share of
+successful raids is the same (65%). Raid points 260 and 272, defence points 69 and 83. A raider held by both legs
+no longer travels, so the struggle can no longer carry him over a line; he is brought down instead.
+
+**Still not right:**
+
+- **Speed changes** are down to 408 frames over 40 m/s² (0.9 per 1,000 body-frames, against 3.2). What is left:
+  - a dive's first frames (4% of dive frames, against 12%);
+  - a holder kept clear of the raider in the first frames of a hold, while the raider is still carried on by his
+    speed (keeping clear is not limited; 0.7% of holders' frames);
+  - a raider's own sidestep, built at 1.9 times his top speed (it also passes 9 m/s for the quickest raiders: 14
+    frames in these matches, how many depending on how many sidesteps a run has).
+- **Bodies inside one another**: fewer than before (2,374 frames over 5 cm, against 2,922), and fewer in the
+  struggle, but players outside it still meet a little more often than when they were pushed apart in a frame
+  (1.77 against 1.53 frames per 1,000 body-frames): two defenders stepping into the same place, a helper running
+  in past a holder. Steering round takes a few frames once they have met head on.
+- **Middles jumping:** 4 frames just over 0.2 m (worst 0.20 m), a holder's dive coming down into his hold.
+- **A held foot** can be short of its hold for a frame or two (worst 0.10 m, the 99th percentile still 0): a new
+  hold's sink now comes in at 5 m/s rather than in one frame.
+- **An ankle dive's first grip** is looser than before (0.21 m from the ankle as the hands close, within the 0.3 m
+  contact): the dive now reaches him two frames later in its arc. Through the hold it is as before (median 0.05 m,
+  90th percentile 0.07 m).
+- **The steps** of a raider held round the middle are made by the body, not a captured clip: the trailing foot comes
+  through on an arc while the other stays planted. They start once the speed he was caught at has died away.
 
 ## Measuring
 
@@ -1052,8 +1244,9 @@ but contact never is. The scenarios:
 - **touch**: a hand touch and home. The points are given once, and the score goes up by exactly them.
 - **flurry**: within a second or two, a touch, the touched defender grabbing straight back, another diving
   in, help, and a takedown. Every event comes in order, and the raid is scored once.
-- **slip**: held at the ankle and round the middle (the helper comes in from behind), a dubki slips only the
-  arms round him: still held, no "Broke free!", taken down.
+- **slip**: held at the ankle and round the middle (the helper comes in from behind, the back kept for him
+  whichever ankle the diver catches), a dubki slips only the arms round him: still held, no "Broke free!", taken
+  down.
 - **duck**: held only at the ankle, a dubki slips nothing.
 - **drag**: the `catch` hold with the raider driving for the line as hard as he can, as the AI does. He drags
   the holder a little at a time and is brought down.
@@ -1083,6 +1276,8 @@ Each scenario prints:
   - how much of the raider's travel was sliding rather than hopping, and the number of hops;
   - how soon he answers the hold;
   - which way he lies once down, against the way the hold pulls him;
+- however he is held, how fast a foot of his on the floor moves along it (a foot held aside), and how often one
+  leaves it (`feet_slide`, `foot_lifts`): carried along with his feet down reads high, stepping or hopping near 0;
 - each holder's grip all through, and while the raider is still on his feet (`grip_each`, "held");
 - after a takedown, when each holder let go, how he got up and when he was up (`recovery`);
 - a lion jump out of the hold (`escape_timing`): when the hold lets go after the jump is called for, the free
@@ -1146,5 +1341,19 @@ The options:
 - `--json` writes all of it to a file.
 - `--digest FILE` checks the run against an earlier one in another process, event for event. The first run
   writes FILE.
-- `--trace` adds every player's place and state, every frame, to what is compared.
-- `--again` plays the first match a second time in the same process.
+- `--trace` adds every player's place (to a micrometre) and state, every frame, to what is compared.
+- `--again` plays the first match a second time in the same process, which must come out the same.
+
+Each match is begun once the engine's frame steps are steady (its first half-dozen frames are not a 30th of a
+second, even at a fixed frame rate). `tests/match_record` plays a match for recording the same way, and with
+`trace=FILE` writes the same per-frame trace, so a recording can be checked against the audit's own run of that
+seed, frame for frame:
+
+```sh
+godot --headless --path . --fixed-fps 30 res://tests/raid_audit.tscn -- 1 1 --trace --digest /tmp/audit.json
+xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --fixed-fps 30 --write-movie m.avi \
+    res://tests/match_record.tscn -- 600 seed=1 home=MUM away=DEL trace=/tmp/rec.json
+```
+
+The digest's "frame" entries, up to its "final" entry, are the audited match's frames in order; the recording's
+trace is the same list.
