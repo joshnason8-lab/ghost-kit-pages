@@ -231,6 +231,32 @@ line.
   hold's first frames, a dive's first two frames, getting up, and the raider's own sidestep (over 9 m/s by design).
 - **Standing over a man lying flat**, a player is not moved off him, and his legs can be in the other's body.
 
+### The thigh hold's grip
+
+| | |
+|---|---|
+| Asked | Fix the thigh hold's grip: in AI matches a thigh holder's hands came up to 0.30 m off the thigh for a few frames, and the scripted thigh and waist dives' first grips read looser. |
+| Functions found responsible | The scripted first grips were the hands still closing on the hold's first frame (0.12 m, then 0.055 m). In matches: `RiggedBody._ik_two` turned a holder's arm onto the hold from the hand-made pose by the shortest turn, from a forearm pointing 90-160 degrees off, so the forearm's twist, and with the arm folded right up the elbow, flipped from frame to frame; the last pose stage held the flips back (`_limit_turns`), and the hands trailed the thigh by up to 0.4 m; the same twist kept every hold's hands about 0.06 m off the part. And `Grapple.update` carried a holder's being kept clear of another holder into his speed, so a thigh diver backing off to his place went 0.3 m past it, out of reach. |
+| Fix | A hand reaching for a hold starts each frame from the arm as drawn the frame before, the wrist keeping the pose's bend and the fingers their grip; a folded or straight elbow bends the way it did. Where the hand goes while a hold closes or lets go is unchanged (between the pose and the hold, by how far the hold has closed): a helper's hands still take the hold's 0.2 s to close, and a hand letting go goes back to the pose over the let-go. Being kept clear moves a holder without becoming speed he carries. Details: `docs/TACKLE_SYSTEM.md`, "The thigh hold's grip". |
+| Tests | `raid_audit`, eight matches (seeds 1-8), on the last build, with the arms alone (the same matches, frame for frame) and with both; `tackle_check` (17 scenarios), with each holder's hands traced frame by frame as they close and let go; `test_runner` at a fixed 30 fps, as CI runs it; `compile_check`; `ai_bench`. |
+| Recording | `thigh` close up, the last build and now side by side, at half speed: the holder's near arm was held out past the thigh; now it wraps it. |
+
+| Eight AI matches on Pro | Before | Now |
+|---|---|---|
+| Grip, hands from the part held: median / 90th / 99th percentile | 0.06 / 0.10 / 0.12 m | 0.02 / 0.03 / 0.10 m |
+| Worst grip | 0.30 m (a thigh holder's arm flipping) | 0.15 m (a dubki ducking a held thigh out of reach) |
+| Holds valid / invalid | 172 / 0 | 191 / 0 |
+| Holders' speed changes over 40 m/s² (share of their frames) | 0.64% | 0.57% |
+| `tackle_check`: grip median in every hold | 0.05-0.07 m | 0.02 m |
+| `tackle_check`: a thigh helper's grip once his hold has closed (median) | 0.053-0.057 m | 0.021-0.022 m |
+
+**Still not right:**
+
+- **An ankle holder at full stretch** has his hands 0.12 m short of the ankle.
+- **A defender getting up outside the sideline's margin** is put back inside it in one frame (0.3 m), as he always was.
+- **A thigh helper as the raider lands** holds at full stretch while the thigh drops away, up to 0.13 m off it, for the 0.2 s before he lets go (as before).
+- **Letting go to get up from the floor,** an ankle holder's hands swing back to the get-up pose in the let-go's 0.15 s however far it is: up to 1.3 m in five frames (as before).
+
 ## First review (the 0.7.5 recording): five fixes, and where milestones A-E stand
 
 A review of the 0.7.5 gameplay recording (11 Oct 2026) named five problems. This page answers it: for each, the

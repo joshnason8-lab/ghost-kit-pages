@@ -1386,6 +1386,95 @@ which names both defenders; it reads it now.)
 - **The steps** of a raider held round the middle are made by the body (the trailing foot on an arc), not a captured
   clip.
 
+### The thigh hold's grip
+
+**Asked:** fix the thigh hold's grip. In AI matches a thigh holder's hands came up to 0.30 m off the thigh for a few
+frames (0.22 m the round before), and in the scripted scenarios the thigh and waist dives' first grips read looser.
+
+**The scripted first grips** were the hands still closing on the hold's first frame: in `tackle_check thigh`, 0.12 m
+on the first frame and 0.055 m on the next, as close as ever after that.
+
+**In matches it was two things,** each measured frame by frame on the worst holds (seeds 2, 3 and 5).
+
+- **The arms.** A hand reaching for a hold was turned onto it from the hand-made pose by the shortest turn
+  (`RiggedBody._ik_two`). The hand-made pose does not know where the hold is: in a hold, the forearm the reach wanted
+  pointed 90-110 degrees off the pose's, and as a raider hopped toward his thigh holder (the thigh 0.13 m from the
+  holder's shoulder) 145-161 degrees. Near opposite, the shortest turn is undecided, so the forearm's twist flipped
+  from one frame to the next, and with the arm folded right up the elbow flipped from one side to the other. The last
+  pose stage held turns of 80-150 degrees in a frame back to 40 (`_limit_turns`), and the hands trailed the thigh by
+  up to 0.4 m for four or five frames. The same twist left every hold's hands a few centimetres off the part they
+  held all through (median 0.06 m): the hand's grip point was turned away from it.
+  - A hand reaching for a hold now starts each frame from the arm as it was drawn the frame before
+    (`RiggedBody._reach_hands`), and the reach turns it from there: a frame's change, never a half turn. The hand
+    keeps the pose's bend at the wrist, and the fingers their grip.
+  - Folded right up, or straight, an elbow says nothing of which way it bends: it bends the way it did
+    (`_ik_two`, `BEND_MIN`).
+  - Where the hand goes is unchanged: while a hold closes (`CLOSE_IN`, a helper's 0.2 s) or lets go (`LET_GO`), the
+    hand is put between where the pose has it and the hold, by how far the hold has closed. Only the arm starts from
+    where it was drawn. Tried with the hand put between where it was drawn and the hold, a helper's hands closed in
+    half his time, and a hand letting go stayed on the hold all through the let-go, then went back in a frame or two
+    (at 8-14 m/s, in `tackle_check`).
+- **The holder's body.** A thigh diver who lands with his shoulders right on the thigh is backed off to his place, an
+  arm's length off it (`Grapple.update`), coming round to it no quicker than `HOLD_ACCEL`. Being kept clear of the
+  holder on the other thigh (`HOLDER_GAP`) was added to his speed as well, and carried into the next frames; he went on
+  past his place, out of his arms' reach by 0.3 m, before `HOLD_ACCEL` had taken it off. Being kept clear now moves him
+  without becoming speed he carries.
+
+**In numbers.** `raid_audit`, eight matches (seeds 1-8). The arms alone change nothing but the drawn arms: the same
+matches, every place, state and event the same, so they compare frame for frame. Keeping the push out of the holder's
+speed moves holders a little differently, and the matches play out differently from there.
+
+| Eight AI matches on Pro | Before | The arms (the same matches) | Now (the arms and the holder's speed) |
+|---|---|---|---|
+| Grip, hands from the part held: median / 90th / 99th percentile | 0.06 / 0.10 / 0.12 m | 0.02 / 0.04 / 0.10 m | 0.02 / 0.03 / 0.10 m |
+| Worst grip | 0.30 m, a thigh hold | 0.24 m, a thigh hold | 0.15 m, a thigh hold as a dubki ducks it out of reach |
+| Holds valid / invalid | 172 / 0 | 172 / 0 | 191 / 0 |
+| Holders' speed changes over 40 m/s² (share of their frames) | 0.64% | 0.64% | 0.57% |
+| Bodies inside one another: raider and holder; two holders (per holder's frame) | 0.133; 0.039 | 0.133; 0.039 | 0.131; 0.040 |
+| Bone turns the last pose stage holds back | 0.33% | 0.33% | 0.33% |
+
+In the scripted scenarios the hands are on the part all through once they have closed: the median grip is 0.02 m in
+every hold, against 0.05-0.07 m (`catch` 0.061 → 0.019, `thigh` 0.063 → 0.022, `join` 0.073 → 0.021), and a thigh
+helper's, once his hold has closed, 0.021-0.022 m against 0.053-0.057 m. A thigh helper's hands close over his hold's
+0.2 s and reach the thigh as it closes: under 0.1 m after 0.17 s, where before they were under it after 0.13 s but
+stayed 0.05-0.06 m off it. What is left of the 90th percentile in the holds with a helper (`join` 0.118 → 0.110,
+`chain` 0.083 → 0.062, `crowd` 0.087 → 0.060) is those closing frames, and a thigh helper's last 0.2 s before he lets
+go, as the raider lands: the thigh drops out of his reach, up to 0.13 m from his hands, as it did before (`raid_audit`
+leaves the fall out). A waist hold reads 0.02 m now against 0.00: its measure counts from the middle's surface (0.12 m
+round its centre line), and the hands now sit on their marks just outside it, where before they reached inside it. All
+17 scenarios are as expected; the holds with more than one holder (`chain`, `crowd`, `join`) play a frame or two
+differently, as their holders are no longer carried along by being kept clear.
+
+The worst grips left are all a hold the body cannot reach: a dubki ducking a held thigh or the arms round a middle
+out of reach (as it is meant to; a dubki slips arms round the middle), and an ankle holder at full stretch, the ankle
+0.70-0.74 m from his shoulders against an arm of 0.57-0.59 m, his hands 0.12 m short of it.
+
+**Checks.**
+
+- `test_runner` at a fixed 30 fps, as CI runs it: all 185 checks pass (the fingers' grip among them).
+- `tackle_check`: all 17 scenarios as expected. `compile_check`: no broken scripts.
+- The audit run again in a separate process, traced: the same four matches entry for entry (43,274 entries: every
+  player's place, state and timer in every frame, and every event and score change). Run on the code as it is now
+  against the run before the hands' closing and letting go were put back as they were, the same 43,274 entries:
+  where the hands go changes nothing in play.
+- `ai_bench`, sixteen matches on Pro (random seeds), run before the hands' closing and letting go were put back (the
+  same play, above): every match's points add up, and every event check is clean (no grab back in the frame of a
+  touch, no takedown within 0.6 s of a new hold, no escape the move could not make, no two holds on one part). Raids
+  end in a tackle a little more often than in last night's runs (23% of 486, against 21% of 473 and 18% of 544) and
+  succeed a little less (60%, against 64% and 63%): within the spread between runs, or holders now staying on their
+  holds; not looked into.
+
+**Still not right:**
+
+- **An ankle holder at full stretch** has his hands 0.12 m short of the ankle (above). Kept closer, the struggle
+  itself (where the held ankle can be dragged to) would change.
+- **A thigh helper as the raider lands** keeps hold at full stretch while the thigh drops away from him, up to 0.13 m
+  off it, for the last 0.2 s before he lets go (`join`, `chain`, `crowd`; as before).
+- **Letting go to get up from the floor,** an ankle holder's hands swing back to the get-up pose over the let-go's
+  0.15 s however far that is: up to 1.3 m in five frames in `slip` (17 m/s at the fastest), as before.
+- **A defender getting up outside the sideline's margin** (a dive that carried him past it) is put back inside it in
+  the frame he stands: 0.3 m in a frame, once in these eight matches. The clamp has done this all along.
+
 ## Measuring
 
 ```sh
