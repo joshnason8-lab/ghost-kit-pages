@@ -1457,12 +1457,11 @@ out of reach (as it is meant to; a dubki slips arms round the middle), and an an
   player's place, state and timer in every frame, and every event and score change). Run on the code as it is now
   against the run before the hands' closing and letting go were put back as they were, the same 43,274 entries:
   where the hands go changes nothing in play.
-- `ai_bench`, sixteen matches on Pro (random seeds), run before the hands' closing and letting go were put back (the
-  same play, above): every match's points add up, and every event check is clean (no grab back in the frame of a
-  touch, no takedown within 0.6 s of a new hold, no escape the move could not make, no two holds on one part). Raids
-  end in a tackle a little more often than in last night's runs (23% of 486, against 21% of 473 and 18% of 544) and
-  succeed a little less (60%, against 64% and 63%): within the spread between runs, or holders now staying on their
-  holds; not looked into.
+- `ai_bench`, sixteen matches on Pro (random seeds): every match's points add up, and every event check is clean (no
+  grab back in the frame of a touch, no takedown within 0.6 s of a new hold, no escape the move could not make, no two
+  holds on one part). 61% of 491 raids succeed, 21% are tackled, 11% go out of bounds and 7% are empty; last night's
+  runs had 64% and 63% succeeding and 21% and 18% tackled. A run before the hands' closing and letting go were put
+  back (the same play, above) had 60% of 486 succeeding and 23% tackled: the spread between runs.
 
 **Still not right:**
 
