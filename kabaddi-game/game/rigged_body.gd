@@ -92,6 +92,7 @@ const SETTLE_DROP := 3.0     # m/s a body held by the leg it stood on comes down
 const RISE_MAX := 4.0        # m/s the body's middle may rise against its root, whatever lifts it (_limit_height) ...
 const FALL_MAX := 5.0        # ... and come down
 const TURN_MAX := 1200.0     # deg/s any bone of the drawn body may turn, whatever turns it (_limit_turns)
+const BEND_MIN := 0.04       # m off straight an elbow must be to say which way it bends (_ik_two)
 var _plant := {}             # side -> [world position of the held sole point, how firmly held 0..1, which point,
                              #          let go at the slip limit (stepping)]
 var _replant := {}           # side -> seconds before a foot let go at the slip limit may be held again
@@ -112,6 +113,7 @@ var hand_target := {}        # side -> {model: HumanModel or null, part, offset 
 var foot_goal := {}          # side -> [world position of the ankle joint, weight, weight lost per second (0: held)]
 var hands_free := Vector3.INF
 var _hand_t := -1.0
+var _bend := {}              # hand -> which way its elbow bent last frame, reaching for a hold (skeleton space)
 var _curl := {"l": 0.7, "r": 0.7}
 var _turns := {}             # bone -> how it was turned last frame, as drawn (skeleton space; _limit_turns)
 var _turn_t := -1.0
@@ -1082,6 +1084,7 @@ func _ik_leg(g: Dictionary, fk: Array, s: String, goal: Vector3) -> void:
 func _reach_hands(g: Dictionary, hips: Vector3, now: float) -> void:
 	if hand_target.is_empty() or not (_bone.has("hand_l") and _bone.has("hand_r")):
 		hands_free = Vector3.INF
+		_bend.clear()
 		return
 	var dt := clampf(now - _hand_t, 0.0, 0.1) if _hand_t >= 0.0 else 0.0
 	_hand_t = now
@@ -1095,6 +1098,7 @@ func _reach_hands(g: Dictionary, hips: Vector3, now: float) -> void:
 			ht.w = float(ht.w) - float(ht.fade) * dt
 			if float(ht.w) <= 0.0:
 				hand_target.erase(s)
+				_bend.erase("hand_" + s)
 				continue
 		var goal_w: Vector3
 		if ht.get("model") != null and is_instance_valid(ht.model):
@@ -1103,6 +1107,31 @@ func _reach_hands(g: Dictionary, hips: Vector3, now: float) -> void:
 			goal_w = ht.point
 		else:
 			continue
+		# Reaching last frame too, the arm starts from where it was drawn then, not from the hand-made pose, which does
+		# not know where the hold is and can point the forearm nearly the other way. Turned from there by the shortest
+		# way (_ik_two), a forearm 90-160 degrees off took a twist that flipped from frame to frame: the last pose
+		# stage held the flips back (_limit_turns), and the hands were 0.2-0.3 m off a thigh they held for a few
+		# frames, and a few centimetres off any hold all through. The hand keeps the pose's own bend at the wrist, and
+		# the fingers their grip.
+		var up_n: String = "upperarm_" + s
+		var fo_n: String = "forearm_" + s
+		# Where the pose has the hand: closing on a hold or letting go of it, the hand goes between there and the
+		# hold, by how far the hold has closed. Between where it was drawn and the hold instead, a hand letting go
+		# stayed on the hold all through the let-go and went back in a frame, and a helper's closed in half his time.
+		var pose_wrist: Vector3 = fk[0][_bone["hand_" + s]]
+		if _bend.has("hand_" + s) and _turns.has(up_n) and _turns.has(fo_n):
+			var chain: Array[String] = [fo_n, "hand_" + s]
+			for f in ["fingers_" + s, "fingertips_" + s]:
+				if g.has(f):
+					chain.append(f)
+			var rel: Array[Basis] = []
+			for i in range(1, chain.size()):
+				rel.append((g[chain[i - 1]] as Basis).orthonormalized().inverse() * (g[chain[i]] as Basis))
+			g[up_n] = Basis(_turns[up_n] as Quaternion).scaled_local((g[up_n] as Basis).get_scale())
+			g[fo_n] = Basis(_turns[fo_n] as Quaternion).scaled_local((g[fo_n] as Basis).get_scale())
+			for i in range(1, chain.size()):
+				g[chain[i]] = (g[chain[i - 1]] as Basis).orthonormalized() * rel[i - 1]
+			fk = _fk(g, hips)
 		var wrist: Vector3 = fk[0][_bone["hand_" + s]]
 		var hb: Basis = fk[1][_bone["hand_" + s]]
 		var grip := wrist + hb * (body.rest_dirs["hand_" + s] as Vector3) * _hand_len(s) * 0.6
@@ -1111,7 +1140,7 @@ func _reach_hands(g: Dictionary, hips: Vector3, now: float) -> void:
 		for f in ["fingers_" + s, "fingertips_" + s]:
 			if g.has(f):
 				carry.append(f)
-		_ik_two(g, fk, "upperarm_" + s, "forearm_" + s, "hand_" + s, wrist.lerp(goal, clampf(float(ht.w), 0.0, 1.0)), carry)
+		_ik_two(g, fk, up_n, fo_n, "hand_" + s, pose_wrist.lerp(goal, clampf(float(ht.w), 0.0, 1.0)), carry, "hand_" + s)
 
 
 func _hand_len(s: String) -> float:
@@ -1122,8 +1151,11 @@ func _hand_len(s: String) -> float:
 
 ## Two-bone IK: turn the upper and lower bones so the end joint reaches `goal` (skeleton space), keeping
 ## the middle joint bent the way it was. The end bone keeps its own orientation (its basis in g is absolute)
-## unless it is listed in carry, whose bones turn with the lower one.
-func _ik_two(g: Dictionary, fk: Array, upper: String, lower: String, end: String, goal: Vector3, carry := []) -> void:
+## unless it is listed in carry, whose bones turn with the lower one. With keep (a hand reaching for a hold), the
+## way the middle joint bends is remembered: folded right up or straight, the joint says nothing of which way it
+## bends, and taken afresh it flipped the elbow from one side to the other.
+func _ik_two(g: Dictionary, fk: Array, upper: String, lower: String, end: String, goal: Vector3, carry := [],
+		keep := "") -> void:
 	if not (g.has(upper) and g.has(lower)):
 		return
 	var hp: Vector3 = fk[0][_bone[upper]]
@@ -1135,7 +1167,14 @@ func _ik_two(g: Dictionary, fk: Array, upper: String, lower: String, end: String
 	var dist := clampf(to.length(), absf(l1 - l2) + 0.001, l1 + l2 - 0.001)
 	var u := to.normalized()
 	var bend := (kp - hp) - u * (kp - hp).dot(u)
+	if keep != "":
+		var was: Vector3 = _bend.get(keep, Vector3.ZERO)
+		was -= u * was.dot(u)   # the way it bent last frame, square to where it reaches now
+		if bend.length() < BEND_MIN and was.length() > 0.3:
+			bend = was
 	bend = bend.normalized() if bend.length() > 0.0001 else Vector3.FORWARD
+	if keep != "":
+		_bend[keep] = bend
 	var ca := clampf((l1 * l1 + dist * dist - l2 * l2) / (2.0 * l1 * dist), -1.0, 1.0)
 	var knee := hp + (u * ca + bend * sqrt(1.0 - ca * ca)) * l1
 	var ankle := hp + u * dist

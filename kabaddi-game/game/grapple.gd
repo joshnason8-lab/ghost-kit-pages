@@ -628,6 +628,7 @@ func update(dt: float) -> void:
 		# Coming round to it no quicker than HOLD_ACCEL: a diver who has just taken hold is slowed and brought back
 		# over a few frames, not turned round in one. (Keeping clear of the raider and the others, below, is not.)
 		step = _flat(d.vel).move_toward(step / maxf(dt, 0.0001), HOLD_ACCEL * dt) * dt
+		var own := step   # his own going, which he carries into the next frame; being kept clear (below) is not
 		# Not inside one another: holders' middles at least HOLDER_GAP apart, each giving way half (all of it to an
 		# ankle holder, who lies where his dive put him).
 		var mid := _flat(d.model.anchor("waist") + step)
@@ -646,7 +647,10 @@ func update(dt: float) -> void:
 		# few frames, not in one.
 		step = step.limit_length((BODY_FOLLOW + raider.vel.length() + 1.0) * dt)
 		d.position += step
-		d.vel = step / maxf(dt, 0.0001)
+		# Carried on as his speed, a push to keep clear went on moving him the next frames, until HOLD_ACCEL had
+		# taken it off: a thigh holder backing off the thigh he had dived into, pushed by the holder on the other
+		# thigh, went 0.3 m past his place, out of his arms' reach, for a few frames.
+		d.vel = own / maxf(dt, 0.0001)
 		d.hold_offset = d.position - raider.position
 		d.face_toward(goal, dt, 12.0)
 	# The raider: how badly he is off balance, how hard he is pulled back now, and which leg it is pulled by;
