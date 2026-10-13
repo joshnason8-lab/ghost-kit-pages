@@ -191,6 +191,46 @@ line.
 - **A held foot** can be short of its hold for a frame or two (worst 0.10 m) as a new hold's sink comes in.
 - **The steps** held round the middle are made by the body (the trailing foot on an arc), not a captured clip.
 
+### The rest of the list, and what the last fixes broke
+
+| | |
+|---|---|
+| Asked | Keep going: the middles still jumping, what was left of a dive's launch, and the three things the last round made worse (players outside the struggle meeting more often, an ankle dive's looser first grip, a held foot short of its hold). |
+| Functions found responsible | Keeping apart (`Match._separate`) went by where players' feet were, so a defender walked into a holder bent over the raider, and two divers getting up lay inside one another; nothing kept players apart after the raid, or off a team-mate as they walked off put out. The defender clamp (`_clamp_defender`) held a corner defender's place at the sideline but not his speed, so his wind-up started sideways and the dive snapped him back. The defence's dive did not move in its first frame (`_ai_defender` returned before it), and the push-off went at one speed for every dive. The fall limit held the hip joint, while a trunk tipping forward lowered the middle with it. `_plant_feet` judged the floor from the held foot too. Found on the way: `RiggedBody._ground` took "nothing left to stand on" (the standing leg caught as the other was let go of) as an endless sink, which sank the body through the floor for the rest of the raid, or sent it to NaN; after the raid most players were moved twice a frame (`_tick_post` and `_walk_to_positions`); an all out set the tackled last man walking in the frame he began to go down, and his holders were swung round with him as he walked off; an evading defender ran into the court's edge from a sprint. |
+| Fix | Bodies kept apart by their trunks, in three dimensions (`_trunk`, `_nudge_body`, `BODY_GAP`), during the raid and after it. The clamp takes the speed into a line with it. The dive moves from its first frame and gets to its speed from however he was moving, no quicker than from a standstill, each dive as far as it always went (the defence's 4.0 m/s out of the wind-up, the player's 5.0 m/s at the button). The limit is on the middle. A held foot is left out of where the floor is, and a free foot is planted once the body is down on it. Nothing to stand on is no sink; each player moved once a frame after the raid; a player brought back down or mid-move finishes it first; an evasion runs no faster than he can stop by the line. Details: `docs/TACKLE_SYSTEM.md`, "The rest of the list, and what the last fixes broke". |
+| Tests | `raid_audit` on last round's build and now, eight matches each (seeds 1-8, about 245 raids); a new check in `test_runner` for the leg let go of as the other is caught (it fails without the fix); `tackle_check` (17 scenarios); `test_runner` at a fixed 30 fps, as CI runs it; `compile_check`; `ai_bench`. |
+| Recording | The ankle dive (`catch`, a third of the speed) and a dubki with the ankle held (`duck`, half speed), last round's build and now side by side. |
+
+| Eight AI matches on Pro, every frame of every raid | Before | Now |
+|---|---|---|
+| Raids (tackles, escapes) | 240 (45, 70) | 247 (45, 56) |
+| A body's middle moving over 0.2 m beyond the body in a frame: frames / worst | 14 / 0.21 m | 0 / 0.17 m |
+| Speed changes over 40 m/s²: frames (per 1,000 body-frames) | 705 (0.77) | 246 (0.27) |
+| ... diving / winding up / the free raider: frames | 195 / 84 / 208 | 16 / 2 / 0 |
+| Bodies inside one another outside the struggle (per 1,000 body-frames) | 1.82 | 1.47 |
+| ... the raider and his holder (per holder's frame) | 0.117 | 0.133 |
+| A body moving over 9 m/s in a frame | 17 | 10 |
+| Grip, hands from the part held: 99th percentile / worst | 0.12 / 0.22 m | 0.12 / 0.30 m |
+| Held foot from its hold: 99th percentile / worst | 0.000 / 0.10 m | 0.000 / 0.18 m |
+| Holds valid / invalid; events, points; softlocks | 181 / 0; consistent; 0 | 172 / 0; consistent; 0 |
+
+| Scripted (`tackle_check`) | Before | Now |
+|---|---|---|
+| `catch`: the ankle dive's first grip (hands from the ankle as they close) | 0.208 m, on the other leg, 0.10 s late | 0.086 m, the near ankle, at 0.77 s as it always was |
+| `duck`, `sidestep`: the free foot planted through a held dubki or sidestep | 8%, 63% | all through |
+| A held raider's free foot sliding (90th percentile): `catch`, `drag`, `thigh`; `waist` | 0.25, 0.21, 0.23; 0.09 m/s | 0.07, 0.07, 0.18; 0.13 m/s |
+| The first grip, hands from the part as they close: `thigh`, `waist` | 0.094, 0.113 m | 0.12, 0.151 m |
+
+**Still not right:**
+
+- **A thigh hold's grip** is looser at its worst (0.30 m for a few frames, against 0.22 m), though as before at the
+  median and 99th percentile, and the thigh and waist dives' first grips are looser (0.12 and 0.15 m); not found yet.
+- **A held foot** is off its hold in a lion jump's first spring frame, up to 0.18 m (0.10 m before): one frame a jump.
+- **The raider and his holder** are inside one another a little more often (0.117 → 0.133 per holder's frame).
+- **Speed changes** left (0.27 per 1,000 body-frames): defenders standing ready (as many as before), holders in a
+  hold's first frames, a dive's first two frames, getting up, and the raider's own sidestep (over 9 m/s by design).
+- **Standing over a man lying flat**, a player is not moved off him, and his legs can be in the other's body.
+
 ## First review (the 0.7.5 recording): five fixes, and where milestones A-E stand
 
 A review of the 0.7.5 gameplay recording (11 Oct 2026) named five problems. This page answers it: for each, the

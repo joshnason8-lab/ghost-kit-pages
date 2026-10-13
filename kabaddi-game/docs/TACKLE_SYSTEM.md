@@ -1216,6 +1216,176 @@ no longer travels, so the struggle can no longer carry him over a line; he is br
 - **The steps** of a raider held round the middle are made by the body, not a captured clip: the trailing foot comes
   through on an arc while the other stays planted. They start once the speed he was caught at has died away.
 
+### The rest of the list, and what the last fixes broke
+
+**Asked:** keep going: the last middles jumping, what was left of a dive's launch, and the three things the last
+round made worse (players outside the struggle meeting more often, an ankle dive's looser first grip, a held foot
+short of its hold).
+
+**A body sent off to infinity (found on the way).** In one of sixteen benchmark matches a raider's body went to NaN for
+good: millions of warnings, the model gone. The cause was older than this round. Held by one leg and standing on the
+other, he had his standing leg caught in the same frame as the hold on the other let go of it. `RiggedBody._ground`
+then looked for the lowest point of a body with both legs out of what he stands on (the one let go of, coming back
+into it, and the one just caught), found none (INF), and took that as a sink to come up out of: an endless one. Last
+round's limit on the hips let them down at 5 m/s, so he sank through the floor at that speed for the rest of the
+raid; this round's limit on the middle subtracted the infinity, and the body went to NaN. Fixed where it starts:
+nothing left to stand on is no sink at all. The middle's limit and the new keeping apart also leave a body that is
+not finite alone, rather than spreading it to anyone else. `tests/test_runner` now checks it (section 8a): the left
+ankle held, then let go of in the frame the right is caught. Without the fix the check fails (the middle off to
+infinity, the freed ankle 0.22 m in the air); with it, the middle stays where it was and the ankle is back on the
+floor.
+
+**An all out with the last man still held (found on the way).** When a tackle put out a team's last man, the all out
+brought the whole team back at once and set every one of them walking: the tackled raider too, in the frame he began
+to go down. He stood where he was with the holders still on him and, a second later, walked off to his place; arms
+round his middle were swung round with him as he turned (`Grapple.update`), 0.3-0.5 m a frame, the fastest anything
+moved in these matches (up to 14 m/s). The all out has done this since it was written; it came up three times in this
+round's first four matches. Now a player brought back while down or in the middle of a move finishes it first (the all
+out in `Match._end_raid`, and `_revive`): the raider goes down, lies there and gets up like any tackled raider, then
+walks back.
+
+**Keeping apart by the body's shape.** Players were kept apart by where their feet were. A holder bent over the raider
+reaches well past his feet, and a diver on the floor is a body's length along it: a defender walked into a holder,
+and two divers getting up side by side lay inside one another, their feet a body's width apart.
+
+- Each body is its trunk, from his middle to the top of his head, where it is about to be (`Match._trunk`), and a
+  player on his feet keeps 0.4 m from the trunk of anyone on the floor, getting up or in the grapple (`_nudge_body`,
+  `BODY_GAP`), in three dimensions: a helper stepping in past a team-mate lying at the ankle is a body's height above
+  him, and goes on to his hold. (Kept apart along the floor only, the helper in `tackle_check slip` never got there.)
+- After the raid too, and the players put out with them: they walked off to the bench straight through their
+  team-mates (`_tick_post`).
+- A player standing over a man lying flat is not moved: his trunk is a body's height above the other's. His legs can
+  be in the other man's body (as they could before: kept off a body's feet only, he stood about as close, waist to
+  waist, in `tackle_check`).
+- Bodies inside one another outside the struggle, over eight matches: 1.82 → 1.47 frames per 1,000 body-frames
+  (on the four matches of last round's table, 1.77 → 1.18; 1.53 the round before).
+
+**What was left of a dive's launch** was three things:
+
+- **A defender against the sideline.** The defence's place for a corner defender can be past the line's margin, and
+  he ran at it every frame, the clamp holding his position but not his speed. In his wind-up (not clamped) he was off
+  sideways at that speed, and the dive's first frame snapped him back: a lurch of up to 9 cm. Now the clamp takes the
+  speed into the line with it (`Match._clamp_defender`), and runs after he is moved aside as well as on his own step.
+- **A frame late.** Out of the wind-up the dive did not move in its first frame (`_ai_defender` returned before it).
+  It does now.
+- **The push-off** gets him to the dive's speed from however he was moving, no quicker than the push off a
+  standstill (`_dive_motion`): stepping across or back as he went, he is no longer turned round in a frame. It covers
+  the ground the old dive did: out of the wind-up (4.0 m/s, the sharpest change 31 m/s²) to within 4 cm at every
+  frame; at the player's button (5.0 m/s, 38 m/s²), where the old dive went in its first frame and so always reached
+  further (0.95 m against 0.81), to within 4 cm from the fifth frame. Last round's push (4.5 m/s for both) put the
+  defence's dives a few centimetres ahead mid-flight, and they held more often (32 tackles against 21 in the same four
+  matches); the player's dives fell 15 cm short (the scripted ankle dive missed him altogether).
+- Frames with a speed change over 40 m/s², eight matches: diving 195 → 16 (3.5% → 0.3% of dive frames), winding up
+  84 → 2, the free raider 208 → 0. What is left of the dive is its first two frames, all under 63 m/s².
+
+**The ankle dive's first grip** came with it: the scripted ankle dive (`tackle_check catch`) takes the near ankle at the
+moment it always did (0.77 s), its hands 0.086 m from it on the first frame (0.075 m before last round; last round
+0.208 m, on the other leg, three frames later). The thigh and waist dives reach at their old moments too (0.77 and
+0.73 s), but their hands are further from the part on the first frame than in either of the last two rounds: thigh
+0.12 m (0.06 before last round, 0.09 last round), waist 0.15 m (0.13, 0.11).
+
+**Middles jumping.** The fall limit held the hip joint, but a trunk tipping forward lowers the middle (most of the way
+from the hips up the spine, where the audit measures it) as well, and a dive still dropped it 0.2 m in a frame. The
+limit is on the middle now (`RiggedBody._limit_height`): over eight matches, frames with a middle moving over 0.2 m
+14 → 0 (worst 0.21 → 0.17 m).
+
+**The free foot in a held dubki.** Planting a foot judged where the floor is from the lower of the two feet, held or
+not. A dubki that put the held foot lowest had the free one off the floor and never planted: in `tackle_check duck`
+the free foot was planted for 8% of the dubki (all of it before last round), in `sidestep` 63%. The held foot is left
+out now, as the body's grounding already left it out, and a free foot caught mid-stride is planted once the body has
+come down onto it, not in the air (`_plant_feet`). It is planted all through again, and a held raider's feet slide
+less: 90th percentile, last round and now, 0.25 → 0.07 m/s (`catch`), 0.21 → 0.07 (`drag`, `stopped`), 0.24 → 0.08
+(`duck`, `sidestep`), 0.23 → 0.18 (`thigh`); 0.09 → 0.13 held round the middle (`waist`). (The measure of a free foot
+on the floor reads 0.88-0.97 now, against 1.0, in `catch`, `drag`, `stopped`, `sidestep` and `slip`: in the frames
+it counts as up, the foot is 3.0-3.2 cm above the floor, against a limit of 3 cm.)
+
+**Smaller things:**
+
+- After a raid, from a second in, nearly everyone was moved twice a frame: by his own post-raid logic (standing still,
+  or jogging over to slap hands) and by the walk back to his place; holders letting go were moved by the grapple and
+  driven as well. Each is moved once now.
+- An ankle diver's slide into his hold stops over a few frames as his elbows give (no quicker than 38 m/s²,
+  `Grapple.SLIDE_STOP`), not dead in one as his shoulders reach the ankle.
+- The raider's plant out of a dubki or a jump sheds speed at 38 m/s², not 40 (counted over the limit by rounding).
+- An evading defender pulled up short of a line by easing in over the last 0.9 m, which he could not do from a
+  sprint: he ran on into the court's edge, and the clamp, now taking his speed into the line with it, stopped him
+  dead. He now runs no faster than he can stop by the line at his own acceleration (`_ai_defender`, "evade").
+- The audit counted a body's second frame of a raid against a first frame it had not measured (as standing still):
+  28 of last round's 408 speed changes. It no longer does, and both columns below are measured that way.
+
+**In numbers.** `raid_audit` on last round's build ("Before", run with this round's audit) and now, eight matches
+each (seeds 1-8; four, as last round, swing too much from one set of seeds to the next: a raider and a defender
+inside one another went from 0.42 to 0.64 per held frame between two sets of four on the same build).
+
+| Eight AI matches on Pro, every frame of every raid | Before | Now |
+|---|---|---|
+| Raids (tackles, escapes) | 240 (45, 70) | 247 (45, 56) |
+| Holds checked: valid / invalid | 181 / 0 | 172 / 0 |
+| Grip, hands from the part held: median / 99th percentile / worst | 0.06 / 0.12 / 0.22 m | 0.06 / 0.12 / 0.30 m |
+| Held foot from where the hold has it: 99th percentile / worst | 0.000 / 0.10 m | 0.000 / 0.18 m |
+| A body's middle moving more than 0.2 m beyond the body in a frame: frames / worst | 14 / 0.21 m | 0 / 0.17 m |
+| Frames with a speed change over 40 m/s² (per 1,000 body-frames) / sharpest | 705 (0.77) / 243 m/s² | 246 (0.27) / 211 m/s² |
+|   of them diving: frames over / share of that state's frames | 195 / 3.5% | 16 / 0.3% |
+|   winding up | 84 / 1.2% | 2 / 0.03% |
+|   the raider, free | 208 / 0.4% | 0 |
+|   holding | 60 / 0.55% | 70 / 0.64% |
+|   the held raider | 19 | 8 |
+|   defenders standing ready | 112 / 0.03% | 116 / 0.03% |
+|   evading a touch | 0 | 4 / 0.6% |
+|   getting up | 7 | 8 |
+| Joint pops (bone-frames at the last stage's cap); bone turns it held back | 11,067; 0.32% | 12,298; 0.33% |
+| Bodies inside one another, frames over 5 cm | 5,754 | 5,520 |
+|   the raider and a defender; the raider and his holder; two holders (per holder's frame) | 0.218; 0.117; 0.040 | 0.212; 0.133; 0.039 |
+|   anyone else (per 1,000 body-frames) | 1.82 | 1.47 |
+| A body moving over 9 m/s in a frame | 17 (a raider's sidestep, or its last frame) | 10 (the same) |
+| Lying on the floor and moving over 2.5 m/s (episodes) | 5 | 6 |
+| Duplicate or impossible events / matches whose points do not add up / softlocks | 0 / 0 / 0 | 0 / 0 / 0 |
+
+Tackle phases are as before (winding up 0.37 s, the dive 0.30 s, on the floor 1.07 s, getting up 1.40 s, each
+holder letting go 0.93-0.97 s after the takedown: medians, both builds).
+
+**The game itself.** `ai_bench`, sixteen matches on Pro each (random seeds), last round's build and now: much the
+same. Successful raids 63% and 64% (301 of 478, 302 of 473), tackles 20% and 21%, out of bounds 10% and 8%, empty
+raids 7% and 6%; raid points 511 and 515, defence points 157 both. The defence's shape (its line's depth and spread,
+the way home covered as the raider runs for it) is as it was, so players walking back once a raid is over, moved
+once a frame now, still get to their places. (The bench's own check of the events stopped at a broken chain's event,
+which names both defenders; it reads it now.)
+
+**Checks.**
+
+- `test_runner` at a fixed 30 fps, as CI runs it: all 185 checks pass, the new one among them (it fails on the code
+  before the fix: the middle off to infinity, the freed ankle 0.22 m up).
+- `tackle_check`: all 17 scenarios as expected.
+- `compile_check`: no broken scripts.
+- The audit and the diagnostic build of it (its extra prints) on the same four seeds: the same 450,439 body-frames and
+  every count the same.
+- The audit run again in a separate process, traced: the same four matches entry for entry, every player's place,
+  state and timer in each of the 41,481 frames, and every event and score change (42,428 entries in all).
+
+**Still not right:**
+
+- **A thigh hold's grip, at its worst.** A few tenths of a second into a thigh hold, the hands can be up to 0.30 m
+  off the thigh for a few frames (0.22 m before), just inside what still counts as a hold (all 172 were). The median
+  and 99th percentile are as before (0.06 and 0.12 m). All of the worst grips, before and now, are thigh holds; in
+  the scripted scenarios the thigh and waist dives' first grips are looser too (above). Not found yet.
+- **A held foot in a lion jump's first spring frame.** The hold lets go halfway from the end of the gather to the
+  takeoff, so the leg leaves the hands as he leaves the floor; in the frame before, the foot is still held while the
+  body has begun to rise off it: up to 0.18 m off its hold in these matches (0.10 m before). One frame per jump out
+  of a hold; the 99th percentile is 0.
+- **The raider and his holder** are inside one another a little more often (0.117 → 0.133 per holder's frame, both
+  sets of four higher than either before), and holders' speed changes are about as before (0.55% → 0.64% of their
+  frames): the struggle's own contact, not looked into yet.
+- **Speed changes** left (246 frames, 0.27 per 1,000 body-frames): defenders standing ready (116, as many as before);
+  holders (70, 55 of them in a hold's first 0.2 s); a dive's first two frames (16, under 63 m/s²); getting up (8, up
+  to 79 m/s²: mostly a holder letting go, who stops in the frame he starts to get up, what the grapple last moved him
+  by dropped at once); an evasion stopped by a line (4: two of them a sprint with no line within the evasion's planned
+  reach, which carried him to one).
+- **A raider's sidestep** passes 9 m/s for the quickest raiders (10 frames): it is built at 1.9 times his top speed.
+- **Standing over a man lying flat**, a player is not moved off him (see above), and his legs can be in the other's
+  body. The audit's own measure (spheres round each pelvis, chest and head) does not see legs either.
+- **The steps** of a raider held round the middle are made by the body (the trailing foot on an arc), not a captured
+  clip.
+
 ## Measuring
 
 ```sh
