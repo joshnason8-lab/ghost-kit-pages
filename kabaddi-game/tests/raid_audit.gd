@@ -305,7 +305,7 @@ func _body(a: Athlete, dt: float) -> void:
 		for b in BONES:
 			if rig._bone.has(b):
 				rots[b] = rig.skeleton.get_bone_global_pose(int(rig._bone[b])).basis.get_rotation_quaternion()
-	var v := Vector3.ZERO
+	var v := Vector3.INF   # not known on a body's first frame of the raid (no frame before it to measure from)
 	if _last.has(a):
 		var was: Array = _last[a]
 		var step := p - (was[0] as Vector3)
@@ -315,12 +315,14 @@ func _body(a: Athlete, dt: float) -> void:
 			n.jumps += 1
 			_keep("jump (m/s)", speed, _where(a))
 
-		var acc := (v - (was[2] as Vector3)).length() / dt
-		d.accel.append(acc)
-		_tally("accel", a.state, acc > HARD_ACCEL)
-		if acc > HARD_ACCEL:
-			n.hard_accel += 1
-			_keep("accel (m/s²)", acc, _where(a))
+		if (was[2] as Vector3) != Vector3.INF:
+			# (Not on his second frame: the change from a speed not measured, taken as standing still, is not his.)
+			var acc := (v - (was[2] as Vector3)).length() / dt
+			d.accel.append(acc)
+			_tally("accel", a.state, acc > HARD_ACCEL)
+			if acc > HARD_ACCEL:
+				n.hard_accel += 1
+				_keep("accel (m/s²)", acc, _where(a))
 		var extra := ((w - (was[1] as Vector3)) - step).length()
 		d.pose_jump.append(extra)
 		if extra > POSE_JUMP:
@@ -477,7 +479,8 @@ func _conflicts(m: Node, r: Athlete, g, mat: Array) -> void:
 	for a in mat:
 		var speed := 0.0
 		if _last.has(a):
-			speed = (_last[a][2] as Vector3).length()
+			var lv: Vector3 = _last[a][2]
+			speed = lv.length() if lv != Vector3.INF else 0.0
 		var lying: bool = float(a.model.fallen) > 0.7 or (float(a.model.dive) > 0.7 and a.state not in ["dive", "holding"])
 		if lying and speed > 2.5:
 			seen["lying on the floor, moving over 2.5 m/s"] = a

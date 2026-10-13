@@ -266,6 +266,25 @@ func _run() -> void:
 			await frames(30)
 			var grip: float = ra.model.rig.skeleton.get_bone_pose_rotation(fb).get_angle()
 			check(relaxed > 0.2 and grip > relaxed * 1.6, "fingers rest curled and grip in a hold (%.2f, %.2f)" % [relaxed, grip])
+		# Held by one leg and standing on the other, his standing leg caught in the frame the hold on the first lets go of
+		# it: nothing left to stand on was taken as an endless sink, and the body sank through the floor for the rest of
+		# the raid (or went to NaN). He stands on the leg let go of, at his height.
+		var rig: RiggedBody = ra.model.rig
+		ra.set_state("idle", 1000.0)
+		await frames(10)
+		rig.foot_goal["l"] = [ra.model.anchor("foot_l"), 1.0]
+		await frames(15)
+		var stood: float = ra.model.anchor("waist").y
+		rig.foot_goal.erase("l")
+		rig.foot_goal["r"] = [ra.model.anchor("foot_r"), 1.0]
+		var moved := 0.0
+		for i in 15:
+			await get_tree().process_frame
+			var w: Vector3 = ra.model.anchor("waist")
+			moved = maxf(moved, absf(w.y - stood)) if w.is_finite() and is_finite(rig._sunk) else INF
+		var freed: float = ra.model.anchor("foot_l").y
+		check(moved < 0.06 and freed < 0.15, "held by the leg he stands on as the other is let go of, he stays on his feet (middle moved %.2f m, the freed ankle %.2f m up)" % [moved, freed])
+		rig.foot_goal.clear()
 		ra.queue_free()
 
 	# 8b. Cant, chain, reactions: drive a user match by hand.

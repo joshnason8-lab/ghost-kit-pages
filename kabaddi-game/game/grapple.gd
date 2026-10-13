@@ -71,7 +71,8 @@ const HAUL_SPEED := 1.3        # m/s a haul draws the ankle in
 const LEG_REST := 0.22         # m behind his hip (along the floor) the raider draws a held foot back to ...
 const LEG_DRAW := 0.45         # ... this fast (m/s), between hauls
 const ANKLE_LIFT := 0.14       # m a haul lifts a held ankle off the floor, at full struggle
-const SETTLE := 0.09           # s: how quickly a diver's slide dies away once his hands are on the ankle
+const SETTLE := 0.09           # s: how quickly a diver's slide dies away once his hands are on the ankle ...
+const SLIDE_STOP := 38.0       # ... and m/s² it stops at, at most, his shoulders up against his arms (ARM_MIN)
 const LEG_SPAN := 0.97         # share of the raider's leg (hip joint to ankle joint) a held leg stretches to
 const LOW_HIP := 0.62          # share of his leg's length his hips can sink to over the free foot ...
 const STAND_HIP := 0.95        # ... and stand at, one leg held
@@ -689,10 +690,12 @@ func _ankle(h: Dictionary, dt: float) -> void:
 	var at: Vector3 = h.at
 	var slide: Vector3 = h.get("slide", Vector3.ZERO)
 	var step := slide * dt
+	# Dying away, and up against his own arms (his shoulders as near the ankle as they go) all of it: stopped over a
+	# few frames either way as his elbows give (SLIDE_STOP), not dead in a frame (from a dive's 3-4 m/s, 100 m/s²).
+	var left := slide * exp(-dt / SETTLE)
 	if step.length() > 0.0 and _flat(at - (_shoulders(d) + step)).length() < ARM_MIN:
-		step = Vector3.ZERO
-		slide = Vector3.ZERO
-	h.slide = slide * exp(-dt / SETTLE)
+		left = Vector3.ZERO
+	h.slide = slide.move_toward(left, SLIDE_STOP * dt)
 	d.position += step
 	d.vel = step / maxf(dt, 0.0001) + (h.get("dragged", Vector3.ZERO) as Vector3) / maxf(dt, 0.0001)
 	h.dragged = Vector3.ZERO

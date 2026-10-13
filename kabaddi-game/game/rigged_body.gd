@@ -89,7 +89,7 @@ const SWING_LIFT := 0.07     # m: a foot stepping on purpose (step) lifts this h
 const MAX_SINK := 0.3        # m the hips may come down for a held leg to reach its hold (_sink_to_hold) ...
 const SINK_RISE := 2.5       # ... and m/s they come back up at, the hold let go (a foot torn out of the hands as he springs)
 const SETTLE_DROP := 3.0     # m/s a body held by the leg it stood on comes down onto the other (_ground)
-const RISE_MAX := 4.0        # m/s the hips may rise against the body's root, whatever lifts them (_limit_height) ...
+const RISE_MAX := 4.0        # m/s the body's middle may rise against its root, whatever lifts it (_limit_height) ...
 const FALL_MAX := 5.0        # ... and come down
 const TURN_MAX := 1200.0     # deg/s any bone of the drawn body may turn, whatever turns it (_limit_turns)
 var _plant := {}             # side -> [world position of the held sole point, how firmly held 0..1, which point,
@@ -104,7 +104,7 @@ var _rejoined := {}          # bones of a leg back in what he stands on this fra
 var _newly_held := {}        # sides newly left out of what he stands on this frame, held (_ground)
 var _lifted := 0.0           # how far _ground still holds the hips up over the leg he now stands on (skeleton space)
 var _standing := true        # on his feet, as far as what touches the floor goes (_ground)
-var _hip_y := INF            # the hips' height last frame (skeleton space; _limit_height)
+var _mid_y := INF            # the body's middle's height last frame (skeleton space; _limit_height)
 # Holds (see Grapple): hands reaching for a point on another player's body, and a foot kept where a
 # defender holds it. hands_free is where this body's hands are before they reach (world, last frame).
 var hand_target := {}        # side -> {model: HumanModel or null, part, offset (world), point (world, when model
@@ -599,7 +599,7 @@ func _limit_turns(g: Dictionary, now: float) -> void:
 ## Returns the hips' position; turns the feet and legs in g.
 func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	if not grounding or (body.get("contacts", []) as Array).is_empty():
-		_hip_y = INF
+		_mid_y = INF
 		return hips
 	var target := float(h.air) / scale.y
 	var up: Vector3 = (g.get("chest", Basis()) as Basis) * (body.rest_dirs.chest as Vector3)
@@ -616,8 +616,12 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	var low := _lowest(_fk(g, hips), standing, held)
 	if not _rejoined.is_empty():
 		# A leg let go of, back in what he stands on (it was left out of it while held): he comes up onto it no faster
-		# than SINK_RISE (_sink_to_hold), the leg bending under him meanwhile, rather than in a frame.
-		_sunk = maxf(_sunk, _lowest(_fk(g, hips), standing, held.merged(_rejoined)) - low)
+		# than SINK_RISE (_sink_to_hold), the leg bending under him meanwhile, rather than in a frame. (Let go of as the
+		# other is caught, in the same frame, there is nothing in what is left to stand on, and nothing to come up out
+		# of: taken as a sink, that nothing was an endless one, and the body went off to infinity.)
+		var back := _lowest(_fk(g, hips), standing, held.merged(_rejoined))
+		if back != INF:
+			_sunk = maxf(_sunk, back - low)
 	# Held by the leg he was standing on (a back kick caught, say): he comes down onto the other leg no faster than
 	# SETTLE_DROP, rather than dropping onto it in a frame.
 	_lifted = maxf(0.0, _lifted - SETTLE_DROP / scale.y * dt)
@@ -626,7 +630,9 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 		for s in _newly_held:
 			for b in _side_bones[s]:
 				with.erase(b)
-		_lifted = maxf(_lifted, low - _lowest(_fk(g, hips), standing, with))
+		var under := _lowest(_fk(g, hips), standing, with)
+		if under != INF:
+			_lifted = maxf(_lifted, low - under)
 	hips.y += target - low + _lifted
 	if target > 0.02:
 		_plant.clear()
@@ -669,25 +675,34 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	return hips
 
 
-## The hips rise no faster than RISE_MAX and come down no faster than FALL_MAX against the body's root, whatever
-## moves them: the body set down on whatever is lowest (a dive coming down onto the chest as that goes lower than the
-## feet), a clip blended in over a few frames (a get-up from the floor), a hold's sink, a spring out of a crouch.
-## Each was a jump of the body's middle of 0.2 to 0.3 m in a frame, now spread over the frames a body would take.
-## Held down, a foot that would go through the floor is lifted out of it (the knee bends); held up, standing, a foot
-## that was on the floor reaches down to it as far as the leg goes. Returns the hips.
+## The body's middle rises no faster than RISE_MAX and comes down no faster than FALL_MAX against the body's root,
+## whatever moves it: the body set down on whatever is lowest (a dive coming down onto the chest as that goes lower
+## than the feet), a clip blended in over a few frames (a get-up from the floor), a hold's sink, a spring out of a
+## crouch. Each was a jump of the middle of 0.2 to 0.3 m in a frame, now spread over the frames a body would take.
+## The middle is where anchor("waist") has it, most of the way from the hips up the spine: a trunk tipping over brings
+## it down as well as the hips coming down (a dive going down, the hips held to FALL_MAX, still dropped it 0.2 m in a
+## frame). Held down, a foot that would go through the floor is lifted out of it (the knee bends); held up, standing,
+## a foot that was on the floor reaches down to it as far as the leg goes. Returns the hips.
 func _limit_height(g: Dictionary, hips: Vector3, dt: float, standing: bool) -> Vector3:
-	var y := hips.y
-	if _hip_y != INF and dt > 0.0:
-		y = clampf(y, _hip_y - FALL_MAX / scale.y * dt, _hip_y + RISE_MAX / scale.y * dt)
-	_hip_y = y
-	if y == hips.y:
+	var fk := _fk(g, hips)
+	var mid := hips.y
+	if _bone.has("spine"):
+		mid = lerpf(hips.y, (fk[0][_bone["spine"]] as Vector3).y, 0.7)
+	if not is_finite(mid):
+		# (Never, now that nothing above sends the hips off to infinity; were it to, he stays where he was.)
+		hips.y = _mid_y if is_finite(_mid_y) else 0.0
+		return hips
+	var y := mid
+	if _mid_y != INF and dt > 0.0:
+		y = clampf(y, _mid_y - FALL_MAX / scale.y * dt, _mid_y + RISE_MAX / scale.y * dt)
+	_mid_y = y
+	if y == mid:
 		return hips
 	var was := {}
-	var fk := _fk(g, hips)
 	for s in body.soles:
 		was[s] = _sole_low(fk, s)
-	var off := y - hips.y
-	hips.y = y
+	var off := y - mid
+	hips.y += off
 	fk = _fk(g, hips)
 	var down := PLANT_DOWN / scale.y
 	for s in body.soles:
@@ -817,9 +832,16 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 	# fk was worked out before they were laid flat.
 	var floor_y := INF
 	for s in body.soles:
+		if foot_goal.has(s) and float(foot_goal[s][1]) > 0.5:
+			continue   # held: not what he stands on (as _ground leaves it out), wherever the motion has it; counted, a
+			           # move that put the held foot lowest (a dubki's) had the free one off the floor, and not planted
 		var fb: Basis = g.get("foot_" + s, fk[1][body.soles[s][0]])
 		for q in (body.soles[s][1] as PackedVector3Array):
 			floor_y = minf(floor_y, (fk[0][body.soles[s][0]] as Vector3).y + (fb * q).y)
+	# Still being let down onto the free leg, the one he stood on just caught (_ground, _lifted): the floor is that far
+	# below its foot yet, and the foot is planted when it gets there, not in the air.
+	if is_finite(_lifted):
+		floor_y -= _lifted
 	var down := PLANT_DOWN / scale.y
 	var slip := PLANT_SLIP / scale.y
 	for s in body.soles:

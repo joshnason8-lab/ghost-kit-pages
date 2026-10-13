@@ -169,7 +169,7 @@ func _event_checks() -> void:
 		var t: float = e[0]
 		var k: String = e[1]
 		var info: Dictionary = e[2]
-		var who := String(info.get("who", info.get("from", "")))
+		var who := str(info.get("who", info.get("from", "")))   # (a broken chain names both: an array)
 		match k:
 			"touch":
 				touched[who] = t
