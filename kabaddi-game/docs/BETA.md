@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.7.5-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.7.6-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.7.5-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.7.6-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -67,7 +67,7 @@ For each problem, note:
 If the game closes by itself (it crashed): say when (at start-up, on the home screen, starting a match, mid-raid),
 and the phone model. A crash log helps most: with the phone plugged into a computer with USB debugging on,
 `adb logcat -d > log.txt` straight after the crash; without a computer, Settings → Developer options → **Bug report**.
-Since 0.7.5 the game draws with OpenGL rather than Vulkan, which is what crashed on a Galaxy S24.
+Since 0.7.6 the game draws with OpenGL rather than Vulkan, which is what crashed on a Galaxy S24.
 
 Things worth reporting even if nothing is broken:
 
