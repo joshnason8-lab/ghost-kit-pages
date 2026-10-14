@@ -49,6 +49,7 @@ var dive_launch := 4.0             # m/s his dive drives off to (Match._defender
 var push := Vector3.ZERO           # how fast he is being moved out of someone's way (Match._push_all) ...
 var avoid := Vector3.ZERO          # ... or, steering himself, how he steers round them: added to where he means to go
 var drove := false                 # he steered himself this frame (drive)
+var drives := 0                    # times drive() moved him (tests/motion_probe counts frames with more than one: two owners)
 var walk_target := Vector3.ZERO
 var evade_to := Vector3.INF       # where an evasion pulls up, a line in its way (Match._evade); INF: none
 var energy := 1.0
@@ -229,15 +230,20 @@ func airborne() -> bool:
 ## for a hard step.
 func drive(desired: Vector3, dt: float, rate := -1.0) -> void:
 	desired.y = 0
+	var meant := desired   # where he means to go, before stepping round anyone
 	if avoid != Vector3.ZERO:
 		# Round anyone he is about to walk into (Match._push_all): no further toward them, and out of their way.
 		var away := avoid.normalized()
 		desired -= away * minf(0.0, desired.dot(away))
 		desired += avoid
 	drove = true
+	drives += 1
 	vel = vel.move_toward(desired, (accel if rate < 0.0 else rate) * dt)
 	position += vel * dt
-	if not lock_facing and vel.length() > 0.4:
+	# He turns the way he is going while it is the way he means to go: stepped aside by someone (avoid) with nowhere he
+	# means to go, he does not turn to it (one stood still and stepped aside and back was turned to and fro with each step,
+	# tests/motion_audit); pulling up from a sprint to go back, he faces the way he was running until he is going back.
+	if not lock_facing and vel.length() > 0.4 and vel.dot(meant) > 0.0:
 		facing = facing.slerp(vel.normalized(), clampf(dt * 10.0, 0.0, 1.0)).normalized()
 
 
@@ -312,8 +318,11 @@ func _pose(delta: float) -> void:
 	# (Grapple._steps, RiggedBody.step), or held by both legs, who cannot step at all.
 	m.speed = 0.0 if state == "holding" or (state == "held" and held_leg == 0.0) else move_vel.length()
 	# The held clip's own leg work would fight his steps (its feet lifting and shifting under a planted foot): his legs
-	# are the braced stance underneath while he steps or is held by both legs.
-	m.clip_legs = move_toward(m.clip_legs, 0.0 if state == "held" and held_leg == 0.0 else 1.0, delta * 4.0)
+	# are the braced stance underneath while he steps or is held by both legs. Standing ready, the same: the stance clip
+	# (a goalkeeper's) stood him with his knees and toes turned out and a leg straight out to the side, a foot left
+	# planted at its widest; his legs are the hand-made crouch (HumanModel._animate), the clip keeps his trunk and arms.
+	var own_legs := (state == "held" and held_leg == 0.0) or state == "ready"
+	m.clip_legs = move_toward(m.clip_legs, 0.0 if own_legs else 1.0, delta * 4.0)
 	var want_crouch := 0.0
 	var want_lean := 0.0
 	var want_reach := 0.0

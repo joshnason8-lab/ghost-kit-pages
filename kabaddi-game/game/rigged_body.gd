@@ -91,6 +91,11 @@ const PLANT_SINK := 0.03     # m the planted feet may bring the hips down below 
 const RUN_STATES := ["raid", "ready", "idle", "walk", "evade", "telegraph", "dodge"]   # on his feet, free to run (_ground)
 const STEP_LIFT := 0.05      # m: a foot let go at the slip limit lifts this high as it steps on
 const SWING_LIFT := 0.07     # m: a foot stepping on purpose (step) lifts this high as it comes through
+const SETTLE_OFF := 0.12     # m: standing ready, a planted foot this far from where his stance has it steps there ...
+const SETTLE_STEP := 0.28    # ... taking this long (s), ...
+const SETTLE_LIFT := 0.06    # ... lifted this high (m), ...
+const SETTLE_GAP := 0.2      # ... one foot at a time, this long (s) after the last (_plant_feet)
+const SETTLE_STATES := ["ready", "idle"]   # standing (_ground)
 const MAX_SINK := 0.3        # m the hips may come down for a held leg to reach its hold (_sink_to_hold) ...
 const SINK_RISE := 2.5       # ... and m/s they come back up at, the hold let go (a foot torn out of the hands as he springs)
 const SETTLE_DROP := 3.0     # m/s a body held by the leg it stood on comes down onto the other (_ground)
@@ -105,6 +110,8 @@ var _replant := {}           # side -> seconds before a foot let go at the slip 
 var _stepping := {}          # side -> [where the foot left the floor (world, the ankle), the clock then, how long the step
                              #          takes]: a step on purpose (step)
 var _plant_t := -1.0         # the motion's clock at the last frame, for the time step
+var _settle_wait := 0.0      # s before the next settling step may start (_plant_feet)
+var settle_steps := 0        # settling steps taken, all told (for tests)
 var _sunk := 0.0             # how far _sink_to_hold had the hips down last frame (skeleton space)
 var _held_out := {}          # sides _held_legs left out of what he stands on last frame
 var _rejoined := {}          # bones of a leg back in what he stands on this frame, let go of (_ground)
@@ -686,7 +693,10 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	if not on_feet and float(h.get("one_leg")) > 0.5:
 		on_feet = ((g.get("hips", Basis()) as Basis) * (body.rest_dirs.hips as Vector3)).y > 0.5
 	if on_feet and hips.y > 0.35 * float(body.leg_len):
-		_plant_feet(g, fk, dt)
+		# Standing ready (not moving off, nothing holding him): a foot left out of place steps back under him.
+		var settling := ath != null and String(ath.get("state")) in SETTLE_STATES and float(h.speed) < 0.35 \
+			and held.is_empty() and foot_goal.is_empty()
+		_plant_feet(g, fk, dt, settling)
 	else:
 		_release_plants(g, fk, dt)
 	# Back on the floor after the feet were laid flat and planted, then down for a held leg to reach its hold,
@@ -853,8 +863,9 @@ func _hold_feet(g: Dictionary, fk: Array) -> void:
 ## point is held where it is, so the roll stays natural. The hold is firm at once (it starts where the foot
 ## touches down) and lets go over a few hundredths of a second as the foot lifts. A foot the motion would
 ## carry more than PLANT_SLIP away is let go and steps on with a small lift; one suddenly far away (a player
-## placed somewhere new) is let go at once.
-func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
+## placed somewhere new) is let go at once. With settle (standing ready), a foot SETTLE_OFF out of place steps back to
+## where his stance has it, one foot at a time.
+func _plant_feet(g: Dictionary, fk: Array, dt: float, settle := false) -> void:
 	var xf := skeleton.global_transform
 	var inv := xf.affine_inverse()
 	# Heights from the lowest sole, which is where the floor ends up (the body is set down on it after
@@ -874,6 +885,29 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 		floor_y -= _lifted
 	var down := PLANT_DOWN / scale.y
 	var slip := PLANT_SLIP / scale.y
+	_settle_wait = maxf(0.0, _settle_wait - dt)
+	if settle and _stepping.is_empty() and _settle_wait <= 0.0:
+		# The foot furthest out of place, if out by SETTLE_OFF, steps to where his stance has it. A planted foot stays where
+		# it came down until the motion carries it PLANT_SLIP away (a stride's worth), and standing ready after a shuffle or
+		# a clip's weight shift a leg was left out to the side, straight, for as long as he stood there.
+		var worst := ""
+		var worst_off := SETTLE_OFF / scale.y
+		for s in _plant:
+			var st0: Array = _plant[s]
+			if st0[3] or float(st0[1]) < 1.0 or not body.soles.has(s):
+				continue   # stepping on already, or not yet firmly down
+			var bi0: int = body.soles[s][0]
+			var b0: Basis = g.get("foot_" + s, fk[1][bi0])
+			var held0: Vector3 = (fk[0][bi0] as Vector3) + b0 * (body.soles[s][1] as PackedVector3Array)[int(st0[2])]
+			var at0: Vector3 = inv * (st0[0] as Vector3)
+			var off0 := Vector2(at0.x - held0.x, at0.z - held0.z).length()
+			if off0 > worst_off:
+				worst = s
+				worst_off = off0
+		if worst != "":
+			step(worst, SETTLE_STEP, SETTLE_LIFT)
+			_settle_wait = SETTLE_STEP + SETTLE_GAP
+			settle_steps += 1
 	for s in body.soles:
 		if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
 			continue
@@ -887,12 +921,19 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 		var ankle: Vector3 = fk[0][_bone["foot_" + s]]
 		if _stepping.has(s):
 			# Stepping on purpose: from where it left the floor to where the motion has it now, lifted on the way.
-			# It comes up before it goes across and is over the spot before it comes down.
+			# It comes up before it goes across and is over the spot before it comes down; that spot is kept where it is
+			# on the floor as the foot comes down (following the motion down, a foot coming down while he moved on slid
+			# along the floor into its plant).
 			var sw: Array = _stepping[s]
 			var p := clampf((_plant_t - float(sw[1])) / maxf(float(sw[2]), 0.01), 0.0, 1.0)
 			var q := clampf((p - 0.2) / 0.6, 0.0, 1.0)
 			var goal := (inv * (sw[0] as Vector3)).lerp(ankle, q * q * (3.0 - 2.0 * q))
-			goal.y += SWING_LIFT / scale.y * sin(PI * p)
+			if q >= 1.0:
+				if sw.size() < 5:
+					sw.append(xf * goal)
+				var spot := inv * (sw[4] as Vector3)
+				goal = Vector3(spot.x, ankle.y, spot.z)   # along the floor where it was; as high as the motion has it
+			goal.y += float(sw[3]) / scale.y * sin(PI * p)
 			_ik_leg(g, fk, s, goal)
 			if p >= 1.0:
 				_stepping.erase(s)   # down: planted where it lands (below, next frame)
@@ -968,13 +1009,14 @@ func _release_plants(g: Dictionary, fk: Array, dt: float) -> void:
 		_ik_leg(g, fk, s, (fk[0][_bone["foot_" + s]] as Vector3) + off * float(st[1]))
 
 
-## A step the body takes on purpose (Grapple._steps): the foot s leaves the floor where it is and comes through to
-## where the motion has it, over length s, lifted off the floor on the way, and is planted again where it lands.
-func step(s: String, length: float) -> void:
+## A step the body takes on purpose (Grapple._steps, settling his feet standing ready): the foot s leaves the floor
+## where it is and comes through to where the motion has it, over length s, lifted lift off the floor on the way, and is
+## planted again where it lands.
+func step(s: String, length: float, lift := SWING_LIFT) -> void:
 	if not _bone.has("foot_" + s):
 		return
 	_plant.erase(s)
-	_stepping[s] = [anchor("foot_" + s), _plant_t, length]
+	_stepping[s] = [anchor("foot_" + s), _plant_t, length, lift]
 
 
 ## A point on the body as drawn now, in world space, for holds and contact checks: "hand_l"/"hand_r" (the

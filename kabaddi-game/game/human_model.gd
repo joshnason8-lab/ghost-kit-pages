@@ -91,6 +91,8 @@ var _pace := -1.0           # his speed, smoothed: how far a running clip is in 
 # an offset that fades out, so every transition starts from the pose on screen (see _settle).
 const SETTLE_TIME := 0.18
 const WAY_EASE := 0.18       # s over which the way he travels is smoothed for picking a running clip
+const READY_HINGE := 0.5     # rad the pelvis tips forward per unit of crouch, standing ready on his own legs ...
+const READY_WIDEN := 0.08    # ... and rad each leg goes further out: feet about 0.45 m apart
 const MOVE_FADE := 0.28      # s to cross-fade from one running clip to the next
 var _joints: Array[Node3D] = []
 var _last_q: Array[Quaternion] = []
@@ -535,6 +537,12 @@ func _animate(delta: float) -> void:
 	# would leak into later frames (and an angle past 90 degrees flips the others round).
 	# Whole-body pitch for dives (face down toward the target) and falls.
 	var pel_x := lerpf(0.0, -1.5, dive) + lerpf(0.0, -1.5, fallen * (1.0 - dive))
+	# Standing ready on his own legs (clip_legs 0: the stance clip has only his trunk and arms), bent forward at the hips
+	# over his bent knees, feet a little wider than his shoulders, each player a little his own way. The thighs take the
+	# hinge back, so the knees and feet stay where they were.
+	var ready := (1.0 - clip_legs) * c * (1.0 - lie)
+	var hinge := ready * (READY_HINGE + 0.08 * sin(_life * 3.7))
+	pel_x -= hinge
 	var pel_z := sw * 0.04 * run * fwd_w
 	var pel_y := sw * 0.12 * run * fwd_w
 	# Idle life: weight shifting from foot to foot and breathing.
@@ -562,8 +570,8 @@ func _animate(delta: float) -> void:
 	# toward the next step and is nearly straight as the foot lands.
 	var amp := clampf(0.2 + 0.13 * gait, 0.0, 0.8) * fwd_w * (0.6 if back else 1.0) * minf(1.0, gait * 2.0)
 	var fold := clampf(0.35 + 0.28 * gait, 0.35, 1.6) * fwd_w * minf(1.0, gait * 1.5)
-	var lthigh := sw * amp + c * 0.75
-	var rthigh := -sw * amp + c * 0.75
+	var lthigh := sw * amp + c * 0.75 + hinge
+	var rthigh := -sw * amp + c * 0.75 + hinge
 	var lknee := -(0.08 * minf(1.0, gait) + fold * pow(maxf(0.0, cw), 1.5)) - c * 1.35
 	var rknee := -(0.08 * minf(1.0, gait) + fold * pow(maxf(0.0, -cw), 1.5)) - c * 1.35
 	# A raider on his toes: quick light steps on the spot while he works the cover.
@@ -593,8 +601,9 @@ func _animate(delta: float) -> void:
 	lknee = lerpf(lknee, -1.45, seated)
 	rknee = lerpf(rknee, -1.5, seated)
 	pelvis.position.y = lerpf(pelvis.position.y, 0.47 * height / 1.78, seated)
-	hip_l.rotation = Vector3(lthigh, 0, -0.06 - c * 0.12 - side_l - dubki * 0.25)
-	hip_r.rotation = Vector3(rthigh, 0, 0.06 + c * 0.12 + kick * 0.12 + side_r + dubki * 0.25)
+	var wide := ready * (READY_WIDEN + 0.03 * cos(_life * 2.3))
+	hip_l.rotation = Vector3(lthigh, 0, -0.06 - c * 0.12 - wide - side_l - dubki * 0.25)
+	hip_r.rotation = Vector3(rthigh, 0, 0.06 + c * 0.12 + wide + kick * 0.12 + side_r + dubki * 0.25)
 	kn_l.rotation = Vector3(lknee, 0, 0)
 	kn_r.rotation = Vector3(rknee, 0, 0)
 

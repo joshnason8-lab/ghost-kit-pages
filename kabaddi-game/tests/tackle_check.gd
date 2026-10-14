@@ -27,7 +27,8 @@ extends Node
 ## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording ("plain" leaves
 ## the debug overlay off; "high" looks down from above, three-quarters on, to see every hold in a pile; "close"
 ## comes in closer, a little in front, to see the bodies' detail):
-##   godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json FILE] [--log]
+##   godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json FILE] [--log] [--audit]
+## --audit adds who moved whom each frame and what shook (tests/motion_probe.gd) to each scenario's results.
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie out.avi \
 ##       --fixed-fps 30 res://tests/tackle_check.tscn -- view catch [plain]
 
@@ -64,6 +65,7 @@ var _plain := false
 var _cam_off := Vector3(5.2, 1.6, 0.0)   # the camera from what it looks at: from the side; "high": above, three-quarters
 var _results := {}
 var _cam: Camera3D
+var _audit := false   # --audit: who moved whom each frame, and what shook (tests/motion_probe.gd)
 
 
 func _ready() -> void:
@@ -75,6 +77,8 @@ func _ready() -> void:
 			_view = true
 		elif args[i] == "plain":
 			_plain = true
+		elif args[i] == "--audit":
+			_audit = true
 		elif args[i] == "high":
 			_cam_off = Vector3(3.4, 3.6, 2.4)
 		elif args[i] == "close":
@@ -191,6 +195,11 @@ func _run(sc: String) -> Dictionary:
 	var down_at := -1.0
 	var esc := {}          # a lion jump out of the hold: when it was called for, let go, off the floor (see _escape)
 	var duck := {}         # a dubki held at the ankle: the hold through it, and the arms it slips (see _duck)
+	var probe = null
+	if _audit:
+		probe = load("res://tests/motion_probe.gd").new()
+		probe.log_events = _log
+		probe.attach(m)
 	while t < 12.0:
 		var dt := get_process_delta_time()
 		dt = dt if dt > 0.0005 else 1.0 / 30.0
@@ -261,6 +270,8 @@ func _run(sc: String) -> Dictionary:
 			break
 		await get_tree().process_frame
 		t += dt
+		if probe:
+			probe.frame(dt)
 		if _view:
 			_follow(r, d, dt)
 		# What the frame did.
@@ -497,6 +508,8 @@ func _run(sc: String) -> Dictionary:
 				and float(out.states_r[jumped + 1][0]) - float(out.states_r[jumped][0]) < 0.4
 			out.ok = out.attached and out.events.count("escape") == 0 and out.events.count("release") == 0 and back \
 				and downs == 1 and out.end == "tackle"
+	if probe:
+		out["audit"] = probe.report()
 	m.queue_free()
 	await get_tree().process_frame
 	return out

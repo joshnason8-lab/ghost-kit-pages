@@ -51,6 +51,8 @@ var _stride := -2.0                    # see stride()
 
 static var _library := {}
 static var _scanned := false
+static var _to_read := PackedStringArray()   # files still to read (scan_step)
+static var _to_read_total := 0
 
 
 ## The running set: clips named move_*, each travelling some way at some speed.
@@ -90,15 +92,39 @@ static func how(state: String) -> String:
 
 
 static func _scan() -> void:
-	_scanned = true
-	var d := DirAccess.open(DIR)
-	if d == null:
-		return
-	for f in d.get_files():
-		if f.ends_with(".json"):
-			var c := load_file(DIR.path_join(f))
-			if c:
-				_library[c.name] = c
+	while scan_step():
+		pass
+
+
+## Reads the next clip into the library, so the loading screen can read them a few at a time: false once they
+## are all in.
+static func scan_step() -> bool:
+	if _scanned:
+		return false
+	if _to_read.is_empty() and _to_read_total == 0:
+		var d := DirAccess.open(DIR)
+		if d != null:
+			for f in d.get_files():
+				if f.ends_with(".json"):
+					_to_read.append(f)
+		_to_read_total = maxi(1, _to_read.size())
+	if _to_read.is_empty():
+		_scanned = true
+		return false
+	var c := load_file(DIR.path_join(_to_read[0]))
+	_to_read.remove_at(0)
+	if c:
+		_library[c.name] = c
+	return true
+
+
+## How much of the library is read, 0..1 (scan_step).
+static func scan_progress() -> float:
+	if _scanned:
+		return 1.0
+	if _to_read_total == 0:
+		return 0.0
+	return 1.0 - float(_to_read.size()) / float(_to_read_total)
 
 
 static func load_file(path: String) -> MocapClip:

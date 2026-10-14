@@ -83,10 +83,12 @@ const NUDGE := 3.0             # ... kept apart no faster than this (m/s): out o
 const NUDGE_ACCEL := 15.0      # ... and getting up to that speed, or off it, no quicker (m/s²): eased aside, not knocked
 const SEPARATE_LOOK := 0.2     # s ahead keeping apart looks, at how players are going: aside before they meet, not after
 const AVOID_TIME := 0.15       # s a player steering round another means to be clear of him in
+const APART_HYST := 0.08       # m further apart than the gap players kept apart last frame are kept apart to (_gap)
 const SHUFFLE := 0.6           # m/s a player getting up off the floor shuffles out from under another body at, at most
 const BODY_GAP := 0.4          # m kept between a body on the floor, getting up or bent into a hold (its trunk, _trunk)
                                # and anyone else's: lying, a body is a body's length along the floor, not a point
 const DOWN_STATES := ["holding", "dive", "recover", "rise", "fallen"]   # on the floor, or in the grapple: not pushed
+const WATCH_HOLD := 0.4        # s the raider keeps watching the defender he chose (or not watching), at least
 const HELD_TURN := 1.5         # rad/s a raider held other than by the ankle turns toward home at most
 const SPRING := 35.0           # m/s² a lion jump out of a hold drives off the free leg at, up to the spring's speed
 const EVADE_REACH := 1.4       # m an evading defender can cover (_evade: 0.34 s from a standstill), and a little more
@@ -131,6 +133,8 @@ var attract := false           # AI match running behind the main menu
 var tutorial: Node = null
 var _links: Array = []         # mesh pool for chain hand-holds
 var _push_want := {}           # Athlete -> how far keeping players apart would move him this frame (_push_all)
+var _kept := {}               # pairs kept apart last frame (_gap) ...
+var _kept_now := {}           # ... and this frame
 var control_mode := "all"      # "all" (quick, cup) or "career" (only your player)
 var career_pid := ""
 var paused := false
@@ -153,6 +157,8 @@ var move_tries := {}          # move -> attempts, for tuning
 var lab := false
 var lab_move := Vector3.ZERO
 var lab_force := {}
+# Tests (tests/motion_audit): called with the name of each stage of the raid's frame that moves players, as it ends.
+var audit := Callable()
 var grapple: Grapple = null   # the raider in defenders' hands (see Grapple)
 var defence: DefenceCoach      # the defending team's roles and places (see DefenceCoach)
 var event_log: Array = []      # the last gameplay events: [match seconds, raid number, kind, info]
@@ -434,7 +440,11 @@ func _begin_setup() -> void:
 		a.touched = false
 		a.set_ring(Color(0, 0, 0, 0))
 		if a.on_mat and a.state != "walk":
-			a.set_state("idle")
+			# The raiding side waits idle in its own half, the defence is ready (_walk_to_positions): straight there. (All
+			# put idle here, the defence was put ready again the next frame, each player's stance started twice.)
+			var want := "idle" if a.team == raiding else "ready"
+			if a.state != want:
+				a.set_state(want)
 		elif not a.on_mat and a.state in BUSY:
 			a.set_state("walk")   # out, and still down or in a move as the next raid is set up: off he goes
 	# He walks to the start spot through the setup (_walk_to_positions); only from far off is he put there.
@@ -637,9 +647,11 @@ func _tick_raid(dt: float) -> void:
 	else:
 		raider.lock_facing = watch != null
 		move = lab_move if lab else _ai_raider(dt)
+	_audit("start")
 	_move_raider(move, dt)
 	if watch != null and not (raider == controlled and cam.mode == Game.CAM_FIRST):
 		raider.face_toward(watch.position, dt, 9.0)
+	_audit("raider")
 
 	# Defenders: the team's plan first, then each one at it.
 	defence.update(dt)
@@ -650,16 +662,20 @@ func _tick_raid(dt: float) -> void:
 			_chained_follow(d, dt)
 		else:
 			_ai_defender(d, dt)
+	_audit("defence")
 	_separate(defs)
 	_push_all(dt)
+	_audit("apart")
 	# Inside the court after being moved aside as well: a push past the line was pulled back only on his next step, in
 	# one frame, and if that step was a dive's first, a lurch sideways as he left the floor.
 	for d in defs:
 		if d.state not in DOWN_STATES:
 			_clamp_defender(d)
 	_tick_bystanders(dt)
+	_audit("court")
 	if grapple:
 		grapple.update(dt)
+	_audit("grapple")
 	for h in holders:
 		_tire(h, 0.02 * dt)
 		if grapple and grapple.has(h):
@@ -669,6 +685,7 @@ func _tick_raid(dt: float) -> void:
 		h.position = raider.position + h.hold_offset
 		h.vel = raider.vel
 		h.face_toward(raider.position, dt, 20.0)
+	_audit("attach")
 
 	_aim_limb()
 	_check_contacts(defs)
@@ -676,6 +693,12 @@ func _tick_raid(dt: float) -> void:
 		_check_chain_cross()
 	_check_lines()
 	_check_end(dt)
+	_audit("contacts")
+
+
+func _audit(stage: String) -> void:
+	if audit.is_valid():
+		audit.call(stage)
 
 
 func _move_raider(move: Vector3, dt: float) -> void:
@@ -780,9 +803,29 @@ func _move_raider(move: Vector3, dt: float) -> void:
 ## While he is stepping sideways or backing off with defenders close, the raider keeps his
 ## eyes on the nearest one rather than turning his back. Returns that defender, or null
 ## when he should just face where he is running (going for a touch, or racing home).
+## Whom the raider watches as he works the cover (he faces him), or null (he faces where he runs). What he chooses is
+## kept for WATCH_HOLD at least: chosen afresh each frame, two defenders about as near, or running at one and then not,
+## threw his eyes and shoulders from one to the other and to where he ran, and back, frame by frame (tests/motion_audit).
+## Not free to look about (in a move, held) or the one he watches out of reach or down, it changes at once.
 func _raider_watch() -> Athlete:
 	if raider.state != "raid" or not raid.holders.is_empty():
+		raid.erase("watch")
 		return null
+	var want := _watch_pick()
+	var cur: Array = raid.get("watch", [])
+	if cur.is_empty() or want == cur[0] or phase_t - float(cur[1]) >= WATCH_HOLD:
+		if cur.is_empty() or want != cur[0]:
+			raid["watch"] = [want, phase_t]
+		return want
+	var keep = cur[0]
+	if keep != null and (not is_instance_valid(keep) or keep.state in DOWN_STATES \
+			or Vector2(keep.position.x - raider.position.x, keep.position.z - raider.position.z).length() > 3.4):
+		raid["watch"] = [want, phase_t]
+		return want
+	return keep
+
+
+func _watch_pick() -> Athlete:
 	if depth_in(1 - raiding, raider.position) < 1.2:
 		return null
 	var near: Athlete = null
@@ -863,6 +906,8 @@ func _separate(defs: Array) -> void:
 	for d in up:
 		if d == controlled:
 			continue
+		if held and defence.role_of(d) == "help":
+			continue   # coming in to take hold: his place (Grapple.approach) is nearer him than this would keep him
 		if held or d.state in ["ready", "idle"]:
 			# (A free raider is where he is: no one gives way to where he is going, which would take a touch away.)
 			_nudge(d, _ahead(raider) if held else raider.position, 0.55)
@@ -899,10 +944,16 @@ func _apart(list: Array) -> void:
 			var d := _ahead(b) - _ahead(a)
 			d.y = 0
 			var l := d.length()
-			if l < SEPARATE and l > 0.001:
-				var push := d / l * (SEPARATE - l) * 0.5
-				_push_want[a] = (_push_want.get(a, Vector3.ZERO) as Vector3) - push
-				_push_want[b] = (_push_want.get(b, Vector3.ZERO) as Vector3) + push
+			var gap := _gap(a, b, SEPARATE)
+			if l < gap and l > 0.001:
+				_kept_now[_pair(a, b)] = true
+				# The one on the move gives way, most of it: one standing at his place is not jostled by everyone who
+				# walks past (each giving half, a player stood at his spot was nudged to and fro as team-mates went by).
+				var va := Vector2(a.vel.x, a.vel.z).length() + 0.2
+				var vb := Vector2(b.vel.x, b.vel.z).length() + 0.2
+				var push := d / l * (gap - l)
+				_push_want[a] = (_push_want.get(a, Vector3.ZERO) as Vector3) - push * va / (va + vb)
+				_push_want[b] = (_push_want.get(b, Vector3.ZERO) as Vector3) + push * vb / (va + vb)
 
 
 ## a moved out of the way of a body at p, to at least gap from it (along the floor), from where he is about to be
@@ -911,7 +962,9 @@ func _nudge(a: Athlete, p: Vector3, gap: float) -> void:
 	var off := _ahead(a) - p
 	off.y = 0
 	var l := off.length()
+	gap = _gap(a, null, gap)
 	if l < gap and l > 0.001:
+		_kept_now[_pair(a, null)] = true
 		_push_want[a] = (_push_want.get(a, Vector3.ZERO) as Vector3) + off / l * (gap - l)
 
 
@@ -923,8 +976,10 @@ func _nudge_body(a: Athlete, o: Athlete, gap: float) -> void:
 	var tb := _trunk(o)
 	var c := Geometry3D.get_closest_points_between_segments(ta[0], ta[1], tb[0], tb[1])
 	var l := (c[0] as Vector3).distance_to(c[1])
+	gap = _gap(a, o, gap)
 	if l >= gap or not is_finite(l):
 		return
+	_kept_now[_pair(a, o)] = true
 	var off: Vector3 = c[0] - c[1]
 	off.y = 0.0
 	if off.length() <= 0.05:
@@ -933,6 +988,18 @@ func _nudge_body(a: Athlete, o: Athlete, gap: float) -> void:
 		if off.length() <= 0.001:
 			return
 	_push_want[a] = (_push_want.get(a, Vector3.ZERO) as Vector3) + off.normalized() * (gap - l)
+
+
+## The gap a and b are kept apart by (b null: a and the raider, _nudge), noted as kept this frame: one kept apart last
+## frame is kept so until he is APART_HYST further off. Kept apart only while closer than the gap itself, looking
+## SEPARATE_LOOK ahead, two players walking past each other were apart one frame (steering away) and not the next
+## (steering back), and shook from side to side every frame (tests/motion_audit).
+func _gap(a: Athlete, b: Athlete, gap: float) -> float:
+	return gap + APART_HYST if _kept.has(_pair(a, b)) else gap
+
+
+func _pair(a: Athlete, b: Athlete) -> String:
+	return "%d:%d" % [a.get_instance_id(), b.get_instance_id() if b != null else 0]
 
 
 ## Where a player is about to be (SEPARATE_LOOK ahead, going as he is), for keeping players apart.
@@ -985,6 +1052,8 @@ func _push_all(dt: float) -> void:
 		a.position += a.push * dt
 		a.drove = false
 	_push_want.clear()
+	_kept = _kept_now
+	_kept_now = {}
 
 
 ## A defender kept inside his half: stopped at a line, the speed he had into it gone with it (kept, he went on running
@@ -2179,7 +2248,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 				d.set_state("ready")
 			_clamp_defender(d)
 			return
-	if lab and not (bool(lab_force.get("help", false)) and not holders.is_empty()):
+	if lab and not bool(lab_force.get("ai_defence", false)) and not (bool(lab_force.get("help", false)) and not holders.is_empty()):
 		d.lock_facing = true
 		d.drive(Vector3.ZERO, dt)
 		d.face_toward(raider.position, dt, 10.0)
@@ -3390,9 +3459,11 @@ func _revive(t: int, n: int) -> void:
 
 func _tick_post(dt: float) -> void:
 	# Let the moment breathe, then reset.
+	_audit("start")
 	_aim_limb()   # a touch or kick the raid ended in the middle of reaches on to its end, then lets go
 	if grapple:
 		grapple.update(dt)
+	_audit("grapple")
 	for a in athletes:
 		# Caught in the middle of a move as the raid ended, a player finishes it as he would have: a dive lands and
 		# he gets up; a wind-up comes to nothing; any other move (the raider's jump or dubki over the line, a kick, a
@@ -3431,14 +3502,6 @@ func _tick_post(dt: float) -> void:
 			a.remove_meta("walk_at")
 			if a.state == "idle":
 				a.set_state("walk")
-		# Getting up next to the man on the floor (a holder who went down on him), he steps off him rather than
-		# standing up inside him.
-		if raider and a != raider and raider.state in ["fallen", "recover"] and (a.state in ["ready", "idle", "roar", "celebrate", "slump"] \
-				or (a.state in ["recover", "rise"] and a.st_t > a.st_len * 0.5)):
-			var off := Vector3(a.position.x - raider.position.x, 0, a.position.z - raider.position.z)
-			if off.length() < 0.7:
-				var away := off.normalized() if off.length() > 0.01 else -raider.facing
-				a.position += away * minf(0.7 - off.length(), 1.2 * dt)
 		if a.state == "shove" and a.shove_target != null and a.st_t < 0.35:
 			var push: Vector3 = a.shove_target.position - a.position
 			push.y = 0
@@ -3462,7 +3525,8 @@ func _tick_post(dt: float) -> void:
 					p.set_meta("fived", true)
 					Sfx.play("clap", -6.0)
 		elif a.state == "celebrate":
-			a.drive(Vector3.ZERO, dt)
+			if phase_t <= 1.0:
+				a.drive(Vector3.ZERO, dt)   # (from a second in, _walk_to_positions walks him: both drove him twice a frame)
 		elif not a.on_mat:
 			# Out: off to the bench (or slowing to a stop where he is first, slumping or arguing) from the moment the raid
 			# ends, not stood still and then sliding off on the speed he had. From a second in, _walk_to_positions.
@@ -3477,14 +3541,17 @@ func _tick_post(dt: float) -> void:
 	# Walking back and cheering, players do not walk through one another, nor through anyone on the floor, getting up
 	# or still holding (_keep_apart): a player put out too, walking off through his team-mates (the bench aside, and the
 	# raider, who is not moved).
+	_audit("post")
 	var around := athletes.filter(func(a): return a != raider and (a.on_mat or absf(a.position.z) < Arena.HALF_L + 1.5))
 	var down := around.filter(func(a): return a.state in DOWN_STATES)
 	if raider.state in DOWN_STATES:
 		down.append(raider)
 	_keep_apart(around.filter(func(a): return a.state in ["ready", "idle", "celebrate", "roar", "slump", "walk", "argue"]), down)
 	_push_all(dt)
+	_audit("apart")
 	if phase_t > 1.0:
 		_walk_to_positions(dt, false)
+	_audit("walk")
 	if phase_t > 2.6 + float(raid.get("post_extra", 0.0)):
 		_next_raid()
 

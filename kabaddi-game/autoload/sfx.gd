@@ -2,6 +2,8 @@ extends Node
 ## Sound effects synthesised at startup, so the game ships without audio files.
 ## Drop an .ogg or .wav with the same name into res://assets/audio/ to replace any of them
 ## (for example assets/audio/whistle.ogg or assets/audio/crowd_loop.ogg).
+## They are made a sound at a time by the loading screen (build_step), so it can show its progress; anything that
+## needs one before then makes the rest at once (_ensure).
 
 const RATE := 22050
 const VOICES := {"grunt": 5, "oof": 3, "exhale": 2, "hup": 2}
@@ -16,26 +18,63 @@ var _drums: AudioStreamPlayer
 var _crowd_target := -60.0
 var _music: AudioStreamPlayer
 var _music_target := -80.0
+var _todo := []          # the sounds still to make: [name, how to synthesise it or null] (build_step)
+var _planned := false
+var _built := false
+var _total := 1
 
 
 func _ready() -> void:
-	_build()
 	for i in 10:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
 		_pool.append(p)
 	_crowd = AudioStreamPlayer.new()
-	_crowd.stream = streams.crowd_loop
 	_crowd.volume_db = -60.0
 	add_child(_crowd)
 	_drums = AudioStreamPlayer.new()
-	_drums.stream = streams.dhol_loop
 	_drums.volume_db = -14.0
 	add_child(_drums)
 	_music = AudioStreamPlayer.new()
-	_music.stream = streams.get("menu_music")
 	_music.volume_db = -80.0
 	add_child(_music)
+
+
+## Make the next sound; false once they are all made. progress() says how far along.
+func build_step() -> bool:
+	if _built:
+		return false
+	if not _planned:
+		_plan()
+	if not _todo.is_empty():
+		var item: Array = _todo.pop_front()
+		var k: String = item[0]
+		# A recorded file wins, and then nothing is synthesised for it (the crowd's loop was made, at length, only to
+		# be thrown away for its file).
+		for ext in ["ogg", "wav", "mp3"]:
+			var path := "res://assets/audio/%s.%s" % [k, ext]
+			if ResourceLoader.exists(path):
+				streams[k] = load(path)
+				break
+		if not streams.has(k) and item[1] != null:
+			streams[k] = (item[1] as Callable).call()
+		return true
+	_finish()
+	return false
+
+
+## 0..1: how many of the sounds are made.
+func progress() -> float:
+	if _built:
+		return 1.0
+	if not _planned:
+		return 0.0
+	return 1.0 - float(_todo.size()) / float(maxi(1, _total))
+
+
+func _ensure() -> void:
+	while build_step():
+		pass
 
 
 func _process(delta: float) -> void:
@@ -52,6 +91,7 @@ func enabled() -> bool:
 
 
 func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
+	_ensure()
 	if not enabled() or not streams.has(sound):
 		return
 	var p := _pool[_next]
@@ -91,6 +131,7 @@ func click() -> void:
 
 ## Crowd bed: intensity 0..1. Pass a negative value to stop.
 func crowd(intensity: float) -> void:
+	_ensure()
 	if intensity < 0.0 or not enabled():
 		_crowd.stop()
 		return
@@ -103,6 +144,7 @@ func crowd(intensity: float) -> void:
 ## The menus' music ("Indian" by LNPLUSMUSIC, Pixabay): on in the menus, carrying on from one screen to the next
 ## (the opening once, then the middle minute round and round); faded out for a match, or with sound or music off.
 func music(on: bool) -> void:
+	_ensure()
 	if on and enabled() and bool(Game.settings.get("music", true)) and _music.stream != null:
 		_music_target = MUSIC_DB
 		if not _music.playing:
@@ -113,6 +155,7 @@ func music(on: bool) -> void:
 
 
 func drums(on: bool) -> void:
+	_ensure()
 	if on and enabled():
 		if not _drums.playing:
 			_drums.play()
@@ -129,41 +172,43 @@ func stop_all() -> void:
 
 # ---------------------------------------------------------------- synthesis
 
-func _build() -> void:
-	streams.whistle = _whistle()
-	streams.buzzer = _tone_env(0.9, func(t): return signf(sin(TAU * 196.0 * t)) * 0.35 + sin(TAU * 392.0 * t) * 0.15, 0.01, 0.1)
-	streams.thud = _thud()
-	streams.slap = _slap()
-	streams.whoosh = _whoosh()
-	streams.click = _tone_env(0.035, func(t): return sin(TAU * 1500.0 * t) * 0.5, 0.001, 0.03)
-	streams.gavel = _gavel()
-	streams.roar = _roar()
-	streams.crowd_loop = _crowd_loop()
-	streams.dhol_loop = _dhol_loop()
-	streams.bid = _tone_env(0.08, func(t): return sin(TAU * 880.0 * t) * 0.4 + sin(TAU * 1320.0 * t) * 0.2, 0.002, 0.07)
+func _plan() -> void:
+	_planned = true
+	_todo = [
+		["whistle", _whistle],
+		["buzzer", func(): return _tone_env(0.9, func(t): return signf(sin(TAU * 196.0 * t)) * 0.35 + sin(TAU * 392.0 * t) * 0.15, 0.01, 0.1)],
+		["thud", _thud],
+		["slap", _slap],
+		["whoosh", _whoosh],
+		["click", func(): return _tone_env(0.035, func(t): return sin(TAU * 1500.0 * t) * 0.5, 0.001, 0.03)],
+		["gavel", _gavel],
+		["roar", _roar],
+		["crowd_loop", _crowd_loop],
+		["dhol_loop", _dhol_loop],
+		["bid", func(): return _tone_env(0.08, func(t): return sin(TAU * 880.0 * t) * 0.4 + sin(TAU * 1320.0 * t) * 0.2, 0.002, 0.07)],
+	]
 	# Recorded voices that have no synthesised stand-in: chants and players shouting.
 	for k in ["chant_raider", "crowd_chant", "chant_word_1", "chant_word_2", "yell_aaja", "yell_pakad",
 			"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch",
 			"crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music"]:
-		streams[k] = null
+		_todo.append([k, null])
 	# Players' efforts and breaths (see tools/audio/make_sounds.py).
 	for kind in VOICES:
 		for i in int(VOICES[kind]):
-			streams["%s_%d" % [kind, i + 1]] = null
-	for k in streams.keys():
-		for ext in ["ogg", "wav", "mp3"]:
-			var path := "res://assets/audio/%s.%s" % [k, ext]
-			if ResourceLoader.exists(path):
-				streams[k] = load(path)
-				break
-	for k in streams.keys():
-		if streams[k] == null:
-			streams.erase(k)
+			_todo.append(["%s_%d" % [kind, i + 1], null])
+	_total = _todo.size()
+
+
+func _finish() -> void:
+	_built = true
 	for k in ["crowd_loop", "dhol_loop", "menu_music"]:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
 	if streams.get("menu_music") is AudioStreamOggVorbis:
 		(streams.menu_music as AudioStreamOggVorbis).loop_offset = MUSIC_LOOP
+	_crowd.stream = streams.get("crowd_loop")
+	_drums.stream = streams.get("dhol_loop")
+	_music.stream = streams.get("menu_music")
 
 
 func _to_stream(samples: PackedFloat32Array, loop := false) -> AudioStreamWAV:

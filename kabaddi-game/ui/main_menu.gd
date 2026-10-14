@@ -33,7 +33,10 @@ func _ready() -> void:
 		_start_attract()
 	_shade()
 	_build_ui()
-	_animate_in()
+	if Game.loading:
+		Game.loaded.connect(_animate_in, CONNECT_ONE_SHOT)   # the title comes in as the loading screen goes
+	else:
+		_animate_in()
 	Sfx.crowd(0.3)
 
 

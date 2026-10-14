@@ -41,7 +41,8 @@ const C_DANGER := Color("ff5a5a")
 var settings := {
 	"language": "",         # "" follows the phone's language
 	"lang_v": 2,            # settings version: 2 stopped pinning the phone's language on first run
-	"camera": CAM_THIRD,
+	"camera": CAM_TV,       # the broadcast camera; third person behind the raider is the other choice
+	"cam_v": 2,             # settings version: 2 made the broadcast camera the default
 	"graphics": GFX_MEDIUM,
 	"sound": true,
 	"music": true,          # the menus' music (needs sound on too)
@@ -57,8 +58,11 @@ var settings := {
 	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
 }
 
+signal loaded   # the loading screen is going: the home screen behind it is ready
+
 var main: Node = null
 var current: Node = null
+var loading := false   # the loading screen is up (ui/loading_screen.gd)
 var theme: Theme
 var font_body: Font
 var font_bold: Font
@@ -148,10 +152,15 @@ func load_settings() -> void:
 		if String(settings.language) == phone_language():
 			settings.language = ""
 		settings.lang_v = 2
+	if data is Dictionary and int(data.get("cam_v", 1)) < 2:
+		# The broadcast camera is the default now: saves from before it (third person, whether picked or not)
+		# move to it once.
+		settings.camera = CAM_TV
+		settings.cam_v = 2
 	if settings.raid_rule > 2:
 		settings.raid_rule = 2   # the spoken cant (3) is gone
 	if settings.camera == CAM_FIRST:
-		settings.camera = CAM_THIRD
+		settings.camera = CAM_TV
 
 
 func save_settings() -> void:

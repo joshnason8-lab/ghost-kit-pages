@@ -6,12 +6,15 @@ extends Node
 ##   - facing snaps: the body turning faster than a person can (deg/s) while on the move;
 ##   - pose pops: a joint jumping further in one frame than any move swings it;
 ##   - clip flicker: running clips switched, cross-fades restarted part-way, fading clips dropped;
-##   - neck drift: the neck left turned by a clip that has finished.
+##   - neck drift: the neck left turned by a clip that has finished;
+##   - stance: a defender standing ready (not moving off), how often a leg is held straight (knee over STRAIGHT_KNEE)
+##     or splayed (out to the side over SPLAY_DEG), how far apart his feet are, and the steps he takes to settle them.
 ## Two runs: "course" (one raider and one defender sprint, stop, backpedal, shuffle, pivot and sprint again)
 ## and "match" (an AI match, every player on the mat). Prints one line per measure; --json writes them,
 ## --log prints each jump, snap and pop as it happens. "view" plays the course on screen, with the planted
 ## feet marked, for recording:
 ##   godot --headless --path . --fixed-fps 30 res://tests/locomotion_check.tscn -- [course|match|both] [SECONDS] [--json FILE] [--log]
+##       [--seed N]   (another match: the AI's choices and the bodies' small variations come from it)
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie out.avi \
 ##       --fixed-fps 30 res://tests/locomotion_check.tscn -- view
 
@@ -20,6 +23,8 @@ const SNAP_TURN := 720.0        # deg/s: faster than a person turns while moving
 const POP_DEG := 40.0           # deg in a 30th of a second (1200 deg/s): faster than a body swings a joint
 const JERK_DEG := 25.0          # deg in a 30th of a second that starts out of nowhere: 3x the frame before
 const STANCE_H := 0.025         # a sole this close to the floor is standing on it
+const STRAIGHT_KNEE := 160.0    # deg: a knee this open, standing ready, is a straight leg
+const SPLAY_DEG := 20.0         # deg: a leg this far out to the side of straight down, from the front, is splayed
 const JOINTS := ["pelvis", "spine", "chest", "neck", "head", "sh_l", "sh_r", "el_l", "el_r", "hip_l", "hip_r", "kn_l", "kn_r"]
 
 var _probes := {}               # athlete -> Probe
@@ -29,6 +34,7 @@ var _json := ""
 var _results := {}
 var _view := false
 var _view_who := 0          # whom the camera follows: 0 the raider, 1 the defender
+var _seed := 7
 var _cam: Camera3D
 var _marks := []
 
@@ -66,6 +72,12 @@ class Probe:
 	var restarts := 0
 	var drops := 0
 	var neck := 0.0
+	var stance_frames := 0        # standing ready
+	var straight := 0             # ... with a leg held straight
+	var splayed := 0              # ... with a leg out to the side
+	var apart := []               # ... how far apart the ankles are (m)
+	var settles := 0              # settling steps (RiggedBody.settle_steps)
+	var settle_base := -1
 
 	func _init(p_a: Athlete) -> void:
 		a = p_a
@@ -170,6 +182,32 @@ class Probe:
 		prev_w = m._prev_weight
 		if m.clip == null and m.move_weight <= 0.001 and m.neck:
 			neck = maxf(neck, rad_to_deg(m.neck.quaternion.get_angle()))
+		# Standing ready: the legs as drawn.
+		if m.rig and m.rig.skeleton:
+			if settle_base < 0:
+				settle_base = int(m.rig.get("settle_steps")) if m.rig.get("settle_steps") != null else 0
+			settles = (int(m.rig.get("settle_steps")) if m.rig.get("settle_steps") != null else 0) - settle_base
+		if a.state == "ready" and m.speed < 0.35 and m.rig and m.rig.skeleton:
+			var r: RiggedBody = m.rig
+			var side := a.global_transform.basis.x
+			side = Vector3(side.x, 0.0, side.z).normalized()
+			var knee_max := 0.0
+			var out_max := 0.0
+			for sd in ["l", "r"]:
+				var hip := r.anchor("hip_" + sd)
+				var sk := r.skeleton
+				var kn := sk.global_transform * sk.get_bone_global_pose(sk.find_bone("shin_" + sd)).origin
+				var an := r.anchor("foot_" + sd)
+				knee_max = maxf(knee_max, rad_to_deg((hip - kn).angle_to(an - kn)))
+				var d := an - hip
+				var outward := d.dot(side) * (-1.0 if sd == "l" else 1.0)   # the model's left is -x
+				out_max = maxf(out_max, rad_to_deg(atan2(outward, -d.y)))
+			stance_frames += 1
+			if knee_max > STRAIGHT_KNEE:
+				straight += 1
+			if out_max > SPLAY_DEG:
+				splayed += 1
+			apart.append(r.anchor("foot_l").distance_to(r.anchor("foot_r")))
 
 
 func _ready() -> void:
@@ -186,11 +224,13 @@ func _ready() -> void:
 			_json = args[i + 1]
 		elif args[i] == "--log":
 			Probe.log_events = true
-		elif args[i].is_valid_float():
+		elif args[i] == "--seed" and i + 1 < args.size():
+			_seed = int(args[i + 1])
+		elif args[i].is_valid_float() and not (i > 0 and args[i - 1] == "--seed"):
 			_secs = float(args[i])
 	Game.settings.models = 1
 	Game.settings.graphics = Game.GFX_LOW
-	seed(7)
+	seed(_seed)
 	if _view:
 		_stage()
 	if _mode in ["course", "both"]:
@@ -369,7 +409,7 @@ func _follow(who: Array) -> void:
 func _match() -> void:
 	var m: Node = load("res://game/match.gd").new()
 	m.config = {"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "autoplay": true,
-		"autoplay_no_report": true, "length": 0, "difficulty": 1}
+		"autoplay_no_report": true, "length": 0, "difficulty": 1, "seed": _seed}
 	add_child(m)
 	var t := 0.0
 	while t < _secs and is_instance_valid(m):
@@ -405,6 +445,11 @@ func _match() -> void:
 		all.restarts += q.restarts
 		all.drops += q.drops
 		all.neck = maxf(all.neck, q.neck)
+		all.stance_frames += q.stance_frames
+		all.straight += q.straight
+		all.splayed += q.splayed
+		all.apart.append_array(q.apart)
+		all.settles += q.settles
 	_report("match (%d players, %ds)" % [_probes.size(), int(_secs)], all)
 	if is_instance_valid(m):
 		m.queue_free()
@@ -450,6 +495,10 @@ func _report(name: String, p: Probe) -> void:
 		"fades_restarted": p.restarts,
 		"dropped_fades": p.drops,
 		"neck_left_turned_deg": snappedf(p.neck, 0.1),
+		"stance_straight_leg_pct": snappedf(100.0 * p.straight / maxi(1, p.stance_frames), 0.1),
+		"stance_splayed_leg_pct": snappedf(100.0 * p.splayed / maxi(1, p.stance_frames), 0.1),
+		"stance_feet_apart_m": "median %.2f p10 %.2f p90 %.2f" % [_pct(p.apart, 50), _pct(p.apart, 10), _pct(p.apart, 90)],
+		"settle_steps_per_min": snappedf(p.settles / mins, 0.1),
 	}
 	if not p.by_label.is_empty():
 		var parts := {}

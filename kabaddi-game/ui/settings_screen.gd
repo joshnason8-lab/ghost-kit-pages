@@ -69,8 +69,8 @@ func _ready() -> void:
 		disp[1].add_child(UI.field(tr("SET_MODELS"), UI.chips([tr("MODELS_CLASSIC"), tr("MODELS_REAL")], int(Game.settings.get("models", 1)), func(i):
 			Game.settings.models = i
 			Game.save_settings())))
-	var cams := [Game.CAM_THIRD, Game.CAM_TV]
-	disp[1].add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_THIRD"), tr("CAM_TV")], maxi(0, cams.find(int(Game.settings.camera))), func(i):
+	var cams := [Game.CAM_TV, Game.CAM_THIRD]   # the broadcast camera first: it is the default
+	disp[1].add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_TV"), tr("CAM_THIRD")], maxi(0, cams.find(int(Game.settings.camera))), func(i):
 		Game.settings.camera = cams[i]
 		Game.save_settings())))
 
