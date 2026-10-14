@@ -68,14 +68,19 @@ game has the players, after every stage has moved them, and its own motion did n
 every frame is 1/30 s of game time (it was recorded frame by frame), so the stutter in it is motion, not frame rate;
 on a phone, slow frames would add to it, which the recording cannot show.
 
-All 17 tackle scenarios, before and after (`--audit`):
+All 17 tackle scenarios (`--audit`): before, with the fixes above, and with the tackle changes below as well:
 
-| | Before | Now |
-|---|---|---|
-| Reversals (where the game has them) | 23 | 14 |
-| Facing wobbles | 28 | 11 |
-| State flicker | 105 | 2 |
-| Lurches | 8 | 4 |
+| | Before | The fixes above | Now |
+|---|---|---|---|
+| Reversals (where the game has them) | 23 | 15 | 22 |
+| Facing wobbles | 28 | 16 | 17 |
+| State flicker | 105 | 2 | 2 |
+| Lurches | 8 | 6 | 7 |
+| Two stages moving one player opposite ways, double drives, hold flicker | 0, not counted, 0 | 0, 0, 0 | 0, 0, 0 |
+
+(This table first gave 14, 11, 2 and 4 for the fixes: a run from before the last change to the facing rule. Most of
+what the tackle changes added is holders moving with the raider as he braces and wrenches: reversals in crowd 2 to 6,
+waist 0 to 2, flurry 3 to 4; a wobble and a lurch more in chain.)
 
 AI matches, two seeds, 90 s each (each match goes its own way once anything changes, so these move by a third from one
 version to the next; the double drives and flicker are what is solid):
@@ -88,9 +93,186 @@ version to the next; the double drives and flicker are what is solid):
 | Reversals | 99 | 101 |
 | Two stages moving one player opposite ways | 3 | 2 |
 
-What is left: reversals in the AI matches about where they were, mostly defenders standing ready close to others and
-holders in the grapple (each haul moves them back and forth); the raider's facing still swings when he changes his mind
-fast.
+What was left then: reversals in the AI matches about where they were, mostly defenders standing ready close to others
+(two causes, found and fixed in the next section) and holders in the grapple (each haul moves them back and
+forth); the raider's facing still swings when he changes his mind fast.
+
+### Two more fights over a player, found in AI matches
+
+Measured again for this review, one AI match (seed 2) had 232 reversals where the others had 31-53: five defenders
+shaking on the spot for two seconds round a raider held by the side line. Traced frame by frame on that match (which
+stage moved each of them, what each was steering for, and what kept them apart):
+
+| Found | What it did | Fix |
+|---|---|---|
+| The defence plan keeps places 1.05 m apart, but left a helper's place out of it (`DefenceCoach._space`) | With the raider held by a line, a contain place pulled in off it fell 0.4 m from a helper's: inside the 0.6 m keeping apart holds two players to. The plan steered them together, keeping apart pushed them off, every frame | A helper's place is his hold's, and anyone else's now gives way from it all the way |
+| Keeping apart looks 0.2 s ahead at where each player is going (`Match._ahead`); a player steering aside means to be clear in 0.15 s (`Athlete.avoid`) | The step aside went into where he was going, so the next frame counted him 1.3 times as far clear as the push asked: he stopped stepping aside, came back, was pushed again. On, off, on, every frame, whenever two players were close and one was steering, in every match | Where he is going is judged without the step aside he is making (his velocity less `avoid`) |
+
+`tests/motion_probe.gd` now counts the second directly ("avoid flicker": the step aside on, off and on again in three
+frames). The same four AI matches (seeds 1-4, 90 s each; a match goes its own way once anything changes, so a few
+either way is noise):
+
+| | Before | Helpers' places | Now (and the look ahead) |
+|---|---|---|---|
+| Avoid flicker | 865 | 766 | 175 |
+| Reversals (seed 2) | 363 (232) | 209 (89) | 170 (33) |
+| ... standing ready | 280 | 142 | 110 |
+| Reversals of the drawn body | 823 | 623 | 582 |
+| Facing wobble | 143 | 143 | 133 |
+
+In the repeatable encounters the look ahead changes little (one defender: 1 reversal before and after; three: 2 and
+5, each a single change of direction as a defender takes up another role, not shaking; `linger`, a raider standing
+1.6 m in front of a defender for 3.5 s: none either way). Nor does it let players into one another: in the AI raid
+audit's four matches, bodies inside one another outside the struggle went from 1.22 to 1.05 per 1,000 body-frames
+(the raider and a defender, two holders: as they were, per held frame).
+
+### The tackle at 1:32: what happened, and what changed
+
+The recording's log for that raid: a hand touch from 0.94 m that did not count (the hand did not reach), the touched
+defender grabbing straight back ("Waist hold!"), help arriving ("Chain tackle!"), Break free pressed five times in
+2.4 s with no try succeeding, then the tackle. Two things on screen came from code, not from the struggle:
+
+- **Every Break free press while held was the free sidestep.** Break free picks the escape that suits the holds; round
+  the middle that is a sidestep, and the sidestep played its clip (a step out to the side, upright) for 0.26 s and went
+  back to "held": each press stood him up out of the struggle. Now, held, it is a wrench against the holds: his hips and
+  shoulders twist hard to the side he tries to go, he leans into it, his arms drive down at the arms round him, and
+  the held clip carries on under it (`HumanModel.wrench`); the holders feel him go and heave back at once
+  (`Grapple.clamp_down`, from as hard as each is pulling, so nothing jumps).
+- **Held round the middle, he stood upright.** His legs are his own there (the held clip's leg work fought his steps),
+  and nothing bent him at the hips: the clip's trunk sat on an upright pelvis. Now he bends at the hips into his drive
+  from the grip (the hinge the ready stance uses), a little lower as his balance goes.
+
+Measured in the tackle scenarios (`tackle_check`; "least lean": the least his trunk leans from upright while held,
+from 0.4 s after the grip to going down; "straightened": the most it comes up in any 0.3 s):
+
+| Scenario | Least lean, before | Now | Straightened, before | Now |
+|---|---|---|---|---|
+| waist (held round the middle) | 10.1 deg | 28.8 deg | 7.2 | 6.9 |
+| flurry (a touch, a grab back, a dive, help) | 14.5 | 32.8 | 6.6 | 6.3 |
+| chain (ankle, then thigh and waist help) | 13.5 | 21.1 | 7.5 | 7.1 |
+| crowd (four holds) | 16.0 | 21.1 | 6.0 | 5.7 |
+| breakfree (the 1:32 raid, Break free every 0.55 s) | 18.5 | 17.1 | 9.8 | 6.5 |
+
+Held by a leg (ankle or thigh) his legs are the held clip's, so the hinge does not reach him; there the lean is about
+what it was (17-23 degrees) and the tries no longer stand him up. What it cost: held round the middle, his feet slide
+more as he steps (90th percentile 0.14 to 0.37 m/s, the crouch moving where the stepping feet land), holders' hands
+sit a little further off their holds in chain and crowd (90th percentile 0.07 to 0.09 m), and the scenarios' reversals
+went from 16 to 26, most of them holders moving with the raider.
+
+The defender lying flat beside him: the log does not say whether he was the ankle helper or a diver who missed.
+An ankle holder on the floor did work the hold, but only from the knees down: each haul (about 0.9 s apart) bent his
+knees from 160 degrees (legs out straight on the floor) to 115 and lifted his waist 3 cm, and between hauls he lay
+still, legs straight. Now each haul is his whole body's (`HumanModel._apply_struggle`, `HAUL_DIG`): chest and head come
+up as his arms draw the ankle in and a knee drives up under him to dig in, and between hauls his knees keep working,
+one then the other, so he never lies straight out (a fade with the hold, so it does not jump on or off). Measured the
+same way both times (`tackle_check catch`, his waist height and left knee every 0.1 s while he lies at the ankle):
+
+| | Before | Now |
+|---|---|---|
+| Waist off the floor, between hauls / at a haul | 0.33 / 0.35 m | 0.36 / 0.39 m (up to 0.41) |
+| Knee, between hauls / at a haul | 160 / 122 deg | 152 / 121 deg |
+| His body's motion while he holds (`holder_motion`, catch, drag, stopped) | 0.30-0.31 m/s | 0.34-0.35 m/s |
+| His hands off the ankle, 90th percentile: catch, drag (the raider driving for the line), escape | 0.022, 0.038, 0.026 m | 0.023, 0.052, 0.040 m |
+
+Twice as much of it (`HAUL_DIG` 1.0) moved his shoulders enough to loosen the grip (drag 0.09 m), so it is half that. It
+is a bigger movement, not a large one: from the broadcast camera's distance he may still read as lying there, which
+the footage has to show. A diver who missed starts getting up as he lands (on his hands and knees within 0.4 s, up in
+about a second, `tackle_check miss`); he does not lie still.
+
+### The holder left on the floor by an escape
+
+Recording the escape scenario for this review showed a holder lying stiff for most of a second after a lion jump tore
+the leg out of his hands, then up in a tenth of a second: the held pose and the snap from the floor the review asks
+about. The cause: a lion jump or a dubki that tears a leg out of an ankle or thigh holder's hands leaves him where it
+left him, reaching after it, for `LOST_GRIP` (0.3 s), and then the captured get-up is to play over 1.1 s
+(`Match._release`). It never played. A clip told to wait counted the wait down only while it was on show, and a get-up
+is not on show while it waits (`HumanModel._apply_clip`); only a jump (whose first frame is on show as he gathers)
+ever started. So he lay under the hand-made pose, which keeps a man flat until over half his get-up time has gone and
+then stands him up at once. Now the wait counts down whatever is on show. Measured on his body (`tackle_check escape`:
+`holder_lies` until his waist is 0.15 m up from where it lay, `holder_up` until it is 0.7 m off the floor,
+`holder_rise` the fastest it comes up over a tenth of a second):
+
+| | Before | Now |
+|---|---|---|
+| Lies where the leg left him | 1.0 s | 0.53 s (0.3 s reaching after it, then the get-up's first push) |
+| On his feet | 1.13 s | 0.70 s |
+| Fastest rise | 2.5 m/s | 1.8 m/s (the captured get-up's own) |
+
+The test's old measure watched the pose's own "dive" value, which drops as the lying-reaching pose gives way to lying
+flat, and read 0.3 s: it was measuring the wrong thing, and now measures the body. Every escape from a leg hold by a
+lion jump or a dubki did this, the player's and the AI's. The review's 2:00 escape was Break free coming out as a dubki
+("Dubki!", "Broke free!"): if the hold it slipped was at the thigh, it had this; the log does not name the hold.
+
+### Two linked defenders, one dive (0:54)
+
+A chained pair went in in the same frame, each with his own (often the same) hold, and both got up after the same
+time: one dive drawn twice. Now the partner goes a beat after the lead (0.08-0.18 s, each his own), at another part of
+the raider (the lead at the ankle, the partner at the thigh; at the thigh, round the middle), and every diver gets up
+at his own pace, sooner from his knees than from flat on the floor. `tackle_check linked`: the partner went 0.13 s after
+the lead, at the thigh; after the takedown he was up from his knees at 3.63 s, the lead from the floor at 3.77 s.
+
+### Messages (2:00)
+
+Event lines are ranked: how the raid ended (and a line crossed) over breaking free, over holds, over touches, moves
+and the bonus, over information (a signature move, the toss). A new message clears any line up that matters less, so
+"Toe touch!" under the hold that follows it, or a hold under the raid's result, is gone at once rather than stacked; no
+more than two lines are up. In the first version of this (the previous push) "Broke free!" ranked with the holds, so
+it sat under "Ankle hold!" with the hold already gone, and it cleared the name of the move that freed him. Now it ranks
+over the holds and clears them, the move ("Lion jump!") goes up under it, and a hold that catches him again takes its
+place. Shouts over players' heads ("Pakad!", "Aaja!") are at least 0.7 s apart. Every
+message still goes to `MatchHud.shown`, which the tests check against the events.
+
+### The review's repeatable cases, and what checks them
+
+Every case runs the same way each time (a lab raid: scripted stick and buttons, fixed seeds), headless for the numbers
+and on screen for the footage (`view`), on the code as it is now:
+
+| Case | Run | Result now |
+|---|---|---|
+| Approach and retreat | `motion_audit approach`, `approach3`: one and three defenders placed by the team's plan; the raider steps in, stops, backs off, jinks left and right in front of them, steps in close and goes home | No stage fighting another over a player, no double drives, no state or hold flicker; 1 and 5 reversals (each a single change of direction), 1 and 4 facing wobbles in 1479 and 1849 player-frames; `linger` (a raider standing 1.6 m in front of a defender for 3.5 s): none |
+| One defender's hold | `tackle_check catch`, `drag`, `duck`, `sidestep`, `stopped`, `thigh`, `waist` | All as expected. Hands on the hold (90th percentile): ankle 0.023-0.052 m, thigh 0.036, waist 0.024. The raider braced: his trunk leans at least 19-29 degrees while held (8.5 in `stopped`, where the hold stops a jump) |
+| Escape | `escape` (a lion jump), `slip` (a dubki slips one of two holds), `stopped`, `breakfree` (Break free pressed, every try failing) | All as expected. "Broke free!" only when free (not in `slip`); the holder left on the floor up in 0.70 s, after 0.3 s reaching after the leg |
+| Tackle completion | `catch`, `thigh`, `waist`, `chain`, `crowd`, `flurry`, `join`, `breakfree` | One takedown each, the raid scored once, the events in order |
+| Several defenders joining | `chain`, `join`, `crowd`, `flurry`, `linked` | Each helper to a hold of his own, none on one already held, nobody inside anybody; the linked partner 0.13 s after the lead, at the thigh |
+| A missed dive and the recovery | `miss`, `whiff` | No hold without a hand on him; the diver getting up as he lands, up in about a second |
+| A grounded defender letting go and getting up | `escape` (`holder_lies`, `holder_up`, `holder_rise`); `chain`, `crowd`, `linked` (`recovery`, `recovery_spread`) | Escape: lies 0.53 s, up 0.70 s, rising 1.8 m/s at most. After a takedown the holders start getting up over 0.13-0.3 s, first to last, and are up over 0.3-0.6 s, each from where he lies and at his own pace (over 0.87 and 1.33 s in `breakfree`, the ankle helper flat on the floor last) |
+| Direction changes near defenders | `motion_audit approach`, `approach3` (the jinks); `locomotion_check course` | As in the first row |
+
+The review's checks, and what measures each:
+
+| Check | Measured by | Now |
+|---|---|---|
+| No oscillation | Reversals, facing wobble and avoid flicker (`tests/motion_probe.gd`), every tackle scenario, encounter and AI match | 22 reversals and 17 wobbles over the 17 tackle scenarios (23 and 28 before this review's work); avoid flicker 175 in four AI matches (865) |
+| No hold flicker | Hold let go and back on within 0.3 s, or the reverse (`motion_probe`) | 0 in every scenario and encounter |
+| Connected grips | Contact gap and hands on the hold every frame (`tackle_check`); every hold in 119 AI raids (`raid_audit`) | Every hold made on contact (123 of 123 in 118 AI raids); hands on the hold median 0.024 m, 99th percentile 0.078. A block's hands are measured against the raider's middle, so its 0.33 m in `flurry` and `breakfree` (as before) is his shoulders, not a gap: not checked frame by frame |
+| Visible restraint response | The raider's lean while held, and how far it straightens (`brace`); both bodies' motion (`raider_motion`, `holder_motion`) | Lean 17-33 degrees; holders 0.32-0.49 m/s |
+| No rigid grounded players | An ankle holder's waist and knee through each haul; `holder_lies` | Above: legs working between hauls, waist 4 cm higher at each haul; 0.53 s on the floor after an escape (was 1.0) |
+| No prone-to-run snap | `holder_rise`; joint pops by state (`raid_audit`) | 1.8 m/s after an escape (was 2.5). In the AI raid audit 5.9% of get-up frames have a forearm or foot turning at the last pose stage's limit (652 of 11,112), as before: see below |
+| No identical supporters | `chain_lag`, `chain_kinds`, `recovery_spread` | A linked partner 0.13 s later, at another hold; holders start getting up over 0.13-0.87 s, first to last |
+| Readable without text | The footage only, with the event lines off in the before and after | Not measured |
+| Frame time, separately | Wall-clock ms per frame (`motion_probe`, headless on a desktop, no drawing) | An AI match: median 9.8 ms, 99th percentile 18.0, worst 22.4 (9.8, 17.3 and 24.5 after the first fixes); the encounters 6-8 ms median, under 13 ms at the 99th percentile. Not measured on a phone |
+
+### Still open, and not verified
+
+- **On a phone**: nothing here has been run on one. The S24 crash's cause is likely, not proven (no crash log); frame
+  times are measured headless on a desktop.
+- **The 1:32 tackle**: held round the middle he braces and leans 29-33 degrees. Held by a leg (that raid had a grab
+  back and an ankle dive), his lean is the held clip's (17-23 degrees, as before): what changed there is that the tries
+  no longer stand him up.
+- **The ankle holder on the floor** moves more, not a lot more: his waist 4 cm higher at each haul, his legs working
+  between hauls. From the broadcast camera's distance he may still read as lying there.
+- **Getting up**: in the AI raid audit, 5.8% of get-up frames still have a forearm or a foot turning at the last pose
+  stage's limit (40 degrees a frame), as before: the hands swinging back as a holder lets go to get up (up to 1.3 m in
+  0.15 s), not fixed.
+- **A grab back's hold** (a block, chest to chest) is measured against the raider's middle, so its 0.33 m reads large;
+  not checked frame by frame.
+- **Held round the middle**, his feet slide more as he steps (0.14 to 0.37 m/s at the 90th percentile).
+- **Keeping apart** still flickers (175 times in the four AI matches, from 865); reversals run 33-50 a match; the
+  raider's facing still swings when he changes his mind fast.
+- **0:23-0:25** (a waist hold and a dubki): nothing aimed at it alone; the brace and the wrench apply, and `slip`
+  covers a dubki under two holds. **2:00**: Break free came out as a dubki; whether it slipped a thigh hold, and so
+  had the get-up bug, is not in the log.
+- **Readable without text**: judged from the footage only, with the event lines off in the before and after.
 
 ## Third review (the phone beta): eleven notes
 

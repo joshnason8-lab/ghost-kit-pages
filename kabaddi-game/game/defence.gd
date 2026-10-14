@@ -239,7 +239,10 @@ func _contain_spots(r: Athlete, home: Vector3, n: int) -> Array:
 	return out
 
 
-## No two places too close: each pair pushed apart, half each (linked pairs keep their hold on each other).
+## No two places too close: each pair pushed apart, half each (linked pairs keep their hold on each other). A helper's
+## place is his hold's (Grapple.approach): anyone else's gives way from it all the way. Left where they fell, a contain
+## place 0.4 m from a helper's (the raider held by a line, the places pulled in off it) had the two kept apart by Match
+## (SEPARATE) and steered back by this, and they went to and fro every frame.
 func _space(want: Dictionary) -> void:
 	var ds := want.keys()
 	for it in 3:
@@ -247,16 +250,18 @@ func _space(want: Dictionary) -> void:
 			for j in range(i + 1, ds.size()):
 				var a: Athlete = ds[i]
 				var b: Athlete = ds[j]
-				if a.chain_partner == b or String(want[a][0]) == "help" or String(want[b][0]) == "help":
+				var ha := String(want[a][0]) == "help"
+				var hb := String(want[b][0]) == "help"
+				if a.chain_partner == b or (ha and hb):
 					continue
 				var pa: Vector3 = want[a][1]
 				var pb: Vector3 = want[b][1]
 				var d := Vector3(pb.x - pa.x, 0, pb.z - pa.z)
 				var l := d.length()
 				if l < SPOT_GAP:
-					var push := (d / l if l > 0.01 else Vector3(1, 0, 0)) * (SPOT_GAP - l) * 0.5
-					want[a][1] = _inside_court(pa - push)
-					want[b][1] = _inside_court(pb + push)
+					var push := (d / l if l > 0.01 else Vector3(1, 0, 0)) * (SPOT_GAP - l)
+					want[a][1] = _inside_court(pa - push * (0.0 if ha else (1.0 if hb else 0.5)))
+					want[b][1] = _inside_court(pb + push * (0.0 if hb else (1.0 if ha else 0.5)))
 
 
 func _inside_court(p: Vector3) -> Vector3:

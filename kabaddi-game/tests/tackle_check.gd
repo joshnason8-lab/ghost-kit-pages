@@ -31,7 +31,8 @@ extends Node
 ## same dive in the same frame, and they are not up in the same frame either).
 ## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording ("plain" leaves
 ## the debug overlay off; "high" looks down from above, three-quarters on, to see every hold in a pile; "close"
-## comes in closer, a little in front, to see the bodies' detail):
+## comes in closer, a little in front, to see the bodies' detail; "quiet" leaves the event lines off, which from this
+## close cover the bodies):
 ##   godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- [SCENARIO ...] [--json FILE] [--log] [--audit]
 ## --audit adds who moved whom each frame and what shook (tests/motion_probe.gd) to each scenario's results.
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 960x540 --write-movie out.avi \
@@ -69,6 +70,7 @@ var _json := ""
 var _log := false
 var _view := false
 var _plain := false
+var _quiet := false          # "quiet": the event lines ("Ankle hold!") off, so they do not cover the bodies
 var _cam_off := Vector3(5.2, 1.6, 0.0)   # the camera from what it looks at: from the side; "high": above, three-quarters
 var _results := {}
 var _cam: Camera3D
@@ -84,6 +86,8 @@ func _ready() -> void:
 			_view = true
 		elif args[i] == "plain":
 			_plain = true
+		elif args[i] == "quiet":
+			_quiet = true
 		elif args[i] == "--audit":
 			_audit = true
 		elif args[i] == "high":
@@ -490,8 +494,11 @@ func _run(sc: String) -> Dictionary:
 		"catch", "thigh", "waist":
 			out.ok = out.attached and out.end == "tackle" and holds == 1 and downs == 1
 		"escape":
+			# The holder left on the floor gets up the captured way, on his feet within 0.95 s (lying stiff under the
+			# hand-made pose, as when the get-up never started, he was up at 1.13 s, all at once).
+			var up: float = float(out.escape_timing.get("holder_up", -1.0)) if out.has("escape_timing") else -1.0
 			out.ok = out.attached and out.end == "return" and holds == 1 and out.events.count("release") == 1 \
-				and out.events.count("escape") == 1 and downs == 0
+				and out.events.count("escape") == 1 and downs == 0 and up > 0.0 and up < 0.95
 		"miss", "whiff":
 			out.ok = not out.attached and holds == 0 and downs == 0
 		"chain":
@@ -919,7 +926,8 @@ func _restraint(out: Dictionary, mo: Array) -> void:
 ## A lion jump out of the hold, each frame from when it is called for: when the hold lets go and how far his free
 ## foot is off the floor then; when both feet are off the floor and when one is back on it, and how fast his body
 ## travels at each; how far out the holder's hands are from his shoulders after it lets go (reaching after the leg,
-## or pushing himself up); how long the holder lies before getting up.
+## or pushing himself up); how long the holder lies before getting up, as his body shows it: his waist 0.15 m up off
+## where it lay, then 0.7 m off the floor (on his feet), and the fastest it rises over a tenth of a second on the way.
 func _escape_frame(esc: Dictionary, r: Athlete, d: Athlete, t: float, dt: float) -> void:
 	var rig: RiggedBody = r.model.rig
 	var s := String(esc.side)
@@ -933,6 +941,8 @@ func _escape_frame(esc: Dictionary, r: Athlete, d: Athlete, t: float, dt: float)
 		esc.release = t
 		esc.free_up = free_up
 		esc.reach = []
+		esc.waist0 = d.model.anchor("waist").y
+		esc.waists = []
 	if not esc.has("air") and minf(held_up, free_up) > 0.05:
 		esc.air = t
 		esc.v_air = speed
@@ -943,22 +953,33 @@ func _escape_frame(esc: Dictionary, r: Athlete, d: Athlete, t: float, dt: float)
 		var sh: Vector3 = (d.model.anchor("shoulder_l") + d.model.anchor("shoulder_r")) * 0.5
 		var hands: Vector3 = (d.model.anchor("hand_l") + d.model.anchor("hand_r")) * 0.5
 		(esc.reach as Array).append(Vector2(hands.x - sh.x, hands.z - sh.z).length())
-	if esc.has("release") and not esc.has("lies") and float(d.model.dive) < 0.5:
-		esc.lies = t - float(esc.release)
+	if esc.has("release") and not esc.has("up"):
+		var wy: float = d.model.anchor("waist").y
+		(esc.waists as Array).append(wy)
+		var n: int = (esc.waists as Array).size()
+		if n > 3:
+			esc.rise = maxf(float(esc.get("rise", 0.0)), (wy - float(esc.waists[n - 4])) / (3.0 * dt))
+		if not esc.has("lies") and wy > float(esc.waist0) + 0.15:
+			esc.lies = t - float(esc.release)
+		if wy > 0.7:
+			esc.up = t - float(esc.release)
 
 
 ## escape_timing: from the jump called for to the hold letting go (s); the free foot's height off the floor then
 ## (m); from the hold letting go to both feet off the floor (s; negative: he was in the air before it let go); how
 ## much faster his body travels landing than taking off (m/s: a jump's speed is set as it leaves the floor); how far
 ## out the holder's hands are from his shoulders over the 0.3 s after (m, along the floor: reaching after the leg as
-## it is torn out of them, or under him pushing himself up); how long the holder lies where it left him (s).
+## it is torn out of them, or under him pushing himself up); how long the holder lies where it left him, until he is
+## on his feet (s), and how fast his middle comes up on the way (m/s).
 func _escape(out: Dictionary, esc: Dictionary) -> void:
 	out.escape_timing = {"press_to_release": snappedf(float(esc.release) - float(esc.press), 0.01),
 		"free_foot_at_release": snappedf(float(esc.free_up), 0.01),
 		"release_to_air": snappedf(float(esc.air) - float(esc.release), 0.01) if esc.has("air") else "-",
 		"air_speedup": snappedf(float(esc.v_land) - float(esc.v_air), 0.1) if esc.has("land") else "-",
 		"hands_reach": snappedf(_pct(esc.reach, 50), 0.01) if not (esc.reach as Array).is_empty() else "-",
-		"holder_lies": snappedf(float(esc.get("lies", -1.0)), 0.01)}
+		"holder_lies": snappedf(float(esc.get("lies", -1.0)), 0.01),
+		"holder_up": snappedf(float(esc.get("up", -1.0)), 0.01),
+		"holder_rise": snappedf(float(esc.get("rise", 0.0)), 0.1)}
 
 
 ## A dubki (or a sidestep) made while held at the ankle, each frame of it: the one-leg stance (HumanModel.one_leg),
@@ -1133,3 +1154,4 @@ func _stage(m: Node) -> void:
 	_cam.look_at(mid + Vector3(0, 0.5, 0), Vector3.UP)
 	_cam.current = true
 	m.hud.visible = true
+	m.hud.events_box.visible = not _quiet

@@ -6,9 +6,10 @@ extends CanvasLayer
 var shown: Array = []     # every event message put up, in order (tests read it)
 # How much an event message matters (event): the newest clears whatever is up that matters less.
 const EV_INFO := 0        # a signature move, graphics lowered, a suspension over, the toss
-const EV_TOUCH := 1       # a touch or kick given, the bonus
-const EV_HOLD := 2        # a hold, help arriving, a dash, breaking free
-const EV_RESULT := 3      # how the raid ended, the points, a line crossed
+const EV_TOUCH := 1       # a touch or kick given, a move's name, the bonus
+const EV_HOLD := 2        # a hold, help arriving, a dash
+const EV_FREE := 3        # breaking free: the holds it ends go with it, and a hold after it takes its place
+const EV_RESULT := 4      # how the raid ended, the points, a line crossed
 const BUBBLE_GAP := 0.7   # s at least between two shouts over players' heads
 var _bubble_t := -10.0
 var m  # Match
@@ -449,8 +450,9 @@ func event(text: String, color: Color, small := false, prio := EV_HOLD) -> void:
 		return
 	shown.append(text)
 	# The newest says what is happening now: whatever is up that matters less goes at once (a touch's name under the
-	# hold that follows it, a hold under the raid's result), so the two lines up are never one stale and one new.
-	var less := events_box.get_children().filter(func(c): return int(c.get_meta("prio", EV_HOLD)) < prio)
+	# hold that follows it, a hold under the raid's result, "Ankle hold!" once he has broken free of it), so the two
+	# lines up are never one stale and one new.
+	var less := events_box.get_children().filter(func(c): return _outdone(int(c.get_meta("prio", EV_HOLD)), prio))
 	for c in less:
 		events_box.remove_child(c)
 		c.queue_free()
@@ -470,6 +472,12 @@ func event(text: String, color: Color, small := false, prio := EV_HOLD) -> void:
 	tw.tween_interval(1.3)
 	tw.tween_property(l, "modulate:a", 0.0, 0.35)
 	tw.tween_callback(l.queue_free)
+
+
+## Whether a line up with rank was matters less than a new one with rank now: lower ranks do, and "Broke free!" does
+## under a hold that comes after it (caught again).
+static func _outdone(was: int, now: int) -> bool:
+	return was < now or (was == EV_FREE and now == EV_HOLD)
 
 
 func float_points(a: Node3D, text: String) -> void:

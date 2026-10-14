@@ -9,6 +9,8 @@ extends RefCounted
 ##     over REV_SPEED: shaking on the spot. On his root (where the game has him) and on his drawn body (the waist);
 ##   - lurches: a change of velocity in one frame no body makes (over LURCH_ACC), root and drawn body;
 ##   - facing wobble: the drawn turn swinging one way then back, both frames over WOBBLE_RATE;
+##   - avoid flicker: a player's steering round another (Athlete.avoid, from keeping players apart) on, off and on
+##     again (or off, on, off) in three frames running: keeping apart and what he steers for at odds, every frame;
 ##   - state flicker: a state left and come back to within FLICKER_S; hold flicker: a holder let go and back on (or
 ##     on and let go) within FLICKER_S;
 ##   - the camera: reversals and lurches of its position, wobble of its turn;
@@ -63,11 +65,14 @@ class Track:
 	var flicker := 0
 	var conflicts := 0
 	var double := 0
+	var avoid_on := []          # the last three frames: steering round someone or not
+	var avoid_flicker := 0
 	var by_state := {}          # state -> {frames, reversals, body_reversals, wobbles, conflicts}
 
 	func bump(st: String, k: String) -> void:
 		if not by_state.has(st):
-			by_state[st] = {"frames": 0, "reversals": 0, "body_reversals": 0, "lurches": 0, "wobbles": 0, "conflicts": 0, "double": 0}
+			by_state[st] = {"frames": 0, "reversals": 0, "body_reversals": 0, "lurches": 0, "wobbles": 0, "conflicts": 0, "double": 0,
+			"avoid_flicker": 0}
 		by_state[st][k] = int(by_state[st][k]) + 1
 
 
@@ -175,6 +180,15 @@ func _track(a: Athlete, dt: float) -> void:
 		if log_events:
 			print("%6.2f DOUBLE %s driven %d times state=%s phase=%s" % [t, a.name, a.drives, a.state, m.phase])
 	a.drives = 0
+	# Steering round someone switched on and off every frame.
+	tr.avoid_on.append(a.avoid.length() > 0.001)
+	if tr.avoid_on.size() > 3:
+		tr.avoid_on.pop_front()
+	if tr.avoid_on.size() == 3 and tr.avoid_on[0] == tr.avoid_on[2] and tr.avoid_on[0] != tr.avoid_on[1]:
+		tr.avoid_flicker += 1
+		tr.bump(a.state, "avoid_flicker")
+		if log_events:
+			print("%6.2f AVOID FLICKER %s state=%s role=%s" % [t, a.name, a.state, m.defence.role_of(a) if m.get("defence") else "-"])
 	# State changes, and a state come back to within FLICKER_S of leaving it.
 	if a.state != tr.state:
 		_frame_note.append("%s %s>%s" % [a.name, tr.state, a.state])
@@ -282,14 +296,14 @@ func report() -> Dictionary:
 	var out := {"players": {}, "conflict_frames": conflict_frames, "conflicts": conflicts, "movers": movers,
 		"hold_flicker": hold_flicker}
 	var sum := {"frames": 0, "reversals": 0, "lurches": 0, "body_reversals": 0, "body_lurches": 0, "wobbles": 0,
-		"flicker": 0, "conflicts": 0, "double": 0}
+		"flicker": 0, "conflicts": 0, "double": 0, "avoid_flicker": 0}
 	var by_state := {}
 	for a in _per:
 		var tr: Track = _per[a]
 		var name := "%s (%s)" % [tr.a.name if is_instance_valid(tr.a) else "?", tr.role]
 		out.players[name] = {"frames": tr.frames, "reversals": tr.reversals, "lurches": tr.lurches,
 			"body_reversals": tr.body_reversals, "body_lurches": tr.body_lurches, "wobbles": tr.wobbles,
-			"flicker": tr.flicker, "conflicts": tr.conflicts, "double": tr.double}
+			"flicker": tr.flicker, "conflicts": tr.conflicts, "double": tr.double, "avoid_flicker": tr.avoid_flicker}
 		for k in sum:
 			sum[k] = int(sum[k]) + int(out.players[name][k])
 		for st in tr.by_state:

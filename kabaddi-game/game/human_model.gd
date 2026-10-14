@@ -97,6 +97,7 @@ const WAY_EASE := 0.18       # s over which the way he travels is smoothed for p
 const READY_HINGE := 0.5     # rad the pelvis tips forward per unit of crouch, standing ready on his own legs ...
 const READY_WIDEN := 0.08    # ... and rad each leg goes further out: feet about 0.45 m apart
 const HELD_HINGE := 0.6      # share of that hinge a raider held round the middle bends into, struggling
+const HAUL_DIG := 0.5        # how much more of his body an ankle holder on the floor hauls with (_apply_struggle)
 const MOVE_FADE := 0.28      # s to cross-fade from one running clip to the next
 var _joints: Array[Node3D] = []
 var _last_q: Array[Quaternion] = []
@@ -780,13 +781,19 @@ func _apply_struggle() -> void:
 	if haul > 0.001:
 		var low := clampf((dive - 0.75) / 0.25, 0.0, 1.0)   # lying on the floor (an ankle hold)
 		var back := -1.0 if haul_drive else 1.0
-		_turn(spine, Vector3.RIGHT, haul * lerpf(0.22, 0.4, low) * back)
-		_turn(chest, Vector3.RIGHT, haul * 0.15 * back)
-		_turn(head, Vector3.RIGHT, haul * 0.2 * low)
-		_turn(hip_l, Vector3.RIGHT, haul * lerpf(0.25, 0.75, low))
-		_turn(hip_r, Vector3.RIGHT, haul * lerpf(0.15, 0.5, low))
-		_turn(kn_l, Vector3.RIGHT, -haul * lerpf(0.35, 1.15, low))
-		_turn(kn_r, Vector3.RIGHT, -haul * lerpf(0.25, 0.8, low))
+		# Lying on the floor, each haul is the whole body's: chest and head up as the arms draw the ankle in, a knee
+		# driven up under him to dig in (the one on the side he hauls with most), and between hauls the knees still at
+		# work, one then the other, finding the floor (drawn smaller than this, his legs read as a held pose). That
+		# fades in and out with the hold (haul is 0.3 or more all the while he has it), so it does not jump on or off.
+		var dig := HAUL_DIG * low
+		var alt := sin(_t * 2.3 + _life) * (1.0 - haul) * minf(1.0, haul / 0.3) * low
+		_turn(spine, Vector3.RIGHT, haul * lerpf(0.22, 0.4 + 0.2 * dig, low) * back)
+		_turn(chest, Vector3.RIGHT, haul * (0.15 + 0.1 * dig) * back)
+		_turn(head, Vector3.RIGHT, haul * (0.2 + 0.15 * dig) * low)
+		_turn(hip_l, Vector3.RIGHT, haul * lerpf(0.25, 0.75 + 0.35 * dig, low) + 0.22 * maxf(0.0, alt))
+		_turn(hip_r, Vector3.RIGHT, haul * lerpf(0.15, 0.5 + 0.25 * dig, low) + 0.22 * maxf(0.0, -alt))
+		_turn(kn_l, Vector3.RIGHT, -haul * lerpf(0.35, 1.15 + 0.35 * dig, low) - 0.3 * maxf(0.0, alt))
+		_turn(kn_r, Vector3.RIGHT, -haul * lerpf(0.25, 0.8 + 0.3 * dig, low) - 0.3 * maxf(0.0, -alt))
 		pelvis.position.y -= haul * 0.05 * (1.0 - low) * height / 1.78
 	if strain > 0.001:
 		# Pulled toward the raider by what he holds: his arms go out straight (the arm IK), his chest and head go
@@ -873,6 +880,13 @@ func _turn(n: Node3D, axis: Vector3, a: float) -> void:
 
 ## Blend captured motion over the hand-made pose: the state's clip, and the one before it fading out.
 func _apply_clip(delta: float) -> void:
+	# A clip told to wait (play_clip) counts down to its start whether or not it is on show meanwhile. Counted only
+	# while on show, one not shown as it waits never started: a holder whose leg was torn out of his hands lay flat
+	# under the hand-made pose until it stood him up, late and in a rush, and the captured get-up never played.
+	var waited := false
+	if clip and clip_time < 0.0 and clip_weight <= 0.0:
+		clip_time += delta * clip_rate
+		waited = true
 	# Looping stance clips give way to the run cycle when the player is moving fast.
 	var want := 0.0
 	if clip and (clip_time >= 0.0 or _wait_shown):
@@ -884,7 +898,8 @@ func _apply_clip(delta: float) -> void:
 		_prev_time += delta * _prev_rate
 		_play_frame(_prev_clip, _prev_time, _prev_loop, _prev_weight)
 	if clip and clip_weight > 0.0:
-		clip_time += delta * clip_rate
+		if not waited:
+			clip_time += delta * clip_rate
 		_play_frame(clip, clip_time, clip_loop, clip_weight)
 
 

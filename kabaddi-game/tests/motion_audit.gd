@@ -5,16 +5,20 @@ extends Node
 ##   "approach"  one defender, placed by the team's plan (not tackling): the raider steps in, stops, backs off, jinks
 ##               left and right in front of him, steps in close and goes home: no contact;
 ##   "approach3" the same with three defenders;
+##   "linger"    one defender: the raider walks in to LINGER_DEPTH, 1.6 m short of the defender's place, and stands
+##               there LINGER_T, then goes home: a defender giving ground to a raider standing close, and holding it;
 ##   "ai"        an AI match (SECONDS, 60 by default), every player.
 ## The holds, escapes, chains, misses and takedowns are tackle_check's scenarios, run with --audit.
-##   godot --headless --path . --fixed-fps 30 res://tests/motion_audit.tscn -- [approach|approach3|ai ...] [SECONDS]
+##   godot --headless --path . --fixed-fps 30 res://tests/motion_audit.tscn -- [approach|approach3|linger|ai ...] [SECONDS]
 ##       [--json FILE] [--log] [--seed N]   (N: which AI match)
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --write-movie out.avi --fixed-fps 30 \
 ##       res://tests/motion_audit.tscn -- view approach [tv]
 ## "view" records one, from a fixed camera side-on (or the game's broadcast camera with "tv").
 
 const Probe := preload("res://tests/motion_probe.gd")
-const ENCOUNTERS := ["approach", "approach3", "ai"]
+const ENCOUNTERS := ["approach", "approach3", "linger", "ai"]
+const LINGER_DEPTH := 3.6     # m into the half the raider stops at in "linger" ...
+const LINGER_T := 3.5         # ... and stands there this long
 
 var _chosen := []
 var _secs := 60.0
@@ -44,7 +48,7 @@ func _ready() -> void:
 		elif args[i].is_valid_float() and not (i > 0 and args[i - 1] == "--seed"):
 			_secs = float(args[i])
 	if _chosen.is_empty():
-		_chosen = ["approach", "approach3", "ai"]
+		_chosen = ["approach", "approach3", "linger", "ai"]
 	Game.settings.models = 1
 	Game.settings.graphics = Game.GFX_LOW if not _view else Game.GFX_MEDIUM
 	Game.settings.camera = Game.CAM_TV
@@ -107,14 +111,23 @@ func _approach(e: String) -> Dictionary:
 	if _view:
 		_stage(m, r)
 	var t := 0.0
-	while t < 9.5 and is_instance_valid(m) and m.phase == "raid":
+	var stood := -1.0   # "linger": when he stopped close
+	while t < (12.0 if e == "linger" else 9.5) and is_instance_valid(m) and m.phase == "raid":
 		var dt := get_process_delta_time()
 		dt = dt if dt > 0.0005 else 1.0 / 30.0
 		var stick := Vector3.ZERO
-		for s in SCRIPT:
-			if t < float(s[0]):
-				stick = into * float(s[1]) + across * float(s[2])
-				break
+		if e == "linger":
+			if stood < 0.0 and m.depth_in(1 - m.raiding, r.position) >= LINGER_DEPTH:
+				stood = t
+			if stood < 0.0:
+				stick = into * 0.5
+			elif t - stood > LINGER_T:
+				stick = -into
+		else:
+			for s in SCRIPT:
+				if t < float(s[0]):
+					stick = into * float(s[1]) + across * float(s[2])
+					break
 		m.lab_move = stick
 		await get_tree().process_frame
 		t += dt

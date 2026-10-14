@@ -1006,15 +1006,20 @@ func _pair(a: Athlete, b: Athlete) -> String:
 	return "%d:%d" % [a.get_instance_id(), b.get_instance_id() if b != null else 0]
 
 
-## Where a player is about to be (SEPARATE_LOOK ahead, going as he is), for keeping players apart.
+## Where a player is about to be (SEPARATE_LOOK ahead, going the way he means to), for keeping players apart. Without
+## the step aside he is making to keep apart (Athlete.avoid): with it, each step aside, made to be clear in AVOID_TIME,
+## counted 1.3 times over in where he was going, so the next frame had him clear, he stopped stepping aside and came
+## back, and two players near each other went to and fro every frame (tests/motion_probe, "avoid flicker").
 func _ahead(a: Athlete) -> Vector3:
-	return a.position + Vector3(a.vel.x + a.push.x, 0.0, a.vel.z + a.push.z) * SEPARATE_LOOK
+	var v := a.vel - a.avoid + a.push
+	return a.position + Vector3(v.x, 0.0, v.z) * SEPARATE_LOOK
 
 
 ## A body's trunk, where it is about to be (moved on as _ahead): from his middle to the top of his head. On his feet,
 ## upright over his feet; bent into a hold, it reaches over what he holds; lying, it is his length along the floor.
 func _trunk(a: Athlete) -> Array:
-	var shift := Vector3(a.vel.x + a.push.x, 0.0, a.vel.z + a.push.z) * SEPARATE_LOOK
+	var sv := a.vel - a.avoid + a.push   # (as _ahead)
+	var shift := Vector3(sv.x, 0.0, sv.z) * SEPARATE_LOOK
 	if a.model == null:
 		var p := Vector3(a.position.x, 0.9, a.position.z) + shift
 		return [p, p + Vector3(0.0, 0.8, 0.0)]
@@ -1366,13 +1371,14 @@ func _tick_escape(dt: float) -> void:
 		_event("escape", {"how": e.kind, "from": h.pid(), "kind": h.kind(),
 			"hold": grapple.style_of_hold(h) if grapple else "", "free": free})
 		_release(h, true, true)
-		_move_moment(String(e.kind))
-		# "Broke free!" only when he is: slipping one of several holds is not getting away.
+		# "Broke free!" only when he is: slipping one of several holds is not getting away. It clears the hold's line,
+		# and the move's name goes up under it.
 		if free:
-			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true)
+			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true, MatchHud.EV_FREE)
 			_ooh()
 			if raider == controlled:
 				tutorial_event.emit("broke_free")
+		_move_moment(String(e.kind))
 		if raid.holders.is_empty():
 			raid.progress = maxf(0.0, raid.progress - 0.35)
 	if e.kind != "lion":
@@ -1511,7 +1517,7 @@ func _raider_dodge(dir: Vector3) -> void:
 				"free": free})
 			_release(h, true)
 			if free:
-				hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD)
+				hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, false, MatchHud.EV_FREE)
 				if raider == controlled:
 					tutorial_event.emit("broke_free")
 			if holders.is_empty():
@@ -3304,7 +3310,7 @@ func _check_chain_cross() -> void:
 			# Barged through: the hands come apart.
 			_unchain(d)
 			_event("chain_broken", {"who": [d.pid(), p.pid()]})
-			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true)
+			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true, MatchHud.EV_FREE)
 		return
 
 func _link(a: Athlete, b: Athlete) -> void:
