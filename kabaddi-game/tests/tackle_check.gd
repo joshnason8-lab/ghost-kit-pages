@@ -23,7 +23,12 @@ extends Node
 ## a dubki slips nothing), "drag" (the "catch" hold with the raider driving for the line as hard as he can,
 ## as the AI does: he drags the holder a little at a time and is brought down), "stopped" (a lion jump out of
 ## the ankle hold that does not slip it: the hold stops him leaving the floor, he is held still and brought down)
-## and "sidestep" (held only at the ankle, a sidestep slips nothing: he twists on the free leg where he is held).
+## "sidestep" (held only at the ankle, a sidestep slips nothing: he twists on the free leg where he is held) and
+## "breakfree" (the review's 1:32 raid: a touch, a grab straight back, a dive at the ankle, help, and Break free pressed
+## every 0.55 s while held, every try failing: he is braced from the first grip and each try is a wrench against the
+## holds that does not stand him up, the holders heaving back, until he is brought down) and "linked" (the review's
+## 0:54: two defenders holding hands, the first diving at the ankle: his partner goes a beat later, at the thigh, not the
+## same dive in the same frame, and they are not up in the same frame either).
 ## --json writes the numbers; "view SCENARIO" plays one on screen, from the side, for recording ("plain" leaves
 ## the debug overlay off; "high" looks down from above, three-quarters on, to see every hold in a pile; "close"
 ## comes in closer, a little in front, to see the bodies' detail):
@@ -33,7 +38,7 @@ extends Node
 ##       --fixed-fps 30 res://tests/tackle_check.tscn -- view catch [plain]
 
 const SCENARIOS := ["miss", "catch", "escape", "whiff", "thigh", "waist", "chain", "join", "committed", "crowd", "touch", "flurry",
-	"slip", "duck", "drag", "stopped", "sidestep"]
+	"slip", "duck", "drag", "stopped", "sidestep", "breakfree", "linked"]
 const JUMP_SPEED := 10.0        # m/s in one frame
 const BODY_R := 0.12            # m: the raider's middle is this thick, for measuring holds round it
 # Per scenario: defenders (style each; the first dives), where the first starts (metres in front), helpers.
@@ -55,6 +60,8 @@ const SETUP := {
 	"drag": {"styles": ["ankle"], "push": 1.0},
 	"stopped": {"styles": ["ankle"]},
 	"sidestep": {"styles": ["ankle"]},
+	"breakfree": {"styles": ["thigh", "ankle", "waist"], "touch": true, "help": true, "push": 1.0},
+	"linked": {"styles": ["ankle", "ankle"], "link": true},
 }
 
 var _chosen := []
@@ -142,7 +149,7 @@ func _run(sc: String) -> Dictionary:
 		# flurry he is close enough to grab straight back (a grab back is made only within reach of a defender's
 		# hands, after his reaction: Match._counter_grabs).
 		touched_one = d
-		d.position = m.pos_in(1, 0.6, 3.9 + (0.75 if sc == "flurry" else 0.95))
+		d.position = m.pos_in(1, 0.6, 3.9 + (0.75 if sc in ["flurry", "breakfree"] else 0.95))
 		if defs.size() > 1:
 			d = defs[1]
 	for i in range(1, defs.size()):
@@ -195,6 +202,15 @@ func _run(sc: String) -> Dictionary:
 	var down_at := -1.0
 	var esc := {}          # a lion jump out of the hold: when it was called for, let go, off the floor (see _escape)
 	var duck := {}         # a dubki held at the ankle: the hold through it, and the arms it slips (see _duck)
+	var press_t := -1.0    # breakfree: when Break free is pressed next
+	var partner: Athlete = null   # linked: the diver's partner, and his states
+	out["partner_states"] = []
+	if bool(setup.get("link", false)) and defs.size() > 1:
+		partner = defs[1]
+		partner.position = d.position + (d.position - r.position).cross(Vector3.UP).normalized() * 0.9
+		partner.facing = d.facing
+		m._link(d, partner)
+	out["presses"] = 0
 	var probe = null
 	if _audit:
 		probe = load("res://tests/motion_probe.gd").new()
@@ -264,6 +280,19 @@ func _run(sc: String) -> Dictionary:
 			var n_before: int = m.event_log.size()
 			m._defender_tackle(d, "waist")
 			out.refused = m.event_log.size() == n_before and d.state == "holding"
+		if partner != null and (out.partner_states.is_empty() or String(out.partner_states[-1][1]) != partner.state):
+			out.partner_states.append([snappedf(t, 0.01), partner.state, partner.kind(), snappedf(partner.st_len, 0.01)])
+		if sc == "breakfree" and m.phase == "raid" and not (m.raid.get("holders", []) as Array).is_empty() \
+				and r.state in ["held", "dodge"]:
+			if press_t < 0.0:
+				press_t = t + 0.2
+			if t >= press_t:
+				press_t = t + 0.55
+				m.lab_force["escape"] = false
+				var before: String = r.state
+				m._break_free()
+				if r.state != before:
+					out.presses += 1
 		if sc in ["miss", "whiff"] and dived and t > 1.6:
 			m.lab_move = home * 1.0
 		if sc == "touch" and t > 6.0 and m.phase == "raid":
@@ -479,6 +508,24 @@ func _run(sc: String) -> Dictionary:
 		"flurry":
 			out.ok = out.events.count("touch") == 1 and holds >= 1 and downs == 1 and out.events.count("raid_end") == 1 \
 				and out.end == "tackle" and out.scored_once and out.in_order and out.hold_after_takedown == 0
+		"linked":
+			# The partner goes after the lead, at another part of him, and they are not up in the same frame.
+			var lead_go := -1.0
+			for x in out.states_d:
+				if String(x[1]) == "dive" and lead_go < 0.0:
+					lead_go = float(x[0])
+			var dives: Array = out.partner_states.filter(func(x): return String(x[1]) == "dive")
+			var lag := float(dives[0][0]) - lead_go if not dives.is_empty() and lead_go >= 0.0 else -1.0
+			out["chain_lag"] = snappedf(lag, 0.01)
+			out["chain_kinds"] = [String(styles[0]), String(dives[0][2]) if not dives.is_empty() else ""]
+			out.ok = lag >= 0.05 and lag <= 0.35 and String(out.chain_kinds[1]) not in ["", "ankle"]
+		"breakfree":
+			# The 1:32 raid: every try made and failed, braced from the first grip (leaning into it, his middle down), no try
+			# standing him up, brought down.
+			var br: Dictionary = out.get("brace", {})
+			out.ok = out.events.count("touch") == 1 and holds >= 2 and downs == 1 and out.end == "tackle" and int(out.presses) >= 2 \
+				and out.events.count("escape") == 0 and not br.is_empty() and float(br.lean_at_0_4) >= 12.0 \
+				and float(br.drop_at_0_4) >= 0.04 and float(br.least_lean) >= 8.0 and float(br.straightened) <= 10.0
 		"slip":
 			# Held at the ankle and round the middle: the arms round his middle slipped, the ankle kept; still held, no
 			# "Broke free!", taken down.
@@ -567,6 +614,41 @@ func _sample(m: Node, r: Athlete, d: Athlete, pts_last: Dictionary, t: float, dt
 		rig.ankle_height() if rig else 0.08, rig != null and _held_by(rig, "l"), rig != null and _held_by(rig, "r")]
 
 
+## How the raider's body takes being held, from the first grip to going down: his lean (trunk from upright, degrees)
+## and how far his middle has come down from where it was before he was caught, 0.4 s after the grip; the least lean
+## and the most he straightened in any 0.3 s while held from then on (a try at breaking free standing him up shows as
+## that); and his lean at each try's height against just before it.
+func _brace(out: Dictionary, mo: Array, grip_t: float) -> void:
+	if grip_t < 0.0:
+		return
+	var before := mo.filter(func(x): return float(x[0]) < grip_t and float(x[0]) > grip_t - 0.4)
+	var held := mo.filter(func(x): return float(x[0]) >= grip_t + 0.4 and String(x[1]) in ["held", "dodge"])
+	if before.is_empty() or held.size() < 3:
+		return
+	var w0 := 0.0
+	for x in before:
+		w0 += float(x[3])
+	w0 /= before.size()
+	var at: Array = held[0]
+	var least := INF
+	var straightened := 0.0
+	for i in held.size():
+		least = minf(least, float(held[i][2]))
+		for j in range(i + 1, held.size()):
+			if float(held[j][0]) - float(held[i][0]) > 0.3:
+				break
+			straightened = maxf(straightened, float(held[i][2]) - float(held[j][2]))
+	var tries := []
+	for i in range(1, mo.size()):
+		if String(mo[i][1]) == "dodge" and String(mo[i - 1][1]) == "held":
+			var lean0 := float(mo[i - 1][2])
+			var mid := mo.filter(func(x): return absf(float(x[0]) - (float(mo[i][0]) + 0.13)) < 0.02)
+			if not mid.is_empty():
+				tries.append([snappedf(lean0, 0.1), snappedf(float(mid[0][2]), 0.1)])
+	out["brace"] = {"lean_at_0_4": snappedf(float(at[2]), 0.1), "drop_at_0_4": snappedf(w0 - float(at[3]), 0.001),
+		"least_lean": snappedf(least, 0.1), "straightened": snappedf(straightened, 0.1), "tries": tries}
+
+
 ## A foot a defender holds (where the hold has it), not one of his to stand or step on.
 func _held_by(rig: RiggedBody, s: String) -> bool:
 	return rig.foot_goal.has(s) and float(rig.foot_goal[s][1]) > 0.5
@@ -637,6 +719,7 @@ func _body_speed(a: Athlete, pts_last: Dictionary, dt: float, again := false) ->
 ##                    goes down): 0 is fallen straight away from it.
 func _motion(out: Dictionary, mo: Array) -> void:
 	_restraint(out, mo)
+	_brace(out, mo, float(out.attach_t))
 	var held := mo.filter(func(x): return String(x[1]) == "held")
 	var down_i := -1
 	for i in mo.size():
@@ -1021,7 +1104,8 @@ func _print(sc: String, r: Dictionary) -> void:
 			"holder_jitter", "root_accel_max", "anchor_err", "leg_stretch_max", "free_foot_down", "glide", "hops", "planted_slide",
 			"feet_slide", "foot_lifts", "react_raider",
 			"fall_dir_err", "grip_each", "recovery", "recovery_spread", "escape_timing", "dubki_held", "slipped",
-			"last_hold_to_down", "on_floor", "getting_up", "up_to_walk", "moved_while_down", "stood_by_him"]:
+			"last_hold_to_down", "on_floor", "getting_up", "up_to_walk", "moved_while_down", "stood_by_him", "presses", "brace",
+			"chain_lag", "chain_kinds", "partner_states"]:
 		print("  %-20s %s" % [k, str(r.get(k, "-"))])
 	print("  raider   %s" % [str(r.states_r)])
 	print("  defender %s" % [str(r.states_d)])

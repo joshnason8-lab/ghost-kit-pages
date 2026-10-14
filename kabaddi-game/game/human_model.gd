@@ -19,6 +19,9 @@ var kick := 0.0             # toe touch leg extension, 0..1
 var dive := 0.0             # tackle dive, 0..1
 var fallen := 0.0           # lying on the mat, 0..1
 var struggle := 0.0         # dragging defenders toward the line, 0..1
+var stance_ready := 0.0     # standing ready (Athlete), 0..1: his feet a little wider apart
+var wrench := 0.0           # held, trying to break free: twisting and driving against the holds, 0..1 ...
+var wrench_side := 1.0      # ... toward his right (1) or left (-1)
 var celebrate := 0.0        # celebrating, 0..1
 var bounce := 0.0           # a raider's light, quick steps on the spot, 0..1
 var _tap := 0.0
@@ -93,6 +96,7 @@ const SETTLE_TIME := 0.18
 const WAY_EASE := 0.18       # s over which the way he travels is smoothed for picking a running clip
 const READY_HINGE := 0.5     # rad the pelvis tips forward per unit of crouch, standing ready on his own legs ...
 const READY_WIDEN := 0.08    # ... and rad each leg goes further out: feet about 0.45 m apart
+const HELD_HINGE := 0.6      # share of that hinge a raider held round the middle bends into, struggling
 const MOVE_FADE := 0.28      # s to cross-fade from one running clip to the next
 var _joints: Array[Node3D] = []
 var _last_q: Array[Quaternion] = []
@@ -540,7 +544,8 @@ func _animate(delta: float) -> void:
 	# Standing ready on his own legs (clip_legs 0: the stance clip has only his trunk and arms), bent forward at the hips
 	# over his bent knees, feet a little wider than his shoulders, each player a little his own way. The thighs take the
 	# hinge back, so the knees and feet stay where they were.
-	var ready := (1.0 - clip_legs) * c * (1.0 - lie)
+	# Held round the middle (on his own legs too), bent forward at the hips into his drive for the line, from the grip.
+	var ready := (1.0 - clip_legs) * maxf(c, struggle * HELD_HINGE) * (1.0 - lie)
 	var hinge := ready * (READY_HINGE + 0.08 * sin(_life * 3.7))
 	pel_x -= hinge
 	var pel_z := sw * 0.04 * run * fwd_w
@@ -601,7 +606,7 @@ func _animate(delta: float) -> void:
 	lknee = lerpf(lknee, -1.45, seated)
 	rknee = lerpf(rknee, -1.5, seated)
 	pelvis.position.y = lerpf(pelvis.position.y, 0.47 * height / 1.78, seated)
-	var wide := ready * (READY_WIDEN + 0.03 * cos(_life * 2.3))
+	var wide := ready * stance_ready * (READY_WIDEN + 0.03 * cos(_life * 2.3))   # (held, his feet stay where they are)
 	hip_l.rotation = Vector3(lthigh, 0, -0.06 - c * 0.12 - wide - side_l - dubki * 0.25)
 	hip_r.rotation = Vector3(rthigh, 0, 0.06 + c * 0.12 + wide + kick * 0.12 + side_r + dubki * 0.25)
 	kn_l.rotation = Vector3(lknee, 0, 0)
@@ -734,6 +739,20 @@ func _animate(delta: float) -> void:
 ## chest comes up off the mat and his knees draw up to drive back; higher up he sits back into it; chest to
 ## chest (a block) he drives into him.
 func _apply_struggle() -> void:
+	if wrench > 0.001:
+		# Wrenching against the holds (Break free, held): hips and shoulders twist hard toward the side he tries to go,
+		# leaning into it, arms driving down at the arms round him; the holds keep him where he is (Grapple), and as the
+		# try passes he settles back into the struggle.
+		var tw := -wrench_side * wrench
+		_turn(pelvis, Vector3.UP, tw * 0.32)
+		_turn(spine, Vector3.UP, tw * 0.26)
+		_turn(chest, Vector3.UP, tw * 0.2)
+		_turn(spine, Vector3.FORWARD, tw * 0.14)
+		_turn(spine, Vector3.RIGHT, -wrench * 0.12)
+		pelvis.position.y -= wrench * 0.05 * height / 1.78
+		for arm in [[sh_l, el_l], [sh_r, el_r]]:
+			(arm[0] as Node3D).quaternion = (arm[0] as Node3D).quaternion.slerp(Quaternion.from_euler(Vector3(0.75, 0.0, 0.0)), wrench * 0.6)
+			(arm[1] as Node3D).quaternion = (arm[1] as Node3D).quaternion.slerp(Quaternion(Vector3.RIGHT, 0.9), wrench * 0.6)
 	var b := balance
 	if b > 0.001 or tug > 0.001 or jolt > 0.001 or one_leg > 0.001:
 		# Held by a leg he goes right over it; held round the middle, less.

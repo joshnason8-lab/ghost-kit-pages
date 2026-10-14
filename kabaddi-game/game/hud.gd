@@ -4,6 +4,13 @@ extends CanvasLayer
 ## pause menu, and the touch controls.
 
 var shown: Array = []     # every event message put up, in order (tests read it)
+# How much an event message matters (event): the newest clears whatever is up that matters less.
+const EV_INFO := 0        # a signature move, graphics lowered, a suspension over, the toss
+const EV_TOUCH := 1       # a touch or kick given, the bonus
+const EV_HOLD := 2        # a hold, help arriving, a dash, breaking free
+const EV_RESULT := 3      # how the raid ended, the points, a line crossed
+const BUBBLE_GAP := 0.7   # s at least between two shouts over players' heads
+var _bubble_t := -10.0
 var m  # Match
 var controls: TouchControls
 var root: Control
@@ -437,11 +444,18 @@ func banner(text: String) -> void:
 	tw.tween_property(banner_l, "modulate:a", 1.0, 0.3)
 
 
-func event(text: String, color: Color, small := false) -> void:
+func event(text: String, color: Color, small := false, prio := EV_HOLD) -> void:
 	if text == "":
 		return
 	shown.append(text)
+	# The newest says what is happening now: whatever is up that matters less goes at once (a touch's name under the
+	# hold that follows it, a hold under the raid's result), so the two lines up are never one stale and one new.
+	var less := events_box.get_children().filter(func(c): return int(c.get_meta("prio", EV_HOLD)) < prio)
+	for c in less:
+		events_box.remove_child(c)
+		c.queue_free()
 	var l := _label(text, "TitleLabel", 36 if small else 54, color)
+	l.set_meta("prio", prio)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))
 	l.add_theme_constant_override("outline_size", 12)
@@ -477,8 +491,12 @@ func float_points(a: Node3D, text: String) -> void:
 	tw.tween_callback(l.queue_free)
 
 
-## A shout above a player's head, like "Pakad!".
+## A shout above a player's head, like "Pakad!": one at a time, BUBBLE_GAP apart (two at once read as neither, over
+## the messages and the moment itself).
 func bubble(a: Node3D, text: String, color := Color.WHITE) -> void:
+	if _t - _bubble_t < BUBBLE_GAP:
+		return
+	_bubble_t = _t
 	var l := Label3D.new()
 	l.text = text
 	l.font = Game.font_display

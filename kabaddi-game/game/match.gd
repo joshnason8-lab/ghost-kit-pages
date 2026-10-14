@@ -89,6 +89,8 @@ const BODY_GAP := 0.4          # m kept between a body on the floor, getting up 
                                # and anyone else's: lying, a body is a body's length along the floor, not a point
 const DOWN_STATES := ["holding", "dive", "recover", "rise", "fallen"]   # on the floor, or in the grapple: not pushed
 const WATCH_HOLD := 0.4        # s the raider keeps watching the defender he chose (or not watching), at least
+const CHAIN_LAG := 0.08        # s after the lead of a chained pair goes that the partner goes, at least ...
+const CHAIN_LAG_SPREAD := 0.1  # ... and up to this much later, each partner his own
 const HELD_TURN := 1.5         # rad/s a raider held other than by the ankle turns toward home at most
 const SPRING := 35.0           # m/s² a lion jump out of a hold drives off the free leg at, up to the spring's speed
 const EVADE_REACH := 1.4       # m an evading defender can cover (_evade: 0.34 s from a standstill), and a little more
@@ -493,7 +495,7 @@ func _begin_setup() -> void:
 	if not attract:
 		# Who is coming, and what he likes to do.
 		var sig := DB.signature(raider.data)
-		hud.event("%s · %s: %s" % [raider.display_name(), tr("SIGNATURE"), tr(DB.MOVE_KEYS[sig])], Game.C_MUTED, true)
+		hud.event("%s · %s: %s" % [raider.display_name(), tr("SIGNATURE"), tr(DB.MOVE_KEYS[sig])], Game.C_MUTED, true, MatchHud.EV_INFO)
 
 
 func _user_controls_raider() -> bool:
@@ -633,6 +635,7 @@ func _tick_raid(dt: float) -> void:
 		raider.set_state("held" if holders.size() > 0 else "raid")
 	if holders.size() > 0 and raider.state == "raid":
 		raider.set_state("held")
+	raider.held_by = holders.size()
 	_tick_escape(dt)
 
 	var move := Vector3.ZERO
@@ -654,6 +657,7 @@ func _tick_raid(dt: float) -> void:
 	_audit("raider")
 
 	# Defenders: the team's plan first, then each one at it.
+	_chain_follow()
 	defence.update(dt)
 	for d in defs:
 		if d == controlled:
@@ -1154,7 +1158,7 @@ func _check_frame_rate(delta: float) -> void:
 		Game.apply_graphics(get_viewport())
 		if arena.sun:
 			arena.sun.shadow_enabled = Game.shadows_enabled()
-		hud.event(tr("GFX_LOWERED").format({"level": tr(["GFX_LOW", "GFX_MEDIUM", "GFX_HIGH"][g - 1])}), Game.C_MUTED)
+		hud.event(tr("GFX_LOWERED").format({"level": tr(["GFX_LOW", "GFX_MEDIUM", "GFX_HIGH"][g - 1])}), Game.C_MUTED, false, MatchHud.EV_INFO)
 
 
 func set_paused(p: bool) -> void:
@@ -1441,7 +1445,7 @@ func _move_moment(move: String) -> void:
 	raid.moves.append(move)
 	var key: String = {"dubki": "EV_DUBKI", "lion": "EV_LION", "backkick": "EV_BACK_KICK", "sidekick": "EV_SIDE_KICK", "toe": "EV_TOE"}.get(move, "")
 	if key != "":
-		hud.event(tr(key), Game.C_GOLD, move in ["toe", "backkick", "sidekick"])
+		hud.event(tr(key), Game.C_GOLD, move in ["toe", "backkick", "sidekick"], MatchHud.EV_TOUCH)
 	if move in ["dubki", "lion"]:
 		arena.excite(0.6)
 		Sfx.play("roar", -14.0)
@@ -1501,7 +1505,7 @@ func _raider_dodge(dir: Vector3) -> void:
 		var h: Athlete = pick[0]
 		var fit: float = pick[1]
 		var chance := 0.5 * fit * raider.agility * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
-		if fit > 0.0 and rng.randf() < chance:
+		if fit > 0.0 and bool(lab_force.get("escape", rng.randf() < chance)):
 			var free := holders.size() == 1
 			_event("escape", {"how": "dodge", "from": h.pid(), "kind": h.kind(), "hold": grapple.style_of_hold(h),
 				"free": free})
@@ -1512,6 +1516,8 @@ func _raider_dodge(dir: Vector3) -> void:
 					tutorial_event.emit("broke_free")
 			if holders.is_empty():
 				raid.progress = maxf(0.0, raid.progress - 0.35)
+		elif grapple:
+			grapple.clamp_down()   # it fails: they feel him go and heave him back
 
 
 func _release(h: Athlete, knocked: bool, torn := false) -> void:
@@ -1581,14 +1587,44 @@ func _defender_tackle(d: Athlete, kind := "", windup := false) -> void:
 	d.chain_dive = false
 	Sfx.play("whoosh", -8.0, 0.8)
 	Sfx.voice("grunt", -9.0, d.voice_pitch())
-	# A chained pair goes in together.
+	# A chained pair goes in together: the partner a beat after the lead (his own reaction to him going), at the other
+	# part of the raider (one low, one high; _chain_follow). In the same frame, at the same part, they read as one dive
+	# twice, and went down and got up as one.
 	var p: Athlete = d.chain_partner
 	if p != null:
 		_unchain(d)
 		d.chain_dive = true
 		if p.state in ["ready", "idle"] and p.position.distance_to(raider.position) < 3.0:
-			_defender_tackle(p, p.style, windup)
+			var lag := CHAIN_LAG + CHAIN_LAG_SPREAD * float(absi(hash(p.pid())) % 100) / 100.0
+			p.set_meta("chain_go", [phase_t + lag, _chain_kind(d.kind(), p.style), windup])
+
+
+## A chained partner going in after the lead (_defender_tackle) when his beat comes, if he still can.
+func _chain_follow() -> void:
+	for p in defenders():
+		if not p.has_meta("chain_go"):
+			continue
+		var go: Array = p.get_meta("chain_go")
+		if phase_t < float(go[0]):
+			continue
+		p.remove_meta("chain_go")
+		if p.state in ["ready", "idle"] and p != controlled and raider.state != "fallen" \
+				and p.position.distance_to(raider.position) < 3.2:
+			_defender_tackle(p, String(go[1]), bool(go[2]))
 			p.chain_dive = true
+
+
+## The partner's tackle in a chain: his own, unless it is the lead's, then the part of the raider the lead is not going
+## for (the lead at his ankle, the partner at his thigh; at his thigh, round his middle; round his middle, his thigh).
+static func _chain_kind(lead: String, own: String) -> String:
+	if Grapple.style_of(own) != Grapple.style_of(lead):
+		return own
+	match Grapple.style_of(lead):
+		"ankle":
+			return "thigh"
+		"thigh":
+			return "waist"
+	return "thigh"
 
 
 ## The point on the raider a defender's tackle goes for (the ground under it).
@@ -1628,7 +1664,11 @@ func _dive_motion(d: Athlete, dt: float) -> void:
 
 ## A dive comes down: on the floor, getting up. His arms are still out for a moment.
 func _land(d: Athlete, getup: float) -> void:
-	d.set_state("recover", getup)
+	# Up at his own pace, and sooner from a dive that left him low on his knees than from one flat on the floor (an
+	# ankle dive): two who went down together were up together, to the frame.
+	var depth: float = {"ankle": 1.0, "thigh": 0.72, "waist": 0.45, "dash": 0.3}.get(d.kind(), 0.8)
+	var pace := 0.9 + 0.25 * float(absi(hash(d.pid())) % 100) / 100.0
+	d.set_state("recover", getup * pace * (0.7 + 0.3 * depth))
 	if Grapple.style_of(d.kind()) != "":
 		d.reach_t = ARMS_OUT_AFTER
 
@@ -1720,7 +1760,7 @@ func _user_defender(d: Athlete, dt: float) -> void:
 	# Crossing the midline into the raider's half during a raid is out.
 	if depth_in(d.team, d.position) < -0.12 and d.state != "holding":
 		_event("defender_out", {"who": d.pid(), "why": "midline"})
-		hud.event(tr("EV_CROSSED_MIDLINE"), Game.C_DANGER)
+		hud.event(tr("EV_CROSSED_MIDLINE"), Game.C_DANGER, false, MatchHud.EV_RESULT)
 		_put_out(d)
 		teams[raiding].score += 1
 		teams[raiding].pts.extra += 1
@@ -1733,7 +1773,7 @@ func _user_defender(d: Athlete, dt: float) -> void:
 
 func _defender_out_of_bounds(d: Athlete) -> void:
 	_event("defender_out", {"who": d.pid(), "why": "bounds"})
-	hud.event(tr("EV_OUT_OF_BOUNDS"), Game.C_DANGER)
+	hud.event(tr("EV_OUT_OF_BOUNDS"), Game.C_DANGER, false, MatchHud.EV_RESULT)
 	_put_out(d)
 	teams[raiding].score += 1
 	teams[raiding].pts.extra += 1
@@ -2728,7 +2768,7 @@ func _check_lines() -> void:
 	if not raid.bonus and foot > line and (golden or on_mat(opp).size() >= 6) and raid.holders.is_empty():
 		raid.bonus = true
 		_event("bonus", {"airborne": airborne})
-		hud.event(tr("EV_BONUS_AIR") if airborne else tr("EV_BONUS"), Game.C_GOLD)
+		hud.event(tr("EV_BONUS_AIR") if airborne else tr("EV_BONUS"), Game.C_GOLD, false, MatchHud.EV_TOUCH)
 		if raider == controlled:
 			tutorial_event.emit("bonus")
 		Sfx.play("slap", 0.0, 0.8)
@@ -2785,6 +2825,7 @@ func _end_raid(kind: String) -> void:
 	if phase != "raid":
 		return
 	_set_phase("post")
+	raider.held_by = 0
 	hud.chant(false)
 	var atk: int = raiding
 	var dfn := 1 - raiding
@@ -2974,9 +3015,9 @@ func _end_raid(kind: String) -> void:
 		Sfx.voice("exhale", -9.0, raider.voice_pitch())
 	Sfx.play("whistle", -6.0)
 	for m in _post_messages:
-		hud.event(m[0], m[1])
+		hud.event(m[0], m[1], false, MatchHud.EV_RESULT)
 	if raid_pts + def_pts > 0:
-		hud.event(tr("EV_POINTS").format({"n": raid_pts + def_pts}), Game.C_INK, true)
+		hud.event(tr("EV_POINTS").format({"n": raid_pts + def_pts}), Game.C_INK, true, MatchHud.EV_RESULT)
 	clock = maxf(0.0, clock - RAID_GAP * clock_speed)
 
 
@@ -3424,7 +3465,7 @@ func _end_suspensions() -> void:
 			a.suspended = -1.0
 			a.on_mat = true
 			a.set_state("walk")
-			hud.event(tr("EV_SUSPENSION_OVER").format({"name": a.display_name()}), Game.C_GOOD)
+			hud.event(tr("EV_SUSPENSION_OVER").format({"name": a.display_name()}), Game.C_GOOD, false, MatchHud.EV_INFO)
 
 
 ## Super 10 (ten raid points in a match) and High 5 (five tackle points).
@@ -3606,6 +3647,7 @@ func _next_raid(after_timeout := false) -> void:
 		a.remove_meta("cheer")
 		a.remove_meta("cheer_at")
 		a.remove_meta("grab_at")
+		a.remove_meta("chain_go")
 		a.remove_meta("under")
 		if a.has_meta("walk_at"):
 			a.remove_meta("walk_at")
@@ -3757,7 +3799,7 @@ func _start_golden() -> void:
 	_all_back()
 	raiding = rng.randi() % 2
 	hud.banner(tr("GOLDEN_RAID"))
-	hud.event(tr("EV_TOSS").format({"team": String(teams[raiding].id)}), Game.C_GOLD)
+	hud.event(tr("EV_TOSS").format({"team": String(teams[raiding].id)}), Game.C_GOLD, false, MatchHud.EV_INFO)
 	Sfx.play("buzzer", -4.0)
 	_begin_setup()
 

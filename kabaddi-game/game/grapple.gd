@@ -523,6 +523,29 @@ func tug_mean() -> float:
 	return sum / holds.size()
 
 
+## He tries to break free and it fails: every holder easing off between hauls heaves again now, from as hard as he
+## is pulling (no jump in it), so the holds are seen to answer him; one already heaving carries on.
+func clamp_down() -> void:
+	for h in holds:
+		var ph := float(h.ph)
+		if ph < 0.0:
+			continue   # not hauling yet
+		var x := fposmod(ph, 1.0)
+		if x < PULL_UP:
+			continue
+		var p := haul(ph)
+		# Where on the heave's rise the pull is as strong as now (the rise is a smoothstep: found by halving).
+		var lo := 0.0
+		var hi := 1.0
+		for i in 12:
+			var mid := (lo + hi) * 0.5
+			if mid * mid * (3.0 - 2.0 * mid) < p:
+				lo = mid
+			else:
+				hi = mid
+		h.ph = floorf(ph) + 1.0 + lo * PULL_UP
+
+
 ## A haul's strength through its cycle (ph in cycles): a quick heave, then easing off to take a new grip.
 static func haul(ph: float) -> float:
 	if ph < 0.0:

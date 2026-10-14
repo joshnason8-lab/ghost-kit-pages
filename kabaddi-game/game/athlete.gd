@@ -50,6 +50,7 @@ var push := Vector3.ZERO           # how fast he is being moved out of someone's
 var avoid := Vector3.ZERO          # ... or, steering himself, how he steers round them: added to where he means to go
 var drove := false                 # he steered himself this frame (drive)
 var drives := 0                    # times drive() moved him (tests/motion_probe counts frames with more than one: two owners)
+var held_by := 0                   # raider: how many hold him now (Match), for how his body takes it
 var walk_target := Vector3.ZERO
 var evade_to := Vector3.INF       # where an evasion pulls up, a line in its way (Match._evade); INF: none
 var energy := 1.0
@@ -87,6 +88,8 @@ var accel := 18.0
 # can, quicker standing than at a sprint.
 const TURN_STILL := 900.0    # deg/s, pivoting on the spot
 const TURN_SPRINT := 420.0   # deg/s at 5 m/s
+const BRACE := 0.1            # how far a held raider crouches into his struggle, caught (and BRACE_LOSS more as his balance
+const BRACE_LOSS := 0.15      # goes); his hips go back over it (HumanModel.HELD_HINGE)
 var move_vel := Vector3.ZERO
 var _vis_yaw := INF
 var _last_pos := Vector3.INF
@@ -191,6 +194,9 @@ func set_state(s: String, length := 0.0, wait_first := 0.0) -> void:
 					return
 			"fallen":
 				variant = fall_kind
+		if s == "dodge" and held_by > 0:
+			model.play_state("held")   # a twist against the holds, not a sidestep: the struggle's own motion carries on
+			return
 		model.play_state(s, length - wait, variant, wait)
 
 
@@ -339,6 +345,7 @@ func _pose(delta: float) -> void:
 	var want_seated := 0.0
 	var want_signal := 0.0
 	var want_bounce := 0.0
+	var want_wrench := 0.0
 	var p := clampf((st_t - wait) / maxf(st_len - wait, 0.01), 0.0, 1.0)
 	var waiting := st_t < wait
 	match state:
@@ -357,6 +364,12 @@ func _pose(delta: float) -> void:
 			want_back_kick = sin(p * PI)
 		"dodge":
 			want_crouch = 0.5
+			if held_by > 0:
+				# Break free, held: a wrench against the holds (HumanModel.wrench) out of his braced stance, not a sidestep
+				# in the air (the sidestep's clip and stance stood him up out of the struggle at every try).
+				want_struggle = 1.0
+				want_crouch = BRACE + BRACE_LOSS * balance
+				want_wrench = sin(p * PI)
 		"evade":
 			# Pulling back from a touch: hips back, stomach in.
 			want_crouch = 0.6
@@ -411,6 +424,9 @@ func _pose(delta: float) -> void:
 			want_fallen = 1.0
 		"held":
 			want_struggle = 1.0
+			# Braced from the moment he is caught (knees bent, hips back and down, leaning into his drive for the line),
+			# lower as his balance goes: not stood upright until the takedown.
+			want_crouch = BRACE + BRACE_LOSS * balance
 		"holding":
 			# Each hold drawn its own way (Grapple), the arms reaching the rest of the way (RiggedBody): an ankle
 			# hold lying on the floor, arms out; a thigh hold down low, bent over the leg; round the waist bent
@@ -498,6 +514,10 @@ func _pose(delta: float) -> void:
 	m.jump = want_jump
 	m.cele = cele_kind
 	m.bounce = lerpf(m.bounce, want_bounce, k)
+	m.wrench = lerpf(m.wrench, want_wrench, clampf(delta * 14.0, 0.0, 1.0))
+	m.stance_ready = move_toward(m.stance_ready, 1.0 if state == "ready" else 0.0, delta * 4.0)
+	if want_wrench > 0.0:
+		m.wrench_side = 1.0 if dive_dir.dot(facing.cross(Vector3.UP)) >= 0.0 else -1.0
 	m.ref_sig = sig_kind
 	m.ref_amt = lerpf(m.ref_amt, want_signal, clampf(delta * 9.0, 0.0, 1.0))
 	m.seated = lerpf(m.seated, want_seated, clampf(delta * 4.0, 0.0, 1.0))
