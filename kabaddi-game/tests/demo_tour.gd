@@ -4,8 +4,11 @@ extends Node
 ## buttons, drawn on screen as it is pressed): in at a defender, a toe touch or a hand touch, back home, and Break
 ## free when he is held. The player's team defends by itself (the AI). Partway, the pause menu; after a few raids
 ## the match is ended and the result screen shown.
-##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 1560x720 --write-movie out.avi \
-##       --fixed-fps 30 res://tests/demo_tour.tscn [-- RAIDS]
+##   xvfb-run -a -s "-screen 0 1600x900x24" godot --path . --rendering-driver opengl3 --resolution 1560x720 \
+##       --write-movie out.avi --fixed-fps 30 res://tests/demo_tour.tscn [-- RAIDS]
+## Movie Maker records at the project's window size whatever --resolution says (1280x720, with a 1560-wide game laid
+## out in it, cropped): for a phone's 19.5:9, record from a copy of the project with
+## display/window/size/window_width_override=1560 and window_height_override=720 in project.godot.
 ## It prints what happens and when ("TOUR 12.3 s ..."), to cut the recording by.
 
 var m: Node = null
