@@ -84,6 +84,11 @@ var _hidden_head := false
 # Planted feet: a foot flat on the floor keeps its place in the world until it lifts (see _plant_feet).
 const PLANT_DOWN := 0.03     # m: heel and toe this close to the floor and the foot is planted
 const PLANT_SLIP := 0.2      # m: furthest a planted foot is held from where the motion puts it
+const FLAT_EASE := 0.1       # s to lay a foot flat on the floor or let it go (_flatten)
+const PLANT_TAKE := 0.1      # s to plant a foot that has come down (_plant_feet) ...
+const PLANT_LET_GO := 0.08   # s ... and to let it go (_plant_feet, _release_plants)
+const PLANT_SINK := 0.03     # m the planted feet may bring the hips down below where the motion has them (_ground)
+const RUN_STATES := ["raid", "ready", "idle", "walk", "evade", "telegraph", "dodge"]   # on his feet, free to run (_ground)
 const STEP_LIFT := 0.05      # m: a foot let go at the slip limit lifts this high as it steps on
 const SWING_LIFT := 0.07     # m: a foot stepping on purpose (step) lifts this high as it comes through
 const MAX_SINK := 0.3        # m the hips may come down for a held leg to reach its hold (_sink_to_hold) ...
@@ -93,6 +98,7 @@ const RISE_MAX := 4.0        # m/s the body's middle may rise against its root, 
 const FALL_MAX := 5.0        # ... and come down
 const TURN_MAX := 1200.0     # deg/s any bone of the drawn body may turn, whatever turns it (_limit_turns)
 const BEND_MIN := 0.04       # m off straight an elbow must be to say which way it bends (_ik_two)
+var _flat_w := {}            # side -> how far its foot is being laid flat, eased from frame to frame (_flatten)
 var _plant := {}             # side -> [world position of the held sole point, how firmly held 0..1, which point,
                              #          let go at the slip limit (stepping)]
 var _replant := {}           # side -> seconds before a foot let go at the slip limit may be held again
@@ -111,6 +117,9 @@ var _mid_y := INF            # the body's middle's height last frame (skeleton s
 var hand_target := {}        # side -> {model: HumanModel or null, part, offset (world), point (world, when model
                              #          is null), w, fade}
 var foot_goal := {}          # side -> [world position of the ankle joint, weight, weight lost per second (0: held)]
+var kick_goal := Vector3.INF # a kick reaching for a defender: where the toe goes (world; Match) ...
+var kick_w := 0.0            # ... and how far into the reach it is, 0..1
+var _kick_leg := ""          # the leg the kick goes out with (_reach_kick)
 var hands_free := Vector3.INF
 var _hand_t := -1.0
 var _bend := {}              # hand -> which way its elbow bent last frame, reaching for a hold (skeleton space)
@@ -557,6 +566,7 @@ func drive(h: Node3D) -> void:
 	var pel: Vector3 = inv * h.pelvis.global_position
 	var k := float(body.leg_len) / maxf(0.5, h.leg_length())
 	var hips := _ground(g, Vector3(pel.x * k, pel.y * k, pel.z * k), h)
+	_reach_kick(g, hips)
 	_reach_hands(g, hips, float(h._t))
 	_limit_turns(g, float(h._t))
 	for name in g:
@@ -612,6 +622,12 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	else:
 		_standing = hips.y > 0.74 * float(body.leg_len) and up.y > 0.8
 	var standing := _standing
+	# On his feet and free to move (running, stepping about, standing ready), the feet are laid flat as a runner's
+	# (_flatten). Held, down or getting up, as they were before: a held raider's free foot stood on its toes, off the
+	# floor four frames in five in a hold he drove against, and a raider caught by three at once, then taken down, had
+	# his feet sliding 1.8 m/s.
+	var ath := h.get_parent()
+	var stride := 1.0 if ath == null or String(ath.get("state")) in RUN_STATES else 0.0
 	var dt := clampf(float(h._t) - _plant_t, 0.0, 0.1) if _plant_t >= 0.0 else 0.0
 	_plant_t = float(h._t)
 	var held := _held_legs(dt)
@@ -637,14 +653,20 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 			_lifted = maxf(_lifted, low - under)
 	hips.y += target - low + _lifted
 	if target > 0.02:
-		_plant.clear()
 		hips = _sink_to_hold(g, hips, target, dt)
 		hips = _limit_height(g, hips, dt, false)
+		# In the air: nothing to stand on. A foot laid flat or planted is let go of over a few frames, as it is
+		# lifted off the floor standing: let go at once, every stride of a run turned the feet 40 degrees and more in
+		# a frame as it left the floor and again as it landed.
+		var fk_air := _fk(g, hips)
+		for s in body.soles:
+			_flatten(g, fk_air, s, dt, true, stride)
+		_release_plants(g, _fk(g, hips), dt)
 		_hold_feet(g, _fk(g, hips))
-		return hips   # in the air: nothing to stand on
+		return hips
 	var fk := _fk(g, hips)
 	for s in body.soles:
-		_flatten(g, fk, s)
+		_flatten(g, fk, s, dt, false, stride)
 	# fk's bone positions still hold after laying the feet flat (only the feet turned, read from g below).
 	var still := float(h.speed) < 1.2 and float(h.kick) + float(h.back_kick) + float(h.jump) + float(h.dubki) < 0.1
 	if standing and still and held.is_empty():
@@ -666,10 +688,16 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	if on_feet and hips.y > 0.35 * float(body.leg_len):
 		_plant_feet(g, fk, dt)
 	else:
-		_plant.clear()
+		_release_plants(g, fk, dt)
 	# Back on the floor after the feet were laid flat and planted, then down for a held leg to reach its hold,
 	# and the held leg reaching for it last of all, so nothing moves it off the hold afterwards.
-	hips = Vector3(hips.x, hips.y + target - _lowest(_fk(g, hips), standing, held) + _lifted, hips.z)
+	var settle := target - _lowest(_fk(g, hips), standing, held) + _lifted
+	if not _plant.is_empty() and foot_goal.is_empty() and _sunk <= 0.0:
+		# A planted foot the leg no longer reaches from where the motion has the hips (left behind him as he runs
+		# on) comes off the floor and is let go of (_plant_feet), rather than pull the hips down after it: they sank
+		# up to 15 cm through every running stride and came back up in a frame as it left the floor.
+		settle = maxf(settle, -PLANT_SINK / scale.y)
+	hips = Vector3(hips.x, hips.y + settle, hips.z)
 	if not foot_goal.is_empty() or _sunk > 0.0:
 		hips = _sink_to_hold(g, hips, 0.0, dt)
 	hips = _limit_height(g, hips, dt, standing)
@@ -883,9 +911,9 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 				st = [xf * ((fk[0][bi] as Vector3) + b * pts[lo_i]), 1.0, lo_i, false]
 				_plant[s] = st
 			if not st[3]:
-				st[1] = minf(1.0, float(st[1]) + dt / 0.06)
+				st[1] = minf(1.0, float(st[1]) + dt / PLANT_TAKE)
 		elif st != null:
-			st[1] = float(st[1]) - dt / 0.08
+			st[1] = float(st[1]) - dt / PLANT_LET_GO
 		if st != null and st[3]:
 			st[1] = float(st[1]) - dt / 0.12   # stepping on after being let go at the slip limit
 		if st == null:
@@ -921,6 +949,25 @@ func _plant_feet(g: Dictionary, fk: Array, dt: float) -> void:
 		_ik_leg(g, fk, s, goal)
 
 
+## The feet planted on the floor let go of over PLANT_LET_GO, still held where they were for that moment (along the
+## floor), when the body is off the floor (a running stride's flight) or off its feet: let go at once, a foot held
+## up to PLANT_SLIP from where the motion has it jumped there in a frame.
+func _release_plants(g: Dictionary, fk: Array, dt: float) -> void:
+	var inv := skeleton.global_transform.affine_inverse()
+	for s in _plant.keys():
+		var st: Array = _plant[s]
+		st[1] = float(st[1]) - dt / PLANT_LET_GO
+		if float(st[1]) <= 0.0 or not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
+			_plant.erase(s)
+			continue
+		var bi: int = body.soles[s][0]
+		var b: Basis = g.get("foot_" + s, fk[1][bi])
+		var held: Vector3 = (fk[0][bi] as Vector3) + b * (body.soles[s][1] as PackedVector3Array)[int(st[2])]
+		var at: Vector3 = inv * (st[0] as Vector3)
+		var off := Vector3(at.x - held.x, 0.0, at.z - held.z).limit_length(PLANT_SLIP / scale.y)
+		_ik_leg(g, fk, s, (fk[0][_bone["foot_" + s]] as Vector3) + off * float(st[1]))
+
+
 ## A step the body takes on purpose (Grapple._steps): the foot s leaves the floor where it is and comes through to
 ## where the motion has it, over length s, lifted off the floor on the way, and is planted again where it lands.
 func step(s: String, length: float) -> void:
@@ -950,6 +997,13 @@ func anchor(part: String) -> Vector3:
 			return xf * wrist.lerp(tip, 0.6)
 		"foot":
 			return xf * _bone_head("foot_" + side)
+		"toe":
+			# The tip of the sole (bones end at the ankle and the ball of the foot; the toes reach further).
+			var sole: PackedVector3Array = body.soles[side][1] if body.soles.has(side) else PackedVector3Array()
+			if sole.size() < 4:
+				return xf * _bone_head("foot_" + side)
+			var gp := skeleton.get_bone_global_pose(int(body.soles[side][0]))
+			return xf * (gp.origin + gp.basis * sole[2])
 		"ankle":
 			return xf * _bone_head("foot_" + side).lerp(_bone_head("shin_" + side), 0.12)
 		"shin":
@@ -1042,20 +1096,34 @@ func _sole_low(fk: Array, s: String) -> float:
 
 
 ## A foot near the floor turns about its ankle until its sole lies flat: heel level with toe, side with side.
-func _flatten(g: Dictionary, fk: Array, s: String) -> void:
+func _flatten(g: Dictionary, fk: Array, s: String, dt: float, aloft := false, stride := 0.0) -> void:
 	var sole: PackedVector3Array = body.soles[s][1]
 	if sole.size() < 4 or not g.has("foot_" + s):
 		return
 	var bi: int = body.soles[s][0]
 	var b: Basis = fk[1][bi]
-	var w := clampf(1.0 - _sole_low(fk, s) / 0.07, 0.0, 1.0)
+	# How flat: by how near the floor the sole is (none in the air). Free (stride 1: on his feet and free to move), it
+	# comes and goes over FLAT_EASE rather than in the frame the foot lands or leaves the floor; held, down or getting
+	# up (stride 0), at once, as the foot is planted (eased there, a held raider's free foot rolled flat after it was
+	# planted, its ankle sliding 0.4 m/s).
+	var want := 0.0 if aloft else clampf(1.0 - _sole_low(fk, s) / 0.07, 0.0, 1.0)
+	var ease := FLAT_EASE * clampf(stride * 2.0, 0.0, 1.0)
+	var w := move_toward(float(_flat_w.get(s, want)), want, dt / ease) if dt > 0.0 and ease > 0.001 else want
+	_flat_w[s] = w
 	if w <= 0.0:
 		return
 	var along := b * (sole[2] - sole[3])    # heel to toe
 	var across := b * (sole[0] - sole[1])   # left to right
-	# A foot pointing nearly straight down (on its toes) is left as it is: laid flat from there, the way it would lie
-	# flips end for end as it passes the vertical, half a turn of the foot in a frame.
-	w *= clampf((Vector2(along.x, along.z).length() / maxf(along.length(), 0.0001) - 0.2) / 0.3, 0.0, 1.0)
+	# Free, laid flat only from a little off flat (the body's proportions are not the clip's): a heel the motion lifts
+	# on purpose (a running stride's push off, up to 60 degrees) or toes it lifts (landing on the heel) are left to it,
+	# from 15 degrees off flat to none at 35. Laid flat from there, a foot pushing off came back to the motion's angle
+	# 40 degrees and more in a frame as it left the floor, every stride. Held, down or getting up, a foot is laid flat
+	# from up to 60 degrees off and left alone only nearly straight down (on its toes): laid flat from there, the way
+	# it would lie flips end for end as it passes the vertical. (With the free window, a held raider's free foot stood
+	# on its toes, off the floor four frames in five in a hold he drove against.)
+	var lo := lerpf(0.2, 0.82, clampf(stride, 0.0, 1.0))
+	var span := lerpf(0.3, 0.146, clampf(stride, 0.0, 1.0))
+	w *= clampf((Vector2(along.x, along.z).length() / maxf(along.length(), 0.0001) - lo) / span, 0.0, 1.0)
 	if w <= 0.0:
 		return
 	var turn := Quaternion.IDENTITY
@@ -1072,6 +1140,43 @@ func _reach_down(g: Dictionary, fk: Array, s: String, d: float) -> void:
 	if not (_bone.has("thigh_" + s) and _bone.has("shin_" + s) and _bone.has("foot_" + s)):
 		return
 	_ik_leg(g, fk, s, (fk[0][_bone["foot_" + s]] as Vector3) - Vector3(0.0, d, 0.0))
+
+
+## A kick reaching for a defender (kick_goal, kick_w): the leg the clip kicks with, the one it has further out from
+## its hip, is turned at hip and knee so that the toe goes to him, as far as the leg reaches, over the kick's own
+## curve; the foot turns with the shin. The clips kick one way with one leg; a defender anywhere else, the foot
+## went past him or fell short of him, and the touch was given all the same (Match judged it by the distance between
+## the two bodies).
+func _reach_kick(g: Dictionary, hips: Vector3) -> void:
+	if kick_w <= 0.0 or kick_goal == Vector3.INF or not body.soles.has("l") or not body.soles.has("r"):
+		_kick_leg = ""
+		return
+	var fk := _fk(g, hips)
+	if _kick_leg == "":
+		var out := {}
+		for s in ["l", "r"]:
+			var hip: Vector3 = fk[0][_bone["thigh_" + s]]
+			var ankle: Vector3 = fk[0][_bone["foot_" + s]]
+			out[s] = Vector2(ankle.x - hip.x, ankle.z - hip.z).length() - _sole_low(fk, s)
+		# Which leg is the clip's is plain once one is clearly out (or lifted) further than the other.
+		if absf(float(out.l) - float(out.r)) < 0.1 and kick_w < 0.5:
+			return
+		_kick_leg = "l" if float(out.l) > float(out.r) else "r"
+	var s := _kick_leg
+	var sole: PackedVector3Array = body.soles[s][1]
+	var ankle: Vector3 = fk[0][_bone["foot_" + s]]
+	var bi: int = body.soles[s][0]
+	var toe: Vector3 = (fk[0][bi] as Vector3) + (fk[1][bi] as Basis) * sole[2] if sole.size() >= 4 else ankle
+	var want := toe.lerp(skeleton.global_transform.affine_inverse() * kick_goal, clampf(kick_w, 0.0, 1.0))
+	var aim := ankle + (want - toe)
+	# Twice: the foot turns with the shin, so after the first the toe is not where the ankle's goal meant it to be (up
+	# to 0.1 m off, short of a defender's leg or past it), and the second takes up the difference.
+	for i in 2:
+		_ik_two(g, fk, "thigh_" + s, "shin_" + s, "foot_" + s, aim, ["foot_" + s])
+		if i == 1 or sole.size() < 4:
+			break
+		fk = _fk(g, hips)
+		aim += want - ((fk[0][bi] as Vector3) + (fk[1][bi] as Basis) * sole[2])
 
 
 func _ik_leg(g: Dictionary, fk: Array, s: String, goal: Vector3) -> void:

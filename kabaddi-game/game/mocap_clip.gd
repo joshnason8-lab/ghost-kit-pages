@@ -47,6 +47,7 @@ var arms := "both"                     # "r": only the right arm is the clip's, 
 var _landing := -2.0                   # see landing()
 var _takeoff := -2.0                   # see takeoff()
 var _ducked := -2.0                    # see ducked()
+var _stride := -2.0                    # see stride()
 
 static var _library := {}
 static var _scanned := false
@@ -123,6 +124,34 @@ static func load_file(path: String) -> MocapClip:
 		c.frames = parsed.frames
 	c.length = float(parsed.get("length", float(parsed.frames[-1].t)))
 	return c
+
+
+## Where in its loop (0..1) a running clip has the left leg furthest out the way it travels: about when that foot
+## comes down. The clips do not start at the same point of the stride (a jog with the left leg out at 0.12, the run
+## at 0.19, the walk at 0.29, running backward at 0.32-0.38), so a switch from one to another is made at the same
+## point of the stride by this, not at the same fraction of the loop: that put the legs up to a fifth of a stride
+## out of step with themselves through the cross-fade, one passing through the other.
+func stride() -> float:
+	if _stride > -2.0:
+		return _stride
+	_stride = 0.0
+	var pi := joints.find("pelvis")
+	var li := joints.find("hip_l")
+	var ri := joints.find("hip_r")
+	if version < 2 or quats.is_empty() or pi < 0 or li < 0 or ri < 0 or dir.length() < 0.1:
+		return _stride
+	var way := Vector3(dir.x, 0.0, -dir.y).normalized()
+	var best := -INF
+	for k in quats.size():
+		var f: PackedFloat32Array = quats[k]
+		var pel := Quaternion(f[pi * 4], f[pi * 4 + 1], f[pi * 4 + 2], f[pi * 4 + 3])
+		var l := (pel * Quaternion(f[li * 4], f[li * 4 + 1], f[li * 4 + 2], f[li * 4 + 3])) * Vector3.DOWN
+		var r := (pel * Quaternion(f[ri * 4], f[ri * 4 + 1], f[ri * 4 + 2], f[ri * 4 + 3])) * Vector3.DOWN
+		var ahead := (l - r).dot(way)
+		if ahead > best:
+			best = ahead
+			_stride = float(k) / float(quats.size())
+	return _stride
 
 
 ## When a fall reaches the floor (s): the first frame its hips are within 0.04 of their lowest. -1 for a clip

@@ -112,9 +112,23 @@ static func pose(name: String) -> Texture2D:
 	return _poses[name]
 
 
+static var _art := {}
+
+
+## A figure for the menus, already in its colours (assets/ui/art_*.png, from tools/ui_art/import_art.py).
+static func art(name: String) -> Texture2D:
+	if not _art.has(name):
+		var path := "res://assets/ui/art_%s.png" % name
+		_art[name] = load(path) if ResourceLoader.exists(path) else null
+	return _art[name]
+
+
 ## A big menu tile: accent colour, title, a line of description, a pose pictogram on the
-## right and an arrow. tall tiles put the pictogram large behind the text.
-static func tile(title: String, desc: String, accent: Color, pose_name: String, cb: Callable, tall := false) -> Button:
+## right and an arrow. tall tiles put the pictogram large behind the text. With figure (art()),
+## that figure in its own colours is the tile's background instead: on the right of a small
+## tile, the words kept clear of it on the left; across the lower part of a tall one.
+static func tile(title: String, desc: String, accent: Color, pose_name: String, cb: Callable, tall := false,
+		figure := "") -> Button:
 	var b := Button.new()
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -133,26 +147,49 @@ static func tile(title: String, desc: String, accent: Color, pose_name: String, 
 	b.add_theme_stylebox_override("hover", sbh)
 	b.add_theme_stylebox_override("pressed", sbh)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	var tex := pose(pose_name)
-	if tex:
-		var art := TextureRect.new()
-		art.texture = tex
-		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		art.modulate = Color(accent.lightened(0.3), 0.5 if tall else 0.38)
-		art.set_anchors_preset(Control.PRESET_FULL_RECT)
-		art.anchor_left = 0.42 if not tall else 0.15
-		art.anchor_top = 0.08 if not tall else 0.3
-		art.offset_right = -10
-		art.offset_bottom = 0
-		b.add_child(art)
+	var fig := art(figure) if figure != "" else null
+	var tex := pose(pose_name) if fig == null else null
+	if fig:
+		var bg := TextureRect.new()
+		bg.texture = fig
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.modulate = Color(1, 1, 1, 0.92)
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		if tall:
+			bg.anchor_left = -0.03
+			bg.anchor_right = 1.05
+			bg.anchor_top = 0.27
+			bg.anchor_bottom = 0.9
+		else:
+			bg.anchor_left = 0.53
+			bg.anchor_right = 1.07
+			bg.anchor_top = 0.04
+			bg.anchor_bottom = 0.98
+		b.add_child(bg)
+	elif tex:
+		var art_rect := TextureRect.new()
+		art_rect.texture = tex
+		art_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art_rect.modulate = Color(accent.lightened(0.3), 0.5 if tall else 0.38)
+		art_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		art_rect.anchor_left = 0.42 if not tall else 0.15
+		art_rect.anchor_top = 0.08 if not tall else 0.3
+		art_rect.offset_right = -10
+		art_rect.offset_bottom = 0
+		b.add_child(art_rect)
 	var v := VBoxContainer.new()
 	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	v.offset_left = 26
 	v.offset_top = 16
 	v.offset_right = -18
 	v.offset_bottom = -14
+	if fig and not tall:
+		v.anchor_right = 0.53   # the words on the left, the figure on the right
+		v.offset_right = 0
 	v.add_theme_constant_override("separation", 2)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(v)

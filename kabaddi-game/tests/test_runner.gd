@@ -554,19 +554,36 @@ func _run() -> void:
 		mm._check_contacts(mm.defenders())
 		check(d0.state == "recover" and mm.raid.holders.is_empty(), "lion jump clears an ankle dive")
 		check(mm.raid.moves.has("lion"), "lion jump is counted")
-		# Back kick at a defender behind.
+		# Back kick at a defender behind. The touch is the foot on him, as drawn, the match steering it out to him
+		# (Match._aim_limb) frame by frame: from within a leg's reach it touches him, and from further off it falls
+		# short and gives nothing (kicks were given from 2 m, the foot nowhere near him).
+		d0.position = mm.pos_in(opp, -3.5, 6.0)   # the lion jump's diver, out of the way
+		for far in [false, true]:
+			rd.set_state("raid")
+			rd.cooldown = 0.0
+			rd.facing = Vector3(0, 0, -mm.side(mm.raiding))
+			d1.touched = false
+			d1.set_state("ready")
+			d1.cooldown = 5.0   # standing his ground (no pulling back out of reach)
+			d1.position = rd.position - rd.facing * (1.7 if far else 0.85)
+			d1.facing = rd.facing
+			mm.raid.touch_hit = false
+			mm.raid.moves.erase("backkick")
+			await frames(3)
+			mm._raider_kick()
+			check(rd.state == "backkick", "Kick at a defender behind is a back kick" + (" (from 1.7 m)" if far else ""))
+			var kf := 0
+			while rd.state == "backkick" and rd.st_t < rd.st_len and kf < 40:
+				mm._aim_limb()
+				await get_tree().process_frame
+				mm._check_contacts(mm.defenders())
+				kf += 1
+			if far:
+				check(not d1.touched and not mm.raid.moves.has("backkick"), "a back kick from 1.7 m falls short: no touch")
+			else:
+				check(d1.touched and mm.raid.moves.has("backkick"), "back kick touches him")
 		rd.set_state("raid")
-		rd.cooldown = 0.0
-		rd.facing = Vector3(0, 0, -mm.side(mm.raiding))
-		d1.touched = false
-		d1.set_state("ready")
-		d1.position = rd.position - rd.facing * 1.2
-		mm.raid.touch_hit = false
-		mm._raider_kick()
-		check(rd.state == "backkick", "Kick at a defender behind is a back kick")
-		rd.st_t = mm.BACKKICK_TIME * 0.45
-		mm._check_contacts(mm.defenders())
-		check(d1.touched and mm.raid.moves.has("backkick"), "back kick touches him")
+		mm._aim_limb()   # the leg let go (the match is not running to do it)
 		# Waist hold plucks a jumping raider out of the air.
 		rd.st_t = 99.0
 		rd.set_state("jump", mm.JUMP_TIME)
@@ -601,6 +618,20 @@ func _run() -> void:
 		check(caught >= 12, "waist hold catches a lion jump most of the time (%d/20)" % caught)
 		for h in mm.raid.holders.duplicate():
 			mm._release(h, false)
+		# Break free (the Dodge button while he is held) makes the escape that suits the hold: out of an ankle hold,
+		# which a sidestep cannot slip, a lion jump.
+		rd.st_t = 99.0
+		rd.set_state("raid")
+		dw.tackle_kind = "ankle"
+		dw.position = rd.position + Vector3(1.2, 0, 0)
+		mm._attach(dw, false, "leg_l")
+		rd.cooldown = 0.0
+		mm._break_free()
+		check(mm.raid.holders.has(dw) and rd.state == "jump", "Break free out of an ankle hold is a lion jump")
+		for h in mm.raid.holders.duplicate():
+			mm._release(h, false)
+		rd.st_t = 99.0
+		rd.set_state("raid")
 		# Dash near the side line shoves him out (no struggle yet, so the lobby is out).
 		mm.raid.struggle = false
 		rd.set_state("raid")

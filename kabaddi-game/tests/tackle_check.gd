@@ -197,6 +197,9 @@ func _run(sc: String) -> Dictionary:
 		# The script.
 		if touch_t >= 0.0 and not touched and t >= touch_t:
 			touched = true
+			# He stands his ground for it: a defender who pulls back out of reach (Match._evade) is not touched,
+			# now that a touch needs the hand on him.
+			touched_one.cooldown = maxf(touched_one.cooldown, 0.5)
 			m._raider_touch(false)
 		if sc == "touch" and touched and t > 0.9:
 			m.lab_move = home * 1.0

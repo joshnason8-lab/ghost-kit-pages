@@ -5,6 +5,8 @@ extends Node
 
 const RATE := 22050
 const VOICES := {"grunt": 5, "oof": 3, "exhale": 2, "hup": 2}
+const MUSIC_DB := -8.0             # the menus' music, faded in
+const MUSIC_LOOP := 13.915         # s: where menu_music.ogg comes round to (tools/audio/make_menu_music.py)
 
 var streams := {}
 var _pool: Array[AudioStreamPlayer] = []
@@ -12,6 +14,8 @@ var _next := 0
 var _crowd: AudioStreamPlayer
 var _drums: AudioStreamPlayer
 var _crowd_target := -60.0
+var _music: AudioStreamPlayer
+var _music_target := -80.0
 
 
 func _ready() -> void:
@@ -28,11 +32,19 @@ func _ready() -> void:
 	_drums.stream = streams.dhol_loop
 	_drums.volume_db = -14.0
 	add_child(_drums)
+	_music = AudioStreamPlayer.new()
+	_music.stream = streams.get("menu_music")
+	_music.volume_db = -80.0
+	add_child(_music)
 
 
 func _process(delta: float) -> void:
 	if _crowd.playing:
 		_crowd.volume_db = move_toward(_crowd.volume_db, _crowd_target, 30.0 * delta)
+	if _music.playing:
+		_music.volume_db = move_toward(_music.volume_db, _music_target, (20.0 if _music_target > _music.volume_db else 30.0) * delta)
+		if _music_target < -60.0 and _music.volume_db <= -60.0:
+			_music.stop()
 
 
 func enabled() -> bool:
@@ -88,6 +100,18 @@ func crowd(intensity: float) -> void:
 		_crowd.play()
 
 
+## The menus' music ("Indian" by LNPLUSMUSIC, Pixabay): on in the menus, carrying on from one screen to the next
+## (the opening once, then the middle minute round and round); faded out for a match, or with sound or music off.
+func music(on: bool) -> void:
+	if on and enabled() and bool(Game.settings.get("music", true)) and _music.stream != null:
+		_music_target = MUSIC_DB
+		if not _music.playing:
+			_music.volume_db = -30.0
+			_music.play()
+	else:
+		_music_target = -80.0
+
+
 func drums(on: bool) -> void:
 	if on and enabled():
 		if not _drums.playing:
@@ -120,7 +144,7 @@ func _build() -> void:
 	# Recorded voices that have no synthesised stand-in: chants and players shouting.
 	for k in ["chant_raider", "crowd_chant", "chant_word_1", "chant_word_2", "yell_aaja", "yell_pakad",
 			"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch",
-			"crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap"]:
+			"crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music"]:
 		streams[k] = null
 	# Players' efforts and breaths (see tools/audio/make_sounds.py).
 	for kind in VOICES:
@@ -135,9 +159,11 @@ func _build() -> void:
 	for k in streams.keys():
 		if streams[k] == null:
 			streams.erase(k)
-	for k in ["crowd_loop", "dhol_loop"]:
+	for k in ["crowd_loop", "dhol_loop", "menu_music"]:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
+	if streams.get("menu_music") is AudioStreamOggVorbis:
+		(streams.menu_music as AudioStreamOggVorbis).loop_offset = MUSIC_LOOP
 
 
 func _to_stream(samples: PackedFloat32Array, loop := false) -> AudioStreamWAV:

@@ -85,9 +85,13 @@ var _move_prev_t := 0.0
 var _move_fade := 1.0
 var _move_held := 0.0       # seconds since the running clip last changed
 var _low_gait := false      # running crouched (shuffle clips): with hysteresis so it does not flicker
+var _way := Vector2.ZERO    # the way he travels, against his facing, smoothed (the running clip is picked by it)
+var _pace := -1.0           # his speed, smoothed: how far a running clip is in the pose goes by it
 # The final pose stage: when a clip changes, the step between last frame's pose and the new one is kept as
 # an offset that fades out, so every transition starts from the pose on screen (see _settle).
 const SETTLE_TIME := 0.18
+const WAY_EASE := 0.18       # s over which the way he travels is smoothed for picking a running clip
+const MOVE_FADE := 0.28      # s to cross-fade from one running clip to the next
 var _joints: Array[Node3D] = []
 var _last_q: Array[Quaternion] = []
 var _last_h := 0.0
@@ -938,15 +942,22 @@ func _apply_moves(delta: float) -> void:
 		return
 	var busy := maxf(maxf(dive, fallen), maxf(maxf(struggle, dubki), maxf(jump, maxf(kick, back_kick))))
 	busy = maxf(busy, maxf(seated, maxf(celebrate, shove)))
-	var want := clampf((speed - 0.35) / 0.6, 0.0, 1.0) * (1.0 - busy)
+	# How far the running clip is in the pose, by his speed smoothed over WAY_EASE: a defender edging about at the
+	# walking clip's threshold had his legs flicking between the clip and his stance.
+	_pace = speed if _pace < 0.0 else lerpf(_pace, speed, 1.0 - exp(-delta / WAY_EASE))
+	var want := clampf((_pace - 0.35) / 0.6, 0.0, 1.0) * (1.0 - busy)
 	# Crouched or upright gait, with a gap between going down and coming up so it does not flicker.
 	if crouch > 0.55:
 		_low_gait = true
 	elif crouch < 0.4:
 		_low_gait = false
 	var crouched := 1.0 if _low_gait else 0.0
-	var way := Vector2(move_side, move_fwd)
-	way = way.normalized() if way.length() > 0.1 else Vector2(0, 1)
+	# The way he travels, smoothed over WAY_EASE: a defender edging about changes it every frame, and the clip
+	# picked by it changed nearly every second (53 times a minute), each change a cross-fade of the legs.
+	var raw := Vector2(move_side, move_fwd)
+	raw = raw.normalized() if raw.length() > 0.1 else Vector2(0, 1)
+	_way = raw if _way == Vector2.ZERO else _way.lerp(raw, 1.0 - exp(-delta / WAY_EASE))
+	var way := _way.normalized() if _way.length() > 0.05 else raw
 	var s178 := speed * 1.78 / height   # his speed as a 1.78 m player's
 	var best: MocapClip = null
 	var best_score := INF
@@ -962,9 +973,10 @@ func _apply_moves(delta: float) -> void:
 		if score < best_score:
 			best = c
 			best_score = score
-	# Hysteresis: keep the clip he is in unless another fits clearly better, and give each clip a moment.
+	# Hysteresis: keep the clip he is in unless another fits clearly better, and give each clip a moment; and no
+	# change while the clip is barely in the pose (edging about, about to stop or just starting).
 	_move_held += delta
-	if _move != null and cur_score < INF and (best_score > cur_score - 0.3 or _move_held < 0.3):
+	if _move != null and cur_score < INF and (best_score > cur_score - 0.35 or _move_held < 0.45 or want < 0.3):
 		best = _move
 	if best == null:
 		want = 0.0
@@ -980,14 +992,19 @@ func _apply_moves(delta: float) -> void:
 		_move_prev = _move
 		_move_prev_t = _move_t
 		_move_fade = 0.0 if _move != null else 1.0
-		_move_t = (fposmod(_move_t, _move.length) / _move.length * best.length) if _move != null else _rng.randf() * best.length
+		# The new clip at the same point of the stride as the old (MocapClip.stride: the left foot coming down).
+		if _move != null:
+			var at := fposmod(_move_t, _move.length) / _move.length
+			_move_t = fposmod(at - _move.stride() + best.stride(), 1.0) * best.length
+		else:
+			_move_t = _rng.randf() * best.length
 		_move = best
 	if _move == null or move_weight <= 0.0:
 		return
 	_move_t += delta * clampf(s178 / _move.speed, 0.5, 1.8)
 	var pose := _move.sample_pose(_move_t, true)
 	if _move_prev != null and _move_fade < 1.0:
-		_move_fade = minf(1.0, _move_fade + delta * 5.0)
+		_move_fade = minf(1.0, _move_fade + delta / MOVE_FADE)
 		_move_prev_t += delta * clampf(s178 / _move_prev.speed, 0.5, 1.8)
 		var old := _move_prev.sample_pose(_move_prev_t, true)
 		for k in pose:
@@ -1032,10 +1049,10 @@ func anchor(part: String) -> Vector3:
 		"hand":
 			var el: Node3D = el_l if side == "l" else el_r
 			return el.global_transform * Vector3(0, -0.29 * s, 0)
-		"foot", "ankle", "shin":
+		"foot", "ankle", "shin", "toe":
 			var kn: Node3D = kn_l if side == "l" else kn_r
-			var down := {"foot": 0.44, "ankle": 0.39, "shin": 0.29}[part.substr(0, part.length() - 2)] as float
-			return kn.global_transform * Vector3(0, -down * s, 0)
+			var down := {"foot": 0.44, "ankle": 0.39, "shin": 0.29, "toe": 0.46}[part.substr(0, part.length() - 2)] as float
+			return kn.global_transform * Vector3(0, -down * s, -0.14 * s if part.begins_with("toe") else 0.0)
 		"thigh", "knee":
 			var hip: Node3D = hip_l if side == "l" else hip_r
 			return hip.global_transform * Vector3(0, -(0.24 if part.begins_with("thigh") else 0.37) * s, 0)

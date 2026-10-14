@@ -44,6 +44,7 @@ var settings := {
 	"camera": CAM_THIRD,
 	"graphics": GFX_MEDIUM,
 	"sound": true,
+	"music": true,          # the menus' music (needs sound on too)
 	"vibration": true,
 	"left_handed": false,
 	"difficulty": 1,
@@ -274,6 +275,7 @@ func show_screen(script_path: String, args := {}) -> Node:
 	if node.has_method("setup"):
 		node.setup(args)
 	_swap(node)
+	Sfx.music(true)   # the menus' music, carrying on from screen to screen
 	return node
 
 
@@ -288,6 +290,7 @@ func start_match(config: Dictionary) -> void:
 	var s: Script = load("res://game/match.gd")
 	var m: Node = s.new()
 	m.config = config
+	Sfx.music(false)
 	_swap(m)
 
 

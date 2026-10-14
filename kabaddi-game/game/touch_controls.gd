@@ -15,8 +15,10 @@ var cant_mode := false  # raid with the tap-to-chant cant
 var beat_k := 0.0       # 0 right after a beat .. 1 just before the next one
 var chain_on := false
 var read_hint := ""     # escape button to light up for the tackle coming in (easier levels)
+var held := false       # the user's raider is held: Dodge becomes a big Break free, the touches he cannot make dim
 var _flash := ""        # last cant tap result, for colour feedback
 var _flash_t := 0.0
+var _t := 0.0
 
 var _stick_id := -1
 var _stick_origin := Vector2.ZERO
@@ -75,14 +77,19 @@ func _buttons() -> Array:
 			# Scoring moves sit nearest the thumb; the escapes (dodge, dubki, lion jump)
 			# make an arc above them.
 			var esc := Color("3b4f6b")
+			# Held, he cannot touch or kick: those dim, and Dodge, his way out, is Break free, big and glowing.
+			var dim := 0.3 if held else 1.0
 			if cant_mode:
 				list.append({"id": "cant", "label": tr("BTN_CANT"), "pos": main, "r": 78.0, "col": Game.C_SAFFRON, "pulse": true})
-				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main + Vector2(185 * dx, 22), "r": 58.0, "col": Game.C_GOLD})
-				list.append({"id": "kick", "label": tr("BTN_LEG"), "pos": main + Vector2(152 * dx, -128), "r": 50.0, "col": Game.C_GOLD.darkened(0.15)})
+				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main + Vector2(185 * dx, 22), "r": 58.0, "col": Color(Game.C_GOLD, dim)})
+				list.append({"id": "kick", "label": tr("BTN_LEG"), "pos": main + Vector2(152 * dx, -128), "r": 50.0, "col": Color(Game.C_GOLD.darkened(0.15), dim)})
 			else:
-				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main, "r": 76.0, "col": Game.C_SAFFRON})
-				list.append({"id": "kick", "label": tr("BTN_LEG"), "pos": main + Vector2(180 * dx, 30), "r": 56.0, "col": Game.C_GOLD})
-			list.append({"id": "dodge", "label": tr("BTN_DODGE"), "pos": main + Vector2(15 * dx, -195), "r": 47.0, "col": Game.C_INK})
+				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main, "r": 76.0, "col": Color(Game.C_SAFFRON, dim)})
+				list.append({"id": "kick", "label": tr("BTN_LEG"), "pos": main + Vector2(180 * dx, 30), "r": 56.0, "col": Color(Game.C_GOLD, dim)})
+			if held:
+				list.append({"id": "dodge", "label": tr("BTN_BREAK_FREE"), "pos": main + Vector2(15 * dx, -195), "r": 72.0, "col": Game.C_GOLD, "glow": true})
+			else:
+				list.append({"id": "dodge", "label": tr("BTN_DODGE"), "pos": main + Vector2(15 * dx, -195), "r": 47.0, "col": Game.C_INK})
 			list.append({"id": "dubki", "label": tr("BTN_DUBKI"), "pos": main + Vector2(-100 * dx, -165), "r": 42.0,
 				"col": Game.C_GOLD if read_hint == "dubki" else esc, "lit": read_hint == "dubki"})
 			list.append({"id": "jump", "label": tr("BTN_JUMP"), "pos": main + Vector2(70 * dx, -330), "r": 46.0,
@@ -104,11 +111,17 @@ func _buttons() -> Array:
 	return list
 
 
+## The button a touch is on: within a finger's width of its edge, the nearest one (a big Break free next to Dubki
+## does not take a press meant for Dubki).
 func _hit(p: Vector2) -> String:
+	var best := ""
+	var bd := INF
 	for b in _buttons():
-		if p.distance_to(b.pos) <= float(b.r) + 14.0:
-			return String(b.id)
-	return ""
+		var d := p.distance_to(b.pos) - float(b.r)
+		if d <= 14.0 and d < bd:
+			bd = d
+			best = String(b.id)
+	return best
 
 
 func _fire(id: String) -> void:
@@ -205,7 +218,8 @@ func flash(kind: String) -> void:
 
 func _process(delta: float) -> void:
 	_flash_t = maxf(0.0, _flash_t - delta)
-	if cant_mode and context == "raid":
+	_t += delta
+	if (cant_mode or held) and context == "raid":
 		queue_redraw()
 	var lit := false
 	for k in _pressed.keys():
@@ -242,6 +256,9 @@ func _draw() -> void:
 			if _flash_t > 0.0:
 				var fc: Color = {"perfect": Game.C_GOLD, "good": Game.C_INK, "off": Game.C_DANGER, "fast": Game.C_DANGER}.get(_flash, Game.C_INK)
 				fill = fc
+		if b.get("glow", false):
+			var g := 0.5 + 0.5 * sin(_t * 7.0)
+			draw_arc(pos, r * (1.1 + 0.12 * g), 0, TAU, 48, Color(Game.C_GOLD, 0.3 + 0.5 * g), 5.0, true)
 		if b.id in ["pause", "camera"]:
 			fill = Color(0.03, 0.07, 0.12, 0.55 if not lit else 0.85)
 		draw_circle(pos, r, fill)

@@ -80,8 +80,8 @@ func _ready() -> void:
 	var row := HFlowContainer.new()
 	row.add_theme_constant_override("h_separation", 36)
 	row.add_theme_constant_override("v_separation", 14)
-	for key in ["sound", "vibration", "left_handed"]:
-		row.add_child(_toggle(key, {"sound": "SOUND", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
+	for key in ["sound", "music", "vibration", "left_handed"]:
+		row.add_child(_toggle(key, {"sound": "SOUND", "music": "MUSIC", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
 	snd[1].add_child(row)
 	right.add_child(UI.wrap(tr("PLACEHOLDER_NOTE"), "MutedLabel", 15))
 
@@ -91,4 +91,6 @@ func _toggle(key: String, title_key: String) -> VBoxContainer:
 		Game.settings[key] = i == 0
 		Game.save_settings()
 		if key == "sound" and i == 1:
-			Sfx.stop_all()))
+			Sfx.stop_all()
+		if key in ["sound", "music"]:
+			Sfx.music(true)))   # on again, or faded out if now off

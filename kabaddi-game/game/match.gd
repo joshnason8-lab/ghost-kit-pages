@@ -39,6 +39,7 @@ const PROFILES := [
 ]
 const SUSPEND_TIME := 120.0   # yellow card: two minutes of match time
 const START_LIMIT := 5.0      # seconds to start a raid after the whistle
+const SETUP_WAIT := 9.0       # s the next raid waits at most for players put out to reach the sitting block
 const C_GREEN_CARD := Color("3fbf6a")
 const C_YELLOW_CARD := Color("ffd23f")
 const CELE_ARMS := 0
@@ -62,7 +63,13 @@ const DIVE_LAUNCH := 4.0       # ... to this (m/s), out of his wind-up (the defe
 const DIVE_LAUNCH_NOW := 5.0   # ... or this, made at once (the player's, at the button): each the reach it always had
 const DIVE_LAND := 1.5         # ... and has this much left as he lands (no long slide on the floor)
 const ARMS_OUT_AFTER := 0.15   # s a landed ankle dive can still grip, arms out
-const LUNGE := 0.45            # how much further an AI raider's touch starts, stepping in as it goes
+const LUNGE := 0.45            # how much further a lunge's touch reaches, stepping in as it goes (defenders' evades)
+const STRIKE_REACH := {"touch": 0.9, "kick": 0.9, "backkick": 0.75}  # m centre to centre a hand or foot steered at a
+                               # defender surely gets to him from without a step (stood still, it lands from up to 1.0,
+                               # 1.1 and 1.0 m)
+const STRIKE_STEP := 0.5       # a touch or kick steps in at him at up to this share of his top speed ...
+const LUNGE_STEP := 0.95       # ... and a lunge (the AI's strike from further off) at nearly a sprint (_strike_vel)
+const TOUCH_GAP := 0.05        # m: a hand or foot this near a defender's body (past its thickness) touches him
 const LIE_TIME := 0.9          # s a tackled raider stays down once he hits the floor
 const COUNTER_REACT := 0.18    # s a touched defender takes to grab back ...
 const COUNTER_STEP := 0.5      # ... with a step in toward him (m)
@@ -333,6 +340,18 @@ func formation_spot(a: Athlete) -> Vector3:
 	return pos_in(t, lat + 0.2 * (k2 * 2.0 - 1.0), d + 0.45 * (k * 2.0 - 1.0))
 
 
+## Every player put out has reached his place in the sitting block, or nearly.
+func _outs_off() -> bool:
+	for t in 2:
+		for a in teams[t].players:
+			if a.on_mat or a.state == "sit":
+				continue
+			var spot := bench_spot(t, teams[t].out_queue.find(a))
+			if Vector2(a.position.x - spot.x, a.position.z - spot.z).length() > 1.5:
+				return false
+	return true
+
+
 func bench_spot(t: int, k: int) -> Vector3:
 	return Vector3(-3.5 + k * 1.0, 0, side(t) * (Arena.HALF_L + 2.5))
 
@@ -366,7 +385,9 @@ func _process(delta: float) -> void:
 				_begin_setup()
 		"setup":
 			_walk_to_positions(dt, true)
-			if phase_t > 2.2:
+			# The next raid waits for anyone put out in the last to be off to the sitting block (it began with a
+			# tackled raider still walking off across the court), or for long enough.
+			if phase_t > 2.2 and (_outs_off() or phase_t > SETUP_WAIT):
 				_begin_raid()
 		"raid":
 			_tick_raid(dt)
@@ -649,6 +670,7 @@ func _tick_raid(dt: float) -> void:
 		h.vel = raider.vel
 		h.face_toward(raider.position, dt, 20.0)
 
+	_aim_limb()
 	_check_contacts(defs)
 	if phase == "raid":
 		_check_chain_cross()
@@ -674,13 +696,8 @@ func _move_raider(move: Vector3, dt: float) -> void:
 			raider.face_toward(raider.position + raider.vel, dt, 10.0)
 		else:
 			raider.drive(raider.dive_dir * _jump_speed(), dt)
-	elif raider.state == "backkick":
-		raider.drive(move * raider.max_speed * 0.6, dt)
-	elif raider.state in ["touch", "kick"]:
-		if raid.get("lunge", false) and raider.st_t < raider.st_len * 0.6:
-			raider.drive(raider.facing * raider.max_speed * 0.95, dt)
-		else:
-			raider.drive(move * raider.max_speed * 0.35, dt)
+	elif raider.state in ["touch", "kick", "backkick"]:
+		raider.drive(_strike_vel(move), dt)
 	elif holders.size() > 0:
 		# Struggle: push toward the midline against the holders.
 		var hold_power := 0.0
@@ -829,7 +846,7 @@ func _to_bench(a: Athlete, dt: float) -> void:
 	a.lock_facing = false
 	if a.state != "walk":
 		a.set_state("walk")
-	a.seek(spot, 2.6, dt, 0.5)
+	a.seek(spot, 3.3 if phase == "setup" and off.length() > 3.0 else 2.6, dt, 0.5)   # a jog when the next raid waits
 	if off.length() < 0.2:
 		a.vel = Vector3.ZERO
 		a.set_state("sit")
@@ -1021,7 +1038,7 @@ func _on_action(id: String) -> void:
 			"kick":
 				_raider_kick()
 			"dodge", "tackle":
-				_raider_dodge(Vector3.ZERO)
+				_break_free()
 			"dubki":
 				_raider_escape("dubki")
 			"jump":
@@ -1087,6 +1104,41 @@ func _reach_for(move: String) -> float:
 	return raider.reach + 0.35 + 0.25 * (raider.move_skill("hand") - 0.6)
 
 
+## The body's part in a touch or kick: a step in at the defender it goes for (raid.aim), wherever he goes, as far as
+## the hand or foot needs to get to him (STRIKE_REACH) and no further, by the time it is fully out (halfway through
+## the move). A lunge (the AI's strike from further off) steps in at nearly a sprint, anything else at up to half
+## his speed, so from too far off it falls short. With nobody to go for, or once it is out, he goes where the stick
+## or the AI wants, slowly. (A lunge used to run straight on for most of the move, past him or short of him.)
+func _strike_vel(move: Vector3) -> Vector3:
+	var slow: Vector3 = move * raider.max_speed * (0.6 if raider.state == "backkick" else 0.35)
+	var aim = raid.get("aim")
+	if aim == null or not is_instance_valid(aim) or raider.st_t >= raider.st_len * 0.6:
+		return slow
+	var to: Vector3 = (aim as Athlete).position - raider.position
+	to.y = 0.0
+	var gap: float = to.length() - float(STRIKE_REACH[raider.state])
+	if gap <= 0.0:
+		return Vector3.ZERO
+	var left := maxf(raider.st_len * 0.5 - raider.st_t, 1.0 / 15.0)
+	var top: float = raider.max_speed * (LUNGE_STEP if raid.get("lunge", false) else STRIKE_STEP)
+	return to / to.length() * minf(gap / left, top)
+
+
+## How far off a touch or kick at d gets to him: the hand's or foot's own reach and the step in the body can take by
+## the time it is out (_strike_vel), from the speed he has toward d now and d's toward him. The AI strikes from
+## within it.
+func _strike_from(move: String, d: Athlete, lunge := false) -> float:
+	var to: Vector3 = d.position - raider.position
+	to.y = 0.0
+	var dir: Vector3 = to.normalized() if to.length() > 0.01 else raider.facing
+	var t: float = 0.5 * float({"touch": TOUCH_TIME, "kick": KICK_TIME, "backkick": BACKKICK_TIME}[move])
+	var top: float = raider.max_speed * (LUNGE_STEP if lunge else STRIKE_STEP)
+	var v0 := clampf(raider.vel.dot(dir), 0.0, top)
+	var t_top := (top - v0) / maxf(raider.accel, 0.1)
+	var step := v0 * t + 0.5 * raider.accel * t * t if t < t_top else (v0 + top) * 0.5 * t_top + top * (t - t_top)
+	return float(STRIKE_REACH[move]) + step + maxf(0.0, -d.vel.dot(dir)) * t
+
+
 func _raider_touch(toe: bool, lunge := false) -> void:
 	if raider.state not in ["raid", "dodge"] or raider.cooldown > 0.0:
 		return
@@ -1110,6 +1162,7 @@ func _raider_touch(toe: bool, lunge := false) -> void:
 			best = d
 	if best:
 		raider.facing = (best.position - raider.position).normalized()
+	raid["aim"] = best   # the hand or foot goes for him (_aim_limb)
 	# Sharp defenders see it coming and pull back out of reach.
 	for d in defenders():
 		if d == controlled or d.touched or d.state not in ["ready", "idle"] or d.cooldown > 0.0:
@@ -1156,6 +1209,8 @@ func _raider_back_kick(target: Athlete) -> void:
 	var to := target.position - raider.position
 	to.y = 0
 	raider.kick_dir = to.normalized()
+	raid["aim"] = target   # the foot goes for him (_aim_limb)
+	raid["lunge"] = false
 	var right := raider.facing.cross(Vector3.UP).normalized()
 	raider.kick_side = clampf(raider.kick_dir.dot(right), -1.0, 1.0)
 	raider.kick_back = clampf(-raider.kick_dir.dot(raider.facing), 0.0, 1.0)
@@ -1323,6 +1378,28 @@ func _move_moment(move: String) -> void:
 		Sfx.play("roar", -14.0)
 	if raider == controlled:
 		tutorial_event.emit({"dubki": "dubki", "lion": "lion_jump", "backkick": "back_kick", "sidekick": "back_kick", "toe": "toe_touch"}.get(move, move))
+
+
+## The player's Dodge button, which is Break free while he is held (TouchControls.held): held, the escape that suits
+## the holds on him best (Grapple.ESCAPES: a lion jump out of hands on his ankle, a dubki out of arms round him, a
+## sidestep out of a thigh hold), rather than a sidestep, which no ankle hold gives way to. Dubki and Lion jump stay
+## there to pick one himself.
+func _break_free() -> void:
+	var holders: Array = raid.holders
+	if holders.is_empty() or grapple == null:
+		_raider_dodge(Vector3.ZERO)
+		return
+	var best := "dodge"
+	var fit := float(grapple.best_escape("dodge", holders)[1])
+	for mv in ["dubki", "lion"]:
+		var f := float(grapple.best_escape(mv, holders)[1])
+		if f > fit:
+			best = mv
+			fit = f
+	if best == "dodge":
+		_raider_dodge(Vector3.ZERO)
+	else:
+		_raider_escape(best)
 
 
 func _raider_dodge(dir: Vector3) -> void:
@@ -1665,7 +1742,7 @@ func _ai_raider(dt: float) -> Vector3:
 			var dd = d.position.distance_to(raider.position)
 			# Only at a defender coming at him, not at one standing off.
 			var closing: bool = d.state == "telegraph" or d.vel.dot((raider.position - d.position).normalized()) > 0.8
-			if closing and dd < _reach_for("kick") and raider.facing.angle_to((d.position - raider.position).normalized()) > 1.5 \
+			if closing and dd < _strike_from("backkick", d) and raider.facing.angle_to((d.position - raider.position).normalized()) > 1.5 \
 					and rng.randf() < dt * (0.05 + 0.5 * _tend("kick")) * skill \
 					and (raid.touched.is_empty() or raid.get("ai_greedy", false)):
 				_raider_back_kick(d)
@@ -1707,6 +1784,7 @@ func _ai_raider(dt: float) -> Vector3:
 				# Plant one foot and stretch the other across the line.
 				raider.facing = Vector3(0, 0, -side(raiding))
 				_raider_touch(true)
+				raid.erase("aim")   # the foot goes over the line, not at a defender (and he does not step in at one)
 			if raid.bonus or raid.t < 14.0:
 				raid.ai_mode = "probe"
 		"probe":
@@ -1928,8 +2006,9 @@ func _ai_probe(defs: Array, skill: float, dt: float) -> Vector3:
 			target = mark.position + home_dir * 0.4
 			raid.ai_speed = 1.0
 			var toe: bool = raid.get("strike_toe", false)
-			# Real raiders go for the touch from about 2 m, a lunge step carrying the hand or foot in.
-			if dist < _reach_for("toe" if toe else "hand") + LUNGE and raider.cooldown <= 0.0 and raider.state == "raid":
+			# Real raiders go for the touch from about 2 m, a lunge step carrying the hand or foot in: from as far as
+			# that step gets the hand or foot to him at the speed he is coming in at.
+			if dist < _strike_from("kick" if toe else "touch", mark, true) and raider.cooldown <= 0.0 and raider.state == "raid":
 				raider.facing = to.normalized()
 				_raider_touch(toe, true)
 				raid.ai_step = "work"
@@ -1962,7 +2041,7 @@ func _ai_probe(defs: Array, skill: float, dt: float) -> Vector3:
 				else:
 					raid.ai_step_t = rng.randf_range(0.5, 1.3)
 			# A toe tap at a foot left in range: little risk, so take it.
-			elif float(raid.probe_t) > 2.0 and dist < _reach_for("toe") - 0.1 and raider.cooldown <= 0.0 and raider.state == "raid" \
+			elif float(raid.probe_t) > 2.0 and dist < _strike_from("kick", mark) - 0.05 and raider.cooldown <= 0.0 and raider.state == "raid" \
 					and mark.state not in ["telegraph", "dive"] and rng.randf() < dt * (0.025 + 0.1 * _tend("toe")) * (0.3 + open):
 				raider.facing = to.normalized()
 				_raider_touch(true)
@@ -2196,8 +2275,105 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 
 # ---------------------------------------------------------------- contacts and lines
 
+var _limb_last := {}   # the raider's touching hand or kicking foot last frame (_limbs)
+
+
+## A touch or kick reaching for the defender it goes for (raid.aim): the right hand (RiggedBody.hand_target) or the
+## kicking foot (RiggedBody.kick_goal) steered to the nearest of him over the move's own curve, as far as the arm or
+## leg reaches. Out of its reach, it falls short of him and no touch is given (_check_contacts).
+func _aim_limb() -> void:
+	var rig: RiggedBody = raider.model.rig if raider and raider.model else null
+	if rig == null:
+		return
+	var moving: bool = raider.state in ["touch", "kick", "backkick"]
+	var aim = raid.get("aim")
+	if not moving or aim == null or not is_instance_valid(aim) or (aim as Athlete).model == null:
+		rig.kick_w = 0.0
+		rig.kick_goal = Vector3.INF
+		if raid.has("aim_part"):
+			rig.hand_target.erase("r")
+			raid.erase("aim_part")
+		if not moving:
+			raid.erase("aim")
+		return
+	var m: HumanModel = (aim as Athlete).model
+	var w := sin(clampf(raider.st_t / maxf(raider.st_len, 0.01), 0.0, 1.0) * PI)
+	if raider.state == "touch":
+		if not raid.has("aim_part"):
+			# The nearest of him to the shoulder the hand goes from, on the side of him facing the raider.
+			var sh: Vector3 = raider.model.anchor("shoulder_r")
+			var part := "waist"
+			for p in ["shoulder_l", "shoulder_r", "thigh_l", "thigh_r"]:
+				if sh.distance_to(m.anchor(p)) < sh.distance_to(m.anchor(part)):
+					part = p
+			var off := sh - m.anchor(part)
+			off.y = 0.0
+			raid["aim_part"] = part
+			# On his surface, the part's own thickness out from it (as _gap_to has it): 3 cm further out, a hand that
+			# got there was still short of a touch by the width of a finger.
+			var skin: float = {"waist": 0.15, "shoulder": 0.05}.get(part.substr(0, part.length() - 2) if part != "waist" else part, 0.08)
+			rig.hand_target["r"] = {"model": m, "part": part, "offset": off.normalized() * skin, "w": 0.0, "fade": 0.0}
+		if rig.hand_target.has("r"):
+			rig.hand_target["r"]["w"] = w
+		return
+	# A toe touch goes for his nearest shin, along the floor; a back or side kick for a shin or thigh.
+	var from: Vector3 = raider.model.anchor("waist")
+	var goal := Vector3.INF
+	var bd := INF
+	for s in ["l", "r"]:
+		var segs := [[m.anchor("ankle_" + s), m.anchor("knee_" + s), 0.06]]
+		if raider.state == "backkick":
+			segs.append([m.anchor("knee_" + s), m.anchor("hip_" + s), 0.08])
+		for sg in segs:
+			var q := Geometry3D.get_closest_point_to_segment(from, sg[0], sg[1])
+			var out := Vector3(from.x - q.x, 0.0, from.z - q.z)
+			if out.length() < bd:
+				bd = out.length()
+				goal = q + out.normalized() * float(sg[2])   # on the near side of the leg, on it, not inside it
+	rig.kick_goal = goal
+	rig.kick_w = w
+
+
+## The raider's touching hands or kicking feet as drawn this frame, and halfway back to where they were last frame
+## (a fast foot does not pass through a leg between two frames); none when he is not touching or kicking.
+func _limbs() -> Array:
+	var out := []
+	if raider == null or raider.model == null or raider.state not in ["touch", "kick", "backkick"]:
+		_limb_last.clear()
+		return out
+	for part in (["hand_l", "hand_r"] if raider.state == "touch" else ["toe_l", "toe_r", "foot_l", "foot_r"]):
+		var p: Vector3 = raider.model.anchor(part)
+		out.append(p)
+		if _limb_last.has(part):
+			out.append(p.lerp(_limb_last[part], 0.5))
+		_limb_last[part] = p
+	return out
+
+
+## How far the nearest of these points is from d's body as drawn, past its thickness (m): his feet, shins and
+## thighs, trunk and arms.
+func _gap_to(d: Athlete, pts: Array) -> float:
+	if d.model == null or pts.is_empty():
+		return INF
+	var m: HumanModel = d.model
+	var segs := [[m.anchor("waist"), (m.anchor("shoulder_l") + m.anchor("shoulder_r")) * 0.5, 0.15]]
+	for s in ["l", "r"]:
+		segs.append([m.anchor("toe_" + s), m.anchor("ankle_" + s), 0.05])
+		segs.append([m.anchor("ankle_" + s), m.anchor("knee_" + s), 0.06])
+		segs.append([m.anchor("knee_" + s), m.anchor("hip_" + s), 0.08])
+		segs.append([m.anchor("shoulder_" + s), m.anchor("hand_" + s), 0.05])
+	var best := INF
+	for p in pts:
+		for sg in segs:
+			best = minf(best, Grapple._seg_dist(p, sg[0], sg[1]) - float(sg[2]))
+	return best
+
 func _check_contacts(defs: Array) -> void:
 	_counter_grabs(defs)
+	# The touching hand or kicking foot as drawn: a touch is given when it is on a defender's body (_gap_to), not
+	# for the two bodies being within a reach of each other (kicks were given from up to 2.2 m apart, the foot well
+	# short of him or past him).
+	var limbs := _limbs()
 	var opp := 1 - raiding
 	var piling := []
 	var in_half := depth_in(opp, raider.position) > -0.1
@@ -2215,18 +2391,19 @@ func _check_contacts(defs: Array) -> void:
 			if raider.state in ["touch", "kick"]:
 				var p := raider.st_t / maxf(raider.st_len, 0.01)
 				var active := p > 0.2 and p < 0.75
-				var r := _reach_for("toe" if raider.state == "kick" else "hand")
-				var ang := raider.facing.angle_to((d.position - raider.position).normalized())
+				var on_him: bool = _gap_to(d, limbs) <= TOUCH_GAP if not limbs.is_empty() \
+						else dist < _reach_for("toe" if raider.state == "kick" else "hand") and raider.facing.angle_to((d.position - raider.position).normalized()) < 1.2
 				# A leg tags one defender; a hand can sweep two, but not on a lunge, which goes for one man.
 				var one: bool = raider.state == "kick" or raid.get("lunge", false)
-				if active and dist < r and ang < 1.2 and not (one and raid.get("touch_hit", false)):
+				if active and on_him and not (one and raid.get("touch_hit", false)):
 					hit = true
 					via = "toe" if raider.state == "kick" else "hand"
 					raid.touch_hit = true
 			elif raider.state == "backkick":
 				var p2 := raider.st_t / maxf(raider.st_len, 0.01)
-				var ang2 := raider.kick_dir.angle_to((d.position - raider.position).normalized())
-				if p2 > 0.25 and p2 < 0.75 and dist < _reach_for("kick") and ang2 < 0.6 and not raid.get("touch_hit", false):
+				var on_him2: bool = _gap_to(d, limbs) <= TOUCH_GAP if not limbs.is_empty() \
+						else dist < _reach_for("kick") and raider.kick_dir.angle_to((d.position - raider.position).normalized()) < 0.6
+				if p2 > 0.25 and p2 < 0.75 and on_him2 and not raid.get("touch_hit", false):
 					hit = true
 					raid.touch_hit = true
 					via = "backkick" if raider.kick_back > 0.55 else "sidekick"
@@ -2499,8 +2676,8 @@ func _check_end(dt: float) -> void:
 		if holders.is_empty() and dep < -0.35:
 			_end_raid("return")
 			return
-		if holders.size() > 0 and dep - raider.reach * 0.9 < 0.0:
-			# Stretched out and touched the midline while held.
+		if holders.size() > 0 and _over_midline():
+			# Held, he has got back to the midline: a foot dragged onto it, or any of him down on it or beyond it.
 			_end_raid("return")
 			return
 	# Down he goes once the struggle is won, but only when every hold on him is a hold (Grapple.established):
@@ -2514,6 +2691,23 @@ func _check_end(dt: float) -> void:
 		return
 	if raid.t <= 0.0:
 		_end_raid("time" if raid_rule == RULE_CLOCK else "cant")
+
+
+## Whether the raider, as drawn, has any of himself on the midline or over it into his own half: a toe or foot, a
+## knee, his middle, or a hand down at the floor (a hand held up over the line has not touched it). Held, that is
+## home. (It was being within his reach of the line, 0.86 m, stretched out or not: he was given the points
+## standing short of it.)
+func _over_midline() -> bool:
+	var opp := 1 - raiding
+	var on := Arena.LINE_W * 0.8   # the midline's half width
+	if raider.model == null:
+		return depth_in(opp, raider.position) < on
+	for part in ["toe_l", "toe_r", "foot_l", "foot_r", "knee_l", "knee_r", "waist", "hand_l", "hand_r"]:
+		var p: Vector3 = raider.model.anchor(part)
+		var low: float = {"hand": 0.35, "knee": 0.25}.get(part.substr(0, part.length() - 2), INF)
+		if depth_in(opp, p) < on and p.y < low:
+			return true
+	return false
 
 
 # ---------------------------------------------------------------- scoring
@@ -3196,6 +3390,7 @@ func _revive(t: int, n: int) -> void:
 
 func _tick_post(dt: float) -> void:
 	# Let the moment breathe, then reset.
+	_aim_limb()   # a touch or kick the raid ended in the middle of reaches on to its end, then lets go
 	if grapple:
 		grapple.update(dt)
 	for a in athletes:

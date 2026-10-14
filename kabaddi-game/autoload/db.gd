@@ -61,7 +61,9 @@ const ARENAS := [
 const STATES := ["STATE_HARYANA", "STATE_PUNJAB", "STATE_MAHARASHTRA", "STATE_TAMIL_NADU", "STATE_KARNATAKA", "STATE_TELANGANA", "STATE_ANDHRA", "STATE_BENGAL", "STATE_UP", "STATE_BIHAR", "STATE_RAJASTHAN", "STATE_KERALA", "STATE_GUJARAT", "STATE_DELHI", "STATE_HIMACHAL", "STATE_ODISHA"]
 
 # Skin tones from light wheatish to deep brown, and hair colours.
-const SKIN_TONES := ["e8b98f", "d6a07a", "c68863", "a86b4a", "8a5538", "6b3f28"]
+# Light tan to deep brown. The two lightest were a pale peach and near white: on the bodies' tan skin textures
+# they came out washed out and grey-white.
+const SKIN_TONES := ["d4966c", "cf9069", "c68863", "a86b4a", "8a5538", "6b3f28"]
 const HAIR_COLORS := ["1a1410", "2b1d14", "3d2a1c", "5a4632"]
 
 const FIRST_NAMES := {

@@ -289,14 +289,16 @@ func _build_center() -> void:
 	root.add_child(objective)
 
 
+## The pause menu: big buttons well apart, for a thumb (a small one next to another was easy to miss), and Quit
+## set further off, in red.
 func _build_pause() -> void:
 	pause_panel = PanelContainer.new()
 	pause_panel.theme_type_variation = "CardPanel"
 	pause_panel.set_anchors_preset(Control.PRESET_CENTER)
-	pause_panel.custom_minimum_size = Vector2(420, 0)
-	pause_panel.position = Vector2(-210, -170)
+	pause_panel.custom_minimum_size = Vector2(560, 0)
+	pause_panel.position = Vector2(-280, -262)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 14)
+	v.add_theme_constant_override("separation", 18)
 	pause_panel.add_child(v)
 	var title := _label(tr("PAUSED"), "HeaderLabel")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -305,6 +307,7 @@ func _build_pause() -> void:
 	resume.text = tr("RESUME")
 	resume.theme_type_variation = "PrimaryButton"
 	resume.pressed.connect(func(): m.set_paused(false))
+	_big(resume, 96, 32)
 	v.add_child(resume)
 	cam_btn = Button.new()
 	cam_btn.pressed.connect(func():
@@ -312,6 +315,7 @@ func _build_pause() -> void:
 		Game.settings.camera = m.cam.mode
 		Game.save_settings()
 		_update_cam_btn())
+	_big(cam_btn)
 	v.add_child(cam_btn)
 	timeout_btn = Button.new()
 	timeout_btn.pressed.connect(func():
@@ -319,13 +323,26 @@ func _build_pause() -> void:
 			_update_timeout_btn()
 			m.set_paused(false)
 			hint(tr("TIMEOUT_CALLED")))
+	_big(timeout_btn)
 	v.add_child(timeout_btn)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 14)
+	v.add_child(gap)
 	var quit := Button.new()
 	quit.text = tr("QUIT_MATCH")
 	quit.pressed.connect(func(): m.quit_match())
+	_big(quit)
+	quit.add_theme_color_override("font_color", Game.C_DANGER)
+	quit.add_theme_color_override("font_hover_color", Game.C_DANGER.lightened(0.2))
+	quit.add_theme_color_override("font_pressed_color", Game.C_DANGER.lightened(0.2))
 	v.add_child(quit)
 	pause_panel.visible = false
 	root.add_child(pause_panel)
+
+
+func _big(b: Button, h := 80, size := 27) -> void:
+	b.custom_minimum_size = Vector2(0, h)
+	b.add_theme_font_size_override("font_size", size)
 
 
 func _update_cam_btn() -> void:
@@ -539,6 +556,11 @@ func refresh() -> void:
 		hint_now = m.escape_hint() if m.raider == m.controlled else m.defend_hint()
 	if hint_now != controls.read_hint:
 		controls.read_hint = hint_now
+		controls.queue_redraw()
+	var held: bool = m.phase == "raid" and m.controlled != null and m.controlled == m.raider \
+			and not (m.raid.get("holders", []) as Array).is_empty()
+	if held != controls.held:
+		controls.held = held
 		controls.queue_redraw()
 	if chant_l.visible:
 		chant_l.modulate.a = 0.55 + 0.45 * absf(sin(_t * 3.3))

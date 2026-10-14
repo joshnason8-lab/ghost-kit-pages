@@ -79,11 +79,10 @@ func _ready() -> void:
 		mh.add_theme_constant_override("separation", 12)
 		mc.add_child(mh)
 		var art := TextureRect.new()
-		art.texture = UI.pose("cup")
+		art.texture = UI.art("celebrate")   # arms up, in its own blue
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		art.custom_minimum_size = Vector2(90, 0)
-		art.modulate = Color(Game.C_GOLD, 0.6)
+		art.custom_minimum_size = Vector2(110, 120)
 		mh.add_child(art)
 		var mv := VBoxContainer.new()
 		mv.alignment = BoxContainer.ALIGNMENT_CENTER
