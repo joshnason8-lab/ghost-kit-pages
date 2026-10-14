@@ -105,13 +105,14 @@ tests/      compile_check, test_runner (headless smoke test), screenshots (rende
             events, tackle phases, bodies inside one another, softlocks), match_record (an AI match to record,
             or to check against the audited one, frame for frame), tackle_reach (how far each dive
             reaches), defence_view (a match with the debug overlay), motion_view (gaits, celebrations,
-            signals), play_video (a bot that plays)
+            signals), play_video (a bot that plays), motion_audit (who moves each player in a frame, and what
+            shakes: docs/REALISM_REVIEW.md)
 tools/      build_i18n.py, rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
             mocap/ (animation clips, and movement measured from match video)
 docs/       ASSETS.md (how to drop in real humans), KABADDI.md (the rules), BETA.md (testing on a phone), ROADMAP.md,
             FOOTAGE_STYLE.md (how real raids play, measured from match video), MOTION_REALISM.md (movement and
             animation fixes, measured), TACKLE_SYSTEM.md (tackles and holds, measured), REALISM_REVIEW.md (the
-            gameplay review's five fixes, and where milestones A-E stand)
+            reviews of each video and beta, what was found and what changed)
 ```
 
 ## Tests
@@ -126,6 +127,8 @@ xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.ts
 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /tmp/shots moves   # raid moves
 godot --headless --path . --fixed-fps 30 res://tests/ai_bench.tscn -- 4 1   # AI v AI balance: 4 matches on Pro
 godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn      # tackle scenarios: contact, grip, motion, events
+godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- --audit   # ... and who moved whom each frame
+godot --headless --path . --fixed-fps 30 res://tests/motion_audit.tscn     # movement stability: encounters and an AI match
 godot --headless --path . --fixed-fps 30 res://tests/raid_audit.tscn -- 4 1 --digest /tmp/d.json   # 4 AI matches audited (run twice: the same)
 godot --headless --path . --fixed-fps 30 res://tests/match_record.tscn -- 600 seed=1 trace=/tmp/r.json   # the audit's first match, unaudited
 ```

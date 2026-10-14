@@ -1,5 +1,97 @@
 # Realism reviews
 
+## Fourth review: a phone that crashed, a loading bar, the defenders' stance, and movement that fights itself
+
+Four notes from the beta (a Galaxy S24 that kept crashing, no sign of loading at start-up, the defenders' legs, the
+broadcast camera as the standard one) and a review of the last video asking first for the stutter to be traced to
+whatever moves the same player twice in a frame. What was found and what changed:
+
+| Note | What was wrong | What changed |
+|---|---|---|
+| A Galaxy S24 kept crashing | The game drew with Vulkan (the Mobile renderer). Samsung's S24 GPUs (Xclipse 940, Adreno 750) are where Godot's Vulkan path has had driver crashes; no crash log from the phone, so this is the likely cause, not a proven one. | The OpenGL renderer (Compatibility) everywhere: `project.godot`. Every effect the game uses (AGX tonemapping, glow, fog, colour adjustments, shadows, MSAA) has an OpenGL path, and the review videos were already recorded with it. |
+| A loading bar at start-up | A blank screen for the few seconds the sounds were made, the bodies and clips read and the home screen's live match set up. | `ui/loading_screen.gd`: the game's icon and name and a bar that fills as the sounds are made one at a time (`Sfx.build_step`), the clips read (`MocapClip.scan_step`), the bodies built, then the home screen and its match set up and drawn until it runs smoothly; it fades as the title comes in. On a desktop's software renderer: sounds 0.15-0.9 s, clips 0.02-0.6 s, bodies 1-2.7 s, the home screen 0.9-1.2 s. |
+| The defenders' legs: "not how a human stands" | Standing ready, the legs were a soccer goalkeeper clip's: knees and toes turned out, and a planted foot stayed wherever it came down until the motion was 0.2 m away. A leg was left straight and out to the side, the foot planted at the clip's widest. | The legs are the hand-made crouch (the clip keeps the trunk and arms): knees bent, hips back over them (the pelvis tipped forward, the thighs taking it back), feet a little wider than the shoulders, each player a little his own way. Standing ready, a foot 12 cm out of place steps back under him, one foot at a time, lifted 6 cm, put down where it lands. |
+| The broadcast camera as the standard one | Third person was the default. | The broadcast camera is the default, first in Settings; saves from before move to it once. |
+
+### The defenders' stance, measured
+
+`tests/locomotion_check` counts, for defenders standing ready, how often a leg is straight (knee over 160 degrees)
+or out to the side (over 20 degrees from straight down, seen from the front), and how far apart the ankles are.
+Three AI matches each (90 s, seeds 1-3):
+
+| | Before | Now |
+|---|---|---|
+| A leg straight | 14.4, 15.4, 14.7% | 1.2, 1.0, 1.0% |
+| A leg out to the side | 40.6, 42.0, 40.8% | 2.4, 2.4, 3.5% |
+| Ankles apart (median) | 0.56 m | 0.42-0.43 m |
+| Pose pops / jerks per match | 7.7/342, 7.5/337, 6.1/303 | 7.8/349, 8.1/320, 5.6/298 |
+| Foot skate, 90th percentile | 0.01 m/s | 0.02-0.07 m/s |
+
+The settling steps' first version slid: lifted 4 cm, a foot moving across within 2.5 cm of the floor counts as on it,
+and it followed the body down as it landed. Lifted 6 cm and landing where it was over the floor when it started down,
+the skate came back to about what it was (0.07 m/s at the 90th percentile, from 0.08-0.19).
+
+### Who moves a player in a frame
+
+Nothing in the game moves anyone in `_physics_process`; everything moves in `_process`. The match moves the players
+in stages each frame (the raider, the defence, keeping players apart, the court's edges, the grapple, holders kept on;
+after a raid, the post-raid moves, keeping apart, the walk back), and then each player's own `_process` measures how
+he moved and poses him. `Match.audit` names each stage as it ends; `tests/motion_probe.gd` records how far each stage
+moved each player and measures what a viewer sees shake:
+
+- two stages moving a player opposite ways in one frame, and a player steered (`Athlete.drive`) twice in one frame;
+- reversals: his motion along the floor turning back on itself from one frame to the next, both frames over 0.15 m/s,
+  on where the game has him and on his drawn body (the waist);
+- lurches (over 40 m/s² in a frame), facing wobble (the drawn turn swinging one way then back, both over 45 deg/s),
+  a state left and come back to within 0.3 s, a hold let go and back on within 0.3 s, the same for the camera, and
+  the frame's cost.
+
+`tests/motion_audit.tscn` runs it on repeatable encounters (one defender and three, placed by the team's plan, the
+raider stepping in, stopping, backing off and jinking in front of them, no contact) and on AI matches;
+`tests/tackle_check --audit` adds it to every tackle scenario (holds, escapes, chains, misses, takedowns).
+
+Confirmed causes, each found in the logs and fixed where it was, not smoothed over:
+
+| Found | What it did | Fix |
+|---|---|---|
+| After a takedown, a player standing by the man on the floor was stepped off him by a direct position write (`_tick_post`) and walked back to his place by `_walk_to_positions`: two owners, every frame, for 1.3 s | Reversed direction every frame; his facing swung ±100-150 deg/s every frame | The direct write is gone: keeping clear of a body on the floor is already the keep-apart pass's, through each player's own steering |
+| A celebrating player with no team-mate to slap hands with was driven twice a frame (held still by the post-raid loop, walked back by `_walk_to_positions`) | His motion integrated twice a frame: 430 double drives in two 90 s matches | Held still only for the first second, as the others are |
+| Each new raid put every player idle, and the next frame the defence ready again | Every defender's stance clip restarted twice at the start of every raid (82 state flickers in two matches) | Straight to idle or ready |
+| Players kept apart only while closer than the gap, looking 0.2 s ahead | Two players passing each other were apart one frame (steering away) and not the next (steering back): side to side every frame | Once kept apart, kept so until 8 cm further off; the one on the move does most of the giving way, so one standing at his place is not jostled by everyone who walks past |
+| A player turned to face the way he moved, avoidance included | Stood still and stepped aside and back, he was turned to and fro | He turns with his motion only while it is the way he means to go |
+| A helper waits at his spot by the held raider (`Grapple.approach`), 0.47 m from him, while keeping apart holds anyone not holding him 0.55 m off | In and out every frame for as long as he waited (1.5 s in one match) | A helper coming in to take hold is not kept off the raider |
+| The raider faced whichever defender was nearest within 2.8 m, unless running at him, chosen afresh each frame | With two about as near, or running at one and then not, his eyes and shoulders went from one to the other and back | What he watches is kept at least 0.4 s, unless it stops making sense (he is held or in a move, the man is down or out of reach) |
+
+Ruled out: `_physics_process` (unused); two stages moving a player opposite ways in the same frame during raids
+(no such frame in the approach encounters, and none in the 17 tackle scenarios); the camera (it follows where the
+game has the players, after every stage has moved them, and its own motion did not change). In the review's video
+every frame is 1/30 s of game time (it was recorded frame by frame), so the stutter in it is motion, not frame rate;
+on a phone, slow frames would add to it, which the recording cannot show.
+
+All 17 tackle scenarios, before and after (`--audit`):
+
+| | Before | Now |
+|---|---|---|
+| Reversals (where the game has them) | 23 | 14 |
+| Facing wobbles | 28 | 11 |
+| State flicker | 105 | 2 |
+| Lurches | 8 | 4 |
+
+AI matches, two seeds, 90 s each (each match goes its own way once anything changes, so these move by a third from one
+version to the next; the double drives and flicker are what is solid):
+
+| | Before | Now |
+|---|---|---|
+| Double drives | 430 | 3 |
+| State flicker | 82 | 18 |
+| Facing wobbles | 106 | 77 |
+| Reversals | 99 | 101 |
+| Two stages moving one player opposite ways | 3 | 2 |
+
+What is left: reversals in the AI matches about where they were, mostly defenders standing ready close to others and
+holders in the grapple (each haul moves them back and forth); the raider's facing still swings when he changes his mind
+fast.
+
 ## Third review (the phone beta): eleven notes
 
 The third review came from playing the beta APK on a phone: eleven notes, from the app icon to the legs. Each is

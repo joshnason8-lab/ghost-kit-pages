@@ -64,6 +64,11 @@ For each problem, note:
 4. A screenshot or screen recording if you can (Power + Volume down; most phones also have a screen recorder
    in the quick settings).
 
+If the game closes by itself (it crashed): say when (at start-up, on the home screen, starting a match, mid-raid),
+and the phone model. A crash log helps most: with the phone plugged into a computer with USB debugging on,
+`adb logcat -d > log.txt` straight after the crash; without a computer, Settings → Developer options → **Bug report**.
+Since 0.7.5 the game draws with OpenGL rather than Vulkan, which is what crashed on a Galaxy S24.
+
 Things worth reporting even if nothing is broken:
 
 - **Feel.** Is the raider too fast or too slow? Does a tackle feel fair?
