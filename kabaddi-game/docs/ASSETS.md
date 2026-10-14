@@ -98,12 +98,24 @@ running hand touch, dubki (ducking under a chain), frog jump and scorpion kick. 
 - **Today's placeholder** uses about 40 small meshes per athlete. It's fine on mid-range phones. A real skinned
   model will be **cheaper** to draw.
 
+## Icon and menu art
+
+The app icon is a painted raider reaching past a defender who has him by the thigh, and the home screen's tiles
+each have a flat figure in the tile's colour (a yellow raider, a green chain, a blue celebration, a purple
+lunge). The originals are in `tools/ui_art/src/` (not imported by Godot); `tools/ui_art/import_art.py` frames
+the icon for Android's adaptive icons (`assets/icon/`) and crops and scales the figures (`assets/ui/art_*.png`).
+
 ## Audio
 
-Every sound is synthesised in `autoload/sfx.gd` so the game ships with no audio files. Put a file with the same
+Every effect is synthesised in `autoload/sfx.gd` or made by the scripts in `tools/audio/`. Put a file with the same
 name in `assets/audio/` (`.ogg`, `.wav` or `.mp3`) to override one:
 
 `whistle`, `buzzer`, `thud`, `slap`, `whoosh`, `click`, `gavel`, `roar`, `crowd_loop`, `dhol_loop`, `bid`
+
+The menus' music, `assets/audio/menu_music.ogg`, is **"Indian" by LNPLUSMUSIC** (Pixabay, track 611803), under the
+[Pixabay Content License](https://pixabay.com/service/license-summary/): free to use in an app, edited, with no
+credit required (credited here anyway). The licence does not allow passing the track on by itself, so only the
+edited loop made from it by `tools/audio/make_menu_music.py` is in the repository, not the download.
 
 High-value recordings:
 

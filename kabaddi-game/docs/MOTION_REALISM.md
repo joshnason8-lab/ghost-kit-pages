@@ -142,6 +142,16 @@ Still open after Milestone A:
   or two before it is held.
 - A few placements remain: players put back in formation between raids from the bench or after a tackle.
 
+## The phone beta's legs
+
+Playing the beta on a phone, the legs still looked herky-jerky. Three causes were found and fixed: the running
+clip changing back and forth as a player eased off or turned a little (each change a fresh cross-fade, the legs
+jumping between two strides), planted feet let go of in a frame, and the body dropped onto its planted feet by
+whatever it took. In a 3-minute AI match, sudden leg steps went from 175 to 128 a player-minute, the hips moving
+over 4 cm in a frame from 88 to 40, clip changes from 59 to 45 a minute, and a planted foot's slide from 0.53 to
+0.01 m/s (90th percentile). A held, fallen or rising raider's feet are laid flat as before. The details and the full table are in
+[REALISM_REVIEW.md](REALISM_REVIEW.md), "Third review".
+
 ## Measuring
 
 ```sh

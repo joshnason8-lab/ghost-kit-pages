@@ -1,5 +1,122 @@
 # Realism reviews
 
+## Third review (the phone beta): eleven notes
+
+The third review came from playing the beta APK on a phone: eleven notes, from the app icon to the legs. Each is
+below with what was found and what changed; the numbers are from the tests and AI matches named.
+
+| # | Note | What was wrong | What changed |
+|---|---|---|---|
+| 1 | Make the painted raider-and-defender picture the app icon | The icon was a placeholder drawing. | The picture is the launcher icon: the adaptive icon's background, framed so his face, his reaching hand and the hand on his thigh sit inside the part every launcher shows, with a plain icon for older launchers (`tools/ui_art/import_art.py`, `assets/icon/`). |
+| 2 | The yellow, green, blue and purple figures as the home screen's tile backgrounds | Small grey pose pictograms. | Each tile shows its figure in its own colours: the yellow raider behind Quick Match, the green chain on League Season, the blue celebration on Nations Cup, the purple lunge on Training (`UI.tile`, `assets/ui/art_*.png`). |
+| 3 | Menu music from the attached track | No music. | "Indian" by LNPLUSMUSIC (Pixabay), cut into a loop: the opening once, then its middle minute round and round, joined on a downbeat with a 40 ms crossfade, at one steady loudness (`tools/audio/make_menu_music.py`). It fades in on the menus and out as a match starts; Settings has a Music switch. |
+| 4 | The lightest players are far too white | The two lightest skin tones (e8b98f, d6a07a) are a pale peach; on the bodies' own tan skin textures they came out washed out, grey-white. | A light and a mid tan (d4966c, cf9069); the four darker tones are unchanged. |
+| 5 | A way to break free when tackled, labelled so, and bigger | Dodge was the button, small, labelled Dodge, and a sidestep, which never slips an ankle hold. | While the player's raider is held, Dodge becomes **Break free**: half as big again (72 px), gold and pulsing, with the touch buttons dimmed. It makes the escape that suits the holds on him (a lion jump out of hands on his ankle, a dubki out of arms round his middle, a sidestep out of a thigh hold); Dubki and Lion jump are still there to pick one yourself. A press goes to the nearest button, so the big one does not take presses meant for Dubki. |
+| 6 | A kick scores with the foot still far from the defender | A touch or kick was given when the two bodies were within the move's reach, up to 2.2 m apart: the foot did not have to get to him. In two AI matches, the foot was a median 1.09 m from the defender's body at the moment a toe touch was given, and 1.45 m for a back kick; none of 9 back and side kicks given got there. | A touch or kick is given only when the hand or foot, as drawn, is on him: within 5 cm of his legs, trunk or arms (each with its own thickness), checked every frame, and halfway back to the last frame so a fast foot cannot pass through a leg between two. The hand or foot is steered at the nearest of him within its reach, and the body steps in as far as it needs to and no further: the AI's strikes as a lunge, anything else as a short step. From too far off it falls short, and the AI goes for him only from where it can get there. Details below. |
+| 7 | Bigger pause buttons | 420 px wide, standard height, 14 px apart. | 560 px wide, 80 px tall (Resume 96), larger text, 18 px apart, and Quit set apart in red. |
+| 8 | Points without crossing back over the midline | A held raider was home when he was within 0.86 m of the midline (his reach), stretched out or not. | Held, he is home only with a foot, a knee, his middle or a hand down on the midline or past it. Unheld, he still has to be 0.35 m into his own half. |
+| 9 | The next raid starts before the player put out reaches the bench | The next raid started 2.2 s into the set-up, wherever the players put out were. | It waits until they are sitting or within 1.5 m of their places in the sitting block (at most 9 s), and they jog there faster between raids. |
+| 10 | The blue figure for the player of the match | A small pictogram. | The blue celebrating figure, large, on the result screen. |
+| 11 | Leg movement still herky-jerky | See below. | See below. |
+
+### Touches and kicks (6)
+
+`Match._aim_limb` steers the toe touch's foot at the nearest point of the defender's shins, a back or side
+kick's at a shin or thigh, and the hand touch's hand at his nearest shoulder or thigh, each over the move's own
+curve (out and back), aimed at his surface. `RiggedBody._reach_kick` bends the leg to it with the same two-bone
+solver the hands use, twice: the foot turns with the shin, so after one pass the toe was up to 0.1 m from where it
+was aimed, and a back kick from 0.85 m got to the defender only as it came back. `Match._check_contacts` gives the
+touch on the limbs as drawn (`_limbs`, `_gap_to`).
+
+How far each gets to a defender who stands still, the raider not stepping (centre to centre): a hand 1.0 m, a toe
+touch 1.1 m, a back kick 1.0 m. Before, touches were given out to 1.3-1.7 m for the hand and 1.5-2.2 m for kicks.
+To keep the touches a raider ought to make, the body now steps in (`Match._strike_vel`): at the defender, wherever
+he goes, by as much as the hand or foot is short (to 0.9, 0.9 and 0.75 m apart), by the time it is fully out. The AI's
+strike is a lunge at up to 95% of his speed; the player's touch, a kick and a toe tap take a step at up to half his
+speed, so from much further off they fall short. A lunge used to run straight on along his facing for most of the
+move, whatever the distance, past the defender or short of him. The AI goes for a touch only from where its step
+gets there (`Match._strike_from`: the reach, plus the step at the speed it is coming in at, plus the defender's own
+step toward it), not from about 2 m whatever its speed.
+
+| AI matches | Before | Now |
+|---|---|---|
+| Touches given with the hand or foot on the defender (two matches, before) | 21 of 66 | all |
+| A toe touch's foot from the defender as it was given (median) | 1.09 m | 5 cm or less |
+| Back and side kicks given that got to him (two matches, before) | 0 of 9 | all |
+| Attempts that land: hand touch, toe touch, back or side kick | (given from where they stood) | 67%, 86%, 53% |
+| ... missed because the defender pulled back | | 12 of 66 hand touches, 9 of 59 toe touches |
+| Hand or foot touches a raid | 0.73 | 0.47 |
+| Raids succeeding, tackled, out of bounds, empty | 61%, 21%, 11%, 7% | 53%, 29%, 12%, 6% |
+| Raid points a raid | 1.06 | 0.84 |
+
+Before: 16 matches, 491 raids, on the last build; now: 8 matches, 236 raids (`ai_bench`, Pro). A raider now has to get
+within about a metre of a defender for a touch, so the defence catches him more often, mostly with ankle holds and
+grabs back at the touch. Points add up in every match, and every event check is clean (no escape a move could not
+make, no two holds on one part, no takedown within 0.6 s of a new hold).
+
+Still to do: AI raiders go for a touch from 1.55 m from the nearest defender (median; 1.78 m before, 2.04 m in the
+India v Pakistan footage). The game's lunge is the body's ordinary acceleration, so it carries him less far than a
+real raider's long step, and he has to start closer.
+
+A defender who pulls back from a touch (`Match._evade`) now gets out of its reach; before, the touch was given
+anyway. `tackle_check`'s `touch` and `flurry` scenarios have the defender stand his ground, as they test the
+scoring and what follows a touch. In `flurry` the raider now steps in for the touch as the next defender dives:
+that diver's hands are up to 0.38 m off the ankle for a few frames as they close (0.02 m once he holds it).
+
+### The legs (11)
+
+Three causes, measured in a 3-minute AI match (`locomotion_check`, every player's legs every frame) and on the
+locomotion course:
+
+- **Clip changes.** The running clips (jog, run, strafes, backpedal, shuffles) were picked from the raw speed and
+  direction every frame, so a player easing from a jog to a walk, or turning a little, swapped clips back and forth,
+  each swap a fresh 0.2 s cross-fade restarted part-way, and the legs jumped between two strides at different
+  points of the cycle. Now the speed and direction are smoothed (0.18 s), a new clip has to be clearly better to
+  take over, the cross-fade is longer (0.28 s, was 0.2), and the new clip starts at the same point of its stride as
+  the old (`MocapClip.stride`: the left leg furthest forward, about to come down), so the feet carry on rather
+  than swap.
+- **Feet let go in a frame.** Every planted foot was let go in one frame when the body left the floor or came off
+  its feet, and a sole was laid flat by how near the floor it was that frame, so a foot coming down snapped flat.
+  Now the planted feet are let go over 0.08 s, held where they were for that moment, and a plant takes hold over
+  0.1 s (was 0.06). On his feet and free to move, a sole lies flat and lifts over 0.1 s, and is laid flat only from
+  a little off flat (15-35 degrees), so a stride's push off and heel strike are the clip's own
+  (`RiggedBody._release_plants`, `_flatten`).
+- **The body dropping onto its feet.** Re-grounding the body each frame brought it down onto the planted feet by
+  whatever it took, often more than 4 cm in a frame. Now the planted feet bring it down at most 3 cm a frame; a
+  foot that would need more comes off the floor and is let go of instead.
+
+| 3-minute AI match, every player | Before | Now |
+|---|---|---|
+| Sudden leg steps (a joint turning far more than the frame before), per player-minute | 175 | 128 |
+| ... while running | 4,132 in all | 2,688 |
+| Middle (hips) moving over 4 cm in a frame, per player-minute | 87.8 | 39.8 |
+| Largest joint step a frame (99th percentile) | 26.7° | 22.7° |
+| Clip changes a minute | 59.2 | 44.8 |
+| Pose pops a minute | 9.2 | 5.1 |
+| Planted foot sliding (90th percentile) | 0.53 m/s | 0.01 m/s |
+
+What is left is mostly defenders edging about in their ready stance and the frames in the middle of a cross-fade.
+With the floor contact off altogether, the raider on the course still has about 60 sudden steps: some are in the
+clips themselves.
+
+The feet of a raider who is held, down or getting up are laid flat as they were. With the free foot's rules, a held
+raider's free foot stood on its toes (on the floor in a fifth of the `drag` scenario's frames, 97% before) and,
+caught by three at once and taken down, his feet slid 1.8 m/s. `tackle_check` against the last build now: the free
+foot is on the floor 86-100% of the time in the leg holds (88-100% before), and the held ankle is on its hold in
+every frame, as before. His feet on the floor slide about as before (90th percentile 0.03-0.17 m/s, 0.07-0.21
+before), and a planted free foot's slide is the same at the 90th percentile with one holder, a little higher at
+worst (`catch` 0.27 to 0.35 m/s for a frame, `thigh` 0.30 to 0.44) and with two or three holders (0.23 to 0.36
+m/s). The hold point itself is hauled further in some (0.27 m in `catch`, 0.06 before): the leg's pose as it is
+caught is a little different.
+
+### Tests
+
+`test_runner` (188 checks, at a fixed 30 fps as CI runs it): the back kick now has to reach (from 0.85 m it touches
+him; from 1.7 m it falls short and gives nothing), and Break free out of an ankle hold is a lion jump.
+`tackle_check`: 17 scenarios as expected.
+`compile_check`: 61 scripts. `tests/demo_tour.tscn` plays the home screen, the Quick Match screen and a quick match
+with the player's raids made through the on-screen controls, for a recording with sound.
+
 ## Second review (the V2 video): the ankle hold first
 
 The second review asked for one interaction to be made believable before anything else: the ankle hold at
