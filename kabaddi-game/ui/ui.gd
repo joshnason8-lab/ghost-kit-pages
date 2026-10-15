@@ -126,9 +126,10 @@ static func art(name: String) -> Texture2D:
 ## A big menu tile: accent colour, title, a line of description, a pose pictogram on the
 ## right and an arrow. tall tiles put the pictogram large behind the text. With figure (art()),
 ## that figure in its own colours is the tile's background instead: on the right of a small
-## tile, the words kept clear of it on the left; across the lower part of a tall one.
+## tile, the words kept clear of it on the left; across the lower part of a tall one. tag (a
+## pill) sits beside the arrow, centred on it.
 static func tile(title: String, desc: String, accent: Color, pose_name: String, cb: Callable, tall := false,
-		figure := "") -> Button:
+		figure := "", tag: Control = null) -> Button:
 	var b := Button.new()
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -196,6 +197,7 @@ static func tile(title: String, desc: String, accent: Color, pose_name: String, 
 	var t := label(title, "HeaderLabel", 54 if tall else 40)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_fit_line(t, 54 if tall else 40)
 	v.add_child(t)
 	var d := label(desc, "", 17, Color(Game.C_INK, 0.78))
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -213,12 +215,35 @@ static func tile(title: String, desc: String, accent: Color, pose_name: String, 
 	v.add_child(sp)
 	var go := HBoxContainer.new()
 	go.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	go.add_theme_constant_override("separation", 10)
 	var dot = Icon.make("next", 26, accent.lightened(0.2))
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	go.add_child(dot)
+	if tag:
+		tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		go.add_child(tag)
 	v.add_child(go)
 	b.pressed.connect(Sfx.click)
 	b.pressed.connect(cb)
 	return b
+
+
+## Keeps a title on one line where it can: the font shrinks, to 72% of size at most, when the
+## words would wrap. If they wrap anyway the lines sit close (the display font leaves a wide gap
+## between lines).
+static func _fit_line(l: Label, size: int) -> void:
+	l.add_theme_constant_override("line_spacing", -roundi(size * 0.22))
+	l.resized.connect(func():
+		var w := l.size.x
+		if w <= 0.0:
+			return
+		var font := l.get_theme_font("font")
+		var fs := size
+		while fs > roundi(size * 0.72) and font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > w:
+			fs -= 1
+		if l.get_theme_font_size("font_size") != fs:
+			l.add_theme_font_size_override("font_size", fs))
 
 
 ## Teams to pick from, filling the screen: crest, name, rating bar.

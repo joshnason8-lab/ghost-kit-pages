@@ -1,20 +1,21 @@
 extends Control
 ## How to play: topics down the left, and for each a page of short sections with bold
-## headings and one point per line, the moves picked out in bold.
+## headings and one point per line, the moves picked out in bold. Behind each page stands one of
+## the home screen's figures (UI.art), faint, in its own colours.
 
 const TOPICS := [
-	{"title": "HT_RAIDING", "icon": "play", "pose": "quick", "sections": [
+	{"title": "HT_RAIDING", "icon": "play", "art": "raider", "sections": [
 		["H_RAID", "HOW_RAID"], ["MOVES", "HOW_MOVES"], ["H_BONUS", "HOW_BONUS"]]},
-	{"title": "HT_CANT", "icon": "mic", "pose": "cup", "sections": [
+	{"title": "HT_CANT", "icon": "mic", "art": "lunge", "sections": [
 		["RULE_CANT_AUTO", "RULE_BREATH_NOTE"], ["RULE_CANT_TAP", "RULE_TAP_NOTE"], ["RULE_CLOCK", "RULE_CLOCK_NOTE"]]},
-	{"title": "HT_DEFENDING", "icon": "people", "pose": "defend", "sections": [
+	{"title": "HT_DEFENDING", "icon": "people", "art": "chain", "sections": [
 		["HUD_DEFEND", "HOW_DEFEND"], ["DEF_SKILLS", "HOW_STYLES"], ["BTN_CHAIN", "HOW_CHAIN"], ["BTN_SWITCH", "HOW_SWITCH"]]},
-	{"title": "HT_RULES", "icon": "whistle", "pose": "howto", "sections": [
+	{"title": "HT_RULES", "icon": "whistle", "art": "raider", "sections": [
 		["LOBBY", "HOW_LINES"], ["H_REVIVAL", "HOW_REVIVE"], ["H_ALL_OUT", "HOW_ALLOUT"], ["HUD_DOD", "HOW_DOD"],
 		["FIVE_SECONDS", "HOW_FIVE"], ["CARDS", "HOW_CARDS"]]},
-	{"title": "HT_MATCH", "icon": "trophy", "pose": "league", "sections": [
+	{"title": "HT_MATCH", "icon": "trophy", "art": "celebrate", "sections": [
 		["TEAM_ENERGY", "HOW_ENERGY"], ["GOLDEN_RAID", "HOW_TIEBREAK"], ["MILESTONES", "HOW_MILESTONES"]]},
-	{"title": "HT_CONTROLS", "icon": "gear", "pose": "dubki", "sections": [
+	{"title": "HT_CONTROLS", "icon": "gear", "art": "lunge", "sections": [
 		["HT_CONTROLS", "HOW_CONTROLS"]]},
 ]
 const BOLD_TERMS := ["BTN_CANT", "BTN_TOUCH", "BTN_LEG", "BTN_DODGE", "BTN_DUBKI", "BTN_JUMP", "BTN_ANKLE", "BTN_THIGH",
@@ -55,15 +56,21 @@ func _ready() -> void:
 	row.add_child(card)
 	var stack := Control.new()
 	card.add_child(stack)
+	# The figure stands in the bottom right corner, as big as the right half allows.
+	var fig_box := AspectRatioContainer.new()
+	fig_box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fig_box.anchor_left = 0.5
+	fig_box.anchor_top = 0.08
+	fig_box.alignment_horizontal = AspectRatioContainer.ALIGNMENT_END
+	fig_box.alignment_vertical = AspectRatioContainer.ALIGNMENT_END
+	fig_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(fig_box)
 	_art = TextureRect.new()
 	_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_art.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_art.anchor_left = 0.68
-	_art.anchor_top = 0.05
+	_art.stretch_mode = TextureRect.STRETCH_SCALE
 	_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_art.modulate = Color(Game.C_SAFFRON, 0.16)
-	stack.add_child(_art)
+	_art.modulate = Color(1, 1, 1, 0.25)
+	fig_box.add_child(_art)
 	var inner := VBoxContainer.new()
 	inner.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	inner.add_theme_constant_override("separation", 6)
@@ -116,7 +123,9 @@ func _show(i: int) -> void:
 		(_tabs[k] as Button).set_pressed_no_signal(k == i)
 	var t: Dictionary = TOPICS[i]
 	_title.text = tr(String(t.title))
-	_art.texture = UI.pose(String(t.pose))
+	_art.texture = UI.art(String(t.art))
+	if _art.texture:
+		(_art.get_parent() as AspectRatioContainer).ratio = float(_art.texture.get_width()) / _art.texture.get_height()
 	for c in _page.get_children():
 		c.queue_free()
 	for sec in t.sections:
@@ -132,6 +141,7 @@ func _section(head: String, body: String) -> VBoxContainer:
 		r.add_theme_constant_override("separation", 12)
 		var dot := UI.swatch(Game.C_SAFFRON, Vector2(6, 6))
 		dot.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var dot_box := MarginContainer.new()
 		dot_box.add_theme_constant_override("margin_top", 13)
 		dot_box.add_child(dot)
@@ -142,6 +152,8 @@ func _section(head: String, body: String) -> VBoxContainer:
 		rt.scroll_active = false
 		rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		# A drag that starts on the words must reach the scroll box: the text takes no input.
+		rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		rt.add_theme_font_override("normal_font", Game.font_body)
 		rt.add_theme_font_override("bold_font", Game.font_bold)
 		rt.add_theme_font_size_override("normal_font_size", 20)

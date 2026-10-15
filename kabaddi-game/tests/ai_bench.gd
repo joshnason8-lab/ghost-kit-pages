@@ -16,6 +16,11 @@ var _shape := {"mate_gap": [], "bunched": [], "near_raider": [], "home_covered":
 var _cur = null
 var _rs := {}
 var _score_errors := []   # matches whose points do not add up
+# After a touch, until he is held or home: raids, defenders who went for him (a wind-up or a dive), raids where no one
+# did, and defenders who had him within a dive's reach (AFTER_REACH) for AFTER_TIME, free to go, and never went.
+var _after := {"raids": 0, "went": 0, "none": 0, "missed": 0, "missed_raids": 0}
+const AFTER_REACH := 1.8
+const AFTER_TIME := 0.2
 var _evs := []            # every gameplay event: [seconds, kind, info] (see _event_checks)
 var _clock := 0.0
 # Which hold each escape can slip (as Grapple.ESCAPES; kept here so the bench measures older builds too).
@@ -165,14 +170,26 @@ func _event_checks() -> void:
 	var slots := {}
 	var since := {}
 	var touched := {}
+	# After the raider's first touch in a raid: did the defence go for him (a dive, a hold, a dash) before it ended,
+	# and did he get home.
+	var first_touch := -1.0
+	var went := false
+	var touch_raids := 0
+	var went_for := 0
+	var home_after := 0
+	var home_untried := 0
 	for e in _evs:
 		var t: float = e[0]
 		var k: String = e[1]
 		var info: Dictionary = e[2]
 		var who := str(info.get("who", info.get("from", "")))   # (a broken chain names both: an array)
+		if first_touch >= 0.0 and k in ["tackle_attempt", "hold", "dash"]:
+			went = true
 		match k:
 			"touch":
 				touched[who] = t
+				if first_touch < 0.0:
+					first_touch = t
 			"hold":
 				holds += 1
 				var slot := String(info.get("slot", ""))
@@ -206,10 +223,30 @@ func _event_checks() -> void:
 					if t - newest < 0.59:
 						quick += 1
 			"raid_end":
+				if first_touch >= 0.0:
+					touch_raids += 1
+					var home := String(info.get("kind", "")) == "return"
+					if went:
+						went_for += 1
+					if home:
+						home_after += 1
+						if not went:
+							home_untried += 1
+				first_touch = -1.0
+				went = false
 				holders.clear()
 				slots.clear()
 				since.clear()
 				touched.clear()
+	print("after a touch")
+	print("  %-40s %d of %d raids with a touch (%d%%)" % ["the defence went for him (dive, hold, dash)", went_for, touch_raids,
+		roundi(100.0 * went_for / maxf(1, touch_raids))])
+	print("  %-40s %d (%d with no one going for him)" % ["he got home", home_after, home_untried])
+	print("  until he is held or home (%d raids):" % _after.raids)
+	print("    %-38s %d (%.2f a raid)" % ["defenders who went (wind-up, dive)", _after.went, float(_after.went) / maxf(1, _after.raids)])
+	print("    %-38s %d" % ["raids where no one went", _after.none])
+	print("    %-38s %d, in %d raids" % ["had him within %.1f m for %.1f s, never went" % [AFTER_REACH, AFTER_TIME], _after.missed,
+		_after.missed_raids])
 	print("event checks")
 	print("  %-40s %d, %d in the same frame as the touch; after %s s (median)" % ["grabs back at a touch", grab.size(), same_frame, _pct(grab, 50)])
 	print("  %-40s %d of %d (newest hold to takedown, median %s s)" % ["takedowns within 0.6 s of a new hold", quick, downs.size(), _pct(downs, 50)])
@@ -250,6 +287,14 @@ func _sample(m: Node, dt: float) -> void:
 		if d.state == "telegraph" and was not in ["telegraph", "dive"] and _rs.hold < 0.0:
 			_style.dive_gap.append(d.position.distance_to(m.raider.position))
 		_rs.def_state[d] = d.state
+	if not r.touched.is_empty() and not held and m.depth_in(1 - m.raiding, m.raider.position) > 0.0:
+		if not _rs.has("after"):
+			_rs["after"] = {"near": {}, "went": {}}
+		for d in defs:
+			if d.state in ["telegraph", "dive"]:
+				_rs.after.went[d] = true
+			elif d.state == "ready" and d.position.distance_to(m.raider.position) < AFTER_REACH:
+				_rs.after.near[d] = float(_rs.after.near.get(d, 0.0)) + dt
 	if held and _rs.hold < 0.0:
 		_rs.hold = t
 		_style.tackle_after.append(t)
@@ -335,6 +380,16 @@ func _close_raid() -> void:
 	for i in range(1, a.size()):
 		_style.between.append(a[i] - a[i - 1])
 	_style.top_speed.append(_rs.top)
+	if _rs.has("after"):
+		var missed := 0
+		for d in _rs.after.near:
+			if float(_rs.after.near[d]) >= AFTER_TIME and not _rs.after.went.has(d):
+				missed += 1
+		_after.raids += 1
+		_after.went += _rs.after.went.size()
+		_after.none += 1 if _rs.after.went.is_empty() else 0
+		_after.missed += missed
+		_after.missed_raids += 1 if missed > 0 else 0
 	_cur = null
 
 

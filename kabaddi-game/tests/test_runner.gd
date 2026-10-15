@@ -78,6 +78,16 @@ func _run() -> void:
 		var n := Game.show_screen(scr)
 		await frames(3)
 		check(is_instance_valid(n), "screen " + scr)
+	# How to Play scrolls from a drag anywhere on its page: nothing on it takes the touch for itself (its lines of
+	# text did, so a drag that started on the words did not move the page).
+	var how := Game.show_screen("res://ui/howto_screen.gd")
+	await frames(3)
+	var stops := []
+	for sc in how.find_children("*", "ScrollContainer", true, false):
+		for c in sc.get_child(0).find_children("*", "Control", true, false):
+			if (c as Control).is_visible_in_tree() and (c as Control).mouse_filter == Control.MOUSE_FILTER_STOP:
+				stops.append(c.get_class())
+	check(stops.is_empty(), "how to play: a drag on the page reaches its scroll box %s" % [stops])
 
 	# 5. Nations Cup plays out.
 	Game.delete_cup()
@@ -697,6 +707,19 @@ func _run() -> void:
 		check(used.size() >= 3, "raiders land a mix of moves (%d kinds)" % used.size())
 	await frames(5)
 
+	# 10. After a touch the defence goes for him: a hand touch, then straight for home past the line either side of the
+	# man touched (as a player raids), the AI defending, twelve times. Before, a raider running home with the point was
+	# mostly let go: 20 defenders went for him in the twelve, and 12 who had him within a dive's reach never did (now
+	# 28 and 5).
+	var went_n := 0
+	var missed_n := 0
+	for sd in 12:
+		var res: Array = await _touch_and_run(100 + sd)
+		went_n += int(res[0])
+		missed_n += int(res[1])
+	check(went_n >= 24 and missed_n <= 7, "after a touch the defence goes for him (%d went in 12 runs home; %d had him in reach and never went)"
+		% [went_n, missed_n])
+
 	print("")
 	if failures.is_empty():
 		print("ALL CHECKS PASSED")
@@ -706,3 +729,65 @@ func _run() -> void:
 		for f in failures:
 			print("  - " + f)
 		get_tree().quit(1)
+
+
+## A hand touch, then straight for home past the line either side of the man touched, the AI defending (lab mode):
+## how many defenders went for him (a wind-up or a dive) before he was held or home, and how many had him within a
+## dive's reach (1.8 m) for 0.2 s, free to go, and never went.
+func _touch_and_run(sd: int) -> Array:
+	seed(sd)
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "MUM", "away": "DEL", "arena": "dome", "mode": "quick", "autoplay": true,
+		"autoplay_no_report": true, "length": 0, "difficulty": 1, "players": [7, 4], "first_raider": 0, "lab": true,
+		"raid_rule": 0}
+	add_child(m)
+	m.rng.seed = sd
+	while m.phase != "raid":
+		await get_tree().process_frame
+	var r: Athlete = m.raider
+	var defs: Array = m.defenders()
+	var home := Vector3(0, 0, m.side(m.raiding))
+	r.position = m.pos_in(1, 0.0, 3.9)
+	r.facing = -home
+	# The one he touches in front of him, the line either side of him, one deeper.
+	var places := [[0.6, 4.85], [-0.7, 4.9], [1.9, 4.8], [0.2, 6.2]]
+	for i in defs.size():
+		defs[i].position = m.pos_in(1, places[i][0], places[i][1])
+		defs[i].facing = home
+	m.lab_move = Vector3(0.2, 0, 0)
+	m.lab_force = {"hold": true, "ai_defence": true}
+	var dt := 1.0 / 30.0
+	var t := 0.0
+	var touched := false
+	var held := false
+	var went := {}
+	var near := {}
+	while t < 8.0:
+		if not touched and t >= 0.4:
+			touched = true
+			defs[0].cooldown = maxf(defs[0].cooldown, 0.5)   # he stands his ground for the touch ...
+			m._raider_touch(false)
+			m.lab_move = home   # ... and the raider goes straight for home
+		if touched and t >= 0.6 and t < 0.65:
+			defs[0].cooldown = 0.0   # ... then he is free to go
+		await get_tree().process_frame
+		t += dt
+		if m.phase != "raid":
+			break
+		held = held or not (m.raid.holders as Array).is_empty()
+		if touched and not held:
+			for i in defs.size():
+				var a: Athlete = defs[i]
+				if not is_instance_valid(a):
+					continue
+				if a.state in ["telegraph", "dive"]:
+					went[i] = true
+				elif a.state == "ready" and a.position.distance_to(r.position) < 1.8:
+					near[i] = float(near.get(i, 0.0)) + dt
+	var missed := 0
+	for i in near:
+		if float(near[i]) >= 0.2 and not went.has(i):
+			missed += 1
+	m.queue_free()
+	await get_tree().process_frame
+	return [went.size(), missed]

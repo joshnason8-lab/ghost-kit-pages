@@ -1,5 +1,57 @@
 # Realism reviews
 
+## Fifth review (the phone beta): six notes
+
+Six notes from playing 0.7.7 on a phone. Each is below with what was wrong and what changed; the numbers are from
+the tests and AI matches named.
+
+| # | Note | What was wrong | What changed |
+|---|---|---|---|
+| 1 | Take Training out for now | It was on the home screen as a fourth mode. | The tile is gone; the screens, demos and lessons stay in the code for later (`ui/tutorial_menu.gd`, `game/tutorial.gd`, `game/move_demo.gd`). Nothing else led to them. |
+| 2 | "League Season": too big a space between the words, pushing the text below it down | At 40 px, "League Season" is 212 px wide, and on a 1560 px wide screen the tile gives it 214. On anything a little narrower it wraps: an S24 in landscape keeps clear of its camera, about 1493 px wide, which leaves 203. The display font (Teko, made for Devanagari too) leaves a wide gap between lines, so the two words stood far apart, the title took 119 px instead of 58, and the description's last line and the arrow were pushed out of the tile. | A tile's title shrinks to fit on one line, to 72% of its size at most, and if it still wraps its lines sit closer (`UI._fit_line`). At 1493 px, "League Season" is 38 px on one line. Checked at 1560, 1493 and 1280 px wide, in English and Hindi. |
+| 3 | Quick Match's PLAY sits awkwardly by its arrow | The tag was placed by hand, on its own, about 12 px higher than the arrow beside it. | It sits in the arrow's row, the two centred on one line (`UI.tile`'s `tag`). |
+| 4 | How to Play doesn't scroll well | Each line of text took the touch for itself (a RichTextLabel stops input by default), so a drag that started on the words never reached the scroll box: only a drag from a heading or a gap moved the page. At the S24's size, the longest page has 206 px to scroll; a drag from a line of text moved it 0 px, from a heading 206. | The lines and their bullets let the touch through to the page: a drag from the text scrolls it 206 px. `test_runner` checks that nothing on the page takes a touch for itself. |
+| 5 | How to Play's yellow figures should be the new ones | Faint saffron copies of the old pose pictograms. | The home screen's figures in their own colours, faint (25%) behind each page, standing in its lower right: the yellow raider (Raiding; Points and rules), the purple lunge (The cant; Controls), the green chain (Defending), the blue celebration (The match). |
+| 6 | After a touch the defence doesn't always go for the raider | See below. | See below. |
+
+### The defence after a touch (6)
+
+After a touch, a defender went for the raider (a wind-up, then a dive, a hold or a dash) within 1.75-2.05 m of him,
+two at a time at most, and never the ones standing off in his way home (the "contain" role), which are there to stop
+him, not to dive at him from out there. The chance of going was raised only once he was running for home at over
+1 m/s, to about 2.5-3 a second on Pro (1.1-1.35 on Rookie) by the defender's tackling; until then it stayed at the
+working-the-cover rate, about 0.1 a second. A raider running past a defender is within reach of him for a
+fraction of a second: at 2.5-3 a second, a defender he passes within reach of for 0.2 s went about two times in five.
+
+Now, from the touch until he is held or home, it is the last chance (`Match._ai_defender`, `last_ditch`): whoever he
+comes near goes for him, the ones in his way home too, up to three at once; from up to 0.8 m further when he is
+running at them (he comes into the dive's reach as it goes); at about 7-8.5 a second on Pro (3-3.75 on Rookie), so
+about four times in five in that 0.2 s; with a quarter less wind-up. Before the touch nothing changes.
+
+| | Before | Now |
+|---|---|---|
+| AI matches (6 each, Pro), from the touch until he is held or home: raids | 107 | 118 |
+| Defenders who went for him (a wind-up, then a dive or a dash), a raid | 2.59 | 3.01 |
+| Defenders who had him within 1.8 m for 0.2 s, free to go, and never went | 79, in 55 raids (51%) | 18, in 17 raids (14%) |
+| He got home after a touch with no one going for him | 2 of 75 (7 of 72 in another run) | 0 of 81 |
+| Raids succeeding, tackled, out of bounds, empty | 59%, 23%, 9%, 9% (57%, 24%, 13%, 6%) | 57%, 23%, 11%, 8% |
+| The way home covered as he runs for it | 24% (19%) | 14% |
+| A touch, then straight for home past the line either side of the man touched (`test_runner`, 12 runs): defenders who went; who had him in reach and never went | 20; 12 | 28; 5 |
+
+The bench's matches are not seeded, so two runs of the old build differ; the second run's numbers are in brackets.
+The extra dives after a touch are mostly last tries that miss or holds he breaks out of (held and still home 31-35
+raids before, 38 now): tackles and successful raids are where they were. What it costs is the cover: a defender
+who stood off in his way home now goes for him as he comes past, and after a missed dive he is on the floor, not in
+his way. A first version that made it the last chance only once he was running home left the men right beside him
+at the touch standing while he turned; the touch itself is now the start.
+
+### Tests
+
+`test_runner` (191 checks): How to Play's page takes no touch for itself (on 0.7.7 its 9 lines and 9 bullets did),
+and the touch-and-run above (on 0.7.7: 20 went, 12 in reach never went; the check wants 24 and 7 or better). Both
+fail on 0.7.7 and pass now. `tackle_check`: 19 of 19 scenarios as expected. `compile_check`: 64 scripts.
+`screenshots -- OUT howto` renders every page of How to Play.
+
 ## Fourth review: a phone that crashed, a loading bar, the defenders' stance, and movement that fights itself
 
 Four notes from the beta (a Galaxy S24 that kept crashing, no sign of loading at start-up, the defenders' legs, the

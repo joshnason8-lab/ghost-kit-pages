@@ -2337,19 +2337,27 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		return
 	if not inside or d.cooldown > 0.0 or raider.state == "dodge":
 		return
+	var heading_home := raider.vel.dot(Vector3(0, 0, -side(d.team))) > 1.0
+	# Once he has touched someone he is getting away with the point unless they stop him: the last chance. Whoever
+	# he comes near goes for him, the ones standing off in his way home too, up to three at once, from further off
+	# when he is running at them, and with less of a wind-up: a dive at his ankles rather than watching him go.
+	var last_ditch: bool = not raid.touched.is_empty()
 	# Once he is held, team-mates join the struggle rather than dive in; and the ones standing off in his way
-	# home are there to stop him, not to dive at him from out there.
-	if holders.size() > 0 or defence.role_of(d) == "contain":
+	# home are there to stop him, not to dive at him from out there (until the last chance).
+	if holders.size() > 0 or (defence.role_of(d) == "contain" and not last_ditch):
 		return
 	var engaging := 0
 	for o in defenders():
 		if o.state in ["telegraph", "dive"]:
 			engaging += 1
-	var max_engage := 2 if alarm else 1
+	var max_engage := 3 if last_ditch else (2 if alarm else 1)
 	if engaging >= max_engage:
 		return
 	# In the footage defenders went for the raider from 1.4-3 m (median 1.8), as he stepped in.
 	var rng_range := 1.75 + 0.3 * react
+	if last_ditch and dist > 0.01:
+		# Running at him, he comes into the dive's reach as it goes.
+		rng_range += clampf(raider.vel.dot(-to / dist) * 0.25, 0.0, 0.8)
 	# A feint at him: a jumpy defender bites and goes in early.
 	if raid.feint_on == d and float(raid.feint_t) > 0.0 and not raid.feint_bit and dist < rng_range + 0.4:
 		raid.feint_bit = true
@@ -2361,7 +2369,6 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	if dist > rng_range:
 		return
 	var p := 0.06 * diff * (0.6 + d.tackle)
-	var heading_home := raider.vel.dot(Vector3(0, 0, -side(d.team))) > 1.0
 	if _line_gap() < 2.0 and d.dskill("dash") > 0.55:
 		p *= 1.5
 	if heading_home:
@@ -2373,8 +2380,8 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 	var striking: bool = raid.get("ai_step") == "strike" and raid.get("ai_mark") == d
 	if stepping_in or striking or raider.state in ["touch", "kick"]:
 		p = maxf(p, 2.2 * diff * (0.6 + d.tackle) * react)
-	elif heading_home and not raid.touched.is_empty():
-		p = maxf(p, 1.8 * diff * (0.6 + d.tackle) * react)
+	elif last_ditch:
+		p = maxf(p, 5.0 * diff * (0.6 + d.tackle) * react)
 	# Behind his back: a raider looking the other way is there to be caught.
 	if dist > 0.01 and dist < 2.0 and raid.baulk and raider.facing.dot(-to.normalized()) < -0.3:
 		p = maxf(p, 1.2 * diff * (0.6 + d.tackle) * react)
@@ -2384,7 +2391,7 @@ func _ai_defender(d: Athlete, dt: float) -> void:
 		p *= 1.5
 	if rng.randf() < p * dt:
 		d.tackle_kind = _ai_pick_tackle(d)
-		d.set_state("telegraph", float(prof.telegraph) * (1.15 if d.tackle_kind == "waist" else 1.0))
+		d.set_state("telegraph", float(prof.telegraph) * (1.15 if d.tackle_kind == "waist" else 1.0) * (0.75 if last_ditch else 1.0))
 		d.cooldown = 0.2
 
 

@@ -64,6 +64,14 @@ func _tour() -> void:
 	if args_only.begins_with("hi:"):
 		TranslationServer.set_locale("hi")
 		args_only = args_only.substr(3)
+	if args_only == "howto":
+		# Every page of How to Play.
+		var how := Game.show_screen("res://ui/howto_screen.gd")
+		for i in how.TOPICS.size():
+			how._show(i)
+			await frames(12)
+			await shot("howto_%d" % i)
+		return
 	if args_only.begins_with("screen:"):
 		# One screen: screen:res://ui/main_menu.gd
 		Game.show_screen(args_only.substr(7))

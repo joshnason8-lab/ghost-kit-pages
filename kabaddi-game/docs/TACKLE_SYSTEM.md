@@ -225,7 +225,8 @@ What changed:
   0.12-0.38 s, quicker for agile players and a little different each time, so the shape moves like people
   and not like one machine.
 - Players standing off in his way home do not dive at him from out there. Who dives, and when, is
-  otherwise unchanged.
+  otherwise unchanged. (Since 0.7.8, once he has touched someone they do, as he comes near: it is the last
+  chance, and more go, from further, with less wind-up; `docs/REALISM_REVIEW.md`, "Fifth review".)
 - **Debug overlay** (`game/debug_draw.gd`, `config.debug_draw`; on in `tests/defence_view.tscn` and in
   `tackle_check`'s view): each defender's place in the plan as a ring in his role's colour with a line to
   it, the holds' hand targets and held feet, and planted feet.

@@ -134,11 +134,7 @@ func _build_ui() -> void:
 	tiles.size_flags_stretch_ratio = 1.25
 	row.add_child(tiles)
 	var hero := UI.tile(tr("MENU_QUICK"), tr("MENU_QUICK_DESC"), Game.C_SAFFRON, "quick", func(): _go("res://ui/quick_setup.gd"), true,
-		"raider")
-	var play_tag := UI.pill(tr("PLAY").to_upper(), Game.C_SAFFRON, true)
-	play_tag.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	play_tag.position = Vector2(64, -52)
-	hero.add_child(play_tag)
+		"raider", UI.pill(tr("PLAY").to_upper(), Game.C_SAFFRON, true))
 	hero.size_flags_stretch_ratio = 0.9
 	tiles.add_child(hero)
 	_cards.append(hero)
@@ -146,10 +142,10 @@ func _build_ui() -> void:
 	stack.add_theme_constant_override("separation", 14)
 	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tiles.add_child(stack)
-	# Each tile's figure is in the tile's own colour (tools/ui_art/src).
+	# Each tile's figure is in the tile's own colour (tools/ui_art/src). Training (ui/tutorial_menu.gd) is off the
+	# menu for now; its code stays, for later.
 	for md in [["MENU_SEASON", "MENU_SEASON_DESC", "res://ui/season_hub.gd", Game.C_GOOD, "league", "chain"],
-			["MENU_CUP", "MENU_CUP_DESC", "res://ui/cup_screen.gd", Color("5aa9ff"), "cup", "celebrate"],
-			["MENU_TRAINING", "TRAINING_EYEBROW", "res://ui/tutorial_menu.gd", Game.C_MAGENTA.lightened(0.1), "dubki", "lunge"]]:
+			["MENU_CUP", "MENU_CUP_DESC", "res://ui/cup_screen.gd", Color("5aa9ff"), "cup", "celebrate"]]:
 		var path2: String = md[2]
 		var t := UI.tile(tr(md[0]), tr(md[1]), md[3], md[4], func(): _go(path2), false, md[5])
 		stack.add_child(t)
