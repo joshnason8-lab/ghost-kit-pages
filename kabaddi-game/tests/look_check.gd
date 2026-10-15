@@ -5,7 +5,7 @@ extends Node
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 1493x720 --fixed-fps 30 \
 ##       res://tests/look_check.tscn -- OUTDIR [grounds=dome,stadium,village,monsoon,beach] [at=14,31] [gfx=1] [seed=1] [nobake]
 ## gfx is the graphics level (0 low, 1 medium as phones start, 2 high); nobake builds the grounds without their baked
-## lighting (assets/grounds/). Prints each frame's draw time too.
+## lighting (assets/grounds/). Prints each frame's draw time too, and each picture's draw calls and primitives.
 
 var _out := "user://look"
 
@@ -76,7 +76,9 @@ func _ground(id: String, at: Array, s: int) -> void:
 func _shot(_m: Node, name: String) -> void:
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(_out.path_join(name + ".png"))
-	print("look_check: ", name)
+	print("look_check: %s (%d draw calls, %d primitives)" % [name,
+		RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+		RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)])
 
 
 ## The raider and whoever is nearest him, from 4 m off at chest height, without the HUD.

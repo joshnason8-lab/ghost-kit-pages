@@ -31,7 +31,7 @@ sphere next to a baked lamp stays black once the lamp itself is gone), so the ba
 ground is loaded, and the players cost nothing more to draw.
 
 On the phone a baked ground costs one more texture read for the fixed parts and about 1 MB of memory (an ASTC
-lightmap, HDR, one 1024 x 1024 page per ground).
+lightmap, HDR, one 1024 x 1024 page per ground; a GPU that cannot read HDR ASTC is given it unpacked, 8 MB).
 
 ### Re-baking
 

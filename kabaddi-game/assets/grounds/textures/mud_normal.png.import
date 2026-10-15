@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://d3chmfw6u7usa"
+path.s3tc="res://.godot/imported/mud_normal.png-0861fa2dc1634a4dcbbce5db86f21945.s3tc.ctex"
+path.etc2="res://.godot/imported/mud_normal.png-0861fa2dc1634a4dcbbce5db86f21945.etc2.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/grounds/textures/mud_normal.png"
+dest_files=["res://.godot/imported/mud_normal.png-0861fa2dc1634a4dcbbce5db86f21945.s3tc.ctex", "res://.godot/imported/mud_normal.png-0861fa2dc1634a4dcbbce5db86f21945.etc2.ctex"]
 
 [params]
 

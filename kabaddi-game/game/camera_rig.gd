@@ -15,6 +15,7 @@ var frozen := false      # hold the camera still (used when recording test foota
 var _tight := 0.0        # broadcast: 0 the play as a whole, 1 in close on a struggle
 var _jolt := 0.0         # metres of shake left (a takedown, a hold: shake)
 var _jolt_t := 0.0
+var _shake_now := Vector3.ZERO   # this frame's shake, put on after the smoothing (which would all but take it out)
 
 const VIGNETTE := """
 shader_type canvas_item;
@@ -83,6 +84,8 @@ func input_to_world(v: Vector2) -> Vector3:
 func follow(m, dt: float) -> void:
 	if frozen:
 		return
+	cam.global_position -= _shake_now   # last frame's shake off before the smoothing
+	_shake_now = Vector3.ZERO
 	_t += dt
 	var look: Vector2 = m.controls.take_look()
 	var a: Athlete = m.focus_athlete()
@@ -123,8 +126,9 @@ func follow(m, dt: float) -> void:
 		cam.fov = lerpf(cam.fov, 60.0 - 9.0 * close_in, dt * 3.0)
 		var z := clampf(a.position.z * 0.55, -4.5, 4.5)
 		var drift := Vector3(0, sin(_t * 0.53) * 0.035 + sin(_t * 1.31) * 0.012, sin(_t * 0.41 + 1.0) * 0.05)
-		_move(Vector3(11.5 - 1.2 * close_in, 6.2 - 0.9 * close_in, z) + drift + _shake_offset(dt),
+		_move(Vector3(11.5 - 1.2 * close_in, 6.2 - 0.9 * close_in, z) + drift,
 			Vector3(0, 0.4 + 0.25 * close_in, a.position.z * 0.75) + drift * 0.5, dt, 3.0)
+		_shake(dt)
 		return
 	cam.fov = lerpf(cam.fov, 60.0, dt * 4.0)
 
@@ -135,16 +139,18 @@ func follow(m, dt: float) -> void:
 	var b := Basis(Vector3.UP, orbit)
 	var pos := a.position + b * Vector3(0, 2.9, 5.2)
 	var tgt := a.position + b * Vector3(0, 0.8, -3.2)
-	_move(pos + _shake_offset(dt), tgt, dt, 6.0)
+	_move(pos, tgt, dt, 6.0)
+	_shake(dt)
 
 
-## This frame's shake: a quick, tight wobble that dies away.
-func _shake_offset(dt: float) -> Vector3:
+## This frame's shake, on top of where the camera has moved to: a quick, tight wobble that dies away.
+func _shake(dt: float) -> void:
 	if _jolt <= 0.001:
-		return Vector3.ZERO
+		return
 	_jolt_t += dt
 	_jolt = move_toward(_jolt, 0.0, dt * 0.22)
-	return Vector3(sin(_jolt_t * 61.0), sin(_jolt_t * 47.0 + 1.3), sin(_jolt_t * 53.0 + 2.1) * 0.5) * _jolt
+	_shake_now = Vector3(sin(_jolt_t * 61.0), sin(_jolt_t * 47.0 + 1.3), sin(_jolt_t * 53.0 + 2.1) * 0.5) * _jolt
+	cam.global_position += _shake_now
 
 
 func _move(pos: Vector3, target: Vector3, dt: float, rate: float) -> void:

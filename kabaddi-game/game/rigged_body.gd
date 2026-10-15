@@ -65,10 +65,11 @@ void fragment() {
 	vec3 kit_col = (mix(jersey_col, shorts_col, region.g) * k.r + trim_col * k.g) / max(k.r + k.g, 0.001);
 	ALBEDO = mix(body, kit_col * k.b * 2.0, amount);
 	// Skin: a soft sheen, wetter as he sweats, and warm light carried through it where it is thin; cloth: matte, with
-	// the sheen of a jersey at grazing angles. Both pick up the lights behind them at the edges.
+	// the sheen of a jersey at grazing angles. Both pick up the lights behind them at the edges. Hair, shoes and the
+	// referees' clothes stay as they were.
 	float bare = skin * (1.0 - amount);
-	ROUGHNESS = mix(mix(0.52, 0.34, sweat), 0.86, amount);
-	SPECULAR = mix(0.42 + 0.18 * sweat * bare, 0.28, amount);
+	ROUGHNESS = mix(mix(0.6, mix(0.52, 0.34, sweat), bare), 0.86, amount);
+	SPECULAR = mix(mix(0.35, 0.42 + 0.18 * sweat, bare), 0.28, amount);
 	RIM = mix(0.15, 0.45, amount);
 	RIM_TINT = mix(0.6, 0.3, amount);
 	BACKLIGHT = vec3(0.32, 0.12, 0.07) * bare;

@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.7.8-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.7.9-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.7.8-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.7.9-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -51,6 +51,8 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
   menu it closes the game.
 - Leave the app mid-raid (home button or a call), then come back. The match should be paused.
 - A **League Season** through the auction and a few rounds.
+- **Every ground** in a Quick Match. Since 0.7.9 each has baked lighting, new court and stand surfaces and a
+  broadcast camera that moves in on a tackle. Say if one looks wrong or runs slower than the others.
 - Each **raid rule**: Breath, Tap and the 30-second clock.
 
 ## Reporting
@@ -72,7 +74,7 @@ Things worth reporting even if nothing is broken:
 
 - **Feel.** Is the raider too fast or too slow? Does a tackle feel fair?
 - **Difficulty.** Is Rookie easy enough and Legend hard enough?
-- **Frame rate.** Does it stutter, and on which graphics setting?
+- **Frame rate.** Does it stutter, and on which graphics setting and ground?
 - **Heat and battery** after a full match.
 - **Text** that is cut off, overlaps, or reads wrong in your language.
 

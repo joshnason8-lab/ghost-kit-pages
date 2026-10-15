@@ -24,8 +24,8 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 | **Emotion** | Raiders slap their thighs before a raid and taunt the chain ("Aaja!"). Defenders call "Pakad!". Celebrations vary and don't come every time: roars, fist pumps, claps, chest thumps, pointing to the crowd, and team-mates jogging over for a high five. Out players sit on the bench in the sitting block. Winners roar, the beaten slump with hands on heads, players dispute touches ("Touch tha!" / "No touch!"), and there's the occasional shove after a tackle. Shouts are voiced and shown as speech bubbles in your language. |
 | **Difficulty** | Rookie, Pro, Star and Legend change defender timing and aggression, AI raider skill, aim assist and how strict the cant rhythm is. |
 | **Players** | Realistic textured bodies from a generated model (faces, knee pads, ankle guards), auto-rigged and driven by the game's animation. Each team's colours replace the model's kit, keeping its folds; skin is tinted to each player's tone; shirt numbers are added. Strides match running speed; players side-shuffle, backpedal, shift their weight and look around. Switch to the classic code-built bodies in Settings. |
-| **Cameras** | Third person and broadcast. |
-| **Grounds** | Mumbai Dome, Gaon Maidan (village mud court), National Stadium (floodlit), Monsoon Ground (rain), Puri Beach (sand). |
+| **Cameras** | Third person and broadcast. The broadcast camera moves in while the raider is held and jolts at a takedown. See [docs/GRAPHICS.md](docs/GRAPHICS.md). |
+| **Grounds** | Mumbai Dome, Gaon Maidan (village mud court), National Stadium (floodlit), Monsoon Ground (rain), Puri Beach (sand). Each has baked lighting, textured surfaces and its own colour grade. See [docs/GRAPHICS.md](docs/GRAPHICS.md). |
 | **Quick Match** | Any two league teams or countries, any ground. |
 | **Season awards** | Every player's raid and tackle points are kept all season (simulated matches share each team's score by ability). At the end: best raider, best defender, and the **Arjuna Award** for the most valuable player, presented with a bronze statuette. |
 | **League Season** | Own a franchise. Retain your best six, then **bid at the auction**: categories A–D and New Young Players, paddles, "going once, going twice", bidding wars, record buys, **Final Bid Match cards**, and an accelerated round. Then play 11 rounds and the playoffs (top six, two eliminators, semis, final) and **lift the trophy**. |
@@ -106,13 +106,15 @@ tests/      compile_check, test_runner (headless smoke test), screenshots (rende
             or to check against the audited one, frame for frame), tackle_reach (how far each dive
             reaches), defence_view (a match with the debug overlay), motion_view (gaits, celebrations,
             signals), play_video (a bot that plays), motion_audit (who moves each player in a frame, and what
-            shakes: docs/REALISM_REVIEW.md)
+            shakes: docs/REALISM_REVIEW.md), look_check (each ground at set moments, to compare a look change)
 tools/      build_i18n.py, rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
-            mocap/ (animation clips, and movement measured from match video)
+            mocap/ (animation clips, and movement measured from match video), bake_lighting/ (the grounds'
+            baked lighting), ground_art/ (court and stand textures)
 docs/       ASSETS.md (how to drop in real humans), KABADDI.md (the rules), BETA.md (testing on a phone), ROADMAP.md,
             FOOTAGE_STYLE.md (how real raids play, measured from match video), MOTION_REALISM.md (movement and
             animation fixes, measured), TACKLE_SYSTEM.md (tackles and holds, measured), REALISM_REVIEW.md (the
-            reviews of each video and beta, what was found and what changed)
+            reviews of each video and beta, what was found and what changed), GRAPHICS.md (lighting, surfaces,
+            shading, camera and picture)
 ```
 
 ## Tests

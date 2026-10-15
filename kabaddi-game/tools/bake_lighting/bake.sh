@@ -27,7 +27,8 @@ for g in "${grounds[@]}"; do echo "res://assets/grounds/$g/$g.tscn" >> "$work/ba
 icd=${VK_ICD_FILENAMES:-}
 [ -z "$icd" ] && [ -f /usr/share/vulkan/icd.d/lvp_icd.json ] && ! command -v nvidia-smi >/dev/null && icd=/usr/share/vulkan/icd.d/lvp_icd.json
 VK_ICD_FILENAMES=$icd xvfb-run -a -s "-screen 0 1600x900x24" "$godot" --path "$work" -e \
-	--rendering-driver vulkan --rendering-method forward_plus 2>&1 | grep -v "^ALSA\|ALSA lib" | grep -i "bake\|error" || true
+	--rendering-driver vulkan --rendering-method forward_plus 2>&1 | grep --line-buffered -v "^ALSA\|ALSA lib" \
+	| grep --line-buffered -i "bake\|error" || true
 for g in "${grounds[@]}"; do
 	if [ ! -f "$work/assets/grounds/$g/$g.lmbake" ]; then
 		echo "bake.sh: $g was not baked" >&2

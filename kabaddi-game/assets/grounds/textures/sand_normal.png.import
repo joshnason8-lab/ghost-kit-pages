@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://bdy43yt86qpp6"
+path.s3tc="res://.godot/imported/sand_normal.png-f9ac2e52dc3aede2173f234034355948.s3tc.ctex"
+path.etc2="res://.godot/imported/sand_normal.png-f9ac2e52dc3aede2173f234034355948.etc2.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/grounds/textures/sand_normal.png"
+dest_files=["res://.godot/imported/sand_normal.png-f9ac2e52dc3aede2173f234034355948.s3tc.ctex", "res://.godot/imported/sand_normal.png-f9ac2e52dc3aede2173f234034355948.etc2.ctex"]
 
 [params]
 

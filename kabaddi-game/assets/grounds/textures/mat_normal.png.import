@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://pviramrntt11"
+path.s3tc="res://.godot/imported/mat_normal.png-f425f60382be7fd3e2a80bcb8a741895.s3tc.ctex"
+path.etc2="res://.godot/imported/mat_normal.png-f425f60382be7fd3e2a80bcb8a741895.etc2.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/grounds/textures/mat_normal.png"
+dest_files=["res://.godot/imported/mat_normal.png-f425f60382be7fd3e2a80bcb8a741895.s3tc.ctex", "res://.godot/imported/mat_normal.png-f425f60382be7fd3e2a80bcb8a741895.etc2.ctex"]
 
 [params]
 

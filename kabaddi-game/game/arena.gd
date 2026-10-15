@@ -742,6 +742,8 @@ func _tree(pos: Vector3, scale_f: float, trunk_col: Color, leaf_col: Color) -> v
 	cyl.top_radius = 0.18
 	cyl.bottom_radius = 0.3
 	cyl.height = 3.2
+	cyl.radial_segments = 12   # Godot's 64 sides by default: far more than a trunk at this distance needs
+	cyl.rings = 1
 	trunk.mesh = cyl
 	trunk.position = Vector3(0, 1.6, 0)
 	trunk.material_override = _mat(trunk_col, 0.95)
@@ -774,6 +776,8 @@ func _palm(pos: Vector3, scale_f: float, lean: float) -> void:
 		cyl.top_radius = 0.14
 		cyl.bottom_radius = 0.18
 		cyl.height = 1.1
+		cyl.radial_segments = 10
+		cyl.rings = 1
 		seg.mesh = cyl
 		seg.position = Vector3(0, 0.55 + k * 1.0, k * k * 0.03)
 		seg.rotation.x = k * 0.05
@@ -786,6 +790,8 @@ func _palm(pos: Vector3, scale_f: float, lean: float) -> void:
 		var cap := CapsuleMesh.new()
 		cap.radius = 0.22
 		cap.height = 3.2
+		cap.radial_segments = 8   # a flattened leaf (its scale below): Godot gives it 64 sides and 8 rings by default
+		cap.rings = 3
 		leaf.mesh = cap
 		leaf.material_override = leaf_mat
 		var a := TAU * k / 9.0
@@ -1000,6 +1006,8 @@ func _shell_beach() -> void:
 		cone.top_radius = 0.05
 		cone.bottom_radius = 1.4
 		cone.height = 0.6
+		cone.radial_segments = 24
+		cone.rings = 1
 		top.mesh = cone
 		top.position = p + Vector3(0, 2.5, 0)
 		top.material_override = _mat(tops[i], 0.7)

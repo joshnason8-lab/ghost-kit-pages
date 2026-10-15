@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://b26i5325q3guh"
+path.s3tc="res://.godot/imported/mat_albedo.png-50c94232575f2088dd2c788b4dd56d54.s3tc.ctex"
+path.etc2="res://.godot/imported/mat_albedo.png-50c94232575f2088dd2c788b4dd56d54.etc2.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/grounds/textures/mat_albedo.png"
+dest_files=["res://.godot/imported/mat_albedo.png-50c94232575f2088dd2c788b4dd56d54.s3tc.ctex", "res://.godot/imported/mat_albedo.png-50c94232575f2088dd2c788b4dd56d54.etc2.ctex"]
 
 [params]
 
