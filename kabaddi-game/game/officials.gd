@@ -14,6 +14,7 @@ var umpires: Array = []     # [far side, team 0 half], [near side, team 1 half]
 var judges: Array = []
 var scorers: Array = []
 var _homes := {}            # athlete -> resting spot
+var _cloth: StandardMaterial3D   # the scorers' table's
 var _signal_t := 0.0
 
 
@@ -35,6 +36,13 @@ func setup(p_match) -> void:
 		scorers.append(s)
 
 
+## The officials' shadows on the floor, and the scorers' table's (Match._floor_shadows).
+func set_floor_shadow(mat: Material) -> void:
+	for a in _homes:
+		a.model.set_floor_shadow(mat)
+	_cloth.next_pass = mat
+
+
 func _official(rng: RandomNumberGenerator, i: int, pos: Vector3) -> Athlete:
 	var data := {
 		"id": "OFFICIAL_%d" % i, "name": "", "role": "official",
@@ -53,14 +61,14 @@ func _official(rng: RandomNumberGenerator, i: int, pos: Vector3) -> Athlete:
 
 
 func _table(pos: Vector3) -> void:
-	var cloth := StandardMaterial3D.new()
-	cloth.albedo_color = Color("1d3557")
-	cloth.roughness = 0.9
+	_cloth = StandardMaterial3D.new()
+	_cloth.albedo_color = Color("1d3557")
+	_cloth.roughness = 0.9
 	var top := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(0.7, 0.74, 2.2)
 	top.mesh = box
-	top.material_override = cloth
+	top.material_override = _cloth
 	top.position = pos + Vector3(0, 0.37, 0)
 	add_child(top)
 	var sign_l := Label3D.new()

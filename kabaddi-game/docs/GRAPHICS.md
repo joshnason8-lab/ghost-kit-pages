@@ -26,7 +26,7 @@ darkening into corners and under benches and roofs, pools of light under the lam
 and the ground.
 
 What is not: the sun's direct light and its shadows stay live, so the players cast shadows on the baked floor as
-before (on Medium and High; blob shadows on Low). The players and the crowd are lit live by the sun and the
+before (Shadows, below). The players and the crowd are lit live by the sun and the
 ambient light: the Compatibility renderer does not light moving things from a bake's light probes (checked: a
 sphere next to a baked lamp stays black once the lamp itself is gone), so the bake's own lamps are taken out when a
 ground is loaded, and the players cost nothing more to draw.
@@ -49,6 +49,32 @@ fixed parts, their materials or the bake's lights.
 Previews of baked grounds on a machine without a GPU are slow: Mesa's software OpenGL decodes the desktop lightmap
 format (BC6H) texel by texel. A copy of the project with the lightmaps imported uncompressed renders them at the usual
 speed; phones decode their format (ASTC) in hardware.
+
+## Shadows
+
+On Medium and High the sun casts real shadows, of everything: a shadow map, and on the Compatibility renderer a second
+pass over everything the sun lights, which makes them the dearest thing in the picture (on the software renderer the
+same frames take 2.4 to 2.8 times as long as on Low, and twice the triangles). A phone that cannot keep up drops a
+level by itself in its first match (Settings, Auto graphics), so a mid-range phone plays on Low, where the sun casts
+none.
+
+On Low each player, official and the scorers' table cast their own (`Arena.floor_shadow`,
+`HumanModel.set_floor_shadow`): the body drawn a second time, flattened onto the floor along the sun's light, in
+see-through black. The shadow has his shape, is as long as the sun is low (seven metres in the village's late
+afternoon, a pool round his feet under the dome's lamps) and moves with him; a stencil lets each pixel be darkened
+once where limbs or players overlap. It is as dark as the sun's own shadow on the court is on each ground
+(`Arena.SHADE`, measured with `tests/shade_check.tscn`: the court with the sun and without it, which is all a shadow
+keeps). It costs one more draw of each body (21 in a match) and nothing else: the bodies are most of the picture's
+triangles on Low (about 300,000 of 320,000), so those double, and a frame took 4% longer on the software renderer.
+When a match lowers itself to Low, the bodies' own shadows take over from the sun's there and then.
+
+Before 0.7.11 a match that lowered itself lost its shadows altogether, and a match that started on Low had a faint
+round blob under each player; the placeholder body still has that.
+
+Low still has no shadows of the stands, trees, huts, umbrellas or crowd (the bake has the sky's light, not the
+sun's), and its sunlit floors are darker than Medium's: the Compatibility renderer adds a shadowed sun's light to a
+picture already turned to sRGB, which makes Medium's sunlit floors brighter than the same light gives on Low (the
+dome's court about 1.7 times, the whole picture 1.5 to 1.75 times).
 
 ## Court and stand textures
 
@@ -108,4 +134,5 @@ the stadium take a quarter longer: their stands, and the dome's floor, take thei
 reads a texture where a surface laid out flat takes one. If a phone cannot keep up, the game drops a graphics level
 by itself (Settings, Auto graphics).
 
-`test_runner` checks that every ground loads with its baked lighting, and with the bake's lamps and sky taken out.
+`test_runner` checks that every ground loads with its baked lighting, and with the bake's lamps and sky taken out;
+and that every body has its own floor shadow on Low, from the start and once a match lowers itself from Medium.

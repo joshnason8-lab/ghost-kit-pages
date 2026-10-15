@@ -211,10 +211,11 @@ func _ready() -> void:
 		seven = seven.slice(0, int(limit[t]))
 		if t == 0 and cp is Dictionary:
 			seven = _insert_career_player(seven, cp)
+		var on_show: Array = RiggedBody.featured() if bool(config.get("featured", false)) else []
 		for i in seven.size():
 			var a := Athlete.new()
-			if i == 0 and bool(config.get("featured", false)) and String(seven[i].get("body", "")) == "":
-				a.body_file = RiggedBody.featured()   # the body on show, if there is one, on each side's first raider
+			if i < on_show.size() and String(seven[i].get("body", "")) == "":
+				a.body_file = on_show[i]   # the bodies on show (bodies.json "featured"), on each side's first players
 			a.setup(seven[i], t, tm.kit, tm.trim, arena.barefoot)
 			if String(config.get("style", "")) != "":
 				a.style = String(config.style)
@@ -231,6 +232,7 @@ func _ready() -> void:
 	officials = Officials.new()
 	add_child(officials)
 	officials.setup(self)
+	_floor_shadows()
 
 	cam = CameraRig.new()
 	add_child(cam)
@@ -1158,14 +1160,28 @@ func _check_frame_rate(delta: float) -> void:
 		return
 	_fps_done = true
 	var fps := _fps_frames / _fps_time
-	var g := int(Game.settings.graphics)
-	if fps < 36.0 and g > Game.GFX_LOW:
-		Game.settings.graphics = g - 1
-		Game.save_settings()
-		Game.apply_graphics(get_viewport())
-		if arena.sun:
-			arena.sun.shadow_enabled = Game.shadows_enabled()
-		hud.event(tr("GFX_LOWERED").format({"level": tr(["GFX_LOW", "GFX_MEDIUM", "GFX_HIGH"][g - 1])}), Game.C_MUTED, false, MatchHud.EV_INFO)
+	if fps < 36.0 and int(Game.settings.graphics) > Game.GFX_LOW:
+		lower_graphics()
+
+
+## One graphics level down, for this match and the ones after (Settings shows it).
+func lower_graphics() -> void:
+	var g := int(Game.settings.graphics) - 1
+	Game.settings.graphics = g
+	Game.save_settings()
+	Game.apply_graphics(get_viewport())
+	arena.graphics_changed()
+	_floor_shadows()   # on Low the sun's shadows go: each body's own take their place
+	hud.event(tr("GFX_LOWERED").format({"level": tr(["GFX_LOW", "GFX_MEDIUM", "GFX_HIGH"][g])}), Game.C_MUTED, false, MatchHud.EV_INFO)
+
+
+## Every body's shadow on the floor: the sun's own on Medium and High, each body's drawn flat on Low (where the sun
+## casts none, as a shadowed light costs a phone a second pass over the whole ground).
+func _floor_shadows() -> void:
+	var mat: Material = null if Game.shadows_enabled() else arena.floor_shadow
+	for a in athletes:
+		a.model.set_floor_shadow(mat)
+	officials.set_floor_shadow(mat)
 
 
 func set_paused(p: bool) -> void:

@@ -124,6 +124,7 @@ var _phase := 0.0
 var _t := 0.0
 var _custom: Node3D = null
 var rig: RiggedBody = null
+var _blob: MeshInstance3D = null   # a soft round shadow, when the sun casts none (_make_blob)
 var _anim: AnimationPlayer = null
 var _clips := {}
 var _current_clip := ""
@@ -348,28 +349,45 @@ func _build_procedural() -> void:
 		_part(kn, _capsule(0.05, 0.25), shoe_m, Vector3(0, -shin_len - 0.02, -0.06), Vector3(1.05, 1.0, 0.75), Vector3(PI / 2, 0, 0))
 
 	if not Game.shadows_enabled():
-		# Blob shadow keeps players grounded when real shadows are off.
-		var blob := MeshInstance3D.new()
-		var quad := QuadMesh.new()
-		quad.size = Vector2(0.75, 0.75)
-		blob.mesh = quad
-		blob.rotation = Vector3(-PI / 2, 0, 0)
-		blob.position = Vector3(0, 0.012, 0)
-		var bm := StandardMaterial3D.new()
-		bm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		bm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		var grad := GradientTexture2D.new()
-		grad.fill = GradientTexture2D.FILL_RADIAL
-		grad.fill_from = Vector2(0.5, 0.5)
-		grad.fill_to = Vector2(1.0, 0.5)
-		var g := Gradient.new()
-		g.set_color(0, Color(0, 0, 0, 0.45))
-		g.set_color(1, Color(0, 0, 0, 0))
-		grad.gradient = g
-		bm.albedo_texture = grad
-		blob.material_override = bm
-		blob.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(blob)
+		_make_blob()
+
+
+## A blob shadow keeps a body grounded when the sun casts no shadows (outside a match, and the placeholder body).
+func _make_blob() -> void:
+	_blob = MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.75, 0.75)
+	_blob.mesh = quad
+	_blob.rotation = Vector3(-PI / 2, 0, 0)
+	_blob.position = Vector3(0, 0.012, 0)
+	var bm := StandardMaterial3D.new()
+	bm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	bm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var grad := GradientTexture2D.new()
+	grad.fill = GradientTexture2D.FILL_RADIAL
+	grad.fill_from = Vector2(0.5, 0.5)
+	grad.fill_to = Vector2(1.0, 0.5)
+	var g := Gradient.new()
+	g.set_color(0, Color(0, 0, 0, 0.45))
+	g.set_color(1, Color(0, 0, 0, 0))
+	grad.gradient = g
+	bm.albedo_texture = grad
+	_blob.material_override = bm
+	_blob.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_blob)
+
+
+## His shadow on the floor when the sun casts none (Low graphics), mat being the ground's (Arena.floor_shadow); null
+## when it does. The realistic body is drawn a second time with mat, flattened onto the floor along the sun's light,
+## so his shadow has his shape and moves with him; the placeholder body keeps its blob.
+func set_floor_shadow(mat: Material) -> void:
+	var flat := rig != null and rig.material != null
+	if flat:
+		rig.material.next_pass = mat
+	elif mat != null and _blob == null:
+		_make_blob()
+	if _blob:
+		_blob.visible = mat != null and not flat
 
 
 # ---------------------------------------------------------------- custom model

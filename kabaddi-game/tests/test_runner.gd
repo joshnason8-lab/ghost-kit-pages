@@ -222,6 +222,27 @@ func _run() -> void:
 	check(not sheet.is_empty() and (sheet.info.people as Array).size() >= 8 and (sheet.info.frames as Array).size() == 8,
 		"crowd sprite sheet: eight people in eight poses")
 
+	# 7b. Shadows on every graphics level: the sun's own on Medium and High; on Low, where the sun casts none, each
+	# body's drawn flat on the floor, from the start or once a slow phone's match lowers its graphics.
+	var gfx_was := int(Game.settings.graphics)
+	for gfx in [Game.GFX_LOW, Game.GFX_MEDIUM]:
+		Game.settings.graphics = gfx
+		Game.start_match({"home": "MUM", "away": "DEL", "arena": "village", "mode": "quick", "autoplay": true, "autoplay_no_report": true, "length": 0, "difficulty": 1})
+		var shm: Node = Game.current
+		await frames(2)
+		var n: Array = _floor_shadowed(shm)
+		if gfx == Game.GFX_LOW:
+			check(not shm.arena.sun.shadow_enabled and n[0] == n[1] and n[1] >= 21, "Low: every body has its own shadow on the floor (%d of %d)" % n)
+		else:
+			check(shm.arena.sun.shadow_enabled and n[0] == 0, "Medium: the sun casts the shadows")
+			shm.lower_graphics()
+			n = _floor_shadowed(shm)
+			check(not shm.arena.sun.shadow_enabled and n[0] == n[1], "lowered to Low in a match: every body's own shadow takes over (%d of %d)" % n)
+		shm.queue_free()
+		await frames(3)
+	Game.settings.graphics = gfx_was
+	Game.save_settings()
+
 	# 8. Captured motion clips load and play on an athlete.
 	var clip := MocapClip.load_file("res://tests/fixtures/walk_clip.json")
 	check(clip != null and clip.frames.size() > 10, "mocap clip loads")
@@ -732,6 +753,18 @@ func _run() -> void:
 		for f in failures:
 			print("  - " + f)
 		get_tree().quit(1)
+
+
+## How many bodies in match m have their own shadow on the floor (Arena.floor_shadow), and how many bodies there are.
+func _floor_shadowed(m: Node) -> Array:
+	var bodies := 0
+	var flat := 0
+	for h in m.find_children("*", "Node3D", true, false):
+		if h is HumanModel:
+			bodies += 1
+			if h.rig != null and h.rig.material.next_pass == m.arena.floor_shadow and (h._blob == null or not h._blob.visible):
+				flat += 1
+	return [flat, bodies]
 
 
 ## A hand touch, then straight for home past the line either side of the man touched, the AI defending (lab mode):

@@ -165,21 +165,23 @@ static func available() -> bool:
 	return not bodies().is_empty()
 
 
-## A body on show: the player body bodies.json marks "featured" (a new one to see in matches), which each side's
-## first raider wears in a match that asks for it (Match: config "featured", as Quick Match does); "" when none is.
-static func featured() -> String:
+## The bodies on show: the player bodies bodies.json marks "featured" (new ones to see in matches), in its order,
+## which each side's first players wear in a match that asks for them (Match: config "featured", as Quick Match does).
+static func featured() -> Array:
+	var out := []
 	for e in bodies():
 		if String(e.kind) == "player" and bool(e.get("featured", false)):
-			return String(e.file)
-	return ""
+			out.append(String(e.file))
+	return out
 
 
 ## The body for a person: the nearest in skin tone and build among those of his kind, with a little
-## of the seed so team-mates alike don't all look the same. Officials fall back to players' bodies.
+## of the seed so team-mates alike don't all look the same. Officials fall back to players' bodies. A body
+## bodies.json marks "pick": false is only worn when it is featured.
 static func pick(kind: String, skin: Color, build: float, seed: int) -> String:
-	var options := bodies().filter(func(e): return String(e.kind) == kind)
+	var options := bodies().filter(func(e): return String(e.kind) == kind and bool(e.get("pick", true)))
 	if options.is_empty():
-		options = bodies().filter(func(e): return String(e.kind) == "player")
+		options = bodies().filter(func(e): return String(e.kind) == "player" and bool(e.get("pick", true)))
 	if options.is_empty():
 		return ""
 	var best := ""

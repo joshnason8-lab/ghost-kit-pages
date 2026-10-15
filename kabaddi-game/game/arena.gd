@@ -135,6 +135,33 @@ void fragment() {
 }
 """
 
+## A body drawn a second time (its material's next pass), flattened onto the floor along the sun's light and see-through
+## black: its shadow, for when the sun casts none (Low graphics). The stencil lets each pixel be darkened once, however
+## many limbs or players overlap there. Fog is left on: a shadow far off fades into the haze as the floor does.
+const FLOOR_SHADOW_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, blend_mix, world_vertex_coords, shadows_disabled;
+stencil_mode read, write, compare_not_equal, 1;
+uniform vec3 light_dir = vec3(0.0, -1.0, 0.0);   // the way the sun's light travels
+uniform float floor_y = 0.013;                    // just over the court's lines and lettering
+uniform float strength = 0.5;                     // how much darker the floor is in it (SHADE)
+void vertex() {
+	VERTEX += light_dir * (max(VERTEX.y - floor_y, 0.0) / -light_dir.y);
+	VERTEX.y = floor_y;
+}
+void fragment() {
+	ALBEDO = vec3(0.0);
+	ALPHA = strength;
+}
+"""
+static var _floor_shadow_shader: Shader = null
+var floor_shadow: ShaderMaterial   # the players' shadows when the sun casts none: see HumanModel.set_floor_shadow
+# How much darker the court is in the sun's shadow on each ground, with its baked lighting: the court seen from above
+# with the sun and without it (all a shadow keeps), in linear light, lit 0.206 / shaded 0.058 in the dome, stadium
+# 0.193 / 0.038, village 0.164 / 0.042, monsoon 0.086 / 0.008, beach 0.341 / 0.034; as the Compatibility renderer
+# blends, in sRGB, 1 - srgb(shaded) / srgb(lit).
+const SHADE := {"dome": 0.46, "stadium": 0.55, "village": 0.49, "monsoon": 0.73, "beach": 0.68}
+
 
 func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text: String) -> void:
 	arena_id = p_arena_id if p_arena_id in ["stadium", "village", "monsoon", "beach"] else "dome"
@@ -205,6 +232,7 @@ func _env() -> void:
 			sun.rotation = Vector3(deg_to_rad(-72), deg_to_rad(25), 0)
 			sun.light_color = Color("fff3e0")
 			_grade(Color(0.0, 0.006, 0.025), Color(1.0, 0.99, 0.97), 0.25)   # indoors: cool shadows under warm lamps
+	_floor_shadow(SHADE[arena_id])
 
 
 ## A grade for the ground, after tonemapping: each channel from lift (its black) to gain (its white), along a gentle
@@ -480,7 +508,6 @@ func _environment(sky_top: Color, sky_horizon: Color, ground: Color, sun_energy:
 		env.ambient_light_color = sky_horizon
 	env.ambient_light_energy = ambient
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.glow_enabled = int(Game.settings.graphics) >= Game.GFX_MEDIUM
 	env.glow_intensity = 0.6
 	env.glow_bloom = 0.05
 	env.glow_hdr_threshold = 1.1
@@ -498,11 +525,30 @@ func _environment(sky_top: Color, sky_horizon: Color, ground: Color, sun_energy:
 
 	sun = DirectionalLight3D.new()
 	sun.light_energy = sun_energy
-	sun.shadow_enabled = Game.shadows_enabled()
 	sun.shadow_blur = 1.5
 	sun.directional_shadow_max_distance = 40.0
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL if int(Game.settings.graphics) < Game.GFX_HIGH else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	add_child(sun)
+	graphics_changed()
+
+
+## The sun's shadows and the glow for the graphics level now; again when a match lowers it on a slow phone.
+func graphics_changed() -> void:
+	var g := int(Game.settings.graphics)
+	env.glow_enabled = g >= Game.GFX_MEDIUM
+	sun.shadow_enabled = Game.shadows_enabled()
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL if g < Game.GFX_HIGH else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+
+
+## The players' shadows on the floor when the sun casts none (HumanModel.set_floor_shadow), along the sun's light and
+## as dark as the sun's own shadow on the court (strength: SHADE).
+func _floor_shadow(strength: float) -> void:
+	if _floor_shadow_shader == null:
+		_floor_shadow_shader = Shader.new()
+		_floor_shadow_shader.code = FLOOR_SHADOW_SHADER
+	floor_shadow = ShaderMaterial.new()
+	floor_shadow.shader = _floor_shadow_shader
+	floor_shadow.set_shader_parameter("light_dir", -sun.transform.basis.z)
+	floor_shadow.set_shader_parameter("strength", strength)
 
 
 # ---------------------------------------------------------------- crowds and props

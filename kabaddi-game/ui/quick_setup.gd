@@ -231,5 +231,5 @@ func _play() -> void:
 	Game.start_match({
 		"home": home, "away": away, "arena": arena, "mode": "quick", "control": "all",
 		"length": int(Game.settings.length), "difficulty": int(Game.settings.difficulty), "knockout": false,
-		"featured": true,   # the featured body (bodies.json) on each side's first raider, to see it in a match
+		"featured": true,   # the featured bodies (bodies.json) on each side's first players, to see them in a match
 	})
