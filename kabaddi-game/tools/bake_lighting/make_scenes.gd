@@ -55,7 +55,12 @@ func _make(id: String) -> void:
 		lm.environment_custom_color = Color("2a3550")
 		lm.environment_custom_energy = 0.35
 	else:
-		lm.environment_mode = LightmapGI.ENVIRONMENT_MODE_SCENE
+		# The sky lights the bake as strongly as it lit the ground as ambient light before (the bake takes the ambient's
+		# place on what it lights). The scene's own sky came in at full strength: on the beach, under a clear sky with
+		# ambient 0.32, that was three times the fill and washed the sand out.
+		lm.environment_mode = LightmapGI.ENVIRONMENT_MODE_CUSTOM_SKY
+		lm.environment_custom_sky = arena.env.sky
+		lm.environment_custom_energy = arena.env.ambient_light_energy
 	shell.add_child(lm)
 	for n in shell.find_children("*", "", true, false):
 		n.owner = shell
