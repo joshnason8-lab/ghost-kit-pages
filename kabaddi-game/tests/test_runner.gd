@@ -209,7 +209,10 @@ func _run() -> void:
 		add_child(ar)
 		ar.build(a.id, Color.RED, Color.BLUE, "TEST")
 		await frames(2)
-		check(ar.get_child_count() > 5, "arena builds: " + a.id)
+		check(ar.shell != null and ar.shell.get_child_count() > 3 and ar.get_child_count() > 3, "arena builds: " + a.id)
+		# Its fixed parts come with their baked lighting (tools/bake_lighting), the bake's own lights and sky taken out.
+		check(ar.baked and ar.shell.find_child("LightmapGI", false, false) != null
+			and ar.shell.find_children("*", "Light3D", false, false).is_empty(), "arena has its baked lighting: " + a.id)
 		if not Arena.crowd_sheet().is_empty():
 			var cards := ar.find_children("*", "MultiMeshInstance3D", false, false).filter(
 				func(n): return n.material_override is ShaderMaterial and n.material_override.get_shader_parameter("atlas") is Texture2D)

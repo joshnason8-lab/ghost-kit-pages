@@ -3100,6 +3100,8 @@ func _event(kind: String, info := {}) -> void:
 	event_log.append([snappedf(half_len - clock, 0.01), raid_log.size() + 1, kind, info])
 	if event_log.size() > 400:
 		event_log.pop_front()
+	if cam:
+		cam.on_event(kind)
 	game_event.emit(kind, info)
 
 

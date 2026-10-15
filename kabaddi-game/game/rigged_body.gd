@@ -34,6 +34,8 @@ void fragment() {
 	ALBEDO = c;
 	ROUGHNESS = rough;
 	SPECULAR = 0.35;
+	RIM = rough > 0.8 ? 0.5 : 0.25;
+	RIM_TINT = 0.4;
 }
 """
 const SHADER_TEXTURED := """
@@ -46,6 +48,7 @@ uniform vec3 jersey_col : source_color = vec3(0.1, 0.4, 0.8);
 uniform vec3 shorts_col : source_color = vec3(0.05, 0.1, 0.16);
 uniform vec3 trim_col : source_color = vec3(1.0);
 uniform float recolour = 1.0;          // 0 keeps the texture's own clothes (referees)
+uniform float sweat = 0.0;             // 0..1: skin shines more as he works (Athlete: from his energy)
 varying vec3 region;
 void vertex() {
 	region = COLOR.rgb;   // r jersey, g shorts, b hair
@@ -61,8 +64,14 @@ void fragment() {
 	float amount = smoothstep(0.3, 0.7, k.r + k.g) * recolour;
 	vec3 kit_col = (mix(jersey_col, shorts_col, region.g) * k.r + trim_col * k.g) / max(k.r + k.g, 0.001);
 	ALBEDO = mix(body, kit_col * k.b * 2.0, amount);
-	ROUGHNESS = mix(0.6, 0.85, amount);
-	SPECULAR = 0.35;
+	// Skin: a soft sheen, wetter as he sweats, and warm light carried through it where it is thin; cloth: matte, with
+	// the sheen of a jersey at grazing angles. Both pick up the lights behind them at the edges.
+	float bare = skin * (1.0 - amount);
+	ROUGHNESS = mix(mix(0.52, 0.34, sweat), 0.86, amount);
+	SPECULAR = mix(0.42 + 0.18 * sweat * bare, 0.28, amount);
+	RIM = mix(0.15, 0.45, amount);
+	RIM_TINT = mix(0.6, 0.3, amount);
+	BACKLIGHT = vec3(0.32, 0.12, 0.07) * bare;
 }
 """
 
@@ -73,6 +82,7 @@ static var _index = null
 var skeleton: Skeleton3D
 var mesh_instance: MeshInstance3D
 var material: ShaderMaterial
+var _sweat := 0.0
 var body := {}        # the loaded body this one wears
 var _bone := {}       # name -> index
 var _parent := []     # index -> parent index
@@ -531,6 +541,13 @@ func add_number(n: int, col: Color, outline: Color) -> void:
 	var f: Basis = body.rest_frames.chest
 	lab.transform = Transform3D(f, f * Vector3(0, 0.02, 0) + body.back_offset)
 	att.add_child(lab)
+
+
+## How wet his skin looks, 0..1 (SHADER_TEXTURED's sweat).
+func set_sweat(v: float) -> void:
+	if material and not is_equal_approx(_sweat, v):
+		_sweat = v
+		material.set_shader_parameter("sweat", v)
 
 
 func set_head_visible(v: bool) -> void:

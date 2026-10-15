@@ -54,6 +54,8 @@ var held_by := 0                   # raider: how many hold him now (Match), for 
 var walk_target := Vector3.ZERO
 var evade_to := Vector3.INF       # where an evasion pulls up, a line in its way (Match._evade); INF: none
 var energy := 1.0
+var _sweat := 0.0        # how wet his skin is (from his energy, see _process)
+var _sweat_t := 0.0
 var raids_made := 0
 var is_user := false
 var is_career := false
@@ -285,6 +287,13 @@ func _process(delta: float) -> void:
 	st_t += delta
 	cooldown = maxf(0.0, cooldown - delta)
 	reach_t = maxf(0.0, reach_t - delta)
+	# Sweat builds as he tires and dries slowly once he has his breath back (his skin's shine, RiggedBody.set_sweat).
+	var wet := clampf((1.0 - energy) * 1.8, 0.0, 1.0)
+	_sweat = wet if wet > _sweat else move_toward(_sweat, wet, delta * 0.01)
+	_sweat_t -= delta
+	if _sweat_t <= 0.0 and model and model.rig:
+		_sweat_t = 0.5
+		model.rig.set_sweat(snappedf(_sweat, 0.02))
 	_track_motion(delta)
 	rotation.y = _vis_yaw
 	_pose(delta)

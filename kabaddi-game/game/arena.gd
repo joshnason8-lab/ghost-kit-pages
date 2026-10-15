@@ -2,6 +2,11 @@ class_name Arena
 extends Node3D
 ## Builds the court and its surroundings for one ground.
 ##
+## Each ground is its sky and light (_env), its fixed parts (_shell: the court, the floor, stands, roofs, trees)
+## and what changes from match to match or moves (_dress: the teams' boards, the crowd, rain, the sea). The fixed
+## parts come baked with their lighting from assets/grounds/<id>/ (tools/bake_lighting) where they are there, and are
+## built here otherwise.
+##
 ## Court geometry follows Pro-style men's rules: a 10 m x 13 m playing field split by the
 ## midline, baulk lines 3.75 m from the midline, bonus lines 1 m further, 1 m lobbies on both
 ## sides, and a sitting block behind each end line. Origin is the centre of the midline;
@@ -14,7 +19,12 @@ const BAULK := 3.75
 const BONUS := 4.75
 const LINE_W := 0.05
 
+const GROUNDS := "res://assets/grounds/"
+static var use_baked := true   # off: the fixed parts built here, unlit by any bake (as tools/bake_lighting needs them)
+
 var arena_id := "dome"
+var shell: Node3D              # the ground's fixed parts
+var baked := false             # ... came with their baked lighting
 var crowd_mats: Array[ShaderMaterial] = []
 var sun: DirectionalLight3D
 var env: Environment
@@ -55,7 +65,9 @@ uniform float frames = 8.0;
 uniform bool standing = false;
 uniform float excitement = 0.0;
 uniform float top_lum[16];   // each person's shirt brightness, linear; 0 keeps their own clothes
+uniform float falloff = 0.0;  // under lights (an arena, floodlights at night): the back rows darker, 0 by day
 varying flat vec2 cell;
+varying flat float dim;
 varying flat float mirror;
 varying flat vec3 tint;
 varying flat float lum;
@@ -80,6 +92,7 @@ void vertex() {
 		frame = base + 1.0 + beat;   // clapping
 	}
 	cell = vec2(person, frame);
+	dim = 1.0 - falloff * clamp((length(MODEL_MATRIX[3].xz) - 10.0) / 12.0, 0.0, 1.0);
 	mirror = step(0.5, fract(ph * 7.77));
 	tint = INSTANCE_CUSTOM.rgb;
 	lum = top_lum[int(person)];
@@ -94,7 +107,7 @@ void fragment() {
 		float l = dot(col, vec3(0.2126, 0.7152, 0.0722)) / lum;
 		col = mix(col, tint * clamp(l, 0.2, 1.5), m);
 	}
-	ALBEDO = col;
+	ALBEDO = col * dim;
 	ALPHA = c.a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 	ROUGHNESS = 0.95;
@@ -124,18 +137,119 @@ void fragment() {
 
 
 func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text: String) -> void:
+	arena_id = p_arena_id if p_arena_id in ["stadium", "village", "monsoon", "beach"] else "dome"
+	_env()
+	var path := GROUNDS + "%s/%s.tscn" % [arena_id, arena_id]
+	if use_baked and ResourceLoader.exists(path):
+		shell = (load(path) as PackedScene).instantiate()
+		add_child(shell)
+		# What it was baked with: the sky and sun are the arena's own (_env), and the lights that were only there for
+		# the bake would light the players as well, at a cost on phones.
+		for n in shell.get_children():
+			if n is WorldEnvironment or n is Light3D or n.has_meta("bake_only"):
+				shell.remove_child(n)
+				n.free()
+		baked = true
+	else:
+		shell = Node3D.new()
+		shell.name = "Shell"
+		add_child(shell)
+		_shell()
+	_dress(home_color, away_color, banner_text)
+
+
+## The ground as tools/bake_lighting bakes it: the sky, the sun and the fixed parts, with the lights that are only
+## there to be baked (floodlights, roof lamps: their light on the ground is baked; the players are lit by the sun).
+func build_for_bake(p_arena_id: String) -> Array:
 	arena_id = p_arena_id
+	_env()
+	shell = Node3D.new()
+	shell.name = "Shell"
+	add_child(shell)
+	_shell()
+	return _bake_lights()
+
+
+func _env() -> void:
 	match arena_id:
-		"village":
-			_build_village(home_color, away_color)
 		"stadium":
-			_build_stadium(home_color, away_color, banner_text)
+			_environment(Color("050b1c"), Color("1c2a4a"), Color("0a0f18"), 1.6, 0.35, 0.006, Color("101830"))
+			sun.rotation = Vector3(deg_to_rad(-55), deg_to_rad(-35), 0)
+			sun.light_color = Color("f2f6ff")
+			_grade(Color(0.0, 0.012, 0.04), Color(1.0, 0.98, 0.94), 0.3)   # night: blue shadows, warm floodlit highlights
+		"village":
+			barefoot = true
+			_environment(Color("4f7cc4"), Color("f2b36b"), Color("6b4a2e"), 1.9, 0.7, 0.008, Color("e8b07a"))
+			sun.rotation = Vector3(deg_to_rad(-14), deg_to_rad(-60), 0)
+			sun.light_color = Color("ffc98a")
+			var sky_mat: ProceduralSkyMaterial = env.sky.sky_material
+			sky_mat.sun_curve = 0.08
+			_grade(Color(0.03, 0.015, 0.0), Color(1.0, 0.96, 0.88), 0.2)   # late afternoon: warm through
 		"monsoon":
-			_build_monsoon(home_color, away_color)
+			_environment(Color("4a5562"), Color("8c96a0"), Color("3b4048"), 0.6, 0.9, 0.025, Color("7f8a95"))
+			sun.rotation = Vector3(deg_to_rad(-60), deg_to_rad(20), 0)
+			sun.light_color = Color("d6e0ea")
+			_grade(Color(0.03, 0.035, 0.045), Color(0.95, 0.97, 1.0), 0.08)   # overcast: soft, cool, a little hazy
 		"beach":
-			_build_beach(home_color, away_color)
+			barefoot = true
+			_environment(Color("1f6fd0"), Color("8cc4e6"), Color("b59866"), 1.05, 0.32, 0.002, Color("cfe8f5"))
+			env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+			env.adjustment_saturation = 1.2
+			sun.rotation = Vector3(deg_to_rad(-48), deg_to_rad(140), 0)
+			sun.light_color = Color("fff1d6")
+			_grade(Color(0.0, 0.02, 0.03), Color(1.0, 0.98, 0.93), 0.25)   # sunny: teal shadows, warm sand
 		_:
-			_build_dome(home_color, away_color, banner_text)
+			_environment(Color("0b0f1a"), Color("2a3550"), Color("0b0f1a"), 1.25, 0.55, 0.012, Color("1a2236"), false, Color("070a12"))
+			sun.rotation = Vector3(deg_to_rad(-72), deg_to_rad(25), 0)
+			sun.light_color = Color("fff3e0")
+			_grade(Color(0.0, 0.006, 0.025), Color(1.0, 0.99, 0.97), 0.25)   # indoors: cool shadows under warm lamps
+
+
+## A grade for the ground, after tonemapping: each channel from lift (its black) to gain (its white), along a gentle
+## S curve (contrast, 0 a straight line). A one-dimensional lookup the Compatibility renderer applies too.
+func _grade(lift: Color, gain: Color, contrast: float) -> void:
+	var offsets := PackedFloat32Array()
+	var colors := PackedColorArray()
+	for i in 9:
+		var t := i / 8.0
+		var s := lerpf(t, t * t * (3.0 - 2.0 * t), contrast)
+		offsets.append(t)
+		colors.append(Color(lerpf(lift.r, gain.r, s), lerpf(lift.g, gain.g, s), lerpf(lift.b, gain.b, s)))
+	var g := Gradient.new()
+	g.offsets = offsets
+	g.colors = colors
+	var lut := GradientTexture1D.new()
+	lut.gradient = g
+	lut.width = 256
+	env.adjustment_color_correction = lut
+
+
+func _shell() -> void:
+	match arena_id:
+		"stadium":
+			_shell_stadium()
+		"village":
+			_shell_village()
+		"monsoon":
+			_shell_monsoon()
+		"beach":
+			_shell_beach()
+		_:
+			_shell_dome()
+
+
+func _dress(hc: Color, ac: Color, banner: String) -> void:
+	match arena_id:
+		"stadium":
+			_dress_stadium(hc, ac, banner)
+		"village":
+			_dress_village(hc, ac)
+		"monsoon":
+			_dress_monsoon(hc, ac)
+		"beach":
+			_dress_beach(hc, ac)
+		_:
+			_dress_dome(hc, ac, banner)
 
 
 ## 0..1 crowd energy; decays on its own.
@@ -179,56 +293,75 @@ func _noise_tex(freq: float, seamless := true, as_normal := false, bump := 1.0, 
 	return t
 
 
-func _surface_mat(kind: String) -> StandardMaterial3D:
+const TEX := "res://assets/grounds/textures/"
+# Metres of ground each texture covers (tools/ground_art/make_textures.py makes them so).
+const PERIOD := {"mat": 2.0, "concrete": 4.0, "stand": 1.8, "grass": 6.0, "mud": 3.0, "sand": 3.0}
+static var _tex := {}
+
+
+static func _texture(name: String) -> Texture2D:
+	if not _tex.has(name):
+		var path := TEX + name + ".png"
+		_tex[name] = load(path) if ResourceLoader.exists(path) else null
+	return _tex[name]
+
+
+## A surface from tools/ground_art: its detail texture times col, its normal map. Its UV scale is set where it is laid
+## (_lay: by the size of what it covers), or it is laid in world space (world: stands, a floor slab).
+func _textured(kind: String, col: Color, rough: float, normal_scale: float, world := false) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
+	m.albedo_color = col
+	m.roughness = rough
+	m.albedo_texture = _texture(kind + "_albedo")
+	var nt := _texture(kind + "_normal")
+	if nt:
+		m.normal_enabled = true
+		m.normal_texture = nt
+		m.normal_scale = normal_scale
+	m.set_meta("period", float(PERIOD.get(kind, 2.0)))
+	if world:
+		m.uv1_triplanar = true
+		m.uv1_world_triplanar = true
+		m.uv1_triplanar_sharpness = 4.0
+		m.uv1_scale = Vector3.ONE / float(PERIOD.get(kind, 2.0))
+	return m
+
+
+## The material laid on a plane of this size: its texture repeats at the surface's own period.
+func _lay(m: Material, size: Vector2) -> Material:
+	if not (m is StandardMaterial3D) or not m.has_meta("period") or (m as StandardMaterial3D).uv1_triplanar:
+		return m
+	var d: StandardMaterial3D = m.duplicate()
+	var per := float(m.get_meta("period"))
+	d.uv1_scale = Vector3(size.x / per, size.y / per, 1.0)
+	return d
+
+
+func _surface_mat(kind: String) -> StandardMaterial3D:
+	var m: StandardMaterial3D
 	match kind:
 		"mat":
-			m.albedo_color = Color("1d4f9c")
-			m.roughness = 0.55
-			m.normal_enabled = true
-			m.normal_texture = _noise_tex(0.08, true, true, 1.5)
-			m.normal_scale = 0.25
-			m.uv1_scale = Vector3(6, 6, 6)
+			m = _textured("mat", Color("1d4f9c"), 0.55, 0.5)
 		"mat_wet":
-			m.albedo_color = Color("1a4687")
-			m.roughness = 0.18
+			m = _textured("mat", Color("1a4687"), 0.18, 0.6)
 			m.metallic_specular = 0.8
-			m.normal_enabled = true
-			m.normal_texture = _noise_tex(0.05, true, true, 2.0)
-			m.normal_scale = 0.35
-			m.uv1_scale = Vector3(4, 4, 4)
 		"mud":
-			var g := Gradient.new()
-			g.set_color(0, Color("6e4a2e"))
-			g.set_color(1, Color("9b7048"))
-			m.albedo_texture = _noise_tex(0.02, true, false, 1.0, g)
-			m.roughness = 0.95
-			m.normal_enabled = true
-			m.normal_texture = _noise_tex(0.06, true, true, 6.0)
-			m.normal_scale = 0.8
-			m.uv1_scale = Vector3(3, 3, 3)
+			m = _textured("mud", Color.WHITE, 0.95, 1.0)
 		"sand":
-			var g2 := Gradient.new()
-			g2.set_color(0, Color("a8834f"))
-			g2.set_color(1, Color("c9a874"))
-			m.albedo_texture = _noise_tex(0.03, true, false, 1.0, g2)
-			m.roughness = 0.97
-			m.normal_enabled = true
-			m.normal_texture = _noise_tex(0.12, true, true, 4.0)
-			m.normal_scale = 0.6
-			m.uv1_scale = Vector3(4, 4, 4)
+			m = _textured("sand", Color.WHITE, 0.97, 0.8)
 		"grass":
-			var g3 := Gradient.new()
-			g3.set_color(0, Color("4b6b2a"))
-			g3.set_color(1, Color("7a8f3a"))
-			m.albedo_texture = _noise_tex(0.015, true, false, 1.0, g3)
-			m.roughness = 0.95
-			m.uv1_scale = Vector3(12, 12, 12)
+			m = _textured("grass", Color.WHITE, 0.95, 0.7)
 		"floor":
-			m.albedo_color = Color("141a24")
-			m.roughness = 0.35
+			m = _textured("concrete", Color("232b38"), 0.4, 0.4, true)
 			m.metallic_specular = 0.6
+		_:
+			m = StandardMaterial3D.new()
 	return m
+
+
+## The stands' concrete in col, laid in world space.
+func _stand_mat(col: Color) -> StandardMaterial3D:
+	return _textured("stand", col, 0.85, 0.6, true)
 
 
 # ---------------------------------------------------------------- court
@@ -252,7 +385,7 @@ func _plane(parent: Node3D, size: Vector2, pos: Vector3, mat: Material) -> MeshI
 	p.size = size
 	mi.mesh = p
 	mi.position = pos
-	mi.material_override = mat
+	mi.material_override = _lay(mat, size)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(mi)
 	return mi
@@ -261,18 +394,19 @@ func _plane(parent: Node3D, size: Vector2, pos: Vector3, mat: Material) -> MeshI
 func _court(surface: String, lobby_tint: Color, line_color: Color, surround: Color) -> void:
 	var court := Node3D.new()
 	court.name = "Court"
-	add_child(court)
+	shell.add_child(court)
 	var field_mat := _surface_mat(surface)
 	if surface == "mat" or surface == "mat_wet":
 		# Run-off mat, lobbies, then the field.
-		_plane(court, Vector2(16.0, 19.0), Vector3(0, 0.0, 0), _mat(surround, 0.6))
+		var run_off := _textured("mat", surround, 0.6 if surface == "mat" else 0.22, 0.5)
+		_plane(court, Vector2(16.0, 19.0), Vector3(0, 0.0, 0), run_off)
 		var lobby_mat: StandardMaterial3D = field_mat.duplicate()
 		lobby_mat.albedo_color = lobby_tint
 		_plane(court, Vector2(LOBBY, HALF_L * 2), Vector3(-HALF_W - LOBBY * 0.5, 0.003, 0), lobby_mat)
 		_plane(court, Vector2(LOBBY, HALF_L * 2), Vector3(HALF_W + LOBBY * 0.5, 0.003, 0), lobby_mat)
 		_plane(court, Vector2(HALF_W * 2, HALF_L * 2), Vector3(0, 0.004, 0), field_mat)
 		# Sitting blocks behind each end line.
-		var sb := _mat(lobby_tint.darkened(0.2), 0.6)
+		var sb := _textured("mat", lobby_tint.darkened(0.2), 0.6, 0.5)
 		_plane(court, Vector2(8.0, 1.0), Vector3(0, 0.004, HALF_L + 2.5), sb)
 		_plane(court, Vector2(8.0, 1.0), Vector3(0, 0.004, -HALF_L - 2.5), sb)
 	else:
@@ -303,7 +437,8 @@ func _court(surface: String, lobby_tint: Color, line_color: Color, surround: Col
 
 
 func _line(parent: Node3D, pos: Vector3, size: Vector2, mat: Material) -> void:
-	_plane(parent, size, pos, mat)
+	# 5 cm wide: baked at 2.5 cm a texel (tools/bake_lighting) to be more than a texel across.
+	_plane(parent, size, pos, mat).set_meta("lm_texel", 0.025)
 
 
 func _mat_label(text: String, pos: Vector3, rot_y: float, size := 140, col := Color(1, 1, 1, 0.55)) -> void:
@@ -512,6 +647,7 @@ func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumbe
 	sm.set_shader_parameter("frames", float((info.frames as Array).size()))
 	sm.set_shader_parameter("standing", standing)
 	sm.set_shader_parameter("top_lum", lums)
+	sm.set_shader_parameter("falloff", {"dome": 0.5, "stadium": 0.4}.get(arena_id, 0.0))
 	mmi.material_override = sm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	crowd_mats.append(sm)
@@ -530,19 +666,28 @@ func _card_mesh(w: float, h: float) -> ArrayMesh:
 	return mesh
 
 
-## Tiered stands on all four sides. Returns spectator seat positions.
-func _stands(inner_x: float, inner_z: float, tiers: int, mat: Material, gap_for_tunnel := true) -> Array:
-	var seats := []
+## Tiered stands on all four sides (into the shell).
+func _stand_boxes(inner_x: float, inner_z: float, tiers: int, mat: Material) -> void:
 	var tier_d := 0.9
 	var tier_h := 0.45
 	for t in tiers:
 		var h := tier_h * (t + 1)
 		var off := t * tier_d
 		var wx := (inner_x + off) * 2.0 + tier_d * 2
-		# Long sides (along z).
 		for sgn in [-1.0, 1.0]:
-			_box(self, Vector3(tier_d, h, (inner_z + off) * 2.0), Vector3(sgn * (inner_x + off + tier_d * 0.5), h * 0.5, 0), mat, false)
-			_box(self, Vector3(wx, h, tier_d), Vector3(0, h * 0.5, sgn * (inner_z + off + tier_d * 0.5)), mat, false)
+			_box(shell, Vector3(tier_d, h, (inner_z + off) * 2.0), Vector3(sgn * (inner_x + off + tier_d * 0.5), h * 0.5, 0), mat, false)
+			_box(shell, Vector3(wx, h, tier_d), Vector3(0, h * 0.5, sgn * (inner_z + off + tier_d * 0.5)), mat, false)
+
+
+## The spectators' seats on those stands.
+func _stand_seats(inner_x: float, inner_z: float, tiers: int, gap_for_tunnel := true) -> Array:
+	var seats := []
+	var tier_d := 0.9
+	var tier_h := 0.45
+	for t in tiers:
+		var h := tier_h * (t + 1)
+		var off := t * tier_d
+		for sgn in [-1.0, 1.0]:
 			var z := -inner_z - off + 0.4
 			while z < inner_z + off - 0.4:
 				seats.append(Vector3(sgn * (inner_x + off + tier_d * 0.5), h, z))
@@ -555,15 +700,20 @@ func _stands(inner_x: float, inner_z: float, tiers: int, mat: Material, gap_for_
 	return seats
 
 
-func _ad_boards(inner_x: float, inner_z: float, colors: Array, text: String) -> void:
-	# LED boards around the run-off, alternating team colours, with league text.
+## The LED boards round the run-off: [centre, size, turn] for each side.
+func _board_segments(inner_x: float, inner_z: float) -> Array:
 	var h := 0.9
-	var segs := [
+	return [
 		[Vector3(0, h * 0.5, -inner_z), Vector3(inner_x * 2, h, 0.12), 0.0],
 		[Vector3(0, h * 0.5, inner_z), Vector3(inner_x * 2, h, 0.12), PI],
 		[Vector3(-inner_x, h * 0.5, 0), Vector3(0.12, h, inner_z * 2), PI / 2],
 		[Vector3(inner_x, h * 0.5, 0), Vector3(0.12, h, inner_z * 2), -PI / 2],
 	]
+
+
+func _ad_boards(inner_x: float, inner_z: float, colors: Array, text: String) -> void:
+	# LED boards around the run-off, alternating team colours, with league text.
+	var segs := _board_segments(inner_x, inner_z)
 	var i := 0
 	for s in segs:
 		var col: Color = colors[i % colors.size()]
@@ -586,7 +736,7 @@ func _tree(pos: Vector3, scale_f: float, trunk_col: Color, leaf_col: Color) -> v
 	var t := Node3D.new()
 	t.position = pos
 	t.scale = Vector3.ONE * scale_f
-	add_child(t)
+	shell.add_child(t)
 	var trunk := MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = 0.18
@@ -616,7 +766,7 @@ func _palm(pos: Vector3, scale_f: float, lean: float) -> void:
 	t.position = pos
 	t.scale = Vector3.ONE * scale_f
 	t.rotation = Vector3(lean, fposmod(pos.x * 12.9898 + pos.z * 78.233, TAU), 0)   # its own turn, the same every time
-	add_child(t)
+	shell.add_child(t)
 	var trunk_mat := _mat(Color("7a6046"), 0.9)
 	for k in 6:
 		var seg := MeshInstance3D.new()
@@ -650,7 +800,7 @@ func _hut(pos: Vector3, rot: float, wall: Color, roof: Color) -> void:
 	var h := Node3D.new()
 	h.position = pos
 	h.rotation.y = rot
-	add_child(h)
+	shell.add_child(h)
 	_box(h, Vector3(4.0, 2.4, 3.0), Vector3(0, 1.2, 0), _mat(wall, 0.95))
 	var roof_l := _box(h, Vector3(4.6, 0.15, 2.0), Vector3(0, 2.85, -0.75), _mat(roof, 0.9))
 	roof_l.rotation.x = 0.5
@@ -660,30 +810,74 @@ func _hut(pos: Vector3, rot: float, wall: Color, roof: Color) -> void:
 
 
 func _floodlight(pos: Vector3, look_at_pos: Vector3) -> void:
-	_box(self, Vector3(0.5, pos.y, 0.5), Vector3(pos.x, pos.y * 0.5, pos.z), _mat(Color("39424e"), 0.6))
-	var panel := _box(self, Vector3(3.6, 2.2, 0.3), pos, _mat(Color("fff6dc"), 0.2, 6.0), false)
+	_box(shell, Vector3(0.5, pos.y, 0.5), Vector3(pos.x, pos.y * 0.5, pos.z), _mat(Color("39424e"), 0.6))
+	var panel := _box(shell, Vector3(3.6, 2.2, 0.3), pos, _mat(Color("fff6dc"), 0.2, 6.0), false)
 	panel.basis = Basis.looking_at((look_at_pos - pos).normalized(), Vector3.UP)
+
+
+## A spot light that is only there to be baked (see _bake_lights), at pos, pointed at the point aim.
+func _bake_spot(pos: Vector3, aim: Vector3, angle: float, reach: float, energy: float, col: Color, size: float) -> SpotLight3D:
+	var l := SpotLight3D.new()
+	l.transform = Transform3D(Basis.looking_at((aim - pos).normalized(), Vector3.UP if absf((aim - pos).normalized().y) < 0.99 else Vector3.FORWARD), pos)
+	l.spot_angle = angle
+	l.spot_range = reach
+	l.light_energy = energy
+	l.light_color = col
+	l.light_size = size   # the bake's soft shadows
+	l.shadow_enabled = true
+	return l
+
+
+## The lights that are only there for tools/bake_lighting: the roof's lamps, the floodlights. Their light on the
+## fixed parts is baked; they are taken out when the baked ground is loaded (build): the players are lit by the sun.
+func _bake_lights() -> Array:
+	var lights := []
+	match arena_id:
+		"dome":
+			for x in [-6.0, -2.0, 2.0, 6.0]:
+				for z in [-7.0, 0.0, 7.0]:
+					lights.append(_bake_spot(Vector3(x, 13.8, z), Vector3(x * 0.8, 0, z * 0.8), 60.0, 24.0, 1.5, Color("fff3e0"), 0.6))
+		"stadium":
+			for p in STADIUM_FLOODS:
+				lights.append(_bake_spot(p - (p * Vector3(1, 0, 1)).normalized() * 0.5, Vector3(0, 0, 0), 32.0, 75.0, 9.0, Color("f2f6ff"), 2.5))
+	for l in lights:
+		l.light_bake_mode = Light3D.BAKE_STATIC
+		shell.add_child(l)
+	# The teams' boards are put up for each match (_dress); for the bake, plain ones in their place, so the floor
+	# has their shadow and a little of their glow. They go when the baked ground is loaded.
+	var boards := {"dome": [8.6, 10.2], "stadium": [9.0, 11.0]}
+	if boards.has(arena_id):
+		var glow := _mat(Color("2a2f3a"), 0.4)
+		glow.emission_enabled = true
+		glow.emission = Color("fff1dc")
+		glow.emission_energy_multiplier = 0.45
+		for seg in _board_segments(boards[arena_id][0], boards[arena_id][1]):
+			_box(shell, seg[1], seg[0], glow).set_meta("bake_only", true)
+	return lights
 
 
 # ---------------------------------------------------------------- grounds
 
-func _build_dome(hc: Color, ac: Color, banner: String) -> void:
-	_environment(Color("0b0f1a"), Color("2a3550"), Color("0b0f1a"), 1.25, 0.55, 0.012, Color("1a2236"), false, Color("070a12"))
-	sun.rotation = Vector3(deg_to_rad(-72), deg_to_rad(25), 0)
-	sun.light_color = Color("fff3e0")
+const STADIUM_FLOODS := [Vector3(-20, 22, -22), Vector3(20, 22, -22), Vector3(-20, 22, 22), Vector3(20, 22, 22)]
+
+
+func _shell_dome() -> void:
 	_court("mat", Color("ff8a1f"), Color("f3efe6"), Color("0f2c57"))
-	_mat_label(banner, Vector3(0, 0.012, -HALF_L - 1.2), 0.0, 120)
-	_mat_label(banner, Vector3(0, 0.012, HALF_L + 1.2), PI, 120)
-	_box(self, Vector3(60, 0.1, 60), Vector3(0, -0.06, 0), _surface_mat("floor"), false)
-	_ad_boards(8.6, 10.2, [hc, ac, Color("ff9a1f")], banner)
-	var seats := _stands(9.6, 11.2, 9, _mat(Color("1b2433"), 0.8))
-	_crowd(seats, [hc, ac, hc, ac, Color("f3efe6"), Color("ff9a1f"), Color("2b2b2b")], Color("a06a48"), Vector3.ZERO)
+	_box(shell, Vector3(60, 0.1, 60), Vector3(0, -0.06, 0), _surface_mat("floor"), false)
+	_stand_boxes(9.6, 11.2, 9, _stand_mat(Color("27324a")))
 	# Roof lighting rig.
 	for x in [-6.0, -2.0, 2.0, 6.0]:
 		for z in [-7.0, 0.0, 7.0]:
-			_box(self, Vector3(1.6, 0.25, 0.9), Vector3(x, 14.0, z), _mat(Color("fff7e6"), 0.2, 5.0), false)
+			_box(shell, Vector3(1.6, 0.25, 0.9), Vector3(x, 14.0, z), _mat(Color("fff7e6"), 0.2, 5.0), false)
 	for x in [-9.0, 9.0]:
-		_box(self, Vector3(0.3, 0.4, 30.0), Vector3(x, 14.4, 0), _mat(Color("2c3440"), 0.5), false)
+		_box(shell, Vector3(0.3, 0.4, 30.0), Vector3(x, 14.4, 0), _mat(Color("2c3440"), 0.5), false)
+
+
+func _dress_dome(hc: Color, ac: Color, banner: String) -> void:
+	_mat_label(banner, Vector3(0, 0.012, -HALF_L - 1.2), 0.0, 120)
+	_mat_label(banner, Vector3(0, 0.012, HALF_L + 1.2), PI, 120)
+	_ad_boards(8.6, 10.2, [hc, ac, Color("ff9a1f")], banner)
+	_crowd(_stand_seats(9.6, 11.2, 9), [hc, ac, hc, ac, Color("f3efe6"), Color("ff9a1f"), Color("2b2b2b")], Color("a06a48"), Vector3.ZERO)
 	var fill := OmniLight3D.new()
 	fill.position = Vector3(0, 9, 0)
 	fill.omni_range = 22.0
@@ -692,40 +886,25 @@ func _build_dome(hc: Color, ac: Color, banner: String) -> void:
 	add_child(fill)
 
 
-func _build_stadium(hc: Color, ac: Color, banner: String) -> void:
-	_environment(Color("050b1c"), Color("1c2a4a"), Color("0a0f18"), 1.6, 0.35, 0.006, Color("101830"))
-	sun.rotation = Vector3(deg_to_rad(-55), deg_to_rad(-35), 0)
-	sun.light_color = Color("f2f6ff")
+func _shell_stadium() -> void:
 	_court("mat", Color("2f6fd6").darkened(0.35), Color("f3efe6"), Color("163a72"))
-	_mat_label(banner, Vector3(0, 0.012, -HALF_L - 1.2), 0.0, 120)
-	_mat_label(banner, Vector3(0, 0.012, HALF_L + 1.2), PI, 120)
-	_plane(self, Vector2(120, 120), Vector3(0, -0.02, 0), _surface_mat("grass"))
-	_ad_boards(9.0, 11.0, [hc, ac], banner)
-	var seats := _stands(13.0, 15.0, 12, _mat(Color("2a3140"), 0.85), false)
-	_crowd(seats, [hc, ac, hc, ac, Color("f3efe6"), Color("1d4ed8"), Color("ff9933")], Color("a06a48"), Vector3.ZERO)
-	for p in [Vector3(-20, 22, -22), Vector3(20, 22, -22), Vector3(-20, 22, 22), Vector3(20, 22, 22)]:
+	_plane(shell, Vector2(120, 120), Vector3(0, -0.02, 0), _surface_mat("grass"))
+	_stand_boxes(13.0, 15.0, 12, _stand_mat(Color("343d50")))
+	for p in STADIUM_FLOODS:
 		_floodlight(p, Vector3.ZERO)
 
 
-func _build_village(hc: Color, ac: Color) -> void:
-	barefoot = true
-	_environment(Color("4f7cc4"), Color("f2b36b"), Color("6b4a2e"), 1.9, 0.7, 0.008, Color("e8b07a"))
-	sun.rotation = Vector3(deg_to_rad(-14), deg_to_rad(-60), 0)
-	sun.light_color = Color("ffc98a")
-	var sky_mat: ProceduralSkyMaterial = env.sky.sky_material
-	sky_mat.sun_curve = 0.08
+func _dress_stadium(hc: Color, ac: Color, banner: String) -> void:
+	_mat_label(banner, Vector3(0, 0.012, -HALF_L - 1.2), 0.0, 120)
+	_mat_label(banner, Vector3(0, 0.012, HALF_L + 1.2), PI, 120)
+	_ad_boards(9.0, 11.0, [hc, ac], banner)
+	_crowd(_stand_seats(13.0, 15.0, 12, false), [hc, ac, hc, ac, Color("f3efe6"), Color("1d4ed8"), Color("ff9933")], Color("a06a48"), Vector3.ZERO)
+
+
+func _shell_village() -> void:
 	_court("mud", Color.WHITE, Color("f7f2e6"), Color.WHITE)
-	_plane(self, Vector2(140, 140), Vector3(0, -0.01, 0), _surface_mat("grass"))
-	var dirt := _surface_mat("mud")
-	dirt.uv1_scale = Vector3(10, 10, 10)
-	_plane(self, Vector2(26, 30), Vector3(0, 0.0, 0), dirt)
-	# Villagers standing around the ground.
-	var ring := []
-	for i in 260:
-		var a := TAU * i / 260.0
-		var r := 11.5 + (i % 3) * 0.7
-		ring.append(Vector3(cos(a) * r * 0.85, 0.0, sin(a) * r))
-	_crowd(ring, [Color("f3efe6"), Color("e0c35b"), Color("c44536"), Color("3a6ea5"), Color("6a994e"), Color("f28482"), hc, ac], Color("9a6345"), Vector3.ZERO)
+	_plane(shell, Vector2(140, 140), Vector3(0, -0.01, 0), _surface_mat("grass"))
+	_plane(shell, Vector2(26, 30), Vector3(0, 0.0, 0), _surface_mat("mud"))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	for i in 18:
@@ -739,31 +918,41 @@ func _build_village(hc: Color, ac: Color) -> void:
 	_tree(Vector3(4, 0, -22), 2.6, Color("4c3a2a"), Color("3f5f24"))
 
 
-func _build_monsoon(hc: Color, ac: Color) -> void:
-	_environment(Color("4a5562"), Color("8c96a0"), Color("3b4048"), 0.6, 0.9, 0.025, Color("7f8a95"))
-	sun.rotation = Vector3(deg_to_rad(-60), deg_to_rad(20), 0)
-	sun.light_color = Color("d6e0ea")
+func _dress_village(hc: Color, ac: Color) -> void:
+	# Villagers standing around the ground.
+	var ring := []
+	for i in 260:
+		var a := TAU * i / 260.0
+		var r := 11.5 + (i % 3) * 0.7
+		ring.append(Vector3(cos(a) * r * 0.85, 0.0, sin(a) * r))
+	_crowd(ring, [Color("f3efe6"), Color("e0c35b"), Color("c44536"), Color("3a6ea5"), Color("6a994e"), Color("f28482"), hc, ac], Color("9a6345"), Vector3.ZERO)
+
+
+func _shell_monsoon() -> void:
 	_court("mat_wet", Color("e07a1f").darkened(0.2), Color("f3efe6"), Color("173b6b"))
-	_plane(self, Vector2(140, 140), Vector3(0, -0.01, 0), _surface_mat("grass"))
+	_plane(shell, Vector2(140, 140), Vector3(0, -0.01, 0), _surface_mat("grass"))
 	# Tin-roof pavilion on one side.
-	var roof := _box(self, Vector3(24, 0.12, 6), Vector3(-12.5, 4.2, 0), _mat(Color("8f9aa3"), 0.35))
+	var roof := _box(shell, Vector3(24, 0.12, 6), Vector3(-12.5, 4.2, 0), _mat(Color("8f9aa3"), 0.35))
 	roof.rotation.y = PI / 2
 	roof.rotation.z = 0.12
 	for z in [-11.0, -5.5, 0.0, 5.5, 11.0]:
-		_box(self, Vector3(0.18, 4.2, 0.18), Vector3(-10.0, 2.1, z), _mat(Color("5d6670"), 0.5))
-		_box(self, Vector3(0.18, 3.6, 0.18), Vector3(-15.0, 1.8, z), _mat(Color("5d6670"), 0.5))
-	var seats := _stands(10.5, 10.5, 3, _mat(Color("6c7178"), 0.9))
-	var west := []
-	for s in seats:
-		if s.x < 0:
-			west.append(s)
-	_crowd(west, [Color("f3efe6"), Color("2b2b2b"), hc, ac, Color("1d4ed8"), Color("e0c35b")], Color("8a5a3f"), Vector3.ZERO)
+		_box(shell, Vector3(0.18, 4.2, 0.18), Vector3(-10.0, 2.1, z), _mat(Color("5d6670"), 0.5))
+		_box(shell, Vector3(0.18, 3.6, 0.18), Vector3(-15.0, 1.8, z), _mat(Color("5d6670"), 0.5))
+	_stand_boxes(10.5, 10.5, 3, _stand_mat(Color("7a8088")))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 9
 	for i in 14:
 		var a := rng.randf_range(-1.2, 1.2)
 		var r := rng.randf_range(16.0, 28.0)
 		_palm(Vector3(cos(a) * r, 0, sin(a) * r), rng.randf_range(0.9, 1.3), rng.randf_range(-0.12, 0.12))
+
+
+func _dress_monsoon(hc: Color, ac: Color) -> void:
+	var west := []
+	for s in _stand_seats(10.5, 10.5, 3):
+		if s.x < 0:
+			west.append(s)
+	_crowd(west, [Color("f3efe6"), Color("2b2b2b"), hc, ac, Color("1d4ed8"), Color("e0c35b")], Color("8a5a3f"), Vector3.ZERO)
 	_rain()
 
 
@@ -794,17 +983,31 @@ func _rain() -> void:
 	add_child(p)
 
 
-func _build_beach(hc: Color, ac: Color) -> void:
-	barefoot = true
-	_environment(Color("1f6fd0"), Color("8cc4e6"), Color("b59866"), 1.05, 0.32, 0.002, Color("cfe8f5"))
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.adjustment_saturation = 1.2
-	sun.rotation = Vector3(deg_to_rad(-48), deg_to_rad(140), 0)
-	sun.light_color = Color("fff1d6")
+func _shell_beach() -> void:
 	_court("sand", Color.WHITE, Color("1d6fd1"), Color.WHITE)
-	var sand := _surface_mat("sand")
-	sand.uv1_scale = Vector3(20, 20, 20)
-	_plane(self, Vector2(160, 70), Vector3(0, -0.01, 5), sand)
+	_plane(shell, Vector2(160, 70), Vector3(0, -0.01, 5), _surface_mat("sand"))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 21
+	for x in [-16.0, -11.0, 12.0, 17.0]:
+		_palm(Vector3(x, 0, rng.randf_range(-6.0, 12.0)), rng.randf_range(1.0, 1.3), rng.randf_range(-0.2, 0.2))
+	# Beach umbrellas.
+	var tops := [Color("e4572e"), Color("2e86de"), Color("f6c445")]
+	var i := 0
+	for p in [Vector3(-12, 0, 6), Vector3(13, 0, -3), Vector3(10, 0, 9)]:
+		_box(shell, Vector3(0.08, 2.4, 0.08), p + Vector3(0, 1.2, 0), _mat(Color("dddddd"), 0.5))
+		var top := MeshInstance3D.new()
+		var cone := CylinderMesh.new()
+		cone.top_radius = 0.05
+		cone.bottom_radius = 1.4
+		cone.height = 0.6
+		top.mesh = cone
+		top.position = p + Vector3(0, 2.5, 0)
+		top.material_override = _mat(tops[i], 0.7)
+		shell.add_child(top)
+		i += 1
+
+
+func _dress_beach(hc: Color, ac: Color) -> void:
 	# The sea, beyond the far end.
 	var sea := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
@@ -829,17 +1032,3 @@ func _build_beach(hc: Color, ac: Color) -> void:
 			continue
 		ring.append(pos)
 	_crowd(ring, [Color("f3efe6"), Color("f28482"), Color("84c7ff"), Color("ffd166"), hc, ac], Color("8f5a3c"), Vector3.ZERO)
-	for x in [-16.0, -11.0, 12.0, 17.0]:
-		_palm(Vector3(x, 0, randf_range(-6.0, 12.0)), randf_range(1.0, 1.3), randf_range(-0.2, 0.2))
-	# Beach umbrellas.
-	for p in [Vector3(-12, 0, 6), Vector3(13, 0, -3), Vector3(10, 0, 9)]:
-		_box(self, Vector3(0.08, 2.4, 0.08), p + Vector3(0, 1.2, 0), _mat(Color("dddddd"), 0.5))
-		var top := MeshInstance3D.new()
-		var cone := CylinderMesh.new()
-		cone.top_radius = 0.05
-		cone.bottom_radius = 1.4
-		cone.height = 0.6
-		top.mesh = cone
-		top.position = p + Vector3(0, 2.5, 0)
-		top.material_override = _mat([hc, ac, Color("ff9a1f")][int(p.x) % 3], 0.7)
-		add_child(top)
