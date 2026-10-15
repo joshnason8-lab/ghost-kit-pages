@@ -166,7 +166,7 @@ static func available() -> bool:
 
 
 ## A body on show: the player body bodies.json marks "featured" (a new one to see in matches), which each side's
-## first raider wears (Match); "" when none is.
+## first raider wears in a match that asks for it (Match: config "featured", as Quick Match does); "" when none is.
 static func featured() -> String:
 	for e in bodies():
 		if String(e.kind) == "player" and bool(e.get("featured", false)):

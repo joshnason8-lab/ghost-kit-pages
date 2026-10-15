@@ -86,4 +86,6 @@ as the game shows it and a close look at the raider, so a change can be compared
     xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 1493x720 --fixed-fps 30 \
         res://tests/look_check.tscn -- OUTDIR [grounds=dome,stadium] [at=14,31] [gfx=1] [seed=1] [nobake]
 
+Each picture's draw calls and primitives are printed with it.
+
 `test_runner` checks that every ground loads with its baked lighting, and with the bake's lamps and sky taken out.

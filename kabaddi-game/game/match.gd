@@ -213,7 +213,7 @@ func _ready() -> void:
 			seven = _insert_career_player(seven, cp)
 		for i in seven.size():
 			var a := Athlete.new()
-			if i == 0 and String(seven[i].get("body", "")) == "":
+			if i == 0 and bool(config.get("featured", false)) and String(seven[i].get("body", "")) == "":
 				a.body_file = RiggedBody.featured()   # the body on show, if there is one, on each side's first raider
 			a.setup(seven[i], t, tm.kit, tm.trim, arena.barefoot)
 			if String(config.get("style", "")) != "":
