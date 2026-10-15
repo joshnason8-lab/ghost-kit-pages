@@ -1,4 +1,4 @@
-[gd_scene format=4 uid="uid://dyk11u22wvhd0"]
+[gd_scene format=4 uid="uid://bj3ywb4421rvr"]
 
 [ext_resource type="Texture2D" uid="uid://bwhkiw6ools5f" path="res://assets/grounds/textures/sand_albedo.png" id="1_s58bn"]
 [ext_resource type="Texture2D" uid="uid://bdy43yt86qpp6" path="res://assets/grounds/textures/sand_normal.png" id="2_1bl3m"]
@@ -1371,495 +1371,495 @@ adjustment_contrast = 1.05
 adjustment_saturation = 1.2
 adjustment_color_correction = SubResource("GradientTexture1D_5eqxm")
 
-[node name="Beach" type="Node3D" unique_id=1692702291]
+[node name="Beach" type="Node3D" unique_id=1977586048]
 
-[node name="Court" type="Node3D" parent="." unique_id=745308376]
+[node name="Court" type="Node3D" parent="." unique_id=1128406336]
 
-[node name="@MeshInstance3D@663" type="MeshInstance3D" parent="Court" unique_id=1949766244]
+[node name="@MeshInstance3D@566" type="MeshInstance3D" parent="Court" unique_id=884968465]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.004, 0)
 material_override = SubResource("StandardMaterial3D_8wnif")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_1llxp")
 
-[node name="@MeshInstance3D@664" type="MeshInstance3D" parent="Court" unique_id=1456418330]
+[node name="@MeshInstance3D@567" type="MeshInstance3D" parent="Court" unique_id=466120764]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.39, -9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_5j7v3")
 
-[node name="@MeshInstance3D@665" type="MeshInstance3D" parent="Court" unique_id=967604081]
+[node name="@MeshInstance3D@568" type="MeshInstance3D" parent="Court" unique_id=1725182246]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 0.18, -9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_grtyr")
 
-[node name="@MeshInstance3D@666" type="MeshInstance3D" parent="Court" unique_id=695850829]
+[node name="@MeshInstance3D@569" type="MeshInstance3D" parent="Court" unique_id=1957770763]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.25, 0.18, -9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_0m1bo")
 
-[node name="@MeshInstance3D@667" type="MeshInstance3D" parent="Court" unique_id=439822917]
+[node name="@MeshInstance3D@570" type="MeshInstance3D" parent="Court" unique_id=1347357581]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0.18, -9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_s2ck1")
 
-[node name="@MeshInstance3D@668" type="MeshInstance3D" parent="Court" unique_id=1323317977]
+[node name="@MeshInstance3D@571" type="MeshInstance3D" parent="Court" unique_id=1925118412]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 0.18, -9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_qm6st")
 
-[node name="@MeshInstance3D@669" type="MeshInstance3D" parent="Court" unique_id=1369063090]
+[node name="@MeshInstance3D@572" type="MeshInstance3D" parent="Court" unique_id=256341278]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.39, 9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_pngb0")
 
-[node name="@MeshInstance3D@670" type="MeshInstance3D" parent="Court" unique_id=62528902]
+[node name="@MeshInstance3D@573" type="MeshInstance3D" parent="Court" unique_id=1676940951]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 0.18, 9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_5iisb")
 
-[node name="@MeshInstance3D@671" type="MeshInstance3D" parent="Court" unique_id=2015104009]
+[node name="@MeshInstance3D@574" type="MeshInstance3D" parent="Court" unique_id=1594725176]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.25, 0.18, 9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_biwgg")
 
-[node name="@MeshInstance3D@672" type="MeshInstance3D" parent="Court" unique_id=1398322877]
+[node name="@MeshInstance3D@575" type="MeshInstance3D" parent="Court" unique_id=883393178]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0.18, 9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_mrjcf")
 
-[node name="@MeshInstance3D@673" type="MeshInstance3D" parent="Court" unique_id=2109962796]
+[node name="@MeshInstance3D@576" type="MeshInstance3D" parent="Court" unique_id=476567141]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 0.18, 9.12)
 material_override = SubResource("StandardMaterial3D_dy2g5")
 mesh = SubResource("ArrayMesh_6lmr4")
 
-[node name="@MeshInstance3D@674" type="MeshInstance3D" parent="Court" unique_id=1049779063]
+[node name="@MeshInstance3D@577" type="MeshInstance3D" parent="Court" unique_id=2065511731]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009, -6.5)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_2d2d0")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@675" type="MeshInstance3D" parent="Court" unique_id=835763823]
+[node name="@MeshInstance3D@578" type="MeshInstance3D" parent="Court" unique_id=1350323542]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009, 6.5)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_128o8")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@676" type="MeshInstance3D" parent="Court" unique_id=2064130913]
+[node name="@MeshInstance3D@579" type="MeshInstance3D" parent="Court" unique_id=554232285]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.009, 0)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_ps047")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@677" type="MeshInstance3D" parent="Court" unique_id=2144110531]
+[node name="@MeshInstance3D@580" type="MeshInstance3D" parent="Court" unique_id=1506060390]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.009, 0)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_mb3rj")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@678" type="MeshInstance3D" parent="Court" unique_id=358603833]
+[node name="@MeshInstance3D@581" type="MeshInstance3D" parent="Court" unique_id=797492639]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.009, 0)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_u1ums")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@679" type="MeshInstance3D" parent="Court" unique_id=951269880]
+[node name="@MeshInstance3D@582" type="MeshInstance3D" parent="Court" unique_id=1830107225]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.009, 0)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_xuive")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@680" type="MeshInstance3D" parent="Court" unique_id=1224534001]
+[node name="@MeshInstance3D@583" type="MeshInstance3D" parent="Court" unique_id=907229697]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_n2eeq")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@681" type="MeshInstance3D" parent="Court" unique_id=1634777229]
+[node name="@MeshInstance3D@584" type="MeshInstance3D" parent="Court" unique_id=2110724478]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009, -3.75)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_idorj")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@682" type="MeshInstance3D" parent="Court" unique_id=2145990060]
+[node name="@MeshInstance3D@585" type="MeshInstance3D" parent="Court" unique_id=622540507]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009, -4.75)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_1yhqw")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@683" type="MeshInstance3D" parent="Court" unique_id=1018777769]
+[node name="@MeshInstance3D@586" type="MeshInstance3D" parent="Court" unique_id=155464250]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009, 3.75)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_dgtgy")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@684" type="MeshInstance3D" parent="Court" unique_id=402364811]
+[node name="@MeshInstance3D@587" type="MeshInstance3D" parent="Court" unique_id=299230587]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009, 4.75)
 material_override = SubResource("StandardMaterial3D_ouart")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_hc608")
 metadata/lm_texel = 0.025
 
-[node name="@MeshInstance3D@685" type="MeshInstance3D" parent="." unique_id=1388041245]
+[node name="@MeshInstance3D@588" type="MeshInstance3D" parent="." unique_id=1341279166]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01, 5)
 material_override = SubResource("StandardMaterial3D_j44so")
 cast_shadow = 0
 mesh = SubResource("ArrayMesh_rhhyu")
 
-[node name="@Node3D@686" type="Node3D" parent="." unique_id=305085749]
+[node name="@Node3D@589" type="Node3D" parent="." unique_id=2006083876]
 transform = Transform3D(-0.7605125, 0.04546058, 0.85575724, 0, 1.1441469, -0.060780767, -0.8569639, -0.040343985, -0.7594416, -16, 0, 11.440193)
 
-[node name="@MeshInstance3D@687" type="MeshInstance3D" parent="@Node3D@686" unique_id=2088884611]
+[node name="@MeshInstance3D@590" type="MeshInstance3D" parent="@Node3D@589" unique_id=1462176781]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 material_override = SubResource("StandardMaterial3D_q80or")
 mesh = SubResource("ArrayMesh_6vqt4")
 
-[node name="@MeshInstance3D@688" type="MeshInstance3D" parent="@Node3D@686" unique_id=1708050954]
+[node name="@MeshInstance3D@591" type="MeshInstance3D" parent="@Node3D@589" unique_id=2102770342]
 transform = Transform3D(1, 0, 0, 0, 0.99875027, -0.04997917, 0, 0.04997917, 0.99875027, 0, 1.55, 0.03)
 material_override = SubResource("StandardMaterial3D_q80or")
 mesh = SubResource("ArrayMesh_56dx7")
 
-[node name="@MeshInstance3D@689" type="MeshInstance3D" parent="@Node3D@686" unique_id=475623986]
+[node name="@MeshInstance3D@592" type="MeshInstance3D" parent="@Node3D@589" unique_id=770007326]
 transform = Transform3D(1, 0, 0, 0, 0.9950042, -0.09983342, 0, 0.09983342, 0.9950042, 0, 2.55, 0.12)
 material_override = SubResource("StandardMaterial3D_q80or")
 mesh = SubResource("ArrayMesh_qpvsh")
 
-[node name="@MeshInstance3D@690" type="MeshInstance3D" parent="@Node3D@686" unique_id=1693192980]
+[node name="@MeshInstance3D@593" type="MeshInstance3D" parent="@Node3D@589" unique_id=1560102184]
 transform = Transform3D(1, 0, 0, 0, 0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 3.55, 0.27)
 material_override = SubResource("StandardMaterial3D_q80or")
 mesh = SubResource("ArrayMesh_8txob")
 
-[node name="@MeshInstance3D@691" type="MeshInstance3D" parent="@Node3D@686" unique_id=932929170]
+[node name="@MeshInstance3D@594" type="MeshInstance3D" parent="@Node3D@589" unique_id=719201042]
 transform = Transform3D(1, 0, 0, 0, 0.9800666, -0.19866933, 0, 0.19866933, 0.9800666, 0, 4.55, 0.48)
 material_override = SubResource("StandardMaterial3D_q80or")
 mesh = SubResource("ArrayMesh_kbvgx")
 
-[node name="@MeshInstance3D@692" type="MeshInstance3D" parent="@Node3D@686" unique_id=1480709040]
+[node name="@MeshInstance3D@595" type="MeshInstance3D" parent="@Node3D@589" unique_id=492432478]
 transform = Transform3D(1, 0, 0, 0, 0.9689124, -0.24740396, 0, 0.24740396, 0.9689124, 0, 5.55, 0.75)
 material_override = SubResource("StandardMaterial3D_q80or")
 mesh = SubResource("ArrayMesh_lf88b")
 
-[node name="@MeshInstance3D@693" type="MeshInstance3D" parent="@Node3D@686" unique_id=1737857897]
+[node name="@MeshInstance3D@596" type="MeshInstance3D" parent="@Node3D@589" unique_id=1124569046]
 transform = Transform3D(0.3428978, 0.9393727, 0, -0.9393727, 0.3428978, 0, 0, 0, 0.25, 1.3, 5.745, 0.75)
 material_override = SubResource("StandardMaterial3D_6q2iu")
 mesh = SubResource("ArrayMesh_xjwbb")
 
-[node name="@MeshInstance3D@694" type="MeshInstance3D" parent="@Node3D@686" unique_id=61594762]
+[node name="@MeshInstance3D@597" type="MeshInstance3D" parent="@Node3D@589" unique_id=1211687940]
 transform = Transform3D(0.26267496, 0.7196013, -0.1606969, -0.9393727, 0.3428978, 2.554788e-09, 0.22041045, 0.6038171, 0.19151111, 0.9958577, 5.745, 1.585624)
 material_override = SubResource("StandardMaterial3D_6q2iu")
 mesh = SubResource("ArrayMesh_t4jph")
 
-[node name="@MeshInstance3D@695" type="MeshInstance3D" parent="@Node3D@686" unique_id=835168082]
+[node name="@MeshInstance3D@598" type="MeshInstance3D" parent="@Node3D@589" unique_id=594797656]
 transform = Transform3D(0.059543595, 0.1631204, -0.24620193, -0.9393727, 0.3428978, 0, 0.33768842, 0.9251015, 0.043412056, 0.22574262, 5.745, 2.03025)
 material_override = SubResource("StandardMaterial3D_6q2iu")
 mesh = SubResource("ArrayMesh_mhici")
 
-[node name="@MeshInstance3D@696" type="MeshInstance3D" parent="@Node3D@686" unique_id=685410598]
+[node name="@MeshInstance3D@599" type="MeshInstance3D" parent="@Node3D@589" unique_id=1654318171]
 transform = Transform3D(-0.17144892, -0.46968642, -0.21650635, -0.9393727, 0.3428978, 0, 0.2969582, 0.8135206, -0.12500001, -0.65, 5.745, 1.8758329)
 material_override = SubResource("StandardMaterial3D_6q2iu")
 mesh = SubResource("ArrayMesh_0pjwm")
 
-[node name="@MeshInstance3D@697" type="MeshInstance3D" parent="@Node3D@686" unique_id=1369733739]
+[node name="@MeshInstance3D@600" type="MeshInstance3D" parent="@Node3D@589" unique_id=1894794067]
 transform = Transform3D(-0.32221854, -0.8827216, -0.08550505, -0.9393727, 0.3428978, -2.5547877e-09, 0.11727799, 0.32128444, -0.23492315, -1.2216004, 5.745, 1.1946262)
 material_override = SubResource("StandardMaterial3D_6q2iu")
 mesh = SubResource("ArrayMesh_hg7do")
 
-[node name="@MeshInstance3D@698" type="MeshInstance3D" parent="@Node3D@686" unique_id=195347327]
+[node name="@MeshInstance3D@601" type="MeshInstance3D" parent="@Node3D@589" unique_id=1494118684]
 transform = Transform3D(-0.32221854, -0.8827216, 0.08550505, -0.9393727, 0.3428978, 0, -0.11727798, -0.32128444, -0.23492315, -1.2216004, 5.745, 0.30537382)
 material_override = SubResource("StandardMaterial3D_6q2iu")
 mesh = SubResource("ArrayMesh_vbolq")
 
-[node name="@MeshInstance3D@699" type="MeshInstance3D" parent="@Node3D@686" unique_id=1724544373]
+[node name="@MeshInstance3D@602" type="MeshInstance3D" parent="@Node3D@589" unique_id=736778110]
 transform = Transform3D(-0.17144886, -0.4696862, 0.21650638, -0.9393727, 0.3428978, 0, -0.29695824, -0.8135207, -0.12499996, -0.65, 5.745, -0.37583292)
 material_override = SubResource("StandardMaterial3D_6q2iu")
 mesh = SubResource("ArrayMesh_rc808")
 
-[node name="@MeshInstance3D@700" type="MeshInstance3D" parent="@Node3D@686" unique_id=798649305]
+[node name="@MeshInstance3D@603" type="MeshInstance3D" parent="@Node3D@589" unique_id=2118091670]
 transform = Transform3D(0.059543595, 0.1631204, 0.24620193, -0.9393727, 0.3428978, 0, -0.33768842, -0.9251015, 0.043412056, 0.22574262, 5.745, -0.53024995)
 material_override = SubResource("StandardMaterial3D_6q2iu")
 mesh = SubResource("ArrayMesh_styug")
 
-[node name="@MeshInstance3D@701" type="MeshInstance3D" parent="@Node3D@686" unique_id=1639489669]
+[node name="@MeshInstance3D@604" type="MeshInstance3D" parent="@Node3D@589" unique_id=531460559]
 transform = Transform3D(0.26267493, 0.71960115, 0.16069694, -0.9393727, 0.3428978, 9.446486e-10, -0.22041051, -0.6038173, 0.19151108, 0.9958577, 5.745, -0.08562392)
 material_override = SubResource("StandardMaterial3D_6q2iu")
 mesh = SubResource("ArrayMesh_ppdcr")
 
-[node name="@Node3D@702" type="Node3D" parent="." unique_id=1315786506]
+[node name="@Node3D@605" type="Node3D" parent="." unique_id=115341418]
 transform = Transform3D(-0.26084086, 0.038847566, 1.2415882, 0, 1.2686658, -0.039694782, -1.2421958, -0.008157355, -0.2607133, -11, 0, 7.872694)
 
-[node name="@MeshInstance3D@703" type="MeshInstance3D" parent="@Node3D@702" unique_id=348207136]
+[node name="@MeshInstance3D@606" type="MeshInstance3D" parent="@Node3D@605" unique_id=375737308]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 material_override = SubResource("StandardMaterial3D_a3rci")
 mesh = SubResource("ArrayMesh_nx4lt")
 
-[node name="@MeshInstance3D@704" type="MeshInstance3D" parent="@Node3D@702" unique_id=439969292]
+[node name="@MeshInstance3D@607" type="MeshInstance3D" parent="@Node3D@605" unique_id=2099206182]
 transform = Transform3D(1, 0, 0, 0, 0.99875027, -0.04997917, 0, 0.04997917, 0.99875027, 0, 1.55, 0.03)
 material_override = SubResource("StandardMaterial3D_a3rci")
 mesh = SubResource("ArrayMesh_nwp5w")
 
-[node name="@MeshInstance3D@705" type="MeshInstance3D" parent="@Node3D@702" unique_id=1669710558]
+[node name="@MeshInstance3D@608" type="MeshInstance3D" parent="@Node3D@605" unique_id=1746473840]
 transform = Transform3D(1, 0, 0, 0, 0.9950042, -0.09983342, 0, 0.09983342, 0.9950042, 0, 2.55, 0.12)
 material_override = SubResource("StandardMaterial3D_a3rci")
 mesh = SubResource("ArrayMesh_7pnk0")
 
-[node name="@MeshInstance3D@706" type="MeshInstance3D" parent="@Node3D@702" unique_id=1463414471]
+[node name="@MeshInstance3D@609" type="MeshInstance3D" parent="@Node3D@605" unique_id=400933854]
 transform = Transform3D(1, 0, 0, 0, 0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 3.55, 0.27)
 material_override = SubResource("StandardMaterial3D_a3rci")
 mesh = SubResource("ArrayMesh_nfduo")
 
-[node name="@MeshInstance3D@707" type="MeshInstance3D" parent="@Node3D@702" unique_id=132856451]
+[node name="@MeshInstance3D@610" type="MeshInstance3D" parent="@Node3D@605" unique_id=1336650520]
 transform = Transform3D(1, 0, 0, 0, 0.9800666, -0.19866933, 0, 0.19866933, 0.9800666, 0, 4.55, 0.48)
 material_override = SubResource("StandardMaterial3D_a3rci")
 mesh = SubResource("ArrayMesh_1d3tt")
 
-[node name="@MeshInstance3D@708" type="MeshInstance3D" parent="@Node3D@702" unique_id=1194114390]
+[node name="@MeshInstance3D@611" type="MeshInstance3D" parent="@Node3D@605" unique_id=1460955575]
 transform = Transform3D(1, 0, 0, 0, 0.9689124, -0.24740396, 0, 0.24740396, 0.9689124, 0, 5.55, 0.75)
 material_override = SubResource("StandardMaterial3D_a3rci")
 mesh = SubResource("ArrayMesh_l18jt")
 
-[node name="@MeshInstance3D@709" type="MeshInstance3D" parent="@Node3D@702" unique_id=955424381]
+[node name="@MeshInstance3D@612" type="MeshInstance3D" parent="@Node3D@605" unique_id=850072848]
 transform = Transform3D(0.3428978, 0.9393727, 0, -0.9393727, 0.3428978, 0, 0, 0, 0.25, 1.3, 5.745, 0.75)
 material_override = SubResource("StandardMaterial3D_f5wa2")
 mesh = SubResource("ArrayMesh_1fn10")
 
-[node name="@MeshInstance3D@710" type="MeshInstance3D" parent="@Node3D@702" unique_id=1993707559]
+[node name="@MeshInstance3D@613" type="MeshInstance3D" parent="@Node3D@605" unique_id=513916660]
 transform = Transform3D(0.26267496, 0.7196013, -0.1606969, -0.9393727, 0.3428978, 2.554788e-09, 0.22041045, 0.6038171, 0.19151111, 0.9958577, 5.745, 1.585624)
 material_override = SubResource("StandardMaterial3D_f5wa2")
 mesh = SubResource("ArrayMesh_mjfbu")
 
-[node name="@MeshInstance3D@711" type="MeshInstance3D" parent="@Node3D@702" unique_id=1545792226]
+[node name="@MeshInstance3D@614" type="MeshInstance3D" parent="@Node3D@605" unique_id=987161850]
 transform = Transform3D(0.059543595, 0.1631204, -0.24620193, -0.9393727, 0.3428978, 0, 0.33768842, 0.9251015, 0.043412056, 0.22574262, 5.745, 2.03025)
 material_override = SubResource("StandardMaterial3D_f5wa2")
 mesh = SubResource("ArrayMesh_k7m1v")
 
-[node name="@MeshInstance3D@712" type="MeshInstance3D" parent="@Node3D@702" unique_id=2061279238]
+[node name="@MeshInstance3D@615" type="MeshInstance3D" parent="@Node3D@605" unique_id=1610672937]
 transform = Transform3D(-0.17144892, -0.46968642, -0.21650635, -0.9393727, 0.3428978, 0, 0.2969582, 0.8135206, -0.12500001, -0.65, 5.745, 1.8758329)
 material_override = SubResource("StandardMaterial3D_f5wa2")
 mesh = SubResource("ArrayMesh_u4m83")
 
-[node name="@MeshInstance3D@713" type="MeshInstance3D" parent="@Node3D@702" unique_id=1918651607]
+[node name="@MeshInstance3D@616" type="MeshInstance3D" parent="@Node3D@605" unique_id=1001140885]
 transform = Transform3D(-0.32221854, -0.8827216, -0.08550505, -0.9393727, 0.3428978, -2.5547877e-09, 0.11727799, 0.32128444, -0.23492315, -1.2216004, 5.745, 1.1946262)
 material_override = SubResource("StandardMaterial3D_f5wa2")
 mesh = SubResource("ArrayMesh_ch153")
 
-[node name="@MeshInstance3D@714" type="MeshInstance3D" parent="@Node3D@702" unique_id=1227964854]
+[node name="@MeshInstance3D@617" type="MeshInstance3D" parent="@Node3D@605" unique_id=192262016]
 transform = Transform3D(-0.32221854, -0.8827216, 0.08550505, -0.9393727, 0.3428978, 0, -0.11727798, -0.32128444, -0.23492315, -1.2216004, 5.745, 0.30537382)
 material_override = SubResource("StandardMaterial3D_f5wa2")
 mesh = SubResource("ArrayMesh_rl4ik")
 
-[node name="@MeshInstance3D@715" type="MeshInstance3D" parent="@Node3D@702" unique_id=2070137925]
+[node name="@MeshInstance3D@618" type="MeshInstance3D" parent="@Node3D@605" unique_id=1169097623]
 transform = Transform3D(-0.17144886, -0.4696862, 0.21650638, -0.9393727, 0.3428978, 0, -0.29695824, -0.8135207, -0.12499996, -0.65, 5.745, -0.37583292)
 material_override = SubResource("StandardMaterial3D_f5wa2")
 mesh = SubResource("ArrayMesh_ff4ou")
 
-[node name="@MeshInstance3D@716" type="MeshInstance3D" parent="@Node3D@702" unique_id=245597837]
+[node name="@MeshInstance3D@619" type="MeshInstance3D" parent="@Node3D@605" unique_id=446644161]
 transform = Transform3D(0.059543595, 0.1631204, 0.24620193, -0.9393727, 0.3428978, 0, -0.33768842, -0.9251015, 0.043412056, 0.22574262, 5.745, -0.53024995)
 material_override = SubResource("StandardMaterial3D_f5wa2")
 mesh = SubResource("ArrayMesh_byv0y")
 
-[node name="@MeshInstance3D@717" type="MeshInstance3D" parent="@Node3D@702" unique_id=738673708]
+[node name="@MeshInstance3D@620" type="MeshInstance3D" parent="@Node3D@605" unique_id=1539775846]
 transform = Transform3D(0.26267493, 0.71960115, 0.16069694, -0.9393727, 0.3428978, 9.446486e-10, -0.22041051, -0.6038173, 0.19151108, 0.9958577, 5.745, -0.08562392)
 material_override = SubResource("StandardMaterial3D_f5wa2")
 mesh = SubResource("ArrayMesh_mog0f")
 
-[node name="@Node3D@718" type="Node3D" parent="." unique_id=697004491]
+[node name="@Node3D@621" type="Node3D" parent="." unique_id=1882571761]
 transform = Transform3D(0.38411945, 0.09159642, 0.9297501, 0, 1.0052685, -0.099036284, -0.93425107, 0.037660073, 0.38226885, 12, 0, 10.230303)
 
-[node name="@MeshInstance3D@719" type="MeshInstance3D" parent="@Node3D@718" unique_id=824875704]
+[node name="@MeshInstance3D@622" type="MeshInstance3D" parent="@Node3D@621" unique_id=85926588]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 material_override = SubResource("StandardMaterial3D_uyofh")
 mesh = SubResource("ArrayMesh_qdjvg")
 
-[node name="@MeshInstance3D@720" type="MeshInstance3D" parent="@Node3D@718" unique_id=464549157]
+[node name="@MeshInstance3D@623" type="MeshInstance3D" parent="@Node3D@621" unique_id=1372380183]
 transform = Transform3D(1, 0, 0, 0, 0.99875027, -0.04997917, 0, 0.04997917, 0.99875027, 0, 1.55, 0.03)
 material_override = SubResource("StandardMaterial3D_uyofh")
 mesh = SubResource("ArrayMesh_i7csk")
 
-[node name="@MeshInstance3D@721" type="MeshInstance3D" parent="@Node3D@718" unique_id=1291078512]
+[node name="@MeshInstance3D@624" type="MeshInstance3D" parent="@Node3D@621" unique_id=1623242605]
 transform = Transform3D(1, 0, 0, 0, 0.9950042, -0.09983342, 0, 0.09983342, 0.9950042, 0, 2.55, 0.12)
 material_override = SubResource("StandardMaterial3D_uyofh")
 mesh = SubResource("ArrayMesh_bpo2y")
 
-[node name="@MeshInstance3D@722" type="MeshInstance3D" parent="@Node3D@718" unique_id=1584719932]
+[node name="@MeshInstance3D@625" type="MeshInstance3D" parent="@Node3D@621" unique_id=1289187688]
 transform = Transform3D(1, 0, 0, 0, 0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 3.55, 0.27)
 material_override = SubResource("StandardMaterial3D_uyofh")
 mesh = SubResource("ArrayMesh_pb154")
 
-[node name="@MeshInstance3D@723" type="MeshInstance3D" parent="@Node3D@718" unique_id=2108414160]
+[node name="@MeshInstance3D@626" type="MeshInstance3D" parent="@Node3D@621" unique_id=1521383781]
 transform = Transform3D(1, 0, 0, 0, 0.9800666, -0.19866933, 0, 0.19866933, 0.9800666, 0, 4.55, 0.48)
 material_override = SubResource("StandardMaterial3D_uyofh")
 mesh = SubResource("ArrayMesh_jgy5a")
 
-[node name="@MeshInstance3D@724" type="MeshInstance3D" parent="@Node3D@718" unique_id=325536351]
+[node name="@MeshInstance3D@627" type="MeshInstance3D" parent="@Node3D@621" unique_id=1341125855]
 transform = Transform3D(1, 0, 0, 0, 0.9689124, -0.24740396, 0, 0.24740396, 0.9689124, 0, 5.55, 0.75)
 material_override = SubResource("StandardMaterial3D_uyofh")
 mesh = SubResource("ArrayMesh_28jw1")
 
-[node name="@MeshInstance3D@725" type="MeshInstance3D" parent="@Node3D@718" unique_id=184065824]
+[node name="@MeshInstance3D@628" type="MeshInstance3D" parent="@Node3D@621" unique_id=1880055456]
 transform = Transform3D(0.3428978, 0.9393727, 0, -0.9393727, 0.3428978, 0, 0, 0, 0.25, 1.3, 5.745, 0.75)
 material_override = SubResource("StandardMaterial3D_yfgij")
 mesh = SubResource("ArrayMesh_emsw7")
 
-[node name="@MeshInstance3D@726" type="MeshInstance3D" parent="@Node3D@718" unique_id=215050764]
+[node name="@MeshInstance3D@629" type="MeshInstance3D" parent="@Node3D@621" unique_id=2066934539]
 transform = Transform3D(0.26267496, 0.7196013, -0.1606969, -0.9393727, 0.3428978, 2.554788e-09, 0.22041045, 0.6038171, 0.19151111, 0.9958577, 5.745, 1.585624)
 material_override = SubResource("StandardMaterial3D_yfgij")
 mesh = SubResource("ArrayMesh_j7hwx")
 
-[node name="@MeshInstance3D@727" type="MeshInstance3D" parent="@Node3D@718" unique_id=272529335]
+[node name="@MeshInstance3D@630" type="MeshInstance3D" parent="@Node3D@621" unique_id=2004070452]
 transform = Transform3D(0.059543595, 0.1631204, -0.24620193, -0.9393727, 0.3428978, 0, 0.33768842, 0.9251015, 0.043412056, 0.22574262, 5.745, 2.03025)
 material_override = SubResource("StandardMaterial3D_yfgij")
 mesh = SubResource("ArrayMesh_q4anu")
 
-[node name="@MeshInstance3D@728" type="MeshInstance3D" parent="@Node3D@718" unique_id=1441398411]
+[node name="@MeshInstance3D@631" type="MeshInstance3D" parent="@Node3D@621" unique_id=2020759588]
 transform = Transform3D(-0.17144892, -0.46968642, -0.21650635, -0.9393727, 0.3428978, 0, 0.2969582, 0.8135206, -0.12500001, -0.65, 5.745, 1.8758329)
 material_override = SubResource("StandardMaterial3D_yfgij")
 mesh = SubResource("ArrayMesh_08ktg")
 
-[node name="@MeshInstance3D@729" type="MeshInstance3D" parent="@Node3D@718" unique_id=649657665]
+[node name="@MeshInstance3D@632" type="MeshInstance3D" parent="@Node3D@621" unique_id=958084055]
 transform = Transform3D(-0.32221854, -0.8827216, -0.08550505, -0.9393727, 0.3428978, -2.5547877e-09, 0.11727799, 0.32128444, -0.23492315, -1.2216004, 5.745, 1.1946262)
 material_override = SubResource("StandardMaterial3D_yfgij")
 mesh = SubResource("ArrayMesh_8bxq3")
 
-[node name="@MeshInstance3D@730" type="MeshInstance3D" parent="@Node3D@718" unique_id=1846529046]
+[node name="@MeshInstance3D@633" type="MeshInstance3D" parent="@Node3D@621" unique_id=493546070]
 transform = Transform3D(-0.32221854, -0.8827216, 0.08550505, -0.9393727, 0.3428978, 0, -0.11727798, -0.32128444, -0.23492315, -1.2216004, 5.745, 0.30537382)
 material_override = SubResource("StandardMaterial3D_yfgij")
 mesh = SubResource("ArrayMesh_mvxdb")
 
-[node name="@MeshInstance3D@731" type="MeshInstance3D" parent="@Node3D@718" unique_id=1154210931]
+[node name="@MeshInstance3D@634" type="MeshInstance3D" parent="@Node3D@621" unique_id=97497794]
 transform = Transform3D(-0.17144886, -0.4696862, 0.21650638, -0.9393727, 0.3428978, 0, -0.29695824, -0.8135207, -0.12499996, -0.65, 5.745, -0.37583292)
 material_override = SubResource("StandardMaterial3D_yfgij")
 mesh = SubResource("ArrayMesh_6lruu")
 
-[node name="@MeshInstance3D@732" type="MeshInstance3D" parent="@Node3D@718" unique_id=1694440841]
+[node name="@MeshInstance3D@635" type="MeshInstance3D" parent="@Node3D@621" unique_id=1530732319]
 transform = Transform3D(0.059543595, 0.1631204, 0.24620193, -0.9393727, 0.3428978, 0, -0.33768842, -0.9251015, 0.043412056, 0.22574262, 5.745, -0.53024995)
 material_override = SubResource("StandardMaterial3D_yfgij")
 mesh = SubResource("ArrayMesh_41yc5")
 
-[node name="@MeshInstance3D@733" type="MeshInstance3D" parent="@Node3D@718" unique_id=1453059476]
+[node name="@MeshInstance3D@636" type="MeshInstance3D" parent="@Node3D@621" unique_id=941485967]
 transform = Transform3D(0.26267493, 0.71960115, 0.16069694, -0.9393727, 0.3428978, 9.446486e-10, -0.22041051, -0.6038173, 0.19151108, 0.9958577, 5.745, -0.08562392)
 material_override = SubResource("StandardMaterial3D_yfgij")
 mesh = SubResource("ArrayMesh_ik3mo")
 
-[node name="@Node3D@734" type="Node3D" parent="." unique_id=30070036]
+[node name="@Node3D@637" type="Node3D" parent="." unique_id=1850764740]
 transform = Transform3D(-0.98821497, 0.017344814, 0.23195742, 0, 1.0123947, -0.07570268, -0.232605, -0.073688895, -0.98546374, 17, 0, 10.145037)
 
-[node name="@MeshInstance3D@735" type="MeshInstance3D" parent="@Node3D@734" unique_id=276287159]
+[node name="@MeshInstance3D@638" type="MeshInstance3D" parent="@Node3D@637" unique_id=1159678446]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 material_override = SubResource("StandardMaterial3D_ncn41")
 mesh = SubResource("ArrayMesh_slhop")
 
-[node name="@MeshInstance3D@736" type="MeshInstance3D" parent="@Node3D@734" unique_id=1964577302]
+[node name="@MeshInstance3D@639" type="MeshInstance3D" parent="@Node3D@637" unique_id=1567326642]
 transform = Transform3D(1, 0, 0, 0, 0.99875027, -0.04997917, 0, 0.04997917, 0.99875027, 0, 1.55, 0.03)
 material_override = SubResource("StandardMaterial3D_ncn41")
 mesh = SubResource("ArrayMesh_kgock")
 
-[node name="@MeshInstance3D@737" type="MeshInstance3D" parent="@Node3D@734" unique_id=803301509]
+[node name="@MeshInstance3D@640" type="MeshInstance3D" parent="@Node3D@637" unique_id=1582956845]
 transform = Transform3D(1, 0, 0, 0, 0.9950042, -0.09983342, 0, 0.09983342, 0.9950042, 0, 2.55, 0.12)
 material_override = SubResource("StandardMaterial3D_ncn41")
 mesh = SubResource("ArrayMesh_4f6no")
 
-[node name="@MeshInstance3D@738" type="MeshInstance3D" parent="@Node3D@734" unique_id=1160661518]
+[node name="@MeshInstance3D@641" type="MeshInstance3D" parent="@Node3D@637" unique_id=1998691336]
 transform = Transform3D(1, 0, 0, 0, 0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 3.55, 0.27)
 material_override = SubResource("StandardMaterial3D_ncn41")
 mesh = SubResource("ArrayMesh_tr6q6")
 
-[node name="@MeshInstance3D@739" type="MeshInstance3D" parent="@Node3D@734" unique_id=919836988]
+[node name="@MeshInstance3D@642" type="MeshInstance3D" parent="@Node3D@637" unique_id=616573539]
 transform = Transform3D(1, 0, 0, 0, 0.9800666, -0.19866933, 0, 0.19866933, 0.9800666, 0, 4.55, 0.48)
 material_override = SubResource("StandardMaterial3D_ncn41")
 mesh = SubResource("ArrayMesh_oikkx")
 
-[node name="@MeshInstance3D@740" type="MeshInstance3D" parent="@Node3D@734" unique_id=246477872]
+[node name="@MeshInstance3D@643" type="MeshInstance3D" parent="@Node3D@637" unique_id=463674192]
 transform = Transform3D(1, 0, 0, 0, 0.9689124, -0.24740396, 0, 0.24740396, 0.9689124, 0, 5.55, 0.75)
 material_override = SubResource("StandardMaterial3D_ncn41")
 mesh = SubResource("ArrayMesh_207qe")
 
-[node name="@MeshInstance3D@741" type="MeshInstance3D" parent="@Node3D@734" unique_id=1367672501]
+[node name="@MeshInstance3D@644" type="MeshInstance3D" parent="@Node3D@637" unique_id=926597568]
 transform = Transform3D(0.3428978, 0.9393727, 0, -0.9393727, 0.3428978, 0, 0, 0, 0.25, 1.3, 5.745, 0.75)
 material_override = SubResource("StandardMaterial3D_ge1f2")
 mesh = SubResource("ArrayMesh_3qi3t")
 
-[node name="@MeshInstance3D@742" type="MeshInstance3D" parent="@Node3D@734" unique_id=946110442]
+[node name="@MeshInstance3D@645" type="MeshInstance3D" parent="@Node3D@637" unique_id=217535040]
 transform = Transform3D(0.26267496, 0.7196013, -0.1606969, -0.9393727, 0.3428978, 2.554788e-09, 0.22041045, 0.6038171, 0.19151111, 0.9958577, 5.745, 1.585624)
 material_override = SubResource("StandardMaterial3D_ge1f2")
 mesh = SubResource("ArrayMesh_fkdal")
 
-[node name="@MeshInstance3D@743" type="MeshInstance3D" parent="@Node3D@734" unique_id=1080981165]
+[node name="@MeshInstance3D@646" type="MeshInstance3D" parent="@Node3D@637" unique_id=1693548327]
 transform = Transform3D(0.059543595, 0.1631204, -0.24620193, -0.9393727, 0.3428978, 0, 0.33768842, 0.9251015, 0.043412056, 0.22574262, 5.745, 2.03025)
 material_override = SubResource("StandardMaterial3D_ge1f2")
 mesh = SubResource("ArrayMesh_fw7fe")
 
-[node name="@MeshInstance3D@744" type="MeshInstance3D" parent="@Node3D@734" unique_id=412056866]
+[node name="@MeshInstance3D@647" type="MeshInstance3D" parent="@Node3D@637" unique_id=345624136]
 transform = Transform3D(-0.17144892, -0.46968642, -0.21650635, -0.9393727, 0.3428978, 0, 0.2969582, 0.8135206, -0.12500001, -0.65, 5.745, 1.8758329)
 material_override = SubResource("StandardMaterial3D_ge1f2")
 mesh = SubResource("ArrayMesh_l2epn")
 
-[node name="@MeshInstance3D@745" type="MeshInstance3D" parent="@Node3D@734" unique_id=1835270289]
+[node name="@MeshInstance3D@648" type="MeshInstance3D" parent="@Node3D@637" unique_id=251083515]
 transform = Transform3D(-0.32221854, -0.8827216, -0.08550505, -0.9393727, 0.3428978, -2.5547877e-09, 0.11727799, 0.32128444, -0.23492315, -1.2216004, 5.745, 1.1946262)
 material_override = SubResource("StandardMaterial3D_ge1f2")
 mesh = SubResource("ArrayMesh_cq7r3")
 
-[node name="@MeshInstance3D@746" type="MeshInstance3D" parent="@Node3D@734" unique_id=1239304812]
+[node name="@MeshInstance3D@649" type="MeshInstance3D" parent="@Node3D@637" unique_id=1969673594]
 transform = Transform3D(-0.32221854, -0.8827216, 0.08550505, -0.9393727, 0.3428978, 0, -0.11727798, -0.32128444, -0.23492315, -1.2216004, 5.745, 0.30537382)
 material_override = SubResource("StandardMaterial3D_ge1f2")
 mesh = SubResource("ArrayMesh_k4gm1")
 
-[node name="@MeshInstance3D@747" type="MeshInstance3D" parent="@Node3D@734" unique_id=1219720913]
+[node name="@MeshInstance3D@650" type="MeshInstance3D" parent="@Node3D@637" unique_id=202605800]
 transform = Transform3D(-0.17144886, -0.4696862, 0.21650638, -0.9393727, 0.3428978, 0, -0.29695824, -0.8135207, -0.12499996, -0.65, 5.745, -0.37583292)
 material_override = SubResource("StandardMaterial3D_ge1f2")
 mesh = SubResource("ArrayMesh_ltkrv")
 
-[node name="@MeshInstance3D@748" type="MeshInstance3D" parent="@Node3D@734" unique_id=189135943]
+[node name="@MeshInstance3D@651" type="MeshInstance3D" parent="@Node3D@637" unique_id=240841787]
 transform = Transform3D(0.059543595, 0.1631204, 0.24620193, -0.9393727, 0.3428978, 0, -0.33768842, -0.9251015, 0.043412056, 0.22574262, 5.745, -0.53024995)
 material_override = SubResource("StandardMaterial3D_ge1f2")
 mesh = SubResource("ArrayMesh_tgblf")
 
-[node name="@MeshInstance3D@749" type="MeshInstance3D" parent="@Node3D@734" unique_id=1350636186]
+[node name="@MeshInstance3D@652" type="MeshInstance3D" parent="@Node3D@637" unique_id=1276084011]
 transform = Transform3D(0.26267493, 0.71960115, 0.16069694, -0.9393727, 0.3428978, 9.446486e-10, -0.22041051, -0.6038173, 0.19151108, 0.9958577, 5.745, -0.08562392)
 material_override = SubResource("StandardMaterial3D_ge1f2")
 mesh = SubResource("ArrayMesh_j3sxh")
 
-[node name="@MeshInstance3D@750" type="MeshInstance3D" parent="." unique_id=1128088713]
+[node name="@MeshInstance3D@653" type="MeshInstance3D" parent="." unique_id=1913694319]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1.2, 6)
 material_override = SubResource("StandardMaterial3D_a03hs")
 mesh = SubResource("ArrayMesh_mp56j")
 
-[node name="@MeshInstance3D@751" type="MeshInstance3D" parent="." unique_id=652372275]
+[node name="@MeshInstance3D@654" type="MeshInstance3D" parent="." unique_id=1205883689]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2.5, 6)
 material_override = SubResource("StandardMaterial3D_6grwf")
 mesh = SubResource("ArrayMesh_qb3sa")
 
-[node name="@MeshInstance3D@752" type="MeshInstance3D" parent="." unique_id=291987916]
+[node name="@MeshInstance3D@655" type="MeshInstance3D" parent="." unique_id=1416834955]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 1.2, -3)
 material_override = SubResource("StandardMaterial3D_7wyy7")
 mesh = SubResource("ArrayMesh_7rskk")
 
-[node name="@MeshInstance3D@753" type="MeshInstance3D" parent="." unique_id=1071894864]
+[node name="@MeshInstance3D@656" type="MeshInstance3D" parent="." unique_id=1124754237]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2.5, -3)
 material_override = SubResource("StandardMaterial3D_0bgwe")
 mesh = SubResource("ArrayMesh_mf3vp")
 
-[node name="@MeshInstance3D@754" type="MeshInstance3D" parent="." unique_id=1094886946]
+[node name="@MeshInstance3D@657" type="MeshInstance3D" parent="." unique_id=1895716347]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1.2, 9)
 material_override = SubResource("StandardMaterial3D_6bkf7")
 mesh = SubResource("ArrayMesh_n68jo")
 
-[node name="@MeshInstance3D@755" type="MeshInstance3D" parent="." unique_id=1124786089]
+[node name="@MeshInstance3D@658" type="MeshInstance3D" parent="." unique_id=768748414]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 2.5, 9)
 material_override = SubResource("StandardMaterial3D_3vhbr")
 mesh = SubResource("ArrayMesh_rkapa")
 
-[node name="@WorldEnvironment@661" type="WorldEnvironment" parent="." unique_id=2030060306]
+[node name="@WorldEnvironment@564" type="WorldEnvironment" parent="." unique_id=932774481]
 environment = SubResource("Environment_x1gx4")
 
-[node name="@DirectionalLight3D@662" type="DirectionalLight3D" parent="." unique_id=207347680]
+[node name="@DirectionalLight3D@565" type="DirectionalLight3D" parent="." unique_id=1900326427]
 transform = Transform3D(-0.76604444, -0.47768432, 0.43010885, 0, 0.66913056, 0.74314487, -0.64278764, 0.569282, -0.51258373, 0, 0, 0)
 light_color = Color(1, 0.94509804, 0.8392157, 1)
 light_energy = 1.05
@@ -1868,7 +1868,10 @@ shadow_blur = 1.5
 directional_shadow_mode = 1
 directional_shadow_max_distance = 40.0
 
-[node name="LightmapGI" type="LightmapGI" parent="." unique_id=545360302]
+[node name="LightmapGI" type="LightmapGI" parent="." unique_id=538372984]
 max_texture_size = 2048
+environment_mode = 2
+environment_custom_sky = SubResource("Sky_amcl6")
+environment_custom_energy = 0.32
 generate_probes_subdiv = 0
 light_data = ExtResource("3_1bl3m")
