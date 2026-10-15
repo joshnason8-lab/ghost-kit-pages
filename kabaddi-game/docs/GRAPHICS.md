@@ -35,13 +35,15 @@ lightmap, HDR, one 1024 x 1024 page per ground; a GPU that cannot read HDR ASTC 
 
 ### Re-baking
 
-`tools/bake_lighting/bake.sh [grounds]` (about 10 minutes a ground on a CPU-only machine). Godot's lightmapper only
-runs from the editor and on a Vulkan device, so the script works on a copy of the project: it imports, builds the
-scenes (`make_scenes.tscn`: the arena's fixed parts, every mesh unwrapped for its lightmap at a texel size that suits
-it, the LightmapGI set up per ground), turns on `addon/` (a plugin that presses the editor's Bake Lightmaps button for
-each scene, answers where to save it and saves the scene), runs the editor under xvfb with Vulkan (Mesa's lavapipe on
-a machine without a GPU: `apt-get install mesa-vulkan-drivers xvfb`), and copies each ground's scene, bake and
-lightmap back. Re-bake after changing a ground's fixed parts, their materials or the bake's lights.
+`tools/bake_lighting/bake.sh [grounds]`: at medium quality, the default and what the game ships, half an hour for all
+five on a 4-core machine without a GPU (2 to 9 minutes a ground); `BAKE_QUALITY=low` is quicker and, once denoised,
+nearly as clean, for trying things out. Godot's lightmapper only runs from the editor and on a Vulkan device, so the
+script works on a copy of the project: it imports, builds the scenes (`make_scenes.tscn`: the arena's fixed parts,
+every mesh unwrapped for its lightmap at a texel size that suits it, the LightmapGI set up per ground), turns on
+`addon/` (a plugin that presses the editor's Bake Lightmaps button for each scene, answers where to save it and saves
+the scene), runs the editor under xvfb with Vulkan (Mesa's lavapipe on a machine without a GPU: `apt-get install
+mesa-vulkan-drivers xvfb`), and copies each ground's scene, bake and lightmap back. Re-bake after changing a ground's
+fixed parts, their materials or the bake's lights.
 
 Previews of baked grounds on a machine without a GPU are slow: Mesa's software OpenGL decodes the desktop lightmap
 format (BC6H) texel by texel. A copy of the project with the lightmaps imported uncompressed renders them at the usual

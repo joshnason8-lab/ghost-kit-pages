@@ -53,6 +53,8 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
 - A **League Season** through the auction and a few rounds.
 - **Every ground** in a Quick Match. Since 0.7.9 each has baked lighting, new court and stand surfaces and a
   broadcast camera that moves in on a tackle. Say if one looks wrong or runs slower than the others.
+- **The new player model**: in a Quick Match each side's first raider wears the player made in Meshy's web app
+  from a picture. Compare him with the others, from the broadcast camera and from behind (the Camera button).
 - Each **raid rule**: Breath, Tap and the 30-second clock.
 
 ## Reporting
