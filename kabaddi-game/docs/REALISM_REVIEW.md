@@ -1,5 +1,37 @@
 # Realism reviews
 
+## Sixth round: the graphics pass, and a player made from a picture
+
+After asking whether Unity would look better (it could be connected, but the gap is in the art and the lighting, not
+the engine), four asks for the grounds, the players and the picture, and then a question about the generated
+players. What was there, and what changed (docs/GRAPHICS.md has how each works):
+
+| Ask | What was there | What changed |
+|---|---|---|
+| Pre-calculated lighting for the grounds | Everything lit live, by the sun (an overhead light indoors) and a flat ambient light: no shadows but the sun's, no darkening in corners or under roofs, no light from the floodlights or lamps on the floor. | Each ground's fixed parts are baked with Godot's lightmapper (`tools/bake_lighting/`): soft shadows, corners and the ground under benches and roofs darker, light bounced off the court and the ground, pools of light under the dome's lamps and the stadium's floodlights. The sun stays live, so the players' shadows and their lighting are as before. One 1024 x 1024 lightmap a ground. |
+| Better court and stand textures | Flat colours. | Seamless textures with normal maps (`tools/ground_art/`), at their real size: foam mat tiles with seams, polished concrete, weathered stand concrete, grass, packed mud, rippled sand. |
+| Better skin and kit shading | Skin and cloth differed only in roughness: no sheen, no rim, no light through the skin. | Skin with a sheen that gets wetter as a player tires, and warm light through where it is thin; kits matte with a jersey's sheen at grazing angles; both catch the light behind them at the edges. |
+| Camera and screen effects | A broadcast camera that panned with the play at one distance. | It moves in while the raider is held and back out as he gets away, drifts like a hand-held camera, and jolts at a takedown, a dash and a hold; a vignette; a colour grade for each ground; the crowd's back rows in shadow under arena lights. |
+
+Found on the way: the camera's jolt went through its smoothing, which left under a tenth of it; trees, palms and
+umbrellas used Godot's default 64 sides (2,000 vertices a palm leaf), which made the monsoon ground's baked scene
+19.5 MB (1.6 MB now).
+
+**Why the generated players look plainer than one made in Meshy's web app.** The web model was made from a picture
+(Image to 3D) with 4096 px colour, normal, roughness and glow maps; ours were made from text, asked for plain kits
+with no logos (so every team can wear them), a neutral face and a T-pose, with colour only, and the game uses that
+colour at 1024 px. The number of triangles is not the difference: the web model has 10,415, ours about 15,300. The
+web model is in the game now as `player_10`, marked `featured` so that in Quick Match each side's first raider wears
+it (docs/ASSETS.md); `make_body.py --plain-kit` paints out the white graphics a real kit's picture is full of. Its
+face is far sharper; its hands are less so (Image to 3D runs the fingers together, which the text prompts asked
+apart).
+
+### Tests
+
+`test_runner` (196 checks): every ground loads with its baked lighting and without the bake's own lamps and sky.
+`tests/look_check.tscn` renders the same seeded match on each ground at set moments, before and after.
+`compile_check`: 65 scripts.
+
 ## Fifth review (the phone beta): six notes
 
 Six notes from playing 0.7.7 on a phone. Each is below with what was wrong and what changed; the numbers are from
