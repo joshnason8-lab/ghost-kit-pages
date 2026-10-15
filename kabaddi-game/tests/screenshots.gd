@@ -61,9 +61,26 @@ func _tour() -> void:
 		await shot("lang_3_picker_ta")
 		Game.set_language("")
 		return
+	if args_only == "walkout":
+		# The final's walk-out, and a derby's intro.
+		var s2: Script = load("res://game/match.gd")
+		var m: Node = s2.new()
+		m.config = {"home": "KEN", "away": "IND", "arena": "stadium", "mode": "quick", "walkout": true, "length": 0, "difficulty": 1}
+		Game._swap(m)
+		await frames(45)
+		await shot("e14_walkout")
+		var d: Node = s2.new()
+		d.config = {"home": "MUM", "away": "PUN", "arena": "dome", "mode": "quick", "derby": "DERBY_MAHARASHTRA", "length": 0, "difficulty": 1}
+		Game._swap(d)
+		await frames(30)
+		await shot("e15_derby")
+		return
 	if args_only.begins_with("hi:"):
 		TranslationServer.set_locale("hi")
 		args_only = args_only.substr(3)
+	if args_only in ["engage", "engage2d"]:
+		await _engage(args_only == "engage")
+		return
 	if args_only == "howto":
 		# Every page of How to Play.
 		var how := Game.show_screen("res://ui/howto_screen.gd")
@@ -366,3 +383,101 @@ func _grounds() -> void:
 	await frames(5)
 	await shot("%02d_settings_tamil" % (i + 1))
 	TranslationServer.set_locale("en")
+
+
+## The League Season and Nations Cup screens of the news-and-auction update: hub, breaking news, match day,
+## retentions, war room, auction, grades, hall of fame, cup squad, cup hub, menu ticker, final walk-out.
+func _engage(with_3d := true) -> void:
+	Game.delete_season()
+	var se = Game.new_season("PAT")
+	se.seed_value = 4242
+	var eng: AuctionEngine = se.make_auction()
+	eng.resolve_all(false)
+	se.finish_auction(eng)
+	for i in 5:
+		se.simulate_user_match()
+	Game.save_season()
+	se.news_seen = se.news_n[0]   # no breaking news over the hub's picture
+	Game.show_screen("res://ui/season_hub.gd")
+	await frames(40)
+	await shot("e01_season_hub")
+	var fresh := []
+	for it in se.news:
+		if int(it.p) >= 2:
+			fresh.append(it)
+	NewsTicker.breaking(Game.current, fresh.slice(-3), func(): pass)
+	await frames(30)
+	await shot("e02_breaking")
+	Game.show_screen("res://ui/match_day.gd")
+	await frames(30)
+	await shot("e03_match_day")
+	# A season on: retentions, war room, auction.
+	while se.phase != "done":
+		if se.next_user_fixture() == null:
+			se._advance()
+		else:
+			se.simulate_user_match()
+	se.next_year()
+	se.news_seen = se.news_n[0]
+	Game.save_season()
+	Game.show_screen("res://ui/season_hub.gd")
+	await frames(30)
+	await shot("e04_preseason")
+	Game.show_screen("res://ui/retention_screen.gd")
+	await frames(30)
+	await shot("e05_retentions")
+	se.retained = se.default_retained().slice(0, 4)
+	se.retain_done = true
+	var wr := Game.show_screen("res://ui/war_room.gd")
+	await frames(10)
+	var n := 0
+	for l in wr.eng.lots:
+		if n < 3 and Scout.fit(l.player, wr.eng.teams[se.team].squad) >= 2:
+			wr._pin(l)
+			n += 1
+	await frames(30)
+	await shot("e06_war_room")
+	var au := Game.show_screen("res://ui/auction_screen.gd", {"mode": "owner"})
+	await frames(150)
+	await shot("e07_auction")
+	au._finish_all()
+	await frames(40)
+	await shot("e08_auction_grades")
+	Game.show_screen("res://ui/hall_of_fame.gd")
+	await frames(30)
+	await shot("e09_hall_of_fame")
+	# The Nations Cup.
+	Game.delete_cup()
+	var cup = Game.new_cup("KEN")
+	Game.show_screen("res://ui/cup_squad.gd")
+	await frames(30)
+	await shot("e10_cup_squad")
+	cup.confirm_squad(cup.best_squad(), String(cup.best_squad()[0].id))
+	for i in 2:
+		cup.simulate_user_match()
+	cup.news_seen = cup.news_n[0]
+	Game.save_cup()
+	Game.show_screen("res://ui/cup_screen.gd")
+	await frames(40)
+	await shot("e11_cup_hub")
+	if not with_3d:
+		Game.delete_cup()
+		Game.delete_season()
+		return
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(200)
+	await shot("e12_menu_ticker")
+	Game.show_screen("res://ui/trophy_screen.gd", {"team": "KEN", "title": tr("UNDERDOG_TROPHY"), "underdog": true, "back": "res://ui/main_menu.gd"})
+	await frames(60)
+	await shot("e13_underdog_trophy")
+	var s2: Script = load("res://game/match.gd")
+	var m: Node = s2.new()
+	m.config = {"home": "KEN", "away": "IND", "arena": "stadium", "mode": "quick", "walkout": true, "length": 0, "difficulty": 1}
+	Game._swap(m)
+	await frames(60)
+	await shot("e14_walkout")
+	Game.goto_menu()
+	await frames(5)
+	Game.delete_cup()
+	Game.delete_season()
+

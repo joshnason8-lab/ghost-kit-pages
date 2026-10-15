@@ -373,23 +373,45 @@ func show_pause(p: bool) -> void:
 	controls.visible = not p
 
 
-func show_intro(home: String, away: String, arena_name: String) -> void:
+## The teams before the start. occasion: a gold line above them (a derby's name, the final); ids: the two teams,
+## whose crests or flags stand either side of their names (the final's walk-out).
+func show_intro(home: String, away: String, arena_name: String, occasion := "", ids: Array = []) -> void:
 	intro_panel = PanelContainer.new()
 	intro_panel.theme_type_variation = "GlassPanel"
 	intro_panel.set_anchors_preset(Control.PRESET_CENTER)
-	intro_panel.custom_minimum_size = Vector2(760, 0)
-	intro_panel.position = Vector2(-380, -110)
+	var w := 900.0 if ids.size() == 2 else 760.0
+	intro_panel.custom_minimum_size = Vector2(w, 0)
+	intro_panel.position = Vector2(-w * 0.5, -150 if occasion != "" else -110)
 	intro_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	intro_panel.add_child(v)
+	if occasion != "":
+		var o := _label(occasion.to_upper(), "HeaderLabel", 34, Game.C_GOLD)
+		o.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(o)
 	var e := _label(arena_name.to_upper(), "EyebrowLabel", 18)
 	e.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(e)
 	var t := _label("%s  %s  %s" % [home, tr("VS"), away], "HeaderLabel", 52)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(e)
-	v.add_child(t)
+	if ids.size() == 2:
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 18)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var c0 := Crest.make(String(ids[0]), 84)
+		c0.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(c0)
+		t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(t)
+		var c1 := Crest.make(String(ids[1]), 84)
+		c1.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(c1)
+		v.add_child(row)
+	else:
+		v.add_child(t)
 	root.add_child(intro_panel)
 
 

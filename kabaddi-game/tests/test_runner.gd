@@ -203,6 +203,214 @@ func _run() -> void:
 	await frames(3)
 	check(Flags.texture("IND").get_width() == 60, "flags render")
 
+	# 6c. The news, the auction's war room and the season around the matches: retentions, the shortlist and auto-bid,
+	# grades, the board's goal, line-ups, fitness, knocks, form, derbies, weekly awards, records, growth.
+	Game.delete_season()
+	var ns = Game.new_season("MUM")
+	ns.seed_value = 777
+	var keep_two: Array = ns.default_retained().slice(0, 2)
+	ns.retained = keep_two
+	ns.retain_done = true
+	var neng: AuctionEngine = ns.make_auction()
+	var keep_cost := 0.0
+	for p in neng.teams.MUM.squad:
+		keep_cost += Season.retain_cost(p)
+	check(neng.teams.MUM.squad.size() == 2 and is_equal_approx(float(neng.teams.MUM.purse), snappedf(Season.PURSE - keep_cost, 0.5)),
+		"retentions: you keep the two you chose, and your purse pays for them (%s)" % Game.fmt_money(float(neng.teams.MUM.purse)))
+	check(neng.lots.size() == 34, "the auction still has 34 lots with your own retentions")
+	var star_lot: Dictionary = neng.lots[0]
+	neng.user_max = {String(star_lot.player.id): neng.can_spend("MUM")}
+	neng.auto_bid = true
+	check(neng.estimate(star_lot) >= float(star_lot.base) and neng.likely_bidders(star_lot).size() <= 3, "a lot's likely price (%s) and likely bidders %s" % [Game.fmt_money(neng.estimate(star_lot)), neng.likely_bidders(star_lot)])
+	neng.resolve_until(func(l): return false)
+	check(String(star_lot.sold_to) == "MUM", "auto-bid wins your shortlisted star up to your max (%s for %s)" % [String(star_lot.sold_to), Game.fmt_money(float(star_lot.price))])
+	ns.finish_auction(neng)
+	var graded := 0
+	for id in ns.grades:
+		if String(ns.grades[id].grade) in ["A+", "A", "B+", "B", "C+", "C", "D"]:
+			graded += 1
+	check(graded == 12, "every franchise's auction is graded (yours: %s, %s)" % [ns.grades.MUM.grade, ns.grades.MUM.note])
+	check(String(ns.goal.get("key", "")) in Season.GOALS, "the board sets a goal: %s" % ns.goal.get("key", ""))
+	var nkinds := {}
+	for it in ns.news:
+		nkinds[it.k] = true
+	check(nkinds.has("AUC_RECORD") and nkinds.has("GOAL_SET"), "the auction and the board make the news: %s" % [nkinds.keys()])
+	# Your seven: a bench_p player picked plays, and the match is set up with him.
+	var bench_p: Dictionary = {}
+	var best_7: Array = ns.best_seven("MUM")
+	for p in ns.squads.MUM:
+		if not best_7.has(p) and String(p.role) == "defender":
+			bench_p = p
+	var pick7: Array = []
+	for p in best_7:
+		pick7.append(String(p.id))
+	if not bench_p.is_empty():
+		pick7[6] = String(bench_p.id)
+	ns.lineup = pick7
+	var mine_7: Array = ns.seven("MUM")
+	var ids_7 := []
+	for p in mine_7:
+		ids_7.append(String(p.id))
+	check(ids_7 == pick7, "your seven is the one you picked")
+	var nfix = ns.next_user_fixture()
+	var ncfg: Dictionary = ns.match_config(nfix)
+	check((ncfg.home_seven as Array).size() == 7 and ncfg.home_seven[6].id == pick7[6] and (ncfg.fitness as Dictionary).size() == 14,
+		"the match gets your seven and everyone's fitness")
+	# The match puts them on7 the mat, tired ones with less energy, and a final opens with the walk-out.
+	var tired_id := String(pick7[0])
+	ncfg.fitness[tired_id] = 0.6
+	ncfg["walkout"] = true
+	ncfg["autoplay"] = true
+	ncfg["autoplay_no_report"] = true
+	Game.start_match(ncfg)
+	var nlm: Node = Game.current
+	await frames(3)
+	var on7 := []
+	var tired_en := 1.0
+	for a in nlm.teams[0].players:
+		on7.append(a.pid())
+		if a.pid() == tired_id:
+			tired_en = a.energy
+	check(on7 == pick7, "your picked seven take the mat")
+	check(is_equal_approx(tired_en, 0.6), "a tired player starts the match with his fitness as energy (%.2f)" % tired_en)
+	check(nlm.walkout and nlm.phase == "intro" and nlm.crowd_lift > 0.2 and absf(nlm.teams[0].players[0].position.x - 1.6) < 0.2,
+		"the final opens with both teams lined up for the walk-out")
+	Game.show_screen("res://ui/season_hub.gd")
+	await frames(2)
+	# A season of it.
+	var gns := 0
+	while ns.phase != "done" and gns < 80:
+		gns += 1
+		if ns.next_user_fixture() == null:
+			ns._advance()
+		else:
+			ns.simulate_user_match()
+	nkinds = {}
+	var raw_news := []
+	for it in ns.news:
+		nkinds[it.k] = true
+		var txt: String = News.text(it)
+		if txt.begins_with("NEWS_") or txt.contains("{"):
+			raw_news.append(txt)
+	check(ns.news.size() >= 30 and nkinds.has("CHAMPIONS") and nkinds.has("ARJUNA"), "a season fills the news (%d stories): %s" % [ns.news.size(), nkinds.keys()])
+	check(raw_news.is_empty(), "every story reads as a headline: %s" % [raw_news.slice(0, 3)])
+	check(String(News.top_story(ns.news).get("k", "")) == "CHAMPIONS", "the champions are the front page after the final")
+	check(not ns.week.is_empty() and not (ns.week.raider as Dictionary).is_empty(), "weekly awards: raider of the week %s" % ns.week.raider.get("name", "?"))
+	check(ns.records.has("raid_match") and ns.records.has("raid_season") and ns.records.has("margin"), "the record book fills: %s" % [ns.records.keys()])
+	var fits_ok := true
+	for pid in ns.fitness:
+		if float(ns.fitness[pid]) < 0.5 or float(ns.fitness[pid]) > 1.0:
+			fits_ok = false
+	var forms_ok := true
+	for pid in ns.form:
+		if (ns.form[pid] as Array).size() > 5:
+			forms_ok = false
+	check(fits_ok and forms_ok and not ns.form.is_empty(), "fitness stays 0.5 to 1 and form keeps the last five matches")
+	check(nkinds.has("INJURY") or nkinds.has("KNOCK") or not ns.injuries.is_empty() or nkinds.has("RETURN"), "players pick up knocks")
+	var hist_last: Dictionary = ns.history[-1]
+	check(hist_last.has("goal_met") and not is_zero_approx(ns.purse_bonus), "the board's verdict moves next year's budget (%s, %s)" % [hist_last.goal_met, Game.fmt_money(ns.purse_bonus)])
+	var derby_seen := false
+	for f in ns.fixtures:
+		if f.stage == "league" and ns.derby_of(f.home, f.away) != "" and (f.home == "MUM" or f.away == "MUM"):
+			derby_seen = ns.derby_of(f.home, f.away) == "DERBY_MAHARASHTRA"
+	check(derby_seen, "Mumbai play the Maharashtra Derby")
+	check(not ns.all_time(3).is_empty(), "all-time scorers for the hall of fame")
+	Game.save_season()
+	Game.season = null
+	var nsb = Game.get_season()
+	check(nsb != null and nsb.news.size() == ns.news.size() and int(nsb.news_n[0]) == int(ns.news_n[0]) and nsb.records.size() == ns.records.size(),
+		"the news and the record book are saved")
+	# Next year: older players, the young improving, retentions to choose again.
+	var vet_p: Dictionary = nsb.squads.MUM[0]
+	var vet_age := Scout.age(vet_p)
+	var young_better := 0
+	var young_count := 0
+	var before_ns := {}
+	for id in nsb.squads:
+		for p in nsb.squads[id]:
+			before_ns[String(p.id)] = [Scout.age(p), DB.overall(p)]
+	nsb.next_year()
+	for id in nsb.squads:
+		for p in nsb.squads[id]:
+			var b: Array = before_ns.get(String(p.id), [])
+			if not b.is_empty() and int(b[0]) <= 21:
+				young_count += 1
+				if DB.overall(p) >= int(b[1]):
+					young_better += 1
+	var vet_now: Dictionary = nsb.find_player(String(vet_p.id))
+	check(vet_now.is_empty() or Scout.age(vet_now) == vet_age + 1, "players are a year older")
+	check(young_count == 0 or young_better * 2 >= young_count, "young players improve (%d of %d)" % [young_better, young_count])
+	check(nsb.phase == "auction" and not nsb.retain_done and str(News.latest(nsb.news, 3).map(func(i): return i.k)).contains("NEW_SEASON"), "a new season starts with retentions and the news of it")
+	for scr in ["res://ui/season_hub.gd", "res://ui/retention_screen.gd", "res://ui/war_room.gd", "res://ui/hall_of_fame.gd"]:
+		var scr_n := Game.show_screen(scr)
+		await frames(3)
+		check(is_instance_valid(scr_n) and Game.current == scr_n, "screen " + scr)
+	Game.save_season()
+	nsb.retained = nsb.default_retained()
+	nsb.retain_done = true
+	Game.show_screen("res://ui/auction_screen.gd", {"mode": "owner"})
+	await frames(20)
+	var aus_n: Node = Game.current
+	aus_n._skip_to_target()
+	await frames(2)
+	aus_n._finish_all()
+	await frames(5)
+	check(aus_n._done and nsb.phase == "league" and not nsb.grades.is_empty(), "the auction screen finishes with grades for all")
+	var mds := Game.show_screen("res://ui/match_day.gd")
+	await frames(3)
+	check(is_instance_valid(mds) and mds.picked.size() == 7, "match day opens with your seven")
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(3)
+	check(not Game.current.find_children("*", "NewsTicker", true, false).is_empty(), "the home screen runs the news ticker")
+	Game.delete_season()
+
+	# 6d. Nations Cup: the squad of twelve and a captain, what you need, the awards, the underdog.
+	Game.delete_cup()
+	var ucup = Game.new_cup("KEN")
+	check(not ucup.picked and ucup.pool().size() == 18, "a country's pool is eighteen: %d" % ucup.pool().size())
+	var best_12: Array = ucup.best_squad()
+	check(best_12.size() == 12 and Cup.squad_ok(best_12), "its best twelve make a squad")
+	var short11 := best_12.slice(0, 11)
+	check(not Cup.squad_ok(short11), "eleven do not")
+	Game.show_screen("res://ui/cup_squad.gd")
+	await frames(3)
+	check(Game.current.get_script().resource_path.ends_with("cup_squad.gd"), "the squad picker opens")
+	ucup.confirm_squad(best_12, String(best_12[1].id))
+	check(ucup.picked and ucup.captain == String(best_12[1].id) and String(News.latest(ucup.news, 1)[0].k) == "CUP_CAPTAIN", "squad confirmed and the captain named")
+	check(Cup.is_underdog("KEN") and not Cup.is_underdog("IND"), "Kenya are underdogs, India are not")
+	ucup.simulate_user_match()
+	ucup.simulate_user_match()
+	var fx_before: String = JSON.stringify(ucup.fixtures)
+	var need_sc: Dictionary = ucup.scenario()
+	check(String(need_sc.get("k", "")) in ["QUAL_THROUGH", "QUAL_OUT", "NEED_WIN", "NEED_WIN_BY", "NEED_TIE", "NEED_LOSS_BY", "NEED_HELP"],
+		"what you need from the last group match: %s" % (News.text({"k": need_sc.get("k", ""), "v": 1, "a": need_sc.get("a", {})}) if not need_sc.is_empty() else "?"))
+	check(JSON.stringify(ucup.fixtures) == fx_before, "working it out leaves the fixtures as they were")
+	var need_news := false
+	for it in ucup.news:
+		if String(it.k).begins_with("NEED_") or String(it.k).begins_with("QUAL_"):
+			need_news = true
+	check(need_news, "and it is in the news")
+	Game.show_screen("res://ui/cup_screen.gd")
+	await frames(3)
+	ucup.sim_everything_left()
+	check(ucup.stage == "done" and not ucup.awards.get("mvp", {}).is_empty() and not ucup.awards.get("raider", {}).is_empty(),
+		"the Nations Cup names its Golden Raider (%s) and Player of the Tournament (%s)" % [ucup.awards.raider.get("name", "?"), ucup.awards.mvp.get("name", "?")])
+	var cupk := {}
+	for it in ucup.news:
+		cupk[it.k] = true
+	check(cupk.has("CUP_CHAMPIONS") and cupk.has("GOLDEN_RAIDER") and cupk.has("CUP_FINAL_SET"), "the cup makes the news: %s" % [cupk.keys()])
+	check((ucup.bracket().semis as Array).size() == 2 and String(ucup.bracket().champion) == ucup.champion, "the bracket has the semi-finals and the champion")
+	Game.save_cup()
+	Game.cup = null
+	check(Game.get_cup() != null and Game.get_cup().picked and Game.get_cup().awards.size() == 3, "the cup's squad and awards are saved")
+	Game.show_screen("res://ui/cup_screen.gd")
+	await frames(3)
+	Game.show_screen("res://ui/awards_screen.gd", {"awards": ucup.awards, "label": "Cup", "nsb": "res://ui/main_menu.gd", "mine": "KEN",
+		"title": "CUP_AWARDS", "titles": {"mvp": "PLAYER_OF_TOURNAMENT", "raider": "GOLDEN_RAIDER", "defender": "BEST_DEFENDER"}})
+	await frames(3)
+	check(Game.current.get_script().resource_path.ends_with("awards_screen.gd"), "the tournament awards screen opens")
+	Game.delete_cup()
+
 	# 7. Every ground builds.
 	for a in DB.ARENAS:
 		var ar := Arena.new()

@@ -6,6 +6,10 @@ var awards := {}
 var label := ""
 var back := "res://ui/main_menu.gd"
 var mine := ""          # a team id or player id to highlight as yours
+var title := "SEASON_AWARDS"
+var titles := {"mvp": "ARJUNA_AWARD", "raider": "BEST_RAIDER", "defender": "BEST_DEFENDER"}
+var sub := "ARJUNA_SUB"
+var note := "ARJUNA_NOTE"
 var _statue: Node3D
 var _t := 0.0
 
@@ -15,11 +19,15 @@ func setup(args: Dictionary) -> void:
 	label = String(args.get("label", ""))
 	back = String(args.get("back", back))
 	mine = String(args.get("mine", ""))
+	title = String(args.get("title", tr(title)))
+	titles = args.get("titles", titles)
+	sub = String(args.get("sub", sub))
+	note = String(args.get("note", note))
 
 
 func _ready() -> void:
 	UI.screen(self)
-	var v := UI.page(self, tr("SEASON_AWARDS"), func(): Game.show_screen(back), label)
+	var v := UI.page(self, tr(title), func(): Game.show_screen(back), label)
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 28)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -43,13 +51,13 @@ func _ready() -> void:
 	right.add_theme_constant_override("separation", 16)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cols.add_child(right)
-	right.add_child(_award_card("ARJUNA_AWARD", "ARJUNA_SUB", awards.get("mvp", {}), "total", true))
+	right.add_child(_award_card(String(titles.mvp), sub, awards.get("mvp", {}), "total", true))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 16)
-	row.add_child(_award_card("BEST_RAIDER", "", awards.get("raider", {}), "raid", false))
-	row.add_child(_award_card("BEST_DEFENDER", "", awards.get("defender", {}), "tackle", false))
+	row.add_child(_award_card(String(titles.raider), "", awards.get("raider", {}), "raid", false))
+	row.add_child(_award_card(String(titles.defender), "", awards.get("defender", {}), "tackle", false))
 	right.add_child(row)
-	right.add_child(UI.wrap(tr("ARJUNA_NOTE"), "MutedLabel", 15))
+	right.add_child(UI.wrap(tr(note), "MutedLabel", 15))
 	Sfx.crowd(0.6)
 	Sfx.play("roar", -8.0)
 
@@ -87,7 +95,7 @@ func _award_card(title_key: String, sub_key: String, w: Dictionary, stat: String
 			line = "%d %s · %d %s · %d %s" % [int(w.raid) + int(w.tackle), tr("POINTS_TOTAL"), int(w.raid), tr("STAT_RAID_PTS"), int(w.tackle), tr("STAT_TACKLE_PTS")]
 	cv.add_child(UI.label(line, "MutedLabel", 17))
 	if _is_mine(w) and big:
-		cv.add_child(UI.label(tr("ARJUNA_YOURS"), "SubLabel", 20, Game.C_SAFFRON))
+		cv.add_child(UI.label(tr("ARJUNA_YOURS" if title_key == "ARJUNA_AWARD" else "AWARD_YOURS"), "SubLabel", 20, Game.C_SAFFRON))
 	return card
 
 

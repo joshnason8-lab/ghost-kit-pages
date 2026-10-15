@@ -165,6 +165,10 @@ var grapple: Grapple = null   # the raider in defenders' hands (see Grapple)
 var defence: DefenceCoach      # the defending team's roles and places (see DefenceCoach)
 var event_log: Array = []      # the last gameplay events: [match seconds, raid number, kind, info]
 var _event_n := 0
+var crowd_lift := 0.0          # a derby or a final: the crowd louder all match
+var walkout := false           # a final: the teams walk out and line up across the midline before the start
+const WALKOUT_HOLD := 3.6      # ... standing in line this long
+const WALKOUT_LEN := 7.0       # ... and the intro this long in all
 
 
 func _ready() -> void:
@@ -180,6 +184,8 @@ func _ready() -> void:
 	clock_speed = CLOCK_SPEEDS[clampi(int(config.get("length", Game.settings.length)), 0, 2)]
 	attract = bool(config.get("attract", false))
 	lab = bool(config.get("lab", false))
+	walkout = bool(config.get("walkout", false)) and not attract
+	crowd_lift = 0.25 if walkout else (0.15 if String(config.get("derby", "")) != "" else 0.0)
 	defence = DefenceCoach.new(self)
 	if bool(config.get("debug_draw", false)):
 		add_child(DebugDraw.new(self))
@@ -206,7 +212,11 @@ func _ready() -> void:
 	for t in 2:
 		var tm: Dictionary = teams[t]
 		var squad: Array = config.get("home_squad" if t == 0 else "away_squad", DB.team(tm.id).squad)
-		var seven := DB.starting_seven(squad.duplicate())
+		# The seven picked for the match (League Season), else the best seven.
+		var seven: Array = (config.get("home_seven" if t == 0 else "away_seven", []) as Array).duplicate()
+		if seven.is_empty():
+			seven = DB.starting_seven(squad.duplicate())
+		var fit_map: Dictionary = config.get("fitness", {})
 		var limit: Array = config.get("players", [7, 7])
 		seven = seven.slice(0, int(limit[t]))
 		if t == 0 and cp is Dictionary:
@@ -224,6 +234,8 @@ func _ready() -> void:
 				a.dmoves[a.style] = 90
 			a.slot = i
 			a.is_career = (String(seven[i].id) == career_pid)
+			if fit_map.has(a.pid()):
+				a.energy = clampf(float(fit_map[a.pid()]), 0.5, 1.0)   # tired from earlier matches
 			add_child(a)
 			tm.players.append(a)
 			athletes.append(a)
@@ -258,11 +270,20 @@ func _ready() -> void:
 		first_raider = int(config.first_raider)
 	raiding = first_raider
 	_place_all_instant()
-	Sfx.crowd(0.35)
+	Sfx.crowd(0.35 + crowd_lift)
 	Sfx.drums(true)
 	_set_phase("intro")
+	if walkout:
+		arena.excite(1.0)
+		Sfx.play("roar", -4.0)
 	if not attract:
-		hud.show_intro(DB.team_name(teams[0].id), DB.team_name(teams[1].id), tr(_arena_name()))
+		var occasion := ""
+		if walkout:
+			occasion = tr("THE_FINAL")
+		elif String(config.get("derby", "")) != "":
+			occasion = tr(String(config.derby))
+		hud.show_intro(DB.team_name(teams[0].id), DB.team_name(teams[1].id), tr(_arena_name()), occasion,
+			[teams[0].id, teams[1].id] if walkout else [])
 
 
 func _arena_name() -> String:
@@ -370,9 +391,22 @@ func bench_spot(t: int, k: int) -> Vector3:
 
 func _place_all_instant() -> void:
 	for t in 2:
-		for a in teams[t].players:
-			a.position = formation_spot(a)
-			a.facing = Vector3(0, 0, -side(t))
+		var ps: Array = teams[t].players
+		for a in ps:
+			if walkout:
+				# The final: both teams in a line along the midline's side of their halves, facing the main stand.
+				a.position = Vector3(1.6, 0, side(t) * (0.8 + ps.find(a) * 0.85))
+				a.facing = Vector3(1, 0, 0)
+			else:
+				a.position = formation_spot(a)
+				a.facing = Vector3(0, 0, -side(t))
+
+
+## The walk-out: the teams stand in their lines, facing the cameras and the crowd, before going to their places.
+func _stand_lined_up(dt: float) -> void:
+	for a in athletes:
+		a.drive(Vector3.ZERO, dt)
+		a.face_toward(a.position + Vector3(4, 0, 0), dt)
 
 
 # ---------------------------------------------------------------- phases
@@ -392,8 +426,11 @@ func _process(delta: float) -> void:
 	phase_t += dt
 	match phase:
 		"intro":
-			_walk_to_positions(dt, false)
-			if phase_t > 3.0:
+			if walkout and phase_t < WALKOUT_HOLD:
+				_stand_lined_up(dt)
+			else:
+				_walk_to_positions(dt, false)
+			if phase_t > (WALKOUT_LEN if walkout else 3.0):
 				_begin_setup()
 		"setup":
 			_walk_to_positions(dt, true)
@@ -625,7 +662,7 @@ func _tick_raid(dt: float) -> void:
 	_tick_shouts(dt)
 	# The crowd builds as the raider goes deep and roars through a struggle.
 	var tension := clampf(depth_in(1 - raiding, raider.position) / Arena.BONUS, 0.0, 1.0)
-	Sfx.crowd(0.3 + 0.35 * tension + (0.35 if raid.struggle and not raid.holders.is_empty() else 0.0))
+	Sfx.crowd(0.3 + crowd_lift + 0.35 * tension + (0.35 if raid.struggle and not raid.holders.is_empty() else 0.0))
 	var defs := defenders()
 	var holders: Array = raid.holders
 

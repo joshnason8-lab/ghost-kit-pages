@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.7.11-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.8.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.7.11-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.8.0-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -50,7 +50,23 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
 - The phone's **back button**: in a match it pauses and resumes; on other screens it goes back; on the main
   menu it closes the game.
 - Leave the app mid-raid (home button or a call), then come back. The match should be paused.
-- A **League Season** through the auction and a few rounds.
+- A **League Season**, the 0.8.0 way:
+  - **Retentions**: keep up to six (watch the purse fall as you keep stars), then the **war room**: what your squad
+    needs, the fit stars and likely prices on the list, a **shortlist** with your maximum for each, the other
+    franchises' purses and needs.
+  - **The auction**: likely bidders on each lot, **auto-bid** to your maximum, **Next target** to skip ahead,
+    and the **grades** for all twelve franchises at the end.
+  - **Match day**: the preview (form guide, last meeting, key battles), then pick **your seven**. Rest a tired
+    player (his fitness bar) and see whether the match feels different with fresh legs; injured players cannot
+    play.
+  - **The news**: the ticker along the bottom, the front page after each round, and breaking news (a record, a
+    knock to your star, clinching a playoff place). Are the headlines interesting, and do they read well in your
+    language?
+  - The **board's goal** (on your team card) and its verdict at the end, the **weekly awards**, a **derby**
+    (louder crowd), the **walk-out** before the final, the **Hall of fame**, and **Next season** (players a year
+    older; look for a rising star or a retirement in the news).
+- A **Nations Cup**: pick 12 of 18 and a captain, check **What you need** before your last group match, the
+  bracket, the awards, and try the **Underdog Trophy** with Kenya, Japan or Argentina.
 - **Every ground** in a Quick Match. Since 0.7.9 each has baked lighting, new court and stand surfaces and a
   broadcast camera that moves in on a tackle. Say if one looks wrong or runs slower than the others.
 - **The new player models**: in a Quick Match each side's first two players wear the two players made in Meshy's

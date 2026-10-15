@@ -102,6 +102,7 @@ const BLOCKED_NAMES := ["Pardeep Narwal", "Pawan Sehrawat", "Naveen Kumar", "Man
 var teams := {}        # id -> team dictionary
 var league_ids: Array[String] = []
 var country_ids: Array[String] = []
+var _pools := {}       # country id -> its national pool (national_pool)
 
 
 func _ready() -> void:
@@ -221,6 +222,43 @@ func make_player(rng: RandomNumberGenerator, role: String, level: int, pname: St
 		"build": rng.randf_range(0.92, 1.1),
 		"height": rng.randf_range(1.70, 1.88),
 	}
+
+
+## A country's pool for the Nations Cup: its twelve, and six young hopefuls pushing for a place (19 to 23, rated a
+## little below the twelve, some with a lot still to come). Made from the country's own seed, so the same everywhere.
+func national_pool(id: String) -> Array:
+	if _pools.has(id):
+		return _pools[id]
+	var t := team(id)
+	var pool: Array = t.squad.duplicate(true)
+	var code := "in"
+	for c in COUNTRIES:
+		if c.id == id:
+			code = String(c.names)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(id + "|pool")
+	var used := {}
+	var numbers := []
+	for p in pool:
+		used[String(p.name)] = true
+		numbers.append(int(p.number))
+	var roles := ["raider", "raider", "allrounder", "defender", "defender", "defender"]
+	for i in roles.size():
+		var p := make_player(rng, roles[i], int(t.base) - 3 - rng.randi_range(0, 6), _make_name(rng, code, "", used))
+		var num := rng.randi_range(1, 99)
+		while numbers.has(num):
+			num = rng.randi_range(1, 99)
+		numbers.append(num)
+		p.number = num
+		p.team = id
+		p.id = "%s_%d" % [id, 12 + i]
+		p.age = rng.randi_range(19, 23)
+		p.pot = snappedf(rng.randf_range(0.4, 1.0), 0.01)
+		if code != "in":
+			p.skin = rng.randi_range(0, 3) if code in ["ir", "kr", "jp", "ar", "pl", "th"] else rng.randi_range(2, 5)
+		pool.append(p)
+	_pools[id] = pool
+	return pool
 
 
 # ---------------------------------------------------------------- moves

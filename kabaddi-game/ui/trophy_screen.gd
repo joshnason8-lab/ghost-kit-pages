@@ -4,6 +4,7 @@ extends Control
 var team := ""
 var title := ""
 var back := "res://ui/main_menu.gd"
+var underdog := false   # the Nations Cup won by a side rated 70 or below: a silver cup with a gold crown
 var _cam: Camera3D
 var _trophy: Node3D
 var _t := 0.0
@@ -13,6 +14,7 @@ func setup(args: Dictionary) -> void:
 	team = String(args.get("team", "MUM"))
 	title = String(args.get("title", ""))
 	back = String(args.get("back", back))
+	underdog = bool(args.get("underdog", false))
 
 
 func _ready() -> void:
@@ -35,7 +37,9 @@ func _ready() -> void:
 	_trophy.position = Vector3(0, 0, 0)
 	sv.add_child(_trophy)
 	var squad: Array = DB.team(team).squad
-	if Game.get_season() and Game.get_season().team == team:
+	if t.kind == "country" and Game.get_cup() and Game.get_cup().user == team:
+		squad = Game.get_cup().squad
+	elif Game.get_season() and Game.get_season().team == team:
 		squad = Game.get_season().squads[team]
 	for i in mini(7, squad.size()):
 		var a := Athlete.new()
@@ -69,6 +73,8 @@ func _ready() -> void:
 	champ.add_theme_constant_override("outline_size", 16)
 	v.add_child(champ)
 	v.add_child(UI.label(DB.team_name(team), "HeaderLabel", 54))
+	if underdog:
+		v.add_child(UI.label(tr("UNDERDOG_TROPHY_SUB"), "SubLabel", 24, Game.C_GOLD))
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -91,6 +97,11 @@ func _make_trophy() -> Node3D:
 	gold.albedo_color = Color("e6b422")
 	gold.metallic = 1.0
 	gold.roughness = 0.22
+	if underdog:
+		# The Underdog Trophy is silver: less of a mirror, or it shows only the dark sky it reflects.
+		gold.albedo_color = Color("e4e8ee")
+		gold.metallic = 0.55
+		gold.roughness = 0.3
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color("1b1b1b")
 	dark.roughness = 0.4
@@ -124,6 +135,23 @@ func _make_trophy() -> Node3D:
 		h.position = Vector3(sgn * 0.48, 1.45, 0)
 		h.rotation = Vector3(PI / 2, 0, 0)
 		root.add_child(h)
+	if underdog:
+		# Its crown: a ring of gold points round the rim.
+		var crown := StandardMaterial3D.new()
+		crown.albedo_color = Color("e6b422")
+		crown.metallic = 1.0
+		crown.roughness = 0.25
+		for k in 8:
+			var spike := MeshInstance3D.new()
+			var cone := CylinderMesh.new()
+			cone.top_radius = 0.0
+			cone.bottom_radius = 0.07
+			cone.height = 0.22
+			spike.mesh = cone
+			spike.material_override = crown
+			var ang := TAU * k / 8.0
+			spike.position = Vector3(cos(ang) * 0.4, 1.9, sin(ang) * 0.4)
+			root.add_child(spike)
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 2.6, 1.5)
 	light.light_energy = 2.0

@@ -246,8 +246,8 @@ static func _fit_line(l: Label, size: int) -> void:
 			l.add_theme_font_size_override("font_size", fs))
 
 
-## Teams to pick from, filling the screen: crest, name, rating bar.
-static func team_grid(owner: Control, ids: Array, columns: int, on_pick: Callable) -> GridContainer:
+## Teams to pick from, filling the screen: crest, name, rating bar, and a tag (a pill) for any team in tags.
+static func team_grid(owner: Control, ids: Array, columns: int, on_pick: Callable, tags := {}) -> GridContainer:
 	var grid := GridContainer.new()
 	grid.columns = columns
 	grid.add_theme_constant_override("h_separation", 14)
@@ -290,7 +290,18 @@ static func team_grid(owner: Control, ids: Array, columns: int, on_pick: Callabl
 		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var nm := label(DB.team_name(id), "SubLabel", 21)
 		nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		col.add_child(nm)
+		if tags.has(id):
+			var top := HBoxContainer.new()
+			top.add_theme_constant_override("separation", 8)
+			top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			top.add_child(nm)
+			var tag: Control = tags[id]
+			tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			top.add_child(tag)
+			col.add_child(top)
+		else:
+			col.add_child(nm)
 		var rating := DB.team_rating(t.squad)
 		var sub := owner.tr(String(t.state)) if t.kind != "country" else owner.tr("RATING") + " %d" % rating
 		col.add_child(label(sub, "MutedLabel", 15))
@@ -517,12 +528,13 @@ static func team_picker(ids: Array, selected: String, on_pick: Callable) -> Opti
 	return o
 
 
-## Standings table: rows of {id, p, w, d, l, pd, pts}.
-static func table(owner: Control, rows: Array, highlight: String) -> GridContainer:
+## Standings table: rows of {id, p, w, d, l, pd, pts}. compact: smaller rows, for two tables on one screen.
+static func table(owner: Control, rows: Array, highlight: String, compact := false) -> GridContainer:
 	var g := GridContainer.new()
 	g.columns = 8
-	g.add_theme_constant_override("h_separation", 18)
-	g.add_theme_constant_override("v_separation", 6)
+	g.add_theme_constant_override("h_separation", 14)
+	g.add_theme_constant_override("v_separation", 1 if compact else 6)
+	var fs := 18 if compact else 20
 	var heads := ["#", owner.tr("COL_TEAM"), owner.tr("COL_P"), owner.tr("COL_W"), owner.tr("COL_D"), owner.tr("COL_L"), owner.tr("COL_PD"), owner.tr("COL_PTS")]
 	for h in heads:
 		g.add_child(label(h, "EyebrowLabel"))
@@ -530,20 +542,20 @@ static func table(owner: Control, rows: Array, highlight: String) -> GridContain
 		var r: Dictionary = rows[i]
 		var hl: bool = r.id == highlight
 		var col := Game.C_SAFFRON if hl else Game.C_INK
-		g.add_child(label(str(i + 1), "", 20, Game.C_MUTED))
+		g.add_child(label(str(i + 1), "", fs, Game.C_MUTED))
 		var nm := HBoxContainer.new()
 		nm.add_theme_constant_override("separation", 8)
-		nm.add_child(Crest.make(r.id, 26))
-		var name_l := label(DB.team_name(r.id), "SubLabel" if hl else "", 20, col)
+		nm.add_child(Crest.make(r.id, 22 if compact else 26))
+		var name_l := label(DB.team_name(r.id), "SubLabel" if hl else "", fs, col)
 		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nm.add_child(name_l)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		g.add_child(nm)
 		for k in ["p", "w", "d", "l"]:
-			g.add_child(label(str(int(r[k])), "", 20, col))
+			g.add_child(label(str(int(r[k])), "", fs, col))
 		var pd := int(r.pd)
-		g.add_child(label(("+" if pd > 0 else "") + str(pd), "", 20, col))
-		g.add_child(label(str(int(r.pts)), "SubLabel", 20, col))
+		g.add_child(label(("+" if pd > 0 else "") + str(pd), "", fs, col))
+		g.add_child(label(str(int(r.pts)), "SubLabel", fs, col))
 	return g
 
 

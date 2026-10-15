@@ -76,9 +76,13 @@ func _shade() -> void:
 func _build_ui() -> void:
 	var margin := UI.frame(self, 44)
 	_ui = margin
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 14)
+	margin.add_child(outer)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 36)
-	margin.add_child(row)
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer.add_child(row)
 
 	# Left: the title, and the small links at the foot.
 	var col := VBoxContainer.new()
@@ -150,6 +154,23 @@ func _build_ui() -> void:
 		var t := UI.tile(tr(md[0]), tr(md[1]), md[3], md[4], func(): _go(path2), false, md[5])
 		stack.add_child(t)
 		_cards.append(t)
+	# The news from your season and your cup, along the foot of the screen.
+	var stories := _menu_news()
+	if not stories.is_empty():
+		var tk := NewsTicker.make(stories)
+		outer.add_child(tk)
+		_cards.append(tk)
+
+
+func _menu_news() -> Array:
+	var out := []
+	var s = Game.get_season()
+	if s != null:
+		out.append_array(News.latest(s.news, 8))
+	var c = Game.get_cup()
+	if c != null:
+		out.append_array(News.latest(c.news, 6))
+	return out
 
 
 ## Pick up where you left off: a season or cup in progress.

@@ -28,8 +28,9 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 | **Grounds** | Mumbai Dome, Gaon Maidan (village mud court), National Stadium (floodlit), Monsoon Ground (rain), Puri Beach (sand). Each has baked lighting, textured surfaces and its own colour grade; players cast shadows on every graphics level. See [docs/GRAPHICS.md](docs/GRAPHICS.md). |
 | **Quick Match** | Any two league teams or countries, any ground. |
 | **Season awards** | Every player's raid and tackle points are kept all season (simulated matches share each team's score by ability). At the end: best raider, best defender, and the **Arjuna Award** for the most valuable player, presented with a bronze statuette. |
-| **League Season** | Own a franchise. Retain your best six, then **bid at the auction**: categories A–D and New Young Players, paddles, "going once, going twice", bidding wars, record buys, **Final Bid Match cards**, and an accelerated round. Then play 11 rounds and the playoffs (top six, two eliminators, semis, final) and **lift the trophy**. |
-| **Nations Cup** | 8 countries, two groups, semis, final. Real flags and flag-accurate kits for 12 countries. |
+| **League Season** | Own a franchise. **Choose up to six retentions** (stars cost more to keep), plan in the **war room** (what your squad still needs: a star raider, corners, covers; every lot with how well he fits, his age, last season's points and likely price; a shortlist with the most you will pay; the other franchises' purses and needs), then **bid at the auction**: categories A–D and New Young Players, paddles, "going once, going twice", bidding wars, record buys, **Final Bid Match cards**, an accelerated round, likely bidders on each lot, **auto-bid to your max** and a skip to your next target. Every franchise's auction is **graded**. Then the **board sets a goal** that moves next year's budget, and you play 11 rounds and the playoffs (top six, two eliminators, semis, final). Before each match: a **preview** (form guide, last meeting, key battles, their injuries) and **your seven**, picked with each player's form, fitness and knocks; tired players start with less energy. **Derbies** have louder crowds, the final opens with a **walk-out**, each round names a raider, defender and team of the week, the **record book** and **hall of fame** keep every season, and players age: the young improve, the old slow and retire. |
+| **News** | A **ticker** of headlines written from what happens (upsets, thrashings, Super 10s, High 5s, runs, the table, clinched places, injuries, records, the auction, the board), several wordings for each story, the round's biggest story on the **front page**, **breaking news** that stops you until you have seen it, and the latest on the home screen. |
+| **Nations Cup** | 8 countries, two groups, semis, final. **Pick your 12 from 18** (the regulars and six uncapped youngsters) and a **captain**; before your last group match you are told **what you need** ("India must beat Iran by 6 or more"); a **knockout bracket**; the **Golden Raider**, Best Defender and Player of the Tournament; the final's **walk-out**; and the **Underdog Trophy** for winning it with a side rated 70 or below (Kenya, Japan, Argentina...). Real flags and flag-accurate kits for 12 countries. |
 | **Training** | Off the main menu for now; the code is kept (`ui/tutorial_menu.gd`). Each move acted out on a loop before you try it, then twelve lessons with on-screen objectives: cant, hand touch, toe touch, back and side kicks, dubki, lion jump, bonus, breaking a hold, tackling, chain tackle, waist hold, dash. |
 | **Menus** | Built for wide phone screens: big mode tiles over a live AI match, each with a painted player in its colour, teams facing off in Quick Match, a full-screen player auction, How to play in short sections. Music plays in the menus (turn it off in Settings). |
 | **Languages** | English, हिन्दी, मराठी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা, ਪੰਜਾਬੀ. The game starts in the phone's language when it has it; the globe button on the main menu and Settings both change it. |
@@ -92,9 +93,13 @@ is already set up for that layout and builds the APK on every push.
 ```
 autoload/   game.gd (settings, saves, theme, screen switching), db.gd (teams, squads, grounds), sfx.gd (synth audio)
 game/       match.gd (rules + AI), athlete.gd, human_model.gd (placeholder body + custom model slot),
-            arena.gd (court + five grounds), camera_rig.gd, touch_controls.gd, hud.gd, cup.gd, career.gd
-ui/         main menu, quick match setup, settings, how to play, Nations Cup, career hub,
-            create player, auction, result screen
+            arena.gd (court + five grounds), camera_rig.gd, touch_controls.gd, hud.gd, cup.gd, career.gd,
+            season.gd (the League Season: line-ups, fitness, the board, records, growth), news.gd (the headlines),
+            scout.gd (a player's place, age, growth, strengths; a squad's needs and how well a player fits it),
+            auction.gd
+ui/         main menu, quick match setup, settings, how to play, Nations Cup (cup_screen, cup_squad), career hub,
+            create player, League Season (season_hub, match_day, retention_screen, war_room, auction_screen,
+            hall_of_fame), news_ticker (ticker, front page, breaking news), player_card, result screen
 i18n/       src/*.json (one file per language), strings.csv (generated)
 fonts/      Noto Sans (Latin, Devanagari, Bengali, Tamil, Telugu, Kannada, Gurmukhi) and Teko. All SIL OFL.
 tests/      compile_check, test_runner (headless smoke test), screenshots (renders a visual tour),
@@ -141,6 +146,9 @@ The smoke test does five things:
 - Checks the data and all eight translations.
 - Opens every screen.
 - Runs a whole Nations Cup, plus a career auction and season through to the next season.
+- Runs a League Season with your own retentions, a shortlist won on auto-bid, the grades, your picked seven on
+  the mat (tired ones with less energy), the final's walk-out, the news, weekly awards, records, the board's
+  verdict and a year's growth; and a Nations Cup with a picked squad, a captain, what you need, and its awards.
 - Plays a full AI-vs-AI match under knockout rules.
 
 ## Translations

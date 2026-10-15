@@ -30,11 +30,14 @@ static func add_match(table: Dictionary, player_stats: Dictionary, skip_pid := "
 		add(table, String(pid), String(r.name), String(r.team), int(r.raid), int(r.tackle))
 
 
-## Share a simulated team score among the starting seven.
-static func sim_team(table: Dictionary, squad: Array, team: String, points: int, rng: RandomNumberGenerator) -> void:
-	var seven := DB.starting_seven(squad.duplicate())
+## Share a simulated team score among the seven who played (the starting seven if not given). Returns each
+## one's share, pid -> [raid points, tackle points].
+static func sim_team(table: Dictionary, squad: Array, team: String, points: int, rng: RandomNumberGenerator,
+		played: Array = []) -> Dictionary:
+	var seven: Array = played if not played.is_empty() else DB.starting_seven(squad.duplicate())
+	var out := {}
 	if seven.is_empty():
-		return
+		return out
 	var raid_w := []
 	var tackle_w := []
 	for p in seven:
@@ -48,6 +51,8 @@ static func sim_team(table: Dictionary, squad: Array, team: String, points: int,
 	for i in seven.size():
 		var p: Dictionary = seven[i]
 		add(table, String(p.id), String(p.name), team, raid_pts[i], tackle_pts[i])
+		out[String(p.id)] = [raid_pts[i], tackle_pts[i]]
+	return out
 
 
 static func _split(total: int, weights: Array, rng: RandomNumberGenerator) -> Array:

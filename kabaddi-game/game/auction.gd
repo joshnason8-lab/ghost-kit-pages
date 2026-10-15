@@ -36,6 +36,10 @@ var last_bidders: Array = []
 var stage := "open"             # open, once, twice, fbm_offer, done
 var war_announced := false
 var _next_ai := 0.6
+# Your shortlist (League Season): pid -> the most you will pay. With auto_bid on, your paddle goes up for them by
+# itself, up to that, like a franchise's would.
+var user_max := {}
+var auto_bid := false
 
 
 static func category_for(ovr: int) -> String:
@@ -46,6 +50,12 @@ static func category_for(ovr: int) -> String:
 	if ovr >= 64:
 		return "C"
 	return "D"
+
+
+## What a player is worth on the open market, in lakhs: the yardstick for the franchises' bids and the grades.
+static func worth(ovr: int, cat: String) -> float:
+	var v := pow(maxf(0.0, float(ovr) - 48.0), 1.62) * 0.9
+	return v * (0.6 if cat == "NYP" else 1.0)
 
 
 static func increment(p: float) -> float:
@@ -133,10 +143,7 @@ func valuation(team_id: String, lot: Dictionary) -> float:
 	var t: Dictionary = teams[team_id]
 	var r := RandomNumberGenerator.new()
 	r.seed = hash(team_id + String(lot.player.name)) + round_no
-	var o: float = lot.ovr
-	var v := pow(maxf(0.0, o - 48.0), 1.62) * 0.9
-	if lot.cat == "NYP":
-		v *= 0.6
+	var v := worth(int(lot.ovr), String(lot.cat))
 	# Need: teams short of a role pay more for it.
 	var have := 0
 	for p in t.squad:
@@ -165,7 +172,11 @@ func step(dt: float) -> Array:
 		_next_ai = rng.randf_range(0.35, 1.2)
 		var keen := []
 		for id in teams.keys():
-			if id == user_team or not can_bid(id):
+			if not can_bid(id):
+				continue
+			if id == user_team:
+				if auto_bid and float(user_max.get(String(lot.player.get("id", "")), -1.0)) >= next_price():
+					keen.append(id)
 				continue
 			if valuation(id, lot) >= next_price():
 				keen.append(id)
@@ -279,11 +290,17 @@ func next_lot() -> Dictionary:
 
 ## Finish everything instantly (skip buttons and simulation).
 func resolve_all(stop_at_mine := false) -> void:
+	resolve_until(func(l): return stop_at_mine and bool(l.mine))
+
+
+## Play on instantly until a lot that stop(lot) wants comes up (left waiting, for the screen to open it), or to the
+## end. Your auto-bids go in as they would live; a Final Bid Match is used if he is on your shortlist at the price.
+func resolve_until(stop: Callable) -> void:
 	var guard := 0
 	while not finished() and guard < 2000:
 		guard += 1
 		var lot := current()
-		if stop_at_mine and lot.mine and lot.status == "waiting":
+		if lot.status == "waiting" and stop.call(lot):
 			return
 		if lot.status == "waiting":
 			open_lot()
@@ -291,7 +308,40 @@ func resolve_all(stop_at_mine := false) -> void:
 		while stage not in ["done"] and inner < 400:
 			inner += 1
 			if stage == "fbm_offer":
-				answer_fbm(false)
+				answer_fbm(auto_bid and float(user_max.get(String(lot.player.get("id", "")), -1.0)) >= price)
 				break
 			step(0.5)
 		next_lot()
+
+
+## Roughly what it will take to sign a lot: the most any other franchise would go to for him, as far as its purse
+## allows (it can go higher or lower on the day, as purses empty and squads fill).
+func estimate(lot: Dictionary) -> float:
+	var top := float(lot.base)
+	for id in teams:
+		if id == user_team or teams[id].squad.size() >= SQUAD_MAX:
+			continue
+		top = maxf(top, minf(valuation(id, lot), float(teams[id].purse)))
+	return top
+
+
+## The most you can put on one player and still fill your squad at minimum prices.
+func can_spend(team_id: String) -> float:
+	var t: Dictionary = teams[team_id]
+	return float(t.purse) - maxf(0.0, (SQUAD_MAX - t.squad.size() - 1) * float(CATEGORIES.NYP))
+
+
+## The franchises likely to bid for a lot, keenest first: those who rate him well above his base price.
+func likely_bidders(lot: Dictionary, n := 3) -> Array:
+	var rows := []
+	for id in teams:
+		if id == user_team or teams[id].squad.size() >= SQUAD_MAX:
+			continue
+		var v := valuation(id, lot)
+		if v >= float(lot.base) * 1.15:
+			rows.append([id, v])
+	rows.sort_custom(func(a, b): return float(a[1]) > float(b[1]))
+	var ids := []
+	for r in rows.slice(0, n):
+		ids.append(r[0])
+	return ids

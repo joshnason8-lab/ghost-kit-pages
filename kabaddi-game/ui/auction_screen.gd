@@ -25,6 +25,10 @@ var _lot_meta: Label
 var _ovr: Label
 var _bars: VBoxContainer
 var _sig: Label
+var _extra: Label            # age, last season's points or a young player's potential
+var _fit_row: HBoxContainer  # how well he fits your squad (League Season)
+var _strengths: Label
+var _bidders: HBoxContainer
 var _portrait_root: Node3D
 var _portrait: Athlete = null
 var _portrait_sil: TextureRect
@@ -36,11 +40,14 @@ var _record: Label
 var _feed: VBoxContainer
 var _bid_btn: Button
 var _buttons: HBoxContainer
+var _buttons2: HBoxContainer
+var _max_l: Label
 # The board.
 var _team_tiles := {}
 var _queue: VBoxContainer
 var _lot_count: Label
 var _purse_l: Label
+var _needs_l: Label
 var _fbm_panel: PanelContainer
 var _t := 0.0
 
@@ -59,6 +66,9 @@ func _ready() -> void:
 		Game.goto_menu()
 		return
 	eng = owner_obj.make_auction()
+	if mode == "owner":
+		eng.user_max = owner_obj.shortlist.duplicate()
+		eng.auto_bid = bool(owner_obj.auto_bid)
 	var back := func(): Game.show_screen("res://ui/season_hub.gd" if mode == "owner" else "res://ui/career_hub.gd")
 	var yr: int = owner_obj.year if mode == "owner" else owner_obj.season
 	var v := UI.page(self, tr("AUCTION"), back, tr("AUCTION_SEASON").format({"n": yr}))
@@ -66,6 +76,7 @@ func _ready() -> void:
 	_lot_count = UI.label("", "SubLabel", 20, Game.C_MUTED)
 	head.add_child(_lot_count)
 	if mode == "owner":
+		head.add_child(_needs_card())
 		head.add_child(_purse_card())
 
 	var cols := HBoxContainer.new()
@@ -128,6 +139,30 @@ func _purse_card() -> PanelContainer:
 	return p
 
 
+## What your squad still needs, beside the purse (League Season).
+func _needs_card() -> PanelContainer:
+	var p := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(Game.C_PANEL, 0.9)
+	sb.set_corner_radius_all(14)
+	sb.border_color = Color(Game.C_SAFFRON, 0.35)
+	sb.set_border_width_all(1)
+	sb.content_margin_left = 12
+	sb.content_margin_right = 14
+	sb.content_margin_top = 4
+	sb.content_margin_bottom = 4
+	p.add_theme_stylebox_override("panel", sb)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", -4)
+	col.add_child(UI.label(tr("NEEDS").to_upper(), "EyebrowLabel", 13, Game.C_SAFFRON))
+	_needs_l = UI.label("", "SubLabel", 17)
+	_needs_l.custom_minimum_size = Vector2(250, 0)
+	_needs_l.clip_text = true
+	col.add_child(_needs_l)
+	p.add_child(col)
+	return p
+
+
 func _block_panel() -> PanelContainer:
 	var pv: Array = _panel(0.85)
 	var v: VBoxContainer = pv[1]
@@ -174,12 +209,24 @@ func _block_panel() -> PanelContainer:
 	_ovr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	nrow.add_child(_ovr)
 	v.add_child(nrow)
+	_extra = UI.label("", "MutedLabel", 15)
+	_extra.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(_extra)
+	_fit_row = HBoxContainer.new()
+	_fit_row.add_theme_constant_override("separation", 4)
+	v.add_child(_fit_row)
 	_bars = VBoxContainer.new()
 	_bars.add_theme_constant_override("separation", 2)
 	v.add_child(_bars)
 	_sig = UI.label("", "EyebrowLabel", 14, Game.C_GOLD)
 	_sig.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(_sig)
+	_strengths = UI.label("", "", 15, Game.C_GOOD)
+	_strengths.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(_strengths)
+	_bidders = HBoxContainer.new()
+	_bidders.add_theme_constant_override("separation", 6)
+	v.add_child(_bidders)
 	return pv[0]
 
 
@@ -219,8 +266,8 @@ func _build_stand(sv: SubViewport) -> void:
 	var cam := Camera3D.new()
 	cam.fov = 30
 	_portrait_root.add_child(cam)
-	cam.position = Vector3(0, 1.1, 3.3)
-	cam.look_at(Vector3(0, 0.95, 0))
+	# Aimed by its transform: the stand is built before it is in the tree, where look_at() cannot work.
+	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 0.95, 0) - Vector3(0, 1.1, 3.3)), Vector3(0, 1.1, 3.3))
 
 
 func _show_portrait(p: Dictionary, former: String) -> void:
@@ -260,6 +307,14 @@ func _stage_panel() -> PanelContainer:
 	_record.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_record.visible = false
 	v.add_child(_record)
+	_buttons2 = HBoxContainer.new()
+	_buttons2.add_theme_constant_override("separation", 10)
+	_max_l = UI.label("", "SubLabel", 17, Game.C_SAFFRON)
+	_max_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_max_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_max_l.clip_text = true
+	_buttons2.add_child(_max_l)
+	v.add_child(_buttons2)
 	# The auctioneer, newest line on top.
 	var feed_card := PanelContainer.new()
 	var fsb := StyleBoxFlat.new()
@@ -317,6 +372,11 @@ func _board_panel() -> PanelContainer:
 	_queue = VBoxContainer.new()
 	_queue.add_theme_constant_override("separation", 0)
 	v.add_child(_queue)
+	if mode == "owner":
+		var sim := UI.button(tr("AUC_SIM_REST"), false, _finish_all)
+		sim.custom_minimum_size = Vector2(0, 50)
+		sim.name = "SimRest"
+		v.add_child(sim)
 	return pv[0]
 
 
@@ -367,6 +427,9 @@ func _team_tile(id: String) -> PanelContainer:
 func _build_buttons() -> void:
 	for c in _buttons.get_children():
 		c.queue_free()
+	for c in _buttons2.get_children():
+		if c != _max_l:
+			c.queue_free()
 	_bid_btn = null
 	if _done:
 		return
@@ -375,7 +438,21 @@ func _build_buttons() -> void:
 		_bid_btn.custom_minimum_size = Vector2(0, 74)
 		_bid_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_buttons.add_child(_bid_btn)
-		_buttons.add_child(UI.button(tr("AUC_SIM_REST"), false, _finish_all))
+		var nxt := UI.button(tr("NEXT_TARGET"), false, _skip_to_target)
+		nxt.custom_minimum_size = Vector2(0, 74)
+		nxt.disabled = eng.user_max.is_empty()
+		_buttons.add_child(nxt)
+		var auto := Button.new()
+		auto.text = tr("AUTO_BID_SHORT")
+		auto.theme_type_variation = "ChipButton"
+		auto.toggle_mode = true
+		auto.button_pressed = eng.auto_bid
+		auto.custom_minimum_size = Vector2(0, 46)
+		auto.toggled.connect(func(on):
+			eng.auto_bid = on
+			owner_obj.auto_bid = on
+			_refresh())
+		_buttons2.add_child(auto)
 	else:
 		_buttons.add_child(UI.button(tr("SKIP_TO_MY_LOT"), false, _skip_to_mine))
 		_buttons.add_child(UI.button(tr("FINISH_AUCTION"), false, _finish_all))
@@ -464,6 +541,33 @@ func _open() -> void:
 	_bars.add_child(UI.stat_bar(tr("ATTR_SPEED"), float(a.speed), Color("5aa9ff")))
 	_bars.add_child(UI.stat_bar(tr("ATTR_STAMINA"), float(a.stamina), Game.C_GOOD))
 	_sig.text = DB.moves_line(p)
+	_strengths.text = ", ".join(Scout.strengths(p))
+	var bits := [tr("AGE_N").format({"n": Scout.age(p)}), Scout.slot_name(p)]
+	if mode == "owner":
+		var ls: Dictionary = owner_obj.last_stats.get(String(p.id), {})
+		if not ls.is_empty():
+			bits.append(tr("PTS_LAST_SEASON").format({"n": int(ls.raid) + int(ls.tackle)}))
+		elif cat == "NYP":
+			var pot := Scout.potential(p)
+			bits.append(tr("NYP_POTENTIAL_" + ("HIGH" if pot >= 0.75 else ("FAIR" if pot >= 0.5 else "LOW"))))
+	_extra.text = " · ".join(bits)
+	for c in _fit_row.get_children():
+		c.queue_free()
+	for c in _bidders.get_children():
+		c.queue_free()
+	if mode == "owner":
+		var fit := Scout.fit(p, eng.teams[eng.user_team].squad)
+		_fit_row.add_child(UI.label(tr("FIT").to_upper(), "EyebrowLabel", 13, Game.C_MUTED))
+		for i in 3:
+			_fit_row.add_child(Icon.make("star", 18, Game.C_GOLD if i < fit else Color(1, 1, 1, 0.14)))
+		var pid := String(p.id)
+		if eng.user_max.has(pid):
+			_fit_row.add_child(UI.pill(tr("ON_YOUR_LIST").to_upper(), Game.C_SAFFRON, true))
+		var keen: Array = eng.likely_bidders(lot)
+		if not keen.is_empty():
+			_bidders.add_child(UI.label(tr("LIKELY_BIDDERS").to_upper(), "EyebrowLabel", 13, Game.C_MUTED))
+			for id in keen:
+				_bidders.add_child(Crest.make(String(id), 26))
 	_show_portrait(p, String(lot.former))
 	_price.text = Game.fmt_money(lot.base)
 	_set_leader("")
@@ -482,6 +586,13 @@ func _refresh() -> void:
 	if _purse_l and eng.teams.has(eng.user_team):
 		var ut: Dictionary = eng.teams[eng.user_team]
 		_purse_l.text = "%s · %d/%d" % [Game.fmt_money(ut.purse), ut.squad.size(), AuctionEngine.SQUAD_MAX]
+		if _needs_l:
+			_needs_l.text = Scout.needs_text(Scout.needs(ut.squad))
+	if _max_l and not eng.finished():
+		var mx := float(eng.user_max.get(String(eng.current().player.get("id", "")), -1.0))
+		_max_l.visible = mx > 0.0
+		if mx > 0.0:
+			_max_l.text = tr("YOUR_MAX_LINE").format({"price": Game.fmt_money(mx)})
 	_lot_count.text = tr("AUC_LOT_OF").format({"n": mini(eng.index + 1, eng.lots.size()), "of": eng.lots.size()})
 	for c in _queue.get_children():
 		c.queue_free()
@@ -490,6 +601,8 @@ func _refresh() -> void:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		row.add_child(UI.pill(String(l.cat), CAT_COLORS.get(String(l.cat), Game.C_MUTED)))
+		if eng.user_max.has(String(l.player.get("id", ""))):
+			row.add_child(Icon.make("star", 16, Game.C_SAFFRON))
 		row.add_child(UI.label(String(l.player.name), "", 15))
 		row.add_child(UI.label(str(int(l.ovr)), "MutedLabel", 15))
 		_queue.add_child(row)
@@ -573,6 +686,11 @@ func _handle(ev: Dictionary) -> void:
 				Sfx.play("roar", -4.0)
 			if ev.team == eng.user_team:
 				Sfx.play("roar", -8.0)
+			if mode == "owner" and eng.user_max.has(String(lot.player.get("id", ""))):
+				if ev.team == eng.user_team:
+					_say(tr("TARGET_SIGNED").format({"name": lot.player.name}), Game.C_SAFFRON)
+				else:
+					_say(tr("TARGET_LOST").format({"name": lot.player.name, "team": DB.team_name(ev.team)}), Game.C_MUTED)
 			_pause = 1.8 if not lot.mine else 3.0
 			_between = true
 		"unsold":
@@ -611,6 +729,30 @@ func _skip_to_mine() -> void:
 	_between = false
 	_pause = 0.0
 	_open()
+
+
+## On to the next player on your shortlist, the auction played out instantly until then (your auto-bids in).
+func _skip_to_target() -> void:
+	var cur := eng.current()
+	if not cur.is_empty() and cur.status == "open":
+		# Finish the lot on the block first.
+		var guard := 0
+		while eng.stage != "done" and guard < 400:
+			guard += 1
+			if eng.stage == "fbm_offer":
+				eng.answer_fbm(eng.auto_bid and float(eng.user_max.get(String(cur.player.get("id", "")), -1.0)) >= eng.price)
+				break
+			eng.step(0.5)
+		eng.next_lot()
+	var wanted: Dictionary = eng.user_max
+	eng.resolve_until(func(l): return wanted.has(String(l.player.get("id", ""))) and eng.teams[eng.user_team].squad.size() < AuctionEngine.SQUAD_MAX)
+	_between = false
+	_pause = 0.0
+	if eng.finished():
+		_complete()
+	else:
+		_say(tr("SKIPPED_TO_TARGET"), Game.C_SAFFRON)
+		_open()
 
 
 func _finish_all() -> void:
@@ -663,25 +805,42 @@ func _show_summary() -> void:
 	hc.add_child(UI.label(tr("AUC_CLOSED").to_upper(), "EyebrowLabel", 16, Game.C_GOLD))
 	if mode == "owner":
 		hc.add_child(UI.label(tr("AUC_YOUR_SQUAD"), "HeaderLabel", 44))
+
 	else:
 		hc.add_child(UI.label(tr("YOU_SOLD").format({"team": DB.team_name(owner_obj.team), "price": Game.fmt_money(owner_obj.price)}), "HeaderLabel", 36))
 	head.add_child(hc)
+	if mode == "owner":
+		var mine: Dictionary = owner_obj.grades.get(owner_obj.team, {})
+		if not mine.is_empty():
+			var gb := VBoxContainer.new()
+			gb.add_theme_constant_override("separation", -10)
+			gb.add_child(UI.label(tr("YOUR_GRADE").to_upper(), "EyebrowLabel", 13, Game.C_GOLD))
+			gb.add_child(UI.label(String(mine.grade), "TitleLabel", 64, Game.C_GOLD))
+			head.add_child(gb)
 	if eng.record > 0.0:
 		var rec := UI.label(tr("AUC_TOP_BUY").format({"name": eng.record_holder, "price": Game.fmt_money(eng.record)}), "SubLabel", 18, Game.C_GOLD)
 		rec.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		rec.custom_minimum_size = Vector2(320, 0)
 		head.add_child(rec)
 	if mode == "owner":
+		var cols := HBoxContainer.new()
+		cols.add_theme_constant_override("separation", 18)
+		cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		v.add_child(cols)
 		var sq: Array = owner_obj.squads[owner_obj.team]
 		var grid := GridContainer.new()
-		grid.columns = 4
+		grid.columns = 2
 		grid.add_theme_constant_override("h_separation", 10)
 		grid.add_theme_constant_override("v_separation", 10)
 		var sorted := sq.duplicate()
 		sorted.sort_custom(func(a, b): return DB.overall(a) > DB.overall(b))
 		for pl in sorted:
 			grid.add_child(_squad_chip(pl))
-		v.add_child(UI.scroll(grid))
+		var gs := UI.scroll(grid)
+		gs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		gs.size_flags_stretch_ratio = 1.1
+		cols.add_child(gs)
+		cols.add_child(_grades())
 	else:
 		var sp := Control.new()
 		sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -693,6 +852,37 @@ func _show_summary() -> void:
 	p.modulate.a = 0.0
 	var tw := create_tween()
 	tw.tween_property(p, "modulate:a", 1.0, 0.3)
+
+
+## Every franchise's auction, marked: the grade, and why.
+func _grades() -> Control:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 4)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.add_child(UI.label(tr("AUCTION_GRADES").to_upper(), "EyebrowLabel", 14, Game.C_GOLD))
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 4)
+	var g: Dictionary = owner_obj.grades
+	var ids: Array = g.keys()
+	ids.sort_custom(func(a, b): return int(g[a].rank) < int(g[b].rank))
+	for id in ids:
+		var r: Dictionary = g[id]
+		var mine: bool = id == owner_obj.team
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		row.add_child(Crest.make(String(id), 28))
+		var letter := UI.label(String(r.grade), "HeaderLabel", 30, Game.C_GOLD if String(r.grade).begins_with("A") else (Game.C_INK if String(r.grade).begins_with("B") else Game.C_MAGENTA))
+		letter.custom_minimum_size = Vector2(44, 0)
+		row.add_child(letter)
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", -3)
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		col.add_child(UI.label(DB.team_name(String(id)), "SubLabel", 15, Game.C_SAFFRON if mine else Game.C_INK))
+		col.add_child(UI.label("%s · %s %s · %s %d" % [tr(String(r.note)), tr("SPENT"), Game.fmt_money(float(r.spent)), tr("RATING"), int(r.rating)], "MutedLabel", 13))
+		row.add_child(col)
+		list.add_child(row)
+	v.add_child(UI.scroll(list))
+	return v
 
 
 func _squad_chip(pl: Dictionary) -> PanelContainer:

@@ -23,7 +23,13 @@ here to a store release, roughly in order.
 
 ## 3. Modes
 - [ ] Women's league and women's Nations Cup.
-- [ ] Owner mode: run a franchise's auction (bid for a whole squad) instead of being a lot.
+- [x] Owner mode: run a franchise's auction (bid for a whole squad) instead of being a lot. Since 0.8.0 with your own
+  retentions, a war room and shortlist, auto-bid to your price, and grades for every franchise.
+- [x] The League Season around the matches (0.8.0): the news, your seven for each match, form, fitness and knocks,
+  the board's goal and next year's budget, derbies, weekly awards, the record book, a hall of fame, and players who
+  age, improve and retire.
+- [x] Nations Cup squads (0.8.0): twelve from eighteen and a captain, what you need before the last group match, the
+  bracket, the tournament's awards and the Underdog Trophy.
 - [ ] Beach kabaddi rules on the Puri Beach ground (4 v 4, no lobbies, smaller court).
 - [ ] Circle-style kabaddi (Punjab) as an event mode.
 - [ ] Online: async challenges first, real-time 1v1 later. Real-time needs a server and anti-cheat.
