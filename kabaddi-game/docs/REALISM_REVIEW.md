@@ -15,7 +15,9 @@ players. What was there, and what changed (docs/GRAPHICS.md has how each works):
 
 Found on the way: the camera's jolt went through its smoothing, which left under a tenth of it; trees, palms and
 umbrellas used Godot's default 64 sides (2,000 vertices a palm leaf), which made the monsoon ground's baked scene
-19.5 MB (1.6 MB now).
+19.5 MB (1.6 MB now). In 0.7.9 the beach came out hazy and pale (colour 0.18 → 0.13 against before): the bake had
+lit it with its clear sky at full strength, three times the ambient light it had before. In 0.7.10 each outdoor
+ground's sky is baked as strong as its ambient light was.
 
 **Why the generated players look plainer than one made in Meshy's web app.** The web model was made from a picture
 (Image to 3D) with 4096 px colour, normal, roughness and glow maps; ours were made from text, asked for plain kits

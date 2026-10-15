@@ -18,11 +18,12 @@ The fixed parts are baked with Godot's lightmapper (LightmapGI) and saved in `as
 lightmap (`<id>.exr`). `Arena.build` loads them when they are there and builds the fixed parts itself when not
 (`Arena.use_baked = false` does too, as the bake needs).
 
-What is baked: the sky's light (from the scene's sky outdoors; a dim colour indoors), the sun's light bounced off
-everything, and lights that are only there to be baked: the dome's twelve roof lamps and the stadium's four
-floodlights, each a spot with soft shadows. Stand-ins for the teams' boards go in for the bake too, so the run-off
-has their shadow and a little of their glow. All of it gives soft shadows, darkening into corners and under
-benches and roofs, pools of light under the lamps, and colour bounced from the court and the ground.
+What is baked: the sky's light (outdoors the ground's own sky, as strong as its ambient light was before the bake; a
+dim colour indoors), the sun's light bounced off everything, and lights that are only there to be baked: the dome's
+twelve roof lamps and the stadium's four floodlights, each a spot with soft shadows. Stand-ins for the teams' boards
+go in for the bake too, so the run-off has their shadow and a little of their glow. All of it gives soft shadows,
+darkening into corners and under benches and roofs, pools of light under the lamps, and colour bounced from the court
+and the ground.
 
 What is not: the sun's direct light and its shadows stay live, so the players cast shadows on the baked floor as
 before (on Medium and High; blob shadows on Low). The players and the crowd are lit live by the sun and the
@@ -89,5 +90,22 @@ as the game shows it and a close look at the raider, so a change can be compared
         res://tests/look_check.tscn -- OUTDIR [grounds=dome,stadium] [at=14,31] [gfx=1] [seed=1] [nobake]
 
 Each picture's draw calls and primitives are printed with it.
+
+What the pass cost, measured on 0.7.8 and 0.7.9, each run alone: the first 6 s of the same match on every ground at
+Medium, on a machine without a GPU (Mesa's software OpenGL, so the times are long and texture reads count for more
+than on a phone's GPU):
+
+| Ground | Draw calls | Primitives | Frame, median |
+|---|---|---|---|
+| Dome | 243 → 244 | 651,404 → 632,114 | 383 → 483 ms |
+| Stadium | 255 → 256 | 653,506 → 634,216 | 448 → 552 ms |
+| Village | 288 → 289 | 666,548 → 637,706 | 386 → 395 ms |
+| Monsoon | 252 → 253 | 705,260 → 635,354 | 389 → 402 ms |
+| Beach | 277 → 270 | 829,618 → 640,680 | 395 → 360 ms |
+
+One more draw call (the vignette); fewer primitives (the trees, palms and umbrellas with fewer sides). The dome and
+the stadium take a quarter longer: their stands, and the dome's floor, take their textures in world space, three
+reads a texture where a surface laid out flat takes one. If a phone cannot keep up, the game drops a graphics level
+by itself (Settings, Auto graphics).
 
 `test_runner` checks that every ground loads with its baked lighting, and with the bake's lamps and sky taken out.
