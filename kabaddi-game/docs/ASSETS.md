@@ -15,6 +15,13 @@ bones a hand, and packed (`.krb`). `game/rigged_body.gd` builds each as a skinne
 to follow the code-built skeleton every frame, so it needs no animation clips. Every player gets the body
 nearest his skin tone and build (`bodies.json`), officials the referees'.
 
+A ninth, `player_10`, is a player made in Meshy's web app from a picture (Image to 3D, Meshy-6): a sharper face,
+knee pads and ankle supports, 10,415 triangles, and 4096 px colour, normal, roughness and glow maps, of which the
+game uses the colour at 1024 px like the others. It was rigged with `make_body.py --plain-kit`, which also paints
+out the light graphics a real kit's picture is full of; its red stripes take each team's trim colour. It is marked
+`"featured"` in `bodies.json`, so each side's first raider wears it in every match, to compare it with the
+others; take the mark off and it is picked by skin tone and build like the rest.
+
 Each body's texture (`NAME_albedo.webp`) gives the face, skin, knee and ankle supports and the kit's folds.
 The kit map (`NAME_kit.webp`) marks the kit's main colour and trim, so each team's colours replace the
 model's own; logos and numbers were painted out, and the shirt number is added by the game. Skin is tinted

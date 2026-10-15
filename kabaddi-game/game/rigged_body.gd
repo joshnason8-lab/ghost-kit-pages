@@ -165,6 +165,15 @@ static func available() -> bool:
 	return not bodies().is_empty()
 
 
+## A body on show: the player body bodies.json marks "featured" (a new one to see in matches), which each side's
+## first raider wears (Match); "" when none is.
+static func featured() -> String:
+	for e in bodies():
+		if String(e.kind) == "player" and bool(e.get("featured", false)):
+			return String(e.file)
+	return ""
+
+
 ## The body for a person: the nearest in skin tone and build among those of his kind, with a little
 ## of the seed so team-mates alike don't all look the same. Officials fall back to players' bodies.
 static func pick(kind: String, skin: Color, build: float, seed: int) -> String:

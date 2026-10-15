@@ -66,6 +66,18 @@
   "source": "player_09_allrounder_kenya.glb"
  },
  {
+  "file": "player_10.krb",
+  "kind": "player",
+  "build": 1.0,
+  "skin": [
+   0.9373,
+   0.6941,
+   0.549
+  ],
+  "source": "Meshy_AI_kabaddi_player_meshy6_1015044039_image-to-3d-texture.glb",
+  "featured": true
+ },
+ {
   "file": "referee_01.krb",
   "kind": "referee",
   "build": 1.0,

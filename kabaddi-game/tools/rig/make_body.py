@@ -12,6 +12,8 @@ Run it with the Python that has the rig tools' packages (see README.md), from an
 
 --build is the body's build on the game's scale (0.92 lean to 1.1 stocky); the game gives each player the
 body nearest his skin tone and build. --hem is the shirt's hem as a fraction of the height (default 0.53).
+--plain-kit paints out every light graphic on the kit, not only logos and numbers (kit_texture.py): for a model
+made from a picture of a real kit.
 """
 
 import argparse
@@ -86,6 +88,7 @@ def main():
     ap.add_argument("--yolo", required=True, help="YOLO pose weights (yolo11m-pose.pt)")
     ap.add_argument("--godot", default="godot")
     ap.add_argument("--work", default=None)
+    ap.add_argument("--plain-kit", action="store_true", help="paint out all the kit's light graphics")
     ap.add_argument("--keep-joints", action="store_true",
                     help="reuse the joints found in --work last time (after changing only the rig or textures)")
     a = ap.parse_args()
@@ -118,7 +121,7 @@ def main():
     BODIES.mkdir(parents=True, exist_ok=True)
     albedo, kit = f"{a.name}_albedo.webp", f"{a.name}_kit.webp"
     print(run([py, HERE / "kit_texture.py", model, rigged, work / albedo, work / kit,
-               "--res-path", "res://assets/characters/bodies/", "--size", "1024"]))
+               "--res-path", "res://assets/characters/bodies/", "--size", "1024"] + (["--plain-kit"] if a.plain_kit else [])))
     krb = f"{a.name}.krb"
     print(run([py, HERE / "pack_body.py", rigged, BODIES / krb]))
     for f, q in ((albedo, 0.85), (kit, 0.9)):

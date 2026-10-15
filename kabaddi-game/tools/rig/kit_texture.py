@@ -18,8 +18,11 @@ model's JSON with the files and the texture's skin colour. game/rigged_body.gd t
 the kit in the team's colours, keeping its folds, and tints the skin to each player's tone.
 Use .webp names: the albedo is saved lossy, the kit map lossless.
 
+With --plain-kit, every light graphic on the kit goes too (stripes, piping, panels, text), not only the logos
+and numbers: for a model made from a picture of a real kit, which is full of them.
+
 Usage:
-  python kit_texture.py MODEL.glb RIGGED.json ALBEDO.webp KIT.webp [--res-path res://assets/characters/]
+  python kit_texture.py MODEL.glb RIGGED.json ALBEDO.webp KIT.webp [--res-path res://assets/characters/] [--plain-kit]
 """
 
 import argparse
@@ -73,6 +76,8 @@ def main():
     ap.add_argument("--trim-hue", type=float, default=355.0)
     ap.add_argument("--res-path", default="res://assets/characters/")
     ap.add_argument("--size", type=int, default=1024, help="texture size for the phone (0: keep the model's)")
+    ap.add_argument("--plain-kit", action="store_true",
+                    help="paint out every light graphic on the kit, not only logos and numbers")
     a = ap.parse_args()
 
     img = base_color_image(a.model)
@@ -119,6 +124,11 @@ def main():
     light = (s < 0.3) & (v > 0.5)
     orange = hue_near(h, 30, 18) & (s > 0.6) & (v > 0.6)   # bright: darker skin is as saturated
     marks = used & ~head & (light | orange) & (kitness > 0.35) & (skinness < 0.25)
+    if a.plain_kit:
+        # A real kit's graphics: anything pale or greyed below the head that is not skin (thin piping between dark
+        # panels has little kit colour around it, so no kitness test).
+        pale = (s < 0.35) & (v > 0.35) & ~skin_like
+        marks |= used & ~head & pale & (skinness < 0.5)
     marks = cv2.dilate(marks.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
     # Whatever else is in and around a mark (a crest's red, outlines) goes with it.
     near = cv2.dilate(marks.astype(np.uint8), np.ones((9, 9), np.uint8)).astype(bool)

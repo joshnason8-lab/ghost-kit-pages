@@ -24,7 +24,9 @@ python make_body.py player_10 ../../assets/meshy/player_10_x.glb --kind player -
 ```
 
 `--kind referee` for officials. `--build` is the body's build on the game's scale (0.92 lean to
-1.1 stocky). It writes `NAME.krb` (the packed rig), `NAME_albedo.webp` and `NAME_kit.webp` with
+1.1 stocky). `--plain-kit` paints out every light graphic on the kit, not only logos and numbers: for a model
+made from a picture of a real kit (Meshy's Image to 3D), whose stripes, piping and text would otherwise stay
+white on every team's kit. It writes `NAME.krb` (the packed rig), `NAME_albedo.webp` and `NAME_kit.webp` with
 their import settings, and lists the body in `bodies.json`. After changing only the rig or texture
 scripts, `--keep-joints` reuses the joints found last time in `--work`.
 

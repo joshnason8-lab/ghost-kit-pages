@@ -54,6 +54,7 @@ var held_by := 0                   # raider: how many hold him now (Match), for 
 var walk_target := Vector3.ZERO
 var evade_to := Vector3.INF       # where an evasion pulls up, a line in its way (Match._evade); INF: none
 var energy := 1.0
+var body_file := ""      # a body to wear instead of his own (Match: the featured body), set before setup
 var _sweat := 0.0        # how wet his skin is (from his energy, see _process)
 var _sweat_t := 0.0
 var raids_made := 0
@@ -117,7 +118,7 @@ func setup(p_data: Dictionary, p_team: int, kit: Color, trim: Color, barefoot: b
 	model = HumanModel.new()
 	model.body_kind = "referee" if team == 2 else "player"
 	model.body_seed = hash(String(data.get("id", data.get("name", ""))))
-	model.body_file = String(data.get("body", ""))
+	model.body_file = String(data.get("body", "")) if body_file == "" else body_file
 	model.setup(Color(DB.SKIN_TONES[int(data.skin)]), Color(DB.HAIR_COLORS[int(data.hair)]), kit, trim, int(data.number), float(data.height), float(data.build), barefoot)
 	add_child(model)
 	_make_ring()
