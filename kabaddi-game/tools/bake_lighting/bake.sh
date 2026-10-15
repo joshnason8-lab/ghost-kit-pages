@@ -7,7 +7,8 @@
 #   apt-get install mesa-vulkan-drivers xvfb
 # So this works on a copy of the project: builds the scenes (make_scenes.tscn), turns on addon/ there, runs the
 # editor (under xvfb) to bake them, and copies each ground's scene, bake and lightmap back.
-#   tools/bake_lighting/bake.sh [dome stadium village monsoon beach]     (BAKE_QUALITY=low|medium|high, high by default)
+#   tools/bake_lighting/bake.sh [dome stadium village monsoon beach]     (BAKE_QUALITY=low|medium|high, medium by default:
+#   what the game ships; low is as clean once denoised, for trying things out, and high takes much longer)
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 proj=$(cd "$here/../.." && pwd)
@@ -18,9 +19,10 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/bake_lighting.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 tar -C "$proj" --exclude=./assets/meshy --exclude=./build -cf - . | tar -C "$work" -xf -
 "$godot" --headless --path "$work" --import > /dev/null 2>&1 || true   # the surfaces' textures, before they are used
-"$godot" --headless --path "$work" res://tools/bake_lighting/make_scenes.tscn -- "${grounds[@]}" "quality=${BAKE_QUALITY:-high}"
+"$godot" --headless --path "$work" res://tools/bake_lighting/make_scenes.tscn -- "${grounds[@]}" "quality=${BAKE_QUALITY:-medium}"
 mkdir -p "$work/addons"
 cp -r "$here/addon" "$work/addons/bake_lighting"
+rm -f "$work/addons/bake_lighting/"*.uid   # the copy would share the original's UIDs
 printf '\n[editor_plugins]\n\nenabled=PackedStringArray("res://addons/bake_lighting/plugin.cfg")\n' >> "$work/project.godot"
 : > "$work/bake_list.txt"
 for g in "${grounds[@]}"; do echo "res://assets/grounds/$g/$g.tscn" >> "$work/bake_list.txt"; done

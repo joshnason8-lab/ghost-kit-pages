@@ -6,7 +6,7 @@ extends Node
 ##   godot --headless --path . res://tools/bake_lighting/make_scenes.tscn -- [dome stadium ...] [quality=low|medium|high]
 
 const OUT := "res://assets/grounds/"
-var _quality := LightmapGI.BAKE_QUALITY_HIGH
+var _quality := LightmapGI.BAKE_QUALITY_MEDIUM
 
 
 func _ready() -> void:
