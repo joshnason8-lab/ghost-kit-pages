@@ -197,9 +197,9 @@ func _env() -> void:
 			env.adjustment_saturation = 1.2
 			sun.rotation = Vector3(deg_to_rad(-48), deg_to_rad(140), 0)
 			sun.light_color = Color("fff1d6")
-			# Sunny: teal shadows, the sand a touch warm. Gently: the highlights' blue taken down 7% with a stronger curve
-			# made the clear sky a pale grey.
-			_grade(Color(0.0, 0.012, 0.02), Color(1.0, 0.99, 0.975), 0.12)
+			# Sunny: teal shadows, warm sand. (Gentler, the sky is a little bluer close up but the sand loses its colour in
+			# the broadcast view, which is mostly sand: measured 0.18 -> 0.15 saturation, 0.18 before the pass.)
+			_grade(Color(0.0, 0.02, 0.03), Color(1.0, 0.98, 0.93), 0.25)
 		_:
 			_environment(Color("0b0f1a"), Color("2a3550"), Color("0b0f1a"), 1.25, 0.55, 0.012, Color("1a2236"), false, Color("070a12"))
 			sun.rotation = Vector3(deg_to_rad(-72), deg_to_rad(25), 0)
