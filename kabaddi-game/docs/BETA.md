@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.7.10-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.7.11-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.7.10-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.7.11-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -53,8 +53,12 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
 - A **League Season** through the auction and a few rounds.
 - **Every ground** in a Quick Match. Since 0.7.9 each has baked lighting, new court and stand surfaces and a
   broadcast camera that moves in on a tackle. Say if one looks wrong or runs slower than the others.
-- **The new player model**: in a Quick Match each side's first raider wears the player made in Meshy's web app
-  from a picture. Compare him with the others, from the broadcast camera and from behind (the Camera button).
+- **The new player models**: in a Quick Match each side's first two players wear the two players made in Meshy's
+  web app (the first from a picture, with knee pads; the second in a sleeveless vest, barefoot). Compare them with
+  the others, from the broadcast camera and from behind (the Camera button).
+- **Shadows on Low**: since 0.7.11 every player, official and the scorers' table casts a shadow on Low too, along
+  the sun's light (long in the village's late afternoon, short under the dome's lamps), and keeps it when a slow
+  phone drops to Low by itself in its first match. Say if a shadow looks detached from the feet or flickers.
 - Each **raid rule**: Breath, Tap and the 30-second clock.
 
 ## Reporting

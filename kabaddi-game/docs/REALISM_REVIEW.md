@@ -1,5 +1,23 @@
 # Realism reviews
 
+## Seventh round: no shadows while playing, and a second player from the web app
+
+"I'm not seeing shadows cast at all while playing", on a Galaxy A16.
+
+| What was seen | Why | What changed |
+|---|---|---|
+| No player casts a shadow | The game starts on Medium and lowers the graphics by itself if the first raids run under 36 frames a second, which a mid-range phone does: real shadows cost the Compatibility renderer a shadow map and a second pass over everything the sun lights (on the software renderer the same frames take 2.4 to 2.8 times as long as on Low). Lowered mid-match, the sun's shadows went off and nothing took their place; a match that started on Low had only a faint round blob under each player, all but invisible on the court. | On Low every player, official and the scorers' table casts a shadow of his own shape along the sun's light: the body drawn a second time flattened onto the floor, as dark as the sun's shadow is on Medium on each ground (measured: `tests/shade_check.tscn`). It takes over the moment a match lowers itself. One more draw of each body: a frame took 4% longer on the software renderer. `test_runner` checks it on Low from the start and after lowering. |
+
+Found on the way: Low is darker than Medium in the sun (the whole picture 1.5 to 1.75 times, the dome's court
+about 1.7 times), because the Compatibility renderer adds a shadowed sun's light after the picture is turned to sRGB;
+and on Low the stands, trees, huts and crowd still cast no shadows. Both are in docs/GRAPHICS.md.
+
+**The second player** (`player_11`) came from the web app rigged for Mixamo, with walk and run clips and 206,920
+triangles, about twenty times the others. The game rigs every body to its own skeleton, so `tools/rig/slim.py`
+keeps only the mesh, in its bind pose, at 15,000 triangles with its texture; `make_body.py` learned an orange trim
+(`--trim-hue`), which is about skin's hue (skin is now told by the face's own hue), and paints out a printed
+number of any colour. Each side's second player wears it in Quick Match; nobody else is given it.
+
 ## Sixth round: the graphics pass, and a player made from a picture
 
 After asking whether Unity would look better (it could be connected, but the gap is in the art and the lighting, not

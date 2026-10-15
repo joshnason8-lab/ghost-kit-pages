@@ -26,9 +26,23 @@ python make_body.py player_10 ../../assets/meshy/player_10_x.glb --kind player -
 `--kind referee` for officials. `--build` is the body's build on the game's scale (0.92 lean to
 1.1 stocky). `--plain-kit` paints out every light graphic on the kit, not only logos and numbers: for a model
 made from a picture of a real kit (Meshy's Image to 3D), whose stripes, piping and text would otherwise stay
-white on every team's kit. It writes `NAME.krb` (the packed rig), `NAME_albedo.webp` and `NAME_kit.webp` with
-their import settings, and lists the body in `bodies.json`. After changing only the rig or texture
-scripts, `--keep-joints` reuses the joints found last time in `--work`.
+white on every team's kit, and a printed number of any colour. `--main-hue` and `--trim-hue` are the kit's own
+two colours, blue (230) and red (355) by default; an orange trim (`--trim-hue 21`, say) is about skin's hue, so
+only orange next to the kit's main colour is taken for it, and skin is told apart by the face's own hue. It
+writes `NAME.krb` (the packed rig), `NAME_albedo.webp` and `NAME_kit.webp` with their import settings, and lists
+the body in `bodies.json`. After changing only the rig or texture scripts, `--keep-joints` reuses the joints
+found last time in `--work`.
+
+A model that comes rigged (Meshy's web app rigs for Mixamo, with walk and run clips) or with far more than 15,000
+triangles goes through `slim.py` first: it keeps the mesh in its bind pose, without the skeleton and clips (the
+game uses its own), brings it down to 15,000 triangles keeping the texture coordinates (MeshLab's quadric collapse
+with texture: `pip install pymeshlab`, which needs `libopengl0` on Linux) and writes a one-node GLB with the
+texture at 2048 px:
+
+```sh
+python slim.py "new kabaddi player.glb" /tmp/slim.glb --triangles 15000
+python make_body.py player_11 /tmp/slim.glb --kind player --build 1.0 --yolo yolo11m-pose.pt --plain-kit --trim-hue 21
+```
 
 Then check every body side by side (full figure, a raid stance, the face, the hand gripping):
 
@@ -42,7 +56,8 @@ You need Python with `trimesh fast-simplification ultralytics opencv-python pill
 venv from `tools/mocap` works) and Godot 4.7.
 
 1. **Shrink it** if it has more than about 15,000 triangles (generated models often have
-   500,000 or more). Skip this for a game-ready export.
+   500,000 or more). Skip this for a game-ready export. `decimate.py` drops the texture (for an untextured
+   model); `slim.py`, above, keeps it.
 
    ```sh
    python decimate.py model.obj model.glb 14000 1.5

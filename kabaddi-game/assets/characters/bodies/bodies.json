@@ -78,6 +78,19 @@
   "featured": true
  },
  {
+  "file": "player_11.krb",
+  "kind": "player",
+  "build": 1.0,
+  "skin": [
+   0.7098,
+   0.5569,
+   0.4745
+  ],
+  "source": "new kabaddi player.glb",
+  "featured": true,
+  "pick": false
+ },
+ {
   "file": "referee_01.krb",
   "kind": "referee",
   "build": 1.0,

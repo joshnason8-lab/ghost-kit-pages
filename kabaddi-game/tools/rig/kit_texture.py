@@ -6,7 +6,8 @@ included. This script:
 1. Paints out the logos, sponsor names and numbers on the kit (light or orange marks with
    kit colour around them, and red marks in the middle of them, such as a crest).
 2. Marks which texels are the kit's main colour and which its trim (saturated blue and red
-   by default; see --main-hue and --trim-hue), leaving out the head.
+   by default; see --main-hue and --trim-hue: an orange trim, about skin's hue, only where it
+   meets the main colour), leaving out the head.
 3. Pads the texture's islands so mipmaps don't bleed the black gaps between them.
 
 It writes ALBEDO (the cleaned texture) and KIT (red: main colour, green: trim, blue: the kit's
@@ -107,33 +108,53 @@ def main():
     used = cv2.dilate(used, np.ones((3, 3), np.uint8)).astype(bool)
     head = cv2.dilate(head, np.ones((5, 5), np.uint8)).astype(bool)
 
+    orange_trim = bool(hue_near(a.trim_hue, 25, 20))
+
     def classes(rgb):
         hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV_FULL).astype(np.float32)
         h, s, v = hsv[..., 0] * 360.0 / 256.0, hsv[..., 1] / 255.0, hsv[..., 2] / 255.0
         main = used & ~head & hue_near(h, a.main_hue, 35) & (s > 0.35)
-        # Red trim, and its shadows, which turn crimson (no skin is that hue).
-        trim = used & ~head & (v > 0.25) & ((hue_near(h, a.trim_hue, 22) & (s > 0.5)) |
-                                            (hue_near(h, a.trim_hue - 35, 20) & (s > 0.4)))
+        if orange_trim:
+            # Orange trim is skin's hue, only stronger: the orange the kit's main colour is close to.
+            near_main = cv2.blur(main.astype(np.float32), (25, 25)) > 0.1
+            trim = used & ~head & (v > 0.25) & hue_near(h, a.trim_hue, 9) & (s > 0.5) & near_main
+        else:
+            # Red trim, and its shadows, which turn crimson (no skin is that hue).
+            trim = used & ~head & (v > 0.25) & ((hue_near(h, a.trim_hue, 22) & (s > 0.5)) |
+                                                (hue_near(h, a.trim_hue - 35, 20) & (s > 0.4)))
         return h, s, v, main, trim
 
     h, s, v, main, trim = classes(img)
-    skin_like = hue_near(h, 25, 20) & (s > 0.15) & (s < 0.6) & (v > 0.45)
+    # Skin: near the hue of the face, forearms and hands (bare on every model), so that a tan number or orange trim
+    # a little off skin's hue is not taken for skin.
+    loose = hue_near(h, 25, 20) & (s > 0.15) & (s < 0.6) & (v > 0.45)
+    skin_hue = float(np.median(h[used & head & loose])) if (used & head & loose).sum() > 500 else 25.0
+    skin_like = hue_near(h, skin_hue, 10) & (s > 0.15) & (s < 0.6) & (v > 0.45)
+    print(f"skin hue {skin_hue:.0f}")
     # Logos and numbers: light or orange marks with kit colour around them and little skin.
     kitness = cv2.blur((main | trim).astype(np.float32), (17, 17))
     skinness = cv2.blur((used & ~main & ~trim & skin_like).astype(np.float32), (17, 17))
     light = (s < 0.3) & (v > 0.5)
     orange = hue_near(h, 30, 18) & (s > 0.6) & (v > 0.6)   # bright: darker skin is as saturated
+    if orange_trim:
+        orange &= ~trim   # this kit's own orange is its trim, not a logo
     marks = used & ~head & (light | orange) & (kitness > 0.35) & (skinness < 0.25)
     if a.plain_kit:
         # A real kit's graphics: anything pale or greyed below the head that is not skin (thin piping between dark
         # panels has little kit colour around it, so no kitness test).
         pale = (s < 0.35) & (v > 0.35) & ~skin_like
         marks |= used & ~head & pale & (skinness < 0.5)
+        # And a graphic of any other colour that is neither the kit's nor skin, with kit all round it (a printed
+        # number, as wide as the kit colour is far away from its middle: hence the wide look round).
+        around = cv2.blur(main.astype(np.float32), (61, 61)) / np.maximum(cv2.blur(used.astype(np.float32), (61, 61)), 1e-3)
+        marks |= used & ~head & ~main & ~trim & ~skin_like & (v > 0.35) & (around > 0.3) & (skinness < 0.25)
     marks = cv2.dilate(marks.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
     # Whatever else is in and around a mark (a crest's red, outlines) goes with it.
     near = cv2.dilate(marks.astype(np.uint8), np.ones((9, 9), np.uint8)).astype(bool)
     marks |= near & ~main & ~skin_like
     marks &= used & ~head
+    if orange_trim:
+        marks &= ~trim   # thin stripes have marks either side of them (where they blend into the kit colour)
     print(f"painted out {marks.mean() * 100:.1f}% of the texture")
     # Specks: odd texels in the middle of the kit (anti-aliasing, dark seams) join it.
     other = used & ~head & ~main & ~trim & ~marks

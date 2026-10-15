@@ -23,6 +23,14 @@ out the light graphics a real kit's picture is full of; its red stripes take eac
 others (other matches and the tests, which ask for no featured body, are as before); take the mark off and it is
 picked by skin tone and build like the rest.
 
+A tenth, `player_11`, is a second player from the web app, rigged there for Mixamo with walk and run clips: a
+sleeveless vest and shorts in royal blue with orange trim, barefoot, 206,920 triangles and a 4096 px colour map.
+The game uses neither the skeleton nor the clips (it rigs the body to its own); `tools/rig/slim.py` kept the mesh
+in its bind pose and brought it down to 15,000 triangles, keeping its texture coordinates, and `make_body.py
+--plain-kit --trim-hue 21` rigged it, its orange trim taking each team's trim colour and the number on its back
+painted out. It is `"featured"` too, so each side's second player wears it in Quick Match, and `"pick": false`:
+no one else is given it (it would be the nearest body for a fifth of all players, and change every seeded match).
+
 Each body's texture (`NAME_albedo.webp`) gives the face, skin, knee and ankle supports and the kit's folds.
 The kit map (`NAME_kit.webp`) marks the kit's main colour and trim, so each team's colours replace the
 model's own; logos and numbers were painted out, and the shirt number is added by the game. Skin is tinted
