@@ -48,19 +48,19 @@ On a phone:
 - **Top right.** Camera and pause.
 - **Left-handed layout.** Turn it on in Settings.
 
-On a keyboard (for testing in the editor):
+On a keyboard (the browser version on a computer, or the editor), each on-screen button shows its key:
 
 - **Move.** WASD or arrow keys.
 - **J.** Hand touch (defending: ankle hold).
 - **K.** Kick: toe touch, or back/side kick (defending: thigh hold).
 - **U.** Dubki (defending: dash).
 - **I.** Lion jump.
-- **Space.** Cant when raiding, your usual tackle when defending.
+- **Space.** Cant when raiding (Dodge when the cant is automatic), your usual tackle when defending, Skip on the walk-out.
 - **L.** Dodge (defending: waist hold).
 - **G.** Chain (link hands with the nearest team-mate).
 - **Tab.** Switch defender (or click a defender).
 - **C.** Change camera.
-- **Esc.** Pause.
+- **Esc** or **P.** Pause.
 
 ## Get it on your phone
 
@@ -81,6 +81,14 @@ installs over the other. Shipping to the Play Store needs a release keystore. Se
 This folder is self-contained. To give the game its own repo, make a new repo, copy everything inside
 `kabaddi-game/` to its root (including the hidden `.github/` folder), and push. `.github/workflows/android.yml`
 is already set up for that layout and builds the APK on every push.
+
+## Play it in a browser
+
+The **Web** export preset builds a browser version: single-threaded WebGL 2, so any static host serves it with no
+special headers. Export it with `godot --headless --path . --export-release "Web" build/web/index.html`, serve
+`build/web/` (for example `python3 -m http.server` in that folder) and open it. About 75 MB loads the first time.
+Phones and tablets play by touch, computers by keyboard. Sound starts after the first tap or key, and saves stay in
+that browser.
 
 ## Run it on a computer
 

@@ -57,7 +57,7 @@ func _item(it: Dictionary) -> HBoxContainer:
 	hb.add_theme_constant_override("separation", 8)
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var big := int(it.get("p", 1)) >= 3
-	var dot := UI.label("●", "", 13, Game.C_MAGENTA if big else Game.C_GOLD)
+	var dot := Icon.make("dot", 14, Game.C_MAGENTA if big else Game.C_GOLD)
 	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hb.add_child(dot)
 	hb.add_child(UI.label(News.text(it), "SubLabel" if int(it.get("p", 1)) >= 2 else "", 19, Game.C_INK))
@@ -168,7 +168,8 @@ static func breaking(owner: Control, stories: Array, on_close: Callable) -> void
 	var bh := HBoxContainer.new()
 	bh.add_theme_constant_override("separation", 12)
 	band.add_child(bh)
-	var live := UI.label("●", "", 22, Color.WHITE)
+	var live := Icon.make("dot", 22, Color.WHITE)
+	live.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bh.add_child(live)
 	bh.add_child(UI.label(TranslationServer.translate("BREAKING_NEWS").to_upper(), "HeaderLabel", 34, Color.WHITE))
 	v.add_child(band)

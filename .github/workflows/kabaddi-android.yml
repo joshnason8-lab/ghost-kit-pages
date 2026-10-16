@@ -134,6 +134,11 @@ jobs:
         run: |
           TAG=kabaddi-raid-beta
           APK=${PROJECT_DIR}/build/kabaddi-raid-${VERSION}.apk
+          # The browser version is named only while its site really serves the game.
+          WEB=""
+          if curl -sfL --max-time 20 -o web.html https://kabaddi-raid-beta.netlify.app/ && grep -qi "<title>Kabaddi Raid" web.html; then
+            WEB="**iPhone, iPad or a computer**: play the web version at https://kabaddi-raid-beta.netlify.app (on a phone, turn it sideways; tap once to start the sound)."
+          fi
           cat > notes.md <<EOF
           The latest beta of **Kabaddi Raid** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
 
@@ -141,8 +146,7 @@ jobs:
           downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
           any earlier Kabaddi Raid beta and keeps your saves.
 
-          **iPhone**: play the web version in Safari at https://kabaddi-raid-beta.netlify.app (best with the phone
-          turned sideways; tap once to start the sound).
+          ${WEB}
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF

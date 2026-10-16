@@ -4,7 +4,7 @@ extends Control
 ## touch at a time. Left: a floating joystick. Right: context buttons. Anywhere else: drag to
 ## look. Keyboard works too: WASD/arrows. Raiding: J hand touch, K kick, L dodge, U dubki,
 ## I lion jump, Space cant. Defending: J ankle, K thigh, L waist, U dash, Space your usual
-## tackle, G chain, Tab switch. C camera, Esc pause.
+## tackle, G chain, Tab switch. C camera, Esc pause. Played from a keyboard, each button wears its key.
 
 signal action(id: String)
 signal tapped(pos: Vector2)   # a quick tap that was not on a button (to pick a defender)
@@ -29,6 +29,11 @@ var _look_acc := Vector2.ZERO
 var _pressed := {}       # button id -> time left lit
 var _button_touch := {}  # touch index -> button id
 var _touch_start := {}   # touch index -> [position, time], to tell taps from drags
+var _cap_box: StyleBoxFlat
+
+## Each button shows its key: from the start in a computer's browser, after the first key press anywhere else,
+## and off again with a finger's touch (not one the mouse makes).
+static var keys_shown := OS.has_feature("web") and not (OS.has_feature("web_android") or OS.has_feature("web_ios"))
 
 const STICK_R := 92.0
 
@@ -36,6 +41,11 @@ const STICK_R := 92.0
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cap_box = StyleBoxFlat.new()
+	_cap_box.bg_color = Color(0.03, 0.07, 0.12, 0.92)
+	_cap_box.set_corner_radius_all(6)
+	_cap_box.border_color = Color(1, 1, 1, 0.55)
+	_cap_box.set_border_width_all(1)
 
 
 func move_vec() -> Vector2:
@@ -133,6 +143,9 @@ func _input(event: InputEvent) -> void:
 	if not enabled or not is_visible_in_tree():
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
+		if not keys_shown:
+			keys_shown = true
+			queue_redraw()
 		match event.keycode:
 			KEY_J:
 				_fire("ankle" if context == "defend" else "touch")
@@ -163,6 +176,8 @@ func _input(event: InputEvent) -> void:
 	var s := get_viewport_rect().size
 	var lh: bool = Game.settings.left_handed
 	if event is InputEventScreenTouch:
+		if event.pressed and keys_shown and event.device != InputEvent.DEVICE_ID_EMULATION:
+			keys_shown = false
 		if event.pressed:
 			_touch_start[event.index] = [event.position, Time.get_ticks_msec()]
 		elif _touch_start.has(event.index) and not _button_touch.has(event.index):
@@ -263,6 +278,8 @@ func _draw() -> void:
 			fill = Color(0.03, 0.07, 0.12, 0.55 if not lit else 0.85)
 		draw_circle(pos, r, fill)
 		draw_arc(pos, r, 0, TAU, 48, Color(1, 1, 1, 0.35 if not lit else 0.9), 2.0, true)
+		if keys_shown:
+			_key_cap(pos + Vector2(0, -r), _key_of(String(b.id)))
 		var dark = col.get_luminance() > 0.55 and b.id not in ["pause", "camera"]
 		var tc := Color("1d1307") if dark else Game.C_INK
 		var size := 22 if r > 70 else (17 if r > 40 else 14)
@@ -288,6 +305,48 @@ func _draw() -> void:
 		var c := Vector2(hx, s.y - 160)
 		draw_arc(c, STICK_R, 0, TAU, 48, Color(1, 1, 1, 0.12), 2.0, true)
 		draw_circle(c, 30, Color(1, 1, 1, 0.08))
+		if keys_shown:
+			_key_cap(c, "WASD")
+
+
+## The key that does a button's job, as it is printed on the keyboard.
+func _key_of(id: String) -> String:
+	match id:
+		"pause":
+			return "P"
+		"camera":
+			return "C"
+		"skip", "cant":
+			return "Space"
+		"touch", "ankle":
+			return "J"
+		"kick", "thigh":
+			return "K"
+		"dodge":
+			return "L" if cant_mode else "Space"
+		"waist":
+			return "L"
+		"dubki", "dash":
+			return "U"
+		"jump":
+			return "I"
+		"chain":
+			return "G"
+		"switch":
+			return "Tab"
+	return ""
+
+
+## A key's name in a small dark cap, centred on a point (a button's top edge).
+func _key_cap(at: Vector2, key: String) -> void:
+	if key == "":
+		return
+	var font: Font = Game.font_bold
+	var fs := 14
+	var w := font.get_string_size(key, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 14.0
+	var rect := Rect2(at - Vector2(w * 0.5, 11), Vector2(w, 22))
+	draw_style_box(_cap_box, rect)
+	draw_string(font, Vector2(rect.position.x, at.y + fs * 0.36), key, HORIZONTAL_ALIGNMENT_CENTER, w, fs, Game.C_INK)
 
 
 func _wrap(text: String, font: Font, size: int, width: float) -> PackedStringArray:

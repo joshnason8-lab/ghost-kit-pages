@@ -615,6 +615,10 @@ func refresh() -> void:
 	if _hint_t > 0.0:
 		_hint_t -= dt
 		hint_l.modulate.a = clampf(_hint_t, 0.0, 1.0)
+	# The calls (who is coming, a hold, the points) go under a hint that is still up, not over it, and slide back up
+	# once it has gone.
+	var ev_y := 150.0 + (hint_l.size.y + 14.0 if _hint_t > 0.0 and hint_l.text != "" else 0.0)
+	events_box.position.y = ev_y if ev_y > events_box.position.y else lerpf(events_box.position.y, ev_y, minf(1.0, dt * 10.0))
 	var ctx := "none"
 	if m.phase == "intro":
 		ctx = "intro"

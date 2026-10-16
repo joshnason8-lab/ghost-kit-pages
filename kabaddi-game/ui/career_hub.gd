@@ -97,7 +97,7 @@ func _player_card(with_training: bool) -> PanelContainer:
 	var sig := DB.signature(p)
 	for mv in DB.MOVES:
 		var mkey: String = mv
-		mg.add_child(UI.label(("★ " if mkey == sig else "") + tr(DB.MOVE_KEYS[mkey]), "MutedLabel", 18))
+		mg.add_child(_skill_name(tr(DB.MOVE_KEYS[mkey]), mkey == sig))
 		var mbar := ProgressBar.new()
 		mbar.custom_minimum_size = Vector2(150, 12)
 		mbar.max_value = 99
@@ -127,7 +127,7 @@ func _player_card(with_training: bool) -> PanelContainer:
 	var dsig := DB.def_signature(p)
 	for dm in DB.STYLES:
 		var dkey: String = dm
-		dg.add_child(UI.label(("★ " if dkey == dsig else "") + tr(DB.STYLE_KEYS[dkey]), "MutedLabel", 18))
+		dg.add_child(_skill_name(tr(DB.STYLE_KEYS[dkey]), dkey == dsig))
 		var dbar := ProgressBar.new()
 		dbar.custom_minimum_size = Vector2(150, 12)
 		dbar.max_value = 99
@@ -150,6 +150,18 @@ func _player_card(with_training: bool) -> PanelContainer:
 	v.add_child(UI.label(tr("DEF_SKILLS").to_upper(), "EyebrowLabel", 15, Game.C_MAGENTA.lightened(0.3)))
 	v.add_child(dg)
 	return card
+
+
+## A move's name, with a drawn star in front of his signature one.
+func _skill_name(text: String, signature: bool) -> HBoxContainer:
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 6)
+	if signature:
+		var st := Icon.make("star", 18, Game.C_GOLD)
+		st.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(st)
+	h.add_child(UI.label(text, "MutedLabel", 18))
+	return h
 
 
 func _auction_gate() -> void:
