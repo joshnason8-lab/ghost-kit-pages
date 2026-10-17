@@ -689,5 +689,8 @@
   "AWARD_YOURS": "ਤੁਹਾਡਾ! ਇਨਾਮ ਘਰ ਆਇਆ।",
   "LIKELY_PRICE": "ਅੰਦਾਜ਼ਨ ਕੀਮਤ {price}",
   "YOUR_GRADE": "ਤੁਹਾਡਾ ਗ੍ਰੇਡ",
-  "AUTO_BID_SHORT": "ਆਟੋ-ਬੋਲੀ"
+  "AUTO_BID_SHORT": "ਆਟੋ-ਬੋਲੀ",
+  "PLAYER_TAGS": "ਖਿਡਾਰੀਆਂ ਦੇ ਨਾਮ",
+  "TAGS_KEY": "ਤੁਸੀਂ ਅਤੇ ਰੇਡਰ",
+  "TAGS_ALL": "ਸਾਰੇ"
 }

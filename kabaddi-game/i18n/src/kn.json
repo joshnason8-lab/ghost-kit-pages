@@ -689,5 +689,8 @@
   "AWARD_YOURS": "ನಿಮ್ಮದು! ಪ್ರಶಸ್ತಿ ಮನೆಗೆ ಬಂತು.",
   "LIKELY_PRICE": "ಅಂದಾಜು ಬೆಲೆ {price}",
   "YOUR_GRADE": "ನಿಮ್ಮ ಗ್ರೇಡ್",
-  "AUTO_BID_SHORT": "ಆಟೋ-ಬಿಡ್"
+  "AUTO_BID_SHORT": "ಆಟೋ-ಬಿಡ್",
+  "PLAYER_TAGS": "ಆಟಗಾರರ ಹೆಸರುಗಳು",
+  "TAGS_KEY": "ನೀವು ಮತ್ತು ರೇಡರ್",
+  "TAGS_ALL": "ಎಲ್ಲರೂ"
 }

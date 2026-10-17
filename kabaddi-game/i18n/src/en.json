@@ -689,5 +689,8 @@
   "AWARD_YOURS": "Yours! The award comes home.",
   "LIKELY_PRICE": "likely {price}",
   "YOUR_GRADE": "Your grade",
-  "AUTO_BID_SHORT": "Auto-bid"
+  "AUTO_BID_SHORT": "Auto-bid",
+  "PLAYER_TAGS": "Player tags",
+  "TAGS_KEY": "You and the raider",
+  "TAGS_ALL": "Everyone"
 }

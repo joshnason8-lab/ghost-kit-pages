@@ -33,8 +33,15 @@ func shot(name: String) -> void:
 
 
 func _tour() -> void:
+	# "hi:" in front of any tour renders it in Hindi.
+	if args_only.begins_with("hi:"):
+		TranslationServer.set_locale("hi")
+		args_only = args_only.substr(3)
 	if args_only == "moves":
 		await _moves()
+		return
+	if args_only == "tags":
+		await _tags()
 		return
 	if args_only == "awards":
 		var sq: Array = DB.team("PAT").squad
@@ -75,9 +82,6 @@ func _tour() -> void:
 		await frames(30)
 		await shot("e15_derby")
 		return
-	if args_only.begins_with("hi:"):
-		TranslationServer.set_locale("hi")
-		args_only = args_only.substr(3)
 	if args_only in ["engage", "engage2d"]:
 		await _engage(args_only == "engage")
 		return
@@ -214,6 +218,22 @@ func _menus() -> void:
 	await frames(10)
 	await shot("m12_result")
 	Game.delete_cup()
+
+
+## Who is who: the tags over the players in the broadcast view, defending and raiding, then names over everyone.
+func _tags() -> void:
+	for spec in [[1, 0, "tags_1_defend"], [0, 0, "tags_2_raid"], [1, 1, "tags_3_everyone"]]:
+		Game.settings.tags = spec[1]
+		Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+			"difficulty": 0, "first_raider": spec[0], "passive": true})
+		var m: Node = Game.current
+		var guard := 0
+		while m.phase != "raid" and guard < 900:
+			await get_tree().process_frame
+			guard += 1
+		await frames(50)
+		await shot(spec[2])
+	Game.settings.tags = 0
 
 
 ## Raid moves: the raid buttons, then dubki, lion jump and kicks frozen mid-move.

@@ -689,5 +689,8 @@
   "AWARD_YOURS": "तुमचा! पुरस्कार घरी आला.",
   "LIKELY_PRICE": "अंदाजे {price}",
   "YOUR_GRADE": "तुमचा ग्रेड",
-  "AUTO_BID_SHORT": "आपोआप बोली"
+  "AUTO_BID_SHORT": "आपोआप बोली",
+  "PLAYER_TAGS": "खेळाडूंची नावे",
+  "TAGS_KEY": "तुम्ही आणि रेडर",
+  "TAGS_ALL": "सर्व"
 }

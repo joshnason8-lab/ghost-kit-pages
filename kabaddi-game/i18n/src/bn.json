@@ -689,5 +689,8 @@
   "AWARD_YOURS": "আপনার! পুরস্কার ঘরে এল।",
   "LIKELY_PRICE": "সম্ভাব্য দাম {price}",
   "YOUR_GRADE": "আপনার গ্রেড",
-  "AUTO_BID_SHORT": "অটো-বিড"
+  "AUTO_BID_SHORT": "অটো-বিড",
+  "PLAYER_TAGS": "খেলোয়াড়দের নাম",
+  "TAGS_KEY": "আপনি ও রেইডার",
+  "TAGS_ALL": "সবাই"
 }

@@ -3085,8 +3085,24 @@ func _end_raid(kind: String) -> void:
 	for m in _post_messages:
 		hud.event(m[0], m[1], false, MatchHud.EV_RESULT)
 	if raid_pts + def_pts > 0:
-		hud.event(tr("EV_POINTS").format({"n": raid_pts + def_pts}), Game.C_INK, true, MatchHud.EV_RESULT)
+		hud.event(_points_line(kind, raid_pts, def_pts, holders_were), Game.C_INK, true, MatchHud.EV_RESULT)
 	clock = maxf(0.0, clock - RAID_GAP * clock_speed)
+
+
+## "+2  K. RAO": the raid's points and who scored them (the raider; whoever held him, two at most; the defender who
+## dashed him out), so the names in the awards are the players seen scoring.
+func _points_line(kind: String, raid_pts: int, def_pts: int, holders_were: Array) -> String:
+	var line: String = tr("EV_POINTS").format({"n": raid_pts + def_pts})
+	var who: Array = []
+	if raid_pts > def_pts:
+		who = [raider]
+	elif kind == "tackle":
+		who = holders_were.slice(0, 2)
+	elif kind == "out_of_bounds" and raid.get("dashed_by") != null and float(raid.get("dash_t", 0.0)) > 0.0:
+		who = [raid.dashed_by]
+	if who.is_empty():
+		return line
+	return "%s  %s" % [line, " & ".join(who.map(func(a): return a.tag_name()))]
 
 
 ## A reaction to the end of the raid (the codes _after_getup takes): now if he is on his feet and between moves, else
@@ -3929,6 +3945,7 @@ func _finish() -> void:
 	var best_pts := -1
 	var best_team := 0
 	var best_name := ""
+	var best_number := 0
 	for t in 2:
 		for a in teams[t].players:
 			var s: Dictionary = stats[a.pid()]
@@ -3938,6 +3955,7 @@ func _finish() -> void:
 				best_pid = a.pid()
 				best_team = t
 				best_name = a.display_name()
+				best_number = int(a.data.get("number", 0))
 	var career_stats := {"raid": 0, "tackle": 0}
 	if career_pid != "" and stats.has(career_pid):
 		career_stats = stats[career_pid]
@@ -3954,7 +3972,7 @@ func _finish() -> void:
 		"score": [teams[0].score, teams[1].score],
 		"breakdown": [teams[0].pts.duplicate(), teams[1].pts.duplicate()],
 		"winner": _winner(),
-		"mvp": {"pid": best_pid, "name": best_name, "team": teams[best_team].id, "pts": best_pts},
+		"mvp": {"pid": best_pid, "name": best_name, "team": teams[best_team].id, "pts": best_pts, "number": best_number},
 		"career_stats": career_stats,
 		"raid_log": raid_log, "move_tries": move_tries,
 		"quit": false,

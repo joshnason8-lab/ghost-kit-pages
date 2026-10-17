@@ -91,7 +91,10 @@ func _ready() -> void:
 		var nm := UI.label(String(mvp.name), "HeaderLabel", 34)
 		nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		mv.add_child(nm)
-		mv.add_child(UI.label("%s · %d %s" % [DB.team_name(mvp.team), int(mvp.pts), tr("POINTS_TOTAL")], "MutedLabel", 17))
+		var line := "%s · %d %s" % [DB.team_name(mvp.team), int(mvp.pts), tr("POINTS_TOTAL")]
+		if int(mvp.get("number", 0)) > 0:
+			line = "#%d · %s" % [int(mvp.number), line]   # the number on his tag in the match
+		mv.add_child(UI.label(line, "MutedLabel", 17))
 		mh.add_child(mv)
 		row.add_child(mc)
 	if mode == "career":

@@ -689,5 +689,8 @@
   "AWARD_YOURS": "మీదే! అవార్డు ఇంటికి వచ్చింది.",
   "LIKELY_PRICE": "అంచనా ధర {price}",
   "YOUR_GRADE": "మీ గ్రేడ్",
-  "AUTO_BID_SHORT": "ఆటో-బిడ్"
+  "AUTO_BID_SHORT": "ఆటో-బిడ్",
+  "PLAYER_TAGS": "ఆటగాళ్ల పేర్లు",
+  "TAGS_KEY": "మీరు మరియు రైడర్",
+  "TAGS_ALL": "అందరూ"
 }

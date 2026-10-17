@@ -1105,6 +1105,8 @@ func anchor(part: String) -> Vector3:
 	if rig:
 		return rig.anchor(part)
 	var s := height / 1.78
+	if part == "head":
+		return head.global_transform * Vector3(0, 0.12 * s, 0)
 	var side := part.substr(part.length() - 1)
 	match part.substr(0, part.length() - 2) if part != "waist" else part:
 		"hand":

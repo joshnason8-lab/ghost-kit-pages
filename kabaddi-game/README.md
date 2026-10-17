@@ -47,6 +47,10 @@ On a phone:
 - **Drag anywhere else** to look around (orbit the third-person camera).
 - **Top right.** Camera and pause.
 - **Left-handed layout.** Turn it on in Settings.
+- **Who is who.** A tag over your player (edged in saffron) and over the raider gives his number and name, and
+  everyone else on the mat has a tag with his number. The points go up with the scorer's name, and the player of
+  the match is shown with his number. Settings → Display → Player tags puts names over everyone, or turns the
+  tags off.
 
 On a keyboard (the browser version on a computer, or the editor), each on-screen button shows its key:
 

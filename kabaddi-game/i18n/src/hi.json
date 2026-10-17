@@ -689,5 +689,8 @@
   "AWARD_YOURS": "आपका! पुरस्कार घर आया।",
   "LIKELY_PRICE": "संभावित कीमत {price}",
   "YOUR_GRADE": "आपका ग्रेड",
-  "AUTO_BID_SHORT": "ऑटो-बोली"
+  "AUTO_BID_SHORT": "ऑटो-बोली",
+  "PLAYER_TAGS": "खिलाड़ियों के नाम",
+  "TAGS_KEY": "आप और रेडर",
+  "TAGS_ALL": "सभी"
 }

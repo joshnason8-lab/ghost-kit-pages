@@ -157,6 +157,19 @@ func display_name() -> String:
 	return String(data.name)
 
 
+## His name as his tag shows it: an initial and the surname ("K. RAO").
+func tag_name() -> String:
+	var words := String(data.name).strip_edges().split(" ", false)
+	if words.size() < 2:
+		return String(data.name).to_upper()
+	return ("%s. %s" % [words[0].substr(0, 1), words[words.size() - 1]]).to_upper()
+
+
+## Where his tag goes: over his head as he is now, standing, diving or lying down.
+func tag_point() -> Vector3:
+	return model.anchor("head") + Vector3(0, 0.15, 0)
+
+
 func is_raider_type() -> bool:
 	return data.role != "defender"
 

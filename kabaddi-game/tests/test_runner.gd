@@ -669,6 +669,36 @@ func _run() -> void:
 	while rm.phase != "raid" and g13 < 900:
 		await get_tree().process_frame
 		g13 += 1
+	# Who is who: the tags over the players' heads, and the names with the points.
+	var tg: Array = rm.hud.tags.tags_now()
+	var keyed: Array = tg.filter(func(e): return e.key)
+	check(tg.size() == rm.on_mat(0).size() + rm.on_mat(1).size() and keyed.size() == 2
+		and keyed.any(func(e): return e.a == rm.controlled and e.name == rm.controlled.tag_name())
+		and keyed.any(func(e): return e.a == rm.raider and e.name == rm.raider.tag_name())
+		and tg.filter(func(e): return not e.key).all(func(e): return e.name == ""),
+		"tags: names over you and the raider, numbers over everyone else on the mat")
+	check(tg.back().key, "... yours and the raider's drawn last, on top")
+	Game.settings.tags = 1
+	check(rm.hud.tags.tags_now().all(func(e): return e.name != ""), "tags: names over everyone")
+	Game.settings.tags = 2
+	check(rm.hud.tags.tags_now().is_empty(), "tags: off")
+	Game.settings.tags = 0
+	var tp: Vector3 = rm.controlled.tag_point()
+	var waist: Vector3 = rm.controlled.model.anchor("waist")
+	check(tp.y > waist.y + 0.6 and tp.y < 2.4 and Vector2(tp.x - waist.x, tp.z - waist.z).length() < 0.5,
+		"a player's tag is just over his head, crouched in his stance too (%.2f m up, waist %.2f m)" % [tp.y, waist.y])
+	var nm2 := Athlete.new()
+	nm2.data = {"name": "Karthik Rao"}
+	var nm1 := Athlete.new()
+	nm1.data = {"name": "Pele"}
+	check(nm2.tag_name() == "K. RAO" and nm1.tag_name() == "PELE", "a tag names him by initial and surname")
+	nm2.free()
+	nm1.free()
+	var hs: Array = rm.on_mat(0).slice(0, 2)
+	check(rm._points_line("return", 2, 0, []) == tr("EV_POINTS").format({"n": 2}) + "  " + rm.raider.tag_name()
+		and rm._points_line("tackle", 0, 1, hs) == tr("EV_POINTS").format({"n": 1}) + "  %s & %s" % [hs[0].tag_name(), hs[1].tag_name()]
+		and rm._points_line("time", 0, 1, []) == tr("EV_POINTS").format({"n": 1}),
+		"the points go up with who scored them: the raider, his holders, no one for a time-out")
 	var rough: Athlete = rm.on_mat(0)[0]
 	var away_before: int = rm.teams[1].score
 	rm._post_messages = []
@@ -918,6 +948,7 @@ func _run() -> void:
 		print("      score %d - %d, breakdown %s" % [s[0], s[1], str(_match_result.breakdown)])
 		check(s[0] + s[1] > 5, "match produces points")
 		check(s[0] != s[1], "knockout match has a winner")
+		check(int(_match_result.mvp.get("number", 0)) > 0, "the player of the match carries his shirt number (#%d)" % int(_match_result.mvp.get("number", 0)))
 		var kinds := {}
 		var tot_t := 0.0
 		for r in _match_result.raid_log:

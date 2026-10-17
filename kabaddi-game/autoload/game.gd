@@ -56,6 +56,8 @@ var settings := {
 	"models": 1,            # 0 classic code-built players, 1 realistic rigged players
 	"tutorial_done": [],
 	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
+	"tags": 0,              # tags over players' heads: 0 names over you and the raider (numbers over the rest),
+	                        # 1 names over everyone, 2 none (MatchHud.PlayerTags)
 }
 
 signal loaded   # the loading screen is going: the home screen behind it is ready
@@ -140,7 +142,7 @@ func load_settings() -> void:
 			# Older saves had a cant switch (tap or automatic); keep what the player chose.
 			settings.raid_rule = 1 if int(data.cant) == 0 else 2
 	# JSON gives floats; keep ints as ints.
-	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models"]:
+	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models", "tags"]:
 		settings[k] = int(settings[k])
 	if data is Dictionary and int(data.get("rules_v", 1)) < 2:
 		# Tapping the cant was the old default and it tied up the thumb: move to Breath.

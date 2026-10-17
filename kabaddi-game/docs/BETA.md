@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.8.1-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.8.2-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.8.1-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.8.2-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -76,6 +76,10 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
   the sun's light (long in the village's late afternoon, short under the dome's lamps), and keeps it when a slow
   phone drops to Low by itself in its first match. Say if a shadow looks detached from the feet or flickers.
 - Each **raid rule**: Breath, Tap and the 30-second clock.
+- **Who is who** (0.8.2): the tag over your player (edged in saffron) and the raider's, with number and name; the
+  numbers over everyone else; the scorer's name with the points; the player of the match with his number. Can you
+  always tell which player is yours, and who scored? Try Settings → Display → Player tags (Everyone, Off) too.
+- **The award plaque** (0.8.2) on the season awards and the Nations Cup awards, in place of the bronze figure.
 
 ## Reporting
 

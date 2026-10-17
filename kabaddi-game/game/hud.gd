@@ -44,6 +44,7 @@ var cam_btn: Button
 var _chant_on := false
 var _t := 0.0
 var _hint_t := 0.0
+var tags: PlayerTags
 
 
 class MatDots extends Control:
@@ -67,6 +68,128 @@ class MatDots extends Control:
 				draw_arc(c, r - 0.5, 0, TAU, 16, Color(1, 1, 1, 0.25), 1.5, true)
 
 
+## Who is who on the mat, drawn where each head is on screen. Your player's tag and the raider's carry his number and
+## name ("7  K. RAO"); the others carry just their number. Settings can put names over everyone, or turn tags off.
+class PlayerTags extends Control:
+	const TAG_KEY := 0   # Game.settings.tags: names over you and the raider, numbers over the rest
+	const TAG_ALL := 1   # names over everyone
+	const TAG_OFF := 2
+	var m   # Match
+	var _box := StyleBoxFlat.new()
+
+	func _init() -> void:
+		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_box.anti_aliasing = true
+
+	## The tags to draw now, each {"a": Athlete, "name": String ("" for a number alone), "key": bool}; yours and the
+	## raider's last, so they are drawn over the rest.
+	func tags_now() -> Array:
+		var out := []
+		if m == null or m.attract or m.paused or m.phase not in ["setup", "raid", "post"]:
+			return out
+		var mode := int(Game.settings.get("tags", TAG_KEY))
+		if mode == TAG_OFF:
+			return out
+		var keys := []
+		for t in 2:
+			for a in m.teams[t].players:
+				if not a.on_mat:
+					continue
+				var key: bool = a == m.controlled or a == m.raider
+				var tag := {"a": a, "key": key, "name": a.tag_name() if key or mode == TAG_ALL else ""}
+				if key:
+					keys.append(tag)
+				else:
+					out.append(tag)
+		return out + keys
+
+	func _draw() -> void:
+		if m == null or m.cam == null:
+			return
+		var c: Camera3D = m.cam.cam
+		var keys := []
+		var rest := []
+		for tag in tags_now():
+			var e := _measure(c, tag.a, String(tag.name), bool(tag.key))
+			if not e.is_empty():
+				(keys if e.key else rest).append(e)
+		# Yours and the raider's never cover each other (the higher one moves up), and a number under either
+		# is left out.
+		if keys.size() == 2 and (keys[0].rect as Rect2).intersects(keys[1].rect):
+			var hi: Dictionary = keys[0] if keys[0].rect.position.y <= keys[1].rect.position.y else keys[1]
+			var lo: Dictionary = keys[1] if hi == keys[0] else keys[0]
+			var hr: Rect2 = hi.rect
+			hr.position.y = (lo.rect as Rect2).position.y - hr.size.y - 3.0
+			hi.rect = hr
+		for e in rest:
+			var hidden := false
+			for k in keys:
+				if (e.rect as Rect2).intersects((k.rect as Rect2).grow(2.0)):
+					hidden = true
+			if not hidden:
+				_paint(e)
+		for e in keys:
+			_paint(e)
+
+	## Where a tag goes on screen and what it says: {} if he is behind the camera.
+	func _measure(c: Camera3D, a, label: String, key: bool) -> Dictionary:
+		var p: Vector3 = a.tag_point()
+		if c.is_position_behind(p):
+			return {}
+		var at := c.unproject_position(p)
+		var font: Font = Game.font_bold
+		var fs := 16 if key else 13
+		var h := fs + 9.0
+		var num := str(int(a.data.get("number", 0)))
+		var nw := maxf(h, font.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 12.0)
+		var tw := 0.0 if label == "" else font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 16.0
+		var point := 6.0 if key else 0.0
+		return {"a": a, "at": at, "label": label, "key": key, "num": num, "fs": fs, "h": h, "nw": nw, "point": point,
+			"rect": Rect2(at.x - (nw + tw) * 0.5, at.y - h - point, nw + tw, h)}
+
+	## One tag over his head: the number on his kit's colour, the name (if shown) on dark glass, and for yours and
+	## the raider's a point down to him; yours is edged in saffron.
+	func _paint(e: Dictionary) -> void:
+		var a = e.a
+		var r: Rect2 = e.rect
+		var label: String = e.label
+		var key: bool = e.key
+		var h: float = e.h
+		var fs: int = e.fs
+		var nw: float = e.nw
+		var font: Font = Game.font_bold
+		var kit: Color = m.teams[a.team].kit
+		var mine: bool = a == m.controlled
+		var alpha := 1.0 if key else 0.85
+		var bw := 2 if mine else (1 if key else 0)
+		_box.set_corner_radius_all(int(h * 0.5) if label == "" else 7)
+		_box.set_border_width_all(bw)
+		_box.border_color = Game.C_SAFFRON if mine else Color(1, 1, 1, 0.7)
+		if label != "":
+			_box.bg_color = Color(0.03, 0.06, 0.1, 0.82 * alpha)
+			draw_style_box(_box, r)
+			_box.set_border_width_all(0)
+			_box.corner_radius_top_right = 0
+			_box.corner_radius_bottom_right = 0
+		_box.bg_color = Color(kit, alpha)
+		var nr := Rect2(r.position, Vector2(nw, h)) if label != "" else r
+		draw_style_box(_box, nr.grow(-float(bw)) if label != "" else nr)
+		var base := r.position.y + (h - font.get_ascent(fs) - font.get_descent(fs)) * 0.5 + font.get_ascent(fs)
+		var ink := Color("10161f") if kit.get_luminance() > 0.6 else Color.WHITE
+		draw_string(font, Vector2(nr.position.x, base), String(e.num), HORIZONTAL_ALIGNMENT_CENTER, nr.size.x, fs, Color(ink, alpha))
+		if label != "":
+			draw_string(font, Vector2(r.position.x + nw + 8.0, base), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
+				Game.C_SAFFRON if mine else Game.C_INK)
+		if key:
+			# The point down to him, from wherever the tag ended up.
+			var tip := Color(Game.C_SAFFRON if mine else Color(1, 1, 1, 0.85))
+			var at: Vector2 = e.at
+			var x := clampf(at.x, r.position.x + 8.0, r.end.x - 8.0)
+			draw_colored_polygon(PackedVector2Array([Vector2(x - 6.0, r.end.y), Vector2(x + 6.0, r.end.y),
+				Vector2(x, r.end.y + float(e.point))]), tip)
+
+
 func setup(p_match) -> void:
 	m = p_match
 	layer = 5
@@ -74,6 +197,9 @@ func setup(p_match) -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
+	tags = PlayerTags.new()
+	tags.m = m
+	root.add_child(tags)   # first, so the rest of the HUD is drawn over the tags
 	_build_scoreboard()
 	_build_center()
 	controls = TouchControls.new()
@@ -550,6 +676,7 @@ func bubble(a: Node3D, text: String, color := Color.WHITE) -> void:
 func refresh() -> void:
 	var dt := get_process_delta_time()
 	_t += dt
+	tags.queue_redraw()
 	for t in 2:
 		score_l[t].text = str(m.teams[t].score)
 		energy_bars[t].value = m.team_energy(t)

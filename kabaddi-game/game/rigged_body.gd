@@ -1057,6 +1057,8 @@ func anchor(part: String) -> Vector3:
 	if skeleton == null:
 		return global_position
 	var xf := skeleton.global_transform
+	if part == "head":
+		return xf * _bone_head("head") + Vector3(0, 0.2, 0)   # the top of his head, near enough, however he lies
 	var side := part.substr(part.length() - 1)
 	match part.substr(0, part.length() - 2) if part != "waist" else part:
 		"hand":
