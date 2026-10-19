@@ -84,8 +84,8 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
   patches, worst on light and two-colour kits such as Chennai's), and the bottom of most players' shorts took the
   shirt's colour. Look at the players' legs in a few different kits.
 - **Text on a 16:9 phone or a tablet** (0.8.3): names and details on the retention cards, in the war room, the
-  Nations Cup squad and the auction's Needs box were cut off mid-word. They now take a second line or end in "…".
-  Say if any text is still cut off, and on which screen.
+  Nations Cup squad and the auction's Needs box were cut off mid-word, and country names broke in two beside the
+  Underdog tag. They now take a second line or end in "…". Say if any text is still cut off, and on which screen.
 - **The auction's grades** (0.8.3) count what you paid for the free agents who filled your squad (a purse that went
   down while "spent 0 L" said otherwise), and the Underdog Trophy's countries are the ones rated 75 or below on the
   country picker.

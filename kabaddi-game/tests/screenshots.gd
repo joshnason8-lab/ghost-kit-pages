@@ -137,6 +137,17 @@ func _tour() -> void:
 	if args_only == "menus":
 		await _menus()
 		return
+	if args_only == "pickers":
+		# The franchise and country pickers alone (both built by UI.team_grid), quicker than every menu.
+		Game.delete_season()
+		Game.show_screen("res://ui/season_hub.gd")
+		await frames(8)
+		await shot("p1_franchise")
+		Game.delete_cup()
+		Game.show_screen("res://ui/cup_screen.gd")
+		await frames(8)
+		await shot("p2_country")
+		return
 	if args_only != "":
 		await _grounds()
 		return

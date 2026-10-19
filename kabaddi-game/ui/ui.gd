@@ -288,23 +288,19 @@ static func team_grid(owner: Control, ids: Array, columns: int, on_pick: Callabl
 		col.add_theme_constant_override("separation", 2)
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# The name has the card's width to itself, and wraps between its words, never inside one ("Argent-ina" with a
+		# tag beside it on a 16:9 phone).
 		var nm := label(DB.team_name(id), "SubLabel", 21)
-		nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		nm.autowrap_mode = TextServer.AUTOWRAP_WORD
+		col.add_child(nm)
+		# Under it, a tag and a franchise's state (a country's rating is on the bar).
 		if tags.has(id):
-			var top := HBoxContainer.new()
-			top.add_theme_constant_override("separation", 8)
-			top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			top.add_child(nm)
 			var tag: Control = tags[id]
-			tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			top.add_child(tag)
-			col.add_child(top)
-		else:
-			col.add_child(nm)
+			tag.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			col.add_child(tag)
+		if t.kind != "country":
+			col.add_child(label(owner.tr(String(t.state)), "MutedLabel", 15))
 		var rating := DB.team_rating(t.squad)
-		var sub := owner.tr(String(t.state)) if t.kind != "country" else owner.tr("RATING") + " %d" % rating
-		col.add_child(label(sub, "MutedLabel", 15))
 		var bar := stat_bar(owner.tr("RATING"), rating, c1.lightened(0.25))
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		col.add_child(bar)
