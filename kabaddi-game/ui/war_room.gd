@@ -214,7 +214,8 @@ func _lot_row(l: Dictionary, sq: Array) -> PanelContainer:
 	if String(l.former) != "":
 		bits.append(String(l.former))
 	bits.append(tr("LIKELY_PRICE").format({"price": Game.fmt_money(snappedf(eng.estimate(l), 1.0))}))
-	var info := UI.label(" · ".join(bits), "MutedLabel", 13)
+	# Wrapped anywhere (the row is narrow), but never starting a line with a separator.
+	var info := UI.label(" · ".join(bits).replace(" · ", "\u00a0· "), "MutedLabel", 13)
 	UI.fit(info, 2)
 	col.add_child(info)
 	var st := Scout.strengths(p)
