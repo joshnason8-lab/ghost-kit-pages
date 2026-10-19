@@ -95,13 +95,13 @@ func _refresh() -> void:
 		var ln := PlayerCard.line(p)
 		if int(String(pid).get_slice("_", 1)) >= 12:
 			var pot := Scout.potential(p)
-			ln += " · " + tr("UNCAPPED") + " · " + tr("NYP_POTENTIAL_" + ("HIGH" if pot >= 0.75 else ("FAIR" if pot >= 0.5 else "LOW")))
+			ln += "\n" + tr("UNCAPPED") + " · " + tr("NYP_POTENTIAL_" + ("HIGH" if pot >= 0.75 else ("FAIR" if pot >= 0.5 else "LOW")))
 		_grid.add_child(PlayerCard.make(p, {"selected": chosen.has(pid), "captain": pid == captain, "line": ln}, _toggle.bind(pid)))
 	var players := _players()
 	var counts := {"raider": 0, "allrounder": 0, "defender": 0}
 	for p in players:
 		counts[String(p.role)] += 1
-	_summary.text = tr("CUP_SQUAD_COUNT").format({"n": players.size(), "r": counts.raider, "a": counts.allrounder, "d": counts.defender})
+	_summary.text = UI.bits([tr("CUP_SQUAD_COUNT").format({"n": players.size(), "r": counts.raider, "a": counts.allrounder, "d": counts.defender})])
 	var cap := ""
 	for p in players:
 		if String(p.id) == captain:

@@ -69,7 +69,7 @@ func _team_header(v: Control, compact := false) -> void:
 	col.add_theme_constant_override("separation", -4)
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var nm := UI.label(String(t.name), "HeaderLabel", 32 if compact else 38)
-	nm.clip_text = true
+	UI.fit(nm)
 	col.add_child(nm)
 	col.add_child(UI.label("%s %d · %s" % [tr("RATING"), season.rating(season.team), tr(String(t.state))], "MutedLabel", 17))
 	row.add_child(col)
@@ -273,12 +273,12 @@ func _week_line(title: String, who: String, team_id: String, what: String) -> HB
 	h.add_theme_constant_override("separation", 10)
 	var tl := UI.label(title, "MutedLabel", 14)
 	tl.custom_minimum_size = Vector2(150, 0)
-	tl.clip_text = true
+	UI.fit(tl)
 	h.add_child(tl)
 	h.add_child(Crest.make(team_id, 22))
 	var nm := UI.label(who, "SubLabel" if team_id != season.team else "SubLabel", 17, Game.C_SAFFRON if team_id == season.team else Game.C_INK)
 	nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	nm.clip_text = true
+	UI.fit(nm)
 	h.add_child(nm)
 	h.add_child(UI.label(what, "MutedLabel", 14))
 	return h

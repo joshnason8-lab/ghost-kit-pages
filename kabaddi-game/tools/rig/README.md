@@ -114,7 +114,9 @@ venv from `tools/mocap` works) and Godot 4.7.
    It paints out the kit's logos and numbers, marks the kit's main colour (blue by default,
    `--main-hue`) and trim (red, `--trim-hue`), and adds the texture entry to the JSON. In
    Godot, import both textures as **Lossy** with **mipmaps** on and **Detect 3D** off (see
-   their `.import` files); this keeps the APK small.
+   their `.import` files); this keeps the APK small. A body whose texture is in many small pieces
+   (`player_10`, from Meshy's web app) imports its kit map **Lossless** instead: lossy compression
+   smears the kit's colour into the pieces of skin beside it (a third of a megabyte more).
 
 7. **Pack it** for the phone, and list it in `assets/characters/bodies/bodies.json`
    (`{"file", "kind", "build", "skin"}`; `skin` is the texture entry's `skin_ref`):
@@ -122,6 +124,21 @@ venv from `tools/mocap` works) and Godot 4.7.
    ```sh
    python pack_body.py rigged.json ../../assets/characters/bodies/NAME.krb
    ```
+
+8. **Give the legs back to the skin** (a player, not a referee):
+
+   ```sh
+   python leg_skin.py ../../assets/characters/bodies/NAME.krb \
+       ../../assets/characters/bodies/NAME_kit.webp ../../assets/characters/bodies/NAME_albedo.webp
+   ```
+
+   Saturated skin in a knee's or shin's shadows is close enough to a red trim for step 6 to take it for one, which
+   shows as speckles of the team's trim and kit on the legs. This clears every kit and trim mark below the shorts
+   (pads, guards and shoes keep their own colours), finds the shorts' real bottom edge from the kit joined to the
+   shorts region and moves it into that region (so it takes the shorts' colour, not the jersey's), and points the
+   few small pieces of leg whose texture lies inside the jersey's at their neighbours' skin. `--check OUT.png`
+   writes a picture of what it would clear (magenta) and keep as shorts (cyan) without changing anything; pass the
+   same `--main-hue` and `--trim-hue` as step 6. `res://tests/body_gallery.tscn` has a row of the legs to compare.
 
 Check the result with `res://tests/body_gallery.tscn` or `res://tests/rig_view.tscn` (see the comments at their tops), and in a match
 with `res://tests/screenshots.tscn -- OUT dome`.

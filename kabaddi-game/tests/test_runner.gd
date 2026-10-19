@@ -45,6 +45,16 @@ func _run() -> void:
 	for p in paths:
 		var s: Script = load(p)
 		check(s != null and s.can_instantiate(), "compiles " + p)
+	# A label that runs out of room ends in "…" (UI.fit), and details wrap only between them (UI.bits), never cut
+	# off mid-letter (clip_text) as they were on a 16:9 phone or a tablet.
+	var clipped := paths.filter(func(p): return String(p).begins_with("res://ui/") and FileAccess.get_file_as_string(p).contains("clip_text = true"))
+	check(clipped.is_empty(), "no menu label is cut off mid-letter %s" % str(clipped))
+	check(UI.bits(["Raider · Age 24", "76 pts last season"]) == "Raider\u00a0· Age\u00a024\u00a0· 76\u00a0pts\u00a0last\u00a0season"
+		and UI.bits(["1 raider, 2 covers"], ", ") == "1\u00a0raider, 2\u00a0covers", "details wrap only between them")
+	var fl := UI.fit(UI.label("x"), 2)
+	check(fl.text_overrun_behavior == TextServer.OVERRUN_TRIM_ELLIPSIS and fl.max_lines_visible == 2
+		and fl.autowrap_mode != TextServer.AUTOWRAP_OFF, "a label out of room takes two lines, then ends in an ellipsis")
+	fl.free()
 
 	# 2. Data.
 	check(DB.league_ids.size() == 12, "12 league teams")
@@ -159,12 +169,29 @@ func _run() -> void:
 	check(oe.current().status in ["sold", "unsold"], "first lot hammered: %s" % String(oe.current().sold_to))
 	oe.next_lot()
 	oe.resolve_all(false)
+	var purse_at_auction := {}
+	for tid in oe.teams:
+		purse_at_auction[tid] = float(oe.teams[tid].purse)
 	var sold := 0
 	for lot in oe.lots:
 		if lot.status == "sold":
 			sold += 1
 	check(sold >= 15, "most lots sell (%d), record %s" % [sold, Game.fmt_money(oe.record)])
+	# What each franchise spent at and after the auction (its buys, and the free agents it was topped up with to ten).
+	var bought := {}
+	for lot in oe.lots:
+		if lot.status == "sold":
+			bought[lot.sold_to] = float(bought.get(lot.sold_to, 0.0)) + float(lot.price)
 	se.finish_auction(oe)
+	var ledger_ok := true
+	var filled := 0
+	for tid in se.grades:
+		var opening: float = float(purse_at_auction[tid]) + float(bought.get(tid, 0.0))
+		if absf(opening - float(se.grades[tid].spent) - float(se.purses[tid])) > 0.01:
+			ledger_ok = false
+			print("      ledger %s: opening %.1f, spent %.1f, left %.1f" % [tid, opening, float(se.grades[tid].spent), float(se.purses[tid])])
+		filled += int(se.grades[tid].get("free_agents", 0))
+	check(ledger_ok, "every franchise's purse adds up: opening, less what it spent (free agents included), is what it has left (%d free agents)" % filled)
 	var ok_sizes := true
 	for id in se.squads:
 		if se.squads[id].size() < 10 or se.squads[id].size() > 12:
@@ -378,6 +405,11 @@ func _run() -> void:
 	ucup.confirm_squad(best_12, String(best_12[1].id))
 	check(ucup.picked and ucup.captain == String(best_12[1].id) and String(News.latest(ucup.news, 1)[0].k) == "CUP_CAPTAIN", "squad confirmed and the captain named")
 	check(Cup.is_underdog("KEN") and not Cup.is_underdog("IND"), "Kenya are underdogs, India are not")
+	var under_ok := true
+	for cid in DB.country_ids:
+		under_ok = under_ok and Cup.is_underdog(cid) == (DB.team_rating(DB.team(cid).squad) <= Cup.UNDERDOG)
+	check(under_ok and Cup.is_underdog("BAN") == false and Cup.is_underdog("POL"),
+		"the Underdog badge goes by the rating on the country's card, the one the challenge names")
 	ucup.simulate_user_match()
 	ucup.simulate_user_match()
 	var fx_before: String = JSON.stringify(ucup.fixtures)
@@ -494,6 +526,14 @@ func _run() -> void:
 			"the realistic body wears its texture, with the kit map for team colours")
 		var sr: Vector3 = rmat.get_shader_parameter("skin_ratio")
 		check(sr.x > 0.0 and sr.x < 3.0 and sr.z > 0.0, "skin tone ratio is sane: %s" % sr)
+		# Below the knees nothing is in the team's colours (tools/rig/leg_skin.py): the kit map once had speckles of
+		# trim and kit over the knees and shins of every body (a third of one body's lower legs, half another's).
+		var legs := {}
+		for b in RiggedBody.bodies():
+			if String(b.kind) == "player":
+				legs[String(b.file)] = snappedf(_leg_kit(String(b.file)) * 100.0, 0.01)
+		check(not legs.is_empty() and legs.values().all(func(v): return v < 1.0),
+			"bare legs: no team colour below the knees (%% of the triangles there, each body: %s)" % str(legs))
 		ra.set_state("dubki", 1000.0)
 		ra.st_t = 500.0
 		await frames(20)
@@ -683,6 +723,22 @@ func _run() -> void:
 	Game.settings.tags = 2
 	check(rm.hud.tags.tags_now().is_empty(), "tags: off")
 	Game.settings.tags = 0
+	# A shout over the calls on the left is held back ("Tackle!" and "Shabash!" on top of each other).
+	rm.hud.event("Tackle!", Game.C_GOOD)
+	await frames(2)
+	var c3: Camera3D = rm.cam.cam
+	var calls: Rect2 = rm.hud.events_box.get_global_rect()
+	check(rm.hud.over_calls(c3.project_position(calls.get_center(), 12.0))
+		and not rm.hud.over_calls(c3.project_position(Vector2(calls.get_center().x + 700.0, 650.0), 12.0)),
+		"a shout over the calls is held back, one clear of them is not")
+	check(not bool(Game.settings.dev) and rm.get_children().all(func(c): return not (c is DevOverlay)),
+		"no developer overlay in a player's match")
+	var dov := DevOverlay.new(rm)
+	rm.add_child(dov)
+	await frames(45)
+	check(dov._all.size() >= 44 and dov.summary().contains("frames over") and dov._readout().contains("graphics"),
+		"developer overlay: frame times, graphics, a summary to copy")
+	dov.queue_free()
 	var tp: Vector3 = rm.controlled.tag_point()
 	var waist: Vector3 = rm.controlled.model.anchor("waist")
 	check(tp.y > waist.y + 0.6 and tp.y < 2.4 and Vector2(tp.x - waist.x, tp.z - waist.z).length() < 0.5,
@@ -1004,6 +1060,45 @@ func _floor_shadowed(m: Node) -> Array:
 			if h.rig != null and h.rig.material.next_pass == m.arena.floor_shadow and (h._blob == null or not h._blob.visible):
 				flat += 1
 	return [flat, bodies]
+
+
+## The share of the triangles below a body's knees whose kit map marks them as kit or trim, at their middles.
+func _leg_kit(file: String) -> float:
+	var d: Dictionary = RiggedBody._load(file)
+	var img: Image = (d.kit as Texture2D).get_image()
+	if img.is_compressed():
+		img.decompress()
+	var arr: Array = (d.mesh as ArrayMesh).surface_get_arrays(0)
+	var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	var uv: PackedVector2Array = arr[Mesh.ARRAY_TEX_UV]
+	var bi: PackedInt32Array = arr[Mesh.ARRAY_BONES]
+	var bw: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
+	var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
+	var names: Array = d.bones.map(func(b): return String(b.name))
+	var lower: Array = ["shin_l", "shin_r", "foot_l", "foot_r"].map(func(n): return names.find(n))
+	var knee := minf(float(d.bones[names.find("shin_l")].head[1]), float(d.bones[names.find("shin_r")].head[1]))
+	var low := PackedByteArray()
+	low.resize(v.size())
+	for i in v.size():
+		var top := 0
+		for k in 4:
+			if bw[i * 4 + k] > bw[i * 4 + top]:
+				top = k
+		low[i] = 1 if lower.has(bi[i * 4 + top]) and v[i].y < knee - 0.04 else 0
+	var n := 0
+	var marked := 0
+	for t in idx.size() / 3:
+		var a := idx[t * 3]
+		var b := idx[t * 3 + 1]
+		var c := idx[t * 3 + 2]
+		if low[a] == 0 or low[b] == 0 or low[c] == 0:
+			continue
+		var u: Vector2 = (uv[a] + uv[b] + uv[c]) / 3.0
+		var px := img.get_pixel(clampi(int(u.x * img.get_width()), 0, img.get_width() - 1), clampi(int(u.y * img.get_height()), 0, img.get_height() - 1))
+		n += 1
+		if px.r + px.g > 0.5:
+			marked += 1
+	return float(marked) / maxf(n, 1)
 
 
 ## A hand touch, then straight for home past the line either side of the man touched, the AI defending (lab mode):

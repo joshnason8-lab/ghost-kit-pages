@@ -106,7 +106,7 @@ func _refresh() -> void:
 		var pts := ""
 		var ls: Dictionary = season.last_stats.get(pid, {})
 		if not ls.is_empty():
-			pts = " · " + tr("PTS_LAST_SEASON").format({"n": int(ls.raid) + int(ls.tackle)})
+			pts = "\n" + tr("PTS_LAST_SEASON").format({"n": int(ls.raid) + int(ls.tackle)})
 		var info := {"selected": kept.has(pid), "price": Game.fmt_money(Season.retain_cost(p)), "line": PlayerCard.line(p) + pts}
 		_grid.add_child(PlayerCard.make(p, info, _toggle.bind(pid)))
 	var mine := _kept_players()

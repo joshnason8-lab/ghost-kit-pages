@@ -87,7 +87,6 @@ func _ready() -> void:
 	for key in ["sound", "music", "vibration", "left_handed"]:
 		row.add_child(_toggle(key, {"sound": "SOUND", "music": "MUSIC", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
 	snd[1].add_child(row)
-	right.add_child(UI.wrap(tr("PLACEHOLDER_NOTE"), "MutedLabel", 15))
 
 
 func _toggle(key: String, title_key: String) -> VBoxContainer:

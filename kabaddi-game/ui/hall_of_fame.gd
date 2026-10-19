@@ -71,7 +71,7 @@ func _honours() -> PanelContainer:
 			if w.is_empty():
 				continue
 			var l := UI.label("%s: %s (%s)" % [tr(pair[1]), String(w.name), String(w.team)], "", 14, Game.C_SAFFRON if String(w.team) == season.team else Game.C_INK)
-			l.clip_text = true
+			UI.fit(l)
 			box.add_child(l)
 		list.add_child(box)
 	return cl[0]
@@ -98,7 +98,7 @@ func _record_book() -> PanelContainer:
 			col.add_theme_constant_override("separation", -3)
 			col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			var wl := UI.label(who, "SubLabel", 16, Game.C_SAFFRON if String(rec.team) == season.team else Game.C_INK)
-			wl.clip_text = true
+			UI.fit(wl)
 			col.add_child(wl)
 			var sub := [String(rec.team), tr("SEASON").format({"n": int(rec.year)})]
 			if String(rec.get("team2", "")) != "":
@@ -128,7 +128,7 @@ func _all_time() -> PanelContainer:
 		col.add_theme_constant_override("separation", -3)
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var nm := UI.label(String(r.name), "SubLabel", 15, Game.C_SAFFRON if String(r.team) == season.team else Game.C_INK)
-		nm.clip_text = true
+		UI.fit(nm)
 		col.add_child(nm)
 		col.add_child(UI.label(tr("ALL_TIME_LINE").format({"raid": int(r.raid), "tackle": int(r.tackle), "n": int(r.seasons)}), "MutedLabel", 13))
 		row.add_child(col)

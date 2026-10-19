@@ -233,7 +233,7 @@ func _bracket() -> Control:
 		ch.add_child(Icon.make("trophy", 30, Game.C_GOLD))
 		ch.add_child(Crest.make(String(b.champion), 34))
 		var nl := UI.label(DB.team_name(String(b.champion)), "SubLabel", 18, Game.C_GOLD)
-		nl.clip_text = true
+		UI.fit(nl)
 		nl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		ch.add_child(nl)
 		fin.add_child(ch)
@@ -267,7 +267,7 @@ func _tie_box(f: Dictionary, final := false) -> PanelContainer:
 			row.add_child(Crest.make(id, 24))
 		var nm := UI.label(DB.team_name(id) if known else _place_name(id), "SubLabel" if won else "", 16,
 			Game.C_SAFFRON if id == cup.user else (Game.C_INK if known else Game.C_MUTED))
-		nm.clip_text = true
+		UI.fit(nm)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(nm)
 		if bool(f.played):

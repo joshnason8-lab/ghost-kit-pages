@@ -189,6 +189,8 @@ func _ready() -> void:
 	defence = DefenceCoach.new(self)
 	if bool(config.get("debug_draw", false)):
 		add_child(DebugDraw.new(self))
+	if bool(Game.settings.get("dev", false)) and not attract:
+		add_child(DevOverlay.new(self))
 	if String(config.get("mode", "")) == "tutorial":
 		clock_speed = 0.0
 	clock = half_len

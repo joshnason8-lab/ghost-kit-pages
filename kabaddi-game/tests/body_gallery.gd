@@ -1,6 +1,7 @@
 extends Node3D
 ## Every realistic body side by side, for checking new ones: full figure from the front, a raid stance from
-## three quarters, the face, and the right hand gripping, one column per body in bodies.json.
+## three quarters, the face, the right hand gripping, and the legs from the shorts down, one column per body in
+## bodies.json.
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 384x384 res://tests/body_gallery.tscn -- /out.png
 
 const CELL := 384
@@ -8,6 +9,12 @@ const CELL := 384
 
 func _ready() -> void:
 	var out: String = OS.get_cmdline_user_args()[0]
+	# Optional kit and trim colours after the file name (default Mumbai's): "-- out.png d62828 ffd166" for Delhi's,
+	# or "-- out.png plain" for the textures' own colours (as the referees wear them).
+	var args := OS.get_cmdline_user_args()
+	var plain := args.size() > 1 and args[1] == "plain"
+	var kit := Color(args[1]) if args.size() > 1 and not plain else Color("12a4a7")
+	var trim := Color(args[2]) if args.size() > 2 else Color("f3efe6")
 	var env := WorldEnvironment.new()
 	env.environment = Environment.new()
 	env.environment.background_mode = Environment.BG_COLOR
@@ -26,7 +33,8 @@ func _ready() -> void:
 	var shots := [["idle", 0, 32.0, Vector3(0, 1.0, -4.4), Vector3(0, 0.95, 0), ""],
 		["raid", 0, 32.0, Vector3(2.6, 1.3, -3.2), Vector3(0, 0.8, 0), ""],
 		["idle", 0, 22.0, Vector3(0.25, 0.05, -1.0), Vector3.ZERO, "head"],
-		["holding", 0, 30.0, Vector3(0.35, 0.1, -0.55), Vector3.ZERO, "hand_r"]]
+		["holding", 0, 30.0, Vector3(0.35, 0.1, -0.55), Vector3.ZERO, "hand_r"],
+		["idle", 0, 30.0, Vector3(0, 0.05, -1.75), Vector3(0, 0.5, 0), ""]]
 	var sheet := Image.create(CELL * bodies.size(), CELL * shots.size(), false, Image.FORMAT_RGB8)
 	for b in bodies.size():
 		var data: Dictionary = DB.team("MUM").squad[b].duplicate(true)
@@ -41,8 +49,10 @@ func _ready() -> void:
 		data["skin"] = best
 		var team := 2 if String(bodies[b].kind) == "referee" else 0
 		var a := Athlete.new()
-		a.setup(data, team, Color("12a4a7"), Color("f3efe6"), true)
+		a.setup(data, team, kit, trim, true)
 		add_child(a)
+		if plain and a.model.rig:
+			a.model.rig.material.set_shader_parameter("recolour", 0.0)
 		a.facing = Vector3(0, 0, -1)
 		for i in shots.size():
 			var s: Array = shots[i]

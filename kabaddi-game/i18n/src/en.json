@@ -241,7 +241,6 @@
   "POS_RIGHT_IN": "Right in",
   "POS_CENTRE": "Centre",
   "LOADING": "Loading…",
-  "PLACEHOLDER_NOTE": "Placeholder athletes. Drop real character models into assets/characters to replace them.",
   "DIFF_LEGEND": "Legend",
   "DIFF_EASY_DESC": "Slow defenders who wind up early, a wide cant window, generous aim assist.",
   "DIFF_NORMAL_DESC": "Balanced. Defenders punish careless touches; the cant needs a steady rhythm.",
@@ -692,5 +691,6 @@
   "AUTO_BID_SHORT": "Auto-bid",
   "PLAYER_TAGS": "Player tags",
   "TAGS_KEY": "You and the raider",
-  "TAGS_ALL": "Everyone"
+  "TAGS_ALL": "Everyone",
+  "SPENT_FREE_AGENTS": "(incl. {n} free agents at {price} each)"
 }

@@ -58,6 +58,7 @@ var settings := {
 	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
 	"tags": 0,              # tags over players' heads: 0 names over you and the raider (numbers over the rest),
 	                        # 1 names over everyone, 2 none (MatchHud.PlayerTags)
+	"dev": false,           # the developer's overlay in matches (DevOverlay): seven taps on the home screen's version
 }
 
 signal loaded   # the loading screen is going: the home screen behind it is ready

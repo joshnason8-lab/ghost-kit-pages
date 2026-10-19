@@ -157,7 +157,7 @@ func _needs_card() -> PanelContainer:
 	col.add_child(UI.label(tr("NEEDS").to_upper(), "EyebrowLabel", 13, Game.C_SAFFRON))
 	_needs_l = UI.label("", "SubLabel", 17)
 	_needs_l.custom_minimum_size = Vector2(250, 0)
-	_needs_l.clip_text = true
+	UI.fit(_needs_l, 2)
 	col.add_child(_needs_l)
 	p.add_child(col)
 	return p
@@ -312,7 +312,7 @@ func _stage_panel() -> PanelContainer:
 	_max_l = UI.label("", "SubLabel", 17, Game.C_SAFFRON)
 	_max_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_max_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_max_l.clip_text = true
+	UI.fit(_max_l)
 	_buttons2.add_child(_max_l)
 	v.add_child(_buttons2)
 	# The auctioneer, newest line on top.
@@ -587,7 +587,7 @@ func _refresh() -> void:
 		var ut: Dictionary = eng.teams[eng.user_team]
 		_purse_l.text = "%s · %d/%d" % [Game.fmt_money(ut.purse), ut.squad.size(), AuctionEngine.SQUAD_MAX]
 		if _needs_l:
-			_needs_l.text = Scout.needs_text(Scout.needs(ut.squad))
+			_needs_l.text = UI.bits([Scout.needs_text(Scout.needs(ut.squad))], ", ")
 	if _max_l and not eng.finished():
 		var mx := float(eng.user_max.get(String(eng.current().player.get("id", "")), -1.0))
 		_max_l.visible = mx > 0.0
@@ -878,7 +878,13 @@ func _grades() -> Control:
 		col.add_theme_constant_override("separation", -3)
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		col.add_child(UI.label(DB.team_name(String(id)), "SubLabel", 15, Game.C_SAFFRON if mine else Game.C_INK))
-		col.add_child(UI.label("%s · %s %s · %s %d" % [tr(String(r.note)), tr("SPENT"), Game.fmt_money(float(r.spent)), tr("RATING"), int(r.rating)], "MutedLabel", 13))
+		# What it spent is all that left its purse after the retentions: the free agents it was topped up with too.
+		var spent := "%s %s" % [tr("SPENT"), Game.fmt_money(float(r.spent))]
+		if int(r.get("free_agents", 0)) > 0:
+			spent += " " + tr("SPENT_FREE_AGENTS").format({"n": int(r.free_agents), "price": Game.fmt_money(owner_obj.FREE_AGENT_PRICE)})
+		var line := UI.label("%s · %s · %s %d" % [tr(String(r.note)), spent, tr("RATING"), int(r.rating)], "MutedLabel", 13)
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(line)
 		row.add_child(col)
 		list.add_child(row)
 	v.add_child(UI.scroll(list))

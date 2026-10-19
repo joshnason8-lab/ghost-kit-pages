@@ -94,7 +94,7 @@ func _squad_panel() -> PanelContainer:
 		ov.custom_minimum_size = Vector2(28, 0)
 		h.add_child(ov)
 		var nm := UI.label(String(p.name), "", 16)
-		nm.clip_text = true
+		UI.fit(nm)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		h.add_child(nm)
 		h.add_child(UI.label(Scout.slot_name(p), "MutedLabel", 14))
@@ -184,15 +184,26 @@ func _lot_row(l: Dictionary, sq: Array) -> PanelContainer:
 	pill.custom_minimum_size = Vector2(40, 0)
 	pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(pill)
+	# His rating, and under it how well he fits (leaving the row's width to what is known about him).
+	var badge := VBoxContainer.new()
+	badge.add_theme_constant_override("separation", -2)
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var ov := UI.label(str(int(l.ovr)), "HeaderLabel", 28, Game.C_GOLD)
-	ov.custom_minimum_size = Vector2(36, 0)
-	ov.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	h.add_child(ov)
+	ov.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.add_child(ov)
+	var stars := HBoxContainer.new()
+	stars.add_theme_constant_override("separation", 0)
+	stars.alignment = BoxContainer.ALIGNMENT_CENTER
+	var fit := Scout.fit(p, sq)
+	for i in 3:
+		stars.add_child(Icon.make("star", 12, Game.C_GOLD if i < fit else Color(1, 1, 1, 0.14)))
+	badge.add_child(stars)
+	h.add_child(badge)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", -3)
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var nm := UI.label(String(p.name), "SubLabel", 16)
-	nm.clip_text = true
+	UI.fit(nm)
 	col.add_child(nm)
 	var bits := [PlayerCard.line(p)]
 	var ls: Dictionary = season.last_stats.get(pid, {})
@@ -204,21 +215,14 @@ func _lot_row(l: Dictionary, sq: Array) -> PanelContainer:
 		bits.append(String(l.former))
 	bits.append(tr("LIKELY_PRICE").format({"price": Game.fmt_money(snappedf(eng.estimate(l), 1.0))}))
 	var info := UI.label(" · ".join(bits), "MutedLabel", 13)
-	info.clip_text = true
+	UI.fit(info, 2)
 	col.add_child(info)
 	var st := Scout.strengths(p)
 	if not st.is_empty():
-		var sl := UI.label(", ".join(st), "", 13, Color(Game.C_GOOD, 0.9))
-		sl.clip_text = true
+		var sl := UI.label(UI.bits(st, ", "), "", 13, Color(Game.C_GOOD, 0.9))
+		UI.fit(sl, 2)
 		col.add_child(sl)
 	h.add_child(col)
-	var stars := HBoxContainer.new()
-	stars.add_theme_constant_override("separation", 1)
-	stars.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var fit := Scout.fit(p, sq)
-	for i in 3:
-		stars.add_child(Icon.make("star", 14, Game.C_GOLD if i < fit else Color(1, 1, 1, 0.14)))
-	h.add_child(stars)
 	var right := VBoxContainer.new()
 	right.add_theme_constant_override("separation", 0)
 	right.size_flags_vertical = Control.SIZE_SHRINK_CENTER

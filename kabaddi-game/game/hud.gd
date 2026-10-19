@@ -652,6 +652,9 @@ func float_points(a: Node3D, text: String) -> void:
 func bubble(a: Node3D, text: String, color := Color.WHITE) -> void:
 	if _t - _bubble_t < BUBBLE_GAP:
 		return
+	# A shout never goes up behind the calls: a far-side "Shabash!" under "Tackle!" and its points read as neither.
+	if over_calls(a.global_position + Vector3(0, 2.35, 0)):
+		return
 	_bubble_t = _t
 	var l := Label3D.new()
 	l.text = text
@@ -671,6 +674,17 @@ func bubble(a: Node3D, text: String, color := Color.WHITE) -> void:
 	tw.tween_property(l, "position:y", l.position.y + 0.5, 1.1)
 	tw.parallel().tween_property(l, "modulate:a", 0.0, 0.5).set_delay(0.6)
 	tw.tween_callback(l.queue_free)
+
+
+## Whether a point in the match, where it is on screen now, falls under the calls that are up (with room for a
+## shout's width and its rise).
+func over_calls(p: Vector3) -> bool:
+	if events_box.get_child_count() == 0 or m.cam == null:
+		return false
+	var c: Camera3D = m.cam.cam
+	if c.is_position_behind(p):
+		return false
+	return events_box.get_global_rect().grow_individual(120, 40, 120, 90).has_point(c.unproject_position(p))
 
 
 func refresh() -> void:

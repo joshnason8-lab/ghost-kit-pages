@@ -96,7 +96,7 @@ func _preview() -> Control:
 		row.add_child(Crest.make(id, 30))
 		var nm := UI.label(DB.team_name(id), "SubLabel", 17, Game.C_SAFFRON if id == season.team else Game.C_INK)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		nm.clip_text = true
+		UI.fit(nm)
 		nm.custom_minimum_size = Vector2(90, 0)
 		row.add_child(nm)
 		var pos := 0
@@ -156,7 +156,7 @@ func _battle(raider: Dictionary, tackler: Dictionary) -> HBoxContainer:
 		box.add_theme_constant_override("separation", -2)
 		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var nm := UI.label(String(p.name), "SubLabel", 16, Game.C_SAFFRON if mine else Game.C_INK)
-		nm.clip_text = true
+		UI.fit(nm)
 		if i == 1:
 			nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		box.add_child(nm)

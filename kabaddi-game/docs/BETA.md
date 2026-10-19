@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.8.2-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.8.3-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.8.2-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.8.3-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -80,6 +80,15 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
   numbers over everyone else; the scorer's name with the points; the player of the match with his number. Can you
   always tell which player is yours, and who scored? Try Settings → Display → Player tags (Everyone, Off) too.
 - **The award plaque** (0.8.2) on the season awards and the Nations Cup awards, in place of the bronze figure.
+- **Legs and shorts** (0.8.3): knees and shins were speckled with the team's trim and kit colours (gold or navy
+  patches, worst on light and two-colour kits such as Chennai's), and the bottom of most players' shorts took the
+  shirt's colour. Look at the players' legs in a few different kits.
+- **Text on a 16:9 phone or a tablet** (0.8.3): names and details on the retention cards, in the war room, the
+  Nations Cup squad and the auction's Needs box were cut off mid-word. They now take a second line or end in "…".
+  Say if any text is still cut off, and on which screen.
+- **The auction's grades** (0.8.3) count what you paid for the free agents who filled your squad (a purse that went
+  down while "spent 0 L" said otherwise), and the Underdog Trophy's countries are the ones rated 75 or below on the
+  country picker.
 
 ## Reporting
 
@@ -100,9 +109,23 @@ Things worth reporting even if nothing is broken:
 
 - **Feel.** Is the raider too fast or too slow? Does a tackle feel fair?
 - **Difficulty.** Is Rookie easy enough and Legend hard enough?
-- **Frame rate.** Does it stutter, and on which graphics setting and ground?
+- **Frame rate.** Does it stutter, and on which graphics setting and ground? See *Measuring stutter* below.
 - **Heat and battery** after a full match.
 - **Text** that is cut off, overlaps, or reads wrong in your language.
+
+## Measuring stutter
+
+The average frame rate hides stutter: a match can average 60 frames a second and still catch every few seconds. A
+developer's overlay measures it on your phone:
+
+1. On the home screen, tap the version number (bottom left) seven times quickly. It says **developer overlay on**.
+2. Play a match. A dark panel on the left shows the frame times over the last five seconds (median, 95th and 99th
+   percentile, worst) and a graph of the last three seconds, the **hitches** (frames more than twice the usual, and
+   what was happening at the last one), the graphics level (and when it lowered itself), and for the player you
+   control his speed, state and the clip his body is playing, with the last contacts (touches, holds, escapes).
+3. When it stutters, tap **Copy summary** and paste it into your report. It has the phone, the screen, the
+   graphics and the worst frames with what was happening at each.
+4. Seven taps on the version again turn it off.
 
 ## Known limits
 

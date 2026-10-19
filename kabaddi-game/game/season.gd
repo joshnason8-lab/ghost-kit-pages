@@ -22,6 +22,7 @@ const RETAIN_MARKUP := 1.8      # a retained player costs his category's base pr
 ## the semi-finals, the next three the playoffs, the rest the top eight.
 const GOALS := ["GOAL_FINAL", "GOAL_SEMI", "GOAL_PLAYOFFS", "GOAL_TOP8"]
 const GOAL_REWARD := 20.0       # lakhs on next year's purse for meeting the goal (twice that for the title)
+const FREE_AGENT_PRICE := 6.0   # lakhs for each free agent a franchise is topped up with after the auction
 const GOAL_PENALTY := 20.0      # ... and off it for missing
 const NEWS_PER_ROUND := 5       # stories a round makes, besides your team's own
 
@@ -356,14 +357,19 @@ func finish_auction(eng: AuctionEngine) -> void:
 		if l.status == "unsold":
 			pool.append(l.player)
 	pool.sort_custom(func(a, b): return DB.overall(a) > DB.overall(b))
+	var fills := {}   # team -> [free agents signed, what they cost]
 	for id in eng.teams:
 		var sq: Array = eng.teams[id].squad
-		# Fill to ten from free agents at minimum price.
+		# Fill to ten from free agents at minimum price (what is left of the purse, if less).
+		var signed := []
+		var before := float(eng.teams[id].purse)
 		while sq.size() < 10 and not pool.is_empty():
 			var p: Dictionary = pool.pop_front().duplicate(true)
 			p.team = id
 			sq.append(p)
-			eng.teams[id].purse = maxf(0.0, float(eng.teams[id].purse) - 6.0)
+			signed.append(p)
+			eng.teams[id].purse = maxf(0.0, float(eng.teams[id].purse) - FREE_AGENT_PRICE)
+		fills[id] = [signed, before - float(eng.teams[id].purse)]
 		for i in sq.size():
 			sq[i].team = id
 			if String(sq[i].get("id", "")) == "" or not String(sq[i].id).begins_with(id):
@@ -373,7 +379,7 @@ func finish_auction(eng: AuctionEngine) -> void:
 		squads[id] = sq
 		purses[id] = float(eng.teams[id].purse)
 	lineup = []
-	_grade_auction(eng)
+	_grade_auction(eng, fills)
 	_start_league()
 
 
@@ -389,7 +395,9 @@ func _carry(old: String, now: String) -> void:
 
 
 ## Marks for every franchise's auction: the seven it can put out now, how well it spent, and the gaps it left.
-func _grade_auction(eng: AuctionEngine) -> void:
+## What it spent is everything that left its purse after the retentions: its buys at the auction and the free agents
+## it was topped up with after it (fills: team -> [players, cost]), so the purse it is left with adds up.
+func _grade_auction(eng: AuctionEngine, fills := {}) -> void:
 	var rows := []
 	for id in DB.league_ids:
 		var fair := 0.0
@@ -400,6 +408,12 @@ func _grade_auction(eng: AuctionEngine) -> void:
 				fair += AuctionEngine.worth(int(l.ovr), String(l.cat))
 				spent += float(l.price)
 				buys += 1
+		var fill: Array = fills.get(id, [[], 0.0])
+		for p in fill[0]:
+			var ovr := DB.overall(p)
+			fair += AuctionEngine.worth(ovr, AuctionEngine.category_for(ovr))
+			buys += 1
+		spent += float(fill[1])
 		var value := fair / maxf(spent, 1.0) if buys > 0 else 1.0
 		var strength := float(DB.team_rating(squads[id]))
 		var holes := 0
@@ -407,7 +421,8 @@ func _grade_auction(eng: AuctionEngine) -> void:
 		for s in Scout.SLOTS:
 			holes += int(n[s])
 		var score := (strength - 70.0) * 4.0 + clampf(value - 1.0, -0.6, 1.0) * 18.0 - holes * 3.0
-		rows.append({"id": id, "score": score, "strength": strength, "value": value, "holes": holes, "spent": spent})
+		rows.append({"id": id, "score": score, "strength": strength, "value": value, "holes": holes, "spent": spent,
+			"free_agents": (fill[0] as Array).size()})
 	rows.sort_custom(func(a, b): return float(a.score) > float(b.score))
 	var by_strength := rows.duplicate()
 	by_strength.sort_custom(func(a, b): return float(a.strength) > float(b.strength))
@@ -430,7 +445,7 @@ func _grade_auction(eng: AuctionEngine) -> void:
 		elif int(strength_rank[r.id]) < 4:
 			note = "GRADE_NOTE_STRONG"
 		grades[r.id] = {"grade": letters[mini(i, letters.size() - 1)], "rank": i + 1, "note": note,
-			"spent": float(r.spent), "rating": int(r.strength)}
+			"spent": float(r.spent), "rating": int(r.strength), "free_agents": int(r.free_agents)}
 	# The auction's stories.
 	var when := {"key": "AUCTION"}
 	var top := {}

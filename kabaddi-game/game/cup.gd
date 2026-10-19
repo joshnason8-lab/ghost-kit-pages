@@ -12,7 +12,7 @@ const FIELD := ["IND", "IRN", "KOR", "PAK", "BAN", "KEN", "JPN", "ARG"]
 const SQUAD_SIZE := 12
 const MIN_RAIDERS := 3      # in a squad of twelve, at least
 const MIN_DEFENDERS := 4
-const UNDERDOG := 70        # rated this or below: an underdog
+const UNDERDOG := 75        # rated this or below (the rating shown on the country's card): an underdog
 
 var user := "IND"
 var teams: Array = []
@@ -108,8 +108,10 @@ func _rng(salt: int) -> RandomNumberGenerator:
 	return r
 
 
+## An underdog by the rating the country picker shows (its squad's), so the badge, the note's threshold and the
+## Underdog Trophy agree: Kenya, Sri Lanka, Japan, Nepal, Argentina, Thailand and Poland (67-74).
 static func is_underdog(id: String) -> bool:
-	return int(DB.team(id).get("base", 99)) <= UNDERDOG
+	return DB.team_rating(DB.team(id).squad) <= UNDERDOG
 
 
 # ---------------------------------------------------------------- the squad

@@ -398,6 +398,26 @@ static func wrap(text: String, variation := "", size := 0) -> Label:
 	return l
 
 
+## A label that may run out of room (a name, the details under it): it takes up to LINES lines, wrapping at words,
+## and ends in "…" rather than being cut off mid-letter.
+static func fit(l: Label, lines := 1) -> Label:
+	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	if lines > 1:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.max_lines_visible = lines
+	return l
+
+
+## Details for under a name, "Raider · Age 24 · 76 pts last season", that wrap only between them: never inside
+## one, and with the separator kept at the end of the line it ends.
+static func bits(parts: Array, sep := " · ") -> String:
+	var out := PackedStringArray()
+	for p in parts:
+		for b in String(p).split(sep, false):
+			out.append(b.replace(" ", "\u00a0"))
+	return (("\u00a0" + sep.lstrip(" ")) if sep.begins_with(" ") else sep).join(out)
+
+
 static func button(text: String, primary := false, cb: Callable = Callable()) -> Button:
 	var b := Button.new()
 	b.text = text

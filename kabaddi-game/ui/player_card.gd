@@ -3,8 +3,9 @@ extends RefCounted
 ## A player as a card to tap: his rating, name and a line about him, and whatever the screen needs on the right
 ## (form, fitness, a knock, a price, how well he fits). Picking a seven, retentions and a national squad use it.
 ##
-## info keys, all optional: selected (bool), line (String, under the name), form (-1, 0, 1), fit (0..1, a fitness
-## bar), injured (matches out), price (String), stars (0..3), captain (bool), dim (bool: not available).
+## info keys, all optional: selected (bool), line (String, under the name: up to two lines, "\n" between them),
+## form (-1, 0, 1), fit (0..1, a fitness bar), injured (matches out), price (String), stars (0..3), captain (bool),
+## dim (bool: not available).
 
 const ROLE_KEYS := {"raider": "ROLE_RAIDER", "defender": "ROLE_DEFENDER", "allrounder": "ROLE_ALLROUNDER"}
 
@@ -64,13 +65,16 @@ static func make(p: Dictionary, info: Dictionary, on_press: Callable) -> Button:
 		cr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		top.add_child(cr)
 	var nm := UI.label(String(p.name), "SubLabel", 18, Game.C_MUTED if dim else (Game.C_SAFFRON if sel else Game.C_INK))
-	nm.clip_text = true
+	UI.fit(nm)
 	nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(nm)
 	col.add_child(top)
-	var ln := UI.label(String(info.get("line", line(p))), "MutedLabel", 14)
-	ln.clip_text = true
+	var lines := PackedStringArray()
+	for s in String(info.get("line", line(p))).split("\n"):
+		lines.append(UI.bits([s]))
+	var ln := UI.label("\n".join(lines), "MutedLabel", 14)
+	UI.fit(ln, 2)
 	ln.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(ln)
 	if info.has("fit"):

@@ -14,6 +14,8 @@ var _cards: Array = []
 var _t := 0.0
 var _ui: Control
 var _picker: LanguagePicker = null
+var _ver_taps := 0       # taps on the version in a row (_on_version_input) ...
+var _ver_last := 0       # ... and when the last was (ms)
 
 
 func _ready() -> void:
@@ -129,6 +131,9 @@ func _build_ui() -> void:
 		_cards.append(b)
 	col.add_child(links)
 	var ver := UI.label("v" + String(ProjectSettings.get_setting("application/config/version", "0.1")), "MutedLabel", 14)
+	# Seven taps turn the developer's overlay on or off (DevOverlay); nothing shows it to anyone else.
+	ver.mouse_filter = Control.MOUSE_FILTER_STOP
+	ver.gui_input.connect(_on_version_input.bind(ver))
 	col.add_child(ver)
 
 	# Right: the modes, as big tiles.
@@ -313,3 +318,18 @@ func _process(delta: float) -> void:
 	_t += delta
 	if _hi:
 		_hi.modulate = Color(1, 1, 1, _hi.modulate.a).lerp(Color(1.25, 1.1, 0.9, _hi.modulate.a), 0.5 + 0.5 * sin(_t * 2.6))
+
+
+func _on_version_input(ev: InputEvent, ver: Label) -> void:
+	if not (ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT):
+		return
+	var now := Time.get_ticks_msec()
+	_ver_taps = _ver_taps + 1 if now - _ver_last < 1000 else 1
+	_ver_last = now
+	if _ver_taps < 7:
+		return
+	_ver_taps = 0
+	Game.settings.dev = not bool(Game.settings.get("dev", false))
+	Game.save_settings()
+	ver.text = "v%s · developer overlay %s" % [String(ProjectSettings.get_setting("application/config/version", "0.1")),
+		"on" if Game.settings.dev else "off"]

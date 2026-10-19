@@ -43,6 +43,20 @@ func _tour() -> void:
 	if args_only == "tags":
 		await _tags()
 		return
+	if args_only == "dev":
+		# The developer's overlay over a raid (DevOverlay), as a tester sees it after seven taps on the version.
+		Game.settings.dev = true
+		Game.start_match({"home": "CHE", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+			"difficulty": 1, "first_raider": 0})
+		var dm: Node = Game.current
+		var dg := 0
+		while dm.phase != "raid" and dg < 900:
+			await get_tree().process_frame
+			dg += 1
+		await frames(90)
+		await shot("dev_overlay")
+		Game.settings.dev = false
+		return
 	if args_only == "awards":
 		var sq: Array = DB.team("PAT").squad
 		var aw := {"mvp": {"pid": sq[0].id, "name": sq[0].name, "team": "PAT", "raid": 212, "tackle": 14},
@@ -205,6 +219,9 @@ func _menus() -> void:
 	await shot("m09_season_hub")
 	Game.delete_season()
 	Game.delete_cup()
+	Game.show_screen("res://ui/cup_screen.gd")   # no cup yet: pick your country
+	await frames(8)
+	await shot("m10a_cup_country")
 	Game.new_cup("IND")
 	Game.show_screen("res://ui/cup_screen.gd")
 	await frames(8)
