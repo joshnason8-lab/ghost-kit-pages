@@ -45,6 +45,7 @@ func _tour() -> void:
 		return
 	if args_only == "dev":
 		# The developer's overlay over a raid (DevOverlay), as a tester sees it after seven taps on the version.
+		var dev_was: bool = Game.settings.dev
 		Game.settings.dev = true
 		Game.start_match({"home": "CHE", "away": "DEL", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
 			"difficulty": 1, "first_raider": 0})
@@ -55,7 +56,8 @@ func _tour() -> void:
 			dg += 1
 		await frames(90)
 		await shot("dev_overlay")
-		Game.settings.dev = false
+		Game.settings.dev = dev_was
+		Game.save_settings()   # the match may have saved it on (lowering the graphics saves the settings)
 		return
 	if args_only == "awards":
 		var sq: Array = DB.team("PAT").squad

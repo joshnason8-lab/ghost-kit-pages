@@ -11,6 +11,7 @@ var _match_result := {}
 func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
+	Game.settings.dev = false   # as a player has it, whatever this machine's saved settings say
 	await _run()
 
 
