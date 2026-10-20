@@ -123,10 +123,15 @@ tests/      compile_check, test_runner (headless smoke test), screenshots (rende
             or to check against the audited one, frame for frame), tackle_reach (how far each dive
             reaches), defence_view (a match with the debug overlay), motion_view (gaits, celebrations,
             signals), play_video (a bot that plays), motion_audit (who moves each player in a frame, and what
-            shakes: docs/REALISM_REVIEW.md), look_check (each ground at set moments, to compare a look change)
-tools/      build_i18n.py, rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
+            shakes: docs/REALISM_REVIEW.md), look_check (each ground at set moments, to compare a look change),
+            fit_audit (every screen in every language at any phone's shape: words cut short, off the screen,
+            over other words, or in letters no font has)
+tools/      build_i18n.py, check_pages.py (an APK's or bundle's 16 KB pages), store_art.py (the store's pictures),
+            rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
             mocap/ (animation clips, and movement measured from match video), bake_lighting/ (the grounds'
             baked lighting), ground_art/ (court and stand textures)
+store/      PLAY_STORE.md (every step to Google Play, and the answers to its forms), listing/ (the store text),
+            graphics/ (icon, feature graphic, screenshots). The privacy policy and help pages are in ../kabaddi-raid/
 docs/       ASSETS.md (how to drop in real humans), KABADDI.md (the rules), BETA.md (testing on a phone), ROADMAP.md,
             FOOTAGE_STYLE.md (how real raids play, measured from match video), MOTION_REALISM.md (movement and
             animation fixes, measured), TACKLE_SYSTEM.md (tackles and holds, measured), REALISM_REVIEW.md (the
@@ -150,6 +155,8 @@ godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn -- --audi
 godot --headless --path . --fixed-fps 30 res://tests/motion_audit.tscn     # movement stability: encounters and an AI match
 godot --headless --path . --fixed-fps 30 res://tests/raid_audit.tscn -- 4 1 --digest /tmp/d.json   # 4 AI matches audited (run twice: the same)
 godot --headless --path . --fixed-fps 30 res://tests/match_record.tscn -- 600 seed=1 trace=/tmp/r.json   # the audit's first match, unaudited
+godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- /tmp/fit.jsonl all 1280x720,2208x1840   # every screen, every language
+xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/screenshots.tscn -- /tmp/shots ta:hud   # the match's words in Tamil
 ```
 
 The smoke test does five things:

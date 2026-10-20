@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.8.3-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.8.4-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.8.3-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.8.4-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -89,6 +89,23 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
 - **The auction's grades** (0.8.3) count what you paid for the free agents who filled your squad (a purse that went
   down while "spent 0 L" said otherwise), and the Underdog Trophy's countries are the ones rated 75 or below on the
   country picker.
+- **Every language** (0.8.4): play a match and go through a season in yours.
+  - The match's words (the calls, banners, pause menu and walk-out) were in the engine's own plain font, with Indian
+    scripts left to whatever fonts the phone had, and the pause menu was unstyled. They are now in the game's fonts.
+  - Tamil, Telugu and Kannada text is set a little smaller, as their words run longer: a Tamil label is typically
+    1.4 times as wide as the English.
+  - In Tamil, the auction, war room and retentions ran off the right of the screen. They fit now, drawn a little
+    smaller where they must.
+  - In Kannada, Telugu and Punjabi, two-line details showed only their first line.
+  - Long calls and banners ("Time out · Chandigarh Chargers") ran off the screen in every language, English too.
+    They now stay in the middle and take two lines.
+- **Big phones, foldables and tablets** (0.8.4):
+  - The game now tells Android it is a game. On a tablet or a foldable's inner screen, Android 16 had been free to
+    ignore its landscape lock.
+  - The buttons keep clear of a punch-hole camera at the screen's edge.
+  - Try it at the phone's highest screen resolution and refresh rate.
+- **Settings → About** (0.8.4): the version, the privacy policy and help pages (they open in your browser), and the
+  licences of what the game is made with.
 
 ## Reporting
 

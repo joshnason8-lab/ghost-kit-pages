@@ -40,10 +40,28 @@ here to a store release, roughly in order.
 - [ ] Keep the download under 150 MB. Use Play Asset Delivery if the grounds grow.
 
 ## 5. Release
-- [ ] Release keystore and signed AAB (Godot exports it; switch `gradle_build/export_format` to AAB).
-- [ ] Privacy policy and data safety form. The game stores only local saves today.
+- [x] Signed AAB (0.8.4): GitHub Actions builds the Play bundle with Gradle, signed with your upload key once it is
+  in the repository's secrets. See [store/PLAY_STORE.md](../store/PLAY_STORE.md) for every step to Google Play.
+- [x] Privacy policy, help page and the Data safety answers (0.8.4): `kabaddi-raid/` at the top of the repository,
+  linked from Settings > About.
 - [ ] Native-speaker review of all 7 translations, especially the kabaddi terms.
 - [ ] Monetisation: free-to-play with cosmetics (kits, celebrations) and a season pass. **No real-money gaming**:
       India's 2025 online gaming law bans it, so keep anything that looks like betting or paid contests out.
 - [ ] Licensing (optional, later): a real league or player licence costs real money. Fictional teams keep that
       off the critical path.
+
+## 6. Gameplay, after the 0.8.4 audit
+Ideas ranked by how much they would add for the work they take.
+- [ ] **A first raid that teaches**: the first Quick Match opens with one guided raid (cross, touch, get back),
+      prompts on screen, so a new player learns by playing rather than reading How to Play.
+- [ ] **Replays of the big moments**: a super raid, super tackle or do-or-die raid plays again from a second camera,
+      slowed down (the match already records every event).
+- [ ] **A box score after the match**: each player's raid and tackle points, raids, empty raids and success rate,
+      and the player of the match's numbers.
+- [ ] **Haptics on contact**: a short buzz on your touch, a firmer one on your hold or a tackle on you (the game
+      buzzes at three moments now).
+- [ ] **Daily and season challenges**: "win a raid with a lion jump", "a super tackle with Kenya", for a reason to
+      come back each day.
+- [ ] **Commentary lines in each language**, written first (on screen), voiced later.
+- [ ] **A 60 fps cap and a battery saver** in Settings, for phones that run hot at 120 Hz.
+- [ ] **Bigger or movable buttons**, for players with large thumbs or small phones.
