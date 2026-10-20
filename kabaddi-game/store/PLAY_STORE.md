@@ -14,7 +14,8 @@ stand in October 2026.
   - one permission (vibration) and no internet access.
 - **The privacy policy, help page and a page for the game**, in `kabaddi-raid/` at the top of this repository:
   - live now at https://kabaddi-raid-beta.netlify.app/privacy.html and `/support.html`;
-  - on thekabaddipulse.com once that site's update is installed (asked of the Kabaddi Pulse chat);
+  - on thekabaddipulse.com once you install the site's update, plugin and theme 0.4.2 from the Kabaddi Pulse chat:
+    https://thekabaddipulse.com/kabaddi-raid/, `/kabaddi-raid/privacy/` and `/kabaddi-raid/support/`;
   - on GitHub Pages once this branch is merged.
 
   The game links to them from **Settings > About**, as Google asks, and shows the licences there.
@@ -80,7 +81,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://kabaddi-raid-beta.netlify.app/privacy.html`, or the thekabaddipulse.com page once it is live |
+| **Privacy policy** | `https://thekabaddipulse.com/kabaddi-raid/privacy/` once the site's update is installed (until then `https://kabaddi-raid-beta.netlify.app/privacy.html`). Pick one and keep it |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |
@@ -122,8 +123,9 @@ and shows no ads, but the 13+ groups are the simpler start.
 6. **7-inch and 10-inch tablet screenshots**: upload the same eight. They are 16:9, which Play accepts for tablets.
 7. **Category**: **Store settings > App category: Game > Sports**. Add tags such as Sports.
 8. **Contact details**:
-   - **Email** (required, shown publicly): the game's contact address.
-   - **Website**: the game's page.
+   - **Email** (required, shown publicly): an address you are happy to show. The pages' contact is the site's
+     contact form (https://thekabaddipulse.com/contact/), which cannot stand in for it.
+   - **Website**: https://thekabaddipulse.com/kabaddi-raid/
 
 ## 6. The closed test (required for new personal accounts)
 
