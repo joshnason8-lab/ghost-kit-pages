@@ -202,6 +202,7 @@
   "QUIT_MATCH": "退出比赛",
   "CAMERA": "视角",
   "CAM_TV": "转播",
+  "CAM_SIDE": "侧面",
   "CAM_END": "我方身后",
   "SET_GAME": "游戏",
   "SET_DISPLAY": "画面",

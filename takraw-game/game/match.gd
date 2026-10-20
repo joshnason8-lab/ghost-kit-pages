@@ -256,6 +256,13 @@ func _make_officials() -> void:
 	for o in officials:
 		o.apply(Moves.READY)
 	_ref.apply(Moves.static_pose("sit"))
+	# Line judges sit on low chairs at the corners, as they do; each with its chair.
+	var g := Geo.new()
+	for j in _judges:
+		j.apply(Moves.static_pose("sit"))
+		var back := -Vector3(sin(j.rotation.y), 0, cos(j.rotation.y)) * 0.18
+		g.box(j.position + back + Vector3(0, 0.22, 0), Vector3(0.42, 0.44, 0.42), Color("2b3c55"), j.rotation.y)
+	add_child(g.commit(Geo.material(true)))
 
 
 # ---------------------------------------------------------------- the clock
@@ -617,11 +624,21 @@ func _serve_kick(pl: Player, from: Vector3, q: float, mv: String) -> void:
 	var horse := mv == "horse"
 	_attack_kind = "horse" if horse else ""
 	# A fault on the serve now and then: the standing foot lifted.
-	if rng.randf() < 0.006:
+	if rng.randf() < 0.003:
 		_fault(pl.side, "FAULT_FOOT", pl)
 		return
 	var err := lerpf(2.6, 0.25, q) * (1.25 if horse else 1.0)
 	target += Vector3(rng.randfn(0, err * 0.5), 0, rng.randfn(0, err * 0.5))
+	# Servers miss now and then: long, wide, or into the net (the horse kick more often).
+	if not _is_user(pl) and rng.randf() < (0.05 if not horse else 0.09) + (1.0 - q) * 0.08:
+		var so := Court.sgn(opp)
+		match rng.randi_range(0, 2):
+			0:
+				target.x = so * (Court.HALF + rng.randf_range(0.2, 1.0))
+			1:
+				target.z = signf(target.z if target.z != 0.0 else 1.0) * (Court.HALF_W + rng.randf_range(0.2, 0.8))
+			_:
+				q = 0.0   # into the net, below
 	target.y = Ball.RADIUS
 	var v: Vector3
 	if horse:
@@ -629,9 +646,9 @@ func _serve_kick(pl: Player, from: Vector3, q: float, mv: String) -> void:
 	else:
 		var sol := Ball.solve_apex(from, target, lerpf(2.4, 3.1, rng.randf()) + (0.4 if q < 0.4 else 0.0))
 		v = sol[0]
-	# A poor serve can catch the net.
+	# A poor serve catches the net: it is struck too flat to clear the tape.
 	if q < 0.22 and rng.randf() < 0.55:
-		v.y *= 0.72
+		v = Ball.solve_apex(from, target, arena.net_top - 0.15)[0]
 	Sfx.play("kick", -2.0, 1.1 if horse else 1.0)
 	_launch(from, v, pl.side, horse)
 	_after_touch(pl.side)
@@ -767,6 +784,14 @@ func _attack(pl: Player, from: Vector3, q: float, p: Dictionary) -> void:
 	var target := aim if aim != Vector3.INF and mv != "feint" else _attack_target(pl, opp, mv)
 	var err := lerpf(2.0, 0.22, q)
 	target += Vector3(rng.randfn(0, err * 0.45), 0, rng.randfn(0, err * 0.45))
+	# A spike is a risk: the harder the spike, the likelier it goes long or wide (a roll spike most of all).
+	var risk: float = {"roll": 0.13, "sunback": 0.1, "tapak": 0.08, "head_spike": 0.07}.get(mv, 0.0) + (1.0 - q) * 0.2
+	if not _is_user(pl) and rng.randf() < risk:
+		var s := Court.sgn(opp)
+		if rng.randf() < 0.55:
+			target.x = s * (Court.HALF + rng.randf_range(0.2, 1.2))
+		else:
+			target.z = signf(target.z if target.z != 0.0 else 1.0) * (Court.HALF_W + rng.randf_range(0.15, 0.9))
 	target.y = Ball.RADIUS
 	var v: Vector3
 	if mv == "feint":
@@ -870,6 +895,7 @@ func _at_net(t: float) -> void:
 		var d := deflect
 		deflect = {}
 		var bp: Player = d.player
+		_attack_kind = ""   # the spike is spent: what happens now is the block's
 		touch_side = bp.side
 		touches = 1
 		last_toucher = bp
@@ -911,6 +937,8 @@ func _at_net(t: float) -> void:
 		_plan_next()
 		return
 	if p.y <= bottom:
+		if OS.has_environment("TAKRAW_DEBUG"):
+			print("UNDER launch %s v %s at %s touch_side %d toucher side %d" % [ball.p_launch, ball.v_launch, p, touch_side, last_toucher.side if last_toucher else -1])
 		_fault(from_side, "FAULT_UNDER_NET", last_toucher)
 		return
 	# Over: the other side plans now (it already has, if it saw it coming).
@@ -931,12 +959,14 @@ func _plan_next() -> void:
 	# Which side is the ball going to be played on next: if it crosses the net cleanly, the other side.
 	var crossing := net_t > 0.0
 	var next_side := touch_side
+	var until := land_t
 	if crossing:
 		var pn := ball.at(net_t)
 		if pn.y > arena.net_top + Ball.RADIUS and absf(pn.z) <= Court.HALF_W:
 			next_side = 1 - touch_side if touch_side >= 0 else Court.side_of(ball.at(land_t).x)
 		else:
-			return   # it will meet the net (or go round it): plan when it does
+			# It will meet the net (or pass under it, or round it) unless this side plays it first.
+			until = net_t
 	var touch_no := 1 if next_side != touch_side else touches + 1
 	if touch_no > 3:
 		return   # a fourth touch is a fault: nobody plays it, it falls
@@ -946,7 +976,7 @@ func _plan_next() -> void:
 		var margin := Court.line_margin(land)
 		if margin > 0.12 and rng.randf() < 0.92:
 			return
-	var pick := _find_touch(next_side, touch_no)
+	var pick := _find_touch(next_side, touch_no, until)
 	if OS.has_environment("TAKRAW_DEBUG") and touch_no == 1 and _attack_kind in ["roll", "sunback", "tapak", "head_spike"]:
 		var nearest := 99.0
 		for pp in players_on(next_side):
@@ -967,9 +997,9 @@ func _plan_next() -> void:
 
 ## The best touch a side can make on the ball's flight: for each moment it is in reach, each player and each way of
 ## meeting it at that height, can he be there in time? The first good one, the easier the better.
-func _find_touch(side: int, touch_no: int) -> Dictionary:
+func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 	var s := Court.sgn(side)
-	var t_end := land_t - 0.02
+	var t_end := (until if until > 0.0 else land_t) - 0.02
 	var t0 := now + 0.12
 	# A set ball is met where it was set to, by the striker, with his spike.
 	if touch_no == 3 and not _set_for.is_empty():
@@ -977,7 +1007,7 @@ func _find_touch(side: int, touch_no: int) -> Dictionary:
 		var mv := String(_set_for.move)
 		var h: float = Moves.CONTACT[mv][0] - (0.12 if women else 0.0)
 		var tc := ball.when_height(h)
-		if tc > now + 0.3:
+		if tc > now + 0.3 and tc < t_end:
 			var cp := ball.at(tc)
 			if cp.x * s > 0.05 and cp.x * s < 1.6:
 				var mirror := striker.left_footed()
@@ -1046,6 +1076,8 @@ func _moves_for_height(h: float, touch_no: int) -> Array:
 	var out := []
 	if touch_no == 3 and h > 1.9:
 		out.append("head_spike")
+	if touch_no == 3 and h > 1.45 and h < 2.3:
+		out.append("feint")   # a soft tap over the net when no spike is on
 	if h < 0.42:
 		out.append("dig")
 	elif h < 0.78:
@@ -1062,7 +1094,7 @@ func _moves_for_height(h: float, touch_no: int) -> Array:
 
 
 func _touch_cost(pl: Player, mv: String, touch_no: int) -> float:
-	var c: float = {"sila": 0.0, "thigh": 0.15, "chest": 0.25, "header": 0.3, "kuda": 0.3, "dig": 0.8, "head_spike": 0.2}.get(mv, 0.4)
+	var c: float = {"sila": 0.0, "thigh": 0.15, "chest": 0.25, "header": 0.3, "kuda": 0.3, "dig": 0.8, "head_spike": 0.2, "feint": 0.35}.get(mv, 0.4)
 	# Roles: the feeder sets, the striker attacks; on a first touch the striker is spared if anyone else can play it.
 	if touch_no == 2 and pl.role != DB.POS_FEEDER:
 		c += 0.35
@@ -1165,9 +1197,9 @@ func _block_at_net(attacker: Player, from: Vector3, v: Vector3, mv: String) -> v
 	var bz := blocker.position.z
 	var at_net := absf(blocker.position.x) < 1.0
 	var covers := at_net and absf(pn.z - bz) < 0.6 and pn.y < arena.net_top + 0.95
-	var p_stop := tq * (0.4 + float(blocker.data.get("block", 60)) * 0.004) - (0.1 if mv == "roll" else 0.0)
+	var p_stop := tq * (0.2 + float(blocker.data.get("block", 60)) * 0.0022) - (0.08 if mv == "roll" else 0.0)
 	if covers and rng.randf() < p_stop:
-		var kill := rng.randf() < 0.5
+		var kill := rng.randf() < 0.45
 		var back_v: Vector3
 		if kill:
 			back_v = Vector3(Court.sgn(attacker.side) * rng.randf_range(3.0, 6.0), rng.randf_range(-1.0, 1.5), rng.randf_range(-1.5, 1.5))
@@ -1231,6 +1263,8 @@ func _schedule_ai_challenge(team: int) -> void:
 
 func _fault(fault_side: int, key: String, who: Player) -> void:
 	_why = key
+	if OS.has_environment("TAKRAW_DEBUG"):
+		print("FAULT %s after %s" % [key, _last_kind])
 	Sfx.play("whistle", -6.0)
 	hud.call_line(tr(key))
 	if who:
@@ -1302,10 +1336,14 @@ func _judge_signal(p: Vector3, called_in: bool) -> void:
 	for j in _judges:
 		if j.global_position.distance_to(p) < nearest.global_position.distance_to(p):
 			nearest = j
-	nearest.apply(Moves.static_pose("signal_in" if called_in else "signal_out"))
+	var sig := Moves.static_pose("sit")
+	var arm := Moves.static_pose("signal_in" if called_in else "signal_out")
+	sig.upperarm_r = arm.upperarm_r
+	sig.forearm_r = arm.forearm_r
+	nearest.apply(sig)
 	await get_tree().create_timer(1.6).timeout
 	if is_instance_valid(nearest):
-		nearest.apply(Moves.READY)
+		nearest.apply(Moves.static_pose("sit"))
 
 
 ## After the point: a set or the match won, the ends changed, or the next serve.

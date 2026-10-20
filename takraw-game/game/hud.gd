@@ -483,7 +483,7 @@ func show_pause(on: bool) -> void:
 		var to := UI.button(tr("TIMEOUT_N").format({"n": int(m.timeouts[m.user_team])}), false, func(): m.call_timeout())
 		to.disabled = int(m.timeouts[m.user_team]) <= 0
 		v.add_child(to)
-	v.add_child(UI.button(tr("CAMERA") + ": " + tr("CAM_TV" if m.cam.mode == Game.CAM_END else "CAM_END"), false, func():
+	v.add_child(UI.button(tr("CAMERA") + ": " + tr({Game.CAM_TV: "CAM_TV", Game.CAM_SIDE: "CAM_SIDE"}.get(m.cam.mode, "CAM_END")), false, func():
 		m.cam.toggle()
 		show_pause(false)
 		show_pause(true)))

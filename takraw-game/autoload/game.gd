@@ -29,8 +29,10 @@ const LANGUAGES := [
 	["hi", "हिन्दी", "Hindi"],
 ]
 
-const CAM_TV := 0       # the broadcast camera, high in the stand on the side line
+const CAM_TV := 0       # the broadcast camera: high in the stand, off to your end of the side line, so the net is seen at
+                        # an angle rather than edge on
 const CAM_END := 1      # behind your own end line, looking over the net
+const CAM_SIDE := 2     # high in the stand level with the net, the whole court side on
 
 const GFX_LOW := 0
 const GFX_MEDIUM := 1

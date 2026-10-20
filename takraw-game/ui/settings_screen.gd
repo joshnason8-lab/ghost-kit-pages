@@ -70,8 +70,9 @@ func _ready() -> void:
 		_fps_note.text = _fps_text(fps_opts[i], smooth, hz))))
 	_fps_note = UI.wrap(_fps_text(fps_opts[shown], smooth, hz), "MutedLabel", 17)
 	disp[1].add_child(_fps_note)
-	disp[1].add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_TV"), tr("CAM_END")], int(Game.settings.camera), func(i):
-		Game.settings.camera = i
+	var cams := [Game.CAM_TV, Game.CAM_SIDE, Game.CAM_END]
+	disp[1].add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_TV"), tr("CAM_SIDE"), tr("CAM_END")], maxi(0, cams.find(int(Game.settings.camera))), func(i):
+		Game.settings.camera = cams[i]
 		Game.save_settings())))
 	disp[1].add_child(UI.field(tr("PLAYER_TAGS"), UI.chips([tr("TAGS_KEY"), tr("TAGS_ALL"), tr("OFF")], int(Game.settings.tags), func(i):
 		Game.settings.tags = i

@@ -202,6 +202,7 @@ RESUME,Resume,เล่นต่อ,Sambung,Lanjutkan,Tiếp tục,ຫຼິ້�
 QUIT_MATCH,Quit match,ออกจากแมตช์,Keluar perlawanan,Keluar laga,Rời trận,ອອກຈາກນັດແຂ່ງ,ပွဲမှထွက်,ចាកចេញពីការប្រកួត,Umalis sa laban,試合をやめる,경기 종료,退出比赛,मैच छोड़ें
 CAMERA,Camera,มุมกล้อง,Kamera,Kamera,Góc máy,ມຸມກ້ອງ,ကင်မရာ,កាមេរ៉ា,Camera,カメラ,카메라,视角,कैमरा
 CAM_TV,Broadcast,ถ่ายทอดสด,Siaran,Siaran TV,Truyền hình,ຖ່າຍທອດສົດ,တီဗီ,ផ្សាយផ្ទាល់,Broadcast,中継,중계,转播,ब्रॉडकास्ट
+CAM_SIDE,Side on,ด้านข้าง,Sisi,Samping,Ngang sân,ດ້ານຂ້າງ,ဘေးဘက်,ចំហៀង,Gilid,サイド,측면,侧面,साइड
 CAM_END,Behind your end,หลังแดนคุณ,Belakang gelanggang anda,Di belakang sisimu,Sau phần sân bạn,ຫຼັງເດີ່ນເຈົ້າ,သင့်ဘက်နောက်မှ,ពីក្រោយទីលានអ្នក,Sa likod ng panig mo,自陣の後方,내 진영 뒤,我方身后,आपके पाले के पीछे
 SET_GAME,The game,เกม,Permainan,Permainan,Trò chơi,ເກມ,ဂိမ်း,ហ្គេម,Ang laro,ゲーム,게임,游戏,गेम
 SET_DISPLAY,Screen,หน้าจอ,Skrin,Layar,Màn hình,ໜ້າຈໍ,မျက်နှာပြင်,អេក្រង់,Screen,画面,화면,画面,स्क्रीन

@@ -202,6 +202,7 @@
   "QUIT_MATCH": "試合をやめる",
   "CAMERA": "カメラ",
   "CAM_TV": "中継",
+  "CAM_SIDE": "サイド",
   "CAM_END": "自陣の後方",
   "SET_GAME": "ゲーム",
   "SET_DISPLAY": "画面",

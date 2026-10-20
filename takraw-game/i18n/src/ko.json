@@ -202,6 +202,7 @@
   "QUIT_MATCH": "경기 종료",
   "CAMERA": "카메라",
   "CAM_TV": "중계",
+  "CAM_SIDE": "측면",
   "CAM_END": "내 진영 뒤",
   "SET_GAME": "게임",
   "SET_DISPLAY": "화면",
