@@ -199,6 +199,9 @@ func summary() -> String:
 	var hz := DisplayServer.screen_get_refresh_rate()
 	if hz > 0.0:
 		out.append("One screen refresh: %.1f ms" % (1000.0 / hz))
+	var cap := Game.frame_cap()
+	out.append("Frame rate: %s" % (("capped at %d a second" % cap) if cap > 0 else "the screen's own") +
+		(" (battery saver)" if int(Game.settings.get("fps", Game.FPS_SMOOTH)) == Game.FPS_SAVER else ""))
 	for i in range(1, _gfx.size()):
 		out.append("Graphics changed to %s at %s" % [GFX_NAMES[int(_gfx[i][1])], _clock(float(_gfx[i][0]))])
 	if _all.size() > 0:

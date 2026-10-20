@@ -5,6 +5,7 @@ const RULE_KEYS := ["RULE_CLOCK", "RULE_CANT_TAP", "RULE_CANT_AUTO"]
 const RULE_NOTES := ["RULE_CLOCK_NOTE", "RULE_TAP_NOTE", "RULE_BREATH_NOTE"]
 
 var _rule_note: Label
+var _fps_note: Label
 
 
 func setup(_args: Dictionary) -> void:
@@ -65,6 +66,26 @@ func _ready() -> void:
 		Game.settings.graphics = i
 		Game.save_settings())))
 	disp[1].add_child(_toggle("auto_gfx", "GFX_AUTO"))
+	# Frame rate: the battery saver, Smooth (60, or as near as the screen shows evenly) and the screen's own rate.
+	var hz := Game.screen_hz()
+	var smooth := Game.smooth_cap(hz)
+	var fps_opts := [Game.FPS_SAVER]
+	var fps_names := [tr("FPS_SAVER")]
+	if smooth > 0 and smooth < hz:
+		fps_opts.append(Game.FPS_SMOOTH)
+		fps_names.append(tr("FPS_N").format({"n": smooth}))
+	fps_opts.append(Game.FPS_MAX)
+	fps_names.append(tr("FPS_MAX_N").format({"n": hz}))
+	var shown := fps_opts.find(int(Game.settings.get("fps", Game.FPS_SMOOTH)))
+	if shown < 0:
+		shown = fps_opts.size() - 1   # Smooth on a screen it does not divide evenly is the screen's own rate
+	disp[1].add_child(UI.field(tr("FRAME_RATE"), UI.chips(fps_names, shown, func(i):
+		Game.settings.fps = fps_opts[i]
+		Game.save_settings()
+		Game.apply_frame_rate()
+		_fps_note.text = _fps_text(fps_opts[i], smooth, hz))))
+	_fps_note = UI.wrap(_fps_text(fps_opts[shown], smooth, hz), "MutedLabel", 17)
+	disp[1].add_child(_fps_note)
 	if RiggedBody.available():
 		disp[1].add_child(UI.field(tr("SET_MODELS"), UI.chips([tr("MODELS_CLASSIC"), tr("MODELS_REAL")], int(Game.settings.get("models", 1)), func(i):
 			Game.settings.models = i
@@ -99,6 +120,16 @@ func _ready() -> void:
 	links.add_child(UI.button(tr("HELP_SUPPORT"), false, func(): OS.shell_open(Game.SITE_URL + "support.html")))
 	links.add_child(UI.button(tr("LICENCES"), false, func(): Game.show_screen("res://ui/licences_screen.gd")))
 	about[1].add_child(links)
+
+
+## What a frame rate choice means on this phone's screen (of HZ refreshes a second).
+func _fps_text(opt: int, smooth: int, hz: int) -> String:
+	match opt:
+		Game.FPS_SAVER:
+			return tr("FPS_NOTE_SAVER").format({"n": Game.saver_cap(hz)})
+		Game.FPS_SMOOTH:
+			return tr("FPS_NOTE_SMOOTH").format({"n": smooth, "hz": hz})
+	return tr("FPS_NOTE_MAX").format({"hz": hz})
 
 
 func _toggle(key: String, title_key: String) -> VBoxContainer:

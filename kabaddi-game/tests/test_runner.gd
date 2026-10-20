@@ -771,6 +771,15 @@ func _run() -> void:
 	rm._post_messages = []
 	rm._milestones()
 	check(rm.raider.has_meta("super10"), "ten raid points is a Super 10")
+	# The phone buzzes for your side: your hold firmly, a team-mate's lightly. A hold made without a dive is a tackle
+	# tried, in the box score.
+	rm.haptics.clear()
+	var mate: Athlete = rm.on_mat(0).filter(func(a): return a != rm.controlled)[0]
+	var tries_were := int(rm.stats[mate.pid()].tries)
+	rm._attach(rm.controlled, false, "leg_l")
+	rm._attach(mate, false, "leg_r")
+	check(rm.haptics == ["hold", "team_hold"], "your hold buzzes the phone, a team-mate's more lightly (%s)" % str(rm.haptics))
+	check(int(rm.stats[mate.pid()].tries) == tries_were + 1, "a hold made without a dive counts as a tackle tried")
 	Game.go_back()
 	check(rm.paused, "the phone's back button pauses a match")
 	Game.go_back()
@@ -958,6 +967,7 @@ func _run() -> void:
 		rd.cooldown = 0.0
 		mm._break_free()
 		check(mm.raid.holders.has(dw) and rd.state == "jump", "Break free out of an ankle hold is a lion jump")
+		check(rd == mm.controlled and mm.haptics.has("held"), "a hold on your raider buzzes the phone")
 		for h in mm.raid.holders.duplicate():
 			mm._release(h, false)
 		rd.st_t = 99.0
@@ -975,11 +985,29 @@ func _run() -> void:
 		mm._defender_tackle(dd, "dash")
 		mm._check_contacts(mm.defenders())
 		check(rd.state == "shoved", "dash shoves the raider")
+		check(mm.haptics.back() == "dash", "a dash on your raider buzzes the phone")
 		check(mm.raid.dashed_by == dd and rd.dive_dir.x > 0.5, "dash pushes toward the near side line")
 		check(mm.defend_hint() == "dash" or mm._line_gap() < 1.2, "dash is the hint near the line")
 	mm.queue_free()
 	await frames(3)
 	Sfx.stop_all()
+
+	# Frame rate: the battery saver plays at 30 frames a second; Smooth at 60 on a 60 or 120 Hz screen, half of a 144 Hz
+	# one, and never unevenly (a 90 Hz screen runs at its own rate); Max as many as the screen shows.
+	check(Game.smooth_cap(60) == 60 and Game.smooth_cap(120) == 60 and Game.smooth_cap(144) == 72 and Game.smooth_cap(90) == 0,
+		"Smooth's frame rate divides the screen's evenly")
+	check([60, 90, 120].all(func(hz): return Game.saver_cap(hz) == 30) and Game.saver_cap(144) == 36,
+		"the battery saver's too: 30, or 36 on a 144 Hz screen")
+	var fps_was := int(Game.settings.fps)
+	Game.settings.fps = Game.FPS_SAVER
+	Game.apply_frame_rate()
+	var saver_cap := Engine.max_fps
+	Game.settings.fps = Game.FPS_MAX
+	Game.apply_frame_rate()
+	check(saver_cap == Game.saver_cap(Game.screen_hz()) and Engine.max_fps == 0,
+		"the battery saver plays at about 30 frames a second (%d here), Max at the screen's own rate" % saver_cap)
+	Game.settings.fps = fps_was
+	Game.apply_frame_rate()
 
 	# 9. A full AI-vs-AI match, quick length, knockout rules.
 	var m: Node = null
@@ -992,10 +1020,13 @@ func _run() -> void:
 	var raids := 0
 	var last_phase := ""
 	var counted := {}
+	var buzzes := 0
 	m.tree_exiting.connect(func(): pass)
 	while not _match_done and n_frames < 30 * 60 * 12:
 		await get_tree().process_frame
 		n_frames += 1
+		if is_instance_valid(m):
+			buzzes = m.haptics.size()
 		if is_instance_valid(m) and m.phase != last_phase:
 			last_phase = m.phase
 			if last_phase == "raid":
@@ -1026,6 +1057,39 @@ func _run() -> void:
 				cc += 1
 		print("      moves landed %s, tried %s, caught crossing a chain %d" % [str(used), str(_match_result.get("move_tries", {})), cc])
 		check(used.size() >= 3, "raiders land a mix of moves (%d kinds)" % used.size())
+		check(buzzes == 0, "a match the AI plays on its own (as behind the home screen) never buzzes the phone")
+		# The box score: both sides' seven, adding up to the match.
+		var box: Array = _match_result.get("box", [])
+		var adds: bool = box.size() == 2 and box[0].size() == 7 and box[1].size() == 7
+		var made := 0
+		var empties := 0
+		var top := 0
+		for t in box.size():
+			var rsum := 0
+			for r in box[t]:
+				rsum += int(r.raid)
+				made += int(r.raids)
+				empties += int(r.empty)
+				top = maxi(top, int(r.raid) + int(r.tackle))
+				adds = adds and int(r.raids_ok) <= int(r.raids) and int(r.empty) <= int(r.raids) - int(r.raids_ok) \
+					and int(r.tackle) <= int(r.tries) and int(r.bonus) <= int(r.raid)
+			adds = adds and rsum == int(_match_result.breakdown[t].raid)
+		var logged: Array = _match_result.raid_log.filter(func(r): return r.kind != "late")
+		var logged_empty: Array = _match_result.raid_log.filter(func(r): return r.kind == "return" and int(r.raid_pts) == 0 and not r.raider_out)
+		check(adds and made == logged.size() and empties == logged_empty.size(),
+			"the box score adds up: raid points, %d raids, %d empty, tackles within those tried" % [made, empties])
+		check(int(_match_result.mvp.pts) == top, "the player of the match has the most points in the box score")
+		await frames(3)
+		var rs: Node = Game.current
+		var tabs: Array = (rs.get_meta("header_right") as Node).find_children("*", "Button", true, false) \
+			if rs.has_meta("header_right") else []
+		check(tabs.size() == 2 and rs._summary.visible and not rs._box.visible, "the result screen opens on its summary, with a Box score tab")
+		if tabs.size() == 2:
+			(tabs[1] as Button).pressed.emit()
+			await frames(2)
+			var grids: Array = rs._box_body.find_children("*", "GridContainer", true, false)
+			check(rs._box.visible and not rs._summary.visible and grids.size() == 1
+				and grids[0].get_child_count() == grids[0].columns * 9, "the box score shows a side's seven, the headings and the side's line")
 	await frames(5)
 
 	# 10. After a touch the defence goes for him: a hand touch, then straight for home past the line either side of the

@@ -30,6 +30,27 @@ const GFX_LOW := 0
 const GFX_MEDIUM := 1
 const GFX_HIGH := 2
 
+## Frame rate (Settings): Battery saver, about 30 frames a second and the court drawn softer; Smooth, 60 a second (the
+## default); Max, as many as the screen shows.
+const FPS_SAVER := 0
+const FPS_SMOOTH := 1
+const FPS_MAX := 2
+
+## The buzz for what happens to you in a match (Settings, Vibration): milliseconds and strength (0-1), or, for a
+## pattern, buzzes and the gaps between them in milliseconds.
+const HAPTICS := {
+	"touch": [24, 0.55],                         # your hand or foot on a defender
+	"touched": [16, 0.35],                       # the raider's on you
+	"hold": [45, 0.8],                           # your hold on the raider
+	"team_hold": [20, 0.35],                     # a team-mate's, as you defend
+	"held": [70, 1.0],                           # the first hold on you
+	"held_more": [35, 0.7],                      # another hold on you
+	"takedown": [120, 1.0],                      # you are brought down
+	"tackle_won": [[40, 0.8], 90, [60, 1.0]],    # your side brings the raider down
+	"dash": [50, 0.85],                          # your dash lands, or one lands on you
+	"free": [[20, 0.6], 70, [20, 0.6]],          # you break free
+}
+
 # Brand palette, shared with the HUD and menus.
 const C_BG := Color("0c1a29")
 const C_PANEL := Color("172f47")
@@ -60,6 +81,7 @@ var settings := {
 	"models": 1,            # 0 classic code-built players, 1 realistic rigged players
 	"tutorial_done": [],
 	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
+	"fps": FPS_SMOOTH,      # frame rate: FPS_SAVER, FPS_SMOOTH or FPS_MAX (frame_cap)
 	"tags": 0,              # tags over players' heads: 0 names over you and the raider (numbers over the rest),
 	                        # 1 names over everyone, 2 none (MatchHud.PlayerTags)
 	"dev": false,           # the developer's overlay in matches (DevOverlay): seven taps on the home screen's version
@@ -81,6 +103,7 @@ var season = null  # Season (RefCounted), loaded lazily
 
 func _ready() -> void:
 	load_settings()
+	apply_frame_rate()
 	TranslationServer.set_locale(language())
 	_build_theme()
 	get_tree().root.theme = theme
@@ -147,7 +170,7 @@ func load_settings() -> void:
 			# Older saves had a cant switch (tap or automatic); keep what the player chose.
 			settings.raid_rule = 1 if int(data.cant) == 0 else 2
 	# JSON gives floats; keep ints as ints.
-	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models", "tags"]:
+	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models", "tags", "fps"]:
 		settings[k] = int(settings[k])
 	if data is Dictionary and int(data.get("rules_v", 1)) < 2:
 		# Tapping the cant was the old default and it tied up the thumb: move to Breath.
@@ -359,6 +382,46 @@ func apply_graphics(viewport: Viewport) -> void:
 		_:
 			viewport.msaa_3d = Viewport.MSAA_4X
 			viewport.scaling_3d_scale = 1.0
+	if int(settings.get("fps", FPS_SMOOTH)) == FPS_SAVER:
+		viewport.scaling_3d_scale *= 0.8   # the battery saver draws the court a little softer
+
+
+## The screen's refresh rate, a whole number (60 when the phone does not say).
+func screen_hz() -> int:
+	var hz := roundi(DisplayServer.screen_get_refresh_rate())
+	return hz if hz > 0 else 60
+
+
+## Smooth's frame rate on a screen of HZ: 60 on a 60, 120 or 240 Hz screen, which shows each frame for the same number
+## of refreshes; half the screen's rate at 144 Hz and up (72). 0, no cap, on a screen 60 does not divide evenly, such
+## as 90 Hz, where 60 frames a second would be shown unevenly.
+func smooth_cap(hz: int) -> int:
+	if hz % 60 == 0:
+		return 60
+	if hz >= 130:
+		return hz / 2
+	return 0
+
+
+## The battery saver's frame rate on a screen of HZ: about 30, a whole number of refreshes each (30 at 60, 90 or
+## 120 Hz; 36 at 144 Hz, where 30 would be shown unevenly).
+func saver_cap(hz: int) -> int:
+	return hz / ceili(hz / 36.0)
+
+
+## The most frames a second the game draws: 0 for as many as the screen shows.
+func frame_cap() -> int:
+	match int(settings.get("fps", FPS_SMOOTH)):
+		FPS_SAVER:
+			return saver_cap(screen_hz())
+		FPS_SMOOTH:
+			var cap := smooth_cap(screen_hz())
+			return cap if cap < screen_hz() else 0
+	return 0
+
+
+func apply_frame_rate() -> void:
+	Engine.max_fps = frame_cap()
 
 
 func shadows_enabled() -> bool:
@@ -369,9 +432,20 @@ func crowd_density() -> float:
 	return [0.35, 0.65, 1.0][int(settings.graphics)]
 
 
-func vibrate(ms: int) -> void:
-	if settings.vibration and OS.has_feature("mobile"):
-		Input.vibrate_handheld(ms)
+## Buzz the phone for something that happens to you in a match (HAPTICS), if vibration is on.
+func haptic(kind: String) -> void:
+	if not settings.vibration or not OS.has_feature("mobile") or not HAPTICS.has(kind):
+		return
+	var h: Array = HAPTICS[kind]
+	if not (h[0] is Array):
+		Input.vibrate_handheld(int(h[0]), float(h[1]))
+		return
+	for step in h:
+		if step is Array:
+			Input.vibrate_handheld(int(step[0]), float(step[1]))
+			await get_tree().create_timer(float(step[0]) / 1000.0).timeout
+		else:
+			await get_tree().create_timer(float(step) / 1000.0).timeout
 
 
 # ---------------------------------------------------------------- text helpers

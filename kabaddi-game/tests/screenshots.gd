@@ -149,6 +149,21 @@ func _tour() -> void:
 	if args_only == "menus":
 		await _menus()
 		return
+	if args_only == "result":
+		# Settings, and the result screen's summary and box score: quicker than every menu.
+		Game.show_screen("res://ui/settings_screen.gd")
+		await frames(8)
+		await shot("r1_settings")
+		var rs := Game.show_screen("res://ui/result_screen.gd", {"result": load("res://tests/fit_audit.gd").sample_result()})
+		await frames(10)
+		await shot("r2_result")
+		_tap((rs.get_meta("header_right") as Node).find_children("*", "Button", true, false)[1])
+		await frames(6)
+		await shot("r3_box_score")
+		_tap(rs._box.get_child(0).get_child(1))
+		await frames(6)
+		await shot("r4_box_score_away")
+		return
 	if args_only == "pickers":
 		# The franchise and country pickers alone (both built by UI.team_grid), quicker than every menu.
 		Game.delete_season()
@@ -202,6 +217,12 @@ func _tour() -> void:
 
 ## Every menu screen, for checking layouts at phone shapes (run with --resolution 1560x720
 ## for a 19.5:9 phone such as a Galaxy A16).
+## A tap on a chip: it lights, as a finger's would light it, and does what it does.
+func _tap(b: Button) -> void:
+	b.button_pressed = true
+	b.pressed.emit()
+
+
 func _menus() -> void:
 	Game.show_screen("res://ui/main_menu.gd")
 	await frames(240)
@@ -252,11 +273,12 @@ func _menus() -> void:
 	Game.show_screen("res://ui/trophy_screen.gd", {"team": "IND", "title": "Nations Cup", "back": "res://ui/main_menu.gd"})
 	await frames(90)
 	await shot("m11_trophy")
-	Game.show_screen("res://ui/result_screen.gd", {"result": {"config": {"mode": "quick"}, "home": "MUM", "away": "DEL", "score": [38, 31], "winner": 0,
-		"breakdown": [{"raid": 22, "tackle": 10, "allout": 4, "extra": 2}, {"raid": 19, "tackle": 9, "allout": 2, "extra": 1}],
-		"mvp": {"name": "Karthik Rao", "team": "MUM", "pts": 14}}})
+	var rs := Game.show_screen("res://ui/result_screen.gd", {"result": load("res://tests/fit_audit.gd").sample_result()})
 	await frames(10)
 	await shot("m12_result")
+	_tap((rs.get_meta("header_right") as Node).find_children("*", "Button", true, false)[1])
+	await frames(6)
+	await shot("m12b_box_score")
 	Game.delete_cup()
 
 

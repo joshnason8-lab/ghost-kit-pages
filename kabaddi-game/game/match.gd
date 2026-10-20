@@ -145,7 +145,12 @@ var events_left := 0
 var raider: Athlete = null
 var controlled: Athlete = null
 var raid := {}
-var stats := {}                # pid -> {raid, tackle}
+var stats := {}                # pid -> {raid, tackle} points, and the box score's numbers (BOX)
+var haptics: Array = []        # what the phone was last asked to buzz for, up to 50 (the tests read them)
+## A player's numbers for the box score, besides his raid and tackle points: raids made, raids that scored, empty
+## raids, bonus points, super raids; tackles tried (a dive or dash, or a hold or grab made without one) and super
+## tackles.
+const BOX := ["raids", "raids_ok", "empty", "bonus", "super_raids", "tries", "super_tackles"]
 var _pending_end := ""
 var _post_messages: Array = []
 var _hints_shown := 0
@@ -242,6 +247,8 @@ func _ready() -> void:
 			tm.players.append(a)
 			athletes.append(a)
 			stats[a.pid()] = {"raid": 0, "tackle": 0}
+			for k in BOX:
+				stats[a.pid()][k] = 0
 	_order_slots()
 	officials = Officials.new()
 	add_child(officials)
@@ -1185,6 +1192,16 @@ func on_back() -> void:
 		set_paused(not paused)
 
 
+## The phone buzzes for what happens to the player's side (Game.HAPTICS); not in a match the AI plays on its own, as
+## behind the home screen.
+func _haptic(kind: String) -> void:
+	if control_mode != "none" and not attract:
+		Game.haptic(kind)
+		haptics.append(kind)
+		if haptics.size() > 50:
+			haptics.pop_front()
+
+
 ## Lower the graphics by itself if the first raids run slowly on this phone.
 func _check_frame_rate(delta: float) -> void:
 	if _fps_done or phase != "raid":
@@ -1199,7 +1216,10 @@ func _check_frame_rate(delta: float) -> void:
 		return
 	_fps_done = true
 	var fps := _fps_frames / _fps_time
-	if fps < 36.0 and int(Game.settings.graphics) > Game.GFX_LOW:
+	# Slow against what the phone is asked for: the battery saver's 30 frames a second is not slow.
+	var cap := Game.frame_cap()
+	var slow := minf(36.0, 0.8 * cap) if cap > 0 else 36.0
+	if fps < slow and int(Game.settings.graphics) > Game.GFX_LOW:
 		lower_graphics()
 
 
@@ -1435,6 +1455,7 @@ func _tick_escape(dt: float) -> void:
 			_ooh()
 			if raider == controlled:
 				tutorial_event.emit("broke_free")
+				_haptic("free")
 		_move_moment(String(e.kind))
 		if raid.holders.is_empty():
 			raid.progress = maxf(0.0, raid.progress - 0.35)
@@ -1577,6 +1598,7 @@ func _raider_dodge(dir: Vector3) -> void:
 				hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, false, MatchHud.EV_FREE)
 				if raider == controlled:
 					tutorial_event.emit("broke_free")
+					_haptic("free")
 			if holders.is_empty():
 				raid.progress = maxf(0.0, raid.progress - 0.35)
 		elif grapple:
@@ -2019,7 +2041,8 @@ func _dash_hit(d: Athlete) -> void:
 	hud.event(tr("EV_DASH"), Game.C_MAGENTA)
 	Sfx.play("thud", -2.0, 1.2)
 	arena.excite(0.6)
-	Game.vibrate(40)
+	if d == controlled or raider == controlled:
+		_haptic("dash")
 
 
 ## Metres from the raider to the nearest line he can be pushed over.
@@ -2742,7 +2765,10 @@ func _touch(d: Athlete, via := "") -> void:
 		_move_moment(via)
 	hud.float_points(d, "+1")
 	arena.excite(0.5)
-	Game.vibrate(25)
+	if raider == controlled:
+		_haptic("touch")
+	elif d == controlled:
+		_haptic("touched")
 
 
 func _attach(d: Athlete, block := false, slot := "", reached := false) -> void:
@@ -2809,7 +2835,12 @@ func _attach(d: Athlete, block := false, slot := "", reached := false) -> void:
 	if chained and (d == controlled or (d.chain_partner == null and raid.holders.any(func(h): return h == controlled))):
 		tutorial_event.emit("chain_tackle")
 	arena.excite(0.7)
-	Game.vibrate(40)
+	if d == controlled:
+		_haptic("hold")
+	elif raider == controlled:
+		_haptic("held" if first else "held_more")
+	elif controlled != null:
+		_haptic("team_hold")   # a team-mate's, as you defend
 
 
 func _check_lines() -> void:
@@ -2907,6 +2938,7 @@ func _end_raid(kind: String) -> void:
 	var msg := ""
 	var col := Game.C_INK
 	var raider_out := false
+	var empty := false
 	var tm_atk: Dictionary = teams[atk]
 	var tm_def: Dictionary = teams[dfn]
 
@@ -2926,6 +2958,7 @@ func _end_raid(kind: String) -> void:
 				else:
 					if not tiebreak and not golden:
 						tm_atk.empty += 1
+					empty = true
 					msg = tr("EV_EMPTY")
 			else:
 				raid_pts = touched.size() + bonus
@@ -2939,6 +2972,8 @@ func _end_raid(kind: String) -> void:
 			col = Game.C_MAGENTA
 			for h in holders_copy():
 				stats[h.pid()].tackle += 1
+				if on_def <= 3:
+					_count(h.pid(), "super_tackles")
 			# Caught by the ankle, he trips and goes down with the foot still held; the holders keep hold
 			# until he is down (Grapple.takedown).
 			raider.fall_kind = grapple.fall_kind() if grapple and not grapple.holds.is_empty() else ""
@@ -2956,6 +2991,10 @@ func _end_raid(kind: String) -> void:
 			raid["post_extra"] = 1.8
 			_event("takedown", {"raider": raider.pid(), "holders": holders_copy().map(func(h): return h.pid()),
 				"grapple": grapple.id if grapple else 0})
+			if raider == controlled:
+				_haptic("takedown")
+			elif dfn == 0:
+				_haptic("tackle_won")   # your side brings him down
 			Sfx.voice("oof", -4.0, raider.voice_pitch())
 		"out_of_bounds":
 			raider_out = true
@@ -3007,6 +3046,14 @@ func _end_raid(kind: String) -> void:
 	tm_atk.score += raid_pts
 	tm_atk.pts.raid += raid_pts
 	stats[raider.pid()].raid += raid_pts
+	# The raider's numbers (a raid not started in time was never made).
+	if kind != "late":
+		var rp := raider.pid()
+		_count(rp, "raids")
+		_count(rp, "raids_ok", 1 if raid_pts > 0 else 0)
+		_count(rp, "super_raids", 1 if raid_pts >= 3 else 0)
+		_count(rp, "bonus", bonus)
+		_count(rp, "empty", 1 if empty else 0)
 	tm_def.score += def_pts
 	tm_def.pts.tackle += def_pts
 
@@ -3171,11 +3218,32 @@ func _event(kind: String, info := {}) -> void:
 	_event_n += 1
 	info["n"] = _event_n
 	event_log.append([snappedf(half_len - clock, 0.01), raid_log.size() + 1, kind, info])
+	_tally(kind, info)
 	if event_log.size() > 400:
 		event_log.pop_front()
 	if cam:
 		cam.on_event(kind)
 	game_event.emit(kind, info)
+
+
+## The box score's tackles tried: a dive or a dash, and a hold or a grab made without one (a counter-grab, piling on,
+## a linked pair's catch), whether it held or not.
+func _tally(kind: String, info: Dictionary) -> void:
+	match kind:
+		"tackle_attempt", "grab_missed":
+			_count(String(info.who), "tries")
+		"hold":
+			if String(info.kind) == "pile":
+				_count(String(info.who), "tries")
+		"chain_broken":
+			for pid in info.who:
+				_count(String(pid), "tries")
+
+
+## Adds to one of a player's box score numbers (BOX).
+func _count(pid: String, key: String, n := 1) -> void:
+	if stats.has(pid):
+		stats[pid][key] = int(stats[pid].get(key, 0)) + n
 
 
 func _react(kind: String, raid_pts: int, def_pts: int, raider_out: bool, touched: Array, holders_were: Array) -> void:
@@ -3393,6 +3461,8 @@ func _check_chain_cross() -> void:
 			_unchain(d)
 			_event("chain_broken", {"who": [d.pid(), p.pid()]})
 			hud.event(tr("EV_BROKE_FREE"), Game.C_GOLD, true, MatchHud.EV_FREE)
+			if raider == controlled:
+				_haptic("free")
 		return
 
 func _link(a: Athlete, b: Athlete) -> void:
@@ -3968,6 +4038,7 @@ func _finish() -> void:
 			player_stats[a.pid()] = {"name": a.display_name(), "team": String(teams[t].id), "raid": int(st.raid), "tackle": int(st.tackle)}
 	var result := {
 		"player_stats": player_stats,
+		"box": [_box(0), _box(1)],
 		"config": config,
 		"home": teams[0].id,
 		"away": teams[1].id,
@@ -3983,6 +4054,23 @@ func _finish() -> void:
 	if attract or bool(config.get("autoplay_no_report", false)):
 		return
 	Game.on_match_finished(result)
+
+
+## A side's box score: each of its players' numbers (stats), the most points first.
+func _box(t: int) -> Array:
+	var rows := []
+	for a in teams[t].players:
+		var st: Dictionary = stats[a.pid()]
+		var row := {"pid": a.pid(), "name": a.display_name(), "number": int(a.data.get("number", 0)),
+			"raid": int(st.raid), "tackle": int(st.tackle)}
+		for k in BOX:
+			row[k] = int(st.get(k, 0))
+		rows.append(row)
+	rows.sort_custom(func(x, y):
+		var px: int = x.raid + x.tackle
+		var py: int = y.raid + y.tackle
+		return px > py if px != py else int(x.raids) > int(y.raids))
+	return rows
 
 
 func quit_match() -> void:
@@ -4005,6 +4093,7 @@ func quit_match() -> void:
 		"breakdown": [teams[0].pts.duplicate(), teams[1].pts.duplicate()], "winner": 1,
 		"mvp": {"pid": "", "name": "", "team": teams[1].id, "pts": 0},
 		"career_stats": stats.get(career_pid, {"raid": 0, "tackle": 0}), "quit": true,
+		"box": [_box(0), _box(1)],
 	}
 	Game.on_match_finished(result)
 

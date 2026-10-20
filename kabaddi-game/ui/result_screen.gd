@@ -1,7 +1,14 @@
 extends Control
-## Full-time scorecard, then back to whichever mode the match came from.
+## Full-time scorecard: the summary, and each side's box score; then back to whichever mode the match came from.
+
+## The box score's columns after the player: the heading's key and the number each shows (Match.BOX).
+const BOX_COLS := [["BOX_PTS", "pts"], ["STAT_RAID_PTS", "raid"], ["BOX_RAIDS", "raids"], ["BOX_RAIDS_OK", "raids_ok"],
+	["BOX_EMPTY", "empty"], ["STAT_TACKLE_PTS", "tackle"], ["BOX_TRIES", "tries"]]
 
 var result := {}
+var _summary: Control
+var _box: Control
+var _box_body: VBoxContainer   # the side on show's table, made again when the other side is picked
 
 
 func setup(args: Dictionary) -> void:
@@ -14,6 +21,30 @@ func _ready() -> void:
 	var cfg: Dictionary = result.get("config", {})
 	var mode := String(cfg.get("mode", "quick"))
 	var v := UI.page(self, tr("FULL_TIME"), Callable(), tr("SCORECARD"))
+	var has_box: bool = result.get("box", []).size() == 2
+	if has_box:
+		# The summary and the box score, as tabs beside the title.
+		(get_meta("header_right") as Container).add_child(UI.chips_row([tr("SUMMARY"), tr("BOX_SCORE")], 0, func(i):
+			_summary.visible = i == 0
+			_box.visible = i == 1))
+	_summary = _build_summary(mode)
+	v.add_child(_summary)
+	if has_box:
+		_box = _build_box()
+		_box.visible = false
+		v.add_child(_box)
+
+	var go := UI.button(tr("CONTINUE"), true, _continue.bind(mode))
+	go.custom_minimum_size = Vector2(340, 72)
+	go.size_flags_horizontal = Control.SIZE_SHRINK_END
+	v.add_child(go)
+
+
+## The two sides and their scores, where the points came from, and the player of the match.
+func _build_summary(mode: String) -> VBoxContainer:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 16)
+	v.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var s: Array = result.score
 	var w := int(result.winner)
 
@@ -95,6 +126,10 @@ func _ready() -> void:
 		if int(mvp.get("number", 0)) > 0:
 			line = "#%d · %s" % [int(mvp.number), line]   # the number on his tag in the match
 		mv.add_child(UI.label(line, "MutedLabel", 17))
+		var his := _box_row(String(mvp.get("pid", "")))
+		if not his.is_empty():
+			# His numbers: what his raids and tackles came to.
+			mv.add_child(UI.fit(UI.label(_numbers(his), "MutedLabel", 16, Game.C_GOLD), 2))
 		mh.add_child(mv)
 		row.add_child(mc)
 	if mode == "career":
@@ -102,11 +137,122 @@ func _ready() -> void:
 		var cl := UI.label("%s: %d · %s: %d" % [tr("STAT_RAID_PTS"), int(cs.get("raid", 0)), tr("STAT_TACKLE_PTS"), int(cs.get("tackle", 0))], "SubLabel", 22, Game.C_GOLD)
 		cl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(cl)
+	return v
 
-	var go := UI.button(tr("CONTINUE"), true, _continue.bind(mode))
-	go.custom_minimum_size = Vector2(340, 72)
-	go.size_flags_horizontal = Control.SIZE_SHRINK_END
-	v.add_child(go)
+
+## Each side's box score, one side at a time: every player's points, raids and tackles.
+func _build_box() -> VBoxContainer:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	v.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var s: Array = result.score
+	var sides := []
+	for t in 2:
+		sides.append("%s  %d" % [DB.team_name(result.home if t == 0 else result.away), int(s[t])])
+	v.add_child(UI.chips_row(sides, 0, _fill_box))
+	var card := UI.card()
+	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_box_body = VBoxContainer.new()
+	_box_body.add_theme_constant_override("separation", 10)
+	card.add_child(UI.scroll(_box_body))
+	v.add_child(card)
+	_fill_box(0)
+	return v
+
+
+func _fill_box(t: int) -> void:
+	for c in _box_body.get_children():
+		c.queue_free()
+	var rows: Array = result.box[t]
+	var mvp_pid := String(result.get("mvp", {}).get("pid", ""))
+	var g := GridContainer.new()
+	g.columns = 2 + BOX_COLS.size()
+	g.add_theme_constant_override("h_separation", 14)
+	g.add_theme_constant_override("v_separation", 12)
+	g.add_child(_head("#", 38))
+	var ph := _head(tr("BOX_PLAYER"), 0)
+	ph.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	ph.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	g.add_child(ph)
+	for c in BOX_COLS:
+		g.add_child(_head(tr(c[0]), 100))
+	var sums := {}
+	for r in rows:
+		var star: bool = String(r.pid) == mvp_pid
+		var col := Game.C_GOLD if star else Game.C_INK
+		g.add_child(_cell(str(int(r.number)) if int(r.number) > 0 else "", Game.C_MUTED))
+		var who := HBoxContainer.new()
+		who.add_theme_constant_override("separation", 6)
+		who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if star:
+			who.add_child(Icon.make("crown", 22, Game.C_GOLD))   # the player of the match
+		var nm := UI.fit(UI.label(String(r.name), "SubLabel" if star else "", 22, col))
+		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		who.add_child(nm)
+		g.add_child(who)
+		for c in BOX_COLS:
+			var n := _stat(r, String(c[1]))
+			sums[c[1]] = int(sums.get(c[1], 0)) + n
+			g.add_child(_cell(str(n), col, c[1] == "pts"))
+	# The side's line: its points as scored (all outs and extras too), the rest added up.
+	var bd: Dictionary = result.breakdown[t]
+	sums["pts"] = int(result.score[t])
+	sums["raid"] = int(bd.raid)
+	sums["tackle"] = int(bd.tackle)
+	g.add_child(_cell("", Game.C_MUTED))
+	var tl := UI.fit(UI.label(tr("BOX_TEAM"), "SubLabel", 22, Game.C_SAFFRON))
+	tl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	g.add_child(tl)
+	for c in BOX_COLS:
+		var k: String = c[1]
+		var txt := str(int(sums.get(k, 0)))
+		if k == "raids_ok" and int(sums.get("raids", 0)) > 0:
+			txt += " (%d%%)" % roundi(100.0 * int(sums.raids_ok) / int(sums.raids))   # the side's raid success rate
+		g.add_child(_cell(txt, Game.C_SAFFRON, true))
+	_box_body.add_child(g)
+	var note := UI.wrap(tr("BOX_NOTE").format({"n": int(bd.allout) + int(bd.extra)}), "MutedLabel", 16)
+	_box_body.add_child(note)
+
+
+func _head(text: String, w: float) -> Label:
+	var l := UI.label(text, "EyebrowLabel", 15)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	if w > 0.0:
+		l.custom_minimum_size.x = w
+	return UI.fit(l, 2)
+
+
+func _cell(text: String, col: Color, bold := false) -> Label:
+	var l := UI.label(text, "SubLabel" if bold else "", 22, col)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return l
+
+
+## One of a box score row's numbers: its points, or a number it keeps.
+func _stat(r: Dictionary, k: String) -> int:
+	return int(r.raid) + int(r.tackle) if k == "pts" else int(r.get(k, 0))
+
+
+func _box_row(pid: String) -> Dictionary:
+	for side in result.get("box", []):
+		for r in side:
+			if String(r.pid) == pid:
+				return r
+	return {}
+
+
+## "Raid points 8 · 6 of 9 raids successful · Tackle points 2 · 2 of 3 tackles successful": what a player's points
+## came from, raiding and tackling (a side he scored nothing on is left out).
+func _numbers(r: Dictionary) -> String:
+	var parts := []
+	if int(r.raid) > 0:
+		parts.append("%s %d" % [tr("STAT_RAID_PTS"), int(r.raid)])
+		parts.append(tr("BOX_RAIDS_OF").format({"ok": int(r.raids_ok), "n": int(r.raids)}))
+	if int(r.tackle) > 0:
+		parts.append("%s %d" % [tr("STAT_TACKLE_PTS"), int(r.tackle)])
+		parts.append(tr("BOX_TRIES_OF").format({"ok": int(r.tackle), "n": maxi(int(r.tries), int(r.tackle))}))
+	return UI.bits(parts)
 
 
 func _side(id: String, score: int, won: bool, right: bool) -> PanelContainer:

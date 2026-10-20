@@ -445,11 +445,42 @@ func _menus() -> void:
 	Game.show_screen("res://ui/quick_setup.gd")
 	await frames(10)
 	await audit("quick_setup")
-	Game.show_screen("res://ui/result_screen.gd", {"result": {"config": {"mode": "quick"}, "home": "MUM", "away": "DEL", "score": [38, 31], "winner": 0,
-		"breakdown": [{"raid": 22, "tackle": 10, "allout": 4, "extra": 2}, {"raid": 19, "tackle": 9, "allout": 2, "extra": 1}],
-		"mvp": {"name": "Karthik Rao", "team": "MUM", "pts": 14}}})
+	var rs := Game.show_screen("res://ui/result_screen.gd", {"result": sample_result()})
 	await frames(12)
 	await audit("result")
+	# The box score, each side.
+	var tabs: Array = (rs.get_meta("header_right") as Node).find_children("*", "Button", true, false)
+	(tabs[1] as Button).pressed.emit()
+	await frames(8)
+	await audit("result_box")
+	(rs._box.get_child(0).get_child(1) as Button).pressed.emit()
+	await frames(8)
+	await audit("result_box_away")
+
+
+## A full-time result with a box score that adds up: each side's first seven, with the longest names in its squad,
+## and numbers like a match's.
+static func sample_result() -> Dictionary:
+	var box := []
+	var raid := [[9, 6, 4, 2, 1, 0, 0], [8, 5, 3, 2, 1, 0, 0]]
+	var tackle := [[0, 1, 2, 3, 2, 1, 1], [1, 0, 1, 2, 3, 1, 1]]
+	var raids := [[9, 7, 5, 4, 2, 1, 0], [8, 7, 5, 4, 3, 1, 0]]
+	for t in 2:
+		var squad: Array = DB.team(["MUM", "DEL"][t]).squad.duplicate()
+		squad.sort_custom(func(a, b): return String(a.name).length() > String(b.name).length())
+		var rows := []
+		for i in 7:
+			var p: Dictionary = squad[i]
+			rows.append({"pid": String(p.id), "name": String(p.name), "number": int(p.get("number", i + 1)),
+				"raid": raid[t][i], "tackle": tackle[t][i], "raids": raids[t][i], "raids_ok": mini(raids[t][i], raid[t][i]),
+				"empty": maxi(0, raids[t][i] - raid[t][i] - 1), "bonus": 1 if raid[t][i] > 3 else 0,
+				"super_raids": 1 if raid[t][i] >= 8 else 0, "tries": tackle[t][i] * 2 + 1, "super_tackles": 0})
+		box.append(rows)
+	var top: Dictionary = box[0][0]
+	return {"config": {"mode": "quick"}, "home": "MUM", "away": "DEL", "score": [38, 31], "winner": 0,
+		"breakdown": [{"raid": 22, "tackle": 10, "allout": 4, "extra": 2}, {"raid": 19, "tackle": 9, "allout": 2, "extra": 1}],
+		"mvp": {"pid": top.pid, "name": top.name, "team": "MUM", "pts": int(top.raid) + int(top.tackle), "number": top.number},
+		"box": box}
 
 
 func _season() -> void:
