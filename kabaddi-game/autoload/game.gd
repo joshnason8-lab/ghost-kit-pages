@@ -6,6 +6,10 @@ const CAREER_PATH := "user://career.json"
 const CUP_PATH := "user://cup.json"
 const SEASON_PATH := "user://season.json"
 
+## Where the game's privacy policy and help pages are (Settings > About): the web version's site, which also forwards
+## to wherever the pages move.
+const SITE_URL := "https://kabaddi-raid-beta.netlify.app/"
+
 ## Code, name in the language itself, name in English.
 const LANGUAGES := [
 	["en", "English", "English"],
@@ -174,7 +178,28 @@ func save_settings() -> void:
 func set_language(code: String) -> void:
 	settings.language = code
 	TranslationServer.set_locale(language())
+	_size_theme()
 	save_settings()
+
+
+## How big a language's text is set against the English sizes. Words made for English in a space made for English:
+## Tamil's labels run 1.4 times as wide as English at the median (2.2 times for the longest tenth), Kannada's and
+## Telugu's up to 1.3-1.4 times, so their text is set a little smaller; the rest are as narrow as English or narrower.
+const TEXT_K := {"ta": 0.86, "kn": 0.93, "te": 0.93}
+
+
+func text_k() -> float:
+	return float(TEXT_K.get(TranslationServer.get_locale().left(2), 1.0))
+
+
+## Languages whose words run long enough that a line about a player can need a third line (UI.fit).
+func long_words() -> bool:
+	return TranslationServer.get_locale().left(2) in ["ta", "te", "kn", "bn"]
+
+
+## A font size for the language being shown (text_k).
+func ts(size: int) -> int:
+	return maxi(1, roundi(size * text_k()))
 
 
 func _read_json(path: String):
@@ -388,7 +413,6 @@ func _build_theme() -> void:
 
 	theme = Theme.new()
 	theme.default_font = font_body
-	theme.default_font_size = 22
 
 	# Buttons: dark panel with a hairline, saffron on focus.
 	theme.set_stylebox("normal", "Button", _sb(C_PANEL, 12, Color(1, 1, 1, 0.08), 1))
@@ -412,7 +436,6 @@ func _build_theme() -> void:
 	theme.set_color("font_pressed_color", "PrimaryButton", Color("1d1307"))
 	theme.set_color("font_focus_color", "PrimaryButton", Color("1d1307"))
 	theme.set_font("font", "PrimaryButton", font_display)
-	theme.set_font_size("font_size", "PrimaryButton", 34)
 
 	# Toggle chips for option rows.
 	theme.set_type_variation("ChipButton", "Button")
@@ -422,7 +445,6 @@ func _build_theme() -> void:
 	theme.set_stylebox("hover_pressed", "ChipButton", _sb(C_SAFFRON.lightened(0.1), 999, C_SAFFRON, 1, 10))
 	theme.set_color("font_pressed_color", "ChipButton", Color("1d1307"))
 	theme.set_color("font_hover_pressed_color", "ChipButton", Color("1d1307"))
-	theme.set_font_size("font_size", "ChipButton", 20)
 
 	theme.set_stylebox("panel", "PanelContainer", _sb(C_PANEL, 16, Color(1, 1, 1, 0.06), 1, 20))
 	theme.set_type_variation("CardPanel", "PanelContainer")
@@ -433,20 +455,15 @@ func _build_theme() -> void:
 	theme.set_color("font_color", "Label", C_INK)
 	theme.set_type_variation("TitleLabel", "Label")
 	theme.set_font("font", "TitleLabel", font_display)
-	theme.set_font_size("font_size", "TitleLabel", 76)
 	theme.set_type_variation("HeaderLabel", "Label")
 	theme.set_font("font", "HeaderLabel", font_display)
-	theme.set_font_size("font_size", "HeaderLabel", 44)
 	theme.set_type_variation("SubLabel", "Label")
 	theme.set_font("font", "SubLabel", font_bold)
-	theme.set_font_size("font_size", "SubLabel", 24)
 	theme.set_type_variation("MutedLabel", "Label")
 	theme.set_color("font_color", "MutedLabel", C_MUTED)
-	theme.set_font_size("font_size", "MutedLabel", 19)
 	theme.set_type_variation("EyebrowLabel", "Label")
 	theme.set_color("font_color", "EyebrowLabel", C_MUTED)
 	theme.set_font("font", "EyebrowLabel", font_bold)
-	theme.set_font_size("font_size", "EyebrowLabel", 16)
 	theme.set_type_variation("ScoreLabel", "Label")
 	theme.set_font("font", "ScoreLabel", font_display)
 	theme.set_font_size("font_size", "ScoreLabel", 64)
@@ -457,7 +474,6 @@ func _build_theme() -> void:
 
 	theme.set_stylebox("panel", "PopupMenu", _sb(C_PANEL, 10, Color(1, 1, 1, 0.1), 1, 8))
 	theme.set_stylebox("hover", "PopupMenu", _sb(C_PANEL_HI, 8))
-	theme.set_font_size("font_size", "PopupMenu", 22)
 	theme.set_stylebox("normal", "OptionButton", _sb(C_PANEL, 12, Color(1, 1, 1, 0.1), 1))
 	theme.set_stylebox("hover", "OptionButton", _sb(C_PANEL_HI, 12, Color(1, 1, 1, 0.18), 1))
 	theme.set_stylebox("pressed", "OptionButton", _sb(C_PANEL_HI, 12, C_SAFFRON, 2))
@@ -472,6 +488,18 @@ func _build_theme() -> void:
 	theme.set_stylebox("grabber", "VScrollBar", grabber)
 	theme.set_stylebox("grabber_highlight", "VScrollBar", grabber)
 	theme.set_stylebox("scroll", "VScrollBar", _sb(Color(0, 0, 0, 0), 999, Color(0, 0, 0, 0), 0, 0))
+	_size_theme()
+
+
+## The theme's text sizes, for the language being shown (text_k); again whenever the language changes.
+func _size_theme() -> void:
+	if theme == null:
+		return
+	theme.default_font_size = ts(22)
+	for pair in [["PrimaryButton", 34], ["ChipButton", 20], ["TitleLabel", 76], ["HeaderLabel", 44], ["SubLabel", 24],
+			["MutedLabel", 19], ["EyebrowLabel", 16], ["PopupMenu", 22]]:
+		theme.set_font_size("font_size", pair[0], ts(pair[1]))
+	theme.set_font_size("font_size", "ScoreLabel", 64)   # numbers only
 
 
 func _sb(bg: Color, radius := 12, border := Color(0, 0, 0, 0), bw := 0, pad := 14) -> StyleBoxFlat:

@@ -267,7 +267,7 @@ func _tie_box(f: Dictionary, final := false) -> PanelContainer:
 			row.add_child(Crest.make(id, 24))
 		var nm := UI.label(DB.team_name(id) if known else _place_name(id), "SubLabel" if won else "", 16,
 			Game.C_SAFFRON if id == cup.user else (Game.C_INK if known else Game.C_MUTED))
-		UI.fit(nm)
+		UI.fit(nm, 2)   # "Winner semi-final 1" in Tamil takes two lines in a narrow bracket
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(nm)
 		if bool(f.played):

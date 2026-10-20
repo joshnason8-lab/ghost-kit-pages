@@ -115,7 +115,7 @@ func _lesson_row(l: Dictionary, done: bool) -> Button:
 	b.add_theme_stylebox_override("pressed", on)
 	b.add_theme_stylebox_override("hover_pressed", on)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	b.add_theme_font_size_override("font_size", 19)
+	b.add_theme_font_size_override("font_size", Game.ts(19))
 	var ic := Icon.make("check" if done else "play", 22, Game.C_GOOD if done else Color(accent, 0.8))
 	ic.position = Vector2(14, 15)
 	ic.size = Vector2(22, 22)

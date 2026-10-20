@@ -692,5 +692,11 @@
   "PLAYER_TAGS": "Player tags",
   "TAGS_KEY": "You and the raider",
   "TAGS_ALL": "Everyone",
-  "SPENT_FREE_AGENTS": "(incl. {n} free agents at {price} each)"
+  "SPENT_FREE_AGENTS": "(incl. {n} free agents at {price} each)",
+  "SET_ABOUT": "About",
+  "VERSION_N": "Kabaddi Raid, version {v}",
+  "PRIVACY_POLICY": "Privacy policy",
+  "HELP_SUPPORT": "Help",
+  "LICENCES": "Licences",
+  "LICENCES_INTRO": "Kabaddi Raid is made with these, under their own licences. The licences are in English, as they are written."
 }

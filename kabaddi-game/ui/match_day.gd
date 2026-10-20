@@ -96,7 +96,7 @@ func _preview() -> Control:
 		row.add_child(Crest.make(id, 30))
 		var nm := UI.label(DB.team_name(id), "SubLabel", 17, Game.C_SAFFRON if id == season.team else Game.C_INK)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UI.fit(nm)
+		UI.fit(nm, 2)   # beside the table's words in Kannada or Tamil, a name can need two lines
 		nm.custom_minimum_size = Vector2(90, 0)
 		row.add_child(nm)
 		var pos := 0

@@ -191,8 +191,14 @@ func summary() -> String:
 	out.append("Kabaddi Raid %s, developer overlay" % String(ProjectSettings.get_setting("application/config/version", "")))
 	out.append("Device: %s, %s %s, GPU %s (%s)" % [OS.get_model_name(), OS.get_name(), OS.get_version(),
 		RenderingServer.get_video_adapter_name(), RenderingServer.get_video_adapter_vendor()])
-	out.append("Screen %s, window %s, graphics %s%s" % [str(DisplayServer.screen_get_size()), str(m.get_viewport().get_visible_rect().size),
+	out.append("Screen %s at %.0f Hz, window %s, graphics %s%s" % [str(DisplayServer.screen_get_size()),
+		DisplayServer.screen_get_refresh_rate(), str(m.get_viewport().get_visible_rect().size),
 		GFX_NAMES[int(_gfx[0][1])], " (auto)" if bool(Game.settings.get("auto_gfx", true)) else ""])
+	# A screen at 90 or 120 Hz shows a frame that missed its slot for 1.5 or 2 slots of 60 Hz: the frame times say
+	# whether the game keeps the screen's own rate, half of it, or neither (the uneven case is the one that judders).
+	var hz := DisplayServer.screen_get_refresh_rate()
+	if hz > 0.0:
+		out.append("One screen refresh: %.1f ms" % (1000.0 / hz))
 	for i in range(1, _gfx.size()):
 		out.append("Graphics changed to %s at %s" % [GFX_NAMES[int(_gfx[i][1])], _clock(float(_gfx[i][0]))])
 	if _all.size() > 0:

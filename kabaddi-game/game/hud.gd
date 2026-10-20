@@ -196,6 +196,9 @@ func setup(p_match) -> void:
 	root = Control.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A CanvasLayer does not pass the window's theme on: without this the HUD's words were in the engine's own font,
+	# which has no Indian script (the phone drew them in whatever its system had), and its panels unstyled.
+	root.theme = Game.theme
 	add_child(root)
 	tags = PlayerTags.new()
 	tags.m = m
@@ -207,13 +210,26 @@ func setup(p_match) -> void:
 	_build_pause()
 
 
+## Anchors c by preset (one of the centre ones) w wide, its top at y and its middle on the screen's middle. It grows
+## both ways as its words widen it, so a long name or call in another language stays in the middle (set from its
+## left edge, it grew off the right of the screen).
+func _center(c: Control, preset: int, w: float, y: float) -> void:
+	c.set_anchors_preset(preset)
+	c.custom_minimum_size.x = w
+	c.offset_left = -w * 0.5
+	c.offset_right = w * 0.5
+	c.offset_top = y
+	c.offset_bottom = y
+	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
+
+
 func _label(text: String, variation := "", size := 0, color := Color(0, 0, 0, 0)) -> Label:
 	var l := Label.new()
 	l.text = text
 	if variation != "":
 		l.theme_type_variation = variation
 	if size > 0:
-		l.add_theme_font_size_override("font_size", size)
+		l.add_theme_font_size_override("font_size", Game.ts(size))
 	if color.a > 0.0:
 		l.add_theme_color_override("font_color", color)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -222,9 +238,7 @@ func _label(text: String, variation := "", size := 0, color := Color(0, 0, 0, 0)
 
 func _build_scoreboard() -> void:
 	var top := HBoxContainer.new()
-	top.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	top.position = Vector2(-330, 10)
-	top.custom_minimum_size = Vector2(660, 0)
+	_center(top, Control.PRESET_CENTER_TOP, 660, 10)
 	top.alignment = BoxContainer.ALIGNMENT_CENTER
 	top.add_theme_constant_override("separation", 0)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -309,9 +323,7 @@ func _build_scoreboard() -> void:
 
 	# Raid strip under the scoreboard.
 	var strip := HBoxContainer.new()
-	strip.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	strip.position = Vector2(-300, 102)
-	strip.custom_minimum_size = Vector2(600, 0)
+	_center(strip, Control.PRESET_CENTER_TOP, 600, 102)
 	strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	strip.add_theme_constant_override("separation", 14)
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -324,9 +336,7 @@ func _build_scoreboard() -> void:
 	strip.add_child(dod_l)
 
 	hint_l = _label("", "", 21, Game.C_INK)
-	hint_l.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	hint_l.position = Vector2(-380, 160)
-	hint_l.custom_minimum_size = Vector2(760, 0)
+	_center(hint_l, Control.PRESET_CENTER_TOP, 760, 160)
 	hint_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint_l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
@@ -337,27 +347,24 @@ func _build_scoreboard() -> void:
 func _build_center() -> void:
 	# Play-by-play messages under the raid strip, clear of the middle of the screen where the play is.
 	events_box = VBoxContainer.new()
-	events_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	events_box.position = Vector2(-400, 150)
-	events_box.custom_minimum_size = Vector2(800, 0)
+	_center(events_box, Control.PRESET_CENTER_TOP, 800, 150)
 	events_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	events_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(events_box)
 
 	banner_l = _label("", "TitleLabel", 96)
-	banner_l.set_anchors_preset(Control.PRESET_CENTER)
-	banner_l.position = Vector2(-500, -70)
-	banner_l.custom_minimum_size = Vector2(1000, 0)
+	_center(banner_l, Control.PRESET_CENTER, 1000, -70)
 	banner_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# "Time out · Chandigarh Chargers" ran off the screen at 96 px, in English too: smaller, then two lines.
+	banner_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.shrink(banner_l, 96, 0.7)
 	banner_l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
 	banner_l.add_theme_constant_override("outline_size", 14)
 	banner_l.visible = false
 	root.add_child(banner_l)
 
 	struggle_box = VBoxContainer.new()
-	struggle_box.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	struggle_box.position = Vector2(-160, -96)
-	struggle_box.custom_minimum_size = Vector2(320, 0)
+	_center(struggle_box, Control.PRESET_CENTER_BOTTOM, 320, -96)
 	struggle_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sl := _label(tr("EV_HOLD").trim_suffix("!"), "EyebrowLabel", 15, Game.C_MAGENTA)
 	sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -376,9 +383,7 @@ func _build_center() -> void:
 	root.add_child(struggle_box)
 
 	chant_l = _label(tr("HUD_CHANT"), "SubLabel", 22, Game.C_GOLD)
-	chant_l.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	chant_l.position = Vector2(-250, -52)
-	chant_l.custom_minimum_size = Vector2(500, 0)
+	_center(chant_l, Control.PRESET_CENTER_BOTTOM, 500, -52)
 	chant_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	chant_l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
 	chant_l.add_theme_constant_override("outline_size", 6)
@@ -387,9 +392,7 @@ func _build_center() -> void:
 
 	# Breath for the cant: tap Cant on the beat to keep it up.
 	breath_box = VBoxContainer.new()
-	breath_box.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	breath_box.position = Vector2(-170, -140)
-	breath_box.custom_minimum_size = Vector2(340, 0)
+	_center(breath_box, Control.PRESET_CENTER_BOTTOM, 340, -140)
 	breath_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bl := _label(tr("HUD_BREATH").to_upper(), "EyebrowLabel", 15, Game.C_GOLD)
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -428,9 +431,7 @@ func _build_center() -> void:
 func _build_pause() -> void:
 	pause_panel = PanelContainer.new()
 	pause_panel.theme_type_variation = "CardPanel"
-	pause_panel.set_anchors_preset(Control.PRESET_CENTER)
-	pause_panel.custom_minimum_size = Vector2(560, 0)
-	pause_panel.position = Vector2(-280, -262)
+	_center(pause_panel, Control.PRESET_CENTER, 560, -262)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 18)
 	pause_panel.add_child(v)
@@ -476,7 +477,7 @@ func _build_pause() -> void:
 
 func _big(b: Button, h := 80, size := 27) -> void:
 	b.custom_minimum_size = Vector2(0, h)
-	b.add_theme_font_size_override("font_size", size)
+	b.add_theme_font_size_override("font_size", Game.ts(size))
 
 
 func _update_cam_btn() -> void:
@@ -504,10 +505,7 @@ func show_pause(p: bool) -> void:
 func show_intro(home: String, away: String, arena_name: String, occasion := "", ids: Array = []) -> void:
 	intro_panel = PanelContainer.new()
 	intro_panel.theme_type_variation = "GlassPanel"
-	intro_panel.set_anchors_preset(Control.PRESET_CENTER)
-	var w := 900.0 if ids.size() == 2 else 760.0
-	intro_panel.custom_minimum_size = Vector2(w, 0)
-	intro_panel.position = Vector2(-w * 0.5, -150 if occasion != "" else -110)
+	_center(intro_panel, Control.PRESET_CENTER, 900.0 if ids.size() == 2 else 760.0, -150 if occasion != "" else -110)
 	intro_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -587,6 +585,7 @@ func chant(on: bool) -> void:
 
 func banner(text: String) -> void:
 	banner_l.text = text
+	UI.refit(banner_l)
 	banner_l.visible = true
 	banner_l.modulate.a = 0.0
 	var tw := create_tween()
@@ -607,6 +606,9 @@ func event(text: String, color: Color, small := false, prio := EV_HOLD) -> void:
 	var l := _label(text, "TitleLabel", 36 if small else 54, color)
 	l.set_meta("prio", prio)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Kept to the box's width (a long call in Telugu ran off the screen): smaller, then two lines.
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.shrink(l, 36 if small else 54, 0.72)
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))
 	l.add_theme_constant_override("outline_size", 12)
 	l.pivot_offset = Vector2(400, 30)

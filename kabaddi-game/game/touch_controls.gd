@@ -30,6 +30,8 @@ var _pressed := {}       # button id -> time left lit
 var _button_touch := {}  # touch index -> button id
 var _touch_start := {}   # touch index -> [position, time], to tell taps from drags
 var _cap_box: StyleBoxFlat
+var _insets := Vector2.ZERO   # the screen's unsafe strips (a camera cut-out) at the left and right, in canvas units
+var _fits := {}          # a button's words and size -> the font size and lines that sit inside its circle
 
 ## Each button shows its key: from the start in a computer's browser, after the first key press anywhere else,
 ## and off again with a finger's touch (not one the mouse makes).
@@ -46,6 +48,17 @@ func _ready() -> void:
 	_cap_box.set_corner_radius_all(6)
 	_cap_box.border_color = Color(1, 1, 1, 0.55)
 	_cap_box.set_border_width_all(1)
+	resized.connect(_read_insets)
+	_read_insets.call_deferred()
+
+
+## Held sideways, a phone's punch-hole camera sits at the left or right edge: the buttons keep clear of it.
+func _read_insets() -> void:
+	if not is_inside_tree():
+		return
+	var m := UI.safe_margins(self, 0.0)
+	_insets = Vector2(m.x, m.z)
+	queue_redraw()
 
 
 func move_vec() -> Vector2:
@@ -73,7 +86,8 @@ func take_look() -> Vector2:
 func _buttons() -> Array:
 	var s := get_viewport_rect().size
 	var lh: bool = Game.settings.left_handed
-	var fx := func(x: float) -> float: return s.x - x if not lh else x
+	var ins := _insets
+	var fx := func(x: float) -> float: return s.x - x - ins.y if not lh else x + ins.x
 	var list := [
 		{"id": "pause", "label": "II", "pos": Vector2(fx.call(52), 52), "r": 30.0, "col": Color(1, 1, 1, 0.16)},
 		{"id": "camera", "label": tr("BTN_CAMERA"), "pos": Vector2(fx.call(140), 52), "r": 30.0, "col": Color(1, 1, 1, 0.16), "small": true},
@@ -282,14 +296,16 @@ func _draw() -> void:
 			_key_cap(pos + Vector2(0, -r), _key_of(String(b.id)))
 		var dark = col.get_luminance() > 0.55 and b.id not in ["pause", "camera"]
 		var tc := Color("1d1307") if dark else Game.C_INK
-		var size := 22 if r > 70 else (17 if r > 40 else 14)
+		var size := Game.ts(22 if r > 70 else (17 if r > 40 else 14))
 		if b.id == "pause":
 			draw_rect(Rect2(pos + Vector2(-9, -11), Vector2(6, 22)), Game.C_INK)
 			draw_rect(Rect2(pos + Vector2(3, -11), Vector2(6, 22)), Game.C_INK)
 			continue
 		var text: String = b.label
 		var w := r * 1.8
-		var lines := _wrap(text, font, size, w)
+		var fit: Array = fit_label(text, font, size, r)
+		size = fit[0]
+		var lines: PackedStringArray = fit[1]
 		var lh := size * 1.1
 		var y0 := pos.y - (lines.size() - 1) * lh * 0.5 + size * 0.35
 		for i in lines.size():
@@ -301,12 +317,42 @@ func _draw() -> void:
 	elif context in ["raid", "defend"]:
 		# Hint where the stick lives.
 		var s := get_viewport_rect().size
-		var hx := 170.0 if not Game.settings.left_handed else s.x - 170.0
+		var hx := 170.0 + _insets.x if not Game.settings.left_handed else s.x - 170.0 - _insets.y
 		var c := Vector2(hx, s.y - 160)
 		draw_arc(c, STICK_R, 0, TAU, 48, Color(1, 1, 1, 0.12), 2.0, true)
 		draw_circle(c, 30, Color(1, 1, 1, 0.08))
 		if keys_shown:
 			_key_cap(c, "WASD")
+
+
+## The font size, from size down to two thirds of it, and the lines at which a button's words sit inside its circle
+## of radius r: the words of Tamil, Telugu or Kannada can run half as long again as the English ones.
+func fit_label(text: String, font: Font, size: int, r: float) -> Array:
+	var key := "%s|%d|%d" % [text, size, int(r)]
+	if _fits.has(key):
+		return _fits[key]
+	var fs := size
+	var lines := _wrap(text, font, fs, r * 1.8)
+	while fs > roundi(size * 0.66) and not inside(lines, font, fs, r):
+		fs -= 1
+		lines = _wrap(text, font, fs, r * 1.8)
+	_fits[key] = [fs, lines]
+	return _fits[key]
+
+
+## Whether lines drawn at font size fs, centred as _draw centres them, keep inside a circle of radius r.
+static func inside(lines: PackedStringArray, font: Font, fs: int, r: float) -> bool:
+	var lh := fs * 1.1
+	var edge := r - 3.0
+	for i in lines.size():
+		var base := -(lines.size() - 1) * lh * 0.5 + fs * 0.35 + i * lh
+		var top := base - font.get_ascent(fs) * 0.8
+		var bottom := base + font.get_descent(fs) * 0.6
+		var half := font.get_string_size(lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x * 0.5
+		var room := minf(sqrt(maxf(edge * edge - top * top, 0.0)), sqrt(maxf(edge * edge - bottom * bottom, 0.0)))
+		if half > room + 0.5:
+			return false
+	return true
 
 
 ## The key that does a button's job, as it is printed on the keyboard.

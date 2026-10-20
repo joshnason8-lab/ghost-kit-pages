@@ -202,6 +202,7 @@ func _block_panel() -> PanelContainer:
 	_lot_name = UI.label("", "HeaderLabel", 32)
 	_lot_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_lot_meta = UI.label("", "MutedLabel", 17)
+	_lot_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # in Tamil one line was wider than the panel
 	ncol.add_child(_lot_name)
 	ncol.add_child(_lot_meta)
 	nrow.add_child(ncol)
@@ -527,10 +528,10 @@ func _open() -> void:
 		_lot_pills.add_child(UI.pill(tr("YOUR_LOT").to_upper(), Game.C_GOLD))
 	_lot_name.text = String(p.name)
 	_lot_name.add_theme_color_override("font_color", Game.C_GOLD if lot.mine else Game.C_INK)
-	var meta := "%s · %s %s" % [tr(role_key), tr("BASE_PRICE"), Game.fmt_money(lot.base)]
+	var meta := [tr(role_key), "%s %s" % [tr("BASE_PRICE"), Game.fmt_money(lot.base)]]
 	if String(lot.former) != "":
-		meta += " · " + tr("AUC_FORMER").format({"team": String(lot.former)})
-	_lot_meta.text = meta
+		meta.append(tr("AUC_FORMER").format({"team": String(lot.former)}))
+	_lot_meta.text = UI.bits(meta)   # wrapping between them, never inside one
 	_ovr.text = str(int(lot.ovr))
 	for c in _bars.get_children():
 		c.queue_free()

@@ -41,8 +41,10 @@ func _ready() -> void:
 	_needs = UI.label("", "MutedLabel", 16)
 	_needs.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	left.add_child(_needs)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	# Side by side where they fit, one under the other where they do not (in Tamil they took the cards' room).
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 10)
+	row.add_theme_constant_override("v_separation", 10)
 	row.add_child(UI.button(tr("KEEP_BEST_SIX"), false, func():
 		kept = season.default_retained()
 		_refresh()))

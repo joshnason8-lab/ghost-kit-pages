@@ -88,6 +88,18 @@ func _ready() -> void:
 		row.add_child(_toggle(key, {"sound": "SOUND", "music": "MUSIC", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
 	snd[1].add_child(row)
 
+	# About: the version, the privacy policy and help (on the web, in the phone's browser), and the licences.
+	var about: Array = UI.section(tr("SET_ABOUT"), "book")
+	right.add_child(about[0])
+	about[1].add_child(UI.label(tr("VERSION_N").format({"v": String(ProjectSettings.get_setting("application/config/version"))}), "MutedLabel", 17))
+	var links := HFlowContainer.new()
+	links.add_theme_constant_override("h_separation", 10)
+	links.add_theme_constant_override("v_separation", 10)
+	links.add_child(UI.button(tr("PRIVACY_POLICY"), false, func(): OS.shell_open(Game.SITE_URL + "privacy.html")))
+	links.add_child(UI.button(tr("HELP_SUPPORT"), false, func(): OS.shell_open(Game.SITE_URL + "support.html")))
+	links.add_child(UI.button(tr("LICENCES"), false, func(): Game.show_screen("res://ui/licences_screen.gd")))
+	about[1].add_child(links)
+
 
 func _toggle(key: String, title_key: String) -> VBoxContainer:
 	return UI.field(tr(title_key), UI.chips([tr("ON"), tr("OFF")], 0 if Game.settings[key] else 1, func(i):

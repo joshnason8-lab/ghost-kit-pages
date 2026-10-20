@@ -33,15 +33,25 @@ func shot(name: String) -> void:
 
 
 func _tour() -> void:
-	# "hi:" in front of any tour renders it in Hindi.
-	if args_only.begins_with("hi:"):
-		TranslationServer.set_locale("hi")
+	# A language's code and a colon in front of any tour renders it in that language: "hi:menus", "ta:tags".
+	if args_only.find(":") == 2 and args_only.left(2) in ["en", "hi", "mr", "ta", "te", "kn", "bn", "pa"]:
+		Game.settings.language = args_only.left(2)
+		TranslationServer.set_locale(args_only.left(2))
 		args_only = args_only.substr(3)
 	if args_only == "moves":
 		await _moves()
 		return
 	if args_only == "tags":
 		await _tags()
+		return
+	if args_only == "hud":
+		await _hud()
+		return
+	if args_only == "store":
+		await _store()
+		return
+	if args_only == "store_extra":
+		await _store_extra()
 		return
 	if args_only == "dev":
 		# The developer's overlay over a raid (DevOverlay), as a tester sees it after seven taps on the version.
@@ -264,6 +274,173 @@ func _tags() -> void:
 		await frames(50)
 		await shot(spec[2])
 	Game.settings.tags = 0
+
+
+## The match's HUD in the tour's language, quickly (the 3D world is not drawn): the scoreboard and buttons with the
+## language's longest call up under a short one, its longest hint, a banner, the pause menu and the final's walk-out.
+func _hud() -> void:
+	Game.settings.graphics = Game.GFX_LOW
+	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+		"difficulty": 1, "first_raider": 0, "passive": true})
+	var m: Node = Game.current
+	await frames(2)
+	m.cam.cam.cull_mask = 0
+	var guard := 0
+	while m.phase != "raid" and guard < 900:
+		await get_tree().process_frame
+		guard += 1
+	await frames(10)
+	var hud: Node = m.hud
+	m.set_process(false)
+	var font: Font = Game.font_display
+	var longest := func(prefix: String) -> String:
+		var best := ""
+		for k in _keys(prefix):
+			var t := tr(k).format({"name": "R. Sehrawat", "n": 2, "team": DB.team_name("CHD")})
+			if font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 54).x > font.get_string_size(best, HORIZONTAL_ALIGNMENT_LEFT, -1, 54).x:
+				best = t
+		return best
+	hud.event(tr("EV_TOUCH") if tr("EV_TOUCH") != "EV_TOUCH" else "Touch!", Game.C_GOLD, true, hud.EV_TOUCH)
+	hud.event(longest.call("EV_"), Game.C_SAFFRON, false, hud.EV_RESULT)
+	hud.hint(longest.call("HINT_"))
+	await frames(12)
+	await shot("hud_1_calls")
+	for c in hud.events_box.get_children():
+		c.free()
+	hud.hint("")
+	hud.banner(tr("TIMEOUT_BY").format({"team": DB.team_name("CHD")}))
+	await frames(14)
+	await shot("hud_2_banner")
+	hud.banner_l.visible = false
+	hud.show_pause(true)
+	await frames(8)
+	await shot("hud_3_pause")
+	hud.show_pause(false)
+	var s2: Script = load("res://game/match.gd")
+	var w: Node = s2.new()
+	w.config = {"home": "KEN", "away": "IND", "arena": "stadium", "mode": "quick", "walkout": true, "length": 0, "difficulty": 1}
+	Game._swap(w)
+	await frames(3)
+	w.cam.cam.cull_mask = 0
+	await frames(40)
+	await shot("hud_4_walkout")
+
+
+## The store's pictures (run at 1920x1080): two raids on different grounds, the final's walk-out, the home screen,
+## the season's hub and auction, and the Nations Cup. The 3D world is drawn only for the moment of each picture
+## (software drawing is slow), so the waits between them are quick.
+func _store() -> void:
+	var world := func(m: Node, on: bool): m.cam.cam.cull_mask = 0xFFFFF if on else 0
+	var raid_shot := func(cfg: Dictionary, wait: int, name: String):
+		Game.start_match(cfg)
+		var m: Node = Game.current
+		await frames(2)
+		world.call(m, false)
+		var guard := 0
+		while m.phase != "raid" and guard < 1200:
+			await get_tree().process_frame
+			guard += 1
+		await frames(wait)
+		world.call(m, true)
+		await frames(4)
+		await shot(name)
+	await raid_shot.call({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "autoplay": true, "length": 0,
+		"difficulty": 2, "first_raider": 0}, 75, "store_1_raid")
+	await raid_shot.call({"home": "IND", "away": "IRN", "arena": "stadium", "mode": "quick", "autoplay": true, "length": 0,
+		"difficulty": 2, "first_raider": 1}, 95, "store_2_stadium")
+	var s2: Script = load("res://game/match.gd")
+	var w: Node = s2.new()
+	w.config = {"home": "KEN", "away": "IND", "arena": "stadium", "mode": "quick", "walkout": true, "length": 0, "difficulty": 1}
+	Game._swap(w)
+	await frames(2)
+	world.call(w, false)
+	await frames(50)
+	world.call(w, true)
+	await frames(4)
+	await shot("store_3_final")
+	await _store_menu()
+	Game.delete_season()
+	var se = Game.new_season("PAT")
+	se.seed_value = 4242
+	var eng: AuctionEngine = se.make_auction()
+	eng.resolve_all(false)
+	se.finish_auction(eng)
+	for i in 5:
+		se.simulate_user_match()
+	se.news_seen = se.news_n[0]
+	Game.save_season()
+	Game.show_screen("res://ui/season_hub.gd")
+	await frames(40)
+	await shot("store_5_season")
+	while se.phase != "done":
+		if se.next_user_fixture() == null:
+			se._advance()
+		else:
+			se.simulate_user_match()
+	se.next_year()
+	se.retained = se.default_retained().slice(0, 4)
+	se.retain_done = true
+	Game.save_season()
+	Game.show_screen("res://ui/auction_screen.gd", {"mode": "owner"})
+	await frames(150)
+	await shot("store_6_auction")
+	Game.delete_season()
+	Game.delete_cup()
+	var cup = Game.new_cup("IND")
+	cup.confirm_squad(cup.best_squad(), String(cup.best_squad()[0].id))
+	for i in 2:
+		cup.simulate_user_match()
+	cup.news_seen = cup.news_n[0]
+	Game.save_cup()
+	Game.show_screen("res://ui/cup_screen.gd")
+	await frames(40)
+	await shot("store_7_cup")
+	Game.delete_cup()
+	await _store_extra()   # the home screen again, and its language picker
+
+
+## The home screen for the store, without the beta's version number in its corner.
+func _store_menu() -> Node:
+	var menu := Game.show_screen("res://ui/main_menu.gd")
+	await frames(2)
+	for l in menu.find_children("*", "Label", true, false):
+		if String(l.text).begins_with("v0."):
+			l.modulate.a = 0.0
+	await frames(118)
+	await shot("store_4_menu")
+	return menu
+
+
+## The home screen and its language picker, and a raid at the stadium without the HUD (behind the store's feature
+## graphic).
+func _store_extra() -> void:
+	var menu: Node = await _store_menu()
+	menu._open_language()
+	await frames(20)
+	await shot("store_8_languages")
+	Game.start_match({"home": "IND", "away": "IRN", "arena": "stadium", "mode": "quick", "autoplay": true, "length": 0,
+		"difficulty": 2, "first_raider": 1})
+	var m: Node = Game.current
+	await frames(2)
+	m.cam.cam.cull_mask = 0
+	var guard := 0
+	while m.phase != "raid" and guard < 1200:
+		await get_tree().process_frame
+		guard += 1
+	await frames(95)
+	m.hud.visible = false
+	m.cam.cam.cull_mask = 0xFFFFF
+	await frames(4)
+	await shot("store_feature_bg")
+
+
+func _keys(prefix: String) -> Array:
+	var out := []
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://i18n/src/en.json"))
+	for k in d:
+		if String(k).begins_with(prefix):
+			out.append(k)
+	return out
 
 
 ## Raid moves: the raid buttons, then dubki, lion jump and kicks frozen mid-move.

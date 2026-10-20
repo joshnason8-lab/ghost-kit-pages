@@ -273,7 +273,8 @@ func _week_line(title: String, who: String, team_id: String, what: String) -> HB
 	h.add_theme_constant_override("separation", 10)
 	var tl := UI.label(title, "MutedLabel", 14)
 	tl.custom_minimum_size = Vector2(150, 0)
-	UI.fit(tl)
+	tl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	UI.fit(tl, 2)   # "Defender of the week" runs to two lines in Tamil
 	h.add_child(tl)
 	h.add_child(Crest.make(team_id, 22))
 	var nm := UI.label(who, "SubLabel" if team_id != season.team else "SubLabel", 17, Game.C_SAFFRON if team_id == season.team else Game.C_INK)

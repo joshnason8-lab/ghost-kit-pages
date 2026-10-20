@@ -37,7 +37,42 @@ static func frame(owner: Control, base := 40.0) -> MarginContainer:
 	margin.add_theme_constant_override("margin_right", int(m.z))
 	margin.add_theme_constant_override("margin_bottom", int(m.w))
 	owner.add_child(margin)
+	keep_on_screen(margin)
 	return margin
+
+
+## A safety net for every language and screen: when a page needs more room than the screen has (a row of Tamil
+## buttons, a long word that cannot break), the whole page is drawn smaller, just enough to fit, rather than run off
+## the edge. Never below 70%; at 100% where it fits, which is everywhere in English.
+static func keep_on_screen(frame: Control) -> void:
+	var st := {"room": Vector2.ZERO, "k": 1.0, "queued": false}
+	var fit := func():
+		st.queued = false
+		if not is_instance_valid(frame) or not frame.is_inside_tree():
+			return
+		var room := frame.get_parent_area_size()
+		var need := frame.get_combined_minimum_size()
+		if room.x <= 0.0 or room.y <= 0.0 or need.x <= 0.0 or need.y <= 0.0:
+			return
+		if room != st.room:
+			st.room = room   # a new screen size (a phone unfolded): fit afresh
+			st.k = 1.0
+		# Only ever smaller while the screen keeps its size: words wrap less on a page drawn smaller (so wider), which
+		# would let it grow again, and wrap more again, back and forth.
+		var k := clampf(minf(minf(room.x / need.x, room.y / need.y), float(st.k)), 0.7, 1.0)
+		if absf(frame.scale.x - k) < 0.004:
+			return
+		st.k = k
+		frame.scale = Vector2(k, k)
+		frame.offset_right = room.x / k - room.x
+		frame.offset_bottom = room.y / k - room.y
+	var queue := func():
+		if not st.queued:
+			st.queued = true
+			fit.call_deferred()
+	frame.minimum_size_changed.connect(queue)
+	frame.resized.connect(queue)
+	queue.call()
 
 
 ## Page body with safe margins and a header (round Back button, eyebrow and title), returns
@@ -234,16 +269,84 @@ static func tile(title: String, desc: String, accent: Color, pose_name: String, 
 ## between lines).
 static func _fit_line(l: Label, size: int) -> void:
 	l.add_theme_constant_override("line_spacing", -roundi(size * 0.22))
-	l.resized.connect(func():
-		var w := l.size.x
-		if w <= 0.0:
+	shrink(l, size, 0.72)
+
+
+## Words made for English in a space made for English: in Tamil, Telugu or Kannada the same words can run half as
+## long again. The label's font shrinks, to min_k of size at most, until its text takes no more than lines lines of
+## the label's width; past that it wraps as it is set to (and a label with max_lines_visible ends in "…"). It fits
+## again whenever the label changes size, and on refit(l) after its text changes.
+static func shrink(l: Label, size: int, min_k := 0.75, lines := 1) -> Label:
+	if size > 0:
+		size = Game.ts(size)
+		l.add_theme_font_size_override("font_size", size)
+	var state := {"size": size, "key": ""}   # size 0: the label's own, read when it is first fitted
+	var fit := func():
+		if not is_instance_valid(l):
 			return
+		var w := l.size.x
+		if w <= 0.0 or l.text == "" or not l.is_inside_tree():
+			return
+		var key := "%s|%d" % [l.text, int(w)]
+		if key == state.key:
+			return
+		state.key = key
+		if int(state.size) <= 0:
+			state.size = l.get_theme_font_size("font_size")
+		var top: int = state.size
 		var font := l.get_theme_font("font")
-		var fs := size
-		while fs > roundi(size * 0.72) and font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > w:
+		var text := l.text.to_upper() if l.uppercase else l.text
+		var fs := top
+		while fs > roundi(top * min_k) and lines_at(font, text, w, fs) > lines:
 			fs -= 1
 		if l.get_theme_font_size("font_size") != fs:
-			l.add_theme_font_size_override("font_size", fs))
+			l.add_theme_font_size_override("font_size", fs)
+		if l.autowrap_mode != TextServer.AUTOWRAP_OFF and l.max_lines_visible > 0:
+			# Godot sizes a wrapped label that ends in "…" by the font's own line height, but a line of Kannada,
+			# Telugu or Gurmukhi stands taller than that, and the label then hid its last line: room for the lines
+			# as they are set.
+			var tp := TextParagraph.new()
+			tp.add_string(text, font, fs)
+			tp.width = w
+			tp.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+			var n := mini(tp.get_line_count(), l.max_lines_visible)
+			var h := 0.0
+			for i in n:
+				h += tp.get_line_size(i).y
+			h = ceilf(h + maxi(n - 1, 0) * l.get_theme_constant("line_spacing"))
+			if absf(l.custom_minimum_size.y - h) > 0.5:
+				l.custom_minimum_size.y = h
+	l.set_meta("fit", fit)
+	l.resized.connect(fit)
+	# Its text can change after it is laid out (a price, a team's needs): it fits again when it redraws, once.
+	l.draw.connect(func():
+		if not state.get("queued", false):
+			state.queued = true
+			(func():
+				state.queued = false
+				fit.call()).call_deferred())
+	return l
+
+
+## Fits a label set up with shrink() to its new text.
+static func refit(l: Label) -> void:
+	if l.has_meta("fit"):
+		(l.get_meta("fit") as Callable).call()
+
+
+## How many lines text takes at width w, wrapped between words.
+static func lines_at(font: Font, text: String, w: float, fs: int) -> int:
+	var n := 0
+	for para in text.split("\n"):
+		if font.get_string_size(para, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= w:
+			n += 1
+			continue
+		var tp := TextParagraph.new()
+		tp.add_string(para, font, fs)
+		tp.width = w
+		tp.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND
+		n += tp.get_line_count()
+	return n
 
 
 ## Teams to pick from, filling the screen: crest, name, rating bar, and a tag (a pill) for any team in tags.
@@ -381,7 +484,7 @@ static func label(text: String, variation := "", size := 0, color := Color(0, 0,
 	if variation != "":
 		l.theme_type_variation = variation
 	if size > 0:
-		l.add_theme_font_size_override("font_size", size)
+		l.add_theme_font_size_override("font_size", Game.ts(size))
 	if color.a > 0.0:
 		l.add_theme_color_override("font_color", color)
 	return l
@@ -400,7 +503,12 @@ static func fit(l: Label, lines := 1) -> Label:
 	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if lines > 1:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		# Tamil, Telugu, Kannada and Bengali say it in longer words: one more line before the "…".
+		if Game.long_words():
+			lines += 1
 		l.max_lines_visible = lines
+	# A little smaller (to 85%) before anything is cut.
+	shrink(l, 0, 0.85, lines)
 	return l
 
 

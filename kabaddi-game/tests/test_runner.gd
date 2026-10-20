@@ -56,6 +56,7 @@ func _run() -> void:
 	check(fl.text_overrun_behavior == TextServer.OVERRUN_TRIM_ELLIPSIS and fl.max_lines_visible == 2
 		and fl.autowrap_mode != TextServer.AUTOWRAP_OFF, "a label out of room takes two lines, then ends in an ellipsis")
 	fl.free()
+	await _languages()
 
 	# 2. Data.
 	check(DB.league_ids.size() == 12, "12 league teams")
@@ -1052,6 +1053,122 @@ func _run() -> void:
 
 
 ## How many bodies in match m have their own shadow on the floor (Arena.floor_shadow), and how many bodies there are.
+## Every language, where the Indian ones run long (tests/fit_audit goes through every screen): their letters in the
+## game's fonts, the match's words in the game's theme, the buttons' words inside their circles, and the screens
+## whose words ran off a 16:9 phone's screen in Tamil, Kannada or Telugu.
+func _languages() -> void:
+	var was := TranslationServer.get_locale()
+	var keys: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://i18n/src/en.json"))
+	var missing := []
+	for lang in ["hi", "mr", "ta", "te", "kn", "bn", "pa"]:
+		TranslationServer.set_locale(lang)
+		for k in keys:
+			var t := tr(k)
+			for i in t.length():
+				var c := t.unicode_at(i)
+				if c > 0x7f and not c in [0xA0, 0x200C, 0x200D] and not Game.font_body.has_char(c):
+					missing.append("%s %s U+%04X" % [lang, k, c])
+	check(missing.is_empty(), "every language's letters are in the game's fonts %s" % str(missing.slice(0, 5)))
+	var tc: TouchControls = TouchControls.new()
+	var spilt := []
+	for lang in Game.LANGUAGES.map(func(l): return l[0]):
+		TranslationServer.set_locale(lang)
+		for pair in [["BTN_CAMERA", 30.0], ["BTN_SKIP", 62.0], ["BTN_CANT", 78.0], ["BTN_TOUCH", 58.0], ["BTN_LEG", 50.0],
+				["BTN_BREAK_FREE", 72.0], ["BTN_DODGE", 47.0], ["BTN_DUBKI", 42.0], ["BTN_JUMP", 46.0], ["BTN_ANKLE", 78.0],
+				["BTN_THIGH", 58.0], ["BTN_WAIST", 50.0], ["BTN_DASH", 47.0], ["BTN_CHAIN", 42.0], ["BTN_UNCHAIN", 42.0], ["BTN_SWITCH", 46.0]]:
+			var r: float = pair[1]
+			var fit: Array = tc.fit_label(tr(pair[0]), Game.font_bold, Game.ts(22 if r > 70 else (17 if r > 40 else 14)), r)
+			if not TouchControls.inside(fit[1], Game.font_bold, fit[0], r):
+				spilt.append("%s %s" % [lang, pair[0]])
+	tc.free()
+	check(spilt.is_empty(), "every button's words sit inside its circle, in every language %s" % str(spilt))
+	# A wrapped label that ends in "…" kept the font's own line height and hid a taller script's last line.
+	TranslationServer.set_locale("kn")
+	var box := VBoxContainer.new()
+	box.theme = Game.theme
+	box.custom_minimum_size = Vector2(150, 0)
+	add_child(box)
+	var kl := UI.fit(UI.label("ಡಿಫೆಂಡರ್ (ಕವರ್) ವಯಸ್ಸು 28", "MutedLabel", 17), 2)
+	box.add_child(kl)
+	await frames(3)
+	check(kl.get_line_count() >= 2 and kl.get_visible_line_count() == kl.get_line_count(), "a wrapped Kannada label shows every line (%d of %d)" % [kl.get_visible_line_count(), kl.get_line_count()])
+	box.queue_free()
+	# The screens that ran off a 16:9 phone's screen, now inside it.
+	var size_was := get_tree().root.size
+	get_tree().root.size = Vector2i(1280, 720)
+	await frames(2)
+	var off := []
+	for lang in ["en", "ta", "kn", "te"]:
+		TranslationServer.set_locale(lang)
+		Game._size_theme()
+		Game.delete_season()
+		var se = Game.new_season("PAT")
+		for screen in ["res://ui/settings_screen.gd", "res://ui/quick_setup.gd", "res://ui/retention_screen.gd", "res://ui/auction_screen.gd"]:
+			var sc := Game.show_screen(screen, {"mode": "owner"})
+			await frames(12)
+			for t in _off_screen(sc):
+				off.append("%s %s: %s" % [lang, screen.get_file(), t])
+		se.retained = se.default_retained().slice(0, 4)
+		se.retain_done = true
+		var wr := Game.show_screen("res://ui/war_room.gd")
+		await frames(12)
+		for t in _off_screen(wr):
+			off.append("%s war_room: %s" % [lang, t])
+	check(off.is_empty(), "no words off a 16:9 phone's screen in English, Tamil, Kannada or Telugu %s" % str(off.slice(0, 6)))
+	Game.delete_season()
+	Game.goto_menu()
+	get_tree().root.size = size_was
+	TranslationServer.set_locale(was)
+	Game._size_theme()
+	await frames(2)
+	# Settings > About: the privacy policy and help pages, and the licences (Godot's own and the fonts' ask to be shown).
+	var st := Game.show_screen("res://ui/settings_screen.gd")
+	await frames(3)
+	var about := st.find_children("*", "Button", true, false).map(func(b): return String(b.text))
+	check(about.has(tr("PRIVACY_POLICY")) and about.has(tr("HELP_SUPPORT")) and about.has(tr("LICENCES")),
+		"Settings links to the privacy policy, help and the licences")
+	var lic := Game.show_screen("res://ui/licences_screen.gd")
+	await frames(3)
+	var all := ""
+	for rt in lic.find_children("*", "RichTextLabel", true, false):
+		all += String(rt.text)
+	check(all.contains("Godot Engine contributors") and all.contains("SIL Open Font License") and all.contains("FreeType"),
+		"the licences screen shows Godot's licence, its parts' and the fonts'")
+	# The match's words in the game's own fonts (a CanvasLayer does not pass the window's theme on).
+	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+		"difficulty": 1, "first_raider": 0, "passive": true})
+	await frames(3)
+	var hm: Node = Game.current
+	hm.hud.event("Touch!", Game.C_GOLD)
+	var ev: Label = hm.hud.events_box.get_child(hm.hud.events_box.get_child_count() - 1)
+	check(hm.hud.root.theme == Game.theme and ev.get_theme_font("font") == Game.font_display, "the match's words are in the game's fonts")
+	Game.goto_menu()
+	await frames(2)
+
+
+## Visible words of a screen that reach past the screen's edge (a scrolling list may run on; a ticker runs past).
+func _off_screen(root: Node) -> Array:
+	var vp := get_viewport().get_visible_rect().grow(2.0)
+	var out := []
+	for n in root.find_children("*", "Control", true, false):
+		var c: Control = n
+		if not c.is_visible_in_tree() or not (c is Label or c is Button) or String(c.get("text")) == "":
+			continue
+		var x := c.get_parent()
+		var skip := false
+		while x:
+			if x is ScrollContainer or (x.get_script() and String(x.get_script().resource_path).ends_with("news_ticker.gd")):
+				skip = true
+				break
+			x = x.get_parent()
+		if skip:
+			continue
+		var r: Rect2 = c.get_global_transform() * Rect2(Vector2.ZERO, c.size)
+		if not vp.encloses(r):
+			out.append(String(c.text).left(30))
+	return out
+
+
 func _floor_shadowed(m: Node) -> Array:
 	var bodies := 0
 	var flat := 0
