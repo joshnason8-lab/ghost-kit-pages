@@ -1,0 +1,8 @@
+.godot/
+build/
+*.translation
+export_credentials.cfg
+*.keystore
+__pycache__/
+android/
+*.jks

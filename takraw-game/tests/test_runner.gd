@@ -1,0 +1,152 @@
+extends Node
+## The smoke test CI runs before building: every screen opens in every language; a season and a tournament play
+## through to their champions; AI matches in each event finish with scores the laws allow; a team event's regus never
+## use a player twice; the save files read back. Headless:
+##   godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
+## Exits 1 on any failure.
+
+var failures := 0
+var checks := 0
+
+
+func _ready() -> void:
+	Game.main = self
+	Game.settings.sound = false
+	var keep: Dictionary = Game.settings.duplicate(true)
+	await _screens()
+	_rules_helpers()
+	_season()
+	_cup()
+	_team_event_lineups()
+	await _matches()
+	Game.settings = keep
+	Game.delete_season()
+	Game.delete_cup()
+	print("test_runner: %d checks, %d failures" % [checks, failures])
+	get_tree().quit(1 if failures > 0 else 0)
+
+
+func check(ok: bool, what: String) -> void:
+	checks += 1
+	if not ok:
+		failures += 1
+		print("FAIL: ", what)
+
+
+func frames(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
+
+
+## Every screen, in every language: it opens and builds without leaving the screen empty.
+func _screens() -> void:
+	var screens := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
+		"res://ui/records_screen.gd", "res://ui/season_hub.gd", "res://ui/cup_screen.gd", "res://ui/licences_screen.gd"]
+	for pair in Game.LANGUAGES:
+		Game.settings.language = pair[0]
+		TranslationServer.set_locale(pair[0])
+		Game._size_theme()
+		check(tr("GAME_TITLE") != "GAME_TITLE", "%s: translations load" % pair[0])
+		check(tr("BTN_SPIKE") != "BTN_SPIKE" and tr("BTN_SPIKE") != "", "%s: button labels" % pair[0])
+		for path in screens:
+			var s := Game.show_screen(path)
+			await frames(3)
+			check(is_instance_valid(s) and s.get_child_count() > 0, "%s: %s builds" % [pair[0], path])
+	Game.settings.language = "en"
+	TranslationServer.set_locale("en")
+	Game._size_theme()
+
+
+## A set's score is one the laws allow: to set_points, by two from (points - 1)-all, up to the cap.
+static func valid_set(a: int, b: int, points: int) -> bool:
+	var cap := 17 if points == 15 else 25
+	var hi := maxi(a, b)
+	var lo := mini(a, b)
+	if hi == cap:
+		return lo == cap - 1 or lo == cap - 2   # 17-16 at the cap, or 17-15 won by two
+	return hi >= points and hi < cap and hi - lo >= 2 and (hi == points or hi - lo == 2)
+
+
+func _rules_helpers() -> void:
+	check(valid_set(15, 9, 15), "15-9 is a set")
+	check(valid_set(16, 14, 15), "16-14 is a set")
+	check(valid_set(17, 16, 15), "17-16 is a set (the cap)")
+	check(not valid_set(15, 14, 15), "15-14 is not")
+	check(not valid_set(18, 16, 15), "18-16 is not (past the cap)")
+	check(valid_set(21, 10, 21) and valid_set(25, 24, 21), "21-point sets and their cap")
+	check(Sim.table_points(2, 0) == 3 and Sim.table_points(2, 1) == 2 and Sim.table_points(1, 2) == 1 and Sim.table_points(0, 2) == 0, "table points")
+	check(Court.in_court(Vector3(-Court.HALF - 0.05, 0, 0), 0), "a ball on the back line is in")
+	check(not Court.in_court(Vector3(-Court.HALF - 0.2, 0, 0), 0), "a ball 20 cm past the line is out")
+	var sol: Array = Ball.solve_apex(Vector3(-4, 1, 0), Vector3(3, 0.1, 1), 3.5)
+	var land := Ball.pos_at(Vector3(-4, 1, 0), sol[0], sol[1])
+	check(land.distance_to(Vector3(3, 0.1, 1)) < 0.01, "a solved lob lands where it was aimed")
+
+
+func _season() -> void:
+	for lid in DB.LEAGUES:
+		var se: Season = Game.new_season(lid, DB.league_clubs(lid)[0])
+		var guard := 0
+		while se.phase != "done" and guard < 40:
+			se.sim_round()
+			guard += 1
+		check(se.phase == "done" and se.champion != "", "%s season reaches a champion" % lid)
+		var tbl := se.table()
+		var n: int = DB.league_clubs(lid).size()
+		for row in tbl:
+			check(int(row.p) == n - 1, "%s: %s played everyone once" % [lid, row.id])
+		for rnd in se.rounds:
+			for f in rnd:
+				for sc in f.set_scores:
+					check(valid_set(int(sc[0]), int(sc[1]), 15), "%s: set %s is legal" % [lid, sc])
+		check(se.awards().size() == 4, "%s: four awards" % lid)
+		# The save reads back as it was.
+		Game.save_season()
+		Game.season = null
+		var back = Game.get_season()
+		check(back != null and back.champion == se.champion and back.table()[0].id == tbl[0].id, "%s: the season saves and loads" % lid)
+
+
+func _cup() -> void:
+	for kind in Cup.KINDS:
+		for women in [false, true]:
+			var c: Cup = Game.new_cup(kind, "USA" if kind == "world" else "LAO", women, "regu")
+			var guard := 0
+			while c.stage != "done" and guard < 20:
+				c.sim_next()
+				guard += 1
+			check(c.stage == "done", "%s %s: the tournament finishes" % [kind, "women" if women else "men"])
+			check(String(c.medals.get("gold", "")) != "" and (c.medals.get("bronze", []) as Array).size() == 2, "%s: gold and two bronzes" % kind)
+			check(c.group_table(0).size() == 4 and c.group_table(1).size() == 4, "%s: two groups of four" % kind)
+			check(c.user in c.groups[0] or c.user in c.groups[1], "%s: your country is in it" % kind)
+
+
+func _team_event_lineups() -> void:
+	var used := []
+	for i in 3:
+		var r := DB.regu("THA", false, 3, used)
+		check(r.size() == 3, "team event: regu %d has three players" % (i + 1))
+		for p in r:
+			check(not (p.id in used), "team event: %s plays once" % p.name)
+			used.append(p.id)
+
+
+## AI matches in each event: they finish, with legal set scores.
+func _matches() -> void:
+	var cases := [["regu", 3, 15, "THA", "MAS", "dome"], ["quadrant", 1, 15, "JPN", "VIE", "beach"], ["doubles", 1, 15, "PHI", "LAO", "street"],
+		["regu", 1, 21, "KLC", "SLA", "provincial"]]
+	for c in cases:
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": c[3], "away": c[4], "venue": c[5], "event": c[0], "sets": c[1], "points": c[2], "user_team": -1,
+			"demo": true, "seed": 77, "mode": "quick", "women": c[0] == "quadrant"}
+		add_child(m)
+		var res: Dictionary = await m.finished
+		check(int(res.sets[0]) != int(res.sets[1]), "%s: a winner" % c[0])
+		for sc in res.set_scores:
+			check(valid_set(int(sc[0]), int(sc[1]), int(c[2])), "%s: set %s is legal" % [c[0], sc])
+		check((res.log as Array).size() > 10, "%s: rallies were played" % c[0])
+		var kills := 0
+		for id in res.stats:
+			kills += int(res.stats[id].kills)
+		check(kills > 0, "%s: spikes won points" % c[0])
+		m.queue_free()
+		await frames(2)
