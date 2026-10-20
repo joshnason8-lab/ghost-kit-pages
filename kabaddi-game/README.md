@@ -92,7 +92,8 @@ The **Web** export preset builds a browser version: single-threaded WebGL 2, so 
 special headers. Export it with `godot --headless --path . --export-release "Web" build/web/index.html`, serve
 `build/web/` (for example `python3 -m http.server` in that folder) and open it. About 75 MB loads the first time.
 Phones and tablets play by touch, computers by keyboard. Sound starts after the first tap or key, and saves stay in
-that browser.
+that browser. Online, the export goes up to Netlify with `tools/web/netlify.toml` beside it, which forwards the old
+privacy and help addresses to thekabaddipulse.com.
 
 ## Run it on a computer
 
@@ -130,7 +131,7 @@ tests/      compile_check, test_runner (headless smoke test), screenshots (rende
 tools/      build_i18n.py, check_pages.py (an APK's or bundle's 16 KB pages), store_art.py (the store's pictures),
             rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
             mocap/ (animation clips, and movement measured from match video), bake_lighting/ (the grounds'
-            baked lighting), ground_art/ (court and stand textures)
+            baked lighting), ground_art/ (court and stand textures), web/ (the web version's Netlify settings)
 store/      PLAY_STORE.md (every step to Google Play, and the answers to its forms), listing/ (the store text),
             graphics/ (icon, feature graphic, screenshots). The privacy policy and help pages are in ../kabaddi-raid/
 docs/       ASSETS.md (how to drop in real humans), KABADDI.md (the rules), BETA.md (testing on a phone), ROADMAP.md,

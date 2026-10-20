@@ -13,10 +13,12 @@ stand in October 2026.
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - one permission (vibration) and no internet access.
 - **The privacy policy, help page and a page for the game**, in `kabaddi-raid/` at the top of this repository:
-  - live now at https://kabaddi-raid-beta.netlify.app/privacy.html and `/support.html`;
-  - on thekabaddipulse.com once you install the site's update, plugin and theme 0.4.2 from the Kabaddi Pulse chat:
+  - live on thekabaddipulse.com (plugin and theme 0.4.2, installed 20 October 2026):
     https://thekabaddipulse.com/kabaddi-raid/, `/kabaddi-raid/privacy/` and `/kabaddi-raid/support/`;
-  - on GitHub Pages once this branch is merged.
+  - the game's Settings > About opens them there, and the web version's old addresses
+    (https://kabaddi-raid-beta.netlify.app/privacy.html and `/support.html`, which builds up to 0.8.6 open) forward
+    there (`tools/web/netlify.toml`);
+  - on GitHub Pages once this branch is merged, as copies that name the site's pages as the originals.
 
   The game links to them from **Settings > About**, as Google asks, and shows the licences there.
 - **The store listing**: the text in English and Hindi (`store/listing/`), and the 512 × 512 icon, the
@@ -81,7 +83,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://thekabaddipulse.com/kabaddi-raid/privacy/` once the site's update is installed (until then `https://kabaddi-raid-beta.netlify.app/privacy.html`). Pick one and keep it |
+| **Privacy policy** | `https://thekabaddipulse.com/kabaddi-raid/privacy/` |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |
@@ -156,7 +158,8 @@ and shows no ads, but the 13+ groups are the simpler start.
 - **Android's developer verification** covers apps installed from outside the stores too: in Brazil, Indonesia,
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
-- **The privacy policy's address must keep working** while the game is on Play. The game's Settings link to the
-  Netlify site, which can forward to thekabaddipulse.com later, so keep that site.
+- **The privacy policy's address must keep working** while the game is on Play: keep
+  https://thekabaddipulse.com/kabaddi-raid/privacy/ where it is. Builds up to 0.8.6 link to the Netlify site, which
+  forwards there, so keep that site too.
 - **Names**: the league, franchises and players in the game are made up, and real players' names are blocked
   (`autoload/db.gd`), so no league's or player's rights are involved. Do not add real logos or names.
