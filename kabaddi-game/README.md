@@ -157,6 +157,7 @@ godot --headless --path . --fixed-fps 30 res://tests/raid_audit.tscn -- 4 1 --di
 godot --headless --path . --fixed-fps 30 res://tests/match_record.tscn -- 600 seed=1 trace=/tmp/r.json   # the audit's first match, unaudited
 godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- /tmp/fit.jsonl all 1280x720,2208x1840   # every screen, every language
 xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/screenshots.tscn -- /tmp/shots ta:hud   # the match's words in Tamil
+xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/screenshots.tscn -- /tmp/shots result   # Settings, the result and the box score
 ```
 
 The smoke test does five things:

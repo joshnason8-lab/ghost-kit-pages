@@ -56,12 +56,12 @@ Ideas ranked by how much they would add for the work they take.
       prompts on screen, so a new player learns by playing rather than reading How to Play.
 - [ ] **Replays of the big moments**: a super raid, super tackle or do-or-die raid plays again from a second camera,
       slowed down (the match already records every event).
-- [ ] **A box score after the match**: each player's raid and tackle points, raids, empty raids and success rate,
-      and the player of the match's numbers.
-- [ ] **Haptics on contact**: a short buzz on your touch, a firmer one on your hold or a tackle on you (the game
-      buzzes at three moments now).
+- [x] **A box score after the match** (0.8.5): each player's raid and tackle points, raids, successful and empty
+      raids and tackles tried, the side's raid success rate, and the player of the match's numbers.
+- [x] **Haptics on contact** (0.8.5): a short buzz on your touch, a firmer one on your hold, the strongest when you are
+      held or brought down; lighter for a team-mate's hold; none for the AI's match behind the home screen.
 - [ ] **Daily and season challenges**: "win a raid with a lion jump", "a super tackle with Kenya", for a reason to
       come back each day.
 - [ ] **Commentary lines in each language**, written first (on screen), voiced later.
-- [ ] **A 60 fps cap and a battery saver** in Settings, for phones that run hot at 120 Hz.
+- [x] **A 60 fps cap and a battery saver** in Settings (0.8.5), for phones that run hot at 120 Hz.
 - [ ] **Bigger or movable buttons**, for players with large thumbs or small phones.

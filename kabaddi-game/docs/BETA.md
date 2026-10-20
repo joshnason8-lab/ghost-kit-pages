@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.8.4-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.8.5-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.8.4-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.8.5-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -106,6 +106,22 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
   - Try it at the phone's highest screen resolution and refresh rate.
 - **Settings → About** (0.8.4): the version, the privacy policy and help pages (they open in your browser), and the
   licences of what the game is made with.
+- **The box score** (0.8.5): after a match, the **Box score** tab beside the title shows each side's seven: points,
+  raid points, raids, successful and empty raids, tackle points and tackles tried, and the side's line. The player of
+  the match wears a crown, and the Summary says what his points came from. Do the numbers match what you saw?
+- **Vibration** (0.8.5): the phone buzzes for what happens to you, not to everyone.
+  - Short on your touch, firm on your hold, strongest when you are held and when you are brought down.
+  - Light when a team-mate holds the raider, a double buzz when your side brings him down or you break free.
+  - The live match behind the home screen no longer buzzes the phone (it did on every touch).
+  - Is each one clear on your phone? Too strong, or too weak to feel?
+- **Frame rate** (0.8.5, Settings → Display):
+  - **Battery saver** plays at about 30 frames a second (36 on a 144 Hz screen, which shows 30 unevenly) and draws
+    the court a little softer.
+  - **60 fps**, the default, appears on a 120 Hz screen (on a 144 Hz one, 72).
+  - **Max** plays at the screen's own rate.
+  - A 60 Hz or 90 Hz phone shows only Battery saver and Max: 60 would judder on a 90 Hz screen, so the game runs at
+    90 there.
+  - On a phone that runs hot, compare how warm it gets after a match on Max and on 60.
 
 ## Reporting
 
