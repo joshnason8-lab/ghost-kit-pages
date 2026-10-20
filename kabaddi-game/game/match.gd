@@ -1186,9 +1186,11 @@ func _on_action(id: String) -> void:
 				_toggle_chain(controlled)
 
 
-## The phone's back button: pause, or resume from the pause menu.
+## The phone's back button: pause, resume from the pause menu, or close Move buttons back to it.
 func on_back() -> void:
-	if phase != "fulltime":
+	if hud.layout_panel:
+		hud.layout_panel.finish()   # Move buttons is open: back to the pause menu
+	elif phase != "fulltime":
 		set_paused(not paused)
 
 

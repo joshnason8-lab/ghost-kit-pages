@@ -111,7 +111,8 @@ game/       match.gd (rules + AI), athlete.gd, human_model.gd (placeholder body 
             auction.gd
 ui/         main menu, quick match setup, settings, how to play, Nations Cup (cup_screen, cup_squad), career hub,
             create player, League Season (season_hub, match_day, retention_screen, war_room, auction_screen,
-            hall_of_fame), news_ticker (ticker, front page, breaking news), player_card, result screen
+            hall_of_fame), news_ticker (ticker, front page, breaking news), player_card, result screen,
+            button_layout and button_layout_panel (Move buttons: the match buttons dragged where the thumb finds them)
 i18n/       src/*.json (one file per language), strings.csv (generated)
 fonts/      Noto Sans (Latin, Devanagari, Bengali, Tamil, Telugu, Kannada, Gurmukhi) and Teko. All SIL OFL.
 tests/      compile_check, test_runner (headless smoke test), screenshots (renders a visual tour),
@@ -158,6 +159,7 @@ godot --headless --path . --fixed-fps 30 res://tests/match_record.tscn -- 600 se
 godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- /tmp/fit.jsonl all 1280x720,2208x1840   # every screen, every language
 xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/screenshots.tscn -- /tmp/shots ta:hud   # the match's words in Tamil
 xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/screenshots.tscn -- /tmp/shots result   # Settings, the result and the box score
+xvfb-run -a -s "-screen 0 1600x800x24" godot --path . --rendering-driver opengl3 --resolution 1560x720 res://tests/screenshots.tscn -- /tmp/shots buttons   # button sizes, Move buttons
 ```
 
 The smoke test does five things:

@@ -414,11 +414,14 @@ func _buttons() -> void:
 	for key in spec:
 		var text := tr(key)
 		_check_chars(null, text, font)
-		for r in spec[key]:
-			var size := Game.ts(22 if r > 70 else (17 if r > 40 else 14))
-			var fit: Array = tc.fit_label(text, font, size, r)
-			if not TouchControls.inside(fit[1], font, fit[0], r):
-				_report("button_overflow", null, "%s [r%d at %d px]: %s" % [key, int(r), fit[0], " / ".join(fit[1])])
+		for r0 in spec[key]:
+			# At every button size (Settings > Button size); camera and Break free grow half as much as the rest.
+			for k in TouchControls.SIZE_K:
+				var kk: float = 1.0 + (k - 1.0) * 0.5 if float(r0) in [30.0, 72.0] else k
+				var r: float = float(r0) * kk
+				var fit: Array = tc.fit_label(text, font, TouchControls.font_size(r0, kk), r)
+				if not TouchControls.inside(fit[1], font, fit[0], r):
+					_report("button_overflow", null, "%s [r%d at %d px]: %s" % [key, int(r), fit[0], " / ".join(fit[1])])
 	tc.free()
 
 
@@ -436,6 +439,19 @@ func _menus() -> void:
 	Game.show_screen("res://ui/settings_screen.gd")
 	await frames(10)
 	await audit("settings")
+	# Move buttons, for either hand (the card on the joystick's side), and showing the defence's buttons.
+	var lh_was: bool = Game.settings.left_handed
+	for lh in [false, true]:
+		Game.settings.left_handed = lh
+		var mb := Game.show_screen("res://ui/button_layout.gd")
+		await frames(12)
+		await audit("move_buttons_left" if lh else "move_buttons")
+		if not lh:
+			mb.controls.context = "defend"
+			mb.controls.queue_redraw()
+			await frames(4)
+			await audit("move_buttons_defend")
+	Game.settings.left_handed = lh_was
 	var how := Game.show_screen("res://ui/howto_screen.gd")
 	await frames(10)
 	for i in how.TOPICS.size():
@@ -656,6 +672,11 @@ func _match() -> void:
 	hud.show_pause(true)
 	await frames(10)
 	await audit("pause")
+	hud._move_buttons()
+	await frames(10)
+	await audit("move_buttons_match")
+	hud.layout_panel.finish()
+	await frames(4)
 	hud.show_pause(false)
 	Game.goto_menu()
 	await frames(5)

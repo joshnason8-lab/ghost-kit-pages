@@ -16,7 +16,7 @@ const TOPICS := [
 	{"title": "HT_MATCH", "icon": "trophy", "art": "celebrate", "sections": [
 		["TEAM_ENERGY", "HOW_ENERGY"], ["GOLDEN_RAID", "HOW_TIEBREAK"], ["MILESTONES", "HOW_MILESTONES"]]},
 	{"title": "HT_CONTROLS", "icon": "gear", "art": "lunge", "sections": [
-		["HT_CONTROLS", "HOW_CONTROLS"]]},
+		["HT_CONTROLS", "HOW_CONTROLS"], ["MOVE_BUTTONS", "HOW_BUTTONS"]]},
 ]
 const BOLD_TERMS := ["BTN_CANT", "BTN_TOUCH", "BTN_LEG", "BTN_DODGE", "BTN_DUBKI", "BTN_JUMP", "BTN_ANKLE", "BTN_THIGH",
 	"BTN_WAIST", "BTN_DASH", "BTN_CHAIN", "BTN_SWITCH"]

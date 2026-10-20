@@ -73,6 +73,8 @@ var settings := {
 	"music": true,          # the menus' music (needs sound on too)
 	"vibration": true,
 	"left_handed": false,
+	"btn_size": 0,          # the match buttons' size: 0 Normal, 1 Large, 2 Extra large (TouchControls.SIZE_K)
+	"btn_places": [],       # where the player put the six match buttons (Move buttons), or [] for the size's own
 	"difficulty": 1,
 	"length": 0,
 	"seen_howto": false,
@@ -170,8 +172,10 @@ func load_settings() -> void:
 			# Older saves had a cant switch (tap or automatic); keep what the player chose.
 			settings.raid_rule = 1 if int(data.cant) == 0 else 2
 	# JSON gives floats; keep ints as ints.
-	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models", "tags", "fps"]:
+	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models", "tags", "fps", "btn_size"]:
 		settings[k] = int(settings[k])
+	if not TouchControls.is_layout(settings.btn_places):
+		settings.btn_places = []
 	if data is Dictionary and int(data.get("rules_v", 1)) < 2:
 		# Tapping the cant was the old default and it tied up the thumb: move to Breath.
 		if settings.raid_rule == 1:

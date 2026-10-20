@@ -164,6 +164,9 @@ func _tour() -> void:
 		await frames(6)
 		await shot("r4_box_score_away")
 		return
+	if args_only == "buttons":
+		await _buttons()
+		return
 	if args_only == "pickers":
 		# The franchise and country pickers alone (both built by UI.team_grid), quicker than every menu.
 		Game.delete_season()
@@ -730,3 +733,88 @@ func _engage(with_3d := true) -> void:
 	Game.delete_cup()
 	Game.delete_season()
 
+
+
+## The match buttons at each size (Settings > Button size), raiding and defending, Break free while held; the pause
+## menu; Move buttons over the paused match, a button mid-drag and let go; and Move buttons from Settings, for either hand.
+func _buttons() -> void:
+	var size_was := int(Game.settings.btn_size)
+	var places_was: Array = Game.settings.btn_places
+	Game.settings.btn_places = []
+	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+		"difficulty": 1, "first_raider": 0, "passive": true})
+	var m: Node = Game.current
+	var guard := 0
+	while m.phase != "raid" and guard < 900:
+		await get_tree().process_frame
+		guard += 1
+	await frames(30)
+	m.set_process(false)
+	var c: TouchControls = m.controls
+	for i in TouchControls.SIZE_K.size():
+		Game.settings.btn_size = i
+		c.queue_redraw()
+		await frames(3)
+		await shot("b%d_raid_%s" % [i + 1, ["normal", "large", "xl"][i]])
+	c.set_context("defend")
+	await frames(3)
+	await shot("b4_defend_xl")
+	c.set_context("raid")
+	c.held = true
+	await frames(3)
+	await shot("b5_held_xl")
+	c.held = false
+	Game.settings.btn_size = 0
+	m.set_paused(true)
+	await frames(4)
+	await shot("b6_pause")
+	m.hud._move_buttons()
+	await frames(6)
+	await shot("b7_move_in_match")
+	# Dubki picked up and dragged onto Lion jump's place: Lion jump makes way.
+	var dubki: Vector2 = c._buttons().filter(func(b): return b.id == "dubki")[0].pos
+	var jump: Vector2 = c._buttons().filter(func(b): return b.id == "jump")[0].pos
+	c._input(_touch_ev(0, dubki, true))
+	c._input(_drag_ev(0, dubki.lerp(jump, 0.6)))
+	c._input(_drag_ev(0, jump))
+	await frames(3)
+	await shot("b8_dragging")
+	c._input(_touch_ev(0, jump, false))
+	await frames(3)
+	await shot("b9_let_go")
+	m.hud.layout_panel.finish()
+	m.queue_free()
+	await frames(3)
+	Game.settings.btn_places = []
+	var lh_was: bool = Game.settings.left_handed
+	for lh in [false, true]:
+		Game.settings.left_handed = lh
+		Game.settings.btn_size = 1
+		Game.show_screen("res://ui/button_layout.gd")
+		await frames(120)
+		await shot("b10_settings_editor" if not lh else "b11_settings_editor_left")
+	Game.settings.left_handed = lh_was
+	Game.show_screen("res://ui/settings_screen.gd")
+	await frames(8)
+	var sc: ScrollContainer = Game.current.find_children("*", "ScrollContainer", true, false)[0]
+	sc.scroll_vertical = 10000
+	await frames(4)
+	await shot("b12_settings")
+	Game.settings.btn_size = size_was
+	Game.settings.btn_places = places_was
+	Game.save_settings()
+
+
+func _touch_ev(i: int, at: Vector2, down: bool) -> InputEventScreenTouch:
+	var e := InputEventScreenTouch.new()
+	e.index = i
+	e.position = at
+	e.pressed = down
+	return e
+
+
+func _drag_ev(i: int, at: Vector2) -> InputEventScreenDrag:
+	var e := InputEventScreenDrag.new()
+	e.index = i
+	e.position = at
+	return e

@@ -64,4 +64,5 @@ Ideas ranked by how much they would add for the work they take.
       come back each day.
 - [ ] **Commentary lines in each language**, written first (on screen), voiced later.
 - [x] **A 60 fps cap and a battery saver** in Settings (0.8.5), for phones that run hot at 120 Hz.
-- [ ] **Bigger or movable buttons**, for players with large thumbs or small phones.
+- [x] **Bigger or movable buttons** (0.8.6), for players with large thumbs or small phones: three sizes (up to 1.4
+      times), and Move buttons in Settings and the pause menu to drag each one where the thumb finds it.

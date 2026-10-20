@@ -5,9 +5,12 @@ extends Control
 ## look. Keyboard works too: WASD/arrows. Raiding: J hand touch, K kick, L dodge, U dubki,
 ## I lion jump, Space cant. Defending: J ankle, K thigh, L waist, U dash, Space your usual
 ## tackle, G chain, Tab switch. C camera, Esc pause. Played from a keyboard, each button wears its key.
+## The buttons are as big as the player likes them (Settings > Button size) and where the player puts them (Move buttons,
+## in Settings and the pause menu, ButtonLayoutPanel): while editing, a touch drags a button instead of pressing it.
 
 signal action(id: String)
 signal tapped(pos: Vector2)   # a quick tap that was not on a button (to pick a defender)
+signal moved                  # editing: a button was let go in its new place (saved in Game.settings.btn_places)
 
 var context := "none"   # none, intro, raid, defend
 var enabled := true
@@ -32,12 +35,38 @@ var _touch_start := {}   # touch index -> [position, time], to tell taps from dr
 var _cap_box: StyleBoxFlat
 var _insets := Vector2.ZERO   # the screen's unsafe strips (a camera cut-out) at the left and right, in canvas units
 var _fits := {}          # a button's words and size -> the font size and lines that sit inside its circle
+var editing := false:    # moving the buttons: a touch picks one up and drags it, nothing is pressed
+	set(v):
+		editing = v
+		_drag = -1
+		_drag_touch = -1
+		queue_redraw()
+var _drag := -1          # editing: the place (PLACES) being dragged ...
+var _drag_touch := -1    # ... by this touch ...
+var _drag_at := Vector2.ZERO    # ... its middle where the finger has it ...
+var _drag_off := Vector2.ZERO   # ... the finger's offset from the middle ...
+var _drag_from := Vector2.ZERO  # ... and where it was picked up
+var _places := []        # the six places' middles on this screen (places_now) ...
+var _places_key := ""    # ... and what they were worked out for
 
 ## Each button shows its key: from the start in a computer's browser, after the first key press anywhere else,
 ## and off again with a finger's touch (not one the mouse makes).
 static var keys_shown := OS.has_feature("web") and not (OS.has_feature("web_android") or OS.has_feature("web_ios"))
 
 const STICK_R := 92.0
+const STICK_SIDE := 0.45   # the share of the screen's width on the joystick's side: a touch there moves, no button goes
+## The buttons' sizes in Settings (Normal, Large, Extra large). The spacing between them grows a little over half as
+## much, so the biggest set still fits between the scoreboard's row and the bottom of a phone's screen.
+const SIZE_K := [1.0, 1.2, 1.4]
+## The six places on the right the match buttons sit in, as offsets from the first at the Normal size, for the right
+## hand (the left hand's are mirrored). A raid button and a defence button share each place, Touch and Ankle in the
+## first, under the thumb: the scoring moves and the grips nearest the thumb, the escapes and dash, chain and switch in
+## an arc above them.
+const PLACES := [Vector2(0, 0), Vector2(-185, 22), Vector2(-152, -128), Vector2(-15, -195), Vector2(100, -165),
+	Vector2(-70, -330)]
+const PLACE_R := [78.0, 58.0, 50.0, 47.0, 42.0, 46.0]   # the biggest button each place holds, at the Normal size
+const GAP := 10.0          # px kept between two buttons' edges
+const TOP := 100.0         # px: the buttons stay below the scoreboard's row, and pause and camera
 
 
 func _ready() -> void:
@@ -88,51 +117,171 @@ func _buttons() -> Array:
 	var lh: bool = Game.settings.left_handed
 	var ins := _insets
 	var fx := func(x: float) -> float: return s.x - x - ins.y if not lh else x + ins.x
+	var k := size_k()
+	# Pause and camera, up in the corner and pressed seldom, grow half as much as the rest.
+	var kc := 1.0 + (k - 1.0) * 0.5
+	var rc := 30.0 * kc
 	var list := [
-		{"id": "pause", "label": "II", "pos": Vector2(fx.call(52), 52), "r": 30.0, "col": Color(1, 1, 1, 0.16)},
-		{"id": "camera", "label": tr("BTN_CAMERA"), "pos": Vector2(fx.call(140), 52), "r": 30.0, "col": Color(1, 1, 1, 0.16), "small": true},
+		{"id": "pause", "label": "II", "pos": Vector2(fx.call(22 + rc), 22 + rc), "r": rc, "fs": font_size(30.0, kc),
+			"col": Color(1, 1, 1, 0.16)},
+		{"id": "camera", "label": tr("BTN_CAMERA"), "pos": Vector2(fx.call(50 + 3 * rc), 22 + rc), "r": rc,
+			"fs": font_size(30.0, kc), "col": Color(1, 1, 1, 0.16), "small": true},
 	]
-	var main := Vector2(fx.call(150), s.y - 150)
+	# A button in place i, r0 its radius at the Normal size.
+	var at := places_now()
+	var place := func(id: String, label: String, i: int, r0: float, col: Color, extra: Dictionary) -> Dictionary:
+		var b := {"id": id, "label": label, "pos": at[i], "place": i, "r": r0 * k, "fs": font_size(r0, k), "col": col}
+		b.merge(extra, true)
+		return b
 	match context:
 		"intro":
-			list.append({"id": "skip", "label": tr("BTN_SKIP"), "pos": main, "r": 62.0, "col": Color(Game.C_INK, 0.85)})
+			list.append(place.call("skip", tr("BTN_SKIP"), 0, 62.0, Color(Game.C_INK, 0.85), {}))
 		"raid":
-			var dx := -1.0 if not lh else 1.0
 			# Scoring moves sit nearest the thumb; the escapes (dodge, dubki, lion jump)
 			# make an arc above them.
 			var esc := Color("3b4f6b")
 			# Held, he cannot touch or kick: those dim, and Dodge, his way out, is Break free, big and glowing.
 			var dim := 0.3 if held else 1.0
 			if cant_mode:
-				list.append({"id": "cant", "label": tr("BTN_CANT"), "pos": main, "r": 78.0, "col": Game.C_SAFFRON, "pulse": true})
-				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main + Vector2(185 * dx, 22), "r": 58.0, "col": Color(Game.C_GOLD, dim)})
-				list.append({"id": "kick", "label": tr("BTN_LEG"), "pos": main + Vector2(152 * dx, -128), "r": 50.0, "col": Color(Game.C_GOLD.darkened(0.15), dim)})
+				list.append(place.call("cant", tr("BTN_CANT"), 0, 78.0, Game.C_SAFFRON, {"pulse": true}))
+				list.append(place.call("touch", tr("BTN_TOUCH"), 1, 58.0, Color(Game.C_GOLD, dim), {}))
+				list.append(place.call("kick", tr("BTN_LEG"), 2, 50.0, Color(Game.C_GOLD.darkened(0.15), dim), {}))
 			else:
-				list.append({"id": "touch", "label": tr("BTN_TOUCH"), "pos": main, "r": 76.0, "col": Color(Game.C_SAFFRON, dim)})
-				list.append({"id": "kick", "label": tr("BTN_LEG"), "pos": main + Vector2(180 * dx, 30), "r": 56.0, "col": Color(Game.C_GOLD, dim)})
+				list.append(place.call("touch", tr("BTN_TOUCH"), 0, 76.0, Color(Game.C_SAFFRON, dim), {}))
+				list.append(place.call("kick", tr("BTN_LEG"), 1, 56.0, Color(Game.C_GOLD, dim), {}))
 			if held:
-				list.append({"id": "dodge", "label": tr("BTN_BREAK_FREE"), "pos": main + Vector2(15 * dx, -195), "r": 72.0, "col": Game.C_GOLD, "glow": true})
+				# Break free, big already, grows half as much as the rest: it stays clear of Dubki beside it.
+				var kb := 1.0 + (k - 1.0) * 0.5
+				list.append(place.call("dodge", tr("BTN_BREAK_FREE"), 3, 72.0, Game.C_GOLD,
+					{"r": 72.0 * kb, "fs": font_size(72.0, kb), "glow": true}))
 			else:
-				list.append({"id": "dodge", "label": tr("BTN_DODGE"), "pos": main + Vector2(15 * dx, -195), "r": 47.0, "col": Game.C_INK})
-			list.append({"id": "dubki", "label": tr("BTN_DUBKI"), "pos": main + Vector2(-100 * dx, -165), "r": 42.0,
-				"col": Game.C_GOLD if read_hint == "dubki" else esc, "lit": read_hint == "dubki"})
-			list.append({"id": "jump", "label": tr("BTN_JUMP"), "pos": main + Vector2(70 * dx, -330), "r": 46.0,
-				"col": Game.C_GOLD if read_hint == "jump" else esc, "lit": read_hint == "jump"})
+				list.append(place.call("dodge", tr("BTN_DODGE"), 3, 47.0, Game.C_INK, {}))
+			list.append(place.call("dubki", tr("BTN_DUBKI"), 4, 42.0, Game.C_GOLD if read_hint == "dubki" else esc,
+				{"lit": read_hint == "dubki"}))
+			list.append(place.call("jump", tr("BTN_JUMP"), 5, 46.0, Game.C_GOLD if read_hint == "jump" else esc,
+				{"lit": read_hint == "jump"}))
 		"defend":
-			var dx2 := -1.0 if not lh else 1.0
 			# The grips nearest the thumb; dash, chain and switch above them.
 			var hint_col := func(id: String, base: Color) -> Color: return Game.C_GOLD if read_hint == id else base
 			var grip := Game.C_MAGENTA.lightened(0.15)
-			list.append({"id": "ankle", "label": tr("BTN_ANKLE"), "pos": main, "r": 78.0, "col": Game.C_MAGENTA})
-			list.append({"id": "thigh", "label": tr("BTN_THIGH"), "pos": main + Vector2(185 * dx2, 22), "r": 58.0, "col": grip})
-			list.append({"id": "waist", "label": tr("BTN_WAIST"), "pos": main + Vector2(152 * dx2, -128), "r": 50.0,
-				"col": hint_col.call("waist", grip), "lit": read_hint == "waist"})
-			list.append({"id": "dash", "label": tr("BTN_DASH"), "pos": main + Vector2(15 * dx2, -195), "r": 47.0,
-				"col": hint_col.call("dash", Color("6b3b5b")), "lit": read_hint == "dash"})
-			list.append({"id": "chain", "label": tr("BTN_UNCHAIN") if chain_on else tr("BTN_CHAIN"), "pos": main + Vector2(-100 * dx2, -165), "r": 42.0,
-				"col": Game.C_GOLD if chain_on else Color("3b4f6b"), "lit": chain_on})
-			list.append({"id": "switch", "label": tr("BTN_SWITCH"), "pos": main + Vector2(70 * dx2, -330), "r": 46.0, "col": Game.C_INK})
+			list.append(place.call("ankle", tr("BTN_ANKLE"), 0, 78.0, Game.C_MAGENTA, {}))
+			list.append(place.call("thigh", tr("BTN_THIGH"), 1, 58.0, grip, {}))
+			list.append(place.call("waist", tr("BTN_WAIST"), 2, 50.0, hint_col.call("waist", grip), {"lit": read_hint == "waist"}))
+			list.append(place.call("dash", tr("BTN_DASH"), 3, 47.0, hint_col.call("dash", Color("6b3b5b")), {"lit": read_hint == "dash"}))
+			list.append(place.call("chain", tr("BTN_UNCHAIN") if chain_on else tr("BTN_CHAIN"), 4, 42.0,
+				Game.C_GOLD if chain_on else Color("3b4f6b"), {"lit": chain_on}))
+			list.append(place.call("switch", tr("BTN_SWITCH"), 5, 46.0, Game.C_INK, {}))
 	return list
+
+
+## How big the buttons are drawn (Settings > Button size).
+static func size_k() -> float:
+	return SIZE_K[clampi(int(Game.settings.get("btn_size", 0)), 0, SIZE_K.size() - 1)]
+
+
+## The size a button's words start at (fit_label may take them smaller to fit): by its radius at the Normal size, r0,
+## and as much bigger as the button (k).
+static func font_size(r0: float, k := 1.0) -> int:
+	return Game.ts(roundi((22 if r0 > 70 else (17 if r0 > 40 else 14)) * k))
+
+
+## The six places' middles on this screen: where the player put them (Move buttons) or the size's own, kept on the
+## screen, off the joystick's side and apart. While one is dragged, it is where the finger has it and the rest make way.
+func places_now() -> Array:
+	var s := get_viewport_rect().size
+	var saved: Array = Game.settings.get("btn_places", [])
+	var key := str([s, _insets, size_k(), Game.settings.left_handed, saved, _drag, _drag_at])
+	if key != _places_key:
+		_places_key = key
+		_places = layout(s, _insets, size_k(), Game.settings.left_handed, saved, _drag, _drag_at)
+	return _places
+
+
+## The six places' middles on a screen of size s (ins: its unsafe strips at the left and right) for buttons k times
+## their Normal size. saved: the places the player put them in, each [from the side, from the bottom] in px (to_saved),
+## or [] for the size's own. A dragged one (drag, its middle at at) stays where the finger has it; the rest make way.
+static func layout(s: Vector2, ins: Vector2, k: float, lh: bool, saved: Array, drag := -1, at := Vector2.ZERO) -> Array:
+	var g := 1.0 + (k - 1.0) * 0.6
+	# The first place, from the bottom right corner: as near the side as the Dubki/Chain place lets it, and lower down
+	# for the bigger sizes so that the Lion jump/Switch place stays under the scoreboard's row.
+	var first := Vector2(8.0 + 100.0 * g + 42.0 * k, 150.0 - 25.0 * (k - 1.0))
+	var own := is_layout(saved)
+	var p := []
+	var r := []
+	for i in PLACES.size():
+		var e: Vector2 = Vector2(float(saved[i][0]), float(saved[i][1])) if own else first - PLACES[i] * g
+		p.append(Vector2(s.x - ins.y - e.x if not lh else ins.x + e.x, s.y - e.y))
+		r.append(PLACE_R[i] * k)
+	if drag >= 0 and drag < p.size():
+		p[drag] = at
+	return settle(p, r, room(s, ins, lh), drag)
+
+
+## The places' middles p as saved: each [from the side, from the bottom] in px, the side the thumb's (the right, or
+## the left for the left hand), so a layout keeps to the thumb when the hand changes.
+static func to_saved(p: Array, s: Vector2, ins: Vector2, lh: bool) -> Array:
+	var out := []
+	for q in p:
+		out.append([snappedf(s.x - ins.y - q.x if not lh else q.x - ins.x, 0.1), snappedf(s.y - q.y, 0.1)])
+	return out
+
+
+## Whether saved is a layout to_saved made: six places, two numbers each.
+static func is_layout(saved) -> bool:
+	if not saved is Array or saved.size() != PLACES.size():
+		return false
+	for e in saved:
+		if not e is Array or e.size() != 2 or not (e[0] is float or e[0] is int) or not (e[1] is float or e[1] is int):
+			return false
+	return true
+
+
+## Where the buttons may go on a screen of size s: below the scoreboard's row, inside the screen's safe strips and off
+## the joystick's side.
+static func room(s: Vector2, ins: Vector2, lh: bool) -> Rect2:
+	var x0 := s.x * STICK_SIDE if not lh else ins.x + 6.0
+	var x1 := s.x - ins.y - 6.0 if not lh else s.x * (1.0 - STICK_SIDE)
+	return Rect2(x0, TOP, x1 - x0, s.y - 6.0 - TOP)
+
+
+## Moves circles (middles p, radii r) apart where they come closer than GAP and into room. A pinned one stays put and
+## the others make way, as long as they can; then all give a little.
+static func settle(p: Array, r: Array, rm: Rect2, pinned := -1) -> Array:
+	var out := p.duplicate()
+	for it in 24:
+		var moved_any := false
+		for i in out.size():
+			for j in range(i + 1, out.size()):
+				var d: Vector2 = out[j] - out[i]
+				var need: float = r[i] + r[j] + GAP
+				var l := d.length()
+				if l >= need - 0.01:
+					continue
+				var wi := 0.5   # the share of the move that is i's
+				if it < 16 and i == pinned:
+					wi = 0.0
+				elif it < 16 and j == pinned:
+					wi = 1.0
+				var n := d / l if l > 0.001 else Vector2.ZERO
+				if l <= 0.001:
+					# One right on top of the other: the one that gives way goes towards the middle of the room.
+					var inward: Vector2 = rm.get_center() - (out[j] if wi == 0.0 else out[i])
+					n = inward.normalized() if inward.length() > 0.001 else Vector2.DOWN
+					if wi != 0.0:
+						n = -n
+				out[i] -= n * (need - l) * wi
+				out[j] += n * (need - l) * (1.0 - wi)
+				moved_any = true
+		for i in out.size():
+			var lo: Vector2 = rm.position + Vector2(r[i], r[i])
+			var hi: Vector2 = rm.end - Vector2(r[i], r[i])
+			var q := Vector2(clampf(out[i].x, lo.x, maxf(lo.x, hi.x)), clampf(out[i].y, lo.y, maxf(lo.y, hi.y)))
+			if q.distance_to(out[i]) > 0.01:
+				out[i] = q
+				moved_any = true
+		if not moved_any:
+			break
+	return out
 
 
 ## The button a touch is on: within a finger's width of its edge, the nearest one (a big Break free next to Dubki
@@ -155,6 +304,9 @@ func _fire(id: String) -> void:
 
 func _input(event: InputEvent) -> void:
 	if not enabled or not is_visible_in_tree():
+		return
+	if editing:
+		_edit(event)
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if not keys_shown:
@@ -207,7 +359,7 @@ func _input(event: InputEvent) -> void:
 				_fire(id)
 				get_viewport().set_input_as_handled()
 				return
-			var in_stick_zone: bool = (event.position.x < s.x * 0.45) if not lh else (event.position.x > s.x * 0.55)
+			var in_stick_zone: bool = (event.position.x < s.x * STICK_SIDE) if not lh else (event.position.x > s.x * (1.0 - STICK_SIDE))
 			if in_stick_zone and event.position.y > s.y * 0.22 and _stick_id == -1 and context in ["raid", "defend"]:
 				_stick_id = event.index
 				_stick_origin = event.position
@@ -237,6 +389,48 @@ func _input(event: InputEvent) -> void:
 		elif event.index == _look_id:
 			_look_acc += event.position - _look_last
 			_look_last = event.position
+
+
+## Moving the buttons: a touch on one picks it up, it follows the finger (the others making way) and stays where it is
+## let go, the six places saved.
+func _edit(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		# (The same finger down again: its lift was lost, as when the app was left mid-drag. A fresh pick-up.)
+		if event.pressed and (_drag_touch == -1 or event.index == _drag_touch):
+			_drag = -1
+			_drag_touch = -1
+			var id := _hit(event.position)
+			for b in _buttons():
+				if b.id == id and b.has("place"):
+					_drag = int(b.place)
+					_drag_touch = event.index
+					_drag_off = b.pos - event.position
+					_drag_at = b.pos
+					_drag_from = b.pos
+					get_viewport().set_input_as_handled()
+					queue_redraw()
+					return
+		elif not event.pressed and event.index == _drag_touch:
+			# A touch that did not move it keeps the layout as it was (the size's own stays the size's own).
+			if _drag_at.distance_to(_drag_from) > 4.0:
+				Game.settings.btn_places = to_saved(places_now(), get_viewport_rect().size, _insets, Game.settings.left_handed)
+				Game.save_settings()
+			_drag = -1
+			_drag_touch = -1
+			get_viewport().set_input_as_handled()
+			queue_redraw()
+			moved.emit()
+	elif event is InputEventScreenDrag and event.index == _drag_touch:
+		_drag_at = event.position + _drag_off
+		get_viewport().set_input_as_handled()
+		queue_redraw()
+
+
+## Back to the size's own places.
+func reset_places() -> void:
+	Game.settings.btn_places = []
+	Game.save_settings()
+	queue_redraw()
 
 
 func flash(kind: String) -> void:
@@ -272,11 +466,18 @@ func set_context(c: String) -> void:
 
 func _draw() -> void:
 	var font: Font = Game.font_bold
+	if editing and _drag >= 0:
+		# Where a button can go: dashed round the room, while one is moved.
+		var rm := room(get_viewport_rect().size, _insets, Game.settings.left_handed)
+		var corners := [rm.position, Vector2(rm.end.x, rm.position.y), rm.end, Vector2(rm.position.x, rm.end.y)]
+		for i in 4:
+			draw_dashed_line(corners[i], corners[(i + 1) % 4], Color(1, 1, 1, 0.4), 2.0, 12.0)
 	for b in _buttons():
 		var pos: Vector2 = b.pos
 		var r: float = b.r
 		var col: Color = b.col
-		var lit: bool = _pressed.has(b.id) or bool(b.get("lit", false))
+		var picked: bool = editing and int(b.get("place", -1)) == _drag and _drag >= 0
+		var lit: bool = _pressed.has(b.id) or bool(b.get("lit", false)) or picked
 		var fill := Color(col, 0.92 if lit else (0.78 if col.a > 0.5 else col.a))
 		if b.get("pulse", false):
 			# Cant: a ring closes in on the button; tap as it lands.
@@ -292,14 +493,17 @@ func _draw() -> void:
 			fill = Color(0.03, 0.07, 0.12, 0.55 if not lit else 0.85)
 		draw_circle(pos, r, fill)
 		draw_arc(pos, r, 0, TAU, 48, Color(1, 1, 1, 0.35 if not lit else 0.9), 2.0, true)
-		if keys_shown:
+		if picked:
+			draw_arc(pos, r + 7.0, 0, TAU, 48, Color(Game.C_INK, 0.8), 3.0, true)
+		if keys_shown and not editing:
 			_key_cap(pos + Vector2(0, -r), _key_of(String(b.id)))
 		var dark = col.get_luminance() > 0.55 and b.id not in ["pause", "camera"]
 		var tc := Color("1d1307") if dark else Game.C_INK
-		var size := Game.ts(22 if r > 70 else (17 if r > 40 else 14))
+		var size: int = b.fs
 		if b.id == "pause":
-			draw_rect(Rect2(pos + Vector2(-9, -11), Vector2(6, 22)), Game.C_INK)
-			draw_rect(Rect2(pos + Vector2(3, -11), Vector2(6, 22)), Game.C_INK)
+			var u := r / 30.0
+			draw_rect(Rect2(pos + Vector2(-9, -11) * u, Vector2(6, 22) * u), Game.C_INK)
+			draw_rect(Rect2(pos + Vector2(3, -11) * u, Vector2(6, 22) * u), Game.C_INK)
 			continue
 		var text: String = b.label
 		var w := r * 1.8
@@ -314,7 +518,7 @@ func _draw() -> void:
 		draw_circle(_stick_origin, STICK_R, Color(1, 1, 1, 0.07))
 		draw_arc(_stick_origin, STICK_R, 0, TAU, 48, Color(1, 1, 1, 0.3), 2.0, true)
 		draw_circle(_stick_origin + _stick_vec * STICK_R, 38, Color(Game.C_INK, 0.85))
-	elif context in ["raid", "defend"]:
+	elif context in ["raid", "defend"] and not editing:
 		# Hint where the stick lives.
 		var s := get_viewport_rect().size
 		var hx := 170.0 + _insets.x if not Game.settings.left_handed else s.x - 170.0 - _insets.y

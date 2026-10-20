@@ -1105,6 +1105,8 @@ func _run() -> void:
 	check(went_n >= 24 and missed_n <= 7, "after a touch the defence goes for him (%d went in 12 runs home; %d had him in reach and never went)"
 		% [went_n, missed_n])
 
+	await _buttons()
+
 	print("")
 	if failures.is_empty():
 		print("ALL CHECKS PASSED")
@@ -1140,12 +1142,15 @@ func _languages() -> void:
 		for pair in [["BTN_CAMERA", 30.0], ["BTN_SKIP", 62.0], ["BTN_CANT", 78.0], ["BTN_TOUCH", 58.0], ["BTN_LEG", 50.0],
 				["BTN_BREAK_FREE", 72.0], ["BTN_DODGE", 47.0], ["BTN_DUBKI", 42.0], ["BTN_JUMP", 46.0], ["BTN_ANKLE", 78.0],
 				["BTN_THIGH", 58.0], ["BTN_WAIST", 50.0], ["BTN_DASH", 47.0], ["BTN_CHAIN", 42.0], ["BTN_UNCHAIN", 42.0], ["BTN_SWITCH", 46.0]]:
-			var r: float = pair[1]
-			var fit: Array = tc.fit_label(tr(pair[0]), Game.font_bold, Game.ts(22 if r > 70 else (17 if r > 40 else 14)), r)
-			if not TouchControls.inside(fit[1], Game.font_bold, fit[0], r):
-				spilt.append("%s %s" % [lang, pair[0]])
+			# At every button size (Settings); camera and Break free grow half as much as the rest.
+			for k in TouchControls.SIZE_K:
+				var kk: float = 1.0 + (k - 1.0) * 0.5 if float(pair[1]) in [30.0, 72.0] else k
+				var r: float = float(pair[1]) * kk
+				var fit: Array = tc.fit_label(tr(pair[0]), Game.font_bold, TouchControls.font_size(pair[1], kk), r)
+				if not TouchControls.inside(fit[1], Game.font_bold, fit[0], r):
+					spilt.append("%s %s x%s" % [lang, pair[0], k])
 	tc.free()
-	check(spilt.is_empty(), "every button's words sit inside its circle, in every language %s" % str(spilt))
+	check(spilt.is_empty(), "every button's words sit inside its circle, in every language and at every size %s" % str(spilt))
 	# A wrapped label that ends in "…" kept the font's own line height and hid a taller script's last line.
 	TranslationServer.set_locale("kn")
 	var box := VBoxContainer.new()
@@ -1343,3 +1348,142 @@ func _touch_and_run(sd: int) -> Array:
 	m.queue_free()
 	await get_tree().process_frame
 	return [went.size(), missed]
+
+
+## 11. The match buttons' sizes and places (Settings > Button size, Move buttons): every size's own places on every phone's
+## shape, apart and on the screen; Normal where the buttons always were; a dragged button stays where it is let go and
+## the others make way; a layout kept, and mirrored for the left hand; Move buttons from Settings and the pause menu.
+func _buttons() -> void:
+	var size_was := int(Game.settings.btn_size)
+	var places_was: Array = Game.settings.btn_places
+	var lh_was: bool = Game.settings.left_handed
+	var s := Vector2(1280, 720)
+	var old := [Vector2(0, 0), Vector2(-185, 22), Vector2(-152, -128), Vector2(-15, -195), Vector2(100, -165), Vector2(-70, -330)]
+	var p0: Array = TouchControls.layout(s, Vector2.ZERO, 1.0, false, [])
+	var same := true
+	for i in 6:
+		same = same and (p0[i] as Vector2).distance_to(s - Vector2(150, 150) + old[i]) < 0.01
+	check(same, "Normal keeps the buttons where they always were")
+	var bad := []
+	for k in TouchControls.SIZE_K:
+		var kb: float = 1.0 + (k - 1.0) * 0.5
+		for shape in [Vector2(1280, 720), Vector2(1560, 720), Vector2(1690, 720), Vector2(1280, 960), Vector2(1280, 1067)]:
+			for lh in [false, true]:
+				var ins := Vector2(40, 0) if lh else Vector2(0, 40)   # a camera cut-out on the thumb's side
+				var p: Array = TouchControls.layout(shape, ins, k, lh, [])
+				var rm := TouchControls.room(shape, ins, lh)
+				for i in 6:
+					var r: float = TouchControls.PLACE_R[i] * k
+					if not rm.grow(0.01).encloses(Rect2(p[i] - Vector2(r, r), Vector2(2 * r, 2 * r))):
+						bad.append("%s %s %s: place %d off the room" % [k, shape, lh, i])
+					for j in range(i + 1, 6):
+						if (p[i] as Vector2).distance_to(p[j]) < r + TouchControls.PLACE_R[j] * k + TouchControls.GAP - 0.01:
+							bad.append("%s %s %s: places %d and %d too close" % [k, shape, lh, i, j])
+				if (p[3] as Vector2).distance_to(p[4]) < 72.0 * kb + 42.0 * k:
+					bad.append("%s %s %s: Break free over Dubki" % [k, shape, lh])
+	check(bad.is_empty(), "every button size fits every phone's shape, either hand: apart, and under the scoreboard's row %s"
+		% str(bad.slice(0, 4)))
+	# Dubki dragged right onto Lion jump: it stays where it is let go, and Lion jump makes way.
+	var p1: Array = TouchControls.layout(s, Vector2.ZERO, 1.0, false, [], 4, p0[5])
+	var apart := true
+	for i in 6:
+		for j in range(i + 1, 6):
+			apart = apart and (p1[i] as Vector2).distance_to(p1[j]) >= TouchControls.PLACE_R[i] + TouchControls.PLACE_R[j] + TouchControls.GAP - 0.5
+	check((p1[4] as Vector2).distance_to(p0[5]) < 0.5 and (p1[5] as Vector2).distance_to(p0[5]) > 50.0 and apart,
+		"a button dragged onto another stays where it is let go, and the other makes way")
+	var saved := TouchControls.to_saved(p1, s, Vector2.ZERO, false)
+	var back: Array = TouchControls.layout(s, Vector2.ZERO, 1.0, false, saved)
+	var mirrored: Array = TouchControls.layout(s, Vector2.ZERO, 1.0, true, saved)
+	var kept := TouchControls.is_layout(saved) and not TouchControls.is_layout([[1, 2]])
+	for i in 6:
+		kept = kept and (back[i] as Vector2).distance_to(p1[i]) < 0.2 \
+			and (mirrored[i] as Vector2).distance_to(Vector2(s.x - p1[i].x, p1[i].y)) < 0.2
+	check(kept, "a layout is kept as it was moved, and mirrored for the left hand")
+
+	# By touch, as on the phone: Dubki picked up, dragged and let go stays there (saved); out of Move buttons a touch
+	# there presses it; Reset puts it back.
+	Game.settings.left_handed = false
+	Game.settings.btn_size = 0
+	Game.settings.btn_places = []
+	var tc := TouchControls.new()
+	add_child(tc)
+	tc.set_context("raid")
+	tc.editing = true
+	var dubki_at := func() -> Vector2: return tc._buttons().filter(func(b): return b.id == "dubki")[0].pos
+	var was: Vector2 = dubki_at.call()
+	var to := Vector2(tc.get_viewport_rect().size.x * 0.6, 420)
+	tc._input(_touch(0, was, true))
+	tc._input(_drag(0, was.lerp(to, 0.5)))
+	tc._input(_drag(0, to))
+	tc._input(_touch(0, to, false))
+	var moved_to: Vector2 = dubki_at.call()
+	var pressed := []
+	tc.action.connect(func(id): pressed.append(id))
+	tc.editing = false
+	tc._input(_touch(1, to, true))
+	tc._input(_touch(1, to, false))
+	check(moved_to.distance_to(to) < 1.0 and TouchControls.is_layout(Game.settings.btn_places) and pressed == ["dubki"],
+		"a button dragged in Move buttons stays where it is let go, saved, and a touch there presses it %s" % str(pressed))
+	tc.reset_places()
+	check((Game.settings.btn_places as Array).is_empty() and (dubki_at.call() as Vector2).distance_to(was) < 0.01,
+		"Reset puts the buttons back")
+	Game.settings.btn_size = 2
+	var big: Dictionary = tc._buttons().filter(func(b): return b.id == "touch")[0]
+	check(is_equal_approx(float(big.r), 76.0 * 1.4) and int(big.fs) == TouchControls.font_size(76.0, 1.4)
+		and int(big.fs) > TouchControls.font_size(76.0), "Extra large draws the buttons and their words 1.4 times as big")
+	Game.settings.btn_size = 0
+	tc.queue_free()
+
+	# Move buttons from the pause menu: the match stays paused behind, its buttons come back to be dragged, and the
+	# phone's back button returns to the pause menu.
+	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+		"difficulty": 1, "first_raider": 0})
+	var m: Node = Game.current
+	var g := 0
+	while m.phase != "raid" and g < 900:
+		await get_tree().process_frame
+		g += 1
+	m.set_paused(true)
+	m.hud._move_buttons()
+	await frames(2)
+	var opened: bool = m.hud.layout_panel != null and m.controls.editing and m.controls.visible and not m.hud.pause_panel.visible
+	m.on_back()
+	await frames(2)
+	check(opened and m.hud.layout_panel == null and m.paused and m.hud.pause_panel.visible and not m.controls.editing
+		and not m.controls.visible, "Move buttons opens from the pause menu over the paused match, and back returns to it")
+	m.queue_free()
+	await frames(3)
+	Sfx.stop_all()
+	# And from Settings, over a match the AI plays; Done goes back to Settings.
+	Game.show_screen("res://ui/settings_screen.gd")
+	await frames(3)
+	var move: Array = Game.current.find_children("*", "Button", true, false).filter(func(b): return b.text == tr("MOVE_BUTTONS"))
+	if not move.is_empty():
+		move[0].pressed.emit()
+	await frames(5)
+	var ed: Node = Game.current
+	var on_editor: bool = String(ed.get_script().resource_path).ends_with("button_layout.gd") and ed.controls.editing
+	if on_editor:
+		ed.panel.finish()
+	await frames(3)
+	check(on_editor and String(Game.current.get_script().resource_path).ends_with("settings_screen.gd"),
+		"Move buttons opens from Settings, and Done goes back")
+	Game.settings.btn_size = size_was
+	Game.settings.btn_places = places_was
+	Game.settings.left_handed = lh_was
+	Game.save_settings()
+
+
+func _touch(i: int, at: Vector2, down: bool) -> InputEventScreenTouch:
+	var e := InputEventScreenTouch.new()
+	e.index = i
+	e.position = at
+	e.pressed = down
+	return e
+
+
+func _drag(i: int, at: Vector2) -> InputEventScreenDrag:
+	var e := InputEventScreenDrag.new()
+	e.index = i
+	e.position = at
+	return e

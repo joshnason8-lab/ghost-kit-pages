@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.8.5-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.8.6-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.8.5-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.8.6-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -122,6 +122,16 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
   - A 60 Hz or 90 Hz phone shows only Battery saver and Max: 60 would judder on a 90 Hz screen, so the game runs at
     90 there.
   - On a phone that runs hot, compare how warm it gets after a match on Max and on 60.
+- **Bigger buttons, where you want them** (0.8.6):
+  - **Settings → Sound and controls → Button size**: Normal, Large (1.2 times) or Extra large (1.4 times). The
+    spacing grows with them, and the biggest still fit under the scoreboard.
+  - **Move buttons**, in Settings (over a match the AI plays) and in the pause menu (over your paused match):
+    - Drag a button to where your thumb finds it. The others make way, and the layout is saved as you go.
+    - **Raiding** and **Defending** show each side's buttons. A raid button and a defence button share each place
+      (Hand touch and Ankle, Kick and Thigh, and so on), so moving one moves its partner.
+    - **Reset** puts them back. The joystick's side of the screen stays free, and left-handed controls mirror your
+      layout.
+  - Does the size you picked feel right in a match? Are the moved buttons where you left them after a restart?
 
 ## Reporting
 

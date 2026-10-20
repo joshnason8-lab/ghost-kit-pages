@@ -108,6 +108,14 @@ func _ready() -> void:
 	for key in ["sound", "music", "vibration", "left_handed"]:
 		row.add_child(_toggle(key, {"sound": "SOUND", "music": "MUSIC", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
 	snd[1].add_child(row)
+	# The match buttons: bigger, and where the thumb finds them (ui/button_layout.gd).
+	snd[1].add_child(UI.field(tr("BUTTON_SIZE"), UI.chips([tr("SIZE_NORMAL"), tr("SIZE_LARGE"), tr("SIZE_XL")],
+		int(Game.settings.btn_size), func(i):
+			Game.settings.btn_size = i
+			Game.save_settings())))
+	var move := UI.button(tr("MOVE_BUTTONS"), false, func(): Game.show_screen("res://ui/button_layout.gd"))
+	move.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	snd[1].add_child(move)
 
 	# About: the version, the privacy policy and help (on the web, in the phone's browser), and the licences.
 	var about: Array = UI.section(tr("SET_ABOUT"), "book")
@@ -132,8 +140,9 @@ func _fps_text(opt: int, smooth: int, hz: int) -> String:
 	return tr("FPS_NOTE_MAX").format({"hz": hz})
 
 
+## On and Off side by side (on one line: under a short title like Sound they wrapped, Off below On).
 func _toggle(key: String, title_key: String) -> VBoxContainer:
-	return UI.field(tr(title_key), UI.chips([tr("ON"), tr("OFF")], 0 if Game.settings[key] else 1, func(i):
+	return UI.field(tr(title_key), UI.chips_row([tr("ON"), tr("OFF")], 0 if Game.settings[key] else 1, func(i):
 		Game.settings[key] = i == 0
 		Game.save_settings()
 		if key == "sound" and i == 1:

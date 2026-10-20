@@ -717,5 +717,15 @@
   "FPS_MAX_N": "Max · {n} fps",
   "FPS_NOTE_SAVER": "{n} frames a second, with the court drawn a little softer: the phone stays cooler and the battery lasts longer.",
   "FPS_NOTE_SMOOTH": "{n} frames a second: smooth, and easier on the phone than your screen's full {hz}.",
-  "FPS_NOTE_MAX": "As many frames a second as your screen shows, {hz}: the smoothest, and the hardest on the battery."
+  "FPS_NOTE_MAX": "As many frames a second as your screen shows, {hz}: the smoothest, and the hardest on the battery.",
+  "BUTTON_SIZE": "Button size",
+  "SIZE_NORMAL": "Normal",
+  "SIZE_LARGE": "Large",
+  "SIZE_XL": "Extra large",
+  "MOVE_BUTTONS": "Move buttons",
+  "MOVE_BUTTONS_NOTE": "Drag a button to where your thumb finds it. Each raid button shares its place with a defence button.",
+  "BTNS_RAIDING": "Raiding",
+  "BTNS_DEFENDING": "Defending",
+  "RESET_PLACES": "Reset",
+  "HOW_BUTTONS": "Buttons too small, or out of your thumb's reach? In Settings, Button size makes them bigger and Move buttons puts them where you want them. Move buttons is in the pause menu too."
 }

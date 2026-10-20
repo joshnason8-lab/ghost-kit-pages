@@ -14,6 +14,7 @@ const BUBBLE_GAP := 0.7   # s at least between two shouts over players' heads
 var _bubble_t := -10.0
 var m  # Match
 var controls: TouchControls
+var layout_panel: ButtonLayoutPanel = null   # Move buttons, opened from the pause menu
 var root: Control
 var score_l: Array[Label] = []
 var name_l: Array[Label] = []
@@ -433,7 +434,8 @@ func _build_pause() -> void:
 	pause_panel.theme_type_variation = "CardPanel"
 	_center(pause_panel, Control.PRESET_CENTER, 560, -262)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 18)
+	# Six big buttons and the title on a 720-high screen, under the scoreboard: a little closer together than elsewhere.
+	v.add_theme_constant_override("separation", 12)
 	pause_panel.add_child(v)
 	var title := _label(tr("PAUSED"), "HeaderLabel")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -452,6 +454,11 @@ func _build_pause() -> void:
 		_update_cam_btn())
 	_big(cam_btn)
 	v.add_child(cam_btn)
+	var move := Button.new()
+	move.text = tr("MOVE_BUTTONS")
+	move.pressed.connect(_move_buttons)
+	_big(move)
+	v.add_child(move)
 	timeout_btn = Button.new()
 	timeout_btn.pressed.connect(func():
 		if m.request_timeout():
@@ -473,6 +480,24 @@ func _build_pause() -> void:
 	v.add_child(quit)
 	pause_panel.visible = false
 	root.add_child(pause_panel)
+
+
+## Move buttons, from the pause menu: the match stays paused behind, and its buttons come back over it to be dragged,
+## with the card beside them. Done goes back to the pause menu.
+func _move_buttons() -> void:
+	pause_panel.visible = false
+	# The calls and hints frozen on the screen would show round the card: put away while the buttons are moved.
+	var shown := [events_box.visible, hint_l.visible, banner_l.visible]
+	for c in [events_box, hint_l, banner_l]:
+		c.visible = false
+	layout_panel = ButtonLayoutPanel.new(controls, m.raid_rule == m.RULE_CANT_TAP, func():
+		layout_panel.queue_free()
+		layout_panel = null
+		events_box.visible = shown[0]
+		hint_l.visible = shown[1]
+		banner_l.visible = shown[2]
+		show_pause(true))
+	root.add_child(layout_panel)
 
 
 func _big(b: Button, h := 80, size := 27) -> void:
