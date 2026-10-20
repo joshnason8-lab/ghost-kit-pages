@@ -1,0 +1,85 @@
+{
+ "note": "The character order for Meshy: docs/MESHY_BRIEF.md. Edit here; run tools/meshy/meshy_batch.py.",
+ "assets": [
+  {
+   "name": "player_01_striker_thai",
+   "kind": "player",
+   "prompt": "T-pose, arms out at shoulder height, palms down, five fingers, feet flat, neutral face. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. A Thai sepak takraw striker, 24-year-old man, lean springy athletic build, long legs, warm tan skin, short black hair, in a fitted short-sleeve royal blue takraw jersey with red collar and side panels, royal blue shorts to above the knee, white ankle socks, light rubber-soled court shoes, a red headband; no logos, no text, no numbers. ",
+   "texture_prompt": "In a fitted short-sleeve royal blue takraw jersey with red collar and side panels, royal blue shorts to above the knee, white ankle socks, light rubber-soled court shoes, a red headband; no logos, no text, no numbers. Player: a Thai sepak takraw striker, 24-year-old man, lean springy athletic build, long legs, warm tan skin, short black hair. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. Even lighting, no baked shadows.",
+   "faces": 5000,
+   "pose": "t-pose",
+   "height_m": 1.74,
+   "batch": 1
+  },
+  {
+   "name": "player_02_tekong_malay",
+   "kind": "player",
+   "prompt": "T-pose, arms out at shoulder height, palms down, five fingers, feet flat, neutral face. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. A Malaysian sepak takraw server, 27-year-old man, compact strong build, thick thighs, medium brown skin, black crew cut, in a fitted short-sleeve yellow takraw jersey with navy collar and side panels, yellow shorts to above the knee, white ankle socks, light rubber-soled court shoes, a navy headband; no logos, no text, no numbers. ",
+   "texture_prompt": "In a fitted short-sleeve yellow takraw jersey with navy collar and side panels, yellow shorts to above the knee, white ankle socks, light rubber-soled court shoes, a navy headband; no logos, no text, no numbers. Player: a Malaysian sepak takraw server, 27-year-old man, compact strong build, thick thighs, medium brown skin, black crew cut. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. Even lighting, no baked shadows.",
+   "faces": 5000,
+   "pose": "t-pose",
+   "height_m": 1.7,
+   "batch": 1
+  },
+  {
+   "name": "player_03_feeder_vietnam_woman",
+   "kind": "player",
+   "prompt": "T-pose, arms out at shoulder height, palms down, five fingers, feet flat, neutral face. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. A Vietnamese sepak takraw setter, 22-year-old woman, slim athletic build, light skin, black hair in a tight ponytail, in a fitted short-sleeve red takraw jersey with yellow collar and side panels, red shorts to above the knee, white ankle socks, light rubber-soled court shoes, a yellow headband; no logos, no text, no numbers. ",
+   "texture_prompt": "In a fitted short-sleeve red takraw jersey with yellow collar and side panels, red shorts to above the knee, white ankle socks, light rubber-soled court shoes, a yellow headband; no logos, no text, no numbers. Player: a Vietnamese sepak takraw setter, 22-year-old woman, slim athletic build, light skin, black hair in a tight ponytail. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. Even lighting, no baked shadows.",
+   "faces": 5000,
+   "pose": "t-pose",
+   "height_m": 1.6,
+   "batch": 1
+  },
+  {
+   "name": "player_04_striker_indonesia",
+   "kind": "player",
+   "prompt": "T-pose, arms out at shoulder height, palms down, five fingers, feet flat, neutral face. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. A Indonesian sepak takraw striker, 25-year-old man, wiry athletic build, deep brown skin, short wavy black hair, in a fitted short-sleeve red takraw jersey with white collar and side panels, red shorts to above the knee, white ankle socks, light rubber-soled court shoes, a white headband; no logos, no text, no numbers. ",
+   "texture_prompt": "In a fitted short-sleeve red takraw jersey with white collar and side panels, red shorts to above the knee, white ankle socks, light rubber-soled court shoes, a white headband; no logos, no text, no numbers. Player: a Indonesian sepak takraw striker, 25-year-old man, wiry athletic build, deep brown skin, short wavy black hair. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. Even lighting, no baked shadows.",
+   "faces": 5000,
+   "pose": "t-pose",
+   "height_m": 1.72,
+   "batch": 1
+  },
+  {
+   "name": "player_05_tekong_japan",
+   "kind": "player",
+   "prompt": "T-pose, arms out at shoulder height, palms down, five fingers, feet flat, neutral face. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. A Japanese sepak takraw server, 28-year-old man, tall athletic build, fair skin, short neat black hair, in a fitted short-sleeve navy takraw jersey with white collar and side panels, navy shorts to above the knee, white ankle socks, light rubber-soled court shoes, a white headband; no logos, no text, no numbers. ",
+   "texture_prompt": "In a fitted short-sleeve navy takraw jersey with white collar and side panels, navy shorts to above the knee, white ankle socks, light rubber-soled court shoes, a white headband; no logos, no text, no numbers. Player: a Japanese sepak takraw server, 28-year-old man, tall athletic build, fair skin, short neat black hair. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. Even lighting, no baked shadows.",
+   "faces": 5000,
+   "pose": "t-pose",
+   "height_m": 1.78,
+   "batch": 1
+  },
+  {
+   "name": "player_06_striker_philippines_woman",
+   "kind": "player",
+   "prompt": "T-pose, arms out at shoulder height, palms down, five fingers, feet flat, neutral face. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. A Filipino sepak takraw striker, 24-year-old woman, strong athletic build, golden brown skin, black hair in a bun, in a fitted short-sleeve royal blue takraw jersey with gold collar and side panels, royal blue shorts to above the knee, white ankle socks, light rubber-soled court shoes, a gold headband; no logos, no text, no numbers. ",
+   "texture_prompt": "In a fitted short-sleeve royal blue takraw jersey with gold collar and side panels, royal blue shorts to above the knee, white ankle socks, light rubber-soled court shoes, a gold headband; no logos, no text, no numbers. Player: a Filipino sepak takraw striker, 24-year-old woman, strong athletic build, golden brown skin, black hair in a bun. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. Even lighting, no baked shadows.",
+   "faces": 5000,
+   "pose": "t-pose",
+   "height_m": 1.62,
+   "batch": 1
+  },
+  {
+   "name": "referee_01_man",
+   "kind": "referee",
+   "prompt": "T-pose, arms out at shoulder height, palms down, five fingers, feet flat, neutral face. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. A sepak takraw referee, 45-year-old Thai man, average build, in a white short-sleeve referee shirt, black trousers, black shoes, a whistle on a cord; no logos or text. ",
+   "texture_prompt": "In a white short-sleeve referee shirt, black trousers, black shoes, a whistle on a cord; no logos or text. A sepak takraw referee, 45-year-old Thai man, average build. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. Even lighting, no baked shadows.",
+   "faces": 4000,
+   "pose": "t-pose",
+   "height_m": 1.7,
+   "batch": 1
+  },
+  {
+   "name": "referee_02_woman",
+   "kind": "referee",
+   "prompt": "T-pose, arms out at shoulder height, palms down, five fingers, feet flat, neutral face. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. A sepak takraw referee, 38-year-old Malaysian woman in a navy hijab, average build, in a white short-sleeve referee shirt, black trousers, black shoes, a whistle on a cord; no logos or text. ",
+   "texture_prompt": "In a white short-sleeve referee shirt, black trousers, black shoes, a whistle on a cord; no logos or text. A sepak takraw referee, 38-year-old Malaysian woman in a navy hijab, average build. Stylized sports game character: clean simple shapes, slightly large head, flat matte colours for cel shading. Even lighting, no baked shadows.",
+   "faces": 4000,
+   "pose": "t-pose",
+   "height_m": 1.6,
+   "batch": 1
+  }
+ ]
+}

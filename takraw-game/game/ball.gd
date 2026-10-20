@@ -5,6 +5,7 @@ extends Node3D
 
 const G := 9.81
 const RADIUS := 0.068     # 0.43 m round
+const LOOK_SCALE := 1.7
 
 var vel := Vector3.ZERO
 var flying := false
@@ -35,7 +36,20 @@ func _ready() -> void:
 	mat.roughness = 0.8
 	_mesh.material_override = mat
 	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Drawn a little larger than it is, with a dark rim, so it reads on a phone from the broadcast camera's seat; it
+	# flies, and is met, at its true size.
+	_mesh.scale = Vector3.ONE * LOOK_SCALE
 	add_child(_mesh)
+	var rim := MeshInstance3D.new()
+	rim.mesh = sm
+	rim.scale = Vector3.ONE * 1.12
+	var rm := StandardMaterial3D.new()
+	rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	rm.cull_mode = BaseMaterial3D.CULL_FRONT
+	rm.albedo_color = Color(0.03, 0.05, 0.08)
+	rim.material_override = rm
+	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_mesh.add_child(rim)
 	_shadow = MeshInstance3D.new()
 	var q := QuadMesh.new()
 	q.size = Vector2(0.34, 0.34)
@@ -56,7 +70,7 @@ func _ready() -> void:
 		t.material_override = tm
 		t.top_level = true
 		t.visible = false
-		t.scale = Vector3.ONE * (0.9 - i * 0.15)
+		t.scale = Vector3.ONE * (0.9 - i * 0.15) * LOOK_SCALE
 		add_child(t)
 		_trail.append(t)
 

@@ -241,7 +241,7 @@ func _make_officials() -> void:
 	_ref.rotation.y = PI
 	officials.append(_ref)
 	var low := int(Game.settings.graphics) == Game.GFX_LOW
-	var spots := [Vector3(0, 0, -post_z - 0.7)]   # the assistant referee
+	var spots := [Vector3(-0.9, 0, -post_z - 1.6)]   # the assistant referee, at the near post (off the middle of the picture)
 	spots.append_array([Vector3(-Court.HALF - 0.8, 0, Court.HALF_W + 0.8), Vector3(Court.HALF + 0.8, 0, -Court.HALF_W - 0.8)])
 	if not low:
 		spots.append_array([Vector3(-Court.HALF - 0.8, 0, -Court.HALF_W - 0.8), Vector3(Court.HALF + 0.8, 0, Court.HALF_W + 0.8)])

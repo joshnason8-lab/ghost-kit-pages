@@ -18,7 +18,7 @@ IGNORE = re.compile(r"Identifier not found: (Game|DB|Sfx)\b|Failed to compile de
 def main() -> int:
     godot = sys.argv[1] if len(sys.argv) > 1 else "godot"
     bad = 0
-    files = sorted(p for d in ["autoload", "game", "ui", "tests"] for p in (ROOT / d).rglob("*.gd")) + [ROOT / "main.gd"]
+    files = sorted(p for d in ["autoload", "game", "ui", "tests", "tools"] for p in (ROOT / d).rglob("*.gd")) + [ROOT / "main.gd"]
     for f in files:
         rel = f.relative_to(ROOT).as_posix()
         out = subprocess.run([godot, "--headless", "--path", str(ROOT), "--check-only", "--script", rel],

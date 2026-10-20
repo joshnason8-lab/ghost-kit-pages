@@ -1,0 +1,35 @@
+# Google Play store listing, English (United States). Paste each part into Play Console > Grow > Store presence >
+# Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Takraw Smash
+
+== Short description ==
+Sepak takraw: roll spikes, horse-kick serves and blocks at the net. ISTAF rules.
+
+== Full description ==
+Takraw Smash is sepak takraw for your phone: the kick volleyball of Southeast Asia. Serve with a foot in the circle, receive with the inside of your foot, set it high by the net, and launch a roll spike over the block.
+
+THE REAL GAME
+• The ISTAF laws as they stand: sets to 15 (win by two, up to 17), best of three, the serve alternating every point, three touches a side.
+• Regu, quadrant, doubles and the team event, for men and women, on a court and net to the exact measurements.
+• The moves fans know: sepak sila, the instep dig, the header, the horse-kick serve, the roll spike, the sunback, the sole spike, the feint and the block.
+• Faults called by the referee, line judges' calls, and a video challenge to overturn them.
+
+WAYS TO PLAY
+• Quick Match: any two teams, any venue.
+• League Season: take a club through the Malaysia, Thai or Indonesia league and into the Final Four.
+• International: the World Cup, the Royal Cup, the Asian and the Southeast Asian championships, with Thailand, Malaysia, Vietnam, Indonesia, Myanmar, Japan, Korea and more.
+• Training: learn every touch with a hint.
+
+EIGHT VENUES
+The national arena, a grand dome, a shopping-mall court, a provincial gym, a temple court, a park court under the lights, a beach at sunset and a night-market street.
+
+PLAY YOUR WAY
+• Thirteen languages: English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文 and हिन्दी.
+• Time each touch as the ring closes on the ball; choose how much the game helps you run and time.
+• Made to run smoothly on budget phones like the Galaxy A16.
+• Plays offline. No ads, no purchases, no account, and no data collected.
+
+== Release notes (first release) ==
+The first release of Takraw Smash: Quick Match, League Season, International and Training, in thirteen languages.

@@ -1,0 +1,35 @@
+# Google Play store listing, Indonesian. Paste each part into Play Console > Grow > Store presence >
+# Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Takraw Smash
+
+== Short description ==
+Sepak takraw aturan ISTAF: servis keras, smash salto, dan blok di depan net.
+
+== Full description ==
+Takraw Smash menghadirkan sepak takraw di genggamanmu, voli kaki khas Asia Tenggara. Servis dengan satu kaki di dalam lingkaran, terima bola dengan sepak sila, beri umpan tinggi dekat net, lalu lepaskan smash salto melewati blok lawan.
+
+PERMAINAN ASLI
+• Peraturan ISTAF terbaru: set hingga 15 poin (unggul dua poin, maksimal 17), best of three, servis bergantian setiap poin, tiga sentuhan per tim.
+• Regu, quadrant, ganda, dan beregu, putra dan putri, di lapangan dan net dengan ukuran resmi yang persis.
+• Teknik yang akrab bagi penggemar: sepak sila, menyelamatkan bola dengan punggung kaki, main kepala, servis sepak kuda, smash salto, sunback, smash telapak kaki, tipuan, dan blok.
+• Pelanggaran ditiup wasit, keputusan hakim garis, dan tantangan video untuk membatalkannya.
+
+MODE PERMAINAN
+• Laga Cepat: dua tim mana pun, venue mana pun.
+• Musim Liga: bawa klubmu mengarungi liga Malaysia, Thailand, atau Indonesia hingga babak Final Four.
+• Internasional: Piala Dunia, Royal Cup, Kejuaraan Asia, dan Kejuaraan Asia Tenggara, bersama Thailand, Malaysia, Vietnam, Indonesia, Myanmar, Jepang, Korea, dan banyak lagi.
+• Latihan: pelajari setiap sentuhan dengan petunjuk.
+
+DELAPAN VENUE
+Arena nasional, kubah megah, lapangan di mal, GOR daerah, lapangan di halaman kuil, lapangan taman di bawah lampu, pantai saat matahari terbenam, dan jalanan pasar malam.
+
+MAIN SESUKA GAYAMU
+• Tiga belas bahasa: English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文, dan हिन्दी.
+• Atur timing setiap sentuhan saat lingkaran menyempit ke bola; pilih seberapa besar bantuan untuk berlari dan menentukan timing.
+• Dirancang agar lancar di HP terjangkau seperti Galaxy A16.
+• Bisa dimainkan offline. Tanpa iklan, tanpa pembelian, tanpa akun, dan tanpa pengumpulan data.
+
+== Release notes (first release) ==
+Rilis pertama Takraw Smash: Laga Cepat, Musim Liga, Internasional, dan Latihan, dalam tiga belas bahasa.

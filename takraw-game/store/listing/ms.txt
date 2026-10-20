@@ -1,0 +1,35 @@
+# Google Play store listing, Malay. Paste each part into Play Console > Grow > Store presence >
+# Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Takraw Smash
+
+== Short description ==
+Sepak takraw peraturan ISTAF: servis padu, rejam guling dan hadangan di jaring.
+
+== Full description ==
+Takraw Smash membawa sepak takraw ke telefon anda, sukan kebanggaan Asia Tenggara. Jadi tekong dengan sebelah kaki di dalam bulatan, terima bola dengan sepak sila, beri umpan tinggi dekat jaring, dan lepaskan rejam guling melepasi hadangan lawan.
+
+PERMAINAN SEBENAR
+• Undang-undang ISTAF terkini: set 15 mata (menang dengan beza dua mata, maksimum 17), terbaik daripada tiga set, servis bertukar setiap mata, tiga sentuhan bagi setiap pasukan.
+• Regu, kuadran, beregu dan acara berpasukan, lelaki dan wanita, di gelanggang dan jaring mengikut ukuran sebenar.
+• Teknik yang peminat kenal: sepak sila, selamatkan bola dengan kura kaki, tandukan, servis sepak kuda, rejam guling, kalih, rejam tapak, tipuan dan hadangan.
+• Kesalahan dipanggil pengadil, keputusan penjaga garisan, dan cabaran video untuk membatalkannya.
+
+CARA BERMAIN
+• Perlawanan Pantas: mana-mana dua pasukan, mana-mana gelanggang.
+• Musim Liga: bawa kelab anda mengharungi liga Malaysia, Thailand atau Indonesia hingga ke Final Four.
+• Antarabangsa: Piala Dunia, Piala Diraja, Kejohanan Asia dan Kejohanan Asia Tenggara, bersama Thailand, Malaysia, Vietnam, Indonesia, Myanmar, Jepun, Korea dan banyak lagi.
+• Latihan: kuasai setiap sentuhan dengan bantuan petunjuk.
+
+LAPAN GELANGGANG
+Arena kebangsaan, kubah tersergam, gelanggang di pusat beli-belah, dewan sukan daerah, gelanggang di perkarangan kuil, gelanggang taman di bawah lampu, pantai ketika matahari terbenam dan jalan pasar malam.
+
+MAIN IKUT GAYA ANDA
+• Tiga belas bahasa: English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文 dan हिन्दी.
+• Tepatkan masa setiap sentuhan ketika gelang mengecil pada bola; pilih sejauh mana permainan membantu anda berlari dan menepati masa.
+• Dibina untuk berjalan lancar pada telefon bajet seperti Galaxy A16.
+• Boleh dimain tanpa internet. Tiada iklan, tiada pembelian, tiada akaun dan tiada data dikumpul.
+
+== Release notes (first release) ==
+Keluaran pertama Takraw Smash: Perlawanan Pantas, Musim Liga, Antarabangsa dan Latihan, dalam tiga belas bahasa.
