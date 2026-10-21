@@ -5,21 +5,21 @@
 Takraw Smash
 
 == Short description ==
-Sepak takraw aturan ISTAF: servis keras, smash salto, dan blok di depan net.
+Sepak takraw aturan asli: servis keras, smash salto, dan blok di depan net.
 
 == Full description ==
 Takraw Smash menghadirkan sepak takraw di genggamanmu, voli kaki khas Asia Tenggara. Servis dengan satu kaki di dalam lingkaran, terima bola dengan sepak sila, beri umpan tinggi dekat net, lalu lepaskan smash salto melewati blok lawan.
 
 PERMAINAN ASLI
-• Peraturan ISTAF terbaru: set hingga 15 poin (unggul dua poin, maksimal 17), best of three, servis bergantian setiap poin, tiga sentuhan per tim.
+• Peraturan permainan terbaru: set hingga 15 poin (unggul dua poin, maksimal 17), best of three, servis bergantian setiap poin, tiga sentuhan per tim.
 • Regu, quadrant, ganda, dan beregu, putra dan putri, di lapangan dan net dengan ukuran resmi yang persis.
 • Teknik yang akrab bagi penggemar: sepak sila, menyelamatkan bola dengan punggung kaki, main kepala, servis sepak kuda, smash salto, sunback, smash telapak kaki, tipuan, dan blok.
 • Pelanggaran ditiup wasit, keputusan hakim garis, dan tantangan video untuk membatalkannya.
 
 MODE PERMAINAN
 • Laga Cepat: dua tim mana pun, venue mana pun.
-• Musim Liga: liga sungguhan, dengan format aslinya. Sepak Takraw League di Malaysia: tujuh Grand Prix, poin untuk setiap posisi akhir, promosi dan degradasi. Takraw Thailand League: kandang dan tandang, setiap laga beregu terdiri dari dua partai regu. Liga Sepak Takraw Indonesia: lima wilayah, lalu final nasional di Jakarta.
-• Internasional: Piala Dunia, Royal Cup, Kejuaraan Asia, dan Kejuaraan Asia Tenggara, bersama Thailand, Malaysia, Vietnam, Indonesia, Myanmar, Jepang, Korea, dan banyak lagi.
+• Musim Liga: musim klub yang dijalankan dengan format liga sungguhan di Malaysia, Thailand, dan Indonesia. Malaysia: tujuh Grand Prix, poin untuk setiap posisi akhir, promosi dan degradasi. Thailand: kandang dan tandang, setiap laga beregu terdiri dari dua partai regu. Indonesia: lima wilayah, lalu final nasional di Jakarta.
+• Internasional: Kejuaraan Dunia, Royal Cup, Kejuaraan Asia, dan Kejuaraan Asia Tenggara, bersama Thailand, Malaysia, Vietnam, Indonesia, Myanmar, Jepang, Korea, dan banyak lagi.
 
 DELAPAN VENUE
 Arena nasional, kubah megah, lapangan di mal, GOR daerah, lapangan di halaman kuil, lapangan taman di bawah lampu, pantai saat matahari terbenam, dan jalanan pasar malam.
@@ -27,8 +27,10 @@ Arena nasional, kubah megah, lapangan di mal, GOR daerah, lapangan di halaman ku
 MAIN SESUKA GAYAMU
 • Tiga belas bahasa: English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文, dan हिन्दी.
 • Tidak ada yang dimainkan otomatis: gerakkan pemainmu ke bola dengan joystick dan sepak saat lingkaran menyempit ke bola. Pilih seberapa besar bantuan untuk berlari, dan seberapa cepat laga berjalan.
-• Dirancang agar lancar di HP terjangkau seperti Galaxy A16.
+• Dirancang agar lancar di HP terjangkau dan kelas menengah.
 • Bisa dimainkan offline. Tanpa iklan, tanpa pembelian, tanpa akun, dan tanpa pengumpulan data.
+
+Takraw Smash adalah game independen. Game ini tidak berafiliasi dengan dan tidak didukung oleh federasi, liga, klub, atau pemain sepak takraw mana pun. Julukan klub adalah rekaan dan para pemainnya fiktif; negara, tempat, dan aturannya nyata.
 
 == Release notes (first release) ==
 Rilis pertama Takraw Smash: Laga Cepat, Musim Liga, dan Internasional, dalam tiga belas bahasa.

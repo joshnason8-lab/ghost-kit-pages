@@ -5,21 +5,21 @@
 Takraw Smash
 
 == Short description ==
-Cầu mây chuẩn luật ISTAF: giao cầu uy lực, đập cầu móc và chắn cầu trên lưới.
+Cầu mây chuẩn luật thi đấu: giao cầu uy lực, đập cầu móc và chắn cầu trên lưới.
 
 == Full description ==
 Takraw Smash mang cầu mây lên điện thoại của bạn, môn "bóng chuyền bằng chân" của Đông Nam Á. Giao cầu với một chân trong vòng tròn, đỡ cầu bằng má trong bàn chân, chuyền cao sát lưới rồi tung cú đập móc vượt qua hàng chắn.
 
 ĐÚNG CHẤT CẦU MÂY
-• Luật ISTAF hiện hành: mỗi hiệp 15 điểm (thắng cách biệt 2 điểm, tối đa 17), thi đấu 3 hiệp thắng 2, quyền giao cầu luân phiên sau mỗi điểm, mỗi bên chạm cầu tối đa 3 lần.
+• Luật thi đấu hiện hành: mỗi hiệp 15 điểm (thắng cách biệt 2 điểm, tối đa 17), thi đấu 3 hiệp thắng 2, quyền giao cầu luân phiên sau mỗi điểm, mỗi bên chạm cầu tối đa 3 lần.
 • Đội 3 người, đội 4 người, đôi và đồng đội, nam và nữ, trên sân và lưới đúng kích thước chuẩn.
 • Những kỹ thuật người hâm mộ quen thuộc: tâng cầu bằng má trong, cứu cầu bằng mu bàn chân, đánh đầu, giao cầu bằng mu bàn chân, đập móc, đập ngược (sunback), đập cầu bằng gan bàn chân, động tác giả và chắn cầu.
 • Trọng tài bắt lỗi, trọng tài biên báo cầu, cùng quyền yêu cầu xem lại video để lật ngược quyết định.
 
 CHẾ ĐỘ CHƠI
 • Trận nhanh: hai đội bất kỳ, sân đấu bất kỳ.
-• Mùa giải: các giải đấu thật, đúng thể thức thật. Sepak Takraw League của Malaysia: bảy chặng Grand Prix, thứ hạng nào cũng có điểm, có thăng hạng và xuống hạng. Takraw Thailand League: đá sân nhà và sân khách, mỗi cặp đấu gồm hai trận đội 3 người. Liga Sepak Takraw Indonesia: năm khu vực, rồi vòng chung kết quốc gia tại Jakarta.
-• Quốc tế: World Cup, Cúp Hoàng gia, giải vô địch châu Á và giải vô địch Đông Nam Á, cùng Thái Lan, Malaysia, Việt Nam, Indonesia, Myanmar, Nhật Bản, Hàn Quốc và nhiều đội khác.
+• Mùa giải: mùa giải cấp câu lạc bộ, theo đúng thể thức các giải đấu thật của Malaysia, Thái Lan và Indonesia. Malaysia: bảy chặng Grand Prix, thứ hạng nào cũng có điểm, có thăng hạng và xuống hạng. Thái Lan: đá sân nhà và sân khách, mỗi cặp đấu gồm hai trận đội 3 người. Indonesia: năm khu vực, rồi vòng chung kết quốc gia tại Jakarta.
+• Quốc tế: giải vô địch thế giới, Cúp Hoàng gia, giải vô địch châu Á và giải vô địch Đông Nam Á, cùng Thái Lan, Malaysia, Việt Nam, Indonesia, Myanmar, Nhật Bản, Hàn Quốc và nhiều đội khác.
 
 TÁM SÂN ĐẤU
 Nhà thi đấu quốc gia, mái vòm hoành tráng, sân trong trung tâm thương mại, nhà thi đấu tỉnh, sân chùa, sân công viên dưới ánh đèn, bãi biển lúc hoàng hôn và con phố chợ đêm.
@@ -27,8 +27,10 @@ Nhà thi đấu quốc gia, mái vòm hoành tráng, sân trong trung tâm thư�
 CHƠI THEO CÁCH CỦA BẠN
 • 13 ngôn ngữ: English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文 và हिन्दी.
 • Không có gì được đá hộ bạn: dùng cần điều khiển cho cầu thủ chạy tới cầu và đá khi vòng tròn thu hẹp quanh quả cầu. Tùy chỉnh mức hỗ trợ di chuyển và tốc độ trận đấu.
-• Chạy mượt trên điện thoại giá rẻ như Galaxy A16.
+• Chạy mượt trên điện thoại giá rẻ và tầm trung.
 • Chơi offline. Không quảng cáo, không mua hàng, không cần tài khoản, không thu thập dữ liệu.
+
+Takraw Smash là trò chơi độc lập, không liên kết với và không được bất kỳ liên đoàn, giải đấu, câu lạc bộ hay cầu thủ cầu mây nào bảo trợ. Biệt danh của các câu lạc bộ là tự đặt, các cầu thủ đều là nhân vật hư cấu; còn quốc gia, địa điểm và luật thi đấu đều là thật.
 
 == Release notes (first release) ==
 Phiên bản đầu tiên của Takraw Smash: Trận nhanh, Mùa giải và Quốc tế, hỗ trợ 13 ngôn ngữ.

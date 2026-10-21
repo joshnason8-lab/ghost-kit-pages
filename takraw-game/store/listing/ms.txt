@@ -5,21 +5,21 @@
 Takraw Smash
 
 == Short description ==
-Sepak takraw peraturan ISTAF: servis padu, rejam guling dan hadangan di jaring.
+Sepak takraw peraturan sebenar: servis padu, rejam guling, hadangan di jaring.
 
 == Full description ==
 Takraw Smash membawa sepak takraw ke telefon anda, sukan kebanggaan Asia Tenggara. Jadi tekong dengan sebelah kaki di dalam bulatan, terima bola dengan sepak sila, beri umpan tinggi dekat jaring, dan lepaskan rejam guling melepasi hadangan lawan.
 
 PERMAINAN SEBENAR
-• Undang-undang ISTAF terkini: set 15 mata (menang dengan beza dua mata, maksimum 17), terbaik daripada tiga set, servis bertukar setiap mata, tiga sentuhan bagi setiap pasukan.
+• Undang-undang permainan terkini: set 15 mata (menang dengan beza dua mata, maksimum 17), terbaik daripada tiga set, servis bertukar setiap mata, tiga sentuhan bagi setiap pasukan.
 • Regu, kuadran, beregu dan acara berpasukan, lelaki dan wanita, di gelanggang dan jaring mengikut ukuran sebenar.
 • Teknik yang peminat kenal: sepak sila, selamatkan bola dengan kura kaki, tandukan, servis sepak kuda, rejam guling, kalih, rejam tapak, tipuan dan hadangan.
 • Kesalahan dipanggil pengadil, keputusan penjaga garisan, dan cabaran video untuk membatalkannya.
 
 CARA BERMAIN
 • Perlawanan Pantas: mana-mana dua pasukan, mana-mana gelanggang.
-• Musim Liga: liga sebenar, dengan format sebenar. Sepak Takraw League di Malaysia: tujuh Grand Prix, mata untuk setiap kedudukan, naik dan turun divisyen. Takraw Thailand League: bertemu di laman sendiri dan di tempat lawan, setiap perlawanan ialah pertembungan dua regu. Liga Sepak Takraw Indonesia: lima zon, kemudian peringkat akhir kebangsaan di Jakarta.
-• Antarabangsa: Piala Dunia, Piala Diraja, Kejohanan Asia dan Kejohanan Asia Tenggara, bersama Thailand, Malaysia, Vietnam, Indonesia, Myanmar, Jepun, Korea dan banyak lagi.
+• Musim Liga: musim kelab yang berjalan mengikut format liga sebenar di Malaysia, Thailand dan Indonesia. Malaysia: tujuh Grand Prix, mata untuk setiap kedudukan, naik dan turun divisyen. Thailand: bertemu di laman sendiri dan di tempat lawan, setiap perlawanan ialah pertembungan dua regu. Indonesia: lima zon, kemudian peringkat akhir kebangsaan di Jakarta.
+• Antarabangsa: Kejohanan Dunia, Piala Diraja, Kejohanan Asia dan Kejohanan Asia Tenggara, bersama Thailand, Malaysia, Vietnam, Indonesia, Myanmar, Jepun, Korea dan banyak lagi.
 
 LAPAN GELANGGANG
 Arena kebangsaan, kubah tersergam, gelanggang di pusat beli-belah, dewan sukan daerah, gelanggang di perkarangan kuil, gelanggang taman di bawah lampu, pantai ketika matahari terbenam dan jalan pasar malam.
@@ -27,8 +27,10 @@ Arena kebangsaan, kubah tersergam, gelanggang di pusat beli-belah, dewan sukan d
 MAIN IKUT GAYA ANDA
 • Tiga belas bahasa: English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文 dan हिन्दी.
 • Tiada apa-apa dimainkan untuk anda: larikan pemain anda ke bola dengan joystick dan sepak ketika gelang mengecil pada bola. Pilih sejauh mana permainan membantu anda berlari, dan seberapa laju perlawanan berjalan.
-• Dibina untuk berjalan lancar pada telefon bajet seperti Galaxy A16.
+• Dibina untuk berjalan lancar pada telefon bajet dan kelas pertengahan.
 • Boleh dimain tanpa internet. Tiada iklan, tiada pembelian, tiada akaun dan tiada data dikumpul.
+
+Takraw Smash ialah permainan bebas. Ia tidak bergabung dengan atau disokong oleh mana-mana persekutuan, liga, kelab atau pemain sepak takraw. Nama jolokan kelab adalah rekaan dan pemainnya fiktif; negara, tempat dan peraturannya adalah sebenar.
 
 == Release notes (first release) ==
 Keluaran pertama Takraw Smash: Perlawanan Pantas, Musim Liga dan Antarabangsa, dalam tiga belas bahasa.
