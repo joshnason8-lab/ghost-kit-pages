@@ -86,6 +86,8 @@ func _env(top: Color, horizon: Color, ambient: Color, energy: float, sun_rot: Ve
 	env.ambient_light_color = ambient
 	env.ambient_light_energy = 0.62
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC if int(Game.settings.graphics) >= Game.GFX_MEDIUM else Environment.TONE_MAPPER_LINEAR
+	if int(Game.settings.graphics) < Game.GFX_MEDIUM:
+		env.ambient_light_energy = 0.8   # the linear tone mapper draws darker: lift the shade to match Medium
 	if int(Game.settings.graphics) >= Game.GFX_HIGH:
 		env.fog_enabled = true
 		env.fog_light_color = horizon
@@ -143,7 +145,8 @@ func _field() -> void:
 		_ground.floor_rect(-L, -W, L, W, 0.001, earth)
 	# The lines, in lime (or white tape on the mats), 5 cm wide.
 	var line := Color("f4f6e8") if not mat else Color("f7f7f7")
-	var lw := 0.05
+	# 5 cm chalk; on Low (no anti-aliasing, a smaller render) drawn wider so it does not break into dashes far off.
+	var lw := 0.09 if int(Game.settings.graphics) == Game.GFX_LOW else 0.06
 	var y := 0.012
 	_glow.floor_rect(-L, -W, L, -W + lw, y, line)
 	_glow.floor_rect(-L, W - lw, L, W, y, line)

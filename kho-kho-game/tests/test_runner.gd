@@ -67,8 +67,12 @@ func _rules() -> void:
 	check(not KhoRules.touch_counts(cf, c, p, p + Vector3(0.3, 0, 0.2)), "a defender touched during a foul is not out")
 	for i in 40:
 		KhoRules.step_chase(cf, c, p + Vector3(1.0 + i * 0.1, 0, 0), Vector3(3.5, 0, 0), 0.03)
-	check(c.foul == "", "the foul is put right by running his proper way")
-	check(KhoRules.touch_counts(cf, c, p, p + Vector3(0.3, 0, 0.2)), "a touch counts once the foul is put right")
+	check(c.foul == KhoRules.FOUL_TURN, "running his proper way again does not end the foul")
+	KhoRules.step_chase(cf, c, Vector3(cf.pole_gap * 0.5 + 0.4, 0, 0.5), Vector3(3, 0, 0), 0.03)
+	check(c.foul == "", "the free zone puts it right")
+	c.reset_at(xs[3], 1)
+	check(c.foul == "", "and so does a kho: the new chaser starts clean")
+	check(KhoRules.touch_counts(cf, Chase_new_clean(cf), p, p + Vector3(0.3, 0, 0.2)), "a touch counts once the foul is put right")
 	# The lane: he may not cross it between the poles.
 	var c2 := KhoRules.Chase.new()
 	c2.reset_at(0.0, 1)
@@ -134,6 +138,12 @@ func _rules() -> void:
 	check(KhoRules.winner([10, 10]) == -1 and KhoRules.winner([11, 10]) == 0, "the winner by points; a tie")
 	check(KhoRules.min_chase_winner([42.0, 55.0]) == 0 and KhoRules.min_chase_winner([-1.0, 80.0]) == 1, "minimum chase: the quicker first out wins")
 	check(KhoRules.min_chase_winner([30.0, 30.0]) == -1, "minimum chase level: another")
+
+
+static func Chase_new_clean(_f: Dictionary) -> KhoRules.Chase:
+	var c := KhoRules.Chase.new()
+	c.reset_at(0.0, 1)
+	return c
 
 
 func _sim() -> void:
@@ -285,6 +295,13 @@ func _your_controls() -> void:
 	await frames(12)
 	check(m.active != before, "KHO hands you the chase: you are the one who rose")
 	check(m.chase.half == face, "you rise on the side he faced")
+	# A thumb pushing at the lane (at the next seated chaser's back) runs you along it at speed, never a crawl.
+	for k in 45:
+		m.controls.joystick = Vector2(0.3, -float(m.chase.half)).normalized()
+		await frames(1)
+	check(absf(m.active.vel.x) > 5.0, "pushing at the lane runs you along it (%.1f m/s)" % absf(m.active.vel.x))
+	check(m.chase.foul == "", "and keeps you legal")
+	m.controls.joystick = Vector2.ZERO
 	await frames(20)
 	m.active.position = Vector3(float(f.square_x[4]), 0, float(m.chase.half) * 3.0)
 	m.active.vel = Vector3.ZERO

@@ -228,8 +228,9 @@ func _draw() -> void:
 		draw_arc(c, r, 0, TAU, 64, Color(0.05, 0.03, 0.02, 0.8) if primary else Color(1, 1, 1, 0.22), 3.0, true)
 		var ink := Color("1d1307") if primary else Game.C_INK
 		_draw_label(id, c, r, ink, primary)
-		if not OS.has_feature("mobile") and i < 3 and not editing:
-			var kc: String = ["␣", "J", "K"][i]
+		# The key that presses it, where there is a keyboard and no touchscreen (not on a phone, its browser included).
+		if not DisplayServer.is_touchscreen_available() and i < 3 and not editing:
+			var kc: String = ["Space", "J", "K"][i]
 			draw_string(Game.font_bold, c + Vector2(r * 0.55, r * 0.95), kc, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(Game.C_INK, 0.6))
 
 

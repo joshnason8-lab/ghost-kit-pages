@@ -92,7 +92,8 @@ var settings := {
 	"turn_len": 0,          # 0 three minutes, 1 five, 2 the real length (9 classic, 7 fast)
 	"follow_on": true,      # classic: a side 9 or more ahead may make the other follow on (scaled to shorter turns)
 	"powerplay": true,      # fast: one power play a chasing turn
-	"lane_assist": true,    # your active chaser keeps to his direction and his side of the lane unless you mean it
+	"lane_assist": true,
+	"coach": true,          # coach tips in your next match (off by itself after your first finished match)    # your active chaser keeps to his direction and his side of the lane unless you mean it
 	"tags": 0,              # the shirt numbers over players' heads: 0 on, 2 off
 	"seen_howto": false,
 	"dev": false,
@@ -125,6 +126,12 @@ func _ready() -> void:
 	get_tree().root.get_viewport().gui_embed_subwindows = true
 	var r = _read_json(RECORDS_PATH)
 	records = r if r is Dictionary else {}
+	if Playtest.wanted():
+		add_child(Playtest.new())
+		# The scripted playtest plays on Low, as a budget phone would.
+		var q := String(JavaScriptBridge.eval("window.location.search", true))
+		if q.contains("gfx="):
+			settings.graphics = int(q.get_slice("gfx=", 1).left(1))
 
 
 func _notification(what: int) -> void:

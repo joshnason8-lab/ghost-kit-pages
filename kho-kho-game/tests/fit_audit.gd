@@ -45,6 +45,7 @@ func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
 	Game.settings.dev = false
+	Game.settings.coach = true
 	for s in sizes:
 		get_tree().root.size = s
 		await frames(2)
@@ -503,6 +504,13 @@ func _match() -> void:
 	var m: Node = Game.current
 	await frames(120)
 	await audit("match_play")
+	if m.coach:
+		for key in ["COACH_CHASE", "COACH_KHO", "COACH_KHO_READY", "COACH_DIRECTION", "COACH_TOUCH", "COACH_FOUL", "COACH_DEFEND"]:
+			m.coach.seen.erase(key)
+			m.coach.tip(key, key in ["COACH_CHASE", "COACH_DEFEND"])
+			await frames(3)
+			await audit("coach_" + key.to_lower())
+			m.coach._dismiss()
 	m.hud.callout(tr("CALL_POLE_DIVE"), Game.C_GOOD)
 	m.hud.callout(tr("FOUL_CROSS_LANE"), Game.C_DANGER, Vector3.ZERO, true)
 	await frames(4)

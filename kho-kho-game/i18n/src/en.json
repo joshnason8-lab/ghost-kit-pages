@@ -313,5 +313,14 @@
   "S_PUN": "Punjab",
   "S_CHH": "Chhattisgarh",
   "S_ASM": "Assam",
-  "S_GOA": "Goa"
+  "S_GOA": "Goa",
+  "COACH_OK": "Got it",
+  "COACH_TIPS": "Coach tips",
+  "COACH_CHASE": "You chase. You are the runner in the gold ring. Drag anywhere on the left to run, and touch a defender to put him out.",
+  "COACH_KHO": "Can't catch him? Pass the chase: run up behind a seated chaser whose back is to you.",
+  "COACH_KHO_READY": "His square is lit: press KHO. He rises on the other side, and you are him.",
+  "COACH_DIRECTION": "The gold arrow is your way. You can't turn back or cross the lane: only round a pole.",
+  "COACH_TOUCH": "A defender close by: touch him, or press DIVE when he is just out of reach.",
+  "COACH_FOUL": "Foul! The umpire whistles until you give a kho or reach the free zone. Touches don't count until then.",
+  "COACH_DEFEND": "Now you defend. Run from the chaser, get behind him (he can't turn back) and stay inside the lines. SWITCH changes your runner."
 }

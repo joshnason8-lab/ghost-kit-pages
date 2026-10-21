@@ -24,6 +24,7 @@ var cam: Camera3D
 var hud = null                 # MatchHud
 var controls: TouchControls
 var dev = null
+var coach: Coach = null
 var roster := [[], []]         # Athletes in this match, per side
 var chase_line := [[], []]     # the chasers, per side: [active first, then the seated]
 var def_order := [[], []]      # the defenders in batch order, per side
@@ -118,6 +119,9 @@ func _ready() -> void:
 		if bool(Game.settings.get("dev", false)):
 			dev = (load("res://game/dev_overlay.gd") as Script).new(self)
 			add_child(dev)
+		if not demo and bool(Game.settings.get("coach", true)) and not bool(config.get("test", false)):
+			coach = Coach.new(self)
+			add_child(coach)
 	var first := int(config.get("chase_first", 0))
 	order = KhoRules.chase_order(first)
 	turn = 0
@@ -195,6 +199,7 @@ func _build_markers() -> void:
 	add_child(_shadows)
 	_ring = _ring_mesh(Game.C_GOLD, 0.5)
 	_target_ring = _ring_mesh(Game.C_CHALK, 0.42)
+	_arrow = _arrow_mesh()
 
 
 func _ring_mesh(col: Color, r: float) -> MeshInstance3D:
@@ -209,6 +214,29 @@ func _ring_mesh(col: Color, r: float) -> MeshInstance3D:
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.albedo_color = col
+	mi.material_override = m
+	mi.visible = false
+	add_child(mi)
+	return mi
+
+
+## Your direction, drawn on the ground ahead of your chaser: a gold chevron toward the pole he must keep running to.
+var _arrow: MeshInstance3D
+
+
+func _arrow_mesh() -> MeshInstance3D:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for pt in [Vector3(0.95, 0, 0), Vector3(0.55, 0, 0.32), Vector3(0.55, 0, -0.32), Vector3(0.55, 0, 0.13), Vector3(0.2, 0, 0.13), Vector3(0.2, 0, -0.13),
+			Vector3(0.55, 0, 0.13), Vector3(0.2, 0, -0.13), Vector3(0.55, 0, -0.13)]:
+		st.add_vertex(pt)
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = Color(Game.C_GOLD, 0.85)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi.material_override = m
 	mi.visible = false
 	add_child(mi)
@@ -474,6 +502,9 @@ func _finish(w: int) -> void:
 		"follow_on": follow_on, "extra": extra, "min_chase": min_chase, "teams": teams}
 	if not demo and not attract:
 		Sfx.react("applause", -4.0)
+		if bool(Game.settings.get("coach", true)):
+			Game.settings.coach = false   # one match with the coach is enough; Settings turns it on again
+			Game.save_settings()
 	game_event.emit("over")
 	finished.emit(result)
 	if attract or bool(config.get("test", false)):
@@ -612,7 +643,13 @@ func _play(dt: float) -> void:
 			a.want = to2.normalized() * minf(2.2, to2.length() * 6.0)
 	# The umpires watch the active chaser.
 	if active and not active.busy():
+		var dir_was := chase.dir
 		var foul := KhoRules.step_chase(f, chase, active.position, active.vel, dt)
+		# Round the pole: the hand on it as his direction turns about.
+		if dir_was != 0 and chase.dir == -dir_was and active.act == "":
+			var pole := Vector3(signf(active.position.x) * f.pole_gap * 0.5, 0, 0)
+			if (active.position - pole).length() < 1.6:
+				active.do("pole_turn", 0.45, (active.position.z - pole.z) * signf(pole.x) > 0.0)
 		if foul != "":
 			_on_foul(foul)
 	if chase.foul != "":
@@ -645,6 +682,7 @@ func _chase_input(dt: float) -> void:
 func _legal(want: Vector3) -> Vector3:
 	var p := active.position
 	var w := want
+	var speed := want.length()
 	if not KhoRules.in_free_zone(f, p):
 		if chase.dir != 0 and not chase.wazir and not (String(active.data.id) in wazir_ids):
 			w.x = float(chase.dir) * maxf(w.x * float(chase.dir), 0.0)
@@ -654,6 +692,11 @@ func _legal(want: Vector3) -> Vector3:
 		var stop := vz_in * vz_in / (2.0 * Athlete.DECEL * active.agility)
 		if float(chase.half) * p.z < edge + 0.25 + stop and float(chase.half) * w.z < 0.0:
 			w.z = 0.0
+			# Pushed at the lane (at a seated chaser's back): run along it, at the speed asked for, his way.
+			var along := float(chase.dir) if chase.dir != 0 else (signf(w.x) if absf(w.x) > 0.05 else 1.0)
+			if chase.wazir or (String(active.data.id) in wazir_ids):
+				along = signf(w.x) if absf(w.x) > 0.05 else along
+			w.x = along * maxf(absf(w.x), speed * 0.95)
 			if float(chase.half) * p.z < edge:
 				w.z = float(chase.half) * 1.0
 	var L: float = f.length * 0.5 - 0.3
@@ -815,10 +858,13 @@ func _kho_step(dt: float) -> void:
 func _sitters(dt: float) -> void:
 	for a in squares:
 		if a == active or _to_square.has(a):
+			a.watch = Vector3.INF
 			continue
 		a.want = Vector3.ZERO
 		if a.act != "sit" and a.act != "foul":
 			a.do("sit")
+		# Seated, he watches the chase: the active chaser coming, or the defender on his side nearest him.
+		a.watch = active.position if active else Vector3.INF
 	# Now and then a seated chaser rises before the kho is on his back: a foul, and he goes down again.
 	if not _user_chasing() and rng.randf() < _foul_rate * 0.04 * dt and _pending_kho.is_empty():
 		var i := rng.randi() % squares.size()
@@ -1339,6 +1385,7 @@ func _pick_spot(a: Athlete, here: float, read: float) -> Vector3:
 			var s := minf(reach_time(q), 5.0)
 			s -= ring / 6.0 * 0.6
 			s -= _edge_cost(q)
+			s += _chain_bias(q)
 			for m in batch:
 				if m != a and d_state.get(m, "") == "in":
 					var dm: float = (m.position - q).length()
@@ -1351,6 +1398,24 @@ func _pick_spot(a: Athlete, here: float, read: float) -> Vector3:
 				bs = s
 				best = q
 	return best
+
+
+## The chain: defenders play close to the lane, round the seated chasers, and best of all beside one whose back is
+## to them (he cannot rise toward them); far out in the field there is nothing to hide behind.
+func _chain_bias(q: Vector3) -> float:
+	var az := absf(q.z)
+	var b := 0.0
+	if az >= 0.8 and az <= 4.0:
+		b += 0.35
+	elif az > 5.0:
+		b -= (az - 5.0) * 0.25
+	if az < 2.2:
+		var hq := KhoRules.half_of(q.z)
+		for i in squares.size():
+			if absf(float(f.square_x[i]) - q.x) < 1.2 and int(sq_face[i]) != hq:
+				b += 0.3
+				break
+	return b
 
 
 func _edge_cost(q: Vector3) -> float:
@@ -1450,6 +1515,12 @@ func _update_markers() -> void:
 	_ring.visible = mine != null and not attract
 	if mine:
 		_ring.position = Vector3(mine.position.x, 0.03, mine.position.z)
+	var show_dir: bool = _user_chasing() and active != null and chase.dir != 0 and not chase.wazir \
+		and not KhoRules.in_free_zone(f, active.position) and phase == "play"
+	_arrow.visible = show_dir
+	if show_dir:
+		_arrow.position = Vector3(active.position.x, 0.035, active.position.z)
+		_arrow.rotation.y = 0.0 if chase.dir > 0 else PI
 	var ti := _kho_target(false) if _user_chasing() else -1
 	_target_ring.visible = ti >= 0
 	if ti >= 0:
