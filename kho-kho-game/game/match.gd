@@ -638,7 +638,10 @@ func _legal(want: Vector3) -> Vector3:
 		if chase.dir != 0 and not chase.wazir and not (String(active.data.id) in wazir_ids):
 			w.x = float(chase.dir) * maxf(w.x * float(chase.dir), 0.0)
 		var edge: float = f.lane_w * 0.5 + 0.22
-		if float(chase.half) * p.z < edge + 0.25 and float(chase.half) * w.z < 0.0:
+		# Room to stop short of the lane at the speed he is coming at it.
+		var vz_in := maxf(0.0, -float(chase.half) * active.vel.z)
+		var stop := vz_in * vz_in / (2.0 * Athlete.DECEL * active.agility)
+		if float(chase.half) * p.z < edge + 0.25 + stop and float(chase.half) * w.z < 0.0:
 			w.z = 0.0
 			if float(chase.half) * p.z < edge:
 				w.z = float(chase.half) * 1.0
@@ -668,6 +671,9 @@ func _user_chaser(_dt: float) -> void:
 
 func _top_speed(a: Athlete, chaser: bool) -> float:
 	var r: float = a.speed_rating() + float(_diff[a.side])
+	# A defender turns sharper than a chaser: it is all he does (his turn rating); a chaser runs straight lines.
+	var turn: float = float(a.data.get("turn", 70)) + float(_diff[a.side])
+	a.agility = 0.9 if chaser else lerpf(1.15, 1.6, clampf(turn / 100.0, 0.0, 1.0))
 	var top := 5.7 + 2.3 * clampf(r / 100.0, 0.2, 1.05)
 	if not chaser:
 		top *= lerpf(0.82, 1.0, a.stamina)
@@ -847,11 +853,11 @@ func _chaser_think(dt: float) -> void:
 				_chase_plan = {}
 			else:
 				var dist := (d.position - p).length()
-				var reach := 1.5 + float(active.data.get("reach", 70)) / 100.0 * 0.8
+				var reach := 1.3 + float(active.data.get("reach", 70)) / 100.0 * 0.6
 				var near_line: bool = absf(d.position.z) > f.width * 0.5 - 1.6 or absf(d.position.x) > f.length * 0.5 - 1.4
 				var closing := d.vel.length() < 3.0 or (d.position - p).normalized().dot(d.vel.normalized()) < 0.3
 				if dist < reach and dist > 1.1 and _dive_cool <= 0.0 and KhoRules.touch_counts(f, chase, p, d.position) \
-						and (near_line or closing) and rng.randf() < 0.25:
+						and (near_line or closing) and rng.randf() < 0.08:
 					_dive_at(d)
 					return
 				target = d.position + d.vel * clampf(dist / 8.0, 0.1, 0.5)
@@ -995,13 +1001,13 @@ func _touches() -> void:
 		return
 	var fwd := Vector3(sin(active.yaw), 0, cos(active.yaw))
 	var hand := active.position + fwd * 0.4
-	var hand_r := 0.42
+	var hand_r := 0.36
 	var kind := KhoRules.OUT_TOUCH
 	if active.act == "dive":
 		if active.act_t < 0.08 or active.act_t > 0.45:
 			return
-		hand = active.position + fwd * 1.35
-		hand_r = 0.65
+		hand = active.position + fwd * 1.3
+		hand_r = 0.45
 		kind = KhoRules.OUT_DIVE
 	elif active.act == "pole_dive":
 		if active.act_t < 0.1:
@@ -1016,8 +1022,42 @@ func _touches() -> void:
 			continue
 		var gap := Vector2(d.position.x - hand.x, d.position.z - hand.z).length()
 		if gap < hand_r and KhoRules.touch_counts(f, chase, active.position, d.position):
+			if _swerves(d, kind):
+				continue
 			_out(d, kind, active)
 			return
+
+
+## The last-moment swerve: as the hand comes, a defender may twist away from it. The chance is his turn rating
+## against the chaser's reach (and a dive is harder to escape). Calibrated so that equal sides put out about
+## 1.3-2 defenders a minute, as real matches do (docs/AI.md). Once a defender has swerved a hand, it has missed him.
+const SWERVE_TOUCH := 0.72
+const SWERVE_DIVE := 0.42
+
+
+func _swerves(d: Athlete, kind: String) -> bool:
+	var ai: Dictionary = _ai[d]
+	if float(ai.get("slip_until", 0.0)) > t_match:
+		return true
+	if d == user_def:
+		return false   # yours to dodge yourself
+	var turn := float(d.data.get("turn", 70)) + float(_diff[d.side])
+	var reach := float(active.data.get("reach", 70)) + float(_diff[active.side])
+	var base := SWERVE_TOUCH if kind == KhoRules.OUT_TOUCH else SWERVE_DIVE
+	var p := clampf(base + (turn - reach) / 150.0, 0.15, 0.85)
+	if rng.randf() >= p:
+		return false
+	ai.slip_until = t_match + (0.5 if kind == KhoRules.OUT_TOUCH else 0.6)
+	var away := d.position - active.position
+	away.y = 0
+	var back := Vector3(-float(chase.dir), 0, 0) if chase.dir != 0 else Vector3.ZERO
+	var dir := (away.normalized() + back * 0.8).normalized()
+	ai.juke_at = t_match
+	ai.juke_until = t_match + 0.45
+	ai.juke_dir = dir
+	Sfx.react("ooh", -10.0)
+	game_event.emit("swerve")
+	return true
 
 
 func _out(d: Athlete, kind: String, by: Athlete = null) -> void:
@@ -1168,7 +1208,8 @@ func _on_foul(kind: String, who: Athlete = null) -> void:
 	ump.face_to = a.position
 	if a.data.has("id"):
 		stats[a.data.id].fouls += 1
-	_log("foul", {"how": kind, "by": a.data.get("id", "")})
+	_log("foul", {"how": kind, "by": a.data.get("id", ""), "act": a.act, "x": a.position.x, "z": a.position.z,
+		"vz": a.vel.z, "half": chase.half, "plan": String(_chase_plan.get("kind", ""))})
 	Sfx.play("whistle_short", -3.0)
 	_foul_whistle = 0.32
 	if who and kind == KhoRules.FOUL_EARLY:
@@ -1224,7 +1265,7 @@ func _defender_think(a: Athlete, dt: float) -> void:
 	if ai.has("dodge_at") and t_match >= float(ai.dodge_at) and t_match < float(ai.dodge_at) + 0.4:
 		a.top = top * 1.15
 		a.want = _keep_in(a, (ai.dodge_dir as Vector3) * a.top)
-		a.vel += (ai.dodge_dir as Vector3) * 9.0 * dt   # a quick, hard step aside
+		a.vel += _keep_in(a, (ai.dodge_dir as Vector3)) * 9.0 * dt   # a quick, hard step aside
 		return
 	# The juke: the active chaser closing in, the defender waits for him to commit, then slips behind him, where his
 	# direction will not let him turn (the wazir and a chaser in the free zone can still follow).
@@ -1232,7 +1273,7 @@ func _defender_think(a: Athlete, dt: float) -> void:
 		var to_me := a.position - active.position
 		to_me.y = 0
 		var closing := active.vel.dot(to_me.normalized()) > 2.0
-		if to_me.length() < 1.9 and closing:
+		if to_me.length() < 2.4 and closing:
 			var read := float(a.data.get("read", 70)) + float(_diff[a.side])
 			var c_read := float(active.data.get("read", 70)) + float(_diff[active.side])
 			var react := clampf(0.16 + (c_read - read) * 0.006 + rng.randf_range(-0.06, 0.1), 0.06, 0.4)
@@ -1247,7 +1288,7 @@ func _defender_think(a: Athlete, dt: float) -> void:
 		elif t_match >= float(ai.juke_at):
 			a.top = top * 1.1
 			a.want = _keep_in(a, (ai.juke_dir as Vector3) * a.top)
-			a.vel += (ai.juke_dir as Vector3) * 7.0 * dt
+			a.vel += _keep_in(a, (ai.juke_dir as Vector3)) * 7.0 * dt
 			_stamina(a, dt)
 			return
 	var here := reach_time(a.position)
@@ -1327,8 +1368,10 @@ func _avoid(a: Athlete, w: Vector3) -> Vector3:
 
 ## Inside the limits: a defender running at a line stops at it (you can still step over, and are out).
 func _keep_in(a: Athlete, w: Vector3) -> Vector3:
-	var L: float = f.length * 0.5 - 0.45
-	var W: float = f.width * 0.5 - 0.45
+	# Room to stop: at speed v he needs v^2 / 2a to pull up.
+	var stop := a.vel.length_squared() / (2.0 * Athlete.DECEL * a.agility)
+	var L: float = f.length * 0.5 - 0.45 - stop
+	var W: float = f.width * 0.5 - 0.45 - stop
 	var p := a.position
 	if (p.x > L and w.x > 0.0) or (p.x < -L and w.x < 0.0):
 		w.x = -signf(p.x) * 0.5

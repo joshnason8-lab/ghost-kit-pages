@@ -84,6 +84,7 @@ class Chase:
 	var mended := 0.0      # m run the proper way since the foul (a turning-back foul is put right at CORRECT_DIST)
 	var wazir := false     # the fast game's wazir: free of the direction rule, not of the lane
 	var start_x := 0.0     # where he rose: he takes his direction once he leaves it
+	var settled := true    # out of a free zone, his side is the one he takes once clear of the lane
 
 	func reset_at(x: float, p_half: int, p_wazir := false) -> void:
 		dir = 0
@@ -103,10 +104,16 @@ static func step_chase(f: Dictionary, c: Chase, pos: Vector3, vel: Vector3, dt: 
 		# middle, so that is his direction, and the foul of crossing the lane cannot be his here.
 		c.dir = -1 if pos.x > 0.0 else 1
 		c.half = half_of(pos.z)
+		c.settled = false
 		if c.foul == FOUL_TURN or c.foul == FOUL_LANE:
 			c.foul = ""
 		return ""
 	var new_foul := ""
+	if not c.settled:
+		if absf(pos.z) > float(f.lane_w) * 0.5 + 0.25:
+			c.half = half_of(pos.z)
+			c.settled = true
+		return ""
 	# The lane: he may not cross it between the poles.
 	var side := half_of(pos.z) if absf(pos.z) > float(f.lane_w) * 0.5 else c.half
 	if side != c.half:

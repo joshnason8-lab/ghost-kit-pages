@@ -82,6 +82,11 @@ func _rules() -> void:
 	check(KhoRules.in_free_zone(cf, pz), "behind the pole is the free zone")
 	check(KhoRules.step_chase(cf, c3, pz, Vector3(-2, 0, -3), 0.03) == "", "in the free zone he may go any way")
 	check(c3.dir == -1 and c3.half == -1, "round the pole he comes out the other way, on the other side")
+	var out_p := Vector3(cf.pole_gap * 0.5 - 0.3, 0, -0.05)
+	check(KhoRules.step_chase(cf, c3, out_p, Vector3(-2, 0, 3), 0.03) == "", "coming out of the free zone on the lane line is no foul")
+	KhoRules.step_chase(cf, c3, out_p + Vector3(-0.3, 0, 0.6), Vector3(-2, 0, 2), 0.03)
+	check(c3.half == 1, "his side is the one he takes once clear of the lane")
+	check(KhoRules.step_chase(cf, c3, out_p + Vector3(-0.6, 0, -0.6), Vector3(-2, 0, -3), 0.03) == KhoRules.FOUL_LANE, "then crossing back is a foul")
 	# The wazir: free of the direction rule, not of the lane.
 	var c4 := KhoRules.Chase.new()
 	c4.reset_at(0.0, 1, true)
