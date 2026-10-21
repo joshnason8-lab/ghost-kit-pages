@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Make the menus' music and the match drums: assets/audio/menu_music.ogg and drums_loop.ogg.
-
-The music is a loop in the spirit of a Thai piphat or Malay gamelan ensemble, all synthesised: a ranat (wooden
-xylophone) melody on a five-note scale over a gong cycle, small kong wong gong chimes, ching cymbals on the beat and
-a klong drum. The drums are the crowd's: the steady klong and thon beat a takraw crowd plays through a match.
+"""Make the menus' music: assets/audio/menu_music.ogg, a jig of the game's own in D, as a session might play it on a
+summer evening: a tin whistle with the tune, a harp picking the chords, a bodhrán keeping the 6/8 lilt. All
+synthesised; the tune is written for the game (two parts of eight bars, each played once, then back to the top, so
+it loops).
 
 Usage: python3 tools/audio/make_music.py   (needs numpy and ffmpeg with libvorbis)
 """
@@ -17,12 +16,36 @@ import numpy as np
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "assets" / "audio"
 RATE = 44100
-BPM = 112
-BEAT = 60.0 / BPM
-rng = np.random.default_rng(7)
+EIGHTH = 60.0 / 92.0 / 3.0   # a dotted crotchet at 92: an easy, lilting jig
+rng = np.random.default_rng(11)
 
-# A Thai-style seven-tone scale played pentatonically: C D E G A, over two octaves.
-SCALE = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3, 784.0, 880.0]
+# D major, from the D above middle C.
+D_MAJOR = [293.66, 329.63, 369.99, 392.00, 440.00, 493.88, 554.37, 587.33, 659.26, 739.99, 783.99, 880.00]
+
+# The tune: (degree, eighths). Each bar is six eighths.
+PART_A = [
+    (4, 2), (7, 1), (9, 2), (7, 1),
+    (8, 1), (7, 1), (5, 1), (4, 2), (2, 1),
+    (3, 2), (5, 1), (8, 2), (5, 1),
+    (4, 3), (4, 2), (2, 1),
+    (4, 2), (7, 1), (9, 2), (11, 1),
+    (10, 1), (9, 1), (8, 1), (7, 2), (5, 1),
+    (4, 1), (5, 1), (7, 1), (8, 1), (6, 1), (4, 1),
+    (7, 3), (7, 3),
+]
+PART_B = [
+    (9, 2), (10, 1), (11, 2), (9, 1),
+    (10, 1), (9, 1), (8, 1), (9, 2), (7, 1),
+    (8, 2), (9, 1), (10, 2), (8, 1),
+    (9, 3), (7, 2), (5, 1),
+    (4, 2), (7, 1), (9, 2), (7, 1),
+    (8, 1), (7, 1), (5, 1), (4, 2), (3, 1),
+    (2, 1), (4, 1), (7, 1), (6, 1), (8, 1), (6, 1),
+    (7, 3), (7, 2), (4, 1),
+]
+# A chord root (Hz, low) for each bar, played on the two beats of the bar.
+CHORDS = [146.8, 196.0, 196.0, 220.0, 146.8, 196.0, 220.0, 146.8, 146.8, 196.0, 196.0, 146.8, 146.8, 196.0, 220.0, 146.8]
+THIRDS = {146.8: 1.26, 196.0: 1.26, 220.0: 1.26}
 
 
 def env(n, attack, decay):
@@ -30,39 +53,39 @@ def env(n, attack, decay):
     return np.minimum(1.0, t / attack) * np.exp(-t / decay)
 
 
-def ranat(freq, dur):
-    """A struck wooden bar: a strong fundamental, an inharmonic overtone at ~3.9x, a quick decay."""
+def whistle(freq, dur):
+    """A tin whistle: a nearly pure tone, a little second harmonic, breath, and vibrato that comes in on long notes."""
     n = int(dur * RATE)
     t = np.arange(n) / RATE
-    s = np.sin(2 * np.pi * freq * t) * env(n, 0.002, 0.22)
-    s += 0.35 * np.sin(2 * np.pi * freq * 3.93 * t) * env(n, 0.001, 0.05)
-    s += 0.15 * np.sin(2 * np.pi * freq * 2.0 * t) * env(n, 0.002, 0.12)
-    return s
+    vib = 1.0 + 0.006 * np.sin(2 * np.pi * 5.5 * t) * np.minimum(1.0, t / 0.25)
+    phase = 2 * np.pi * np.cumsum(freq * vib) / RATE
+    s = np.sin(phase) + 0.18 * np.sin(2 * phase) + 0.05 * np.sin(3 * phase)
+    breath = np.convolve(rng.uniform(-1, 1, n), np.ones(6) / 6, mode="same") * 0.06
+    shape = np.minimum(1.0, t / 0.02) * np.clip((dur - t) / 0.04, 0.0, 1.0) * (0.85 + 0.15 * np.exp(-t / 0.08))
+    return (s + breath) * shape
 
 
-def gong(freq, dur, decay=1.6):
+def harp(freq, dur):
+    """A plucked string (Karplus-Strong)."""
+    n = int(dur * RATE)
+    period = max(2, int(RATE / freq))
+    buf = rng.uniform(-1, 1, period)
+    out = np.zeros(n)
+    for i in range(n):
+        out[i] = buf[i % period]
+        buf[i % period] = 0.5 * (buf[i % period] + buf[(i + 1) % period]) * 0.996
+    return out * env(n, 0.002, 1.2)
+
+
+def bodhran(strong):
+    """The frame drum: a low, bending thump on the beat, a lighter tap off it."""
+    dur = 0.35 if strong else 0.15
     n = int(dur * RATE)
     t = np.arange(n) / RATE
-    s = np.zeros(n)
-    for k, a in [(1.0, 1.0), (2.01, 0.45), (2.76, 0.25), (5.4, 0.08)]:
-        s += a * np.sin(2 * np.pi * freq * k * t + 0.3 * np.sin(2 * np.pi * 3.1 * t))
-    return s * env(n, 0.01, decay)
-
-
-def ching(dur=0.4):
-    n = int(dur * RATE)
-    t = np.arange(n) / RATE
-    s = np.sin(2 * np.pi * 3520 * t) + 0.6 * np.sin(2 * np.pi * 5230 * t) + 0.4 * rng.uniform(-1, 1, n)
-    return s * env(n, 0.001, 0.09) * 0.25
-
-
-def drum(freq0, freq1, dur, decay, noise=0.2):
-    n = int(dur * RATE)
-    t = np.arange(n) / RATE
-    f = freq1 + (freq0 - freq1) * np.exp(-t / 0.05)
-    phase = 2 * np.pi * np.cumsum(f) / RATE
-    s = np.sin(phase) * env(n, 0.002, decay)
-    s += noise * rng.uniform(-1, 1, n) * env(n, 0.001, 0.02)
+    f0, f1 = (110, 62) if strong else (190, 140)
+    f = f1 + (f0 - f1) * np.exp(-t / 0.03)
+    s = np.sin(2 * np.pi * np.cumsum(f) / RATE) * env(n, 0.002, 0.16 if strong else 0.05)
+    s += 0.15 * rng.uniform(-1, 1, n) * env(n, 0.001, 0.01)
     return s
 
 
@@ -73,7 +96,7 @@ def put(buf, at, sound, gain):
         buf[i:j] += sound[: j - i] * gain
 
 
-def write_ogg(name, samples, quality=4):
+def write_ogg(name, samples, quality=3):
     samples = samples / max(1e-6, np.max(np.abs(samples))) * 0.85
     pcm = (samples * 32767).astype(np.int16)
     with tempfile.TemporaryDirectory() as d:
@@ -89,55 +112,29 @@ def write_ogg(name, samples, quality=4):
 
 
 def music():
-    bars = 8
-    dur = bars * 4 * BEAT
+    tune = PART_A + PART_B
+    eighths = sum(l for _, l in tune)
+    assert eighths == 16 * 6, eighths
+    dur = eighths * EIGHTH
     buf = np.zeros(int(dur * RATE) + RATE * 3)
-    # The melody: two phrases of eighth notes, answered.
-    phrase_a = [4, 5, 7, 5, 4, 3, 4, 2, 3, 4, 5, 4, 3, 2, 0, 2]
-    phrase_b = [5, 7, 8, 7, 5, 4, 5, 7, 4, 3, 2, 3, 4, 2, 1, 0]
-    melody = phrase_a + phrase_b + phrase_a + [5, 7, 8, 9, 8, 7, 5, 4, 3, 4, 2, 1, 2, 1, 0, 0]
-    for i, deg in enumerate(melody):
-        at = i * BEAT / 2
-        put(buf, at, ranat(SCALE[deg], 0.6), 0.32)
-        if i % 4 == 2:
-            put(buf, at, ranat(SCALE[deg] * 2, 0.4), 0.08)
-    # Kong wong: the skeleton melody on the beat, an octave down.
-    for b in range(bars * 4):
-        deg = melody[b * 2] if b * 2 < len(melody) else 0
-        put(buf, b * BEAT, gong(SCALE[deg] / 2, 1.2, 0.5), 0.12)
-    # The big gong at each four-bar cycle, the ching on every beat (open on 2 and 4).
-    for c in range(0, bars, 4):
-        put(buf, c * 4 * BEAT, gong(98.0, 3.0), 0.35)
-    for b in range(bars * 4):
-        put(buf, b * BEAT, ching(0.5 if b % 2 else 0.25), 0.5 if b % 2 else 0.3)
-    # Klong: low on 1, slaps on the off-beats.
-    for b in range(bars * 4):
-        put(buf, b * BEAT, drum(140, 70, 0.5, 0.18), 0.4 if b % 4 == 0 else 0.22)
-        put(buf, b * BEAT + BEAT * 0.75, drum(330, 220, 0.2, 0.05, 0.4), 0.14)
-    # Fold the tail back onto the start so the loop is seamless.
+    at = 0.0
+    for deg, length in tune:
+        put(buf, at, whistle(D_MAJOR[deg], length * EIGHTH * 0.97), 0.34)
+        at += length * EIGHTH
+    for bar, root in enumerate(CHORDS):
+        for beat in range(2):
+            t0 = (bar * 6 + beat * 3) * EIGHTH
+            put(buf, t0, harp(root, 1.6), 0.22)
+            put(buf, t0 + EIGHTH * 0.5, harp(root * THIRDS[root], 1.2), 0.12)
+            put(buf, t0 + EIGHTH, harp(root * 1.5, 1.2), 0.12)
+    for e in range(eighths):
+        strong = e % 3 == 0
+        put(buf, e * EIGHTH, bodhran(strong), 0.32 if e % 6 == 0 else (0.22 if strong else 0.1))
     n = int(dur * RATE)
     tail = buf[n:]
     buf[: len(tail)] += tail
     write_ogg("menu_music.ogg", buf[:n])
 
 
-def drums():
-    bars = 2
-    dur = bars * 4 * BEAT
-    buf = np.zeros(int(dur * RATE) + RATE)
-    for b in range(bars * 4):
-        put(buf, b * BEAT, drum(120, 60, 0.6, 0.22, 0.25), 0.6)
-        put(buf, b * BEAT + BEAT / 2, drum(260, 180, 0.25, 0.06, 0.5), 0.3)
-        if b % 2:
-            put(buf, b * BEAT + BEAT * 0.75, drum(260, 180, 0.25, 0.06, 0.5), 0.22)
-        put(buf, b * BEAT, ching(0.3), 0.25)
-    n = int(dur * RATE)
-    tail = buf[n:]
-    buf[: len(tail)] += tail
-    write_ogg("drums_loop.ogg", buf[:n], 3)
-
-
 if __name__ == "__main__":
-    OUT.mkdir(parents=True, exist_ok=True)
     music()
-    drums()

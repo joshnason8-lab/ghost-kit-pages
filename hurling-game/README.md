@@ -1,51 +1,57 @@
-# Takraw Smash
+# Ash & Leather
 
-A sepak takraw game for Android phones, built with [Godot 4.7](https://godotengine.org) (free and open source, no
-royalties), the same way as Kabaddi Raid. It is aimed at the sport's heartland, Southeast Asia, and plays the ISTAF
-laws as they stand, with players drawn in the style of the concept art and venues closer to the real thing.
+Hurling for Android phones, built with [Godot 4.7](https://godotengine.org) (free and open source, no royalties) in
+the same way as Kabaddi Raid and Takraw Smash. It plays the GAA's playing rules as they stand in 2026, fifteen a side,
+for the people who play and follow hurling: Ireland, and the Irish abroad. In English and in Irish.
 
-> **Status: playable beta.** The players are built in code (`game/body.gd`) on a humanoid skeleton, ready to be
-> replaced by Meshy models (docs/MESHY_BRIEF.md). Everything else is the game as it will ship.
+> **Status: playable beta (0.1.0).** The players are built in code (`game/body.gd`) on a humanoid skeleton, ready to
+> be replaced by Meshy models (docs/MESHY_BRIEF.md). Everything else is the game as it will ship.
 
 ## What's in it
 
 | Area | What works today |
 |---|---|
-| **The laws** | ISTAF, since 1 February 2024: rally point, sets to 15 (from 14-all, win by two, up to 17), best of three (or one set), the serve alternating every point; the 21-point sets of the old rule as an option. Ends change after each set and at 8 in the third. Three touches a side, one player may make all three; a block counts as one. One video challenge a side a set. See [docs/TAKRAW.md](docs/TAKRAW.md), with its sources. |
-| **The court** | 13.40 × 6.10 m, lines inside the court, the quarter circles and service circles where the laws put them, the net 1.52 m for men and 1.42 m for women, posts 30 cm outside the side lines, boundary tapes over the side lines. |
-| **Events** | Regu (3), the team event (three regus, no player twice, first to two), quadrant (4) and doubles (2); men and women. |
-| **The serve** | The score is called; the feeder throws to the tekong, who kicks with a foot in the circle while both inside players stand in their quarter circles. Quadrant and doubles servers serve from behind the back line. Instep serve or the horse-kick (sunback) serve. |
-| **Touches** | Every touch is planned on the ball's exact flight: who can get there, and with what (sila, instep, thigh, chest, header, a diving dig), and when. On your side nothing is played for you: you run the lit player to the gold mark on the floor (with the assist, the setter and striker run to the set themselves), and he kicks only when you press; too early, too late or too far from the ball and he misses it. A match runs at 70% of real speed by default (Settings: Game speed). |
-| **Attacks** | The roll spike (a full somersault), the sunback (the Malaysian *kalih*), the sole spike (*tapak*), the header spike and the feint; high or quick sets; the feeder's surprise second-touch attack. Spikes run up to about 30 m/s. |
-| **Defence** | Blockers read the set and jump at the net; defenders read the striker's approach and dig what they can reach, with the foot, chest or thigh. |
-| **Faults** | Net touches, the ball under the net or outside the boundary tape, a fourth touch, out balls, the server's standing foot. |
-| **Officials** | The referee in his high chair, the assistant at the other post, line judges who signal in and out, and now and then call a close one wrong. Challenge it: a video review shows the ball's mark against the line, in millimetres. |
-| **Broadcast touches** | Slow motion on a roll spike, replays of the great points, the crowd that rises with a long rally, drums in the arenas, call-outs (ROLL SPIKE!, BLOCKED!, ACE!), set point and match point. |
-| **Venues** | Four indoor (the National Arena, the Grand Dome, a shopping-mall atrium where the world championship is played, a provincial gym) and four outdoor (a temple court, a floodlit park court, a beach at sunset, a night-market street). |
-| **Modes** | Quick Match; League Season in the real leagues, run their real way: Malaysia's Sepak Takraw League (seven Grand Prix of groups of three, quarter-finals, semi-finals, the final and third place, worth the STL's points; the last two relegated; Division 1's finalists promoted into the same season), the Takraw Thailand League (home and away, every fixture a tie of two regus, 2 points for both, 1 for one each) and Liga Sepak Takraw Indonesia (five regions, then the national finals in Jakarta; men and women); awards and the record book. International: the World Cup, the Royal Cup, the Asian and the Southeast Asian championships (groups, semi-finals, both losing semi-finalists take bronze, the final). |
-| **Teams** | 22 national teams rated from 2025–26 results (men's and women's apart: Vietnam's women are near the top), 54 clubs: the real line-ups' states, provinces and services (Malaysia's 2026 Premier League and Division 1, Thailand's provincial clubs, Indonesia's five regions) under invented nicknames. Squads of nine with tekongs, feeders and strikers, each with ratings and a signature spike. |
-| **Languages** | English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文, हिन्दी. The game starts in the phone's language when it has it. A text-fit audit checks every screen in every language at 16:9 and at a Galaxy A16's shape (`tests/fit_audit.gd`), the way Kabaddi Raid's does. |
-| **Phones** | GL Compatibility renderer; each venue's structure merged into a few draw calls, the crowd one draw call, players one each (two with their outline). A match in the Grand Dome, the biggest venue, draws about 85 draw calls and 61,000 triangles a frame on Low, 98 and 140,000 on Medium, 128 and 304,000 on High (`tests/perf_probe.tscn`). On a phone with a small GPU or under 4.5 GB of memory (a Galaxy A16's Mali-G57 MC2 or Mali-G68 MP2) the game starts on Low: no outlines, no MSAA, a 75% render scale, a thinner crowd. A battery-saver frame rate. |
+| **The rules** | The Official Guide Part 2 in force from 27 March 2026, in one module (`game/rules.gd`) with a test for each rule: goals (3) and points, written 2-18; halves of 35 minutes (senior county) or 30 (club), added time; the throw-in; four steps and two catches, the solo, no lifting by hand, the hand-pass (no hand-passed goals); puck-outs (everyone outside the 20 m line, 13 m before the taker's side plays it), frees, 65s, sideline cuts, penalties (one defender on the line); the tackle and its fouls; advantage for five seconds; yellow and red cards, and in senior county hurling the black card and sin bin for denying a goal chance; the 2026 dissent rule; extra time and the penalty shoot-out in knock-out games. See [docs/RULES.md](docs/RULES.md), with its sources. |
+| **The pitch** | 140 × 85 m, the 13, 20, 45 and 65 m lines, the halfway line, the small (14 × 4.5 m) and large (19 × 13 m) rectangles, the 13 m arc, the goals (6.5 m apart, the bar at 2.5 m, posts 10 m high) with their nets, the corner and line flags. |
+| **The sliotar** | 113 g, 71 mm, flying with air drag (a 40 m/s puck-out carries 80-100 m), bouncing and rolling on grass; marked on screen (a dot, an arrow at the edge) so it reads on a phone. |
+| **The players** | Thirty hurlers in helmets with face guards, hurleys in hand, county colours in the game's own kit designs; running, striking from the hand and off the hurley, soloing, catching, lifting, hand-passing, hooking, blocking, shouldering, falling, celebrating. One movement writer each, audited: nothing snaps, strides match speed. |
+| **The officials** | The referee (the whistle, the arm out for a free, one arm up for advantage, the cards, ten fingers for the sin bin, both arms for a penalty, the throw-in), two linesmen with their flags, four umpires in white coats (white flag for a point, green for a goal, arms crossed for a wide, an arm up for a 65). |
+| **The AI** | Each side keeps its lines and marks man to man by the numbers, presses the man on the ball, supports him for the hand-pass, shoots for points from range and goes for goal only when through, pucks out short or long as county sides do. Tuned to the GAA's 2026 match statistics: about two goals and 23 points in a 14-minute match. [docs/AI.md](docs/AI.md). |
+| **Modes** | Throw-in (any two counties, any ground); the Summer Championship (two groups of five, group finals, quarter-finals, semi-finals, the final) and the Tier Two Cup; Watch a match (AI v AI); a match behind the home screen. A result in the newspaper's style with the scorers and the box score. |
+| **The counties** | Twenty, by their place names in English and Irish, rated from the 2025 and 2026 seasons, in their traditional colours in kit designs of the game's own (no crests, county-board jerseys, nicknames or real competitions). Every player is invented. |
+| **Grounds** | The parish field at dusk (a small stand, a grass bank, ball-stop nets, floodlights, the trees and hills), the county ground by day and under lights, the national stadium. |
+| **Languages** | English and Irish (Gaeilge), with the GAA's Irish terms and Irish plural forms. The game starts in the phone's language; the globe on the home screen changes it. A text-fit audit checks every screen in both languages at 16:9, 19.5:9, 20:9 with a camera cut-out and 4:3 (`tests/fit_audit.gd`). [docs/LANGUAGES.md](docs/LANGUAGES.md). |
+| **Phones** | GL Compatibility renderer. Each ground's structure in a few draw calls, the crowd in one, a player in one (two with his outline on Medium and High). At the national stadium, the heaviest ground: **Low 57 draw calls and 101,000 triangles a frame, Medium 72 and 198,000, High 124 and 492,000**; at the parish field 57 / 92,000, 72 / 174,000, 118 / 421,000 (`tests/perf_probe.tscn`). On a phone under 4.5 GB of memory or with a small GPU (Mali-G52/G57, Adreno 5xx/61x) the game starts on Low: simpler players (a third of the polygons), far ones posed less often, no outlines, no MSAA, 75% render scale, a thinner crowd, no 3D behind the menus; and it drops a level by itself if a match runs under about 36 frames a second. Frame rate: Battery saver (about 30, at 80% scale), 60, or Max. |
 
 ## Controls
 
-On a phone: the left thumb anywhere on the left of the screen is a joystick: it runs your lit player to the gold mark
-on the floor (green when he is close enough), slides your blocker along the net, and aims serves and spikes. The right
-thumb has the buttons for the touch that is coming; he kicks only when you press, as the ring closes on the ball.
-Settings: assist (Off: you run for every touch; Standard: for the first touch; Full: they run for you; you always time
-the touch), game speed (Slow, Medium, Real), button size, left-handed.
+On a phone: your left thumb anywhere on the left of the screen is a joystick that runs your player (the gold ring).
+The buttons on the right are what he can do now: with the sliotar, STRIKE (for a point with the joystick toward the
+posts or let go; a long ball to the teammate you point at), GOAL (close in), PASS (a hand-pass), SOLO (onto the
+hurley before your four steps are up; the dots count them) and HAND (back into the hand, your second catch); without
+it, CATCH, LIFT and PULL as it comes, TACKLE and BLOCK near the man on the ball; SWITCH changes your player. At your
+restarts: LONG or SHORT puck-outs, STRIKE or PASS frees, 65s and sideline cuts, GOAL for a penalty. Settings: help
+with the ball (Off, Solo, Full), match length, grade, button size, move buttons, left-handed.
 
-On a keyboard: WASD or arrows, Space for the first button, J and K for the others, Esc to pause.
+On a keyboard: WASD or arrows, Space, J, K and L for the buttons, Q to switch, Esc to pause.
 
 ## Get it on your phone
 
-Every push that touches `takraw-game/` runs the **Takraw Smash · Android build** action: it runs the tests, then
-exports the beta APK (64-bit ARM) and puts it on the release page
-https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/takraw-smash-beta. Open that page on the phone, tap the
-APK, and allow your browser to install it. See [docs/BETA.md](docs/BETA.md).
+Every push that touches `hurling-game/` runs the **Ash & Leather · Android build** action: it runs the tests, then
+exports the beta APKs (64-bit ARM, and 32-bit ARM for older and Android Go phones) and puts them on the release page
+https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/ash-and-leather-beta. Open that page on the phone, tap
+the APK, and allow your browser to install it. See [docs/BETA.md](docs/BETA.md).
 
-For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step, and the **Takraw Smash · Play Store
-bundle** action builds the `.aab`.
+For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step, and the **Ash & Leather · Play Store
+bundle** action builds the `.aab` (unsigned until the upload key is added as secrets; target API 36, 16 KB pages
+checked, vibration the only permission).
+
+## Play it in a browser
+
+The **Web** export preset builds a browser version: single-threaded WebGL 2, so any static host serves it with no
+special headers. Export it with `godot --headless --path . --export-release "Web" build/web/index.html`, serve
+`build/web/` (for example `python3 -m http.server` in that folder) and open it. Phones and tablets play by touch,
+computers by keyboard. Sound starts after the first tap or key, and saves stay in that browser.
 
 ## Run it on a computer
 
@@ -56,35 +62,38 @@ bundle** action builds the `.aab`.
 ## Tests
 
 ```
-python3 tools/check_scripts.py                                                       # every script parses
-godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn                 # the smoke test CI runs
-godot --headless --path . --fixed-fps 60 res://tests/match_sim.tscn -- 4              # AI matches, how rallies end
-godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- out.jsonl      # text fit, every language
-xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /out   # a tour of the screens
-xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/venue_view.tscn -- /out   # every venue
+godot --headless --path . res://tests/compile_check.tscn                              # every script compiles
+godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn                 # the rules, screens, scrolling, the championship, a match, the movement audit
+godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- out.jsonl      # text fit, both languages, four screen shapes
+godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- play 4          # a thumb on the buttons plays a match
+godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 4 14 v         # AI matches, their numbers and events
+xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn      # touch: scrolling from anywhere, taps
+xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn   # draw calls, triangles
+xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/screenshots.tscn -- /out   # a tour of the screens
+xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/kit_view.tscn -- /out                     # kits and officials close up
 ```
 
 ## Project layout
 
 ```
-autoload/   game.gd (settings, saves, theme, screens), db.gd (teams, squads, venues), sfx.gd (sounds)
-game/       match.gd (the laws, the rally, the AI, challenges, replays), ball.gd, court.gd, player.gd,
-            body.gd (the drawn player on its skeleton), moves.gd (every move's key poses and contact),
-            arena.gd + geo.gd + crowd.gd (the venues), camera_rig.gd, hud.gd, touch_controls.gd,
-            sim.gd (matches played out), season.gd, cup.gd, records.gd
-ui/         main menu, quick setup, season, international, result, settings, how to play, records, licences
-i18n/       src/*.json (one file per language), strings.csv (generated)
-fonts/      Noto Sans for Latin and Vietnamese, Thai, Lao, Myanmar, Khmer, Devanagari, and Japanese, Korean and
-            Chinese cut to the characters used (tools/subset_fonts.py); Teko. All SIL OFL.
-tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py,
-            ui_art/render_art.tscn (the menu figures), store/ (icons, screenshots), meshy/ (the character order)
-tests/      test_runner, fit_audit, match_sim, screenshots, venue_view, pose_view, rally_frames, compile_check
-store/      PLAY_STORE.md, the listing in five languages, the icon, feature graphic and screenshots
-docs/       TAKRAW.md (the sport, with sources), MESHY_BRIEF.md, BETA.md, ROADMAP.md
+autoload/   game.gd (settings, saves, theme, screens), db.gd (counties, players, grounds), sfx.gd (sounds)
+game/       rules.gd (the playing rules, pure), match.gd (the match: play, restarts, fouls, cards, time, your player),
+            team_ai.gd (shape, marking, decisions), officials.gd, player.gd (movement and poses), body.gd (the drawn
+            player on its skeleton), sliotar.gd, pitch.gd, stadium.gd + geo.gd + crowd.gd (the grounds),
+            camera_rig.gd, hud.gd, touch_controls.gd, championship.gd, sim.gd, records.gd, plural.gd
+ui/         home screen (the programme), match setup (the team sheets), the championship, result, settings, how to
+            play, move buttons, licences, language picker, loading screen, backdrop, drawn art
+i18n/       src/en.json, src/ga.json, strings.csv (generated)
+fonts/      Noto Sans and Oswald (cut to the letters used), Uncial Antiqua; all SIL OFL
+tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py (the jig),
+            store/ (icons, feature graphic, screenshots)
+tests/      test_runner, fit_audit, user_bot, match_sim, input_test, perf_probe, screenshots, kit_view, compile_check
+store/      PLAY_STORE.md, the listings, the icon, feature graphic and screenshots
+docs/       RULES.md, LANGUAGES.md, AI.md, MESHY_BRIEF.md, BETA.md, PROGRESS.md
 ```
 
 ## Moving it to its own repository
 
-This folder is self-contained. To give the game its own repo, copy everything inside `takraw-game/` to the new
+This folder is self-contained. To give the game its own repo, copy everything inside `hurling-game/` to the new
 repo's root (including the hidden `.github/` folder) and push: `.github/workflows/android.yml` is set up for that
-layout. Move the privacy and help pages (`takraw-smash/` at the top of this repository) too, or keep them here.
+layout. Move the privacy and help pages (`ash-and-leather/` at the top of this repository) too, or keep them here.

@@ -46,7 +46,7 @@ func _ready() -> void:
 	nm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	nm.cull_mode = BaseMaterial3D.CULL_DISABLED
 	nm.vertex_color_use_as_albedo = true
-	nm.albedo_color = Color(1, 1, 1, 0.38)
+	nm.albedo_color = Color(1, 1, 1, 0.22)
 	add_child(nets.commit(nm))
 	if not lamps.verts.is_empty():
 		var lm := Geo.material(false)
@@ -159,7 +159,7 @@ func _trees(g: Geo, rng: RandomNumberGenerator, x0: float, x1: float, z0: float,
 		var p := Vector3(rng.randf_range(x0, x1), 0, rng.randf_range(z0, z1))
 		var h := rng.randf_range(7.0, 14.0)
 		g.cylinder(p, p + Vector3(0, h * 0.45, 0), 0.25, 0.18, Color("3a2c20"), 5, false)
-		var col := Color("1f3a20").lerp(Color("2e4f26"), rng.randf())
+		var col := Color("2e5a2a").lerp(Color("44703a"), rng.randf())
 		# A rounded crown of three tiers, like the ash and sycamore round a field.
 		for k in 3:
 			var y0 := h * (0.35 + k * 0.18)
@@ -208,7 +208,7 @@ func _parish(g: Geo, nets: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 		var x := (H + 9.0) * s
 		for z in [-24.0, -12.0, 0.0, 12.0, 24.0]:
 			g.cylinder(Vector3(x, 0, z), Vector3(x, 14.0, z), 0.12, 0.1, Color("8a9298"), 5, false)
-		nets.wall(Vector3(x, 0, -24.0), Vector3(x, 0, 24.0), 2.0, 14.0, Color(0.15, 0.17, 0.18), true)
+		nets.wall(Vector3(x, 0, -24.0), Vector3(x, 0, 24.0), 2.0, 14.0, Color(0.55, 0.58, 0.6), true)
 		# The rail's end: a low wall behind the goal.
 		g.box(Vector3((H + 4.0) * s, 0.5, 0), Vector3(0.3, 1.0, 60.0), Color("8f979e"))
 	# The clubhouse behind one goal, and the dressing rooms.
@@ -311,12 +311,13 @@ func _environment() -> void:
 			sun.light_color = Color(1.0, 0.97, 0.9)
 		"dusk":
 			# A summer evening: the sun just down behind the hills, the floodlights coming on.
-			sm.sky_top_color = Color("27305e")
-			sm.sky_horizon_color = Color("f08a4b")
-			sm.ground_horizon_color = Color("3b2a30")
-			sun.rotation_degrees = Vector3(-35, 160, 0)
-			sun.light_energy = 0.9
-			sun.light_color = Color(1.0, 0.82, 0.62)
+			sm.sky_top_color = Color("3d5590")
+			sm.sky_horizon_color = Color("f2a868")
+			sm.ground_horizon_color = Color("4a3a40")
+			sm.sky_energy_multiplier = 1.3
+			sun.rotation_degrees = Vector3(-38, 160, 0)
+			sun.light_energy = 0.95
+			sun.light_color = Color(1.0, 0.9, 0.78)
 		"night":
 			sm.sky_top_color = Color("060a18")
 			sm.sky_horizon_color = Color("1a2038")
@@ -330,13 +331,13 @@ func _environment() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = {"day": Color(0.78, 0.82, 0.9), "dusk": Color(0.62, 0.55, 0.62), "night": Color(0.42, 0.45, 0.58)}[time]
+	env.ambient_light_color = {"day": Color(0.78, 0.82, 0.9), "dusk": Color(0.7, 0.66, 0.72), "night": Color(0.42, 0.45, 0.58)}[time]
 	env.ambient_light_energy = 0.62
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC if int(Game.settings.graphics) >= Game.GFX_MEDIUM else Environment.TONE_MAPPER_LINEAR
 	if int(Game.settings.graphics) >= Game.GFX_MEDIUM:
 		env.fog_enabled = true
-		env.fog_light_color = sm.sky_horizon_color
-		env.fog_density = 0.0016
+		env.fog_light_color = sm.sky_horizon_color.lerp(Color(0.75, 0.78, 0.85), 0.6)
+		env.fog_density = 0.0009
 		env.fog_sky_affect = 0.0
 	var we := WorldEnvironment.new()
 	we.environment = env
