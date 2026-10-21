@@ -4,7 +4,7 @@ Hurling for Android phones, built with [Godot 4.7](https://godotengine.org) (fre
 the same way as Kabaddi Raid and Takraw Smash. It plays the GAA's playing rules as they stand in 2026, fifteen a side,
 for the people who play and follow hurling: Ireland, and the Irish abroad. In English and in Irish.
 
-> **Status: playable beta (0.1.0).** The players are built in code (`game/body.gd`) on a humanoid skeleton, ready to
+> **Status: playable beta (0.2.0).** The players are built in code (`game/body.gd`) on a humanoid skeleton, ready to
 > be replaced by Meshy models (docs/MESHY_BRIEF.md). Everything else is the game as it will ship.
 
 ## What's in it
@@ -16,7 +16,9 @@ for the people who play and follow hurling: Ireland, and the Irish abroad. In En
 | **The sliotar** | 113 g, 71 mm, flying with air drag (a 40 m/s puck-out carries 80-100 m), bouncing and rolling on grass; marked on screen (a dot, an arrow at the edge) so it reads on a phone. |
 | **The players** | Thirty hurlers in helmets with face guards, hurleys in hand, county colours in the game's own kit designs; running, striking from the hand and off the hurley, soloing, catching, lifting, hand-passing, hooking, blocking, shouldering, falling, celebrating. One movement writer each, audited: nothing snaps, strides match speed. |
 | **The officials** | The referee (the whistle, the arm out for a free, one arm up for advantage, the cards, ten fingers for the sin bin, both arms for a penalty, the throw-in), two linesmen with their flags, four umpires in white coats (white flag for a point, green for a goal, arms crossed for a wide, an arm up for a 65). |
-| **The AI** | Each side keeps its lines and marks man to man by the numbers, presses the man on the ball, supports him for the hand-pass, shoots for points from range and goes for goal only when through, pucks out short or long as county sides do. Tuned to the GAA's 2026 match statistics: one or two goals and about 20 points in a 14-minute match. [docs/AI.md](docs/AI.md). |
+| **The AI** | Each side keeps its lines and marks man to man by the numbers, presses the man on the ball, supports him for the hand-pass, shoots for points from range and goes for goal only when through, pucks out short or long as county sides do. Tuned to the GAA's 2026 match statistics and checked at every length in CI (`tests/score_check.tscn`): the 35-minute length is a full 70-minute match with the ball live as long as in a real one, and it ends like one (about 3 goals and 43 points between the sides; real: 2.75 and 42); shorter lengths score in proportion. [docs/AI.md](docs/AI.md). |
+| **Tired players, substitutions, tactics** | Players tire by the match clock (more in a sprint, less with stamina), slower and less accurate as they do; five substitutions (three more in extra time) made at a break, by the manager or by you from the pause menu, the man going off walking to the line. Tactics from the pause menu: a sweeper, two inside (the corner-forward out), short, mixed or long puck-outs; the computer's side has its county's habits and drops a sweeper back to hold a late lead. |
+| **Your first match** | The coach on the sideline: the game in three lines before the throw-in, then a short tip the first time each thing comes up (the ball near you, the four steps, the solo, in range, close in, a tackle, your puck-out, your free, too many steps), in English and Irish. A ring on the grass shows where a high ball near you comes down. |
 | **Modes** | Throw-in (any two counties, any ground); the Summer Championship (two groups of five, group finals, quarter-finals, semi-finals, the final) and the Tier Two Cup; Watch a match (AI v AI); a match behind the home screen. A result in the newspaper's style with the scorers and the box score. |
 | **The counties** | Twenty, by their place names in English and Irish, rated from the 2025 and 2026 seasons, in their traditional colours in kit designs of the game's own (no crests, county-board jerseys, nicknames or real competitions). Every player is invented. |
 | **Grounds** | The parish field at dusk (a small stand, a grass bank, ball-stop nets, floodlights, the trees and hills), the county ground by day and under lights, the national stadium. |
@@ -31,7 +33,7 @@ posts or let go; a long ball to the teammate you point at), GOAL (close in), PAS
 hurley before your four steps are up; the dots count them) and HAND (back into the hand, your second catch); without
 it, CATCH, LIFT and PULL as it comes, TACKLE and BLOCK near the man on the ball; SWITCH changes your player. At your
 restarts: LONG or SHORT puck-outs, STRIKE or PASS frees, 65s and sideline cuts, GOAL for a penalty. Settings: help
-with the ball (Off, Solo, Full), match length, grade, button size, move buttons, left-handed.
+with the ball (Off, Solo, Full), match length, grade, coach's tips, button size, move buttons, left-handed. In the pause menu: substitutions and tactics.
 
 On a keyboard: WASD or arrows, Space, J, K and L for the buttons, Q to switch, Esc to pause.
 
@@ -67,6 +69,7 @@ godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn           
 godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- out.jsonl      # text fit, both languages, four screen shapes
 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- play 4          # a thumb on the buttons plays a match
 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 4 14 v         # AI matches, their numbers and events
+godot --headless --path . --fixed-fps 30 res://tests/score_check.tscn -- 2            # scores at every length against real hurling's
 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn      # touch: scrolling from anywhere, taps
 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn   # draw calls, triangles
 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/screenshots.tscn -- /out   # a tour of the screens
@@ -80,16 +83,18 @@ autoload/   game.gd (settings, saves, theme, screens), db.gd (counties, players,
 game/       rules.gd (the playing rules, pure), match.gd (the match: play, restarts, fouls, cards, time, your player),
             team_ai.gd (shape, marking, decisions), officials.gd, player.gd (movement and poses), body.gd (the drawn
             player on its skeleton), sliotar.gd, pitch.gd, stadium.gd + geo.gd + crowd.gd (the grounds),
-            camera_rig.gd, hud.gd, touch_controls.gd, championship.gd, sim.gd, records.gd, plural.gd
+            camera_rig.gd, hud.gd, touch_controls.gd, championship.gd, sim.gd, records.gd, plural.gd, coach.gd,
+            playtest_hook.gd (the Web build's state for browser playtests)
 ui/         home screen (the programme), match setup (the team sheets), the championship, result, settings, how to
-            play, move buttons, licences, language picker, loading screen, backdrop, drawn art
+            play, move buttons, licences, language picker, loading screen, backdrop, drawn art, substitutions,
+            tactics
 i18n/       src/en.json, src/ga.json, strings.csv (generated)
 fonts/      Noto Sans and Oswald (cut to the letters used), Uncial Antiqua; all SIL OFL
 tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py (the jig),
             store/ (icons, feature graphic, screenshots)
-tests/      test_runner, fit_audit, user_bot, match_sim, input_test, perf_probe, screenshots, kit_view, compile_check
+tests/      test_runner, fit_audit, user_bot, match_sim, score_check, input_test, perf_probe, screenshots, kit_view, compile_check
 store/      PLAY_STORE.md, the listings, the icon, feature graphic and screenshots
-docs/       RULES.md, LANGUAGES.md, AI.md, MESHY_BRIEF.md, BETA.md, PROGRESS.md
+docs/       RULES.md, LANGUAGES.md, AI.md, MESHY_BRIEF.md, BETA.md, PLAYTEST.md, PROGRESS.md
 ```
 
 ## Moving it to its own repository

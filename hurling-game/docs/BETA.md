@@ -9,6 +9,16 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.2.0
+
+- **A full match that ends like one**: Settings > Match length > 35 min plays all 70 minutes, the ball live about as
+  long as in a real match; expect a score like 2-20 v 1-19. The shorter lengths are the same game, less of it.
+- **The coach** in your first match: the game in three lines before the throw-in, then a tip the first time each
+  thing comes up. Did you know how to play within a minute? (Settings > Coach's tips turns them on again.)
+- **Substitutions**: pause, Substitutions. Tap a tired man (the bar is his legs), then who comes on. Or leave it to
+  the manager. **Tactics**: pause, Tactics: a sweeper, two inside, short or long puck-outs.
+- **A high ball near you** has a gold ring on the grass where it comes down: run under it and CATCH.
+
 ## What to try
 
 - **A match**: Throw-in on the home screen. Run with your left thumb; the buttons on the right change with what
