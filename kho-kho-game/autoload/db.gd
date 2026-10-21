@@ -58,7 +58,7 @@ const STATES := [
 ## id, name key, rating men, rating women, kit, name pool. Squads mix the city's region with players from all over.
 const CLUBS := [
 	["MUM", "L_MUM", 86, 88, ["1f4e8c", "f2c14e", "f7f2e8"], "mr"],
-	["PUN", "L_PUN", 84, 85, ["7b2cbf", "f7f2e8", "ffb703"], "mr"],
+	["PNE", "L_PNE", 84, 85, ["7b2cbf", "f7f2e8", "ffb703"], "mr"],
 	["BBS", "L_BBS", 85, 86, ["e85d04", "1b2a5c", "f7f2e8"], "or"],
 	["BLR", "L_BLR", 83, 82, ["c1121f", "141414", "f2c14e"], "kn"],
 	["HYD", "L_HYD", 80, 78, ["2b9348", "f7f2e8", "ff9f1c"], "te"],
