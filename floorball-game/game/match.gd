@@ -1618,9 +1618,11 @@ func _user(dt: float) -> void:
 	if sprint:
 		user_player.stamina = maxf(0.35, user_player.stamina - 0.03 * dt)
 	# 2026: no field player in the goalkeeper area; you are stopped at its edge.
+	# Looking as far ahead as he needs to stop (he cannot stop dead), and only from outside: from in it, he can leave.
 	for end: int in [-1, 1]:
-		var nxt = user_player.pos + user_player.want_vel * 0.12
-		if Rules.in_gk_area(nxt, end):
+		var ahead: float = 0.12 + user_player.vel.length() / Player.DECEL * 0.5
+		var nxt = user_player.pos + user_player.want_vel.normalized() * user_player.vel.length() * ahead
+		if Rules.in_gk_area(nxt, end) and not Rules.in_gk_area(user_player.pos, end):
 			user_player.want_vel.x = 0.0
 	if touch:
 		touch.set_buttons(["SHOOT", "PASS", "SPRINT"] if ball.carrier == user_player else ["TACKLE", "SWITCH", "SPRINT"])

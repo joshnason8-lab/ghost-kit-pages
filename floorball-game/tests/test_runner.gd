@@ -687,6 +687,37 @@ func _coach() -> void:
 	m.ball.carrier = me
 	m._on_action("SHOOT")
 	check(m.ball.carrier == null and m._pass_target != null and m.ball.vel.x * ad < 0.0, "behind their goal, Shoot passes it out in front")
+	# With the ball, you run where the joystick points.
+	while m.phase != "live":
+		await get_tree().physics_frame
+	me.respawn(Vector2(0.0, 2.0))
+	await get_tree().physics_frame
+	m.ball.set_spot(me.pos)
+	m.ball.carrier = me
+	m._set_user(me)
+	var x0: float = me.pos.x
+	for i in 60:
+		m.touch.joystick = Vector2(ad, 0.0)
+		await get_tree().physics_frame
+	check((me.pos.x - x0) * ad > 1.5 and m.ball.carrier == me, "with the ball you run where the joystick points (%.2f m)" % ((me.pos.x - x0) * ad))
+	# 2026: you are stopped at the goalkeeper area's edge, but never kept in it: from inside you can always leave.
+	var auto: bool = Game.settings.auto_switch
+	Game.settings.auto_switch = false
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var own := -int(ad)
+	me.respawn(Vector2(own * 16.0, 0.3))
+	m._set_user(me)
+	for i in 40:
+		m.touch.joystick = Vector2(ad, 0.0)
+		await get_tree().physics_frame
+	check(not Rules.in_gk_area(me.pos, own), "2026: a player inside the goalkeeper area can run out of it (%s)" % me.pos)
+	me.respawn(Vector2(own * 13.0, 0.0))
+	for i in 60:
+		m.touch.joystick = Vector2(-ad, 0.0)
+		await get_tree().physics_frame
+	check(not Rules.in_gk_area(me.pos, own), "2026: running at the goalkeeper area, you stop at its edge (%s)" % me.pos)
+	Game.settings.auto_switch = auto
 	m.queue_free()
 	await frames(2)
 

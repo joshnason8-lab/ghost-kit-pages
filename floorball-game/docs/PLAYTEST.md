@@ -41,8 +41,14 @@ the check's text).
 | 14 | Passive play warnings came too early once added (24 s with the ball anywhere short of the attacking zone). | 30 s, counting only in a team's own half or behind the opponents' goal; building play in their half holds the count. |
 | 15 | In the club season, Midnight Owls (navy) against Granite Moose (charcoal) were two black teams: the clash rule compared colours only, and two dark shirts are far apart in colour but look the same under the hall's lights. | Two dark shirts count as a clash; the visitors change. Test: "kits: the two sides' shirts never look alike" (every pair of the 22 nations and 10 clubs). |
 | 16 | In the interval the scoreboard already showed the next period ("Period 2" over "End of period 1"). | It shows the period just played until play restarts. |
+| 17 | Running at the goalkeeper area (no field player may enter it, 2026), you were stopped a few centimetres inside it: the check looked 0.12 s ahead, less than a running player needs to stop. | It looks as far ahead as he needs to stop, and only from outside the area (from inside you can always leave). Tests: "2026: running at the goalkeeper area, you stop at its edge", "a player inside the goalkeeper area can run out of it". |
 
 ## Still open
+
+- **Your team's shots are all yours.** As in most sports games you always run the team-mate with the ball, so your
+  team shoots when you do. The test bot, steering by the screen and shooting only when close, took none in a World
+  Finals match (Sweden 2-0 Czechia): a first-time player who does not shoot will see the same. The coach's second
+  tip says when to shoot; whether a beginner needs more (an auto-shot on Rookie?) is for phone testing.
 
 - **Goalkeepers wear black**, close to a dark team's shirts at a glance; their pads and the cage tell them apart.
 - **Simulated club results run a little high** (8-5, 7-4 in a first round; real league matches average about ten
