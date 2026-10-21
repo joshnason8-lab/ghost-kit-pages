@@ -47,6 +47,11 @@ func _ready() -> void:
 				hist["<1s" if t < 1.0 else ("1-2s" if t < 2.0 else ("2-4s" if t < 4.0 else ">4s"))] += 1
 				if float(e.dz) < 2.0:
 					near_lane += 1
+		var shown := 0
+		for e in res.log:
+			if String(e.kind) == "foul" and String(e.get("how", "")) == "cross_lane" and shown < 6:
+				shown += 1
+				print("   lane foul: act %s x %.1f z %.2f vz %.1f half %d plan %s" % [e.act, e.x, e.z, e.vz, e.half, e.plan])
 		print("  time since the last kho ", hist, "  within 2 m of the lane ", near_lane)
 		for id in res.stats:
 			c.dives += int(res.stats[id].dives)

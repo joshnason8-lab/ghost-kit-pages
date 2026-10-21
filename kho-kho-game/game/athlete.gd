@@ -20,6 +20,7 @@ var act_t := 0.0            # seconds into it
 var act_len := 0.0          # its length (0: held until changed)
 var mirror := false         # play the act mirrored (left-handed for a pole dive round the other side)
 var stamina := 1.0          # 0-1: a defender tires as he runs flat out
+var agility := 1.0          # how sharply he gathers, sheds and turns his speed (a defender's turn rating)
 var yaw := 0.0
 var _ph := 0.0
 var _pose := {}
@@ -81,7 +82,7 @@ func integrate(dt: float) -> void:
 	if act == "dive" and act_t > 0.25:
 		dv = -vel
 		rate = 10.0   # he lands and slides to a stop
-	vel += dv.limit_length(rate * dt)
+	vel += dv.limit_length(rate * agility * dt)
 	position += vel * dt
 	position.y = 0.0
 	# Facing: where he runs, or the point he watches when still.
