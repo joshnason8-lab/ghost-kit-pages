@@ -129,9 +129,7 @@ func _box(side: int, team: String, best: String) -> PanelContainer:
 	g.add_theme_constant_override("h_separation", 12)
 	g.add_theme_constant_override("v_separation", 4)
 	for h in [tr("COL_PLAYER"), tr("COL_OUTS"), tr("COL_DIVES"), tr("COL_KHOS"), tr("COL_TIME"), tr("COL_BEST")]:
-		var hl := UI.label(h, "EyebrowLabel", 13, Game.C_MUTED)
-		UI.fit(hl)
-		g.add_child(hl)
+		g.add_child(UI.label(h, "EyebrowLabel", 13, Game.C_MUTED))
 	var rows: Array = []
 	for id in result.get("stats", {}):
 		var st: Dictionary = result.stats[id]
