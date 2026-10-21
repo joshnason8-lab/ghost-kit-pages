@@ -73,6 +73,15 @@ const POLE_DIVE := {
 	"thigh_r": Vector3(26, 0, -10), "shin_r": Vector3(12, 0, 0), "foot_r": Vector3(30, 0, 0),
 }
 
+## Round the pole: the near hand gripping it at shoulder height, the body leaning out and round it, running.
+const POLE_TURN := {
+	"hips_y": -0.18, "spine": Vector3(18, 0, 22), "chest": Vector3(4, 10, 0), "head": Vector3(-12, 24, 0),
+	"upperarm_l": Vector3(-78, 0, 58), "forearm_l": Vector3(-22, 0, 0), "hand_l": Vector3(0, 0, 0),
+	"upperarm_r": Vector3(-30, 0, -30), "forearm_r": Vector3(-70, 0, 0),
+	"thigh_l": Vector3(-46, 0, 12), "shin_l": Vector3(70, 0, 0), "foot_l": Vector3(-14, 0, -6),
+	"thigh_r": Vector3(-6, 0, -16), "shin_r": Vector3(40, 0, 0), "foot_r": Vector3(-6, 0, 6),
+}
+
 ## An umpire: the whistle at his lips.
 const WHISTLE := {
 	"hips_y": -0.02, "spine": Vector3(2, 0, 0), "head": Vector3(-6, 0, 0),

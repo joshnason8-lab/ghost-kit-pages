@@ -25,7 +25,6 @@ const FOUL_CALL := "kho_call"       # "kho" called before the touch, or a touch 
 const REACH := 0.95          # m: how far the active chaser's hand reaches, from his centre, for a touch or a kho
 const KHO_LATE_TOL := 0.15   # m past the cross lane's far edge that an umpire still lets go
 const TURN_TOL := 0.45       # m/s backwards before an umpire calls him turning back
-const CORRECT_DIST := 0.8    # m he must run his proper way to correct a turning-back foul
 
 
 ## The field for a rule book (docs/RULES.md "The field"). Classic: 27 x 16 m, 24 m between the poles, eight cross lanes
@@ -80,8 +79,8 @@ static func on_lane(f: Dictionary, p: Vector3, body := 0.0) -> bool:
 class Chase:
 	var dir := 0           # +1 or -1: the pole he must run toward; 0 until he takes one
 	var half := 1          # the side of the central lane he is on
-	var foul := ""         # a foul being whistled until it is put right ("" none)
-	var mended := 0.0      # m run the proper way since the foul (a turning-back foul is put right at CORRECT_DIST)
+	var foul := ""         # a foul being whistled until it is put right, by a kho or the free zone ("" none)
+	var mended := 0.0      # m run his proper way since a turning-back foul
 	var wazir := false     # the fast game's wazir: free of the direction rule, not of the lane
 	var start_x := 0.0     # where he rose: he takes his direction once he leaves it
 	var settled := true    # out of a free zone, his side is the one he takes once clear of the lane
@@ -116,12 +115,9 @@ static func step_chase(f: Dictionary, c: Chase, pos: Vector3, vel: Vector3, dt: 
 		return ""
 	# The lane: he may not cross it between the poles.
 	var side := half_of(pos.z) if absf(pos.z) > float(f.lane_w) * 0.5 else c.half
-	if side != c.half:
-		if c.foul == "":
-			new_foul = FOUL_LANE
-			c.foul = FOUL_LANE
-	elif c.foul == FOUL_LANE:
-		c.foul = ""
+	if side != c.half and c.foul == "":
+		new_foul = FOUL_LANE
+		c.foul = FOUL_LANE   # put right, as a turning-back foul is, by a kho or the free zone
 	# His direction: the way he first goes once he leaves where he rose.
 	if c.dir == 0:
 		if absf(pos.x - c.start_x) > 0.25 or absf(vel.x) > 1.2:
@@ -133,11 +129,12 @@ static func step_chase(f: Dictionary, c: Chase, pos: Vector3, vel: Vector3, dt: 
 			c.foul = FOUL_TURN
 			c.mended = 0.0
 		elif c.foul == FOUL_TURN:
+			# Made to go his proper way again; the foul stands until he gives a kho (a new Chase) or reaches a
+			# free zone (rules text via search: "compel the attacker to go in the direction opposite"; cleared
+			# by a kho or the free zone, the glossary).
 			var fwd := vel.x * float(c.dir) * dt
 			if fwd > 0.0:
 				c.mended += fwd
-			if c.mended >= CORRECT_DIST:
-				c.foul = ""
 	if c.wazir and vel.length() > 1.0 and absf(vel.x) > 0.6:
 		c.dir = 1 if vel.x > 0.0 else -1   # the wazir runs where he likes; his "direction" is just the way he goes
 	return new_foul

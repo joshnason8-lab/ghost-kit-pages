@@ -22,6 +22,8 @@ var mirror := false         # play the act mirrored (left-handed for a pole dive
 var stamina := 1.0          # 0-1: a defender tires as he runs flat out
 var agility := 1.0          # how sharply he gathers, sheds and turns his speed (a defender's turn rating)
 var yaw := 0.0
+var watch := Vector3.INF    # a point his head turns to follow (a seated chaser watches the play), INF none
+var _head := 0.0
 var _ph := 0.0
 var _pose := {}
 var _prev_act := ""
@@ -116,7 +118,7 @@ func _finish_act() -> void:
 			act_t = 0.0
 			act_len = 0.45
 			return
-		"getup", "out", "foul", "end", "cheer":
+		"getup", "out", "foul", "end", "cheer", "pole_turn":
 			act = ""
 	act_len = 0.0
 	act_t = 0.0
@@ -162,8 +164,24 @@ func _animate(dt: float, spd: float) -> void:
 			target = Poses.SIGNAL_END
 		"cheer":
 			target = Poses.CHEER
+		"pole_turn":
+			# Swinging round the pole: the turn over the run, held hard in the middle of it.
+			target = Poses.blend(base, Poses.POLE_TURN, sin(PI * clampf(f, 0.0, 1.0)) * 0.9 + 0.1)
 	if mirror:
 		target = Poses.mirrored(target)
+	# A head that follows the play: up to 70 degrees either way of where his body faces, eased.
+	var want_head := 0.0
+	if watch != Vector3.INF:
+		var to := watch - position
+		var rel := wrapf(atan2(to.x, to.z) - yaw, -PI, PI)
+		want_head = clampf(rad_to_deg(rel), -70.0, 70.0)
+	_head = lerpf(_head, want_head, minf(1.0, dt * 6.0))
+	if absf(_head) > 0.5:
+		target = target.duplicate()
+		var nk: Vector3 = target.get("neck", Vector3.ZERO)
+		var hd: Vector3 = target.get("head", Vector3.ZERO)
+		target["neck"] = Vector3(nk.x, nk.y + _head * 0.45, nk.z)
+		target["head"] = Vector3(hd.x, hd.y + _head * 0.55, hd.z)
 	# Into a new pose over a few frames, never in one.
 	_blend = minf(1.0, _blend + dt * (10.0 if act in ["dive", "pole_dive", "kho"] else 6.0))
 	_pose = Poses.blend(_pose, target, _blend if _blend < 1.0 else 1.0)

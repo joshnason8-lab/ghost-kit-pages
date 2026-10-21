@@ -39,6 +39,9 @@ func _ready() -> void:
 		Game.settings.lane_assist = i == 0
 		Game.save_settings())))
 	game[1].add_child(UI.wrap(tr("LANE_ASSIST_NOTE"), "MutedLabel", 17))
+	game[1].add_child(UI.field(tr("COACH_TIPS"), UI.chips_row([tr("ON"), tr("OFF")], 0 if Game.settings.coach else 1, func(i):
+		Game.settings.coach = i == 0
+		Game.save_settings())))
 	game[1].add_child(UI.field(tr("FOLLOW_ON"), UI.chips_row([tr("ON"), tr("OFF")], 0 if Game.settings.follow_on else 1, func(i):
 		Game.settings.follow_on = i == 0
 		Game.save_settings())))
