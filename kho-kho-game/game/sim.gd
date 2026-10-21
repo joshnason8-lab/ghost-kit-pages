@@ -10,7 +10,7 @@ const BASE_RATE := 1.3 / 60.0   # outs a second, equal sides
 
 
 static func rate(att: float, def: float) -> float:
-	return BASE_RATE * exp((att - def) / 22.0)
+	return BASE_RATE * exp((att - def) / 30.0)
 
 
 ## One chasing turn: [outs, dream points to the defenders, seconds to the first out (-1 none)].

@@ -117,10 +117,7 @@ func _build_scoreboard() -> void:
 	for side in 2:
 		var box := HBoxContainer.new()
 		box.add_theme_constant_override("separation", 8)
-		var flag := TextureRect.new()
-		flag.texture = Flags.texture(DB.team(m.teams[side]).flag if not DB.is_state(m.teams[side]) else m.teams[side], 36, 24)
-		flag.custom_minimum_size = Vector2(36, 24)
-		flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		var flag := Crest.make(m.teams[side], 34)
 		flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var col := VBoxContainer.new()
 		col.add_theme_constant_override("separation", -6)
