@@ -33,5 +33,29 @@ Findings, worst first, with what was done about each. "Test" names the automated
 
 ## Second pass (0.2.0-beta)
 
-The fixes above, then the Club Season and the coach, were played again at 1280 × 720 and 2400 × 1080 from a fresh
-start (`?fresh`, so the coach is on). See the end of this file for what that pass found.
+The fixes above, then the coach and the Club Season, were played again from a fresh start (`?fresh`, so the coach is
+on): a Quick Match at 1280 × 720, the screen tour at 1280 × 720, and a Club Season match at 2400 × 1080 through to
+the table after it.
+
+| # | Severity | What the tester saw | Fixed by | Test |
+|---|---|---|---|---|
+| 11 | Major | **Esc on the home screen froze the page** in a browser: Back there quits, and quitting stops the engine on the Web. | Back on the home screen quits only on a phone (`MainMenu.quits_on_back`). | screenshot run (the tour now closes the language list with Esc and goes on) |
+| 12 | Cosmetic | A table before any match showed a goal percentage of 0. | A dash until a team has played (Nations Cup and Club Season). | screenshot |
+| 13 | (harness) | The match's test bridge could overwrite the result screen's report in the frame the match was freed. | The bridge reports only while the match is the current screen. | the league run reaches the result |
+
+Confirmed working:
+
+- **The coach** opens with how to move, then on the first loose ball "They have the ball…", then passing, shooting and
+  the rest, each once, in a box between the stick and the buttons; it never covers the buttons at any shape.
+- **The interval**: each team's figures, and "GS  Hannah Rowe  ›  Isla Osborne" on each change button.
+- **Name tags** stack above a defender and her player instead of printing over each other.
+- **The Club Season**: pick a club (crests in club colours, home country under the name), the hub with Play and
+  Simulate, a match in the sports hall with the clubs' crests on the scoreboard, the result, then the table and the
+  round's results. A 0–0 test match (25-second quarters) was recorded as a draw, one point each.
+- The home screen's two competitions, one above the other in the left third, read clearly at every shape.
+
+Left as they are:
+
+- The tester's scripted thumb scored few goals in 25-second quarters: a quarter that short holds two or three
+  passages of play. The scripted thumb in `_controls` (90 seconds) does score.
+- The result screen's box score starts just above the buttons; it scrolls (the bar shows), as it did in 0.1.

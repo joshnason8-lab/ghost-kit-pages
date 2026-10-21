@@ -217,7 +217,7 @@ func _process(delta: float) -> void:
 		u.follow(ball.court_pos())
 		u.advance(dt, ball.court_pos())
 	ball.step(dt)
-	if Game.test_quarter_s > 0.0 and OS.has_feature("web") and Engine.get_process_frames() % 15 == 0:
+	if Game.test_quarter_s > 0.0 and OS.has_feature("web") and Engine.get_process_frames() % 15 == 0 and Game.current == self:
 		# A browser playtest reads the match's state from the page (tools/playtest/play.js).
 		JavaScriptBridge.eval("window.cpn = %s" % JSON.stringify({"phase": phase, "q": q, "score": score, "me": me.pos if me else "",
 			"buttons": button_set(), "holder": holder.pos if holder else "", "mine": holder != null and holder.team == user_team}))
