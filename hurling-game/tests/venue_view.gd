@@ -1,6 +1,6 @@
 extends Node
 ## Each ground as the match camera sees it at the throw-in and from behind a goal, for checking how it looks:
-##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/venue_view.tscn -- /out [venue]
+##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/venue_view.tscn -- /out [venue] [graphics 0-2]
 
 func _ready() -> void:
 	var a := OS.get_cmdline_user_args()
@@ -8,7 +8,7 @@ func _ready() -> void:
 	var only := a[1] if a.size() > 1 else ""
 	Game.main = self
 	Game.settings.sound = false
-	Game.settings.graphics = Game.GFX_HIGH
+	Game.settings.graphics = int(a[2]) if a.size() > 2 else Game.GFX_HIGH
 	for v in DB.VENUES:
 		if only != "" and v != only:
 			continue

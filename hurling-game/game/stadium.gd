@@ -310,7 +310,7 @@ func _environment() -> void:
 		"day":
 			sm.sky_top_color = Color("4a86c9")
 			sm.sky_horizon_color = Color("c9d8e4")
-			sm.ground_horizon_color = Color("c9d8e4")
+			sm.ground_horizon_color = Color("9fb0a8")
 			sun.rotation_degrees = Vector3(-48, 30, 0)
 			sun.light_energy = 1.1
 			sun.light_color = Color(1.0, 0.97, 0.9)
@@ -330,6 +330,10 @@ func _environment() -> void:
 			sun.rotation_degrees = Vector3(-70, 15, 0)   # the floodlights, really
 			sun.light_energy = 0.95
 			sun.light_color = Color(1.0, 0.95, 0.85)
+	# Below the horizon (what the gantry camera sees past the hills and trees): the horizon's own haze, not the
+	# material's default brown.
+	sm.ground_bottom_color = sm.ground_horizon_color.darkened(0.15)
+	sm.ground_curve = 0.2
 	sm.sun_angle_max = 0.0
 	sky.sky_material = sm
 	sky.radiance_size = Sky.RADIANCE_SIZE_32

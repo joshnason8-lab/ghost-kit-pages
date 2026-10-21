@@ -555,6 +555,7 @@ func _playtest_fixes() -> void:
 	await frames(2)
 	# No floodlight mast between the television gantry and the field.
 	var in_way := 0
+	var brown := 0
 	for id in DB.VENUES:
 		var st := Stadium.new(String(id), [Color.WHITE, Color.BLACK])
 		add_child(st)
@@ -562,8 +563,13 @@ func _playtest_fixes() -> void:
 		for p in st.mast_spots:
 			if p.z > 0.0 and p.z < CameraRig.GANTRY_Z:
 				in_way += 1
+		var we: WorldEnvironment = st.find_children("*", "WorldEnvironment", true, false)[0]
+		var sm: ProceduralSkyMaterial = we.environment.sky.sky_material
+		if sm.ground_bottom_color.is_equal_approx(ProceduralSkyMaterial.new().ground_bottom_color):
+			brown += 1
 		st.queue_free()
 	check(in_way == 0, "Playtest: no floodlight mast in front of the camera (%d)" % in_way)
+	check(brown == 0, "Playtest: past the hills, the horizon's haze, not the sky's default brown (%d grounds)" % brown)
 	# On a touch screen a button looks the same hovered as not (a finger leaves the emulated mouse where it lifts).
 	var th: Theme = Game.theme.duplicate()
 	Game.flatten_hover(th)
