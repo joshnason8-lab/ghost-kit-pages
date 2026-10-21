@@ -22,3 +22,16 @@
 - `PLAYER_TAGS` 显示球员位置 — rephrased ("show player positions") rather than literal "bibs".
 - `INTERVAL_NOTE` — word order assumes {next} is a noun like "第2节"; check with real values.
 - `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.
+
+## Added in 0.2
+- Coach **教练**; tips **教练提示**; umpiring (setting) **判罚尺度**; "fewer whistles" **少吹哨**; standard **标准**; real rate **真实频率**.
+- Escalate **升级** (CALL_ESCALATE "升级：罚球传球"); pass advanced **传球位置前移**; ordered off **罚下场** (as in RULES_SANCTIONS_TEXT).
+- Club season **俱乐部赛季**; table **积分榜**; round **第{n}轮**; grand final **总决赛**; premiers **联赛冠军！**; the season stage **常规赛**.
+- Button names in the COACH_* tips are quoted “{pass}” as in the CTRL_* texts; "mark her" is **盯防她**; "dashed ring" is **虚线圆环**.
+- 29 new characters entered the font subset (共升去吹哪因太子字季定尺己带常幅教某榜横母简练走遇需顶频); fonts/NotoSansSC.ttf was regenerated with tools/subset_fonts.py.
+
+## Check first (0.2)
+- CALL_ESCALATE "升级" and CALL_ADVANCE "传球位置前移": local umpiring usage is unconfirmed.
+- STAGE_SEASON "常规赛" (regular season) for "The season".
+- LEAGUE_WON "联赛冠军！" ("league champions"): Australian "Premiers" has no direct equivalent.
+- UMPIRING "判罚尺度" as a settings label.

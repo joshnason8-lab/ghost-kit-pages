@@ -22,3 +22,16 @@
 - INJURY_NOTE "Mutambi we{team}": the concord is attached directly to the team name.
 - Country names: Ingirandi and Sikotirandi are localised. Wales, Northern Ireland, South Africa and New Zealand are kept in English as commonly written; confirm.
 - POS_ROLE_WA, CTRL_PASS_TEXT and TIMEOUTS_NOTE run about 1.3x the English length. Check that they fit on screen.
+
+## Added in 0.2
+- Coach **murairidzi**; tips **mazano emurairidzi**; umpiring (setting) **kutonga**; "fewer whistles" **mapito mashoma**.
+- Escalate **yakwidziridzwa** (CALL_ESCALATE "Yakwidziridzwa: pasa yepenariti"); pass advanced **pasa yaendeswa mberi**; ordered off **abudiswa** (matches *kumubudisa* in RULES_SANCTIONS_TEXT).
+- Club season **Mwaka weKirabhu**; table **rondedzero**; round **rawundi** (loanword, plural *marawundi*); grand final **fainari huru**; premiers **Makunda ligi!** (patterned on CUP_WON); champions in LEAGUE_CHAMPIONS **shasha**.
+- "Dashed ring" is **mhete yemitsetse**; "mark her" is **umurinde**.
+
+## Check first (0.2)
+- LEAGUE_TABLE "Rondedzero": Zimbabwean sport media usually say "log" (log standings); that may be the better choice.
+- ROUND_N_OF "Rawundi {n} pa{of}": the concord on the number.
+- LEAGUE_WON "Makunda ligi!" and LEAGUE_CHAMPIONS "{team}: shasha".
+- CALL_ESCALATE "Yakwidziridzwa" (about 1.35x English) and CALL_ADVANCE.
+- COACH_PASS / COACH_DEFEND length in the coach box.

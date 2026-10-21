@@ -22,3 +22,16 @@
 - TIMEOUTS_NOTE "buli kitundu ekinene" (for "a half"): this may be unclear.
 - Country names: Awusitureeliya, Bungereza, Sikotilandi, Welisi, Ayalandi ey'Obukiikakkono, Malayiziya, Singapoo, Samowa, Namibiya. "South Afrika" and "New Zealand" are kept close to English.
 - Several rules texts (RULES_COURT_TEXT, CTRL_DEFEND_TEXT, CUP_ABOUT) come out about 1.3x the English length, which is normal for Luganda. Check that they fit on screen.
+
+## Added in 0.2
+- Coach **omutendesi**; tips **amagezi g'omutendesi**; umpiring (setting) **obulamuzi**; "fewer whistles" **efirimbi ntono**.
+- Escalate **kyongezeddwa** (CALL_ESCALATE "Kyongezeddwa: pasi ya peneti"); pass advanced **pasi etwaliddwa mu maaso**; ordered off **agobeddwa** (matches *okumugoba* in RULES_SANCTIONS_TEXT).
+- Club season **Sizoni ya Kiraabu**; table **olukalala** (as in the world-ranking list); round **omutendera** (ROUND_N "Omutendera {n}"); grand final **fayinolo ennene**; premiers **Bakyampiyoni!** (same word as CUP_WON); the season stage **Sizoni**.
+- "Dashed ring" is **empeta ey'obutonnyeze**; "mark her" is **omukuume**.
+
+## Check first (0.2)
+- ROUND_N / MENU_LEAGUE_DESC "omutendera": Ugandan sport writing may prefer another word (or "raundi") for a league round.
+- LEAGUE_TABLE "Olukalala" vs a loan such as "ttaabulo".
+- CALL_ESCALATE "Kyongezeddwa" and CALL_ADVANCE "Pasi etwaliddwa mu maaso": the umpiring sense may not be clear.
+- UMP_REAL "Nga ddala" and UMP_STANDARD "Ekya bulijjo" as option chips.
+- COACH_PASS and COACH_DEFEND are the longest tips (about 1.1x English); check they fit the coach box.

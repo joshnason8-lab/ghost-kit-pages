@@ -26,3 +26,10 @@ South African orthography (wa, ya, tshwaya, jwang). Lesotho orthography differs 
 - Country names: Engelane, Jamaika, Ireland Leboya; Scotland and Wales kept in English.
 - Long rule texts (RULES_FOOTWORK_TEXT, RULES_CENTRE_TEXT, RULES_SANCTIONS_TEXT) for grammar and length.
 - `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.
+
+## Added in 0.2
+- Coach **mokwetlisi**; tips **malebela** ("Malebela a mokwetlisi"); umpiring **boahlodi**; whistle **mololi / melodi**; penalties in the umpiring notes rendered as **diphoso** (faults).
+- Escalate **e nyollotswe** ("E nyollotswe: pase ya kotlo"); advance **e isitswe pele** ("Pase e isitswe pele"); ordered off **o ntshitswe lebaleng**.
+- Club season **Sehla sa Ditlelabo**; table **tafole**; round **potoloho / dipotoloho**; grand final **final e kgolo** (follows STAGE_FINAL "Final"); finals stay **makgaolakgang**; premiers **Ditshampione!** (same as CUP_WON); titles **ditlotla**.
+- Tap **tobetsa**; stick kept as **joystick** (as in CTRL_* texts); mark a player **lebela**. 0.9 m with a decimal point, as elsewhere in this file.
+- Check first: `ROUND_N` "Potoloho" (I am unsure of the usual word for a league round), `MENU_LEAGUE` "Sehla", `CALL_ESCALATE` "E nyollotswe", `UMP_FEWER` "Melodi e fokolang", `UMP_STANDARD` "Ka tlwaelo", `LEAGUE_TABLE` "Tafole", `COACH_FOOTWORK` "e phaphamatsa", `REC_TITLES`.

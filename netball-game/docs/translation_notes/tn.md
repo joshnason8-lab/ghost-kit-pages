@@ -22,3 +22,10 @@
 - Country names: Aforika Borwa, Engelane, Jamaika, Ireland Bokone; Scotland and Wales kept in English.
 - Setswana and Sesotho strings were written in parallel; check that no Sesotho forms leaked in.
 - `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.
+
+## Added in 0.2
+- Coach **mokatisi**; tips **dikgakololo** ("Dikgakololo tsa mokatisi"); umpiring **botsereganyi**; whistle **phala / diphala**; penalties in the umpiring notes rendered as **diphoso** (faults).
+- Escalate **e godisitswe** ("E godisitswe: pase ya kotlhao"); advance **e isitswe pele** ("Pase e isitswe pele"); ordered off **o ntshitswe lebaleng**.
+- Club season **Paka ya Ditlelabo** (paka = period/season); table **tafole**; round **potologo / dipotologo**; grand final **final e kgolo**; finals stay **difinale**; premiers **Bafenyi!** (same as CUP_WON); titles **ditlotla**. Elite match: **motshameko wa baitseanape**.
+- Tap **tobetsa**; stick kept as **joystick**; mark a player **disa**. 0.9 m with a decimal point, as elsewhere in this file.
+- Check first: `MENU_LEAGUE` / `STAGE_SEASON` "Paka" (alternative "Sešene"), `ROUND_N` "Potologo", `UMP_FEWER` "Diphala di le dinnye", `CALL_ESCALATE` "E godisitswe", `COACH_DEFEND` "o mo disa", `COACH_TIPS_NOTE` (long), and again that no Sesotho forms leaked in.

@@ -22,3 +22,10 @@
 - `INTERVAL_NOTE` and `RESULT_WINS` — check mutations once {next} and {team} are filled in.
 - `RULES_CENTRE_TEXT`, `RULES_SANCTIONS_TEXT`, `CUP_ABOUT` — longest strings, check flow and length.
 - `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.
+
+## Added in 0.2
+- Coach **hyfforddwr**; tips **cynghorion** ("Cynghorion yr hyfforddwr"); umpiring **dyfarnu**, levels Llai o chwibanu / Safonol / Cyfradd go iawn.
+- Escalate **wedi'i chodi** ("Wedi'i chodi: pàs gosb", feminine after pàs); advance **ymlaen** ("Pàs ymlaen"); ordered off **wedi'i hanfon o'r cwrt** (as in RULES_SANCTIONS_TEXT).
+- Club season **Tymor Clwb**; table **tabl**; round **rownd** (rowndiau terfynol = finals, as for the cup); grand final **y brif ffeinal**; premiers **Pencampwyr!** (same word as CUP_WON).
+- Stick **ffon**, tap **tapiwch** (as in QUIT_SURE), dashed ring **cylch toredig**. 0.9 m with a decimal point.
+- Check first: `CALL_ESCALATE` and `CALL_ADVANCE` (no settled Welsh umpire wording), `LEAGUE_WON` (could be "Pencampwyr y gynghrair!" if it fits the title), `STAGE_GRAND_FINAL`, mutations in `COACH_DEFEND` ("a'i marcio hi") and in strings where {pass}/{lob}/{defend} follow a verb, and `COACH_TIPS_NOTE` (cynghorion vs awgrymiadau).

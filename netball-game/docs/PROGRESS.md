@@ -8,7 +8,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 
 - Branch `claude/netball-game`, folder `netball-game/` (self-contained Godot 4.7.2 project), pages folder
   `centre-pass-netball/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
-- Version 0.1.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
+- Version 0.2.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
   https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/centre-pass-netball-beta.
 
 ## Done
@@ -23,7 +23,8 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   scoreboard, touch controls with movable buttons, the AI for both teams, the umpires' calls, box score.
 - Screens: home (court-shaped menu, bib rail), quick setup (team sheet), settings, how to play (four tabs, the
   positions with area maps), result with box score, Nations Cup, records, licences.
-- Tests: test_runner with a check for each rule, rule- League options: the Double Zone, time-outs (90 s, two a half, after a goal) and rolling changes.
+- Tests: test_runner with a check for each rule, the rules in play, the cup, controls and motion.
+- League options: the Double Zone, time-outs (90 s, two a half, after a goal) and rolling changes.
 - CI: the Android build (tests, fit audit, input test, APK, beta release) and the Play bundle (unsigned; target API
   36, min 24, only VIBRATE, isGame, 16 KB pages: all checked) pass.
 - Store: PLAY_STORE.md, English listings (6 regional), icon, feature graphic, 7 screenshots; pages; README; BETA.md;
@@ -32,19 +33,23 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   ms-MY, zh-CN, si-LK, ta-IN besides the six English ones. (The usage limit stopped work at about 07:45 UTC; it
   resumed at 09:48.)
 - Umpires warn and suspend (R6); injury stoppages hold time (R10).
+- Round two (0.2.0-beta): the Web build played by touch in Chromium at three phone shapes (docs/PLAYTEST.md) and
+  its findings fixed with tests (pause button, Back/Esc, language list, pass target, key hints, interval screen,
+  name tags, home art); the coach's tips for a first match; the umpires advance, escalate and order off; the
+  Umpiring setting (AI penalty rate); the Club Season (eight invented clubs); the rules re-checked (rule numbers,
+  on-the-line offside, simultaneous infringement, ET interval) with what is still blocked recorded in RULES.md;
+  339 strings in all 19 languages, fit audit clean.
 
 ## Next
 
-1. Native speakers' review of every translation (docs/translation_notes/), the lower-resource languages first.
-2. Ordering off, and the umpires' advance and escalate options (in the rules module, unused).
-3. A club league season (invented club nicknames in Australia, New Zealand, England, South Africa).
-4. The after-goal tactical change (2024) on request.
+1. Native speakers' review of every translation (docs/translation_notes/), the lower-resource languages first; the
+   0.2 strings are listed under "Added in 0.2" in each.
+2. The non-English store listings: add the Club Season and the coach (the English ones have them).
+3. A home-and-away Club Season (14 rounds) as an option, and a finals series with a second chance for the top two.
+4. The after-goal tactical change (2024) on request; the without-ball obstruction signal drawn.
 5. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
-7. Meshy models (docs/MESHY_BRIEF.md) if the owner chooses; the upload key and the closed test (store/PLAY_STORE.md).
-
-s), suspension in play, injury stoppages.
-5. A club league season (invented club nicknames) after the Nations Cup.
-6. Meshy models (docs/MESHY_BRIEF.md) if the owner chooses.
+6. Meshy models (docs/MESHY_BRIEF.md) if the owner chooses; the upload key and the closed test (store/PLAY_STORE.md).
+7. Open the rules PDF when the network allows and settle the items in RULES.md "Still unconfirmed".
 
 ## Decisions
 
@@ -74,5 +79,10 @@ s), suspension in play, injury stoppages.
   only where they are official).
 - **armeabi-v7a**: the Play bundle includes 32-bit ARM as well as 64-bit, for the older phones common in Malawi,
   Uganda, Zambia and Zimbabwe; the sideload beta APK is 64-bit only, as Kabaddi's and Takraw's are.
-- **Workflow use**: the 18 translations were run as one multi-agent workflow (six translator agents in parallel),
-  a choice made on my own for speed overnight; no user opt-in was asked for, since the owner was asleep.
+- **Workflow use**: round one's 18 translations were run as one multi-agent workflow, a choice made on my own for
+  speed overnight. The owner has not opted in to workflows, so round two used three translator subagents instead.
+- **Club names** (round two): invented city + nickname, checked by web search against the top leagues of the four
+  countries; "Sunbirds" clashed with a South African league team and became the Strelitzias; Kestrels and Kāhu,
+  each close to a team in the same country, became Brolgas and Kārearea.
+- **Coach**: tips rather than a scripted tutorial match, so a first-timer plays a real match from the first tap; each
+  tip shows once, when its moment comes, and the tips stop after the first full match.

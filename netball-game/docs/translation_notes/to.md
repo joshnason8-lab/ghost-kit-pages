@@ -19,3 +19,10 @@
 - `QUARTER_SHORT` "K{n}" (kuata), `EXTRA_TIME_SHORT` "TF{n}" (taimi fakalahi), `COL_P/W/D/L` → V/I/T/M (vaʻinga, ikuna, tatau, mole), and the `BOX_*` abbreviations (K/F, Fafa, Tokon, Maʻu, Puke, Teke, Foki, Taut, Mole; CPR kept).
 - Country names: Simipapuei, Pāpeitosi, Potisiuana, Tilinitati mo Topako, ʻIukanitā, Sīlangikā. Most of these are guessed transliterations.
 - Several rules texts (RULES_PENALTIES_TEXT, RULES_SANCTIONS_TEXT, RULES_TEAMS_TEXT) and INTERVAL_NOTE are about 1.3–1.4x the English length. Tongan runs longer. Check the layout.
+
+## Added in 0.2
+- Coach **faiako**; tips **fakahinohino**; umpiring **founga fakamaau**, levels Siʻi ange e ifi / Angamaheni / Tuʻunga moʻoni.
+- Escalate **hiki hake** ("Hiki hake: paasi tautea"); advance **ki muʻa** ("Paasi ki muʻa"); ordered off **tuli ki tuʻa** (as in RULES_SANCTIONS_TEXT).
+- Club season **Sīsini Kalapu** (loan); table **tēpile**; round **takai**; grand final **fainolo lahi**; premiers **Ikuna ʻo e liki!** (liki as in RULES_DZ; champions stays "ikuna lahi" as in CUP_WON).
+- Tap **tā** (as in QUIT_SURE), stick **sitiki**, dashed ring **takai laine motumotu**, whistle **ifi**. 0.9 m with a decimal point.
+- Check first: `ROUND_N`/`ROUND_N_OF` "Takai" (the same word is used for the ring in the CTRL/COACH texts; a different word for a round may be better), `MENU_LEAGUE` "Sīsini", `LEAGUE_WON`, `CALL_ESCALATE`/`CALL_ADVANCE`, `COACH_INTERCEPT` ("ʻi he ʻatā" for "in the air"), and `COACH_WHISTLE` ("tohi ʻi ʻolunga" for the banner).

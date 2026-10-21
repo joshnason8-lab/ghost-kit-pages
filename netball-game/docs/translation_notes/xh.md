@@ -24,3 +24,10 @@
 - Grammar and noun-class agreement throughout (ibhola is treated as class 9: "ibhola engena", "iphume").
 - Length: about a dozen descriptions run 1.3–1.4x the English character count (agglutination). Check that they fit their text boxes.
 - `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.
+
+## Added in 0.2
+- Coach **umqeqeshi**; tips **iingcebiso** ("Iingcebiso zomqeqeshi"); umpiring **ukugweba**; whistles **iimpempe**; penalties in the umpiring notes rendered as **iimpazamo** (faults).
+- Escalate **inyuswe** ("Inyuswe: ipasi yesohlwayo"); advance **isiwe phambili** ("Ipasi isiwe phambili"); ordered off **ukhutshwe ebaleni** (matches RULES_SANCTIONS_TEXT).
+- Club season **Isizini Yeeklabhu**; table **itheyibhile**; round **umjikelo**; grand final **owamagqibela omkhulu**; premiers **Iintshatsheli!** (same as CUP_WON, kept short for the large title); titles **iitayitile**.
+- Tap **cofa** (as in TEAM_CHANGES_NOTE); post **ipali**; banner **ibhena**; mark a player **linda**. 0,9 m with decimal comma. LEAGUE_ABOUT reuses the CUP_ABOUT wording, so the amanqaku (goals/points) ambiguity carries over.
+- Check first: `CALL_ESCALATE` "Inyuswe", `UMPIRING` "Ukugweba", `UMP_REAL` "Njengokwenyani", `LEAGUE_TABLE` "Itheyibhile", `ROUND_N` "Umjikelo", `REC_TITLES` "Iitayitile", `COACH_DEFEND` "umlinde", and noun-class agreement in the COACH_* tips.

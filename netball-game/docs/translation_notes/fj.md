@@ -25,3 +25,10 @@
 - `VERSION_N` "Tabana {v}", `DEV_ON/OFF`, `CTRL_KEYS_TEXT` ("kii vakatakilakila" for arrow keys) — technical wording is uncertain.
 - Country names: Ositerelia, Niusiladi, Igiladi, Aferika ki Ceva, Sikotiladi, Airelani ki Vualiku, Viti, Singapoa, Malesia; others left as international spellings.
 - Fijian runs long: `BIB_TEAM_NOTE`, `GFX_NOTE`, `RULES_COURT_TEXT`, `TIMEOUTS_NOTE` are about 1.3x English; check layout.
+
+## Added in 0.2
+- Coach **vakatavulica** (as in Fijian sports reporting); tips **ivakasala**; umpiring **veilewai** (from dauveilewai), levels Lailai na uvi / Vakamatau / Wiliwili dina.
+- Escalate **vakalevutaki** ("Vakalevutaki: pasi ni itotogi"); advance **toso i liu** ("Toso i liu na pasi"); ordered off **vakasavai** (as in RULES_SANCTIONS_TEXT).
+- Club season **Sisini ni Kalabu** (loan); table **ivakatagedegede** (as in STAGE_DONE); round **raundi**; grand final **fainala levu**; premiers **Dauqaqa ni liki!** (liki as in RULES_DZ).
+- Tap **tabaka** (as in QUIT_SURE), stick **joystick**, dashed ring **mama ni laini motumotu**, banner **ivakatakilakila e cake**. 0.9 m with a decimal point.
+- Check first: `MENU_LEAGUE` "Sisini" (yabaki is an alternative), `COACH` "Vakatavulica", `UMP_STANDARD` "Vakamatau", `UMP_REAL` "Wiliwili dina", `CALL_ESCALATE`/`CALL_ADVANCE`, and `LEAGUE_TABLE` (a long word for a tab or header; "Teveli" would be shorter).

@@ -19,3 +19,15 @@
 - `BOX_TO` "Pot" (potezo?) is unclear; `COL_P/W/D/L` Mc/Sh/Sr/Fu; `EXTRA_TIME_SHORT` "MN{n}".
 - `CALL_BREAKING` "Kutoka mapema", `CALL_REPLAYED_BALL` "Kuudaka tena".
 - New keys: "Muda wa kusimama" for time-out; `TIMEOUTS_NOTE` is about 1.35x English.
+
+## Added in 0.2
+- Coach **kocha**; tips **vidokezo vya kocha**; umpiring (setting) **uamuzi**; "fewer whistles" **filimbi chache**.
+- Escalate **imepandishwa** (CALL_ESCALATE "Imepandishwa: pasi ya penalti"); pass advanced **pasi imesogezwa mbele**; ordered off **ametolewa nje** (as in RULES_SANCTIONS_TEXT).
+- Club season **Msimu wa Klabu**; table **msimamo** (league standings, as in football); round **raundi**; grand final **fainali kuu**; premiers **Mabingwa!** (same as CUP_WON).
+- "Mark her" is **umkabe**; "dashed ring" is **pete ya vistari**.
+
+## Check first (0.2)
+- UMPIRING "Uamuzi" (could read as "decision"); "Waamuzi" or "Upulizaji filimbi" are alternatives.
+- CALL_ESCALATE "Imepandishwa" in the umpiring sense.
+- LEAGUE_ABOUT uses "Uingereza" for England, as TEAM_ENG does (see the earlier note).
+- REC_TITLES "Mataji ya Msimu wa Klabu".

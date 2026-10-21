@@ -21,3 +21,15 @@
 - `VS` "lwn" (lawan) — standard in Malaysian press.
 - `RULES_FOOTWORK_TEXT`, `RULES_PENALTIES_TEXT` — long rule sentences; check flow and length.
 - `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.
+
+## Added in 0.2
+- Coach **jurulatih**; tips **tip jurulatih**; umpiring (setting) **pengadilan**; "fewer whistles" **kurang wisel**; standard **Standard**; real rate **kadar sebenar**.
+- Escalate **dinaikkan** (CALL_ESCALATE "Dinaikkan: hantaran penalti"); pass advanced **hantaran dimarakan**; ordered off **diusir keluar** (as in RULES_SANCTIONS_TEXT).
+- Club season **Musim Kelab**; table **kedudukan** (standings; *jadual* would mean schedule); round **pusingan**; grand final **final besar**; premiers **Juara!** (same as CUP_WON); titles **kejuaraan**.
+- "Mark her" is **kawal dia**; "dashed ring" is **gelang putus-putus**; "tap" is **ketik**.
+
+## Check first (0.2)
+- UMPIRING "Pengadilan": correct but also means "court/tribunal"; "Tiupan wisel" or "Gaya pengadil" may read better.
+- STAGE_GRAND_FINAL "Final besar": Malaysian leagues often just say "Grand Final".
+- CALL_ADVANCE "Hantaran dimarakan".
+- ROUND_N_OF "Pusingan {n} daripada {of}" is about 1.5x English; check where it is shown.

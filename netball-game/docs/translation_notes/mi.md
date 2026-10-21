@@ -19,3 +19,10 @@
 - `COL_P/W/D/L` → Tk/To/Ō/Hi (tākaro, toa, ōrite, hinga), `COL_PTS` "Kaute", and the `BOX_*` abbreviations (P/W, Whāng, Āwh, TWH, Riro, Hauk, Pare, Hoki, Whiu, Ngaro). These are the most likely to need changing.
 - Country names that are less settled: Timuwawe (Zimbabwe), Papatohe (Barbados), Poriwana (Botswana), Tirinitā me Topako, Hiri Rānaka.
 - `ON`/`OFF` "Kā"/"Weto", `SIMULATE` "Whakatairite", `PAUSED` "Kua tatari".
+
+## Added in 0.2
+- Coach **kaiako**; tips **tohutohu**; umpiring **te wawao** (from kaiwawao), levels Iti iho ngā whio / Paerewa / Auau tūturu.
+- Escalate **kua piki** ("Kua piki: tuku whiu"); advance **whakamua** ("Tuku whakamua"); ordered off **kua panaia atu** (pana atu as in RULES_SANCTIONS_TEXT).
+- Club season **Tau Karapu** (tau = season/year); table **tūtohi**; round **rauna**; grand final **whiringa toa nui**; premiers **Toa o te Rīki!** (rīki as in RULES_DZ).
+- Tap **pāwhiria** (as in TEAM_CHANGES_NOTE), stick **rākau**, dashed ring **mowhiti motumotu**, banner **te pae i runga**. 0.9 m with a decimal point.
+- Check first: `UMPIRING` "Te wawao", `UMP_REAL` "Auau tūturu", `CALL_ESCALATE`/`CALL_ADVANCE`, `MENU_LEAGUE` "Tau Karapu" (kaupeka is an alternative for season), `STAGE_GRAND_FINAL`, and `COACH_WHISTLE` (pae for the banner).

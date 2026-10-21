@@ -21,3 +21,10 @@
 - EXTRA_TIME_SHORT "NW{n}" (invented abbreviation).
 - Country names: South Africa, England, Northern Ireland kept in English as is common in Malawian usage; confirm.
 - `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.
+
+## Added in 0.2
+- Coach **mphunzitsi**; tips **malangizo** ("Malangizo a mphunzitsi"); umpiring **kuyimbira**; whistle **muluzu / miluzu** (as in RULES_GOAL_TEXT); penalties in the umpiring notes rendered as **zolakwa** (faults).
+- Escalate **yasanduka** ("Yasanduka: pasi ya chilango", = "it became"); advance **yapita patsogolo** ("Pasi yapita patsogolo"); ordered off **watulutsidwa m'bwalo** (matches RULES_SANCTIONS_TEXT "kumutulutsa").
+- Club season **Nyengo ya Makalabu**; table **tebulo**; round **rawundi / marawundi** (loanword, like fainolo, kalabu); grand final **fainolo yaikulu**; finals stay **mafainolo**; premiers **Akatswiri!** (same as CUP_WON); titles **zikho** (trophies). Elite match: **masewera apamwamba**.
+- Tap **dinani**; stick kept as **joystick**; mark a player **kulondera**. Polite plural address kept. 0.9 m with a decimal point, as elsewhere in this file.
+- Check first: `ROUND_N` "Rawundi" (alternatives: "Gawo", or keep "Round"), `CALL_ESCALATE` "Yasanduka", `UMP_STANDARD` "Wamba", `UMP_REAL` "Ngati zenizeni", `LEAGUE_TABLE` "Tebulo", `COACH_FOOTWORK` "imayandamitsa", `REC_TITLES` "Zikho".
