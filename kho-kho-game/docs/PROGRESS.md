@@ -21,16 +21,29 @@ The kho kho game, built overnight on 21-22 October 2026 on branch `claude/kho-kh
 - Screens: home (the kho lane menu over an AI match), match setup + toss, settings, how to play, records, result
   with box score, championships (world, to fast rules; national, to classic rules), licences, move buttons.
 - Venues: village ground at dusk, school ground, indoor arena on mats, floodlit stadium.
-- test_runner green: 307 checks.
+- test_runner green: 319 checks (every law; screens in every language; scrolling text passes touches; championships
+  of both kinds; AI matches in both rule books with the score checked against the outs and dream runs; a motion
+  audit: no snaps, smooth speed changes; your own controls).
+- All fourteen languages translated (subagents, each with a notes file in docs/translation-notes/ for a native
+  speaker); fit_audit clean at 16:9, 19.5:9, 20:9 with a cut-out, and 4:3, in every language.
+- The AI calibrated against real finals with tests/match_sim (docs/AI.md): ~2 outs a minute between equal sides
+  (real 1.3-1.6), AI fouls ~0.3 a minute.
+- Docs: RULES.md (every rule, source, conflicts), LANGUAGES.md, AI.md, MESHY_BRIEF.md, BETA.md, README with the
+  perf_probe numbers.
+- Store: PLAY_STORE.md, listings in en-US/en-IN/en-GB and eleven Play languages, the icon, feature graphic and seven
+  screenshots rendered from the game. Pages in khamba-dash/.
+- Music: raag Bhupali on a bansuri over keherwa; the crowd's dhol and thali in matches.
+- CI green; beta APK on the khamba-dash-beta release; the Play bundle workflow passes (unsigned).
 
 ## Next
 
-1. Push the skeleton, open the draft PR, CI green, beta release.
-2. Translations for the 13 other languages (subagents), fit_audit clean at the four shapes.
-3. docs/RULES.md, docs/LANGUAGES.md, docs/AI.md, docs/MESHY_BRIEF.md, docs/BETA.md, README.
-4. Pages (khamba-dash/), store/PLAY_STORE.md, listings, icon, feature graphic, screenshots from the game.
-5. Music (tools/audio/make_music.py, a dhol and harmonium loop), perf_probe numbers in the README.
-6. Polish: AI tuning to the measured rates, motion check on the kho and dive, the user-chaser feel.
+1. A native speaker's pass over each translation (docs/translation-notes/), and the rule-book conflicts in
+   docs/RULES.md checked against a printed KKFI rule book (the rulebook sites were blocked from here).
+2. Feel on a real phone: the chaser's run and kho timing, the camera, button places; a Galaxy A0x/A1x at Low.
+3. A feature graphic without the HUD; a nicer icon (hands, a rounder figure).
+4. More motion: a proper pole turn (hand on the pole, swing round), sitters' heads following the play.
+5. A league (a franchise-style season with invented city sides) as a second competition.
+6. Meshy models when the owner chooses (docs/MESHY_BRIEF.md).
 
 ## Decisions, and why
 
