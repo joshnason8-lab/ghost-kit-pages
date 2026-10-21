@@ -630,12 +630,15 @@ func _try_contacts() -> void:
 	var b := ball.global_position
 	if b.y > CATCH_H + 0.6:
 		return
+	# The nearest player in reach goes for it first, whichever side he is on.
+	var best: Player = null
+	var bd := REACH + 0.3
 	for pl in all_players():
 		var p: Player = pl
 		if not p.on_pitch() or p.busy() or p.down(now):
 			continue
 		var hd := Vector2(b.x - p.global_position.x, b.z - p.global_position.z).length()
-		if hd > REACH + 0.3:
+		if hd > bd:
 			continue
 		if ball.last_touch == p and now - float(ball.get_meta("t_launch", 0.0)) < 0.5:
 			continue
@@ -643,12 +646,10 @@ func _try_contacts() -> void:
 			continue
 		if p == active and controls.visible:
 			continue
-		var h := b.y
-		if h > 1.3:
-			_attempt(p, "catch")
-		else:
-			_attempt(p, "lift")
-		return
+		bd = hd
+		best = p
+	if best != null:
+		_attempt(best, "catch" if b.y > 1.3 else "lift")
 
 
 ## The 13 m rule: a puck-out must travel 13 m before another of the taker's side plays it.
@@ -823,7 +824,10 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 	if near != null:
 		pressure = 1.0 - near.global_position.distance_to(pl.global_position) / 4.0
 	var skill_k: float = 1.0 / float(ai[pl.team].skill) if pl != active else 0.9
-	var sigma := (0.45 + dist * 0.042) * (1.55 - acc) * (1.0 + pressure * 0.9) * skill_k
+	# From 35 m about three in four go over, from 50 m about three in five (55% from play in 2026, 75% from frees).
+	var sigma := (0.8 + dist * 0.075) * (1.6 - acc) * (1.0 + pressure * 1.2) * skill_k
+	if String(shot.get("placed", "")) != "":
+		sigma *= 0.72
 	if bool(shot.get("goal", false)):
 		sigma = (0.4 + dist * 0.03) * (1.5 - acc) * (1.0 + pressure)
 	var aim := target + Vector3(0, rng.randfn(0.0, sigma * 0.5), rng.randfn(0.0, sigma))
@@ -865,8 +869,12 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 ## A strike to a teammate: long and dropping into his path at a height he can catch.
 func _strike_pass(pl: Player, to: Player, placed := "") -> void:
 	var lead := to.vel * clampf(pl.global_position.distance_to(to.global_position) / 28.0, 0.3, 2.0)
-	var target := to.global_position + lead + Vector3(0, 1.9, 0)
-	target = Pitch.clamp_in(target, 1.5) + Vector3(0, 1.9, 0)
+	var target := Pitch.clamp_in(to.global_position + lead, 1.5)
+	# A ball into the forwards drops in front of the square, not into the net or over the bar.
+	var d := dir(pl.team)
+	if Pitch.from_goal_line(target, d) < 14.0:
+		target.x = (Pitch.HALF_L - 14.0) * d
+	target += Vector3(0, 1.9, 0)
 	var kind := "strike" if pl.ball_hand or placed != "" else "strike_stick"
 	if placed == "sideline":
 		kind = "cut"
@@ -897,8 +905,9 @@ func _pass_contact(pl: Player, target: Vector3, placed: String) -> void:
 	var acc := float(pl.data.get("accuracy", 70)) / 100.0
 	var sigma := (0.5 + dist * 0.05) * (1.5 - acc)
 	var aim := target + Vector3(rng.randfn(0.0, sigma), 0, rng.randfn(0.0, sigma))
-	var speed := clampf(dist * 0.5 + 10.0, 16.0, 40.0)
-	var sol := Sliotar.solve(from, aim, speed, dist > 55.0)
+	var speed := clampf(dist * 0.45 + 10.0, 16.0, 38.0)
+	var near_goal := Pitch.from_goal_line(target, dir(pl.team)) < 30.0
+	var sol := Sliotar.solve(from, aim, speed, dist > 55.0 or near_goal)
 	var v: Vector3 = sol[0] if not sol.is_empty() else (Vector3(aim.x - from.x, 0, aim.z - from.z).normalized() * 0.8 + Vector3(0, 0.6, 0)) * 36.0
 	_release(pl)
 	ball.global_position = from
@@ -1007,7 +1016,7 @@ func _keeper_reacts(shooter_team: int) -> void:
 	var reaction := maxf(0.05, t - 0.22)
 	var cover := 1.0 + reaction * 3.5    # how far he can get to, and reach, in the time
 	if p.y < Pitch.BAR_H:
-		var chance := clampf((cover - absf(p.z - k.global_position.z) * 0.9) / cover, 0.0, 1.0) * lerpf(0.45, 0.85, keep)
+		var chance := clampf((cover - absf(p.z - k.global_position.z) * 0.8) / cover, 0.0, 1.0) * lerpf(0.45, 0.8, keep)
 		chance *= clampf(1.3 - v.length() / 45.0, 0.4, 1.0)
 		k.play("save", Vector3(p.z - k.global_position.z, 0, 0))
 		if rng.randf() < chance:
@@ -1240,7 +1249,12 @@ func _tackle(d: Player, c: Player) -> void:
 	var through := _goal_chance(c)
 	var foul_p := 0.08 + (0.22 if behind and kind in ["tackle", "hook"] else 0.0) - tk * 0.06
 	if through:
-		foul_p += 0.28   # the cynical foul: a pull-down or a trip to stop a goal
+		# The cynical foul: a pull-down or a trip to stop a goal. Rare (a penalty and the sin bin cost more than
+		# the goal chance most times): about one black card in four or five senior games.
+		foul_p *= 0.3
+	# Defenders in their own large rectangle, where a foul is a penalty, go in more carefully.
+	if Pitch.in_large_rect(c.global_position, dir(c.team)):
+		foul_p *= 0.35
 	if int(Game.settings.get("difficulty", 1)) == 0 and c.team == user_team:
 		foul_p += 0.04
 	var ok_p: float = {"tackle": 0.22, "flick": 0.38, "hook": 0.45, "block": 0.5}[kind] * lerpf(0.7, 1.2, tk)

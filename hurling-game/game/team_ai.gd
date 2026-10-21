@@ -149,9 +149,10 @@ func decide(pl: Player) -> Dictionary:
 	# A shot: a point from where he is, or a goal if he is through.
 	var chance := shot_chance(pl, dist, absf(p.z), press_d)
 	var goal_chance := goal_shot_chance(pl, dist, absf(p.z), press_d)
-	if goal_chance > 0.42 and goal_chance > chance * 0.6:
+	# A goal is gone for only with a clear sight of it: inside the 20 m line, no defender but the goalkeeper close.
+	if goal_chance > 0.32 and goal_chance > chance * 0.5 and nearest_opponent_d(pl, 3.5) and rng_ok():
 		return {"kind": "goal"}
-	if chance >= lerpf(0.62, 0.48, clampf((60.0 - dist) / 40.0, 0.0, 1.0)) / skill:
+	if chance >= lerpf(0.5, 0.4, clampf((60.0 - dist) / 40.0, 0.0, 1.0)) / skill:
 		return {"kind": "shoot"}
 	# A pass to someone better placed.
 	var best := best_pass(pl, press_d)
@@ -184,9 +185,9 @@ func _carry_target(pl: Player) -> Vector3:
 ## from 45 m, falling off past 65 m, less from a tight angle, less again under pressure, more for a good striker.
 static func shot_chance(pl: Player, dist: float, off_centre: float, press_d: float) -> float:
 	var acc := float(pl.data.get("accuracy", 70)) / 100.0
-	var base := 0.95 - maxf(0.0, dist - 22.0) * 0.0105
-	if dist > 70.0:
-		base -= (dist - 70.0) * 0.02
+	var base := 0.97 - maxf(0.0, dist - 20.0) * 0.012
+	if dist > 65.0:
+		base -= (dist - 65.0) * 0.02
 	var angle := atan2(off_centre, maxf(1.0, dist * 0.9))
 	base -= maxf(0.0, angle - 0.45) * 0.55
 	if press_d < 4.0:
@@ -196,10 +197,10 @@ static func shot_chance(pl: Player, dist: float, off_centre: float, press_d: flo
 
 ## The chance of a goal: only close in (inside about 25 m), in front, with room to strike.
 static func goal_shot_chance(pl: Player, dist: float, off_centre: float, press_d: float) -> float:
-	if dist > 28.0 or off_centre > 16.0:
+	if dist > 25.0 or off_centre > 14.0:
 		return 0.0
 	var acc := float(pl.data.get("accuracy", 70)) / 100.0
-	var base := 0.62 - maxf(0.0, dist - 12.0) * 0.022 - off_centre * 0.018
+	var base := 0.62 - maxf(0.0, dist - 10.0) * 0.025 - off_centre * 0.02
 	if press_d < 3.0:
 		base -= 0.18
 	return clampf(base * lerpf(0.8, 1.1, acc), 0.0, 0.9)
@@ -238,6 +239,20 @@ func best_pass(pl: Player, press_d: float) -> Dictionary:
 			best_v = v
 			best = {"kind": "hand_pass" if hand else "pass", "to": r, "gain": gain}
 	return best if best_v > -5.0 else {}
+
+
+## No outfield defender within d metres of him (the goalkeeper aside).
+func nearest_opponent_d(pl: Player, d: float) -> bool:
+	for q in m.team_players(1 - team):
+		var o: Player = q
+		if o.on_pitch() and not o.is_keeper() and o.global_position.distance_to(pl.global_position) < d:
+			return false
+	return true
+
+
+## Most clear chances are still taken as points: a goal is gone for about one time in three.
+func rng_ok() -> bool:
+	return randf() < 0.6
 
 
 func _openness(r: Player) -> float:
@@ -289,6 +304,5 @@ func puck_out_choice(keeper: Player) -> Dictionary:
 	if short_best != null and bo > 9.0 and randf() < 0.5:
 		return {"kind": "short", "to": short_best}
 	var wing := -1.0 if randf() < 0.5 else 1.0
-	var land := Vector3((Pitch.HALF_L - 75.0 - randf() * 15.0) * -d * -1.0, 0, wing * randf_range(8.0, 24.0))
-	land.x = (-Pitch.HALF_L + 70.0 + randf() * 18.0) * d
+	var land := Vector3((-Pitch.HALF_L + 70.0 + randf() * 18.0) * d, 0, wing * randf_range(8.0, 24.0))
 	return {"kind": "long", "target": land}
