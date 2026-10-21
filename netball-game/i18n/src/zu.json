@@ -287,5 +287,17 @@
   "TEAM_SRI": "iSri Lanka",
   "TEAM_KEN": "iKenya",
   "TEAM_BOT": "iBotswana",
-  "TEAM_NAM": "iNamibia"
+  "TEAM_NAM": "iNamibia",
+  "TIMEOUTS": "Ama-time-out",
+  "TIMEOUTS_NOTE": "Umthetho weligi: iqembu ngalinye lingacela ama-time-out amabili emizuzwana engu-90 engxenyeni ngayinye, ngemva kwegoli. Elakho lisemenyu yokumisa.",
+  "ROLLING": "Ukushintsha noma nini",
+  "ROLLING_NOTE": "Umthetho weligi: shintsha iqembu noma nini kumenyu yokumisa, hhayi ngamakhefu kuphela.",
+  "TIME_OUT_N": "I-time-out (kusele {n})",
+  "TIME_OUT_CALLED": "I-time-out: {team}",
+  "TIME_OUT_NOTE": "Imizuzwana engu-90, isikhathi simisiwe. Shintsha iqembu manje; Qhubeka uma usulungile.",
+  "INJURY_HELD": "Isikhathi simisiwe: ukulimala",
+  "INJURY_NOTE": "Umdlali weqembu {team} ulimele. Iqembu linemizuzwana engu-30 ukumsiza aphume enkundleni; womabili amaqembu angashintsha. Qhubeka uma usulungile.",
+  "CALL_WARNING": "Isixwayiso",
+  "CALL_SUSPENSION": "Umisiwe: 2 min",
+  "SANCTION_LINE": "{pos} · {team}"
 }

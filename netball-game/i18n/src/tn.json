@@ -287,5 +287,17 @@
   "TEAM_SRI": "Sri Lanka",
   "TEAM_KEN": "Kenya",
   "TEAM_BOT": "Botswana",
-  "TEAM_NAM": "Namibia"
+  "TEAM_NAM": "Namibia",
+  "TIMEOUTS": "Di-time-out",
+  "TIMEOUTS_NOTE": "Molao wa liki: setlhopha sengwe le sengwe se ka kopa di-time-out di le pedi tsa metsotswana e 90 mo halofong nngwe le nngwe, morago ga kolo. Ya gago e mo menyung ya go emisa.",
+  "ROLLING": "Diphetogo nako nngwe le nngwe",
+  "ROLLING_NOTE": "Molao wa liki: dira diphetogo tsa setlhopha nako nngwe le nngwe go tswa mo menyung ya go emisa, e seng fela ka nako ya boikhutso.",
+  "TIME_OUT_N": "Time-out (go setse {n})",
+  "TIME_OUT_CALLED": "Time-out: {team}",
+  "TIME_OUT_NOTE": "Metsotswana e 90, nako e emisitswe. Dira diphetogo tsa setlhopha jaanong; Tswelela fa o setse o ipaakantse.",
+  "INJURY_HELD": "Nako e emisitswe: kgobalo",
+  "INJURY_NOTE": "Motshameki wa {team} o gobetse. Setlhopha se na le metsotswana e 30 go mo thusa go tswa; ditlhopha tsoopedi di ka dira diphetogo. Tswelela fa o setse o ipaakantse.",
+  "CALL_WARNING": "Tlhagiso",
+  "CALL_SUSPENSION": "O emisitswe: mets. 2",
+  "SANCTION_LINE": "{pos} · {team}"
 }

@@ -20,3 +20,4 @@
 - SIZE_LARGE/SIZE_XL "Lalikulu" agreement with "batani".
 - EXTRA_TIME_SHORT "NW{n}" (invented abbreviation).
 - Country names: South Africa, England, Northern Ireland kept in English as is common in Malawian usage; confirm.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.

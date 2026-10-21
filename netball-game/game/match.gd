@@ -185,7 +185,13 @@ func _process(delta: float) -> void:
 			_run_live(dt)
 		"stop":
 			if phase_t > 1.0:
-				_apply_award(_stop_award)
+				if _stop_award.has("injured") and not _stop_award.get("treated", false):
+					_injury_stop()
+				else:
+					_apply_award(_stop_award)
+		"injury":
+			if (demo and phase_t > 3.0) or _break_skip or phase_t > Rules.INJURY_STOP:
+				_end_injury()
 		"goal":
 			if phase_t > 2.4:
 				_setup_centre()
@@ -223,6 +229,15 @@ func _clock_runs() -> bool:
 
 func _tick_clock(dt: float) -> void:
 	time_left -= dt
+	# Suspensions run on playing time; she comes back on to her own area.
+	for t in 2:
+		for pl in players[t]:
+			if pl.suspended > 0.0:
+				pl.suspended -= dt
+				if pl.suspended <= 0.0:
+					pl.suspended = 0.0
+					pl.fenced = pl != me or bool(Game.settings.onside)
+					game_event.emit("return", {"team": t, "by": pl.pos})
 	if time_left <= 0.0:
 		time_left = 0.0
 		_end_period()
@@ -292,7 +307,7 @@ func _choose_taker() -> void:
 	var best: Player = null
 	var bd := INF
 	for pl in players[t]:
-		if not (pl.pos in ok) or pl.out_until > 0.0:
+		if not (pl.pos in ok) or pl.away():
 			continue
 		if bool(restart.shot) and not (pl.pos in ["GS", "GA"]):
 			continue
@@ -387,7 +402,7 @@ func _check_offside() -> void:
 			var off := Rules.offside(pl.pos, pl.p, pl.dir)
 			var stepped: bool = off and not pl.was_offside
 			pl.was_offside = off
-			if pl.out_until > 0.0 or not stepped:
+			if pl.away() or not stepped:
 				continue
 			_infringe("offside", pl, pl.p)
 			return
@@ -509,7 +524,7 @@ func _run_loose() -> void:
 	var bd := 0.75
 	for t in 2:
 		for pl in players[t]:
-			if pl.out_until > 0.0:
+			if pl.away():
 				continue
 			var d: float = pl.p.distance_to(b)
 			if d < bd and ball.pos.y < pl.reach(true) and not Rules.offside(pl.pos, b, pl.dir):
@@ -606,13 +621,13 @@ func _run_shot(dt: float) -> void:
 		game_event.emit("miss", {"by": pl.pos, "team": pl.team})
 
 
-## The chance a shot goes in: about 95% under the post, 85% at 2.5 m, 65% at the circle's edge for a shooter of 85;
-## a defender's arm over the ball takes up to a sixth off it. (Real shooters: GS about 86%, GA about 77%, the GA's
+## The chance a shot goes in: about 95% under the post, 87% at 2.5 m, 62% at the circle's edge for a shooter of 85;
+## a defender's arm over the ball takes up to an eighth off it. (Real shooters: GS about 86%, GA about 77%, the GA's
 ## shots longer: docs/RULES.md "Numbers".)
 static func shot_chance(dist: float, shooting: float, pressure: float) -> float:
-	var base := clampf(0.99 - 0.07 * dist - 0.009 * dist * dist, 0.25, 0.97)
-	var skill := lerpf(0.82, 1.06, clampf((shooting - 40.0) / 59.0, 0.0, 1.0))
-	return clampf(base * skill * (1.0 - 0.16 * pressure), 0.05, 0.98)
+	var base := clampf(0.995 - 0.045 * dist - 0.008 * dist * dist, 0.3, 0.98)
+	var skill := lerpf(0.84, 1.07, clampf((shooting - 40.0) / 59.0, 0.0, 1.0))
+	return clampf(base * skill * (1.0 - 0.12 * pressure), 0.05, 0.98)
 
 
 func _goal(pl: Player, value: int) -> void:
@@ -675,6 +690,45 @@ func _infringe(kind: String, by: Player, at: Vector2) -> void:
 	if by.team == user_team and by == me and not demo:
 		Game.haptic("penalty")
 	_award(a, by, kind)
+	_sanction(by, kind)
+
+
+## Game management (R6, 2024): proactive advice, then a warning for a player who keeps infringing, then a suspension
+## of two minutes of playing time (her team plays a player short), and ordering off for the worst. The game's
+## umpires warn a player at her fourth penalty since her last sanction and suspend her at the third after a warning.
+const WARN_AT := 4
+const SUSPEND_AT := 3
+
+
+func _sanction(pl: Player, kind: String) -> void:
+	if Rules.INFRINGEMENTS.get(kind, "") != Rules.PENALTY:
+		return
+	pl.pens += 1
+	if not pl.warned and pl.pens >= WARN_AT:
+		pl.warned = true
+		pl.pens = 0
+		game_event.emit("warning", {"team": pl.team, "by": pl.pos})
+		log.append({"t": _elapsed(), "q": q, "warning": pl.pos, "team": pl.team})
+	elif pl.warned and pl.pens >= SUSPEND_AT:
+		pl.pens = 0
+		suspend(pl)
+
+
+## Suspends a player for two minutes of playing time: she goes to her bench, and no one stands out of play for the
+## penalty (2024).
+func suspend(pl: Player) -> void:
+	pl.suspended = Rules.SUSPENSION
+	pl.out_until = 0.0
+	if restart.get("out") == pl:
+		restart.erase("out")
+	if _stop_award.get("by") == pl:
+		_stop_award.by = null
+	if me == pl and int(Game.settings.control) == Game.CONTROL_TEAM:
+		var n := ai.nearest_defender(pl.team, pl)
+		if n:
+			_set_me(n)
+	game_event.emit("suspension", {"team": pl.team, "by": pl.pos})
+	log.append({"t": _elapsed(), "q": q, "suspension": pl.pos, "team": pl.team})
 
 
 ## Stops play for an award: the whistle, the call and the signal, then (in "stop") the restart is set up.
@@ -694,6 +748,16 @@ func _award(a: Dictionary, by: Player, kind: String) -> void:
 		if u.controls(at):
 			u.call_signal(_signal_for(kind), team_dir(int(a.to)))
 	Sfx.play("whistle", -4.0)
+	# Now and then a player is hurt in the contact: the umpire will hold time (R10).
+	if kind == "contact" and by and not bool(config.get("no_injuries", false)) and rng.randf() < 0.04:
+		var hurt: Player = null
+		var hd := INF
+		for pl in players[1 - by.team]:
+			if pl.p.distance_to(at) < hd and not pl.away():
+				hd = pl.p.distance_to(at)
+				hurt = pl
+		if hurt:
+			_stop_award.injured = hurt
 	log.append({"t": _elapsed(), "q": q, "call": kind, "to": a.to, "award": a.kind, "at": [snappedf(at.x, 0.1), snappedf(at.y, 0.1)]})
 	game_event.emit("call", {"kind": kind, "award": a.kind, "to": a.to, "by": by.pos if by else "", "shot": a.shot})
 
@@ -715,7 +779,7 @@ func _apply_award(a: Dictionary) -> void:
 	restart = {"to": int(a.to), "kind": String(a.kind), "at": a.at, "shot": bool(a.shot), "why": String(a.get("why", ""))}
 	_choose_taker()
 	var by: Player = a.get("by")
-	if String(a.kind) == Rules.PENALTY and by and is_instance_valid(by):
+	if String(a.kind) == Rules.PENALTY and by and is_instance_valid(by) and by.suspended <= 0.0:
 		var taker: Player = restart.taker
 		var dirv := Vector2(0, 1 if taker.p.y < 0 else -1)
 		var spot: Vector2 = restart.spot + dirv * Rules.OUT_OF_PLAY_GAP
@@ -778,6 +842,32 @@ func call_timeout(t: int) -> void:
 	game_event.emit("timeout", {"team": t})
 	if hud:
 		hud.show_break(-1, q, t)
+
+
+## An injury stoppage (R10): time is held; the team has 30 seconds to get her off (or she plays on), and both teams
+## may make changes. The AI's injured players are replaced when the bench has someone for the position.
+func _injury_stop() -> void:
+	_stop_award.treated = true
+	var hurt: Player = _stop_award.injured
+	_enter("injury")
+	_break_skip = false
+	for u in umpires:
+		if u.controls(hurt.p):
+			u.call_signal("time", 1)
+	game_event.emit("injury", {"team": hurt.team, "by": hurt.pos})
+	log.append({"t": _elapsed(), "q": q, "injury": hurt.pos, "team": hurt.team})
+	if hud:
+		hud.show_break(-2, q, hurt.team)
+
+
+func _end_injury() -> void:
+	var hurt: Player = _stop_award.get("injured")
+	if hurt and hurt.team != user_team and rng.randf() < 0.7:
+		substitute(hurt)
+	_break_skip = false
+	if hud:
+		hud.hide_break()
+	_apply_award(_stop_award)
 
 
 func _end_timeout() -> void:
@@ -901,7 +991,7 @@ func _drive_me(dt: float) -> void:
 
 
 func out_of_play(pl: Player) -> bool:
-	return pl.out_until > 0.0
+	return pl.away()
 
 
 func _on_action(id: String) -> void:

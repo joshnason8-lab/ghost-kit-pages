@@ -88,7 +88,7 @@ func _set_cp(pl: Player, spot: Vector2, snap: bool, d: int) -> void:
 func settled() -> bool:
 	for t in 2:
 		for pl in m.players[t]:
-			if pl == m.holder or pl.out_until > 0.0:
+			if pl == m.holder or pl.away():
 				continue
 			if pl.vel.length() > 1.2:
 				return false
@@ -113,10 +113,13 @@ func think(dt: float) -> void:
 				var incoming: bool = m.ball.state == "flight" and m.pass_info.get("to") == pl
 				if not (incoming and m.controls and m.controls.joystick.length() < 0.1):
 					continue
+			if pl.suspended > 0.0:
+				_suspended(pl)
+				continue
 			if pl == m.holder:
 				_holder(pl, dt)
 				continue
-			if pl.out_until > 0.0:
+			if pl.away():
 				_out_of_play(pl)
 				continue
 			if centre_setup:
@@ -139,6 +142,8 @@ func think(dt: float) -> void:
 					continue
 			if pl == m.restart.get("taker") and m.phase == "setup":
 				continue
+			if _rejoin(pl):
+				continue
 			_play(pl, dt)
 	if m.phase == "live":
 		_slips(dt)
@@ -155,6 +160,41 @@ func _out_of_play(pl: Player) -> void:
 	pl.look_at_p = m.ball.court_pos()
 	if pl.p.distance_to(pl.target) < 0.3:
 		pl.set_act("out_of_play")
+
+
+## Suspended (R6): she waits by her team's bench, off the court, for two minutes of playing time.
+func _suspended(pl: Player) -> void:
+	pl.target = bench_spot(pl.team)
+	pl.want_speed = 3.0
+	pl.fenced = false
+	pl.look_on = true
+	pl.look_at_p = m.ball.court_pos()
+	if pl.p.distance_to(pl.target) < 0.4:
+		pl.set_act("ready")
+
+
+## Back from the bench (or from fetching a ball): off the court, she walks along outside the line until she is level
+## with her own areas, then steps on, so she never crosses an area she may not enter.
+func _rejoin(pl: Player) -> bool:
+	if Court.on_court(pl.p) or pl == m.holder or m.ball.state == "loose":
+		if pl.suspended <= 0.0 and not pl.fenced and pl != me:
+			pl.fenced = true
+		return false
+	var edge := Court.clamp_court(pl.p, 0.4)
+	var inside := Rules.onside_point(pl.pos, edge, pl.dir, 0.3)
+	pl.fenced = false
+	pl.want_speed = 4.0
+	pl.set_act("run")
+	if inside.distance_to(edge) > 0.5:
+		pl.target = Vector2(inside.x, pl.p.y)
+	else:
+		pl.target = inside
+	return true
+
+
+## Beside the officials' table, on the near side: team 0's bench to the left, team 1's to the right.
+static func bench_spot(t: int) -> Vector2:
+	return Vector2(-6.5 if t == 0 else 6.5, Court.HALF_W + Court.RUNOFF * 0.6)
 
 
 ## One player in open play (or as a restart is set up): chase a loose ball, meet a pass, take a cut at one, or move
@@ -310,7 +350,7 @@ func nearest_defender(team: int, except: Player = null) -> Player:
 	var best: Player = null
 	var bd := INF
 	for pl in m.players[team]:
-		if pl == except or pl.out_until > 0.0:
+		if pl == except or pl.away():
 			continue
 		var d: float = pl.p.distance_to(b)
 		if Rules.offside(pl.pos, Court.clamp_court(b, 0.05), pl.dir):
@@ -373,7 +413,7 @@ func _best_option(pl: Player) -> Array:
 	var best: Player = null
 	var bv := -INF
 	for o in m.players[pl.team]:
-		if o == pl or o.out_until > 0.0:
+		if o == pl or o.away():
 			continue
 		var v := _pass_value(pl, o)
 		if v > bv:
@@ -410,7 +450,7 @@ func _pass_value(from: Player, to: Player) -> float:
 	# Open: how far her nearest opponent is from the catch.
 	var open := 9.0
 	for o in m.players[1 - from.team]:
-		if o.out_until <= 0.0:
+		if not o.away():
 			open = minf(open, o.p.distance_to(at))
 	v += minf(open, 3.0) * 0.5
 	v -= _risk(from, to, at, kind) * 7.0
@@ -447,7 +487,7 @@ func _risk(from: Player, to: Player, at: Vector2, kind: String) -> float:
 	var spd: float = {"chest": 11.5, "shoulder": 14.5, "bounce": 9.0, "lob": 8.5}.get(kind, 11.0)
 	var dur := clampf(dist / spd, 0.25, 2.0)
 	for d in m.players[1 - from.team]:
-		if d.out_until > 0.0 or d == marker_of(from) and d.p.distance_to(from.p) < 1.3 and kind == "lob":
+		if d.away() or d == marker_of(from) and d.p.distance_to(from.p) < 1.3 and kind == "lob":
 			continue
 		for k: float in [0.3, 0.5, 0.7, 0.9]:
 			var pt := from.p.lerp(at, k)
@@ -470,7 +510,7 @@ func on_pass(info: Dictionary) -> void:
 	var best_k := 1.0
 	var dur: float = info.dur
 	for d in m.players[1 - from.team]:
-		if d.out_until > 0.0 or d == me:
+		if d.away() or d == me:
 			continue
 		for k: float in [0.25, 0.4, 0.55, 0.7, 0.85, 0.95]:
 			var pt: Vector3 = m.ball.flight_at(k)
@@ -540,7 +580,7 @@ func _slips(dt: float) -> void:
 		return
 	var h: Player = m.holder
 	var dm := marker_of(h)
-	if dm and dm != me and dm.out_until <= 0.0 and dm.p.distance_to(h.landing) < 1.35:
+	if dm and dm != me and not dm.away() and dm.p.distance_to(h.landing) < 1.35:
 		var disc := clampf(float(dm.data.defend) / 99.0, 0.4, 1.0)
 		var lam := 0.075 * (1.45 - disc)
 		if rng().randf() < lam * dt:
@@ -558,7 +598,7 @@ func _slips(dt: float) -> void:
 	if rng().randf() < 0.0035 * dt:
 		var t := rng().randi_range(0, 1)
 		var pl: Player = m.players[t][rng().randi_range(0, 6)]
-		if pl != me and pl != h and pl.out_until <= 0.0:
+		if pl != me and pl != h and not pl.away():
 			m._infringe("offside", pl, pl.p)
 
 
@@ -568,7 +608,7 @@ func _pick_user_target(pl: Player) -> Player:
 	var best: Player = null
 	var bv := -INF
 	for o in m.players[pl.team]:
-		if o == pl or o.out_until > 0.0:
+		if o == pl or o.away():
 			continue
 		var v: float
 		if user_aim.length() > 0.2:

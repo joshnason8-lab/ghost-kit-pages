@@ -60,8 +60,8 @@ third, 4 the rest of the defending third, 5 the defending circle):
   twelve: seven starters and five on the bench.
 - Substitutions and team changes are unlimited, at an interval, during a stoppage for injury or illness, and (since
   2024) straight after a goal if an on-court player asks. **In the game:** team changes at every interval (the break
-  screen). *Simplified:* the after-goal tactical change and changes during injury stoppages are not in yet
-  (PROGRESS.md "Next").
+  screen), during an injury stoppage, at a time-out, and at any time with the Rolling changes option. *Simplified:* the
+  2024 after-goal tactical change on request is not offered separately (PROGRESS.md "Next").
 - Test: `_rules` ("GS may enter area 1" ... "GK is offside in area 3"), 35 checks.
 - Source: https://israelnetball.org.il/en/what-s-netball.html (the numbering), the rulebook.
 
@@ -179,8 +179,10 @@ one. 2024: a shot that has left the shooter's hands before the whistle ending a 
 - In the game: `Rules.period_length`, `interval_after`, `ends_for_quarter`, `next_period`, `match_over`. The clock
   runs on through goals and restarts, as the real one does; the break screen shows the interval's real length, and
   Continue skips it. *Simplified:* quarters default to **5 minutes** for a phone session (8, 10 and the real 15 on
-  offer, Quick Match > Quarters; extra time scales with them: 7 of 15). Injury and blood stoppages are not played out
-  yet (the module has the 30 seconds).
+  offer, Quick Match > Quarters; extra time scales with them: 7 of 15). **Injury stoppages**: now and then a contact
+  hurts a player; the umpire holds time (the T signal) and the team has 30 seconds to help her off, both teams free to
+  make changes (the AI replaces its injured player when the bench has one for the position). Blood is treated the same.
+  Test: `_sanctions_and_injury` ("time is held for the injury").
 - Tests: `_rules` (intervals, extra time, ends, "until a team leads by two"); `_matches` ("a knockout has a winner").
 - Sources: the rulebook; https://www.bucs.org.uk/rules-and-regulations/sport/netball.html (extra time as played).
 
@@ -189,8 +191,13 @@ one. 2024: a shot that has left the shooter's hands before the whistle ending a 
 2024: the umpires' ladder is proactive advice, warning, **suspension** (two minutes of playing time, the team a
 player short), **ordering off** (no further part; since 2024 she may be replaced after four minutes of playing time).
 Cautions are gone. Umpires may also **advance** a pass up to half a third or **escalate** a free pass to a penalty
-pass. In the game: the numbers are in the module (`SUSPENSION`, `ORDERED_OFF_REPLACE`). *Simplified:* the umpires do
-not yet warn or suspend: the AI's players do not commit the repeated or dangerous play that earns it. Source:
+pass. In the game (`Match._sanction`, `suspend`): a player is **warned** at her fourth penalty-pass infringement
+since her last sanction, and **suspended** at the third after a warning: she walks to her bench and her team plays a
+player short for two minutes of playing time (the clock held through stoppages does not count), then she comes back
+on to her own area, walking round the outside of the court; no one stands out of play for a penalty she was suspended
+for. The HUD shows each warning and suspension. *Simplified:* ordering off (`ORDERED_OFF_REPLACE`, 4 minutes) and
+the advance and escalate options are in the module but the umpires do not use them: the game's players commit no
+dangerous play. Test: `_sanctions_and_injury`. Source:
 https://netball.sport/wp-content/uploads/2024/01/Game-Management-PDF.pdf
 
 ## The officials (R4)
@@ -276,5 +283,5 @@ numbers:
 
 **Choices against the real numbers**: the AI gives away penalties at about a third of the real rate (one every
 70 seconds or so a team rather than one every 65 seconds of play), so a match is not mostly whistles; the rate is in
-`TeamAI._slips` and can be raised. Shot chance: about 95% under the post, 85% at 2.5 m, 65% at the circle's edge for
-an 85-rated shooter, up to a sixth off with a defender's arm over the ball (`Match.shot_chance`).
+`TeamAI._slips` and can be raised. Shot chance: about 95% under the post, 87% at 2.5 m, 62% at the circle's edge for
+an 85-rated shooter, up to an eighth off with a defender's arm over the ball (`Match.shot_chance`).

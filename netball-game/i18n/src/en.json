@@ -294,5 +294,10 @@
   "ROLLING_NOTE": "A league rule: make team changes at any time from the pause menu, not only at the intervals.",
   "TIME_OUT_N": "Time-out ({n} left)",
   "TIME_OUT_CALLED": "Time-out: {team}",
-  "TIME_OUT_NOTE": "90 seconds, with time held. Make team changes now; Continue when you are ready."
+  "TIME_OUT_NOTE": "90 seconds, with time held. Make team changes now; Continue when you are ready.",
+  "INJURY_HELD": "Time held: injury",
+  "INJURY_NOTE": "A {team} player is hurt. The team has 30 seconds to help her off; both teams may make changes. Continue when you are ready.",
+  "CALL_WARNING": "Warning",
+  "CALL_SUSPENSION": "Suspended: 2 minutes",
+  "SANCTION_LINE": "{pos} · {team}"
 }

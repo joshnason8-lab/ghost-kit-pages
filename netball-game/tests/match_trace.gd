@@ -14,7 +14,7 @@ func _ready() -> void:
 	if args.size() > 0:
 		secs = float(args[0])
 	m = (load("res://game/match.gd") as Script).new()
-	m.config = {"home": "AUS", "away": "NZL", "venue": "arena", "user_team": -1, "demo": true, "seed": 11, "quarter": 15, "mode": "quick"}
+	m.config = {"home": "AUS", "away": "NZL", "venue": "arena", "user_team": -1, "demo": true, "seed": 13, "quarter": 15, "mode": "quick"}
 	add_child(m)
 	m.game_event.connect(func(k, info):
 		print("%6.1f %-6s %-12s %s" % [t, m.phase, k, info]))

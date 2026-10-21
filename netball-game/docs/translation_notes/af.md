@@ -19,3 +19,4 @@
 - `QUARTER_SHORT` "K{n}" (kwart), `EXTRA_TIME_SHORT` "ET{n}" (ekstra tyd).
 - `POS_NAME_C` "Senter" vs "Middel" — "Senter" is what I believe players use.
 - `RULES_ADVANTAGE_TEXT`, `RULES_FOOTWORK_TEXT` — longer rule sentences, check flow.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.

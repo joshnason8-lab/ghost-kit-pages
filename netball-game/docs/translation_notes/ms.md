@@ -20,3 +20,4 @@
 - `COL_P/W/D/L` → P/M/S/K (Perlawanan/Menang/Seri/Kalah), as in Malaysian league tables; `COL_PTS` "Mata".
 - `VS` "lwn" (lawan) — standard in Malaysian press.
 - `RULES_FOOTWORK_TEXT`, `RULES_PENALTIES_TEXT` — long rule sentences; check flow and length.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.

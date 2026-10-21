@@ -22,3 +22,4 @@
 - `SIMULATE` "Lingisa", `PLAY_AS` "Ulawula" (= "You control"), `KEEP_ONSIDE`.
 - Country names (`TEAM_*`), especially iSkotilandi, iNyakatho ye-Ireland, iNgilandi.
 - Length: as an agglutinative language, about a dozen descriptions run 1.3–1.45x the English character count (e.g. POS_ROLE_GA, FPS_NOTE_SAVER, RULES_COURT_TEXT, CTRL_PASS_TEXT). Check that they fit their text boxes.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.

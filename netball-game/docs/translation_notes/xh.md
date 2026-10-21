@@ -23,3 +23,4 @@
 - Country names, especially iNgilani, iSkotlani, uMntla weIreland, iOstreliya.
 - Grammar and noun-class agreement throughout (ibhola is treated as class 9: "ibhola engena", "iphume").
 - Length: about a dozen descriptions run 1.3–1.4x the English character count (agglutination). Check that they fit their text boxes.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.

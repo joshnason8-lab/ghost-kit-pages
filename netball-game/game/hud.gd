@@ -161,7 +161,7 @@ func _process(delta: float) -> void:
 		var want: Array = m.button_set()
 		if want != _controls.ids and not _controls.editing:
 			_controls.set_buttons(want)
-		_controls.visible = not m.paused and not (m.phase in ["break", "over", "timeout"]) or _controls.editing
+		_controls.visible = not m.paused and not (m.phase in ["break", "over", "timeout", "injury"]) or _controls.editing
 	_me_ring += delta
 	_overlay.queue_redraw()
 
@@ -231,6 +231,10 @@ func _on_event(kind: String, info: Dictionary) -> void:
 		"goal":
 			var v := int(info.value)
 			banner(tr("GOAL_TWO") if v == 2 else tr("GOAL"), DB.team_name(m.team_id(int(info.team))), 1.6)
+		"warning":
+			banner(tr("CALL_WARNING"), tr("SANCTION_LINE").format({"pos": info.by, "team": DB.team_name(m.team_id(int(info.team)))}), 2.0)
+		"suspension":
+			banner(tr("CALL_SUSPENSION"), tr("SANCTION_LINE").format({"pos": info.by, "team": DB.team_name(m.team_id(int(info.team)))}), 2.4)
 		"gain":
 			if m.user_team >= 0:
 				banner(tr("CALL_INTERCEPT") if String(info.how) == "intercept" else tr("CALL_GAIN"), "", 1.2)
@@ -258,7 +262,7 @@ func _floor_ring(c: Vector2, r: float, col: Color, w := 3.0, seg := 28) -> void:
 
 
 func _draw_overlay() -> void:
-	if m.phase == "break" or m.phase == "timeout":
+	if m.phase in ["break", "timeout", "injury"]:
 		return
 	var font: Font = Game.font_bold
 	var show_tags := int(Game.settings.tags) != 2 and not bool(m.config.get("attract", false))
@@ -316,7 +320,10 @@ func show_break(q: int, next: int, timeout_team := -1) -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
 	margin.add_child(v)
-	if timeout_team >= 0:
+	if q == -2:
+		v.add_child(UI.label(tr("INJURY_HELD"), "TitleLabel", 60))
+		v.add_child(UI.wrap(tr("INJURY_NOTE").format({"team": DB.team_name(m.team_id(timeout_team))}), "MutedLabel", 18))
+	elif timeout_team >= 0:
 		v.add_child(UI.label(tr("TIME_OUT_CALLED").format({"team": DB.team_name(m.team_id(timeout_team))}), "TitleLabel", 60))
 		v.add_child(UI.wrap(tr("TIME_OUT_NOTE"), "MutedLabel", 18))
 	else:

@@ -38,7 +38,10 @@ var lead_t := 0.0            # the AI: time left on her current lead or hold
 var lead_to := Vector2.ZERO
 var moves := 0               # tests: how many times this frame her position was written (must be 1)
 var stride_phase := 0.0
-var out_until := 0.0         # suspended or standing out of play
+var out_until := 0.0         # standing out of play beside the thrower of a penalty pass
+var suspended := 0.0         # seconds of playing time left on a suspension (R6): off the court, by the bench
+var warned := false          # the umpire has warned her (R6)
+var pens := 0                # penalties since her last sanction
 var was_offside := false     # offside last frame (an offside is called when she steps in, not while she walks out)
 var fenced := true           # she keeps to her areas (the AI always; you with Keep me onside): she pulls up at a line
                              # rather than running over it
@@ -190,6 +193,11 @@ func hand_point() -> Vector3:
 func reach(leap := false) -> float:
 	var h := float(data.get("height", 1.75))
 	return h * 1.28 + (0.45 if leap else 0.0)
+
+
+## Not available to play: out of play for a penalty, or suspended.
+func away() -> bool:
+	return out_until > 0.0 or suspended > 0.0
 
 
 func tag() -> String:

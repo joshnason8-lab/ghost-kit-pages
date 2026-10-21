@@ -21,3 +21,4 @@
 - EXTRA_TIME_SHORT "NO{n}" (invented abbreviation).
 - Country names: Aforika Borwa, Engelane, Jamaika, Ireland Bokone; Scotland and Wales kept in English.
 - Setswana and Sesotho strings were written in parallel; check that no Sesotho forms leaked in.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.

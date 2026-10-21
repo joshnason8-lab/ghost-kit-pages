@@ -25,3 +25,4 @@ South African orthography (wa, ya, tshwaya, jwang). Lesotho orthography differs 
 - STAGE_FINAL "Final" vs KNOCKOUT/STAGE_FINALS "Makgaolakgang"; MEDAL_SILVER "Silefera".
 - Country names: Engelane, Jamaika, Ireland Leboya; Scotland and Wales kept in English.
 - Long rule texts (RULES_FOOTWORK_TEXT, RULES_CENTRE_TEXT, RULES_SANCTIONS_TEXT) for grammar and length.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.

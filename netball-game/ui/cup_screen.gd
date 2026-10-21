@@ -112,7 +112,7 @@ func _fixture(f: Dictionary, user: String, label: String) -> HBoxContainer:
 		UI.fit(l, 2)
 		h.add_child(l)
 	h.add_child(UI.badge(f.home, Vector2(30, 20)))
-	var a := UI.fit(UI.label(DB.team_name(f.home), "", 17, col))
+	var a := UI.fit(UI.label(DB.team_name(f.home), "", 17, col), 2)
 	a.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	a.custom_minimum_size = Vector2(80, 0)
 	a.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -121,7 +121,7 @@ func _fixture(f: Dictionary, user: String, label: String) -> HBoxContainer:
 	mid.custom_minimum_size = Vector2(76, 0)
 	mid.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	h.add_child(mid)
-	var b := UI.fit(UI.label(DB.team_name(f.away), "", 17, col))
+	var b := UI.fit(UI.label(DB.team_name(f.away), "", 17, col), 2)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.custom_minimum_size = Vector2(80, 0)
 	h.add_child(b)

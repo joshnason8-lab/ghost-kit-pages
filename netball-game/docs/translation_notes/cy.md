@@ -21,3 +21,4 @@
 - `COL_P/W/D/L` → Ch/E/Cy/Co (Chwarae/Ennill/Cyfartal/Colli), `COL_PTS` "Pt".
 - `INTERVAL_NOTE` and `RESULT_WINS` — check mutations once {next} and {team} are filled in.
 - `RULES_CENTRE_TEXT`, `RULES_SANCTIONS_TEXT`, `CUP_ABOUT` — longest strings, check flow and length.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.

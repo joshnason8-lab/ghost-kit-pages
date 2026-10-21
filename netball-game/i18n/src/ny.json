@@ -287,5 +287,17 @@
   "TEAM_SRI": "Sri Lanka",
   "TEAM_KEN": "Kenya",
   "TEAM_BOT": "Botswana",
-  "TEAM_NAM": "Namibia"
+  "TEAM_NAM": "Namibia",
+  "TIMEOUTS": "Ma time-out",
+  "TIMEOUTS_NOTE": "Lamulo la ligi: timu iliyonse ikhoza kupempha ma time-out awiri a masekondi 90 pa hafu iliyonse, chigoli chikalowa. Lanu lili mu menyu yoimitsa.",
+  "ROLLING": "Kusintha kulikonse",
+  "ROLLING_NOTE": "Lamulo la ligi: sinthani osewera nthawi iliyonse kuchokera mu menyu yoimitsa, osati pa nthawi yopuma yokha.",
+  "TIME_OUT_N": "Time-out (yatsala {n})",
+  "TIME_OUT_CALLED": "Time-out: {team}",
+  "TIME_OUT_NOTE": "Masekondi 90, nthawi itaimitsidwa. Sinthani osewera tsopano; Pitirizani mukakonzeka.",
+  "INJURY_HELD": "Nthawi yaima: kuvulala",
+  "INJURY_NOTE": "Wosewera wa {team} wavulala. Timu ili ndi masekondi 30 kuti imuthandize kutuluka; matimu onse awiri akhoza kusintha osewera. Pitirizani mukakonzeka.",
+  "CALL_WARNING": "Chenjezo",
+  "CALL_SUSPENSION": "Waimitsidwa: mph. 2",
+  "SANCTION_LINE": "{pos} · {team}"
 }

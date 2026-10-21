@@ -21,3 +21,4 @@
 - `QUARTER_SHORT` "第{n}节" and `EXTRA_TIME_SHORT` "加时{n}" are 3 characters (wider than "Q1"); check they fit the HUD.
 - `PLAYER_TAGS` 显示球员位置 — rephrased ("show player positions") rather than literal "bibs".
 - `INTERVAL_NOTE` — word order assumes {next} is a noun like "第2节"; check with real values.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.

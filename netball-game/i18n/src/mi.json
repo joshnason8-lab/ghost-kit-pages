@@ -294,5 +294,10 @@
   "ROLLING_NOTE": "He ture rīki: whakarerekēhia te kapa i ngā wā katoa mai i te rārangi tatari, ehara i ngā wā okioki anake.",
   "TIME_OUT_N": "Wā okioki ({n} e toe ana)",
   "TIME_OUT_CALLED": "Wā okioki: {team}",
-  "TIME_OUT_NOTE": "90 hēkona, kua tū te karaka. Whakarerekēhia te kapa ināianei; Haere tonu ina rite koe."
+  "TIME_OUT_NOTE": "90 hēkona, kua tū te karaka. Whakarerekēhia te kapa ināianei; Haere tonu ina rite koe.",
+  "INJURY_HELD": "Kua tū te karaka: whara",
+  "INJURY_NOTE": "Kua whara tētahi kaitākaro o {team}. E 30 hēkona te kapa hei āwhina i a ia ki waho; ka taea e ngā kapa e rua te whakarerekē. Haere tonu ina rite koe.",
+  "CALL_WARNING": "Whakatūpato",
+  "CALL_SUSPENSION": "Whakatārewa: 2 meneti",
+  "SANCTION_LINE": "{pos} · {team}"
 }

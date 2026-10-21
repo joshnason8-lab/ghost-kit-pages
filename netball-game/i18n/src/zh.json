@@ -287,5 +287,17 @@
   "TEAM_SRI": "斯里兰卡",
   "TEAM_KEN": "肯尼亚",
   "TEAM_BOT": "博茨瓦纳",
-  "TEAM_NAM": "纳米比亚"
+  "TEAM_NAM": "纳米比亚",
+  "TIMEOUTS": "暂停",
+  "TIMEOUTS_NOTE": "联赛规则：每队每半场可在进球后叫两次90秒暂停。你的暂停在暂停菜单中。",
+  "ROLLING": "随时换人",
+  "ROLLING_NOTE": "联赛规则：可随时从暂停菜单换人，不必等到节间休息。",
+  "TIME_OUT_N": "暂停（剩 {n} 次）",
+  "TIME_OUT_CALLED": "暂停：{team}",
+  "TIME_OUT_NOTE": "90秒，计时停止。现在可以换人；准备好后点“继续”。",
+  "INJURY_HELD": "计时停止：受伤",
+  "INJURY_NOTE": "{team}有一名球员受伤。该队有30秒扶她下场；双方均可换人。准备好后点“继续”。",
+  "CALL_WARNING": "警告",
+  "CALL_SUSPENSION": "禁赛：2分钟",
+  "SANCTION_LINE": "{pos} · {team}"
 }

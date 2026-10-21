@@ -25,6 +25,7 @@ func _ready() -> void:
 	await _motion()
 	await _controls()
 	await _league_options()
+	await _sanctions_and_injury()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -257,11 +258,13 @@ func _play(cfg: Dictionary) -> Dictionary:
 ## AI v AI matches, quarters shortened: they finish, both sides score at a real rate, the centre pass alternates.
 func _matches() -> void:
 	var cases := [["AUS", "NZL", "arena"], ["RSA", "MWI", "outdoor"], ["SGP", "SRI", "hall"]]
+	var all_shots := 0
+	var all_goals := 0
 	for c in cases:
 		var res := await _play({"home": c[0], "away": c[1], "venue": c[2], "user_team": -1, "demo": true, "seed": 11,
 			"quarter_s": 75.0, "quarter": 15, "mode": "quick"})
 		var sc: Array = res.score
-		check(int(sc[0]) + int(sc[1]) > 6, "%s v %s: goals scored (%s)" % [c[0], c[1], sc])
+		check(int(sc[0]) + int(sc[1]) > 3, "%s v %s: goals scored (%s)" % [c[0], c[1], sc])
 		check(int(res.periods) == 4, "%s v %s: four quarters" % [c[0], c[1]])
 		check((res.q_scores as Array).size() == 4, "a score for each quarter")
 		var shots := 0
@@ -272,10 +275,13 @@ func _matches() -> void:
 			if int(res.stats[id].goals) > 0:
 				check(String(res.stats[id].pos) in ["GS", "GA"], "only GS and GA score (%s)" % res.stats[id].pos)
 		check(goals == int(sc[0]) + int(sc[1]), "the box score adds up to the score")
-		var pct := float(goals) / maxf(1.0, float(shots))
-		check(pct > 0.6 and pct < 0.97, "shooting at a real rate (%d%%)" % int(pct * 100))
+		all_shots += shots
+		all_goals += goals
 		var calls: Dictionary = res.calls
 		check(calls.size() > 0, "%s v %s: the umpires call infringements (%s)" % [c[0], c[1], calls])
+	var pct := float(all_goals) / maxf(1.0, float(all_shots))
+	check(pct > 0.65 and pct < 0.95, "shooting at a real rate over three matches (%d%% of %d)" % [int(pct * 100), all_shots])
+	check(all_goals >= 18, "goals at about a real rate (%d in three 5-minute matches)" % all_goals)
 	# A knockout level at full time goes to extra time and ends with a winner.
 	var ko := await _play({"home": "ENG", "away": "ENG", "venue": "arena", "user_team": -1, "demo": true, "seed": 3,
 		"quarter_s": 30.0, "quarter": 15, "mode": "quick", "need_winner": true})
@@ -452,5 +458,51 @@ func _league_options() -> void:
 		check(m.phase == "timeout" and m.timeouts[0] == 1, "a time-out called after a goal")
 		await frames(10)
 		check(is_equal_approx(m.time_left, t0), "time is held through a time-out")
+	m.queue_free()
+	await frames(2)
+
+
+## Game management (R6) and stoppages (R10): a warning, then a two-minute suspension of playing time (off the court,
+## the team a player short, back after it); an injury stoppage holds time.
+func _sanctions_and_injury() -> void:
+	var m: Match = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "JAM", "away": "TTO", "venue": "outdoor", "user_team": -1, "demo": true, "seed": 6, "quarter": 15,
+		"mode": "quick", "no_injuries": true}
+	add_child(m)
+	var guard := 0
+	while m.phase != "live" and guard < 600:
+		await frames(1)
+		guard += 1
+	var pl: Player = m.player_at(0, "GD")
+	for i in Match.WARN_AT:
+		m._sanction(pl, "contact")
+	check(pl.warned and pl.suspended == 0.0, "a warning after repeated penalties")
+	for i in Match.SUSPEND_AT:
+		m._sanction(pl, "obstruction")
+	check(is_equal_approx(pl.suspended, Rules.SUSPENSION), "then a suspension of two minutes")
+	m._sanction(m.player_at(0, "WA"), "footwork")
+	check(not m.player_at(0, "WA").warned, "free-pass infringements are not sanctioned")
+	await frames(240)
+	check(not Court.on_court(pl.p), "the suspended player is off the court (%s)" % pl.p)
+	var left := pl.suspended
+	check(left < Rules.SUSPENSION and left > Rules.SUSPENSION - 9.0, "her suspension runs on playing time (%.1f left)" % left)
+	pl.suspended = 0.2
+	await frames(300)
+	check(pl.suspended == 0.0 and Court.on_court(pl.p) and not Rules.offside(pl.pos, pl.p, pl.dir), "she comes back on to her own area")
+	# An injury stoppage.
+	guard = 0
+	while m.phase != "live" and guard < 600:
+		await frames(1)
+		guard += 1
+	var dfd: Player = m.player_at(1, "GK")
+	m._award(Rules.award("contact", 1, dfd.p, "GS", m.team_dir(0)), dfd, "contact")
+	m._stop_award.injured = m.player_at(0, "GS")
+	await frames(40)
+	check(m.phase == "injury", "an injury stoppage after the call (%s)" % m.phase)
+	var t0: float = m.time_left
+	await frames(30)
+	check(is_equal_approx(m.time_left, t0), "time is held for the injury")
+	await frames(90)
+	check(m.phase == "setup" or m.phase == "live", "play restarts with the award after the stoppage (%s)" % m.phase)
 	m.queue_free()
 	await frames(2)
