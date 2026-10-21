@@ -287,13 +287,16 @@ func _process(delta: float) -> void:
 			_live(dt)
 		P.DEAD:
 			_brains(dt)
+			_run_clock(dt)
 			if phase_t > DEAD_T:
 				_begin_setup()
 		P.SETUP:
 			_brains(dt)
+			_run_clock(dt)
 			_setup_step()
 		P.SET:
 			_brains(dt)
+			_run_clock(dt)
 			_set_step(dt)
 		P.HALF_TIME:
 			if phase_t > (5.0 if not attract else 2.0):
@@ -425,8 +428,15 @@ func _wants_auto_solo(pl: Player) -> bool:
 
 # ---------------------------------------------------------------- open play
 
-func _live(dt: float) -> void:
+## The referee's watch runs on through stoppages (the time lost is added on at the end of the half).
+func _run_clock(dt: float) -> void:
 	clock += dt * clock_k
+	if not _added_shown and clock >= half_len_now() - 60.0:
+		_end_of_half_check()
+
+
+func _live(dt: float) -> void:
+	_run_clock(dt)
 	_brains(dt)
 	_loose_ball(dt)
 	_tackles(dt)
@@ -1581,7 +1591,7 @@ func _set_step(_dt: float) -> void:
 	if taker.busy():
 		return
 	var yours := user_team >= 0 and taker.team == user_team and controls.visible
-	if yours and phase_t < 12.0:
+	if yours and phase_t < 8.0:
 		return
 	if phase_t < _set_t:
 		return
@@ -1852,7 +1862,7 @@ func _shootout_step(_dt: float) -> void:
 			shootout.t = now
 	elif String(shootout.state) == "ready":
 		var yours := user_team >= 0 and taker.team == user_team and controls.visible
-		if (not yours and now - float(shootout.t) > 1.2) or now - float(shootout.t) > 12.0:
+		if (not yours and now - float(shootout.t) > 1.2) or now - float(shootout.t) > 8.0:
 			_shootout_strike("")
 	elif String(shootout.state) == "done":
 		if now - float(shootout.t) > 2.2:

@@ -1,59 +1,36 @@
-# Meshy brief: the players and referees
+# Meshy brief: models the owner may choose to generate
 
-The players today are built in code (`game/body.gd`): a skinned mesh on a 17-bone humanoid skeleton, posed by the
-game's own moves (`game/moves.gd`). This is the order for Meshy to replace them, and what the game will do with the
-models. The prompts are in `tools/meshy/assets.json`; `tools/meshy/meshy_batch.py` (the same tool Kabaddi Raid uses)
-makes them: a preview to check, then the texture, the rig and the download. Nothing has been ordered yet.
+**No Meshy credits have been spent on this game.** Every player, official, the crowd and the venues are built in
+code today (`game/body.gd`, `game/stadium.gd`, `game/crowd.gd`). This is what to order if better-looking models are
+wanted later, and how they would slot in.
 
-## The look
+## How a model replaces the code-built body
 
-The concept art's: a **stylized** sports character (clean shapes, a slightly large head, flat matte colours that cel
-shading suits), not a photograph. The venues around them are more realistic. Every prompt says so; check the
-previews for it before paying for textures.
+`ToonBody` builds a skinned mesh on a 17-bone humanoid skeleton with the usual names (hips, spine, chest, neck, head,
+upperarm/forearm/hand left and right, thigh/shin/foot left and right), the rest pose standing, arms hanging, facing
++Z, feet at y = 0, 1.80 m tall. A Meshy model rigged to the same bone names (Meshy's auto-rig, then renamed) can take
+its place: the poses are bone rotations, so the same moves play on it. Keep each model to **one mesh, one material,
+under about 4,000 triangles** (the low-end phones draw thirty of them), with a lower level of detail under 1,500.
 
-## What to order first (8 models, about 560 credits at ~70 each)
+## The order (in priority)
 
-| Model | Who | Why |
-|---|---|---|
-| `player_01_striker_thai` | lean, long-legged striker | the roll spike's body |
-| `player_02_tekong_malay` | compact, strong server | the tekong's build |
-| `player_03_feeder_vietnam_woman` | slim setter, ponytail | the women's events |
-| `player_04_striker_indonesia` | wiry, deep brown skin | skin and build range |
-| `player_05_tekong_japan` | tall, fair | height range |
-| `player_06_striker_philippines_woman` | strong striker, bun | women's strikers |
-| `referee_01_man`, `referee_02_woman` | officials | the referee's chair and line judges |
+1. **Hurler, outfield** (one body, kit recoloured in game): "A senior hurler in a plain short-sleeved county jersey,
+   white shorts, knee-length socks, black boots, a modern hurling helmet with a steel face guard; athletic, 1.80 m,
+   T-pose, arms out, palms down; realistic proportions; no logos, no crest, no numbers, no sponsor." The jersey,
+   shorts and socks textured plain white or grey so the game tints them with each county's colours (a mask texture:
+   red = jersey, green = trim, blue = skin).
+2. **Hurley** (a separate prop, attached to the right hand): "An ash hurley, 34 inches, a broad curved bas with a
+   metal band, grip tape on the handle, natural wood." Under 300 triangles.
+3. **Goalkeeper**: as 1, a different jersey (tinted) and a wider-bas hurley.
+4. **Referee**: "A GAA referee in a black short-sleeved shirt and shorts, a whistle on a lanyard, T-pose."
+5. **Umpire**: "A Gaelic games umpire in a long white coat to the knees and a white cap, T-pose; a small white flag
+   and a small green flag as separate props."
+6. **Linesman**: as the referee, with a flag prop.
+7. **Spectators** (for the crowd's one-draw-call cards): eight people, waist up, in rain jackets and county-coloured
+   jerseys (plain, no crests), rendered to a 384 × 96 sprite sheet.
+8. **A sliotar**: "A hurling sliotar, white leather, a raised rim (seam) round it, 70 mm." Under 200 triangles.
 
-The game recolours the kit for every team (as Kabaddi Raid does) and shifts skin tone a little, so six players
-cover every squad.
+## Not to order
 
-## Settings for every model
-
-| Setting | Value | Why |
-|---|---|---|
-| Model | Meshy latest | best faces and hands |
-| Pose | **T-pose**, palms down | rigs cleanly (Meshy did not hold the A-pose for Kabaddi Raid) |
-| Faces | **5,000** for players, 4,000 for referees | ten players and seven officials on a Galaxy A16: about 85,000 faces, comfortable for a Mali-G57 MC2 |
-| Topology | quad, symmetry on | even limbs for the moves' big swings |
-| Texture | one 1024 × 1024 base colour, no PBR maps | the toon shader uses the colour only; small download |
-| Rig | Meshy's humanoid rig at the player's height | its Mixamo-style bone names map onto the game's (below) |
-
-Reject a preview with: fused fingers, a jersey with a logo or number, a big belly or bulky muscles (takraw players
-are lean), bare feet, long trousers.
-
-## Fitting the models to the game
-
-The game's skeleton (`game/body.gd`, `BONES`) uses these names; Meshy's rig maps onto them:
-
-| Game | Meshy / Mixamo |
-|---|---|
-| hips, spine, chest, neck, head | Hips, Spine, Spine1 (or Spine2), Neck, Head |
-| upperarm_l / _r, forearm_l / _r, hand_l / _r | LeftArm / RightArm, LeftForeArm / RightForeArm, LeftHand / RightHand |
-| thigh_l / _r, shin_l / _r, foot_l / _r | LeftUpLeg / RightUpLeg, LeftLeg / RightLeg, LeftFoot / RightFoot |
-
-The game's moves are written against a rest pose with the arms hanging down and every bone's rotation the identity;
-a Meshy model rests in a T-pose with its own bone axes. The fitting (to do when the models arrive) works in model
-space: each bone's rotation in a move, applied to the model's rest pose with the arms first turned down to the sides,
-then converted back to the bone's local rotation. The players' blob shadows, tags, selection rings and contact points
-stay as they are, so nothing else in the match changes.
-
-Until then, `ToonBody` is the player, and the moves were tuned on it.
+Real players' likenesses, county crests or sponsors' marks, real stadiums. The venues stay code-built (merged, a few
+draw calls each), which the low-end phones need more than detail.

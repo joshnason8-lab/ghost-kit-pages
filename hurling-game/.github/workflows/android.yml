@@ -91,6 +91,14 @@ jobs:
           timeout 900 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 2 8 2>&1 | tee sim.log
           if grep -q "SCRIPT ERROR" sim.log; then grep -A4 "SCRIPT ERROR" sim.log; exit 1; fi
 
+      - name: Controls (a thumb on the buttons plays and scores; hands off, nothing is played for you)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- play 4 2>&1 | tee bot.log
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- idle 4 2>&1 | tee -a bot.log
+          if grep -q "SCRIPT ERROR" bot.log; then grep -A4 "SCRIPT ERROR" bot.log; exit 1; fi
+
       - name: Touch input (scrolling from anywhere on a page, taps)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
