@@ -18,18 +18,26 @@ nothing about a phone's; `tests/perf_probe.tscn` and a real phone do.
 | Quick Match (Throw-in), Kilkenny v Tipperary, the parish field, 8 minutes, Intermediate, coach's tips on | 1280 × 720 | to full time: 1-5 v 0-9 |
 | Quick Match again, the county ground, after the first fixes | 1280 × 720 | to full time: 0-0 v 0-14 |
 | The Summer Championship, Clare's first group match, Cork v Clare, the county ground | 1600 × 720 | to full time: 1-8 v 0-1 |
-| The Tier Two Cup, Antrim's first group match, Derry v Antrim, the county ground | 2400 × 1080 | TIER2_RESULT |
+| The Tier Two Cup, Antrim's first group match, Derry v Antrim, the county ground | 2400 × 1080 | the menus, the hub and the first ten minutes (the software renderer drew 2400 × 1080 at about one frame a second: a full match would have taken seven hours) |
+| The same Tier Two match, from the throw-in | 1280 × 720 | to full time: 0-11 v 0-0 |
 
 The script is a plain player: it shoots inside 45 m, solos early, passes up the field after a second and a half on
 the ball, tackles whenever it can and switches only when the ball is far away. Against Intermediate opposition its
-side lost every match, mostly for want of the ball: the computer's side wins far more of it. That is about what a
-first-time player meets too (see "The opening difficulty" below).
+side lost every match, mostly for want of the ball: the computer's side wins far more of it. Its log shows why: almost every pass it made
+was lost within three seconds. Played headless with the same habits (`tests/user_bot.tscn -- pass`), the same passes
+are kept 92-95% of the time, so most of the loss is the script's coarse, slow play through a screen drawn a few times
+a second. Two things a first-time player would meet the same way were fixed (below: the receiver who stood still, the
+pass into a defender's lane), and the opening difficulty is now Junior.
 
 ## What was wrong, worst first
 
 | What was seen | Why | What changed | Test |
 |---|---|---|---|
 | **The championship stopped for good at your county's bye.** Five counties in a group means a bye each; in that round there was no game for you, no Play button, and the round's other games were only played after yours, so the season could never go on. The hub said "Your county are out" (after one game) | `play_others` ran only from your result; the hub showed "out" whenever there was no next game. The tests had played the byes themselves, so never met it | The hub plays a round without you on to your next game, and says so ("Clare had a bye: the round's other games have been played") | "never stuck without a game", five counties' seasons as the hub plays them |
+| After your pass, the man it went to stood still until you moved him (with Help on Solo, the default), so a slow thumb lost the pass | You become the receiver the moment the ball is struck; idle, he held his place in the shape | With Help on he runs to meet a pass to him until you move him (and the Help note says so) | "passed to, he runs to meet it" |
+| PASS toward goal could go through a defender standing in the lane | Your pass weighed the way you point and how free a man was, not what stood between | A defender in the lane counts against a man, as in the computer's own passes | "PASS toward goal finds the free man" |
+| CI: the Licences screen crashed the engine once (fit_audit, core dumped) | Its long licence texts were laid out on a background thread, and leaving the screen at once freed one mid-layout | Laid out on the main thread (a pause opening a screen hardly anyone opens, instead of a crash) | fit_audit opens and leaves it |
+| CI: the scoring check passed here and failed in CI on the same seeds | The team AI drew its chances from the engine's unseeded generator | The match's seeded generator; three matches a length | score_check |
 | A full-length match scored twice a real one's (5-34 v 5-46) | The ball was live for about 80% of the 70 minutes; in a real match it is live 38% | Stoppages cost their real time on the watch; the 35-minute length is the full 70 with the ball live as long as in a real match (docs/AI.md) | `tests/score_check.tscn` in CI, at every length |
 | Your side scored nothing from play in the first match: the man on the ball ran and ran and never struck | Not the game: the test's own touches. Chrome's touch emulation lifts the first finger when one of two lifts, so the joystick thumb came up and the tapping finger stayed down, and every later tap was lost. Found by logging the page's own touch events | The playtest script lifts both and puts the joystick thumb back down. The game's two-thumb play (joystick held, a button tapped) was checked by hand in the browser: the button fires | - |
 | The coach's card covered the PASS button | It sat in the middle at the bottom, 600 wide | It sits between the joystick's side and the nearest button, wherever the buttons are moved, at any size, either hand | "the coach's card clear of every button" |

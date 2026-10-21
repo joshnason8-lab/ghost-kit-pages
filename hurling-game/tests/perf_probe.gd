@@ -7,6 +7,7 @@ extends Node
 func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
+	Game.settings.coach = false     # the first match's coach card would be on the screen at the moment measured
 	for venue in ["stadium", "parish"]:
 		for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
 			Game.settings.graphics = g
