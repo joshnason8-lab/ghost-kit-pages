@@ -16,14 +16,20 @@ nothing about a phone's; `tests/perf_probe.tscn` and a real phone do.
 | Played | Screen | Result |
 |---|---|---|
 | Quick Match (Throw-in), Kilkenny v Tipperary, the parish field, 8 minutes, Intermediate, coach's tips on | 1280 × 720 | to full time: 1-5 v 0-9 |
-| Quick Match again, the county ground, after the fixes below | 1280 × 720 | see below |
-| The Summer Championship, a group match | 1600 × 720 | see below |
-| The Tier Two Cup, a group match | 2400 × 1080 | see below |
+| Quick Match again, the county ground, after the first fixes | 1280 × 720 | to full time: 0-0 v 0-14 |
+| The Summer Championship, Clare's first group match, Cork v Clare, the county ground | 1600 × 720 | to full time: 1-8 v 0-1 |
+| The Tier Two Cup, Antrim's first group match, Derry v Antrim, the county ground | 2400 × 1080 | TIER2_RESULT |
+
+The script is a plain player: it shoots inside 45 m, solos early, passes up the field after a second and a half on
+the ball, tackles whenever it can and switches only when the ball is far away. Against Intermediate opposition its
+side lost every match, mostly for want of the ball: the computer's side wins far more of it. That is about what a
+first-time player meets too (see "The opening difficulty" below).
 
 ## What was wrong, worst first
 
 | What was seen | Why | What changed | Test |
 |---|---|---|---|
+| **The championship stopped for good at your county's bye.** Five counties in a group means a bye each; in that round there was no game for you, no Play button, and the round's other games were only played after yours, so the season could never go on. The hub said "Your county are out" (after one game) | `play_others` ran only from your result; the hub showed "out" whenever there was no next game. The tests had played the byes themselves, so never met it | The hub plays a round without you on to your next game, and says so ("Clare had a bye: the round's other games have been played") | "never stuck without a game", five counties' seasons as the hub plays them |
 | A full-length match scored twice a real one's (5-34 v 5-46) | The ball was live for about 80% of the 70 minutes; in a real match it is live 38% | Stoppages cost their real time on the watch; the 35-minute length is the full 70 with the ball live as long as in a real match (docs/AI.md) | `tests/score_check.tscn` in CI, at every length |
 | Your side scored nothing from play in the first match: the man on the ball ran and ran and never struck | Not the game: the test's own touches. Chrome's touch emulation lifts the first finger when one of two lifts, so the joystick thumb came up and the tapping finger stayed down, and every later tap was lost. Found by logging the page's own touch events | The playtest script lifts both and puts the joystick thumb back down. The game's two-thumb play (joystick held, a button tapped) was checked by hand in the browser: the button fires | - |
 | The coach's card covered the PASS button | It sat in the middle at the bottom, 600 wide | It sits between the joystick's side and the nearest button, wherever the buttons are moved, at any size, either hand | "the coach's card clear of every button" |
@@ -34,6 +40,9 @@ nothing about a phone's; `tests/perf_probe.tscn` and a real phone do.
 | No sideline cuts in a match (one in seven AI matches; a real match has a good many) | The ball hardly ever went out over the sideline: passes aim inside, nobody cleared it | A back hemmed in near his own goal, or anyone pinned on the sideline with no pass on, drives it over the sideline: about ten cuts a full match | score_check: "sideline cuts" |
 | A high ball was hard to judge: a white dot against the stand or the sky, no way to tell where it would come down | Only the ball was marked | A gold ring on the grass where a high ball near you comes down to hand height | "a high ball is marked where it comes down" |
 | A chip dragged over when scrolling stayed lit, as if chosen | Android (and a phone's browser) leaves the emulated mouse where a finger lifts, so the chip stayed "hovered" | No hover look on a touch screen | "no hover look on a touch screen" |
+| A championship could not be left: to try the Tier Two Cup or another county you had to play the season out | No way to start again until it was over | Start again in the hub, a second tap to be sure ("Lose this season? Tap again") | fit_audit: the hub with it asked |
+| The home screen lit Throw-in even with a championship under way, the Continue row above it plain | The first item was always the lit one | Continue is lit when there is one | (a look) |
+| The opening difficulty was Intermediate, where a new player loses heavily (the script lost 1-5 v 0-9, 0-0 v 0-14 and 0-1 v 1-8) | - | Junior to start; Settings or match setup to raise it | - |
 | Match setup forgot the ground: back to the county ground every time | The choice was not saved | Saved | "match setup remembers the ground" |
 
 ## What a first-time player meets

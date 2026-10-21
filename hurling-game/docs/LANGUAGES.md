@@ -91,6 +91,11 @@ Google's own page).
 | knock-out game | cluiche cnaguirlis | **check** |
 | tackle (button) | tacláil | likely |
 | semi-final, final | cluiche leathcheannais, cluiche ceannais | sure |
+| coach | traenálaí | sure |
+| substitute(s), the bench | ionadaí (ionadaithe), an binse | sure |
+| tactics, sweeper | beartaíocht, scuabaire | **check** (scuabaire for the sweeper is a calque) |
+| two inside (the two-man full-forward line) | beirt istigh | **check** |
+| a bye (in a round) | sos | **check** |
 
 ## For a native speaker to check
 
@@ -101,5 +106,7 @@ release. In particular:
 - "bosca smachta" for the sin bin, "cluiche cnaguirlis" for a knock-out game, "Corn an Dara Sraith" for the Tier Two
   Cup;
 - the plural forms of cúilín after 11-19 ("11 chúilín" is read "aon chúilín déag");
-- the How to Play texts (RULES_*_TEXT, CTRL_*_TEXT), the longest Irish in the game.
+- the How to Play texts (RULES_*_TEXT, CTRL_*_TEXT), the longest Irish in the game;
+- 0.2.0's new texts: the coach's tips (COACH_*), substitutions and tactics (SUBS_*, TAC_*), the bye (CHAMP_BYE) and
+  the match-length note (LENGTH_NOTE). "fágtha" (left) is the same in every plural form, so SUBS_LEFT has one text.
 Reports from the beta go to joshnason8@gmail.com (support page).
