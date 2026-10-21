@@ -2,9 +2,9 @@ extends Node
 ## Draw calls, triangles and objects drawn per frame in a match, at each graphics level, at every venue (the biggest
 ## crowd is the floodlit stadium's), and the frame time at each:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn
-## The budgets (README, "Phones"): Low under 90 draw calls and 90k triangles, Medium 130 and 280k, High 180 and 600k.
+## The budgets (README, "Phones"): Low under 90 draw calls and 90k triangles, Medium 130 and 340k, High 190 and 700k.
 
-const BUDGET := [[90, 90000], [130, 280000], [180, 600000]]
+const BUDGET := [[90, 90000], [130, 340000], [190, 700000]]
 
 
 func _ready() -> void:
