@@ -86,3 +86,8 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   each close to a team in the same country, became Brolgas and Kārearea.
 - **Coach**: tips rather than a scripted tutorial match, so a first-timer plays a real match from the first tap; each
   tip shows once, when its moment comes, and the tips stop after the first full match.
+- **Before every push** (the owner's request, round two): run locally what CI runs (check_scripts, test_runner,
+  the full fit audit, the input test, the perf probe and a Web export), so a push fails CI only for what cannot be
+  caught here (the Android export and signing). The Android build runs on `push` only (no `pull_request` run of the
+  same commit), so one failure sends one email.
+
