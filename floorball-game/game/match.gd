@@ -663,10 +663,6 @@ func _check_shot() -> void:
 	var cross := ball.pos + ball.vel * tt
 	cross.y = ball.pos.y + ball.vel.y * tt - 0.5 * Ball.G * tt * tt
 	var on_target := absf(cross.z) < Rules.GOAL_W * 0.5 - Ball.R and cross.y < Rules.GOAL_H - Ball.R and cross.y > 0.0
-	if on_target:
-		team_stats[t].sog += 1
-		stats[_shot_live.by.data.id].sog += 1
-		stats[gk.data.id].sa += 1
 	if not on_target:
 		return
 	# The save: harder far from his body, high in a corner, fast, and through bodies in front (a screen).
@@ -684,7 +680,11 @@ func _check_shot() -> void:
 		var catch_it := reach < 0.45 and sp < 26.0 and _rng.randf() < 0.55
 		var low := cross.y < 0.45
 		gk.do("save_low" if low else ("save_high_l" if cross.z * a > gk.pos.y * a else "save_high_r"), 0.55)
+		# A shot on goal is one the goalkeeper saves or one that scores (counted with the goal, _goal()).
 		stats[gk.data.id].saves += 1
+		stats[gk.data.id].sa += 1
+		team_stats[t].sog += 1
+		stats[_shot_live.by.data.id].sog += 1
 		get_tree().create_timer(maxf(0.02, tt * 0.9) / speed_k).timeout.connect(func(): _keeper_stops(gk, catch_it))
 	else:
 		_shot_live.outcome = "goal"
@@ -835,6 +835,10 @@ func _goal(t: int, own: bool) -> void:
 	rules.goal(t, {"scorer": String(scorer.data.id) if scorer else "", "assist": String(assist.data.id) if assist else "", "own": own})
 	if scorer:
 		stats[scorer.data.id].g += 1
+		stats[scorer.data.id].sog += 1
+	if not own:
+		team_stats[t].sog += 1
+		stats[keeper(o).data.id].sa += 1
 	if assist:
 		stats[assist.data.id].a += 1
 	if pp:

@@ -453,7 +453,10 @@ func _matches() -> void:
 		await frames(2)
 	# Over 3 x 3-minute periods a real match's 60 minutes would bring ~10 goals: scaled, about 1.5 a match.
 	check(total_sog > n * 4, "shots on goal are taken (%d in %d matches)" % [total_sog, n])
-	check(total_sa > 0 and float(total_saves) / float(total_sa) > 0.45 and float(total_saves) / float(total_sa) < 0.92, "goalkeepers save about three in four on target (%d/%d)" % [total_saves, total_sa])
+	# Saves of shots on goal (saves + goals): three in four in real matches; over three short matches it varies, so
+	# the bounds are wide: a goalkeeper who saves everything or nothing is a bug (tests/ai_bench measures it closely).
+	check(total_sa > 0 and float(total_saves) / float(total_sa) > 0.45 and float(total_saves) / float(total_sa) < 0.97, "goalkeepers save most, not all, shots on goal (%d/%d)" % [total_saves, total_sa])
+	check(total_saves < total_sa, "some shots on goal go in (%d saves of %d)" % [total_saves, total_sa])
 
 
 func _count(log: Array, kind: String) -> int:
