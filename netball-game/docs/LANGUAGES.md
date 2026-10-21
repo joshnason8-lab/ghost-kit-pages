@@ -42,23 +42,23 @@ top twenty and of the biggest player base (South Africa's):
 |---|---|---|---|---|
 | en | English (British spelling) | everyone; the default | yes | netball |
 | af | Afrikaans | South Africa, Namibia | yes | netbal |
-| zu | isiZulu | South Africa | yes | (netball; the national team is "Amantombazane") |
-| xh | isiXhosa | South Africa | no | (a netball rulebook exists in isiXhosa: Western Cape government) |
-| st | Sesotho | South Africa, Lesotho | no | |
-| tn | Setswana | Botswana, South Africa | no | |
+| zu | isiZulu | South Africa | yes | ibhola lomnqakiswano (translator's choice; check) |
+| xh | isiXhosa | South Africa | no | ibhola yomnyazi (check against the Western Cape isiXhosa rulebook) |
+| st | Sesotho | South Africa, Lesotho | no | netbolo (loan; check) |
+| tn | Setswana | Botswana, South Africa | no | netbolo (loan; check) |
 | ny | Chichewa | Malawi | no | netiboli / mpira wa manja |
-| lg | Luganda | Uganda | no | |
-| sn | chiShona | Zimbabwe | no | |
+| lg | Luganda | Uganda | no | netiboolo (loan; check) |
+| sn | chiShona | Zimbabwe | no | netibhora (loan; check) |
 | sw | Kiswahili | Kenya, Tanzania, Uganda | yes | netiboli |
 | ms | Bahasa Melayu | Malaysia, Singapore, Brunei | yes | bola jaring |
-| zh | Chinese (Simplified) | Singapore, Malaysia | yes | 篮网球 / 投球 |
+| zh | Chinese (Simplified) | Singapore, Malaysia | yes | 投球 (Singapore and Malaysia press; 篮网球 elsewhere) |
 | si | Sinhala | Sri Lanka | yes | දැල්පන්දු |
 | ta | Tamil | Sri Lanka, Singapore, Malaysia | yes | வலைப்பந்து |
 | cy | Welsh | Wales | some phones | pêl-rwyd |
-| mi | Te Reo Māori | New Zealand | no | netipōro (poitarawhiti) |
-| to | Tongan | Tonga | no | |
-| sm | Samoan | Samoa | no | |
-| fj | Fijian | Fiji | no | |
+| mi | Te Reo Māori | New Zealand | no | poitarawhiti (netipōro also used) |
+| to | Tongan | Tonga | no | netipolo (check) |
+| sm | Samoan | Samoa | no | netipolo (check) |
+| fj | Fijian | Fiji | no | netiboli (check) |
 
 Sources for the words: https://conceptnet.io/c/en/netball ; https://en.wikipedia.org/wiki/Wales_Netball ;
 https://maoridictionary.co.nz/word/5742 ; https://en.wikipedia.org/wiki/Malaysian_Netball_Association ;

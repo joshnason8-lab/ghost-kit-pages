@@ -28,19 +28,18 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   36, min 24, only VIBRATE, isGame, 16 KB pages: all checked) pass.
 - Store: PLAY_STORE.md, English listings (6 regional), icon, feature graphic, 7 screenshots; pages; README; BETA.md;
   MESHY_BRIEF.md; synthesized menu music.
-- Languages done: en, af, zu, xh, st, tn, ny, sw, ms, zh, cy (fit audit clean). In progress: lg, sn, si, ta, mi, to,
-  sm, fj, and the translated store listings. The usage limit stopped the first translation run at 07:45 UTC; it
-  resumed at 09:48.
+- All 19 languages in, 301 strings each, fit audit clean at four screen shapes; store listings in af, zu, sw,
+  ms-MY, zh-CN, si-LK, ta-IN besides the six English ones. (The usage limit stopped work at about 07:45 UTC; it
+  resumed at 09:48.)
+- Umpires warn and suspend (R6); injury stoppages hold time (R10).
 
 ## Next
 
-1. Finish the last eight languages and the store listings' translations; translate the seven time-out/rolling
-   strings added after the first pass; fit audit clean in all 19.
-2. Injury and blood stoppages (30 s, time held); umpires' warnings and suspensions (2 min) for repeated infringements.
+1. Native speakers' review of every translation (docs/translation_notes/), the lower-resource languages first.
+2. Ordering off, and the umpires' advance and escalate options (in the rules module, unused).
 3. A club league season (invented club nicknames in Australia, New Zealand, England, South Africa).
 4. The after-goal tactical change (2024) on request.
 5. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
-6. Native speakers' review of every translation (docs/translation_notes/).
 7. Meshy models (docs/MESHY_BRIEF.md) if the owner chooses; the upload key and the closed test (store/PLAY_STORE.md).
 
 s), suspension in play, injury stoppages.
