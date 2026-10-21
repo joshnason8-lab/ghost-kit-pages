@@ -13,21 +13,23 @@ Floorstorm è l'unihockey (floorball) sul tuo telefono: il veloce gioco con il b
 IL GIOCO VERO
 • Il regolamento di gioco internazionale dell'unihockey, nell'edizione in vigore dal 1° luglio 2026: tre tempi a tempo effettivo, ingaggi, rimesse e punizioni con la distanza di 3 metri, area di porta e area del portiere, penalità di due e cinque minuti, superiorità numerica, supplementare e rigori.
 • Anche le nuove regole del 2026: nessun giocatore di movimento attraverso l'area del portiere, il lancio del portiere può valere un gol, e le penalità simultanee non tolgono più giocatori dal campo.
-• Due arbitri che fischiano e segnalano ogni decisione come quelli veri: punizione, vantaggio, penalità ritardata, due minuti, gol.
+• Due arbitri che fischiano e segnalano ogni decisione come quelli veri: punizione, vantaggio, penalità ritardata, due minuti, gioco passivo, gol.
+• Nel finale la squadra in svantaggio toglie il portiere per un sesto giocatore di movimento; un giocatore punito va sulla panchina dei puniti e sconta il suo tempo.
 • Squadre che giocano come si gioca a unihockey: difesa 2-1-2, cambi di linea volanti ogni cinquanta secondi, ali larghe e il centro nello slot.
 
 MODALITÀ DI GIOCO
 • Partita rapida: 22 nazionali, maschili e femminili, in un'arena cittadina, un palazzetto o una palestra scolastica. Tempi da 4 a 20 minuti, tempo effettivo o tempo continuo.
 • Finali mondiali: sedici nazioni in quattro gironi, play-off, quarti di finale, semifinali e le partite per le medaglie.
+• Stagione di club: dieci club, un campionato con punti 3-2-1-0 (3 per una vittoria nei tempi regolamentari, 2 dopo supplementare o rigori, 1 per una sconfitta al supplementare), poi semifinali e finale.
 • Un tabellino dopo ogni partita: tiri in porta, parate, minuti di penalità, gol in superiorità, ogni gol e ogni penalità con la sua regola.
 
 GIOCA A MODO TUO
 • Quindici lingue: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 e ไทย.
-• Un joystick e tre pulsanti, anche per mancini, in tre dimensioni, e spostabili dove vogliono i tuoi pollici.
+• Un allenatore ti guida nella tua prima partita. Un joystick e tre pulsanti, anche per mancini, in tre dimensioni, e spostabili dove vogliono i tuoi pollici.
 • Pensato per girare fluido su telefoni economici e di fascia media, con risparmio batteria.
 • Si gioca offline. Niente pubblicità, niente acquisti, nessun account e nessun dato raccolto.
 
 Floorstorm è un gioco indipendente. Non è affiliato né sostenuto da alcuna federazione, lega, società o giocatore di unihockey. I giocatori sono inventati; i paesi e le regole sono veri.
 
 == Release notes (first release) ==
-La prima versione di Floorstorm: Partita rapida e le Finali mondiali, in quindici lingue.
+La prima versione di Floorstorm: Partita rapida, le Finali mondiali e una stagione di club, con un allenatore per la tua prima partita, in quindici lingue.

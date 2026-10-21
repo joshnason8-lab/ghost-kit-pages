@@ -13,21 +13,23 @@ Floorstorm ist Unihockey (Floorball) fürs Handy: das schnelle Hallenspiel mit S
 DAS ECHTE SPIEL
 • Die internationalen Unihockey-Spielregeln in der Fassung ab 1. Juli 2026: drei Drittel mit effektiver Spielzeit, Bullys, Einschläge und Freischläge mit 3 Metern Abstand, Torraum und Torhüterraum, 2-Minuten- und 5-Minuten-Strafen, Überzahl, Verlängerung und Penaltyschiessen.
 • Auch die neuen Regeln von 2026: kein Feldspieler durch den Torhüterraum, ein Wurf des Torhüters kann ein Tor sein, und gleichzeitige Strafen nehmen keine Spieler mehr vom Feld.
-• Zwei Schiedsrichter, die jeden Entscheid pfeifen und anzeigen wie echte: Freischlag, Vorteil, verzögerte Strafe, zwei Minuten, Tor.
+• Zwei Schiedsrichter, die jeden Entscheid pfeifen und anzeigen wie echte: Freischlag, Vorteil, verzögerte Strafe, zwei Minuten, passives Spiel, Tor.
+• Spät im Spiel nimmt das zurückliegende Team den Torhüter für einen sechsten Feldspieler vom Feld; ein bestrafter Spieler geht auf die Strafbank und sitzt seine Zeit ab.
 • Teams, die spielen, wie Unihockey gespielt wird: 2-1-2-Verteidigung, fliegende Linienwechsel alle fünfzig Sekunden, Flügel aussen und der Center im Slot.
 
 SPIELMODI
 • Schnelles Spiel: 22 Nationalteams, Herren und Damen, in einer Stadtarena, einer Sporthalle oder einer Turnhalle. Drittellänge von 4 bis 20 Minuten, effektive Spielzeit oder durchlaufende Uhr.
 • WM-Endrunde: sechzehn Nationen in vier Gruppen, Playoffs, Viertelfinals, Halbfinals und die Medaillenspiele.
+• Klubsaison: zehn Klubs, eine Liga mit 3-2-1-0-Punkten (3 für einen Sieg in der regulären Spielzeit, 2 nach Verlängerung oder Penaltyschiessen, 1 für eine Niederlage nach Verlängerung), dann Halbfinals und ein Final.
 • Eine Statistik nach jedem Spiel: Schüsse aufs Tor, Paraden, Strafminuten, Überzahltore, jedes Tor und jede Strafe mit ihrer Regel.
 
 SPIEL, WIE DU WILLST
 • Fünfzehn Sprachen: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 und ไทย.
-• Ein Joystick und drei Tasten, auf Wunsch für Linkshänder, in drei Grössen und dort platziert, wo deine Daumen sie haben wollen.
+• Ein Trainer begleitet dich durch dein erstes Spiel. Ein Joystick und drei Tasten, auf Wunsch für Linkshänder, in drei Grössen und dort platziert, wo deine Daumen sie haben wollen.
 • Läuft flüssig auf günstigen Handys und der Mittelklasse, mit Akkusparmodus.
 • Spielbar offline. Keine Werbung, keine Käufe, kein Konto und keine Datenerfassung.
 
 Floorstorm ist ein unabhängiges Spiel. Es ist mit keinem Unihockeyverband, keiner Liga, keinem Club und keinem Spieler verbunden und wird von keinem unterstützt. Die Spieler sind erfunden; die Länder und die Regeln sind echt.
 
 == Release notes (first release) ==
-Die erste Version von Floorstorm: Schnelles Spiel und die WM-Endrunde, in fünfzehn Sprachen.
+Die erste Version von Floorstorm: Schnelles Spiel, die WM-Endrunde und eine Klubsaison, mit einem Trainer für dein erstes Spiel, in fünfzehn Sprachen.

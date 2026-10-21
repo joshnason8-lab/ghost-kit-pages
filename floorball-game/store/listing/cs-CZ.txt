@@ -13,21 +13,23 @@ Floorstorm je florbal do mobilu: rychlý halový sport s hokejkou, který se hra
 SKUTEČNÝ FLORBAL
 • Mezinárodní Pravidla florbalu ve znění platném od 1. července 2026: tři třetiny čistého času, vhazování, rozehrání a volné údery se vzdáleností 3 metry, brankoviště a malé brankoviště, dvouminutové i pětiminutové tresty, přesilovky, prodloužení a trestná střílení.
 • I nová pravidla z roku 2026: žádný hráč v poli nesmí projít malým brankovištěm, brankář může skórovat hodem a vzájemné tresty už hráče z hřiště neposílají.
-• Dva rozhodčí, kteří pískají a signalizují každé rozhodnutí jako ti skuteční: volný úder, výhoda, oddálený trest, dvě minuty, gól.
+• Dva rozhodčí, kteří pískají a signalizují každé rozhodnutí jako ti skuteční: volný úder, výhoda, oddálený trest, dvě minuty, pasivní hra, gól.
+• Na konci zápasu stahuje prohrávající tým brankáře za šestého hráče v poli; potrestaný hráč odchází na trestnou lavici a odsedí si svůj trest.
 • Týmy, které hrají tak, jak se florbal hraje: obrana 2-1-2, letmé střídání formací každých padesát sekund, křídla u mantinelů a centr před brankou.
 
 JAK HRÁT
 • Rychlý zápas: 22 mužských i ženských reprezentací v městské aréně, sportovní hale nebo školní tělocvičně. Délka třetiny od 4 do 20 minut, čistý nebo hrubý čas.
 • Světové finále: šestnáct zemí ve čtyřech skupinách, předkolo play-off, čtvrtfinále, semifinále a zápasy o medaile.
+• Klubová sezóna: deset klubů, liga s bodováním 3-2-1-0 (3 za výhru v základní hrací době, 2 po prodloužení nebo trestných stříleních, 1 za prohru v prodloužení), pak semifinále a finále.
 • Statistiky po každém zápase: střely na branku, zákroky, trestné minuty, góly v přesilovce, každý gól a každý trest i s číslem pravidla.
 
 HRAJ PO SVÉM
 • Patnáct jazyků: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 a ไทย.
-• Joystick a tři tlačítka, i pro leváky, ve třech velikostech a přesunutá tam, kde je chtějí mít tvé palce.
+• Trenér tě provede prvním zápasem. Joystick a tři tlačítka, i pro leváky, ve třech velikostech a přesunutá tam, kde je chtějí mít tvé palce.
 • Vyladěno pro plynulý chod na levných i středních telefonech, s úsporou baterie.
 • Hraje se offline. Žádné reklamy, žádné nákupy, žádný účet a žádný sběr dat.
 
 Floorstorm je nezávislá hra. Není spojena se žádným florbalovým svazem, ligou, klubem ani hráčem a žádný z nich ji nepodporuje. Hráči jsou smyšlení; země a pravidla jsou skutečné.
 
 == Release notes (first release) ==
-První vydání hry Floorstorm: Rychlý zápas a Světové finále v patnácti jazycích.
+První vydání hry Floorstorm: Rychlý zápas, Světové finále a klubová sezóna, s trenérem pro tvůj první zápas, v patnácti jazycích.

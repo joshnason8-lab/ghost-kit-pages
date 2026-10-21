@@ -13,21 +13,23 @@ Floorstorm ir florbols tavā tālrunī: Zviedrijas, Somijas, Šveices un Čehija
 ĪSTĀ SPĒLE
 • Florbola starptautiskie spēles noteikumi, redakcija, kas stājās spēkā 2026. gada 1. jūlijā: trīs periodi tīrajā laikā, iemešanas, iesitieni un brīvsitieni ar 3 metru attālumu, vārtu laukums un vārtsarga laukums, divu un piecu minūšu sodi, vairākums, papildlaiks un soda metieni.
 • Arī jaunie 2026. gada noteikumi: neviens laukuma spēlētājs nedrīkst šķērsot vārtsarga laukumu, vārtsarga metiens var kļūt par vārtiem, un vienlaicīgi sodi vairs neizņem spēlētājus no laukuma.
-• Divi tiesneši, kas svilpj un rāda katru lēmumu kā īsti tiesneši: brīvsitiens, priekšrocība, atliktais sods, divas minūtes, vārti.
+• Divi tiesneši, kas svilpj un rāda katru lēmumu kā īsti tiesneši: brīvsitiens, priekšrocība, atliktais sods, divas minūtes, pasīva spēle, vārti.
+• Spēles beigās komanda, kas zaudē, nomaina vārtsargu pret sesto laukuma spēlētāju; sodītais spēlētājs dodas uz soda solu un izsēž savu laiku.
 • Komandas spēlē tā, kā spēlē florbolu: 2-1-2 aizsardzība, maiņas lidojumā ik pēc piecdesmit sekundēm, malējie uzbrucēji plaši un centra uzbrucējs pie vārtiem.
 
 SPĒLES VEIDI
 • Ātrā spēle: 22 izlases, vīrieši un sievietes, pilsētas arēnā, sporta zālē vai skolas sporta zālē. Perioda garums no 4 līdz 20 minūtēm, tīrais vai netīrais laiks.
 • PČ turnīrs: sešpadsmit valstis četrās grupās, izslēgšanas spēles, ceturtdaļfināli, pusfināli un medaļu spēles.
+• Klubu sezona: desmit klubi, līga ar punktiem 3-2-1-0 (3 par uzvaru pamatlaikā, 2 pēc papildlaika vai soda metieniem, 1 par zaudējumu papildlaikā), pēc tam pusfināli un fināls.
 • Statistika pēc katras spēles: metieni vārtos, atvairīti metieni, soda minūtes, vārti vairākumā, katri vārti un katrs sods ar noteikuma numuru.
 
 SPĒLĒ PA SAVAM
 • Piecpadsmit valodas: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 un ไทย.
-• Kursorsvira un trīs pogas, pēc vēlēšanās kreiļiem, trīs izmēros un novietojamas tur, kur tās vēlas tavi īkšķi.
+• Treneris tevi izvadīs cauri pirmajai spēlei. Kursorsvira un trīs pogas, pēc vēlēšanās kreiļiem, trīs izmēros un novietojamas tur, kur tās vēlas tavi īkšķi.
 • Veidota, lai vienmērīgi darbotos lētos un vidējās klases tālruņos, ar taupības režīmu.
 • Darbojas bezsaistē. Bez reklāmām, bez pirkumiem, bez konta un bez datu vākšanas.
 
 Floorstorm ir neatkarīga spēle. Tā nav saistīta ne ar vienu florbola federāciju, līgu, klubu vai spēlētāju, un neviens no tiem to nav apstiprinājis. Spēlētāji ir izdomāti; valstis un noteikumi ir īsti.
 
 == Release notes (first release) ==
-Floorstorm pirmā versija: ātrā spēle un PČ turnīrs piecpadsmit valodās.
+Floorstorm pirmā versija: ātrā spēle, PČ turnīrs un klubu sezona, ar treneri tavā pirmajā spēlē, piecpadsmit valodās.

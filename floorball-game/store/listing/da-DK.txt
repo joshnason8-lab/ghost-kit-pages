@@ -13,21 +13,23 @@ Floorstorm er floorball på din telefon: den hurtige indendørssport med stav fr
 DET ÆGTE SPIL
 • Floorballs internationale spilleregler, udgaven der gælder fra 1. juli 2026: tre perioder med effektiv tid, face-offs, indslag og frislag med 3 meters afstand, målfelt og målmandsfelt, to- og femminutters udvisninger, powerplay, forlængelse og straffeslag.
 • Også de nye regler fra 2026: ingen markspiller gennem målmandsfeltet, målmandens udkast kan give mål, og samtidige udvisninger tager ikke længere spillere af banen.
-• To dommere, der fløjter og giver tegn for hver afgørelse, som rigtige dommere gør: frislag, fordel, udsat udvisning, to minutter, mål.
+• To dommere, der fløjter og giver tegn for hver afgørelse, som rigtige dommere gør: frislag, fordel, udsat udvisning, to minutter, passivt spil, mål.
+• Sent i kampen tager holdet, der er bagud, målmanden ud for en sjette markspiller; en udvist spiller går i udvisningsboksen og sidder sin tid af.
 • Hold, der spiller floorball, som det spilles: 2-1-2 i forsvaret, flyvende kædeskift hvert halvtredsindstyvende sekund, wings ude på kanterne og centeren foran mål.
 
 SÅDAN KAN DU SPILLE
 • Hurtig kamp: 22 landshold, herrer og damer, i byens arena, en idrætshal eller en gymnastiksal. Periodelængde fra 4 til 20 minutter, effektiv eller løbende tid.
 • Verdensfinaler: seksten nationer i fire grupper, playoff, kvartfinaler, semifinaler og medaljekampe.
+• Klubsæson: ti klubber, en liga med 3-2-1-0-point (3 for sejr i ordinær tid, 2 efter forlængelse eller straffeslag, 1 for nederlag i forlængelse), derefter semifinaler og finale.
 • Kampstatistik efter hver kamp: skud på mål, redninger, udvisningsminutter, powerplaymål, hvert mål og hver udvisning med dens regel.
 
 SPIL PÅ DIN MÅDE
 • Femten sprog: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 og ไทย.
-• Et joystick og tre knapper, til venstrehåndede hvis du vil, i tre størrelser og placeret, hvor dine tommelfingre vil have dem.
+• En træner guider dig gennem din første kamp. Et joystick og tre knapper, til venstrehåndede hvis du vil, i tre størrelser og placeret, hvor dine tommelfingre vil have dem.
 • Lavet til at køre glat på billige og mellemklassetelefoner, med batterisparer.
 • Kan spilles offline. Ingen reklamer, ingen køb, ingen konto og ingen dataindsamling.
 
 Floorstorm er et uafhængigt spil. Det er ikke tilknyttet eller støttet af noget floorballforbund, nogen liga, klub eller spiller. Spillerne er opdigtede; landene og reglerne er ægte.
 
 == Release notes (first release) ==
-Første udgave af Floorstorm: Hurtig kamp og Verdensfinaler, på femten sprog.
+Første udgave af Floorstorm: Hurtig kamp, Verdensfinaler og en klubsæson, med en træner til din første kamp, på femten sprog.

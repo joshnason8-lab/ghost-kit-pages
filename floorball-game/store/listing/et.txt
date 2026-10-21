@@ -13,21 +13,23 @@ Floorstorm on saalihoki sinu telefonis: Rootsi, Soome, Šveitsi ja Tšehhi kiire
 PÄRIS MÄNG
 • Saalihoki rahvusvahelised mängureeglid, 1. juulil 2026 jõustunud väljaanne: kolm perioodi puhta mänguajaga, vahevisked, sisse- ja vabalöögid 3-meetrise vahemaaga, väravaala ja väravavahi ala, kahe- ja viieminutilised karistused, arvuline ülekaal, lisaaeg ja karistusvisked.
 • Ka 2026. aasta uued reeglid: ükski väljakumängija ei tohi läbida väravavahi ala, väravavahi visatud pall võib väravasse minna ja samaaegsed karistused ei vii enam mängijaid väljakult.
-• Kaks kohtunikku, kes vilistavad ja näitavad iga otsust nagu päris kohtunikud: vabalöök, eelis, edasilükatud karistus, kaks minutit, värav.
+• Kaks kohtunikku, kes vilistavad ja näitavad iga otsust nagu päris kohtunikud: vabalöök, eelis, edasilükatud karistus, kaks minutit, passiivne mäng, värav.
+• Mängu lõpus vahetab kaotusseisus meeskond väravavahi kuuenda väljakumängija vastu; karistatud mängija läheb karistuspingile ja istub oma aja ära.
 • Meeskonnad mängivad nii, nagu saalihokit mängitakse: 2-1-2 kaitse, lennukad vahetused umbes iga viiekümne sekundi järel, äärmängijad laial ja tsenter värava ees.
 
 MÄNGUVIISID
 • Kiirmäng: 22 koondist, mehed ja naised, linna areenil, spordisaalis või kooli võimlas. Perioodi pikkus 4 kuni 20 minutit, puhas mänguaeg või jooksev kell.
 • MM-turniir: kuusteist riiki neljas alagrupis, play-off, veerandfinaalid, poolfinaalid ja medalimängud.
+• Klubihooaeg: kümme klubi, liiga punktisüsteemiga 3-2-1-0 (3 võidu eest normaalajal, 2 pärast lisaaega või karistusviskeid, 1 lisaajal kaotuse eest), seejärel poolfinaalid ja finaal.
 • Statistika pärast iga mängu: visked väravale, tõrjed, karistusminutid, ülekaaluväravad ning iga värav ja karistus koos reegli numbriga.
 
 MÄNGI OMAMOODI
 • Viisteist keelt: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 ja ไทย.
-• Juhtkang ja kolm nuppu, soovi korral vasakukäelistele, kolmes suuruses ja liigutatavad sinna, kuhu su pöidlad neid tahavad.
+• Treener juhendab sind esimeses mängus. Juhtkang ja kolm nuppu, soovi korral vasakukäelistele, kolmes suuruses ja liigutatavad sinna, kuhu su pöidlad neid tahavad.
 • Loodud sujuvalt töötama soodsatel ja keskklassi telefonidel, koos akusäästjaga.
 • Töötab võrguühenduseta. Ei mingeid reklaame, oste ega kontot ning andmeid ei koguta.
 
 Floorstorm on sõltumatu mäng. See ei ole seotud ühegi saalihokiliidu, -liiga, -klubi ega -mängijaga ega ole nende poolt heaks kiidetud. Mängijad on väljamõeldud; riigid ja reeglid on päris.
 
 == Release notes (first release) ==
-Floorstormi esimene väljalase: kiirmäng ja MM-turniir viieteistkümnes keeles.
+Floorstormi esimene väljalase: kiirmäng, MM-turniir ja klubihooaeg ning treener esimeseks mänguks, viieteistkümnes keeles.

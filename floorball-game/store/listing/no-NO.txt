@@ -13,21 +13,23 @@ Floorstorm er innebandy på mobilen: den raske innendørssporten med kølle fra 
 DET EKTE SPILLET
 • Innebandyens internasjonale spilleregler, utgaven som gjelder fra 1. juli 2026: tre perioder med effektiv tid, avslag, innslag og frislag med 3 meters avstand, målområde og keeperområde, to- og fem-minutters utvisninger, overtall, forlengning og straffeslag.
 • Også de nye reglene fra 2026: ingen utespiller gjennom keeperområdet, keeperens utkast kan gi mål, og samtidige utvisninger tar ikke lenger spillere av banen.
-• To dommere som blåser og gir tegn for hver avgjørelse slik ekte dommere gjør: frislag, fordel, utsatt utvisning, to minutter, mål.
+• To dommere som blåser og gir tegn for hver avgjørelse slik ekte dommere gjør: frislag, fordel, utsatt utvisning, to minutter, passivt spill, mål.
+• Sent i kampen tar laget som ligger under, ut keeperen for en sjette utespiller; en utvist spiller går til utvisningsboksen og sitter ut tiden sin.
 • Lag som spiller innebandy slik den spilles: 2-1-2 i forsvar, flygende rekkebytter hvert femtiende sekund, vingene ute på kantene og senteren foran mål.
 
 SLIK KAN DU SPILLE
 • Hurtigkamp: 22 landslag, herrer og damer, i en byarena, en idrettshall eller en gymsal. Periodelengde fra 4 til 20 minutter, effektiv eller løpende tid.
 • Verdensfinaler: seksten nasjoner i fire grupper, sluttspill, kvartfinaler, semifinaler og medaljekamper.
+• Klubbsesong: ti klubber, en serie med 3-2-1-0-poeng (3 for seier i ordinær tid, 2 etter forlengning eller straffeslag, 1 for tap i forlengning), deretter semifinaler og finale.
 • Kampstatistikk etter hver kamp: skudd på mål, redninger, utvisningsminutter, overtallsmål, hvert mål og hver utvisning med regelen sin.
 
 SPILL PÅ DIN MÅTE
 • Femten språk: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 og ไทย.
-• En joystick og tre knapper, for venstrehendte om du vil, i tre størrelser og plassert der tomlene vil ha dem.
+• En trener guider deg gjennom din første kamp. En joystick og tre knapper, for venstrehendte om du vil, i tre størrelser og plassert der tomlene vil ha dem.
 • Laget for å gå jevnt på rimelige mobiler og mellomklassemobiler, med batterisparing.
 • Spilles uten nett. Ingen reklame, ingen kjøp, ingen konto og ingen innsamling av data.
 
 Floorstorm er et uavhengig spill. Det er ikke tilknyttet eller støttet av noe innebandyforbund, noen serie, klubb eller spiller. Spillerne er oppdiktet; landene og reglene er ekte.
 
 == Release notes (first release) ==
-Første versjon av Floorstorm: Hurtigkamp og Verdensfinaler, på femten språk.
+Første versjon av Floorstorm: Hurtigkamp, Verdensfinaler og en klubbsesong, med en trener for din første kamp, på femten språk.

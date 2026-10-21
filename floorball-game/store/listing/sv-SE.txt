@@ -13,21 +13,23 @@ Floorstorm är innebandy i mobilen: den snabba inomhussporten med klubba från S
 PÅ RIKTIGT
 • Innebandyns internationella spelregler, utgåvan som gäller från 1 juli 2026: tre perioder med effektiv tid, tekningar, inslag och frislag med 3 meters avstånd, målområde och målvaktsområde, två- och femminutersutvisningar, powerplay, förlängning och straffslag.
 • Även de nya reglerna från 2026: ingen utespelare genom målvaktsområdet, målvaktens utkast kan bli mål, och samtidiga utvisningar tar inte längre spelare av planen.
-• Två domare som blåser och visar tecken för varje beslut precis som riktiga domare: frislag, fördel, fördröjd utvisning, två minuter, mål.
+• Två domare som blåser och visar tecken för varje beslut precis som riktiga domare: frislag, fördel, fördröjd utvisning, två minuter, passivt spel, mål.
+• Sent i matchen tar laget som ligger under ut målvakten för en sjätte utespelare; en utvisad spelare går till utvisningsbåset och sitter av sin tid.
 • Lag som spelar innebandy som den spelas: 2-1-2 i försvar, flygande femmabyten var femtionde sekund, yttrar ute på kanterna och centern i slottet.
 
 SÅ KAN DU SPELA
 • Snabbmatch: 22 landslag, herrar och damer, i en stadsarena, en sporthall eller en gympasal. Periodlängd från 4 till 20 minuter, effektiv tid eller rullande tid.
 • Världsfinaler: sexton nationer i fyra grupper, playoff, kvartsfinaler, semifinaler och medaljmatcher.
+• Klubbsäsong: tio klubbar, en serie med 3-2-1-0-poäng (3 för vinst under ordinarie tid, 2 efter förlängning eller straffslag, 1 för förlust efter förlängning), sedan semifinaler och final.
 • Matchstatistik efter varje match: skott på mål, räddningar, utvisningsminuter, powerplaymål, varje mål och varje utvisning med sin regel.
 
 SPELA PÅ DITT SÄTT
 • Femton språk: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 och ไทย.
-• En joystick och tre knappar, för vänsterhänta om du vill, i tre storlekar och placerade där tummarna vill ha dem.
+• En tränare guidar dig genom din första match. En joystick och tre knappar, för vänsterhänta om du vill, i tre storlekar och placerade där tummarna vill ha dem.
 • Gjort för att flyta på enklare och mellanklassmobiler, med batterisparläge.
 • Fungerar offline. Inga annonser, inga köp, inget konto och ingen datainsamling.
 
 Floorstorm är ett oberoende spel. Det har ingen koppling till och stöds inte av något innebandyförbund, någon serie, klubb eller spelare. Spelarna är påhittade; länderna och reglerna är på riktigt.
 
 == Release notes (first release) ==
-Första versionen av Floorstorm: Snabbmatch och Världsfinaler, på femton språk.
+Första versionen av Floorstorm: Snabbmatch, Världsfinaler och en klubbsäsong, med en tränare för din första match, på femton språk.
