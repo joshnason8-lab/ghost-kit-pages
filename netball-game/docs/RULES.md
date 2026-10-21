@@ -204,9 +204,15 @@ pass. In the game (`Match._sanction`, `suspend`): a player is **warned** at her 
 since her last sanction, and **suspended** at the third after a warning: she walks to her bench and her team plays a
 player short for two minutes of playing time (the clock held through stoppages does not count), then she comes back
 on to her own area, walking round the outside of the court; no one stands out of play for a penalty she was suspended
-for. The HUD shows each warning and suspension. *Simplified:* ordering off (`ORDERED_OFF_REPLACE`, 4 minutes) and
-the advance and escalate options are in the module but the umpires do not use them: the game's players commit no
-dangerous play. Test: `_sanctions_and_injury`. Source:
+for. A player suspended a second time is **ordered off**: her team plays a player short until four minutes of playing
+time have passed, then the next player on the bench who plays her position comes on (`Rules.SUSPENSIONS_TO_ORDER_OFF`,
+`ORDERED_OFF_REPLACE`). When a warned player infringes again, the umpire uses the 2024 options before a suspension:
+a free pass is **escalated** to a penalty pass (`Rules.escalate`; in the circle, a penalty pass or shot), or the award
+is **advanced** up to half a third toward the goal the infringer's team defends (`Rules.advance`; into the circle only if the
+infringement was in the goal third). The HUD names each warning, escalation, advance, suspension and ordering off.
+*Simplified:* the game's players commit no dangerous play or misconduct, so ordering off comes only from repeated
+infringement, not from a single act. The **Umpiring** setting sets how often the AI infringes: fewer whistles (half
+the standard), standard, or the real elite rate (`TeamAI.whistle_rate`). Test: `_sanctions_and_injury`. Source:
 https://netball.sport/wp-content/uploads/2024/01/Game-Management-PDF.pdf
 
 ## The officials (R4)
@@ -226,7 +232,8 @@ https://nsw.netball.com.au/sites/nsw/files/2022-10/HandSignals.pdf):
 | Held ball | Arm straight up |
 | Footwork | Hands palms down, rolling past each other |
 | Short pass | Hands a short way apart, one moving to the other |
-| Obstruction | Hands palms in, a short way apart, in front |
+| Obstruction (of the player with the ball) | Hands palms in, a short way apart, in front |
+| Obstruction (of a player without the ball) | Arms angled out from the body below the waist (secondary source; the game draws the with-ball signal for both) |
 | Contact | One hand tapping the other forearm |
 | Over a third | An arm sweeping up in an arc in the ball's direction |
 | Offside, breaking, throw-in | An arm angled down to the line or area |
@@ -269,6 +276,13 @@ go to extra time. `game/cup.gd`; test `_cup`. The real world championship has 16
 (2023), and adds Cup and Plate competitions in 2027
 (https://netball.sport/wp-content/uploads/2025/06/World-Netball-Introduces-Cup-and-Plate-Competitions-to-Netball-World-Cup-2027-Final.pdf).
 
+The **Club Season** is the game's own league: eight invented clubs (a city and a nickname no club in Australia's, New
+Zealand's, England's or South Africa's top league uses; checked October 2026) play each other once, seven rounds,
+two points for a win and one for a draw, split by goal percentage. Then the professional leagues' finals in their
+simplest form: first plays fourth and second plays third (the higher-placed club at home), and the winners meet in the
+grand final, with extra time if level. (The real leagues' finals series differ in detail, some giving the top two a
+second chance; the game keeps a single knockout.) `game/league.gd`; test `_league`.
+
 ## How the AI plays: the numbers
 
 The AI (`game/ai.gd`) plays the positions as they are played: attackers lead into space and hold it, the GS works
@@ -290,7 +304,26 @@ numbers:
 | Time on the ball | under three seconds; the game's AI passes after 0.3-1.2 s, sooner the better its passing | design assumption |
 | Possessions a team | about 75-90 in 60 minutes | derived (one centre pass a goal, plus turnovers) |
 
-**Choices against the real numbers**: the AI gives away penalties at about a third of the real rate (one every
-70 seconds or so a team rather than one every 65 seconds of play), so a match is not mostly whistles; the rate is in
-`TeamAI._slips` and can be raised. Shot chance: about 95% under the post, 87% at 2.5 m, 62% at the circle's edge for
+**Choices against the real numbers**: by default the AI gives away penalties at about a third of the real rate, so a
+match is not mostly whistles; Settings, Umpiring, offers half that or the real rate (`TeamAI.whistle_rate`,
+`_slips`). Shot chance: about 95% under the post, 87% at 2.5 m, 62% at the circle's edge for
 an 85-rated shooter, up to an eighth off with a defender's arm over the ball (`Match.shot_chance`).
+
+## Still unconfirmed, and why
+
+Round two re-checked every point above that rested on the rules' text. The official PDF could not be opened from the
+build machine (the network policy answered 403 for netball.sport, netball.com.au, archive.org, englandnetball.co.uk and
+netballnz.co.nz; the fetch tool could not resolve those hosts), so the checks used search engines' quotes of the PDF
+and national bodies' documents. Confirmed that way, and corrected in the game: the rule numbers, "on the line is
+fine" for offside, advance (half a third) and escalate, ordering off with a replacement after four minutes, the
+simultaneous-infringement rule (last possession keeps the ball; a shot is allowed in its attacking circle), a 4-minute
+interval before extra time. Still open, for anyone who opens the PDF:
+
+- **Simultaneous infringement**: the clause number (the rule itself is confirmed by national bodies' 2024 summaries).
+- **Over a third**: R12, but 12.3 or 12.4 (two European umpiring papers disagree).
+- **Signals**: the PDF's signal pages (from about page 70) were not readable. Held ball and goal are confirmed by
+  secondary sources; obstruction of a player without the ball has its own signal (added above, not drawn); whether
+  offside, breaking and a throw-in share the "arm angled down" signal is unverified (a throw-in at the goal line has its
+  own, the arm angled to the post's base).
+- **In the air above an area is not offside** (landing is what counts): not contradicted, but no quote found.
+

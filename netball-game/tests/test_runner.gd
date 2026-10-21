@@ -30,6 +30,7 @@ func _ready() -> void:
 	await _break_screen()
 	_tags()
 	await _coach()
+	await _navigation()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -668,3 +669,35 @@ func _league() -> void:
 	var back = Game.get_league()
 	check(back != null and back.champion == l.champion and back.fixtures.size() == 28, "the season saves and loads")
 	Game.delete_league()
+
+
+## Pausing and going back (playtest: the pause button sat off screen; Esc did nothing in a browser; Back with the
+## language list open quit the game).
+func _navigation() -> void:
+	Game.show_screen("res://ui/settings_screen.gd")
+	await frames(3)
+	var esc := InputEventKey.new()
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	Input.parse_input_event(esc)
+	await frames(3)
+	check(String(Game.current.get_script().resource_path).ends_with("main_menu.gd"), "Esc goes back (settings to home)")
+	var menu = Game.current
+	menu._open_language()
+	await frames(3)
+	Game.go_back()
+	await frames(3)
+	check(Game.current == menu and is_instance_valid(menu) and (menu._picker == null or not is_instance_valid(menu._picker) or not menu._picker.visible or menu._picker.is_queued_for_deletion()),
+		"Back with the language list open closes the list, not the game")
+	Game.start_match({"home": "ENG", "away": "WAL", "venue": "hall", "user_team": 0, "seed": 7, "quarter": 15, "mode": "quick", "difficulty": 1})
+	await frames(30)
+	var m = Game.current
+	var b: Button = m.hud.pause_button()
+	var view := Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size)
+	check(b.is_visible_in_tree() and view.encloses(b.get_global_rect()) and b.get_global_rect().size.x > 40, "the pause button is on screen (%s)" % b.get_global_rect())
+	b.pressed.emit()
+	await frames(2)
+	check(m.paused, "it pauses the match")
+	m.set_paused(false)
+	Game.goto_menu()
+	await frames(3)

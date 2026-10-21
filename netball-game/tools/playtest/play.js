@@ -1,6 +1,6 @@
 // Plays the Web build in Chromium as a phone tester would: touch emulation, landscape, Low graphics.
 // Usage: node tools/playtest/play.js URL OUT_DIR WIDTH HEIGHT SCENARIO
-//   SCENARIO: tour (every screen), quick (a Quick Match played with the touch controls), cup, coach
+//   SCENARIO: tour (every screen), quick (a Quick Match played with the touch controls), cup, league, cup_match
 // Needs Playwright (preinstalled: PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers); the game served over http.
 const { chromium } = require('/opt/node-tools/node_modules/playwright');
 const [url, out, w, h, scenario] = process.argv.slice(2);
@@ -61,7 +61,9 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     await tap(W * 0.85, H * 0.6); await sleep(1500); await shot('howto');
     await drag(W * 0.5, H * 0.75, W * 0.5, H * 0.35, 500); await sleep(800); await shot('howto_scrolled');
     await page.keyboard.press('Escape'); await sleep(1000);
-    await tap(W * 0.18, H * 0.6); await sleep(1500); await shot('cup');
+    await tap(W * 0.18, H * 0.5); await sleep(1500); await shot('cup');
+    await page.keyboard.press('Escape'); await sleep(1000);
+    await tap(W * 0.18, H * 0.82); await sleep(1500); await shot('league');
     await page.keyboard.press('Escape'); await sleep(1000);
     await tap(W * 0.5, H * 0.6); await sleep(1500); await shot('quick_setup');
   } else if (S === 'quick' || S === 'cup_match') {
@@ -71,15 +73,19 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     }
     await playMatch();
   } else if (S === 'cup') {
-    await tap(W * 0.18, H * 0.6); await sleep(1500); await shot('cup_pick');
+    await tap(W * 0.18, H * 0.5); await sleep(1500); await shot('cup_pick');
     await tap(W * 0.3, H * 0.45); await sleep(2000); await shot('cup_hub');
     // Play (the lime button on the next-match card, right side).
     await tap(W - gx(150), gy(210)); await sleep(6000);
     await playMatch();
     await tap(W - gx(120), H - gy(50)); await sleep(2000); await shot('cup_after');
-  } else if (S === 'cup') {
-    await tap(W * 0.18, H * 0.6); await sleep(1500); await shot('cup_pick');
-    await tap(W * 0.3, H * 0.45); await sleep(1500); await shot('cup_hub');
+  } else if (S === 'league') {
+    // The Club Season: the lower half of the left third.
+    await tap(W * 0.18, H * 0.82); await sleep(1500); await shot('league_pick');
+    await tap(W * 0.2, H * 0.45); await sleep(2000); await shot('league_hub');
+    await tap(W - gx(150), gy(210)); await sleep(6000);
+    await playMatch();
+    await tap(W - gx(120), H - gy(50)); await sleep(2000); await shot('league_after');
   }
   async function playMatch() {
     const state = async () => page.evaluate(() => window.cpn || {});
