@@ -12,7 +12,8 @@ here and `git log`.
 - **The match** (`game/match.gd`): throw-ins, open play, the loose ball, catches and lifts, the carry rules, strikes,
   hand-passes, solos, tackles, fouls, advantage, cards (yellow, red, black and the sin bin), puck-outs, frees, 65s,
   sideline cuts, penalties, scores, wides, posts and crossbar, added time, half time, extra time, the shoot-out,
-  full time and the result. The clock runs through stoppages (the referee's watch); match length 8-70 minutes.
+  full time and the result. The clock runs through stoppages (the referee's watch; at 40% of its sped-up rate while the ball is dead, so restarts
+  do not eat a short match); match length 8-70 minutes.
 - **Officials** with their signals and flags; **team AI** tuned to real numbers (AI.md); your player by touch
   (floating joystick, context buttons, switch, assist levels); the broadcast camera; the HUD (score bug in
   goals-points and total, the clock, added time, calls, the sliotar's marker, your steps).
@@ -38,8 +39,9 @@ here and `git log`.
 ## Next (in order)
 
 1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev
-   overlay: tap the version seven times), heat, the buttons' size and place. The logic costs about 2 ms a frame on a
-   desktop core; a low-end phone's is maybe four times slower: if needed, think off-ball players' targets at 10 Hz.
+   overlay: tap the version seven times), heat, the buttons' size and place. The logic costs about 1.1 ms a frame on a
+   desktop core (off-ball players re-plan where to stand seven times a second); a low-end phone's core is maybe
+   four times slower, well inside a 33 ms frame.
 2. **Substitutions** (five, three more in extra time, temporary ones for the sin bin) and tired players.
 3. **Tactics**: a sweeper, a two-man full-forward line, short or long puck-outs, chosen in match setup.
 4. **Umpires who now and then get a close one wrong**, and Hawk-Eye at the stadium (as the real one has).

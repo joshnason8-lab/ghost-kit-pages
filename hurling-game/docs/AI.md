@@ -65,21 +65,21 @@ From the GAA's Games Intelligence Unit, sports-science papers and match analysis
 
 ## What the game's matches produce
 
-`tests/match_sim.tscn` plays AI matches headless. At the default length (14 minutes; the clock runs 5× real time),
-six matches between the top counties, after tuning (21 October 2026):
+`tests/match_sim.tscn` plays AI matches headless. At the default length (14 minutes; the clock runs 5× real time in play, 2× while the ball is dead),
+matches between the top counties, after tuning (21 October 2026; ten matches across the last two runs):
 
 | | Per match (both sides) |
 |---|---|
-| Goals | 2.0 |
-| Points | 23 |
-| Shots | 38 |
-| Wides | 17 |
-| Frees | 4.5 |
-| Yellow cards | 1.2 |
-| Black cards | 0.3-0.5 |
-| Puck-outs | 42 |
+| Goals | 1.3-2.0 |
+| Points | 20-23 |
+| Shots | 34-38 |
+| Wides | 16-17 |
+| Frees | 3.5-4.5 |
+| Yellow cards | about 1 |
+| Black cards | 0-0.5 |
+| Puck-outs | about 37-42 |
 
-Scorelines like 2-11 v 0-17, 1-15 v 1-13, 0-12 v 1-4: real hurling's shape (points far outnumber goals, a goal or
+Scorelines like 1-11 v 0-7, 0-15 v 0-9, 1-15 v 1-13, 2-11 v 0-17: real hurling's shape (points far outnumber goals, a goal or
 two a game), with fewer scores than 70 real minutes since the match is shorter. The play itself runs at real speed:
 a full 70-minute match (Settings > Match length > 70 min) produces about the real numbers.
 

@@ -74,6 +74,7 @@ var pstats := {}             # player id -> {goals, points, frees, w (wides), ..
 var tstats := [{}, {}]       # shots, wides, frees, 65s, puckouts, puckouts_won, yellow, red, black
 
 var _cooldown := {}          # player -> earliest time he tries another tackle
+var _spot_plan := {}         # player -> [where he means to stand, when to look again]
 var _hold_still := 0.0
 var _fps_hist: Array = []    # recent frame times (ms) for the dev overlay and the auto graphics level
 var _early_frames := 0
@@ -428,9 +429,11 @@ func _wants_auto_solo(pl: Player) -> bool:
 
 # ---------------------------------------------------------------- open play
 
-## The referee's watch runs on through stoppages (the time lost is added on at the end of the half).
+## The referee's watch runs on through stoppages (the time lost is added on at the end of the half). With the clock
+## sped up to fit a short match, a restart would eat minutes of it, so while the ball is dead it runs at 40%.
 func _run_clock(dt: float) -> void:
-	clock += dt * clock_k
+	var k := clock_k if phase in [P.LIVE, P.THROW_IN] else maxf(1.0, clock_k * 0.4)
+	clock += dt * k
 	if not _added_shown and clock >= half_len_now() - 60.0:
 		_end_of_half_check()
 
@@ -492,17 +495,24 @@ func _brains(dt: float) -> void:
 			elif ball.state == Sliotar.FREE and pl in chasers[k]:
 				target = _chase_target(pl)
 				speed = pl.top_speed() * (1.0 if chasers[k].find(pl) == 0 else 0.85)
-			elif carrier != null and carrier.team == k:
-				target = t.attack_spot(pl, carrier)
-				speed = _jog(pl, target)
 			elif pl == press or pl == press2:
 				target = _press_spot(pl, carrier)
 				speed = pl.top_speed()
-			elif carrier != null:
-				target = t.defend_spot(pl)
-				speed = _jog(pl, target)
 			else:
-				target = t.home_spot(pl) if _last_owner != k else t.attack_spot(pl, null)
+				# Off the ball: where to stand is looked at again about seven times a second (a phone's CPU is
+				# spared thirty players' marking sums every frame); he steers to it every frame.
+				var plan: Array = _spot_plan.get(pl, [])
+				if plan.is_empty() or now >= float(plan[1]):
+					var spot: Vector3
+					if carrier != null and carrier.team == k:
+						spot = t.attack_spot(pl, carrier)
+					elif carrier != null:
+						spot = t.defend_spot(pl)
+					else:
+						spot = t.home_spot(pl) if _last_owner != k else t.attack_spot(pl, null)
+					plan = [spot, now + 0.12 + rng.randf() * 0.06]
+					_spot_plan[pl] = plan
+				target = plan[0]
 				speed = _jog(pl, target)
 			_steer(pl, target, speed)
 
