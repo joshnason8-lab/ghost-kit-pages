@@ -59,7 +59,7 @@ func _ready() -> void:
 	tv.add_child(how)
 	tv.add_child(MatchHud.score_by_turn(_turns_view()))
 	# The box score, a card a side.
-	var cols := HBoxContainer.new()
+	var cols := VBoxContainer.new()
 	cols.add_theme_constant_override("separation", 16)
 	body.add_child(cols)
 	var best := _player_of_match()
@@ -142,7 +142,7 @@ func _box(side: int, team: String, best: String) -> PanelContainer:
 		var st: Dictionary = r[1]
 		var col := Game.C_GOLD if String(r[0]) == best else Game.C_INK
 		var nm := UI.label("%d %s" % [int(st.num), String(st.name)], "", 16, col)
-		nm.custom_minimum_size = Vector2(150, 0)
+		nm.custom_minimum_size = Vector2(220, 0)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		UI.fit(nm)
 		g.add_child(nm)

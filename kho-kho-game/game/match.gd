@@ -78,6 +78,7 @@ var _target_ring: MeshInstance3D
 var _foul_rate := 0.02
 var _diff := [0.0, 0.0]        # the AI's rating change per side (difficulty)
 var _end_reason := ""
+var _last_kho_t := 0.0
 var _min_turns := 0            # minimum-chase turns played, plus one
 
 
@@ -102,7 +103,7 @@ func _ready() -> void:
 	_build_people()
 	_build_markers()
 	cam = Camera3D.new()
-	cam.fov = 46.0
+	cam.fov = 50.0
 	cam.near = 0.3
 	cam.far = 160.0
 	add_child(cam)
@@ -759,6 +760,7 @@ func _give_kho(i: int) -> void:
 	active.face_to = squares[i].position
 	active.do("kho", 0.3)
 	_pending_kho = {"i": i, "t": 0.16, "giver": active}
+	_last_kho_t = t_match
 	Sfx.voice("hup", -4.0, 1.25)
 	Sfx.play("slap", -8.0)
 	if hud:
@@ -847,8 +849,9 @@ func _chaser_think(dt: float) -> void:
 				var dist := (d.position - p).length()
 				var reach := 1.5 + float(active.data.get("reach", 70)) / 100.0 * 0.8
 				var near_line: bool = absf(d.position.z) > f.width * 0.5 - 1.6 or absf(d.position.x) > f.length * 0.5 - 1.4
-				if dist < reach and dist > 0.9 and _dive_cool <= 0.0 and KhoRules.touch_counts(f, chase, p, d.position) \
-						and (near_line or rng.randf() < 0.35):
+				var closing := d.vel.length() < 3.0 or (d.position - p).normalized().dot(d.vel.normalized()) < 0.3
+				if dist < reach and dist > 1.1 and _dive_cool <= 0.0 and KhoRules.touch_counts(f, chase, p, d.position) \
+						and (near_line or closing) and rng.randf() < 0.25:
 					_dive_at(d)
 					return
 				target = d.position + d.vel * clampf(dist / 8.0, 0.1, 0.5)
@@ -938,16 +941,37 @@ func _dive_at(d: Athlete) -> void:
 	if KhoRules.in_free_zone(f, p) and absf(absf(p.x) - f.pole_gap * 0.5) < 1.4 and d:
 		_pole_dive_at(d)
 		return
+	# Never across the lane: a dive is within the direction rules (and the lane's).
+	if not KhoRules.in_free_zone(f, p) and float(chase.half) * dir.z < 0.0:
+		dir.z = 0.0
+		dir = dir.normalized() if dir.length() > 0.01 else Vector3(float(chase.dir), 0, 0)
 	active.vel = dir * maxf(active.vel.length(), 5.6)
 	active.yaw = atan2(dir.x, dir.z)
 	active.do("dive", 0.5)
-	_dive_cool = 1.6
+	_dive_cool = 3.0
+	if d:
+		_see_dive(d, dir)
 	stats[active.data.id].dives += 1
 	Sfx.play("whoosh", -6.0)
 	Sfx.voice("grunt", -6.0)
 	if _user_chasing():
 		Game.haptic("dive")
 	game_event.emit("dive")
+
+
+## A defender sees the dive coming and jumps aside, if he reads it in time: his reaction is 0.12 s for the best
+## and 0.32 s for the slowest, and the dive's hands arrive 0.25-0.35 s after it starts (docs/AI.md).
+func _see_dive(d: Athlete, dir: Vector3) -> void:
+	if d == user_def:
+		return
+	var read := float(d.data.get("read", 70)) + float(_diff[d.side])
+	var react := lerpf(0.32, 0.12, clampf(read / 100.0, 0.0, 1.0)) + rng.randf_range(-0.05, 0.08)
+	var side := Vector3(-dir.z, 0, dir.x)
+	if side.dot(d.position - active.position) < 0.0:
+		side = -side
+	var ai: Dictionary = _ai[d]
+	ai.dodge_at = t_match + react
+	ai.dodge_dir = (side * 1.0 + dir * 0.35).normalized()
 
 
 func _pole_dive_at(d: Athlete) -> void:
@@ -958,7 +982,8 @@ func _pole_dive_at(d: Athlete) -> void:
 	active.vel = dir * 3.0
 	active.yaw = atan2(dir.x, dir.z)
 	active.do("pole_dive", 0.45, dir.z * signf(pole.x) < 0.0)
-	_dive_cool = 1.6
+	_dive_cool = 3.0
+	_see_dive(d, dir)
 	stats[active.data.id].pole_dives += 1
 	Sfx.voice("grunt", -6.0)
 	game_event.emit("pole_dive")
@@ -970,7 +995,7 @@ func _touches() -> void:
 		return
 	var fwd := Vector3(sin(active.yaw), 0, cos(active.yaw))
 	var hand := active.position + fwd * 0.4
-	var hand_r := 0.55
+	var hand_r := 0.42
 	var kind := KhoRules.OUT_TOUCH
 	if active.act == "dive":
 		if active.act_t < 0.08 or active.act_t > 0.45:
@@ -1009,7 +1034,8 @@ func _out(d: Athlete, kind: String, by: Athlete = null) -> void:
 	st.run = 0.0
 	if by:
 		stats[by.data.id].outs += 1
-	_log("out", {"kind": kind, "who": d.data.id, "by": by.data.id if by else "", "pts": pts})
+	_log("out", {"how": kind, "who": d.data.id, "by": by.data.id if by else "", "pts": pts, "since_kho": t_match - _last_kho_t,
+		"dz": absf(d.position.z), "x": d.position.x})
 	var ump := _umpire_for(d.position.x)
 	ump.do("out", 1.4)
 	ump.face_to = d.position
@@ -1142,7 +1168,7 @@ func _on_foul(kind: String, who: Athlete = null) -> void:
 	ump.face_to = a.position
 	if a.data.has("id"):
 		stats[a.data.id].fouls += 1
-	_log("foul", {"kind": kind, "by": a.data.get("id", "")})
+	_log("foul", {"how": kind, "by": a.data.get("id", "")})
 	Sfx.play("whistle_short", -3.0)
 	_foul_whistle = 0.32
 	if who and kind == KhoRules.FOUL_EARLY:
@@ -1195,6 +1221,35 @@ func _defender_think(a: Athlete, dt: float) -> void:
 		to.y = 0
 		a.want = to.normalized() * top * 0.9
 		return
+	if ai.has("dodge_at") and t_match >= float(ai.dodge_at) and t_match < float(ai.dodge_at) + 0.4:
+		a.top = top * 1.15
+		a.want = _keep_in(a, (ai.dodge_dir as Vector3) * a.top)
+		a.vel += (ai.dodge_dir as Vector3) * 9.0 * dt   # a quick, hard step aside
+		return
+	# The juke: the active chaser closing in, the defender waits for him to commit, then slips behind him, where his
+	# direction will not let him turn (the wazir and a chaser in the free zone can still follow).
+	if active and not active.busy() and not ai.has("juke_until"):
+		var to_me := a.position - active.position
+		to_me.y = 0
+		var closing := active.vel.dot(to_me.normalized()) > 2.0
+		if to_me.length() < 1.9 and closing:
+			var read := float(a.data.get("read", 70)) + float(_diff[a.side])
+			var c_read := float(active.data.get("read", 70)) + float(_diff[active.side])
+			var react := clampf(0.16 + (c_read - read) * 0.006 + rng.randf_range(-0.06, 0.1), 0.06, 0.4)
+			var back := -float(chase.dir) if chase.dir != 0 and not chase.wazir else (-signf(active.vel.x) if absf(active.vel.x) > 0.5 else 1.0)
+			var lateral := signf(to_me.z) if absf(to_me.z) > 0.2 else (1.0 if rng.randf() < 0.5 else -1.0)
+			ai.juke_at = t_match + react
+			ai.juke_until = t_match + react + 0.45
+			ai.juke_dir = Vector3(back * 0.85, 0, lateral * 0.55).normalized()
+	if ai.has("juke_until"):
+		if t_match > float(ai.juke_until):
+			ai.erase("juke_until")
+		elif t_match >= float(ai.juke_at):
+			a.top = top * 1.1
+			a.want = _keep_in(a, (ai.juke_dir as Vector3) * a.top)
+			a.vel += (ai.juke_dir as Vector3) * 7.0 * dt
+			_stamina(a, dt)
+			return
 	var here := reach_time(a.position)
 	if float(ai.cool) <= 0.0:
 		var read := float(a.data.get("read", 70)) + float(_diff[a.side])
@@ -1203,7 +1258,7 @@ func _defender_think(a: Athlete, dt: float) -> void:
 	var tgt: Vector3 = ai.target
 	var to2: Vector3 = tgt - a.position
 	to2.y = 0
-	var urgency := clampf((3.2 - here) / 2.4, 0.0, 1.0)
+	var urgency := clampf((4.2 - here) / 2.8, 0.0, 1.0)
 	var spd := lerpf(3.4, top, urgency)
 	var w := to2.normalized() * minf(spd, to2.length() * 3.0 + 0.5) if to2.length() > 0.05 else Vector3.ZERO
 	w = _avoid(a, w)
@@ -1368,8 +1423,8 @@ func _camera(dt: float) -> void:
 			if attract:
 				cam.position = Vector3(_cam_x * 0.6 + sin(t_match * 0.05) * 3.0, 11.0, W + 15.0)
 			else:
-				cam.position = Vector3(_cam_x, 12.5, W + 14.0)
-			cam.look_at(Vector3(_cam_x, 0.0, -0.8))
+				cam.position = Vector3(_cam_x, 10.0, W + 10.5)
+			cam.look_at(Vector3(_cam_x, 0.0, -1.2))
 
 
 func cycle_camera() -> void:
