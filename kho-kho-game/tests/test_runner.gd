@@ -227,6 +227,14 @@ func _cups() -> void:
 ## then 1st v 4th and 2nd v 3rd and the final.
 func _league(c: Cup, women: bool) -> void:
 	check(c.teams.size() == 8 and c.sched.size() == 14, "league: eight sides, fourteen rounds")
+	# The playtest found Punjab among the cities: Pune's code was Punjab's (PUN). Every side's code is its own.
+	var codes := {}
+	for id in DB.nation_ids() + DB.state_ids() + DB.club_ids():
+		codes[id] = int(codes.get(id, 0)) + 1
+	var twice := codes.keys().filter(func(k): return codes[k] > 1)
+	check(twice.is_empty(), "every side's code is its own (%s)" % str(twice))
+	for id in c.teams:
+		check(DB.is_club(id) and not DB.is_state(id), "league: %s is a city side" % id)
 	var met := {}
 	for rnd in c.sched:
 		var playing := {}
@@ -397,6 +405,20 @@ func _your_controls() -> void:
 	d.controls.joystick = Vector2(0, 1)
 	await frames(2)
 	check(not d._user_auto(), "the stick takes him back at once")
+	# Run him at the side line, thumb held: with the assist on he pulls up inside it.
+	var ud: Athlete = d.user_def
+	var far_x: float = -signf(d.active.position.x + 0.01) * d.f.pole_gap * 0.4
+	ud.position = Vector3(far_x, 0.0, -d.f.width * 0.5 + 2.0)
+	ud.vel = Vector3.ZERO
+	d.controls.joystick = Vector2(0, -1)
+	var stayed := true
+	for k in 90:
+		await frames(1)
+		if d.user_def != ud:
+			stayed = false
+			break
+	check(stayed and d.d_state.get(ud, "") == "in" and absf(ud.position.z) < d.f.width * 0.5,
+		"your defender held at the side line pulls up inside it (z %.2f)" % ud.position.z)
 	# The playtest's worst find: a new batch walking on with your thumb held away from the field never came in and
 	# was out for a late entry, batch after batch (53-2). Walking on is his own now.
 	for a in d.batch:

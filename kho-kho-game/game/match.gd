@@ -1175,7 +1175,7 @@ func _out(d: Athlete, kind: String, by: Athlete = null) -> void:
 	st.run = 0.0
 	if by:
 		stats[by.data.id].outs += 1
-	_log("out", {"how": kind, "who": d.data.id, "by": by.data.id if by else "", "pts": pts, "since_kho": t_match - _last_kho_t,
+	_log("out", {"how": kind, "side": d.side, "who": d.data.id, "by": by.data.id if by else "", "pts": pts, "since_kho": t_match - _last_kho_t,
 		"dz": absf(d.position.z), "x": d.position.x})
 	var ump := _umpire_for(d.position.x)
 	ump.do("out", 1.4)
@@ -1525,6 +1525,10 @@ func _user_defender(dt: float) -> void:
 		return
 	a.want = Vector3(j.x, 0, j.y) * a.top
 	a.want = _avoid(a, a.want) if a.want.length() > 0.1 else a.want
+	# With the assist on (Settings > Lane assist) he pulls up at the line as the AI's defenders do, rather than run
+	# out of limits from a thumb pushed the wrong way under an angled camera (the playtest's second worst find).
+	if bool(Game.settings.lane_assist):
+		a.want = _keep_in(a, a.want)
 	_stamina(a, dt)
 
 
