@@ -27,7 +27,7 @@ func _init(p_items: Array, p_squares := 8) -> void:
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	custom_minimum_size = Vector2(0, 250)
-	_runner = Vector2(-0.03, 0.5)
+	_runner = Vector2(0.035, 0.5)   # at the left pole, in its free zone
 	for i in items.size():
 		var it: Array = items[i]
 		if String(it[0]) == "":
