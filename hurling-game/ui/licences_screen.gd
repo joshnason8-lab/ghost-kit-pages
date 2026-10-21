@@ -3,14 +3,17 @@ extends Control
 ## and those of the engine's own parts (Engine.get_copyright_info), which their licences ask to be shown. The legal
 ## texts are in English, as they are written.
 
-const CREDITS := """[b]Takraw Smash[/b]
+const CREDITS := """[b]Ash & Leather[/b]
 Made by Josh Nason.
-Players, venues, crowd, ball and sounds made in code for the game; the menu music and crowd drums written for it
-(tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker."""
+Players, officials, venues, crowd, sliotar and sounds made in code for the game; the menu music written for it
+(tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
+The game is not connected with, or endorsed by, any sporting body, county board or club. Counties appear by their
+place names, in colours of the game's own design; every player is invented."""
 
 const FONTS := """[b]Fonts[/b]
-Noto Sans, Noto Sans Thai, Lao, Myanmar, Khmer, Devanagari, JP, KR and SC: Copyright The Noto Project Authors (https://github.com/notofonts).
-Teko: Copyright 2023 The Teko Project Authors (https://www.github.com/googlefonts/teko).
+Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic).
+Oswald: Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont).
+Uncial Antiqua: Copyright (c) 2011 by Brian J. Bonislawsky DBA Astigmatic (AOETI), with Reserved Font Name "Uncial Antiqua".
 All under the SIL Open Font License, Version 1.1:"""
 
 

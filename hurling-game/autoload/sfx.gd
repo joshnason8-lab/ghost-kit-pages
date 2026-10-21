@@ -12,9 +12,7 @@ var streams := {}
 var _pool: Array[AudioStreamPlayer] = []
 var _next := 0
 var _crowd: AudioStreamPlayer
-var _drums: AudioStreamPlayer
 var _crowd_target := -60.0
-var _drums_target := -60.0
 var _music: AudioStreamPlayer
 var _music_target := -80.0
 var _todo := []
@@ -31,9 +29,6 @@ func _ready() -> void:
 	_crowd = AudioStreamPlayer.new()
 	_crowd.volume_db = -60.0
 	add_child(_crowd)
-	_drums = AudioStreamPlayer.new()
-	_drums.volume_db = -60.0
-	add_child(_drums)
 	_music = AudioStreamPlayer.new()
 	_music.volume_db = -80.0
 	add_child(_music)
@@ -76,8 +71,6 @@ func _ensure() -> void:
 func _process(delta: float) -> void:
 	if _crowd.playing:
 		_crowd.volume_db = move_toward(_crowd.volume_db, _crowd_target, 30.0 * delta)
-	if _drums.playing:
-		_drums.volume_db = move_toward(_drums.volume_db, _drums_target, 20.0 * delta)
 	if _music.playing:
 		_music.volume_db = move_toward(_music.volume_db, _music_target, (20.0 if _music_target > _music.volume_db else 30.0) * delta)
 		if _music_target < -60.0 and _music.volume_db <= -60.0:
@@ -128,18 +121,6 @@ func crowd(intensity: float) -> void:
 		_crowd.play()
 
 
-## The crowd's drums, louder as the rally builds (0..1); negative stops them.
-func drums(level: float) -> void:
-	_ensure()
-	if level < 0.0 or not enabled():
-		_drums.stop()
-		return
-	_drums_target = lerpf(-24.0, -9.0, clampf(level, 0.0, 1.0))
-	if not _drums.playing:
-		_drums.volume_db = -40.0
-		_drums.play()
-
-
 ## The menus' music: on in the menus, carrying on from one screen to the next; faded out for a match.
 func music(on: bool) -> void:
 	_ensure()
@@ -154,7 +135,6 @@ func music(on: bool) -> void:
 
 func stop_all() -> void:
 	_crowd.stop()
-	_drums.stop()
 	for p in _pool:
 		p.stop()
 
@@ -166,19 +146,18 @@ func _plan() -> void:
 	_todo = [
 		["whistle", _whistle],
 		["whistle_long", func(): return _whistle(1.1)],
-		["kick", func(): return _tock(1.0, 0.09)],          # an instep or inside kick: the ball's hollow "tok"
-		["knee", func(): return _tock(0.7, 0.07)],          # a thigh, chest or head touch: duller
-		["spike", _spike],
-		["block", _block],
-		["bounce", func(): return _tock(0.55, 0.12, 0.6)],  # the ball landing on the floor
-		["net", _net],
-		["whoosh", _whoosh],
+		["strike", _strike],                                # ash on leather: the crack of a full strike
+		["tap", func(): return _wood(1.6, 0.03, 0.25)],     # the sliotar hopped on the bas
+		["clash", func(): return _wood(0.9, 0.09, 0.8)],    # hurleys meeting
+		["catch", func(): return _slap()],                  # leather into the palm
+		["post", func(): return _wood(0.55, 0.16, 0.6)],    # off the upright
+		["save", func(): return _wood(0.75, 0.06, 0.9)],
+		["bounce", func(): return _thud(0.06)],             # on the grass
 		["click", func(): return _tone_env(0.035, func(t): return sin(TAU * 1500.0 * t) * 0.5, 0.001, 0.03)],
-		["buzzer", func(): return _tone_env(0.8, func(t): return signf(sin(TAU * 196.0 * t)) * 0.3 + sin(TAU * 392.0 * t) * 0.15, 0.01, 0.1)],
 		["roar", _roar],
 		["crowd_loop", _crowd_loop],
 	]
-	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music", "drums_loop"]:
+	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music"]:
 		_todo.append([k, null])
 	for kind in VOICES:
 		for i in int(VOICES[kind]):
@@ -188,11 +167,10 @@ func _plan() -> void:
 
 func _finish() -> void:
 	_built = true
-	for k in ["crowd_loop", "drums_loop", "menu_music"]:
+	for k in ["crowd_loop", "menu_music"]:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
 	_crowd.stream = streams.get("crowd_loop")
-	_drums.stream = streams.get("drums_loop")
 	_music.stream = streams.get("menu_music")
 
 
@@ -236,25 +214,9 @@ func _whistle(dur := 0.5) -> AudioStreamWAV:
 	return _to_stream(out)
 
 
-## The synthetic takraw ball is a hollow woven sphere: struck, it gives a short, bright, slightly ringing "tok".
-## bright scales the pitch; ring how long it sounds; air how much of the thump is the foot rather than the ball.
-func _tock(bright: float, ring: float, air := 0.3) -> AudioStreamWAV:
-	var dur := ring * 3.0
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var lp := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.35)
-		var body := sin(TAU * 820.0 * bright * t) * 0.55 + sin(TAU * 1730.0 * bright * t) * 0.25
-		var thump := sin(TAU * lerpf(160.0, 70.0, minf(1.0, t / 0.05)) * t) * air
-		out[i] = (body * exp(-t / ring * 2.2) + thump * exp(-t * 35.0) + lp * 0.35 * exp(-t * 120.0)) * 0.8
-	return _to_stream(out)
-
-
-func _spike() -> AudioStreamWAV:
-	var dur := 0.35
+## A full strike: the hurley's bas meets the leather with a hard, dry crack and a short woody ring.
+func _strike() -> AudioStreamWAV:
+	var dur := 0.28
 	var n := int(dur * RATE)
 	var out := PackedFloat32Array()
 	out.resize(n)
@@ -262,49 +224,52 @@ func _spike() -> AudioStreamWAV:
 	for i in n:
 		var t := float(i) / RATE
 		var w := randf_range(-1.0, 1.0)
-		var crack := (w - prev) * exp(-t * 70.0)
+		var crack := (w - prev) * exp(-t * 160.0)
 		prev = w
-		var body := sin(TAU * 700.0 * t) * 0.6 * exp(-t * 30.0) + sin(TAU * lerpf(200.0, 60.0, minf(1.0, t / 0.08)) * t) * 0.7 * exp(-t * 18.0)
-		out[i] = clampf((crack * 0.9 + body) * 0.85, -1.0, 1.0)
+		var wood := (sin(TAU * 1180.0 * t) * 0.5 + sin(TAU * 2350.0 * t) * 0.25) * exp(-t * 55.0)
+		var knock := sin(TAU * lerpf(420.0, 180.0, minf(1.0, t / 0.03)) * t) * exp(-t * 40.0) * 0.6
+		out[i] = clampf((crack * 1.1 + wood + knock) * 0.8, -1.0, 1.0)
 	return _to_stream(out)
 
 
-func _block() -> AudioStreamWAV:
-	var dur := 0.3
+## Wood on wood or leather on wood: pitch scales the ring, ring its length, hit the noise of the knock.
+func _wood(pitch: float, ring: float, hit: float) -> AudioStreamWAV:
+	var dur := ring * 4.0 + 0.03
 	var n := int(dur * RATE)
 	var out := PackedFloat32Array()
 	out.resize(n)
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / RATE
-		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.2)
-		out[i] = (sin(TAU * lerpf(110.0, 45.0, t / dur) * t) * 0.8 + lp * 0.5 * exp(-t * 40.0) + sin(TAU * 600.0 * t) * 0.3 * exp(-t * 50.0)) * exp(-t * 12.0)
+		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.4)
+		var body := sin(TAU * 900.0 * pitch * t) * 0.45 + sin(TAU * 1900.0 * pitch * t) * 0.2 + sin(TAU * 420.0 * pitch * t) * 0.3
+		out[i] = (body * exp(-t / ring * 2.5) + lp * hit * exp(-t * 140.0)) * 0.75
 	return _to_stream(out)
 
 
-func _net() -> AudioStreamWAV:
-	var dur := 0.45
+func _slap() -> AudioStreamWAV:
+	var dur := 0.12
 	var n := int(dur * RATE)
 	var out := PackedFloat32Array()
 	out.resize(n)
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / RATE
-		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.5)
-		out[i] = lp * exp(-t * 9.0) * (0.6 + 0.4 * sin(TAU * 23.0 * t)) * 0.6
+		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.55)
+		out[i] = (lp * exp(-t * 70.0) + sin(TAU * 260.0 * t) * 0.4 * exp(-t * 45.0)) * 0.8
 	return _to_stream(out)
 
 
-func _whoosh() -> AudioStreamWAV:
-	var dur := 0.3
+func _thud(ring: float) -> AudioStreamWAV:
+	var dur := ring * 4.0
 	var n := int(dur * RATE)
 	var out := PackedFloat32Array()
 	out.resize(n)
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / RATE
-		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.04 + 0.25 * sin(PI * t / dur))
-		out[i] = lp * sin(PI * t / dur) * 0.7
+		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.15)
+		out[i] = (sin(TAU * lerpf(140.0, 70.0, t / dur) * t) * 0.7 + lp * 0.4) * exp(-t / ring * 2.0) * 0.7
 	return _to_stream(out)
 
 

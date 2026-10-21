@@ -1,5 +1,6 @@
 extends Control
-## Settings, grouped into cards: the game, the screen, sound and controls, and about.
+## Settings, grouped into cards: the game, the screen, sound and controls, and about (the version, the privacy
+## policy and help pages, the licences).
 
 var _fps_note: Label
 var _assist_note: Label
@@ -36,23 +37,32 @@ func _ready() -> void:
 		Game.set_language(codes[i])
 		Game.show_screen("res://ui/settings_screen.gd"))))
 	game[1].add_child(UI.difficulty_field(self))
-	var akeys := ["ASSIST_OFF", "ASSIST_RUN", "ASSIST_FULL"]
+	var akeys := ["ASSIST_OFF", "ASSIST_SOLO", "ASSIST_FULL"]
 	_assist_note = UI.wrap(tr(akeys[int(Game.settings.assist)] + "_NOTE"), "MutedLabel", 17)
-	game[1].add_child(UI.field(tr("ASSIST"), UI.chips([tr("ASSIST_OFF"), tr("ASSIST_RUN"), tr("ASSIST_FULL")], int(Game.settings.assist), func(i):
+	game[1].add_child(UI.field(tr("ASSIST"), UI.chips([tr("ASSIST_OFF"), tr("ASSIST_SOLO"), tr("ASSIST_FULL")], int(Game.settings.assist), func(i):
 		Game.settings.assist = i
 		Game.save_settings()
 		_assist_note.text = tr(akeys[i] + "_NOTE"))))
 	game[1].add_child(_assist_note)
-	game[1].add_child(UI.field(tr("GAME_SPEED"), UI.chips([tr("SPEED_SLOW"), tr("SPEED_MEDIUM"), tr("SPEED_REAL")], int(Game.settings.game_speed), func(i):
-		Game.settings.game_speed = i
+	var lens := []
+	for n in Game.LENGTHS:
+		lens.append(tr("MINUTES_N").format({"n": n}))
+	game[1].add_child(UI.field(tr("MATCH_LENGTH"), UI.chips(lens, int(Game.settings.length), func(i):
+		Game.settings.length = i
 		Game.save_settings())))
-	game[1].add_child(UI.wrap(tr("SPEED_NOTE"), "MutedLabel", 17))
+	game[1].add_child(UI.field(tr("GRADE"), UI.chips([tr("GRADE_SENIOR"), tr("GRADE_CLUB")], int(Game.settings.grade), func(i):
+		Game.settings.grade = i
+		Game.save_settings())))
+	game[1].add_child(UI.wrap(tr("GRADE_NOTE"), "MutedLabel", 17))
 
 	# The screen.
 	var disp: Array = UI.section(tr("SET_DISPLAY"), "display")
 	right.add_child(disp[0])
 	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")], int(Game.settings.graphics), func(i):
 		Game.settings.graphics = i
+		Game.save_settings())))
+	disp[1].add_child(UI.field(tr("GFX_AUTO"), UI.chips_row([tr("ON"), tr("OFF")], 0 if bool(Game.settings.auto_gfx) else 1, func(i):
+		Game.settings.auto_gfx = i == 0
 		Game.save_settings())))
 	disp[1].add_child(UI.wrap(tr("GFX_NOTE"), "MutedLabel", 17))
 	var hz := Game.screen_hz()
@@ -74,12 +84,9 @@ func _ready() -> void:
 		_fps_note.text = _fps_text(fps_opts[i], smooth, hz))))
 	_fps_note = UI.wrap(_fps_text(fps_opts[shown], smooth, hz), "MutedLabel", 17)
 	disp[1].add_child(_fps_note)
-	var cams := [Game.CAM_TV, Game.CAM_SIDE, Game.CAM_END]
-	disp[1].add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_TV"), tr("CAM_SIDE"), tr("CAM_END")], maxi(0, cams.find(int(Game.settings.camera))), func(i):
+	var cams := [Game.CAM_TV, Game.CAM_HIGH, Game.CAM_END]
+	disp[1].add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_TV"), tr("CAM_HIGH"), tr("CAM_END")], maxi(0, cams.find(int(Game.settings.camera))), func(i):
 		Game.settings.camera = cams[i]
-		Game.save_settings())))
-	disp[1].add_child(UI.field(tr("PLAYER_TAGS"), UI.chips_row([tr("ON"), tr("OFF")], 1 if int(Game.settings.tags) == 2 else 0, func(i):
-		Game.settings.tags = 2 if i == 1 else 0
 		Game.save_settings())))
 
 	# Sound and controls.
@@ -94,6 +101,9 @@ func _ready() -> void:
 	snd[1].add_child(UI.field(tr("BUTTON_SIZE"), UI.chips([tr("SIZE_NORMAL"), tr("SIZE_LARGE"), tr("SIZE_XL")], int(Game.settings.btn_size), func(i):
 		Game.settings.btn_size = i
 		Game.save_settings())))
+	var mv := UI.button(tr("MOVE_BUTTONS"), false, func(): Game.show_screen("res://ui/buttons_screen.gd"))
+	mv.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	snd[1].add_child(mv)
 
 	# About.
 	var about: Array = UI.section(tr("SET_ABOUT"), "book")

@@ -14,7 +14,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / "i18n" / "src"
 OUT = ROOT / "i18n" / "strings.csv"
-LANGS = ["en", "th", "ms", "id", "vi", "lo", "my", "km", "fil", "ja", "ko", "zh", "hi"]
+LANGS = ["en", "ga"]
 
 
 def main() -> int:

@@ -1,14 +1,16 @@
 class_name TouchControls
 extends Control
 ## The match controls for a phone held sideways. Left thumb: a joystick wherever it lands on the left of the screen
-## (to aim, or to run your player with the assist off). Right thumb: the buttons for the touch coming, which change
-## with it (SERVE and HORSE KICK, KICK, SET, SPIKE, FEINT, BLOCK ...), the first the biggest. Several fingers at once.
-## Left-handed (Settings) swaps the sides. Keys too: WASD or arrows, Space for the first button, J and K for the others.
+## (to run your player, and to aim). Right thumb: the buttons for what he can do now, which change with it (STRIKE,
+## GOAL, PASS, SOLO; CATCH, LIFT, PULL; TACKLE, BLOCK; at a restart LONG and SHORT ...), the first the biggest, and a
+## small SWITCH above them to change your player. Several fingers at once. Left-handed (Settings) swaps the sides;
+## Button size makes them bigger; Move buttons (Settings) lets you drag each where you want it, kept in settings.
+## Keys too: WASD or arrows, Space for the first button, J, K and L for the others, Q to switch.
 
 signal action(id: String)
 
 const JOY_R := 92.0
-const KEYS := [KEY_SPACE, KEY_J, KEY_K]
+const KEYS := [KEY_SPACE, KEY_J, KEY_K, KEY_L]
 
 var joystick := Vector2.ZERO
 var ids: Array = []          # the buttons showing now
@@ -19,6 +21,9 @@ var _flash := {}             # id -> time left lit
 var _pulse := 0.0
 var _keys := {}
 var _paras := {}             # id -> TextParagraph (its label, fitted to the circle)
+var edit := false            # Move buttons: drags move the buttons instead of pressing them
+var _drag_slot := -1
+var _drag_touch := -1
 
 
 func _ready() -> void:
@@ -46,25 +51,91 @@ func flash(id: String) -> void:
 	queue_redraw()
 
 
-## Where each button is: the first big in the corner, the others round it.
-func _layout() -> Array:
+## The default place of each slot, as a fraction of the screen from the corner: slot 0 the big one in the corner,
+## 1 to its left, 2 above it, 3 above and left; 4 the small SWITCH.
+func _default_slot(i: int) -> Vector2:
 	var s := size
 	var k := _k()
-	var out := []
 	var m := UI.safe_margins(self, 30.0)
 	var corner := Vector2(s.x - m.z - 104.0 * k, s.y - m.w - 104.0 * k)
-	var places := [corner, corner + Vector2(-178, 6) * k, corner + Vector2(-60, -170) * k, corner + Vector2(-190, -150) * k]
-	var radii := [86.0 * k, 60.0 * k, 60.0 * k, 54.0 * k]
-	for i in mini(ids.size(), 4):
-		var c: Vector2 = places[i]
-		if _left_handed():
-			c.x = s.x - c.x
-		out.append([ids[i], c, radii[i]])
+	var places := [corner, corner + Vector2(-182, 8) * k, corner + Vector2(-62, -176) * k, corner + Vector2(-200, -150) * k,
+		corner + Vector2(10, -300) * k]
+	return places[i]
+
+
+func slot_pos(i: int) -> Vector2:
+	var key := "slot%d" % i
+	var saved: Dictionary = Game.settings.get("btn_pos", {})
+	var c := _default_slot(i)
+	if saved.has(key) and size.x > 0:
+		var f: Array = saved[key]
+		c = Vector2(float(f[0]) * size.x, float(f[1]) * size.y)
+	if _left_handed():
+		c.x = size.x - c.x
+	return c
+
+
+func slot_radius(i: int) -> float:
+	var k := _k()
+	return [86.0, 62.0, 62.0, 56.0, 40.0][i] * k
+
+
+## Where each button showing is: [id, centre, radius].
+func _layout() -> Array:
+	var out := []
+	var slot := 0
+	for id in ids:
+		if String(id) == "SWITCH":
+			out.append([id, slot_pos(4), slot_radius(4)])
+			continue
+		if slot > 3:
+			continue
+		out.append([id, slot_pos(slot), slot_radius(slot)])
+		slot += 1
 	return out
+
+
+## Move buttons: a drag on a slot moves it; let go and it is saved, as fractions of the screen.
+func _edit_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		var e := event as InputEventScreenTouch
+		if e.pressed:
+			for i in 5:
+				if e.position.distance_to(slot_pos(i)) <= slot_radius(i) * 1.1:
+					_drag_slot = i
+					_drag_touch = e.index
+					get_viewport().set_input_as_handled()
+					return
+		elif e.index == _drag_touch:
+			_drag_slot = -1
+			_drag_touch = -1
+			Game.save_settings()
+	elif event is InputEventScreenDrag and _drag_slot >= 0:
+		var d := event as InputEventScreenDrag
+		if d.index != _drag_touch:
+			return
+		var r := slot_radius(_drag_slot)
+		var p := Vector2(clampf(d.position.x, r, size.x - r), clampf(d.position.y, r + 90.0, size.y - r))
+		if _left_handed():
+			p.x = size.x - p.x
+		var saved: Dictionary = Game.settings.get("btn_pos", {})
+		saved["slot%d" % _drag_slot] = [p.x / size.x, p.y / size.y]
+		Game.settings.btn_pos = saved
+		queue_redraw()
+		get_viewport().set_input_as_handled()
+
+
+func reset_positions() -> void:
+	Game.settings.btn_pos = {}
+	Game.save_settings()
+	queue_redraw()
 
 
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
+		return
+	if edit:
+		_edit_input(event)
 		return
 	var half := size.x * 0.45
 	if event is InputEventScreenTouch:
@@ -101,8 +172,13 @@ func _input(event: InputEvent) -> void:
 		_keys[ke.physical_keycode] = ke.pressed
 		if ke.pressed:
 			var i := KEYS.find(ke.physical_keycode)
-			if i >= 0 and i < ids.size():
-				_fire(String(ids[i]))
+			var shown: Array = ids.filter(func(x): return String(x) != "SWITCH")
+			if i >= 0 and i < shown.size():
+				_fire(String(shown[i]))
+			elif ke.physical_keycode == KEY_Q and "SWITCH" in ids:
+				_fire("SWITCH")
+			elif ke.physical_keycode == KEY_ESCAPE:
+				Game.go_back()
 		_keys_to_joystick()
 
 
@@ -157,8 +233,11 @@ func _draw() -> void:
 		var primary := i == 0
 		var lit := _flash.has(id)
 		var col := Game.C_SAFFRON if primary else Color(Game.C_PANEL, 0.9)
-		if id == "BLOCK":
+		if id in ["TACKLE", "BLOCK"] and primary:
 			col = Game.C_TEAL
+		if id == "SWITCH":
+			col = Color(Game.C_PANEL, 0.75)
+			primary = false
 		if lit:
 			col = col.lightened(0.3)
 		if primary:
@@ -166,11 +245,11 @@ func _draw() -> void:
 			draw_arc(c, pr, 0, TAU, 64, Color(col, 0.35), 4.0, true)
 		draw_circle(c, r, col)
 		draw_arc(c, r, 0, TAU, 64, Color(0.02, 0.05, 0.09, 0.8) if primary else Color(1, 1, 1, 0.22), 3.0, true)
-		var ink := Color("1d1307") if primary or id == "BLOCK" else Game.C_INK
+		var ink := Color("1d1307") if primary else Game.C_INK
 		_draw_label(id, c, r, ink, primary)
 		# The key that presses it, on a computer.
-		if not OS.has_feature("mobile") and i < 3:
-			var kc: String = ["␣", "J", "K"][i]
+		if not OS.has_feature("mobile") and i < 4:
+			var kc: String = "Q" if id == "SWITCH" else ["␣", "J", "K", "L"][mini(i, 3)]
 			draw_string(Game.font_bold, c + Vector2(r * 0.55, r * 0.95), kc, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(Game.C_INK, 0.6))
 
 
@@ -181,7 +260,7 @@ func _draw_label(id: String, c: Vector2, r: float, ink: Color, primary: bool) ->
 	if not _paras.has(key):
 		var text := tr("BTN_" + id)
 		var w := r * 1.62
-		var fs := int((44.0 if primary else 30.0) * Game.text_k() * (r / (86.0 if primary else 60.0)))
+		var fs := int((40.0 if primary else 28.0) * Game.text_k() * (r / (86.0 if primary else 62.0)))
 		var font: Font = Game.font_display if Game.text_k() >= 0.99 else Game.font_bold
 		var para := TextParagraph.new()
 		while fs > 12:
@@ -195,7 +274,7 @@ func _draw_label(id: String, c: Vector2, r: float, ink: Color, primary: bool) ->
 			for li in lines:
 				widest = maxf(widest, para.get_line_width(li))
 			if lines <= 2 and widest <= w and para.get_size().y <= r * 1.5:
-				if lines == 1 or fs <= int(30.0 * Game.text_k()):
+				if lines == 1 or fs <= int(26.0 * Game.text_k()):
 					break
 				# Two lines only once one line would be too small to read.
 				var one := TextParagraph.new()

@@ -39,7 +39,7 @@ const COUNTIES := {
 	"WAT": [82, "ffffff", "2b6bc4", 1, "S"],
 	"WEX": [80, "5a2a82", "f2c230", 3, "E"],
 	"OFF": [77, "1f7a3a", "f2c230", 2, "E"],
-	"ANT": [74, "f2b01e", "ffffff", 0, "E"],
+	"ANT": [74, "f2b01e", "ffffff", 0, ""],
 	"LAO": [71, "1f4fa0", "ffffff", 1, ""],
 	"CAR": [70, "c8202f", "1f7a3a", 1, ""],
 	"WME": [69, "7a1631", "ffffff", 2, ""],

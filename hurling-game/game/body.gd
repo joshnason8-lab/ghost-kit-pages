@@ -138,8 +138,18 @@ func apply(p: Dictionary) -> void:
 # ---------------------------------------------------------------- the mesh
 
 func _key() -> String:
-	return "%s|%s|%s|%s|%s|%s|%s|%d" % [look.get("skin"), look.get("jersey"), look.get("shorts"), look.get("trim"),
-		look.get("shoe"), look.get("hair"), look.get("band"), int(look.get("hair_style", 0))]
+	return "%s|%s|%s|%s|%s|%s|%s|%d|%d|%s|%d|%d" % [look.get("skin"), look.get("jersey"), look.get("shorts"),
+		look.get("trim"), look.get("socks"), look.get("hair"), look.get("helmet"), int(look.get("hair_style", 0)),
+		int(look.get("design", 0)), look.get("kind", "player"), int(look.get("hurley", 1)), int(_lod)]
+
+
+## The level of detail: 0 full, 1 the far one (fewer sides to every part, no face guard bars, no ears), about a
+## third of the triangles. Low graphics draws everyone at 1.
+var _lod := 0
+
+
+func set_lod(l: int) -> void:
+	_lod = l
 
 
 func _mesh() -> ArrayMesh:
@@ -147,61 +157,112 @@ func _mesh() -> ArrayMesh:
 	if _cache.has(key):
 		return _cache[key]
 	var m := MeshBuilder.new()
-	var skin: Color = look.get("skin", Color("c98a5a"))
-	var jersey: Color = look.get("jersey", Color("ff8a1f"))
-	var shorts: Color = look.get("shorts", Color("2a1a0e"))
+	m.seg_k = 1.0 if _lod == 0 else 0.6
+	var skin: Color = look.get("skin", Color("e8c0a0"))
+	var jersey: Color = look.get("jersey", Color("c8202f"))
+	var shorts: Color = look.get("shorts", Color("ffffff"))
 	var trim: Color = look.get("trim", Color.WHITE)
-	var shoe: Color = look.get("shoe", Color("f3efe6"))
-	var hair: Color = look.get("hair", Color("1a1410"))
-	var band: Color = look.get("band", Color("e8336d"))
+	var socks: Color = look.get("socks", jersey)
+	var shoe := Color("15161a")
+	var hair: Color = look.get("hair", Color("3a2a1c"))
+	var helmet: Color = look.get("helmet", Color("1a1a1a"))
+	var kind := String(look.get("kind", "player"))
+	var design := int(look.get("design", 0))
+	var coat := kind == "umpire"
 	var r := _rest
-	# Torso: the jersey from the hips to the shoulders, a little wider at the chest.
-	m.capsule(r.hips + Vector3(0, -0.02, 0), r.spine + Vector3(0, 0.06, 0), 0.17, 0.165, shorts.lerp(jersey, 0.0), bone("hips"), Vector3(1.0, 1, 0.72))
-	m.capsule(r.spine, r.chest + Vector3(0, 0.12, 0), 0.165, 0.2, jersey, bone("spine"), Vector3(1.0, 1, 0.66))
+	# Torso: the jersey from the hips to the shoulders; an umpire's long white coat down to the knees.
+	var lower := jersey if design != 3 else jersey
+	m.capsule(r.hips + Vector3(0, -0.02, 0), r.spine + Vector3(0, 0.06, 0), 0.17, 0.165, lower, bone("hips"), Vector3(1.0, 1, 0.72))
+	var chest_col := jersey
+	m.capsule(r.spine, r.chest + Vector3(0, 0.12, 0), 0.165, 0.2, chest_col, bone("spine"), Vector3(1.0, 1, 0.66))
 	m.capsule(r.chest + Vector3(0, 0.04, 0), r.neck - Vector3(0, 0.02, 0), 0.2, 0.12, jersey, bone("chest"), Vector3(1.05, 1, 0.66))
-	# Collar trim and the neck.
+	match design:
+		1:   # a hoop round the chest
+			m.capsule(r.chest + Vector3(0, -0.05, 0), r.chest + Vector3(0, 0.07, 0), 0.204, 0.205, trim, bone("chest"), Vector3(1.03, 1, 0.68))
+		2:   # a sash from the right shoulder to the left hip, front and back
+			for k in 4:
+				var t := float(k) / 3.0
+				var c: Vector3 = (r.chest as Vector3).lerp(r.spine, t) + Vector3(lerpf(-0.13, 0.12, t), 0.1 - t * 0.12, 0)
+				m.sphere(c + Vector3(0, 0, 0.115), Vector3(0.07, 0.06, 0.03), trim, bone("chest" if t < 0.5 else "spine"))
+				m.sphere(c + Vector3(0, 0, -0.115), Vector3(0.07, 0.06, 0.03), trim, bone("chest" if t < 0.5 else "spine"))
+		_:
+			pass
+	if coat:
+		m.capsule(r.hips + Vector3(0, 0.05, 0), r.hips + Vector3(0, -0.52, 0), 0.2, 0.24, Color("f4f4f0"), bone("hips"), Vector3(1.0, 1, 0.8))
+	# Collar and the neck.
 	m.capsule(r.neck - Vector3(0, 0.03, 0), r.neck + Vector3(0, 0.01, 0), 0.085, 0.085, trim, bone("chest"))
 	m.capsule(r.neck, r.head + Vector3(0, 0.04, 0), 0.06, 0.06, skin, bone("neck"))
-	# Head, a little big for the style; hair, headband, eyes, nose and ears.
+	# Head; a player's helmet with its face guard; an official's hair (or a cap for an umpire).
 	var hc: Vector3 = r.head + Vector3(0, 0.13, 0.0)
-	m.sphere(hc, Vector3(0.125, 0.14, 0.13), skin, bone("head"))
-	match int(look.get("hair_style", 0)):
-		0:   # short crop
-			m.sphere(hc + Vector3(0, 0.035, -0.012), Vector3(0.133, 0.115, 0.135), hair, bone("head"), 0.15)
-		1:   # buzz cut
-			m.sphere(hc + Vector3(0, 0.03, -0.01), Vector3(0.129, 0.12, 0.133), hair, bone("head"), 0.3)
-		2:   # longer on top
-			m.sphere(hc + Vector3(0, 0.05, -0.01), Vector3(0.138, 0.13, 0.142), hair, bone("head"), 0.05)
-		_:   # shaved: just the band
-			pass
-	m.band(hc + Vector3(0, 0.055, -0.005), 0.137, 0.14, 0.03, band, bone("head"))
-	for sx: float in [-1.0, 1.0]:
-		m.sphere(hc + Vector3(0.045 * sx, 0.005, 0.115), Vector3(0.017, 0.024, 0.012), Color("0c1a29"), bone("head"))
-		m.sphere(hc + Vector3(0.124 * sx, -0.005, 0.0), Vector3(0.02, 0.035, 0.025), skin.darkened(0.06), bone("head"))
-	m.sphere(hc + Vector3(0, -0.03, 0.128), Vector3(0.02, 0.025, 0.02), skin.darkened(0.05), bone("head"))
-	# Arms: short sleeves in the jersey, then skin.
+	m.sphere(hc, Vector3(0.115, 0.13, 0.12), skin, bone("head"))
+	if kind == "player":
+		m.sphere(hc + Vector3(0, 0.03, -0.01), Vector3(0.14, 0.135, 0.145), helmet, bone("head"), 0.35)
+		# The guard: bars from the brow to the chin, in front of the face.
+		var bars := [-0.06, 0.0, 0.06] if _lod == 0 else [0.0]
+		for bx in bars:
+			m.capsule(hc + Vector3(bx, 0.04, 0.142), hc + Vector3(bx * 0.8, -0.1, 0.122), 0.007, 0.007, Color("c9ccd1"), bone("head"), Vector3.ONE, 4)
+		if _lod == 0:
+			m.capsule(hc + Vector3(-0.1, -0.02, 0.11), hc + Vector3(0.1, -0.02, 0.11), 0.007, 0.007, Color("c9ccd1"), bone("head"), Vector3.ONE, 4)
+	elif coat:
+		m.sphere(hc + Vector3(0, 0.05, -0.005), Vector3(0.128, 0.1, 0.132), Color("f4f4f0"), bone("head"), 0.45)
+		m.capsule(hc + Vector3(0, 0.05, 0.08), hc + Vector3(0, 0.05, 0.17), 0.08, 0.06, Color("f4f4f0"), bone("head"), Vector3(1.0, 1, 0.2))
+	else:
+		m.sphere(hc + Vector3(0, 0.035, -0.012), Vector3(0.122, 0.115, 0.125), hair, bone("head"), 0.15)
+	if _lod == 0:
+		for sx: float in [-1.0, 1.0]:
+			m.sphere(hc + Vector3(0.045 * sx, 0.005, 0.105), Vector3(0.016, 0.022, 0.012), Color("1a1410"), bone("head"))
+	# Arms: short sleeves (long white sleeves on an umpire), then skin.
 	for side in ["l", "r"]:
 		var s := 1.0 if side == "l" else -1.0
 		var sh: Vector3 = r["upperarm_" + side]
 		var el: Vector3 = r["forearm_" + side]
 		var wr: Vector3 = r["hand_" + side]
-		m.sphere(sh + Vector3(-0.01 * s, -0.02, 0), Vector3(0.085, 0.085, 0.085), jersey, bone("upperarm_" + side))
-		m.capsule(sh + Vector3(0, -0.02, 0), sh.lerp(el, 0.45), 0.075, 0.068, jersey, bone("upperarm_" + side))
-		m.capsule(sh.lerp(el, 0.4), el, 0.055, 0.05, skin, bone("upperarm_" + side))
-		m.capsule(el, wr, 0.05, 0.042, skin, bone("forearm_" + side))
+		var sleeve := Color("f4f4f0") if coat else jersey
+		m.sphere(sh + Vector3(-0.01 * s, -0.02, 0), Vector3(0.085, 0.085, 0.085), sleeve, bone("upperarm_" + side))
+		m.capsule(sh + Vector3(0, -0.02, 0), sh.lerp(el, 0.5), 0.075, 0.068, sleeve, bone("upperarm_" + side))
+		m.capsule(sh.lerp(el, 0.45), el, 0.055, 0.05, sleeve if coat else skin, bone("upperarm_" + side))
+		m.capsule(el, wr, 0.05, 0.042, sleeve if coat else skin, bone("forearm_" + side))
 		m.sphere(wr + Vector3(0, -0.05, 0.005), Vector3(0.045, 0.06, 0.035), skin, bone("hand_" + side))
-		# Legs: shorts to above the knee, skin, a sock and the shoe.
+		# Legs: shorts to mid-thigh, skin, the county socks to below the knee, boots.
 		var hp: Vector3 = r["thigh_" + side]
 		var kn: Vector3 = r["shin_" + side]
 		var an: Vector3 = r["foot_" + side]
-		m.capsule(hp + Vector3(0, 0.04, 0), hp.lerp(kn, 0.62), 0.115, 0.095, shorts, bone("thigh_" + side))
-		m.capsule(hp.lerp(kn, 0.55), kn, 0.08, 0.07, skin, bone("thigh_" + side))
-		m.capsule(kn, kn.lerp(an, 0.62), 0.07, 0.055, skin, bone("shin_" + side))
-		m.capsule(kn.lerp(an, 0.6), an + Vector3(0, 0.02, 0), 0.055, 0.05, trim, bone("shin_" + side))
+		var legwear := Color("1a1a1a") if kind != "player" else shorts
+		m.capsule(hp + Vector3(0, 0.04, 0), hp.lerp(kn, 0.5), 0.115, 0.095, legwear, bone("thigh_" + side))
+		m.capsule(hp.lerp(kn, 0.45), kn, 0.08, 0.07, skin if kind == "player" else legwear, bone("thigh_" + side))
+		m.capsule(kn, kn.lerp(an, 0.25), 0.07, 0.065, skin if kind == "player" else legwear, bone("shin_" + side))
+		m.capsule(kn.lerp(an, 0.2), an + Vector3(0, 0.02, 0), 0.066, 0.05, socks if kind == "player" else Color("1a1a1a"), bone("shin_" + side))
 		m.capsule(an + Vector3(0, -0.005, -0.04), an + Vector3(0, -0.01, 0.15), 0.055, 0.05, shoe, bone("foot_" + side), Vector3(1.0, 0.75, 1))
+	# The hurley, in the right hand: the handle in the fist, the shaft down and forward, the bas (the flat, curved
+	# blade) at its foot. 34 inches (0.86 m), the ash's colour.
+	if kind == "player":
+		var ash := Color("d8b27a")
+		var hh: Vector3 = r.hand_r + Vector3(0, -0.06, 0.01)
+		var dir := HURLEY_DIR
+		var length := 0.86 if int(look.get("hurley", 1)) == 1 else 0.9
+		var foot := hh + dir * length
+		m.capsule(hh - dir * 0.08, hh + dir * (length * 0.62), 0.017, 0.02, ash, bone("hand_r"), Vector3(1.0, 1, 0.7), 6)
+		m.capsule(hh + dir * (length * 0.62), foot, 0.03, 0.055, ash.lightened(0.05), bone("hand_r"), Vector3(0.32, 1, 1.0), 8)
+		# The grip tape on the handle.
+		m.capsule(hh - dir * 0.08, hh + dir * 0.14, 0.021, 0.021, Color("2a2a2a"), bone("hand_r"), Vector3(1, 1, 1), 6)
 	var mesh := m.commit()
 	_cache[key] = mesh
 	return mesh
+
+
+## The hurley's line from the right hand at rest (the arm hanging): down and well forward.
+const HURLEY_DIR := Vector3(0.05, -0.62, 0.78)
+
+
+## Where the bas is now, in world space: what meets the sliotar.
+func bas_world() -> Vector3:
+	var i := bone("hand_r")
+	if i < 0 or skeleton == null:
+		return global_position
+	var t := skeleton.global_transform * skeleton.get_bone_global_pose(i)
+	var hh: Vector3 = _rest.hand_r + Vector3(0, -0.06, 0.01)
+	var rest_hand: Vector3 = _rest.hand_r
+	return t * ((hh - rest_hand) + HURLEY_DIR.normalized() * 0.78)
 
 
 ## Builds a skinned mesh out of rounded parts, each part rigidly on one bone, coloured by vertex.
@@ -212,6 +273,7 @@ class MeshBuilder:
 	var bones := PackedInt32Array()
 	var weights := PackedFloat32Array()
 	var idx := PackedInt32Array()
+	var seg_k := 1.0
 
 	func _vert(p: Vector3, n: Vector3, c: Color, b: int) -> void:
 		verts.append(p)
@@ -222,6 +284,7 @@ class MeshBuilder:
 
 	## A rounded, tapered tube from a to b (radius ra at a, rb at b), squashed by squash across its width.
 	func capsule(a: Vector3, b: Vector3, ra: float, rb: float, c: Color, bone: int, squash := Vector3.ONE, seg := 10) -> void:
+		seg = maxi(4, roundi(seg * seg_k))
 		var axis := (b - a)
 		var length := axis.length()
 		if length < 0.0001:
@@ -270,6 +333,8 @@ class MeshBuilder:
 	## An ellipsoid at centre with radii r. cut keeps only the part above that fraction of its height (a hair cap: 0.15
 	## keeps the top 85%... measured from the bottom), so a sphere of hair sits over the head's crown only.
 	func sphere(centre: Vector3, r: Vector3, c: Color, bone: int, cut := -1.0, seg := 12, rings := 8) -> void:
+		seg = maxi(6, roundi(seg * seg_k))
+		rings = maxi(4, roundi(rings * seg_k))
 		var base := verts.size()
 		var lat0 := 0
 		var cols := seg + 1

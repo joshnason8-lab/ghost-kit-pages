@@ -1,30 +1,33 @@
 class_name MatchHud
 extends CanvasLayer
-## What is on the screen in a match: the scoreboard (sets, points, who serves, set and match point), the referee's
-## calls, the big call-outs (ROLL SPIKE!, BLOCKED!, ACE!), the timing ring that closes on the ball when a touch is
-## yours, the video challenge and its review, the replay, the set break and the pause menu.
+## What is on the screen in a match, the way hurling is shown on television: the score bug in the top corner (each
+## side's colours, goals-points and the total, the clock counting up from 0:00 to the half's 35 minutes, the added
+## time when it is shown), the referee's calls, the big moments (POINT, GOAL, WIDE, FREE, 65 ...), the restart
+## coming, and the pause menu. The sliotar is small and fast, so it is marked: a bright dot over it, and an arrow at
+## the screen's edge when it is out of the picture. Your player has a ring and, with the ball in his hand, his steps.
+## The theme is set on this layer's root: a CanvasLayer does not inherit the window's.
 
-var m: Node   # the match
+var m: Node
 var root: Control
-var _score_l: Array = []      # per screen side: {panel, name, pts, sets (HBox), serve}
-var _mid_set: Label
-var _mid_tag: Label
+var _rows: Array = []        # [{chip, name, score, total}]
+var _clock: Label
+var _half: Label
+var _added: Label
 var _call: Label
+var _call_t := 0.0
 var _banner: Label
 var _banner_t := 0.0
-var _ring: Control
-var _ring_plan := {}
-var _ring_result := ""
-var _ring_result_t := 0.0
-var _challenge: Button
-var _review: Control
-var _review_data := {}
-var _review_t := 0.0
-var _replay_tag: Control
+var _tag: Label
+var _toast: Label
+var _toast_t := 0.0
+var _marks: Control
 var _pause: Control
-var _break: Control
+var _card: Control
+var _shoot: Control
 var _intro: Control
 var _intro_t := 0.0
+var _dev: Label
+var _active: Player = null
 
 
 func setup(p_match: Node) -> void:
@@ -35,481 +38,420 @@ func setup(p_match: Node) -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.theme = Game.theme
 	add_child(root)
-	_build_scoreboard()
-	_call = UI.label("", "SubLabel", 22, Game.C_GOLD)
-	_call.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_marks = Control.new()
+	_marks.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_marks.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_marks.draw.connect(_draw_marks)
+	root.add_child(_marks)
+	_build_scorebug()
+	_call = _outlined("", "SubLabel", 24, Game.C_GOLD)
 	_call.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	_call.offset_top = 128
-	_call.offset_left = -400
-	_call.offset_right = 400
-	_call.add_theme_constant_override("outline_size", 8)
-	_call.add_theme_color_override("font_outline_color", Color(0.02, 0.05, 0.09, 0.85))
+	_call.offset_top = 96
+	_call.offset_left = -420
+	_call.offset_right = 420
+	_call.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.fit(_call, 2)
 	root.add_child(_call)
-	_banner = UI.label("", "TitleLabel", 96, Game.C_SAFFRON)
-	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_tag = _outlined("", "EyebrowLabel", 20, Game.C_INK)
+	_tag.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_tag.offset_top = 64
+	_tag.offset_left = -300
+	_tag.offset_right = 300
+	_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.fit(_tag, 1)
+	root.add_child(_tag)
+	_banner = _outlined("", "TitleLabel", 92, Game.C_GOLD)
 	_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	_banner.offset_left = -560
 	_banner.offset_right = 560
-	_banner.offset_top = -150
-	_banner.offset_bottom = -40
-	_banner.add_theme_constant_override("outline_size", 22)
-	_banner.add_theme_color_override("font_outline_color", Color(0.02, 0.05, 0.09, 0.95))
+	_banner.offset_top = -170
+	_banner.offset_bottom = -50
+	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.shrink(_banner, 96, 0.5, 1)
+	UI.shrink(_banner, 92, 0.5, 1)
 	_banner.modulate.a = 0.0
 	root.add_child(_banner)
-	_ring = Control.new()
-	_ring.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ring.draw.connect(_draw_ring)
-	root.add_child(_ring)
-	# Top right: the challenge (when there is a call to challenge), the camera and pause.
-	var tr_box := HBoxContainer.new()
-	tr_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	var sm := UI.safe_margins(root, 26.0)
-	tr_box.offset_right = -sm.z
-	tr_box.offset_top = 22
-	tr_box.offset_left = -560
-	tr_box.alignment = BoxContainer.ALIGNMENT_END
-	tr_box.add_theme_constant_override("separation", 12)
-	root.add_child(tr_box)
-	_challenge = UI.button(tr("BTN_CHALLENGE"), true, func(): m.challenge_by_user())
-	_challenge.visible = false
-	_challenge.custom_minimum_size = Vector2(0, 62)
-	tr_box.add_child(_challenge)
-	tr_box.add_child(UI.round_button("camera", func(): m.cam.toggle(), 62))
-	tr_box.add_child(UI.round_button("pause", func(): m.set_paused(not m.paused), 62))
-	_replay_tag = _make_replay_tag()
-	root.add_child(_replay_tag)
+	_toast = _outlined("", "SubLabel", 20, Game.C_INK)
+	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_toast.offset_top = -60
+	_toast.offset_bottom = -28
+	_toast.offset_left = -400
+	_toast.offset_right = 400
+	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.fit(_toast, 1)
+	root.add_child(_toast)
+	# Top right: the camera and pause.
+	var box := HBoxContainer.new()
+	box.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	var sm := UI.safe_margins(root, 24.0)
+	box.offset_right = -sm.z
+	box.offset_top = 18
+	box.offset_left = -300
+	box.alignment = BoxContainer.ALIGNMENT_END
+	box.add_theme_constant_override("separation", 12)
+	root.add_child(box)
+	box.add_child(UI.round_button("camera", func(): _next_camera(), 60))
+	box.add_child(UI.round_button("pause", func(): m.set_paused(not m.paused), 60))
+	_dev = UI.label("", "MutedLabel", 15, Game.C_GOLD)
+	_dev.position = Vector2(sm.x + 6, 150)
+	_dev.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dev.visible = bool(Game.settings.get("dev", false))
+	root.add_child(_dev)
 
 
-func _build_scoreboard() -> void:
-	var bar := HBoxContainer.new()
-	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	bar.offset_top = 16
-	bar.offset_left = -380
-	bar.offset_right = 380
-	bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	bar.add_theme_constant_override("separation", 6)
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(bar)
-	for side in 2:
-		var panel := PanelContainer.new()
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.03, 0.07, 0.12, 0.9)
-		sb.set_corner_radius_all(14)
-		sb.border_color = Color(1, 1, 1, 0.1)
-		sb.set_border_width_all(1)
-		sb.content_margin_left = 16
-		sb.content_margin_right = 16
-		sb.content_margin_top = 6
-		sb.content_margin_bottom = 6
-		panel.add_theme_stylebox_override("panel", sb)
-		panel.custom_minimum_size = Vector2(250, 104)
-		var h := HBoxContainer.new()
-		h.add_theme_constant_override("separation", 14)
-		panel.add_child(h)
-		var col := VBoxContainer.new()
-		col.alignment = BoxContainer.ALIGNMENT_CENTER
-		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		col.add_theme_constant_override("separation", 4)
-		var name_row := HBoxContainer.new()
-		name_row.add_theme_constant_override("separation", 8)
-		var crest := Crest.make("", 30)
-		name_row.add_child(crest)
-		var nm := UI.label("", "HeaderLabel", 40)
-		name_row.add_child(nm)
-		col.add_child(name_row)
-		var sets_row := HBoxContainer.new()
-		sets_row.add_theme_constant_override("separation", 6)
-		col.add_child(sets_row)
-		var pts := UI.label("0", "ScoreLabel", 0)
-		pts.add_theme_font_size_override("font_size", 78)
-		pts.custom_minimum_size = Vector2(70, 0)
-		pts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var serve := Icon.make("ball", 22, Game.C_GOLD)
-		serve.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		if side == 0:
-			h.add_child(col)
-			h.add_child(serve)
-			h.add_child(pts)
-		else:
-			h.add_child(pts)
-			h.add_child(serve)
-			h.add_child(col)
-			col.alignment = BoxContainer.ALIGNMENT_CENTER
-			name_row.alignment = BoxContainer.ALIGNMENT_END
-			sets_row.alignment = BoxContainer.ALIGNMENT_END
-		_score_l.append({"panel": panel, "sb": sb, "name": nm, "crest": crest, "pts": pts, "sets": sets_row, "serve": serve})
-		bar.add_child(panel)
-		if side == 0:
-			var mid := PanelContainer.new()
-			var msb: StyleBoxFlat = sb.duplicate()
-			mid.add_theme_stylebox_override("panel", msb)
-			mid.custom_minimum_size = Vector2(150, 104)
-			var mv := VBoxContainer.new()
-			mv.alignment = BoxContainer.ALIGNMENT_CENTER
-			mv.add_theme_constant_override("separation", 0)
-			mid.add_child(mv)
-			_mid_set = UI.label("", "EyebrowLabel", 17)
-			_mid_set.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			UI.shrink(_mid_set, 17, 0.7)
-			mv.add_child(_mid_set)
-			_mid_tag = UI.label("", "HeaderLabel", 30, Game.C_SAFFRON)
-			_mid_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			UI.shrink(_mid_tag, 30, 0.6)
-			mv.add_child(_mid_tag)
-			bar.add_child(mid)
+func _outlined(text: String, variation: String, size: int, col: Color) -> Label:
+	var l := UI.label(text, variation, size, col)
+	l.add_theme_constant_override("outline_size", 10)
+	l.add_theme_color_override("font_outline_color", Color(0.02, 0.04, 0.03, 0.9))
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
 
 
-## The scoreboard as the broadcast camera shows the court: side 1 (x > 0) on the left of the screen.
+## The score bug: two rows, each a colour chip, the county's short name, goals-points and the total; the clock
+## beside them.
+func _build_scorebug() -> void:
+	var sm := UI.safe_margins(root, 24.0)
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.04, 0.07, 0.05, 0.88)
+	sb.set_corner_radius_all(8)
+	sb.content_margin_left = 10
+	sb.content_margin_right = 10
+	sb.content_margin_top = 6
+	sb.content_margin_bottom = 6
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.position = Vector2(sm.x, 16)
+	root.add_child(panel)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 12)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(h)
+	var rows := VBoxContainer.new()
+	rows.add_theme_constant_override("separation", 2)
+	rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(rows)
+	for k in 2:
+		var r := HBoxContainer.new()
+		r.add_theme_constant_override("separation", 8)
+		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var chip := ColorRect.new()
+		chip.custom_minimum_size = Vector2(10, 30)
+		chip.color = m.teams[k].c1
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		r.add_child(chip)
+		var nm := UI.label(DB.short_name(String(m.teams[k].id)), "SubLabel", 22, Game.C_INK)
+		nm.custom_minimum_size = Vector2(62, 0)
+		r.add_child(nm)
+		var sc := UI.label("0-0", "ScoreLabel", 30, Game.C_INK)
+		sc.custom_minimum_size = Vector2(70, 0)
+		sc.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		r.add_child(sc)
+		var tot := UI.label("(0)", "MutedLabel", 18, Game.C_MUTED)
+		tot.custom_minimum_size = Vector2(40, 0)
+		r.add_child(tot)
+		rows.add_child(r)
+		_rows.append({"name": nm, "score": sc, "total": tot})
+	var tc := VBoxContainer.new()
+	tc.alignment = BoxContainer.ALIGNMENT_CENTER
+	tc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(tc)
+	_clock = UI.label("0:00", "ScoreLabel", 30, Game.C_GOLD)
+	_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tc.add_child(_clock)
+	_half = UI.label("", "EyebrowLabel", 14, Game.C_MUTED)
+	_half.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tc.add_child(_half)
+	_added = UI.label("", "SubLabel", 20, Color("1a1a1a"))
+	var asb := StyleBoxFlat.new()
+	asb.bg_color = Game.C_GOLD
+	asb.set_corner_radius_all(4)
+	asb.content_margin_left = 6
+	asb.content_margin_right = 6
+	_added.add_theme_stylebox_override("normal", asb)
+	_added.visible = false
+	tc.add_child(_added)
+	for c in [panel, h, rows, tc]:
+		(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for l in [_clock, _half, _added]:
+		(l as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_score()
+
+
 func set_score() -> void:
-	for panel_i in 2:
-		var side := 1 - panel_i
-		var team: int = m.side_team[side]
-		var t: Dictionary = m.teams[team]
-		var s: Dictionary = _score_l[panel_i]
-		(s.name as Label).text = String(t.short)
-		var cr: Crest = s.crest
-		cr.team_id = String(t.id)
-		cr.queue_redraw()
-		(s.pts as Label).text = str(int(m.points[team]))
-		(s.sb as StyleBoxFlat).border_color = Color(t.c1, 0.9)
-		(s.sb as StyleBoxFlat).border_width_left = 7 if panel_i == 0 else 1
-		(s.sb as StyleBoxFlat).border_width_right = 7 if panel_i == 1 else 1
-		var sets_row: HBoxContainer = s.sets
-		for c in sets_row.get_children():
-			c.queue_free()
-		for i in int(m.sets_to_win):
-			var dot := Icon.make("dot" if i < int(m.sets[team]) else "ring", 16, t.c1.lightened(0.2))
-			sets_row.add_child(dot)
-		(s.serve as Control).modulate.a = 1.0 if int(m.server) == team else 0.0
-	_mid_set.text = tr("SET_N_TO").format({"n": m.set_no, "p": m.set_points})
-	var mp: int = m.match_point_for()
-	var sp: int = m.set_point_for()
-	_mid_tag.text = tr("MATCH_POINT") if mp >= 0 else (tr("SET_POINT") if sp >= 0 else "")
-	UI.refit(_mid_tag)
+	for k in 2:
+		var s: Array = m.score[k]
+		_rows[k].score.text = Rules.fmt(int(s[0]), int(s[1]))
+		_rows[k].total.text = "(%d)" % Rules.total(int(s[0]), int(s[1]))
+
+
+func added_time(mins: int) -> void:
+	_added.text = "+%d" % mins
+	_added.visible = true
+
+
+func tick(delta: float) -> void:
+	var secs := int(m.clock)
+	var limit := int(m.half_len_now())
+	var shown := mini(secs, limit + int(m.added))
+	var base := 0
+	if m.half == 2:
+		base = int(m.half_len)
+	elif m.half >= 3:
+		base = int(m.half_len) * 2 + (0 if m.half == 3 else Rules.EXTRA_HALF * 60)
+	var t := base + shown
+	_clock.text = "%d:%02d" % [t / 60, t % 60]
+	_half.text = tr(["HALF_1", "HALF_2", "HALF_ET1", "HALF_ET2"][clampi(int(m.half) - 1, 0, 3)])
+	if m.phase == m.P.SHOOTOUT:
+		_half.text = tr("SHOOTOUT")
+	if _banner_t > 0.0:
+		_banner_t -= delta
+		_banner.modulate.a = clampf(_banner_t / 0.4, 0.0, 1.0)
+		_banner.scale = Vector2.ONE * (1.0 + maxf(0.0, _banner_t - 1.6) * 0.3)
+	if _call_t > 0.0:
+		_call_t -= delta
+		_call.modulate.a = clampf(_call_t / 0.5, 0.0, 1.0)
+	if _toast_t > 0.0:
+		_toast_t -= delta
+		_toast.modulate.a = clampf(_toast_t / 0.5, 0.0, 1.0)
+	if _intro != null and is_instance_valid(_intro):
+		_intro_t -= delta
+		_intro.modulate.a = clampf(_intro_t / 0.6, 0.0, 1.0)
+		if _intro_t <= 0.0:
+			_intro.queue_free()
+			_intro = null
+	if _dev.visible:
+		var pc: Array = m.frame_percentiles()
+		var rs := RenderingServer
+		_dev.text = "frame ms p50 %.1f  p95 %.1f  max %.1f  hitches %d\ndraws %d  prims %d  gfx %d  fps %d" % [pc[0], pc[1], pc[2], pc[3],
+			rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+			rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), int(Game.settings.graphics),
+			Engine.get_frames_per_second()]
+	_marks.queue_redraw()
 
 
 func call_line(text: String) -> void:
 	_call.text = text
+	UI.refit(_call)
+	_call_t = 2.6
 	_call.modulate.a = 1.0
 
 
-func banner(text: String, col: Color = Game.C_SAFFRON) -> void:
+func banner(text: String, col: Color = Game.C_GOLD) -> void:
 	_banner.text = text
-	_banner.add_theme_color_override("font_color", col.lightened(0.15) if col.get_luminance() < 0.45 else col)
-	_banner.modulate.a = 1.0
-	_banner.scale = Vector2(1.25, 1.25)
-	_banner.pivot_offset = _banner.size * 0.5
-	_banner_t = 1.6
+	_banner.add_theme_color_override("font_color", col)
 	UI.refit(_banner)
+	_banner_t = 2.0
+	_banner.pivot_offset = _banner.size * 0.5
+
+
+func toast(text: String) -> void:
+	_toast.text = text
+	_toast_t = 3.0
+
+
+func restart_tag(r: Dictionary) -> void:
+	if r.is_empty():
+		_tag.text = ""
+		return
+	var team := DB.short_name(String(m.teams[int(r.team)].id))
+	_tag.text = tr("RESTART_" + String(r.kind).to_upper()) + " · " + team
+
+
+func set_active(pl: Player) -> void:
+	_active = pl
 
 
 func intro(text: String) -> void:
 	_intro = PanelContainer.new()
 	_intro.theme_type_variation = "GlassPanel"
 	_intro.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_intro.offset_left = -420
-	_intro.offset_right = 420
-	_intro.offset_top = 40
-	_intro.offset_bottom = 230
+	_intro.offset_left = -360
+	_intro.offset_right = 360
+	_intro.offset_top = -40
+	_intro.offset_bottom = 110
+	_intro.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.add_theme_constant_override("separation", 6)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_intro.add_child(v)
-	var ey := UI.label(text.to_upper(), "EyebrowLabel", 18, Game.C_SAFFRON)
-	ey.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ey.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(ey)
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 18)
-	for k in 2:
-		var t: Dictionary = m.teams[k]
-		if k == 1:
-			row.add_child(UI.label(tr("VS"), "HeaderLabel", 34, Game.C_MUTED))
-		var col := VBoxContainer.new()
-		col.alignment = BoxContainer.ALIGNMENT_CENTER
-		var cr := Crest.make(String(t.id), 56)
-		cr.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		col.add_child(cr)
-		var nm := UI.fit(UI.label(DB.team_name(String(t.id)), "SubLabel", 24), 2)
-		nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		nm.custom_minimum_size = Vector2(300, 0)
-		col.add_child(nm)
-		row.add_child(col)
-	v.add_child(row)
+	var l := UI.label(DB.team_name(String(m.teams[0].id)) + "  " + tr("VS") + "  " + DB.team_name(String(m.teams[1].id)), "HeaderLabel", 40)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.shrink(l, 40, 0.6, 1)
+	v.add_child(l)
+	var s := UI.label(text, "MutedLabel", 19)
+	s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.fit(s, 2)
+	v.add_child(s)
 	root.add_child(_intro)
-	_intro_t = 2.4
-	set_score()
+	_intro_t = 3.2
 
 
-func set_break() -> void:
-	_break = PanelContainer.new()
-	_break.theme_type_variation = "GlassPanel"
-	_break.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_break.offset_left = -360
-	_break.offset_right = 360
-	_break.offset_top = -40
-	_break.offset_bottom = 160
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 6)
-	_break.add_child(v)
-	var t := UI.label(tr("SET_BREAK").to_upper(), "EyebrowLabel", 18, Game.C_SAFFRON)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(t)
-	var g := GridContainer.new()
-	g.columns = 1 + (m.set_scores as Array).size()
-	g.add_theme_constant_override("h_separation", 26)
-	for k in 2:
-		var nm := UI.fit(UI.label(DB.team_name(String(m.teams[k].id)), "SubLabel", 24))
-		nm.custom_minimum_size = Vector2(300, 0)
-		g.add_child(nm)
-		for sc in m.set_scores:
-			var won: bool = int(sc[k]) > int(sc[1 - k])
-			g.add_child(UI.label(str(int(sc[k])), "HeaderLabel", 36, Game.C_INK if won else Game.C_MUTED))
-	v.add_child(g)
-	var ce := UI.label(tr("CHANGE_ENDS"), "MutedLabel", 18)
-	ce.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(ce)
-	root.add_child(_break)
-	set_score()
+func _next_camera() -> void:
+	var order := [Game.CAM_TV, Game.CAM_HIGH, Game.CAM_END]
+	var i := order.find(int(Game.settings.camera))
+	Game.settings.camera = order[(i + 1) % order.size()]
+	Game.save_settings()
+	m.cam.mode = int(Game.settings.camera)
 
 
-func tick(delta: float) -> void:
-	if _banner_t > 0.0:
-		_banner_t -= delta
-		_banner.scale = _banner.scale.lerp(Vector2.ONE, minf(1.0, 10.0 * delta))
-		_banner.pivot_offset = _banner.size * 0.5
-		if _banner_t < 0.4:
-			_banner.modulate.a = maxf(0.0, _banner_t / 0.4)
-	if _intro and is_instance_valid(_intro):
-		_intro_t -= delta
-		if _intro_t < 0.3:
-			_intro.modulate.a = maxf(0.0, _intro_t / 0.3)
-		if _intro_t <= 0.0:
-			_intro.queue_free()
-			_intro = null
-	if _break and is_instance_valid(_break) and int(m.state) != 4:
-		_break.queue_free()
-		_break = null
-	if _ring_result_t > 0.0:
-		_ring_result_t -= delta
-	_ring.queue_redraw()
-	if not _review_data.is_empty():
-		_review_t += delta
-		_review.queue_redraw()
+## The marks drawn over the 3D picture: the sliotar's dot (or an arrow to it), your player's ring and steps.
+func _draw_marks() -> void:
+	var cam: Camera3D = m.cam.camera
+	var vp := root.get_viewport_rect().size
+	var b: Vector3 = m.ball.global_position
+	if m.ball.state != Sliotar.HELD or m.carrier == null:
+		if not cam.is_position_behind(b):
+			var sp := cam.unproject_position(b)
+			if Rect2(Vector2.ZERO, vp).grow(-4).has_point(sp):
+				_marks.draw_circle(sp, 5.5, Color(0.05, 0.05, 0.05, 0.75))
+				_marks.draw_circle(sp, 3.8, Color(1, 1, 0.92))
+			else:
+				_edge_arrow(sp, vp)
+		else:
+			_edge_arrow(vp - cam.unproject_position(b), vp)
+	if _active != null and is_instance_valid(_active) and _active.visible and m.controls.visible:
+		var p := _active.global_position
+		if not cam.is_position_behind(p):
+			var c := cam.unproject_position(p)
+			var top := cam.unproject_position(p + Vector3(0, 2.1, 0))
+			var r := maxf(10.0, (c.y - top.y) * 0.32)
+			_marks.draw_arc(c, r, 0, TAU, 32, Color(Game.C_GOLD, 0.95), 3.0, true)
+			_marks.draw_string(Game.font_bold, top + Vector2(-12, -6), str(_active.num), HORIZONTAL_ALIGNMENT_CENTER, 24, 18, Game.C_GOLD)
+			if _active == m.carrier and _active.ball_hand:
+				var c2: Rules.Carry = m.carry_of(_active)
+				for i in Rules.MAX_STEPS:
+					var col := Game.C_DANGER if i < c2.steps and c2.steps >= 3 else (Game.C_GOLD if i < c2.steps else Color(1, 1, 1, 0.35))
+					_marks.draw_circle(top + Vector2(-15 + i * 10, -30), 3.6, col)
 
 
-# ---------------------------------------------------------------- the timing ring
-
-func timing_open(p: Dictionary) -> void:
-	_ring_plan = p
-
-
-func timing_done() -> void:
-	_ring_plan = {}
-
-
-func timing_result(label: String) -> void:
-	_ring_result = label
-	_ring_result_t = 0.8
-
-
-func _draw_ring() -> void:
-	var cam: Camera3D = m.cam
-	if not _ring_plan.is_empty() and cam:
-		_draw_spot(cam)
-		var pos: Vector3 = _ring_plan.pos
-		if not cam.is_position_behind(pos):
-			var sp := cam.unproject_position(pos)
-			var left := float(_ring_plan.t) - float(m.now)
-			var k := clampf(left / 1.1, 0.0, 1.0)
-			var r := 26.0 + 74.0 * k
-			var w: Array = m.timing_windows()
-			var good := left <= float(w[1])
-			_ring.draw_arc(sp, 26.0, 0, TAU, 40, Color(Game.C_GOLD, 0.85), 3.0, true)
-			_ring.draw_arc(sp, r, 0, TAU, 48, Game.C_GOOD if good else Color(Game.C_INK, 0.8), 4.0, true)
-	if _ring_result_t > 0.0:
-		var key := "TIMING_" + _ring_result
-		var col: Color = {"PERFECT": Game.C_GOLD, "GOOD": Game.C_GOOD, "EARLY": Game.C_MUTED, "LATE": Game.C_MUTED, "MISS": Game.C_DANGER}.get(_ring_result, Game.C_INK)
-		var f: Font = Game.font_display
-		var fs := Game.ts(48)
-		var txt := tr(key)
-		var tw := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var at := Vector2(_ring.size.x * 0.5 - tw * 0.5, _ring.size.y * 0.72)
-		_ring.draw_string_outline(f, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 10, Color(0.02, 0.05, 0.09, minf(1.0, _ring_result_t * 2.0)))
-		_ring.draw_string(f, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(col, minf(1.0, _ring_result_t * 2.0)))
-
-
-## Where your player must stand to play it: a ring on the floor, gold, green once he is near enough; a line to it from
-## his feet while he is not.
-func _draw_spot(cam: Camera3D) -> void:
-	if not _ring_plan.has("player") or not _ring_plan.has("stand") or String(_ring_plan.get("kind", "")) == "serve":
+func _edge_arrow(sp: Vector2, vp: Vector2) -> void:
+	var c := vp * 0.5
+	var d := (sp - c)
+	if d.length() < 1.0:
 		return
-	var st: Vector3 = _ring_plan.stand
-	if st == Vector3.INF or cam.is_position_behind(st):
-		return
-	var near: bool = m._off_spot(_ring_plan) <= m._reach(_ring_plan)
-	var col := Game.C_GOOD if near else Game.C_GOLD
-	var pts := PackedVector2Array()
-	for i in 25:
-		var a := TAU * float(i) / 24.0
-		pts.append(cam.unproject_position(st + Vector3(cos(a) * 0.42, 0.02, sin(a) * 0.42)))
-	_ring.draw_polyline(pts, Color(0.02, 0.05, 0.09, 0.6), 7.0, true)
-	_ring.draw_polyline(pts, col, 4.0, true)
-	if not near:
-		var pl: Node3D = _ring_plan.player
-		var a2 := cam.unproject_position(Vector3(pl.position.x, 0.02, pl.position.z))
-		var b2 := cam.unproject_position(st + Vector3(0, 0.02, 0))
-		var n := int(a2.distance_to(b2) / 18.0)
-		for i in n:
-			if i % 2 == 0:
-				_ring.draw_line(a2.lerp(b2, float(i) / n), a2.lerp(b2, float(i + 1) / n), Color(col, 0.75), 3.0, true)
+	d = d.normalized()
+	var k := minf((vp.x * 0.5 - 30.0) / maxf(0.001, absf(d.x)), (vp.y * 0.5 - 30.0) / maxf(0.001, absf(d.y)))
+	var at := c + d * k
+	var n := Vector2(-d.y, d.x)
+	_marks.draw_colored_polygon(PackedVector2Array([at + d * 14.0, at - d * 6.0 + n * 9.0, at - d * 6.0 - n * 9.0]), Color(1, 1, 0.92, 0.9))
 
 
-# ---------------------------------------------------------------- challenge and review
-
-func challenge_prompt(on: bool) -> void:
-	if on:
-		_challenge.text = tr("BTN_CHALLENGE_N").format({"n": int(m.challenges[m.user_team])})
-	_challenge.visible = on
-
-
-## The review: the ball's mark on the floor beside the line, magnified, then the verdict.
-func show_review(c: Dictionary, team: int) -> void:
-	_review_data = c.merged({"team": team}, true)
-	_review_t = 0.0
-	_review = PanelContainer.new()
-	_review.theme_type_variation = "GlassPanel"
-	_review.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_review.offset_left = -330
-	_review.offset_right = 330
-	_review.offset_top = -170
-	_review.offset_bottom = 190
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	_review.add_child(v)
-	var t := UI.label(tr("REVIEW_TITLE").to_upper(), "EyebrowLabel", 18, Game.C_SAFFRON)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(t)
-	var who := UI.label(tr("REVIEW_BY").format({"t": DB.team_name(String(m.teams[team].id))}), "MutedLabel", 18)
-	who.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(who)
-	var canvas := Control.new()
-	canvas.custom_minimum_size = Vector2(600, 220)
-	canvas.draw.connect(_draw_review.bind(canvas))
-	v.add_child(canvas)
-	_review.draw.connect(func(): canvas.queue_redraw())
-	root.add_child(_review)
-
-
-func _draw_review(c: Control) -> void:
-	var d := _review_data
-	if d.is_empty():
-		return
-	var s := c.size
-	c.draw_rect(Rect2(Vector2.ZERO, s), Color("2b6cc4"))
-	# The line: 4 cm, drawn 600 px for 30 cm (the view is 30 cm across).
-	var px := s.x / 0.3
-	var p: Vector3 = d.p
-	var margin := Court.line_margin(p, 0.0)   # the ball's centre from the line's outer edge
-	var line_x := s.x * 0.5
-	c.draw_rect(Rect2(line_x - Court.LINE * px, 0, Court.LINE * px, s.y), Color("f6f4ee"))
-	c.draw_string(Game.font_bold, Vector2(8, 24), tr("REVIEW_IN"), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 1, 1, 0.8))
-	c.draw_string(Game.font_bold, Vector2(s.x - 70, 24), tr("REVIEW_OUT"), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 1, 1, 0.8))
-	# The ball's contact patch slides in over the first second.
-	var k := clampf(_review_t / 1.0, 0.0, 1.0)
-	var bx := line_x + margin * px
-	var r := 0.02 * px   # the patch of the ball that touches the floor, about 4 cm across
-	c.draw_circle(Vector2(lerpf(-40.0, bx, k), s.y * 0.5), r, Color("f2c14e"))
-	c.draw_arc(Vector2(lerpf(-40.0, bx, k), s.y * 0.5), Ball.RADIUS * px, 0, TAU, 48, Color(1, 1, 1, 0.5), 2.0, true)
-	if _review_t > 1.6:
-		var inside: bool = bool(d.true_in)
-		var txt := tr("REVIEW_IN" if inside else "REVIEW_OUT")
-		var dist := absf(margin + Ball.RADIUS) * 1000.0
-		var sub := tr("REVIEW_MM").format({"n": int(dist)})
-		var f: Font = Game.font_display
-		var fs := 64
-		var tw := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		c.draw_string_outline(f, Vector2((s.x - tw) * 0.5, s.y * 0.8), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 10, Color(0, 0, 0, 0.7))
-		c.draw_string(f, Vector2((s.x - tw) * 0.5, s.y * 0.8), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Game.C_GOOD if inside else Game.C_DANGER)
-		var sw := Game.font_bold.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
-		c.draw_string(Game.font_bold, Vector2((s.x - sw) * 0.5, s.y * 0.95), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
-
-
-func hide_review() -> void:
-	_review_data = {}
-	if _review:
-		_review.queue_free()
-		_review = null
-
-
-# ---------------------------------------------------------------- the replay
-
-func _make_replay_tag() -> Control:
-	var b := Button.new()
-	b.flat = true
-	b.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	b.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-	b.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-	b.pressed.connect(func(): m.end_replay())
-	var tag := HBoxContainer.new()
-	tag.position = Vector2(UI.safe_margins(root, 30.0).x, 140)
-	tag.add_theme_constant_override("separation", 10)
-	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tag.add_child(Icon.make("dot", 22, Game.C_DANGER))
-	tag.add_child(UI.label(tr("REPLAY"), "HeaderLabel", 40))
-	tag.add_child(UI.label(tr("TAP_TO_SKIP"), "MutedLabel", 18))
-	b.add_child(tag)
-	b.visible = false
-	return b
-
-
-func replay(on: bool) -> void:
-	_replay_tag.visible = on
-	m.controls.visible = not on and m.user_team >= 0
-
-
-# ---------------------------------------------------------------- pause
+# ---------------------------------------------------------------- overlays
 
 func show_pause(on: bool) -> void:
-	if not on:
-		if _pause:
-			_pause.queue_free()
-			_pause = null
-		return
-	if _pause:
-		return
-	_pause = Control.new()
-	_pause.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_pause.mouse_filter = Control.MOUSE_FILTER_STOP
-	var dim := ColorRect.new()
-	dim.color = Color(Game.C_BG, 0.8)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_pause.add_child(dim)
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_pause.add_child(center)
-	var card := PanelContainer.new()
-	card.theme_type_variation = "CardPanel"
-	center.add_child(card)
+	if on and _pause == null:
+		_pause = _overlay()
+		var v: VBoxContainer = _pause.get_meta("col")
+		var t := UI.label(tr("PAUSED"), "HeaderLabel", 44)
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(t)
+		var s := UI.label(m.score_text(0) + "  ·  " + m.score_text(1), "SubLabel", 22, Game.C_MUTED)
+		s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.fit(s, 2)
+		v.add_child(s)
+		var b1 := UI.button(tr("RESUME"), true, func(): m.set_paused(false))
+		b1.custom_minimum_size = Vector2(320, 64)
+		v.add_child(b1)
+		var b2 := UI.button(tr("QUIT_MATCH"), false, func(): m.quit_match())
+		b2.custom_minimum_size = Vector2(320, 56)
+		v.add_child(b2)
+	elif not on and _pause != null:
+		_pause.queue_free()
+		_pause = null
+
+
+func _overlay() -> Control:
+	var o := ColorRect.new()
+	o.color = Color(0.02, 0.04, 0.03, 0.72)
+	o.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	o.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(o)
+	var c := CenterContainer.new()
+	c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	o.add_child(c)
+	var p := PanelContainer.new()
+	p.theme_type_variation = "CardPanel"
+	p.custom_minimum_size = Vector2(460, 0)
+	c.add_child(p)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
-	v.custom_minimum_size = Vector2(440, 0)
-	card.add_child(v)
-	var t := UI.label(tr("PAUSED"), "HeaderLabel", 52)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	p.add_child(v)
+	o.set_meta("col", v)
+	return o
+
+
+## Half time (and the break before extra time): the score, and the scorers so far.
+func half_time(h: int) -> void:
+	_card = _overlay()
+	var v: VBoxContainer = _card.get_meta("col")
+	var t := UI.label(tr("HALF_TIME") if h == 1 else (tr("FULL_TIME_LEVEL") if h == 2 else tr("EXTRA_HALF_TIME")), "HeaderLabel", 40)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.shrink(t, 40, 0.6, 1)
+	v.add_child(t)
+	for k in 2:
+		var l := UI.label(DB.team_name(String(m.teams[k].id)) + "   " + m.score_text(k), "SubLabel", 26)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.fit(l, 2)
+		v.add_child(l)
+	if h == 2:
+		var e := UI.label(tr("EXTRA_TIME_NOTE"), "MutedLabel", 18)
+		e.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		e.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(e)
+	_added.visible = false
+
+
+func end_half_time() -> void:
+	if _card != null:
+		_card.queue_free()
+		_card = null
+
+
+func full_time(winner: int) -> void:
+	end_half_time()
+	_card = _overlay()
+	_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var v: VBoxContainer = _card.get_meta("col")
+	var t := UI.label(tr("FULL_TIME"), "HeaderLabel", 44)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(t)
-	v.add_child(UI.button(tr("RESUME"), true, func(): m.set_paused(false)))
-	v.add_child(UI.button(tr("CAMERA") + ": " + tr({Game.CAM_TV: "CAM_TV", Game.CAM_SIDE: "CAM_SIDE"}.get(m.cam.mode, "CAM_END")), false, func():
-		m.cam.toggle()
-		show_pause(false)
-		show_pause(true)))
-	v.add_child(UI.button(tr("QUIT_MATCH"), false, func(): m.quit_match()))
-	root.add_child(_pause)
-	UI.keep_on_screen(card)
+	for k in 2:
+		var l := UI.label(DB.team_name(String(m.teams[k].id)) + "   " + m.score_text(k), "SubLabel", 28, Game.C_GOLD if k == winner else Game.C_INK)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.fit(l, 2)
+		v.add_child(l)
+
+
+func shootout(so: Dictionary) -> void:
+	if _shoot == null:
+		_shoot = PanelContainer.new()
+		_shoot.theme_type_variation = "GlassPanel"
+		_shoot.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+		_shoot.offset_top = -150
+		_shoot.offset_bottom = -110
+		_shoot.offset_left = -260
+		_shoot.offset_right = 260
+		_shoot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var g := GridContainer.new()
+		g.columns = 2
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_shoot.add_child(g)
+		_shoot.set_meta("grid", g)
+		root.add_child(_shoot)
+	var grid: GridContainer = _shoot.get_meta("grid")
+	for c in grid.get_children():
+		c.queue_free()
+	for k in 2:
+		var n := UI.label(DB.short_name(String(m.teams[k].id)), "SubLabel", 22)
+		n.custom_minimum_size = Vector2(70, 0)
+		grid.add_child(n)
+		var marks := ""
+		for e in so.get("log", []):
+			if int(e[0]) == k:
+				marks += "● " if bool(e[1]) else "○ "
+		var l := UI.label(marks + "  %d" % int(so.goals[k]), "SubLabel", 22, Game.C_GOLD)
+		grid.add_child(l)

@@ -1,6 +1,7 @@
 class_name Records
 extends RefCounted
-## The record book (Game.records, saved): titles won, matches played and won, and the best single-match feats.
+## The record book (Game.records, saved): titles won, matches played and won, the biggest win and the best scoring
+## feats by your players in one match.
 
 
 static func add_title(key: String, year: int) -> void:
@@ -18,13 +19,17 @@ static func add_match(result: Dictionary) -> void:
 	r.played = int(r.get("played", 0)) + 1
 	if int(result.winner) == user:
 		r.won = int(r.get("won", 0)) + 1
-	# The best feats by your players in one match.
-	for id in result.get("stats", {}):
-		var s: Dictionary = result.stats[id]
+	var sc: Array = result.score
+	var margin := Rules.total(sc[user][0], sc[user][1]) - Rules.total(sc[1 - user][0], sc[1 - user][1])
+	if margin > int(r.get("best_margin", 0)):
+		r.best_margin = margin
+		r.best_margin_vs = String(result.away if user == 0 else result.home)
+	for id in result.get("pstats", {}):
+		var s: Dictionary = result.pstats[id]
 		if int(s.get("team", -1)) != user:
 			continue
-		for k in ["kills", "blocks", "aces"]:
-			var best: Dictionary = r.get("best_" + k, {})
-			if int(s.get(k, 0)) > int(best.get("n", 0)):
-				r["best_" + k] = {"n": int(s[k]), "num": int(s.get("num", 0)), "vs": String(result.away if user == 0 else result.home)}
+		var tot := int(s.goals) * 3 + int(s.points)
+		if tot > int(r.get("best_tally", 0)):
+			r.best_tally = tot
+			r.best_tally_line = Rules.fmt(int(s.goals), int(s.points))
 	Game.save_records()

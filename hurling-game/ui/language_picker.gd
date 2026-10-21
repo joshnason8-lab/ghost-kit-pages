@@ -43,7 +43,7 @@ func _ready() -> void:
 	var cur := String(Game.settings.language)
 	v.add_child(_choice("", tr("LANG_PHONE"), Game.language_names(Game.phone_language())[0], cur == "", true))
 	var grid := GridContainer.new()
-	grid.columns = 4
+	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 12)
 	v.add_child(grid)

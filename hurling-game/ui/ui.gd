@@ -95,7 +95,9 @@ static func page(owner: Control, title: String, back: Callable = Callable(), eye
 	head.add_child(tv)
 	if eyebrow != "":
 		tv.add_child(label(eyebrow.to_upper(), "EyebrowLabel", 15, Game.C_SAFFRON))
-	tv.add_child(label(title, "HeaderLabel", 46))
+	var tl := label(title, "HeaderLabel", 46)
+	shrink(tl, 46, 0.6, 1)
+	tv.add_child(tl)
 	var right := HBoxContainer.new()
 	right.add_theme_constant_override("separation", 12)
 	right.alignment = BoxContainer.ALIGNMENT_END
@@ -138,131 +140,6 @@ static func round_button(icon_kind: String, cb: Callable, px := 58.0) -> Button:
 
 
 static var _poses := {}
-
-
-## A pictogram of a pose (assets/ui/pose_*.png), white on transparent; tint with modulate.
-static func pose(name: String) -> Texture2D:
-	if not _poses.has(name):
-		var path := "res://assets/ui/pose_%s.png" % name
-		_poses[name] = load(path) if ResourceLoader.exists(path) else null
-	return _poses[name]
-
-
-static var _art := {}
-
-
-## A figure for the menus, already in its colours (assets/ui/art_*.png, from tools/ui_art/import_art.py).
-static func art(name: String) -> Texture2D:
-	if not _art.has(name):
-		var path := "res://assets/ui/art_%s.png" % name
-		_art[name] = load(path) if ResourceLoader.exists(path) else null
-	return _art[name]
-
-
-## A big menu tile: accent colour, title, a line of description, a pose pictogram on the
-## right and an arrow. tall tiles put the pictogram large behind the text. With figure (art()),
-## that figure in its own colours is the tile's background instead: on the right of a small
-## tile, the words kept clear of it on the left; across the lower part of a tall one. tag (a
-## pill) sits beside the arrow, centred on it.
-static func tile(title: String, desc: String, accent: Color, pose_name: String, cb: Callable, tall := false,
-		figure := "", tag: Control = null) -> Button:
-	var b := Button.new()
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	b.clip_contents = true
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(accent.darkened(0.62).lerp(Game.C_PANEL, 0.35), 0.93)
-	sb.set_corner_radius_all(18)
-	sb.border_color = Color(accent, 0.55)
-	sb.border_width_left = 5
-	var sbh: StyleBoxFlat = sb.duplicate()
-	sbh.bg_color = Color(accent.darkened(0.5).lerp(Game.C_PANEL_HI, 0.3), 0.98)
-	sbh.border_color = accent
-	sbh.set_border_width_all(2)
-	sbh.border_width_left = 6
-	b.add_theme_stylebox_override("normal", sb)
-	b.add_theme_stylebox_override("hover", sbh)
-	b.add_theme_stylebox_override("pressed", sbh)
-	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	var fig := art(figure) if figure != "" else null
-	var tex := pose(pose_name) if fig == null else null
-	if fig:
-		var bg := TextureRect.new()
-		bg.texture = fig
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bg.modulate = Color(1, 1, 1, 0.92)
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		if tall:
-			bg.anchor_left = -0.03
-			bg.anchor_right = 1.05
-			bg.anchor_top = 0.27
-			bg.anchor_bottom = 0.9
-		else:
-			bg.anchor_left = 0.53
-			bg.anchor_right = 1.07
-			bg.anchor_top = 0.04
-			bg.anchor_bottom = 0.98
-		b.add_child(bg)
-	elif tex:
-		var art_rect := TextureRect.new()
-		art_rect.texture = tex
-		art_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		art_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		art_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		art_rect.modulate = Color(accent.lightened(0.3), 0.5 if tall else 0.38)
-		art_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-		art_rect.anchor_left = 0.42 if not tall else 0.15
-		art_rect.anchor_top = 0.08 if not tall else 0.3
-		art_rect.offset_right = -10
-		art_rect.offset_bottom = 0
-		b.add_child(art_rect)
-	var v := VBoxContainer.new()
-	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	v.offset_left = 26
-	v.offset_top = 16
-	v.offset_right = -18
-	v.offset_bottom = -14
-	if fig and not tall:
-		v.anchor_right = 0.53   # the words on the left, the figure on the right
-		v.offset_right = 0
-	v.add_theme_constant_override("separation", 2)
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	b.add_child(v)
-	var t := label(title, "HeaderLabel", 54 if tall else 40)
-	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_fit_line(t, 54 if tall else 40)
-	v.add_child(t)
-	var d := label(desc, "", 17, Color(Game.C_INK, 0.78))
-	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	d.custom_minimum_size = Vector2(0, 0)
-	d.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var dw := MarginContainer.new()
-	dw.add_theme_constant_override("margin_right", 0)
-	dw.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	dw.add_child(d)
-	v.add_child(dw)
-	var sp := Control.new()
-	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(sp)
-	var go := HBoxContainer.new()
-	go.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	go.add_theme_constant_override("separation", 10)
-	var dot = Icon.make("next", 26, accent.lightened(0.2))
-	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	go.add_child(dot)
-	if tag:
-		tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		go.add_child(tag)
-	v.add_child(go)
-	b.pressed.connect(Sfx.click)
-	b.pressed.connect(cb)
-	return b
 
 
 ## Keeps a title on one line where it can: the font shrinks, to 72% of size at most, when the
@@ -348,79 +225,6 @@ static func lines_at(font: Font, text: String, w: float, fs: int) -> int:
 		tp.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND
 		n += tp.get_line_count()
 	return n
-
-
-## Teams to pick from, filling the screen: crest, name, rating bar, and a tag (a pill) for any team in tags.
-static func team_grid(owner: Control, ids: Array, columns: int, on_pick: Callable, tags := {}) -> GridContainer:
-	var grid := GridContainer.new()
-	grid.columns = columns
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 14)
-	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	for id in ids:
-		var t := DB.team(id)
-		var c1: Color = t.c1
-		var b := Button.new()
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		b.custom_minimum_size = Vector2(0, 96)
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(c1.darkened(0.72).lerp(Game.C_PANEL, 0.35), 0.95)
-		sb.set_corner_radius_all(16)
-		sb.border_color = Color(c1, 0.7)
-		sb.border_width_bottom = 4
-		var sbh: StyleBoxFlat = sb.duplicate()
-		sbh.bg_color = Color(c1.darkened(0.55).lerp(Game.C_PANEL_HI, 0.3), 1.0)
-		sbh.border_color = c1.lightened(0.2)
-		sbh.set_border_width_all(2)
-		sbh.border_width_bottom = 5
-		b.add_theme_stylebox_override("normal", sb)
-		b.add_theme_stylebox_override("hover", sbh)
-		b.add_theme_stylebox_override("pressed", sbh)
-		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-		var h := HBoxContainer.new()
-		h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		h.offset_left = 14
-		h.offset_right = -14
-		h.add_theme_constant_override("separation", 14)
-		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var cr := Crest.make(id, 58)
-		cr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		h.add_child(cr)
-		var col := VBoxContainer.new()
-		col.alignment = BoxContainer.ALIGNMENT_CENTER
-		col.add_theme_constant_override("separation", 2)
-		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		# The name has the card's width to itself, and wraps between its words, never inside one ("Argent-ina" with a
-		# tag beside it on a 16:9 phone).
-		var nm := label(DB.team_name(id), "SubLabel", 21)
-		nm.autowrap_mode = TextServer.AUTOWRAP_WORD
-		col.add_child(nm)
-		# Under it, a tag and a franchise's state (a country's rating is on the bar).
-		if tags.has(id):
-			var tag: Control = tags[id]
-			tag.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-			col.add_child(tag)
-		if t.kind != "country":
-			col.add_child(label(owner.tr(String(t.home)), "MutedLabel", 15))
-		var rating := DB.team_rating(id)
-		var bar := stat_bar(owner.tr("RATING"), rating, c1.lightened(0.25))
-		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		col.add_child(bar)
-		h.add_child(col)
-		b.add_child(h)
-		# As tall as its lines need (a long name over two lines, the town, the rating).
-		var grow := func():
-			b.custom_minimum_size.y = maxf(96.0, h.get_combined_minimum_size().y + 16.0)
-		h.minimum_size_changed.connect(grow)
-		grow.call()
-		var pick: String = id
-		b.pressed.connect(func():
-			Sfx.click()
-			on_pick.call(pick))
-		grid.add_child(b)
-	return grid
 
 
 ## A big choice card (a league, a tournament): an emblem, a name and a line or two about it; the chosen one lit gold.
@@ -696,7 +500,7 @@ static func swatch(c: Color, size := Vector2(14, 34)) -> ColorRect:
 
 ## Difficulty chips with a line explaining what each level changes.
 static func difficulty_field(owner: Control) -> VBoxContainer:
-	var keys := ["DIFF_EASY", "DIFF_NORMAL", "DIFF_PRO", "DIFF_LEGEND"]
+	var keys := ["DIFF_JUNIOR", "DIFF_INTER", "DIFF_SENIOR", "DIFF_ALLSTAR"]
 	var desc := label(owner.tr(keys[int(Game.settings.difficulty)] + "_DESC"), "MutedLabel", 17)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var names := []
@@ -708,78 +512,6 @@ static func difficulty_field(owner: Control) -> VBoxContainer:
 		desc.text = owner.tr(keys[i] + "_DESC")))
 	box.add_child(desc)
 	return box
-
-
-## A team's badge: the flag for a country, colour bars for a franchise.
-static func badge(id: String, size := Vector2(30, 20)) -> Control:
-	var t := DB.team(id)
-	if not t.is_empty() and t.kind == "country":
-		var tr_ := TextureRect.new()
-		tr_.texture = Flags.texture(id, int(size.x * 2), int(size.y * 2))
-		tr_.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr_.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		tr_.custom_minimum_size = size
-		tr_.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		return tr_
-	var c := swatch(t.c1 if not t.is_empty() else Color.GRAY, Vector2(maxf(6, size.x * 0.25), size.y))
-	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return c
-
-
-## Team picker built on OptionButton with colour icons.
-static func team_picker(ids: Array, selected: String, on_pick: Callable) -> OptionButton:
-	var o := OptionButton.new()
-	o.custom_minimum_size = Vector2(320, 58)
-	o.fit_to_longest_item = false
-	for i in ids.size():
-		var t := DB.team(ids[i])
-		var icon: Texture2D
-		if t.kind == "country":
-			icon = Flags.texture(ids[i], 42, 28)
-		else:
-			var img := Image.create(28, 28, false, Image.FORMAT_RGBA8)
-			img.fill(t.c1)
-			icon = ImageTexture.create_from_image(img)
-		o.add_icon_item(icon, DB.team_name(ids[i]), i)
-		if ids[i] == selected:
-			o.select(i)
-	o.item_selected.connect(func(i): on_pick.call(ids[i]))
-	return o
-
-
-## Standings table: rows of {id, p, w, l, sd, pd, pts} (played, won, lost, set difference, point difference, table
-## points). compact: smaller rows, for two tables on one screen.
-static func table(owner: Control, rows: Array, highlight: String, compact := false, cut := 0) -> GridContainer:
-	var g := GridContainer.new()
-	g.columns = 8
-	g.add_theme_constant_override("h_separation", 14)
-	g.add_theme_constant_override("v_separation", 1 if compact else 6)
-	var fs := 18 if compact else 20
-	var heads := ["#", owner.tr("COL_TEAM"), owner.tr("COL_P"), owner.tr("COL_W"), owner.tr("COL_L"), owner.tr("COL_SD"), owner.tr("COL_PD"), owner.tr("COL_PTS")]
-	for h in heads:
-		g.add_child(label(h, "EyebrowLabel"))
-	for i in rows.size():
-		var r: Dictionary = rows[i]
-		var hl: bool = r.id == highlight
-		var col := Game.C_SAFFRON if hl else Game.C_INK
-		# The places that go through (cut: the top so many) get a gold number.
-		g.add_child(label(str(i + 1), "", fs, Game.C_GOLD if i < cut else Game.C_MUTED))
-		var nm := HBoxContainer.new()
-		nm.add_theme_constant_override("separation", 8)
-		nm.add_child(Crest.make(r.id, 22 if compact else 26))
-		var name_l := fit(label(DB.team_name(r.id), "SubLabel" if hl else "", fs, col))
-		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_l.custom_minimum_size = Vector2(120, 0)
-		nm.add_child(name_l)
-		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		g.add_child(nm)
-		for k in ["p", "w", "l"]:
-			g.add_child(label(str(int(r[k])), "", fs, col))
-		for k in ["sd", "pd"]:
-			var d := int(r[k])
-			g.add_child(label(("+" if d > 0 else "") + str(d), "", fs, col))
-		g.add_child(label(str(int(r.pts)), "SubLabel", fs, col))
-	return g
 
 
 ## A table of any shape: headers, then rows of [team id, cell, cell ...]; the first `gold` places numbered in gold
@@ -802,7 +534,7 @@ static func standings(headers: Array, rows: Array, highlight: String, gold := 0,
 		g.add_child(label(str(i + 1), "", fs, place_col))
 		var nm := HBoxContainer.new()
 		nm.add_theme_constant_override("separation", 8)
-		nm.add_child(Crest.make(id, 22 if compact else 26))
+		nm.add_child(Colours.make(id, 22 if compact else 26))
 		var name_l := fit(label(DB.team_name(id), "SubLabel" if hl else "", fs, col))
 		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_l.custom_minimum_size = Vector2(120, 0)
@@ -818,25 +550,25 @@ static func signed(n: int) -> String:
 	return ("+" if n > 0 else "") + str(n)
 
 
-## One fixture line, in sets: "Bangkok 2 – 1 Selangor", or "Bangkok vs Selangor".
+## One fixture line, in goals and points: "Cork 2-21 – 1-19 Clare", or "Cork v Clare".
 static func fixture_line(owner: Control, f: Dictionary, highlight: String) -> HBoxContainer:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 10)
 	var mine: bool = f.home == highlight or f.away == highlight
 	var col := Game.C_INK if mine else Game.C_MUTED
-	h.add_child(Crest.make(f.home, 30))
+	h.add_child(Colours.make(f.home, 30))
 	var a := fit(label(DB.team_name(f.home), "", 18, col), 2)
 	a.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	a.custom_minimum_size = Vector2(90, 0)
 	a.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	h.add_child(a)
-	var mid := label("%d – %d" % [f.sets[0], f.sets[1]] if f.played else owner.tr("VS"), "SubLabel", 19, Game.C_SAFFRON if mine else Game.C_INK)
-	mid.custom_minimum_size = Vector2(70, 0)
+	var mid := label(Rules.fmt(f.score[0][0], f.score[0][1]) + " – " + Rules.fmt(f.score[1][0], f.score[1][1]) if f.played else owner.tr("VS"), "SubLabel", 19, Game.C_SAFFRON if mine else Game.C_INK)
+	mid.custom_minimum_size = Vector2(130, 0)
 	mid.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	h.add_child(mid)
 	var b := fit(label(DB.team_name(f.away), "", 18, col), 2)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.custom_minimum_size = Vector2(90, 0)
 	h.add_child(b)
-	h.add_child(Crest.make(f.away, 30))
+	h.add_child(Colours.make(f.away, 30))
 	return h
