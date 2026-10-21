@@ -6,7 +6,8 @@ extends RefCounted
 ## "world": the nations, to the fast rules, as the 2025 world championship was played. "national": the states, to the
 ## classic rules, as the national championships are. The names are plain: no real competition is named.
 
-const KINDS := ["world", "national"]
+const KINDS := ["world", "national", "league"]
+const LEAGUE_ROUNDS := 14   # eight sides, home and away
 
 var kind := "world"
 var women := false
@@ -19,6 +20,7 @@ var stage := "groups"         # groups, qf, sf, f, done, out
 var ties: Array = []          # this knockout round's pairs [a, b]
 var ko_results: Array = []    # [stage, a, b, score a, score b, winner]
 var champion := ""
+var sched: Array = []         # the league's rounds of pairs
 var seed := 1
 
 
@@ -28,6 +30,11 @@ static func create(p_kind: String, p_user: String, p_women := false) -> Cup:
 	c.women = p_women
 	c.user = p_user
 	c.seed = randi()
+	if p_kind == "league":
+		c.teams = DB.club_ids()
+		c.groups = [c.teams.duplicate()]
+		c.sched = league_schedule(c.teams)
+		return c
 	var pool: Array = DB.nation_ids() if p_kind == "world" else DB.state_ids()
 	pool.sort_custom(func(a, b): return DB.team_rating(a, p_women) > DB.team_rating(b, p_women))
 	var pick: Array = pool.slice(0, 16)
@@ -44,17 +51,46 @@ static func create(p_kind: String, p_user: String, p_women := false) -> Cup:
 	return c
 
 
+## Every side plays every other at home and away: the circle method, the second half the first with home and away
+## turned round.
+static func league_schedule(ids: Array) -> Array:
+	var n := ids.size()
+	var arr := ids.duplicate()
+	var first: Array = []
+	for r in n - 1:
+		var rnd := []
+		for i in n / 2:
+			var a = arr[i]
+			var b = arr[n - 1 - i]
+			rnd.append([a, b] if (r + i) % 2 == 0 else [b, a])
+		first.append(rnd)
+		arr.insert(1, arr.pop_back())
+	var out: Array = first.duplicate(true)
+	for rnd in first:
+		var back := []
+		for pr in rnd:
+			back.append([pr[1], pr[0]])
+		out.append(back)
+	return out
+
+
+func league() -> bool:
+	return kind == "league"
+
+
 func fmt() -> int:
-	return KhoRules.FAST if kind == "world" else KhoRules.CLASSIC
+	return KhoRules.CLASSIC if kind == "national" else KhoRules.FAST
 
 
 func title() -> String:
-	return TranslationServer.translate("CUP_WORLD" if kind == "world" else "CUP_NATIONAL")
+	return TranslationServer.translate({"world": "CUP_WORLD", "national": "CUP_NATIONAL", "league": "CUP_LEAGUE"}.get(kind, "CUP_WORLD"))
 
 
 func stage_name() -> String:
 	match stage:
 		"groups":
+			if league():
+				return TranslationServer.translate("CUP_STAGE_LEAGUE") + " · %d/%d" % [round + 1, LEAGUE_ROUNDS]
 			return TranslationServer.translate("CUP_STAGE_GROUPS") + " · %d/3" % (round + 1)
 		"qf":
 			return TranslationServer.translate("CUP_STAGE_QF")
@@ -73,6 +109,8 @@ static func group_pairs(g: Array, r: int) -> Array:
 
 func fixtures() -> Array:
 	if stage == "groups":
+		if league():
+			return sched[round] if round < sched.size() else []
 		var out := []
 		for g in groups:
 			out.append_array(group_pairs(g, round))
@@ -142,6 +180,13 @@ func _finish_round() -> void:
 	for p in fixtures():
 		if not _played(p):
 			return
+	if stage == "groups" and league():
+		round += 1
+		if round >= LEAGUE_ROUNDS:
+			var t := group_table(0)
+			ties = [[t[0].id, t[3].id], [t[1].id, t[2].id]]
+			stage = "sf"
+		return
 	if stage == "groups":
 		round += 1
 		if round >= 3:
@@ -199,7 +244,7 @@ func group_table(g: int) -> Array:
 			me.p += 1
 			me.pf += mine
 			me.pa += theirs
-			me.pts += Sim.table_points(mine, theirs)
+			me.pts += Sim.league_points(mine, theirs) if league() else Sim.table_points(mine, theirs)
 			if mine > theirs:
 				me.w += 1
 			elif mine == theirs:
@@ -217,14 +262,14 @@ func group_table(g: int) -> Array:
 
 
 func user_group() -> int:
-	for g in 4:
+	for g in groups.size():
 		if user in groups[g]:
 			return g
 	return 0
 
 
 func to_dict() -> Dictionary:
-	return {"kind": kind, "women": women, "user": user, "teams": teams, "groups": groups, "results": results, "round": round,
+	return {"sched": sched, "kind": kind, "women": women, "user": user, "teams": teams, "groups": groups, "results": results, "round": round,
 		"stage": stage, "ties": ties, "ko": ko_results, "champion": champion, "seed": seed}
 
 
@@ -242,4 +287,5 @@ static func from_dict(d: Dictionary) -> Cup:
 	c.ko_results = d.get("ko", [])
 	c.champion = String(d.get("champion", ""))
 	c.seed = int(d.get("seed", 1))
+	c.sched = d.get("sched", [])
 	return c

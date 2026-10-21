@@ -493,6 +493,13 @@ func _cup() -> void:
 	Game.show_screen("res://ui/cup_screen.gd")
 	await frames(12)
 	await audit("cup_over")
+	var lg = Game.new_cup("league", "HYD", false)
+	for i in 5:
+		lg.sim_round(false)
+	Game.save_cup()
+	Game.show_screen("res://ui/cup_screen.gd")
+	await frames(12)
+	await audit("league_hub")
 	Game.delete_cup()
 
 

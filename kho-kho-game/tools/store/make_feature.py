@@ -2,7 +2,8 @@
 """The store's feature graphic (1024 x 500) and screenshots, from the game's own frames (tests/screenshots.tscn at
 1920 x 1080): the village ground at dusk behind the title in the game's display face.
 
-Usage: python3 tools/store/make_feature.py SHOTS_DIR   (needs Pillow)
+Usage: python3 tools/store/make_feature.py SHOTS_DIR [CLEAN_SHOTS_DIR]   (needs Pillow)
+CLEAN_SHOTS_DIR: the same tour with "clean" (no HUD), for the feature graphic.
 """
 import pathlib
 import sys
@@ -21,7 +22,8 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     for src, name in PICKS:
         Image.open(shots / f"{src}.png").convert("RGB").save(out / f"{name}.jpg", quality=88)
-    bg = Image.open(shots / "05_match_school.png").convert("RGB")
+    clean = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else shots
+    bg = Image.open(clean / "05_match_maidan.png").convert("RGB")
     w, h = bg.size
     crop = bg.crop((0, int(h * 0.16), w, int(h * 0.16) + int(w * 500 / 1024)))
     feat = crop.resize((1024, 500), Image.LANCZOS).convert("RGBA")

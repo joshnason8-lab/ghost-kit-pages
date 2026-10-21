@@ -198,8 +198,11 @@ func _screens() -> void:
 func _cups() -> void:
 	for kind in Cup.KINDS:
 		for women in [false, true]:
-			var team := "IND" if kind == "world" else "MAH"
+			var team: String = {"world": "IND", "national": "MAH", "league": "BBS"}[kind]
 			var c: Cup = Game.new_cup(kind, team, women)
+			if kind == "league":
+				_league(c, women)
+				continue
 			check(c.teams.size() == 16 and team in c.teams, "%s: sixteen sides, yours among them" % kind)
 			var guard := 0
 			while c.stage != "done" and guard < 12:
@@ -218,6 +221,39 @@ func _cups() -> void:
 			Game.cup = null
 			var back = Game.get_cup()
 			check(back != null and back.champion == c.champion, "%s: saves and loads" % kind)
+
+
+## The city league: eight sides, each plays the others home and away (14 rounds), the franchise league's points,
+## then 1st v 4th and 2nd v 3rd and the final.
+func _league(c: Cup, women: bool) -> void:
+	check(c.teams.size() == 8 and c.sched.size() == 14, "league: eight sides, fourteen rounds")
+	var met := {}
+	for rnd in c.sched:
+		var playing := {}
+		for pr in rnd:
+			check(not playing.has(pr[0]) and not playing.has(pr[1]), "league: no side twice in a round")
+			playing[pr[0]] = true
+			playing[pr[1]] = true
+			met["%s|%s" % [pr[0], pr[1]]] = true
+	check(met.size() == 56, "league: every side at home to every other once (%d)" % met.size())
+	check(Sim.league_points(30, 20) == 3 and Sim.league_points(20, 20) == 2 and Sim.league_points(18, 20) == 1 and Sim.league_points(10, 20) == 0,
+		"league points: 3 a win, 2 a tie, 1 for losing by 3 or fewer")
+	var guard := 0
+	while c.stage != "done" and guard < 30:
+		c.sim_round(true)
+		guard += 1
+	check(c.stage == "done" and c.champion != "", "league %s: a champion (%s)" % ["women" if women else "men", c.champion])
+	for row in c.group_table(0):
+		check(int(row.p) == 14, "league: fourteen matches each (%d)" % int(row.p))
+	check(c.ko_results.size() == 3, "league: two semi-finals and the final")
+	var top4 := []
+	for row in c.group_table(0).slice(0, 4):
+		top4.append(row.id)
+	for r in c.ko_results:
+		check(r[1] in top4 and r[2] in top4, "league: the knockouts are the top four's")
+	Game.save_cup()
+	Game.cup = null
+	check(Game.get_cup() != null and Game.get_cup().sched.size() == 14, "league: saves and loads")
 
 
 # ---------------------------------------------------------------- matches
@@ -302,6 +338,25 @@ func _your_controls() -> void:
 	check(absf(m.active.vel.x) > 5.0, "pushing at the lane runs you along it (%.1f m/s)" % absf(m.active.vel.x))
 	check(m.chase.foul == "", "and keeps you legal")
 	m.controls.joystick = Vector2.ZERO
+	# KHO a moment early, running flat out at the next seated chaser: he brakes into his back and gives it.
+	var j: int = -1
+	for k in m.squares.size():
+		if int(m.sq_face[k]) == -m.chase.half and k > i + 1:
+			j = k
+			break
+	if j >= 0:
+		var giver: Athlete = m.active
+		m.chase.dir = 1
+		m.active.position = Vector3(float(f.square_x[j]) - 3.0, 0, float(m.chase.half) * 0.6)
+		m.active.vel = Vector3(7.5, 0, 0)
+		await frames(1)
+		m._on_action("KHO")
+		for k in 40:
+			m.controls.joystick = Vector2(1, 0)
+			await frames(1)
+		check(m.active != giver and m.chase.half == int(m.sq_face[j]), "KHO pressed 3 m early at full speed still gives the kho")
+		check(m.chase.foul == "", "and it is not a late kho")
+		m.controls.joystick = Vector2.ZERO
 	await frames(20)
 	m.active.position = Vector3(float(f.square_x[4]), 0, float(m.chase.half) * 3.0)
 	m.active.vel = Vector3.ZERO
@@ -329,6 +384,35 @@ func _your_controls() -> void:
 	var x0: float = d.user_def.position.x
 	await frames(20)
 	check(d.user_def.position.x > x0 + 1.0, "the joystick runs your defender (%.1f m)" % (d.user_def.position.x - x0))
+	d.controls.joystick = Vector2.ZERO
+	await frames(3)
+	check(not d._user_auto(), "just let go, he is still yours")
+	await frames(20)
+	check(d._user_auto(), "thumb off the stick for half a second: your defender runs himself")
+	var seen := false
+	for k in 40:
+		await frames(1)
+		seen = seen or d.user_def == null or d.user_def.want.length() > 0.5 or d.user_def.vel.length() > 0.5
+	check(seen, "and he moves (as the AI would)")
+	d.controls.joystick = Vector2(0, 1)
+	await frames(2)
+	check(not d._user_auto(), "the stick takes him back at once")
+	# The playtest's worst find: a new batch walking on with your thumb held away from the field never came in and
+	# was out for a late entry, batch after batch (53-2). Walking on is his own now.
+	for a in d.batch:
+		d.d_state[a] = "out"
+	d._next_batch()
+	var away: Vector3 = d.user_def.position.normalized()
+	d.controls.joystick = Vector2(away.x, away.z).normalized()
+	var all_in := false
+	for k in 200:
+		await frames(1)
+		all_in = true
+		for a in d.batch:
+			all_in = all_in and d.d_state.get(a, "") == "in"
+		if all_in:
+			break
+	check(all_in, "a new batch walks on even with your thumb held away from the field")
 	d.controls.joystick = Vector2.ZERO
 	d.queue_free()
 	await frames(2)

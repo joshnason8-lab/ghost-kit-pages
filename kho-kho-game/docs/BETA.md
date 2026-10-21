@@ -9,6 +9,17 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.2
+
+- **Coach tips** for your first match (Settings > Coach tips turns them on again).
+- **The City League**: eight invented city sides, home and away, then the semi-finals and the final.
+- **Fixed from a phone playtest** (docs/PLAYTEST.md): your defenders walk on in time; with your thumb off the stick
+  your defender runs himself; a chaser pushed into the lane runs along it; KHO can be pressed a moment early; the
+  gold arrow shows your way; clearer chalk on Low; no keyboard hints on a touch screen.
+- **Rules:** a foul now stands until the chaser gives a kho or reaches a free zone, as the rule books say.
+- **Motion:** a hand-on-the-pole turn, and seated chasers' heads follow the play.
+- A new icon.
+
 ## What to try
 
 - **The home screen.** Tap a seated chaser: does the kho, and the run into the screen, feel like kho kho?
@@ -20,6 +31,8 @@ since about 2019. The Play bundle also carries a 32-bit build for older Android 
 - **Defending.** Run your defender behind the active chaser; DODGE and SWITCH. Can you last a minute? Three, for a
   dream run in the fast game?
 - **Both rule books.** Classic and Fast, with the real turn length, and the follow-on when you lead by 9.
+- **Your first match.** With coach tips on, did you know what to do within a minute? Which tip was unclear?
+- **The City League.** A full season: does the table read right (3 a win, 2 a tie, 1 for losing by 3 or fewer)?
 - **A championship.** World (fast rules) and national (classic rules), men's and women's, through the knockouts. A
   tied knockout goes to extra innings, then minimum chases.
 - **Scrolling.** Drag any long page (How to Play, Settings, the tables, the licences) from anywhere on it, its words

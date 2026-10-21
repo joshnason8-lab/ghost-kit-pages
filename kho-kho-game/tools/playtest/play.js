@@ -83,12 +83,13 @@ const log = (...a) => { const line = `[${new Date().toISOString().slice(11, 19)}
     await touch('touchMove', [[p[0] + (dx / len) * r * k, p[1] + (dy / len) * r * k, 1]]);
   };
   const release = async () => { if (joy) { await touch('touchEnd', []); joy = null; } };
+  // A button press: the left thumb lifts, the right taps, the left goes down again on the next stick (one finger at a
+  // time keeps the touch stream simple; the game takes two at once too, which test_runner checks).
   const tapButton = async (s, id) => {
     const b = (s.match.touch_buttons || []).find((x) => x.id === id);
     if (!b) return false;
-    if (joy) await touch('touchStart', [[joy[0], joy[1], 1], [b.at[0], b.at[1], 2]]);
-    await touch('touchEnd', joy ? [[joy[0], joy[1], 1]] : []);
-    if (!joy) { await touch('touchStart', [[b.at[0], b.at[1], 2]]); await sleep(50); await touch('touchEnd', []); }
+    await release();
+    await tap(b.at[0], b.at[1], 2);
     log('button', id);
     return true;
   };

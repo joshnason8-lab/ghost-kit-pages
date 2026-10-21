@@ -21,7 +21,7 @@ func _ready() -> void:
 func _draw() -> void:
 	var w := size.x
 	var h := size.y
-	if not DB.is_state(team_id):
+	if not DB.has_shield(team_id):
 		var fh := w * 0.66
 		var r := Rect2(0, (h - fh) * 0.5, w, fh)
 		draw_texture_rect(Flags.texture(team_id, int(w * 2), int(fh * 2)), r, false)

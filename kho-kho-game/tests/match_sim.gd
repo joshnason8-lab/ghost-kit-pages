@@ -1,7 +1,8 @@
 extends Node
 ## AI v AI matches measured against real ones (docs/AI.md): outs a minute, time a defender lasts, khos a minute, dives,
 ## pole dives, fouls, dream runs, the score. Headless:
-##   godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- [matches] [classic|fast] [turn seconds]
+##   godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- [matches] [classic|fast] [turn seconds] [user]
+## user: the home side is yours, with your thumb off the stick (your defender runs himself: match.gd _user_auto).
 
 func _ready() -> void:
 	Game.main = self
@@ -10,12 +11,13 @@ func _ready() -> void:
 	var n := int(args[0]) if args.size() > 0 else 2
 	var fmt := KhoRules.FAST if args.size() > 1 and args[1] == "fast" else KhoRules.CLASSIC
 	var tl := float(args[2]) if args.size() > 2 else 180.0
+	var you := 0 if args.size() > 3 and args[3] == "user" else -1
 	var pairs := [["MAH", "ODI"], ["KAR", "KER"], ["IND", "NEP"], ["TEL", "DEL"]]
 	var tot := {"outs": 0, "khos": 0, "dives": 0, "pole": 0, "fouls": 0, "dream": 0, "limits": 0, "late": 0, "secs": 0.0}
 	for i in n:
 		var p: Array = pairs[i % pairs.size()]
 		var m: Node = (load("res://game/match.gd") as Script).new()
-		m.config = {"home": p[0], "away": p[1], "venue": "maidan", "format": fmt, "turn_len": tl, "user_team": -1, "seed": 100 + i,
+		m.config = {"home": p[0], "away": p[1], "venue": "maidan", "format": fmt, "turn_len": tl, "user_team": you, "seed": 100 + i,
 			"mode": "quick", "test": true, "chase_first": i % 2, "follow_on": false}
 		add_child(m)
 		var res: Dictionary = await m.finished

@@ -113,9 +113,10 @@ func _build_right(right: VBoxContainer) -> void:
 			vs.add_child(l)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	row.add_child(UI.chips_row([tr("TEAMS_STATES"), tr("TEAMS_NATIONS")], 0 if _pool == "states" else 1, func(i):
-		_pool = "states" if i == 0 else "nations"
-		var ids := DB.state_ids() if _pool == "states" else DB.nation_ids()
+	var pools := ["states", "nations", "cities"]
+	row.add_child(UI.chips_row([tr("TEAMS_STATES"), tr("TEAMS_NATIONS"), tr("TEAMS_CITIES")], pools.find(_pool), func(i):
+		_pool = pools[i]
+		var ids := _pool_ids()
 		_sides = [ids[0], ids[1]]
 		_rebuild()))
 	row.add_child(UI.chips_row([tr("MEN"), tr("WOMEN")], 1 if _women else 0, func(i):
@@ -126,7 +127,7 @@ func _build_right(right: VBoxContainer) -> void:
 	_grid.columns = 4
 	_grid.add_theme_constant_override("h_separation", 8)
 	_grid.add_theme_constant_override("v_separation", 8)
-	var ids := DB.state_ids() if _pool == "states" else DB.nation_ids()
+	var ids := _pool_ids()
 	for id in ids:
 		var b := Button.new()
 		b.theme_type_variation = "LaneButton"
@@ -157,6 +158,15 @@ func _build_right(right: VBoxContainer) -> void:
 			_rebuild())
 		_grid.add_child(b)
 	right.add_child(UI.scroll(_grid))
+
+
+func _pool_ids() -> Array:
+	match _pool:
+		"nations":
+			return DB.nation_ids()
+		"cities":
+			return DB.club_ids()
+	return DB.state_ids()
 
 
 func _rebuild() -> void:
