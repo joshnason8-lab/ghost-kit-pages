@@ -26,7 +26,8 @@ func _ready() -> void:
 	var presses := {}
 	var frames := 0
 	var user_shots := 0
-	while m.phase != m.P.OVER and frames < int(minutes * 60.0 * 30.0 * 1.8):
+	# Hands off, the user's own restarts each wait eight seconds before they are taken for him: room for those.
+	while m.phase != m.P.OVER and frames < int(minutes * 60.0 * 30.0 * 2.5):
 		await get_tree().process_frame
 		frames += 1
 		if mode == "idle":
