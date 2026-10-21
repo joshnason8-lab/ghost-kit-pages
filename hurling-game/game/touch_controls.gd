@@ -22,6 +22,7 @@ var _pulse := 0.0
 var _keys := {}
 var _paras := {}             # id -> TextParagraph (its label, fitted to the circle)
 var edit := false            # Move buttons: drags move the buttons instead of pressing them
+static var key_hints := true # the keyboard's keys beside the buttons on a computer (off for the store's pictures)
 var _drag_slot := -1
 var _drag_touch := -1
 
@@ -248,7 +249,7 @@ func _draw() -> void:
 		var ink := Color("1d1307") if primary else Game.C_INK
 		_draw_label(id, c, r, ink, primary)
 		# The key that presses it, on a computer.
-		if not OS.has_feature("mobile") and i < 4:
+		if not OS.has_feature("mobile") and key_hints and i < 4:
 			var kc: String = "Q" if id == "SWITCH" else ["␣", "J", "K", "L"][mini(i, 3)]
 			draw_string(Game.font_bold, c + Vector2(r * 0.55, r * 0.95), kc, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(Game.C_INK, 0.6))
 

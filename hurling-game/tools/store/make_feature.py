@@ -21,10 +21,10 @@ def main():
     src = Image.open(ROOT / "store/graphics/feature_src.png").convert("RGB")
     sw, sh = src.size
     # The action is at the middle of the frame: crop round it, to the graphic's shape.
-    crop_w = int(sw * 0.62)
+    crop_w = int(sw * 0.45)
     crop_h = int(crop_w * H / W)
     cx, cy = sw // 2, int(sh * 0.48)
-    box = (cx - crop_w // 2 + int(sw * 0.1), cy - crop_h // 2, cx + crop_w // 2 + int(sw * 0.1), cy + crop_h // 2)
+    box = (cx - crop_w // 2 - int(sw * 0.04), cy - crop_h // 2, cx + crop_w // 2 - int(sw * 0.04), cy + crop_h // 2)
     pic = src.crop(box).resize((W, H), Image.LANCZOS).convert("RGBA")
     shade = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     px = shade.load()

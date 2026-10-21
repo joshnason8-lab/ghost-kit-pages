@@ -198,9 +198,13 @@ func squad(id: String) -> Array:
 			first = rng.randi_range(0, FIRST.size() - 1)
 			last = rng.randi_range(0, LAST.size() - 1)
 			var en := "%s %s" % [FIRST[first][0], LAST[last][0]]
-			if not used.has("%d|%d" % [first, last]) and not (en in NOT_NAMES):
+			# Unique on the team sheet as printed ("S. Ó Briain"), in both languages.
+			var short_en := "%s|%d" % [String(FIRST[first][0]).left(1), last]
+			var short_ga := "%s|%d" % [String(FIRST[first][1]).left(1), last]
+			if not used.has(short_en) and not used.has(short_ga) and not (en in NOT_NAMES):
 				break
-		used["%d|%d" % [first, last]] = true
+		used["%s|%d" % [String(FIRST[first][0]).left(1), last]] = true
+		used["%s|%d" % [String(FIRST[first][1]).left(1), last]] = true
 		p.first = first
 		p.last = last
 		p.striking = _r(rng, base, 4.0 if line >= POS_HF else 0.0)

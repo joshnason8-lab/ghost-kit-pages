@@ -27,7 +27,10 @@ func _draw() -> void:
 		for d in Pitch.LINES:
 			var x: float = ex - float(d) * side
 			draw_line(P.call(x, -Pitch.HALF_W), P.call(x, Pitch.HALF_W), w, 1.2)
-			draw_string(font, P.call(x, -Pitch.HALF_W) + Vector2(-8, -6), str(int(d)), HORIZONTAL_ALIGNMENT_CENTER, 16, 13, Color(1, 1, 1, 0.8))
+			# 13 and 65 above the pitch, 20 and 45 below, so neighbours do not run together.
+			var below := int(d) in [20, 45]
+			var at: Vector2 = P.call(x, Pitch.HALF_W if below else -Pitch.HALF_W) + Vector2(-8, 16 if below else -6)
+			draw_string(font, at, str(int(d)), HORIZONTAL_ALIGNMENT_CENTER, 16, 13, Color(1, 1, 1, 0.8))
 		for r in [[Pitch.SMALL_W, Pitch.SMALL_D], [Pitch.LARGE_W, Pitch.LARGE_D]]:
 			var a: Vector2 = P.call(ex - float(r[1]) * side, -float(r[0]) * 0.5)
 			var b: Vector2 = P.call(ex, float(r[0]) * 0.5)
@@ -45,6 +48,6 @@ func _draw() -> void:
 			var depth: float = TeamAI.LINE_X.get(line, 70.0)
 			var x := (depth - Pitch.HALF_L) * dirx
 			var z := -float(sh[1]) * (TeamAI.LANE_Z if line != DB.POS_MF else 14.0) * dirx
-			var p: Vector2 = P.call(x + (2.0 * dirx if line == DB.POS_MF else 0.0), z)
+			var p: Vector2 = P.call(x - (4.0 * dirx if line == DB.POS_MF else 0.0), z)
 			draw_circle(p, 7.0, Game.C_GOLD if t == 0 else Game.C_PAPER)
 			draw_string(font, p + Vector2(-8, 4), str(n), HORIZONTAL_ALIGNMENT_CENTER, 16, 10, Game.C_PRINT)

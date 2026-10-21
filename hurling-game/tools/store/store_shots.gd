@@ -14,6 +14,7 @@ func _ready() -> void:
 	Game.settings.sound = false
 	Game.settings.graphics = Game.GFX_HIGH
 	Game.settings.dev = false
+	TouchControls.key_hints = false
 	_lang("en")
 	var only := OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else ""
 	if only == "" or only == "feature":
@@ -76,6 +77,8 @@ func _moment(name: String, cfg: Dictionary, actions: Array, hud := true) -> void
 		m.controls.visible = false
 	var guard := 0
 	var found := false
+	# Nothing is drawn while the moment is looked for (a software renderer draws 1080p slowly); on again for the shot.
+	RenderingServer.render_loop_enabled = false
 	while guard < 30 * 120 and not found:
 		await get_tree().process_frame
 		guard += 1
@@ -88,6 +91,7 @@ func _moment(name: String, cfg: Dictionary, actions: Array, hud := true) -> void
 				found = true
 				break
 	m.paused = true
+	RenderingServer.render_loop_enabled = true
 	await _wait(0.1)
 	await _shot(name if name != "feature_src" else "../feature_src")
 	m.paused = false
