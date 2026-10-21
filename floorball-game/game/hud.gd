@@ -210,8 +210,9 @@ func _build_coach() -> void:
 	_coach = PanelContainer.new()
 	_coach.theme_type_variation = "GlassPanel"
 	_coach.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_coach.offset_left = -270
-	_coach.offset_right = 270
+	# A little left of the middle: the buttons' cluster reaches further in from the right than the joystick does.
+	_coach.offset_left = -335
+	_coach.offset_right = 165
 	_coach.offset_bottom = -76
 	_coach.offset_top = -76
 	_coach.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -224,7 +225,7 @@ func _build_coach() -> void:
 	v.add_child(head)
 	_coach_line = UI.label("", "SubLabel", 19, Game.C_INK)
 	_coach_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_coach_line.custom_minimum_size = Vector2(500, 0)
+	_coach_line.custom_minimum_size = Vector2(470, 0)
 	v.add_child(_coach_line)
 	_coach.modulate.a = 0.0
 	_coach.visible = false

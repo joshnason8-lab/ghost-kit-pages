@@ -81,7 +81,7 @@ func mark(on: bool) -> void:
 	if on and marker == null:
 		marker = MeshInstance3D.new()
 		var q := PlaneMesh.new()
-		q.size = Vector2(1.25, 1.25)
+		q.size = Vector2(1.6, 1.6)
 		marker.mesh = q
 		var m := StandardMaterial3D.new()
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED

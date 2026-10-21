@@ -14,8 +14,8 @@ const WHISTLE_S := 1.6          # the stop after a whistle while the referee sho
 const GOAL_S := 3.4
 const SETUP_MAX_S := 7.0        # players walk to a restart; after this the restart is taken anyway
 const PICKUP_SPEED := 15.0      # a ball faster than this past a blade is not controlled, only deflected
-const PASSIVE_S := 24.0         # a team that keeps the ball this long without an attack is warned of passive play
-const PASSIVE_WARN_S := 8.0     # after the warning: an attack (or a shot) or the ball goes to the other team
+const PASSIVE_S := 30.0         # a team that keeps the ball this long without an attack is warned of passive play
+const PASSIVE_WARN_S := 8.0     # after the warning: a shot, or the ball goes to the other team
 const RESTART_DELAY_S := 9.0    # your free-hit or hit-in not taken by then: delaying a fixed situation
 const ADVANTAGE_S := 2.6        # how long advantage is played before the free-hit is forgotten (play went on)
 
@@ -674,8 +674,10 @@ func _on_turnover(new_team: int) -> void:
 
 
 ## 507.20, passive play: a team keeping the ball without trying to attack is warned (the referee's arm held up),
-## then gives a free-hit to the other team if it still does not attack. An attack is the ball in the opponents'
-## end or a shot; the warning lasts until either.
+## then gives a free-hit to the other team if it has not shot within PASSIVE_WARN_S. Time in front of the
+## opponents' goal resets the count before a warning, building in their half holds it, and in its own end or behind
+## their goal it runs. Only a shot (or
+## losing the ball) ends a warning.
 func _passive_tick(dt: float) -> void:
 	var t: int = ball.carrier.team if ball.carrier else (ball.held_by.team if ball.held_by else ball.last_team)
 	if t < 0:
@@ -683,11 +685,13 @@ func _passive_tick(dt: float) -> void:
 	if t != int(passive.team):
 		passive = {"team": t, "t": 0.0, "warned": false, "w": 0.0}
 		return
-	var attacking := ball.floor_pos().x * attack_dir(t) > 6.0
-	if attacking:
+	# An attack: the ball in front of their goal in their end. Behind their goal, or back in our own end, is not one.
+	var x := ball.floor_pos().x * attack_dir(t)
+	if x > 6.0 and x < Rules.GOAL_LINE and not bool(passive.warned):
 		passive.t = 0.0
-		passive.warned = false
 		return
+	if x > 0.0 and x < Rules.GOAL_LINE and not bool(passive.warned):
+		return   # past the centre line, building: the count waits
 	passive.t = float(passive.t) + dt
 	if not bool(passive.warned):
 		if float(passive.t) > PASSIVE_S:
@@ -695,7 +699,7 @@ func _passive_tick(dt: float) -> void:
 			passive.w = 0.0
 			_ref_signal("passive", Vector2(attack_dir(t), 0))
 			if hud:
-				hud.call_card(tr("CALL_PASSIVE"), tr("PASSIVE_LINE"), t)
+				hud.call_card(tr("CALL_PASSIVE"), tr("PASSIVE_LINE"), -1)
 		return
 	passive.w = float(passive.w) + dt
 	if float(passive.w) > PASSIVE_WARN_S:
@@ -1220,6 +1224,8 @@ func _place_for_hit(r: Dictionary) -> void:
 		gk.set_meta("face", 0.0 if at > 0 else PI)
 	if taker and taker.team == user_team:
 		_set_user(taker)
+		if touch:
+			touch.set_buttons(["SHOOT", "PASS", "SPRINT"])
 
 
 func _setup(dt: float) -> void:
@@ -1253,6 +1259,8 @@ func _setup(dt: float) -> void:
 				_resume()
 				return
 			if taker.team == user_team and taker == user_player and not demo:
+				if touch:
+					touch.set_buttons(["SHOOT", "PASS", "SPRINT"])
 				if hud:
 					hud.hint(tr("HINT_RESTART"))
 					hud.coach("TIP_RESTART")
@@ -1653,8 +1661,9 @@ func _on_action(id: String) -> void:
 	if paused or user_player == null:
 		return
 	if phase == "setup" and restart.get("taker") == user_player:
-		if id == "SHOOT" or id == "PASS":
-			_take_restart(user_player, id == "SHOOT")
+		# Your free-hit or hit-in: the buttons show SHOOT and PASS (a tap that came as the old ones still counts).
+		if id in ["SHOOT", "PASS", "TACKLE", "SWITCH"]:
+			_take_restart(user_player, id in ["SHOOT", "TACKLE"])
 		return
 	if phase == "shootout" and String(_so.get("stage", "")) == "run" and _so.get("shooter") == user_player and not bool(_so.get("shot", false)):
 		if id == "SHOOT" or id == "TACKLE":
@@ -1666,6 +1675,19 @@ func _on_action(id: String) -> void:
 		"SHOOT":
 			if ball.carrier == user_player:
 				var g: Vector2 = ai[user_team].target_goal()
+				if user_player.pos.x * attack_dir(user_team) > Rules.GOAL_LINE - 0.4:
+					# Behind their goal there is no shot: the ball goes out in front, to the best-placed team-mate.
+					var best: Player = null
+					var bs := -1e9
+					for q: Player in skaters(user_team):
+						if q != user_player and q.pos.x * attack_dir(user_team) < Rules.GOAL_LINE - 1.0:
+							var s: float = ai[user_team]._pass_value(user_player, q) - q.pos.distance_to(g) / 10.0
+							if s > bs:
+								bs = s
+								best = q
+					if best:
+						pass_to(user_player, best)
+					return
 				var aim: Vector3 = ai[user_team]._aim(user_player, g)
 				# The joystick's sideways push picks the corner.
 				var j: Vector2 = touch.joystick if touch else Vector2.ZERO

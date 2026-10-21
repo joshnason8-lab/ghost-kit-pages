@@ -25,6 +25,7 @@ var _keys := {}
 var _paras := {}
 var _held := {}                   # button index -> touch index holding it
 var _key_held := {}
+var _touched := false
 var _drag := -1
 var _drag_touch := -1
 var _drag_at := Vector2.ZERO
@@ -120,6 +121,9 @@ func _input(event: InputEvent) -> void:
 	var lay := _layout()
 	if event is InputEventScreenTouch:
 		var e := event as InputEventScreenTouch
+		if e.device != InputEvent.DEVICE_ID_EMULATION and not _touched:
+			_touched = true   # a real finger (a phone's browser): the keyboard's letters off the buttons
+			queue_redraw()
 		var on_left := e.position.x < size.x * STICK_SIDE if not _left_handed() else e.position.x > size.x * (1.0 - STICK_SIDE)
 		if e.pressed:
 			for i in lay.size():
@@ -260,7 +264,7 @@ func _draw() -> void:
 		var ink := Color("1d1307") if primary else (Color.WHITE if id == "SPRINT" else Game.C_INK)
 		if id != "":
 			_draw_label(id, c, r, ink, primary)
-		if not OS.has_feature("mobile") and i < 3 and not editing:
+		if not OS.has_feature("mobile") and not _touched and i < 3 and not editing:
 			var kc: String = ["␣", "J", "K"][i]
 			draw_string(Game.font_bold, c + Vector2(r * 0.55, r * 0.95), kc, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, 0.7))
 

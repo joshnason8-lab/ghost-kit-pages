@@ -1,14 +1,11 @@
 name: Floorstorm · Android build
 
 # Builds the Godot project in floorball-game/ into the beta APK you can sideload,
-# after running the headless test suite.
+# after running the headless test suite. Push only (its checks show on the PR's head commit): a pull_request
+# trigger ran every build twice.
 
 on:
   push:
-    paths:
-      - "floorball-game/**"
-      - ".github/workflows/floorball-android.yml"
-  pull_request:
     paths:
       - "floorball-game/**"
       - ".github/workflows/floorball-android.yml"
@@ -142,7 +139,7 @@ jobs:
 
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
       # "floorstorm-beta", always the latest build of this branch, made afresh on every push that passes the
-      # tests. Pull request runs build the same APK and leave the release alone.
+      # tests. A manual run (workflow_dispatch) builds the same APK and leaves the release alone.
       - name: Publish the beta release
         if: github.event_name == 'push'
         env:

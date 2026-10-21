@@ -78,7 +78,9 @@ func _env(kind: String, energy: float) -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.78, 0.8, 0.84) if kind != "arena" else Color(0.6, 0.63, 0.7)
 	env.ambient_light_energy = 0.42
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC if int(Game.settings.graphics) >= Game.GFX_MEDIUM else Environment.TONE_MAPPER_LINEAR
+	# Filmic on every level: in GL Compatibility it is a few instructions in the scene shader, and Low with the linear
+	# curve showed the rink 40% darker than Medium and High (the playtest, docs/PLAYTEST.md).
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)

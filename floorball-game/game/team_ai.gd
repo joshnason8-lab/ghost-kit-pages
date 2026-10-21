@@ -162,6 +162,9 @@ func _defend(p: Player, b: Vector2, carrier, presser) -> Vector2:
 		# Press on the goal side of the ball, a stick's length off.
 		var g := own_goal()
 		var to_goal: Vector2 = (g - carrier.pos).normalized()
+		if absf(carrier.pos.x) > Rules.GOAL_LINE - 0.3:
+			# Behind our goal: from the side he must come out on, not through the cage.
+			to_goal = Vector2(0.0, -signf(carrier.pos.y) if carrier.pos.y != 0.0 else 1.0)
 		return carrier.pos + to_goal * 1.1
 	return _shape_defence(p, b)
 
