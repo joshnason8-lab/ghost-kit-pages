@@ -109,7 +109,10 @@ func think(dt: float) -> void:
 			if pl == me and pl != m.holder:
 				if not _arms.has(pl) and pl.act in ["defend", "defend_shot"]:
 					pl.set_act("ready")
-				continue
+				# A pass coming to you: she runs on to it unless you steer her.
+				var incoming: bool = m.ball.state == "flight" and m.pass_info.get("to") == pl
+				if not (incoming and m.controls and m.controls.joystick.length() < 0.1):
+					continue
 			if pl == m.holder:
 				_holder(pl, dt)
 				continue
@@ -342,7 +345,7 @@ func _holder(pl: Player, _dt: float) -> void:
 	if not _decide.has(pl):
 		var quick := clampf(float(pl.data.pass) / 99.0, 0.3, 1.0)
 		_decide.clear()
-		_decide[pl] = rng().randf_range(0.35, 1.0) * lerpf(1.2, 0.8, quick)
+		_decide[pl] = rng().randf_range(0.55, 1.45) * lerpf(1.2, 0.85, quick)
 	if m.hold_t < float(_decide[pl]):
 		return
 	# Shooters in the circle: shoot from close, pass in nearer if a team-mate is under the post.
@@ -392,7 +395,9 @@ func _pass_value(from: Player, to: Player) -> float:
 		return -100.0
 	var d := from.dir
 	var progress := (at.x - from.p.x) * d
-	var v := progress * 0.32
+	var v := progress * 0.42
+	if to == last_passer and m.hold_t < 1.6:
+		v -= 1.4   # straight back to the player who just passed it: only when nothing else is on
 	if String(m.restart.get("kind", "")) == Rules.CENTRE and not m.restart.get("cp_done", false):
 		# The centre pass goes forward: to the GA or WA driving in, as nearly all do (C to GA to WA to GS is the most
 		# common start of a passage of play).

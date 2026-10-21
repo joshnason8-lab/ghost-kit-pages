@@ -23,6 +23,7 @@ func _ready() -> void:
 	await _matches()
 	await _rules_in_play()
 	await _motion()
+	await _controls()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -389,3 +390,43 @@ func _motion() -> void:
 	check(stride_bad == 0, "strides keep pace with speed")
 	m.queue_free()
 	await frames(2)
+
+
+## Your controls: a scripted thumb plays a match as the team. With the ball it picks a team-mate and passes (or
+## shoots when it may); in defence it switches to the defender nearest the ball and runs at the ball. Nothing is
+## played for you: a thumb that does nothing gets called for held ball.
+func _controls() -> void:
+	for mode in ["play", "idle"]:
+		Game.settings.control = Game.CONTROL_TEAM
+		var m: Match = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "ENG", "away": "WAL", "venue": "hall", "user_team": 0, "seed": 4, "quarter": 15, "mode": "quick", "difficulty": 1}
+		add_child(m)
+		var passes := [0]
+		var held := [0]
+		m.game_event.connect(func(k, info):
+			if k == "pass" and m.me and m.me.team == 0 and m.ai.last_passer and m.ai.last_passer.team == 0:
+				passes[0] += 1
+			if k == "call" and info.kind == "held_ball" and int(info.to) == 1:
+				held[0] += 1)
+		for f in 1800:
+			await get_tree().process_frame
+			if mode != "play" or m.phase != "live":
+				continue
+			var ids: Array = m.button_set()
+			if f % 20 == 0 and m.me == m.holder:
+				if "SHOOT" in ids:
+					m._on_action("SHOOT")
+				elif "PASS" in ids and m.hold_t > 0.5:
+					m._on_action("PASS")
+			elif m.holder and m.holder.team == 1:
+				if f % 45 == 0:
+					m._on_action("SWITCH")
+				m.controls.joystick = Vector2.ZERO
+		if mode == "play":
+			check(passes[0] > 4, "your passes are thrown when you press PASS (%d)" % passes[0])
+			check(int(m.score[0]) > 0, "your team scores with your passes and shots (%s)" % [m.score])
+			check(held[0] <= 2, "a thumb that passes is rarely called for held ball (%d)" % held[0])
+		else:
+			check(held[0] >= 1, "nothing is played for you: an idle thumb is called for held ball (%d)" % held[0])
+		m.queue_free()
+		await frames(2)

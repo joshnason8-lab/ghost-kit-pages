@@ -181,7 +181,7 @@ func _process(delta: float) -> void:
 			if phase_t > 1.0:
 				_apply_award(_stop_award)
 		"goal":
-			if phase_t > 1.6:
+			if phase_t > 2.4:
 				_setup_centre()
 		"break":
 			_run_break(dt)
@@ -260,7 +260,7 @@ func _run_setup(_dt: float) -> void:
 	if ball.state == "held" and holder == taker:
 		if String(restart.kind) == Rules.CENTRE:
 			# The centre pass: everyone in her third, then the whistle.
-			var settle := 3.0 if not _cp_whistled else 1.6
+			var settle := 3.0 if not _cp_whistled else 3.2
 			if phase_t > settle and (ai.settled() or phase_t > settle + 2.5):
 				_go_live()
 		else:
@@ -840,6 +840,8 @@ func _drive_me(dt: float) -> void:
 		return
 	if phase == "setup" and String(restart.get("kind", "")) == Rules.CENTRE:
 		return   # the centre pass: everyone to her spot first
+	if ball.state == "flight" and pass_info.get("to") == me and j.length() < 0.1:
+		return   # running on to the pass (TeamAI)
 	if out_of_play(me):
 		return
 	if j.length() > 0.1:
