@@ -141,6 +141,14 @@ func _ready() -> void:
 		var diff := int(config.get("difficulty", Game.settings.get("difficulty", 1)))
 		if k != user_team and user_team >= 0:
 			t.skill = [0.82, 0.95, 1.05, 1.15][clampi(diff, 0, 3)]
+		if k == user_team:
+			var mine: Dictionary = Game.settings.get("tactics", {})
+			for key in t.tactics:
+				t.tactics[key] = mine.get(key, t.tactics[key])
+		elif not config.has("tactics"):
+			t.pick_tactics(String(config.home if k == 0 else config.away), rng)
+		if config.has("tactics"):
+			t.tactics.merge(config.tactics[k], true)
 		ai.append(t)
 	_place_for_throw_in(true)
 	phase = P.INTRO
@@ -1580,6 +1588,7 @@ func _begin_setup() -> void:
 	_run_off_stoppage()
 	for k in 2:
 		_auto_subs(k)
+		_manager_tactics(k)
 	_run_subs()
 	# The end of a half comes at a break in play once the time is up.
 	if _time_up() and String(restart.kind) != "penalty":
@@ -1981,6 +1990,35 @@ func _auto_subs(k: int) -> void:
 	var pd := best_bench(k, worst.line())
 	if not pd.is_empty():
 		ask_sub(worst, pd)
+
+
+## The computer's manager changes his set-up late on: holding a lead of four or more in the last quarter he drops a
+## sweeper back; chasing six or more he pushes him up again.
+func _manager_tactics(k: int) -> void:
+	if k == user_team:
+		return
+	var t: TeamAI = ai[k]
+	var prog := total_clock() / (half_len * 2.0)
+	if prog < 0.75:
+		return
+	var lead := Rules.total(score[k][0], score[k][1]) - Rules.total(score[1 - k][0], score[1 - k][1])
+	if lead >= 4 and not bool(t.tactics.sweeper):
+		t.tactics.sweeper = true
+		hud.call_line(tr("CALL_SWEEPER").format({"team": DB.short_name(String(teams[k].id))}))
+	elif lead <= -6 and bool(t.tactics.sweeper):
+		t.tactics.sweeper = false
+
+
+## Your side's set-up, from the pause menu (TeamAI.tactics); kept for your next match too.
+func set_tactic(key: String, value: Variant) -> void:
+	if user_team < 0:
+		return
+	var t: TeamAI = ai[user_team]
+	t.tactics[key] = value
+	var mine: Dictionary = Game.settings.get("tactics", {}).duplicate()
+	mine[key] = value
+	Game.settings.tactics = mine
+	Game.save_settings()
 
 
 ## The best fresh man on the bench for a line: one who plays there if there is one, else the best outfield player.

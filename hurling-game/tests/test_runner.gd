@@ -35,6 +35,7 @@ func _ready() -> void:
 	_clock_lengths()
 	_coach()
 	await _subs()
+	await _tactics()
 	await _match_and_motion()
 	Game.settings = keep
 	Game.delete_champ()
@@ -465,6 +466,38 @@ func _subs() -> void:
 	check(a.top_speed() < Player.speed_of({"speed": 80}), "Tiredness: a tired man is slower")
 	a.free()
 	b.free()
+	m.queue_free()
+	await frames(2)
+
+
+## Tactics: the sweeper sits in front of his full-back line marking no one; two inside sends the corner-forward out;
+## the puck-out style changes how often it goes short.
+func _tactics() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "COR", "venue": "county", "user_team": -1, "seed": 6, "length": 8.0, "mode": "test",
+		"tactics": [{"sweeper": true, "two_ff": true, "puckout": 0}, {"sweeper": false, "two_ff": false, "puckout": 2}]}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(3)
+	m.ball.place(Vector3.ZERO)
+	var t: TeamAI = m.ai[0]
+	var sw: Player = m.player_by_num(0, 12)
+	var from_own := func(p: Vector3, k: int) -> float: return Pitch.HALF_L + p.x * m.dir(k)
+	var sx: float = from_own.call(t.home_spot(sw), 0)
+	var fb: float = from_own.call(t.home_spot(m.player_by_num(0, 3)), 0)
+	var hb: float = from_own.call(t.home_spot(m.player_by_num(0, 6)), 0)
+	check(sx > fb and sx < hb and t.mark_of(sw) == null, "Tactics: the sweeper between his full-backs (%.0f m) and half-backs (%.0f m), at %.0f m, marking no one" % [fb, hb, sx])
+	var out13: float = from_own.call(t.home_spot(m.player_by_num(0, 13)), 0)
+	var in14: float = from_own.call(t.home_spot(m.player_by_num(0, 14)), 0)
+	check(in14 - out13 > 15.0, "Tactics: two inside, the corner-forward out the field (%.0f m behind the full-forward)" % (in14 - out13))
+	var u: TeamAI = m.ai[1]
+	check(u.mark_of(m.player_by_num(1, 12)) != null and absf(from_own.call(u.home_spot(m.player_by_num(1, 13)), 1) - from_own.call(u.home_spot(m.player_by_num(1, 14)), 1)) < 6.0, "Tactics: without them, the lines as usual")
+	var shorts := [0, 0]
+	for k in 2:
+		for i in 200:
+			if String(m.ai[k].puck_out_choice(m.player_by_num(k, 1)).kind) == "short":
+				shorts[k] += 1
+	check(shorts[0] > shorts[1] * 2, "Tactics: short puck-outs go short more than long ones (%d v %d in 200)" % shorts)
 	m.queue_free()
 	await frames(2)
 

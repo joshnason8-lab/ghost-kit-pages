@@ -354,3 +354,15 @@ LINE_HB,Half-back line,Líne na leathchúl
 LINE_MF,Midfield,Lár na páirce
 LINE_HF,Half-forward line,Líne na leath-thosaithe
 LINE_FF,Full-forward line,Líne na lántosaithe
+TACTICS,Tactics,Beartaíocht
+TAC_SWEEPER,A sweeper,Scuabaire
+TAC_SWEEPER_NOTE,"A half-forward (12) drops back in front of the full-back line and marks no one: an extra man in defence, one fewer up front.","Titeann leath-thosaí (12) siar os comhair líne na lánchúl agus ní mharcálann sé aon duine: fear breise sa chosaint, duine níos lú chun tosaigh."
+TAC_TWO_FF,Two inside,Beirt istigh
+TAC_TWO_FF_NOTE,"The corner-forward (13) comes out to the half-forward line, and his marker with him: two left inside with room to run.","Tagann an cúinne-thosaí (13) amach go líne na leath-thosaithe, agus a mharcálaí leis: fágtar beirt istigh le spás le rith."
+TAC_PUCKOUT,Puck-outs,Poic amach
+TAC_PO_SHORT,Short,Gearr
+TAC_PO_MIXED,Mixed,Measctha
+TAC_PO_LONG,Long,Fada
+TAC_PUCKOUT_NOTE,Short to a free back keeps the ball but invites the press; long into the middle is won about half the time.,Coinníonn poc gearr chuig cúlaí saor an sliotar ach meallann sé an brú; buaitear poc fada isteach sa lár thart ar leath an ama.
+TAC_THEIRS,{team} are playing: {list},Mar seo atá {team} ag imirt: {list}
+CALL_SWEEPER,{team} drop a sweeper back to hold the lead,Scuabaire siar ag {team} chun an tosach a choinneáil

@@ -353,5 +353,17 @@
   "LINE_HB": "Half-back line",
   "LINE_MF": "Midfield",
   "LINE_HF": "Half-forward line",
-  "LINE_FF": "Full-forward line"
+  "LINE_FF": "Full-forward line",
+  "TACTICS": "Tactics",
+  "TAC_SWEEPER": "A sweeper",
+  "TAC_SWEEPER_NOTE": "A half-forward (12) drops back in front of the full-back line and marks no one: an extra man in defence, one fewer up front.",
+  "TAC_TWO_FF": "Two inside",
+  "TAC_TWO_FF_NOTE": "The corner-forward (13) comes out to the half-forward line, and his marker with him: two left inside with room to run.",
+  "TAC_PUCKOUT": "Puck-outs",
+  "TAC_PO_SHORT": "Short",
+  "TAC_PO_MIXED": "Mixed",
+  "TAC_PO_LONG": "Long",
+  "TAC_PUCKOUT_NOTE": "Short to a free back keeps the ball but invites the press; long into the middle is won about half the time.",
+  "TAC_THEIRS": "{team} are playing: {list}",
+  "CALL_SWEEPER": "{team} drop a sweeper back to hold the lead"
 }

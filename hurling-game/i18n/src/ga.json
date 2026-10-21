@@ -359,5 +359,17 @@
   "LINE_HB": "Líne na leathchúl",
   "LINE_MF": "Lár na páirce",
   "LINE_HF": "Líne na leath-thosaithe",
-  "LINE_FF": "Líne na lántosaithe"
+  "LINE_FF": "Líne na lántosaithe",
+  "TACTICS": "Beartaíocht",
+  "TAC_SWEEPER": "Scuabaire",
+  "TAC_SWEEPER_NOTE": "Titeann leath-thosaí (12) siar os comhair líne na lánchúl agus ní mharcálann sé aon duine: fear breise sa chosaint, duine níos lú chun tosaigh.",
+  "TAC_TWO_FF": "Beirt istigh",
+  "TAC_TWO_FF_NOTE": "Tagann an cúinne-thosaí (13) amach go líne na leath-thosaithe, agus a mharcálaí leis: fágtar beirt istigh le spás le rith.",
+  "TAC_PUCKOUT": "Poic amach",
+  "TAC_PO_SHORT": "Gearr",
+  "TAC_PO_MIXED": "Measctha",
+  "TAC_PO_LONG": "Fada",
+  "TAC_PUCKOUT_NOTE": "Coinníonn poc gearr chuig cúlaí saor an sliotar ach meallann sé an brú; buaitear poc fada isteach sa lár thart ar leath an ama.",
+  "TAC_THEIRS": "Mar seo atá {team} ag imirt: {list}",
+  "CALL_SWEEPER": "Scuabaire siar ag {team} chun an tosach a choinneáil"
 }

@@ -217,13 +217,14 @@ func _parish(g: Geo, nets: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 	# Floodlight masts at the four corners.
 	for sx: float in [-1.0, 1.0]:
 		for sz: float in [-1.0, 1.0]:
-			var p := Vector3((H - 10.0) * sx, 0, (W + 9.0) * sz)
+			# The near side's masts stand back behind the camera's gantry, out of the picture.
+			var p := Vector3((H - 10.0) * sx, 0, (W + 9.0) * sz if sz < 0.0 else W + 32.0)
 			_mast(g, lamps, p, 24.0, (-p).normalized())
 	# Trees, then the hills at dusk.
 	_trees(g, rng, -H - 40.0, H + 40.0, -W - 40.0, -W - 18.0, 60)
 	_trees(g, rng, H + 16.0, H + 40.0, -W, W, 18)
 	_trees(g, rng, -H - 40.0, -H - 16.0, 0, W, 10)
-	_hills(g, rng, 560.0, Color("3a3a4a"))
+	_hills(g, rng, 560.0, Color("5a5c72"))
 
 
 func _county(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
@@ -253,7 +254,7 @@ func _county(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 			spots.append(Vector3(-H + 0.35 + i * 0.7, y, z + 0.4))
 	for sx: float in [-1.0, 1.0]:
 		for sz: float in [-1.0, 1.0]:
-			var p := Vector3((H + 12.0) * sx, 0, (W + 14.0) * sz)
+			var p := Vector3((H + 12.0) * sx, 0, (W + 14.0) * sz if sz < 0.0 else W + 32.0)
 			_mast(g, lamps, p, 38.0, (-p).normalized())
 	_trees(g, rng, -H - 60.0, H + 60.0, -W - 70.0, -W - 40.0, 30)
 	_hills(g, rng, 760.0, Color("5d7468") if time != "night" else Color("0c1210"))
@@ -313,7 +314,7 @@ func _environment() -> void:
 			# A summer evening: the sun just down behind the hills, the floodlights coming on.
 			sm.sky_top_color = Color("3d5590")
 			sm.sky_horizon_color = Color("f2a868")
-			sm.ground_horizon_color = Color("4a3a40")
+			sm.ground_horizon_color = Color("6e5a66")
 			sm.sky_energy_multiplier = 1.3
 			sun.rotation_degrees = Vector3(-38, 160, 0)
 			sun.light_energy = 0.95

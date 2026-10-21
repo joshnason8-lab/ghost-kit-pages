@@ -150,7 +150,7 @@ func _place_coach() -> void:
 		if p.y + r < vp.y - 200.0:
 			continue     # a button moved up out of the card's way
 		edge = minf(edge, p.x - r - 16.0) if not lh else maxf(edge, p.x + r + 16.0)
-	var thumb := vp.x * 0.2
+	var thumb := vp.x * 0.23
 	var left := thumb if not lh else edge
 	var right := edge if not lh else vp.x - thumb
 	var w := clampf(right - left, 360.0, 640.0)
@@ -446,6 +446,10 @@ func show_pause(on: bool) -> void:
 			var bs := UI.button(tr("SUBS") + "  ·  " + (Plural.word("SUBS_LEFT", m.subs_left(m.user_team)) if m.subs_left(m.user_team) > 0 else tr("SUBS_NONE")), false, func(): open_subs())
 			bs.custom_minimum_size = Vector2(320, 56)
 			v.add_child(bs)
+		if m.user_team >= 0:
+			var bt := UI.button(tr("TACTICS"), false, func(): open_tactics())
+			bt.custom_minimum_size = Vector2(320, 56)
+			v.add_child(bt)
 		var b2 := UI.button(tr("QUIT_MATCH"), false, func(): m.quit_match())
 		b2.custom_minimum_size = Vector2(320, 56)
 		v.add_child(b2)
@@ -464,7 +468,15 @@ func open_subs() -> void:
 	root.add_child(_subs)
 
 
-## Back closes the substitutions first.
+func open_tactics() -> void:
+	if _subs != null and is_instance_valid(_subs):
+		return
+	_subs = TacticsPanel.new()
+	_subs.m = m
+	root.add_child(_subs)
+
+
+## Back closes the substitutions (or the tactics) first.
 func close_subs() -> bool:
 	if _subs != null and is_instance_valid(_subs):
 		_subs.close()

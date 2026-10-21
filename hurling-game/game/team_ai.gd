@@ -11,6 +11,14 @@ var team := 0
 var skill := 1.0       # 0.8 to 1.2 with the difficulty, for the computer's side
 var think_t := {}      # player -> next time his decision is looked at again
 var plan := {}         # player -> what he means to do with the ball: {kind, target, t}
+## How the side sets up (the manager's choice; yours from the pause menu):
+##   sweeper  a half-forward (12) drops back in front of the full-back line, marking no one: an extra man in defence
+##   two_ff   the left corner-forward (13) comes out to the half-forward line, two left inside with room to run
+##   puckout  0 short (to a free back whenever there is one), 1 mixed (about half the time), 2 long (rarely short)
+var tactics := {"sweeper": false, "two_ff": false, "puckout": 1}
+
+const SWEEPER_NUM := 12
+const OUT_FF_NUM := 13
 
 ## Line -> metres from his own end line in the team's shape when the ball is at midfield.
 const LINE_X := {DB.POS_GK: 1.5, DB.POS_FB: 22.0, DB.POS_HB: 45.0, DB.POS_MF: 70.0, DB.POS_HF: 95.0, DB.POS_FF: 117.0}
@@ -41,6 +49,11 @@ func home_spot(pl: Player) -> Vector3:
 	var bz: float = m.ball.global_position.z
 	var ball_prog := Pitch.HALF_L + bx * d          # metres from our own end line to the ball
 	var ours: bool = m.possession_team() == team
+	if is_sweeper(pl):
+		# The sweeper: in front of his full-back line, in the middle, sliding less with the ball than the rest; a
+		# little higher when his side has it, to take a pass out of defence.
+		var sx := clampf(32.0 + (ball_prog - 70.0) * 0.3 + (12.0 if ours else 0.0), 18.0, 70.0)
+		return Vector3((sx - Pitch.HALF_L) * d, 0, clampf(bz * 0.35, -14.0, 14.0))
 	var base: float = LINE_X.get(ln, 70.0)
 	var x_from_own := base
 	if ln != DB.POS_GK:
@@ -55,6 +68,14 @@ func home_spot(pl: Player) -> Vector3:
 		var hi: float = {DB.POS_FB: 85.0, DB.POS_HB: 105.0, DB.POS_MF: 118.0, DB.POS_HF: 128.0, DB.POS_FF: 134.0}.get(ln, 130.0)
 		x_from_own = clampf(x_from_own, lo, hi)
 	var place := float(pl.data.get("place", 0.0))
+	if bool(tactics.two_ff) and ln == DB.POS_FF:
+		if pl.pos_num == OUT_FF_NUM:
+			# Out to the half-forward line, on his side of the centre.
+			x_from_own = clampf(x_from_own - 22.0, 45.0, 112.0)
+			place *= 0.35
+		else:
+			# The two left inside spread across the goal, room either side.
+			place = signf(place if place != 0.0 else 1.0) * 0.45
 	var z := -place * LANE_Z * d
 	if ln == DB.POS_MF:
 		z = -place * 14.0 * d
@@ -66,8 +87,14 @@ func home_spot(pl: Player) -> Vector3:
 	return Vector3(x, 0, clampf(z, -Pitch.HALF_W + 3.0, Pitch.HALF_W - 3.0))
 
 
-## The opponent a player marks (or null).
+func is_sweeper(pl: Player) -> bool:
+	return bool(tactics.sweeper) and pl.pos_num == SWEEPER_NUM and pl.team == team
+
+
+## The opponent a player marks (or null). The sweeper marks no one.
 func mark_of(pl: Player) -> Player:
+	if is_sweeper(pl):
+		return null
 	var n := mark_number(pl.pos_num)
 	if n == 0:
 		return null
@@ -290,6 +317,17 @@ static func goal_target(dir_: float, keeper_z: float) -> Vector3:
 
 ## The puck-out: short to a corner-back or wing-back who is free (37% of puck-outs in the 2026 league), else long
 ## to the middle third, toward the wing where his side's half-forward is.
+## The manager's own set-up for the computer's side: each county has its habits (a sweeper, two inside, its
+## puck-outs), and a side holding a lead late on drops a sweeper back.
+func pick_tactics(county: String, rng: RandomNumberGenerator) -> void:
+	var h := hash("tactics:" + county)
+	tactics.sweeper = h % 4 == 0
+	tactics.two_ff = (h / 4) % 3 == 0
+	tactics.puckout = [1, 0, 1, 2, 1][(h / 12) % 5]
+	if rng.randf() < 0.15:
+		tactics.sweeper = not tactics.sweeper
+
+
 func puck_out_choice(keeper: Player) -> Dictionary:
 	var d := dir()
 	var short_best: Player = null
@@ -301,7 +339,8 @@ func puck_out_choice(keeper: Player) -> Dictionary:
 			if o > bo:
 				bo = o
 				short_best = r
-	if short_best != null and bo > 9.0 and randf() < 0.5:
+	var short_p: float = [0.9, 0.5, 0.12][clampi(int(tactics.puckout), 0, 2)]
+	if short_best != null and bo > 9.0 and randf() < short_p:
 		return {"kind": "short", "to": short_best}
 	var wing := -1.0 if randf() < 0.5 else 1.0
 	var land := Vector3((-Pitch.HALF_L + 70.0 + randf() * 18.0) * d, 0, wing * randf_range(8.0, 24.0))
