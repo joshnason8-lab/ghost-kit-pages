@@ -12,11 +12,19 @@ var cur: Node = null
 
 ## The playtest tester's thumb, when the home side defends.
 func _process(_d: float) -> void:
-	if not bot or cur == null or not is_instance_valid(cur) or cur.controls == null:
+	if cur == null or not is_instance_valid(cur) or cur.controls == null:
 		return
 	var m = cur
+	if m.phase == "interval":   # "Next turn"
+		if m.hud._interval:
+			m.hud._interval.queue_free()
+			m.hud._interval = null
+		m.next_turn()
+		return
 	if m.user_def == null or m.active == null or m.phase != "play":
 		m.controls.joystick = Vector2.ZERO
+		return
+	if not bot:
 		return
 	var me: Vector3 = m.user_def.position
 	var c: Vector3 = m.active.position
