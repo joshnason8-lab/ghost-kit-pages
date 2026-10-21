@@ -20,6 +20,7 @@ func _ready() -> void:
 	_footwork()
 	_sim()
 	_cup()
+	_league()
 	await _matches()
 	await _rules_in_play()
 	await _motion()
@@ -50,7 +51,7 @@ func frames(n: int) -> void:
 ## Every screen, in every language: it opens and builds.
 func _screens() -> void:
 	var screens := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
-		"res://ui/records_screen.gd", "res://ui/cup_screen.gd", "res://ui/licences_screen.gd"]
+		"res://ui/records_screen.gd", "res://ui/cup_screen.gd", "res://ui/league_screen.gd", "res://ui/licences_screen.gd"]
 	for pair in Game.LANGUAGES:
 		Game.settings.language = pair[0]
 		TranslationServer.set_locale(pair[0])
@@ -616,3 +617,54 @@ func _coach() -> void:
 	check(demo.hud.coach == null, "no coach when the AI plays itself")
 	demo.queue_free()
 	await frames(2)
+
+
+## The Club Season: eight invented clubs, each plays the others once, the top four to the finals, a grand final.
+func _league() -> void:
+	var clubs: Array = DB.club_ids()
+	check(clubs.size() == 8 and DB.team_ids().size() == DB.NATIONS.size(), "eight clubs, kept apart from the nations")
+	for id in clubs:
+		check(DB.squad(id).size() == 12 and DB.team(id).has("country"), "%s: a squad of twelve and a home country" % id)
+	var l: League = Game.new_league("SKF")
+	check(l.fixtures.size() == 28, "every club plays every other once (%d matches)" % l.fixtures.size())
+	var pairs := {}
+	for r in League.ROUNDS:
+		var seen := {}
+		for f in l.fixtures:
+			if int(f.round) == r:
+				seen[f.home] = true
+				seen[f.away] = true
+				var key := [f.home, f.away]
+				key.sort()
+				pairs[str(key)] = true
+		check(seen.size() == 8, "round %d: every club plays" % (r + 1))
+	check(pairs.size() == 28, "no pairing twice")
+	var homes := {}
+	for f in l.fixtures:
+		homes[f.home] = int(homes.get(f.home, 0)) + 1
+	check(homes.values().max() <= 4 and homes.values().min() >= 3, "home matches shared out (%s)" % [homes.values()])
+	var nm := l.next_user_match()
+	check(nm.home == "SKF" or nm.away == "SKF", "your next match is your club's")
+	var guard := 0
+	while l.stage == "season" and guard < 20:
+		l.sim_next()
+		guard += 1
+	var t := l.table()
+	var pts := 0
+	for r in t:
+		pts += int(r.pts)
+		check(int(r.p) == 7, "each club plays seven")
+	check(pts == 56, "two points a match shared out (%d)" % pts)
+	check(l.stage == "semis" and l.finals.size() == 2 and l.finals[0].home == t[0].id and l.finals[0].away == t[3].id
+		and l.finals[1].home == t[1].id and l.finals[1].away == t[2].id, "first plays fourth, second plays third")
+	var titles := int(Game.records.get("seasons_played", 0))
+	while l.stage != "done" and guard < 40:
+		l.sim_next()
+		guard += 1
+	check(l.stage == "done" and l.finals.size() == 3 and l.champion == l.finals[2].winner, "a grand final, and champions")
+	check(int(Game.records.get("seasons_played", 0)) == titles + 1, "the season goes in the record book")
+	Game.save_league()
+	Game.league = null
+	var back = Game.get_league()
+	check(back != null and back.champion == l.champion and back.fixtures.size() == 28, "the season saves and loads")
+	Game.delete_league()

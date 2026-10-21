@@ -99,7 +99,16 @@ func _build_ui() -> void:
 	var cup_desc := tr("MENU_CUP_DESC")
 	if cup and cup.stage != "done":
 		cup_desc = tr("MENU_CUP_CONTINUE")
-	court.add_child(CourtThird.make(tr("MENU_CUP"), cup_desc, "goal_left", func(): _go("res://ui/cup_screen.gd")))
+	# The left goal third holds the two competitions, one above the other.
+	var lg = Game.get_league()
+	var league_desc := tr("MENU_LEAGUE_CONTINUE") if lg and lg.stage != "done" else tr("MENU_LEAGUE_DESC")
+	var comps := VBoxContainer.new()
+	comps.add_theme_constant_override("separation", 0)
+	comps.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	comps.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	comps.add_child(CourtThird.make(tr("MENU_CUP"), cup_desc, "goal_left_top", func(): _go("res://ui/cup_screen.gd")))
+	comps.add_child(CourtThird.make(tr("MENU_LEAGUE"), league_desc, "goal_left_bottom", func(): _go("res://ui/league_screen.gd")))
+	court.add_child(comps)
 	court.add_child(CourtThird.make(tr("MENU_QUICK"), tr("MENU_QUICK_DESC"), "centre", func(): _go("res://ui/quick_setup.gd")))
 	court.add_child(CourtThird.make(tr("MENU_HOWTO"), tr("MENU_HOWTO_DESC"), "goal_right", func(): _go("res://ui/howto_screen.gd")))
 	# The version: seven taps turn the developer overlay on or off.

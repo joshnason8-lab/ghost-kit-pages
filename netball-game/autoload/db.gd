@@ -30,6 +30,21 @@ const NATIONS := [
 	["NAM", "Namibia", 57, "003580", "d21034", ["5a341c", "6a3e22", "d9a77e"], "sa"],
 ]
 
+## The Club Season's clubs (League): invented, each a city and a nickname no real club uses (checked against the four countries' top
+## leagues and a web search, October 2026),
+## in the four countries with professional netball leagues. id, name, short (on the crest), rating, dress colour,
+## trim, skin tones, name pool, country.
+const CLUBS := [
+	["BBR", "Brisbane Brolgas", "BB", 86, "b5452a", "f2d16b", ["e8c4a0", "d9a77e", "b07a52", "7a4a2a"], "anglo", "AUS"],
+	["ADP", "Adelaide Pelicans", "AP", 82, "1d4e89", "f4f4f4", ["eccaa6", "d9a77e", "a06a44"], "anglo", "AUS"],
+	["WKR", "Wellington Kārearea", "WK", 85, "3b2a4f", "e0b04a", ["e8c4a0", "c48f62", "a06a44", "8a5636"], "nz", "NZL"],
+	["DHE", "Dunedin Herons", "DH", 78, "4f7f8f", "f4f4f4", ["eccaa6", "c48f62", "8a5636"], "nz", "NZL"],
+	["SKF", "Sheffield Kingfishers", "SK", 84, "0a7f9e", "f28c28", ["eccaa6", "c48f62", "8a5636", "5e3a22"], "anglo", "ENG"],
+	["BRO", "Bristol Otters", "BO", 79, "5a3d2b", "9fd3c7", ["eccaa6", "e8c4a0", "8a5636"], "anglo", "ENG"],
+	["DST", "Durban Strelitzias", "DS", 81, "e2a400", "3a1f5d", ["6a3e22", "8a5636", "5a341c", "d9a77e"], "sa", "RSA"],
+	["CTG", "Cape Town Gannets", "CG", 80, "f4f4f4", "1b365d", ["6a3e22", "d9a77e", "8a5636", "5a341c"], "sa", "RSA"],
+]
+
 ## Given names and family names, common in each country (never a pairing taken from a real player).
 const NAMES := {
 	"anglo": [["Amy", "Beth", "Chloe", "Ella", "Grace", "Hannah", "Isla", "Jess", "Kate", "Laura", "Molly", "Phoebe",
@@ -100,10 +115,19 @@ func _ready() -> void:
 	for n in NATIONS:
 		_teams[n[0]] = {"id": n[0], "name": n[1], "rating": int(n[2]), "c1": Color(String(n[3])), "c2": Color(String(n[4])),
 			"skins": n[5], "pool": n[6], "kind": "country"}
+	for c in CLUBS:
+		_teams[c[0]] = {"id": c[0], "name": c[1], "short": c[2], "rating": int(c[3]), "c1": Color(String(c[4])),
+			"c2": Color(String(c[5])), "skins": c[6], "pool": c[7], "country": c[8], "kind": "club"}
 
 
+## The national teams (Quick Match and the Nations Cup).
 func team_ids() -> Array:
-	return _teams.keys()
+	return _teams.keys().filter(func(id): return _teams[id].kind == "country")
+
+
+## The Club Season's clubs.
+func club_ids() -> Array:
+	return _teams.keys().filter(func(id): return _teams[id].kind == "club")
 
 
 func team(id: String) -> Dictionary:

@@ -403,7 +403,7 @@ static func team_grid(owner: Control, ids: Array, columns: int, on_pick: Callabl
 			tag.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 			col.add_child(tag)
 		if t.kind != "country":
-			col.add_child(label(owner.tr(String(t.home)), "MutedLabel", 15))
+			col.add_child(label(DB.team_name(String(t.get("country", ""))), "MutedLabel", 15))
 		var rating := DB.team_rating(id)
 		var bar := stat_bar(owner.tr("RATING"), rating, c1.lightened(0.25))
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -721,7 +721,14 @@ static func badge(id: String, size := Vector2(30, 20)) -> Control:
 		tr_.custom_minimum_size = size
 		tr_.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		return tr_
-	var c := swatch(t.c1 if not t.is_empty() else Color.GRAY, Vector2(maxf(6, size.x * 0.25), size.y))
+	if not t.is_empty():
+		# A club: its crest, as tall as a flag would be.
+		var box := CenterContainer.new()
+		box.custom_minimum_size = size
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(Crest.make(id, size.y / 1.12))
+		return box
+	var c := swatch(Color.GRAY, Vector2(maxf(6, size.x * 0.25), size.y))
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return c
 

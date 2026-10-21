@@ -5,7 +5,7 @@ extends Node
 ## Also the match buttons' labels against their circles. Headless, so it is quick:
 ##   godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- OUT.jsonl [langs] [WxH,...] [parts]
 ## langs: en,af,zu,... (all by default). WxH: the phone's screen in pixels (layouts depend only on its shape: 16:9,
-## 19.5:9 (a Galaxy A16), 20:9 with a camera cut-out, and a 4:3 tablet by default). parts: menus,cup,match.
+## 19.5:9 (a Galaxy A16), 20:9 with a camera cut-out, and a 4:3 tablet by default). parts: menus,cup,league,match.
 ## Each problem is a line of JSON; a summary is printed at the end. Exits 1 if anything was found.
 
 const LANGS := ["en", "af", "zu", "xh", "st", "tn", "ny", "lg", "sn", "sw", "ms", "zh", "si", "ta", "cy", "mi", "to", "sm", "fj"]
@@ -14,7 +14,7 @@ const SKIP_CHARS := [0x20, 0x09, 0x0A, 0xA0, 0xAD, 0x200B, 0x200C, 0x200D, 0x206
 var out_path := "user://fit_audit.jsonl"
 var langs: Array = LANGS
 var sizes: Array = [Vector2i(1280, 720), Vector2i(2340, 1080), Vector2i(2400, 1080), Vector2i(1600, 1200)]
-var parts: Array = ["menus", "cup", "match"]
+var parts: Array = ["menus", "cup", "league", "match"]
 var lang := "en"
 var res := ""
 var where := ""
@@ -62,6 +62,7 @@ func _ready() -> void:
 	Game.goto_menu()
 	await frames(2)
 	Game.delete_cup()
+	Game.delete_league()
 	Game.settings = keep
 	Game.save_settings()
 	TranslationServer.set_locale(Game.language())
@@ -510,6 +511,32 @@ func _cup() -> void:
 	await frames(12)
 	await audit("cup_over")
 	Game.delete_cup()
+
+
+func _league() -> void:
+	Game.delete_league()
+	Game.show_screen("res://ui/league_screen.gd")
+	await frames(12)
+	await audit("league_pick")
+	var lg = Game.new_league("WKR")
+	lg.sim_next()
+	Game.save_league()
+	Game.show_screen("res://ui/league_screen.gd")
+	await frames(12)
+	await audit("league_hub")
+	while lg.stage == "season":
+		lg.sim_next()
+	Game.save_league()
+	Game.show_screen("res://ui/league_screen.gd")
+	await frames(12)
+	await audit("league_finals")
+	while lg.stage != "done":
+		lg.sim_next()
+	Game.save_league()
+	Game.show_screen("res://ui/league_screen.gd")
+	await frames(12)
+	await audit("league_over")
+	Game.delete_league()
 
 
 func _match() -> void:

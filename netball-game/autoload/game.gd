@@ -3,6 +3,7 @@ extends Node
 
 const SETTINGS_PATH := "user://settings.json"
 const CUP_PATH := "user://cup.json"
+const LEAGUE_PATH := "user://league.json"
 const RECORDS_PATH := "user://records.json"
 
 ## The game's privacy policy and help pages (Settings > About).
@@ -121,6 +122,7 @@ var font_body: Font
 var font_bold: Font
 var font_display: Font
 var cup = null     # Cup (RefCounted), loaded lazily
+var league = null  # League (RefCounted), loaded lazily
 var _latin: FontFile
 var _fallbacks: Array[Font] = []
 var records := {}
@@ -323,6 +325,30 @@ func delete_cup() -> void:
 	delete_file(CUP_PATH)
 
 
+func get_league():
+	if league == null:
+		var data = _read_json(LEAGUE_PATH)
+		if data is Dictionary:
+			league = League.from_dict(data)
+	return league
+
+
+func new_league(club_id: String):
+	league = League.create(club_id)
+	save_league()
+	return league
+
+
+func save_league() -> void:
+	if league:
+		_write_json(LEAGUE_PATH, league.to_dict())
+
+
+func delete_league() -> void:
+	league = null
+	delete_file(LEAGUE_PATH)
+
+
 func save_records() -> void:
 	_write_json(RECORDS_PATH, records)
 
@@ -350,7 +376,7 @@ func goto_menu() -> void:
 	show_screen("res://ui/main_menu.gd")
 
 
-## config keys: home, away (team ids), venue (DB.VENUES id), quarter (minutes), difficulty, mode ("quick"|"cup"),
+## config keys: home, away (team ids), venue (DB.VENUES id), quarter (minutes), difficulty, mode ("quick"|"cup"|"league"),
 ## user_team (0, 1 or -1 for none), control, bib, stage (a line naming the match: "Semi-final"), need_winner (a
 ## knockout: extra time if drawn), double_zone, rolling, timeouts (bools).
 func start_match(config: Dictionary) -> void:
@@ -368,6 +394,9 @@ func on_match_finished(result: Dictionary) -> void:
 	if String(result.config.get("mode", "quick")) == "cup":
 		get_cup().record_user_result(result)
 		save_cup()
+	elif String(result.config.get("mode", "quick")) == "league":
+		get_league().record_user_result(result)
+		save_league()
 	show_screen("res://ui/result_screen.gd", {"result": result})
 
 

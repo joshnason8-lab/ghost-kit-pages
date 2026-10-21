@@ -68,6 +68,14 @@ func _menus() -> void:
 	Game.show_screen("res://ui/cup_screen.gd")
 	await frames(10)
 	await shot("06_cup")
+	var lg = Game.new_league("BBR")
+	for i in 3:
+		lg.sim_next()
+	Game.save_league()
+	Game.show_screen("res://ui/league_screen.gd")
+	await frames(10)
+	await shot("07_league")
+	Game.delete_league()
 	Game.delete_cup()
 
 

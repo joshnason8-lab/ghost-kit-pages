@@ -35,3 +35,11 @@ static func add_cup(won: bool) -> void:
 	if won:
 		r.cups_won = int(r.get("cups_won", 0)) + 1
 	Game.save_records()
+
+
+static func add_league(won: bool) -> void:
+	var r: Dictionary = Game.records
+	r.seasons_played = int(r.get("seasons_played", 0)) + 1
+	if won:
+		r.titles_won = int(r.get("titles_won", 0)) + 1
+	Game.save_records()

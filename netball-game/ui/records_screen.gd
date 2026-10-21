@@ -27,6 +27,7 @@ func _ready() -> void:
 			["REC_GOALS", str(int(r.get("goals", 0)))],
 			["REC_BEST_WIN", String(r.get("best_win", "–"))],
 			["REC_TOP_SHOOTER", "%s · %d" % [r.get("top_shooter", "–"), int(r.get("top_shooter_goals", 0))]],
-			["REC_CUPS", "%d / %d" % [int(r.get("cups_won", 0)), int(r.get("cups_played", 0))]]]:
+			["REC_CUPS", "%d / %d" % [int(r.get("cups_won", 0)), int(r.get("cups_played", 0))]],
+			["REC_TITLES", "%d / %d" % [int(r.get("titles_won", 0)), int(r.get("seasons_played", 0))]]]:
 		grid.add_child(UI.label(tr(pair[0]), "MutedLabel", 19))
 		grid.add_child(UI.fit(UI.label(pair[1], "SubLabel", 22)))

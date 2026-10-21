@@ -15,8 +15,9 @@ func _ready() -> void:
 	if Game.test_quarter_s > 0.0 and OS.has_feature("web"):
 		JavaScriptBridge.eval("window.cpn = {phase: 'result'}")
 	var cfg: Dictionary = result.get("config", {})
-	var cup: bool = String(cfg.get("mode", "quick")) == "cup"
-	var v := UI.page(self, _headline(), func(): Game.show_screen("res://ui/cup_screen.gd") if cup else Game.goto_menu(),
+	var cup: bool = String(cfg.get("mode", "quick")) in ["cup", "league"]
+	var hub := "res://ui/league_screen.gd" if String(cfg.get("mode", "")) == "league" else "res://ui/cup_screen.gd"
+	var v := UI.page(self, _headline(), func(): Game.show_screen(hub) if cup else Game.goto_menu(),
 		String(cfg.get("stage", tr("FULL_TIME"))))
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 16)
@@ -75,7 +76,7 @@ func _ready() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_END
 	v.add_child(row)
 	if cup:
-		row.add_child(UI.button(tr("CONTINUE"), true, func(): Game.show_screen("res://ui/cup_screen.gd")))
+		row.add_child(UI.button(tr("CONTINUE"), true, func(): Game.show_screen(hub)))
 	else:
 		row.add_child(UI.button(tr("REMATCH"), false, func():
 			var c := cfg.duplicate()

@@ -499,14 +499,14 @@ func _changes() -> VBoxContainer:
 	v.add_child(UI.label(tr("TEAM_CHANGES"), "SubLabel", 22))
 	v.add_child(UI.wrap(tr("TEAM_CHANGES_NOTE"), "MutedLabel", 15))
 	var grid := GridContainer.new()
-	grid.columns = 2
+	grid.columns = 1   # a row each: the position, who plays it and who would come on
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 6)
 	v.add_child(grid)
 	var t: int = m.user_team
 	for pl in m.players[t]:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(0, 44)
+		b.custom_minimum_size = Vector2(0, 40)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.text = _change_text(pl)
 		b.disabled = m.next_on(pl) < 0

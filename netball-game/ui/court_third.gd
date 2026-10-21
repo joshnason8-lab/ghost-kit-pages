@@ -4,7 +4,7 @@ extends Button
 ## line, the goal circle at an end third, the centre circle in the middle one, which pulses: the centre pass, Play),
 ## a title and a line of description, sized to fit in every language.
 
-var kind := "centre"     # centre, goal_left, goal_right
+var kind := "centre"     # centre, goal_left, goal_right; goal_left_top and _bottom (the left third, halved)
 var _t := 0.0
 
 
@@ -28,14 +28,18 @@ static func make(title: String, desc: String, p_kind: String, cb: Callable) -> C
 	v.alignment = BoxContainer.ALIGNMENT_END if p_kind == "centre" else BoxContainer.ALIGNMENT_BEGIN
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(v)
-	var t := UI.label(title, "HeaderLabel", 46 if p_kind == "centre" else 40)
+	var half := p_kind.begins_with("goal_left_")
+	if half:
+		v.offset_top = 10
+		v.offset_bottom = -10
+	var t := UI.label(title, "HeaderLabel", 46 if p_kind == "centre" else (34 if half else 40))
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if p_kind == "centre" else HORIZONTAL_ALIGNMENT_LEFT
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.add_theme_constant_override("line_spacing", -8)
-	UI.shrink(t, 46 if p_kind == "centre" else 40, 0.62, 2)
+	UI.shrink(t, 46 if p_kind == "centre" else (34 if half else 40), 0.62, 2)
 	v.add_child(t)
-	var d := UI.label(desc, "", 17, Color(Game.C_INK, 0.85))
+	var d := UI.label(desc, "", 16 if half else 17, Color(Game.C_INK, 0.85))
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	d.horizontal_alignment = t.horizontal_alignment
 	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -71,8 +75,13 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, s), court, true)
 	var line := Color(1, 1, 1, 0.85)
 	var lw := 3.0
-	draw_line(Vector2(0, lw * 0.5), Vector2(s.x, lw * 0.5), line, lw)
-	draw_line(Vector2(0, s.y - lw * 0.5), Vector2(s.x, s.y - lw * 0.5), line, lw)
+	if kind != "goal_left_bottom":
+		draw_line(Vector2(0, lw * 0.5), Vector2(s.x, lw * 0.5), line, lw)
+	if kind != "goal_left_top":
+		draw_line(Vector2(0, s.y - lw * 0.5), Vector2(s.x, s.y - lw * 0.5), line, lw)
+	else:
+		# Where the two halves meet: a faint seam, no court line.
+		draw_line(Vector2(s.x * 0.04, s.y - 0.5), Vector2(s.x * 0.96, s.y - 0.5), Color(1, 1, 1, 0.14), 1.0)
 	match kind:
 		"centre":
 			# The transverse lines either side, and the centre circle, pulsing.
@@ -90,6 +99,13 @@ func _draw() -> void:
 		"goal_left":
 			draw_line(Vector2(lw * 0.5, 0), Vector2(lw * 0.5, s.y), line, lw)
 			_goal_circle(Vector2(0, s.y * 0.5), s, line, lw, -1.0)
+		"goal_left_top", "goal_left_bottom":
+			draw_line(Vector2(lw * 0.5, 0), Vector2(lw * 0.5, s.y), line, lw)
+			# The goal circle of the whole third, centred where the halves meet.
+			var cy := s.y if kind == "goal_left_top" else 0.0
+			var faint := Color(line, line.a * 0.32)
+			var r := s.y * 0.84
+			draw_arc(Vector2(0, cy), r, -PI * 0.5, PI * 0.5, 48, faint, lw, true)
 		"goal_right":
 			draw_line(Vector2(s.x - lw * 0.5, 0), Vector2(s.x - lw * 0.5, s.y), line, lw)
 			_goal_circle(Vector2(s.x, s.y * 0.5), s, line, lw, 1.0)
