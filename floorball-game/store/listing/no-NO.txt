@@ -1,0 +1,33 @@
+# Google Play-butikkoppføring, norsk bokmål (Norge). Lim inn hver del i Play Console > Grow > Store presence >
+# Main store listing. Grenser: appnavn 30 tegn, kort beskrivelse 80, full beskrivelse 4000.
+
+== App name ==
+Floorstorm: Innebandy Arena
+
+== Short description ==
+Innebandy fem mot fem med keepere, etter de ekte reglene. Skyt, pass og scor!
+
+== Full description ==
+Floorstorm er innebandy på mobilen: den raske innendørssporten med kølle fra Sverige, Finland, Sveits og Tsjekkia, med fem utespillere og en keeper per lag på en bane på 40 ganger 20 meter innenfor vantet.
+
+DET EKTE SPILLET
+• Innebandyens internasjonale spilleregler, utgaven som gjelder fra 1. juli 2026: tre perioder med effektiv tid, avslag, innslag og frislag med 3 meters avstand, målområde og keeperområde, to- og fem-minutters utvisninger, overtall, forlengning og straffeslag.
+• Også de nye reglene fra 2026: ingen utespiller gjennom keeperområdet, keeperens utkast kan gi mål, og samtidige utvisninger tar ikke lenger spillere av banen.
+• To dommere som blåser og gir tegn for hver avgjørelse slik ekte dommere gjør: frislag, fordel, utsatt utvisning, to minutter, mål.
+• Lag som spiller innebandy slik den spilles: 2-1-2 i forsvar, flygende rekkebytter hvert femtiende sekund, vingene ute på kantene og senteren foran mål.
+
+SLIK KAN DU SPILLE
+• Hurtigkamp: 22 landslag, herrer og damer, i en byarena, en idrettshall eller en gymsal. Periodelengde fra 4 til 20 minutter, effektiv eller løpende tid.
+• Verdensfinaler: seksten nasjoner i fire grupper, sluttspill, kvartfinaler, semifinaler og medaljekamper.
+• Kampstatistikk etter hver kamp: skudd på mål, redninger, utvisningsminutter, overtallsmål, hvert mål og hver utvisning med regelen sin.
+
+SPILL PÅ DIN MÅTE
+• Femten språk: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 og ไทย.
+• En joystick og tre knapper, for venstrehendte om du vil, i tre størrelser og plassert der tomlene vil ha dem.
+• Laget for å gå jevnt på rimelige mobiler og mellomklassemobiler, med batterisparing.
+• Spilles uten nett. Ingen reklame, ingen kjøp, ingen konto og ingen innsamling av data.
+
+Floorstorm er et uavhengig spill. Det er ikke tilknyttet eller støttet av noe innebandyforbund, noen serie, klubb eller spiller. Spillerne er oppdiktet; landene og reglene er ekte.
+
+== Release notes (first release) ==
+Første versjon av Floorstorm: Hurtigkamp og Verdensfinaler, på femten språk.

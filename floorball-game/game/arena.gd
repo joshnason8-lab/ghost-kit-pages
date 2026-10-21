@@ -77,7 +77,7 @@ func _env(kind: String, energy: float) -> void:
 	env.background_color = Color("15181d") if kind == "arena" else Color("2a2d31")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.78, 0.8, 0.84) if kind != "arena" else Color(0.6, 0.63, 0.7)
-	env.ambient_light_energy = 0.62
+	env.ambient_light_energy = 0.42
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC if int(Game.settings.graphics) >= Game.GFX_MEDIUM else Environment.TONE_MAPPER_LINEAR
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -85,7 +85,7 @@ func _env(kind: String, energy: float) -> void:
 	# The hall's lights hang over the rink: a high, soft key from above and a little to one side.
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-72, 18, 0)
-	sun.light_energy = 0.9 * energy
+	sun.light_energy = 0.62 * energy
 	sun.light_color = Color(1.0, 0.98, 0.95)
 	sun.shadow_enabled = Game.shadows_enabled()
 	sun.directional_shadow_max_distance = 60.0
@@ -96,13 +96,14 @@ func _env(kind: String, energy: float) -> void:
 
 func _floor() -> void:
 	# The hall's floor round the rink, then the rink's own sports floor with its markings.
-	_lit.floor_rect(-32, -24, 32, 24, -0.01, Color("8f9399") if venue == "arena" else Color("c49b62"))
+	_lit.floor_rect(-32, -24, 32, 24, -0.01, Color("6f7379") if venue == "arena" else Color("9a8566"))
 	var mi := MeshInstance3D.new()
 	var q := PlaneMesh.new()
 	q.size = Vector2(Rules.LENGTH, Rules.WIDTH)
 	mi.mesh = q
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = floor_texture()
+	m.albedo_color = Color(0.86, 0.86, 0.86)
 	m.roughness = 0.55
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	mi.material_override = m
@@ -148,7 +149,7 @@ static func floor_texture() -> ImageTexture:
 		img.fill_rect(Rect2i(p.x - arm, p.y - lw / 2, arm * 2, lw), line)
 		img.fill_rect(Rect2i(p.x - lw / 2, p.y - arm, lw, arm * 2), line)
 	# Outside the rounded corners the boards stand: paint the hall's floor colour there so nothing shows past them.
-	var hall := Color("c49b62")
+	var hall := Color("9a8566")
 	var r := Rules.CORNER_R * FLOOR_PX
 	for sx: int in [0, 1]:
 		for sz: int in [0, 1]:

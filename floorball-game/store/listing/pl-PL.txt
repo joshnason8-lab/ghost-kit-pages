@@ -1,0 +1,33 @@
+# Opis w sklepie Google Play, polski (Polska). Każdą część wklej w Play Console > Rozwój > Obecność w sklepie >
+# Główna strona aplikacji w sklepie. Limity: nazwa aplikacji 30 znaków, krótki opis 80, pełny opis 4000.
+
+== App name ==
+Floorstorm: Arena Unihokeja
+
+== Short description ==
+Unihokej pięciu na pięciu z bramkarzami, według przepisów. Strzelaj, podawaj!
+
+== Full description ==
+Floorstorm to unihokej w telefonie: szybka halowa gra kijem, popularna w Szwecji, Finlandii, Szwajcarii i Czechach, pięciu zawodników i bramkarz w każdej drużynie, na boisku 40 na 20 metrów otoczonym bandą.
+
+PRAWDZIWA GRA
+• Międzynarodowe Przepisy gry w unihokeja w wersji obowiązującej od 1 lipca 2026: trzy tercje czasu efektywnego, wznowienia, wybicia i uderzenia wolne z odległością 3 metrów, pole bramkowe i pole bramkarza, kary 2 i 5 minut, gra w przewadze, dogrywka i rzuty karne.
+• Także nowe przepisy z 2026 roku: żaden zawodnik z pola nie może przebiec przez pole bramkarza, bramkarz może zdobyć gola rzutem, a kary wzajemne nie zdejmują już zawodników z boiska.
+• Dwóch sędziów, którzy gwiżdżą i sygnalizują każdą decyzję jak prawdziwi: uderzenie wolne, korzyść, kara odroczona, dwie minuty, gol.
+• Drużyny grające tak, jak gra się w unihokeja: obrona 2-1-2, lotne zmiany piątek co pięćdziesiąt sekund, skrzydłowi przy bandach i środkowy przed bramką.
+
+TRYBY GRY
+• Szybki mecz: 22 reprezentacje, męskie i kobiece, w arenie miejskiej, hali sportowej lub sali gimnastycznej. Tercje od 4 do 20 minut, czas efektywny lub ciągły.
+• Finały Świata: szesnaście krajów w czterech grupach, baraże, ćwierćfinały, półfinały i mecze o medale.
+• Statystyki po każdym meczu: strzały na bramkę, obrony, minuty kar, gole w przewadze, każdy gol i każda kara z numerem przepisu.
+
+GRAJ PO SWOJEMU
+• Piętnaście języków: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 i ไทย.
+• Joystick i trzy przyciski, także dla leworęcznych, w trzech rozmiarach i w miejscach, które wybiorą Twoje kciuki.
+• Działa płynnie na tanich i średnich telefonach, z trybem oszczędzania baterii.
+• Gra offline. Bez reklam, bez zakupów, bez konta i bez zbierania danych.
+
+Floorstorm to niezależna gra. Nie jest powiązana z żadnym związkiem, ligą, klubem ani zawodnikiem unihokeja ani przez nich wspierana. Zawodnicy są fikcyjni; kraje i przepisy są prawdziwe.
+
+== Release notes (first release) ==
+Pierwsze wydanie gry Floorstorm: Szybki mecz i Finały Świata w piętnastu językach.

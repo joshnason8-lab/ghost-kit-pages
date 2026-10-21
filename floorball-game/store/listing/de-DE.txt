@@ -1,0 +1,33 @@
+# Google-Play-Store-Eintrag, Deutsch (Deutschland). Jeden Teil in der Play Console unter Wachsen > Store-Präsenz >
+# Haupteintrag im Play Store einfügen. Limits: App-Name 30 Zeichen, Kurzbeschreibung 80, vollständige Beschreibung 4000.
+
+== App name ==
+Floorstorm: Unihockey Arena
+
+== Short description ==
+Unihockey: fünf Feldspieler plus Goalie, echte Regeln. Schiessen, passen, Tor!
+
+== Full description ==
+Floorstorm ist Unihockey (Floorball) fürs Handy: das schnelle Hallenspiel mit Stock aus Schweden, Finnland, der Schweiz und Tschechien, gespielt mit fünf Feldspielern und einem Goalie pro Team auf einem 40 mal 20 Meter grossen Feld innerhalb der Bande.
+
+DAS ECHTE SPIEL
+• Die internationalen Unihockey-Spielregeln in der Fassung ab 1. Juli 2026: drei Drittel mit effektiver Spielzeit, Bullys, Einschläge und Freischläge mit 3 Metern Abstand, Torraum und Torhüterraum, 2-Minuten- und 5-Minuten-Strafen, Überzahl, Verlängerung und Penaltyschiessen.
+• Auch die neuen Regeln von 2026: kein Feldspieler durch den Torhüterraum, ein Wurf des Torhüters kann ein Tor sein, und gleichzeitige Strafen nehmen keine Spieler mehr vom Feld.
+• Zwei Schiedsrichter, die jeden Entscheid pfeifen und anzeigen wie echte: Freischlag, Vorteil, verzögerte Strafe, zwei Minuten, Tor.
+• Teams, die spielen, wie Unihockey gespielt wird: 2-1-2-Verteidigung, fliegende Linienwechsel alle fünfzig Sekunden, Flügel aussen und der Center im Slot.
+
+SPIELMODI
+• Schnelles Spiel: 22 Nationalteams, Herren und Damen, in einer Stadtarena, einer Sporthalle oder einer Turnhalle. Drittellänge von 4 bis 20 Minuten, effektive Spielzeit oder durchlaufende Uhr.
+• WM-Endrunde: sechzehn Nationen in vier Gruppen, Playoffs, Viertelfinals, Halbfinals und die Medaillenspiele.
+• Eine Statistik nach jedem Spiel: Schüsse aufs Tor, Paraden, Strafminuten, Überzahltore, jedes Tor und jede Strafe mit ihrer Regel.
+
+SPIEL, WIE DU WILLST
+• Fünfzehn Sprachen: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 und ไทย.
+• Ein Joystick und drei Tasten, auf Wunsch für Linkshänder, in drei Grössen und dort platziert, wo deine Daumen sie haben wollen.
+• Läuft flüssig auf günstigen Handys und der Mittelklasse, mit Akkusparmodus.
+• Spielbar offline. Keine Werbung, keine Käufe, kein Konto und keine Datenerfassung.
+
+Floorstorm ist ein unabhängiges Spiel. Es ist mit keinem Unihockeyverband, keiner Liga, keinem Club und keinem Spieler verbunden und wird von keinem unterstützt. Die Spieler sind erfunden; die Länder und die Regeln sind echt.
+
+== Release notes (first release) ==
+Die erste Version von Floorstorm: Schnelles Spiel und die WM-Endrunde, in fünfzehn Sprachen.

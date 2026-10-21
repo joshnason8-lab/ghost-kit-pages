@@ -225,7 +225,7 @@ static func _from_to(a: Vector3, b: Vector3) -> Basis:
 # ---------------------------------------------------------------- the mesh
 
 func _key() -> String:
-	return "%s|%s|%s|%s|%s|%s|%s|%d|%s" % [look.get("kind", "player"), look.get("skin"), look.get("jersey"), look.get("shorts"),
+	return "%s|%s|%s|%s|%s|%s|%s|%s|%d|%s" % [int(Game.settings.graphics) == Game.GFX_LOW, look.get("kind", "player"), look.get("skin"), look.get("jersey"), look.get("shorts"),
 		look.get("socks"), look.get("trim"), look.get("hair"), int(look.get("hair_style", 0)), look.get("goggles", false)]
 
 
@@ -233,6 +233,7 @@ func _mesh() -> ArrayMesh:
 	var key := _key()
 	if _cache.has(key):
 		return _cache[key]
+	MeshBuilder.low = int(Game.settings.graphics) == Game.GFX_LOW
 	var m := MeshBuilder.new()
 	var kind := String(look.get("kind", "player"))
 	var skin: Color = look.get("skin", Color("e8b48f"))
@@ -322,6 +323,7 @@ func _mesh() -> ArrayMesh:
 
 ## Builds a skinned mesh out of rounded parts, each part rigidly on one bone, coloured by vertex.
 class MeshBuilder:
+	static var low := false   # Low graphics: rounder parts with fewer sides (the bodies are a phone's biggest triangle cost)
 	var verts := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
@@ -342,6 +344,8 @@ class MeshBuilder:
 		var length := axis.length()
 		if length < 0.0001:
 			return
+		if low:
+			seg = maxi(5, seg * 6 / 10)
 		var up := axis / length
 		var side := up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
 		var fwd := side.cross(up).normalized()
@@ -386,6 +390,9 @@ class MeshBuilder:
 	## An ellipsoid at centre with radii r. cut keeps only the part above that fraction of its height (a hair cap: 0.15
 	## keeps the top 85%... measured from the bottom), so a sphere of hair sits over the head's crown only.
 	func sphere(centre: Vector3, r: Vector3, c: Color, bone: int, cut := -1.0, seg := 12, rings := 8) -> void:
+		if low:
+			seg = maxi(6, seg * 2 / 3)
+			rings = maxi(4, rings * 2 / 3)
 		var base := verts.size()
 		var lat0 := 0
 		var cols := seg + 1

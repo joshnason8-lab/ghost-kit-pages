@@ -1,0 +1,33 @@
+# Google Play poe kirje, eesti keel. Kleebi iga osa Play Console'is jaotisse Kasv > Poes kohalolek >
+# Poe põhikirje. Piirangud: rakenduse nimi 30 tähemärki, lühikirjeldus 80, täielik kirjeldus 4000.
+
+== App name ==
+Floorstorm: Saalihoki Areen
+
+== Short description ==
+Saalihoki viis viie vastu koos väravavahtidega, päris reeglitega. Viska, sööda!
+
+== Full description ==
+Floorstorm on saalihoki sinu telefonis: Rootsi, Soome, Šveitsi ja Tšehhi kiire sisekepimäng, mida mängitakse viie väljakumängija ja väravavahiga 40 × 20 meetri suurusel piiretega väljakul.
+
+PÄRIS MÄNG
+• Saalihoki rahvusvahelised mängureeglid, 1. juulil 2026 jõustunud väljaanne: kolm perioodi puhta mänguajaga, vahevisked, sisse- ja vabalöögid 3-meetrise vahemaaga, väravaala ja väravavahi ala, kahe- ja viieminutilised karistused, arvuline ülekaal, lisaaeg ja karistusvisked.
+• Ka 2026. aasta uued reeglid: ükski väljakumängija ei tohi läbida väravavahi ala, väravavahi visatud pall võib väravasse minna ja samaaegsed karistused ei vii enam mängijaid väljakult.
+• Kaks kohtunikku, kes vilistavad ja näitavad iga otsust nagu päris kohtunikud: vabalöök, eelis, edasilükatud karistus, kaks minutit, värav.
+• Meeskonnad mängivad nii, nagu saalihokit mängitakse: 2-1-2 kaitse, lennukad vahetused umbes iga viiekümne sekundi järel, äärmängijad laial ja tsenter värava ees.
+
+MÄNGUVIISID
+• Kiirmäng: 22 koondist, mehed ja naised, linna areenil, spordisaalis või kooli võimlas. Perioodi pikkus 4 kuni 20 minutit, puhas mänguaeg või jooksev kell.
+• MM-turniir: kuusteist riiki neljas alagrupis, play-off, veerandfinaalid, poolfinaalid ja medalimängud.
+• Statistika pärast iga mängu: visked väravale, tõrjed, karistusminutid, ülekaaluväravad ning iga värav ja karistus koos reegli numbriga.
+
+MÄNGI OMAMOODI
+• Viisteist keelt: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 ja ไทย.
+• Juhtkang ja kolm nuppu, soovi korral vasakukäelistele, kolmes suuruses ja liigutatavad sinna, kuhu su pöidlad neid tahavad.
+• Loodud sujuvalt töötama soodsatel ja keskklassi telefonidel, koos akusäästjaga.
+• Töötab võrguühenduseta. Ei mingeid reklaame, oste ega kontot ning andmeid ei koguta.
+
+Floorstorm on sõltumatu mäng. See ei ole seotud ühegi saalihokiliidu, -liiga, -klubi ega -mängijaga ega ole nende poolt heaks kiidetud. Mängijad on väljamõeldud; riigid ja reeglid on päris.
+
+== Release notes (first release) ==
+Floorstormi esimene väljalase: kiirmäng ja MM-turniir viieteistkümnes keeles.

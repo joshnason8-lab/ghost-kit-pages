@@ -96,9 +96,9 @@ func _scoreboard() -> void:
 	var panel := PanelContainer.new()
 	panel.theme_type_variation = "DarkPanel"
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	panel.offset_top = 12
-	panel.offset_left = -330
-	panel.offset_right = 330
+	panel.offset_top = 10
+	panel.offset_left = 0
+	panel.offset_right = 0
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(panel)
