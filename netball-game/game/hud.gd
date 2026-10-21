@@ -191,7 +191,7 @@ func _place_coach() -> void:
 	if not coach.visible:
 		return
 	var sm := UI.safe_margins(root, 14.0)
-	var w := minf(root.size.x * 0.44, 620.0)
+	var w := minf(root.size.x * 0.40, 600.0)   # clear of the stick and of the buttons at normal size
 	coach.custom_minimum_size.x = w
 	coach.size = Vector2(w, 0)
 	coach.position = Vector2((root.size.x - w) * 0.5, root.size.y - sm.w - coach.get_combined_minimum_size().y - 8.0)

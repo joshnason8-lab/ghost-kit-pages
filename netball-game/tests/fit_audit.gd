@@ -461,9 +461,15 @@ func _menus() -> void:
 	Game.show_screen("res://ui/quick_setup.gd")
 	await frames(10)
 	await audit("quick_setup")
+	# The records as a keen player's would be (an empty book shows only a line, and hid a layout bug).
+	var kept_records: Dictionary = Game.records.duplicate(true)
+	Game.records = {"played": 128, "won": 71, "drawn": 6, "lost": 51, "goals": 4123, "best_margin": 38,
+		"best_win": "TTO 71 – 33 NAM", "top_shooter": "Kerry-Ann Thompson (GS)", "top_shooter_goals": 64,
+		"cups_played": 12, "cups_won": 3, "seasons_played": 9, "titles_won": 2}
 	Game.show_screen("res://ui/records_screen.gd")
 	await frames(8)
 	await audit("records")
+	Game.records = kept_records
 	Game.show_screen("res://ui/licences_screen.gd")
 	await frames(8)
 	await audit("licences")

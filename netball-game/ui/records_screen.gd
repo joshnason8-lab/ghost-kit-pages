@@ -30,4 +30,7 @@ func _ready() -> void:
 			["REC_CUPS", "%d / %d" % [int(r.get("cups_won", 0)), int(r.get("cups_played", 0))]],
 			["REC_TITLES", "%d / %d" % [int(r.get("titles_won", 0)), int(r.get("seasons_played", 0))]]]:
 		grid.add_child(UI.label(tr(pair[0]), "MutedLabel", 19))
-		grid.add_child(UI.fit(UI.label(pair[1], "SubLabel", 22)))
+		# The value takes the rest of the row (without it the grid gave it no width at all: every value an ellipsis).
+		var val := UI.fit(UI.label(pair[1], "SubLabel", 22))
+		val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_child(val)

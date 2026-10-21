@@ -41,12 +41,13 @@ the table after it.
 |---|---|---|---|---|
 | 11 | Major | **Esc on the home screen froze the page** in a browser: Back there quits, and quitting stops the engine on the Web. | Back on the home screen quits only on a phone (`MainMenu.quits_on_back`). | screenshot run (the tour now closes the language list with Esc and goes on) |
 | 12 | Cosmetic | A table before any match showed a goal percentage of 0. | A dash until a team has played (Nations Cup and Club Season). | screenshot |
+| 14 | Major | **Records screen**: once a player had records, every value (matches, goals, best win, cups) showed as an ellipsis: the grid gave the value column no width. Found by the fit audit run on a machine that had played; CI's empty record book never showed it. | The value takes the rest of the row. | fit audit now fills the record book first |
 | 13 | (harness) | The match's test bridge could overwrite the result screen's report in the frame the match was freed. | The bridge reports only while the match is the current screen. | the league run reaches the result |
 
 Confirmed working:
 
 - **The coach** opens with how to move, then on the first loose ball "They have the ball…", then passing, shooting and
-  the rest, each once, in a box between the stick and the buttons; it never covers the buttons at any shape.
+  the rest, each once, in a box between the stick and the buttons (at 1280 wide it touched the Defend button by a few pixels: narrowed to 40% of the width).
 - **The interval**: each team's figures, and "GS  Hannah Rowe  ›  Isla Osborne" on each change button.
 - **Name tags** stack above a defender and her player instead of printing over each other.
 - **The Club Season**: pick a club (crests in club colours, home country under the name), the hub with Play and
