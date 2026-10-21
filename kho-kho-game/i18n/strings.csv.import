@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://drtib7ygq8wys"
+
+[deps]
+
+files=["res://i18n/strings.en.translation", "res://i18n/strings.hi.translation", "res://i18n/strings.mr.translation", "res://i18n/strings.kn.translation", "res://i18n/strings.te.translation", "res://i18n/strings.ta.translation", "res://i18n/strings.ml.translation", "res://i18n/strings.or.translation", "res://i18n/strings.bn.translation", "res://i18n/strings.gu.translation", "res://i18n/strings.pa.translation", "res://i18n/strings.as.translation", "res://i18n/strings.ne.translation", "res://i18n/strings.si.translation"]
+
+source_file="res://i18n/strings.csv"
+dest_files=["res://i18n/strings.en.translation", "res://i18n/strings.hi.translation", "res://i18n/strings.mr.translation", "res://i18n/strings.kn.translation", "res://i18n/strings.te.translation", "res://i18n/strings.ta.translation", "res://i18n/strings.ml.translation", "res://i18n/strings.or.translation", "res://i18n/strings.bn.translation", "res://i18n/strings.gu.translation", "res://i18n/strings.pa.translation", "res://i18n/strings.as.translation", "res://i18n/strings.ne.translation", "res://i18n/strings.si.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true
