@@ -370,6 +370,7 @@ func _end_turn(reason := "time") -> void:
 	_end_reason = reason
 	_pending_kho = {}
 	Sfx.play("whistle_long", -2.0)
+	Sfx.drums(-1.0)
 	officials.referee.do("end", 2.0)
 	officials.timekeeper.do("whistle", 1.0)
 	for a in roster[0] + roster[1]:
@@ -502,6 +503,8 @@ func _process(delta: float) -> void:
 				phase = "play"
 				phase_t = 0.0
 				Sfx.play("whistle", -2.0)   # the timekeeper's long and short whistle: the turn is on
+				if not attract:
+					Sfx.drums(0.3 * arena.atmosphere())
 				officials.timekeeper.do("whistle", 0.8)
 				game_event.emit("play")
 		"play":
@@ -554,9 +557,17 @@ func next_turn() -> void:
 		_after_turn()
 
 
+var _drum_t := 0.0
+
+
 func _play(dt: float) -> void:
 	clock -= dt
 	since_out += dt
+	# The crowd's drums: up with an out, settling back as the chase goes on.
+	_drum_t -= dt
+	if _drum_t <= 0.0 and not attract:
+		_drum_t = 0.5
+		Sfx.drums((0.3 + 0.5 * exp(-since_out / 6.0)) * arena.atmosphere())
 	_dive_cool -= dt
 	if powerplay_offer > 0.0:
 		powerplay_offer -= dt
@@ -1082,6 +1093,7 @@ func _out(d: Athlete, kind: String, by: Athlete = null) -> void:
 	Sfx.play("whistle", -3.0)
 	if not attract:
 		Sfx.react("cheer" if (user < 0 or chasing == user) else "groan", -6.0)
+		Sfx.drums(0.8 * arena.atmosphere())
 	if hud:
 		var key: String = {"touch": "CALL_OUT", "dive": "CALL_SKY_DIVE", "pole": "CALL_POLE_DIVE", "limits": "CALL_OUT_LIMITS",
 			"late": "CALL_LATE_ENTRY"}[kind]
