@@ -3,7 +3,8 @@ extends RefCounted
 ## Procedural national flags for the national teams.
 ## Every flag is drawn with plain Image pixel work at a supersampled size and
 ## scaled down with Lanczos filtering, so no flag art ships with the game.
-## Unknown ids (league franchises) get a plain swatch of the team's main colour.
+## The club season's clubs have no flag: their crest's shield (ui/crest.gd draws it with the code). Unknown ids get a
+## plain swatch of the team's main colour.
 
 static var _cache: Dictionary = {}
 
@@ -71,7 +72,10 @@ static func image(id: String, w: int, h: int) -> Image:
 		"AUS":
 			_australia(img)
 		_:
-			img.fill(_team_colour(id))
+			if DB.is_club(id):
+				_crest(img, id)
+			else:
+				img.fill(_team_colour(id))
 	img.resize(w, h, Image.INTERPOLATE_LANCZOS)
 	return img
 
@@ -82,6 +86,22 @@ static func _team_colour(id: String) -> Color:
 	if t.has("c1"):
 		return t.c1
 	return Color(0.5, 0.5, 0.5)
+
+
+## A club's shield in its jersey colour on a clear ground, a band of its second colour across the top.
+static func _crest(img: Image, id: String) -> void:
+	img.fill(Color(0, 0, 0, 0))
+	var t: Dictionary = DB.team(id)
+	var fill: Color = t.home[0]
+	var second: Color = t.home[1] if not DB._alike(t.home[1], fill) else t.trim
+	var s := _size(img)
+	var w := minf(s.x, s.y * 0.92)
+	var poly := Crest.outline(w, s.y, Vector2((s.x - w) * 0.5, 0))
+	for y in img.get_height():
+		for x in img.get_width():
+			var p := Vector2(x + 0.5, y + 0.5)
+			if Geometry2D.is_point_in_polygon(p, poly):
+				img.set_pixel(x, y, second if p.y < s.y * 0.2 else fill)
 
 
 # --- Flags -------------------------------------------------------------------

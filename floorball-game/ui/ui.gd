@@ -51,10 +51,10 @@ static func frame(owner: Control, base := 40.0) -> MarginContainer:
 ## buttons, a long word that cannot break), the whole page is drawn smaller, just enough to fit, rather than run off
 ## the edge. Never below 70%; at 100% where it fits, which is everywhere in English.
 static func keep_on_screen(frame: Control) -> void:
-	var st := {"room": Vector2.ZERO, "k": 1.0, "queued": false}
+	var st := {"room": Vector2.ZERO, "k": 1.0, "queued": false, "settling": true}
 	var fit := func():
 		st.queued = false
-		if not is_instance_valid(frame) or not frame.is_inside_tree():
+		if not is_instance_valid(frame) or not frame.is_inside_tree() or bool(st.settling):
 			return
 		var room := frame.get_parent_area_size()
 		var need := frame.get_combined_minimum_size()
@@ -78,7 +78,13 @@ static func keep_on_screen(frame: Control) -> void:
 			fit.call_deferred()
 	frame.minimum_size_changed.connect(queue)
 	frame.resized.connect(queue)
-	queue.call()
+	# Not before the page is laid out: until its wrapping text has its width, a paragraph measures a word a line, many
+	# times the screen's height, and the page would stay at its smallest.
+	var tree := Engine.get_main_loop() as SceneTree
+	var settled := func():
+		st.settling = false
+		queue.call()
+	tree.process_frame.connect(func(): tree.process_frame.connect(settled, CONNECT_ONE_SHOT), CONNECT_ONE_SHOT)
 
 
 ## Page body with safe margins and a header (round Back button, eyebrow and title), returns
@@ -213,7 +219,7 @@ static func refit(l: Label) -> void:
 		(l.get_meta("fit") as Callable).call()
 
 
-## How many lines text takes at width w, wrapped between words.
+## How many lines text takes at width w, wrapped between words (a word too wide for the line counts one more).
 static func lines_at(font: Font, text: String, w: float, fs: int) -> int:
 	var n := 0
 	for para in text.split("\n"):
@@ -225,6 +231,10 @@ static func lines_at(font: Font, text: String, w: float, fs: int) -> int:
 		tp.width = w
 		tp.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND
 		n += tp.get_line_count()
+		# A word wider than the line is broken in the middle when it is shown: count the line it runs on to.
+		for i in tp.get_line_count():
+			if tp.get_line_width(i) > w + 0.5:
+				n += 1
 	return n
 
 
@@ -481,8 +491,11 @@ static func difficulty_field(owner: Control) -> VBoxContainer:
 	return box
 
 
-## A team's badge: its country's flag (national teams only: no club crests, store/PLAY_STORE.md).
+## A team's badge: its country's flag, or for one of the club season's invented clubs its crest (ui/crest.gd: no
+## real club's crest, store/PLAY_STORE.md).
 static func badge(id: String, size := Vector2(30, 20)) -> Control:
+	if DB.is_club(id):
+		return Crest.make(id, size)
 	var t := DB.team(id)
 	if not t.is_empty():
 		var tr_ := TextureRect.new()

@@ -6,24 +6,26 @@ Finland, Switzerland and Czechia: five and a goalkeeper a side, a plastic ball w
 low boards. Floorstorm plays the international Rules of the Game in force from 1 July 2026, and dresses its menus as
 the coach's whiteboard in a Nordic sports hall.
 
-> **Status: first beta (0.1.0).** The players, referees, rink, hall and crowd are built in code; the bodies are on a
-> humanoid skeleton ready for Meshy models if wanted (docs/MESHY_BRIEF.md). docs/PROGRESS.md has what is done and
-> what is next.
+> **Status: beta 0.2.0.** Played through in a browser on phone-shaped screens, and fixed from what that showed
+> (docs/PLAYTEST.md); a coach for the first match, the club season, the empty net, passive play. The players,
+> referees, rink, hall and crowd are built in code; the bodies are on a humanoid skeleton ready for Meshy models if
+> wanted (docs/MESHY_BRIEF.md). docs/BETA.md says how to install and what to try; docs/PROGRESS.md has what is done
+> and what is next.
 
 ## What's in it
 
 | Area | What works today |
 |---|---|
 | **The rules** | The 2026 edition, as a pure rules module with a test for each rule (docs/RULES.md lists every rule, its number, how the game does it and what is simplified). Three periods (4, 8, 12 or the laws' 20 minutes), effective time or a league's running clock (with the last 3 minutes always effective, new in 2026), intervals and changing ends, one time-out a team. |
-| **Restarts** | Face-offs at the centre and the nearest dot; hit-ins 1.5 m from the boards, never behind a goal line's extension; free-hits where the offence was, never within 3.5 m of the goal crease; opponents 3 m away; goals straight from either. |
-| **Offences and penalties** | Hitting or hooking the stick, a stick between the legs, pushing, holding, tripping, slashing, the ball above the knee, the goalkeeper's 3 seconds; advantage played, delayed penalties with the arm up; 2-, 5- and 10-minute and match penalties; power plays (a minor ends on a power-play goal, a major never); never more than two penalties running; the 2026 coincidental-penalty rule; nobody through the goalkeeper area. |
+| **Restarts** | Face-offs at the centre and the nearest dot; hit-ins 1.5 m from the boards, never behind a goal line's extension; free-hits where the offence was, never within 3.5 m of the goalkeeper area; opponents 3 m away; goals straight from either. |
+| **Offences and penalties** | Hitting or hooking the stick, a stick between the legs, pushing, holding, tripping, slashing, the ball above the knee, the goalkeeper's 3 seconds; advantage played, delayed penalties with the arm up; 2-, 5- and 10-minute (2 + 10, sat by the offender) and match penalties; power plays (a minor ends on a power-play goal, a major never); never more than two penalties running; the 2026 coincidental-penalty rule; the penalised player walks to the penalty bench and sits there; passive play warned, then a free-hit; nobody through the goalkeeper area. |
 | **Goals** | The whole ball over the line from the front; no kicked, headed or hand-ball goals; own goals count; a goalkeeper's throw may score (2026). |
 | **Overtime** | Group matches may be drawn; a match that needs a winner gets 10 minutes of sudden victory (5 with the league clock), then penalty shots: five different players a team, then one each (after five, anyone, again: 2026). |
 | **Officials** | Two referees on the diagonal along the long sides; the nearer whistles and signs the call (free-hit, hit-in, advantage, delayed penalty, goal, no goal, 2/5/10 minutes, penalty shot, face-off, time-out); a card on the screen shows the consequence, then the offence and its rule. |
-| **The teams** | 22 national teams, men's and women's, rated in world-ranking order; squads of 20 (two goalkeepers, three lines of five, two reserves) with invented players from each country's common names. Kits in each country's colours; the visitors change when the jerseys clash. |
-| **How they play** | A 2-1-2 defence with the nearest player pressing on the goal side, a 2-2-1 forecheck, wingers wide and the centre in the slot, flying line changes every 40-60 seconds, goalkeepers who read the shot, butterfly, catch or spill. Tuned to real matches: per 60 minutes 10 goals, 75.7% saved (docs/RULES.md). |
-| **You** | One outfield player at a time (the yellow number), switched to the one nearest the ball by itself or with Switch; shoot (aim at a corner), pass to the joystick's team-mate, sprint, tackle; you take your team's free-hits and hit-ins, and the penalty shots. |
-| **Modes** | Quick match (any two of 22, three venues, period length, difficulty, clock, draw or decided); the World Finals (16 nations in the World Championships' format: groups A-D, play-offs, quarter-finals, semi-finals, bronze and final); an AI v AI match behind the home screen. |
+| **The teams** | 22 national teams, men's and women's, rated in world-ranking order; squads of 20 (two goalkeepers, three lines of five, three reserves) with invented players from each country's common names. Kits in each country's colours; the visitors change when the jerseys clash. |
+| **How they play** | A 2-1-2 defence with the nearest player pressing on the goal side, a 2-2-1 forecheck, wingers wide and the centre in the slot, flying line changes every 40-60 seconds, goalkeepers who read the shot, butterfly, catch or spill. Late in a match the team a goal or two behind pulls its goalkeeper for a sixth outfield player. Tuned to real matches (tests/ai_bench, per 60 minutes): 9.5 goals and 100 shots (real: about 10 and 95). |
+| **You** | One outfield player at a time (the yellow ring and number), switched to the one nearest the ball by itself or with Switch; shoot (aim at a corner), pass to the joystick's team-mate, sprint, tackle; you take your team's free-hits and hit-ins (without delay: kept waiting, the referee gives it to the other team), and the penalty shots. Your first match has a coach: a note at the bottom of the screen as each moment comes (moving, the ball, defending, your free-hit, the whistle, a penalty, a goal), in every language. |
+| **Modes** | Quick match (any two of 22, three venues, period length, difficulty, clock, draw or decided); the World Finals (16 nations in the World Championships' format: groups A-D, play-offs, quarter-finals, semi-finals, bronze and final); a club season (ten invented clubs, a single round robin of nine rounds counted 3-2-1-0 as the Nordic leagues do, no draws, then semi-finals 1 v 4 and 2 v 3 and a final); an AI v AI match behind the home screen. |
 | **After the match** | A box score: the score by period, shots on goal, saves, penalty minutes, power-play goals, face-offs won, blocked shots, every goal with scorer and assist and power play, every penalty with its offence and rule, the player of the match. |
 | **Venues** | A city arena (stands all round, a hanging scoreboard), a sports hall (birch walls, one bank of seats behind the benches), a school gym (wall bars, a few parents). The benches and substitution zones on the far side, the penalty benches and secretariat on the near side. |
 | **Languages** | English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk bokmål, Dansk, Latviešu, Eesti, Polski, 日本語 and ไทย, with each country's real floorball terms and CLDR plurals (docs/LANGUAGES.md). The game starts in the phone's language; the globe on the home screen changes it. |
@@ -84,6 +86,9 @@ anywhere yet.
 
 ## Tests
 
+`tools/ci_local.sh` runs what the Android build action runs (every check below but the APK itself); run it before
+a push. By hand:
+
 ```
 python3 tools/check_scripts.py                                                   # every script parses
 godot --headless --path . res://tests/compile_check.tscn                          # every script loads
@@ -108,17 +113,19 @@ autoload/   game.gd (settings, saves, the whiteboard theme, plurals, screens), d
             sfx.gd (whistles, the ball's crack, boards, horn, crowd and drum, made in code)
 game/       rules.gd (the rules, pure), match.gd (the match), team_ai.gd, player.gd (movement and poses),
             body.gd (the person and stick on one skeleton), ball.gd, arena.gd + geo.gd + crowd.gd (rink and hall),
-            camera_rig.gd, hud.gd, touch_controls.gd, sim.gd (matches not shown), cup.gd (the World Finals)
-ui/         main menu (whiteboard + live match), quick setup, World Finals, settings, move buttons, how to play,
-            result (box score), licences, language picker, loading screen, ui.gd (fit helpers), drag_scroll.gd,
-            backdrop.gd + rink_sketch.gd (the whiteboard), flags.gd, icon.gd
+            camera_rig.gd, hud.gd, touch_controls.gd, sim.gd (matches not shown), cup.gd (the World Finals),
+            season.gd (the club season)
+ui/         main menu (whiteboard + live match), quick setup, World Finals, club season, settings, move buttons,
+            how to play, result (box score), licences, language picker, loading screen, ui.gd (fit helpers),
+            drag_scroll.gd, backdrop.gd + rink_sketch.gd (the whiteboard), flags.gd, crest.gd (the clubs'), icon.gd
 i18n/       src/*.json (one file per language), strings.csv (generated by tools/build_i18n.py)
 fonts/      Noto Sans, Noto Sans Thai, Noto Sans JP (cut to the Japanese text), Caveat, Barlow Condensed: SIL OFL
-tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py,
+tools/      ci_local.sh (CI's checks, run before a push), build_i18n.py, subset_fonts.py, check_scripts.py,
+            check_pages.py, audio/make_music.py,
             store/ (icons, feature graphic, screenshots)
 tests/      test_runner, fit_audit, input_test, perf_probe, ai_bench, screenshots, compile_check
 store/      PLAY_STORE.md, the listing in 15 languages, the icon, feature graphic and screenshots
-docs/       RULES.md, LANGUAGES.md, PROGRESS.md, MESHY_BRIEF.md
+docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md (install and test), PLAYTEST.md, MESHY_BRIEF.md
 ```
 
 ## Moving it to its own repository

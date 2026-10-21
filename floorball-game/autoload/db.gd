@@ -1,7 +1,8 @@
 extends Node
-## The teams, their squads and kits, and the venues. National teams only, as plain country names with their flags:
-## no real players, clubs, leagues or competitions (store/PLAY_STORE.md, "Names"). Ratings follow the world ranking
-## order of the men's and women's championships (docs/LANGUAGES.md, "Markets").
+## The teams, their squads and kits, and the venues. National teams, as plain country names with their flags, and ten
+## invented clubs for the club season (CLUBS): no real players, clubs, leagues or competitions (store/PLAY_STORE.md,
+## "Names"). Ratings follow the world ranking order of the men's and women's championships (docs/LANGUAGES.md,
+## "Markets").
 
 ## id: [rating men, rating women, home jersey, home shorts, away jersey, away shorts, trim]
 const TEAMS := {
@@ -27,6 +28,24 @@ const TEAMS := {
 	"AUS": [55, 58, "00843d", "ffcd00", "ffcd00", "00843d", "00843d"],
 	"PHI": [54, 56, "0038a8", "ffffff", "ffffff", "ce1126", "fcd116"],
 	"NED": [53, 55, "ff7f00", "ffffff", "ffffff", "21468b", "21468b"],
+}
+
+## The club season's ten clubs: invented nicknames (a colour or material and an animal), no town, no real club,
+## league or sponsor; proper names, the same in every language. Each has a three-letter code for the scoreboard (none
+## a country's), two kit colours, a rating like a domestic league's (below the top national teams) and the country
+## whose names its squad is drawn from. No flag: a crest, a shield in the club's colours with its code (ui/crest.gd).
+## id: [name, rating men, rating women, home jersey, home shorts, away jersey, away shorts, trim, country]
+const CLUBS := {
+	"FOX": ["Copper Foxes", 84, 82, "b8652e", "2b1d16", "ffffff", "b8652e", "2b1d16", "SWE"],
+	"WLV": ["Glacier Wolves", 83, 84, "8cc8e8", "14315c", "14315c", "14315c", "8cc8e8", "FIN"],
+	"LYX": ["Thunder Lynx", 82, 79, "f2c230", "1a1a1a", "1a1a1a", "1a1a1a", "f2c230", "CZE"],
+	"OWL": ["Midnight Owls", 81, 83, "1b2440", "1b2440", "ffffff", "ffffff", "e0b04a", "SUI"],
+	"MSE": ["Granite Moose", 80, 78, "6b7078", "2a2d33", "ffffff", "6b7078", "e8e8e8", "FIN"],
+	"RVN": ["Ember Ravens", 79, 80, "c2361f", "1a1a1a", "ffffff", "1a1a1a", "f08a24", "SWE"],
+	"SEL": ["Silver Seals", 78, 77, "c0c6cc", "1d2b4f", "1d2b4f", "1d2b4f", "c0c6cc", "NOR"],
+	"BDG": ["Iron Badgers", 77, 75, "3a3d42", "3a3d42", "ffffff", "ffffff", "d9d9d9", "CZE"],
+	"HWK": ["Amber Hawks", 75, 81, "e89a1c", "3b2410", "3b2410", "3b2410", "e89a1c", "SUI"],
+	"OTR": ["Polar Otters", 74, 74, "f4f7fa", "3d7fb8", "3d7fb8", "3d7fb8", "f4f7fa", "SWE"],
 }
 
 ## Venues: the local sports hall (a few hundred on one side), a city arena (stands all round), a school gym.
@@ -113,9 +132,13 @@ var _squads := {}
 
 
 func team(id: String) -> Dictionary:
-	if not TEAMS.has(id):
+	var t: Array = []
+	if TEAMS.has(id):
+		t = TEAMS[id]
+	elif CLUBS.has(id):
+		t = (CLUBS[id] as Array).slice(1, 8)
+	else:
 		return {}
-	var t: Array = TEAMS[id]
 	return {"id": id, "rating_m": t[0], "rating_w": t[1], "home": [Color(t[2]), Color(t[3])], "away": [Color(t[4]), Color(t[5])], "trim": Color(t[6]), "c1": Color(t[2]) if Color(t[2]) != Color.WHITE else Color(t[3])}
 
 
@@ -124,12 +147,30 @@ func team_ids() -> Array:
 
 
 func team_name(id: String) -> String:
+	if CLUBS.has(id):
+		return String(CLUBS[id][0])
 	return tr("TEAM_" + id)
 
 
 func rating(id: String, women := false) -> int:
+	if CLUBS.has(id):
+		return int(CLUBS[id][2] if women else CLUBS[id][1])
 	var t: Array = TEAMS.get(id, [50, 50])
 	return int(t[1] if women else t[0])
+
+
+## The club season's clubs, strongest first.
+func club_ids() -> Array:
+	return CLUBS.keys()
+
+
+func is_club(id: String) -> bool:
+	return CLUBS.has(id)
+
+
+## The country a team's players come from: its own for a national team, the club's for a club.
+func nation(id: String) -> String:
+	return String(CLUBS[id][8]) if CLUBS.has(id) else id
 
 
 ## The kits two teams wear: the home side its home kit; the visitors theirs too unless the jerseys are alike, when
@@ -152,14 +193,15 @@ static func _alike(a: Color, b: Color) -> bool:
 
 ## A squad of 20 (Rules 301: at most 20 players): two goalkeepers and three lines of five, each a centre, two
 ## forwards and two defenders, and a 19th and 20th outfield player in reserve. Players are made from the country's
-## name lists and the team's rating, the same for a team every time (seeded by its id).
+## name lists (a club's: its country's) and the team's rating, the same for a team every time (seeded by its id).
 func squad(id: String, women := false) -> Array:
 	var key := "%s|%s" % [id, women]
 	if _squads.has(key):
 		return _squads[key]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(key)
-	var names: Array = NAMES.get(id, NAMES["SWE"])
+	var nat := nation(id)
+	var names: Array = NAMES.get(nat, NAMES["SWE"])
 	var given: Array = names[1] if women else names[0]
 	var family: Array = names[2]
 	var base := rating(id, women)
@@ -168,7 +210,7 @@ func squad(id: String, women := false) -> Array:
 	var roles := ["G", "G"]
 	for l in 3:
 		roles.append_array(["C", "F", "F", "D", "D"])
-	roles.append_array(["F", "D"])
+	roles.append_array(["C", "F", "D"])   # three reserves: a squad of 20 (two goalkeepers, three lines of five)
 	var numbers := {}
 	for i in roles.size():
 		var nm := ""
@@ -190,11 +232,11 @@ func squad(id: String, women := false) -> Array:
 			"pass": clampf(r + rng.randf_range(-10, 10), 25, 99), "stick": clampf(r + rng.randf_range(-10, 10), 25, 99),
 			"defence": clampf(r + rng.randf_range(-10, 10) + (8.0 if roles[i] == "D" else 0.0), 25, 99),
 			"reflex": clampf(r + rng.randf_range(-8, 8), 25, 99) if roles[i] == "G" else 30.0,
-			"rating": r, "left": rng.randf() < (0.62 if id in ["SWE", "FIN", "NOR", "DEN", "EST", "LAT"] else 0.5),
-			"skin": _skin_for(id, rng), "hair": HAIR[rng.randi() % HAIR.size()], "hair_style": rng.randi() % 4,
+			"rating": r, "left": rng.randf() < (0.62 if nat in ["SWE", "FIN", "NOR", "DEN", "EST", "LAT"] else 0.5),
+			"skin": _skin_for(nat, rng), "hair": HAIR[rng.randi() % HAIR.size()], "hair_style": rng.randi() % 4,
 			"height": rng.randf_range(1.62, 1.76) if women else rng.randf_range(1.72, 1.92), "women": women,
 		}
-		if id in ["THA", "JPN", "SGP", "PHI"]:
+		if nat in ["THA", "JPN", "SGP", "PHI"]:
 			p.hair = HAIR[[0, 6, 7][rng.randi() % 3]]
 		out.append(p)
 	_squads[key] = out

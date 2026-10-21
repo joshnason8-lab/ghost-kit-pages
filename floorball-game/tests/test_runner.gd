@@ -26,6 +26,7 @@ func _ready() -> void:
 	_plurals()
 	_translations()
 	_cup()
+	_season()
 	await _screens()
 	await _penalty_shot()
 	await _match_parts()
@@ -327,11 +328,117 @@ func _cup() -> void:
 	Game.delete_cup()
 
 
+## The club season: 3-2-1-0 points, the table's tiebreaks, every pair of the ten clubs met once, the play-offs
+## seeded 1 v 4 and 2 v 3, and the season saved and carried on.
+func _season() -> void:
+	var keep_season = Game.season
+	var reg := {"goals": [4, 2], "ot": false, "so": false}
+	var otw := {"goals": [2, 3], "ot": true, "so": false}
+	var sow := {"goals": [5, 4], "ot": true, "so": true}
+	check(Season.points(reg, 0) == 3 and Season.points(reg, 1) == 0, "season: 3 for a win in regulation, 0 for a loss in it")
+	check(Season.points(otw, 1) == 2 and Season.points(otw, 0) == 1, "season: 2 for a win in overtime, 1 for a loss in it")
+	check(Season.points(sow, 0) == 2 and Season.points(sow, 1) == 1, "season: 2 for a win on penalty shots, 1 for a loss on them")
+	check(DB.club_ids().size() == 10, "season: ten clubs")
+	for id in DB.club_ids():
+		check(not DB.TEAMS.has(id) and String(id).length() == 3, "season: %s is a three-letter code no national team has" % id)
+		check(DB.team_name(id) != "" and not DB.team_name(id).begins_with("TEAM_"), "season: %s has a name" % id)
+		check(DB.rating(id) < DB.rating("SWE") and DB.rating(id) < DB.rating("FIN"), "season: %s is below the top national teams" % id)
+		check(DB.squad(id).size() == DB.squad("SWE").size() and DB.kits(id, "FOX").size() == 2, "season: %s has a squad and a kit" % id)
+		var crest := UI.badge(id)
+		check(crest is Crest, "season: %s shows a crest" % id)
+		crest.free()
+	# The table: points first, then goal difference, then goals scored.
+	var t := Season.create("FOX", false, 7)
+	var c: Array = t.clubs
+	t.fixtures.league = [[
+		{"home": c[0], "away": c[1], "played": true, "goals": [5, 1], "ot": false, "so": false, "user": false},
+		{"home": c[2], "away": c[3], "played": true, "goals": [3, 0], "ot": false, "so": false, "user": false},
+		{"home": c[4], "away": c[5], "played": true, "goals": [4, 1], "ot": false, "so": false, "user": false},
+		{"home": c[6], "away": c[7], "played": true, "goals": [2, 1], "ot": true, "so": false, "user": false},
+		{"home": c[8], "away": c[9], "played": false, "goals": [0, 0], "ot": false, "so": false, "user": false}]]
+	var order := []
+	for r in t.table():
+		order.append(r.id)
+	check(order[0] == c[0] and order[1] == c[4] and order[2] == c[2], "season: level on points, goal difference, then goals scored (%s)" % [order.slice(0, 3)])
+	check(order[3] == c[6] and order[4] == c[7], "season: an overtime win (2) above an overtime loss (1)")
+	check(order[7] == c[5] and order[8] == c[3] and order[9] == c[1], "season: losers by goal difference, then goals (%s)" % [order.slice(7, 10)])
+	var row6: Dictionary = t.table()[3]
+	check(int(row6.otw) == 1 and int(row6.pts) == 2 and int(row6.w) == 0, "season: an overtime win counts in OTW")
+	for women in [false, true]:
+		var s: Season = Game.new_season("OTR", women)
+		var pairs := {}
+		var ok_rounds := true
+		for rnd in s.fixtures.league:
+			var seen := {}
+			for f in rnd:
+				var k := "%s|%s" % ([f.home, f.away] if String(f.home) < String(f.away) else [f.away, f.home])
+				pairs[k] = int(pairs.get(k, 0)) + 1
+				seen[f.home] = true
+				seen[f.away] = true
+			if seen.size() != 10:
+				ok_rounds = false
+		var once := true
+		for k in pairs:
+			if int(pairs[k]) != 1:
+				once = false
+		check(s.fixtures.league.size() == 9 and pairs.size() == 45 and once, "season: nine rounds, all 45 pairings exactly once (%d)" % pairs.size())
+		check(ok_rounds, "season: every club plays in every round")
+		# Three rounds, the first your match played as a match ends (in overtime), then saved and carried on.
+		var mine: Dictionary = s.user_fixture()
+		var side := 0 if mine.home == "OTR" else 1
+		var g := [2, 2]
+		g[side] = 3
+		s.record_user_result({"goals": g, "ot": true, "so": false})
+		check(s.round == 1 and bool(mine.played), "season: your result plays the round")
+		var mrow := {}
+		for r in s.table():
+			if r.id == "OTR":
+				mrow = r
+		check(int(mrow.pts) == 2 and int(mrow.otw) == 1, "season: your overtime win is 2 points")
+		s.sim_next()
+		s.sim_next()
+		Game.save_season()
+		var before: Array = s.table()
+		Game.season = null
+		var back = Game.get_season()
+		check(back != null and back.round == 3 and back.stage == "league" and String(back.user) == "OTR" and bool(back.women) == women, "season: saves and carries on")
+		var after: Array = back.table()
+		check(String(after[0].id) == String(before[0].id) and int(after[0].pts) == int(before[0].pts) and String(after[9].id) == String(before[9].id), "season: the table reads back")
+		var guard := 0
+		while back.stage != "done" and guard < 20:
+			back.sim_next()
+			guard += 1
+		check(back.stage == "done" and String(back.champion) != "" and back.user_finish() != "", "season: reaches its champion (%s)" % back.user_finish())
+		var draws := 0
+		for rnd in back.fixtures.league:
+			for f in rnd:
+				if int(f.goals[0]) == int(f.goals[1]):
+					draws += 1
+		check(draws == 0, "season: no league match is drawn")
+		var tab: Array = back.table()
+		check(int(tab[0].p) == 9 and int(tab[0].pts) >= int(tab[1].pts), "season: nine matches each, in points order")
+		var sf: Array = back.fixtures.sf[0]
+		check(String(sf[0].home) == String(tab[0].id) and String(sf[0].away) == String(tab[3].id) and String(sf[1].home) == String(tab[1].id) and String(sf[1].away) == String(tab[2].id), "season: semi-finals 1 v 4 and 2 v 3")
+		var fin: Dictionary = back.fixtures.final[0][0]
+		check(int(fin.goals[0]) != int(fin.goals[1]) and String(back.champion) in [String(fin.home), String(fin.away)], "season: the final decides the champion")
+		check(String(fin.home) in [Season._winner_of(sf[0]), Season._winner_of(sf[1])] and String(fin.away) in [Season._winner_of(sf[0]), Season._winner_of(sf[1])], "season: the semi-finals' winners in the final")
+	# A club out of the top four: the play-offs are played without it.
+	var out := Season.create("OTR", false, 11)
+	var guard2 := 0
+	while out.stage == "league" and guard2 < 20:
+		out.sim_next()
+		guard2 += 1
+	if out.place("OTR") > 4:
+		check(out.stage == "done" and out.user_finish() == "missed", "season: out of the top four, the season ends with the league")
+	Game.delete_season()
+	Game.season = keep_season
+
+
 # ---------------------------------------------------------------- screens
 
 func _screens() -> void:
 	var screens := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
-		"res://ui/cup_screen.gd", "res://ui/licences_screen.gd", "res://ui/button_layout_screen.gd"]
+		"res://ui/cup_screen.gd", "res://ui/season_screen.gd", "res://ui/licences_screen.gd", "res://ui/button_layout_screen.gd"]
 	var langs: Array = Game.LANGUAGES if not quick else [Game.LANGUAGES[0], Game.LANGUAGES[2]]
 	for pair in langs:
 		Game.settings.language = pair[0]
@@ -354,6 +461,29 @@ func _screens() -> void:
 	await frames(3)
 	check(Game.current.get_child_count() > 0, "the World Finals hub builds")
 	Game.delete_cup()
+	# The club season's hub in every language: the table, your match, the play-offs, the end.
+	for pair in langs:
+		TranslationServer.set_locale(pair[0])
+		Game._size_theme()
+		var season: Season = Game.new_season("WLV")
+		Game.show_screen("res://ui/season_screen.gd")
+		await frames(2)
+		check(Game.current.get_child_count() > 0, "%s: the club season hub builds" % pair[0])
+		for i in 9:
+			season.sim_next()
+		Game.show_screen("res://ui/season_screen.gd")
+		await frames(2)
+		check(Game.current.get_child_count() > 0, "%s: the club season's play-offs build" % pair[0])
+		while season.stage != "done":
+			season.sim_next()
+		Game.show_screen("res://ui/season_screen.gd")
+		await frames(2)
+		check(Game.current.get_child_count() > 0, "%s: the club season's end builds" % pair[0])
+		Game.show_screen("res://ui/main_menu.gd")
+		await frames(2)
+		Game.delete_season()
+	TranslationServer.set_locale("en")
+	Game._size_theme()
 
 
 ## Chapter 8: a foul that stops a clear chance is a penalty shot, from the centre spot at the goal the fouled team
@@ -488,6 +618,7 @@ func _match_parts() -> void:
 	await get_tree().physics_frame
 	m.ball.release()
 	m.ball.carrier = c
+	m._carry_ball()   # the ball on his blade, in his own end
 	m.passive = {"team": 0, "t": m.PASSIVE_S + 0.5, "warned": false, "w": 0.0}
 	m._passive_tick(0.02)
 	check(bool(m.passive.warned), "507.20: a team keeping the ball in its own end is warned of passive play")

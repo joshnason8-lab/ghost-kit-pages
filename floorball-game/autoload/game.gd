@@ -3,6 +3,7 @@ extends Node
 
 const SETTINGS_PATH := "user://settings.json"
 const CUP_PATH := "user://cup.json"
+const SEASON_PATH := "user://season.json"
 const RECORDS_PATH := "user://records.json"
 
 const SLUG := "floorstorm"
@@ -111,6 +112,7 @@ var font_bold: Font
 var font_marker: Font     # the whiteboard's hand
 var font_score: Font      # the scoreboard's numbers and the HUD
 var cup = null            # Cup (RefCounted), loaded lazily
+var season = null         # Season (RefCounted), the club season, loaded lazily
 var _latin: FontFile
 var _fallbacks: Array[Font] = []
 var records := {}
@@ -325,6 +327,31 @@ func delete_cup() -> void:
 	delete_file(CUP_PATH)
 
 
+## The club season: one at a time, saved after every round as the World Finals are.
+func get_season():
+	if season == null:
+		var data = _read_json(SEASON_PATH)
+		if data is Dictionary:
+			season = Season.from_dict(data)
+	return season
+
+
+func new_season(club_id: String, women := false):
+	season = Season.create(club_id, women)
+	save_season()
+	return season
+
+
+func save_season() -> void:
+	if season:
+		_write_json(SEASON_PATH, season.to_dict())
+
+
+func delete_season() -> void:
+	season = null
+	delete_file(SEASON_PATH)
+
+
 func save_records() -> void:
 	_write_json(RECORDS_PATH, records)
 
@@ -368,7 +395,7 @@ func goto_menu() -> void:
 	show_screen("res://ui/main_menu.gd")
 
 
-## config keys: home, away (team ids), venue (DB.VENUES id), period (minutes), difficulty, mode ("quick"|"cup"),
+## config keys: home, away (team ids), venue (DB.VENUES id), period (minutes), difficulty, mode ("quick"|"cup"|"season"),
 ## user_team (0, 1 or -1 for none), stage (a line naming the match: "Semi-final"), women (bool), knockout (bool: a
 ## draw goes to overtime and penalty shots), rules (0 IFF, 1 league clock), seed.
 func start_match(config: Dictionary) -> void:
@@ -384,6 +411,9 @@ func on_match_finished(result: Dictionary) -> void:
 	if String(result.config.get("mode", "quick")) == "cup":
 		get_cup().record_user_result(result)
 		save_cup()
+	elif String(result.config.get("mode", "quick")) == "season" and get_season() != null:
+		get_season().record_user_result(result)
+		save_season()
 	show_screen("res://ui/result_screen.gd", {"result": result})
 
 

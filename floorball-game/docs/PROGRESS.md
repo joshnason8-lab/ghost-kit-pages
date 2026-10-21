@@ -43,15 +43,37 @@ on with "Next".
   calls, 49k triangles); CI green; beta APK 0.1.0-beta on the floorstorm-beta release (31 MB).
 - **Initial build complete** (21 October 2026, about 10:40 UTC).
 
+### Round two: 0.2.0-beta (21 October 2026, evening)
+
+- **Played through** in Chromium on the Web export with real touch events at 1280 x 720, 1600 x 720 and
+  2400 x 1080 on Low: Quick match and World Finals matches, screenshots looked at. docs/PLAYTEST.md lists what was
+  found, worst first, and what was fixed (with a test where one could be written). The worst: your free-hit could
+  not be taken by touch; a penalty that ran out left the team short; a won tackle went straight back to the carrier;
+  shots were deflected almost every time; a carrier behind the goal was stuck; the ball and your player were hard to
+  see; Low graphics were 40% too dark.
+- **A coach for the first match**: seven tips, each once, as its moment comes (Settings > Coach tips), 15 languages.
+- **The club season**: ten invented clubs with crests, a single round robin, 3-2-1-0 points, no draws, semi-finals
+  1 v 4 and 2 v 3 and a final (game/season.gd, ui/season_screen.gd).
+- **The empty net**: a goal or two down late in the last period, the goalkeeper off for a sixth outfield player.
+- **The penalty bench seen**: the penalised player walks there and sits out his time.
+- **Delay of game (507.20)**: passive play warned with the arm up, then a free-hit; your restart kept waiting goes to
+  the other team.
+- **Rules re-checked** against extracts of the 2026 text (the PDF itself still blocked here): free-hit 3.5 m from the
+  goalkeeper area; the personal penalty 2 + 10 sat by the offender; a goalkeeper sits his own major and personal
+  penalties; rule numbers 603 and 508-510. docs/RULES.md ends with what is still to check.
+- **AI retuned** after the tackle and deflection fixes: per 60 minutes 9.5 goals, 101 shots (real ~10 and ~95).
+- tools/ci_local.sh runs CI's checks before each push; the Android build runs on push only (no double runs).
+- **0.2.0-beta** (version code 2).
+
 ## Next (in order)
 
-1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach.
-2. Pulling the goalkeeper for a sixth skater late in a match.
-3. The penalised player seen walking to the penalty bench; delay-of-game calls; the 30 seconds of a time-out shown.
-4. More competitions: a club season with invented club nicknames and the Nordic leagues' 3-2-1-0 points.
-5. Shots run about 25% above real (120 v ~95 per 60 min): tune the carrier's shot decision further.
-6. Native-speaker review of the translations; the 2026 PDF read against docs/RULES.md's [verify] items.
-7. Meshy bodies if the owner wants them (docs/MESHY_BRIEF.md).
+1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's
+   notes on a real screen.
+2. The 2026 rules PDF read against docs/RULES.md's "Still to check" list.
+3. Native-speaker review of the translations (docs/LANGUAGES.md), the coach's tips first.
+4. Club season extras: a short 3 v 3 overtime as the Nordic leagues play it, a second season, form and streaks.
+5. The penalty benches and secretariat as real models; Meshy bodies if the owner wants them (docs/MESHY_BRIEF.md).
+6. The World Finals' tables in bigger type on phones.
 
 ## Decisions and why
 
@@ -66,11 +88,20 @@ on with "Next".
 - **Broadcast camera** high on the near side (the secretariat's), benches across the picture, as floorball TV does.
 - **The stick is a bone of the body's skeleton**: one draw call a player with his stick.
 - **Penalised players**: the rules module tracks who sits; on the rink the player's place is taken by a team-mate
-  from the bench and the team plays short by hiding the wingers' places (simplified: the penalised player does not
-  walk to the penalty bench).
+  from the bench and the team plays short by hiding the wingers' places; a figure of the penalised player walks to
+  the penalty bench and sits there (two a team at most, as no more than two penalties run).
+- **The empty net**: only a goal or two behind, in the last minutes of regulation time (8% of the period, at least
+  20 s), with the ball in the opponents' half; never short-handed. Back after a goal, at the period's end, or at a
+  stoppage once level.
+- **Passive play**: warned after 30 s with the ball in the team's own half or behind the opponents' goal (building
+  in their half holds the count); then a shot within 8 s or a free-hit to the other team.
+- **Club names**: colour or material and an animal (Copper Foxes, Glacier Wolves...), the same in every language, no
+  towns, so no real club can be meant.
 - **Game speed Steady (80%) by default**: 12 players at real floorball pace is hard to follow on a phone screen.
 - **Penalty shot in play**: awarded when the fouled player is in the attacking half, within 12 m of goal, in front of
   it, with no defender but the offender between him and the goal (our reading of "a clear chance"); the clock stands.
+- **Coach tips**: notes, not a separate tutorial: a first match is a real match, and each tip comes when its
+  moment does, so nothing has to be read before playing.
 - **Time-outs**: granted at the next stoppage with the referee's T; the 30 seconds are signalled, not waited out.
 - **Overtime keeps the third period's ends** (2026 rule 203 text on ends was not retrieved).
 - **armeabi-v7a**: the Play bundle keeps 32-bit too (older phones in Thailand, the Philippines and eastern Europe
@@ -82,4 +113,4 @@ on with "Next".
 
 - Play Console account, the upload key as repository secrets (store/PLAY_STORE.md), a trademark search on the name.
 - A native speaker's check of each translation (docs/LANGUAGES.md lists the doubtful strings).
-- A read of the 2026 rules PDF against docs/RULES.md's items marked "verify".
+- A read of the 2026 rules PDF against docs/RULES.md's "Still to check" list.

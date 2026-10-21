@@ -64,6 +64,7 @@ func _ready() -> void:
 	Game.goto_menu()
 	await frames(2)
 	Game.delete_cup()
+	Game.delete_season()
 	UI.sim_cutout = 0.0
 	Game.settings = keep
 	Game.save_settings()
@@ -469,12 +470,51 @@ func _menus() -> void:
 	Game.show_screen("res://ui/result_screen.gd", {"result": _fake_result()})
 	await frames(12)
 	await audit("result")
+	Game.show_screen("res://ui/result_screen.gd", {"result": _fake_result("WLV", "OTR", "season")})
+	await frames(12)
+	await audit("result_clubs")
+	await _season()
+
+
+## The club season: the club picker, the table with a season under way and the home screen's note carrying it on,
+## the play-offs, the end.
+func _season() -> void:
+	Game.delete_season()
+	Game.show_screen("res://ui/season_screen.gd")
+	await frames(10)
+	await audit("season_pick")
+	var season = Game.new_season("WLV", false)
+	Game.show_screen("res://ui/season_screen.gd")
+	await frames(12)
+	await audit("season_start")
+	for i in 4:
+		season.sim_next()
+	Game.save_season()
+	Game.show_screen("res://ui/season_screen.gd")
+	await frames(12)
+	await audit("season_table")
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(30)
+	await audit("main_menu_season")
+	while season.stage == "league":
+		season.sim_next()
+	Game.save_season()
+	Game.show_screen("res://ui/season_screen.gd")
+	await frames(12)
+	await audit("season_playoffs")
+	while season.stage != "done":
+		season.sim_next()
+	Game.save_season()
+	Game.show_screen("res://ui/season_screen.gd")
+	await frames(12)
+	await audit("season_over")
+	Game.delete_season()
 
 
 ## A result as a long match leaves one: goals, penalties of every kind, a shoot-out, the longest names.
-func _fake_result() -> Dictionary:
-	var sq_a: Array = DB.squad("SUI")
-	var sq_b: Array = DB.squad("CZE")
+func _fake_result(home := "SUI", away := "CZE", mode := "quick") -> Dictionary:
+	var sq_a: Array = DB.squad(home)
+	var sq_b: Array = DB.squad(away)
 	var stats := {}
 	for p in sq_a:
 		stats[p.id] = {"g": 1, "a": 1, "sog": 3, "pim": 2, "saves": 22, "sa": 25, "name": p.name, "num": p.num, "team": 0, "role": p.role}
@@ -486,7 +526,7 @@ func _fake_result() -> Dictionary:
 			"assist": (sq_a if i % 2 == 0 else sq_b)[8 + i].id, "pp": i == 1, "sh": i == 3})
 	for k in ["trip", "gk_collision", "rough_board", "unsporting"]:
 		log.append({"kind": "penalty", "team": 1, "id": sq_b[6].id, "pen": Rules.sanction(k), "offence": k, "period": 2, "t": 412.0})
-	return {"config": {"home": "SUI", "away": "CZE", "mode": "quick", "stage": tr("STAGE_SF")}, "goals": [3, 2], "winner": 0, "user_team": 0,
+	return {"config": {"home": home, "away": away, "mode": mode, "stage": tr("STAGE_SF")}, "goals": [3, 2], "winner": 0, "user_team": 0,
 		"log": log, "stats": stats, "team_stats": [{"shots": 31, "sog": 20, "fo": 14, "ppg": 1, "blocked": 7}, {"shots": 28, "sog": 25, "fo": 11, "ppg": 0, "blocked": 4}],
 		"calls": [], "shootout": [[true, false, true], [false, true, false]], "periods": 4, "potm": sq_a[0].id, "ot": true, "so": true}
 

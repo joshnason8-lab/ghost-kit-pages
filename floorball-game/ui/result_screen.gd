@@ -17,6 +17,8 @@ func _ready() -> void:
 	var back := func():
 		if String(cfg.get("mode", "quick")) == "cup":
 			Game.show_screen("res://ui/cup_screen.gd")
+		elif String(cfg.get("mode", "quick")) == "season":
+			Game.show_screen("res://ui/season_screen.gd")
 		else:
 			Game.goto_menu()
 	var v := UI.page(self, tr("FULL_TIME"), back, String(cfg.get("stage", "")))

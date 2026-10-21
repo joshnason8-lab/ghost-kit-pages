@@ -2,7 +2,8 @@ extends Control
 ## The home screen: the coach's whiteboard standing on the left of a sports hall, a match going on behind it on the
 ## rink (two national teams, the AI on both sides: user_team -1, so nothing buzzes and nothing is recorded). On the
 ## board: the game's name in marker, a rink sketched with a team's magnets moving through a 2-1-2, and the notes to
-## pick from: Quick match, World Finals, How to Play, Settings. The globe, top right, changes the language.
+## pick from: Quick match, World Finals and Club season across the board, How to Play and Settings smaller under them.
+## The globe, top right, changes the language.
 
 var _picker: LanguagePicker = null
 var _demo: Node = null
@@ -44,17 +45,26 @@ func _ready() -> void:
 	sketch.custom_minimum_size = Vector2(0, 150)
 	sketch.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(sketch)
+	# The three ways to play across the board, then How to play and Settings, smaller, under them.
 	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 16)
-	grid.add_theme_constant_override("v_separation", 16)
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 14)
 	v.add_child(grid)
 	var cup = Game.get_cup()
 	var cup_desc := tr("CUP_DESC") if cup == null else tr("CUP_CONTINUE").format({"team": DB.team_name(cup.user)})
+	var season = Game.get_season()
+	var season_desc := tr("SEASON_DESC") if season == null else tr("CUP_CONTINUE").format({"team": DB.team_name(season.user)})
 	grid.add_child(UI.note(tr("MENU_QUICK"), tr("MENU_QUICK_DESC"), Game.C_BLUE, func(): Game.show_screen("res://ui/quick_setup.gd"), true))
 	grid.add_child(UI.note(tr("MENU_CUP"), cup_desc, Game.C_RED, func(): Game.show_screen("res://ui/cup_screen.gd"), true))
-	grid.add_child(UI.note(tr("MENU_HOWTO"), tr("MENU_HOWTO_DESC"), Game.C_GREEN, func(): Game.show_screen("res://ui/howto_screen.gd")))
-	grid.add_child(UI.note(tr("MENU_SETTINGS"), tr("MENU_SETTINGS_DESC"), Game.C_INK, func(): Game.show_screen("res://ui/settings_screen.gd")))
+	grid.add_child(UI.note(tr("MENU_SEASON"), season_desc, Game.C_MAGNET.darkened(0.2), func(): Game.show_screen("res://ui/season_screen.gd"), true))
+	var small := GridContainer.new()
+	small.columns = 2
+	small.add_theme_constant_override("h_separation", 14)
+	small.add_theme_constant_override("v_separation", 14)
+	v.add_child(small)
+	small.add_child(UI.note(tr("MENU_HOWTO"), tr("MENU_HOWTO_DESC"), Game.C_GREEN, func(): Game.show_screen("res://ui/howto_screen.gd")))
+	small.add_child(UI.note(tr("MENU_SETTINGS"), tr("MENU_SETTINGS_DESC"), Game.C_INK, func(): Game.show_screen("res://ui/settings_screen.gd")))
 	# Top right, over the hall: the language and what is on the rink.
 	var tr_box := VBoxContainer.new()
 	tr_box.set_anchors_preset(Control.PRESET_TOP_RIGHT)
