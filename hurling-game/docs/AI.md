@@ -77,19 +77,26 @@ about as long as in a real one, and it scores like one. The shorter lengths are 
 score in proportion.
 
 **The check.** `tests/score_check.tscn` plays two AI matches between top counties at each length and holds them to the
-real numbers (it runs in CI). The run of 21 October 2026 (means a match, both sides):
+real numbers (it runs in CI). The run of 21 October 2026, with tired players and substitutions in (means a match,
+both sides):
 
 | Length | Real minutes | Ball live (real min) | Goals | Points | Shots | Real hurling for that much play |
 |---|---|---|---|---|---|---|
-| 8 min | 8.7 | 6.4 | 0.0 | 10.5 | 16.5 | 0.7 goals, 10 points |
-| 14 min | 15.7 | 11.3 | 1.0 | 20.0 | 28.5 | 1.2 goals, 18 points |
-| 20 min | 22.4 | 16.5 | 3.0 | 24.5 | 43.0 | 1.7 goals, 26 points |
-| **35 min (the full 70)** | 36.3 | 27.2 | 2.0 | 41.0 | 60.5 | **2.75 goals, 42 points, 77 shots** |
+| 8 min | 8.4 | 6.5 | 0.0 | 8.5 | 15.5 | 0.7 goals, 10 points |
+| 14 min | 15.8 | 11.4 | 0.5 | 20.5 | 31.0 | 1.2 goals, 18 points |
+| 20 min | 23.1 | 16.4 | 2.0 | 29.0 | 42.0 | 1.7 goals, 26 points |
+| **35 min (the full 70)** | 34.7 | 25.0 | 3.0 | 43.0 | 69.0 | **2.75 goals, 42 points, 77 shots** |
 
-Full-length scorelines from that run and the tuning runs before it: 2-21 v 2-21, 0-20 v 0-20, 0-21 v 0-24,
-0-19 v 4-20, 2-22 v 0-12. Over every match: 1.56 points a live minute (real 1.58), 0.10 goals (real 0.10), 2.4 shots
-(real 2.9), 69% of shots scored (real 60%: the game's forwards shoot a little less often and a little better than
-real ones). Frees about 17 a full match (real 26), puck-outs about 70 (real 66), 4-7 yellow cards.
+Full-length scorelines from that run: 2-20 v 1-19 and 2-22 v 1-25 (earlier runs: 2-21 v 2-21, 0-20 v 0-20,
+0-19 v 4-20, 2-22 v 0-12). Over every match: 1.70 points a live minute (real 1.58), 0.09 goals (real 0.10), 2.7 shots
+(real 2.9), 68% of shots scored (real 60%: the game's forwards still shoot a little less often and a little better
+than real ones). Frees about 17 a full match (real 26), puck-outs about 70 (real 66), 4-7 yellow cards.
+
+**Tired players and substitutions.** A player tires by the match clock (so a short match tires him as a full one
+does): a little all the time and far more in a sprint, less with stamina. A hard-working player ends a full match
+about half to two-thirds spent; tired, he is up to 12% slower and his strikes up to 20% less true. Half-time gives
+back 30%. Managers bring on fresh men from about the 45% mark (the hour in a real match: most substitutions in a
+championship match come from the 50th minute), the most tired first, one a break, the last kept until late.
 
 The earlier version of this page said a 70-minute match "runs far too high (5-34 v 5-46)": that was the old 70-minute
 length, which ran the clock at real time through every stoppage too, so the ball was live for about twice as long as in

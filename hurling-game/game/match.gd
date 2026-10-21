@@ -934,7 +934,7 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 		pressure = 1.0 - near.global_position.distance_to(pl.global_position) / 4.0
 	var skill_k: float = 1.0 / float(ai[pl.team].skill) if pl != active else 0.9
 	# From 35 m about three in four go over, from 50 m about three in five (55% from play in 2026, 75% from frees).
-	var sigma := (0.8 + dist * 0.075) * (1.6 - acc) * (1.0 + pressure * 1.2) * skill_k * (1.0 + pl.fatigue * 0.35)
+	var sigma := (0.74 + dist * 0.069) * (1.6 - acc) * (1.0 + pressure * 1.2) * skill_k * (1.0 + pl.fatigue * 0.2)
 	if String(shot.get("placed", "")) != "":
 		sigma *= 0.72
 	if bool(shot.get("goal", false)):

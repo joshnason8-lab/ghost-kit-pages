@@ -179,7 +179,7 @@ func decide(pl: Player) -> Dictionary:
 	# A goal is gone for only with a clear sight of it: inside the 20 m line, no defender but the goalkeeper close.
 	if goal_chance > 0.32 and goal_chance > chance * 0.5 and nearest_opponent_d(pl, 3.5) and rng_ok():
 		return {"kind": "goal"}
-	if chance >= lerpf(0.5, 0.4, clampf((60.0 - dist) / 40.0, 0.0, 1.0)) / skill:
+	if chance >= lerpf(0.4, 0.3, clampf((60.0 - dist) / 40.0, 0.0, 1.0)) / skill:
 		return {"kind": "shoot"}
 	# A pass to someone better placed.
 	var best := best_pass(pl, press_d)
