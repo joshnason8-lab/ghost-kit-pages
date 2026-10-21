@@ -67,7 +67,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 3300 godot --headless --path . --fixed-fps 30 res://tests/score_check.tscn -- 2 ${{ matrix.lengths }} 2>&1 | tee score.log
+          timeout 3300 godot --headless --path . --fixed-fps 30 res://tests/score_check.tscn -- 3 ${{ matrix.lengths }} 2>&1 | tee score.log
           if grep -q "SCRIPT ERROR" score.log; then grep -A4 "SCRIPT ERROR" score.log; exit 1; fi
 
   test-and-build:

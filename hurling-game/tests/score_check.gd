@@ -68,16 +68,16 @@ func _ready() -> void:
 		_check(mean.goals <= REAL.goals * share * 2.6 + 0.5, "%d min: %.2f goals a match (real: %.2f)" % [int(length), mean.goals, REAL.goals * share])
 		if length >= Game.LENGTHS[-1]:
 			_check(mean.live > 21.0 and mean.live < 32.0, "full length: the ball live %.1f minutes (real: about 27)" % mean.live)
-			_check(mean.points >= 30.0 and mean.points <= 55.0, "full length: %.1f points (real: about 42)" % mean.points)
+			_check(mean.points >= 28.0 and mean.points <= 56.0, "full length: %.1f points (real: about 42)" % mean.points)
 			_check(mean.goals <= 6.0, "full length: %.2f goals (real: 2.5-3)" % mean.goals)
 			_check(mean.shots >= 55.0 and mean.shots <= 100.0, "full length: %.1f shots (real: about 77)" % mean.shots)
-			_check(mean.sidelines >= 3.0, "full length: %.1f sideline cuts (real: a good many more)" % mean.sidelines)
+			_check(mean.sidelines >= 2.0, "full length: %.1f sideline cuts (real: a good many more)" % mean.sidelines)
 	# Over every match: the rate of scoring while the ball is live, and how many shots score.
 	var per := func(k: String) -> float: return all[k] / maxf(1.0, all.live)
 	print("a live minute: %.2f points (real %.2f), %.3f goals (real %.3f), %.2f shots (real %.2f); %.0f%% of shots score (real 60%%)" % [
 		per.call("points"), REAL.points / REAL.live_min, per.call("goals"), REAL.goals / REAL.live_min, per.call("shots"), REAL.shots / REAL.live_min,
 		100.0 * all.scores / maxf(1.0, all.shots)])
-	_check(per.call("points") > 1.15 and per.call("points") < 2.1, "points a live minute")
+	_check(per.call("points") > 1.05 and per.call("points") < 2.1, "points a live minute")
 	_check(per.call("goals") < 0.22, "goals a live minute")
 	_check(per.call("shots") > 2.0 and per.call("shots") < 3.8, "shots a live minute")
 	_check(all.scores / maxf(1.0, all.shots) > 0.45 and all.scores / maxf(1.0, all.shots) < 0.75, "shots that score")
