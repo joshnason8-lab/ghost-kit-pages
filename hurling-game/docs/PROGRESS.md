@@ -1,28 +1,87 @@
 # Ash & Leather: progress
 
-The hurling game, built overnight on `claude/hurling-game`. If work stops, resume from here and `git log`.
+The hurling game, built overnight (21 October 2026) on `claude/hurling-game`, draft PR #6. If work stops, resume from
+here and `git log`.
 
-## Done
-- Project copied from a snapshot of Takraw Smash (its infrastructure: autoloads, UI helpers, tests, CI), with the
-  Takraw-specific game, leagues, art and languages taken out.
-- Research (in the session's scratchpad, written up into docs/): how hurling is played (numbers), markets and
-  languages, Play policy, names.
-- Fonts: Noto Sans (body), Oswald (programme-style headings), Uncial Antiqua (the title), all with Irish fadas; Noto
-  and Oswald subset to Latin + Latin Extended-A (312 KB in all).
-- autoload/game.gd: settings, palette, frame rate, graphics; autoload/db.gd: twenty counties, invented players.
+## Done (0.1.0-beta)
 
-## Next
-- Rules module + tests, pitch, sliotar, players, AI, officials, match, HUD, menus, tests, CI, store, pages.
+- **Research** (written up in docs/RULES.md, LANGUAGES.md, AI.md): the GAA Official Guide Part 2 (27 March 2026
+  edition) and the 2026 dissent rule; how hurling is played (the 2026 Games Intelligence Unit numbers, sports
+  science); markets, languages and Google Play policy; the name.
+- **Rules module** (`game/rules.gd`, `game/pitch.gd`) with a headless test for each rule (test_runner: 292 checks).
+- **The match** (`game/match.gd`): throw-ins, open play, the loose ball, catches and lifts, the carry rules, strikes,
+  hand-passes, solos, tackles, fouls, advantage, cards (yellow, red, black and the sin bin), puck-outs, frees, 65s,
+  sideline cuts, penalties, scores, wides, posts and crossbar, added time, half time, extra time, the shoot-out,
+  full time and the result. The clock runs through stoppages (the referee's watch); match length 8-70 minutes.
+- **Officials** with their signals and flags; **team AI** tuned to real numbers (AI.md); your player by touch
+  (floating joystick, context buttons, switch, assist levels); the broadcast camera; the HUD (score bug in
+  goals-points and total, the clock, added time, calls, the sliotar's marker, your steps).
+- **Bodies** built in code on a 17-bone skeleton: helmets with face guards, hurleys, four kit designs in each county's
+  colours, umpires' white coats; a far LOD on Low. Close-ups: `tests/kit_view.tscn`.
+- **Grounds**: the parish field at dusk, the county ground (day and under lights), the national stadium; merged
+  geometry, a one-draw-call crowd.
+- **Menus**: the home screen as a match programme over a live AI match (a drawn dusk field on Low); match setup as
+  the team sheets; the Summer Championship and the Tier Two Cup; Settings (language, help, length, grade, graphics
+  with auto, frame rate, camera, sound, music, vibration, left-handed, button size, move buttons, About with
+  privacy, help, licences); How to Play (scrolls from anywhere); results as the paper's report with a box score.
+- **Languages**: English and Irish (every string), Irish plurals; fit_audit clean at four screen shapes.
+- **Tests**: test_runner, fit_audit, user_bot (play and idle), match_sim, input_test, perf_probe, screenshots,
+  kit_view, venue_view, compile_check. All in CI except perf_probe and the picture tools.
+- **CI**: the Android build (tests, 64-bit and 32-bit APKs, the `ash-and-leather-beta` release) and the Play bundle
+  (unsigned; target API 36, 16 KB pages, isGame, vibrate only) both green.
+- **Pages**: `ash-and-leather/` (index, privacy, support), linked from Settings > About.
+- **Store**: PLAY_STORE.md with every App content answer, listings (en-GB default, en-US, en-AU, en-CA), the icon,
+  the feature graphic and the screenshots (two in Irish).
+- **Docs**: README, RULES, LANGUAGES, AI, MESHY_BRIEF, BETA.
+- **Music**: a jig written for the game (tin whistle, harp, bodhrán), synthesised (`tools/audio/make_music.py`).
 
-## Decisions
-- **Name: Ash & Leather** (slug `ash-and-leather`). The "clash of the ash" (the hurley) on leather (the sliotar).
-  Web and store search (21 Oct 2026) found no app or game by that name; the hurling apps on the stores are Flick
+## Next (in order)
+
+1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev
+   overlay: tap the version seven times), heat, the buttons' size and place. The logic costs about 2 ms a frame on a
+   desktop core; a low-end phone's is maybe four times slower: if needed, think off-ball players' targets at 10 Hz.
+2. **Substitutions** (five, three more in extra time, temporary ones for the sin bin) and tired players.
+3. **Tactics**: a sweeper, a two-man full-forward line, short or long puck-outs, chosen in match setup.
+4. **Umpires who now and then get a close one wrong**, and Hawk-Eye at the stadium (as the real one has).
+5. **Commentary-style call-outs** and crowd songs ("Come on the ...", "[County] abú!").
+6. **A native Irish speaker** to read `i18n/src/ga.json` (docs/LANGUAGES.md lists the terms to check).
+7. **Camogie**, with its own rules done properly (60 minutes, the 45, hand-passed goals, its contact rules).
+8. **Club hurling**: invented parish clubs in a county championship, at the parish field.
+9. Meshy bodies, if the owner wants them (docs/MESHY_BRIEF.md): no credits spent.
+
+## Needs the owner
+
+- Google Play: the developer account, the upload key (as the three repository secrets in PLAY_STORE.md), the closed
+  test with 12 testers for 14 days, the store listing pasted in.
+- Confirm in Play Console that Irish is not offered as a store-listing language (the research could not open
+  Google's page).
+- A native Irish speaker's read of the translation.
+
+## Decisions, and why
+
+- **Name: Ash & Leather** (slug `ash-and-leather`): the "clash of the ash" (the hurley) on leather (the sliotar). A
+  web and store search on 21 October 2026 found no app or game by that name; the hurling apps on the stores are Flick
   Hurling, the old GPA Hurling, Red Bull Strike and Hurl Clash. Rejected: "Puc Fada" (a real GAA competition),
   "Clash of the Ash" (the crowded "Clash of ..." space), "Hurl" (Hurl Clash), "Small Ball" (an existing app).
-- **Counties as places.** County names are place names, so they are used plainly (in English and Irish). No crests,
+- **Counties as places.** County names are place names, so they are used plainly, in English and Irish. No crests,
   no county-board jerseys (each county wears its traditional colours in one of the game's own four kit designs, no
-  crest, no sponsor), no nicknames (fans' nicknames such as a county's animal are associated with the county boards'
-  marketing), no real competition names (the game's competition is "the Summer Championship").
-- **Players are invented**: common Irish first names and surnames, combined from a seed, with a block-list of
-  well-known hurlers' names that are never generated.
-- **Languages**: English and Irish (docs/LANGUAGES.md).
+  crest, no sponsor), no nicknames (fans' nicknames are tied to the county boards' marketing), no real competition
+  names: the game's competitions are "the Summer Championship" and "the Tier Two Cup", run in the shape of the real
+  senior championship (two provincial round robins of five, then the knock-outs) without its names.
+- **Players are invented**: common Irish first names and surnames combined from a seed, with a block-list of
+  well-known hurlers' names that are never generated; shown in Irish form in Irish, English form in English.
+- **Languages**: English and Irish (docs/LANGUAGES.md); Play has no Irish listing, so en-GB is the default.
+- **The look**: the match-day programme (cream paper, black and red print, a halftone sun) and the parish field at
+  dusk, rather than Kabaddi's tiles or Takraw's arena navy. Uncial lettering for the name, a condensed face (Oswald)
+  for headings, as programmes print them.
+- **The clock** runs faster than real time (Settings > Match length, 14 minutes by default), the play at real speed,
+  so a match fits a sitting and still ends with a real-looking scoreline; 70 minutes is the real thing.
+- **Camera**: the broadcast gantry at the halfway line, panning and zooming, and a marker on the sliotar, because
+  the ball is 7 cm across on a 140 m pitch.
+- **ABIs**: arm64-v8a and armeabi-v7a in the bundle (Play serves each phone its own, so 32-bit costs 64-bit users
+  nothing) because some 2-3 GB Galaxy A0x and other Android Go phones run 32-bit Android; the beta release has a
+  64-bit APK and a separate 32-bit one.
+- **The black card** in the Senior grade only (it does not apply in club hurling); the autumn 2026 third-level
+  trial rules are not played (not in force).
+- **Grade and draws**: a draw stands in a challenge match; a knock-out game goes to extra time and penalties.
+- **No Meshy credits** were spent; bodies are code-built (MESHY_BRIEF.md says what to order).
