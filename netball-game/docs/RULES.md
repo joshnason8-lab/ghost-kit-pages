@@ -227,14 +227,14 @@ Real leagues change a few rules. The game offers them under its own names, never
 | Game option | What it is | Who plays it (facts, October 2026) |
 |---|---|---|
 | **Double Zone** (Quick Match setting) | In the last five minutes of each quarter (and of extra time), a goal from the outer zone of the circle, 3.0 to 4.9 m from the post, counts two | Australia's top league since 2020 (its "Super Shot", 3.0-4.9 m, the last 5 minutes of each quarter); England's top league since 2025 (last 5 minutes, about 3 m); New Zealand's since 2025 (3.5 m and out, last 5 minutes) |
-| Rolling substitutions (next) | Changes on the fly, with no stoppage | Australia's top league |
-| Time-outs (next) | 90-second team time-outs after a goal | Australia: two a team each half; England: one a team a match; New Zealand: one a team each half |
+| **Rolling changes** (Quick Match setting) | Team changes at any time (in the game, from the pause menu) | Australia's top league |
+| **Time-outs** (Quick Match setting) | 90-second team time-outs after a goal, time held; the game gives two a team each half and resets them at half-time; the AI calls one now and then when four or more behind | Australia: two a team each half; England: one a team a match; New Zealand: one a team each half |
 
 Sources: https://netball.com.au/sites/netballnation/files/2025-12/2026%20SSN%20&%20SN%20Reserves%20Rules%20of%20the%20Game%20FINAL.pdf ;
 https://www.netballsl.com/learn-the-game/ ; https://www.rnz.co.nz/news/sport/544090/ ;
 https://www.skysports.com/netball/news/12415/13267746/
 
-In the game: `Rules.DZ_FROM`, `DZ_LAST`, `goal_value`, `double_zone_live`; the scoreboard says DOUBLE ZONE while it is
+In the game: time-outs in `Match.call_timeout` (`Rules.TIMEOUT_LEN`, `TIMEOUTS_PER_HALF`; test `_league_options`), rolling changes in the pause menu (`HUD._rolling_changes`); the Double Zone in `Rules.DZ_FROM`, `DZ_LAST`, `goal_value`, `double_zone_live`; the scoreboard says DOUBLE ZONE while it is
 live and a two-point goal is called as one. Shorter quarters scale the window (its last third). The AI's GA takes a
 long two now and then. Test: `_rules` ("the Double Zone: two from 3.5 m ..."). Fast5 (five a side, 6-minute quarters,
 1-2-3 point shots) is a different game and not offered.

@@ -8,7 +8,8 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 
 - Branch `claude/netball-game`, folder `netball-game/` (self-contained Godot 4.7.2 project), pages folder
   `centre-pass-netball/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
-- Version 0.1.0-beta.
+- Version 0.1.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
+  https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/centre-pass-netball-beta.
 
 ## Done
 
@@ -22,15 +23,27 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   scoreboard, touch controls with movable buttons, the AI for both teams, the umpires' calls, box score.
 - Screens: home (court-shaped menu, bib rail), quick setup (team sheet), settings, how to play (four tabs, the
   positions with area maps), result with box score, Nations Cup, records, licences.
-- Tests: test_runner with a check for each rule, rules seen in live play, AI matches, extra time, the motion audit,
-  the cup; fit_audit at four screen shapes in every language; input_test (dragging on text scrolls every page).
+- Tests: test_runner with a check for each rule, rule- League options: the Double Zone, time-outs (90 s, two a half, after a goal) and rolling changes.
+- CI: the Android build (tests, fit audit, input test, APK, beta release) and the Play bundle (unsigned; target API
+  36, min 24, only VIBRATE, isGame, 16 KB pages: all checked) pass.
+- Store: PLAY_STORE.md, English listings (6 regional), icon, feature graphic, 7 screenshots; pages; README; BETA.md;
+  MESHY_BRIEF.md; synthesized menu music.
+- Languages done: en, af, zu, xh, st, tn, ny, sw, ms, zh, cy (fit audit clean). In progress: lg, sn, si, ta, mi, to,
+  sm, fj, and the translated store listings. The usage limit stopped the first translation run at 07:45 UTC; it
+  resumed at 09:48.
 
 ## Next
 
-1. Translations into the 18 other languages (in progress), then fit_audit clean.
-2. CI green, the draft PR, the beta release.
-3. Store: icon, feature graphic, screenshots, listings; pages; PLAY_STORE.md.
-4. Time-outs and rolling substitutions (league options), suspension in play, injury stoppages.
+1. Finish the last eight languages and the store listings' translations; translate the seven time-out/rolling
+   strings added after the first pass; fit audit clean in all 19.
+2. Injury and blood stoppages (30 s, time held); umpires' warnings and suspensions (2 min) for repeated infringements.
+3. A club league season (invented club nicknames in Australia, New Zealand, England, South Africa).
+4. The after-goal tactical change (2024) on request.
+5. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
+6. Native speakers' review of every translation (docs/translation_notes/).
+7. Meshy models (docs/MESHY_BRIEF.md) if the owner chooses; the upload key and the closed test (store/PLAY_STORE.md).
+
+s), suspension in play, injury stoppages.
 5. A club league season (invented club nicknames) after the Nations Cup.
 6. Meshy models (docs/MESHY_BRIEF.md) if the owner chooses.
 

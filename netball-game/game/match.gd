@@ -55,6 +55,9 @@ var me: Player = null               # the player you control
 var me_idle := 0.0
 var need_winner := false
 var double_zone := false
+var rolling := false                # the league option: team changes at any time (the pause menu)
+var timeouts := [0, 0]              # the league option: time-outs left this half, by team
+var _timeout_until := 0.0
 var stats := {}                     # player id -> counters
 var log: Array = []                 # what happened, for the tests and the result
 var calls := {}                     # infringement kind -> count (the tests check the rules are used)
@@ -74,6 +77,9 @@ func _ready() -> void:
 	quarter_min = float(config.get("quarter", Game.quarter_minutes()))
 	need_winner = bool(config.get("need_winner", false))
 	double_zone = bool(config.get("double_zone", false))
+	rolling = bool(config.get("rolling", false))
+	if bool(config.get("timeouts", false)):
+		timeouts = [Rules.TIMEOUTS_PER_HALF, Rules.TIMEOUTS_PER_HALF]
 	time_left = Rules.period_length(1, quarter_min)
 	if config.has("quarter_s"):
 		time_left = float(config.quarter_s)   # the tests: short quarters
@@ -185,6 +191,9 @@ func _process(delta: float) -> void:
 				_setup_centre()
 		"break":
 			_run_break(dt)
+		"timeout":
+			if demo and phase_t > 0.6 or _break_skip or phase_t > Rules.TIMEOUT_LEN:
+				_end_timeout()
 		"over":
 			if phase_t > 2.5 and not _ended:
 				_end()
@@ -631,6 +640,10 @@ func _goal(pl: Player, value: int) -> void:
 		Game.haptic("goal")
 	pl.set_act("cheer")
 	log.append({"t": _elapsed(), "q": q, "goal": pl.team, "by": pl.pos, "value": value})
+	# A side four or more behind may call a time-out after the goal (the AI's; yours is in the pause menu).
+	var other := 1 - pl.team
+	if other != user_team and int(timeouts[other]) > 0 and score[pl.team] - score[other] >= 4 and rng.randf() < 0.35:
+		call_timeout.call_deferred(other)
 	game_event.emit("goal", {"team": pl.team, "by": pl.pos, "value": value})
 
 
@@ -747,6 +760,33 @@ func _run_break(_dt: float) -> void:
 		_next_period()
 
 
+## A time-out (the league option): 90 seconds with time held, taken after a goal (the next centre pass not yet
+## whistled), two a team each half.
+func can_timeout(t: int) -> bool:
+	return t >= 0 and int(timeouts[t]) > 0 and (phase == "goal" or (phase == "setup" and String(restart.get("kind", "")) == Rules.CENTRE))
+
+
+func call_timeout(t: int) -> void:
+	if not can_timeout(t):
+		return
+	timeouts[t] = int(timeouts[t]) - 1
+	if phase == "goal":
+		_setup_centre()
+	_enter("timeout")
+	_break_skip = false
+	Sfx.play("whistle", -6.0)
+	game_event.emit("timeout", {"team": t})
+	if hud:
+		hud.show_break(-1, q, t)
+
+
+func _end_timeout() -> void:
+	_break_skip = false
+	if hud:
+		hud.hide_break()
+	_enter("setup")
+
+
 func skip_break() -> void:
 	_break_skip = true
 
@@ -760,6 +800,8 @@ func _next_period() -> void:
 		time_left = float(config.quarter_s) * 0.5 if q <= 6 else INF
 	q_scores.append([0, 0])
 	_cp_whistled = false
+	if q == 3 and bool(config.get("timeouts", false)):
+		timeouts = [Rules.TIMEOUTS_PER_HALF, Rules.TIMEOUTS_PER_HALF]
 	_set_ends()
 	for t in 2:
 		for pl in players[t]:

@@ -1,0 +1,41 @@
+# Google Play store listing, Kiswahili (sw). Paste each part into Play Console > Grow >
+# Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Centre Pass Netball
+
+== Short description ==
+Netiboli kwa sheria halisi: toa pasi, linda kwa m 0.9, funga ukiwa duarani.
+
+== Full description ==
+Centre Pass Netball ni netiboli kwenye simu yako, inayochezwa kwa Sheria za Netiboli kama zilivyo leo. Chukua pasi ya katikati, kimbilia nafasi wazi, lisha duara la goli na upige, kisha urudishe mpira kwa kuunasa.
+
+MCHEZO HALISI
+• Wachezaji saba kila upande, kila mmoja katika maeneo yake: GS, GA, WA, C, WD, GD na GK, wakiwa wamevaa bibu.
+• Pasi ya katikati, inayopokezanwa baada ya kila goli na lazima idakwe katika theluthi ya kati.
+• Kazi ya miguu na mguu wa kutua, sekunde tatu, uzuiaji kwa m 0.9, kugusana, kuotea, juu ya theluthi na pasi fupi, vyote vikiamuliwa na waamuzi wawili wanaoonyesha kila uamuzi kwa ishara.
+• Pasi huru, pasi za penalti, pasi au pigo la penalti ndani ya duara, mirusho kutoka nje na faida.
+• Robo nne zenye mapumziko halisi, na muda wa nyongeza hadi timu moja iongoze kwa magoli mawili pale mechi lazima ipate mshindi.
+• Ni Goal Shooter na Goal Attack pekee wanaoweza kufunga, na tu wakiwa ndani ya duara.
+
+CHEZA UPENDAVYO
+• Cheza kama timu nzima, au chagua bibu ucheze nafasi moja mechi nzima.
+• Mechi ya haraka: mataifa yoyote mawili kati ya 23 ya netiboli, kuanzia Australia, New Zealand, Uingereza, Jamaika na Afrika Kusini hadi Malawi, Uganda, Tonga, Fiji, Singapore na Sri Lanka.
+• Kombe la Mataifa: makundi mawili, nusu fainali, mechi ya medali ya shaba na fainali, pamoja na msimamo unaopangwa kwa asilimia ya magoli.
+• Takwimu za kila mechi: magoli kwa majaribio, pasi za kulisha, pasi za katikati zilizopokelewa, mipira iliyopatikana, mipira iliyonaswa, mipira iliyorudi na penalti.
+• Sheria ya ligi unayoweza kuwasha: Double Zone, ambapo mipigo ya mbali mwishoni mwa kila robo huhesabiwa magoli mawili.
+• Robo za dakika 5, 8, 10 au dakika 15 kamili.
+
+VIWANJA VITATU
+Ukumbi mkubwa uliojaa mashabiki, ukumbi wa michezo na uwanja wa nje chini ya anga la jioni.
+
+IMETENGENEZWA KWA AJILI YA SIMU YAKO
+• Lugha kumi na tisa: English, Afrikaans, isiZulu, isiXhosa, Sesotho, Setswana, Chichewa, Luganda, chiShona, Kiswahili, Bahasa Melayu, 中文, සිංහල, தமிழ், Cymraeg, Te Reo Māori, Lea Faka-Tonga, Gagana Sāmoa na Na Vosa Vakaviti.
+• Hakuna kinachochezwa kwa niaba yako: wewe ndiye unayetoa pasi, unayefunga na unayelinda.
+• Inaenda vizuri kwenye simu za bei nafuu na za bei ya kati, na kuna hali ya kuokoa chaji pia. Vitufe unavyoweza kubadilisha ukubwa wake na kuvihamisha, na mpangilio kwa wanaotumia mkono wa kushoto.
+• Inachezwa bila intaneti. Hakuna matangazo, hakuna ununuzi, hakuna akaunti, na hakuna data inayokusanywa.
+
+Centre Pass Netball ni mchezo huru. Hauhusiani na, wala haujaidhinishwa na, chombo chochote kinachosimamia netiboli, ligi, klabu au mchezaji yeyote. Wachezaji ni wa kubuni; nchi na sheria ni halisi.
+
+== Release notes (first release) ==
+Toleo la kwanza la Centre Pass Netball: Mechi ya haraka na Kombe la Mataifa, katika lugha kumi na tisa.

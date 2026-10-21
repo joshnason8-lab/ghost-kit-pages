@@ -5,8 +5,8 @@ extends Control
 
 const CREDITS := """[b]Centre Pass Netball[/b]
 Made by Josh Nason.
-Players, umpires, venues, crowd, ball, flags and sounds made in code for the game. Crowd reactions from Kabaddi
-Raid, by the same maker."""
+Players, umpires, venues, crowd, ball, flags and sounds made in code for the game; the menu music written for
+it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans, Noto Sans Sinhala, Noto Sans Tamil and Noto Sans SC: Copyright The Noto Project Authors (https://github.com/notofonts).

@@ -287,5 +287,12 @@
   "TEAM_SRI": "Sri Lanka",
   "TEAM_KEN": "Kenya",
   "TEAM_BOT": "Botswana",
-  "TEAM_NAM": "Namibia"
+  "TEAM_NAM": "Namibia",
+  "TIMEOUTS": "Time-outs",
+  "TIMEOUTS_NOTE": "A league rule: each side may call two 90-second time-outs a half, after a goal. Yours is in the pause menu.",
+  "ROLLING": "Rolling changes",
+  "ROLLING_NOTE": "A league rule: make team changes at any time from the pause menu, not only at the intervals.",
+  "TIME_OUT_N": "Time-out ({n} left)",
+  "TIME_OUT_CALLED": "Time-out: {team}",
+  "TIME_OUT_NOTE": "90 seconds, with time held. Make team changes now; Continue when you are ready."
 }

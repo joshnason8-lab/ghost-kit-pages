@@ -161,7 +161,7 @@ func _process(delta: float) -> void:
 		var want: Array = m.button_set()
 		if want != _controls.ids and not _controls.editing:
 			_controls.set_buttons(want)
-		_controls.visible = not m.paused and m.phase != "break" and m.phase != "over" or _controls.editing
+		_controls.visible = not m.paused and not (m.phase in ["break", "over", "timeout"]) or _controls.editing
 	_me_ring += delta
 	_overlay.queue_redraw()
 
@@ -258,7 +258,7 @@ func _floor_ring(c: Vector2, r: float, col: Color, w := 3.0, seg := 28) -> void:
 
 
 func _draw_overlay() -> void:
-	if m.phase == "break":
+	if m.phase == "break" or m.phase == "timeout":
 		return
 	var font: Font = Game.font_bold
 	var show_tags := int(Game.settings.tags) != 2 and not bool(m.config.get("attract", false))
@@ -300,7 +300,7 @@ func _draw_overlay() -> void:
 
 ## The break after period q (next: the period that follows): the scores by quarter, the interval's real length
 ## counting down, team changes (substitutions are allowed at any interval, R3), and Continue.
-func show_break(q: int, next: int) -> void:
+func show_break(q: int, next: int, timeout_team := -1) -> void:
 	if m.demo:
 		return
 	hide_break()
@@ -316,13 +316,16 @@ func show_break(q: int, next: int) -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
 	margin.add_child(v)
-	var mins := Rules.interval_after(q)
-	var title := tr("HALF_TIME") if q == 2 else (tr("FULL_TIME_LEVEL") if q == 4 else tr("QUARTER_TIME_N").format({"n": q}))
-	if q >= 5:
-		title = tr("EXTRA_TIME_BREAK")
-	var head := UI.label(title, "TitleLabel", 60)
-	v.add_child(head)
-	v.add_child(UI.wrap(tr("INTERVAL_NOTE").format({"min": int(mins), "next": period_name(next)}), "MutedLabel", 18))
+	if timeout_team >= 0:
+		v.add_child(UI.label(tr("TIME_OUT_CALLED").format({"team": DB.team_name(m.team_id(timeout_team))}), "TitleLabel", 60))
+		v.add_child(UI.wrap(tr("TIME_OUT_NOTE"), "MutedLabel", 18))
+	else:
+		var mins := Rules.interval_after(q)
+		var title := tr("HALF_TIME") if q == 2 else (tr("FULL_TIME_LEVEL") if q == 4 else tr("QUARTER_TIME_N").format({"n": q}))
+		if q >= 5:
+			title = tr("EXTRA_TIME_BREAK")
+		v.add_child(UI.label(title, "TitleLabel", 60))
+		v.add_child(UI.wrap(tr("INTERVAL_NOTE").format({"min": int(mins), "next": period_name(next)}), "MutedLabel", 18))
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 22)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -442,6 +445,15 @@ func show_pause(on: bool) -> void:
 	v.add_child(UI.label("%s %d – %d %s · %s %s" % [DB.team_abbr(m.team_id(0)), m.score[0], m.score[1], DB.team_abbr(m.team_id(1)),
 		period_name(m.q), _clock_l.text], "MutedLabel", 18))
 	v.add_child(UI.button(tr("RESUME"), true, func(): m.set_paused(false)))
+	if m.can_timeout(m.user_team):
+		v.add_child(UI.button(tr("TIME_OUT_N").format({"n": int(m.timeouts[m.user_team])}), false, func():
+			m.set_paused(false)
+			m.call_timeout(m.user_team)))
+	if m.rolling and m.user_team >= 0:
+		v.add_child(UI.button(tr("TEAM_CHANGES"), false, func():
+			show_pause(false)
+			_pause_btn.visible = false
+			_rolling_changes()))
 	v.add_child(UI.button(tr("MOVE_BUTTONS"), false, _move_buttons))
 	var quit := UI.button(tr("QUIT_MATCH"), false)
 	quit.pressed.connect(func():
@@ -452,6 +464,32 @@ func show_pause(on: bool) -> void:
 			quit.text = tr("QUIT_SURE"))
 	v.add_child(quit)
 	keep_pause_card(card)
+
+
+## Rolling substitutions (the league option): team changes from the pause menu, at any time.
+func _rolling_changes() -> void:
+	var layer := Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(layer)
+	var dim := ColorRect.new()
+	dim.color = Color(Game.C_BG, 0.86)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var card := UI.card()
+	card.custom_minimum_size = Vector2(620, 0)
+	center.add_child(card)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	card.add_child(v)
+	v.add_child(_changes())
+	v.add_child(UI.button(tr("DONE"), true, func():
+		layer.queue_free()
+		show_pause(true)))
+	UI.keep_on_screen(card)
 
 
 func keep_pause_card(card: Control) -> void:

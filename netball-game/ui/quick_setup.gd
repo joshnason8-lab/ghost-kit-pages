@@ -69,6 +69,12 @@ func _ready() -> void:
 		Game.settings.double_zone = i == 0
 		Game.save_settings())))
 	right.add_child(UI.wrap(tr("DOUBLE_ZONE_NOTE"), "MutedLabel", 16))
+	for opt in [["timeouts", "TIMEOUTS"], ["rolling", "ROLLING"]]:
+		var key: String = opt[0]
+		right.add_child(UI.field(tr(opt[1]), UI.chips_row([tr("ON"), tr("OFF")], 0 if Game.settings[key] else 1, func(i):
+			Game.settings[key] = i == 0
+			Game.save_settings())))
+		right.add_child(UI.wrap(tr(opt[1] + "_NOTE"), "MutedLabel", 16))
 	var play := UI.button(tr("PLAY"), true, _play)
 	play.custom_minimum_size = Vector2(0, 70)
 	v.add_child(play)
@@ -149,4 +155,5 @@ func _play() -> void:
 	Game.save_settings()
 	Game.start_match({"home": _home, "away": _away, "venue": _venue, "quarter": Game.quarter_minutes(),
 		"difficulty": int(Game.settings.difficulty), "mode": "quick", "user_team": 0, "control": int(Game.settings.control),
-		"bib": String(Game.settings.bib), "double_zone": bool(Game.settings.double_zone), "need_winner": false})
+		"bib": String(Game.settings.bib), "double_zone": bool(Game.settings.double_zone), "timeouts": bool(Game.settings.timeouts),
+		"rolling": bool(Game.settings.rolling), "need_winner": false})

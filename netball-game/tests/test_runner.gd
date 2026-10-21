@@ -24,6 +24,7 @@ func _ready() -> void:
 	await _rules_in_play()
 	await _motion()
 	await _controls()
+	await _league_options()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -430,3 +431,26 @@ func _controls() -> void:
 			check(held[0] >= 1, "nothing is played for you: an idle thumb is called for held ball (%d)" % held[0])
 		m.queue_free()
 		await frames(2)
+
+
+## The league options: time-outs (90 s, time held, after a goal, two a half) and the Double Zone's two-point goal.
+func _league_options() -> void:
+	var m: Match = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "AUS", "away": "NZL", "venue": "arena", "user_team": -1, "demo": true, "seed": 2, "quarter": 15,
+		"mode": "quick", "timeouts": true, "double_zone": true}
+	add_child(m)
+	await frames(5)
+	check(m.timeouts == [2, 2], "two time-outs a team each half")
+	check(not m.can_timeout(0) or m.phase == "setup", "a time-out only after a goal, before the centre pass")
+	var guard := 0
+	while m.phase != "goal" and guard < 6000:
+		await frames(1)
+		guard += 1
+	if m.phase == "goal":
+		var t0: float = m.time_left
+		m.call_timeout(0)
+		check(m.phase == "timeout" and m.timeouts[0] == 1, "a time-out called after a goal")
+		await frames(10)
+		check(is_equal_approx(m.time_left, t0), "time is held through a time-out")
+	m.queue_free()
+	await frames(2)

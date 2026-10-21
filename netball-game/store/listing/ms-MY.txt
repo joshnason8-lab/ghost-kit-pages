@@ -1,0 +1,41 @@
+# Google Play store listing, Bahasa Melayu, Malaysia (ms-MY). Paste each part into Play Console > Grow >
+# Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Centre Pass Netball
+
+== Short description ==
+Bola jaring peraturan sebenar: hantar, kawal pada 0.9 m, jaring dari bulatan.
+
+== Full description ==
+Centre Pass Netball ialah bola jaring untuk telefon anda, dimainkan mengikut Peraturan Bola Jaring yang terkini. Ambil hantaran tengah, pecut ke ruang kosong, suap bola ke dalam bulatan dan jaringkan, kemudian rampas semula bola dengan pintasan.
+
+PERMAINAN SEBENAR
+• Tujuh pemain sepasukan, setiap seorang dalam kawasannya sendiri: GS, GA, WA, C, WD, GD dan GK, lengkap dengan bib.
+• Hantaran tengah yang bergilir selepas setiap gol dan mesti ditangkap di pertiga tengah.
+• Langkah kaki dan kaki pendaratan, tiga saat, halangan pada 0.9 m, sentuhan, ofsaid, melepasi pertiga dan hantaran pendek, semuanya diadili oleh dua pengadil yang memberi isyarat bagi setiap keputusan.
+• Hantaran bebas, hantaran penalti, hantaran atau jaringan penalti dalam bulatan, balingan masuk dan kelebihan.
+• Empat suku masa dengan rehat sebenar, dan masa tambahan sehingga satu pasukan mendahului dua gol apabila perlawanan mesti ada pemenang.
+• Hanya Penjaring Gol dan Penyerang Gol boleh menjaring, dan hanya dari dalam bulatan.
+
+MAIN IKUT CARA ANDA
+• Kawal seluruh pasukan, atau pilih satu bib dan main satu posisi sepanjang perlawanan.
+• Perlawanan Pantas: mana-mana dua daripada 23 negara bola jaring, dari Australia, New Zealand, England, Jamaica dan Afrika Selatan hingga Malawi, Uganda, Tonga, Fiji, Singapura dan Sri Lanka.
+• Piala Negara: dua kumpulan, separuh akhir, perlawanan pingat gangsa dan final, dengan jadual kedudukan mengikut peratusan gol.
+• Statistik bagi setiap perlawanan: gol daripada cubaan, suapan, hantaran tengah diterima, rampasan, pintasan, lantunan dan penalti.
+• Peraturan liga yang boleh dihidupkan: Double Zone, di mana jaringan jarak jauh pada minit-minit akhir setiap suku dikira dua gol.
+• Suku masa 5, 8, 10 atau 15 minit penuh.
+
+TIGA GELANGGANG
+Arena yang penuh sesak, dewan sukan dan gelanggang terbuka di bawah langit senja.
+
+DIREKA UNTUK TELEFON ANDA
+• Sembilan belas bahasa: English, Afrikaans, isiZulu, isiXhosa, Sesotho, Setswana, Chichewa, Luganda, chiShona, Kiswahili, Bahasa Melayu, 中文, සිංහල, தமிழ், Cymraeg, Te Reo Māori, Lea Faka-Tonga, Gagana Sāmoa dan Na Vosa Vakaviti.
+• Tiada apa yang dimainkan untuk anda: anda yang menghantar, anda yang menjaring, anda yang bertahan.
+• Lancar pada telefon bajet dan pertengahan, dengan mod jimat bateri juga. Butang yang boleh diubah saiz dan dialihkan, serta susun atur untuk pemain kidal.
+• Boleh dimainkan di luar talian. Tiada iklan, tiada pembelian, tiada akaun dan tiada data dikumpul.
+
+Centre Pass Netball ialah permainan indie yang bebas. Ia tidak bergabung dengan atau disokong oleh mana-mana badan induk bola jaring, liga, kelab atau pemain. Pemain-pemainnya adalah rekaan; negara dan peraturannya adalah benar.
+
+== Release notes (first release) ==
+Keluaran pertama Centre Pass Netball: Perlawanan Pantas dan Piala Negara, dalam sembilan belas bahasa.
