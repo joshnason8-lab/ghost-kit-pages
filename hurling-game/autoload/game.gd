@@ -366,7 +366,7 @@ func shadows_enabled() -> bool:
 
 
 func crowd_density() -> float:
-	return [0.35, 0.7, 1.0][clampi(int(settings.graphics), 0, 2)]
+	return [0.22, 0.7, 1.0][clampi(int(settings.graphics), 0, 2)]
 
 
 func haptic(kind: String) -> void:
