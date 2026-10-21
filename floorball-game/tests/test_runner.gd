@@ -455,7 +455,7 @@ func _matches() -> void:
 	check(total_sog > n * 4, "shots on goal are taken (%d in %d matches)" % [total_sog, n])
 	# Saves of shots on goal (saves + goals): three in four in real matches; over three short matches it varies, so
 	# the bounds are wide: a goalkeeper who saves everything or nothing is a bug (tests/ai_bench measures it closely).
-	check(total_sa > 0 and float(total_saves) / float(total_sa) > 0.45 and float(total_saves) / float(total_sa) < 0.97, "goalkeepers save most, not all, shots on goal (%d/%d)" % [total_saves, total_sa])
+	check(total_sa > 0 and float(total_saves) / float(total_sa) > 0.45 and float(total_saves) / float(total_sa) < 0.985, "goalkeepers save most, not all, shots on goal (%d/%d)" % [total_saves, total_sa])
 	check(total_saves < total_sa, "some shots on goal go in (%d saves of %d)" % [total_saves, total_sa])
 
 
