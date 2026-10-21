@@ -93,7 +93,8 @@ func _build_ui() -> void:
 	right.add_child(rule)
 	var cont := _continue_row()
 	var items := [
-		["1", tr("MENU_QUICK"), tr("MENU_QUICK_DESC"), func(): Game.show_screen("res://ui/quick_setup.gd"), true],
+		# The first row is lit: Continue when a championship is under way, else Throw-in.
+		["1", tr("MENU_QUICK"), tr("MENU_QUICK_DESC"), func(): Game.show_screen("res://ui/quick_setup.gd"), cont == null],
 		["2", tr("MENU_CHAMP"), tr("MENU_CHAMP_DESC"), func(): Game.show_screen("res://ui/champ_screen.gd"), false],
 		["3", tr("MENU_WATCH"), tr("MENU_WATCH_DESC"), func(): Game.show_screen("res://ui/quick_setup.gd", {"watch": true}), false],
 		["4", tr("MENU_HOWTO"), tr("MENU_HOWTO_DESC"), func(): Game.show_screen("res://ui/howto_screen.gd"), false],
@@ -240,7 +241,7 @@ func _continue_row() -> Control:
 	var what := tr(c.name_key())
 	if not f.is_empty():
 		what += " · " + tr(String(f.stage)) + " · " + DB.team_name(String(f.home)) + " " + tr("VS") + " " + DB.team_name(String(f.away))
-	return _row("»", tr("CONTINUE"), what, func(): Game.show_screen("res://ui/champ_screen.gd"), false)
+	return _row("»", tr("CONTINUE"), what, func(): Game.show_screen("res://ui/champ_screen.gd"), true)
 
 
 func _lang_button() -> Button:

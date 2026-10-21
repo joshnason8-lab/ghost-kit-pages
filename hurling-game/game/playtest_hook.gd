@@ -40,6 +40,7 @@ func _process(delta: float) -> void:
 		"goal_dist": snappedf(Pitch.from_goal_line(a.global_position, m.dir(a.team)), 0.1) if a != null else 0.0,
 		"user_team": int(m.user_team), "restart": String(m.restart.get("kind", "")),
 		"taker": m.taker != null and m.taker == a, "events": m.events.size(),
+		"drop": px.call(m.hud._drop) if m.hud._drop != Vector3.INF else [],
 		"fired": m.controls.last_fired, "action": String(a.action) if a != null else "", "busy": a != null and a.busy(),
 	}
 	JavaScriptBridge.eval("window.ashState = " + JSON.stringify(st) + ";", true)

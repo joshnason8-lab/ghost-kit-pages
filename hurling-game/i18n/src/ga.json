@@ -371,5 +371,7 @@
   "TAC_PO_LONG": "Fada",
   "TAC_PUCKOUT_NOTE": "Coinníonn poc gearr chuig cúlaí saor an sliotar ach meallann sé an brú; buaitear poc fada isteach sa lár thart ar leath an ama.",
   "TAC_THEIRS": "Mar seo atá {team} ag imirt: {list}",
-  "CALL_SWEEPER": "Scuabaire siar ag {team} chun an tosach a choinneáil"
+  "CALL_SWEEPER": "Scuabaire siar ag {team} chun an tosach a choinneáil",
+  "START_AGAIN": "Tosaigh arís",
+  "START_AGAIN_SURE": "An séasúr seo a chailleadh? Tapáil arís"
 }

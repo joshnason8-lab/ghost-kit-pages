@@ -365,5 +365,7 @@
   "TAC_PO_LONG": "Long",
   "TAC_PUCKOUT_NOTE": "Short to a free back keeps the ball but invites the press; long into the middle is won about half the time.",
   "TAC_THEIRS": "{team} are playing: {list}",
-  "CALL_SWEEPER": "{team} drop a sweeper back to hold the lead"
+  "CALL_SWEEPER": "{team} drop a sweeper back to hold the lead",
+  "START_AGAIN": "Start again",
+  "START_AGAIN_SURE": "Lose this season? Tap again"
 }

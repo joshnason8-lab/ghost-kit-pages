@@ -504,6 +504,15 @@ func _champ() -> void:
 			h._fill()
 			await frames(8)
 			await audit("champ_%s_%d" % [team, tab])
+		# Start again, asked once more.
+		var hub := Game.show_screen("res://ui/champ_screen.gd")
+		await frames(4)
+		for b in hub.find_children("*", "Button", true, false):
+			if (b as Button).text == tr("START_AGAIN"):
+				b.set_meta("sure", true)
+				(b as Button).text = tr("START_AGAIN_SURE")
+		await frames(4)
+		await audit("champ_%s_again" % team)
 		# On to the knock-outs, and the end.
 		var guard := 0
 		while c.phase != "done" and guard < 40:

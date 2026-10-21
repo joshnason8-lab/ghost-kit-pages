@@ -74,7 +74,7 @@ var settings := {
 	"left_handed": false,
 	"btn_size": 0,          # the match buttons: 0 Normal, 1 Large, 2 Extra large
 	"btn_pos": {},          # buttons you have moved: id -> [x, y] as a fraction of the screen
-	"difficulty": 1,        # 0 Junior, 1 Intermediate, 2 Senior, 3 All-Star
+	"difficulty": 0,        # 0 Junior, 1 Intermediate, 2 Senior, 3 All-Star (Junior to start: docs/PLAYTEST.md)
 	"assist": 1,            # 0 none; 1 your player solos by himself before his fourth step; 2 that and the switch
 	"length": 1,            # LENGTHS: how long a match you play takes
 	"grade": 0,             # 0 senior county (2 x 35), 1 club and minor (2 x 30)

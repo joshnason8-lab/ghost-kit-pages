@@ -75,6 +75,17 @@ func _hub() -> void:
 			Game.delete_champ()
 			Game.show_screen("res://ui/champ_screen.gd")))
 	elif not f.is_empty():
+		# Start again (another county, the other competition): a second tap to be sure, as the season is lost.
+		var again := UI.button(tr("START_AGAIN"), false)
+		again.custom_minimum_size = Vector2(0, 56)
+		again.pressed.connect(func():
+			if again.has_meta("sure"):
+				Game.delete_champ()
+				Game.show_screen("res://ui/champ_screen.gd")
+			else:
+				again.set_meta("sure", true)
+				again.text = tr("START_AGAIN_SURE"))
+		right.add_child(again)
 		right.add_child(UI.button(tr("PLAY"), true, func(): _play(f)))
 	v.add_child(UI.chips([tr("CHAMP_NEXT"), tr("CHAMP_TABLES"), tr("CHAMP_RESULTS")], _tab, func(i):
 		_tab = i
