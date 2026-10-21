@@ -22,7 +22,7 @@ players in India, Nepal, Bangladesh and Sri Lanka, in fourteen of their language
 | **The active chaser** | Takes his direction with his first run and may not turn back, may not cross the lane, turns only round a pole in the free zone. Fouls are whistled again and again until put right; a touch during a foul does not count. Lane assist (Settings) keeps your chaser legal unless you turn it off. |
 | **Outs** | A touch, a sky dive, a pole dive, a step over the line, a late entry. Defenders on in batches of three; the next batch comes on when one is out. |
 | **Officials** | Two umpires, one on each side line, each with his half: a short whistle and an arm up for an out, short whistles and an arm pointing the way for a foul. The referee signals the end of a turn; the timekeeper and scorer sit at the table under the shamiana. |
-| **The AI** | Chasers chain khos along the lane toward the defender, dive at the lines, turn at the poles; defenders keep behind the chaser's direction, across from the seated chasers who could rise at them, slip past him as he commits and swerve from the hand. Measured against real finals: about 2 outs a minute between equal sides (real: 1.3-1.6). [docs/AI.md](docs/AI.md) has every number. |
+| **The AI** | Chasers chain khos along the lane toward the defender, dive at the lines, turn at the poles; defenders keep behind the chaser's direction, across from the seated chasers who could rise at them, slip past him as he commits and swerve from the hand. Measured against real finals: 1.5 outs a minute between equal sides in the classic game, 1.75 in the fast one (real: 1.3-1.6). [docs/AI.md](docs/AI.md) has every number. |
 | **Grounds** | A village ground of beaten earth at dusk, a school ground by day, an indoor arena on mats (the fast game's), a floodlit stadium of red earth. |
 | **Modes** | Quick Match (either rule book, any two sides, the toss called and the choice made), Championships (16 nations at a world championship, fast rules; 16 states at a national championship, classic rules; men's and women's; groups, quarter-finals, semi-finals, the final), the City League (eight invented city sides, home and away under the fast rules, 3 points a win, 2 a tie, 1 for losing by 3 or fewer; the top four to the semi-finals), Watch a Match, Records. A match plays behind the home screen. |
 | **Teams** | 24 nations (from the 2025 world championship), 18 Indian states and 8 invented city sides (Mumbai Monsoon, Pune Pace, Bhubaneswar Bolts, Bengaluru Blaze, Hyderabad Hawks, Chennai Cyclones, Kolkata Comets, Ahmedabad Arrows: no real club's name or colours), rated from 2025-26 results, men's and women's apart. Squads of 15, every player invented (names from each region's common names, never a real player's). |
@@ -33,13 +33,13 @@ Per frame in a match (`tests/perf_probe.tscn`, Godot 4.7.2, 1280 × 720):
 
 | Ground | Low | Medium | High |
 |---|---|---|---|
-| Village ground | 75 draws, 70k triangles | 98 draws, 254k triangles | 154 draws, 548k triangles |
-| School ground | 75 draws, 70k triangles | 98 draws, 254k triangles | 154 draws, 547k triangles |
-| Indoor arena (fast game: 24 players) | 84 draws, 89k triangles | 113 draws, 322k triangles | 179 draws, 671k triangles |
-| Floodlit stadium | 75 draws, 71k triangles | 98 draws, 257k triangles | 152 draws, 541k triangles |
+| Village ground | 73 draws, 71k triangles | 96 draws, 255k triangles | 154 draws, 559k triangles |
+| School ground | 73 draws, 71k triangles | 96 draws, 254k triangles | 154 draws, 559k triangles |
+| Indoor arena (fast game: 24 players) | 82 draws, 89k triangles | 111 draws, 322k triangles | 179 draws, 683k triangles |
+| Floodlit stadium | 73 draws, 72k triangles | 96 draws, 258k triangles | 152 draws, 552k triangles |
 
 Budgets: Low 90 draw calls and 90,000 triangles (a Mali-G52 at 720p, 30 frames a second), Medium 130 and 340,000,
-High 190 and 700,000. The beta APK (64-bit ARM) is 28.5 MB; a phone downloads about that from Play. The fonts are 2.4 MB of it.
+High 190 and 700,000. The beta APK (64-bit ARM) is 29.3 MB; a phone downloads about that from Play. The fonts are 2.4 MB of it.
 
 ## Controls
 

@@ -26,14 +26,24 @@ prints outs a minute, how each out came, khos, dives and fouls. Between equal si
 
 | | Classic | Fast (7-minute turns) |
 |---|---|---|
-| Outs a minute | 1.9-2.2 | 2.7 |
-| Of them: touches / dives / pole dives / limits | ~75% / ~10% / ~12% / ~3% | ~70% / 4% / 15% / 8% |
-| Khos a minute | 5.1 | 4.9 |
-| A dive every | 20 s | 19 s |
-| Fouls a minute (AI chasers) | 0.3 | 0.7 |
+| Outs a minute | 1.5 (0.75-2.3 a match) | 1.75 |
+| Of them: touches / dives / pole dives / limits | ~66% / ~7% / ~27% / 0 | ~58% / ~9% / ~32% / 0 |
+| Khos a minute | 13.3 | 11.8 |
+| A dive every | 22 s | 16 s |
+| Fouls a minute (AI chasers) | 0.56 | 0.77 |
+| Dream runs | — | about one a match |
 
-The AI is about 1.5 times as quick to an out as real matches, by design. Sim (`game/sim.gd`), which plays the
-championship matches you don't play, uses the real 1.3 a minute.
+Measured again for 0.2 (21 October 2026, after the playtest's fixes). Two changes moved the numbers:
+
+- **The chain.** Defenders play close to the lane, beside a seated chaser who faces away (`_chain_bias`), as real
+  defenders do, so the chasers give many more khos (5 a minute before, 13 now).
+- **The brake at the line.** A defender turning back from a side line spent his grip on turning and ran over it: a
+  quarter of the AI's outs were out of limits. He now brakes his speed toward a line at his full braking as soon as
+  he needs it all to stop inside (`_brake_at_line`); the same brake keeps your own defender in with the assist on.
+
+The classic game is now at the real rate (1.3-1.6 a minute). `tests/match_sim.gd ... user` and `... bot` play the
+home side as yours (your thumb off the stick, or steered as the phone playtest's tester steers), and print your
+side's outs by kind (docs/PLAYTEST.md).
 
 ## The numbers
 
