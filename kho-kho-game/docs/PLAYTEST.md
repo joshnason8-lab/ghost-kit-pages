@@ -55,6 +55,9 @@ budgets instead (README).
    | Fast rules | ~8, three in four out of limits | 1.3-2.2, a few out of limits | 1.3-1.6 |
    | Classic rules | ~7.7, most out of limits | 0.7-1.5, none out of limits | 1.3-1.6 |
 
+   Run B played again through touch with the fixed build: your side lost 5 defenders in the 3-minute turn instead of
+   34, and the second batch lasted 2:21, close to a dream run.
+
    The AI's own defenders had the same overrun (a quarter of their outs were out of limits) and now brake the same
    way: AI v AI, the classic game came down from 1.8 outs a minute to 1.5, the real rate (docs/AI.md).
 3. **Defending, the defender you steer had no reflexes.** The AI's defenders slip a touch about 70% of the time
