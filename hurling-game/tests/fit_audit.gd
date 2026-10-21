@@ -501,6 +501,7 @@ func _champ() -> void:
 			var h := Game.show_screen("res://ui/champ_screen.gd")
 			await frames(4)
 			h._tab = tab
+			h._bye_note = tab == 0
 			h._fill()
 			await frames(8)
 			await audit("champ_%s_%d" % [team, tab])

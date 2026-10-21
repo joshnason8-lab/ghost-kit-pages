@@ -368,3 +368,4 @@ TAC_THEIRS,{team} are playing: {list},Mar seo atá {team} ag imirt: {list}
 CALL_SWEEPER,{team} drop a sweeper back to hold the lead,Scuabaire siar ag {team} chun an tosach a choinneáil
 START_AGAIN,Start again,Tosaigh arís
 START_AGAIN_SURE,Lose this season? Tap again,An séasúr seo a chailleadh? Tapáil arís
+CHAMP_BYE,{team} had a bye: the round's other games have been played (Results).,Bhí sos ag {team} an babhta seo: imríodh na cluichí eile (Torthaí).

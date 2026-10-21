@@ -367,5 +367,6 @@
   "TAC_THEIRS": "{team} are playing: {list}",
   "CALL_SWEEPER": "{team} drop a sweeper back to hold the lead",
   "START_AGAIN": "Start again",
-  "START_AGAIN_SURE": "Lose this season? Tap again"
+  "START_AGAIN_SURE": "Lose this season? Tap again",
+  "CHAMP_BYE": "{team} had a bye: the round's other games have been played (Results)."
 }

@@ -332,15 +332,17 @@ func _move(at: Vector2) -> void:
 # ---------------------------------------------------------------- the championship, results
 
 func _championship() -> void:
-	for team in ["KIL", "LAO"]:
+	for team in ["KIL", "LAO", "CLA", "WEX", "DOW"]:
 		var c: Championship = Game.new_champ(team)
 		var guard := 0
 		while c.phase != "done" and guard < 40:
 			guard += 1
+			# As the hub does: a round without your county (its bye, or out) is played on to your next game.
+			c.play_byes()
 			var f := c.next_fixture()
 			if f.is_empty():
-				c.play_others()
-				continue
+				check(c.phase == "done", "%s: never stuck without a game (%s, round %d)" % [team, c.phase, c.round])
+				break
 			var r := Sim.play(String(f.home), String(f.away), null, bool(f.knockout))
 			c.record_user_result({"home": f.home, "away": f.away, "score": r.score, "winner": r.winner, "extra_time": r.extra_time,
 				"shootout": {"goals": r.pens} if not (r.pens as Array).is_empty() else {}})

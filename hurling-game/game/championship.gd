@@ -120,6 +120,19 @@ func _due(f: Dictionary) -> bool:
 	return String(f.stage) == ko_stage
 
 
+## A round your county sits out (five in a group, so each has a bye): its other games are played and the
+## championship moves on, round by round, until you have a game or are out. How many rounds went by.
+func play_byes() -> int:
+	var n := 0
+	while phase != "done" and next_fixture().is_empty() and n < 20:
+		var before := "%s%d%s" % [phase, round, ko_stage]
+		play_others()
+		n += 1
+		if "%s%d%s" % [phase, round, ko_stage] == before:
+			break
+	return n
+
+
 func user_out() -> bool:
 	return phase == "done" or (phase == "ko" and next_fixture().is_empty() and not _user_in_later_stage())
 

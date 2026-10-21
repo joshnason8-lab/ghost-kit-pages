@@ -11,12 +11,22 @@ func setup(_args: Dictionary) -> void:
 	pass
 
 
+var _byes := 0
+var _bye_note := false
+
+
 func _ready() -> void:
 	UI.screen(self)
 	_c = Game.get_champ()
 	if _c == null:
 		_pick()
 	else:
+		# Your county's bye (or your county out): the rounds without you are played on to your next game.
+		var was_groups := String(_c.phase) == "groups" and not _c.user_out()
+		_byes = _c.play_byes()
+		if _byes > 0:
+			Game.save_champ()
+			_bye_note = was_groups
 		_hub()
 
 
@@ -143,6 +153,10 @@ func _next() -> void:
 		v.add_child(UI.wrap(tr("CHAMP_WON") if _c.champion == _c.user else tr("CHAMP_OVER"), "", 18))
 		return
 	var f := _c.next_fixture()
+	if _bye_note:
+		var note := UI.wrap(tr("CHAMP_BYE").format({"team": DB.team_name(String(_c.user))}), "SubLabel", 18)
+		note.add_theme_color_override("font_color", Game.C_GOLD)
+		v.add_child(note)
 	if f.is_empty():
 		v.add_child(UI.wrap(tr("CHAMP_OUT"), "", 18))
 		return

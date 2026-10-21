@@ -373,5 +373,6 @@
   "TAC_THEIRS": "Mar seo atá {team} ag imirt: {list}",
   "CALL_SWEEPER": "Scuabaire siar ag {team} chun an tosach a choinneáil",
   "START_AGAIN": "Tosaigh arís",
-  "START_AGAIN_SURE": "An séasúr seo a chailleadh? Tapáil arís"
+  "START_AGAIN_SURE": "An séasúr seo a chailleadh? Tapáil arís",
+  "CHAMP_BYE": "Bhí sos ag {team} an babhta seo: imríodh na cluichí eile (Torthaí)."
 }
