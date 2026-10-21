@@ -24,6 +24,27 @@ excerpts of the cited pages, not from reading a rule book end to end. The only r
 this page says so (**conflict**) and records the reading the game uses. **The owner should check the conflicts
 against a printed rule book** before the release.
 
+## The 0.2 re-check of the conflicts
+
+In October 2026 every conflict on this page was checked again. **The primary sources are still blocked** from the
+build environment (the proxy answers 403 for the Khelo India PDF, the franchise league's rule book, Wikipedia,
+the federation's site and the rule-book copies), so the re-check again rests on search excerpts. What it found:
+
+| Conflict | What the excerpts say now | The game | Status |
+|---|---|---|---|
+| Field 27 m or 29 m | 27 × 16 m with 24 m between the poles and 1.5 m free zones is current (Wikipedia, several 2024-25 sites); 29 × 16 m with 23.5 m and 2.75 m free zones is the older layout still in school textbooks | 27 × 16 m, 24 m | likely; no 2024-26 rule book text seen |
+| The fast field | 22 × 16 m, seven attackers (one active, six seated), 40 × 40 cm blocks 2.30 m apart (the league's Season 1 rule book, search excerpt) | 22 × 16 m, six squares, 40 cm lane | field and seven confirmed; the number of marked blocks uncertain |
+| Points an out at the 2025 World Cup | 2 a touch, as in the franchise league since its second season; the scorelines fit | 2 | likely |
+| Power play | one an innings for each side (several sources and the Season 1 rule book) — the same as one a turn | one a turn | confirmed for the league; whether the World Cup used it is not known |
+| Follow-on | a lead of 9 or more, the leading side's option; one copy says compulsory above 9 and contradicts itself | 9 or more, optional | threshold fairly sure; optional or compulsory uncertain |
+| Putting a foul right | the umpire whistles and sends the chaser the opposite way; cleared by a kho or reaching a free zone; a defender put out through the foul is not out | as found (changed in 0.2) | direction confirmed; clearing from one source |
+| Dream run | 1 point at 3 minutes and 1 more each 30 s (a 5:14 run in the World Cup final scored 5) | as found | confirmed |
+| Both feet out | not found again | the line | unchanged |
+| Sideways play | not found again | any sideways movement allowed | unchanged |
+
+**Still blocked:** reading any rule book end to end, and every rule number. The owner should check the rows above
+marked likely or uncertain against a printed rule book.
+
 ## The field
 
 | | Classic | Fast | Sources |
@@ -92,8 +113,10 @@ and `game/arena.gd` marks out exactly that field. Tests check 27/22 × 16 m, 8/6
   - Crossing the lane between the poles is a foul.
   - In a free zone his direction is free and his side can change. He comes out toward the middle.
 - **Fouls are whistled until put right**, as the umpires do (continuous short whistles, an arm pointing the way):
-  - A turning-back foul is put right by running 0.8 m his proper way.
-  - A lane foul is put right by getting back to his side.
+  - The foul stands until the chaser gives a kho or reaches a free zone (the federation-style wording: the umpire
+    "shall compel the attacker to go in the direction opposite"; the Wikipedia glossary: the foul is cleared by
+    "either giving a kho to a teammate or reaching the free zone"). Until 0.2 the game cleared a turning-back foul
+    after 0.8 m the proper way and a lane foul on getting back to his side; the 0.2 re-check changed both.
   - A defender touched while a foul is on is not out (`touch_counts`). Tests check each of these.
 - **Lane assist** (Settings, on by default) keeps your chaser from turning back or crossing the lane by mistake. Off,
   you play every rule yourself and the umpire whistles you.

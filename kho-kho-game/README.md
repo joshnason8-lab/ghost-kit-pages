@@ -5,7 +5,10 @@ royalties), the same way as Kabaddi Raid and Takraw Smash. "Khamba" is the pole,
 classic rules of the national championships and the fast rules of the 2025 world championship, for the sport's
 players in India, Nepal, Bangladesh and Sri Lanka, in fourteen of their languages.
 
-> **Status: playable beta.** The players are built in code (`game/body.gd`) on a humanoid skeleton, ready to be
+> **Status: playable beta, 0.2.** 0.2 was played first as a phone tester would, in a browser with touch
+> ([docs/PLAYTEST.md](docs/PLAYTEST.md)), and fixed from what was found; it adds coach tips for a first match, the
+> City League, a pole turn and seated chasers who watch the play.
+> The players are built in code (`game/body.gd`) on a humanoid skeleton, ready to be
 > replaced by Meshy models (docs/MESHY_BRIEF.md). No Meshy credits have been spent. Everything else is the game as it
 > will ship.
 
@@ -21,8 +24,8 @@ players in India, Nepal, Bangladesh and Sri Lanka, in fourteen of their language
 | **Officials** | Two umpires, one on each side line, each with his half: a short whistle and an arm up for an out, short whistles and an arm pointing the way for a foul. The referee signals the end of a turn; the timekeeper and scorer sit at the table under the shamiana. |
 | **The AI** | Chasers chain khos along the lane toward the defender, dive at the lines, turn at the poles; defenders keep behind the chaser's direction, across from the seated chasers who could rise at them, slip past him as he commits and swerve from the hand. Measured against real finals: about 2 outs a minute between equal sides (real: 1.3-1.6). [docs/AI.md](docs/AI.md) has every number. |
 | **Grounds** | A village ground of beaten earth at dusk, a school ground by day, an indoor arena on mats (the fast game's), a floodlit stadium of red earth. |
-| **Modes** | Quick Match (either rule book, any two sides, the toss called and the choice made), Championships (16 nations at a world championship, fast rules; 16 states at a national championship, classic rules; men's and women's; groups, quarter-finals, semi-finals, the final), Watch a Match, Records. A match plays behind the home screen. |
-| **Teams** | 24 nations (from the 2025 world championship) and 18 Indian states, rated from 2025-26 results, men's and women's apart. Squads of 15, every player invented (names from each region's common names, never a real player's). |
+| **Modes** | Quick Match (either rule book, any two sides, the toss called and the choice made), Championships (16 nations at a world championship, fast rules; 16 states at a national championship, classic rules; men's and women's; groups, quarter-finals, semi-finals, the final), the City League (eight invented city sides, home and away under the fast rules, 3 points a win, 2 a tie, 1 for losing by 3 or fewer; the top four to the semi-finals), Watch a Match, Records. A match plays behind the home screen. |
+| **Teams** | 24 nations (from the 2025 world championship), 18 Indian states and 8 invented city sides (Mumbai Monsoon, Pune Pace, Bhubaneswar Bolts, Bengaluru Blaze, Hyderabad Hawks, Chennai Cyclones, Kolkata Comets, Ahmedabad Arrows: no real club's name or colours), rated from 2025-26 results, men's and women's apart. Squads of 15, every player invented (names from each region's common names, never a real player's). |
 | **Languages** | English, हिन्दी, मराठी, ಕನ್ನಡ, తెలుగు, தமிழ், മലയാളം, ଓଡ଼ିଆ, বাংলা, ગુજરાતી, ਪੰਜਾਬੀ, অসমীয়া, नेपाली, සිංහල ([docs/LANGUAGES.md](docs/LANGUAGES.md)). The game starts in the phone's language; the globe on the home screen changes it. A text-fit audit checks every screen in every language at 16:9, 19.5:9, 20:9 with a camera cut-out and 4:3 (`tests/fit_audit.gd`). |
 | **Phones** | GL Compatibility renderer. Each ground merged into three draw calls, the crowd one, every player's shadow one. Low graphics: lighter bodies, no outlines, no MSAA, 75% render scale, a thinner crowd; a phone with a small GPU or under 4.5 GB of memory starts on Low, and a match running under 36 frames a second drops a level. Battery saver: about 30 frames a second at 80%. The numbers are below. |
 
@@ -42,10 +45,13 @@ High 190 and 700,000. The beta APK (64-bit ARM) is 28.5 MB; a phone downloads ab
 
 On a phone, held sideways:
 - **Chasing** (your side is always the one chasing or defending, by turns): you are the active chaser, ringed in gold.
-  The left thumb, anywhere on the left, is the joystick. Touch a defender and he is out. **KHO** (it pulses when a
-  seated chaser is in reach, his square ringed) gives the kho; **DIVE** throws you at the nearest defender, or is a
+  The left thumb, anywhere on the left, is the joystick. Touch a defender and he is out. A gold arrow under you shows the way you must keep. **KHO** (it pulses when a
+  seated chaser is in reach, his square ringed) gives the kho; pressed a moment early it arms, and you slow into his
+  back and give it; **DIVE** throws you at the nearest defender, or is a
   pole dive in the free zone. In the fast game, **POWER PLAY** shows for a few seconds as each batch comes on.
-- **Defending**: you run one of the batch; **DODGE** is a burst, **SWITCH** takes another defender.
+- **Defending**: you run one of the batch; **DODGE** is a burst, **SWITCH** takes another defender. Take your thumb
+  off the stick and he runs himself until you take him back.
+- **Coach tips** (on for your first match, and in Settings) explain each of these the first time it matters.
 - Settings: lane assist, button size, Move buttons (drag them, saved), left-handed, vibration (only for what happens
   to you), camera (broadcast, close, behind the pole).
 - The phone's back button pauses a match and resumes it; elsewhere it is Back; on the home screen it quits.

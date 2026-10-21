@@ -39,8 +39,8 @@ func _pick() -> void:
 	(left.get_parent() as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for k in Cup.KINDS:
 		var kk: String = k
-		var key := "CUP_WORLD" if k == "world" else "CUP_NATIONAL"
-		left.add_child(UI.option_card(tr(key), tr(key + "_DESC"), FieldIcon.make(KhoRules.FAST if k == "world" else KhoRules.CLASSIC), _kind == k, func():
+		var key: String = {"world": "CUP_WORLD", "national": "CUP_NATIONAL", "league": "CUP_LEAGUE"}[k]
+		left.add_child(UI.option_card(tr(key), tr(key + "_DESC"), FieldIcon.make(KhoRules.CLASSIC if k == "national" else KhoRules.FAST), _kind == k, func():
 			_kind = kk
 			_clear()
 			_pick()))
@@ -57,7 +57,7 @@ func _pick() -> void:
 	g.columns = 3
 	g.add_theme_constant_override("h_separation", 8)
 	g.add_theme_constant_override("v_separation", 8)
-	var ids: Array = DB.nation_ids() if _kind == "world" else DB.state_ids()
+	var ids: Array = DB.nation_ids() if _kind == "world" else (DB.club_ids() if _kind == "league" else DB.state_ids())
 	for id in ids:
 		var b := Button.new()
 		b.theme_type_variation = "LaneButton"
@@ -156,16 +156,17 @@ func _hub(c) -> void:
 	cols.add_child(UI.scroll(right))
 	(right.get_parent() as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var order := [c.user_group()]
-	for gi in 4:
+	for gi in c.groups.size():
 		if gi != order[0]:
 			order.append(gi)
 	for gi in order:
-		right.add_child(UI.label(tr("CUP_GROUP_N").format({"n": String.chr(65 + gi)}), "SubLabel", 20, Game.C_SAFFRON))
+		var head: String = tr("CUP_TABLE") if c.league() else tr("CUP_GROUP_N").format({"n": String.chr(65 + gi)})
+		right.add_child(UI.label(head, "SubLabel", 20, Game.C_SAFFRON))
 		var rows := []
 		for row in c.group_table(gi):
 			rows.append([row.id, int(row.p), int(row.w), int(row.d), int(row.l), UI.signed(int(row.pf) - int(row.pa)), int(row.pts)])
 		right.add_child(UI.standings([tr("COL_TEAM"), tr("COL_P"), tr("COL_W"), tr("COL_D"), tr("COL_L"), tr("COL_PD"), tr("COL_PTS")],
-			rows, c.user, 2, 0, true))
+			rows, c.user, 4 if c.league() else 2, 0, not c.league()))
 
 
 func _stage_word(s: String) -> String:
@@ -176,7 +177,7 @@ func _play(c, p: Array) -> void:
 	# Your side is always the first named (home) in the match; the toss is the referee's, held at random.
 	var home: String = c.user
 	var away: String = p[1] if p[0] == c.user else p[0]
-	var venue: String = "arena" if c.kind == "world" else ["maidan", "floodlit", "school"][c.round % 3]
+	var venue: String = "arena" if c.kind != "national" else ["maidan", "floodlit", "school"][c.round % 3]
 	Game.start_match({"home": home, "away": away, "venue": venue, "format": c.fmt(), "turn_len": [180.0, 300.0, KhoRules.real_turn(c.fmt())][int(Game.settings.turn_len)],
 		"difficulty": int(Game.settings.difficulty), "mode": "cup", "user_team": 0, "women": c.women, "chase_first": randi() % 2,
 		"knockout": c.knockout(), "stage": c.stage_name(), "follow_on": bool(Game.settings.follow_on), "powerplay": bool(Game.settings.powerplay)})

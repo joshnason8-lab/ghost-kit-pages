@@ -53,6 +53,7 @@ var powerplay_used := false
 var powerplay_on := false
 var powerplay_offer := 0.0     # s left to call a power play (you, the chasing side)
 var user_def: Athlete = null
+var _user_idle := 0.0
 var stats := {}
 var turns_log: Array = []
 var log: Array = []
@@ -80,6 +81,7 @@ var _foul_rate := 0.02
 var _diff := [0.0, 0.0]        # the AI's rating change per side (difficulty)
 var _end_reason := ""
 var _last_kho_t := 0.0
+var _kho_armed := {}           # a kho pressed a moment early: {i, until}
 var _min_turns := 0            # minimum-chase turns played, plus one
 
 
@@ -713,6 +715,21 @@ func _user_chaser(_dt: float) -> void:
 	var w := Vector3(j.x, 0, j.y) * active.top
 	if bool(Game.settings.lane_assist):
 		w = _legal(w)
+	if not _kho_armed.is_empty():
+		var i: int = _kho_armed.i
+		var r := KhoRules.kho_check(f, chase, active.position, float(f.square_x[i]), int(sq_face[i]))
+		if t_match > float(_kho_armed.until) or r == "late" or _to_square.values().has(i):
+			_kho_armed = {}
+		elif r == "ok" and absf(active.position.x - float(f.square_x[i])) < 0.6:
+			_kho_armed = {}
+			_give_kho(i)
+			return
+		else:
+			# Brake into his back: to just short of his cross lane, on this side of the lane.
+			var kp := Vector3(float(f.square_x[i]) - float(chase.dir if chase.dir != 0 else 1) * 0.3, 0, float(chase.half) * 0.55)
+			var to := kp - active.position
+			to.y = 0
+			w = _legal(to.normalized() * minf(active.top, 2.2 + to.length() * 2.5))
 	if not active.busy():
 		active.want = w
 	active.top = _top_speed(active, true)
@@ -720,7 +737,24 @@ func _user_chaser(_dt: float) -> void:
 	if powerplay_offer > 0.0 and not powerplay_used:
 		ids.append("POWERPLAY")
 	controls.set_buttons(ids)
-	controls.lit = "KHO" if _kho_target(false) >= 0 else ""
+	controls.lit = "KHO" if _kho_target(false) >= 0 or not _kho_armed.is_empty() else ""
+
+
+## The next seated chaser ahead of your chaser whose back is to him, within reach of a few strides; -1 none.
+func _next_kho_ahead(within: float) -> int:
+	if active == null:
+		return -1
+	var best := -1
+	var bd := within
+	for i in squares.size():
+		if _to_square.values().has(i) or int(sq_face[i]) != -chase.half:
+			continue
+		var dx := float(f.square_x[i]) - active.position.x
+		var ahead: float = dx * float(chase.dir) if chase.dir != 0 else absf(dx)
+		if ahead > -0.2 and ahead < bd:
+			bd = ahead
+			best = i
+	return best
 
 
 func _top_speed(a: Athlete, chaser: bool) -> float:
@@ -764,6 +798,11 @@ func _on_action(id: String) -> void:
 				var i := _kho_target(true)
 				if i >= 0:
 					_give_kho(i)
+				else:
+					# Pressed a moment early: the kho is armed, and he brakes into the seated chaser's back and gives it.
+					var j := _next_kho_ahead(3.5)
+					if j >= 0:
+						_kho_armed = {"i": j, "until": t_match + 1.2}
 		"DIVE":
 			if _user_chasing() and not active.busy():
 				_dive_at(_nearest_defender(active.position, 3.0))
@@ -820,6 +859,7 @@ func _give_kho(i: int) -> void:
 	active.face_to = squares[i].position
 	active.do("kho", 0.3)
 	_pending_kho = {"i": i, "t": 0.16, "giver": active}
+	_kho_armed = {}
 	_last_kho_t = t_match
 	Sfx.voice("hup", -4.0, 1.25)
 	Sfx.play("slap", -8.0)
@@ -1025,7 +1065,7 @@ func _dive_at(d: Athlete) -> void:
 ## A defender sees the dive coming and jumps aside, if he reads it in time: his reaction is 0.12 s for the best
 ## and 0.32 s for the slowest, and the dive's hands arrive 0.25-0.35 s after it starts (docs/AI.md).
 func _see_dive(d: Athlete, dir: Vector3) -> void:
-	if d == user_def:
+	if d == user_def and not _user_auto():
 		return
 	var read := float(d.data.get("read", 70)) + float(_diff[d.side])
 	var react := lerpf(0.32, 0.12, clampf(read / 100.0, 0.0, 1.0)) + rng.randf_range(-0.05, 0.08)
@@ -1096,12 +1136,14 @@ func _swerves(d: Athlete, kind: String) -> bool:
 	var ai: Dictionary = _ai[d]
 	if float(ai.get("slip_until", 0.0)) > t_match:
 		return true
-	if d == user_def:
-		return false   # yours to dodge yourself
+	# Yours steered by your thumb: his reflexes still work (a touch can slip off him), a little less often than when
+	# he runs himself, and DODGE is yours on top. Without them a new player's defenders fell at 9 outs a minute
+	# against the AI's 2 (docs/PLAYTEST.md).
+	var steered := d == user_def and not _user_auto()
 	var turn := float(d.data.get("turn", 70)) + float(_diff[d.side])
 	var reach := float(active.data.get("reach", 70)) + float(_diff[active.side])
 	var base := SWERVE_TOUCH if kind == KhoRules.OUT_TOUCH else SWERVE_DIVE
-	var p := clampf(base + (turn - reach) / 150.0, 0.15, 0.85)
+	var p := clampf(base + (turn - reach) / 150.0, 0.15, 0.85) * (USER_REFLEX if steered else 1.0)
 	if rng.randf() >= p:
 		return false
 	ai.slip_until = t_match + (0.5 if kind == KhoRules.OUT_TOUCH else 0.6)
@@ -1112,6 +1154,8 @@ func _swerves(d: Athlete, kind: String) -> bool:
 	ai.juke_at = t_match
 	ai.juke_until = t_match + 0.45
 	ai.juke_dir = dir
+	if steered:
+		d.vel += dir * 3.0
 	Sfx.react("ooh", -10.0)
 	game_event.emit("swerve")
 	return true
@@ -1463,19 +1507,30 @@ func _stamina(a: Athlete, dt: float) -> void:
 	a.stamina = clampf(a.stamina - drain * dt * 10.0 + (0.02 * dt if spd < 4.0 else 0.0), 0.0, 1.0)
 
 
+const USER_IDLE := 0.5
+const USER_REFLEX := 0.75
+
+
 func _user_defender(dt: float) -> void:
 	var a := user_def
 	var j := controls.joystick if controls else Vector2.ZERO
 	a.top = _top_speed(a, false)
-	if d_state.get(a, "") == "enter":
+	_user_idle = _user_idle + dt if j.length() < 0.1 else 0.0
+	controls.set_buttons(["DODGE", "SWITCH"])
+	controls.lit = ""
+	# Coming on, or your thumb off the stick for a moment: he runs as the AI would (a first-time player is not left
+	# standing in front of the chaser); the stick takes him back at once.
+	if d_state.get(a, "") == "enter" or _user_auto():
 		_defender_think(a, dt)
-		if j.length() < 0.1:
-			return
+		return
 	a.want = Vector3(j.x, 0, j.y) * a.top
 	a.want = _avoid(a, a.want) if a.want.length() > 0.1 else a.want
 	_stamina(a, dt)
-	controls.set_buttons(["DODGE", "SWITCH"])
-	controls.lit = ""
+
+
+## Your defender runs himself while your thumb is off the stick (USER_IDLE seconds).
+func _user_auto() -> bool:
+	return user_def != null and _user_idle > USER_IDLE
 
 
 # ---------------------------------------------------------------- officials, markers, camera
@@ -1522,6 +1577,8 @@ func _update_markers() -> void:
 		_arrow.position = Vector3(active.position.x, 0.035, active.position.z)
 		_arrow.rotation.y = 0.0 if chase.dir > 0 else PI
 	var ti := _kho_target(false) if _user_chasing() else -1
+	if ti < 0 and not _kho_armed.is_empty():
+		ti = int(_kho_armed.i)
 	_target_ring.visible = ti >= 0
 	if ti >= 0:
 		_target_ring.position = Vector3(float(f.square_x[ti]), 0.03, 0)

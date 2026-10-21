@@ -94,3 +94,13 @@ static func table_points(mine: int, theirs: int) -> int:
 	if mine == theirs:
 		return 1
 	return 0
+
+
+## The franchise league's table points (its second season's rules): 3 for a win, 2 each for a tie, 1 for losing by
+## 3 or fewer.
+static func league_points(mine: int, theirs: int) -> int:
+	if mine > theirs:
+		return 3
+	if mine == theirs:
+		return 2
+	return 1 if theirs - mine <= 3 else 0

@@ -54,6 +54,19 @@ const STATES := [
 	["GOA", "S_GOA", 58, 56, ["0096c7", "f7f2e8", "f77f00"], "mr"],
 ]
 
+## The league's city sides: invented, each named for its city with a made-up nickname (none is a real franchise's).
+## id, name key, rating men, rating women, kit, name pool. Squads mix the city's region with players from all over.
+const CLUBS := [
+	["MUM", "L_MUM", 86, 88, ["1f4e8c", "f2c14e", "f7f2e8"], "mr"],
+	["PUN", "L_PUN", 84, 85, ["7b2cbf", "f7f2e8", "ffb703"], "mr"],
+	["BBS", "L_BBS", 85, 86, ["e85d04", "1b2a5c", "f7f2e8"], "or"],
+	["BLR", "L_BLR", 83, 82, ["c1121f", "141414", "f2c14e"], "kn"],
+	["HYD", "L_HYD", 80, 78, ["2b9348", "f7f2e8", "ff9f1c"], "te"],
+	["CHE", "L_CHE", 79, 77, ["0096c7", "f2c14e", "f7f2e8"], "ta"],
+	["KOL", "L_KOL", 77, 79, ["9d0208", "f2c14e", "f7f2e8"], "bn"],
+	["AHM", "L_AHM", 78, 76, ["f9c74f", "1b2a5c", "f7f2e8"], "gu"],
+]
+
 ## Venues: id, name key, surface ("mud" or "mat"), the time of day, the kind of crowd. All invented places.
 const VENUES := [
 	["maidan", "V_MAIDAN", "mud", "dusk", "village"],
@@ -147,6 +160,25 @@ const NAME_BLOCK := ["Pratik Waikar", "Ramji Kashyap", "Aditya Ganpule", "Priyan
 var _squads := {}
 
 
+func is_club(id: String) -> bool:
+	for c in CLUBS:
+		if c[0] == id:
+			return true
+	return false
+
+
+func club_ids() -> Array:
+	var out := []
+	for c in CLUBS:
+		out.append(c[0])
+	return out
+
+
+## A side drawn as a shield (a state or a city side), not a flag.
+func has_shield(id: String) -> bool:
+	return is_state(id) or is_club(id)
+
+
 func is_state(id: String) -> bool:
 	for s in STATES:
 		if s[0] == id:
@@ -161,6 +193,9 @@ func team(id: String) -> Dictionary:
 	for s in STATES:
 		if s[0] == id:
 			return {"id": id, "key": s[1], "flag": "IND", "rating": [s[2], s[3]], "kit": s[4], "pool": s[5], "state": true}
+	for c in CLUBS:
+		if c[0] == id:
+			return {"id": id, "key": c[1], "flag": "IND", "rating": [c[2], c[3]], "kit": c[4], "pool": c[5], "state": false, "club": true}
 	return {"id": id, "key": id, "flag": "", "rating": [50, 50], "kit": ["888888", "333333", "ffffff"], "pool": "hi", "state": false}
 
 

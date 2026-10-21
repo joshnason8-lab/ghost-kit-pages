@@ -1,6 +1,7 @@
 extends Node
 ## A tour of the screens and the grounds, saved as pictures to look at (and for the store):
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- OUT_DIR [lang] [WxH]
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- OUT_DIR [lang] [WxH] [clean]
+## clean: the matches without the HUD and buttons (for the store's feature graphic).
 
 var out := "user://shots"
 
@@ -16,7 +17,9 @@ func _ready() -> void:
 	if args.size() > 2 and args[2] != "":
 		var wh := args[2].split("x")
 		get_tree().root.size = Vector2i(int(wh[0]), int(wh[1]))
+	var clean := args.size() > 3 and args[3] == "clean"
 	DirAccess.make_dir_recursive_absolute(out)
+	Game.settings.coach = false
 	Game.main = self
 	Game.settings.sound = false
 	Game.settings.graphics = Game.GFX_HIGH
@@ -37,6 +40,9 @@ func _ready() -> void:
 		Game.start_match({"home": spec[2], "away": spec[3], "venue": spec[0], "format": spec[1], "turn_len": 300.0,
 			"user_team": spec[4], "seed": 11, "mode": "quick", "chase_first": 0})
 		await _wait(200)
+		if clean and Game.current.hud:
+			Game.current.hud.visible = false
+			Game.current._ring.visible = false
 		await _shot("05_match_" + String(spec[0]))
 	Game.show_screen("res://ui/howto_screen.gd")
 	await _wait(10)

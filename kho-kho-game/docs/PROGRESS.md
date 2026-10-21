@@ -35,15 +35,29 @@ The kho kho game, built overnight on 21-22 October 2026 on branch `claude/kho-kh
 - Music: raag Bhupali on a bansuri over keherwa; the crowd's dhol and thali in matches.
 - CI green; beta APK on the khamba-dash-beta release; the Play bundle workflow passes (unsigned).
 
+## Round two: 0.2.0-beta (21 October 2026)
+
+- Played first as a phone tester would: the Web build in Chromium with touch (Playwright, `tools/playtest/play.js`,
+  the game's `?playtest` state in `game/playtest.gd`), at 1280 × 720, 1600 × 720 and 2400 × 1080 on Low, both rule
+  books, chasing and defending. Findings and fixes, worst first, in docs/PLAYTEST.md; a test for each fix.
+- Coach tips (`game/coach.gd`) in all fourteen languages; fit_audit clean.
+- The City League (`game/cup.gd` kind "league"; `DB.CLUBS`): eight invented city sides, a double round robin, the
+  top four to the semi-finals.
+- A pole turn (`Poses.POLE_TURN`), seated chasers' heads following the play (`Athlete.watch`), the chain game for
+  defenders, the armed kho, the direction arrow.
+- A new icon and a feature graphic without the HUD (`tests/screenshots.gd ... clean`, `tools/store/make_feature.py`).
+- The rules re-checked (docs/RULES.md, "The 0.2 re-check"): the primary sources are still blocked; the foul now
+  stands until a kho or a free zone.
+
 ## Next
 
 1. A native speaker's pass over each translation (docs/translation-notes/), and the rule-book conflicts in
    docs/RULES.md checked against a printed KKFI rule book (the rulebook sites were blocked from here).
-2. Feel on a real phone: the chaser's run and kho timing, the camera, button places; a Galaxy A0x/A1x at Low.
-3. A feature graphic without the HUD; a nicer icon (hands, a rounder figure).
-4. More motion: a proper pole turn (hand on the pole, swing round), sitters' heads following the play.
-5. A league (a franchise-style season with invented city sides) as a second competition.
-6. Meshy models when the owner chooses (docs/MESHY_BRIEF.md).
+2. A real phone at Low (a Galaxy A0x/A1x): frame rate, warmth, and whether the coach tips teach the game in a
+   minute to someone who has never played it.
+3. The City League's own season mode: squads that change, a player draft, a season's records.
+4. Defending feel: a juke button, and the AI's chasers reading your defender's runs.
+5. Meshy models when the owner chooses (docs/MESHY_BRIEF.md).
 
 ## Decisions, and why
 

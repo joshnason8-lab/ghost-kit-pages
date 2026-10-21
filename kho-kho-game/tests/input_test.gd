@@ -13,6 +13,7 @@ func _ready() -> void:
 	Game.settings.sound = false
 	await _scrolling()
 	await _real_pages()
+	await _two_thumbs()
 	print("input_test: %d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures > 0 else 0)
 
@@ -87,6 +88,50 @@ func _real_pages() -> void:
 		var most := sc.get_v_scroll_bar().max_value - sc.get_v_scroll_bar().page
 		check(sc.scroll_vertical >= minf(40.0, most) - 1.0, "%s scrolls when dragged (%d of %d)" % [path, sc.scroll_vertical, most])
 	Game.delete_cup()
+
+
+## Two thumbs: the left holds the joystick while the right taps a button; the joystick is still held after.
+func _two_thumbs() -> void:
+	var tc := TouchControls.new()
+	add_child(tc)
+	tc.set_buttons(["KHO", "DIVE"])
+	await frames(2)
+	var fired := []
+	tc.action.connect(func(id): fired.append(id))
+	var base := Vector2(200, 500)
+	_touch(0, base, true)
+	_drag_t(0, base + Vector2(60, 0))
+	await frames(1)
+	check(tc.joystick.x > 0.5, "the left thumb drives the joystick (%.2f)" % tc.joystick.x)
+	var kho: Vector2 = tc.layout()[0][1]
+	_touch(1, kho, true)
+	await frames(1)
+	_touch(1, kho, false)
+	await frames(1)
+	check(fired == ["KHO"], "the right thumb's tap presses KHO (%s)" % str(fired))
+	check(tc.joystick.x > 0.5, "the joystick is still held after the tap (%.2f)" % tc.joystick.x)
+	_drag_t(0, base + Vector2(0, 60))
+	await frames(1)
+	check(tc.joystick.y > 0.5, "and still follows the left thumb (%.2f)" % tc.joystick.y)
+	_touch(0, base, false)
+	await frames(1)
+	check(tc.joystick == Vector2.ZERO, "lifting the left thumb lets the joystick go")
+	tc.queue_free()
+
+
+func _touch(i: int, at: Vector2, down: bool) -> void:
+	var e := InputEventScreenTouch.new()
+	e.index = i
+	e.position = at
+	e.pressed = down
+	Input.parse_input_event(e)
+
+
+func _drag_t(i: int, at: Vector2) -> void:
+	var e := InputEventScreenDrag.new()
+	e.index = i
+	e.position = at
+	Input.parse_input_event(e)
 
 
 func _first_scroll(n: Node) -> ScrollContainer:
