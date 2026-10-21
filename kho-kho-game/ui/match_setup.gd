@@ -144,7 +144,7 @@ func _build_right(right: VBoxContainer) -> void:
 		var nm := UI.label(DB.team_name(id), "", 16, Game.C_GOLD if id in _sides else Game.C_INK)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		UI.fit(nm, 2)
+		UI.fit(nm, 2, 0.62)   # a long one-word name (Malayalam's Andhra Pradesh) gets smaller rather than broken
 		h.add_child(nm)
 		b.add_child(h)
 		var pid: String = id

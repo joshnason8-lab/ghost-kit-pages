@@ -122,13 +122,13 @@ func _build_scoreboard() -> void:
 		var col := VBoxContainer.new()
 		col.add_theme_constant_override("separation", -6)
 		var nm := UI.label(DB.team_name(m.teams[side]), "SubLabel", 19)
-		nm.custom_minimum_size.x = 150
+		nm.custom_minimum_size.x = 175
 		nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if side == 0 else HORIZONTAL_ALIGNMENT_LEFT
-		UI.fit(nm)
+		UI.fit(nm, 1, 0.7)
 		var tag := UI.label(tr("CHASING"), "EyebrowLabel", 13, Game.C_SAFFRON)
 		tag.horizontal_alignment = nm.horizontal_alignment
 		UI.fit(tag)
-		tag.custom_minimum_size.x = 150
+		tag.custom_minimum_size.x = 175
 		col.add_child(nm)
 		col.add_child(tag)
 		var pts := UI.label("0", "ScoreLabel", 0, Game.C_INK)

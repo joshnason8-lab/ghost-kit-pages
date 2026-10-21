@@ -170,7 +170,7 @@ static func shrink(l: Label, size: int, min_k := 0.75, lines := 1) -> Label:
 		var font := l.get_theme_font("font")
 		var text := l.text.to_upper() if l.uppercase else l.text
 		var fs := top
-		while fs > roundi(top * min_k) and lines_at(font, text, w, fs) > lines:
+		while fs > roundi(top * min_k) and (lines_at(font, text, w, fs) > lines or widest_word(font, text, fs) > w):
 			fs -= 1
 		if l.get_theme_font_size("font_size") != fs:
 			l.add_theme_font_size_override("font_size", fs)
@@ -205,6 +205,14 @@ static func shrink(l: Label, size: int, min_k := 0.75, lines := 1) -> Label:
 static func refit(l: Label) -> void:
 	if l.has_meta("fit"):
 		(l.get_meta("fit") as Callable).call()
+
+
+## The widest single word (a word cannot be wrapped: if it is wider than the label, the label must get smaller).
+static func widest_word(font: Font, text: String, fs: int) -> float:
+	var w := 0.0
+	for word in text.replace("\n", " ").split(" ", false):
+		w = maxf(w, font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+	return w
 
 
 ## How many lines text takes at width w, wrapped between words.
@@ -392,7 +400,7 @@ static func wrap(text: String, variation := "", size := 0) -> Label:
 
 ## A label that may run out of room (a name, the details under it): it takes up to LINES lines, wrapping at words,
 ## and ends in "…" rather than being cut off mid-letter.
-static func fit(l: Label, lines := 1) -> Label:
+static func fit(l: Label, lines := 1, min_k := 0.85) -> Label:
 	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if lines > 1:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -400,8 +408,8 @@ static func fit(l: Label, lines := 1) -> Label:
 		if Game.long_words():
 			lines += 1
 		l.max_lines_visible = lines
-	# A little smaller (to 85%) before anything is cut.
-	shrink(l, 0, 0.85, lines)
+	# A little smaller (to 85%, or min_k) before anything is cut.
+	shrink(l, 0, min_k, lines)
 	return l
 
 
