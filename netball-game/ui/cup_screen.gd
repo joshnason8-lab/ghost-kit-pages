@@ -86,7 +86,7 @@ func _hub(cup) -> void:
 		pv.add_child(UI.label(tr("POOL_N").format({"n": p + 1}), "SubLabel", 22))
 		var rows := []
 		for r in cup.pool_table(p):
-			rows.append([r.id, int(r.p), int(r.w), int(r.d), int(r.l), "%d" % roundi(float(r.pct)), int(r.pts)])
+			rows.append([r.id, int(r.p), int(r.w), int(r.d), int(r.l), "%d" % roundi(float(r.pct)) if int(r.p) > 0 else "–", int(r.pts)])
 		pv.add_child(UI.standings([tr("COL_TEAM"), tr("COL_P"), tr("COL_W"), tr("COL_D"), tr("COL_L"), tr("COL_PCT"), tr("COL_PTS")], rows, cup.user, 2, 0, true))
 		for f in cup.fixtures:
 			if int(f.pool) == p and f.played:

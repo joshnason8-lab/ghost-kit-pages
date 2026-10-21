@@ -90,7 +90,7 @@ func _hub(league) -> void:
 	tv.add_child(UI.label(tr("LEAGUE_TABLE"), "SubLabel", 22))
 	var rows := []
 	for r in league.table():
-		rows.append([r.id, int(r.p), int(r.w), int(r.d), int(r.l), "%d" % roundi(float(r.pct)), int(r.pts)])
+		rows.append([r.id, int(r.p), int(r.w), int(r.d), int(r.l), "%d" % roundi(float(r.pct)) if int(r.p) > 0 else "–", int(r.pts)])
 	tv.add_child(UI.standings([tr("COL_TEAM"), tr("COL_P"), tr("COL_W"), tr("COL_D"), tr("COL_L"), tr("COL_PCT"), tr("COL_PTS")], rows, league.user, 4, 0, true))
 	tv.add_child(UI.wrap(tr("LEAGUE_TOP_FOUR"), "MutedLabel", 15))
 	cols.add_child(tc)

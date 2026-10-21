@@ -166,12 +166,18 @@ func _pick_bib(pos: String) -> void:
 	_bib_note.text = _bib_text()
 
 
-## Back (the phone's button, or Esc): closes the language picker if it is open, else leaves the game.
+## Back (the phone's button, or Esc): closes the language picker if it is open, else leaves the game. In a browser
+## there is nothing to leave to: quitting would freeze the page (playtest), so Esc on the home screen does nothing.
 func on_back() -> void:
 	if _picker and is_instance_valid(_picker):
 		_picker.close()
 		return
-	get_tree().quit()
+	if quits_on_back():
+		get_tree().quit()
+
+
+static func quits_on_back() -> bool:
+	return not OS.has_feature("web")
 
 
 func _go(path: String) -> void:
