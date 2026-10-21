@@ -290,7 +290,9 @@ func refresh() -> void:
 			var left := int(ceil(float(p.left)))
 			bits.append("#%s %d:%02d%s" % [num, left / 60, left % 60, "" if bool(p.running) else "*"])
 		_pen_rows[side].text = "  ".join(bits)
-	_period.text = tr("OT_SHORT") if r.period > Rules.PERIODS else tr("PERIOD_N").format({"n": r.period})
+	# In the interval the board still shows the period just played (the rules have moved on to the next).
+	var shown: int = r.period - 1 if m.phase == "interval" and r.period > 1 else r.period
+	_period.text = tr("OT_SHORT") if shown > Rules.PERIODS else tr("PERIOD_N").format({"n": shown})
 	var c := int(r.clock)
 	_clock.text = "%02d:%02d" % [c / 60, c % 60]
 	var s0 := r.strength(0)
