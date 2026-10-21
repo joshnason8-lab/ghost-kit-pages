@@ -217,8 +217,6 @@
   "FPS_NOTE_SMOOTH": "在你的{hz} Hz屏幕上每秒{n}帧。",
   "FPS_NOTE_MAX": "按你的{hz} Hz屏幕所能显示的最高帧率运行。",
   "PLAYER_TAGS": "球员标签",
-  "TAGS_KEY": "我的球员和发球员",
-  "TAGS_ALL": "所有人",
   "SOUND": "音效",
   "MUSIC": "音乐",
   "VIBRATION": "振动",
@@ -354,5 +352,6 @@
   "RELEGATED_N": "降入甲级联赛：{a}和{b}。",
   "PROMOTED_N": "从甲级联赛升级：{a}和{b}。",
   "YOU_RELEGATED": "你的俱乐部降入甲级联赛。下赛季再打回来吧。",
-  "YOU_STAY_DIV1": "你的俱乐部留在甲级联赛。打进决赛即可升级。"
+  "YOU_STAY_DIV1": "你的俱乐部留在甲级联赛。打进决赛即可升级。",
+  "SHIRT_N": "#{n}"
 }

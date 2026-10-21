@@ -26,5 +26,5 @@ static func add_match(result: Dictionary) -> void:
 		for k in ["kills", "blocks", "aces"]:
 			var best: Dictionary = r.get("best_" + k, {})
 			if int(s.get(k, 0)) > int(best.get("n", 0)):
-				r["best_" + k] = {"n": int(s[k]), "name": String(s.get("name", "")), "vs": String(result.away if user == 0 else result.home)}
+				r["best_" + k] = {"n": int(s[k]), "num": int(s.get("num", 0)), "vs": String(result.away if user == 0 else result.home)}
 	Game.save_records()

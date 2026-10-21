@@ -1,9 +1,8 @@
 extends Node
-## Teams, players and venues. Everything is fictional but built the way the real game is (docs/TAKRAW.md):
-## national teams for the countries that play, rated from their recent results (men's and women's apart), and three
-## club leagues named the way real clubs are: Malaysian clubs a state and an English mascot, Thai clubs an epithet and
-## a province, Indonesian clubs a city and a nickname. Squads are made from each team's id, so they are the same in
-## every game without a file of players.
+## Teams, players and venues, built the way the real game is (docs/TAKRAW.md): national teams for the countries that
+## play, rated from their recent results (men's and women's apart), and the three club leagues' real line-ups of
+## states, provinces and services, under invented nicknames. Players have no names, only shirt numbers: none is a real
+## person. Squads are made from each team's id, so they are the same in every game without a file of players.
 
 const POS_TEKONG := 0   # the server, at the back
 const POS_FEEDER := 1   # the left inside player, who sets (apit kiri)
@@ -15,7 +14,7 @@ const SPIKE_SUNBACK := 1   # the sunback (kalih): a jumping horse kick, legs sci
 const SPIKE_HEADER := 2    # a header spike
 const SPIKE_TAPAK := 3     # the sole spike (tapak): a sharp downward stamp of the sole over the net
 
-## id: [strength men, strength women, kit colour 1, kit colour 2, name pool]
+## id: [strength men, strength women, kit colour 1, kit colour 2, region (the players' looks and style)]
 const COUNTRIES := {
 	"THA": [93, 93, "1f3fa0", "e8313d", "th"],
 	"MAS": [90, 76, "ffcc00", "0b2a8c", "ms"],
@@ -41,17 +40,17 @@ const COUNTRIES := {
 	"AUS": [49, 50, "00843d", "ffcd00", "en"],
 }
 
-## The three club leagues, run the way they are run now (docs/TAKRAW.md). The clubs are the real line-ups' states,
-## provinces and services under invented nicknames (the real clubs' names and badges are theirs): [id, short, name,
-## home, colour 1, colour 2, strength].
-##  - Malaysia, the Sepak Takraw League (STL): twelve Premier clubs (the 2026 line-up: the states, the armed forces,
+## The three club leagues, run the way the real ones are run now (docs/TAKRAW.md), under plain names of our own: the
+## real leagues', clubs' and competitions' names and badges are theirs, so the clubs here are the real line-ups'
+## states, provinces and services under invented nicknames: [id, short, name, home, colour 1, colour 2, strength].
+##  - Malaysia (the Sepak Takraw League): twelve Premier clubs (the 2026 line-up: the states, the armed forces,
 ##    the police and the fire service) play a circuit of seven Grand Prix, each a tournament of its own (four groups of
 ##    three, the quarter-finals, the semi-finals, the final and the third place) worth points to the season's
 ##    standings; the most points win the league, the last two go down. Division 1 is one tournament before the
 ##    season, its two finalists going up into that season's Premier League.
-##  - Thailand, the Takraw Thailand League (TTL, as last played in 2022): eight provincial clubs, home and away; a
+##  - Thailand (the Takraw Thailand League, as last played in 2022): eight provincial clubs, home and away; a
 ##    fixture is a tie of two regus, 2 points for winning both, 1 for one each; the champion is top of the table.
-##  - Indonesia, Liga Sepak Takraw Indonesia (LSI, revived in 2026): five regions play a round robin each; the top two
+##  - Indonesia (Liga Sepak Takraw Indonesia, revived in 2026): five regions play a round robin each; the top two
 ##    of each go to the national finals in Jakarta (two groups of five, the semi-finals, the final). Men and women.
 const LEAGUES := {
 	"MY": {"name": "LEAGUE_MY", "country": "MAS", "pool": "ms", "format": "gp", "women": false, "year": 2026, "clubs": [
@@ -105,7 +104,7 @@ const LEAGUES := {
 		["SOL", "SOL", "Solo Garuda", "Surakarta", "1d2a5c", "f2c14e", 84],
 		["SBY", "SBY", "Surabaya Baya", "Surabaya", "0b8a3e", "ffcc00", 82],
 		["JKT", "JKT", "Jakarta Rajawali", "Jakarta", "c8102e", "ffffff", 81],
-		["BDG", "BDG", "Bandung Maung", "Bandung", "0f4c9e", "f3efe6", 80],
+		["BDG", "BDG", "Bandung Kujang", "Bandung", "0f4c9e", "f3efe6", 80],
 		["SRG", "SRG", "Serang Badak", "Serang", "1a1a1a", "f7e017", 79],
 		["DPS", "DPS", "Denpasar Barong", "Denpasar", "ff8a1f", "1a1a1a", 76],
 		["MKS", "MKS", "Makassar Phinisi", "Makassar", "e8313d", "0f4c9e", 80],
@@ -123,15 +122,15 @@ const LEAGUES := {
 	]},
 }
 
-## The STL's Grand Prix of 2026, in their order: [host, city, the arena it is played in, our venue].
+## The Grand Prix of the 2026 Malaysian season, in their order: [host state, city, our venue].
 const STL_GPS := [
-	["Perak", "Ipoh", "Stadium Indera Mulia", "national"],
-	["Penang", "Balik Pulau", "Kompleks Sukan Balik Pulau", "provincial"],
-	["Melaka", "Melaka", "Stadium Bukit Serindit", "national"],
-	["Kuala Lumpur", "Kuala Lumpur", "Stadium Titiwangsa", "dome"],
-	["Negeri Sembilan", "Seremban", "Arena Karisma", "national"],
-	["Johor", "Johor Bahru", "Arena Larkin", "dome"],
-	["Selangor", "Serdang", "Stadium MBSJ", "national"],
+	["Perak", "Ipoh", "national"],
+	["Penang", "Balik Pulau", "provincial"],
+	["Melaka", "Melaka", "national"],
+	["Kuala Lumpur", "Kuala Lumpur", "dome"],
+	["Negeri Sembilan", "Seremban", "national"],
+	["Johor", "Johor Bahru", "dome"],
+	["Selangor", "Serdang", "national"],
 ]
 ## The two clubs the real Division 1 of 2026 sent up (they start in the Premier League; pick a Division 1 club and
 ## that tournament is played again, with you in it).
@@ -151,54 +150,6 @@ const VENUES := [
 	["beach", "VENUE_BEACH", false, "beach"],            # a beach court at sunset
 	["street", "VENUE_STREET", false, "street"],         # a street court by a night market
 ]
-
-# Name pools: [given names, family names, family name first?]
-const NAMES := {
-	"th": [["Anan", "Kittisak", "Siriwat", "Phanuwat", "Wirot", "Jakkrit", "Thanawat", "Sarawut", "Pongsak", "Nattapong", "Somchai", "Chaiwat", "Weerapong", "Supachai", "Kritsada", "Apichart", "Teerawat", "Yutthana"],
-		["Thongdee", "Kaewmanee", "Srisuk", "Chaiyaporn", "Boonmee", "Rattanakorn", "Phromma", "Inthasorn", "Wongsawat", "Saelim", "Charoensuk", "Pholsri", "Duangjai", "Kongkaew", "Sukprasert", "Nakdee"], false],
-	"ms": [["Hafiz", "Syafiq", "Amirul", "Haziq", "Izzat", "Farhan", "Aiman", "Zulkifli", "Faris", "Danial", "Ikhwan", "Shahrul", "Asyraf", "Hakimi", "Naim", "Firdaus", "Azri", "Luqman"],
-		["Rahim", "Zainal", "Ismail", "Hamid", "Yusof", "Osman", "Razak", "Kamal", "Salleh", "Halim", "Aziz", "Ghani", "Noor", "Latif", "Rashid", "Hassan"], false],
-	"id": [["Rizky", "Dimas", "Fajar", "Andi", "Yoga", "Agus", "Bayu", "Eko", "Hendra", "Iqbal", "Wahyu", "Rendi", "Galih", "Bima", "Taufik", "Ilham"],
-		["Pratama", "Saputra", "Nugroho", "Setiawan", "Kurniawan", "Hidayat", "Wibowo", "Santoso", "Gunawan", "Firmansyah", "Ramadhan", "Hakim", "Siregar", "Lubis"], false],
-	"vi": [["Văn Tú", "Minh Đức", "Quốc Bảo", "Thanh Hải", "Hữu Phước", "Đức Anh", "Văn Hùng", "Tuấn Kiệt", "Minh Khoa", "Công Vinh", "Gia Huy", "Văn Lâm"],
-		["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Vũ", "Đặng", "Bùi", "Đỗ", "Ngô"], true],
-	"my": [["Aung", "Zaw", "Kyaw", "Htet", "Min", "Naing", "Thura", "Ye", "Wai", "Soe", "Pyae", "Hein"],
-		["Win", "Myint", "Lin", "Oo", "Tun", "Htun", "Aung", "Zin", "Naing", "Kyaw"], false],
-	"lo": [["Souksavanh", "Phonesavanh", "Khamla", "Sengphet", "Bounmy", "Vilaysak", "Somphone", "Thongsavanh", "Anousone", "Keo"],
-		["Phommachanh", "Vongsa", "Sisouphanh", "Keomany", "Inthavong", "Sengsouriya", "Chanthavong", "Phanthavong"], false],
-	"km": [["Sokha", "Dara", "Vuthy", "Rithy", "Sopheak", "Chann", "Piseth", "Vannak", "Kosal", "Rotha"],
-		["Chea", "Sok", "Heng", "Chan", "Lim", "Kim", "Meas", "Prak", "Ouk", "Keo"], true],
-	"fil": [["Jason", "Mark", "John Paul", "Rey", "Carlo", "Rodel", "Jerome", "Kenneth", "Paolo", "Vince", "Ronnel", "Jeric"],
-		["Dela Cruz", "Santos", "Reyes", "Bautista", "Mendoza", "Villanueva", "Garcia", "Ramos", "Aquino", "Navarro"], false],
-	"ja": [["Haruto", "Ren", "Sota", "Yuto", "Kaito", "Riku", "Daiki", "Shota", "Takumi", "Kenta", "Yuma", "Hayato"],
-		["Sato", "Suzuki", "Takahashi", "Tanaka", "Watanabe", "Ito", "Yamamoto", "Nakamura", "Kobayashi", "Kato", "Yoshida"], false],
-	"ko": [["Min-jun", "Seo-jun", "Ji-ho", "Hyun-woo", "Do-yun", "Ji-hoon", "Sung-min", "Tae-yang", "Jun-young", "Woo-jin"],
-		["Kim", "Lee", "Park", "Choi", "Jung", "Kang", "Cho", "Yoon", "Jang", "Lim"], true],
-	"zh": [["Wei", "Jun", "Hao", "Lei", "Peng", "Yu", "Chen", "Bo", "Tao", "Xiang"],
-		["Wang", "Li", "Zhang", "Liu", "Chen", "Yang", "Huang", "Zhao", "Zhou", "Wu"], true],
-	"hi": [["Rahul", "Amit", "Sandeep", "Vikram", "Arjun", "Rohit", "Manoj", "Deepak", "Suresh", "Nitin", "Tomba", "Ibomcha"],
-		["Singh", "Sharma", "Kumar", "Yadav", "Meitei", "Devi", "Verma", "Patel", "Chauhan", "Rao"], false],
-	"fa": [["Ali", "Reza", "Hamid", "Mehdi", "Saeed", "Omid", "Farhad", "Imran", "Bilal", "Usman"],
-		["Ahmadi", "Hosseini", "Karimi", "Rezaei", "Moradi", "Khan", "Hussain", "Malik", "Javed", "Rahimi"], false],
-	"en": [["Tom", "Lucas", "Max", "Ben", "Leo", "Sam", "Noah", "Jack", "Felix", "Hugo", "Ethan", "Jonas"],
-		["Martin", "Smith", "Brown", "Wilson", "Moreau", "Becker", "Taylor", "Lee", "Weber", "Clarke", "Bernard", "Walker"], false],
-}
-const NAMES_W := {
-	"th": ["Sirinya", "Kanokwan", "Pimchanok", "Wiphawan", "Nattaya", "Jiraporn", "Supaporn", "Ratchanee", "Kanyarat", "Thitima"],
-	"ms": ["Nurul", "Siti", "Aina", "Farah", "Syazwani", "Nadia", "Aisyah", "Hani", "Izzati", "Amira"],
-	"id": ["Dewi", "Putri", "Ayu", "Rina", "Lestari", "Wulan", "Sari", "Indah", "Fitri", "Nadia"],
-	"vi": ["Thị Hoa", "Ngọc Trâm", "Thu Hà", "Thị Linh", "Bảo Ngọc", "Thanh Thúy", "Minh Thư", "Kim Ngân", "Thị Yến", "Hồng Nhung"],
-	"my": ["Su", "Thandar", "Ei", "Hnin", "Khin", "May", "Phyu", "Nandar", "Thiri", "Yadanar"],
-	"lo": ["Vanida", "Malaythong", "Souphaphone", "Chanthaly", "Ketsana", "Noy", "Dalavanh", "Phonepaseuth"],
-	"km": ["Sreymom", "Chanthou", "Sophea", "Bopha", "Raksmey", "Leakhena", "Sreypov", "Kanha"],
-	"fil": ["Jean", "Mary Joy", "Angeline", "Rhea", "Kristine", "Jessa", "Camille", "Princess"],
-	"ja": ["Yui", "Hina", "Sakura", "Aoi", "Rin", "Mio", "Yuna", "Saki"],
-	"ko": ["Ji-woo", "Seo-yeon", "Min-seo", "Ha-eun", "Yu-na", "Su-bin", "Ji-min", "Eun-ji"],
-	"zh": ["Fang", "Jing", "Li", "Na", "Ying", "Xue", "Mei", "Hua"],
-	"hi": ["Priya", "Anjali", "Sunita", "Pooja", "Khushbu", "Chaoba", "Leirik", "Sanjita"],
-	"fa": ["Maryam", "Zahra", "Fatemeh", "Sara", "Ayesha", "Hina", "Sana", "Laleh"],
-	"en": ["Emma", "Lea", "Mia", "Chloe", "Anna", "Grace", "Lena", "Sophie"],
-}
 
 var _teams := {}      # id -> team dict
 var _squads := {}     # id|w -> Array of players
@@ -295,15 +246,12 @@ func squad(id: String, women := false) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(key)
 	var base := float(strength(id, women))
-	var pool: Array = NAMES.get(String(t.pool), NAMES.en)
-	var used := {}
 	for i in 9:
 		var pos := i % 3
 		var tier: float = [3.0, 0.0, -5.0][i / 3]  # the first regu best, the second close behind, then reserves
 		var q := clampf(base + tier + rng.randf_range(-4.0, 4.0), 35.0, 99.0)
-		var name := _name(rng, pool, String(t.pool), women, used)
 		var p := {
-			"id": "%s_%d" % [key, i], "name": name[0], "short": name[1], "pos": pos, "num": 0,
+			"id": "%s_%d" % [key, i], "pos": pos, "num": 0,
 			"age": rng.randi_range(19, 33), "height": rng.randf_range(1.66, 1.84) - (0.1 if women else 0.0),
 			"left": rng.randf() < 0.22,
 			"serve": _r(rng, q, 12.0 if pos == POS_TEKONG else -10.0),
@@ -372,26 +320,6 @@ static func _skin(rng: RandomNumberGenerator, pool: String) -> int:
 		"hi", "fa":
 			return rng.randi_range(2, 4)
 	return rng.randi_range(1, 3)
-
-
-func _name(rng: RandomNumberGenerator, pool: Array, code: String, women: bool, used: Dictionary) -> Array:
-	for attempt in 20:
-		var given: String = (NAMES_W.get(code, NAMES_W.en) as Array)[rng.randi_range(0, (NAMES_W.get(code, NAMES_W.en) as Array).size() - 1)] if women else pool[0][rng.randi_range(0, pool[0].size() - 1)]
-		var family: String = pool[1][rng.randi_range(0, pool[1].size() - 1)]
-		var full := ("%s %s" % [family, given]) if pool[2] else ("%s %s" % [given, family])
-		if used.has(full):
-			continue
-		used[full] = true
-		# The name on the scoreboard: Thai, Malay, Lao and Filipino players go by their given name; the rest by the
-		# family name, with an initial (Vietnamese by the last word of the given name, as commentators do).
-		var short := given
-		match code:
-			"vi":
-				short = given.split(" ")[-1]
-			"ja", "ko", "zh", "km", "en", "fa", "id", "hi", "my":
-				short = "%s. %s" % [given.left(1), family] if not pool[2] else family + " " + given.left(1) + "."
-		return [full, short]
-	return ["?", "?"]
 
 
 func venue(id: String) -> Array:

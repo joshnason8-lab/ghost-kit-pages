@@ -78,8 +78,8 @@ func _ready() -> void:
 	disp[1].add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_TV"), tr("CAM_SIDE"), tr("CAM_END")], maxi(0, cams.find(int(Game.settings.camera))), func(i):
 		Game.settings.camera = cams[i]
 		Game.save_settings())))
-	disp[1].add_child(UI.field(tr("PLAYER_TAGS"), UI.chips([tr("TAGS_KEY"), tr("TAGS_ALL"), tr("OFF")], int(Game.settings.tags), func(i):
-		Game.settings.tags = i
+	disp[1].add_child(UI.field(tr("PLAYER_TAGS"), UI.chips_row([tr("ON"), tr("OFF")], 1 if int(Game.settings.tags) == 2 else 0, func(i):
+		Game.settings.tags = 2 if i == 1 else 0
 		Game.save_settings())))
 
 	# Sound and controls.
@@ -99,6 +99,7 @@ func _ready() -> void:
 	var about: Array = UI.section(tr("SET_ABOUT"), "book")
 	right.add_child(about[0])
 	about[1].add_child(UI.label(tr("VERSION_N").format({"v": String(ProjectSettings.get_setting("application/config/version"))}), "MutedLabel", 17))
+	about[1].add_child(UI.wrap(tr("ABOUT_DISCLAIMER"), "MutedLabel", 16))
 	var links := HFlowContainer.new()
 	links.add_theme_constant_override("h_separation", 10)
 	links.add_theme_constant_override("v_separation", 10)

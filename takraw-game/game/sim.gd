@@ -24,7 +24,7 @@ static func play(home: String, away: String, women := false, best_of := 3, set_p
 	var stats := {}
 	for k in 2:
 		for pd in lineups[k]:
-			stats[pd.id] = {"kills": 0, "aces": 0, "blocks": 0, "digs": 0, "errors": 0, "serves": 0, "name": pd.short, "num": pd.num, "team": k}
+			stats[pd.id] = {"kills": 0, "aces": 0, "blocks": 0, "digs": 0, "errors": 0, "serves": 0, "num": pd.num, "pos": pd.pos, "team": k}
 	while sets[0] < to_win and sets[1] < to_win:
 		var pts := [0, 0]
 		while true:

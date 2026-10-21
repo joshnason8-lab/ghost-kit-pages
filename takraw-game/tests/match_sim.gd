@@ -24,7 +24,7 @@ func _ready() -> void:
 		var t0 := Time.get_ticks_msec()
 		var res: Dictionary = await m.finished
 		var frames := Engine.get_process_frames()
-		print("match %d %s v %s: sets %s %s, potm %s (%.1f s real)" % [i, pr[0], pr[1], res.sets, res.set_scores, res.potm.get("name", "?"), (Time.get_ticks_msec() - t0) / 1000.0])
+		print("match %d %s v %s: sets %s %s, potm %s (%.1f s real)" % [i, pr[0], pr[1], res.sets, res.set_scores, "#%d" % int(res.potm.get("num", 0)), (Time.get_ticks_msec() - t0) / 1000.0])
 		var tot := {"kills": 0, "aces": 0, "blocks": 0, "digs": 0, "errors": 0, "serves": 0}
 		for id in res.stats:
 			for k in tot:

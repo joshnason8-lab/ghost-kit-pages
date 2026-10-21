@@ -217,8 +217,6 @@
   "FPS_NOTE_SMOOTH": "{hz} Hz 화면에서 초당 {n}프레임.",
   "FPS_NOTE_MAX": "{hz} Hz 화면이 표시할 수 있는 최대 프레임.",
   "PLAYER_TAGS": "선수 이름표",
-  "TAGS_KEY": "내 선수와 서버",
-  "TAGS_ALL": "모두",
   "SOUND": "효과음",
   "MUSIC": "음악",
   "VIBRATION": "진동",
@@ -354,5 +352,6 @@
   "RELEGATED_N": "디비전 1로 강등: {a}, {b}.",
   "PROMOTED_N": "디비전 1에서 승격: {a}, {b}.",
   "YOU_RELEGATED": "내 클럽이 디비전 1로 강등됩니다. 다음 시즌에 이겨서 다시 올라오세요.",
-  "YOU_STAY_DIV1": "내 클럽은 디비전 1에 남습니다. 결승에 오르면 승격합니다."
+  "YOU_STAY_DIV1": "내 클럽은 디비전 1에 남습니다. 결승에 오르면 승격합니다.",
+  "SHIRT_N": "#{n}"
 }

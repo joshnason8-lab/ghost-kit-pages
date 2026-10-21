@@ -190,7 +190,7 @@ func _team_event_lineups() -> void:
 		var r := DB.regu("THA", false, 3, used)
 		check(r.size() == 3, "team event: regu %d has three players" % (i + 1))
 		for p in r:
-			check(not (p.id in used), "team event: %s plays once" % p.name)
+			check(not (p.id in used), "team event: #%d plays once" % int(p.num))
 			used.append(p.id)
 
 

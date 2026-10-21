@@ -366,7 +366,7 @@ func _led_boards(face: Color) -> void:
 	# Words on the long board facing the camera.
 	for k in 3:
 		var lbl := Label3D.new()
-		lbl.text = ["TAKRAW SMASH", "ISTAF LAWS · 15 POINTS", "TAKRAW SMASH"][k]
+		lbl.text = ["TAKRAW SMASH", "SEPAK TAKRAW · 15 POINTS", "TAKRAW SMASH"][k]
 		lbl.font = Game.font_display
 		lbl.font_size = 96
 		lbl.pixel_size = 0.004

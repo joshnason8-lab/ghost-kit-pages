@@ -117,7 +117,7 @@ func _gp_event(kind: String, gp: int, clubs: Array) -> Dictionary:
 	var ev: Dictionary
 	if gp >= 0:
 		var g: Array = DB.STL_GPS[gp]
-		ev = _event("gp", "GP_HOST", {"h": g[0], "n": gp + 1, "of": DB.STL_GPS.size()}, String(g[3]), "%s, %s" % [g[2], g[1]], clubs)
+		ev = _event("gp", "GP_HOST", {"h": g[0], "n": gp + 1, "of": DB.STL_GPS.size()}, String(g[2]), String(g[1]), clubs)
 	else:
 		ev = _event("div1", "STL_DIV1", {}, "provincial", "", clubs)
 	var rng := RandomNumberGenerator.new()
@@ -359,7 +359,7 @@ func _apply(f: Dictionary, r: Dictionary) -> void:
 		f.set_scores = (r.tie as Dictionary).get("set_scores", [])
 	for id in r.get("stats", {}):
 		var s: Dictionary = r.stats[id]
-		var ps: Dictionary = player_stats.get(id, {"kills": 0, "blocks": 0, "aces": 0, "digs": 0, "name": s.get("name", "?"),
+		var ps: Dictionary = player_stats.get(id, {"kills": 0, "blocks": 0, "aces": 0, "digs": 0, "num": int(s.get("num", 0)),
 			"team": f.home if int(s.get("team", 0)) == 0 else f.away, "matches": 0})
 		for k in ["kills", "blocks", "aces", "digs"]:
 			ps[k] = int(ps[k]) + int(s.get(k, 0))

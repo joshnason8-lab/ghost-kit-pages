@@ -187,7 +187,7 @@ func _make_teams() -> void:
 			p.slot = i
 			add_child(p)
 			team.players.append(p)
-			stats[pd.id] = {"kills": 0, "aces": 0, "blocks": 0, "digs": 0, "errors": 0, "serves": 0, "name": pd.short, "num": pd.num, "team": k}
+			stats[pd.id] = {"kills": 0, "aces": 0, "blocks": 0, "digs": 0, "errors": 0, "serves": 0, "num": pd.num, "pos": pd.pos, "team": k}
 		teams.append(team)
 	_place_sides()
 	for k in 2:
@@ -1847,20 +1847,13 @@ func _offer_block() -> void:
 			hud.timing_done()
 
 
-## The player tags: your player's name, the server's, numbers on the rest (Settings).
+## The tags over the players' heads: their shirt numbers, yours in gold (Settings: off).
 func _update_tags() -> void:
-	var mode := int(Game.settings.tags)
+	var on := int(Game.settings.tags) != 2
 	for side in 2:
 		for pp in players_on(side):
 			var pl: Player = pp
-			var name := "%d %s" % [int(pl.data.num), String(pl.data.short)]
-			var mine := _is_user(pl)
-			if mode == 2:
-				pl.set_tag("")
-			elif mode == 1:
-				pl.set_tag(name, mine)
-			else:
-				pl.set_tag(name if (mine and pl.role == DB.POS_TEKONG) or pl == _server() else str(int(pl.data.num)), mine)
+			pl.set_tag(str(int(pl.data.num)) if on else "", _is_user(pl))
 
 
 ## How much is riding on the point: set point, match point, a close finish.

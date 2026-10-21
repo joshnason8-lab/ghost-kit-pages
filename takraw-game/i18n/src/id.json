@@ -217,8 +217,6 @@
   "FPS_NOTE_SMOOTH": "{n} frame per detik di layar {hz} Hz-mu.",
   "FPS_NOTE_MAX": "Frame sebanyak yang bisa ditampilkan layar {hz} Hz-mu.",
   "PLAYER_TAGS": "Label pemain",
-  "TAGS_KEY": "Pemainmu dan tekong",
-  "TAGS_ALL": "Semua",
   "SOUND": "Suara",
   "MUSIC": "Musik",
   "VIBRATION": "Getaran",
@@ -354,5 +352,6 @@
   "RELEGATED_N": "Terdegradasi ke Divisi 1: {a} dan {b}.",
   "PROMOTED_N": "Promosi dari Divisi 1: {a} dan {b}.",
   "YOU_RELEGATED": "Klubmu turun ke Divisi 1. Rebut kembali tempatmu musim depan.",
-  "YOU_STAY_DIV1": "Klubmu tetap di Divisi 1. Lolos ke final untuk naik divisi."
+  "YOU_STAY_DIV1": "Klubmu tetap di Divisi 1. Lolos ke final untuk naik divisi.",
+  "SHIRT_N": "#{n}"
 }

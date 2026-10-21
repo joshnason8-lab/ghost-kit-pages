@@ -1,5 +1,5 @@
 extends Control
-## International: pick a tournament (the World Cup, the Royal Cup, the Asian or the Southeast Asian Championship),
+## International: pick a tournament (the World Championship, the Royal Cup, the Asian or the Southeast Asian Championship),
 ## men's or women's, the regu or the team event, and your country; then the tournament's home: the two groups, your
 ## next match, the knockouts, and the medals.
 

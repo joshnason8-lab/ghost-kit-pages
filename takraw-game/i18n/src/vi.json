@@ -217,8 +217,6 @@
   "FPS_NOTE_SMOOTH": "{n} khung hình/giây trên màn hình {hz} Hz của bạn.",
   "FPS_NOTE_MAX": "Nhiều khung hình nhất mà màn hình {hz} Hz hiển thị được.",
   "PLAYER_TAGS": "Tên cầu thủ",
-  "TAGS_KEY": "Cầu thủ của bạn và người giao",
-  "TAGS_ALL": "Tất cả",
   "SOUND": "Âm thanh",
   "MUSIC": "Nhạc",
   "VIBRATION": "Rung",
@@ -354,5 +352,6 @@
   "RELEGATED_N": "Xuống Hạng 1: {a} và {b}.",
   "PROMOTED_N": "Thăng hạng từ Hạng 1: {a} và {b}.",
   "YOU_RELEGATED": "Câu lạc bộ của bạn xuống Hạng 1. Hãy giành lại suất lên hạng vào mùa sau.",
-  "YOU_STAY_DIV1": "Câu lạc bộ của bạn ở lại Hạng 1. Vào chung kết để lên hạng."
+  "YOU_STAY_DIV1": "Câu lạc bộ của bạn ở lại Hạng 1. Vào chung kết để lên hạng.",
+  "SHIRT_N": "#{n}"
 }

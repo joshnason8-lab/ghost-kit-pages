@@ -217,8 +217,6 @@
   "FPS_NOTE_SMOOTH": "{n} bingkai sesaat pada skrin {hz} Hz anda.",
   "FPS_NOTE_MAX": "Sebanyak bingkai yang mampu dipaparkan skrin {hz} Hz anda.",
   "PLAYER_TAGS": "Label pemain",
-  "TAGS_KEY": "Pemain anda dan tekong",
-  "TAGS_ALL": "Semua",
   "SOUND": "Bunyi",
   "MUSIC": "Muzik",
   "VIBRATION": "Getaran",
@@ -354,5 +352,6 @@
   "RELEGATED_N": "Turun ke Divisyen 1: {a} dan {b}.",
   "PROMOTED_N": "Naik dari Divisyen 1: {a} dan {b}.",
   "YOU_RELEGATED": "Kelab anda turun ke Divisyen 1. Menangi semula tempat anda musim depan.",
-  "YOU_STAY_DIV1": "Kelab anda kekal dalam Divisyen 1. Layak ke perlawanan akhir untuk naik."
+  "YOU_STAY_DIV1": "Kelab anda kekal dalam Divisyen 1. Layak ke perlawanan akhir untuk naik.",
+  "SHIRT_N": "#{n}"
 }

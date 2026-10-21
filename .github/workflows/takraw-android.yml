@@ -72,13 +72,19 @@ jobs:
 
       - name: Smoke test (screens in every language, season, tournament, AI matches)
         working-directory: ${{ env.PROJECT_DIR }}
-        run: timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
+        run: |
+          # A script error does not stop Godot or fail a check, so the log is read for them too.
+          set -o pipefail
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn 2>&1 | tee test_runner.log
+          if grep -q "SCRIPT ERROR" test_runner.log; then grep -A4 "SCRIPT ERROR" test_runner.log; exit 1; fi
 
       - name: Controls (nothing played for you; a good player wins points)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- idle 1 0
-          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- perfect 1 0
+          set -o pipefail
+          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- idle 1 0 2>&1 | tee bot.log
+          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- perfect 1 0 2>&1 | tee -a bot.log
+          if grep -q "SCRIPT ERROR" bot.log; then grep -A4 "SCRIPT ERROR" bot.log; exit 1; fi
 
       - name: Touch input (scrolling from anywhere on a page, taps)
         working-directory: ${{ env.PROJECT_DIR }}

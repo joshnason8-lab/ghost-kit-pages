@@ -254,7 +254,7 @@ func _done(s: Season, side: VBoxContainer, right: HBoxContainer) -> void:
 			cv.add_child(UI.wrap(tr("YOU_STAY_DIV1"), "SubLabel", 20))
 	for a in s.awards():
 		var ps: Dictionary = a[1]
-		var line := UI.fit(UI.label("%s: %s (%s) · %d" % [tr(a[0]), String(ps.get("name", "")), DB.team_name(String(ps.get("team", ""))), int(ps.get(a[2], 0))], "", 18), 2)
+		var line := UI.fit(UI.label("%s: %s, %s · %d" % [tr(a[0]), tr("SHIRT_N").format({"n": int(ps.get("num", 0))}), DB.team_name(String(ps.get("team", ""))), int(ps.get(a[2], 0))], "", 18), 2)
 		cv.add_child(line)
 	side.add_child(card)
 	right.add_child(UI.button(tr("NEXT_SEASON"), true, func():

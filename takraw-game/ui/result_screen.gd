@@ -17,6 +17,7 @@ func _ready() -> void:
 	UI.screen(self)
 	var cfg: Dictionary = result.get("config", {})
 	var user := int(result.get("user_team", 0))
+	var teams := [String(result.home), String(result.away)]
 	var won := int(result.get("winner", 0)) == user
 	var v := UI.page(self, tr("RESULT_WON") if won else tr("RESULT_LOST"), Callable(), String(cfg.get("stage", "")))
 	var right: HBoxContainer = get_meta("header_right")
@@ -67,7 +68,8 @@ func _ready() -> void:
 		var pr := HBoxContainer.new()
 		pr.add_theme_constant_override("separation", 12)
 		pr.add_child(Icon.make("star", 30, Game.C_GOLD))
-		var pl := UI.fit(UI.label(tr("PLAYER_OF_MATCH").format({"n": "%d %s" % [int(potm.get("num", 0)), String(potm.get("name", ""))]}), "SubLabel", 22), 2)
+		var who := "%s · %s" % [tr("SHIRT_N").format({"n": int(potm.get("num", 0))}), DB.team_name(teams[int(potm.get("team", 0))])]
+		var pl := UI.fit(UI.label(tr("PLAYER_OF_MATCH").format({"n": who}), "SubLabel", 22), 2)
 		pl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		pr.add_child(pl)
 		sv.add_child(pr)
@@ -92,7 +94,7 @@ func _ready() -> void:
 	for id in ids:
 		var s: Dictionary = stats[id]
 		var mine := int(s.team) == user
-		var nm := UI.fit(UI.label("%d %s" % [int(s.num), String(s.name)], "", 18, Game.C_INK if mine else Game.C_MUTED))
+		var nm := UI.fit(UI.label("%s · %s" % [tr("SHIRT_N").format({"n": int(s.num)}), String(DB.team(teams[int(s.team)]).get("short", ""))], "", 18, Game.C_INK if mine else Game.C_MUTED))
 		nm.custom_minimum_size = Vector2(170, 0)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(nm)

@@ -20,7 +20,7 @@ func _ready() -> void:
 	for k in ["kills", "blocks", "aces"]:
 		var b: Dictionary = r.get("best_" + k, {})
 		if not b.is_empty():
-			left[1].add_child(UI.wrap(tr("RECORDS_BEST_" + k.to_upper()).format({"n": int(b.n), "p": String(b.name), "t": DB.team_name(String(b.vs))}), "", 18))
+			left[1].add_child(UI.wrap(tr("RECORDS_BEST_" + k.to_upper()).format({"n": int(b.n), "p": tr("SHIRT_N").format({"n": int(b.get("num", 0))}), "t": DB.team_name(String(b.vs))}), "", 18))
 	var right: Array = UI.section(tr("RECORDS_TITLES"), "trophy")
 	cols.add_child(right[0])
 	var titles: Array = r.get("titles", [])
