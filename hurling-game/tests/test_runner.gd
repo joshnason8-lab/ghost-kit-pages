@@ -36,6 +36,7 @@ func _ready() -> void:
 	_coach()
 	await _subs()
 	await _tactics()
+	await _playtest_fixes()
 	await _match_and_motion()
 	Game.settings = keep
 	Game.delete_champ()
@@ -512,6 +513,70 @@ func _tactics() -> void:
 	check(shorts[0] > shorts[1] * 2, "Tactics: short puck-outs go short more than long ones (%d v %d in 200)" % shorts)
 	m.queue_free()
 	await frames(2)
+
+
+## What the browser playtest found (docs/PLAYTEST.md), each held to its fix.
+func _playtest_fixes() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "TIP", "venue": "parish", "user_team": 0, "seed": 8, "length": 8.0, "mode": "test"}
+	add_child(m)
+	await frames(3)
+	var keep: Dictionary = Game.settings.duplicate(true)
+	# The coach's card never covers a button: every size, either hand, the most buttons there are.
+	m.controls.set_buttons(["STRIKE", "PASS", "SOLO", "GOAL", "SWITCH"])
+	var clear := true
+	for lh in [false, true]:
+		for size in 3:
+			Game.settings.left_handed = lh
+			Game.settings.btn_size = size
+			m.hud.coach("SHOOT")
+			await frames(2)
+			var card: Rect2 = m.hud._coach.get_global_rect()
+			for b in m.controls._layout():
+				var c: Vector2 = b[1]
+				var r: float = b[2]
+				var near := Vector2(clampf(c.x, card.position.x, card.end.x), clampf(c.y, card.position.y, card.end.y))
+				if near.distance_to(c) < r:
+					clear = false
+	check(clear, "Playtest: the coach's card clear of every button (each size, either hand)")
+	Game.settings.left_handed = keep.left_handed
+	Game.settings.btn_size = keep.btn_size
+	# The keyboard's letters go once a thumb touches the screen.
+	TouchControls.touch_seen = false
+	var t := InputEventScreenTouch.new()
+	t.position = Vector2(900, 300)
+	t.pressed = true
+	m.controls._input(t)
+	t.pressed = false
+	m.controls._input(t)
+	check(TouchControls.touch_seen, "Playtest: no keyboard hints on the buttons once the screen is touched")
+	TouchControls.touch_seen = false
+	m.queue_free()
+	await frames(2)
+	# No floodlight mast between the television gantry and the field.
+	var in_way := 0
+	for id in DB.VENUES:
+		var st := Stadium.new(String(id), [Color.WHITE, Color.BLACK])
+		add_child(st)
+		await frames(1)
+		for p in st.mast_spots:
+			if p.z > 0.0 and p.z < CameraRig.GANTRY_Z:
+				in_way += 1
+		st.queue_free()
+	check(in_way == 0, "Playtest: no floodlight mast in front of the camera (%d)" % in_way)
+	# On a touch screen a button looks the same hovered as not (a finger leaves the emulated mouse where it lifts).
+	var th: Theme = Game.theme.duplicate()
+	Game.flatten_hover(th)
+	check(th.get_stylebox("hover", "ChipButton") == th.get_stylebox("normal", "ChipButton") and th.get_stylebox("hover", "Button") == th.get_stylebox("normal", "Button"), "Playtest: no hover look on a touch screen")
+	# Match setup remembers the ground.
+	Game.settings.venue = "stadium"
+	var q: Control = load("res://ui/quick_setup.gd").new()
+	add_child(q)
+	await frames(2)
+	check(String(q._venue) == "stadium", "Playtest: match setup remembers the ground")
+	q.queue_free()
+	Game.settings = keep
+	await frames(1)
 
 
 # ---------------------------------------------------------------- a match, and the movement audit

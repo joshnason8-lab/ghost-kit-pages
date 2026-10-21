@@ -881,6 +881,9 @@ func _carrier_brain(pl: Player, t: TeamAI) -> void:
 			"pass":
 				_strike_pass(pl, d.to)
 				return
+			"clear":
+				_strike_to(pl, d.target)
+				return
 			"hand_pass":
 				if pl.ball_hand:
 					_hand_pass(pl, d.to)

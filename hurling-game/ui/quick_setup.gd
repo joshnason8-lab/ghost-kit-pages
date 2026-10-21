@@ -6,7 +6,7 @@ extends Control
 
 var _home := "KIL"
 var _away := "TIP"
-var _venue := "county"
+var _venue := "county"     # the last one picked (Game.settings.venue)
 var _watch := false
 var _knockout := false
 var _body: VBoxContainer
@@ -19,6 +19,7 @@ func setup(args: Dictionary) -> void:
 
 func _ready() -> void:
 	UI.screen(self)
+	_venue = String(Game.settings.get("venue", "county"))
 	_ids = DB.counties_ranked()
 	var c = Game.get_champ()
 	if c != null:
@@ -54,7 +55,9 @@ func _build() -> void:
 	for id in vids:
 		vnames.append(tr(String(DB.venue(id)[0])))
 	flow.add_child(UI.field(tr("VENUE"), UI.chips(vnames, vids.find(_venue), func(i):
-		_venue = vids[i])))
+		_venue = vids[i]
+		Game.settings.venue = _venue
+		Game.save_settings())))
 	var lens := []
 	for n in Game.LENGTHS:
 		lens.append(tr("MINUTES_N").format({"n": n}))

@@ -81,6 +81,7 @@ var settings := {
 	"draw_rule": 0,         # a drawn knock-out game: 0 extra time then penalties, 1 extra time then a replay (old)
 	"tags": 0,              # the numbers over players' heads: 0 on, 2 off
 	"seen_howto": false,
+	"venue": "county",      # the ground last picked in match setup
 	"tactics": {"sweeper": false, "two_ff": false, "puckout": 1},   # your side's set-up (TeamAI.tactics)
 	"auto_subs": true,      # the manager makes your substitutions (else you do, from the pause menu)
 	"coach": true,          # coach's tips in a match (game/coach.gd); off by itself after your first match
@@ -93,6 +94,9 @@ var main: Node = null
 var current: Node = null
 var loading := false
 var theme: Theme
+## A touch screen: no hover look on buttons (Android moves an emulated mouse to where a finger lifts, so a chip or
+## button dragged over would stay lit as if hovered).
+var touch_ui := DisplayServer.is_touchscreen_available()
 var font_body: Font
 var font_bold: Font
 var font_display: Font
@@ -447,6 +451,9 @@ func _build_theme() -> void:
 	theme.set_color("font_pressed_color", "ChipButton", Color("1d1307"))
 	theme.set_color("font_hover_pressed_color", "ChipButton", Color("1d1307"))
 
+	if touch_ui:
+		flatten_hover(theme)
+
 	theme.set_stylebox("panel", "PanelContainer", _sb(C_PANEL, 16, Color(1, 1, 1, 0.06), 1, 20))
 	theme.set_type_variation("CardPanel", "PanelContainer")
 	theme.set_stylebox("panel", "CardPanel", _sb(C_PANEL, 16, Color(1, 1, 1, 0.06), 1, 20))
@@ -485,6 +492,19 @@ func _build_theme() -> void:
 	theme.set_stylebox("grabber_highlight", "VScrollBar", grabber)
 	theme.set_stylebox("scroll", "VScrollBar", _sb(Color(0, 0, 0, 0), 999, Color(0, 0, 0, 0), 0, 0))
 	_size_theme()
+
+
+## On a touch screen the hover look is the normal one (and pressed for a chosen chip).
+static func flatten_hover(t: Theme) -> void:
+	for type in ["Button", "PrimaryButton", "ChipButton"]:
+		if t.has_stylebox("normal", type):
+			t.set_stylebox("hover", type, t.get_stylebox("normal", type))
+		if t.has_stylebox("pressed", type):
+			t.set_stylebox("hover_pressed", type, t.get_stylebox("pressed", type))
+		if t.has_color("font_color", type):
+			t.set_color("font_hover_color", type, t.get_color("font_color", type))
+		if t.has_color("font_pressed_color", type):
+			t.set_color("font_hover_pressed_color", type, t.get_color("font_pressed_color", type))
 
 
 func _size_theme() -> void:

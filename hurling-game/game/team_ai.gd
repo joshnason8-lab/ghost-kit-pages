@@ -183,6 +183,13 @@ func decide(pl: Player) -> Dictionary:
 		return {"kind": "shoot"}
 	# A pass to someone better placed.
 	var best := best_pass(pl, press_d)
+	# The clearance: a back hemmed in near his own goal, or anyone pinned against the sideline, with no pass on,
+	# drives it over the sideline (as real defenders do: a sideline cut to them beats a turnover in front of goal).
+	var own_d := Pitch.LENGTH - dist
+	var hemmed := (pl.line() in [DB.POS_FB, DB.POS_HB] and own_d < 60.0) or absf(p.z) > Pitch.HALF_W - 12.0
+	if hemmed and press_d < 4.5 and (best.is_empty() or float(best.get("gain", 0.0)) < 15.0) and randf() < 0.5:
+		var side := signf(p.z) if absf(p.z) > 4.0 else (1.0 if randf() < 0.5 else -1.0)
+		return {"kind": "clear", "target": Vector3(p.x + d * randf_range(25.0, 45.0), 0, side * (Pitch.HALF_W + 6.0))}
 	if not best.is_empty() and (press_d < 5.0 or float(best.gain) > 18.0 or dist > 95.0):
 		return best
 	# Carry it on: solo when the hand's steps are nearly up (or take it back into the hand to strike).

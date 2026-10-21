@@ -129,7 +129,7 @@ static func round_button(icon_kind: String, cb: Callable, px := 58.0) -> Button:
 	sbh.bg_color = Game.C_PANEL_HI
 	sbh.border_color = Game.C_SAFFRON
 	b.add_theme_stylebox_override("normal", sb)
-	b.add_theme_stylebox_override("hover", sbh)
+	b.add_theme_stylebox_override("hover", sb if Game.touch_ui else sbh)
 	b.add_theme_stylebox_override("pressed", sbh)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	var ic := Icon.make(icon_kind, px * 0.46)
@@ -248,7 +248,7 @@ static func option_card(title: String, desc: String, emblem: Control, chosen: bo
 	sbh.bg_color = Game.C_PANEL_HI
 	sbh.border_color = Game.C_GOLD if chosen else Color(Game.C_GOLD, 0.5)
 	b.add_theme_stylebox_override("normal", sb)
-	b.add_theme_stylebox_override("hover", sbh)
+	b.add_theme_stylebox_override("hover", sb if Game.touch_ui else sbh)
 	b.add_theme_stylebox_override("pressed", sbh)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	var m := MarginContainer.new()

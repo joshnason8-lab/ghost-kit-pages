@@ -26,7 +26,7 @@ func _ready() -> void:
 	print("length  real min  live min   goals  points  shots   (means a match, both sides)")
 	for li in lengths.size():
 		var length := float(lengths[li])
-		var sum := {"goals": 0.0, "points": 0.0, "shots": 0.0, "scores": 0.0, "live": 0.0, "real": 0.0}
+		var sum := {"goals": 0.0, "points": 0.0, "shots": 0.0, "scores": 0.0, "live": 0.0, "real": 0.0, "sidelines": 0.0}
 		for i in n:
 			var home: String = ids[(i * 2 + li) % 6]
 			var away: String = ids[(i * 2 + li + 3) % 6]
@@ -48,6 +48,7 @@ func _ready() -> void:
 				sum.goals += int(s[k][0])
 				sum.points += int(s[k][1])
 				sum.shots += int(m.tstats[k].shots)
+				sum.sidelines += int(m.tstats[k].sidelines)
 				sum.scores += int(m.tstats[k].scores_play) + int(m.tstats[k].scores_placed)
 			m.queue_free()
 			await get_tree().process_frame
@@ -70,6 +71,7 @@ func _ready() -> void:
 			_check(mean.points >= 30.0 and mean.points <= 55.0, "full length: %.1f points (real: about 42)" % mean.points)
 			_check(mean.goals <= 6.0, "full length: %.2f goals (real: 2.5-3)" % mean.goals)
 			_check(mean.shots >= 55.0 and mean.shots <= 100.0, "full length: %.1f shots (real: about 77)" % mean.shots)
+			_check(mean.sidelines >= 3.0, "full length: %.1f sideline cuts (real: a good many more)" % mean.sidelines)
 	# Over every match: the rate of scoring while the ball is live, and how many shots score.
 	var per := func(k: String) -> float: return all[k] / maxf(1.0, all.live)
 	print("a live minute: %.2f points (real %.2f), %.3f goals (real %.3f), %.2f shots (real %.2f); %.0f%% of shots score (real 60%%)" % [

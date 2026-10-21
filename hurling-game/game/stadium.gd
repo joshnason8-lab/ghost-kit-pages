@@ -143,7 +143,11 @@ func _terrace(g: Geo, z0: float, z1: float, x0: float, dir: float, rows: int, co
 		g.cylinder(Vector3(x, 0.6 + r * 0.32 + 1.0, z0), Vector3(x, 0.6 + r * 0.32 + 1.0, z1), 0.04, 0.04, Color("8a9096"), 4, false)
 
 
+var mast_spots: Array[Vector3] = []   # where the floodlight masts stand (tests: none between the camera and the field)
+
+
 func _mast(g: Geo, lamps: Geo, p: Vector3, h: float, face: Vector3) -> void:
+	mast_spots.append(p)
 	g.cylinder(p, p + Vector3(0, h, 0), 0.35, 0.22, Color("9aa2aa"), 6, false)
 	var head := p + Vector3(0, h, 0)
 	var side := face.cross(Vector3.UP).normalized()
