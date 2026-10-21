@@ -8,10 +8,8 @@ on:
     paths:
       - "kho-kho-game/**"
       - ".github/workflows/kho-kho-android.yml"
-  pull_request:
-    paths:
-      - "kho-kho-game/**"
-      - ".github/workflows/kho-kho-android.yml"
+  # No pull_request trigger: push already reports its checks on the PR's head commit, and a second run per push
+  # meant two "run failed" emails for one failure.
   workflow_dispatch:
 
 env:
@@ -146,7 +144,7 @@ jobs:
 
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
       # "khamba-dash-beta", always the latest build of this branch, made afresh on every push that passes the
-      # tests. Pull request runs build the same APK and leave the release alone.
+      # tests. A manual run (workflow_dispatch) builds the same APK and leaves the release alone.
       - name: Publish the beta release
         if: github.event_name == 'push'
         env:
