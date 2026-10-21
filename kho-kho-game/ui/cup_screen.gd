@@ -75,7 +75,7 @@ func _pick() -> void:
 		var nm := UI.label(DB.team_name(id), "", 17)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		UI.fit(nm, 2)
+		UI.fit(nm, 2, 0.62)   # a long one-word name (Malayalam's Andhra Pradesh) gets smaller rather than broken
 		h.add_child(nm)
 		b.add_child(h)
 		var pid: String = id

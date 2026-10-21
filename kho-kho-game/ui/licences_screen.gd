@@ -45,13 +45,13 @@ func _ready() -> void:
 		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
 
 
-## Licence texts are long: a big one is laid out off the main thread.
+## Licence texts are long, but are laid out on the main thread: the threaded layout crashed (see below).
 func _text(bb: String, big := false) -> RichTextLabel:
 	var rt := RichTextLabel.new()
 	rt.bbcode_enabled = true
 	rt.fit_content = true
 	rt.scroll_active = false
-	rt.threaded = big
+	rt.threaded = false   # threaded layout crashed Godot 4.7.2 (fit_audit, 21 Oct): laid out here instead
 	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# A drag that starts on the words must reach the scroll box: the text takes no input.
