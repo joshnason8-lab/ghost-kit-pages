@@ -187,8 +187,12 @@ func kits(home: String, away: String) -> Array:
 	return [[hk[0], hk[1], h.trim], [ak[0], ak[1], a.trim]]
 
 
+## Two shirts that would be hard to tell apart on the rink: near in colour, or both dark (navy and charcoal read as
+## the same under the hall's lights, as the playtest showed: docs/PLAYTEST.md).
 static func _alike(a: Color, b: Color) -> bool:
-	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length() < 0.35
+	if Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length() < 0.35:
+		return true
+	return a.get_luminance() < 0.3 and b.get_luminance() < 0.3
 
 
 ## A squad of 20 (Rules 301: at most 20 players): two goalkeepers and three lines of five, each a centre, two

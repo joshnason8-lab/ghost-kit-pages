@@ -347,6 +347,16 @@ func _season() -> void:
 		var crest := UI.badge(id)
 		check(crest is Crest, "season: %s shows a crest" % id)
 		crest.free()
+	# Kits: no two sides ever take the rink in shirts that look alike (navy against charcoal did, in the playtest).
+	var sides: Array = DB.TEAMS.keys() + DB.club_ids()
+	var clashes := []
+	for h in sides:
+		for aw in sides:
+			if h != aw:
+				var k: Array = DB.kits(h, aw)
+				if DB._alike(k[0][0], k[1][0]):
+					clashes.append("%s v %s" % [h, aw])
+	check(clashes.is_empty(), "kits: the two sides' shirts never look alike (%s)" % ", ".join(clashes.slice(0, 6)))
 	# The table: points first, then goal difference, then goals scored.
 	var t := Season.create("FOX", false, 7)
 	var c: Array = t.clubs

@@ -3,7 +3,7 @@
 October 2026. Before 0.2.0 the game was played the way a first-time player would meet it: the Web export (the same
 project, single-threaded) in Chromium with touch emulation, driven by real touch events (two fingers: the left thumb
 on the joystick, the right on the buttons), landscape at **1280 x 720**, **1600 x 720** (20:9) and **2400 x 1080**
-(a 6.7" phone), on **Low** graphics. Full matches in Quick match and the World Finals, screenshots every few
+(a 6.7" phone), on **Low** graphics. Full matches in Quick match and the World Finals, then the club season, screenshots every few
 seconds and at every screen, each looked at. A software renderer runs the game at a third to a half of real speed,
 so feel was judged from the screenshots and the state the game reported each tenth of a second (where the ball, your
 player and the goal were on the screen), not from smoothness.
@@ -39,8 +39,14 @@ the check's text).
 | 12 | The coach's note (new in 0.2.0) overlapped the Switch button at 16:9. | Moved left, between the joystick and the buttons. |
 | 13 | The penalised player vanished from the rink; the penalty bench stayed empty. | He walks to his team's penalty bench at the secretariat and sits there until his time is up. |
 | 14 | Passive play warnings came too early once added (24 s with the ball anywhere short of the attacking zone). | 30 s, counting only in a team's own half or behind the opponents' goal; building play in their half holds the count. |
+| 15 | In the club season, Midnight Owls (navy) against Granite Moose (charcoal) were two black teams: the clash rule compared colours only, and two dark shirts are far apart in colour but look the same under the hall's lights. | Two dark shirts count as a clash; the visitors change. Test: "kits: the two sides' shirts never look alike" (every pair of the 22 nations and 10 clubs). |
+| 16 | In the interval the scoreboard already showed the next period ("Period 2" over "End of period 1"). | It shows the period just played until play restarts. |
 
 ## Still open
+
+- **Goalkeepers wear black**, close to a dark team's shirts at a glance; their pads and the cage tell them apart.
+- **Simulated club results run a little high** (8-5, 7-4 in a first round; real league matches average about ten
+  goals between them).
 
 - **The penalty benches and secretariat** at the bottom of the broadcast picture are plain boxes and take a strip of
   the screen at 16:9. They are where they are in a real hall; better models are a Meshy job (docs/MESHY_BRIEF.md).
