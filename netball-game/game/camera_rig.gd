@@ -40,8 +40,8 @@ func track(ball: Vector2, attack_dir: int, dt: float, snap := false) -> void:
 			look = Vector3(focus.x * 0.6 + end_dir * 2.0, 0.3, focus.y * 0.5)
 			fov = 50.0
 		_:
-			eye = Vector3(focus.x * 0.78, 10.5, Court.HALF_W + 15.5)
-			fov = 38.0
+			eye = Vector3(focus.x * 0.78, 9.4, Court.HALF_W + 14.0)
+			fov = 36.0
 	global_position = eye
 	look_at(look, Vector3.UP)
 

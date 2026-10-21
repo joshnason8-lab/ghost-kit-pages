@@ -257,14 +257,14 @@ func _hall() -> Array:
 	var wall := Color("d8cdb8")
 	var h := 9.0
 	# The far wall and the two end walls; the near side has the stand.
-	_lit.wall(Vector3(hl, 0, -hw - 5.0), Vector3(-hl, 0, -hw - 5.0), 0, h, wall)
-	_lit.wall(Vector3(-hl, 0, -hw - 5.0), Vector3(-hl, 0, hw + 7.0), 0, h, wall.darkened(0.08))
-	_lit.wall(Vector3(hl, 0, hw + 7.0), Vector3(hl, 0, -hw - 5.0), 0, h, wall.darkened(0.08))
+	_lit.wall(Vector3(hl, 0, -hw - 5.0), Vector3(-hl, 0, -hw - 5.0), 0, h, wall, true)
+	_lit.wall(Vector3(-hl, 0, -hw - 5.0), Vector3(-hl, 0, hw + 7.0), 0, h, wall.darkened(0.08), true)
+	_lit.wall(Vector3(hl, 0, hw + 7.0), Vector3(hl, 0, -hw - 5.0), 0, h, wall.darkened(0.08), true)
 	# A blue band low on the walls, and high windows of daylight.
-	_lit.wall(Vector3(hl, 0, -hw - 4.98), Vector3(-hl, 0, -hw - 4.98), 0, 1.6, Color("2b4f86"))
+	_lit.wall(Vector3(hl, 0, -hw - 4.98), Vector3(-hl, 0, -hw - 4.98), 0, 1.6, Color("2b4f86"), true)
 	for i in 7:
 		var x := -hl + 4.0 + i * (hl * 2.0 - 8.0) / 6.0
-		_glow.wall(Vector3(x + 1.4, 0, -hw - 4.95), Vector3(x - 1.4, 0, -hw - 4.95), 6.2, 8.2, Color("dfe9f2"))
+		_glow.wall(Vector3(x + 1.4, 0, -hw - 4.95), Vector3(x - 1.4, 0, -hw - 4.95), 6.2, 8.2, Color("dfe9f2"), true)
 	# Wall bars on the far wall.
 	if not _low:
 		for i in 8:

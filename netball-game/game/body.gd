@@ -151,7 +151,7 @@ func apply(p: Dictionary) -> void:
 
 func _key() -> String:
 	return "%s|%s|%s|%s|%s|%s|%d|%s|%s" % [look.get("skin"), look.get("dress"), look.get("trim"), look.get("bib"),
-		look.get("shoe"), look.get("hair"), int(look.get("hair_style", 0)), look.get("pos", ""), look.get("umpire", false)]
+		look.get("shoe"), look.get("hair"), int(look.get("hair_style", 0)), look.get("pos", ""), look.get("umpire", false)] + ("|low" if int(Game.settings.graphics) == Game.GFX_LOW else "")
 
 
 func _mesh() -> ArrayMesh:
@@ -159,6 +159,7 @@ func _mesh() -> ArrayMesh:
 	if _cache.has(key):
 		return _cache[key]
 	var m := MeshBuilder.new()
+	m.low = int(Game.settings.graphics) == Game.GFX_LOW   # fewer sides to each part on Low
 	var skin: Color = look.get("skin", Color("c48f62"))
 	var dress: Color = look.get("dress", Color("2f6fc4"))
 	var trim: Color = look.get("trim", Color.WHITE)
@@ -248,6 +249,7 @@ class MeshBuilder:
 	var bones := PackedInt32Array()
 	var weights := PackedFloat32Array()
 	var idx := PackedInt32Array()
+	var low := false
 
 	func _vert(p: Vector3, n: Vector3, c: Color, b: int, uv := Vector2(-1, -1)) -> void:
 		verts.append(p)
@@ -266,6 +268,8 @@ class MeshBuilder:
 		_tube(a, b, ra, rb, c, bone, squash, seg, false)
 
 	func _tube(a: Vector3, b: Vector3, ra: float, rb: float, c: Color, bone: int, squash: Vector3, seg: int, caps: bool) -> void:
+		if low:
+			seg = maxi(6, seg * 2 / 3)
 		var axis := (b - a)
 		var length := axis.length()
 		if length < 0.0001:
@@ -326,6 +330,9 @@ class MeshBuilder:
 
 	## An ellipsoid at centre with radii r. cut keeps only the part above that fraction of its height (a hair cap).
 	func sphere(centre: Vector3, r: Vector3, c: Color, bone: int, cut := -1.0, seg := 12, rings := 8) -> void:
+		if low:
+			seg = 8
+			rings = 6
 		var base := verts.size()
 		var cols := seg + 1
 		var kept := 0

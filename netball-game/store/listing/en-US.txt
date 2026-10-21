@@ -1,0 +1,41 @@
+# Google Play store listing, English (United States). Paste each part into Play Console > Grow >
+# Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Centre Pass Netball
+
+== Short description ==
+Netball by the real rules: lead, pass, defend at 0.9 m, shoot from the circle.
+
+== Full description ==
+Centre Pass Netball is netball for your phone, played to the Rules of Netball as they stand today. Take the centre pass, drive into space, feed the circle and shoot, then win the ball back with an intercept.
+
+THE REAL GAME
+• Seven a side, each in her own areas: GS, GA, WA, C, WD, GD and GK, with bibs on.
+• The centre pass, alternating after every goal, caught in the centre third.
+• Footwork and the landing foot, the three seconds, obstruction at 0.9 m, contact, offside, over a third and the short pass, all called by two umpires who signal every decision.
+• Free passes, penalty passes, the penalty pass or shot in the circle, throw-ins and advantage.
+• Four quarters with real intervals, and extra time to a two-goal lead when a match must have a winner.
+• Only the Goal Shooter and Goal Attack can score, from inside the circle.
+
+PLAY YOUR WAY
+• Play the whole team, or pick a bib and play one position all match.
+• Quick Match: any two of 23 netball nations, from Australia, New Zealand, England, Jamaica and South Africa to Malawi, Uganda, Tonga, Fiji, Singapore and Sri Lanka.
+• The Nations Cup: two pools, semi-finals, the bronze-medal match and the final, with tables by goal percentage.
+• A box score for every match: goals from attempts, feeds, centre pass receives, gains, intercepts, rebounds and penalties.
+• A league rule to switch on: the Double Zone, where long shots late in each quarter count two.
+• Quarters of 5, 8, 10 or the full 15 minutes.
+
+THREE VENUES
+A packed arena, a sports hall and an outdoor court under an evening sky.
+
+MADE FOR YOUR PHONE
+• Nineteen languages: English, Afrikaans, isiZulu, isiXhosa, Sesotho, Setswana, Chichewa, Luganda, chiShona, Kiswahili, Bahasa Melayu, 中文, සිංහල, தமிழ், Cymraeg, Te Reo Māori, Lea Faka-Tonga, Gagana Sāmoa and Na Vosa Vakaviti.
+• Nothing is played for you: you pass, you shoot, you defend.
+• Runs smoothly on budget and mid-range phones; a battery saver too. Buttons you can resize and move, and a left-handed layout.
+• Plays offline. No ads, no purchases, no account, and no data collected.
+
+Centre Pass Netball is an independent game. It is not affiliated with or endorsed by any netball governing body, league, club or player. The players are fictional; the countries and the rules are real.
+
+== Release notes (first release) ==
+The first release of Centre Pass Netball: Quick Match and the Nations Cup, in nineteen languages.

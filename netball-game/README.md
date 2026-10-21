@@ -1,0 +1,104 @@
+# Centre Pass Netball
+
+A netball game for Android phones, built with [Godot 4.7](https://godotengine.org) (free and open source, no
+royalties) the same way as Kabaddi Raid and Takraw Smash. It plays the Rules of Netball as they stand (World Netball,
+2024 edition), for the sport's players from Johannesburg to Lilongwe, Kingston, Auckland and Nuku'alofa, in their
+languages.
+
+> **Status: playable beta.** The players are built in code (`game/body.gd`) on a humanoid skeleton, ready to be
+> replaced by Meshy models if you choose (docs/MESHY_BRIEF.md; no credits spent). Everything else is the game as it
+> will ship.
+
+## What's in it
+
+| Area | What works today |
+|---|---|
+| **The rules** | World Netball's Rules of Netball, 2024 edition (current in October 2026), in a pure rules module with a test for each rule: seven positions and their areas, offside (lines belong to the areas they bound), the centre pass alternating whoever scored and caught in the centre third, footwork and the landing foot, three seconds, short pass, over a third, obstruction at 0.9 m from the landing foot, contact, free pass, penalty pass, penalty pass or shot in the circle, the penalised player out of play beside the thrower, throw-ins, advantage, no toss-up (2024), a goal released before the whistle counts, only GS and GA score from the circle; four quarters with 4-12-4 minute intervals; extra time of 2 × 7 minutes and on to a two-goal lead. See [docs/RULES.md](docs/RULES.md), with its sources. |
+| **The court** | 30.5 × 15.25 m in thirds, the 0.9 m centre circle, 4.9 m goal circles, posts 3.05 m with a 380 mm ring on its 150 mm arm and a net, padded post protectors, 3.05 m run-off, all to measure. |
+| **Playing** | A full match against the AI, by touch. Play the whole team (you have whoever has the ball, and the defender nearest it) or pick a bib and play one position all match. With the ball she cannot run: turn with the stick, pick a team-mate, Pass or Lob within your three seconds; Shoot from the circle. In defence, Defend from 0.9 m (the ring round the landing foot turns red when you are closer) and Intercept passes you can reach. Nothing is played for you: hold on too long and it is held ball. |
+| **The AI** | Plays the positions as they are played: leads into space and holds, the GS round the post, the GA at the circle's edge, the WA in the pocket, defenders goal-side of their player and on the ball at 0.9 m, the centre pass forward to the GA or WA. Tuned to real numbers: about 55 goals a team in 60 minutes, GS about 86% and GA about 77% shooting, few gains a match (docs/RULES.md "How the AI plays"). |
+| **Officials** | Two umpires, each controlling her half (one goal third, half the centre third, a side line and a goal line), walking her side line with play; she blows, calls and signals each decision as World Netball's signals show it, then points the award. |
+| **Broadcast touches** | A netball scoreboard (flags, scores, quarter, the clock counting down, the arrow to the next centre pass, DOUBLE ZONE when live), the call and award on screen, bibs over players' heads, crowd reactions, the swish of the net and the ring's clang. |
+| **Modes** | Quick Match (any two of 23 nations, three venues, quarters of 5, 8, 10 or the real 15 minutes, four difficulty levels, the Double Zone league rule); the Nations Cup (two pools, semi-finals, bronze and final, tables by goal percentage, extra time in knockouts); records; an AI v AI match behind the home screen. |
+| **After the match** | The score by quarter, the player of the match, and a box score for each side: goals from attempts and shooting %, feeds, assists, centre pass receives, gains, intercepts, deflections, rebounds, penalties, turnovers. |
+| **Teams** | 23 national teams rated from the 2026 world ranking, by their plain names and flags (drawn in code; Northern Ireland, which has no official flag, gets a neutral one); squads of twelve with invented names from each country's common names. No national team's nickname, governing body, league or competition is named. |
+| **Venues** | An arena with seating all round, a sports hall with one stand, and an outdoor court under the evening sky, as so much netball is played. |
+| **Languages** | English, Afrikaans, isiZulu, isiXhosa, Sesotho, Setswana, Chichewa, Luganda, chiShona, Kiswahili, Bahasa Melayu, 中文, සිංහල, தமிழ், Cymraeg, Te Reo Māori, Lea Faka-Tonga, Gagana Sāmoa, Na Vosa Vakaviti. The game starts in the phone's language when it has it; the globe on the home screen changes it. A text-fit audit checks every screen in every language at four screen shapes (`tests/fit_audit.gd`). See [docs/LANGUAGES.md](docs/LANGUAGES.md); the translations await native speakers' checks (docs/translation_notes/). |
+| **Phones** | GL Compatibility renderer; each venue merged into a few draw calls, the crowd one draw call, each player one (two with the outline). A match in the arena, the biggest venue, draws **88 draw calls and 56,000 triangles a frame on Low**, 104 and 186,000 on Medium, 151 and 442,000 on High (`tests/perf_probe.tscn`). Budgets: 100 draw calls and 100,000 triangles on Low, for a Mali-G52 at 720p. Phones with a small GPU or under about 4.5 GB of memory start on Low (no outlines, no MSAA, 75% render scale, a thinner crowd, fewer sides to each body part); auto graphics drops a level if the first 20 seconds of a match run under 36 fps. Frame rate: Battery saver (about 30 a second at 80% scale), 60, or the screen's maximum, each a whole fraction of the refresh rate. A developer overlay (frame-time percentiles, hitches, Copy summary) behind seven taps on the version. |
+| **Play** | Target API 36, 64-bit with 16 KB pages (checked in CI), category Game, landscape, the only permission vibration; no internet, ads, purchases, analytics or data collected. The Play bundle carries 32-bit ARM too, for the older phones common in southern and eastern Africa. |
+
+## Controls
+
+On a phone: the left thumb anywhere on the left of the screen is a joystick: it runs your player (the lime ring),
+or, when she has the ball, turns her and picks whom to pass to (a ring shows who). The right thumb has the buttons
+for what she can do now: **Pass** and **Lob** with the ball, **Shoot** when your GS or GA has it in the circle;
+**Intercept**, **Defend** and **Switch** in defence. Settings: Play as (Team or One position), Keep me onside,
+button size, Move buttons (drag them where your thumb finds them; also in the pause menu), left-handed. The phone's
+Back button pauses and resumes a match, goes back elsewhere, and quits from the home screen; the game pauses itself
+when it loses focus.
+
+On a keyboard: WASD or arrows, Space for the first button, J and K for the others, Esc to pause.
+
+## Get it on your phone
+
+Every push that touches `netball-game/` runs the **Centre Pass Netball · Android build** action: it runs the tests,
+then exports the beta APK (64-bit ARM) and puts it on the release page
+https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/centre-pass-netball-beta. Open that page on the phone,
+tap the APK, and allow your browser to install it. See [docs/BETA.md](docs/BETA.md).
+
+For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step and every App content answer, and the
+**Centre Pass Netball · Play Store bundle** action builds the `.aab` (unsigned until the upload key is added as
+repository secrets).
+
+## Play it in a browser
+
+The **Web** export preset builds a browser version (single-threaded WebGL 2, so any static host serves it with no
+special headers): `godot --headless --path . --export-release "Web" build/web/index.html`, then serve `build/web/`
+(for example `python3 -m http.server` in that folder) and open it. Mouse clicks act as touches.
+
+To run it in the editor instead:
+
+1. Install Godot 4.7 (standard build, not .NET).
+2. Build the translations: `python3 tools/build_i18n.py`.
+3. Open `project.godot` and press Play.
+
+## Tests
+
+```
+python3 tools/check_scripts.py                                                        # every script parses
+godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn                  # rules, screens, matches, motion, cup, controls
+godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- out.jsonl       # text fit, every language, four shapes
+xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn      # drag from anywhere (text too) scrolls
+xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn   # draw calls per level
+godot --headless --path . --fixed-fps 30 res://tests/match_trace.tscn -- 120           # a match's events, as they happen
+xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /out en menus,match,store
+```
+
+## Project layout
+
+```
+autoload/   game.gd (settings, saves, theme, screens, graphics), db.gd (nations, squads, venues), sfx.gd (sounds)
+game/       rules.gd (the Rules of Netball, pure), court.gd (the court's measurements), match.gd (the match: phases,
+            calls, scoring, the box score), ai.gd (both teams' play), player.gd (movement, one writer a frame),
+            body.gd (the drawn player and umpire on their skeleton), poses.gd (every pose and umpire signal),
+            ball.gd, umpire.gd, arena.gd + geo.gd + crowd.gd (the venues), camera_rig.gd, hud.gd,
+            touch_controls.gd, dev_overlay.gd, sim.gd (matches in numbers), cup.gd, records.gd
+ui/         home (main_menu, court_third, bib_button), quick setup, settings, how to play, result, cup, records,
+            licences, language picker, button layout, ui.gd (the helpers: fit, shrink, bits, keep_on_screen),
+            drag_scroll.gd, flags.gd, icon.gd
+i18n/       src/*.json (one file per language), strings.csv (generated)
+fonts/      Noto Sans (Latin, cut), Noto Sans Sinhala and Tamil (cut to their scripts), Noto Sans SC (cut to the
+            characters used), Barlow Condensed. All SIL OFL.
+tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, art/make_bib_letters.py,
+            store/ (icons, feature graphic)
+tests/      test_runner, fit_audit, input_test, perf_probe, match_trace, screenshots, compile_check, controls_only
+store/      PLAY_STORE.md, the listings (store/listing/), the icon, feature graphic and screenshots
+docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md, MESHY_BRIEF.md, translation_notes/
+```
+
+## Moving it to its own repository
+
+This folder is self-contained. To give the game its own repo, copy everything inside `netball-game/` to the new
+repo's root (including the hidden `.github/` folder) and push: `.github/workflows/android.yml` is set up for that
+layout. Move the privacy and help pages (`centre-pass-netball/` at the top of this repository) too, or keep them
+here, and change `PRIVACY_URL` and `SUPPORT_URL` in `autoload/game.gd` if their address changes.
