@@ -616,15 +616,21 @@ func _match_parts() -> void:
 	c = m.skaters(0)[3]
 	c.respawn(Vector2(-a * 8.0, 2.0))
 	await get_tree().physics_frame
-	m.ball.release()
+	m.ball.set_spot(c.pos)   # the ball at his feet, in his own end
 	m.ball.carrier = c
-	m._carry_ball()   # the ball on his blade, in his own end
 	m.passive = {"team": 0, "t": m.PASSIVE_S + 0.5, "warned": false, "w": 0.0}
 	m._passive_tick(0.02)
 	check(bool(m.passive.warned), "507.20: a team keeping the ball in its own end is warned of passive play")
 	m.passive.w = m.PASSIVE_WARN_S + 0.5
 	m._passive_tick(0.02)
 	check(m.phase == "whistle" and int(m.restart.team) == 1 and String(m.restart.why) == "delay", "507.20: still passive after the warning, a free-hit to the other team")
+	# A carrier behind the defenders' goal is pressed from the side he must come out on, not through the cage.
+	var behind: Player = m.skaters(0)[0]
+	behind.respawn(Vector2(a * 18.0, 2.0))
+	await get_tree().physics_frame
+	var presser: Player = m.skaters(1)[0]
+	var at: Vector2 = m.ai[1]._defend(presser, behind.pos, behind, presser)
+	check(is_equal_approx(at.x, behind.pos.x) and absf(at.y) < absf(behind.pos.y), "behind the goal, the carrier is pressed from the side (%s)" % at)
 	m.queue_free()
 	await frames(2)
 
@@ -653,11 +659,24 @@ func _coach() -> void:
 	var spot := Vector2(-m.attack_dir(0) * 3.0, 2.0)
 	m._begin_restart({"kind": "free_hit", "team": 0, "spot": spot, "why": "push", "sanction": "free_hit", "line": ""})
 	check(m.user_player == m.restart.taker, "you take your team's free-hit")
+	check(m.touch.ids.has("SHOOT") and m.touch.ids.has("PASS"), "your free-hit: the buttons are Shoot and Pass (%s)" % [m.touch.ids])
 	guard = 0
 	while int(m.restart.get("team", 0)) == 0 and guard < 60 * 20:
 		await get_tree().physics_frame
 		guard += 1
 	check(int(m.restart.team) == 1 and String(m.restart.why) == "delay", "507.20: a free-hit kept waiting goes to the other team")
+	# Shoot from behind their goal: a pass out in front, not a shot into the back of the cage.
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var ad: float = m.attack_dir(0)
+	var me: Player = m.skaters(0)[0]
+	m._set_user(me)
+	me.respawn(Vector2(ad * 17.6, 2.0))
+	await get_tree().physics_frame
+	m.ball.set_spot(me.pos)
+	m.ball.carrier = me
+	m._on_action("SHOOT")
+	check(m.ball.carrier == null and m._pass_target != null and m.ball.vel.x * ad < 0.0, "behind their goal, Shoot passes it out in front")
 	m.queue_free()
 	await frames(2)
 
