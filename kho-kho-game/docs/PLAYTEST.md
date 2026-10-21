@@ -42,9 +42,18 @@ budgets instead (README).
    three minutes of play, most of them "out of limits": fleeing the chaser with the stick, the tester's defender ran
    over the side line, and with the low camera angle a phone player does the same. The AI's defenders pull up at the
    line (`_keep_in`, from their stopping distance); yours did not. **Fixed:** with the assist on (Settings > Lane
-   assist, on by default) your defender pulls up at the line too; off, the line is yours to watch. Test: *your
-   defender held at the side line pulls up inside it*. Measured with the tester's thumb in `tests/match_sim.gd ...
-   bot`: see the numbers below.
+   assist, on by default) your defender pulls up at the line too: his speed toward the line is braked at his full
+   braking as soon as he needs it all to stop inside (`_brake_at_line`; a turn of the stick alone spent his grip on
+   turning and carried him over). Off, the line is yours to watch. Test: *your defender held at the side line pulls
+   up inside it*.
+
+   Measured in `tests/match_sim.gd ... bot`, which steers your defender as the tester does, defenders your side
+   lost a minute of defending:
+
+   | | Before (0.1) | After (0.2) | Real matches |
+   |---|---|---|---|
+   | Fast rules | ~8, three in four out of limits | 1.3-2.2, a few out of limits | 1.3-1.6 |
+   | Classic rules | ~7.7, most out of limits | 0.7-1.5, none out of limits | 1.3-1.6 |
 3. **Defending, the defender you steer had no reflexes.** The AI's defenders slip a touch about 70% of the time
    (their turn against the chaser's reach); yours never did, and stood still when your thumb was off the stick.
    **Fixed:** with your thumb off the stick for half a second he runs as the AI would (the stick takes him back at

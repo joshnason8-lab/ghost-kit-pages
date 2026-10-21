@@ -1529,7 +1529,25 @@ func _user_defender(dt: float) -> void:
 	# out of limits from a thumb pushed the wrong way under an angled camera (the playtest's second worst find).
 	if bool(Game.settings.lane_assist):
 		a.want = _keep_in(a, a.want)
+		_brake_at_line(a, dt)
 	_stamina(a, dt)
+
+
+## The assist's brake: his speed toward a line he is about to cross goes, at his full braking, as soon as he needs
+## all of it to stop inside (a turn of the stick alone spends his grip on turning and carries him over).
+func _brake_at_line(a: Athlete, dt: float) -> void:
+	var brake := Athlete.DECEL * a.agility
+	for k in [0, 2]:
+		var lim: float = (f.length if k == 0 else f.width) * 0.5 - 0.3
+		var p: float = a.position[k]
+		var out: float = a.vel[k] * signf(p)
+		if out <= 0.0:
+			continue
+		var room := lim - absf(p)
+		if out * out / (2.0 * brake) >= room:
+			a.vel[k] -= signf(p) * minf(out, brake * dt)
+			if a.want[k] * signf(p) > 0.0:
+				a.want[k] = 0.0
 
 
 ## Your defender runs himself while your thumb is off the stick (USER_IDLE seconds).
