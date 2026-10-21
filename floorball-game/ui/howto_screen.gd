@@ -7,7 +7,7 @@ extends Control
 const RULES := [["RULE_RINK", "101-105"], ["RULE_TEAMS", "301-302"], ["RULE_TIME", "201"], ["RULE_FACEOFF", "501, 503"],
 	["RULE_HITIN", "504-505"], ["RULE_FREEHIT", "506-507"], ["RULE_STICK", "507.1-507.4"], ["RULE_BODY", "507.5-507.11"],
 	["RULE_GK", "303, 507.15-507.18"], ["RULE_GKAREA", "507.12"], ["RULE_GOALS", "701-703"], ["RULE_PENALTIES", "601-614"],
-	["RULE_PP", "604"], ["RULE_PENSHOT", "801-802"], ["RULE_OT", "203-204"], ["RULE_ADVANTAGE", "602"]]
+	["RULE_PP", "604"], ["RULE_PENSHOT", "508-510"], ["RULE_OT", "203-204"], ["RULE_ADVANTAGE", "602"]]
 const SIGNS := ["free_hit", "hit_in", "advantage", "delayed", "goal", "no_goal", "pen2", "pen5", "pen10", "penalty_shot", "face_off", "timeout"]
 
 var _tab := 0

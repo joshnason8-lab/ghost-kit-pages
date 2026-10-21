@@ -15,7 +15,8 @@ const REACH := 0.95           # how far from the feet the blade can play the bal
 var data := {}                # the squad entry (DB.squad), or a referee's
 var team := 0                 # 0, 1, or -1 for a referee
 var role := "F"               # G, C, F, D, or R for a referee
-var slot := 0                 # the place in the line: 0 C, 1 LW, 2 RW, 3 LD, 4 RD; 5 the goalkeeper
+var slot := 0                 # the place in the line: 0 C, 1 LW, 2 RW, 3 LD, 4 RD; 5 the goalkeeper; 6 the sixth
+                              # player of an empty net; 9 a penalised player on his way to the penalty bench
 var body: Body
 var match_node: Node = null
 
@@ -32,8 +33,10 @@ var act_len := 0.0
 var signal_arm := Vector2.ZERO  # a referee's signal: the floor direction an arm points
 var stamina := 1.0
 var on_rink := true
+var off_boards := false       # may go over the boards (to the penalty bench): no board stops him
 var in_box := false           # on the penalty bench
 var tag: Label3D
+var marker: MeshInstance3D    # your player's ring on the floor
 var writes := 0               # step() calls this frame: the motion audit checks there is exactly one
 
 var respawned := false        # came back on (from the penalty bench) this frame: the one jump allowed, unseen
@@ -60,7 +63,7 @@ func _ready() -> void:
 		tag.text = str(int(data.get("num", 0)))
 		tag.font = Game.font_score
 		tag.font_size = 64
-		tag.pixel_size = 0.004
+		tag.pixel_size = 0.0062
 		tag.outline_size = 10
 		tag.modulate = Color.WHITE
 		tag.outline_modulate = Color(0, 0, 0, 0.7)
@@ -71,6 +74,29 @@ func _ready() -> void:
 	if role == "G" or role == "R":
 		body.no_stick()
 	_place()
+
+
+## Marks this player as the one you run: a ring on the floor in your team's colour and a bigger number.
+func mark(on: bool) -> void:
+	if on and marker == null:
+		marker = MeshInstance3D.new()
+		var q := PlaneMesh.new()
+		q.size = Vector2(1.25, 1.25)
+		marker.mesh = q
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.albedo_texture = Ball.ring_texture()
+		m.albedo_color = Color(Game.C_YELLOW, 0.95)
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		marker.material_override = m
+		marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		marker.position = Vector3(0, 0.008, 0)
+		add_child(marker)
+	if marker:
+		marker.visible = on
+	if tag:
+		tag.modulate = Game.C_YELLOW if on else Color.WHITE
+		tag.font_size = 84 if on else 64
 
 
 func _look() -> Dictionary:
@@ -145,7 +171,7 @@ func step(dt: float) -> void:
 	vel += diff
 	pos += vel * dt
 	# The boards: he stops at them (a body cannot pass through).
-	if not Rules.in_rink(pos, 0.3):
+	if not off_boards and not Rules.in_rink(pos, 0.3):
 		var c: Array = Rules.board_contact(pos)
 		pos = c[0] + c[1] * 0.3
 		var n: Vector2 = c[1]
@@ -366,6 +392,10 @@ func _referee_pose(p: Dictionary, t: float, _dt: float) -> void:
 			# Advantage: the arm out forward and up, the way the play goes.
 			p[arm] = Vector3(-130 * cos(deg_to_rad(absf(yaw))), 0, 60 * s * sin(deg_to_rad(absf(yaw))))
 			p[arm.replace("upper", "fore")] = Vector3(0, 0, 0)
+		"passive":
+			# Passive play: the arm raised forward and up, held while the warning stands [verify the sign].
+			p.upperarm_r = Vector3(-140, 0, -10)
+			p.forearm_r = Vector3.ZERO
 		"delayed":
 			# A delayed penalty: one arm straight up, held until play stops.
 			p.upperarm_r = Vector3(-180, 0, -5)

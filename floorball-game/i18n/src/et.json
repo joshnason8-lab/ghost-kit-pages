@@ -135,7 +135,7 @@
   "RULE_HITIN": "Sisselöögid",
   "RULE_HITIN_BODY": "Kui pall läheb üle piirde, lööb selle sisse meeskond, kes seda viimasena ei puudutanud, 1,5 m kauguselt piirdest kohas, kus pall välja läks, kuid mitte kunagi väravajoone pikenduse tagant. Vastased 3 m kaugusel. Sisselöögist võib otse värava lüüa.",
   "RULE_FREEHIT": "Vabalöögid",
-  "RULE_FREEHIT_BODY": "Lüüakse rikkumise kohast, kuid mitte kunagi lähemalt kui 3,5 m väravaalast ega väravajoone pikenduse tagant. Vastased 3 m kaugusel, ka nende kepid. See peab olema löök ja võib minna otse väravasse.",
+  "RULE_FREEHIT_BODY": "Lüüakse rikkumise kohast, kuid mitte kunagi lähemalt kui 3,5 m väravavahi alast ega väravajoone pikenduse tagant. Vastased 3 m kaugusel, ka nende kepid. See peab olema löök ja võib minna otse väravasse.",
   "RULE_STICK": "Kepp",
   "RULE_STICK_BODY": "Vastase keppi ei tohi lüüa, haakida, tõsta ega blokeerida; hoovõtul ei tohi kepp tõusta üle vöökoha; palli ei tohi mängida üle põlve; kepp ega jalg ei tohi olla vastase jalgade vahel. Iga rikkumise eest vabalöök, ohtlike eest kaks minutit.",
   "RULE_BODY": "Keha ja jalad",
@@ -147,7 +147,7 @@
   "RULE_GOALS": "Väravad",
   "RULE_GOALS_BODY": "Kogu pall üle väravajoone eestpoolt, reeglipäraselt kepiga mängitud või väravavahi visatud. Mitte jalaga ega peaga sisse löödud ega ründava meeskonna rikkumise järel. Omavärav läheb alati arvesse.",
   "RULE_PENALTIES": "Karistused",
-  "RULE_PENALTIES_BODY": "Väike meeskonnakaristus on 2 minutit, suur 5. 10-minutiline isiklik karistus saadab mängija välja ja tema meeskond kannab lisaks 2 minutit. Mängukaristus saadab mängija lõplikult välja ja tema meeskond kannab 5 minutit. Ühe meeskonna karistustest saab korraga kehtida kõige rohkem kaks.",
+  "RULE_PENALTIES_BODY": "Väike meeskonnakaristus on 2 minutit, suur 5. 10-minutilise isikliku karistusega kaasneb alati väike: mängija istub 2 ja siis 10 minutit, tema meeskond on vähemuses ainult esimesed 2. Mängukaristus saadab mängija lõplikult välja ja tema meeskond kannab 5 minutit. Ühe meeskonna karistustest saab korraga kehtida kõige rohkem kaks.",
   "RULE_PP": "Arvuline ülekaal",
   "RULE_PP_BODY": "Ühe mängija võrra vähemuses meeskond mängib neljakesi viie vastu. Kui suurema mängijate arvuga meeskond lööb värava, lõpeb lühim 2-minutiline karistus; 5-minutiline karistus ei lõpe kunagi enne aega.",
   "RULE_PENSHOT": "Karistusvisked",
@@ -323,5 +323,14 @@
   "TEAM_SGP": "Singapur",
   "TEAM_AUS": "Austraalia",
   "TEAM_PHI": "Filipiinid",
-  "TEAM_NED": "Holland"
+  "TEAM_NED": "Holland",
+  "COACH": "Treener",
+  "SET_TIPS": "Treeneri nõuanded",
+  "TIP_MOVE": "Sina oled kollase rõngaga mängija. Aseta vasak pöial ükskõik kuhu ekraani vasakule poolele ja libista, et joosta.",
+  "TIP_BALL": "Pall on sinu! Värava lähedal vajuta VISE: lükka viskel juhtkangi üles või alla, et nurk valida. SÖÖT läheb kaaslasele, kellele juhtkang osutab.",
+  "TIP_DEFEND": "Pall on vastastel. Mine palli ja oma värava vahele ja vajuta ÄRAVÕTT, eestpoolt. VAHETUS viib sind pallile lähima kaaslase juurde.",
+  "TIP_RESTART": "Sinu vabalöök: vastased peavad olema 3 m kaugusel. Suuna juhtkangi, siis SÖÖT või VISE. See peab olema löök ja võib minna otse väravasse.",
+  "TIP_WHISTLE": "Vile peatab mängu. Ülal olev kast näitab, mis määrati ja miks, koos reegliga. Paus paremal üleval: sealt saad aja maha võtta.",
+  "TIP_PENALTY": "Kaks minutit: karistatud mängija istub karistuspingil ja tema meeskond mängib ühe mängija võrra vähem. Järelejäänud aeg on seisu all.",
+  "TIP_GOAL": "Pärast iga väravat jätkub mäng vaheviskega keskpunktist."
 }

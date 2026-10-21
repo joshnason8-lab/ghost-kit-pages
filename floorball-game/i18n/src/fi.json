@@ -135,7 +135,7 @@
   "RULE_HITIN": "Rajalyönnit",
   "RULE_HITIN_BODY": "Kun pallo menee laidan yli, rajalyönnin saa joukkue, joka ei koskenut palloon viimeksi. Se lyödään 1,5 metrin päästä laidasta kohdasta, jossa pallo meni ulos, mutta ei koskaan maaliviivan jatkeen takaa. Vastustajat ovat 3 metrin päässä. Rajalyönnistä voi tehdä maalin suoraan.",
   "RULE_FREEHIT": "Vapaalyönnit",
-  "RULE_FREEHIT_BODY": "Lyödään rikkeen tapahtumapaikalta, mutta ei koskaan 3,5 metriä lähempää maalialuetta eikä maaliviivan jatkeen takaa. Vastustajat ovat mailoineen 3 metrin päässä. Sen on oltava lyönti, ja se voi mennä suoraan maaliin.",
+  "RULE_FREEHIT_BODY": "Lyödään rikkeen tapahtumapaikalta, mutta ei koskaan 3,5 metriä lähempää maalivahdin aluetta eikä maaliviivan jatkeen takaa. Vastustajat ovat mailoineen 3 metrin päässä. Sen on oltava lyönti, ja se voi mennä suoraan maaliin.",
   "RULE_STICK": "Maila",
   "RULE_STICK_BODY": "Vastustajan mailaa ei saa lyödä, koukata, nostaa eikä estää; mailaa ei saa nostaa lyönnissä vyötärön yläpuolelle; palloa ei saa pelata polven yläpuolelta; mailaa tai jalkaa ei saa viedä vastustajan jalkojen väliin. Kustakin seuraa vapaalyönti, vaarallisista kaksi minuuttia.",
   "RULE_BODY": "Keho ja jalat",
@@ -147,7 +147,7 @@
   "RULE_GOALS": "Maalit",
   "RULE_GOALS_BODY": "Koko pallo maaliviivan yli edestä, oikein mailalla pelattuna tai maalivahdin heittämänä. Ei potkaistuna eikä puskettuna, eikä hyökkäävän joukkueen rikkeen jälkeen. Oma maali hyväksytään aina.",
   "RULE_PENALTIES": "Jäähyt",
-  "RULE_PENALTIES_BODY": "Pieni joukkuerangaistus on 2 minuuttia, iso 5. Henkilökohtainen 10 minuutin rangaistus vie pelaajan pois, ja hänen joukkueensa kärsii lisäksi 2 minuuttia. Ottelurangaistus vie pelaajan pois koko ottelusta, ja joukkue kärsii 5 minuuttia. Joukkueella voi olla kerrallaan voimassa enintään kaksi jäähyä.",
+  "RULE_PENALTIES_BODY": "Pieni joukkuerangaistus on 2 minuuttia, iso 5. Henkilökohtaiseen 10 minuutin rangaistukseen liittyy aina pieni: pelaaja istuu ensin 2 ja sitten 10 minuuttia, ja joukkue on alivoimalla vain ensimmäiset 2. Ottelurangaistus vie pelaajan pois koko ottelusta, ja joukkue kärsii 5 minuuttia. Joukkueella voi olla kerrallaan voimassa enintään kaksi jäähyä.",
   "RULE_PP": "Ylivoima",
   "RULE_PP_BODY": "Alivoimainen joukkue pelaa neljällä viittä vastaan. Jos ylivoimalla pelaava joukkue tekee maalin, lyhin 2 minuutin jäähy päättyy; 5 minuutin jäähy ei koskaan pääty etuajassa.",
   "RULE_PENSHOT": "Rangaistuslaukaus",
@@ -323,5 +323,14 @@
   "TEAM_SGP": "Singapore",
   "TEAM_AUS": "Australia",
   "TEAM_PHI": "Filippiinit",
-  "TEAM_NED": "Alankomaat"
+  "TEAM_NED": "Alankomaat",
+  "COACH": "Valmentaja",
+  "SET_TIPS": "Valmentajan vinkit",
+  "TIP_MOVE": "Olet pelaaja, jolla on keltainen rengas. Paina vasen peukalo mihin tahansa näytön vasemmalle puolelle ja liu'uta, niin juokset.",
+  "TIP_BALL": "Pallo on sinulla! Lähellä maalia paina LAUKAUS: työnnä ohjainta ylös tai alas laukoessasi, niin valitset kulman. SYÖTTÖ menee sille, jota ohjain osoittaa.",
+  "TIP_DEFEND": "Pallo on vastustajilla. Mene pallon ja oman maalisi väliin ja paina RIISTO edestä. VAIHTO siirtää ohjauksen palloa lähimmälle joukkuetoverille.",
+  "TIP_RESTART": "Vapaalyönti teille: vastustajien on oltava 3 metrin päässä. Suuntaa ohjaimella ja paina SYÖTTÖ tai LAUKAUS. Sen on oltava lyönti, ja se voi mennä suoraan maaliin.",
+  "TIP_WHISTLE": "Vihellys pysäyttää pelin. Ylhäällä oleva ruutu kertoo, mitä tuomittiin ja miksi, sääntöineen. Aikalisän saat Tauko-painikkeesta oikealta ylhäältä.",
+  "TIP_PENALTY": "Kaksi minuuttia: jäähyn saanut pelaaja istuu jäähyaitiossa, ja joukkue pelaa yhden vähemmällä. Jäljellä oleva aika näkyy tuloksen alla.",
+  "TIP_GOAL": "Jokaisen maalin jälkeen peli jatkuu aloituksella keskipisteestä."
 }

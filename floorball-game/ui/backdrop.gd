@@ -1,8 +1,8 @@
 class_name Backdrop
 extends Control
 ## The menus' background: a coach's whiteboard on the wall of a Nordic sports hall. The board fills the screen: its
-## white face with the faint grey ghosts of old erased tactics, the aluminium frame round it, the marker tray along
-## the bottom with its pens, and two magnets in the corners. All drawn in code: no image ships for it.
+## white face with the faint grey ghosts of old erased tactics, the aluminium frame round it and two magnets in the
+## corners (no marker tray: on a phone it read as a stray scroll bar). All drawn in code: no image ships for it.
 
 var with_frame := true
 var _ghosts := []
@@ -48,15 +48,6 @@ func _draw() -> void:
 	draw_rect(Rect2(0, 0, f, s.y), frame.darkened(0.05))
 	draw_rect(Rect2(s.x - f, 0, f, s.y), frame.darkened(0.1))
 	draw_line(Vector2(f, f), Vector2(s.x - f, f), Color(0, 0, 0, 0.12), 2.0)
-	# The marker tray and its pens, bottom left.
-	var ty := s.y - f - 6.0
-	draw_rect(Rect2(s.x * 0.06, ty, s.x * 0.22, 6.0), frame.darkened(0.25))
-	var pens := [Game.C_INK, Game.C_BLUE, Game.C_RED, Game.C_GREEN]
-	for i in pens.size():
-		var x := s.x * 0.075 + i * 46.0
-		draw_rect(Rect2(x, ty - 9.0, 38.0, 9.0), Color("f4f4f2"))
-		draw_rect(Rect2(x + 30.0, ty - 9.0, 8.0, 9.0), pens[i])
-
 
 ## A magnet: a coloured disc with a highlight and its shadow, as the board's tactics are drawn with.
 static func magnet(ci: CanvasItem, at: Vector2, r: float, col: Color, label := "", font: Font = null, fs := 14) -> void:

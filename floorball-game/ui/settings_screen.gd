@@ -43,6 +43,7 @@ func _ready() -> void:
 	game[1].add_child(UI.wrap(tr("SPEED_NOTE"), "MutedLabel", 16))
 	game[1].add_child(_toggle("auto_switch", "AUTO_SWITCH"))
 	game[1].add_child(UI.wrap(tr("AUTO_SWITCH_NOTE"), "MutedLabel", 16))
+	game[1].add_child(_toggle("tips", "SET_TIPS"))
 
 	# The screen.
 	var disp: Array = UI.section(tr("SET_DISPLAY"), "display")
@@ -137,6 +138,8 @@ func _fps_text(opt: int, smooth: int, hz: int) -> String:
 func _toggle(key: String, title_key: String) -> VBoxContainer:
 	return UI.field(tr(title_key), UI.chips_row([tr("ON"), tr("OFF")], 0 if Game.settings[key] else 1, func(i):
 		Game.settings[key] = i == 0
+		if key == "tips":
+			Game.settings.tips_seen = []
 		Game.save_settings()
 		if key == "sound" and i == 1:
 			Sfx.stop_all()

@@ -95,6 +95,8 @@ var settings := {
 	"auto_switch": true,    # the player you run changes to the one nearest the ball by itself
 	"game_speed": 0,        # 0 Steady (80% of real pace, the default on a phone), 1 Real
 	"seen_howto": false,
+	"tips": true,           # the coach's tips in a first match (game/hud.gd coach()), each once
+	"tips_seen": [],
 	"dev": false,
 }
 
@@ -244,6 +246,8 @@ func load_settings() -> void:
 		settings[k] = int(settings[k])
 	if not (settings.btn_places is Array):
 		settings.btn_places = []
+	if not (settings.tips_seen is Array):
+		settings.tips_seen = []
 
 
 func save_settings() -> void:

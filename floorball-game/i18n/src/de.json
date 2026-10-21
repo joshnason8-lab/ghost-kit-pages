@@ -135,7 +135,7 @@
   "RULE_HITIN": "Einschläge",
   "RULE_HITIN_BODY": "Geht der Ball über die Bande, schlägt ihn das Team ein, das ihn nicht zuletzt berührt hat: 1,5 m von der Bande, wo er hinausging, nie hinter der verlängerten Torlinie. Gegner 3 m entfernt. Aus einem Einschlag darf direkt ein Tor fallen.",
   "RULE_FREEHIT": "Freischläge",
-  "RULE_FREEHIT_BODY": "Ausgeführt am Ort des Vergehens, aber nie näher als 3,5 m am Torraum und nie hinter der verlängerten Torlinie. Gegner 3 m entfernt, Stöcke eingeschlossen. Der Ball muss geschlagen werden und darf direkt ins Tor gehen.",
+  "RULE_FREEHIT_BODY": "Ausgeführt am Ort des Vergehens, aber nie näher als 3,5 m am Torhüterraum und nie hinter der verlängerten Torlinie. Gegner 3 m entfernt, Stöcke eingeschlossen. Der Ball muss geschlagen werden und darf direkt ins Tor gehen.",
   "RULE_STICK": "Der Stock",
   "RULE_STICK_BODY": "Kein Schlagen, Haken, Anheben oder Blockieren des gegnerischen Stocks; beim Ausholen kein Stock über Hüfthöhe; kein Spielen des Balls über Kniehöhe; kein Stock oder Bein zwischen den Beinen eines Gegners. Jedes Vergehen gibt Freischlag; gefährliche kosten zwei Minuten.",
   "RULE_BODY": "Körper und Füsse",
@@ -147,7 +147,7 @@
   "RULE_GOALS": "Tore",
   "RULE_GOALS_BODY": "Der ganze Ball über der Torlinie, von vorn, korrekt mit dem Stock gespielt oder vom Torhüter geworfen. Nicht mit dem Fuss oder dem Kopf, und nicht nach einem Vergehen des angreifenden Teams. Ein Eigentor zählt immer.",
   "RULE_PENALTIES": "Strafen",
-  "RULE_PENALTIES_BODY": "Eine kleine Bankstrafe dauert 2 Minuten, eine grosse 5. Eine persönliche 10-Minuten-Strafe schickt den Spieler vom Feld, und sein Team sitzt zusätzlich 2 Minuten ab. Eine Matchstrafe schliesst den Spieler endgültig aus, und sein Team sitzt 5 Minuten ab. Nie laufen mehr als zwei Strafen eines Teams gleichzeitig.",
+  "RULE_PENALTIES_BODY": "Eine kleine Bankstrafe dauert 2 Minuten, eine grosse 5. Eine persönliche 10-Minuten-Strafe kommt immer mit einer kleinen: Der Spieler sitzt 2 und dann 10 Minuten, sein Team ist nur in den ersten 2 in Unterzahl. Eine Matchstrafe schliesst den Spieler endgültig aus, und sein Team sitzt 5 Minuten ab. Nie laufen mehr als zwei Strafen eines Teams gleichzeitig.",
   "RULE_PP": "Überzahl",
   "RULE_PP_BODY": "Ein Team mit einem Spieler weniger spielt vier gegen fünf. Trifft das Team in Überzahl, endet die kürzeste 2-Minuten-Strafe; eine 5-Minuten-Strafe endet nie vorzeitig.",
   "RULE_PENSHOT": "Penaltys",
@@ -323,5 +323,14 @@
   "TEAM_SGP": "Singapur",
   "TEAM_AUS": "Australien",
   "TEAM_PHI": "Philippinen",
-  "TEAM_NED": "Niederlande"
+  "TEAM_NED": "Niederlande",
+  "COACH": "Trainer",
+  "SET_TIPS": "Trainertipps",
+  "TIP_MOVE": "Du bist der Spieler mit dem gelben Ring. Leg den linken Daumen irgendwo auf die linke Bildschirmhälfte und schieb ihn, um zu laufen.",
+  "TIP_BALL": "Dein Ball! Tippe vor dem Tor auf SCHUSS: Drück den Joystick beim Schiessen nach oben oder unten, um eine Ecke zu wählen. PASS geht zum Mitspieler, auf den der Joystick zeigt.",
+  "TIP_DEFEND": "Der Gegner hat den Ball. Stell dich zwischen Ball und dein Tor und tippe von vorn auf TACKLING. WECHSELN springt zum Mitspieler, der dem Ball am nächsten ist.",
+  "TIP_RESTART": "Dein Freischlag: Die Gegner müssen 3 m Abstand halten. Richte den Joystick aus, dann PASS oder SCHUSS. Der Ball muss geschlagen werden und darf direkt ins Tor.",
+  "TIP_WHISTLE": "Der Pfiff unterbricht das Spiel. Die Anzeige oben sagt, was gegeben wurde und warum, mit der Regel. Pause, oben rechts, für dein Timeout.",
+  "TIP_PENALTY": "Zwei Minuten: Der bestrafte Spieler sitzt auf der Strafbank, und sein Team spielt mit einem weniger. Die Restzeit steht unter dem Spielstand.",
+  "TIP_GOAL": "Nach jedem Tor geht es mit einem Bully am Mittelpunkt weiter."
 }

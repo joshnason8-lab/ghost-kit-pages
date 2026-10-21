@@ -135,7 +135,7 @@
   "RULE_HITIN": "Innslag",
   "RULE_HITIN_BODY": "Går ballen over vantet, slår laget som ikke var sist borti den innslag, 1,5 m fra vantet der den gikk ut, aldri bak mållinjens forlengelse. Motstanderne 3 m unna. Det kan scores direkte på innslag.",
   "RULE_FREEHIT": "Frislag",
-  "RULE_FREEHIT_BODY": "Tas der forseelsen skjedde, men aldri nærmere målområdet enn 3,5 m eller bak mållinjens forlengelse. Motstanderne 3 m unna, kølla medregnet. Det må være et slag, og det kan gå rett i mål.",
+  "RULE_FREEHIT_BODY": "Tas der forseelsen skjedde, men aldri nærmere keeperområdet enn 3,5 m eller bak mållinjens forlengelse. Motstanderne 3 m unna, kølla medregnet. Det må være et slag, og det kan gå rett i mål.",
   "RULE_STICK": "Kølla",
   "RULE_STICK_BODY": "Ikke slå, hekte, løfte eller låse motstanderens kølle; ingen kølle over hoftehøyde i slaget; ikke spill ballen over kneet; ingen kølle eller fot mellom motstanderens bein. Alt dette gir frislag; farlige forseelser gir to minutter.",
   "RULE_BODY": "Kropp og føtter",
@@ -147,7 +147,7 @@
   "RULE_GOALS": "Mål",
   "RULE_GOALS_BODY": "Hele ballen over mållinjen forfra, korrekt spilt med kølle eller kastet av keeperen. Ikke sparket eller headet inn, og ikke etter en forseelse fra det angripende laget. Selvmål teller alltid.",
   "RULE_PENALTIES": "Utvisninger",
-  "RULE_PENALTIES_BODY": "En liten lagstraff er 2 minutter, en stor 5. En personlig straff på 10 minutter tar spilleren ut, og laget soner i tillegg 2 minutter. Matchstraff tar spilleren ut for resten av kampen, og laget soner 5 minutter. Høyst to av et lags utvisninger løper samtidig.",
+  "RULE_PENALTIES_BODY": "En liten lagstraff er 2 minutter, en stor 5. En personlig straff på 10 minutter kommer alltid med en liten lagstraff: spilleren sitter 2 og så 10 minutter, laget spiller med én mindre bare de første 2. Matchstraff tar spilleren ut for resten av kampen, og laget soner 5 minutter. Høyst to av et lags utvisninger løper samtidig.",
   "RULE_PP": "Overtall",
   "RULE_PP_BODY": "Et lag med én spiller mindre spiller fire mot fem. Scorer laget med flere spillere, avsluttes den korteste 2-minuttersutvisningen; en 5-minuttersutvisning avsluttes aldri før tiden.",
   "RULE_PENSHOT": "Straffeslag",
@@ -323,5 +323,14 @@
   "TEAM_SGP": "Singapore",
   "TEAM_AUS": "Australia",
   "TEAM_PHI": "Filippinene",
-  "TEAM_NED": "Nederland"
+  "TEAM_NED": "Nederland",
+  "COACH": "Trener",
+  "SET_TIPS": "Trenertips",
+  "TIP_MOVE": "Du er spilleren med den gule ringen. Sett venstre tommel hvor som helst på venstre side av skjermen og dra for å løpe.",
+  "TIP_BALL": "Din ball! Nær mål trykker du SKYT: før joysticken opp eller ned når du skyter for å velge hjørne. PASS går til lagkameraten joysticken peker mot.",
+  "TIP_DEFEND": "De har ballen. Kom deg mellom ballen og ditt eget mål og trykk TAKLE, forfra. BYTT hopper til lagkameraten nærmest ballen.",
+  "TIP_RESTART": "Ditt frislag: motstanderne må stå 3 m unna. Sikt med joysticken, så PASS eller SKYT. Det må være et slag, og det kan gå rett i mål.",
+  "TIP_WHISTLE": "Fløyta stopper spillet. Ruten øverst viser hva som ble dømt og hvorfor, med regelen. Pause, oppe til høyre, for din timeout.",
+  "TIP_PENALTY": "To minutter: den utviste spilleren sitter i utvisningsboksen, og laget spiller med én mindre. Tiden som er igjen, vises under stillingen.",
+  "TIP_GOAL": "Etter hvert mål starter spillet igjen med avslag på midtpunktet."
 }

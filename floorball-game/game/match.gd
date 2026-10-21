@@ -14,6 +14,9 @@ const WHISTLE_S := 1.6          # the stop after a whistle while the referee sho
 const GOAL_S := 3.4
 const SETUP_MAX_S := 7.0        # players walk to a restart; after this the restart is taken anyway
 const PICKUP_SPEED := 15.0      # a ball faster than this past a blade is not controlled, only deflected
+const PASSIVE_S := 24.0         # a team that keeps the ball this long without an attack is warned of passive play
+const PASSIVE_WARN_S := 8.0     # after the warning: an attack (or a shot) or the ball goes to the other team
+const RESTART_DELAY_S := 9.0    # your free-hit or hit-in not taken by then: delaying a fixed situation
 const ADVANTAGE_S := 2.6        # how long advantage is played before the free-hit is forgotten (play went on)
 
 var config := {}
@@ -52,6 +55,10 @@ var _fps_probe := []
 var _auto_gfx_done := false
 var _intro_left := 0.0
 var _sim_left := -1.0
+var passive := {"team": -1, "t": 0.0, "warned": false, "w": 0.0}   # 507.20: passive play
+var pulled := [false, false]     # the goalkeeper off for a sixth outfield player (an empty net)
+var sixth: Array = [null, null]  # each team's extra outfield player, off the rink until its keeper is pulled
+var sitters := [[], []]          # each team's two figures for its penalised players: they walk to the penalty bench
 
 
 func _ready() -> void:
@@ -89,6 +96,18 @@ func _ready() -> void:
 		var line: Array = _line(t, 0)
 		for s in 5:
 			players[t].append(_make_player(line[s], t, line[s].role, s))
+		var six := _make_player(_line(t, 1)[0], t, "F", 6)
+		six.on_rink = false
+		six.visible = false
+		players[t].append(six)
+		sixth[t] = six
+		for k in 2:
+			var s := _make_player(_line(t, 2)[0], t, "F", 9)
+			s.on_rink = false
+			s.visible = false
+			s.off_boards = true
+			s.set_meta("sits", "")
+			sitters[t].append(s)
 	for i in 2:
 		var r := Player.new({"skin": DB.SKIN[_rng.randi_range(0, 2)], "hair": DB.HAIR[_rng.randi_range(0, 5)], "height": 1.82, "hair_style": _rng.randi_range(0, 1)}, -1, "R", i)
 		r.match_node = self
@@ -267,6 +286,8 @@ func _physics_process(delta: float) -> void:
 	cam.follow(ball.pos, delta, self)
 	if hud:
 		hud.refresh()
+	if OS.has_feature("web") and Engine.get_physics_frames() % 6 == 0 and not demo:
+		_web_probe()
 
 
 func _step_all(dt: float) -> void:
@@ -285,7 +306,13 @@ func _stop_players() -> void:
 
 
 func _tick_clock(dt: float, live: bool) -> void:
-	if rules.tick(dt, live) == "period_end":
+	var n: int = rules.penalties[0].size() + rules.penalties[1].size()
+	var s := [rules.strength(0), rules.strength(1)]
+	var end := rules.tick(dt, live)
+	# A penalty over: the player back from the penalty bench, his team whole again.
+	if rules.penalties[0].size() + rules.penalties[1].size() != n or s != [rules.strength(0), rules.strength(1)]:
+		_update_boxes()
+	if end == "period_end":
 		_period_over()
 
 
@@ -293,13 +320,16 @@ func _live(dt: float) -> void:
 	possession_time += dt
 	for t in 2:
 		ai[t].play(dt)
-		ai[t].keeper(keeper(t), dt)
+		if not pulled[t]:
+			ai[t].keeper(keeper(t), dt)
+	_empty_net()
 	_user(dt)
 	_pickups()
 	_keeper_block()
 	_keeper_hold(dt)
 	_check_shot()
 	_advantage_tick(dt)
+	_passive_tick(dt)
 	_step_all(dt)
 	_tick_clock(dt, true)
 	_crowd_noise()
@@ -346,6 +376,7 @@ func _pickups() -> void:
 		return
 	if ball.pos.y > 0.42:
 		return
+	var now := Time.get_ticks_msec()
 	var best: Player = null
 	var bd := 1e9
 	for t in 2:
@@ -354,6 +385,8 @@ func _pickups() -> void:
 				continue
 			if p == ball.last_player and p.act != "" and possession_time < 0.35:
 				continue
+			if int(p.get_meta("no_pick_until", 0)) > Engine.get_physics_frames():
+				continue
 			var d := p.blade_floor().distance_to(ball.floor_pos())
 			if d < 0.55 and d < bd:
 				bd = d
@@ -361,15 +394,24 @@ func _pickups() -> void:
 	if best == null:
 		return
 	var sp := ball.speed()
+	# A moving ball gives each player one try at it as it passes (a stick reaches for it once, not every frame); a
+	# ball that has all but stopped can be gathered by whoever gets there.
+	var key := str(best.get_instance_id())
+	if sp > 3.0:
+		if ball.tries.has(key):
+			return
+		ball.tries[key] = now
 	var rel := (Vector2(ball.vel.x, ball.vel.z) - best.vel).length()
 	var intended: bool = _pass_target == best
 	var control := clampf(1.0 - (rel - 4.0) / PICKUP_SPEED, 0.0, 1.0) * (0.7 + best.stat("stick") / 330.0)
 	if intended:
-		control = maxf(control, 0.8)
+		control = maxf(control, 0.85)
+	elif ball.last_team != best.team and sp > 6.0:
+		control *= 0.6   # cutting out a pass is harder than taking one
 	if _rng.randf() < control:
 		_take(best)
-	elif sp > 4.0 and _rng.randf() < 0.25:
-		# A touch that only deflects it.
+	elif sp > 4.0 and _rng.randf() < clampf(0.35 - sp / 80.0, 0.05, 0.3):
+		# A touch that only deflects it: likelier on a slower ball (a hard shot is past before the stick moves).
 		ball.strike(Vector3(ball.vel.x * 0.5 + _rng.randf_range(-2, 2), 0.0, ball.vel.z * 0.5 + _rng.randf_range(-2, 2)), best, best.team, "stick")
 		Sfx.play("touch", -10.0)
 
@@ -423,6 +465,7 @@ func pass_to(p: Player, q: Player) -> void:
 func shoot(p: Player, aim: Vector3, slap := false) -> void:
 	if ball.carrier != p:
 		return
+	passive = {"team": p.team, "t": 0.0, "warned": false, "w": 0.0}
 	var from := ball.pos
 	var to := aim - from
 	var flat := Vector2(to.x, to.z)
@@ -464,12 +507,11 @@ func tackle(def: Player, car: Player) -> void:
 	var r := _rng.randf()
 	Sfx.play("clack", -7.0)
 	if r < win:
-		# Won cleanly: the ball off the carrier's blade.
+		# Won cleanly: the stick lifts the carrier's and the ball comes away on the tackler's blade; the player who
+		# lost it cannot take it straight back (half a second).
 		ball.release()
-		var away := (ball.floor_pos() - car.pos).normalized().rotated(_rng.randf_range(-0.8, 0.8))
-		ball.strike(Vector3(away.x * 3.5, 0, away.y * 3.5), def, def.team, "stick")
-		if def.team == user_team and def == user_player:
-			Game.haptic("steal")
+		car.set_meta("no_pick_until", Engine.get_physics_frames() + 30)
+		_take(def)
 	elif r < win + foul:
 		var kind: String = ["stick_hit", "hook", "stick_hit", "hook", "between_legs", "trip", "slash", "hold"][_rng.randi_range(0, 7) if behind > 0.4 else _rng.randi_range(0, 4)]
 		offence(def, car, kind)
@@ -540,11 +582,12 @@ func _offence_line(kind: String) -> String:
 	return "%s (%s)" % [tr("OFF_" + kind.to_upper()), Rules.offence_rule(kind)]
 
 
-## A bench penalty on p's team (a goalkeeper's is served by an outfield player, 601). The player goes to the penalty
-## bench; his team plays one fewer while it runs.
+## A bench penalty on p's team. A goalkeeper's minor or match penalty is served by an outfield player; he sits his own
+## major and personal penalties, and the reserve goalkeeper comes on (603). The player goes to the penalty bench; his
+## team plays one fewer while it runs.
 func _penalise(p: Player, kind: String, why: String) -> void:
 	var server := p
-	if p.role == "G":
+	if p.role == "G" and kind in ["pen2", "match"]:
 		server = skaters(p.team)[0] if not skaters(p.team).is_empty() else p
 	rules.add_penalty(p.team, String(p.data.id), kind, why, String(server.data.id))
 	var mins = {"pen2": 2, "pen5": 5, "pen10": 12, "match": 25}.get(kind, 2)
@@ -552,14 +595,23 @@ func _penalise(p: Player, kind: String, why: String) -> void:
 	calls.append({"kind": kind, "team": p.team, "id": p.data.id, "why": why, "period": rules.period, "t": rules.clock})
 	_ref_signal(kind, Vector2.ZERO)
 	_update_boxes()
+	if hud and user_team >= 0:
+		hud.coach("TIP_PENALTY")
 
 
 ## Who sits in the penalty bench now, from the rules' list. A penalised player on the rink is replaced in his place by
 ## a team-mate from the bench (he sits out his time); then the team has as many places filled as its strength: short,
 ## the wingers step off first, so a team a man down plays the centre and both defenders and a forward.
 func _update_boxes() -> void:
+	_send_to_box()
 	for t in 2:
 		var boxed: Array = rules.in_box(t)
+		var gk: Player = players[t][0]
+		if String(gk.data.id) in boxed:
+			for d in squads[t]:
+				if d.role == "G" and not (String(d.id) in boxed):
+					gk.become(_kit(d, t))
+					break
 		for i in range(1, players[t].size()):
 			var p: Player = players[t][i]
 			if String(p.data.id) in boxed:
@@ -579,7 +631,7 @@ func _update_boxes() -> void:
 			if p.in_box and ball.carrier == p:
 				ball.release()
 			if p.in_box and p == user_player:
-				user_player = null
+				_set_user(null)
 
 
 func _kit(d: Dictionary, t: int) -> Dictionary:
@@ -621,6 +673,37 @@ func _on_turnover(new_team: int) -> void:
 		_whistle_offence(adv.offender, String(adv.offence), String(adv.sanction), adv.at)
 
 
+## 507.20, passive play: a team keeping the ball without trying to attack is warned (the referee's arm held up),
+## then gives a free-hit to the other team if it still does not attack. An attack is the ball in the opponents'
+## end or a shot; the warning lasts until either.
+func _passive_tick(dt: float) -> void:
+	var t: int = ball.carrier.team if ball.carrier else (ball.held_by.team if ball.held_by else ball.last_team)
+	if t < 0:
+		return
+	if t != int(passive.team):
+		passive = {"team": t, "t": 0.0, "warned": false, "w": 0.0}
+		return
+	var attacking := ball.floor_pos().x * attack_dir(t) > 6.0
+	if attacking:
+		passive.t = 0.0
+		passive.warned = false
+		return
+	passive.t = float(passive.t) + dt
+	if not bool(passive.warned):
+		if float(passive.t) > PASSIVE_S:
+			passive.warned = true
+			passive.w = 0.0
+			_ref_signal("passive", Vector2(attack_dir(t), 0))
+			if hud:
+				hud.call_card(tr("CALL_PASSIVE"), tr("PASSIVE_LINE"), t)
+		return
+	passive.w = float(passive.w) + dt
+	if float(passive.w) > PASSIVE_WARN_S:
+		var at := ball.floor_pos()
+		calls.append({"kind": "free_hit", "team": 1 - t, "why": "delay", "period": rules.period, "t": rules.clock})
+		_stop("free_hit", {"team": 1 - t, "spot": Rules.free_hit_spot(at), "why": "delay", "sanction": "free_hit", "line": _offence_line("delay")})
+
+
 func _advantage_tick(dt: float) -> void:
 	if advantage.is_empty():
 		return
@@ -649,7 +732,11 @@ func _check_shot() -> void:
 		return
 	# Blocked by a defender on the way (a field player stands in the lane; lying down to block would be a penalty).
 	for o: Player in skaters(1 - t):
-		if o.pos.distance_to(ball.floor_pos()) < 0.32 and ball.pos.y < 0.9 and _rng.randf() < 0.35:
+		var bk := "block" + str(o.get_instance_id())
+		if o.pos.distance_to(ball.floor_pos()) < 0.32 and ball.pos.y < 0.9 and not ball.tries.has(bk):
+			ball.tries[bk] = true
+			if _rng.randf() >= 0.45:
+				continue
 			ball.strike(Vector3(-ball.vel.x * 0.25 + _rng.randf_range(-3, 3), 0.8, _rng.randf_range(-4, 4)), o, o.team, "deflect_defender")
 			team_stats[1 - t].blocked += 1
 			_shot_live = {}
@@ -665,6 +752,9 @@ func _check_shot() -> void:
 	var on_target := absf(cross.z) < Rules.GOAL_W * 0.5 - Ball.R and cross.y < Rules.GOAL_H - Ball.R and cross.y > 0.0
 	if not on_target:
 		return
+	if pulled[1 - t] or not gk.on_rink:
+		_shot_live.outcome = "goal"   # the net is empty
+		return
 	# The save: harder far from his body, high in a corner, fast, and through bodies in front (a screen).
 	var reach := Vector2(cross.z - gk.pos.y, cross.y - 0.45).length()
 	var screen := 0.0
@@ -672,7 +762,7 @@ func _check_shot() -> void:
 		if absf(o.pos.x - gx) < 4.0 and absf(o.pos.y - ball.pos.z) < 1.0:
 			screen += 0.12
 	var sp: float = float(_shot_live.speed)
-	var save := clampf(1.02 - reach * 0.3 - (sp - 20.0) * 0.007 - screen + (gk.stat("reflex") - 70.0) / 160.0, 0.35, 0.95)
+	var save := clampf(0.965 - reach * 0.3 - (sp - 20.0) * 0.007 - screen + (gk.stat("reflex") - 70.0) / 160.0, 0.35, 0.95)
 	if gk.team != user_team and user_team >= 0:
 		save *= [0.9, 0.97, 1.0, 1.04][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 3)]
 	if _rng.randf() < save:
@@ -725,6 +815,8 @@ func _keeper_block() -> void:
 		return
 	for t in 2:
 		var gk := keeper(t)
+		if not gk.on_rink:
+			continue
 		var b := ball.floor_pos()
 		if not Rules.in_goal_crease(b, int(signf(gk.pos.x)) if gk.pos.x != 0.0 else 1):
 			continue
@@ -838,7 +930,8 @@ func _goal(t: int, own: bool) -> void:
 		stats[scorer.data.id].sog += 1
 	if not own:
 		team_stats[t].sog += 1
-		stats[keeper(o).data.id].sa += 1
+		if not pulled[o]:
+			stats[keeper(o).data.id].sa += 1
 	if assist:
 		stats[assist.data.id].a += 1
 	if pp:
@@ -846,6 +939,8 @@ func _goal(t: int, own: bool) -> void:
 	_update_boxes()
 	_shot_live = {}
 	_set_phase("goal")
+	if hud and user_team >= 0:
+		hud.coach("TIP_GOAL")
 	Sfx.play("whistle_double", -3.0)
 	Sfx.play("horn", -8.0)
 	Sfx.play("roar", -4.0)
@@ -886,6 +981,114 @@ func _after_goal() -> void:
 func _set_phase(p: String) -> void:
 	phase = p
 	phase_t = 0.0
+	if p in ["goal", "interval", "over", "shootout"]:
+		for t in 2:
+			_restore_keeper(t)
+
+
+# ---------------------------------------------------------------- the empty net
+
+## A team a goal or two down late in the last period pulls its goalkeeper for a sixth outfield player, as any
+## substitution (302): he skates off in his team's substitution zone and the extra player comes on there. He is
+## back after a goal, at the end of the period, or when the team is no longer behind (at the next stoppage).
+func _empty_net() -> void:
+	if demo and bool(config.get("menu", false)):
+		return
+	for t in 2:
+		var gk := keeper(t)
+		if not pulled[t]:
+			if ai[t].wants_empty_net() and ball.carrier != null and ball.carrier.team == t and ball.held_by == null \
+					and ball.floor_pos().x * attack_dir(t) > 0.0 and rules.strength(t) >= rules.strength(1 - t):
+				pulled[t] = true
+				calls.append({"kind": "empty_net", "team": t, "period": rules.period, "t": rules.clock})
+				if hud:
+					hud.hint(tr("HINT_EMPTY_NET").format({"team": DB.team_name(String(config.home if t == 0 else config.away))}))
+			continue
+		if not gk.on_rink:
+			continue
+		# Off to the bench: the sixth player comes on when he is over the board.
+		var zone: Vector2 = sub_zone(t)
+		var at := Vector2((zone.x + zone.y) * 0.5, -Rules.HALF_W + 0.35)
+		var d := at - gk.pos
+		if d.length() > 0.7:
+			gk.want_vel = d.normalized() * minf(gk.MAX_SPEED * 0.85, d.length() * 3.0)
+			gk.want_face = NAN
+			continue
+		gk.want_vel = Vector2.ZERO
+		gk.on_rink = false
+		gk.visible = false
+		var six: Player = sixth[t]
+		var fresh := _bench_player(t, rules.in_box(t))
+		if not fresh.is_empty():
+			six.become(_kit(fresh, t))
+		six.respawn(at)
+		six.on_rink = true
+		six.visible = true
+
+
+## The penalised players seen: one figure each of the first two in the penalty bench walks there from where he was
+## (on the near side, at the secretariat, 105) and sits out his time; when it is over he is gone (his team-mate
+## comes back on the rink from the bench, _update_boxes()).
+func _send_to_box() -> void:
+	for t in 2:
+		var boxed: Array = rules.in_box(t)
+		for k in sitters[t].size():
+			var s: Player = sitters[t][k]
+			var id: String = boxed[k] if k < boxed.size() else ""
+			if String(s.get_meta("sits")) == id:
+				continue
+			s.set_meta("sits", id)
+			if id == "":
+				s.visible = false
+				continue
+			var from := Vector2(0.0, Rules.HALF_W - 1.0)
+			for p: Player in players[t]:
+				if p.visible and p.on_rink and String(p.data.id) == id and p.slot != 9:
+					from = p.pos
+			for d in squads[t]:
+				if String(d.id) == id:
+					s.become(_kit(d, t))
+			s.respawn(from)
+			s.visible = true
+
+
+func _box_seat(t: int, k: int) -> Vector2:
+	var side := -1.0 if t == 0 else 1.0
+	return Vector2(side * (2.6 + k * 0.8), Rules.HALF_W + 0.75)
+
+
+func _walk_to_box() -> void:
+	for t in 2:
+		for k in sitters[t].size():
+			var s: Player = sitters[t][k]
+			s.writes = 0
+			if s.visible:
+				var seat := _box_seat(t, k)
+				# Along the rink to the door, then through it.
+				var want := seat if absf(s.pos.x - seat.x) < 0.6 else Vector2(seat.x, Rules.HALF_W - 0.6)
+				var d := want - s.pos
+				s.want_vel = d.normalized() * minf(3.2, d.length() * 2.0) if d.length() > 0.1 else Vector2.ZERO
+				s.want_face = NAN if d.length() > 0.1 else -PI * 0.5
+				s.step(get_physics_process_delta_time() * speed_k)
+
+
+## The goalkeeper back in his goal, the sixth player off.
+func _restore_keeper(t: int) -> void:
+	if not pulled[t]:
+		return
+	pulled[t] = false
+	var six: Player = sixth[t]
+	if ball.carrier == six:
+		ball.release()
+	if six == user_player:
+		_set_user(null)
+	six.on_rink = false
+	six.visible = false
+	var gk := keeper(t)
+	if not gk.on_rink:
+		gk.respawn(Vector2(-Rules.GOAL_LINE * attack_dir(t) + attack_dir(t) * 0.6, 0.0))
+	gk.on_rink = true
+	gk.visible = true
 
 
 ## The whistle: kind of restart and its details. The ball is dead until the restart.
@@ -900,6 +1103,13 @@ func _stop(kind: String, d: Dictionary) -> void:
 	restart = r
 	_set_phase("whistle")
 	Sfx.play("whistle", -2.0)
+	passive = {"team": -1, "t": 0.0, "warned": false, "w": 0.0}
+	for t in 2:
+		# Still behind: the net stays empty (the goalkeeper still on his way off comes back).
+		if pulled[t] and (not ai[t].wants_empty_net() or keeper(t).on_rink):
+			_restore_keeper(t)
+	if hud and user_team >= 0 and int(d.get("team", -1)) != user_team:
+		hud.coach("TIP_WHISTLE")
 	_ai_timeout()
 	if _timeout_team >= 0:
 		phase_t = -1.5   # a longer stop: the time-out
@@ -968,7 +1178,7 @@ func _place_for_faceoff(spot: Vector2, now: bool) -> void:
 				p.pos = want
 				p.facing = p.get_meta("face")
 		var gk := keeper(t)
-		var gp := Vector2(-Rules.GOAL_LINE * a + a * 0.6, 0)
+		var gp := Vector2(-Rules.GOAL_LINE * a + a * 0.6, 0) if not pulled[t] else gk.pos
 		gk.set_meta("spot", gp)
 		gk.set_meta("face", 0.0 if a > 0 else PI)
 		if now:
@@ -1006,7 +1216,7 @@ func _place_for_hit(r: Dictionary) -> void:
 			want = Vector2(clampf(want.x, -18.8, 18.8), clampf(want.y, -9.3, 9.3))
 			p.set_meta("spot", TeamAI._keep_out_of_gk_area(want))
 		var gk := keeper(tt)
-		gk.set_meta("spot", Vector2(-Rules.GOAL_LINE * at + at * 0.6, clampf(spot.y * 0.05, -0.5, 0.5)))
+		gk.set_meta("spot", Vector2(-Rules.GOAL_LINE * at + at * 0.6, clampf(spot.y * 0.05, -0.5, 0.5)) if not pulled[tt] else gk.pos)
 		gk.set_meta("face", 0.0 if at > 0 else PI)
 	if taker and taker.team == user_team:
 		_set_user(taker)
@@ -1045,9 +1255,15 @@ func _setup(dt: float) -> void:
 			if taker.team == user_team and taker == user_player and not demo:
 				if hud:
 					hud.hint(tr("HINT_RESTART"))
-				# You take it: PASS or SHOOT (it must be a hit: 504, 506). After a while it is taken for you.
-				if phase_t > SETUP_MAX_S + 6.0:
-					_take_restart(taker, false)
+					hud.coach("TIP_RESTART")
+				# You take it: PASS or SHOOT (it must be a hit: 504, 506), without delay: a fixed situation kept waiting
+				# goes to the other team (507.20). A warning first.
+				if phase_t > RESTART_DELAY_S - 3.0 and not restart.get("warned", false):
+					restart.warned = true
+					if hud:
+						hud.hint(tr("HINT_DELAY"))
+				if phase_t > RESTART_DELAY_S:
+					_delay_of_game(taker)
 				return
 			if phase_t > 1.4:
 				_take_restart(taker, false)
@@ -1084,6 +1300,18 @@ func _slot(t: int, s: int) -> Player:
 
 ## The taker plays the free-hit or hit-in: a pass, or at goal when it is near enough (a goal may be scored straight
 ## from either, 504 and 506).
+## A free-hit or hit-in kept waiting: the referee gives it to the other team where it was (507.20).
+func _delay_of_game(taker: Player) -> void:
+	var t := 1 - taker.team
+	var spot: Vector2 = restart.spot
+	calls.append({"kind": "free_hit", "team": t, "why": "delay", "period": rules.period, "t": rules.clock})
+	_ref_signal("free_hit", Vector2(attack_dir(t), 0))
+	Sfx.play("whistle", -2.0)
+	if hud:
+		hud.call_card(tr("CALL_FREE_HIT"), _offence_line("delay"), t)
+	_begin_restart({"kind": "free_hit", "team": t, "spot": Rules.free_hit_spot(spot), "why": "delay", "sanction": "free_hit", "line": _offence_line("delay")})
+
+
 func _take_restart(taker: Player, shot: bool) -> void:
 	ball.live = true
 	ball.carrier = taker
@@ -1339,6 +1567,7 @@ func _officials(dt: float) -> void:
 		r.max_speed = 6.0
 		r.writes = 0
 		r.step(dt)
+	_walk_to_box()
 
 
 ## The nearer referee whistles and shows the sign: the consequence first, then the offence where needed (306).
@@ -1347,17 +1576,17 @@ func _ref_signal(kind: String, dir: Vector2) -> void:
 	var r: Player = refs[0] if refs[0].pos.distance_to(b) < refs[1].pos.distance_to(b) else refs[1]
 	r.signal_arm = dir if dir.length() > 0.1 else (b - r.pos).normalized()
 	r.facing = r.facing   # the arm is placed relative to how he stands now
-	r.do("signal_" + kind, 3.0 if kind in ["delayed", "advantage"] else 1.8)
+	r.do("signal_" + kind, 3.0 if kind in ["delayed", "advantage", "passive"] else 1.8)
 
 
 # ---------------------------------------------------------------- you
 
 func _set_user(p: Player) -> void:
-	if user_player and is_instance_valid(user_player) and user_player.tag:
-		user_player.tag.modulate = Color.WHITE
+	if user_player and is_instance_valid(user_player):
+		user_player.mark(false)
 	user_player = p
-	if p and p.tag:
-		p.tag.modulate = Game.C_YELLOW
+	if p:
+		p.mark(true)
 
 
 func _user(dt: float) -> void:
@@ -1387,6 +1616,13 @@ func _user(dt: float) -> void:
 			user_player.want_vel.x = 0.0
 	if touch:
 		touch.set_buttons(["SHOOT", "PASS", "SPRINT"] if ball.carrier == user_player else ["TACKLE", "SWITCH", "SPRINT"])
+	# A first match: the coach's tips, each once, as the moment for it comes.
+	if hud and phase == "live":
+		hud.coach("TIP_MOVE")
+		if ball.carrier == user_player:
+			hud.coach("TIP_BALL")
+		elif ball.carrier != null and ball.carrier.team != user_team:
+			hud.coach("TIP_DEFEND")
 
 
 var _switch_cool := 0.0
@@ -1549,6 +1785,22 @@ func _ai_timeout() -> void:
 	for t in 2:
 		if t != user_team and rules.timeouts[t] > 0 and int(rules.goals[t]) == int(rules.goals[1 - t]) - 1:
 			call_timeout(t)
+
+
+## In a browser build, the state a playtest script reads (window.fs): where the ball and your player are on the
+## screen, the phase, the score. Nothing reads it in the game itself.
+func _web_probe() -> void:
+	var vp := get_viewport()
+	var k := vp.get_visible_rect().size
+	var bs := cam.unproject_position(ball.pos)
+	var us := cam.unproject_position(Vector3(user_player.pos.x, 0.9, user_player.pos.y)) if user_player else Vector2(-1, -1)
+	var g: Vector2 = ai[user_team].target_goal() if user_team >= 0 else Vector2.ZERO
+	var gs := cam.unproject_position(Vector3(g.x, 0.5, g.y))
+	var st := {"phase": phase, "score": rules.goals, "clock": int(rules.clock), "period": rules.period, "vw": k.x, "vh": k.y,
+		"ball": [bs.x, bs.y], "me": [us.x, us.y], "goal": [gs.x, gs.y], "mine": ball.carrier == user_player and user_player != null,
+		"ours": ball.carrier != null and ball.carrier.team == user_team, "buttons": touch.ids if touch else [],
+		"taker": phase == "setup" and restart.get("taker") == user_player, "so": phase == "shootout"}
+	JavaScriptBridge.eval("window.fs = " + JSON.stringify(st) + ";")
 
 
 # ---------------------------------------------------------------- performance

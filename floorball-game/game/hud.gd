@@ -25,6 +25,10 @@ var _banner_sub: Label
 var _banner_t := 0.0
 var _hint: Label
 var _hint_t := 0.0
+var _coach: PanelContainer
+var _coach_line: Label
+var _coach_t := 0.0
+var _coach_gap := 0.0
 var _pause: Control
 var _interval: Control
 var _so: Label
@@ -45,6 +49,7 @@ func setup(p_match: Node) -> void:
 	_scoreboard()
 	_build_card()
 	_build_banner()
+	_build_coach()
 	_hint = UI.label("", "HudLabel", 19)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
@@ -199,6 +204,55 @@ func _build_card() -> void:
 	root.add_child(_card)
 
 
+## The coach's notes for a first match: a note on the whiteboard's paper, bottom centre between the joystick and the
+## buttons, so it never covers the scoreboard or a referee's call.
+func _build_coach() -> void:
+	_coach = PanelContainer.new()
+	_coach.theme_type_variation = "GlassPanel"
+	_coach.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_coach.offset_left = -270
+	_coach.offset_right = 270
+	_coach.offset_bottom = -76
+	_coach.offset_top = -76
+	_coach.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_coach.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_coach.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 0)
+	_coach.add_child(v)
+	var head := UI.label(tr("COACH"), "HeaderLabel", 26, Game.C_BLUE)
+	v.add_child(head)
+	_coach_line = UI.label("", "SubLabel", 19, Game.C_INK)
+	_coach_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_coach_line.custom_minimum_size = Vector2(500, 0)
+	v.add_child(_coach_line)
+	_coach.modulate.a = 0.0
+	_coach.visible = false
+	root.add_child(_coach)
+
+
+## A coach's tip (TIP_* key), each said once: Settings > Coach tips brings them all back. One at a time; a tip that
+## comes while another shows waits for its moment to come again.
+func coach(key: String) -> bool:
+	if not bool(Game.settings.tips) or _coach_t > 0.0 or _coach_gap > 0.0 or key in Game.settings.tips_seen:
+		return false
+	Game.settings.tips_seen.append(key)
+	if (Game.settings.tips_seen as Array).size() >= TIPS.size():
+		Game.settings.tips = false
+	Game.save_settings()
+	_coach_line.text = tr(key)
+	_coach.visible = true
+	_coach_t = 7.0
+	return true
+
+
+func coach_showing() -> String:
+	return _coach_line.text if _coach_t > 0.0 else ""
+
+
+const TIPS := ["TIP_MOVE", "TIP_BALL", "TIP_DEFEND", "TIP_RESTART", "TIP_WHISTLE", "TIP_PENALTY", "TIP_GOAL"]
+
+
 func _build_banner() -> void:
 	var v := VBoxContainer.new()
 	v.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -251,6 +305,14 @@ func refresh() -> void:
 	if _hint_t > 0.0:
 		_hint_t -= dt
 		_hint.modulate.a = clampf(_hint_t * 2.0, 0.0, 1.0)
+	if _coach_t > 0.0:
+		_coach_t -= dt
+		_coach.modulate.a = clampf(_coach_t * 2.0, 0.0, 1.0)
+		if _coach_t <= 0.0:
+			_coach.visible = false
+			_coach_gap = 1.5
+	elif _coach_gap > 0.0:
+		_coach_gap -= dt
 
 
 ## The developer overlay (seven taps on the version): real frame times, not physics ticks.

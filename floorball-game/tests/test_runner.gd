@@ -28,6 +28,8 @@ func _ready() -> void:
 	_cup()
 	await _screens()
 	await _penalty_shot()
+	await _match_parts()
+	await _coach()
 	await _matches()
 	Game.settings = keep
 	Game.delete_cup()
@@ -77,10 +79,12 @@ func _restarts() -> void:
 	check(is_equal_approx(side.y, -8.5), "504: on the far side too (%s)" % side)
 	check(Rules.free_hit_spot(Vector2(0, 3)) == Vector2(0, 3), "506: a free-hit where the offence was")
 	check(Rules.free_hit_spot(Vector2(18.0, 2.0)) == Vector2(16.5, 8.5), "506: from behind the goal line's extension, the nearest dot on it")
-	var near := Rules.free_hit_spot(Vector2(12.5, 0.0))
-	check(Rules.crease_distance(near, 1) >= Rules.FREE_HIT_FROM_CREASE - 0.01 and is_equal_approx(near.y, 0.0), "506: moved straight out to 3.5 m from the crease (%s)" % near)
-	var side_near := Rules.free_hit_spot(Vector2(14.0, 4.0))
-	check(Rules.crease_distance(side_near, 1) >= Rules.FREE_HIT_FROM_CREASE - 0.01, "506: beside the crease, out to 3.5 m too (%s)" % side_near)
+	var near := Rules.free_hit_spot(Vector2(14.0, 0.0))
+	check(is_equal_approx(near.x, Rules.GK_AREA_FRONT - 3.5) and is_equal_approx(near.y, 0.0), "506: moved straight out to 3.5 m from the goalkeeper area (%s)" % near)
+	check(Rules.free_hit_spot(Vector2(11.5, 1.0)) == Vector2(11.5, 1.0), "506: 3.5 m is from the goalkeeper area, not the goal crease (a free-hit 4 m out stays)")
+	var side_near := Rules.free_hit_spot(Vector2(14.5, 2.5))
+	var g := Vector2(Rules.GOAL_LINE, 0.0)
+	check(Rules.gk_area_distance(side_near, 1) >= 3.49 and absf((side_near - g).normalized().cross((Vector2(14.5, 2.5) - g).normalized())) < 0.01, "506: moved out along the line from the goal's centre (%s)" % side_near)
 	check(Rules.keeps_distance(Vector2(3.0, 0), Vector2.ZERO) and not Rules.keeps_distance(Vector2(2.5, 0), Vector2.ZERO), "504, 506: opponents 3 m from the ball")
 
 
@@ -184,9 +188,13 @@ func _penalties() -> void:
 	check(two.penalties[0].size() == 2, "604: one goal ends one penalty (%d left)" % two.penalties[0].size())
 	var pers := Rules.State.new()
 	pers.add_penalty(0, "a", "pen10", "unsporting", "b")
-	check(pers.strength(0) == 4 and pers.in_box(0).has("a") and pers.in_box(0).has("b"), "609: a personal penalty, and a team-mate serves 2 minutes")
+	check(pers.strength(0) == 4 and pers.in_box(0).has("a") and not pers.in_box(0).has("b"), "609: a personal penalty comes with a minor, both sat by the offender")
 	pers.tick(120.0, true)
 	check(pers.strength(0) == 5 and pers.in_box(0).has("a"), "609: the team is whole after 2 minutes, the player sits his 10")
+	pers.tick(599.0, true)
+	check(pers.in_box(0).has("a"), "609: the 10 minutes start when the minor ends (out 2 + 10)")
+	pers.tick(2.0, true)
+	check(not pers.in_box(0).has("a"), "609: the player may come back after 12 minutes")
 	var mp := Rules.State.new()
 	mp.add_penalty(0, "a", "match", "fight", "b")
 	check(mp.strength(0) == 4 and float(mp.penalties[0][0].left) == Rules.PEN_MAJOR_S, "613: a match penalty: the team serves 5 minutes")
@@ -386,6 +394,143 @@ func _penalty_shot() -> void:
 	await frames(2)
 
 
+## The match's own pieces, each on a live AI match: a won tackle keeps the ball, a penalty's player walks to the
+## penalty bench and comes back when it is over, the empty net, passive play.
+func _match_parts() -> void:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 5, "period": 4.0}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var a: float = m.attack_dir(0)
+	# A tackle won: the ball on the tackler's blade, and the player who lost it cannot take it straight back.
+	var won := false
+	for k in 60:
+		var car: Player = m.skaters(1)[0]
+		var def: Player = m.skaters(0)[0]
+		car.respawn(Vector2(0, 0))
+		def.respawn(Vector2(0.9, 0))
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		m.ball.release()
+		m.ball.carrier = car
+		def.act = ""
+		m._carry_ball()
+		def.pos = m.ball.floor_pos() + Vector2(0.35, 0.0)   # the test's own placing, by the ball
+		def.facing = PI
+		m.tackle(def, car)
+		if m.ball.carrier == def:
+			await get_tree().physics_frame
+			won = m.ball.carrier == def or (m.ball.last_team == 0)
+			break
+		if m.phase != "live":
+			while m.phase != "live":
+				await get_tree().physics_frame
+	check(won, "a tackle won keeps the ball (it does not go straight back to the carrier)")
+	while m.phase != "live":
+		await get_tree().physics_frame
+	# A minor: the player walks to the penalty bench, his team plays one fewer, and he is back when it is over.
+	var off: Player = m.skaters(0)[1]
+	var id := String(off.data.id)
+	m._penalise(off, "pen2", "trip")
+	var sitter: Player = m.sitters[0][0]
+	check(m.rules.strength(0) == 4 and sitter.visible and String(sitter.data.id) == id, "105: the penalised player is seen going to the penalty bench")
+	for i in 420:
+		await get_tree().physics_frame
+	check(sitter.pos.distance_to(m._box_seat(0, 0)) < 1.2, "105: he sits in his team's penalty bench (%s)" % sitter.pos)
+	m._tick_clock(Rules.PEN_MINOR_S + 1.0, true)
+	var short := 0
+	for i in range(1, 6):
+		if m.players[0][i].in_box:
+			short += 1
+	check(m.rules.strength(0) == 5 and short == 0 and not sitter.visible, "a penalty over: the team is whole again on the rink (%d places empty)" % short)
+	m.queue_free()
+	await frames(2)
+
+	# The empty net: one goal down late in the last period, the goalkeeper off for a sixth outfield player.
+	m = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 6, "period": 4.0}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	m.rules.period = Rules.PERIODS
+	m.rules.goals = [0, 1]
+	m.rules.clock = m.rules.period_s - 15.0
+	a = m.attack_dir(0)
+	check(m.ai[0].wants_empty_net() and not m.ai[1].wants_empty_net(), "the team behind wants an empty net late in the last period")
+	var c: Player = m.skaters(0)[0]
+	c.respawn(Vector2(a * 4.0, 0.0))
+	await get_tree().physics_frame
+	m.ball.release()
+	m.ball.carrier = c
+	m._empty_net()
+	check(m.pulled[0], "with the ball in their half, the goalkeeper goes off")
+	var gk: Player = m.keeper(0)
+	var zone: Vector2 = m.sub_zone(0)
+	gk.respawn(Vector2((zone.x + zone.y) * 0.5, -Rules.HALF_W + 0.4))
+	await get_tree().physics_frame
+	m._empty_net()
+	check(not gk.on_rink and m.skaters(0).size() == 6, "302: over the board in the substitution zone, a sixth outfield player on (%d)" % m.skaters(0).size())
+	m._set_phase("goal")
+	check(gk.on_rink and gk.visible and m.skaters(0).size() == 5 and not m.pulled[0], "after a goal the goalkeeper is back in his net")
+	m.queue_free()
+	await frames(2)
+
+	# 507.20: passive play warned, then a free-hit to the other team.
+	m = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 7, "period": 4.0}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	a = m.attack_dir(0)
+	c = m.skaters(0)[3]
+	c.respawn(Vector2(-a * 8.0, 2.0))
+	await get_tree().physics_frame
+	m.ball.release()
+	m.ball.carrier = c
+	m.passive = {"team": 0, "t": m.PASSIVE_S + 0.5, "warned": false, "w": 0.0}
+	m._passive_tick(0.02)
+	check(bool(m.passive.warned), "507.20: a team keeping the ball in its own end is warned of passive play")
+	m.passive.w = m.PASSIVE_WARN_S + 0.5
+	m._passive_tick(0.02)
+	check(m.phase == "whistle" and int(m.restart.team) == 1 and String(m.restart.why) == "delay", "507.20: still passive after the warning, a free-hit to the other team")
+	m.queue_free()
+	await frames(2)
+
+
+## A first match with you in it: the coach's first tip shows, each tip once, and none when they are turned off. Your
+## free-hit kept waiting goes to the other team.
+func _coach() -> void:
+	Game.settings.tips = true
+	Game.settings.tips_seen = []
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": 0, "seed": 8, "period": 4.0, "mode": "quick"}
+	add_child(m)
+	var guard := 0
+	while (m.phase != "live" or m.hud.coach_showing() == "") and guard < 600:
+		await get_tree().physics_frame
+		guard += 1
+	check(m.hud.coach_showing() == tr("TIP_MOVE"), "a first match: the coach's first tip is how to move (%s)" % m.hud.coach_showing())
+	check(not m.hud.coach("TIP_MOVE"), "each tip is said once")
+	Game.settings.tips = false
+	m.hud._coach_t = 0.0
+	m.hud._coach_gap = 0.0
+	check(not m.hud.coach("TIP_GOAL"), "no tips when they are turned off")
+	# Your free-hit, not taken.
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var spot := Vector2(-m.attack_dir(0) * 3.0, 2.0)
+	m._begin_restart({"kind": "free_hit", "team": 0, "spot": spot, "why": "push", "sanction": "free_hit", "line": ""})
+	check(m.user_player == m.restart.taker, "you take your team's free-hit")
+	guard = 0
+	while int(m.restart.get("team", 0)) == 0 and guard < 60 * 20:
+		await get_tree().physics_frame
+		guard += 1
+	check(int(m.restart.team) == 1 and String(m.restart.why) == "delay", "507.20: a free-hit kept waiting goes to the other team")
+	m.queue_free()
+	await frames(2)
+
+
 # ---------------------------------------------------------------- matches
 
 ## AI matches: they finish, the score is the goals logged, the numbers look like floorball's (goals per match, shots,
@@ -455,6 +600,8 @@ func _matches() -> void:
 	check(total_sog > n * 4, "shots on goal are taken (%d in %d matches)" % [total_sog, n])
 	# Saves of shots on goal (saves + goals): three in four in real matches; over three short matches it varies, so
 	# the bounds are wide: a goalkeeper who saves everything or nothing is a bug (tests/ai_bench measures it closely).
+	if quick:
+		return
 	check(total_sa > 0 and float(total_saves) / float(total_sa) > 0.45 and float(total_saves) / float(total_sa) < 0.985, "goalkeepers save most, not all, shots on goal (%d/%d)" % [total_saves, total_sa])
 	check(total_saves < total_sa, "some shots on goal go in (%d saves of %d)" % [total_saves, total_sa])
 

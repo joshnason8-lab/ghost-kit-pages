@@ -141,6 +141,8 @@ func _support(p: Player, b: Vector2, carrier) -> Vector2:
 		0:   # centre: the slot in front of their goal, or in support behind the ball
 			var x := lerpf(b.x - a * 3.0, gx - a * 6.5, deep)
 			return Vector2(x, clampf(b.y * -0.3, -3.0, 3.0))
+		6:   # the sixth player, the goalkeeper pulled: in front of their goal, for the rebound and the screen
+			return Vector2(lerpf(b.x, gx - a * 3.0, deep), clampf(b.y * 0.25, -2.0, 2.0))
 		1, 2:   # wings: wide, ahead of the ball
 			var s := -1.0 if p.slot == 1 else 1.0
 			s *= a
@@ -170,6 +172,8 @@ func _shape_defence(p: Player, b: Vector2) -> Vector2:
 	var gx := -Rules.GOAL_LINE * a          # our goal line
 	var deep := clampf((b.x * a + 20.0) / 40.0, 0.0, 1.0)   # 1: the ball deep in their end (we forecheck)
 	match int(p.slot):
+		6:
+			return Vector2(lerpf(gx + a * 10.0, b.x - a * 3.0, 0.5), clampf(b.y * 0.5, -4.0, 4.0))
 		0:
 			return Vector2(lerpf(gx + a * 7.5, b.x - a * 4.0, 0.35 + deep * 0.3), clampf(b.y * 0.35, -3.0, 3.0))
 		1, 2:
@@ -197,6 +201,17 @@ func _try_tackle(p: Player, carrier) -> void:
 	m.tackle(p, carrier)
 
 
+## Late in the last period, a goal or two behind: the goalkeeper off for a sixth outfield player (the match does it).
+func wants_empty_net() -> bool:
+	var r: Rules.State = m.rules
+	if r.period != Rules.PERIODS:
+		return false
+	var behind := int(r.goals[1 - t]) - int(r.goals[t])
+	if behind < 1 or behind > 2:
+		return false
+	return r.remaining() < maxf(20.0, r.period_s * 0.08)
+
+
 ## The carrier: shoot, pass or carry on. Decided a few times a second, not every frame.
 func _carry(p: Player, dt: float) -> void:
 	var a := att()
@@ -222,12 +237,16 @@ func _carry(p: Player, dt: float) -> void:
 	var behind: bool = p.pos.x * a > Rules.GOAL_LINE - 0.6
 	var angle_ok: bool = not behind and absf(p.pos.y) < dist * 0.75 + 0.5
 	var held: float = m.possession_time
+	# Their net empty: a shot from anywhere with a clear lane.
+	if m.pulled[1 - t] and not behind and dist < 32.0 and m.shot_lane_open(p, g) > 0.7 and _rng.randf() < 0.35:
+		m.shoot(p, Vector3(g.x, 0.25, _rng.randf_range(-0.4, 0.4)), false)
+		return
 	if angle_ok and dist < 14.0:
 		var open: float = m.shot_lane_open(p, g)
 		var want := clampf((14.0 - dist) / 10.0, 0.0, 1.0) * (0.25 + open * 0.75) * (0.55 + p.stat("shot") / 200.0)
 		if dist < 7.0:
 			want += 0.15
-		if _rng.randf() < want * 0.1 * level:
+		if _rng.randf() < want * 0.175 * level:
 			m.shoot(p, _aim(p, g), _rng.randf() < 0.35 and dist > 8.0)
 			return
 	# Pass: someone open and further on, or under pressure.
@@ -297,7 +316,8 @@ func _line_change(dt: float, players: Array, ours: bool, b: Vector2) -> void:
 		changing = true
 		line = (line + 1) % 3
 		for p in players:
-			p.set_meta("going_off", true)
+			if p.slot != 6:   # the sixth player (an empty net) stays on
+				p.set_meta("going_off", true)
 
 
 ## Off over the board in the team's substitution zone; the next line's player comes on in the same place (302: the

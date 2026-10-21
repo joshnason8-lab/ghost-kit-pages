@@ -136,7 +136,7 @@
   "RULE_HITIN": "Rozehrání",
   "RULE_HITIN_BODY": "Když míček přeletí mantinel, rozehrává tým, který se ho naposledy nedotkl, 1,5 m od mantinelu v místě, kde míček opustil hřiště, nikdy však za prodlouženou brankovou čarou. Soupeři 3 m daleko. Z rozehrání může padnout gól přímo.",
   "RULE_FREEHIT": "Volné údery",
-  "RULE_FREEHIT_BODY": "Provádí se v místě přestupku, nikdy však blíž než 3,5 m od brankoviště ani za prodlouženou brankovou čarou. Soupeři 3 m daleko, včetně hokejek. Musí to být úder a gól z něj může padnout přímo.",
+  "RULE_FREEHIT_BODY": "Provádí se v místě přestupku, nikdy však blíž než 3,5 m od malého brankoviště ani za prodlouženou brankovou čarou. Soupeři 3 m daleko, včetně hokejek. Musí to být úder a gól z něj může padnout přímo.",
   "RULE_STICK": "Hokejka",
   "RULE_STICK_BODY": "Zakázáno je sekat do soupeřovy hokejky, hákovat, zvedat nebo blokovat ji; hokejka nesmí být při švihu nad pasem; míček se nehraje nad kolenem; hokejka ani noha nesmí soupeři mezi nohy. Za každý z těchto přestupků je volný úder, za nebezpečné dvě minuty.",
   "RULE_BODY": "Tělo a nohy",
@@ -148,7 +148,7 @@
   "RULE_GOALS": "Góly",
   "RULE_GOALS_BODY": "Celý míček za brankovou čarou zepředu, správně zahraný hokejkou nebo hozený brankářem. Ne kopnutý ani hlavou, a ne po přestupku útočícího týmu. Vlastní gól platí vždy.",
   "RULE_PENALTIES": "Tresty",
-  "RULE_PENALTIES_BODY": "Menší trest týmu trvá 2 minuty, větší 5 minut. Osobní trest na 10 minut pošle hráče ze hry a jeho tým si navíc odpyká 2 minuty. Trest do konce utkání vyloučí hráče definitivně a jeho tým si odpyká 5 minut. Současně mohou běžet nejvýše dva tresty jednoho týmu.",
+  "RULE_PENALTIES_BODY": "Menší trest týmu trvá 2 minuty, větší 5 minut. Osobní trest na 10 minut je vždy spojen s menším trestem: hráč sedí 2 a pak 10 minut, jeho tým hraje oslaben jen první 2. Trest do konce utkání vyloučí hráče definitivně a jeho tým si odpyká 5 minut. Současně mohou běžet nejvýše dva tresty jednoho týmu.",
   "RULE_PP": "Přesilovka",
   "RULE_PP_BODY": "Tým s vyloučeným hráčem hraje čtyři proti pěti. Když tým s více hráči skóruje, skončí nejkratší dvouminutový trest; pětiminutový trest nikdy nekončí předčasně.",
   "RULE_PENSHOT": "Trestné střílení",
@@ -324,5 +324,14 @@
   "TEAM_SGP": "Singapur",
   "TEAM_AUS": "Austrálie",
   "TEAM_PHI": "Filipíny",
-  "TEAM_NED": "Nizozemsko"
+  "TEAM_NED": "Nizozemsko",
+  "COACH": "Trenér",
+  "SET_TIPS": "Rady trenéra",
+  "TIP_MOVE": "Jsi hráč se žlutým kroužkem. Polož levý palec kamkoli na levou polovinu obrazovky a posuň ho: tak poběžíš.",
+  "TIP_BALL": "Míček je tvůj! U branky stiskni STŘELA: při střele vychyl joystick nahoru nebo dolů a vybereš roh. PŘIHRÁVKA jde spoluhráči, na kterého joystick míří.",
+  "TIP_DEFEND": "Míček má soupeř. Postav se mezi něj a svou branku a stiskni ODEBRAT, zepředu. PŘEPNOUT tě přepne na spoluhráče nejblíž k míčku.",
+  "TIP_RESTART": "Tvůj volný úder: soupeři musí stát 3 m daleko. Namiř joystickem, pak PŘIHRÁVKA nebo STŘELA. Musí to být úder a gól z něj může padnout přímo.",
+  "TIP_WHISTLE": "Hvizd přeruší hru. Panel nahoře ukazuje, co bylo odpískáno a proč, i s pravidlem. Pauza vpravo nahoře: tam je tvůj oddechový čas.",
+  "TIP_PENALTY": "Dvě minuty: potrestaný hráč sedí na trestné lavici a jeho tým hraje o jednoho méně. Zbývající čas je vidět pod skóre.",
+  "TIP_GOAL": "Po každém gólu se hra znovu zahajuje vhazováním na středové značce."
 }

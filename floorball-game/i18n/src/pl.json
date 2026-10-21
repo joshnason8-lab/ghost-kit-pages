@@ -137,7 +137,7 @@
   "RULE_HITIN": "Wybicia",
   "RULE_HITIN_BODY": "Gdy piłka wyjdzie za bandę, wybija drużyna, która nie dotknęła jej ostatnia, 1,5 m od bandy w miejscu wyjścia piłki, nigdy za przedłużeniem linii bramkowej. Rywale 3 m dalej. Gol może paść bezpośrednio z wybicia.",
   "RULE_FREEHIT": "Uderzenia wolne",
-  "RULE_FREEHIT_BODY": "Wykonywane w miejscu przewinienia, ale nigdy bliżej niż 3,5 m od pola bramkowego ani za przedłużeniem linii bramkowej. Rywale 3 m dalej, razem z kijami. Musi to być uderzenie i może trafić prosto do bramki.",
+  "RULE_FREEHIT_BODY": "Wykonywane w miejscu przewinienia, ale nigdy bliżej niż 3,5 m od pola bramkarza ani za przedłużeniem linii bramkowej. Rywale 3 m dalej, razem z kijami. Musi to być uderzenie i może trafić prosto do bramki.",
   "RULE_STICK": "Kij",
   "RULE_STICK_BODY": "Nie wolno uderzać, zahaczać, podnosić ani blokować kija rywala; kij przy zamachu nie może być powyżej pasa; piłki nie gra się powyżej kolana; kij ani noga nie mogą trafić między nogi rywala. Za każde z tych przewinień jest uderzenie wolne, za groźne dwie minuty.",
   "RULE_BODY": "Ciało i nogi",
@@ -149,7 +149,7 @@
   "RULE_GOALS": "Gole",
   "RULE_GOALS_BODY": "Cała piłka za linią bramkową od przodu, prawidłowo zagrana kijem albo rzucona przez bramkarza. Nie po kopnięciu ani strzale głową i nie po przewinieniu drużyny atakującej. Gol samobójczy zawsze się liczy.",
   "RULE_PENALTIES": "Kary",
-  "RULE_PENALTIES_BODY": "Mniejsza kara drużynowa to 2 minuty, większa 5. Kara osobista 10 minut wyklucza zawodnika, a jego drużyna dodatkowo odbywa 2 minuty. Kara meczu wyklucza zawodnika do końca, a jego drużyna odbywa 5 minut. Jednocześnie mogą biec najwyżej dwie kary jednej drużyny.",
+  "RULE_PENALTIES_BODY": "Mniejsza kara drużynowa to 2 minuty, większa 5. Kara osobista 10 minut zawsze idzie w parze z mniejszą: zawodnik siedzi 2, a potem 10 minut, jego drużyna gra w osłabieniu tylko przez pierwsze 2. Kara meczu wyklucza zawodnika do końca, a jego drużyna odbywa 5 minut. Jednocześnie mogą biec najwyżej dwie kary jednej drużyny.",
   "RULE_PP": "Gra w przewadze",
   "RULE_PP_BODY": "Drużyna z zawodnikiem na ławce kar gra w czterech przeciw pięciu. Gdy drużyna w przewadze zdobędzie gola, kończy się najkrótsza kara 2 minut; kara 5 minut nigdy nie kończy się wcześniej.",
   "RULE_PENSHOT": "Rzuty karne",
@@ -325,5 +325,14 @@
   "TEAM_SGP": "Singapur",
   "TEAM_AUS": "Australia",
   "TEAM_PHI": "Filipiny",
-  "TEAM_NED": "Holandia"
+  "TEAM_NED": "Holandia",
+  "COACH": "Trener",
+  "SET_TIPS": "Wskazówki trenera",
+  "TIP_MOVE": "Jesteś zawodnikiem z żółtym pierścieniem. Połóż lewy kciuk w dowolnym miejscu lewej części ekranu i przesuń go, by biec.",
+  "TIP_BALL": "Twoja piłka! Pod bramką naciśnij STRZAŁ: wychyl joystick w górę lub w dół przy strzale, by wybrać róg. PODANIE trafia do kolegi, na którego wskazuje joystick.",
+  "TIP_DEFEND": "Rywale mają piłkę. Stań między nią a swoją bramką i naciśnij ODBIÓR, od przodu. ZMIANA przełącza Cię na kolegę najbliżej piłki.",
+  "TIP_RESTART": "Twoje uderzenie wolne: rywale muszą stać 3 m dalej. Wyceluj joystickiem, potem PODANIE lub STRZAŁ. Musi to być uderzenie i może trafić prosto do bramki.",
+  "TIP_WHISTLE": "Gwizdek przerywa grę. Okienko u góry pokazuje, co odgwizdano i dlaczego, z przepisem. Pauza, w prawym górnym rogu, by wziąć czas.",
+  "TIP_PENALTY": "Dwie minuty: ukarany zawodnik siedzi na ławce kar, a jego drużyna gra w osłabieniu. Pozostały czas widać pod wynikiem.",
+  "TIP_GOAL": "Po każdym golu gra rusza od nowa wznowieniem na punkcie środkowym."
 }

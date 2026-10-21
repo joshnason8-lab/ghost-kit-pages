@@ -135,7 +135,7 @@
   "RULE_HITIN": "Indslag",
   "RULE_HITIN_BODY": "Går bolden over banden, slår holdet, der ikke rørte den sidst, indslag 1,5 m fra banden, hvor den gik ud, aldrig bag mållinjens forlængelse. Modstanderne 3 m væk. Der må scores direkte på indslag.",
   "RULE_FREEHIT": "Frislag",
-  "RULE_FREEHIT_BODY": "Tages, hvor forseelsen skete, men aldrig nærmere end 3,5 m fra målfeltet eller bag mållinjens forlængelse. Modstanderne 3 m væk, staven medregnet. Det skal være et slag, og det må gå direkte i mål.",
+  "RULE_FREEHIT_BODY": "Tages, hvor forseelsen skete, men aldrig nærmere end 3,5 m fra målmandsfeltet eller bag mållinjens forlængelse. Modstanderne 3 m væk, staven medregnet. Det skal være et slag, og det må gå direkte i mål.",
   "RULE_STICK": "Staven",
   "RULE_STICK_BODY": "Ingen slag, hagen, løft eller blokering af modstanderens stav; ingen stav over hoften i svinget; bolden må ikke spilles over knæet; ingen stav eller fod mellem modstanderens ben. Alt dette giver frislag; farlige forseelser giver to minutter.",
   "RULE_BODY": "Krop og fødder",
@@ -147,7 +147,7 @@
   "RULE_GOALS": "Mål",
   "RULE_GOALS_BODY": "Hele bolden over mållinjen forfra, korrekt spillet med staven eller kastet af målmanden. Ikke sparket eller headet ind, og ikke efter en forseelse fra det angribende hold. Selvmål tæller altid.",
   "RULE_PENALTIES": "Udvisninger",
-  "RULE_PENALTIES_BODY": "En lille holdstraf er 2 minutter, en stor 5. En personlig straf på 10 minutter tager spilleren ud, og holdet afsoner desuden 2 minutter. En matchstraf tager spilleren ud resten af kampen, og holdet afsoner 5 minutter. Højst to af et holds udvisninger løber på samme tid.",
+  "RULE_PENALTIES_BODY": "En lille holdstraf er 2 minutter, en stor 5. En personlig straf på 10 minutter kommer altid med en lille holdstraf: spilleren sidder 2 og så 10 minutter, holdet spiller kun med én mindre de første 2. En matchstraf tager spilleren ud resten af kampen, og holdet afsoner 5 minutter. Højst to af et holds udvisninger løber på samme tid.",
   "RULE_PP": "Powerplay",
   "RULE_PP_BODY": "Et hold med en spiller mindre spiller fire mod fem. Scorer holdet med flest spillere, slutter den korteste 2-minutters udvisning; en 5-minutters udvisning slutter aldrig før tid.",
   "RULE_PENSHOT": "Straffeslag",
@@ -323,5 +323,14 @@
   "TEAM_SGP": "Singapore",
   "TEAM_AUS": "Australien",
   "TEAM_PHI": "Filippinerne",
-  "TEAM_NED": "Nederlandene"
+  "TEAM_NED": "Nederlandene",
+  "COACH": "Træner",
+  "SET_TIPS": "Trænertips",
+  "TIP_MOVE": "Du er spilleren med den gule ring. Sæt venstre tommelfinger hvor som helst i venstre side af skærmen, og træk for at løbe.",
+  "TIP_BALL": "Din bold! Tæt på mål trykker du SKYD: skub joysticket op eller ned, mens du skyder, for at vælge hjørne. AFLEVER går til holdkammeraten, joysticket peger på.",
+  "TIP_DEFEND": "De har bolden. Kom ind mellem bolden og dit mål, og tryk TACKL forfra. SKIFT hopper til holdkammeraten tættest på bolden.",
+  "TIP_RESTART": "Dit frislag: modstanderne skal stå 3 m væk. Sigt med joysticket, og tryk så AFLEVER eller SKYD. Det skal være et slag, og det må gå direkte i mål.",
+  "TIP_WHISTLE": "Fløjten stopper spillet. Boksen øverst viser, hvad der blev dømt og hvorfor, med reglen. Pause, øverst til højre, for din timeout.",
+  "TIP_PENALTY": "To minutter: den udviste spiller sidder i udvisningsboksen, og holdet spiller med én mindre. Den resterende tid står under stillingen.",
+  "TIP_GOAL": "Efter hvert mål starter spillet igen med face-off på midtpunktet."
 }

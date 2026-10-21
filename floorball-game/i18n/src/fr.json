@@ -135,7 +135,7 @@
   "RULE_HITIN": "Remises en jeu",
   "RULE_HITIN_BODY": "Si la balle passe par-dessus la bande, l'équipe qui ne l'a pas touchée en dernier la remet en jeu à 1,5 m de la bande, là où elle est sortie, jamais derrière le prolongement de la ligne de but. Adversaires à 3 m. On peut marquer directement sur une remise en jeu.",
   "RULE_FREEHIT": "Coups francs",
-  "RULE_FREEHIT_BODY": "Joué là où la faute a eu lieu, mais jamais à moins de 3,5 m de la zone de but ni derrière le prolongement de la ligne de but. Adversaires à 3 m, cannes comprises. Il doit être frappé et peut entrer directement.",
+  "RULE_FREEHIT_BODY": "Joué là où la faute a eu lieu, mais jamais à moins de 3,5 m de la zone du gardien ni derrière le prolongement de la ligne de but. Adversaires à 3 m, cannes comprises. Il doit être frappé et peut entrer directement.",
   "RULE_STICK": "La canne",
   "RULE_STICK_BODY": "Interdit de frapper, crocheter, soulever ou bloquer la canne adverse ; pas de canne au-dessus de la taille dans l'élan ; pas de balle jouée au-dessus du genou ; ni canne ni jambe entre les jambes d'un adversaire. C'est chaque fois coup franc ; les cas dangereux valent deux minutes.",
   "RULE_BODY": "Corps et pieds",
@@ -147,7 +147,7 @@
   "RULE_GOALS": "Les buts",
   "RULE_GOALS_BODY": "La balle entière franchit la ligne de but par l'avant, jouée correctement avec la canne ou lancée par le gardien. Pas du pied ni de la tête, ni après une faute de l'équipe qui attaque. Un autogoal compte toujours.",
   "RULE_PENALTIES": "Les pénalités",
-  "RULE_PENALTIES_BODY": "Une petite pénalité de banc dure 2 minutes, une grande 5. Une pénalité personnelle de 10 minutes exclut le joueur, et son équipe purge en plus 2 minutes. Une pénalité de match exclut le joueur définitivement, et son équipe purge 5 minutes. Jamais plus de deux pénalités d'une même équipe ne courent en même temps.",
+  "RULE_PENALTIES_BODY": "Une petite pénalité de banc dure 2 minutes, une grande 5. Une pénalité personnelle de 10 minutes s'accompagne toujours d'une petite : le joueur purge 2 puis 10 minutes, son équipe n'est en infériorité que les 2 premières. Une pénalité de match exclut le joueur définitivement, et son équipe purge 5 minutes. Jamais plus de deux pénalités d'une même équipe ne courent en même temps.",
   "RULE_PP": "La supériorité numérique",
   "RULE_PP_BODY": "Une équipe privée d'un joueur joue à quatre contre cinq. Si l'équipe en supériorité marque, la plus courte des pénalités de 2 minutes prend fin ; une pénalité de 5 minutes ne s'arrête jamais plus tôt.",
   "RULE_PENSHOT": "Penaltys",
@@ -323,5 +323,14 @@
   "TEAM_SGP": "Singapour",
   "TEAM_AUS": "Australie",
   "TEAM_PHI": "Philippines",
-  "TEAM_NED": "Pays-Bas"
+  "TEAM_NED": "Pays-Bas",
+  "COACH": "Coach",
+  "SET_TIPS": "Conseils du coach",
+  "TIP_MOVE": "Tu es le joueur à l'anneau jaune. Pose le pouce gauche n'importe où sur la moitié gauche de l'écran et fais-le glisser pour courir.",
+  "TIP_BALL": "À toi la balle ! Près du but, touche TIR : pousse le joystick vers le haut ou le bas en tirant pour choisir un coin. PASSE va au coéquipier que vise le joystick.",
+  "TIP_DEFEND": "Ils ont la balle. Place-toi entre elle et ton but et touche TACLE, de face. CHANGER passe au coéquipier le plus proche de la balle.",
+  "TIP_RESTART": "Ton coup franc : les adversaires doivent rester à 3 m. Oriente le joystick, puis PASSE ou TIR. Il doit être frappé et peut entrer directement.",
+  "TIP_WHISTLE": "Le sifflet arrête le jeu. Le panneau en haut indique ce qui a été sifflé et pourquoi, avec la règle. Pause, en haut à droite, pour ton temps mort.",
+  "TIP_PENALTY": "Deux minutes : le joueur pénalisé va sur le banc des pénalités et son équipe joue à un de moins. Le temps restant s'affiche sous le score.",
+  "TIP_GOAL": "Après chaque but, le jeu reprend par un bully au point central."
 }

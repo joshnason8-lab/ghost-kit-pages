@@ -32,7 +32,7 @@ const SUB_ZONE_FROM_CENTRE := 5.0   # 104: each substitution zone begins 5 m fro
 const SUB_ZONE_LEN := 10.0          # ... and is 10 m long (2022; 2026 may run it to the goal line's extension)
 const HIT_IN_FROM_BOARD := 1.5  # 504: a hit-in 1.5 m from the board
 const DISTANCE := 3.0           # 504, 506, 501: opponents at least 3 m from the ball, sticks included
-const FREE_HIT_FROM_CREASE := 3.5   # 506: never nearer the goal crease than 3.5 m
+const FREE_HIT_FROM_GK_AREA := 3.5  # 506: never nearer the goalkeeper area (the small one) than 3.5 m
 
 const BALL_D := 0.072           # Material Regulations: 72 mm, 26 holes, about 23 g
 const BALL_MASS := 0.023
@@ -106,8 +106,8 @@ static func offence_rule(id: String) -> String:
 	return String(OFFENCES.get(id, ["?", ""])[0])
 
 
-## The decision for an offence: free_hit, pen2, pen5, pen10 (a personal penalty: the player out 10 minutes, and as in
-## 609 a minor bench penalty for the team as well) or match. A free-hit offence done dangerously is a minor bench
+## The decision for an offence: free_hit, pen2, pen5, pen10 (a personal penalty, 609: always with a minor bench
+## penalty, the player out 2 + 10 minutes) or match. A free-hit offence done dangerously is a minor bench
 ## penalty (605), violently a major one (607).
 static func sanction(id: String, dangerous := false, violent := false) -> String:
 	var base := String(OFFENCES.get(id, ["", "free_hit"])[1])
@@ -198,16 +198,22 @@ static func free_hit_spot(at: Vector2) -> Vector2:
 		return Vector2(GOAL_LINE * signf(at.x), (HALF_W - DOT_FROM_BOARD) * (signf(at.y) if at.y != 0.0 else 1.0))
 	var p := at
 	for end: int in [-1, 1]:
-		var d := crease_distance(p, end)
-		if d < FREE_HIT_FROM_CREASE:
-			# Straight out: away from the crease's nearest point, to 3.5 m from it.
-			var near := crease_nearest(p, end)
-			var away := (p - near)
-			if away.length() < 0.01:
-				away = Vector2(-end, 0)
-			p = near + away.normalized() * FREE_HIT_FROM_CREASE
-			if absf(p.x) > GOAL_LINE:
-				p.x = GOAL_LINE * signf(p.x)
+		if gk_area_distance(p, end) < FREE_HIT_FROM_GK_AREA:
+			# Out along the line from the centre of the goal line through the offence, to 3.5 m from the area.
+			var g := Vector2(GOAL_LINE * end, 0.0)
+			var dir := p - g
+			if dir.length() < 0.01 or signf(dir.x) == float(end):
+				dir = Vector2(-end, 0.0)
+			dir = dir.normalized()
+			var lo := 0.0
+			var hi := 8.0
+			for i in 30:
+				var mid := (lo + hi) * 0.5
+				if gk_area_distance(g + dir * mid, end) < FREE_HIT_FROM_GK_AREA:
+					lo = mid
+				else:
+					hi = mid
+			p = g + dir * hi
 	p.y = clampf(p.y, -(HALF_W - 0.5), HALF_W - 0.5)
 	return p
 
@@ -221,6 +227,13 @@ static func crease_nearest(p: Vector2, end: int) -> Vector2:
 
 static func crease_distance(p: Vector2, end: int) -> float:
 	return p.distance_to(crease_nearest(p, end))
+
+
+## How far p is from the goalkeeper area (1 x 2.5 m, its rear line the goal line) of the goal at end.
+static func gk_area_distance(p: Vector2, end: int) -> float:
+	var x0 := GK_AREA_FRONT * end
+	var x1 := GOAL_LINE * end
+	return p.distance_to(Vector2(clampf(p.x, minf(x0, x1), maxf(x0, x1)), clampf(p.y, -GK_AREA_HALF_W, GK_AREA_HALF_W)))
 
 
 ## A restart's own distance: the defending players keep 3 m; at a free-hit nearer than 3 m to the crease the
@@ -322,13 +335,22 @@ class State:
 		penalties[t] = keep
 		_start_waiting(t)
 
-	## 601: at most two of a team's bench penalties run at once; the next starts as one ends.
+	## 603: at most two of a team's bench penalties run at once; the next starts as one ends.
 	func _start_waiting(t: int) -> void:
 		var running := 0
 		for p in penalties[t]:
 			if bool(p.running) and not bool(p.coincidental) and String(p.kind) != "pen10":
 				running += 1
 		for p in penalties[t]:
+			if not bool(p.running) and String(p.kind) == "pen10":
+				# A personal penalty runs once its own minor is over.
+				var minor := false
+				for q in penalties[t]:
+					if String(q.id) == String(p.id) and String(q.kind) == "pen2":
+						minor = true
+				if not minor:
+					p.running = true
+				continue
 			if running >= MAX_RUNNING:
 				break
 			if not bool(p.running):
@@ -352,9 +374,10 @@ class State:
 				out.append(p.id)
 		return out
 
-	## A penalty on team t for player id (a field player serves a goalkeeper's bench penalty, which the match decides).
-	## kind: pen2, pen5, pen10, match. A personal penalty (pen10, 609) comes with a minor bench penalty a team-mate
-	## serves; a match penalty (613) with a major one, the player gone for the match.
+	## A penalty on team t for player id, served by server (a field player serves a goalkeeper's minor; a goalkeeper
+	## sits his own major and personal penalties: the match decides). kind: pen2, pen5, pen10, match. A personal
+	## penalty (pen10, 609) comes with a minor, both sat by the offender himself, the minor first; a match penalty
+	## (613) with a major a team-mate serves, the player gone for the match.
 	func add_penalty(t: int, id: String, kind: String, offence := "", server := "") -> void:
 		var serve := server if server != "" else id
 		match kind:
@@ -363,8 +386,10 @@ class State:
 			"pen5":
 				penalties[t].append({"id": serve, "kind": "pen5", "left": PEN_MAJOR_S, "mins": 5, "running": false, "coincidental": false})
 			"pen10":
-				penalties[t].append({"id": id, "kind": "pen10", "left": PEN_PERSONAL_S, "mins": 10, "running": true, "coincidental": false})
-				penalties[t].append({"id": server, "kind": "pen2", "left": PEN_MINOR_S, "mins": 2, "running": false, "coincidental": false})
+				# 609: the offender himself sits 2 + 10: the minor first (his team short), then the personal 10 minutes,
+				# when a team-mate may take his place.
+				penalties[t].append({"id": id, "kind": "pen2", "left": PEN_MINOR_S, "mins": 2, "running": false, "coincidental": false})
+				penalties[t].append({"id": id, "kind": "pen10", "left": PEN_PERSONAL_S, "mins": 10, "running": false, "coincidental": false})
 			"match":
 				penalties[t].append({"id": server, "kind": "match", "left": PEN_MAJOR_S, "mins": 5, "running": false, "coincidental": false})
 		log.append({"kind": "penalty", "team": t, "id": id, "pen": kind, "offence": offence, "period": period, "t": clock})

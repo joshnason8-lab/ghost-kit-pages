@@ -27,11 +27,18 @@ var last_player = null      # who played it last
 var last_team := -1
 var last_how := "stick"     # stick, kick, body, head, hand, gk_throw, deflect_defender
 var in_goal := 0            # the end whose net holds it (after a goal), or 0
+var tries := {}             # players who have had their one try at it since it was last struck (match._pickups)
 var live := true            # in play: out-of-play and goal-line checks run
 var _carry_target := Vector3.ZERO
 var _mesh: MeshInstance3D
 var _shadow: MeshInstance3D
+var _halo: MeshInstance3D
+var _streak: MeshInstance3D
 var _spin := Vector3.ZERO
+const SHOW_K := 1.8         # the ball is drawn this much bigger than it is: 72 mm is 3 pixels from the broadcast camera
+                            # on a 720p phone (the physics keep its real size)
+
+static var _ring_tex: ImageTexture
 
 static var _tex: ImageTexture
 
@@ -49,7 +56,35 @@ func _ready() -> void:
 	m.roughness = 0.4
 	_mesh.material_override = m
 	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_mesh.scale = Vector3.ONE * SHOW_K
 	add_child(_mesh)
+	# A bright ring on the floor round the ball, so the eye finds it in a crowd of sticks and legs.
+	_halo = MeshInstance3D.new()
+	var hq := PlaneMesh.new()
+	hq.size = Vector2(0.62, 0.62)
+	_halo.mesh = hq
+	var hm := StandardMaterial3D.new()
+	hm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	hm.albedo_texture = ring_texture()
+	hm.albedo_color = Color(1.0, 0.93, 0.35, 0.9)
+	hm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	hm.no_depth_test = false
+	_halo.material_override = hm
+	_halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_halo)
+	# A short streak behind a fast ball (a shot), pointing back along its flight.
+	_streak = MeshInstance3D.new()
+	var sq := BoxMesh.new()
+	sq.size = Vector3(0.05, 0.05, 1.0)
+	_streak.mesh = sq
+	var sm2 := StandardMaterial3D.new()
+	sm2.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	sm2.albedo_color = Color(1, 1, 1, 0.45)
+	sm2.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_streak.material_override = sm2
+	_streak.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_streak.visible = false
+	add_child(_streak)
 	# A soft dark spot on the floor under it, so its height reads from the broadcast camera.
 	_shadow = MeshInstance3D.new()
 	var q := PlaneMesh.new()
@@ -62,6 +97,22 @@ func _ready() -> void:
 	_shadow.material_override = sm
 	add_child(_shadow)
 	_place()
+
+
+## The halo's ring: a soft bright band, clear in the middle.
+static func ring_texture() -> ImageTexture:
+	if _ring_tex:
+		return _ring_tex
+	var n := 64
+	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
+	for y in n:
+		for x in n:
+			var r := Vector2(x + 0.5 - n * 0.5, y + 0.5 - n * 0.5).length() / (n * 0.5)
+			var a := clampf(1.0 - absf(r - 0.78) / 0.16, 0.0, 1.0)
+			img.set_pixel(x, y, Color(1, 1, 1, a * a))
+	img.generate_mipmaps()
+	_ring_tex = ImageTexture.create_from_image(img)
+	return _ring_tex
 
 
 ## The ball's skin: white, its 26 holes as dark dots.
@@ -127,6 +178,7 @@ func strike(v: Vector3, p, t: int, how := "stick") -> void:
 	last_player = p
 	last_team = t
 	last_how = how
+	tries = {}
 	_spin = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * v.length()
 
 
@@ -190,7 +242,19 @@ func _place() -> void:
 	if _shadow:
 		_shadow.global_position = Vector3(pos.x, 0.004, pos.z)
 		var k := clampf(1.0 - pos.y * 0.5, 0.3, 1.0)
-		_shadow.scale = Vector3(k, 1, k)
+		_shadow.scale = Vector3(k, 1, k) * SHOW_K
+	if _halo:
+		_halo.global_position = Vector3(pos.x, 0.006, pos.z)
+		_halo.visible = in_goal == 0
+	if _streak:
+		var sp := vel.length()
+		_streak.visible = sp > 12.0 and carrier == null and held_by == null
+		if _streak.visible:
+			var l := clampf(sp * 0.035, 0.3, 1.4)
+			var back := -vel.normalized()
+			_streak.global_position = pos + back * l * 0.5
+			_streak.look_at(pos + vel, Vector3.UP if absf(back.y) < 0.95 else Vector3.RIGHT)
+			_streak.scale = Vector3(1, 1, l)
 
 
 func _collide_boards() -> void:

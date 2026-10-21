@@ -136,7 +136,7 @@
   "RULE_HITIN": "Iesitieni",
   "RULE_HITIN_BODY": "Ja bumbiņa pārlido pāri apmalei, to iesit komanda, kas tai pēdējā nepieskārās, 1,5 m no apmales vietā, kur tā izgāja, bet nekad aiz vārtu līnijas pagarinājuma. Pretinieki 3 m attālumā. No iesitiena var gūt vārtus uzreiz.",
   "RULE_FREEHIT": "Brīvsitieni",
-  "RULE_FREEHIT_BODY": "Izpilda pārkāpuma vietā, bet nekad tuvāk par 3,5 m no vārtu laukuma un ne aiz vārtu līnijas pagarinājuma. Pretinieki 3 m attālumā, ieskaitot nūjas. Tam jābūt sitienam, un tas var iet tieši vārtos.",
+  "RULE_FREEHIT_BODY": "Izpilda pārkāpuma vietā, bet nekad tuvāk par 3,5 m no vārtsarga laukuma un ne aiz vārtu līnijas pagarinājuma. Pretinieki 3 m attālumā, ieskaitot nūjas. Tam jābūt sitienam, un tas var iet tieši vārtos.",
   "RULE_STICK": "Nūja",
   "RULE_STICK_BODY": "Nedrīkst sist, aizķert, pacelt vai bloķēt pretinieka nūju; vēzienā nūju nedrīkst celt virs vidukļa; bumbiņu nedrīkst spēlēt virs ceļa; nūju vai kāju nedrīkst likt starp pretinieka kājām. Par katru pārkāpumu brīvsitiens, par bīstamiem divas minūtes.",
   "RULE_BODY": "Ķermenis un kājas",
@@ -148,7 +148,7 @@
   "RULE_GOALS": "Vārti",
   "RULE_GOALS_BODY": "Visa bumbiņa pāri vārtu līnijai no priekšpuses, pareizi spēlēta ar nūju vai vārtsarga iemesta. Ne iesperta, ne ar galvu, ne pēc uzbrūkošās komandas pārkāpuma. Pašu vārti vienmēr tiek ieskaitīti.",
   "RULE_PENALTIES": "Sodi",
-  "RULE_PENALTIES_BODY": "Mazais komandas sods ir 2 minūtes, lielais 5. Personīgais 10 minūšu sods izraida spēlētāju, un viņa komanda papildus izcieš 2 minūtes. Spēles sods izraida spēlētāju līdz spēles beigām, un viņa komanda izcieš 5 minūtes. Vienlaikus var ritēt ne vairāk kā divi vienas komandas sodi.",
+  "RULE_PENALTIES_BODY": "Mazais komandas sods ir 2 minūtes, lielais 5. Personīgais 10 minūšu sods vienmēr nāk kopā ar mazo: spēlētājs sēž 2 un tad 10 minūtes, viņa komanda mazākumā ir tikai pirmās 2. Spēles sods izraida spēlētāju līdz spēles beigām, un viņa komanda izcieš 5 minūtes. Vienlaikus var ritēt ne vairāk kā divi vienas komandas sodi.",
   "RULE_PP": "Vairākums",
   "RULE_PP_BODY": "Komanda, kurai trūkst spēlētāja, spēlē četratā pret pieciem. Ja vairākumā esošā komanda gūst vārtus, beidzas īsākais 2 minūšu sods; 5 minūšu sods nekad nebeidzas priekšlaicīgi.",
   "RULE_PENSHOT": "Soda metieni",
@@ -324,5 +324,14 @@
   "TEAM_SGP": "Singapūra",
   "TEAM_AUS": "Austrālija",
   "TEAM_PHI": "Filipīnas",
-  "TEAM_NED": "Nīderlande"
+  "TEAM_NED": "Nīderlande",
+  "COACH": "Treneris",
+  "SET_TIPS": "Trenera padomi",
+  "TIP_MOVE": "Tu esi spēlētājs ar dzelteno apli. Novieto kreiso īkšķi jebkur ekrāna kreisajā pusē un velc, lai skrietu.",
+  "TIP_BALL": "Bumbiņa ir tev! Pie vārtiem spied MEST: metot pavirzi sviru uz augšu vai leju, lai izvēlētos stūri. PIESPĒLĒT nosūta bumbiņu biedram, uz kuru rāda svira.",
+  "TIP_DEFEND": "Bumbiņa ir pretiniekiem. Nostājies starp to un saviem vārtiem un spied ATŅEMT, no priekšas. MAINĪT pārlec uz bumbiņai tuvāko komandas biedru.",
+  "TIP_RESTART": "Tavs brīvsitiens: pretiniekiem jāstāv 3 m attālumā. Pavērs sviru, tad spied PIESPĒLĒT vai MEST. Tam jābūt sitienam, un tas var iet tieši vārtos.",
+  "TIP_WHISTLE": "Svilpe aptur spēli. Panelis augšā rāda, kas piešķirts un kāpēc, ar noteikumu. Pauze augšā pa labi: tur ir tavs pārtraukums.",
+  "TIP_PENALTY": "Divas minūtes: sodītais spēlētājs sēž uz soda sola, un viņa komanda spēlē par vienu mazāk. Atlikušais laiks redzams zem rezultāta.",
+  "TIP_GOAL": "Pēc katriem vārtiem spēle atsākas ar iemešanu centra punktā."
 }

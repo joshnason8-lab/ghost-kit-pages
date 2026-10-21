@@ -135,7 +135,7 @@
   "RULE_HITIN": "Rimesse",
   "RULE_HITIN_BODY": "Se la palla esce oltre la balaustra, la squadra che non l'ha toccata per ultima la rimette in gioco a 1,5 m dalla balaustra, dove è uscita, mai dietro il prolungamento della linea di porta. Avversari a 3 m. Si può segnare direttamente su rimessa.",
   "RULE_FREEHIT": "Punizioni",
-  "RULE_FREEHIT_BODY": "Si batte dove è avvenuto il fallo, ma mai a meno di 3,5 m dall'area di porta né dietro il prolungamento della linea di porta. Avversari a 3 m, bastoni compresi. La palla va colpita e può entrare direttamente.",
+  "RULE_FREEHIT_BODY": "Si batte dove è avvenuto il fallo, ma mai a meno di 3,5 m dall'area del portiere né dietro il prolungamento della linea di porta. Avversari a 3 m, bastoni compresi. La palla va colpita e può entrare direttamente.",
   "RULE_STICK": "Il bastone",
   "RULE_STICK_BODY": "Vietato colpire, agganciare, sollevare o bloccare il bastone avversario; niente bastone sopra la vita nel caricamento; niente palla giocata sopra il ginocchio; né bastone né gamba tra le gambe di un avversario. Ogni infrazione è punizione; quelle pericolose costano due minuti.",
   "RULE_BODY": "Corpo e piedi",
@@ -147,7 +147,7 @@
   "RULE_GOALS": "I gol",
   "RULE_GOALS_BODY": "La palla intera oltre la linea di porta, dal davanti, giocata correttamente con il bastone o lanciata dal portiere. Non di piede né di testa, e non dopo un fallo della squadra che attacca. L'autogol vale sempre.",
   "RULE_PENALTIES": "Le penalità",
-  "RULE_PENALTIES_BODY": "Una penalità minore di squadra dura 2 minuti, una maggiore 5. Una penalità personale di 10 minuti manda fuori il giocatore e la sua squadra sconta anche 2 minuti. Una penalità di partita esclude il giocatore definitivamente e la sua squadra sconta 5 minuti. Non corrono mai più di due penalità della stessa squadra alla volta.",
+  "RULE_PENALTIES_BODY": "Una penalità minore di squadra dura 2 minuti, una maggiore 5. Una penalità personale di 10 minuti arriva sempre con una minore: il giocatore sconta 2 e poi 10 minuti, la sua squadra resta in inferiorità solo per i primi 2. Una penalità di partita esclude il giocatore definitivamente e la sua squadra sconta 5 minuti. Non corrono mai più di due penalità della stessa squadra alla volta.",
   "RULE_PP": "La superiorità numerica",
   "RULE_PP_BODY": "Una squadra con un giocatore in meno gioca quattro contro cinque. Se segna la squadra con più giocatori, termina la penalità di 2 minuti più breve; una penalità di 5 minuti non termina mai prima.",
   "RULE_PENSHOT": "Tiri di rigore",
@@ -323,5 +323,14 @@
   "TEAM_SGP": "Singapore",
   "TEAM_AUS": "Australia",
   "TEAM_PHI": "Filippine",
-  "TEAM_NED": "Paesi Bassi"
+  "TEAM_NED": "Paesi Bassi",
+  "COACH": "Allenatore",
+  "SET_TIPS": "Consigli dell'allenatore",
+  "TIP_MOVE": "Sei il giocatore con l'anello giallo. Appoggia il pollice sinistro dove vuoi sulla metà sinistra dello schermo e fallo scorrere per correre.",
+  "TIP_BALL": "Palla tua! Vicino alla porta tocca TIRA: spingi il joystick in alto o in basso mentre tiri per scegliere l'angolo. PASSA serve il compagno indicato dal joystick.",
+  "TIP_DEFEND": "Hanno loro la palla. Mettiti tra la palla e la tua porta e tocca CONTRASTA, da davanti. CAMBIA passa al compagno più vicino alla palla.",
+  "TIP_RESTART": "Punizione per te: gli avversari devono stare a 3 m. Punta il joystick, poi PASSA o TIRA. La palla va colpita e può entrare direttamente.",
+  "TIP_WHISTLE": "Il fischio ferma il gioco. Il riquadro in alto dice cosa è stato fischiato e perché, con la regola. Pausa, in alto a destra, per il tuo timeout.",
+  "TIP_PENALTY": "Due minuti: il giocatore punito va sulla panchina dei puniti e la sua squadra gioca con uno in meno. Il tempo rimasto appare sotto il punteggio.",
+  "TIP_GOAL": "Dopo ogni gol si riparte con un ingaggio dal punto centrale."
 }
