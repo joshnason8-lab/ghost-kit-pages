@@ -12,8 +12,7 @@ here and `git log`.
 - **The match** (`game/match.gd`): throw-ins, open play, the loose ball, catches and lifts, the carry rules, strikes,
   hand-passes, solos, tackles, fouls, advantage, cards (yellow, red, black and the sin bin), puck-outs, frees, 65s,
   sideline cuts, penalties, scores, wides, posts and crossbar, added time, half time, extra time, the shoot-out,
-  full time and the result. The clock runs through stoppages (the referee's watch; at 40% of its sped-up rate while the ball is dead, so restarts
-  do not eat a short match); match length 8-70 minutes.
+  full time and the result. The clock runs through stoppages (the referee's watch).
 - **Officials** with their signals and flags; **team AI** tuned to real numbers (AI.md); your player by touch
   (floating joystick, context buttons, switch, assist levels); the broadcast camera; the HUD (score bug in
   goals-points and total, the clock, added time, calls, the sliotar's marker, your steps).
@@ -36,22 +35,40 @@ here and `git log`.
 - **Docs**: README, RULES, LANGUAGES, AI, MESHY_BRIEF, BETA.
 - **Music**: a jig written for the game (tin whistle, harp, bodhrán), synthesised (`tools/audio/make_music.py`).
 
+## Done (0.2.0-beta, round two, 21 October 2026)
+
+- **Scoring at full length fixed**: the ball is live 38% of the watch, as in a real match; stoppages cost their real
+  time (moved on when the players are set). Lengths 8, 14, 20 and 35 minutes; 35 is the full 70 with the ball live
+  as long as in a real match, and it ends like one (about 2.5-3 goals and 43 points between the sides; real 2.75 and
+  42). `tests/score_check.tscn` holds every length to the real numbers, in CI (docs/AI.md).
+- **The playtest** (docs/PLAYTEST.md): the Web build played in Chromium by touch at 1280 × 720, 1600 × 720 and
+  2400 × 1080, full matches in Quick Match and both competitions; what was wrong, fixed worst first, a test each.
+- **The coach**: the game in three lines before your first throw-in and a tip the first time each thing comes up, in
+  English and Irish (`game/coach.gd`; Settings > Coach's tips).
+- **Tired players and substitutions**: tiredness by the match clock and stamina (slower, less true); five
+  substitutions (three more in extra time), at a break, by the manager or by you (pause > Substitutions).
+- **Tactics**: a sweeper, two inside, short, mixed or long puck-outs (pause > Tactics); the computer's side by its
+  county's habits, a sweeper dropped back to hold a late lead.
+- **The ball in the air**: a ring on the grass where a high ball near you comes down.
+- **Sideline cuts**: backs under pressure clear it over the sideline, as real ones do.
+- **Rules re-check**: still blocked (the network policy refuses every host with the Guide; docs/RULES.md says what
+  would finish it).
+
 ## Next (in order)
 
 1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev
    overlay: tap the version seven times), heat, the buttons' size and place. The logic costs about 1.1 ms a frame on a
    desktop core (off-ball players re-plan where to stand seven times a second); a low-end phone's core is maybe
    four times slower, well inside a 33 ms frame.
-2. **Scoring at full length**: a 70-minute match runs about twice a real game's scoring (5-34 v 5-46 in one test);
-   the 14-minute default is right. docs/AI.md says how to tune it.
-3. **Substitutions** (five, three more in extra time, temporary ones for the sin bin) and tired players.
-4. **Tactics**: a sweeper, a two-man full-forward line, short or long puck-outs, chosen in match setup.
+2. **The full Official Guide**: read the rules against it once the network allows `www.gaa.ie` (docs/RULES.md).
+3. **More frees and shots**: real matches have about 26 frees and 77 shots; the game about 17 and 70.
+4. **Temporary substitutes** (blood, a head injury) and injuries, and the sin-binned player's replacement rules.
 5. **Umpires who now and then get a close one wrong**, and Hawk-Eye at the stadium (as the real one has).
 6. **Commentary-style call-outs** and crowd songs ("Come on the ...", "[County] abú!").
 7. **A native Irish speaker** to read `i18n/src/ga.json` (docs/LANGUAGES.md lists the terms to check).
 8. **Camogie**, with its own rules done properly (60 minutes, the 45, hand-passed goals, its contact rules).
 9. **Club hurling**: invented parish clubs in a county championship, at the parish field.
-9. Meshy bodies, if the owner wants them (docs/MESHY_BRIEF.md): no credits spent.
+10. Meshy bodies, if the owner wants them (docs/MESHY_BRIEF.md): no credits spent.
 
 ## Needs the owner
 
@@ -78,8 +95,12 @@ here and `git log`.
 - **The look**: the match-day programme (cream paper, black and red print, a halftone sun) and the parish field at
   dusk, rather than Kabaddi's tiles or Takraw's arena navy. Uncial lettering for the name, a condensed face (Oswald)
   for headings, as programmes print them.
-- **The clock** runs faster than real time (Settings > Match length, 14 minutes by default), the play at real speed,
-  so a match fits a sitting and still ends with a real-looking scoreline; 70 minutes is the real thing.
+- **The clock** runs faster than real time while the ball is live (Settings > Match length, 14 minutes by default),
+  the play at real speed; a dead ball costs its real time on the watch. The 35-minute length is the full 70 with the
+  ball live as long as in a real match; a 70-minute real-time length was dropped (it is the 35-minute match with half
+  an hour of waiting at restarts).
+- **Substitutions** are made at a break (as a referee waves them on), by the manager unless you take them over;
+  tiredness runs on the match clock so a short match tires players as a full one does.
 - **Camera**: the broadcast gantry at the halfway line, panning and zooming, and a marker on the sliotar, because
   the ball is 7 cm across on a 140 m pitch.
 - **ABIs**: arm64-v8a and armeabi-v7a in the bundle (Play serves each phone its own, so 32-bit costs 64-bit users
