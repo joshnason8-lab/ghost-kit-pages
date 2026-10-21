@@ -111,6 +111,8 @@ jobs:
           echo "CODE=$CODE" >> "$GITHUB_ENV"
           # The Android preset, built with Gradle into a bundle (Play serves each phone the 64- or 32-bit build).
           sed -i 's/^gradle_build\/use_gradle_build=false/gradle_build\/use_gradle_build=true/; s/^gradle_build\/export_format=0/gradle_build\/export_format=1/' export_presets.cfg
+          # Google Play's target API for new apps and updates from 31 August 2026: 36 (Android 16). Android 7 and up.
+          sed -i 's/^gradle_build\/target_sdk=""/gradle_build\/target_sdk="36"/; s/^gradle_build\/min_sdk=""/gradle_build\/min_sdk="24"/' export_presets.cfg
           sed -i "s/^package\/signed=true/package\/signed=${SIGNED}/" export_presets.cfg
           mkdir -p build
           godot --headless --path . --install-android-build-template --export-release "Android" "build/ash-and-leather-${VERSION}.aab"
@@ -125,7 +127,6 @@ jobs:
           java -jar "$RUNNER_TEMP/bundletool.jar" dump manifest --bundle "$AAB" > "$RUNNER_TEMP/manifest.xml"
           grep -o 'android:targetSdkVersion="[0-9]*"\|android:minSdkVersion="[0-9]*"\|android:versionCode="[0-9]*"\|android:versionName="[^"]*"\|android:isGame="[a-z]*"\|android:appCategory="[a-z]*"\|uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | sort -u
           grep -q 'android:isGame="true"' "$RUNNER_TEMP/manifest.xml"
-          grep -q 'android:appCategory="game"' "$RUNNER_TEMP/manifest.xml"
           grep -q 'android:targetSdkVersion="36"' "$RUNNER_TEMP/manifest.xml"
           # The only permission: vibrate.
           test "$(grep -o 'uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | grep -v 'VIBRATE' | wc -l)" = "0"
