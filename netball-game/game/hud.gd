@@ -20,6 +20,8 @@ var _clock_l: Label
 var _cp_arrow: Array = []     # per team: the arrow by its name when its centre pass is next
 var _dz: Label
 var _call: PanelContainer
+var coach: Coach = null           # the first match's tips (Coach.wanted)
+var _whistled := false
 var _call_title: Label
 var _call_line: Label
 var _call_t := 0.0
@@ -49,6 +51,9 @@ func _ready() -> void:
 	root.add_child(_overlay)
 	_build_board()
 	_build_call()
+	if Coach.wanted(m):
+		coach = Coach.new(m)
+		root.add_child(coach)
 	m.game_event.connect(_on_event)
 	if m.demo:
 		_board.visible = not bool(m.config.get("attract", false))
@@ -173,8 +178,24 @@ func _process(delta: float) -> void:
 		if want != _controls.ids and not _controls.editing:
 			_controls.set_buttons(want)
 		_controls.visible = not m.paused and not (m.phase in ["break", "over", "timeout", "injury"]) or _controls.editing
+	if coach:
+		coach.step(delta, _whistled)
+		_whistled = false
+		_place_coach()
 	_me_ring += delta
 	_overlay.queue_redraw()
+
+
+## The coach's tip: at the bottom, between the stick and the buttons; above the umpire's call if both show.
+func _place_coach() -> void:
+	if not coach.visible:
+		return
+	var sm := UI.safe_margins(root, 14.0)
+	var w := minf(root.size.x * 0.44, 620.0)
+	coach.custom_minimum_size.x = w
+	coach.size = Vector2(w, 0)
+	coach.position = Vector2((root.size.x - w) * 0.5, root.size.y - sm.w - coach.get_combined_minimum_size().y - 8.0)
+	coach.visible = not (m.phase in ["break", "over", "timeout", "injury"]) and not m.paused
 
 
 ## The player you control changed (the HUD rings her; nothing else to do here yet).
@@ -231,6 +252,7 @@ func banner(title: String, line := "", secs := 2.2) -> void:
 func _on_event(kind: String, info: Dictionary) -> void:
 	match kind:
 		"call":
+			_whistled = true
 			var to := int(info.to)
 			var what := tr("CALL_" + String(info.kind).to_upper())
 			var award := tr("AWARD_" + String(info.award).to_upper())
@@ -302,19 +324,50 @@ func _draw_overlay() -> void:
 		_overlay.draw_arc(c, 13.0, -PI / 2, -PI / 2 + TAU * left, 28, col, 4.0, true)
 	if show_tags:
 		var fs := Game.ts(15)
+		var tags := []
 		for t in 2:
 			for pl in m.players[t]:
 				var at := _screen(pl.position + Vector3(0, float(pl.data.height) + 0.28, 0))
 				if at.x < -100:
 					continue
-				var mine: bool = t == m.user_team
-				var txt: String = pl.pos
-				var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-				var col: Color = DB.team(m.team_id(t)).c1
-				_overlay.draw_rect(Rect2(at - Vector2(w * 0.5 + 6, fs * 0.5 + 3), Vector2(w + 12, fs + 6)), Color(0.04, 0.03, 0.1, 0.62), true)
-				_overlay.draw_rect(Rect2(at + Vector2(-w * 0.5 - 6, fs * 0.5 + 1), Vector2(w + 12, 2)), col, true)
-				_overlay.draw_string(font, at + Vector2(-w * 0.5, fs * 0.36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
-					Game.C_ACCENT if pl == m.me else (Game.C_INK if mine or m.user_team < 0 else Color(Game.C_INK, 0.8)))
+				var w := font.get_string_size(pl.pos, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+				tags.append({"pl": pl, "rect": Rect2(at - Vector2(w * 0.5 + 6, fs * 0.5 + 3), Vector2(w + 12, fs + 6)), "w": w})
+		var rects := []
+		for tg in tags:
+			rects.append(tg.rect)
+		rects = declutter(rects)
+		for i in tags.size():
+			var pl: Player = tags[i].pl
+			var r: Rect2 = rects[i]
+			var mine: bool = pl.team == m.user_team
+			var col: Color = DB.team(m.team_id(pl.team)).c1
+			_overlay.draw_rect(r, Color(0.04, 0.03, 0.1, 0.62), true)
+			_overlay.draw_rect(Rect2(r.position + Vector2(0, r.size.y - 2), Vector2(r.size.x, 2)), col, true)
+			_overlay.draw_string(font, r.position + Vector2(6, 3 + fs * 0.86), pl.pos, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
+				Game.C_ACCENT if pl == m.me else (Game.C_INK if mine or m.user_team < 0 else Color(Game.C_INK, 0.8)))
+
+
+## Name tags that would overlap (two players side by side, a defender on her attacker) are stacked: each one that
+## meets a tag already placed moves up above it. Tags lower on the screen (nearer the camera) keep their places.
+static func declutter(rects: Array) -> Array:
+	var order := range(rects.size())
+	order.sort_custom(func(a, b): return rects[a].position.y > rects[b].position.y)
+	var out := rects.duplicate()
+	var placed: Array[Rect2] = []
+	for i in order:
+		var r: Rect2 = out[i]
+		var moved := true
+		var guard := 0
+		while moved and guard < 14:
+			moved = false
+			guard += 1
+			for p in placed:
+				if r.grow(-1.0).intersects(p):
+					r.position.y = p.position.y - r.size.y - 2.0
+					moved = true
+		out[i] = r
+		placed.append(r)
+	return out
 
 
 # ---------------------------------------------------------------- the break between quarters
@@ -356,7 +409,11 @@ func show_break(q: int, next: int, timeout_team := -1) -> void:
 	v.add_child(cols)
 	var left := UI.card()
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.add_child(score_table(m))
+	var lv := VBoxContainer.new()
+	lv.add_theme_constant_override("separation", 18)
+	lv.add_child(score_table(m))
+	lv.add_child(team_stats(m))
+	left.add_child(lv)
 	cols.add_child(left)
 	if m.user_team >= 0:
 		var right := UI.card()
@@ -398,6 +455,34 @@ static func score_table(mt) -> GridContainer:
 	return g
 
 
+## The teams' match so far, side by side: goals from attempts, feeds, gains, intercepts, penalties, turnovers.
+static func team_stats(mt) -> GridContainer:
+	var keys := [["BOX_G", ""], ["BOX_PCT", ""], ["BOX_FEEDS", "feeds"], ["BOX_GAINS", "gains"], ["BOX_INT", "intercepts"],
+		["BOX_PEN", "penalties"], ["BOX_TO", "turnovers"]]
+	var sum := [{}, {}]
+	for id in mt.stats:
+		var s: Dictionary = mt.stats[id]
+		for k in s:
+			if typeof(s[k]) == TYPE_INT and k != "team":
+				sum[s.team][k] = int(sum[s.team].get(k, 0)) + int(s[k])
+	var g := GridContainer.new()
+	g.columns = keys.size() + 1
+	g.add_theme_constant_override("h_separation", 22)
+	g.add_theme_constant_override("v_separation", 8)
+	g.add_child(UI.label("", "EyebrowLabel"))
+	for k in keys:
+		g.add_child(UI.label(TranslationServer.translate(k[0]).to_upper(), "EyebrowLabel"))
+	for t in 2:
+		g.add_child(UI.label(DB.team_abbr(mt.team_id(t)), "SubLabel", 20))
+		var goals := int(sum[t].get("goals", 0))
+		var att := int(sum[t].get("attempts", 0))
+		g.add_child(UI.label("%d/%d" % [goals, att], "", 20))
+		g.add_child(UI.label("%d" % roundi(100.0 * goals / att) if att > 0 else "–", "", 20))
+		for k in keys.slice(2):
+			g.add_child(UI.label(str(int(sum[t].get(k[1], 0))), "", 20))
+	return g
+
+
 static func _pname(q: int) -> String:
 	if q <= 4:
 		return TranslationServer.translate("QUARTER_SHORT").format({"n": q})
@@ -423,7 +508,8 @@ func _changes() -> VBoxContainer:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(0, 44)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.text = "%s  %s" % [pl.pos, pl.data.name]
+		b.text = _change_text(pl)
+		b.disabled = m.next_on(pl) < 0
 		b.clip_text = true
 		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -431,9 +517,18 @@ func _changes() -> VBoxContainer:
 		b.pressed.connect(func():
 			Sfx.click()
 			if m.substitute(who):
-				b.text = "%s  %s" % [who.pos, who.data.name])
+				b.text = _change_text(who)
+				b.disabled = m.next_on(who) < 0)
 		grid.add_child(b)
 	return v
+
+
+## A change button's words: the position, who plays it now and who would come on ("GS  Hannah Rowe  ›  Amy Lee").
+func _change_text(pl: Player) -> String:
+	var i: int = m.next_on(pl)
+	if i < 0:
+		return "%s  %s" % [pl.pos, pl.data.name]
+	return "%s  %s  ›  %s" % [pl.pos, pl.data.name, String(m.bench[pl.team][i].name)]
 
 
 # ---------------------------------------------------------------- pause

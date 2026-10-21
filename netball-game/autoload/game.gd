@@ -104,6 +104,8 @@ var settings := {
 	"tags": 0,              # the bibs' letters over players' heads: 0 on, 2 off
 	"whistles": 1,          # how often the AI infringes: 0 fewer whistles, 1 standard, 2 the real rate
 	"seen_howto": false,
+	"coach": true,          # the coach's tips in a match (on for a first match, then off; Settings)
+	"coached": false,       # a first match has been played to the end with the tips
 	"dev": false,
 	"last_home": "ENG",
 	"last_away": "JAM",
@@ -181,8 +183,8 @@ func _web_options() -> void:
 	var q := String(JavaScriptBridge.eval("window.location.search", true))
 	if q.contains("fresh"):
 		for k in ["seen_howto", "coached"]:
-			if settings.has(k):
-				settings[k] = false
+			settings[k] = false
+		settings.coach = true
 	for pair in q.trim_prefix("?").split("&", false):
 		var kv := pair.split("=")
 		if kv.size() != 2:

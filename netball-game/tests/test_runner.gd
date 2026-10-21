@@ -26,6 +26,9 @@ func _ready() -> void:
 	await _controls()
 	await _league_options()
 	await _sanctions_and_injury()
+	await _break_screen()
+	_tags()
+	await _coach()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -525,4 +528,91 @@ func _sanctions_and_injury() -> void:
 	await frames(90)
 	check(m.phase == "setup" or m.phase == "live", "play restarts with the award after the stoppage (%s)" % m.phase)
 	m.queue_free()
+	await frames(2)
+
+
+## The interval screen (playtest: it was half empty, and a change button did not say who would come on): the teams'
+## figures beside the score, and each change button naming the player who would come on.
+func _break_screen() -> void:
+	var m: Match = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "ENG", "away": "WAL", "venue": "hall", "user_team": 0, "seed": 5, "quarter": 15, "mode": "quick"}
+	add_child(m)
+	await frames(5)
+	m.hud.show_break(1, 2)
+	await frames(2)
+	var texts := []
+	var buttons := []
+	var stack: Array = [m.hud._break]
+	while stack.size() > 0:
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if n is Label:
+			texts.append(n.text)
+		elif n is Button:
+			buttons.append(n)
+	check(tr("BOX_FEEDS").to_upper() in texts and tr("BOX_GAINS").to_upper() in texts, "the interval shows the teams' figures")
+	var gs: Player = m.player_at(0, "GS")
+	var b: Button = null
+	for x in buttons:
+		if x.text.begins_with("GS "):
+			b = x
+	var coming := String(m.bench[0][m.next_on(gs)].name) if m.next_on(gs) >= 0 else ""
+	check(b != null and coming != "" and b.text.ends_with(coming), "a change button names who would come on (%s)" % (b.text if b else "none"))
+	if b:
+		b.pressed.emit()
+		check(String(gs.data.name) == coming, "tapping it brings her on")
+	m.queue_free()
+	await frames(2)
+
+
+## Name tags over players standing together are stacked, not printed over each other (playtest: "GSK", "GD/D").
+func _tags() -> void:
+	var rs := [Rect2(100, 200, 40, 22), Rect2(110, 205, 40, 22), Rect2(300, 200, 40, 22), Rect2(105, 190, 40, 22)]
+	var out: Array = HUD.declutter(rs)
+	var overlap := 0
+	for i in out.size():
+		for j in range(i + 1, out.size()):
+			if (out[i] as Rect2).grow(-1.0).intersects(out[j]):
+				overlap += 1
+	check(overlap == 0, "name tags never overlap (%d pairs did)" % overlap)
+	check(out[2] == rs[2] and out[1] == rs[1], "a tag alone, and the one nearest the camera, stay where they are")
+
+
+## The coach (playtest: a first-timer scored nothing and did not know the rings or buttons): each tip when it is
+## needed, once; on for a first match, off after it.
+func _coach() -> void:
+	check(Coach.pick({}, {}) == "move", "the first tip is how to move")
+	check(Coach.pick({"me_has_ball": true}, {"move": true}) == "pass", "with the ball: how to pass")
+	check(Coach.pick({"me_has_ball": true, "may_shoot": true}, {"move": true, "pass": true}) == "shoot", "in the circle: how to shoot")
+	check(Coach.pick({"they_have_ball": true}, {"move": true}) == "defend", "their ball: how to defend")
+	check(Coach.pick({"they_have_ball": true}, {"move": true, "defend": true}) == "", "a tip is shown only once")
+	for k in Coach.ORDER:
+		var t := Coach.text(k)
+		check(t != "COACH_" + k.to_upper() and not t.contains("{"), "the %s tip reads (%s)" % [k, t.left(30)])
+	var was := Game.settings.duplicate()
+	Game.settings.coach = true
+	Game.settings.coached = false
+	var m: Match = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "ENG", "away": "WAL", "venue": "hall", "user_team": 0, "seed": 6, "quarter": 15, "mode": "quick", "difficulty": 1}
+	add_child(m)
+	await frames(90)
+	check(m.hud.coach != null and m.hud.coach.seen.has("move"), "a first match has the coach, and she starts with moving")
+	m.time_left = 0.01
+	m.q = 4
+	var guard := 0
+	while m.phase != "over" and guard < 900:
+		if m.phase == "break":
+			m.skip_break()
+		await frames(1)
+		guard += 1
+	check(m.phase == "over" and not Game.settings.coach and Game.settings.coached, "after the first match the tips turn off")
+	m.queue_free()
+	await frames(2)
+	Game.settings = was
+	var demo: Match = (load("res://game/match.gd") as Script).new()
+	demo.config = {"home": "ENG", "away": "WAL", "venue": "hall", "user_team": -1, "demo": true, "seed": 6, "quarter": 15, "mode": "quick"}
+	add_child(demo)
+	await frames(3)
+	check(demo.hud.coach == null, "no coach when the AI plays itself")
+	demo.queue_free()
 	await frames(2)

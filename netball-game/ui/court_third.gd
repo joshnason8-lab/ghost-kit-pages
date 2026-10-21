@@ -98,5 +98,7 @@ func _draw() -> void:
 func _goal_circle(c: Vector2, s: Vector2, col: Color, lw: float, side: float) -> void:
 	var r := s.y * 0.42
 	var a0 := PI * 0.5 if side > 0.0 else -PI * 0.5
-	draw_arc(c, r, a0, a0 + PI, 40, col, lw, true)
-	draw_circle(c + Vector2(-side * 6.0, 0), 5.0, col)
+	# Faint: the title and the words run across it (playtest: a full-strength line cut through them).
+	var faint := Color(col, col.a * 0.32)
+	draw_arc(c, r, a0, a0 + PI, 40, faint, lw, true)
+	draw_circle(c + Vector2(-side * 6.0, 0), 5.0, faint)

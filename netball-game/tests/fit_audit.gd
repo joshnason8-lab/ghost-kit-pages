@@ -513,6 +513,7 @@ func _cup() -> void:
 
 
 func _match() -> void:
+	Game.settings.coach = true
 	Game.start_match({"home": "TTO", "away": "NAM", "venue": "arena", "quarter": 15, "difficulty": 1, "mode": "cup",
 		"user_team": 0, "stage": tr("STAGE_SEMI"), "seed": 3})
 	await frames(30)
@@ -523,6 +524,11 @@ func _match() -> void:
 	m.hud.banner(tr("CALL_OBSTRUCTION"), tr("AWARD_TO").format({"award": tr("AWARD_PENALTY_SHOT"), "team": DB.team_name("NAM")}))
 	await frames(4)
 	await audit("match_callout")
+	if m.hud.coach:
+		for k in ["pass", "defend"]:   # the two longest tips
+			m.hud.coach.show_tip(k)
+			await frames(4)
+			await audit("match_coach_" + k)
 	m.set_paused(true)
 	await frames(6)
 	await audit("match_pause")

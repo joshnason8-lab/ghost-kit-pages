@@ -97,6 +97,8 @@ func _ready() -> void:
 	for key in ["sound", "music", "vibration", "left_handed"]:
 		row.add_child(_toggle(key, {"sound": "SOUND", "music": "MUSIC", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
 	snd[1].add_child(row)
+	snd[1].add_child(_toggle("coach", "COACH_TIPS"))
+	snd[1].add_child(UI.wrap(tr("COACH_TIPS_NOTE"), "MutedLabel", 16))
 	snd[1].add_child(UI.field(tr("BUTTON_SIZE"), UI.chips([tr("SIZE_NORMAL"), tr("SIZE_LARGE"), tr("SIZE_XL")], int(Game.settings.btn_size), func(i):
 		Game.settings.btn_size = i
 		Game.save_settings())))

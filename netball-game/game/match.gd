@@ -34,6 +34,7 @@ var phase_t := 0.0
 var q := 1                          # the period: 1-4 the quarters, 5-6 extra time's halves, 7 on to a two-goal lead
 var quarter_min := 5.0
 var time_left := 300.0
+var live_s := 0.0                   # playing time so far (the coach waits for some before the areas tip)
 var score := [0, 0]
 var q_scores: Array = []            # [[team 0, team 1] for each period]
 var first_dir := 1                  # the end team 0 attacks in the first quarter
@@ -233,6 +234,7 @@ func _clock_runs() -> bool:
 
 func _tick_clock(dt: float) -> void:
 	time_left -= dt
+	live_s += dt
 	# Suspensions run on playing time; she comes back on to her own area.
 	for t in 2:
 		for pl in players[t]:
@@ -851,6 +853,11 @@ func _end_period() -> void:
 	game_event.emit("period_end", {"q": q})
 	if nxt == 0:
 		_enter("over")
+		# The coach's tips were for a first match: after one played to the end they stop (Settings brings them back).
+		if hud and hud.coach and not bool(Game.settings.get("coached", false)):
+			Game.settings.coached = true
+			Game.settings.coach = false
+			Game.save_settings()
 		Sfx.react("applause", -6.0)
 		for t in 2:
 			for pl in players[t]:
@@ -1120,18 +1127,27 @@ func _auto_graphics(delta: float) -> void:
 ## position or a neighbouring one). Returns whether anyone came on.
 func substitute(pl: Player) -> bool:
 	var t := pl.team
-	for i in bench[t].size():
+	var i := next_on(pl)
+	if i >= 0:
 		var e: Dictionary = bench[t][i]
-		if String(e.pos) == pl.pos or pl.pos in (e.alt as Array):
-			bench[t].remove_at(i)
-			bench[t].append(pl.data)
-			pl.data = e
-			if not stats.has(String(e.id)):
-				stats[String(e.id)] = _blank_stats(t, e)
-			stats[String(e.id)].pos = pl.pos
-			pl.body.queue_free()
-			pl._ready()
-			pl.place(pl.p, pl.facing)
-			game_event.emit("substitution", {"team": t, "pos": pl.pos})
-			return true
+		bench[t].remove_at(i)
+		bench[t].append(pl.data)
+		pl.data = e
+		if not stats.has(String(e.id)):
+			stats[String(e.id)] = _blank_stats(t, e)
+		stats[String(e.id)].pos = pl.pos
+		pl.body.queue_free()
+		pl._ready()
+		pl.place(pl.p, pl.facing)
+		game_event.emit("substitution", {"team": t, "pos": pl.pos})
+		return true
 	return false
+
+
+## Who on the bench would come on for pl: the index in bench[pl.team], or -1 when no one plays her position.
+func next_on(pl: Player) -> int:
+	for i in bench[pl.team].size():
+		var e: Dictionary = bench[pl.team][i]
+		if String(e.pos) == pl.pos or pl.pos in (e.alt as Array):
+			return i
+	return -1
