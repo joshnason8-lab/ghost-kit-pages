@@ -60,13 +60,24 @@ func add_controls(c: TouchControls) -> void:
 	root.move_child(c, 1)
 	# The pause button, top right, clear of the scoreboard and a camera cut-out.
 	_pause_btn = UI.round_button("pause", func(): m.set_paused(true), 60)
+	# Anchored to the top right corner (not placed by size: the HUD has no size yet when the match is built).
 	_pause_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	var sm := UI.safe_margins(root, 22.0)
-	_pause_btn.position = Vector2(root.size.x - sm.z - 60, sm.y)
-	root.resized.connect(func():
-		var s2 := UI.safe_margins(root, 22.0)
-		_pause_btn.position = Vector2(root.size.x - s2.z - 60, s2.y))
+	_place_pause()
+	root.resized.connect(_place_pause)
 	root.add_child(_pause_btn)
+
+
+func _place_pause() -> void:
+	var sm := UI.safe_margins(root, 22.0)
+	_pause_btn.offset_left = -sm.z - 60
+	_pause_btn.offset_right = -sm.z
+	_pause_btn.offset_top = sm.y
+	_pause_btn.offset_bottom = sm.y + 60
+
+
+## For the tests: where the pause button is.
+func pause_button() -> Button:
+	return _pause_btn
 
 
 # ---------------------------------------------------------------- the scoreboard
@@ -233,6 +244,12 @@ func _on_event(kind: String, info: Dictionary) -> void:
 			banner(tr("GOAL_TWO") if v == 2 else tr("GOAL"), DB.team_name(m.team_id(int(info.team))), 1.6)
 		"warning":
 			banner(tr("CALL_WARNING"), tr("SANCTION_LINE").format({"pos": info.by, "team": DB.team_name(m.team_id(int(info.team)))}), 2.0)
+		"escalate":
+			banner(tr("CALL_ESCALATE"), tr("SANCTION_LINE").format({"pos": info.by, "team": DB.team_name(m.team_id(int(info.team)))}), 1.8)
+		"advance":
+			banner(tr("CALL_ADVANCE"), tr("SANCTION_LINE").format({"pos": info.by, "team": DB.team_name(m.team_id(int(info.team)))}), 1.8)
+		"ordered_off":
+			banner(tr("CALL_ORDERED_OFF"), tr("SANCTION_LINE").format({"pos": info.by, "team": DB.team_name(m.team_id(int(info.team)))}), 2.6)
 		"suspension":
 			banner(tr("CALL_SUSPENSION"), tr("SANCTION_LINE").format({"pos": info.by, "team": DB.team_name(m.team_id(int(info.team)))}), 2.4)
 		"gain":

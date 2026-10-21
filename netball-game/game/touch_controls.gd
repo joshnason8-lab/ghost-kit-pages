@@ -226,9 +226,15 @@ func _draw() -> void:
 		var ink := Game.C_ON_ACCENT if primary or id == "DEFEND" or (editing and _drag == int(b[3])) else Game.C_INK
 		_draw_label(id, c, r, ink, primary)
 		# The key that presses it, on a computer.
-		if not OS.has_feature("mobile") and i < 3:
-			var kc: String = ["␣", "J", "K"][i]
+		# The key that presses it, on a computer with a keyboard (not on a touch screen).
+		if show_keys() and i < 3:
+			var kc: String = ["Space", "J", "K"][i]
 			draw_string(Game.font_bold, c + Vector2(r * 0.55, r * 0.95), kc, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(Game.C_INK, 0.6))
+
+
+## Key hints only where there is a keyboard and no touch screen.
+static func show_keys() -> bool:
+	return not OS.has_feature("mobile") and not DisplayServer.is_touchscreen_available()
 
 
 ## The button's word, as big as fits: shrunk to fit the circle's width, then over two lines if it must (shaped and

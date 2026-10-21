@@ -162,7 +162,7 @@ func _out_of_play(pl: Player) -> void:
 		pl.set_act("out_of_play")
 
 
-## Suspended (R6): she waits by her team's bench, off the court, for two minutes of playing time.
+## Suspended (R18, game management): she waits by her team's bench, off the court, for two minutes of playing time.
 func _suspended(pl: Player) -> void:
 	pl.target = bench_spot(pl.team)
 	pl.want_speed = 3.0
@@ -424,7 +424,7 @@ func _best_option(pl: Player) -> Array:
 
 ## How good a pass to `to` is: forward progress, a shooter in the circle best of all, minus the risk of an
 ## intercept; nothing the rules forbid (a short pass, over a third, the centre pass to anyone outside the centre third).
-func _pass_value(from: Player, to: Player) -> float:
+func _pass_value(from: Player, to: Player, noise := true) -> float:
 	var kind := pass_kind(from, to)
 	var at := catch_point(to, kind)
 	if Rules.short_pass(from.p, at) or from.p.distance_to(at) < 2.2:
@@ -454,7 +454,7 @@ func _pass_value(from: Player, to: Player) -> float:
 			open = minf(open, o.p.distance_to(at))
 	v += minf(open, 3.0) * 0.5
 	v -= _risk(from, to, at, kind) * 7.0
-	return v + rng().randf_range(-0.3, 0.3)
+	return v + (rng().randf_range(-0.3, 0.3) if noise else 0.0)
 
 
 func pass_kind(from: Player, to: Player) -> String:
@@ -573,6 +573,12 @@ func shot_pressure(shooter: Player) -> float:
 
 # ---------------------------------------------------------------- slips: the infringements real players make
 
+## How often the AI infringes, against the game's standard (Settings > Umpiring): fewer whistles, standard (about a
+## third of real elite matches' rate), or the real rate (50-58 penalties a team a match).
+func whistle_rate() -> float:
+	return [0.5, 1.0, 3.0][clampi(int(m.config.get("whistles", Game.settings.get("whistles", 1))), 0, 2)]
+
+
 ## Contact and obstruction by the defender on the ball, a footwork slip, a step offside: at rates scaled from real
 ## matches (docs/RULES.md "How the AI plays"). Your own player makes only the mistakes you make.
 func _slips(dt: float) -> void:
@@ -582,20 +588,20 @@ func _slips(dt: float) -> void:
 	var dm := marker_of(h)
 	if dm and dm != me and not dm.away() and dm.p.distance_to(h.landing) < 1.35:
 		var disc := clampf(float(dm.data.defend) / 99.0, 0.4, 1.0)
-		var lam := 0.075 * (1.45 - disc)
+		var lam := 0.075 * (1.45 - disc) * whistle_rate()
 		if rng().randf() < lam * dt:
 			if rng().randf() < 0.55:
 				m._infringe("contact", dm, dm.p)
 			else:
 				m._infringe("obstruction", dm, dm.p)
 			return
-	if h != me and rng().randf() < 0.006 * dt:
+	if h != me and rng().randf() < 0.006 * dt * whistle_rate():
 		h.landing += Vector2(0.05, 0)
 		m.footwork.drag("l" if m.footwork.landing != "r" else "r")
 		if m.footwork.fault == "":
 			m.footwork.fault = "footwork"
 		return
-	if rng().randf() < 0.0035 * dt:
+	if rng().randf() < 0.0035 * dt * whistle_rate():
 		var t := rng().randi_range(0, 1)
 		var pl: Player = m.players[t][rng().randi_range(0, 6)]
 		if pl != me and pl != h and not pl.away():
@@ -604,18 +610,29 @@ func _slips(dt: float) -> void:
 
 # ---------------------------------------------------------------- you
 
+## Whom your PASS goes to. With the stick pushed: the team-mate in that direction (within about 50 degrees), the
+## safest of them if there are several; with the stick at rest, the best pass on, as the AI would choose it. No
+## randomness, so the ring showing who it is stays put; it changes only when it should, and holds for a moment.
 func _pick_user_target(pl: Player) -> Player:
 	var best: Player = null
 	var bv := -INF
+	var aim := user_aim.length() > 0.2
 	for o in m.players[pl.team]:
 		if o == pl or o.away():
 			continue
-		var v: float
-		if user_aim.length() > 0.2:
+		var v := _pass_value(pl, o, false)
+		# You may throw the moment it is shown, before the AI would judge it open: a pass a defender can reach counts
+		# against it more than it does for the AI.
+		v -= _risk(pl, o, catch_point(o, pass_kind(pl, o)), pass_kind(pl, o)) * 4.0
+		if aim:
 			var d: Vector2 = (o.p - pl.p)
-			v = user_aim.normalized().dot(d.normalized()) * 10.0 - d.length() * 0.15
-		else:
-			v = _pass_value(pl, o)
+			var c := user_aim.normalized().dot(d.normalized())
+			if c < 0.64:
+				v = -1000.0 + c * 10.0   # out of the cone: only if no one is in it
+			else:
+				v = c * 6.0 + clampf(v, -6.0, 6.0)
+		if o == _user_target and v > 0.0:
+			v += 0.8   # keep the one already shown unless another is clearly better
 		if v > bv:
 			bv = v
 			best = o

@@ -39,6 +39,13 @@ func _ready() -> void:
 		Game.settings.control = i
 		Game.save_settings())))
 	game[1].add_child(UI.wrap(tr("PLAY_AS_NOTE"), "MutedLabel", 16))
+	var wnotes := ["UMP_FEWER_NOTE", "UMP_STANDARD_NOTE", "UMP_REAL_NOTE"]
+	var wnote := UI.wrap(tr(wnotes[int(Game.settings.whistles)]), "MutedLabel", 16)
+	game[1].add_child(UI.field(tr("UMPIRING"), UI.chips([tr("UMP_FEWER"), tr("UMP_STANDARD"), tr("UMP_REAL")], int(Game.settings.whistles), func(i):
+		Game.settings.whistles = i
+		Game.save_settings()
+		wnote.text = tr(wnotes[i]))))
+	game[1].add_child(wnote)
 	game[1].add_child(UI.field(tr("KEEP_ONSIDE"), UI.chips_row([tr("ON"), tr("OFF")], 0 if Game.settings.onside else 1, func(i):
 		Game.settings.onside = i == 0
 		Game.save_settings())))

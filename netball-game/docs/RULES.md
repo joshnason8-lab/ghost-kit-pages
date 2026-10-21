@@ -13,16 +13,19 @@ Netball opened a minor rules review in May 2026, to go to its Congress before th
   https://netball.sport/wp-content/uploads/2024/02/World-Netball-Congress-Approves-Changes-to-the-International-Rules-of-Netball.pdf
 - The minor review: https://netball.sport/world-netball-launches-minor-rules-review/
 
-**Rule numbers.** These were confirmed for the 2024 book by national bodies' summaries: R3 Team, R4 Match officials,
-R6 Sanctions and actions, R7 Advantage, R8 Centre pass, R9 Scoring a goal, R10 Stoppages, R12 Short pass,
-R13 Obstruction, R16 Contact. The others below are named by their subject; the research could not open the PDF itself
-(the build machine's network blocked it), so a reader with the book should add the remaining numbers.
+**Rule numbers** (the 2024 book's contents, re-checked in round two against quotes of the official PDF and national
+bodies' papers): R1 Technical specifications (court and equipment), R2 Time, R3 Team, R4 Match officials, R5 Technical
+and event officials, R6 Sanctions and actions, R7 Advantage, R8 Centre pass, R9 Scoring a goal, R10 Stoppages, R11
+Playing the ball (held ball), R12 Passing distances (short pass, over a third), R13 Footwork, R14 Offside, R15 Out of
+court, R16 Obstruction, R17 Contact, R18 Game management, R19 Foul play. (The first build had obstruction as R13 and
+contact as R16: corrected.) The PDF itself could still not be opened from the build machine (403 from the network
+policy for netball.sport and netball.com.au, in round one and again in round two); what is not confirmed is marked so.
 
 The rules live in `game/rules.gd` (pure functions) and `game/court.gd` (the court). The match (`game/match.gd`) calls
 them; `tests/test_runner.gd` checks each one (`_rules`, `_footwork`) and sees them work in real play
 (`_rules_in_play`, `_matches`). Each section says which test covers it.
 
-## The court and equipment
+## The court and equipment (R1)
 
 | Rule | Value | In the game |
 |---|---|---|
@@ -65,18 +68,22 @@ third, 4 the rest of the defending third, 5 the defending circle):
 - Test: `_rules` ("GS may enter area 1" ... "GK is offside in area 3"), 35 checks.
 - Source: https://israelnetball.org.il/en/what-s-netball.html (the numbering), the rulebook.
 
-## Offside
+## Offside (R14)
 
 A player who enters an area her position may not, with or without the ball, is offside: a free pass to the other
-team where it happened. Landing is what counts (in the air above an area is not offside). A foot on a line is in the
-area the line bounds, so a GS with a toe on the transverse line is in the centre third.
+team where it happened. Landing is what counts (in the air above an area is not offside). A line between two areas
+belongs to both, and since 2024 **a player touching the line of her own area, without going over it, is not
+offside** ("on the line is fine", England Netball's 2024 update: "A player is not offside, if any part of their body
+is in contact with, but not over, the line"). The first build read it the old way (a toe on the line offside):
+corrected in round two.
 
 - In the game: `Rules.offside` on the player's foot each frame; called when she **steps** into the area
   (`Match._check_offside`). The AI's players keep to their areas: they pull up at a line as a player does
   (`Player._room_along`, the "fence"). Your player does too while **Keep me onside** is on (Settings); with it off,
   step over a line and the umpire calls it. A few AI mistakes are made on purpose (`TeamAI._slips`).
 - Two players of opposite teams offside together: a simultaneous infringement (below).
-- Tests: `_rules` ("GS on the transverse line: offside", "WA on the circle's line: offside" ...); `_rules_in_play`
+- Tests: `_rules` ("GS on the transverse line: onside (on the line is fine)", "GS over the transverse line, in the
+  centre third: offside", "WA inside the circle: offside" ...); `_rules_in_play`
   ("offside called, a free pass to the other side").
 
 ## The centre pass (R8)
@@ -96,7 +103,7 @@ area the line bounds, so a GS with a toe on the transverse line is in the centre
 - Tests: `_rules` (alternation, line-up, breaking, the catch); `_rules_in_play` ("centre passes alternate after each
   goal").
 
-## Playing the ball, footwork and the three seconds
+## Playing the ball (R11), passing distances (R12) and footwork (R13)
 
 - **Three seconds**: a player with the ball must pass or shoot within three seconds: "held ball", a free pass.
   `Rules.held_ball`; the HUD shows the three seconds running out round the ball. Test: `_rules_in_play` ("held ball
@@ -106,10 +113,10 @@ area the line bounds, so a GS with a toe on the transverse line is in the centre
   landing foot. No dragging or sliding the landing foot, no hopping, no jumping from both feet and landing on both
   with the ball: a free pass. `Rules.Footwork` (a small state machine). In play, the player with the ball cannot run
   (your stick turns her); the AI's footwork faults come at a real rate (`_slips`). Test: `_footwork`.
-- **Short pass (R12)**: there must be room for an opponent to deflect or intercept between the thrower's and the
+- **Short pass (R12, passing distances)**: there must be room for an opponent to deflect or intercept between the thrower's and the
   catcher's hands (the 2024 wording; before 2024, "room for a third player"). `Rules.short_pass` (0.9 m). Test:
   `_rules`.
-- **Over a third**: the ball may not cross a whole third without being caught or touched by a player in it: a free
+- **Over a third (R12; 12.3 or 12.4, the two sources differ)**: the ball may not cross a whole third without being caught or touched by a player in it: a free
   pass where it crossed the second line. `Rules.over_third`; the AI never tries it; your pass can. Test: `_rules`.
 - **Replayed ball**: she may not catch her own throw before another player (or the goal post) has touched it.
   `Rules.replayed_ball`. *Simplified:* the game's passes always go to a team-mate, so it cannot happen in play; the
@@ -117,7 +124,7 @@ area the line bounds, so a GS with a toe on the transverse line is in the centre
 - Not in the game because the game's players never do them: striking with a fist, kicking, rolling the ball to a
   team-mate, falling with it, throwing from the ground, using the post for support.
 
-## Obstruction (R13) and contact (R16)
+## Obstruction (R16) and contact (R17)
 
 - **Obstruction**: a defender trying to intercept, deflect or defend the player with the ball must have at least
   0.9 m on the ground between her nearer foot and the attacker's landing foot. Closer without defending is fine; she
@@ -144,8 +151,9 @@ area the line bounds, so a GS with a toe on the transverse line is in the centre
 - **Penalty pass or shot**: a penalty in the goal circle the fouled team attacks, taken by its GS or GA, may be a
   pass or a shot. `award` sets `shot`. Test: `_rules`.
 - **Simultaneous infringement (2024: no more toss-up)**: when players of both teams infringe together, the team last
-  in possession keeps the ball, where it was. `Rules.simultaneous`. The toss-up is not in the game because the 2024
-  rules removed it. Test: `_rules`. Source: https://netballhamilton.org.nz/media/1731/toss-up-removal-pdf.pdf
+  in possession keeps the ball, where it was; in the goal circle that team attacks, its GS or GA may shoot.
+  `Rules.simultaneous`. The toss-up is not in the game because the 2024 rules removed it. *Simplified:* the game's
+  players never infringe at the same instant, so the rule is in the module and tested but not met in play. Test: `_rules`. Source: https://netballhamilton.org.nz/media/1731/toss-up-removal-pdf.pdf
 - **Out of court and the throw-in**: the ball is out when it touches the ground (or anything) outside the court; the
   team that did not touch it last throws it in from where it crossed the line, standing outside with a foot within
   15 cm of the line, within three seconds. Since 2024 she need not wait for players to be back on court.
@@ -168,12 +176,13 @@ one. 2024: a shot that has left the shooter's hands before the whistle ending a 
   ...); `_matches` ("only GS and GA score").
 - Source: https://netball.sport/wp-content/uploads/2024/01/Goal-After-Whistle-PDF.pdf
 
-## Time, intervals, extra time (and R10 stoppages)
+## Time (R2), intervals, extra time, and stoppages (R10)
 
 - Four quarters of **15 minutes**; intervals of **4 minutes** after the first and third quarters and **12 minutes** at
   half-time (8 if both teams and the organiser agree). The teams change ends every quarter.
 - When a match needs a winner and is level: **extra time of two halves of not more than 7 minutes**, with **1
-  minute** between them (the teams change ends), then **play goes on until one team leads by two goals**.
+  minute** between them (the teams change ends), then **play goes on until one team leads by two goals**. A **4-minute interval** comes between full time and extra
+  time (confirmed in round two).
 - Time is held only for stoppages (R10): injury or illness (the player off within **30 seconds**), blood (a bleeding
   player must leave; dry blood no longer has to, 2024), an emergency, foul play.
 - In the game: `Rules.period_length`, `interval_after`, `ends_for_quarter`, `next_period`, `match_over`. The clock

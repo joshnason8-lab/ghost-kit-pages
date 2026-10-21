@@ -49,7 +49,8 @@ func _text(bb: String, big := false) -> RichTextLabel:
 	rt.bbcode_enabled = true
 	rt.fit_content = true
 	rt.scroll_active = false
-	rt.threaded = big
+	# (Not in headless runs: freeing a threaded label mid-layout, as the screen tests do, can crash the engine.)
+	rt.threaded = big and DisplayServer.get_name() != "headless"
 	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# A drag that starts on the words must reach the scroll box: the text takes no input.

@@ -157,6 +157,14 @@ func _pick_bib(pos: String) -> void:
 	_bib_note.text = _bib_text()
 
 
+## Back (the phone's button, or Esc): closes the language picker if it is open, else leaves the game.
+func on_back() -> void:
+	if _picker and is_instance_valid(_picker):
+		_picker.close()
+		return
+	get_tree().quit()
+
+
 func _go(path: String) -> void:
 	Game.show_screen(path)
 

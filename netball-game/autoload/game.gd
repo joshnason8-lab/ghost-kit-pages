@@ -102,6 +102,7 @@ var settings := {
 	"rolling": false,       # rolling substitutions
 	"timeouts": false,      # team time-outs
 	"tags": 0,              # the bibs' letters over players' heads: 0 on, 2 off
+	"whistles": 1,          # how often the AI infringes: 0 fewer whistles, 1 standard, 2 the real rate
 	"seen_howto": false,
 	"dev": false,
 	"last_home": "ENG",
@@ -121,10 +122,12 @@ var cup = null     # Cup (RefCounted), loaded lazily
 var _latin: FontFile
 var _fallbacks: Array[Font] = []
 var records := {}
+var test_quarter_s := 0.0   # a playtest's short quarters (?qs= in a browser); 0 in the game
 
 
 func _ready() -> void:
 	load_settings()
+	_web_options()
 	if int(settings.graphics) < 0:
 		settings.graphics = detect_graphics()
 		save_settings()
@@ -146,6 +149,13 @@ func _notification(what: int) -> void:
 				current.set_paused(true)
 
 
+## Esc on a keyboard (a computer, a browser, a phone with a keyboard) is the phone's Back button.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		go_back()
+
+
 ## Back: pause or resume a match, leave a screen the way its Back button does, and quit from the home screen.
 func go_back() -> void:
 	if current == null or not is_instance_valid(current):
@@ -163,6 +173,29 @@ func go_back() -> void:
 ## The graphics level for this phone on its first run: Low on a phone with a small GPU or under about 4.5 GB of
 ## memory (a Galaxy A0x/A1x's Mali-G52 or G57, Adreno 5xx and 6xx below 640, PowerVR), Medium on the rest; High is a
 ## choice.
+## In a browser, the page's address can set things for a test or a demo: ?gfx=low|medium|high, ?lang=xx, ?fresh
+## (forget the saved settings: a first run).
+func _web_options() -> void:
+	if not OS.has_feature("web"):
+		return
+	var q := String(JavaScriptBridge.eval("window.location.search", true))
+	if q.contains("fresh"):
+		for k in ["seen_howto", "coached"]:
+			if settings.has(k):
+				settings[k] = false
+	for pair in q.trim_prefix("?").split("&", false):
+		var kv := pair.split("=")
+		if kv.size() != 2:
+			continue
+		match kv[0]:
+			"gfx":
+				settings.graphics = ["low", "medium", "high"].find(kv[1])
+			"lang":
+				settings.language = kv[1]
+			"qs":
+				test_quarter_s = float(kv[1])   # a playtest: quarters this many seconds long
+
+
 func detect_graphics() -> int:
 	if not OS.has_feature("mobile"):
 		return GFX_HIGH
@@ -206,7 +239,7 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "control", "quarter", "tags"]:
+	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "control", "quarter", "tags", "whistles"]:
 		settings[k] = int(settings[k])
 	if not (settings.btn_places is Dictionary):
 		settings.btn_places = {}
@@ -319,6 +352,8 @@ func goto_menu() -> void:
 ## user_team (0, 1 or -1 for none), control, bib, stage (a line naming the match: "Semi-final"), need_winner (a
 ## knockout: extra time if drawn), double_zone, rolling, timeouts (bools).
 func start_match(config: Dictionary) -> void:
+	if test_quarter_s > 0.0:
+		config.quarter_s = test_quarter_s
 	var s: Script = load("res://game/match.gd")
 	var m: Node = s.new()
 	m.config = config

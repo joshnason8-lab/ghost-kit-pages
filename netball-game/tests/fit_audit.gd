@@ -144,6 +144,7 @@ func audit(at: String) -> void:
 		if scroll == null and not vp.grow(1.0).encloses(ink):
 			_report("offscreen", c, text, ink.end.x if ink.end.x > vp.end.x else ink.end.y, vp.end.x if ink.end.x > vp.end.x else vp.end.y)
 		_check_clip(c, text, ink)
+		_check_box(c, text, seen_ink if seen_ink.size.x > 0.0 else ink)
 	# Text over text: two pieces of text, neither inside the other, drawn over each other and not hidden under a panel.
 	for i in inks.size():
 		var p: Dictionary = inks[i]
@@ -380,6 +381,20 @@ func _check_chars(c: Control, text: String, font: Font) -> void:
 		for i in missing.length():
 			codes.append("U+%04X" % missing.unicode_at(i))
 		_report("no_glyph", c, text, 0, 0, " ".join(codes))
+
+
+## Text that runs out of the card or button it sits in (a box that does not clip shows it spilling over the next one).
+func _check_box(c: Control, text: String, ink: Rect2) -> void:
+	var x := c.get_parent()
+	while x and not (x is CanvasLayer) and x != get_tree().root:
+		if x is ScrollContainer:
+			return
+		if x is Button or x is PanelContainer:
+			var r: Rect2 = (x as Control).get_global_rect().grow(2.0)
+			if not r.encloses(ink):
+				_report("outside_box", c, text, ink.end.x, r.end.x, _short_path(x))
+			return
+		x = x.get_parent()
 
 
 ## Text outside a box that clips what is in it (a scrolling list may run on down or across, as it scrolls).

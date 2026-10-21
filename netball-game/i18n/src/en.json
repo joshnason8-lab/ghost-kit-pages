@@ -299,5 +299,15 @@
   "INJURY_NOTE": "A {team} player is hurt. The team has 30 seconds to help her off; both teams may make changes. Continue when you are ready.",
   "CALL_WARNING": "Warning",
   "CALL_SUSPENSION": "Suspended: 2 minutes",
-  "SANCTION_LINE": "{pos} · {team}"
+  "SANCTION_LINE": "{pos} · {team}",
+  "CALL_ESCALATE": "Escalated: penalty pass",
+  "CALL_ADVANCE": "Pass advanced",
+  "CALL_ORDERED_OFF": "Ordered off",
+  "UMPIRING": "Umpiring",
+  "UMP_FEWER": "Fewer whistles",
+  "UMP_STANDARD": "Standard",
+  "UMP_REAL": "Real rate",
+  "UMP_FEWER_NOTE": "The other players give away half the standard number of penalties.",
+  "UMP_STANDARD_NOTE": "About a third of the penalties an elite match has, so play flows.",
+  "UMP_REAL_NOTE": "As many penalties as an elite match: some 50 a team in 60 minutes."
 }

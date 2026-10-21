@@ -216,6 +216,10 @@ func _process(delta: float) -> void:
 		u.follow(ball.court_pos())
 		u.advance(dt, ball.court_pos())
 	ball.step(dt)
+	if Game.test_quarter_s > 0.0 and OS.has_feature("web") and Engine.get_process_frames() % 15 == 0:
+		# A browser playtest reads the match's state from the page (tools/playtest/play.js).
+		JavaScriptBridge.eval("window.cpn = %s" % JSON.stringify({"phase": phase, "q": q, "score": score, "me": me.pos if me else "",
+			"buttons": button_set(), "holder": holder.pos if holder else "", "mine": holder != null and holder.team == user_team}))
 	var att := team_dir(possession) if possession >= 0 else 0
 	cam.end_dir = team_dir(maxi(user_team, 0))
 	cam.track(ball.court_pos(), att, dt)
@@ -234,6 +238,18 @@ func _tick_clock(dt: float) -> void:
 		for pl in players[t]:
 			if pl.suspended > 0.0:
 				pl.suspended -= dt
+				if pl.suspended <= 0.0 and pl.ordered_off:
+					# Four minutes on: a replacement may come on (if the bench has one); else the place stays empty.
+					if substitute(pl):
+						pl.ordered_off = false
+						pl.suspensions = 0
+						pl.warned = false
+						pl.pens = 0
+						pl.suspended = 0.0
+						game_event.emit("replacement", {"team": t, "by": pl.pos})
+					else:
+						pl.suspended = 9999.0
+					continue
 				if pl.suspended <= 0.0:
 					pl.suspended = 0.0
 					pl.fenced = pl != me or bool(Game.settings.onside)
@@ -686,6 +702,16 @@ func _infringe(kind: String, by: Player, at: Vector2) -> void:
 	var a := Rules.award(kind, by.team, at, taker_pos, team_dir(other))
 	if Rules.INFRINGEMENTS.get(kind, "") == Rules.THROW_IN:
 		a = Rules.throw_in(by.team, at)
+	elif by.warned and String(a.kind) == Rules.FREE and kind in ["held_ball", "footwork", "offside", "breaking"]:
+		# A warned player infringing again: the umpire escalates the free pass to a penalty pass (R18).
+		a = Rules.escalate(a, team_dir(other))
+		game_event.emit("escalate", {"team": by.team, "by": by.pos})
+	elif by.warned and String(a.kind) == Rules.PENALTY:
+		# ... or advances the penalty pass up to half a third (R18).
+		a.at = Rules.advance(a.at, team_dir(other))
+		a.shot = bool(a.shot) or Court.in_circle(a.at, team_dir(other))
+		a.advanced = true
+		game_event.emit("advance", {"team": by.team, "by": by.pos})
 	stats[String(by.data.id)].penalties += 1
 	if by.team == user_team and by == me and not demo:
 		Game.haptic("penalty")
@@ -693,7 +719,7 @@ func _infringe(kind: String, by: Player, at: Vector2) -> void:
 	_sanction(by, kind)
 
 
-## Game management (R6, 2024): proactive advice, then a warning for a player who keeps infringing, then a suspension
+## Game management (R18, 2024): proactive advice, then a warning for a player who keeps infringing, then a suspension
 ## of two minutes of playing time (her team plays a player short), and ordering off for the worst. The game's
 ## umpires warn a player at her fourth penalty since her last sanction and suspend her at the third after a warning.
 const WARN_AT := 4
@@ -717,6 +743,10 @@ func _sanction(pl: Player, kind: String) -> void:
 ## Suspends a player for two minutes of playing time: she goes to her bench, and no one stands out of play for the
 ## penalty (2024).
 func suspend(pl: Player) -> void:
+	pl.suspensions += 1
+	if pl.suspensions >= Rules.SUSPENSIONS_TO_ORDER_OFF:
+		order_off(pl)
+		return
 	pl.suspended = Rules.SUSPENSION
 	pl.out_until = 0.0
 	if restart.get("out") == pl:
@@ -729,6 +759,24 @@ func suspend(pl: Player) -> void:
 			_set_me(n)
 	game_event.emit("suspension", {"team": pl.team, "by": pl.pos})
 	log.append({"t": _elapsed(), "q": q, "suspension": pl.pos, "team": pl.team})
+
+
+## Ordering off (R18): she takes no further part. Her team plays a player short, and may bring on a replacement after
+## four minutes of playing time (2024): the game does so if the bench has a player for the position.
+func order_off(pl: Player) -> void:
+	pl.ordered_off = true
+	pl.suspended = Rules.ORDERED_OFF_REPLACE
+	pl.out_until = 0.0
+	if restart.get("out") == pl:
+		restart.erase("out")
+	if _stop_award.get("by") == pl:
+		_stop_award.by = null
+	if me == pl:
+		var n := ai.nearest_defender(pl.team, pl)
+		if n:
+			_set_me(n)
+	game_event.emit("ordered_off", {"team": pl.team, "by": pl.pos})
+	log.append({"t": _elapsed(), "q": q, "ordered_off": pl.pos, "team": pl.team})
 
 
 ## Stops play for an award: the whistle, the call and the signal, then (in "stop") the restart is set up.

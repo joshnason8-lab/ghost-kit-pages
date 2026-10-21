@@ -27,7 +27,8 @@ const HOLD_LIMIT := 3.0              # seconds a player may hold the ball (held 
 const SHORT_PASS_MIN := 0.9          # metres between thrower and catcher: room for an opponent to intercept
 const OUT_OF_PLAY_GAP := 0.9         # the penalised player stands beside the thrower, away from her
 
-## Free passes and penalty passes (R6, R12, R13, R16 and the rules on playing the ball, offside and out of court): what each infringement gives the other team.
+## Free passes and penalty passes (R6): what each infringement gives the other team (R11 playing the ball, R12 passing
+## distances, R13 footwork, R14 offside, R15 out of court, R16 obstruction, R17 contact).
 const FREE := "free_pass"
 const PENALTY := "penalty_pass"
 const THROW_IN := "throw_in"
@@ -48,7 +49,7 @@ const INFRINGEMENTS := {
 	"intimidation": PENALTY,
 }
 
-## Timing ("Duration of the match"): four quarters of 15 minutes; four minutes after the first and third, twelve
+## Time (R2): four quarters of 15 minutes; four minutes after the first and third, twelve
 ## at half-time (eight if both teams and the organiser agree). Extra time when a winner is needed: two halves of not
 ## more than seven minutes with one minute between them, then on until one team leads by two.
 const QUARTER_MIN := 15.0
@@ -58,9 +59,10 @@ const ET_HALF_MIN := 7.0
 const ET_BREAK_MIN := 1.0
 const ET_LEAD := 2
 
-## Stoppages and sanctions (R6, R10).
+## Stoppages and game management (R10, R18).
 const INJURY_STOP := 30.0                # seconds to get an injured or bleeding player off
-const SUSPENSION := 120.0                # seconds of playing time
+const SUSPENSION := 120.0
+const SUSPENSIONS_TO_ORDER_OFF := 2      # the game's umpires order off a player suspended a second time                # seconds of playing time
 const ORDERED_OFF_REPLACE := 240.0       # seconds of playing time before the team may replace her
 const MIN_PLAYERS := 5
 
@@ -78,16 +80,19 @@ static func may_enter(pos: String, area: String) -> bool:
 	return area in AREAS.get(pos, [])
 
 
-## Offside: a player is offside when she touches the ground in an area her position may not go into, with or
-## without the ball. A foot on a line is in each area the line bounds, so a GS with a toe on the transverse line is in
-## the centre third, and offside. In the air above an area is not offside: callers test where a foot lands.
+## Offside (R14): a player is offside when she touches the ground in an area her position may not go into, with or
+## without the ball. A line between two areas belongs to both, and since 2024 a player touching the line of her own
+## area, without going over it, is not offside ("on the line is fine"): so a GS with a toe on the transverse line is
+## onside; a foot beyond it, in the centre third, is offside. In the air above an area is not offside: callers test
+## where a foot lands.
 static func offside(pos: String, foot: Vector2, dir: int) -> bool:
-	for a in Court.areas_at(foot, dir):
-		if a == Court.A_OUT:
-			continue   # off the court (fetching the ball, a throw-in): not an area of the court
-		if not may_enter(pos, a):
-			return true
-	return false
+	var areas := Court.areas_at(foot, dir)
+	if areas.has(Court.A_OUT):
+		return false   # off the court (fetching the ball, a throw-in): not an area of the court
+	for a in areas:
+		if may_enter(pos, a):
+			return false   # in one of her areas, or on its line
+	return true
 
 
 ## The nearest point to p that pos may stand on, margin metres inside her areas (for the AI and Keep me onside).
@@ -151,7 +156,7 @@ static func centre_pass_ok(pos: String, landing_foot: Vector2) -> bool:
 	return absf(landing_foot.x) < Court.THIRD_X - Court.LINE_W * 0.5
 
 
-# ---------------------------------------------------------------- playing the ball (and R12, short pass)
+# ---------------------------------------------------------------- playing the ball (R11), passing distances (R12), footwork (R13)
 
 ## Held ball: more than three seconds.
 static func held_ball(held_for: float) -> bool:
@@ -175,7 +180,7 @@ static func replayed_ball(thrower: int, catcher: int, touched_since: bool) -> bo
 	return thrower == catcher and not touched_since
 
 
-## Footwork (playing the ball): the landing foot, and what the other may do. A player who lands on one foot may step with the other
+## Footwork (R13): the landing foot, and what the other may do. A player who lands on one foot may step with the other
 ## and pivot on the landing foot as often as she likes; once she lifts the landing foot she must pass or shoot before
 ## it is grounded again. Landing on both feet, she chooses which is her landing foot. She may not drag or slide the
 ## landing foot, hop on either foot, or jump from both feet and land on both before she releases the ball.
@@ -220,7 +225,7 @@ class Footwork:
 		fault = "footwork"
 
 
-# ---------------------------------------------------------------- obstruction and contact (R13, R16)
+# ---------------------------------------------------------------- obstruction (R16) and contact (R17)
 
 ## Obstruction of the player with the ball: a defender trying to intercept or defend her must have at least 0.9 m
 ## on the ground between her nearer foot and the attacker's landing foot. Standing closer without defending is not
@@ -252,6 +257,25 @@ static func may_shoot(pos: String, foot: Vector2, dir: int, from_free_pass := fa
 	return Court.in_circle(foot, dir)
 
 
+## Advance (R18, game management): an umpire may move a free or penalty pass up to half a third toward the goal the
+## team taking it attacks (into the goal circle if the infringement was in that goal third). dir: the end it attacks.
+static func advance(at: Vector2, dir: int) -> Vector2:
+	var in_goal_third := at.x * dir > Court.THIRD_X
+	var to := at + Vector2(Court.THIRD * 0.5 * dir, 0.0)
+	var lim := Court.HALF_L - 0.3 if in_goal_third else Court.HALF_L - Court.CIRCLE_R - 0.3
+	to.x = clampf(to.x * dir, -Court.HALF_L, lim) * dir
+	return to
+
+
+## Escalate (R18): a free pass may be raised to a penalty pass (in the goal circle it attacks, a penalty pass or shot).
+static func escalate(a: Dictionary, dir: int) -> Dictionary:
+	var b := a.duplicate()
+	b.kind = PENALTY
+	b.shot = Court.in_circle(a.at, dir)
+	b.escalated = true
+	return b
+
+
 ## A goal's worth: 1 under the World Netball rules; with the Double Zone variant, 2 from 3.0 m or more from the post in
 ## the last five minutes of a quarter (and in extra time's last five).
 static func goal_value(foot: Vector2, dir: int, double_zone: bool, time_left: float) -> int:
@@ -277,9 +301,11 @@ static func award(kind: String, by: int, at: Vector2, taker_pos: String, taker_d
 
 
 ## Two players of opposite teams infringe at once (2024: no more toss-up): the team last in possession keeps the
-## ball, where it was when play stopped.
-static func simultaneous(last_possession: int, at: Vector2) -> Dictionary:
-	return {"to": last_possession, "kind": FREE, "at": at, "shot": false, "why": "simultaneous"}
+## ball, where it was when play stopped; in the goal circle it attacks, its GS or GA may shoot (dir: the end that team
+## attacks).
+static func simultaneous(last_possession: int, at: Vector2, dir := 0) -> Dictionary:
+	var shot := dir != 0 and Court.in_circle(at, dir)
+	return {"to": last_possession, "kind": FREE, "at": at, "shot": shot, "why": "simultaneous"}
 
 
 ## The ball out of court: a throw-in to the team that did not last touch it, from where it crossed the line. The
@@ -323,8 +349,7 @@ static func ends_for_quarter(t: int, q: int, first_dir: int) -> int:
 
 
 ## The interval after period q, in minutes: four after the first and third quarters, twelve at half-time (eight by
-## agreement), one between the halves of extra time. The rules set no break before extra time; the game uses a
-## quarter's interval there (q 4).
+## agreement), one between the halves of extra time, and four between full time and extra time (q 4).
 static func interval_after(q: int, short_half := false) -> float:
 	match q:
 		1, 3:

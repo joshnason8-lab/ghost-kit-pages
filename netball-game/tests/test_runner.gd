@@ -73,7 +73,7 @@ func _rules() -> void:
 	check(is_equal_approx(Court.RING_H, 3.05) and is_equal_approx(Court.RING_R * 2.0, 0.38), "ring 3.05 m up, 380 mm across")
 	check(Court.in_circle(Vector2(Court.HALF_L - 4.85, 0), 1) and not Court.in_circle(Vector2(Court.HALF_L - 5.0, 0), 1), "the circle's edge at 4.9 m")
 	check(Court.in_circle(Vector2(Court.HALF_L - 3.0, 3.8), 1), "inside the circle, off to the side")
-	# Positions and areas (R3, and offside): each position's areas, and offside for a step outside them.
+	# Positions and areas (R3, R14): each position's areas, and offside for a step outside them.
 	var d := 1
 	var att_circle := Vector2(Court.HALF_L - 2.0, 0)
 	var att_third := Vector2(Court.HALF_L - 7.0, 6.0)
@@ -87,11 +87,13 @@ func _rules() -> void:
 		for i in 5:
 			var ok := not Rules.offside(pos, spots[i], d)
 			check(ok == (want[pos][i] == 1), "%s %s area %d" % [pos, "may enter" if want[pos][i] == 1 else "is offside in", 5 - i])
-	# The lines belong to the areas they bound: a GS on the transverse line is in the centre third.
-	check(Rules.offside("GS", Vector2(Court.THIRD_X, 0), d), "GS on the transverse line: offside")
+	# On the line is fine (R14, 2024): a player touching her own area's line, not over it, is onside.
+	check(not Rules.offside("GS", Vector2(Court.THIRD_X, 0), d), "GS on the transverse line: onside (on the line is fine)")
+	check(Rules.offside("GS", Vector2(Court.THIRD_X - 0.1, 0), d), "GS over the transverse line, in the centre third: offside")
 	check(not Rules.offside("GA", Vector2(Court.THIRD_X, 0), d), "GA on the transverse line: fine")
-	check(Rules.offside("WA", Vector2(Court.HALF_L - Court.CIRCLE_R, 0), d), "WA on the circle's line: offside")
-	check(not Rules.offside("GK", Vector2(-Court.THIRD_X - 0.2, 0), d) and Rules.offside("GK", Vector2(-Court.THIRD_X + 0.1, 0), d), "GK up to her transverse line")
+	check(not Rules.offside("WA", Vector2(Court.HALF_L - Court.CIRCLE_R, 0), d), "WA on the circle's line: onside")
+	check(Rules.offside("WA", Vector2(Court.HALF_L - Court.CIRCLE_R + 0.15, 0), d), "WA inside the circle: offside")
+	check(not Rules.offside("GK", Vector2(-Court.THIRD_X, 0), d) and Rules.offside("GK", Vector2(-Court.THIRD_X + 0.1, 0), d), "GK up to her transverse line, not over it")
 	check(not Rules.offside("C", Vector2(Court.HALF_L + 0.5, 3), d), "off the court is not an area (a throw-in)")
 	# Every position kept onside by the AI's helper lands in her areas.
 	for pos in want:
@@ -149,6 +151,7 @@ func _rules() -> void:
 		check(Rules.INFRINGEMENTS[k] == Rules.PENALTY, "%s: penalty pass" % k)
 	var s := Rules.simultaneous(1, Vector2(2, 2))
 	check(s.to == 1, "simultaneous infringement (2024): the team last in possession keeps it, no toss-up")
+	check(Rules.simultaneous(0, Vector2(Court.HALF_L - 2.0, 0), 1).shot, "in its attacking circle, its GS or GA may shoot")
 	var ti := Rules.throw_in(0, Vector2(4.0, Court.HALF_W))
 	check(ti.to == 1 and ti.kind == Rules.THROW_IN, "out of court: a throw-in to the side that did not touch it last")
 	var spot := Rules.throw_in_spot(Vector2(4.0, Court.HALF_W))
@@ -169,6 +172,13 @@ func _rules() -> void:
 	check(Rules.next_period(6, [58, 58], true) == 7, "still level: play on")
 	check(not Rules.match_over(7, false, [59, 58], true) and Rules.match_over(7, false, [60, 58], true), "until a team leads by two")
 	check(Rules.enough_players(5) and not Rules.enough_players(4), "five players at least")
+	# Game management (R18): advance up to half a third, into the circle only from the goal third; escalate.
+	var adv := Rules.advance(Vector2(0.0, 2.0), 1)
+	check(is_equal_approx(adv.x, Court.THIRD * 0.5), "advance: half a third toward the goal attacked")
+	check(not Court.in_circle(Rules.advance(Vector2(Court.THIRD_X - 0.5, 0), 1), 1), "advanced from the centre third: not into the circle")
+	check(Court.in_circle(Rules.advance(Vector2(Court.HALF_L - 6.0, 0), 1), 1), "advanced within the goal third: may go into the circle")
+	var esc := Rules.escalate(Rules.award("held_ball", 1, Vector2(Court.HALF_L - 2.0, 0), "GS", 1), 1)
+	check(esc.kind == Rules.PENALTY and esc.shot, "escalate: a free pass in the circle becomes a penalty pass or shot")
 	check(is_equal_approx(Rules.SUSPENSION, 120.0) and is_equal_approx(Rules.INJURY_STOP, 30.0), "suspension 2 min, injury stoppage 30 s")
 	check(Rules.double_zone_live(299.0, 15.0) and not Rules.double_zone_live(301.0, 15.0), "the Double Zone's last five minutes")
 
@@ -415,13 +425,15 @@ func _controls() -> void:
 				passes[0] += 1
 			if k == "call" and info.kind == "held_ball" and int(info.to) == 1:
 				held[0] += 1)
-		for f in 1800:
+		for f in 2700:
 			await get_tree().process_frame
 			if mode != "play" or m.phase != "live":
 				continue
 			var ids: Array = m.button_set()
 			if f % 20 == 0 and m.me == m.holder:
-				if "SHOOT" in ids:
+				# A sensible thumb shoots from close, or when the three seconds are running out.
+				var close: bool = m.me.landing.distance_to(Court.goal_post(m.me.dir)) < 3.2
+				if "SHOOT" in ids and (close or m.hold_t > 1.6 or not "PASS" in ids):
 					m._on_action("SHOOT")
 				elif "PASS" in ids and m.hold_t > 0.5:
 					m._on_action("PASS")
@@ -489,6 +501,14 @@ func _sanctions_and_injury() -> void:
 	pl.suspended = 0.2
 	await frames(300)
 	check(pl.suspended == 0.0 and Court.on_court(pl.p) and not Rules.offside(pl.pos, pl.p, pl.dir), "she comes back on to her own area")
+	# Suspended a second time: ordered off; after four minutes of playing time a replacement may come on.
+	var was_id := String(pl.data.id)
+	for i in Match.SUSPEND_AT:
+		m._sanction(pl, "contact")
+	check(pl.ordered_off and is_equal_approx(pl.suspended, Rules.ORDERED_OFF_REPLACE), "suspended twice: ordered off, four minutes before a replacement")
+	pl.suspended = 0.05
+	await frames(10)
+	check(not pl.ordered_off and String(pl.data.id) != was_id, "after four minutes a replacement comes on from the bench")
 	# An injury stoppage.
 	guard = 0
 	while m.phase != "live" and guard < 600:

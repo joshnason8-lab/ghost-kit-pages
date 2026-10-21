@@ -12,6 +12,8 @@ func setup(args: Dictionary) -> void:
 
 func _ready() -> void:
 	UI.screen(self)
+	if Game.test_quarter_s > 0.0 and OS.has_feature("web"):
+		JavaScriptBridge.eval("window.cpn = {phase: 'result'}")
 	var cfg: Dictionary = result.get("config", {})
 	var cup: bool = String(cfg.get("mode", "quick")) == "cup"
 	var v := UI.page(self, _headline(), func(): Game.show_screen("res://ui/cup_screen.gd") if cup else Game.goto_menu(),

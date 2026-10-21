@@ -50,6 +50,8 @@ func _ready() -> void:
 	for pair in Game.LANGUAGES:
 		grid.add_child(_choice(pair[0], pair[1], pair[2] if pair[2] != pair[1] else "", cur == pair[0]))
 
+	# The card never runs off the screen: drawn smaller if it must (a short phone, a big font).
+	UI.keep_on_screen(_card)
 	modulate.a = 0.0
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 1.0, 0.15)
@@ -103,13 +105,31 @@ func _choice(code: String, title: String, sub: String, on: bool, wide := false) 
 		row.add_child(what)
 		tv.add_child(row)
 	else:
-		tv.add_child(UI.label(title, "SubLabel", 28))
+		# A long name ("Bahasa Melayu", "Lea Faka-Tonga") shrinks to fit its card, then ends in "…": never past it.
+		var t := UI.label(title, "SubLabel", 28)
+		t.custom_minimum_size = Vector2(1, 0)
+		t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UI.shrink(t, 28, 0.55)
+		t.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		tv.add_child(t)
 		if sub != "":
-			tv.add_child(UI.label(sub, "MutedLabel", 16))
+			var st := UI.label(sub, "MutedLabel", 16)
+			st.custom_minimum_size = Vector2(1, 0)
+			st.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			tv.add_child(st)
 	if on:
-		var ck := Icon.make("check", 26, Game.C_ACCENT)
-		ck.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		h.add_child(ck)
+		# The tick in the card's corner, not beside the name (it would take the name's room).
+		var ck := Icon.make("check", 22, Game.C_ACCENT)
+		if wide:
+			ck.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			h.add_child(ck)
+		else:
+			ck.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+			ck.offset_left = -30
+			ck.offset_right = -8
+			ck.offset_top = 6
+			ck.offset_bottom = 28
+			b.add_child(ck)
 	b.pressed.connect(func():
 		Sfx.click()
 		Game.set_language(code)

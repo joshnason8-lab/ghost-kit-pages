@@ -56,7 +56,7 @@ static func in_circle(p: Vector2, dir: int) -> bool:
 
 
 ## Which area p is in, for a team attacking dir. The transverse lines and the circle's line belong to the area they
-## enclose, so standing on a third line is standing in both thirds (Rules.offside reads it that way): this returns the
+## enclose, so standing on a third line is standing in both thirds (Rules.offside: on the line is fine): this returns the
 ## areas a foot there touches.
 static func areas_at(p: Vector2, dir: int) -> Array:
 	if not on_court(p):
