@@ -35,6 +35,11 @@ func _ready() -> void:
 			await get_tree().process_frame
 			frames += 1
 		var s: Array = m.score
+		var fat := []
+		for pl in m.all_players():
+			fat.append(snappedf((pl as Player).fatigue, 0.01))
+		fat.sort()
+		print("   fatigue at the end: median %.2f, most %.2f; subs %d and %d" % [fat[fat.size() / 2], fat[-1], m.teams[0].subs, m.teams[1].subs])
 		print("%s %s v %s %s  (%.1f real min, %.1f live, phase %d)" % [home, Rules.fmt(s[0][0], s[0][1]), Rules.fmt(s[1][0], s[1][1]), away, frames / 1800.0, m.live_real / 60.0, m.phase])
 		for k in 2:
 			var t: Dictionary = m.tstats[k]

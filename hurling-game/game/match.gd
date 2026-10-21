@@ -52,6 +52,8 @@ var _dead_clock0 := 0.0      # the clock when this stoppage began
 var _live_w := 0.0           # match seconds of the watch this half with the ball live
 var _dead_w := 0.0           # and with it dead
 var live_real := 0.0         # real seconds the ball has been live this match (tests/score_check)
+var _subs_due: Array = []    # substitutions asked for, made at the next break: [{off: Player, pd: Dictionary}]
+var _leaving: Array = []     # the men substituted, walking off
 var coach: Coach = null      # the coach's tips, in your first match (Settings > Coach's tips)
 ## What a stoppage costs on the watch in a real match, in seconds: the ball is in play only about 38% of a real
 ## game's 70 minutes (2023 league statistics; docs/AI.md). The game's restarts are quicker than that, so when the
@@ -145,6 +147,10 @@ func _ready() -> void:
 	phase_t = 0.0
 	if user_team >= 0 and bool(Game.settings.get("coach", true)) and not has_meta("test"):
 		coach = Coach.new()
+	if not attract and preload("res://game/playtest_hook.gd").wanted():
+		var hook: Node = preload("res://game/playtest_hook.gd").new()
+		hook.m = self
+		add_child(hook)
 	if not attract:
 		hud.intro(_intro_line(), tr("COACH_INTRO") if coach != null else "")
 
@@ -173,25 +179,33 @@ func _make_teams() -> void:
 				c1 = Color("f2f2ee")
 		var team := {"id": ids[k], "c1": c1, "c2": c2, "design": int(t.design), "players": [], "bench": DB.squad(ids[k]).slice(15),
 			"subs": 0, "temp": 0}
-		var helmet := c2.darkened(0.2) if c2.get_luminance() > 0.85 else c2
+		teams.append(team)
 		for pd in DB.starters(ids[k]):
-			var look := {"skin": _skin(int(pd.skin)), "hair": _hair(int(pd.hair)), "hair_style": int(pd.hair_style),
-				"jersey": c1, "trim": c2, "shorts": Color("f6f6f2") if c1.get_luminance() < 0.6 else Color("1a1a1a"),
-				"socks": c1, "helmet": helmet, "design": int(t.design), "height": float(pd.height), "kind": "player"}
-			if int(pd.line) == DB.POS_GK:
-				# The goalkeeper in a different jersey from both sides.
-				look.jersey = Color("2a9d5c") if k == 0 else Color("d9772b")
-				look.socks = look.jersey
-				look.design = 0
-			var pl := Player.new(pd, k, look)
+			var pl := Player.new(pd, k, _look(k, pd, int(pd.line) == DB.POS_GK))
+			pl.tire_k = clock_k
 			add_child(pl)
 			team.players.append(pl)
 			carries[pl] = Rules.Carry.new()
 			pstats[pd.id] = {"goals": 0, "points": 0, "free_g": 0, "free_p": 0, "wides": 0, "team": k, "num": int(pd.num)}
-		teams.append(team)
 		tstats[k] = {"shots": 0, "wides": 0, "frees": 0, "s65": 0, "sidelines": 0, "puckouts": 0, "puckouts_won": 0,
-			"yellow": 0, "red": 0, "black": 0, "scores_play": 0, "scores_placed": 0, "shots_play": 0, "shots_placed": 0}
+			"yellow": 0, "red": 0, "black": 0, "subs": 0, "scores_play": 0, "scores_placed": 0, "shots_play": 0, "shots_placed": 0}
 	_set_lods()
+
+
+## A player's looks: his own skin, hair and height in his side's colours (a goalkeeper in a jersey unlike both).
+func _look(k: int, pd: Dictionary, keeper: bool) -> Dictionary:
+	var team: Dictionary = teams[k]
+	var c1: Color = team.c1
+	var c2: Color = team.c2
+	var helmet := c2.darkened(0.2) if c2.get_luminance() > 0.85 else c2
+	var look := {"skin": _skin(int(pd.skin)), "hair": _hair(int(pd.hair)), "hair_style": int(pd.hair_style),
+		"jersey": c1, "trim": c2, "shorts": Color("f6f6f2") if c1.get_luminance() < 0.6 else Color("1a1a1a"),
+		"socks": c1, "helmet": helmet, "design": int(team.design), "height": float(pd.height), "kind": "player"}
+	if keeper:
+		look.jersey = Color("2a9d5c") if k == 0 else Color("d9772b")
+		look.socks = look.jersey
+		look.design = 0
+	return look
 
 
 static func _skin(i: int) -> Color:
@@ -219,7 +233,7 @@ func all_players() -> Array:
 
 func player_by_num(k: int, n: int) -> Player:
 	for pl in teams[k].players:
-		if (pl as Player).num == n:
+		if (pl as Player).pos_num == n:
 			return pl
 	return null
 
@@ -398,6 +412,15 @@ func _move_all(dt: float) -> void:
 		p.visible_on_screen = cam.camera.is_position_in_frustum(p.global_position + Vector3(0, 1, 0)) or d < 12.0
 		p.set_pose_rate(1 if d < 60.0 else (2 if d < 95.0 or not low else 3))
 		p.animate(now)
+	for g in _leaving.duplicate():
+		var gp: Player = g
+		var off := Vector3(gp.global_position.x, 0, -Pitch.HALF_W - 7.0)
+		_steer(gp, off, 2.6)
+		gp.integrate(dt, now)
+		gp.animate(now)
+		if gp.global_position.distance_to(off) < 0.8:
+			_leaving.erase(gp)
+			gp.queue_free()
 	_separate(dt)
 
 
@@ -903,7 +926,7 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 		pressure = 1.0 - near.global_position.distance_to(pl.global_position) / 4.0
 	var skill_k: float = 1.0 / float(ai[pl.team].skill) if pl != active else 0.9
 	# From 35 m about three in four go over, from 50 m about three in five (55% from play in 2026, 75% from frees).
-	var sigma := (0.8 + dist * 0.075) * (1.6 - acc) * (1.0 + pressure * 1.2) * skill_k
+	var sigma := (0.8 + dist * 0.075) * (1.6 - acc) * (1.0 + pressure * 1.2) * skill_k * (1.0 + pl.fatigue * 0.35)
 	if String(shot.get("placed", "")) != "":
 		sigma *= 0.72
 	if bool(shot.get("goal", false)):
@@ -1555,6 +1578,9 @@ func _begin_setup() -> void:
 		_begin_throw_in()
 		return
 	_run_off_stoppage()
+	for k in 2:
+		_auto_subs(k)
+	_run_subs()
 	# The end of a half comes at a break in play once the time is up.
 	if _time_up() and String(restart.kind) != "penalty":
 		_end_half()
@@ -1787,7 +1813,7 @@ func _throw_in_spot(pl: Player) -> Vector3:
 	var d := dir(pl.team)
 	if pl.line() == DB.POS_MF:
 		# The two midfielders on their own side of the halfway line, beside the referee.
-		return Vector3(-d * 1.2, 0, 1.2 if pl.num == 8 else -1.2)
+		return Vector3(-d * 1.2, 0, 1.2 if pl.pos_num == 8 else -1.2)
 	var home: Vector3 = ai[pl.team].home_spot(pl)
 	# Everyone else in position, out of the centre.
 	if absf(home.x) < 10.0 and absf(home.z) < 10.0:
@@ -1885,10 +1911,127 @@ func _second_half() -> void:
 	_added_shown = false
 	_stoppage = 0.0
 	hud.end_half_time()
+	# The break: some of the legs come back, and the managers make their changes.
+	for pl in all_players():
+		(pl as Player).fatigue *= 0.7
+	for k in 2:
+		_auto_subs(k)
+	_run_subs()
 	_place_for_throw_in(true)
 	phase = P.INTRO
 	phase_t = 1.2
 	hud.set_score()
+
+
+# ---------------------------------------------------------------- substitutions
+
+## How many more a side may make (Rules.subs_allowed: five, three more in extra time); those asked for count.
+func subs_left(k: int) -> int:
+	var due := _subs_due.filter(func(q): return int((q.off as Player).team) == k).size()
+	return Rules.subs_allowed(half >= 3) - int(teams[k].subs) - due
+
+
+## Can this man be taken off for that one: on the pitch (a man sent off or in the sin bin cannot be replaced), the
+## substitute on the bench, a substitution left, neither already in one asked for.
+func sub_ok(off: Player, pd: Dictionary) -> bool:
+	if off == null or off.team < 0 or not off.on_pitch() or not off.visible:
+		return false
+	if not (pd in teams[off.team].bench) or subs_left(off.team) <= 0:
+		return false
+	for q in _subs_due:
+		if q.off == off or q.pd == pd:
+			return false
+	return true
+
+
+## Ask for a substitution (your side's, from the pause menu): it is made at the next break in play.
+func ask_sub(off: Player, pd: Dictionary) -> bool:
+	if not sub_ok(off, pd):
+		return false
+	_subs_due.append({"off": off, "pd": pd})
+	return true
+
+
+func subs_waiting(k: int) -> Array:
+	return _subs_due.filter(func(q): return int((q.off as Player).team) == k)
+
+
+## The manager's changes (the computer's side; yours too unless you make them yourself): from about the hour mark
+## of a full match (45% of it) his most tired man for the best fresh one in that line, one a break, the last kept
+## back until late; in extra time, any tired man.
+func _auto_subs(k: int) -> void:
+	if k == user_team and not bool(Game.settings.get("auto_subs", true)):
+		return
+	var left := subs_left(k)
+	if left <= 0 or not subs_waiting(k).is_empty():
+		return
+	var prog := total_clock() / (half_len * 2.0)
+	if prog < 0.45 and half <= 2:
+		return
+	if left <= 1 and prog < 0.85 and half <= 2:
+		return
+	var worst: Player = null
+	for pl in teams[k].players:
+		var p: Player = pl
+		if p.on_pitch() and p.visible and p.line() != DB.POS_GK and p != carrier and p != taker and (worst == null or p.fatigue > worst.fatigue):
+			worst = p
+	var need := lerpf(0.55, 0.3, clampf((prog - 0.45) / 0.45, 0.0, 1.0)) if half <= 2 else 0.25
+	if worst == null or worst.fatigue < need:
+		return
+	var pd := best_bench(k, worst.line())
+	if not pd.is_empty():
+		ask_sub(worst, pd)
+
+
+## The best fresh man on the bench for a line: one who plays there if there is one, else the best outfield player.
+func best_bench(k: int, line: int) -> Dictionary:
+	var best := {}
+	var bv := -1.0
+	for pd in teams[k].bench:
+		if int(pd.line) == DB.POS_GK and line != DB.POS_GK:
+			continue
+		var v := (float(pd.striking) + float(pd.accuracy) + float(pd.catching) + float(pd.speed) + float(pd.tackling)) / 5.0
+		if int(pd.line) == line:
+			v += 15.0
+		if v > bv:
+			bv = v
+			best = pd
+	return best
+
+
+## Make the substitutions asked for (at a break): the man going off walks to the line, the substitute takes his
+## place in the shape, coming on from the dugout side.
+func _run_subs() -> void:
+	for q in _subs_due.duplicate():
+		var off: Player = q.off
+		var pd: Dictionary = q.pd
+		_subs_due.erase(q)
+		if not off.on_pitch() or not (pd in teams[off.team].bench) or off == carrier:
+			continue
+		var k := off.team
+		var team: Dictionary = teams[k]
+		team.bench.erase(pd)
+		team.subs = int(team.subs) + 1
+		tstats[k].subs += 1
+		var ghost := Player.new(off.data, k, off.body.look)
+		add_child(ghost)
+		ghost.global_position = off.global_position
+		ghost.yaw = off.yaw
+		ghost.fatigue = off.fatigue
+		_leaving.append(ghost)
+		var old_name := DB.player_name(off.data, true)
+		var old_id := String(off.data.id)
+		off.take_over(pd, _look(k, pd, int(pd.line) == DB.POS_GK))
+		off.tire_k = clock_k
+		off.global_position = Vector3(clampf(off.global_position.x, -20.0, 20.0), 0, -Pitch.HALF_W - 1.5)
+		off.vel = Vector3.ZERO
+		carries[off] = Rules.Carry.new()
+		pstats[pd.id] = {"goals": 0, "points": 0, "free_g": 0, "free_p": 0, "wides": 0, "team": k, "num": int(pd.num)}
+		events.append({"t": match_minute(), "team": k, "kind": "sub", "by": String(pd.id), "how": old_id})
+		hud.call_line(tr("SUB_LINE").format({"team": DB.short_name(String(team.id)), "on": DB.player_name(pd, true), "off": old_name}))
+		if off == active:
+			_set_active(off)
+	_set_lods()
 
 
 # ---------------------------------------------------------------- the shoot-out
@@ -2289,6 +2432,8 @@ func set_paused(on: bool) -> void:
 
 
 func on_back() -> void:
+	if hud.close_subs():
+		return
 	set_paused(not paused)
 
 

@@ -81,6 +81,7 @@ var settings := {
 	"draw_rule": 0,         # a drawn knock-out game: 0 extra time then penalties, 1 extra time then a replay (old)
 	"tags": 0,              # the numbers over players' heads: 0 on, 2 off
 	"seen_howto": false,
+	"auto_subs": true,      # the manager makes your substitutions (else you do, from the pause menu)
 	"coach": true,          # coach's tips in a match (game/coach.gd); off by itself after your first match
 	"dev": false,
 }

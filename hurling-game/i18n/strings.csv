@@ -334,3 +334,23 @@ COACH_PENALTY,"A penalty: aim with the joystick, then GOAL. Only the goalkeeper 
 COACH_STEPS,Too many steps: a free to them. SOLO it onto your hurley before the fourth step.,An iomarca coiscéimeanna: saorphoc dóibh. Cuir SOLO ar do chamán roimh an gceathrú coiscéim.
 SET_COACH,Coach's tips,Leideanna an traenálaí
 SET_COACH_NOTE,"Short tips through a match, each the first time it is needed. On for your first match.","Leideanna gearra le linn cluiche, gach ceann an chéad uair a bhíonn gá leis. Ar siúl do do chéad chluiche."
+SUB_LINE,{team} change: {on} on for {off},Athrú {team}: {on} isteach in áit {off}
+SUBS,Substitutions,Ionadaithe
+SUBS_LEFT_one,{n} left,{n} fágtha
+SUBS_LEFT_other,{n} left,{n} fágtha
+SUBS_NONE,None left,Níl aon cheann fágtha
+SUBS_ON_PITCH,On the pitch,Ar an bpáirc
+SUBS_BENCH,The bench,An binse
+SUBS_PICK,"Tap a tired man, then the one to bring on. The change is made at the next break in play.","Tapáil fear tuirseach, ansin an té a thiocfaidh isteach. Déantar an t-athrú ag an gcéad bhriseadh eile san imirt."
+SUBS_PICKED,Who comes on for {name}?,Cé a thiocfaidh isteach in áit {name}?
+SUBS_DUE,{on} on for {off} at the next break,{on} isteach in áit {off} ag an gcéad bhriseadh eile
+SUBS_OFF_FIELD,off the field,den pháirc
+SUBS_AUTO,Your changes,Do chuid athruithe
+SUBS_AUTO_ON,The manager makes them,Déanann an bainisteoir iad
+SUBS_AUTO_OFF,You make them,Déanann tusa iad
+LINE_GK,Goalkeeper,Cúl báire
+LINE_FB,Full-back line,Líne na lánchúl
+LINE_HB,Half-back line,Líne na leathchúl
+LINE_MF,Midfield,Lár na páirce
+LINE_HF,Half-forward line,Líne na leath-thosaithe
+LINE_FF,Full-forward line,Líne na lántosaithe

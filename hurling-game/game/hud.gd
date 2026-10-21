@@ -29,6 +29,7 @@ var _intro_t := 0.0
 var _dev: Label
 var _active: Player = null
 var _coach: Control
+var _subs: Control
 var _coach_text: Label
 var _coach_t := 0.0
 
@@ -136,11 +137,37 @@ func _build_coach() -> void:
 	root.add_child(_coach)
 
 
+## The coach's card sits between the joystick's side and the nearest button (wherever you have put them, whatever
+## their size, either hand), never over a button.
+func _place_coach() -> void:
+	var vp := root.get_viewport_rect().size
+	var c: TouchControls = m.controls
+	var lh := bool(Game.settings.get("left_handed", false))
+	var edge := vp.x if not lh else 0.0
+	for i in 4:
+		var p := c.slot_pos(i)
+		var r := c.slot_radius(i)
+		if p.y + r < vp.y - 200.0:
+			continue     # a button moved up out of the card's way
+		edge = minf(edge, p.x - r - 16.0) if not lh else maxf(edge, p.x + r + 16.0)
+	var thumb := vp.x * 0.2
+	var left := thumb if not lh else edge
+	var right := edge if not lh else vp.x - thumb
+	var w := clampf(right - left, 360.0, 640.0)
+	var cx := (left + right) * 0.5
+	_coach.anchor_left = 0.0
+	_coach.anchor_right = 0.0
+	_coach.offset_left = cx - w * 0.5
+	_coach.offset_right = cx + w * 0.5
+	_coach_text.custom_minimum_size.x = w - 40.0
+
+
 ## Show a coach's tip (game/coach.gd), by its id; "" leaves what is shown.
 func coach(id: String) -> void:
 	if id == "":
 		return
 	_coach_text.text = tr(Coach.text_key(id))
+	_place_coach()
 	UI.refit(_coach_text)
 	_coach.visible = true
 	_coach.modulate.a = 1.0
@@ -415,12 +442,35 @@ func show_pause(on: bool) -> void:
 		var b1 := UI.button(tr("RESUME"), true, func(): m.set_paused(false))
 		b1.custom_minimum_size = Vector2(320, 64)
 		v.add_child(b1)
+		if m.user_team >= 0:
+			var bs := UI.button(tr("SUBS") + "  ·  " + (Plural.word("SUBS_LEFT", m.subs_left(m.user_team)) if m.subs_left(m.user_team) > 0 else tr("SUBS_NONE")), false, func(): open_subs())
+			bs.custom_minimum_size = Vector2(320, 56)
+			v.add_child(bs)
 		var b2 := UI.button(tr("QUIT_MATCH"), false, func(): m.quit_match())
 		b2.custom_minimum_size = Vector2(320, 56)
 		v.add_child(b2)
 	elif not on and _pause != null:
 		_pause.queue_free()
 		_pause = null
+		close_subs()
+
+
+## Your substitutions (ui/subs_panel.gd), over the pause menu.
+func open_subs() -> void:
+	if _subs != null and is_instance_valid(_subs):
+		return
+	_subs = SubsPanel.new()
+	_subs.m = m
+	root.add_child(_subs)
+
+
+## Back closes the substitutions first.
+func close_subs() -> bool:
+	if _subs != null and is_instance_valid(_subs):
+		_subs.close()
+		_subs = null
+		return true
+	return false
 
 
 func _overlay() -> Control:

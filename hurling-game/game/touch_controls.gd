@@ -23,6 +23,8 @@ var _keys := {}
 var _paras := {}             # id -> TextParagraph (its label, fitted to the circle)
 var edit := false            # Move buttons: drags move the buttons instead of pressing them
 static var key_hints := true # the keyboard's keys beside the buttons on a computer (off for the store's pictures)
+static var touch_seen := false   # a thumb has touched the screen: no keyboard here to hint at
+var last_fired := ""             # the last button pressed (the playtest hook reads it)
 var _drag_slot := -1
 var _drag_touch := -1
 
@@ -141,6 +143,9 @@ func _input(event: InputEvent) -> void:
 	var half := size.x * 0.45
 	if event is InputEventScreenTouch:
 		var e := event as InputEventScreenTouch
+		if not touch_seen:
+			touch_seen = true
+			queue_redraw()
 		var on_left := e.position.x < half if not _left_handed() else e.position.x > size.x - half
 		if e.pressed:
 			for b in _layout():
@@ -199,6 +204,7 @@ func _keys_to_joystick() -> void:
 
 
 func _fire(id: String) -> void:
+	last_fired = id
 	flash(id)
 	action.emit(id)
 
@@ -249,7 +255,7 @@ func _draw() -> void:
 		var ink := Color("1d1307") if primary else Game.C_INK
 		_draw_label(id, c, r, ink, primary)
 		# The key that presses it, on a computer.
-		if not OS.has_feature("mobile") and key_hints and i < 4:
+		if not OS.has_feature("mobile") and key_hints and not touch_seen and i < 4:
 			var kc: String = "Q" if id == "SWITCH" else ["␣", "J", "K", "L"][mini(i, 3)]
 			draw_string(Game.font_bold, c + Vector2(r * 0.55, r * 0.95), kc, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(Game.C_INK, 0.6))
 

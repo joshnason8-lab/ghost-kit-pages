@@ -48,7 +48,8 @@ const ACTIONS := {
 
 var data := {}             # from DB.squad (an official: {num 0, line -1})
 var team := 0              # 0 or 1; -1 an official
-var num := 0
+var num := 0               # the number on his back
+var pos_num := 0           # his place in the side's shape, 1-15 (a substitute takes the place of the man he replaces)
 var role := ""             # "" a player; "referee", "linesman", "umpire"
 var body: ToonBody
 var max_speed := 7.5       # m/s, from his speed rating (8.4 m/s is a hurler's top speed)
@@ -70,7 +71,10 @@ var _lod_skip := 0
 var _pose_every := 1
 var _flag: MeshInstance3D
 var _flag_att: BoneAttachment3D
-var fatigue := 0.0               # 0 fresh .. 1 spent: his top speed falls a little through the game
+var fatigue := 0.0               # 0 fresh .. 1 spent: slower, and his striking less true, through the game
+var came_on := 0                 # how many times a substitute has taken this place (the movement audit skips the change)
+var tire_k := 1.0                # match seconds a real second while the ball is live (the match sets it): tiring
+                                 # goes by the match clock, so a short match tires a man as a full one does
 var down_until := 0.0            # on the ground until then (match time)
 var sent_off := false
 var sin_bin_until := -1.0        # match clock (s) he may come back
@@ -86,9 +90,10 @@ func _init(p_data := {}, p_team := 0, look := {}, p_role := "") -> void:
 	team = p_team
 	role = p_role
 	num = int(p_data.get("num", 0))
+	pos_num = num
 	body = ToonBody.new(look)
 	if p_data.has("speed"):
-		max_speed = lerpf(6.6, 8.4, clampf((float(p_data.speed) - 40.0) / 59.0, 0.0, 1.0))
+		max_speed = speed_of(p_data)
 	elif role == "referee":
 		max_speed = 7.2
 	elif role != "":
@@ -99,6 +104,38 @@ func _ready() -> void:
 	add_child(body)
 	body.rotation.y = yaw
 
+
+static func speed_of(pd: Dictionary) -> float:
+	return lerpf(6.6, 8.4, clampf((float(pd.get("speed", 70)) - 40.0) / 59.0, 0.0, 1.0))
+
+
+## A substitute comes on in this man's place: his data and looks, fresh legs, no cards; the place in the shape
+## (line, side of the field, pos_num) stays.
+func take_over(pd: Dictionary, look: Dictionary) -> void:
+	came_on += 1
+	var d := pd.duplicate()
+	d.line = data.get("line", d.get("line", 0))
+	d.place = data.get("place", d.get("place", 0.0))
+	data = d
+	num = int(pd.get("num", num))
+	max_speed = speed_of(pd)
+	fatigue = 0.0
+	yellows = 0
+	blacks = 0
+	stop_action()
+	ball_hand = false
+	ball_stick = false
+	var lod: int = body._lod
+	body.queue_free()
+	body = ToonBody.new(look)
+	add_child(body)
+	body.set_lod(lod)
+	body.rotation.y = yaw
+
+
+## How tired he is, as a share of what he can give: 1 fresh.
+func freshness() -> float:
+	return 1.0 - fatigue
 
 func is_official() -> bool:
 	return role != ""
@@ -150,7 +187,7 @@ func stop_action() -> void:
 
 ## How fast he can run now: his top speed, a little less when tired or soloing.
 func top_speed() -> float:
-	var k := 1.0 - fatigue * 0.08
+	var k := 1.0 - fatigue * 0.12
 	if ball_stick:
 		k *= 0.93
 	elif ball_hand:
@@ -199,7 +236,11 @@ func integrate(dt: float, now: float) -> void:
 		action_t += dt
 		if action_t >= action_len and not action.begins_with("sig_"):
 			action = ""
-	fatigue = minf(1.0, fatigue + dt * (sp * sp) * 0.0000045)
+	# Tiring: a little all the time, much more in a sprint; less for a man with stamina. Over a full match a
+	# hard-working player ends about two-thirds spent (docs/AI.md).
+	if role == "":
+		var st := clampf(float(data.get("stamina", 70)) / 100.0, 0.3, 1.0)
+		fatigue = minf(1.0, fatigue + dt * tire_k * (0.00004 + sp * sp * 0.000011) * lerpf(1.35, 0.75, st))
 
 
 func take_steps() -> int:

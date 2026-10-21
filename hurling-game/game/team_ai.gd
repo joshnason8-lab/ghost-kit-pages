@@ -68,7 +68,7 @@ func home_spot(pl: Player) -> Vector3:
 
 ## The opponent a player marks (or null).
 func mark_of(pl: Player) -> Player:
-	var n := mark_number(pl.num)
+	var n := mark_number(pl.pos_num)
 	if n == 0:
 		return null
 	var opp: Player = m.player_by_num(1 - team, n)

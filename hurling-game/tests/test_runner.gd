@@ -34,6 +34,7 @@ func _ready() -> void:
 	_sim_scores()
 	_clock_lengths()
 	_coach()
+	await _subs()
 	await _match_and_motion()
 	Game.settings = keep
 	Game.delete_champ()
@@ -422,6 +423,52 @@ func _coach() -> void:
 		check(tr(Coach.text_key(id)) != Coach.text_key(id), "Coach: COACH_%s has words" % id)
 
 
+## Substitutions: five, made at a break; not for a man sent off; the substitute takes the place in the shape.
+func _subs() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "COR", "venue": "county", "user_team": 0, "seed": 4, "length": 8.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(3)
+	var t: Dictionary = m.teams[0]
+	var off: Player = m.player_by_num(0, 11)
+	var pd: Dictionary = t.bench[0]
+	var bench_n: int = t.bench.size()
+	check(m.subs_left(0) == 5, "Subs: five a match")
+	check(m.ask_sub(off, pd), "Subs: one asked for")
+	check(not m.ask_sub(off, t.bench[1]), "Subs: not the same man twice")
+	check(m.subs_left(0) == 4, "Subs: the one asked for counts")
+	off.fatigue = 0.8
+	m._run_subs()
+	check(off.data.id == pd.id and off.pos_num == 11 and off.num == int(pd.num), "Subs: the substitute takes the place in the shape (%s, wearing %d)" % [off.data.id, off.num])
+	check(off.fatigue == 0.0 and off.came_on == 1, "Subs: fresh legs")
+	check(t.bench.size() == bench_n - 1 and int(t.subs) == 1, "Subs: off the bench, one made")
+	var red: Player = m.player_by_num(0, 5)
+	red.sent_off = true
+	check(not m.sub_ok(red, t.bench[0]), "Subs: a man sent off is not replaced")
+	red.sent_off = false
+	for i in 4:
+		m.ask_sub(m.player_by_num(0, 2 + i), t.bench[i])
+	m._run_subs()
+	check(m.subs_left(0) == 0 and not m.sub_ok(m.player_by_num(0, 13), t.bench[0]), "Subs: no sixth in normal time")
+	m.half = 3
+	check(m.subs_left(0) == 3, "Subs: three more in extra time")
+	# Tiredness: a sprint tires a man more than a walk, and a man with stamina less.
+	var a := Player.new({"stamina": 90, "speed": 80}, 0, {})
+	var b := Player.new({"stamina": 50, "speed": 80}, 0, {})
+	for i in 300:
+		a.want_vel = Vector3(8, 0, 0)
+		b.want_vel = Vector3(8, 0, 0)
+		a.integrate(1.0 / 30.0, 0.0)
+		b.integrate(1.0 / 30.0, 0.0)
+	check(a.fatigue > 0.0 and b.fatigue > a.fatigue * 1.2, "Tiredness: stamina tells (%.3f v %.3f)" % [a.fatigue, b.fatigue])
+	check(a.top_speed() < Player.speed_of({"speed": 80}), "Tiredness: a tired man is slower")
+	a.free()
+	b.free()
+	m.queue_free()
+	await frames(2)
+
+
 # ---------------------------------------------------------------- a match, and the movement audit
 
 ## An AI match at the shortest length plays to full time with a legal score; every frame, no player moves further
@@ -439,6 +486,7 @@ func _match_and_motion() -> void:
 	var dist := 0.0
 	var steps := 0
 	var probe: Player = m.player_by_num(0, 8)
+	var came := {}
 	var guard := 0
 	while m.phase != m.P.OVER and guard < 30 * 60 * 14:
 		await get_tree().process_frame
@@ -449,6 +497,10 @@ func _match_and_motion() -> void:
 			if not pl.visible:
 				continue
 			var pos := pl.global_position
+			if came.get(pl, 0) != pl.came_on:
+				# A substitute has taken this place: he comes on from the line.
+				came[pl] = pl.came_on
+				last.erase(pl)
 			if last.has(pl) and m.phase != m.P.HALF_TIME and m.phase != m.P.INTRO:
 				var d: float = pos.distance_to(last[pl])
 				worst_jump = maxf(worst_jump, d / (dt * pl.max_speed * 1.25))
@@ -467,5 +519,8 @@ func _match_and_motion() -> void:
 	check(worst_acc <= 1.0, "Motion: speed changes no faster than a player accelerates (worst %.2f of the limit)" % worst_acc)
 	var stride := dist / maxf(1.0, float(steps))
 	check(steps > 50 and stride > 0.6 and stride < 2.3, "Motion: strides match the ground covered (%.2f m a step, %d steps)" % [stride, steps])
+	for k in 2:
+		check(int(m.teams[k].subs) <= Rules.subs_allowed(false), "Subs: the manager makes no more than five (%d)" % int(m.teams[k].subs))
+	check(int(m.teams[0].subs) + int(m.teams[1].subs) > 0, "Subs: the managers bring on fresh legs in the second half")
 	m.queue_free()
 	await frames(2)
