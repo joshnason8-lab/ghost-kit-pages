@@ -22,8 +22,8 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CACHE = pathlib.Path.home() / ".cache" / "fbfonts"
 RAW = "https://raw.githubusercontent.com/google/fonts/main/ofl/"
-LATIN = "U+0000-024F,U+0300-036F,U+1E00-1EFF,U+2000-206F,U+20A0-20CF,U+2190-21FF,U+2212,U+2423,U+25CF,U+00D7"
-BASE = "".join(chr(c) for c in range(0x20, 0x7F)) + "·–—…“”‘’「」『』、。，．！？：；（）《》〈〉・ー〜％＋－×÷°"
+LATIN = "U+0000-024F,U+0300-036F,U+1E00-1EFF,U+2000-206F,U+20A0-20CF,U+2190-21FF,U+2212,U+2423,U+25A0-25FF,U+00D7"
+BASE = "".join(chr(c) for c in range(0x20, 0x7F)) + "日本語●○·–—…“”‘’「」『』、。，．！？：；（）《》〈〉・ー〜％＋－×÷°"
 
 
 def fetch(path: str) -> pathlib.Path:

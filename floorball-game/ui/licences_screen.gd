@@ -7,8 +7,8 @@ const CREDITS := """[b]Floorstorm[/b]
 Made by Josh Nason.
 Players, referees, rink, hall, crowd and ball made in code for the game; the whistles, the ball's sounds, the horn,
 the drum and the menu music made for it. Crowd reactions from Kabaddi Raid, by the same maker.
-Floorball's rules: the International Floorball Federation's Rules of the Game, as the game understands them. The game
-is not made or endorsed by any federation, league or team."""
+Floorball's rules: the international Rules of the Game, as the game understands them. The game is not made or
+endorsed by any federation, league or team."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans, Noto Sans Thai and Noto Sans JP: Copyright The Noto Project Authors (https://github.com/notofonts).

@@ -105,7 +105,9 @@ func _hub(cup) -> void:
 			row.add_theme_constant_override("separation", 10)
 			row.add_child(UI.label(tr("MEDAL_" + k.to_upper()), "SubLabel", 20, {"gold": Game.C_GOLD, "silver": Game.C_MUTED, "bronze": Color("a8652f")}[k]))
 			row.add_child(UI.badge(cup.medals[k], Vector2(33, 22)))
-			row.add_child(UI.fit(UI.label(DB.team_name(cup.medals[k]), "SubLabel", 20)))
+			var mn := UI.fit(UI.label(DB.team_name(cup.medals[k]), "SubLabel", 20))
+			mn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(mn)
 			nv.add_child(row)
 		nv.add_child(UI.button(tr("CUP_AGAIN"), true, func():
 			Game.delete_cup()

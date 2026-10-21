@@ -10,10 +10,16 @@ static func screen(owner: Control, with_backdrop := true) -> void:
 		owner.add_child(Backdrop.new())
 
 
+## A camera cut-out to pretend there is (tests/fit_audit: a 20:9 phone's punch-hole on the left in landscape), in
+## canvas units; 0 on a real phone, where the display's safe area says where the cut-out is.
+static var sim_cutout := 0.0
+
+
 ## Margins that keep content clear of the screen edges and any camera cut-out, in canvas
 ## units: x left, y top, z right, w bottom.
 static func safe_margins(owner: Control, base := 40.0) -> Vector4:
 	var m := Vector4(base, base * 0.6, base, base * 0.55)
+	m.x += sim_cutout
 	var win := DisplayServer.window_get_size()
 	if win.x <= 0 or not owner.is_inside_tree():
 		return m

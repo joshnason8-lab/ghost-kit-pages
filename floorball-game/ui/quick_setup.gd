@@ -42,7 +42,7 @@ func _ready() -> void:
 			vs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			slots.add_child(vs)
 	_grid = GridContainer.new()
-	_grid.columns = 4
+	_grid.columns = 3
 	_grid.add_theme_constant_override("h_separation", 10)
 	_grid.add_theme_constant_override("v_separation", 10)
 	left.add_child(UI.scroll(_grid))
