@@ -1,0 +1,37 @@
+# Google Play store listing, English (United Kingdom). Paste each part into Play Console > Grow > Store presence >
+# Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Khamba Dash: Kho Kho
+
+== Short description ==
+Kho kho to the real rules: sit in the lane, give the kho, chase and pole dive.
+
+== Full description ==
+Khamba Dash is kho kho for your phone: the chasing game of India. Sit in the lane with your side, rise on a kho, chase the defenders to the pole, and dive to touch them out before the turn runs down.
+
+THE REAL GAME
+• Two rule books. Classic, as the national championships play it: nine a side, eight seated in the squares, a 27 m field, 1 point an out, and the follow-on. Fast, as the 2025 world championship played it: seven a side, a 22 m field, 2 points an out, dream runs, the wazir and the power play.
+• Every rule of the active chaser: take your direction and keep to it, never cross the central lane, turn only round a pole, and give the kho from behind before you pass the cross lane.
+• Defenders on in batches of three. Out by a touch, a sky dive, a pole dive, a step over the line or a late entry.
+• Umpires on both side lines who whistle a foul until it is put right, a referee and a timekeeper. Extra innings and the minimum chase settle a tied knockout.
+
+WAYS TO PLAY
+• Quick Match: any two sides, any ground, either rule book. You call the toss and choose to chase or defend.
+• Championships: sixteen nations at the world championship, or sixteen states at the national championship: groups, quarter-finals, semi-finals, the final. Men's and women's.
+• Watch a Match: two sides play it out on their own.
+
+FOUR GROUNDS
+A village ground of beaten earth at dusk, a school ground in the morning, an indoor arena on mats, and a floodlit stadium of red earth.
+
+PLAY YOUR WAY
+• Fourteen languages: English, हिन्दी, मराठी, ಕನ್ನಡ, తెలుగు, தமிழ், മലയാളം, ଓଡ଼ିଆ, বাংলা, ગુજરાતી, ਪੰਜਾਬੀ, অসমীয়া, नेपाली and සිංහල.
+• Simple touch controls: a joystick for your chaser, KHO and DIVE. Move the buttons where your thumb finds them, make them bigger, or play left-handed.
+• Turns of 3 or 5 minutes for a quick game, or the real length.
+• Made to run smoothly on budget and mid-range phones.
+• Plays offline. No ads, no purchases, no account, and no data collected.
+
+Khamba Dash is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
+
+== Release notes (first release) ==
+The first release of Khamba Dash: Quick Match, Championships and Watch a Match, in fourteen languages.
