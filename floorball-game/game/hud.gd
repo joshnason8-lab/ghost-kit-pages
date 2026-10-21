@@ -222,8 +222,9 @@ func _build_banner() -> void:
 	root.add_child(v)
 
 
+## Called once a physics tick by the match: the fades count physics time (a slow frame runs several ticks).
 func refresh() -> void:
-	var dt := get_process_delta_time()
+	var dt := get_physics_process_delta_time()
 	var r: Rules.State = m.rules
 	var g: Array = r.goals
 	for side in 2:
@@ -250,8 +251,12 @@ func refresh() -> void:
 	if _hint_t > 0.0:
 		_hint_t -= dt
 		_hint.modulate.a = clampf(_hint_t * 2.0, 0.0, 1.0)
+
+
+## The developer overlay (seven taps on the version): real frame times, not physics ticks.
+func _process(delta: float) -> void:
 	if _dev:
-		_frames.append(dt * 1000.0)
+		_frames.append(delta * 1000.0)
 		if _frames.size() > 240:
 			_frames = _frames.slice(_frames.size() - 240)
 		var sorted := _frames.duplicate()

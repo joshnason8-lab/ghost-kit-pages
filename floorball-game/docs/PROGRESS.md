@@ -30,14 +30,23 @@ on with "Next".
 - AI calibrated with tests/ai_bench (per 60 minutes): 10.0 goals, 120 shots, 75.7% save rate, 5 penalties,
   30 face-offs (real: ~10 goals, ~95 shots, ~73% saves).
 
+- 15 languages in the game and in store listings (AI translators with each country's federation terms; doubts in
+  docs/LANGUAGES.md); fit_audit clean: 15 languages x 16:9, 19.5:9, 20:9 with a cut-out, 4:3 (Thai's space-free lines
+  exempt from the whole-word check, as Japanese is).
+- input_test: every scrolling page scrolls when a drag starts on its text. test_runner: 436 checks green.
+- CI: floorball-android.yml (tests, fit audit, input test, APK signed with the public debug key, release
+  floorstorm-beta), floorball-play-bundle.yml (passed, unsigned); standalone workflows in floorball-game/.github.
+- Draft PR #7, subscribed. Pages in floorstorm/. Icon, menu music. README, RULES, LANGUAGES, MESHY_BRIEF, PLAY_STORE.
+
 ## Next (in order)
 
-1. Translations (14 languages, being written), then fit_audit at 16:9, 19.5:9, 20:9 with a cut-out and 4:3.
-2. CI: floorball-android.yml (tests, signed APK, beta release floorstorm-beta) and floorball-play-bundle.yml;
-   the standalone-repo workflow in floorball-game/.github/workflows.
-3. Pages floorstorm/ (index, privacy, support), icons, store graphics and screenshots, PLAY_STORE.md.
-4. input_test (drag on text scrolls each scrolling page), perf_probe numbers per graphics level.
-5. README, docs/RULES.md, docs/LANGUAGES.md, docs/MESHY_BRIEF.md.
+1. Store screenshots and the feature graphic (tools/store), perf numbers into the README; CI green and the beta APK.
+2. A penalty shot awarded in play for a foul on a clear chance (rules module has the procedure; the referee does
+   not yet award it).
+3. Pulling the goalkeeper for a sixth skater late in a match; a time-out's 30 seconds shown.
+4. The penalised player seen walking to the penalty bench; delay-of-game calls.
+5. More competitions (a club season with invented club nicknames, Swedish/Finnish 3-2-1-0 points).
+6. Native-speaker review of the translations; the 2026 PDF read against docs/RULES.md's [verify] items.
 
 ## Decisions and why
 

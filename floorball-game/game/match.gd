@@ -487,15 +487,49 @@ func offence(p: Player, victim: Player, kind: String, dangerous := false) -> voi
 		if hud:
 			hud.call_card(tr("CALL_ADVANTAGE") if sanction == "free_hit" else tr("CALL_DELAYED"), _offence_line(kind), fouled)
 		return
-	_whistle_offence(p, kind, sanction, at)
+	_whistle_offence(p, kind, sanction, at, victim)
 
 
-func _whistle_offence(p: Player, kind: String, sanction: String, at: Vector2) -> void:
+func _whistle_offence(p: Player, kind: String, sanction: String, at: Vector2, victim: Player = null) -> void:
 	var fouled := 1 - p.team
 	var line := _offence_line(kind)
 	if sanction != "free_hit":
 		_penalise(p, sanction, kind)
+	if victim and _clear_chance(victim, p):
+		_award_penalty_shot(victim, kind)
+		return
 	_stop("free_hit", {"team": fouled, "spot": Rules.free_hit_spot(at), "why": kind, "sanction": sanction, "line": line})
+
+
+## A clear chance of a goal (the penalty shot's condition, chapter 8): the fouled player near the goal he attacks, in
+## front of it, with no defender but the goalkeeper between him and it.
+func _clear_chance(v: Player, offender: Player) -> bool:
+	var a := attack_dir(v.team)
+	var g := Vector2(Rules.GOAL_LINE * a, 0)
+	if v.pos.x * a < 4.0 or v.pos.distance_to(g) > 12.0 or absf(v.pos.y) > 6.0:
+		return false
+	for o: Player in skaters(1 - v.team):
+		if o == offender:
+			continue
+		if (o.pos - v.pos).dot(g - v.pos) > 0.0 and o.pos.distance_to(g) < v.pos.distance_to(g):
+			return false
+	return true
+
+
+## The referee points to the centre spot and crosses his arms: a penalty shot by the fouled player, the game clock
+## stopped (2026). A 2-minute penalty for the same offence ends if it scores (the goal ends it, as a power-play goal).
+func _award_penalty_shot(v: Player, why: String) -> void:
+	ball.live = false
+	ball.release()
+	_shot_live = {}
+	_ref_signal("penalty_shot", Vector2.ZERO)
+	Sfx.play("whistle", -2.0)
+	calls.append({"kind": "penalty_shot", "team": v.team, "why": why, "period": rules.period, "t": rules.clock})
+	rules.log.append({"kind": "penalty_shot", "team": v.team, "id": String(v.data.id), "period": rules.period, "t": rules.clock})
+	if hud:
+		hud.call_card(tr("SIGN_PENALTY_SHOT"), _offence_line(why), v.team)
+	_so = {"stage": "setup", "t": 0.0, "in_match": true, "team": v.team, "dir": attack_dir(v.team), "pick": v}
+	_set_phase("shootout")
 
 
 func _offence_line(kind: String) -> String:
@@ -1108,36 +1142,42 @@ var _so := {}
 ## each until it is decided.
 func _start_shootout() -> void:
 	_set_phase("shootout")
-	_so = {"stage": "setup", "t": 0.0}
+	_so = {"stage": "setup", "t": 0.0, "in_match": false, "dir": 1.0}
 	if hud:
 		hud.banner(tr("SHOOTOUT"))
 
 
 func _shootout(dt: float) -> void:
 	_so.t = float(_so.t) + dt
-	var t := rules.shootout_next()
-	var g := Vector2(Rules.GOAL_LINE, 0)   # both teams shoot at the same goal
+	var in_match := bool(_so.get("in_match", false))
+	var t := int(_so.team) if in_match else rules.shootout_next()
+	var s := float(_so.get("dir", 1.0))     # the goal shot at: the competition's both at +x, a match's the one attacked
+	var g := Vector2(Rules.GOAL_LINE * s, 0)
 	match String(_so.stage):
 		"setup":
 			# Everyone off to the far side; the shooter at the centre spot; the goalkeeper on his line.
 			var shooter: Player = null
-			for p: Player in skaters(t):
-				if rules.may_shoot(t, String(p.data.id), shooters_used[t]) and shooter == null:
-					shooter = p
+			if in_match:
+				var pick: Player = _so.pick
+				shooter = pick if pick in skaters(t) else (skaters(t)[0] if not skaters(t).is_empty() else null)
+			else:
+				for p: Player in skaters(t):
+					if rules.may_shoot(t, String(p.data.id), shooters_used[t]) and shooter == null:
+						shooter = p
 			if shooter == null:
 				_bring_shooter(t)
 				shooter = skaters(t)[0]
 			_so.shooter = shooter
 			for tt in 2:
 				for p: Player in skaters(tt):
-					p.set_meta("spot", Vector2(-8.0 + skaters(tt).find(p) * 1.2 + tt * 8.0, -8.5) if p != shooter else Vector2(-0.6, 0))
+					p.set_meta("spot", Vector2((-8.0 + skaters(tt).find(p) * 1.2 + tt * 8.0) * s, -8.5) if p != shooter else Vector2(-0.6 * s, 0))
 				var gk := keeper(tt)
-				gk.set_meta("spot", Vector2(Rules.GOAL_LINE - 0.4, 0) if tt != t else Vector2(-12.0 + tt * 1.0, -8.6))
+				gk.set_meta("spot", Vector2((Rules.GOAL_LINE - 0.4) * s, 0) if tt != t else Vector2((-12.0 + tt * 1.0) * s, -8.6))
 			ball.set_spot(Vector2.ZERO)
 			ball.live = true
 			_so.stage = "walk"
 			_so.t = 0.0
-			if hud:
+			if hud and not in_match:
 				hud.shootout(rules.shootout)
 		"walk":
 			var ready := true
@@ -1145,11 +1185,12 @@ func _shootout(dt: float) -> void:
 				var want: Vector2 = p.get_meta("spot", p.pos)
 				var d: Vector2 = want - p.pos
 				p.want_vel = d.normalized() * minf(5.0, d.length() * 2.5) if d.length() > 0.1 else Vector2.ZERO
-				p.want_face = NAN if d.length() > 0.8 else (0.0 if p == _so.shooter or p.role == "G" and p.team == t else PI)
+				var toward := 0.0 if s > 0.0 else PI
+				p.want_face = NAN if d.length() > 0.8 else (toward if p == _so.shooter or p.role == "G" and p.team == t else toward + PI)
 				if d.length() > 0.5:
 					ready = false
 			var gk := keeper(1 - t)
-			gk.want_face = PI
+			gk.want_face = PI if s > 0.0 else 0.0
 			_step_all(dt)
 			if (ready and _so.t > 1.0) or _so.t > 6.0:
 				Sfx.play("whistle", -4.0)
@@ -1165,16 +1206,27 @@ func _shootout(dt: float) -> void:
 			# The ball must keep moving toward the goal (no stopping, no going back): the shooter skates in.
 			if sh.team == user_team and not demo:
 				var j: Vector2 = touch.joystick if touch else Vector2.ZERO
-				sh.want_vel = Vector2(maxf(3.0, 5.5 + j.x * 1.5), j.y * 3.5)
+				sh.want_vel = Vector2(maxf(3.0, 5.5 + j.x * s * 1.5) * s, j.y * 3.5)
 			else:
-				sh.want_vel = Vector2(6.0, clampf(-sh.pos.y * 0.6 + sin(_so.t * 2.0) * 2.0, -3.0, 3.0))
-			gk.want_vel = Vector2((Rules.GOAL_LINE - 1.2 - gk.pos.x) * 2.0, (ball.pos.z * 0.25 - gk.pos.y) * 3.0)
-			gk.want_face = PI
-			if not bool(_so.shot) and (sh.pos.x > 9.5 + _rng.randf() * 3.0 and sh.team != user_team or sh.pos.x > 13.2):
+				sh.want_vel = Vector2(6.0 * s, clampf(-sh.pos.y * 0.6 + sin(_so.t * 2.0) * 2.0, -3.0, 3.0))
+			gk.want_vel = Vector2(((Rules.GOAL_LINE - 1.2) * s - gk.pos.x) * 2.0, (ball.pos.z * 0.25 - gk.pos.y) * 3.0)
+			gk.want_face = PI if s > 0.0 else 0.0
+			if not bool(_so.shot) and (sh.pos.x * s > 9.5 + _rng.randf() * 3.0 and sh.team != user_team or sh.pos.x * s > 13.2):
 				_so_shot(sh, g)
 			_check_shot()
 			_step_all(dt)
-			var done = ball.in_goal != 0 or (bool(_so.shot) and (ball.speed() < 1.0 or ball.vel.x < 0.0 or ball.held_by != null)) or _so.t > 7.0
+			var done = ball.in_goal != 0 or (bool(_so.shot) and (ball.speed() < 1.0 or ball.vel.x * s < 0.0 or ball.held_by != null)) or _so.t > 7.0
+			if done and in_match:
+				_so.stage = "end"
+				ball.held_by = null
+				if ball.in_goal != 0:
+					_set_phase("live")
+					_goal(t, false)
+				else:
+					Sfx.react("groan", -6.0)
+					ball.release()
+					_begin_restart({"kind": "faceoff", "spot": Rules.nearest_faceoff(Vector2(Rules.GOAL_LINE * s, 1.0))})
+				return
 			if done:
 				var scored := ball.in_goal != 0
 				shooters_used[t].append(String(sh.data.id))
@@ -1405,7 +1457,7 @@ func _on_action(id: String) -> void:
 
 
 func _so_user_shot() -> void:
-	_so_shot(user_player, Vector2(Rules.GOAL_LINE, 0))
+	_so_shot(user_player, Vector2(Rules.GOAL_LINE * float(_so.get("dir", 1.0)), 0))
 
 
 ## Who a pass goes to: the team-mate most in the joystick's direction, or the best one by the AI's reading.

@@ -137,6 +137,12 @@ func _notification(what: int) -> void:
 				current.set_paused(true)
 
 
+## Esc on a keyboard is the phone's Back.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_ESCAPE:
+		go_back()
+
+
 ## Back: pause or resume a match, leave a screen the way its Back button does, and quit from the home screen.
 func go_back() -> void:
 	if current == null or not is_instance_valid(current):

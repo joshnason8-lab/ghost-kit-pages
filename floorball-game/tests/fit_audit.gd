@@ -323,8 +323,9 @@ func _check(c: Control, text: String) -> Rect2:
 		return c.get_global_transform() * Rect2(Vector2.ZERO, Vector2(widest, minf(rh, c.size.y)))
 	var wraps: bool = (c is Label or c is Button) and c.autowrap_mode != TextServer.AUTOWRAP_OFF
 	var trims: bool = (c is Label or c is Button) and (c.text_overrun_behavior != TextServer.OVERRUN_NO_TRIMMING or c.clip_text)
-	if wraps and not (lang in ["ja", "zh"]):
-		# (Chinese and Japanese break lines between any two characters: no word to keep whole.)
+	if wraps and not (lang in ["ja", "zh", "th"]):
+		# (Chinese and Japanese break lines between any two characters, Thai between dictionary words without spaces: no
+		# space-separated word to keep whole.)
 		# A piece that may not be broken (a word, or words held together by no-break spaces) wider than the room is
 		# broken in the middle, or sticks out.
 		for word in text.replace("\n", " ").split(" ", false):
