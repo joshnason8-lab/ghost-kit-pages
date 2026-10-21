@@ -42,7 +42,9 @@ func _hits(at: Vector2) -> bool:
 	if not is_visible_in_tree() or not get_global_rect().has_point(at):
 		return false
 	var over := get_viewport().gui_get_hovered_control()
-	return over == null or over == self or is_ancestor_of(over)
+	# Words and pictures in the box take no touch (mouse_filter IGNORE): under them the hovered control can be the
+	# page behind the box, which is fine; a dialog drawn over the box is not.
+	return over == null or over == self or is_ancestor_of(over) or over.is_ancestor_of(self)
 
 
 func _input(event: InputEvent) -> void:

@@ -108,8 +108,8 @@ func _fixture(f: Dictionary, user: String, label: String) -> HBoxContainer:
 	var col := Game.C_INK if mine else Game.C_MUTED
 	if label != "":
 		var l := UI.label(label, "EyebrowLabel", 13)
-		l.custom_minimum_size = Vector2(110, 0)
-		UI.fit(l)
+		l.custom_minimum_size = Vector2(150, 0)
+		UI.fit(l, 2)
 		h.add_child(l)
 	h.add_child(UI.badge(f.home, Vector2(30, 20)))
 	var a := UI.fit(UI.label(DB.team_name(f.home), "", 17, col))

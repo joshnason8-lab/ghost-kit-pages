@@ -27,7 +27,7 @@ const HOLD_LIMIT := 3.0              # seconds a player may hold the ball (held 
 const SHORT_PASS_MIN := 0.9          # metres between thrower and catcher: room for an opponent to intercept
 const OUT_OF_PLAY_GAP := 0.9         # the penalised player stands beside the thrower, away from her
 
-## Free passes and penalty passes (R6, R11-R16): what each infringement gives the other team.
+## Free passes and penalty passes (R6, R12, R13, R16 and the rules on playing the ball, offside and out of court): what each infringement gives the other team.
 const FREE := "free_pass"
 const PENALTY := "penalty_pass"
 const THROW_IN := "throw_in"
@@ -48,7 +48,7 @@ const INFRINGEMENTS := {
 	"intimidation": PENALTY,
 }
 
-## Timing (R5, "Duration of the match"): four quarters of 15 minutes; four minutes after the first and third, twelve
+## Timing ("Duration of the match"): four quarters of 15 minutes; four minutes after the first and third, twelve
 ## at half-time (eight if both teams and the organiser agree). Extra time when a winner is needed: two halves of not
 ## more than seven minutes with one minute between them, then on until one team leads by two.
 const QUARTER_MIN := 15.0
@@ -78,7 +78,7 @@ static func may_enter(pos: String, area: String) -> bool:
 	return area in AREAS.get(pos, [])
 
 
-## Offside (R14): a player is offside when she touches the ground in an area her position may not go into, with or
+## Offside: a player is offside when she touches the ground in an area her position may not go into, with or
 ## without the ball. A foot on a line is in each area the line bounds, so a GS with a toe on the transverse line is in
 ## the centre third, and offside. In the air above an area is not offside: callers test where a foot lands.
 static func offside(pos: String, foot: Vector2, dir: int) -> bool:
@@ -151,7 +151,7 @@ static func centre_pass_ok(pos: String, landing_foot: Vector2) -> bool:
 	return absf(landing_foot.x) < Court.THIRD_X - Court.LINE_W * 0.5
 
 
-# ---------------------------------------------------------------- playing the ball (R11, R12)
+# ---------------------------------------------------------------- playing the ball (and R12, short pass)
 
 ## Held ball: more than three seconds.
 static func held_ball(held_for: float) -> bool:
@@ -175,7 +175,7 @@ static func replayed_ball(thrower: int, catcher: int, touched_since: bool) -> bo
 	return thrower == catcher and not touched_since
 
 
-## Footwork (R12): the landing foot, and what the other may do. A player who lands on one foot may step with the other
+## Footwork (playing the ball): the landing foot, and what the other may do. A player who lands on one foot may step with the other
 ## and pivot on the landing foot as often as she likes; once she lifts the landing foot she must pass or shoot before
 ## it is grounded again. Landing on both feet, she chooses which is her landing foot. She may not drag or slide the
 ## landing foot, hop on either foot, or jump from both feet and land on both before she releases the ball.

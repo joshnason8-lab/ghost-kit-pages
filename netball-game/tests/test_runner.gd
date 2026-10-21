@@ -63,14 +63,14 @@ func _screens() -> void:
 # ---------------------------------------------------------------- the rules, one by one
 
 func _rules() -> void:
-	# The court (R2): 30.5 x 15.25 m in thirds, circles of 4.9 m, the centre circle 0.9 m across.
+	# The court: 30.5 x 15.25 m in thirds, circles of 4.9 m, the centre circle 0.9 m across.
 	check(is_equal_approx(Court.LENGTH, 30.5) and is_equal_approx(Court.WIDTH, 15.25), "court 30.5 x 15.25 m")
 	check(is_equal_approx(Court.THIRD * 3.0, Court.LENGTH), "three equal thirds")
 	check(is_equal_approx(Court.CIRCLE_R, 4.9) and is_equal_approx(Court.CENTRE_R * 2.0, 0.9), "goal circle 4.9 m, centre circle 0.9 m")
 	check(is_equal_approx(Court.RING_H, 3.05) and is_equal_approx(Court.RING_R * 2.0, 0.38), "ring 3.05 m up, 380 mm across")
 	check(Court.in_circle(Vector2(Court.HALF_L - 4.85, 0), 1) and not Court.in_circle(Vector2(Court.HALF_L - 5.0, 0), 1), "the circle's edge at 4.9 m")
 	check(Court.in_circle(Vector2(Court.HALF_L - 3.0, 3.8), 1), "inside the circle, off to the side")
-	# Positions and areas (R3, R14): each position's areas, and offside for a step outside them.
+	# Positions and areas (R3, and offside): each position's areas, and offside for a step outside them.
 	var d := 1
 	var att_circle := Vector2(Court.HALF_L - 2.0, 0)
 	var att_third := Vector2(Court.HALF_L - 7.0, 6.0)
@@ -110,7 +110,7 @@ func _rules() -> void:
 	check(not Rules.centre_pass_ok("WA", Vector2(6, 2)), "caught beyond the centre third: a free pass")
 	check(not Rules.centre_pass_ok("GS", Vector2(1, 0)) and not Rules.centre_pass_ok("GK", Vector2(1, 0)), "GS and GK may not take it")
 	check(not Rules.centre_pass_ok("WD", Vector2(Court.THIRD_X, 0)), "a foot on the transverse line is not wholly in the centre third")
-	# Playing the ball (R11, R12).
+	# Playing the ball (and R12, short pass).
 	check(not Rules.held_ball(2.9) and Rules.held_ball(3.05), "three seconds: held ball after them")
 	check(Rules.short_pass(Vector2(0, 0), Vector2(0.6, 0)) and not Rules.short_pass(Vector2(0, 0), Vector2(1.5, 0)), "short pass: room for an opponent")
 	check(Rules.over_third(-8.0, 8.0) and not Rules.over_third(-8.0, 2.0) and not Rules.over_third(-2.0, 8.0), "over a third")
@@ -152,7 +152,7 @@ func _rules() -> void:
 	check(spot.y > Court.HALF_W and spot.y - Court.HALF_W <= 0.15, "the thrower outside, within 15 cm of the line")
 	check(Rules.takers(Vector2(Court.HALF_L - 2.0, 0), 1) == ["GS", "GA"], "a pass in the attacking circle: GS or GA takes it")
 	check(Rules.takers(Vector2(0, 0), 1) == ["GA", "WA", "C", "WD", "GD"], "in the centre third: all but GS and GK")
-	# Time (R5): quarters, intervals, ends, extra time.
+	# Time: quarters, intervals, ends, extra time.
 	check(Rules.period_length(1, 15.0) == 900.0, "quarters of 15 minutes")
 	check(Rules.interval_after(1) == 4.0 and Rules.interval_after(2) == 12.0 and Rules.interval_after(3) == 4.0, "intervals of 4, 12 and 4 minutes")
 	check(Rules.interval_after(2, true) == 8.0, "half-time of 8 by agreement")
@@ -170,7 +170,7 @@ func _rules() -> void:
 	check(Rules.double_zone_live(299.0, 15.0) and not Rules.double_zone_live(301.0, 15.0), "the Double Zone's last five minutes")
 
 
-## Footwork (R12): the landing foot.
+## Footwork: the landing foot.
 func _footwork() -> void:
 	var f := Rules.Footwork.new()
 	f.land("l")

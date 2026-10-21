@@ -96,9 +96,9 @@ func _build_board() -> void:
 		side.add_theme_constant_override("separation", 8)
 		side.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var id: String = m.team_id(t)
-		var arrow := UI.label("◀" if t == 1 else "▶", "SubLabel", 18, Game.C_ACCENT)
-		arrow.custom_minimum_size = Vector2(18, 0)
-		arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		# The centre pass arrow: by the team whose centre pass is next, pointing at it.
+		var arrow := Icon.make("back" if t == 1 else "next", 22, Game.C_ACCENT)
+		arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		_cp_arrow.append(arrow)
 		var flag := UI.badge(id, Vector2(36, 24))
 		flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -150,7 +150,7 @@ func _process(delta: float) -> void:
 	_clock_l.text = "%d:%02d" % [int(tl) / 60, int(tl) % 60] if tl < 1e6 else "—"
 	var next_cp: int = Rules.centre_pass_team(m.cp_first, m.cp_n)
 	for t in 2:
-		(_cp_arrow[t] as Label).modulate.a = 1.0 if next_cp == t else 0.0
+		(_cp_arrow[t] as Control).modulate.a = 1.0 if next_cp == t else 0.0
 	_dz.text = tr("DZ_LIVE") if m.double_zone and Rules.double_zone_live(m.time_left, m.quarter_min) and m.q <= 6 else ""
 	_place_board()
 	if _call.visible:
@@ -164,6 +164,11 @@ func _process(delta: float) -> void:
 		_controls.visible = not m.paused and m.phase != "break" and m.phase != "over" or _controls.editing
 	_me_ring += delta
 	_overlay.queue_redraw()
+
+
+## The player you control changed (the HUD rings her; nothing else to do here yet).
+func on_me(_pl: Player) -> void:
+	_me_ring = 0.0
 
 
 func period_name(q: int) -> String:

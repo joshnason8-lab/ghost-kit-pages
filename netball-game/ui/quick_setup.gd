@@ -123,7 +123,7 @@ func _fill_grid() -> void:
 	for c in _grid_box.get_children():
 		c.queue_free()
 	var ids: Array = DB.team_ids()
-	var grid := UI.team_grid(self, ids, 3, func(id):
+	var grid := UI.team_grid(self, ids, 2, func(id):
 		if _pick_side == 0:
 			if id == _away:
 				_away = _home

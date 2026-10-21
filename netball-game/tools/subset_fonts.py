@@ -61,6 +61,9 @@ def main() -> int:
         run("fontTools.subset", str(src), f"--unicodes={block},U+0020-0040,U+200C-200D,U+25CC",
             "--layout-features=*", "--output-file=" + str(out))
         report(out)
+    if not (ROOT / "i18n" / "src" / "zh.json").exists():
+        print("no zh.json yet: Noto Sans SC left as it is")
+        return 0
     src = fetch("notosanssc", "NotoSansSC", "wght")
     text = json.loads((ROOT / "i18n" / "src" / "zh.json").read_text(encoding="utf-8"))
     chars = set(BASE) | set("".join(text.values()))

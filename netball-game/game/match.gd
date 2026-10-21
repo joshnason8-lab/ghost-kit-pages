@@ -370,7 +370,7 @@ func _run_live(dt: float) -> void:
 			_run_loose()
 
 
-## Offside (R14): any player touching the ground in an area her position may not enter. The AI keeps to its areas;
+## Offside: any player touching the ground in an area her position may not enter. The AI keeps to its areas;
 ## your player can stray (unless Keep me onside is on), and a few AI mistakes are made on purpose (TeamAI.slip).
 func _check_offside() -> void:
 	for t in 2:
@@ -486,7 +486,7 @@ func _arrive() -> void:
 	game_event.emit("catch", {"by": to.pos, "team": to.team})
 
 
-## A loose ball: the nearest players chase it; the first to reach it takes it. Over a line it is out (R15).
+## A loose ball: the nearest players chase it; the first to reach it takes it. Over a line it is out of court.
 func _run_loose() -> void:
 	var b := ball.court_pos()
 	if not Court.on_court(b) and ball.pos.y < 0.4:
