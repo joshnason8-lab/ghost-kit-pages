@@ -543,7 +543,25 @@ func _playtest_fixes() -> void:
 	check(clear, "Playtest: the coach's card clear of every button (each size, either hand)")
 	Game.settings.left_handed = keep.left_handed
 	Game.settings.btn_size = keep.btn_size
-	# The keyboard's letters go once a thumb touches the screen.
+	# Your pass goes to the free man the way you point, not the marked one straight ahead.
+	var me: Player = m.player_by_num(0, 6)
+	var d: float = m.dir(0)
+	for q in m.all_players():
+		(q as Player).global_position = Vector3(0, 0, 60)    # everyone out of the way
+	me.global_position = Vector3(0, 0, 0)
+	var marked: Player = m.player_by_num(0, 11)
+	var free: Player = m.player_by_num(0, 12)
+	marked.global_position = Vector3(d * 30.0, 0, 0)
+	free.global_position = Vector3(d * 26.0, 0, 14.0)
+	m.player_by_num(1, 6).global_position = Vector3(d * 29.0, 0, 0.8)     # his marker, tight
+	m.player_by_num(1, 7).global_position = Vector3(d * 15.0, 0, 0.3)     # and one in the lane
+	var j: Vector2 = Vector2.ZERO
+	for i in 64:
+		var a := TAU * i / 64.0
+		var cand := Vector2(cos(a), sin(a))
+		if m._cam_dir(cand).dot(Vector3(d, 0, 0)) > 0.99:
+			j = cand
+	check(m._pass_option(me, j) == free, "Playtest: PASS toward goal finds the free man, not the marked one straight ahead")
 	TouchControls.touch_seen = false
 	var t := InputEventScreenTouch.new()
 	t.position = Vector2(900, 300)

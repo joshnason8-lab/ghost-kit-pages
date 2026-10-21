@@ -1797,6 +1797,8 @@ func _short_option(pl: Player, joy := Vector2.ZERO) -> Player:
 
 
 ## The teammate in the joystick's direction (or the AI's best), for a pass.
+## Your pass: to the teammate the joystick points toward who is freest and safest to reach (let go of it: the
+## computer's choice).
 func _pass_option(pl: Player, joy: Vector2) -> Player:
 	if joy.length() < 0.3:
 		var b: Dictionary = ai[pl.team].best_pass(pl, 99.0)
@@ -1812,7 +1814,14 @@ func _pass_option(pl: Player, joy: Vector2) -> Player:
 		var dd := to.length()
 		if dd < 4.0 or dd > 75.0:
 			continue
-		var v := want.dot(to / dd) * 30.0 - dd * 0.15 + float(ai[pl.team]._openness(r)) * 0.8
+		# The way you point, but a free man before a marked one, and not through a defender (the playtest: passes
+		# straight up the field to a marked man were nearly all lost).
+		var along := want.dot(to / dd)
+		if along < 0.0:
+			continue
+		var t: TeamAI = ai[pl.team]
+		var open: float = minf(float(t._openness(r)), 12.0)
+		var v := along * 14.0 - dd * 0.12 + open * 2.0 - float(t._lane_risk(pl.global_position, r.global_position)) * 18.0
 		if v > bv:
 			bv = v
 			best = r
@@ -2290,17 +2299,25 @@ func _user_move(pl: Player, dt: float) -> void:
 		return
 	var t: TeamAI = ai[pl.team]
 	var target := pl.global_position
+	var chase := false
 	if phase in [P.SETUP, P.SET]:
 		target = _set_spot(pl)
 	elif ball.state == Sliotar.FREE and int(Game.settings.get("assist", 1)) >= 2 and pl in chasers[pl.team]:
 		target = _chase_target(pl)
+		chase = true
+	elif ball.state == Sliotar.FREE and int(Game.settings.get("assist", 1)) >= 1 and ball.last_team == pl.team and not chasers[pl.team].is_empty() and chasers[pl.team][0] == pl:
+		# A pass to you (you became the man it was struck to): with Help on he runs to meet it until you take over.
+		target = _chase_target(pl)
+		chase = true
 	elif carrier != null and carrier.team == pl.team:
 		target = t.attack_spot(pl, carrier)
 	elif carrier != null:
 		target = t.defend_spot(pl)
 	else:
 		target = t.home_spot(pl)
-	if _idle_t > 0.6:
+	if chase and _idle_t > 0.3:
+		_steer(pl, target, pl.top_speed())
+	elif _idle_t > 0.6:
 		_steer(pl, target, _jog(pl, target))
 	else:
 		pl.want_vel = Vector3.ZERO

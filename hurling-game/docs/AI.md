@@ -77,7 +77,8 @@ about as long as in a real one, and it scores like one. The shorter lengths are 
 score in proportion.
 
 **The check.** `tests/score_check.tscn` plays two AI matches between top counties at each length and holds them to the
-real numbers (it runs in CI). The run of 21 October 2026, with tired players and substitutions in (means a match,
+real numbers (it runs in CI, three matches a length; the AI's chances come from the match's seeded generator, so a
+run is close to repeatable). The run of 21 October 2026, with tired players and substitutions in (means a match,
 both sides):
 
 | Length | Real minutes | Ball live (real min) | Goals | Points | Shots | Real hurling for that much play |
@@ -86,11 +87,13 @@ both sides):
 | 14 min | 15.8 | 11.4 | 0.5 | 20.5 | 31.0 | 1.2 goals, 18 points |
 | 20 min | 23.1 | 16.4 | 2.0 | 29.0 | 42.0 | 1.7 goals, 26 points |
 | **35 min (the full 70)** | 34.7 | 25.0 | 3.0 | 43.0 | 69.0 | **2.75 goals, 42 points, 77 shots** |
+| 35 min, CI's three matches with the clearance in (22:16 UTC) | 36.4 | 27.0 | 3.7 | 40.3 | 71.3 | the same |
 
-Full-length scorelines from that run: 2-20 v 1-19 and 2-22 v 1-25 (earlier runs: 2-21 v 2-21, 0-20 v 0-20,
+Full-length scorelines from that run: 2-20 v 1-19 and 2-22 v 1-25; from CI's: 2-22 v 1-19, 1-19 v 5-18, 0-20 v 2-23 (earlier runs: 2-21 v 2-21, 0-20 v 0-20,
 0-19 v 4-20, 2-22 v 0-12). Over every match: 1.70 points a live minute (real 1.58), 0.09 goals (real 0.10), 2.7 shots
 (real 2.9), 68% of shots scored (real 60%: the game's forwards still shoot a little less often and a little better
-than real ones). Frees about 17 a full match (real 26), puck-outs about 70 (real 66), 4-7 yellow cards.
+than real ones). Frees about 17 a full match (real 26), puck-outs about 70 (real 66), 4-7 yellow cards, sideline cuts about 10 (backs
+under pressure clear it over the line, as real ones do; there were all but none before the playtest).
 
 **Tired players and substitutions.** A player tires by the match clock (so a short match tires him as a full one
 does): a little all the time and far more in a sprint, less with stamina. A hard-working player ends a full match

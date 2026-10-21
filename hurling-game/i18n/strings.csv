@@ -69,7 +69,7 @@ ASSIST_OFF,Off,Múchta
 ASSIST_SOLO,Solo,Solo
 ASSIST_FULL,Full,Iomlán
 ASSIST_OFF_NOTE,"Everything is yours: four steps with the sliotar in your hand, then you must solo, pass or strike, or it is a free against you.","Is leatsa gach rud: ceithre choiscéim leis an sliotar i do lámh, ansin caithfidh tú solo a dhéanamh, é a phasáil nó é a bhualadh, nó is saorphoc i do choinne é."
-ASSIST_SOLO_NOTE,"Your player puts the sliotar on his hurley himself before his fourth step. You still strike, pass and catch.","Cuireann d'imreoir an sliotar ar a chamán é féin roimh an gceathrú coiscéim. Buaileann tú, pasálann tú agus beireann tú air fós."
+ASSIST_SOLO_NOTE,"Your player puts the sliotar on his hurley himself before his fourth step. You still strike, pass and catch. He runs to meet a pass to him till you move him.","Cuireann d'imreoir an sliotar ar a chamán é féin roimh an gceathrú coiscéim. Buaileann tú, pasálann tú agus beireann tú air fós. Ritheann sé chun pas a fháil go dtí go mbogann tú é."
 ASSIST_FULL_NOTE,"As Solo, and with your thumb off the joystick your player runs for the loose ball himself.","Mar Solo, agus nuair nach bhfuil d'ordóg ar an luamhán ritheann d'imreoir i ndiaidh na liathróide scaoilte é féin."
 GRAPHICS,Graphics,Grafaic
 GFX_LOW,Low,Íseal
