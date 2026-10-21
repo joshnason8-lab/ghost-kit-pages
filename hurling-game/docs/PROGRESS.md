@@ -42,13 +42,15 @@ here and `git log`.
    overlay: tap the version seven times), heat, the buttons' size and place. The logic costs about 1.1 ms a frame on a
    desktop core (off-ball players re-plan where to stand seven times a second); a low-end phone's core is maybe
    four times slower, well inside a 33 ms frame.
-2. **Substitutions** (five, three more in extra time, temporary ones for the sin bin) and tired players.
-3. **Tactics**: a sweeper, a two-man full-forward line, short or long puck-outs, chosen in match setup.
-4. **Umpires who now and then get a close one wrong**, and Hawk-Eye at the stadium (as the real one has).
-5. **Commentary-style call-outs** and crowd songs ("Come on the ...", "[County] abú!").
-6. **A native Irish speaker** to read `i18n/src/ga.json` (docs/LANGUAGES.md lists the terms to check).
-7. **Camogie**, with its own rules done properly (60 minutes, the 45, hand-passed goals, its contact rules).
-8. **Club hurling**: invented parish clubs in a county championship, at the parish field.
+2. **Scoring at full length**: a 70-minute match runs about twice a real game's scoring (5-34 v 5-46 in one test);
+   the 14-minute default is right. docs/AI.md says how to tune it.
+3. **Substitutions** (five, three more in extra time, temporary ones for the sin bin) and tired players.
+4. **Tactics**: a sweeper, a two-man full-forward line, short or long puck-outs, chosen in match setup.
+5. **Umpires who now and then get a close one wrong**, and Hawk-Eye at the stadium (as the real one has).
+6. **Commentary-style call-outs** and crowd songs ("Come on the ...", "[County] abú!").
+7. **A native Irish speaker** to read `i18n/src/ga.json` (docs/LANGUAGES.md lists the terms to check).
+8. **Camogie**, with its own rules done properly (60 minutes, the 45, hand-passed goals, its contact rules).
+9. **Club hurling**: invented parish clubs in a county championship, at the parish field.
 9. Meshy bodies, if the owner wants them (docs/MESHY_BRIEF.md): no credits spent.
 
 ## Needs the owner

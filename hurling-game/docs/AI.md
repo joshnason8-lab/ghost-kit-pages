@@ -79,12 +79,19 @@ matches between the top counties, after tuning (21 October 2026; ten matches acr
 | Black cards | 0-0.5 |
 | Puck-outs | about 37-42 |
 
-Scorelines like 1-11 v 0-7, 0-15 v 0-9, 1-15 v 1-13, 2-11 v 0-17: real hurling's shape (points far outnumber goals, a goal or
-two a game), with fewer scores than 70 real minutes since the match is shorter. The play itself runs at real speed:
-a full 70-minute match (Settings > Match length > 70 min) produces about the real numbers.
+Scorelines like 1-11 v 0-7, 0-15 v 0-9, 1-15 v 1-13, 2-11 v 0-17: real hurling's shape (points far outnumber goals,
+a goal or two a game) at the default length.
+
+**Not yet right at full length.** A 70-minute match played in real time (Settings > Match length > 70 min) runs far
+too high: one test gave 5-34 v 5-46, about twice a real game's scoring. Real hurling has the ball in play only about
+38% of the time (2023 league statistics); the game's restarts are quicker and its attacks shorter. The fix is the
+first of the next steps below.
 
 ## Next
 
+- Scoring at the longer lengths: slower build-up (more passes before a shot, more turnovers, contested puck-outs
+  kept about half the time), longer restarts at 30 and 70 minutes, tuned until a 70-minute match gives about 2-3
+  goals and 40 points between the sides.
 - Substitutions (five, and three in extra time), with tired players coming off.
 - Tactics a manager picks: a sweeper (the extra defender), a two-man full-forward line, short or long puck-outs.
 - Umpires who now and then call a close point wrong, and Hawk-Eye at the stadium.
