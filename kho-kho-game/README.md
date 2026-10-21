@@ -28,10 +28,15 @@ players in India, Nepal, Bangladesh and Sri Lanka, in fourteen of their language
 
 Per frame in a match (`tests/perf_probe.tscn`, Godot 4.7.2, 1280 × 720):
 
-PERF_TABLE
+| Ground | Low | Medium | High |
+|---|---|---|---|
+| Village ground | 75 draws, 70k triangles | 98 draws, 254k triangles | 154 draws, 548k triangles |
+| School ground | 75 draws, 70k triangles | 98 draws, 254k triangles | 154 draws, 547k triangles |
+| Indoor arena (fast game: 24 players) | 84 draws, 89k triangles | 113 draws, 322k triangles | 179 draws, 671k triangles |
+| Floodlit stadium | 75 draws, 71k triangles | 98 draws, 257k triangles | 152 draws, 541k triangles |
 
-Budgets: Low 90 draw calls and 90,000 triangles (a Mali-G52 at 720p, 30 frames a second), Medium 130 and 280,000,
-High 180 and 600,000. The game is about BUNDLE_MB MB to download (the Play bundle's arm64 split); the fonts are 2.4 MB.
+Budgets: Low 90 draw calls and 90,000 triangles (a Mali-G52 at 720p, 30 frames a second), Medium 130 and 340,000,
+High 190 and 700,000. The game is about BUNDLE_MB MB to download (the Play bundle's arm64 split); the fonts are 2.4 MB.
 
 ## Controls
 

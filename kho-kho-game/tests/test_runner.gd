@@ -18,6 +18,7 @@ func _ready() -> void:
 	await _screens()
 	_cups()
 	await _matches()
+	await _your_controls()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -251,6 +252,69 @@ func _matches() -> void:
 		m.queue_free()
 		audit.queue_free()
 		await frames(2)
+
+
+## Your controls, as the buttons send them: KHO from behind a seated chaser hands you the chase (you are then him);
+## DIVE dives; defending, the buttons are DODGE and SWITCH and SWITCH changes your defender.
+func _your_controls() -> void:
+	Game.settings.lane_assist = true
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "MAH", "away": "ODI", "venue": "school", "format": KhoRules.CLASSIC, "turn_len": 60.0, "user_team": 0,
+		"seed": 5, "mode": "quick", "test": true, "chase_first": 0}
+	add_child(m)
+	var guard := 0
+	while m.phase != "play" and guard < 200:
+		await frames(1)
+		guard += 1
+	await frames(3)
+	check(m.phase == "play", "your match starts")
+	check(m.controls.ids.has("KHO") and m.controls.ids.has("DIVE"), "chasing, your buttons are KHO and DIVE (%s)" % str(m.controls.ids))
+	# Put your chaser just behind a seated chaser whose back is to his side (a test may place him; play never does).
+	var f: Dictionary = m.f
+	var i := 2
+	var face: int = m.sq_face[i]
+	m.chase.half = -face
+	m.chase.dir = 1
+	m.chase.settled = true
+	m.active.position = Vector3(float(f.square_x[i]) - 0.3, 0, -float(face) * 0.55)
+	m.active.vel = Vector3.ZERO
+	var before: Athlete = m.active
+	await frames(2)
+	check(m._kho_target(false) == i, "his square is the kho you can give (%d)" % m._kho_target(false))
+	m._on_action("KHO")
+	await frames(12)
+	check(m.active != before, "KHO hands you the chase: you are the one who rose")
+	check(m.chase.half == face, "you rise on the side he faced")
+	await frames(20)
+	m.active.position = Vector3(float(f.square_x[4]), 0, float(m.chase.half) * 3.0)
+	m.active.vel = Vector3.ZERO
+	await frames(2)
+	m._dive_cool = 0.0
+	m._on_action("DIVE")
+	await frames(2)
+	check(m.active.act == "dive" or m.active.act == "pole_dive", "DIVE dives (%s)" % m.active.act)
+	m.queue_free()
+	await frames(2)
+	var d: Node = (load("res://game/match.gd") as Script).new()
+	d.config = {"home": "MAH", "away": "ODI", "venue": "school", "format": KhoRules.CLASSIC, "turn_len": 60.0, "user_team": 0,
+		"seed": 6, "mode": "quick", "test": true, "chase_first": 1}
+	add_child(d)
+	guard = 0
+	while d.phase != "play" and guard < 200:
+		await frames(1)
+		guard += 1
+	await frames(3)
+	check(d.controls.ids.has("DODGE") and d.controls.ids.has("SWITCH"), "defending, your buttons are DODGE and SWITCH (%s)" % str(d.controls.ids))
+	var was: Athlete = d.user_def
+	d._on_action("SWITCH")
+	check(d.user_def != null and d.user_def != was, "SWITCH takes another defender")
+	d.controls.joystick = Vector2(1, 0)
+	var x0: float = d.user_def.position.x
+	await frames(20)
+	check(d.user_def.position.x > x0 + 1.0, "the joystick runs your defender (%.1f m)" % (d.user_def.position.x - x0))
+	d.controls.joystick = Vector2.ZERO
+	d.queue_free()
+	await frames(2)
 
 
 ## Watches every player each frame: nothing moves further in one frame than his speed allows (no snaps), speed
