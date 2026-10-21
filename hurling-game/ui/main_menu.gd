@@ -44,7 +44,7 @@ func _start_attract() -> void:
 	_pick += 1
 	_match = (load("res://game/match.gd") as Script).new()
 	_match.config = {"home": a[0], "away": a[1], "venue": a[2], "mode": "attract", "user_team": -1, "attract": true,
-		"difficulty": 2, "length": 70}
+		"difficulty": 2, "length": 35}
 	_sv.add_child(_match)
 
 

@@ -435,7 +435,9 @@ func _menus() -> void:
 	await frames(30)
 	await audit("main_menu")
 	menu._open_language()
-	await frames(12)
+	# The picker fades in over a time, not a number of frames: wait it out (frames are quick on Low).
+	await get_tree().create_timer(0.6).timeout
+	await frames(2)
 	await audit("language_picker")
 	menu._picker.close()
 	await frames(6)
@@ -552,6 +554,17 @@ func _match() -> void:
 	m.hud.call_line(tr("SIN_BIN_LINE").format({"name": "S. Ó Caoindealbháin"}))
 	await frames(4)
 	await audit("match_card")
+	# The coach's tips, the longest of them in each language.
+	var longest := ""
+	for id in Coach.TIPS + ["STEPS"]:
+		if tr(Coach.text_key(id)).length() > tr(Coach.text_key(longest)).length() or longest == "":
+			longest = id
+	m.hud.coach(longest)
+	await frames(4)
+	await audit("match_coach")
+	m.hud.intro("Semi-final · The county ground", tr("COACH_INTRO"))
+	await frames(4)
+	await audit("match_intro_coach")
 	m.set_paused(true)
 	await frames(6)
 	await audit("match_pause")

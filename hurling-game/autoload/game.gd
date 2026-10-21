@@ -60,7 +60,7 @@ const C_PRINT := Color("1f1b15")
 
 ## Match length, in minutes of real time for a match you play: the clock runs faster so a full match fits. The last
 ## is the real thing, a minute a minute.
-const LENGTHS := [8, 14, 20, 30, 70]
+const LENGTHS := [8, 14, 20, 35]
 
 var settings := {
 	"language": "",         # "" follows the phone's language
@@ -81,6 +81,7 @@ var settings := {
 	"draw_rule": 0,         # a drawn knock-out game: 0 extra time then penalties, 1 extra time then a replay (old)
 	"tags": 0,              # the numbers over players' heads: 0 on, 2 off
 	"seen_howto": false,
+	"coach": true,          # coach's tips in a match (game/coach.gd); off by itself after your first match
 	"dev": false,
 }
 
@@ -305,6 +306,10 @@ func start_match(config: Dictionary) -> void:
 
 func on_match_finished(result: Dictionary) -> void:
 	Records.add_match(result)
+	# The coach's tips are for a first match: once one is played through, they go off (Settings turns them on).
+	if int(result.get("user_team", -1)) >= 0 and bool(settings.get("coach", true)):
+		settings.coach = false
+		save_settings()
 	if String(result.config.get("mode", "quick")) == "champ" and get_champ() != null:
 		get_champ().record_user_result(result)
 		save_champ()

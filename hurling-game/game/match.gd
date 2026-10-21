@@ -47,6 +47,23 @@ var half_len := 35.0 * 60.0
 var added := 0.0             # added time this half, in match seconds (shown in whole minutes)
 var _added_shown := false
 var _stoppage := 0.0         # time lost this half to stoppages (cards, injuries, scores), for the added time
+var _lost := 0.0             # match seconds this stoppage costs on the referee's watch (STOP_COST), not yet run off
+var _dead_clock0 := 0.0      # the clock when this stoppage began
+var _live_w := 0.0           # match seconds of the watch this half with the ball live
+var _dead_w := 0.0           # and with it dead
+var live_real := 0.0         # real seconds the ball has been live this match (tests/score_check)
+var coach: Coach = null      # the coach's tips, in your first match (Settings > Coach's tips)
+## What a stoppage costs on the watch in a real match, in seconds: the ball is in play only about 38% of a real
+## game's 70 minutes (2023 league statistics; docs/AI.md). The game's restarts are quicker than that, so when the
+## players are set the clock is moved on to what the stoppage would have taken.
+const STOP_COST := {"puck_out": 21.0, "free": 34.0, "65": 32.0, "sideline": 20.0, "penalty": 75.0, "score": 10.0, "card": 45.0}
+## How much of a match's time the ball is in play (2023 league statistics). The game has fewer stoppages than a
+## real match (fewer frees, no injuries), so each one is made to cost what keeps the watch at this share.
+const LIVE_SHARE := 0.38
+const MAX_STOP := 60.0       # the most one stoppage moves the watch on, in match seconds a clock_k (bar a penalty)
+## The real time a match of a given length spends with the ball dead, for each minute it is live.
+const DEAD_PER_LIVE := 0.31
+const ADDED_GUESS := 360.0   # time added on in a match, both halves, about
 
 # The score: [goals, points] each side.
 var score := [[0, 0], [0, 0]]
@@ -89,7 +106,7 @@ func _ready() -> void:
 	knockout = bool(config.get("knockout", false))
 	half_len = float(config.get("half", Rules.half_minutes(grade))) * 60.0
 	var length_min := float(config.get("length", Game.LENGTHS[clampi(int(Game.settings.get("length", 1)), 0, Game.LENGTHS.size() - 1)]))
-	clock_k = (half_len * 2.0 / 60.0) / maxf(1.0, length_min)
+	clock_k = live_clock_k(half_len * 2.0, length_min)
 	var venue := String(config.get("venue", "county"))
 	var home_t := DB.team(String(config.home))
 	stadium = Stadium.new(venue, [home_t.c1, home_t.c2])
@@ -126,8 +143,10 @@ func _ready() -> void:
 	_place_for_throw_in(true)
 	phase = P.INTRO
 	phase_t = 0.0
+	if user_team >= 0 and bool(Game.settings.get("coach", true)) and not has_meta("test"):
+		coach = Coach.new()
 	if not attract:
-		hud.intro(_intro_line())
+		hud.intro(_intro_line(), tr("COACH_INTRO") if coach != null else "")
 
 
 func _intro_line() -> String:
@@ -282,7 +301,7 @@ func _process(delta: float) -> void:
 	match phase:
 		P.INTRO:
 			_brains(dt)
-			if phase_t > 3.0:
+			if phase_t > (6.5 if coach != null and half == 1 else 3.0):
 				_begin_throw_in()
 		P.THROW_IN, P.LIVE:
 			_live(dt)
@@ -317,6 +336,8 @@ func _process(delta: float) -> void:
 	if not attract:
 		hud.tick(delta)
 		_user_buttons()
+		if coach != null and active != null and phase in [P.LIVE, P.SET]:
+			hud.coach(coach.step(dt, coach_state()))
 
 
 func _frame_stats(delta: float) -> void:
@@ -416,6 +437,8 @@ func _carry_ball(dt: float) -> void:
 	if foul == "" and c.in_hand and c.steps >= 3 and _wants_auto_solo(carrier):
 		_do_solo(carrier)
 	elif foul != "" and phase == P.LIVE:
+		if coach != null and carrier == active and foul == "FOUL_STEPS":
+			hud.coach(coach.event("STEPS"))
 		_technical_foul(carrier, foul)
 
 
@@ -429,13 +452,48 @@ func _wants_auto_solo(pl: Player) -> bool:
 
 # ---------------------------------------------------------------- open play
 
-## The referee's watch runs on through stoppages (the time lost is added on at the end of the half). With the clock
-## sped up to fit a short match, a restart would eat minutes of it, so while the ball is dead it runs at 40%.
+## How fast the clock runs while the ball is live, in match seconds a real second, for a match of match_s on the
+## watch to take about length_min real minutes. The ball is live for LIVE_SHARE of the watch; dead balls cost their
+## real time on the watch (STOP_COST) but only a few real seconds each. Never slower than real time: at the longest
+## length the ball is live at about real time, and the score comes out as a real match's.
+static func live_clock_k(match_s: float, length_min: float) -> float:
+	var lr := maxf(1.0, length_min) * 60.0 / (1.0 + DEAD_PER_LIVE)
+	return maxf(1.0, (match_s + ADDED_GUESS) * LIVE_SHARE / lr)
+
+
+## The referee's watch runs on through stoppages (the time lost is added on at the end of the half): in real time
+## while the ball is dead, and moved on to the stoppage's real cost when the players are set (_run_off_stoppage).
 func _run_clock(dt: float) -> void:
-	var k := clock_k if phase in [P.LIVE, P.THROW_IN] else maxf(1.0, clock_k * 0.4)
+	var live := phase in [P.LIVE, P.THROW_IN]
+	var k := clock_k if live else 1.0
 	clock += dt * k
+	if live:
+		_live_w += dt * k
+		live_real += dt
+	else:
+		_dead_w += dt * k
 	if not _added_shown and clock >= half_len_now() - 60.0:
 		_end_of_half_check()
+
+
+## A stoppage begins or grows (a restart awarded, a score, a card): what it costs on the watch.
+func _stop_cost(kind: String) -> void:
+	if _lost <= 0.0:
+		_dead_clock0 = clock
+	_lost += float(STOP_COST.get(kind, 20.0))
+
+
+## The players are set: the watch moved on to what the stoppage cost, less what has run off it already, or to what
+## keeps the ball live for LIVE_SHARE of the half so far, whichever is more.
+func _run_off_stoppage() -> void:
+	if _lost > 0.0:
+		var due := maxf(_lost - (clock - _dead_clock0), _live_w * (1.0 - LIVE_SHARE) / LIVE_SHARE - _dead_w)
+		var cap := MAX_STOP * clock_k + (float(STOP_COST.penalty) if String(restart.get("kind", "")) == "penalty" else 0.0)
+		due = clampf(due, 0.0, cap)
+		clock += due
+		_dead_w += due
+	_lost = 0.0
+	_check_added()
 
 
 func _live(dt: float) -> void:
@@ -1203,6 +1261,7 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 		if rng.randf() < 0.3:
 			(q as Player).play("dejected")
 	_stoppage += 20.0
+	_stop_cost("score")
 	hud.set_score()
 	_award(Rules.after_score(team, dir(team)), 3.2)
 
@@ -1267,7 +1326,7 @@ func _tackle(d: Player, c: Player) -> void:
 	d.play(kind, Vector3.ZERO, -1.0 if to_c.cross(Vector3.UP).dot(c.forward()) > 0.0 else 1.0)
 	var tk := float(d.data.get("tackling", 70)) / 100.0
 	var through := _goal_chance(c)
-	var foul_p := 0.08 + (0.22 if behind and kind in ["tackle", "hook"] else 0.0) - tk * 0.06
+	var foul_p := 0.17 + (0.25 if behind and kind in ["tackle", "hook"] else 0.0) - tk * 0.06
 	if through:
 		# The cynical foul: a pull-down or a trip to stop a goal. Rare (a penalty and the sin bin cost more than
 		# the goal chance most times): about one black card in four or five senior games.
@@ -1275,6 +1334,9 @@ func _tackle(d: Player, c: Player) -> void:
 	# Defenders in their own large rectangle, where a foul is a penalty, go in more carefully.
 	if Pitch.in_large_rect(c.global_position, dir(c.team)):
 		foul_p *= 0.35
+	# A man on a yellow card goes in carefully: a second is a red.
+	if d.yellows > 0:
+		foul_p *= 0.4
 	if int(Game.settings.get("difficulty", 1)) == 0 and c.team == user_team:
 		foul_p += 0.04
 	var ok_p: float = {"tackle": 0.22, "flick": 0.38, "hook": 0.45, "block": 0.5}[kind] * lerpf(0.7, 1.2, tk)
@@ -1349,7 +1411,7 @@ func _aggressive_foul(by: Player, on: Player, foul: String, denial: bool) -> voi
 	var fouled := on.team
 	var spot := on.global_position
 	var award := Rules.free_for(foul, spot, fouled, dir(fouled), denial)
-	var card := Rules.card_for(foul, denial or rng.randf() < 0.25, denial, grade, by.yellows, by.blacks)
+	var card := Rules.card_for(foul, denial or rng.randf() < 0.18, denial, grade, by.yellows, by.blacks)
 	if foul in ["FOUL_PULL_DOWN", "FOUL_TRIP", "FOUL_CHARGE"] and rng.randf() < 0.6:
 		on.play("fall")
 		on.down_until = now + 1.1
@@ -1401,6 +1463,7 @@ func _blow_free(by: Player, foul: String, award: Dictionary, card: String, denia
 func _show_card(pl: Player, card: String) -> void:
 	officials.show_card(pl, card)
 	_stoppage += 40.0
+	_stop_cost("card")
 	var name := DB.player_name(pl.data, true)
 	match card:
 		"yellow":
@@ -1477,6 +1540,7 @@ func _award(r: Dictionary, delay := 2.0) -> void:
 	phase = P.DEAD
 	phase_t = DEAD_T - delay
 	_stoppage += 8.0
+	_stop_cost(String(r.kind))
 	match String(r.kind):
 		"puck_out":
 			tstats[int(r.team)].puckouts += 1
@@ -1490,6 +1554,7 @@ func _begin_setup() -> void:
 	if restart.is_empty():
 		_begin_throw_in()
 		return
+	_run_off_stoppage()
 	# The end of a half comes at a break in play once the time is up.
 	if _time_up() and String(restart.kind) != "penalty":
 		_end_half()
@@ -1771,17 +1836,21 @@ func _time_up() -> bool:
 ## stoppages, the scores, the cards), the referee ending the half at the first break once it is up, or once the
 ## ball is out of the scoring zones.
 func _end_of_half_check() -> void:
-	if not _added_shown and clock >= half_len_now() - 60.0:
-		_added_shown = true
-		var mins := clampi(roundi(_stoppage / 60.0 * 0.5) + 1, 1, 6) if half <= 2 else 1
-		added = mins * 60.0
-		hud.added_time(mins)
+	_check_added()
 	if not _time_up():
 		return
 	var b := ball.global_position
 	var neutral := absf(b.x) < Pitch.HALF_L - 45.0
 	if (neutral and carrier == null) or clock > half_len_now() + added + 45.0:
 		_end_half()
+
+
+func _check_added() -> void:
+	if not _added_shown and clock >= half_len_now() - 60.0:
+		_added_shown = true
+		var mins := clampi(roundi(_stoppage / 60.0 * 0.5) + 1, 1, 6) if half <= 2 else 1
+		added = mins * 60.0
+		hud.added_time(mins)
 
 
 func _end_half() -> void:
@@ -1810,6 +1879,9 @@ func _second_half() -> void:
 	half += 1
 	clock = 0.0
 	added = 0.0
+	_lost = 0.0
+	_live_w = 0.0
+	_dead_w = 0.0
 	_added_shown = false
 	_stoppage = 0.0
 	hud.end_half_time()
@@ -2094,6 +2166,25 @@ func user_buttons() -> Array:
 			out = ["TACKLE", "BLOCK"] if carrier.action in ["strike", "strike_stick"] else ["TACKLE"]
 	out.append("SWITCH")
 	return out
+
+
+## What the coach needs to know to pick a tip (game/coach.gd).
+func coach_state() -> Dictionary:
+	var a := active
+	var b := ball.global_position
+	var c := cam.camera
+	var vp := get_viewport().get_visible_rect().size
+	var off := c.is_position_behind(b) or not Rect2(Vector2.ZERO, vp).has_point(c.unproject_position(b))
+	return {
+		"taker": String(restart.get("kind", "")) if phase == P.SET and a == taker else "",
+		"carrying": carrier == a,
+		"in_hand": carrier == a and a.ball_hand,
+		"buttons": controls.ids,
+		"goal_dist": Pitch.from_goal_line(a.global_position, dir(a.team)),
+		"live_s": live_real,
+		"ball_far": Vector2(b.x - a.global_position.x, b.z - a.global_position.z).length() > 35.0,
+		"ball_off": off,
+	}
 
 
 func _user_buttons() -> void:

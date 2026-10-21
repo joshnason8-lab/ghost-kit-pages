@@ -12,11 +12,15 @@ func _ready() -> void:
 		n = int(args[0])
 	if args.size() > 1:
 		length = float(args[1])
+	var first := 0
+	for a in args:
+		if String(a).begins_with("start="):
+			first = int(String(a).substr(6))
 	Game.main = self
 	Game.settings.sound = false
 	var ids := DB.counties_ranked()
 	var totals := {"goals": 0, "points": 0, "shots": 0, "wides": 0, "frees": 0, "s65": 0, "puckouts": 0, "yellow": 0, "black": 0, "red": 0}
-	for i in n:
+	for i in range(first, first + n):
 		var home: String = ids[i % 8]
 		var away: String = ids[(i * 3 + 1) % 8]
 		if home == away:
@@ -31,16 +35,16 @@ func _ready() -> void:
 			await get_tree().process_frame
 			frames += 1
 		var s: Array = m.score
-		print("%s %s v %s %s  (%d frames, phase %d)" % [home, Rules.fmt(s[0][0], s[0][1]), Rules.fmt(s[1][0], s[1][1]), away, frames, m.phase])
+		print("%s %s v %s %s  (%.1f real min, %.1f live, phase %d)" % [home, Rules.fmt(s[0][0], s[0][1]), Rules.fmt(s[1][0], s[1][1]), away, frames / 1800.0, m.live_real / 60.0, m.phase])
 		for k in 2:
 			var t: Dictionary = m.tstats[k]
-			print("   %s shots %d (play %d placed %d) scored play %d placed %d wides %d frees %d 65s %d puckouts %d cards y%d b%d r%d" % [
-				["home", "away"][k], t.shots, t.shots_play, t.shots_placed, t.scores_play, t.scores_placed, t.wides, t.frees, t.s65, t.puckouts, t.yellow, t.black, t.red])
+			print("   %s shots %d (play %d placed %d) scored play %d placed %d wides %d frees %d 65s %d sidelines %d puckouts %d cards y%d b%d r%d" % [
+				["home", "away"][k], t.shots, t.shots_play, t.shots_placed, t.scores_play, t.scores_placed, t.wides, t.frees, t.s65, t.sidelines, t.puckouts, t.yellow, t.black, t.red])
 			totals.goals += int(s[k][0])
 			totals.points += int(s[k][1])
 			for key in ["shots", "wides", "frees", "s65", "puckouts", "yellow", "black", "red"]:
 				totals[key] += int(t[key])
-		if OS.get_cmdline_user_args().size() > 2:
+		if "v" in args:
 			for e in m.events:
 				print("      %d' %s %s %s %s" % [e.t, ["H", "A"][int(e.team)], e.kind, e.how, e.by])
 		m.queue_free()

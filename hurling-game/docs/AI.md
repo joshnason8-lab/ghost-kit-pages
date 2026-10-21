@@ -65,33 +65,40 @@ From the GAA's Games Intelligence Unit, sports-science papers and match analysis
 
 ## What the game's matches produce
 
-`tests/match_sim.tscn` plays AI matches headless. At the default length (14 minutes; the clock runs 5× real time in play, 2× while the ball is dead),
-matches between the top counties, after tuning (21 October 2026; ten matches across the last two runs):
+**The clock.** A real 70-minute match has the ball in play only about 38% of the time (about 27 minutes; 2023 league
+statistics): the rest is puck-outs, frees, sideline cuts, scores, cards and injuries. The game keeps the same share.
+While the ball is dead the referee's watch runs in real time, and when the players are set for the restart it is moved
+on to what that stoppage costs in a real match (`STOP_COST` in `game/match.gd`: about 20 s for a puck-out, 34 s for a
+free, more for a penalty or a card), or to whatever keeps the ball live for 38% of the half so far, whichever is more
+(the game has fewer frees than a real match and no injuries). While the ball is live the clock runs fast enough for the
+whole match to take the length you picked (`live_clock_k`): 4.4× real time at 8 minutes, 2.6× at 14, 1.8× at 20, and
+at 35 minutes about real time (1.08×). So **the 35-minute length is a full 70-minute match**, with the ball in play
+about as long as in a real one, and it scores like one. The shorter lengths are the same game with less of it, and
+score in proportion.
 
-| | Per match (both sides) |
-|---|---|
-| Goals | 1.3-2.0 |
-| Points | 20-23 |
-| Shots | 34-38 |
-| Wides | 16-17 |
-| Frees | 3.5-4.5 |
-| Yellow cards | about 1 |
-| Black cards | 0-0.5 |
-| Puck-outs | about 37-42 |
+**The check.** `tests/score_check.tscn` plays two AI matches between top counties at each length and holds them to the
+real numbers (it runs in CI). The run of 21 October 2026 (means a match, both sides):
 
-Scorelines like 1-11 v 0-7, 0-15 v 0-9, 1-15 v 1-13, 2-11 v 0-17: real hurling's shape (points far outnumber goals,
-a goal or two a game) at the default length.
+| Length | Real minutes | Ball live (real min) | Goals | Points | Shots | Real hurling for that much play |
+|---|---|---|---|---|---|---|
+| 8 min | 8.7 | 6.4 | 0.0 | 10.5 | 16.5 | 0.7 goals, 10 points |
+| 14 min | 15.7 | 11.3 | 1.0 | 20.0 | 28.5 | 1.2 goals, 18 points |
+| 20 min | 22.4 | 16.5 | 3.0 | 24.5 | 43.0 | 1.7 goals, 26 points |
+| **35 min (the full 70)** | 36.3 | 27.2 | 2.0 | 41.0 | 60.5 | **2.75 goals, 42 points, 77 shots** |
 
-**Not yet right at full length.** A 70-minute match played in real time (Settings > Match length > 70 min) runs far
-too high: one test gave 5-34 v 5-46, about twice a real game's scoring. Real hurling has the ball in play only about
-38% of the time (2023 league statistics); the game's restarts are quicker and its attacks shorter. The fix is the
-first of the next steps below.
+Full-length scorelines from that run and the tuning runs before it: 2-21 v 2-21, 0-20 v 0-20, 0-21 v 0-24,
+0-19 v 4-20, 2-22 v 0-12. Over every match: 1.56 points a live minute (real 1.58), 0.10 goals (real 0.10), 2.4 shots
+(real 2.9), 69% of shots scored (real 60%: the game's forwards shoot a little less often and a little better than
+real ones). Frees about 17 a full match (real 26), puck-outs about 70 (real 66), 4-7 yellow cards.
+
+The earlier version of this page said a 70-minute match "runs far too high (5-34 v 5-46)": that was the old 70-minute
+length, which ran the clock at real time through every stoppage too, so the ball was live for about twice as long as in
+a real match. It is gone; the 35-minute length replaces it.
 
 ## Next
 
-- Scoring at the longer lengths: slower build-up (more passes before a shot, more turnovers, contested puck-outs
-  kept about half the time), longer restarts at 30 and 70 minutes, tuned until a 70-minute match gives about 2-3
-  goals and 40 points between the sides.
+- A few more shots and a few more misses (real 77 shots and 60% scored, the game's about 60 and 69%); more frees
+  (real 26 a game) and sideline cuts (the ball rarely goes out over the sideline).
 - Substitutions (five, and three in extra time), with tired players coming off.
 - Tactics a manager picks: a sweeper (the extra defender), a two-man full-forward line, short or long puck-outs.
 - Umpires who now and then call a close point wrong, and Hawk-Eye at the stadium.

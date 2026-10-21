@@ -50,6 +50,9 @@ func _ready() -> void:
 	game[1].add_child(UI.field(tr("MATCH_LENGTH"), UI.chips(lens, int(Game.settings.length), func(i):
 		Game.settings.length = i
 		Game.save_settings())))
+	game[1].add_child(UI.wrap(tr("LENGTH_NOTE"), "MutedLabel", 17))
+	game[1].add_child(_toggle("coach", "SET_COACH"))
+	game[1].add_child(UI.wrap(tr("SET_COACH_NOTE"), "MutedLabel", 17))
 	game[1].add_child(UI.field(tr("GRADE"), UI.chips([tr("GRADE_SENIOR"), tr("GRADE_CLUB")], int(Game.settings.grade), func(i):
 		Game.settings.grade = i
 		Game.save_settings())))

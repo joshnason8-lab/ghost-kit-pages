@@ -32,6 +32,8 @@ func _ready() -> void:
 	await _scroll_on_text()
 	_championship()
 	_sim_scores()
+	_clock_lengths()
+	_coach()
 	await _match_and_motion()
 	Game.settings = keep
 	Game.delete_champ()
@@ -374,6 +376,50 @@ func _sim_scores() -> void:
 	var avg := float(tot) / 400.0
 	check(avg > 20.0 and avg < 34.0, "Sim: a side scores about 20-34 points' worth (%.1f)" % avg)
 	check(float(goals) / 200.0 > 1.2 and float(goals) / 200.0 < 4.0, "Sim: about two or three goals a game (%.1f)" % (float(goals) / 200.0))
+
+
+## The clock fitted to the match length: at the longest the ball live in real time (so the match scores as a real
+## one, tests/score_check); shorter lengths faster, in proportion.
+func _clock_lengths() -> void:
+	var M: GDScript = load("res://game/match.gd")
+	var full := 70.0 * 60.0
+	check(M.live_clock_k(full, float(Game.LENGTHS[-1])) < 1.1, "Clock: at the longest length the ball is live at about real time")
+	var last := 99.0
+	for n in Game.LENGTHS:
+		var k: float = M.live_clock_k(full, float(n))
+		check(k >= 1.0 and k <= last, "Clock: %d min runs %.2fx, no faster than a shorter length" % [n, k])
+		last = k
+	check(M.live_clock_k(full, 8.0) > 3.0, "Clock: an 8-minute match runs the clock over 3x")
+	# A real match has the ball in play about 38% of its time: what stoppages cost on the watch.
+	check(is_equal_approx(M.LIVE_SHARE, 0.38), "Clock: the ball live 38% of the watch")
+	check(float(M.STOP_COST.puck_out) >= 15.0 and float(M.STOP_COST.free) >= float(M.STOP_COST.puck_out), "Clock: a free costs more time than a puck-out")
+
+
+## The coach's tips: each when it is needed, once.
+func _coach() -> void:
+	var none := {}
+	check(Coach.pick({"taker": "puck_out"}, none) == "PUCK_OUT", "Coach: your puck-out")
+	check(Coach.pick({"taker": "65"}, none) == "FREE", "Coach: your 65 is a free's tip")
+	check(Coach.pick({"taker": "penalty"}, none) == "PENALTY", "Coach: your penalty")
+	check(Coach.pick({"carrying": true, "in_hand": true, "buttons": ["STRIKE", "PASS", "SOLO"]}, none) == "IN_HAND", "Coach: the ball in your hand: the four steps")
+	check(Coach.pick({"carrying": true, "in_hand": false, "buttons": ["STRIKE", "PASS", "HAND"], "goal_dist": 80.0}, none) == "ON_STICK", "Coach: on the hurley")
+	check(Coach.pick({"carrying": true, "in_hand": false, "buttons": ["STRIKE", "PASS", "GOAL"], "goal_dist": 22.0}, none) == "GOAL", "Coach: close in, the goal")
+	check(Coach.pick({"carrying": true, "goal_dist": 35.0}, {"ON_STICK": true}) == "SHOOT", "Coach: in range, the point")
+	check(Coach.pick({"buttons": ["CATCH", "PULL", "SWITCH"]}, none) == "LOOSE", "Coach: the ball near you")
+	check(Coach.pick({"buttons": ["TACKLE", "SWITCH"]}, {"MOVE": true}) == "TACKLE", "Coach: tackle")
+	check(Coach.pick({"buttons": ["SWITCH"]}, none) == "MOVE", "Coach: first, how to run")
+	check(Coach.pick({"buttons": ["SWITCH"], "ball_far": true, "live_s": 30.0}, {"MOVE": true}) == "SWITCH", "Coach: the ball far away: switch")
+	check(Coach.pick({"buttons": ["SWITCH"], "ball_far": true, "live_s": 5.0}, {"MOVE": true}) == "", "Coach: not in the first seconds")
+	var c := Coach.new()
+	var st := {"buttons": ["SWITCH"]}
+	check(c.step(0.1, st) == "MOVE", "Coach: a tip shows")
+	check(c.step(0.1, st) == "", "Coach: one at a time")
+	for i in 120:
+		c.step(0.1, st)
+	check(c.step(0.1, st) == "" and c.seen.has("MOVE"), "Coach: each tip once")
+	check(c.event("STEPS") == "STEPS" and c.event("STEPS") == "", "Coach: the steps tip once, at once")
+	for id in Coach.TIPS + ["STEPS", "INTRO"]:
+		check(tr(Coach.text_key(id)) != Coach.text_key(id), "Coach: COACH_%s has words" % id)
 
 
 # ---------------------------------------------------------------- a match, and the movement audit

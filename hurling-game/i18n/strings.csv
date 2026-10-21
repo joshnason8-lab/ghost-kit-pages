@@ -38,7 +38,7 @@ VENUE_NIGHT,"The county ground, under lights","Páirc an chontae, faoi sholas"
 VENUE_STADIUM,The national stadium,An staid náisiúnta
 MATCH_LENGTH,Match length,Fad an chluiche
 MINUTES_N,{n} min,{n} nóim.
-LENGTH_NOTE,How long a match takes you to play. The clock runs faster so all the match fits; the play itself is at real speed. 70 min is the real thing.,An fad a thógann an cluiche ort. Ritheann an clog níos tapúla ionas go mbeidh an cluiche ar fad ann; imrítear féin ar luas ceart. Is é 70 nóim. an fíorchluiche.
+LENGTH_NOTE,"How long a match takes you. At 35 minutes the clock runs at about the real pace while the ball is in play: a full 70-minute match, and a real match's score.","An fad a mhaireann cluiche duit. Ag 35 nóiméad ritheann an clog ar an luas ceart, nach mór, fad atá an sliotar beo: cluiche iomlán 70 nóiméad, agus scór cluiche cheart."
 GRADE,Grade,Grád
 GRADE_SENIOR,Senior county (2 × 35),Sinsir contae (2 × 35)
 GRADE_CLUB,Club (2 × 30),Club (2 × 30)
@@ -261,15 +261,15 @@ RULES_FOULS_TEXT,"Pulling a man down, tripping, holding, pushing, charging from 
 RULES_CARDS,Cards,Cártaí
 RULES_CARDS_TEXT,"A yellow card is a caution; a second is a red, and he is sent off and not replaced. In senior county hurling, pulling down, tripping or a careless hurley that denies a goal chance inside the 20 m line or the arc is a black card (ten minutes in the sin bin) and a penalty.","Is rabhadh an cárta buí; is dearg an dara ceann, curtar den pháirc é agus ní féidir é a ionadú. San iománaíocht shinsir chontae, má cheiltear seans cúil laistigh den líne 20 m nó den stua le tarraingt anuas, bacadh cos nó camán míchúramach, is cárta dubh é (deich nóiméad sa bhosca smachta) agus poc éirice."
 RULES_PUCKOUT,Puck-out,Poc amach
-RULES_PUCKOUT_TEXT,"After a score or a wide, the goalkeeper strikes the sliotar out from the small rectangle. Everyone else stands outside the 20 m line until it is struck, and it must travel 13 metres before one of his own side plays it.","Tar éis scóir nó iarrachta amú, buaileann an cúl báire an sliotar amach ón dronuilleog bheag. Seasann gach duine eile taobh amuigh den líne 20 m go mbuailtear é, agus caithfidh sé 13 mhéadar a thaisteal sula n-imríonn duine dá thaobh féin é."
+RULES_PUCKOUT_TEXT,"After a score or a wide, the goalkeeper strikes the sliotar out from the small rectangle. Everyone else stands outside the 20 m line until it is struck, and it must travel 13 metres before one of his own side plays it.","Tar éis scóir nó iarrachta amú, buaileann an cúl báire an sliotar amach ón gcearnóg bheag. Seasann gach duine eile taobh amuigh den líne 20 m go mbuailtear é, agus caithfidh sé 13 mhéadar a thaisteal sula n-imríonn duine dá thaobh féin é."
 RULES_FREE,Frees,Saorphocanna
-RULES_FREE_TEXT,"Taken where the foul was: lifted with the hurley and struck, opponents 13 metres away. A foul by a defender inside his 20 m line gives a free from the 20 m line; in the large rectangle a technical foul gives a free from its centre.","Tógtha san áit a raibh an chalaois: ardaithe leis an gcamán agus buailte, an freasúra 13 mhéadar uaidh. Calaois ag cosantóir laistigh dá líne 20 m: saorphoc ón líne 20 m; sa dronuilleog mhór, calaois theicniúil: saorphoc óna lár."
+RULES_FREE_TEXT,"Taken where the foul was: lifted with the hurley and struck, opponents 13 metres away. A foul by a defender inside his 20 m line gives a free from the 20 m line; in the large rectangle a technical foul gives a free from its centre.","Tógtha san áit a raibh an chalaois: ardaithe leis an gcamán agus buailte, an freasúra 13 mhéadar uaidh. Calaois ag cosantóir laistigh dá líne 20 m: saorphoc ón líne 20 m; sa chearnóg mhór, calaois theicniúil: saorphoc óna lár."
 RULES_65,The 65,An 65
 RULES_65_TEXT,"When a defender puts the ball over his own end line wide of the posts, the attackers strike a free from the 65 m line opposite where it crossed.","Nuair a chuireann cosantóir an sliotar thar a chúlline féin, lasmuigh de na cuaillí, buaileann na tosaithe saorphoc ón líne 65 m os comhair na háite ar thrasnaigh sé."
 RULES_SIDELINE,The sideline cut,An poc sleasa
 RULES_SIDELINE_TEXT,"Over the sideline, the other side strike it back in from where it crossed, off the ground, with opponents 13 metres back.","Thar an taobhlíne, buaileann an taobh eile isteach é ón áit ar thrasnaigh sé, den talamh, an freasúra 13 mhéadar siar."
 RULES_PENALTY,The penalty,An poc éirice
-RULES_PENALTY_TEXT,"For an aggressive foul by a defender in his large rectangle, or a foul that denies a goal chance. Struck from the 20 m line, one defender on the goal line, everyone else outside the 20 m line and the arc.","As calaois ionsaitheach ag cosantóir ina dhronuilleog mhór, nó as calaois a cheileann seans cúil. Buailte ón líne 20 m, cosantóir amháin ar an gcúlline, gach duine eile taobh amuigh den líne 20 m agus den stua."
+RULES_PENALTY_TEXT,"For an aggressive foul by a defender in his large rectangle, or a foul that denies a goal chance. Struck from the 20 m line, one defender on the goal line, everyone else outside the 20 m line and the arc.","As calaois ionsaitheach ag cosantóir ina chearnóg mhór, nó as calaois a cheileann seans cúil. Buailte ón líne 20 m, cosantóir amháin ar an gcúlline, gach duine eile taobh amuigh den líne 20 m agus den stua."
 RULES_DRAW,A draw,Comhscór
 RULES_DRAW_TEXT,"In a knock-out game a draw goes to two halves of ten minutes' extra time. Still level: five penalties each, only goals count, then sudden death.","I gcluiche cnaguirlis, téann comhscór go dhá leath deich nóiméad d'am breise. Más cothrom fós: cúig phoc éirice an taobh, níl ach cúil ag comhaireamh, ansin bás tobann."
 RULES_HELMET,Helmets,Clogaid
@@ -317,3 +317,20 @@ SIG_SIDELINE_TEXT,The linesman holds his flag out the way the cut goes.,Coinnío
 WON_BY,{team} by {margin},{team} le {margin}
 MARGIN_one,{n} point,{n} chúilín
 MARGIN_other,{n} points,{n} cúilín
+COACH,Coach,An traenálaí
+COACH_INTRO,"Drag on the left to run. The buttons on the right come up as you need them. Over the bar is a point; in the net, a goal (3).","Tarraing ar chlé chun rith. Tagann na cnaipí ar dheis nuair a bhíonn gá leo. Thar an trasnán, cúilín; san eangach, cúl (3)."
+COACH_MOVE,Drag your thumb on the left to run. You are the man with the gold ring.,Tarraing d'ordóg ar chlé chun rith. Is tusa an fear leis an bhfáinne óir.
+COACH_LOOSE,The sliotar is near: CATCH it in the air or LIFT it off the ground. PULL strikes it first time.,Tá an sliotar gar duit: BEIR air san aer nó ARDAIGH den talamh é. Buaileann TARRAING é den chéad iarraidh.
+COACH_IN_HAND,In your hand you may take four steps (the dots count them). SOLO puts it on your hurley.,"I do lámh, tá ceithre choiscéim agat (comhaireann na poncanna iad). Cuireann SOLO ar do chamán é."
+COACH_ON_STICK,"On the hurley, run as far as you like. STRIKE for the posts or PASS to a teammate.","Ar an gcamán, rith chomh fada agus is mian leat. BUAIL ar na cuaillí nó PAS chuig comhimreoir."
+COACH_SHOOT,In range: push the joystick toward the posts and STRIKE. Over the bar is a point.,"Faoi raon: brúigh an luamhán i dtreo na gcuaillí agus BUAIL. Thar an trasnán, cúilín."
+COACH_GOAL,"Close in: GOAL drives it at the net, worth three points. STRIKE over the bar for one.","Gar don chúl: tiomáineann CÚL san eangach é, trí chúilín. BUAIL thar an trasnán ar cheann."
+COACH_TACKLE,"He has the ball: TACKLE from the side or the front. From behind, it is a free to them.","Tá an sliotar aige: TACLÁIL ón taobh nó ón tosach. Ón gcúl, is saorphoc dóibh é."
+COACH_SWITCH,The ball is far from you: SWITCH takes the teammate best placed for it.,Tá an sliotar i bhfad uait: tógann ATHRAIGH an comhimreoir is fearr suite dó.
+COACH_FOLLOW,"Lost the sliotar? A white dot marks it, and off the screen an arrow at the edge points to it.","Cá bhfuil an sliotar? Marcálann ponc bán é, agus lasmuigh den scáileán taispeánann saighead ar an imeall é."
+COACH_PUCK_OUT,Your puck-out: LONG down the field (aim with the joystick) or SHORT to a back.,Do phoc amach: FADA síos an pháirc (aimsigh leis an luamhán) nó GEARR chuig cúlaí.
+COACH_FREE,"Your free: STRIKE for the posts or PASS to a teammate. Wait, and it is taken for you.","Do shaorphoc: BUAIL ar na cuaillí nó PAS chuig comhimreoir. Fan, agus tógfar duit é."
+COACH_PENALTY,"A penalty: aim with the joystick, then GOAL. Only the goalkeeper stands in your way.","Poc éirice: aimsigh leis an luamhán, ansin CÚL. Níl ach an cúl báire romhat."
+COACH_STEPS,Too many steps: a free to them. SOLO it onto your hurley before the fourth step.,An iomarca coiscéimeanna: saorphoc dóibh. Cuir SOLO ar do chamán roimh an gceathrú coiscéim.
+SET_COACH,Coach's tips,Leideanna an traenálaí
+SET_COACH_NOTE,"Short tips through a match, each the first time it is needed. On for your first match.","Leideanna gearra le linn cluiche, gach ceann an chéad uair a bhíonn gá leis. Ar siúl do do chéad chluiche."

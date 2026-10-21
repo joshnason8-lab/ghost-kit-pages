@@ -28,6 +28,9 @@ var _intro: Control
 var _intro_t := 0.0
 var _dev: Label
 var _active: Player = null
+var _coach: Control
+var _coach_text: Label
+var _coach_t := 0.0
 
 
 func setup(p_match: Node) -> void:
@@ -93,11 +96,55 @@ func setup(p_match: Node) -> void:
 	root.add_child(box)
 	box.add_child(UI.round_button("camera", func(): _next_camera(), 60))
 	box.add_child(UI.round_button("pause", func(): m.set_paused(not m.paused), 60))
+	_build_coach()
 	_dev = UI.label("", "MutedLabel", 15, Game.C_GOLD)
 	_dev.position = Vector2(sm.x + 6, 150)
 	_dev.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dev.visible = bool(Game.settings.get("dev", false))
 	root.add_child(_dev)
+
+
+## The coach's card: low in the middle, between the joystick and the buttons, where the eye is during play.
+func _build_coach() -> void:
+	_coach = PanelContainer.new()
+	_coach.theme_type_variation = "GlassPanel"
+	_coach.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_coach.offset_left = -300
+	_coach.offset_right = 300
+	_coach.offset_top = -196
+	_coach.offset_bottom = -76
+	_coach.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_coach.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var v := VBoxContainer.new()
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_theme_constant_override("separation", 2)
+	_coach.add_child(v)
+	var head := HBoxContainer.new()
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(Icon.make("whistle", 22, Game.C_GOLD))
+	var who := UI.label(tr("COACH").to_upper(), "EyebrowLabel", 16, Game.C_GOLD)
+	who.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(who)
+	v.add_child(head)
+	_coach_text = UI.label("", "SubLabel", 20, Game.C_INK)
+	_coach_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_coach_text.custom_minimum_size.x = 560
+	_coach_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.fit(_coach_text, 3)
+	v.add_child(_coach_text)
+	_coach.visible = false
+	root.add_child(_coach)
+
+
+## Show a coach's tip (game/coach.gd), by its id; "" leaves what is shown.
+func coach(id: String) -> void:
+	if id == "":
+		return
+	_coach_text.text = tr(Coach.text_key(id))
+	UI.refit(_coach_text)
+	_coach.visible = true
+	_coach.modulate.a = 1.0
+	_coach_t = Coach.SHOW_S
 
 
 func _outlined(text: String, variation: String, size: int, col: Color) -> Label:
@@ -212,6 +259,10 @@ func tick(delta: float) -> void:
 	if _call_t > 0.0:
 		_call_t -= delta
 		_call.modulate.a = clampf(_call_t / 0.5, 0.0, 1.0)
+	if _coach_t > 0.0:
+		_coach_t -= delta
+		_coach.modulate.a = clampf(_coach_t / 0.5, 0.0, 1.0)
+		_coach.visible = _coach_t > 0.0
 	if _toast_t > 0.0:
 		_toast_t -= delta
 		_toast.modulate.a = clampf(_toast_t / 0.5, 0.0, 1.0)
@@ -263,7 +314,7 @@ func set_active(pl: Player) -> void:
 	_active = pl
 
 
-func intro(text: String) -> void:
+func intro(text: String, how := "") -> void:
 	_intro = PanelContainer.new()
 	_intro.theme_type_variation = "GlassPanel"
 	_intro.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -284,8 +335,18 @@ func intro(text: String) -> void:
 	s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.fit(s, 2)
 	v.add_child(s)
+	if how != "":
+		# Your first match: the game in three lines before the throw-in.
+		_intro.offset_top = -60
+		_intro.offset_bottom = 170
+		var h := UI.label(how, "SubLabel", 20, Game.C_GOLD)
+		h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		h.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		h.custom_minimum_size.x = 640
+		UI.fit(h, 3)
+		v.add_child(h)
 	root.add_child(_intro)
-	_intro_t = 3.2
+	_intro_t = 6.7 if how != "" else 3.2
 
 
 func _next_camera() -> void:
