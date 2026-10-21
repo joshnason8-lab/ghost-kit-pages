@@ -12,8 +12,15 @@ static func screen(owner: Control, with_backdrop := true) -> void:
 
 ## Margins that keep content clear of the screen edges and any camera cut-out, in canvas
 ## units: x left, y top, z right, w bottom.
+## A camera cut-out to allow for when there is no real screen (tests/fit_audit.gd), in screen pixels.
+static var test_cutout := 0.0
+
+
 static func safe_margins(owner: Control, base := 40.0) -> Vector4:
 	var m := Vector4(base, base * 0.6, base, base * 0.55)
+	if test_cutout > 0.0 and owner.is_inside_tree():
+		var root_size := owner.get_tree().root.size
+		m.x += test_cutout * owner.get_viewport_rect().size.x / maxf(1.0, float(root_size.x))
 	var win := DisplayServer.window_get_size()
 	if win.x <= 0 or not owner.is_inside_tree():
 		return m

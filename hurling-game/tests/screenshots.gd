@@ -20,13 +20,12 @@ func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
 	Game.settings.graphics = Game.GFX_HIGH
-	Game.delete_season()
-	Game.delete_cup()
+	Game.delete_champ()
 	var tour := [
-		["menu", "res://ui/main_menu.gd", {}, 1.5], ["quick", "res://ui/quick_setup.gd", {}, 0.4],
+		["menu", "res://ui/main_menu.gd", {}, 2.5], ["setup", "res://ui/quick_setup.gd", {}, 0.4],
 		["settings", "res://ui/settings_screen.gd", {}, 0.4], ["howto", "res://ui/howto_screen.gd", {}, 0.4],
-		["moves", "res://ui/howto_screen.gd", {"tab": 2}, 0.4], ["season_pick", "res://ui/season_hub.gd", {}, 0.4],
-		["cup_pick", "res://ui/cup_screen.gd", {}, 0.4], ["records", "res://ui/records_screen.gd", {}, 0.4],
+		["howto_controls", "res://ui/howto_screen.gd", {"tab": 1}, 0.4], ["champ_pick", "res://ui/champ_screen.gd", {}, 0.4],
+		["move_buttons", "res://ui/buttons_screen.gd", {}, 0.4],
 	]
 	for t in tour:
 		if only != "" and not String(t[0]).begins_with(only):
@@ -34,35 +33,41 @@ func _ready() -> void:
 		Game.show_screen(t[1], t[2])
 		await _wait(t[3])
 		await shot(t[0])
-	if only == "" or only.begins_with("season"):
-		for ls in [["MY", "KLC", 9, "season_hub"], ["TH", "SPB", 5, "season_th"], ["ID", "SOL", 6, "season_id"], ["MY", "PRK", 300, "season_end"]]:
-			Game.new_season(ls[0], ls[1])
-			for i in int(ls[2]):
-				if Game.season.phase != "done":
-					Game.season.sim_round()
-			Game.show_screen("res://ui/season_hub.gd")
-			await _wait(0.4)
-			await shot(ls[3])
-	if only == "" or only.begins_with("cup"):
-		Game.new_cup("royal", "MAS")
-		Game.cup.sim_next()
-		Game.show_screen("res://ui/cup_screen.gd")
-		await _wait(0.4)
-		await shot("cup_hub")
+	if only == "" or only.begins_with("champ"):
+		var c: Championship = Game.new_champ("TIP")
+		for i in 3:
+			var f := c.next_fixture()
+			var r := Sim.play(String(f.home), String(f.away))
+			c.record_user_result({"home": f.home, "away": f.away, "score": r.score, "winner": r.winner})
+		Game.save_champ()
+		var h := Game.show_screen("res://ui/champ_screen.gd")
+		await _wait(0.3)
+		await shot("champ_next")
+		h._tab = 1
+		h._fill()
+		await _wait(0.3)
+		await shot("champ_tables")
+		Game.delete_champ()
 	if only == "" or only.begins_with("match"):
-		Game.start_match({"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 3, "points": 15,
-			"difficulty": 1, "mode": "quick", "user_team": 0, "seed": 7})
+		var venue := "county" if only == "" else only.trim_prefix("match_")
+		if not DB.VENUES.has(venue):
+			venue = "county"
+		Game.start_match({"home": "KIL", "away": "TIP", "venue": venue, "difficulty": 1, "mode": "quick", "user_team": 0, "seed": 7})
 		await _wait(3.5)
-		await shot("match_serve")
-		await _wait(2.0)
-		await shot("match_rally")
-		await _wait(4.0)
-		await shot("match_rally2")
+		await shot("match_intro")
+		for i in 6:
+			await _wait(2.5)
+			await shot("match_play_%d" % i)
 	if only == "" or only.begins_with("result"):
-		var r := Sim.play("THA", "MAS")
-		r.config = {"mode": "quick", "stage": "Semi-final", "home": "THA", "away": "MAS"}
+		var r := Sim.play("KIL", "TIP")
+		r.config = {"mode": "quick", "stage": "Semi-final"}
 		r.user_team = 0
-		r.potm = r.stats.values()[0]
+		r.pstats = {}
+		for id in r.scorers:
+			var team_k := 0 if String(id).begins_with("KIL") else 1
+			r.pstats[id] = {"goals": r.scorers[id][0], "points": r.scorers[id][1], "free_g": 0, "free_p": 0, "wides": 0, "team": team_k, "num": 0}
+		r.tstats = [{"shots": 30, "wides": 9, "frees": 10}, {"shots": 26, "wides": 8, "frees": 12}]
+		r.star = r.scorers.keys()[0]
 		Game.show_screen("res://ui/result_screen.gd", {"result": r})
 		await _wait(0.4)
 		await shot("result")

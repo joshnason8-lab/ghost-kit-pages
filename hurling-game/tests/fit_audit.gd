@@ -4,17 +4,18 @@ extends Node
 ## text over other text, a translation key or a placeholder shown raw, and characters no font in the chain can draw.
 ## Also the match buttons' labels against their circles. Headless, so it is quick:
 ##   godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- OUT.jsonl [langs] [WxH,...] [parts]
-## langs: en,th,ms,... (all by default). WxH: the phone's screen in pixels (layouts depend only on its shape: 1280x720
-## and a Galaxy A16's 2340x1080 by default). parts: menus,season,cup,match (all by default).
+## langs: en,ga (both by default). WxH: the phone's screen in pixels (layouts depend only on its shape): 16:9
+## (1280x720), 19.5:9 (a Galaxy A16's 2340x1080), 20:9 with a camera cut-out (2400x1080, its cut-out given to the
+## safe-area margins as a phone's would be) and a 4:3 tablet (2048x1536). parts: menus,champ,match (all by default).
 ## Each problem is a line of JSON; a summary is printed at the end. Exits 1 if anything was found.
 
-const LANGS := ["en", "th", "ms", "id", "vi", "lo", "my", "km", "fil", "ja", "ko", "zh", "hi"]
+const LANGS := ["en", "ga"]
 const SKIP_CHARS := [0x20, 0x09, 0x0A, 0xA0, 0xAD, 0x200B, 0x200C, 0x200D, 0x2060, 0xFE0F]
 
 var out_path := "user://fit_audit.jsonl"
 var langs: Array = LANGS
-var sizes: Array = [Vector2i(1280, 720), Vector2i(2340, 1080)]
-var parts: Array = ["menus", "season", "cup", "match"]
+var sizes: Array = [Vector2i(1280, 720), Vector2i(2340, 1080), Vector2i(2400, 1080), Vector2i(2048, 1536)]
+var parts: Array = ["menus", "champ", "match"]
 var lang := "en"
 var res := ""
 var where := ""
@@ -46,6 +47,8 @@ func _ready() -> void:
 	Game.settings.dev = false
 	for s in sizes:
 		get_tree().root.size = s
+		# The 20:9 phone has a camera cut-out on its left edge, held sideways: 110 px of it.
+		UI.test_cutout = 110.0 if s == Vector2i(2400, 1080) else 0.0
 		await frames(2)
 		var vs := get_viewport().get_visible_rect().size
 		res = "%dx%d" % [s.x, s.y]
@@ -61,8 +64,7 @@ func _ready() -> void:
 			print("   %s: %d so far" % [l, found])
 	Game.goto_menu()
 	await frames(2)
-	Game.delete_season()
-	Game.delete_cup()
+	Game.delete_champ()
 	Game.settings = keep
 	Game.save_settings()
 	TranslationServer.set_locale(Game.language())
@@ -413,7 +415,8 @@ func _buttons() -> void:
 	var keep := int(Game.settings.btn_size)
 	for k in 3:
 		Game.settings.btn_size = k
-		for set_ in [["SERVE", "HORSE"], ["KICK"], ["DIG"], ["SET", "QUICK", "ATTACK2"], ["SPIKE", "SPIKE2", "FEINT"], ["BLOCK"]]:
+		for set_ in [["STRIKE", "GOAL", "PASS", "SOLO", "SWITCH"], ["STRIKE", "PASS", "HAND", "SWITCH"], ["CATCH", "PULL", "SWITCH"],
+				["LIFT", "PULL", "SWITCH"], ["TACKLE", "BLOCK", "SWITCH"], ["LONG", "SHORT"], ["GOAL"]]:
 			tc.set_buttons(set_)
 			tc.queue_redraw()
 			await frames(2)   # the labels are fitted as they are drawn
@@ -429,7 +432,7 @@ func _buttons() -> void:
 
 func _menus() -> void:
 	var menu := Game.show_screen("res://ui/main_menu.gd")
-	await frames(40)
+	await frames(30)
 	await audit("main_menu")
 	menu._open_language()
 	await frames(12)
@@ -439,82 +442,130 @@ func _menus() -> void:
 	Game.show_screen("res://ui/settings_screen.gd")
 	await frames(10)
 	await audit("settings")
+	_scroll_to_end()
+	await frames(4)
+	await audit("settings_end")
 	for tab in 3:
 		Game.show_screen("res://ui/howto_screen.gd", {"tab": tab})
 		await frames(10)
 		await audit("howto_%d" % tab)
-	Game.show_screen("res://ui/quick_setup.gd")
-	await frames(10)
-	await audit("quick_setup")
-	Game.show_screen("res://ui/records_screen.gd")
+		_scroll_to_end()
+		await frames(4)
+		await audit("howto_%d_end" % tab)
+	for watch in [false, true]:
+		Game.show_screen("res://ui/quick_setup.gd", {"watch": watch})
+		await frames(10)
+		await audit("setup_%s" % watch)
+		_scroll_to_end()
+		await frames(4)
+		await audit("setup_%s_end" % watch)
+	Game.show_screen("res://ui/buttons_screen.gd")
 	await frames(8)
-	await audit("records")
-	var r := Sim.play("PHI", "LAO")
-	r.config = {"mode": "quick", "stage": tr("SEMI_FINAL"), "home": "PHI", "away": "LAO"}
-	r.user_team = 0
-	r.potm = r.stats.values()[0]
-	Game.show_screen("res://ui/result_screen.gd", {"result": r, "tie": {"results": [[2, 1]], "used": [[], []]}})
+	await audit("move_buttons")
+	Game.show_screen("res://ui/licences_screen.gd")
+	await frames(8)
+	await audit("licences")
+	var ps := {"KIL_14": {"goals": 1, "points": 3, "free_g": 0, "free_p": 2, "wides": 1, "team": 0, "num": 14},
+		"KIL_12": {"goals": 0, "points": 4, "free_g": 0, "free_p": 0, "wides": 1, "team": 0, "num": 12},
+		"KIL_10": {"goals": 1, "points": 2, "free_g": 0, "free_p": 0, "wides": 1, "team": 0, "num": 10},
+		"TIP_11": {"goals": 0, "points": 6, "free_g": 0, "free_p": 5, "wides": 0, "team": 1, "num": 11},
+		"TIP_15": {"goals": 1, "points": 1, "free_g": 0, "free_p": 0, "wides": 0, "team": 1, "num": 15}}
+	var ts := {"shots": 20, "wides": 6, "frees": 7, "s65": 2, "sidelines": 3, "puckouts": 14, "yellow": 1, "black": 1, "red": 0,
+		"scores_play": 10, "scores_placed": 4}
+	var r := {"config": {"mode": "quick", "stage": tr("STAGE_SEMI")}, "home": "KIL", "away": "TIP", "score": [[2, 15], [1, 17]],
+		"winner": 0, "user_team": 0, "pstats": ps, "tstats": [ts, ts.duplicate()], "events": [], "extra_time": true,
+		"shootout": {"goals": [4, 3]}, "star": "KIL_14"}
+	Game.show_screen("res://ui/result_screen.gd", {"result": r})
 	await frames(12)
 	await audit("result")
 
 
-func _season() -> void:
-	Game.delete_season()
-	Game.show_screen("res://ui/season_hub.gd")
-	await frames(10)
-	await audit("season_pick")
-	# Each league's home: Malaysia mid-Grand Prix and in its knockouts, Thailand's ties, Indonesia's finals, a season's
-	# end (relegation and promotion), and a Division 1 club's.
-	for ls in [["MY", "NSN", 3, "season_hub"], ["MY", "FRS", 6, "season_playoffs"], ["TH", "NPT", 4, "season_th"],
-			["ID", "MKS", 7, "season_id"], ["MY", "KDH", 400, "season_over"], ["MY", "PRS", 400, "season_div1"]]:
-		var se = Game.new_season(ls[0], ls[1])
-		for i in int(ls[2]):
-			if se.phase != "done":
-				se.sim_round()
-		Game.save_season()
-		Game.show_screen("res://ui/season_hub.gd")
-		await frames(12)
-		await audit(ls[3])
-	Game.delete_season()
+func _scroll_to_end() -> void:
+	for n in get_tree().root.find_children("*", "ScrollContainer", true, false):
+		var sc: ScrollContainer = n
+		if sc.is_visible_in_tree():
+			sc.scroll_vertical = int(sc.get_v_scroll_bar().max_value)
 
 
-func _cup() -> void:
-	Game.delete_cup()
-	Game.show_screen("res://ui/cup_screen.gd")
+func _champ() -> void:
+	Game.delete_champ()
+	Game.show_screen("res://ui/champ_screen.gd")
 	await frames(10)
-	await audit("cup_pick")
-	var cup = Game.new_cup("sea", "PHI", true, "team")
-	cup.sim_next()
-	Game.save_cup()
-	Game.show_screen("res://ui/cup_screen.gd")
-	await frames(12)
-	await audit("cup_hub")
-	while cup.stage != "done":
-		cup.sim_next()
-	Game.show_screen("res://ui/cup_screen.gd")
-	await frames(12)
-	await audit("cup_over")
-	Game.delete_cup()
+	await audit("champ_pick")
+	for team in ["KIL", "DOW"]:
+		var c: Championship = Game.new_champ(team)
+		Game.save_champ()
+		for tab in 3:
+			var h := Game.show_screen("res://ui/champ_screen.gd")
+			await frames(4)
+			h._tab = tab
+			h._fill()
+			await frames(8)
+			await audit("champ_%s_%d" % [team, tab])
+		# On to the knock-outs, and the end.
+		var guard := 0
+		while c.phase != "done" and guard < 40:
+			guard += 1
+			var f := c.next_fixture()
+			if f.is_empty():
+				c.play_others()
+				continue
+			var r := Sim.play(String(f.home), String(f.away), null, bool(f.knockout))
+			c.record_user_result({"home": f.home, "away": f.away, "score": r.score, "winner": r.winner, "extra_time": r.extra_time, "shootout": {}})
+			if c.phase == "ko" and guard < 40 and String(c.ko_stage) in ["STAGE_QUARTER", "STAGE_SEMI"]:
+				Game.save_champ()
+				var h2 := Game.show_screen("res://ui/champ_screen.gd")
+				await frames(6)
+				h2._tab = 2
+				h2._fill()
+				await frames(6)
+				await audit("champ_%s_ko" % team)
+		Game.save_champ()
+		Game.show_screen("res://ui/champ_screen.gd")
+		await frames(8)
+		await audit("champ_%s_done" % team)
+		Game.show_screen("res://ui/main_menu.gd")
+		await frames(6)
+	Game.new_champ("CLA")
+	Game.save_champ()
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(20)
+	await audit("main_menu_continue")
+	Game.delete_champ()
 
 
 func _match() -> void:
-	Game.start_match({"home": "LAO", "away": "MYA", "venue": "mall", "event": "regu", "sets": 3, "points": 15,
-		"difficulty": 1, "mode": "quick", "user_team": 0, "stage": tr("SEMI_FINAL"), "seed": 3})
+	Game.start_match({"home": "KIL", "away": "WEX", "venue": "parish", "difficulty": 1, "mode": "quick", "user_team": 0,
+		"stage": tr("STAGE_SEMI"), "seed": 3, "knockout": true})
 	await frames(30)
 	await audit("match_intro")
 	var m: Node = Game.current
-	await frames(150)
+	await frames(200)
 	await audit("match_play")
-	m.hud.banner(tr("CALL_ROLL"))
-	m.hud.timing_result("PERFECT")
+	m.hud.banner(tr("CALL_PENALTY"))
+	m.hud.call_line(tr("FOUL_HOOK_HURLEY") + " · " + tr("FREE_TO").format({"team": DB.short_name("WEX")}))
+	m.hud.restart_tag({"kind": "sideline", "team": 1})
+	m.hud.added_time(3)
 	await frames(4)
 	await audit("match_callout")
+	m.hud.banner(tr("CARD_BLACK"))
+	m.hud.call_line(tr("SIN_BIN_LINE").format({"name": "S. Ó Caoindealbháin"}))
+	await frames(4)
+	await audit("match_card")
 	m.set_paused(true)
 	await frames(6)
 	await audit("match_pause")
 	m.set_paused(false)
-	m.hud.set_break()
+	m.hud.half_time(2)
 	await frames(4)
-	await audit("match_break")
+	await audit("match_half_time")
+	m.hud.end_half_time()
+	m.hud.full_time(0)
+	await frames(4)
+	await audit("match_full_time")
+	m.hud.end_half_time()
+	m.hud.shootout({"goals": [3, 2], "log": [[0, true], [1, false], [0, true], [1, true], [0, true], [1, true]]})
+	await frames(4)
+	await audit("match_shootout")
 	Game.goto_menu()
 	await frames(4)

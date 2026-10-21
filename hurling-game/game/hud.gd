@@ -452,6 +452,6 @@ func shootout(so: Dictionary) -> void:
 		var marks := ""
 		for e in so.get("log", []):
 			if int(e[0]) == k:
-				marks += "● " if bool(e[1]) else "○ "
+				marks += "• " if bool(e[1]) else "× "
 		var l := UI.label(marks + "  %d" % int(so.goals[k]), "SubLabel", 22, Game.C_GOLD)
 		grid.add_child(l)

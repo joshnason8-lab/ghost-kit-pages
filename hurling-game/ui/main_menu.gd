@@ -240,7 +240,7 @@ func _continue_row() -> Control:
 	var what := tr(c.name_key())
 	if not f.is_empty():
 		what += " · " + tr(String(f.stage)) + " · " + DB.team_name(String(f.home)) + " " + tr("VS") + " " + DB.team_name(String(f.away))
-	return _row("▶", tr("CONTINUE"), what, func(): Game.show_screen("res://ui/champ_screen.gd"), false)
+	return _row("»", tr("CONTINUE"), what, func(): Game.show_screen("res://ui/champ_screen.gd"), false)
 
 
 func _lang_button() -> Button:

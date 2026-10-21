@@ -1,7 +1,8 @@
-name: Takraw Smash · Android build
+name: Ash & Leather · Android build
 
-# For the game in its own repository (this folder at the root): builds the beta APK you can sideload,
-# after running the headless test suite.
+# For the game in its own repository (this folder at the root): builds the beta APKs you can sideload (64-bit, and 32-bit for older
+# phones), after running the headless test suite: the playing rules, every screen in English and Irish, text fit,
+# scrolling, the championship, an AI match and the movement audit.
 
 on:
   push:
@@ -68,7 +69,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: godot --headless --path . res://tests/compile_check.tscn
 
-      - name: Smoke test (screens in every language, season, tournament, AI matches)
+      - name: Tests (the rules, screens, scrolling, championship, an AI match, the movement audit)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           # A script error does not stop Godot or fail a check, so the log is read for them too.
@@ -76,13 +77,19 @@ jobs:
           timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn 2>&1 | tee test_runner.log
           if grep -q "SCRIPT ERROR" test_runner.log; then grep -A4 "SCRIPT ERROR" test_runner.log; exit 1; fi
 
-      - name: Controls (nothing played for you; a good player wins points)
+      - name: Text fit (every screen, both languages, four screen shapes)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- idle 1 0 2>&1 | tee bot.log
-          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- perfect 1 0 2>&1 | tee -a bot.log
-          if grep -q "SCRIPT ERROR" bot.log; then grep -A4 "SCRIPT ERROR" bot.log; exit 1; fi
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- fit.jsonl 2>&1 | tee fit.log
+          if grep -q "SCRIPT ERROR" fit.log; then grep -A4 "SCRIPT ERROR" fit.log; exit 1; fi
+
+      - name: AI matches (how they go)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 2 8 2>&1 | tee sim.log
+          if grep -q "SCRIPT ERROR" sim.log; then grep -A4 "SCRIPT ERROR" sim.log; exit 1; fi
 
       - name: Touch input (scrolling from anywhere on a page, taps)
         working-directory: ${{ env.PROJECT_DIR }}
@@ -113,34 +120,44 @@ jobs:
           } >> "$SETTINGS"
           grep android "$SETTINGS"
 
-      - name: Export APK
+      - name: Export APKs
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          # The same build as the beta APKs sent in the chat: release, 64-bit ARM only, signed in the next step.
-          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
           mkdir -p build
+          cp export_presets.cfg export_presets.keep
+          # 64-bit ARM (nearly every phone sold since 2019), then 32-bit ARM for the older and Android Go phones
+          # (some 2-3 GB Galaxy A0x run 32-bit Android). Play serves each phone its own from the one bundle.
+          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
           godot --headless --path . --export-release "Android" build/unsigned.apk
+          cp export_presets.keep export_presets.cfg
+          sed -i 's/architectures\/arm64-v8a=true/architectures\/arm64-v8a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          godot --headless --path . --export-release "Android" build/unsigned-armv7.apk
+          mv export_presets.keep export_presets.cfg
+          python3 tools/check_pages.py build/unsigned.apk
           ls -la build
 
       # Signed with uber-apk-signer's built-in debug key, the key the chat APKs use, so either installs over
       # the other and keeps the player's saves.
-      - name: Sign APK
+      - name: Sign APKs
         run: |
           curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
-          java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed
-          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/takraw-smash-${VERSION}.apk
+          java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk ${PROJECT_DIR}/build/unsigned-armv7.apk --out ${PROJECT_DIR}/build/signed
+          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/ash-and-leather-${VERSION}.apk
+          mv ${PROJECT_DIR}/build/signed/unsigned-armv7-aligned-debugSigned.apk ${PROJECT_DIR}/build/ash-and-leather-${VERSION}-32bit.apk
           ls -la ${PROJECT_DIR}/build
 
       - uses: actions/upload-artifact@v4
         with:
-          name: takraw-smash-${{ env.VERSION }}-apk
-          path: ${{ env.PROJECT_DIR }}/build/takraw-smash-${{ env.VERSION }}.apk
+          name: ash-and-leather-${{ env.VERSION }}-apk
+          path: |
+            ${{ env.PROJECT_DIR }}/build/ash-and-leather-${{ env.VERSION }}.apk
+            ${{ env.PROJECT_DIR }}/build/ash-and-leather-${{ env.VERSION }}-32bit.apk
           if-no-files-found: error
 
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
-      # "takraw-smash-beta", always the latest build of this branch, made afresh on every push that passes the
+      # "ash-and-leather-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests. Pull request runs build the same APK and leave the release alone.
       - name: Publish the beta release
         if: github.event_name == 'push'
@@ -148,18 +165,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          TAG=takraw-smash-beta
-          APK=${PROJECT_DIR}/build/takraw-smash-${VERSION}.apk
+          TAG=ash-and-leather-beta
+          APK=${PROJECT_DIR}/build/ash-and-leather-${VERSION}.apk
+          APK32=${PROJECT_DIR}/build/ash-and-leather-${VERSION}-32bit.apk
           cat > notes.md <<EOF
-          The latest beta of **Takraw Smash** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+          The latest beta of **Ash & Leather** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
 
-          **Android** (64-bit phones): tap \`takraw-smash-${VERSION}.apk\` under Assets below. When it has
-          downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
-          any earlier Takraw Smash beta and keeps your saves.
+          **Android**: tap \`ash-and-leather-${VERSION}.apk\` under Assets below (an older or Android Go phone that
+          says it cannot install it: \`ash-and-leather-${VERSION}-32bit.apk\`). When it has downloaded, open it; if
+          Android asks, allow your browser or Files to install unknown apps. It installs over any earlier Ash & Leather
+          beta and keeps your saves.
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
           gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
-            --title "Takraw Smash ${VERSION} (latest beta)" --notes-file notes.md
+          gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
+            --title "Ash & Leather ${VERSION} (latest beta)" --notes-file notes.md
           gh release view "$TAG"

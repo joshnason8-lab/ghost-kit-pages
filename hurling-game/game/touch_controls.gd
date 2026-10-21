@@ -77,7 +77,7 @@ func slot_pos(i: int) -> Vector2:
 
 func slot_radius(i: int) -> float:
 	var k := _k()
-	return [86.0, 62.0, 62.0, 56.0, 40.0][i] * k
+	return [86.0, 62.0, 62.0, 56.0, 46.0][i] * k
 
 
 ## Where each button showing is: [id, centre, radius].
