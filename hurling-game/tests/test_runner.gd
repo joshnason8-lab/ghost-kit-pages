@@ -454,6 +454,18 @@ func _subs() -> void:
 	check(m.subs_left(0) == 0 and not m.sub_ok(m.player_by_num(0, 13), t.bench[0]), "Subs: no sixth in normal time")
 	m.half = 3
 	check(m.subs_left(0) == 3, "Subs: three more in extra time")
+	# The drop ring: a high ball coming down near your player is marked where it reaches hand height.
+	var me: Player = m.player_by_num(0, 8)
+	m.hud.set_active(me)
+	m.ball.place(me.global_position)
+	m.ball.global_position = me.global_position + Vector3(-25, 12, 0)
+	m.ball.vel = Vector3(9, 4, 0)
+	m.ball.state = Sliotar.FREE
+	var drop: Vector3 = m.hud._drop_spot()
+	var hit: Array = Sliotar.first_at_height(m.ball.global_position, m.ball.vel, m.CATCH_H)
+	check(drop != Vector3.INF and not hit.is_empty() and Vector2(drop.x - hit[1].x, drop.z - hit[1].z).length() < 0.01, "Ball: a high ball is marked where it comes down")
+	m.ball.global_position = me.global_position + Vector3(0, 1, 0)
+	check(m.hud._drop_spot() == Vector3.INF, "Ball: no ring for a ball at hand height")
 	# Tiredness: a sprint tires a man more than a walk, and a man with stamina less.
 	var a := Player.new({"stamina": 90, "speed": 80}, 0, {})
 	var b := Player.new({"stamina": 50, "speed": 80}, 0, {})

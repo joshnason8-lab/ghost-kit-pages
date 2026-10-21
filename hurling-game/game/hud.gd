@@ -32,6 +32,8 @@ var _coach: Control
 var _subs: Control
 var _coach_text: Label
 var _coach_t := 0.0
+var _drop := Vector3.INF     # where a high ball near your player comes down to catching height (INF none)
+var _drop_t := 0.0
 
 
 func setup(p_match: Node) -> void:
@@ -135,6 +137,21 @@ func _build_coach() -> void:
 	v.add_child(_coach_text)
 	_coach.visible = false
 	root.add_child(_coach)
+
+
+func _drop_spot() -> Vector3:
+	var b: Sliotar = m.ball
+	if m.user_team < 0 or _active == null or b.state != Sliotar.FREE or b.global_position.y < 4.0:
+		return Vector3.INF
+	var hit: Array = Sliotar.first_at_height(b.global_position, b.vel, m.CATCH_H)
+	if hit.is_empty():
+		return Vector3.INF
+	var at: Vector3 = hit[1]
+	at.y = 0.0
+	var me := _active.global_position
+	if Vector2(at.x - me.x, at.z - me.z).length() > 35.0:
+		return Vector3.INF
+	return at
 
 
 ## The coach's card sits between the joystick's side and the nearest button (wherever you have put them, whatever
@@ -286,6 +303,10 @@ func tick(delta: float) -> void:
 	if _call_t > 0.0:
 		_call_t -= delta
 		_call.modulate.a = clampf(_call_t / 0.5, 0.0, 1.0)
+	_drop_t -= delta
+	if _drop_t <= 0.0:
+		_drop_t = 0.15
+		_drop = _drop_spot()
 	if _coach_t > 0.0:
 		_coach_t -= delta
 		_coach.modulate.a = clampf(_coach_t / 0.5, 0.0, 1.0)
@@ -399,6 +420,14 @@ func _draw_marks() -> void:
 				_edge_arrow(sp, vp)
 		else:
 			_edge_arrow(vp - cam.unproject_position(b), vp)
+	# A high ball dropping near your player: a ring on the grass where it comes down to hand height, so a ball in the
+	# air against the crowd or the sky can be judged and caught.
+	if _drop != Vector3.INF and m.controls.visible and not cam.is_position_behind(_drop):
+		var pts := PackedVector2Array()
+		for i in 25:
+			var a := TAU * i / 24.0
+			pts.append(cam.unproject_position(_drop + Vector3(cos(a) * 1.3, 0.03, sin(a) * 1.3)))
+		_marks.draw_polyline(pts, Color(Game.C_GOLD, 0.85), 2.5, true)
 	if _active != null and is_instance_valid(_active) and _active.visible and m.controls.visible:
 		var p := _active.global_position
 		if not cam.is_position_behind(p):

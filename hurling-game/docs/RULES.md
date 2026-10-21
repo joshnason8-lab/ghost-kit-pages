@@ -24,9 +24,16 @@ Rules of Control, Playing Rules of Hurling), with the number used in the 2024-20
 - 2021 playing rule changes FAQ: https://camogie.ie/wp-content/uploads/2021/06/Playing-Rule-changes-2021-FAQ.pdf
 - GAA referee guidance on advantage (2021): https://gaa.ie/api/images/image/upload/t_q-best/oxdbyhv1zhtgqfsue5zj.pdf
 
-A caveat the owner should know: the research could read the Guide only through quoted excerpts (the sandbox could not
-download the PDFs). The figures below are the ones every edition and source agreed on; where sources differed, the
-newest is used and the difference is noted.
+A caveat the owner should know: the research could read the Guide only through quoted excerpts. **Re-checked
+21 October 2026 (round two): still blocked.** This build's sandbox reaches the web only through a proxy whose policy
+refuses every host that serves the Guide: `usgaa.org`, `www.gaa.ie`, `learning.gaa.ie`, `www.galwaygaa.ie`,
+`www.kilkennygaa.ie` and `gaelicgameseurope.com` all answer `403` to the proxy's `CONNECT` (and do not resolve for the
+fetch tool), so none of the seven PDFs above could be opened. Nothing below was changed by the re-check. Every rule
+still rests on the excerpts and explainers listed, and the figures are the ones every edition and source agreed on;
+where sources differed, the newest is used and the difference is noted. To finish the check, open the network
+policy to `www.gaa.ie` (the cloud environment's settings > Network access > Allowed domains; https://code.claude.com/docs/en/cloud-environments#network-access) or put the 2026 Part 2 PDF in the repository,
+and the rules below can be read against the full text: the ones resting most on a single excerpt are the
+puck-out's 13 m travel, the dissent advance's 20 m limit, the advantage's five seconds and the black card's grades.
 
 ## The field, goals and equipment (Rules of Specification)
 
