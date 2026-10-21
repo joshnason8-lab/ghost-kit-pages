@@ -618,6 +618,8 @@ func _play(dt: float) -> void:
 				_user_defender(dt)
 			else:
 				_defender_think(a, dt)
+				if d_state.get(a, "") == "in":
+					_brake_at_line(a, dt)   # a defender means to stay in; a quarter of the AI's outs were overruns
 	for a in d_state.keys():
 		if d_state[a] == "out":
 			var home := _bench_pos(defending(), roster[defending()].find(a))
