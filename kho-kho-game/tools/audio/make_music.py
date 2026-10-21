@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Make the menus' music and the match drums: assets/audio/menu_music.ogg and drums_loop.ogg.
+"""Make the menus' music and the crowd's drums: assets/audio/menu_music.ogg and drums_loop.ogg.
 
-The music is a loop in the spirit of a Thai piphat or Malay gamelan ensemble, all synthesised: a ranat (wooden
-xylophone) melody on a five-note scale over a gong cycle, small kong wong gong chimes, ching cymbals on the beat and
-a klong drum. The drums are the crowd's: the steady klong and thon beat a takraw crowd plays through a match.
+The music is a loop in the spirit of a village match's band: a bansuri (bamboo flute) melody in raag Bhupali (the
+five notes Sa Re Ga Pa Dha) over a harmonium's drone on Sa and Pa, with the dhol and the dholki playing keherwa,
+the eight-beat cycle of folk and film songs (dha ge na ti | na ka dhi na). The drums are the crowd's: a dhol and a
+thali (a brass plate) beating time, louder as the chase builds. All synthesised.
 
 Usage: python3 tools/audio/make_music.py   (needs numpy and ffmpeg with libvorbis)
 """
@@ -17,12 +18,13 @@ import numpy as np
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "assets" / "audio"
 RATE = 44100
-BPM = 112
+BPM = 104
 BEAT = 60.0 / BPM
 rng = np.random.default_rng(7)
 
-# A Thai-style seven-tone scale played pentatonically: C D E G A, over two octaves.
-SCALE = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3, 784.0, 880.0]
+# Bhupali on Sa = D4: Sa Re Ga Pa Dha, over two octaves.
+SA = 293.7
+SCALE = [SA * r for r in (1.0, 9 / 8, 5 / 4, 3 / 2, 5 / 3, 2.0, 9 / 4, 5 / 2, 3.0, 10 / 3)]
 
 
 def env(n, attack, decay):
@@ -88,32 +90,72 @@ def write_ogg(name, samples, quality=4):
     print("wrote", OUT / name)
 
 
+def bansuri(freq, dur):
+    """A bamboo flute: a breathy sine with a slow vibrato, a soft attack and a little second harmonic."""
+    n = int(dur * RATE)
+    t = np.arange(n) / RATE
+    vib = 1.0 + 0.006 * np.sin(2 * np.pi * 5.2 * t) * np.minimum(1.0, t / 0.25)
+    phase = 2 * np.pi * np.cumsum(freq * vib) / RATE
+    s = np.sin(phase) + 0.18 * np.sin(2 * phase) + 0.05 * np.sin(3 * phase)
+    breath = rng.uniform(-1, 1, n) * 0.06
+    a = np.minimum(1.0, t / 0.06) * np.minimum(1.0, (dur - t) / 0.08).clip(0, 1)
+    return (s + breath) * a
+
+
+def harmonium(freq, dur):
+    """A reed drone: odd and even partials, a slow swell."""
+    n = int(dur * RATE)
+    t = np.arange(n) / RATE
+    s = np.zeros(n)
+    for k, amp in [(1, 1.0), (2, 0.6), (3, 0.4), (4, 0.25), (5, 0.15), (6, 0.1)]:
+        s += amp * np.sign(np.sin(2 * np.pi * freq * k * t)) * 0.2 + amp * np.sin(2 * np.pi * freq * k * t)
+    return s * np.minimum(1.0, t / 0.4) * np.minimum(1.0, (dur - t) / 0.4).clip(0, 1)
+
+
+def thali(dur=0.3):
+    n = int(dur * RATE)
+    t = np.arange(n) / RATE
+    s = np.sin(2 * np.pi * 2350 * t) + 0.7 * np.sin(2 * np.pi * 3810 * t) + 0.3 * rng.uniform(-1, 1, n)
+    return s * env(n, 0.001, 0.07) * 0.3
+
+
+def keherwa(buf, start, bars, gain=1.0):
+    """Keherwa on the dhol (bass, dha) and dholki (treble): dha ge na ti | na ka dhi na, eighth notes."""
+    bols = ["dha", "ge", "na", "ti", "na", "ka", "dhi", "na"]
+    for bar in range(bars):
+        for i, bol in enumerate(bols):
+            at = start + (bar * 8 + i) * BEAT / 2
+            if bol in ("dha", "ge", "dhi"):
+                put(buf, at, drum(110, 55, 0.5, 0.2, 0.2), (0.5 if bol == "dha" else 0.3) * gain)
+            if bol in ("dha", "na", "ti", "dhi", "ka"):
+                put(buf, at, drum(420, 300, 0.2, 0.05, 0.45), (0.22 if bol != "ka" else 0.12) * gain)
+
+
 def music():
     bars = 8
     dur = bars * 4 * BEAT
     buf = np.zeros(int(dur * RATE) + RATE * 3)
-    # The melody: two phrases of eighth notes, answered.
-    phrase_a = [4, 5, 7, 5, 4, 3, 4, 2, 3, 4, 5, 4, 3, 2, 0, 2]
-    phrase_b = [5, 7, 8, 7, 5, 4, 5, 7, 4, 3, 2, 3, 4, 2, 1, 0]
-    melody = phrase_a + phrase_b + phrase_a + [5, 7, 8, 9, 8, 7, 5, 4, 3, 4, 2, 1, 2, 1, 0, 0]
-    for i, deg in enumerate(melody):
-        at = i * BEAT / 2
-        put(buf, at, ranat(SCALE[deg], 0.6), 0.32)
-        if i % 4 == 2:
-            put(buf, at, ranat(SCALE[deg] * 2, 0.4), 0.08)
-    # Kong wong: the skeleton melody on the beat, an octave down.
-    for b in range(bars * 4):
-        deg = melody[b * 2] if b * 2 < len(melody) else 0
-        put(buf, b * BEAT, gong(SCALE[deg] / 2, 1.2, 0.5), 0.12)
-    # The big gong at each four-bar cycle, the ching on every beat (open on 2 and 4).
+    # The melody: the raag's phrases, answered (degrees of SCALE; -1 holds the note before).
+    a = [0, 1, 2, -1, 3, 2, 1, 0, 2, 3, 4, -1, 3, 2, 1, 2]
+    b = [5, -1, 4, 3, 4, 5, 6, 5, 4, 3, 2, 3, 2, 1, 0, -1]
+    melody = a + b + a + [3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 2, 1, 0, -1, -1]
+    i = 0
+    while i < len(melody):
+        deg = melody[i]
+        length = 1
+        while i + length < len(melody) and melody[i + length] == -1:
+            length += 1
+        if deg >= 0:
+            put(buf, i * BEAT / 2, bansuri(SCALE[deg] * 2, length * BEAT / 2 + 0.05), 0.3)
+        i += length
+    # The harmonium's drone, Sa and Pa, through each four-bar cycle.
     for c in range(0, bars, 4):
-        put(buf, c * 4 * BEAT, gong(98.0, 3.0), 0.35)
-    for b in range(bars * 4):
-        put(buf, b * BEAT, ching(0.5 if b % 2 else 0.25), 0.5 if b % 2 else 0.3)
-    # Klong: low on 1, slaps on the off-beats.
-    for b in range(bars * 4):
-        put(buf, b * BEAT, drum(140, 70, 0.5, 0.18), 0.4 if b % 4 == 0 else 0.22)
-        put(buf, b * BEAT + BEAT * 0.75, drum(330, 220, 0.2, 0.05, 0.4), 0.14)
+        put(buf, c * 4 * BEAT, harmonium(SA / 2, 4 * 4 * BEAT + 0.3), 0.07)
+        put(buf, c * 4 * BEAT, harmonium(SA * 3 / 4, 4 * 4 * BEAT + 0.3), 0.04)
+    keherwa(buf, 0.0, bars)
+    for bt in range(bars * 4):
+        if bt % 2 == 1:
+            put(buf, bt * BEAT, thali(0.25), 0.18)
     # Fold the tail back onto the start so the loop is seamless.
     n = int(dur * RATE)
     tail = buf[n:]
@@ -125,12 +167,9 @@ def drums():
     bars = 2
     dur = bars * 4 * BEAT
     buf = np.zeros(int(dur * RATE) + RATE)
-    for b in range(bars * 4):
-        put(buf, b * BEAT, drum(120, 60, 0.6, 0.22, 0.25), 0.6)
-        put(buf, b * BEAT + BEAT / 2, drum(260, 180, 0.25, 0.06, 0.5), 0.3)
-        if b % 2:
-            put(buf, b * BEAT + BEAT * 0.75, drum(260, 180, 0.25, 0.06, 0.5), 0.22)
-        put(buf, b * BEAT, ching(0.3), 0.25)
+    keherwa(buf, 0.0, bars * 1, 1.0)
+    for bt in range(bars * 4):
+        put(buf, bt * BEAT, thali(0.3), 0.3)
     n = int(dur * RATE)
     tail = buf[n:]
     buf[: len(tail)] += tail
