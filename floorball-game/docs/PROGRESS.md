@@ -38,15 +38,20 @@ on with "Next".
   floorstorm-beta), floorball-play-bundle.yml (passed, unsigned); standalone workflows in floorball-game/.github.
 - Draft PR #7, subscribed. Pages in floorstorm/. Icon, menu music. README, RULES, LANGUAGES, MESHY_BRIEF, PLAY_STORE.
 
+- Penalty shot awarded in play for a foul on a clear chance (tested); time-outs granted at the next stoppage, the AI
+  calling one a goal down late; store screenshots (7) and feature graphic; perf numbers in the README (Low: 89 draw
+  calls, 49k triangles); CI green; beta APK 0.1.0-beta on the floorstorm-beta release (31 MB).
+- **Initial build complete** (21 October 2026, about 10:40 UTC).
+
 ## Next (in order)
 
-1. Store screenshots and the feature graphic (tools/store), perf numbers into the README; CI green and the beta APK.
-2. A penalty shot awarded in play for a foul on a clear chance (rules module has the procedure; the referee does
-   not yet award it).
-3. Pulling the goalkeeper for a sixth skater late in a match; a time-out's 30 seconds shown.
-4. The penalised player seen walking to the penalty bench; delay-of-game calls.
-5. More competitions (a club season with invented club nicknames, Swedish/Finnish 3-2-1-0 points).
+1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach.
+2. Pulling the goalkeeper for a sixth skater late in a match.
+3. The penalised player seen walking to the penalty bench; delay-of-game calls; the 30 seconds of a time-out shown.
+4. More competitions: a club season with invented club nicknames and the Nordic leagues' 3-2-1-0 points.
+5. Shots run about 25% above real (120 v ~95 per 60 min): tune the carrier's shot decision further.
 6. Native-speaker review of the translations; the 2026 PDF read against docs/RULES.md's [verify] items.
+7. Meshy bodies if the owner wants them (docs/MESHY_BRIEF.md).
 
 ## Decisions and why
 
@@ -64,6 +69,9 @@ on with "Next".
   from the bench and the team plays short by hiding the wingers' places (simplified: the penalised player does not
   walk to the penalty bench).
 - **Game speed Steady (80%) by default**: 12 players at real floorball pace is hard to follow on a phone screen.
+- **Penalty shot in play**: awarded when the fouled player is in the attacking half, within 12 m of goal, in front of
+  it, with no defender but the offender between him and the goal (our reading of "a clear chance"); the clock stands.
+- **Time-outs**: granted at the next stoppage with the referee's T; the 30 seconds are signalled, not waited out.
 - **Overtime keeps the third period's ends** (2026 rule 203 text on ends was not retrieved).
 - **armeabi-v7a**: the Play bundle keeps 32-bit too (older phones in Thailand, the Philippines and eastern Europe
   run 32-bit Android); the beta APK is 64-bit only to keep it small, as Kabaddi's and Takraw's.
