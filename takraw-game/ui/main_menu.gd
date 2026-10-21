@@ -3,8 +3,8 @@ extends Control
 ## English and in Thai script (ตะกร้อ), the language, the modes as big tiles, and a card to carry on a season or
 ## tournament.
 
-const ATTRACT := [["THA", "MAS", "dome"], ["SPB", "KRT", "national"], ["VIE", "INA", "mall"], ["KLC", "SLA", "provincial"],
-	["JPN", "KOR", "beach"], ["PHI", "LAO", "temple"], ["MYA", "IND", "street"], ["HDY", "BKK", "park"]]
+const ATTRACT := [["THA", "MAS", "dome"], ["SPB", "NPT", "national"], ["VIE", "INA", "mall"], ["KLC", "SLA", "provincial"],
+	["JPN", "KOR", "beach"], ["PHI", "LAO", "temple"], ["MYA", "IND", "street"], ["ACR", "PRE", "park"]]
 
 var _sv: SubViewport
 var _match: Node = null
@@ -136,11 +136,9 @@ func _build_ui() -> void:
 	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tiles.add_child(stack)
 	for md in [["MENU_SEASON", "MENU_SEASON_DESC", "res://ui/season_hub.gd", Game.C_GOOD, "serve"],
-			["MENU_CUP", "MENU_CUP_DESC", "res://ui/cup_screen.gd", Color("5aa9ff"), "block"],
-			["MENU_TRAINING", "MENU_TRAINING_DESC", "res://ui/howto_screen.gd", Game.C_TEAL, "celebrate"]]:
+			["MENU_CUP", "MENU_CUP_DESC", "res://ui/cup_screen.gd", Color("5aa9ff"), "block"]]:
 		var path2: String = md[2]
-		var args := {"tab": 1} if md[0] == "MENU_TRAINING" else {}
-		var t := UI.tile(tr(md[0]), tr(md[1]), md[3], "", func(): Game.show_screen(path2, args), false, md[4])
+		var t := UI.tile(tr(md[0]), tr(md[1]), md[3], "", func(): Game.show_screen(path2), false, md[4])
 		stack.add_child(t)
 		_cards.append(t)
 
@@ -151,7 +149,7 @@ func _continue_card() -> Control:
 	var team := ""
 	var s = Game.get_season()
 	if s != null and String(s.phase) != "done":
-		what = "%s · %s" % [tr("MENU_SEASON"), s.stage_name()]
+		what = s.short_stage()
 		path = "res://ui/season_hub.gd"
 		team = s.team
 	else:
@@ -195,6 +193,10 @@ func _continue_card() -> Control:
 	w.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(w)
 	h.add_child(v)
+	# As tall as its two lines need.
+	var grow := func():
+		b.custom_minimum_size.y = maxf(84.0, h.get_combined_minimum_size().y + 12.0)
+	h.minimum_size_changed.connect(grow)
 	var ic := Icon.make("play", 28, Game.C_GOLD)
 	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(ic)

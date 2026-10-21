@@ -12,9 +12,9 @@ func _ready() -> void:
 	var venue := String(a[2]) if a.size() > 2 else "national"
 	Game.main = self
 	Game.settings.sound = false
-	var pairs := [["THA", "MAS"], ["VIE", "INA"], ["SPB", "KRT"], ["JPN", "KOR"]]
+	var pairs := [["THA", "MAS"], ["VIE", "INA"], ["SPB", "NPT"], ["JPN", "KOR"]]
 	if OS.has_environment("SWAP"):
-		pairs = [["MAS", "THA"], ["INA", "VIE"], ["KRT", "SPB"], ["KOR", "JPN"]]
+		pairs = [["MAS", "THA"], ["INA", "VIE"], ["NPT", "SPB"], ["KOR", "JPN"]]
 	for i in n:
 		var pr: Array = pairs[i % pairs.size()]
 		var m: Node = (load("res://game/match.gd") as Script).new()

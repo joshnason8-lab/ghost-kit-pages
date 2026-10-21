@@ -99,6 +99,7 @@ static func page(owner: Control, title: String, back: Callable = Callable(), eye
 	var right := HBoxContainer.new()
 	right.add_theme_constant_override("separation", 12)
 	right.alignment = BoxContainer.ALIGNMENT_END
+	right.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(right)
 	owner.set_meta("header_right", right)
 	return v
@@ -409,12 +410,105 @@ static func team_grid(owner: Control, ids: Array, columns: int, on_pick: Callabl
 		col.add_child(bar)
 		h.add_child(col)
 		b.add_child(h)
+		# As tall as its lines need (a long name over two lines, the town, the rating).
+		var grow := func():
+			b.custom_minimum_size.y = maxf(96.0, h.get_combined_minimum_size().y + 16.0)
+		h.minimum_size_changed.connect(grow)
+		grow.call()
 		var pick: String = id
 		b.pressed.connect(func():
 			Sfx.click()
 			on_pick.call(pick))
 		grid.add_child(b)
 	return grid
+
+
+## A big choice card (a league, a tournament): an emblem, a name and a line or two about it; the chosen one lit gold.
+static func option_card(title: String, desc: String, emblem: Control, chosen: bool, cb: Callable) -> Button:
+	var b := Button.new()
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.custom_minimum_size = Vector2(0, 92)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(Game.C_PANEL_HI if chosen else Game.C_PANEL, 0.95)
+	sb.set_corner_radius_all(16)
+	sb.border_color = Game.C_GOLD if chosen else Color(1, 1, 1, 0.1)
+	sb.set_border_width_all(3 if chosen else 1)
+	var sbh: StyleBoxFlat = sb.duplicate()
+	sbh.bg_color = Game.C_PANEL_HI
+	sbh.border_color = Game.C_GOLD if chosen else Color(Game.C_GOLD, 0.5)
+	b.add_theme_stylebox_override("normal", sb)
+	b.add_theme_stylebox_override("hover", sbh)
+	b.add_theme_stylebox_override("pressed", sbh)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var m := MarginContainer.new()
+	m.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for k in ["margin_left", "margin_right"]:
+		m.add_theme_constant_override(k, 16)
+	for k in ["margin_top", "margin_bottom"]:
+		m.add_theme_constant_override(k, 10)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 14)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	m.add_child(h)
+	if emblem:
+		emblem.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		h.add_child(emblem)
+	var col := VBoxContainer.new()
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override("separation", 2)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var t := label(title, "SubLabel", 24, Game.C_GOLD if chosen else Game.C_INK)
+	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(t)
+	if desc != "":
+		col.add_child(UI.wrap(desc, "MutedLabel", 16))
+	h.add_child(col)
+	b.add_child(m)
+	# The card is as tall as its words need.
+	var grow := func():
+		b.custom_minimum_size.y = maxf(92.0, m.get_combined_minimum_size().y)
+	m.minimum_size_changed.connect(grow)
+	b.pressed.connect(func():
+		Sfx.click()
+		cb.call())
+	return b
+
+
+## The layout of a "pick" page: the choices in a column on the left, a big panel on the right (its title, chips beside
+## it, and a scrolling grid under them) filling the rest of the screen. Returns [left column, right panel's head row,
+## right panel's body].
+static func pick_layout(v: VBoxContainer, title: String) -> Array:
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 20)
+	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(cols)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 12)
+	left.custom_minimum_size = Vector2(400, 0)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.size_flags_stretch_ratio = 0.62
+	cols.add_child(left)
+	var panel := card()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cols.add_child(panel)
+	var pv := VBoxContainer.new()
+	pv.add_theme_constant_override("separation", 12)
+	panel.add_child(pv)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 16)
+	pv.add_child(head)
+	var t := label(title.to_upper(), "EyebrowLabel", 18, Game.C_SAFFRON)
+	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(t)
+	var body := VBoxContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	pv.add_child(body)
+	return [left, head, body]
 
 
 ## A titled card for grouping options, with an optional icon.
@@ -583,8 +677,9 @@ static func card(variation := "CardPanel") -> PanelContainer:
 	return p
 
 
+## A box that scrolls its content up and down, dragged from anywhere on it (DragScroll).
 static func scroll(content: Control) -> ScrollContainer:
-	var s := ScrollContainer.new()
+	var s := DragScroll.new()
 	s.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -687,6 +782,42 @@ static func table(owner: Control, rows: Array, highlight: String, compact := fal
 	return g
 
 
+## A table of any shape: headers, then rows of [team id, cell, cell ...]; the first `gold` places numbered in gold
+## (they go through), the last `red` in red (they go down).
+static func standings(headers: Array, rows: Array, highlight: String, gold := 0, red := 0, compact := false) -> GridContainer:
+	var g := GridContainer.new()
+	g.columns = headers.size() + 1
+	g.add_theme_constant_override("h_separation", 14)
+	g.add_theme_constant_override("v_separation", 1 if compact else 5)
+	var fs := 17 if compact else 20
+	g.add_child(label("#", "EyebrowLabel"))
+	for h in headers:
+		g.add_child(label(String(h), "EyebrowLabel"))
+	for i in rows.size():
+		var r: Array = rows[i]
+		var id := String(r[0])
+		var hl := id == highlight
+		var col := Game.C_SAFFRON if hl else Game.C_INK
+		var place_col := Game.C_GOLD if i < gold else (Game.C_DANGER if i >= rows.size() - red else Game.C_MUTED)
+		g.add_child(label(str(i + 1), "", fs, place_col))
+		var nm := HBoxContainer.new()
+		nm.add_theme_constant_override("separation", 8)
+		nm.add_child(Crest.make(id, 22 if compact else 26))
+		var name_l := fit(label(DB.team_name(id), "SubLabel" if hl else "", fs, col))
+		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_l.custom_minimum_size = Vector2(120, 0)
+		nm.add_child(name_l)
+		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		g.add_child(nm)
+		for c in range(1, r.size()):
+			g.add_child(label(str(r[c]), "SubLabel" if c == r.size() - 1 else "", fs, col))
+	return g
+
+
+static func signed(n: int) -> String:
+	return ("+" if n > 0 else "") + str(n)
+
+
 ## One fixture line, in sets: "Bangkok 2 – 1 Selangor", or "Bangkok vs Selangor".
 static func fixture_line(owner: Control, f: Dictionary, highlight: String) -> HBoxContainer:
 	var h := HBoxContainer.new()
@@ -694,16 +825,18 @@ static func fixture_line(owner: Control, f: Dictionary, highlight: String) -> HB
 	var mine: bool = f.home == highlight or f.away == highlight
 	var col := Game.C_INK if mine else Game.C_MUTED
 	h.add_child(Crest.make(f.home, 30))
-	var a := label(DB.team_name(f.home), "", 19, col)
+	var a := fit(label(DB.team_name(f.home), "", 18, col), 2)
 	a.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	a.custom_minimum_size = Vector2(90, 0)
 	a.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	h.add_child(a)
 	var mid := label("%d – %d" % [f.sets[0], f.sets[1]] if f.played else owner.tr("VS"), "SubLabel", 19, Game.C_SAFFRON if mine else Game.C_INK)
-	mid.custom_minimum_size = Vector2(90, 0)
+	mid.custom_minimum_size = Vector2(70, 0)
 	mid.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	h.add_child(mid)
-	var b := label(DB.team_name(f.away), "", 19, col)
+	var b := fit(label(DB.team_name(f.away), "", 18, col), 2)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.custom_minimum_size = Vector2(90, 0)
 	h.add_child(b)
 	h.add_child(Crest.make(f.away, 30))
 	return h

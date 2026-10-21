@@ -146,6 +146,14 @@ func update_to(t: float, dt: float) -> void:
 		global_position = Ball.pos_at(p_launch, v_launch, k)
 		vel = v_launch + Vector3(0, -G * k, 0)
 		_mesh.rotation += spin * dt
+		# Down on the floor (the rally is over by now): it bounces, lower each time, and rolls to a stop.
+		if global_position.y < RADIUS and vel.y < 0.0:
+			var p := Vector3(global_position.x, RADIUS, global_position.z)
+			var up := -vel.y * 0.45
+			if up < 0.7:
+				hold(p)
+			else:
+				launch(p, Vector3(vel.x * 0.6, up, vel.z * 0.6), t)
 
 
 func _process(delta: float) -> void:

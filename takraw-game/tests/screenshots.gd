@@ -35,12 +35,14 @@ func _ready() -> void:
 		await _wait(t[3])
 		await shot(t[0])
 	if only == "" or only.begins_with("season"):
-		Game.new_season("MY", "KLC")
-		Game.season.sim_round()
-		Game.season.sim_round()
-		Game.show_screen("res://ui/season_hub.gd")
-		await _wait(0.4)
-		await shot("season_hub")
+		for ls in [["MY", "KLC", 9, "season_hub"], ["TH", "SPB", 5, "season_th"], ["ID", "SOL", 6, "season_id"], ["MY", "PRK", 300, "season_end"]]:
+			Game.new_season(ls[0], ls[1])
+			for i in int(ls[2]):
+				if Game.season.phase != "done":
+					Game.season.sim_round()
+			Game.show_screen("res://ui/season_hub.gd")
+			await _wait(0.4)
+			await shot(ls[3])
 	if only == "" or only.begins_with("cup"):
 		Game.new_cup("royal", "MAS")
 		Game.cup.sim_next()

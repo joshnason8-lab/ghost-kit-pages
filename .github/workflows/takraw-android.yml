@@ -74,6 +74,18 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
 
+      - name: Controls (nothing played for you; a good player wins points)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- idle 1 0
+          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- perfect 1 0
+
+      - name: Touch input (scrolling from anywhere on a page, taps)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
+
       - name: Configure Android export
         run: |
           KEYSTORE=$HOME/debug.keystore

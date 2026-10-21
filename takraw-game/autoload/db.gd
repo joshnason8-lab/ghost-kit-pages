@@ -41,43 +41,104 @@ const COUNTRIES := {
 	"AUS": [49, 50, "00843d", "ffcd00", "en"],
 }
 
-## The three club leagues: [id, short, name, home, colour 1, colour 2, strength].
+## The three club leagues, run the way they are run now (docs/TAKRAW.md). The clubs are the real line-ups' states,
+## provinces and services under invented nicknames (the real clubs' names and badges are theirs): [id, short, name,
+## home, colour 1, colour 2, strength].
+##  - Malaysia, the Sepak Takraw League (STL): twelve Premier clubs (the 2026 line-up: the states, the armed forces,
+##    the police and the fire service) play a circuit of seven Grand Prix, each a tournament of its own (four groups of
+##    three, the quarter-finals, the semi-finals, the final and the third place) worth points to the season's
+##    standings; the most points win the league, the last two go down. Division 1 is one tournament before the
+##    season, its two finalists going up into that season's Premier League.
+##  - Thailand, the Takraw Thailand League (TTL, as last played in 2022): eight provincial clubs, home and away; a
+##    fixture is a tie of two regus, 2 points for winning both, 1 for one each; the champion is top of the table.
+##  - Indonesia, Liga Sepak Takraw Indonesia (LSI, revived in 2026): five regions play a round robin each; the top two
+##    of each go to the national finals in Jakarta (two groups of five, the semi-finals, the final). Men and women.
 const LEAGUES := {
-	"MY": {"name": "LEAGUE_MY", "country": "MAS", "pool": "ms", "clubs": [
-		["SLA", "SLA", "Selangor Stingrays", "Shah Alam", "e8313d", "ffcc00", 84],
-		["KLC", "KLC", "KL Comets", "Kuala Lumpur", "1d2a5c", "19b3a3", 86],
-		["PRK", "PRK", "Perak Rhinos", "Ipoh", "f2c14e", "1a1a1a", 85],
-		["JHR", "JHR", "Johor Hornbills", "Johor Bahru", "0b2a8c", "e8313d", 82],
-		["KDH", "KDH", "Kedah Hawks", "Alor Setar", "f7e017", "137a3e", 80],
-		["PNG", "PNG", "Penang Pythons", "George Town", "2b2b2b", "4cd38a", 78],
-		["SBH", "SBH", "Sabah Summits", "Kota Kinabalu", "0f6fb5", "ffffff", 77],
-		["SWK", "SWK", "Sarawak Hornets", "Kuching", "ffcc00", "c8102e", 76],
+	"MY": {"name": "LEAGUE_MY", "country": "MAS", "pool": "ms", "format": "gp", "women": false, "year": 2026, "clubs": [
+		["PRK", "PRK", "Perak Rhinos", "Ipoh", "f2c14e", "1a1a1a", 89],
+		["KLC", "KLC", "KL Comets", "Kuala Lumpur", "1d2a5c", "19b3a3", 88],
+		["MLK", "MLK", "Melaka Marlins", "Melaka", "8b1c3b", "f3efe6", 87],
+		["NSN", "NSN", "Negeri Sembilan Stags", "Seremban", "f2c14e", "e8313d", 86],
+		["JHR", "JHR", "Johor Hornbills", "Johor Bahru", "0b2a8c", "e8313d", 83],
+		["KTN", "KTN", "Kelantan Kestrels", "Kota Bharu", "c8102e", "ffffff", 81],
+		["PNG", "PNG", "Penang Pythons", "George Town", "2b2b2b", "4cd38a", 81],
+		["ATM", "ATM", "Armed Forces Rangers", "Kuala Lumpur", "3d5229", "f2c14e", 80],
+		["SLA", "SLA", "Selangor Stingrays", "Shah Alam", "e8313d", "ffcc00", 80],
+		["POL", "POL", "Police Falcons", "Kuala Lumpur", "0b2a5c", "c8102e", 79],
+		["KDH", "KDH", "Kedah Hawks", "Alor Setar", "f7e017", "137a3e", 78],
+		["FRS", "FRS", "Fire & Rescue Blazers", "Putrajaya", "c8102e", "ff9a1f", 77],
+	], "div1": [
 		["TRG", "TRG", "Terengganu Tides", "Kuala Terengganu", "ffffff", "0b2a8c", 75],
-		["KTN", "KTN", "Kelantan Kestrels", "Kota Bharu", "c8102e", "ffffff", 79],
-		["NSN", "NSN", "Negeri Sembilan Stags", "Seremban", "f2c14e", "e8313d", 74],
-		["MLK", "MLK", "Melaka Marlins", "Melaka", "8b1c3b", "f3efe6", 73],
+		["SBH", "SBH", "Sabah Summits", "Kota Kinabalu", "0f6fb5", "ffffff", 74],
+		["PHG", "PHG", "Pahang Tapirs", "Kuantan", "1a1a1a", "ffffff", 72],
+		["SWK", "SWK", "Sarawak Hornets", "Kuching", "ffcc00", "c8102e", 72],
+		["UNI", "UNI", "Varsity Owls", "Bangi", "4b2a8c", "f2c14e", 71],
+		["PJY", "PJY", "Putrajaya Lynx", "Putrajaya", "0f6fb5", "f2c14e", 70],
+		["ACD", "ACD", "Academy Cubs", "Bukit Jalil", "ff9a1f", "1d2a5c", 70],
+		["PRS", "PRS", "Perlis Cobras", "Kangar", "137a3e", "f7e017", 68],
+		["LBN", "LBN", "Labuan Sharks", "Labuan", "19b3a3", "1d2a5c", 67],
+		["PRI", "PRI", "Prisons Ironmen", "Kajang", "5a5a5a", "ff9a1f", 66],
 	]},
-	"TH": {"name": "LEAGUE_TH", "country": "THA", "pool": "th", "clubs": [
-		["SPB", "SPB", "Thunder Elephant Suphanburi", "Suphanburi", "e8313d", "ffcc00", 88],
-		["KRT", "KRT", "Iron Naga Korat", "Nakhon Ratchasima", "4b2a8c", "f2c14e", 86],
-		["CNX", "CNX", "Mountain Garuda Chiang Mai", "Chiang Mai", "137a3e", "ffffff", 84],
-		["UBN", "UBN", "Golden Kinnari Ubon", "Ubon Ratchathani", "f7e017", "1d2a5c", 82],
-		["HDY", "HDY", "Southern Tiger Hat Yai", "Songkhla", "ff8a1f", "1a1a1a", 83],
-		["KKN", "KKN", "Silk Lion Khon Kaen", "Khon Kaen", "c8102e", "f3efe6", 80],
-		["BKK", "BKK", "River Dragon Bangkok", "Bangkok", "0f6fb5", "ffcc00", 85],
-		["CBI", "CBI", "Sea Eagle Chonburi", "Chonburi", "19b3a3", "1d2a5c", 79],
+	"TH": {"name": "LEAGUE_TH", "country": "THA", "pool": "th", "format": "ties", "women": false, "year": 2027, "clubs": [
+		["SPB", "SPB", "Tusker Suphanburi", "Suphanburi", "e8313d", "ffcc00", 88],
+		["NPT", "NPT", "Red Stupa Nakhon Pathom", "Nakhon Pathom", "c8102e", "f2c14e", 87],
+		["ACR", "ACR", "Monkey King Amnat Charoen", "Amnat Charoen", "f7e017", "1d2a5c", 86],
+		["PRE", "PRE", "Teak Tiger Phrae", "Phrae", "8b4513", "f3efe6", 85],
+		["CBI", "CBI", "Sea Eagle Chonburi", "Chonburi", "19b3a3", "1d2a5c", 83],
+		["PLK", "PLK", "River Naga Phitsanulok", "Phitsanulok", "4b2a8c", "f2c14e", 82],
+		["SSK", "SSK", "Lightning Sisaket", "Sisaket", "0f6fb5", "ffcc00", 81],
+		["NKI", "NKI", "Mekong Dragon Nong Khai", "Nong Khai", "137a3e", "ffffff", 80],
 	]},
-	"ID": {"name": "LEAGUE_ID", "country": "INA", "pool": "id", "clubs": [
-		["JKT", "JKT", "Jakarta Rajawali", "Jakarta", "c8102e", "ffffff", 82],
-		["SBY", "SBY", "Surabaya Baya", "Surabaya", "0b8a3e", "ffcc00", 80],
-		["BDG", "BDG", "Bandung Maung", "Bandung", "0f4c9e", "f3efe6", 79],
-		["MDN", "MDN", "Medan Harimau", "Medan", "ff8a1f", "1a1a1a", 78],
-		["MKS", "MKS", "Makassar Phinisi", "Makassar", "e8313d", "0f4c9e", 77],
-		["PLM", "PLM", "Palembang Songket", "Palembang", "8b1c3b", "f2c14e", 76],
+	"ID": {"name": "LEAGUE_ID", "country": "INA", "pool": "id", "format": "zones", "women": true, "year": 2026, "zones": [
+		["ZONE_SUMATRA", ["PLM", "MNG", "LPG", "ACH", "PKU", "BTM"]],
+		["ZONE_JAVA", ["SOL", "SBY", "JKT", "BDG", "SRG", "DPS"]],
+		["ZONE_SULAWESI", ["MKS", "PAL", "MJU", "MND"]],
+		["ZONE_KALIMANTAN", ["BJM", "SMD", "PNK", "TRK"]],
+		["ZONE_PAPUA", ["JYP", "AMB", "TTE", "MKW"]],
+	], "clubs": [
+		["PLM", "PLM", "Palembang Songket", "Palembang", "8b1c3b", "f2c14e", 78],
+		["MNG", "MNG", "Minang Rangkiang", "Padang", "e8313d", "1a1a1a", 77],
+		["LPG", "LPG", "Lampung Siger", "Bandar Lampung", "f7e017", "c8102e", 76],
+		["ACH", "ACH", "Aceh Seulawah", "Banda Aceh", "137a3e", "ffffff", 75],
+		["PKU", "PKU", "Pekanbaru Lancang", "Pekanbaru", "0f6fb5", "f7e017", 73],
+		["BTM", "BTM", "Batam Segantang", "Batam", "19b3a3", "ffffff", 72],
+		["SOL", "SOL", "Solo Garuda", "Surakarta", "1d2a5c", "f2c14e", 84],
+		["SBY", "SBY", "Surabaya Baya", "Surabaya", "0b8a3e", "ffcc00", 82],
+		["JKT", "JKT", "Jakarta Rajawali", "Jakarta", "c8102e", "ffffff", 81],
+		["BDG", "BDG", "Bandung Maung", "Bandung", "0f4c9e", "f3efe6", 80],
+		["SRG", "SRG", "Serang Badak", "Serang", "1a1a1a", "f7e017", 79],
+		["DPS", "DPS", "Denpasar Barong", "Denpasar", "ff8a1f", "1a1a1a", 76],
+		["MKS", "MKS", "Makassar Phinisi", "Makassar", "e8313d", "0f4c9e", 80],
+		["PAL", "PAL", "Palu Kaili", "Palu", "4b2a8c", "ffffff", 74],
+		["MJU", "MJU", "Mamuju Sandeq", "Mamuju", "19b3a3", "f7e017", 72],
+		["MND", "MND", "Manado Bunaken", "Manado", "0f6fb5", "ffffff", 70],
 		["BJM", "BJM", "Banjarmasin Bekantan", "Banjarmasin", "f7e017", "137a3e", 74],
+		["SMD", "SMD", "Samarinda Enggang", "Samarinda", "c8102e", "f3efe6", 73],
+		["PNK", "PNK", "Pontianak Khatulistiwa", "Pontianak", "ffcc00", "1d2a5c", 71],
+		["TRK", "TRK", "Tarakan Pesut", "Tarakan", "0f6fb5", "f2c14e", 70],
 		["JYP", "JYP", "Jayapura Cenderawasih", "Jayapura", "19b3a3", "ffcc00", 73],
+		["AMB", "AMB", "Ambon Manise", "Ambon", "e8313d", "ffffff", 70],
+		["TTE", "TTE", "Ternate Kie Raha", "Ternate", "f2c14e", "137a3e", 68],
+		["MKW", "MKW", "Manokwari Kasuari", "Manokwari", "1a1a1a", "e8313d", 67],
 	]},
 }
+
+## The STL's Grand Prix of 2026, in their order: [host, city, the arena it is played in, our venue].
+const STL_GPS := [
+	["Perak", "Ipoh", "Stadium Indera Mulia", "national"],
+	["Penang", "Balik Pulau", "Kompleks Sukan Balik Pulau", "provincial"],
+	["Melaka", "Melaka", "Stadium Bukit Serindit", "national"],
+	["Kuala Lumpur", "Kuala Lumpur", "Stadium Titiwangsa", "dome"],
+	["Negeri Sembilan", "Seremban", "Arena Karisma", "national"],
+	["Johor", "Johor Bahru", "Arena Larkin", "dome"],
+	["Selangor", "Serdang", "Stadium MBSJ", "national"],
+]
+## The two clubs the real Division 1 of 2026 sent up (they start in the Premier League; pick a Division 1 club and
+## that tournament is played again, with you in it).
+const STL_PROMOTED := ["KDH", "FRS"]
+## The points a Grand Prix finish is worth in the STL standings (2026).
+const GP_POINTS := {"1": 32, "2": 28, "3": 24, "4": 21, "qf": 15, "g1": 8, "g0": 0}
+
 
 ## Venues: [id, name key, indoor, kind]. kind picks how Arena builds it.
 const VENUES := [
@@ -150,7 +211,7 @@ func _ready() -> void:
 			"str_w": c[1], "pool": c[4], "home": "TEAM_" + id}
 	for lid in LEAGUES:
 		var lg: Dictionary = LEAGUES[lid]
-		for row in lg.clubs:
+		for row in lg.clubs + lg.get("div1", []):
 			_teams[row[0]] = {"id": row[0], "kind": "club", "league": lid, "short": row[1], "name": row[2],
 				"home": row[3], "c1": Color(row[4]), "c2": Color(row[5]), "str": row[6], "str_w": row[6] - 6,
 				"pool": lg.pool}
@@ -180,11 +241,20 @@ func countries_ranked(women := false) -> Array:
 	return ids
 
 
-func league_clubs(lid: String) -> Array:
+## A league's clubs (Malaysia: the Premier League as it starts in the game; division 2, Division 1).
+func league_clubs(lid: String, division := 1) -> Array:
 	var out := []
-	for row in LEAGUES[lid].clubs:
+	for row in LEAGUES[lid].get("div1" if division == 2 else "clubs", []):
 		out.append(row[0])
 	return out
+
+
+## Indonesia: the region a club plays in (its name key), or "".
+func zone_of(id: String) -> String:
+	for z in LEAGUES.ID.zones:
+		if id in z[1]:
+			return String(z[0])
+	return ""
 
 
 func strength(id: String, women := false) -> int:

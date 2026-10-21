@@ -43,6 +43,10 @@ func _ready() -> void:
 		Game.save_settings()
 		_assist_note.text = tr(akeys[i] + "_NOTE"))))
 	game[1].add_child(_assist_note)
+	game[1].add_child(UI.field(tr("GAME_SPEED"), UI.chips([tr("SPEED_SLOW"), tr("SPEED_MEDIUM"), tr("SPEED_REAL")], int(Game.settings.game_speed), func(i):
+		Game.settings.game_speed = i
+		Game.save_settings())))
+	game[1].add_child(UI.wrap(tr("SPEED_NOTE"), "MutedLabel", 17))
 
 	# The screen.
 	var disp: Array = UI.section(tr("SET_DISPLAY"), "display")

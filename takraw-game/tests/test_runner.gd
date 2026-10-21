@@ -82,28 +82,92 @@ func _rules_helpers() -> void:
 	check(land.distance_to(Vector3(3, 0.1, 1)) < 0.01, "a solved lob lands where it was aimed")
 
 
+## The leagues, run as they are in real life (Season): Malaysia's seven Grand Prix with the STL's points, the last two
+## down and Division 1's finalists up; Thailand's ties of two regus, home and away; Indonesia's regions and national
+## finals. Each reaches a champion, its scores are legal, and its save reads back.
 func _season() -> void:
-	for lid in DB.LEAGUES:
-		var se: Season = Game.new_season(lid, DB.league_clubs(lid)[0])
-		var guard := 0
-		while se.phase != "done" and guard < 40:
-			se.sim_round()
-			guard += 1
-		check(se.phase == "done" and se.champion != "", "%s season reaches a champion" % lid)
-		var tbl := se.table()
-		var n: int = DB.league_clubs(lid).size()
-		for row in tbl:
-			check(int(row.p) == n - 1, "%s: %s played everyone once" % [lid, row.id])
-		for rnd in se.rounds:
+	# Malaysia, a Premier club: seven Grand Prix, each a full tournament.
+	var my: Season = Game.new_season("MY", "PRK")
+	_play_out(my)
+	check(my.phase == "done" and my.champion != "", "MY: the season reaches a champion")
+	check(my.gps_done() == 7, "MY: seven Grand Prix played (%d)" % my.gps_done())
+	var total := 0
+	var want := 0
+	for row in my.gp_table():
+		total += int(row.pts)
+	for ev in my.events:
+		for id in ev.place:
+			want += int(DB.GP_POINTS[ev.place[id]])
+	check(total == want and total >= 7 * (32 + 28 + 24 + 21 + 15 * 4), "MY: each Grand Prix shares out the STL's points (%d)" % total)
+	for ev in my.events:
+		var places := {}
+		for id in ev.place:
+			places[ev.place[id]] = int(places.get(ev.place[id], 0)) + 1
+		check(places.get("1", 0) == 1 and places.get("2", 0) == 1 and places.get("3", 0) == 1 and places.get("4", 0) == 1
+			and places.get("qf", 0) == 4 and int(places.get("g1", 0)) + int(places.get("g0", 0)) == 4, "MY: a Grand Prix's finishes (%s)" % places)
+		_legal_sets(ev, "MY")
+	check(my.relegated.size() == 2 and not (my.relegated[0] in my.premier), "MY: two relegated")
+	check(my.awards().size() == 4, "MY: four awards")
+	Game.save_season()
+	Game.season = null
+	var back = Game.get_season()
+	check(back != null and back.champion == my.champion and back.gp_table()[0].id == my.gp_table()[0].id, "MY: the season saves and loads")
+	# The next season: the relegated two in Division 1, two promoted from it.
+	var nx: Season = my.next_season()
+	check(nx.premier.size() == 12 and nx.promoted.size() == 2, "MY: next season, twelve in the Premier League with two promoted")
+	for id in my.relegated:
+		check(not (id in nx.premier) or id in nx.promoted, "MY: %s relegated (or straight back up)" % id)
+	# A Division 1 club: one tournament; its finalists go up, and you on with them into the Premier League.
+	var d1: Season = Game.new_season("MY", "TRG")
+	check(d1.division == 2 and d1.events.size() == 1, "MY: a Division 1 club starts in Division 1")
+	_play_out(d1)
+	check(d1.phase == "done" and d1.promoted.size() == 2 and d1.relegated.size() == 2 and d1.premier.size() == 10,
+		"MY: Division 1 sends two up, the Premier League two down (%d, %d, %d)" % [d1.promoted.size(), d1.relegated.size(), d1.premier.size()])
+	var d2: Season = d1.next_season()
+	check(d2.premier.size() == (10 if d2.division == 2 else 12), "MY: next season, twelve again once Division 1 is played (%d, division %d)" % [d2.premier.size(), d2.division])
+	_play_out(d2)
+	check(d2.phase == "done" and d2.champion != "", "MY: a second season plays out")
+	check(("TRG" in d1.premier) == (d1.gps_done() == 7), "MY: promoted, you play the Premier season (%s, %d GPs)" % ["TRG" in d1.premier, d1.gps_done()])
+	# Thailand: home and away, ties of two regus.
+	var th: Season = Game.new_season("TH", "SPB")
+	_play_out(th)
+	check(th.phase == "done" and th.champion == th.table()[0].id, "TH: the champion tops the table")
+	var draws := 0
+	for row in th.table():
+		check(int(row.p) == 14, "TH: %s played everyone home and away (%d)" % [row.id, int(row.p)])
+		check(int(row.pts) == int(row.w) * 2 + int(row.d), "TH: 2 points a win, 1 a draw")
+		draws += int(row.d)
+	check(draws > 0, "TH: some ties are drawn 1-1")
+	for rnd in th.events[0].stages[0].rounds:
+		for f in rnd:
+			check((f.regus as Array).size() == 2 and int(f.sets[0]) + int(f.sets[1]) == 2, "TH: a tie is two regus")
+	_legal_sets(th.events[0], "TH")
+	# Indonesia: your region, then the national finals.
+	for women in [false, true]:
+		var id_s: Season = Game.new_season("ID", "SOL", women)
+		check(id_s.women == women, "ID: women's league too")
+		_play_out(id_s)
+		check(id_s.phase == "done" and id_s.champion != "", "ID: a champion")
+		var fin: Dictionary = id_s.events[id_s.events.size() - 1]
+		check(String(fin.kind) == "finals" and (fin.clubs as Array).size() == 10, "ID: ten clubs in the national finals")
+		_legal_sets(fin, "ID")
+	check(not Game.new_season("MY", "PRK", true).women, "MY: men only, as the STL is")
+
+
+func _play_out(se: Season) -> void:
+	var guard := 0
+	while se.phase != "done" and guard < 300:
+		se.sim_round()
+		guard += 1
+
+
+func _legal_sets(ev: Dictionary, lid: String) -> void:
+	for st in ev.stages:
+		for rnd in st.rounds:
 			for f in rnd:
+				check(bool(f.played), "%s: every fixture played" % lid)
 				for sc in f.set_scores:
 					check(valid_set(int(sc[0]), int(sc[1]), 15), "%s: set %s is legal" % [lid, sc])
-		check(se.awards().size() == 4, "%s: four awards" % lid)
-		# The save reads back as it was.
-		Game.save_season()
-		Game.season = null
-		var back = Game.get_season()
-		check(back != null and back.champion == se.champion and back.table()[0].id == tbl[0].id, "%s: the season saves and loads" % lid)
 
 
 func _cup() -> void:

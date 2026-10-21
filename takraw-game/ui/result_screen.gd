@@ -59,7 +59,7 @@ func _ready() -> void:
 		var wins := [0, 0]
 		for r in tie.results:
 			wins[0 if int(r[0]) > int(r[1]) else 1] += 1
-		var tl := UI.wrap(tr("TIE_SCORE").format({"a": wins[0], "b": wins[1]}) + ("  ·  " + tr("TIE_WON" if wins[user] > wins[1 - user] else "TIE_LOST") if tie_done else ""), "SubLabel", 22)
+		var tl := UI.wrap(tr("TIE_SCORE").format({"a": wins[0], "b": wins[1]}) + ("  ·  " + tr("TIE_WON" if wins[user] > wins[1 - user] else ("TIE_DRAWN" if wins[0] == wins[1] else "TIE_LOST")) if tie_done else ""), "SubLabel", 22)
 		tl.add_theme_color_override("font_color", Game.C_GOLD)
 		sv.add_child(tl)
 	var potm: Dictionary = result.get("potm", {})

@@ -321,11 +321,12 @@ func timing_result(label: String) -> void:
 func _draw_ring() -> void:
 	var cam: Camera3D = m.cam
 	if not _ring_plan.is_empty() and cam:
+		_draw_spot(cam)
 		var pos: Vector3 = _ring_plan.pos
 		if not cam.is_position_behind(pos):
 			var sp := cam.unproject_position(pos)
 			var left := float(_ring_plan.t) - float(m.now)
-			var k := clampf(left / 0.9, 0.0, 1.0)
+			var k := clampf(left / 1.1, 0.0, 1.0)
 			var r := 26.0 + 74.0 * k
 			var w: Array = m.timing_windows()
 			var good := left <= float(w[1])
@@ -333,7 +334,7 @@ func _draw_ring() -> void:
 			_ring.draw_arc(sp, r, 0, TAU, 48, Game.C_GOOD if good else Color(Game.C_INK, 0.8), 4.0, true)
 	if _ring_result_t > 0.0:
 		var key := "TIMING_" + _ring_result
-		var col: Color = {"PERFECT": Game.C_GOLD, "GOOD": Game.C_GOOD, "EARLY": Game.C_MUTED, "LATE": Game.C_MUTED}.get(_ring_result, Game.C_INK)
+		var col: Color = {"PERFECT": Game.C_GOLD, "GOOD": Game.C_GOOD, "EARLY": Game.C_MUTED, "LATE": Game.C_MUTED, "MISS": Game.C_DANGER}.get(_ring_result, Game.C_INK)
 		var f: Font = Game.font_display
 		var fs := Game.ts(48)
 		var txt := tr(key)
@@ -341,6 +342,32 @@ func _draw_ring() -> void:
 		var at := Vector2(_ring.size.x * 0.5 - tw * 0.5, _ring.size.y * 0.72)
 		_ring.draw_string_outline(f, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 10, Color(0.02, 0.05, 0.09, minf(1.0, _ring_result_t * 2.0)))
 		_ring.draw_string(f, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(col, minf(1.0, _ring_result_t * 2.0)))
+
+
+## Where your player must stand to play it: a ring on the floor, gold, green once he is near enough; a line to it from
+## his feet while he is not.
+func _draw_spot(cam: Camera3D) -> void:
+	if not _ring_plan.has("player") or not _ring_plan.has("stand") or String(_ring_plan.get("kind", "")) == "serve":
+		return
+	var st: Vector3 = _ring_plan.stand
+	if st == Vector3.INF or cam.is_position_behind(st):
+		return
+	var near: bool = m._off_spot(_ring_plan) <= m._reach(_ring_plan)
+	var col := Game.C_GOOD if near else Game.C_GOLD
+	var pts := PackedVector2Array()
+	for i in 25:
+		var a := TAU * float(i) / 24.0
+		pts.append(cam.unproject_position(st + Vector3(cos(a) * 0.42, 0.02, sin(a) * 0.42)))
+	_ring.draw_polyline(pts, Color(0.02, 0.05, 0.09, 0.6), 7.0, true)
+	_ring.draw_polyline(pts, col, 4.0, true)
+	if not near:
+		var pl: Node3D = _ring_plan.player
+		var a2 := cam.unproject_position(Vector3(pl.position.x, 0.02, pl.position.z))
+		var b2 := cam.unproject_position(st + Vector3(0, 0.02, 0))
+		var n := int(a2.distance_to(b2) / 18.0)
+		for i in n:
+			if i % 2 == 0:
+				_ring.draw_line(a2.lerp(b2, float(i) / n), a2.lerp(b2, float(i + 1) / n), Color(col, 0.75), 3.0, true)
 
 
 # ---------------------------------------------------------------- challenge and review
@@ -479,10 +506,6 @@ func show_pause(on: bool) -> void:
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(t)
 	v.add_child(UI.button(tr("RESUME"), true, func(): m.set_paused(false)))
-	if int(m.user_team) >= 0:
-		var to := UI.button(tr("TIMEOUT_N").format({"n": int(m.timeouts[m.user_team])}), false, func(): m.call_timeout())
-		to.disabled = int(m.timeouts[m.user_team]) <= 0
-		v.add_child(to)
 	v.add_child(UI.button(tr("CAMERA") + ": " + tr({Game.CAM_TV: "CAM_TV", Game.CAM_SIDE: "CAM_SIDE"}.get(m.cam.mode, "CAM_END")), false, func():
 		m.cam.toggle()
 		show_pause(false)

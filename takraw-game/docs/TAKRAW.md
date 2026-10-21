@@ -19,7 +19,7 @@ could not confirm; the game's choice is given beside it.
 | Service | **Since 1 February 2024**: alternates every point, whoever wins it (it was three serves a side, 2013-2024) | Alternates every point |
 | The serve | The score is called; an inside player throws the ball to the tekong, who kicks it over the net with his non-kicking foot in the service circle. Both of the serving side's inside players stand in their quarter circles; the receivers anywhere on their side | Exact, with the faults below |
 | Ends | Change after each set, and in the third set when a side reaches 8 | Exact |
-| Time-outs | One a side a set, up to a minute | One a side a set |
+| Time-outs | One a side a set, up to a minute | Not in the game: the match moves straight on |
 | Touches | At most three a side; one player may make all three | Exact |
 | Block | **[UNCERTAIN]** whether a block counts as one of the three | Counts as one |
 | Challenge | Video review with high-speed cameras: trialled at the 2022 King's Cup, compulsory since the 2025 SEA Games; **[UNCERTAIN]** how many | One a set, kept if right |
@@ -56,11 +56,47 @@ Referee and assistant referee on either side of the net, four line judges on the
   Women: Thailand, Vietnam, Indonesia, Myanmar, Laos, the Philippines, India, Japan, China, Korea.
 
 ## Club leagues
-- **Malaysia, Sepak Takraw League** (since 2014): 12 Premier clubs named "state + English mascot", a Grand Prix series
-  with a split into Class One and Class Two, relegation; Thai imports allowed.
-- **Thailand, Takraw Thailand League** (since 2002): clubs named "epithet + province"; round robin.
-- **Indonesia**: a national league from 2026 across five zones.
-- The game: three fictional leagues in those styles, a round robin then a Final Four (semi-finals and a final).
+How the three leagues are run now, and how the game runs them (game/season.gd). The clubs in the game are the real
+line-ups' states, provinces and services under invented nicknames: the real clubs' names and badges are theirs.
+
+- **Malaysia, Sepak Takraw League (STL)**, run by the PSM with Astro (since 2014). The Premier League has 12 clubs
+  (2026: Perak, Penang, Negeri Sembilan, Melaka, Kelantan, Kuala Lumpur, Johor, Kedah, the armed forces (ATM),
+  the fire service (Bomba), Selangor, the police (PDRM)). Since 2024 the season is a circuit of Grand Prix (5 in
+  2024, 6 in 2025, 7 in 2026: Perak, Penang, Melaka, Kuala Lumpur, Negeri Sembilan, Johor, Selangor, from 21 October
+  2026 to 10 January 2027). At each, the 12 are drawn afresh into four groups of three; the top two go to the
+  quarter-finals, then the semi-finals and the final. Points for a finish (2026): winner 32, runner-up 28, third 24,
+  fourth 21, quarter-finalist 15, out in the group with a win 8, without 0. The most points over the season win the
+  league (Perak 2023 and 2025, Kuala Lumpur 2024); the last two are relegated. Division 1 (12 clubs in 2026, played
+  7-11 October) is played before the Premier season and its two finalists go up into that season. A match is one
+  regu against another, best of three sets to 15. The STL is a men's league. Sources:
+  [TheVocket: the 2026 format and points](https://thevocket.com/stl-2026-liga-premier-ini-format-pembahagian-mata/),
+  [the 2026 clubs](https://thevocket.com/stl-2026-senarai-pasukan-beraksi-dalam-liga-premier/),
+  [the GP Perak draw](https://thevocket.com/stl-2026-keputusan-undian-kumpulan-bagi-gp-perak/),
+  [Astro Media: STL 2026](https://astromedia.com.my/2026-sepak-takraw-league/),
+  [Kosmo: Division 1 2026](https://www.kosmo.com.my/2026/10/11/kedah-eagles-juara-divisyen-1-stl-2026/),
+  [Utusan: the 2024 format](https://www.utusan.com.my/terkini/2024/08/stl-2024-guna-format-baharu-lebih-meriah/).
+  **[UNCERTAIN]** whether a Grand Prix has a third-place match (the game plays one: third and fourth score
+  differently); the order of the 2025 Grand Prix.
+  The game: the 2026 Premier League and Division 1, the seven 2026 Grand Prix in their venues, the points above,
+  promotion and relegation. Pick a Division 1 club and you play Division 1 first; reach its final and you go up into
+  that season's Premier League.
+- **Thailand, Takraw Thailand League (TTL)**, run by the Takraw Association of Thailand (since 2002). Last played in
+  2022 (the 20th season): 7 provincial clubs (Nong Khai, Suphanburi, Sisaket, Phitsanulok, Chonburi, Amnat Charoen,
+  Phrae), home and away. A fixture is a tie of two regus; winning both is worth 2 points, one each 1 (Suphanburi won
+  2022 with 10 wins and 2 draws, 22 points). The champion is top of the table. A relaunch is set for 2027: 16 clubs,
+  ten knockout circuits at one venue. Sources: [Thai Wikipedia](https://th.wikipedia.org/wiki/ตะกร้อไทยแลนด์ลีก),
+  [Matichon](https://www.matichon.co.th/sport/thai-sport/news_5921259), [Daily News](https://www.dailynews.co.th/news/4271795/).
+  **[UNCERTAIN]** the 1 point for a drawn tie (worked out from the 2022 table), and the 2027 format's details.
+  The game: the 2022 format with eight clubs (2022's seven and Nakhon Pathom, the champions ten times), two regus a
+  tie, both played.
+- **Indonesia, Liga Sepak Takraw Indonesia (LSI)**, run by the PB PSTI, revived in 2026 after about 20 years. A
+  regional stage in five regions (Sumatra; Java, Bali and Nusa Tenggara; Sulawesi; Kalimantan; Papua and Maluku), men
+  and women, then the national round in Jakarta. Sources: [RRI](https://rri.co.id/surabaya/olimpik/2543059/liga-sepak-takraw-indonesia-2026-jadi-jalur-pembinaan-atlet-menuju-timnas),
+  [Suara Surabaya](https://www.suarasurabaya.net/olahraga/2026/wakil-jateng-juara-liga-sepak-takraw-indonesia-wilayah-2-di-surabaya/),
+  [Saibumi](https://www.saibumi.com/artikel-139515-liga-sepak-takraw-indonesia-wilayah-i-sumatera-2026-resmi-bergulir-di-bandar-lampung-diikuti-sembilan-klub.html).
+  **[UNCERTAIN]** how many go through from each region and how the national round is played (reports differ).
+  The game: a round robin in your region; the top two of each region to the national finals (two groups of five,
+  the semi-finals, the final).
 
 ## Venues
 The elite game is played **indoors** on a synthetic mat: Titiwangsa Stadium ("Home of Sepak Takraw", about 3,000),

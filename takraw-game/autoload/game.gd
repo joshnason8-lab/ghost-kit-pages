@@ -68,6 +68,10 @@ const C_TEAL := Color("19b3a3")
 const C_GOOD := Color("4cd38a")
 const C_DANGER := Color("ff5a5a")
 
+## How fast a match you play runs, against real time: Slow (the default: time to see the ball and get to it), Medium,
+## Real. The ball, the players and the clock all slow together, so a rally plays as it would, only slower.
+const SPEEDS := [0.7, 0.85, 1.0]
+
 var settings := {
 	"language": "",         # "" follows the phone's language
 	"camera": CAM_TV,
@@ -80,7 +84,9 @@ var settings := {
 	"left_handed": false,
 	"btn_size": 0,          # the match buttons: 0 Normal, 1 Large, 2 Extra large
 	"difficulty": 1,        # 0 Rookie, 1 Pro, 2 Star, 3 Legend
-	"assist": 1,            # 0 Off (you run to the ball), 1 Run (your player runs there himself), 2 Full (and times the touch)
+	"assist": 1,            # who runs your player to the ball: 0 you, every touch; 1 you for the first touch (the set and
+	                        # the spike he runs to himself); 2 he runs to every one. You time every touch yourself.
+	"game_speed": 0,        # the pace of a match you play: SPEEDS
 	"sets": 1,              # 0 one set, 1 best of three: the real match
 	"points": 0,            # 0 sets to 15 (the ISTAF rule), 1 to 21 (the long sets of the old rule)
 	"event": 0,             # the event in Quick Match: 0 Regu (3), 1 Team (three regus), 2 Quadrant (4), 3 Doubles (2)
@@ -191,7 +197,7 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "sets", "points", "event", "tags"]:
+	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "game_speed", "sets", "points", "event", "tags"]:
 		settings[k] = int(settings[k])
 
 
@@ -349,23 +355,29 @@ func on_match_finished(result: Dictionary) -> void:
 	var cfg: Dictionary = result.config
 	Records.add_match(result)
 	if cfg.has("tie"):
-		# One regu of a team event: the tie goes on until a side has won two.
+		# One regu of a tie: a team event goes on until a side has won two of three; a Thai league tie plays both its
+		# regus (play_all), and may be drawn.
 		var tie: Dictionary = cfg.tie.duplicate(true)
 		tie.results.append([int(result.sets[0]), int(result.sets[1])])
+		var scores: Array = tie.get("set_scores", [])
+		scores.append_array(result.get("set_scores", []))
+		tie.set_scores = scores
 		for k in 2:
 			for pd in cfg.get("lineup_%d" % k, []):
 				tie.used[k].append(pd.id)
 		var wins := [0, 0]
 		for r in tie.results:
 			wins[0 if int(r[0]) > int(r[1]) else 1] += 1
-		if wins[0] < 2 and wins[1] < 2:
+		var regus := int(tie.get("regus", 3))
+		var decided: bool = (tie.results as Array).size() >= regus or (not bool(tie.get("play_all", false)) and (wins[0] >= 2 or wins[1] >= 2))
+		if not decided:
 			show_screen("res://ui/result_screen.gd", {"result": result, "tie": tie})
 			return
 		# The tie is decided: it counts as one result, in regus won.
 		var tie_result := result.duplicate()
 		tie_result.sets = wins
 		tie_result.set_scores = []
-		tie_result.winner = 0 if wins[0] > wins[1] else 1
+		tie_result.winner = 0 if wins[0] > wins[1] else (1 if wins[1] > wins[0] else -1)
 		tie_result.tie = tie
 		_record(tie_result)
 		show_screen("res://ui/result_screen.gd", {"result": result, "tie": tie, "tie_done": true})

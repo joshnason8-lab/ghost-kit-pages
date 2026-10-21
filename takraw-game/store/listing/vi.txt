@@ -18,18 +18,17 @@ Takraw Smash mang cầu mây lên điện thoại của bạn, môn "bóng chuy�
 
 CHẾ ĐỘ CHƠI
 • Trận nhanh: hai đội bất kỳ, sân đấu bất kỳ.
-• Mùa giải: dẫn dắt một câu lạc bộ qua giải vô địch Malaysia, Thái Lan hoặc Indonesia và tiến vào vòng Final Four.
+• Mùa giải: các giải đấu thật, đúng thể thức thật. Sepak Takraw League của Malaysia: bảy chặng Grand Prix, thứ hạng nào cũng có điểm, có thăng hạng và xuống hạng. Takraw Thailand League: đá sân nhà và sân khách, mỗi cặp đấu gồm hai trận đội 3 người. Liga Sepak Takraw Indonesia: năm khu vực, rồi vòng chung kết quốc gia tại Jakarta.
 • Quốc tế: World Cup, Cúp Hoàng gia, giải vô địch châu Á và giải vô địch Đông Nam Á, cùng Thái Lan, Malaysia, Việt Nam, Indonesia, Myanmar, Nhật Bản, Hàn Quốc và nhiều đội khác.
-• Luyện tập: học từng kỹ thuật chạm cầu với gợi ý.
 
 TÁM SÂN ĐẤU
 Nhà thi đấu quốc gia, mái vòm hoành tráng, sân trong trung tâm thương mại, nhà thi đấu tỉnh, sân chùa, sân công viên dưới ánh đèn, bãi biển lúc hoàng hôn và con phố chợ đêm.
 
 CHƠI THEO CÁCH CỦA BẠN
 • 13 ngôn ngữ: English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文 và हिन्दी.
-• Canh thời điểm từng lần chạm cầu khi vòng tròn thu hẹp quanh quả cầu; tùy chỉnh mức hỗ trợ di chuyển và canh nhịp.
+• Không có gì được đá hộ bạn: dùng cần điều khiển cho cầu thủ chạy tới cầu và đá khi vòng tròn thu hẹp quanh quả cầu. Tùy chỉnh mức hỗ trợ di chuyển và tốc độ trận đấu.
 • Chạy mượt trên điện thoại giá rẻ như Galaxy A16.
 • Chơi offline. Không quảng cáo, không mua hàng, không cần tài khoản, không thu thập dữ liệu.
 
 == Release notes (first release) ==
-Phiên bản đầu tiên của Takraw Smash: Trận nhanh, Mùa giải, Quốc tế và Luyện tập, hỗ trợ 13 ngôn ngữ.
+Phiên bản đầu tiên của Takraw Smash: Trận nhanh, Mùa giải và Quốc tế, hỗ trợ 13 ngôn ngữ.

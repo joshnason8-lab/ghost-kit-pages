@@ -1,13 +1,18 @@
 extends Node3D
 ## A match, to the ISTAF laws as they stand (docs/TAKRAW.md): rally point, sets to 15 (from 14-all, win by two, up
 ## to 17) or the old 21 (to 25), best of three or one set; the serve alternating every point; ends changed after each
-## set and at 8 in the third; three touches a side; one time-out and one video challenge a side a set.
+## set and at 8 in the third; three touches a side; one video challenge a side a set.
 ##
 ## Every touch is planned. The ball flies under gravity alone (Ball), so the moment a ball is kicked the side it is
 ## going to knows where it can be met: who gets there, with which part of the body (a sila kick, the thigh, the chest,
 ## the head, a diving instep), and when; that player runs to the spot and starts his move so his foot meets the ball.
-## The touch's quality, from the player's ratings (and, for yours, your timing), decides how good the pass, set or
-## spike is. Blocks and digs are planned the same way against a spike.
+## The touch's quality, from the player's ratings, decides how good the pass, set or spike is. Blocks and digs are
+## planned the same way against a spike.
+##
+## Your side is yours: nothing is played for you. The player who can get to the ball is lit; you run him there with the
+## joystick (the gold mark on the floor is where to stand; with the assist on, the setter and the striker run to the
+## set themselves), and he kicks only when you press, as the ring closes on the ball. Too early, too late, too far
+## from it, or no press at all, and he misses it: the ball goes on, and falls unless someone else can still reach it.
 
 signal finished(result: Dictionary)
 
@@ -46,7 +51,6 @@ var set_scores: Array = []   # [[a, b], ...] for the sets played
 var server := 0              # the team serving next
 var first_server := 0        # the team that served first in this set
 var ends_changed_mid := false
-var timeouts := [1, 1]
 var challenges := [1, 1]
 var serving_streak := 0      # the serving team's run of points (for the call-outs)
 var last_point_team := -1
@@ -57,6 +61,7 @@ var state := S.INTRO
 var state_t := 0.0
 var now := 0.0               # match time (the sim's own clock: slow motion slows it)
 var time_scale := 1.0
+var pace := 1.0              # a match you play runs slower than real time (Settings: Game speed)
 var touches := 0             # touches by the side the ball is on
 var touch_side := -1         # the side that last touched the ball
 var last_toucher: Player = null
@@ -103,6 +108,8 @@ func _ready() -> void:
 	event = String(config.get("event", "regu"))
 	n_players = {"regu": 3, "quadrant": 4, "doubles": 2, "team": 3}.get(event, 3)
 	user_team = int(config.get("user_team", 0))
+	if user_team >= 0 and not bool(config.get("attract", false)):
+		pace = float(config.get("pace", Game.SPEEDS[clampi(int(Game.settings.get("game_speed", 0)), 0, Game.SPEEDS.size() - 1)]))
 	sets_to_win = 2 if int(config.get("sets", 3)) >= 3 else 1
 	set_points = int(config.get("points", 15))
 	set_cap = 17 if set_points == 15 else 25
@@ -273,7 +280,7 @@ func _process(delta: float) -> void:
 	if state == S.REPLAY:
 		_replay_step(delta)
 		return
-	var ts := time_scale
+	var ts := time_scale * pace
 	if _slowmo_until > 0.0 and now < _slowmo_until:
 		ts = 0.35
 	var dt := delta * ts
@@ -447,11 +454,12 @@ func _begin_toss() -> void:
 	var t_kick := t_release + float(sol[1])
 	ball.hold(hand)
 	_schedule(t_release, func(): ball.launch(hand, sol[0], t_release))
-	plan = {"player": srv, "kind": "serve", "move": mv, "t": t_kick, "pos": kp, "touch": 0, "mirror": mirror,
-		"user": _is_user(srv), "side": srv.side, "started": false}
-	srv.queue_move(mv, t_kick - Moves.contact_time(mv), mirror)
+	plan = {"player": srv, "kind": "serve", "move": mv, "t": t_kick, "pos": kp, "stand": srv.target, "touch": 0,
+		"mirror": mirror, "user": _is_user(srv), "side": srv.side, "started": false, "auto": true}
 	if plan.user:
 		_open_window(plan, ["SERVE", "HORSE"])
+	else:
+		srv.queue_move(mv, t_kick - Moves.contact_time(mv), mirror)
 	_attack_kind = ""
 
 
@@ -492,8 +500,11 @@ func _rally_events() -> void:
 	# A block.
 	if not block.is_empty() and not bool(block.get("done", false)) and now >= float(block.t):
 		block.done = true
-	# The planned touch.
-	if not plan.is_empty() and now >= float(plan.t):
+	# The planned touch (yours when you press).
+	if not plan.is_empty() and bool(plan.get("user", false)):
+		if _user_touch_due():
+			return
+	elif not plan.is_empty() and now >= float(plan.t):
 		var p := plan
 		plan = {}
 		_touch(p)
@@ -510,6 +521,9 @@ func _rally_events() -> void:
 func _touch(p: Dictionary) -> void:
 	var pl: Player = p.player
 	var q := _quality(p)
+	if bool(p.get("user", false)):
+		pl.set_selected(false)
+		_clear_buttons()
 	input_window = {}
 	hud.timing_done()
 	var kind := String(p.kind)
@@ -554,12 +568,8 @@ func _quality(p: Dictionary) -> float:
 	if bool(p.get("user", false)):
 		var t_ok := _timing_quality(p)
 		var base := t_ok * (0.82 + rating * 0.0022)
-		if int(Game.settings.assist) == 0:
-			# You ran him yourself: the further from the spot, the worse the touch.
-			var off := Vector2(pl.position.x - Vector3(p.stand).x, pl.position.z - Vector3(p.stand).z).length()
-			if off > 0.9:
-				return 0.02
-			base *= clampf(1.15 - off, 0.25, 1.0)
+		# The further from the spot he was, the worse the touch (out of reach, he missed it: _user_touch_due).
+		base *= clampf(1.1 - _off_spot(p) / _reach(p) * 0.45, 0.5, 1.0)
 		return clampf(base, 0.0, 1.0)
 	var diff: float = [0.8, 0.9, 0.97, 1.03][int(config.get("difficulty", Game.settings.difficulty))] if _is_opponent(pl) else 0.94
 	if user_team < 0:
@@ -584,15 +594,12 @@ func _rating_for(pl: Player, kind: String) -> float:
 	return float(d.get("receive", 60))
 
 
-## Your timing: how close your press was to the moment the ball arrived. No press: a weak touch, kinder on Rookie.
+## Your timing: how close your press was to the moment the ball arrived (a touch is only made on a press).
 func _timing_quality(p: Dictionary) -> float:
-	if int(Game.settings.assist) == 2 and _press.is_empty():
-		return 0.78
-	if _press.is_empty():
-		return [0.42, 0.3, 0.2, 0.12][int(Game.settings.difficulty)]
-	var err := absf(float(_press.t) - float(p.t))
+	var pt := float(p.get("press_t", p.t))
+	var err := absf(pt - float(p.t))
 	var w: Array = timing_windows()
-	var label := "LATE" if float(_press.t) > float(p.t) else "EARLY"
+	var label := "LATE" if pt > float(p.t) else "EARLY"
 	var q := 0.0
 	if err <= w[0]:
 		q = 1.0
@@ -844,14 +851,7 @@ func _aim_target(opp: int, base: Vector3, reach: float) -> Vector3:
 	var j := _joy
 	if j.length() < 0.2:
 		return base + Vector3(0, 0, rng.randf_range(-1.2, 1.2))
-	var right := cam.global_transform.basis.x
-	right.y = 0
-	right = right.normalized()
-	var up := -cam.global_transform.basis.z
-	up.y = 0
-	up = up.normalized()
-	var d := right * j.x + up * (-j.y)
-	var t := base + d * reach
+	var t := base + _cam_dir(j) * reach
 	var s := Court.sgn(opp)
 	t.x = s * clampf(t.x * s, 0.6, Court.HALF - 0.2)
 	t.z = clampf(t.z, -Court.HALF_W + 0.2, Court.HALF_W - 0.2)
@@ -984,15 +984,17 @@ func _plan_next() -> void:
 		print("spike flight %.2fs land %s nearest defender %.2fm -> %s" % [land_t - now, land, nearest, "dig " + String(pick.get("move", "")) if not pick.is_empty() else "none"])
 	if pick.is_empty():
 		return
+	pick.until = until
 	plan = pick
 	var pl: Player = pick.player
 	if String(pick.kind) == "attack":
 		_prepare_block(pick)
+	if bool(pick.user):
+		_take_control(pick)
+		return
 	pl.hurry = 1.0
 	pl.target = pick.stand
 	pl.queue_move(String(pick.move), float(pick.t) - Moves.contact_time(String(pick.move)), bool(pick.mirror))
-	if bool(pick.user):
-		_open_window(pick, _choices_for(pick))
 
 
 ## The best touch a side can make on the ball's flight: for each moment it is in reach, each player and each way of
@@ -1019,7 +1021,7 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 					var aim := _attack_target(striker, 1 - side, mv) if not _is_user(striker) else Vector3.INF
 					return {"player": striker, "kind": "attack", "move": mv, "t": tc, "pos": cp, "stand": stand, "touch": 3,
 						"mirror": mirror, "user": _is_user(striker), "side": side, "alt": "sunback" if mv == "roll" else "roll",
-						"aim": aim}
+						"aim": aim, "from_set": true}
 		_set_for = {}
 	var best := {}
 	var best_cost := 99.0
@@ -1051,13 +1053,7 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 					var cost := _touch_cost(pl, mv, touch_no) + (t - now) * 0.05 + dist * 0.04
 					if cost < best_cost:
 						best_cost = cost
-						var kind := "receive"
-						if touch_no == 2:
-							kind = "set"
-						elif touch_no == 3:
-							kind = "attack" if mv in ["roll", "sunback", "tapak", "head_spike", "feint"] else "over"
-						elif mv == "dig":
-							kind = "dig"
+						var kind := _kind_for(mv, touch_no)
 						var ease := 1.0
 						if mv == "dig":
 							ease = 0.8
@@ -1069,6 +1065,14 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 				break
 		t += 0.04
 	return best
+
+
+func _kind_for(mv: String, touch_no: int) -> String:
+	if touch_no == 2:
+		return "set"
+	if touch_no == 3:
+		return "attack" if mv in ["roll", "sunback", "tapak", "head_spike", "feint"] else "over"
+	return "dig" if mv == "dig" else "receive"
 
 
 ## Ways to meet a ball at height h, for the touch it is (the third touch, near the net and high enough, a spike).
@@ -1150,9 +1154,6 @@ func _prepare_block(atk: Dictionary) -> void:
 			var err := rng.randfn(0.0, (100.0 - float(blocker.data.get("block", 60))) * 0.004)
 			blocker.queue_move("block", float(atk.t) + err - Moves.contact_time("block"))
 			block.jump_t = float(atk.t) + err
-	elif int(Game.settings.assist) == 2:
-		blocker.queue_move("block", float(atk.t) - Moves.contact_time("block"))
-		block.jump_t = float(atk.t) + 0.04
 
 
 ## The defenders read the coming spike off the striker's approach: a good one gets in front of where it is going.
@@ -1182,10 +1183,6 @@ func _block_at_net(attacker: Player, from: Vector3, v: Vector3, mv: String) -> v
 	if mv == "feint" or b.is_empty():
 		return
 	var blocker: Player = b.player
-	if bool(b.user) and not b.has("jump_t"):
-		if not _press.is_empty() and String(_press.id) == "BLOCK":
-			b.jump_t = float(_press.t) + Moves.contact_time("block")
-			_press = {}
 	if not b.has("jump_t"):
 		return
 	var tn := -from.x / v.x if absf(v.x) > 0.01 else -1.0
@@ -1261,7 +1258,7 @@ func _schedule_ai_challenge(team: int) -> void:
 		_challenge(team)
 
 
-func _fault(fault_side: int, key: String, who: Player) -> void:
+func _fault(fault_side: int, key: String, who: Player, stop_ball := true) -> void:
 	_why = key
 	if OS.has_environment("TAKRAW_DEBUG"):
 		print("FAULT %s after %s" % [key, _last_kind])
@@ -1271,7 +1268,8 @@ func _fault(fault_side: int, key: String, who: Player) -> void:
 		stats[who.data.id].errors += 1
 		if _is_user(who):
 			Game.haptic("fault")
-	ball.flying = false
+	if stop_ball:
+		ball.flying = false
 	_point(side_team[1 - fault_side])
 
 
@@ -1283,6 +1281,10 @@ func _point(team: int) -> void:
 	deflect = {}
 	input_window = {}
 	hud.timing_done()
+	_clear_buttons()
+	for side in 2:
+		for pp in players_on(side):
+			(pp as Player).set_selected(false)
 	_sched.clear()
 	state = S.DEAD
 	state_t = 0.0
@@ -1370,15 +1372,6 @@ func _after_point() -> void:
 		ends_changed_mid = true
 		_change_ends()
 		hud.banner(tr("CHANGE_ENDS"), Game.C_GOLD)
-	# The AI calls its time-out when it is behind and the other side is on a run.
-	for k in 2:
-		if k != user_team and timeouts[k] > 0 and run[1 - k] >= 4 and points[k] < points[1 - k]:
-			timeouts[k] -= 1
-			run[1 - k] = 0
-			hud.banner(tr("TIMEOUT_CALLED").format({"t": DB.team_name(String(teams[k].id))}), teams[k].c1)
-			state = S.BREAK
-			state_t = BREAK_TIME - 3.0
-			return
 	Crowd.set_excite(0.0)
 	_begin_setup()
 
@@ -1392,14 +1385,13 @@ func _set_won(team: int) -> void:
 	if sets[team] >= sets_to_win:
 		_finish(team)
 		return
-	# The next set: the team that received first in this one serves first; the ends change; time-outs and
-	# challenges are given back.
+	# The next set: the team that received first in this one serves first; the ends change; the challenges are
+	# given back.
 	set_no += 1
 	first_server = 1 - first_server
 	server = first_server
 	points = [0, 0]
 	run = [0, 0]
-	timeouts = [1, 1]
 	challenges = [1, 1]
 	ends_changed_mid = false
 	_change_ends()
@@ -1573,13 +1565,11 @@ func _is_opponent(pl: Player) -> bool:
 
 ## Opens the moment you can time a touch: the buttons for it and the ring that closes on the ball.
 func _open_window(p: Dictionary, choices: Array) -> void:
-	input_window = {"t": p.t, "kind": p.kind, "choices": choices, "player": p.player, "pos": p.pos}
+	input_window = {"t": p.t, "kind": p.kind, "choices": choices, "player": p.player, "pos": p.pos, "stand": p.get("stand", Vector3.INF)}
 	_press = {}
 	_last_choice = ""
 	controls.set_buttons(choices)
 	hud.timing_open(p)
-	if bool(config.get("training", false)):
-		hud.call_line(tr("HINT_" + String(p.kind).to_upper()))
 	for side in 2:
 		for pp in players_on(side):
 			var pl: Player = pp
@@ -1591,8 +1581,9 @@ func _choices_for(p: Dictionary) -> Array:
 		"set":
 			return ["SET", "QUICK", "ATTACK2"]
 		"attack":
-			var alt := "SPIKE2"
-			return ["SPIKE", alt, "FEINT"]
+			if bool(p.get("from_set", false)):
+				return ["SPIKE", "SPIKE2", "FEINT"]
+			return ["SPIKE", "FEINT"] if String(p.move) == "head_spike" else ["FEINT"]
 		"dig":
 			return ["DIG"]
 	return ["KICK"]
@@ -1603,6 +1594,220 @@ func _press_choice(id: String) -> bool:
 
 
 var _last_choice := ""
+
+
+func _clear_buttons() -> void:
+	if not _block_offered:
+		controls.set_buttons([])
+
+
+## A touch of yours: whoever the ball is coming to is yours to play. With the assist he runs to it himself (the set
+## and the spike on Standard, every touch on Full, and a dig, which is a reflex); else you run him there.
+func _take_control(p: Dictionary) -> void:
+	var a := int(Game.settings.assist)
+	var kind := String(p.kind)
+	p.auto = a == 2 or kind == "dig" or (a == 1 and (kind == "set" or bool(p.get("from_set", false))))
+	var pl: Player = p.player
+	if bool(p.auto):
+		pl.hurry = 1.0
+		pl.target = p.stand
+	_open_window(p, _choices_for(p))
+
+
+func _user_plan_live() -> bool:
+	return not plan.is_empty() and bool(plan.get("user", false)) and state in [S.TOSS, S.RALLY]
+
+
+## How far from the spot he can be and still play it (the length of a leg, more on the easier levels).
+func _reach(p: Dictionary) -> float:
+	var r: float = 0.5 + [0.3, 0.18, 0.1, 0.04][clampi(int(Game.settings.difficulty), 0, 3)]
+	return r + (0.4 if bool(p.get("auto", false)) else 0.0)
+
+
+func _off_spot(p: Dictionary) -> float:
+	var pl: Player = p.player
+	var st: Vector3 = p.get("stand", pl.position)
+	return Vector2(pl.position.x - st.x, pl.position.z - st.z).length()
+
+
+## The pull toward the spot when you let go of the joystick near it.
+func _magnet() -> float:
+	return [0.4, 0.6, 1.1][clampi(int(Game.settings.assist), 0, 2)]
+
+
+## Your press: he starts the move now, so it meets the ball when it arrives (or now, if it already has). Pressed far
+## too early it is a stray tap and does not count; a little too early, he kicks before the ball is there.
+func _user_press(id: String) -> void:
+	var w: Array = timing_windows()
+	var err := now - float(plan.t)
+	if err < -float(w[2]) - 0.3:
+		return
+	_last_choice = id
+	_press = {"id": id, "t": now}
+	plan.press_t = now
+	plan.choice = id
+	var pl: Player = plan.player
+	var mv := String(plan.move)
+	if String(plan.kind) == "serve" and id == "HORSE":
+		mv = "horse"
+	elif String(plan.kind) == "attack" and id == "FEINT":
+		mv = "feint"
+	elif String(plan.kind) == "attack" and id == "SPIKE2":
+		mv = String(plan.get("alt", mv))
+	if err < -float(w[2]):
+		plan.early = true
+		pl.play_now(mv, now, bool(plan.mirror))   # a kick at nothing
+		return
+	pl.queue_move(mv, maxf(float(plan.t), now) - Moves.contact_time(mv), bool(plan.mirror))
+	if _off_spot(plan) <= _reach(plan):
+		pl.target = plan.stand   # the last step in
+		pl.hurry = 1.0
+
+
+## Your touch, when its moment comes: made if you pressed in time and he was near enough, missed if not.
+func _user_touch_due() -> bool:
+	var w: Array = timing_windows()
+	if plan.has("press_t"):
+		if bool(plan.get("early", false)):
+			if now >= float(plan.t):
+				_whiff("EARLY")
+				return true
+			return false
+		if now >= maxf(float(plan.t), float(plan.press_t)):
+			if _off_spot(plan) > _reach(plan):
+				_whiff("MISS")
+				return true
+			var p := plan
+			plan = {}
+			_touch(p)
+			return true
+		return false
+	if now > float(plan.t) + float(w[1]) + 0.06:
+		_whiff("MISS")
+		return true
+	return false
+
+
+## He missed it. The ball goes on: one of yours may still reach it lower down (a second chance, if there is time); a
+## missed serve is a fault.
+func _whiff(label: String) -> void:
+	var p := plan
+	plan = {}
+	input_window = {}
+	hud.timing_done()
+	hud.timing_result(label)
+	_clear_buttons()
+	var pl: Player = p.player
+	pl.set_selected(false)
+	if OS.has_environment("TAKRAW_DEBUG"):
+		print("WHIFF %s %s touch %d move %s off %.2f reach %.2f pressed %s auto %s" % [label, p.kind, int(p.touch), p.move, _off_spot(p), _reach(p), p.has("press_t"), p.get("auto", false)])
+	Sfx.voice("hup", -18.0, 0.8)
+	if String(p.kind) == "serve":
+		state = S.RALLY
+		_fault(pl.side, "FAULT_SERVE_MISS", pl, false)   # the thrown ball drops
+		return
+	var until := float(p.get("until", land_t))
+	var pick := _find_touch(int(p.side), int(p.touch), until)
+	if pick.is_empty():
+		return
+	pick.until = until
+	plan = pick
+	_take_control(pick)
+
+
+## The joystick: as seen from the camera, up the screen is away from it.
+func _cam_dir(j: Vector2) -> Vector3:
+	var right := cam.global_transform.basis.x
+	right.y = 0
+	var up := -cam.global_transform.basis.z
+	up.y = 0
+	return right.normalized() * j.x + up.normalized() * (-j.y)
+
+
+## Running your player: the joystick runs him; let go near the spot and he steps onto it. Wherever he is, the touch is
+## re-planned from there (the gold mark moves along under the ball). Before their spike, it slides your blocker along
+## the net.
+func _user_steer(_dt: float) -> void:
+	_offer_block()
+	if not _user_plan_live():
+		if _block_offered and _joy.length() > 0.15:
+			var bp: Player = block.player
+			var d := _cam_dir(_joy)
+			bp.target = Vector3(bp.target.x, 0, clampf(bp.position.z + d.z * 1.4, -Court.HALF_W + 0.4, Court.HALF_W - 0.4))
+			bp.hurry = 1.0
+			block.z = bp.target.z
+		return
+	var pl: Player = plan.player
+	if bool(plan.get("auto", false)) or String(plan.kind) == "serve":
+		return   # he runs there himself: the joystick aims
+	if pl.busy(now):
+		return
+	if _joy.length() > 0.15:
+		pl.target = pl.position + _cam_dir(_joy) * 1.5
+		pl.hurry = clampf(_joy.length(), 0.35, 1.0)
+	elif _off_spot(plan) <= _magnet():
+		pl.target = plan.stand
+		pl.hurry = 1.0
+	else:
+		pl.target = pl.position
+	if not plan.has("press_t") and not bool(plan.get("from_set", false)):
+		_refit_user_plan()
+
+
+## The touch re-planned from where your player is: the moment in the ball's flight, and the way to meet it, that he is
+## nearest to (and can still get to). A few dozen points of the flight, each frame.
+func _refit_user_plan() -> void:
+	var pl: Player = plan.player
+	var side := pl.side
+	var s := Court.sgn(side)
+	var touch_no := int(plan.touch)
+	var t_end := float(plan.get("until", land_t)) - 0.02
+	var mirror := pl.left_footed()
+	var speed := 5.2 * (0.82 + float(pl.data.get("agility", 70)) * 0.0028)
+	if float(plan.t) - now < 0.35:
+		return   # it is nearly there: no changing his mind now
+	var ct0 := Moves.contact_time(String(plan.move))
+	var d0 := _off_spot(plan)
+	var late0 := maxf(0.0, d0 / speed - (float(plan.t) - now - ct0 * 0.5))
+	# The touch planned already, scored as the others are: another must be clearly better to take its place (the mark
+	# stays put while he runs to it).
+	var keep := late0 * 4.0 + d0 * 0.6 + _touch_cost(pl, String(plan.move), touch_no) * 0.3 + (float(plan.t) - now) * 0.03
+	var best := {}
+	var best_score := keep - 0.35
+	var t := now + 0.35
+	while t < t_end:
+		var p := ball.at(t)
+		if p.x * s > 0.05 and absf(p.z) < Court.HALF_W + 1.8:
+			for m in _moves_for_height(p.y, touch_no):
+				var mv := String(m)
+				var stand := Player.stand_for(p, mv, side, mirror)
+				if stand.x * s < 0.02:
+					continue
+				var d := Vector2(stand.x - pl.position.x, stand.z - pl.position.z).length()
+				var late := maxf(0.0, d / speed - (t - now - Moves.contact_time(mv) * 0.5))
+				var score := late * 4.0 + d * 0.6 + _touch_cost(pl, mv, touch_no) * 0.3 + (t - now) * 0.03
+				if score < best_score:
+					best_score = score
+					best = {"t": t, "pos": p, "move": mv, "stand": stand}
+		t += 0.03
+	if best.is_empty():
+		return
+	var kind := _kind_for(String(best.move), touch_no)
+	var was := String(plan.kind)
+	plan.t = best.t
+	plan.pos = best.pos
+	plan.move = best.move
+	plan.stand = best.stand
+	plan.kind = kind
+	plan.mirror = mirror
+	input_window.t = best.t
+	input_window.pos = best.pos
+	input_window.stand = best.stand
+	input_window.kind = kind
+	if kind != was:
+		input_window.choices = _choices_for(plan)
+		controls.set_buttons(input_window.choices)
+	hud.timing_open(plan)
 
 
 func _on_action(id: String) -> void:
@@ -1616,38 +1821,15 @@ func _on_action(id: String) -> void:
 		return
 	# The block: when the other side is attacking, your striker jumps.
 	if id == "BLOCK":
-		_press = {"id": id, "t": now}
 		if not block.is_empty() and bool(block.user) and not block.has("jump_t"):
 			var bp: Player = block.player
 			bp.play_now("block", now)
 			block.jump_t = now + Moves.contact_time("block")
-			_press = {}
 		controls.flash(id)
 		return
-	if input_window.is_empty():
-		return
-	_last_choice = id
-	_press = {"id": id, "t": now}
-	controls.flash(id)
-
-
-## With the assist off you run your player yourself; with it on, the joystick only aims.
-func _user_steer(dt: float) -> void:
-	if int(Game.settings.assist) != 0 or input_window.is_empty():
-		_offer_block()
-		return
-	var pl: Player = input_window.player
-	if _joy.length() > 0.15:
-		var right := cam.global_transform.basis.x
-		right.y = 0
-		var up := -cam.global_transform.basis.z
-		up.y = 0
-		var d := (right.normalized() * _joy.x + up.normalized() * (-_joy.y))
-		pl.target = pl.position + d * 2.0
-		pl.hurry = clampf(_joy.length(), 0.3, 1.0)
-	elif pl.position.distance_to(pl.target) < 0.05:
-		pl.target = pl.position
-	_offer_block()
+	if _user_plan_live() and not plan.has("press_t"):
+		_user_press(id)
+		controls.flash(id)
 
 
 var _block_offered := false
@@ -1701,18 +1883,6 @@ func quit_match() -> void:
 	Sfx.crowd(-1.0)
 	Sfx.drums(-1.0)
 	Game.goto_menu()
-
-
-## The user's time-out (the pause menu).
-func call_timeout() -> void:
-	if user_team < 0 or timeouts[user_team] <= 0 or (state != S.DEAD and state != S.SETUP):
-		return
-	timeouts[user_team] -= 1
-	run = [0, 0]
-	hud.banner(tr("TIMEOUT_CALLED").format({"t": DB.team_name(String(teams[user_team].id))}), teams[user_team].c1)
-	state = S.BREAK
-	state_t = BREAK_TIME - 3.0
-	set_paused(false)
 
 
 ## Is the match one point from being won by team? (for the HUD: set point, match point)

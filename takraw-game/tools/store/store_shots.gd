@@ -13,6 +13,7 @@ func _ready() -> void:
 	Game.settings.sound = false
 	Game.settings.graphics = Game.GFX_HIGH
 	Game.settings.assist = 2
+	Game.settings.game_speed = 2
 	Game.settings.language = "en"
 	TranslationServer.set_locale("en")
 	var only := OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else ""
@@ -63,7 +64,14 @@ func _moment(name: String, cfg: Dictionary, kind: String, mv: String) -> void:
 		await get_tree().process_frame
 		guard += 1
 		var p: Dictionary = m.plan
-		if p.is_empty() or String(p.kind) != kind or (mv != "" and String(p.move) != mv):
+		if p.is_empty():
+			continue
+		var target := String(p.kind) == kind and (mv == "" or String(p.move) == mv)
+		# Nothing is played for you: press for each of your touches, the one to picture a little early so its move is
+		# under way.
+		if bool(p.get("user", false)) and not p.has("press_t") and float(m.now) >= float(p.t) - (0.15 if target else 0.02):
+			m._on_action(String((m.input_window.get("choices", ["KICK"]) as Array)[0]))
+		if not target:
 			continue
 		if float(p.t) - float(m.now) < (0.04 if kind != "serve" else 0.12):
 			m.paused = true

@@ -18,18 +18,17 @@ PERMAINAN SEBENAR
 
 CARA BERMAIN
 • Perlawanan Pantas: mana-mana dua pasukan, mana-mana gelanggang.
-• Musim Liga: bawa kelab anda mengharungi liga Malaysia, Thailand atau Indonesia hingga ke Final Four.
+• Musim Liga: liga sebenar, dengan format sebenar. Sepak Takraw League di Malaysia: tujuh Grand Prix, mata untuk setiap kedudukan, naik dan turun divisyen. Takraw Thailand League: bertemu di laman sendiri dan di tempat lawan, setiap perlawanan ialah pertembungan dua regu. Liga Sepak Takraw Indonesia: lima zon, kemudian peringkat akhir kebangsaan di Jakarta.
 • Antarabangsa: Piala Dunia, Piala Diraja, Kejohanan Asia dan Kejohanan Asia Tenggara, bersama Thailand, Malaysia, Vietnam, Indonesia, Myanmar, Jepun, Korea dan banyak lagi.
-• Latihan: kuasai setiap sentuhan dengan bantuan petunjuk.
 
 LAPAN GELANGGANG
 Arena kebangsaan, kubah tersergam, gelanggang di pusat beli-belah, dewan sukan daerah, gelanggang di perkarangan kuil, gelanggang taman di bawah lampu, pantai ketika matahari terbenam dan jalan pasar malam.
 
 MAIN IKUT GAYA ANDA
 • Tiga belas bahasa: English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文 dan हिन्दी.
-• Tepatkan masa setiap sentuhan ketika gelang mengecil pada bola; pilih sejauh mana permainan membantu anda berlari dan menepati masa.
+• Tiada apa-apa dimainkan untuk anda: larikan pemain anda ke bola dengan joystick dan sepak ketika gelang mengecil pada bola. Pilih sejauh mana permainan membantu anda berlari, dan seberapa laju perlawanan berjalan.
 • Dibina untuk berjalan lancar pada telefon bajet seperti Galaxy A16.
 • Boleh dimain tanpa internet. Tiada iklan, tiada pembelian, tiada akaun dan tiada data dikumpul.
 
 == Release notes (first release) ==
-Keluaran pertama Takraw Smash: Perlawanan Pantas, Musim Liga, Antarabangsa dan Latihan, dalam tiga belas bahasa.
+Keluaran pertama Takraw Smash: Perlawanan Pantas, Musim Liga dan Antarabangsa, dalam tiga belas bahasa.

@@ -463,23 +463,18 @@ func _season() -> void:
 	Game.show_screen("res://ui/season_hub.gd")
 	await frames(10)
 	await audit("season_pick")
-	var se = Game.new_season("MY", "NSN")
-	for i in 3:
-		se.sim_round()
-	Game.save_season()
-	Game.show_screen("res://ui/season_hub.gd")
-	await frames(12)
-	await audit("season_hub")
-	while se.phase == "regular":
-		se.sim_round()
-	Game.show_screen("res://ui/season_hub.gd")
-	await frames(12)
-	await audit("season_playoffs")
-	while se.phase != "done":
-		se.sim_round()
-	Game.show_screen("res://ui/season_hub.gd")
-	await frames(12)
-	await audit("season_over")
+	# Each league's home: Malaysia mid-Grand Prix and in its knockouts, Thailand's ties, Indonesia's finals, a season's
+	# end (relegation and promotion), and a Division 1 club's.
+	for ls in [["MY", "NSN", 3, "season_hub"], ["MY", "FRS", 6, "season_playoffs"], ["TH", "NPT", 4, "season_th"],
+			["ID", "MKS", 7, "season_id"], ["MY", "KDH", 400, "season_over"], ["MY", "PRS", 400, "season_div1"]]:
+		var se = Game.new_season(ls[0], ls[1])
+		for i in int(ls[2]):
+			if se.phase != "done":
+				se.sim_round()
+		Game.save_season()
+		Game.show_screen("res://ui/season_hub.gd")
+		await frames(12)
+		await audit(ls[3])
 	Game.delete_season()
 
 

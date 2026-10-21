@@ -23,36 +23,32 @@ func _ready() -> void:
 
 func _choose() -> void:
 	var v := UI.page(self, tr("MENU_CUP"), func(): Game.goto_menu(), tr("NEW_TOURNAMENT"))
-	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 12)
-	v.add_child(body)
-	var kinds := ["world", "royal", "asia", "sea"]
-	var names := []
-	for k in kinds:
-		names.append(tr(String(Cup.KINDS[k].name)))
-	body.add_child(UI.chips(names, kinds.find(_kind), func(i):
-		_kind = kinds[i]
-		_refresh()))
-	body.add_child(UI.wrap(tr(String(Cup.KINDS[_kind].name) + "_DESC"), "MutedLabel", 17))
-	var row := HFlowContainer.new()
-	row.add_theme_constant_override("h_separation", 24)
-	row.add_theme_constant_override("v_separation", 10)
-	row.add_child(UI.chips([tr("MEN"), tr("WOMEN")], 1 if _women else 0, func(i):
+	var parts := UI.pick_layout(v, tr("PICK_COUNTRY"))
+	var left: VBoxContainer = parts[0]
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 10)
+	for k in ["world", "royal", "asia", "sea"]:
+		var kind: String = k
+		var name := String(Cup.KINDS[kind].name)
+		list.add_child(UI.option_card(tr(name), tr(name + "_DESC") if kind == _kind else "", Icon.make("trophy", 40, Game.C_GOLD if kind == _kind else Game.C_MUTED),
+			kind == _kind, func():
+				_kind = kind
+				_refresh()))
+	left.add_child(UI.scroll(list))
+	var evs := ["regu", "team"]
+	(parts[1] as HBoxContainer).add_child(UI.chips_row([tr("EVENT_REGU"), tr("EVENT_TEAM")], evs.find(_event), func(i):
+		_event = evs[i]))
+	(parts[1] as HBoxContainer).add_child(UI.chips_row([tr("MEN"), tr("WOMEN")], 1 if _women else 0, func(i):
 		_women = i == 1
 		_refresh()))
-	var evs := ["regu", "team"]
-	row.add_child(UI.chips([tr("EVENT_REGU"), tr("EVENT_TEAM")], evs.find(_event), func(i):
-		_event = evs[i]))
-	body.add_child(row)
-	body.add_child(UI.label(tr("PICK_COUNTRY").to_upper(), "EyebrowLabel", 16, Game.C_SAFFRON))
 	var ids: Array = (Cup.KINDS[_kind].field as Array).duplicate()
 	for id in DB.countries_ranked(_women):
 		if not (id in ids):
 			ids.append(id)   # any country can enter: an underdog's run
-	var grid := UI.team_grid(self, ids, 4, func(id):
+	var grid := UI.team_grid(self, ids, 2, func(id):
 		Game.new_cup(_kind, id, _women, _event)
 		Game.show_screen("res://ui/cup_screen.gd"))
-	body.add_child(UI.scroll(grid))
+	(parts[2] as VBoxContainer).add_child(UI.scroll(grid))
 
 
 func _refresh() -> void:
