@@ -14,7 +14,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var dim := ColorRect.new()
-	dim.color = Color(0.02, 0.04, 0.03, 0.9)
+	dim.color = Color(0.02, 0.04, 0.03, 1.0)     # opaque: the pause menu is behind it
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 	var margin := MarginContainer.new()

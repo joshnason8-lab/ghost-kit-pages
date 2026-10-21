@@ -51,6 +51,7 @@ pass into a defender's lane), and the opening difficulty is now Junior.
 | A championship could not be left: to try the Tier Two Cup or another county you had to play the season out | No way to start again until it was over | Start again in the hub, a second tap to be sure ("Lose this season? Tap again") | fit_audit: the hub with it asked |
 | The home screen lit Throw-in even with a championship under way, the Continue row above it plain | The first item was always the lit one | Continue is lit when there is one | (a look) |
 | The opening difficulty was Intermediate, where a new player loses heavily (the script lost 1-5 v 0-9, 0-0 v 0-14 and 0-1 v 1-8) | - | Junior to start; Settings or match setup to raise it | - |
+| The pause menu's score read "0-0 (0) · 0-0 (0)", no counties named; the new Substitutions and Tactics panels let the pause menu show through faintly behind them | - | The short names before each score; the panels opaque | (a look) |
 | Match setup forgot the ground: back to the county ground every time | The choice was not saved | Saved | "match setup remembers the ground" |
 
 ## What a first-time player meets

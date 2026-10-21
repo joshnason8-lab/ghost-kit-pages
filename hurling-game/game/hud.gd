@@ -464,7 +464,7 @@ func show_pause(on: bool) -> void:
 		var t := UI.label(tr("PAUSED"), "HeaderLabel", 44)
 		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(t)
-		var s := UI.label(m.score_text(0) + "  ·  " + m.score_text(1), "SubLabel", 22, Game.C_MUTED)
+		var s := UI.label("%s %s  ·  %s %s" % [DB.short_name(String(m.teams[0].id)), m.score_text(0), DB.short_name(String(m.teams[1].id)), m.score_text(1)], "SubLabel", 22, Game.C_MUTED)
 		s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.fit(s, 2)
 		v.add_child(s)
