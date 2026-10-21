@@ -18,6 +18,7 @@ THE REAL GAME
 • Puck-outs from the small rectangle, frees, 65s, sideline cuts and penalties, each from where the rules put it, with everyone 13 metres back.
 • The tackle: the shoulder, the hook, the block and the flick, and the fouls a referee gives frees for. Yellow, red and, in senior county hurling, the black card and the sin bin for denying a goal chance.
 • Advantage, added time, and in a knock-out game extra time and a penalty shoot-out.
+• Players tire as the match goes on: make your five substitutions, or let the manager. Set up your side: a sweeper, two inside, short or long puck-outs.
 
 THE OFFICIALS
 The referee whistles, points the free and holds up the card; the linesmen flag the sideline cuts; the umpires in their white coats wave the white flag for a point and the green for a goal, cross their arms for a wide and raise an arm for a 65.
@@ -31,13 +32,14 @@ THE GROUNDS
 A parish field at dusk with its ball-stop nets and floodlights, a county ground by day and under lights, and the national stadium.
 
 PLAY YOUR WAY
+• New to hurling? The coach talks you through your first match, a tip at a time.
 • English or Irish, with the game's own Irish terms: camán, sliotar, cúl, cúilín, poc amach.
 • A joystick on the left, the buttons for what your player can do on the right: make them bigger, move them where your thumb wants them, or swap the sides if you are left-handed.
-• Choose how long a match takes (8 to 70 minutes), how hard the other side plays, and how much help you get with the ball.
+• Choose how long a match takes: 8 minutes, or the full 70 with the ball in play as long as in a real match (about 35 minutes to play), how hard the other side plays, and how much help you get with the ball.
 • Made to run smoothly on budget and mid-range phones.
 • Plays offline. No ads, no purchases, no account, and no data collected.
 
 Ash & Leather is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.
 
-== Release notes (first release) ==
-The first release of Ash & Leather: Throw-in, the Summer Championship and Watch a match, in English and Irish.
+== Release notes (0.2.0) ==
+A full 70-minute match now ends with a real match's score. New: tired players, substitutions and tactics (a sweeper, two inside, puck-outs), the coach's tips for your first match, and a ring on the grass where a high ball comes down. Fixes from playtesting on phones.

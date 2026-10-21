@@ -133,7 +133,7 @@ and shows no ads, but the 13+ groups are the simpler start.
 1. Go to **Test and release > Testing > Closed testing**, open the **Closed testing (Alpha)** track, and choose
    **Create new release**.
 2. Upload the signed `.aab` from step 2.
-3. Release name: the version, such as `0.1.0`. Release notes: copy them from `store/listing/en-GB.txt`.
+3. Release name: the version, such as `0.2.0`. Release notes: copy them from `store/listing/en-GB.txt`.
 4. Choose **Save > Review release > Start rollout to Closed testing**. Google's first review takes a few days.
 5. Under **Testers**, make an email list with at least 12 people's Google (Gmail) addresses: family and friends
    with Android phones.
