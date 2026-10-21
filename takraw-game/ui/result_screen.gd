@@ -60,7 +60,7 @@ func _ready() -> void:
 		var wins := [0, 0]
 		for r in tie.results:
 			wins[0 if int(r[0]) > int(r[1]) else 1] += 1
-		var tl := UI.wrap(tr("TIE_SCORE").format({"a": wins[0], "b": wins[1]}) + ("  ·  " + tr("TIE_WON" if wins[user] > wins[1 - user] else ("TIE_DRAWN" if wins[0] == wins[1] else "TIE_LOST")) if tie_done else ""), "SubLabel", 22)
+		var tl := UI.wrap(tr("TIE_SCORE").format({"a": wins[0], "b": wins[1]}) + ("\u00a0\u00a0·  " + tr("TIE_WON" if wins[user] > wins[1 - user] else ("TIE_DRAWN" if wins[0] == wins[1] else "TIE_LOST")) if tie_done else ""), "SubLabel", 22)
 		tl.add_theme_color_override("font_color", Game.C_GOLD)
 		sv.add_child(tl)
 	var potm: Dictionary = result.get("potm", {})
@@ -68,7 +68,7 @@ func _ready() -> void:
 		var pr := HBoxContainer.new()
 		pr.add_theme_constant_override("separation", 12)
 		pr.add_child(Icon.make("star", 30, Game.C_GOLD))
-		var who := "%s · %s" % [tr("SHIRT_N").format({"n": int(potm.get("num", 0))}), DB.team_name(teams[int(potm.get("team", 0))])]
+		var who := "%s\u00a0· %s" % [tr("SHIRT_N").format({"n": int(potm.get("num", 0))}), DB.team_name(teams[int(potm.get("team", 0))])]
 		var pl := UI.fit(UI.label(tr("PLAYER_OF_MATCH").format({"n": who}), "SubLabel", 22), 2)
 		pl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		pr.add_child(pl)
@@ -94,7 +94,7 @@ func _ready() -> void:
 	for id in ids:
 		var s: Dictionary = stats[id]
 		var mine := int(s.team) == user
-		var nm := UI.fit(UI.label("%s · %s" % [tr("SHIRT_N").format({"n": int(s.num)}), String(DB.team(teams[int(s.team)]).get("short", ""))], "", 18, Game.C_INK if mine else Game.C_MUTED))
+		var nm := UI.fit(UI.label("%s\u00a0· %s" % [tr("SHIRT_N").format({"n": int(s.num)}), String(DB.team(teams[int(s.team)]).get("short", ""))], "", 18, Game.C_INK if mine else Game.C_MUTED))
 		nm.custom_minimum_size = Vector2(170, 0)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(nm)

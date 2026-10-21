@@ -17,13 +17,17 @@ func _ready() -> void:
 	add_child(cam)
 	cam.look_at(Vector3(0, 1.1, 0))
 	var moves := [["", 0.0], ["sila", 0.45], ["serve", 0.55], ["horse", 0.55], ["roll", 0.48], ["roll", 0.66], ["sunback", 0.45], ["block", 0.45], ["dig", 0.38], ["header", 0.45], ["celebrate", 0.25]]
-	var x := -7.5
+	# A second argument: the celebrations instead (and the player turned to face the camera).
+	var front := OS.get_cmdline_user_args().size() > 1 and OS.get_cmdline_user_args()[1] == "celebrations"
+	if front:
+		moves = [["", 0.0], ["celebrate", 0.25], ["fist", 0.5], ["clap", 0.15], ["clap", 0.27], ["point", 0.5], ["slump", 0.6]]
+	var x := -7.5 if not front else -4.5
 	for m in moves:
 		var look := {"jersey": Color("ff8a1f"), "shorts": Color("2a1a0e"), "skin": Color("c98a5a"), "hair_style": randi() % 3}
 		var b := ToonBody.new(look)
 		add_child(b)
 		b.position = Vector3(x, 0, 0)
-		b.rotation.y = deg_to_rad(90)
+		b.rotation.y = deg_to_rad(90 if not front else 0)
 		var p: Dictionary = Moves.READY if m[0] == "" else Moves.sample(m[0], m[1])
 		b.apply(p)
 		b.position.y = float(p.get("y", 0.0))

@@ -246,10 +246,12 @@ func squad(id: String, women := false) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(key)
 	var base := float(strength(id, women))
+	var drawn := {}
 	for i in 9:
 		var pos := i % 3
 		var tier: float = [3.0, 0.0, -5.0][i / 3]  # the first regu best, the second close behind, then reserves
 		var q := clampf(base + tier + rng.randf_range(-4.0, 4.0), 35.0, 99.0)
+		_name_draws(rng, String(t.pool), women, drawn)
 		var p := {
 			"id": "%s_%d" % [key, i], "pos": pos, "num": 0,
 			"age": rng.randi_range(19, 33), "height": rng.randf_range(1.66, 1.84) - (0.1 if women else 0.0),
@@ -305,6 +307,26 @@ func regu(id: String, women := false, n := 3, skip := []) -> Array:
 			taken[best.id] = true
 			out.append(best)
 	return out
+
+
+## Squads were first made with names, and the matches were balanced on the players that made. The names are gone,
+## but the draws that picked them are still made (from the old lists' sizes: [given, family, women's given]), so every
+## player keeps the ratings and style he was tuned with.
+const _NAME_DRAWS := {"th": [18, 16, 10], "ms": [18, 16, 10], "id": [16, 14, 10], "vi": [12, 10, 10], "my": [12, 10, 10],
+	"lo": [10, 8, 8], "km": [10, 10, 8], "fil": [12, 10, 8], "ja": [12, 11, 8], "ko": [10, 10, 8], "zh": [10, 10, 8],
+	"hi": [12, 10, 8], "fa": [10, 10, 8], "en": [12, 12, 8]}
+
+
+static func _name_draws(rng: RandomNumberGenerator, code: String, women: bool, drawn: Dictionary) -> void:
+	var n: Array = _NAME_DRAWS.get(code, _NAME_DRAWS.en)
+	for attempt in 20:
+		var g := rng.randi_range(0, int(n[2] if women else n[0]) - 1)
+		var f := rng.randi_range(0, int(n[1]) - 1)
+		var k := "%d/%d" % [g, f]
+		if drawn.has(k):
+			continue
+		drawn[k] = true
+		return
 
 
 static func _r(rng: RandomNumberGenerator, q: float, bias: float) -> int:

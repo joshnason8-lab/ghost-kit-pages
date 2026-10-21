@@ -68,7 +68,7 @@ func _hub(s: Season) -> void:
 	var title := tr(DB.LEAGUES[s.league].name)
 	if s.league == "MY":
 		title = tr("STL_DIV1" if s.division == 2 else "STL_PREMIER")
-	var v := UI.page(self, title, func(): Game.goto_menu(), tr("SEASON_YEAR").format({"y": s.year}) + " · " + s.stage_name())
+	var v := UI.page(self, title, func(): Game.goto_menu(), tr("SEASON_YEAR").format({"y": s.year}) + "\u00a0· " + s.stage_name())
 	var right: HBoxContainer = get_meta("header_right")
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 20)
@@ -109,7 +109,7 @@ func _main_table(s: Season, lv: VBoxContainer) -> void:
 	match s.format():
 		"gp":
 			if s.division == 1 and not s.standings.is_empty():
-				lv.add_child(_eyebrow(tr("STANDINGS") + " · " + tr("GPS_PLAYED").format({"n": s.gps_done(), "of": DB.STL_GPS.size()})))
+				lv.add_child(_eyebrow(tr("STANDINGS") + "\u00a0· " + tr("GPS_PLAYED").format({"n": s.gps_done(), "of": DB.STL_GPS.size()})))
 				var rows := []
 				for r in s.gp_table():
 					rows.append([r.id, int(r.w), int(r.titles), int(r.pts)])
@@ -139,7 +139,7 @@ func _main_table(s: Season, lv: VBoxContainer) -> void:
 func _tournament(s: Season, ev: Dictionary, lv: VBoxContainer) -> void:
 	var name := Season.title(ev)
 	if String(ev.get("arena", "")) != "":
-		name += " · " + String(ev.arena)
+		name += "\u00a0· " + String(ev.arena)
 	lv.add_child(_eyebrow(name))
 	var gs: Dictionary = ev.stages[0]
 	var grid := GridContainer.new()
@@ -171,7 +171,7 @@ func _next(s: Season, rv: VBoxContainer) -> void:
 	var cv := VBoxContainer.new()
 	cv.add_theme_constant_override("separation", 10)
 	card.add_child(cv)
-	cv.add_child(_eyebrow(tr("NEXT_MATCH") + " · " + s.match_stage()))
+	cv.add_child(_eyebrow(tr("NEXT_MATCH") + "\u00a0· " + s.match_stage()))
 	cv.add_child(UI.fixture_line(self, f, s.team))
 	var venue := s.next_venue()
 	var where := String(s.event().get("arena", ""))
@@ -254,7 +254,7 @@ func _done(s: Season, side: VBoxContainer, right: HBoxContainer) -> void:
 			cv.add_child(UI.wrap(tr("YOU_STAY_DIV1"), "SubLabel", 20))
 	for a in s.awards():
 		var ps: Dictionary = a[1]
-		var line := UI.fit(UI.label("%s: %s, %s · %d" % [tr(a[0]), tr("SHIRT_N").format({"n": int(ps.get("num", 0))}), DB.team_name(String(ps.get("team", ""))), int(ps.get(a[2], 0))], "", 18), 2)
+		var line := UI.fit(UI.label("%s: %s, %s\u00a0· %d" % [tr(a[0]), tr("SHIRT_N").format({"n": int(ps.get("num", 0))}), DB.team_name(String(ps.get("team", ""))), int(ps.get(a[2], 0))], "", 18), 2)
 		cv.add_child(line)
 	side.add_child(card)
 	right.add_child(UI.button(tr("NEXT_SEASON"), true, func():

@@ -11,7 +11,7 @@ func _ready() -> void:
 	var ev := String(a[1]) if a.size() > 1 else "regu"
 	var venue := String(a[2]) if a.size() > 2 else "national"
 	Game.main = self
-	Game.settings.sound = false
+	Game.reset_settings_for_tests()
 	var pairs := [["THA", "MAS"], ["VIE", "INA"], ["SPB", "NPT"], ["JPN", "KOR"]]
 	if OS.has_environment("SWAP"):
 		pairs = [["MAS", "THA"], ["INA", "VIE"], ["NPT", "SPB"], ["KOR", "JPN"]]

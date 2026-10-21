@@ -111,7 +111,11 @@ var _fallbacks: Array[Font] = []
 var records := {}  # the record book: titles won, biggest wins, best spikers (Records)
 
 
+var _defaults := {}
+
+
 func _ready() -> void:
+	_defaults = settings.duplicate(true)
 	load_settings()
 	if int(settings.graphics) < 0:
 		settings.graphics = detect_graphics()
@@ -199,6 +203,16 @@ func load_settings() -> void:
 				settings[k] = data[k]
 	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "game_speed", "sets", "points", "event", "tags"]:
 		settings[k] = int(settings[k])
+
+
+## The settings a new player has (for the tests: not this machine's saved ones), sound off, graphics fixed.
+func reset_settings_for_tests() -> void:
+	settings = _defaults.duplicate(true)
+	settings.sound = false
+	settings.graphics = GFX_MEDIUM
+	settings.language = "en"
+	TranslationServer.set_locale("en")
+	_size_theme()
 
 
 func save_settings() -> void:
@@ -343,7 +357,7 @@ func start_match(config: Dictionary) -> void:
 		if not config.has("stage_base"):
 			config.stage_base = String(config.get("stage", ""))
 		var base := String(config.stage_base)
-		config.stage = (base + " · " if base != "" else "") + tr("REGU_N").format({"n": n + 1})
+		config.stage = (base + "\u00a0· " if base != "" else "") + tr("REGU_N").format({"n": n + 1})
 	var s: Script = load("res://game/match.gd")
 	var m: Node = s.new()
 	m.config = config

@@ -11,7 +11,7 @@ var checks := 0
 
 func _ready() -> void:
 	Game.main = self
-	Game.settings.sound = false
+	Game.reset_settings_for_tests()
 	var keep: Dictionary = Game.settings.duplicate(true)
 	await _screens()
 	_rules_helpers()
@@ -127,7 +127,7 @@ func _season() -> void:
 	check(d2.premier.size() == (10 if d2.division == 2 else 12), "MY: next season, twelve again once Division 1 is played (%d, division %d)" % [d2.premier.size(), d2.division])
 	_play_out(d2)
 	check(d2.phase == "done" and d2.champion != "", "MY: a second season plays out")
-	check(("TRG" in d1.premier) == (d1.gps_done() == 7), "MY: promoted, you play the Premier season (%s, %d GPs)" % ["TRG" in d1.premier, d1.gps_done()])
+	check(("TRG" in d1.promoted) == (d1.gps_done() == 7), "MY: promoted, you play the Premier season (%s, %d GPs)" % ["TRG" in d1.promoted, d1.gps_done()])
 	# Thailand: home and away, ties of two regus.
 	var th: Season = Game.new_season("TH", "SPB")
 	_play_out(th)

@@ -71,11 +71,13 @@ func _input(event: InputEvent) -> void:
 		var e := event as InputEventScreenTouch
 		var on_left := e.position.x < half if not _left_handed() else e.position.x > size.x - half
 		if e.pressed:
-			for b in _layout():
-				if e.position.distance_to(b[1]) <= float(b[2]) * 1.12:
-					_fire(String(b[0]))
-					get_viewport().set_input_as_handled()
-					return
+			var hit := _hit(e.position)
+			if hit != "":
+				_fire(hit)
+				get_viewport().set_input_as_handled()
+				return
+			if e.index == _joy_touch:
+				_joy_touch = -1   # the same finger again: its lift was lost (the app was left mid-touch)
 			if on_left and _joy_touch < 0 and e.position.y > 110.0:
 				_joy_touch = e.index
 				_joy_base = e.position
@@ -104,6 +106,28 @@ func _input(event: InputEvent) -> void:
 			if i >= 0 and i < ids.size():
 				_fire(String(ids[i]))
 		_keys_to_joystick()
+
+
+## The button a press is for: of those within reach (their circle and 14 px round it), the one whose edge is nearest,
+## so a big button does not take presses meant for the small one beside it.
+func _hit(at: Vector2) -> String:
+	var best := ""
+	var best_d := 14.0
+	for b in _layout():
+		var d := at.distance_to(b[1]) - float(b[2])
+		if d <= best_d:
+			best_d = d
+			best = String(b[0])
+	return best
+
+
+## Leaving the app mid-touch loses the lift: the joystick lets go rather than run on.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		_joy_touch = -1
+		joystick = Vector2.ZERO
+		_keys.clear()
+		queue_redraw()
 
 
 func _keys_to_joystick() -> void:

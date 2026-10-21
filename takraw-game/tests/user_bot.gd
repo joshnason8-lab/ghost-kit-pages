@@ -19,7 +19,7 @@ func _ready() -> void:
 	var a := OS.get_cmdline_user_args()
 	mode = a[0] if a.size() > 0 else "perfect"
 	Game.main = self
-	Game.settings.sound = false
+	Game.reset_settings_for_tests()
 	Game.settings.assist = int(a[1]) if a.size() > 1 else 1
 	Game.settings.game_speed = int(a[2]) if a.size() > 2 else 0
 	if a.size() > 3:
@@ -28,7 +28,7 @@ func _ready() -> void:
 		Game.settings.graphics = Game.GFX_HIGH
 	m = (load("res://game/match.gd") as Script).new()
 	m.config = {"home": "MAS", "away": "THA", "venue": "national", "event": "regu", "sets": 1, "points": 15, "user_team": 0,
-		"demo": true, "seed": 9, "mode": "quick", "difficulty": 1}
+		"demo": true, "seed": int(OS.get_environment("BOT_SEED")) if OS.has_environment("BOT_SEED") else 9, "mode": "quick", "difficulty": 1}
 	add_child(m)
 	m.finished.connect(_done)
 

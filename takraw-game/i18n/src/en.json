@@ -354,5 +354,7 @@
   "YOU_RELEGATED": "Your club goes down to Division 1. Win your way back next season.",
   "YOU_STAY_DIV1": "Your club stays in Division 1. Reach the final to go up.",
   "SHIRT_N": "#{n}",
-  "ABOUT_DISCLAIMER": "Takraw Smash is an independent game. It is not affiliated with or endorsed by any sepak takraw federation, league, club or player. The clubs' nicknames are invented and the players are fictional; the countries, places and rules are real."
+  "ABOUT_DISCLAIMER": "Takraw Smash is an independent game. It is not affiliated with or endorsed by any sepak takraw federation, league, club or player. The clubs' nicknames are invented and the players are fictional; the countries, places and rules are real.",
+  "AUTO_GFX": "Auto graphics",
+  "GFX_LOWERED": "Graphics lowered to keep the game smooth (Settings)."
 }

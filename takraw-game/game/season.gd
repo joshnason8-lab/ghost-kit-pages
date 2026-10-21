@@ -261,7 +261,7 @@ func short_stage() -> String:
 		where = TranslationServer.translate(String(DB.LEAGUES[league].name))
 	var what: String = TranslationServer.translate(String(st.key)) if String(st.key) in ["GROUP_STAGE", "QUARTER_FINALS", "SEMI_FINALS", "FINALS"] \
 		else TranslationServer.translate("ROUND_N_OF").format({"n": int(st.round_i) + 1, "of": (st.rounds as Array).size()})
-	return "%s · %s" % [where, what]
+	return "%s\u00a0· %s" % [where, what]
 
 
 ## The eyebrow over the season screen: "Grand Prix 3 of 7 · Quarter-finals", "Round 5 of 14" ...
@@ -286,7 +286,7 @@ func stage_name() -> String:
 			parts.append(TranslationServer.translate(String(st.key)))
 		_:
 			parts.append(TranslationServer.translate("ROUND_N_OF").format({"n": int(st.round_i) + 1, "of": (st.rounds as Array).size()}))
-	return " · ".join(parts)
+	return "\u00a0· ".join(parts)
 
 
 ## The name of your next match's stage, for the match's intro card.
@@ -294,7 +294,7 @@ func match_stage() -> String:
 	var ev := event()
 	var name := stage_name()
 	if String(ev.kind) == "gp":
-		name = "%s · %s" % [Season.title(ev, "GP_HOST"), TranslationServer.translate(String(stage().key))]
+		name = "%s\u00a0· %s" % [Season.title(ev, "GP_HOST"), TranslationServer.translate(String(stage().key))]
 	var f := next_fixture()
 	if String(f.get("tag", "")) == "3P":
 		name = TranslationServer.translate("THIRD_PLACE")

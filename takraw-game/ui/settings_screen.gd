@@ -55,6 +55,9 @@ func _ready() -> void:
 		Game.settings.graphics = i
 		Game.save_settings())))
 	disp[1].add_child(UI.wrap(tr("GFX_NOTE"), "MutedLabel", 17))
+	disp[1].add_child(UI.field(tr("AUTO_GFX"), UI.chips_row([tr("ON"), tr("OFF")], 0 if bool(Game.settings.get("auto_gfx", true)) else 1, func(i):
+		Game.settings.auto_gfx = i == 0
+		Game.save_settings())))
 	var hz := Game.screen_hz()
 	var smooth := Game.smooth_cap(hz)
 	var fps_opts := [Game.FPS_SAVER]

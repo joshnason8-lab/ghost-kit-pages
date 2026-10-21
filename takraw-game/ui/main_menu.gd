@@ -155,7 +155,7 @@ func _continue_card() -> Control:
 	else:
 		var c = Game.get_cup()
 		if c != null and String(c.stage) != "done":
-			what = "%s · %s" % [c.title(), c.stage_name()]
+			what = "%s\u00a0· %s" % [c.title(), c.stage_name()]
 			path = "res://ui/cup_screen.gd"
 			team = c.user
 	if path == "":

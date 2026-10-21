@@ -303,6 +303,28 @@ func tick(delta: float) -> void:
 		_review.queue_redraw()
 
 
+# ---------------------------------------------------------------- a cut
+
+var _cut: ColorRect
+
+
+## A broadcast cut: the picture fades to black and back, and what jumps (the teams changing ends) does it in the dark.
+func cut(in_dark: Callable) -> void:
+	if _cut == null:
+		_cut = ColorRect.new()
+		_cut.color = Color(0.02, 0.04, 0.07)
+		_cut.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_cut.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(_cut)
+		root.move_child(_cut, 0)   # under the scoreboard and the banners
+	_cut.modulate.a = 0.0
+	var tw := _cut.create_tween()
+	tw.tween_property(_cut, "modulate:a", 1.0, 0.25)
+	tw.tween_callback(in_dark)
+	tw.tween_interval(0.15)
+	tw.tween_property(_cut, "modulate:a", 0.0, 0.35)
+
+
 # ---------------------------------------------------------------- the timing ring
 
 func timing_open(p: Dictionary) -> void:
@@ -339,7 +361,8 @@ func _draw_ring() -> void:
 		var fs := Game.ts(48)
 		var txt := tr(key)
 		var tw := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var at := Vector2(_ring.size.x * 0.5 - tw * 0.5, _ring.size.y * 0.72)
+		# Under the referee's calls, clear of the play (the players are in the lower half of the picture).
+		var at := Vector2(_ring.size.x * 0.5 - tw * 0.5, 172.0 + float(fs))
 		_ring.draw_string_outline(f, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 10, Color(0.02, 0.05, 0.09, minf(1.0, _ring_result_t * 2.0)))
 		_ring.draw_string(f, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(col, minf(1.0, _ring_result_t * 2.0)))
 
@@ -500,16 +523,30 @@ func show_pause(on: bool) -> void:
 	center.add_child(card)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
-	v.custom_minimum_size = Vector2(440, 0)
+	v.custom_minimum_size = Vector2(560, 0)
 	card.add_child(v)
 	var t := UI.label(tr("PAUSED"), "HeaderLabel", 52)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(t)
-	v.add_child(UI.button(tr("RESUME"), true, func(): m.set_paused(false)))
-	v.add_child(UI.button(tr("CAMERA") + ": " + tr({Game.CAM_TV: "CAM_TV", Game.CAM_SIDE: "CAM_SIDE"}.get(m.cam.mode, "CAM_END")), false, func():
+	# Big buttons for a thumb, Resume the biggest; Quit apart and in red, so it is not hit by mistake.
+	var resume := _big(UI.button(tr("RESUME"), true, func(): m.set_paused(false)), 96, 32)
+	v.add_child(resume)
+	v.add_child(_big(UI.button(tr("CAMERA") + ": " + tr({Game.CAM_TV: "CAM_TV", Game.CAM_SIDE: "CAM_SIDE"}.get(m.cam.mode, "CAM_END")), false, func():
 		m.cam.toggle()
 		show_pause(false)
-		show_pause(true)))
-	v.add_child(UI.button(tr("QUIT_MATCH"), false, func(): m.quit_match()))
+		show_pause(true)), 80, 26))
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 14)
+	v.add_child(gap)
+	var quit := _big(UI.button(tr("QUIT_MATCH"), false, func(): m.quit_match()), 80, 26)
+	quit.add_theme_color_override("font_color", Game.C_DANGER)
+	quit.add_theme_color_override("font_hover_color", Game.C_DANGER.lightened(0.2))
+	v.add_child(quit)
 	root.add_child(_pause)
 	UI.keep_on_screen(card)
+
+
+func _big(b: Button, h: float, fs: int) -> Button:
+	b.custom_minimum_size = Vector2(0, h)
+	b.add_theme_font_size_override("font_size", Game.ts(fs))
+	return b

@@ -8,8 +8,9 @@
 - **Native speakers' review** of the translations' sport terms: the horse-kick serve, the sunback and the sole spike
   have no settled names in some languages (the translators' notes are in the pull request).
 - **The release key and the closed test** (store/PLAY_STORE.md).
-- **Real club names**, if the leagues agree to it (the clubs are their real states and services under invented
-  nicknames for now), and the **TTL's 2027 format** (16 clubs, ten circuits) once its details are out.
+- **Real names only under licence**: the leagues', clubs' and competitions' names stay the game's own unless a
+  league or federation licenses theirs. The **Thai league's 2027 format** (16 clubs, ten circuits) once its details
+  are out.
 
 ## Ideas fans would enjoy
 

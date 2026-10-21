@@ -10,7 +10,7 @@ var checks := 0
 
 func _ready() -> void:
 	Game.main = self
-	Game.settings.sound = false
+	Game.reset_settings_for_tests()
 	await _scrolling()
 	await _real_pages()
 	print("input_test: %d checks, %d failures" % [checks, failures])

@@ -62,6 +62,7 @@ var state_t := 0.0
 var now := 0.0               # match time (the sim's own clock: slow motion slows it)
 var time_scale := 1.0
 var pace := 1.0              # a match you play runs slower than real time (Settings: Game speed)
+var difficulty := 1          # 0 Rookie .. 3 Legend: the opponents' sharpness, your timing windows and reach
 var touches := 0             # touches by the side the ball is on
 var touch_side := -1         # the side that last touched the ball
 var last_toucher: Player = null
@@ -108,6 +109,7 @@ func _ready() -> void:
 	event = String(config.get("event", "regu"))
 	n_players = {"regu": 3, "quadrant": 4, "doubles": 2, "team": 3}.get(event, 3)
 	user_team = int(config.get("user_team", 0))
+	difficulty = clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 3)
 	if user_team >= 0 and not bool(config.get("attract", false)):
 		pace = float(config.get("pace", Game.SPEEDS[clampi(int(Game.settings.get("game_speed", 0)), 0, Game.SPEEDS.size() - 1)]))
 	sets_to_win = 2 if int(config.get("sets", 3)) >= 3 else 1
@@ -157,7 +159,7 @@ func _intro_text() -> String:
 	var ev := tr({"regu": "EVENT_REGU", "quadrant": "EVENT_QUADRANT", "doubles": "EVENT_DOUBLES", "team": "EVENT_TEAM"}[event])
 	if women:
 		ev = tr("WOMENS_EVENT").format({"e": ev})
-	return ("%s · %s" % [stage, ev]) if stage != "" else ev
+	return ("%s\u00a0· %s" % [stage, ev]) if stage != "" else ev
 
 
 func _make_teams() -> void:
@@ -299,6 +301,7 @@ func _process(delta: float) -> void:
 	if controls.visible:
 		_joy = controls.joystick
 		_user_steer(dt)
+	_check_frame_rate(delta)
 
 
 func _step(_dt: float) -> void:
@@ -307,7 +310,8 @@ func _step(_dt: float) -> void:
 			if state_t > 2.6:
 				_begin_setup()
 		S.SETUP:
-			if state_t > SETUP_TIME:
+			# The serve waits for everyone to reach his place (a long rally ends far from it), up to 7 s.
+			if state_t > SETUP_TIME and (_all_in_place() or state_t > 7.0):
 				_begin_toss()
 		S.TOSS, S.RALLY:
 			_rally_events()
@@ -337,8 +341,17 @@ func _setup_positions() -> void:
 		var serving := side == ss
 		for p in players_on(side):
 			var pl: Player = p
-			pl.hurry = 0.3
+			pl.hurry = 0.55
 			pl.target = _serve_spot(pl, side, serving)
+
+
+func _all_in_place() -> bool:
+	for side in 2:
+		for p in players_on(side):
+			var pl: Player = p
+			if Vector2(pl.position.x - pl.target.x, pl.position.z - pl.target.z).length() > 0.35:
+				return false
+	return true
 
 
 ## Where each player stands for the serve: the serving side's tekong with a foot in the service circle and both
@@ -435,8 +448,9 @@ func _begin_toss() -> void:
 	Sfx.play("whistle", -8.0)
 	var thrower := _thrower()
 	var srv := _server()
-	srv.hurry = 0.0
-	srv.position = srv.target
+	srv.hurry = 1.0
+	# The last few centimetres (he is within 35 cm, or set-up ran out of time): eased over the throw, not a jump.
+	srv.vel = Vector3.ZERO
 	var horse := _wants_horse(srv)
 	var mv := "horse" if horse else "serve"
 	var mirror := srv.left_footed()
@@ -571,7 +585,7 @@ func _quality(p: Dictionary) -> float:
 		# The further from the spot he was, the worse the touch (out of reach, he missed it: _user_touch_due).
 		base *= clampf(1.1 - _off_spot(p) / _reach(p) * 0.45, 0.5, 1.0)
 		return clampf(base, 0.0, 1.0)
-	var diff: float = [0.8, 0.9, 0.97, 1.03][int(config.get("difficulty", Game.settings.difficulty))] if _is_opponent(pl) else 0.94
+	var diff: float = [0.8, 0.9, 0.97, 1.03][difficulty] if _is_opponent(pl) else 0.94
 	if user_team < 0:
 		diff = 0.94
 	var mean := clampf(rating / 100.0 * diff, 0.2, 0.98)
@@ -618,7 +632,7 @@ func _timing_quality(p: Dictionary) -> float:
 
 ## Seconds either side of the moment: perfect, good, ok.
 func timing_windows() -> Array:
-	return [[0.09, 0.2, 0.34], [0.07, 0.16, 0.28], [0.055, 0.13, 0.23], [0.045, 0.11, 0.19]][int(Game.settings.difficulty)]
+	return [[0.09, 0.2, 0.34], [0.07, 0.16, 0.28], [0.055, 0.13, 0.23], [0.045, 0.11, 0.19]][difficulty]
 
 
 # ---------------------------------------------------------------- where the ball goes
@@ -1292,6 +1306,7 @@ func _point(team: int) -> void:
 	land_t = -1.0
 	points[team] += 1
 	log.append([rally_len, _why, team])
+	var why := _why
 	_why = ""
 	run[team] += 1
 	run[1 - team] = 0
@@ -1301,7 +1316,7 @@ func _point(team: int) -> void:
 	Crowd.set_excite(0.9 if team == _home_team_index() else 0.4)
 	if team == user_team:
 		Game.haptic("point")
-	_celebrate(team)
+	_celebrate(team, why)
 	hud.set_score()
 	if _attack_kind in ["roll", "sunback"] or (rally_len > 7):
 		_start_replay_after = now + 1.2
@@ -1318,14 +1333,24 @@ func _home_team_index() -> int:
 	return 0
 
 
-func _celebrate(team: int) -> void:
+## The point's winners react, and not the same way every time: after a big point (a kill, an ace, a block, a long
+## rally, a set or match point won) the regu celebrates together, each his own way; after an ordinary one, now and then
+## one player claps or pumps a fist; often nobody does. After a big one, a loser may slump.
+func _celebrate(team: int, why: String) -> void:
 	var side := side_of_team(team)
-	var k := 0
-	for pp in players_on(side):
+	var big := why.begins_with("kill") or why in ["ace", "block"] or rally_len >= 6 or int(points[team]) >= set_points - 1
+	var ways := ["celebrate", "fist", "clap", "point"]
+	var mine := players_on(side).duplicate()
+	if not big:
+		if rng.randf() < 0.45:
+			var one: Player = mine[rng.randi_range(0, mine.size() - 1)]
+			one.play_now(["fist", "clap", "fist"][rng.randi_range(0, 2)], now + rng.randf_range(0.15, 0.5), rng.randf() < 0.5)
+		return
+	for pp in mine:
 		var pl: Player = pp
-		pl.play_now(["celebrate", "fist", "celebrate"][(k + rng.randi_range(0, 2)) % 3], now + rng.randf_range(0.1, 0.4))
-		k += 1
-	if rng.randf() < 0.5:
+		if rng.randf() < 0.85:
+			pl.play_now(ways[rng.randi_range(0, ways.size() - 1)], now + rng.randf_range(0.05, 0.45), rng.randf() < 0.5)
+	if rng.randf() < 0.4:
 		var other := players_on(1 - side)
 		var sad: Player = other[rng.randi_range(0, other.size() - 1)]
 		sad.play_now("slump", now + 0.3)
@@ -1400,13 +1425,18 @@ func _set_won(team: int) -> void:
 	hud.set_break()
 
 
+## The teams change ends: as on television, the picture cuts away (a quick fade) while they cross, rather than every
+## player jumping to the other side in one frame.
 func _change_ends() -> void:
 	side_team = [side_team[1], side_team[0]]
 	_place_sides()
-	for side in 2:
-		for pp in players_on(side):
-			var pl: Player = pp
-			pl.position = pl.target
+	hud.cut(func():
+		for side in 2:
+			for pp in players_on(side):
+				var pl: Player = pp
+				pl.position = pl.target
+				pl.vel = Vector3.ZERO
+		cam.snap())
 	_update_tags()
 
 
@@ -1620,7 +1650,7 @@ func _user_plan_live() -> bool:
 
 ## How far from the spot he can be and still play it (the length of a leg, more on the easier levels).
 func _reach(p: Dictionary) -> float:
-	var r: float = 0.5 + [0.3, 0.18, 0.1, 0.04][clampi(int(Game.settings.difficulty), 0, 3)]
+	var r: float = 0.5 + [0.3, 0.18, 0.1, 0.04][difficulty]
 	return r + (0.4 if bool(p.get("auto", false)) else 0.0)
 
 
@@ -1893,3 +1923,34 @@ func match_point_for() -> int:
 	if k >= 0 and sets[k] == sets_to_win - 1:
 		return k
 	return -1
+
+
+# ---------------------------------------------------------------- frame rate
+
+var _fps_t := 0.0
+var _fps_frames := 0
+var _fps_checked := false
+
+
+## Auto graphics (Settings): if the first seconds of play run slowly on this phone, the graphics go down a level for
+## good (and the player is told). Not for the match behind the home screen, a test, or a recording.
+func _check_frame_rate(real_delta: float) -> void:
+	if _fps_checked or user_team < 0 or not bool(Game.settings.get("auto_gfx", true)) or int(Game.settings.graphics) <= Game.GFX_LOW:
+		return
+	if DisplayServer.get_name() == "headless" or OS.has_feature("movie") or Engine.get_frames_per_second() <= 0:
+		return
+	if state != S.RALLY and state != S.TOSS:
+		return
+	_fps_t += real_delta
+	_fps_frames += 1
+	if _fps_t < 6.0:
+		return
+	_fps_checked = true
+	var fps := float(_fps_frames) / _fps_t
+	var cap := Game.frame_cap()
+	var want := minf(36.0, 0.8 * float(cap)) if cap > 0 else 36.0
+	if fps < want:
+		Game.settings.graphics = int(Game.settings.graphics) - 1
+		Game.save_settings()
+		Game.apply_graphics(get_viewport())
+		hud.call_line(tr("GFX_LOWERED"))

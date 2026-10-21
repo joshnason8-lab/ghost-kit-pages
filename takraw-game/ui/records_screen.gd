@@ -29,4 +29,4 @@ func _ready() -> void:
 	for t in titles:
 		var key := String(t.key)
 		var name := tr(DB.LEAGUES[key.substr(7)].name) if key.begins_with("league_") else tr(String(Cup.KINDS.get(key.substr(4), {}).get("name", key)))
-		right[1].add_child(UI.label("%s · %d" % [name, int(t.year)], "SubLabel", 20))
+		right[1].add_child(UI.label("%s\u00a0· %d" % [name, int(t.year)], "SubLabel", 20))

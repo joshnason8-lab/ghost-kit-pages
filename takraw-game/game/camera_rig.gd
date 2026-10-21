@@ -64,6 +64,14 @@ func follow(b: Vector3, delta: float, m: Node) -> void:
 	look_at(_look)
 
 
+## Straight to where it should be (after a cut).
+func snap() -> void:
+	_pos = _want_pos(Vector3.ZERO)
+	_look = _want_look(Vector3.ZERO)
+	global_position = _pos
+	look_at(_look)
+
+
 func shake(k := 1.0) -> void:
 	_shake = maxf(_shake, k)
 

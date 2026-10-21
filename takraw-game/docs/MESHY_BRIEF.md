@@ -57,3 +57,23 @@ then converted back to the bone's local rotation. The players' blob shadows, tag
 stay as they are, so nothing else in the match changes.
 
 Until then, `ToonBody` is the player, and the moves were tuned on it.
+
+## Lessons from Kabaddi Raid's Meshy players
+
+What went wrong when Kabaddi Raid's Meshy models went into its game, and what to do here from the start:
+
+- **The pose**: Meshy ignores an A-pose request unless the prompt leads with it: start every person prompt with
+  "T-pose".
+- **Size**: a model came back at 206,920 triangles. Cut every body to about 15,000 before rigging.
+- **Standing on the floor**: downloads are centred on the origin; put each model's lowest point at y = 0.
+- **Seams**: vertices split along UV seams got different weights and tore open in motion. Weld before rigging.
+- **Normals and winding**: keep the file's own normals and fix the triangle winding; do not recompute them.
+- **Legs**: the auto-rig swapped legs on one model. Check every knee and ankle sits on its hip's side.
+- **Face**: the face, jaw and beard lagged a turning head: give every face part wholly to the head bone.
+- **Kit against skin**: the kit-colour mask caught saturated skin (kit colour speckled on knees and shins, the
+  shorts' hem taking the shirt colour). Mark skin in a mask saved without loss (a lossy encoder dropped colour under
+  transparent texels); never treat hands as kit; judge skin by the face's own hue; keep kit trims well away from
+  skin hues (an orange trim was read as skin).
+- **Skin tones**: pale peach tones went grey-white on tan textures; use warm tans (d4966c, cf9069) for the lightest.
+- **Shine**: only bare skin takes a sweat sheen, not hair, shoes or officials' clothes.
+- **No real people**: no player's face, name or number, and no logos on kit (see "Reject a preview with" above).

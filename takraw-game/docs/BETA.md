@@ -11,6 +11,11 @@ about 2019, the Galaxy A16 included).
 
 ## What to try
 
+New in 0.3.0: players are shirt numbers (no names); plain league and event names; Kabaddi Raid's fixes brought over
+(the game waits for players to walk to their places before a serve, the teams cross at a change of ends behind a quick
+cut, bigger pause buttons with Quit apart, the nearest button takes a press, the joystick lets go if you leave the
+app, Auto graphics now works, celebrations vary); a paler beach.
+
 - **The controls**: run the lit player to the gold mark with the joystick, and press as the ring meets the gold
   circle. Nothing is played for you. Is it clear who is yours and where to go? Is PERFECT reachable? Try the three
   assist levels and the three game speeds (Settings).

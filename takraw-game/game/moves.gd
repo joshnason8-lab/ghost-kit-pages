@@ -194,6 +194,24 @@ static func _build() -> void:
 			[0.7, {"spine": Vector3(20, 0, 0), "upperarm_r": Vector3(-60, 0, -15), "forearm_r": Vector3(-120, 0, 0)}],
 			[1.0, {}],
 		],
+		"clap": [
+			[0.0, {}],
+			[0.15, {"upperarm_l": Vector3(-62, 0, 14), "upperarm_r": Vector3(-62, 0, -14), "forearm_l": Vector3(-55, 0, 0), "forearm_r": Vector3(-55, 0, 0), "head": Vector3(-8, 0, 0)}],
+			[0.27, {"upperarm_l": Vector3(-62, 0, -18), "upperarm_r": Vector3(-62, 0, 18), "forearm_l": Vector3(-62, 0, 0), "forearm_r": Vector3(-62, 0, 0)}],
+			[0.42, {"upperarm_l": Vector3(-62, 0, 14), "upperarm_r": Vector3(-62, 0, -14), "forearm_l": Vector3(-55, 0, 0), "forearm_r": Vector3(-55, 0, 0)}],
+			[0.54, {"upperarm_l": Vector3(-62, 0, -18), "upperarm_r": Vector3(-62, 0, 18), "forearm_l": Vector3(-62, 0, 0), "forearm_r": Vector3(-62, 0, 0)}],
+			[0.69, {"upperarm_l": Vector3(-62, 0, 14), "upperarm_r": Vector3(-62, 0, -14), "forearm_l": Vector3(-55, 0, 0), "forearm_r": Vector3(-55, 0, 0)}],
+			[0.81, {"upperarm_l": Vector3(-62, 0, -18), "upperarm_r": Vector3(-62, 0, 18), "forearm_l": Vector3(-62, 0, 0), "forearm_r": Vector3(-62, 0, 0)}],
+			[1.0, {}],
+		],
+		"point": [
+			[0.0, {}],
+			[0.3, {"spine": Vector3(-8, 0, 0), "head": Vector3(-20, 0, 0), "upperarm_r": Vector3(-150, 0, -18), "forearm_r": Vector3(-8, 0, 0),
+				"upperarm_l": Vector3(-20, 0, 12), "forearm_l": Vector3(-60, 0, 0)}],
+			[0.75, {"spine": Vector3(-8, 0, 0), "head": Vector3(-22, 0, 0), "upperarm_r": Vector3(-155, 0, -22), "forearm_r": Vector3(-5, 0, 0),
+				"upperarm_l": Vector3(-20, 0, 12), "forearm_l": Vector3(-60, 0, 0)}],
+			[1.0, {}],
+		],
 		"slump": [
 			[0.0, {}],
 			[0.35, {"hips_y": -0.12, "spine": Vector3(48, 0, 0), "chest": Vector3(12, 0, 0), "head": Vector3(10, 0, 0),
@@ -255,7 +273,7 @@ static func has(name: String) -> bool:
 static func length(name: String) -> float:
 	if CONTACT.has(name):
 		return float(CONTACT[name][3])
-	return {"celebrate": 1.3, "fist": 1.1, "slump": 2.2}.get(name, 1.0)
+	return {"celebrate": 1.3, "fist": 1.1, "clap": 1.4, "point": 1.5, "slump": 2.2}.get(name, 1.0)
 
 
 ## When in a move the ball is met, in seconds from its start.

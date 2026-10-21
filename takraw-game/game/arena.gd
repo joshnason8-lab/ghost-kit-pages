@@ -72,7 +72,7 @@ func _ready() -> void:
 			_officials_furniture(true)
 		"beach":
 			_outdoor_env("sunset")
-			_court(Color("e7b46a"), Color("e7b46a"), Color("e7b46a"), false, true)
+			_court(Color("e2cfa6"), Color("dcc79c"), Color("dcc79c"), false, true)
 			spots = _beach()
 			_officials_furniture(true)
 		"street":
@@ -151,9 +151,9 @@ func _outdoor_env(time: String) -> void:
 			sm.sky_top_color = Color("2c2d68")
 			sm.sky_horizon_color = Color("ff8a3d")
 			sm.ground_horizon_color = Color("ff8a3d")
-			sun.rotation_degrees = Vector3(-18, 160, 0)
-			sun.light_energy = 0.9
-			sun.light_color = Color(1.0, 0.86, 0.72)
+			sun.rotation_degrees = Vector3(-24, 160, 0)
+			sun.light_energy = 0.95
+			sun.light_color = Color(1.0, 0.92, 0.82)
 		"night":
 			sm.sky_top_color = Color("060a18")
 			sm.sky_horizon_color = Color("1a1f3a")
@@ -167,7 +167,7 @@ func _outdoor_env(time: String) -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = {"day": Color(0.75, 0.8, 0.9), "dusk": Color(0.55, 0.5, 0.65), "sunset": Color(0.75, 0.66, 0.66),
+	env.ambient_light_color = {"day": Color(0.75, 0.8, 0.9), "dusk": Color(0.55, 0.5, 0.65), "sunset": Color(0.78, 0.76, 0.8),
 		"night": Color(0.4, 0.42, 0.55)}[time]
 	env.ambient_light_energy = 0.6
 	var we := WorldEnvironment.new()
@@ -552,9 +552,9 @@ func _park() -> Array:
 
 func _beach() -> Array:
 	var spots := []
-	_lit.floor_rect(-80, -80, 80, 80, -0.01, Color("e7b46a"))
+	_lit.floor_rect(-80, -80, 80, 80, -0.01, Color("dcc79c"))
 	# The sea behind, and the sun's path on it.
-	_glow.floor_rect(-120, 22, 120, 200, 0.0, Color("0f4c6b"))
+	_glow.floor_rect(-120, 22, 120, 200, 0.0, Color("8fc0d4"))   # (unshaded: shown darker than it reads here)
 	for i in 6:
 		_glow.floor_rect(10.0 - i * 0.4, 30.0 + i * 6.0, 18.0 + i * 0.4, 31.0 + i * 6.0, 0.01, Color("ffd27a").darkened(i * 0.08))
 	for i in 10:

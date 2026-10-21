@@ -4,8 +4,9 @@ extends Node
 ## text over other text, a translation key or a placeholder shown raw, and characters no font in the chain can draw.
 ## Also the match buttons' labels against their circles. Headless, so it is quick:
 ##   godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- OUT.jsonl [langs] [WxH,...] [parts]
-## langs: en,th,ms,... (all by default). WxH: the phone's screen in pixels (layouts depend only on its shape: 1280x720
-## and a Galaxy A16's 2340x1080 by default). parts: menus,season,cup,match (all by default).
+## langs: en,th,ms,... (all by default). WxH: the phone's screen in pixels (layouts depend only on its shape: 1280x720,
+## a Galaxy A16's 2340x1080, and 2240x1080 for a long phone that keeps clear of its camera, as a Galaxy S24 does, by
+## default). parts: menus,season,cup,match (all by default).
 ## Each problem is a line of JSON; a summary is printed at the end. Exits 1 if anything was found.
 
 const LANGS := ["en", "th", "ms", "id", "vi", "lo", "my", "km", "fil", "ja", "ko", "zh", "hi"]
@@ -13,7 +14,7 @@ const SKIP_CHARS := [0x20, 0x09, 0x0A, 0xA0, 0xAD, 0x200B, 0x200C, 0x200D, 0x206
 
 var out_path := "user://fit_audit.jsonl"
 var langs: Array = LANGS
-var sizes: Array = [Vector2i(1280, 720), Vector2i(2340, 1080)]
+var sizes: Array = [Vector2i(1280, 720), Vector2i(2340, 1080), Vector2i(2240, 1080)]
 var parts: Array = ["menus", "season", "cup", "match"]
 var lang := "en"
 var res := ""
@@ -42,7 +43,7 @@ func _ready() -> void:
 	_f = FileAccess.open(out_path, FileAccess.WRITE)
 	var keep: Dictionary = Game.settings.duplicate(true)
 	Game.main = self
-	Game.settings.sound = false
+	Game.reset_settings_for_tests()
 	Game.settings.dev = false
 	for s in sizes:
 		get_tree().root.size = s
