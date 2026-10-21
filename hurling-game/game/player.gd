@@ -453,7 +453,7 @@ func _show_flag(kind: String) -> void:
 		_flag = MeshInstance3D.new()
 		var g := Geo.new()
 		g.cylinder(Vector3(0, 0, 0), Vector3(0, -0.62, 0), 0.012, 0.012, Color("2a2a2a"), 5, false)
-		g.wall(Vector3(0, 0, 0), Vector3(0, 0, 0.42), -0.62, -0.32, Color.WHITE, true)
+		g.wall(Vector3(0, 0, 0), Vector3(0.42, 0, 0), -0.62, -0.32, Color.WHITE, true)
 		_flag.mesh = g.commit(Geo.material(false)).mesh
 		_flag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_flag_att.add_child(_flag)

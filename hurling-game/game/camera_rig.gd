@@ -15,8 +15,8 @@ var _fovv := 0.0
 var _pos := Vector3.ZERO
 var _pvel := Vector3.ZERO
 
-const GANTRY_Z := Pitch.HALF_W + 34.0
-const GANTRY_H := 24.0
+const GANTRY_Z := Pitch.HALF_W + 26.0
+const GANTRY_H := 19.0
 
 
 func setup(m: Node) -> void:
@@ -60,7 +60,7 @@ func _want_focus(m: Node) -> Vector3:
 
 
 func _want_fov(m: Node) -> float:
-	var base := 34.0 if mode == Game.CAM_TV else (40.0 if mode == Game.CAM_HIGH else 50.0)
+	var base := 25.0 if mode == Game.CAM_TV else (36.0 if mode == Game.CAM_HIGH else 46.0)
 	if m.ball.state == Sliotar.FREE:
 		var sp: float = m.ball.vel.length()
 		base += clampf((sp - 10.0) * 0.35, 0.0, 10.0) + clampf(m.ball.global_position.y * 0.5, 0.0, 6.0)

@@ -160,7 +160,11 @@ func _trees(g: Geo, rng: RandomNumberGenerator, x0: float, x1: float, z0: float,
 		var h := rng.randf_range(7.0, 14.0)
 		g.cylinder(p, p + Vector3(0, h * 0.45, 0), 0.25, 0.18, Color("3a2c20"), 5, false)
 		var col := Color("1f3a20").lerp(Color("2e4f26"), rng.randf())
-		g.blob(p + Vector3(0, h * 0.7, 0), Vector3(h * 0.32, h * 0.38, h * 0.32), col)
+		# A rounded crown of three tiers, like the ash and sycamore round a field.
+		for k in 3:
+			var y0 := h * (0.35 + k * 0.18)
+			var r := h * (0.34 - k * 0.08)
+			g.cylinder(p + Vector3(0, y0, 0), p + Vector3(0, y0 + h * 0.3, 0), r, r * 0.55, col.lightened(0.04 * k), 7)
 
 
 func _hills(g: Geo, rng: RandomNumberGenerator, r: float, col: Color) -> void:
@@ -168,8 +172,8 @@ func _hills(g: Geo, rng: RandomNumberGenerator, r: float, col: Color) -> void:
 	for i in n:
 		var a0 := TAU * float(i) / n
 		var a1 := TAU * float(i + 1) / n
-		var h0 := 18.0 + 22.0 * absf(sin(a0 * 2.3 + 1.0)) + rng.randf() * 6.0
-		var h1 := 18.0 + 22.0 * absf(sin(a1 * 2.3 + 1.0)) + rng.randf() * 6.0
+		var h0 := 14.0 + 26.0 * absf(sin(a0 * 2.3 + 1.0)) + rng.randf() * 6.0
+		var h1 := 14.0 + 26.0 * absf(sin(a1 * 2.3 + 1.0)) + rng.randf() * 6.0
 		var p0 := Vector3(cos(a0) * r, 0, sin(a0) * r)
 		var p1 := Vector3(cos(a1) * r, 0, sin(a1) * r)
 		g._tri_quad(Vector3(p0.x, h0, p0.z), Vector3(p1.x, h1, p1.z), Vector3(p1.x, -1, p1.z), Vector3(p0.x, -1, p0.z), -p0.normalized(), col)
@@ -219,14 +223,14 @@ func _parish(g: Geo, nets: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 	_trees(g, rng, -H - 40.0, H + 40.0, -W - 40.0, -W - 18.0, 60)
 	_trees(g, rng, H + 16.0, H + 40.0, -W, W, 18)
 	_trees(g, rng, -H - 40.0, -H - 16.0, 0, W, 10)
-	_hills(g, rng, 420.0, Color("1d2a24"))
+	_hills(g, rng, 560.0, Color("3a3a4a"))
 
 
 func _county(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	g.box(Vector3(0, 0.5, -W - 4.5), Vector3(Pitch.LENGTH + 20.0, 1.0, 0.4), Color("e8e2d0"))
-	g.box(Vector3(0, 0.5, W + 4.5), Vector3(Pitch.LENGTH + 20.0, 1.0, 0.4), Color("e8e2d0"))
+	g.box(Vector3(0, 0.5, -W - 4.5), Vector3(Pitch.LENGTH + 20.0, 1.0, 0.4), Color("1f4a32"))
+	g.box(Vector3(0, 0.5, W + 4.5), Vector3(Pitch.LENGTH + 20.0, 1.0, 0.4), Color("1f4a32"))
 	# The long covered stand on the far side.
 	_stand(g, -62.0, 62.0, -W - 6.0, -1.0, 24, 0.42, 0.8, Color("6a7682"), spots, true, Color("4a5560"), 1.4)
 	# The open terraces on the far side beyond it and at both ends.
@@ -252,7 +256,7 @@ func _county(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 			var p := Vector3((H + 12.0) * sx, 0, (W + 14.0) * sz)
 			_mast(g, lamps, p, 38.0, (-p).normalized())
 	_trees(g, rng, -H - 60.0, H + 60.0, -W - 70.0, -W - 40.0, 30)
-	_hills(g, rng, 520.0, Color("2a3a30") if time != "night" else Color("0c1210"))
+	_hills(g, rng, 760.0, Color("5d7468") if time != "night" else Color("0c1210"))
 
 
 func _stadium(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
@@ -287,7 +291,7 @@ func _stadium(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 	for i in 9:
 		var x := lerpf(-78.0, 78.0, float(i) / 8.0)
 		lamps.box(Vector3(x, 38.5, -W - 40.0), Vector3(3.0, 0.6, 1.0), Color(1.0, 0.97, 0.85) if time != "day" else Color(0.85, 0.85, 0.82), 0.0, false)
-	_hills(g, rng, 600.0, Color("3a4a52"))
+	_hills(g, rng, 800.0, Color("6a7d80"))
 
 
 func _environment() -> void:

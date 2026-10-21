@@ -37,6 +37,9 @@ func _ready() -> void:
 		var c: Championship = Game.new_champ("TIP")
 		for i in 3:
 			var f := c.next_fixture()
+			if f.is_empty():
+				c.play_others()
+				continue
 			var r := Sim.play(String(f.home), String(f.away))
 			c.record_user_result({"home": f.home, "away": f.away, "score": r.score, "winner": r.winner})
 		Game.save_champ()

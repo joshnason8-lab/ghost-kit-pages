@@ -178,7 +178,7 @@ func _mesh() -> ArrayMesh:
 	m.capsule(r.chest + Vector3(0, 0.04, 0), r.neck - Vector3(0, 0.02, 0), 0.2, 0.12, jersey, bone("chest"), Vector3(1.05, 1, 0.66))
 	match design:
 		1:   # a hoop round the chest
-			m.capsule(r.chest + Vector3(0, -0.05, 0), r.chest + Vector3(0, 0.07, 0), 0.204, 0.205, trim, bone("chest"), Vector3(1.03, 1, 0.68))
+			m.band(r.chest + Vector3(0, 0.03, 0), 0.205, 0.138, 0.11, trim, bone("chest"))
 		2:   # a sash from the right shoulder to the left hip, front and back
 			for k in 4:
 				var t := float(k) / 3.0
@@ -228,7 +228,7 @@ func _mesh() -> ArrayMesh:
 		var kn: Vector3 = r["shin_" + side]
 		var an: Vector3 = r["foot_" + side]
 		var legwear := Color("1a1a1a") if kind != "player" else shorts
-		m.capsule(hp + Vector3(0, 0.04, 0), hp.lerp(kn, 0.5), 0.115, 0.095, legwear, bone("thigh_" + side))
+		m.capsule(hp + Vector3(0, 0.04, 0), hp.lerp(kn, 0.48), 0.1, 0.085, legwear, bone("thigh_" + side))
 		m.capsule(hp.lerp(kn, 0.45), kn, 0.08, 0.07, skin if kind == "player" else legwear, bone("thigh_" + side))
 		m.capsule(kn, kn.lerp(an, 0.25), 0.07, 0.065, skin if kind == "player" else legwear, bone("shin_" + side))
 		m.capsule(kn.lerp(an, 0.2), an + Vector3(0, 0.02, 0), 0.066, 0.05, socks if kind == "player" else Color("1a1a1a"), bone("shin_" + side))
