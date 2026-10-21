@@ -35,13 +35,16 @@ the coach's whiteboard in a Nordic sports hall.
 
 | Graphics | Arena: draw calls / triangles | Hall: draw calls / triangles | Render scale | Shadows, MSAA |
 |---|---|---|---|---|
-| Low | PERF_LOW_A | PERF_LOW_H | 75% | none, off |
-| Medium | PERF_MED_A | PERF_MED_H | 90% | none, 2x |
-| High | PERF_HIGH_A | PERF_HIGH_H | 100% | yes, 4x |
+| Low | 89 / 49,100 | 89 / 49,600 | 75% | none, off |
+| Medium | 90 / 86,500 | 90 / 84,900 | 90% | none, 2x |
+| High | 113 / 226,000 | 114 / 229,600 | 100% | yes, 4x |
 
 Budgets for the floor (a 2-3 GB phone with a Mali-G52/G57 at 720p, Low, 30 fps): under 100 draw calls and 100,000
-triangles a frame, which Low meets. The beta APK is about APK_MB MB (fonts subset to under 1.3 MB; no textures ship:
-the floor, ball, net, flags and crowd are drawn at load).
+triangles a frame, which Low meets (bodies are built with fewer sides on Low; High's extra triangles are its
+shadow pass). The draw calls are about 25 for the 3D scene (the rink and hall merged into a few, the crowd one, each
+person with his stick one) and the rest the HUD and buttons. The beta APK is 31 MB, almost all of it the Godot
+engine itself; the game's own data is about 2.5 MB (fonts subset to 1.3 MB; no textures ship: the floor, ball, net,
+flags and crowd are drawn at load).
 
 ## Controls
 

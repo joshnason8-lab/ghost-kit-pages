@@ -93,7 +93,7 @@ func _start_demo() -> void:
 	var pair: Array = pairs[rng.randi() % pairs.size()]
 	var s: Script = load("res://game/match.gd")
 	_demo = s.new()
-	_demo.config = {"home": pair[0], "away": pair[1], "venue": ["arena", "hall"][rng.randi() % 2], "user_team": -1, "demo": true,
+	_demo.config = {"home": pair[0], "away": pair[1], "venue": ["arena", "hall"][rng.randi() % 2], "user_team": -1, "demo": true, "menu": true,
 		"period": 3.0, "seed": rng.randi(), "mode": "demo", "women": rng.randf() < 0.4}
 	add_child(_demo)
 	_demo.finished.connect(func(_r):

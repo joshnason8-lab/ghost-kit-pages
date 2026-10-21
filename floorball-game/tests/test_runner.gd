@@ -27,6 +27,7 @@ func _ready() -> void:
 	_translations()
 	_cup()
 	await _screens()
+	await _penalty_shot()
 	await _matches()
 	Game.settings = keep
 	Game.delete_cup()
@@ -345,6 +346,44 @@ func _screens() -> void:
 	await frames(3)
 	check(Game.current.get_child_count() > 0, "the World Finals hub builds")
 	Game.delete_cup()
+
+
+## Chapter 8: a foul that stops a clear chance is a penalty shot, from the centre spot at the goal the fouled team
+## attacks, the clock stopped while it is taken; anywhere else it is a free-hit.
+func _penalty_shot() -> void:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 3, "period": 4.0}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var a: float = m.attack_dir(0)
+	var v: Player = m.skaters(0)[0]
+	var d: Player = m.skaters(1)[0]
+	# Everyone else of the defending side well behind the play.
+	for o: Player in m.skaters(1):
+		o.respawn(Vector2(-a * 12.0, -6.0 + m.skaters(1).find(o) * 3.0))
+	v.respawn(Vector2(a * 9.0, 0.5))
+	d.respawn(Vector2(a * 8.0, 0.5))
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	check(m._clear_chance(v, d), "a clear chance: in front of goal, nobody but the goalkeeper between")
+	var far: Player = m.skaters(0)[1]
+	far.respawn(Vector2(-a * 5.0, 3.0))
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	check(not m._clear_chance(far, d), "in his own half: no clear chance")
+	m.ball.carrier = v
+	m._whistle_offence(d, "hook", "free_hit", v.pos, v)
+	check(m.phase == "shootout" and bool(m._so.in_match) and int(m._so.team) == 0, "chapter 8: a penalty shot for the fouled team")
+	var clock: float = m.rules.clock
+	var guard := 0
+	while m.phase == "shootout" and guard < 60 * 20:
+		await get_tree().physics_frame
+		guard += 1
+	check(m.phase != "shootout", "the penalty shot is taken and play goes on (%s)" % m.phase)
+	check(is_equal_approx(m.rules.clock, clock), "2026: the clock stands during a penalty shot")
+	m.queue_free()
+	await frames(2)
 
 
 # ---------------------------------------------------------------- matches

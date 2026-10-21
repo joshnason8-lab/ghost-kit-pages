@@ -102,6 +102,10 @@ func _ready() -> void:
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
+	if bool(config.get("menu", false)):
+		# Behind the home screen's whiteboard: the picture shifted so the play shows in the hall to its right.
+		cam.mode = Game.CAM_HIGH
+		cam.h_offset = -11.0
 	if not demo:
 		var hud_s: Script = load("res://game/hud.gd")
 		hud = hud_s.new()
@@ -892,6 +896,10 @@ func _stop(kind: String, d: Dictionary) -> void:
 	restart = r
 	_set_phase("whistle")
 	Sfx.play("whistle", -2.0)
+	_ai_timeout()
+	if _timeout_team >= 0:
+		phase_t = -1.5   # a longer stop: the time-out
+		_take_timeout()
 	var why := String(d.get("why", ""))
 	var dirx := Vector2(attack_dir(int(d.get("team", 0))), 0)
 	match kind:
@@ -1506,14 +1514,37 @@ func continue_after_interval() -> void:
 		_next_period()
 
 
-## The user's timeout (202): one a team, 30 s, at the next stoppage.
-func call_timeout() -> bool:
-	if user_team < 0 or rules.timeouts[user_team] <= 0:
+var _timeout_team := -1
+
+
+## A time-out (202): one a team, 30 seconds, asked for any time and granted at the next stoppage.
+func call_timeout(team := -2) -> bool:
+	var t := user_team if team == -2 else team
+	if t < 0 or rules.timeouts[t] <= 0 or _timeout_team >= 0:
 		return false
-	rules.timeouts[user_team] -= 1
-	rules.log.append({"kind": "timeout", "team": user_team, "period": rules.period, "t": rules.clock})
-	_ref_signal("timeout", Vector2.ZERO)
+	rules.timeouts[t] -= 1
+	_timeout_team = t
 	return true
+
+
+## At a stoppage: a time-out asked for is taken now, the referee making the T. The 30 seconds are shown, not waited.
+func _take_timeout() -> void:
+	if _timeout_team < 0:
+		return
+	rules.log.append({"kind": "timeout", "team": _timeout_team, "period": rules.period, "t": rules.clock})
+	_ref_signal("timeout", Vector2.ZERO)
+	if hud:
+		hud.banner(tr("SIGN_TIMEOUT") + " · " + DB.team_name(String(config.home if _timeout_team == 0 else config.away)))
+	_timeout_team = -1
+
+
+## The AI's coach calls his time-out a goal down late in the third period, as coaches do.
+func _ai_timeout() -> void:
+	if rules.period != Rules.PERIODS or rules.remaining() > 180.0:
+		return
+	for t in 2:
+		if t != user_team and rules.timeouts[t] > 0 and int(rules.goals[t]) == int(rules.goals[1 - t]) - 1:
+			call_timeout(t)
 
 
 # ---------------------------------------------------------------- performance
