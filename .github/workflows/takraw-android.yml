@@ -159,6 +159,8 @@ jobs:
           downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
           any earlier beta (Takraw Smash, its old name, included) and keeps your saves.
 
+          What's new, and what to try: https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_SHA}/takraw-game/docs/BETA.md
+
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
           gh release delete "$TAG" --cleanup-tag --yes || true

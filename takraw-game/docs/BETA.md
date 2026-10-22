@@ -11,7 +11,14 @@ about 2019, the Galaxy A16 included).
 
 ## What to try
 
-New in 0.4.0: the game is **Sepak Takraw Unleashed**, with its new icon. Real-looking players (a man's and a
+New in 0.5.0: every venue rebuilt from real-world pieces. Real skies; courts painted on concrete, asphalt and a maple
+gym floor; a Thai temple behind the temple court with spectators on plastic chairs; palms and rain trees; the sea
+moving at the beach and stilt houses back from it; a fenced park court with benches, lamps and a basketball hoop on
+the next court; a night market with stalls, lanterns and stools; metal bleachers, a clock and basketball boards in
+the provincial gym; bleachers in the mall. Try every venue on Low and on High: does anything float, look out of
+place, or slow the game down?
+
+In 0.4.0: the game is **Sepak Takraw Unleashed**, with its new icon. Real-looking players (a man's and a
 woman's model in each team's colours), the new ball, crowds of real-looking people, glossier courts. The spikes, the
 serve and the knee are motion capture, and so are the run and walk; blocks are made with the feet (a jump, a foot
 raised over the net: press Block as their striker hits). No more numbers over the players' heads; a smaller

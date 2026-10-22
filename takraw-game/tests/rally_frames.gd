@@ -1,6 +1,6 @@
 extends Node
 ## A burst of frames from an AI match, to look at how a rally moves:
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/rally_frames.tscn -- /out/dir [start s] [every s] [n]
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/rally_frames.tscn -- /out/dir [start s] [every s] [n] [venue] [low]
 
 func _ready() -> void:
 	var a := OS.get_cmdline_user_args()
@@ -8,12 +8,13 @@ func _ready() -> void:
 	var start := float(a[1]) if a.size() > 1 else 3.0
 	var every := float(a[2]) if a.size() > 2 else 0.2
 	var n := int(a[3]) if a.size() > 3 else 16
+	var venue := a[4] if a.size() > 4 else "national"
 	DirAccess.make_dir_recursive_absolute(out)
 	Game.main = self
 	Game.settings.sound = false
-	Game.settings.graphics = Game.GFX_HIGH
+	Game.settings.graphics = Game.GFX_LOW if a.size() > 5 and a[5] == "low" else Game.GFX_HIGH
 	var m: Node = (load("res://game/match.gd") as Script).new()
-	m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 1, "points": 15, "user_team": -1,
+	m.config = {"home": "THA", "away": "MAS", "venue": venue, "event": "regu", "sets": 1, "points": 15, "user_team": -1,
 		"demo": true, "seed": 5, "mode": "quick"}
 	add_child(m)
 	await get_tree().create_timer(start).timeout
