@@ -167,8 +167,8 @@ void fragment() {
 
 
 ## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours). A spot
-## sits (a figure from the sheet's sitting four) where seated says, or where its height is below the ground (the
-## front rows of a ground crowd, on the earth).
+## sits (a figure from the sheet's sitting four) where seated says, where its height is below the ground (a row of
+## a ground crowd on the earth), or where it is a seat's height (a chair or a bench).
 func build(p_spots: Array, density: float, palette: Array, seed_ := 1, seated := false) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_
@@ -177,7 +177,7 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, seated :=
 	for s in p_spots:
 		if rng.randf() < density:
 			var v: Vector3 = s
-			var sit := seated or v.y < -0.2
+			var sit := seated or v.y < -0.2 or v.y > 0.3
 			if v.y < -0.2:
 				v.y = 0.15   # on the earth, on his haunches
 			keep.append(v)

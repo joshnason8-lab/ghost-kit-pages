@@ -20,6 +20,7 @@ func _ready() -> void:
 	await _matches()
 	await _your_controls()
 	await _bodies()
+	await _grounds()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -252,6 +253,36 @@ func _bodies() -> void:
 	check(ran, "the active chaser runs his run, at the rate his speed asks")
 	m.queue_free()
 	await frames(2)
+
+
+# ---------------------------------------------------------------- the grounds
+
+## The shared assets round each ground (the graphics update): a photographed sky outdoors, the photo-scanned ground,
+## the trees as cut-outs, the chairs and benches; on Low the light chairs, and only on the far side.
+func _grounds() -> void:
+	var keep_g := int(Game.settings.graphics)
+	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		for v in DB.venue_ids():
+			var a := Arena.new(v, KhoRules.CLASSIC, [Color.RED])
+			add_child(a)
+			await frames(1)
+			var we: WorldEnvironment = a.find_children("*", "WorldEnvironment", true, false)[0]
+			var outdoor := a.kind != "arena"
+			check((we.environment.sky != null) == outdoor, "graphics %d, %s: %s" % [g, v, "a photographed sky" if outdoor else "no sky indoors"])
+			var mms := {}
+			for mmi in a.find_children("*", "MultiMeshInstance3D", true, false):
+				if mmi is Crowd:
+					continue
+				var mesh: Mesh = (mmi as MultiMeshInstance3D).multimesh.mesh
+				mms[mesh.resource_name if mesh.resource_name != "" else str(mesh.get_instance_id())] = (mmi as MultiMeshInstance3D).multimesh.instance_count
+			check(mms.size() >= (3 if outdoor else 1), "graphics %d, %s: the shared assets placed (%d kinds)" % [g, v, mms.size()])
+			if a.kind == "village":
+				var chairs: int = a._chairs.size()
+				check(chairs > 0 and (g != Game.GFX_LOW or chairs < 60), "graphics %d, village: chairs under the front row (%d)" % [g, chairs])
+			a.queue_free()
+			await frames(1)
+	Game.settings.graphics = keep_g
 
 
 # ---------------------------------------------------------------- championships

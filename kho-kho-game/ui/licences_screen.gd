@@ -6,8 +6,10 @@ extends Control
 const CREDITS := """[b]Kho Kho Rush[/b]
 Made by Josh Nason.
 The players and officials: the maker's own athlete model, moved by animations from Mixamo (Adobe), fitted to it for the
-game. Grounds and sounds made in code for the game; the crowd drawn from the players' model; the menu music and the
-crowd's drums written for it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
+game. The grounds' skies, surfaces, plastic chairs, stools, benches, lights and tropical trees: Poly Haven
+(polyhaven.com), CC0. The rain trees, palms, grass, scorers' table and apartment blocks: the maker's own
+models. Grounds otherwise made in code for the game; the crowd drawn from the players' model; sounds, the menu music
+and the crowd's drums written for it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
 Every team's players are invented. No real player, club, league, competition or federation is named."""
 
 const FONTS := """[b]Fonts[/b]

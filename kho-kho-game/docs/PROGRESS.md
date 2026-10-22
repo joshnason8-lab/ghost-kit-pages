@@ -100,6 +100,50 @@ The kho kho game, built overnight on 21-22 October 2026 on branch `claude/kho-kh
 - **Languages**: see docs/LANGUAGES.md. All fourteen in the game; store listings in the Play-supported ones (Odia
   and Assamese have no Play listing locale).
 
+## Round four: 0.4.0-beta, the graphics update (22-23 October 2026, from the lead's shared assets)
+
+Built venue by venue from `shared-assets/plans/kho-kho-rush.md` (the files copied are in `assets/env/`; placed by
+`game/props.gd` and `game/arena.gd`, each kind of thing one MultiMesh):
+
+- **Village ground at dusk:** `qwantani_dusk_2_puresky` sky; `red_laterite_soil_stones` ground, worn along the lane
+  and round the poles; `rain_tree`, `coconut_palm`, `island_tree_a`/`_b` and `dry_grass_tall`/`grass_clumps`
+  cut-outs; the houses in `clay_plaster` under `thatch_roof_angled` and `clay_roof_tiles`; `monobloc_chair` under the
+  crowd's front row; `scorers_table`; `painted_bench` for the teams.
+- **School ground by day:** `qwantani_noon_puresky`; `dry_ground_01` with `sparse_grass` beyond the lobby; the school
+  in `yellow_plaster`; pupils on `painted_bench`; `city_apartments` behind.
+- **Indoor arena on mats:** `rubber_tiles` as the mats' grain; rows of `fluorescent_light`, lit.
+- **Floodlit stadium:** `kloppenheim_02_puresky` (dimmed: the panorama is bright for a lit ground at night);
+  `terrain_red_01`; the terraces in a photo-scanned concrete finish (`plastered_wall`); `city_apartments` on the
+  skyline.
+- Also fixed on the way: High graphics was overexposed. The Compatibility renderer lights far more strongly from a
+  shadowed sun (the school's field 238 against 166), so High's sun is set to 0.18 of its energy when it casts
+  shadows, which matches Medium.
+
+**Moved or skipped, and why:**
+
+- **Trees as cut-outs on every level**, not only on Low: every tree here stands 30 m or more from the camera, where
+  the cut-outs look truer than the models (the rain tree's model looked faceted and yellow under the low sun). The
+  tree models themselves were left out of the APK, as were the bleachers and the folding stool (not placed).
+- **`bleacher_concrete` and `bleacher_metal` not used.** Their treads are uneven (generated models) and the crowd has
+  to sit exactly on rows; the game's own terraces are kept, the stadium's given a concrete finish. The arena keeps its
+  painted seating.
+- **No HDR lighting files** (`*_light_1k.hdr`): the game lights with a colour ambient and its sun on every level, and
+  each HDR is over 1 MB in the APK. The skies are panoramas only.
+- **No surface normal maps:** from the broadcast camera's height they lit the ground unevenly; the albedo photos carry
+  the grain. The normal files were left out of the game (0.7 MB each in the APK); the shared-assets branch has them.
+- **Hills and haystacks removed:** they were code-drawn and looked cartoon next to the photographed sky.
+- **Low keeps chairs only on the far side** (the light chair is 618 triangles; a full ring of 118 came to 73,000).
+
+**Gap that needs the owner:** a small **village temple or shrine** for the village ground; neither free library has
+one (the lead's plan asks for it to be recorded here). No Meshy credits were spent.
+
+Pictures of every ground on Low (left) and High (right), from the match camera and behind the menu:
+`docs/img/grounds-0.4-low-high.jpg`, `docs/img/menu-0.4-low-high.jpg`.
+
+Performance, Low (the phone budget is 90 draw calls and 90,000 triangles): village 73 → 83 draw calls and 40k → 65k
+triangles; school 73 → 80 and 39k → 38k; arena 82 → 82 and 46k → 46k; stadium 73 → 77 and 38k → 39k. All in the
+README.
+
 ## Shared assets (from 22 October 2026)
 
 The owner made the orchestrator session (`session_016XKAyHkTQRNMGEgZbjNK28`) the lead for all six mobile games.
