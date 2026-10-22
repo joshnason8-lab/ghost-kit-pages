@@ -19,6 +19,7 @@ func _ready() -> void:
 	_cups()
 	await _matches()
 	await _your_controls()
+	await _bodies()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -207,6 +208,50 @@ func _screens() -> void:
 				if (n is Label or n is RichTextLabel) and (n as Control).mouse_filter == Control.MOUSE_FILTER_STOP:
 					bad += 1
 		check(bad == 0, "%s: no text in a scrolling page takes the touch (%d do)" % [path, bad])
+
+
+# ---------------------------------------------------------------- the players' bodies
+
+## The owner's model: the lighter mesh on Low and the fuller one above it, each in its side's kit; every clip there;
+## seated chasers kneel, the active chaser runs his run, at a rate that keeps his feet with the ground.
+func _bodies() -> void:
+	ModelBody.warm()
+	for c in ModelBody.CLIPS:
+		check(ResourceLoader.exists("res://assets/models/anims/%s.res" % c), "the %s clip is there" % c)
+	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
+		var b := ModelBody.new({"jersey": Color("e63946"), "shorts": Color("1d3557"), "skin": Color("8d5a3b")}, g == Game.GFX_LOW)
+		add_child(b)
+		await frames(2)
+		var meshes := []
+		for mi in b.find_children("*", "MeshInstance3D", true, false):
+			if not mi.is_queued_for_deletion():
+				meshes.append(String(mi.name))
+		check(meshes == (["player_lod1"] if g == Game.GFX_LOW else ["player_lod0"]), "graphics %d: the body draws %s" % [g, str(meshes)])
+		var mat := (b.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).material_override as ShaderMaterial
+		check(mat != null and mat.get_shader_parameter("albedo_tex") != null and Color(mat.get_shader_parameter("shirt")).is_equal_approx(Color("e63946")),
+			"graphics %d: the kit's shirt is the side's colour, on the model's texture" % g)
+		b.queue_free()
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "MAH", "away": "ODI", "venue": "maidan", "format": KhoRules.CLASSIC, "turn_len": 60.0, "user_team": -1,
+		"seed": 12, "mode": "quick", "test": true}
+	add_child(m)
+	var kneel := 0
+	var ran := false
+	for k in 240:
+		await frames(1)
+		if m.phase != "play" or m.active == null:
+			continue
+		kneel = 0
+		for a in m.squares:
+			if a != m.active and a.act == "sit" and a.body.clip in ["kneel_down", "kneel"]:
+				kneel += 1
+		var spd: float = m.active.vel.length()
+		if m.active.act == "" and spd > 4.0 and m.active.body.clip == "run":
+			ran = ran or absf(m.active.body.anim.speed_scale - ModelBody.rate_for("run", spd)) < 0.01
+	check(kneel >= m.squares.size() - 2, "seated chasers kneel (%d of %d)" % [kneel, m.squares.size()])
+	check(ran, "the active chaser runs his run, at the rate his speed asks")
+	m.queue_free()
+	await frames(2)
 
 
 # ---------------------------------------------------------------- championships

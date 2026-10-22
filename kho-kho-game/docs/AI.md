@@ -52,8 +52,8 @@ kho kho sprints are 7-8 m/s over a few strides. A tiring defender loses up to 18
 - He gathers speed at 9 m/s² and sheds it at 13 m/s² (Athlete.ACCEL, DECEL).
 - A defender turns sharper than a chaser: his acceleration is ×1.15 to ×1.6 by his turn rating, against the
   chaser's ×0.9.
-- Strides lengthen with speed, 0.75 + 0.15 × v m (1.9 m flat out), and step at the speed's own rate, so feet keep
-  pace with the ground (Poses.stride).
+- His run (the owner's Mixamo running clip, 3.5 m/s at its own rate) plays at his speed over that, up to 1.9 times,
+  so his feet keep near pace with the ground; under 2.6 m/s he walks (`ModelBody.rate_for`).
 
 **The chaser.** Every 0.1-0.32 s (quicker with a higher read rating) he weighs three plans and takes the quickest:
 - **Chase** the defender where he is (only if he may: on his side and ahead of him).
