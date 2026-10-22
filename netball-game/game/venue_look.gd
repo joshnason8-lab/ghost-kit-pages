@@ -459,6 +459,32 @@ void fragment() {
 """)
 
 
+## A photographed sky: bg (an equirectangular panorama, tone-mapped) as the background, and on Medium and High the
+## HDR (hdr) for the light the sky casts and its reflections (the radiance pass). yaw turns it (radians).
+static func sky() -> ShaderMaterial:
+	return _make("sky", """
+shader_type sky;
+uniform sampler2D bg : source_color, filter_linear, repeat_enable;
+uniform sampler2D hdr : filter_linear, repeat_enable;
+uniform bool use_hdr = false;
+uniform float bg_energy = 1.0;
+uniform float hdr_energy = 1.0;
+uniform float yaw = 0.0;
+void sky() {
+	vec3 d = EYEDIR;
+	float c = cos(yaw);
+	float s = sin(yaw);
+	d = vec3(c * d.x - s * d.z, d.y, s * d.x + c * d.z);
+	vec2 uv = vec2(atan(d.x, -d.z) / 6.2832 + 0.5, acos(clamp(d.y, -1.0, 1.0)) / 3.1416);
+	if (AT_CUBEMAP_PASS && use_hdr) {
+		COLOR = texture(hdr, uv).rgb * hdr_energy;
+	} else {
+		COLOR = texture(bg, uv).rgb * bg_energy;
+	}
+}
+""")
+
+
 static func _make(name: String, code: String) -> ShaderMaterial:
 	if not _cache.has(name):
 		var sh := Shader.new()

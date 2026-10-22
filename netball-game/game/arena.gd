@@ -99,7 +99,7 @@ func _apply(m: ShaderMaterial) -> void:
 
 ## The world's light: a background or sky, ambient light and a key light from above. Medium and High add bloom
 ## round anything brighter than white (the lights, the light strips) and a filmic curve.
-func _env(bg: Color, ambient: Color, amb_energy: float, key: Color, key_energy: float, key_rot: Vector3, sky: Sky = null) -> void:
+func _env(bg: Color, ambient: Color, amb_energy: float, key: Color, key_energy: float, key_rot: Vector3, sky: Sky = null) -> Environment:
 	var env := Environment.new()
 	if sky:
 		env.background_mode = Environment.BG_SKY
@@ -140,6 +140,7 @@ func _env(bg: Color, ambient: Color, amb_energy: float, key: Color, key_energy: 
 	sun.light_energy = key_energy
 	sun.shadow_enabled = Game.shadows_enabled()
 	add_child(sun)
+	return env
 
 
 # ---------------------------------------------------------------- the court
@@ -148,12 +149,13 @@ func _env(bg: Color, ambient: Color, amb_energy: float, key: Color, key_energy: 
 ## (the lights in it, darker toward the edges). White lines 50 mm wide: the outline, the two transverse lines, the
 ## centre circle and the goal circles. surround: the kind of face for the run-off and beyond (a hall's timber floor,
 ## an outdoor court's surround).
-func _court(court_col: Color, runoff_col: Color, floor_col: Color, surround := VenueLook.FLOOR, court_kind := VenueLook.FLOOR, runoff_kind := -1.0) -> void:
+func _court(court_col: Color, runoff_col: Color, floor_col: Color, surround := VenueLook.FLOOR, court_kind := VenueLook.FLOOR, runoff_kind := -1.0, beyond := 26.0) -> void:
 	var hl := Court.HALF_L
 	var hw := Court.HALF_W
 	var ro := Court.RUNOFF
 	_lit.kind = Vector2(surround, 0)
-	_lit.floor_rect(-hl - 26.0, -hw - 26.0, hl + 26.0, hw + 26.0, -0.02, floor_col)
+	if beyond > 0.0:
+		_lit.floor_rect(-hl - beyond, -hw - beyond, hl + beyond, hw + beyond, -0.02, floor_col)
 	_lit.kind = Vector2(runoff_kind if runoff_kind >= 0.0 else surround, 0)
 	_lit.floor_rect(-hl - ro, -hw - ro, hl + ro, hw + ro, -0.01, runoff_col)
 	_lit.kind = Vector2(court_kind, 0)
@@ -879,9 +881,9 @@ func _ball_cage(p: Vector3) -> void:
 	_glow.kind = Vector2.ZERO
 
 
-## The officials' bench in the hall: a plain scorers' table at the middle of the near side line, and each team's
-## painted benches either side of it.
-func _hall_bench(z: float) -> void:
+## The officials' bench: a plain scorers' table at the middle of the near side line, and each team's benches (model)
+## either side of it, step metres apart from start.
+func _hall_bench(z: float, model := "painted_bench", start := 4.6, step := 1.25) -> void:
 	_lit.box(Vector3(0, 0.735, z), Vector3(2.8, 0.05, 0.75), Color("e8e4dc"))
 	_lit.box(Vector3(0, 0.38, z - 0.33), Vector3(2.7, 0.62, 0.03), Color("2c4f8c"))
 	_lit.kind = Vector2(VenueLook.METAL, 0)
@@ -894,85 +896,107 @@ func _hall_bench(z: float) -> void:
 		_lit.box(Vector3(-0.9 + i * 0.9, 0.72, z + 0.82), Vector3(0.45, 0.5, 0.04), Color("27303a"))
 	for sx: float in [-1.0, 1.0]:
 		for i in 3:
-			_props.put("painted_bench", Vector3(sx * (4.6 + i * 1.25), 0, z + 0.05), PI)
+			_props.put(model, Vector3(sx * (start + i * step), 0, z + 0.05), PI)
 
 
 # ---------------------------------------------------------------- the outdoor court
 
-## The outdoor court on an evening: a blue court on a green surround, a chain-link fence, trees and houses with their
-## windows lit under a dusk sky, floodlights on poles; the people stand round the open side and the ends.
+const COURT_SKY := "res://assets/venue/skies/netball_court_sky_2k.jpg"
+const COURT_HDR := "res://assets/venue/skies/netball_court_light_1k.hdr"
+const ASPH_TEX := "res://assets/venue/surfaces/clean_asphalt_albedo_1k.jpg"
+const TARMAC_TEX := "res://assets/venue/surfaces/asphalt_02_albedo_1k.jpg"
+
+## The outdoor court at the end of the day, as in a park in Johannesburg, Auckland or Leeds: a green acrylic court on
+## asphalt under a photographed sky (a real netball court's), the floodlights coming on; a chain-link fence, a path
+## with park benches and street lamps, a neighbouring court with a street hoop, jacarandas, oaks and smaller trees,
+## a row of terraced houses beyond; the people stand round the open side and the ends.
 func _outdoor() -> Array:
 	var sky := Sky.new()
-	var mat := ProceduralSkyMaterial.new()
-	mat.sky_top_color = Color("0d1a48")
-	mat.sky_horizon_color = Color("e98b5c")
-	mat.sky_curve = 0.12
-	mat.ground_horizon_color = Color("3a3040")
-	mat.ground_bottom_color = Color("1a1820")
-	mat.sun_angle_max = 8.0
+	var mat := VenueLook.sky()
+	mat.set_shader_parameter("bg", load(COURT_SKY))
+	mat.set_shader_parameter("yaw", 0.35)
+	mat.set_shader_parameter("bg_energy", 1.0 if _low else 0.95)
+	if not _low:
+		mat.set_shader_parameter("hdr", load(COURT_HDR))
+		mat.set_shader_parameter("use_hdr", true)
 	sky.sky_material = mat
-	_env(Color.BLACK, Color("8c94c0"), 0.6, Color("fff1dc"), 1.05, Vector3(-52, -32, 0), sky)
-	_look = {"night": Color("0d1a48"), "fade_amt": 0.0, "sheen": 0.22 if _low else 0.28, "gloss": 160.0,
-		"vig_size": Vector2(30.0, 22.0), "vig_dark": 0.55, "density": 0.75, "lamp_col": Color("fff4e0"),
-		"pad": Color("1b4fa8"), "pool_lo": 0.5, "pool_hi": 1.12 if _low else 0.98, "pool_glow": 0.08}
-	_court(Color("6690c8"), Color("4a9a6e"), Color("4a4d56"), VenueLook.ASPHALT)
+	sky.radiance_size = Sky.RADIANCE_SIZE_32 if _low else Sky.RADIANCE_SIZE_128
+	var env := _env(Color.BLACK, Color("aab6cc"), 0.62 if not _low else 0.85, Color("ffdcb4"), 0.95 if not _low else 1.05, Vector3(-30, -35, 0), sky)
+	if not _low:
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		env.ambient_light_sky_contribution = 0.55
+		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	else:
+		env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+	env.fog_enabled = true
+	env.fog_light_color = Color("c9d2d8")
+	env.fog_density = 0.0016
+	env.fog_sky_affect = 0.0
+	_look = {"night": Color("26324a"), "fade_amt": 0.0, "sheen": 0.2 if _low else 0.26, "gloss": 140.0,
+		"vig_size": Vector2(34.0, 24.0), "vig_dark": 0.82, "density": 0.75, "lamp_col": Color("fff1dc"),
+		"pad": Color("1b4fa8"), "pool_lo": 0.86 if not _low else 1.0, "pool_hi": 1.06 if not _low else 1.24, "pool_glow": 0.04,
+		"tex_asph": load(ASPH_TEX), "tex_tarmac": load(TARMAC_TEX)}
 	var hl := Court.HALF_L + Court.RUNOFF
 	var hw := Court.HALF_W + Court.RUNOFF
-	# A chain-link fence on posts down the far side, a low one across the ends (the camera behind the goal looks over
-	# it); the near side open, with the people standing along it.
-	var fz := -hw - 0.5
-	var fx := hl + 0.5
-	for i in 13:
-		var x := -fx + (fx * 2.0) * i / 12.0
-		_lit.kind = Vector2(VenueLook.METAL, 0)
-		_lit.cylinder(Vector3(x, 0, fz), Vector3(x, 3.2, fz), 0.04, 0.04, Color("8a8e96"), 6)
-		_lit.kind = Vector2.ZERO
-	_lit.cylinder(Vector3(-fx, 3.2, fz), Vector3(fx, 3.2, fz), 0.03, 0.03, Color("8a8e96"), 4)
-	_glow.kind = Vector2(VenueLook.FENCE, 0)
-	_glow.quad(Vector3(-fx, 3.2, fz), Vector3(fx, 3.2, fz), Vector3(fx, 0, fz), Vector3(-fx, 0, fz), Color("9aa0aa"),
-		[Vector2(-fx, 3.2), Vector2(fx, 3.2), Vector2(fx, 0), Vector2(-fx, 0)])
+	var fz := -hw - 1.5      # the far fence
+	var fx := hl + 1.5       # the end fences
+	var nz := hw + 1.5       # the open near side's edge
+	# The ground: grass far round, an asphalt apron inside the fence, the court and its run-off coated in green acrylic.
+	_lit.kind = Vector2(VenueLook.GRASS, 0)
+	_lit.floor_rect(-160.0, -160.0, 160.0, 160.0, -0.03, Color("62903c"))
+	_lit.kind = Vector2(VenueLook.TARMAC, 0)
+	_lit.floor_rect(-fx, fz, fx, nz, -0.025, Color("9a9a96"))
+	_court(Color("479866"), Color("33704f"), Color("9a9a96"), VenueLook.TARMAC, VenueLook.ACRYLIC, VenueLook.ACRYLIC, 0.0)
+	# The path beyond the far fence, and the neighbouring court (a half court for basketball) beyond it.
+	_lit.kind = Vector2(VenueLook.TARMAC, 0)
+	_lit.floor_rect(-fx - 8.0, fz - 2.6, fx + 8.0, fz - 0.2, -0.026, Color("a8a69e"))
+	_lit.kind = Vector2(VenueLook.ACRYLIC, 0)
+	var nc := Rect2(9.0, fz - 17.5, 15.0, 14.0)   # x, z, width, depth
+	_lit.floor_rect(nc.position.x - 1.0, nc.position.y - 1.0, nc.end.x + 1.0, nc.end.y + 0.6, -0.022, Color("b8543e"))
+	_lit.kind = Vector2.ZERO
+	var white := Color("eef2f4")
+	var ny := -0.018
+	_glow.floor_rect(nc.position.x, nc.position.y, nc.end.x, nc.position.y + 0.05, ny, white)
+	_glow.floor_rect(nc.position.x, nc.end.y - 0.05, nc.end.x, nc.end.y, ny, white)
+	_glow.floor_rect(nc.position.x, nc.position.y, nc.position.x + 0.05, nc.end.y, ny, white)
+	_glow.floor_rect(nc.end.x - 0.05, nc.position.y, nc.end.x, nc.end.y, ny, white)
+	var kx := nc.get_center().x
+	_glow.floor_rect(kx - 2.45, nc.position.y, kx - 2.4, nc.position.y + 5.8, ny, white)
+	_glow.floor_rect(kx + 2.4, nc.position.y, kx + 2.45, nc.position.y + 5.8, ny, white)
+	_glow.floor_rect(kx - 2.45, nc.position.y + 5.75, kx + 2.45, nc.position.y + 5.8, ny, white)
+	_glow.ring(Vector3(kx, ny, nc.position.y + 5.8), 1.75, 1.8, 0.0, PI, white, 16)
+	_glow.ring(Vector3(kx, ny, nc.position.y + 1.575), 6.7, 6.75, 0.25, PI - 0.25, white, 28)
+	_props.put("basketball_hoop", Vector3(kx, 0, nc.position.y - 0.4), 0.0)
+	_fence(fx, fz, nz)
+	# Along the path: park benches facing the court and tall street lamps.
+	for x: float in [-15.0, -7.5, 7.5]:
+		_props.put("park_bench", Vector3(x, 0, fz - 1.0), PI)
+	for x: float in [-19.0, -3.0, 13.0, 27.0]:
+		_props.put("street_lamp_tall", Vector3(x, 0, fz - 2.3), 0.0)
+		_fx.sprite(Vector3(x, 3.35, fz - 2.3), 0.35 if not _low else 0.3, Color("ffe2b0"), 0.2)
 	for sx: float in [-1.0, 1.0]:
-		_glow.quad(Vector3(fx * sx, 1.2, fz), Vector3(fx * sx, 1.2, -fz), Vector3(fx * sx, 0, -fz), Vector3(fx * sx, 0, fz), Color("9aa0aa"),
-			[Vector2(fz, 1.2), Vector2(-fz, 1.2), Vector2(-fz, 0), Vector2(fz, 0)])
-		_lit.cylinder(Vector3(fx * sx, 1.2, fz), Vector3(fx * sx, 1.2, -fz), 0.03, 0.03, Color("8a8e96"), 4)
-	_glow.kind = Vector2.ZERO
-	# Trees and low houses beyond, their windows lit, under the evening sky.
+		_props.put("park_bench", Vector3(sx * (fx + 2.0), 0, -4.0), -sx * PI * 0.5)
+	# Grass grown up along the foot of the fences.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	for i in (8 if _low else 18):
-		var x := rng.randf_range(-hl - 8.0, hl + 8.0)
-		var z := -hw - rng.randf_range(5.0, 16.0)
-		var hgt := rng.randf_range(4.0, 8.0)
-		_lit.cylinder(Vector3(x, 0, z), Vector3(x, hgt * 0.45, z), 0.18, 0.14, Color("3a2c22"), 5)
-		_lit.blob(Vector3(x, hgt * 0.7, z), Vector3(rng.randf_range(1.6, 2.8), hgt * 0.32, rng.randf_range(1.6, 2.8)), Color("244a32").lightened(rng.randf_range(-0.06, 0.08)))
-	for i in 4:
-		var x := -26.0 + i * 17.0
-		var z := -hw - 22.0
-		_lit.box(Vector3(x, 2.0, z), Vector3(10.0, 4.0, 6.0), Color("8f8270").darkened(0.08 * i))
-		_lit.box(Vector3(x, 4.2, z), Vector3(10.6, 0.4, 6.6), Color("6a2e26"))
-		for j in 3:
-			_glow.wall(Vector3(x - 3.0 + j * 2.6 + 0.5, 0, z + 3.02), Vector3(x - 3.0 + j * 2.6 - 0.5, 0, z + 3.02), 1.4, 2.5,
-				Color("ffc77a") if (i + j) % 3 != 0 else Color("5a6a8a"))
-	# The floodlights: poles at the corners and half way along each side, banks of lamps on top.
-	for p: Vector2 in [Vector2(-hl - 1.2, -hw - 1.5), Vector2(hl + 1.2, -hw - 1.5), Vector2(-hl - 1.2, hw + 2.5), Vector2(hl + 1.2, hw + 2.5),
-			Vector2(0, -hw - 1.5)]:
-		var top := 6.2 if p.y < 0.0 else 9.5   # the far ones low enough to be seen from the stand's camera
-		_lit.kind = Vector2(VenueLook.METAL, 0)
-		_lit.cylinder(Vector3(p.x, 0, p.y), Vector3(p.x, top, p.y), 0.13, 0.09, Color("9aa0aa"), 8)
-		_lit.kind = Vector2.ZERO
-		var inward := Vector3(-p.x, 0, -p.y).normalized()
-		var yaw := atan2(inward.x, inward.z)
-		var head := Vector3(p.x, top + 0.3, p.y) + inward * 0.3
-		_lit.box(head, Vector3(2.2, 1.0, 0.25), Color("2a2e38"), yaw)
-		var side := Vector3(inward.z, 0, -inward.x)
-		for r in 2:
-			for c in 3:
-				var lp := head + inward * 0.14 + side * (-0.7 + c * 0.7) + Vector3(0, -0.22 + r * 0.44, 0)
-				_glow.box(lp, Vector3(0.5, 0.34, 0.04), Color("fff6e4"), yaw, false)
-				_fx.sprite(lp + inward * 0.1, 0.9 if not _low else 0.7, Color("fff2dc"), 0.8)
-		if p.y < 0.0:
-			_lamps.append(head)
-	_bench(Color("4a4f5c"), Color("2f6df0"), Color("ff8a3a"))
+	var gx := -fx
+	while gx < fx:
+		_props.add("grass_clumps_card", Transform3D(Basis(Vector3.UP, rng.randf_range(0, PI)).scaled(Vector3.ONE * rng.randf_range(0.5, 0.75)), Vector3(gx, 0.3, fz - 0.25)))
+		gx += rng.randf_range(1.6, 2.6)
+	for sx: float in [-1.0, 1.0]:
+		var gz := fz
+		while gz < nz:
+			_props.add("grass_clumps_card", Transform3D(Basis(Vector3.UP, rng.randf_range(0, PI)).scaled(Vector3.ONE * rng.randf_range(0.5, 0.7)), Vector3(sx * (fx + 0.25), 0.3, gz)))
+			gz += rng.randf_range(2.0, 3.0)
+	_trees(fx, fz, rng)
+	# Terraced houses beyond the park, behind the far side and both ends.
+	for i in 5:
+		_props.put("terrace_row", Vector3(-58.0 + i * 29.0, 0, -62.0), 0.0, 1.0, Color(1, 1, 1).darkened(0.06 * (i % 2)))
+	for sx: float in [-1.0, 1.0]:
+		for i in 2:
+			_props.put("terrace_row", Vector3(sx * 66.0, 0, -22.0 + i * 30.0), -sx * PI * 0.5)
+	_floodlights(hl, hw)
+	_hall_bench(Court.HALF_W + Court.RUNOFF + 0.75, "park_bench", 4.0, 1.6)
 	# The people: standing along the near side and both ends.
 	var spots := []
 	var lines := [[Vector3(-hl + 0.5, 0, hw + 0.8), Vector3(-8.0, 0, hw + 0.8)], [Vector3(8.0, 0, hw + 0.8), Vector3(hl - 0.5, 0, hw + 0.8)],
@@ -1000,3 +1024,87 @@ func _outdoor() -> Array:
 			for i in n:
 				spots.append(a.lerp(b, (i + 0.5) / n) + back * (r * 0.7) + Vector3(rng.randf_range(-0.2, 0.2), r * 0.2, 0))
 	return spots
+
+
+## A chain-link fence on galvanised posts: tall down the far side, low across the ends (the camera behind the goal
+## looks over it), the near side open.
+func _fence(fx: float, fz: float, nz: float) -> void:
+	var post := Color("9aa0a6")
+	var wire := Color("a4abb2")
+	var top := 3.6
+	_lit.kind = Vector2(VenueLook.METAL, 0)
+	var n := int(fx * 2.0 / 3.0)
+	for i in n + 1:
+		var x := -fx + (fx * 2.0) * i / n
+		_lit.cylinder(Vector3(x, 0, fz), Vector3(x, top, fz), 0.038, 0.038, post, 6)
+	_lit.cylinder(Vector3(-fx, top, fz), Vector3(fx, top, fz), 0.024, 0.024, post, 4, false)
+	_lit.cylinder(Vector3(-fx, 0.05, fz), Vector3(fx, 0.05, fz), 0.02, 0.02, post, 4, false)
+	for sx: float in [-1.0, 1.0]:
+		var m := int((nz - fz) / 3.0)
+		for i in m + 1:
+			var z := fz + (nz - fz) * i / m
+			_lit.cylinder(Vector3(fx * sx, 0, z), Vector3(fx * sx, 1.25, z), 0.035, 0.035, post, 6)
+		_lit.cylinder(Vector3(fx * sx, 1.2, fz), Vector3(fx * sx, 1.2, nz), 0.022, 0.022, post, 4, false)
+	_lit.kind = Vector2.ZERO
+	_glow.kind = Vector2(VenueLook.FENCE, 0)
+	_glow.quad(Vector3(-fx, top, fz), Vector3(fx, top, fz), Vector3(fx, 0, fz), Vector3(-fx, 0, fz), wire,
+		[Vector2(-fx, top), Vector2(fx, top), Vector2(fx, 0), Vector2(-fx, 0)])
+	for sx: float in [-1.0, 1.0]:
+		_glow.quad(Vector3(fx * sx, 1.2, fz), Vector3(fx * sx, 1.2, nz), Vector3(fx * sx, 0, nz), Vector3(fx * sx, 0, fz), wire,
+			[Vector2(fz, 1.2), Vector2(nz, 1.2), Vector2(nz, 0), Vector2(fz, 0)])
+	_glow.kind = Vector2.ZERO
+
+
+## The park's trees: jacarandas mixed with oaks and smaller broadleaves, all cut-outs (the owner's oak as a model reads
+## faceted this close to the cameras; its cut-out is rendered from it), in a band beyond the neighbouring court and the
+## ends.
+func _trees(fx: float, fz: float, rng: RandomNumberGenerator) -> void:
+	var kinds := ["jacaranda_card", "oak_tree_card", "small_broadleaf_card", "jacaranda_card", "small_broadleaf_card"]
+	var spots := []
+	# Behind the far side, in two loose rows.
+	var x := -70.0
+	while x < 70.0:
+		spots.append(Vector3(x + rng.randf_range(-2.0, 2.0), 0, fz - rng.randf_range(20.0, 26.0)))
+		if rng.randf() < 0.6:
+			spots.append(Vector3(x + rng.randf_range(2.0, 6.0), 0, fz - rng.randf_range(30.0, 40.0)))
+		x += rng.randf_range(7.0, 11.0) * (1.4 if _low else 1.0)
+	# Beyond each end.
+	for sx: float in [-1.0, 1.0]:
+		var z := fz - 8.0
+		while z < 30.0:
+			spots.append(Vector3(sx * (fx + rng.randf_range(12.0, 20.0)), 0, z))
+			z += rng.randf_range(8.0, 12.0) * (1.4 if _low else 1.0)
+	# The bigger oaks by the path beyond the fence and past the far corners (clear of the camera behind the goal).
+	for p: Vector3 in [Vector3(-24.0, 0, fz - 5.0), Vector3(-7.0, 0, fz - 6.0), Vector3(26.0, 0, fz - 6.5), Vector3(-fx - 7.0, 0, -15.0),
+			Vector3(fx + 8.0, 0, -18.0)]:
+		_props.add("oak_tree_card", Transform3D(Basis(Vector3.UP, rng.randf_range(0, TAU)).scaled(Vector3.ONE * rng.randf_range(0.7, 0.85)), p + Vector3(0, 0.1, 0)))
+	for i in spots.size():
+		var k: String = kinds[i % kinds.size()]
+		var s := rng.randf_range(0.7, 1.05) * (0.85 if k == "jacaranda_card" else 1.0)
+		var lift := -0.15 * s if k == "jacaranda_card" else 0.1 * s
+		_props.add(k, Transform3D(Basis(Vector3.UP, rng.randf_range(0, TAU)).scaled(Vector3.ONE * s), spots[i] + Vector3(0, lift, 0)))
+
+
+## The floodlights: poles at the corners and half way down the far side, each with a bank of six lamps aimed in.
+func _floodlights(hl: float, hw: float) -> void:
+	for p: Vector2 in [Vector2(-hl - 1.2, -hw - 1.2), Vector2(hl + 1.2, -hw - 1.2), Vector2(-hl - 1.2, hw + 2.5), Vector2(hl + 1.2, hw + 2.5),
+			Vector2(0, -hw - 1.2)]:
+		var top := 8.5 if p.y < 0.0 else 10.0   # the far ones low enough to be seen from the stand's camera
+		_lit.kind = Vector2(VenueLook.METAL, 0)
+		_lit.cylinder(Vector3(p.x, 0, p.y), Vector3(p.x, top, p.y), 0.14, 0.09, Color("a0a6ae"), 8)
+		_lit.kind = Vector2.ZERO
+		var inward := Vector3(-p.x, 0, -p.y).normalized()
+		var yaw := atan2(inward.x, inward.z)
+		var head := Vector3(p.x, top + 0.3, p.y) + inward * 0.3
+		_lit.kind = Vector2(VenueLook.METAL, 0)
+		_lit.box(head - inward * 0.12, Vector3(2.3, 0.08, 0.08), Color("5a606a"), yaw)
+		_lit.kind = Vector2.ZERO
+		_lit.box(head, Vector3(2.2, 0.95, 0.22), Color("2c3038"), yaw)
+		var side := Vector3(inward.z, 0, -inward.x)
+		for r in 2:
+			for c in 3:
+				var lp := head + inward * 0.12 + side * (-0.7 + c * 0.7) + Vector3(0, -0.22 + r * 0.44, 0)
+				_glow.box(lp, Vector3(0.5, 0.34, 0.04), Color("fff6e4"), yaw, false)
+				_fx.sprite(lp + inward * 0.1, 0.8 if not _low else 0.65, Color("fff2dc"), 0.8)
+		if p.y < 0.0:
+			_lamps.append(head)
