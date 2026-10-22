@@ -1,8 +1,9 @@
 # Meshy brief: the players and officials
 
-**No Meshy credits have been spent.** The players today are built in code (`game/body.gd`): a skinned mesh on a
-17-bone humanoid skeleton, posed by the game's own key poses (`game/poses.gd`). This brief is for ordering Meshy models
-later. It says what to order and what the game will do with them, if the owner chooses to; the Kabaddi Raid tool
+**Done differently in 0.3:** the owner supplied the player model (a GLB rigged to Mixamo's skeleton) and six Mixamo
+animations, and the game now uses them (`game/model_body.gd`; built by `tools/models/build_player.py` and
+`tools/models/retarget.gd`; see docs/MODELS.md). **No Meshy credits have been spent.** The brief below was for ordering
+Meshy models; it stays for more variety later (a woman player, more builds and faces). It says what to order and what the game will do with them, if the owner chooses to; the Kabaddi Raid tool
 (`tools/meshy/meshy_batch.py` in that game) makes them.
 
 ## The look

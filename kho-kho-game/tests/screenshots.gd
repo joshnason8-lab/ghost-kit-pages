@@ -23,7 +23,7 @@ func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
 	Game.settings.graphics = Game.GFX_HIGH
-	ToonBody.material(true)
+	ModelBody.warm()
 	var menu := Game.show_screen("res://ui/main_menu.gd")
 	await _wait(90)
 	await _shot("01_home")

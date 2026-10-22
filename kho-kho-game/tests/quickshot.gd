@@ -1,0 +1,23 @@
+extends Node
+# A match on a ground, pictures at a few moments: godot ... res://tests/quickshot.tscn -- OUT venue gfx frames...
+func _ready() -> void:
+	var a := OS.get_cmdline_user_args()
+	Game.main = self
+	Game.settings.sound = false
+	Game.settings.coach = false
+	Game.settings.graphics = int(a[2])
+	Game.settings.camera = int(OS.get_environment("KK_CAM")) if OS.get_environment("KK_CAM") != "" else Game.CAM_TV
+	get_tree().root.size = Vector2i(1280, 720)
+	ModelBody.warm()
+	Game.start_match({"home": "MAH", "away": "ODI", "venue": a[1], "format": KhoRules.FAST if a[1] == "arena" else KhoRules.CLASSIC,
+		"turn_len": 300.0, "user_team": -1, "seed": 5, "mode": "quick", "chase_first": 0})
+	var done := 0
+	for k in range(3, a.size()):
+		var n := int(a[k])
+		for i in n - done:
+			await get_tree().process_frame
+		done = n
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("%s/%s_g%s_%d.png" % [a[0], a[1], a[2], n])
+		print("shot ", n)
+	get_tree().quit()

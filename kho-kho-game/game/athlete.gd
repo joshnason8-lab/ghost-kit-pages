@@ -1,6 +1,6 @@
 class_name Athlete
 extends Node3D
-## One player, or an official, on the field: his body (ToonBody), where he wants to go, and what he is doing. The match
+## One player, or an official, on the field: his body (ModelBody), where he wants to go, and what he is doing. The match
 ## decides what he does (want, act); integrate() is the one place his position is written each frame, so nothing
 ## else moves him and nothing snaps: speed changes within his acceleration, a turn bends his run, his strides keep pace
 ## with his speed (tests/motion_audit.gd checks all three).
@@ -10,7 +10,7 @@ const DECEL := 13.0         # ... and sheds it (kho kho turns are sharp: players
 
 var data := {}              # DB.squad's player, or {} for an official
 var side := 0               # 0 or 1 (-1 an official)
-var body: ToonBody
+var body: ModelBody
 var want := Vector3.ZERO    # the velocity he is trying for (m/s, flat)
 var vel := Vector3.ZERO
 var top := 7.0              # his flat-out speed now (m/s)
@@ -24,22 +24,19 @@ var agility := 1.0          # how sharply he gathers, sheds and turns his speed 
 var yaw := 0.0
 var watch := Vector3.INF    # a point his head turns to follow (a seated chaser watches the play), INF none
 var _head := 0.0
-var _ph := 0.0
-var _pose := {}
 var _prev_act := ""
-var _blend := 1.0
+var _knelt := false
 
 
 func _init(p_data := {}, p_side := 0, look := {}) -> void:
 	data = p_data
 	side = p_side
-	body = ToonBody.new(look)
+	body = ModelBody.new(look, int(Game.settings.graphics) <= Game.GFX_LOW)
 
 
 func _ready() -> void:
 	add_child(body)
 	body.rotation.y = yaw
-	_pose = Poses.STAND
 
 
 func speed_rating() -> float:
@@ -55,7 +52,6 @@ func do(p_act: String, len := 0.0, p_mirror := false) -> void:
 	act_t = 0.0
 	act_len = len
 	mirror = p_mirror
-	_blend = 0.0
 
 
 func busy() -> bool:
@@ -124,51 +120,73 @@ func _finish_act() -> void:
 	act_t = 0.0
 
 
-## Strides at a rate set by his speed (one stride each half turn of the phase), so his feet keep pace with the ground.
-func stride_rate(spd: float) -> float:
-	return PI * spd / Poses.stride(spd)
-
-
+## Which of the model's clips he plays, and how fast: his run or walk at the rate that keeps his feet with the
+## ground; the act's clip fitted to the act's length.
 func _animate(dt: float, spd: float) -> void:
-	_ph += dt * stride_rate(spd)
-	var k := clampf(spd / 8.0, 0.0, 1.0)
-	var local := vel.rotated(Vector3.UP, -yaw)
-	var sidestep := clampf(local.x / maxf(spd, 0.01), -1.0, 1.0) if spd > 0.4 else 0.0
-	var base: Dictionary = Poses.run(_ph, k, sidestep) if spd > 0.35 else Poses.blend(Poses.READY, Poses.run(_ph, 0.0), spd / 0.35)
-	if data.is_empty() and spd < 0.35:
-		base = Poses.STAND
-	var target := base
 	var f := act_t / act_len if act_len > 0.0 else 1.0
+	var c := ""
+	var rate := 1.0
+	var blend := 0.18
+	var at := -1.0
 	match act:
 		"sit":
-			target = Poses.SIT
+			# Down on to his knees, then kneeling, watching.
+			if not _knelt:
+				c = "kneel_down"
+				rate = 2.2
+				if body.clip == "kneel_down" and not body.anim.is_playing():
+					_knelt = true
+			if _knelt:
+				c = "kneel"
 		"rise":
-			target = Poses.blend(Poses.SIT, base, smoothstep(0.0, 1.0, f))
-		"kho":
-			target = Poses.blend(base, Poses.KHO, sin(PI * clampf(f, 0.0, 1.0)))
-		"dive":
-			target = Poses.blend(Poses.READY, Poses.DIVE, smoothstep(0.0, 0.35, f))
-		"pole_dive":
-			target = Poses.blend(Poses.READY, Poses.POLE_DIVE, smoothstep(0.0, 0.3, f))
+			c = "run"
+			blend = 0.3
+		"kho", "reach":
+			# The hand out to the seated chaser's back (or the defender): the reach's second half, fast.
+			c = "reach"
+			var span := body.clip_length("reach") * 0.55
+			rate = span / maxf(act_len, 0.1)
+			at = body.clip_length("reach") - span
+			blend = 0.08
+		"dive", "pole_dive":
+			c = "dive"
+			rate = body.clip_length("dive") / maxf(act_len, 0.2) * 0.6
+			at = 0.25
+			blend = 0.06
 		"lie":
-			target = Poses.LIE
+			c = "dive"
+			rate = 0.0001
 		"getup":
-			target = Poses.blend(Poses.LIE, Poses.READY, smoothstep(0.0, 1.0, f))
+			c = "stand"
+			blend = 0.35
 		"whistle":
-			target = Poses.WHISTLE
+			c = "whistle"
 		"out":
-			target = Poses.SIGNAL_OUT
+			c = "signal_out"
 		"foul":
-			target = Poses.SIGNAL_FOUL
+			c = "signal_foul"
 		"end":
-			target = Poses.SIGNAL_END
+			c = "signal_end"
 		"cheer":
-			target = Poses.CHEER
+			c = "cheer"
 		"pole_turn":
-			# Swinging round the pole: the turn over the run, held hard in the middle of it.
-			target = Poses.blend(base, Poses.POLE_TURN, sin(PI * clampf(f, 0.0, 1.0)) * 0.9 + 0.1)
-	if mirror:
-		target = Poses.mirrored(target)
+			c = "turn"
+			rate = body.clip_length("turn") * 0.6 / maxf(act_len, 0.2)
+			at = body.clip_length("turn") * 0.2
+			blend = 0.1
+	if c == "":
+		if spd > 2.6:
+			c = "run"
+			rate = ModelBody.rate_for("run", spd)
+		elif spd > 0.35:
+			c = "walk"
+			rate = ModelBody.rate_for("walk", spd)
+		else:
+			c = "stand"
+	if act != "sit":
+		_knelt = false
+	body.play(c, rate, blend, at)
+	body.scale.x = -absf(body.scale.x) if mirror else absf(body.scale.x)
 	# A head that follows the play: up to 70 degrees either way of where his body faces, eased.
 	var want_head := 0.0
 	if watch != Vector3.INF:
@@ -176,13 +194,4 @@ func _animate(dt: float, spd: float) -> void:
 		var rel := wrapf(atan2(to.x, to.z) - yaw, -PI, PI)
 		want_head = clampf(rad_to_deg(rel), -70.0, 70.0)
 	_head = lerpf(_head, want_head, minf(1.0, dt * 6.0))
-	if absf(_head) > 0.5:
-		target = target.duplicate()
-		var nk: Vector3 = target.get("neck", Vector3.ZERO)
-		var hd: Vector3 = target.get("head", Vector3.ZERO)
-		target["neck"] = Vector3(nk.x, nk.y + _head * 0.45, nk.z)
-		target["head"] = Vector3(hd.x, hd.y + _head * 0.55, hd.z)
-	# Into a new pose over a few frames, never in one.
-	_blend = minf(1.0, _blend + dt * (10.0 if act in ["dive", "pole_dive", "kho"] else 6.0))
-	_pose = Poses.blend(_pose, target, _blend if _blend < 1.0 else 1.0)
-	body.apply(_pose)
+	body.head_yaw = _head

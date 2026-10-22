@@ -69,7 +69,7 @@ func run() -> void:
 	done += _share("sounds")
 	t0 = _took("sounds", t0)
 	Crowd.sheet()
-	ToonBody.material(int(Game.settings.graphics) > Game.GFX_LOW)
+	ModelBody.warm()
 	done += _share("art")
 	await _progress(done, true)
 	t0 = _took("art", t0)

@@ -14,7 +14,7 @@ func _ready() -> void:
 	for venue in DB.venue_ids():
 		for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
 			Game.settings.graphics = g
-			ToonBody.material(g > Game.GFX_LOW)
+
 			Game.start_match({"home": "MAH", "away": "ODI", "venue": venue, "format": KhoRules.FAST if venue == "arena" else KhoRules.CLASSIC,
 				"turn_len": 300.0, "user_team": 0, "seed": 4, "mode": "quick", "chase_first": 0})
 			for i in 90:

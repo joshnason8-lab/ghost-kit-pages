@@ -583,7 +583,6 @@ func _auto_graphics(delta: float) -> void:
 		Game.settings.graphics = int(Game.settings.graphics) - 1
 		Game.save_settings()
 		Game.apply_graphics(get_viewport())
-		ToonBody.material(int(Game.settings.graphics) > Game.GFX_LOW)
 		game_event.emit("graphics")
 
 
