@@ -1,7 +1,7 @@
 extends Node
 ## A tour of the screens, saved as PNGs (for checking by eye, and for the store's pictures):
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- OUT_DIR [lang] [parts]
-## parts: menus,match (both by default).
+## parts: menus,match (both by default). A fourth argument sets the graphics: low, medium or high.
 
 var out := "user://shots"
 var lang := "en"
@@ -16,6 +16,9 @@ func _ready() -> void:
 		lang = args[1]
 	if args.size() > 2 and args[2] != "":
 		parts = Array(args[2].split(","))
+	if args.size() > 3:   # the graphics level: low, medium or high
+		Game.settings.graphics = ["low", "medium", "high"].find(args[3])
+		ToonBody.material(int(Game.settings.graphics) > Game.GFX_LOW)
 	DirAccess.make_dir_recursive_absolute(out)
 	Game.main = self
 	Game.settings.sound = false

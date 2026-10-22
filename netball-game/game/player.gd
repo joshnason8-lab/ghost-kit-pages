@@ -47,6 +47,8 @@ var pens := 0                # penalties since her last sanction
 var was_offside := false     # offside last frame (an offside is called when she steps in, not while she walks out)
 var fenced := true           # she keeps to her areas (the AI always; you with Keep me onside): she pulls up at a line
                              # rather than running over it
+var clip_body := 0.0         # how much of her legs and body the stride clips take now (0-1), eased
+var clip_arms := 0.0         # and of her arms
 var _pose := {}
 var _airborne := 0.0
 
@@ -61,7 +63,7 @@ func _ready() -> void:
 	var t := DB.team(String(data.team))
 	var c1: Color = t.get("c1", Color.WHITE)
 	var c2: Color = t.get("c2", Color.BLACK)
-	body = ToonBody.new({"skin": Color(String(data.skin)), "dress": c1, "trim": c2, "bib": DB.bib_colour(String(data.team)),
+	body = HeroBody.new({"skin": Color(String(data.skin)), "dress": c1, "trim": c2, "bib": DB.bib_colour(String(data.team)),
 		"shoe": Color("f3f1ee"), "hair": Color("15100c") if int(data.hair) != 2 else Color("2a1d14"),
 		"hair_style": int(data.hair), "height": float(data.height), "pos": pos})
 	add_child(body)
@@ -172,8 +174,40 @@ func _animate(dt: float) -> void:
 			want = Poses.blend(Poses.ready(0.9), want, (spd - 0.3) / 0.9)
 	var k := 1.0 - exp(-14.0 * dt)
 	_pose = Poses.blend(_pose, want, k)
+	# On her feet and moving, the legs and body (and, when they are free, the arms) come from the owner's Mixamo
+	# clips in step with her stride; what her arms are doing (a catch, a pass, marking) stays the code's pose.
+	var moving := spd > 0.3 and act in ["run", "ready", "mark"]
+	var arms_free := act == "run" or act == "ready"
+	var kc := 1.0 - exp(-8.0 * dt)
+	clip_body = lerpf(clip_body, smoothstep(0.3, 1.1, spd) if moving else 0.0, kc)
+	clip_arms = lerpf(clip_arms, clip_body if arms_free else 0.0, kc)
 	if body:
-		body.apply(_pose)
+		body.apply(_with_clips(_pose, spd) if clip_body > 0.01 and body is HeroBody else _pose)
+
+
+const _BODY_BONES := ["hips", "spine", "chest", "neck", "head", "thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
+const _ARM_BONES := ["upperarm_l", "forearm_l", "hand_l", "upperarm_r", "forearm_r", "hand_r"]
+
+
+## The stride clips at her speed, phase-locked to her stride: the model's own walk, then her run, then the sprint
+## (Fast_Run, shared with Hurling), each blended into the next; laid over the code pose p by clip_body and clip_arms.
+func _with_clips(p: Dictionary, spd: float) -> Dictionary:
+	var walk := HeroBody.stride_pose("Walking", stride_phase)
+	var jog := HeroBody.stride_pose("Running", stride_phase)
+	var sprint := HeroBody.stride_pose("Fast_Run", stride_phase)
+	var a := smoothstep(1.8, 3.2, spd)       # walk -> run
+	var b := smoothstep(4.0, 5.6, spd)       # run -> sprint
+	var out := p.duplicate()
+	for i in ToonBody.BONES.size():
+		var n: String = ToonBody.BONES[i][0]
+		var w := clip_body if n in _BODY_BONES else clip_arms
+		if w <= 0.0:
+			continue
+		var q: Quaternion = (walk[0][i] as Quaternion).slerp(jog[0][i], a).slerp(sprint[0][i], b)
+		out[n] = HeroBody.turn(p.get(n, Vector3.ZERO)).slerp(q, w)
+	var lift := lerpf(lerpf(float(walk[1]), float(jog[1]), a), float(sprint[1]), b)
+	out.hips_y = lerpf(float(p.get("hips_y", 0.0)), lift, clip_body)
+	return out
 
 
 func set_act(a: String, kind := "") -> void:

@@ -1,10 +1,16 @@
 # Meshy brief: the players and umpires
 
-The players and umpires today are built in code (`game/body.gd`): a skinned mesh on a 17-bone humanoid skeleton
+> **Superseded for the players (round three).** The fourteen players are now the owner's own model (a Mixamo-rigged
+> netball player, `tools/player/README.md`), drawn by `game/hero_body.gd` on the same 17 bones, running with the
+> owner's Mixamo Fast_Run (shared with Hurling) and the model's own Walking and Running, with each team's colours,
+> each player's skin tone and her bib painted on by the shader. The umpires are still built in code. The order below
+> is kept for the umpires, or for more player models if wanted. **No Meshy credits have been spent.**
+
+The players and umpires were built in code (`game/body.gd`): a skinned mesh on a 17-bone humanoid skeleton
 (the same bone names as Takraw Smash's), posed by the game's own poses (`game/poses.gd`), with the bibs' letters from
-one small strip (`assets/ui/bib_letters.png`). **No Meshy credits have been spent.** This is the order for Meshy if
-you choose to replace them, and what the game would do with the models. Kabaddi Raid's and Takraw Smash's
-`tools/meshy/meshy_batch.py` makes them: a preview to check, then the texture, the rig and the download.
+one small strip (`assets/ui/bib_letters.png`). This is the order for Meshy if you choose to replace them, and what the
+game would do with the models. Kabaddi Raid's and Takraw Smash's `tools/meshy/meshy_batch.py` makes them: a preview
+to check, then the texture, the rig and the download.
 
 ## The look
 
@@ -54,4 +60,7 @@ applied to the model's rest pose with the arms first turned down to the sides, t
 rotation (as Takraw Smash plans). The bib stays a separate panel tied to the chest bone, so its letters remain one
 texture for every team. Everything else in the match (the rings, the tags, the movement) is unchanged.
 
-Until then, `ToonBody` is the player, and the poses were tuned on it.
+The owner's model went this way (`tools/player/bake.gd`, as Hurling's did): the mesh is skinned once into the
+game's rest stance and its weights moved onto the game's bones, so the poses play on it unchanged. The bib is not a
+separate panel after all: the shader paints it, with its letters, from each point's rest position, so it costs no
+extra draw call and never comes off the body.
