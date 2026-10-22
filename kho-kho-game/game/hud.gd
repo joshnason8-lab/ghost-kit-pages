@@ -91,7 +91,8 @@ func _ready() -> void:
 	_pause_btn.offset_top = 14
 	_pause_btn.offset_bottom = 70
 	root.add_child(_pause_btn)
-	_pause_btn.visible = m.user >= 0
+	# Watching a match (no side yours) it is how you leave it: the pause menu's Quit match.
+	_pause_btn.visible = true
 
 
 func _build_scoreboard() -> void:
@@ -434,7 +435,8 @@ func show_pause(on: bool) -> void:
 	v.add_child(t)
 	v.add_child(UI.button(tr("RESUME"), true, func(): m.set_paused(false)))
 	v.add_child(UI.button(tr("CAMERA_CHANGE"), false, func(): m.cycle_camera()))
-	v.add_child(UI.button(tr("MOVE_BUTTONS"), false, _move_buttons))
+	if m.user >= 0:
+		v.add_child(UI.button(tr("MOVE_BUTTONS"), false, _move_buttons))
 	var snd := UI.button(tr("SOUND") + ": " + (tr("ON") if Game.settings.sound else tr("OFF")), false)
 	snd.pressed.connect(func():
 		Game.settings.sound = not Game.settings.sound

@@ -1,28 +1,25 @@
 extends Control
 ## The home screen. Behind it the AI plays a match on one of the grounds. Over it the game's name with the sport's
-## name in Devanagari (खो-खो), the language button (a globe), and the menu as a kho kho lane across the bottom: every
-## choice is a seated chaser; tap one and the active chaser gives him the kho, and he is off into that screen
-## (KhoLane). A card carries on a championship in progress.
+## name in Devanagari (खो-खो), the language button (a globe), and the menu: one row of buttons along the bottom. A
+## card carries on a championship in progress.
 
 const ATTRACT := [["MAH", "ODI", "maidan", 0], ["IND", "NEP", "arena", 1], ["KAR", "KER", "floodlit", 0], ["RSA", "SRI", "arena", 1],
 	["TEL", "DEL", "school", 0], ["BAN", "ENG", "floodlit", 1], ["WBE", "GUJ", "maidan", 0], ["KEN", "IRN", "arena", 1]]
 
 const ITEMS := [
-	["", "", ""],
 	["quick", "MENU_QUICK", "play"],
 	["cup", "MENU_CUP", "trophy"],
 	["watch", "MENU_WATCH", "camera"],
 	["howto", "MENU_HOWTO", "book"],
 	["records", "MENU_RECORDS", "star"],
 	["settings", "MENU_SETTINGS", "gear"],
-	["", "", ""],
 ]
 
 var _sv: SubViewport
 var _match: Node = null
 var _pick := 0
 var _picker: LanguagePicker = null
-var _lane: KhoLane
+var _row: HBoxContainer
 var _fade: Array = []
 
 
@@ -126,15 +123,12 @@ func _build_ui() -> void:
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(spacer)
-	var hint := UI.label(tr("MENU_TAP_HINT"), "MutedLabel", 17)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UI.fit(hint)
-	col.add_child(hint)
-	_lane = KhoLane.new(ITEMS, 8)
-	_lane.custom_minimum_size = Vector2(0, clampf(get_viewport_rect().size.y * 0.5, 250.0, 340.0))
-	_lane.picked.connect(_on_pick)
-	col.add_child(_lane)
-	_fade.append(_lane)
+	_row = HBoxContainer.new()
+	_row.add_theme_constant_override("separation", 12)
+	for it in ITEMS:
+		_row.add_child(_menu_button(String(it[0]), tr(String(it[1])), String(it[2])))
+	col.add_child(_row)
+	_fade.append(_row)
 	var ver := UI.label("v" + String(ProjectSettings.get_setting("application/config/version", "0.1")), "MutedLabel", 13)
 	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	col.add_child(ver)
@@ -154,6 +148,35 @@ func _on_pick(id: String) -> void:
 			Game.show_screen("res://ui/records_screen.gd")
 		"settings":
 			Game.show_screen("res://ui/settings_screen.gd")
+
+
+## A menu button: the icon over the words, all six the same width in one row.
+func _menu_button(id: String, text: String, icon_kind: String) -> Button:
+	var b := Button.new()
+	b.name = id
+	b.theme_type_variation = "LaneButton"
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.custom_minimum_size = Vector2(0, 104)
+	var v := VBoxContainer.new()
+	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	v.offset_left = 6
+	v.offset_right = -6
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_theme_constant_override("separation", 6)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ic := Icon.make(icon_kind, 30, Game.C_SAFFRON)
+	ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(ic)
+	var l := UI.label(text, "SubLabel", 20)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.fit(l, 2)
+	v.add_child(l)
+	b.add_child(v)
+	b.pressed.connect(Sfx.click)
+	b.pressed.connect(_on_pick.bind(id))
+	return b
 
 
 func _continue_card() -> Control:

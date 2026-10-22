@@ -1,4 +1,4 @@
-name: Khamba Dash · Play Store bundle
+name: Kho Kho Rush · Play Store bundle
 
 # Builds the Android App Bundle (.aab) that Google Play takes, with Godot's Gradle build (the beta APK in
 # kho-kho-android.yml is built without it). It is signed with your upload key when the repository has the key as
@@ -113,13 +113,13 @@ jobs:
           sed -i 's/^gradle_build\/use_gradle_build=false/gradle_build\/use_gradle_build=true/; s/^gradle_build\/export_format=0/gradle_build\/export_format=1/' export_presets.cfg
           sed -i "s/^package\/signed=true/package\/signed=${SIGNED}/" export_presets.cfg
           mkdir -p build
-          godot --headless --path . --install-android-build-template --export-release "Android" "build/khamba-dash-${VERSION}.aab"
+          godot --headless --path . --install-android-build-template --export-release "Android" "build/kho-kho-rush-${VERSION}.aab"
           ls -la build
 
       - name: Check the bundle (16 KB pages, target API, permissions)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          AAB="build/khamba-dash-${VERSION}.aab"
+          AAB="build/kho-kho-rush-${VERSION}.aab"
           test -s "$AAB"
           curl -sSL -o "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.1/bundletool-all-1.18.1.jar
           java -jar "$RUNNER_TEMP/bundletool.jar" dump manifest --bundle "$AAB" > "$RUNNER_TEMP/manifest.xml"
@@ -130,7 +130,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: khamba-dash-${{ env.VERSION }}-play-${{ env.SIGNED == 'true' && 'signed' || 'unsigned' }}
-          path: ${{ env.PROJECT_DIR }}/build/khamba-dash-${{ env.VERSION }}.aab
+          name: kho-kho-rush-${{ env.VERSION }}-play-${{ env.SIGNED == 'true' && 'signed' || 'unsigned' }}
+          path: ${{ env.PROJECT_DIR }}/build/kho-kho-rush-${{ env.VERSION }}.aab
           if-no-files-found: error
           retention-days: 30

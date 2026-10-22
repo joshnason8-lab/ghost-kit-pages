@@ -3,7 +3,7 @@ extends Control
 ## and those of the engine's own parts (Engine.get_copyright_info), which their licences ask to be shown. The legal
 ## texts are in English, as they are written.
 
-const CREDITS := """[b]Khamba Dash[/b]
+const CREDITS := """[b]Kho Kho Rush[/b]
 Made by Josh Nason.
 Players, officials, grounds, crowd and sounds made in code for the game; the menu music and the crowd's drums written
 for it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.

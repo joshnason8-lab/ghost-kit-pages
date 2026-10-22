@@ -1,6 +1,6 @@
 # Languages
 
-Khamba Dash starts in the phone's language when it has it. The globe button on the home screen changes it, and so
+Kho Kho Rush starts in the phone's language when it has it. The globe button on the home screen changes it, and so
 does Settings > Language. Fourteen languages are in the game.
 
 ## Who plays kho kho, and what they speak

@@ -251,7 +251,7 @@ func _show_toss() -> void:
 	UI.fit(t)
 	v.add_child(t)
 	var coin := Coin.new()
-	coin.custom_minimum_size = Vector2(0, 130)
+	coin.custom_minimum_size = Vector2(0, 150)
 	v.add_child(coin)
 	var msg := UI.label(tr("TOSS_CALL"), "SubLabel", 22)
 	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -290,24 +290,40 @@ func _show_toss() -> void:
 		row.add_child(b)
 
 
-## The coin, spinning and landing.
+## The coin, spinning and landing. Heads is a lion's head, as the lion side is "heads" on the coins of India; tails is
+## the coin's value, 1 in the currency of the player's language (rupee, Nepali rupee, taka, Sri Lankan rupee), in a
+## wreath. Its face is named under it when it lands.
 class Coin extends Control:
 	var _t := -1.0
 	var _land := 0
+	var _name: Label
+
+	func _ready() -> void:
+		_name = UI.label("", "SubLabel", 20, Game.C_GOLD)
+		_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_name.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+		_name.offset_top = -26
+		add_child(_name)
 
 	func spin(land: int) -> void:
 		_land = land
 		_t = 0.0
+		_name.text = ""
 		Sfx.play("whoosh", -8.0)
 
 	func _process(delta: float) -> void:
 		if _t >= 0.0 and _t < 1.2:
 			_t += delta
+			if _t >= 1.2:
+				_name.text = tr("TOSS_HEADS") if _land == 0 else tr("TOSS_TAILS")
 		queue_redraw()
 
+	static func currency(lang: String) -> String:
+		return {"ne": "रू", "bn": "৳", "si": "රු"}.get(lang, "₹")
+
 	func _draw() -> void:
-		var c := size * 0.5
-		var r := minf(size.y * 0.42, 54.0)
+		var c := size * 0.5 - Vector2(0, 12)
+		var r := minf(size.y * 0.38, 50.0)
 		var k := 1.0
 		var face := _land
 		var lift := 0.0
@@ -316,8 +332,47 @@ class Coin extends Control:
 			k = absf(cos(turns * PI))
 			face = int(floor(turns)) % 2 if _t < 1.15 else _land
 			lift = sin(PI * _t / 1.2) * 34.0
-		var col := Game.C_GOLD if face == 0 else Game.C_SAFFRON.darkened(0.15)
+		var metal := Color("d9b45a")
+		var dark := Color(0.36, 0.24, 0.07)
 		draw_set_transform(c - Vector2(0, lift), 0.0, Vector2(1.0, maxf(0.06, k)))
-		draw_circle(Vector2.ZERO, r, col)
-		draw_arc(Vector2.ZERO, r * 0.82, 0, TAU, 40, Color(0.3, 0.18, 0.05, 0.6), 3.0, true)
+		draw_circle(Vector2.ZERO, r, metal.darkened(0.25))
+		draw_circle(Vector2.ZERO, r * 0.93, metal)
+		draw_arc(Vector2.ZERO, r * 0.86, 0, TAU, 48, Color(dark, 0.6), 2.0, true)
+		if face == 0:
+			_lion(r, dark, metal)
+		else:
+			_value(r, dark)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	## A lion's head, face on: the mane in petals, the face, the ears, the eyes, the nose and the mouth.
+	func _lion(r: float, ink: Color, metal: Color) -> void:
+		for i in 14:
+			var a := TAU * i / 14.0
+			var p := Vector2(cos(a), sin(a)) * r * 0.5
+			draw_circle(p, r * 0.2, metal.darkened(0.18 + 0.06 * (i % 2)))
+		draw_circle(Vector2(0, 0.02 * r), r * 0.4, metal.lightened(0.08))
+		for sx in [-1.0, 1.0]:
+			draw_circle(Vector2(sx * r * 0.3, -r * 0.3), r * 0.1, metal.darkened(0.1))
+			draw_circle(Vector2(sx * r * 0.15, -r * 0.06), r * 0.05, ink)
+		draw_colored_polygon(PackedVector2Array([Vector2(-r * 0.1, r * 0.08), Vector2(r * 0.1, r * 0.08), Vector2(0, r * 0.2)]), ink)
+		draw_line(Vector2(0, r * 0.2), Vector2(0, r * 0.27), ink, 2.0, true)
+		draw_arc(Vector2(-r * 0.07, r * 0.27), r * 0.07, 0.0, PI, 8, ink, 2.0, true)
+		draw_arc(Vector2(r * 0.07, r * 0.27), r * 0.07, 0.0, PI, 8, ink, 2.0, true)
+
+	## The value: 1 and the currency sign, over two ears of wheat.
+	func _value(r: float, ink: Color) -> void:
+		var font: Font = Game.font_bold
+		var cur := currency(Game.language())
+		var txt := "1"
+		var fs := int(r * 0.78)
+		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(font, Vector2(-w * 0.5, r * 0.34), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
+		var ss := int(r * 0.32)
+		var sw := font.get_string_size(cur, HORIZONTAL_ALIGNMENT_LEFT, -1, ss).x
+		draw_string(font, Vector2(-sw * 0.5, -r * 0.3), cur, HORIZONTAL_ALIGNMENT_LEFT, -1, ss, ink)
+		# The wreath: a grain every few degrees round the lower rim, each side.
+		for i in 9:
+			var a := PI * (0.08 + 0.045 * i)
+			for sx in [-1.0, 1.0]:
+				var p := Vector2(sx * cos(a) * r * 0.68, sin(a) * r * 0.68)
+				draw_circle(p, r * 0.055, Color(ink, 0.85))

@@ -54,6 +54,9 @@ var powerplay_on := false
 var powerplay_offer := 0.0     # s left to call a power play (you, the chasing side)
 var user_def: Athlete = null
 var _user_idle := 0.0
+var _dodge_until := -1.0
+var _dodge_ready := 0.0
+var _dodge_dir := Vector3.ZERO
 var stats := {}
 var turns_log: Array = []
 var log: Array = []
@@ -812,12 +815,51 @@ func _on_action(id: String) -> void:
 			if _user_chasing() and powerplay_offer > 0.0:
 				_call_powerplay()
 		"DODGE":
-			if user_def and not user_def.busy():
-				user_def.vel += user_def.vel.normalized() * 1.6 if user_def.vel.length() > 0.5 else Vector3.ZERO
-				user_def.stamina = maxf(0.0, user_def.stamina - 0.08)
-				Sfx.voice("hup", -12.0)
+			_dodge()
 		"SWITCH":
 			_switch_defender()
+
+
+const DODGE_TIME := 0.4
+const DODGE_COOL := 1.1
+const DODGE_SLIP := 0.9    # a touch slips off a defender in his side-step this often
+
+
+## DODGE: a hard side-step, square to the chaser's line at him (the side your stick leans to, else away from the
+## nearer side line), a burst over top speed for 0.4 s, and a touch in it slips off him nine times in ten. Until
+## 0.3 it added 1.6 m/s along his run, which his top speed took straight back off: it did nothing you could see.
+func _dodge() -> void:
+	var a := user_def
+	if a == null or a.busy() or t_match < _dodge_ready:
+		return
+	var from := active.position if active else a.position + Vector3(0, 0, 1)
+	var line := a.position - from
+	line.y = 0
+	if line.length() < 0.05:
+		line = Vector3(1, 0, 0)
+	line = line.normalized()
+	var side := Vector3(-line.z, 0, line.x)
+	var j := controls.joystick if controls else Vector2.ZERO
+	if j.length() > 0.2:
+		if side.dot(Vector3(j.x, 0, j.y)) < 0.0:
+			side = -side
+	elif side.dot(-a.position) < 0.0:
+		side = -side   # toward the middle of the field
+	var dir := (side * 0.85 + line * 0.35).normalized()
+	if bool(Game.settings.lane_assist):
+		dir = _keep_in(a, dir)
+	_dodge_dir = dir.normalized()
+	_dodge_until = t_match + DODGE_TIME
+	_dodge_ready = t_match + DODGE_COOL
+	a.vel = a.vel * 0.3 + _dodge_dir * maxf(a.vel.length(), 5.0)
+	a.stamina = maxf(0.0, a.stamina - 0.06)
+	Sfx.voice("hup", -6.0)
+	Sfx.play("whoosh", -12.0)
+	game_event.emit("dodge")
+
+
+func dodging() -> bool:
+	return user_def != null and t_match < _dodge_until
 
 
 func _switch_defender() -> void:
@@ -1142,6 +1184,11 @@ func _swerves(d: Athlete, kind: String) -> bool:
 	# he runs himself, and DODGE is yours on top. Without them a new player's defenders fell at 9 outs a minute
 	# against the AI's 2 (docs/PLAYTEST.md).
 	var steered := d == user_def and not _user_auto()
+	if d == user_def and dodging() and rng.randf() < DODGE_SLIP:
+		ai.slip_until = t_match + 0.5
+		Sfx.react("ooh", -10.0)
+		game_event.emit("swerve")
+		return true
 	var turn := float(d.data.get("turn", 70)) + float(_diff[d.side])
 	var reach := float(active.data.get("reach", 70)) + float(_diff[active.side])
 	var base := SWERVE_TOUCH if kind == KhoRules.OUT_TOUCH else SWERVE_DIVE
@@ -1522,11 +1569,15 @@ func _user_defender(dt: float) -> void:
 	controls.lit = ""
 	# Coming on, or your thumb off the stick for a moment: he runs as the AI would (a first-time player is not left
 	# standing in front of the chaser); the stick takes him back at once.
-	if d_state.get(a, "") == "enter" or _user_auto():
+	if d_state.get(a, "") == "enter" or (_user_auto() and not dodging()):
 		_defender_think(a, dt)
 		return
 	a.want = Vector3(j.x, 0, j.y) * a.top
 	a.want = _avoid(a, a.want) if a.want.length() > 0.1 else a.want
+	if dodging():
+		a.top *= 1.25
+		a.want = _dodge_dir * a.top
+		a.vel += _dodge_dir * 9.0 * dt
 	# With the assist on (Settings > Lane assist) he pulls up at the line as the AI's defenders do, rather than run
 	# out of limits from a thumb pushed the wrong way under an angled camera (the playtest's second worst find).
 	if bool(Game.settings.lane_assist):

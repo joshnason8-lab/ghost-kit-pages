@@ -1,11 +1,11 @@
-# Khamba Dash on Google Play
+# Kho Kho Rush on Google Play
 
 Everything Google Play asks for, and the steps to put the game on it. Checked against Google's requirements as they
 stand in October 2026.
 
 ## What is ready
 
-- **The Play bundle (.aab)**, built by GitHub Actions ("Khamba Dash · Play Store bundle"). It is unsigned until
+- **The Play bundle (.aab)**, built by GitHub Actions ("Kho Kho Rush · Play Store bundle"). It is unsigned until
   your upload key is in the repository (step 2), then signed with it.
 - **The game meets Google's technical rules**:
   - targets Android 16 (API 36), required for new apps since 31 August 2026;
@@ -44,32 +44,32 @@ Google signs the game for phones with its own key (Play App Signing). You sign e
 1. Make the key, on a computer with Java (Android Studio includes it). In a terminal, run:
 
    ```
-   keytool -genkeypair -v -keystore khamba-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+   keytool -genkeypair -v -keystore khokho-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
    ```
 
    - Pick a strong password, and give the same one when asked for the key's password.
    - The name and organisation questions can be your own name.
-2. **Keep `khamba-upload.jks` and the password safe**: in a password manager, plus a copy somewhere other than your
+2. **Keep `khokho-upload.jks` and the password safe**: in a password manager, plus a copy somewhere other than your
    computer. If you lose them, Play support can reset the upload key, but that takes days.
 3. Copy the key file as text:
-   - Mac: `base64 -i khamba-upload.jks | pbcopy`
-   - Windows (PowerShell): `[Convert]::ToBase64String([IO.File]::ReadAllBytes("khamba-upload.jks")) | Set-Clipboard`
+   - Mac: `base64 -i khokho-upload.jks | pbcopy`
+   - Windows (PowerShell): `[Convert]::ToBase64String([IO.File]::ReadAllBytes("khokho-upload.jks")) | Set-Clipboard`
 4. On GitHub, open the repository and go to **Settings > Secrets and variables > Actions > New repository
    secret**. Add three secrets:
    - `ANDROID_UPLOAD_KEYSTORE_BASE64`: paste what you copied in step 3.
    - `ANDROID_UPLOAD_KEY_ALIAS`: `upload`
    - `ANDROID_UPLOAD_KEY_PASSWORD`: your password.
 5. Build the signed bundle:
-   1. On GitHub, go to **Actions > Khamba Dash · Play Store bundle > Run workflow**.
+   1. On GitHub, go to **Actions > Kho Kho Rush · Play Store bundle > Run workflow**.
    2. Pick the branch `claude/kho-kho-game` (or `main` once merged), then **Run workflow**.
    3. When it finishes (about 15 minutes), open the run. Under **Artifacts**, download
-      `khamba-dash-<version>-play-signed`, a zip with the `.aab` inside.
+      `kho-kho-rush-<version>-play-signed`, a zip with the `.aab` inside.
 
 ## 3. Create the app
 
 1. In Play Console, go to **Home > Create app**.
 2. Fill in:
-   - App name: **Khamba Dash**
+   - App name: **Kho Kho Rush**
    - Default language: **English (United States)**
    - App or game: **Game**
    - Free or paid: **Free**
