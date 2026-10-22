@@ -35,5 +35,5 @@ PLAY YOUR WAY
 
 Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
 
-== Release notes (0.3.0) ==
-Khamba Dash is now Kho Kho Rush, with a new icon. New players, animated from real motion capture: the sprint, the kho, the dive, the pole turn, kneeling in the lane. New grounds: trees and palms, houses, hills and sky, floodlight towers, a hall with a big screen, and a crowd drawn from the same players. DODGE is a real side-step; the toss coin has faces; Watch a Match has a pause button to leave it.
+== Release notes (0.4.0) ==
+New grounds from photographs: real skies (a village dusk, a hot school noon, a floodlit night), photo-scanned red earth and dry ground, rain trees, coconut palms and tropical trees, houses in plaster under thatch and tiles, white plastic chairs under the village crowd, painted benches, a scorers' table, apartment blocks on the skyline, concrete terraces and the hall's lights. High graphics no longer looks washed out.

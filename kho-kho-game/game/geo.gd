@@ -84,68 +84,6 @@ func ring(c: Vector3, r0: float, r1: float, a0: float, a1: float, col: Color, se
 		_tri_quad(c + d0 * r1, c + d1 * r1, c + d1 * r0, c + d0 * r0, Vector3.UP, col)
 
 
-## A rough ball of leaves or a bush: a squashed octahedron-ish blob.
-func blob(c: Vector3, r: Vector3, col: Color) -> void:
-	var pts := [Vector3(1, 0, 0), Vector3(0, 0, 1), Vector3(-1, 0, 0), Vector3(0, 0, -1)]
-	var top := c + Vector3(0, r.y, 0)
-	var bot := c - Vector3(0, r.y * 0.6, 0)
-	for i in 4:
-		var a: Vector3 = c + pts[i] * Vector3(r.x, 0, r.z)
-		var b: Vector3 = c + pts[(i + 1) % 4] * Vector3(r.x, 0, r.z)
-		var n := (a + b - c * 2.0).normalized() + Vector3.UP * 0.6
-		_tri_quad(top, b, a, top, n.normalized(), col.lightened(0.05))
-		_tri_quad(a, b, bot, bot, (n - Vector3.UP * 1.2).normalized(), col.darkened(0.15))
-
-
-static var _ico: Array = []   # [vertices, triangles] of a unit icosphere (80 faces)
-
-
-static func _icosphere() -> Array:
-	if not _ico.is_empty():
-		return _ico
-	var t := (1.0 + sqrt(5.0)) / 2.0
-	var v: Array = [Vector3(-1, t, 0), Vector3(1, t, 0), Vector3(-1, -t, 0), Vector3(1, -t, 0), Vector3(0, -1, t), Vector3(0, 1, t),
-		Vector3(0, -1, -t), Vector3(0, 1, -t), Vector3(t, 0, -1), Vector3(t, 0, 1), Vector3(-t, 0, -1), Vector3(-t, 0, 1)]
-	for i in v.size():
-		v[i] = (v[i] as Vector3).normalized()
-	var f: Array = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6],
-		[7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]]
-	var mid := {}
-	var g := func(a: int, b: int) -> int:
-		var k := Vector2i(mini(a, b), maxi(a, b))
-		if mid.has(k):
-			return mid[k]
-		v.append(((v[a] as Vector3) + (v[b] as Vector3)).normalized())
-		mid[k] = v.size() - 1
-		return v.size() - 1
-	var f2: Array = []
-	for tri in f:
-		var a: int = g.call(tri[0], tri[1])
-		var b: int = g.call(tri[1], tri[2])
-		var c: int = g.call(tri[2], tri[0])
-		f2.append_array([[tri[0], a, c], [tri[1], b, a], [tri[2], c, b], [a, b, c]])
-	_ico = [v, f2]
-	return _ico
-
-
-## A rounded mass of leaves (or a bush, a haystack, a hill): an 80-face sphere squashed to radii r, smooth-shaded,
-## lighter on top and darker beneath, its surface a little lumpy so it does not look turned on a lathe.
-func ball(c: Vector3, r: Vector3, col: Color, lumpy := 0.12, seed_ := 0) -> void:
-	var ico := _icosphere()
-	var v: Array = ico[0]
-	var base := verts.size()
-	for i in v.size():
-		var d: Vector3 = v[i]
-		var k := 1.0 + lumpy * sin(d.x * 7.1 + seed_ * 1.7) * sin(d.y * 6.3 + seed_) * sin(d.z * 5.7 + seed_ * 0.6)
-		verts.append(c + d * r * k)
-		normals.append((d / r).normalized())
-		var shade := clampf(0.78 + 0.32 * (d.y * 0.5 + 0.5), 0.6, 1.12)
-		colors.append(Color(col.r * shade, col.g * shade, col.b * shade).srgb_to_linear())
-		uvs.append(Vector2(d.x, d.z))
-	for tri in ico[1]:
-		idx.append_array([base + tri[0], base + tri[2], base + tri[1]])
-
-
 ## A roof ridge: a triangular prism along x, centred at c, width w across z, length l, peak h above c.
 func prism(c: Vector3, l: float, w: float, h: float, col: Color, yaw := 0.0) -> void:
 	var b := Basis(Vector3.UP, yaw)

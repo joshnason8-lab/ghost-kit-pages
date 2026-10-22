@@ -9,6 +9,14 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.4
+
+- **The grounds, from photographs:** real skies (a village dusk, a school's hot noon, a lit night), photo-scanned red
+  earth and dry ground, rain trees, coconut palms and tropical trees, dry grass, houses in clay plaster under thatch
+  and tiles, white plastic chairs under the village crowd's front row, painted benches, a scorers' trestle table,
+  apartment blocks behind the school and on the stadium's skyline, concrete terraces, fluorescent lights in the hall.
+- **High graphics** no longer looks washed out.
+
 ## What's new in 0.3
 
 - **The game is now Kho Kho Rush**, with a new icon. Its Android package changed with the name
