@@ -51,12 +51,13 @@ The game's skeleton (`game/body.gd`, `BONES`) uses these names; Meshy's rig maps
 | thigh_l / _r, shin_l / _r, foot_l / _r | LeftUpLeg / RightUpLeg, LeftLeg / RightLeg, LeftFoot / RightFoot |
 
 The game's moves are written against a rest pose with the arms hanging down and every bone's rotation the identity;
-a Meshy model rests in a T-pose with its own bone axes. The fitting (to do when the models arrive) works in model
-space: each bone's rotation in a move, applied to the model's rest pose with the arms first turned down to the sides,
-then converted back to the bone's local rotation. The players' blob shadows, tags, selection rings and contact points
-stay as they are, so nothing else in the match changes.
+a Meshy model rests in a T-pose (or an A-pose) with its own bone axes. The fitting works in model space: each bone's
+rotation in a move, applied to the model's rest pose with its limbs first turned the way the moves' bones rest (arms
+and legs down, feet flat, the back upright), then converted back to the bone's local rotation.
 
-Until then, `ToonBody` is the player, and the moves were tuned on it.
+**Done (0.4.0):** `game/real_body.gd` does this for the man and woman models in `assets/models/` (prepared with
+`tools/models/prepare_model.gd`, their kits from `tools/models/kit_mask.py`), and `tools/models/fbx_to_move.tscn`
+turns Mixamo kicks and the models' own run and walk into moves the same way (`assets/moves/`).
 
 ## Lessons from Kabaddi Raid's Meshy players
 

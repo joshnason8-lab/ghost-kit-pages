@@ -1,5 +1,5 @@
 {
-  "GAME_TITLE": "Takraw Smash",
+  "GAME_TITLE": "Sepak Takraw Unleashed",
   "TAGLINE": "서브. 토스. 롤링 스파이크.",
   "MENU_EYEBROW": "세팍타크로 · 실제 규칙",
   "LOADING": "코트 준비 중…",
@@ -216,7 +216,6 @@
   "FPS_NOTE_SAVER": "초당 약 {n}프레임: 배터리는 오래, 폰은 시원하게.",
   "FPS_NOTE_SMOOTH": "{hz} Hz 화면에서 초당 {n}프레임.",
   "FPS_NOTE_MAX": "{hz} Hz 화면이 표시할 수 있는 최대 프레임.",
-  "PLAYER_TAGS": "선수 이름표",
   "SOUND": "효과음",
   "MUSIC": "음악",
   "VIBRATION": "진동",
@@ -354,7 +353,7 @@
   "YOU_RELEGATED": "내 클럽이 디비전 1로 강등됩니다. 다음 시즌에 이겨서 다시 올라오세요.",
   "YOU_STAY_DIV1": "내 클럽은 디비전 1에 남습니다. 결승에 오르면 승격합니다.",
   "SHIRT_N": "#{n}",
-  "ABOUT_DISCLAIMER": "Takraw Smash는 독립 게임입니다. 어떤 세팍타크로 연맹, 리그, 클럽, 선수와도 제휴 관계가 없으며 보증을 받지도 않았습니다. 클럽 애칭은 창작이고 선수는 가상 인물입니다. 국가, 장소, 규칙은 실제입니다.",
+  "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed는 독립 게임입니다. 어떤 세팍타크로 연맹, 리그, 클럽, 선수와도 제휴 관계가 없으며 보증을 받지도 않았습니다. 클럽 애칭은 창작이고 선수는 가상 인물입니다. 국가, 장소, 규칙은 실제입니다.",
   "AUTO_GFX": "그래픽 자동 조절",
   "GFX_LOWERED": "게임이 부드럽게 돌아가도록 그래픽을 낮췄습니다 (설정)."
 }

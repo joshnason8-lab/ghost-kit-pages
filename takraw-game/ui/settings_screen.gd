@@ -81,9 +81,6 @@ func _ready() -> void:
 	disp[1].add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_TV"), tr("CAM_SIDE"), tr("CAM_END")], maxi(0, cams.find(int(Game.settings.camera))), func(i):
 		Game.settings.camera = cams[i]
 		Game.save_settings())))
-	disp[1].add_child(UI.field(tr("PLAYER_TAGS"), UI.chips_row([tr("ON"), tr("OFF")], 1 if int(Game.settings.tags) == 2 else 0, func(i):
-		Game.settings.tags = 2 if i == 1 else 0
-		Game.save_settings())))
 
 	# Sound and controls.
 	var snd: Array = UI.section(tr("SET_SOUND_CONTROLS"), "sound")

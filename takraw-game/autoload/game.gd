@@ -90,7 +90,6 @@ var settings := {
 	"sets": 1,              # 0 one set, 1 best of three: the real match
 	"points": 0,            # 0 sets to 15 (the ISTAF rule), 1 to 21 (the long sets of the old rule)
 	"event": 0,             # the event in Quick Match: 0 Regu (3), 1 Team (three regus), 2 Quadrant (4), 3 Doubles (2)
-	"tags": 0,              # the shirt numbers over players' heads: 0 on, 2 off
 	"seen_howto": false,
 	"dev": false,
 }
@@ -201,7 +200,7 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "game_speed", "sets", "points", "event", "tags"]:
+	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "game_speed", "sets", "points", "event"]:
 		settings[k] = int(settings[k])
 
 

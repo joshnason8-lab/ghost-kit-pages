@@ -10,6 +10,9 @@ var colors := PackedColorArray()
 var uvs := PackedVector2Array()
 var idx := PackedInt32Array()
 
+static var _surface: ShaderMaterial
+static var _grain: ImageTexture
+
 
 func _tri_quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, col: Color, uv := Rect2(0, 0, 1, 1)) -> void:
 	# a b c d in order round the face, seen from the side n points to (clockwise is the front in Godot).
@@ -117,9 +120,54 @@ func commit(mat: Material) -> MeshInstance3D:
 
 
 ## The material for vertex-coloured structure: lit per vertex (cheap), or unshaded for things that glow.
-static func material(lit := true) -> StandardMaterial3D:
+## The venue's material: its parts' own colours, lit (or not: lines, lights, signs). On Medium and High graphics the
+## lit parts are shaded per pixel with a fine grain in their surfaces (concrete, boards, court), and a vertex's alpha
+## below 1 makes it glossy: a court's surface under the lights.
+static func material(lit := true) -> Material:
+	if lit and int(Game.settings.graphics) >= Game.GFX_MEDIUM:
+		if _surface == null:
+			var sh := Shader.new()
+			sh.code = """
+shader_type spatial;
+render_mode cull_back, diffuse_burley, specular_schlick_ggx;
+uniform sampler2D grain : filter_linear_mipmap, repeat_enable;
+varying vec3 wpos;
+varying vec3 wnrm;
+void vertex() {
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	wnrm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+}
+void fragment() {
+	vec3 n = abs(wnrm);
+	vec2 uv = n.y > 0.7 ? wpos.xz : (n.x > n.z ? wpos.zy : wpos.xy);
+	float broad = texture(grain, uv * 0.11).r;
+	float fine = texture(grain, uv * 1.7).r;
+	float gloss = 1.0 - COLOR.a;
+	ALBEDO = COLOR.rgb * (0.88 + 0.16 * broad + mix(0.1, 0.04, gloss) * fine);
+	ROUGHNESS = mix(0.86, 0.34, gloss);
+	SPECULAR = mix(0.3, 0.6, gloss);
+}
+"""
+			_surface = ShaderMaterial.new()
+			_surface.shader = sh
+			_surface.set_shader_parameter("grain", grain())
+		return _surface
 	var m := StandardMaterial3D.new()
 	m.vertex_color_use_as_albedo = true
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX if lit else BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.roughness = 0.9
 	return m
+
+
+## A tile of soft noise for the surfaces' grain, made once.
+static func grain() -> ImageTexture:
+	if _grain == null:
+		var noise := FastNoiseLite.new()
+		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		noise.frequency = 0.035
+		noise.fractal_octaves = 4
+		var img := noise.get_seamless_image(128, 128)
+		img.convert(Image.FORMAT_L8)
+		img.generate_mipmaps()
+		_grain = ImageTexture.create_from_image(img)
+	return _grain

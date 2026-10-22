@@ -1,5 +1,5 @@
 {
-  "GAME_TITLE": "Takraw Smash",
+  "GAME_TITLE": "Sepak Takraw Unleashed",
   "TAGLINE": "发球，传球，倒钩扣球！",
   "MENU_EYEBROW": "藤球 · 真实规则",
   "LOADING": "正在准备场地…",
@@ -216,7 +216,6 @@
   "FPS_NOTE_SAVER": "每秒约{n}帧：更省电，手机更凉爽。",
   "FPS_NOTE_SMOOTH": "在你的{hz} Hz屏幕上每秒{n}帧。",
   "FPS_NOTE_MAX": "按你的{hz} Hz屏幕所能显示的最高帧率运行。",
-  "PLAYER_TAGS": "球员标签",
   "SOUND": "音效",
   "MUSIC": "音乐",
   "VIBRATION": "振动",
@@ -354,7 +353,7 @@
   "YOU_RELEGATED": "你的俱乐部降入甲级联赛。下赛季再打回来吧。",
   "YOU_STAY_DIV1": "你的俱乐部留在甲级联赛。打进决赛即可升级。",
   "SHIRT_N": "#{n}",
-  "ABOUT_DISCLAIMER": "Takraw Smash是一款独立游戏，与任何藤球联合会、联赛、俱乐部或球员均无关联，也未获得其认可。俱乐部绰号均为虚构，球员亦为虚构人物；国家、地点和规则则真实存在。",
+  "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed是一款独立游戏，与任何藤球联合会、联赛、俱乐部或球员均无关联，也未获得其认可。俱乐部绰号均为虚构，球员亦为虚构人物；国家、地点和规则则真实存在。",
   "AUTO_GFX": "自动画质",
   "GFX_LOWERED": "已降低画质以保持游戏流畅（设置）。"
 }

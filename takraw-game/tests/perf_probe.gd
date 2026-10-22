@@ -7,7 +7,7 @@ func _ready() -> void:
 	Game.settings.sound = false
 	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
 		Game.settings.graphics = g
-		ToonBody.material(g > Game.GFX_LOW)
+		RealBody.warm()
 		Game.start_match({"home": "THA", "away": "MAS", "venue": "dome", "event": "regu", "sets": 1, "points": 15,
 			"user_team": 0, "seed": 4, "mode": "quick"})
 		for i in 150:

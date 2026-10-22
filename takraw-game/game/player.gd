@@ -1,13 +1,13 @@
 class_name Player
 extends Node3D
-## One player on the court: his body (ToonBody), where he is going and when he must be there, and the move he is
+## One player on the court: his body (RealBody), where he is going and when he must be there, and the move he is
 ## playing. The match decides what he does (Match); this moves and poses him.
 
 var data := {}             # from DB.squad
 var side := 0              # 0 or 1
 var role := DB.POS_TEKONG
 var slot := 0              # his place in the line-up
-var body: ToonBody
+var body: RealBody
 var target := Vector3.ZERO # where he is going
 var hurry := 0.0           # 0 a walk back to his place .. 1 a sprint to the ball
 var vel := Vector3.ZERO
@@ -23,7 +23,6 @@ var _queued_mirror := false
 var _ph := 0.0             # running stride's phase
 var _w := 0.0              # how much the move holds the pose (eases in and out)
 var _yaw := 0.0
-var _tag: Label3D
 var _ring: MeshInstance3D
 var _shadow: MeshInstance3D
 
@@ -34,7 +33,7 @@ func _init(p_data := {}, p_side := 0, p_role := 0, look := {}) -> void:
 	data = p_data
 	side = p_side
 	role = p_role
-	body = ToonBody.new(look)
+	body = RealBody.new(look)
 
 
 func _ready() -> void:
@@ -78,29 +77,6 @@ func left_footed() -> bool:
 ## Shows him as the one you control.
 func set_selected(on: bool) -> void:
 	_ring.visible = on
-
-
-## The tag over his head: his number and, when named, his name.
-func set_tag(text: String, mine := false) -> void:
-	if text == "":
-		if _tag:
-			_tag.visible = false
-		return
-	if _tag == null:
-		_tag = Label3D.new()
-		_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		_tag.fixed_size = true
-		_tag.pixel_size = 0.0011
-		_tag.font = Game.font_bold
-		_tag.font_size = 30
-		_tag.outline_size = 10
-		_tag.no_depth_test = true
-		_tag.position = Vector3(0, 2.15, 0)
-		add_child(_tag)
-	_tag.visible = true
-	_tag.text = text
-	_tag.modulate = Game.C_GOLD if mine else Game.C_INK
-	_tag.outline_modulate = Color(0.03, 0.06, 0.1, 0.9)
 
 
 ## The way he faces when he faces the net.

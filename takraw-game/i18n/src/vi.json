@@ -1,5 +1,5 @@
 {
-  "GAME_TITLE": "Takraw Smash",
+  "GAME_TITLE": "Sepak Takraw Unleashed",
   "TAGLINE": "Giao cầu. Chuyền. Đập lộn người.",
   "MENU_EYEBROW": "Cầu mây · Luật chơi thật",
   "LOADING": "Đang chuẩn bị sân…",
@@ -216,7 +216,6 @@
   "FPS_NOTE_SAVER": "Khoảng {n} khung hình/giây: pin lâu hơn, máy mát hơn.",
   "FPS_NOTE_SMOOTH": "{n} khung hình/giây trên màn hình {hz} Hz của bạn.",
   "FPS_NOTE_MAX": "Nhiều khung hình nhất mà màn hình {hz} Hz hiển thị được.",
-  "PLAYER_TAGS": "Tên cầu thủ",
   "SOUND": "Âm thanh",
   "MUSIC": "Nhạc",
   "VIBRATION": "Rung",
@@ -354,7 +353,7 @@
   "YOU_RELEGATED": "Câu lạc bộ của bạn xuống Hạng 1. Hãy giành lại suất lên hạng vào mùa sau.",
   "YOU_STAY_DIV1": "Câu lạc bộ của bạn ở lại Hạng 1. Vào chung kết để lên hạng.",
   "SHIRT_N": "#{n}",
-  "ABOUT_DISCLAIMER": "Takraw Smash là một game độc lập. Game không liên kết với, cũng không được bảo trợ bởi, bất kỳ liên đoàn, giải đấu, câu lạc bộ hay cầu thủ cầu mây nào. Biệt danh của các câu lạc bộ là do sáng tác và các cầu thủ đều là nhân vật hư cấu; còn các quốc gia, địa điểm và luật chơi là có thật.",
+  "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed là một game độc lập. Game không liên kết với, cũng không được bảo trợ bởi, bất kỳ liên đoàn, giải đấu, câu lạc bộ hay cầu thủ cầu mây nào. Biệt danh của các câu lạc bộ là do sáng tác và các cầu thủ đều là nhân vật hư cấu; còn các quốc gia, địa điểm và luật chơi là có thật.",
   "AUTO_GFX": "Đồ họa tự động",
   "GFX_LOWERED": "Đã giảm đồ họa để game chạy mượt (Cài đặt)."
 }

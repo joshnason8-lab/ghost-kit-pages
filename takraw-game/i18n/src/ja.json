@@ -1,5 +1,5 @@
 {
-  "GAME_TITLE": "Takraw Smash",
+  "GAME_TITLE": "Sepak Takraw Unleashed",
   "TAGLINE": "サーブ、トス、ローリングスパイク。",
   "MENU_EYEBROW": "セパタクロー · 本物のルール",
   "LOADING": "コートを準備中…",
@@ -216,7 +216,6 @@
   "FPS_NOTE_SAVER": "毎秒約{n}フレーム：バッテリー長持ち、スマホも熱くなりにくい。",
   "FPS_NOTE_SMOOTH": "{hz} Hzの画面で毎秒{n}フレーム。",
   "FPS_NOTE_MAX": "{hz} Hzの画面で表示できる最大フレーム数。",
-  "PLAYER_TAGS": "選手名表示",
   "SOUND": "効果音",
   "MUSIC": "音楽",
   "VIBRATION": "振動",
@@ -354,7 +353,7 @@
   "YOU_RELEGATED": "あなたのクラブはディビジョン1へ降格。来シーズン、勝って再昇格を目指そう。",
   "YOU_STAY_DIV1": "あなたのクラブはディビジョン1に残留。決勝に進めば昇格。",
   "SHIRT_N": "#{n}",
-  "ABOUT_DISCLAIMER": "Takraw Smashは独立系のゲームです。セパタクローのいかなる連盟、リーグ、クラブ、選手とも提携しておらず、承認も受けていません。クラブの愛称は創作で、選手は架空の人物です。国、場所、ルールは実在のものです。",
+  "ABOUT_DISCLAIMER": "Sepak Takraw Unleashedは独立系のゲームです。セパタクローのいかなる連盟、リーグ、クラブ、選手とも提携しておらず、承認も受けていません。クラブの愛称は創作で、選手は架空の人物です。国、場所、ルールは実在のものです。",
   "AUTO_GFX": "グラフィック自動調整",
   "GFX_LOWERED": "なめらかに動くよう、グラフィックを下げました（設定）。"
 }

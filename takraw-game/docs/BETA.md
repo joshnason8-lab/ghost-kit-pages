@@ -2,8 +2,8 @@
 
 ## Install
 
-1. On the phone, open https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/takraw-smash-beta.
-2. Tap `takraw-smash-<version>.apk` under Assets.
+1. On the phone, open https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/sepak-takraw-unleashed-beta.
+2. Tap `sepak-takraw-unleashed-<version>.apk` under Assets.
 3. Open it when it has downloaded. If Android asks, allow your browser (or Files) to install unknown apps.
 
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
@@ -11,7 +11,13 @@ about 2019, the Galaxy A16 included).
 
 ## What to try
 
-New in 0.3.0: players are shirt numbers (no names); plain league and event names; Kabaddi Raid's fixes brought over
+New in 0.4.0: the game is **Sepak Takraw Unleashed**, with its new icon. Real-looking players (a man's and a
+woman's model in each team's colours), the new ball, crowds of real-looking people, glossier courts. The spikes, the
+serve and the knee are motion capture, and so are the run and walk; blocks are made with the feet (a jump, a foot
+raised over the net: press Block as their striker hits). No more numbers over the players' heads; a smaller
+scoreboard with the referee's calls under it.
+
+In 0.3.0: players are shirt numbers (no names); plain league and event names; Kabaddi Raid's fixes brought over
 (the game waits for players to walk to their places before a serve, the teams cross at a change of ends behind a quick
 cut, bigger pause buttons with Quit apart, the nearest button takes a press, the joystick lets go if you leave the
 app, Auto graphics now works, celebrations vary); a paler beach.

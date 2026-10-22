@@ -30,8 +30,8 @@ func _ready() -> void:
 			var s: Array = spots[i]
 			var side := 0 if i < 3 else 1
 			var look := {"jersey": Color("ff8a1f") if side == 0 else Color("19b3a3"), "shorts": Color("2a1a0e") if side == 0 else Color("0e3b4f"),
-				"skin": [Color("c98a5a"), Color("b07448"), Color("e0b48c")][i % 3], "hair_style": i % 3, "band": Color("e8336d") if side == 0 else Color.WHITE}
-			var b := ToonBody.new(look)
+				"skin": [Color("c98a5a"), Color("b07448"), Color("e0b48c")][i % 3]}
+			var b := RealBody.new(look)
 			holder.add_child(b)
 			b.position = s[0]
 			b.rotation.y = Court.facing(side)

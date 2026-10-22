@@ -81,9 +81,6 @@ func _moment(name: String, cfg: Dictionary, kind: String, mv: String) -> void:
 	if name == "01_roll_spike":
 		m.hud.visible = false
 		m.controls.visible = false
-		for side in 2:
-			for pl in m.players_on(side):
-				pl.set_tag("")
 		await _wait(0.1)
 		var img := get_viewport().get_texture().get_image()
 		img.save_png(ProjectSettings.globalize_path("res://store/graphics/feature_src.png"))

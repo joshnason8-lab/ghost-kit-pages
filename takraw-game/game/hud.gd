@@ -10,6 +10,7 @@ var _score_l: Array = []      # per screen side: {panel, name, pts, sets (HBox),
 var _mid_set: Label
 var _mid_tag: Label
 var _call: Label
+var _bar: HBoxContainer
 var _banner: Label
 var _banner_t := 0.0
 var _ring: Control
@@ -39,7 +40,7 @@ func setup(p_match: Node) -> void:
 	_call = UI.label("", "SubLabel", 22, Game.C_GOLD)
 	_call.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_call.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	_call.offset_top = 128
+	_call.offset_top = 86   # under the scoreboard (call_line() keeps it there)
 	_call.offset_left = -400
 	_call.offset_right = 400
 	_call.add_theme_constant_override("outline_size", 8)
@@ -86,10 +87,11 @@ func setup(p_match: Node) -> void:
 
 func _build_scoreboard() -> void:
 	var bar := HBoxContainer.new()
+	_bar = bar
 	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	bar.offset_top = 16
-	bar.offset_left = -380
-	bar.offset_right = 380
+	bar.offset_top = 12
+	bar.offset_left = -300
+	bar.offset_right = 300
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	bar.add_theme_constant_override("separation", 6)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -98,37 +100,37 @@ func _build_scoreboard() -> void:
 		var panel := PanelContainer.new()
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = Color(0.03, 0.07, 0.12, 0.9)
-		sb.set_corner_radius_all(14)
+		sb.set_corner_radius_all(10)
 		sb.border_color = Color(1, 1, 1, 0.1)
 		sb.set_border_width_all(1)
-		sb.content_margin_left = 16
-		sb.content_margin_right = 16
-		sb.content_margin_top = 6
-		sb.content_margin_bottom = 6
+		sb.content_margin_left = 10
+		sb.content_margin_right = 10
+		sb.content_margin_top = 3
+		sb.content_margin_bottom = 3
 		panel.add_theme_stylebox_override("panel", sb)
-		panel.custom_minimum_size = Vector2(250, 104)
+		panel.custom_minimum_size = Vector2(178, 66)
 		var h := HBoxContainer.new()
-		h.add_theme_constant_override("separation", 14)
+		h.add_theme_constant_override("separation", 8)
 		panel.add_child(h)
 		var col := VBoxContainer.new()
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		col.add_theme_constant_override("separation", 4)
+		col.add_theme_constant_override("separation", 2)
 		var name_row := HBoxContainer.new()
-		name_row.add_theme_constant_override("separation", 8)
-		var crest := Crest.make("", 30)
+		name_row.add_theme_constant_override("separation", 6)
+		var crest := Crest.make("", 20)
 		name_row.add_child(crest)
-		var nm := UI.label("", "HeaderLabel", 40)
+		var nm := UI.label("", "HeaderLabel", 24)
 		name_row.add_child(nm)
 		col.add_child(name_row)
 		var sets_row := HBoxContainer.new()
-		sets_row.add_theme_constant_override("separation", 6)
+		sets_row.add_theme_constant_override("separation", 4)
 		col.add_child(sets_row)
 		var pts := UI.label("0", "ScoreLabel", 0)
-		pts.add_theme_font_size_override("font_size", 78)
-		pts.custom_minimum_size = Vector2(70, 0)
+		pts.add_theme_font_size_override("font_size", 44)
+		pts.custom_minimum_size = Vector2(46, 0)
 		pts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var serve := Icon.make("ball", 22, Game.C_GOLD)
+		var serve := Icon.make("ball", 16, Game.C_GOLD)
 		serve.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		if side == 0:
 			h.add_child(col)
@@ -147,18 +149,18 @@ func _build_scoreboard() -> void:
 			var mid := PanelContainer.new()
 			var msb: StyleBoxFlat = sb.duplicate()
 			mid.add_theme_stylebox_override("panel", msb)
-			mid.custom_minimum_size = Vector2(150, 104)
+			mid.custom_minimum_size = Vector2(108, 66)
 			var mv := VBoxContainer.new()
 			mv.alignment = BoxContainer.ALIGNMENT_CENTER
 			mv.add_theme_constant_override("separation", 0)
 			mid.add_child(mv)
-			_mid_set = UI.label("", "EyebrowLabel", 17)
+			_mid_set = UI.label("", "EyebrowLabel", 13)
 			_mid_set.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			UI.shrink(_mid_set, 17, 0.7)
+			UI.shrink(_mid_set, 13, 0.7)
 			mv.add_child(_mid_set)
-			_mid_tag = UI.label("", "HeaderLabel", 30, Game.C_SAFFRON)
+			_mid_tag = UI.label("", "HeaderLabel", 21, Game.C_SAFFRON)
 			_mid_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			UI.shrink(_mid_tag, 30, 0.6)
+			UI.shrink(_mid_tag, 21, 0.6)
 			mv.add_child(_mid_tag)
 			bar.add_child(mid)
 
@@ -176,13 +178,13 @@ func set_score() -> void:
 		cr.queue_redraw()
 		(s.pts as Label).text = str(int(m.points[team]))
 		(s.sb as StyleBoxFlat).border_color = Color(t.c1, 0.9)
-		(s.sb as StyleBoxFlat).border_width_left = 7 if panel_i == 0 else 1
-		(s.sb as StyleBoxFlat).border_width_right = 7 if panel_i == 1 else 1
+		(s.sb as StyleBoxFlat).border_width_left = 5 if panel_i == 0 else 1
+		(s.sb as StyleBoxFlat).border_width_right = 5 if panel_i == 1 else 1
 		var sets_row: HBoxContainer = s.sets
 		for c in sets_row.get_children():
 			c.queue_free()
 		for i in int(m.sets_to_win):
-			var dot := Icon.make("dot" if i < int(m.sets[team]) else "ring", 16, t.c1.lightened(0.2))
+			var dot := Icon.make("dot" if i < int(m.sets[team]) else "ring", 12, t.c1.lightened(0.2))
 			sets_row.add_child(dot)
 		(s.serve as Control).modulate.a = 1.0 if int(m.server) == team else 0.0
 	_mid_set.text = tr("SET_N_TO").format({"n": m.set_no, "p": m.set_points})
@@ -192,9 +194,11 @@ func set_score() -> void:
 	UI.refit(_mid_tag)
 
 
+## The referee's call (a fault, in, out), just under the scoreboard.
 func call_line(text: String) -> void:
 	_call.text = text
 	_call.modulate.a = 1.0
+	_call.offset_top = _bar.offset_top + _bar.size.y + 4.0
 
 
 func banner(text: String, col: Color = Game.C_SAFFRON) -> void:

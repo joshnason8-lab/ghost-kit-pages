@@ -1,56 +1,26 @@
 class_name Crowd
 extends MultiMeshInstance3D
-## The spectators: flat cut-outs from one small sheet of painted figures, every one an instance of the same quad, so a
+## The spectators: flat cut-outs from one small sheet of figures, every one an instance of the same quad, so a
 ## stand of thousands is one draw call. A shader turns each to face the camera, picks its figure and shirt from the
 ## sheet, and makes it fidget, and jump and wave when the crowd goes up (excite).
 
-const FIGS := 8          # figures across the sheet
-const FIG_W := 48
-const FIG_H := 96
+const FIGS := 16         # figures across the sheet
+const FIG_W := 64        # each one's pixels
+const FIG_H := 128
+const FIG_W_M := 0.56    # and metres: from the seat to above the head
+const FIG_H_M := 1.12
+const SHEET := "res://assets/models/crowd_sheet.png"
 
-static var _sheet: ImageTexture
+static var _sheet: Texture2D
 static var _mat: ShaderMaterial
 
-var spots: Array[Vector3] = []   # where people stand or sit (their feet)
+var spots: Array[Vector3] = []   # where people sit (the seat) or stand
 
 
-## The sheet: eight people, head and shoulders and a shirt, a few skin and hair tones, drawn once.
-static func sheet() -> ImageTexture:
-	if _sheet:
-		return _sheet
-	var img := Image.create_empty(FIG_W * FIGS, FIG_H, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-	var skins := [Color("e0b48c"), Color("c98a5a"), Color("b07448"), Color("8d5a36")]
-	var hairs := [Color("15100c"), Color("2b1d14"), Color("15100c"), Color("4a3a2a")]
-	for f in FIGS:
-		var ox := f * FIG_W
-		var skin: Color = skins[f % 4]
-		var hair: Color = hairs[(f + 1) % 4]
-		# The shirt is white here: the shader tints it with each person's colour.
-		for y in FIG_H:
-			for x in FIG_W:
-				var u := (x + 0.5) / FIG_W - 0.5
-				var v := (y + 0.5) / FIG_H
-				var c := Color(0, 0, 0, 0)
-				# Body: shoulders from 0.42 down, a rounded top.
-				var shoulder := 0.45 + 0.04 * float(f % 3)
-				if v > shoulder and absf(u) < 0.42 - maxf(0.0, (shoulder + 0.08 - v)) * 2.2:
-					c = Color(1, 1, 1, 1)
-				# Arms a shade darker at the sides.
-				if c.a > 0.0 and absf(u) > 0.3:
-					c = Color(0.85, 0.85, 0.85, 1)
-				# Head.
-				var hd := Vector2(u / 0.2, (v - 0.3) / 0.15)
-				if hd.length() < 1.0:
-					c = skin
-					if v < 0.26 + 0.02 * float(f % 2) or (f % 4 == 3 and absf(u) > 0.13):
-						c = hair
-				# Neck.
-				if v > 0.42 and v < shoulder + 0.02 and absf(u) < 0.07:
-					c = skin.darkened(0.1)
-				img.set_pixel(ox + x, y, c)
-	img.generate_mipmaps()
-	_sheet = ImageTexture.create_from_image(img)
+## The sheet: people from the players' models, seated, rendered by tools/models/crowd_sheet.tscn.
+static func sheet() -> Texture2D:
+	if _sheet == null:
+		_sheet = load(SHEET)
 	return _sheet
 
 
@@ -82,10 +52,11 @@ void fragment() {
 	vec4 c = texture(sheet, uv);
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
-	shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
-	float is_shirt = step(0.84, min(c.r, min(c.g, c.b)));
+	shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.45) * 0.75;
+	// The shirt is the part the sheet marks (alpha 0.7), white with its shading: dyed.
+	float is_shirt = 1.0 - smoothstep(0.8, 0.9, c.a);
 	vec3 col = mix(c.rgb, shirt * c.r, is_shirt);
-	ALBEDO = pow(col, vec3(2.2)) * light;
+	ALBEDO = col * light;
 }
 """
 	_mat = ShaderMaterial.new()
@@ -108,8 +79,8 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
 	var q := QuadMesh.new()
-	q.size = Vector2(0.52, 1.04)
-	q.center_offset = Vector3(0, 0.52, 0)
+	q.size = Vector2(FIG_W_M, FIG_H_M)
+	q.center_offset = Vector3(0, FIG_H_M * 0.5, 0)
 	mm.mesh = q
 	mm.instance_count = keep.size()
 	for i in keep.size():

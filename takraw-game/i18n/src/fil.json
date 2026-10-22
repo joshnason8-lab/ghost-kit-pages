@@ -1,5 +1,5 @@
 {
-  "GAME_TITLE": "Takraw Smash",
+  "GAME_TITLE": "Sepak Takraw Unleashed",
   "TAGLINE": "Mag-serve. Mag-set. Mag-roll spike.",
   "MENU_EYEBROW": "Sepak takraw · Totoong patakaran",
   "LOADING": "Inihahanda ang court…",
@@ -216,7 +216,6 @@
   "FPS_NOTE_SAVER": "Mga {n} frame bawat segundo: mas matagal ang baterya, mas malamig ang phone.",
   "FPS_NOTE_SMOOTH": "{n} frame bawat segundo sa iyong {hz} Hz na screen.",
   "FPS_NOTE_MAX": "Kasindami ng frame na kayang ipakita ng iyong {hz} Hz na screen.",
-  "PLAYER_TAGS": "Mga tag ng manlalaro",
   "SOUND": "Tunog",
   "MUSIC": "Musika",
   "VIBRATION": "Vibration",
@@ -354,7 +353,7 @@
   "YOU_RELEGATED": "Bababa sa Division 1 ang club mo. Manalo para makabalik sa susunod na season.",
   "YOU_STAY_DIV1": "Mananatili sa Division 1 ang club mo. Umabot sa finals para umakyat.",
   "SHIRT_N": "#{n}",
-  "ABOUT_DISCLAIMER": "Ang Takraw Smash ay isang independiyenteng laro. Hindi ito kaugnay o ineendorso ng anumang pederasyon, liga, club, o manlalaro ng sepak takraw. Imbento ang mga palayaw ng mga club at kathang-isip ang mga manlalaro; totoo ang mga bansa, lugar, at patakaran.",
+  "ABOUT_DISCLAIMER": "Ang Sepak Takraw Unleashed ay isang independiyenteng laro. Hindi ito kaugnay o ineendorso ng anumang pederasyon, liga, club, o manlalaro ng sepak takraw. Imbento ang mga palayaw ng mga club at kathang-isip ang mga manlalaro; totoo ang mga bansa, lugar, at patakaran.",
   "AUTO_GFX": "Auto graphics",
   "GFX_LOWERED": "Ibinaba ang graphics para manatiling smooth ang laro (Settings)."
 }

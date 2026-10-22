@@ -3,9 +3,10 @@ extends Control
 ## and those of the engine's own parts (Engine.get_copyright_info), which their licences ask to be shown. The legal
 ## texts are in English, as they are written.
 
-const CREDITS := """[b]Takraw Smash[/b]
+const CREDITS := """[b]Sepak Takraw Unleashed[/b]
 Made by Josh Nason.
-Players, venues, crowd, ball and sounds made in code for the game; the menu music and crowd drums written for it
+The players (a man and a woman), the ball and the app's icon made for the game; the kicks, runs and walks from
+motion capture (Mixamo). Venues and sounds made in code for the game; the menu music and crowd drums written for it
 (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker."""
 
 const FONTS := """[b]Fonts[/b]

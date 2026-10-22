@@ -151,7 +151,7 @@ static func pose(name: String) -> Texture2D:
 static var _art := {}
 
 
-## A figure for the menus, already in its colours (assets/ui/art_*.png, from tools/ui_art/import_art.py).
+## A figure for the menus, already in its colours (assets/ui/art_*.png, from tools/ui_art/render_art.tscn).
 static func art(name: String) -> Texture2D:
 	if not _art.has(name):
 		var path := "res://assets/ui/art_%s.png" % name
@@ -195,13 +195,13 @@ static func tile(title: String, desc: String, accent: Color, pose_name: String, 
 		bg.modulate = Color(1, 1, 1, 0.92)
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		if tall:
-			bg.anchor_left = -0.03
-			bg.anchor_right = 1.05
+			bg.anchor_left = 0.02
+			bg.anchor_right = 0.98
 			bg.anchor_top = 0.27
 			bg.anchor_bottom = 0.9
 		else:
-			bg.anchor_left = 0.53
-			bg.anchor_right = 1.07
+			bg.anchor_left = 0.5
+			bg.anchor_right = 0.98
 			bg.anchor_top = 0.04
 			bg.anchor_bottom = 0.98
 		b.add_child(bg)

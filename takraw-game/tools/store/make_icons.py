@@ -1,83 +1,49 @@
 #!/usr/bin/env python3
 """Make the launcher icons (512, 192 and the adaptive icon's 432 foreground and background) and the store's 512
-icon, from the menu art (assets/ui/art_spike.png, rendered by tools/ui_art/render_art.tscn): the roll spike, over
-a woven ball, on the game's navy and saffron.
+icon from the game's icon picture, store/graphics/icon_source.jpg (the ball, kicked by the net).
 
 Usage: python3 tools/store/make_icons.py   (needs Pillow)
 """
-import math
 import pathlib
 
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-NAVY = (12, 26, 41)
-NAVY2 = (27, 58, 92)
-SAFFRON = (255, 154, 31)
-GOLD = (255, 210, 122)
+# The part of the picture that must show (the ball and the shoe), as fractions of its width and height.
+KEEP = (0.1, 0.03, 0.9, 0.79)
 
 
-def background(n):
-    img = Image.new("RGBA", (n, n), NAVY + (255,))
-    px = img.load()
-    for y in range(n):
-        for x in range(n):
-            d = math.hypot(x - n * 0.35, y - n * 0.3) / n
-            k = max(0.0, 1.0 - d * 1.4)
-            px[x, y] = tuple(int(NAVY[i] + (NAVY2[i] - NAVY[i]) * k) for i in range(3)) + (255,)
-    # A saffron glow low on the right, and the court's lines.
-    glow = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow)
-    gd.ellipse([n * 0.35, n * 0.45, n * 1.3, n * 1.3], fill=SAFFRON + (90,))
-    glow = glow.filter(ImageFilter.GaussianBlur(n * 0.12))
-    img.alpha_composite(glow)
-    d = ImageDraw.Draw(img)
-    w = max(2, n // 128)
-    d.line([(0, n * 0.82), (n, n * 0.7)], fill=(255, 255, 255, 40), width=w)
-    d.line([(n * 0.5, n * 0.76), (n * 0.62, n)], fill=(255, 255, 255, 30), width=w)
-    return img
+def source():
+    return Image.open(ROOT / "store/graphics/icon_source.jpg").convert("RGBA")
 
 
-def ball(n, r):
-    """The woven synthetic ball: yellow strips crossing, dark holes between."""
-    b = Image.new("RGBA", (r * 2, r * 2), (0, 0, 0, 0))
-    px = b.load()
-    for y in range(r * 2):
-        for x in range(r * 2):
-            dx, dy = (x - r) / r, (y - r) / r
-            if dx * dx + dy * dy > 1:
-                continue
-            z = math.sqrt(1 - dx * dx - dy * dy)
-            u, v = math.atan2(dx, z) * 3, math.asin(dy) * 3
-            a, c = math.sin(u + v), math.sin(u - v)
-            shade = 0.55 + 0.45 * (z * 0.7 + (-dx * 0.3 - dy * 0.4) + 0.3)
-            if max(abs(a), abs(c)) < 0.32:
-                col = (107, 61, 16)
-            elif abs(a) > abs(c):
-                col = (250, 205, 95)
-            else:
-                col = (222, 170, 62)
-            px[x, y] = tuple(min(255, int(ch * shade)) for ch in col) + (255,)
-    d = ImageDraw.Draw(b)
-    d.ellipse([1, 1, r * 2 - 2, r * 2 - 2], outline=(12, 26, 41, 255), width=max(2, r // 14))
-    return b
+def rounded(img, n):
+    img = img.resize((n, n), Image.LANCZOS)
+    mask = Image.new("L", (n, n), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, n - 1, n - 1], radius=int(n * 0.22), fill=255)
+    out = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    out.paste(img, (0, 0), mask)
+    return out
 
 
-def figure(n, scale):
-    art = Image.open(ROOT / "assets/ui/art_spike.png").convert("RGBA")
-    h = int(n * scale)
-    w = int(art.width * h / art.height)
-    return art.resize((w, h), Image.LANCZOS)
-
-
-def compose(n, safe=1.0):
-    """The icon's picture at n pixels; safe shrinks it into the adaptive icon's safe circle."""
-    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    f = figure(n, 0.78 * safe)
-    img.alpha_composite(f, (int(n * 0.5 - f.width * 0.52), int(n * 0.5 - f.height * 0.5 + n * 0.03 * safe)))
-    r = int(n * 0.13 * safe)
-    bl = ball(n, r)
-    img.alpha_composite(bl, (int(n * 0.5 + n * 0.16 * safe), int(n * 0.5 - n * 0.36 * safe)))
+def adaptive_background(n):
+    """The whole picture for the adaptive icon: a launcher shows only its middle two thirds (in a circle, a
+    squircle...), so the picture is shrunk until the ball and the shoe fit there, over a blurred copy of itself."""
+    src = source()
+    img = src.resize((n, n), Image.LANCZOS).filter(ImageFilter.GaussianBlur(n * 0.04))
+    window = n * 0.64
+    w = KEEP[2] - KEEP[0]
+    h = KEEP[3] - KEEP[1]
+    s = int(window / max(w, h))
+    pic = src.resize((s, s), Image.LANCZOS)
+    # Its edges fade into the blurred copy.
+    fade = Image.new("L", (s, s), 0)
+    edge = int(s * 0.06)
+    ImageDraw.Draw(fade).rectangle([edge, edge, s - edge, s - edge], fill=255)
+    fade = fade.filter(ImageFilter.GaussianBlur(edge * 0.6))
+    cx = (KEEP[0] + KEEP[2]) * 0.5 * s
+    cy = (KEEP[1] + KEEP[3]) * 0.5 * s
+    img.paste(pic, (int(n * 0.5 - cx), int(n * 0.5 - cy)), fade)
     return img
 
 
@@ -85,20 +51,11 @@ def main():
     out = ROOT / "assets/icon"
     out.mkdir(parents=True, exist_ok=True)
     for n in (512, 192):
-        img = background(n)
-        img.alpha_composite(compose(n))
-        mask = Image.new("L", (n, n), 0)
-        ImageDraw.Draw(mask).rounded_rectangle([0, 0, n - 1, n - 1], radius=int(n * 0.22), fill=255)
-        rounded = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-        rounded.paste(img, (0, 0), mask)
-        rounded.save(out / f"icon_{n}.png")
-    background(432).save(out / "icon_bg_432.png")
-    compose(432, safe=0.62).save(out / "icon_fg_432.png")
+        rounded(source(), n).save(out / f"icon_{n}.png")
+    adaptive_background(432).save(out / "icon_bg_432.png")
+    Image.new("RGBA", (432, 432), (0, 0, 0, 0)).save(out / "icon_fg_432.png")
     store = ROOT / "store/graphics"
-    store.mkdir(parents=True, exist_ok=True)
-    full = background(512)
-    full.alpha_composite(compose(512))
-    full.convert("RGB").save(store / "icon-512.png")
+    source().convert("RGB").resize((512, 512), Image.LANCZOS).save(store / "icon-512.png")
     print("icons written")
 
 

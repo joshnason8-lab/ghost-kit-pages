@@ -1,11 +1,11 @@
-# Takraw Smash on Google Play
+# Sepak Takraw Unleashed on Google Play
 
 Everything Google Play asks for, and the steps to put the game on it. Checked against Google's requirements as they
 stand in October 2026.
 
 ## What is ready
 
-- **The Play bundle (.aab)**, built by GitHub Actions ("Takraw Smash · Play Store bundle"). It is unsigned until
+- **The Play bundle (.aab)**, built by GitHub Actions ("Sepak Takraw Unleashed · Play Store bundle"). It is unsigned until
   your upload key is in the repository (step 2), then signed with it.
 - **The game meets Google's technical rules**:
   - targets Android 16 (API 36), required for new apps since 31 August 2026;
@@ -57,16 +57,16 @@ Google signs the game for phones with its own key (Play App Signing). You sign e
    - `ANDROID_UPLOAD_KEY_ALIAS`: `upload`
    - `ANDROID_UPLOAD_KEY_PASSWORD`: your password.
 5. Build the signed bundle:
-   1. On GitHub, go to **Actions > Takraw Smash · Play Store bundle > Run workflow**.
+   1. On GitHub, go to **Actions > Sepak Takraw Unleashed · Play Store bundle > Run workflow**.
    2. Pick the branch `claude/kind-clarke-3g5fqs` (or `main` once merged), then **Run workflow**.
    3. When it finishes (about 15 minutes), open the run. Under **Artifacts**, download
-      `takraw-smash-<version>-play-signed`, a zip with the `.aab` inside.
+      `sepak-takraw-unleashed-<version>-play-signed`, a zip with the `.aab` inside.
 
 ## 3. Create the app
 
 1. In Play Console, go to **Home > Create app**.
 2. Fill in:
-   - App name: **Takraw Smash**
+   - App name: **Sepak Takraw Unleashed**
    - Default language: **English (United States)**
    - App or game: **Game**
    - Free or paid: **Free**

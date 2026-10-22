@@ -98,9 +98,9 @@ var _rec: Array = []
 var _replay_i := 0.0
 var _replay_frames: Array = []
 
-var officials: Array[ToonBody] = []
-var _ref: ToonBody
-var _judges: Array[ToonBody] = []
+var officials: Array[RealBody] = []
+var _ref: RealBody
+var _judges: Array[RealBody] = []
 
 
 func _ready() -> void:
@@ -183,8 +183,7 @@ func _make_teams() -> void:
 		for i in lineup.size():
 			var pd: Dictionary = lineup[i]
 			var look := {"skin": pd.get("skin", Color("c98a5a")), "jersey": c1, "shorts": c2.darkened(0.3) if c2.get_luminance() > 0.7 else c2,
-				"trim": c2 if c2.get_luminance() > 0.5 else Color.WHITE, "shoe": Color("f3efe6"), "hair": Color("15100c"),
-				"band": c2, "hair_style": int(pd.get("hair_style", 0)), "height": float(pd.get("height", 1.76)), "women": women}
+				"height": float(pd.get("height", 1.76)), "women": women}
 			var p := Player.new(pd, 0, roles[i] if i < roles.size() else DB.POS_STRIKER, look)
 			p.slot = i
 			add_child(p)
@@ -196,7 +195,6 @@ func _make_teams() -> void:
 		for p in teams[k].players:
 			var pl: Player = p
 			pl.position = pl.target
-	_update_tags()
 
 
 func _roles() -> Array:
@@ -243,8 +241,8 @@ func _role_player(side: int, role: int, nth := 0) -> Player:
 
 func _make_officials() -> void:
 	var post_z := Court.HALF_W + Court.POST_OUT
-	var look := {"jersey": Color("f3efe6"), "shorts": Color("1a1a1a"), "skin": Color("c98a5a"), "trim": Color("1a1a1a"), "band": Color("f3efe6"), "hair_style": 1, "shoe": Color("1a1a1a")}
-	_ref = ToonBody.new(look)
+	var look := {"jersey": Color("f3efe6"), "shorts": Color("1a1a1a"), "skin": Color("c98a5a")}
+	_ref = RealBody.new(look)
 	add_child(_ref)
 	_ref.position = Vector3(0, 0.8, post_z + 0.82)
 	_ref.rotation.y = PI
@@ -255,7 +253,7 @@ func _make_officials() -> void:
 	if not low:
 		spots.append_array([Vector3(-Court.HALF - 0.8, 0, -Court.HALF_W - 0.8), Vector3(Court.HALF + 0.8, 0, Court.HALF_W + 0.8)])
 	for i in spots.size():
-		var b := ToonBody.new(look.merged({"skin": [Color("e0b48c"), Color("b07448"), Color("8d5a36")][i % 3]}, true))
+		var b := RealBody.new(look.merged({"skin": [Color("e0b48c"), Color("b07448"), Color("8d5a36")][i % 3]}, true))
 		add_child(b)
 		b.position = spots[i]
 		b.rotation.y = atan2(-spots[i].x, -spots[i].z)
@@ -411,7 +409,6 @@ func _begin_setup() -> void:
 	var thrower := _thrower()
 	ball.hold(thrower.position + thrower.net_dir() * 0.25 + Vector3(0, 1.0, 0))
 	hud.set_score()
-	_update_tags()
 	if not _intro_done:
 		_intro_done = true
 	hud.call_line(_score_call())
@@ -1156,7 +1153,7 @@ func _prepare_block(atk: Dictionary) -> void:
 	var def_side := 1 - int(atk.side)
 	var blocker := _role_player(def_side, DB.POS_STRIKER)
 	var cp: Vector3 = atk.pos
-	var spot := Court.spot(def_side, 0.42, 0.0)
+	var spot := Court.spot(def_side, 0.55, 0.0)   # his raised foot reaches the net
 	spot.z = clampf(cp.z, -Court.HALF_W + 0.5, Court.HALF_W - 0.5)
 	blocker.hurry = 1.0
 	blocker.target = spot
@@ -1359,7 +1356,7 @@ func _celebrate(team: int, why: String) -> void:
 func _judge_signal(p: Vector3, called_in: bool) -> void:
 	if _judges.is_empty():
 		return
-	var nearest: ToonBody = _judges[0]
+	var nearest: RealBody = _judges[0]
 	for j in _judges:
 		if j.global_position.distance_to(p) < nearest.global_position.distance_to(p):
 			nearest = j
@@ -1437,7 +1434,6 @@ func _change_ends() -> void:
 				pl.position = pl.target
 				pl.vel = Vector3.ZERO
 		cam.snap())
-	_update_tags()
 
 
 func _finish(team: int) -> void:
@@ -1875,15 +1871,6 @@ func _offer_block() -> void:
 			hud.timing_open({"t": float(block.t) - Moves.contact_time("block"), "pos": Vector3(0, arena.net_top + 0.6, float(block.z)), "kind": "block"})
 		else:
 			hud.timing_done()
-
-
-## The tags over the players' heads: their shirt numbers, yours in gold (Settings: off).
-func _update_tags() -> void:
-	var on := int(Game.settings.tags) != 2
-	for side in 2:
-		for pp in players_on(side):
-			var pl: Player = pp
-			pl.set_tag(str(int(pl.data.num)) if on else "", _is_user(pl))
 
 
 ## How much is riding on the point: set point, match point, a close finish.

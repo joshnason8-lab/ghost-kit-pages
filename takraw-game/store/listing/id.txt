@@ -2,13 +2,13 @@
 # Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Takraw Smash
+Sepak Takraw Unleashed
 
 == Short description ==
 Sepak takraw aturan asli: servis keras, smash salto, dan blok di depan net.
 
 == Full description ==
-Takraw Smash menghadirkan sepak takraw di genggamanmu, voli kaki khas Asia Tenggara. Servis dengan satu kaki di dalam lingkaran, terima bola dengan sepak sila, beri umpan tinggi dekat net, lalu lepaskan smash salto melewati blok lawan.
+Sepak Takraw Unleashed menghadirkan sepak takraw di genggamanmu, voli kaki khas Asia Tenggara. Servis dengan satu kaki di dalam lingkaran, terima bola dengan sepak sila, beri umpan tinggi dekat net, lalu lepaskan smash salto melewati blok lawan.
 
 PERMAINAN ASLI
 • Peraturan permainan terbaru: set hingga 15 poin (unggul dua poin, maksimal 17), best of three, servis bergantian setiap poin, tiga sentuhan per tim.
@@ -30,7 +30,7 @@ MAIN SESUKA GAYAMU
 • Dirancang agar lancar di HP terjangkau dan kelas menengah.
 • Bisa dimainkan offline. Tanpa iklan, tanpa pembelian, tanpa akun, dan tanpa pengumpulan data.
 
-Takraw Smash adalah game independen. Game ini tidak berafiliasi dengan dan tidak didukung oleh federasi, liga, klub, atau pemain sepak takraw mana pun. Julukan klub adalah rekaan dan para pemainnya fiktif; negara, tempat, dan aturannya nyata.
+Sepak Takraw Unleashed adalah game independen. Game ini tidak berafiliasi dengan dan tidak didukung oleh federasi, liga, klub, atau pemain sepak takraw mana pun. Julukan klub adalah rekaan dan para pemainnya fiktif; negara, tempat, dan aturannya nyata.
 
 == Release notes (first release) ==
-Rilis pertama Takraw Smash: Laga Cepat, Musim Liga, dan Internasional, dalam tiga belas bahasa.
+Rilis pertama Sepak Takraw Unleashed: Laga Cepat, Musim Liga, dan Internasional, dalam tiga belas bahasa.

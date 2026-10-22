@@ -6,6 +6,8 @@ extends Node3D
 const G := 9.81
 const RADIUS := 0.068     # 0.43 m round
 const LOOK_SCALE := 1.7
+const MODEL := "res://assets/models/ball.glb"
+const MODEL_RADIUS := 0.93   # the model's size
 
 var vel := Vector3.ZERO
 var flying := false
@@ -18,38 +20,25 @@ var _shadow: MeshInstance3D
 var _trail: Array[MeshInstance3D] = []
 var _trail_on := 0.0
 
-static var _tex: ImageTexture
 static var _shadow_mat: StandardMaterial3D
+static var _model: Mesh
+static var _model_mat: StandardMaterial3D
 
 
 func _ready() -> void:
 	_mesh = MeshInstance3D.new()
+	_mesh.mesh = model()
+	_mesh.material_override = model_material()
+	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Drawn a little larger than it is, so it reads on a phone from the broadcast camera's seat; it flies, and is met,
+	# at its true size.
+	_mesh.scale = Vector3.ONE * LOOK_SCALE * RADIUS / MODEL_RADIUS
+	add_child(_mesh)
 	var sm := SphereMesh.new()
 	sm.radius = RADIUS
 	sm.height = RADIUS * 2.0
-	sm.radial_segments = 16
-	sm.rings = 10
-	_mesh.mesh = sm
-	var mat := StandardMaterial3D.new()
-	mat.albedo_texture = texture()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
-	mat.roughness = 0.8
-	_mesh.material_override = mat
-	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# Drawn a little larger than it is, with a dark rim, so it reads on a phone from the broadcast camera's seat; it
-	# flies, and is met, at its true size.
-	_mesh.scale = Vector3.ONE * LOOK_SCALE
-	add_child(_mesh)
-	var rim := MeshInstance3D.new()
-	rim.mesh = sm
-	rim.scale = Vector3.ONE * 1.12
-	var rm := StandardMaterial3D.new()
-	rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	rm.cull_mode = BaseMaterial3D.CULL_FRONT
-	rm.albedo_color = Color(0.03, 0.05, 0.08)
-	rim.material_override = rm
-	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_mesh.add_child(rim)
+	sm.radial_segments = 12
+	sm.rings = 6
 	_shadow = MeshInstance3D.new()
 	var q := QuadMesh.new()
 	q.size = Vector2(0.34, 0.34)
@@ -75,33 +64,22 @@ func _ready() -> void:
 		_trail.append(t)
 
 
-## The ball's look: the woven yellow of the synthetic ball with its twelve holes and twenty crossings, drawn once.
-static func texture() -> ImageTexture:
-	if _tex:
-		return _tex
-	var w := 128
-	var h := 64
-	var img := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
-	var base := Color("f2c14e")
-	for y in h:
-		for x in w:
-			var u := float(x) / w * TAU * 3.0
-			var v := float(y) / h * PI * 3.0
-			# Two sets of strips woven over each other, and the holes between them.
-			var a := sin(u + v)
-			var b := sin(u - v)
-			var strip := maxf(absf(a), absf(b))
-			var c := base
-			if strip < 0.32:
-				c = Color("6b3d10")          # a hole
-			elif absf(a) > absf(b):
-				c = base.lightened(0.08)
-			else:
-				c = base.darkened(0.12)
-			img.set_pixel(x, y, c)
-	img.generate_mipmaps()
-	_tex = ImageTexture.create_from_image(img)
-	return _tex
+## The ball's model: woven strips with the holes between them.
+static func model() -> Mesh:
+	if _model == null:
+		var scene: Node = (load(MODEL) as PackedScene).instantiate()
+		_model = (scene.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
+		scene.free()
+	return _model
+
+
+static func model_material() -> StandardMaterial3D:
+	if _model_mat == null:
+		_model_mat = StandardMaterial3D.new()
+		_model_mat.albedo_texture = load("res://assets/models/ball.jpg")
+		_model_mat.roughness = 0.55
+		_model_mat.cull_mode = BaseMaterial3D.CULL_DISABLED   # through a hole, the inside of the far side
+	return _model_mat
 
 
 static func shadow_material() -> StandardMaterial3D:

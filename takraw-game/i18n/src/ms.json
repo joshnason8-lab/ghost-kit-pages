@@ -1,5 +1,5 @@
 {
-  "GAME_TITLE": "Takraw Smash",
+  "GAME_TITLE": "Sepak Takraw Unleashed",
   "TAGLINE": "Servis. Umpan. Rejam guling.",
   "MENU_EYEBROW": "Sepak takraw · Peraturan sebenar",
   "LOADING": "Menyediakan gelanggang…",
@@ -216,7 +216,6 @@
   "FPS_NOTE_SAVER": "Kira-kira {n} bingkai sesaat: bateri lebih tahan, telefon lebih sejuk.",
   "FPS_NOTE_SMOOTH": "{n} bingkai sesaat pada skrin {hz} Hz anda.",
   "FPS_NOTE_MAX": "Sebanyak bingkai yang mampu dipaparkan skrin {hz} Hz anda.",
-  "PLAYER_TAGS": "Label pemain",
   "SOUND": "Bunyi",
   "MUSIC": "Muzik",
   "VIBRATION": "Getaran",
@@ -354,7 +353,7 @@
   "YOU_RELEGATED": "Kelab anda turun ke Divisyen 1. Menangi semula tempat anda musim depan.",
   "YOU_STAY_DIV1": "Kelab anda kekal dalam Divisyen 1. Layak ke perlawanan akhir untuk naik.",
   "SHIRT_N": "#{n}",
-  "ABOUT_DISCLAIMER": "Takraw Smash ialah permainan bebas. Ia tidak bergabung dengan, atau disokong oleh, mana-mana persekutuan, liga, kelab atau pemain sepak takraw. Nama jolokan kelab dicipta dan pemainnya rekaan; negara, tempat dan peraturannya adalah sebenar.",
+  "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed ialah permainan bebas. Ia tidak bergabung dengan, atau disokong oleh, mana-mana persekutuan, liga, kelab atau pemain sepak takraw. Nama jolokan kelab dicipta dan pemainnya rekaan; negara, tempat dan peraturannya adalah sebenar.",
   "AUTO_GFX": "Grafik automatik",
   "GFX_LOWERED": "Grafik diturunkan supaya permainan kekal lancar (Tetapan)."
 }

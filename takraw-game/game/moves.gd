@@ -1,13 +1,15 @@
 class_name Moves
 extends RefCounted
-## The players' moves as key poses (ToonBody's angles, in degrees), played over a move's length. Each move that meets
+## The players' moves as key poses (RealBody's angles, in degrees), played over a move's length. Each move that meets
 ## the ball knows when (contact, a fraction of its length) and where: the height the ball is met at and how far in
 ## front of the player, so a player can be sent to the right spot at the right moment and start the move so his foot,
 ## knee or head arrives with the ball. Moves are made for the right foot; mirrored for the left (and for kicks to
 ## the other side).
 ##
 ## Besides the bones, a key may set "y" (the body's lift off the floor, m: a jump), "yaw" (degrees the body turns from
-## facing the net) and "hips_y" (the hips lowered, m).
+## facing the net), "hips_y" (the hips lowered, m), "hips_fwd" and "hips_side" (the hips moved toward the net and to
+## his right, m) and "plant" (0: leave the body's height as it is, for motion capture; RealBody keeps a foot on the
+## floor otherwise).
 
 const READY := {
 	"hips": Vector3(0, 0, 0), "hips_y": -0.07, "y": 0.0, "yaw": 0.0,
@@ -19,31 +21,41 @@ const READY := {
 }
 
 ## Where a move meets the ball: [height above the floor (m), how far in front of the player toward the net (m), how
-## far to his kicking side (m)], the move's length (s) and when in it the ball is met (0-1).
+## far to his kicking side (m)], the move's length (s) and when in it the ball is met (0-1). The moves from motion
+## capture (CLIPS) have theirs measured on the man's model by tools/models/fbx_to_move.gd, which prints these rows.
 const CONTACT := {
 	"sila": [0.62, 0.28, 0.05, 0.55, 0.45],
 	"kuda": [0.55, 0.62, 0.12, 0.6, 0.45],
-	"thigh": [0.88, 0.36, 0.12, 0.55, 0.45],
+	"thigh": [0.9, 0.31, 0.3, 0.62, 0.42],
 	"chest": [1.30, 0.22, 0.0, 0.6, 0.45],
 	"header": [1.78, 0.18, 0.0, 0.55, 0.45],
 	"dig": [0.28, 0.95, 0.25, 0.8, 0.38],
-	"serve": [1.08, 0.58, 0.16, 1.0, 0.55],
+	"serve": [1.18, 0.7, 0.02, 1.1, 0.5],
 	"horse": [1.62, 0.42, 0.1, 1.1, 0.55],
 	"toss": [1.05, 0.35, 0.0, 0.7, 0.5],
-	"roll": [2.50, 0.42, 0.0, 1.15, 0.48],
-	"sunback": [2.20, 0.34, 0.32, 1.0, 0.45],
-	"tapak": [2.00, 0.50, 0.12, 0.9, 0.45],
+	"roll": [2.07, 0.58, 0.0, 1.65, 0.36],
+	"sunback": [1.95, 1.15, -0.11, 1.05, 0.43],
+	"tapak": [1.91, 1.32, 0.03, 1.05, 0.42],
 	"head_spike": [2.25, 0.30, 0.0, 0.95, 0.45],
 	"feint": [1.80, 0.46, 0.1, 0.75, 0.45],
-	"block": [2.05, 0.30, 0.0, 0.9, 0.45],
+	"block": [1.95, 0.64, -0.22, 0.9, 0.45],
 }
 
+## The moves taken from motion capture (tools/models/fbx_to_move.gd): a pose for each frame.
+const CLIPS := ["serve", "roll", "sunback", "tapak", "thigh", "run", "walk"]
+const CLIP_DIR := "res://assets/moves/"
+
 static var _moves := {}
+static var _clips := {}
 
 
 static func _build() -> void:
 	if not _moves.is_empty():
 		return
+	for name in CLIPS:
+		var frames := load_clip(CLIP_DIR + name + ".json")
+		if not frames.is_empty():
+			_clips[name] = frames
 	_moves = {
 		"sila": [
 			[0.0, {}],
@@ -59,13 +71,6 @@ static func _build() -> void:
 			[0.45, {"spine": Vector3(-12, 0, 0), "thigh_r": Vector3(-78, 0, -6), "shin_r": Vector3(8, 0, 0), "foot_r": Vector3(42, 0, 0),
 				"upperarm_l": Vector3(10, 0, 55), "upperarm_r": Vector3(10, 0, -55), "head": Vector3(22, 0, 0)}],
 			[0.7, {"thigh_r": Vector3(-60, 0, -6), "shin_r": Vector3(25, 0, 0)}],
-			[1.0, {}],
-		],
-		"thigh": [
-			[0.0, {}],
-			[0.45, {"thigh_r": Vector3(-86, 0, -4), "shin_r": Vector3(88, 0, 0), "foot_r": Vector3(0, 0, 0), "head": Vector3(28, 0, 0),
-				"upperarm_l": Vector3(-5, 0, 58), "upperarm_r": Vector3(-5, 0, -58), "spine": Vector3(2, 0, 0)}],
-			[0.7, {"thigh_r": Vector3(-50, 0, -4), "shin_r": Vector3(60, 0, 0)}],
 			[1.0, {}],
 		],
 		"chest": [
@@ -92,16 +97,6 @@ static func _build() -> void:
 			[0.7, {"hips_y": -0.3, "thigh_r": Vector3(-60, 0, -10), "shin_r": Vector3(30, 0, 0), "shin_l": Vector3(100, 0, 0)}],
 			[1.0, {}],
 		],
-		"serve": [
-			[0.0, {}],
-			[0.3, {"spine": Vector3(8, 0, 0), "thigh_r": Vector3(42, 0, -10), "shin_r": Vector3(72, 0, 0), "upperarm_l": Vector3(-10, 0, 50), "upperarm_r": Vector3(10, 0, -50),
-				"thigh_l": Vector3(-12, 0, 6), "shin_l": Vector3(26, 0, 0)}],
-			[0.55, {"spine": Vector3(-24, 0, -6), "chest": Vector3(-8, 0, 0), "head": Vector3(30, 0, 0), "thigh_r": Vector3(-102, 0, -8),
-				"shin_r": Vector3(6, 0, 0), "foot_r": Vector3(42, 0, 0), "upperarm_l": Vector3(-30, 0, 72), "upperarm_r": Vector3(-10, 0, -70),
-				"thigh_l": Vector3(-6, 0, 6), "shin_l": Vector3(14, 0, 0)}],
-			[0.78, {"spine": Vector3(-30, 0, -4), "thigh_r": Vector3(-122, 0, -6), "shin_r": Vector3(22, 0, 0)}],
-			[1.0, {}],
-		],
 		"horse": [
 			[0.0, {}],
 			[0.3, {"yaw": 160.0, "spine": Vector3(30, 0, 0), "thigh_r": Vector3(-30, 0, -8), "shin_r": Vector3(60, 0, 0)}],
@@ -115,40 +110,6 @@ static func _build() -> void:
 			[0.0, {"upperarm_l": Vector3(-48, 0, 12), "upperarm_r": Vector3(-48, 0, -12), "forearm_l": Vector3(-40, 0, 0), "forearm_r": Vector3(-40, 0, 0)}],
 			[0.28, {"spine": Vector3(18, 0, 0), "upperarm_l": Vector3(22, 0, 10), "upperarm_r": Vector3(22, 0, -10), "forearm_l": Vector3(-15, 0, 0), "forearm_r": Vector3(-15, 0, 0)}],
 			[0.5, {"spine": Vector3(4, 0, 0), "upperarm_l": Vector3(-78, 0, 8), "upperarm_r": Vector3(-78, 0, -8), "forearm_l": Vector3(-25, 0, 0), "forearm_r": Vector3(-25, 0, 0)}],
-			[1.0, {}],
-		],
-		"roll": [
-			[0.0, {}],
-			[0.18, {"hips_y": -0.26, "spine": Vector3(26, 0, 0), "thigh_l": Vector3(-62, 0, 7), "thigh_r": Vector3(-62, 0, -7), "shin_l": Vector3(95, 0, 0),
-				"shin_r": Vector3(95, 0, 0), "foot_l": Vector3(-30, 0, 0), "foot_r": Vector3(-30, 0, 0), "upperarm_l": Vector3(45, 0, 20), "upperarm_r": Vector3(45, 0, -20)}],
-			[0.32, {"y": 0.55, "hips": Vector3(-45, 0, 0), "spine": Vector3(0, 0, 0), "thigh_l": Vector3(-20, 0, 6), "shin_l": Vector3(30, 0, 0),
-				"thigh_r": Vector3(-40, 0, -6), "shin_r": Vector3(40, 0, 0), "upperarm_l": Vector3(-150, 0, 20), "upperarm_r": Vector3(-150, 0, -20)}],
-			[0.48, {"y": 0.82, "hips": Vector3(-132, 0, 0), "spine": Vector3(-10, 0, 0), "head": Vector3(-20, 0, 0), "thigh_r": Vector3(-24, 0, -4),
-				"shin_r": Vector3(4, 0, 0), "foot_r": Vector3(30, 0, 0), "thigh_l": Vector3(70, 0, 8), "shin_l": Vector3(50, 0, 0),
-				"upperarm_l": Vector3(-60, 0, 85), "upperarm_r": Vector3(-60, 0, -85)}],
-			[0.66, {"y": 0.6, "hips": Vector3(-250, 0, 0), "thigh_r": Vector3(-30, 0, -6), "thigh_l": Vector3(-20, 0, 6), "shin_l": Vector3(60, 0, 0), "shin_r": Vector3(60, 0, 0)}],
-			[0.84, {"y": 0.02, "hips": Vector3(-340, 0, 0), "hips_y": -0.3, "thigh_l": Vector3(-70, 0, 8), "thigh_r": Vector3(-70, 0, -8), "shin_l": Vector3(105, 0, 0),
-				"shin_r": Vector3(105, 0, 0), "foot_l": Vector3(-35, 0, 0), "foot_r": Vector3(-35, 0, 0), "upperarm_l": Vector3(-40, 0, 60), "upperarm_r": Vector3(-40, 0, -60)}],
-			[1.0, {"hips": Vector3(-360, 0, 0)}],
-		],
-		"sunback": [
-			[0.0, {}],
-			[0.2, {"hips_y": -0.2, "yaw": 30.0, "thigh_l": Vector3(-55, 0, 7), "thigh_r": Vector3(-55, 0, -7), "shin_l": Vector3(85, 0, 0), "shin_r": Vector3(85, 0, 0),
-				"upperarm_l": Vector3(40, 0, 25), "upperarm_r": Vector3(40, 0, -25)}],
-			[0.45, {"y": 0.68, "yaw": 72.0, "spine": Vector3(-6, 0, -38), "chest": Vector3(0, 0, -10), "head": Vector3(10, -30, 20),
-				"thigh_r": Vector3(-38, 0, -112), "shin_r": Vector3(8, 0, 0), "foot_r": Vector3(30, 0, 0),
-				"thigh_l": Vector3(-62, 0, 18), "shin_l": Vector3(84, 0, 0), "upperarm_l": Vector3(-30, 0, 100), "upperarm_r": Vector3(-20, 0, -60)}],
-			[0.7, {"y": 0.3, "yaw": 40.0, "thigh_r": Vector3(-40, 0, -40), "spine": Vector3(5, 0, -10)}],
-			[0.88, {"y": 0.0, "hips_y": -0.22, "thigh_l": Vector3(-50, 0, 7), "thigh_r": Vector3(-50, 0, -7), "shin_l": Vector3(80, 0, 0), "shin_r": Vector3(80, 0, 0)}],
-			[1.0, {}],
-		],
-		"tapak": [
-			[0.0, {}],
-			[0.2, {"hips_y": -0.2, "thigh_l": Vector3(-55, 0, 7), "thigh_r": Vector3(-55, 0, -7), "shin_l": Vector3(85, 0, 0), "shin_r": Vector3(85, 0, 0),
-				"upperarm_l": Vector3(40, 0, 25), "upperarm_r": Vector3(40, 0, -25)}],
-			[0.45, {"y": 0.6, "spine": Vector3(-22, 0, 0), "head": Vector3(25, 0, 0), "thigh_r": Vector3(-122, 0, -6), "shin_r": Vector3(28, 0, 0),
-				"foot_r": Vector3(-40, 0, 0), "thigh_l": Vector3(-20, 0, 6), "shin_l": Vector3(60, 0, 0), "upperarm_l": Vector3(-40, 0, 70), "upperarm_r": Vector3(-40, 0, -70)}],
-			[0.75, {"y": 0.15, "thigh_r": Vector3(-50, 0, -6), "shin_r": Vector3(60, 0, 0), "spine": Vector3(10, 0, 0)}],
 			[1.0, {}],
 		],
 		"head_spike": [
@@ -169,15 +130,20 @@ static func _build() -> void:
 			[0.75, {"y": 0.0}],
 			[1.0, {}],
 		],
+		# The block is made with the feet: a jump at the net, turned side on, one leg raised high with its sole to the
+		# spike (the arms out for balance, never up: a hand on the ball is a fault).
 		"block": [
 			[0.0, {}],
-			[0.22, {"hips_y": -0.24, "thigh_l": Vector3(-60, 0, 7), "thigh_r": Vector3(-60, 0, -7), "shin_l": Vector3(92, 0, 0), "shin_r": Vector3(92, 0, 0),
-				"upperarm_l": Vector3(40, 0, 15), "upperarm_r": Vector3(40, 0, -15)}],
-			[0.45, {"y": 0.78, "spine": Vector3(-12, 0, 0), "head": Vector3(14, 0, 0), "thigh_l": Vector3(-78, 0, 12), "thigh_r": Vector3(-78, 0, -12),
-				"shin_l": Vector3(96, 0, 0), "shin_r": Vector3(96, 0, 0), "foot_l": Vector3(-20, 0, 0), "foot_r": Vector3(-20, 0, 0),
-				"upperarm_l": Vector3(55, 0, 20), "upperarm_r": Vector3(55, 0, -20), "forearm_l": Vector3(-10, 0, 0), "forearm_r": Vector3(-10, 0, 0)}],
-			[0.75, {"y": 0.2}],
-			[0.9, {"y": 0.0, "hips_y": -0.2}],
+			[0.22, {"hips_y": -0.24, "yaw": 20.0, "thigh_l": Vector3(-60, 0, 7), "thigh_r": Vector3(-60, 0, -7), "shin_l": Vector3(92, 0, 0),
+				"shin_r": Vector3(92, 0, 0), "upperarm_l": Vector3(35, 0, 18), "upperarm_r": Vector3(35, 0, -18)}],
+			[0.45, {"y": 0.6, "yaw": 60.0, "hips": Vector3(0, 0, -12), "spine": Vector3(-4, 0, 14), "chest": Vector3(0, 0, 6), "head": Vector3(10, -40, -10),
+				"thigh_r": Vector3(-128, 0, -34), "shin_r": Vector3(6, 0, 0), "foot_r": Vector3(-25, 0, 0),
+				"thigh_l": Vector3(-28, 0, 10), "shin_l": Vector3(58, 0, 0), "foot_l": Vector3(20, 0, 0),
+				"upperarm_l": Vector3(-15, 0, 72), "upperarm_r": Vector3(-10, 0, -62), "forearm_l": Vector3(-20, 0, 0), "forearm_r": Vector3(-25, 0, 0)}],
+			[0.7, {"y": 0.22, "yaw": 40.0, "thigh_r": Vector3(-55, 0, -16), "shin_r": Vector3(35, 0, 0), "thigh_l": Vector3(-30, 0, 8), "shin_l": Vector3(45, 0, 0),
+				"upperarm_l": Vector3(-10, 0, 45), "upperarm_r": Vector3(-10, 0, -45)}],
+			[0.88, {"y": 0.0, "hips_y": -0.2, "yaw": 15.0, "thigh_l": Vector3(-50, 0, 7), "thigh_r": Vector3(-50, 0, -7), "shin_l": Vector3(80, 0, 0),
+				"shin_r": Vector3(80, 0, 0)}],
 			[1.0, {}],
 		],
 		"celebrate": [
@@ -229,6 +195,24 @@ static func _build() -> void:
 			key[1] = full
 
 
+## A move from motion capture, as poses: each bone's turn a Quaternion.
+static func load_clip(path: String) -> Array:
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return []
+	var data = JSON.parse_string(f.get_as_text())
+	if not data is Dictionary:
+		return []
+	var frames := []
+	for fr in data.get("frames", []):
+		var pose := {}
+		for key in fr:
+			var v = fr[key]
+			pose[key] = Quaternion(v[0], v[1], v[2], v[3]) if v is Array else float(v)
+		frames.append(pose)
+	return frames
+
+
 ## Poses held still: an official sitting in his chair, a line judge's signals.
 static func static_pose(name: String) -> Dictionary:
 	var p := READY.duplicate()
@@ -267,7 +251,7 @@ static func static_pose(name: String) -> Dictionary:
 
 static func has(name: String) -> bool:
 	_build()
-	return _moves.has(name)
+	return _moves.has(name) or _clips.has(name)
 
 
 static func length(name: String) -> float:
@@ -284,10 +268,17 @@ static func contact_time(name: String) -> float:
 ## The pose part way (t: 0-1) through a move; mirrored for the left foot.
 static func sample(name: String, t: float, mirror := false) -> Dictionary:
 	_build()
+	t = clampf(t, 0.0, 1.0)
+	if _clips.has(name):
+		# A move from motion capture: a pose for every frame, played straight through.
+		var frames: Array = _clips[name]
+		var f := t * float(frames.size() - 1)
+		var i := mini(int(f), frames.size() - 2)
+		var pc := blend(frames[i], frames[i + 1], f - float(i))
+		return Moves.mirrored(pc) if mirror else pc
 	var keys: Array = _moves.get(name, [])
 	if keys.is_empty():
 		return READY.duplicate()
-	t = clampf(t, 0.0, 1.0)
 	var i := 0
 	while i < keys.size() - 2 and t > float(keys[i + 1][0]):
 		i += 1
@@ -300,17 +291,33 @@ static func sample(name: String, t: float, mirror := false) -> Dictionary:
 	return Moves.mirrored(p) if mirror else p
 
 
-## a to b by k (0-1): angles, lifts and turns alike.
+## a to b by k (0-1): angles, lifts and turns alike. A bone's angles (degrees) and a turn from motion capture (a
+## Quaternion) blend as turns.
 static func blend(a: Dictionary, b: Dictionary, k: float) -> Dictionary:
 	var out := {}
 	for key in a:
 		var va = a[key]
-		var vb = b.get(key, va)
-		if va is Vector3:
-			out[key] = (va as Vector3).lerp(vb, k)
-		else:
-			out[key] = lerpf(float(va), float(vb), k)
+		var vb = b.get(key, _rest_of(key, va))
+		out[key] = _mix(va, vb, k)
+	for key in b:
+		if not a.has(key):
+			out[key] = _mix(_rest_of(key, b[key]), b[key], k)
 	return out
+
+
+static func _mix(va, vb, k: float):
+	if va is Quaternion or vb is Quaternion:
+		return RealBody.local_rot(va).slerp(RealBody.local_rot(vb), k)
+	if va is Vector3:
+		return (va as Vector3).lerp(vb, k)
+	return lerpf(float(va), float(vb), k)
+
+
+## What a pose without the key means by it.
+static func _rest_of(key: String, like):
+	if like is Vector3 or like is Quaternion:
+		return Vector3.ZERO
+	return 1.0 if key == "plant" else 0.0
 
 
 ## The same pose for the other foot: left and right swapped, and twists and side leans turned the other way.
@@ -325,15 +332,39 @@ static func mirrored(p: Dictionary) -> Dictionary:
 			k = k.left(-2) + "_l"
 		if v is Vector3:
 			out[k] = Vector3(v.x, -v.y, -v.z)
-		elif key == "yaw":
+		elif v is Quaternion:
+			out[k] = Quaternion(v.x, -v.y, -v.z, v.w)
+		elif key == "yaw" or key == "hips_side":
 			out[k] = -float(v)
 		else:
 			out[k] = v
 	return out
 
 
-## The running stride at phase ph (radians), at speed k (0-1 of a sprint), and a side-shuffle for sideways steps.
+## The running stride at phase ph (radians, a stride each turn), at speed k (0-1 of a sprint), and a side-shuffle for
+## sideways steps: the models' own walk and run (from motion capture), the shuffle drawn.
 static func run(ph: float, k: float, side := 0.0) -> Dictionary:
+	var p := _drawn_run(ph, k, side)
+	_build()
+	if not _clips.has("run") or k < 0.02:
+		return p
+	var cyc := fposmod(ph / TAU, 1.0)
+	var stride := _cycle("run", cyc)
+	if _clips.has("walk") and k < 0.6:
+		stride = blend(_cycle("walk", cyc), stride, smoothstep(0.3, 0.6, k))
+	return blend(p, stride, smoothstep(0.02, 0.2, k) * (1.0 - absf(side)))
+
+
+## A stride's pose part way (0-1) round its cycle.
+static func _cycle(name: String, c: float) -> Dictionary:
+	var frames: Array = _clips[name]
+	var f := c * float(frames.size())
+	var i := int(f) % frames.size()
+	return blend(frames[i], frames[(i + 1) % frames.size()], f - floorf(f))
+
+
+## The stride drawn by hand: standing (k 0) to a sprint, and the side-shuffle.
+static func _drawn_run(ph: float, k: float, side: float) -> Dictionary:
 	var p := READY.duplicate()
 	var s := sin(ph)
 	var c := cos(ph)

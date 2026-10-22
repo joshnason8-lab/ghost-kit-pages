@@ -90,7 +90,9 @@ func _build_ui() -> void:
 	_title = UI.label(tr("GAME_TITLE"), "TitleLabel", tsize)
 	_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.55))
 	_title.add_theme_constant_override("outline_size", 10)
-	_title.add_theme_constant_override("line_spacing", -30)
+	# The display font (with its fallbacks for every script) leaves a wide gap between lines: a wrapped name sits close.
+	var fs := Game.ts(tsize)
+	_title.add_theme_constant_override("line_spacing", -roundi(Game.font_display.get_height(fs) - fs * 0.9))
 	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(_title)
 	# The sport's name in Thai, where the game was born; in Thailand, its Malay name instead.

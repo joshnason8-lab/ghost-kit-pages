@@ -2,13 +2,13 @@
 # Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Takraw Smash
+Sepak Takraw Unleashed
 
 == Short description ==
 Sepak takraw: roll spikes, horse-kick serves and blocks at the net. Real rules.
 
 == Full description ==
-Takraw Smash is sepak takraw for your phone: the kick volleyball of Southeast Asia. Serve with a foot in the circle, receive with the inside of your foot, set it high by the net, and launch a roll spike over the block.
+Sepak Takraw Unleashed is sepak takraw for your phone: the kick volleyball of Southeast Asia. Serve with a foot in the circle, receive with the inside of your foot, set it high by the net, and launch a roll spike over the block.
 
 THE REAL GAME
 • The laws of the game as they stand today: sets to 15 (win by two, up to 17), best of three, the serve alternating every point, three touches a side.
@@ -30,7 +30,7 @@ PLAY YOUR WAY
 • Made to run smoothly on budget and mid-range phones.
 • Plays offline. No ads, no purchases, no account, and no data collected.
 
-Takraw Smash is an independent game. It is not affiliated with or endorsed by any sepak takraw federation, league, club or player. The clubs' nicknames are invented and the players are fictional; the countries, places and rules are real.
+Sepak Takraw Unleashed is an independent game. It is not affiliated with or endorsed by any sepak takraw federation, league, club or player. The clubs' nicknames are invented and the players are fictional; the countries, places and rules are real.
 
 == Release notes (first release) ==
-The first release of Takraw Smash: Quick Match, League Season and International, in thirteen languages.
+The first release of Sepak Takraw Unleashed: Quick Match, League Season and International, in thirteen languages.

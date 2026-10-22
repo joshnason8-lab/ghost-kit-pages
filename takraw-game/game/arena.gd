@@ -113,8 +113,9 @@ func _indoor_env(bg: Color, ambient: Color, energy: float) -> void:
 	env.background_color = bg
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = ambient
-	env.ambient_light_energy = 0.55
+	env.ambient_light_energy = 0.6
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC if int(Game.settings.graphics) >= Game.GFX_MEDIUM else Environment.TONE_MAPPER_LINEAR
+	_glow_on(env)
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -124,6 +125,18 @@ func _indoor_env(bg: Color, ambient: Color, energy: float) -> void:
 	sun.light_color = Color(1.0, 0.98, 0.94)
 	sun.shadow_enabled = Game.shadows_enabled()
 	add_child(sun)
+
+
+## On High graphics, the bright things (the lights, the boards, the lines in the sun) bloom a little, as on television.
+func _glow_on(env: Environment) -> void:
+	if int(Game.settings.graphics) < Game.GFX_HIGH:
+		return
+	env.glow_enabled = true
+	env.glow_intensity = 0.5
+	env.glow_strength = 0.9
+	env.glow_bloom = 0.04
+	env.glow_hdr_threshold = 0.9
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 
 
 func _outdoor_env(time: String) -> void:
@@ -170,6 +183,8 @@ func _outdoor_env(time: String) -> void:
 	env.ambient_light_color = {"day": Color(0.75, 0.8, 0.9), "dusk": Color(0.55, 0.5, 0.65), "sunset": Color(0.78, 0.76, 0.8),
 		"night": Color(0.4, 0.42, 0.55)}[time]
 	env.ambient_light_energy = 0.6
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC if int(Game.settings.graphics) >= Game.GFX_MEDIUM else Environment.TONE_MAPPER_LINEAR
+	_glow_on(env)
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -190,8 +205,10 @@ func _court(court: Color, surround: Color, floor_col: Color, wood := false, sand
 		for i in 40:
 			var z := -20.0 + i * 1.0
 			_lit.floor_rect(-20, z, 20, z + 1.0, -0.001, floor_col.darkened(0.04 * float(i % 3)))
-	_lit.floor_rect(-Court.HALF - fz, -Court.HALF_W - fz, Court.HALF + fz, Court.HALF_W + fz, 0.0, surround)
-	_lit.floor_rect(-Court.HALF, -Court.HALF_W, Court.HALF, Court.HALF_W, 0.001, court)
+	# The playing surface has a sheen under the lights (alpha: gloss, Geo.material); sand has none.
+	var sheen := 1.0 if sand else 0.45
+	_lit.floor_rect(-Court.HALF - fz, -Court.HALF_W - fz, Court.HALF + fz, Court.HALF_W + fz, 0.0, Color(surround, sheen + 0.2))
+	_lit.floor_rect(-Court.HALF, -Court.HALF_W, Court.HALF, Court.HALF_W, 0.001, Color(court, sheen))
 	var line := Color("f6f4ee") if not sand else Color("1f4f8f")
 	var y := 0.003
 	var l := Court.LINE
@@ -366,7 +383,7 @@ func _led_boards(face: Color) -> void:
 	# Words on the long board facing the camera.
 	for k in 3:
 		var lbl := Label3D.new()
-		lbl.text = ["TAKRAW SMASH", "SEPAK TAKRAW · 15 POINTS", "TAKRAW SMASH"][k]
+		lbl.text = ["SEPAK TAKRAW UNLEASHED", "SEPAK TAKRAW · 15 POINTS", "SEPAK TAKRAW UNLEASHED"][k]
 		lbl.font = Game.font_display
 		lbl.font_size = 96
 		lbl.pixel_size = 0.004
