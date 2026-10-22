@@ -121,6 +121,8 @@ QUIT_MATCH,Leave the match,Fág an cluiche
 CALL_POINT,POINT,CÚILÍN
 CALL_GOAL,GOAL!,CÚL!
 CALL_WIDE,Wide,Amú
+REPLAY,Replay,Athsheinm
+REPLAY_SKIP,Tap to skip,Tapáil chun é a scipeáil
 CALL_65,A 65,Poc 65
 CALL_SIDELINE,Sideline ball,Poc sleasa
 CALL_FREE,FREE,SAORPHOC

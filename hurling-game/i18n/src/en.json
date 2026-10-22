@@ -121,6 +121,8 @@
   "CALL_POINT": "POINT",
   "CALL_GOAL": "GOAL!",
   "CALL_WIDE": "Wide",
+  "REPLAY": "Replay",
+  "REPLAY_SKIP": "Tap to skip",
   "CALL_65": "A 65",
   "CALL_SIDELINE": "Sideline ball",
   "CALL_FREE": "FREE",

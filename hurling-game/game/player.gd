@@ -1,6 +1,6 @@
 class_name Player
 extends Node3D
-## One hurler (or an official) on the pitch: his body (ToonBody), how he moves and the move he is making. The match
+## One hurler (or an official) on the pitch: his body (HeroBody; an official's ToonBody), how he moves and the move he is making. The match
 ## and the AI decide what he does by setting want_vel, face_to and starting actions; this is the only code that moves
 ## him (integrate), so nothing else writes his position and nothing jumps in a frame: his speed changes by at most
 ## his acceleration, he turns at a person's rate, and his strides lengthen and quicken with his speed.
@@ -99,7 +99,7 @@ func _init(p_data := {}, p_team := 0, look := {}, p_role := "") -> void:
 	role = p_role
 	num = int(p_data.get("num", 0))
 	pos_num = num
-	body = ToonBody.new(look)
+	body = _new_body(look)
 	if p_data.has("speed"):
 		max_speed = speed_of(p_data)
 	elif role == "referee":
@@ -112,6 +112,13 @@ func _ready() -> void:
 	add_child(body)
 	body.scale = Vector3.ONE * DRAW_SCALE
 	body.rotation.y = yaw
+
+
+## A hurler is drawn with the owner's model; an official with the cel-shaded figure.
+func _new_body(look: Dictionary) -> ToonBody:
+	if role == "" and String(look.get("kind", "player")) == "player":
+		return HeroBody.new(look)
+	return ToonBody.new(look)
 
 
 static func speed_of(pd: Dictionary) -> float:
@@ -136,7 +143,7 @@ func take_over(pd: Dictionary, look: Dictionary) -> void:
 	ball_stick = false
 	var lod: int = body._lod
 	body.queue_free()
-	body = ToonBody.new(look)
+	body = _new_body(look)
 	add_child(body)
 	body.scale = Vector3.ONE * DRAW_SCALE
 	body.set_lod(lod)
@@ -320,9 +327,54 @@ func _pose(now: float) -> Dictionary:
 		# The sliotar in the left hand, held in front.
 		p.upperarm_l = Vector3(-38.0, 0, 6)
 		p.forearm_l = Vector3(62.0, 0, 0)
+	# At a run, the legs, the body and the free arm from the Mixamo sprint (one stride of each leg, the left thigh
+	# furthest forward at phase pi/2 as above); the right arm keeps the hurley as it is carried.
+	var wr := smoothstep(2.6, 5.5, sp)
+	if wr > 0.0:
+		var fr: Dictionary = HeroBody.data().clips.Fast_Run
+		var cycle := float(fr.frames.size() - 1) / float(fr.fps)
+		var run_p := HeroBody.clip_pose("Fast_Run", float(fr.left_forward) + (_ph / TAU - 0.25) * cycle, true)
+		for i in (RUN_ARMS if is_official() else (RUN_BODY if ball_stick or ball_hand else RUN_ARM_L)):
+			p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(run_p[0][i], wr)
+		p.hips_y = lerpf(float(p.get("hips_y", 0.0)), float(run_p[1]), wr)
 	if action != "" and action_t <= action_len + 0.001:
-		_action_pose(p, action, clampf(action_t / maxf(0.01, action_len), 0.0, 1.0), now)
+		var t := clampf(action_t / maxf(0.01, action_len), 0.0, 1.0)
+		if SWING_CLIP.has(action):
+			_swing_pose(p, action, t, run)
+		else:
+			_action_pose(p, action, t, now)
 	return p
+
+
+const BONE_NAMES := ["hips", "spine", "chest", "neck", "head", "upperarm_l", "forearm_l", "hand_l", "upperarm_r",
+	"forearm_r", "hand_r", "thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]   # ToonBody.BONES' order
+const RUN_BODY := [0, 1, 2, 3, 4, 11, 12, 13, 14, 15, 16]   # the body and legs
+const RUN_ARM_L := RUN_BODY + [5, 6, 7]                    # and the free (left) arm
+const RUN_ARMS := RUN_ARM_L + [8, 9, 10]                   # an official: both arms
+## The swings from the owner's Mixamo clips: from the hand and off the hurley a baseball hit (the backswing over
+## the right shoulder, level through the ball), the overhead pull the bigger swing, along the ground the golf drive.
+const SWING_CLIP := {"strike": "Baseball_Hit", "strike_stick": "Baseball_Hit", "puck_out": "Baseball_Hit",
+	"pull": "Baseball_Strike", "ground": "Golf_Drive", "cut": "Golf_Drive"}
+const SWING_BEFORE := 0.6   # seconds of the clip played before the bas meets the ball
+const SWING_AFTER := 0.5    # and after
+
+
+## A swing from its clip, timed so the bas meets the ball at the action's contact time, turned so the ball goes the
+## way he faces (the clip's "yaw"), eased in from his run and out again; his legs keep more of the run the faster he
+## is going.
+func _swing_pose(p: Dictionary, name: String, t: float, run: float) -> void:
+	var c: Dictionary = HeroBody.data().clips[SWING_CLIP[name]]
+	var ct := contact_time(name) / action_len
+	var hit := float(c.contact)
+	var ct_clip := lerpf(hit - SWING_BEFORE, hit, t / ct) if t < ct else lerpf(hit, hit + SWING_AFTER, (t - ct) / (1.0 - ct))
+	var sw := HeroBody.clip_pose(SWING_CLIP[name], ct_clip)
+	var w := smoothstep(0.0, 0.12, t) * (1.0 - smoothstep(0.86, 1.0, t))
+	var wl := w * (1.0 - 0.6 * run)
+	var yaw := Quaternion(Vector3.UP, deg_to_rad(float(c.yaw)))
+	for i in BONE_NAMES.size():
+		var q: Quaternion = sw[0][i] if i > 0 else yaw * sw[0][0]
+		p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(q, wl if i >= 11 else w)
+	p.hips_y = lerpf(float(p.get("hips_y", 0.0)), float(sw[1]), wl)
 
 
 static func _k(t: float, a: float, b: float) -> float:
@@ -332,37 +384,6 @@ static func _k(t: float, a: float, b: float) -> float:
 func _action_pose(p: Dictionary, name: String, t: float, now: float) -> void:
 	var m := action_mirror
 	match name:
-		"strike", "strike_stick", "puck_out", "pull":
-			# Side on, the hurley drawn back over the right shoulder, swung down through the ball and on round.
-			var ct := contact_time(name) / action_len
-			var back := _k(t, 0.0, ct * 0.75) * (1.0 - _k(t, ct * 0.8, ct))
-			var through := _k(t, ct * 0.8, 1.0)
-			p.chest = Vector3(10.0, lerpf(55.0 * back, -55.0, through) if t > ct * 0.8 else 55.0 * back, 0)
-			p.spine = Vector3(14.0, 20.0 * back - 20.0 * through, 0)
-			p.upperarm_r = Vector3(lerpf(-20.0, -165.0, back) if t < ct * 0.8 else lerpf(-150.0, -60.0, _k(t, ct * 0.8, ct)) - 70.0 * through, 0, -30.0 * back + 25.0 * through)
-			p.forearm_r = Vector3(lerpf(28.0, 70.0, back) * (1.0 - through) + 15.0 * through, 0, 0)
-			p.hand_r = Vector3(-20.0 - 30.0 * back, 0, 0)
-			p.upperarm_l = Vector3(-60.0 * (1.0 - through) - 20.0, 0, -20.0)
-			p.forearm_l = Vector3(30.0, 0, 0)
-			p.thigh_l = Vector3(-22.0 * back, 0, 4)
-			p.thigh_r = Vector3(14.0 * through, 0, -4)
-			p.shin_r = Vector3(18.0 * through, 0, 0)
-		"ground", "cut":
-			# Low over the ball, the hurley swung along the grass.
-			var ct := contact_time(name) / action_len
-			var back := _k(t, 0.0, ct) * (1.0 - _k(t, ct, ct + 0.1))
-			var through := _k(t, ct, 1.0)
-			p.spine = Vector3(38.0, 0, 0)
-			p.chest = Vector3(14.0, 40.0 * back - 45.0 * through, 0)
-			p.thigh_l = Vector3(-30.0, 0, 6)
-			p.shin_l = Vector3(40.0, 0, 0)
-			p.thigh_r = Vector3(-10.0, 0, -6)
-			p.shin_r = Vector3(35.0, 0, 0)
-			p.hips_y = -0.12
-			p.upperarm_r = Vector3(-30.0 + 100.0 * back - 120.0 * through, 0, -20.0 + 30.0 * through)
-			p.forearm_r = Vector3(20.0, 0, 0)
-			p.upperarm_l = Vector3(-40.0, 0, -30.0)
-			p.forearm_l = Vector3(20.0, 0, 0)
 		"hand_pass":
 			var k := _k(t, 0.0, 0.45) * (1.0 - _k(t, 0.7, 1.0))
 			p.upperarm_l = Vector3(-30.0 - 60.0 * k, 0, -10.0 * k)

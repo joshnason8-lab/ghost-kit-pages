@@ -9,6 +9,16 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.3.0
+
+- **New players**: the owner's hurler, in every county's colours, running and swinging from motion capture. Do they
+  read on your phone? Does the strike look like hurling?
+- **Your player answers the stick** at once now, and is drawn bigger, with the camera closer.
+- **A wide is shown again** from behind the goal (tap to skip), and every ball over the end line flies on into the
+  net behind.
+- **PULL** no longer crashes the game. The trees round the grounds stand in fields now.
+- **Hurling Heroes**: the new name, the new icon and the new home screen picture.
+
 ## New in 0.2.0
 
 - **A full match that ends like one**: Settings > Match length > 35 min plays all 70 minutes, the ball live about as

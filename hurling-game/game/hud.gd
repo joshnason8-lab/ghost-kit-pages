@@ -34,6 +34,7 @@ var _coach_text: Label
 var _coach_t := 0.0
 var _drop := Vector3.INF     # where a high ball near your player comes down to catching height (INF none)
 var _drop_t := 0.0
+var _replay: Control = null   # "Replay", over the whole screen while one plays: a tap anywhere skips it
 
 
 func setup(p_match: Node) -> void:
@@ -328,6 +329,40 @@ func tick(delta: float) -> void:
 			rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), int(Game.settings.graphics),
 			Engine.get_frames_per_second()]
 	_marks.queue_redraw()
+
+
+## The replay's tag at the top and its tap-to-skip over everything (on), or gone.
+func replay(on: bool, skip: Callable) -> void:
+	if _replay != null:
+		_replay.queue_free()
+		_replay = null
+	_tag.visible = not on
+	_call.visible = not on
+	if not on:
+		return
+	_replay = Control.new()
+	_replay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_replay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_replay.gui_input.connect(func(e: InputEvent):
+		if (e is InputEventScreenTouch or e is InputEventMouseButton) and e.pressed:
+			skip.call())
+	root.add_child(_replay)
+	var box := VBoxContainer.new()
+	box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	box.offset_top = 60
+	box.offset_left = -300
+	box.offset_right = 300
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", 2)
+	_replay.add_child(box)
+	var head := _outlined(tr("REPLAY").to_upper(), "SubLabel", 30, Game.C_GOLD)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.fit(head, 1)
+	box.add_child(head)
+	var hint := _outlined(tr("REPLAY_SKIP"), "MutedLabel", 18, Game.C_INK)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.fit(hint, 1)
+	box.add_child(hint)
 
 
 func call_line(text: String) -> void:

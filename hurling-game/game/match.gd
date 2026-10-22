@@ -55,6 +55,7 @@ var live_real := 0.0         # real seconds the ball has been live this match (t
 var _subs_due: Array = []    # substitutions asked for, made at the next break: [{off: Player, pd: Dictionary}]
 var _leaving: Array = []     # the men substituted, walking off
 var coach: Coach = null      # the coach's tips, in your first match (Settings > Coach's tips)
+var replay: Replay           # the last seconds kept, and a wide shown again from behind the goal
 ## What a stoppage costs on the watch in a real match, in seconds: the ball is in play only about 38% of a real
 ## game's 70 minutes (2023 league statistics; docs/AI.md). The game's restarts are quicker than that, so when the
 ## players are set the clock is moved on to what the stoppage would have taken.
@@ -120,6 +121,7 @@ func _ready() -> void:
 	_make_teams()
 	officials = Officials.new(self)
 	add_child(officials)
+	replay = Replay.new(self)
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
@@ -317,6 +319,9 @@ func _process(delta: float) -> void:
 	_frame_stats(delta)
 	if paused:
 		return
+	if replay.playing:
+		replay.step(delta)
+		return
 	var dt := minf(delta, 0.05)
 	now += dt
 	phase_t += dt
@@ -356,6 +361,8 @@ func _process(delta: float) -> void:
 		_check_ball(cross[0], cross[1])
 	officials.tick(dt)
 	cam.follow(self, delta)
+	if user_team >= 0:
+		replay.record()
 	if not attract:
 		hud.tick(delta)
 		_user_buttons()
@@ -1241,6 +1248,10 @@ func _over_end_line(c: Vector3, s: float) -> void:
 		hud.call_line(tr("CALL_WIDE"))
 		Sfx.react("groan", -8.0)
 		_award(Rules.over_end_line(c, ball.last_team, att, s), 2.2)
+		if user_team >= 0 and shot.has("by"):
+			# Shown again once the ball has hit the net behind.
+			var t := now
+			_after(Replay.AFTER + 0.1, func(): replay.start(t, s, c))
 	else:
 		officials.umpire_signal(s, "sig_65", c.z)
 		hud.call_line(tr("CALL_65"))

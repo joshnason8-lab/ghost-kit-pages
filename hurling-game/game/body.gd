@@ -35,9 +35,10 @@ const BONES := [
 var skeleton: Skeleton3D
 var mesh_instance: MeshInstance3D
 var look := {}          # skin, jersey, shorts, trim, shoe, hair, band (Colors), hair_style (int), height (m)
-var pose := {}          # bone name -> Vector3 degrees; plus "hips_y" (m above rest), "hips_x"/"hips_z" handled as bones
+var pose := {}          # bone name -> Vector3 degrees (or a Quaternion: the clips); plus "hips_y" (m above rest), "hips_x"/"hips_z" handled as bones
 var _idx := {}
 var _rest := {}         # bone -> rest position (model space)
+var _hips := Vector3.ZERO
 
 static var _toon_mat: ShaderMaterial
 static var _outline_mat: ShaderMaterial
@@ -51,6 +52,7 @@ func _init(p_look := {}) -> void:
 func _ready() -> void:
 	skeleton = Skeleton3D.new()
 	add_child(skeleton)
+	var off := _offsets()
 	var acc := {}
 	for i in BONES.size():
 		var b: Array = BONES[i]
@@ -58,17 +60,28 @@ func _ready() -> void:
 		_idx[b[0]] = i
 		if int(b[1]) >= 0:
 			skeleton.set_bone_parent(i, int(b[1]))
-		skeleton.set_bone_rest(i, Transform3D(Basis.IDENTITY, b[2]))
-		skeleton.set_bone_pose_position(i, b[2])
-		acc[b[0]] = (acc[BONES[int(b[1])][0]] if int(b[1]) >= 0 else Vector3.ZERO) + b[2]
+		skeleton.set_bone_rest(i, Transform3D(Basis.IDENTITY, off[i]))
+		skeleton.set_bone_pose_position(i, off[i])
+		acc[b[0]] = (acc[BONES[int(b[1])][0]] if int(b[1]) >= 0 else Vector3.ZERO) + off[i]
 	_rest = acc
+	_hips = off[0]
 	var h := float(look.get("height", 1.78))
 	scale = Vector3.ONE * (h / 1.80)
 	mesh_instance = MeshInstance3D.new()
-	mesh_instance.mesh = _mesh()
 	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	skeleton.add_child(mesh_instance)
 	mesh_instance.skeleton = NodePath("..")
+	_dress()
+
+
+## Each bone's offset from its parent at rest (HeroBody: the owner's model's own).
+func _offsets() -> Array:
+	return BONES.map(func(b): return b[2])
+
+
+## The mesh and its material.
+func _dress() -> void:
+	mesh_instance.mesh = _mesh()
 	mesh_instance.material_override = material(int(Game.settings.graphics) > Game.GFX_LOW)
 
 
@@ -130,9 +143,12 @@ func apply(p: Dictionary) -> void:
 		return
 	for i in BONES.size():
 		var n: String = BONES[i][0]
-		var e: Vector3 = p.get(n, Vector3.ZERO)
-		skeleton.set_bone_pose_rotation(i, Basis.from_euler(Vector3(deg_to_rad(e.x), deg_to_rad(e.y), deg_to_rad(e.z)), EULER_ORDER_YXZ).get_rotation_quaternion())
-	skeleton.set_bone_pose_position(0, BONES[0][2] + Vector3(0, float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
+		var e: Variant = p.get(n, Vector3.ZERO)
+		if e is Quaternion:
+			skeleton.set_bone_pose_rotation(i, e)
+		else:
+			skeleton.set_bone_pose_rotation(i, Basis.from_euler(Vector3(deg_to_rad(e.x), deg_to_rad(e.y), deg_to_rad(e.z)), EULER_ORDER_YXZ).get_rotation_quaternion())
+	skeleton.set_bone_pose_position(0, _hips + Vector3(0, float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
 
 
 # ---------------------------------------------------------------- the mesh
@@ -233,21 +249,25 @@ func _mesh() -> ArrayMesh:
 		m.capsule(kn, kn.lerp(an, 0.25), 0.07, 0.065, skin if kind == "player" else legwear, bone("shin_" + side))
 		m.capsule(kn.lerp(an, 0.2), an + Vector3(0, 0.02, 0), 0.066, 0.05, socks if kind == "player" else Color("1a1a1a"), bone("shin_" + side))
 		m.capsule(an + Vector3(0, -0.005, -0.04), an + Vector3(0, -0.01, 0.15), 0.055, 0.05, shoe, bone("foot_" + side), Vector3(1.0, 0.75, 1))
-	# The hurley, in the right hand: the handle in the fist, the shaft down and forward, the bas (the flat, curved
-	# blade) at its foot. 34 inches (0.86 m), the ash's colour.
 	if kind == "player":
-		var ash := Color("d8b27a")
-		var hh: Vector3 = r.hand_r + Vector3(0, -0.06, 0.01)
-		var dir := HURLEY_DIR
-		var length := 0.86 if int(look.get("hurley", 1)) == 1 else 0.9
-		var foot := hh + dir * length
-		m.capsule(hh - dir * 0.08, hh + dir * (length * 0.62), 0.017, 0.02, ash, bone("hand_r"), Vector3(1.0, 1, 0.7), 6)
-		m.capsule(hh + dir * (length * 0.62), foot, 0.03, 0.055, ash.lightened(0.05), bone("hand_r"), Vector3(0.32, 1, 1.0), 8)
-		# The grip tape on the handle.
-		m.capsule(hh - dir * 0.08, hh + dir * 0.14, 0.021, 0.021, Color("2a2a2a"), bone("hand_r"), Vector3(1, 1, 1), 6)
+		_hurley(m)
 	var mesh := m.commit()
 	_cache[key] = mesh
 	return mesh
+
+
+## The hurley, in the right hand: the handle in the fist, the shaft down and forward, the bas (the flat, curved
+## blade) at its foot. 34 inches (0.86 m), the ash's colour.
+func _hurley(m: MeshBuilder) -> void:
+	var ash := Color("d8b27a")
+	var hh: Vector3 = _rest.hand_r + Vector3(0, -0.06, 0.01)
+	var dir := HURLEY_DIR
+	var length := 0.86 if int(look.get("hurley", 1)) == 1 else 0.9
+	var foot := hh + dir * length
+	m.capsule(hh - dir * 0.08, hh + dir * (length * 0.62), 0.017, 0.02, ash, bone("hand_r"), Vector3(1.0, 1, 0.7), 6)
+	m.capsule(hh + dir * (length * 0.62), foot, 0.03, 0.055, ash.lightened(0.05), bone("hand_r"), Vector3(0.32, 1, 1.0), 8)
+	# The grip tape on the handle.
+	m.capsule(hh - dir * 0.08, hh + dir * 0.14, 0.021, 0.021, Color("2a2a2a"), bone("hand_r"), Vector3(1, 1, 1), 6)
 
 
 ## The hurley's line from the right hand at rest (the arm hanging): down and well forward.

@@ -1,7 +1,7 @@
 extends Node
 ## The store's screenshots, 1920 x 1080, from the game itself: matches at their moments (a strike for a point, a
-## catch in the air), at each ground, and the menus, two of them in Irish. Writes store/graphics/screenshots/ and
-## store/graphics/feature_src.png (a strike at the parish field, without the scoreboard):
+## catch in the air), at each ground, and the menus, two of them in Irish. Writes store/graphics/screenshots/ (the
+## feature graphic is the owner's artwork: make_feature.py):
 ##   xvfb-run -a -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 30 res://tools/store/store_shots.tscn [-- only]
 
 var out := "res://store/graphics/screenshots"
@@ -17,11 +17,6 @@ func _ready() -> void:
 	TouchControls.key_hints = false
 	_lang("en")
 	var only := OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else ""
-	if only == "" or only == "feature":
-		await _moment("feature_src", {"home": "KIL", "away": "TIP", "venue": "parish", "seed": 5}, ["strike", "strike_stick"], false)
-		if only == "feature":
-			get_tree().quit()
-			return
 	if only == "" or only == "matches":
 		await _moment("01_strike", {"home": "COR", "away": "LIM", "venue": "stadium", "seed": 12, "stage": tr("STAGE_FINAL")}, ["strike", "strike_stick"])
 		await _moment("02_catch", {"home": "GAL", "away": "CLA", "venue": "county", "seed": 7}, ["catch"])
@@ -93,7 +88,7 @@ func _moment(name: String, cfg: Dictionary, actions: Array, hud := true) -> void
 	m.paused = true
 	RenderingServer.render_loop_enabled = true
 	await _wait(0.1)
-	await _shot(name if name != "feature_src" else "../feature_src")
+	await _shot(name)
 	m.paused = false
 
 

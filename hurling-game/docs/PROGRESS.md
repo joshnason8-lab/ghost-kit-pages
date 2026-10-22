@@ -54,6 +54,31 @@ here and `git log`.
 - **Rules re-check**: still blocked (the network policy refuses every host with the Guide; docs/RULES.md says what
   would finish it).
 
+## Done (0.3.0-beta, round three, 22 October 2026)
+
+The owner's first round of changes, each with a test where one can say it works:
+
+- **PULL crashed the game**: the free ball's path was read empty after a pull; fixed, and `user_bot -- pull` presses
+  PULL all match in CI.
+- **The players barely reacted to the joystick**: your man now reaches top speed in about half a second (twice the
+  computer's men's acceleration, quicker turns) and runs flat out from two-thirds of the stick's travel.
+- **Renamed Hurling Heroes** (below, under Decisions); the owner's artwork for the home screen's cover, the app icon
+  (adaptive, with its own green behind) and the store's feature graphic (`tools/store/`).
+- **The trees floated on nothing**: the countryside round every ground, fields and hedges out to the horizon, in the
+  light of the time of day.
+- **The ball over the end line**: it flies on into the goal's net or the ball-stop net behind the goal, and drops.
+- **The players were too small**: drawn 15% larger than life, the camera closer (TV 25° to 19°, High 36° to 29°,
+  End 46° to 40°).
+- **The owner's model** (a GLB on Google Drive) for every hurler, and **the four Mixamo clips**: baked for phones by
+  `tools/player/` (mesh 187,754 triangles to 5,866, texture 4096 to 1024), moved onto the game's own skeleton so
+  every pose plays on it, each county's colours painted by a shader; the sprint and the three swings from the clips
+  (`game/hero_body.gd`, `tools/player/README.md`). Officials stay code-built. The model's texture has the number 11
+  on every back: a number per man needs the owner's model without one (or a second texture).
+- **A replay of a wide** from behind the goal, a little slower than life, about four seconds; a tap skips it
+  (`game/replay.gd`).
+- **CI**: the root workflow runs on a push (and by hand), not on the pull request as well; the full test suite is
+  run here before every push.
+
 ## Next (in order)
 
 1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev
@@ -68,7 +93,8 @@ here and `git log`.
 7. **A native Irish speaker** to read `i18n/src/ga.json` (docs/LANGUAGES.md lists the terms to check).
 8. **Camogie**, with its own rules done properly (60 minutes, the 45, hand-passed goals, its contact rules).
 9. **Club hurling**: invented parish clubs in a county championship, at the parish field.
-10. Meshy bodies, if the owner wants them (docs/MESHY_BRIEF.md): no credits spent.
+10. Officials and goalkeepers in the owner's style, and a number per man on the back (the owner's model, without the
+    11 in its texture, or a texture of numbers).
 
 ## Needs the owner
 
@@ -110,4 +136,10 @@ here and `git log`.
 - **The black card** in the Senior grade only (it does not apply in club hurling); the autumn 2026 third-level
   trial rules are not played (not in force).
 - **Grade and draws**: a draw stands in a challenge match; a knock-out game goes to extra time and penalties.
-- **No Meshy credits** were spent; bodies are code-built (MESHY_BRIEF.md says what to order).
+- **No Meshy credits** were spent. The hurlers are the owner's own model (tools/player); the officials code-built.
+- **The owner's model on the game's skeleton**, not the game on the model's: its mesh is skinned into the game's rest
+  stance and its weights moved onto the game's seventeen bones, and the Mixamo clips are sampled into the game's own
+  poses, so every hand-made pose (the solo, the catch, the officials' signals) plays on the new players unchanged and
+  the clips could play on the old ones. Neither the 36.7 MB GLB (tools/player/build.sh fetches it) nor the Mixamo
+  files (their terms allow them in a game, not handed out as they are) are in this public repository; the game
+  ships only what is baked from them.

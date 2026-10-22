@@ -1,8 +1,9 @@
 # Meshy brief: models the owner may choose to generate
 
-**No Meshy credits have been spent on this game.** Every player, official, the crowd and the venues are built in
-code today (`game/body.gd`, `game/stadium.gd`, `game/crowd.gd`). This is what to order if better-looking models are
-wanted later, and how they would slot in.
+**No Meshy credits have been spent on this game.** Since 0.3.0 the hurlers are the owner's own model (a GLB, with four
+Mixamo clips), baked for the game by `tools/player/` (its README says how; the same route takes any humanoid GLB with
+a Mixamo-named skeleton). The officials, the crowd and the venues are built in code (`game/body.gd`,
+`game/stadium.gd`, `game/crowd.gd`). This is what to order if more models are wanted, and how they would slot in.
 
 ## How a model replaces the code-built body
 

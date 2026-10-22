@@ -38,6 +38,8 @@ func _ready() -> void:
 	await _tactics()
 	await _playtest_fixes()
 	await _nets()
+	await _hero_body()
+	await _replay()
 	await _match_and_motion()
 	Game.settings = keep
 	Game.delete_champ()
@@ -632,6 +634,100 @@ func _nets() -> void:
 	check(b.global_position.x <= Pitch.HALF_L + Pitch.NET_DEPTH + 0.05 and b.global_position.x > Pitch.HALF_L, "Nets: a goal stays in the net (%.2f m behind the line)" % (b.global_position.x - Pitch.HALF_L))
 	b.queue_free()
 	await frames(1)
+
+
+# ---------------------------------------------------------------- the owner's model, its clips, the replay
+
+## The owner's player model as baked for phones (tools/player): small enough, on the game's seventeen bones; the
+## Mixamo clips in step with the game: the sprint's left thigh forward at the stride's phase pi/2, the swing's bas
+## coming past the striker the way he faces at the moment of contact.
+func _hero_body() -> void:
+	var hi: ArrayMesh = load("res://assets/player/hero_hi.res")
+	var lo: ArrayMesh = load("res://assets/player/hero_lo.res")
+	var tris_hi := hi.surface_get_array_index_len(0) / 3
+	var tris_lo := lo.surface_get_array_index_len(0) / 3
+	check(tris_hi <= 6500 and tris_lo <= 2000, "Player model: %d triangles (%d on Low)" % [tris_hi, tris_lo])
+	var tex: Texture2D = load("res://assets/player/hero_albedo.jpg")
+	check(tex.get_width() <= 1024 and tex.get_height() <= 1024, "Player model: its texture at most 1024 square")
+	var pl := Player.new({"num": 9, "line": 4, "speed": 70}, 0, {"jersey": Color("c8202f"), "trim": Color.WHITE, "kind": "player"})
+	add_child(pl)
+	await frames(1)
+	check(pl.body is HeroBody and pl.body.skeleton.get_bone_count() == ToonBody.BONES.size(), "A hurler is drawn with the owner's model, on the game's bones")
+	var ref := Player.new({}, -1, {"kind": "referee"}, "referee")
+	add_child(ref)
+	await frames(1)
+	check(not (ref.body is HeroBody), "An official keeps the cel-shaded figure")
+	# The sprint: at full speed, phase pi/2, the left thigh swung forward and the right back.
+	pl.vel = Vector3(0, 0, 7.5)
+	pl._ph = PI * 0.5
+	var p: Dictionary = pl._pose(0.0)
+	var lt := HeroBody.turn(p.thigh_l) * Vector3.DOWN
+	var rt := HeroBody.turn(p.thigh_r) * Vector3.DOWN
+	check(lt.z > 0.25 and rt.z < lt.z, "The sprint clip: the left thigh forward at the stride's phase pi/2 (%.2f, the right %.2f)" % [lt.z, rt.z])
+	# The swings: at the contact time the bas comes past him going the way he faces (where the ball goes), within
+	# his reach, below the shoulder.
+	pl.vel = Vector3.ZERO
+	pl.yaw = 0.0
+	pl.body.rotation.y = 0.0
+	for a in ["strike", "ground", "pull"]:
+		pl.play(a)
+		var at := []
+		for dt in [-0.02, 0.0, 0.02]:
+			pl.action_t = pl.contact_time(a) + dt
+			pl.animate(0.0)
+			at.append(pl.body.bas_world() - pl.global_position)
+		var mv: Vector3 = at[2] - at[0]
+		var bas: Vector3 = at[1]
+		var ok := mv.z > absf(mv.x) and bas.z > -0.5 and Vector2(bas.x, bas.z).length() < 1.9 and bas.y < 1.7 * Player.DRAW_SCALE
+		check(ok, "The %s clip: the bas comes past him going forward at contact (at %.2f across, %.2f forward, %.2f up; moving %.2f across, %.2f forward)" % [a, bas.x, bas.z, bas.y, mv.x, mv.z])
+	pl.queue_free()
+	ref.queue_free()
+	await frames(1)
+
+
+## A wide shown again: from its own camera, the HUD's tag and tap-to-skip up, the controls hidden; at its end (or a
+## tap) everyone and the ball back where they were, the match camera and the controls back.
+func _replay() -> void:
+	Game.settings.coach = false
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "WEX", "venue": "county", "user_team": 0, "seed": 3, "length": 4.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(200)
+	var before := {}
+	for pl in m.all_players():
+		before[pl] = (pl as Player).position
+	var ball0: Vector3 = m.ball.global_position
+	m.replay.start(m.now - 1.0, 1.0, Vector3(Pitch.HALF_L, 2.0, 9.0))
+	check(m.replay.playing and not m.controls.visible and m.hud._replay != null and not m.cam.camera.current, "Replay: its own camera, the tag and tap-to-skip, no controls")
+	var n := 0
+	var moved := false
+	while m.replay.playing and n < 400:
+		await frames(1)
+		n += 1
+		if n == 20:
+			for pl in m.all_players():
+				moved = moved or (pl as Player).position.distance_to(before[pl]) > 0.3
+	check(n > 60 and n < 300 and moved, "Replay: plays the last seconds again (%d frames)" % n)
+	var back := true
+	for pl in m.all_players():
+		back = back and (pl as Player).position.distance_to(before[pl]) < 0.001
+	check(back and m.ball.global_position.distance_to(ball0) < 0.001, "Replay: everyone and the ball back where they were")
+	check(m.controls.visible and m.hud._replay == null and m.cam.camera.current, "Replay: the match camera and the controls back")
+	m.replay.start(m.now - 1.0, -1.0, Vector3(-Pitch.HALF_L, 2.0, -9.0))
+	await frames(5)
+	m.replay.stop()
+	check(not m.replay.playing and m.controls.visible, "Replay: a tap skips it")
+	m.queue_free()
+	await frames(2)
+	# Watching a match (no side yours): nothing kept for a replay, the scoreboard still running.
+	var w: Node = load("res://game/match.gd").new()
+	w.config = {"home": "KIL", "away": "WEX", "venue": "county", "user_team": -1, "seed": 3, "length": 4.0, "mode": "test"}
+	add_child(w)
+	await frames(30)
+	check(w.replay._buf.is_empty() and w.hud._half.text != "", "Watching a match: no replay kept, the scoreboard ticking")
+	w.queue_free()
+	await frames(2)
 
 
 # ---------------------------------------------------------------- a match, and the movement audit

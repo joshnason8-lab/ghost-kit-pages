@@ -211,6 +211,13 @@ func place(p: Vector3) -> void:
 	_prev = global_position
 
 
+## Drawn at p, its shadow under it (a replay shows where it was).
+func show_at(p: Vector3) -> void:
+	global_position = p
+	_shadow.global_position = Vector3(p.x, 0.015, p.z)
+	_shadow.visible = true
+
+
 ## The match moves it: in flight, held, on a hurley or placed. Returns the crossing of an end or side line this step
 ## (prev and now), for the match to judge.
 func step(dt: float) -> Array:
