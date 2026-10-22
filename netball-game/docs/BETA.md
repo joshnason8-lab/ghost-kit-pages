@@ -2,8 +2,8 @@
 
 ## Install
 
-1. On the phone, open https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/centre-pass-netball-beta.
-2. Tap `centre-pass-netball-<version>.apk` under Assets.
+1. On the phone, open https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta.
+2. Tap `netball-unleashed-<version>.apk` under Assets.
 3. Open it when it has downloaded. If Android asks, allow your browser (or Files) to install unknown apps.
 
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since

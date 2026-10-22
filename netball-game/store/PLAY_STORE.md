@@ -1,20 +1,20 @@
-# Centre Pass Netball on Google Play
+# Netball Unleashed on Google Play
 
 Everything Google Play asks for, and the steps to put the game on it. Checked against Google's requirements as they
 stand in October 2026.
 
 ## What is ready
 
-- **The Play bundle (.aab)**, built by GitHub Actions ("Centre Pass Netball · Play Store bundle"). It is unsigned until
+- **The Play bundle (.aab)**, built by GitHub Actions ("Netball Unleashed · Play Store bundle"). It is unsigned until
   your upload key is in the repository (step 2), then signed with it.
 - **The game meets Google's technical rules**:
   - targets Android 16 (API 36), required for new apps since 31 August 2026;
   - 64-bit, with 16 KB memory pages (checked on every bundle);
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - one permission (vibration) and no internet access.
-- **The privacy policy, help page and a page for the game**, in `centre-pass-netball/` at the top of this
+- **The privacy policy, help page and a page for the game**, in `netball-unleashed/` at the top of this
   repository. Once this branch is merged and GitHub Pages serves the repository, they are at
-  https://joshnason8-lab.github.io/ghost-kit-pages/centre-pass-netball/ (with `privacy.html` and `support.html`), the
+  https://joshnason8-lab.github.io/ghost-kit-pages/netball-unleashed/ (with `privacy.html` and `support.html`), the
   addresses the game opens from **Settings > About**, as Google asks. The licences are shown there too.
 - **The store listing**: the text in English (en-GB, the default, and en-AU, en-ZA, en-US, en-IN, en-SG) and in
   Afrikaans, isiZulu, Kiswahili, Malay, Chinese, Sinhala and Tamil (`store/listing/`), and the 512 × 512 icon, the
@@ -58,16 +58,16 @@ Google signs the game for phones with its own key (Play App Signing). You sign e
    - `ANDROID_UPLOAD_KEY_ALIAS`: `upload`
    - `ANDROID_UPLOAD_KEY_PASSWORD`: your password.
 5. Build the signed bundle:
-   1. On GitHub, go to **Actions > Centre Pass Netball · Play Store bundle > Run workflow**.
+   1. On GitHub, go to **Actions > Netball Unleashed · Play Store bundle > Run workflow**.
    2. Pick the branch `claude/netball-game`, then **Run workflow**.
    3. When it finishes (about 15 minutes), open the run. Under **Artifacts**, download
-      `centre-pass-netball-<version>-play-signed`, a zip with the `.aab` inside.
+      `netball-unleashed-<version>-play-signed`, a zip with the `.aab` inside.
 
 ## 3. Create the app
 
 1. In Play Console, go to **Home > Create app**.
 2. Fill in:
-   - App name: **Centre Pass Netball**
+   - App name: **Netball Unleashed**
    - Default language: **English (United Kingdom)** (netball's players mostly use British spelling)
    - App or game: **Game**
    - Free or paid: **Free**
@@ -79,7 +79,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/centre-pass-netball/privacy.html` |
+| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/netball-unleashed/privacy.html` |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |
@@ -126,7 +126,7 @@ and shows no ads, but the 13+ groups are the simpler start.
 6. **7-inch and 10-inch tablet screenshots**: upload the same. They are 16:9, which Play accepts for tablets.
 7. **Category**: **Store settings > App category: Game > Sports**. Tags: Sports, Netball (if offered).
 8. **Contact details**: Email (required, shown publicly): joshnason8@gmail.com, as on the help page, or another
-   address you are happy to show. Website: https://joshnason8-lab.github.io/ghost-kit-pages/centre-pass-netball/
+   address you are happy to show. Website: https://joshnason8-lab.github.io/ghost-kit-pages/netball-unleashed/
 
 ## 6. The closed test (required for new personal accounts)
 

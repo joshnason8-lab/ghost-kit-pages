@@ -1,15 +1,15 @@
 # Progress
 
-The working log for Centre Pass Netball: what is done, what is next, and the decisions made along the way with the
+The working log for Netball Unleashed: what is done, what is next, and the decisions made along the way with the
 reasons. Anyone picking the work up (after a usage limit, a restart, a context summary) starts here, then reads
 `git log`.
 
 ## State
 
 - Branch `claude/netball-game`, folder `netball-game/` (self-contained Godot 4.7.2 project), pages folder
-  `centre-pass-netball/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
+  `netball-unleashed/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
 - Version 0.2.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
-  https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/centre-pass-netball-beta.
+  https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta.
 
 ## Done
 
@@ -53,9 +53,10 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 
 ## Decisions
 
-- **Name: Centre Pass Netball** (slug `centre-pass-netball`, package `com.centrepassnetball.game`). The centre pass
-  starts every passage of netball and is the sport's own term; searches of Google Play and the web (October 2026)
-  found no game of that name (only scoring apps that mention centre passes).
+- **Name: Netball Unleashed** (slug `netball-unleashed`, package `com.netballunleashed.game`), the owner's choice
+  (round three, October 2026); a web search found no game of that name. The game was Centre Pass Netball until 0.2;
+  the rename came before any Play release, so the package could still change (0.2 beta installs do not upgrade in
+  place: uninstall the old one).
 - **Rules edition: World Netball Rules of Netball 2024**, in force since 1 January 2024; no 2025 or 2026 edition (a
   minor review is under way for 2027). So: no toss-up (simultaneous infringements go to the team last in
   possession), cautions replaced by warnings and suspensions, a goal counts if released before the whistle.

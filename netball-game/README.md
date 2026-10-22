@@ -1,4 +1,4 @@
-# Centre Pass Netball
+# Netball Unleashed
 
 A netball game for Android phones, built with [Godot 4.7](https://godotengine.org) (free and open source, no
 royalties) the same way as Kabaddi Raid and Takraw Smash. It plays the Rules of Netball as they stand (World Netball,
@@ -41,13 +41,13 @@ On a keyboard: WASD or arrows, Space for the first button, J and K for the other
 
 ## Get it on your phone
 
-Every push that touches `netball-game/` runs the **Centre Pass Netball · Android build** action: it runs the tests,
+Every push that touches `netball-game/` runs the **Netball Unleashed · Android build** action: it runs the tests,
 then exports the beta APK (64-bit ARM) and puts it on the release page
-https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/centre-pass-netball-beta. Open that page on the phone,
+https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta. Open that page on the phone,
 tap the APK, and allow your browser to install it. See [docs/BETA.md](docs/BETA.md).
 
 For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step and every App content answer, and the
-**Centre Pass Netball · Play Store bundle** action builds the `.aab` (unsigned until the upload key is added as
+**Netball Unleashed · Play Store bundle** action builds the `.aab` (unsigned until the upload key is added as
 repository secrets).
 
 ## Play it in a browser
@@ -103,5 +103,5 @@ docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md, MESHY_BRIEF.md, transl
 
 This folder is self-contained. To give the game its own repo, copy everything inside `netball-game/` to the new
 repo's root (including the hidden `.github/` folder) and push: `.github/workflows/android.yml` is set up for that
-layout. Move the privacy and help pages (`centre-pass-netball/` at the top of this repository) too, or keep them
+layout. Move the privacy and help pages (`netball-unleashed/` at the top of this repository) too, or keep them
 here, and change `PRIVACY_URL` and `SUPPORT_URL` in `autoload/game.gd` if their address changes.

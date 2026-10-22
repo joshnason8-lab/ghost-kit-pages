@@ -2,13 +2,13 @@
 # Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Centre Pass Netball
+Netball Unleashed
 
 == Short description ==
 Netball by the real rules: lead, pass, defend at 0.9 m, shoot from the circle.
 
 == Full description ==
-Centre Pass Netball is netball for your phone, played to the Rules of Netball as they stand today. Take the centre pass, drive into space, feed the circle and shoot, then win the ball back with an intercept.
+Netball Unleashed is netball for your phone, played to the Rules of Netball as they stand today. Take the centre pass, drive into space, feed the circle and shoot, then win the ball back with an intercept.
 
 THE REAL GAME
 • Seven a side, each in her own areas: GS, GA, WA, C, WD, GD and GK, with bibs on.
@@ -37,10 +37,10 @@ MADE FOR YOUR PHONE
 • Runs smoothly on budget and mid-range phones; a battery saver too. Buttons you can resize and move, and a left-handed layout.
 • Plays offline. No ads, no purchases, no account, and no data collected.
 
-Centre Pass Netball is an independent game. It is not affiliated with or endorsed by any netball governing body, league, club or player. The players are fictional; the countries and the rules are real.
+Netball Unleashed is an independent game. It is not affiliated with or endorsed by any netball governing body, league, club or player. The players are fictional; the countries and the rules are real.
 
 == Release notes (first release) ==
-The first release of Centre Pass Netball: Quick Match and the Nations Cup, in nineteen languages.
+The first release of Netball Unleashed: Quick Match and the Nations Cup, in nineteen languages.
 
 == Release notes (0.2.0) ==
 The Club Season: eight clubs, a season and a grand final. A coach's tips for your first match. Umpires now advance and escalate penalties and can order a player off; choose how often they blow in Settings. A fuller interval screen, clearer name tags, and fixes from playtesting on phones.

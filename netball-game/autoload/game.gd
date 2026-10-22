@@ -7,8 +7,8 @@ const LEAGUE_PATH := "user://league.json"
 const RECORDS_PATH := "user://records.json"
 
 ## The game's privacy policy and help pages (Settings > About).
-const PRIVACY_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/centre-pass-netball/privacy.html"
-const SUPPORT_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/centre-pass-netball/support.html"
+const PRIVACY_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/netball-unleashed/privacy.html"
+const SUPPORT_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/netball-unleashed/support.html"
 
 ## Code, name in the language itself, name in English. English first (most netball phones are set to it), then the
 ## languages of the netball nations, biggest player base first: South Africa's, Malawi's, Uganda's, Zimbabwe's, East

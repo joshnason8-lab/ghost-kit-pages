@@ -2,13 +2,13 @@
 # Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Centre Pass Netball
+Netball Unleashed
 
 == Short description ==
 Ibhola lomnqakiswano ngemithetho yangempela: dlulisa, vikela ku-0,9 m, shaya.
 
 == Full description ==
-I-Centre Pass Netball yibhola lomnqakiswano efonini yakho, elidlalwa ngokwemithetho yebhola lomnqakiswano njengoba injalo namuhla. Thatha i-centre pass, ugijimele esikhaleni, udlulisele ibhola esiyingini bese uyashaya, bese ulithatha futhi ibhola ngokulihlwitha.
+I-Netball Unleashed yibhola lomnqakiswano efonini yakho, elidlalwa ngokwemithetho yebhola lomnqakiswano njengoba injalo namuhla. Thatha i-centre pass, ugijimele esikhaleni, udlulisele ibhola esiyingini bese uyashaya, bese ulithatha futhi ibhola ngokulihlwitha.
 
 UMDLALO WANGEMPELA
 • Abayisikhombisa ohlangothini, ngamunye ezindaweni zakhe: GS, GA, WA, C, WD, GD no-GK, begqoke ama-bib.
@@ -35,7 +35,7 @@ YENZELWE IFONI YAKHO
 • Isebenza kahle kumafoni angabizi kakhulu nawezinga eliphakathi, futhi kukhona nokonga ibhethri. Izinkinobho ongazishintsha ubukhulu futhi uzisuse, kanye nesakhiwo sabantu abangababunxele.
 • Idlalwa ngaphandle kwe-inthanethi. Azikho izikhangiso, akukho ukuthenga, ayikho i-akhawunti, futhi ayikho idatha eqoqwayo.
 
-I-Centre Pass Netball ingumdlalo ozimele. Awuhlobene futhi awugunyazwanga yinoma iyiphi inhlangano ephethe ibhola lomnqakiswano, iligi, iklabhu noma umdlali. Abadlali baqanjiwe; amazwe nemithetho kungokwangempela.
+I-Netball Unleashed ingumdlalo ozimele. Awuhlobene futhi awugunyazwanga yinoma iyiphi inhlangano ephethe ibhola lomnqakiswano, iligi, iklabhu noma umdlali. Abadlali baqanjiwe; amazwe nemithetho kungokwangempela.
 
 == Release notes (first release) ==
-Ukukhishwa kokuqala kwe-Centre Pass Netball: Umdlalo osheshayo kanye neNdebe Yezizwe, ngezilimi eziyishumi nesishiyagalolunye.
+Ukukhishwa kokuqala kwe-Netball Unleashed: Umdlalo osheshayo kanye neNdebe Yezizwe, ngezilimi eziyishumi nesishiyagalolunye.
