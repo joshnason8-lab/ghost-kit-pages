@@ -122,6 +122,22 @@ func ring(c: Vector3, r0: float, r1: float, a0: float, a1: float, col: Color, se
 		_tri_quad(c + d0 * r1, c + d1 * r1, c + d1 * r0, c + d0 * r0, Vector3.UP, col)
 
 
+## A ball of radius r at c: seg pieces round, seg / 2 from pole to pole.
+func sphere(c: Vector3, r: float, col: Color, seg := 8) -> void:
+	var rows := maxi(2, seg / 2)
+	for j in rows:
+		var p0 := PI * j / rows
+		var p1 := PI * (j + 1) / rows
+		for i in seg:
+			var t0 := TAU * i / seg
+			var t1 := TAU * (i + 1) / seg
+			var a := Vector3(sin(p0) * cos(t0), cos(p0), sin(p0) * sin(t0))
+			var b := Vector3(sin(p0) * cos(t1), cos(p0), sin(p0) * sin(t1))
+			var d := Vector3(sin(p1) * cos(t0), cos(p1), sin(p1) * sin(t0))
+			var e := Vector3(sin(p1) * cos(t1), cos(p1), sin(p1) * sin(t1))
+			_tri_quad(c + a * r, c + b * r, c + e * r, c + d * r, (a + b + d + e).normalized(), col)
+
+
 ## A rough ball of leaves or a bush: a squashed octahedron-ish blob.
 func blob(c: Vector3, r: Vector3, col: Color) -> void:
 	var pts := [Vector3(1, 0, 0), Vector3(0, 0, 1), Vector3(-1, 0, 0), Vector3(0, 0, -1)]

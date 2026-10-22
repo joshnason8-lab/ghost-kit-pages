@@ -48,6 +48,18 @@ func _ready() -> void:
 				await frames(20)
 				await shot("%s_%s_%s" % [v, lv, c[1]])
 			m.cam.set_mode(Game.CAM_TV)
+		# The home screen's live match behind the menu (Medium and High only: Low has a plain backdrop).
+		if g != Game.GFX_LOW and out != "-":
+			for v: String in venues:
+				var menu: Node = Game.show_screen("res://ui/main_menu.gd")
+				await frames(2)
+				for i in menu.ATTRACT.size():
+					if menu.ATTRACT[i][2] == v:
+						menu._pick = i
+						break
+				menu._start_attract()
+				await frames(150)
+				await shot("%s_%s_menu" % [v, lv])
 	get_tree().quit()
 
 

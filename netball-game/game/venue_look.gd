@@ -18,6 +18,13 @@ const LED := 7.0         # glow: an LED band, a slow sweep of light along it; y 
 const ASPHALT := 8.0     # an outdoor court's surround: speckled, a little sheen
 const STANDING := 9.0    # people standing in a row, painted on an upright face; UV in metres
 const FENCE := 10.0      # glow: chain-link wire; UV in metres
+const MAPLE := 11.0      # a sprung maple floor (tex_wood, the photo-scanned veneer), polished, the hall in it (refl_pan)
+const BLOCK := 12.0      # painted concrete block: the vertex colour is the paint, tex_block's normal map its relief
+const CEIL := 13.0       # ceiling boards (tex_ceil)
+const SLAT := 14.0       # pale timber slats on a wall, upright (tex_wood)
+const ACRYLIC := 15.0    # an outdoor court's acrylic coat on asphalt: the vertex colour, the asphalt's grain (tex_asph)
+const TARMAC := 16.0     # plain asphalt paths (tex_tarmac)
+const GRASS := 17.0      # mown grass in stripes (vertex colour, tex_tarmac's grain)
 
 const COMMON := """
 varying vec3 wpos;
@@ -44,6 +51,15 @@ uniform vec2 pool_size = vec2(17.0, 10.0);
 uniform float pool_lo = 1.0;
 uniform float pool_hi = 1.0;
 uniform float pool_glow = 0.0;
+uniform sampler2D tex_wood : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_block : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D tex_ceil : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D tex_asph : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_tarmac : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D refl_pan : filter_linear_mipmap, repeat_enable;
+uniform float refl_amt = 0.0;
+uniform float refl_lod = 3.0;
+uniform vec3 refl_tint = vec3(1.0);
 
 float hash12(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -176,6 +192,12 @@ float pool() {
 	return clamp(broad * 0.6 + spots * 0.45, 0.0, 1.0);
 }
 
+// The room reflected in a polished face (refl_pan: an equirectangular HDR), at a blur of lod.
+vec3 pan(vec3 d, float lod) {
+	vec2 uv = vec2(atan(d.x, -d.z) / 6.2832 + 0.5, acos(clamp(d.y, -1.0, 1.0)) / 3.1416);
+	return textureLod(refl_pan, uv, lod).rgb;
+}
+
 float vignette() {
 	float r = length(wpos.xz / vig_size);
 	return mix(1.0, vig_dark, smoothstep(0.55, 1.25, r));
@@ -191,15 +213,43 @@ static func lit() -> ShaderMaterial:
 shader_type spatial;
 render_mode vertex_lighting, cull_back, specular_disabled;
 """ + COMMON + """
+varying vec3 wnrm;
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	wnrm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
 void fragment() {
 	int k = int(UV2.x + 0.5);
 	vec3 col = COLOR.rgb;
 	vec3 emit = vec3(0.0);
 	vec3 v = normalize(CAMERA_POSITION_WORLD - wpos);
-	if (k == 1 || k == 2 || k == 8) {
+	// Along an upright face, in metres: u along it, v up.
+	vec2 wuv = vec2(abs(wnrm.x) > abs(wnrm.z) ? -wpos.z * sign(wnrm.x) : wpos.x * sign(wnrm.z), wpos.y);
+	if (k == 12) {
+		// Block relief, lit from above: the normal map's slope toward the light.
+		vec3 n = texture(tex_block, wuv / 2.4).xyz * 2.0 - 1.0;
+		col *= 0.9 + 0.32 * dot(n.xy, vec2(-0.25, 0.75)) - 0.12 * (1.0 - n.z);
+	} else if (k == 13) {
+		col *= texture(tex_ceil, wpos.xz / 2.4).rgb * 1.6;
+	} else if (k == 14) {
+		vec3 t = texture(tex_wood, vec2(wuv.y, wuv.x) / 2.4).rgb;
+		float aa = fwidth(wuv.x) * 1.5;
+		float groove = smoothstep(aa + 0.006, 0.0, abs(fract(wuv.x / 0.095) - 0.5) * 0.095 - 0.04);
+		col *= t * 1.1 * (1.0 - groove * 0.45 * (1.0 - smoothstep(0.01, 0.04, aa)));
+	} else if (k == 16) {
+		col *= texture(tex_tarmac, wpos.xz / 3.0).rgb * 1.8;
+	} else if (k == 17) {
+		float stripe = step(0.5, fract(wpos.x / 6.0));
+		float g = dot(texture(tex_tarmac, wpos.xz / 1.3).rgb, vec3(0.33));
+		col *= (0.92 + 0.12 * stripe) * (0.75 + g * 0.7);
+	}
+	if (k == 1 || k == 2 || k == 8 || k == 11 || k == 15 || k == 16 || k == 17) {
+		if (k == 11) {
+			col *= texture(tex_wood, wpos.xz / 2.4).rgb;
+		} else if (k == 15) {
+			float g = dot(texture(tex_asph, wpos.xz / 2.0).rgb, vec3(0.33));
+			col *= 0.82 + g * 0.45;
+		}
 		if (k == 2) {
 			float aa = fwidth(wpos.z) * 1.5;
 			float board = floor(wpos.z / 0.11);
@@ -216,7 +266,12 @@ void fragment() {
 		float pl = pool();
 		col *= mix(pool_lo, pool_hi, pl) * vignette();
 		emit += COLOR.rgb * pl * pl * pool_glow + lamp_col * pow(pl, 3.0) * pool_glow * 0.06;
-		emit += floor_sheen(v, sheen * (k == 8 ? 0.25 : 1.0), CAMERA_POSITION_WORLD) * mix(1.0, 0.6, 1.0 - vignette());
+		float sh = k == 8 || k == 15 ? 0.25 : (k == 16 || k == 17 ? 0.0 : 1.0);
+		emit += floor_sheen(v, sheen * sh, CAMERA_POSITION_WORLD) * mix(1.0, 0.6, 1.0 - vignette());
+		if (k == 11 && refl_amt > 0.0) {
+			float fr = 0.03 + 0.97 * pow(1.0 - clamp(v.y, 0.0, 1.0), 5.0);
+			emit += pan(reflect(-v, vec3(0.0, 1.0, 0.0)), refl_lod) * refl_tint * fr * refl_amt;
+		}
 	} else if (k == 3) {
 		// The stands are in the dark beyond the floodlights: painted as they look (stand_tint), not lit again.
 		float g;
@@ -339,6 +394,67 @@ void fragment() {
 	}
 	ALBEDO = COLOR.rgb * k * intensity * twinkle;
 	ALPHA = 1.0;
+}
+""")
+
+
+## The props' material (VenueProps): models from one atlas, cut-outs (kind 1 in UV2.x) from a second with their alpha
+## cut at 0.4, metal (kind 2) a little shiny; UV2.y makes a surface glow (a lamp's diffuser). Lit per vertex on Low.
+static func props(low: bool) -> ShaderMaterial:
+	return _make("props_low" if low else "props", """
+shader_type spatial;
+render_mode cull_disabled%s;
+uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D cards : source_color, filter_linear_mipmap, repeat_disable, hint_default_transparent;
+uniform vec3 night : source_color = vec3(0.03, 0.06, 0.16);
+uniform float fade_y0 = 5.0;
+uniform float fade_y1 = 15.0;
+uniform float fade_amt = 0.0;
+uniform float props_bright = 1.0;
+varying vec3 wpos;
+void vertex() {
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+void fragment() {
+	int k = int(UV2.x + 0.5);
+	vec4 t = k == 1 ? texture(cards, UV) : vec4(texture(atlas, UV).rgb, 1.0);
+	if (t.a < 0.4) discard;
+	vec3 c = t.rgb * COLOR.rgb * props_bright;
+	float fade = smoothstep(fade_y0, fade_y1, wpos.y) * fade_amt;
+	ALBEDO = mix(c, night, fade);
+	ROUGHNESS = k == 2 ? 0.45 : 0.8;
+	METALLIC = k == 2 ? 0.6 : 0.0;
+	SPECULAR = 0.3;
+	EMISSION = t.rgb * COLOR.rgb * UV2.y * (1.0 - fade);
+}
+""" % (", vertex_lighting" if low else ""))
+
+
+## Glass (a basketball backboard): faintly tinted, clearer face on, the room reflected at a glancing angle.
+static func glass() -> ShaderMaterial:
+	return _make("glass", """
+shader_type spatial;
+render_mode unshaded, blend_mix, cull_disabled, depth_draw_never, shadows_disabled;
+uniform sampler2D refl_pan : filter_linear_mipmap, repeat_enable;
+uniform float refl_amt = 0.0;
+uniform vec3 glass_col : source_color = vec3(0.75, 0.85, 0.85);
+varying vec3 wpos;
+varying vec3 wnrm;
+void vertex() {
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	wnrm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+}
+void fragment() {
+	vec3 v = normalize(CAMERA_POSITION_WORLD - wpos);
+	vec3 n = dot(wnrm, v) < 0.0 ? -wnrm : wnrm;
+	float fr = 0.08 + 0.92 * pow(1.0 - clamp(dot(n, v), 0.0, 1.0), 4.0);
+	vec3 d = reflect(-v, n);
+	vec2 uv = vec2(atan(d.x, -d.z) / 6.2832 + 0.5, acos(clamp(d.y, -1.0, 1.0)) / 3.1416);
+	vec3 r = mix(glass_col * 0.9, textureLod(refl_pan, uv, 1.5).rgb, refl_amt);
+	// A sheen across the glass, as a board catches the lights.
+	float streak = smoothstep(0.35, 0.0, abs(fract(wpos.y * 0.9 + (wpos.x + wpos.z) * 0.35) - 0.5)) * 0.25;
+	ALBEDO = r * (0.6 + streak) + glass_col * 0.1;
+	ALPHA = clamp(0.16 + fr * 0.6 + streak * 0.3, 0.0, 0.85);
 }
 """)
 
