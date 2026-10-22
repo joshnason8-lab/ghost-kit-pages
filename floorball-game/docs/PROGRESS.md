@@ -116,6 +116,9 @@ games. Assets that suit more than one game come from it: they are listed in `sha
 `claude/shared-assets` (large files on a "shared-assets" GitHub release), each with its source, licence and the games
 it suits, and a message says what each new one is and how to fetch it.
 
+**Briefs from the lead need no go-ahead.** The owner, 22 October 2026: "Go, you don't need to ask permissions": a
+brief the lead session relays from the owner is started straight away.
+
 ## Needs the owner
 
 - Play Console account, the upload key as repository secrets (store/PLAY_STORE.md), a trademark search on the name.
