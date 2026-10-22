@@ -109,6 +109,13 @@ on with "Next".
 - **German with ss, not ß; the sport called Unihockey in German, French and Italian prose**: most German, French
   and Italian speaking floorball players are Swiss.
 
+## Shared assets
+
+The owner (Josh) has made the orchestrator session (session_016XKAyHkTQRNMGEgZbjNK28) the lead for all six mobile
+games. Assets that suit more than one game come from it: they are listed in `shared-assets/README.md` on the branch
+`claude/shared-assets` (large files on a "shared-assets" GitHub release), each with its source, licence and the games
+it suits, and a message says what each new one is and how to fetch it.
+
 ## Needs the owner
 
 - Play Console account, the upload key as repository secrets (store/PLAY_STORE.md), a trademark search on the name.
