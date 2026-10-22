@@ -32,10 +32,11 @@ plastered and tiled houses.
 - **Sky:** `skies/kloppenheim_02_puresky`. **Ground:** `terrain_red_01` or `red_laterite_soil_stones`.
 - `stands/bleacher_concrete` for the stand, `buildings/city_apartments` on the skyline.
 
-## Gap
+## The village temple (added)
 
-**A small village temple or shrine** would make the village ground truly Indian. Neither free library has one. Note
-it in PROGRESS; the lead will ask the owner about generating one.
+`buildings/indian_village_temple` (High) and `_low`: a whitewashed shrine with saffron and red stripes, 7 m tall. Put
+it at the edge of the village ground, facing the field, with a rain tree beside it. Its forecourt is a natural place
+for a few monobloc chairs and slippers left at the steps.
 
 ## Not for this game
 

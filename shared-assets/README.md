@@ -113,6 +113,7 @@ Previews of every model: [`previews/`](previews/) (`psheet*.png`).
 | **wall_clock** | Wall clock above the doors | sports halls, gyms | `hall/wall_clock.glb` High: 532 tris, 131 KB<br>`hall/wall_clock_low.glb` Low: 532 tris, 131 KB | Poly Haven, CC0 |
 | **fire_alarm** | Fire alarm call point by the doors | sports halls | `hall/fire_alarm.glb` High: 847 tris, 83 KB<br>`hall/fire_alarm_low.glb` Low: 847 tris, 83 KB | Poly Haven, CC0 |
 | **wet_floor_sign** | Wet floor sign | sports halls (by the doors, never on court) | `hall/wet_floor_sign.glb` High: 228 tris, 30 KB<br>`hall/wet_floor_sign_low.glb` Low: 228 tris, 30 KB | Poly Haven, CC0 |
+| **indian_village_temple** | Whitewashed South Indian village temple: saffron and red striped walls, pillared porch, stone steps, tiered domed tower. Generated in Meshy for these games (30 credits). | India: Kabaddi Raid (Gaon Maidan, and on the skyline elsewhere), Kho Kho Rush (village ground) | `buildings/indian_village_temple.glb` High: 7,999 tris<br>`buildings/indian_village_temple_low.glb` Low: 1,999 tris. 7 m tall. Preview: `previews/indian_village_temple.jpg` | owner (Meshy), owner |
 
 ## What was looked at and not used
 
@@ -129,10 +130,8 @@ Previews of every model: [`previews/`](previews/) (`psheet*.png`).
 
 ## Gaps that need the owner
 
-- **An Indian temple** (a village shrine for Kabaddi Raid's Gaon Maidan and Kho Kho Rush's village ground, and the
-  Jagannath temple's tower on the skyline at Puri Beach). Neither free library has one. Options: generate it in Meshy
-  (about 30–40 credits each) or a free Sketchfab account (an API token in the environment's secrets) to download a
-  CC-BY one.
+- **The Jagannath temple tower** for Puri Beach's skyline (the village temple is now done: `buildings/indian_village_temple`).
+  Another Meshy model, if the owner wants it.
 - **A clean indoor basketball backboard.** The owner's hoop is a weathered street hoop (good for outdoor courts).
   Halls should build a clean regulation one from simple shapes; the plans give the measurements.
 

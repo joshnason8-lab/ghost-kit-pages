@@ -31,10 +31,11 @@ Puri Beach (sand).
   `buildings/city_apartments` on the skyline.
 - **Mumbai Dome:** `stands/bleacher_metal` for any lower tier you rebuild.
 
-## Gap
+## The village temple (added)
 
-**A temple:** a village shrine at Gaon Maidan, and the Jagannath temple's tower on the skyline at Puri Beach (Puri's
-landmark). Neither free library has one. Note it in PROGRESS; the lead will ask the owner.
+`buildings/indian_village_temple` (High) and `_low`: a whitewashed shrine with saffron and red stripes, 7 m tall. Put
+it at the edge of Gaon Maidan, facing the court, with a rain tree beside it. The Jagannath tower for Puri Beach is
+still a gap; the lead will ask the owner.
 
 ## Not for this game
 
