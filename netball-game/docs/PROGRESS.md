@@ -109,4 +109,8 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   so the feet keep pace with the floor. The legs and body take the clip whenever she moves; the arms only when they
   are free (running, ready), so a catch, a pass, marking or holding the ball keep the code's arms. A player with the
   ball stands (footwork), so she never runs.
+- **Shared assets** (October 2026): the owner made the orchestrator session the lead for all six mobile games.
+  Assets that suit more than one game come from it, listed in `shared-assets/README.md` on branch
+  `claude/shared-assets` (large files on the "shared-assets" GitHub release) with each one's source, licence and the
+  games it suits. When one arrives, a message says what it is and how to fetch it.
 
