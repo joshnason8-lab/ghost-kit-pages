@@ -165,8 +165,9 @@ func recolour(look: Dictionary) -> void:
 	material.set_shader_parameter("socks_col", look.get("socks", Color.BLUE))
 	material.set_shader_parameter("trim_col", look.get("trim", Color.WHITE))
 	material.set_shader_parameter("keeper", 1.0 if kind == "keeper" else 0.0)
-	# The texture's skin is light: the player's own tone over it, in linear light.
-	var ref := Color("e3b08e").srgb_to_linear()
+	# The texture's skin as the lightest tone in the game (DB.SKIN[0]): darker tones darken it, in linear light; none
+	# lightens it (brightened, a light skin washed out to grey under the hall's lights).
+	var ref := Color(DB.SKIN[0]).srgb_to_linear()
 	var sk: Color = (look.get("skin", Color("e3b08e")) as Color).srgb_to_linear()
 	material.set_shader_parameter("skin_ratio", Vector3(sk.r / ref.r, sk.g / ref.g, sk.b / ref.b))
 

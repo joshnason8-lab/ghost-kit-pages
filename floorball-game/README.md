@@ -37,16 +37,18 @@ the coach's whiteboard in a Nordic sports hall.
 
 | Graphics | Arena: draw calls / triangles | Hall: draw calls / triangles | Render scale | Shadows, MSAA |
 |---|---|---|---|---|
-| Low | 89 / 49,100 | 89 / 49,600 | 75% | none, off |
-| Medium | 90 / 86,500 | 90 / 84,900 | 90% | none, 2x |
-| High | 113 / 226,000 | 114 / 229,600 | 100% | yes, 4x |
+| Low | 82 / 49,400 | 79 / 48,200 | 75% | none, off |
+| Medium | 79 / 80,700 | 79 / 78,100 | 90% | none, 2x |
+| High | 122 / 414,100 | 122 / 410,600 | 100% | yes, 4x |
 
 Budgets for the floor (a 2-3 GB phone with a Mali-G52/G57 at 720p, Low, 30 fps): under 100 draw calls and 100,000
-triangles a frame, which Low meets (bodies are built with fewer sides on Low; High's extra triangles are its
-shadow pass). The draw calls are about 25 for the 3D scene (the rink and hall merged into a few, the crowd one, each
-person with his stick one) and the rest the HUD and buttons. The beta APK is 31 MB, almost all of it the Godot
-engine itself; the game's own data is about 2.5 MB (fonts subset to 1.3 MB; no textures ship: the floor, ball, net,
-flags and crowd are drawn at load).
+triangles a frame, which Low meets. The people are the owner's Meshy models at three detail levels (Low about 2,700
+triangles a person, Medium 5,400, High 10,800; docs/MESHY_BRIEF.md), each one draw call, and one more for a stick;
+High's extra triangles are its shadow pass. The rink, hall and crowd are 6 draw calls and 3,000-7,000 triangles at
+every level (merged into one texture sheet; the crowd is one draw call of cut-outs baked from the same models). The
+rest of the draw calls are the HUD and buttons. The game's own data is about 6 MB: fonts subset to 1.3 MB, the
+characters and stick 1.5 MB, the venue and crowd sheets 1.8 MB (compressed for phones), the floor, ball and flags
+still drawn at load.
 
 ## Controls
 
