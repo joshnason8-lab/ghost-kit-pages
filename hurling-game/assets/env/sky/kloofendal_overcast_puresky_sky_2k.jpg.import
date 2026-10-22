@@ -3,23 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dpbiw82gl4xij"
-path.s3tc="res://.godot/imported/kloofendal_overcast_puresky_sky_2k.jpg-f0d4838db7cabb78ce73d48663da23d5.s3tc.ctex"
-path.etc2="res://.godot/imported/kloofendal_overcast_puresky_sky_2k.jpg-f0d4838db7cabb78ce73d48663da23d5.etc2.ctex"
+path="res://.godot/imported/kloofendal_overcast_puresky_sky_2k.jpg-f0d4838db7cabb78ce73d48663da23d5.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/env/sky/kloofendal_overcast_puresky_sky_2k.jpg"
-dest_files=["res://.godot/imported/kloofendal_overcast_puresky_sky_2k.jpg-f0d4838db7cabb78ce73d48663da23d5.s3tc.ctex", "res://.godot/imported/kloofendal_overcast_puresky_sky_2k.jpg-f0d4838db7cabb78ce73d48663da23d5.etc2.ctex"]
+dest_files=["res://.godot/imported/kloofendal_overcast_puresky_sky_2k.jpg-f0d4838db7cabb78ce73d48663da23d5.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

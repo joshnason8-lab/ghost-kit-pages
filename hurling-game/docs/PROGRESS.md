@@ -103,6 +103,9 @@ copied into `assets/env/`:
 - **Small things**: on Low the pitch's lines are drawn 18 cm wide (at three-quarter resolution 10 cm lines broke
   into dashes in the distance); the old code-drawn hills are gone (flat grey slabs against a photographed sky).
 - **Credits**: Poly Haven (CC0) and the maker's models in Settings > About > Licences.
+- **APK size**: the first 0.4.0 build was 43.8 MB (11.7 MB more than 0.3.0: compressed GPU textures do not zip).
+  The skies are now kept as WebP (30-65 KB each instead of 1 MB; one is in memory at a time) and the fields',
+  worn and withered grass scans capped at 512 px, the same to look at.
 - **Performance** (`tests/perf_probe.tscn`, the busiest frame): stadium Low 77 → 87 draw calls, 67k → 82k
   triangles; Medium 95 → 105, 149k → 164k; High 168 → 178, 306k → 320k. Parish Low 77 → 91, 64k → 81k; Medium
   95 → 109, 125k → 141k; High 148 → 167, 234k → 263k. Low stays inside its budget of about 100.

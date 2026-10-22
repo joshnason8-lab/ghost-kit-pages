@@ -3,23 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d1hv8jxnhf80a"
-path.s3tc="res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_sky_2k.jpg-6468df9e6aa65d1098a90d142644616b.s3tc.ctex"
-path.etc2="res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_sky_2k.jpg-6468df9e6aa65d1098a90d142644616b.etc2.ctex"
+path="res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_sky_2k.jpg-6468df9e6aa65d1098a90d142644616b.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/env/sky/kloofendal_48d_partly_cloudy_puresky_sky_2k.jpg"
-dest_files=["res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_sky_2k.jpg-6468df9e6aa65d1098a90d142644616b.s3tc.ctex", "res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_sky_2k.jpg-6468df9e6aa65d1098a90d142644616b.etc2.ctex"]
+dest_files=["res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_sky_2k.jpg-6468df9e6aa65d1098a90d142644616b.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
