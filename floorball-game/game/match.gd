@@ -770,7 +770,7 @@ func _check_shot() -> void:
 		if absf(o.pos.x - gx) < 4.0 and absf(o.pos.y - ball.pos.z) < 1.0:
 			screen += 0.12
 	var sp: float = float(_shot_live.speed)
-	var save := clampf(0.985 - reach * 0.3 - (sp - 20.0) * 0.007 - screen + (gk.stat("reflex") - 70.0) / 160.0, 0.35, 0.95)
+	var save := clampf(1.01 - reach * 0.3 - (sp - 20.0) * 0.007 - screen + (gk.stat("reflex") - 70.0) / 160.0, 0.35, 0.95)
 	if gk.team != user_team and user_team >= 0:
 		save *= [0.9, 0.97, 1.0, 1.04][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 3)]
 	if _rng.randf() < save:
