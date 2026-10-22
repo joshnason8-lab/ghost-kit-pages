@@ -1,4 +1,4 @@
-name: Ash & Leather · Android build
+name: Hurling Heroes · Android build
 
 # Builds the Godot project in hurling-game/ into the beta APKs you can sideload (64-bit, and 32-bit for older
 # phones), after running the headless test suite: the playing rules, every screen in English and Irish, text fit,
@@ -9,10 +9,8 @@ on:
     paths:
       - "hurling-game/**"
       - ".github/workflows/hurling-android.yml"
-  pull_request:
-    paths:
-      - "hurling-game/**"
-      - ".github/workflows/hurling-android.yml"
+  # No pull_request trigger: the push run reports its checks on the PR's head commit already, and a second run
+  # doubled every failure email (the owner's request, round two).
   workflow_dispatch:
 
 env:
@@ -151,6 +149,7 @@ jobs:
           set -o pipefail
           timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- play 4 2>&1 | tee bot.log
           timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- idle 4 2>&1 | tee -a bot.log
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- pull 4 2>&1 | tee -a bot.log
           if grep -q "SCRIPT ERROR" bot.log; then grep -A4 "SCRIPT ERROR" bot.log; exit 1; fi
 
       - name: Touch input (scrolling from anywhere on a page, taps)
@@ -206,16 +205,16 @@ jobs:
         run: |
           curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
           java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk ${PROJECT_DIR}/build/unsigned-armv7.apk --out ${PROJECT_DIR}/build/signed
-          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/ash-and-leather-${VERSION}.apk
-          mv ${PROJECT_DIR}/build/signed/unsigned-armv7-aligned-debugSigned.apk ${PROJECT_DIR}/build/ash-and-leather-${VERSION}-32bit.apk
+          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk
+          mv ${PROJECT_DIR}/build/signed/unsigned-armv7-aligned-debugSigned.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}-32bit.apk
           ls -la ${PROJECT_DIR}/build
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ash-and-leather-${{ env.VERSION }}-apk
+          name: hurling-heroes-${{ env.VERSION }}-apk
           path: |
-            ${{ env.PROJECT_DIR }}/build/ash-and-leather-${{ env.VERSION }}.apk
-            ${{ env.PROJECT_DIR }}/build/ash-and-leather-${{ env.VERSION }}-32bit.apk
+            ${{ env.PROJECT_DIR }}/build/hurling-heroes-${{ env.VERSION }}.apk
+            ${{ env.PROJECT_DIR }}/build/hurling-heroes-${{ env.VERSION }}-32bit.apk
           if-no-files-found: error
 
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
@@ -228,19 +227,19 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           TAG=ash-and-leather-beta
-          APK=${PROJECT_DIR}/build/ash-and-leather-${VERSION}.apk
-          APK32=${PROJECT_DIR}/build/ash-and-leather-${VERSION}-32bit.apk
+          APK=${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk
+          APK32=${PROJECT_DIR}/build/hurling-heroes-${VERSION}-32bit.apk
           cat > notes.md <<EOF
-          The latest beta of **Ash & Leather** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+          The latest beta of **Hurling Heroes** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
 
-          **Android**: tap \`ash-and-leather-${VERSION}.apk\` under Assets below (an older or Android Go phone that
-          says it cannot install it: \`ash-and-leather-${VERSION}-32bit.apk\`). When it has downloaded, open it; if
-          Android asks, allow your browser or Files to install unknown apps. It installs over any earlier Ash & Leather
+          **Android**: tap \`hurling-heroes-${VERSION}.apk\` under Assets below (an older or Android Go phone that
+          says it cannot install it: \`hurling-heroes-${VERSION}-32bit.apk\`). When it has downloaded, open it; if
+          Android asks, allow your browser or Files to install unknown apps. It installs over any earlier Hurling Heroes
           beta and keeps your saves.
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
           gh release delete "$TAG" --cleanup-tag --yes || true
           gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
-            --title "Ash & Leather ${VERSION} (latest beta)" --notes-file notes.md
+            --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
           gh release view "$TAG"

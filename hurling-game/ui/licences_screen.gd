@@ -3,7 +3,7 @@ extends Control
 ## and those of the engine's own parts (Engine.get_copyright_info), which their licences ask to be shown. The legal
 ## texts are in English, as they are written.
 
-const CREDITS := """[b]Ash & Leather[/b]
+const CREDITS := """[b]Hurling Heroes[/b]
 Made by Josh Nason.
 Players, officials, venues, crowd, sliotar and sounds made in code for the game; the menu music written for it
 (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.

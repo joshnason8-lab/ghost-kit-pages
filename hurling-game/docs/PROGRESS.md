@@ -1,4 +1,4 @@
-# Ash & Leather: progress
+# Hurling Heroes: progress
 
 The hurling game, built overnight (21 October 2026) on `claude/hurling-game`, draft PR #6. If work stops, resume from
 here and `git log`.
@@ -80,10 +80,11 @@ here and `git log`.
 
 ## Decisions, and why
 
-- **Name: Ash & Leather** (slug `ash-and-leather`): the "clash of the ash" (the hurley) on leather (the sliotar). A
-  web and store search on 21 October 2026 found no app or game by that name; the hurling apps on the stores are Flick
-  Hurling, the old GPA Hurling, Red Bull Strike and Hurl Clash. Rejected: "Puc Fada" (a real GAA competition),
-  "Clash of the Ash" (the crowded "Clash of ..." space), "Hurl" (Hurl Clash), "Small Ball" (an existing app).
+- **Name: Hurling Heroes** (the owner's choice, round three; first released as "Ash & Leather", the "clash of the ash"
+  on leather). A store search on 22 October 2026 found no app by that name. The slug `ash-and-leather` stays where
+  changing it would cost something: the package (`com.ashandleather.game`, so a new beta installs over the old one and
+  keeps the saves), the release tag and the privacy and help pages' addresses (linked from the game). Before the first
+  Play upload the package can still be changed at no cost (`com.hurlingheroes.game`); after it, never.
 - **Counties as places.** County names are place names, so they are used plainly, in English and Irish. No crests,
   no county-board jerseys (each county wears its traditional colours in one of the game's own four kit designs, no
   crest, no sponsor), no nicknames (fans' nicknames are tied to the county boards' marketing), no real competition

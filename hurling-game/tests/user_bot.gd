@@ -1,6 +1,6 @@
 extends Node
 ## A thumb on the controls, through the touch buttons' own signal and the joystick's value, as a player's would be:
-##   godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- [idle|play|pass] [minutes]
+##   godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- [idle|play|pass|pull] [minutes]
 ## pass: as play, but out of range he passes (PASS, the joystick toward the goal) after a second and a half on the
 ## ball; how many of his passes his side keeps is printed.
 ## play: run at the ball, take what is offered (catch, lift, tackle), strike for the posts when in range, solo when
@@ -60,7 +60,10 @@ func _ready() -> void:
 					kept += 1
 				passes.remove_at(i)
 		var press := ""
-		for want in ["GOAL", "STRIKE", "CATCH", "LIFT", "TACKLE", "LONG"]:
+		var order := ["GOAL", "STRIKE", "CATCH", "LIFT", "TACKLE", "LONG"]
+		if mode == "pull":
+			order = ["PULL", "GOAL", "STRIKE", "TACKLE", "LONG"]
+		for want in order:
 			if want in ids:
 				press = want
 				break
@@ -84,6 +87,8 @@ func _ready() -> void:
 		print("user_bot pass: %d passes, %d kept by his side 3 s later" % [int(presses.get("PASS", 0)), kept])
 	print("user_bot %s: %s v %s, presses %s, %d frames" % [mode, Rules.fmt(s[0][0], s[0][1]), Rules.fmt(s[1][0], s[1][1]), JSON.stringify(presses), frames])
 	var ok: bool = m.phase == m.P.OVER
+	if mode == "pull":
+		ok = ok and int(presses.get("PULL", 0)) > 3
 	if mode in ["play", "pass"]:
 		ok = ok and int(presses.get("CATCH", 0)) + int(presses.get("LIFT", 0)) > 3 and user_shots > 2 and Rules.total(s[0][0], s[0][1]) > 0
 	if not ok:

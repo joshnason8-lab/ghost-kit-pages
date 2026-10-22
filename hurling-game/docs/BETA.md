@@ -3,8 +3,8 @@
 ## Install
 
 1. On the phone, open https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/ash-and-leather-beta.
-2. Tap `ash-and-leather-<version>.apk` under Assets (an older or Android Go phone that will not install it:
-   `ash-and-leather-<version>-32bit.apk`).
+2. Tap `hurling-heroes-<version>.apk` under Assets (an older or Android Go phone that will not install it:
+   `hurling-heroes-<version>-32bit.apk`).
 3. Open it when it has downloaded. If Android asks, allow your browser (or Files) to install unknown apps.
 
 Each new beta installs over the last and keeps your saves.

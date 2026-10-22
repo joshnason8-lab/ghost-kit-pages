@@ -8,6 +8,13 @@ extends Node3D
 const ACCEL := 6.5          # m/s^2 to speed up
 const DECEL := 9.0          # m/s^2 to slow down
 const TURN := 7.0           # rad/s he can turn his body at a jog (slower at a sprint)
+## The man under your thumb answers it quicker than the computer's men move: a game's player has to feel the stick
+## (round three: "the players barely react to the joystick"; 6.5 m/s^2 took well over a second to top speed).
+const USER_ACCEL_K := 2.0
+## Bodies are drawn a little larger than life, as sports games draw them, so a player reads on a phone across a
+## 140 m pitch; where they stand, reach and collide is unchanged.
+const DRAW_SCALE := 1.15
+const USER_TURN_K := 1.8
 const STRIDE_K := 0.32      # a stride's length grows with speed: 0.7 m walking to about 2 m at a sprint
 
 ## Actions: how long each lasts and, for those that meet the ball, when (seconds from the start).
@@ -72,6 +79,7 @@ var _pose_every := 1
 var _flag: MeshInstance3D
 var _flag_att: BoneAttachment3D
 var fatigue := 0.0               # 0 fresh .. 1 spent: slower, and his striking less true, through the game
+var agility := 1.0               # USER_ACCEL_K while you control him, else 1
 var came_on := 0                 # how many times a substitute has taken this place (the movement audit skips the change)
 var tire_k := 1.0                # match seconds a real second while the ball is live (the match sets it): tiring
                                  # goes by the match clock, so a short match tires a man as a full one does
@@ -102,6 +110,7 @@ func _init(p_data := {}, p_team := 0, look := {}, p_role := "") -> void:
 
 func _ready() -> void:
 	add_child(body)
+	body.scale = Vector3.ONE * DRAW_SCALE
 	body.rotation.y = yaw
 
 
@@ -129,6 +138,7 @@ func take_over(pd: Dictionary, look: Dictionary) -> void:
 	body.queue_free()
 	body = ToonBody.new(look)
 	add_child(body)
+	body.scale = Vector3.ONE * DRAW_SCALE
 	body.set_lod(lod)
 	body.rotation.y = yaw
 
@@ -207,7 +217,7 @@ func integrate(dt: float, now: float) -> void:
 	if w.length() > top:
 		w = w.normalized() * top
 	var dv := w - vel
-	var rate := ACCEL if w.length() >= vel.length() else DECEL
+	var rate := (ACCEL if w.length() >= vel.length() else DECEL) * agility
 	if dv.length() > rate * dt:
 		dv = dv.normalized() * rate * dt
 	vel += dv
@@ -223,7 +233,7 @@ func integrate(dt: float, now: float) -> void:
 			want_yaw = atan2(d.x, d.z)
 	elif sp > 0.3:
 		want_yaw = atan2(vel.x, vel.z)
-	var turn := TURN * (1.0 - clampf((sp - 5.0) / 6.0, 0.0, 0.5)) * dt
+	var turn := TURN * (1.0 - clampf((sp - 5.0) / 6.0, 0.0, 0.5)) * dt * (USER_TURN_K if agility > 1.0 else 1.0)
 	yaw += clampf(wrapf(want_yaw - yaw, -PI, PI), -turn, turn)
 	body.rotation.y = yaw
 	# The stride: a foot down twice a cycle.

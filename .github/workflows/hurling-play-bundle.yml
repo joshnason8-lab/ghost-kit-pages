@@ -1,4 +1,4 @@
-name: Ash & Leather · Play Store bundle
+name: Hurling Heroes · Play Store bundle
 
 # Builds the Android App Bundle (.aab) that Google Play takes, with Godot's Gradle build (the beta APK in
 # takraw-android.yml is built without it). It is signed with your upload key when the repository has the key as
@@ -115,13 +115,13 @@ jobs:
           sed -i 's/^gradle_build\/target_sdk=""/gradle_build\/target_sdk="36"/; s/^gradle_build\/min_sdk=""/gradle_build\/min_sdk="24"/' export_presets.cfg
           sed -i "s/^package\/signed=true/package\/signed=${SIGNED}/" export_presets.cfg
           mkdir -p build
-          godot --headless --path . --install-android-build-template --export-release "Android" "build/ash-and-leather-${VERSION}.aab"
+          godot --headless --path . --install-android-build-template --export-release "Android" "build/hurling-heroes-${VERSION}.aab"
           ls -la build
 
       - name: Check the bundle (16 KB pages, target API, permissions)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          AAB="build/ash-and-leather-${VERSION}.aab"
+          AAB="build/hurling-heroes-${VERSION}.aab"
           test -s "$AAB"
           curl -sSL -o "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.1/bundletool-all-1.18.1.jar
           java -jar "$RUNNER_TEMP/bundletool.jar" dump manifest --bundle "$AAB" > "$RUNNER_TEMP/manifest.xml"
@@ -135,7 +135,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ash-and-leather-${{ env.VERSION }}-play-${{ env.SIGNED == 'true' && 'signed' || 'unsigned' }}
-          path: ${{ env.PROJECT_DIR }}/build/ash-and-leather-${{ env.VERSION }}.aab
+          name: hurling-heroes-${{ env.VERSION }}-play-${{ env.SIGNED == 'true' && 'signed' || 'unsigned' }}
+          path: ${{ env.PROJECT_DIR }}/build/hurling-heroes-${{ env.VERSION }}.aab
           if-no-files-found: error
           retention-days: 30

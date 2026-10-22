@@ -1,4 +1,4 @@
-# Ash & Leather
+# Hurling Heroes
 
 Hurling for Android phones, built with [Godot 4.7](https://godotengine.org) (free and open source, no royalties) in
 the same way as Kabaddi Raid and Takraw Smash. It plays the GAA's playing rules as they stand in 2026, fifteen a side,
@@ -39,12 +39,12 @@ On a keyboard: WASD or arrows, Space, J, K and L for the buttons, Q to switch, E
 
 ## Get it on your phone
 
-Every push that touches `hurling-game/` runs the **Ash & Leather · Android build** action: it runs the tests, then
+Every push that touches `hurling-game/` runs the **Hurling Heroes · Android build** action: it runs the tests, then
 exports the beta APKs (64-bit ARM, and 32-bit ARM for older and Android Go phones) and puts them on the release page
 https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/ash-and-leather-beta. Open that page on the phone, tap
 the APK, and allow your browser to install it. See [docs/BETA.md](docs/BETA.md).
 
-For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step, and the **Ash & Leather · Play Store
+For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step, and the **Hurling Heroes · Play Store
 bundle** action builds the `.aab` (unsigned until the upload key is added as secrets; target API 36, 16 KB pages
 checked, vibration the only permission).
 

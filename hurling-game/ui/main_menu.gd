@@ -123,7 +123,7 @@ func _build_ui() -> void:
 	foot.add_child(ver)
 
 
-## The programme's cover, printed on cream paper.
+## The programme's cover, printed on cream paper: the masthead, the picture with the name over it, the foot line.
 func _cover() -> Control:
 	var card := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
@@ -154,25 +154,36 @@ func _cover() -> Control:
 	var bl := UI.label(tr("PROGRAMME").to_upper(), "EyebrowLabel", 16, Game.C_PAPER)
 	UI.fit(bl, 1)
 	band.add_child(bl)
-	var inner := MarginContainer.new()
-	for side in ["left", "right"]:
-		inner.add_theme_constant_override("margin_" + side, 20)
-	v.add_child(inner)
+	# The cover picture (the owner's artwork: a hurler in green striking at dusk), the game's name over its pale sky.
+	var pic := Control.new()
+	pic.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	pic.custom_minimum_size = Vector2(0, 220)
+	pic.clip_contents = true
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(pic)
+	var tex := TextureRect.new()
+	tex.texture = load("res://assets/art/cover.jpg")
+	tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pic.add_child(tex)
 	var iv := VBoxContainer.new()
-	iv.add_theme_constant_override("separation", 2)
-	inner.add_child(iv)
-	var title := UI.label(tr("GAME_TITLE"), "LogoLabel", 62, Game.C_PRINT)
+	iv.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	iv.offset_left = 16
+	iv.offset_right = -16
+	iv.offset_top = 10
+	iv.add_theme_constant_override("separation", 0)
+	iv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pic.add_child(iv)
+	var title := UI.label(tr("GAME_TITLE"), "LogoLabel", 58, Game.C_PRINT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UI.shrink(title, 62, 0.6, 1)
+	UI.shrink(title, 58, 0.6, 1)
 	iv.add_child(title)
-	var tag := UI.label(tr("TAGLINE"), "SubLabel", 19, Color(Game.C_PRINT, 0.75))
+	var tag := UI.label(tr("TAGLINE"), "SubLabel", 19, Color(Game.C_PRINT, 0.8))
 	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.fit(tag, 2)
 	iv.add_child(tag)
-	var art := HurlerArt.new()
-	art.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	art.custom_minimum_size = Vector2(0, 150)
-	v.add_child(art)
 	var bottom := UI.label(tr("COVER_FOOT"), "EyebrowLabel", 14, Color(Game.C_PRINT, 0.7))
 	bottom.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.fit(bottom, 2)

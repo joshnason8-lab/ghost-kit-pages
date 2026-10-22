@@ -114,6 +114,7 @@ func _ready() -> void:
 	stadium = Stadium.new(venue, [home_t.c1, home_t.c2])
 	add_child(stadium)
 	ball = Sliotar.new()
+	ball.backstop = stadium.backstop()
 	add_child(ball)
 	ball.place(Vector3.ZERO)
 	_make_teams()
@@ -693,6 +694,7 @@ func _pick_chasers(k: int) -> Array:
 ## The soonest a player could be at the ball along its path (in the air within his reach, or on the ground), or the
 ## end of the path if he cannot catch it up before it stops.
 func _reach_time(pl: Player) -> float:
+	_ensure_path()
 	var p := pl.global_position
 	var sp := pl.top_speed()
 	for e in _path:
@@ -708,7 +710,16 @@ func _reach_time(pl: Player) -> float:
 	return float(last[0]) + Vector2(lp.x - p.x, lp.z - p.z).length() / sp
 
 
+## The free ball's flight ahead, worked out again if a strike has just cleared it (a PULL, a pass, a deflection all
+## set _path to [] and the next look at it comes before the loose-ball step: the PULL crash, round three).
+func _ensure_path() -> void:
+	if _path.is_empty():
+		_path = Sliotar.path(ball.global_position, ball.vel, 5.0)
+		_path_t = now
+
+
 func _chase_target(pl: Player) -> Vector3:
+	_ensure_path()
 	var p := pl.global_position
 	var sp := pl.top_speed()
 	var el := now - _path_t
@@ -1308,8 +1319,12 @@ func _whistle_dead(sound := true) -> void:
 	phase_t = 0.0
 	if carrier != null:
 		_release(carrier)
-	ball.state = Sliotar.DEAD
-	ball.vel = Vector3.ZERO
+	if ball.state == Sliotar.FREE and absf(ball.global_position.x) > Pitch.HALF_L:
+		# Over the end line (a score or a wide): it flies on into the net or the ball-stop behind, and drops.
+		ball.state = Sliotar.OUT
+	else:
+		ball.state = Sliotar.DEAD
+		ball.vel = Vector3.ZERO
 	advantage = {}
 	officials.end_advantage()
 	_puck_travel = {}
@@ -2234,7 +2249,10 @@ func _restart_attract() -> void:
 func _set_active(pl: Player) -> void:
 	if pl == null or user_team < 0:
 		return
+	if active != null and is_instance_valid(active):
+		active.agility = 1.0
 	active = pl
+	pl.agility = Player.USER_ACCEL_K
 	hud.set_active(pl)
 
 
@@ -2281,6 +2299,11 @@ func _cam_dir(j: Vector2) -> Vector3:
 var _idle_t := 0.0
 
 
+## How much of his top speed a push of the stick asks for: a jog from a small push, full speed from two-thirds out.
+static func stick_speed(l: float) -> float:
+	return clampf(0.35 + (l - 0.12) / 0.55 * 0.65, 0.0, 1.0) if l > 0.12 else 0.0
+
+
 func _user_move(pl: Player, dt: float) -> void:
 	var j: Vector2 = controls.joystick
 	pl.face_to = Vector3.ZERO
@@ -2290,7 +2313,7 @@ func _user_move(pl: Player, dt: float) -> void:
 		return
 	if j.length() > 0.12:
 		_idle_t = 0.0
-		pl.want_vel = _cam_dir(j) * pl.top_speed() * clampf(j.length() * 1.15, 0.0, 1.0)
+		pl.want_vel = _cam_dir(j) * pl.top_speed() * stick_speed(j.length())
 		return
 	# Hands off the joystick: he keeps his place in the side's shape (Full assist: he runs for the ball too).
 	_idle_t += dt

@@ -37,6 +37,7 @@ func _ready() -> void:
 	await _subs()
 	await _tactics()
 	await _playtest_fixes()
+	await _nets()
 	await _match_and_motion()
 	Game.settings = keep
 	Game.delete_champ()
@@ -602,6 +603,34 @@ func _playtest_fixes() -> void:
 	check(String(q._venue) == "stadium", "Playtest: match setup remembers the ground")
 	q.queue_free()
 	Game.settings = keep
+	await frames(1)
+
+
+## Over the end line the ball flies on into a net and drops (round three: it used to stop dead in the air).
+func _nets() -> void:
+	var b := Sliotar.new()
+	add_child(b)
+	await frames(1)
+	b.backstop = Vector3(9.0, 24.0, 14.0)
+	# A wide, high and hard: it reaches the ball-stop net and no further.
+	b.place(Vector3(Pitch.HALF_L - 30.0, 0, 15.0))
+	b.global_position = Vector3(Pitch.HALF_L - 30.0, 1.0, 15.0)
+	b.launch(Vector3(32.0, 9.0, 3.0), null, "strike")
+	for i in 240:
+		b.step(1.0 / 60.0)
+		if b.global_position.x > Pitch.HALF_L and b.state == Sliotar.FREE:
+			b.state = Sliotar.OUT
+	check(b.global_position.x <= Pitch.HALF_L + 9.05 and b.global_position.x > Pitch.HALF_L + 5.0 and b.global_position.y < 0.5, "Nets: a wide flies on into the ball-stop net and drops (%.1f m behind, %.1f m up)" % [b.global_position.x - Pitch.HALF_L, b.global_position.y])
+	# A goal: it stops in the goal's net.
+	b.place(Vector3(Pitch.HALF_L - 12.0, 0, 0))
+	b.global_position = Vector3(Pitch.HALF_L - 12.0, 0.8, 0.5)
+	b.launch(Vector3(34.0, 0.6, 0.0), null, "strike")
+	for i in 180:
+		b.step(1.0 / 60.0)
+		if b.global_position.x > Pitch.HALF_L and b.state == Sliotar.FREE:
+			b.state = Sliotar.OUT
+	check(b.global_position.x <= Pitch.HALF_L + Pitch.NET_DEPTH + 0.05 and b.global_position.x > Pitch.HALF_L, "Nets: a goal stays in the net (%.2f m behind the line)" % (b.global_position.x - Pitch.HALF_L))
+	b.queue_free()
 	await frames(1)
 
 

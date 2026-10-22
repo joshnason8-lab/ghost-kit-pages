@@ -1,5 +1,5 @@
 keys,en,ga
-GAME_TITLE,Ash & Leather,Ash & Leather
+GAME_TITLE,Hurling Heroes,Hurling Heroes
 TAGLINE,"Hurling, as it is played.","An iománaíocht, mar a imrítear í."
 PROGRAMME,Clár an Lae · Match programme,Clár an Lae
 COVER_FOOT,Fifteen a side · Two halves · Every rule,Cúigear déag sa taobh · Dhá leath · Gach riail
@@ -100,11 +100,11 @@ SIZE_XL,Extra large,An-mhór
 MOVE_BUTTONS,Move buttons,Bog na cnaipí
 MOVE_BUTTONS_NOTE,Drag each button to where your thumb wants it. The game keeps them there. Reset puts them back.,Tarraing gach cnaipe chuig an áit is fearr le d'ordóg. Coinníonn an cluiche ansin iad. Cuireann Athshocraigh ar ais iad.
 VERSION_N,Version {v},Leagan {v}
-ABOUT_DISCLAIMER,"Ash & Leather is not connected with, or endorsed by, any sporting body, county board or club. The counties appear by their place names in colours of the game's own design; every player is invented. No data leaves your phone.","Níl baint ag Ash & Leather le haon chomhlacht spóirt, bord contae ná club, ná níl a dtacaíocht aige. Tá na contaetha ann de réir a logainmneacha i ndathanna a dhear an cluiche féin; tá gach imreoir cumtha. Ní fhágann aon sonraí d'fhón."
+ABOUT_DISCLAIMER,"Hurling Heroes is not connected with, or endorsed by, any sporting body, county board or club. The counties appear by their place names in colours of the game's own design; every player is invented. No data leaves your phone.","Níl baint ag Hurling Heroes le haon chomhlacht spóirt, bord contae ná club, ná níl a dtacaíocht aige. Tá na contaetha ann de réir a logainmneacha i ndathanna a dhear an cluiche féin; tá gach imreoir cumtha. Ní fhágann aon sonraí d'fhón."
 PRIVACY_POLICY,Privacy policy,Polasaí príobháideachta
 HELP_SUPPORT,Help,Cabhair
 LICENCES,Licences,Ceadúnais
-LICENCES_INTRO,Ash & Leather is made with the Godot Engine and the fonts below. Their licences ask that these notices be shown.,"Rinneadh Ash & Leather le hInneall Godot agus leis na clónna thíos. Iarrann a gceadúnais go dtaispeánfaí na fógraí seo (as Béarla, mar a scríobhadh iad)."
+LICENCES_INTRO,Hurling Heroes is made with the Godot Engine and the fonts below. Their licences ask that these notices be shown.,"Rinneadh Hurling Heroes le hInneall Godot agus leis na clónna thíos. Iarrann a gceadúnais go dtaispeánfaí na fógraí seo (as Béarla, mar a scríobhadh iad)."
 HALF_1,1st half,1ú leath
 HALF_2,2nd half,2ú leath
 HALF_ET1,Extra time,Am breise

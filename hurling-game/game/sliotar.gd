@@ -15,7 +15,13 @@ const RESTITUTION := 0.42     # the vertical bounce off firm grass
 const ROLL_DECEL := 2.6       # m/s^2 on the ground
 const LOOK_SCALE := 2.2
 
-enum {FREE, HELD, ON_STICK, DEAD}
+enum {FREE, HELD, ON_STICK, DEAD, OUT}   # OUT: dead, but still flying on (over the end line into a net)
+
+## What stops a ball over the end line, set by the ground (Stadium.backstop): the goal's net (sloping back from the bar
+## to the ground Pitch.NET_DEPTH behind the line) and, further back, the ball-stop net or the terrace: [distance behind the line, half its
+## width, its height].
+var backstop := Vector3(9.0, 24.0, 14.0)
+
 
 var state := FREE
 var vel := Vector3.ZERO
@@ -209,7 +215,7 @@ func place(p: Vector3) -> void:
 ## (prev and now), for the match to judge.
 func step(dt: float) -> Array:
 	_prev = global_position
-	if state == FREE:
+	if state == FREE or state == OUT:
 		var p := global_position
 		var v := vel
 		# Two half steps: a hard strike moves 0.8 m a frame at 60 fps.
@@ -221,12 +227,37 @@ func step(dt: float) -> Array:
 			bounced = bounced or bool(r[2])
 		vel = v
 		global_position = p
+		if state == OUT:
+			_nets()
 		if bounced and vel.length() > 3.0:
 			Sfx.play("bounce", -14.0 + minf(8.0, vel.length() * 0.3), randf_range(0.95, 1.08))
 	_mesh.rotate_x(spin * dt)
 	_shadow.global_position = Vector3(global_position.x, 0.015, global_position.z)
-	_shadow.visible = state == FREE or state == DEAD
+	_shadow.visible = state == FREE or state == DEAD or state == OUT
 	return [_prev, global_position]
+
+
+## A dead ball flying on over the end line: into the goal's net if it went in under the bar (the net takes the pace
+## off it and it drops), else on into the ball-stop net or the terrace behind, which stops it the same way.
+func _nets() -> void:
+	var p := global_position
+	var s := signf(p.x)
+	var past := absf(p.x) - Pitch.HALF_L
+	var was := absf(_prev.x) - Pitch.HALF_L
+	var in_mouth := absf(p.z) < Pitch.POST_GAP * 0.5 + 0.2 and p.y < Pitch.BAR_H + 0.2
+	# The goal net slopes from the crossbar down to the ground NET_DEPTH behind the line.
+	var depth := maxf(0.3, Pitch.NET_DEPTH * (1.0 - clampf(p.y / Pitch.BAR_H, 0.0, 1.0)))
+	if in_mouth and past > depth and was <= depth + 0.6:
+		_net_hit(s * (Pitch.HALF_L + depth))
+	elif past > backstop.x and was <= backstop.x + 0.05 and absf(p.z) < backstop.y and p.y < backstop.z:
+		_net_hit(s * (Pitch.HALF_L + backstop.x))
+
+
+func _net_hit(x: float) -> void:
+	Sfx.play("bounce", -16.0, 0.6)     # the soft thump of a net
+	global_position.x = x
+	vel = Vector3(-vel.x * 0.1, vel.y * 0.35, vel.z * 0.35)
+	spin *= 0.3
 
 
 func prev_pos() -> Vector3:

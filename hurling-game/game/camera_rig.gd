@@ -60,10 +60,11 @@ func _want_focus(m: Node) -> Vector3:
 
 
 func _want_fov(m: Node) -> float:
-	var base := 25.0 if mode == Game.CAM_TV else (36.0 if mode == Game.CAM_HIGH else 46.0)
+	# Round three: closer than before (25, 36, 46): the players were too small on a phone.
+	var base := 19.0 if mode == Game.CAM_TV else (29.0 if mode == Game.CAM_HIGH else 40.0)
 	if m.ball.state == Sliotar.FREE:
 		var sp: float = m.ball.vel.length()
-		base += clampf((sp - 10.0) * 0.35, 0.0, 10.0) + clampf(m.ball.global_position.y * 0.5, 0.0, 6.0)
+		base += clampf((sp - 10.0) * 0.3, 0.0, 9.0) + clampf(m.ball.global_position.y * 0.45, 0.0, 6.0)
 	if m.phase in [m.P.SETUP, m.P.SET]:
 		base += 4.0
 	return base

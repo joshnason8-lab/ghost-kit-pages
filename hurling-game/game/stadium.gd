@@ -33,6 +33,7 @@ func _ready() -> void:
 	var lamps := Geo.new()
 	var spots: Array[Vector3] = []
 	_goals(g, nets)
+	_countryside(g)
 	match kind:
 		"parish":
 			_parish(g, nets, lamps, spots)
@@ -169,6 +170,36 @@ func _trees(g: Geo, rng: RandomNumberGenerator, x0: float, x1: float, z0: float,
 			var y0 := h * (0.35 + k * 0.18)
 			var r := h * (0.34 - k * 0.08)
 			g.cylinder(p + Vector3(0, y0, 0), p + Vector3(0, y0 + h * 0.3, 0), r, r * 0.55, col.lightened(0.04 * k), 7)
+
+
+## The land round the ground, out to the hills: a patchwork of fields in different greens with hedges between them,
+## as round any ground in Ireland, so the trees, banks and stands stand on something (round three: "the trees are
+## just floating" over the sky's lower half). A little below the pitch, which covers it near the field.
+func _countryside(g: Geo) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 31
+	var greens: Array = {"day": [Color("5a8a3e"), Color("6b9645"), Color("4d7d37"), Color("7a9a4a"), Color("587f3a")],
+		"dusk": [Color("5a7d40"), Color("668a46"), Color("4f733b"), Color("738a48"), Color("57773e")],
+		"night": [Color("16251a"), Color("1b2c1d"), Color("142218"), Color("1f2f1f"), Color("182819")]}[time]
+	var hedge: Color = {"day": Color("2f4f24"), "dusk": Color("33522a"), "night": Color("0b140d")}[time]
+	var cell := 90.0
+	var reach := 860.0
+	var n := int(reach / cell)
+	for i in range(-n, n):
+		for j in range(-n, n):
+			var x0 := i * cell + rng.randf_range(-8.0, 8.0)
+			var z0 := j * cell + rng.randf_range(-8.0, 8.0)
+			var w := cell + rng.randf_range(-6.0, 10.0)
+			var d := cell + rng.randf_range(-6.0, 10.0)
+			var c := Vector3(x0 + w * 0.5, -0.09, z0 + d * 0.5)
+			if Vector2(c.x, c.z).length() > reach:
+				continue
+			var col: Color = greens[rng.randi() % greens.size()]
+			g.box(c, Vector3(w, 0.1, d), col, 0.0, false)
+			# Hedges on two sides of each field (the others come from its neighbours), off the pitch's surrounds.
+			if absf(c.x) > H + 30.0 or absf(c.z) > W + 30.0:
+				g.box(Vector3(c.x, 0.7, z0), Vector3(w, 1.6, 1.4), hedge, 0.0, false)
+				g.box(Vector3(x0, 0.7, c.z), Vector3(1.4, 1.6, d), hedge, 0.0, false)
 
 
 func _hills(g: Geo, rng: RandomNumberGenerator, r: float, col: Color) -> void:
@@ -353,6 +384,17 @@ func _environment() -> void:
 	add_child(we)
 	add_child(sun)
 	Crowd.set_light({"day": 1.0, "dusk": 0.72, "night": 0.75}[time])
+
+
+## What stops a ball behind each goal: [metres behind the end line, half its width, its height]. The parish field's
+## ball-stop nets; the terraces and stands at the bigger grounds.
+func backstop() -> Vector3:
+	match kind:
+		"parish":
+			return Vector3(9.0, 24.0, 14.0)
+		"stadium":
+			return Vector3(9.0, W + 8.0, 30.0)
+	return Vector3(8.0, W + 8.0, 20.0)
 
 
 func atmosphere() -> float:

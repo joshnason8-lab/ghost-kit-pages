@@ -1,4 +1,4 @@
-# The rules of hurling, as Ash & Leather plays them
+# The rules of hurling, as Hurling Heroes plays them
 
 The game plays the **GAA Official Guide, Part 2 (Playing Rules)**, the edition in force from **27 March 2026**
 (with the hurling dissent rule passed at Congress in February 2026, in force from 28 March 2026). The rules live in

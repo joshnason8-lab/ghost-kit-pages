@@ -2,13 +2,13 @@
 # Main store listing > Manage translations. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Ash & Leather
+Hurling Heroes
 
 == Short description ==
 Hurling: fifteen a side, the real rules, every county. As Gaeilge too.
 
 == Full description ==
-Ash & Leather is hurling for your phone: the clash of the ash, fifteen a side, goals and points, on a parish field at dusk or in front of a full stadium. Lift the sliotar, solo through, and strike it over the bar.
+Hurling Heroes is hurling for your phone: the clash of the ash, fifteen a side, goals and points, on a parish field at dusk or in front of a full stadium. Lift the sliotar, solo through, and strike it over the bar.
 
 Ar fáil as Gaeilge / Available in Irish.
 
@@ -39,7 +39,7 @@ PLAY YOUR WAY
 • Made to run smoothly on budget and mid-range phones.
 • Plays offline. No ads, no purchases, no account, and no data collected.
 
-Ash & Leather is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.
+Hurling Heroes is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.
 
 == Release notes (0.2.0) ==
 A full 70-minute match now ends with a real match's score. New: tired players, substitutions and tactics (a sweeper, two inside, puck-outs), the coach's tips for your first match, and a ring on the grass where a high ball comes down. Fixes from playtesting on phones.

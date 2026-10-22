@@ -9,7 +9,7 @@ extends Control
 
 signal action(id: String)
 
-const JOY_R := 92.0
+const JOY_R := 78.0          # a thumb's travel for full deflection (was 92: too far for a quick run)
 const KEYS := [KEY_SPACE, KEY_J, KEY_K, KEY_L]
 
 var joystick := Vector2.ZERO
