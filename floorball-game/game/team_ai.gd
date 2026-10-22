@@ -249,7 +249,7 @@ func _carry(p: Player, dt: float) -> void:
 		var want := clampf((14.0 - dist) / 10.0, 0.0, 1.0) * (0.25 + open * 0.75) * (0.55 + p.stat("shot") / 200.0)
 		if dist < 7.0:
 			want += 0.15
-		if _rng.randf() < want * 0.135 * level:
+		if _rng.randf() < want * 0.12 * level:
 			m.shoot(p, _aim(p, g), _rng.randf() < 0.35 and dist > 8.0)
 			return
 	# Pass: someone open and further on, or under pressure.
