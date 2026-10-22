@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""The store's feature graphic (1024 x 500): a frame of a match from the game, darkened on the left under the game's
-name and line, in the game's own display face. And the store icon copy.
+"""The store's feature graphic (1024 x 500): the owner's artwork (store/graphics/icon-source.jpg, the ball sweeping
+through the ring) on the right, the arena's night blue on the left under the game's name and line, in the game's own
+display face. And the store icon copy.
 
-Usage: python3 tools/store/make_feature.py SCREENSHOT.png   (a 1920 x 1080 frame from tests/screenshots.tscn)
+Usage: python3 tools/store/make_feature.py
 """
 import pathlib
 import shutil
@@ -13,22 +14,21 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 
 
 def main() -> None:
-    shot = Image.open(sys.argv[1]).convert("RGBA")
-    # Crop the court's middle, without the scoreboard and buttons, to 1024 x 500.
-    w, h = shot.size
-    box = (int(w * 0.18), int(h * 0.27), int(w * 0.18) + int(h * 0.62 * 1024 / 500), int(h * 0.89))
-    img = shot.crop(box).resize((1024, 500), Image.LANCZOS)
+    art = Image.open(ROOT / "store" / "graphics" / "icon-source.jpg").convert("RGBA").resize((560, 560), Image.LANCZOS)
+    img = Image.new("RGBA", (1024, 500), (10, 22, 58, 255))
+    img.alpha_composite(art, (1024 - 560, -30))
+    # The art fades into the blue toward the words.
     shade = Image.new("RGBA", img.size)
     d = ImageDraw.Draw(shade)
     for x in range(1024):
-        a = int(max(0.0, 1.0 - x / 640.0) * 225)
-        d.line([(x, 0), (x, 500)], fill=(20, 16, 41, a))
+        a = int(min(1.0, max(0.0, (720 - x) / 256.0)) ** 1.5 * 255)
+        d.line([(x, 0), (x, 500)], fill=(10, 22, 58, a))
     img.alpha_composite(shade)
     d = ImageDraw.Draw(img)
     big = ImageFont.truetype(str(ROOT / "fonts" / "BarlowCondensed-ExtraBold.ttf"), 112)
     small = ImageFont.truetype(str(ROOT / "fonts" / "BarlowCondensed-SemiBold.ttf"), 40)
-    d.text((48, 108), "CENTRE PASS", font=big, fill=(246, 243, 255))
-    d.text((48, 214), "NETBALL", font=big, fill=(200, 240, 60))
+    d.text((48, 108), "NETBALL", font=big, fill=(246, 243, 255))
+    d.text((48, 214), "UNLEASHED", font=big, fill=(255, 140, 40))
     d.text((52, 346), "The real rules. Nineteen languages.", font=small, fill=(246, 243, 255))
     out = ROOT / "store" / "graphics"
     out.mkdir(parents=True, exist_ok=True)

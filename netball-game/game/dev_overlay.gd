@@ -183,7 +183,7 @@ func _readout() -> String:
 ## frames with what was happening at each.
 func summary() -> String:
 	var out := []
-	out.append("Centre Pass Netball %s, developer overlay" % String(ProjectSettings.get_setting("application/config/version", "")))
+	out.append("Netball Unleashed %s, developer overlay" % String(ProjectSettings.get_setting("application/config/version", "")))
 	out.append("Device: %s, %s %s, GPU %s (%s)" % [OS.get_model_name(), OS.get_name(), OS.get_version(),
 		RenderingServer.get_video_adapter_name(), RenderingServer.get_video_adapter_vendor()])
 	out.append("Screen %s at %.0f Hz, window %s, graphics %s%s" % [str(DisplayServer.screen_get_size()),

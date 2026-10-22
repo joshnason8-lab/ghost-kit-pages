@@ -1,6 +1,6 @@
 # Google Play store listings: translation notes
 
-Files: `store/listing/{af,zu,sw,ms-MY,zh-CN,si-LK,ta-IN}.txt`, translated from `en-GB.txt`. In every file the App name stays "Centre Pass Netball", the position abbreviations GS, GA, WA, C, WD, GD and GK stay in English, the nineteen language names are copied exactly, and "Double Zone" is kept as a feature name. Lengths were checked with Python on the stripped text between markers (limits: short 80, full 4000).
+Files: `store/listing/{af,zu,sw,ms-MY,zh-CN,si-LK,ta-IN}.txt`, translated from `en-GB.txt`. In every file the App name stays "Netball Unleashed", the position abbreviations GS, GA, WA, C, WD, GD and GK stay in English, the nineteen language names are copied exactly, and "Double Zone" is kept as a feature name. Lengths were checked with Python on the stripped text between markers (limits: short 80, full 4000).
 
 | File | Short | Full |
 |---|---|---|
@@ -20,7 +20,7 @@ Check: "maak lope" (leads) in the short description; "voer" for feeds and "balwi
 
 ## isiZulu (zu)
 **Confidence: medium-low.** Netball is **ibhola lomnqakiswano**, as in `i18n/src/zu.json` (MENU_EYEBROW). As in the app, positions and on-court jargon are English loanwords with Zulu prefixes (i-centre pass, i-bib, ama-feed, ama-rebound, i-offside).
-Check: that the netball term itself is still current; the "I-" prefix on the app name in running text ("I-Centre Pass Netball"); the stats line, which is mostly loanwords; and the release-note phrase "ukukhishwa kokuqala". In the language list, the final "and" was left out on purpose so that "Na Vosa Vakaviti" does not pick up a prefix.
+Check: that the netball term itself is still current; the "I-" prefix on the app name in running text ("I-Netball Unleashed"); the stats line, which is mostly loanwords; and the release-note phrase "ukukhishwa kokuqala". In the language list, the final "and" was left out on purpose so that "Na Vosa Vakaviti" does not pick up a prefix.
 
 ## Kiswahili (sw)
 **Confidence: medium.** **Netiboli**, pasi ya katikati, kuotea, bibu, Mechi ya haraka and Kombe la Mataifa, all as in `sw.json`. Positions use the English names, as in the app. The decimal is "m 0.9", following the app.

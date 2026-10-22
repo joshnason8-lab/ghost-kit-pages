@@ -1,13 +1,13 @@
-# Centre Pass Netball
+# Netball Unleashed
 
 A netball game for Android phones, built with [Godot 4.7](https://godotengine.org) (free and open source, no
 royalties) the same way as Kabaddi Raid and Takraw Smash. It plays the Rules of Netball as they stand (World Netball,
 2024 edition), for the sport's players from Johannesburg to Lilongwe, Kingston, Auckland and Nuku'alofa, in their
 languages.
 
-> **Status: playable beta.** The players are built in code (`game/body.gd`) on a humanoid skeleton, ready to be
-> replaced by Meshy models if you choose (docs/MESHY_BRIEF.md; no credits spent). Everything else is the game as it
-> will ship.
+> **Status: playable beta.** The players are the owner's own model (`game/hero_body.gd`, `tools/player/`), in each
+> team's colours with the position's letters on the bib, running with the owner's Mixamo Fast_Run (shared with
+> Hurling); the umpires are built in code (`game/body.gd`). Everything else is the game as it will ship.
 
 ## What's in it
 
@@ -24,7 +24,7 @@ languages.
 | **Teams** | 23 national teams rated from the 2026 world ranking, by their plain names and flags (drawn in code; Northern Ireland, which has no official flag, gets a neutral one); squads of twelve with invented names from each country's common names. No national team's nickname, governing body, league or competition is named. |
 | **Venues** | An arena with seating all round, a sports hall with one stand, and an outdoor court under the evening sky, as so much netball is played. |
 | **Languages** | English, Afrikaans, isiZulu, isiXhosa, Sesotho, Setswana, Chichewa, Luganda, chiShona, Kiswahili, Bahasa Melayu, 中文, සිංහල, தமிழ், Cymraeg, Te Reo Māori, Lea Faka-Tonga, Gagana Sāmoa, Na Vosa Vakaviti. The game starts in the phone's language when it has it; the globe on the home screen changes it. A text-fit audit checks every screen in every language at four screen shapes (`tests/fit_audit.gd`). See [docs/LANGUAGES.md](docs/LANGUAGES.md); the translations await native speakers' checks (docs/translation_notes/). |
-| **Phones** | GL Compatibility renderer; each venue merged into a few draw calls, the crowd one draw call, each player one (two with the outline). A match in the arena, the biggest venue, draws **88 draw calls and 56,000 triangles a frame on Low**, 104 and 186,000 on Medium, 151 and 442,000 on High (`tests/perf_probe.tscn`). Budgets: 100 draw calls and 100,000 triangles on Low, for a Mali-G52 at 720p. Phones with a small GPU or under about 4.5 GB of memory start on Low (no outlines, no MSAA, 75% render scale, a thinner crowd, fewer sides to each body part); auto graphics drops a level if the first 20 seconds of a match run under 36 fps. Frame rate: Battery saver (about 30 a second at 80% scale), 60, or the screen's maximum, each a whole fraction of the refresh rate. A developer overlay (frame-time percentiles, hitches, Copy summary) behind seven taps on the version. |
+| **Phones** | GL Compatibility renderer; each venue merged into a few draw calls, the crowd one draw call, each player one (two with the outline). The players' model is 5,840 triangles (with its own levels for far away), 1,460 on Low. A match in the arena, the biggest venue, draws **94 draw calls and 33,000 triangles a frame on Low**, 110 and 196,000 on Medium, 147 and 405,000 on High (`tests/perf_probe.tscn`). Budgets: 100 draw calls and 100,000 triangles on Low, for a Mali-G52 at 720p. Phones with a small GPU or under about 4.5 GB of memory start on Low (no outlines, no MSAA, 75% render scale, a thinner crowd, fewer sides to each body part); auto graphics drops a level if the first 20 seconds of a match run under 36 fps. Frame rate: Battery saver (about 30 a second at 80% scale), 60, or the screen's maximum, each a whole fraction of the refresh rate. A developer overlay (frame-time percentiles, hitches, Copy summary) behind seven taps on the version. |
 | **Play** | Target API 36, 64-bit with 16 KB pages (checked in CI), category Game, landscape, the only permission vibration; no internet, ads, purchases, analytics or data collected. The Play bundle carries 32-bit ARM too, for the older phones common in southern and eastern Africa. |
 
 ## Controls
@@ -41,13 +41,13 @@ On a keyboard: WASD or arrows, Space for the first button, J and K for the other
 
 ## Get it on your phone
 
-Every push that touches `netball-game/` runs the **Centre Pass Netball · Android build** action: it runs the tests,
+Every push that touches `netball-game/` runs the **Netball Unleashed · Android build** action: it runs the tests,
 then exports the beta APK (64-bit ARM) and puts it on the release page
-https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/centre-pass-netball-beta. Open that page on the phone,
+https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta. Open that page on the phone,
 tap the APK, and allow your browser to install it. See [docs/BETA.md](docs/BETA.md).
 
 For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step and every App content answer, and the
-**Centre Pass Netball · Play Store bundle** action builds the `.aab` (unsigned until the upload key is added as
+**Netball Unleashed · Play Store bundle** action builds the `.aab` (unsigned until the upload key is added as
 repository secrets).
 
 ## Play it in a browser
@@ -83,7 +83,8 @@ node tools/playtest/play.js "http://localhost:8765/index.html?gfx=low&qs=25&fres
 autoload/   game.gd (settings, saves, theme, screens, graphics), db.gd (nations, squads, venues), sfx.gd (sounds)
 game/       rules.gd (the Rules of Netball, pure), court.gd (the court's measurements), match.gd (the match: phases,
             calls, scoring, the box score), ai.gd (both teams' play), player.gd (movement, one writer a frame),
-            body.gd (the drawn player and umpire on their skeleton), poses.gd (every pose and umpire signal),
+            hero_body.gd (the players: the owner's model, the team's colours, the bib, the clips), body.gd (the
+            skeleton, and the umpires drawn in code), poses.gd (every pose and umpire signal),
             ball.gd, umpire.gd, arena.gd + geo.gd + crowd.gd (the venues), camera_rig.gd, hud.gd,
             touch_controls.gd, dev_overlay.gd, sim.gd (matches in numbers), cup.gd, records.gd
 ui/         home (main_menu, court_third, bib_button), quick setup, settings, how to play, result, cup, records,
@@ -93,8 +94,9 @@ i18n/       src/*.json (one file per language), strings.csv (generated)
 fonts/      Noto Sans (Latin, cut), Noto Sans Sinhala and Tamil (cut to their scripts), Noto Sans SC (cut to the
             characters used), Barlow Condensed. All SIL OFL.
 tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, art/make_bib_letters.py,
-            store/ (icons, feature graphic)
-tests/      test_runner, fit_audit, input_test, perf_probe, match_trace, screenshots, compile_check, controls_only
+            store/ (icons, feature graphic), player/ (bakes the owner's model into assets/player/: README.md)
+tests/      test_runner, fit_audit, input_test, perf_probe, match_trace, screenshots, compile_check, controls_only,
+            player_view (the players' model up close)
 store/      PLAY_STORE.md, the listings (store/listing/), the icon, feature graphic and screenshots
 docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md, MESHY_BRIEF.md, translation_notes/
 ```
@@ -103,5 +105,5 @@ docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md, MESHY_BRIEF.md, transl
 
 This folder is self-contained. To give the game its own repo, copy everything inside `netball-game/` to the new
 repo's root (including the hidden `.github/` folder) and push: `.github/workflows/android.yml` is set up for that
-layout. Move the privacy and help pages (`centre-pass-netball/` at the top of this repository) too, or keep them
+layout. Move the privacy and help pages (`netball-unleashed/` at the top of this repository) too, or keep them
 here, and change `PRIVACY_URL` and `SUPPORT_URL` in `autoload/game.gd` if their address changes.

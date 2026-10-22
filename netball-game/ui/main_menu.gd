@@ -103,7 +103,7 @@ func _build_ui() -> void:
 	var lg = Game.get_league()
 	var league_desc := tr("MENU_LEAGUE_CONTINUE") if lg and lg.stage != "done" else tr("MENU_LEAGUE_DESC")
 	var comps := VBoxContainer.new()
-	comps.add_theme_constant_override("separation", 0)
+	comps.add_theme_constant_override("separation", -2)   # the halves overlap: one white line between them
 	comps.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	comps.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	comps.add_child(CourtThird.make(tr("MENU_CUP"), cup_desc, "goal_left_top", func(): _go("res://ui/cup_screen.gd")))

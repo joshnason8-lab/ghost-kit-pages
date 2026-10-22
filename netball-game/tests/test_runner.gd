@@ -410,6 +410,26 @@ func _motion() -> void:
 	check(twice == 0, "each player's position written once a frame (%d frames otherwise)" % twice)
 	check(worst_jump <= 0.0001, "no player moves faster than she can run in a frame (worst over by %.3f m)" % worst_jump)
 	check(stride_bad == 0, "strides keep pace with speed")
+	# The players are the owner's model (HeroBody), the umpires the code-built figure; a running player's legs come
+	# from the Mixamo clips; her bib carries her position's letters.
+	var pl0: Player = m.players[0][0]
+	check(pl0.body is HeroBody and pl0.body.skeleton.get_bone_count() == ToonBody.BONES.size(), "a player is drawn with the owner's model, on the game's bones")
+	check(not (m.umpires[0].body is HeroBody), "an umpire keeps the code-built figure")
+	var mat: ShaderMaterial = pl0.body.mesh_instance.material_override
+	check(mat.get_shader_parameter("letter") == ToonBody.LETTERS.find(pl0.pos) and mat.get_shader_parameter("letters") != null, "her bib carries her position's letters (%s)" % pl0.pos)
+	var ran := false
+	for f in 300:
+		await get_tree().process_frame
+		for t in 2:
+			for pl in m.players[t]:
+				if pl.act == "run" and pl.vel.length() > 4.5 and pl.clip_body > 0.8 and pl.body.pose.get("thigh_l") is Quaternion:
+					ran = true
+		if ran:
+			break
+	check(ran, "a player running at speed takes her legs from the run clips")
+	var lf := HeroBody.stride_pose("Fast_Run", 0.25)
+	var lt: Vector3 = (lf[0][ToonBody.BONES.map(func(b): return b[0]).find("thigh_l")] as Quaternion) * Vector3.DOWN
+	check(lt.z > 0.25, "the sprint clip: the left thigh forward at the stride's phase 1/4 (%.2f)" % lt.z)
 	m.queue_free()
 	await frames(2)
 

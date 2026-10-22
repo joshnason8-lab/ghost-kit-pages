@@ -1,6 +1,6 @@
 # The rules the game plays
 
-Centre Pass Netball plays the **Rules of Netball, 2024 Edition**, published by World Netball (the sport's governing
+Netball Unleashed plays the **Rules of Netball, 2024 Edition**, published by World Netball (the sport's governing
 body) in December 2023, in force for international matches from 1 January 2024 and in every member nation by
 1 September 2024. As of October 2026 it is still the edition in force: there is no 2025 or 2026 edition. World
 Netball opened a minor rules review in May 2026, to go to its Congress before the 2027 world championship.

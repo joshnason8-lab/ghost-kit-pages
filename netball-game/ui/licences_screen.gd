@@ -3,7 +3,7 @@ extends Control
 ## and those of the engine's own parts (Engine.get_copyright_info), which their licences ask to be shown. The legal
 ## texts are in English, as they are written.
 
-const CREDITS := """[b]Centre Pass Netball[/b]
+const CREDITS := """[b]Netball Unleashed[/b]
 Made by Josh Nason.
 Players, umpires, venues, crowd, ball, flags and sounds made in code for the game; the menu music written for
 it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker."""

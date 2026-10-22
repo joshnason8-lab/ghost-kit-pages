@@ -2,13 +2,13 @@
 # Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Centre Pass Netball
+Netball Unleashed
 
 == Short description ==
 Bola jaring peraturan sebenar: hantar, kawal pada 0.9 m, jaring dari bulatan.
 
 == Full description ==
-Centre Pass Netball ialah bola jaring untuk telefon anda, dimainkan mengikut Peraturan Bola Jaring yang terkini. Ambil hantaran tengah, pecut ke ruang kosong, suap bola ke dalam bulatan dan jaringkan, kemudian rampas semula bola dengan pintasan.
+Netball Unleashed ialah bola jaring untuk telefon anda, dimainkan mengikut Peraturan Bola Jaring yang terkini. Ambil hantaran tengah, pecut ke ruang kosong, suap bola ke dalam bulatan dan jaringkan, kemudian rampas semula bola dengan pintasan.
 
 PERMAINAN SEBENAR
 • Tujuh pemain sepasukan, setiap seorang dalam kawasannya sendiri: GS, GA, WA, C, WD, GD dan GK, lengkap dengan bib.
@@ -35,7 +35,7 @@ DIREKA UNTUK TELEFON ANDA
 • Lancar pada telefon bajet dan pertengahan, dengan mod jimat bateri juga. Butang yang boleh diubah saiz dan dialihkan, serta susun atur untuk pemain kidal.
 • Boleh dimainkan di luar talian. Tiada iklan, tiada pembelian, tiada akaun dan tiada data dikumpul.
 
-Centre Pass Netball ialah permainan indie yang bebas. Ia tidak bergabung dengan atau disokong oleh mana-mana badan induk bola jaring, liga, kelab atau pemain. Pemain-pemainnya adalah rekaan; negara dan peraturannya adalah benar.
+Netball Unleashed ialah permainan indie yang bebas. Ia tidak bergabung dengan atau disokong oleh mana-mana badan induk bola jaring, liga, kelab atau pemain. Pemain-pemainnya adalah rekaan; negara dan peraturannya adalah benar.
 
 == Release notes (first release) ==
-Keluaran pertama Centre Pass Netball: Perlawanan Pantas dan Piala Negara, dalam sembilan belas bahasa.
+Keluaran pertama Netball Unleashed: Perlawanan Pantas dan Piala Negara, dalam sembilan belas bahasa.

@@ -2,13 +2,13 @@
 # Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Centre Pass Netball
+Netball Unleashed
 
 == Short description ==
 Netiboli kwa sheria halisi: toa pasi, linda kwa m 0.9, funga ukiwa duarani.
 
 == Full description ==
-Centre Pass Netball ni netiboli kwenye simu yako, inayochezwa kwa Sheria za Netiboli kama zilivyo leo. Chukua pasi ya katikati, kimbilia nafasi wazi, lisha duara la goli na upige, kisha urudishe mpira kwa kuunasa.
+Netball Unleashed ni netiboli kwenye simu yako, inayochezwa kwa Sheria za Netiboli kama zilivyo leo. Chukua pasi ya katikati, kimbilia nafasi wazi, lisha duara la goli na upige, kisha urudishe mpira kwa kuunasa.
 
 MCHEZO HALISI
 • Wachezaji saba kila upande, kila mmoja katika maeneo yake: GS, GA, WA, C, WD, GD na GK, wakiwa wamevaa bibu.
@@ -35,7 +35,7 @@ IMETENGENEZWA KWA AJILI YA SIMU YAKO
 • Inaenda vizuri kwenye simu za bei nafuu na za bei ya kati, na kuna hali ya kuokoa chaji pia. Vitufe unavyoweza kubadilisha ukubwa wake na kuvihamisha, na mpangilio kwa wanaotumia mkono wa kushoto.
 • Inachezwa bila intaneti. Hakuna matangazo, hakuna ununuzi, hakuna akaunti, na hakuna data inayokusanywa.
 
-Centre Pass Netball ni mchezo huru. Hauhusiani na, wala haujaidhinishwa na, chombo chochote kinachosimamia netiboli, ligi, klabu au mchezaji yeyote. Wachezaji ni wa kubuni; nchi na sheria ni halisi.
+Netball Unleashed ni mchezo huru. Hauhusiani na, wala haujaidhinishwa na, chombo chochote kinachosimamia netiboli, ligi, klabu au mchezaji yeyote. Wachezaji ni wa kubuni; nchi na sheria ni halisi.
 
 == Release notes (first release) ==
-Toleo la kwanza la Centre Pass Netball: Mechi ya haraka na Kombe la Mataifa, katika lugha kumi na tisa.
+Toleo la kwanza la Netball Unleashed: Mechi ya haraka na Kombe la Mataifa, katika lugha kumi na tisa.

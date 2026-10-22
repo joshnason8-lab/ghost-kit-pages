@@ -2,13 +2,13 @@
 # Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Centre Pass Netball
+Netball Unleashed
 
 == Short description ==
 Netbal volgens die regte reëls: maak lope, gee aan, verdedig op 0,9 m, skiet.
 
 == Full description ==
-Centre Pass Netball is netbal vir jou foon, gespeel volgens die Netbalreëls soos hulle vandag lui. Neem die senterpas, sny in die oop ruimte in, voer die sirkel en skiet, en wen dan die bal terug met 'n onderskepping.
+Netball Unleashed is netbal vir jou foon, gespeel volgens die Netbalreëls soos hulle vandag lui. Neem die senterpas, sny in die oop ruimte in, voer die sirkel en skiet, en wen dan die bal terug met 'n onderskepping.
 
 DIE REGTE SPEL
 • Sewe per span, elkeen in haar eie areas: GS, GA, WA, C, WD, GD en GK, met borslappe aan.
@@ -35,7 +35,7 @@ GEMAAK VIR JOU FOON
 • Loop glad op bekostigbare en middelklasfone, met 'n batterybespaarder ook. Knoppies wat jy kan vergroot, verklein en skuif, en 'n uitleg vir linkshandiges.
 • Speel vanlyn. Geen advertensies, geen aankope, geen rekening nie, en geen data word ingesamel nie.
 
-Centre Pass Netball is 'n onafhanklike speletjie. Dit is nie verbonde aan of onderskryf deur enige netbalbeheerliggaam, liga, klub of speler nie. Die spelers is versin; die lande en die reëls is eg.
+Netball Unleashed is 'n onafhanklike speletjie. Dit is nie verbonde aan of onderskryf deur enige netbalbeheerliggaam, liga, klub of speler nie. Die spelers is versin; die lande en die reëls is eg.
 
 == Release notes (first release) ==
-Die eerste vrystelling van Centre Pass Netball: Vinnige wedstryd en die Nasiesbeker, in negentien tale.
+Die eerste vrystelling van Netball Unleashed: Vinnige wedstryd en die Nasiesbeker, in negentien tale.

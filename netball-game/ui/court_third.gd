@@ -75,13 +75,10 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, s), court, true)
 	var line := Color(1, 1, 1, 0.85)
 	var lw := 3.0
-	if kind != "goal_left_bottom":
-		draw_line(Vector2(0, lw * 0.5), Vector2(s.x, lw * 0.5), line, lw)
-	if kind != "goal_left_top":
-		draw_line(Vector2(0, s.y - lw * 0.5), Vector2(s.x, s.y - lw * 0.5), line, lw)
-	else:
-		# Where the two halves meet: a faint seam, no court line.
-		draw_line(Vector2(s.x * 0.04, s.y - 0.5), Vector2(s.x * 0.96, s.y - 0.5), Color(1, 1, 1, 0.14), 1.0)
+	# Where the left third's two halves meet, a white line like the court's own: each half draws it whole along its
+	# edge, and the halves overlap (MainMenu), so no dark seam shows between them.
+	draw_line(Vector2(0, lw * 0.5), Vector2(s.x, lw * 0.5), line, lw)
+	draw_line(Vector2(0, s.y - lw * 0.5), Vector2(s.x, s.y - lw * 0.5), line, lw)
 	match kind:
 		"centre":
 			# The transverse lines either side, and the centre circle, pulsing.
