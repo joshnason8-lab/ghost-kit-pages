@@ -9,6 +9,16 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.3.0-beta
+
+- **Netball Unleashed**: the game's new name and icon. It has a new Android package, so it does not install over a
+  Centre Pass Netball beta: uninstall that first.
+- **The players are the owner's own 3D model**, in each team's colours with the position on the bib, running with
+  the same sprint as Hurling's players.
+- **New-look venues**: a floodlit arena with a deeper court, fuller stands, light rigs and glow; the hall and the
+  outdoor court lit to match.
+- The home screen's two competitions are split by a white court line.
+
 ## New in 0.2.0-beta
 
 - **The Club Season** (home screen, under the Nations Cup): pick one of eight clubs, play seven rounds, then the

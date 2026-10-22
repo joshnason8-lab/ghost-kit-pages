@@ -44,3 +44,6 @@ The first release of Netball Unleashed: Quick Match and the Nations Cup, in nine
 
 == Release notes (0.2.0) ==
 The Club Season: eight clubs, a season and a grand final. A coach's tips for your first match. Umpires now advance and escalate penalties and can order a player off; choose how often they blow in Settings. A fuller interval screen, clearer name tags, and fixes from playtesting on phones.
+
+== Release notes (0.3.0) ==
+Netball Unleashed: a new name and icon. New players, modelled in 3D, in your team's colours with a proper sprint. A floodlit arena with fuller stands and a polished court, and the hall and outdoor court relit.

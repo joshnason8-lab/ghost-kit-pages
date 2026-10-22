@@ -8,7 +8,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 
 - Branch `claude/netball-game`, folder `netball-game/` (self-contained Godot 4.7.2 project), pages folder
   `netball-unleashed/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
-- Version 0.2.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
+- Version 0.3.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
   https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta.
 
 ## Done
@@ -42,6 +42,9 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 - Round three: the players are the owner's own model (game/hero_body.gd, baked by tools/player/build.sh), running
   with the owner's Mixamo Fast_Run (shared with Hurling) and the model's own Walking and Running, locked to the
   stride; tests/player_view.tscn shows it up close.
+- Round three (0.3.0-beta): renamed Netball Unleashed (package com.netballunleashed.game), the owner's artwork as
+  the icon and feature graphic; the players are the owner's 3D model with the shared Fast_Run (tools/player); the
+  venues relit and rebuilt (game/venue_look.gd); one white line between the home screen's competitions.
 
 ## Next
 
