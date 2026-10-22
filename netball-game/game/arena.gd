@@ -397,7 +397,7 @@ func _boards() -> void:
 
 
 ## The roof and the floodlight rigs under it: trusses along both sides and across both ends, each with banks of lamps
-## that flare.
+## that flare, a glow in the air round them and beams down to the court.
 func _rigs(x0: float, z0: float) -> void:
 	var h := 15.5
 	if not _low:
@@ -414,6 +414,11 @@ func _rigs(x0: float, z0: float) -> void:
 				_fx.sprite(Vector3(x + j, h - 0.35, z - 0.25 * sz), 1.3 if not _low else 1.0, Color("dfe9ff"), 0.9)
 			if sz < 0.0 and i % 2 == 1 and _lamps.size() < 8:
 				_lamps.append(Vector3(x, h - 0.3, z))
+			# The far rig lights the air round it, and on Medium and High throws beams down onto the court.
+			if sz < 0.0 and i % 2 == 1:
+				_fx.sprite(Vector3(x, h - 0.6, z), 9.0, Color("56689e"), -1.0)
+				if not _low:
+					_fx.beam(Vector3(x, h - 0.4, z), Vector3(x * 0.85, 0.0, -1.5), 5.0, Color("46558a"))
 	for sx: float in [-1.0, 1.0]:
 		var x := 20.5 * sx
 		_lit.box(Vector3(x, h + 0.35, 0), Vector3(0.5, 0.5, 20.0), Color("1a2148"))

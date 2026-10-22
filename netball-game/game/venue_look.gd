@@ -269,7 +269,8 @@ void fragment() {
 """)
 
 
-## The lights: soft glowing sprites that face the camera, with a faint horizontal streak (added, drawn last).
+## The lights, added to what is behind them and drawn last: soft glowing sprites that face the camera with a faint
+## horizontal streak; glows in the air round lights (Geo.sprite with streak -1); beams down from them (Geo.beam).
 static func flare() -> ShaderMaterial:
 	return _make("flare", """
 shader_type spatial;
@@ -282,22 +283,42 @@ varying float twinkle;
 void vertex() {
 	vec3 right = normalize(INV_VIEW_MATRIX[0].xyz);
 	vec3 up = normalize(INV_VIEW_MATRIX[1].xyz);
-	q = (UV - 0.5) * 2.0;
-	streak = UV2.y;
-	float s = UV2.x;
-	float wide = 1.0 + streak * 2.5;
 	vec3 c = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	vec3 w = c + right * q.x * s * wide + up * q.y * s;
-	q.x *= wide;
+	streak = UV2.y;
+	vec3 w;
+	if (streak < -1.5) {
+		// A beam: a strip down its axis (NORMAL), turned about it to face the camera, wider at its foot.
+		vec3 axis = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+		vec3 side = normalize(cross(axis, c - INV_VIEW_MATRIX[3].xyz));
+		w = c + side * (UV.x - 0.5) * UV2.x * mix(0.35, 1.0, UV.y);
+		q = vec2(UV.x * 2.0 - 1.0, UV.y);
+	} else {
+		q = (UV - 0.5) * 2.0;
+		float s = UV2.x;
+		float wide = 1.0 + max(streak, 0.0) * 2.5;
+		w = c + right * q.x * s * wide + up * q.y * s;
+		q.x *= wide;
+	}
 	twinkle = COLOR.a > 0.01 ? 0.55 + 0.45 * sin(TIME * (2.0 + COLOR.a * 5.0) + COLOR.a * 40.0) : 1.0;
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(w, 1.0);
 }
 void fragment() {
-	float d = length(q);
-	float core = smoothstep(0.32, 0.12, d);
-	float glow = exp(-d * d * 5.0) * 0.55 * halo;
-	float st = exp(-abs(q.y) * 22.0) * exp(-abs(q.x) * 0.9) * streak * 0.5 * halo;
-	ALBEDO = COLOR.rgb * (core * 1.6 + glow + st) * intensity * twinkle;
+	float k;
+	if (streak < -1.5) {
+		float a = 1.0 - q.x * q.x;
+		k = a * a * (1.0 - q.y * 0.75) * smoothstep(0.0, 0.08, q.y);
+	} else if (streak < -0.5) {
+		// A glow in the air round a light (no lamp in it).
+		float d = length(q);
+		k = exp(-d * d * 3.5) * smoothstep(1.0, 0.7, d);
+	} else {
+		float d = length(q);
+		float core = smoothstep(0.32, 0.12, d);
+		float glow = exp(-d * d * 5.0) * 0.55 * halo;
+		float st = exp(-abs(q.y) * 22.0) * exp(-abs(q.x) * 0.9) * streak * 0.5 * halo;
+		k = core * 1.6 + glow + st;
+	}
+	ALBEDO = COLOR.rgb * k * intensity * twinkle;
 	ALPHA = 1.0;
 }
 """)

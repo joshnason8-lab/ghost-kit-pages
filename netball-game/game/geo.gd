@@ -43,11 +43,20 @@ func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, col: Color, uv: Array 
 
 
 ## A light: a square of size metres (half across) that always faces the camera, drawn by VenueLook.flare. streak
-## stretches it sideways into a flare; twinkle (0-1, 0 for none) makes it flicker at its own pace.
+## stretches it sideways into a flare (-1: only the glow round it, no lamp); twinkle (0-1, 0 for none) makes it flicker
+## at its own pace.
 func sprite(c: Vector3, size: float, col: Color, streak := 0.0, twinkle := 0.0) -> void:
 	var k := kind
 	kind = Vector2(size, streak)
 	_quad4(c, c, c, c, Vector3.BACK, Color(col, twinkle), [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)])
+	kind = k
+
+
+## A beam of light from a down to b, width metres across at b, drawn by VenueLook.flare (it turns to face the camera).
+func beam(a: Vector3, b: Vector3, width: float, col: Color) -> void:
+	var k := kind
+	kind = Vector2(width, -2.0)
+	_quad4(a, a, b, b, (b - a).normalized(), col, [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)])
 	kind = k
 
 
