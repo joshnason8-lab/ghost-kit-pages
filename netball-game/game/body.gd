@@ -1,5 +1,6 @@
 class_name ToonBody
 extends Node3D
+## The umpires' figure (the players are HeroBody, the owner's model, on this same skeleton and its poses).
 ## A netball player built in code: a skinned mesh on a Skeleton3D (the same humanoid bones as Takraw Smash's bodies,
 ## so a Meshy model rigged to those names can take its place, docs/MESHY_BRIEF.md), posed each frame from joint angles
 ## (Poses). A woman's build: a fitted playing dress with a short flared skirt, compression shorts under it, a bib with
@@ -39,10 +40,12 @@ var mesh_instance: MeshInstance3D
 var look := {}          # skin, dress, trim, bib, shoe, hair (Colors), hair_style (int), height (m), pos (bib letters)
 var pose := {}
 var _idx := {}
-var _rest := {}
+var _rest := {}         # bone -> rest position (model space)
+var _hips := Vector3.ZERO
 
 static var _toon_mat: ShaderMaterial
 static var _outline_mat: ShaderMaterial
+static var _also_outlined := []   # other bodies' materials that take the outline with _toon_mat (HeroBody's)
 static var _cache := {}  # look key -> ArrayMesh
 
 
@@ -53,6 +56,7 @@ func _init(p_look := {}) -> void:
 func _ready() -> void:
 	skeleton = Skeleton3D.new()
 	add_child(skeleton)
+	var off := _offsets()
 	var acc := {}
 	for i in BONES.size():
 		var b: Array = BONES[i]
@@ -60,22 +64,34 @@ func _ready() -> void:
 		_idx[b[0]] = i
 		if int(b[1]) >= 0:
 			skeleton.set_bone_parent(i, int(b[1]))
-		skeleton.set_bone_rest(i, Transform3D(Basis.IDENTITY, b[2]))
-		skeleton.set_bone_pose_position(i, b[2])
-		acc[b[0]] = (acc[BONES[int(b[1])][0]] if int(b[1]) >= 0 else Vector3.ZERO) + b[2]
+		skeleton.set_bone_rest(i, Transform3D(Basis.IDENTITY, off[i]))
+		skeleton.set_bone_pose_position(i, off[i])
+		acc[b[0]] = (acc[BONES[int(b[1])][0]] if int(b[1]) >= 0 else Vector3.ZERO) + off[i]
 	_rest = acc
+	_hips = off[0]
 	var h := float(look.get("height", 1.75))
 	scale = Vector3.ONE * (h / 1.76)
 	mesh_instance = MeshInstance3D.new()
-	mesh_instance.mesh = _mesh()
 	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	skeleton.add_child(mesh_instance)
 	mesh_instance.skeleton = NodePath("..")
+	_dress()
+
+
+## Each bone's offset from its parent at rest (HeroBody: the owner's model's own).
+func _offsets() -> Array:
+	return BONES.map(func(b): return b[2])
+
+
+## The mesh and its material.
+func _dress() -> void:
+	mesh_instance.mesh = _mesh()
 	mesh_instance.material_override = material(int(Game.settings.graphics) > Game.GFX_LOW)
 
 
 ## The shared cel-shaded material (with its outline pass on Medium and High). Parts are coloured by vertex; the bib's
-## letters come from the strip, inked dark on a light bib and light on a dark one.
+## letters come from the strip, inked dark on a light bib and light on a dark one. The players' own materials
+## (HeroBody, in _also_outlined) take the outline on and off with it.
 static func material(outline: bool) -> ShaderMaterial:
 	if _toon_mat == null:
 		var sh := Shader.new()
@@ -115,11 +131,8 @@ void fragment() { ALBEDO = vec3(0.012, 0.008, 0.03); }
 """
 		_outline_mat = ShaderMaterial.new()
 		_outline_mat.shader = osh
-	if outline:
-		if _toon_mat.next_pass == null:
-			_toon_mat.next_pass = _outline_mat
-	else:
-		_toon_mat.next_pass = null
+	for m: ShaderMaterial in [_toon_mat] + _also_outlined:
+		m.next_pass = _outline_mat if outline else null
 	return _toon_mat
 
 
@@ -135,16 +148,19 @@ func bone_world(name: String) -> Vector3:
 	return skeleton.global_transform * skeleton.get_bone_global_pose(i).origin
 
 
-## Puts the skeleton in the pose (bone -> degrees), with hips_y lifting the body (m).
+## Puts the skeleton in the pose (bone -> degrees, or a Quaternion: the clips), with hips_y lifting the body (m).
 func apply(p: Dictionary) -> void:
 	pose = p
 	if skeleton == null:
 		return
 	for i in BONES.size():
 		var n: String = BONES[i][0]
-		var e: Vector3 = p.get(n, Vector3.ZERO)
-		skeleton.set_bone_pose_rotation(i, Basis.from_euler(Vector3(deg_to_rad(e.x), deg_to_rad(e.y), deg_to_rad(e.z)), EULER_ORDER_YXZ).get_rotation_quaternion())
-	skeleton.set_bone_pose_position(0, BONES[0][2] + Vector3(0, float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
+		var e: Variant = p.get(n, Vector3.ZERO)
+		if e is Quaternion:
+			skeleton.set_bone_pose_rotation(i, e)
+		else:
+			skeleton.set_bone_pose_rotation(i, Basis.from_euler(Vector3(deg_to_rad(e.x), deg_to_rad(e.y), deg_to_rad(e.z)), EULER_ORDER_YXZ).get_rotation_quaternion())
+	skeleton.set_bone_pose_position(0, _hips + Vector3(0, float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
 
 
 # ---------------------------------------------------------------- the mesh

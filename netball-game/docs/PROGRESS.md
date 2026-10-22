@@ -39,6 +39,9 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   Umpiring setting (AI penalty rate); the Club Season (eight invented clubs); the rules re-checked (rule numbers,
   on-the-line offside, simultaneous infringement, ET interval) with what is still blocked recorded in RULES.md;
   339 strings in all 19 languages, fit audit clean.
+- Round three: the players are the owner's own model (game/hero_body.gd, baked by tools/player/build.sh), running
+  with the owner's Mixamo Fast_Run (shared with Hurling) and the model's own Walking and Running, locked to the
+  stride; tests/player_view.tscn shows it up close.
 
 ## Next
 
@@ -48,7 +51,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 3. A home-and-away Club Season (14 rounds) as an option, and a finals series with a second chance for the top two.
 4. The after-goal tactical change (2024) on request; the without-ball obstruction signal drawn.
 5. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
-6. Meshy models (docs/MESHY_BRIEF.md) if the owner chooses; the upload key and the closed test (store/PLAY_STORE.md).
+6. The umpires as a model too if the owner wants (docs/MESHY_BRIEF.md); the upload key and the closed test (store/PLAY_STORE.md).
 7. Open the rules PDF when the network allows and settle the items in RULES.md "Still unconfirmed".
 
 ## Decisions
@@ -91,4 +94,16 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   the full fit audit, the input test, the perf probe and a Web export), so a push fails CI only for what cannot be
   caught here (the Android export and signing). The Android build runs on `push` only (no `pull_request` run of the
   same commit), so one failure sends one email.
+- **The players are the owner's model** (round three, the owner's request; the code-built run with its arms held
+  out looked awkward). One model for all fourteen, baked as Hurling's is (tools/player/README.md): 5,840 triangles,
+  1,460 on Low; the shader paints the dress's navy in the team's first colour and its light blue panels in the
+  second, keeps the white socks and shoes, and gives each player her own skin tone and dark hair. **The bib is
+  painted by the shader** (from each point's rest position, carried in UV2) rather than a separate panel mesh: no
+  extra draw call per player (Low stays under 100), and it bends with the body. Umpires keep the code-built figure.
+- **The run is the owner's Mixamo Fast_Run**, the one Hurling uses, copied as baked poses (tools/player/clips/
+  fast_run.json: both games share the 17 bones, every rest rotation the identity); below a sprint the model's own
+  Running, and Walking below a jog, blended by speed and locked to the stride phase (the left thigh forward at 1/4),
+  so the feet keep pace with the floor. The legs and body take the clip whenever she moves; the arms only when they
+  are free (running, ready), so a catch, a pass, marking or holding the ball keep the code's arms. A player with the
+  ball stands (footwork), so she never runs.
 
