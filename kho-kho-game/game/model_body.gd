@@ -11,7 +11,7 @@ extends Node3D
 ## Local space: he faces +Z, soles at y = 0; height from look.height (the model stands 1.75 m).
 
 const CLIPS := ["run", "walk", "stand", "dive", "reach", "turn", "kneel_down", "kneel", "whistle", "signal_out",
-	"signal_foul", "signal_end", "cheer"]
+	"signal_foul", "signal_end", "cheer", "seated", "clap"]
 const MODEL_HEIGHT := 1.75
 
 static var _scene: PackedScene
@@ -165,37 +165,27 @@ static func _texture(p_low: bool) -> Texture2D:
 const SHADER := """
 shader_type spatial;
 render_mode cull_back, diffuse_lambert, specular_disabled;
-uniform sampler2D albedo_tex : source_color, filter_linear_mipmap;
+// Read raw (no source_color): the paint's sRGB values as stored, the same in every renderer; turned to linear here.
+// Its alpha is the class tools/models/build_player.py baked: 0.25 shirt, 0.5 shorts and trim, 0.75 skin, 1 the rest.
+uniform sampler2D albedo_tex : filter_linear_mipmap;
 uniform vec3 shirt : source_color;
 uniform vec3 shorts : source_color;
 uniform vec3 skin : source_color;
 
-vec3 rgb2hsv(vec3 c) {
-	vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-	vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-	vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-	float d = q.x - min(q.w, q.y);
-	return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + 1e-10)), d / (q.x + 1e-10), q.x);
-}
-
 void fragment() {
-	vec3 t = texture(albedo_tex, UV).rgb;
-	vec3 s = pow(t, vec3(1.0 / 2.2));   // back to the painted (sRGB) values to read the colours
-	vec3 hsv = rgb2hsv(s);
-	// The kit is blue: light blue the shirt, navy the shorts and trim.
-	float blue = smoothstep(0.47, 0.52, hsv.x) * (1.0 - smoothstep(0.70, 0.75, hsv.x)) * smoothstep(0.15, 0.25, hsv.y);
-	float navy = smoothstep(0.55, 0.7, hsv.y) * (1.0 - smoothstep(0.5, 0.62, hsv.z));
-	vec3 kit_shirt = shirt * clamp(hsv.z / 0.77, 0.3, 1.25);
-	vec3 kit_shorts = shorts * clamp(hsv.z / 0.37, 0.3, 1.6);
-	vec3 kit = mix(kit_shirt, kit_shorts, navy);
-	// His skin: the painted tone (orange, middling saturation) moved to his own.
-	float sk = (1.0 - smoothstep(0.1, 0.14, hsv.x)) * smoothstep(0.25, 0.35, hsv.y) * smoothstep(0.25, 0.4, hsv.z);
-	vec3 skin_c = skin * clamp(hsv.z / 0.735, 0.4, 1.3);
-	// The painted texture is dim (its brightest white is 0.77): lift what keeps its paint; the kit and skin take
-	// their colours as given.
-	vec3 c = mix(t * 1.3, kit, blue);
-	c = mix(c, skin_c, sk * (1.0 - blue));
-	ALBEDO = c;
+	vec4 t = texture(albedo_tex, UV);
+	float v = max(t.r, max(t.g, t.b));
+	float cls = t.a;
+	// The cloth's and the skin's shading: the painted brightness against each part's usual one.
+	vec3 paint = pow(t.rgb, vec3(2.2)) * 1.6;   // the paint is dim (its whites are 0.77)
+	vec3 kit_shirt = shirt * clamp(pow(v / 0.77, 2.2), 0.25, 1.4);
+	vec3 kit_shorts = shorts * clamp(pow(v / 0.37, 2.2), 0.25, 1.8);
+	vec3 skin_c = skin * clamp(pow(v / 0.735, 2.2), 0.3, 1.4);
+	float w_shirt = 1.0 - smoothstep(0.32, 0.4, cls);
+	float w_shorts = smoothstep(0.32, 0.4, cls) * (1.0 - smoothstep(0.58, 0.66, cls));
+	float w_skin = smoothstep(0.58, 0.66, cls) * (1.0 - smoothstep(0.84, 0.92, cls));
+	float w_paint = smoothstep(0.84, 0.92, cls);
+	ALBEDO = kit_shirt * w_shirt + kit_shorts * w_shorts + skin_c * w_skin + paint * w_paint;
 	ROUGHNESS = 0.85;
 }
 """

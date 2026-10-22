@@ -18,6 +18,10 @@ since about 2019. The Play bundle also carries a 32-bit build for older Android 
 - **Watch a Match:** the pause button (top right) is there now; its menu has Quit match.
 - **The toss:** the coin shows a lion's head for heads and the value for tails, in your language's currency.
 - **DODGE** is a real side-step now, and a touch during it mostly slips off.
+- **New players:** the owner's athlete model with Mixamo animations: the sprint, the kho (a reach to the seated
+  chaser's back), the dive, the turn round the pole, kneeling in the lane; umpires signal on the same model.
+- **New grounds:** trees and palms, houses and haystacks, hills and a sky, light towers, the hall's roof and screen,
+  and a crowd drawn from the players themselves, up on its feet at an out.
 
 ## What's new in 0.2
 
@@ -31,6 +35,9 @@ since about 2019. The Play bundle also carries a 32-bit build for older Android 
 - A new icon.
 
 ## What to try
+
+- **The new players and grounds.** Do the players look right running, diving, kneeling? Is anything stretched or
+  through the floor? Does the phone stay smooth on Low and Medium?
 
 - **The home screen.** One row of buttons over a match the AI plays: can you find everything at a glance?
 - **Chasing.** You are the active chaser in gold.

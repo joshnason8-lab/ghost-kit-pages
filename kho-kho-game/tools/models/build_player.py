@@ -110,6 +110,7 @@ def bake(Pn, Fn, UVn, size, P0, F0, UV0, tex):
     cent = P0[F0].mean(1)
     tree = cKDTree(cent)
     out = np.zeros((size, size, 3), np.float32)
+    cls = np.full((size, size), CLASS_OTHER, np.float32)
     filled = np.zeros((size, size), bool)
     pts, pix = [], []
     for f in Fn:
@@ -148,7 +149,9 @@ def bake(Pn, Fn, UVn, size, P0, F0, UV0, tex):
         best_uv[better] = uv[better]
     tx = np.clip((best_uv[:, 0] % 1.0) * W, 0, W - 1).astype(int)
     ty = np.clip((best_uv[:, 1] % 1.0) * H, 0, H - 1).astype(int)
-    out[pix[:, 1], pix[:, 0]] = tex[ty, tx, :3]
+    rgb = tex[ty, tx, :3]
+    out[pix[:, 1], pix[:, 0]] = rgb
+    cls[pix[:, 1], pix[:, 0]] = classify(rgb / 255.0, pts[:, 1])
     filled[pix[:, 1], pix[:, 0]] = True
     # Pad the islands outward so filtering and mipmaps never reach the empty atlas.
     for _ in range(12):
@@ -160,8 +163,44 @@ def bake(Pn, Fn, UVn, size, P0, F0, UV0, tex):
             cnt += sf
         grow = (~filled) & (cnt > 0)
         out[grow] = acc[grow] / cnt[grow][:, None]
+        # The class spreads as the nearest one does (any filled neighbour's), never averaged.
+        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            sf = np.roll(filled, (dy, dx), (0, 1)) & grow
+            cls[sf] = np.roll(cls, (dy, dx), (0, 1))[sf]
         filled |= grow
-    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
+    rgba = np.concatenate([np.clip(out, 0, 255), cls[..., None]], axis=2)
+    return Image.fromarray(rgba.astype(np.uint8), "RGBA")
+
+
+# The texture's alpha says what each texel is, for the shader's kit colours (game/model_body.gd).
+CLASS_SHIRT, CLASS_SHORTS, CLASS_SKIN, CLASS_OTHER = 64.0, 128.0, 192.0, 255.0
+
+
+def classify(rgb, height):
+    """The source paints a light blue shirt, navy shorts and trim, and the skin orange; shoes (below 13 cm) are
+    blue too but stay as painted."""
+    mx = rgb.max(1)
+    mn = rgb.min(1)
+    d = mx - mn
+    sat = np.where(mx > 1e-6, d / np.maximum(mx, 1e-6), 0.0)
+    r, g, b = rgb[:, 0], rgb[:, 1], rgb[:, 2]
+    hue = np.zeros(len(rgb))
+    nz = d > 1e-6
+    rm = nz & (mx == r)
+    gm = nz & (mx == g) & ~rm
+    bm = nz & ~rm & ~gm
+    hue[rm] = ((g - b)[rm] / d[rm]) % 6
+    hue[gm] = (b - r)[gm] / d[gm] + 2
+    hue[bm] = (r - g)[bm] / d[bm] + 4
+    hue /= 6.0
+    blue = (hue > 0.48) & (hue < 0.72) & (sat > 0.2) & (height > 0.13)
+    navy = blue & ((sat > 0.62) | (mx < 0.5))
+    skin = (hue < 0.12) & (sat > 0.25) & (mx > 0.25)
+    out = np.full(len(rgb), CLASS_OTHER)
+    out[skin] = CLASS_SKIN
+    out[blue & ~navy] = CLASS_SHIRT
+    out[navy] = CLASS_SHORTS
+    return out
 
 
 class Writer:

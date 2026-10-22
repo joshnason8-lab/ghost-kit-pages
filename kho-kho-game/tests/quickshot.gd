@@ -9,6 +9,7 @@ func _ready() -> void:
 	Game.settings.camera = int(OS.get_environment("KK_CAM")) if OS.get_environment("KK_CAM") != "" else Game.CAM_TV
 	get_tree().root.size = Vector2i(1280, 720)
 	ModelBody.warm()
+	await Crowd.render_sheet(get_tree())
 	Game.start_match({"home": "MAH", "away": "ODI", "venue": a[1], "format": KhoRules.FAST if a[1] == "arena" else KhoRules.CLASSIC,
 		"turn_len": 300.0, "user_team": -1, "seed": 5, "mode": "quick", "chase_first": 0})
 	var done := 0
@@ -16,6 +17,11 @@ func _ready() -> void:
 		var n := int(a[k])
 		for i in n - done:
 			await get_tree().process_frame
+			# KK_WIDE: a wide view from high behind the near side, to see the place round the field.
+			if OS.get_environment("KK_WIDE") != "" and Game.current and Game.current.get("cam"):
+				Game.current.cam_locked = true
+				Game.current.cam.position = Vector3(-6.0, 9.0, 26.0)
+				Game.current.cam.look_at(Vector3(4.0, 3.0, -20.0))
 		done = n
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("%s/%s_g%s_%d.png" % [a[0], a[1], a[2], n])
