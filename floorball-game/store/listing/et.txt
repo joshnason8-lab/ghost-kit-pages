@@ -2,13 +2,13 @@
 # Poe põhikirje. Piirangud: rakenduse nimi 30 tähemärki, lühikirjeldus 80, täielik kirjeldus 4000.
 
 == App name ==
-Floorstorm: Saalihoki Areen
+Floorball Unleashed
 
 == Short description ==
 Saalihoki viis viie vastu koos väravavahtidega, päris reeglitega. Viska, sööda!
 
 == Full description ==
-Floorstorm on saalihoki sinu telefonis: Rootsi, Soome, Šveitsi ja Tšehhi kiire sisekepimäng, mida mängitakse viie väljakumängija ja väravavahiga 40 × 20 meetri suurusel piiretega väljakul.
+Floorball Unleashed on saalihoki sinu telefonis: Rootsi, Soome, Šveitsi ja Tšehhi kiire sisekepimäng, mida mängitakse viie väljakumängija ja väravavahiga 40 × 20 meetri suurusel piiretega väljakul.
 
 PÄRIS MÄNG
 • Saalihoki rahvusvahelised mängureeglid, 1. juulil 2026 jõustunud väljaanne: kolm perioodi puhta mänguajaga, vahevisked, sisse- ja vabalöögid 3-meetrise vahemaaga, väravaala ja väravavahi ala, kahe- ja viieminutilised karistused, arvuline ülekaal, lisaaeg ja karistusvisked.
@@ -29,7 +29,7 @@ MÄNGI OMAMOODI
 • Loodud sujuvalt töötama soodsatel ja keskklassi telefonidel, koos akusäästjaga.
 • Töötab võrguühenduseta. Ei mingeid reklaame, oste ega kontot ning andmeid ei koguta.
 
-Floorstorm on sõltumatu mäng. See ei ole seotud ühegi saalihokiliidu, -liiga, -klubi ega -mängijaga ega ole nende poolt heaks kiidetud. Mängijad on väljamõeldud; riigid ja reeglid on päris.
+Floorball Unleashed on sõltumatu mäng. See ei ole seotud ühegi saalihokiliidu, -liiga, -klubi ega -mängijaga ega ole nende poolt heaks kiidetud. Mängijad on väljamõeldud; riigid ja reeglid on päris.
 
 == Release notes (first release) ==
-Floorstormi esimene väljalase: kiirmäng, MM-turniir ja klubihooaeg ning treener esimeseks mänguks, viieteistkümnes keeles.
+Floorball Unleashedi esimene väljalase: kiirmäng, MM-turniir ja klubihooaeg ning treener esimeseks mänguks, viieteistkümnes keeles.

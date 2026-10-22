@@ -14,7 +14,7 @@ const WHISTLE_S := 1.6          # the stop after a whistle while the referee sho
 const GOAL_S := 3.4
 const SETUP_MAX_S := 7.0        # players walk to a restart; after this the restart is taken anyway
 const PICKUP_SPEED := 15.0      # a ball faster than this past a blade is not controlled, only deflected
-const PASSIVE_S := 30.0         # a team that keeps the ball this long without an attack is warned of passive play
+const PASSIVE_S := 40.0         # a team that keeps the ball this long without an attack is warned of passive play
 const PASSIVE_WARN_S := 8.0     # after the warning: a shot, or the ball goes to the other team
 const RESTART_DELAY_S := 9.0    # your free-hit or hit-in not taken by then: delaying a fixed situation
 const ADVANTAGE_S := 2.6        # how long advantage is played before the free-hit is forgotten (play went on)
@@ -117,7 +117,7 @@ func _ready() -> void:
 	for t in 2:
 		for p in squads[t]:
 			stats[p.id] = {"g": 0, "a": 0, "sog": 0, "pim": 0, "saves": 0, "sa": 0, "name": p.name, "num": p.num, "team": t, "role": p.role}
-		team_stats[t] = {"shots": 0, "sog": 0, "fo": 0, "ppg": 0, "pp": 0, "blocked": 0}
+		team_stats[t] = {"shots": 0, "sog": 0, "fo": 0, "ppg": 0, "pp": 0, "blocked": 0, "passes": 0, "own_passes": 0}
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
@@ -452,6 +452,9 @@ func pass_to(p: Player, q: Player) -> void:
 	var dir := (lead - p.pos).normalized().rotated(_rng.randf_range(-err, err))
 	p.do("pass", 0.32)
 	p.want_face = dir.angle()
+	team_stats[p.team].passes += 1
+	if p.pos.x * attack_dir(p.team) < 0.0 and (lead.x - p.pos.x) * attack_dir(p.team) < 2.0:
+		team_stats[p.team].own_passes += 1   # in our own half and not forward: the recycling a coach counts
 	ball.release()
 	# Struck along the floor; a long pass a little lifted (a "lob" stays under the knee near its end).
 	var lift := 0.0 if d < 12.0 else 1.6
@@ -696,6 +699,7 @@ func _passive_tick(dt: float) -> void:
 	if not bool(passive.warned):
 		if float(passive.t) > PASSIVE_S:
 			passive.warned = true
+			calls.append({"kind": "passive", "team": t, "period": rules.period, "t": rules.clock})
 			passive.w = 0.0
 			_ref_signal("passive", Vector2(attack_dir(t), 0))
 			if hud:

@@ -2,13 +2,13 @@
 # Main store listing. Grenser: appnavn 30 tegn, kort beskrivelse 80, full beskrivelse 4000.
 
 == App name ==
-Floorstorm: Innebandy Arena
+Floorball Unleashed
 
 == Short description ==
 Innebandy fem mot fem med keepere, etter de ekte reglene. Skyt, pass og scor!
 
 == Full description ==
-Floorstorm er innebandy på mobilen: den raske innendørssporten med kølle fra Sverige, Finland, Sveits og Tsjekkia, med fem utespillere og en keeper per lag på en bane på 40 ganger 20 meter innenfor vantet.
+Floorball Unleashed er innebandy på mobilen: den raske innendørssporten med kølle fra Sverige, Finland, Sveits og Tsjekkia, med fem utespillere og en keeper per lag på en bane på 40 ganger 20 meter innenfor vantet.
 
 DET EKTE SPILLET
 • Innebandyens internasjonale spilleregler, utgaven som gjelder fra 1. juli 2026: tre perioder med effektiv tid, avslag, innslag og frislag med 3 meters avstand, målområde og keeperområde, to- og fem-minutters utvisninger, overtall, forlengning og straffeslag.
@@ -29,7 +29,7 @@ SPILL PÅ DIN MÅTE
 • Laget for å gå jevnt på rimelige mobiler og mellomklassemobiler, med batterisparing.
 • Spilles uten nett. Ingen reklame, ingen kjøp, ingen konto og ingen innsamling av data.
 
-Floorstorm er et uavhengig spill. Det er ikke tilknyttet eller støttet av noe innebandyforbund, noen serie, klubb eller spiller. Spillerne er oppdiktet; landene og reglene er ekte.
+Floorball Unleashed er et uavhengig spill. Det er ikke tilknyttet eller støttet av noe innebandyforbund, noen serie, klubb eller spiller. Spillerne er oppdiktet; landene og reglene er ekte.
 
 == Release notes (first release) ==
-Første versjon av Floorstorm: Hurtigkamp, Verdensfinaler og en klubbsesong, med en trener for din første kamp, på femten språk.
+Første versjon av Floorball Unleashed: Hurtigkamp, Verdensfinaler og en klubbsesong, med en trener for din første kamp, på femten språk.

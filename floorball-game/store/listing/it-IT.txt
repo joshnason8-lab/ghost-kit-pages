@@ -2,13 +2,13 @@
 # Scheda dello store principale. Limiti: nome dell'app 30 caratteri, descrizione breve 80, descrizione completa 4000.
 
 == App name ==
-Floorstorm: Arena Unihockey
+Floorball Unleashed
 
 == Short description ==
 Unihockey a cinque più il portiere, con le regole vere. Tira, passa, segna!
 
 == Full description ==
-Floorstorm è l'unihockey (floorball) sul tuo telefono: il veloce gioco con il bastone indoor di Svezia, Finlandia, Svizzera e Cechia, cinque giocatori più il portiere per squadra, su un campo di 40 per 20 metri cinto dalle balaustre.
+Floorball Unleashed è l'unihockey (floorball) sul tuo telefono: il veloce gioco con il bastone indoor di Svezia, Finlandia, Svizzera e Cechia, cinque giocatori più il portiere per squadra, su un campo di 40 per 20 metri cinto dalle balaustre.
 
 IL GIOCO VERO
 • Il regolamento di gioco internazionale dell'unihockey, nell'edizione in vigore dal 1° luglio 2026: tre tempi a tempo effettivo, ingaggi, rimesse e punizioni con la distanza di 3 metri, area di porta e area del portiere, penalità di due e cinque minuti, superiorità numerica, supplementare e rigori.
@@ -29,7 +29,7 @@ GIOCA A MODO TUO
 • Pensato per girare fluido su telefoni economici e di fascia media, con risparmio batteria.
 • Si gioca offline. Niente pubblicità, niente acquisti, nessun account e nessun dato raccolto.
 
-Floorstorm è un gioco indipendente. Non è affiliato né sostenuto da alcuna federazione, lega, società o giocatore di unihockey. I giocatori sono inventati; i paesi e le regole sono veri.
+Floorball Unleashed è un gioco indipendente. Non è affiliato né sostenuto da alcuna federazione, lega, società o giocatore di unihockey. I giocatori sono inventati; i paesi e le regole sono veri.
 
 == Release notes (first release) ==
-La prima versione di Floorstorm: Partita rapida, le Finali mondiali e una stagione di club, con un allenatore per la tua prima partita, in quindici lingue.
+La prima versione di Floorball Unleashed: Partita rapida, le Finali mondiali e una stagione di club, con un allenatore per la tua prima partita, in quindici lingue.

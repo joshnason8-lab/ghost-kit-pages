@@ -35,7 +35,6 @@ var stamina := 1.0
 var on_rink := true
 var off_boards := false       # may go over the boards (to the penalty bench): no board stops him
 var in_box := false           # on the penalty bench
-var tag: Label3D
 var marker: MeshInstance3D    # your player's ring on the floor
 var writes := 0               # step() calls this frame: the motion audit checks there is exactly one
 
@@ -46,6 +45,7 @@ var _lean := 0.0
 var _crouch := 0.0
 var _blade := Vector3(0.2, 0.0, 0.62)   # where the blade is (local), smoothed toward where it should be
 var _wob := 0.0
+const ARM_REACH := 0.47       # shoulder to the grip at most (m, a 1.80 m player): the hands always reach the stick
 
 
 func _init(p_data := {}, p_team := 0, p_role := "F", p_slot := 0) -> void:
@@ -58,19 +58,6 @@ func _init(p_data := {}, p_team := 0, p_role := "F", p_slot := 0) -> void:
 func _ready() -> void:
 	body = Body.new(_look())
 	add_child(body)
-	if role != "R" and int(Game.settings.tags) != 2:
-		tag = Label3D.new()
-		tag.text = str(int(data.get("num", 0)))
-		tag.font = Game.font_score
-		tag.font_size = 64
-		tag.pixel_size = 0.0062
-		tag.outline_size = 10
-		tag.modulate = Color.WHITE
-		tag.outline_modulate = Color(0, 0, 0, 0.7)
-		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		tag.no_depth_test = true
-		tag.position = Vector3(0, 2.25, 0)
-		add_child(tag)
 	if role == "G" or role == "R":
 		body.no_stick()
 	_place()
@@ -92,11 +79,21 @@ func mark(on: bool) -> void:
 		marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		marker.position = Vector3(0, 0.008, 0)
 		add_child(marker)
+		# And a small arrow over his head, seen over the others (no numbers over heads: only yours is marked).
+		var arrow := Label3D.new()
+		arrow.text = "▼"
+		arrow.font = Game.font_bold
+		arrow.font_size = 56
+		arrow.pixel_size = 0.006
+		arrow.outline_size = 10
+		arrow.modulate = Game.C_YELLOW
+		arrow.outline_modulate = Color(0, 0, 0, 0.6)
+		arrow.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		arrow.no_depth_test = true
+		arrow.position = Vector3(0, 2.2, 0)
+		marker.add_child(arrow)
 	if marker:
 		marker.visible = on
-	if tag:
-		tag.modulate = Game.C_YELLOW if on else Color.WHITE
-		tag.font_size = 84 if on else 64
 
 
 func _look() -> Dictionary:
@@ -114,6 +111,7 @@ func _look() -> Dictionary:
 	return {"kind": "keeper" if keeper else "player", "skin": Color(String(data.get("skin", "e8b48f"))), "jersey": jersey, "shorts": shorts,
 		"socks": kit[0] if not keeper else shorts, "trim": kit[2], "hair": Color(String(data.get("hair", "4a3220"))),
 		"hair_style": int(data.get("hair_style", 0)), "height": float(data.get("height", 1.8)), "goggles": bool(data.get("goggles", false)),
+		"women": String(data.get("id", "")).substr(3, 1) == "w",
 		"stick": Color("1f2933") if int(data.get("num", 0)) % 3 != 0 else Color("e9ecef"), "blade": Color("f4f5f6") if int(data.get("num", 0)) % 2 == 0 else Color("1d1f22")}
 
 
@@ -122,8 +120,6 @@ func become(p_data: Dictionary) -> void:
 	data = p_data
 	if body:
 		body.relook(_look())
-	if tag:
-		tag.text = str(int(data.get("num", 0)))
 
 
 func stat(k: String) -> float:
@@ -214,7 +210,9 @@ func _animate(dt: float) -> void:
 	var k := sin(_phase * TAU)
 	var k2 := sin(_phase * TAU + PI)
 	# Forward lean with speed, a low stance near the ball (a floorball player plays bent at the knees).
-	var lean_want := 8.0 + run * 14.0
+	var lean_want := 26.0 + run * 8.0   # a floorball player plays bent forward over his stick
+	if act == "tackle":
+		lean_want += 22.0   # and lunges into a tackle
 	var crouch_want := 0.0
 	match role:
 		"G":
@@ -223,7 +221,7 @@ func _animate(dt: float) -> void:
 		"R":
 			lean_want = 3.0 + run * 8.0
 		_:
-			crouch_want = 0.45
+			crouch_want = 0.6
 	_lean = lerpf(_lean, lean_want, minf(1.0, 6.0 * dt))
 	_crouch = lerpf(_crouch, crouch_want, minf(1.0, 6.0 * dt))
 	var swing := 34.0 * run
@@ -256,6 +254,7 @@ func _animate(dt: float) -> void:
 	body.apply(p)
 	if role != "G" and role != "R":
 		_stick(dt, t)
+	body.sync()
 
 
 ## The stick: blade on the floor in front, to his stick side; drawn back and swept through in a shot, never above the
@@ -295,8 +294,17 @@ func _stick(dt: float, t: float) -> void:
 	else:
 		heel = grip + shaft.normalized() * Body.STICK_LEN
 	heel.y = maxf(heel.y, 0.01)
+	# The grip within the top hand's reach: the point of the stick's reach round the blade nearest his shoulder, and the
+	# blade drawn in toward him when even that is too far (a lunge the arms cannot make; the play keeps _blade).
+	var sh := body.shoulder(top_hand)
+	if grip.distance_to(sh) > ARM_REACH:
+		grip = heel + (sh - heel).normalized() * Body.STICK_LEN
+		if grip.distance_to(sh) > ARM_REACH:
+			heel = sh + (heel - sh).normalized() * (Body.STICK_LEN + ARM_REACH)
+			heel.y = maxf(heel.y, 0.01)
+			grip = heel + (sh - heel).normalized() * Body.STICK_LEN
 	var toe := Vector3(0.2 * side, 0, 1.0).normalized()
-	body.place_stick(grip, heel, toe, top_hand, 0.4)
+	body.place_stick(grip, heel, toe, top_hand, 0.3)
 
 
 ## Where the blade is now, on the floor (for the ball to sit on and for tackles).

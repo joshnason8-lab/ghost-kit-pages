@@ -45,6 +45,9 @@ var pose := {}
 var _idx := {}
 var _rest := {}         # bone -> rest position (model space)
 var _stick_xf := Transform3D()
+var _has_stick := true
+var _hands := {}        # side -> how far down the shaft from the grip's end that hand holds it (m)
+var rig: RiggedBody = null   # the owner's model, when it is there: this skeleton is then posed but not drawn
 
 static var _mat: ShaderMaterial
 static var _cache := {}
@@ -70,6 +73,11 @@ func _ready() -> void:
 	_rest = acc
 	var h := float(look.get("height", 1.80))
 	scale = Vector3.ONE * (h / 1.80)
+	if RiggedBody.available() and not bool(look.get("procedural", false)):
+		rig = RiggedBody.new()
+		add_child(rig)
+		rig.setup(self, look)
+		return
 	mesh_instance = MeshInstance3D.new()
 	mesh_instance.mesh = _mesh()
 	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -81,6 +89,9 @@ func _ready() -> void:
 ## Changes the kit or face (a line change: the next player out wears his own number and face).
 func relook(p_look: Dictionary) -> void:
 	look = p_look
+	if rig:
+		rig.recolour(look)
+		scale = Vector3.ONE * (float(look.get("height", 1.80)) / 1.80)
 	if mesh_instance:
 		mesh_instance.mesh = _mesh()
 		scale = Vector3.ONE * (float(look.get("height", 1.80)) / 1.80)
@@ -176,13 +187,17 @@ func place_stick(top: Vector3, heel: Vector3, toe: Vector3, top_hand := "r", low
 	skeleton.set_bone_pose_rotation(bone("stick"), b.get_rotation_quaternion())
 	skeleton.set_bone_pose_position(bone("stick"), top)
 	var other := "l" if top_hand == "r" else "r"
+	_has_stick = true
+	_hands = {top_hand: 0.03}
 	_reach(top_hand, top + down * 0.03)
 	if two_hands:
+		_hands[other] = STICK_LEN * low_k
 		_reach(other, top + down * (STICK_LEN * low_k))
 
 
 ## Hides the stick (a goalkeeper, a referee): folded into the hips, out of sight.
 func no_stick() -> void:
+	_has_stick = false
 	if skeleton:
 		skeleton.set_bone_pose_position(bone("stick"), Vector3(0, 0.9, 0))
 		skeleton.set_bone_pose_rotation(bone("stick"), Quaternion.IDENTITY)
@@ -211,6 +226,30 @@ func _reach(side: String, target: Vector3) -> void:
 	skeleton.set_bone_pose_rotation(bone("upperarm_" + side), up_l.get_rotation_quaternion())
 	skeleton.set_bone_pose_rotation(bone("forearm_" + side), fo_l.get_rotation_quaternion())
 	skeleton.set_bone_pose_rotation(bone("hand_" + side), Quaternion.IDENTITY)
+
+
+## The shoulder of side ("l" or "r") in this body's space, from the pose as set this frame.
+func shoulder(side: String) -> Vector3:
+	return _fk("chest") * (BONES[bone("upperarm_" + side)][2] as Vector3)
+
+
+## The drawn body (the owner's model) takes this frame's pose: call once a frame after apply() and place_stick().
+func sync() -> void:
+	if rig and skeleton:
+		rig.follow(self)
+
+
+func has_stick() -> bool:
+	return _has_stick
+
+
+## The stick's grip end and frame in this body's space (the shaft down -Y, the blade toward +Z).
+func stick_transform() -> Transform3D:
+	return _stick_xf
+
+
+func stick_hands() -> Dictionary:
+	return _hands
 
 
 static func _from_to(a: Vector3, b: Vector3) -> Basis:

@@ -2,13 +2,13 @@
 # Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Floorstorm: Floorball Arena
+Floorball Unleashed
 
 == Short description ==
 Floorball five a side with goalkeepers, to the real rules. Shoot, pass, score!
 
 == Full description ==
-Floorstorm is floorball for your phone: the fast indoor stick game of Sweden, Finland, Switzerland and Czechia, played five and a goalkeeper a side on a 40 by 20 metre rink inside the boards.
+Floorball Unleashed is floorball for your phone: the fast indoor stick game of Sweden, Finland, Switzerland and Czechia, played five and a goalkeeper a side on a 40 by 20 metre rink inside the boards.
 
 THE REAL GAME
 • Floorball's international Rules of the Game, the edition in force from 1 July 2026: three periods with a stopped clock, face-offs, hit-ins and free-hits with the 3 metre distance, the goal crease and goalkeeper area, two-minute and five-minute penalties, power plays, overtime and penalty shots.
@@ -29,7 +29,7 @@ PLAY YOUR WAY
 • Made to run smoothly on budget and mid-range phones, with a battery saver.
 • Plays offline. No ads, no purchases, no account, and no data collected.
 
-Floorstorm is an independent game. It is not affiliated with or endorsed by any floorball federation, league, club or player. The players are fictional; the countries and the rules are real.
+Floorball Unleashed is an independent game. It is not affiliated with or endorsed by any floorball federation, league, club or player. The players are fictional; the countries and the rules are real.
 
 == Release notes (first release) ==
-The first release of Floorstorm: Quick match, the World Finals and a club season, with a coach for your first match, in fifteen languages.
+The first release of Floorball Unleashed: Quick match, the World Finals and a club season, with a coach for your first match, in fifteen languages.

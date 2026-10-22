@@ -2,13 +2,13 @@
 # Pääkauppasivu. Rajat: sovelluksen nimi 30 merkkiä, lyhyt kuvaus 80, koko kuvaus 4000.
 
 == App name ==
-Floorstorm: Salibandy Areena
+Floorball Unleashed
 
 == Short description ==
 Salibandya viisi vastaan viisi maalivahdeilla, oikeilla säännöillä. Laukaa!
 
 == Full description ==
-Floorstorm on salibandya puhelimeesi: Ruotsin, Suomen, Sveitsin ja Tšekin nopea sisämailapeli, jota pelataan viidellä kenttäpelaajalla ja maalivahdilla laitojen ympäröimällä 40 × 20 metrin kentällä.
+Floorball Unleashed on salibandya puhelimeesi: Ruotsin, Suomen, Sveitsin ja Tšekin nopea sisämailapeli, jota pelataan viidellä kenttäpelaajalla ja maalivahdilla laitojen ympäröimällä 40 × 20 metrin kentällä.
 
 AITOA SALIBANDYA
 • Salibandyn kansainväliset pelisäännöt, 1.7.2026 voimaan tullut versio: kolme erää tehokkaalla peliajalla, aloitukset, raja- ja vapaalyönnit 3 metrin etäisyydellä, maalialue ja maalivahdin alue, kahden ja viiden minuutin jäähyt, ylivoimat, jatkoaika ja rangaistuslaukaukset.
@@ -29,7 +29,7 @@ PELAA OMALLA TAVALLASI
 • Tehty pyörimään sujuvasti edullisissa ja keskitason puhelimissa, mukana virransäästötila.
 • Toimii ilman verkkoyhteyttä. Ei mainoksia, ei ostoksia, ei tiliä eikä tietojen keräämistä.
 
-Floorstorm on itsenäinen peli. Se ei ole yhteydessä mihinkään salibandyliittoon, -sarjaan, -seuraan tai -pelaajaan, eikä kukaan niistä ole sitä hyväksynyt. Pelaajat ovat keksittyjä; maat ja säännöt ovat oikeita.
+Floorball Unleashed on itsenäinen peli. Se ei ole yhteydessä mihinkään salibandyliittoon, -sarjaan, -seuraan tai -pelaajaan, eikä kukaan niistä ole sitä hyväksynyt. Pelaajat ovat keksittyjä; maat ja säännöt ovat oikeita.
 
 == Release notes (first release) ==
-Floorstormin ensimmäinen versio: pikaottelu, MM-turnaus ja seurakausi sekä valmentaja ensimmäiseen otteluusi, viidellätoista kielellä.
+Floorball Unleashed -pelin ensimmäinen versio: pikaottelu, MM-turnaus ja seurakausi sekä valmentaja ensimmäiseen otteluusi, viidellätoista kielellä.

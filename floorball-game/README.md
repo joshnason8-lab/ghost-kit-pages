@@ -1,16 +1,16 @@
-# Floorstorm
+# Floorball Unleashed
 
 A floorball game for Android phones, built with [Godot 4.7](https://godotengine.org) (free and open source, no
 royalties), the same way as Kabaddi Raid and Takraw Smash. Floorball is the fast indoor stick game of Sweden,
 Finland, Switzerland and Czechia: five and a goalkeeper a side, a plastic ball with 26 holes, a 40 x 20 m rink inside
-low boards. Floorstorm plays the international Rules of the Game in force from 1 July 2026, and dresses its menus as
+low boards. Floorball Unleashed plays the international Rules of the Game in force from 1 July 2026, and dresses its menus as
 the coach's whiteboard in a Nordic sports hall.
 
-> **Status: beta 0.2.0.** Played through in a browser on phone-shaped screens, and fixed from what that showed
-> (docs/PLAYTEST.md); a coach for the first match, the club season, the empty net, passive play. The players,
-> referees, rink, hall and crowd are built in code; the bodies are on a humanoid skeleton ready for Meshy models if
-> wanted (docs/MESHY_BRIEF.md). docs/BETA.md says how to install and what to try; docs/PROGRESS.md has what is done
-> and what is next.
+> **Status: beta 0.3.0.** The players, goalkeepers and referees are the owner's Meshy models (a man for the men's
+> game, a woman for the women's), in each team's colours, with the owner's stick; the rink, hall and crowd were made
+> to match them (docs/MESHY_BRIEF.md). 0.2 added a coach for the first match, the club season, the empty net and
+> passive play, after a playtest in a browser on phone-shaped screens (docs/PLAYTEST.md). docs/BETA.md says how to
+> install and what to try; docs/PROGRESS.md has what is done and what is next.
 
 ## What's in it
 
@@ -24,7 +24,7 @@ the coach's whiteboard in a Nordic sports hall.
 | **Officials** | Two referees on the diagonal along the long sides; the nearer whistles and signs the call (free-hit, hit-in, advantage, delayed penalty, goal, no goal, 2/5/10 minutes, penalty shot, face-off, time-out); a card on the screen shows the consequence, then the offence and its rule. |
 | **The teams** | 22 national teams, men's and women's, rated in world-ranking order; squads of 20 (two goalkeepers, three lines of five, three reserves) with invented players from each country's common names. Kits in each country's colours; the visitors change when the jerseys clash. |
 | **How they play** | A 2-1-2 defence with the nearest player pressing on the goal side, a 2-2-1 forecheck, wingers wide and the centre in the slot, flying line changes every 40-60 seconds, goalkeepers who read the shot, butterfly, catch or spill. Late in a match the team a goal or two behind pulls its goalkeeper for a sixth outfield player. Tuned to real matches (tests/ai_bench, per 60 minutes): 9.5 goals and 100 shots (real: about 10 and 95). |
-| **You** | One outfield player at a time (the yellow ring and number), switched to the one nearest the ball by itself or with Switch; shoot (aim at a corner), pass to the joystick's team-mate, sprint, tackle; you take your team's free-hits and hit-ins (without delay: kept waiting, the referee gives it to the other team), and the penalty shots. Your first match has a coach: a note at the bottom of the screen as each moment comes (moving, the ball, defending, your free-hit, the whistle, a penalty, a goal), in every language. |
+| **You** | One outfield player at a time (the yellow ring at his feet and arrow over his head; no numbers over heads), switched to the one nearest the ball by itself or with Switch; shoot (aim at a corner), pass to the joystick's team-mate, sprint, tackle; you take your team's free-hits and hit-ins (without delay: kept waiting, the referee gives it to the other team), and the penalty shots. Your first match has a coach: a note at the bottom of the screen as each moment comes (moving, the ball, defending, your free-hit, the whistle, a penalty, a goal), in every language. |
 | **Modes** | Quick match (any two of 22, three venues, period length, difficulty, clock, draw or decided); the World Finals (16 nations in the World Championships' format: groups A-D, play-offs, quarter-finals, semi-finals, bronze and final); a club season (ten invented clubs, a single round robin of nine rounds counted 3-2-1-0 as the Nordic leagues do, no draws, then semi-finals 1 v 4 and 2 v 3 and a final); an AI v AI match behind the home screen. |
 | **After the match** | A box score: the score by period, shots on goal, saves, penalty minutes, power-play goals, face-offs won, blocked shots, every goal with scorer and assist and power play, every penalty with its offence and rule, the player of the match. |
 | **Venues** | A city arena (stands all round, a hanging scoreboard), a sports hall (birch walls, one bank of seats behind the benches), a school gym (wall bars, a few parents). The benches and substitution zones on the far side, the penalty benches and secretariat on the near side. |
@@ -62,13 +62,13 @@ On a keyboard: WASD or arrows to move, Space, J and K for the three buttons, Esc
 
 ## Get it on your phone
 
-Every push that touches `floorball-game/` runs the **Floorstorm · Android build** action: it runs the tests and the
+Every push that touches `floorball-game/` runs the **Floorball Unleashed · Android build** action: it runs the tests and the
 fit audit, exports the beta APK (64-bit ARM) and puts it on the release page
-https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorstorm-beta. Open that page on the phone, tap the
-APK, and allow your browser to install it. It installs over any earlier Floorstorm beta and keeps your settings.
+https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorball-unleashed-beta. Open that page on the phone, tap the
+APK, and allow your browser to install it. It installs over any earlier Floorball Unleashed beta and keeps your settings.
 
 For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step and every App content answer, and the
-**Floorstorm · Play Store bundle** action builds the `.aab` (unsigned until the upload key is in the repository's
+**Floorball Unleashed · Play Store bundle** action builds the `.aab` (unsigned until the upload key is in the repository's
 secrets).
 
 ## Play it in a browser
@@ -112,7 +112,8 @@ writes it), and that nobody moves faster than a sprint or jumps between frames. 
 autoload/   game.gd (settings, saves, the whiteboard theme, plurals, screens), db.gd (teams, squads, kits, venues),
             sfx.gd (whistles, the ball's crack, boards, horn, crowd and drum, made in code)
 game/       rules.gd (the rules, pure), match.gd (the match), team_ai.gd, player.gd (movement and poses),
-            body.gd (the person and stick on one skeleton), ball.gd, arena.gd + geo.gd + crowd.gd (rink and hall),
+            body.gd (the pose: a skeleton the game moves), rigged_body.gd (the owner's model following it, kit colours, the
+            stick in its hands), ball.gd, arena.gd + geo.gd + crowd.gd (rink and hall),
             camera_rig.gd, hud.gd, touch_controls.gd, sim.gd (matches not shown), cup.gd (the World Finals),
             season.gd (the club season)
 ui/         main menu (whiteboard + live match), quick setup, World Finals, club season, settings, move buttons,
@@ -120,7 +121,9 @@ ui/         main menu (whiteboard + live match), quick setup, World Finals, club
             drag_scroll.gd, backdrop.gd + rink_sketch.gd (the whiteboard), flags.gd, crest.gd (the clubs'), icon.gd
 i18n/       src/*.json (one file per language), strings.csv (generated by tools/build_i18n.py)
 fonts/      Noto Sans, Noto Sans Thai, Noto Sans JP (cut to the Japanese text), Caveat, Barlow Condensed: SIL OFL
-tools/      ci_local.sh (CI's checks, run before a push), build_i18n.py, subset_fonts.py, check_scripts.py,
+assets/     characters/ (the owner's Meshy man, woman and stick, made fit for phones by tools/meshy), icon/, audio/
+tools/      meshy/ (prepare.gd: the models cut down for phones; views and the grip check), ci_local.sh (CI's checks,
+            run before a push), build_i18n.py, subset_fonts.py, check_scripts.py,
             check_pages.py, audio/make_music.py,
             store/ (icons, feature graphic, screenshots)
 tests/      test_runner, fit_audit, input_test, perf_probe, ai_bench, screenshots, compile_check
@@ -132,4 +135,4 @@ docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md (install and test), PLA
 
 This folder is self-contained. Copy everything inside `floorball-game/` (including the hidden `.github/`) to the new
 repository's root and push: `.github/workflows/android.yml` and `play-bundle.yml` are set up for that layout. Move the
-privacy and help pages (`floorstorm/` at the top of this repository) too, or keep them here.
+privacy and help pages (`floorball-unleashed/` at the top of this repository) too, or keep them here.

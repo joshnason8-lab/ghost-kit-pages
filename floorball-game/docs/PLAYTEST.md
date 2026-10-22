@@ -1,4 +1,4 @@
-# Floorstorm: playtest of 0.1.0-beta, and what 0.2.0 fixed
+# Floorball Unleashed: playtest of 0.1.0-beta, and what 0.2.0 fixed
 
 October 2026. Before 0.2.0 the game was played the way a first-time player would meet it: the Web export (the same
 project, single-threaded) in Chromium with touch emulation, driven by real touch events (two fingers: the left thumb

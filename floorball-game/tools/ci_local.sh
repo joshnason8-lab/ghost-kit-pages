@@ -1,11 +1,11 @@
 #!/bin/bash
-# The checks the "Floorstorm · Android build" action runs, run here before a push, so a push only fails CI for what
+# The checks the "Floorball Unleashed · Android build" action runs, run here before a push, so a push only fails CI for what
 # cannot be caught on this machine (the Android export itself, which needs the Android SDK).
 #   tools/ci_local.sh            everything
 #   tools/ci_local.sh quick      the test_runner's quick mode and no fit audit (while working)
 set -u
 cd "$(dirname "$0")/.."
-LOG=${CI_LOG_DIR:-/tmp/floorstorm-ci}
+LOG=${CI_LOG_DIR:-/tmp/floorball-unleashed-ci}
 mkdir -p "$LOG"
 fail=0
 step() { echo "== $1"; }

@@ -3,7 +3,7 @@ extends Control
 ## and those of the engine's own parts (Engine.get_copyright_info), which their licences ask to be shown. The legal
 ## texts are in English, as they are written.
 
-const CREDITS := """[b]Floorstorm[/b]
+const CREDITS := """[b]Floorball Unleashed[/b]
 Made by Josh Nason.
 Players, referees, rink, hall, crowd and ball made in code for the game; the whistles, the ball's sounds, the horn,
 the drum and the menu music made for it. Crowd reactions from Kabaddi Raid, by the same maker.

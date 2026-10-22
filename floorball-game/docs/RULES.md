@@ -1,6 +1,6 @@
-# The rules Floorstorm plays
+# The rules Floorball Unleashed plays
 
-Floorstorm plays the International Floorball Federation's **Rules of the Game, edition valid from 1 July 2026**
+Floorball Unleashed plays the International Floorball Federation's **Rules of the Game, edition valid from 1 July 2026**
 ("Rules and Interpretations"), the edition in force as of October 2026. It was approved by the IFF Central Board on
 11 December 2025 and published in February 2026; a corrected clean final is dated 31 May 2026.
 

@@ -2,13 +2,13 @@
 # Główna strona aplikacji w sklepie. Limity: nazwa aplikacji 30 znaków, krótki opis 80, pełny opis 4000.
 
 == App name ==
-Floorstorm: Arena Unihokeja
+Floorball Unleashed
 
 == Short description ==
 Unihokej pięciu na pięciu z bramkarzami, według przepisów. Strzelaj, podawaj!
 
 == Full description ==
-Floorstorm to unihokej w telefonie: szybka halowa gra kijem, popularna w Szwecji, Finlandii, Szwajcarii i Czechach, pięciu zawodników i bramkarz w każdej drużynie, na boisku 40 na 20 metrów otoczonym bandą.
+Floorball Unleashed to unihokej w telefonie: szybka halowa gra kijem, popularna w Szwecji, Finlandii, Szwajcarii i Czechach, pięciu zawodników i bramkarz w każdej drużynie, na boisku 40 na 20 metrów otoczonym bandą.
 
 PRAWDZIWA GRA
 • Międzynarodowe Przepisy gry w unihokeja w wersji obowiązującej od 1 lipca 2026: trzy tercje czasu efektywnego, wznowienia, wybicia i uderzenia wolne z odległością 3 metrów, pole bramkowe i pole bramkarza, kary 2 i 5 minut, gra w przewadze, dogrywka i rzuty karne.
@@ -29,7 +29,7 @@ GRAJ PO SWOJEMU
 • Działa płynnie na tanich i średnich telefonach, z trybem oszczędzania baterii.
 • Gra offline. Bez reklam, bez zakupów, bez konta i bez zbierania danych.
 
-Floorstorm to niezależna gra. Nie jest powiązana z żadnym związkiem, ligą, klubem ani zawodnikiem unihokeja ani przez nich wspierana. Zawodnicy są fikcyjni; kraje i przepisy są prawdziwe.
+Floorball Unleashed to niezależna gra. Nie jest powiązana z żadnym związkiem, ligą, klubem ani zawodnikiem unihokeja ani przez nich wspierana. Zawodnicy są fikcyjni; kraje i przepisy są prawdziwe.
 
 == Release notes (first release) ==
-Pierwsze wydanie gry Floorstorm: Szybki mecz, Finały Świata i sezon klubowy, z trenerem na Twój pierwszy mecz, w piętnastu językach.
+Pierwsze wydanie gry Floorball Unleashed: Szybki mecz, Finały Świata i sezon klubowy, z trenerem na Twój pierwszy mecz, w piętnastu językach.

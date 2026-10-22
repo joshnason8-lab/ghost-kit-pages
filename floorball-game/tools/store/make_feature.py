@@ -27,7 +27,7 @@ def main() -> None:
     d = ImageDraw.Draw(img)
     title = ImageFont.truetype(str(ROOT / "fonts" / "Caveat.ttf"), 100)
     title.set_variation_by_axes([700])
-    d.text((60, 120), "Floorstorm", font=title, fill=(29, 78, 216))
+    d.text((60, 120), "Floorball Unleashed", font=title, fill=(29, 78, 216))
     sub = ImageFont.truetype(str(ROOT / "fonts" / "BarlowCondensed-SemiBold.ttf"), 36)
     d.text((64, 268), "FLOORBALL · 5 v 5 · REAL RULES", font=sub, fill=(31, 41, 51))
     d.line([(64, 250), (440, 244)], fill=(214, 40, 57), width=6)

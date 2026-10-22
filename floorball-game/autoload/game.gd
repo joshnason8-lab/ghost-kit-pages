@@ -6,10 +6,10 @@ const CUP_PATH := "user://cup.json"
 const SEASON_PATH := "user://season.json"
 const RECORDS_PATH := "user://records.json"
 
-const SLUG := "floorstorm"
+const SLUG := "floorball-unleashed"
 ## The game's privacy policy and help pages (Settings > About).
-const PRIVACY_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/floorstorm/privacy.html"
-const SUPPORT_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/floorstorm/support.html"
+const PRIVACY_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/floorball-unleashed/privacy.html"
+const SUPPORT_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/floorball-unleashed/support.html"
 
 ## Code, name in the language itself, name in English. The sport's heartland first (Sweden, Finland, Switzerland,
 ## Czechia), then the rest of its Europe, then Japan and Thailand, and English for everyone else (docs/LANGUAGES.md).
@@ -92,7 +92,6 @@ var settings := {
 	"difficulty": 1,        # 0 Rookie, 1 Club, 2 Elite, 3 World class
 	"period": 0,            # PERIODS index: the length of a period
 	"rules": 0,             # 0 the IFF Rules of the Game; 1 a league's: running clock but for the last 3 minutes
-	"tags": 0,              # the shirt numbers over players' heads: 0 on, 2 off
 	"auto_switch": true,    # the player you run changes to the one nearest the ball by itself
 	"game_speed": 0,        # 0 Steady (80% of real pace, the default on a phone), 1 Real
 	"seen_howto": false,
@@ -244,7 +243,7 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "period", "rules", "tags", "game_speed"]:
+	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "period", "rules", "game_speed"]:
 		settings[k] = int(settings[k])
 	if not (settings.btn_places is Array):
 		settings.btn_places = []

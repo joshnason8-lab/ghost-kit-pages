@@ -1,4 +1,4 @@
-name: Floorstorm · Android build
+name: Floorball Unleashed · Android build
 
 # For the game in its own repository (this folder at the root): builds it into the beta APK you can sideload,
 # after running the headless test suite.
@@ -129,17 +129,17 @@ jobs:
         run: |
           curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
           java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed
-          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/floorstorm-${VERSION}.apk
+          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/floorball-unleashed-${VERSION}.apk
           ls -la ${PROJECT_DIR}/build
 
       - uses: actions/upload-artifact@v4
         with:
-          name: floorstorm-${{ env.VERSION }}-apk
-          path: ${{ env.PROJECT_DIR }}/build/floorstorm-${{ env.VERSION }}.apk
+          name: floorball-unleashed-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build/floorball-unleashed-${{ env.VERSION }}.apk
           if-no-files-found: error
 
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
-      # "floorstorm-beta", always the latest build of this branch, made afresh on every push that passes the
+      # "floorball-unleashed-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests. Pull request runs build the same APK and leave the release alone.
       - name: Publish the beta release
         if: github.event_name == 'push'
@@ -147,18 +147,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          TAG=floorstorm-beta
-          APK=${PROJECT_DIR}/build/floorstorm-${VERSION}.apk
+          TAG=floorball-unleashed-beta
+          APK=${PROJECT_DIR}/build/floorball-unleashed-${VERSION}.apk
           cat > notes.md <<EOF
-          The latest beta of **Floorstorm** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+          The latest beta of **Floorball Unleashed** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
 
-          **Android** (64-bit phones): tap \`floorstorm-${VERSION}.apk\` under Assets below. When it has
+          **Android** (64-bit phones): tap \`floorball-unleashed-${VERSION}.apk\` under Assets below. When it has
           downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
-          any earlier Floorstorm beta and keeps your saves.
+          any earlier Floorball Unleashed beta and keeps your saves.
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
           gh release delete "$TAG" --cleanup-tag --yes || true
           gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
-            --title "Floorstorm ${VERSION} (latest beta)" --notes-file notes.md
+            --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
           gh release view "$TAG"

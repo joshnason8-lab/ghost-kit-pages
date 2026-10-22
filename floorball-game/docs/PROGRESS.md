@@ -1,4 +1,4 @@
-# Floorstorm: progress
+# Floorball Unleashed: progress
 
 The floorball game built overnight on 21-22 October 2026 by a Claude Code session, on branch `claude/floorball-game`.
 If you are resuming (after a usage limit, a restart or a context summary): read this file and `git log`, then carry
@@ -8,7 +8,7 @@ on with "Next".
 
 - Research: the IFF Rules of the Game, edition valid from 1 July 2026 (the full PDF could not be fetched from this
   environment; built from the 2026 text's extracts, the IFF's "What's new" and the 2022 edition, see docs/RULES.md);
-  markets, languages and real local terms (docs/LANGUAGES.md); the name (Floorstorm: no floorball game on Google
+  markets, languages and real local terms (docs/LANGUAGES.md); the name (Floorball Unleashed: no floorball game on Google
   Play, "Rink Rush" clashed).
 - Project: Godot 4.7.2, GL Compatibility, self-contained in floorball-game/, infrastructure taken from a snapshot
   of Takraw Smash (commit 2b800d1 of claude/kind-clarke-3g5fqs): UI helpers, DragScroll, Geo, Crowd, the
@@ -35,12 +35,12 @@ on with "Next".
   exempt from the whole-word check, as Japanese is).
 - input_test: every scrolling page scrolls when a drag starts on its text. test_runner: 436 checks green.
 - CI: floorball-android.yml (tests, fit audit, input test, APK signed with the public debug key, release
-  floorstorm-beta), floorball-play-bundle.yml (passed, unsigned); standalone workflows in floorball-game/.github.
-- Draft PR #7, subscribed. Pages in floorstorm/. Icon, menu music. README, RULES, LANGUAGES, MESHY_BRIEF, PLAY_STORE.
+  floorball-unleashed-beta), floorball-play-bundle.yml (passed, unsigned); standalone workflows in floorball-game/.github.
+- Draft PR #7, subscribed. Pages in floorball-unleashed/. Icon, menu music. README, RULES, LANGUAGES, MESHY_BRIEF, PLAY_STORE.
 
 - Penalty shot awarded in play for a foul on a clear chance (tested); time-outs granted at the next stoppage, the AI
   calling one a goal down late; store screenshots (7) and feature graphic; perf numbers in the README (Low: 89 draw
-  calls, 49k triangles); CI green; beta APK 0.1.0-beta on the floorstorm-beta release (31 MB).
+  calls, 49k triangles); CI green; beta APK 0.1.0-beta on the floorball-unleashed-beta release (31 MB).
 - **Initial build complete** (21 October 2026, about 10:40 UTC).
 
 ### Round two: 0.2.0-beta (21 October 2026, evening)
@@ -77,7 +77,7 @@ on with "Next".
 
 ## Decisions and why
 
-- **Name: Floorstorm** ("Floorstorm: Floorball Arena" on Play, so a search for floorball finds it). No dedicated
+- **Name: Floorball Unleashed** ("Floorball Unleashed" on Play, so a search for floorball finds it). No dedicated
   floorball game was found on Google Play; Rink Rush, Holeball and 26 Holes clashed with existing titles.
   A trademark search (EUIPO, USPTO) is for the owner before launch.
 - **No governing body named in the game or store**: the brief rules out real governing bodies' names (Takraw had

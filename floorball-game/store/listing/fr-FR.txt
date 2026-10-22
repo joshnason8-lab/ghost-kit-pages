@@ -2,13 +2,13 @@
 # Fiche principale. Limites : nom de l'appli 30 caractères, description courte 80, description complète 4000.
 
 == App name ==
-Floorstorm : Aréna Unihockey
+Floorball Unleashed : Aréna Unihockey
 
 == Short description ==
 Unihockey à cinq plus un gardien, selon les vraies règles. Tire, passe, marque !
 
 == Full description ==
-Floorstorm, c'est l'unihockey (floorball) sur ton téléphone : le jeu de canne rapide en salle de Suède, de Finlande, de Suisse et de Tchéquie, à cinq joueurs et un gardien par équipe, sur un terrain de 40 sur 20 mètres entouré de bandes.
+Floorball Unleashed, c'est l'unihockey (floorball) sur ton téléphone : le jeu de canne rapide en salle de Suède, de Finlande, de Suisse et de Tchéquie, à cinq joueurs et un gardien par équipe, sur un terrain de 40 sur 20 mètres entouré de bandes.
 
 LE VRAI JEU
 • Les règles de jeu internationales de l'unihockey, dans l'édition en vigueur dès le 1er juillet 2026 : trois tiers-temps à temps effectif, bullys, remises en jeu et coups francs avec la distance de 3 mètres, zone de but et zone du gardien, pénalités de deux et de cinq minutes, supériorité numérique, prolongation et penaltys.
@@ -29,7 +29,7 @@ JOUE À TA FAÇON
 • Conçu pour tourner de façon fluide sur les téléphones d'entrée et de milieu de gamme, avec un mode économie de batterie.
 • Jouable hors ligne. Pas de pub, pas d'achats, pas de compte et aucune donnée collectée.
 
-Floorstorm est un jeu indépendant. Il n'est affilié à aucune fédération, ligue, aucun club ni joueur d'unihockey, et n'est soutenu par aucun d'eux. Les joueurs sont fictifs ; les pays et les règles sont réels.
+Floorball Unleashed est un jeu indépendant. Il n'est affilié à aucune fédération, ligue, aucun club ni joueur d'unihockey, et n'est soutenu par aucun d'eux. Les joueurs sont fictifs ; les pays et les règles sont réels.
 
 == Release notes (first release) ==
-La première version de Floorstorm : Match rapide, les Finales mondiales et une saison de club, avec un coach pour ton premier match, en quinze langues.
+La première version de Floorball Unleashed : Match rapide, les Finales mondiales et une saison de club, avec un coach pour ton premier match, en quinze langues.

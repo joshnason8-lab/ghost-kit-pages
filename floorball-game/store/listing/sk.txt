@@ -2,13 +2,13 @@
 # Hlavný záznam v obchode. Limity: názov aplikácie 30 znakov, krátky popis 80, úplný popis 4000.
 
 == App name ==
-Floorstorm: Florbalová aréna
+Floorball Unleashed
 
 == Short description ==
 Florbal päť na päť s brankármi podľa skutočných pravidiel. Strieľaj, prihrávaj!
 
 == Full description ==
-Floorstorm je florbal do mobilu: rýchly halový šport s hokejkou, ktorý sa hrá vo Švédsku, Fínsku, Švajčiarsku aj v Česku, päť hráčov a brankár na každej strane, na ihrisku 40 × 20 metrov vnútri mantinelov.
+Floorball Unleashed je florbal do mobilu: rýchly halový šport s hokejkou, ktorý sa hrá vo Švédsku, Fínsku, Švajčiarsku aj v Česku, päť hráčov a brankár na každej strane, na ihrisku 40 × 20 metrov vnútri mantinelov.
 
 SKUTOČNÝ FLORBAL
 • Medzinárodné Pravidlá florbalu v znení platnom od 1. júla 2026: tri tretiny čistého času, vhadzovanie, rozohrania a voľné údery so vzdialenosťou 3 metre, bránkovisko a malé bránkovisko, dvojminútové aj päťminútové tresty, presilovky, predĺženie a trestné strieľania.
@@ -29,7 +29,7 @@ HRAJ PO SVOJOM
 • Vyladené na plynulý chod na lacných aj stredných telefónoch, so šetričom batérie.
 • Hrá sa offline. Žiadne reklamy, žiadne nákupy, žiadny účet a žiadny zber údajov.
 
-Floorstorm je nezávislá hra. Nie je spojená so žiadnym florbalovým zväzom, ligou, klubom ani hráčom a nikto z nich ju nepodporuje. Hráči sú vymyslení; krajiny a pravidlá sú skutočné.
+Floorball Unleashed je nezávislá hra. Nie je spojená so žiadnym florbalovým zväzom, ligou, klubom ani hráčom a nikto z nich ju nepodporuje. Hráči sú vymyslení; krajiny a pravidlá sú skutočné.
 
 == Release notes (first release) ==
-Prvé vydanie hry Floorstorm: Rýchly zápas, Svetové finále a klubová sezóna, s trénerom pre tvoj prvý zápas, v pätnástich jazykoch.
+Prvé vydanie hry Floorball Unleashed: Rýchly zápas, Svetové finále a klubová sezóna, s trénerom pre tvoj prvý zápas, v pätnástich jazykoch.

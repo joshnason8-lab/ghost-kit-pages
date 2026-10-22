@@ -2,13 +2,13 @@
 # Galvenais veikala ieraksts. Ierobežojumi: lietotnes nosaukums 30 rakstzīmes, īsais apraksts 80, pilnais apraksts 4000.
 
 == App name ==
-Floorstorm: Florbola Arēna
+Floorball Unleashed
 
 == Short description ==
 Florbols pieci pret pieci ar vārtsargiem, pēc īstajiem noteikumiem. Met, gūsti!
 
 == Full description ==
-Floorstorm ir florbols tavā tālrunī: Zviedrijas, Somijas, Šveices un Čehijas ātrā telpu nūjas spēle, ko spēlē pieci laukuma spēlētāji un vārtsargs katrā komandā 40 × 20 metru laukumā, ko ietver apmales.
+Floorball Unleashed ir florbols tavā tālrunī: Zviedrijas, Somijas, Šveices un Čehijas ātrā telpu nūjas spēle, ko spēlē pieci laukuma spēlētāji un vārtsargs katrā komandā 40 × 20 metru laukumā, ko ietver apmales.
 
 ĪSTĀ SPĒLE
 • Florbola starptautiskie spēles noteikumi, redakcija, kas stājās spēkā 2026. gada 1. jūlijā: trīs periodi tīrajā laikā, iemešanas, iesitieni un brīvsitieni ar 3 metru attālumu, vārtu laukums un vārtsarga laukums, divu un piecu minūšu sodi, vairākums, papildlaiks un soda metieni.
@@ -29,7 +29,7 @@ SPĒLĒ PA SAVAM
 • Veidota, lai vienmērīgi darbotos lētos un vidējās klases tālruņos, ar taupības režīmu.
 • Darbojas bezsaistē. Bez reklāmām, bez pirkumiem, bez konta un bez datu vākšanas.
 
-Floorstorm ir neatkarīga spēle. Tā nav saistīta ne ar vienu florbola federāciju, līgu, klubu vai spēlētāju, un neviens no tiem to nav apstiprinājis. Spēlētāji ir izdomāti; valstis un noteikumi ir īsti.
+Floorball Unleashed ir neatkarīga spēle. Tā nav saistīta ne ar vienu florbola federāciju, līgu, klubu vai spēlētāju, un neviens no tiem to nav apstiprinājis. Spēlētāji ir izdomāti; valstis un noteikumi ir īsti.
 
 == Release notes (first release) ==
-Floorstorm pirmā versija: ātrā spēle, PČ turnīrs un klubu sezona, ar treneri tavā pirmajā spēlē, piecpadsmit valodās.
+Floorball Unleashed pirmā versija: ātrā spēle, PČ turnīrs un klubu sezona, ar treneri tavā pirmajā spēlē, piecpadsmit valodās.

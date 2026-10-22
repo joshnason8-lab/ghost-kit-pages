@@ -2,13 +2,13 @@
 # Haupteintrag im Play Store einfügen. Limits: App-Name 30 Zeichen, Kurzbeschreibung 80, vollständige Beschreibung 4000.
 
 == App name ==
-Floorstorm: Unihockey Arena
+Floorball Unleashed
 
 == Short description ==
 Unihockey: fünf Feldspieler plus Goalie, echte Regeln. Schiessen, passen, Tor!
 
 == Full description ==
-Floorstorm ist Unihockey (Floorball) fürs Handy: das schnelle Hallenspiel mit Stock aus Schweden, Finnland, der Schweiz und Tschechien, gespielt mit fünf Feldspielern und einem Goalie pro Team auf einem 40 mal 20 Meter grossen Feld innerhalb der Bande.
+Floorball Unleashed ist Unihockey (Floorball) fürs Handy: das schnelle Hallenspiel mit Stock aus Schweden, Finnland, der Schweiz und Tschechien, gespielt mit fünf Feldspielern und einem Goalie pro Team auf einem 40 mal 20 Meter grossen Feld innerhalb der Bande.
 
 DAS ECHTE SPIEL
 • Die internationalen Unihockey-Spielregeln in der Fassung ab 1. Juli 2026: drei Drittel mit effektiver Spielzeit, Bullys, Einschläge und Freischläge mit 3 Metern Abstand, Torraum und Torhüterraum, 2-Minuten- und 5-Minuten-Strafen, Überzahl, Verlängerung und Penaltyschiessen.
@@ -29,7 +29,7 @@ SPIEL, WIE DU WILLST
 • Läuft flüssig auf günstigen Handys und der Mittelklasse, mit Akkusparmodus.
 • Spielbar offline. Keine Werbung, keine Käufe, kein Konto und keine Datenerfassung.
 
-Floorstorm ist ein unabhängiges Spiel. Es ist mit keinem Unihockeyverband, keiner Liga, keinem Club und keinem Spieler verbunden und wird von keinem unterstützt. Die Spieler sind erfunden; die Länder und die Regeln sind echt.
+Floorball Unleashed ist ein unabhängiges Spiel. Es ist mit keinem Unihockeyverband, keiner Liga, keinem Club und keinem Spieler verbunden und wird von keinem unterstützt. Die Spieler sind erfunden; die Länder und die Regeln sind echt.
 
 == Release notes (first release) ==
-Die erste Version von Floorstorm: Schnelles Spiel, die WM-Endrunde und eine Klubsaison, mit einem Trainer für dein erstes Spiel, in fünfzehn Sprachen.
+Die erste Version von Floorball Unleashed: Schnelles Spiel, die WM-Endrunde und eine Klubsaison, mit einem Trainer für dein erstes Spiel, in fünfzehn Sprachen.

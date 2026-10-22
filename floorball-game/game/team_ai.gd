@@ -262,7 +262,10 @@ func _carry(p: Player, dt: float) -> void:
 		if s > best_s:
 			best_s = s
 			best = q
-	var urge := 0.15 + (0.45 if pd < 1.8 else 0.0) + clampf(held - 2.5, 0.0, 4.0) * 0.12
+	# In our own end with nobody on him he carries it up the rink rather than passing it round (the CPU passed back and
+	# forth in its own end for half a minute: the playtest); pressed, he moves it on.
+	var own_end: bool = p.pos.x * a < 0.0
+	var urge := (0.05 if own_end and pd > 3.0 else 0.15) + (0.45 if pd < 1.8 else 0.0) + clampf(held - 2.5, 0.0, 4.0) * 0.12
 	if best and best_s > 0.35 and _rng.randf() < urge * clampf(best_s, 0.0, 1.5):
 		m.pass_to(p, best)
 
@@ -282,7 +285,11 @@ func _pass_value(p: Player, q: Player) -> float:
 	var danger := 0.0
 	if lead.x * a < -10.0 and absf(lead.y) < 4.0:
 		danger = 0.8   # across the front of our own goal: never
-	return open * 0.8 + clampf(near_q / 4.0, 0.0, 1.0) * 0.6 + clampf(forward, -0.5, 0.8) - danger - d / 60.0
+	var value := open * 0.8 + clampf(near_q / 4.0, 0.0, 1.0) * 0.6 + clampf(forward, -0.5, 0.8) - danger - d / 60.0
+	if p.pos.x * a < 0.0 and (lead.x - p.pos.x) * a < 1.5:
+		# Back or across in our own end: worth less the longer we have had the ball.
+		value -= 0.25 + clampf(m.possession_time / 6.0, 0.0, 1.0) * 0.6
+	return value
 
 
 ## Where in the goal to shoot: a corner, low more often (the goalkeeper's hands are up), with an error by skill.

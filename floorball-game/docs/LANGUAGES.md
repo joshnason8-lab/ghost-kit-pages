@@ -1,6 +1,6 @@
 # Languages
 
-Floorstorm ships fifteen languages in the game and a Google Play listing in each (store/listing/). It starts in the
+Floorball Unleashed ships fifteen languages in the game and a Google Play listing in each (store/listing/). It starts in the
 phone's language when it has it (Norwegian phones report "nb" or "no"), else English; the globe on the home screen
 and Settings change it.
 
@@ -411,7 +411,7 @@ All Estonian game terms in the glossary were marked unverified, so please check 
 - Table headers: 試 勝 分 敗 得点 勝点 (Japanese standings style)
 - Effective time 実時間制; running clock ランニングタイム; Steady ゆったり; Real リアル
 - Offences: hockey-style katakana where Japanese sports use them (フッキング, ホールディング, トリッピング, スラッシング, チャージング, プッシング); descriptive Japanese otherwise.
-- Japanese full-width punctuation (：！（）) used throughout; app name keeps ASCII colon "Floorstorm: フロアボール".
+- Japanese full-width punctuation (：！（）) used throughout; app name keeps ASCII colon "Floorball Unleashed: フロアボール".
 - Goalkeeper "he" rendered gender-neutrally.
 
 #### Unsure / please review

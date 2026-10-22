@@ -1,17 +1,17 @@
-# Floorstorm beta: install and test
+# Floorball Unleashed beta: install and test
 
-Version **0.2.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.3.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find. docs/PLAYTEST.md has what the last playtest found and what was fixed.
 
 ## What phone
 
 - Android 7.0 or newer, 64-bit (almost every phone since 2017; the Play Store build adds 32-bit).
-- About 120 MB free.
+- About 150 MB free.
 - The game runs in landscape. Turn auto-rotate on, or hold the phone sideways before you open it.
 
 ## Install
 
-1. On the phone, open https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorstorm-beta and tap the
+1. On the phone, open https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorball-unleashed-beta and tap the
    `.apk` file under **Assets**.
 2. Open the downloaded file. Android asks you to allow installs from your browser (or Files). Allow it, go back and
    tap **Install**.
@@ -20,9 +20,14 @@ what you find. docs/PLAYTEST.md has what the last playtest found and what was fi
 
 ### Updating
 
-Every beta on that page is signed with the same key, so a new one installs over the old and keeps your settings,
-your World Finals and your club season. If Android says **App not installed**, uninstall Floorstorm first (that
-clears the saves).
+**From 0.2 (Floorstorm) to 0.3:** the game changed its name to Floorball Unleashed and, with it, its app id, so
+0.3 installs as a new app beside the old one. Uninstall **Floorstorm** when you have the new one (your old settings
+and saves stay with the old app). The old beta's page,
+https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorstorm-beta, is no longer updated.
+
+From 0.3 on, every beta on the page above is signed with the same key, so a new one installs over the old and keeps
+your settings, your World Finals and your club season. If Android says **App not installed**, uninstall Floorball
+Unleashed first (that clears the saves).
 
 ## First run
 
@@ -38,7 +43,7 @@ clears the saves).
 ## Things to try
 
 - A **Quick match** at each difficulty and both game speeds (Steady is 80% of real pace).
-- **Your player** has the yellow ring and the yellow number. Slide your left thumb anywhere on the left half to
+- **Your player** has the yellow ring at his feet and the yellow arrow over his head (no numbers over heads since 0.3). Slide your left thumb anywhere on the left half to
   run. With the ball: **Shoot** (push the joystick up or down as you shoot to pick a corner), **Pass** (to the
   team-mate the joystick points at), **Sprint** (held). Without it: **Tackle** from the front, **Switch** to the
   team-mate nearest the ball.
@@ -55,7 +60,7 @@ clears the saves).
   in regulation time, 2 for a win in overtime or penalty shots, 1 for a loss after regulation time), then the top
   four play semi-finals and a final.
 - **Settings**: left-handed, button size, **Move buttons** (drag each where your thumbs want them; also in the pause
-  menu), camera (Broadcast, High, Behind the goal), shirt numbers, sound, music, vibration.
+  menu), camera (Broadcast, High, Behind the goal), sound, music, vibration.
 - The phone's **Back** button: in a match it pauses and resumes; elsewhere it goes back; on the home screen it
   closes the game. Leave the app mid-match and come back: the match should be paused.
 
