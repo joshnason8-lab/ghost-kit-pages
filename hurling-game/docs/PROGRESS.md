@@ -96,6 +96,14 @@ The owner's first round of changes, each with a test where one can say it works:
 10. Officials and goalkeepers in the owner's style, and a number per man on the back (the owner's model, without the
     11 in its texture, or a texture of numbers).
 
+## Shared assets
+
+Since 22 October 2026 the owner has made the orchestrator session (session_016XKAyHkTQRNMGEgZbjNK28) the lead for
+all six mobile games. Assets that suit more than one game come from it: listed in `shared-assets/README.md` on the
+branch `claude/shared-assets` (large files on the `shared-assets` GitHub release), each with its source, licence and
+the games it suits. When one is meant for this game, a message says what it is and how to fetch it; check its
+licence there before it goes into the game.
+
 ## Needs the owner
 
 - Google Play: the developer account, the upload key (as the three repository secrets in PLAY_STORE.md), the closed
