@@ -180,6 +180,22 @@ func _screens() -> void:
 	Game.settings.language = "en"
 	TranslationServer.set_locale("en")
 	Game._size_theme()
+	# The home screen's menu: one row of six buttons, all on the screen, none over another (the owner's 0.3 ask).
+	var home := Game.show_screen("res://ui/main_menu.gd")
+	await frames(4)
+	var row: HBoxContainer = home._row
+	check(row.get_child_count() == 6, "home: six menu buttons in one row")
+	var ys := {}
+	var vis := get_viewport().get_visible_rect()
+	var inside := true
+	for b in row.get_children():
+		var rr := (b as Control).get_global_rect()
+		ys[roundi(rr.position.y)] = true
+		inside = inside and vis.encloses(rr)
+	check(ys.size() == 1 and inside, "home: the buttons in line and on the screen")
+	var coin = preload("res://ui/match_setup.gd").Coin
+	check(coin.currency("hi") == "₹" and coin.currency("ne") == "रू" and coin.currency("bn") == "৳" and coin.currency("si") == "රු",
+		"the toss coin's tails is the value in the player's currency")
 	# Labels on scrolling pages pass the touch to the scroll box (the How to Play lesson from Kabaddi Raid).
 	for path in ["res://ui/howto_screen.gd", "res://ui/licences_screen.gd", "res://ui/settings_screen.gd", "res://ui/match_setup.gd",
 			"res://ui/records_screen.gd", "res://ui/cup_screen.gd"]:
@@ -419,6 +435,27 @@ func _your_controls() -> void:
 			break
 	check(stayed and d.d_state.get(ud, "") == "in" and absf(ud.position.z) < d.f.width * 0.5,
 		"your defender held at the side line pulls up inside it (z %.2f)" % ud.position.z)
+	# DODGE (the owner: "doesn't seem to work"): a side-step you can see, and a touch in it mostly slips off.
+	var dd: Athlete = d.user_def
+	dd.vel = Vector3.ZERO
+	d.controls.joystick = Vector2.ZERO
+	var at0: Vector3 = dd.position
+	d._on_action("DODGE")
+	check(d.dodging(), "DODGE starts a side-step")
+	await frames(10)
+	var moved := (dd.position - at0).length()
+	check(moved > 1.0, "DODGE from standing moves him over a metre in a third of a second (%.2f m)" % moved)
+	var slips := 0
+	for k in 40:
+		d._ai[dd].erase("slip_until")
+		d._dodge_until = d.t_match + 0.3
+		if d._swerves(dd, KhoRules.OUT_TOUCH):
+			slips += 1
+	check(slips >= 30, "a touch in the side-step slips off him (%d of 40)" % slips)
+	d._dodge_until = -1.0
+	d._on_action("DODGE")
+	check(not d.dodging(), "DODGE waits for its cool-down before the next")
+	d._dodge_ready = 0.0
 	# The playtest's worst find: a new batch walking on with your thumb held away from the field never came in and
 	# was out for a late entry, batch after batch (53-2). Walking on is his own now.
 	for a in d.batch:
@@ -437,6 +474,21 @@ func _your_controls() -> void:
 	check(all_in, "a new batch walks on even with your thumb held away from the field")
 	d.controls.joystick = Vector2.ZERO
 	d.queue_free()
+	await frames(2)
+	# Watching a match (no side yours), the pause button is there, and the pause menu quits it.
+	var w: Node = (load("res://game/match.gd") as Script).new()
+	w.config = {"home": "KAR", "away": "KER", "venue": "maidan", "format": KhoRules.CLASSIC, "turn_len": 60.0, "user_team": -1,
+		"seed": 9, "mode": "quick", "test": true}
+	add_child(w)
+	await frames(5)
+	check(w.hud._pause_btn.visible, "watching a match, the pause button shows")
+	w.set_paused(true)
+	await frames(2)
+	var labels := []
+	for b in w.hud._pause.find_children("*", "Button", true, false):
+		labels.append((b as Button).text)
+	check(labels.has(tr("QUIT_MATCH")) and not labels.has(tr("MOVE_BUTTONS")), "and its pause menu has Quit match (%s)" % str(labels))
+	w.queue_free()
 	await frames(2)
 
 

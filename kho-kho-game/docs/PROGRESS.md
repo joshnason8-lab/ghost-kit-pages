@@ -1,4 +1,4 @@
-# Khamba Dash: progress
+# Kho Kho Rush: progress
 
 The kho kho game, built overnight on 21-22 October 2026 on branch `claude/kho-kho-game`. Read this and
 `git log` first when resuming.
@@ -18,7 +18,7 @@ The kho kho game, built overnight on 21-22 October 2026 on branch `claude/kho-kh
   (a threat field from the chase's reach); umpires, referee, timekeeper, scorer with signals; your controls.
 - HUD (scoreboard, batch, clock, calls, interval, follow-on question, pause with Move buttons), touch controls
   (joystick, context buttons, sizes, left-handed, drag-to-move saved).
-- Screens: home (the kho lane menu over an AI match), match setup + toss, settings, how to play, records, result
+- Screens: home (one row of buttons over an AI match; until 0.3 a kho kho lane), match setup + toss, settings, how to play, records, result
   with box score, championships (world, to fast rules; national, to classic rules), licences, move buttons.
 - Venues: village ground at dusk, school ground, indoor arena on mats, floodlit stadium.
 - test_runner green: 319 checks (every law; screens in every language; scrolling text passes touches; championships
@@ -61,10 +61,13 @@ The kho kho game, built overnight on 21-22 October 2026 on branch `claude/kho-kh
 
 ## Decisions, and why
 
-- **Name: Khamba Dash** ("khamba" is the pole in Hindi and Marathi). Checked against Play by search: the existing
+- **Name: Kho Kho Rush** (the owner's choice, 22 October 2026; the working title was Khamba Dash, "khamba" being the
+  pole in Hindi and Marathi; the release tag `khamba-dash-beta` and the pages folder `khamba-dash/` keep their names so
+  their links keep working). The working title was checked against Play by search: the existing
   apps are "Kho Kho Game", "Kho Kho 3D", "Kho Kho World Cup", "Kho.Kho" (the official world cup app); "Ultimate
-  Kho Kho" is the league's brand. "Khamba Dash" turned up nothing. "Kho Kho" goes in the store title's subtitle for
-  search: "Khamba Dash: Kho Kho".
+  Kho Kho" is the league's brand. "Khamba Dash" turned up nothing. "Kho Kho Rush" has not been checked against Play
+  from here; the owner should search Play for it before publishing. In the non-English listings the local name of
+  the sport follows it in the title for search ("Kho Kho Rush: खो-खो").
 - **Two rule books** as the owner asked: Classic (the national federation's) and Fast (the 2025 world
   championship's and the franchise league's). Details and conflicts in docs/RULES.md.
 - **The fast field's squares**: sources give 22 x 16 m with 1.5 m free zones and 40 cm cross lanes, and seven

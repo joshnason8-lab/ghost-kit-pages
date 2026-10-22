@@ -2,13 +2,13 @@
 # Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
 
 == App name ==
-Khamba Dash: Kho Kho
+Kho Kho Rush
 
 == Short description ==
 Kho kho to the real rules: sit in the lane, give the kho, chase and pole dive.
 
 == Full description ==
-Khamba Dash is kho kho for your phone: the chasing game of India. Sit in the lane with your side, rise on a kho, chase the defenders to the pole, and dive to touch them out before the turn runs down.
+Kho Kho Rush is kho kho for your phone: the chasing game of India. Sit in the lane with your side, rise on a kho, chase the defenders to the pole, and dive to touch them out before the turn runs down.
 
 THE REAL GAME
 • Two rule books. Classic, as the national championships play it: nine a side, eight seated in the squares, a 27 m field, 1 point an out, and the follow-on. Fast, as the 2025 world championship played it: seven a side, a 22 m field, 2 points an out, dream runs, the wazir and the power play.
@@ -33,7 +33,7 @@ PLAY YOUR WAY
 • Made to run smoothly on budget and mid-range phones.
 • Plays offline. No ads, no purchases, no account, and no data collected.
 
-Khamba Dash is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
+Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
 
 == Release notes (0.2.0) ==
 New: the City League, coach tips for your first match, a pole turn, seated chasers who watch the play, a new icon. Fixed from a phone playtest: your defenders now walk on in time, a chaser pushed into the lane runs along it, KHO can be pressed a moment early, clearer chalk on Low.

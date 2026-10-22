@@ -1,6 +1,6 @@
-# The rules of kho kho, as Khamba Dash plays them
+# The rules of kho kho, as Kho Kho Rush plays them
 
-Khamba Dash plays two rule books:
+Kho Kho Rush plays two rule books:
 
 - **Classic**: the national federation's game, as played at the senior national championships in India.
 - **Fast**: the seven-a-side game of the 2025 world championship (New Delhi, 13-19 January 2025) and of the

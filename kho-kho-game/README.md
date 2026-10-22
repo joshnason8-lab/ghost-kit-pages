@@ -1,7 +1,7 @@
-# Khamba Dash
+# Kho Kho Rush
 
 A kho kho game for Android phones, built with [Godot 4.7](https://godotengine.org) (free and open source, no
-royalties), the same way as Kabaddi Raid and Takraw Smash. "Khamba" is the pole, in Hindi and Marathi. It plays the
+royalties), the same way as Kabaddi Raid and Takraw Smash. (Its working title was Khamba Dash.) It plays the
 classic rules of the national championships and the fast rules of the 2025 world championship, for the sport's
 players in India, Nepal, Bangladesh and Sri Lanka, in fourteen of their languages.
 
@@ -60,12 +60,12 @@ On a keyboard: WASD or arrows, Space for the first button, J and K for the other
 
 ## Get it on your phone
 
-Every push that touches `kho-kho-game/` runs the **Khamba Dash · Android build** action: it runs the tests, then
+Every push that touches `kho-kho-game/` runs the **Kho Kho Rush · Android build** action: it runs the tests, then
 exports the beta APK (64-bit ARM) and puts it on the release page
 https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/khamba-dash-beta. Open that page on the phone, tap the
 APK, and allow your browser to install it. See [docs/BETA.md](docs/BETA.md).
 
-For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step, and the **Khamba Dash · Play Store
+For Google Play: [store/PLAY_STORE.md](store/PLAY_STORE.md) has every step, and the **Kho Kho Rush · Play Store
 bundle** action builds the `.aab` (64- and 32-bit ARM, so Android Go phones get it too).
 
 ## Play it in a browser
@@ -100,7 +100,7 @@ game/       rules.gd (the laws), match.gd (turns, the chase, the AI, the officia
             (the one place a player's position is written), body.gd (the drawn player on its skeleton), poses.gd,
             arena.gd + geo.gd + crowd.gd (the grounds), hud.gd, touch_controls.gd, sim.gd (matches in numbers),
             cup.gd (championships), records.gd, dev_overlay.gd (seven taps on the version)
-ui/         main menu (the kho lane, kho_lane.gd), match setup and toss, settings, how to play, records, result,
+ui/         main menu (one row of buttons over an AI match), match setup and toss, settings, how to play, records, result,
             championships, licences, move buttons, the shared builders (ui.gd), flags, crests, field icons
 i18n/       src/*.json (one file per language), strings.csv (generated)
 fonts/      Noto Sans and its Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam and

@@ -37,7 +37,7 @@ def main() -> int:
     title = ImageFont.truetype(str(ROOT / "fonts" / "Baloo2.ttf"), 112)
     sub = ImageFont.truetype(str(ROOT / "fonts" / "Baloo2.ttf"), 64)
     tag = ImageFont.truetype(str(ROOT / "fonts" / "NotoSans.ttf"), 30)
-    d.text((48, 120), "Khamba Dash", font=title, fill=(247, 239, 226), stroke_width=4, stroke_fill=(20, 12, 10))
+    d.text((48, 120), "Kho Kho Rush", font=title, fill=(247, 239, 226), stroke_width=4, stroke_fill=(20, 12, 10))
     d.text((52, 250), "खो-खो", font=sub, fill=(255, 176, 32), stroke_width=3, stroke_fill=(20, 12, 10))
     d.text((54, 345), "Sit. Kho. Chase.", font=tag, fill=(255, 217, 122))
     feat.convert("RGB").save(ROOT / "store" / "graphics" / "feature-1024x500.png")

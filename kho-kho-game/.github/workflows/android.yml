@@ -1,4 +1,4 @@
-name: Khamba Dash · Android build
+name: Kho Kho Rush · Android build
 
 # For the game in its own repository (this folder at the root): builds the beta APK you can sideload,
 # after running the headless test suite.
@@ -133,13 +133,13 @@ jobs:
         run: |
           curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
           java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed
-          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/khamba-dash-${VERSION}.apk
+          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/kho-kho-rush-${VERSION}.apk
           ls -la ${PROJECT_DIR}/build
 
       - uses: actions/upload-artifact@v4
         with:
-          name: khamba-dash-${{ env.VERSION }}-apk
-          path: ${{ env.PROJECT_DIR }}/build/khamba-dash-${{ env.VERSION }}.apk
+          name: kho-kho-rush-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build/kho-kho-rush-${{ env.VERSION }}.apk
           if-no-files-found: error
 
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
@@ -152,17 +152,17 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           TAG=khamba-dash-beta
-          APK=${PROJECT_DIR}/build/khamba-dash-${VERSION}.apk
+          APK=${PROJECT_DIR}/build/kho-kho-rush-${VERSION}.apk
           cat > notes.md <<EOF
-          The latest beta of **Khamba Dash** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+          The latest beta of **Kho Kho Rush** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
 
-          **Android** (64-bit phones): tap \`khamba-dash-${VERSION}.apk\` under Assets below. When it has
+          **Android** (64-bit phones): tap \`kho-kho-rush-${VERSION}.apk\` under Assets below. When it has
           downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
-          any earlier Khamba Dash beta and keeps your saves.
+          any earlier Kho Kho Rush beta and keeps your saves.
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
           gh release delete "$TAG" --cleanup-tag --yes || true
           gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
-            --title "Khamba Dash ${VERSION} (latest beta)" --notes-file notes.md
+            --title "Kho Kho Rush ${VERSION} (latest beta)" --notes-file notes.md
           gh release view "$TAG"

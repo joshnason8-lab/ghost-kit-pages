@@ -3,11 +3,21 @@
 ## Install
 
 1. On the phone, open https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/khamba-dash-beta.
-2. Tap `khamba-dash-<version>.apk` under Assets.
+2. Tap `kho-kho-rush-<version>.apk` under Assets.
 3. Open it when it has downloaded. If Android asks, allow your browser (or Files) to install unknown apps.
 
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
+
+## What's new in 0.3
+
+- **The game is now Kho Kho Rush**, with a new icon. Its Android package changed with the name
+  (`com.khokhorush.game`), so 0.3 installs beside the old Khamba Dash beta rather than over it: uninstall Khamba Dash
+  (your old saves go with it). From 0.3 on, each beta installs over the last again.
+- **The home screen:** one row of buttons.
+- **Watch a Match:** the pause button (top right) is there now; its menu has Quit match.
+- **The toss:** the coin shows a lion's head for heads and the value for tails, in your language's currency.
+- **DODGE** is a real side-step now, and a touch during it mostly slips off.
 
 ## What's new in 0.2
 
@@ -22,7 +32,7 @@ since about 2019. The Play bundle also carries a 32-bit build for older Android 
 
 ## What to try
 
-- **The home screen.** Tap a seated chaser: does the kho, and the run into the screen, feel like kho kho?
+- **The home screen.** One row of buttons over a match the AI plays: can you find everything at a glance?
 - **Chasing.** You are the active chaser in gold.
   - Run up behind a seated chaser who faces the other way. When his square lights up, press KHO.
   - Touch a defender, or DIVE at one. In the free zone behind a pole, DIVE is a pole dive.
