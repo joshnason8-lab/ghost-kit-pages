@@ -66,6 +66,7 @@ uniform float figs = 8.0;
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
+uniform vec3 tint = vec3(1.0);
 varying vec4 data;
 void vertex() {
 	data = INSTANCE_CUSTOM;
@@ -85,7 +86,7 @@ void fragment() {
 	shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
 	float is_shirt = step(0.84, min(c.r, min(c.g, c.b)));
 	vec3 col = mix(c.rgb, shirt * c.r, is_shirt);
-	ALBEDO = pow(col, vec3(2.2)) * light;
+	ALBEDO = pow(col, vec3(2.2)) * light * tint;
 }
 """
 	_mat = ShaderMaterial.new()
@@ -147,3 +148,8 @@ static func set_excite(k: float) -> void:
 
 static func set_light(k: float) -> void:
 	material().set_shader_parameter("light", k)
+
+
+## The colour of the light the crowd sits in (a dark arena's blue, a hall's warm white).
+static func set_tint(c: Color) -> void:
+	material().set_shader_parameter("tint", Vector3(c.r, c.g, c.b))

@@ -8,19 +8,47 @@ var verts := PackedVector3Array()
 var normals := PackedVector3Array()
 var colors := PackedColorArray()
 var uvs := PackedVector2Array()
+var uv2s := PackedVector2Array()
 var idx := PackedInt32Array()
+## What the faces added now are, for the venue's shaders (VenueLook): x the kind of face, y its parameter. Set it,
+## add the parts, set it back to Vector2.ZERO.
+var kind := Vector2.ZERO
 
 
 func _tri_quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, col: Color, uv := Rect2(0, 0, 1, 1)) -> void:
+	_quad4(a, b, c, d, n, col, [uv.position, Vector2(uv.end.x, uv.position.y), uv.end, Vector2(uv.position.x, uv.end.y)])
+
+
+func _quad4(a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, col: Color, uv: Array) -> void:
 	# a b c d in order round the face, seen from the side n points to (clockwise is the front in Godot).
 	var base := verts.size()
 	verts.append_array([a, b, c, d])
 	var lin := col.srgb_to_linear()   # colours are written in sRGB; the renderer lights in linear
+	lin.a = col.a
 	for i in 4:
 		normals.append(n)
 		colors.append(lin)
-	uvs.append_array([uv.position, Vector2(uv.end.x, uv.position.y), uv.end, Vector2(uv.position.x, uv.end.y)])
+		uv2s.append(kind)
+	uvs.append_array(uv)
 	idx.append_array([base, base + 1, base + 2, base, base + 2, base + 3])
+
+
+## Any four-sided face, a b c d in order round it; it faces the side from which they go clockwise. uv: one for each
+## corner (by default the unit square).
+func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, col: Color, uv: Array = []) -> void:
+	var n := (d - a).cross(b - a).normalized()
+	if uv.is_empty():
+		uv = [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
+	_quad4(a, b, c, d, n, col, uv)
+
+
+## A light: a square of size metres (half across) that always faces the camera, drawn by VenueLook.flare. streak
+## stretches it sideways into a flare; twinkle (0-1, 0 for none) makes it flicker at its own pace.
+func sprite(c: Vector3, size: float, col: Color, streak := 0.0, twinkle := 0.0) -> void:
+	var k := kind
+	kind = Vector2(size, streak)
+	_quad4(c, c, c, c, Vector3.BACK, Color(col, twinkle), [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)])
+	kind = k
 
 
 ## A flat rectangle at height y, from (x0, z0) to (x1, z1), facing up.
@@ -71,6 +99,7 @@ func cylinder(a: Vector3, b: Vector3, r0: float, r1: float, col: Color, seg := 8
 				normals.append(up)
 				colors.append(col.lightened(0.05).srgb_to_linear())
 				uvs.append(Vector2.ZERO)
+				uv2s.append(kind)
 			idx.append_array([base, base + 1, base + 2])
 
 
@@ -107,12 +136,14 @@ func commit(mat: Material) -> MeshInstance3D:
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = colors
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_TEX_UV2] = uv2s
 	arrays[Mesh.ARRAY_INDEX] = idx
 	var m := ArrayMesh.new()
 	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	mi.mesh = m
 	mi.material_override = mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.extra_cull_margin = 4.0   # sprites grow from their middles in the shader
 	return mi
 
 
