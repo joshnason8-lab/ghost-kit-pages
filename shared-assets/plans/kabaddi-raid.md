@@ -34,8 +34,9 @@ Puri Beach (sand).
 ## The village temple (added)
 
 `buildings/indian_village_temple` (High) and `_low`: a whitewashed shrine with saffron and red stripes, 7 m tall. Put
-it at the edge of Gaon Maidan, facing the court, with a rain tree beside it. The Jagannath tower for Puri Beach is
-still a gap; the lead will ask the owner.
+it at the edge of Gaon Maidan, facing the court, with a rain tree beside it. For Puri Beach, `buildings/jagannath_tower`
+(60 m, use `_low` at that distance) stands on the skyline up the coast, 400–800 m away, softened by haze, so the
+broadcast camera catches it over the sea behind the court.
 
 ## Not for this game
 

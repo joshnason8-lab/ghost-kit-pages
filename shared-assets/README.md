@@ -114,6 +114,7 @@ Previews of every model: [`previews/`](previews/) (`psheet*.png`).
 | **fire_alarm** | Fire alarm call point by the doors | sports halls | `hall/fire_alarm.glb` High: 847 tris, 83 KB<br>`hall/fire_alarm_low.glb` Low: 847 tris, 83 KB | Poly Haven, CC0 |
 | **wet_floor_sign** | Wet floor sign | sports halls (by the doors, never on court) | `hall/wet_floor_sign.glb` High: 228 tris, 30 KB<br>`hall/wet_floor_sign_low.glb` Low: 228 tris, 30 KB | Poly Haven, CC0 |
 | **indian_village_temple** | Whitewashed South Indian village temple: saffron and red striped walls, pillared porch, stone steps, tiered domed tower. Generated in Meshy for these games (30 credits). | India: Kabaddi Raid (Gaon Maidan, and on the skyline elsewhere), Kho Kho Rush (village ground) | `buildings/indian_village_temple.glb` High: 7,999 tris<br>`buildings/indian_village_temple_low.glb` Low: 1,999 tris. 7 m tall. Preview: `previews/indian_village_temple.jpg` | owner (Meshy), owner |
+| **jagannath_tower** | An Odisha (Kalinga-style) temple tower in pale sandstone, for Puri's skyline. Generated in Meshy for Kabaddi Raid (50 credits). It's a stand-in with the right silhouette, not an exact copy. | India: Kabaddi Raid, Puri Beach skyline | `buildings/jagannath_tower.glb` High: 8,000 tris<br>`buildings/jagannath_tower_low.glb` Low: 2,000 tris. 60 m tall (the real tower is about 65 m). Preview: `previews/jagannath_tower.jpg` | owner (Meshy), owner |
 
 ## What was looked at and not used
 
@@ -130,8 +131,7 @@ Previews of every model: [`previews/`](previews/) (`psheet*.png`).
 
 ## Gaps that need the owner
 
-- **The Jagannath temple tower** for Puri Beach's skyline (the village temple is now done: `buildings/indian_village_temple`).
-  Another Meshy model, if the owner wants it.
+- None at present: the village temple and the Jagannath tower are both done.
 - **A clean indoor basketball backboard.** The owner's hoop is a weathered street hoop (good for outdoor courts).
   Halls should build a clean regulation one from simple shapes; the plans give the measurements.
 
