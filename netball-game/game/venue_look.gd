@@ -8,7 +8,7 @@ extends RefCounted
 
 ## The kinds of face (Geo.kind.x). Their parameter (Geo.kind.y) is noted beside each.
 const PLAIN := 0.0       # vertex colour as it is (glow: y adds brightness)
-const FLOOR := 1.0       # a polished floor: sheen, the lights reflected, a vignette
+const FLOOR := 1.0       # a polished floor: pools of light (pool_*), sheen, the lights reflected, a vignette
 const WOOD := 2.0        # a timber floor (boards along x), polished like FLOOR
 const STAND := 3.0       # a tier of seats with people on it; UV in metres (u along, v up the slope); y the first row filled
 const METAL := 4.0       # brushed metal: a bright streak down a cylinder
@@ -40,6 +40,10 @@ uniform float density = 0.85;
 uniform float excite = 0.0;
 uniform float aisle_every = 10.0;
 uniform vec3 stand_tint = vec3(1.0);
+uniform vec2 pool_size = vec2(17.0, 10.0);
+uniform float pool_lo = 1.0;
+uniform float pool_hi = 1.0;
+uniform float pool_glow = 0.0;
 
 float hash12(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -159,6 +163,19 @@ vec3 floor_sheen(vec3 v, float amt, vec3 cam) {
 	return e * amt;
 }
 
+// Where the floodlights fall (0-1): a broad pool over the court, brightest under the three banks of lights down it.
+float pool() {
+	vec2 p = wpos.xz;
+	vec2 e = p / pool_size;
+	float broad = exp(-dot(e, e) * 1.4);
+	float spots = 0.0;
+	for (int i = -1; i <= 1; i++) {
+		vec2 d = (p - vec2(float(i) * 10.5, -0.8)) / vec2(5.5, 4.6);
+		spots += exp(-dot(d, d));
+	}
+	return clamp(broad * 0.6 + spots * 0.45, 0.0, 1.0);
+}
+
 float vignette() {
 	float r = length(wpos.xz / vig_size);
 	return mix(1.0, vig_dark, smoothstep(0.55, 1.25, r));
@@ -196,7 +213,9 @@ void fragment() {
 			float sp = hash12(floor(wpos.xz * 30.0));
 			col *= 1.0 + (sp - 0.5) * 0.25 * (1.0 - smoothstep(0.01, 0.05, aa));
 		}
-		col *= vignette();
+		float pl = pool();
+		col *= mix(pool_lo, pool_hi, pl) * vignette();
+		emit += COLOR.rgb * pl * pl * pool_glow + lamp_col * pow(pl, 3.0) * pool_glow * 0.06;
 		emit += floor_sheen(v, sheen * (k == 8 ? 0.25 : 1.0), CAMERA_POSITION_WORLD) * mix(1.0, 0.6, 1.0 - vignette());
 	} else if (k == 3) {
 		// The stands are in the dark beyond the floodlights: painted as they look (stand_tint), not lit again.

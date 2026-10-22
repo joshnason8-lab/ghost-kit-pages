@@ -108,10 +108,10 @@ func _env(bg: Color, ambient: Color, amb_energy: float, key: Color, key_energy: 
 		env.tonemap_exposure = 1.1
 		env.tonemap_white = 5.0
 		env.glow_enabled = true
-		env.glow_intensity = 0.9
+		env.glow_intensity = 0.95
 		env.glow_strength = 1.0
-		env.glow_bloom = 0.0
-		env.glow_hdr_threshold = 1.05
+		env.glow_bloom = 0.03
+		env.glow_hdr_threshold = 0.95
 		env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
 		env.set_glow_level(1, 0.0)
 		env.set_glow_level(2, 1.0)
@@ -313,11 +313,11 @@ func _front_rows(x0: float, z0: float, o0: float, y0: float, rows: int, depth: f
 func _arena() -> Array:
 	var night := Color("040a24")
 	_env(night, Color("7088d0"), 0.55, Color("f4f6ff"), 1.0, Vector3(-62, 25, 0))
-	_look = {"night": night, "fade_y0": 2.0, "fade_y1": 11.0, "fade_amt": 0.9, "stand_tint": Color(0.55, 0.6, 0.88), "sheen": 0.32 if _low else 0.4,
+	_look = {"night": night, "fade_y0": 2.0, "fade_y1": 11.0, "fade_amt": 0.9, "stand_tint": Color(0.4, 0.45, 0.72) if _low else Color(0.5, 0.55, 0.85), "sheen": 0.32 if _low else 0.4,
 		"gloss": 300.0, "vig_size": Vector2(25.0, 16.5), "vig_dark": 0.32, "seat_col": Color("1c2560"),
 		"stair_col": Color("39447a"), "density": 0.86, "aisle_every": 9.0, "lamp_col": Color("dfe8ff"),
-		"pad": Color("17256a")}
-	_court(Color("2560d2"), Color("0e6276"), Color("0a1a44"))
+		"pad": Color("17256a"), "pool_lo": 0.45, "pool_hi": 1.15 if _low else 0.98, "pool_glow": 0.1}
+	_court(Color("5a8cc8"), Color("3a95a8"), Color("0a1a44"))
 	_runoff_edge(Color("2fd6e0"))
 	_boards()
 	# The bowl: front corners of the seating, X0 along, Z0 across.
@@ -455,8 +455,9 @@ func _hall() -> Array:
 	_env(night, Color("c8bfb0"), 0.62, Color("fff4e2"), 0.95, Vector3(-62, 25, 0))
 	_look = {"night": night, "fade_amt": 0.0, "sheen": 0.3 if _low else 0.38, "gloss": 220.0,
 		"vig_size": Vector2(30.0, 20.0), "vig_dark": 0.7, "seat_col": Color("6a4a30"), "stair_col": Color("8a7a66"),
-		"density": 0.7, "aisle_every": 8.0, "lamp_col": Color("fff1d8"), "pad": Color("1f8a96"), "stand_tint": Color(0.95, 0.92, 0.88)}
-	_court(Color("1c7d86"), Color("c9a27a"), Color("b48e66"), VenueLook.WOOD)
+		"density": 0.7, "aisle_every": 8.0, "lamp_col": Color("fff1d8"), "pad": Color("1f8a96"), "stand_tint": Color(0.95, 0.92, 0.88),
+		"pool_lo": 0.72, "pool_hi": 1.08, "pool_glow": 0.05}
+	_court(Color("3d97a6"), Color("c9a27a"), Color("b48e66"), VenueLook.WOOD)
 	_runoff_edge(Color("ff8a3a"))
 	var hl := Court.HALF_L + 12.5   # room for the camera behind the goal
 	var hw := Court.HALF_W + Court.RUNOFF + 1.0
@@ -553,8 +554,8 @@ func _outdoor() -> Array:
 	_env(Color.BLACK, Color("8c94c0"), 0.6, Color("fff1dc"), 1.05, Vector3(-52, -32, 0), sky)
 	_look = {"night": Color("0d1a48"), "fade_amt": 0.0, "sheen": 0.22 if _low else 0.28, "gloss": 160.0,
 		"vig_size": Vector2(30.0, 22.0), "vig_dark": 0.55, "density": 0.75, "lamp_col": Color("fff4e0"),
-		"pad": Color("1b4fa8")}
-	_court(Color("2a66cc"), Color("246a4a"), Color("383b44"), VenueLook.ASPHALT)
+		"pad": Color("1b4fa8"), "pool_lo": 0.5, "pool_hi": 1.12 if _low else 0.98, "pool_glow": 0.08}
+	_court(Color("6690c8"), Color("4a9a6e"), Color("4a4d56"), VenueLook.ASPHALT)
 	var hl := Court.HALF_L + Court.RUNOFF
 	var hw := Court.HALF_W + Court.RUNOFF
 	# A chain-link fence on posts down the far side, a low one across the ends (the camera behind the goal looks over
