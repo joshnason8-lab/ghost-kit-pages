@@ -1,5 +1,6 @@
 extends Node
-## Each ground as the match camera sees it at the throw-in and from behind a goal, for checking how it looks:
+## Each ground as the match camera sees it at the throw-in and from behind a goal, and a wide shot from high in a
+## corner (the sky and the surrounds), for checking how it looks:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/venue_view.tscn -- /out [venue] [graphics 0-2]
 
 func _ready() -> void:
@@ -23,5 +24,17 @@ func _ready() -> void:
 			await get_tree().process_frame
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(out.path_join("venue_%s_end.png" % v))
+		# A wide shot from high in a corner: the sky, the surrounds, the village or the town.
+		var wide := Camera3D.new()
+		m.add_child(wide)
+		wide.fov = 62.0
+		wide.far = 1500.0
+		wide.look_at_from_position(Vector3(-Pitch.HALF_L - 30.0, 34.0, Pitch.HALF_W + 45.0), Vector3(25.0, 4.0, -40.0))
+		wide.make_current()
+		for i in 3:
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(out.path_join("venue_%s_wide.png" % v))
+		wide.queue_free()
 		print("venue ", v)
 	get_tree().quit()

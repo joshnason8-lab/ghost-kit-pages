@@ -93,7 +93,7 @@ static func build(time_of_day: String) -> Node3D:
 	var g := Geo.new()
 	var white := Color(0.95, 0.95, 0.92)
 	var y := 0.012
-	var w := LINE_W
+	var w := drawn_line_w()
 	# Side lines and end lines.
 	g.floor_rect(-HALF_L - w, -HALF_W - w, HALF_L + w, -HALF_W, y, white)
 	g.floor_rect(-HALF_L - w, HALF_W, HALF_L + w, HALF_W + w, y, white)
@@ -120,10 +120,16 @@ static func build(time_of_day: String) -> Node3D:
 	return root
 
 
+## How wide the lines are drawn: 10 cm, as painted; on Low (three-quarter resolution, no smoothing) 18 cm, or the
+## far lines break up into dashes. Where the lines are, for the rules, does not change.
+static func drawn_line_w() -> float:
+	return LINE_W * (1.8 if int(Game.settings.graphics) == Game.GFX_LOW else 1.0)
+
+
 static func _rect(g: Geo, ex: float, s: float, wide: float, deep: float, y: float, col: Color) -> void:
 	var hw := wide * 0.5
 	var x1 := ex - deep * s
-	var w := LINE_W
+	var w := drawn_line_w()
 	g.floor_rect(minf(x1, x1 - w * s), -hw, maxf(x1, x1 - w * s), hw, y, col)
 	g.floor_rect(minf(ex, x1), -hw - w, maxf(ex, x1), -hw, y, col)
 	g.floor_rect(minf(ex, x1), hw, maxf(ex, x1), hw + w, y, col)
@@ -132,34 +138,62 @@ static func _rect(g: Geo, ex: float, s: float, wide: float, deep: float, y: floa
 static var _grass := {}
 
 
-## Grass mown in bands across the pitch, a little patchy, worn in the goalmouths; lit flat (the sun's direction is
-## in the shader), so it costs one texture-free pass.
+## The pitch's grass: the photo-scanned mown grass (Poly Haven's grass_ground, two sizes over each other so it never
+## repeats), coloured the game's greens and mown in bands across the pitch; worn grass (sparse_grass) along the
+## touchlines and behind the end lines, withered grass in the goalmouths and the small rectangle. Unlit, the time
+## of day's light in the colour (as the players are); on Medium and High the scan's normal map catches the sun.
+## Low draws the grass and the bands only (two texture reads a pixel).
 static func grass_material(time_of_day: String) -> ShaderMaterial:
-	if _grass.has(time_of_day):
-		return _grass[time_of_day]
+	var g := int(Game.settings.graphics)
+	var key := "%s|%d" % [time_of_day, g]
+	if _grass.has(key):
+		return _grass[key]
 	var sh := Shader.new()
 	sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_back;
+uniform sampler2D grass : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D grass_n : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D sparse : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D withered : source_color, filter_linear_mipmap, repeat_enable;
+uniform bool detail = true;
 uniform vec3 g1 = vec3(0.20, 0.42, 0.16);
 uniform vec3 g2 = vec3(0.17, 0.36, 0.13);
 uniform vec3 worn = vec3(0.36, 0.34, 0.20);
 uniform float light = 1.0;
+uniform vec3 sun = vec3(0.4, 0.8, 0.45);
 uniform float half_l = 70.0;
+uniform float half_w = 42.5;
 varying vec3 wp;
-float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-float noise(vec2 p) {
-	vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
-	return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
-}
+float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+// A scan's mean brightness: its smallest mip level (1 x 1).
+float mean_lum(sampler2D s) { return max(lum(textureLod(s, vec2(0.5), 10.0).rgb), 0.002); }
 void vertex() { wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
 void fragment() {
+	vec2 uv = wp.xz / 2.7;
+	vec3 t = mix(texture(grass, uv).rgb, texture(grass, wp.xz / 9.7 + vec2(0.37, 0.61)).rgb, 0.45);
+	float GRASS_LUM = mean_lum(grass);
 	float band = step(0.5, fract(wp.x / 10.0));
-	vec3 c = mix(g1, g2, band);
-	float n = noise(wp.xz * 0.35) * 0.6 + noise(wp.xz * 2.1) * 0.4;
-	c *= 0.9 + n * 0.2;
-	float goal = min(length(wp.xz - vec2(half_l - 4.0, 0.0)), length(wp.xz - vec2(-half_l + 4.0, 0.0)));
-	c = mix(c, worn, smoothstep(9.0, 2.0, goal) * 0.35 * n);
+	vec3 green = mix(g1, g2, band);
+	// The scan's light and dark in the game's green, a little of its own colour kept.
+	float k = lum(t) / GRASS_LUM;
+	vec3 c = mix(green * k, t * (lum(green) / GRASS_LUM), 0.22);
+	float goal = min(length(wp.xz - vec2(half_l - 3.5, 0.0)), length(wp.xz - vec2(-half_l + 3.5, 0.0)));
+	if (detail) {
+		// Worn along the touchlines and outside the field.
+		float edge = max(smoothstep(half_w - 1.0, half_w + 3.0, abs(wp.z)), smoothstep(half_l + 0.5, half_l + 4.0, abs(wp.x)));
+		vec3 s = texture(sparse, wp.xz / 3.1).rgb;
+		float SPARSE_LUM = mean_lum(sparse);
+		c = mix(c, mix(green * 0.85, s * (lum(green) / SPARSE_LUM) * 0.9, 0.35) * (lum(s) / SPARSE_LUM), edge * 0.55);
+		// Withered in the goalmouth, where the keeper and the backs stand.
+		vec3 w = texture(withered, wp.xz / 2.3).rgb;
+		float mouth = smoothstep(8.5, 2.0, goal) * smoothstep(0.25, 0.65, texture(withered, wp.xz / 17.0).r);
+		c = mix(c, w * (lum(green) * 1.15 / mean_lum(withered)), mouth * 0.6);
+		vec3 n = texture(grass_n, uv).rgb * 2.0 - 1.0;
+		c *= 0.9 + 0.2 * clamp(dot(normalize(vec3(n.x, n.z * 2.0, -n.y)), normalize(sun)), 0.0, 1.0);
+	} else {
+		c = mix(c, worn, smoothstep(9.0, 2.0, goal) * 0.3);
+	}
 	c = mix(c, c * 0.8, smoothstep(half_l + 2.0, half_l + 9.0, abs(wp.x)));
 	ALBEDO = c * light;
 }
@@ -167,10 +201,17 @@ void fragment() {
 	var m := ShaderMaterial.new()
 	m.shader = sh
 	m.set_shader_parameter("half_l", HALF_L)
+	m.set_shader_parameter("half_w", HALF_W)
+	m.set_shader_parameter("detail", g > Game.GFX_LOW)
+	m.set_shader_parameter("grass", load("res://assets/env/ground/grass_ground_albedo_1k.jpg"))
+	if g > Game.GFX_LOW:
+		m.set_shader_parameter("grass_n", load("res://assets/env/ground/grass_ground_normal_1k.jpg"))
+		m.set_shader_parameter("sparse", load("res://assets/env/ground/sparse_grass_albedo_1k.jpg"))
+		m.set_shader_parameter("withered", load("res://assets/env/ground/withered_grass_albedo_1k.jpg"))
 	var light: float = {"day": 1.0, "dusk": 0.78, "night": 0.86}.get(time_of_day, 1.0)
 	m.set_shader_parameter("light", light)
 	if time_of_day == "dusk":
 		m.set_shader_parameter("g1", Vector3(0.22, 0.38, 0.15))
 		m.set_shader_parameter("g2", Vector3(0.19, 0.33, 0.13))
-	_grass[time_of_day] = m
+	_grass[key] = m
 	return m

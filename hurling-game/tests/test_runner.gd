@@ -38,6 +38,7 @@ func _ready() -> void:
 	await _tactics()
 	await _playtest_fixes()
 	await _nets()
+	await _scenery()
 	await _hero_body()
 	await _replay()
 	await _match_and_motion()
@@ -587,12 +588,13 @@ func _playtest_fixes() -> void:
 			if p.z > 0.0 and p.z < CameraRig.GANTRY_Z:
 				in_way += 1
 		var we: WorldEnvironment = st.find_children("*", "WorldEnvironment", true, false)[0]
-		var sm: ProceduralSkyMaterial = we.environment.sky.sky_material
-		if sm.ground_bottom_color.is_equal_approx(ProceduralSkyMaterial.new().ground_bottom_color):
+		# A photographed sky (its horizon's own haze below the skyline), never the engine's default brown ground.
+		var sm := we.environment.sky.sky_material
+		if not (sm is PanoramaSkyMaterial and (sm as PanoramaSkyMaterial).panorama != null):
 			brown += 1
 		st.queue_free()
 	check(in_way == 0, "Playtest: no floodlight mast in front of the camera (%d)" % in_way)
-	check(brown == 0, "Playtest: past the hills, the horizon's haze, not the sky's default brown (%d grounds)" % brown)
+	check(brown == 0, "Playtest: past the fields, a real sky's horizon, not the sky's default brown (%d grounds)" % brown)
 	# On a touch screen a button looks the same hovered as not (a finger leaves the emulated mouse where it lifts).
 	var th: Theme = Game.theme.duplicate()
 	Game.flatten_hover(th)
@@ -634,6 +636,50 @@ func _nets() -> void:
 	check(b.global_position.x <= Pitch.HALF_L + Pitch.NET_DEPTH + 0.05 and b.global_position.x > Pitch.HALF_L, "Nets: a goal stays in the net (%.2f m behind the line)" % (b.global_position.x - Pitch.HALF_L))
 	b.queue_free()
 	await frames(1)
+
+
+# ---------------------------------------------------------------- the grounds' surrounds
+
+## Every ground dressed from the shared assets: trees and hedgerows round it, the parish field's village and lough,
+## the towns round the county ground and the stadium; nothing of it on the field or in the camera's foreground; a
+## real sky; one draw call a kind of thing, so the surrounds stay a dozen draws at most.
+func _scenery() -> void:
+	var keep := int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_LOW
+	for v in ["parish", "county", "stadium", "night"]:
+		var st := Stadium.new(v)
+		add_child(st)
+		await frames(1)
+		var sc: Scenery = st.scenery
+		var trees := sc.count("oak_tree_card") + sc.count("broadleaf_tree_dark_card")
+		check(trees >= 20 and sc.count("small_broadleaf_card") >= 100, "Scenery %s: trees (%d) and hedgerows (%d bushes)" % [v, trees, sc.count("small_broadleaf_card")])
+		if v == "parish":
+			check(sc.count("thatched_cottage_low") >= 3 and sc.count("mossy_rocks_low") > 0 and sc.count("painted_bench_low") > 0, "Scenery parish: the village, the stone wall, the subs' benches")
+			var through := 0
+			for name in ["small_broadleaf_card", "grass_wispy_card", "grass_clumps_card", "fern_card"]:
+				for t: Transform3D in sc.placed(name):
+					if Stadium.VILLAGE.has_point(Vector2(t.origin.x, t.origin.z)):
+						through += 1
+			check(through == 0, "Scenery parish: no hedgerow through the village's houses (%d)" % through)
+		else:
+			check(sc.count("terrace_row_low") >= 8 and sc.count("street_lamp_tall_low") > 0, "Scenery %s: the town's terraced rows and street lamps" % v)
+		var bad := 0
+		for name in sc.names():
+			for t: Transform3D in sc.placed(name):
+				var o := t.origin
+				var on_field := absf(o.x) < Pitch.HALF_L + 1.0 and absf(o.z) < Pitch.HALF_W + 1.0
+				var foreground := o.z > Pitch.HALF_W + 3.0 and o.z < CameraRig.GANTRY_Z and absf(o.x) < Pitch.HALF_L
+				if on_field or foreground:
+					bad += 1
+					if bad < 4:
+						print("  ", v, " ", name, " at ", o)
+		check(bad == 0, "Scenery %s: nothing on the field or in front of the camera (%d)" % [v, bad])
+		check(sc.get_child_count() <= 12, "Scenery %s: %d draw calls" % [v, sc.get_child_count()])
+		var we: WorldEnvironment = st.find_children("*", "WorldEnvironment", false, false)[0]
+		check(we.environment.sky.sky_material is PanoramaSkyMaterial, "Scenery %s: a real sky (%s)" % [v, st.sky_name()])
+		st.queue_free()
+		await frames(1)
+	Game.settings.graphics = keep
 
 
 # ---------------------------------------------------------------- the owner's model, its clips, the replay

@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.4.0
+
+- **New graphics round every ground**: real skies (a Northern Irish sunset at the parish field, Irish grey cloud at
+  the county ground, a bright final day at the national stadium), a photo-scanned pitch mown in bands and worn in
+  the goalmouths, real trees and hedgerows, a village with thatched cottages and a lough beyond the parish field,
+  terraced streets round the county ground and the stadium. Look behind the goals (the camera button: End) and in
+  the replay of a wide. Is it still smooth on your phone? (Settings > Graphics > Low if not.)
+
 ## New in 0.3.0
 
 - **New players**: the owner's hurler, in every county's colours, running and swinging from motion capture. Do they

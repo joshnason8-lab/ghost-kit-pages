@@ -41,5 +41,5 @@ PLAY YOUR WAY
 
 Hurling Heroes is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.
 
-== Release notes (0.3.0) ==
-New players: a hurler with textured kit in every county's colours, running and swinging from motion capture. A wide is shown again from behind the goal, and every ball over the end line flies on into the net. Your player answers the stick much quicker; bigger players, a closer camera, the countryside round every ground. A crash on PULL fixed. Now called Hurling Heroes.
+== Release notes (0.4.0) ==
+New graphics at every ground: real skies (a sunset at the parish field, Irish cloud at the county ground, a bright final day at the national stadium), a photo-scanned pitch mown in bands, real trees and hedgerows, a village and a lough beyond the parish field, terraced streets round the bigger grounds. Still smooth on budget phones.

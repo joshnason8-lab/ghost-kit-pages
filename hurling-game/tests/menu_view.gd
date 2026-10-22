@@ -1,11 +1,11 @@
 extends Node
 ## The home screen as a phone shows it, in both languages, for a look:
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/menu_view.tscn -- /out
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/menu_view.tscn -- /out [graphics 0-2]
 func _ready() -> void:
 	var out: String = OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "user://"
 	Game.main = self
 	Game.settings.sound = false
-	Game.settings.graphics = Game.GFX_LOW
+	Game.settings.graphics = int(OS.get_cmdline_user_args()[1]) if OS.get_cmdline_user_args().size() > 1 else Game.GFX_LOW
 	for size in [Vector2i(1280, 720), Vector2i(2400, 1080)]:
 		get_tree().root.size = size
 		DisplayServer.window_set_size(size)

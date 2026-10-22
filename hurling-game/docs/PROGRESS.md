@@ -79,6 +79,48 @@ The owner's first round of changes, each with a test where one can say it works:
 - **CI**: the root workflow runs on a push (and by hand), not on the pull request as well; the full test suite is
   run here before every push.
 
+## Done (0.4.0-beta, the graphics update, 22-23 October 2026)
+
+From the lead's shared assets (branch `claude/shared-assets`, `plans/hurling-heroes.md`), only what the plan uses,
+copied into `assets/env/`:
+
+- **Skies** (2K panoramas, every level): the parish field under `belfast_sunset_puresky`, the county ground by day
+  under `kloofendal_overcast_puresky`, at night under `kloppenheim_07_puresky` (darkened to sit over a floodlit
+  field), the national stadium under `kloofendal_48d_partly_cloudy_puresky` (a final-day sky). Each sky is turned
+  so its sun is where the light comes from; the sun's place, colour and the sky's ambient colour were read once from
+  the 1K HDRs (`tools/env/sky_light.py` → `assets/env/sky/skies.json`), so the HDRs are not shipped.
+- **The pitch**: `grass_ground` in the game's greens, mown in bands, `sparse_grass` worn along the touchlines and
+  outside the field, `withered_grass` in the goalmouths, the scan's normal map in the light (Medium and High; Low
+  draws the grass and the bands, two texture reads). **The fields** round every ground: `leafy_grass` in each
+  field's green, over a ground that leaves no gap for the sky.
+- **Round the grounds** (one MultiMesh a kind, `game/scenery.gd`): oak and dark broadleaf trees as cut-outs;
+  hedgerows of `small_broadleaf` bushes with `grass_wispy`, `fern` and `grass_clumps` along the foot and a tree now
+  and then (plants within 420 m, a dark bank beyond); at the parish field the village (`thatched_cottage` ×4, a
+  `terrace_row` ×2) along a road with `street_lamp_tall`s, a dry-stone wall of `mossy_rocks`, `park_bench`es by the
+  clubhouse, `painted_bench`es for the subs, and a lough beyond the village (`water_normal_512`, a cheap shader with
+  a ragged shore); at the county ground and the stadium the town's terraced rows round the ends and beyond the far
+  stand, street lamps outside.
+- **Small things**: on Low the pitch's lines are drawn 18 cm wide (at three-quarter resolution 10 cm lines broke
+  into dashes in the distance); the old code-drawn hills are gone (flat grey slabs against a photographed sky).
+- **Credits**: Poly Haven (CC0) and the maker's models in Settings > About > Licences.
+- **Performance** (`tests/perf_probe.tscn`, the busiest frame): stadium Low 77 → 87 draw calls, 67k → 82k
+  triangles; Medium 95 → 105, 149k → 164k; High 168 → 178, 306k → 320k. Parish Low 77 → 91, 64k → 81k; Medium
+  95 → 109, 125k → 141k; High 148 → 167, 234k → 263k. Low stays inside its budget of about 100.
+- **Tests**: every ground dressed, nothing on the field or between the gantry and the field, a real sky, the
+  surrounds a dozen draws at most, no hedgerow through the village. `tests/venue_view.tscn` now adds a wide shot of each
+  ground; `docs/graphics/` has every ground on Low and High (TV, end, wide) and before-and-after sheets.
+
+Moved or skipped, and why:
+- **`skies/suburban_football_field`** (the plan's first choice for the county ground by day): its horizon is a
+  German town's red-tiled roofs and wooded hills; the plan's alternative, `kloofendal_overcast`, is used instead.
+- **`stands/bleacher_concrete` and `bleacher_metal`**: the crowd stands on the stands' and terraces' own steps
+  (built in code, each person placed on a step); a model of a stand segment would need its steps measured to seat
+  the crowd, and at the camera's distance the shared segment reads as a plain slab. The code-built stands stay.
+- **The full-size tree meshes** (`oak_tree`, `broadleaf_tree_dark` and their `_low`): every tree is more than 25 m
+  from the match camera, so cut-outs everywhere, as the shared README advises; **the buildings' and props' High
+  meshes**: the village and the towns are 100-200 m off, so the `_low` meshes on every level.
+- **The owner's `Hurling.Goal`**: a soccer goal; the game's posts are built to the rules.
+
 ## Next (in order)
 
 1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev
@@ -93,7 +135,9 @@ The owner's first round of changes, each with a test where one can say it works:
 7. **A native Irish speaker** to read `i18n/src/ga.json` (docs/LANGUAGES.md lists the terms to check).
 8. **Camogie**, with its own rules done properly (60 minutes, the 45, hand-passed goals, its contact rules).
 9. **Club hurling**: invented parish clubs in a county championship, at the parish field.
-10. Officials and goalkeepers in the owner's style, and a number per man on the back (the owner's model, without the
+10. A stand model for the stadium and the county ground (a section with its seat rows at a known rise and depth, so
+    the crowd can be seated on it), if the owner wants one: the only gap the graphics update left.
+11. Officials and goalkeepers in the owner's style, and a number per man on the back (the owner's model, without the
     11 in its texture, or a texture of numbers).
 
 ## Shared assets

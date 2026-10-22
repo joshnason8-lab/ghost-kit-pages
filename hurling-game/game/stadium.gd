@@ -5,7 +5,7 @@ extends Node3D
 ## its lines in two (Pitch.build). Sky and light for the time of day. The camera's stand is on the near (+z) side,
 ## so that side has only what the camera can see over: a rail, the dugouts and the advertising-free hoarding.
 ##   parish   a club's field at dusk: a small covered stand, a grass bank, a rail round the field, ball-stop nets
-##            behind the goals, four floodlight masts, the clubhouse, trees and the hills
+##            behind the goals, four floodlight masts, the clubhouse, trees, the village beyond
 ##   county   a county ground: a long covered stand across the pitch, open terraces at the ends
 ##   stadium  the national stadium: tall stands on three sides, a terrace at one end
 ##   night    the county ground under its floodlights
@@ -13,6 +13,7 @@ extends Node3D
 var kind := "county"
 var time := "day"
 var crowd: Crowd
+var scenery: Scenery
 var home_colours: Array = []
 
 const H := Pitch.HALF_L
@@ -31,9 +32,11 @@ func _ready() -> void:
 	var g := Geo.new()
 	var nets := Geo.new()
 	var lamps := Geo.new()
+	var fields := Geo.new()
 	var spots: Array[Vector3] = []
+	scenery = Scenery.new(time)
 	_goals(g, nets)
-	_countryside(g)
+	_countryside(g, fields)
 	match kind:
 		"parish":
 			_parish(g, nets, lamps, spots)
@@ -42,6 +45,9 @@ func _ready() -> void:
 		_:
 			_county(g, lamps, spots)
 	add_child(g.commit(Geo.material(true)))
+	add_child(fields.commit(field_material(time)))
+	scenery.commit()
+	add_child(scenery)
 	var nm := StandardMaterial3D.new()
 	nm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	nm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -159,23 +165,22 @@ func _mast(g: Geo, lamps: Geo, p: Vector3, h: float, face: Vector3) -> void:
 			lamps.box(lp, Vector3(0.9, 0.8, 0.9), Color(1.0, 0.97, 0.85) if time != "day" else Color(0.8, 0.8, 0.78), 0.0, false)
 
 
-func _trees(g: Geo, rng: RandomNumberGenerator, x0: float, x1: float, z0: float, z1: float, n: int) -> void:
+## Trees as Irish grounds have them round the field: oak and the darker broadleaves (ash, sycamore), cut-outs of
+## the shared models, 8 to 15 m tall.
+func _trees(rng: RandomNumberGenerator, x0: float, x1: float, z0: float, z1: float, n: int) -> void:
 	for i in n:
 		var p := Vector3(rng.randf_range(x0, x1), 0, rng.randf_range(z0, z1))
-		var h := rng.randf_range(7.0, 14.0)
-		g.cylinder(p, p + Vector3(0, h * 0.45, 0), 0.25, 0.18, Color("3a2c20"), 5, false)
-		var col := Color("2e5a2a").lerp(Color("44703a"), rng.randf())
-		# A rounded crown of three tiers, like the ash and sycamore round a field.
-		for k in 3:
-			var y0 := h * (0.35 + k * 0.18)
-			var r := h * (0.34 - k * 0.08)
-			g.cylinder(p + Vector3(0, y0, 0), p + Vector3(0, y0 + h * 0.3, 0), r, r * 0.55, col.lightened(0.04 * k), 7)
+		var h := rng.randf_range(8.0, 15.0)
+		var oak := rng.randf() < 0.55
+		scenery.add("oak_tree_card" if oak else "broadleaf_tree_dark_card", p, rng.randf() * TAU, h / (14.28 if oak else 11.22))
 
 
-## The land round the ground, out to the hills: a patchwork of fields in different greens with hedges between them,
-## as round any ground in Ireland, so the trees, banks and stands stand on something (round three: "the trees are
-## just floating" over the sky's lower half). A little below the pitch, which covers it near the field.
-func _countryside(g: Geo) -> void:
+## The land round the ground, out to the horizon: a patchwork of fields in different greens (the photo-scanned
+## leafy grass in each field's colour) with hedgerows between them, as round any ground in Ireland, so the trees,
+## banks and stands stand on something. Near the ground the hedgerows are plants (bushes of the small broadleaf,
+## wispy grass, ferns and clumps along the bottom, now and then a tree); far off, where they are a line in the haze,
+## a low dark bank. A little below the pitch, which covers it near the field.
+func _countryside(g: Geo, fields: Geo) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 31
 	var greens: Array = {"day": [Color("5a8a3e"), Color("6b9645"), Color("4d7d37"), Color("7a9a4a"), Color("587f3a")],
@@ -185,6 +190,8 @@ func _countryside(g: Geo) -> void:
 	var cell := 90.0
 	var reach := 860.0
 	var n := int(reach / cell)
+	# Under the patchwork, the land itself, so no sky shows in the gaps between fields.
+	fields.box(Vector3(0, -0.17, 0), Vector3(reach * 2.0 + 200.0, 0.05, reach * 2.0 + 200.0), greens[2].darkened(0.08), 0.0, false)
 	for i in range(-n, n):
 		for j in range(-n, n):
 			var x0 := i * cell + rng.randf_range(-8.0, 8.0)
@@ -195,23 +202,84 @@ func _countryside(g: Geo) -> void:
 			if Vector2(c.x, c.z).length() > reach:
 				continue
 			var col: Color = greens[rng.randi() % greens.size()]
-			g.box(c, Vector3(w, 0.1, d), col, 0.0, false)
+			fields.box(c, Vector3(w, 0.1, d), col, 0.0, false)
 			# Hedges on two sides of each field (the others come from its neighbours), off the pitch's surrounds.
-			if absf(c.x) > H + 30.0 or absf(c.z) > W + 30.0:
-				g.box(Vector3(c.x, 0.7, z0), Vector3(w, 1.6, 1.4), hedge, 0.0, false)
-				g.box(Vector3(x0, 0.7, c.z), Vector3(1.4, 1.6, d), hedge, 0.0, false)
+			if (absf(c.x) > H + 30.0 or absf(c.z) > W + 30.0) and not (kind == "parish" and LAKE.grow(20.0).has_point(Vector2(c.x, c.z))):
+				var near := Vector2(c.x, c.z).length() < HEDGE_PLANTS
+				for e in [[Vector3(x0, 0, z0), Vector3(x0 + w, 0, z0)], [Vector3(x0, 0, z0), Vector3(x0, 0, z0 + d)]]:
+					if near:
+						_hedgerow(rng, e[0], e[1])
+					else:
+						var mid: Vector3 = (e[0] + e[1]) * 0.5
+						var size := Vector3(w, 1.6, 1.4) if (e[1] as Vector3).x != (e[0] as Vector3).x else Vector3(1.4, 1.6, d)
+						g.box(mid + Vector3(0, 0.7, 0), size, hedge, 0.0, false)
 
 
-func _hills(g: Geo, rng: RandomNumberGenerator, r: float, col: Color) -> void:
-	var n := 28
-	for i in n:
-		var a0 := TAU * float(i) / n
-		var a1 := TAU * float(i + 1) / n
-		var h0 := 14.0 + 26.0 * absf(sin(a0 * 2.3 + 1.0)) + rng.randf() * 6.0
-		var h1 := 14.0 + 26.0 * absf(sin(a1 * 2.3 + 1.0)) + rng.randf() * 6.0
-		var p0 := Vector3(cos(a0) * r, 0, sin(a0) * r)
-		var p1 := Vector3(cos(a1) * r, 0, sin(a1) * r)
-		g._tri_quad(Vector3(p0.x, h0, p0.z), Vector3(p1.x, h1, p1.z), Vector3(p1.x, -1, p1.z), Vector3(p0.x, -1, p0.z), -p0.normalized(), col)
+const HEDGE_PLANTS := 420.0   # m: hedgerows nearer than this are plants, further a dark bank
+const LAKE := Rect2(-300.0, -325.0, 520.0, 150.0)   # the parish field's lough (x, z): no hedges across it
+const VILLAGE := Rect2(-225.0, -142.0, 450.0, 48.0)  # the parish field's road and village: no hedge through a house
+
+
+## A hedgerow from a to b: bushes a few metres tall close together, grasses and ferns along the foot (near the
+## ground only), and a tree standing out of it every so often.
+func _hedgerow(rng: RandomNumberGenerator, a: Vector3, b: Vector3) -> void:
+	var length := a.distance_to(b)
+	var dir := (b - a) / length
+	var side := Vector3(-dir.z, 0, dir.x)
+	var t := rng.randf_range(0.0, 4.0)
+	var clear := VILLAGE if kind == "parish" else Rect2()
+	while t < length:
+		var p := a + dir * t + side * rng.randf_range(-0.6, 0.6)
+		if clear.has_point(Vector2(p.x, p.z)):
+			t += 5.0
+			continue
+		scenery.add("small_broadleaf_card", p, rng.randf() * TAU, rng.randf_range(0.3, 0.46))
+		if rng.randf() < 0.06:
+			var oak := rng.randf() < 0.5
+			scenery.add("oak_tree_card" if oak else "broadleaf_tree_dark_card", p + side * 1.5, rng.randf() * TAU, rng.randf_range(0.6, 0.95))
+		t += rng.randf_range(4.5, 7.5)
+	if a.length() > 260.0:
+		return
+	t = rng.randf_range(0.0, 2.0)
+	var foot := ["grass_wispy_card", "grass_clumps_card", "fern_card"]
+	while t < length:
+		var p := a + dir * t + side * rng.randf_range(-1.4, 1.4)
+		if clear.has_point(Vector2(p.x, p.z)):
+			t += 2.5
+			continue
+		scenery.add(foot[rng.randi() % foot.size()], p, rng.randf() * TAU, rng.randf_range(0.8, 1.4))
+		t += rng.randf_range(2.0, 3.6)
+
+
+static var _field_mats := {}
+
+
+## The fields: the photo-scanned leafy grass, in each field's own green (the vertex colour), unlit in the time of
+## day's light as the pitch is. Two sizes of the texture over each other so the tiling does not show from the gantry.
+static func field_material(t: String) -> ShaderMaterial:
+	if _field_mats.has(t):
+		return _field_mats[t]
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, cull_back;
+uniform sampler2D tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform float light = 1.0;
+varying vec3 wp;
+void vertex() { wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+void fragment() {
+	vec3 a = mix(texture(tex, wp.xz / 4.0).rgb, texture(tex, wp.xz / 23.0 + vec2(0.3, 0.7)).rgb, 0.5);
+	float MEAN_LUM = max(dot(textureLod(tex, vec2(0.5), 10.0).rgb, vec3(0.2126, 0.7152, 0.0722)), 0.002);   // its 1 x 1 mip
+	float k = dot(a, vec3(0.2126, 0.7152, 0.0722)) / MEAN_LUM;
+	ALBEDO = mix(COLOR.rgb * k, a * (dot(COLOR.rgb, vec3(0.2126, 0.7152, 0.0722)) / MEAN_LUM), 0.3) * light;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("tex", load("res://assets/env/ground/leafy_grass_albedo_1k.jpg"))
+	m.set_shader_parameter("light", {"day": 0.95, "dusk": 0.8, "night": 0.85}.get(t, 1.0))
+	_field_mats[t] = m
+	return m
 
 
 func _parish(g: Geo, nets: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
@@ -255,11 +323,34 @@ func _parish(g: Geo, nets: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 			# The near side's masts stand back behind the camera's gantry, out of the picture.
 			var p := Vector3((H - 10.0) * sx, 0, (W + 9.0) * sz if sz < 0.0 else W + 32.0)
 			_mast(g, lamps, p, 24.0, (-p).normalized())
-	# Trees, then the hills at dusk.
-	_trees(g, rng, -H - 40.0, H + 40.0, -W - 40.0, -W - 18.0, 60)
-	_trees(g, rng, H + 16.0, H + 40.0, -W, W, 18)
-	_trees(g, rng, -H - 40.0, -H - 16.0, 0, W, 10)
-	_hills(g, rng, 560.0, Color("5a5c72"))
+	# Trees round the field.
+	_trees(rng, -H - 40.0, H + 40.0, -W - 40.0, -W - 18.0, 60)
+	_trees(rng, H + 16.0, H + 40.0, -W, W, 18)
+	_trees(rng, -H - 40.0, -H - 16.0, 0, W, 10)
+	# The village beyond the far hedge: thatched cottages along the road and a terrace of houses, facing the field;
+	# the road itself with its lamps; a dry-stone wall of mossy rocks along the ground's far boundary.
+	var road_z := -W - 58.0
+	g.box(Vector3(0, -0.03, road_z), Vector3(520.0, 0.08, 6.5), Color("4a4d50") if time != "night" else Color("1c1e20"), 0.0, false)
+	for x: float in [-150.0, -105.0, 95.0, 160.0]:
+		var p := Vector3(x + rng.randf_range(-6, 6), 0, road_z - 13.0 - rng.randf_range(0, 6))
+		scenery.add("thatched_cottage_low", p, Scenery.facing(p, Vector3(p.x, 0, 0)) + rng.randf_range(-0.15, 0.15))
+	for x: float in [-30.0, 10.0]:
+		var p := Vector3(x, 0, road_z - 16.0)
+		scenery.add("terrace_row_low", p, 0.0)
+	for i in 14:
+		var p := Vector3(-195.0 + i * 30.0, 0, road_z + 4.2)
+		scenery.add("street_lamp_tall_low", p, PI, 1.6)
+	for i in 18:
+		scenery.add("mossy_rocks_low", Vector3(-H - 30.0 + i * 9.5, 0, -W - 44.0 + rng.randf_range(-0.6, 0.6)), rng.randf_range(-0.2, 0.2) + (PI if i % 2 else 0.0), rng.randf_range(0.8, 1.0))
+	# A lough beyond the village, as many clubs have: it catches the sunset.
+	add_child(_lake(Vector3(LAKE.get_center().x, 0.02, LAKE.get_center().y), LAKE.size))
+	# Benches: by the clubhouse, and in front of the dugouts for the subs.
+	for i in 3:
+		var p := Vector3(-H - 13.5, 0, -24.0 + i * 6.0)
+		scenery.add("park_bench_low", p, PI * 0.5)
+	for sx: float in [-1.0, 1.0]:
+		for i in 4:
+			scenery.add("painted_bench_low", Vector3(10.0 * sx - 3.0 + i * 2.0 * 1.0, 0, -W - 2.0), 0.0)
 
 
 func _county(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
@@ -291,8 +382,10 @@ func _county(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 		for sz: float in [-1.0, 1.0]:
 			var p := Vector3((H + 12.0) * sx, 0, (W + 14.0) * sz if sz < 0.0 else W + 32.0)
 			_mast(g, lamps, p, 38.0, (-p).normalized())
-	_trees(g, rng, -H - 60.0, H + 60.0, -W - 70.0, -W - 40.0, 30)
-	_hills(g, rng, 760.0, Color("5d7468") if time != "night" else Color("0c1210"))
+	_trees(rng, -H - 60.0, H + 60.0, -W - 70.0, -W - 40.0, 30)
+	# The county town round the ground: terraced rows on the streets behind the ends and beyond the far stand, the
+	# street lamps outside.
+	_town(rng, H + 34.0, 120.0)
 
 
 func _stadium(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
@@ -327,57 +420,148 @@ func _stadium(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 	for i in 9:
 		var x := lerpf(-78.0, 78.0, float(i) / 8.0)
 		lamps.box(Vector3(x, 38.5, -W - 40.0), Vector3(3.0, 0.6, 1.0), Color(1.0, 0.97, 0.85) if time != "day" else Color(0.85, 0.85, 0.82), 0.0, false)
-	_hills(g, rng, 800.0, Color("6a7d80"))
+	# Dublin's terraced streets round the national stadium, on the skyline beyond the stands.
+	_town(rng, H + 52.0, 170.0)
+
+
+## A stretch of water: the shared water normal map scrolled two ways at once, the sky's horizon colour in it at a
+## low angle and the lough's own dark green-grey looking down (Fresnel); unlit, no real-time reflection.
+func _lake(c: Vector3, size: Vector2) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = size
+	mi.mesh = pm
+	mi.position = c
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, cull_back;
+uniform sampler2D waves : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform vec3 deep : source_color = vec3(0.10, 0.14, 0.15);
+uniform vec3 sky : source_color = vec3(0.9, 0.7, 0.6);
+uniform float light = 1.0;
+varying vec3 wp;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+float noise(vec2 p) {
+	vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
+void vertex() { wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+void fragment() {
+	// A lough's shore, not a rectangle: an oval with a ragged edge.
+	vec2 q = UV * 2.0 - 1.0;
+	float edge = length(q) + (noise(UV * 7.0) - 0.5) * 0.35 + (noise(UV * 23.0) - 0.5) * 0.08;
+	if (edge > 0.95) { discard; }
+	vec2 uv = wp.xz / 14.0;
+	vec3 n1 = texture(waves, uv + vec2(TIME * 0.012, TIME * 0.007)).rgb * 2.0 - 1.0;
+	vec3 n2 = texture(waves, uv * 1.7 - vec2(TIME * 0.009, -TIME * 0.011)).rgb * 2.0 - 1.0;
+	vec3 n = normalize(vec3(n1.x + n2.x, 3.0, n1.y + n2.y));
+	vec3 v = normalize(CAMERA_POSITION_WORLD - wp);
+	float fres = pow(1.0 - clamp(dot(n, v), 0.0, 1.0), 5.0);
+	vec3 refl = sky * (0.55 + 0.45 * clamp(n.x * 3.0 + 0.5, 0.0, 1.0));
+	vec3 c = mix(deep, refl, clamp(fres * 0.85, 0.0, 0.7));
+	c = mix(c * 0.8, c, smoothstep(0.95, 0.7, edge));   // darker in the shallows by the bank
+	ALBEDO = c * light;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("waves", load("res://assets/env/water/water_normal_512.png"))
+	var d: Dictionary = _sky_data_for(sky_name())
+	var hc: Array = d.horizon
+	m.set_shader_parameter("sky", Color(hc[0], hc[1], hc[2]).lerp(Color(0.62, 0.64, 0.74), 0.5))
+	m.set_shader_parameter("deep", Color(0.07, 0.1, 0.11))
+	m.set_shader_parameter("light", Scenery.light(time).v)
+	mi.material_override = m
+	return mi
+
+
+static func _sky_data_for(name: String) -> Dictionary:
+	if _sky_data.is_empty():
+		_sky_data = JSON.parse_string(FileAccess.get_file_as_string("res://assets/env/sky/skies.json"))
+	return _sky_data[name]
+
+
+## Terraced rows on the streets round a ground in a town: across both ends at x = ±end, facing in, and along the
+## far side beyond the stand at z = -far; street lamps along the kerb in front of the ends' rows.
+func _town(rng: RandomNumberGenerator, end: float, far: float) -> void:
+	for sx: float in [-1.0, 1.0]:
+		for i in 4:
+			var p := Vector3(sx * (end + rng.randf_range(0, 3)), 0, -45.0 + i * 31.0)
+			scenery.add("terrace_row_low", p, -sx * PI * 0.5)
+		for i in 8:
+			scenery.add("street_lamp_tall_low", Vector3(sx * (end - 6.0), 0, -56.0 + i * 16.0), -sx * PI * 0.5, 1.6)
+	for i in 9:
+		var p := Vector3(-124.0 + i * 31.0, 0, -far - rng.randf_range(0, 4))
+		scenery.add("terrace_row_low", p, 0.0)
+
+
+## Each ground's sky: a real one (Poly Haven's skies, as 2K panoramas): the parish field under a Northern Irish
+## sunset, the county ground under Irish grey cloud, the national stadium on a bright final day with summer cumulus,
+## the county ground at night under a cloudy sky lit by the town. (The shared "suburban football field" sky was
+## not used: its horizon is a German town's red-tiled roofs.)
+const SKY := {"dusk": "belfast_sunset_puresky", "day": "kloofendal_overcast_puresky", "stadium": "kloofendal_48d_partly_cloudy_puresky",
+	"night": "kloppenheim_07_puresky"}
+## Where each sky's sun should be seen from (its compass direction, x and z): at dusk low in the far left of the
+## camera's view, the glow behind the far side; by day behind the camera's right shoulder, so the field is lit from
+## the front; at night the town's glow beyond the far side.
+const SUN_AT := {"dusk": Vector2(-0.55, -1.0), "day": Vector2(0.6, 1.0), "night": Vector2(0.3, -1.0)}
+
+static var _sky_data := {}
+
+
+func sky_name() -> String:
+	return SKY["stadium"] if kind == "stadium" and time == "day" else SKY[time]
 
 
 func _environment() -> void:
+	var name := sky_name()
+	var d: Dictionary = _sky_data_for(name)
 	var env := Environment.new()
 	var sky := Sky.new()
-	var sm := ProceduralSkyMaterial.new()
+	var sm := PanoramaSkyMaterial.new()
+	sm.panorama = load("res://assets/env/sky/%s_sky_2k.jpg" % name)
+	sm.filter = true
+	# The night sky's photograph is exposed for the day's eye: darkened to sit over a floodlit field.
+	sm.energy_multiplier = 0.32 if time == "night" else 1.0
+	sky.sky_material = sm
+	sky.radiance_size = Sky.RADIANCE_SIZE_32
+	sky.process_mode = Sky.PROCESS_MODE_QUALITY if int(Game.settings.graphics) >= Game.GFX_HIGH else Sky.PROCESS_MODE_INCREMENTAL
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	# Turn the sky so its sun is where SUN_AT wants it (the panorama's u = 0.5 is +z, u = 0.25 is +x).
+	var sun_yaw := (0.5 - float(d.sun_u)) * TAU
+	var want: Vector2 = SUN_AT[time]
+	var turn := atan2(want.x, want.y) - sun_yaw
+	env.sky_rotation = Vector3(0, turn, 0)
 	var sun := DirectionalLight3D.new()
 	sun.shadow_enabled = Game.shadows_enabled()
 	sun.directional_shadow_max_distance = 120.0
-	match time:
-		"day":
-			sm.sky_top_color = Color("4a86c9")
-			sm.sky_horizon_color = Color("c9d8e4")
-			sm.ground_horizon_color = Color("9fb0a8")
-			sun.rotation_degrees = Vector3(-48, 30, 0)
-			sun.light_energy = 1.1
-			sun.light_color = Color(1.0, 0.97, 0.9)
-		"dusk":
-			# A summer evening: the sun just down behind the hills, the floodlights coming on.
-			sm.sky_top_color = Color("3d5590")
-			sm.sky_horizon_color = Color("f2a868")
-			sm.ground_horizon_color = Color("6e5a66")
-			sm.sky_energy_multiplier = 1.3
-			sun.rotation_degrees = Vector3(-38, 160, 0)
-			sun.light_energy = 0.95
-			sun.light_color = Color(1.0, 0.9, 0.78)
-		"night":
-			sm.sky_top_color = Color("060a18")
-			sm.sky_horizon_color = Color("1a2038")
-			sm.ground_horizon_color = Color("0c0f1c")
-			sun.rotation_degrees = Vector3(-70, 15, 0)   # the floodlights, really
-			sun.light_energy = 0.95
-			sun.light_color = Color(1.0, 0.95, 0.85)
-	# Below the horizon (what the gantry camera sees past the hills and trees): the horizon's own haze, not the
-	# material's default brown.
-	sm.ground_bottom_color = sm.ground_horizon_color.darkened(0.15)
-	sm.ground_curve = 0.2
-	sm.sun_angle_max = 0.0
-	sky.sky_material = sm
-	sky.radiance_size = Sky.RADIANCE_SIZE_32
-	env.background_mode = Environment.BG_SKY
-	env.sky = sky
+	# The sun's light comes from its place in the sky, but never lower than 28 degrees (a sunset's grazing light
+	# would leave the stands black); at night the floodlights, from high up.
+	var elev := deg_to_rad(clampf(float(d.sun_elevation), 28.0, 60.0)) if time != "night" else deg_to_rad(70.0)
+	var az := sun_yaw + turn
+	var to_sun := Vector3(sin(az) * cos(elev), sin(elev), cos(az) * cos(elev))
+	sun.look_at_from_position(Vector3.ZERO, -to_sun, Vector3.UP if absf(to_sun.y) < 0.99 else Vector3.FORWARD)
+	var sc: Array = d.sun_colour
+	sun.light_color = Color(1.0, 0.95, 0.85) if time == "night" else Color(sc[0], sc[1], sc[2]).lerp(Color.WHITE, 0.45)
+	sun.light_energy = {"day": 1.1, "dusk": 0.95, "night": 0.95}[time]
+	# The ambient light: the sky's own colour (from its HDR, tools/env/sky_light.py), at the game's strength.
+	var ac: Array = d.ambient
+	var sky_amb := Color(ac[0], ac[1], ac[2])
+	var base: Color = {"day": Color(0.78, 0.82, 0.9), "dusk": Color(0.7, 0.66, 0.72), "night": Color(0.42, 0.45, 0.58)}[time]
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = {"day": Color(0.78, 0.82, 0.9), "dusk": Color(0.7, 0.66, 0.72), "night": Color(0.42, 0.45, 0.58)}[time]
+	env.ambient_light_color = Color(base.r * sky_amb.r, base.g * sky_amb.g, base.b * sky_amb.b).lerp(base, 0.4)
 	env.ambient_light_energy = 0.62
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC if int(Game.settings.graphics) >= Game.GFX_MEDIUM else Environment.TONE_MAPPER_LINEAR
 	if int(Game.settings.graphics) >= Game.GFX_MEDIUM:
+		var hc: Array = d.horizon
 		env.fog_enabled = true
-		env.fog_light_color = sm.sky_horizon_color.lerp(Color(0.75, 0.78, 0.85), 0.6)
-		env.fog_density = 0.0009
+		# The haze: the horizon's colour, cooled (a sunset's orange over everything reads as smoke).
+		env.fog_light_color = Color(hc[0], hc[1], hc[2]).lerp(Color(0.72, 0.75, 0.82), 0.5 if time == "day" else 0.75) * (0.35 if time == "night" else 1.0)
+		env.fog_density = 0.0009 if time == "day" else 0.0006
 		env.fog_sky_affect = 0.0
 	var we := WorldEnvironment.new()
 	we.environment = env

@@ -4,7 +4,7 @@ Hurling for Android phones, built with [Godot 4.7](https://godotengine.org) (fre
 the same way as Kabaddi Raid and Takraw Smash. It plays the GAA's playing rules as they stand in 2026, fifteen a side,
 for the people who play and follow hurling: Ireland, and the Irish abroad. In English and in Irish.
 
-> **Status: playable beta (0.3.0).** The hurlers are the owner's own model, animated with four Mixamo clips and baked
+> **Status: playable beta (0.4.0).** The hurlers are the owner's own model, animated with four Mixamo clips and baked
 > for phones (`tools/player/`); the officials are built in code (`game/body.gd`). Everything else is the game as it
 > will ship.
 
@@ -22,9 +22,9 @@ for the people who play and follow hurling: Ireland, and the Irish abroad. In En
 | **Your first match** | The coach on the sideline: the game in three lines before the throw-in, then a short tip the first time each thing comes up (the ball near you, the four steps, the solo, in range, close in, a tackle, your puck-out, your free, too many steps), in English and Irish. A ring on the grass shows where a high ball near you comes down. |
 | **Modes** | Throw-in (any two counties, any ground); the Summer Championship (two groups of five, group finals, quarter-finals, semi-finals, the final) and the Tier Two Cup; Watch a match (AI v AI); a match behind the home screen. A result in the newspaper's style with the scorers and the box score. |
 | **The counties** | Twenty, by their place names in English and Irish, rated from the 2025 and 2026 seasons, in their traditional colours in kit designs of the game's own (no crests, county-board jerseys, nicknames or real competitions). Every player is invented. |
-| **Grounds** | The parish field at dusk (a small stand, a grass bank, ball-stop nets, floodlights, the trees and hills), the county ground by day and under lights, the national stadium. |
+| **Grounds** | The parish field at dusk under a Northern Irish sunset (a small stand, a grass bank, ball-stop nets, floodlights, the clubhouse, oak and broadleaf trees, a village of thatched cottages and a terrace beyond the road, a dry-stone wall, a lough), the county ground by day under Irish grey cloud and under lights at night, in its town of terraced streets, and the national stadium on a bright final day, Dublin's terraces beyond the stands. Real skies, a photo-scanned pitch (mown in bands, worn on the touchlines and in the goalmouths) and fields of hedgerows to the horizon: the shared assets (Poly Haven, CC0, and the maker's own models), one draw call a kind of thing. |
 | **Languages** | English and Irish (Gaeilge), with the GAA's Irish terms and Irish plural forms. The game starts in the phone's language; the globe on the home screen changes it. A text-fit audit checks every screen in both languages at 16:9, 19.5:9, 20:9 with a camera cut-out and 4:3 (`tests/fit_audit.gd`). [docs/LANGUAGES.md](docs/LANGUAGES.md). |
-| **Phones** | GL Compatibility renderer. Each ground's structure in a few draw calls, the crowd in one, a hurler in two (his body and his hurley; an official in one, two with his outline on Medium and High). The owner's model is cut from 187,754 triangles to 5,866, which the renderer drops to 2,930 or 1,757 for a man far away; on Low every man is the 1,757 one. At the national stadium, the heaviest ground, the busiest frame of two seconds' play: **Low 77 draw calls and 67,000 triangles, Medium 95 and 149,000, High 168 and 306,000**; at the parish field 77 / 64,000, 95 / 125,000, 148 / 234,000 (`tests/perf_probe.tscn`, 0.3.0; 0.2.0's code-built players: Low 68 / 138,000, Medium 91 / 284,000, High 161 / 674,000 at the stadium). On a phone under 4.5 GB of memory or with a small GPU (Mali-G52/G57, Adreno 5xx/61x) the game starts on Low: simpler players (a third of the polygons), far ones posed less often, no outlines, no MSAA, 75% render scale, a thinner crowd, no 3D behind the menus; and it drops a level by itself if a match runs under about 36 frames a second. Frame rate: Battery saver (about 30, at 80% scale), 60, or Max. The beta APK is 32.1 MB (64-bit; 33.5 MB 32-bit), 4.6 MB more than 0.2.0's for the player model, nearly all of it the engine: the game's own files (fonts subset to 312 KB, sounds mostly made in code, the player model's 1024 texture, its mask and its meshes) are about 5.5 MB; Play's bundle serves each phone only its own ABI. |
+| **Phones** | GL Compatibility renderer. Each ground's structure in a few draw calls, the crowd in one, a hurler in two (his body and his hurley; an official in one, two with his outline on Medium and High). The owner's model is cut from 187,754 triangles to 5,866, which the renderer drops to 2,930 or 1,757 for a man far away; on Low every man is the 1,757 one. At the national stadium, the heaviest ground, the busiest frame of two seconds' play: **Low 87 draw calls and 82,000 triangles, Medium 105 and 164,000, High 178 and 320,000**; at the parish field 91 / 81,000, 109 / 141,000, 167 / 263,000 (`tests/perf_probe.tscn`, 0.4.0, with the new skies, pitch, trees, hedgerows and villages; 0.3.0 before them: stadium 77 / 67,000, 95 / 149,000, 168 / 306,000; parish 77 / 64,000, 95 / 125,000, 148 / 234,000). On a phone under 4.5 GB of memory or with a small GPU (Mali-G52/G57, Adreno 5xx/61x) the game starts on Low: simpler players (a third of the polygons), far ones posed less often, no outlines, no MSAA, 75% render scale, a thinner crowd, no 3D behind the menus; and it drops a level by itself if a match runs under about 36 frames a second. Frame rate: Battery saver (about 30, at 80% scale), 60, or Max. The 0.3.0 beta APK was 32.1 MB (64-bit; 33.5 MB 32-bit), most of it the engine; 0.4.0 adds the skies, ground scans and surrounds' models (about 4 MB as imported for phones; the release page has each APK's size). The game's own files: fonts subset to 312 KB, sounds mostly made in code, the player model, the grounds' textures and models; Play's bundle serves each phone only its own ABI. |
 
 ## Controls
 
@@ -75,6 +75,7 @@ xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tsc
 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn   # draw calls, triangles
 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/screenshots.tscn -- /out   # a tour of the screens
 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/kit_view.tscn -- /out                     # kits and officials close up
+xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/venue_view.tscn -- /out "" 0   # every ground on Low (2: High): TV, end, wide
 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/clip_view.tscn -- /out Baseball_Hit 0.2 1.4   # a Mixamo clip as stills
 tools/player/build.sh                                                                                       # re-bake the players' model (tools/player/README.md)
 ```
@@ -86,17 +87,19 @@ autoload/   game.gd (settings, saves, theme, screens), db.gd (counties, players,
 game/       rules.gd (the playing rules, pure), match.gd (the match: play, restarts, fouls, cards, time, your player),
             team_ai.gd (shape, marking, decisions), officials.gd, player.gd (movement and poses), hero_body.gd (the
             owner's model, its clips and its kit shader), body.gd (the skeleton; an official drawn in code),
-            replay.gd (a wide again from behind the goal), sliotar.gd, pitch.gd, stadium.gd + geo.gd + crowd.gd (the grounds),
+            replay.gd (a wide again from behind the goal), scenery.gd (the shared models round a ground), sliotar.gd, pitch.gd, stadium.gd + geo.gd + crowd.gd (the grounds),
             camera_rig.gd, hud.gd, touch_controls.gd, championship.gd, sim.gd, records.gd, plural.gd, coach.gd,
             playtest_hook.gd (the Web build's state for browser playtests)
 ui/         home screen (the programme), match setup (the team sheets), the championship, result, settings, how to
             play, move buttons, licences, language picker, loading screen, backdrop, drawn art, substitutions,
             tactics
 i18n/       src/en.json, src/ga.json, strings.csv (generated)
-assets/     player/ (the baked model: mesh, texture, kit mask, clips), art/ (the home screen's cover), icon/, audio/
+assets/     player/ (the baked model: mesh, texture, kit mask, clips), env/ (skies, ground scans, water, the
+            surrounds' models, from the shared assets), art/ (the home screen's cover), icon/, audio/
 fonts/      Noto Sans and Oswald (cut to the letters used), Uncial Antiqua; all SIL OFL
 tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py (the jig),
-            store/ (icons, feature graphic, screenshots), player/ (bakes the owner's model and clips for the game)
+            store/ (icons, feature graphic, screenshots), player/ (bakes the owner's model and clips for the game),
+            env/sky_light.py (each sky's sun and light from its HDR)
 tests/      test_runner, fit_audit, user_bot, match_sim, score_check, input_test, perf_probe, screenshots, kit_view, clip_view, compile_check
 store/      PLAY_STORE.md, the listings, the icon, feature graphic and screenshots
 docs/       RULES.md, LANGUAGES.md, AI.md, MESHY_BRIEF.md, BETA.md, PLAYTEST.md, PROGRESS.md
