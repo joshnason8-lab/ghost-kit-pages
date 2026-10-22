@@ -46,14 +46,16 @@ func _ready() -> void:
 		"village":
 			_env(Color("2a2140"), Color("d27a4e"), Color(0.75, 0.62, 0.62), 0.9, Vector3(-30, -35, 0), Color(1.0, 0.82, 0.62))
 			spots = _ground_crowd(low)
-			_trees(18 if not low else 10, 24.0, 36.0)
+			_hills(Color("3e5a3a"), Color("c98a6a"))
+			_trees(22 if not low else 10, 24.0, 38.0, true)
 			_huts()
 			_string_lights(low)
 		"school":
 			_env(Color("6ea7e0"), Color("dbe8f0"), Color(0.8, 0.82, 0.86), 1.1, Vector3(-55, 30, 0), Color(1.0, 0.97, 0.9))
 			spots = _ground_crowd(low, true)
+			_hills(Color("4f6e4a"), Color("b9d2e6"))
 			_school()
-			_trees(12 if not low else 7, 26.0, 38.0)
+			_trees(16 if not low else 7, 26.0, 40.0)
 		"arena":
 			_env(Color("0c0f18"), Color("1a2030"), Color(0.62, 0.64, 0.72), 1.0, Vector3(-65, 20, 0), Color(1.0, 0.98, 0.95))
 			spots = _stands(14 if not low else 9, true)
@@ -62,12 +64,12 @@ func _ready() -> void:
 			_env(Color("060914"), Color("161c33"), Color(0.5, 0.52, 0.62), 0.95, Vector3(-70, -15, 0), Color(1.0, 0.93, 0.8))
 			spots = _stands(16 if not low else 10, false)
 			_floodlights()
-	add_child(_ground.commit(Geo.material(true)))
+	add_child(_ground.commit(ground_material(surface() == "mat", f.pole_gap * 0.5)))
 	add_child(_lit.commit(Geo.material(true)))
 	add_child(_glow.commit(Geo.material(false)))
 	if not spots.is_empty():
 		crowd = Crowd.new()
-		crowd.build(spots, Game.crowd_density(), home_colors, hash(venue))
+		crowd.build(spots, Game.crowd_density(), home_colors, hash(venue), kind in ["arena", "stadium"])
 		add_child(crowd)
 
 
@@ -102,15 +104,76 @@ func _env(top: Color, horizon: Color, ambient: Color, energy: float, sun_rot: Ve
 	sun.shadow_enabled = Game.shadows_enabled()
 	sun.directional_shadow_max_distance = 40.0
 	add_child(sun)
-	# The sky's glow at the horizon: a band of colour round the far side (cheaper than a sky).
-	var r := 70.0
-	for i in 24:
-		var a0 := PI * 1.0 + PI * float(i) / 24.0 - PI * 0.5
-		var a1 := PI * 1.0 + PI * float(i + 1) / 24.0 - PI * 0.5
-		var p0 := Vector3(cos(a0) * r, 0, sin(a0) * r - 10.0)
-		var p1 := Vector3(cos(a1) * r, 0, sin(a1) * r - 10.0)
-		_glow.wall(p0, p1, -1.0, 9.0, horizon)
-		_glow.wall(p0 + Vector3(0, 9, 0), p1 + Vector3(0, 9, 0), 0.0, 14.0, horizon.lerp(top, 0.6))
+	# The sky: a dome coloured from the horizon up, brighter toward the sun.
+	var to_sun := Basis.from_euler(sun_rot * PI / 180.0) * Vector3.BACK
+	_glow.dome(90.0, horizon, top, sun_col.lerp(horizon, 0.3), to_sun, 5 if int(Game.settings.graphics) == Game.GFX_LOW else 8, 20 if int(Game.settings.graphics) == Game.GFX_LOW else 28)
+
+
+## Hills far off, hazy with distance: a ring of long low mounds behind the place.
+func _hills(col: Color, haze: Color) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 31
+	var n := 9 if int(Game.settings.graphics) == Game.GFX_LOW else 14
+	for i in n:
+		var a := PI * 1.02 + PI * 0.96 * float(i) / float(n - 1) + rng.randf_range(-0.05, 0.05)
+		var r := rng.randf_range(70.0, 82.0)
+		var c := Vector3(cos(a) * r, -2.0, sin(a) * r * 0.85 - 4.0)
+		_lit.ball(c, Vector3(rng.randf_range(14.0, 24.0), rng.randf_range(5.0, 11.0), rng.randf_range(8.0, 12.0)), col.lerp(haze, rng.randf_range(0.35, 0.6)), 0.08, i)
+
+
+## The ground's material: the vertex colours under a fine grain and a broad mottle (one small texture made once),
+## lighter where the play wears it (along the lane, round the poles). Mats get a fainter, finer grain.
+static var _detail: ImageTexture
+
+
+static func ground_material(mat: bool, half_gap: float) -> ShaderMaterial:
+	if _detail == null:
+		var fine := FastNoiseLite.new()
+		fine.noise_type = FastNoiseLite.TYPE_CELLULAR
+		fine.frequency = 0.09
+		fine.seed = 3
+		var broad := FastNoiseLite.new()
+		broad.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		broad.frequency = 0.012
+		broad.fractal_octaves = 3
+		broad.seed = 9
+		var a := fine.get_seamless_image(128, 128)
+		var b := broad.get_seamless_image(128, 128)
+		var img := Image.create_empty(128, 128, false, Image.FORMAT_RGBA8)
+		for y in 128:
+			for x in 128:
+				img.set_pixel(x, y, Color(a.get_pixel(x, y).r, b.get_pixel(x, y).r, 0.0, 1.0))
+		img.generate_mipmaps()
+		_detail = ImageTexture.create_from_image(img)
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode vertex_lighting, specular_disabled;
+uniform sampler2D detail : filter_linear_mipmap, repeat_enable;
+uniform float grain = 0.16;
+uniform float mottle = 0.12;
+uniform float wear = 0.12;
+uniform float half_gap = 12.0;
+varying vec3 wpos;
+void vertex() { wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+void fragment() {
+	vec2 d = texture(detail, wpos.xz * 0.35).rg;
+	float broad = texture(detail, wpos.xz * 0.035 + vec2(0.37, 0.11)).g;
+	float n = (1.0 + grain * (d.r - 0.5) * 2.0) * (1.0 + mottle * (broad - 0.5) * 2.0);
+	float lane = exp(-wpos.z * wpos.z / 2.5) * (1.0 - smoothstep(half_gap, half_gap + 2.0, abs(wpos.x)));
+	float poles = exp(-(pow(abs(wpos.x) - half_gap, 2.0) + wpos.z * wpos.z) / 3.0);
+	ALBEDO = COLOR.rgb * n * (1.0 + wear * max(lane, poles));
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("detail", _detail)
+	m.set_shader_parameter("half_gap", half_gap)
+	if mat:
+		m.set_shader_parameter("grain", 0.05)
+		m.set_shader_parameter("mottle", 0.04)
+		m.set_shader_parameter("wear", 0.04)
+	return m
 
 
 # ---------------------------------------------------------------- the field
@@ -134,14 +197,6 @@ func _field() -> void:
 		# Beaten earth, rolled and watered: a little lighter where the play wears it, darker at the edges.
 		_ground.floor_rect(-L - lobby - 2.0, -W - lobby - 2.0, L + lobby + 2.0, W + lobby + 2.0, -0.004, earth.darkened(0.12))
 		_ground.floor_rect(-L - lobby, -W - lobby, L + lobby, W + lobby, 0.0, earth.darkened(0.04))
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 7
-		var n := 6 if int(Game.settings.graphics) == Game.GFX_LOW else 14
-		for i in n:
-			var x := rng.randf_range(-L, L)
-			var z := rng.randf_range(-W, W)
-			var r := rng.randf_range(1.0, 3.0)
-			_ground.floor_rect(x - r, z - r * 0.6, x + r, z + r * 0.6, 0.002 + i * 0.0001, earth.lightened(rng.randf_range(0.02, 0.07)))
 		_ground.floor_rect(-L, -W, L, W, 0.001, earth)
 	# The lines, in lime (or white tape on the mats), 5 cm wide.
 	var line := Color("f4f6e8") if not mat else Color("f7f7f7")
@@ -276,43 +331,167 @@ func _stands(rows: int, indoor: bool) -> Array:
 	return spots
 
 
+## The hall's roof: a dark deck on steel trusses, rows of lights between them, and a big screen hung over the
+## centre (plain: no names).
 func _roof_lights() -> void:
+	var low := int(Game.settings.graphics) == Game.GFX_LOW
 	for i in 6:
-		for s: float in [-1.0, 1.0]:
-			_glow.box(Vector3(-12.5 + i * 5.0, 14.0, s * 7.0), Vector3(1.6, 0.1, 0.6), Color("fff6e0"))
-	_lit.box(Vector3(0, 14.4, 0), Vector3(60, 0.3, 50), Color("10131d"))
+		for s2: float in [-1.0, 1.0]:
+			_glow.box(Vector3(-12.5 + i * 5.0, 14.0, s2 * 7.0), Vector3(1.6, 0.1, 0.6), Color("fff6e0"))
+	_lit.box(Vector3(0, 14.6, 0), Vector3(70, 0.3, 56), Color("10131d"))
+	var trusses: int = 4 if low else 7
+	for i in trusses:
+		var x: float = -21.0 + i * 42.0 / float(trusses - 1)
+		_lit.box(Vector3(x, 14.2, 0), Vector3(0.35, 0.5, 54), Color("3a4150"))
+		if not low:
+			_lit.box(Vector3(x, 13.3, 0), Vector3(0.2, 0.2, 54), Color("3a4150"))
+			for k in 9:
+				var z := -24.0 + k * 6.0
+				_lit.box(Vector3(x, 13.75, z + 1.5), Vector3(0.12, 1.1, 0.12), Color("3a4150"))
+	# The screen: four faces of panels, hung on cables.
+	var c := Vector3(0, 10.2, 0)
+	_lit.box(c, Vector3(4.6, 2.4, 4.6), Color("181b22"))
+	for k in 4:
+		var yaw := PI * 0.5 * k
+		var n := Vector3(sin(yaw), 0, cos(yaw))
+		_glow.box(c + n * 2.31, Vector3(4.1, 1.9, 0.02), Color("1d3a6a").lerp(Color("2f86c9"), 0.4), yaw)
+	for sx: float in [-1.6, 1.6]:
+		_lit.cylinder(c + Vector3(sx, 1.2, 0), Vector3(sx, 14.4, 0), 0.03, 0.03, Color("9aa0aa"), 4, false)
 
 
+## Four lattice towers at the corners, each a bank of lamps tilted at the field; a roof over the far stand.
 func _floodlights() -> void:
 	var L: float = f.length * 0.5 + 10.0
 	var W: float = f.width * 0.5 + 9.0
+	var low := int(Game.settings.graphics) == Game.GFX_LOW
 	for sx: float in [-1.0, 1.0]:
 		for sz: float in [-1.0, 1.0]:
-			if sz > 0.0 and int(Game.settings.graphics) == Game.GFX_LOW:
+			if sz > 0.0 and low:
 				continue
 			var base := Vector3(sx * L, 0, sz * W)
-			_lit.cylinder(base, base + Vector3(0, 18, 0), 0.25, 0.18, Color("6b6f78"), 6, false)
-			_glow.box(base + Vector3(0, 18.6, 0), Vector3(2.6, 1.4, 0.3), Color("fffbe8"))
+			# Three legs leaning in to the head, braced.
+			for k in 3:
+				var a := TAU * k / 3.0
+				var foot := base + Vector3(cos(a), 0, sin(a)) * 1.4
+				_lit.cylinder(foot, base + Vector3(0, 19.5, 0), 0.12, 0.08, Color("7b808a"), 5, false)
+			if not low:
+				for hgt: float in [5.0, 10.0, 15.0]:
+					var r := 1.4 * (1.0 - hgt / 19.5)
+					_lit.ring(base + Vector3(0, hgt, 0), r - 0.06, r + 0.06, 0.0, TAU, Color("7b808a"), 8)
+			# The head: a frame and four rows of lamps, facing the field's centre.
+			var yaw := atan2(-base.x, -base.z)
+			var head := base + Vector3(0, 20.5, 0)
+			_lit.box(head, Vector3(4.2, 2.6, 0.35), Color("3a3e46"), yaw)
+			var right := Vector3(cos(yaw), 0, -sin(yaw))
+			var fwd := Vector3(sin(yaw), 0, cos(yaw))
+			for row in 4:
+				for col in 6:
+					var p := head + right * (-1.75 + col * 0.7) + Vector3(0, -0.95 + row * 0.63, 0) + fwd * 0.2
+					_glow.box(p, Vector3(0.5, 0.42, 0.06), Color("fffbe8"), yaw)
+	# A cantilevered roof over the far stand, on columns.
+	var z: float = -(f.width * 0.5 + f.lobby + 3.2) - 16 * 0.85
+	_lit.box(Vector3(0, 12.0, z + 6.0), Vector3(f.length + 16.0, 0.4, 14.0), Color("2a2e38"))
+	if not low:
+		for i in 7:
+			var x: float = -float(f.length) * 0.5 - 6.0 + i * (float(f.length) + 12.0) / 6.0
+			_lit.box(Vector3(x, 6.0, z), Vector3(0.4, 12.0, 0.4), Color("5a5f6a"))
+			_lit.box(Vector3(x, 11.6, z + 6.0), Vector3(0.3, 0.5, 12.0), Color("4a4f5a"))
+	# The night: a few stars.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for i in (40 if not low else 0):
+		var a := rng.randf_range(PI * 1.05, PI * 1.95)
+		var e := rng.randf_range(0.25, 1.1)
+		var d := Vector3(cos(a) * cos(e), sin(e), sin(a) * cos(e)) * 85.0
+		_glow.box(d, Vector3(0.25, 0.25, 0.25), Color(1, 1, 0.95).lerp(Color("aac8ff"), rng.randf()))
 
 
-func _trees(n: int, r0: float, r1: float) -> void:
+## Trees behind the place: neem and rain trees, a broad crown of several rounded masses on a forked trunk, and (palms
+## true) coconut palms, a leaning ringed trunk with a crown of drooping fronds.
+func _trees(n: int, r0: float, r1: float, palms := false) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 23
+	var low := int(Game.settings.graphics) == Game.GFX_LOW
 	for i in n:
 		var a := rng.randf_range(PI * 1.05, PI * 1.95)
 		var r := rng.randf_range(r0, r1)
 		var p := Vector3(cos(a) * r * 1.2, 0, sin(a) * r * 0.7 - 6.0)
-		var h := rng.randf_range(5.0, 9.0)
-		_lit.cylinder(p, p + Vector3(0, h * 0.55, 0), 0.25, 0.18, Color("4a3424"), 6, false)
-		_lit.blob(p + Vector3(0, h * 0.75, 0), Vector3(h * 0.38, h * 0.3, h * 0.38), Color("2f5a2a").lerp(Color("4f7a34"), rng.randf()))
+		if palms and i % 3 == 0:
+			_palm(p, rng.randf_range(7.0, 11.0), rng, low)
+			continue
+		var h := rng.randf_range(5.5, 9.5)
+		var bark := Color("4a3424").lerp(Color("5e4630"), rng.randf())
+		var crown_y := h * 0.62
+		_lit.cylinder(p, p + Vector3(0, crown_y, 0), 0.32, 0.22, bark, 6 if low else 8, false)
+		# Two limbs forking up into the crown.
+		for k in (1 if low else 2):
+			var dir := Vector3(rng.randf_range(-1, 1), 1.4, rng.randf_range(-1, 1)).normalized()
+			var from := p + Vector3(0, crown_y * 0.8, 0)
+			_lit.cylinder(from, from + dir * h * 0.3, 0.16, 0.09, bark, 5, false)
+		var leaf := Color("2f5a2a").lerp(Color("557d36"), rng.randf())
+		var masses := 3 if low else 6
+		for k in masses:
+			var off := Vector3(rng.randf_range(-1, 1) * h * 0.28, rng.randf_range(-0.1, 0.25) * h, rng.randf_range(-1, 1) * h * 0.22)
+			var sz := h * rng.randf_range(0.2, 0.3)
+			_lit.ball(p + Vector3(0, h * 0.78, 0) + off, Vector3(sz * 1.2, sz * 0.8, sz * 1.1), leaf.lerp(Color("6f8f3a"), rng.randf() * 0.35), 0.18, i * 7 + k)
 
 
+func _palm(p: Vector3, h: float, rng: RandomNumberGenerator, low: bool) -> void:
+	var lean := Vector3(rng.randf_range(-0.25, 0.25), 1.0, rng.randf_range(-0.15, 0.25)).normalized()
+	var segs := 4 if low else 6
+	var prev := p
+	var top := p
+	for k in segs:
+		var t := float(k + 1) / segs
+		# The trunk bends: more lean the higher it goes.
+		var q := p + (lean * Vector3(t * 1.6, 1.0, t * 1.6)).normalized() * h * t
+		q.y = h * t
+		_lit.cylinder(prev, q, 0.24 - 0.06 * t, 0.22 - 0.06 * t, Color("7a6248").lerp(Color("5f4a36"), float(k % 2)), 6, false)
+		prev = q
+		top = q
+	var frond := Color("3d7a2e")
+	var n := 6 if low else 9
+	for k in n:
+		var a := TAU * k / n + rng.randf_range(-0.2, 0.2)
+		var dir := Vector3(cos(a), 0.0, sin(a))
+		var side := Vector3(-dir.z, 0, dir.x)
+		var len := h * rng.randf_range(0.36, 0.46)
+		var pts := []
+		for j in 4:
+			var t := float(j) / 3.0
+			pts.append(top + dir * len * t + Vector3(0, 0.6 * t - 1.9 * t * t, 0))
+		for j in 3:
+			var w0 := 0.55 * (1.0 - float(j) / 3.0) + 0.08
+			var w1 := 0.55 * (1.0 - float(j + 1) / 3.0) + 0.08
+			var a0: Vector3 = pts[j]
+			var a1: Vector3 = pts[j + 1]
+			var c := frond.lerp(Color("5a8f36"), float(j) / 3.0)
+			_lit._tri_quad(a0 - side * w0, a0 + side * w0, a1 + side * w1, a1 - side * w1, Vector3.UP, c)
+			_lit._tri_quad(a1 - side * w1, a1 + side * w1, a0 + side * w0, a0 - side * w0, Vector3.DOWN, c.darkened(0.2))
+	_lit.ball(top, Vector3(0.45, 0.35, 0.45), Color("5e4a2a"), 0.1, 3)
+
+
+## Village houses: plastered walls on a plinth, a thatched (or tiled) roof over the eaves, a door and a window.
 func _huts() -> void:
-	for i in 4:
-		var p := Vector3(-24.0 + i * 15.0, 0, -26.0 - (i % 2) * 4.0)
-		_lit.box(p + Vector3(0, 1.3, 0), Vector3(5.0, 2.6, 3.6), Color("c9a27a").lerp(Color("e0c49a"), float(i % 2)))
-		_lit.box(p + Vector3(0, 2.9, 0), Vector3(5.6, 0.6, 4.2), Color("7a4a2a"))
-		_lit.box(p + Vector3(0.8, 0.9, 1.81), Vector3(0.9, 1.8, 0.02), Color("3a2414"))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 41
+	var walls := [Color("d9b98c"), Color("e8d2a8"), Color("c99a72"), Color("dcc9a0"), Color("b9c7c0")]
+	for i in 6:
+		var p := Vector3(-34.0 + i * 13.5 + rng.randf_range(-2, 2), 0, -28.0 - (i % 2) * 5.0 - rng.randf_range(0, 3))
+		var w := rng.randf_range(4.5, 6.5)
+		var d := rng.randf_range(3.4, 4.4)
+		var hgt := rng.randf_range(2.4, 2.9)
+		var wall: Color = walls[i % walls.size()]
+		_lit.box(p + Vector3(0, 0.15, 0), Vector3(w + 0.4, 0.3, d + 0.4), Color("8f7a5e"))
+		_lit.box(p + Vector3(0, 0.3 + hgt * 0.5, 0), Vector3(w, hgt, d), wall)
+		var thatch := i % 3 != 2
+		var roof := Color("a88a52").lerp(Color("8a6a3a"), rng.randf()) if thatch else Color("a4442e")
+		_lit.prism(p + Vector3(0, 0.3 + hgt, 0), w + 1.0, d + 1.4, rng.randf_range(1.2, 1.7), roof)
+		_lit.box(p + Vector3(-w * 0.15, 0.3 + 0.95, d * 0.5 + 0.01), Vector3(0.95, 1.9, 0.04), Color("4a2e1a"))
+		_lit.box(p + Vector3(w * 0.25, 0.3 + 1.5, d * 0.5 + 0.01), Vector3(0.9, 0.75, 0.04), Color("2c3a44"))
+		# A haystack or a cart beside some of them.
+		if i % 2 == 0:
+			_lit.ball(p + Vector3(w * 0.5 + 2.0, 0.9, 1.0), Vector3(1.3, 1.2, 1.3), Color("c9a65a"), 0.1, i)
 
 
 func _string_lights(low: bool) -> void:
@@ -331,11 +510,27 @@ func _string_lights(low: bool) -> void:
 		_lit.cylinder(Vector3(x, 0, z), Vector3(x, 3.8, z), 0.05, 0.05, Color("6b4a2a"), 5, false)
 
 
+## The school: two storeys with a verandah of pillars on each, windows with frames, a parapet, a water tank on the
+## roof, and the boundary wall in front.
 func _school() -> void:
 	var z := -24.0
-	_lit.box(Vector3(0, 3.5, z), Vector3(46, 7.0, 6.0), Color("e6cf9a"))
-	_lit.box(Vector3(0, 7.3, z), Vector3(47, 0.6, 6.6), Color("9a3a2a"))
+	var low := int(Game.settings.graphics) == Game.GFX_LOW
+	var wall := Color("e6cf9a")
+	_lit.box(Vector3(0, 3.5, z - 1.0), Vector3(46, 7.0, 5.0), wall)
+	_lit.box(Vector3(0, 3.5, z + 1.6), Vector3(46.4, 0.25, 1.4), Color("d8c08c"))     # the first floor's verandah
+	_lit.box(Vector3(0, 7.1, z + 0.6), Vector3(47, 0.35, 7.2), Color("9a3a2a"))       # the roof slab's edge
+	_lit.box(Vector3(0, 7.6, z + 3.0), Vector3(47, 0.7, 0.2), wall.darkened(0.08))    # the parapet
 	for row in 2:
 		for i in 14:
-			_lit.box(Vector3(-20.0 + i * 3.1, 1.8 + row * 3.0, z + 3.01), Vector3(1.4, 1.4, 0.04), Color("3b5872"))
+			var x := -20.0 + i * 3.1
+			_lit.box(Vector3(x, 1.8 + row * 3.4, z + 1.51), Vector3(1.5, 1.5, 0.05), Color("f2eadc"))
+			_lit.box(Vector3(x, 1.8 + row * 3.4, z + 1.54), Vector3(1.25, 1.25, 0.04), Color("3b5872"))
+			if not low:
+				_lit.box(Vector3(x - 1.55, 1.7 + row * 3.4, z + 2.15), Vector3(0.3, 3.4, 0.3), Color("efe4cc"))
+		if not low:
+			_lit.box(Vector3(0, 3.35 + row * 3.4, z + 2.25), Vector3(46, 0.08, 0.06), Color("8a6a4a"))   # the rail
+	_lit.cylinder(Vector3(14, 7.3, z - 1.0), Vector3(14, 9.2, z - 1.0), 1.4, 1.4, Color("2b2b2b"), 10, true)   # the tank
 	_lit.box(Vector3(0, 0.6, -18.5), Vector3(50, 1.2, 0.25), Color("cfc6b4"))
+	if not low:
+		for i in 11:
+			_lit.box(Vector3(-25.0 + i * 5.0, 0.7, -18.5), Vector3(0.4, 1.4, 0.4), Color("bdb3a0"))

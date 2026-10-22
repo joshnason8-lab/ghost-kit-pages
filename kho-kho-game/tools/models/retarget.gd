@@ -34,6 +34,14 @@ const POSES := {
 		"LeftArm": Vector3(0.35, 0.95, 0.1), "LeftForeArm": Vector3(-0.5, 0.85, 0.1)},
 	"cheer": {"RightArm": Vector3(-0.55, 0.85, 0.1), "RightForeArm": Vector3(-0.35, 0.95, 0.0),
 		"LeftArm": Vector3(0.55, 0.85, 0.1), "LeftForeArm": Vector3(0.35, 0.95, 0.0)},
+	# A spectator on a seat: thighs forward, shins down, hands on his knees.
+	"seated": {"LeftUpLeg": Vector3(0.12, -0.12, 1.0), "RightUpLeg": Vector3(-0.12, -0.12, 1.0),
+		"LeftLeg": Vector3(0.0, -1.0, 0.12), "RightLeg": Vector3(0.0, -1.0, 0.12),
+		"LeftArm": Vector3(0.2, -0.85, 0.45), "RightArm": Vector3(-0.2, -0.85, 0.45),
+		"LeftForeArm": Vector3(0.0, -0.45, 0.9), "RightForeArm": Vector3(0.0, -0.45, 0.9)},
+	# A spectator on his feet clapping.
+	"clap": {"LeftArm": Vector3(0.25, -0.75, 0.6), "RightArm": Vector3(-0.25, -0.75, 0.6),
+		"LeftForeArm": Vector3(-0.55, 0.45, 0.7), "RightForeArm": Vector3(0.55, 0.45, 0.7)},
 }
 const FPS := 30.0
 const TARGET := "res://src/player.glb"

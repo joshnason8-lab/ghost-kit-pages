@@ -49,6 +49,19 @@ The kho kho game, built overnight on 21-22 October 2026 on branch `claude/kho-kh
 - The rules re-checked (docs/RULES.md, "The 0.2 re-check"): the primary sources are still blocked; the foul now
   stands until a kho or a free zone.
 
+## Round three: 0.3.0-beta (22 October 2026, the owner's list)
+
+- Renamed **Kho Kho Rush**; the owner's icon artwork; the package is now `com.khokhorush.game`.
+- The home menu in one row; Watch a Match has the pause button (Quit match); the toss coin has faces (a lion,
+  and 1 in the language's currency); DODGE is a side-step that a touch mostly slips off.
+- The owner's player model and six Mixamo animations in the game (docs/MODELS.md): decimated and re-baked
+  (`tools/models/build_player.py`), retargeted from the T-posed FBX rig to the A-posed model
+  (`tools/models/retarget.gd`), kit colours by a class mask baked in the texture's alpha.
+- The grounds: a ground shader with grain, mottle and wear; a sky dome; hills; rain trees and coconut palms; houses
+  with thatched and tiled roofs; light towers, a stand roof and stars; the hall's trusses and screen; the school's
+  verandahs. The crowd is drawn from the players' model at load (seated, standing, clapping; cheering at an out).
+- Triangles a frame fell (Low 38-46k, Medium 56-65k) though everything looks fuller; draw calls unchanged.
+
 ## Next
 
 1. A native speaker's pass over each translation (docs/translation-notes/), and the rule-book conflicts in

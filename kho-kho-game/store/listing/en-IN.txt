@@ -37,5 +37,5 @@ Kho kho: खो-खो · ଖୋ-ଖୋ · খো-খো · ಖೋ-ಖೋ · ఖ
 
 Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
 
-== Release notes (0.2.0) ==
-New: the City League, coach tips for your first match, a pole turn, seated chasers who watch the play, a new icon. Fixed from a phone playtest: your defenders now walk on in time, a chaser pushed into the lane runs along it, KHO can be pressed a moment early, clearer chalk on Low.
+== Release notes (0.3.0) ==
+Khamba Dash is now Kho Kho Rush, with a new icon. New players, animated from real motion capture: the sprint, the kho, the dive, the pole turn, kneeling in the lane. New grounds: trees and palms, houses, hills and sky, floodlight towers, a hall with a big screen, and a crowd drawn from the same players. DODGE is a real side-step; the toss coin has faces; Watch a Match has a pause button to leave it.

@@ -24,6 +24,7 @@ func _ready() -> void:
 	Game.settings.sound = false
 	Game.settings.graphics = Game.GFX_HIGH
 	ModelBody.warm()
+	await Crowd.render_sheet(get_tree())
 	var menu := Game.show_screen("res://ui/main_menu.gd")
 	await _wait(90)
 	await _shot("01_home")
@@ -47,6 +48,11 @@ func _ready() -> void:
 		if clean and Game.current.hud:
 			Game.current.hud.visible = false
 			Game.current._ring.visible = false
+			# The store's feature graphic: a wide view that takes in the place round the field.
+			Game.current.cam_locked = true
+			Game.current.cam.position = Vector3(-6.0, 9.0, 26.0)
+			Game.current.cam.look_at(Vector3(4.0, 3.0, -20.0))
+			await _wait(2)
 		await _shot("05_match_" + String(spec[0]))
 	Game.show_screen("res://ui/howto_screen.gd")
 	await _wait(10)

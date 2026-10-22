@@ -48,6 +48,8 @@ var batch: Array = []
 var batch_time := 0.0
 var dream_paid := 0
 var since_out := 0.0
+var _cheer_t := 99.0          # seconds since an out, for the crowd
+var cam_locked := false       # the camera left where it is (pictures for the store and the docs)
 var khos_since := 0
 var powerplay_used := false
 var powerplay_on := false
@@ -598,6 +600,10 @@ var _drum_t := 0.0
 func _play(dt: float) -> void:
 	clock -= dt
 	since_out += dt
+	# The crowd up on its feet at an out, settling over a few seconds.
+	_cheer_t += dt
+	if arena.crowd:
+		Crowd.set_excite(0.75 * exp(-_cheer_t / 2.5))
 	# The crowd's drums: up with an out, settling back as the chase goes on.
 	_drum_t -= dt
 	if _drum_t <= 0.0 and not attract:
@@ -1216,6 +1222,7 @@ func _out(d: Athlete, kind: String, by: Athlete = null) -> void:
 	score[chasing] += pts
 	_turn_out_count += 1
 	since_out = 0.0
+	_cheer_t = 0.0
 	khos_since = 0
 	var st: Dictionary = stats[d.data.id]
 	st.times_out += 1
@@ -1659,6 +1666,8 @@ func _update_markers() -> void:
 
 
 func _camera(dt: float) -> void:
+	if cam_locked:
+		return
 	var fx := 0.0
 	if active:
 		fx = active.position.x

@@ -5,12 +5,9 @@ royalties), the same way as Kabaddi Raid and Takraw Smash. (Its working title wa
 classic rules of the national championships and the fast rules of the 2025 world championship, for the sport's
 players in India, Nepal, Bangladesh and Sri Lanka, in fourteen of their languages.
 
-> **Status: playable beta, 0.2.** 0.2 was played first as a phone tester would, in a browser with touch
-> ([docs/PLAYTEST.md](docs/PLAYTEST.md)), and fixed from what was found; it adds coach tips for a first match, the
-> City League, a pole turn and seated chasers who watch the play.
-> The players are built in code (`game/body.gd`) on a humanoid skeleton, ready to be
-> replaced by Meshy models (docs/MESHY_BRIEF.md). No Meshy credits have been spent. Everything else is the game as it
-> will ship.
+> **Status: playable beta, 0.3.** The players are the owner's model, moved by Mixamo animations (docs/MODELS.md);
+> the grounds have trees, palms, houses, hills, sky, light towers and a crowd drawn from the same players. 0.2 was
+> played first as a phone tester would ([docs/PLAYTEST.md](docs/PLAYTEST.md)). No Meshy credits have been spent.
 
 ## What's in it
 
@@ -23,7 +20,8 @@ players in India, Nepal, Bangladesh and Sri Lanka, in fourteen of their language
 | **Outs** | A touch, a sky dive, a pole dive, a step over the line, a late entry. Defenders on in batches of three; the next batch comes on when one is out. |
 | **Officials** | Two umpires, one on each side line, each with his half: a short whistle and an arm up for an out, short whistles and an arm pointing the way for a foul. The referee signals the end of a turn; the timekeeper and scorer sit at the table under the shamiana. |
 | **The AI** | Chasers chain khos along the lane toward the defender, dive at the lines, turn at the poles; defenders keep behind the chaser's direction, across from the seated chasers who could rise at them, slip past him as he commits and swerve from the hand. Measured against real finals: 1.5 outs a minute between equal sides in the classic game, 1.75 in the fast one (real: 1.3-1.6). [docs/AI.md](docs/AI.md) has every number. |
-| **Grounds** | A village ground of beaten earth at dusk, a school ground by day, an indoor arena on mats (the fast game's), a floodlit stadium of red earth. |
+| **Players** | The owner's athlete model in two levels of detail (3,600 triangles; 1,400 on Low), each side's kit painted on in the shader, every player's own skin tone and height; run, walk, dive, reach (the kho and the touch), pole turn, kneel down and kneel from Mixamo, umpires' signals made on the same rig ([docs/MODELS.md](docs/MODELS.md)). |
+| **Grounds** | A village ground of beaten earth at dusk (rain trees, coconut palms, thatched and tiled houses, haystacks, hills), a school ground by day (a two-storey school with verandahs, a tree line), an indoor arena on mats (the fast game's: roof trusses, lights, a hung screen), a floodlit stadium of red earth (lattice light towers, a roof over the stand, stars). The ground has grain and mottle and is worn along the lane and round the poles; a sky dome glows toward the sun. The crowd is cut-outs of the players' own model, sitting, standing, clapping, and up on their feet at an out. |
 | **Modes** | Quick Match (either rule book, any two sides, the toss called and the choice made), Championships (16 nations at a world championship, fast rules; 16 states at a national championship, classic rules; men's and women's; groups, quarter-finals, semi-finals, the final), the City League (eight invented city sides, home and away under the fast rules, 3 points a win, 2 a tie, 1 for losing by 3 or fewer; the top four to the semi-finals), Watch a Match, Records. A match plays behind the home screen. |
 | **Teams** | 24 nations (from the 2025 world championship), 18 Indian states and 8 invented city sides (Mumbai Monsoon, Pune Pace, Bhubaneswar Bolts, Bengaluru Blaze, Hyderabad Hawks, Chennai Cyclones, Kolkata Comets, Ahmedabad Arrows: no real club's name or colours), rated from 2025-26 results, men's and women's apart. Squads of 15, every player invented (names from each region's common names, never a real player's). |
 | **Languages** | English, हिन्दी, मराठी, ಕನ್ನಡ, తెలుగు, தமிழ், മലയാളം, ଓଡ଼ିଆ, বাংলা, ગુજરાતી, ਪੰਜਾਬੀ, অসমীয়া, नेपाली, සිංහල ([docs/LANGUAGES.md](docs/LANGUAGES.md)). The game starts in the phone's language; the globe on the home screen changes it. A text-fit audit checks every screen in every language at 16:9, 19.5:9, 20:9 with a camera cut-out and 4:3 (`tests/fit_audit.gd`). |
@@ -33,13 +31,13 @@ Per frame in a match (`tests/perf_probe.tscn`, Godot 4.7.2, 1280 × 720):
 
 | Ground | Low | Medium | High |
 |---|---|---|---|
-| Village ground | 73 draws, 71k triangles | 96 draws, 255k triangles | 154 draws, 559k triangles |
-| School ground | 73 draws, 71k triangles | 96 draws, 254k triangles | 154 draws, 559k triangles |
-| Indoor arena (fast game: 24 players) | 82 draws, 89k triangles | 111 draws, 322k triangles | 179 draws, 683k triangles |
-| Floodlit stadium | 73 draws, 72k triangles | 96 draws, 258k triangles | 152 draws, 552k triangles |
+| Village ground | 73 draws, 40k triangles | 73 draws, 61k triangles | 75 draws, 62k triangles |
+| School ground | 73 draws, 39k triangles | 73 draws, 61k triangles | 75 draws, 61k triangles |
+| Indoor arena (fast game: 24 players) | 82 draws, 46k triangles | 82 draws, 65k triangles | 84 draws, 67k triangles |
+| Floodlit stadium | 73 draws, 38k triangles | 73 draws, 56k triangles | 75 draws, 58k triangles |
 
 Budgets: Low 90 draw calls and 90,000 triangles (a Mali-G52 at 720p, 30 frames a second), Medium 130 and 340,000,
-High 190 and 700,000. The beta APK (64-bit ARM) is 29.3 MB; a phone downloads about that from Play. The fonts are 2.4 MB of it.
+High 190 and 700,000. The beta APK (64-bit ARM) is about 33 MB (the players' model and its textures are 2.3 MB of it); a phone downloads about that from Play. The fonts are 2.4 MB of it.
 
 ## Controls
 
@@ -97,7 +95,7 @@ xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.ts
 ```
 autoload/   game.gd (settings, saves, theme, fonts, screens), db.gd (nations, states, squads, grounds), sfx.gd
 game/       rules.gd (the laws), match.gd (turns, the chase, the AI, the officials, your controls), athlete.gd
-            (the one place a player's position is written), body.gd (the drawn player on its skeleton), poses.gd,
+            (the one place a player's position is written), model_body.gd (the player model, its clips and kit),
             arena.gd + geo.gd + crowd.gd (the grounds), hud.gd, touch_controls.gd, sim.gd (matches in numbers),
             cup.gd (championships), records.gd, dev_overlay.gd (seven taps on the version)
 ui/         main menu (one row of buttons over an AI match), match setup and toss, settings, how to play, records, result,
@@ -105,8 +103,9 @@ ui/         main menu (one row of buttons over an AI match), match setup and tos
 i18n/       src/*.json (one file per language), strings.csv (generated)
 fonts/      Noto Sans and its Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam and
             Sinhala, and Baloo 2, each cut to its script (tools/subset_fonts.py). All SIL OFL.
-tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py, store/
-tests/      test_runner, fit_audit, input_test, match_sim, perf_probe, screenshots, compile_check
+tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py, store/,
+            playtest/ (the browser playtest), models/ (the player model and its clips)
+tests/      test_runner, fit_audit, input_test, match_sim, perf_probe, screenshots, quickshot, compile_check
 store/      PLAY_STORE.md, listings, the icon, feature graphic and screenshots
 docs/       RULES.md, LANGUAGES.md, AI.md, MESHY_BRIEF.md, BETA.md, PROGRESS.md, translation-notes/
 ```
