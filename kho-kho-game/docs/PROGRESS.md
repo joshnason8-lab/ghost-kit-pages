@@ -100,6 +100,14 @@ The kho kho game, built overnight on 21-22 October 2026 on branch `claude/kho-kh
 - **Languages**: see docs/LANGUAGES.md. All fourteen in the game; store listings in the Play-supported ones (Odia
   and Assamese have no Play listing locale).
 
+## Shared assets (from 22 October 2026)
+
+The owner made the orchestrator session (`session_016XKAyHkTQRNMGEgZbjNK28`) the lead for all six mobile games.
+Assets, or links to them, that suit more than one game come from it: each is listed in `shared-assets/README.md` on
+the branch `claude/shared-assets` (large files on the `shared-assets` GitHub release) with its source, licence and the
+games it suits, and a message from the orchestrator says what has arrived and how to fetch it. Check that list
+before making or ordering an asset this game could share.
+
 ## Needs the owner
 
 - Play Console account, the upload key secrets (store/PLAY_STORE.md), and a native speaker's check of each
