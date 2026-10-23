@@ -33,6 +33,14 @@ sunset, a night-market street).
   `props/lantern`, `seating/metal_stool`, `seating/folding_stool`, `props/cafe_table_set`, `props/street_lamp_wall` on
   the walls, `buildings/city_apartments` behind.
 
+## Added for 0.5.x (the owner asked for them)
+
+- **`buildings/shophouse_row`**: replaces city_apartments as the street frontage of the night market (both sides, end
+  to end, varied by mirroring and a slight hue shift per row) and as a row along the park's far side. Use `_low` (a
+  facade panel) beyond about 40 m and on Low.
+- **`buildings/city_apartments_night`**: replaces city_apartments at the night market and the floodlit park, so the
+  blocks behind glow with lit windows.
+
 ## Provincial gym
 
 - `surfaces/white_maple_veneer` floor, `concrete_block_wall` walls (pale paint), `hall/fluorescent_light`,
