@@ -89,7 +89,7 @@ fonts/      Noto Sans for Latin and Vietnamese, Thai, Lao, Myanmar, Khmer, Devan
 tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py,
             ui_art/render_art.tscn (the menu figures), store/ (icons, screenshots), meshy/ (the character order),
             models/ (shrinking the models, the kit masks, the crowd sheet, the kicks from motion capture)
-tests/      test_runner, fit_audit, match_sim, screenshots, venue_view, pose_view, rally_frames, compile_check
+tests/      test_runner, fit_audit, match_sim, screenshots, venue_view, crowd_view, pose_view, rally_frames, compile_check
 store/      PLAY_STORE.md, the listing in five languages, the icon, feature graphic and screenshots
 docs/       TAKRAW.md (the sport, with sources), MESHY_BRIEF.md, BETA.md, ROADMAP.md
 ```

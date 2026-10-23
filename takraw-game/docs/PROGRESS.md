@@ -91,6 +91,21 @@ apartment blocks included, with no visible change in the broadcast view (each ve
 - WebP costs more memory once loaded than GPU-compressed textures (a few MB a venue), well within a 4 GB phone.
 - The unused palm and rain-tree meshes and the old apartment block were removed.
 
+## The crowd faces the court (0.5.2)
+
+The owner saw spectators in the near stand facing away from the court. Here every spectator was a cut-out turned to
+the camera and always showing the figure's front, so from behind a stand they all faced the camera rather than the
+court. That only happens in the National Arena's and the Grand Dome's near stands: the other venues seat everyone on
+the far side, and no game camera looks at the near stands, so it never showed in play.
+
+Now each spectator faces the court's centre (`Crowd.facing`). The cut-out still turns to the camera, but when the
+camera is behind someone it shows them from behind: the crowd sheet has a second row, the same figures rendered from
+the back (`tools/models/crowd_sheet.tscn`). `tests/test_runner` checks every spectator in every venue at every
+graphics level (each one's forward within 45° of the way to the court's centre). `tests/crowd_view.tscn` renders
+each venue from cameras on the court looking at each stand, and from behind the near stand:
+[`venues/crowd_facing.jpg`](venues/crowd_facing.jpg) (before and after, close up) and
+[`venues/crowd_facing_all_venues.jpg`](venues/crowd_facing_all_venues.jpg).
+
 ## Gaps that need the owner
 
 None. The two raised in 0.5.0 are filled in 0.5.1:

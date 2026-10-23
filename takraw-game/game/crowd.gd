@@ -1,20 +1,23 @@
 class_name Crowd
 extends MultiMeshInstance3D
 ## The spectators: flat cut-outs from one small sheet of figures, every one an instance of the same quad, so a
-## stand of thousands is one draw call. A shader turns each to face the camera, picks its figure and shirt from the
-## sheet, and makes it fidget, and jump and wave when the crowd goes up (excite).
+## stand of thousands is one draw call. Each one faces the court's centre (its instance turned that way); a shader
+## turns the cut-out to the camera, shows the figure from the front or, when the camera is behind the spectator, from
+## behind, picks its shirt, and makes it fidget, and jump and wave when the crowd goes up (excite).
 
 const FIGS := 16         # figures across the sheet
 const FIG_W := 64        # each one's pixels
 const FIG_H := 128
 const FIG_W_M := 0.56    # and metres: from the seat to above the head
 const FIG_H_M := 1.12
+const ROWS := 2          # the sheet's rows: the figures from the front, then the same from behind
 const SHEET := "res://assets/models/crowd_sheet.png"
 
 static var _sheet: Texture2D
 static var _mat: ShaderMaterial
 
 var spots: Array[Vector3] = []   # where people sit (the seat) or stand
+var placed: Array[Transform3D] = []   # each one's place and the way they face (as the MultiMesh has them)
 
 
 ## The sheet: people from the players' models, seated, rendered by tools/models/crowd_sheet.tscn.
@@ -37,6 +40,7 @@ uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
 varying vec4 data;
+varying float behind;
 void vertex() {
 	data = INSTANCE_CUSTOM;
 	float ph = data.z * 6.2831;
@@ -44,11 +48,16 @@ void vertex() {
 	float fidget = sin(time_s * 1.3 + ph) * 0.02;
 	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	// The way the spectator faces (the court), and whether the camera is behind them.
+	vec3 facing = (MODEL_MATRIX * vec4(0.0, 0.0, 1.0, 0.0)).xyz;
+	vec3 to_cam = CAMERA_POSITION_WORLD - world;
+	behind = step(dot(facing.xz, to_cam.xz), 0.0);
 	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
 }
 void fragment() {
-	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, UV.y);
+	// (Kept a texel inside its row, or the filtering picks up the edge of the row next to it.)
+	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (clamp(UV.y, 0.01, 0.99) + behind) / 2.0);
 	vec4 c = texture(sheet, uv);
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
@@ -75,6 +84,7 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
 		if rng.randf() < density:
 			keep.append(s)
 	spots = keep
+	placed.clear()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
@@ -84,13 +94,19 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
 	mm.mesh = q
 	mm.instance_count = keep.size()
 	for i in keep.size():
-		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, keep[i]))
+		placed.append(Transform3D(facing(keep[i]), keep[i]))
+		mm.set_instance_transform(i, placed[i])
 		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 else Color(rng.randf(), rng.randf(), rng.randf())
 		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase.
 		mm.set_instance_custom_data(i, Color(rng.randf(), _code(col), rng.randf(), 0.0))
 	multimesh = mm
 	material_override = material()
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## A spectator at spot faces the court's centre: their +Z turned toward it, on the ground.
+static func facing(spot: Vector3) -> Basis:
+	return Basis(Vector3.UP, atan2(-spot.x, -spot.z))
 
 
 ## Shirt colours come out of the shader from one number; find one whose colour is near col (a few tries).

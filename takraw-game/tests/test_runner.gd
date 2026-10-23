@@ -1,7 +1,7 @@
 extends Node
 ## The smoke test CI runs before building: every screen opens in every language; a season and a tournament play
 ## through to their champions; AI matches in each event finish with scores the laws allow; a team event's regus never
-## use a player twice; the save files read back. Headless:
+## use a player twice; every spectator in every venue faces the court; the save files read back. Headless:
 ##   godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
 ## Exits 1 on any failure.
 
@@ -18,6 +18,7 @@ func _ready() -> void:
 	_season()
 	_cup()
 	_team_event_lineups()
+	await _crowd_facing()
 	await _matches()
 	Game.settings = keep
 	Game.delete_season()
@@ -195,6 +196,35 @@ func _team_event_lineups() -> void:
 
 
 ## AI matches in each event: they finish, with legal set scores.
+## Every venue, at every graphics level: each spectator faces the court's centre (their forward, on the ground, within
+## about 45 degrees of the way to it), the near stands as much as the far ones.
+func _crowd_facing() -> void:
+	var keep: int = Game.settings.graphics
+	for v in DB.VENUES:
+		for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
+			Game.settings.graphics = g
+			var a := Arena.new(v[0], false, [Color("ff8a1f")])
+			add_child(a)
+			await frames(1)
+			# (The crowd's own list: a headless MultiMesh keeps no transforms to read back.)
+			var placed: Array[Transform3D] = []
+			if a.crowd:
+				placed = a.crowd.placed
+			check(not placed.is_empty() and placed.size() == a.crowd.multimesh.instance_count, "%s (graphics %d): a crowd" % [v[0], g])
+			var worst := 1.0
+			var near := 0
+			for xf in placed:
+				var fwd := Vector3(xf.basis.z.x, 0, xf.basis.z.z).normalized()
+				var to_c := Vector3(-xf.origin.x, 0, -xf.origin.z).normalized()
+				worst = minf(worst, fwd.dot(to_c))
+				if xf.origin.z < 0.0:
+					near += 1
+			check(worst > 0.7, "%s (graphics %d): every spectator faces the court (worst %.2f, %d on the near side)" % [v[0], g, worst, near])
+			a.queue_free()
+			await frames(1)
+	Game.settings.graphics = keep
+
+
 func _matches() -> void:
 	var cases := [["regu", 3, 15, "THA", "MAS", "dome"], ["quadrant", 1, 15, "JPN", "VIE", "beach"], ["doubles", 1, 15, "PHI", "LAO", "street"],
 		["regu", 1, 21, "KLC", "SLA", "provincial"]]
