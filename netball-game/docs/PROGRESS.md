@@ -45,6 +45,16 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 - Round three (0.3.0-beta): renamed Netball Unleashed (package com.netballunleashed.game), the owner's artwork as
   the icon and feature graphic; the players are the owner's 3D model with the shared Fast_Run (tools/player); the
   venues relit and rebuilt (game/venue_look.gd); one white line between the home screen's competitions.
+- The graphics update (October 2026, the lead's shared assets, plan `shared-assets/plans/netball-unleashed.md`):
+  every venue realistic. The hall: a community sports hall by day (maple floor with the other sports' lines, block
+  walls, pads, high windows, trusses and fluorescent lights, FIBA-size basketball boards built from primitives in
+  place of the old back-wall hoop, doors, clock, fire alarms, exit signs, wet floor sign, gym and painted benches, a
+  stepped stand of blue tip-up seats with a league crowd in its front rows). The outdoor court: a park court under
+  Poly Haven's netball-court sky, green acrylic on asphalt, chain-link fence, park benches, street lamps, trees as
+  cut-outs, terraced houses, the street hoop next door. The arena: a painted sprung-timber court (the maple grain
+  under the paint) and, on Medium and High, sections of the owner's metal stand as courtside seating with people
+  in its seats. The models are baked by tools/venue/bake.gd into one mesh and one atlas per venue (VenueProps, one
+  draw call). Credits in Settings > About > Licences. Store screenshots refreshed.
 
 ## Next
 
@@ -113,4 +123,28 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   Assets that suit more than one game come from it, listed in `shared-assets/README.md` on branch
   `claude/shared-assets` (large files on the "shared-assets" GitHub release) with each one's source, licence and the
   games it suits. When one arrives, a message says what it is and how to fetch it.
-
+- **The graphics update: what was used, skipped or moved, and why.**
+  - Used as the plan says: hall (white_maple_veneer, concrete_block_wall normal map, ceiling_interior,
+    fluorescent_light, wall_clock, fire_alarm, wet_floor_sign, gym_bench, painted_bench, gym_01 HDR for reflections
+    on Medium and High); outdoor (netball_court sky and HDR, clean_asphalt, asphalt_02, park_bench,
+    street_lamp_tall, basketball_hoop on the neighbouring court, jacaranda, oak and small_broadleaf cut-outs,
+    grass_clumps, terrace_row); arena (bleacher_metal).
+  - Moved or changed: the hall's basketball boards are built from primitives to FIBA measurements, as the plan asks
+    (the owner's street hoop is outdoors only); the main court's boards are winched up to the roof, the cross-court
+    boards on the far wall. The oak is a cut-out even on High (the mesh reads faceted this close to the cameras).
+    plastered_wall and hanging_lamp not used (painted block and slats, and the fluorescent battens, read better).
+  - Arena: bleacher_metal is used only on Medium and High, as courtside seating in front of the lower tier on the far
+    side and both ends (not the near side, under the cameras), with the crowd's people in its seats; the lower tier
+    is not rebuilt (its painted seated crowd and the floodlit look stay). Its `_low` model is not used: the
+    decimation broke its seats into shards, and on Low the painted tier is cheaper and looks better. The model is
+    8,000 triangles a section (11 sections, about 88,000 triangles on Medium and High).
+  - The hall's stand was a slope with seated people painted on it, which read as coloured bars from the end and
+    courtside cameras; it is now stepped rows of real tip-up seats (folded up where no one sits), with people (Crowd
+    cut-outs) in the front three rows on Medium and High only, so they stay out of the courtside camera's view
+    except for a row of heads along its bottom edge. Low shows the empty seats.
+  - Outdoors the sun's shadows reach 55 m (they used to reach 100): the trees, lamps and houses beyond cost the
+    shadow pass draw calls for shadows no one sees (the courtside camera on High: 207 draw calls down to 180).
+    Indoors the default stays: there the shorter reach crowded the players into more splits (+25 draw calls).
+  - Gaps that would need a new model (not generated; the owner's Meshy credits are not spent): a clean low-poly
+    courtside bleacher for Low (bleacher_metal_low is broken), and a proper arena seat or seated-spectator model to
+    replace the painted tiers. Neither is needed to ship.

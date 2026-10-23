@@ -5,8 +5,11 @@ extends Control
 
 const CREDITS := """[b]Netball Unleashed[/b]
 Made by Josh Nason.
-Players, umpires, venues, crowd, ball, flags and sounds made in code for the game; the menu music written for
-it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker."""
+The players are Josh Nason's own 3D model. Umpires, venues, crowd, ball, flags and sounds made in code for the
+game; the menu music written for it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
+Venue models by Josh Nason: the arena's courtside stand, gym and park benches, oak trees, grass, terraced houses
+and the street hoop. From Poly Haven (polyhaven.com), CC0: the skies, floor and wall textures, jacaranda and
+broadleaf trees, painted benches, hall lights, clock, fire alarm, wet floor sign and street lamps."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans, Noto Sans Sinhala, Noto Sans Tamil and Noto Sans SC: Copyright The Noto Project Authors (https://github.com/notofonts).
