@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://do8c45q2c4uh7"
-path.s3tc="res://.godot/imported/park_bench_0.jpg-26512455865ef2fda257a155227495de.s3tc.ctex"
-path.etc2="res://.godot/imported/park_bench_0.jpg-26512455865ef2fda257a155227495de.etc2.ctex"
+path="res://.godot/imported/park_bench_0.jpg-26512455865ef2fda257a155227495de.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "e105b6303eb5b221bb90f3309ee1abe2"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/seating/park_bench_0.jpg"
-dest_files=["res://.godot/imported/park_bench_0.jpg-26512455865ef2fda257a155227495de.s3tc.ctex", "res://.godot/imported/park_bench_0.jpg-26512455865ef2fda257a155227495de.etc2.ctex"]
+dest_files=["res://.godot/imported/park_bench_0.jpg-26512455865ef2fda257a155227495de.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

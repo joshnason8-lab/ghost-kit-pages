@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cmh7nv03u14jr"
-path.s3tc="res://.godot/imported/cafe_table_set_low_outdoor_table_chair_set_01_table_diff.jpg-129bb29c5b0308cc64fed4cd964f7f65.s3tc.ctex"
-path.etc2="res://.godot/imported/cafe_table_set_low_outdoor_table_chair_set_01_table_diff.jpg-129bb29c5b0308cc64fed4cd964f7f65.etc2.ctex"
+path="res://.godot/imported/cafe_table_set_low_outdoor_table_chair_set_01_table_diff.jpg-129bb29c5b0308cc64fed4cd964f7f65.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "e6127e4a577eab44dfe740797d340623"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/cafe_table_set_low_outdoor_table_chair_set_01_table_diff.jpg"
-dest_files=["res://.godot/imported/cafe_table_set_low_outdoor_table_chair_set_01_table_diff.jpg-129bb29c5b0308cc64fed4cd964f7f65.s3tc.ctex", "res://.godot/imported/cafe_table_set_low_outdoor_table_chair_set_01_table_diff.jpg-129bb29c5b0308cc64fed4cd964f7f65.etc2.ctex"]
+dest_files=["res://.godot/imported/cafe_table_set_low_outdoor_table_chair_set_01_table_diff.jpg-129bb29c5b0308cc64fed4cd964f7f65.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

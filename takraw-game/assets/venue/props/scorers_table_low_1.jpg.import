@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dhqx4k81gjmfo"
-path.s3tc="res://.godot/imported/scorers_table_low_1.jpg-20008f685786fc4ffc2cba1e51a6bf5c.s3tc.ctex"
-path.etc2="res://.godot/imported/scorers_table_low_1.jpg-20008f685786fc4ffc2cba1e51a6bf5c.etc2.ctex"
+path="res://.godot/imported/scorers_table_low_1.jpg-20008f685786fc4ffc2cba1e51a6bf5c.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "5e0311aa161db805c3466a4f19b2210a"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/scorers_table_low_1.jpg"
-dest_files=["res://.godot/imported/scorers_table_low_1.jpg-20008f685786fc4ffc2cba1e51a6bf5c.s3tc.ctex", "res://.godot/imported/scorers_table_low_1.jpg-20008f685786fc4ffc2cba1e51a6bf5c.etc2.ctex"]
+dest_files=["res://.godot/imported/scorers_table_low_1.jpg-20008f685786fc4ffc2cba1e51a6bf5c.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

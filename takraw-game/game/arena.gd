@@ -8,6 +8,9 @@ extends Node3D
 ## skies and surfaces, trees, chairs, buildings and lamps from the shared assets), a crowd of cut-outs (Crowd) and a
 ## light or two; Low graphics leaves out the small things and uses the cut-down models.
 
+## Each row of shophouses a little different in colour: as built, warmer, cooler, pinker.
+const SHOPHOUSE_TINTS := [Color(1.0, 1.0, 1.0), Color(1.0, 0.93, 0.85), Color(0.9, 0.95, 1.0), Color(1.0, 0.9, 0.9)]
+
 var venue := "national"
 var women := false
 var home_colors: Array = []   # the home crowd's shirts
@@ -615,8 +618,12 @@ func _park() -> Array:
 	_sc.add("hall/basketball_hoop", Vector3(27.2, 0, 0.0), -PI * 0.5)
 	_trees(["rain_tree", "rain_tree", "island_tree_a"], 12, -36.0, 36.0, 16.0, 26.0, 9.0, 13.0)
 	_trees(["rain_tree", "island_tree_b"], 6, -40.0, -18.0, -6.0, 14.0, 8.0, 12.0)
+	# A row of shophouses past the trees (their cut-outs, 45 m off), apartment blocks behind with lit windows.
+	for i in 4:
+		_sc.add("buildings/shophouse_row_low", Vector3(-27.75 + i * 18.5, 0, 30.0), PI if i % 2 == 0 else 0.0, 1.0, false,
+			SHOPHOUSE_TINTS[(i + 1) % 4])
 	for i in 6:
-		_sc.add("buildings/city_apartments", Vector3(-30.0 + i * 12.0, 0, 48.0 + _rng.randf_range(-3, 3)), PI, 1.0, false)
+		_sc.add("buildings/city_apartments_night", Vector3(-30.0 + i * 12.0, 0, 48.0 + _rng.randf_range(-3, 3)), PI, 1.0, false)
 	return spots
 
 
@@ -649,17 +656,23 @@ func _beach() -> Array:
 
 
 ## A street court by a night market: the court painted on the street, food stalls under corrugated iron with lanterns
-## strung over them and over the court, people on stools and at café tables, apartment blocks behind with their
-## shops lit and lamps on their walls.
+## strung over them and over the court, people on stools and at café tables, shophouses along the street with lamps
+## on their walls and apartment blocks behind them, their windows lit.
 func _street() -> Array:
 	var spots := []
-	# Apartment blocks behind, shops lit along the street and a lamp on the wall between them.
+	# Shophouses end to end on both sides of the street, every other one turned to show its other front, each a
+	# little different in colour; the far ones (and all on Low) their cut-outs.
 	for i in 5:
-		var x := -24.0 + i * 12.0
-		_sc.add("buildings/city_apartments", Vector3(x, 0, 20.0), PI, 1.0, false)
-		_glow.wall(Vector3(x - 4.0, 0, 16.05), Vector3(x + 4.0, 0, 16.05), 0.2, 2.6, Color("ffcf7a").darkened(0.15 * float(i % 2)))
+		var x := -37.0 + i * 18.5
+		_sc.add("buildings/shophouse_row_low" if absf(x) > 30.0 else "buildings/shophouse_row", Vector3(x, 0, 17.3),
+			PI if i % 2 == 0 else 0.0, 1.0, false, SHOPHOUSE_TINTS[i % 4])
+		_sc.add("buildings/shophouse_row_low", Vector3(x, 0, -21.0), 0.0 if i % 2 == 0 else PI, 1.0, false, SHOPHOUSE_TINTS[(i + 2) % 4])
+	for i in 5:
+		var x := -30.0 + i * 15.0 + _rng.randf_range(-2.0, 2.0)
+		_sc.add("buildings/city_apartments_night", Vector3(x, 0, 27.0 + _rng.randf_range(-1.5, 1.5)), PI, 1.0, false)
+	for i in 5:
 		for k: float in [-3.0, 3.0]:
-			_sc.add("props/street_lamp_wall", Vector3(x + k, 2.7, 16.15 - 0.8))
+			_sc.add("props/street_lamp_wall", Vector3(-24.0 + i * 12.0 + k, 2.7, 16.13 - 0.8))
 	# Stalls: tables under corrugated roofs on poles, a lantern under each.
 	var roof := BoxMesh.new()
 	roof.size = Vector3(3.0, 0.05, 1.9)

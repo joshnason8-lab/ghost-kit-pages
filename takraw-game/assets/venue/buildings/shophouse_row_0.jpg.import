@@ -2,27 +2,25 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c0aujstu54nki"
-path.s3tc="res://.godot/imported/city_apartments_low_0.jpg-c36b1a7e2867b0820c4afe2c9b6dd989.s3tc.ctex"
-path.etc2="res://.godot/imported/city_apartments_low_0.jpg-c36b1a7e2867b0820c4afe2c9b6dd989.etc2.ctex"
+uid="uid://bsluvplr4lqfc"
+path="res://.godot/imported/shophouse_row_0.jpg-69dc44c99c0e469bb47eb9d4ed49a192.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
-"md5": "67b14eab9b52caa9d6f1826a02f61002"
+"md5": "7e83c22d3367c3a22b31213909061480"
 }
 
 [deps]
 
-source_file="res://assets/venue/buildings/city_apartments_low_0.jpg"
-dest_files=["res://.godot/imported/city_apartments_low_0.jpg-c36b1a7e2867b0820c4afe2c9b6dd989.s3tc.ctex", "res://.godot/imported/city_apartments_low_0.jpg-c36b1a7e2867b0820c4afe2c9b6dd989.etc2.ctex"]
+source_file="res://assets/venue/buildings/shophouse_row_0.jpg"
+dest_files=["res://.godot/imported/shophouse_row_0.jpg-69dc44c99c0e469bb47eb9d4ed49a192.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

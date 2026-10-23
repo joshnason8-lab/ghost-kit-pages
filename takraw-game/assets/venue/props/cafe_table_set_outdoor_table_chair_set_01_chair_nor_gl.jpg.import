@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bj1pbuudp3upw"
-path.s3tc="res://.godot/imported/cafe_table_set_outdoor_table_chair_set_01_chair_nor_gl.jpg-93a1221d0e26177d9c804b8a672057be.s3tc.ctex"
-path.etc2="res://.godot/imported/cafe_table_set_outdoor_table_chair_set_01_chair_nor_gl.jpg-93a1221d0e26177d9c804b8a672057be.etc2.ctex"
+path="res://.godot/imported/cafe_table_set_outdoor_table_chair_set_01_chair_nor_gl.jpg-93a1221d0e26177d9c804b8a672057be.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "11c10fdf9abfcdfa520f43b473ec2a8a"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/cafe_table_set_outdoor_table_chair_set_01_chair_nor_gl.jpg"
-dest_files=["res://.godot/imported/cafe_table_set_outdoor_table_chair_set_01_chair_nor_gl.jpg-93a1221d0e26177d9c804b8a672057be.s3tc.ctex", "res://.godot/imported/cafe_table_set_outdoor_table_chair_set_01_chair_nor_gl.jpg-93a1221d0e26177d9c804b8a672057be.etc2.ctex"]
+dest_files=["res://.godot/imported/cafe_table_set_outdoor_table_chair_set_01_chair_nor_gl.jpg-93a1221d0e26177d9c804b8a672057be.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

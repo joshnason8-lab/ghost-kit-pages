@@ -6,7 +6,7 @@ extends Control
 const CREDITS := """[b]Sepak Takraw Unleashed[/b]
 Made by Josh Nason.
 The players (a man and a woman), the ball and the app's icon made for the game; the kicks, runs and walks from
-motion capture (Mixamo). The temple, the stilt houses, the apartment blocks, the trees, the bleachers, benches,
+motion capture (Mixamo). The temple, the stilt houses, the shophouses, the apartment blocks, the trees, the bleachers, benches,
 tables and the basketball hoop made for the game too; skies, surfaces and the other venue pieces from Poly Haven
 (polyhaven.com), CC0. Sounds made in code for the game; the menu music and crowd drums written for it
 (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker."""

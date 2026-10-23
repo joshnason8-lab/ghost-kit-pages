@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bfqeu3cmu7x6c"
-path.s3tc="res://.godot/imported/fluorescent_light_low_mounted_fluorescent_lights_diff.jpg-37e21ea0059a59a797491333782e4ec5.s3tc.ctex"
-path.etc2="res://.godot/imported/fluorescent_light_low_mounted_fluorescent_lights_diff.jpg-37e21ea0059a59a797491333782e4ec5.etc2.ctex"
+path="res://.godot/imported/fluorescent_light_low_mounted_fluorescent_lights_diff.jpg-37e21ea0059a59a797491333782e4ec5.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "1a6957787c61eb908919671b69eb916f"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/hall/fluorescent_light_low_mounted_fluorescent_lights_diff.jpg"
-dest_files=["res://.godot/imported/fluorescent_light_low_mounted_fluorescent_lights_diff.jpg-37e21ea0059a59a797491333782e4ec5.s3tc.ctex", "res://.godot/imported/fluorescent_light_low_mounted_fluorescent_lights_diff.jpg-37e21ea0059a59a797491333782e4ec5.etc2.ctex"]
+dest_files=["res://.godot/imported/fluorescent_light_low_mounted_fluorescent_lights_diff.jpg-37e21ea0059a59a797491333782e4ec5.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

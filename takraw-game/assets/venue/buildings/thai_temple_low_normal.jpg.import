@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://clo4w1s8hwodh"
-path.s3tc="res://.godot/imported/thai_temple_low_normal.jpg-0185903b67be430931ae552756d8c2cf.s3tc.ctex"
-path.etc2="res://.godot/imported/thai_temple_low_normal.jpg-0185903b67be430931ae552756d8c2cf.etc2.ctex"
+path="res://.godot/imported/thai_temple_low_normal.jpg-0185903b67be430931ae552756d8c2cf.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "82daea9a62952663e63a771e48739037"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/buildings/thai_temple_low_normal.jpg"
-dest_files=["res://.godot/imported/thai_temple_low_normal.jpg-0185903b67be430931ae552756d8c2cf.s3tc.ctex", "res://.godot/imported/thai_temple_low_normal.jpg-0185903b67be430931ae552756d8c2cf.etc2.ctex"]
+dest_files=["res://.godot/imported/thai_temple_low_normal.jpg-0185903b67be430931ae552756d8c2cf.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

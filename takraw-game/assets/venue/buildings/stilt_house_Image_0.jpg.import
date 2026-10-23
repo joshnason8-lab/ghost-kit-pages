@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://mupykr3c5jx7"
-path.s3tc="res://.godot/imported/stilt_house_Image_0.jpg-c5ed500199865b43d21bbc7b498d8f1f.s3tc.ctex"
-path.etc2="res://.godot/imported/stilt_house_Image_0.jpg-c5ed500199865b43d21bbc7b498d8f1f.etc2.ctex"
+path="res://.godot/imported/stilt_house_Image_0.jpg-c5ed500199865b43d21bbc7b498d8f1f.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "502963a3dc97f729161581b60c3a4551"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/buildings/stilt_house_Image_0.jpg"
-dest_files=["res://.godot/imported/stilt_house_Image_0.jpg-c5ed500199865b43d21bbc7b498d8f1f.s3tc.ctex", "res://.godot/imported/stilt_house_Image_0.jpg-c5ed500199865b43d21bbc7b498d8f1f.etc2.ctex"]
+dest_files=["res://.godot/imported/stilt_house_Image_0.jpg-c5ed500199865b43d21bbc7b498d8f1f.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

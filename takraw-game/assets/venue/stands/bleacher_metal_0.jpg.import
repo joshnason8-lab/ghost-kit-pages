@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://do1pp3nqvhxov"
-path.s3tc="res://.godot/imported/bleacher_metal_0.jpg-81b52ae791d8ebbaf7e040e0d30a4e1c.s3tc.ctex"
-path.etc2="res://.godot/imported/bleacher_metal_0.jpg-81b52ae791d8ebbaf7e040e0d30a4e1c.etc2.ctex"
+path="res://.godot/imported/bleacher_metal_0.jpg-81b52ae791d8ebbaf7e040e0d30a4e1c.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "cf2f764e022ac0b7e2f5511d4fdab2db"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/stands/bleacher_metal_0.jpg"
-dest_files=["res://.godot/imported/bleacher_metal_0.jpg-81b52ae791d8ebbaf7e040e0d30a4e1c.s3tc.ctex", "res://.godot/imported/bleacher_metal_0.jpg-81b52ae791d8ebbaf7e040e0d30a4e1c.etc2.ctex"]
+dest_files=["res://.godot/imported/bleacher_metal_0.jpg-81b52ae791d8ebbaf7e040e0d30a4e1c.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

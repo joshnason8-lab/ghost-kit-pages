@@ -11,8 +11,9 @@ about 2019, the Galaxy A16 included).
 
 ## What to try
 
-New in 0.5.1: a much smaller download (about 50 MB instead of 89 MB), with the venues looking the same. If anything
-in a venue looks blurrier than in 0.5.0, say where.
+New in 0.5.1: a much smaller download (under 50 MB instead of 89 MB). Shophouses line the night market's street and
+the park's far side, and apartment blocks with lit windows stand behind them. If anything in a venue looks blurrier
+than in 0.5.0, say where.
 
 In 0.5.0: every venue rebuilt from real-world pieces. Real skies; courts painted on concrete, asphalt and a maple
 gym floor; a Thai temple behind the temple court with spectators on plastic chairs; palms and rain trees; the sea

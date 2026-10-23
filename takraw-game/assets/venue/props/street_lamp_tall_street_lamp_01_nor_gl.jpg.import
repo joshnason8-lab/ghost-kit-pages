@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cjldn4pyhin2t"
-path.s3tc="res://.godot/imported/street_lamp_tall_street_lamp_01_nor_gl.jpg-2f51587e2b4e73d0d2f26808a027eecc.s3tc.ctex"
-path.etc2="res://.godot/imported/street_lamp_tall_street_lamp_01_nor_gl.jpg-2f51587e2b4e73d0d2f26808a027eecc.etc2.ctex"
+path="res://.godot/imported/street_lamp_tall_street_lamp_01_nor_gl.jpg-2f51587e2b4e73d0d2f26808a027eecc.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "fa8efe414d5abf1225b77626128a64c9"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/street_lamp_tall_street_lamp_01_nor_gl.jpg"
-dest_files=["res://.godot/imported/street_lamp_tall_street_lamp_01_nor_gl.jpg-2f51587e2b4e73d0d2f26808a027eecc.s3tc.ctex", "res://.godot/imported/street_lamp_tall_street_lamp_01_nor_gl.jpg-2f51587e2b4e73d0d2f26808a027eecc.etc2.ctex"]
+dest_files=["res://.godot/imported/street_lamp_tall_street_lamp_01_nor_gl.jpg-2f51587e2b4e73d0d2f26808a027eecc.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

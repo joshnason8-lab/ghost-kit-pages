@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c1qsbma17g5e"
-path.s3tc="res://.godot/imported/long_table_low_1.jpg-c7964cb14be02c1946b76bbcf424bab0.s3tc.ctex"
-path.etc2="res://.godot/imported/long_table_low_1.jpg-c7964cb14be02c1946b76bbcf424bab0.etc2.ctex"
+path="res://.godot/imported/long_table_low_1.jpg-c7964cb14be02c1946b76bbcf424bab0.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "2ae5f8a18a5c60315c40ff017c9b56ef"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/long_table_low_1.jpg"
-dest_files=["res://.godot/imported/long_table_low_1.jpg-c7964cb14be02c1946b76bbcf424bab0.s3tc.ctex", "res://.godot/imported/long_table_low_1.jpg-c7964cb14be02c1946b76bbcf424bab0.etc2.ctex"]
+dest_files=["res://.godot/imported/long_table_low_1.jpg-c7964cb14be02c1946b76bbcf424bab0.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

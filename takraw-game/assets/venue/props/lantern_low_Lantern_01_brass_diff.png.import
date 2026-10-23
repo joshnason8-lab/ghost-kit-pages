@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://p1dgxg26y0y5"
-path.s3tc="res://.godot/imported/lantern_low_Lantern_01_brass_diff.png-c8ab9f41e72adfadc3403f4207c50bc8.s3tc.ctex"
-path.etc2="res://.godot/imported/lantern_low_Lantern_01_brass_diff.png-c8ab9f41e72adfadc3403f4207c50bc8.etc2.ctex"
+path="res://.godot/imported/lantern_low_Lantern_01_brass_diff.png-c8ab9f41e72adfadc3403f4207c50bc8.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "eb6bb869bed1b905681753e08274a6ef"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/lantern_low_Lantern_01_brass_diff.png"
-dest_files=["res://.godot/imported/lantern_low_Lantern_01_brass_diff.png-c8ab9f41e72adfadc3403f4207c50bc8.s3tc.ctex", "res://.godot/imported/lantern_low_Lantern_01_brass_diff.png-c8ab9f41e72adfadc3403f4207c50bc8.etc2.ctex"]
+dest_files=["res://.godot/imported/lantern_low_Lantern_01_brass_diff.png-c8ab9f41e72adfadc3403f4207c50bc8.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

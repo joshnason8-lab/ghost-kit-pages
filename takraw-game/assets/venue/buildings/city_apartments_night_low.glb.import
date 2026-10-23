@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bp7yn6eyxex1r"
-path="res://.godot/imported/city_apartments.glb-1a8bb84f9fc522bd4fc89a344c1689b1.scn"
+uid="uid://cw2lbb4pem2x4"
+path="res://.godot/imported/city_apartments_night_low.glb-4576c0faaeb0455fce19434d353010fc.scn"
 
 [deps]
 
-source_file="res://assets/venue/buildings/city_apartments.glb"
-dest_files=["res://.godot/imported/city_apartments.glb-1a8bb84f9fc522bd4fc89a344c1689b1.scn"]
+source_file="res://assets/venue/buildings/city_apartments_night_low.glb"
+dest_files=["res://.godot/imported/city_apartments_night_low.glb-4576c0faaeb0455fce19434d353010fc.scn"]
 
 [params]
 

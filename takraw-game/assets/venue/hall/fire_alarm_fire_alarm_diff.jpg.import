@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bave3yprye77d"
-path.s3tc="res://.godot/imported/fire_alarm_fire_alarm_diff.jpg-fe36e4c052334eaa775812c5dc88165c.s3tc.ctex"
-path.etc2="res://.godot/imported/fire_alarm_fire_alarm_diff.jpg-fe36e4c052334eaa775812c5dc88165c.etc2.ctex"
+path="res://.godot/imported/fire_alarm_fire_alarm_diff.jpg-fe36e4c052334eaa775812c5dc88165c.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "2835382414a8cafd81f4c922a3596b6b"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/hall/fire_alarm_fire_alarm_diff.jpg"
-dest_files=["res://.godot/imported/fire_alarm_fire_alarm_diff.jpg-fe36e4c052334eaa775812c5dc88165c.s3tc.ctex", "res://.godot/imported/fire_alarm_fire_alarm_diff.jpg-fe36e4c052334eaa775812c5dc88165c.etc2.ctex"]
+dest_files=["res://.godot/imported/fire_alarm_fire_alarm_diff.jpg-fe36e4c052334eaa775812c5dc88165c.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

@@ -2,27 +2,25 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cbjjn51i7pd5c"
-path.s3tc="res://.godot/imported/city_apartments_0.jpg-334bc559579552f55ce8536ecdf4beda.s3tc.ctex"
-path.etc2="res://.godot/imported/city_apartments_0.jpg-334bc559579552f55ce8536ecdf4beda.etc2.ctex"
+uid="uid://dne33qnb3sqm0"
+path="res://.godot/imported/city_apartments_night_windows_night.jpg-455052dae3b67c479a8fc00c3fd460a6.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
-"md5": "7127cd52fbffb63b760ec0d3126523e0"
+"md5": "10f36340b02dce58073c112f2fef0c97"
 }
 
 [deps]
 
-source_file="res://assets/venue/buildings/city_apartments_0.jpg"
-dest_files=["res://.godot/imported/city_apartments_0.jpg-334bc559579552f55ce8536ecdf4beda.s3tc.ctex", "res://.godot/imported/city_apartments_0.jpg-334bc559579552f55ce8536ecdf4beda.etc2.ctex"]
+source_file="res://assets/venue/buildings/city_apartments_night_windows_night.jpg"
+dest_files=["res://.godot/imported/city_apartments_night_windows_night.jpg-455052dae3b67c479a8fc00c3fd460a6.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

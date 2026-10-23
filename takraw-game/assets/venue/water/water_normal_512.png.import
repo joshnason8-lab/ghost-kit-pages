@@ -3,23 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://y5u3o48mg63"
-path.s3tc="res://.godot/imported/water_normal_512.png-047eca8b85ed8cb290b4e1b7a330ed6e.s3tc.ctex"
-path.etc2="res://.godot/imported/water_normal_512.png-047eca8b85ed8cb290b4e1b7a330ed6e.etc2.ctex"
+path="res://.godot/imported/water_normal_512.png-047eca8b85ed8cb290b4e1b7a330ed6e.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/venue/water/water_normal_512.png"
-dest_files=["res://.godot/imported/water_normal_512.png-047eca8b85ed8cb290b4e1b7a330ed6e.s3tc.ctex", "res://.godot/imported/water_normal_512.png-047eca8b85ed8cb290b4e1b7a330ed6e.etc2.ctex"]
+dest_files=["res://.godot/imported/water_normal_512.png-047eca8b85ed8cb290b4e1b7a330ed6e.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

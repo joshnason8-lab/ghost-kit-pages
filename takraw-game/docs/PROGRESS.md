@@ -33,9 +33,9 @@ from the shared assets (branch `claude/shared-assets`, `shared-assets/plans/sepa
 | Venue | What it has now |
 |---|---|
 | Temple court | The owner's Thai wat behind the court, its long side to the camera; the court painted on the compound's concrete; spectators on white plastic chairs (three rows, two on Low), more standing; coconut palms, rain trees and the island trees round about. Sky: `qwantani_noon_puresky`. |
-| Park court | The court painted on clean asphalt in grass (`grass_ground`, added: the plan's park has grass round it); a chain-link fence (shader) on three sides with its posts; park benches behind it with people on them; street lamps along the path; the owner's street hoop on the next court; rain trees; apartment blocks far off. Sky: `kloppenheim_02_puresky`. Kept: the four floodlight poles. |
+| Park court | The court painted on clean asphalt in grass (`grass_ground`, added: the plan's park has grass round it); a chain-link fence (shader) on three sides with its posts; park benches behind it with people on them; street lamps along the path; the owner's street hoop on the next court; rain trees; past them a row of shophouses (`shophouse_row_low`, the cut-out: they're 45 m off) and apartment blocks with lit windows (`city_apartments_night`). Sky: `kloppenheim_02_puresky`. Kept: the four floodlight poles. |
 | Beach | Dry sand (`coast_sand_01`), damp sand at the water's edge, the sea (`water_normal_512`); coconut palms along the beach; two stilt houses back from it (no shadows: under the low sun they'd cross the court). Sky: `qwantani_sunset_puresky`. Kept: the bunting and the umbrellas. |
-| Night market | The street (`asphalt_02`) with the court painted on it; seven stalls (`long_table` and `scorers_table` under `corrugated_iron` roofs), a lantern under each; strings of lanterns over the court; people on folding stools, metal stools by the stalls, café table sets; apartment blocks behind with their shops lit and street lamps on their walls. Sky: `kloppenheim_07_puresky`. |
+| Night market | The street (`asphalt_02`) with the court painted on it; seven stalls (`long_table` and `scorers_table` under `corrugated_iron` roofs), a lantern under each; strings of lanterns over the court; people on folding stools, metal stools by the stalls, café table sets; shophouses end to end along both sides of the street (`shophouse_row`, every other one turned to show its other front, each row a little different in colour; the far ones and all on Low the cut-out), street lamps on their walls, apartment blocks with lit windows behind (`city_apartments_night`). Sky: `kloppenheim_07_puresky`. |
 | Provincial gym | A maple floor (`white_maple_veneer`) with the court painted on it; painted block walls (`concrete_block_wall`); three sections of metal bleachers with the crowd on them; fluorescent battens in rows under the roof; a clock over the middle, a fire alarm and a wet-floor sign by a door; the hall's own wooden benches for the teams; clean basketball boards on the end walls (built to measure: a 1.80 × 1.05 m board, the rim 3.05 m up). Kept: the banners and the ceiling fans. |
 | Shopping-mall atrium | Three sections of metal bleachers along the far side instead of the box seats. |
 | National Arena, Grand Dome | The reflection of a real hall in the glossy courts. The stands stay the game's own tiers: the bleacher sections' rows don't line up with the bowl's, and the crowd sits on its rows. |
@@ -61,33 +61,41 @@ Moved or skipped, and why:
 | Mall atrium | 72 calls, 100k tris | 73 calls, 124k tris | 75 calls, 135k tris | 88 calls, 218k tris | 91 calls, 290k tris |
 | Provincial gym | 69 calls, 99k tris | 78 calls, 124k tris | 80 calls, 136k tris | 85 calls, 217k tris | 106 calls, 294k tris |
 | Temple court | 69 calls, 100k tris | 77 calls, 140k tris | 79 calls, 126k tris | 85 calls, 217k tris | 97 calls, 264k tris |
-| Park court | 69 calls, 100k tris | 80 calls, 107k tris | 82 calls, 137k tris | 84 calls, 212k tris | 101 calls, 285k tris |
+| Park court | 69 calls, 100k tris | 81 calls, 107k tris | 83 calls, 137k tris | 84 calls, 212k tris | 102 calls, 285k tris |
 | Beach | 69 calls, 100k tris | 76 calls, 102k tris | 78 calls, 116k tris | 107 calls, 388k tris | 97 calls, 271k tris |
-| Night market | 69 calls, 101k tris | 84 calls, 111k tris | 86 calls, 134k tris | 87 calls, 229k tris | 120 calls, 288k tris |
+| Night market | 69 calls, 101k tris | 86 calls, 111k tris | 88 calls, 161k tris | 87 calls, 229k tris | 122 calls, 315k tris |
 
 (Each figure is one frame of a match, so the triangles move with the camera: the temple's Medium frame happened to
-look past most of the chairs.) Low stays well inside its budget of about 100 draw calls everywhere. Most of the added triangles on Low are the
+look past most of the chairs. The park and the night market are 0.5.1's, with the shophouses: one or two draw calls
+more than 0.5.0's; the others are unchanged. Measured with `--fixed-fps 30`, as the README has it: without it the
+match runs in real time, and on a slow machine the frame lands at another moment and Auto graphics lowers the
+scale.) Low stays well inside its budget of about 100 draw calls everywhere. Most of the added triangles on Low are the
 temple's plastic chairs and the bleachers.
 
 ## Download size (0.5.1)
 
 0.5.0's APK was 89 MB (0.4.0's 38 MB): GPU-compressed textures are stored in the APK as they are, unzipped, and the
-venue pieces came to 50 MB of them. 0.5.1 brings the venue pieces down to about 14 MB with no visible change in the
-broadcast view (each venue compared before and after at 1920 × 1080):
+venue pieces came to 50 MB of them. 0.5.1 brings the venue pieces down to about 9 MB, the shophouses and the lit
+apartment blocks included, with no visible change in the broadcast view (each venue compared before and after at
+1920 × 1080):
 
 - **Skies and tree cut-outs** stored as WebP at full size (`compress/mode=1`): 7 MB of skies became 0.8 MB.
 - **Ground scans** stored as WebP at 512 px (the grass at 1024: its blades blur at 512); they're mipmapped now (the
   grass wasn't, and shimmered).
-- **Model textures never seen close** capped at 512 px (the stilt houses, the apartment blocks, the temple's relief,
-  the bleachers) and at 256 px for the small things (chairs, stools, lamps, lanterns, the café set, the light
-  battens), which are under 60 px tall on screen. The temple's colour stays at 1024: at 512 its carvings smear.
-- The unused palm and rain-tree meshes were removed.
+- **Model textures** stored as WebP too. Those never seen close capped at 512 px:
+  - the stilt houses, the apartment blocks, the temple's relief and the bleachers;
+  - the small things at 256 px (chairs, stools, lamps, lanterns, the café set, the light battens), which are under
+    60 px tall on screen.
+
+  The temple's colour and the shophouses' stay at 1024: at 512 the carvings smear.
+- WebP costs more memory once loaded than GPU-compressed textures (a few MB a venue), well within a 4 GB phone.
+- The unused palm and rain-tree meshes and the old apartment block were removed.
 
 ## Gaps that need the owner
 
-None blocking. Two that would help:
+None. The two raised in 0.5.0 are filled in 0.5.1:
+- The shophouse row, at the night market and the park.
+- Apartment blocks with lit windows.
 
-- **A Southeast Asian shophouse row** (two or three storeys, shop fronts below, balconies above) for the night market
-  and the park's skyline. The `city_apartments` block stands in for it.
-- **Night-lit windows**: the apartment blocks have no lit windows of their own, so at night they read as dimly lit
-  walls; a version with an emission map would make the night market glow.
+The shophouse model has a passer-by fused into its pavement: behind the stalls, or 45 m off at the park, it reads as
+background life.

@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://he1fy82ecf16"
-path.s3tc="res://.godot/imported/gym_bench_low_0.jpg-1cdf77a45defdfebc183811636696a20.s3tc.ctex"
-path.etc2="res://.godot/imported/gym_bench_low_0.jpg-1cdf77a45defdfebc183811636696a20.etc2.ctex"
+path="res://.godot/imported/gym_bench_low_0.jpg-1cdf77a45defdfebc183811636696a20.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "a16132de474582262bd2ddaf332bf8a8"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/seating/gym_bench_low_0.jpg"
-dest_files=["res://.godot/imported/gym_bench_low_0.jpg-1cdf77a45defdfebc183811636696a20.s3tc.ctex", "res://.godot/imported/gym_bench_low_0.jpg-1cdf77a45defdfebc183811636696a20.etc2.ctex"]
+dest_files=["res://.godot/imported/gym_bench_low_0.jpg-1cdf77a45defdfebc183811636696a20.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

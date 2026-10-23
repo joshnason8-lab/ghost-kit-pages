@@ -23,12 +23,14 @@ const MEAN := {"clean_asphalt": 0.06, "asphalt_02": 0.11, "concrete_floor": 0.28
 	"grass_ground": 0.12}
 
 static var _parts := {}       # model path -> [[Mesh, Transform3D], ...]
+static var _tintable := {}    # Mesh -> its copy whose materials take each instance's colour
 static var _surface_shaders := {}  # on Low? -> Shader (Low filters the ground plainly, the others anisotropically)
 static var _water_shader: Shader
 
 var _root: Node3D
 var _placed := {}             # model name -> [Transform3D, ...]
 var _shadows := {}            # model name -> casts shadows
+var _tints := {}              # model name -> [Color, ...], one an instance
 var _made := {}               # key -> [Mesh, [Transform3D, ...], casts shadows]: meshes made in code
 static var _fence_shader: Shader
 
@@ -42,11 +44,13 @@ static func low() -> bool:
 
 
 ## Puts a model (a name under assets/venue/, without ".glb") at a place: p on the floor, turned yaw (radians),
-## scaled s.
-func add(name: String, p: Vector3, yaw := 0.0, s := 1.0, shadows := true) -> void:
+## scaled s, its colour multiplied by tint (a row of houses a little different each).
+func add(name: String, p: Vector3, yaw := 0.0, s := 1.0, shadows := true, tint := Color.WHITE) -> void:
 	if not _placed.has(name):
 		_placed[name] = []
+		_tints[name] = []
 	(_placed[name] as Array).append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * s), p))
+	(_tints[name] as Array).append(tint)
 	_shadows[name] = shadows and not name.ends_with("_card")
 
 
@@ -67,21 +71,28 @@ func add_mesh(key: String, mesh: Mesh, xf: Transform3D, shadows := true) -> void
 func commit() -> void:
 	for name in _placed:
 		var xf: Array = _placed[name]
+		var tints: Array = _tints[name]
+		var tinted := tints.any(func(c): return c != Color.WHITE)
 		for part in parts(name):
-			_multi(part[0], xf.map(func(t): return (t as Transform3D) * (part[1] as Transform3D)), _shadows[name])
+			_multi(_tinted(part[0]) if tinted else part[0], xf.map(func(t): return (t as Transform3D) * (part[1] as Transform3D)),
+				_shadows[name], tints if tinted else [])
 	for key in _made:
 		_multi(_made[key][0], _made[key][1], _made[key][2])
 	_placed.clear()
+	_tints.clear()
 	_made.clear()
 
 
-func _multi(mesh: Mesh, xf: Array, shadows: bool) -> void:
+func _multi(mesh: Mesh, xf: Array, shadows: bool, colors := []) -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = not colors.is_empty()
 	mm.mesh = mesh
 	mm.instance_count = xf.size()
 	for i in xf.size():
 		mm.set_instance_transform(i, xf[i])
+		if mm.use_colors:
+			mm.set_instance_color(i, colors[i])
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() and shadows \
@@ -110,6 +121,20 @@ static func parts(name: String) -> Array:
 	scene.free()
 	_parts[path] = out
 	return out
+
+
+## The mesh with its materials multiplied by each instance's colour (MultiMesh colours reach the material as COLOR).
+static func _tinted(mesh: Mesh) -> Mesh:
+	if not _tintable.has(mesh):
+		var copy: Mesh = mesh.duplicate()
+		for i in copy.get_surface_count():
+			var mat := copy.surface_get_material(i)
+			if mat is BaseMaterial3D:
+				var m: BaseMaterial3D = mat.duplicate()
+				m.vertex_color_use_as_albedo = true
+				copy.surface_set_material(i, m)
+		_tintable[mesh] = copy
+	return _tintable[mesh]
 
 
 ## Lamp and lantern glass glows (the models' emission is off).
