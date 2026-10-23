@@ -1,6 +1,6 @@
 # Floorball Unleashed beta: install and test
 
-Version **0.3.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.4.0-beta** (0.4: the halls rebuilt: birch walls, ceilings with lights, folded-up basketball boards, a wooden school gym, steel bleachers in the arena). This page covers installing the beta on an Android phone, what to try, and how to report
 what you find. docs/PLAYTEST.md has what the last playtest found and what was fixed.
 
 ## What phone

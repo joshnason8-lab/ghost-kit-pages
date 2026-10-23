@@ -14,7 +14,7 @@ var colors := PackedColorArray()
 var uvs := PackedVector2Array()
 var uv2s := PackedVector2Array()
 var idx := PackedInt32Array()
-var strip := Vector2(0, 16.0 / 768.0)   # the sheet's plain white strip until told otherwise
+var strip := Vector2(0, 16.0 / 1024.0)   # the sheet's plain white strip until told otherwise
 
 
 func _tri_quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, col: Color, uv := Rect2(0, 0, 1, 1)) -> void:
@@ -181,7 +181,7 @@ const SHEET_SHADER := """
 shader_type spatial;
 render_mode %s;
 uniform sampler2D atlas : source_color, %s, repeat_enable;
-uniform float sheet_h = 768.0;
+uniform float sheet_h = 1024.0;
 varying vec2 strip;
 void vertex() {
 	strip = UV2;

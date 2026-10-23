@@ -13,20 +13,39 @@ extends Node3D
 ##
 ## Everything static is merged by material (Geo) over one texture sheet (assets/crowd/venue_atlas.png, made by
 ## tools/crowd/make_venue.gd): opaque, glowing, cut-out and see-through, a draw call each, the floor one more, the crowd
-## one and the bench's people one (Crowd).
+## one and the bench's people one (Crowd). The halls' walls are real surfaces baked into that sheet (birch slats from a
+## maple veneer scan, painted concrete block lit from its normal map). The floor is one plane over the whole hall: the
+## rink's markings, and round them the hall's floor, both with a scanned surface (rubber sports tiles; the school's
+## wooden boards) for grain, and its normal map on Medium and High.
+##
+## The halls' fittings are models from assets/shared (Poly Haven and the owner's), one MultiMeshInstance3D a model, so
+## each costs a draw call however many there are: gym benches, wall clocks, fluorescent battens (sports hall), pendant
+## lamps (school), fire alarm call points and a wet floor sign. Low skips the smallest (call points, the sign) and draws
+## the sports hall's battens as glowing panels. Every model is its _low file (the lamps, clock, call point and sign
+## are the same mesh at both levels, seen from far off), but for the gym benches on High.
 
 const FLOOR_PX := 32.0        # floor texture pixels a metre (40 m x 20 m: 1280 x 640)
 const SHEET := "res://assets/crowd/venue_atlas.png"
-const SHEET_H := 768.0
+const SHEET_H := 1024.0
 ## The sheet's strips: [top, height] in pixels (tools/crowd/make_venue.gd's STRIPS). Each is 1024 px along.
 const STRIPS := {
 	"plain": [0, 16], "board": [16, 64], "ads1": [80, 64], "ads2": [144, 64], "led": [208, 64], "seats": [272, 64],
 	"slats": [336, 64], "panel": [400, 64], "parquet": [464, 48], "step": [512, 32], "windows": [544, 64],
-	"score": [608, 64], "net": [672, 32], "truss": [704, 64],
+	"score": [608, 64], "net": [672, 32], "truss": [704, 64], "block": [768, 128], "signs": [896, 64], "tread": [960, 32],
+	"ceiling": [992, 32],
+}
+## The signs strip's pieces, as fractions along it (make_venue.gd's SIGNS): [start, length].
+const SIGNS := {"exit": [0.0, 0.125], "door": [0.125, 0.25], "glass": [0.375, 0.25], "mat": [0.625, 0.125], "alarm": [0.75, 0.0625]}
+const SHARED := "res://assets/shared/"
+## The floor's scanned surfaces: [albedo, normal, metres a repeat, the albedo's mean brightness].
+const SURFACES := {
+	"rubber": ["surfaces/rubber_tiles/rubber_tiles_albedo_1k.jpg", "surfaces/rubber_tiles/rubber_tiles_normal_1k.jpg", 3.0, 0.13],
+	"wood": ["surfaces/wood_floor/wood_floor_albedo_1k.jpg", "surfaces/wood_floor/wood_floor_normal_1k.jpg", 1.4, 0.39],
 }
 const ROW_RISE := 0.42        # the stands: each row this much higher ...
 const ROW_DEPTH := 0.8        # ... and this much further back
 const SEAT := 0.5             # a seat's width
+const METAL_ROWS := 5         # the arena's lower tier: rows of steel bleacher
 
 var venue := "hall"
 var home_colors: Array = []
@@ -39,11 +58,15 @@ var _cut: Geo                 # cut-outs: roof trusses
 var _see: Geo                 # see-through: the nets, plexiglass
 var _low := false
 var _lamps := {}              # the ceiling's lamps, for the floor's reflection of them
+var _half := Vector2(27, 19)  # the hall's half length and width (its walls)
+var _models := 0              # model instances placed (for tests and arena_look)
+var _doors: Array = []        # [the wall's foot under a door, into the hall]
 
 static var _floor_tex: ImageTexture
 static var _net_tex: ImageTexture
-static var _grain_tex: ImageTexture
 static var _floor_shader: Shader
+static var _floor_shader_low: Shader
+static var _meshes := {}      # a model's opaque meshes and their placement in it, by path and level
 
 
 func _init(p_venue := "hall", p_home := [], p_away := []) -> void:
@@ -68,7 +91,8 @@ func _ready() -> void:
 	var walls := Color(String(v.walls))
 	match String(v.stands):
 		"bowl":
-			_lamps = {"h": 12.5, "step": Vector2(6.5, 6.5), "n": Vector2i(6, 4), "size": Vector2(1.6, 0.9)}
+			_lamps = {"h": 12.5, "step": Vector2(6.5, 6.5), "n": Vector2i(6, 4), "size": Vector2(1.6, 0.9), "kind": "panel"}
+			_half = Vector2(34, 27)
 			_hall_arena(walls, 34.0, 27.0, 16.0)
 			var seat := Color("24508f")
 			spots = _stands(-1, 14 if not _low else 11, seat, true)
@@ -78,22 +102,29 @@ func _ready() -> void:
 			_scoreboard_cube()
 			_trusses(34.0, 27.0, 14.5, 7)
 		"side":
-			_lamps = {"h": 9.6, "step": Vector2(8.0, 7.0), "n": Vector2i(5, 3), "size": Vector2(2.4, 0.5)}
-			_hall_sports(walls, 27.0, 18.0, 10.0)
+			# Rows of fluorescent battens on a lighting rail under the roof trusses.
+			_lamps = {"h": 8.3, "step": Vector2(7.0, 6.5), "n": Vector2i(6, 3), "size": Vector2(0.9, 0.62), "kind": "tube"}
+			_half = Vector2(27, 19)
+			_hall_sports(walls, 27.0, 19.0, 10.0)
 			spots = _stands(-1, 7, Color("1f6fb2"), false)
-			_wall_bars(1, 27.0, 18.0)
+			_wall_bars(1, 27.0, 19.0)
+			_trusses(27.0, 19.0, 10.0, 5)
 		_:
-			_lamps = {"h": 7.6, "step": Vector2(8.0, 6.0), "n": Vector2i(4, 2), "size": Vector2(2.0, 0.5)}
-			_hall_school(walls, 24.0, 15.5, 8.0)
+			# Industrial pendant lamps on their cords from the ceiling (8 m), their bowls' rims at 6.7 m.
+			_lamps = {"h": 6.75, "step": Vector2(8.0, 5.5), "n": Vector2i(5, 3), "size": Vector2(0.5, 0.5), "kind": "pendant"}
+			_half = Vector2(24, 16)
+			_hall_school(walls, 24.0, 16.0, 8.0)
 			spots = _stands(-1, 3, Color("c8ad7f"), false)
-			_wall_bars(-1, 24.0, 15.5)
-			_wall_bars(1, 24.0, 15.5)
+			_wall_bars(-1, 24.0, 16.0)
+			_wall_bars(1, 24.0, 16.0)
 	_env(venue, float(v.light))
 	_floor()
 	_boards()
 	_goals()
 	_benches()
 	_ceiling_lights()
+	if venue != "arena":
+		_fittings()
 	var atlas: Texture2D = sheet()
 	add_child(_lit.commit(Geo.sheet_material("lit", atlas, _low, int(Game.settings.graphics) >= Game.GFX_HIGH)))
 	add_child(_glow.commit(Geo.sheet_material("glow", atlas)))
@@ -127,7 +158,8 @@ func _env(kind: String, energy: float) -> void:
 		sky_mat.sky_top_color = Color(0.62, 0.65, 0.7)
 		sky_mat.sky_horizon_color = Color(0.4, 0.4, 0.4) if kind != "arena" else Color(0.2, 0.21, 0.24)
 		sky_mat.ground_horizon_color = sky_mat.sky_horizon_color
-		sky_mat.ground_bottom_color = Color(0.13, 0.22, 0.36)
+		# Below: the floor's colour (the blue sports floor; the school's boards).
+		sky_mat.ground_bottom_color = Color(0.13, 0.22, 0.36) if kind != "school" else Color(0.34, 0.27, 0.2)
 		sky_mat.sky_curve = 0.25
 		sky_mat.ground_curve = 0.1
 		sky_mat.sun_angle_max = 0.0
@@ -171,60 +203,96 @@ func _env(kind: String, energy: float) -> void:
 # ---------------------------------------------------------------- the floor and its markings (102)
 
 func _floor() -> void:
-	# The hall's floor round the rink, then the rink's own sports floor with its markings.
-	if venue == "arena":
-		_lit.strip_quad(Vector3(-36, -0.01, -28), Vector3(36, -0.01, -28), Vector3(36, -0.01, 28), Vector3(-36, -0.01, 28),
-			Vector3.UP, Color("6a6f78"), s("step"), Rect2(0, 0, 9, 28))
-	else:
-		var wood := Color("c9b08c") if venue == "hall" else Color("d6c09c")
-		_lit.strip_quad(Vector3(-30, -0.01, -20), Vector3(30, -0.01, -20), Vector3(30, -0.01, 20), Vector3(-30, -0.01, 20),
-			Vector3.UP, Color(wood, 0.55), s("parquet"), Rect2(0, 0, 7.5, 40))
+	# One plane over the whole hall: the rink's sports floor with its markings, the hall's floor round it (the shader
+	# tells them apart by the rink's rounded outline), a scanned surface over both.
+	var kind := "wood" if venue == "school" else "rubber"
+	var src: Array = SURFACES[kind]
 	var mi := MeshInstance3D.new()
 	var q := PlaneMesh.new()
-	q.size = Vector2(Rules.LENGTH, Rules.WIDTH)
+	q.size = _half * 2.0
 	mi.mesh = q
 	var m := ShaderMaterial.new()
-	m.shader = floor_shader()
+	m.shader = floor_shader(_low)
 	m.set_shader_parameter("marks", floor_texture())
-	m.set_shader_parameter("grain", grain_texture())
+	m.set_shader_parameter("surface", load(SHARED + String(src[0])))
+	if not _low:
+		m.set_shader_parameter("surface_n", load(SHARED + String(src[1])))
+	m.set_shader_parameter("tile_m", float(src[2]))
+	m.set_shader_parameter("surface_mean", float(src[3]))
+	m.set_shader_parameter("wood", 1.0 if kind == "wood" else 0.0)
+	# Round the rink: the arena's grey sports floor over its concrete, the sports hall's own floor a darker blue-grey of
+	# the same flooring; the school's boards run under the rink too.
+	var surround: Color = {"arena": Color("5d636c"), "hall": Color("4f6680")}.get(venue, Color("d6c09c"))
+	m.set_shader_parameter("surround", surround)
 	m.set_shader_parameter("lamp_h", float(_lamps.h))
 	m.set_shader_parameter("lamp_step", _lamps.step)
 	m.set_shader_parameter("lamp_n", Vector2(_lamps.n))
 	m.set_shader_parameter("lamp_size", _lamps.size)
-	m.set_shader_parameter("sheen", 0.55 if venue == "arena" else 0.42)
+	m.set_shader_parameter("lamp_round", 1.0 if String(_lamps.kind) == "pendant" else 0.0)
+	m.set_shader_parameter("sheen", {"arena": 0.55, "school": 0.5}.get(venue, 0.42))
 	mi.material_override = m
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 
 
-## The sports floor: its markings' texture, a fine grain, a soft sheen, and the lamps above seen in it, blurred more
-## the further the reflection travels (as on a real synthetic floor, roughness about 0.4).
-static func floor_shader() -> Shader:
-	if _floor_shader:
+## The sports floor: its markings' texture inside the rink, the hall's floor colour outside it, a scanned surface for
+## grain (rubber sports tiles; or, wood 1, the school's boards themselves, the markings painted on them), its normal
+## map on Medium and High, a soft sheen, and the lamps above seen in it, blurred more the further the reflection
+## travels (as on a real synthetic floor, roughness about 0.4).
+static func floor_shader(low := false) -> Shader:
+	if low and _floor_shader_low:
+		return _floor_shader_low
+	if not low and _floor_shader:
 		return _floor_shader
-	_floor_shader = Shader.new()
-	_floor_shader.code = """
+	var sh := Shader.new()
+	sh.code = """
 shader_type spatial;
 render_mode cull_back;
 uniform sampler2D marks : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
-uniform sampler2D grain : filter_linear_mipmap, repeat_enable;
+uniform sampler2D surface : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D surface_n : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform float tile_m = 2.0;
+uniform float surface_mean = 0.13;
+uniform float wood = 0.0;
+uniform vec3 surround : source_color = vec3(0.3, 0.4, 0.5);
+uniform vec2 rink_half = vec2(20.0, 10.0);
+uniform float corner_r = 1.5;
 uniform float lamp_h = 10.0;
 uniform vec2 lamp_step = vec2(8.0, 7.0);
 uniform vec2 lamp_n = vec2(5.0, 3.0);
 uniform vec2 lamp_size = vec2(2.4, 0.5);
+uniform float lamp_round = 0.0;
 uniform float sheen = 0.45;
 varying vec3 wpos;
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 void fragment() {
-	vec3 m = texture(marks, UV).rgb;
-	float g = texture(grain, wpos.xz * 0.61).r * 0.65 + texture(grain, wpos.xz * 0.137 + 0.3).r * 0.35;
-	float line = smoothstep(0.55, 0.8, m.b * m.r);      // the white paint, smoother and brighter
-	ALBEDO = m * mix(0.8, 0.92, line) * (1.0 + (g - 0.5) * mix(0.18, 0.05, line));
-	ROUGHNESS = mix(0.42 + (g - 0.5) * 0.1, 0.35, line);
+	vec2 p = wpos.xz;
+	// Inside the rink's rounded outline (101): its markings; outside, the hall's floor.
+	vec2 q = abs(p) - (rink_half - corner_r);
+	float sd = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - corner_r;
+	float inside = 1.0 - step(0.0, sd);
+	vec3 m = texture(marks, (p + rink_half) / (rink_half * 2.0)).rgb;
+	float line = inside * smoothstep(0.55, 0.8, m.b * m.r);      // the white paint, smoother and brighter
+	// The scanned surface: the wood's boards run along the hall.
+	vec2 suv = (wood > 0.5 ? p.yx : p) / tile_m;
+	vec3 st = texture(surface, suv).rgb;
+	vec3 base = mix(surround, m, inside);
+	if (wood > 0.5) {
+		// Varnished beech: the scan lifted and cooled a little.
+		vec3 w = mix(st, vec3(dot(st, vec3(0.333))), 0.42) * vec3(1.5, 1.47, 1.42);
+		ALBEDO = mix(w, m * 0.92, line);
+		ROUGHNESS = mix(0.45, 0.4, line);
+	} else {
+		float g = dot(st, vec3(0.333)) / surface_mean;
+		// The grain: plain on the rink (a rolled sports floor's faint texture), the tiles' joints round it.
+		ALBEDO = base * mix(0.86, 0.92, line) * clamp(1.0 + (g - 1.0) * mix(2.0, 0.8, inside) * (1.0 - line * 0.8), 0.7, 1.3);
+		ROUGHNESS = mix(0.45 + (g - 1.0) * 0.08, 0.35, line);
+	}
 	SPECULAR = 0.3;
-	// The lamps' reflection: the eye's ray off the floor, up to the ceiling's lamps, the nearest one's soft rectangle.
+	%s
+	// The lamps' reflection: the eye's ray off the floor, up to the ceiling's lamps, the nearest one's soft shape.
 	vec3 cam = INV_VIEW_MATRIX[3].xyz;
 	vec3 v = normalize(wpos - cam);
 	vec3 r = reflect(v, vec3(0.0, 1.0, 0.0));
@@ -233,6 +301,9 @@ void fragment() {
 	vec2 half_n = (lamp_n - 1.0) * 0.5;
 	vec2 c = (clamp(floor(hit / lamp_step + half_n + 0.5), vec2(0.0), lamp_n - 1.0) - half_n) * lamp_step;
 	vec2 d = abs(hit - c) - lamp_size * 0.5;
+	if (lamp_round > 0.5) {
+		d = vec2(length(hit - c) - lamp_size.x * 0.5);
+	}
 	float blur = 0.15 + t * 0.03;
 	float k = (1.0 - smoothstep(-blur, blur, d.x)) * (1.0 - smoothstep(-blur, blur, d.y));
 	// The glow round them, wide and faint, and Fresnel: stronger the lower the eye.
@@ -241,31 +312,15 @@ void fragment() {
 	float fres = 0.3 + 0.7 * pow(1.0 - clamp(-v.y, 0.0, 1.0), 5.0);
 	EMISSION = vec3(0.92, 0.95, 1.0) * (k * 1.1 + wide) * sheen * fres * (1.0 - line * 0.5);
 }
-"""
-	return _floor_shader
-
-
-## A fine, tiling grain for the flooring (sums of whole waves across the tile, so its edges meet).
-static func grain_texture() -> ImageTexture:
-	if _grain_tex:
-		return _grain_tex
-	var n := 64
-	var img := Image.create_empty(n, n, false, Image.FORMAT_L8)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 3
-	var waves := []
-	for i in 10:
-		waves.append([rng.randi_range(1, 9), rng.randi_range(-9, 9), rng.randf() * TAU, rng.randf_range(0.4, 1.0)])
-	for y in n:
-		for x in n:
-			var val := 0.0
-			for w in waves:
-				val += sin(TAU * (float(w[0]) * x + float(w[1]) * y) / n + w[2]) * w[3]
-			val = val / 6.0 + (rng.randf() - 0.5) * 0.5
-			img.set_pixel(x, y, Color(0.5 + val * 0.5, 0, 0))
-	img.generate_mipmaps()
-	_grain_tex = ImageTexture.create_from_image(img)
-	return _grain_tex
+""" % ("" if low else """// The surface's relief (tile joints, the boards' grain), faint under the paint.
+	vec3 nm = texture(surface_n, suv).rgb;
+	NORMAL_MAP = wood > 0.5 ? nm.grb : nm;
+	NORMAL_MAP_DEPTH = mix(0.4, 0.12, max(inside * 0.7, line));""")
+	if low:
+		_floor_shader_low = sh
+	else:
+		_floor_shader = sh
+	return sh
 
 
 ## The rink's floor: blue sports flooring with white markings, 4-5 cm lines (102), drawn once.
@@ -539,7 +594,7 @@ func _benches() -> void:
 
 # ---------------------------------------------------------------- the hall
 
-func _walls(half_x: float, half_z: float, h: float, bands: Array) -> void:
+func _walls(half_x: float, half_z: float, h: float, bands: Array, pale_ceiling := false) -> void:
 	# Each band: [y0, y1, colour, strip, metres a repeat along, metres a repeat up]; round all four walls.
 	var corners := [Vector3(-half_x, 0, -half_z), Vector3(half_x, 0, -half_z), Vector3(half_x, 0, half_z), Vector3(-half_x, 0, half_z)]
 	for i in 4:
@@ -553,7 +608,13 @@ func _walls(half_x: float, half_z: float, h: float, bands: Array) -> void:
 			var target: Array = [_glow] if band.size() > 6 and band[6] else [_lit]
 			(target[0] as Geo).strip_quad(Vector3(a.x, y1, a.z), Vector3(b.x, y1, b.z), Vector3(b.x, y0, b.z), Vector3(a.x, y0, a.z), n,
 				band[2], s(band[3]), Rect2(0, 0, len_ / float(band[4]), (y1 - y0) / float(band[5])))
-	_lit._tri_quad(Vector3(-half_x, h, half_z), Vector3(half_x, h, half_z), Vector3(half_x, h, -half_z), Vector3(-half_x, h, -half_z), Vector3.DOWN, Color("3a3f47"))
+	if pale_ceiling:
+		# A hall's ceiling: white acoustic boards in 60 cm bays. Lit only by the bounce off the floor, which a lamp from
+		# above cannot give a face turned down: drawn unshaded, the soft grey such a ceiling shows.
+		_glow.strip_quad(Vector3(-half_x, h, half_z), Vector3(half_x, h, half_z), Vector3(half_x, h, -half_z), Vector3(-half_x, h, -half_z),
+			Vector3.DOWN, Color(0.8, 0.81, 0.82), s("ceiling"), Rect2(0, 0, half_x * 2.0 / 9.6, half_z * 2.0 / 0.6))
+	else:
+		_lit._tri_quad(Vector3(-half_x, h, half_z), Vector3(half_x, h, half_z), Vector3(half_x, h, -half_z), Vector3(-half_x, h, -half_z), Vector3.DOWN, Color("3a3f47"))
 
 
 func _hall_arena(walls: Color, half_x: float, half_z: float, h: float) -> void:
@@ -565,26 +626,158 @@ func _hall_arena(walls: Color, half_x: float, half_z: float, h: float) -> void:
 		[9.3, h, walls.darkened(0.3), "panel", 8.0, 3.0]])
 
 
-func _hall_sports(walls: Color, half_x: float, half_z: float, h: float) -> void:
-	# Birch slats to 4.5 m (ball-proof), pale acoustic panels above, a band of high windows under the roof.
-	_walls(half_x, half_z, h, [[0, 4.5, walls, "slats", 8.0, 2.25], [4.5, 8.0, Color("e4e1da"), "panel", 8.0, 3.5],
-		[8.0, 9.4, Color(0.9, 0.92, 0.95), "windows", 8.0, 1.4, true], [9.4, h, Color("e4e1da"), "panel", 8.0, 0.6]])
+func _hall_sports(_walls_col: Color, half_x: float, half_z: float, h: float) -> void:
+	# A Nordic sports hall: painted block to 1.2 m (ball-proof, easy to wipe), pale birch slats above it to 6 m, painted
+	# block again to the band of high windows (a pale sky only), a white ceiling on the roof's trusses.
+	var paint := Color(0.97, 0.97, 0.96)
+	_walls(half_x, half_z, h, [[0, 1.2, Color(0.93, 0.93, 0.93), "block", 16.0, 2.0], [1.2, 6.0, Color(1.0, 0.97, 0.92), "slats", 8.0, 2.4],
+		[6.0, 8.2, paint, "block", 16.0, 2.0], [8.2, 9.4, Color(0.9, 0.92, 0.95), "windows", 8.0, 1.4, true], [9.4, h, paint, "block", 16.0, 2.0]], true)
 	# A scoreboard on each end wall.
 	for e: int in [-1, 1]:
 		var x := (half_x - 0.05) * e
 		_lit.box(Vector3(x - 0.1 * e, 5.8, 0), Vector3(0.2, 1.4, 4.2), Color("15181d"))
 		_glow.face(Vector3(x - 0.21 * e, 0, -1.9), Vector3(x - 0.21 * e, 0, 1.9), 5.2, 6.4, Vector3.ZERO, Color.WHITE, s("score"), 0.0, 0.5)
+		# The basketball boards, folded up to the ceiling on their winch frames as they are for every other sport.
+		_backboard_folded(Vector3((half_x - 2.4) * e, h, 0.0), e)
+		# The doors to the changing rooms, the exit sign over them.
+		_door(Vector3(half_x * e, 0, -9.5), Vector3(-e, 0, 0))
 
 
 func _hall_school(walls: Color, half_x: float, half_z: float, h: float) -> void:
-	_walls(half_x, half_z, h, [[0, 1.4, walls.darkened(0.2), "panel", 4.0, 1.4], [1.4, 6.6, walls, "panel", 8.0, 5.2],
-		[6.6, 7.6, Color(0.9, 0.92, 0.95), "windows", 8.0, 1.0, true], [7.6, h, walls, "panel", 8.0, 0.4]])
-	# Basketball boards at the ends.
+	# An older school gym: concrete block painted pale, a darker dado to 1.6 m (scuffed by balls), high windows.
+	var paint := walls.lerp(Color(0.96, 0.97, 0.97), 0.7)
+	_walls(half_x, half_z, h, [[0, 1.6, walls.darkened(0.08), "block", 16.0, 2.0], [1.6, 6.6, paint, "block", 16.0, 2.0],
+		[6.6, 7.6, Color(0.9, 0.92, 0.95), "windows", 8.0, 1.0, true], [7.6, h, paint, "block", 16.0, 2.0]], true)
+	_lit.face(Vector3(-half_x, 0, -half_z + 0.01), Vector3(half_x, 0, -half_z + 0.01), 1.58, 1.64, Vector3.ZERO, Color("6f7c86"))
 	for e: int in [-1, 1]:
-		var x := (half_x - 1.2) * e
-		_lit.box(Vector3(x, 3.4, 0), Vector3(0.04, 1.05, 1.8), Color(0.97, 0.97, 0.97, 0.4))
-		_lit.box(Vector3(x + 0.6 * e, 3.4, 0), Vector3(1.2, 0.08, 0.08), Color("6b7078"))
-		_lit.cylinder(Vector3(x - 0.25 * e, 3.05, -0.23), Vector3(x - 0.25 * e, 3.05, 0.23), 0.012, 0.012, Color("e0582a"), 4, false)
+		# A basketball board on each end wall, on its bracket.
+		_backboard_wall(Vector3(half_x * e, 0, 0), e)
+		_door(Vector3(half_x * e, 0, -9.0), Vector3(-e, 0, 0))
+	# Climbing ropes from a steel beam in the far corner (pushed to the wall for a match, clear of the cameras behind
+	# the goals), hanging clear of the floor.
+	var rz := -half_z + 0.7
+	_lit.box(Vector3(-half_x + 2.9, h - 0.12, rz), Vector3(4.0, 0.2, 0.12), Color("5d636b"))
+	for k in 4:
+		var x := -half_x + 1.4 + k * 1.0
+		_lit.cylinder(Vector3(x, h - 0.22, rz), Vector3(x, 1.1, rz), 0.018, 0.018, Color("c2a878", 0.9), 5, false)
+		_lit.cylinder(Vector3(x, 1.1, rz), Vector3(x, 0.95, rz), 0.03, 0.0, Color("a88f62", 0.9), 5, false)
+
+
+## A double door on a wall (p the wall's foot under the door's centre, n into the hall): the doors 2 m x 2.1 m, a
+## green emergency exit sign over them (lit), and a fire alarm call point beside them (a model on Medium and High).
+func _door(p: Vector3, n: Vector3) -> void:
+	var along := Vector3(-n.z, 0, n.x)
+	var f := p + n * 0.012
+	_lit.face(f - along * 1.0, f + along * 1.0, 0.0, 2.1, p + n * 5.0, Color(1, 1, 1, 0.6), s("signs"), SIGNS.door[0], SIGNS.door[1])
+	# The frame round it.
+	var fr := Color("8d939b", 0.5)
+	for k: int in [-1, 1]:
+		_lit.box(f + along * (1.04 * k) + Vector3(0, 1.08, 0), Vector3(0.08, 2.16, 0.08) if absf(n.x) < 0.5 else Vector3(0.08, 2.16, 0.08), fr)
+	_lit.box(f + Vector3(0, 2.14, 0), (Vector3(2.16, 0.08, 0.08) if absf(n.x) < 0.5 else Vector3(0.08, 0.08, 2.16)), fr)
+	# The exit sign: a white box out from the wall, its face lit green.
+	var sp := p + n * 0.06 + Vector3(0, 2.42, 0)
+	_lit.box(sp, (Vector3(0.42, 0.2, 0.1) if absf(n.x) < 0.5 else Vector3(0.1, 0.2, 0.42)), Color(0.95, 0.95, 0.95))
+	var sf := sp + n * 0.052
+	_glow.face(sf - along * 0.2, sf + along * 0.2, 2.33, 2.51, sf + n, Color(1, 1, 1), s("signs"), SIGNS.exit[0], SIGNS.exit[1])
+	_doors.append([p, n])
+
+
+## A regulation basketball board (1.80 x 1.05 m of clear glass, white lines, an orange 45 cm rim 3.05 m up and a white
+## net) on a bracket from an end wall: e the end (+1: the wall at +x), p the wall's foot on the hall's axis.
+func _backboard_wall(p: Vector3, e: int) -> void:
+	var face_x := p.x - e * 1.2            # the board's face 1.2 m out from the wall (its baseline's place)
+	var y0 := 2.9
+	_board(Vector3(face_x, y0, 0), e, false)
+	# The bracket: two arms from the wall to the board's back, a brace below each.
+	var steel := Color("4a5058", 0.5)
+	for z: float in [-0.5, 0.5]:
+		_lit.box(Vector3((face_x + p.x) * 0.5, y0 + 0.75, z), Vector3(1.2, 0.08, 0.08), steel)
+		_lit.cylinder(Vector3(p.x - e * 0.02, y0 - 0.4, z), Vector3(face_x + e * 0.05, y0 + 0.7, z), 0.03, 0.03, steel, 4, false)
+	for z: float in [-0.5, 0.5]:
+		_lit.box(Vector3(p.x - e * 0.03, y0 + 0.2, z), Vector3(0.06, 1.4, 0.1), steel)   # the wall rails
+
+
+## The same board on a ceiling winch frame, folded up: the frame swung up under the roof, the board lying face down
+## under it, the rim pointing to the floor and the net hanging from it. p: the ceiling over the board, e the end.
+func _backboard_folded(p: Vector3, e: int) -> void:
+	var y := p.y - 0.95
+	_board(Vector3(p.x, y, 0), e, true)
+	var steel := Color("8d939b", 0.45)
+	# The frame: two lattice arms from the hinge on the ceiling near the wall to the board, a cross tube, the winch.
+	var hinge_x := p.x + e * 1.9
+	for z: float in [-0.55, 0.55]:
+		_lit.cylinder(Vector3(hinge_x, p.y - 0.05, z), Vector3(p.x - e * 0.6, y + 0.12, z), 0.04, 0.04, steel, 5, false)
+		_lit.cylinder(Vector3(p.x + e * 0.6, p.y - 0.05, z), Vector3(p.x - e * 0.6, y + 0.12, z), 0.025, 0.025, steel, 4, false)
+		_lit.cylinder(Vector3(p.x + e * 0.6, p.y - 0.05, z), Vector3(hinge_x - e * 0.5, y + 0.55, z), 0.02, 0.02, steel, 4, false)
+	_lit.cylinder(Vector3(p.x - e * 0.6, y + 0.12, -0.6), Vector3(p.x - e * 0.6, y + 0.12, 0.6), 0.03, 0.03, steel, 4, false)
+	_lit.box(Vector3(hinge_x, p.y - 0.08, 0), Vector3(0.25, 0.16, 1.4), Color("5d636b"))
+	_lit.box(Vector3(p.x + e * 0.9, p.y - 0.12, 0), Vector3(0.35, 0.22, 0.3), Color("2f6fb2", 0.5))   # the winch motor
+	_lit.cylinder(Vector3(p.x + e * 0.9, p.y - 0.2, 0), Vector3(p.x - e * 0.3, y + 0.05, 0), 0.006, 0.006, Color("3a3f47"), 3, false)
+
+
+## The board: glass with the white border and shooter's rectangle (the sheet's signs strip), an aluminium edge, the
+## orange rim (45 cm inside, 15 cm off the glass) and its net. Upright with its face toward the hall (folded false; c the
+## middle of its lower edge on its face), or folded face down (c the middle of the board's face).
+func _board(c: Vector3, e: int, folded: bool) -> void:
+	var w := 0.9
+	var hgt := 1.05
+	var edge := Color("c9ccd1", 0.4)
+	var orange := Color("e0582a", 0.35)
+	var rim_r := 0.235
+	if not folded:
+		var x := c.x
+		var to := Vector3(x - e * 5.0, c.y, 0)
+		_see.face(Vector3(x, 0, -w), Vector3(x, 0, w), c.y, c.y + hgt, to, Color(1, 1, 1, 1), s("signs"), SIGNS.glass[0], SIGNS.glass[1])
+		for z: float in [-w, w]:
+			_lit.box(Vector3(x + e * 0.02, c.y + hgt * 0.5, z), Vector3(0.04, hgt + 0.04, 0.03), edge)
+		for yy: float in [c.y, c.y + hgt]:
+			_lit.box(Vector3(x + e * 0.02, yy, 0), Vector3(0.04, 0.03, w * 2.0 + 0.04), edge)
+		# The rim, 3.05 m up, its ring's near edge 15 cm off the glass; a plate behind it.
+		var rc := Vector3(x - e * (0.15 + rim_r), 3.05, 0)
+		_lit.box(Vector3(x - e * 0.08, 3.0, 0), Vector3(0.16, 0.12, 0.2), orange)
+		_ring(rc, rim_r, Vector3.UP, orange)
+		_net(rc, rim_r, Vector3.DOWN, 0.42)
+	else:
+		# Face down: the glass level, its long side across the hall, its lower edge toward the wall.
+		var x0 := c.x - e * hgt * 0.5
+		var x1 := c.x + e * hgt * 0.5
+		_see.strip_quad(Vector3(x0, c.y, -w), Vector3(x0, c.y, w), Vector3(x1, c.y, w), Vector3(x1, c.y, -w), Vector3.DOWN, Color(1, 1, 1, 1),
+			s("signs"), Rect2(SIGNS.glass[0], 0, SIGNS.glass[1], 1))
+		for z: float in [-w, w]:
+			_lit.box(Vector3(c.x, c.y + 0.02, z), Vector3(hgt + 0.04, 0.04, 0.03), edge)
+		for xx: float in [x0, x1]:
+			_lit.box(Vector3(xx, c.y + 0.02, 0), Vector3(0.03, 0.04, w * 2.0 + 0.04), edge)
+		# The rim near the wall's edge of the board, now pointing down; the net hangs from it.
+		var rc := Vector3(x1 - e * 0.15, c.y - 0.15 - rim_r, 0)
+		_lit.box(Vector3(x1 - e * 0.15, c.y - 0.08, 0), Vector3(0.12, 0.16, 0.2), orange)
+		_ring(rc, rim_r, Vector3(e, 0, 0), orange)
+		_net(rc + Vector3(-e * 0.05, -0.05, 0), rim_r * 0.95, Vector3(-e * 0.35, -1, 0).normalized(), 0.4)
+
+
+## A rim: a ring of round tube about the axis n.
+func _ring(c: Vector3, r: float, n: Vector3, col: Color) -> void:
+	var a := n.cross(Vector3.FORWARD if absf(n.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
+	var b := n.cross(a).normalized()
+	var seg := 10
+	for i in seg:
+		var t0 := TAU * i / seg
+		var t1 := TAU * (i + 1) / seg
+		_lit.cylinder(c + (a * cos(t0) + b * sin(t0)) * r, c + (a * cos(t1) + b * sin(t1)) * r, 0.009, 0.009, col, 4, false)
+
+
+## A basketball net: a tapering tube of the goal's net strip from the rim down (along dir), seen through.
+func _net(c: Vector3, r: float, dir: Vector3, length: float) -> void:
+	var a := dir.cross(Vector3.FORWARD if absf(dir.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
+	var b := dir.cross(a).normalized()
+	var seg := 8
+	var bot := c + dir * length
+	for i in seg:
+		var t0 := TAU * i / seg
+		var t1 := TAU * (i + 1) / seg
+		var d0 := a * cos(t0) + b * sin(t0)
+		var d1 := a * cos(t1) + b * sin(t1)
+		_see.strip_quad(c + d0 * r, c + d1 * r, bot + d1 * r * 0.6, bot + d0 * r * 0.6, (d0 + d1).normalized(), Color(1, 1, 1, 0.9),
+			s("net"), Rect2(0, 0, r * 0.9 / 1.28 * 4.0, length / 0.08))
 
 
 ## Rows of seats along a long side (side -1: the far side, behind the benches; 1: the near side), rising; aisles
@@ -614,9 +807,14 @@ func _stands(side: int, rows: int, seat: Color, fascia: bool) -> Array:
 		var zb := zc + side * ROW_DEPTH * 0.5
 		var y := y_front + 0.45 + r * ROW_RISE
 		var y_prev := y - ROW_RISE if r > 0 else 0.0
-		# Riser and tread, the whole length.
-		_lit.face(Vector3(-half, 0, zf), Vector3(half, 0, zf), y_prev, y, rink, concrete.darkened(0.25), s("step"), 0.0, 4.0, 0.5)
-		_lit.flat(-half, zf, half, zb, y, concrete, s("step"), 4.0, 0.5)
+		# Riser and tread, the whole length: the arena's lower tier a steel bleacher (aluminium treads, dark risers),
+		# concrete above it.
+		if fascia and r < METAL_ROWS:
+			_lit.face(Vector3(-half, 0, zf), Vector3(half, 0, zf), y_prev, y, rink, Color("2b2f35", 0.5))
+			_lit.flat(-half, zf, half, zb, y, Color(0.8, 0.82, 0.85, 0.45), s("tread"), 30.0 / 8.0, 1.0)
+		else:
+			_lit.face(Vector3(-half, 0, zf), Vector3(half, 0, zf), y_prev, y, rink, concrete.darkened(0.25), s("step"), 0.0, 4.0, 0.5)
+			_lit.flat(-half, zf, half, zb, y, concrete, s("step"), 4.0, 0.5)
 		# Seats in sections between the aisles.
 		var edges := [-half]
 		for a in aisles:
@@ -655,8 +853,12 @@ func _end_stands(end: int, rows: int, seat: Color) -> Array:
 		var xb := xc + end * ROW_DEPTH * 0.5
 		var y := 1.0 + 0.45 + r * ROW_RISE
 		var y_prev := y - ROW_RISE if r > 0 else 0.0
-		_lit.face(Vector3(xf, 0, -half), Vector3(xf, 0, half), y_prev, y, rink, concrete.darkened(0.25), s("step"), 0.0, 3.0, 0.5)
-		_lit.flat(xf, -half, xb, half, y, concrete, s("step"), 3.0, 0.5)
+		if r < METAL_ROWS:
+			_lit.face(Vector3(xf, 0, -half), Vector3(xf, 0, half), y_prev, y, rink, Color("2b2f35", 0.5))
+			_lit.flat(xf, -half, xb, half, y, Color(0.8, 0.82, 0.85, 0.45), s("tread"), 1.0, 22.0 / 8.0)
+		else:
+			_lit.face(Vector3(xf, 0, -half), Vector3(xf, 0, half), y_prev, y, rink, concrete.darkened(0.25), s("step"), 0.0, 3.0, 0.5)
+			_lit.flat(xf, -half, xb, half, y, concrete, s("step"), 3.0, 0.5)
 		var xs := xb - end * 0.12
 		for sec: Array in [[-half, -0.5], [0.5, half]]:
 			var za: float = sec[0]
@@ -689,7 +891,7 @@ func _trusses(half_x: float, half_z: float, y: float, n: int) -> void:
 	for i in n:
 		var x := -half_x + (i + 1) * 2.0 * half_x / (n + 1)
 		_cut.strip_quad(Vector3(x, y, -half_z), Vector3(x, y, -6.0), Vector3(x, y - 1.6, -6.0), Vector3(x, y - 1.6, -half_z),
-			Vector3.RIGHT, Color("9aa0a8"), s("truss"), Rect2(0, 0, (half_z - 6.0) / 8.0, 1))
+			Vector3.RIGHT, Color("c4c9cf") if venue != "arena" else Color("9aa0a8"), s("truss"), Rect2(0, 0, (half_z - 6.0) / 8.0, 1))
 
 
 func _ceiling_lights() -> void:
@@ -697,11 +899,142 @@ func _ceiling_lights() -> void:
 	var st: Vector2 = _lamps.step
 	var n: Vector2i = _lamps.n
 	var sz: Vector2 = _lamps.size
+	var kind := String(_lamps.kind)
+	var at: Array[Transform3D] = []
 	for i in n.x:
 		for k in n.y:
 			var x := (i - (n.x - 1) * 0.5) * st.x
 			var z := (k - (n.y - 1) * 0.5) * st.y
-			_glow.flat(x - sz.x * 0.5, z - sz.y * 0.5, x + sz.x * 0.5, z + sz.y * 0.5, h, Color(1, 0.99, 0.95), Vector2(-1, 0), 1, 1, true)
+			match kind:
+				"tube":
+					# A batten's white housing on the rail, its tubes under it (glowing panels on Low).
+					_lit.box(Vector3(x, h + 0.035, z), Vector3(sz.x + 0.1, 0.07, sz.y + 0.08), Color(0.95, 0.95, 0.95, 0.5))
+					# Its lit diffuser, the tubes (the model, Medium and High) in front of it.
+					_glow.flat(x - sz.x * 0.5, z - sz.y * 0.5, x + sz.x * 0.5, z + sz.y * 0.5, h - (0.01 if _low else 0.002), Color(1, 0.99, 0.95), Vector2(-1, 0), 1, 1, true)
+					if not _low:
+						at.append(Transform3D(Basis.IDENTITY, Vector3(x, h, z)))
+					# Its drop rods up to the ceiling.
+					for dx: float in [-0.35, 0.35]:
+						_lit.box(Vector3(x + dx, (h + 0.07 + _ceiling_h()) * 0.5, z), Vector3(0.015, _ceiling_h() - h - 0.07, 0.015), Color("8d939b"))
+				"pendant":
+					at.append(Transform3D(Basis.IDENTITY, Vector3(x, _ceiling_h(), z)))
+				_:
+					_glow.flat(x - sz.x * 0.5, z - sz.y * 0.5, x + sz.x * 0.5, z + sz.y * 0.5, h, Color(1, 0.99, 0.95), Vector2(-1, 0), 1, 1, true)
+	match kind:
+		"tube":
+			# Each row's lighting rail, the battens under it.
+			for k in n.y:
+				var z := (k - (n.y - 1) * 0.5) * st.y
+				var xe := (n.x - 1) * 0.5 * st.x + sz.x * 0.5 + 0.3
+				_lit.box(Vector3(0, h + 0.11, z), Vector3(xe * 2.0, 0.08, 0.1), Color(0.9, 0.9, 0.9, 0.5))
+			_place("hall/fluorescent_light", at, true)
+		"pendant":
+			_place("hall/hanging_lamp", at, true)
+
+
+func _ceiling_h() -> float:
+	return {"arena": 16.0, "hall": 10.0}.get(venue, 8.0)
+
+
+## The halls' smaller things: a wall clock over each door, a fire alarm call point beside it and a wet floor sign by
+## the first (the sports hall's, on Medium and High), and the low gym benches along the far wall's free ends.
+func _fittings() -> void:
+	var clocks: Array[Transform3D] = []
+	var alarms: Array[Transform3D] = []
+	var signs: Array[Transform3D] = []
+	for d in _doors:
+		var p: Vector3 = d[0]
+		var n: Vector3 = d[1]
+		var yaw := atan2(n.x, n.z)
+		var along := Vector3(-n.z, 0, n.x)
+		clocks.append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * 1.4), p + n * 0.005 + Vector3(0, 3.05, 0)))
+		alarms.append(Transform3D(Basis(Vector3.UP, yaw), p + n * 0.005 + along * 1.45 + Vector3(0, 1.45, 0)))
+		if signs.is_empty():
+			signs.append(Transform3D(Basis(Vector3.UP, yaw + 0.5), p + n * 0.9 - along * 1.6))
+	_place("hall/wall_clock", clocks)
+	if venue == "hall" and not _low:
+		_place("hall/fire_alarm", alarms)
+		_place("hall/wet_floor_sign", signs)
+	# Gym benches (3.6 m, 32 cm high), long side to the wall.
+	var benches: Array[Transform3D] = []
+	var xs: Array = [17.6, 21.3, 25.0] if venue == "hall" else [17.2, 20.9]
+	for side: int in [-1, 1]:
+		for x: float in xs:
+			if venue == "school" and side < 0 and x > 19.0:
+				continue   # the ropes' corner
+			benches.append(Transform3D(Basis(Vector3.UP, PI * 0.5) * Basis.from_scale(Vector3(0.32, 0.8, 1.3)), Vector3(x * side, 0, -_half.y + 0.22)))
+	_place("seating/gym_bench", benches, true)
+
+
+## Places copies of a model from assets/shared, one MultiMeshInstance3D for each mesh in it (so a draw call a surface
+## however many are placed). Low takes the model's _low file (and so does Medium where medium_low), with its
+## materials lit per vertex and no normal map. A see-through part (a clock's glass) is left out.
+func _place(name: String, at: Array[Transform3D], medium_low := false) -> void:
+	if at.is_empty():
+		return
+	var g := int(Game.settings.graphics)
+	var low_file := g == Game.GFX_LOW or (medium_low and g == Game.GFX_MEDIUM)
+	var path := SHARED + name + ("_low" if low_file else "") + ".glb"
+	if not ResourceLoader.exists(path):
+		path = SHARED + name + "_low.glb"
+	var key := "%s%d" % [path, int(_low)]
+	if not _meshes.has(key):
+		_meshes[key] = _load_meshes(path, _low)
+	for e: Array in _meshes[key]:
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = e[0]
+		mm.instance_count = at.size()
+		for i in at.size():
+			mm.set_instance_transform(i, at[i] * (e[1] as Transform3D))
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mmi)
+	_models += at.size()
+
+
+static func _load_meshes(path: String, low: bool) -> Array:
+	var out := []
+	var scn: PackedScene = load(path)
+	var root := scn.instantiate()
+	for node in root.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		var mesh: Mesh = mi.mesh
+		var opaque := true
+		for i in mesh.get_surface_count():
+			var mat := mesh.surface_get_material(i)
+			if mat is BaseMaterial3D and (mat as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+				opaque = false
+		if not opaque:
+			continue
+		# The lamps' tubes and bulbs: brighter than the scans' own emission, as a lamp that is on.
+		var lamp := false
+		for i in mesh.get_surface_count():
+			var mat := mesh.surface_get_material(i)
+			if mat is BaseMaterial3D and (mat as BaseMaterial3D).emission_enabled:
+				lamp = true
+		if low or lamp:
+			mesh = mesh.duplicate()
+			for i in mesh.get_surface_count():
+				var mat := mesh.surface_get_material(i)
+				if mat is BaseMaterial3D:
+					var lm := (mat as BaseMaterial3D).duplicate() as BaseMaterial3D
+					if low:
+						lm.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
+						lm.normal_enabled = false
+					if lm.emission_enabled:
+						lm.emission_energy_multiplier *= 3.0
+					mesh.surface_set_material(i, lm)
+		# Where the mesh sits in the model.
+		var xf := Transform3D.IDENTITY
+		var n: Node = mi
+		while n != root and n is Node3D:
+			xf = (n as Node3D).transform * xf
+			n = n.get_parent()
+		out.append([mesh, xf])
+	root.free()
+	return out
 
 
 func _scoreboard_cube() -> void:

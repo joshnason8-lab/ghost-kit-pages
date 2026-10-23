@@ -65,6 +65,29 @@ on with "Next".
 - tools/ci_local.sh runs CI's checks before each push; the Android build runs on push only (no double runs).
 - **0.2.0-beta** (version code 2).
 
+### 0.4.0-beta: the graphics update (23 October 2026)
+
+From the lead's brief and shared assets (plans/floorball-unleashed.md on claude/shared-assets):
+- **Sports hall:** painted block to 1.2 m, birch slats to 6 m, block above and a band of high windows (pale sky); one
+  hall floor with a rubber-tile grain round the blue rink; a white acoustic ceiling, trusses and three rows of
+  fluorescent battens (Poly Haven); basketball backboards folded up under the ceiling on winch frames (built in code:
+  1.80 x 1.05 m glass, 45 cm orange rim, white net); doors with green exit signs, clocks, fire alarm points, a wet
+  floor sign, gym benches (the owner's model). The hall is 1 m wider (the far stand's top row came through the wall).
+- **School gym:** pale painted block with a darker dado, a varnished wood floor under the rink, 15 hanging lamps,
+  climbing ropes in a far corner (at the end they hung in front of the behind-the-goal camera), gym benches, a glass
+  board on a bracket at each end. 1 m wider, as the hall.
+- **City arena:** the first five rows of every stand as steel bleachers (made in code), the rubber floor grain.
+- **Low skips** the fire alarm points, the wet floor sign, the fluorescent tube models (glowing panels in the same
+  housings instead) and the floors' normal maps; only the _low models are used on Low.
+- **Not used, and why:** the shared metal bleacher (its Low version is broken by decimation, its rows do not match the
+  game's seating, and it would cost 46-80k triangles across the stands), the shared street basketball hoop (built a
+  clean glass board instead), the gym HDR (it darkened the picture on High for no gain on the players).
+- perf_probe, before -> after (draw calls / triangles): arena Low 81 / 53.0k -> 81 / 53.0k, hall Low 83 / 56.4k ->
+  86 / 58.5k, school Low ~83 / ~58k -> 87 / 73.7k; Medium at most 86 / 95k; High at most 129 / 428k.
+- Gaps for the owner: a metal bleacher remade for the game (straight rows 0.8 m deep and 0.42 m high, under ~1.5k
+  triangles per 8 m section); a Nordic red "break glass" fire alarm point (the shared one is American); a pale gym
+  bench (the scan is dark brown).
+
 ## Next (in order)
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's

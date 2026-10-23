@@ -37,17 +37,21 @@ the coach's whiteboard in a Nordic sports hall.
 
 | Graphics | Arena: draw calls / triangles | Hall: draw calls / triangles | Render scale | Shadows, MSAA |
 |---|---|---|---|---|
-| Low | 82 / 49,400 | 79 / 48,200 | 75% | none, off |
-| Medium | 79 / 80,700 | 79 / 78,100 | 90% | none, 2x |
-| High | 122 / 414,100 | 122 / 410,600 | 100% | yes, 4x |
+| Low | 81 / 53,000 | 86 / 58,500 | 75% | none, off |
+| Medium | 79 / 80,700 | 86 / 82,500 | 90% | none, 2x |
+| High | 122 / 414,100 | 129 / 415,800 | 100% | yes, 4x |
+
+The school gym (measured with tests/arena_look's probe mode): Low 87 / 73,700, Medium 83 / 95,300, High 126 / 428,300.
 
 Budgets for the floor (a 2-3 GB phone with a Mali-G52/G57 at 720p, Low, 30 fps): under 100 draw calls and 100,000
 triangles a frame, which Low meets. The people are the owner's Meshy models at three detail levels (Low about 2,700
 triangles a person, Medium 5,400, High 10,800; docs/MESHY_BRIEF.md), each one draw call, and one more for a stick;
-High's extra triangles are its shadow pass. The rink, hall and crowd are 6 draw calls and 3,000-7,000 triangles at
-every level (merged into one texture sheet; the crowd is one draw call of cut-outs baked from the same models). The
-rest of the draw calls are the HUD and buttons. The game's own data is about 6 MB: fonts subset to 1.3 MB, the
-characters and stick 1.5 MB, the venue and crowd sheets 1.8 MB (compressed for phones), the floor, ball and flags
+High's extra triangles are its shadow pass. The rink, hall and crowd are 6 to 10 draw calls and 3,000-21,000
+triangles on Low (merged into one texture sheet, every repeated fitting one MultiMesh; the crowd is one draw call of
+cut-outs baked from the same models; 0.4 added the halls' walls, ceilings, lamps and backboards, see
+docs/PROGRESS.md). The rest of the draw calls are the HUD and buttons. The game's own data is about 9 MB: fonts
+subset to 1.3 MB, the characters and stick 1.5 MB, the venue and crowd sheets and the halls' fittings and floors
+about 4 MB (compressed for phones), the ball and flags
 still drawn at load.
 
 ## Controls
