@@ -37,11 +37,11 @@ the coach's whiteboard in a Nordic sports hall.
 
 | Graphics | Arena: draw calls / triangles | Hall: draw calls / triangles | Render scale | Shadows, MSAA |
 |---|---|---|---|---|
-| Low | 81 / 53,000 | 86 / 58,500 | 75% | none, off |
-| Medium | 79 / 80,700 | 86 / 82,500 | 90% | none, 2x |
-| High | 122 / 414,100 | 129 / 415,800 | 100% | yes, 4x |
+| Low | 81 / 53,000 | 86 / 77,000 | 75% | none, off |
+| Medium | 79 / 80,700 | 87 / 101,900 | 90% | none, 2x |
+| High | 122 / 414,100 | 130 / 450,000 | 100% | yes, 4x |
 
-The school gym (measured with tests/arena_look's probe mode): Low 87 / 73,700, Medium 83 / 95,300, High 126 / 428,300.
+The school gym (measured with tests/arena_look's probe mode): Low 87 / 74,800, Medium 83 / 96,300, High 126 / 429,000.
 
 Budgets for the floor (a 2-3 GB phone with a Mali-G52/G57 at 720p, Low, 30 fps): under 100 draw calls and 100,000
 triangles a frame, which Low meets. The people are the owner's Meshy models at three detail levels (Low about 2,700

@@ -84,9 +84,11 @@ From the lead's brief and shared assets (plans/floorball-unleashed.md on claude/
   clean glass board instead), the gym HDR (it darkened the picture on High for no gain on the players).
 - perf_probe, before -> after (draw calls / triangles): arena Low 81 / 53.0k -> 81 / 53.0k, hall Low 83 / 56.4k ->
   86 / 58.5k, school Low ~83 / ~58k -> 87 / 73.7k; Medium at most 86 / 95k; High at most 129 / 428k.
-- Gaps for the owner: a metal bleacher remade for the game (straight rows 0.8 m deep and 0.42 m high, under ~1.5k
-  triangles per 8 m section); a Nordic red "break glass" fire alarm point (the shared one is American); a pale gym
-  bench (the scan is dark brown).
+- The owner then had the three gaps made in Meshy (0.4.1): an aluminium hall bleacher (8 m sections of three
+  straight rows; the sports hall's stand is now eight of them, two tiers, one MultiMesh, the crowd seated on its
+  planks; the arena keeps its code-built steel rows, whose 0.42 m rows do not match and whose cost would take Low near
+  its cap), a red Nordic break-glass alarm point by the hall's doors (Medium and High), and a pale birch gym bench
+  along the walls. perf_probe Low after: arena 82 / 49.4k, hall 86 / 77.0k, school 87 / 74.8k.
 
 ## Next (in order)
 

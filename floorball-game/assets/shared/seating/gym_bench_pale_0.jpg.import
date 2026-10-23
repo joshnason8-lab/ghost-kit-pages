@@ -2,21 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v2esu1pc4cr7"
-path.s3tc="res://.godot/imported/fire_alarm_low_fire_alarm_diff.jpg-3f76346a01c0c0b233251e87c0a7250b.s3tc.ctex"
-path.etc2="res://.godot/imported/fire_alarm_low_fire_alarm_diff.jpg-3f76346a01c0c0b233251e87c0a7250b.etc2.ctex"
+uid="uid://cdfu3lmje0etf"
+path.s3tc="res://.godot/imported/gym_bench_pale_0.jpg-0d98bdd980cc961a79eb164df986c144.s3tc.ctex"
+path.etc2="res://.godot/imported/gym_bench_pale_0.jpg-0d98bdd980cc961a79eb164df986c144.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "2835382414a8cafd81f4c922a3596b6b"
+"md5": "e4f2a5b74cba07690ad0884cddfdf1e6"
 }
 
 [deps]
 
-source_file="res://assets/shared/hall/fire_alarm_low_fire_alarm_diff.jpg"
-dest_files=["res://.godot/imported/fire_alarm_low_fire_alarm_diff.jpg-3f76346a01c0c0b233251e87c0a7250b.s3tc.ctex", "res://.godot/imported/fire_alarm_low_fire_alarm_diff.jpg-3f76346a01c0c0b233251e87c0a7250b.etc2.ctex"]
+source_file="res://assets/shared/seating/gym_bench_pale_0.jpg"
+dest_files=["res://.godot/imported/gym_bench_pale_0.jpg-0d98bdd980cc961a79eb164df986c144.s3tc.ctex", "res://.godot/imported/gym_bench_pale_0.jpg-0d98bdd980cc961a79eb164df986c144.etc2.ctex"]
 
 [params]
 

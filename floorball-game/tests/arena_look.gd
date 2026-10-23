@@ -93,6 +93,7 @@ func _static(only: Array, levels: Array) -> void:
 				["door", Vector3(hx - 9.0, 2.5, -5.0), Vector3(hx, 2.2, -9.5)],
 				["ceiling", Vector3(-hx + 8.0, 3.5, 6.0), Vector3(hx - 4.0, 9.0, -2.0)],
 				["lamp", Vector3(1.0, 6.5, 2.5), Vector3(3.5, 8.3, 0.0)],
+				["stand", Vector3(2.0, 2.5, -5.0), Vector3(-5.0, 1.2, -16.0)],
 				["board", Vector3(hx - 8.0, 5.0 if venue != "school" else 2.6, 4.0), Vector3(hx - 2.0, 8.6 if venue == "hall" else 3.3, 0.0)]]
 			if venue == "arena":
 				views = [["tier", Vector3(-3, 2.5, 2.0), Vector3(-6, 2.2, -14.0)]]

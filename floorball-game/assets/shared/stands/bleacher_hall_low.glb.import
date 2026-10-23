@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://d3bqd65iwyyro"
-path="res://.godot/imported/gym_bench.glb-8c1b105ac139fb17ac390ac89092d62a.scn"
+uid="uid://c7h640fabv5j4"
+path="res://.godot/imported/bleacher_hall_low.glb-762dcc0254abc168db4aa1ea928952e0.scn"
 
 [deps]
 
-source_file="res://assets/shared/seating/gym_bench.glb"
-dest_files=["res://.godot/imported/gym_bench.glb-8c1b105ac139fb17ac390ac89092d62a.scn"]
+source_file="res://assets/shared/stands/bleacher_hall_low.glb"
+dest_files=["res://.godot/imported/bleacher_hall_low.glb-762dcc0254abc168db4aa1ea928952e0.scn"]
 
 [params]
 

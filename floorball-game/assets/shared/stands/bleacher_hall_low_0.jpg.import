@@ -2,21 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b1imnl45l6qq8"
-path.s3tc="res://.godot/imported/gym_bench_low_0.jpg-0af3020e5f03ae17b2d8b73dfecbec11.s3tc.ctex"
-path.etc2="res://.godot/imported/gym_bench_low_0.jpg-0af3020e5f03ae17b2d8b73dfecbec11.etc2.ctex"
+uid="uid://hk8jrafmjc3s"
+path.s3tc="res://.godot/imported/bleacher_hall_low_0.jpg-b56f97ed76a35a065a1d805d2e3db34f.s3tc.ctex"
+path.etc2="res://.godot/imported/bleacher_hall_low_0.jpg-b56f97ed76a35a065a1d805d2e3db34f.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "a16132de474582262bd2ddaf332bf8a8"
+"md5": "22be8c24b19e866d79a0144f94f5cbcd"
 }
 
 [deps]
 
-source_file="res://assets/shared/seating/gym_bench_low_0.jpg"
-dest_files=["res://.godot/imported/gym_bench_low_0.jpg-0af3020e5f03ae17b2d8b73dfecbec11.s3tc.ctex", "res://.godot/imported/gym_bench_low_0.jpg-0af3020e5f03ae17b2d8b73dfecbec11.etc2.ctex"]
+source_file="res://assets/shared/stands/bleacher_hall_low_0.jpg"
+dest_files=["res://.godot/imported/bleacher_hall_low_0.jpg-b56f97ed76a35a065a1d805d2e3db34f.s3tc.ctex", "res://.godot/imported/bleacher_hall_low_0.jpg-b56f97ed76a35a065a1d805d2e3db34f.etc2.ctex"]
 
 [params]
 

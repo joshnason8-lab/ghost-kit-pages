@@ -5,9 +5,9 @@ extends Control
 
 const CREDITS := """[b]Floorball Unleashed[/b]
 Made by Josh Nason.
-Players, referees, the stick and the gym benches: the maker's own models, made with Meshy. The halls' lamps, clock,
-fire alarm and floor sign, and their surfaces (block wall, maple, wood floor, rubber floor): Poly Haven
-(polyhaven.com), CC0. The rink, the basketball boards, the rest of the halls and the ball made in code for the game; the whistles, the ball's sounds, the horn, the drum and the menu music made for it. Crowd reactions
+Players, referees, the stick, the sports hall's aluminium stand, the gym benches and the fire alarm points: the
+maker's own models, made with Meshy. The halls' lamps, clock and floor sign, and their surfaces (block wall, maple,
+wood floor, rubber floor): Poly Haven (polyhaven.com), CC0. The rink, the basketball boards, the rest of the halls and the ball made in code for the game; the whistles, the ball's sounds, the horn, the drum and the menu music made for it. Crowd reactions
 from Kabaddi Raid, by the same maker.
 Floorball's rules: the international Rules of the Game, as the game understands them. The game is not made or
 endorsed by any federation, league or team."""

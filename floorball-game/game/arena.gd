@@ -19,10 +19,12 @@ extends Node3D
 ## wooden boards) for grain, and its normal map on Medium and High.
 ##
 ## The halls' fittings are models from assets/shared (Poly Haven and the owner's), one MultiMeshInstance3D a model, so
-## each costs a draw call however many there are: gym benches, wall clocks, fluorescent battens (sports hall), pendant
-## lamps (school), fire alarm call points and a wet floor sign. Low skips the smallest (call points, the sign) and draws
+## each costs a draw call however many there are: the sports hall's pull-out aluminium bleachers, pale birch gym
+## benches, wall clocks, fluorescent battens (sports hall), pendant lamps (school), Nordic break-glass fire alarm call
+## points and a wet floor sign. Low skips the smallest (call points, the sign) and draws
 ## the sports hall's battens as glowing panels. Every model is its _low file (the lamps, clock, call point and sign
-## are the same mesh at both levels, seen from far off), but for the gym benches on High.
+## are the same mesh at both levels, seen from far off), but for the gym benches and bleachers on High; the call
+## point has one file for every level.
 
 const FLOOR_PX := 32.0        # floor texture pixels a metre (40 m x 20 m: 1280 x 640)
 const SHEET := "res://assets/crowd/venue_atlas.png"
@@ -46,6 +48,11 @@ const ROW_RISE := 0.42        # the stands: each row this much higher ...
 const ROW_DEPTH := 0.8        # ... and this much further back
 const SEAT := 0.5             # a seat's width
 const METAL_ROWS := 5         # the arena's lower tier: rows of steel bleacher
+## The hall's bleacher section (assets/shared/stands/bleacher_hall): its depth, how far a section behind is raised,
+## and each row's seat plank [height, z from the section's middle] (measured from the model).
+const BLEACHER_D := 2.4
+const BLEACHER_LIFT := 1.35
+const BLEACHER_ROWS := [[0.33, 0.8], [0.76, 0.38], [1.2, -0.5]]
 
 var venue := "hall"
 var home_colors: Array = []
@@ -106,7 +113,7 @@ func _ready() -> void:
 			_lamps = {"h": 8.3, "step": Vector2(7.0, 6.5), "n": Vector2i(6, 3), "size": Vector2(0.9, 0.62), "kind": "tube"}
 			_half = Vector2(27, 19)
 			_hall_sports(walls, 27.0, 19.0, 10.0)
-			spots = _stands(-1, 7, Color("1f6fb2"), false)
+			spots = _bleachers()
 			_wall_bars(1, 27.0, 19.0)
 			_trusses(27.0, 19.0, 10.0, 5)
 		_:
@@ -780,6 +787,37 @@ func _net(c: Vector3, r: float, dir: Vector3, length: float) -> void:
 			s("net"), Rect2(0, 0, r * 0.9 / 1.28 * 4.0, length / 0.08))
 
 
+## The sports hall's stand behind the teams' benches: pull-out aluminium bleachers (assets/shared/stands/bleacher_hall,
+## 8 m sections of three rows, 0.8 m deep, rising 0.45 m, on a dark steel frame), four across and two deep, the back
+## sections raised on a dark steel deck so the six rows rise evenly. Each section a MultiMesh instance (one draw call
+## for all eight; the _low model on Low and Medium). Returns where people sit: on each row's plank, feet on the one below.
+func _bleachers() -> Array:
+	var spots: Array = []
+	var front := -Rules.HALF_W - 3.2          # the first row's front edge, behind the benches' plexiglass
+	var at: Array[Transform3D] = []
+	for tier in 2:
+		var z := front - BLEACHER_D * 0.5 - tier * BLEACHER_D
+		var lift := tier * BLEACHER_LIFT
+		for k in 4:
+			var x := -12.0 + k * 8.0
+			at.append(Transform3D(Basis.IDENTITY, Vector3(x, lift, z)))
+			for row: Array in BLEACHER_ROWS:
+				var sx := x - 3.75
+				while sx < x + 3.8:
+					spots.append(Vector3(sx, lift + float(row[0]) - 0.42, z + float(row[1])))
+					sx += SEAT
+		if tier > 0:
+			# The deck the back sections stand on: its front and sides dark steel.
+			var zf := z + BLEACHER_D * 0.5
+			var zb := z - BLEACHER_D * 0.5
+			_lit.face(Vector3(-16, 0, zf), Vector3(16, 0, zf), 0.0, lift, Vector3(0, 0, 0), Color("2b2f35", 0.5))
+			_lit.flat(-16, zb, 16, zf, lift, Color("3a3f47", 0.6))
+			for e: int in [-1, 1]:
+				_lit.face(Vector3(16 * e, 0, zf), Vector3(16 * e, 0, zb), 0.0, lift, Vector3(32 * e, 0, z), Color("2b2f35", 0.5))
+	_place("stands/bleacher_hall", at, true)
+	return spots
+
+
 ## Rows of seats along a long side (side -1: the far side, behind the benches; 1: the near side), rising; aisles
 ## between sections. Each row: the step's front, its tread, the seats' backs at its back (people in front of them).
 ## Returns where people sit.
@@ -948,22 +986,22 @@ func _fittings() -> void:
 		var yaw := atan2(n.x, n.z)
 		var along := Vector3(-n.z, 0, n.x)
 		clocks.append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * 1.4), p + n * 0.005 + Vector3(0, 3.05, 0)))
-		alarms.append(Transform3D(Basis(Vector3.UP, yaw), p + n * 0.005 + along * 1.45 + Vector3(0, 1.45, 0)))
+		alarms.append(Transform3D(Basis(Vector3.UP, yaw), p + n * 0.028 + along * 1.45 + Vector3(0, 1.4, 0)))
 		if signs.is_empty():
 			signs.append(Transform3D(Basis(Vector3.UP, yaw + 0.5), p + n * 0.9 - along * 1.6))
 	_place("hall/wall_clock", clocks)
 	if venue == "hall" and not _low:
-		_place("hall/fire_alarm", alarms)
+		_place("hall/fire_alarm_nordic", alarms)
 		_place("hall/wet_floor_sign", signs)
-	# Gym benches (3.6 m, 32 cm high), long side to the wall.
+	# Pale birch gymnastics benches (3 m, 33 cm high), long side to the wall.
 	var benches: Array[Transform3D] = []
-	var xs: Array = [17.6, 21.3, 25.0] if venue == "hall" else [17.2, 20.9]
+	var xs: Array = [17.8, 21.0, 24.2] if venue == "hall" else [17.2, 20.9]
 	for side: int in [-1, 1]:
 		for x: float in xs:
 			if venue == "school" and side < 0 and x > 19.0:
 				continue   # the ropes' corner
-			benches.append(Transform3D(Basis(Vector3.UP, PI * 0.5) * Basis.from_scale(Vector3(0.32, 0.8, 1.3)), Vector3(x * side, 0, -_half.y + 0.22)))
-	_place("seating/gym_bench", benches, true)
+			benches.append(Transform3D(Basis.IDENTITY, Vector3(x * side, 0, -_half.y + 0.2)))
+	_place("seating/gym_bench_pale", benches, true)
 
 
 ## Places copies of a model from assets/shared, one MultiMeshInstance3D for each mesh in it (so a draw call a surface
@@ -976,7 +1014,7 @@ func _place(name: String, at: Array[Transform3D], medium_low := false) -> void:
 	var low_file := g == Game.GFX_LOW or (medium_low and g == Game.GFX_MEDIUM)
 	var path := SHARED + name + ("_low" if low_file else "") + ".glb"
 	if not ResourceLoader.exists(path):
-		path = SHARED + name + "_low.glb"
+		path = SHARED + name + ("" if low_file else "_low") + ".glb"   # a model with one file for every level
 	var key := "%s%d" % [path, int(_low)]
 	if not _meshes.has(key):
 		_meshes[key] = _load_meshes(path, _low)
