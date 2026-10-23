@@ -281,9 +281,10 @@ func _grounds() -> void:
 			var people := 0
 			var astray := 0
 			for c in a.find_children("*", "Crowd", true, false):
-				var mm: MultiMesh = (c as Crowd).multimesh
-				for i in mm.instance_count:
-					var t := (c as Crowd).global_transform * mm.get_instance_transform(i)
+				var cr := c as Crowd
+				check(cr.xforms.size() == cr.multimesh.instance_count, "graphics %d, %s: a transform for every spectator" % [g, v])
+				for x in cr.xforms:
+					var t := cr.global_transform * x
 					var fwd := Vector3(t.basis.z.x, 0.0, t.basis.z.z).normalized()
 					var to_c := Vector3(-t.origin.x, 0.0, -t.origin.z).normalized()
 					people += 1
