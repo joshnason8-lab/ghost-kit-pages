@@ -50,3 +50,6 @@ Netball Unleashed: a new name and icon. New players, modelled in 3D, in your tea
 
 == Release notes (0.4.0) ==
 A real sports hall with proper backboards, a maple floor and a stand; an outdoor park court under a sunset sky; a timber court and courtside stands in the arena.
+
+== Release notes (0.4.1) ==
+Courtside stands in the arena on Low graphics too.

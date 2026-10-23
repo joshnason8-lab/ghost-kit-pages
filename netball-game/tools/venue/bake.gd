@@ -43,8 +43,11 @@ const VENUES := {
 		"grass_clumps_card": ["foliage/grass_clumps_card.glb", 512, {0: [1, 0.0]}],
 	}],
 	"arena": [1024, {
-		# Medium and High only: the _low model's decimation broke its seats, and Low keeps the painted stand.
+		# Medium and High: the bleacher_metal _low model's decimation broke its seats, so Low has the lighter
+		# bleacher_hall (three aluminium rows; its own _low holds together) instead.
 		"bleacher_metal": ["stands/bleacher_metal.glb", 1024, {}],
+		"bleacher_hall": ["stands/bleacher_hall.glb", 512, {}],
+		"bleacher_hall_low": ["stands/bleacher_hall_low.glb", 256, {}],
 	}],
 }
 

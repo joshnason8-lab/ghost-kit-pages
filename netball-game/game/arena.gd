@@ -378,6 +378,9 @@ func _arena() -> Array:
 	_twinkles(x0, z0, fo, fy, uo, uy)
 	_bench(Color("161e4a"), Color("232c66"), Color("29d8ea"))
 	if _low:
+		# Courtside stands without people: the owner's three-row bleacher, light enough for Low.
+		if _props.has("bleacher_hall"):
+			_courtside("bleacher_hall", 8.0, 1.2, x0, z0, front)
 		return []
 	var spots := _front_rows(x0, z0, 0.0, front, first, depth, rise, 9.0, [0, 1, 3])
 	if _props.has("bleacher_metal"):
@@ -394,19 +397,29 @@ func _bleachers(x0: float, z0: float, y: float) -> Array:
 	var spots := []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
+	for xf: Transform3D in _courtside("bleacher_metal", W, 2.07, x0, z0, y):
+		for r in 4:
+			for k in 14:
+				spots.append(xf * Vector3(-3.25 + k * 0.5 + rng.randf_range(-0.04, 0.04), SEAT_Y[r], SEAT_Z[r]))
+	return spots
+
+
+## Places sections of a stand model (w wide, half_d deep from its middle to its front, facing +Z) along the far side
+## and both ends, their fronts at the lower tier's foot; returns each section's transform.
+func _courtside(name: String, w: float, half_d: float, x0: float, z0: float, y: float) -> Array:
+	var out := []
 	for side in [0, 1, 3]:
 		var span := x0 * 2.0 if side == 0 else z0 * 2.0
-		var n := int(floor(span / W))
+		var n := int(floor(span / w))
 		var yaw := 0.0 if side == 0 else (-PI * 0.5 if side == 1 else PI * 0.5)
 		var b := Basis(Vector3.UP, yaw)
+		var back := half_d + 0.05
 		for i in n:
-			var u := (i - (n - 1) * 0.5) * W
-			var c := Vector3(u, y, -z0 - 2.12) if side == 0 else Vector3((x0 + 2.12) * (1.0 if side == 1 else -1.0), y, u)
-			_props.add("bleacher_metal", Transform3D(b, c), Color(0.62, 0.68, 0.95))
-			for r in 4:
-				for k in 14:
-					spots.append(c + b * Vector3(-3.25 + k * 0.5 + rng.randf_range(-0.04, 0.04), SEAT_Y[r], SEAT_Z[r]))
-	return spots
+			var u := (i - (n - 1) * 0.5) * w
+			var c := Vector3(u, y, -z0 - back) if side == 0 else Vector3((x0 + back) * (1.0 if side == 1 else -1.0), y, u)
+			_props.add(name, Transform3D(b, c), Color(0.62, 0.68, 0.95))
+			out.append(Transform3D(b, c))
+	return out
 
 
 ## The boards round the run-off: a dark frame and a glowing band of plain colour that a slow light sweeps along (no

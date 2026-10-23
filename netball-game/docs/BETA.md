@@ -9,6 +9,10 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.4.1-beta
+
+- Low graphics: courtside stands in the arena too (the owner's lighter three-row bleacher).
+
 ## New in 0.4.0-beta
 
 - **A real sports hall**: clean regulation glass backboards on steel brackets in place of the old hoop, a sprung

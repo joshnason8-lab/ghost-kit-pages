@@ -8,7 +8,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 
 - Branch `claude/netball-game`, folder `netball-game/` (self-contained Godot 4.7.2 project), pages folder
   `netball-unleashed/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
-- Version 0.4.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
+- Version 0.4.1-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
   https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta.
 
 ## Done
@@ -150,4 +150,6 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
     replace the painted tiers. Neither is needed to ship.
 - **Crowd near the camera** (0.4): crowd figures within 6 m of the camera are not drawn (Crowd's shader): from the
   Courtside camera behind the hall's stand they read as blocky heads across the bottom of the screen.
+- **Low arena stands** (0.4.1): the lead's new `stands/bleacher_hall` (the owner's Meshy model; its _low holds together)
+  makes the courtside stands on Low; Medium and High keep `bleacher_metal`, which seats the crowd's people.
 
