@@ -68,6 +68,9 @@ Photo-scanned, tileable, 1024 px: `*_albedo_1k.jpg`, `*_normal_1k.jpg` (OpenGL/G
 in different directions, mix a deep and a shallow colour by view angle (Fresnel) and reflect the sky colour. Don't use
 real-time reflections on Low.
 
+Source and licence: generated for these games from a sum of random sine waves (no outside source), so it is the
+owner's own and free to use with no credit needed (treat it as CC0).
+
 ## Models
 
 Previews of every model: [`previews/`](previews/) (`psheet*.png`).
