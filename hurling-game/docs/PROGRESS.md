@@ -124,6 +124,17 @@ Moved or skipped, and why:
   meshes**: the village and the towns are 100-200 m off, so the `_low` meshes on every level.
 - **The owner's `Hurling.Goal`**: a soccer goal; the game's posts are built to the rules.
 
+## Done (0.4.1-beta, 23 October 2026)
+
+- **The crowd faced the wrong way** (the owner: "the crowd to the near side is looking the wrong direction"): every
+  spectator was a cut-out turned to the camera and always drawn from the front, so the stands the camera looks over
+  (the near side under the gantry, and the end terraces from the End camera and the replay) showed faces turned
+  away from the play. Now each person faces the centre of the field (their instance's +Z); the cut-out still turns
+  to the camera, and when the camera is behind them it is drawn from behind (the back of the head; the sheet has
+  each figure from both sides). Wrong before at every ground and level; tests: every spectator faces the field,
+  from the gantry the near side is seen from behind and the far side from the front. `tests/venue_view.tscn` adds
+  shots from the pitch at both stands and from behind the near one (`docs/graphics/crowd_low.jpg`, `crowd_high.jpg`).
+
 ## Next (in order)
 
 1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev

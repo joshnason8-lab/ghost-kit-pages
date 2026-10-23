@@ -675,6 +675,30 @@ func _scenery() -> void:
 						print("  ", v, " ", name, " at ", o)
 		check(bad == 0, "Scenery %s: nothing on the field or in front of the camera (%d)" % [v, bad])
 		check(sc.get_child_count() <= 12, "Scenery %s: %d draw calls" % [v, sc.get_child_count()])
+		# The crowd faces the play: every spectator toward the centre of the field; from the television gantry (behind
+		# the near stand) the near stand is seen from behind, the far one from the front (round four: "the crowd to the
+		# near side is looking the wrong direction").
+		var cr: Crowd = st.crowd
+		var wrong := 0
+		var near_back := 0
+		var near := 0
+		var far_front := 0
+		var far := 0
+		var gantry := Vector3(0.0, CameraRig.GANTRY_H, CameraRig.GANTRY_Z)
+		for i in cr.spots.size():
+			var sp: Vector3 = cr.spots[i]
+			var f: Vector3 = cr.facings[i]
+			if f.dot(Vector3(-sp.x, 0.0, -sp.z).normalized()) <= 0.7:
+				wrong += 1
+			# Opposite the gantry (people further along face the centre at an angle, so a camera at halfway is in front).
+			if sp.z > Pitch.HALF_W and absf(sp.x) < 20.0:
+				near += 1
+				near_back += 1 if Crowd.seen_from_behind(sp, f, gantry) else 0
+			elif sp.z < -Pitch.HALF_W and absf(sp.x) < 20.0:
+				far += 1
+				far_front += 0 if Crowd.seen_from_behind(sp, f, gantry) else 1
+		check(cr.spots.size() > 0 and wrong == 0, "Crowd %s: all %d face the field (%d do not)" % [v, cr.spots.size(), wrong])
+		check(near > 0 and near_back == near and far_front == far, "Crowd %s: from the gantry the near side's %d seen from behind, the far side's %d from the front" % [v, near, far])
 		var we: WorldEnvironment = st.find_children("*", "WorldEnvironment", false, false)[0]
 		check(we.environment.sky.sky_material is PanoramaSkyMaterial, "Scenery %s: a real sky (%s)" % [v, st.sky_name()])
 		st.queue_free()

@@ -1,6 +1,7 @@
 extends Node
 ## Each ground as the match camera sees it at the throw-in and from behind a goal, and a wide shot from high in a
-## corner (the sky and the surrounds), for checking how it looks:
+## corner (the sky and the surrounds), and from the pitch looking at the near and far stands (the crowd faces the
+## field), for checking how it looks:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/venue_view.tscn -- /out [venue] [graphics 0-2]
 
 func _ready() -> void:
@@ -36,5 +37,21 @@ func _ready() -> void:
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(out.path_join("venue_%s_wide.png" % v))
 		wide.queue_free()
+		# From the pitch, looking at the near stand (under the television camera) and the far one: every face toward
+		# the field.
+		# And from behind the near stand, where the television camera is: the backs of their heads.
+		for side in [["near", Vector3(-20.0, 2.0, Pitch.HALF_W - 6.0), Vector3(-20.0, 3.5, Pitch.HALF_W + 9.0)],
+				["far", Vector3(-20.0, 2.0, -Pitch.HALF_W + 6.0), Vector3(-20.0, 4.5, -Pitch.HALF_W - 10.0)],
+				["near_behind", Vector3(-20.0, 7.5, Pitch.HALF_W + 17.0), Vector3(-20.0, 2.0, Pitch.HALF_W + 7.0)]]:
+			var c := Camera3D.new()
+			m.add_child(c)
+			c.fov = 34.0
+			c.look_at_from_position(side[1], side[2])
+			c.make_current()
+			for i in 3:
+				await get_tree().process_frame
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png(out.path_join("venue_%s_crowd_%s.png" % [v, side[0]]))
+			c.queue_free()
 		print("venue ", v)
 	get_tree().quit()

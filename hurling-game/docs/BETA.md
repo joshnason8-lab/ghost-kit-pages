@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.4.1
+
+- **The crowd faces the play**: the people in the stand under the television camera were drawn facing the camera,
+  so from the gantry they seemed to be looking away from the match. Everyone now faces the field: from behind a
+  stand you see the backs of their heads.
+
 ## New in 0.4.0
 
 - **New graphics round every ground**: real skies (a Northern Irish sunset at the parish field, Irish grey cloud at
