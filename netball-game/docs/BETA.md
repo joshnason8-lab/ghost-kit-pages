@@ -9,6 +9,16 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.4.0-beta
+
+- **A real sports hall**: clean regulation glass backboards on steel brackets in place of the old hoop, a sprung
+  maple floor with the other sports' lines, painted block walls with pads, high windows, ceiling trusses and
+  lights, doors, a clock, exit signs, benches, a scorers' table and a stand of tip-up seats.
+- **The outdoor court** is a park court under a real sunset sky: green acrylic, a chain-link fence, park benches,
+  street lamps, trees, a street hoop on the next court and houses beyond.
+- **The arena**: a painted timber court, and on Medium and High courtside stands.
+- Realistic assets from Poly Haven (CC0) and the owner's own models, credited under Settings > Licences.
+
 ## New in 0.3.0-beta
 
 - **Netball Unleashed**: the game's new name and icon. It has a new Android package, so it does not install over a

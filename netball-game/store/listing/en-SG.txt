@@ -47,3 +47,6 @@ The Club Season: eight clubs, a season and a grand final. A coach's tips for you
 
 == Release notes (0.3.0) ==
 Netball Unleashed: a new name and icon. New players, modelled in 3D, in your team's colours with a proper sprint. A floodlit arena with fuller stands and a polished court, and the hall and outdoor court relit.
+
+== Release notes (0.4.0) ==
+A real sports hall with proper backboards, a maple floor and a stand; an outdoor park court under a sunset sky; a timber court and courtside stands in the arena.

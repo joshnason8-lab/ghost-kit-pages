@@ -67,6 +67,9 @@ uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
 uniform vec3 tint = vec3(1.0);
+// People this close to the camera are left out: seen from just behind (the Courtside camera over a hall's stand) the
+// flat figures read as blocks across the bottom of the screen.
+uniform float near_hide = 6.0;
 varying vec4 data;
 void vertex() {
 	data = INSTANCE_CUSTOM;
@@ -77,6 +80,10 @@ void vertex() {
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
+	vec3 cam = INV_VIEW_MATRIX[3].xyz;
+	if (distance(cam.xz, (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xz) < near_hide) {
+		POSITION = vec4(2.0, 2.0, 2.0, 1.0);   // outside the view: the figure is not drawn
+	}
 }
 void fragment() {
 	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, UV.y);
