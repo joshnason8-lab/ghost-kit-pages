@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.9.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.9.1-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.9.0-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.9.1-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -143,6 +143,9 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
   - **Mumbai Dome**: the polished concrete floor and the concrete stands.
   - Does anything float above the ground, stick through something else or look the wrong size? Does any ground
     feel slower than the others, or slower than in 0.8.6?
+- **The crowd faces the play** (0.9.1): the spectators nearest the camera (in the stand it looks over, and round the
+  village and beach courts) showed their faces to the camera rather than to the court. Seen from behind, they now
+  show their backs. Does anyone in a crowd still look the wrong way, on any ground or graphics level?
 
 ## Reporting
 

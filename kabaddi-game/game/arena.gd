@@ -53,24 +53,33 @@ void fragment() {
 
 ## The crowd as cards cut from a sprite sheet of real people (tools/crowd/render_crowd.gd): each card turns
 ## to face the camera, and picks its frame (sitting, clapping, standing to cheer) from the crowd's
-## excitement. Fans in shirts wear their instance's colour, shaded by the shirt's own folds.
+## excitement. Each spectator faces the court (their instance's -z): a camera behind them, as over the stand
+## it looks over, sees their back, from the sheet drawn from behind. Fans in shirts wear their instance's
+## colour, shaded by the shirt's own folds.
 const CROWD_CARD_SHADER := """
 shader_type spatial;
 render_mode cull_disabled;
 uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D atlas_back : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D top_mask : filter_linear_mipmap, repeat_disable;
+uniform sampler2D top_mask_back : filter_linear_mipmap, repeat_disable;
 uniform float people = 8.0;
 uniform float frames = 8.0;
 uniform bool standing = false;
 uniform float excitement = 0.0;
 uniform float top_lum[16];   // each person's shirt brightness, linear; 0 keeps their own clothes
+uniform float top_lum_back[16];   // the same from behind
 uniform float falloff = 0.0;  // under lights (an arena, floodlights at night): the back rows darker, 0 by day
 varying flat vec2 cell;
 varying flat float dim;
 varying flat float mirror;
+varying flat float back;
 varying flat vec3 tint;
 varying flat float lum;
 void vertex() {
+	// Seen from behind when the camera is on the far side of them from where they face.
+	vec3 to_eye = INV_VIEW_MATRIX[3].xyz - MODEL_MATRIX[3].xyz;
+	back = step(0.0, dot(MODEL_MATRIX[2].xz, to_eye.xz));
 	// Face the camera, turning about the vertical only.
 	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(normalize(cross(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[2].xyz)), 0.0),
 		vec4(0.0, 1.0, 0.0, 0.0), vec4(normalize(cross(INV_VIEW_MATRIX[0].xyz, vec3(0.0, 1.0, 0.0))), 0.0), MODEL_MATRIX[3]);
@@ -94,15 +103,15 @@ void vertex() {
 	dim = 1.0 - falloff * clamp((length(MODEL_MATRIX[3].xz) - 10.0) / 12.0, 0.0, 1.0);
 	mirror = step(0.5, fract(ph * 7.77));
 	tint = INSTANCE_CUSTOM.rgb;
-	lum = top_lum[int(person)];
+	lum = back > 0.5 ? top_lum_back[int(person)] : top_lum[int(person)];
 }
 void fragment() {
 	vec2 uv = vec2(mix(UV.x, 1.0 - UV.x, mirror), UV.y);
 	uv = (cell + uv) / vec2(people, frames);
-	vec4 c = texture(atlas, uv);
+	vec4 c = back > 0.5 ? texture(atlas_back, uv) : texture(atlas, uv);
 	vec3 col = c.rgb;
 	if (lum > 0.0 && tint.r + tint.g + tint.b > 0.003) {
-		float m = texture(top_mask, uv).r;
+		float m = back > 0.5 ? texture(top_mask_back, uv).r : texture(top_mask, uv).r;
 		float l = dot(col, vec3(0.2126, 0.7152, 0.0722)) / lum;
 		col = mix(col, tint * clamp(l, 0.2, 1.5), m);
 	}
@@ -636,8 +645,8 @@ func _crowd(positions: Array, palette: Array, skin: Color, facing: Vector3 = Vec
 		return
 	if not crowd_sheet().is_empty():
 		# People on tiers sit; people on the ground stand.
-		_crowd_cards(chosen.filter(func(p): return p.y > 0.2), palette, false, rng)
-		_crowd_cards(chosen.filter(func(p): return p.y <= 0.2), palette, true, rng)
+		_crowd_cards(chosen.filter(func(p): return p.y > 0.2), palette, false, rng, facing)
+		_crowd_cards(chosen.filter(func(p): return p.y <= 0.2), palette, true, rng, facing)
 		return
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -678,12 +687,18 @@ static func crowd_sheet() -> Dictionary:
 			if info is Dictionary:
 				_crowd_sheet = {"info": info, "atlas": load(CROWD_DIR + "crowd_atlas.webp"),
 					"mask": load(CROWD_DIR + "crowd_mask.png")}
+				# From behind, if drawn (tools/crowd/render_crowd.gd); else the front again.
+				var has_back := ResourceLoader.exists(CROWD_DIR + "crowd_atlas_back.webp")
+				_crowd_sheet["atlas_back"] = load(CROWD_DIR + "crowd_atlas_back.webp") if has_back else _crowd_sheet.atlas
+				_crowd_sheet["mask_back"] = load(CROWD_DIR + "crowd_mask_back.png") if has_back else _crowd_sheet.mask
 	return _crowd_sheet
 
 
-## Spectators as camera-facing cards. Fans in shirts are picked more often than the rest, and most wear
-## a colour from the palette (the teams' colours among them); children are fewer.
-func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumberGenerator) -> void:
+## Spectators as camera-facing cards, each facing the point facing (the court's middle): their instance's
+## -z points there, so the card shows their back to a camera behind them. Fans in shirts are picked more
+## often than the rest, and most wear a colour from the palette (the teams' colours among them); children are
+## fewer.
+func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumberGenerator, facing: Vector3) -> void:
 	if spots.is_empty():
 		return
 	var sheet := crowd_sheet()
@@ -695,6 +710,8 @@ func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumbe
 	var weights := []
 	var lums := PackedFloat32Array()
 	lums.resize(16)
+	var lums_back := PackedFloat32Array()
+	lums_back.resize(16)
 	var total := 0.0
 	for i in people.size():
 		var file := String(people[i].file)
@@ -704,17 +721,24 @@ func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumbe
 		weights.append(wt)
 		total += wt
 		lums[i] = float(people[i].top_luminance)
+		lums_back[i] = float(people[i].get("top_luminance_back", people[i].top_luminance))
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
 	mm.mesh = _card_mesh(w, h)
 	mm.instance_count = spots.size()
+	# Each one's feet and forward, kept for the tests: a headless run's MultiMesh keeps no transforms.
+	var faces := PackedVector3Array()
 	for i in spots.size():
 		var pos: Vector3 = spots[i]
 		# Feet on the ground, or on the tier below the seat; the sheet has 2 cm under the feet.
 		var feet := pos - Vector3(0, (0.0 if standing else 0.45) + 0.02, 0)
 		var s := rng.randf_range(0.93, 1.06)
-		mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(s, s, s)), feet))
+		var look := facing - feet
+		look.y = 0.0
+		var turn := Basis.looking_at(look.normalized(), Vector3.UP) if look.length() > 0.01 else Basis()
+		mm.set_instance_transform(i, Transform3D(turn.scaled(Vector3(s, s, s)), feet))
+		faces.append_array([feet, -turn.z])
 		var pick := rng.randf() * total
 		var person := 0
 		while person < people.size() - 1 and pick > weights[person]:
@@ -727,16 +751,20 @@ func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumbe
 		mm.set_instance_custom_data(i, Color(tint.r, tint.g, tint.b, (person + rng.randf_range(0.0, 0.999)) / 16.0))
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
+	mmi.set_meta("faces", faces)
 	var sm := ShaderMaterial.new()
 	var sh := Shader.new()
 	sh.code = CROWD_CARD_SHADER
 	sm.shader = sh
 	sm.set_shader_parameter("atlas", sheet.atlas)
+	sm.set_shader_parameter("atlas_back", sheet.atlas_back)
 	sm.set_shader_parameter("top_mask", sheet.mask)
+	sm.set_shader_parameter("top_mask_back", sheet.mask_back)
 	sm.set_shader_parameter("people", float(people.size()))
 	sm.set_shader_parameter("frames", float((info.frames as Array).size()))
 	sm.set_shader_parameter("standing", standing)
 	sm.set_shader_parameter("top_lum", lums)
+	sm.set_shader_parameter("top_lum_back", lums_back)
 	sm.set_shader_parameter("falloff", {"dome": 0.5, "stadium": 0.4}.get(arena_id, 0.0))
 	mmi.material_override = sm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

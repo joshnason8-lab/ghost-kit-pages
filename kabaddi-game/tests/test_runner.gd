@@ -469,9 +469,10 @@ func _run() -> void:
 		"crowd sprite sheet: eight people in eight poses")
 
 	# 7a. The scenery (game/scenery.gd): a photographed sky outdoors, its HDR light only on Medium and High; each kind of
-	# tree, seat and building drawn in one go, cut-outs and cut-down models on Low; the stands one mesh; few draws.
+	# tree, seat and building drawn in one go, cut-outs and cut-down models on Low; the stands one mesh; few draws; and
+	# every spectator facing the court, on every level.
 	var gfx_before := int(Game.settings.graphics)
-	for gfx in [Game.GFX_LOW, Game.GFX_HIGH]:
+	for gfx in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
 		Game.settings.graphics = gfx
 		for id in ["dome", "stadium", "village", "monsoon", "beach"]:
 			var ar := Arena.new()
@@ -504,6 +505,35 @@ func _run() -> void:
 				check(ar.shell.find_children("Stands", "MeshInstance3D", true, false).size() == 1, id + ": the stands are one mesh")
 			var parts := ar.find_children("*", "GeometryInstance3D", true, false).filter(func(n): return n.visible).size()
 			check(parts <= 60, id + ": %d things to draw%s (60 at most)" % [parts, lvl])
+			# Each spectator's forward (their card's -z) points at the court's middle, and their card has their back
+			# drawn for a camera behind them (as over the stand it looks over). Headless, as here, a MultiMesh keeps no
+			# transforms, so from what the arena kept of each (Arena._crowd_cards), checked against the transforms
+			# themselves where a renderer keeps them.
+			var crowd := ar.find_children("*", "MultiMeshInstance3D", false, false).filter(
+				func(n): return n.material_override is ShaderMaterial and n.material_override.get_shader_parameter("atlas") is Texture2D)
+			var spectators := 0
+			var facing := 0
+			var backs := true
+			for card in crowd:
+				var m: ShaderMaterial = (card as MultiMeshInstance3D).material_override
+				backs = backs and m.get_shader_parameter("atlas_back") is Texture2D \
+					and m.get_shader_parameter("atlas_back") != m.get_shader_parameter("atlas")
+				var mm: MultiMesh = (card as MultiMeshInstance3D).multimesh
+				var faces: PackedVector3Array = card.get_meta("faces", PackedVector3Array())
+				var kept := faces.size() == 2 * mm.instance_count
+				var rendered := not mm.buffer.is_empty()   # a renderer keeps the transforms: what was kept must match them
+				for i in mm.instance_count:
+					spectators += 1
+					if not kept:
+						continue
+					var feet := faces[2 * i]
+					var fwd := faces[2 * i + 1]
+					if rendered and (mm.get_instance_transform(i).origin.distance_to(feet) > 0.001
+							or (-mm.get_instance_transform(i).basis.z.normalized()).distance_to(fwd) > 0.001):
+						continue
+					facing += int(Vector3(fwd.x, 0.0, fwd.z).normalized().dot(Vector3(-feet.x, 0.0, -feet.z).normalized()) > 0.7)
+			check(spectators > 20 and facing == spectators and backs,
+				id + ": every spectator faces the court (%d of %d), their backs drawn%s" % [facing, spectators, lvl])
 			ar.queue_free()
 			await frames(1)
 	Game.settings.graphics = gfx_before

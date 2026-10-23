@@ -131,7 +131,9 @@ tests/      compile_check, test_runner (headless smoke test), screenshots (rende
 tools/      build_i18n.py, check_pages.py (an APK's or bundle's 16 KB pages), store_art.py (the store's pictures),
             rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
             mocap/ (animation clips, and movement measured from match video), bake_lighting/ (the grounds'
-            baked lighting), ground_art/ (court and stand textures), web/ (the web version's Netlify settings)
+            baked lighting), ground_art/ (the mat's texture), crowd/ (the crowd's sprite sheets, front and back),
+            scenery/ (the grounds' models and surfaces, from the shared assets), web/ (the web version's Netlify
+            settings)
 store/      PLAY_STORE.md (every step to Google Play, and the answers to its forms), listing/ (the store text),
             graphics/ (icon, feature graphic, screenshots). The privacy policy and help pages are in ../kabaddi-raid/
 docs/       ASSETS.md (how to drop in real humans), KABADDI.md (the rules), BETA.md (testing on a phone), ROADMAP.md,
@@ -211,6 +213,9 @@ stadium's Medium gave the same 171 MB there as in the long run).
   trees, temple, chairs and stools near the broadcast camera, and the city's blocks). The dome's are unchanged.
 - **Video memory**: up to 14 MB more on Low and 15 MB more on Medium and High, from the photographed surfaces and
   skies. The dome's is unchanged.
+- **0.9.1**: the crowd's back sheet (each spectator seen from behind shows their back) takes 14.4 MB more video memory
+  on every ground and level (on Low, the dome 150 → 164 MB, Gaon Maidan 154 → 168 MB); the draw calls, primitives
+  and objects are the same.
 - Frame times are not in the table. Rendered in software here, with other jobs on the machine, they say nothing about
   a phone; the developer overlay (BETA.md, *Measuring stutter*) measures them on one.
 

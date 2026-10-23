@@ -135,6 +135,10 @@ edges (rim), more on cloth than on skin, which keeps the players apart from the 
   under warm lamps in the dome, blue night shadows and warm floodlit highlights in the stadium, a warm late afternoon
   in the village, a soft cool haze in the monsoon, teal shadows and warm sand at the beach.
 - **Crowd under lights**: in the dome and the stadium at night the back rows of the crowd fall into shadow.
+- **The crowd faces the court** (0.9.1): each spectator is a card turned to the camera, its instance's -z pointing at
+  the court's middle; a camera behind them (as over the stand the broadcast camera looks over) gets their back, from
+  a second sheet drawn from behind (`tools/crowd/render_crowd.gd`). Before, every card showed the person's front,
+  so the near stand looked up at the camera.
 
 ## Measuring
 

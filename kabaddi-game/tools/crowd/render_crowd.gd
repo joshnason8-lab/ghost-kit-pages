@@ -1,12 +1,14 @@
 extends Node3D
-## Renders the crowd's sprite sheet from Meshy's rigged people (assets/meshy/crowd_*_rigged.glb): each
-## person in each crowd frame (sitting, clapping, arms up, standing to cheer), seen from the front, one
-## column per person and one row per frame. The game draws every spectator as one camera-facing card
-## cut from this sheet (game/arena.gd), so a stand of hundreds costs a few thousand triangles.
+## Renders the crowd's sprite sheets from Meshy's rigged people (assets/meshy/crowd_*_rigged.glb): each
+## person in each crowd frame (sitting, clapping, arms up, standing to cheer), one column per person and one
+## row per frame, seen from the front and, in a second sheet, from behind. The game draws every spectator as
+## one camera-facing card cut from these (game/arena.gd), so a stand of hundreds costs a few thousand
+## triangles; a spectator the camera sees from behind (the stand it looks over) shows their back.
 ##
-## Writes OUT/crowd_atlas.webp (colour, alpha the outline), OUT/crowd_mask.png (white on the top a fan
-## wears, which the game recolours so a stand wears its teams' colours), OUT/crowd_atlas.json (the layout,
-## and each top's typical brightness) and their import settings.
+## Writes OUT/crowd_atlas.webp and OUT/crowd_atlas_back.webp (colour, alpha the outline),
+## OUT/crowd_mask.png and OUT/crowd_mask_back.png (white on the top a fan wears, which the game recolours
+## so a stand wears its teams' colours), OUT/crowd_atlas.json (the layout, and each top's typical brightness
+## from either side) and their import settings.
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 288x490 \
 ##       res://tools/crowd/render_crowd.tscn -- /abs/assets/meshy /abs/assets/crowd
 
@@ -14,6 +16,8 @@ const CELL := Vector2i(144, 245)         # pixels a person
 const SS := 2                            # rendered at twice the size, then shrunk
 const CELL_H := 2.312                    # metres a cell covers top to bottom (9.4 mm a pixel)
 const FRAMES := ["sit", "clap_open", "clap", "stand", "stand_clap_open", "stand_clap", "stand_arms_up", "stand_pump"]
+## The two sheets, by the end of their files' names: from the front, and from behind.
+const SIDES := ["", "_back"]
 ## Bones the top covers: the spine and the upper arms (sleeves); around the hips, where the hem falls,
 ## whatever is the top's colour.
 const TOP_BONES := ["Spine02", "Spine01", "Spine", "LeftShoulder", "RightShoulder", "LeftArm", "RightArm"]
@@ -93,19 +97,23 @@ func _ready() -> void:
 	_cam.position = Vector3(0, CELL_H * 0.5 - 0.02, 6.0)
 	_vp.add_child(_cam)
 
-	var sheet := Image.create(CELL.x * files.size(), CELL.y * FRAMES.size(), false, Image.FORMAT_RGBA8)
-	var mask := Image.create(CELL.x * files.size(), CELL.y * FRAMES.size(), false, Image.FORMAT_L8)
+	var sheets: Array[Image] = []   # front, back
+	var masks: Array[Image] = []
+	for side in SIDES:
+		sheets.append(Image.create(CELL.x * files.size(), CELL.y * FRAMES.size(), false, Image.FORMAT_RGBA8))
+		masks.append(Image.create(CELL.x * files.size(), CELL.y * FRAMES.size(), false, Image.FORMAT_L8))
 	var people := []
 	for p in files.size():
-		var person := await _render_person(src.path_join(files[p]), p, sheet, mask)
+		var person := await _render_person(src.path_join(files[p]), p, sheets, masks)
 		person["file"] = files[p]
 		people.append(person)
 		print("rendered ", files[p], " ", person)
 	DirAccess.make_dir_recursive_absolute(out)
-	sheet.save_webp(out.path_join("crowd_atlas.webp"), true, 0.9)
-	mask.save_png(out.path_join("crowd_mask.png"))
-	_import_file(out.path_join("crowd_atlas.webp.import"), "crowd_atlas.webp", 1, true)
-	_import_file(out.path_join("crowd_mask.png.import"), "crowd_mask.png", 0, false)
+	for s in SIDES.size():
+		sheets[s].save_webp(out.path_join("crowd_atlas%s.webp" % SIDES[s]), true, 0.9)
+		masks[s].save_png(out.path_join("crowd_mask%s.png" % SIDES[s]))
+		_import_file(out.path_join("crowd_atlas%s.webp.import" % SIDES[s]), "crowd_atlas%s.webp" % SIDES[s], 1, true)
+		_import_file(out.path_join("crowd_mask%s.png.import" % SIDES[s]), "crowd_mask%s.png" % SIDES[s], 0, false)
 	var info := {"cell": [CELL.x, CELL.y], "cell_height_m": CELL_H, "frames": FRAMES, "people": people}
 	var f := FileAccess.open(out.path_join("crowd_atlas.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify(info, " "))
@@ -113,7 +121,7 @@ func _ready() -> void:
 	get_tree().quit()
 
 
-func _render_person(path: String, col: int, sheet: Image, mask: Image) -> Dictionary:
+func _render_person(path: String, col: int, sheets: Array[Image], masks: Array[Image]) -> Dictionary:
 	var doc := GLTFDocument.new()
 	var state := GLTFState.new()
 	if doc.append_from_file(path, state) != OK:
@@ -134,63 +142,73 @@ func _render_person(path: String, col: int, sheet: Image, mask: Image) -> Dictio
 	if colour_mat is BaseMaterial3D:
 		mask_mat.set_shader_parameter("albedo_tex", (colour_mat as BaseMaterial3D).albedo_texture)
 	var ankle_rest := _ankle_y(sk, root)
-	var lum_sum := 0.0
-	var lum_n := 0
+	var lum_sum := [0.0, 0.0]
+	var lum_n := [0, 0]
 	for r in FRAMES.size():
+		root.rotation.y = 0.0   # posed facing the camera: _pose works out each side's "out" from where it is
 		_pose(sk, FRAMES[r])
 		await get_tree().process_frame
 		root.position.y += ankle_rest - _ankle_y(sk, root)
-		var shots := []
-		for pass_mat in [null, mask_mat]:
-			mi.material_override = pass_mat
-			for k in 3:
-				await get_tree().process_frame
-			await RenderingServer.frame_post_draw
-			var img := _vp.get_texture().get_image()
-			img.convert(Image.FORMAT_RGBA8)
-			if pass_mat == null:
-				img.fix_alpha_edges()   # no dark fringe from the empty background when shrinking
-			img.resize(CELL.x, CELL.y, Image.INTERPOLATE_LANCZOS)
-			shots.append(img)
-		var at := Vector2i(col * CELL.x, r * CELL.y)
-		sheet.blit_rect(shots[0], Rect2i(Vector2i.ZERO, CELL), at)
-		# The top's typical colour, then what below it matches it (chromaticity and brightness).
-		var mean := Vector3.ZERO
-		var n := 0
-		for y in CELL.y:
-			for x in CELL.x:
-				var c: Color = shots[0].get_pixel(x, y)
-				if c.a > 0.95 and shots[1].get_pixel(x, y).r > 0.5:
-					mean += Vector3(c.r, c.g, c.b)
-					n += 1
-		mean /= maxf(1.0, float(n))
-		var mean_sum := maxf(mean.x + mean.y + mean.z, 0.001)
-		for y in CELL.y:
-			for x in CELL.x:
-				var c: Color = shots[0].get_pixel(x, y)
-				var k: Color = shots[1].get_pixel(x, y)
-				var m := k.r
-				if k.g > 0.5 and c.a > 0.5:
-					var sum := maxf(c.r + c.g + c.b, 0.001)
-					var chroma := (Vector3(c.r, c.g, c.b) / sum - mean / mean_sum).length()
-					if chroma < 0.045 and sum / mean_sum > 0.75 and sum / mean_sum < 1.35:
-						m = 1.0
-				if c.a <= 0.5:
-					m = 0.0
-				mask.set_pixel(at.x + x, at.y + y, Color(m, m, m))
-				if r == 0 and m > 0.9 and c.a > 0.95:
-					lum_sum += c.srgb_to_linear().get_luminance()
-					lum_n += 1
+		for side in SIDES.size():
+			# Turned round for the back: the camera and the light stay where they are.
+			root.rotation.y = PI * side
+			var sheet := sheets[side]
+			var mask := masks[side]
+			var shots := []
+			for pass_mat in [null, mask_mat]:
+				mi.material_override = pass_mat
+				for k in 3:
+					await get_tree().process_frame
+				await RenderingServer.frame_post_draw
+				var img := _vp.get_texture().get_image()
+				img.convert(Image.FORMAT_RGBA8)
+				if pass_mat == null:
+					img.fix_alpha_edges()   # no dark fringe from the empty background when shrinking
+				img.resize(CELL.x, CELL.y, Image.INTERPOLATE_LANCZOS)
+				shots.append(img)
+			var at := Vector2i(col * CELL.x, r * CELL.y)
+			sheet.blit_rect(shots[0], Rect2i(Vector2i.ZERO, CELL), at)
+			# The top's typical colour, then what below it matches it (chromaticity and brightness).
+			var mean := Vector3.ZERO
+			var n := 0
+			for y in CELL.y:
+				for x in CELL.x:
+					var c: Color = shots[0].get_pixel(x, y)
+					if c.a > 0.95 and shots[1].get_pixel(x, y).r > 0.5:
+						mean += Vector3(c.r, c.g, c.b)
+						n += 1
+			mean /= maxf(1.0, float(n))
+			var mean_sum := maxf(mean.x + mean.y + mean.z, 0.001)
+			for y in CELL.y:
+				for x in CELL.x:
+					var c: Color = shots[0].get_pixel(x, y)
+					var k: Color = shots[1].get_pixel(x, y)
+					var m := k.r
+					if k.g > 0.5 and c.a > 0.5:
+						var sum := maxf(c.r + c.g + c.b, 0.001)
+						var chroma := (Vector3(c.r, c.g, c.b) / sum - mean / mean_sum).length()
+						if chroma < 0.045 and sum / mean_sum > 0.75 and sum / mean_sum < 1.35:
+							m = 1.0
+					if c.a <= 0.5:
+						m = 0.0
+					mask.set_pixel(at.x + x, at.y + y, Color(m, m, m))
+					if r == 0 and m > 0.9 and c.a > 0.95:
+						lum_sum[side] += c.srgb_to_linear().get_luminance()
+						lum_n[side] += 1
 	mi.material_override = null
-	var top_lum := lum_sum / maxf(1.0, float(lum_n))
 	var recolour := false
 	for word in RECOLOUR:
 		recolour = recolour or path.get_file().contains(word)
-	if not recolour:
-		top_lum = 0.0   # the game leaves this one's clothes alone
+	var out := {}
+	for side in SIDES.size():
+		var top_lum: float = lum_sum[side] / maxf(1.0, float(lum_n[side]))
+		if not recolour:
+			top_lum = 0.0   # the game leaves this one's clothes alone
+		out["top_luminance" + SIDES[side]] = snappedf(top_lum, 0.001)   # in linear light
+		out["top_pixels" + SIDES[side]] = lum_n[side]
 	root.queue_free()
 	await get_tree().process_frame
-	return {"top_luminance": snappedf(top_lum, 0.001), "top_pixels": lum_n}   # in linear light
+	return out
 
 
 ## Vertex colour red: how much of each vertex the top's bones carry.

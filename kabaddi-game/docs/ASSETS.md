@@ -38,9 +38,10 @@ to each player's tone; referees keep their own outfits. To add a body, run `tool
 [tools/rig/README.md](../tools/rig/README.md)).
 
 The crowd is eight generated people (men, women, an older man, a Sikh man, children) rendered into a
-sprite sheet in eight poses (sitting, clapping, standing, arms up) by `tools/crowd/render_crowd.gd`
-(`assets/crowd/`). The stands draw each spectator as one camera-facing card; fans in shirts wear the teams'
-colours, and the crowd claps and stands with the match's excitement.
+sprite sheet in eight poses (sitting, clapping, standing, arms up), from the front and (since 0.9.1) from behind,
+by `tools/crowd/render_crowd.gd` (`assets/crowd/`). The stands draw each spectator as one camera-facing card,
+facing the court: a camera behind them, as over the stand it looks over, sees their back. Fans in shirts wear the
+teams' colours, and the crowd claps and stands with the match's excitement.
 
 ## Drop-in slot
 

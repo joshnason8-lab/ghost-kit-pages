@@ -59,8 +59,8 @@ grounds' draw calls down by more than the new scenery adds (numbers below).
 
 - None for the grounds: the village temple and the Jagannath temple's tower both came while this update was being made
   (the lead had them generated, with the owner's approval) and are in.
-- **Where `water_normal_512.png` comes from** is not written in the shared assets' README (every other piece names
-  its source and licence). Until it is, Settings › About › Licences credits Poly Haven for the rest only.
+- None for the water either: `water_normal_512.png` was made for these games from a sum of random sine waves (the
+  shared assets' README says so since `6dbd5fd`), so it is the owner's own (treat it as CC0) and needs no credit.
 
 ## Performance
 
@@ -100,3 +100,29 @@ stadium's Medium gave the same 171 MB there as in the long run).
   skies. The dome's is unchanged.
 - Frame times are not in the table. Rendered in software here, with other jobs on the machine, they say nothing about
   a phone; the developer overlay (BETA.md, *Measuring stutter*) measures them on one.
+
+## 0.9.1: the crowd faces the court
+
+The owner saw the crowd on the near side looking the wrong way, in more than one game, and the lead passed it on to
+all of them. Here every spectator is a card turned to the camera, cut from a sheet of each person drawn from the
+front, so whoever a camera saw from behind still showed it their face.
+
+- **Where it showed**: on every ground, wherever a camera was behind a crowd. That was the slow circle round the ground
+  at a match's start, half-time and full-time (15 m out, behind each stand in turn); the live match behind the home
+  screen (on Puri Beach the people standing nearest it faced it); and the edges of the broadcast view, which sits
+  above the near stand's front rows and so showed little of it in play. The crowds concerned: the near stand of the
+  Mumbai Dome and the National Stadium, the near side of those standing round Gaon Maidan and Puri Beach, and the
+  Monsoon Ground's crowd under the tarpaulin from behind it.
+- **The fix**: each spectator's card has a facing, its instance's -z, pointing at the court's middle along the
+  ground, and there is a second sheet of every person drawn from behind (`tools/crowd/render_crowd.gd`: the same eight
+  poses; the front sheet comes out the same to the pixel). The card still turns to the camera; when the camera is on
+  the far side of them from where they face, it shows their back.
+- **Checked**: `test_runner` checks on Low, Medium and High that every spectator on every ground faces the court's
+  middle (forward against the way to it, dot above 0.7), from 72 of 72 on the beach on Low to 3,260 of 3,260 in the
+  stadium on High, and that every crowd's cards have the back sheet. Headless, as CI runs it, a MultiMesh keeps no
+  transforms, so each crowd keeps its spectators' feet and facing for the test, and with a renderer the test checks
+  them against the transforms themselves. Before and after, from behind each crowd and from the court:
+  [img/crowd_facing_0.9.1.jpg](img/crowd_facing_0.9.1.jpg).
+- **Cost**: 14.4 MB more video memory on every ground and level, for the back sheet and its shirts' mask (on Low, the
+  dome 150 → 164 MB and Gaon Maidan 154 → 168 MB). The draw calls, primitives and objects are the same (on Low, the
+  dome's 100 and 217, 634k, 315; Gaon Maidan's 102 and 220, 668k, 318).

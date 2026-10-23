@@ -1,4 +1,8 @@
-**New in 0.9.0: every ground has a new look.** Photographed skies and real earth, sand, grass and concrete, and the
+**New in 0.9.1: the crowd faces the play.** The spectators nearest the camera, in the stand it looks over and round
+the village and beach courts, showed their faces to the camera instead of to the court. Seen from behind, they now
+show their backs, on every ground and graphics level.
+
+**In 0.9.0: every ground has a new look.** Photographed skies and real earth, sand, grass and concrete, and the
 scenery round each ground:
 
 - **Gaon Maidan** at dusk: a beaten-earth court in red earth, rain trees, palms, village houses and the village
