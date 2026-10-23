@@ -146,6 +146,17 @@ Performance, Low (the phone budget is 90 draw calls and 90,000 triangles): villa
 triangles; school 73 → 80 and 39k → 38k; arena 82 → 82 and 46k → 46k; stadium 73 → 77 and 38k → 39k. All in the
 README.
 
+**0.4.2-beta, the crowd facing the play (23 October 2026, the owner via the lead).** The crowd is billboards: every
+card turned to the camera, and until 0.4.1 every card showed a person from the front. So the people between the
+broadcast camera and the court (the village's and the school's near-side crowd, at the near corners) looked at the
+camera, their backs to the match; and the stands at the ends, seen from the court, faced wherever the camera was
+rather than the court. All four grounds, on all three graphics levels. Now each spectator has a facing, from his
+seat toward the court's centre (flattened to the ground), as his instance's +Z; the sheet has two more rows, the same
+eight people drawn from behind; and the shader shows the back when the camera is behind him. A test checks every
+spectator's forward against the direction to the centre (dot product over 0.7) at every ground on Low, Medium and
+High. Seen from a camera on the court looking at each stand, and from high behind the near side:
+`docs/img/crowd-facing-0.4.2.jpg`. No change to draw calls or triangles (the same one quad per person).
+
 ## Shared assets (from 22 October 2026)
 
 The owner made the orchestrator session (`session_016XKAyHkTQRNMGEgZbjNK28`) the lead for all six mobile games.

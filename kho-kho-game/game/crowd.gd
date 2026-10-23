@@ -5,15 +5,20 @@ extends MultiMeshInstance3D
 ## fidget, and at an out (excite) brings some of them to their feet, cheering.
 ##
 ## The sheet is the players' own model (ModelBody), posed and lit and drawn once at load (render_sheet): row 0 the
-## crowd at rest, four sitting and four standing and clapping, in four skin tones; row 1 the same people cheering. Their
-## shirts are drawn in a key colour (magenta) that the shader paints with each person's colour. Where nothing can be
-## drawn (the headless tests) the sheet is painted in code instead.
+## crowd at rest, four sitting and four standing and clapping, in four skin tones; row 1 the same people cheering;
+## rows 2 and 3 the same again seen from behind. Their shirts are drawn in a key colour (magenta) that the shader paints
+## with each person's colour. Where nothing can be drawn (the headless tests) the sheet is painted in code instead.
+##
+## Every spectator faces the court's centre (his instance's +Z, flattened to the ground). The card always turns to
+## the camera, but shows his back when the camera is behind him: the near side's crowd, between the broadcast camera
+## and the play, is seen from behind, watching the play (until 0.4.1 they all faced the camera).
 
 const FIGS := 8          # figures across the sheet
 const FIG_W := 64
 const FIG_H := 128
 const CELL_M := Vector2(1.1, 2.2)   # the metres a cell covers
 const SEAT_DROP := 0.88             # a seated figure's hips are this far above its cell's foot
+const ROWS := 4                     # at rest, cheering; from the front, from behind
 
 static var _sheet: ImageTexture
 static var _mat: ShaderMaterial
@@ -29,13 +34,13 @@ static func sheet() -> ImageTexture:
 	return _sheet
 
 
-## The sheet drawn from the model: 8 figures by 2 rows. Awaitable; a no-op where nothing renders.
+## The sheet drawn from the model: 8 figures by 4 rows. Awaitable; a no-op where nothing renders.
 static func render_sheet(tree: SceneTree) -> void:
 	if _rendered or DisplayServer.get_name() == "headless":
 		return
 	_rendered = true
 	var vp := SubViewport.new()
-	vp.size = Vector2i(FIG_W * FIGS, FIG_H * 2)
+	vp.size = Vector2i(FIG_W * FIGS, FIG_H * ROWS)
 	vp.transparent_bg = true
 	vp.own_world_3d = true
 	vp.msaa_3d = Viewport.MSAA_4X
@@ -56,22 +61,24 @@ static func render_sheet(tree: SceneTree) -> void:
 	vp.add_child(sun)
 	var cam := Camera3D.new()
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	cam.size = CELL_M.y * 2.0
+	cam.size = CELL_M.y * ROWS
 	cam.keep_aspect = Camera3D.KEEP_HEIGHT
 	cam.position = Vector3(CELL_M.x * FIGS * 0.5, 0.0, 10.0)
 	vp.add_child(cam)
 	cam.current = true
 	var tones := [Color("d9a77a"), Color("c48a5c"), Color("a86b45"), Color("6e4430")]
-	for row in 2:
+	for row in ROWS:
 		for i in FIGS:
 			var b := ModelBody.new({"skin": tones[i % 4], "jersey": Color(1, 0, 1), "shorts": Color("2a2a30"),
 				"height": 1.72 + 0.04 * float((i * 7) % 3)}, true)
 			vp.add_child(b)
 			var seated := i < 4
-			# Row 0 in the picture's top half (above the camera), row 1 below it; each figure's feet at its cell's foot.
-			b.position = Vector3(CELL_M.x * (i + 0.5), (0.0 if row == 0 else -CELL_M.y) + 0.05, 0.0)
-			b.rotation.y = deg_to_rad([0.0, 12.0, -10.0, 20.0][i % 4])
-			b.play("cheer" if row == 1 else ("seated" if seated else ("clap" if i % 2 == 0 else "stand")), 1.0, 0.0)
+			var cheering := row % 2 == 1
+			var back := row >= 2
+			# Row r between (1 - r) and (2 - r) cells above the camera; each figure's feet at its cell's foot.
+			b.position = Vector3(CELL_M.x * (i + 0.5), (1.0 - row) * CELL_M.y + 0.05, 0.0)
+			b.rotation.y = deg_to_rad([0.0, 12.0, -10.0, 20.0][i % 4]) + (PI if back else 0.0)
+			b.play("cheer" if cheering else ("seated" if seated else ("clap" if i % 2 == 0 else "stand")), 1.0, 0.0)
 	for k in 4:
 		await tree.process_frame
 	await RenderingServer.frame_post_draw
@@ -93,10 +100,10 @@ static func render_sheet(tree: SceneTree) -> void:
 
 ## The painted fallback: the same layout, in flat shapes.
 static func _painted() -> Image:
-	var img := Image.create_empty(FIG_W * FIGS, FIG_H * 2, false, Image.FORMAT_RGBA8)
+	var img := Image.create_empty(FIG_W * FIGS, FIG_H * ROWS, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 	var skins := [Color("d9a77a"), Color("c48a5c"), Color("a86b45"), Color("6e4430")]
-	for row in 2:
+	for row in ROWS:
 		for f in FIGS:
 			var ox := f * FIG_W
 			var oy := row * FIG_H
@@ -106,14 +113,14 @@ static func _painted() -> Image:
 					var u := (x + 0.5) / FIG_W - 0.5
 					var v := (y + 0.5) / FIG_H
 					var c := Color(0, 0, 0, 0)
-					var top := 0.55 if (f < 4 and row == 0) else 0.32
+					var top := 0.55 if (f < 4 and row % 2 == 0) else 0.32
 					if v > top + 0.12 and absf(u) < 0.2:
 						c = Color(1, 0, 1, 1)
 					if v > top + 0.45 and absf(u) < 0.18:
 						c = Color("2a2a30")
 					var hd := Vector2(u / 0.11, (v - top - 0.05) / 0.06)
 					if hd.length() < 1.0:
-						c = skin
+						c = skin if row < 2 else Color("16110d")   # from behind: his hair
 					img.set_pixel(ox + x, oy + y, c)
 	img.generate_mipmaps()
 	return img
@@ -131,8 +138,10 @@ uniform float figs = 8.0;
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
+uniform float rows = 4.0;
 varying vec4 data;
 varying float up;
+varying float back;
 void vertex() {
 	data = INSTANCE_CUSTOM;
 	float ph = data.z * 6.2831;
@@ -142,12 +151,16 @@ void vertex() {
 	float fidget = sin(time_s * 1.3 + ph) * 0.015;
 	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	// He faces the court (his +Z); the camera behind him sees his back.
+	vec2 face = normalize(MODEL_MATRIX[2].xz + vec2(1e-5));
+	vec2 to_cam = INV_VIEW_MATRIX[3].xz - world.xz;
+	back = step(dot(face, to_cam), 0.0);
 	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
 }
 void fragment() {
-	float row = up;
-	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + row) * 0.5);
+	float row = up + 2.0 * back;
+	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + row) / rows);
 	vec4 c = texture(sheet, uv);
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
@@ -163,6 +176,7 @@ void fragment() {
 	_mat.shader = sh
 	_mat.set_shader_parameter("sheet", sheet())
 	_mat.set_shader_parameter("figs", float(FIGS))
+	_mat.set_shader_parameter("rows", float(ROWS))
 	return _mat
 
 
@@ -193,7 +207,7 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, seated :=
 	mm.instance_count = keep.size()
 	for i in keep.size():
 		var base := keep[i] - Vector3(0, SEAT_DROP if sits[i] else 0.0, 0)
-		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, base))
+		mm.set_instance_transform(i, Transform3D(Basis(Vector3.UP, facing(base)), base))
 		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 else Color(rng.randf(), rng.randf(), rng.randf())
 		var fig := rng.randi_range(0, 3) + (0 if sits[i] else 4)
 		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase.
@@ -201,6 +215,11 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, seated :=
 	multimesh = mm
 	material_override = material()
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## The way a spectator at p faces: toward the court's centre, flattened to the ground (a yaw: +Z turned by it).
+static func facing(p: Vector3) -> float:
+	return atan2(-p.x, -p.z)
 
 
 ## Shirt colours come out of the shader from one number; find one whose colour is near col (a few tries).
