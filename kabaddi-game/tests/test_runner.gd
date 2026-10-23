@@ -458,11 +458,55 @@ func _run() -> void:
 		if not Arena.crowd_sheet().is_empty():
 			var cards := ar.find_children("*", "MultiMeshInstance3D", false, false).filter(
 				func(n): return n.material_override is ShaderMaterial and n.material_override.get_shader_parameter("atlas") is Texture2D)
-			check(not cards.is_empty() and cards[0].multimesh.instance_count > 20, "the crowd is people from the sprite sheet: " + a.id)
+			# Those sitting and those standing are drawn apart: on the beach, a few on chairs and the rest standing round.
+			var people := 0
+			for card in cards:
+				people += (card as MultiMeshInstance3D).multimesh.instance_count
+			check(people > 20, "the crowd is people from the sprite sheet: " + a.id)
 		ar.queue_free()
 	var sheet := Arena.crowd_sheet()
 	check(not sheet.is_empty() and (sheet.info.people as Array).size() >= 8 and (sheet.info.frames as Array).size() == 8,
 		"crowd sprite sheet: eight people in eight poses")
+
+	# 7a. The scenery (game/scenery.gd): a photographed sky outdoors, its HDR light only on Medium and High; each kind of
+	# tree, seat and building drawn in one go, cut-outs and cut-down models on Low; the stands one mesh; few draws.
+	var gfx_before := int(Game.settings.graphics)
+	for gfx in [Game.GFX_LOW, Game.GFX_HIGH]:
+		Game.settings.graphics = gfx
+		for id in ["dome", "stadium", "village", "monsoon", "beach"]:
+			var ar := Arena.new()
+			add_child(ar)
+			ar.build(id, Color.RED, Color.BLUE, "TEST")
+			await frames(1)
+			var drawn := ar.find_children("*", "MultiMeshInstance3D", false, false).map(
+				func(n): return String(n.multimesh.mesh.resource_path).get_file())
+			var lvl := " (%s)" % ["Low", "Medium", "High"][gfx]
+			if id != "dome":
+				var sm: Material = ar.env.sky.sky_material
+				check(sm is ShaderMaterial and sm.get_shader_parameter("panorama") is Texture2D
+					and bool(sm.get_shader_parameter("use_light")) == (gfx >= Game.GFX_MEDIUM), id + ": a photographed sky" + lvl)
+			var once := drawn.filter(func(p): return p != "").all(func(p): return drawn.count(p) == 1)
+			check(once, id + ": each model drawn in one go" + lvl + " %s" % [drawn])
+			if id in ["village", "monsoon", "beach"]:
+				check(drawn.any(func(p): return p.ends_with("_card.res")) and not drawn.has("rain_tree_low.res")
+					and drawn.has("monobloc_chair_low.res" if gfx == Game.GFX_LOW else "monobloc_chair.res"),
+					id + ": trees as cut-outs, chairs cut down on Low" + lvl)
+			if id == "stadium":
+				check(drawn.has("city_apartments_low.res" if gfx == Game.GFX_LOW else "city_apartments.res"), "stadium: the city round it" + lvl)
+			if id == "village":
+				check(drawn.has("indian_village_temple_low.res" if gfx == Game.GFX_LOW else "indian_village_temple.res"), "village: the temple" + lvl)
+			if id == "beach":
+				check(drawn.has("jagannath_tower_low.res"), "beach: the Jagannath temple's tower across the bay" + lvl)
+				var sea := ar.find_children("*", "MeshInstance3D", false, false).filter(
+					func(n): return n.material_override is ShaderMaterial and n.material_override.get_shader_parameter("waves") is Texture2D)
+				check(sea.size() == 2, "beach: the sea, near and far")
+			if id in ["dome", "stadium", "monsoon"]:
+				check(ar.shell.find_children("Stands", "MeshInstance3D", true, false).size() == 1, id + ": the stands are one mesh")
+			var parts := ar.find_children("*", "GeometryInstance3D", true, false).filter(func(n): return n.visible).size()
+			check(parts <= 60, id + ": %d things to draw%s (60 at most)" % [parts, lvl])
+			ar.queue_free()
+			await frames(1)
+	Game.settings.graphics = gfx_before
 
 	# 7b. Shadows on every graphics level: the sun's own on Medium and High; on Low, where the sun casts none, each
 	# body's drawn flat on the floor, from the start or once a slow phone's match lowers its graphics.
@@ -473,6 +517,8 @@ func _run() -> void:
 		var shm: Node = Game.current
 		await frames(2)
 		var n: Array = _floor_shadowed(shm)
+		check(shm.officials.find_children("*", "MeshInstance3D", false, false).any(
+			func(mi): return mi.mesh != null and String(mi.mesh.resource_path).contains("scorers_table")), "village: the scorers' trestle table")
 		if gfx == Game.GFX_LOW:
 			check(not shm.arena.sun.shadow_enabled and n[0] == n[1] and n[1] >= 21, "Low: every body has its own shadow on the floor (%d of %d)" % n)
 		else:

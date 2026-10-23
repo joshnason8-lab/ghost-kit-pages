@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.8.6-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.9.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.8.6-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.9.0-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -132,6 +132,17 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
     - **Reset** puts them back. The joystick's side of the screen stays free, and left-handed controls mirror your
       layout.
   - Does the size you picked feel right in a match? Are the moved buttons where you left them after a restart?
+- **The grounds' new look** (0.9.0): play a Quick Match on each ground, on your phone's usual graphics level and on
+  Low.
+  - **Gaon Maidan** at dusk: the beaten-earth court and the red earth round it, rain trees and palms, village houses
+    and the temple, and the village sitting on plastic chairs along the far side and on stools at the ends.
+  - **Monsoon Ground**: wet mud and puddles under heavy cloud, and spectators under a blue tarpaulin at one end.
+  - **Puri Beach** in the evening: the new sea, with surf running up the sand, palms along the shore, and the
+    Jagannath temple's tower across the bay, in the haze over the sea.
+  - **National Stadium** at night: the city beyond the stands, its windows lit.
+  - **Mumbai Dome**: the polished concrete floor and the concrete stands.
+  - Does anything float above the ground, stick through something else or look the wrong size? Does any ground
+    feel slower than the others, or slower than in 0.8.6?
 
 ## Reporting
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Makes the grounds' surface textures: seamless tiles for the court mat, concrete, the stands, grass, mud and
-sand, each a detail albedo (multiplied with the material's colour, so one mat texture serves every court colour) and
-a normal map. Everything is generated here from noise, so there is nothing to license.
+"""Makes the court mat's texture: a seamless tile, a detail albedo (multiplied with the material's colour, so one
+texture serves every court colour) and a normal map, generated from noise, so there is nothing to license. (It made
+the concrete, stands, grass, mud and sand too until 0.9.0, when photographed surfaces took their place:
+assets/scenery/surfaces.)
 
     python3 tools/ground_art/make_textures.py            # writes assets/grounds/textures/*.png
 
@@ -18,7 +19,7 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "grounds", "
 RNG = np.random.default_rng(7)
 
 # Metres of ground one texture covers (Arena reads the same numbers: keep them in step).
-PERIOD = {"mat": 2.0, "concrete": 4.0, "stand": 1.8, "grass": 3.0, "mud": 3.0, "sand": 3.0}
+PERIOD = {"mat": 2.0}
 
 
 def noise(n, beta=2.0, lo=1.0, hi=None):
@@ -36,15 +37,6 @@ def noise(n, beta=2.0, lo=1.0, hi=None):
     return (out - out.mean()) / (out.std() + 1e-9)
 
 
-def blur(a, px):
-    """Seamless gaussian blur of px pixels."""
-    n = a.shape[0]
-    f = np.fft.fftfreq(n)
-    fx, fy = np.meshgrid(f, f)
-    g = np.exp(-2.0 * (np.pi * px) ** 2 * (fx * fx + fy * fy))
-    return np.real(np.fft.ifft2(np.fft.fft2(a) * g))
-
-
 def normal_map(height, strength):
     """Tangent-space normal map (OpenGL convention, +Y up, as Godot reads it) from a height field in pixels."""
     dx = (np.roll(height, -1, axis=1) - np.roll(height, 1, axis=1)) * 0.5 * strength
@@ -59,12 +51,6 @@ def save_gray(a, name):
     """a: 0..1 linear-ish detail value, saved as an sRGB grey image."""
     img = (np.clip(a, 0, 1) ** (1 / 2.2) * 255 + 0.5).astype(np.uint8)
     Image.fromarray(img, "L").convert("RGB").save(os.path.join(OUT, name), optimize=True)
-
-
-def save_rgb(a, name):
-    """a: n x n x 3, 0..1 linear colour, saved as sRGB."""
-    img = (np.clip(a, 0, 1) ** (1 / 2.2) * 255 + 0.5).astype(np.uint8)
-    Image.fromarray(img, "RGB").save(os.path.join(OUT, name), optimize=True)
 
 
 def save_normal(rgb, name):
@@ -91,86 +77,6 @@ def mat(n=512):
     height = noise(n, beta=0.9, lo=30) * 0.6 - seam * 3.0 + mottle * 4.0
     save_gray(albedo, "mat_albedo.png")
     save_normal(normal_map(height, 0.9), "mat_normal.png")
-
-
-def concrete(n=512):
-    """Polished concrete for an indoor floor: soft clouds, small aggregate flecks, a few hairline cracks."""
-    clouds = noise(n, beta=2.4, lo=1) * 0.05
-    fleck = np.clip(noise(n, beta=0.2, lo=60), 2.0, None) - 2.0
-    crack = np.zeros((n, n))
-    for _ in range(4):
-        # A wandering hairline: a random walk drawn across part of the tile, wrapping.
-        px, py = RNG.uniform(0, n, 2)
-        ang = RNG.uniform(0, 2 * np.pi)
-        for _ in range(int(RNG.uniform(80, 260))):
-            ang += RNG.normal(0, 0.25)
-            px, py = (px + np.cos(ang)) % n, (py + np.sin(ang)) % n
-            crack[int(py), int(px)] = 1.0
-    crack = blur(crack, 0.6)
-    crack /= crack.max() + 1e-9
-    albedo = 0.82 + clouds - fleck * 0.06 - crack * 0.18
-    height = clouds * 6 - crack * 2.0 + noise(n, beta=0.8, lo=50) * 0.25
-    save_gray(albedo, "concrete_albedo.png")
-    save_normal(normal_map(height, 0.8), "concrete_normal.png")
-
-
-def stand(n=512):
-    """A row of the stands seen from the front and above, 1.8 m of it: a concrete step with moulded plastic seats
-    every 0.55 m across... in world space it is laid on each tier's tread (Arena: triplanar on the stand blocks), so
-    it is concrete with the seats' pale outlines, dirt in the corners, and streaks running down."""
-    y, x = np.mgrid[0:n, 0:n] / n
-    base = 0.78 + noise(n, beta=2.2, lo=1) * 0.05
-    streak = blur(noise(n, beta=1.0, lo=2) * np.exp(-((x * 8 % 1 - 0.5) ** 2) * 6), 3)
-    streak = np.repeat(streak.mean(axis=0, keepdims=True), n, axis=0) * 0.08 + blur(noise(n, beta=1.2, lo=2), 2) * 0.03
-    albedo = base - np.abs(streak)
-    height = noise(n, beta=1.6, lo=2) * 2 + noise(n, beta=0.6, lo=60) * 0.3
-    save_gray(albedo, "stand_albedo.png")
-    save_normal(normal_map(height, 0.6), "stand_normal.png")
-
-
-def grass(n=512):
-    """Close-cut grass: blades as fine streaks leaning one way, patches lighter and darker, a little earth."""
-    blades = blur(noise(n, beta=0.3, lo=80), 0.6)
-    # Lean the blades: stretch the fine noise along one diagonal.
-    lean = np.zeros_like(blades)
-    for k in range(6):
-        lean += np.roll(np.roll(blades, k, axis=0), k // 2, axis=1)
-    lean /= 6
-    patch = noise(n, beta=2.5, lo=1)
-    earth = np.clip(noise(n, beta=2.0, lo=2) - 1.4, 0, None)
-    g = np.stack([0.20 + patch * 0.03, 0.34 + patch * 0.05, 0.10 + patch * 0.02], axis=-1)
-    g *= (0.85 + lean[..., None] * 0.18)
-    dirt = np.array([0.32, 0.24, 0.15])
-    g = g * (1 - np.clip(earth, 0, 1)[..., None] * 0.7) + dirt * np.clip(earth, 0, 1)[..., None] * 0.7
-    save_rgb(g, "grass_albedo.png")
-    save_normal(normal_map(lean * 2.0 + patch * 1.5, 0.9), "grass_normal.png")
-
-
-def mud(n=512):
-    """Packed earth for a village court: clods and cracks, darker damp patches, pale dust."""
-    big = noise(n, beta=2.3, lo=1)
-    clods = noise(n, beta=1.2, lo=8)
-    cells = np.abs(blur(noise(n, beta=1.8, lo=6), 1.0))
-    crack = np.exp(-(cells ** 2) / 0.01) * 0.6
-    col = np.stack([0.40 + big * 0.04, 0.28 + big * 0.03, 0.17 + big * 0.02], axis=-1)
-    col *= (0.92 + clods[..., None] * 0.05 - crack[..., None] * 0.25)
-    dust = np.clip(noise(n, beta=2.0, lo=3) - 1.0, 0, 1)[..., None]
-    col = col * (1 - dust * 0.25) + np.array([0.55, 0.45, 0.33]) * dust * 0.25
-    save_rgb(col, "mud_albedo.png")
-    save_normal(normal_map(clods * 2.5 - crack * 3.0 + noise(n, beta=0.5, lo=60) * 0.4, 1.0), "mud_normal.png")
-
-
-def sand(n=512):
-    """Beach sand: wind ripples, fine grains, a few footprints' worth of disturbance."""
-    y, x = np.mgrid[0:n, 0:n] / n
-    warp = noise(n, beta=2.5, lo=1) * 0.04
-    ripples = np.sin((y + warp) * 2 * np.pi * 14 + noise(n, beta=2.0, lo=1) * 0.8)
-    grains = noise(n, beta=0.1, lo=100)
-    big = noise(n, beta=2.4, lo=1)
-    col = np.stack([0.62 + big * 0.03, 0.50 + big * 0.03, 0.33 + big * 0.02], axis=-1)
-    col *= (0.95 + ripples[..., None] * 0.03 + grains[..., None] * 0.035)
-    save_rgb(col, "sand_albedo.png")
-    save_normal(normal_map(ripples * 2.0 + grains * 0.5 + big * 2.0, 0.8), "sand_normal.png")
 
 
 IMPORT = """[remap]
@@ -221,7 +127,7 @@ def write_imports():
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    for f in (mat, concrete, stand, grass, mud, sand):
+    for f in (mat,):
         f()
         print("made", f.__name__)
     write_imports()

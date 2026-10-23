@@ -6,7 +6,10 @@ here to a store release, roughly in order.
 ## 1. Look and feel (biggest jump in quality)
 - [ ] Real athlete model and kabaddi mocap. See [ASSETS.md](ASSETS.md). This is the single biggest visual upgrade.
 - [ ] Shirt number decals and team kit textures for custom models.
-- [ ] Modelled stands and venue meshes. Crowd cards and flags at the Nations Cup.
+- [x] The scenery round each ground (0.9.0): photographed skies and surfaces, trees, houses, chairs and stools, the sea
+  at Puri, the city round the stadium. See [PROGRESS.md](PROGRESS.md).
+- [ ] Modelled stands (the curved concrete and metal bleachers in the shared assets do not fit the grounds' tiers), and
+  flags at the Nations Cup.
 - [ ] Replays: a 3-second slow-motion replay of super raids and super tackles.
 - [ ] Recorded audio: crowd, dhol, whistle. **Commentary in each language** is the standout feature.
 

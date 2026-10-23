@@ -6,6 +6,7 @@ extends Control
 const CREDITS := """[b]Kabaddi Raid[/b]
 Made by Josh Nason.
 Players, referees and the crowd modelled with Meshy; movement from Mixamo (Adobe) and from match footage.
+Skies, ground surfaces, the plastic chairs, folding stools and broadleaf trees: Poly Haven (polyhaven.com), CC0. Rain trees, coconut palms, dry grass, the scorers' table, the apartment blocks, the village temple and the Jagannath temple's tower modelled with Meshy for the game.
 Menu music: "Indian" by LNPLUSMUSIC, from Pixabay (Pixabay Content License). The other sounds were made for the game."""
 
 const FONTS := """[b]Fonts[/b]

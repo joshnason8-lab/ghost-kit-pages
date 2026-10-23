@@ -32,7 +32,9 @@ sphere next to a baked lamp stays black once the lamp itself is gone), so the ba
 ground is loaded, and the players cost nothing more to draw.
 
 On the phone a baked ground costs one more texture read for the fixed parts and about 1 MB of memory (an ASTC
-lightmap, HDR, one 1024 x 1024 page per ground; a GPU that cannot read HDR ASTC is given it unpacked, 8 MB).
+lightmap, HDR, one 1024 x 1024 page per ground; a GPU that cannot read HDR ASTC is given it unpacked, 8 MB). A ground
+whose lightmap needs more takes a 2048 page, four times the memory, so the texel sizes keep each under 1024: the
+stadium's stands (one mesh since 0.9.0) at 0.25 m, the beach's 320 m strip of sand sloping into the sea at 0.4 m.
 
 ### Re-baking
 
@@ -76,18 +78,45 @@ sun's), and its sunlit floors are darker than Medium's: the Compatibility render
 picture already turned to sRGB, which makes Medium's sunlit floors brighter than the same light gives on Low (the
 dome's court about 1.7 times, the whole picture 1.5 to 1.75 times).
 
-## Court and stand textures
+## Skies, surfaces and the scenery round the grounds (0.9.0)
 
-`tools/ground_art/make_textures.py` makes seamless textures from noise (nothing to license), each a detail albedo
-(multiplied with the material's colour, so one mat texture serves every court colour) and a normal map, in
-`assets/grounds/textures/`, imported compressed for the GPU with mipmaps:
+From the lead session's shared assets (Poly Haven's photographs and scans, CC0, and the owner's Meshy models), in
+`assets/scenery/`, put together by `game/scenery.gd`; what goes where on each ground, and why, is in
+[PROGRESS.md](PROGRESS.md).
 
-- **mat**: 1 m foam tiles with fine seams, each tile a touch lighter or darker, a fine grain, faint scuffs. On the
-  field, the lobbies, the run-off and the sitting blocks, laid at its real size (2 m a repeat) by the size of each.
-- **concrete**: polished, with soft clouding, flecks and hairline cracks; the dome's floor.
-- **stand**: weathered concrete with streaks; the stands, laid in world space (triplanar), so the tiers of any
-  ground take it at the same size.
-- **grass**, **mud**, **sand**: the fields round the outdoor grounds, the village court, the beach court.
+- **Skies** (`Scenery.sky`): a 2K panorama for the background on every level, turned so its sun is where the
+  ground's sun is. What lights the ground (ambient light, reflections, and the bake) comes from the same sky in HDR on
+  Medium and High, from the panorama on Low (the HDR is not even loaded there), each scaled so the ground gets as
+  much light from the sky as it did from the painted sky before (measured looking up and sideways); the beach's bake
+  takes 45 % of it (`Arena.BAKE_SKY`), as its clear evening sky left the sand in shade almost as bright as in the sun.
+  The HDR's sun is held down: the sun's own light is the ground's DirectionalLight3D. Below the horizon the panorama's
+  haze goes on for the background, and the ground's colour lights things from below. Distant fog takes the sky's own
+  colour.
+- **Ground** (`Scenery.ground`): a photographed surface laid over the world in metres, so it runs on across every plane
+  that shows it; a second surface showing through in patches, toward a line (the wet sand by the sea), out from the
+  middle (worn grass round the village) or outside a box (the red earth round the village court); brightness varied
+  over tens of metres so the tiles do not show; on Medium and High the surfaces' normal maps (the `scenery_detail`
+  shader global, set by `Arena.graphics_changed`). The monsoon's is wet, its puddles rippling and showing the sky.
+- **Walls and stands** (`Scenery.wall`): a photographed surface's grain in grey, in the wall's own colour, laid along
+  whichever axis each face looks down (the stands in concrete, the village houses in plaster).
+- **The sea** (`Scenery.sea`): a gentle swell, ripples from a normal map in two drifting layers, deep and shallow water,
+  the sky's reflection, surf where it runs up the sloping sand.
+- **Models round a ground**: each kind drawn in one go however many there are (a MultiMesh: one draw for forty
+  chairs), the cut-down model on Low. Trees are cut-outs (two crossed pictures of the tree) facing the broadcast
+  camera, the full model only within 25 m of it on Medium and High; they sway a little, let some light through, and
+  are lit partly from above. Seats carry the crowd at their height, with a soft shadow under each, all in one go.
+  The stadium's city at night is unshaded: dark walls and lit windows, out of the floodlights' reach.
+- `tools/scenery/fetch.sh` fetches the source models from the shared assets and `tools/scenery/convert.tscn` makes
+  what the game loads from them (each mesh, its textures as they came, their import settings): the sources are not
+  committed, and the game ships only what it loads.
+
+## Court textures
+
+`tools/ground_art/make_textures.py` makes the mat's texture from noise (nothing to license): a detail albedo
+(multiplied with the material's colour, so one texture serves every court colour) and a normal map, in
+`assets/grounds/textures/`: 1 m foam tiles with fine seams, each tile a touch lighter or darker, a fine grain, faint
+scuffs. On the field, the lobbies, the run-off and the sitting blocks, laid at its real size (2 m a repeat) by the size
+of each. Until 0.9.0 it made the concrete, stand, grass, mud and sand textures too; photographs took their place.
 
 ## Skin and kit
 

@@ -25,7 +25,7 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 | **Difficulty** | Rookie, Pro, Star and Legend change defender timing and aggression, AI raider skill, aim assist and how strict the cant rhythm is. |
 | **Players** | Realistic textured bodies from a generated model (faces, knee pads, ankle guards), auto-rigged and driven by the game's animation. Each team's colours replace the model's kit, keeping its folds; skin is tinted to each player's tone; shirt numbers are added. In Quick Match each side's first two players wear the two players made in Meshy's web app. Strides match running speed; players side-shuffle, backpedal, shift their weight and look around. Switch to the classic code-built bodies in Settings. |
 | **Cameras** | Third person and broadcast. The broadcast camera moves in while the raider is held and jolts at a takedown. See [docs/GRAPHICS.md](docs/GRAPHICS.md). |
-| **Grounds** | Mumbai Dome, Gaon Maidan (village mud court), National Stadium (floodlit), Monsoon Ground (rain), Puri Beach (sand). Each has baked lighting, textured surfaces and its own colour grade; players cast shadows on every graphics level. See [docs/GRAPHICS.md](docs/GRAPHICS.md). |
+| **Grounds** | Mumbai Dome, Gaon Maidan (a village ground at dusk), National Stadium (floodlit, the city round it at night), Monsoon Ground (rain), Puri Beach (sand and the sea). Since 0.9.0 photographed skies and surfaces, and the scenery round each ground: rain trees, palms, village houses and a temple, plastic chairs and stools with the crowd on them, a tarpaulin in the rain, the sea, a city skyline. Each has baked lighting and its own colour grade; players cast shadows on every graphics level. See [docs/GRAPHICS.md](docs/GRAPHICS.md) and [docs/PROGRESS.md](docs/PROGRESS.md). |
 | **Quick Match** | Any two league teams or countries, any ground. |
 | **Season awards** | Every player's raid and tackle points are kept all season (simulated matches share each team's score by ability). At the end: best raider, best defender, and the **Arjuna Award** for the most valuable player, presented with a bronze statuette. |
 | **League Season** | Own a franchise. **Choose up to six retentions** (stars cost more to keep), plan in the **war room** (what your squad still needs: a star raider, corners, covers; every lot with how well he fits, his age, last season's points and likely price; a shortlist with the most you will pay; the other franchises' purses and needs), then **bid at the auction**: categories A–D and New Young Players, paddles, "going once, going twice", bidding wars, record buys, **Final Bid Match cards**, an accelerated round, likely bidders on each lot, **auto-bid to your max** and a skip to your next target. Every franchise's auction is **graded**. Then the **board sets a goal** that moves next year's budget, and you play 11 rounds and the playoffs (top six, two eliminators, semis, final). Before each match: a **preview** (form guide, last meeting, key battles, their injuries) and **your seven**, picked with each player's form, fitness and knocks; tired players start with less energy. **Derbies** have louder crowds, the final opens with a **walk-out**, each round names a raider, defender and team of the week, the **record book** and **hall of fame** keep every season, and players age: the young improve, the old slow and retire. |
@@ -161,6 +161,7 @@ godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- /tmp/fit.
 xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/screenshots.tscn -- /tmp/shots ta:hud   # the match's words in Tamil
 xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/screenshots.tscn -- /tmp/shots result   # Settings, the result and the box score
 xvfb-run -a -s "-screen 0 1600x800x24" godot --path . --rendering-driver opengl3 --resolution 1560x720 res://tests/screenshots.tscn -- /tmp/shots buttons   # button sizes, Move buttons
+xvfb-run -a -s "-screen 0 1600x800x24" godot --path . --rendering-driver opengl3 --resolution 1560x720 --fixed-fps 30 res://tests/perf_probe.tscn -- /tmp/perf.json   # each ground's cost (below)
 ```
 
 The smoke test does five things:
@@ -173,6 +174,45 @@ The smoke test does five things:
   the mat (tired ones with less energy), the final's walk-out, the news, weekly awards, records, the board's
   verdict and a year's growth; and a Nations Cup with a picked squad, a captain, what you need, and its awards.
 - Plays a full AI-vs-AI match under knockout rules.
+
+### Each ground's cost
+
+`tests/perf_probe.tscn` plays the same seeded AI match on each ground from the broadcast camera and counts what a
+frame draws through its first raid (the median frame). Before 0.9.0's new grounds and after:
+
+| Ground | Level | Draw calls, 3D | Draw calls, whole frame | Primitives | Objects | Video memory, MB |
+|---|---|---|---|---|---|---|
+| Mumbai Dome | Low | 144 → 100 | 262 → 217 | 634k → 634k | 360 → 315 | 149 → 150 |
+|  | Medium | 154 → 101 | 272 → 218 | 635k → 635k | 370 → 316 | 164 → 164 |
+|  | High | 154 → 101 | 272 → 218 | 636k → 636k | 370 → 316 | 189 → 189 |
+| National Stadium | Low | 154 → 101 | 272 → 219 | 635k → 661k | 371 → 317 | 151 → 155 |
+|  | Medium | 166 → 103 | 283 → 221 | 637k → 741k | 383 → 319 | 166 → 171 |
+|  | High | 166 → 104 | 283 → 222 | 639k → 743k | 383 → 320 | 190 → 196* |
+| Gaon Maidan | Low | 145 → 102 | 263 → 220 | 636k → 668k | 362 → 318 | 143 → 154 |
+|  | Medium | 199 → 120 | 316 → 238 | 640k → 806k | 416 → 336 | 158 → 173 |
+|  | High | 199 → 124 | 316 → 242 | 641k → 807k | 416 → 340 | 183 → 197 |
+| Monsoon Ground | Low | 125 → 98 | 243 → 216 | 632k → 657k | 342 → 314 | 144 → 156 |
+|  | Medium | 170 → 110 | 286 → 228 | 639k → 773k | 382 → 326 | 159 → 171 |
+|  | High | 170 → 114 | 286 → 232 | 646k → 790k | 382 → 330 | 184 → 196 |
+| Puri Beach | Low | 134 → 96 | 252 → 212 | 638k → 673k | 350 → 310 | 142 → 156 |
+|  | Medium | 181 → 107 | 298 → 224 | 643k → 793k | 396 → 322 | 157 → 168* |
+|  | High | 181 → 113 | 298 → 229 | 644k → 803k | 396 → 327 | 182 → 192* |
+
+The median frame of the first raid. "Before" is 0.8.6, the last commit before this update; "after" is 0.9.0. As
+before, the dome and stadium ran in one run and the village, monsoon and beach in another, so video memory includes
+what earlier grounds in the same run left loaded. \* measured in a run of that ground's Medium and High alone (the
+stadium's Medium gave the same 171 MB there as in the long run).
+
+- **Draw calls**: 22 to 41 % fewer in the 3D view, on every ground and level; 11 to 25 % fewer for the whole frame (the
+  HUD's do not change). The stands, court lines, benches, lamps and masts are one mesh each, and every tree, chair and
+  stool of a kind is drawn in one go: that saves more than the new scenery costs. Objects drawn: 8 to 19 % fewer.
+- **Primitives**: Low draws about what it did (the same in the dome, up to 5 % more elsewhere: cut-outs and cut-down
+  models). Medium and High draw 16 to 26 % more on the outdoor grounds and in the stadium (the full models of the
+  trees, temple, chairs and stools near the broadcast camera, and the city's blocks). The dome's are unchanged.
+- **Video memory**: up to 14 MB more on Low and 15 MB more on Medium and High, from the photographed surfaces and
+  skies. The dome's is unchanged.
+- Frame times are not in the table. Rendered in software here, with other jobs on the machine, they say nothing about
+  a phone; the developer overlay (BETA.md, *Measuring stutter*) measures them on one.
 
 ## Translations
 

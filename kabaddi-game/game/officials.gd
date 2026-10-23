@@ -61,22 +61,45 @@ func _official(rng: RandomNumberGenerator, i: int, pos: Vector3) -> Athlete:
 
 
 func _table(pos: Vector3) -> void:
-	_cloth = StandardMaterial3D.new()
-	_cloth.albedo_color = Color("1d3557")
-	_cloth.roughness = 0.9
-	var top := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3(0.7, 0.74, 2.2)
-	top.mesh = box
-	top.material_override = _cloth
-	top.position = pos + Vector3(0, 0.37, 0)
-	add_child(top)
+	var sign_at := pos + Vector3(0.36, 0.5, 0)
+	if m.arena.arena_id in ["village", "monsoon", "beach"]:
+		# At a local ground, a wooden trestle table (assets/scenery), the scorers' sign on a cloth tied along its front.
+		var low := int(Game.settings.graphics) == Game.GFX_LOW
+		var table := MeshInstance3D.new()
+		table.mesh = Scenery.mesh("props/scorers_table", low)
+		_cloth = (Scenery.material(table.mesh.resource_path.get_basename().trim_prefix(Scenery.DIR)) as StandardMaterial3D).duplicate()
+		table.material_override = _cloth
+		table.position = pos
+		table.rotation.y = PI / 2   # its length along the side line
+		add_child(table)
+		var banner := MeshInstance3D.new()
+		var cloth := BoxMesh.new()
+		cloth.size = Vector3(0.02, 0.3, 1.7)
+		banner.mesh = cloth
+		var bm := StandardMaterial3D.new()
+		bm.albedo_color = Color("1d3557")
+		bm.roughness = 0.95
+		banner.material_override = bm
+		banner.position = pos + Vector3(0.54, 0.58, 0)
+		add_child(banner)
+		sign_at = pos + Vector3(0.556, 0.58, 0)
+	else:
+		_cloth = StandardMaterial3D.new()
+		_cloth.albedo_color = Color("1d3557")
+		_cloth.roughness = 0.9
+		var top := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.7, 0.74, 2.2)
+		top.mesh = box
+		top.material_override = _cloth
+		top.position = pos + Vector3(0, 0.37, 0)
+		add_child(top)
 	var sign_l := Label3D.new()
 	sign_l.text = tr("SCORERS")
 	sign_l.font_size = 64
 	sign_l.pixel_size = 0.004
 	sign_l.modulate = Color("f3efe6")
-	sign_l.position = pos + Vector3(0.36, 0.5, 0)
+	sign_l.position = sign_at
 	sign_l.rotation = Vector3(0, PI / 2, 0)
 	add_child(sign_l)
 

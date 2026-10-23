@@ -134,6 +134,9 @@ jobs:
         run: |
           TAG=kabaddi-raid-beta
           APK=${PROJECT_DIR}/build/kabaddi-raid-${VERSION}.apk
+          # What is new in this version (docs/RELEASE_NOTES.md), when there is something to say.
+          NEW=""
+          [ -f "${PROJECT_DIR}/docs/RELEASE_NOTES.md" ] && NEW=$(cat "${PROJECT_DIR}/docs/RELEASE_NOTES.md")
           # The browser version is named only while its site really serves the game.
           WEB=""
           if curl -sfL --max-time 20 -o web.html https://kabaddi-raid-beta.netlify.app/ && grep -qi "<title>Kabaddi Raid" web.html; then
@@ -147,6 +150,8 @@ jobs:
           any earlier Kabaddi Raid beta and keeps your saves.
 
           ${WEB}
+
+          ${NEW}
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
