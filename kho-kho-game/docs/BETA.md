@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.4.2
+
+- **The crowd faces the play** on every side. The near side's spectators, between the broadcast camera and the court,
+  used to face the camera; now you see their backs, watching the match.
+
 ## What's new in 0.4.1
 
 - **A village temple** at the edge of the village ground: a whitewashed shrine with saffron and red stripes.

@@ -29,6 +29,12 @@ func _ready() -> void:
 				Game.current.cam_locked = true
 				Game.current.cam.position = Vector3(-6.0, 9.0, 26.0)
 				Game.current.cam.look_at(Vector3(4.0, 3.0, -20.0))
+			# KK_LOOK=x,y,z: from the court's centre, a man's height up, looking at that point (a stand, to see its faces).
+			if OS.get_environment("KK_LOOK") != "" and Game.current and Game.current.get("cam"):
+				var t := OS.get_environment("KK_LOOK").split_floats(",")
+				Game.current.cam_locked = true
+				Game.current.cam.position = Vector3(0.0, 1.7, 0.0)
+				Game.current.cam.look_at(Vector3(t[0], t[1], t[2]))
 		done = n
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("%s/%s_g%s_%d.png" % [a[0], a[1].replace(":", ""), a[2], n])

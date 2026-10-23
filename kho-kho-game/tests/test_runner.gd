@@ -258,10 +258,11 @@ func _bodies() -> void:
 # ---------------------------------------------------------------- the grounds
 
 ## The shared assets round each ground (the graphics update): a photographed sky outdoors, the photo-scanned ground,
-## the trees as cut-outs, the chairs and benches; on Low the light chairs, and only on the far side.
+## the trees as cut-outs, the chairs and benches; on Low the light chairs, and only on the far side. Every spectator
+## faces the play: his forward, flattened to the ground, toward the court's centre.
 func _grounds() -> void:
 	var keep_g := int(Game.settings.graphics)
-	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
+	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
 		Game.settings.graphics = g
 		for v in DB.venue_ids():
 			var a := Arena.new(v, KhoRules.CLASSIC, [Color.RED])
@@ -277,6 +278,18 @@ func _grounds() -> void:
 				var mesh: Mesh = (mmi as MultiMeshInstance3D).multimesh.mesh
 				mms[mesh.resource_name if mesh.resource_name != "" else str(mesh.get_instance_id())] = (mmi as MultiMeshInstance3D).multimesh.instance_count
 			check(mms.size() >= (3 if outdoor else 1), "graphics %d, %s: the shared assets placed (%d kinds)" % [g, v, mms.size()])
+			var people := 0
+			var astray := 0
+			for c in a.find_children("*", "Crowd", true, false):
+				var mm: MultiMesh = (c as Crowd).multimesh
+				for i in mm.instance_count:
+					var t := (c as Crowd).global_transform * mm.get_instance_transform(i)
+					var fwd := Vector3(t.basis.z.x, 0.0, t.basis.z.z).normalized()
+					var to_c := Vector3(-t.origin.x, 0.0, -t.origin.z).normalized()
+					people += 1
+					if fwd.dot(to_c) <= 0.7:
+						astray += 1
+			check(people > 0 and astray == 0, "graphics %d, %s: all %d spectators face the court (%d astray)" % [g, v, people, astray])
 			if a.kind == "village":
 				var chairs: int = a._chairs.size()
 				check(chairs > 0 and (g != Game.GFX_LOW or chairs < 60), "graphics %d, village: chairs under the front row (%d)" % [g, chairs])
