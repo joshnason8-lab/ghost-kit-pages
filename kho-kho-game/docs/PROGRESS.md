@@ -134,13 +134,15 @@ Built venue by venue from `shared-assets/plans/kho-kho-rush.md` (the files copie
 - **Hills and haystacks removed:** they were code-drawn and looked cartoon next to the photographed sky.
 - **Low keeps chairs only on the far side** (the light chair is 618 triangles; a full ring of 118 came to 73,000).
 
-**Gap that needs the owner:** a small **village temple or shrine** for the village ground; neither free library has
-one (the lead's plan asks for it to be recorded here). No Meshy credits were spent.
+**The gap, filled in 0.4.1:** a **village temple** for the village ground. Neither free library had one; the owner
+approved generating it in Meshy, and the lead added `buildings/indian_village_temple` to the shared assets. It
+stands at the far edge of the ground between the houses, its porch facing the field, a rain tree beside it and three
+chairs in its forecourt (village on Low: 85 draw calls, 69k triangles). This game spent no Meshy credits itself.
 
 Pictures of every ground on Low (left) and High (right), from the match camera and behind the menu:
 `docs/img/grounds-0.4-low-high.jpg`, `docs/img/menu-0.4-low-high.jpg`.
 
-Performance, Low (the phone budget is 90 draw calls and 90,000 triangles): village 73 → 83 draw calls and 40k → 65k
+Performance, Low (the phone budget is 90 draw calls and 90,000 triangles): village 73 → 85 draw calls and 40k → 69k
 triangles; school 73 → 80 and 39k → 38k; arena 82 → 82 and 46k → 46k; stadium 73 → 77 and 38k → 39k. All in the
 README.
 

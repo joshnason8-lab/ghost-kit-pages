@@ -61,6 +61,7 @@ func _ready() -> void:
 			_huts()
 			_string_lights(low)
 			_greenery(low, true)
+			_temple()
 		"school":
 			_env(Color("6ea7e0"), Color("dbe8f0"), Color(0.8, 0.82, 0.86), 1.1, Vector3(-55, 30, 0), Color(1.0, 0.97, 0.9),
 				"qwantani_noon_puresky", 1.0, 150.0)
@@ -543,6 +544,19 @@ func _greenery(low: bool, village: bool) -> void:
 		Props.place(self, k, near[k])
 	for k in cards:
 		Props.place(self, k, cards[k], false)
+
+
+## The village temple (the lead's shared assets; the owner had it made): a whitewashed shrine with saffron and red
+## stripes at the edge of the ground, its porch facing the field, a rain tree beside it and a few chairs in its
+## forecourt.
+func _temple() -> void:
+	var p := Vector3(-13.5, 0, -24.0)
+	Props.place(self, "buildings/indian_village_temple", [Props.at(p, atan2(-p.x, -p.z))])
+	Props.place(self, "trees/rain_tree_card", [Props.at(p + Vector3(-7.0, 0, -2.5), 0.6, 0.95)], false)
+	var face := atan2(-p.x, -p.z)
+	for k in 3:
+		var off := Basis(Vector3.UP, face) * Vector3(-1.6 + k * 1.0, 0, 4.2)
+		_chairs.append(Props.at(p + off, face + PI + randf_range(-0.3, 0.3)))
 
 
 ## A town behind the place: painted apartment blocks on the skyline (the shared assets).

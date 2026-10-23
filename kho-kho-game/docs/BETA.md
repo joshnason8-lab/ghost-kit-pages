@@ -9,6 +9,10 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.4.1
+
+- **A village temple** at the edge of the village ground: a whitewashed shrine with saffron and red stripes.
+
 ## What's new in 0.4
 
 - **The grounds, from photographs:** real skies (a village dusk, a school's hot noon, a lit night), photo-scanned red
