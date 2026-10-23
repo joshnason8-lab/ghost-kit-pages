@@ -25,6 +25,7 @@ static var _mat: ShaderMaterial
 static var _rendered := false
 
 var spots: Array[Vector3] = []   # where people stand, or sit (their seat)
+var xforms: Array[Transform3D] = []   # each one's transform, as given to the multimesh (which keeps none headless)
 
 
 static func sheet() -> ImageTexture:
@@ -205,9 +206,11 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, seated :=
 	q.center_offset = Vector3(0, CELL_M.y * 0.5, 0)
 	mm.mesh = q
 	mm.instance_count = keep.size()
+	xforms.clear()
 	for i in keep.size():
 		var base := keep[i] - Vector3(0, SEAT_DROP if sits[i] else 0.0, 0)
-		mm.set_instance_transform(i, Transform3D(Basis(Vector3.UP, facing(base)), base))
+		xforms.append(Transform3D(Basis(Vector3.UP, facing(base)), base))
+		mm.set_instance_transform(i, xforms[i])
 		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 else Color(rng.randf(), rng.randf(), rng.randf())
 		var fig := rng.randi_range(0, 3) + (0 if sits[i] else 4)
 		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase.
