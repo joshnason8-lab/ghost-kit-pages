@@ -31,6 +31,7 @@ func _ready() -> void:
 	await _penalty_shot()
 	await _match_parts()
 	await _coach()
+	await _crowd_faces()
 	await _matches()
 	Game.settings = keep
 	Game.delete_cup()
@@ -720,6 +721,34 @@ func _coach() -> void:
 	Game.settings.auto_switch = auto
 	m.queue_free()
 	await frames(2)
+
+
+## Every spectator faces the play, in every venue and stand (the near stand too, which the broadcast camera sees from
+## behind): each one's forward (the facing the crowd's shader turns its cut-out to) points at the rink's centre.
+func _crowd_faces() -> void:
+	for venue in ["arena", "hall", "school"]:
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "SWE", "away": "FIN", "venue": venue, "user_team": -1, "demo": true, "seed": 2, "period": 4.0}
+		add_child(m)
+		await frames(2)
+		var n := 0
+		var bad := 0
+		var worst := 1.0
+		for c in m.find_children("*", "Crowd", true, false):
+			var cr := c as Crowd
+			for i in cr.facings.size():
+				var pos: Vector3 = cr.global_transform * cr.spots_built[i]
+				var fa: float = cr.facings[i] * TAU
+				var fwd := Vector2(sin(fa), cos(fa))
+				var to_centre := Vector2(-pos.x, -pos.z).normalized()
+				var d := fwd.dot(to_centre)
+				worst = minf(worst, d)
+				n += 1
+				if d <= 0.7:
+					bad += 1
+		check(n > 50 and bad == 0, "%s: every spectator faces the rink (%d of %d turned away, worst %.2f)" % [venue, bad, n, worst])
+		m.queue_free()
+		await frames(2)
 
 
 # ---------------------------------------------------------------- matches

@@ -7,6 +7,9 @@ extends MultiMeshInstance3D
 ## camera is (mirrored for the other side), gives them their shirt's colour and their skin's tone, makes them fidget,
 ## and stands them up to cheer when the crowd goes up (excite).
 
+
+var spots_built := PackedVector3Array()   # where each spectator sits (this node's space), as built
+var facings := PackedFloat32Array()        # each one's facing in turns (the shader's INSTANCE_CUSTOM.w)
 const SHEET := "res://assets/crowd/crowd_atlas.png"
 const COLS := 16.0            # cut-outs across the sheet; 4 rows
 const ROWS := 4.0
@@ -115,6 +118,8 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, share := 
 	q.center_offset = Vector3(0, FRAME.y * 0.5, 0)
 	mm.mesh = q
 	mm.instance_count = keep.size()
+	spots_built = PackedVector3Array(keep)
+	facings.resize(keep.size())
 	for i in keep.size():
 		var p := keep[i]
 		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, p))
@@ -127,6 +132,7 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, share := 
 		# Facing the rink: toward the nearest point of its middle.
 		var aim := Vector3(clampf(p.x, -11.0, 11.0), 0.0, clampf(p.z, -2.0, 2.0)) - p
 		var facing := fposmod(atan2(aim.x, aim.z) / TAU, 1.0)
+		facings[i] = facing
 		var model := rng.randi_range(0, 1)
 		var idle: int = [0, 0, 1, 2][rng.randi_range(0, 3)]
 		var tone := 0.0 if rng.randf() < 0.75 else rng.randf_range(0.25, 1.0)
