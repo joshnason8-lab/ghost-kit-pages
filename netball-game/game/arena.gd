@@ -139,6 +139,10 @@ func _env(bg: Color, ambient: Color, amb_energy: float, key: Color, key_energy: 
 	sun.light_color = key
 	sun.light_energy = key_energy
 	sun.shadow_enabled = Game.shadows_enabled()
+	# Outdoors, shadows only as far as the court and its surrounds: the trees, lamps and houses beyond would cost the
+	# shadow pass draw calls in every split for shadows no one sees. (Indoors the default spreads the splits better.)
+	if not indoor():
+		sun.directional_shadow_max_distance = 55.0
 	add_child(sun)
 	return env
 
@@ -329,8 +333,10 @@ func _arena() -> Array:
 	_look = {"night": night, "fade_y0": 2.0, "fade_y1": 11.0, "fade_amt": 0.9, "stand_tint": Color(0.4, 0.45, 0.72) if _low else Color(0.5, 0.55, 0.85), "sheen": 0.32 if _low else 0.4,
 		"gloss": 300.0, "vig_size": Vector2(25.0, 16.5), "vig_dark": 0.32, "seat_col": Color("1c2560"),
 		"stair_col": Color("39447a"), "density": 0.86, "aisle_every": 9.0, "lamp_col": Color("dfe8ff"),
-		"pad": Color("17256a"), "pool_lo": 0.45, "pool_hi": 1.15 if _low else 0.98, "pool_glow": 0.1}
-	_court(Color("5a8cc8"), Color("3a95a8"), Color("0a1a44"))
+		"pad": Color("17256a"), "pool_lo": 0.45, "pool_hi": 1.15 if _low else 0.98, "pool_glow": 0.1,
+		"tex_wood": load(MAPLE_TEX)}
+	# A painted sprung timber court, the grain under the paint.
+	_court(Color("5a8cc8"), Color("3a95a8"), Color("0a1a44"), VenueLook.FLOOR, VenueLook.PAINTED, VenueLook.PAINTED)
 	_runoff_edge(Color("2fd6e0"))
 	_boards()
 	# The bowl: front corners of the seating, X0 along, Z0 across.
@@ -373,7 +379,34 @@ func _arena() -> Array:
 	_bench(Color("161e4a"), Color("232c66"), Color("29d8ea"))
 	if _low:
 		return []
-	return _front_rows(x0, z0, 0.0, front, first, depth, rise, 9.0, [0, 1, 3])
+	var spots := _front_rows(x0, z0, 0.0, front, first, depth, rise, 9.0, [0, 1, 3])
+	if _props.has("bleacher_metal"):
+		spots = _bleachers(x0, z0, front)
+	return spots
+
+
+## Courtside seating: sections of a dark metal stand (the owner's bleacher) in front of the lower tier on the far side
+## and both ends, people of their own in its seats. Medium and High.
+func _bleachers(x0: float, z0: float, y: float) -> Array:
+	const W := 7.48
+	const SEAT_Z := [1.15, 0.45, -0.25, -0.95]
+	const SEAT_Y := [0.8, 1.15, 1.4, 1.75]
+	var spots := []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for side in [0, 1, 3]:
+		var span := x0 * 2.0 if side == 0 else z0 * 2.0
+		var n := int(floor(span / W))
+		var yaw := 0.0 if side == 0 else (-PI * 0.5 if side == 1 else PI * 0.5)
+		var b := Basis(Vector3.UP, yaw)
+		for i in n:
+			var u := (i - (n - 1) * 0.5) * W
+			var c := Vector3(u, y, -z0 - 2.12) if side == 0 else Vector3((x0 + 2.12) * (1.0 if side == 1 else -1.0), y, u)
+			_props.add("bleacher_metal", Transform3D(b, c), Color(0.62, 0.68, 0.95))
+			for r in 4:
+				for k in 14:
+					spots.append(c + b * Vector3(-3.25 + k * 0.5 + rng.randf_range(-0.04, 0.04), SEAT_Y[r], SEAT_Z[r]))
+	return spots
 
 
 ## The boards round the run-off: a dark frame and a glowing band of plain colour that a slow light sweeps along (no
@@ -524,29 +557,61 @@ func _hall() -> Array:
 	# The main court's boards, winched up to the roof over the basketball court's ends, as for a netball session.
 	for sx: float in [-1.0, 1.0]:
 		_stowed_board(Vector3(12.8 * sx, 0, 0), Vector3(-sx, 0, 0), h)
-	# The stand: a retractable stand of blue seats down the near side, a rail in front.
+	# The stand: a retractable stand down the near side, its rows stepped, blue tip-up seats on each, a rail in front.
 	var z0 := hw + 0.4
 	var rows := 7
 	var depth := 0.8
 	var rise := 0.45
 	var front := 0.5
 	var ax := hl * 0.72
-	_lit.wall(Vector3(ax, 0, z0), Vector3(-ax, 0, z0), 0.0, front, Color("2b2f36"), true)
-	var slope := Vector2(rows * depth, rows * rise).length()
-	_lit.kind = Vector2(VenueLook.STAND, 0)
-	_lit.quad(Vector3(ax, front, z0), Vector3(ax, front + rows * rise, z0 + rows * depth), Vector3(-ax, front + rows * rise, z0 + rows * depth), Vector3(-ax, front, z0),
-		Color("2a4f8e"), [Vector2(ax, 0), Vector2(ax, slope), Vector2(-ax, slope), Vector2(-ax, 0)])
-	_lit.kind = Vector2.ZERO
+	var grey := Color("2b2f36")
+	_lit.wall(Vector3(ax, 0, z0), Vector3(-ax, 0, z0), 0.0, front, grey, true)
+	var spots := _hall_stand(z0, rows, depth, rise, front, ax)
 	for sx: float in [-1.0, 1.0]:
 		var e := Vector3(ax * sx, 0, z0)
-		_lit.quad(e, e + Vector3(0, front, 0), e + Vector3(0, front + rows * rise, rows * depth), e + Vector3(0, 0, rows * depth), Color("2b2f36"))
-		_lit.quad(e + Vector3(0, 0, rows * depth), e + Vector3(0, front + rows * rise, rows * depth), e + Vector3(0, front, 0), e, Color("2b2f36"))
+		_lit.quad(e, e + Vector3(0, front, 0), e + Vector3(0, front + rows * rise, rows * depth), e + Vector3(0, 0, rows * depth), grey)
+		_lit.quad(e + Vector3(0, 0, rows * depth), e + Vector3(0, front + rows * rise, rows * depth), e + Vector3(0, front, 0), e, grey)
 		_lit.kind = Vector2(VenueLook.METAL, 0)
 		_lit.cylinder(e + Vector3(0, front, 0), e + Vector3(0, front + 1.0, 0), 0.025, 0.025, Color("9aa0a8"), 6)
 		_lit.kind = Vector2.ZERO
 	_hall_bench(Court.HALF_W + Court.RUNOFF + 0.75)
-	# All painted: the stand is behind the cameras, and people of their own there would stand in the low camera's way.
-	return []
+	return spots
+
+
+## The hall's stand: rows stepped up from z0 (each depth deep, rise high, the first at front), a tip-up seat every
+## half metre along each (folded up where no one sits) with a stair every 8 m. On Medium and High people (Crowd) sit
+## in the front three rows, a league crowd: the spots come back.
+func _hall_stand(z0: float, rows: int, depth: float, rise: float, front: float, ax: float) -> Array:
+	var tread := Color("3a3f47")
+	var seat := Color("2f62b8") if not _low else Color("3a72cc")
+	var spots := []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 21
+	for r in rows:
+		var y := front + r * rise
+		var za := z0 + r * depth
+		_lit.floor_rect(-ax, za, ax, za + depth, y, tread)
+		if r < rows - 1:
+			_lit.wall(Vector3(ax, 0, za + depth), Vector3(-ax, 0, za + depth), y, y + rise, tread.darkened(0.3))
+		_lit.kind = Vector2(VenueLook.GLOSS, 0)
+		var n := int(ax * 2.0 / 0.5)
+		for i in n:
+			var x := -ax + (i + 0.5) * 0.5
+			if absf(fposmod(x, 8.0) - 4.0) < 0.6:
+				continue   # the stairs
+			# The back, and the seat: down if someone is in it (on Medium and High), else folded up against the back.
+			_lit.box(Vector3(x, y + 0.62, za + 0.6), Vector3(0.44, 0.4, 0.05), seat)
+			# People sit in the front rows, as at a league match (further up they would be in the low camera's way).
+			var sat := not _low and r < 3 and rng.randf() < 0.75 - r * 0.15
+			if sat:
+				_lit.box(Vector3(x, y + 0.42, za + 0.38), Vector3(0.44, 0.05, 0.4), seat)
+				spots.append(Vector3(x + rng.randf_range(-0.03, 0.03), y + 0.38, za + 0.4))
+			else:
+				_lit.box(Vector3(x, y + 0.6, za + 0.53), Vector3(0.42, 0.36, 0.05), seat.darkened(0.15))
+			if not _low:
+				_lit.box(Vector3(x, y + 0.2, za + 0.6), Vector3(0.06, 0.4, 0.06), Color("50555e"))
+		_lit.kind = Vector2.ZERO
+	return spots
 
 
 ## A hall wall from a to b (facing the side to the right of a -> b), h high: painted block to 2.4 m with a blue band,

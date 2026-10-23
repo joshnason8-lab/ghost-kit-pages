@@ -25,6 +25,7 @@ const SLAT := 14.0       # pale timber slats on a wall, upright (tex_wood)
 const ACRYLIC := 15.0    # an outdoor court's acrylic coat on asphalt: the vertex colour, the asphalt's grain (tex_asph)
 const TARMAC := 16.0     # plain asphalt paths (tex_tarmac)
 const GRASS := 17.0      # mown grass in stripes (vertex colour, tex_tarmac's grain)
+const PAINTED := 18.0    # a painted sprung timber court: the vertex colour is the paint, tex_wood's grain under it
 
 const COMMON := """
 varying vec3 wpos;
@@ -243,9 +244,12 @@ void fragment() {
 		float g = dot(texture(tex_tarmac, wpos.xz / 1.3).rgb, vec3(0.33));
 		col *= (0.92 + 0.12 * stripe) * (0.75 + g * 0.7);
 	}
-	if (k == 1 || k == 2 || k == 8 || k == 11 || k == 15 || k == 16 || k == 17) {
+	if (k == 1 || k == 2 || k == 8 || k == 11 || k == 15 || k == 16 || k == 17 || k == 18) {
 		if (k == 11) {
 			col *= texture(tex_wood, wpos.xz / 2.4).rgb;
+		} else if (k == 18) {
+			// The grain shows through the paint: the veneer's light and dark, not its colour.
+			col *= 1.0 + (dot(texture(tex_wood, wpos.xz / 2.4).rgb, vec3(0.33)) - 0.84) * 7.0;
 		} else if (k == 15) {
 			float g = dot(texture(tex_asph, wpos.xz / 2.0).rgb, vec3(0.33));
 			col *= 0.82 + g * 0.45;

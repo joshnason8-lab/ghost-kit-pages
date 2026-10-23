@@ -43,8 +43,8 @@ const VENUES := {
 		"grass_clumps_card": ["foliage/grass_clumps_card.glb", 512, {0: [1, 0.0]}],
 	}],
 	"arena": [1024, {
+		# Medium and High only: the _low model's decimation broke its seats, and Low keeps the painted stand.
 		"bleacher_metal": ["stands/bleacher_metal.glb", 1024, {}],
-		"bleacher_metal_low": ["stands/bleacher_metal_low.glb", 512, {}],
 	}],
 }
 
