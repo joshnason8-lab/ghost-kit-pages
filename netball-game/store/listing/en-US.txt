@@ -53,3 +53,6 @@ A real sports hall with proper backboards, a maple floor and a stand; an outdoor
 
 == Release notes (0.4.1) ==
 Courtside stands in the arena on Low graphics too.
+
+== Release notes (0.4.2) ==
+The crowd now faces the play from every camera.

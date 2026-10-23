@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.4.2-beta
+
+- The crowd faces the play: seen from behind (the hall's stand from the Courtside camera, any stand behind the
+  camera), spectators show the backs of their heads instead of looking away from the court.
+
 ## New in 0.4.1-beta
 
 - Low graphics: courtside stands in the arena too (the owner's lighter three-row bleacher).

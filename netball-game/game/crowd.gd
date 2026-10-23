@@ -14,11 +14,12 @@ static var _mat: ShaderMaterial
 var spots: Array[Vector3] = []   # where people stand or sit (their feet)
 
 
-## The sheet: eight people, head and shoulders and a shirt, a few skin and hair tones, drawn once.
+## The sheet: eight people, head and shoulders and a shirt, a few skin and hair tones, drawn once; the top row seen
+## from the front, the bottom row the same people from behind (the back of the head: hair, the nape of the neck).
 static func sheet() -> ImageTexture:
 	if _sheet:
 		return _sheet
-	var img := Image.create_empty(FIG_W * FIGS, FIG_H, false, Image.FORMAT_RGBA8)
+	var img := Image.create_empty(FIG_W * FIGS, FIG_H * 2, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 	var skins := [Color("e0b48c"), Color("c98a5a"), Color("b07448"), Color("8d5a36")]
 	var hairs := [Color("15100c"), Color("2b1d14"), Color("15100c"), Color("4a3a2a")]
@@ -49,6 +50,11 @@ static func sheet() -> ImageTexture:
 				if v > 0.42 and v < shoulder + 0.02 and absf(u) < 0.07:
 					c = skin.darkened(0.1)
 				img.set_pixel(ox + x, y, c)
+				# From behind: the head is hair down to the nape (a little skin under it for short hair).
+				var b := c
+				if hd.length() < 1.0:
+					b = hair if v < 0.4 or f % 2 == 1 else skin.darkened(0.15)
+				img.set_pixel(ox + x, FIG_H + y, b)
 	img.generate_mipmaps()
 	_sheet = ImageTexture.create_from_image(img)
 	return _sheet
@@ -71,8 +77,14 @@ uniform vec3 tint = vec3(1.0);
 // flat figures read as blocks across the bottom of the screen.
 uniform float near_hide = 6.0;
 varying vec4 data;
+varying float back;
 void vertex() {
 	data = INSTANCE_CUSTOM;
+	// Each spectator faces the court (the instance's +Z, Crowd.build): with the camera behind her, her back shows.
+	vec3 seat = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	vec2 facing = normalize((MODEL_MATRIX * vec4(0.0, 0.0, 1.0, 0.0)).xz);
+	vec2 to_cam = normalize(INV_VIEW_MATRIX[3].xz - seat.xz);
+	back = dot(facing, to_cam) < -0.25 ? 1.0 : 0.0;
 	float ph = data.z * 6.2831;
 	float jump = max(0.0, sin(time_s * 9.0 + ph)) * excite * 0.28;
 	float fidget = sin(time_s * 1.3 + ph) * 0.02;
@@ -86,7 +98,7 @@ void vertex() {
 	}
 }
 void fragment() {
-	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, UV.y);
+	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + back) * 0.5);
 	vec4 c = texture(sheet, uv);
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
@@ -121,13 +133,22 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
 	mm.mesh = q
 	mm.instance_count = keep.size()
 	for i in keep.size():
-		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, keep[i]))
+		mm.set_instance_transform(i, Transform3D(facing(keep[i]), keep[i]))
 		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 else Color(rng.randf(), rng.randf(), rng.randf())
 		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase.
 		mm.set_instance_custom_data(i, Color(rng.randf(), _code(col), rng.randf(), 0.0))
 	multimesh = mm
 	material_override = material()
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## A spectator at p faces the middle of the court (the origin): her +Z, flat on the ground, points there. The shader
+## turns the cut-out to the camera but shows her back when the camera is behind her.
+static func facing(p: Vector3) -> Basis:
+	var to := Vector2(-p.x, -p.z)
+	if to.length() < 0.01:
+		return Basis.IDENTITY
+	return Basis(Vector3.UP, atan2(to.x, to.y))
 
 
 ## Shirt colours come out of the shader from one number; find one whose colour is near col (a few tries).

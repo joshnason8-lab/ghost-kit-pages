@@ -31,6 +31,7 @@ func _ready() -> void:
 	_tags()
 	await _coach()
 	await _navigation()
+	await _crowd_facing()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -721,3 +722,32 @@ func _navigation() -> void:
 	m.set_paused(false)
 	Game.goto_menu()
 	await frames(3)
+
+
+## Every spectator faces the court (the owner's report: the near stand's crowd looked the wrong way): each crowd
+## instance's forward points at the court's middle, in every venue, and the near stand shows its backs to the
+## broadcast camera behind it.
+func _crowd_facing() -> void:
+	var was: int = int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_HIGH
+	for venue in ["arena", "hall", "outdoor"]:
+		var m: Match = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "ENG", "away": "WAL", "venue": venue, "user_team": -1, "demo": true, "seed": 3, "quarter": 15, "mode": "quick"}
+		add_child(m)
+		await frames(3)
+		var crowds := m.find_children("*", "Crowd", true, false)
+		var n := 0
+		var bad := 0
+		for c: Crowd in crowds:
+			# (Headless, the MultiMesh keeps no instance data: each seat's turn comes from Crowd.facing, as build sets it.)
+			for spot: Vector3 in c.spots:
+				var xf := c.global_transform * Transform3D(Crowd.facing(spot), spot)
+				var fwd := Vector2(xf.basis.z.x, xf.basis.z.z).normalized()
+				var to := Vector2(-xf.origin.x, -xf.origin.z).normalized()
+				n += 1
+				if fwd.dot(to) <= 0.7:
+					bad += 1
+		check(n > 0 and bad == 0, "%s: every spectator faces the court (%d of %d do not)" % [venue, bad, n])
+		m.queue_free()
+		await frames(2)
+	Game.settings.graphics = was

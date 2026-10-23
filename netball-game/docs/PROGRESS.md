@@ -8,7 +8,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 
 - Branch `claude/netball-game`, folder `netball-game/` (self-contained Godot 4.7.2 project), pages folder
   `netball-unleashed/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
-- Version 0.4.1-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
+- Version 0.4.2-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
   https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta.
 
 ## Done
@@ -152,4 +152,9 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   Courtside camera behind the hall's stand they read as blocky heads across the bottom of the screen.
 - **Low arena stands** (0.4.1): the lead's new `stands/bleacher_hall` (the owner's Meshy model; its _low holds together)
   makes the courtside stands on Low; Medium and High keep `bleacher_metal`, which seats the crowd's people.
+- **Crowd facing** (0.4.2, the owner's report via the lead: the near side's crowd looked the wrong way): the crowd's
+  cut-outs turn to the camera, and the sheet had only front views, so a stand seen from behind (the hall's, from the
+  Courtside camera) showed faces looking away from play. Every spectator now has a facing toward the court's middle
+  (Crowd.facing) and the sheet a back view (the back of the head) that the shader draws when the camera is behind
+  her. All three venues were affected wherever a camera looked over a stand; test `_crowd_facing`.
 
