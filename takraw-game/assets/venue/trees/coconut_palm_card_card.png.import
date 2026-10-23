@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ou4t6dj2iv1n"
-path.s3tc="res://.godot/imported/coconut_palm_card_card.png-72031e3cd98eeb2af2a0afcae474fea9.s3tc.ctex"
-path.etc2="res://.godot/imported/coconut_palm_card_card.png-72031e3cd98eeb2af2a0afcae474fea9.etc2.ctex"
+path="res://.godot/imported/coconut_palm_card_card.png-72031e3cd98eeb2af2a0afcae474fea9.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "499a898f9af0f23d15482a3429c5f475"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/trees/coconut_palm_card_card.png"
-dest_files=["res://.godot/imported/coconut_palm_card_card.png-72031e3cd98eeb2af2a0afcae474fea9.s3tc.ctex", "res://.godot/imported/coconut_palm_card_card.png-72031e3cd98eeb2af2a0afcae474fea9.etc2.ctex"]
+dest_files=["res://.godot/imported/coconut_palm_card_card.png-72031e3cd98eeb2af2a0afcae474fea9.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

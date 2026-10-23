@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b8uek3s7acfci"
-path.s3tc="res://.godot/imported/island_tree_b_card_card.png-9ddfe101df02a65b46fb04a9d53fe3db.s3tc.ctex"
-path.etc2="res://.godot/imported/island_tree_b_card_card.png-9ddfe101df02a65b46fb04a9d53fe3db.etc2.ctex"
+path="res://.godot/imported/island_tree_b_card_card.png-9ddfe101df02a65b46fb04a9d53fe3db.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "cd69e4f91c17b18ff7bf6d23f14dace4"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/trees/island_tree_b_card_card.png"
-dest_files=["res://.godot/imported/island_tree_b_card_card.png-9ddfe101df02a65b46fb04a9d53fe3db.s3tc.ctex", "res://.godot/imported/island_tree_b_card_card.png-9ddfe101df02a65b46fb04a9d53fe3db.etc2.ctex"]
+dest_files=["res://.godot/imported/island_tree_b_card_card.png-9ddfe101df02a65b46fb04a9d53fe3db.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

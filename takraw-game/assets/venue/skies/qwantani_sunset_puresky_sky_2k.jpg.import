@@ -3,23 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ctteqkr7ic3l7"
-path.s3tc="res://.godot/imported/qwantani_sunset_puresky_sky_2k.jpg-f0037971acdf3b0f24b0a182457d67fc.s3tc.ctex"
-path.etc2="res://.godot/imported/qwantani_sunset_puresky_sky_2k.jpg-f0037971acdf3b0f24b0a182457d67fc.etc2.ctex"
+path="res://.godot/imported/qwantani_sunset_puresky_sky_2k.jpg-f0037971acdf3b0f24b0a182457d67fc.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/venue/skies/qwantani_sunset_puresky_sky_2k.jpg"
-dest_files=["res://.godot/imported/qwantani_sunset_puresky_sky_2k.jpg-f0037971acdf3b0f24b0a182457d67fc.s3tc.ctex", "res://.godot/imported/qwantani_sunset_puresky_sky_2k.jpg-f0037971acdf3b0f24b0a182457d67fc.etc2.ctex"]
+dest_files=["res://.godot/imported/qwantani_sunset_puresky_sky_2k.jpg-f0037971acdf3b0f24b0a182457d67fc.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

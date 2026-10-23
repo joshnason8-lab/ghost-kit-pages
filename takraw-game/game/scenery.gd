@@ -23,7 +23,7 @@ const MEAN := {"clean_asphalt": 0.06, "asphalt_02": 0.11, "concrete_floor": 0.28
 	"grass_ground": 0.12}
 
 static var _parts := {}       # model path -> [[Mesh, Transform3D], ...]
-static var _surface_shader: Shader
+static var _surface_shaders := {}  # on Low? -> Shader (Low filters the ground plainly, the others anisotropically)
 static var _water_shader: Shader
 
 var _root: Node3D
@@ -167,13 +167,13 @@ static func aim_sun(sun: DirectionalLight3D, sky_name: String) -> void:
 ## or with paint 1 paints it in tint keeping the grain (a court painted on concrete). Its relief (normal map) on
 ## Medium and High.
 static func surface(name: String, tint := Color.WHITE, paint := 0.0, tile := 2.5, rough := 0.85) -> ShaderMaterial:
-	if _surface_shader == null:
-		_surface_shader = Shader.new()
-		_surface_shader.code = """
+	if not _surface_shaders.has(low()):
+		var sh := Shader.new()
+		sh.code = """
 shader_type spatial;
 render_mode cull_back, diffuse_burley, specular_schlick_ggx;
-uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_enable;
-uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D albedo_tex : source_color, FILTER, repeat_enable;
+uniform sampler2D normal_tex : hint_normal, FILTER, repeat_enable;
 uniform vec3 tint : source_color = vec3(1.0);
 uniform float paint = 0.0;
 uniform float mean = 0.4;
@@ -200,9 +200,10 @@ void fragment() {
 		NORMAL_MAP_DEPTH = 0.8;
 	}
 }
-"""
+""".replace("FILTER", "filter_linear_mipmap" if low() else "filter_linear_mipmap_anisotropic")
+		_surface_shaders[low()] = sh
 	var m := ShaderMaterial.new()
-	m.shader = _surface_shader
+	m.shader = _surface_shaders[low()]
 	m.set_shader_parameter("albedo_tex", load(DIR + "surfaces/%s/%s_albedo_1k.jpg" % [name, name]))
 	m.set_shader_parameter("normal_tex", load(DIR + "surfaces/%s/%s_normal_1k.jpg" % [name, name]))
 	m.set_shader_parameter("tint", tint)

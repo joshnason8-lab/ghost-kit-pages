@@ -11,7 +11,10 @@ about 2019, the Galaxy A16 included).
 
 ## What to try
 
-New in 0.5.0: every venue rebuilt from real-world pieces. Real skies; courts painted on concrete, asphalt and a maple
+New in 0.5.1: a much smaller download (about 50 MB instead of 89 MB), with the venues looking the same. If anything
+in a venue looks blurrier than in 0.5.0, say where.
+
+In 0.5.0: every venue rebuilt from real-world pieces. Real skies; courts painted on concrete, asphalt and a maple
 gym floor; a Thai temple behind the temple court with spectators on plastic chairs; palms and rain trees; the sea
 moving at the beach and stilt houses back from it; a fenced park court with benches, lamps and a basketball hoop on
 the next court; a night market with stalls, lanterns and stools; metal bleachers, a clock and basketball boards in

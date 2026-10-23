@@ -21,7 +21,8 @@ from the shared assets (branch `claude/shared-assets`, `shared-assets/plans/sepa
   `Scenery.SUNS`); the sunset's is raised from 7° to 16°, or every shadow would cross the court. By night the light is
   the floodlights', and the ambient light the place's own colour (a night sky is too dark to light it).
 - **Surfaces** are the photographed ones laid in world space by one shader (`Scenery.surface`): tinted, or painted (a
-  court painted on concrete or asphalt keeps the grain). Roughness maps weren't copied (a constant roughness).
+  court painted on concrete or asphalt keeps the grain), filtered anisotropically on Medium and High so the ground
+  far off keeps its grain. Roughness maps weren't copied (a constant roughness).
 - **Water** (the beach): the wave normal map drifting in two directions, deep blue far out, the sky's colour at a
   glancing angle, the sun's glints. No reflections.
 - **Indoors** on Medium and High the glossy courts reflect a real hall's interior (`gym_01`, dimmed), not the
@@ -45,7 +46,8 @@ Every venue from the broadcast camera, on Low and on High: [`venues/venues_low.j
 Moved or skipped, and why:
 
 - `bleacher_metal` in the arenas' lower tiers: see above.
-- `trees/coconut_palm`, `rain_tree` meshes: the cut-outs are used everywhere instead.
+- `trees/coconut_palm`, `rain_tree` meshes: the cut-outs are used everywhere instead (the meshes were removed in
+  0.5.1).
 - The HDR skies and the roughness maps: download size.
 - The concrete court at the temple: the plan offered `concrete_floor` or `clean_asphalt`; concrete, since a wat's
   forecourt is paved.
@@ -66,6 +68,20 @@ Moved or skipped, and why:
 (Each figure is one frame of a match, so the triangles move with the camera: the temple's Medium frame happened to
 look past most of the chairs.) Low stays well inside its budget of about 100 draw calls everywhere. Most of the added triangles on Low are the
 temple's plastic chairs and the bleachers.
+
+## Download size (0.5.1)
+
+0.5.0's APK was 89 MB (0.4.0's 38 MB): GPU-compressed textures are stored in the APK as they are, unzipped, and the
+venue pieces came to 50 MB of them. 0.5.1 brings the venue pieces down to about 14 MB with no visible change in the
+broadcast view (each venue compared before and after at 1920 × 1080):
+
+- **Skies and tree cut-outs** stored as WebP at full size (`compress/mode=1`): 7 MB of skies became 0.8 MB.
+- **Ground scans** stored as WebP at 512 px (the grass at 1024: its blades blur at 512); they're mipmapped now (the
+  grass wasn't, and shimmered).
+- **Model textures never seen close** capped at 512 px (the stilt houses, the apartment blocks, the temple's relief,
+  the bleachers) and at 256 px for the small things (chairs, stools, lamps, lanterns, the café set, the light
+  battens), which are under 60 px tall on screen. The temple's colour stays at 1024: at 512 its carvings smear.
+- The unused palm and rain-tree meshes were removed.
 
 ## Gaps that need the owner
 
