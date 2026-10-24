@@ -10,12 +10,13 @@ game; their dodge and their standing at ease from the CMU Graphics Lab Motion Ca
 Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
 The grounds' skies, surfaces, plastic chairs, stools, benches, lights and tropical trees: Poly Haven
 (polyhaven.com), CC0. The rain trees, palms, grass, scorers' table, apartment blocks and village temple: the maker's own
-models. Grounds otherwise made in code for the game; the crowd drawn from the players' model; the whistles, the menu
+models. Grounds otherwise made in code for the game; the crowd drawn from the players' model; the menu
 music and the crowd's drums written for it (tools/audio/make_music.py). Some crowd reactions and the players' voices
 from Kabaddi Raid, by the same maker.
 Sounds: footsteps, landings and the menus' click from Kenney (kenney.nl), CC0. The kho's slap by CGEffex (cut by
 congusbongus, opengameart.org), CC-BY 3.0. The crowd's murmur and cheer by Gregor Quendel (opengameart.org), CC-BY 4.0.
-Applause by eXpl0it3r, crickets by Wolfgang_, birds by Thimras (opengameart.org), CC0. Each one in docs/SOUNDS.md.
+Applause by eXpl0it3r, crickets by Wolfgang_, birds by Thimras (opengameart.org), CC0. Whistle sounds from Pixabay:
+charlesheffley009, framptones and freesound_community (Pixabay Content License). Each one in docs/SOUNDS.md.
 Every team's players are invented. No real player, club, league, competition or federation is named."""
 
 const FONTS := """[b]Fonts[/b]

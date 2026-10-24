@@ -35,5 +35,5 @@ PLAY YOUR WAY
 
 Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
 
-== Release notes (0.7.0) ==
-Sharper on Medium and High graphics: finer ground photos, sharper players, a more varied crowd and, on High, sharper skies. Longer crowd and venue sounds. Real recorded sound: footsteps on the earth and the mat, the kho's slap, a dive's landing, a real crowd's murmur and cheer, applause, crickets at dusk, birds at noon and the hall's echo. Real recorded movement from a motion capture library: DODGE is now a runner's hard cut, and players standing still stand at ease.
+== Release notes (0.7.1) ==
+Real referee whistles: the timekeeper's long and short to start a turn, a short pip for an out, pips until a foul is put right, the final whistle, and a gym's echo in the hall. Sharper on Medium and High graphics: finer ground photos, sharper players, a more varied crowd and, on High, sharper skies. Longer crowd and venue sounds.

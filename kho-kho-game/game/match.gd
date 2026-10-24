@@ -405,7 +405,8 @@ func _end_turn(reason := "time") -> void:
 	phase_t = 0.0
 	_end_reason = reason
 	_pending_kho = {}
-	Sfx.play("whistle_long", -2.0)
+	# The timekeeper's long whistle ends the turn; the last turn's is the final whistle (short, short, long).
+	Sfx.whistle("final" if KhoRules.over_after(turn, order, score) else "long", arena.table_pos())
 	Sfx.drums(-1.0)
 	officials.referee.do("end", 2.0)
 	officials.timekeeper.do("whistle", 1.0)
@@ -541,7 +542,9 @@ func _process(delta: float) -> void:
 			if phase_t >= 1.6:
 				phase = "play"
 				phase_t = 0.0
-				Sfx.play("whistle", -2.0)   # the timekeeper's long and short whistle: the turn is on
+				# The timekeeper's long whistle and a short one: the turn is on.
+				Sfx.whistle("long", arena.table_pos())
+				get_tree().create_timer(1.3).timeout.connect(func(): Sfx.whistle("short", arena.table_pos(), -2.0))
 				if not attract:
 					Sfx.drums(0.3 * arena.atmosphere())
 				officials.timekeeper.do("whistle", 0.8)
@@ -669,7 +672,8 @@ func _play(dt: float) -> void:
 		_foul_whistle -= dt
 		if _foul_whistle <= 0.0:
 			_foul_whistle = 0.32
-			Sfx.play("whistle_short", -6.0)   # short whistles, again and again, until it is put right
+			# Short whistles, again and again, until it is put right.
+			Sfx.whistle("short", _umpire_for(active.position.x).global_position if active else arena.table_pos(), -5.0)
 	_touches()
 	_limits_and_entry(dt)
 	_dream(dt)
@@ -1237,7 +1241,7 @@ func _out(d: Athlete, kind: String, by: Athlete = null) -> void:
 	var ump := _umpire_for(d.position.x)
 	ump.do("out", 1.4)
 	ump.face_to = d.position
-	Sfx.play("whistle", -3.0)
+	Sfx.whistle("short", ump.global_position, -2.0)   # an out: one short whistle from that half's umpire
 	if not attract:
 		Sfx.react("cheer" if (user < 0 or chasing == user) else "groan", -6.0)
 		Sfx.drums(0.8 * arena.atmosphere())
@@ -1369,7 +1373,7 @@ func _on_foul(kind: String, who: Athlete = null) -> void:
 		stats[a.data.id].fouls += 1
 	_log("foul", {"how": kind, "by": a.data.get("id", ""), "act": a.act, "x": a.position.x, "z": a.position.z,
 		"vz": a.vel.z, "half": chase.half, "plan": String(_chase_plan.get("kind", ""))})
-	Sfx.play("whistle_short", -3.0)
+	Sfx.whistle("short", ump.global_position, -2.0)
 	_foul_whistle = 0.32
 	if who and kind == KhoRules.FOUL_EARLY:
 		who.do("foul", 0.6)   # half up, then back down

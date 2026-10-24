@@ -1,6 +1,7 @@
 extends Node
-## Sound effects: recordings in res://assets/audio/ (docs/SOUNDS.md says where each comes from), and a few still
-## synthesised at startup (the whistles, the whoosh). Drop an .ogg or .wav with the same name into assets/audio/ to
+## Sound effects: recordings in res://assets/audio/ (docs/SOUNDS.md says where each comes from), and the whoosh and the
+## crowd's fallback synthesised at startup. The umpires' and the timekeeper's whistles are real ones (whistle()), heard
+## from where they stand. Drop an .ogg or .wav with the same name into assets/audio/ to
 ## replace any of them. A sound with takes (slap_1, slap_2 ...) plays one of them at random when asked for by its name.
 ## In a match: the crowd's murmur, the place's own sound (crickets, birds), footsteps where the players run (in 3D, on
 ## the ground's surface), and in the hall a little of its echo on all of it; a pause holds every one of them.
@@ -11,10 +12,11 @@ const RATE := 22050
 const VOICES := {"grunt": 3, "hup": 2}
 const MUSIC_DB := -9.0
 ## Sounds with several takes, and how many.
-const TAKES := {"slap": 2, "thud": 2, "step_earth": 4, "step_mat": 3, "crowd_cheer": 2, "applause": 3}
+const TAKES := {"slap": 2, "thud": 2, "step_earth": 4, "step_mat": 3, "crowd_cheer": 2, "applause": 3,
+	"whistle_short": 3, "whistle_long": 3}
 ## Every recording the game loads from assets/audio/ (the test checks each is there).
 const FILES := ["crowd_ooh", "crowd_groan", "clap", "menu_music", "drums_loop", "crowd_loop",
-	"click", "amb_crickets", "amb_birds"]
+	"click", "amb_crickets", "amb_birds", "whistle_double", "whistle_final", "whistle_gym"]
 const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_crickets", "amb_birds"]
 ## A place's own sound under the crowd: kind of ground -> [bed, its level (dB)].
 const AMBIENCE := {"village": ["amb_crickets", -4.0], "school": ["amb_birds", -2.0], "stadium": ["amb_crickets", -12.0]}
@@ -34,6 +36,9 @@ var _steps: Array[AudioStreamPlayer3D] = []
 var _next_step := 0
 var surface := "mud"          # the ground under the players' feet: "mud" (earth) or "mat"
 var in_match := false         # a match being played (not the menu's backdrop): the field's own sounds are on
+var indoor := false           # the hall: its long whistle is the one recorded in a gym, with its echo
+var _whistles: Array[AudioStreamPlayer3D] = []
+var _next_whistle := 0
 var paused := false           # the match paused: what was playing is held, and nothing new starts on the field
 var _todo := []
 var _planned := false
@@ -66,6 +71,14 @@ func _ready() -> void:
 		s3.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 		add_child(s3)
 		_steps.append(s3)
+	for i in 3:
+		var w3 := AudioStreamPlayer3D.new()
+		w3.bus = BUS
+		w3.unit_size = 20.0   # a whistle carries across the ground
+		w3.max_distance = 150.0
+		w3.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		add_child(w3)
+		_whistles.append(w3)
 	_crowd = AudioStreamPlayer.new()
 	_crowd.volume_db = -60.0
 	_crowd.bus = BUS
@@ -164,6 +177,23 @@ func play_at(sound: String, pos: Vector3, volume_db := 0.0, pitch := 1.0) -> voi
 	p.play()
 
 
+## An official's whistle from where he stands: "short" (a pip: an out, a foul, the second of the timekeeper's start),
+## "long" (a turn's start and end; in the hall the gym's take), "double" or "final" (short, short, long: the match is
+## over). Its own players, so footsteps never cut it short; not in the menu's backdrop match.
+func whistle(kind: String, pos: Vector3, volume_db := 0.0) -> void:
+	_ensure()
+	var sound := _take("whistle_gym" if kind == "long" and indoor else "whistle_" + kind)
+	if not in_match or paused or not enabled() or not streams.has(sound):
+		return
+	var p := _whistles[_next_whistle]
+	_next_whistle = (_next_whistle + 1) % _whistles.size()
+	p.stream = streams[sound]
+	p.global_position = pos
+	p.volume_db = volume_db
+	p.pitch_scale = randf_range(0.98, 1.02)
+	p.play()
+
+
 ## A footstep at pos, on the ground's surface, louder the faster he runs.
 func step(pos: Vector3, speed: float) -> void:
 	play_at("step_mat" if surface == "mat" else "step_earth", pos, lerpf(-16.0, -6.0, clampf(speed / 7.0, 0.0, 1.0)), randf_range(0.92, 1.08))
@@ -174,6 +204,7 @@ func venue(kind: String, p_surface := "mud") -> void:
 	_ensure()
 	surface = p_surface
 	in_match = kind != ""
+	indoor = kind == "arena"
 	AudioServer.set_bus_effect_enabled(AudioServer.get_bus_index(BUS), 0, kind == "arena")
 	if kind == "" or not AMBIENCE.has(kind) or not enabled():
 		_amb.stop()
@@ -190,7 +221,7 @@ func pause(on: bool) -> void:
 	paused = on
 	for p in _pool + [_crowd, _drums, _amb]:
 		(p as AudioStreamPlayer).stream_paused = on
-	for p in _steps:
+	for p in _steps + _whistles:
 		p.stream_paused = on
 
 
@@ -255,7 +286,7 @@ func stop_all() -> void:
 	AudioServer.set_bus_effect_enabled(AudioServer.get_bus_index(BUS), 0, false)
 	for p in _pool:
 		p.stop()
-	for p in _steps:
+	for p in _steps + _whistles:
 		p.stop()
 
 
@@ -263,11 +294,8 @@ func stop_all() -> void:
 
 func _plan() -> void:
 	_planned = true
-	# Made here unless a recording of the same name is in assets/audio/ (a pea whistle has not been found: docs/SOUNDS.md).
+	# Made here unless a recording of the same name is in assets/audio/.
 	_todo = [
-		["whistle", _whistle],
-		["whistle_long", func(): return _whistle(1.1)],
-		["whistle_short", func(): return _whistle(0.16)],   # an umpire's short blast: an out, or a foul again and again
 		["whoosh", _whoosh],
 		["crowd_loop", _crowd_loop],
 		["click", func(): return _tone_env(0.035, func(t): return sin(TAU * 1500.0 * t) * 0.5, 0.001, 0.03)],
@@ -321,17 +349,6 @@ func _tone_env(dur: float, f: Callable, attack: float, release: float) -> AudioS
 	return _to_stream(out)
 
 
-func _whistle(dur := 0.5) -> AudioStreamWAV:
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var phase := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		phase += TAU * (2900.0 + sin(TAU * 34.0 * t) * 180.0) / RATE
-		var env := minf(1.0, t / 0.02) * clampf((dur - t) / 0.08, 0.0, 1.0)
-		out[i] = sin(phase) * (0.65 + 0.35 * sin(TAU * 34.0 * t)) * env * 0.45
-	return _to_stream(out)
 
 
 func _whoosh() -> AudioStreamWAV:

@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.7.1
+
+- **Real referee whistles**, from where the officials stand: the timekeeper's long whistle and a short one to start a
+  turn and a long one to end it, a short pip from the umpire for an out, pips again and again until a foul is put
+  right, the final whistle (short, short, long) at the end of the match, and in the hall a whistle with the gym's echo.
+
 ## What's new in 0.7
 
 - **Sharper on Medium and High graphics:** the grounds' photographs at twice the detail, the players'
