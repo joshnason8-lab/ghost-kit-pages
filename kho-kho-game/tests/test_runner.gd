@@ -704,6 +704,8 @@ class MotionAudit extends Node:
 	var jerks := 0
 	var worst := 0.0
 	var frames_seen := 0
+	var safe_t := 0.0    # defenders out of danger (the chase over 3.2 s away): their time, and the part of it standing
+	var safe_still := 0.0
 
 	func _init(p_m) -> void:
 		m = p_m
@@ -713,6 +715,12 @@ class MotionAudit extends Node:
 			last.clear()
 			return
 		frames_seen += 1
+		if m.active != null:
+			for d in m.batch:
+				if m.d_state.get(d, "") == "in" and m.reach_time(d.position) > m.SAFE_S:
+					safe_t += delta
+					if Vector2(d.vel.x, d.vel.z).length() < 0.5:
+						safe_still += delta
 		for a in m.roster[0] + m.roster[1]:
 			var p: Vector3 = a.position
 			if last.has(a):
@@ -733,3 +741,6 @@ class MotionAudit extends Node:
 		t.check(frames_seen > 100, "%s: the motion audit watched the play (%d frames)" % [name, frames_seen])
 		t.check(snaps == 0, "%s: no player snaps (%d frames over 11 m/s; fastest %.1f m/s)" % [name, snaps, worst])
 		t.check(jerks <= frames_seen / 200, "%s: speeds change smoothly (%d jerks)" % [name, jerks])
+		# As in the real matches watched (docs/AI.md): a defender out of danger stands and watches.
+		if safe_t > 5.0:
+			t.check(safe_still / safe_t > 0.6, "%s: defenders out of danger stand still (%.0f%% of %.0f s)" % [name, 100.0 * safe_still / safe_t, safe_t])

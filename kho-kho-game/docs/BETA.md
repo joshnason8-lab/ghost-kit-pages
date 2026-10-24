@@ -9,6 +9,14 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.8
+
+- **Defenders who play like the real ones**, learned from two real matches: a defender out of danger stands and
+  watches the chase (his head following it), and moves only when it comes his way, instead of jogging about. The
+  one under threat still dodges tight round the pole and the seated chasers.
+- **A chaser with a foul** goes straight for the kho or the pole that puts it right (his touches don't count until
+  then), and the foul's bar no longer stays on screen after the foul is over.
+
 ## What's new in 0.7.1
 
 - **Real referee whistles**, from where the officials stand: the timekeeper's long whistle and a short one to start a

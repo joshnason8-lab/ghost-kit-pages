@@ -18,6 +18,38 @@ Close classic finals put out about 23-26 defenders in 36 minutes of chasing: **a
 final, at 2 points an out with some dream-run points, came to about 1.6 a minute. A mismatch runs far higher: India's
 109 against Bangladesh is about 3.9 a minute.
 
+## Watched: two real matches (October 2026)
+
+The owner sent two full 9-minute turns filmed from behind a pole (a day match, blue chasing yellow, from a steady
+high camera; a night match, purple chasing white, handheld), and they were watched a second at a time (the footage is
+not kept). What they show, the same in both:
+
+- **A defender out of danger stands still and watches.** Most of the time only one defender is under threat; the
+  others stand, often 4-8 m off the lane on the side away from the active chaser or at the far end, facing the play,
+  and move only when the chase comes their way by a kho. The AI's defenders did the opposite: they jogged from spot
+  to spot at 3.4 m/s or more, with a wander "so that he keeps moving".
+- **The defender under threat plays tight round the pole and the end chasers.** Dodging a metre or two from the
+  pole, with the pole or a seated chaser between him and the active chaser, slipping round as the chaser comes round;
+  the chasers answer with pole turns and pole dives there (one at 0:32 of the day match, missed). The AI does this
+  already (reach_time round the pole, the chain bias, pole dives).
+- **Fresh defenders go straight in near the pole**; those put out stand behind the end line.
+- Khos could not be counted reliably at that size of picture, so the kho rate is not measured from them.
+
+What changed (0.8):
+
+- **Settling.** Out of danger (the chase over 3.2 s away, `SAFE_S`), a defender keeps his spot unless another is
+  clearly safer (`STAY_BONUS`), stands once within 1 m of it (`SETTLE_M`), walks rather than jogs to move, and faces
+  the active chaser, his head following him; the wander is only for a defender in danger. Out-of-danger time spent
+  standing: 52% → 76% (classic), 46% → 73% (fast); speed then 1.5 → 0.8 m/s. `tests/test_runner.gd`'s motion audit
+  checks it stays over 60%.
+- **The chaser and a foul.** While a foul is being whistled none of his touches counts, so he now goes straight for
+  the kho (any seated chaser ahead) or the pole that puts it right, instead of chasing; and the foul's bar at the foot
+  of the screen no longer stays up when a foul outlasts its fade.
+
+Outs a minute, before → after (6 classic matches of 3-minute turns; 4 fast): classic 1.60-1.78 → 1.38-1.65 (real
+close finals 1.3-1.6); fast 1.83 → 2.08 (real fast final about 1.6; four matches vary by about that much). Khos 12.8
+→ 13.4 a minute, a dive every 21 → 18 s.
+
 ## What `tests/match_sim.gd` measures
 
 `godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 2 classic 180` plays AI-v-AI matches and
@@ -75,8 +107,11 @@ How he carries them out:
   - round the pole if it does not;
   - or a kho to a seated chaser facing that side, plus 0.45 s for the kho and the rise.
 - **Less** for being within 1.4 m of a line, or near a team-mate.
-- **Plus** a little wander, so that he keeps moving as defenders do.
-- **Pace:** he jogs at 3.4 m/s when safe, rising to flat out as the threat comes within 4.2 s.
+- **Plus** a little wander when he is in danger, so he is hard to pin.
+- **Out of danger** (the chase over 3.2 s away) he keeps his spot unless another is clearly safer, stands, and faces
+  the active chaser (Watched, above).
+- **Pace:** he walks (1.6 m/s) to a new spot when safe, jogs at 3.4 m/s once the threat is within 4.2 s, rising to
+  flat out as it comes.
 
 The defender's reactions:
 - **The juke.** When the active chaser closes inside 2.4 m, the defender waits for him to commit (0.06-0.4 s, his read

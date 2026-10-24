@@ -183,6 +183,14 @@ final whistle as the last turn's, one short pip from that half's umpire for an o
 put right, the gym's take for every long blast in the hall. Random takes, in 3D from the official on their own players
 (a footstep cannot cut one short), silent in the menu's backdrop match. docs/SOUNDS.md has each file and its credit.
 
+## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
+
+The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from
+them. They were watched a second at a time; what they showed and what changed is in docs/AI.md, "Watched". In
+short: defenders out of danger stand and watch rather than jog about (now 76% of their safe time standing, from
+52%); classic outs came to 1.38-1.65 a minute (real close finals 1.3-1.6). A chaser with a foul now puts it right
+first, and a foul's bar that stayed on screen after a long foul is fixed. The footage is not kept in the repository.
+
 ## Round seven: 0.7.0-beta, a bigger APK for Medium and High (24 October 2026, the owner via the lead)
 
 The owner allowed the APK to grow (to about 100 MB, India first) to look and sound better, on two conditions: Low
