@@ -1,12 +1,24 @@
 extends Node
-## Sound effects, most synthesised at startup so the game ships few audio files. Drop an .ogg or .wav with the same
-## name into res://assets/audio/ to replace any of them (assets/audio/whistle.ogg, assets/audio/kick.ogg ...).
+## Sound effects: recordings in res://assets/audio/ (docs/SOUNDS.md says where each comes from), and a few still
+## synthesised at startup (the whistles, the whoosh). Drop an .ogg or .wav with the same name into assets/audio/ to
+## replace any of them. A sound with takes (slap_1, slap_2 ...) plays one of them at random when asked for by its name.
+## In a match: the crowd's murmur, the place's own sound (crickets, birds), footsteps where the players run (in 3D, on
+## the ground's surface), and in the hall a little of its echo on all of it; a pause holds every one of them.
 ## They are made a sound at a time by the loading screen (build_step), so it can show its progress; anything that
 ## needs one before then makes the rest at once (_ensure).
 
 const RATE := 22050
 const VOICES := {"grunt": 3, "hup": 2}
 const MUSIC_DB := -9.0
+## Sounds with several takes, and how many.
+const TAKES := {"slap": 2, "thud": 2, "step_earth": 4, "step_mat": 3}
+## Every recording the game loads from assets/audio/ (the test checks each is there).
+const FILES := ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music", "drums_loop", "crowd_loop",
+	"click", "amb_crickets", "amb_birds"]
+const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_crickets", "amb_birds"]
+## A place's own sound under the crowd: kind of ground -> [bed, its level (dB)].
+const AMBIENCE := {"village": ["amb_crickets", -4.0], "school": ["amb_birds", -2.0], "stadium": ["amb_crickets", -12.0]}
+const BUS := "Venue"   # the match's sounds; in the hall it carries the hall's echo
 
 var streams := {}
 var _pool: Array[AudioStreamPlayer] = []
@@ -17,6 +29,12 @@ var _crowd_target := -60.0
 var _drums_target := -60.0
 var _music: AudioStreamPlayer
 var _music_target := -80.0
+var _amb: AudioStreamPlayer
+var _steps: Array[AudioStreamPlayer3D] = []
+var _next_step := 0
+var surface := "mud"          # the ground under the players' feet: "mud" (earth) or "mat"
+var in_match := false         # a match being played (not the menu's backdrop): the field's own sounds are on
+var paused := false           # the match paused: what was playing is held, and nothing new starts on the field
 var _todo := []
 var _planned := false
 var _built := false
@@ -24,16 +42,41 @@ var _total := 1
 
 
 func _ready() -> void:
+	AudioServer.add_bus()
+	var b := AudioServer.bus_count - 1
+	AudioServer.set_bus_name(b, BUS)
+	AudioServer.set_bus_send(b, "Master")
+	var verb := AudioEffectReverb.new()
+	verb.room_size = 0.55
+	verb.damping = 0.6
+	verb.wet = 0.12
+	verb.dry = 1.0
+	AudioServer.add_bus_effect(b, verb)
+	AudioServer.set_bus_effect_enabled(b, 0, false)
 	for i in 12:
 		var p := AudioStreamPlayer.new()
+		p.bus = BUS
 		add_child(p)
 		_pool.append(p)
+	for i in 6:
+		var s3 := AudioStreamPlayer3D.new()
+		s3.bus = BUS
+		s3.unit_size = 6.0
+		s3.max_distance = 45.0
+		s3.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		add_child(s3)
+		_steps.append(s3)
 	_crowd = AudioStreamPlayer.new()
 	_crowd.volume_db = -60.0
+	_crowd.bus = BUS
 	add_child(_crowd)
 	_drums = AudioStreamPlayer.new()
 	_drums.volume_db = -60.0
+	_drums.bus = BUS
 	add_child(_drums)
+	_amb = AudioStreamPlayer.new()
+	_amb.bus = BUS
+	add_child(_amb)
 	_music = AudioStreamPlayer.new()
 	_music.volume_db = -80.0
 	add_child(_music)
@@ -90,6 +133,7 @@ func enabled() -> bool:
 
 func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
+	sound = _take(sound)
 	if not enabled() or not streams.has(sound):
 		return
 	var p := _pool[_next]
@@ -98,6 +142,56 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
 	p.play()
+
+
+## One of a sound's takes, at random, if it has them.
+func _take(sound: String) -> String:
+	return "%s_%d" % [sound, 1 + randi() % int(TAKES[sound])] if TAKES.has(sound) else sound
+
+
+## A sound from a place on the field, heard from the camera (a footstep, a dive landing).
+func play_at(sound: String, pos: Vector3, volume_db := 0.0, pitch := 1.0) -> void:
+	_ensure()
+	sound = _take(sound)
+	if not in_match or paused or not enabled() or not streams.has(sound):
+		return
+	var p := _steps[_next_step]
+	_next_step = (_next_step + 1) % _steps.size()
+	p.stream = streams[sound]
+	p.global_position = pos
+	p.volume_db = volume_db
+	p.pitch_scale = pitch
+	p.play()
+
+
+## A footstep at pos, on the ground's surface, louder the faster he runs.
+func step(pos: Vector3, speed: float) -> void:
+	play_at("step_mat" if surface == "mat" else "step_earth", pos, lerpf(-16.0, -6.0, clampf(speed / 7.0, 0.0, 1.0)), randf_range(0.92, 1.08))
+
+
+## The place's own sound under the crowd, and in the hall its echo: kind is the ground's (Arena.kind); "" stops it.
+func venue(kind: String, p_surface := "mud") -> void:
+	_ensure()
+	surface = p_surface
+	in_match = kind != ""
+	AudioServer.set_bus_effect_enabled(AudioServer.get_bus_index(BUS), 0, kind == "arena")
+	if kind == "" or not AMBIENCE.has(kind) or not enabled():
+		_amb.stop()
+		return
+	var a: Array = AMBIENCE[kind]
+	_amb.stream = streams.get(a[0])
+	_amb.volume_db = float(a[1])
+	if _amb.stream != null:
+		_amb.play()
+
+
+## A pause holds everything playing (and lets it carry on from there); a menu's music is not the match's.
+func pause(on: bool) -> void:
+	paused = on
+	for p in _pool + [_crowd, _drums, _amb]:
+		(p as AudioStreamPlayer).stream_paused = on
+	for p in _steps:
+		p.stream_paused = on
 
 
 ## A player's effort: voice("grunt") or "hup"; pitch gives each player his own voice.
@@ -153,9 +247,15 @@ func music(on: bool) -> void:
 
 
 func stop_all() -> void:
+	pause(false)
+	in_match = false
 	_crowd.stop()
 	_drums.stop()
+	_amb.stop()
+	AudioServer.set_bus_effect_enabled(AudioServer.get_bus_index(BUS), 0, false)
 	for p in _pool:
+		p.stop()
+	for p in _steps:
 		p.stop()
 
 
@@ -163,29 +263,30 @@ func stop_all() -> void:
 
 func _plan() -> void:
 	_planned = true
+	# Made here unless a recording of the same name is in assets/audio/ (a pea whistle has not been found: docs/SOUNDS.md).
 	_todo = [
 		["whistle", _whistle],
 		["whistle_long", func(): return _whistle(1.1)],
 		["whistle_short", func(): return _whistle(0.16)],   # an umpire's short blast: an out, or a foul again and again
-		["slap", func(): return _tock(0.45, 0.05, 0.8)],    # a palm on a back: the kho
-		["thud", func(): return _tock(0.3, 0.14, 0.9)],     # a dive landing
 		["whoosh", _whoosh],
-		["click", func(): return _tone_env(0.035, func(t): return sin(TAU * 1500.0 * t) * 0.5, 0.001, 0.03)],
-		["buzzer", func(): return _tone_env(0.8, func(t): return signf(sin(TAU * 196.0 * t)) * 0.3 + sin(TAU * 392.0 * t) * 0.15, 0.01, 0.1)],
-		["roar", _roar],
 		["crowd_loop", _crowd_loop],
+		["click", func(): return _tone_env(0.035, func(t): return sin(TAU * 1500.0 * t) * 0.5, 0.001, 0.03)],
 	]
-	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music", "drums_loop"]:
-		_todo.append([k, null])
+	for k in FILES:
+		if not (k in ["crowd_loop", "click"]):
+			_todo.append([k, null])
 	for kind in VOICES:
 		for i in int(VOICES[kind]):
+			_todo.append(["%s_%d" % [kind, i + 1], null])
+	for kind in TAKES:
+		for i in int(TAKES[kind]):
 			_todo.append(["%s_%d" % [kind, i + 1], null])
 	_total = _todo.size()
 
 
 func _finish() -> void:
 	_built = true
-	for k in ["crowd_loop", "drums_loop", "menu_music"]:
+	for k in LOOPS:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
 	_crowd.stream = streams.get("crowd_loop")
@@ -233,65 +334,6 @@ func _whistle(dur := 0.5) -> AudioStreamWAV:
 	return _to_stream(out)
 
 
-## The synthetic takraw ball is a hollow woven sphere: struck, it gives a short, bright, slightly ringing "tok".
-## bright scales the pitch; ring how long it sounds; air how much of the thump is the foot rather than the ball.
-func _tock(bright: float, ring: float, air := 0.3) -> AudioStreamWAV:
-	var dur := ring * 3.0
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var lp := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.35)
-		var body := sin(TAU * 820.0 * bright * t) * 0.55 + sin(TAU * 1730.0 * bright * t) * 0.25
-		var thump := sin(TAU * lerpf(160.0, 70.0, minf(1.0, t / 0.05)) * t) * air
-		out[i] = (body * exp(-t / ring * 2.2) + thump * exp(-t * 35.0) + lp * 0.35 * exp(-t * 120.0)) * 0.8
-	return _to_stream(out)
-
-
-func _spike() -> AudioStreamWAV:
-	var dur := 0.35
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var prev := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		var w := randf_range(-1.0, 1.0)
-		var crack := (w - prev) * exp(-t * 70.0)
-		prev = w
-		var body := sin(TAU * 700.0 * t) * 0.6 * exp(-t * 30.0) + sin(TAU * lerpf(200.0, 60.0, minf(1.0, t / 0.08)) * t) * 0.7 * exp(-t * 18.0)
-		out[i] = clampf((crack * 0.9 + body) * 0.85, -1.0, 1.0)
-	return _to_stream(out)
-
-
-func _block() -> AudioStreamWAV:
-	var dur := 0.3
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var lp := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.2)
-		out[i] = (sin(TAU * lerpf(110.0, 45.0, t / dur) * t) * 0.8 + lp * 0.5 * exp(-t * 40.0) + sin(TAU * 600.0 * t) * 0.3 * exp(-t * 50.0)) * exp(-t * 12.0)
-	return _to_stream(out)
-
-
-func _net() -> AudioStreamWAV:
-	var dur := 0.45
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var lp := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.5)
-		out[i] = lp * exp(-t * 9.0) * (0.6 + 0.4 * sin(TAU * 23.0 * t)) * 0.6
-	return _to_stream(out)
-
-
 func _whoosh() -> AudioStreamWAV:
 	var dur := 0.3
 	var n := int(dur * RATE)
@@ -302,21 +344,6 @@ func _whoosh() -> AudioStreamWAV:
 		var t := float(i) / RATE
 		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.04 + 0.25 * sin(PI * t / dur))
 		out[i] = lp * sin(PI * t / dur) * 0.7
-	return _to_stream(out)
-
-
-func _roar() -> AudioStreamWAV:
-	var dur := 2.4
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var a := 0.0
-	var b := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		a = lerpf(a, randf_range(-1.0, 1.0), 0.09)
-		b = lerpf(b, randf_range(-1.0, 1.0), 0.02)
-		out[i] = (a * 0.8 + b * 1.4) * minf(1.0, t / 0.25) * clampf((dur - t) / 1.4, 0.0, 1.0) * 0.7
 	return _to_stream(out)
 
 

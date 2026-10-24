@@ -37,5 +37,5 @@ Kho kho: खो-खो · ଖୋ-ଖୋ · খো-খো · ಖೋ-ಖೋ · ఖ
 
 Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
 
-== Release notes (0.5.0) ==
-Real recorded movement from a motion capture library: DODGE is now a runner's hard cut, and players standing still stand at ease. Spectators on every side now face the play.
+== Release notes (0.6.0) ==
+Real recorded sound: footsteps on the earth and the mat, the kho's slap, a dive's landing, a real crowd's murmur and cheer, applause, crickets at dusk, birds at noon and the hall's echo. Real recorded movement from a motion capture library: DODGE is now a runner's hard cut, and players standing still stand at ease. Spectators on every side now face the play.

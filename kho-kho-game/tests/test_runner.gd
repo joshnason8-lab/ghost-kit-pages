@@ -254,6 +254,46 @@ func _bodies() -> void:
 	m.queue_free()
 	await frames(2)
 	await _mocap()
+	_sounds()
+
+
+## Every recording the game asks for (docs/SOUNDS.md) is in assets/audio/ and loads as a sound; the beds loop; every
+## sound the game plays by name is there once they are made; a pause holds the match's sounds.
+func _sounds() -> void:
+	var names: Array = Sfx.FILES.duplicate()
+	for kind in Sfx.VOICES:
+		for i in int(Sfx.VOICES[kind]):
+			names.append("%s_%d" % [kind, i + 1])
+	for kind in Sfx.TAKES:
+		for i in int(Sfx.TAKES[kind]):
+			names.append("%s_%d" % [kind, i + 1])
+	var missing := []
+	for n in names:
+		var path := "res://assets/audio/%s.ogg" % n
+		if not (ResourceLoader.exists(path) and load(path) is AudioStream):
+			missing.append(n)
+	check(missing.is_empty(), "every recording is there and loads (%d; missing %s)" % [names.size(), str(missing)])
+	Sfx._ensure()
+	var not_looping := []
+	for k in Sfx.LOOPS:
+		if not (Sfx.streams.get(k) is AudioStreamOggVorbis and (Sfx.streams[k] as AudioStreamOggVorbis).loop):
+			not_looping.append(k)
+	check(not_looping.is_empty(), "the beds and the music loop (%s)" % str(not_looping))
+	var unmade := []
+	for k in ["whistle", "whistle_long", "whistle_short", "whoosh", "slap", "thud", "step_earth", "step_mat", "click"]:
+		if not Sfx.streams.has(Sfx._take(k)):
+			unmade.append(k)
+	for kind in Sfx.AMBIENCE:
+		if not Sfx.streams.has(Sfx.AMBIENCE[kind][0]):
+			unmade.append(kind)
+	check(unmade.is_empty(), "every sound the game plays by name is made (%s)" % str(unmade))
+	Sfx._amb.stream = Sfx.streams["amb_crickets"]
+	Sfx._amb.play()
+	Sfx.pause(true)
+	var held := Sfx._amb.stream_paused and Sfx.paused
+	Sfx.pause(false)
+	check(held and Sfx._amb.playing and not Sfx._amb.stream_paused, "a pause holds the match's sounds, and lets them go")
+	Sfx.stop_all()
 
 
 ## The clips from the CMU motion capture library (docs/MODELS.md): each loads, carries its root (its travel over the
