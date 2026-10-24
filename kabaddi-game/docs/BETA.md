@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.11.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.11.1-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.11.0-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.11.1-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -23,10 +23,12 @@ what you find.
 
 ### Updating to a newer beta
 
-Android only installs an update over the top if both builds were signed with the same key. The APKs sent in
-the chat and the GitHub Actions builds from 0.7.4 on share one key, so either installs over the other and keeps
-your saves. Actions builds from before 0.7.4 used a different key: if Android says **App not installed** or
-**package conflicts**, uninstall Kabaddi Raid first, then install the new APK. Uninstalling clears your saves
+Android only installs an update over the top if both builds were signed with the same key. From 0.11.1 every
+beta is signed with one fixed beta key (the repository's `BETA_KEYSTORE_B64` secret; its certificate's SHA-256 is
+`6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3`), so each
+installs over the one before and keeps your saves. Builds before 0.11.1 were signed with another key: **once**,
+going from one of those to 0.11.1 or later, Android says **App not installed** or **package conflicts** (Obtainium:
+"failure conflict"). Uninstall Kabaddi Raid first, then install the new APK. Uninstalling clears your saves
 (career, season, cup).
 
 ## First run

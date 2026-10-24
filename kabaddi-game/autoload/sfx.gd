@@ -1,14 +1,14 @@
 extends Node
 ## The game's sounds: recordings in res://assets/audio/ (credited in docs/SOUNDS.md and the Licences screen), and the
 ## few with no recording synthesised at startup. Drop an .ogg or .wav with the same name into res://assets/audio/ to
-## replace a synthesised one (for example assets/audio/whistle.ogg).
+## replace a synthesised one (for example assets/audio/buzzer.ogg).
 ## They are made a sound at a time by the loading screen (build_step), so it can show its progress; anything that
 ## needs one before then makes the rest at once (_ensure).
 
 const RATE := 22050
 const VOICES := {"grunt": 5, "oof": 3, "exhale": 2, "hup": 2}
 # Recorded one-shots with variants (name_1, name_2...): play("thud") picks one.
-const VARIED := {"thud": 3, "slap": 3, "step_mat": 3, "step_earth": 4, "step_sand": 4}
+const VARIED := {"whistle_short": 3, "whistle_long": 3, "thud": 3, "slap": 3, "step_mat": 3, "step_earth": 4, "step_sand": 4}
 # Each ground's own sound under the crowd (assets/audio/amb_<ground>.ogg); the dome is indoors and has none.
 const AMBIENCE := ["stadium", "village", "monsoon", "beach"]
 const AMB_DB := -12.0
@@ -202,6 +202,13 @@ func click() -> void:
 		_ui.play()
 
 
+## The referee's whistle, from where he stands: "short" (a foul, a restart), "long" (a raid, a point, the end of a
+## half), "double" (a time-out) or "final" (full time). Indoors (the dome) a long blast is the take in a hall.
+func whistle(kind: String, at: Vector3, indoor := false, volume_db := -2.0) -> void:
+	var k := "whistle_gym" if kind == "long" and indoor else "whistle_" + kind
+	play_at(k, at, volume_db, randf_range(0.98, 1.02))
+
+
 ## The ground's own sound under the crowd (AMBIENCE: the rain, the sea, birds, crickets); "" or the dome for none.
 func ambience(ground: String) -> void:
 	_ensure()
@@ -275,13 +282,12 @@ func stop_all() -> void:
 # Every recording the game plays besides VARIED and VOICES (tests/test_runner checks each one is there and loads).
 const RECORDED := ["chant_raider", "crowd_chant", "chant_word_1", "chant_word_2", "yell_aaja", "yell_pakad",
 		"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch", "crowd_cheer", "crowd_ooh", "crowd_groan",
-		"applause", "clap", "menu_music", "amb_stadium", "amb_village", "amb_monsoon", "amb_beach"]
+		"applause", "clap", "menu_music", "whistle_double", "whistle_final", "whistle_gym", "amb_stadium", "amb_village", "amb_monsoon", "amb_beach"]
 
 
 func _plan() -> void:
 	_planned = true
 	_todo = [
-		["whistle", _whistle],
 		["buzzer", func(): return _tone_env(0.9, func(t): return signf(sin(TAU * 196.0 * t)) * 0.35 + sin(TAU * 392.0 * t) * 0.15, 0.01, 0.1)],
 		["whoosh", _whoosh],
 		["click", func(): return _tone_env(0.035, func(t): return sin(TAU * 1500.0 * t) * 0.5, 0.001, 0.03)],
@@ -342,23 +348,6 @@ func _tone_env(dur: float, f: Callable, attack: float, release: float) -> AudioS
 		var t := float(i) / RATE
 		var env := minf(1.0, t / attack) * clampf((dur - t) / release, 0.0, 1.0)
 		out[i] = float(f.call(t)) * env
-	return _to_stream(out)
-
-
-func _whistle() -> AudioStreamWAV:
-	# Pea whistle: a bright tone warbled by the pea.
-	var dur := 0.55
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var phase := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		var freq := 2900.0 + sin(TAU * 34.0 * t) * 180.0
-		phase += TAU * freq / RATE
-		var trill := 0.65 + 0.35 * sin(TAU * 34.0 * t)
-		var env := minf(1.0, t / 0.02) * clampf((dur - t) / 0.08, 0.0, 1.0)
-		out[i] = sin(phase) * trill * env * 0.45
 	return _to_stream(out)
 
 

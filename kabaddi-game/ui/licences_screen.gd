@@ -17,7 +17,8 @@ Footsteps on the mats and the earth, bodies hitting the mat, touches and the men
 Footsteps on the sand: "Fantozzi's Footsteps (Grass/Sand & Stone)" by Fantozzi (opengameart.org), CC0.
 Applause: "Applause in a large hall or church" by eXpl0it3r (opengameart.org), CC0.
 The grounds: "AMB Rain Loop 1" by Kresiek The Furry, "Beach Ocean Waves" by jasinski, "Park ambiences" by Thimras and "Crickets Ambient Noise - loopable" by Wolfgang_ (all opengameart.org), CC0.
-The officials' whistle, the dhol, the chants and the players' voices were made for the game."""
+Whistle sounds from Pixabay (Pixabay Content License): "Referee whistle" by charlesheffley009, "Referee whistle / coach whistle / sports whistle" by framptones, "Metal whistle" and "Referee whistle blow, gymnasium" by freesound_community. Trimmed and loudness-matched for the game.
+The dhol, the chants and the players' voices were made for the game."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic).

@@ -131,7 +131,7 @@ and CC BY 4.0), made by `tools/audio/make_recorded.py`; the rest is synthesised 
 other scripts in `tools/audio/`. Put a file with the same name in `assets/audio/` (`.ogg`, `.wav` or `.mp3`) to
 override a synthesised one:
 
-`whistle`, `buzzer`, `whoosh`, `gavel`, `dhol_loop`, `bid`
+`buzzer`, `whoosh`, `gavel`, `dhol_loop`, `bid`
 
 The menus' music, `assets/audio/menu_music.ogg`, is **"Indian" by LNPLUSMUSIC** (Pixabay, track 611803), under the
 [Pixabay Content License](https://pixabay.com/service/license-summary/): free to use in an app, edited, with no
@@ -142,7 +142,6 @@ High-value recordings (see SOUNDS.md, "Not found"):
 
 - A real crowd at a PKL-style venue, chanting.
 - A dhol player.
-- A referee's pea whistle.
 - **Commentary and chants in each supported language.** Regional commentary would be a real differentiator.
 
 ## Grounds

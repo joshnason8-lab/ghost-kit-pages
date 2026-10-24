@@ -646,7 +646,7 @@ func _walk_to_positions(dt: float, with_raider: bool) -> void:
 func _begin_raid() -> void:
 	_set_phase("raid")
 	raider.set_state("raid")
-	Sfx.play("whistle", -4.0)
+	_whistle("long")
 	arena.excite(0.3)
 	hud.chant(raid_rule != RULE_CLOCK)
 
@@ -3137,7 +3137,7 @@ func _end_raid(kind: String) -> void:
 			Sfx.react("applause", -18.0)
 	if kind == "return" and not raider_out:
 		Sfx.voice("exhale", -9.0, raider.voice_pitch())
-	Sfx.play("whistle", -6.0)
+	_whistle("long" if raid_pts + def_pts > 0 else "short")
 	for m in _post_messages:
 		hud.event(m[0], m[1], false, MatchHud.EV_RESULT)
 	if raid_pts + def_pts > 0:
@@ -3601,9 +3601,15 @@ func _put_out(a: Athlete) -> void:
 
 ## Rough play: a green card is a warning; a second offence is a yellow card, two
 ## minutes off and a technical point to the other side.
+## The referee blows (Sfx.whistle), from where he stands; in the menus' match behind, only faintly.
+func _whistle(kind: String) -> void:
+	var at: Vector3 = officials.referee.global_position + Vector3.UP * 1.6 if officials and officials.referee else Vector3.ZERO
+	Sfx.whistle(kind, at, arena.arena_id == "dome", -16.0 if attract else -2.0)
+
+
 func _card(a: Athlete) -> void:
 	a.cards += 1
-	Sfx.play("whistle", -4.0, 1.15)
+	_whistle("short")
 	if a.cards == 1:
 		officials.show_card(C_GREEN_CARD)
 		_post_messages.append([tr("EV_GREEN_CARD").format({"name": a.display_name()}), C_GREEN_CARD])
@@ -3850,6 +3856,7 @@ func _next_raid(after_timeout := false) -> void:
 			officials.signal_call("half")
 			hud.banner(tr("HALF_TIME"))
 			Sfx.play("buzzer", -4.0)
+			_whistle("long")
 			return
 		if teams[0].score == teams[1].score and bool(config.get("knockout", false)):
 			_start_tiebreak()
@@ -3916,7 +3923,7 @@ func _start_timeout(t: int) -> void:
 	_set_phase("timeout")
 	officials.signal_call("timeout")
 	hud.banner(tr("TIMEOUT_BY").format({"team": String(tm.id)}))
-	Sfx.play("whistle", -4.0)
+	_whistle("double")
 	for a in athletes:
 		if a.on_mat:
 			a.set_state("walk")
@@ -3983,6 +3990,7 @@ func _end_match() -> void:
 	_set_phase("fulltime")
 	officials.signal_call("end")
 	Sfx.play("buzzer", -2.0)
+	_whistle("final")
 	Sfx.drums(false)
 	var w := _winner()
 	hud.banner(tr("FULL_TIME"))

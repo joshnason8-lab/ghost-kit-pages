@@ -1319,7 +1319,7 @@ func _languages() -> void:
 	check(all.contains("Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217."),
 		"the licences screen credits the CMU motion capture database as it asks")
 	check(["Gregor Quendel", "CC BY 4.0", "Kenney", "Fantozzi", "eXpl0it3r", "Kresiek The Furry", "jasinski", "Thimras",
-		"Wolfgang_"].all(func(w): return all.contains(w)), "the licences screen credits every recorded sound's author")
+		"Wolfgang_", "Whistle sounds from Pixabay", "charlesheffley009", "framptones"].all(func(w): return all.contains(w)), "the licences screen credits every recorded sound's author")
 	# The match's words in the game's own fonts (a CanvasLayer does not pass the window's theme on).
 	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
 		"difficulty": 1, "first_raider": 0, "passive": true})
@@ -1366,6 +1366,8 @@ func _check_sounds() -> void:
 		named["amb_" + g] = true
 	for s in ["mat", "earth", "sand"]:
 		named["step_" + s] = true
+	for w in ["short", "long", "double", "final", "gym"]:
+		named["whistle_" + w] = true
 	var missing := named.keys().filter(func(k): return not Sfx.streams.has(k) and not Sfx.streams.has(k + "_1"))
 	check(named.size() > 25 and missing.is_empty(), "every sound the code plays (%d) is one the game has %s" % [named.size(), str(missing)])
 	var loops := Sfx.AMBIENCE.map(func(g): return "amb_" + g) + ["crowd_loop"]

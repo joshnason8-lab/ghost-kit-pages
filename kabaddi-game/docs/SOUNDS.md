@@ -27,6 +27,11 @@ Made from the downloads by `tools/audio/make_recorded.py`: mono, 22.05 kHz, sile
 | `amb_beach.ogg` | The sea at Puri: the recording's four waves, overlapping round a 16 s loop | [Beach Ocean Waves](https://opengameart.org/content/beach-ocean-waves) | jasinski | CC0 |
 | `amb_village.ogg` | Birds at the village ground at dusk (16 s loop of `park_ambience_birds`) | [Park ambiences](https://opengameart.org/content/park-ambiences) | Thimras | CC0 |
 | `amb_stadium.ogg` | Crickets outside the floodlit stadium at night (10 s loop) | [Crickets Ambient Noise - loopable](https://opengameart.org/content/crickets-ambient-noise-loopable) | Wolfgang_ | CC0 |
+| `whistle_short_1..3.ogg` | The referee's short pip: an empty raid, a card (`short_a`, `_b`, `_c`) | Pixabay 568615, 291816, 6121 | charlesheffley009, framptones, freesound_community | Pixabay Content License |
+| `whistle_long_1..3.ogg` | The long blast: a raid starting, a point, half-time (`long_a`, `_b`, `_c`) | Pixabay 568615, 291816, 6121 | charlesheffley009, framptones, freesound_community | Pixabay Content License |
+| `whistle_double.ogg` | Two quick pips: a time-out | Pixabay 568615 ("Referee whistle") | charlesheffley009 | Pixabay Content License |
+| `whistle_final.ogg` | Short, short, long: full time | Pixabay 568615 | charlesheffley009 | Pixabay Content License |
+| `whistle_gym.ogg` | A long blast in a hall, with its echo: the dome's long blasts | Pixabay 6320 ("Referee whistle blow, gymnasium") | freesound_community | Pixabay Content License |
 | `menu_music.ogg` | The menus' music (an edited loop, `tools/audio/make_menu_music.py`) | "Indian", Pixabay track 611803 | LNPLUSMUSIC | Pixabay Content License |
 
 The dome is indoors and has no ambience of its own: its crowd is its sound.
@@ -39,10 +44,17 @@ The dome is indoors and has no ambience of its own: its crowd is its sound.
 | `yell_aaja`, `yell_pakad`, `yell_shabash`, `yell_chal`, `yell_haan`, `yell_nahi`, `yell_touch` | Players' shouts in Hindi | `tools/audio/make_voices.py` |
 | `crowd_chant`, `crowd_ooh`, `crowd_groan`, `clap` | The crowd chanting, a near miss, a lost point, one clap | `tools/audio/make_sounds.py` (layered synthetic voices) |
 | `grunt_1..5`, `oof_1..3`, `exhale_1..2`, `hup_1..2` | Players' efforts and breaths | `tools/audio/make_sounds.py` (a source-filter voice) |
-| whistle, buzzer, whoosh, gavel, dhol loop, bid | The officials' whistle, the clock's buzzer, moves through the air, the auction | Synthesised at startup in `autoload/sfx.gd` |
+| buzzer, whoosh, gavel, dhol loop, bid | The clock's buzzer, moves through the air, the auction | Synthesised at startup in `autoload/sfx.gd` |
+
+The whistles (0.11.1) were supplied by the owner from Pixabay through the shared assets (`shared-assets/sounds/whistle/`,
+trimmed, mono, loudness-matched to about -16 LUFS); they are copied in unchanged. The Pixabay licence asks for no
+credit; they are credited anyway, as "Whistle sounds from Pixabay".
 
 ## How they play (autoload/sfx.gd)
 
+- **The referee's whistle** (`Sfx.whistle`, `Match._whistle`) from where he stands, a take picked at random: a long
+  blast as a raid starts, after a point and at half-time (in the dome, the hall take); a short pip after an empty raid
+  and for a card; two pips for a time-out; short-short-long at full time. Faint (-16 dB) in the home screen's match.
 - **Spatial:** footsteps, tackles' thuds and touches play from where they happen (`Sfx.play_at`, `AudioStreamPlayer3D`),
   louder near the camera and panned to their side. Each player's feet sound a step each stride on the ground's
   surface (`Athlete._footsteps`, `Arena.step_surface`), harder the faster he goes; none for the menus' match behind.
@@ -57,8 +69,6 @@ The dome is indoors and has no ambience of its own: its crowd is its sound.
 
 Searched kenney.nl and opengameart.org (Freesound and Pixabay are blocked from here):
 
-- **A referee's pea whistle.** The two whistles found were a long musical whistle and short electronic beeps; the
-  synthesised pea whistle stays.
 - **A dhol** (or tabla, or any Indian drum). Only war drums turned up; the synthesised dhol loop stays.
 - **Regional chants:** a real crowd chanting "kabaddi, kabaddi", or in Marathi, Tamil, Telugu, Kannada, Bengali or
   Punjabi. The crowd's chant and the players' shouts are still synthesised.

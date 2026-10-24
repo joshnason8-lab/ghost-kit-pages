@@ -127,6 +127,22 @@ front, so whoever a camera saw from behind still showed it their face.
   dome 150 → 164 MB and Gaon Maidan 154 → 168 MB). The draw calls, primitives and objects are the same (on Low, the
   dome's 100 and 217, 634k, 315; Gaon Maidan's 102 and 220, 668k, 318).
 
+## 0.11.1: one beta signing key, and the referee's real whistle
+
+- **Signing**: every Android build made a new random key (`keytool -genkeypair`), and the APK was then signed with
+  uber-apk-signer's own debug key, so a new beta could refuse to install over the last ("failure conflict" in
+  Obtainium). Both Android workflows (`.github/workflows/kabaddi-android.yml` and the game's own copy) now decode the
+  owner's beta keystore from the `BETA_KEYSTORE_B64` secret (PKCS12, alias `androiddebugkey`, password `android`) and
+  sign with it; without the secret they fall back to a throwaway key with a warning. After signing they log the
+  APK's certificate SHA-256 and fail if the secret is set and it is not
+  `6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3`. The Play
+  bundle's upload key is untouched. Going from an earlier beta to this one needs one uninstall.
+- **Whistles**: the owner's real referee whistles (Pixabay, through `shared-assets/sounds/whistle/`) replace the
+  synthesised one, played from the referee (`Sfx.whistle`, `Match._whistle`): a long blast as a raid starts, after a
+  point and at half-time (the hall take in the dome), a short pip after an empty raid and for a card, a double for a
+  time-out, the final whistle at full time; faint in the home screen's match. Credited on the Licences screen and in
+  SOUNDS.md; test_runner checks each one is there and loads.
+
 ## 0.11.0: real sounds
 
 The lead asked for realistic, non-cartoonish sounds from kenney.nl and opengameart.org (CC0, CC BY, CC BY-SA or
