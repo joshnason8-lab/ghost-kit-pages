@@ -89,12 +89,25 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
 
+      # The beta key: the owner's shared keystore (repository secret BETA_KEYSTORE_B64, PKCS12, storepass and keypass
+      # "android", alias "androiddebugkey"), so every beta installs over the last. Without the secret, a throwaway
+      # key for the export (the APK is then signed with uber-apk-signer's fixed debug key below).
       - name: Configure Android export
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
         run: |
           KEYSTORE=$HOME/debug.keystore
-          keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
-            -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
-            -keyalg RSA -keysize 2048 -validity 10000
+          echo "KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
+          if [ -n "$BETA_KEYSTORE_B64" ]; then
+            echo "$BETA_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "BETA_KEY=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::BETA_KEYSTORE_B64 is not set: this APK is signed with uber-apk-signer's debug key, not the owner's beta key, so it will not install over betas signed with that key."
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+            echo "BETA_KEY=0" >> "$GITHUB_ENV"
+          fi
           SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
           mkdir -p ~/.config/godot
           # Let the editor create its settings file, then point it at the runner's SDK and JDK.
@@ -123,14 +136,28 @@ jobs:
           godot --headless --path . --export-release "Android" build/unsigned.apk
           ls -la build
 
-      # Signed with uber-apk-signer's built-in debug key, the key the chat APKs use, so either installs over
-      # the other and keeps the player's saves.
+      # Signed with the owner's beta key when the secret is set (so each beta installs over the last and keeps the
+      # player's saves), else with uber-apk-signer's fixed debug key. The certificate's SHA-256 goes in the log, and
+      # with the secret it must be the owner's.
       - name: Sign APK
         run: |
           curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
-          java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed
-          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk
+          if [ "$BETA_KEY" = 1 ]; then
+            java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed \
+              --ks "$KEYSTORE" --ksAlias androiddebugkey --ksPass android --ksKeyPass android
+          else
+            java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed
+          fi
+          mv ${PROJECT_DIR}/build/signed/*.apk ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk
           ls -la ${PROJECT_DIR}/build
+          APKSIGNER=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/*/apksigner | sort -V | tail -1)
+          CERT=$("$APKSIGNER" verify --print-certs ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk | grep -m1 "certificate SHA-256 digest" | sed 's/.*digest: *//' | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
+          echo "APK signing certificate SHA-256: $CERT"
+          WANT="6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3"
+          if [ "$BETA_KEY" = 1 ] && [ "$CERT" != "$WANT" ]; then
+            echo "::error::The APK is not signed with the owner's beta key (got $CERT)."
+            exit 1
+          fi
           python3 ${PROJECT_DIR}/tools/check_pages.py ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk
 
       - uses: actions/upload-artifact@v4

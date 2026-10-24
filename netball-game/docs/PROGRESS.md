@@ -189,3 +189,9 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   loudness (the loudest 100 ms above 120 Hz); those the home screen's match already played (whistle, ring, net,
   applause, click) are matched to the sounds they replace, and that match asks for nothing new (no bed, steps,
   catches or reactions: a test checks), so the home screen is no louder.
+- **The beta signing key** (October 2026, the owner's fix for "failure conflict" updates): with the repository
+  secret BETA_KEYSTORE_B64 set, the Android workflow signs the APK with the owner's shared beta key and fails if
+  its certificate's SHA-256 is not 6F:23:A9:...:7B:A3 (logged on every build). Without it, uber-apk-signer's fixed
+  debug key, as before, with a warning. The first build on the owner's key does not install over earlier betas
+  (a one-time uninstall); every one after it does.
+
