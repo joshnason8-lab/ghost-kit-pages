@@ -235,13 +235,13 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 ## Done (0.8.2-beta, one beta key, 24 October 2026)
 
 Every game's betas are now signed with the owner's beta key (the BETA_KEYSTORE_B64 repository secret, a PKCS12
-keystore), so Obtainium and Android install each over the last. Hurling Heroes' betas were already signed with one
-fixed key (uber-apk-signer's built-in debug key, SHA-256 FA:75:FA:DC:...:CC:76), so they did not have the other
-games' new-key-every-build fault; but that is not the owner's key, so 0.8.2 is a one-time reinstall (uninstall
-first; saves are lost once). `.github/workflows/hurling-android.yml` (and the standalone copy) decodes the secret,
-signs both APKs with it and fails if their certificate's SHA-256 is not the owner's
-(6F:23:A9:36:...:69:7B:A3); without the secret it falls back to the uber-apk-signer key with a warning. The Play
-bundle's upload key is unchanged.
+keystore), so Obtainium and Android install each over the last. Hurling Heroes had the fault too: the APKs were
+exported unsigned and signed by uber-apk-signer, which took the runner's own debug key, a different one each build
+(0.8.1 FA:75:FA:DC..., 0.8.2 4C:D4:83:31...). `.github/workflows/hurling-android.yml` (and the standalone copy)
+decodes the secret, signs both APKs with it, logs their certificate's SHA-256 and fails if it is not the owner's
+(6F:23:A9:36:...:69:7B:A3); without the secret it warns that the build will not install over earlier ones. 0.8.2
+was built before the secret was in place, so it still has a key of its own; the first build with the owner's key
+needs one uninstall. The Play bundle's upload key is unchanged.
 
 ## Done (0.8.1-beta, the referee's whistle, 24 October 2026)
 

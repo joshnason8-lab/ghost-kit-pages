@@ -11,10 +11,10 @@ Each new beta installs over the last and keeps your saves.
 
 ## New in 0.8.2
 
-- **Signed with the owner's beta key**, the same one every game's beta now uses, so every later beta installs over
-  this one and keeps your saves. Once only: 0.8.2 will not install over 0.8.1 or earlier (they were signed with a
-  different key). Uninstall Hurling Heroes, then install 0.8.2; this clears your saves (the championship and
-  settings) this one time.
+- **One signing key from now on.** Until now each beta was signed with a key of its own, so Android refused to
+  install a new beta over the last ("failure conflict"). The builds are now signed with the owner's beta key, the same
+  one every game uses: uninstall Hurling Heroes once (this clears its saves) and install the latest; every beta after
+  that installs over it and keeps your saves.
 
 ## New in 0.8.1
 
