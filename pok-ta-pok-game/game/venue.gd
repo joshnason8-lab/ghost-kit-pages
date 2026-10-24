@@ -72,7 +72,7 @@ func _environment() -> void:
 	var sky := Sky.new()
 	var pm := PanoramaSkyMaterial.new()
 	pm.panorama = load("res://assets/env/sky/%s_sky_2k.jpg" % sky_name)
-	pm.energy_multiplier = {"day": 1.0, "dusk": 1.0, "night": 1.6}.get(time(), 1.0)
+	pm.energy_multiplier = {"day": 1.0, "dusk": 1.0, "night": 1.0}.get(time(), 1.0)
 	sky.sky_material = pm
 	sky.radiance_size = Sky.RADIANCE_SIZE_32 if g == Game.GFX_LOW else Sky.RADIANCE_SIZE_128
 	env.background_mode = Environment.BG_SKY
@@ -83,13 +83,13 @@ func _environment() -> void:
 		# Low: a flat ambient light the colour of the sky, read from its HDR once (tools/env/sky_light.py).
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		env.ambient_light_color = amb_c
-		env.ambient_light_energy = {"day": 0.55, "dusk": 0.6, "night": 0.42}.get(time(), 0.5)
+		env.ambient_light_energy = {"day": 0.55, "dusk": 0.6, "night": 0.22}.get(time(), 0.5)
 	else:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_energy = {"day": 0.6, "dusk": 0.65, "night": 0.6}.get(time(), 0.6)
+		env.ambient_light_energy = {"day": 0.6, "dusk": 0.65, "night": 0.14}.get(time(), 0.6)
 		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = {"day": 0.95, "dusk": 1.05, "night": 1.2}.get(time(), 1.0)
+	env.tonemap_exposure = {"day": 0.95, "dusk": 1.05, "night": 0.8}.get(time(), 1.0)
 	env.tonemap_white = 6.0
 	var hor: Array = d.get("horizon", [0.8, 0.8, 0.8])
 	env.fog_enabled = true
@@ -113,7 +113,7 @@ func _environment() -> void:
 	sun.rotation = Vector3(-elev, az, 0)
 	var sc: Array = d.get("sun_colour", [1, 1, 1])
 	sun.light_color = Color(float(sc[0]), float(sc[1]), float(sc[2]))
-	sun.light_energy = {"day": 1.25, "dusk": 1.1, "night": 0.22}.get(time(), 1.0)
+	sun.light_energy = {"day": 1.25, "dusk": 1.1, "night": 0.12}.get(time(), 1.0)
 	sun.shadow_enabled = Game.shadows_enabled()
 	sun.directional_shadow_max_distance = 60.0
 	add_child(sun)
@@ -446,15 +446,15 @@ void fragment() {
 		var l := OmniLight3D.new()
 		l.position = torches[pick[k] % torches.size()] + Vector3(0, 0.3, 0)
 		l.light_color = Color(1.0, 0.62, 0.3)
-		l.light_energy = 2.2
-		l.omni_range = 16.0
+		l.light_energy = 3.2
+		l.omni_range = 18.0
 		l.shadow_enabled = false
 		add_child(l)
 		_lights.append(l)
 	if g == Game.GFX_LOW:
 		# No lights on Low: the torches' warmth in the ambient light instead.
 		env.ambient_light_color = env.ambient_light_color.lerp(Color(1.0, 0.65, 0.4), 0.5)
-		env.ambient_light_energy = 0.75
+		env.ambient_light_energy = 0.5
 
 
 func _process(_delta: float) -> void:
@@ -462,7 +462,7 @@ func _process(_delta: float) -> void:
 		var t := Time.get_ticks_msec() / 1000.0
 		(_flames.material_override as ShaderMaterial).set_shader_parameter("time_s", t)
 		for i in _lights.size():
-			_lights[i].light_energy = 2.0 + 0.35 * sin(t * (11.0 + i) + i)
+			_lights[i].light_energy = 3.0 + 0.4 * sin(t * (11.0 + i) + i)
 
 
 # ---------------------------------------------------------------- the people
@@ -513,7 +513,7 @@ func _crowd(home: Color, away: Color) -> void:
 	add_child(crowd)
 	var palette := [home, away, Color("f2efe6"), Color("2a2a2e")]
 	crowd.build(spectator_spots(), Game.crowd_density(), palette, hash(id) % 1000)
-	crowd.set_light({"day": 1.0, "dusk": 0.82, "night": 0.55}.get(time(), 1.0))
+	crowd.set_light({"day": 1.0, "dusk": 0.8, "night": 0.4}.get(time(), 1.0))
 
 
 # ---------------------------------------------------------------- helpers

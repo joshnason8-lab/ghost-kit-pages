@@ -132,7 +132,7 @@ uniform sampler2D sheet : source_color, filter_linear_mipmap;
 uniform float figs = 16.0;
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
-uniform float light = 1.0;
+uniform float light_k = 1.0;
 varying vec4 data;
 varying float back;
 void vertex() {
@@ -153,7 +153,7 @@ void fragment() {
 	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + back) * 0.5);
 	vec4 c = texture(sheet, uv);
 	if (c.a < 0.5) discard;
-	ALBEDO = c.rgb * light * (0.88 + 0.24 * data.y);
+	ALBEDO = c.rgb * light_k * (0.88 + 0.24 * data.y);
 }
 """
 	_mat = ShaderMaterial.new()
@@ -216,4 +216,4 @@ static func set_excite(k: float) -> void:
 
 
 static func set_light(k: float) -> void:
-	material().set_shader_parameter("light", k)
+	material().set_shader_parameter("light_k", k)
