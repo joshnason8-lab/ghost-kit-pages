@@ -135,7 +135,10 @@ func setup(body: Body, look: Dictionary) -> void:
 		_shader.code = SHADER
 	material = ShaderMaterial.new()
 	material.shader = _shader
-	var tex_file := file.replace("_low", "").replace("_mid", "")
+	# The texture: 1024 px on Low, 2048 px (man_2k.jpg) on Medium and High.
+	var tex_file := file.replace("_low", "").replace("_mid", "") + ("" if gfx <= Game.GFX_LOW else "_2k")
+	if not ResourceLoader.exists(DIR + tex_file + ".jpg"):
+		tex_file = tex_file.trim_suffix("_2k")
 	if not _textures.has(tex_file):
 		_textures[tex_file] = load(DIR + tex_file + ".jpg")
 	material.set_shader_parameter("albedo_tex", _textures[tex_file])

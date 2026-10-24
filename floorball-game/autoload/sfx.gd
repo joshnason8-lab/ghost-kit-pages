@@ -19,6 +19,8 @@ var _steps: Array[AudioStreamPlayer3D] = []   # footsteps, heard from where they
 var _next_step := 0
 var _crowd: AudioStreamPlayer
 var _drums: AudioStreamPlayer
+var _chant: AudioStreamPlayer          # the crowd's rhythmic cheering, over the bed as an attack nears the goal
+var _chant_target := -60.0
 var _crowd_target := -60.0
 var _drums_target := -60.0
 var _music: AudioStreamPlayer
@@ -47,6 +49,9 @@ func _ready() -> void:
 	_drums = AudioStreamPlayer.new()
 	_drums.volume_db = -60.0
 	add_child(_drums)
+	_chant = AudioStreamPlayer.new()
+	_chant.volume_db = -60.0
+	add_child(_chant)
 	_music = AudioStreamPlayer.new()
 	_music.volume_db = -80.0
 	add_child(_music)
@@ -91,6 +96,8 @@ func _process(delta: float) -> void:
 		_crowd.volume_db = move_toward(_crowd.volume_db, _crowd_target, 30.0 * delta)
 	if _drums.playing:
 		_drums.volume_db = move_toward(_drums.volume_db, _drums_target, 20.0 * delta)
+	if _chant.playing:
+		_chant.volume_db = move_toward(_chant.volume_db, _chant_target, 12.0 * delta)
 	if _music.playing:
 		_music.volume_db = move_toward(_music.volume_db, _music_target, (20.0 if _music_target > _music.volume_db else 30.0) * delta)
 		if _music_target < -60.0 and _music.volume_db <= -60.0:
@@ -105,11 +112,19 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
 	if not enabled() or not streams.has(sound):
 		return
+	# A recording with takes (crowd_cheer, crowd_cheer_2, crowd_cheer_3): one of them, so a cheer is not always the same.
+	if streams.has(sound + "_2"):
+		var takes := [sound]
+		for i in range(2, 6):
+			if streams.has("%s_%d" % [sound, i]):
+				takes.append("%s_%d" % [sound, i])
+		sound = takes[randi() % takes.size()]
 	var p := _pool[_next]
 	_next = (_next + 1) % _pool.size()
 	p.stream = streams[sound]
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
+	p.stream_paused = false   # a sound asked for in a pause (the pause menu's buttons) plays
 	p.play()
 
 
@@ -141,16 +156,22 @@ func click() -> void:
 	play("click", -8.0)
 
 
-## Crowd bed: intensity 0..1; negative stops it.
+## Crowd bed: intensity 0..1; negative stops it. Near the top (an attack at the goal) the crowd's rhythmic cheering
+## rises over it.
 func crowd(intensity: float) -> void:
 	_ensure()
 	if intensity < 0.0 or not enabled():
 		_crowd.stop()
+		_chant.stop()
 		return
 	_crowd_target = lerpf(-28.0, -8.0, clampf(intensity, 0.0, 1.0))
+	_chant_target = lerpf(-60.0, -13.0, smoothstep(0.55, 0.75, intensity))
 	if not _crowd.playing:
 		_crowd.volume_db = -40.0
 		_crowd.play()
+	if _chant.stream != null and not _chant.playing:
+		_chant.volume_db = -60.0
+		_chant.play()
 
 
 ## The supporters' drum, louder as an attack builds (0..1); negative stops it.
@@ -176,8 +197,19 @@ func music(on: bool) -> void:
 		_music_target = -80.0
 
 
+## The match paused: every sound holds where it is (the crowd too) and goes on from there.
+func set_paused(on: bool) -> void:
+	for p in [_crowd, _chant, _drums]:
+		(p as AudioStreamPlayer).stream_paused = on
+	for p in _pool:
+		p.stream_paused = on
+	for p in _steps:
+		p.stream_paused = on
+
+
 func stop_all() -> void:
 	_crowd.stop()
+	_chant.stop()
 	_drums.stop()
 	for p in _pool:
 		p.stop()
@@ -214,7 +246,8 @@ func _plan_list() -> Array:
 		["crowd_loop", _crowd_loop],
 		["drums_loop", _drums_loop],
 	]
-	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music"]:
+	for k in ["crowd_cheer", "crowd_cheer_2", "crowd_cheer_3", "roar_2", "crowd_ooh", "crowd_groan", "applause",
+			"applause_2", "clap", "chant_loop", "menu_music"]:
 		todo.append([k, null])
 	for kind in VOICES:
 		for i in int(VOICES[kind]):
@@ -224,10 +257,11 @@ func _plan_list() -> Array:
 
 func _finish() -> void:
 	_built = true
-	for k in ["crowd_loop", "drums_loop", "menu_music"]:
+	for k in ["crowd_loop", "drums_loop", "chant_loop", "menu_music"]:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
 	_crowd.stream = streams.get("crowd_loop")
+	_chant.stream = streams.get("chant_loop")
 	_drums.stream = streams.get("drums_loop")
 	_music.stream = streams.get("menu_music")
 

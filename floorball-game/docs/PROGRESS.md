@@ -121,6 +121,27 @@ From the lead's brief (better sounds, from kenney.nl and opengameart.org):
   sound with its source, author and licence, and what could not be found (a pea whistle, the plastic ball and the
   boards, stick on stick, shoe squeaks, a hall horn, a Nordic floorball crowd's drums and chants).
 
+### 0.7.0-beta: the size update (24 October 2026)
+
+From the lead's brief (the APK may grow, up to about 150 MB, for looks and sound; Low exactly as it was):
+- **Sharper on Medium and High only**, as separate files those levels load: the floor's scans (rubber tiles; the
+  school's boards) at 2048 px with their normal maps (they were imported at 512 px, which Low keeps), the players'
+  and referees' textures at 2048 px (Low keeps 1024; cut from the owner's 4096 px originals), all VRAM-compressed
+  (ETC2 on Android) with mipmaps. 4096 px was tried on paper and left: at the game's camera distances 2048 already
+  passes the screen's own resolution, and it would have added about 40 MB and 30 MB of video memory for nothing seen.
+- **A fuller crowd on Medium and High**: a second sheet at twice the size (assets/crowd/crowd_atlas_hd.png, 2048 x 2048,
+  128 x 256 cut-outs) with five spectators rather than two: a heavier man in grey trousers, a fair-haired woman in
+  jeans, a man in chinos, beside the original two (tools/crowd/make_atlas.gd --hd). A scarf and a cap were made and
+  left out: at this size they read as a bib and a floating hat.
+- **Richer sound**: the crowd's recordings in stereo, the bed 27 s instead of 16, its rhythmic cheering rising over it
+  as an attack nears the goal, three goal cheers, two roars and two applauses taken at random; everything holds in a
+  pause.
+- A test: Low loads exactly its old files (the 1024 px players, the 512 px floor, the two-person crowd sheet); Medium
+  and High their 2048 px ones and the HD sheet.
+- perf_probe, before -> after (draw calls / triangles the same at every level; video memory, this machine):
+  Low arena 29.8 -> 29.8 MB, hall 30.4 -> 30.4, school 30.5 -> 30.5; Medium 44.5-45.4 -> 58.6-59.6 MB; High
+  57.6-59.3 -> 71.8-73.5 MB. APK 0.6.0: 41.79 MB.
+
 ## Next (in order)
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's

@@ -11,27 +11,39 @@ extends MultiMeshInstance3D
 var spots_built := PackedVector3Array()   # where each spectator sits (this node's space), as built
 var facings := PackedFloat32Array()        # each one's facing in turns (the shader's INSTANCE_CUSTOM.w)
 const SHEET := "res://assets/crowd/crowd_atlas.png"
-const COLS := 16.0            # cut-outs across the sheet; 4 rows
+## Medium and High: a sheet at twice the size with five spectators rather than two (make_atlas.gd --hd).
+const SHEET_HD := "res://assets/crowd/crowd_atlas_hd.png"
+const COLS := 16.0            # cut-outs across the sheet; 4 rows (8 on the HD sheet)
 const ROWS := 4.0
+const ROWS_HD := 8.0
+const FIGURES := 2            # people on the sheet (5 on the HD sheet)
+const FIGURES_HD := 5
 const POSES := 5              # sit, lean, clap, cheer, fist (make_atlas.gd's POSES)
 const VIEWS := 5              # 0, 45, 90, 135, 180 degrees round the person
 const FRAME := Vector2(1.1, 2.2)   # metres a cut-out shows (make_atlas.gd: FRAME_H, cells 1:2)
 
-static var _sheet: Texture2D
-static var _mat: ShaderMaterial
+static var _sheets := {}     # by hd
+static var _mats := {}
 
 var spots: Array[Vector3] = []   # where people sit (the floor under their feet)
 
 
+## The HD sheet on Medium and High (if it is there).
+static func hd() -> bool:
+	return int(Game.settings.graphics) != Game.GFX_LOW and ResourceLoader.exists(SHEET_HD)
+
+
 static func sheet() -> Texture2D:
-	if _sheet == null:
-		_sheet = load(SHEET)
-	return _sheet
+	var k := hd()
+	if not _sheets.has(k):
+		_sheets[k] = load(SHEET_HD if k else SHEET)
+	return _sheets[k]
 
 
 static func material() -> ShaderMaterial:
-	if _mat:
-		return _mat
+	var k := hd()
+	if _mats.has(k):
+		return _mats[k]
 	var sh := Shader.new()
 	sh.code = """
 shader_type spatial;
@@ -40,6 +52,7 @@ uniform sampler2D sheet : source_color, filter_linear_mipmap, repeat_disable;
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
+uniform vec2 grid = vec2(16.0, 4.0);   // the sheet's cut-outs across and down
 varying vec2 cell;       // the cut-out's column and row
 varying float mirror;
 varying vec3 shirt;
@@ -65,7 +78,7 @@ void vertex() {
 	float view = clamp(floor(abs(ang) / 0.7853982 + 0.5), 0.0, 4.0);
 	mirror = ang < 0.0 ? 1.0 : 0.0;
 	float idx = (model * 5.0 + pose) * 5.0 + view;
-	cell = vec2(mod(idx, 16.0), floor(idx / 16.0));
+	cell = vec2(mod(idx, grid.x), floor(idx / grid.x));
 	tone = mix(vec3(1.0), vec3(0.42, 0.33, 0.27), d.y);
 	// Seated, a person fills only the cut-out's lower 70%: the quad shrinks to that (less overdraw).
 	float seated = step(pose, 2.5);
@@ -80,7 +93,7 @@ void vertex() {
 }
 void fragment() {
 	float u = mirror > 0.5 ? 1.0 - uv.x : uv.x;
-	vec4 c = texture(sheet, (cell + vec2(u, uv.y)) / vec2(16.0, 4.0));
+	vec4 c = texture(sheet, (cell + vec2(u, uv.y)) / grid);
 	if (c.a < 0.25) discard;
 	float is_shirt = smoothstep(0.8, 0.95, c.a);
 	float is_skin = (1.0 - is_shirt) * smoothstep(0.5, 0.62, c.a);
@@ -90,10 +103,12 @@ void fragment() {
 	ALBEDO = col * light;
 }
 """
-	_mat = ShaderMaterial.new()
-	_mat.shader = sh
-	_mat.set_shader_parameter("sheet", sheet())
-	return _mat
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("sheet", sheet())
+	m.set_shader_parameter("grid", Vector2(COLS, ROWS_HD if k else ROWS))
+	_mats[k] = m
+	return m
 
 
 ## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours), the
@@ -133,7 +148,7 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, share := 
 		var aim := Vector3(clampf(p.x, -11.0, 11.0), 0.0, clampf(p.z, -2.0, 2.0)) - p
 		var facing := fposmod(atan2(aim.x, aim.z) / TAU, 1.0)
 		facings[i] = facing
-		var model := rng.randi_range(0, 1)
+		var model := rng.randi_range(0, (FIGURES_HD if hd() else FIGURES) - 1)
 		var idle: int = [0, 0, 1, 2][rng.randi_range(0, 3)]
 		var tone := 0.0 if rng.randf() < 0.75 else rng.randf_range(0.25, 1.0)
 		mm.set_instance_custom_data(i, Color(model + idle * 0.1, tone, rng.randf(), facing))

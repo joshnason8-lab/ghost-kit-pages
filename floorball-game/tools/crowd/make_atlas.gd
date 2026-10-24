@@ -8,8 +8,12 @@ extends Node
 ## shirt is baked light grey and the game tints it per person; the skin takes a tone per person. The athletes' kit
 ## below the waist becomes jeans or dark trousers, as spectators wear.
 ##
+## With --hd it bakes assets/crowd/crowd_atlas_hd.png (2048 x 2048, 128 x 256 cut-outs) for Medium and High instead:
+## five spectators rather than two (FIGURES: builds, trousers, hair, a team scarf, a cap), each in the same five poses
+## from the same five views. Low keeps crowd_atlas.png as it is.
+##
 ## The source GLBs are big (4096 px textures) and never ship; only the PNG does. Needs a window:
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/crowd/make_atlas.tscn -- man.glb woman.glb [preview.png]
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/crowd/make_atlas.tscn -- man.glb woman.glb [preview.png] [--hd]
 
 const CELL := Vector2i(64, 128)
 const SS := 4                          # supersampling: rendered at 256 x 512, boxed down
@@ -34,6 +38,18 @@ const POSES := [
 ]
 const HEIGHTS := [1.78, 1.68]          # the man, the woman
 const PANTS := [Color(0.13, 0.17, 0.27), Color(0.07, 0.07, 0.08)]
+## The spectators of the --hd sheet: which model, trousers, build (width), hair tint (1 1 1 as modelled; equal parts:
+## grey). The first two are the standard sheet's. (A scarf and a cap, made in code, are there to add, but read as a
+## bib and a floating hat at this size: off.)
+const FIGURES := [
+	{"model": 0, "pants": Color(0.13, 0.17, 0.27), "build": 1.0, "hair": Color(1, 1, 1), "scarf": false, "cap": false},
+	{"model": 1, "pants": Color(0.07, 0.07, 0.08), "build": 1.0, "hair": Color(1, 1, 1), "scarf": false, "cap": false},
+	{"model": 0, "pants": Color(0.32, 0.33, 0.35), "build": 1.14, "hair": Color(1, 1, 1), "scarf": false, "cap": false},
+	{"model": 1, "pants": Color(0.16, 0.22, 0.36), "build": 1.0, "hair": Color(4.2, 3.4, 2.0), "scarf": false, "cap": false},
+	{"model": 0, "pants": Color(0.55, 0.47, 0.34), "build": 1.06, "hair": Color(4.0, 4.0, 4.0), "scarf": false, "cap": false},
+]
+const HD_CELL := Vector2i(128, 256)
+const HD_SS := 2
 
 const KIT := """
 	vec3 t = texture(tex, UV).rgb;
@@ -66,11 +82,19 @@ render_mode cull_back, specular_schlick_ggx;
 uniform sampler2D tex : source_color, filter_linear_mipmap;
 uniform float waist = 0.6;
 uniform vec3 pants : source_color = vec3(0.1, 0.12, 0.2);
+uniform vec3 hair = vec3(1.0);
+uniform float neck = 9.0;
 varying float wy;
 void vertex() { wy = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y; }
 void fragment() {
 %s
 	vec3 c = t;
+	// Hair: above the neck, not kit, darker than the face (the models' auburn hair passes for skin by its hue), tinted
+	// (fair, grey) where asked.
+	float is_hair = step(neck, wy) * (1.0 - kit) * (1.0 - smoothstep(0.2, 0.3, lum));
+	vec3 grey = vec3(dot(c, vec3(0.3333)));
+	vec3 tinted = min((hair.r == hair.b ? grey : c) * hair, vec3(0.9));
+	c = mix(c, tinted, is_hair);
 	c = mix(c, vec3(0.78) * clamp(lum / 0.2, 0.6, 1.25), shirt);
 	c = mix(c, pants * clamp(lum / 0.2, 0.6, 1.3), lower);
 	ALBEDO = c;
@@ -122,6 +146,10 @@ void fragment() {
 	var basis := Basis(Vector3.RIGHT, -p)
 	_cam.transform = Transform3D(basis, basis.y * FRAME_H * 0.5 + basis.z * 15.0)
 	_cam.current = true
+	if "--hd" in args:
+		await _bake_hd(args)
+		get_tree().quit()
+		return
 
 	var atlas := Image.create_empty(COLS * CELL.x, 4 * CELL.y, false, Image.FORMAT_RGBA8)
 	atlas.fill(Color(0, 0, 0, 0))
@@ -153,6 +181,119 @@ void fragment() {
 		preview.save_png(args[2])
 	print("saved res://assets/crowd/crowd_atlas.png")
 	get_tree().quit()
+
+
+## The --hd sheet: FIGURES x POSES x VIEWS cut-outs of HD_CELL, 16 across.
+func _bake_hd(args: Array) -> void:
+	_vp.size = HD_CELL * HD_SS
+	var atlas := Image.create_empty(COLS * HD_CELL.x, 8 * HD_CELL.y, false, Image.FORMAT_RGBA8)
+	atlas.fill(Color(0, 0, 0, 0))
+	var preview := Image.create_empty(VIEWS.size() * HD_CELL.x, FIGURES.size() * POSES.size() * HD_CELL.y, false, Image.FORMAT_RGBA8)
+	preview.fill(Color(0.3, 0.3, 0.35, 1))
+	var models := [_load(args[0], HEIGHTS[0]), _load(args[1], HEIGHTS[1])]
+	for m in models:
+		(m as Model).root.visible = false
+	for fi in FIGURES.size():
+		var f: Dictionary = FIGURES[fi]
+		var md: Model = models[int(f.model)]
+		md.root.visible = true
+		var extras := _accessories(md, f)
+		for pi in POSES.size():
+			var hip_y := _pose(md, POSES[pi])
+			md.root.scale = Vector3(f.build, 1.0, f.build)
+			var neck_y := _world(md, md.bones.Neck).y + 0.06
+			for vi in VIEWS.size():
+				md.root.rotation.y = -deg_to_rad(VIEWS[vi])
+				_set_material(md, false, hip_y, f.pants, f.hair, neck_y)
+				_paint(extras, false)
+				var col := await _grab()
+				_set_material(md, true, hip_y, f.pants, f.hair, neck_y)
+				_paint(extras, true)
+				var cls := await _grab()
+				var idx: int = (fi * POSES.size() + pi) * VIEWS.size() + vi
+				var cell := Image.create_empty(HD_CELL.x, HD_CELL.y, false, Image.FORMAT_RGBA8)
+				cell.fill(Color(0, 0, 0, 0))
+				_down(col, cls, cell, Vector2i.ZERO, HD_CELL, HD_SS)
+				atlas.blit_rect(cell, Rect2i(Vector2i.ZERO, HD_CELL), Vector2i((idx % COLS) * HD_CELL.x, (idx / COLS) * HD_CELL.y))
+				var shown := cell.duplicate() as Image
+				preview.blend_rect(shown, Rect2i(Vector2i.ZERO, HD_CELL), Vector2i(vi * HD_CELL.x, (fi * POSES.size() + pi) * HD_CELL.y))
+				print("hd cell %d: figure %d %s view %d" % [idx, fi, POSES[pi].name, VIEWS[vi]])
+		for e in extras:
+			(e as Node).queue_free()
+		md.root.scale = Vector3.ONE
+		md.root.visible = false
+	atlas.save_png(ProjectSettings.globalize_path("res://assets/crowd/crowd_atlas_hd.png"))
+	if args.size() > 2 and not String(args[2]).begins_with("--"):
+		preview.save_png(args[2])
+	print("saved res://assets/crowd/crowd_atlas_hd.png")
+
+
+## A figure's extras, fixed to its bones: a scarf round the neck with its ends down the chest (the shirt's class, so the
+## game tints it the person's colour), a cap. Returns them as [node, class]: "shirt" or "other".
+func _accessories(md: Model, f: Dictionary) -> Array:
+	var out := []
+	var k := md.skel.global_transform.basis.get_scale().x
+	if f.scarf:
+		var at := BoneAttachment3D.new()
+		at.bone_idx = md.bones.Neck
+		md.skel.add_child(at)
+		var holder := Node3D.new()
+		holder.scale = Vector3.ONE / k
+		at.add_child(holder)
+		var ring := MeshInstance3D.new()
+		var t := TorusMesh.new()
+		t.inner_radius = 0.055
+		t.outer_radius = 0.1
+		ring.mesh = t
+		ring.position = Vector3(0, -0.02, 0.0)
+		holder.add_child(ring)
+		var end := MeshInstance3D.new()
+		var b := BoxMesh.new()
+		b.size = Vector3(0.09, 0.32, 0.025)
+		end.mesh = b
+		end.position = Vector3(0.05, -0.19, 0.1)
+		end.rotation_degrees = Vector3(-8, 0, 6)
+		holder.add_child(end)
+		out.append(at)
+		at.set_meta("cls", "shirt")
+	if f.cap:
+		var at := BoneAttachment3D.new()
+		at.bone_idx = md.bones.Head
+		md.skel.add_child(at)
+		var holder := Node3D.new()
+		holder.scale = Vector3.ONE / k
+		at.add_child(holder)
+		var crown := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.105
+		sm.height = 0.12
+		sm.is_hemisphere = true
+		crown.mesh = sm
+		crown.position = Vector3(0, 0.165, -0.01)
+		holder.add_child(crown)
+		var brim := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.17, 0.012, 0.1)
+		brim.mesh = bm
+		brim.position = Vector3(0, 0.168, 0.1)
+		holder.add_child(brim)
+		out.append(at)
+		at.set_meta("cls", "other")
+	return out
+
+
+func _paint(extras: Array, cls: bool) -> void:
+	for e in extras:
+		var shirt: bool = (e as Node).get_meta("cls") == "shirt"
+		var m := StandardMaterial3D.new()
+		if cls:
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			m.albedo_color = Color(1, 0, 0) if shirt else Color(0, 0, 1)
+		else:
+			m.albedo_color = Color(0.78, 0.78, 0.78) if shirt else Color(0.12, 0.14, 0.2)
+			m.roughness = 0.85
+		for mi in (e as Node).find_children("*", "MeshInstance3D", true, false):
+			(mi as MeshInstance3D).material_override = m
 
 
 class Model:
@@ -263,12 +404,15 @@ func _world(md: Model, b: int) -> Vector3:
 	return md.skel.global_transform * _global(md, b).origin
 
 
-func _set_material(md: Model, cls: bool, hip_y: float, pants: Color) -> void:
+func _set_material(md: Model, cls: bool, hip_y: float, pants: Color, hair := Color(1, 1, 1), neck_y := 9.0) -> void:
 	var m := ShaderMaterial.new()
 	m.shader = _class_shader if cls else _colour_shader
 	m.set_shader_parameter("tex", md.tex)
 	m.set_shader_parameter("waist", hip_y)
 	m.set_shader_parameter("pants", pants)
+	if not cls:
+		m.set_shader_parameter("hair", Vector3(hair.r, hair.g, hair.b))
+		m.set_shader_parameter("neck", neck_y)
 	for mi in md.meshes:
 		(mi as MeshInstance3D).material_override = m
 
@@ -282,21 +426,21 @@ func _grab() -> Image:
 
 
 ## Boxes a supersampled cell down: the colour of the covered pixels, covered where half are, the class most of them have.
-func _down(col: Image, cls: Image, atlas: Image, at: Vector2i) -> void:
-	for y in CELL.y:
-		for x in CELL.x:
+func _down(col: Image, cls: Image, atlas: Image, at: Vector2i, cell := CELL, ss := SS) -> void:
+	for y in cell.y:
+		for x in cell.x:
 			var sum := Color(0, 0, 0, 0)
 			var n := 0
 			var votes := [0, 0, 0]
-			for j in SS:
-				for i in SS:
-					var c := col.get_pixel(x * SS + i, y * SS + j)
+			for j in ss:
+				for i in ss:
+					var c := col.get_pixel(x * ss + i, y * ss + j)
 					if c.a > 0.5:
 						sum += c
 						n += 1
-						var k := cls.get_pixel(x * SS + i, y * SS + j)
+						var k := cls.get_pixel(x * ss + i, y * ss + j)
 						votes[0 if k.r > 0.5 else (1 if k.g > 0.5 else 2)] += 1
-			if n * 2 < SS * SS:
+			if n * 2 < ss * ss:
 				continue
 			var a := 0.4
 			if votes[0] >= votes[1] and votes[0] >= votes[2]:

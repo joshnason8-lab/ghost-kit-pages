@@ -7,10 +7,11 @@ when the game loads (so the game ships few audio files). The Licences screen cre
 
 | Sound (`assets/audio/`) | When | Source | Author | Licence |
 |---|---|---|---|---|
-| `crowd_loop.ogg` (16 s, loops) | the hall's crowd under play, louder as an attack builds | [Free Crowd Cheering Sounds](https://opengameart.org/content/free-crowd-cheering-sounds), "10 - Ambience", 12-28 s | Gregor Quendel | CC BY 4.0 |
-| `crowd_cheer.ogg` (9 s) | a goal; a penalty shot scored | the same, "04 - Strong cheering - II - Short", 3-12 s | Gregor Quendel | CC BY 4.0 |
-| `roar.ogg` (7 s) | a goal, under the cheer | the same, "03 - Strong cheering - I", 4-11 s | Gregor Quendel | CC BY 4.0 |
-| `applause.ogg` (5.5 s) | the horn at the end of each period (the hall applauds the teams off) | [Applause in a large hall or church](https://opengameart.org/content/applause-in-a-large-hall-or-church), 2-7.5 s | eXpl0it3r | CC0 |
+| `crowd_loop.ogg` (27 s, stereo, loops) | the hall's crowd under play, louder as an attack builds | [Free Crowd Cheering Sounds](https://opengameart.org/content/free-crowd-cheering-sounds), "10 - Ambience", 4-31 s | Gregor Quendel | CC BY 4.0 |
+| `chant_loop.ogg` (5 s, stereo, loops) | the crowd's rhythmic cheering, rising over the bed as an attack nears the goal | the same, "08 - Rhythmic cheering", 6-11 s | Gregor Quendel | CC BY 4.0 |
+| `crowd_cheer.ogg`, `_2`, `_3` (9 s, stereo) | a goal; a penalty shot scored (one of the three, at random) | the same, "04 - Strong cheering - II - Short" 3-12 s, "02 - Strong cheering and soft rhythmic cheering" 3.5-12.5 s, "01 - Strong cheering and strong rhythmic cheering" 4-13 s | Gregor Quendel | CC BY 4.0 |
+| `roar.ogg`, `roar_2.ogg` (6-7 s, stereo) | a goal, under the cheer | the same, "03 - Strong cheering - I" 4-11 s, "09 - Ambience and cheering" 12.5-18.5 s | Gregor Quendel | CC BY 4.0 |
+| `applause.ogg`, `applause_2.ogg` (5.5 and 9 s, stereo) | the horn at the end of each period (the hall applauds the teams off) | [Applause in a large hall or church](https://opengameart.org/content/applause-in-a-large-hall-or-church), 2-7.5 s and 10-19 s | eXpl0it3r | CC0 |
 | `step_1.ogg` to `step_5.ogg` | footsteps on the hall floor: your player's and those near the ball, as each foot comes down in the motion capture, heard from where they are | [Impact Sounds](https://kenney.nl/assets/impact-sounds), `footstep_wood_000` to `_004` | Kenney | CC0 |
 | `click.ogg` | a button in the menus | [Interface Sounds](https://kenney.nl/assets/interface-sounds), `click_001` | Kenney | CC0 |
 | `crowd_ooh.ogg`, `crowd_groan.ogg`, `clap.ogg` | a near miss, a goal against | Kabaddi Raid, by the same maker | Josh Nason | the game's own |
@@ -24,7 +25,7 @@ The crowd recordings are of a stadium crowd; in the game they are the hall's cro
 ## How they are made
 
 `tools/audio/prepare_sounds.py <downloads>` cuts each from its source, fades it, makes it mono at 22,050 Hz, brings it
-to one loudness for its kind (EBU R128: one-shots -16 LUFS, the crowd bed -20; footsteps and the click, too short to
+to one loudness for its kind (the crowd's recordings in stereo) (EBU R128: one-shots -16 LUFS, the crowd bed -20; footsteps and the click, too short to
 measure, to peaks of -12 and -6 dBFS) and writes Ogg Vorbis at quality 2 (about 48 kbit/s). The crowd bed loops
 seamlessly: its last 1.5 s are crossfaded into its start.
 
@@ -36,8 +37,8 @@ Download and unpack into one folder: the Gregor Quendel zip (`gregor_quendel_-_f
 
 ## Size
 
-The new recordings are 210 KB (the crowd bed 76 KB, the cheer and roar 78 KB, the applause 33 KB, five footsteps and a
-click 23 KB), against 34 KB for the two files they replace (the crowd bed, roar and click were made in code). APK before and after: docs/PROGRESS.md.
+The recordings are 0.95 MB in all (0.7.0: the crowd in stereo, a longer bed, the chant, two more cheers, a second
+roar and applause; 0.6.0's set was 0.21 MB). APK before and after: docs/PROGRESS.md.
 
 ## Looked for and not found (for the owner to source by hand)
 

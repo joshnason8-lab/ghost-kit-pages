@@ -39,7 +39,8 @@ const STRIPS := {
 ## The signs strip's pieces, as fractions along it (make_venue.gd's SIGNS): [start, length].
 const SIGNS := {"exit": [0.0, 0.125], "door": [0.125, 0.25], "glass": [0.375, 0.25], "mat": [0.625, 0.125], "alarm": [0.75, 0.0625]}
 const SHARED := "res://assets/shared/"
-## The floor's scanned surfaces: [albedo, normal, metres a repeat, the albedo's mean brightness].
+## The floor's scanned surfaces: [albedo, normal, metres a repeat, the albedo's mean brightness] (the 1024 px files;
+## Medium and High load the same scans at 2048 px, _2k).
 const SURFACES := {
 	"rubber": ["surfaces/rubber_tiles/rubber_tiles_albedo_1k.jpg", "surfaces/rubber_tiles/rubber_tiles_normal_1k.jpg", 3.0, 0.13],
 	"wood": ["surfaces/wood_floor/wood_floor_albedo_1k.jpg", "surfaces/wood_floor/wood_floor_normal_1k.jpg", 1.4, 0.39],
@@ -221,9 +222,11 @@ func _floor() -> void:
 	var m := ShaderMaterial.new()
 	m.shader = floor_shader(_low)
 	m.set_shader_parameter("marks", floor_texture())
-	m.set_shader_parameter("surface", load(SHARED + String(src[0])))
+	# Low: the 1024 px scan, no normal map; Medium and High: the 2048 px scan and its normal map.
+	var res := "_1k" if _low else "_2k"
+	m.set_shader_parameter("surface", load(SHARED + String(src[0]).replace("_1k", res)))
 	if not _low:
-		m.set_shader_parameter("surface_n", load(SHARED + String(src[1])))
+		m.set_shader_parameter("surface_n", load(SHARED + String(src[1]).replace("_1k", res)))
 	m.set_shader_parameter("tile_m", float(src[2]))
 	m.set_shader_parameter("surface_mean", float(src[3]))
 	m.set_shader_parameter("wood", 1.0 if kind == "wood" else 0.0)

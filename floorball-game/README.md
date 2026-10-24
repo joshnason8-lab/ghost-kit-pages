@@ -6,11 +6,11 @@ Finland, Switzerland and Czechia: five and a goalkeeper a side, a plastic ball w
 low boards. Floorball Unleashed plays the international Rules of the Game in force from 1 July 2026, and dresses its menus as
 the coach's whiteboard in a Nordic sports hall.
 
-> **Status: beta 0.6.0.** The players, goalkeepers and referees are the owner's Meshy models (a man for the men's
+> **Status: beta 0.7.0.** The players, goalkeepers and referees are the owner's Meshy models (a man for the men's
 > game, a woman for the women's), in each team's colours, with the owner's stick; the rink, hall and crowd were made
 > to match them (docs/MESHY_BRIEF.md). Since 0.5 they walk, jog and run with real people's motion capture (CMU),
 > their feet planted on the floor as they run (docs/MOCAP.md); 0.6 brought a recorded crowd and footsteps
-> (docs/SOUNDS.md). 0.2 added a coach for the first match, the club season, the empty net and
+> (docs/SOUNDS.md); 0.7 sharper floors, kits and a fuller crowd on Medium and High. 0.2 added a coach for the first match, the club season, the empty net and
 > passive play, after a playtest in a browser on phone-shaped screens (docs/PLAYTEST.md). docs/BETA.md says how to
 > install and what to try; docs/PROGRESS.md has what is done and what is next.
 
@@ -37,11 +37,14 @@ the coach's whiteboard in a Nordic sports hall.
 
 `tests/perf_probe.tscn`, a match in the city arena (the biggest venue, 5,200 seats) and the sports hall, per frame:
 
-| Graphics | Arena: draw calls / triangles | Hall: draw calls / triangles | Render scale | Shadows, MSAA |
-|---|---|---|---|---|
-| Low | 81 / 53,000 | 86 / 77,000 | 75% | none, off |
-| Medium | 79 / 80,700 | 87 / 101,900 | 90% | none, 2x |
-| High | 122 / 414,100 | 130 / 450,000 | 100% | yes, 4x |
+| Graphics | Arena: draw calls / triangles | Hall: draw calls / triangles | Video memory | Render scale | Shadows, MSAA |
+|---|---|---|---|---|---|
+| Low | 79 / 48,800 | 83 / 70,200 | 30 MB | 75% | none, off |
+| Medium | 79 / 80,700 | 87 / 101,900 | 59-60 MB | 90% | none, 2x |
+| High | 122 / 414,100 | 130 / 450,300 | 72-74 MB | 100% | yes, 4x |
+
+Medium and High load sharper files than Low (0.7): the floor's scans and the players' textures at 2048 px and a
+crowd sheet of five people at twice the size; Low loads exactly what it did before (docs/PROGRESS.md).
 
 The school gym (measured with tests/arena_look's probe mode): Low 87 / 74,800, Medium 83 / 96,300, High 126 / 429,000.
 

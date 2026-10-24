@@ -34,6 +34,7 @@ func _ready() -> void:
 	await _crowd_faces()
 	_mocap()
 	_sounds()
+	_detail_levels()
 	await _matches()
 	Game.settings = keep
 	Game.delete_cup()
@@ -829,6 +830,35 @@ func _sounds() -> void:
 	check(bad.is_empty(), "sounds: every recorded sound loads (bad: %s)" % [bad])
 	var loop: Variant = Sfx.streams.get("crowd_loop")
 	check(loop is AudioStreamOggVorbis and (loop as AudioStreamOggVorbis).loop, "sounds: the crowd bed is the recording, looping")
+
+
+## The graphics levels' files: Low loads exactly what it always has (the 1024 px player textures, the floor scan at
+## 512 px, the two-person crowd sheet); Medium and High their sharper files (2048 px, the five-person crowd sheet).
+func _detail_levels() -> void:
+	var gfx: int = Game.settings.graphics
+	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		var low: bool = g == Game.GFX_LOW
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 2, "period": 4.0}
+		add_child(m)
+		var p: Player = m.players[0][1]
+		var rb: RiggedBody = p.body.rig
+		var tex: Texture2D = rb.material.get_shader_parameter("albedo_tex") if rb else null
+		var floor_tex: Texture2D = null
+		for mi in m.find_children("*", "MeshInstance3D", true, false):
+			var mat := (mi as MeshInstance3D).material_override as ShaderMaterial
+			if mat and mat.get_shader_parameter("surface") is Texture2D:
+				floor_tex = mat.get_shader_parameter("surface")
+		var want_px := 1024 if low else 2048
+		var floor_px := 512 if low else 2048   # Low's floor scan is imported at 512 px
+		check(tex != null and tex.get_width() == want_px and floor_tex != null and floor_tex.get_width() == floor_px
+			and Crowd.sheet().resource_path.ends_with("crowd_atlas.png" if low else "crowd_atlas_hd.png"),
+			"graphics %d: the player textures at %d px, the floor at %d, the %s crowd sheet (player %s, floor %s, crowd %s)" % [g,
+			want_px, floor_px, "standard" if low else "HD", tex.get_width() if tex else -1, floor_tex.get_width() if floor_tex else -1,
+			Crowd.sheet().resource_path.get_file()])
+		m.queue_free()
+	Game.settings.graphics = gfx
 
 
 # ---------------------------------------------------------------- matches

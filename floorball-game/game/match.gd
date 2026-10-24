@@ -1764,6 +1764,7 @@ func _user_side() -> int:
 
 func set_paused(p: bool) -> void:
 	paused = p
+	Sfx.set_paused(p)
 	if hud:
 		hud.show_pause(p)
 
@@ -1775,6 +1776,7 @@ func on_back() -> void:
 
 
 func quit_to_menu() -> void:
+	Sfx.set_paused(false)
 	Sfx.crowd(-1.0)
 	Game.goto_menu()
 

@@ -8,8 +8,8 @@ are not in the repository (28 to 33 MB each); what ships is what `tools/meshy/pr
 
 | Model | Source | In the game (`assets/characters/`) |
 |---|---|---|
-| Man (men's players, goalkeepers, referees) | A Meshy character, rigged by Meshy with Mixamo's 23 bone names, with Running and Walking clips; 21,500 triangles, a 4096 px texture | `man.scn` 10,800 triangles (High), `man_mid.scn` 5,400 (Medium), `man_low.scn` 2,700 (Low); `man.jpg` 1024 px |
-| Woman (women's players and goalkeepers) | The same kind, 136,500 triangles | `woman.scn` 8,500, `woman_mid.scn` 4,300, `woman_low.scn` 2,100; `woman.jpg` |
+| Man (men's players, goalkeepers, referees) | A Meshy character, rigged by Meshy with Mixamo's 23 bone names, with Running and Walking clips; 21,500 triangles, a 4096 px texture | `man.scn` 10,800 triangles (High), `man_mid.scn` 5,400 (Medium), `man_low.scn` 2,700 (Low); `man.jpg` 1024 px (Low), `man_2k.jpg` 2048 px (Medium, High) |
+| Woman (women's players and goalkeepers) | The same kind, 136,500 triangles | `woman.scn` 8,500, `woman_mid.scn` 4,300, `woman_low.scn` 2,100; `woman.jpg`, `woman_2k.jpg` |
 | Stick | A Meshy prop with a 4096 px texture (black shaft, light-blue blade), 74,000 triangles | `stick.res` 1,400 triangles, `stick.jpg` 512 px |
 | Stick, plain | The same stick untextured (white) | `stick_plain.res` (kept, unused) |
 
@@ -39,6 +39,9 @@ godot --headless --script tools/meshy/prepare.gd -- character man.glb man 10000 
 godot --headless --script tools/meshy/prepare.gd -- character woman.glb woman 10000 5000 2800 1024
 godot --headless --script tools/meshy/prepare.gd -- prop stick.glb stick 1200 512
 ```
+
+`man_2k.jpg` and `woman_2k.jpg` (Medium and High, since 0.7) are the GLBs' own 4096 px textures resized to 2048 px
+(Lanczos) and saved as JPEG at quality 90.
 
 The tool cuts each mesh with Godot's own simplifier (only triangles are dropped, so skin weights and UVs stay),
 shrinks the texture and saves the scenes. `tools/meshy/view.tscn`, `match_view.tscn`, `close_view.tscn` and
