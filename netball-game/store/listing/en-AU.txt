@@ -59,3 +59,6 @@ The crowd now faces the play from every camera.
 
 == Release notes (0.5.0) ==
 Real motion capture for defenders' side-steps and for landing a catch on the run.
+
+== Release notes (0.6.0) ==
+New sounds: catches, bounces, footsteps, the ring and net, the whistle, and a crowd that reacts to the play in every venue.

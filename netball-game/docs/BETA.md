@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.6.0-beta
+
+- **New sounds**: catches, bounces on timber and asphalt, footsteps and shoe squeaks, the ring and net, a better
+  whistle (a long one at the end of each quarter), and each venue's own atmosphere (a big arena crowd, a hall's echo,
+  birds and traffic at the park). The crowd now cheers, groans and gasps with the play (it never did before: a bug),
+  and applauds at quarter time. **Please listen on your phone and tell us what sounds off.**
+
 ## New in 0.5.0-beta
 
 - **Real motion capture** (CMU) for two moves: the defensive side-step when a player shuffles sideways, and the

@@ -5,13 +5,27 @@ extends Control
 
 const CREDITS := """[b]Netball Unleashed[/b]
 Made by Josh Nason.
-The players are Josh Nason's own 3D model. Umpires, venues, crowd, ball, flags and sounds made in code for the
-game; the menu music written for it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
+The players are Josh Nason's own 3D model. Umpires, venues, crowd, ball and flags made in code for the game; the
+menu music, the whistle and the shoe squeaks written for it (tools/audio). The crowd's ooh and groan from Kabaddi
+Raid, by the same maker.
 Venue models by Josh Nason: the arena's courtside stands, gym and park benches, oak trees, grass, terraced houses
 and the street hoop. From Poly Haven (polyhaven.com), CC0: the skies, floor and wall textures, jacaranda and
 broadleaf trees, painted benches, hall lights, clock, fire alarm, wet floor sign and street lamps.
 Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
 (The side-step and the landing: clips 102_27 and 16_08, in Bruce Hahne's BVH conversion.)"""
+
+const SOUNDS := """[b]Sounds[/b] (the full list: docs/SOUNDS.md)
+Kenney (kenney.nl), CC0: Impact Sounds, UI Audio and RPG Audio: the catches, the bounces, the ring, the net, the
+clicks and the footsteps on asphalt.
+Gregor Quendel, "Free Crowd Cheering Sounds" (opengameart.org/content/free-crowd-cheering-sounds), CC-BY 4.0: the
+cheers and the arena's crowd.
+Gregor Quendel, "Free General Ambience Sounds" (opengameart.org/content/free-general-ambience-sounds), CC-BY-SA 4.0:
+the arena's applause, the hall's crowd and the park's birds, traffic and people; adapted (cut, filtered, mixed,
+looped), the adapted sounds also CC-BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0).
+congusbongus, "Footsteps on different surfaces" (opengameart.org/content/footsteps-on-different-surfaces), from
+recordings by swuing and ceberation (freesound.org), CC-BY 3.0: the footsteps on a hall floor.
+eXpl0it3r, "Applause in a large hall or church" (opengameart.org), CC0: the hall's applause.
+qubodup, "Well Done" (opengameart.org), CC0: the park's applause."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans, Noto Sans Sinhala, Noto Sans Tamil and Noto Sans SC: Copyright The Noto Project Authors (https://github.com/notofonts).
@@ -31,6 +45,7 @@ func _ready() -> void:
 	v.add_child(UI.scroll(col))
 	col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
 	col.add_child(_text(CREDITS))
+	col.add_child(_text(SOUNDS))
 	col.add_child(_text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
 	col.add_child(_text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
 	# The engine's own parts, each with its copyright and licence, then the licences' texts.
