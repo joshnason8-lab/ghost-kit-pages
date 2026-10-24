@@ -165,22 +165,22 @@ memory with its mipmaps, not the 21 MB it would as plain pixels):
 level is counted in the next): the draw calls, triangles and video memory (all of it: textures, meshes, buffers) of
 one frame of a match.
 
-| Venue | Low (0.8.0 = 0.9.0) | Medium 0.8.0 → 0.9.0 | High 0.8.0 → 0.9.0 |
+| Venue | Low (0.8.0 = 0.9.1) | Medium 0.8.0 → 0.9.1 | High 0.8.0 → 0.9.1 |
 |---|---|---|---|
-| National Arena | 72 calls, 102k tris, 31.4 MB | 74 calls, 114k tris, 53.2 → 54.4 MB | 88 → 89 calls, 221k tris, 72.5 → 73.6 MB |
+| National Arena | 72 calls, 102k tris, 31.4 MB | 74 calls, 114k tris, 53.2 → 54.4 MB | 88 calls, 221k tris, 72.5 → 73.6 MB |
 | Grand Dome | 72 calls, 102k tris, 31.4 MB | 74 calls, 116k tris, 53.3 → 54.5 MB | 88 calls, 224k tris, 72.6 → 73.7 MB |
 | Mall atrium | 73 calls, 124k tris, 33.8 MB | 75 calls, 135k tris, 55.6 → 56.7 MB | 91 calls, 290k tris, 74.8 → 76.0 MB |
-| Provincial gym | 78 calls, 124k tris, 38.5 MB | 80 calls, 136k tris, 61.0 → 74.2 MB | 106 calls, 294k tris, 80.3 → 93.4 MB |
-| Temple court | 77 calls, 140k tris, 52.8 MB | 79 calls, 126k tris, 70.2 → 74.7 MB | 97 calls, 264k tris, 89.4 → 93.9 MB |
-| Park court | 81 calls, 107k tris, 58.7 MB | 83 calls, 137k tris, 76.1 → 83.6 MB | 102 calls, 285k tris, 95.4 → 102.9 MB |
-| Beach | 76 calls, 102k tris, 49.8 MB | 78 calls, 116k tris, 63.8 → 74.3 MB | 98 calls, 276k tris, 83.0 → 93.5 MB |
-| Night market | 86 calls, 111k tris, 50.6 MB | 88 calls, 161k tris, 73.4 → 83.9 MB | 122 calls, 315k tris, 92.6 → 103.1 MB |
+| Provincial gym | 78 calls, 124k tris, 38.5 MB | 80 calls, 136k tris, 61.0 → 66.2 MB | 106 calls, 294k tris, 80.3 → 85.4 MB |
+| Temple court | 77 calls, 140k tris, 52.8 MB | 79 calls, 126k tris, 70.2 → 70.7 MB | 97 calls, 264k tris, 89.4 → 89.9 MB |
+| Park court | 81 calls, 107k tris, 58.7 MB | 83 calls, 137k tris, 76.1 → 75.6 MB | 102 calls, 285k tris, 95.4 → 94.9 MB |
+| Beach | 76 calls, 102k tris, 49.8 MB | 78 calls, 116k tris, 63.8 → 66.3 MB | 98 calls, 276k tris, 83.0 → 85.5 MB |
+| Night market | 86 calls, 111k tris, 50.6 MB | 88 calls, 161k tris, 73.4 → 75.9 MB | 122 calls, 315k tris, 92.6 → 95.1 MB |
 
-Low is the same in every venue, to the draw call and the tenth of a megabyte. Medium and High draw the same (the
-National Arena's High frame caught a different moment: one object more); their video memory is up by 1 MB in the
-halls (the players' 2K textures, less the crowd sheet, which is smaller compressed than the old one is as plain
-pixels) and 4 to 13 MB outdoors and in the gym (the 2K surfaces and 4K skies). The most, the night market and the park
-on High, is 103 MB: within a mid-range phone's means.
+Low is the same in every venue, to the draw call and the tenth of a megabyte. Medium and High draw the same; their
+video memory is up by 1 MB in the halls (the players' 2K textures, less the crowd sheet, which is smaller compressed
+than the old one is as plain pixels) and by up to 5 MB outdoors and in the gym (the 2K surfaces and 4K skies; in the
+park the smaller crowd sheet outweighs them, 0.5 MB less). The most, the night market on High, is 95 MB: within a
+mid-range phone's means. (0.9.0, with the relief at 2048 px, took up to 13 MB more: 103 MB at the most.)
 
 ## Gaps that need the owner
 

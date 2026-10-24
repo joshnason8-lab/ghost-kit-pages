@@ -9,6 +9,10 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019, the Galaxy A16 included).
 
+From 0.9.1 every build is signed with the owner's beta key (certificate SHA-256 `6F:23:A9:36:…:69:7B:A3`, in each
+build's log). The release page's builds of 0.6.0 to 0.9.0 had another key: if Android says the app wasn't installed,
+uninstall that one first (its saves go with it).
+
 ## What to try
 
 New in 0.9.1: a real referee's whistle (recordings, not a made-up tone): a short pip for a serve or a fault, a long
