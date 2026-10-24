@@ -25,6 +25,9 @@ var stick: MeshInstance3D
 static func data() -> Dictionary:
 	if _data.is_empty():
 		_data = JSON.parse_string(FileAccess.get_file_as_string(DIR + "hero.json"))
+		# The walk and the jog from the CMU motion-capture library (tools/mocap), with the Mixamo clips.
+		var cmu: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "cmu.json"))
+		_data.clips.merge(cmu.clips)
 	return _data
 
 

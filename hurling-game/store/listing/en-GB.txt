@@ -41,6 +41,9 @@ PLAY YOUR WAY
 
 Hurling Heroes is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.
 
+== Release notes (0.6.0) ==
+Players now walk and jog with real motion capture, their feet planted on the grass, blending into the sprint.
+
 == Release notes (0.5.0) ==
 Every score shown again from behind the goal. New fans in the stands, a new referee and umpires, substitutes in the dugouts, a new sliotar and floodlights. The CATCH and PULL buttons come up as soon as you are under a dropping ball.
 

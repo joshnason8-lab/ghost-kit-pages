@@ -15,7 +15,6 @@ const USER_ACCEL_K := 2.0
 ## 140 m pitch; where they stand, reach and collide is unchanged.
 const DRAW_SCALE := 1.15
 const USER_TURN_K := 1.8
-const STRIDE_K := 0.32      # a stride's length grows with speed: 0.7 m walking to about 2 m at a sprint
 
 ## Actions: how long each lasts and, for those that meet the ball, when (seconds from the start).
 const ACTIONS := {
@@ -245,7 +244,7 @@ func integrate(dt: float, now: float) -> void:
 	yaw += clampf(wrapf(want_yaw - yaw, -PI, PI), -turn, turn)
 	body.rotation.y = yaw
 	# The stride: a foot down twice a cycle.
-	var stride := maxf(0.7, sp * STRIDE_K + 0.45)
+	var stride := stride_at(sp, body.scale.x if body != null else DRAW_SCALE)
 	_prev_ph = _ph
 	_ph += sp / stride * PI * dt
 	if floor(_ph / PI) != floor(_prev_ph / PI) and sp > 0.4:
@@ -328,17 +327,17 @@ func _pose(now: float) -> Dictionary:
 		# The sliotar in the left hand, held in front.
 		p.upperarm_l = Vector3(-38.0, 0, 6)
 		p.forearm_l = Vector3(62.0, 0, 0)
-	# At a run, the legs, the body and the free arm from the Mixamo sprint (one stride of each leg, the left thigh
-	# furthest forward at phase pi/2 as above); the right arm keeps the hurley as it is carried.
+	# Moving, the legs, the body and the free arm from motion capture: a walk and a jog from the CMU library, the
+	# Mixamo sprint, each in step with the stride (the left thigh furthest forward at phase pi/2 as above) and blended
+	# by speed; the right arm keeps the hurley as it is carried.
+	var wg := smoothstep(0.25, 0.8, sp)
 	var wr := smoothstep(2.6, 5.5, sp)
-	if wr > 0.0:
-		var fr: Dictionary = HeroBody.data().clips.Fast_Run
-		var cycle := float(fr.frames.size() - 1) / float(fr.fps)
-		var run_p := HeroBody.clip_pose("Fast_Run", float(fr.left_forward) + (_ph / TAU - 0.25) * cycle, true)
+	if wg > 0.0:
+		var run_p := gait_pose(sp, _ph)
 		for i in (RUN_ARMS if is_official() else (RUN_BODY if ball_stick or ball_hand else RUN_ARM_L)):
-			p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(run_p[0][i], wr)
-		p.hips_y = lerpf(float(p.get("hips_y", 0.0)), float(run_p[1]), wr)
-		if not is_official() and not ball_stick:
+			p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(run_p[0][i], wg)
+		p.hips_y = lerpf(float(p.get("hips_y", 0.0)), float(run_p[1]), wg)
+		if wr > 0.0 and not is_official() and not ball_stick:
 			# The hurley carried as hurlers carry it at a run (round five: "running looks a bit awkward with the
 			# hurley"): the right arm swings with the stride, a little less than the free arm, and the wrist turns
 			# the hurley up to point forward, clear of the legs and the grass, rather than hanging straight down.
@@ -352,6 +351,55 @@ func _pose(now: float) -> Dictionary:
 		else:
 			_action_pose(p, action, t, now)
 	return p
+
+
+## The gaits, slowest first: [clip, the speed (m/s) at which it alone is shown]. Between two, both, blended.
+const GAITS := [["CMU_Walk", 1.3], ["CMU_Jog", 2.6], ["Fast_Run", 5.5]]
+
+
+## The body's turns and the hips' lift moving at sp m/s, at stride phase ph: the gait clips nearest sp, blended, each
+## at the point of its own cycle that phase ph is.
+static func gait_pose(sp: float, ph: float) -> Array:
+	var a := 0
+	while a < GAITS.size() - 1 and sp > float(GAITS[a + 1][1]):
+		a += 1
+	var b := mini(a + 1, GAITS.size() - 1)
+	var w := 0.0 if a == b else smoothstep(float(GAITS[a][1]), float(GAITS[b][1]), sp)
+	var pa := _gait_clip(String(GAITS[a][0]), ph)
+	if w <= 0.0:
+		return pa
+	var pb := _gait_clip(String(GAITS[b][0]), ph)
+	var turns := []
+	for i in pa[0].size():
+		turns.append((pa[0][i] as Quaternion).slerp(pb[0][i], w))
+	return [turns, lerpf(pa[1], pb[1], w)]
+
+
+static func _gait_clip(name: String, ph: float) -> Array:
+	var c: Dictionary = HeroBody.data().clips[name]
+	var cycle := float(c.frames.size() - 1) / float(c.fps)
+	return HeroBody.clip_pose(name, float(c.left_forward) + (ph / TAU - 0.25) * cycle, true)
+
+
+## A stride's length (m) at sp m/s for a man drawn scale times the model's size, so the foot on the ground stays put:
+## the CMU walk's and jog's own steps (measured on the drawn man: tests/test_runner.gd _foot_slide), then the sprint
+## at a sprinter's cadence, 4.4 steps a second (the Mixamo clip's feet sit still only at five, a whirl of legs).
+static func stride_at(sp: float, scale := DRAW_SCALE) -> float:
+	var u := sp * DRAW_SCALE / scale           # the speed for a man of the standard drawn size
+	var s := u / 4.4
+	if u < 5.5:
+		var i := 0
+		while i < STEPS.size() - 2 and u > STEPS[i + 1].x:
+			i += 1
+		var a: Vector2 = STEPS[i]
+		var b: Vector2 = STEPS[i + 1]
+		s = lerpf(a.y, b.y, clampf((u - a.x) / (b.x - a.x), 0.0, 1.0))
+	return s * scale / DRAW_SCALE
+
+
+## (speed m/s, stride m) for the standard drawn man: standing to a walk, the CMU walk, the jog, on to the sprint.
+const STEPS := [Vector2(0.0, 0.5), Vector2(1.3, 0.65), Vector2(2.0, 0.8), Vector2(2.6, 1.0), Vector2(3.25, 1.05),
+	Vector2(4.2, 1.2), Vector2(5.5, 5.5 / 4.4)]
 
 
 const BONE_NAMES := ["hips", "spine", "chest", "neck", "head", "upperarm_l", "forearm_l", "hand_l", "upperarm_r",

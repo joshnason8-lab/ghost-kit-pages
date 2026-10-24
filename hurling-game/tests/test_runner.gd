@@ -767,6 +767,17 @@ func _hero_body() -> void:
 	var lt := HeroBody.turn(p.thigh_l) * Vector3.DOWN
 	var rt := HeroBody.turn(p.thigh_r) * Vector3.DOWN
 	check(lt.z > 0.25 and rt.z < lt.z, "The sprint clip: the left thigh forward at the stride's phase pi/2 (%.2f, the right %.2f)" % [lt.z, rt.z])
+	# The gaits from motion capture (the CMU walk and jog, the Mixamo sprint): loaded, and moving at each one's own
+	# speed the foot on the ground stays put (the stride's length is the recording's), within 0.35 m/s (tools/mocap).
+	for g in Player.GAITS:
+		check(HeroBody.data().clips.has(g[0]) and HeroBody.data().clips[g[0]].frames.size() > 10, "The %s clip loads" % g[0])
+	for g in [["CMU_Walk", 1.3], ["CMU_Jog", 2.6]]:
+		var slide := _foot_slide(float(g[1]))
+		check(slide < 0.35, "The %s clip: the planted foot slides %.2f m/s at %.2f m/s" % [g[0], slide, g[1]])
+	# The sprint's feet cannot sit still at a sprinter's cadence (the clip is a short-strided run), but slide half
+	# what they did before 0.6.0 (3.2 m/s at 7 m/s).
+	var sprint := _foot_slide(7.0)
+	check(sprint < 1.8, "The sprint: the planted foot slides %.2f m/s at 7 m/s" % sprint)
 	# The swings: at the contact time the bas comes past him going the way he faces (where the ball goes), within
 	# his reach, below the shoulder.
 	pl.vel = Vector3.ZERO
@@ -786,6 +797,43 @@ func _hero_body() -> void:
 	pl.queue_free()
 	ref.queue_free()
 	await frames(1)
+
+
+## How fast the foot on the ground moves (m/s, along the ground) for a man running straight at sp m/s, over two
+## seconds: the median over the frames when the lower foot is within 12 mm of the lowest a foot gets (on the ground;
+## the median, so a foot coming down at the end of its swing does not count).
+func _foot_slide(sp: float) -> float:
+	var pl := Player.new({"num": 9, "line": 4, "speed": 99, "accel": 99}, 0, {"jersey": Color.RED, "trim": Color.WHITE, "kind": "player"})
+	add_child(pl)
+	pl.vel = Vector3(0, 0, sp)
+	pl.yaw = 0.0
+	var sk: Skeleton3D = pl.body.skeleton
+	var feet := [sk.find_bone("foot_l"), sk.find_bone("foot_r")]
+	var rows := []
+	var dt := 1.0 / 30.0
+	for f in 90:
+		pl.position += Vector3(0, 0, sp * dt)
+		pl.vel = Vector3(0, 0, sp)
+		pl._ph += sp / Player.stride_at(sp, pl.body.scale.x) * PI * dt
+		pl.body.rotation.y = 0.0
+		pl.body.apply(pl._pose(f * dt))
+		var at := []
+		for b in feet:
+			at.append(sk.global_transform * sk.get_bone_global_pose(b).origin)
+		rows.append(at)
+	var low := INF
+	for r in rows:
+		low = minf(low, minf(r[0].y, r[1].y))
+	var speeds := []
+	for f in range(1, rows.size()):
+		for k in 2:
+			var a: Vector3 = rows[f - 1][k]
+			var b: Vector3 = rows[f][k]
+			if b.y < low + 0.012 and b.y <= rows[f][1 - k].y:
+				speeds.append(Vector2(b.x - a.x, b.z - a.z).length() / dt)
+	pl.free()
+	speeds.sort()
+	return speeds[speeds.size() / 2] if not speeds.is_empty() else INF
 
 
 ## A wide shown again: from its own camera, the HUD's tag and tap-to-skip up, the controls hidden; at its end (or a

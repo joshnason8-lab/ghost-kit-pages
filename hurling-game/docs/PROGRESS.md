@@ -182,6 +182,36 @@ officials lost their outline pass, so Medium and High draw fewer calls than befo
 `docs/graphics/round5.jpg`: the new crowd from the front (High) and from behind (Low), the substitutes in the parish
 field's dugout, the referee and umpires signalling.
 
+## Done (0.6.0-beta, motion capture, 24 October 2026)
+
+The owner added the CMU Graphics Lab Motion Capture Database to the shared assets and asked each game to use it where
+a real recording beats what it has. What the hurlers had: the Mixamo sprint and three Mixamo swings (motion capture
+already), and, below about 5 m/s, legs drawn by sine waves with a stride from a formula. Off the ball a hurler walks
+and jogs for most of a match, so that is where a recording helps most.
+
+- **Now from CMU**: the walk (clip **35_01**, subject 35 "walk") and the jog (clip **35_17**, "run/jog"), one gait
+  cycle each, retargeted onto the game's 17 bones by `tools/mocap/bvh_clip.py` (every bone turned at rest onto the
+  game's stance the shortest way; the travel and heading taken out so the game stays the one writer of position;
+  the hips' height set so the lowest the feet reach is the ground), 30 frames a second, `assets/player/cmu.json`
+  (26 KB). `tools/mocap/fetch.sh` fetches the two BVH files from the GitHub mirror and rebuilds it; the BVH files
+  are not kept. `Player.gait_pose` blends walk, jog and the Mixamo sprint by speed, each in step with the stride.
+- **Foot locks**: the stride's length now comes from the recordings (`Player.stride_at`, measured on the drawn
+  man), so the planted foot stays put: it slides 0.19 m/s walking at 1.3 m/s and 0.26 m/s jogging at 2.6 m/s
+  (before, with the drawn legs and the old stride formula, the steps were a third too long). The Mixamo sprint's
+  feet could only sit still at five steps a second, a whirl of legs; it now runs at a sprinter's 4.4 steps a second,
+  and its foot slides 1.6 m/s at 7 m/s, half the 3.2 m/s it slid before.
+- **Decided against**: the CMU baseball (124_07) and golf (63, 64) swings: the Mixamo swings the game has are the
+  same strokes, already timed to the ball's contact and checked against it; a swap would gain nothing. Runs from
+  subjects 09 and 16: the Mixamo sprint is as good and already in step. The throw-and-catch clips (33, 34, 141,
+  143): an American football caught two-handed at the chest; a hurler's catch is one hand overhead, often in the air
+  in a crowd, which none of them is. The sudden stops (16_08, 16_57) would need a stop the game's movement does not
+  have (a man slows over a few strides). No clip for the solo, the hook, the block or the shoulder.
+- Tests: each gait clip loads; the planted foot at the walk's and jog's speeds slides under 0.35 m/s, the sprint's
+  under 1.8 m/s. Perf: the clips are sampled as the sprint was (no extra draw calls or triangles; the stadium on Low
+  stays 90 draw calls and 119,000 triangles).
+- Licences: "Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF
+  EIA-0196217.", with the clip ids.
+
 ## Next (in order)
 
 1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev

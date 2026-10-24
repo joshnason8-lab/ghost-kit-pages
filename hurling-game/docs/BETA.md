@@ -9,6 +9,13 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.6.0
+
+- **Real walking and jogging**: players off the ball walk and jog with motion capture from the CMU library (a real
+  walk and a real jog) instead of drawn leg swings, blending into the sprint as they speed up. Their feet stay put on
+  the grass instead of skating; a sprinter's legs turn over faster. Watch a man drifting back into position: does it
+  look like a hurler?
+
 ## New in 0.5.0
 
 - **Every score shown again** from behind the goal (tap to skip), as a wide is. The still white ball that sat in the
