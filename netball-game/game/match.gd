@@ -69,6 +69,10 @@ var _break_skip := false
 var _ended := false
 var _auto_gfx_t := 0.0
 var _auto_gfx_frames := 0
+var _step_k := {}                   # player -> how far through her stride (the footstep sounds)
+var _last_vel := {}                 # player -> her velocity last frame (a hard cut squeaks)
+var _step_gap := 0.0
+var _squeak_gap := 0.0
 
 
 func _ready() -> void:
@@ -130,7 +134,11 @@ func _ready() -> void:
 	Game.apply_graphics(get_viewport())
 	_setup_centre(true)
 	if not demo:
+		# The venue's sound: its crowd and surroundings, and the sounds on court heard from where they happen.
+		Sfx.venue(arena.kind())
 		Sfx.crowd(arena.atmosphere() * 0.5)
+		Sfx.attach_3d(self)
+		ball.bounced.connect(_on_bounce)
 	if Game.settings.dev and not demo:
 		add_child(DevOverlay.new(self))
 
@@ -217,6 +225,8 @@ func _process(delta: float) -> void:
 		u.follow(ball.court_pos())
 		u.advance(dt, ball.court_pos())
 	ball.step(dt)
+	if not demo and phase in ["setup", "live", "goal"]:
+		_movement_sounds(dt)
 	if Game.test_quarter_s > 0.0 and OS.has_feature("web") and Engine.get_process_frames() % 15 == 0 and Game.current == self:
 		# A browser playtest reads the match's state from the page (tools/playtest/play.js).
 		JavaScriptBridge.eval("window.cpn = %s" % JSON.stringify({"phase": phase, "q": q, "score": score, "me": me.pos if me else "",
@@ -371,6 +381,8 @@ func _give(pl: Player, caught := true) -> void:
 	pl.stopped = true
 	pl.set_act("hold")
 	pl.look_on = false
+	if caught and not demo:
+		Sfx.play_at("catch", ball.pos, -6.0, randf_range(0.94, 1.06))
 	if caught and pl.team == user_team and not demo:
 		Game.haptic("catch")
 	if user_team >= 0 and int(Game.settings.control) == Game.CONTROL_TEAM and pl.team == user_team:
@@ -502,6 +514,8 @@ func _arrive() -> void:
 		last_touch = to.team
 		ball.loose(ball.pos, v)
 		stats[String(to.data.id)].turnovers += 1
+		if not demo:
+			Sfx.react("groan", -16.0)
 		game_event.emit("fumble", {"by": to.pos})
 		pass_info = {}
 		return
@@ -575,8 +589,49 @@ func _gain(pl: Player, how: String) -> void:
 	pl.act_up = 0.6
 	if pl.team == user_team and not demo:
 		Game.haptic("intercept")
-	Sfx.react("crowd_ooh", -10.0)
+	if not demo:
+		Sfx.react("ooh", -10.0)
 	game_event.emit("gain", {"by": pl.pos, "team": pl.team, "how": how})
+
+
+# ---------------------------------------------------------------- sounds on court
+
+func _goal_whistle() -> void:
+	if is_inside_tree() and not paused:
+		Sfx.play("whistle_long", -8.0)
+
+
+## The ball on the floor (a bounce pass, a loose ball): timber indoors, asphalt outdoors; louder the harder it lands.
+func _on_bounce(at: Vector3, speed: float) -> void:
+	if speed < 0.8:
+		return
+	Sfx.play_at("bounce_floor" if arena.indoor() else "bounce_court", at, -10.0 + 4.0 * clampf(speed / 6.0, 0.0, 1.0), randf_range(0.95, 1.05))
+
+
+## Footsteps of the players running near the ball, and indoors the squeak of a shoe on a hard cut. Kept sparse (a
+## step at most every 0.12 s, a squeak every 0.9 s) so fourteen players never make a din.
+func _movement_sounds(dt: float) -> void:
+	_step_gap -= dt
+	_squeak_gap -= dt
+	var b := ball.court_pos()
+	var surface := "step_floor" if arena.indoor() else "step_court"
+	for t in 2:
+		for pl in players[t]:
+			var v: Vector2 = pl.vel
+			var before: Vector2 = _last_vel.get(pl, v)
+			_last_vel[pl] = v
+			if pl.away() or pl.p.distance_to(b) > 9.0:
+				continue
+			var spd := v.length()
+			var k := float(_step_k.get(pl, 0.0)) + spd * dt / 1.4
+			if k >= 1.0 and spd > 2.5 and _step_gap <= 0.0:
+				_step_gap = 0.12
+				Sfx.play_at(surface, Vector3(pl.p.x, 0.0, pl.p.y), -16.0 + 4.0 * clampf((spd - 2.5) / 4.0, 0.0, 1.0), randf_range(0.9, 1.1))
+			_step_k[pl] = fmod(k, 1.0)
+			if arena.indoor() and _squeak_gap <= 0.0 and before.length() > 3.5 and dt > 0.0 \
+					and (v - before).length() / dt > 14.0 and v.dot(before) < before.length_squared() * 0.6 and randf() < 0.5:
+				_squeak_gap = 0.9
+				Sfx.play_at("squeak", Vector3(pl.p.x, 0.0, pl.p.y), -12.0, randf_range(0.9, 1.12))
 
 
 # ---------------------------------------------------------------- shooting (R9)
@@ -634,8 +689,9 @@ func _run_shot(dt: float) -> void:
 		ball.loose(ring, v)
 		last_touch = pl.team
 		shot_info = {"rebound": true}
-		Sfx.play("rim", -6.0)
-		Sfx.react("crowd_groan", -12.0)
+		Sfx.play_at("rim", ring, -6.0)
+		if not demo:
+			Sfx.react("groan", -12.0)
 		game_event.emit("miss", {"by": pl.pos, "team": pl.team})
 
 
@@ -667,8 +723,11 @@ func _goal(pl: Player, value: int) -> void:
 	for u in umpires:
 		if u.controls(Court.goal_post(pl.dir)):
 			u.call_signal("goal", pl.dir)
-	Sfx.play("swish", -4.0)
-	Sfx.react("crowd_cheer", -6.0 if pl.team == 0 else -9.0)
+	Sfx.play_at("swish", Court.ring_centre(pl.dir), -4.0)
+	if not demo:
+		Sfx.react("cheer", -6.0 if pl.team == 0 else -9.0)
+		# The umpire's whistle for the goal, a beat after the net.
+		get_tree().create_timer(0.45, false).timeout.connect(_goal_whistle)
 	if pl.team == user_team and not demo:
 		Game.haptic("goal")
 	pl.set_act("cheer")
@@ -849,7 +908,7 @@ func _end_period() -> void:
 	if shot_info.get("released", false):
 		return
 	var nxt := Rules.next_period(q, score, need_winner)
-	Sfx.play("whistle", -2.0, 0.95)
+	Sfx.play("whistle" if demo else "whistle_long", -2.0, 0.95)
 	game_event.emit("period_end", {"q": q})
 	if nxt == 0:
 		_enter("over")
@@ -864,6 +923,8 @@ func _end_period() -> void:
 				pl.set_act("cheer" if score[t] > score[1 - t] else "ready")
 		return
 	_enter("break")
+	if not demo:
+		Sfx.react("applause", -10.0)
 	_break_skip = false
 	holder = null
 	pass_info = {}
@@ -1092,6 +1153,7 @@ func button_set() -> Array:
 
 func set_paused(p: bool) -> void:
 	paused = p
+	Sfx.pause(p)
 	if hud:
 		hud.show_pause(p)
 	get_tree().paused = false
@@ -1103,6 +1165,7 @@ func on_back() -> void:
 
 func quit_to_menu() -> void:
 	paused = false
+	Sfx.pause(false)
 	Game.goto_menu()
 
 

@@ -3,7 +3,7 @@ extends Node
 ## against the Rules of Netball (docs/RULES.md); the rules are seen at work in real matches (an offside called, a
 ## held ball, obstruction from closer than 0.9 m, the centre pass alternating); AI matches finish with real scores;
 ## extra time decides a knockout; nothing moves a player twice in a frame or faster than she can run; the cup plays
-## to its medals and its save reads back. Headless:
+## to its medals and its save reads back; every sound the code asks for is there and loads, and is credited. Headless:
 ##   godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
 ## Exits 1 on any failure.
 
@@ -32,6 +32,8 @@ func _ready() -> void:
 	await _coach()
 	await _navigation()
 	await _crowd_facing()
+	_sounds()
+	await _sounds_in_play()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -751,3 +753,87 @@ func _crowd_facing() -> void:
 		m.queue_free()
 		await frames(2)
 	Game.settings.graphics = was
+
+
+## Every sound the code names is there and loads: the recordings in assets/audio/ (each credited in docs/SOUNDS.md),
+## every name in a Sfx.play / play_at call, the crowd's reactions in every venue, the venues' looping beds.
+func _sounds() -> void:
+	Sfx._ensure()
+	var files := []
+	for f in DirAccess.get_files_at("res://assets/audio"):
+		if f.ends_with(".ogg") or f.ends_with(".ogg.import"):
+			var n := f.trim_suffix(".import")
+			if not n in files:
+				files.append(n)
+	var credits := FileAccess.get_file_as_string("res://docs/SOUNDS.md")
+	for f in files:
+		var s = load("res://assets/audio/" + f)
+		check(s is AudioStreamOggVorbis and (s as AudioStream).get_length() > 0.0, "sound %s loads" % f)
+		# (Numbered takes are credited together: catch_1..3.ogg.)
+		var stem := RegEx.create_from_string("_[0-9]+$").sub(f.trim_suffix(".ogg"), "")
+		check(credits.contains("`" + stem), "sound %s is credited in docs/SOUNDS.md" % f)
+	var wanted: Array = Sfx.FILES.duplicate()
+	for k in Sfx.VARIANTS:
+		for i in int(Sfx.VARIANTS[k]):
+			wanted.append("%s_%d" % [k, i + 1])
+	for k in wanted:
+		check(ResourceLoader.exists("res://assets/audio/%s.ogg" % k) and Sfx.streams.has(k), "sound %s: file there and loaded" % k)
+	# Every literal name the scripts play.
+	var re := RegEx.create_from_string("Sfx\\.(play|play_at)\\(\"([a-z_0-9]+)\"")
+	var names := {}
+	for dir in ["res://autoload", "res://game", "res://ui"]:
+		for f in DirAccess.get_files_at(dir):
+			if f.ends_with(".gd"):
+				for m in re.search_all(FileAccess.get_file_as_string(dir + "/" + f)):
+					names[m.get_string(2)] = f
+	check(names.size() >= 8, "found the scripts' sounds (%d)" % names.size())
+	for n in names:
+		check(Sfx.streams.has(n) or Sfx.VARIANTS.has(n), "%s plays \"%s\": it exists" % [names[n], n])
+	for v in ["arena", "hall", "outdoor"]:
+		var bed: AudioStream = Sfx.streams.get("amb_" + v)
+		check(bed is AudioStreamOggVorbis and (bed as AudioStreamOggVorbis).loop, "the %s's bed loops" % v)
+	for k in ["crowd_cheer", "crowd_cheer_small", "crowd_ooh", "crowd_groan", "applause", "applause_hall", "applause_small"]:
+		check(Sfx.streams.has(k), "the crowd's %s" % k)
+	Sfx.venue("hall")
+	Sfx.pause(true)
+	Sfx.pause(false)
+	Sfx.venue("arena")
+	check(Sfx._crowd.stream == Sfx.streams.get("amb_arena"), "the arena's bed is the one set")
+
+
+## The sounds at work: a match you play has the catches, the whistle and the steps of its surface, its venue's bed,
+## its sounds on court from a capped set of 3D speakers, and the pause menu holds them. The home screen's match asks
+## for none of the new ones.
+func _sounds_in_play() -> void:
+	for venue in ["hall", "outdoor"]:
+		Sfx.asked.clear()
+		var m: Match = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "ENG", "away": "WAL", "venue": venue, "user_team": 0, "seed": 8, "quarter": 15, "mode": "quick", "difficulty": 1}
+		add_child(m)
+		await frames(900)
+		var surface := "step_floor" if venue == "hall" else "step_court"
+		for k in ["whistle", "catch", "pass", surface]:
+			check(int(Sfx.asked.get(k, 0)) > 0, "%s: a match plays %s (%d)" % [venue, k, int(Sfx.asked.get(k, 0))])
+		check(int(Sfx.asked.get("step_floor" if venue == "outdoor" else "step_court", 0)) == 0, "%s: only its own surface's steps" % venue)
+		check(int(Sfx.asked.get("squeak", 0)) <= 900 / 27 + 1, "%s: squeaks kept sparse (%d)" % [venue, int(Sfx.asked.get("squeak", 0))])
+		check(int(Sfx.asked.get(surface, 0)) <= 900 / 3 + 1, "%s: steps kept sparse (%d)" % [venue, int(Sfx.asked.get(surface, 0))])
+		check(m.find_children("*", "AudioStreamPlayer3D", false, false).size() == Sfx.VOICES_3D, "%s: %d speakers on court, no more" % [venue, Sfx.VOICES_3D])
+		check(Sfx._crowd.stream == Sfx.streams.get("amb_" + venue), "%s: the venue's own bed" % venue)
+		m.set_paused(true)
+		check(not Sfx._crowd.playing or Sfx._crowd.stream_paused, "%s: the pause menu holds the crowd" % venue)
+		m.set_paused(false)
+		m.queue_free()
+		await frames(2)
+	Sfx.asked.clear()
+	var d: Match = (load("res://game/match.gd") as Script).new()
+	d.config = {"home": "ENG", "away": "WAL", "venue": "hall", "user_team": -1, "demo": true, "attract": true, "seed": 8, "quarter": 3, "mode": "quick"}
+	add_child(d)
+	await frames(600)
+	var extra := []
+	for k in Sfx.asked:
+		if not k in ["whistle", "pass", "rim", "swish", "applause"]:
+			extra.append(k)
+	check(extra.is_empty() and int(Sfx.asked.get("whistle", 0)) > 0, "the home screen's match asks only for what it always did (also: %s)" % [extra])
+	d.queue_free()
+	await frames(2)
+	Sfx.stop_all()

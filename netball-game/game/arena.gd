@@ -81,6 +81,11 @@ func atmosphere() -> float:
 	return {"arena": 0.9, "hall": 0.55, "outdoor": 0.4}.get(String(DB.venue(venue)[2]), 0.6)
 
 
+## The kind of venue: "arena", "hall" or "outdoor".
+func kind() -> String:
+	return String(DB.venue(venue)[2])
+
+
 func indoor() -> bool:
 	return String(DB.venue(venue)[2]) != "outdoor"
 

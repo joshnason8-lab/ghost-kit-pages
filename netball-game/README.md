@@ -80,7 +80,8 @@ node tools/playtest/play.js "http://localhost:8765/index.html?gfx=low&qs=25&fres
 ## Project layout
 
 ```
-autoload/   game.gd (settings, saves, theme, screens, graphics), db.gd (nations, squads, venues), sfx.gd (sounds)
+autoload/   game.gd (settings, saves, theme, screens, graphics), db.gd (nations, squads, venues), sfx.gd (sounds: the
+            recordings in assets/audio/, a few synthesised; venue beds, crowd reactions, 3D sounds on court)
 game/       rules.gd (the Rules of Netball, pure), court.gd (the court's measurements), match.gd (the match: phases,
             calls, scoring, the box score), ai.gd (both teams' play), player.gd (movement, one writer a frame),
             hero_body.gd (the players: the owner's model, the team's colours, the bib, the clips), body.gd (the
@@ -94,11 +95,13 @@ i18n/       src/*.json (one file per language), strings.csv (generated)
 fonts/      Noto Sans (Latin, cut), Noto Sans Sinhala and Tamil (cut to their scripts), Noto Sans SC (cut to the
             characters used), Barlow Condensed. All SIL OFL.
 tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, art/make_bib_letters.py,
+            audio/ (make_music.py: the menu music; make_sounds.py: the sounds, from the downloads in docs/SOUNDS.md),
             store/ (icons, feature graphic), player/ (bakes the owner's model into assets/player/: README.md)
 tests/      test_runner, fit_audit, input_test, perf_probe, match_trace, screenshots, compile_check, controls_only,
             player_view (the players' model up close)
 store/      PLAY_STORE.md, the listings (store/listing/), the icon, feature graphic and screenshots
-docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md, MESHY_BRIEF.md, translation_notes/
+docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md, MESHY_BRIEF.md, SOUNDS.md (every sound: source, author,
+            licence), translation_notes/
 ```
 
 ## Moving it to its own repository

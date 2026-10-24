@@ -4,6 +4,9 @@ extends Node3D
 ## hands, in flight on a pass or a shot (a path solved from where it leaves the hands to where it is caught), loose
 ## (bouncing and rolling) or dead. Its position is written only in step(), once a frame.
 
+## The ball meets the floor: at, and how fast it came down (m/s). A bounce pass, a loose ball bouncing.
+signal bounced(at: Vector3, speed: float)
+
 const R := 0.112
 const G := 9.81
 
@@ -18,6 +21,7 @@ var f_t := 0.0
 var f_dur := 1.0
 var f_apex := 0.0
 var f_bounce := -1.0         # 0-1 along the flight where a bounce pass hits the floor, or -1
+var _bounced := false        # the bounce pass has hit the floor
 var _mesh: MeshInstance3D
 var _spin := Vector3.ZERO
 
@@ -84,6 +88,7 @@ func throw(from: Vector3, to: Vector3, dur: float, apex: float, bounce := -1.0) 
 	f_dur = maxf(0.05, dur)
 	f_apex = apex
 	f_bounce = bounce
+	_bounced = false
 	pos = from
 	_spin = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)).normalized() * 8.0
 
@@ -132,6 +137,9 @@ func step(dt: float) -> void:
 		"flight":
 			f_t += dt
 			pos = flight_at(f_t / f_dur)
+			if f_bounce > 0.0 and not _bounced and f_t / f_dur >= f_bounce:
+				_bounced = true
+				bounced.emit(Vector3(pos.x, R, pos.z), f_from.distance_to(f_to) / f_dur)
 			_mesh.rotate(_spin.normalized() if _spin.length() > 0 else Vector3.RIGHT, _spin.length() * dt)
 		"loose":
 			vel.y -= G * dt
@@ -139,6 +147,7 @@ func step(dt: float) -> void:
 			if pos.y < R:
 				pos.y = R
 				if vel.y < -0.6:
+					bounced.emit(pos, -vel.y)
 					vel.y = -vel.y * 0.62
 				else:
 					vel.y = 0.0

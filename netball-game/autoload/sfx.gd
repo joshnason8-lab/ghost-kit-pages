@@ -1,12 +1,21 @@
 extends Node
-## Sound effects, most synthesised at startup so the game ships few audio files. Drop an .ogg or .wav with the same
-## name into res://assets/audio/ to replace any of them (assets/audio/whistle.ogg, assets/audio/kick.ogg ...).
+## Sound effects: recordings in res://assets/audio/ (credited in docs/SOUNDS.md and the Licences screen; made by
+## tools/audio/make_sounds.py), with a few synthesised at startup. A file in res://assets/audio/ with a sound's name
+## replaces its synthesised version (assets/audio/whistle.ogg ...); without the file, the synthesised one plays.
 ## They are made a sound at a time by the loading screen (build_step), so it can show its progress; anything that
 ## needs one before then makes the rest at once (_ensure).
 
 const RATE := 22050
 const VOICES := {}
 const MUSIC_DB := -9.0
+## Sounds recorded more than once: play("catch") picks one of catch_1..catch_3 at random.
+const VARIANTS := {"catch": 3, "bounce_floor": 2, "bounce_court": 2, "step_floor": 4, "step_court": 4, "squeak": 3}
+## Recorded only (nothing synthesised stands in for them).
+const FILES := ["crowd_cheer", "crowd_cheer_small", "crowd_ooh", "crowd_groan", "applause", "applause_hall",
+	"applause_small", "clap", "menu_music", "amb_arena", "amb_hall", "amb_outdoor"]
+const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_arena", "amb_hall", "amb_outdoor"]
+## Sounds on court come from where they happen, through this many speakers at most (the oldest gives way).
+const VOICES_3D := 8
 
 var streams := {}
 var _pool: Array[AudioStreamPlayer] = []
@@ -21,6 +30,10 @@ var _todo := []
 var _planned := false
 var _built := false
 var _total := 1
+var _venue := "arena"
+var _pool3d: Array[AudioStreamPlayer3D] = []
+var _next3d := 0
+var asked := {}                      # sound -> times asked for (sound on or off): the tests see what a match plays
 
 
 func _ready() -> void:
@@ -90,6 +103,8 @@ func enabled() -> bool:
 
 func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
+	asked[sound] = int(asked.get(sound, 0)) + 1
+	sound = _pick(sound)
 	if not enabled() or not streams.has(sound):
 		return
 	var p := _pool[_next]
@@ -97,7 +112,76 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	p.stream = streams[sound]
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
+	p.stream_paused = false
 	p.play()
+
+
+## A sound from a place on court, heard from the camera (attach_3d gives a match its speakers); without them it
+## plays as play() does.
+func play_at(sound: String, at: Vector3, volume_db := 0.0, pitch := 1.0) -> void:
+	if _pool3d.is_empty() or not is_instance_valid(_pool3d[0]):
+		_pool3d.clear()
+		play(sound, volume_db, pitch)
+		return
+	_ensure()
+	asked[sound] = int(asked.get(sound, 0)) + 1
+	sound = _pick(sound)
+	if not enabled() or not streams.has(sound):
+		return
+	var p := _pool3d[_next3d]
+	_next3d = (_next3d + 1) % _pool3d.size()
+	p.stream = streams[sound]
+	p.global_position = at
+	p.volume_db = volume_db
+	p.pitch_scale = pitch
+	p.stream_paused = false
+	p.play()
+
+
+## Gives a match (its 3D world) the speakers play_at uses; they go with it.
+func attach_3d(parent: Node3D) -> void:
+	_pool3d.clear()
+	_next3d = 0
+	for i in VOICES_3D:
+		var p := AudioStreamPlayer3D.new()
+		p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		p.unit_size = 14.0
+		p.max_distance = 90.0
+		p.doppler_tracking = AudioStreamPlayer3D.DOPPLER_TRACKING_DISABLED
+		parent.add_child(p)
+		_pool3d.append(p)
+
+
+func _pick(sound: String) -> String:
+	var n := int(VARIANTS.get(sound, 0))
+	return "%s_%d" % [sound, 1 + randi() % n] if n > 0 else sound
+
+
+## The venue: which crowd and surroundings the bed plays ("arena", "hall", "outdoor"), and the crowd's size.
+func venue(kind: String) -> void:
+	_ensure()
+	_venue = kind
+	var s: AudioStream = streams.get("amb_" + kind, streams.get("crowd_loop"))
+	if _crowd.stream != s:
+		var was := _crowd.playing
+		_crowd.stop()
+		_crowd.stream = s
+		if was:
+			_crowd.play()
+
+
+## Holds every sound where it is (the pause menu), or lets them carry on.
+func pause(on: bool) -> void:
+	var all: Array[Node] = []
+	all.append_array(_pool)
+	all.append_array(_pool3d.filter(func(p): return is_instance_valid(p)))
+	all.append_array([_crowd, _drums])
+	for p in all:
+		# Paused: those sounding hold; resumed: all carry on (a held player still reads as not playing).
+		if not on:
+			p.set("stream_paused", false)
+		elif p.get("playing"):
+			p.set("stream_paused", true)
 
 
 ## A player's effort: voice("grunt") or "hup"; pitch gives each player his own voice.
@@ -107,23 +191,33 @@ func voice(kind: String, volume_db := -10.0, pitch := 1.0) -> void:
 		play("%s_%d" % [kind, 1 + randi() % n], volume_db, pitch * randf_range(0.95, 1.05))
 
 
-## The crowd reacting: "cheer", "ooh", "groan" or "applause".
+## The crowd reacting: "cheer", "ooh", "groan" or "applause", the venue's own where it has one: the arena's big
+## crowd, a hall's smaller one (applause echoing), a park court's few, quieter still.
 func react(kind: String, volume_db := -6.0) -> void:
-	play("crowd_" + kind if kind != "applause" else kind, volume_db, randf_range(0.96, 1.04))
+	var base := kind if kind == "applause" else "crowd_" + kind
+	var key := base
+	if _venue == "hall":
+		key = base + ("_hall" if streams.has(base + "_hall") else "_small")
+	elif _venue == "outdoor":
+		key = base + "_small"
+		volume_db -= 3.0
+	if not streams.has(key):
+		key = base
+	play(key, volume_db, randf_range(0.96, 1.04))
 
 
 func click() -> void:
 	play("click", -8.0)
 
 
-## Crowd bed: intensity 0..1; negative stops it.
+## The venue's bed (its crowd and surroundings, venue()): intensity 0..1; negative stops it.
 func crowd(intensity: float) -> void:
 	_ensure()
 	if intensity < 0.0 or not enabled():
 		_crowd.stop()
 		return
-	_crowd_target = lerpf(-26.0, -6.0, clampf(intensity, 0.0, 1.0))
-	if not _crowd.playing:
+	_crowd_target = lerpf(-18.0, 0.0, clampf(intensity, 0.0, 1.0))
+	if not _crowd.playing and not _crowd.stream_paused:
 		_crowd.volume_db = -40.0
 		_crowd.play()
 
@@ -157,6 +251,12 @@ func stop_all() -> void:
 	_drums.stop()
 	for p in _pool:
 		p.stop()
+		p.stream_paused = false
+	for p in _pool3d:
+		if is_instance_valid(p):
+			p.stop()
+	_crowd.stream_paused = false
+	_drums.stream_paused = false
 
 
 # ---------------------------------------------------------------- synthesis
@@ -166,7 +266,7 @@ func _plan() -> void:
 	_todo = [
 		["whistle", _whistle],
 		["whistle_long", func(): return _whistle(1.1)],
-		["pass", _slap],                                     # the ball slapped into two hands: a pass or a catch
+		["pass", _slap],                                     # the ball pushed away on a pass (catch_* is the catch)
 		["bounce", func(): return _tock(0.45, 0.1, 0.7)],   # a bounce pass on the floor
 		["rim", _rim],                                       # the ball off the steel ring
 		["swish", _net],                                     # through the net
@@ -175,17 +275,20 @@ func _plan() -> void:
 		["roar", _roar],
 		["crowd_loop", _crowd_loop],
 	]
-	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music"]:
+	for k in FILES:
 		_todo.append([k, null])
+	for k in VARIANTS:
+		for i in int(VARIANTS[k]):
+			_todo.append(["%s_%d" % [k, i + 1], null])
 	_total = _todo.size()
 
 
 func _finish() -> void:
 	_built = true
-	for k in ["crowd_loop", "drums_loop", "menu_music"]:
+	for k in LOOPS:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
-	_crowd.stream = streams.get("crowd_loop")
+	_crowd.stream = streams.get("amb_" + _venue, streams.get("crowd_loop"))
 	_drums.stream = streams.get("drums_loop")
 	_music.stream = streams.get("menu_music")
 

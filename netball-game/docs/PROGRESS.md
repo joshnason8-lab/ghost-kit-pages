@@ -55,6 +55,17 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   under the paint) and, on Medium and High, sections of the owner's metal stand as courtside seating with people
   in its seats. The models are baked by tools/venue/bake.gd into one mesh and one atlas per venue (VenueProps, one
   draw call). Credits in Settings > About > Licences. Store screenshots refreshed.
+- Sounds (October 2026): recorded sounds from Kenney (CC0) and OpenGameArt (CC0, CC-BY, CC-BY-SA), made by
+  tools/audio/make_sounds.py, listed with source, author and licence in docs/SOUNDS.md and on the Licences screen.
+  New: catches, bounces on a sprung timber floor and on asphalt (bounce passes, loose balls), footsteps by surface
+  (hall floor, asphalt) for the players running near the ball, shoe squeaks on hard cuts indoors, the venues' beds
+  as seamless loops (the arena's crowd; a hall's small crowd with echo; a park court's birds, distant traffic and a
+  few people), cheers big and small, applause three ways (arena, hall, a few people in the park) at quarter time and
+  full time, the umpire's whistle for a goal and a long one at the end of a quarter. Replaced: the ring, the net,
+  the click, the whistle (re-made with breath and an uneven pea flutter), the cheer and the applause. Kept: the
+  pass's release, the crowd's ooh and groan (Kabaddi Raid). The crowd's reactions had never played (match.gd asked
+  for "crowd_crowd_ooh"): fixed. Sounds on court are 3D (eight speakers under the match, the oldest giving way); the
+  pause menu holds every sound. About 0.5 MB added. Tests `_sounds` and `_sounds_in_play`.
 
 ## Next
 
@@ -157,4 +168,12 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   Courtside camera) showed faces looking away from play. Every spectator now has a facing toward the court's middle
   (Crowd.facing) and the sheet a back view (the back of the head) that the shader draws when the camera is behind
   her. All three venues were affected wherever a camera looked over a stand; test `_crowd_facing`.
-
+- **Sounds: recordings where a free one fits, synthesis where none does.** Only Kenney and OpenGameArt are
+  reachable from the build machines (freesound and pixabay block them). Neither has a referee's pea whistle, a
+  basketball or netball bounce, a ball through a cord net or a shoe squeak, so the whistle and the squeaks are
+  synthesised (tools/audio/make_sounds.py) and the ball's sounds layered from Kenney's generic impacts. No chants,
+  horns or drums: netball's crowds (the UK, Australia, NZ, southern Africa, the Caribbean, the Pacific) cheer, clap,
+  groan; the "rhythmic cheering" takes were left out. One-shots mono 22 kHz Vorbis q3, beds q2, levelled to an even
+  loudness (the loudest 100 ms above 120 Hz); those the home screen's match already played (whistle, ring, net,
+  applause, click) are matched to the sounds they replace, and that match asks for nothing new (no bed, steps,
+  catches or reactions: a test checks), so the home screen is no louder.
