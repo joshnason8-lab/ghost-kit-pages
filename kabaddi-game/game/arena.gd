@@ -288,6 +288,11 @@ func _dress(hc: Color, ac: Color, banner: String) -> void:
 
 
 ## 0..1 crowd energy; decays on its own.
+## What the players' feet sound on (Sfx.step): the village's beaten earth, Puri's sand, the mats everywhere else.
+func step_surface() -> String:
+	return {"village": "earth", "beach": "sand"}.get(arena_id, "mat")
+
+
 func excite(amount: float) -> void:
 	_excite = clampf(maxf(_excite, amount), 0.0, 1.0)
 

@@ -72,6 +72,9 @@ var settings := {
 	"graphics": GFX_MEDIUM,
 	"sound": true,
 	"music": true,          # the menus' music (needs sound on too)
+	"vol_fx": 100,          # the volume sliders, 0..100 (Sfx.apply_volumes): the players' and officials' sounds,
+	"vol_crowd": 100,       # the crowd and the ground's own sound,
+	"vol_music": 100,       # the menus' music
 	"vibration": true,
 	"left_handed": false,
 	"btn_size": 0,          # the match buttons' size: 0 Normal, 1 Large, 2 Extra large (TouchControls.SIZE_K)
@@ -173,7 +176,8 @@ func load_settings() -> void:
 			# Older saves had a cant switch (tap or automatic); keep what the player chose.
 			settings.raid_rule = 1 if int(data.cant) == 0 else 2
 	# JSON gives floats; keep ints as ints.
-	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models", "tags", "fps", "btn_size"]:
+	for k in ["camera", "graphics", "difficulty", "length", "raid_rule", "models", "tags", "fps", "btn_size", "vol_fx",
+			"vol_crowd", "vol_music"]:
 		settings[k] = int(settings[k])
 	if not TouchControls.is_layout(settings.btn_places):
 		settings.btn_places = []

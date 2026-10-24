@@ -8,7 +8,16 @@ Made by Josh Nason.
 Players, referees and the crowd modelled with Meshy; movement from Mixamo (Adobe), the CMU Graphics Lab Motion Capture Database and match footage.
 Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
 Skies, ground surfaces, the plastic chairs, folding stools and broadleaf trees: Poly Haven (polyhaven.com), CC0. Rain trees, coconut palms, dry grass, the scorers' table, the apartment blocks, the village temple and the Jagannath temple's tower modelled with Meshy for the game.
-Menu music: "Indian" by LNPLUSMUSIC, from Pixabay (Pixabay Content License). The other sounds were made for the game."""
+Menu music: "Indian" by LNPLUSMUSIC, from Pixabay (Pixabay Content License)."""
+
+# Every recorded sound, with where it is from and its licence (docs/SOUNDS.md has each file).
+const SOUNDS := """[b]Sounds[/b]
+The crowd (its murmur, cheers and roar): "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org/content/free-crowd-cheering-sounds), licensed CC BY 4.0 (creativecommons.org/licenses/by/4.0/). Cut, made mono and looped for the game.
+Footsteps on the mats and the earth, bodies hitting the mat, touches and the menus' click: "Impact Sounds" and "Interface Sounds" by Kenney (kenney.nl), CC0.
+Footsteps on the sand: "Fantozzi's Footsteps (Grass/Sand & Stone)" by Fantozzi (opengameart.org), CC0.
+Applause: "Applause in a large hall or church" by eXpl0it3r (opengameart.org), CC0.
+The grounds: "AMB Rain Loop 1" by Kresiek The Furry, "Beach Ocean Waves" by jasinski, "Park ambiences" by Thimras and "Crickets Ambient Noise - loopable" by Wolfgang_ (all opengameart.org), CC0.
+The officials' whistle, the dhol, the chants and the players' voices were made for the game."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic).
@@ -30,6 +39,7 @@ func _ready() -> void:
 	v.add_child(UI.scroll(col))
 	col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
 	col.add_child(_text(CREDITS))
+	col.add_child(_text(SOUNDS))
 	col.add_child(_text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
 	col.add_child(_text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
 	# The engine's own parts, each with its copyright and licence, then the licences' texts.

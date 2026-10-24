@@ -127,6 +127,33 @@ front, so whoever a camera saw from behind still showed it their face.
   dome 150 → 164 MB and Gaon Maidan 154 → 168 MB). The draw calls, primitives and objects are the same (on Low, the
   dome's 100 and 217, 634k, 315; Gaon Maidan's 102 and 220, 668k, 318).
 
+## 0.11.0: real sounds
+
+The lead asked for realistic, non-cartoonish sounds from kenney.nl and opengameart.org (CC0, CC BY, CC BY-SA or
+OGA-BY only), processed small, wired into the play and credited. Every file, source, author and licence:
+[SOUNDS.md](SOUNDS.md).
+
+- **Audit (before)**: every effect but the chants, shouts and menu music was synthesised (the crowd from layered
+  espeak voices and noise); there were no footsteps and no ground had a sound of its own.
+- **Recorded now** (`tools/audio/make_recorded.py`, from the downloads): the crowd's bed, cheer and roar (Gregor
+  Quendel, CC BY 4.0); applause (eXpl0it3r, CC0); footsteps on the mats and the village's earth, tackles' thuds,
+  touches and the click (Kenney, CC0); footsteps on sand (Fantozzi, CC0); rain, the sea, birds and crickets for the
+  monsoon, beach, village and stadium grounds (Kresiek The Furry, jasinski, Thimras, Wolfgang_; CC0). Trimmed,
+  mono, 22.05 kHz, peak-normalised one-shots; beds set to one loudness and crossfaded into seamless loops; Ogg
+  Vorbis at low quality.
+- **Wired in** (`autoload/sfx.gd`): footsteps a step a stride on the ground's surface, harder the faster a player
+  goes (`Athlete._footsteps`, `Arena.step_surface`; about 4-5 a second in an AI match); footsteps, thuds and touches
+  spatial (`Sfx.play_at`, 3D players: louder near the camera, panned to their side); variants picked at random
+  (`Sfx.VARIED`); the ground's ambience under the crowd (`Sfx.ambience`); three buses with Effects, Crowd and Music
+  sliders in Settings (`Sfx.apply_volumes`, translated in all eight languages); a paused match holds every sound and
+  starts none (`Sfx.pause`), the menus' click still sounding. The synthesised thud and slap are gone.
+- **Size**: `assets/audio/` 1,464,511 → 1,834,879 bytes (+370 KB), 31 new files.
+- **Not found**, kept synthesised and listed in SOUNDS.md for the owner to source: a referee's pea whistle, a dhol,
+  regional crowd chants, bare feet on a mat, city night and indoor hall ambiences.
+- **Checked**: test_runner 7c (every recording is in assets/audio and loads, every sound the code names exists, the
+  beds loop, a paused match plays nothing, the sliders reach their buses; the licences screen credits each author),
+  compile_check, fit_audit, raid_audit.
+
 ## 0.10.0: recorded crouched walks (CMU)
 
 The owner added the CMU Graphics Lab Motion Capture Database to the shared assets, and the lead asked every game to

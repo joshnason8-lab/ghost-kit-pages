@@ -1,4 +1,11 @@
-**New in 0.10.0: defenders creep in their crouch.** Creeping forward or back in their stance, the defenders now stay
+**New in 0.11.0: real sounds.** The crowd is now a recording of a real crowd, and it cheers, groans and applauds the
+play. Players' footsteps sound on each ground's surface (the mats, the village's earth, Puri's sand), and tackles and
+touches thud and slap from where they happen on the mat. Each ground has its own sound under the crowd: rain at the
+monsoon ground, the sea at Puri, birds in the village, crickets outside the stadium at night. Settings has volume
+sliders for Effects, Crowd and Music, and a paused match is silent. The sounds are CC0 and CC BY recordings from
+kenney.nl and opengameart.org, credited in Settings > About > Licences.
+
+**In 0.10.0: defenders creep in their crouch.** Creeping forward or back in their stance, the defenders now stay
 low, knees bent, with short steps, from movement recorded from real people (the CMU motion capture library), where
 they used to stand up and stride, or jog backwards in slow motion. Running in to tackle, they still run.
 

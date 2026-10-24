@@ -108,6 +108,13 @@ func _ready() -> void:
 	for key in ["sound", "music", "vibration", "left_handed"]:
 		row.add_child(_toggle(key, {"sound": "SOUND", "music": "MUSIC", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
 	snd[1].add_child(row)
+	# How loud each is: the players and officials, the crowd and the ground, the menus' music.
+	var vols := HFlowContainer.new()
+	vols.add_theme_constant_override("h_separation", 36)
+	vols.add_theme_constant_override("v_separation", 14)
+	for k in ["fx", "crowd", "music"]:
+		vols.add_child(UI.field(tr({"fx": "VOL_EFFECTS", "crowd": "VOL_CROWD", "music": "MUSIC"}[k]), _volume(k)))
+	snd[1].add_child(vols)
 	# The match buttons: bigger, and where the thumb finds them (ui/button_layout.gd).
 	snd[1].add_child(UI.field(tr("BUTTON_SIZE"), UI.chips([tr("SIZE_NORMAL"), tr("SIZE_LARGE"), tr("SIZE_XL")],
 		int(Game.settings.btn_size), func(i):
@@ -138,6 +145,24 @@ func _fps_text(opt: int, smooth: int, hz: int) -> String:
 		Game.FPS_SMOOTH:
 			return tr("FPS_NOTE_SMOOTH").format({"n": smooth, "hz": hz})
 	return tr("FPS_NOTE_MAX").format({"hz": hz})
+
+
+## A volume slider (0..100) for one of Sfx.BUSES: heard as it moves, kept when let go.
+func _volume(key: String) -> HSlider:
+	var s := HSlider.new()
+	s.min_value = 0
+	s.max_value = 100
+	s.step = 5
+	s.value = int(Game.settings.get("vol_" + key, 100))
+	s.custom_minimum_size = Vector2(240, 50)
+	s.value_changed.connect(func(v):
+		Game.settings["vol_" + key] = int(v)
+		Sfx.apply_volumes())
+	s.drag_ended.connect(func(_changed):
+		Game.save_settings()
+		if key == "fx":
+			Sfx.click())
+	return s
 
 
 ## On and Off side by side (on one line: under a short title like Sound they wrapped, Off below On).

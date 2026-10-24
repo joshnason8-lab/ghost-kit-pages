@@ -281,6 +281,10 @@ func _ready() -> void:
 	_place_all_instant()
 	Sfx.crowd(0.35 + crowd_lift)
 	Sfx.drums(true)
+	Sfx.ambience(arena.arena_id)
+	if not attract:
+		for a in athletes:
+			a.step_surface = arena.step_surface()
 	_set_phase("intro")
 	if walkout:
 		arena.excite(1.0)
@@ -1247,6 +1251,7 @@ func _floor_shadows() -> void:
 
 func set_paused(p: bool) -> void:
 	paused = p
+	Sfx.pause(p)
 	hud.show_pause(p)
 	get_tree().paused = false
 
@@ -2041,7 +2046,7 @@ func _dash_hit(d: Athlete) -> void:
 	d.set_state("recover", 0.8)
 	_event("dash", {"who": d.pid()})
 	hud.event(tr("EV_DASH"), Game.C_MAGENTA)
-	Sfx.play("thud", -2.0, 1.2)
+	Sfx.play_at("thud", d.global_position, -2.0, 1.2)
 	arena.excite(0.6)
 	if d == controlled or raider == controlled:
 		_haptic("dash")
@@ -2760,7 +2765,7 @@ func _touch(d: Athlete, via := "") -> void:
 	raid.touched.append(d)
 	raid.alarm = true
 	d.set_ring(Color(Game.C_SAFFRON, 0.9))
-	Sfx.play("slap", -2.0)
+	Sfx.play_at("slap", d.global_position + Vector3.UP, -2.0, randf_range(0.95, 1.1))
 	if raider == controlled:
 		tutorial_event.emit("touch")
 	if via in ["toe", "backkick", "sidekick"]:
@@ -2811,7 +2816,7 @@ func _attach(d: Athlete, block := false, slot := "", reached := false) -> void:
 	_event("hold", {"who": d.pid(), "kind": d.kind() if was_dive else "pile", "style": style, "slot": slot, "grapple": grapple.id,
 		"holders": raid.holders.size()})
 	raider.set_state("held")
-	Sfx.play("thud", -2.0)
+	Sfx.play_at("thud", raider.global_position, -2.0, randf_range(0.92, 1.05))
 	Sfx.voice("oof" if first else "grunt", -6.0, raider.voice_pitch())
 	var chained := d.chain_dive and not first
 	# The message names the hold actually made (a counter-grab on a thigh is a thigh hold, not an ankle hold).

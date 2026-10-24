@@ -125,20 +125,24 @@ the icon for Android's adaptive icons (`assets/icon/`) and crops and scales the 
 
 ## Audio
 
-Every effect is synthesised in `autoload/sfx.gd` or made by the scripts in `tools/audio/`. Put a file with the same
-name in `assets/audio/` (`.ogg`, `.wav` or `.mp3`) to override one:
+Every sound, with its file, source, author and licence: **[SOUNDS.md](SOUNDS.md)**. Since 0.11.0 the crowd,
+footsteps, tackles, touches, the click and each ground's ambience are recordings (kenney.nl and opengameart.org, CC0
+and CC BY 4.0), made by `tools/audio/make_recorded.py`; the rest is synthesised in `autoload/sfx.gd` or made by the
+other scripts in `tools/audio/`. Put a file with the same name in `assets/audio/` (`.ogg`, `.wav` or `.mp3`) to
+override a synthesised one:
 
-`whistle`, `buzzer`, `thud`, `slap`, `whoosh`, `click`, `gavel`, `roar`, `crowd_loop`, `dhol_loop`, `bid`
+`whistle`, `buzzer`, `whoosh`, `gavel`, `dhol_loop`, `bid`
 
 The menus' music, `assets/audio/menu_music.ogg`, is **"Indian" by LNPLUSMUSIC** (Pixabay, track 611803), under the
 [Pixabay Content License](https://pixabay.com/service/license-summary/): free to use in an app, edited, with no
 credit required (credited here anyway). The licence does not allow passing the track on by itself, so only the
 edited loop made from it by `tools/audio/make_menu_music.py` is in the repository, not the download.
 
-High-value recordings:
+High-value recordings (see SOUNDS.md, "Not found"):
 
-- A real crowd at a PKL-style venue.
+- A real crowd at a PKL-style venue, chanting.
 - A dhol player.
+- A referee's pea whistle.
 - **Commentary and chants in each supported language.** Regional commentary would be a real differentiator.
 
 ## Grounds

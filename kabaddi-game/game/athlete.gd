@@ -10,6 +10,8 @@ var on_mat := true
 var vel := Vector3.ZERO
 var facing := Vector3(0, 0, -1)
 var lock_facing := false
+var step_surface := ""   # what his feet sound on (Arena.step_surface), "" for none (the menus' match behind)
+var _stride := 0.0       # m gone since his last footstep
 
 # state: idle, ready, raid, touch, kick, backkick, dodge, dubki, jump, telegraph, dive, recover, rise, held, holding, fallen, walk, sit,
 # celebrate
@@ -309,6 +311,8 @@ func _process(delta: float) -> void:
 		_sweat_t = 0.5
 		model.rig.set_sweat(snappedf(_sweat, 0.02))
 	_track_motion(delta)
+	if step_surface != "" and on_mat:
+		_footsteps(delta)
 	rotation.y = _vis_yaw
 	_pose(delta)
 	if _ring.visible:
@@ -332,6 +336,19 @@ func _track_motion(delta: float) -> void:
 		return
 	var cap := deg_to_rad(lerpf(TURN_STILL, TURN_SPRINT, clampf(move_vel.length() / 5.0, 0.0, 1.0))) * dt
 	_vis_yaw = wrapf(_vis_yaw + clampf(wrapf(target - _vis_yaw, -PI, PI) * (1.0 - exp(-dt * 20.0)), -cap, cap), -PI, PI)
+
+
+## A footstep (Sfx.step) each step's length he goes on his feet: short creeping steps, long running ones.
+func _footsteps(delta: float) -> void:
+	var speed := move_vel.length()
+	if speed < 0.6 or airborne() or state in ["fallen", "held", "dive", "rise", "sit"]:
+		_stride = 0.0
+		return
+	_stride += speed * delta
+	var length := 0.55 + 0.1 * speed
+	if _stride >= length:
+		_stride -= length
+		Sfx.step(step_surface, global_position, speed)
 
 
 ## The way his body faces on screen (see _track_motion).

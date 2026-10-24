@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.10.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.11.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.10.0-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.11.0-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -150,6 +150,16 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
   or back in their stance, they now stay low, knees bent, with short steps (movement recorded from real people, from
   the CMU motion capture library), where they used to stand up and stride, or jog backwards in slow motion. Running
   in to tackle, they still run. Does a defender still pop up as he creeps, glide, or slide his feet as he steps?
+- **Real sounds** (0.11.0): play a match on each ground with sound on, ideally with headphones.
+  - The crowd is a recording of a real crowd now: does its murmur loop without a jump, and does it cheer, groan and
+    applaud at the right moments?
+  - Footsteps: on the mats, the village's earth and Puri's sand, each sounds different, and comes from where the
+    player is (left or right, near or far). Too loud, too quiet, too many?
+  - Tackles and touches thud and slap from where they happen.
+  - Each ground's own sound under the crowd: rain at the monsoon ground, the sea at Puri, birds in the village,
+    crickets outside the stadium at night (the dome has none).
+  - Settings > Sound: the Effects, Crowd and Music sliders. Does each change only its own sounds?
+  - Pause a match: everything should stop until you resume.
 
 ## Reporting
 

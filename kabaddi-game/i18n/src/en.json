@@ -47,6 +47,8 @@
   "GFX_HIGH": "High",
   "SOUND": "Sound",
   "MUSIC": "Music",
+  "VOL_EFFECTS": "Effects",
+  "VOL_CROWD": "Crowd",
   "VIBRATION": "Vibration",
   "LEFT_HANDED": "Left-handed controls",
   "SETTINGS_SAVED": "Settings saved",

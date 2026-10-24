@@ -1,12 +1,21 @@
 extends Node
-## Sound effects synthesised at startup, so the game ships without audio files.
-## Drop an .ogg or .wav with the same name into res://assets/audio/ to replace any of them
-## (for example assets/audio/whistle.ogg or assets/audio/crowd_loop.ogg).
+## The game's sounds: recordings in res://assets/audio/ (credited in docs/SOUNDS.md and the Licences screen), and the
+## few with no recording synthesised at startup. Drop an .ogg or .wav with the same name into res://assets/audio/ to
+## replace a synthesised one (for example assets/audio/whistle.ogg).
 ## They are made a sound at a time by the loading screen (build_step), so it can show its progress; anything that
 ## needs one before then makes the rest at once (_ensure).
 
 const RATE := 22050
 const VOICES := {"grunt": 5, "oof": 3, "exhale": 2, "hup": 2}
+# Recorded one-shots with variants (name_1, name_2...): play("thud") picks one.
+const VARIED := {"thud": 3, "slap": 3, "step_mat": 3, "step_earth": 4, "step_sand": 4}
+# Each ground's own sound under the crowd (assets/audio/amb_<ground>.ogg); the dome is indoors and has none.
+const AMBIENCE := ["stadium", "village", "monsoon", "beach"]
+const AMB_DB := -12.0
+# The volume sliders' buses (Settings): the players' and officials' sounds, the crowd and the grounds, the music.
+const BUSES := {"fx": "Effects", "crowd": "Crowd", "music": "Music"}
+# Sounds that are the crowd's, on its bus.
+const CROWD_SOUNDS := ["crowd_", "applause", "roar", "chant", "clap"]
 const MUSIC_DB := -8.0             # the menus' music, faded in
 const MUSIC_LOOP := 13.915         # s: where menu_music.ogg comes round to (tools/audio/make_menu_music.py)
 
@@ -18,6 +27,11 @@ var _drums: AudioStreamPlayer
 var _crowd_target := -60.0
 var _music: AudioStreamPlayer
 var _music_target := -80.0
+var _amb: AudioStreamPlayer
+var _ui: AudioStreamPlayer               # the click, which still sounds in the pause menu
+var _pool3d: Array[AudioStreamPlayer3D] = []
+var _next3d := 0
+var paused := false                      # a match is paused: nothing plays (pause)
 var _todo := []          # the sounds still to make: [name, how to synthesise it or null] (build_step)
 var _planned := false
 var _built := false
@@ -25,19 +39,48 @@ var _total := 1
 
 
 func _ready() -> void:
+	for k in BUSES:
+		if AudioServer.get_bus_index(BUSES[k]) < 0:
+			AudioServer.add_bus()
+			AudioServer.set_bus_name(AudioServer.bus_count - 1, BUSES[k])
+			AudioServer.set_bus_send(AudioServer.bus_count - 1, "Master")
 	for i in 10:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
 		_pool.append(p)
-	_crowd = AudioStreamPlayer.new()
-	_crowd.volume_db = -60.0
-	add_child(_crowd)
-	_drums = AudioStreamPlayer.new()
-	_drums.volume_db = -14.0
-	add_child(_drums)
-	_music = AudioStreamPlayer.new()
-	_music.volume_db = -80.0
-	add_child(_music)
+	# Footsteps and bodies hitting the mat, where they happen: louder near the camera, panned to their side.
+	for i in 8:
+		var p := AudioStreamPlayer3D.new()
+		p.bus = BUSES.fx
+		p.unit_size = 9.0
+		p.max_db = 0.0
+		p.attenuation_filter_cutoff_hz = 9000.0
+		p.panning_strength = 0.6
+		add_child(p)
+		_pool3d.append(p)
+	_crowd = _player(BUSES.crowd, -60.0)
+	_drums = _player(BUSES.crowd, -14.0)
+	_amb = _player(BUSES.crowd, AMB_DB)
+	_music = _player(BUSES.music, -80.0)
+	_ui = _player(BUSES.fx, -8.0)
+	apply_volumes()
+
+
+func _player(bus: String, db: float) -> AudioStreamPlayer:
+	var p := AudioStreamPlayer.new()
+	p.bus = bus
+	p.volume_db = db
+	add_child(p)
+	return p
+
+
+## The volume sliders (Settings: vol_fx, vol_crowd, vol_music, 0..100) on their buses.
+func apply_volumes() -> void:
+	for k in BUSES:
+		var v := clampf(float(Game.settings.get("vol_" + k, 100)) / 100.0, 0.0, 1.0)
+		var i := AudioServer.get_bus_index(BUSES[k])
+		AudioServer.set_bus_mute(i, v <= 0.0)
+		AudioServer.set_bus_volume_db(i, linear_to_db(maxf(v, 0.001)))
 
 
 ## Make the next sound; false once they are all made. progress() says how far along.
@@ -92,14 +135,41 @@ func enabled() -> bool:
 
 func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
-	if not enabled() or not streams.has(sound):
+	sound = _variant(sound)
+	if not enabled() or paused or not streams.has(sound):
 		return
 	var p := _pool[_next]
 	_next = (_next + 1) % _pool.size()
 	p.stream = streams[sound]
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
+	p.bus = BUSES.crowd if CROWD_SOUNDS.any(func(c): return sound.begins_with(c)) else BUSES.fx
 	p.play()
+
+
+## The same, from a point on the ground (a tackle, a body hitting the mat).
+func play_at(sound: String, at: Vector3, volume_db := 0.0, pitch := 1.0) -> void:
+	_ensure()
+	sound = _variant(sound)
+	if not enabled() or paused or not streams.has(sound):
+		return
+	var p := _pool3d[_next3d]
+	_next3d = (_next3d + 1) % _pool3d.size()
+	p.stream = streams[sound]
+	p.volume_db = volume_db
+	p.pitch_scale = pitch
+	p.global_position = at
+	p.play()
+
+
+## A footstep on the ground's surface ("mat", "earth" or "sand"), at the foot; harder the faster he goes.
+func step(surface: String, at: Vector3, speed: float) -> void:
+	play_at("step_" + surface, at, lerpf(-22.0, -9.0, clampf(speed / 6.0, 0.0, 1.0)), randf_range(0.9, 1.1))
+
+
+func _variant(sound: String) -> String:
+	var n := int(VARIED.get(sound, 0))
+	return "%s_%d" % [sound, 1 + randi() % n] if n > 0 else sound
 
 
 ## A player shouting, e.g. yell("pakad"). Slight pitch variation per call.
@@ -126,7 +196,33 @@ func react(kind: String, volume_db := -6.0) -> void:
 
 
 func click() -> void:
-	play("click", -8.0)
+	_ensure()
+	if enabled() and streams.has("click"):
+		_ui.stream = streams.click
+		_ui.play()
+
+
+## The ground's own sound under the crowd (AMBIENCE: the rain, the sea, birds, crickets); "" or the dome for none.
+func ambience(ground: String) -> void:
+	_ensure()
+	var s: AudioStream = streams.get("amb_" + ground) if ground in AMBIENCE else null
+	if s == null or not enabled():
+		_amb.stop()
+		return
+	if _amb.stream != s or not _amb.playing:
+		_amb.stream = s
+		_amb.play()
+
+
+## A match paused: everything it was playing holds where it is, and nothing new starts, until it goes on.
+func pause(p: bool) -> void:
+	paused = p
+	for pl in [_crowd, _drums, _amb]:
+		(pl as AudioStreamPlayer).stream_paused = p
+	for pl in _pool:
+		pl.stream_paused = p
+	for pl in _pool3d:
+		pl.stream_paused = p
 
 
 ## Crowd bed: intensity 0..1. Pass a negative value to stop.
@@ -164,21 +260,29 @@ func drums(on: bool) -> void:
 
 
 func stop_all() -> void:
+	pause(false)
 	_crowd.stop()
 	_drums.stop()
+	_amb.stop()
 	for p in _pool:
+		p.stop()
+	for p in _pool3d:
 		p.stop()
 
 
 # ---------------------------------------------------------------- synthesis
+
+# Every recording the game plays besides VARIED and VOICES (tests/test_runner checks each one is there and loads).
+const RECORDED := ["chant_raider", "crowd_chant", "chant_word_1", "chant_word_2", "yell_aaja", "yell_pakad",
+		"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch", "crowd_cheer", "crowd_ooh", "crowd_groan",
+		"applause", "clap", "menu_music", "amb_stadium", "amb_village", "amb_monsoon", "amb_beach"]
+
 
 func _plan() -> void:
 	_planned = true
 	_todo = [
 		["whistle", _whistle],
 		["buzzer", func(): return _tone_env(0.9, func(t): return signf(sin(TAU * 196.0 * t)) * 0.35 + sin(TAU * 392.0 * t) * 0.15, 0.01, 0.1)],
-		["thud", _thud],
-		["slap", _slap],
 		["whoosh", _whoosh],
 		["click", func(): return _tone_env(0.035, func(t): return sin(TAU * 1500.0 * t) * 0.5, 0.001, 0.03)],
 		["gavel", _gavel],
@@ -187,11 +291,12 @@ func _plan() -> void:
 		["dhol_loop", _dhol_loop],
 		["bid", func(): return _tone_env(0.08, func(t): return sin(TAU * 880.0 * t) * 0.4 + sin(TAU * 1320.0 * t) * 0.2, 0.002, 0.07)],
 	]
-	# Recorded voices that have no synthesised stand-in: chants and players shouting.
-	for k in ["chant_raider", "crowd_chant", "chant_word_1", "chant_word_2", "yell_aaja", "yell_pakad",
-			"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch",
-			"crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music"]:
+	# Recordings with no synthesised stand-in: chants, players shouting, the crowd, the grounds, footsteps, bodies.
+	for k in RECORDED:
 		_todo.append([k, null])
+	for k in VARIED:
+		for i in int(VARIED[k]):
+			_todo.append(["%s_%d" % [k, i + 1], null])
 	# Players' efforts and breaths (see tools/audio/make_sounds.py).
 	for kind in VOICES:
 		for i in int(VOICES[kind]):
@@ -201,7 +306,7 @@ func _plan() -> void:
 
 func _finish() -> void:
 	_built = true
-	for k in ["crowd_loop", "dhol_loop", "menu_music"]:
+	for k in ["crowd_loop", "dhol_loop", "menu_music"] + AMBIENCE.map(func(g): return "amb_" + g):
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
 	if streams.get("menu_music") is AudioStreamOggVorbis:
@@ -254,38 +359,6 @@ func _whistle() -> AudioStreamWAV:
 		var trill := 0.65 + 0.35 * sin(TAU * 34.0 * t)
 		var env := minf(1.0, t / 0.02) * clampf((dur - t) / 0.08, 0.0, 1.0)
 		out[i] = sin(phase) * trill * env * 0.45
-	return _to_stream(out)
-
-
-func _thud() -> AudioStreamWAV:
-	var dur := 0.35
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var phase := 0.0
-	var lp := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		var freq := lerpf(95.0, 38.0, t / dur)
-		phase += TAU * freq / RATE
-		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.15)
-		var env := exp(-t * 11.0)
-		out[i] = (sin(phase) * 0.8 + lp * 0.6 * exp(-t * 30.0)) * env
-	return _to_stream(out)
-
-
-func _slap() -> AudioStreamWAV:
-	var dur := 0.09
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var prev := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		var w := randf_range(-1.0, 1.0)
-		var hp := w - prev
-		prev = w
-		out[i] = hp * exp(-t * 60.0) * 0.6
 	return _to_stream(out)
 
 

@@ -561,6 +561,10 @@ func _run() -> void:
 	Game.settings.graphics = gfx_was
 	Game.save_settings()
 
+	# 7c. Sounds: every recording the game plays is in assets/audio and loads, and every sound the code names is one
+	# the game has; the grounds' ambiences loop; a paused match plays nothing; the volume sliders reach their buses.
+	_check_sounds()
+
 	# 8. Captured motion clips load and play on an athlete.
 	var clip := MocapClip.load_file("res://tests/fixtures/walk_clip.json")
 	check(clip != null and clip.frames.size() > 10, "mocap clip loads")
@@ -1314,6 +1318,8 @@ func _languages() -> void:
 		"the licences screen shows Godot's licence, its parts' and the fonts'")
 	check(all.contains("Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217."),
 		"the licences screen credits the CMU motion capture database as it asks")
+	check(["Gregor Quendel", "CC BY 4.0", "Kenney", "Fantozzi", "eXpl0it3r", "Kresiek The Furry", "jasinski", "Thimras",
+		"Wolfgang_"].all(func(w): return all.contains(w)), "the licences screen credits every recorded sound's author")
 	# The match's words in the game's own fonts (a CanvasLayer does not pass the window's theme on).
 	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
 		"difficulty": 1, "first_raider": 0, "passive": true})
@@ -1324,6 +1330,74 @@ func _languages() -> void:
 	check(hm.hud.root.theme == Game.theme and ev.get_theme_font("font") == Game.font_display, "the match's words are in the game's fonts")
 	Game.goto_menu()
 	await frames(2)
+
+
+func _check_sounds() -> void:
+	Sfx._ensure()
+	var files: Array = Sfx.RECORDED.duplicate()
+	for k in Sfx.VARIED:
+		for i in int(Sfx.VARIED[k]):
+			files.append("%s_%d" % [k, i + 1])
+	for k in Sfx.VOICES:
+		for i in int(Sfx.VOICES[k]):
+			files.append("%s_%d" % [k, i + 1])
+	files += ["crowd_loop", "roar", "click"]   # recordings over synthesised ones
+	var bad := []
+	for k in files:
+		var path := "res://assets/audio/%s.ogg" % k
+		var s: AudioStream = load(path) if ResourceLoader.exists(path) else null
+		if s == null or s.get_length() <= 0.0 or Sfx.streams.get(k) != s:
+			bad.append(k)
+	check(bad.is_empty(), "every recording (%d) is in assets/audio and loads %s" % [files.size(), str(bad)])
+	# Each name the game's code plays: Sfx.play("x"), play_at, yell, react and voice.
+	var named := {}
+	var re := RegEx.create_from_string("Sfx\\.(play|play_at|yell|react|voice)\\(\"([a-z_0-9]+)\"")
+	for dir in ["res://game", "res://ui", "res://autoload"]:
+		for f in DirAccess.get_files_at(dir):
+			if f.ends_with(".gd"):
+				for m in re.search_all(FileAccess.get_file_as_string(dir + "/" + f)):
+					var k := m.get_string(2)
+					match m.get_string(1):
+						"yell": k = "yell_" + k
+						"react": k = "applause" if k == "applause" else "crowd_" + k
+						"voice": k = k + "_1"
+					named[k] = true
+	for g in Sfx.AMBIENCE:
+		named["amb_" + g] = true
+	for s in ["mat", "earth", "sand"]:
+		named["step_" + s] = true
+	var missing := named.keys().filter(func(k): return not Sfx.streams.has(k) and not Sfx.streams.has(k + "_1"))
+	check(named.size() > 25 and missing.is_empty(), "every sound the code plays (%d) is one the game has %s" % [named.size(), str(missing)])
+	var loops := Sfx.AMBIENCE.map(func(g): return "amb_" + g) + ["crowd_loop"]
+	check(loops.all(func(k): return Sfx.streams[k] is AudioStreamOggVorbis and (Sfx.streams[k] as AudioStreamOggVorbis).loop),
+		"the crowd's bed and every ground's ambience loop")
+	# Paused, nothing new starts, and the bed holds; on again, it carries on.
+	var sound_was: bool = Game.settings.sound
+	Game.settings.sound = true
+	Sfx.crowd(0.5)
+	Sfx.pause(true)
+	Sfx.play("whistle")
+	Sfx.play_at("thud", Vector3.ZERO)
+	var started := Sfx._pool.any(func(p): return p.playing and not p.stream_paused) or Sfx._pool3d.any(func(p): return p.playing and not p.stream_paused)
+	check(not started and Sfx._crowd.stream_paused, "a paused match plays no sound, its crowd held")
+	Sfx.pause(false)
+	check(not Sfx._crowd.stream_paused, "the crowd carries on after the pause")
+	Sfx.stop_all()
+	Game.settings.sound = sound_was
+	# The volume sliders: each on its own bus; at 0 the bus is muted.
+	var vols := {}
+	for k in Sfx.BUSES:
+		vols[k] = Game.settings["vol_" + k]
+		Game.settings["vol_" + k] = 50 if k != "crowd" else 0
+	Sfx.apply_volumes()
+	var fx := AudioServer.get_bus_index(Sfx.BUSES.fx)
+	var cr := AudioServer.get_bus_index(Sfx.BUSES.crowd)
+	check(fx > 0 and absf(AudioServer.get_bus_volume_db(fx) - linear_to_db(0.5)) < 0.01 and AudioServer.is_bus_mute(cr)
+		and Sfx._crowd.bus == Sfx.BUSES.crowd and Sfx._pool3d[0].bus == Sfx.BUSES.fx and Sfx._music.bus == Sfx.BUSES.music,
+		"the volume sliders set their buses (effects at half, the crowd off)")
+	for k in vols:
+		Game.settings["vol_" + k] = vols[k]
+	Sfx.apply_volumes()
 
 
 ## Visible words of a screen that reach past the screen's edge (a scrolling list may run on; a ticker runs past).
