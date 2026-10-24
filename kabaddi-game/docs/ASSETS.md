@@ -96,6 +96,7 @@ These are listed from fastest to most bespoke.
 |---|---|---|
 | **MakeHuman / MPFB2 (Blender)** | Free, CC0 output | Make lean, athletic Indian body types and skin tones. Export glTF. Add motion with Mixamo or your own capture. |
 | **Mixamo** (Adobe) | Free with an Adobe account | Auto-rigging plus a big motion library (run, crouch, dive, fall, celebrate). No kabaddi-specific moves. |
+| **CMU Graphics Lab Motion Capture Database** ([mocap.cs.cmu.edu](http://mocap.cs.cmu.edu)) | Free, credit asked | About 2,600 takes of real people (walks, runs, sports, martial arts, two-person scenes), as BVH through its conversions. Free in a product that is sold; the data may not be resold by itself, even converted. No kabaddi moves. The game's crouched walks come from it (see `tools/mocap/README.md`, which reads BVH, and the licences screen's credit). |
 | **Reallusion Character Creator + ActorCore** | Paid | The most realistic option at mobile budgets. Includes LOD and mobile export tools. |
 | **Commissioned artist** | Varies | For signature looks: PRL kits, specific body types, faces. |
 

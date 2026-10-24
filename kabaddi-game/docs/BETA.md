@@ -1,6 +1,6 @@
 # Android beta: install and test
 
-Version **0.9.1-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.10.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
@@ -12,7 +12,7 @@ what you find.
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.9.1-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.10.0-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -146,6 +146,10 @@ your saves. Actions builds from before 0.7.4 used a different key: if Android sa
 - **The crowd faces the play** (0.9.1): the spectators nearest the camera (in the stand it looks over, and round the
   village and beach courts) showed their faces to the camera rather than to the court. Seen from behind, they now
   show their backs. Does anyone in a crowd still look the wrong way, on any ground or graphics level?
+- **Defenders creep in their crouch** (0.10.0): watch the defenders while a raider works the cover. Creeping forward
+  or back in their stance, they now stay low, knees bent, with short steps (movement recorded from real people, from
+  the CMU motion capture library), where they used to stand up and stride, or jog backwards in slow motion. Running
+  in to tackle, they still run. Does a defender still pop up as he creeps, glide, or slide his feet as he steps?
 
 ## Reporting
 

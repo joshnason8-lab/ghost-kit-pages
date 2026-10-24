@@ -178,16 +178,36 @@ To ship pose tracking *inside* the app, switch to an Apache-licensed model such 
 - **Corner picking.** Click the court corners in a small viewer instead of typing coordinates.
 - **Moving cameras.** Find the court lines automatically, so broadcast shots with camera moves can be used.
 
-## Animations from Mixamo or Meshy
+## Animations from Mixamo, Meshy or the CMU library
 
 `fbx_to_clip.gd` turns a ready-made animation into a clip: a Mixamo download (FBX Binary, Without Skin,
-30 fps, no keyframe reduction, In Place ticked for moves that travel) or one of Meshy's rig animations (FBX
-or GLB). It matches the skeleton to the game's joints by bone name, keeps each joint's full 3D rotation
-(clip version 2), and measures how fast and which way a travelling move goes.
+30 fps, no keyframe reduction, In Place ticked for moves that travel), one of Meshy's rig animations (FBX
+or GLB), or a take from the [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu) as BVH (120 fps,
+the subject walking about the room). It matches the skeleton to the game's joints by bone name, keeps each
+joint's full 3D rotation (clip version 2) at 30 frames a second, and measures which way a travelling move goes
+and how fast the game's own skeleton goes taking its strides: the game plays it at the rate that holds the feet.
 
 ```sh
 godot --headless --path . res://tools/mocap/fbx_to_clip.tscn -- Running.fbx assets/mocap/move_run.json move_run --loop
 ```
+
+A CMU take holds several moves, and its subject faces any way: `--from=` and `--to=` (seconds) keep one stretch,
+and the clip is turned to face the way the hips face through it on average. For a loop, pick a stretch of whole
+strides whose last pose meets its first. `--mirror` swaps left and right, and `--low` marks a crouched gait whose
+hips bob up past what the game takes for a crouch. The game's crouched walks were made so (the BVH files are at
+`https://raw.githubusercontent.com/una-dinosauria/cmu-mocap/master/data/136/136_09.bvh`, and the same for 136_11; only
+the clips are kept, not the takes):
+
+```sh
+godot --headless --path . res://tools/mocap/fbx_to_clip.tscn -- 136_09.bvh assets/mocap/move_crouch_walk.json \
+    move_crouch_walk --loop --from=7.267 --to=8.483 --low
+godot --headless --path . res://tools/mocap/fbx_to_clip.tscn -- 136_11.bvh assets/mocap/move_crouch_back.json \
+    move_crouch_back --loop --from=4.8 --to=6.275 --low
+```
+
+The CMU data is free to use, in a product that is sold too, but may not be resold by itself, even converted. The
+game credits it on its licences screen as "Motion capture data from mocap.cs.cmu.edu. The database was created with
+funding from NSF EIA-0196217."
 
 Name a clip `move_*` to add it to the running set (run, jog, walk, strafes, backpedal, crouched shuffle):
 whenever a player travels, the clip nearest his direction, speed and crouch carries the body, at the rate

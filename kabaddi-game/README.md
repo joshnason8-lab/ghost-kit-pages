@@ -23,7 +23,7 @@ It's aimed at Indian players: Pro-style rules, a fictional franchise league, int
 | **AI** | Raiders work the cover: light quick steps about 2 m from a defender, the odd feint to draw a dive, toe taps at a foot left in range, and a lunge for the touch when they go for corners and isolated or weaker tacklers, or they take an empty raid against a tight cover. Defenders stand a metre behind the baulk line, go in as the raider steps in, strikes or turns for home, and catch a raider who turns his back; team-mates run in to help a hold. The spacing and timing are measured from India v Pakistan Asian Games footage: see [docs/FOOTAGE_STYLE.md](docs/FOOTAGE_STYLE.md). |
 | **Emotion** | Raiders slap their thighs before a raid and taunt the chain ("Aaja!"). Defenders call "Pakad!". Celebrations vary and don't come every time: roars, fist pumps, claps, chest thumps, pointing to the crowd, and team-mates jogging over for a high five. Out players sit on the bench in the sitting block. Winners roar, the beaten slump with hands on heads, players dispute touches ("Touch tha!" / "No touch!"), and there's the occasional shove after a tackle. Shouts are voiced and shown as speech bubbles in your language. |
 | **Difficulty** | Rookie, Pro, Star and Legend change defender timing and aggression, AI raider skill, aim assist and how strict the cant rhythm is. |
-| **Players** | Realistic textured bodies from a generated model (faces, knee pads, ankle guards), auto-rigged and driven by the game's animation. Each team's colours replace the model's kit, keeping its folds; skin is tinted to each player's tone; shirt numbers are added. In Quick Match each side's first two players wear the two players made in Meshy's web app. Strides match running speed; players side-shuffle, backpedal, shift their weight and look around. Switch to the classic code-built bodies in Settings. |
+| **Players** | Realistic textured bodies from a generated model (faces, knee pads, ankle guards), auto-rigged and driven by the game's animation. Each team's colours replace the model's kit, keeping its folds; skin is tinted to each player's tone; shirt numbers are added. In Quick Match each side's first two players wear the two players made in Meshy's web app. Strides match running speed; players side-shuffle, backpedal, shift their weight and look around, and defenders creep forward and back in their crouch (recorded movement from the CMU motion capture library, since 0.10.0: see [docs/MOTION_REALISM.md](docs/MOTION_REALISM.md)). Switch to the classic code-built bodies in Settings. |
 | **Cameras** | Third person and broadcast. The broadcast camera moves in while the raider is held and jolts at a takedown. See [docs/GRAPHICS.md](docs/GRAPHICS.md). |
 | **Grounds** | Mumbai Dome, Gaon Maidan (a village ground at dusk), National Stadium (floodlit, the city round it at night), Monsoon Ground (rain), Puri Beach (sand and the sea). Since 0.9.0 photographed skies and surfaces, and the scenery round each ground: rain trees, palms, village houses and a temple, plastic chairs and stools with the crowd on them, a tarpaulin in the rain, the sea, a city skyline. Each has baked lighting and its own colour grade; players cast shadows on every graphics level. See [docs/GRAPHICS.md](docs/GRAPHICS.md) and [docs/PROGRESS.md](docs/PROGRESS.md). |
 | **Quick Match** | Any two league teams or countries, any ground. |
@@ -130,7 +130,7 @@ tests/      compile_check, test_runner (headless smoke test), screenshots (rende
             over other words, or in letters no font has)
 tools/      build_i18n.py, check_pages.py (an APK's or bundle's 16 KB pages), store_art.py (the store's pictures),
             rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
-            mocap/ (animation clips, and movement measured from match video), bake_lighting/ (the grounds'
+            mocap/ (animation clips from Mixamo, Meshy and the CMU library, and movement measured from match video), bake_lighting/ (the grounds'
             baked lighting), ground_art/ (the mat's texture), crowd/ (the crowd's sprite sheets, front and back),
             scenery/ (the grounds' models and surfaces, from the shared assets), web/ (the web version's Netlify
             settings)
@@ -216,6 +216,9 @@ stadium's Medium gave the same 171 MB there as in the long run).
 - **0.9.1**: the crowd's back sheet (each spectator seen from behind shows their back) takes 14.4 MB more video memory
   on every ground and level (on Low, the dome 150 → 164 MB, Gaon Maidan 154 → 168 MB); the draw calls, primitives
   and objects are the same.
+- **0.10.0**: the CMU crouched walks change nothing here: the same draw calls, primitives, objects and video memory
+  on every ground on Low and the dome on Medium and High; the players' animation 4.92 ms a frame for 14 players against
+  4.90 (timed alone, within the runs' spread).
 - Frame times are not in the table. Rendered in software here, with other jobs on the machine, they say nothing about
   a phone; the developer overlay (BETA.md, *Measuring stutter*) measures them on one.
 

@@ -1,15 +1,21 @@
 extends Node
-## Turns an animation from Mixamo (FBX) or Meshy (FBX or GLB) into a clip the game plays
-## (assets/mocap/<name>.json, version 2: a full 3D rotation for each of the game's joints).
+## Turns an animation from Mixamo (FBX), Meshy (FBX or GLB) or the CMU motion capture library (BVH) into a clip
+## the game plays (assets/mocap/<name>.json, version 2: a full 3D rotation for each of the game's joints).
 ##
-##   godot --headless --path . res://tools/mocap/fbx_to_clip.tscn -- IN.fbx OUT.json [NAME] [--loop]
+##   godot --headless --path . res://tools/mocap/fbx_to_clip.tscn -- IN.fbx OUT.json [NAME] [--loop] \
+##       [--from=SECONDS] [--to=SECONDS] [--mirror] [--low]
 ##
-## The source skeleton is matched to the game's by bone names (Mixamo's "mixamorig:" names, or Meshy's).
+## --from and --to keep only that stretch of the source (a CMU take holds several moves); --mirror swaps the body's
+## left and right (a move to the left from one to the right); --low marks a clip crouched all through (a crouched
+## walk, whose hips bob up past what the game would take for a crouch: MocapClip.low).
+##
+## The source skeleton is matched to the game's by bone names (Mixamo's "mixamorig:" names, Meshy's, or CMU's).
 ## Each game joint takes its source bone's rotation, offset once so that the two rest poses line up (the
 ## sources stand in a T-pose, the game's skeleton with its arms down). The clip also records the hips'
-## height through the motion, and, for a move that travels (run, strafe, backpedal), how fast and which
-## way: from the planted foot sliding back under an in-place clip, or from the hips moving otherwise. The
-## game plays travelling clips at the rate that keeps the feet planted at the player's speed.
+## height through the motion, and, for a move that travels (run, strafe, backpedal), which way it goes (the
+## planted foot sliding back under an in-place clip, or the hips moving otherwise) and how fast: as fast as the
+## game's own skeleton goes taking the clip's strides. The game plays travelling clips at the rate that keeps the
+## feet planted at the player's speed.
 
 const FPS := 30.0
 ## Game joint -> its parent joint, and the source bone (and the bone it points to) for each skeleton.
@@ -20,6 +26,11 @@ const MIXAMO := {"pelvis": ["hips", "spine"], "spine": ["spine", "spine1"], "che
 	"head": ["head", "headtop_end"], "sh_l": ["leftarm", "leftforearm"], "sh_r": ["rightarm", "rightforearm"],
 	"el_l": ["leftforearm", "lefthand"], "el_r": ["rightforearm", "righthand"], "hip_l": ["leftupleg", "leftleg"],
 	"hip_r": ["rightupleg", "rightleg"], "kn_l": ["leftleg", "leftfoot"], "kn_r": ["rightleg", "rightfoot"]}
+## The CMU library's BVH skeleton (Hips, LowerBack, Spine, Spine1, Neck, Neck1, Head, LeftArm, LeftUpLeg ...).
+const CMU := {"pelvis": ["hips", "spine"], "spine": ["spine", "spine1"], "chest": ["spine1", "neck1"], "neck": ["neck1", "head"],
+	"head": ["head", "head_end"], "sh_l": ["leftarm", "leftforearm"], "sh_r": ["rightarm", "rightforearm"],
+	"el_l": ["leftforearm", "lefthand"], "el_r": ["rightforearm", "righthand"], "hip_l": ["leftupleg", "leftleg"],
+	"hip_r": ["rightupleg", "rightleg"], "kn_l": ["leftleg", "leftfoot"], "kn_r": ["rightleg", "rightfoot"]}
 const MESHY := {"pelvis": ["hips", "spine02"], "spine": ["spine02", "spine01"], "chest": ["spine", "neck"], "neck": ["neck", "head"],
 	"head": ["head", "head_end"], "sh_l": ["leftarm", "leftforearm"], "sh_r": ["rightarm", "rightforearm"],
 	"el_l": ["leftforearm", "lefthand"], "el_r": ["rightforearm", "righthand"], "hip_l": ["leftupleg", "leftleg"],
@@ -27,6 +38,10 @@ const MESHY := {"pelvis": ["hips", "spine02"], "spine": ["spine02", "spine01"], 
 
 var _sk: Skeleton3D
 var _bone := {}          # normalised name -> bone index
+var _t0 := 0.0           # --from: where in the source the clip starts
+var _t1 := -1.0          # --to: and ends (-1: the source's end)
+var _mirror := false
+var _face := false       # a BVH take: its subject may face any way in the room, so turn the clip to face forward
 
 
 func _ready() -> void:
@@ -35,13 +50,28 @@ func _ready() -> void:
 	var out: String = args[1]
 	var name := args[2] if args.size() > 2 and not args[2].begins_with("--") else out.get_file().get_basename()
 	var loop := "--loop" in args
-	var doc = FBXDocument.new() if src.to_lower().ends_with(".fbx") else GLTFDocument.new()
-	var state = FBXState.new() if src.to_lower().ends_with(".fbx") else GLTFState.new()
-	if doc.append_from_file(src, state) != OK:
+	_mirror = "--mirror" in args
+	for a in args:
+		if a.begins_with("--from="):
+			_t0 = float(a.substr(7))
+		elif a.begins_with("--to="):
+			_t1 = float(a.substr(5))
+	var root: Node3D
+	if src.to_lower().ends_with(".bvh"):
+		root = _load_bvh(src)
+		_face = true
+	else:
+		var doc = FBXDocument.new() if src.to_lower().ends_with(".fbx") else GLTFDocument.new()
+		var state = FBXState.new() if src.to_lower().ends_with(".fbx") else GLTFState.new()
+		if doc.append_from_file(src, state) != OK:
+			push_error("can't read " + src)
+			get_tree().quit(1)
+			return
+		root = doc.generate_scene(state)
+	if root == null:
 		push_error("can't read " + src)
 		get_tree().quit(1)
 		return
-	var root: Node3D = doc.generate_scene(state)
 	add_child(root)
 	_sk = root.find_children("*", "Skeleton3D", true, false)[0]
 	# "mixamorig:LeftArm", imported as "mixamorig_LeftArm" -> "leftarm"
@@ -53,7 +83,7 @@ func _ready() -> void:
 		push_error("no Hips bone in " + src + ": not a Mixamo or Meshy skeleton")
 		get_tree().quit(1)
 		return
-	var map: Dictionary = MESHY if _bone.has("spine02") else MIXAMO
+	var map: Dictionary = MESHY if _bone.has("spine02") else (CMU if _bone.has("lowerback") else MIXAMO)
 	var anim := _longest(root.find_children("*", "AnimationPlayer", true, false))
 	if anim == null:
 		push_error("no animation in " + src)
@@ -61,12 +91,26 @@ func _ready() -> void:
 		return
 	var clip := _convert(anim, map, name, loop)
 	clip["source"] = src.get_file()
-	var f := FileAccess.open(out, FileAccess.WRITE)
-	f.store_string(JSON.stringify(clip))
-	f.close()
+	if "--low" in args:
+		clip["low"] = true
+	_write(clip, out)
+	# A travelling clip goes at the speed the game's own skeleton's strides carry it (MocapClip.foot_speed): played at
+	# that rate, its feet hold. The source's proportions are not the game's.
+	var made := MocapClip.load_file(out)
+	var held := made.foot_speed() if made != null else Vector2.ZERO
+	if float(clip.speed) > 0.2 and held.x > 0.2:
+		print("%s: the source travels at %.2f m/s, the game's skeleton at %.2f" % [name, clip.speed, held.x])
+		clip["speed"] = snappedf(held.x, 0.01)
+		_write(clip, out)
 	print("wrote %s: %s, %.2f s, %d frames, speed %.2f m/s %s, hips %.2f..%.2f" % [out, name, clip.length,
 		(clip.frames as Array).size(), clip.speed, clip.dir, clip.h_min, clip.h_max])
 	get_tree().quit()
+
+
+func _write(clip: Dictionary, out: String) -> void:
+	var f := FileAccess.open(out, FileAccess.WRITE)
+	f.store_string(JSON.stringify(clip))
+	f.close()
 
 
 func _longest(players: Array) -> Animation:
@@ -139,8 +183,10 @@ func _convert(anim: Animation, map: Dictionary, name: String, loop: bool) -> Dic
 			r = 0.1
 		elif "neck" in n:
 			r = 0.06
-		elif "spine" in n or "hips" in n:
+		elif "spine" in n or "hips" in n or "lowerback" in n:
 			r = 0.12
+		elif "hipjoint" in n:
+			r = 0.09
 		elif "shoulder" in n:
 			r = 0.07
 		elif "forearm" in n:
@@ -172,13 +218,25 @@ func _convert(anim: Animation, map: Dictionary, name: String, loop: bool) -> Dic
 		offset[j] = s0.inverse() * fix
 
 	var frames := []
-	var n := maxi(2, int(round(anim.length * FPS)) + (0 if loop else 1))
+	var t0 := clampf(_t0, 0.0, anim.length)
+	var t1 := anim.length if _t1 < 0.0 else clampf(_t1, t0, anim.length)
+	var span := t1 - t0
+	var n := maxi(2, int(round(span * FPS)) + (0 if loop else 1))
+	if _face:
+		# The way the hips face through the clip, on average, turned to the game's forward (-Z).
+		var face := Vector3.ZERO
+		var rest_fwd := ((rest[hips] as Transform3D).basis.inverse() * Vector3.BACK)
+		for i in n:
+			var f := turn * ((_globals(anim, minf(t1, t0 + i / FPS))[hips] as Transform3D).basis * rest_fwd)
+			face += Vector3(f.x, 0.0, f.z)
+		if face.length() > 0.01:
+			turn = Basis(Vector3.UP, PI - atan2(face.x, face.z)) * turn
 	var feet := []   # per frame: [left foot pos, right foot pos]
 	var hips_track := []
 	var h_min := INF
 	var h_max := -INF
 	for i in n:
-		var t := minf(anim.length, i / FPS)
+		var t := minf(t1, t0 + i / FPS)
 		var g := _globals(anim, t)
 		var glob := {}
 		var q := []
@@ -207,14 +265,16 @@ func _convert(anim: Animation, map: Dictionary, name: String, loop: bool) -> Dic
 		for b in _sk.get_bone_count():
 			low = minf(low, (turn * (g[b] as Transform3D).origin).y - floor_y - float(radius[b]))
 		var air := maxf(0.0, low) * scale
-		frames.append({"t": snappedf(t, 0.0001), "h": snappedf(h, 0.0001), "a": snappedf(air, 0.001), "q": q})
+		if _mirror:
+			q = _mirrored(q)
+		frames.append({"t": snappedf(t - t0, 0.0001), "h": snappedf(h, 0.0001), "a": snappedf(air, 0.001), "q": q})
 
 	# How fast and which way the move travels, scaled to a 1.78 m player.
 	var vel := Vector3.ZERO
 	var travel: Vector3 = (hips_track[-1] as Vector3) - (hips_track[0] as Vector3)
 	travel.y = 0.0
 	if travel.length() > 0.3:
-		vel = travel / anim.length   # the hips really move
+		vel = travel / maxf(span, 0.001)   # the hips really move
 	else:
 		# In place: the foot on the ground slides back as fast as the body would go forward.
 		var samples := []
@@ -231,7 +291,126 @@ func _convert(anim: Animation, map: Dictionary, name: String, loop: bool) -> Dic
 		vel.y = 0.0
 	var speed := vel.length() * scale
 	var dir := Vector3.ZERO if speed < 0.2 else vel.normalized()
+	if _mirror:
+		dir.x = -dir.x
 	# The game's "forward" is -Z: report the direction as [side, forward].
-	return {"name": name, "version": 2, "fps": FPS, "length": snappedf(anim.length, 0.0001), "loop": loop,
+	return {"name": name, "version": 2, "fps": FPS, "length": snappedf(span, 0.0001), "loop": loop,
 		"speed": snappedf(speed, 0.01), "dir": [snappedf(dir.x, 0.01), snappedf(-dir.z, 0.01)],
 		"h_min": snappedf(h_min, 0.001), "h_max": snappedf(h_max, 0.001), "joints": JOINTS, "frames": frames}
+
+
+## The frame's joint rotations with the body's left and right swapped: each side takes the other's rotation,
+## reflected through the body's middle (x to -x).
+func _mirrored(q: Array) -> Array:
+	var out := []
+	for j in JOINTS:
+		var k: String = j.replace("_l", "_R").replace("_r", "_l").replace("_R", "_r") if j.ends_with("_l") or j.ends_with("_r") else j
+		var i: int = JOINTS.find(k) * 4
+		out.append_array([q[i], -float(q[i + 1]), -float(q[i + 2]), q[i + 3]])
+	return out
+
+
+## A BVH file (the CMU library's) as a scene the converter reads: a Skeleton3D standing in the file's rest pose
+## (each joint at its OFFSET, unturned) and an AnimationPlayer with its motion, a rotation track for every joint
+## and a position track for the root. An End Site becomes a bone named after its joint with "_end".
+func _load_bvh(path: String) -> Node3D:
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return null
+	var names: Array[String] = []
+	var parents: Array[int] = []
+	var offsets: Array[Vector3] = []
+	var channels: Array = []          # per bone: its channel names
+	var stack: Array[int] = []
+	var pending := -1                 # the bone a "{" opens
+	var frame_time := 1.0 / 120.0
+	var motion: Array[PackedFloat64Array] = []
+	var in_motion := false
+	while not f.eof_reached():
+		var line := f.get_line().strip_edges()
+		if line == "":
+			continue
+		if in_motion:
+			if line.begins_with("Frames:"):
+				continue
+			if line.begins_with("Frame Time:"):
+				frame_time = float(line.substr(11).strip_edges())
+				continue
+			motion.append(PackedFloat64Array(Array(line.split(" ", false)).map(func(s): return float(s))))
+			continue
+		var parts := line.split(" ", false)
+		match parts[0]:
+			"ROOT", "JOINT":
+				names.append(parts[1])
+				parents.append(stack[-1] if not stack.is_empty() else -1)
+				offsets.append(Vector3.ZERO)
+				channels.append([])
+				pending = names.size() - 1
+			"End":
+				names.append(names[stack[-1]] + "_end")
+				parents.append(stack[-1])
+				offsets.append(Vector3.ZERO)
+				channels.append([])
+				pending = names.size() - 1
+			"{":
+				stack.append(pending)
+			"}":
+				stack.pop_back()
+			"OFFSET":
+				offsets[stack[-1]] = Vector3(float(parts[1]), float(parts[2]), float(parts[3]))
+			"CHANNELS":
+				channels[stack[-1]] = parts.slice(2)
+			"MOTION":
+				in_motion = true
+	# Stand the rest pose on the floor: the root's OFFSET is nought, and its motion is in the room's own heights.
+	var rest_pos: Array[Vector3] = []
+	var low := 0.0
+	for k in names.size():
+		rest_pos.append(offsets[k] + (rest_pos[parents[k]] if parents[k] >= 0 else Vector3.ZERO))
+		low = minf(low, rest_pos[k].y)
+	offsets[0] += Vector3(0.0, -low, 0.0)
+	var root := Node3D.new()
+	var sk := Skeleton3D.new()
+	sk.name = "Skeleton3D"
+	root.add_child(sk)
+	for b in names.size():
+		sk.add_bone(names[b])
+		if parents[b] >= 0:
+			sk.set_bone_parent(b, parents[b])
+		sk.set_bone_rest(b, Transform3D(Basis(), offsets[b]))
+	var anim := Animation.new()
+	anim.length = maxf(frame_time, (motion.size() - 1) * frame_time)
+	var col := 0
+	for b in names.size():
+		var ch: Array = channels[b]
+		if ch.is_empty():
+			continue
+		var rot := anim.add_track(Animation.TYPE_ROTATION_3D)
+		anim.track_set_path(rot, "Skeleton3D:" + names[b])
+		var pos := -1
+		if "Xposition" in ch:
+			pos = anim.add_track(Animation.TYPE_POSITION_3D)
+			anim.track_set_path(pos, "Skeleton3D:" + names[b])
+		for i in motion.size():
+			var row := motion[i]
+			var basis := Basis()
+			var at := offsets[b]
+			for k in ch.size():
+				var v := row[col + k]
+				match String(ch[k]):
+					"Xposition": at.x = v
+					"Yposition": at.y = v
+					"Zposition": at.z = v
+					"Xrotation": basis = basis * Basis(Vector3.RIGHT, deg_to_rad(v))
+					"Yrotation": basis = basis * Basis(Vector3.UP, deg_to_rad(v))
+					"Zrotation": basis = basis * Basis(Vector3.BACK, deg_to_rad(v))
+			anim.rotation_track_insert_key(rot, i * frame_time, basis.get_rotation_quaternion())
+			if pos >= 0:
+				anim.position_track_insert_key(pos, i * frame_time, at)
+		col += ch.size()
+	var player := AnimationPlayer.new()
+	var lib := AnimationLibrary.new()
+	lib.add_animation("take", anim)
+	player.add_animation_library("", lib)
+	root.add_child(player)
+	return root

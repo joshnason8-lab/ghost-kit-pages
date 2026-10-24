@@ -126,3 +126,40 @@ front, so whoever a camera saw from behind still showed it their face.
 - **Cost**: 14.4 MB more video memory on every ground and level, for the back sheet and its shirts' mask (on Low, the
   dome 150 → 164 MB and Gaon Maidan 154 → 168 MB). The draw calls, primitives and objects are the same (on Low, the
   dome's 100 and 217, 634k, 315; Gaon Maidan's 102 and 220, 668k, 318).
+
+## 0.10.0: recorded crouched walks (CMU)
+
+The owner added the CMU Graphics Lab Motion Capture Database to the shared assets, and the lead asked every game to
+check where real recorded movement would make its players more real, and to use it there. The full account is in
+[MOTION_REALISM.md](MOTION_REALISM.md), "Recorded crouched walks".
+
+- **Used**: two takes of CMU subject 136 ("Weird Walks"), the only ones clearly more real than what the game had.
+  136_09, Walk Crouched (7.27-8.48 s), is `move_crouch_walk`; 136_11, Walk Backwards Crouched (4.80-6.28 s), is
+  `move_crouch_back`. A defender creeping forward or back in his stance, the commonest way anyone moves on the mat,
+  stood up and strode (or jogged backwards at half speed) on the upright walk and jog; he now stays low. Before and
+  after: [img/crouch_walk_0.10.0.jpg](img/crouch_walk_0.10.0.jpg).
+- **Made into clips** by `tools/mocap/fbx_to_clip.gd`, which reads BVH now: one stride each, cut where its last pose
+  meets its first; 30 frames a second, the game's 13 joints, the subject turned to face forward; no root motion (the
+  clip says how fast and which way it goes, measured on the game's own skeleton so the feet hold, and the rig plants
+  them); laid over the hand-made pose and cross-faded like every running clip. 14 and 18 KB of JSON; the BVH takes
+  (0.86 and 1.09 MB) are not in the repository.
+- **Not used**, each with its reason in MOTION_REALISM.md: the basketball defensive slide (102_22-28: twice the
+  speed a kabaddi defender shuffles at), the basketball feints (102_18, 102_19: running drives), the karate kicks
+  (135_04, 135_07, 135_11: head high), the two-person pull (18_03, 19_03: upright), the boxer's guard and avoid
+  (76_03, 76_04), the crouched walks on the toes (136_13-16: too high), the run side steps (127_13, 127_14), and
+  subject 139's takes (their copies could not be told from subject 77's). No take is a kabaddi move: the holds,
+  dives, chains and dubki keep their clips or the hand-made pose.
+- **The code**: a clip can say it is crouched (`"low": true`, from the converter's `--low`); a crouched clip carries a
+  player only as fast as its legs can be played (1.8 times its speed, by his smoothed pace, and only three quarters of
+  that to change into it), so running in to tackle is still the jog.
+- **Checked**: test_runner (each CMU clip loads, and at its speed a planted foot slides under 0.2 m/s on the game's
+  skeleton: 0.18 and 0.17; a crouched defender is carried by them creeping and by the jog running in; the licences
+  screen credits the database), compile_check, locomotion_check, motion_audit, tackle_check, raid_audit, ai_bench,
+  fit_audit. In three AI matches: pops 123 → 88, sudden steps 267 → 196, the planted foot's slide 0.05 → 0.03 m/s;
+  clip changes 41 → 44 a minute.
+- **Credit**: the licences screen: "Motion capture data from mocap.cs.cmu.edu. The database was created with funding
+  from NSF EIA-0196217."
+- **Cost**: none to measure. `perf_probe` (every ground on Low, the dome on Medium and High) gives the same draw
+  calls, primitives, objects and video memory as 0.9.1; the players' animation takes 4.92 ms a frame for 14 players
+  against 4.90 before, within the runs' spread. The two clips are 32 KB.
+

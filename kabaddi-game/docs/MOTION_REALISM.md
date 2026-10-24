@@ -152,6 +152,78 @@ over 4 cm in a frame from 88 to 40, clip changes from 59 to 45 a minute, and a p
 0.01 m/s (90th percentile). A held, fallen or rising raider's feet are laid flat as before. The details and the full table are in
 [REALISM_REVIEW.md](REALISM_REVIEW.md), "Third review".
 
+## Recorded crouched walks (0.10.0)
+
+The owner added the CMU Graphics Lab Motion Capture Database to the shared assets and asked every game to use real
+recorded movement wherever it is clearly more real than what the game has. The moves that have a clip here already
+play studio motion capture (Mixamo's clips are capture too) or match footage, so the CMU takes were weighed against
+those clips and against the moves made by hand, on the game's own body, in the course and in AI matches.
+
+- **Taken: a crouched walk, forward and back.** A defender standing ready is in a crouch, and in a 5-minute AI match
+  the players on the mat spent 320 player-seconds creeping forward or back in it, more than in any other way of
+  moving. The running set had no crouched walk: the walk and the backward jog carried his legs upright under his
+  crouched trunk, so a creeping defender stood up and strode, or jogged backwards at half speed, and sank back down
+  when he stopped (creeping forward at 0.8 m/s his middle was 0.93-1.02 m off the floor, against 0.90 m standing
+  ready). Two takes of CMU subject 136 ("Weird Walks") fill the gap:
+  - **136_09**, Walk Crouched, 7.27-8.48 s (one stride, 1.22 s): `move_crouch_walk`;
+  - **136_11**, Walk Backwards Crouched, 4.80-6.28 s (1.48 s): `move_crouch_back`.
+
+  Knees bent, short steps, the hips down: creeping forward at 0.8 m/s his middle is now 0.87-0.95 m up. Before and
+  after: [img/crouch_walk_0.10.0.jpg](img/crouch_walk_0.10.0.jpg).
+- **How they play**: as the other running clips do (`HumanModel._apply_moves`): the clip nearest his way, pace and
+  crouch carries the legs, played at the rate that keeps the feet still, the rig holding the planted feet,
+  cross-faded with the clip before and laid over the hand-made pose by his pace, the stance clip keeping his trunk
+  and arms while he barely moves. A clip has no root motion, only how fast and which way it goes; the game moves the
+  body. The CMU subjects' legs are longer for their height than the game's, so a clip's speed is the one the game's
+  own skeleton goes at taking its strides (`MocapClip.foot_speed`): 0.81 and 0.64 m/s, where the subject went 0.96
+  and 0.75. A crouched clip carries a player only up to 1.8 times its speed, the fastest a running clip is played,
+  going by his smoothed pace; one he is not in yet, only up to three quarters of that. Running in to tackle at 3 m/s,
+  a defender takes the jog with his crouch in the trunk, as before. The same holds for the shuffle (the goalkeeper's
+  sidestep): past 4 m/s sideways, the strafe.
+- **Not taken**, each against what the game has:
+  - the basketball defensive slide (102_22-28) against the shuffle: captured at about 3 m/s, more than twice the
+    0.5-1.2 m/s a kabaddi defender shuffles at in the match footage, so it would play at its slowest with the feet
+    sliding, and its stance is narrower and more upright than the sidestep's;
+  - the basketball feints (102_18, 102_19) against the dodge: running drives at 2.8 m/s, not a sidestep on the spot;
+  - the karate kicks (front kick 135_04, side kick 135_11, roundhouse 135_07) against the kicks: head high, the foot
+    0.9-1.4 m up, where a kabaddi kick is a low toe touch or a back kick;
+  - "A pulls B; B resists" (18_03, 19_03) against a held raider's pull: the one resisting stands up and steps back,
+    where a held raider drives low for the line;
+  - "avoid attacker" and "defensive guard pose" (76_03, 76_04) against the evade and the raider's stance: a boxer's
+    guard and hops;
+  - the crouched walks on the toes (136_13-16): the hips higher than the flat-footed ones, and a defender's crouch
+    is lower;
+  - "Run Side Step" (127_13, 127_14): a change of lane at 3 m/s, not a dodge;
+  - subject 139's "Sneak Sideways", "Ducking" and get-ups: the sideways sneak drifts forward with the hips barely
+    down, and the copies of 139's takes found are byte for byte those of subject 77, so which take each is could not
+    be told; subject 111's get-ups from the floor are not an athlete's.
+
+  Nothing in the library is a kabaddi move: no holds, chains, dives at a leg or dubki. Those keep their Mixamo clips
+  or the hand-made pose.
+- **Checked**:
+  - `test_runner`: each CMU clip (a BVH source) loads, and on the game's skeleton at its own speed a planted foot
+    slides 0.18 and 0.17 m/s (the median; the captured walk's 0.17, the other running clips' 0.22-0.36; under 0.2
+    passes); a crouched defender creeping forward and back is carried by them and running in by the jog; the
+    licences screen credits the database.
+  - Three seeded 60-second AI matches, every player on the mat (`locomotion_check`), before and after: joints
+    jumping in a frame (pops) 123 → 88, sudden steps 267 → 196, a planted foot's slide 0.05 → 0.03 m/s (90th
+    percentile), a straight leg standing ready 1.0 → 0.6 % of the time and a splayed one 2.3 → 1.4 %. But the
+    running clip changes 41 → 44 times a minute, and cross-fades restarted 187 → 253 times: a defender creeping on a
+    slant goes between the crouched walk and the shuffle (the final pose stage takes those in).
+  - The course (`locomotion_check`, its defender now creeping forward and back too): a foot slides less of the time
+    it is down creeping back (10 → 7 %), running in (38 → 30 %) and chasing (20 → 13 %), but more creeping forward
+    (6 → 16 %: the crouched walk's low steps bring the foot near the floor early as it lands) and in the backpedal
+    after the run in (5 → 22 %).
+  - `motion_audit`: its encounters are the same as before. Over six seeded AI matches the drawn body turned back on
+    itself 618 → 737 times, nearly all of it standing ready, barely moving, with no running clip in the pose: the
+    matches went differently (the players' own reversals 202 → 216), not the clips. `tackle_check` 19 of 19,
+    `raid_audit`, `ai_bench` and `fit_audit` as before.
+- **Cost**: two clips of 14 and 18 KB (the BVH takes they came from are 0.86 and 1.09 MB, and are not in the
+  repository: `tools/mocap/README.md` says where they are). `perf_probe` before and after, every ground on Low and the dome on Medium and High: the same draw calls,
+  primitives, objects and video memory to the unit (on Low, the dome's 100 and 218, 634k, 317, 164 MB). The
+  players' animation, timed alone (14 players creeping, shuffling and running in, 900 frames, three runs each): 4.90
+  ms a frame before, 4.92 after, within the runs' own spread (4.75-5.09). Nothing is different on Low.
+
 ## Measuring
 
 ```sh

@@ -9,7 +9,8 @@ extends Node
 ##   - neck drift: the neck left turned by a clip that has finished;
 ##   - stance: a defender standing ready (not moving off), how often a leg is held straight (knee over STRAIGHT_KNEE)
 ##     or splayed (out to the side over SPLAY_DEG), how far apart his feet are, and the steps he takes to settle them.
-## Two runs: "course" (one raider and one defender sprint, stop, backpedal, shuffle, pivot and sprint again)
+## Two runs: "course" (one raider and one defender sprint, stop, backpedal, shuffle, pivot and sprint again; the
+## defender creeps forward and back in his crouch too)
 ## and "match" (an AI match, every player on the mat). Prints one line per measure; --json writes them,
 ## --log prints each jump, snap and pop as it happens. "view" plays the course on screen, with the planted
 ## feet marked, for recording:
@@ -271,6 +272,8 @@ func _course() -> void:
 	]
 	var def_course := [
 		[1.0, Vector3.ZERO, fwd, "set"],
+		[1.6, fwd * 0.8, fwd, "creep forward"],
+		[1.6, -fwd * 0.6, fwd, "creep back"],
 		[1.2, right * 1.6, fwd, "shuffle right"],
 		[1.2, -right * 1.6, fwd, "shuffle left"],
 		[0.8, right * 1.6, fwd, "shuffle right"],

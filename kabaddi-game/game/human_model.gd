@@ -87,7 +87,7 @@ var _move_prev: MocapClip = null
 var _move_prev_t := 0.0
 var _move_fade := 1.0
 var _move_held := 0.0       # seconds since the running clip last changed
-var _low_gait := false      # running crouched (shuffle clips): with hysteresis so it does not flicker
+var _low_gait := false      # moving crouched (the shuffles and crouched walks): with hysteresis so it does not flicker
 var _way := Vector2.ZERO    # the way he travels, against his facing, smoothed (the running clip is picked by it)
 var _pace := -1.0           # his speed, smoothed: how far a running clip is in the pose goes by it
 # The final pose stage: when a clip changes, the step between last frame's pose and the new one is kept as
@@ -99,6 +99,7 @@ const READY_WIDEN := 0.08    # ... and rad each leg goes further out: feet about
 const HELD_HINGE := 0.6      # share of that hinge a raider held round the middle bends into, struggling
 const HAUL_DIG := 0.5        # how much more of his body an ankle holder on the floor hauls with (_apply_struggle)
 const MOVE_FADE := 0.28      # s to cross-fade from one running clip to the next
+const MOVE_RATE := Vector2(0.5, 1.8)   # slowest and fastest a running clip is played, against how fast it was captured
 var _joints: Array[Node3D] = []
 var _last_q: Array[Quaternion] = []
 var _last_h := 0.0
@@ -1020,6 +1021,7 @@ func _apply_moves(delta: float) -> void:
 	_way = raw if _way == Vector2.ZERO else _way.lerp(raw, 1.0 - exp(-delta / WAY_EASE))
 	var way := _way.normalized() if _way.length() > 0.05 else raw
 	var s178 := speed * 1.78 / height   # his speed as a 1.78 m player's
+	var pace178 := _pace * 1.78 / height
 	var best: MocapClip = null
 	var best_score := INF
 	var cur_score := INF
@@ -1027,8 +1029,14 @@ func _apply_moves(delta: float) -> void:
 		var align: float = (c as MocapClip).dir.normalized().dot(way)
 		if align < (0.45 if c == _move else 0.6):
 			continue
+		# Past the fastest its legs are played at, a crouched clip leaves the feet behind: a crouched player going
+		# faster (running in to tackle, chasing) takes an upright clip, his crouch kept in the trunk and arms. By his
+		# smoothed pace, so a frame's jolt of speed does not swap his legs over; and one he is not in yet takes him
+		# only well short of that, so a player about that pace does not swap back and forth between the two.
+		if (c as MocapClip).low and pace178 > (c as MocapClip).speed * MOVE_RATE.y * (1.0 if c == _move else 0.75):
+			continue
 		var score := (1.0 - align) * 3.0 + absf(log(maxf(s178, 0.3) / (c as MocapClip).speed))
-		score += absf(crouched - (1.0 if (c as MocapClip).low else 0.0)) * 1.5   # a crouched player shuffles low
+		score += absf(crouched - (1.0 if (c as MocapClip).low else 0.0)) * 1.5   # a crouched player shuffles and walks low
 		if c == _move:
 			cur_score = score
 		if score < best_score:
@@ -1062,11 +1070,11 @@ func _apply_moves(delta: float) -> void:
 		_move = best
 	if _move == null or move_weight <= 0.0:
 		return
-	_move_t += delta * clampf(s178 / _move.speed, 0.5, 1.8)
+	_move_t += delta * clampf(s178 / _move.speed, MOVE_RATE.x, MOVE_RATE.y)
 	var pose := _move.sample_pose(_move_t, true)
 	if _move_prev != null and _move_fade < 1.0:
 		_move_fade = minf(1.0, _move_fade + delta / MOVE_FADE)
-		_move_prev_t += delta * clampf(s178 / _move_prev.speed, 0.5, 1.8)
+		_move_prev_t += delta * clampf(s178 / _move_prev.speed, MOVE_RATE.x, MOVE_RATE.y)
 		var old := _move_prev.sample_pose(_move_prev_t, true)
 		for k in pose:
 			if not old.has(k):

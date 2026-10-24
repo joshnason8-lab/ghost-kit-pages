@@ -591,6 +591,39 @@ func _run() -> void:
 			ra.model._process(1.0 / 30.0)
 		check(ra.model.move_weight > 0.9, "a running player is carried by the captured run (%.2f)" % ra.model.move_weight)
 		ra.queue_free()
+	# 8c. Clips from the CMU motion capture library (a BVH source, tools/mocap/fbx_to_clip.gd): each loads, and on the
+	# game's own skeleton, played at its own speed, a foot on the floor holds (it slides about less than any upright
+	# running clip's does, under 0.2 m/s). The crouched walks carry a crouched defender creeping forward and back, but
+	# not one running in, whom a crouched clip could not keep up with.
+	var cmu := []
+	for f in DirAccess.get_files_at(MocapClip.DIR):
+		var raw = JSON.parse_string(FileAccess.get_file_as_string(MocapClip.DIR.path_join(f))) if f.ends_with(".json") else null
+		if raw is Dictionary and String(raw.get("source", "")).to_lower().ends_with(".bvh"):
+			cmu.append(MocapClip.load_file(MocapClip.DIR.path_join(f)))
+	check(cmu.size() >= 2, "the CMU clips are in the library (%d)" % cmu.size())
+	for cm in cmu:
+		var held: Vector2 = cm.foot_speed() if cm != null else Vector2(0.0, INF)
+		check(cm != null and cm.version == 2 and cm.quats.size() >= 20 and cm.speed > 0.2 and held.y < 0.2,
+			"CMU clip %s loads, and at its %.2f m/s a planted foot holds (slides %.2f m/s)" % [cm.name if cm else "?", cm.speed if cm else 0.0, held.y])
+	var cr := Athlete.new()
+	cr.setup(DB.team("DEL").squad[3], 1, Color.ORANGE, Color.WHITE, true)
+	add_child(cr)
+	cr.facing = Vector3(0, 0, -1)
+	cr.set_state("ready", 1000.0)
+	cr.set_process(false)
+	var carried := {}
+	for way in [["forward", Vector3(0, 0, -0.7)], ["back", Vector3(0, 0, 0.6)], ["running in", Vector3(0, 0, -3.2)]]:
+		for f in 45:
+			cr.lock_facing = true
+			cr.face_toward(cr.position + Vector3(0, 0, -1), 1.0 / 30.0, 10.0)
+			cr.drive(way[1], 1.0 / 30.0)
+			cr._process(1.0 / 30.0)
+			cr.model._process(1.0 / 30.0)
+		carried[way[0]] = cr.model._move.name if cr.model._move != null and cr.model.move_weight > 0.3 else "none"
+	check(carried.forward == "move_crouch_walk" and carried.back == "move_crouch_back"
+		and not String(carried["running in"]).begins_with("move_crouch") and carried["running in"] != "none",
+		"a crouched defender creeps forward and back on the CMU crouched walks, and runs in on an upright clip (%s)" % str(carried))
+	cr.queue_free()
 
 	# 8a. Realistic rigged body follows the placeholder skeleton.
 	if RiggedBody.available():
@@ -1279,6 +1312,8 @@ func _languages() -> void:
 		all += String(rt.text)
 	check(all.contains("Godot Engine contributors") and all.contains("SIL Open Font License") and all.contains("FreeType"),
 		"the licences screen shows Godot's licence, its parts' and the fonts'")
+	check(all.contains("Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217."),
+		"the licences screen credits the CMU motion capture database as it asks")
 	# The match's words in the game's own fonts (a CanvasLayer does not pass the window's theme on).
 	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
 		"difficulty": 1, "first_raider": 0, "passive": true})

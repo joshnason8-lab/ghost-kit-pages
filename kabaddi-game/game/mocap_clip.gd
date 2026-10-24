@@ -2,10 +2,11 @@ class_name MocapClip
 extends RefCounted
 ## Captured animation the athletes play instead of the hand-made pose. Two kinds:
 ## - version 1, joint angles from match footage (tools/mocap/to_clip.py): one bend per joint;
-## - version 2, full 3D joint rotations from Mixamo or Meshy animations (tools/mocap/fbx_to_clip.gd).
+## - version 2, full 3D joint rotations from Mixamo or Meshy animations or the CMU motion capture library
+##   (tools/mocap/fbx_to_clip.gd).
 ## Put clips in res://assets/mocap/<name>.json. A clip named in FOR_STATE plays for that move; clips named
-## move_* are the running set (run, jog, walk, strafes, backpedal), played whenever a player moves the way
-## and about the speed they were captured at, at the rate that keeps the feet planted.
+## move_* are the running set (run, jog, walk, strafes, backpedal, crouched shuffle and walks), played whenever a
+## player moves the way and about the speed they were captured at, at the rate that keeps the feet planted.
 
 ## Athlete state -> which clips can play for it (every clip whose name starts so; each player gets his own
 ## pick) and how: "loop" round and round, "fit" stretched over the move's length in the game, "once" at its
@@ -29,6 +30,11 @@ const FOR_STATE := {
 	"slump": ["slump_", "once"],
 }
 const DIR := "res://assets/mocap"
+## The game's plain skeleton for a 1.78 m player, as HumanModel builds it: the pelvis' joint over the floor, each hip
+## off it, and the thigh and shin, for working out where a clip puts the feet (foot_speed).
+const HIP_H := 0.98
+const HIP := Vector3(0.1, -0.04, 0.0)
+const LEG := 0.44
 
 var name := ""
 var length := 0.0
@@ -41,7 +47,7 @@ var airs := PackedFloat32Array()       # how high the body's lowest point is off
 var quats: Array[PackedFloat32Array] = []   # per frame: x, y, z, w for each joint
 var speed := 0.0                       # m/s a 1.78 m player travels at in this clip (0: on the spot)
 var dir := Vector2.ZERO                # which way: x to his right, y forward
-var low := false                       # crouched all through (a defender's shuffle)
+var low := false                       # crouched all through (a defender's shuffle, a crouched walk)
 var arms := "both"                     # "r": only the right arm is the clip's, the left keeps the game's pose
 
 var _landing := -2.0                   # see landing()
@@ -144,7 +150,8 @@ static func load_file(path: String) -> MocapClip:
 		c.speed = float(parsed.get("speed", 0.0))
 		var d: Array = parsed.get("dir", [0, 0])
 		c.dir = Vector2(float(d[0]), float(d[1]))
-		c.low = float(parsed.get("h_max", 1.0)) < 0.9
+		# Crouched by its hips, or by its own say (a crouched walk's hips bob up past the shuffle's).
+		c.low = bool(parsed.get("low", false)) or float(parsed.get("h_max", 1.0)) < 0.9
 		c.arms = String(parsed.get("arms", "both"))
 	else:
 		c.frames = parsed.frames
@@ -178,6 +185,67 @@ func stride() -> float:
 			best = ahead
 			_stride = float(k) / float(quats.size())
 	return _stride
+
+
+## A travelling clip on the game's own skeleton: how fast a foot on the floor goes back under the body (m/s for a
+## 1.78 m player, along the way the clip goes), which is the speed that holds the feet still as the game plays it;
+## and how fast a foot on the floor slides about at the clip's own speed (the median, m/s). A clip turns each joint
+## as its source did, but the source's proportions are not the game's (the CMU subjects' legs are longer for their height),
+## so the stride, and the speed it carries the body at, is measured here. Zero for a clip that does not travel.
+func foot_speed() -> Vector2:
+	var n := quats.size()
+	if version < 2 or n < 3 or dir.length() < 0.1:
+		return Vector2.ZERO
+	var way := Vector3(dir.x, 0.0, -dir.y).normalized()
+	var at := []
+	var lo := [INF, INF]
+	for k in n:
+		var f := feet(k)
+		at.append(f)
+		lo[0] = minf(lo[0], (f[0] as Vector3).y)
+		lo[1] = minf(lo[1], (f[1] as Vector3).y)
+	# Frame to frame, and round from the last to the first for a loop.
+	var pairs := []
+	for k in n - 1:
+		pairs.append([k, k + 1, times[k + 1] - times[k]])
+	if length - times[n - 1] > 0.001:
+		pairs.append([n - 1, 0, length - times[n - 1]])
+	var back := []
+	var moved := []
+	for pr in pairs:
+		for s in 2:
+			var a: Vector3 = at[pr[0]][s]
+			var b: Vector3 = at[pr[1]][s]
+			if a.y < lo[s] + 0.025 and b.y < lo[s] + 0.025 and float(pr[2]) > 0.0:
+				back.append(-(b - a).dot(way) / float(pr[2]))
+				moved.append([b - a, float(pr[2])])
+	if back.is_empty():
+		return Vector2.ZERO
+	back.sort()
+	var slides := []
+	for m in moved:
+		var d: Vector3 = (m[0] as Vector3) + way * speed * float(m[1])
+		slides.append(Vector2(d.x, d.z).length() / float(m[1]))
+	slides.sort()
+	return Vector2(back[back.size() / 2], slides[slides.size() / 2])
+
+
+## Where frame k of a version 2 clip puts the feet (the ankles) on the game's plain skeleton for a 1.78 m player,
+## from the spot under his pelvis: [left, right].
+func feet(k: int) -> Array:
+	var f: PackedFloat32Array = quats[k]
+	var rot := func(j: String) -> Quaternion:
+		var i := joints.find(j) * 4
+		return Quaternion(f[i], f[i + 1], f[i + 2], f[i + 3]).normalized()
+	var pel: Quaternion = rot.call("pelvis")
+	var out := []
+	for side in ["l", "r"]:
+		var hip: Quaternion = pel * rot.call("hip_" + side)
+		var knee: Quaternion = hip * rot.call("kn_" + side)
+		var x := -HIP.x if side == "l" else HIP.x
+		out.append(Vector3(0.0, HIP_H * heights[k], 0.0) + pel * Vector3(x, HIP.y, 0.0) + hip * Vector3(0.0, -LEG, 0.0)
+			+ knee * Vector3(0.0, -LEG, 0.0))
+	return out
 
 
 ## When a fall reaches the floor (s): the first frame its hips are within 0.04 of their lowest. -1 for a clip
