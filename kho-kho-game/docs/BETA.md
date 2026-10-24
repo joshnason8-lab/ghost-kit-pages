@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.6
+
+- **Real recorded sound:** footsteps where the players run (on the earth, or the hall's mat), the slap of a kho, a dive
+  landing, a real crowd's murmur and cheer, applause, crickets at the village's dusk and the stadium's night, birds at
+  the school's noon, and a little of the hall's echo indoors. A pause now holds every sound until you carry on.
+  Where each sound comes from: docs/SOUNDS.md (and the Licences screen).
+
 ## What's new in 0.5
 
 - **Real recorded movement** for two moves, from a motion capture library: **DODGE** is now a runner's hard cut, the

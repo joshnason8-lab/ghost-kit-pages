@@ -26,6 +26,7 @@ var watch := Vector3.INF    # a point his head turns to follow (a seated chaser 
 var _head := 0.0
 var _prev_act := ""
 var _knelt := false
+var _stride := 0.0          # through his stride: a footstep at each half
 
 
 func _init(p_data := {}, p_side := 0, look := {}) -> void:
@@ -114,6 +115,7 @@ func _finish_act() -> void:
 			act = "lie"
 			act_t = 0.0
 			act_len = 0.55
+			Sfx.play_at("thud", global_position, -2.0, randf_range(0.9, 1.05))   # down on the ground
 			return
 		"lie":
 			act = "getup"
@@ -203,6 +205,12 @@ func _animate(dt: float, spd: float) -> void:
 	if act != "sit":
 		_knelt = false
 	body.play(c, rate, blend, at)
+	# His feet: two steps to each cycle of his run or walk, as fast as the clip plays.
+	if c in ["run", "walk"] and spd > 0.5:
+		_stride += dt * 2.0 * rate / body.clip_length(c)
+		if _stride >= 1.0:
+			_stride -= 1.0
+			Sfx.step(global_position, spd)
 	body.scale.x = -absf(body.scale.x) if mirror else absf(body.scale.x)
 	# A head that follows the play: up to 70 degrees either way of where his body faces, eased.
 	var want_head := 0.0

@@ -135,6 +135,7 @@ func _ready() -> void:
 	_start_turn()
 	if not attract:
 		Sfx.crowd(0.4 * arena.atmosphere())
+		Sfx.venue(arena.kind, arena.surface())
 
 
 # ---------------------------------------------------------------- people
@@ -1707,6 +1708,7 @@ func cycle_camera() -> void:
 
 func set_paused(on: bool) -> void:
 	paused = on
+	Sfx.pause(on)
 	if hud:
 		hud.show_pause(on)
 
