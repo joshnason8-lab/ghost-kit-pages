@@ -9,9 +9,17 @@ The players (a man and a woman), the ball and the app's icon made for the game; 
 motion capture (Mixamo). The jumps in the block, the header spike and the celebration: motion capture data from
 mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217. The temple, the stilt houses, the
 shophouses, the apartment blocks, the trees, the bleachers, benches, tables and the basketball hoop made for the
-game too; skies, surfaces and the other venue pieces from Poly Haven (polyhaven.com), CC0. Sounds made in code for
-the game; the menu music and crowd drums written for it (tools/audio/make_music.py). Crowd reactions from Kabaddi
-Raid, by the same maker."""
+game too; skies, surfaces and the other venue pieces from Poly Haven (polyhaven.com), CC0. The referee's whistle and
+the buzzer made in code for the game; the crowd's drums written for it (tools/audio/make_music.py). The crowd's "ooh"
+and groan, the claps and the players' calls from Kabaddi Raid, by the same maker."""
+
+const SOUNDS := """[b]Sounds[/b] (each with its source in docs/SOUNDS.md)
+The crowd's murmur and cheer: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org/content/free-crowd-cheering-sounds), CC BY 4.0.
+The chatter at the mall and the night market: "Free General Ambience Sounds" (crowd - mall ambience) by Gregor Quendel (www.gregorquendel.com; opengameart.org/content/free-general-ambience-sounds), CC BY-SA 4.0; the game's cut of it (assets/audio/amb_chatter.ogg) is under CC BY-SA 4.0 too.
+The sea at the beach, the birds at the temple and the evening at the park: "Nature Ambient Pack Vol 1" by JC Sounds (opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1), CC BY 4.0.
+Footsteps on the court: "Footsteps on different surfaces" by congusbongus, from recordings by swuing and ceberation (opengameart.org/content/footsteps-on-different-surfaces), CC BY 3.0.
+The slap in a spike: "Punch, slap, n' kick" by CGEffex (opengameart.org/content/punch-slap-n-kick), CC BY 3.0.
+Under CC0, with thanks: the ball's knocks from "Wood and Metal Sound Effects: Volume 2" by Ogrebane; impacts, the net's rustle and the click from Kenney (kenney.nl); applause by eXpl0it3r; footsteps on sand by Fantozzi; the menu music, "Kingdom of a Million Elephants under a White Parasol" by Spring Spring (Julie Damsgaard)."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans, Noto Sans Thai, Lao, Myanmar, Khmer, Devanagari, JP, KR and SC: Copyright The Noto Project Authors (https://github.com/notofonts).
@@ -31,6 +39,7 @@ func _ready() -> void:
 	v.add_child(UI.scroll(col))
 	col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
 	col.add_child(_text(CREDITS))
+	col.add_child(_text(SOUNDS))
 	col.add_child(_text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
 	col.add_child(_text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
 	# The engine's own parts, each with its copyright and licence, then the licences' texts.

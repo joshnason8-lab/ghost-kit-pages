@@ -21,6 +21,7 @@ var _queued := ""          # a move to start at _queued_at
 var _queued_at := 0.0
 var _queued_mirror := false
 var _ph := 0.0             # running stride's phase
+var _half := 0             # half strides run (a footstep each)
 var _w := 0.0              # how much the move holds the pose (eases in and out)
 var _yaw := 0.0
 var _ring: MeshInstance3D
@@ -181,6 +182,12 @@ func tick(dt: float, now: float) -> void:
 	# The pose: the move if one is playing, blended over the run or the ready stance.
 	var speed := vel.length()
 	_ph += dt * (4.0 + speed * 2.2)
+	# A footstep each half stride while he runs (two to a turn of the stride's phase).
+	var half := int(_ph / PI)
+	if half != _half:
+		_half = half
+		if speed > 1.2 and move == "":
+			Sfx.step(global_position, speed)
 	var local := vel.rotated(Vector3.UP, -_yaw)
 	var sidestep := clampf(local.x / maxf(speed, 0.01), -1.0, 1.0) if speed > 0.4 else 0.0
 	var base := Moves.run(_ph, clampf(speed / 5.0, 0.0, 1.0), sidestep * 0.8)

@@ -18,6 +18,8 @@ var net_top := Court.NET_M
 var crowd: Crowd
 var _standing: Array = []      # where people stand (the others' spots are seats)
 const FAR_GROUND := Rect2(-300, -300, 600, 600)   # outdoors the ground reaches the camera's far plane
+const AMBIENCE := {"beach": ["amb_beach", -8.0], "temple": ["amb_temple", -12.0], "park": ["amb_park", -10.0],
+	"street": ["amb_chatter", -10.0], "mall": ["amb_chatter", -16.0]}
 var fans: Array[Node3D] = []  # ceiling fans to turn (the provincial gym)
 var _t := 0.0
 
@@ -116,6 +118,17 @@ func atmosphere() -> float:
 
 func indoor() -> bool:
 	return bool(DB.venue(venue)[2])
+
+
+## The court on sand (the beach): the ball's bounce and the footsteps are on sand.
+func sand() -> bool:
+	return venue == "beach"
+
+
+## The place's own sound under the crowd (Sfx.ambience): [sound, volume dB], or "" for none (the halls: the crowd's
+## murmur is their sound).
+func ambience() -> Array:
+	return AMBIENCE.get(venue, ["", 0.0])
 
 
 # ---------------------------------------------------------------- light and sky

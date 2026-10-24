@@ -150,9 +150,13 @@ func _ready() -> void:
 	if not bool(config.get("attract", false)):
 		Sfx.crowd(arena.atmosphere() * 0.6)
 		Sfx.drums(arena.atmosphere() * 0.3 if arena.indoor() else -1.0)
+		var amb: Array = arena.ambience()
+		Sfx.ambience(String(amb[0]), float(amb[1]))
+		Sfx.surface("sand" if arena.sand() else "court")
 		hud.intro(_intro_text())
 	else:
 		Sfx.crowd(0.15)
+		Sfx.surface("")   # (behind the home screen: its music, the crowd low, no footsteps)
 
 
 func _intro_text() -> String:
@@ -668,7 +672,7 @@ func _serve_kick(pl: Player, from: Vector3, q: float, mv: String) -> void:
 	# A poor serve catches the net: it is struck too flat to clear the tape.
 	if q < 0.22 and rng.randf() < 0.55:
 		v = Ball.solve_apex(from, target, arena.net_top - 0.15)[0]
-	Sfx.play("kick", -2.0, 1.1 if horse else 1.0)
+	Sfx.play_at("kick", from, -2.0, 1.1 if horse else 1.0)
 	_launch(from, v, pl.side, horse)
 	_after_touch(pl.side)
 
@@ -719,7 +723,7 @@ func _pass(pl: Player, from: Vector3, q: float, kind: String) -> void:
 		apex = lerpf(2.6, 4.2, q)
 	if q < 0.14:
 		# A shank: off the body anywhere.
-		Sfx.play("knee", -4.0)
+		Sfx.play_at("knee", from, -4.0)
 		var wild := Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-5, 5))
 		var v := Vector3(wild.x, rng.randf_range(2.0, 5.5), wild.z)
 		_launch(from, v, side, false)
@@ -732,7 +736,7 @@ func _pass(pl: Player, from: Vector3, q: float, kind: String) -> void:
 		spot.x = Court.sgn(side) * 0.35
 	spot.y = 1.0
 	var sol := Ball.solve_apex(from, spot, apex)
-	Sfx.play("kick" if String(_last_move(pl)) in ["sila", "kuda", "dig"] else "knee", -4.0)
+	Sfx.play_at("kick" if String(_last_move(pl)) in ["sila", "kuda", "dig"] else "knee", from, -4.0)
 	_launch(from, sol[0], side, false)
 	_after_touch(side)
 
@@ -767,7 +771,7 @@ func _make_set(pl: Player, from: Vector3, q: float, p: Dictionary) -> void:
 	if cp.x * Court.sgn(side) < 0.25:
 		cp.x = Court.sgn(side) * 0.3
 	var sol := Ball.solve_apex(from, cp, apex)
-	Sfx.play("kick", -6.0, 1.05)
+	Sfx.play_at("kick", from, -6.0, 1.05)
 	_set_for = {"player": striker, "move": spike_move}
 	_launch(from, sol[0], side, false)
 	_after_touch(side)
@@ -820,7 +824,7 @@ func _attack(pl: Player, from: Vector3, q: float, p: Dictionary) -> void:
 		var speed: float = {"roll": 30.0, "sunback": 27.0, "tapak": 22.0, "head_spike": 20.0}.get(mv, 24.0) * lerpf(0.68, 1.04, q)
 		# A poor one, now and then, is driven flat into the tape.
 		v = _drive(from, target, speed, 0.04 if q > 0.3 or rng.randf() < 0.6 else -0.25)
-	Sfx.play("spike" if mv != "feint" else "kick", 0.0 if mv != "feint" else -6.0)
+	Sfx.play_at("spike" if mv != "feint" else "kick", from, 0.0 if mv != "feint" else -6.0)
 	if _is_user(pl):
 		Game.haptic("spike")
 	_launch(from, v, side, mv != "feint")
@@ -878,7 +882,7 @@ func _kick_over(pl: Player, from: Vector3, q: float) -> void:
 	target += Vector3(rng.randfn(0, err * 0.5), 0, rng.randfn(0, err * 0.5))
 	target.y = Ball.RADIUS
 	var sol := Ball.solve_apex(from, target, maxf(from.y + 1.0, arena.net_top + 1.8))
-	Sfx.play("kick", -4.0)
+	Sfx.play_at("kick", from, -4.0)
 	_launch(from, sol[0], pl.side, false)
 	_after_touch(pl.side)
 
@@ -912,7 +916,7 @@ func _at_net(t: float) -> void:
 		touches = 1
 		last_toucher = bp
 		rally_len += 1
-		Sfx.play("block", 0.0)
+		Sfx.play_at("block", p, 0.0)
 		if _is_user(bp):
 			Game.haptic("block")
 		# A stuff block comes off on the attackers' side of the net; a soft one on the blocker's own.
@@ -938,7 +942,7 @@ func _at_net(t: float) -> void:
 	var bottom := arena.net_top - Court.NET_DEPTH - Ball.RADIUS
 	if p.y < top and p.y > bottom:
 		# Into the net: it drops back on the side it came from (still in play, if touches are left).
-		Sfx.play("net", -2.0)
+		Sfx.play_at("net", p, -2.0)
 		var v := ball.vel
 		var back := Vector3(-v.x * 0.18, maxf(0.4, absf(v.y) * 0.15), v.z * 0.4)
 		ball.launch(Vector3(Court.sgn(from_side) * 0.09, p.y, p.z), back, t)
@@ -1220,7 +1224,7 @@ func _block_at_net(attacker: Player, from: Vector3, v: Vector3, mv: String) -> v
 # ---------------------------------------------------------------- the end of a rally
 
 func _landed(p: Vector3) -> void:
-	Sfx.play("bounce", -2.0)
+	Sfx.bounce(p)
 	var side := Court.side_of(p.x)
 	var inside := Court.in_court(p, side)
 	var winner_side := 1 - side if inside else (1 - touch_side if touch_side >= 0 else 1 - side)
@@ -1253,6 +1257,8 @@ func _landed(p: Vector3) -> void:
 	if not called_in:
 		hud.call_line(tr("CALL_OUT"))
 	var winner_team: int = side_team[winner_side]
+	if close and not bool(config.get("attract", false)):
+		Sfx.react("ooh", -8.0)   # (a ball right on the line)
 	if close:
 		_pending_call = {"winner": winner_team, "p": p, "true_in": inside, "called_in": called_in, "side": side,
 			"until": now + 3.5, "true_winner": side_team[(1 - side) if inside else (1 - touch_side if touch_side >= 0 else side)]}
@@ -1310,7 +1316,13 @@ func _point(team: int) -> void:
 	run[1 - team] = 0
 	last_point_team = team
 	if not bool(config.get("attract", false)):
-		Sfx.react("cheer" if rally_len > 3 or _attack_kind != "" else "applause", -4.0 if team == _home_team_index() else -9.0)
+		# The crowd is the home side's: a cheer for a long rally or a kill, applause for a short one; when their own
+		# side gives a point away (out, into the net, a fault) a groan.
+		var home := _home_team_index()
+		if team != home and not (why.begins_with("kill") or why in ["ace", "block"]):
+			Sfx.react("groan", -6.0)
+		else:
+			Sfx.react("cheer" if rally_len > 3 or _attack_kind != "" else "applause", -4.0 if team == home else -9.0)
 	Crowd.set_excite(0.9 if team == _home_team_index() else 0.4)
 	if team == user_team:
 		Game.haptic("point")
@@ -1450,6 +1462,7 @@ func _finish(team: int) -> void:
 	if not bool(config.get("attract", false)):
 		Sfx.crowd(-1.0)
 		Sfx.drums(-1.0)
+		Sfx.ambience("")
 	finished.emit(result)
 	if bool(config.get("demo", false)):
 		return
@@ -1918,6 +1931,7 @@ func _tension() -> float:
 func set_paused(on: bool) -> void:
 	paused = on
 	hud.show_pause(on)
+	Sfx.pause(on)
 
 
 func on_back() -> void:
@@ -1928,8 +1942,10 @@ func on_back() -> void:
 
 
 func quit_match() -> void:
+	Sfx.pause(false)
 	Sfx.crowd(-1.0)
 	Sfx.drums(-1.0)
+	Sfx.ambience("")
 	Game.goto_menu()
 
 

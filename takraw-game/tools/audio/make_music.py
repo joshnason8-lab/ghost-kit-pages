@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Make the menus' music and the match drums: assets/audio/menu_music.ogg and drums_loop.ogg.
+"""Make the match drums (assets/audio/drums_loop.ogg) and, with --menu, the game's own menu music (menu_music.ogg).
+The menus play a recorded piece since 0.8.0 (docs/SOUNDS.md); --menu puts this one back.
 
 The music is a loop in the spirit of a Thai piphat or Malay gamelan ensemble, all synthesised: a ranat (wooden
 xylophone) melody on a five-note scale over a gong cycle, small kong wong gong chimes, ching cymbals on the beat and
 a klong drum. The drums are the crowd's: the steady klong and thon beat a takraw crowd plays through a match.
 
-Usage: python3 tools/audio/make_music.py   (needs numpy and ffmpeg with libvorbis)
+Usage: python3 tools/audio/make_music.py [--menu]   (needs numpy and ffmpeg with libvorbis)
 """
 import pathlib
 import subprocess
+import sys
 import tempfile
 import wave
 
@@ -139,5 +141,6 @@ def drums():
 
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
-    music()
+    if "--menu" in sys.argv:
+        music()
     drums()

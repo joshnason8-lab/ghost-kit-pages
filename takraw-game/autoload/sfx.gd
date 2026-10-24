@@ -1,12 +1,25 @@
 extends Node
-## Sound effects, most synthesised at startup so the game ships few audio files. Drop an .ogg or .wav with the same
-## name into res://assets/audio/ to replace any of them (assets/audio/whistle.ogg, assets/audio/kick.ogg ...).
-## They are made a sound at a time by the loading screen (build_step), so it can show its progress; anything that
-## needs one before then makes the rest at once (_ensure).
+## Sound effects: recordings (assets/audio/*.ogg, FILES; docs/SOUNDS.md says where each comes from and under what
+## licence) and, where nothing recorded fits yet, sounds synthesised at startup (the referee's whistle, the buzzer, a
+## whoosh). A recording with a synthesised sound's name replaces it. They are made ready a sound at a time by the
+## loading screen (build_step), so it can show its progress; anything that needs one before then makes the rest at
+## once (_ensure).
+##
+## The ball's sounds and the players' footsteps come from where they happen (play_at: heard from the camera); the
+## crowd's murmur, its reactions, the place's own sound (ambience) and the music are all around. Pausing a match holds
+## them all (pause); the Sound and Music switches in Settings turn them off.
 
 const RATE := 22050
 const VOICES := {"grunt": 3, "hup": 2}
 const MUSIC_DB := -9.0
+## Sounds recorded in more than one take: <name>, <name>_2 ... one picked at random each time.
+const VARIANTS := {"kick": 3, "knee": 2, "bounce": 2, "step_court": 3, "step_sand": 3}
+## Every recorded sound the game plays (assets/audio/<name>.ogg).
+const FILES := ["kick", "kick_2", "kick_3", "knee", "knee_2", "spike", "block", "bounce", "bounce_2", "bounce_sand", "net",
+	"crowd_loop", "crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "amb_beach", "amb_temple", "amb_park",
+	"amb_chatter", "step_court", "step_court_2", "step_court_3", "step_sand", "step_sand_2", "step_sand_3", "click",
+	"menu_music", "drums_loop", "grunt_1", "grunt_2", "grunt_3", "hup_1", "hup_2"]
+const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_beach", "amb_temple", "amb_park", "amb_chatter"]
 
 var streams := {}
 var _pool: Array[AudioStreamPlayer] = []
@@ -17,6 +30,12 @@ var _crowd_target := -60.0
 var _drums_target := -60.0
 var _music: AudioStreamPlayer
 var _music_target := -80.0
+var _amb: AudioStreamPlayer
+var _amb_target := -60.0
+var _pool3d: Array[AudioStreamPlayer3D] = []
+var _next3d := 0
+var _held: Array = []         # the players paused with the match
+var _surface := "court"       # the floor's footsteps: "court", "sand", or "" (none: the home screen's match)
 var _todo := []
 var _planned := false
 var _built := false
@@ -37,6 +56,19 @@ func _ready() -> void:
 	_music = AudioStreamPlayer.new()
 	_music.volume_db = -80.0
 	add_child(_music)
+	_amb = AudioStreamPlayer.new()
+	_amb.volume_db = -60.0
+	add_child(_amb)
+	for i in 12:
+		var p := AudioStreamPlayer3D.new()
+		p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_LOGARITHMIC
+		p.unit_size = 16.0               # (about the camera's distance: as loud as before from there)
+		p.max_db = 3.0
+		p.panning_strength = 0.6         # to the side, not hard into one ear
+		p.attenuation_filter_db = 0.0    # (no muffling with distance: the court is small)
+		p.doppler_tracking = AudioStreamPlayer3D.DOPPLER_TRACKING_DISABLED
+		add_child(p)
+		_pool3d.append(p)
 
 
 ## Make the next sound; false once they are all made.
@@ -78,6 +110,8 @@ func _process(delta: float) -> void:
 		_crowd.volume_db = move_toward(_crowd.volume_db, _crowd_target, 30.0 * delta)
 	if _drums.playing:
 		_drums.volume_db = move_toward(_drums.volume_db, _drums_target, 20.0 * delta)
+	if _amb.playing:
+		_amb.volume_db = move_toward(_amb.volume_db, _amb_target, 20.0 * delta)
 	if _music.playing:
 		_music.volume_db = move_toward(_music.volume_db, _music_target, (20.0 if _music_target > _music.volume_db else 30.0) * delta)
 		if _music_target < -60.0 and _music.volume_db <= -60.0:
@@ -90,14 +124,83 @@ func enabled() -> bool:
 
 func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
-	if not enabled() or not streams.has(sound):
+	var key := _take(sound)
+	if not enabled() or not streams.has(key):
 		return
 	var p := _pool[_next]
 	_next = (_next + 1) % _pool.size()
-	p.stream = streams[sound]
+	_start(p, streams[key], volume_db, pitch)
+
+
+## A sound from a place on the court (the ball, a player's feet), heard from the camera: to its side as it is, quieter
+## the further off.
+func play_at(sound: String, at: Vector3, volume_db := 0.0, pitch := 1.0) -> void:
+	_ensure()
+	var key := _take(sound)
+	if not enabled() or not streams.has(key):
+		return
+	var p := _pool3d[_next3d]
+	_next3d = (_next3d + 1) % _pool3d.size()
+	p.global_position = at
+	_start(p, streams[key], volume_db, pitch)
+
+
+func _start(p: Node, stream: AudioStream, volume_db: float, pitch: float) -> void:
+	_held.erase(p)
+	p.stream_paused = false
+	p.stream = stream
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
 	p.play()
+
+
+## One of a sound's takes (VARIANTS).
+func _take(sound: String) -> String:
+	var n := int(VARIANTS.get(sound, 1))
+	var k := randi() % n if n > 1 else 0
+	return sound if k == 0 else "%s_%d" % [sound, k + 1]
+
+
+## The ball on the floor: on the court, or on sand.
+func bounce(at: Vector3, volume_db := -2.0) -> void:
+	play_at("bounce_sand" if _surface == "sand" else "bounce", at, volume_db, randf_range(0.95, 1.05))
+
+
+## What the players' feet are on: "court", "sand", or "" for no footsteps.
+func surface(kind: String) -> void:
+	_surface = kind
+
+
+## A footstep at a player's feet, louder the faster he runs.
+func step(at: Vector3, speed: float) -> void:
+	if _surface != "":
+		play_at("step_" + _surface, at, lerpf(-26.0, -14.0, clampf(speed / 6.0, 0.0, 1.0)), randf_range(0.92, 1.08))
+
+
+## The place's own sound under everything (the sea, the birds, a market's chatter), volume_db; "" stops it.
+func ambience(name: String, volume_db := -10.0) -> void:
+	_ensure()
+	if name == "" or not enabled() or not streams.has(name):
+		_amb.stop()
+		return
+	_amb_target = volume_db
+	if _amb.stream != streams[name] or not _amb.playing:
+		_amb.stream = streams[name]
+		_amb.volume_db = -40.0
+		_amb.play()
+
+
+## The match paused: every sound held where it is (and carried on from there after).
+func pause(on: bool) -> void:
+	if on:
+		for p in _players():
+			if p.playing and not p.stream_paused:
+				p.stream_paused = true
+				_held.append(p)
+	else:
+		for p in _held:
+			p.stream_paused = false
+		_held.clear()
 
 
 ## A player's effort: voice("grunt") or "hup"; pitch gives each player his own voice.
@@ -153,10 +256,22 @@ func music(on: bool) -> void:
 
 
 func stop_all() -> void:
+	_held.clear()
 	_crowd.stop()
 	_drums.stop()
-	for p in _pool:
+	_amb.stop()
+	for p in _players():
+		p.stream_paused = false
 		p.stop()
+
+
+## Every player of sounds (not the music's).
+func _players() -> Array:
+	var all := []
+	all.append_array(_pool)
+	all.append_array(_pool3d)
+	all.append_array([_crowd, _drums, _amb])
+	return all
 
 
 # ---------------------------------------------------------------- synthesis
@@ -178,17 +293,16 @@ func _plan() -> void:
 		["roar", _roar],
 		["crowd_loop", _crowd_loop],
 	]
-	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music", "drums_loop"]:
-		_todo.append([k, null])
-	for kind in VOICES:
-		for i in int(VOICES[kind]):
-			_todo.append(["%s_%d" % [kind, i + 1], null])
+	var made := _todo.map(func(item): return item[0])
+	for k in FILES:
+		if not k in made:
+			_todo.append([k, null])
 	_total = _todo.size()
 
 
 func _finish() -> void:
 	_built = true
-	for k in ["crowd_loop", "drums_loop", "menu_music"]:
+	for k in LOOPS:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
 	_crowd.stream = streams.get("crowd_loop")

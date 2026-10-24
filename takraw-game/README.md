@@ -22,6 +22,7 @@ laws as they stand, with real-looking players, ball and crowds.
 | **Defence** | Blockers read the set and jump at the net, side on, a foot raised over it; defenders read the striker's approach and dig what they can reach, with the foot, chest or thigh. |
 | **Faults** | Net touches, the ball under the net or outside the boundary tape, a fourth touch, out balls, the server's standing foot. |
 | **Officials** | The referee in his high chair, the assistant at the other post, line judges who signal in and out, and now and then call a close one wrong. They follow the ball with their heads, breathe and shift their weight; the referee points to the side that won the point (`game/officials.gd`). Challenge it: a video review shows the ball's mark against the line, in millimetres. |
+| **Sound** | Recorded: the ball's knocks and bounces (from where the ball is), footsteps on the court and on sand, a real crowd (murmur, cheers, applause, a groan, an "ooh"), each outdoor venue's own sound (the sea, birds, a summer evening, a market's chatter), menu music; the referee's whistle made in code. Every source and licence in [docs/SOUNDS.md](docs/SOUNDS.md). |
 | **Broadcast touches** | Slow motion on a roll spike, replays of the great points, the crowd that rises with a long rally, drums in the arenas, call-outs (ROLL SPIKE!, BLOCKED!, ACE!), set point and match point. |
 | **Venues** | Four indoor (the National Arena, the Grand Dome, a shopping-mall atrium where the world championship is played, a provincial gym) and four outdoor (a temple court, a floodlit park court, a beach at sunset, a night-market street), built from real-world pieces: photographed skies and surfaces, a Thai wat, stilt houses, shophouses and apartment blocks with lit windows, palms and rain trees, plastic chairs, park benches, a chain-link fence, market stalls and lanterns, metal bleachers, a maple gym floor with its clock and basketball boards, the sea moving at the beach ([docs/PROGRESS.md](docs/PROGRESS.md)). |
 | **Modes** | Quick Match; League Season in club leagues run the way the real ones are, under plain names of the game's own: the Malaysia League (seven Grand Prix of groups of three, quarter-finals, semi-finals, the final and third place, worth the STL's points; the last two relegated; Division 1's finalists promoted into the same season), the Thailand League (home and away, every fixture a tie of two regus, 2 points for both, 1 for one each) and the Indonesia League (five regions, then the national finals in Jakarta; men and women); awards and the record book. International: the World Championship, the Royal Cup, the Asian and the Southeast Asian championships (groups, semi-finals, both losing semi-finalists take bronze, the final). |
@@ -88,14 +89,14 @@ ui/         main menu, quick setup, season, international, result, settings, how
 i18n/       src/*.json (one file per language), strings.csv (generated)
 fonts/      Noto Sans for Latin and Vietnamese, Thai, Lao, Myanmar, Khmer, Devanagari, and Japanese, Korean and
             Chinese cut to the characters used (tools/subset_fonts.py); Teko. All SIL OFL.
-tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py,
+tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/ (make_music.py, prepare_sounds.py),
             ui_art/render_art.tscn (the menu figures), store/ (icons, screenshots), meshy/ (the character order),
             models/ (shrinking the models, the kit masks, the crowd sheet, the moves from motion capture, bvh.gd)
 tests/      test_runner, fit_audit, match_sim, screenshots, venue_view, crowd_view, officials_view, pose_view, rally_frames,
             compile_check
 store/      PLAY_STORE.md, the listing in five languages, the icon, feature graphic and screenshots
-docs/       TAKRAW.md (the sport, with sources), MOCAP.md (the motion capture, clip by clip), MESHY_BRIEF.md, BETA.md,
-            ROADMAP.md, PROGRESS.md
+docs/       TAKRAW.md (the sport, with sources), MOCAP.md (the motion capture, clip by clip), SOUNDS.md (every sound's
+            source and licence), MESHY_BRIEF.md, BETA.md, ROADMAP.md, PROGRESS.md
 ```
 
 ## Moving it to its own repository

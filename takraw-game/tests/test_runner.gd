@@ -23,6 +23,7 @@ func _ready() -> void:
 	_mocap_moves()
 	await _crowd_people()
 	_ball_spins()
+	_sounds()
 	_graphics_auto()
 	await _play_as_and_officials()
 	await _matches()
@@ -256,6 +257,41 @@ func _crowd_people() -> void:
 			check(standing == 0, "national: everyone in the stands is seated (%d standing)" % standing)
 		a.queue_free()
 		await frames(1)
+
+
+## Every recorded sound is there and loads (Sfx.FILES; the loops loop), and every sound the game asks for by name
+## (Sfx.play, play_at, react, voice, ambience, in the game's and the screens' code, and each venue's ambience) is one
+## Sfx has, recorded or made.
+func _sounds() -> void:
+	for k in Sfx.FILES:
+		var path := "res://assets/audio/%s.ogg" % k
+		check(ResourceLoader.exists(path), "sound %s is there" % k)
+		var st = load(path) if ResourceLoader.exists(path) else null
+		check(st is AudioStream and (st as AudioStream).get_length() > 0.0, "sound %s loads" % k)
+	Sfx._ensure()
+	for k in Sfx.LOOPS:
+		check(Sfx.streams.get(k) is AudioStreamOggVorbis and (Sfx.streams[k] as AudioStreamOggVorbis).loop, "sound %s loops" % k)
+	var asked := {}
+	var re := RegEx.create_from_string("Sfx\\.(play|play_at|react|voice|ambience)\\(\"(\\w+)\"")
+	for dir in ["res://game/", "res://ui/", "res://autoload/"]:
+		for f in DirAccess.get_files_at(dir):
+			if f.ends_with(".gd"):
+				for m in re.search_all(FileAccess.get_file_as_string(dir + f)):
+					var name := m.get_string(2)
+					match m.get_string(1):
+						"react":
+							name = "crowd_" + name if name != "applause" else name
+						"voice":
+							name += "_1"
+					asked[name] = f
+	for v in Arena.AMBIENCE:
+		asked[String(Arena.AMBIENCE[v][0])] = "arena.gd"
+	asked["bounce_sand"] = "sfx.gd"
+	asked["step_court"] = "sfx.gd"
+	asked["step_sand"] = "sfx.gd"
+	check(asked.size() > 15, "the sounds asked for are found in the code (%d)" % asked.size())
+	for k in asked:
+		check(Sfx.streams.has(k), "sound %s (asked for in %s) is one there is" % [k, asked[k]])
 
 
 ## The ball spins in the air: a spin once it is kicked, and the ball's mesh turns with it.

@@ -129,6 +129,11 @@ past the ground at the beach (and the sea ending in a square), and the same at t
 - **The night market's street** is closed at both ends by two more rows of shophouses across it (the cut-outs), so
   the end camera looks down a street, not into the dark.
 
+Performance (`perf_probe`, `--fixed-fps 30`): the same objects and triangles as 0.6.0 everywhere (the beach on High
+5k more, its longer sea), and 2 draw calls more in every venue: the officials in the picture, posed afresh each frame
+now that they move (their bodies are skinned again each time). Low is 74 to 88 draw calls; High 90 to 124. The fog
+and the far ground cost no draw calls; the crowd's bigger cut-outs none either (still one).
+
 `tests/venue_view.tscn -- <dir> <venues>,around` renders the outdoor venues from the end camera at each end, the side
 camera and looking out from the court; `tests/crowd_view.tscn -- <dir> 2 up` the crowd on its feet.
 

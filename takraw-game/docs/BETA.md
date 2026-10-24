@@ -11,7 +11,14 @@ about 2019, the Galaxy A16 included).
 
 ## What to try
 
-New in 0.7.0, the owner's list:
+New in 0.8.0: the sound of the game. The ball's knocks, its bounce on the court and on sand and into the net are
+recordings now, and come from where the ball is (left or right in the picture); the players' footsteps on the court
+(a trainer's squeak now and then) and on sand; a real crowd's murmur, cheer and applause, a groan when the home side
+gives a point away and an "ooh" for a ball on the line; the sea at the beach, birds at the temple, a summer evening at
+the park, chatter at the mall and the night market; new menu music. Pausing holds every sound. Listen with headphones:
+does anything sound wrong, too loud or too quiet?
+
+In 0.7.0, the owner's list:
 
 - **Play as one player** (Settings > Play as: the team, the tekong, the feeder or the striker). Only that player's
   touches are yours (a white ring under him); your team-mates play theirs. Does it feel like being on a team?
