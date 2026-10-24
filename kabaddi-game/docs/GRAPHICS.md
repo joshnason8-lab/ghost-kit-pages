@@ -125,19 +125,27 @@ as it was. So every addition is a file of its own that only Medium and High load
 loads the same files as before and never the new ones (`tests/test_runner.gd`, 7d), and every new texture is
 compressed for the GPU (ETC2 on a phone), so the video memory stays in reach of a mid-range phone.
 
-- **The players' faces, skin and kit** (`assets/characters/bodies/*_albedo_2k.webp`, `tools/rig/albedo_2k.py`): the
-  models' own 2K and 4K textures at 2048 px, with the 1K albedo's work (logos and numbers painted out, islands
-  padded) brought over where it was done. The kit map stays at 1K (it marks colours, not detail).
-  `RiggedBody.albedo_for` picks the albedo for the level; a match lowered to Low by itself puts the 1K ones back on.
-  The 1K albedos are uncompressed in video memory; the 2K ones are ETC2 (2.8 MB each with mipmaps).
+- **The players' faces, skin and kit** (`assets/characters/bodies/*_albedo_hi.webp`, `tools/rig/albedo_2k.py`):
+  the models' own 2K and 4K textures at 1536 px, with the 1K albedo's work (logos and numbers painted out, islands
+  padded) brought over where it was done. The kit map stays at 1K (it marks colours, not detail); the referees keep
+  their 1K albedo. `RiggedBody.albedo_for` picks the albedo for the level; a match lowered to Low by itself puts the
+  1K ones back on. The 1K albedos are uncompressed in video memory; the sharper ones are ETC2 (1.6 MB each with
+  mipmaps).
 - **The courts**: the mat's albedo at 2048 px (`tools/ground_art/make_textures.py`: the same mat, seams as wide in
-  metres, four times the grain), and Poly Haven's 2K albedos of the village's earth (`brown_mud_dry`,
-  `red_dirt_mud_01`), Puri's sand (`coast_sand_01`, `damp_beach_sand`) and the dome's floor (`concrete_floor`),
-  `*_albedo_2k.jpg` beside the 1K ones (`Scenery.texture`, `Arena._texture`). Their normal maps stay at 1K.
-- **The crowd** (`assets/crowd/crowd_atlas_hi*`, `tools/crowd/variants.py`): sixteen people where Low has eight, the
-  eight again in other colours: the Sikh man's turban saffron and maroon, the salwar kameez magenta and mustard,
+  metres, four times the grain), and Poly Haven's 2K albedos of the courts' own earth (`brown_mud_dry`, the village)
+  and sand (`coast_sand_01`, Puri), `*_albedo_2k.jpg` beside the 1K ones (`Scenery.texture`, `Arena._texture`). Their
+  normal maps stay at 1K, and the ground round the courts keeps its 1K textures.
+- **The crowd** (`assets/crowd/crowd_atlas_hi*`, `tools/crowd/variants.py`): sixteen people where Low has eight: Low's
+  sheet, and beside it a second sheet of the eight again in other colours (the crowd's shader reads the second for
+  people 9 to 16; they wear their own clothes, so it needs no top mask): the Sikh man's turban saffron and maroon, the salwar kameez magenta and mustard,
   the saree green and royal blue, the girl's frock yellow and sky blue. Each variant takes a share of its own
   person's place in the crowd, so the mix of men, women and children is as before.
+- **What it costs**: Godot keeps GPU-compressed textures uncompressed in the APK, so each costs its full size there:
+  the eight players' albedos 12.6 MB, the mat and two court surfaces 8.2 MB, the crowd's second sheet 6 MB. (At 2048
+  px for every body and five surfaces, with a sixteen-person sheet, the first build of 0.12.0 came to 136 MB.)
+- **The web version** leaves these files out (`export_presets.cfg`, the Web preset's exclude filter): a browser
+  downloads all of it before the game starts, in two texture formats, and the game falls back to Low's textures
+  where a file is missing.
 
 ## Skin and kit
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Make each textured body's 2K albedo (assets/characters/bodies/<body>_albedo_2k.webp), which Medium and High load in
-place of the 1K one (game/rigged_body.gd); Low never loads it.
+"""Make each textured player's sharper albedo (assets/characters/bodies/<body>_albedo_hi.webp, 1536 px), which Medium
+and High load in place of the 1K one (game/rigged_body.gd); Low never loads it. Referees keep the 1K one.
 
 The 1K albedo is kit_texture.py's work on the model's own 2K or 4K texture: the logos and numbers painted out and the
-islands padded. The 2K one is that texture again at 2048 px, its detail (faces, skin, the kit's folds) kept, with the
+islands padded. The sharper one is that texture again at 1536 px (2048 px doubled the APK's cost for little more
+to see at a phone's distance), its detail (faces, skin, the kit's folds) kept, with the
 1K albedo's work brought over where it differs from the texture: wherever the 1K albedo is not just the texture made
 smaller (painted out, padded), the 1K albedo is used, enlarged. The kit map stays at 1K: it marks colours, not detail.
 
@@ -23,7 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 BODIES = os.path.join(ROOT, "assets", "characters", "bodies")
 MESHY = os.path.join(ROOT, "assets", "meshy")
-SIZE = 2048
+SIZE = 1536
 
 
 def base_color_image(path):
@@ -45,7 +46,7 @@ def main():
         name = e["file"][:-4]
         small = os.path.join(BODIES, name + "_albedo.webp")
         src = os.path.join(MESHY, e.get("source", ""))
-        if not os.path.exists(small) or not os.path.exists(src):
+        if e.get("kind") != "player" or not os.path.exists(small) or not os.path.exists(src):
             print("skip", name)
             continue
         tex = base_color_image(src)
@@ -62,7 +63,7 @@ def main():
         m = cv2.resize(cv2.GaussianBlur(worked, (3, 3), 0), (SIZE, SIZE), interpolation=cv2.INTER_LINEAR)[..., None]
         up = cv2.resize(clean, (SIZE, SIZE), interpolation=cv2.INTER_CUBIC)
         out = big * (1.0 - m) + up * m
-        path = os.path.join(BODIES, name + "_albedo_2k.webp")
+        path = os.path.join(BODIES, name + "_albedo_hi.webp")
         Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).save(path, quality=90, method=6)
         print("wrote %s: %d KB, %.0f%% from the model's own %d px texture" % (
             os.path.basename(path), os.path.getsize(path) // 1024, 100.0 * (1.0 - m.mean()), tex.shape[0]))

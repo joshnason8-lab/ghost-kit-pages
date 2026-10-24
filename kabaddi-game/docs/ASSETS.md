@@ -111,7 +111,7 @@ running hand touch, dubki (ducking under a chain), frog jump and scorpion kick. 
 ## Mobile budgets (aim for these)
 
 - **Per athlete.** 8–15k triangles at LOD0, 3–5k at LOD1, one skinned mesh with 1–3 materials. Textures at
-  1024² on Low, the albedo at 2048² ETC2 on Medium and High (0.12.0).
+  1024² on Low, the albedo at 1536² ETC2 on Medium and High (0.12.0).
 - **On screen.** 14 athletes plus a crowd. The crowd is already a single instanced mesh (`arena.gd`), so it costs
   one draw call.
 - **Today's placeholder** uses about 40 small meshes per athlete. It's fine on mid-range phones. A real skinned

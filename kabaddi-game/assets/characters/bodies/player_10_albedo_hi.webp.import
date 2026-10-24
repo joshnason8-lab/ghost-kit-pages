@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c5vnv580bbgcn"
-path.s3tc="res://.godot/imported/player_04_albedo_2k.webp-e27d0dc5bad43ce7eede13750370235b.s3tc.ctex"
-path.etc2="res://.godot/imported/player_04_albedo_2k.webp-e27d0dc5bad43ce7eede13750370235b.etc2.ctex"
+uid="uid://dtydm25h0307d"
+path.s3tc="res://.godot/imported/player_10_albedo_hi.webp-de7255cc77991829f820cb6d1b06167a.s3tc.ctex"
+path.etc2="res://.godot/imported/player_10_albedo_hi.webp-de7255cc77991829f820cb6d1b06167a.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/characters/bodies/player_04_albedo_2k.webp"
-dest_files=["res://.godot/imported/player_04_albedo_2k.webp-e27d0dc5bad43ce7eede13750370235b.s3tc.ctex", "res://.godot/imported/player_04_albedo_2k.webp-e27d0dc5bad43ce7eede13750370235b.etc2.ctex"]
+source_file="res://assets/characters/bodies/player_10_albedo_hi.webp"
+dest_files=["res://.godot/imported/player_10_albedo_hi.webp-de7255cc77991829f820cb6d1b06167a.s3tc.ctex", "res://.godot/imported/player_10_albedo_hi.webp-de7255cc77991829f820cb6d1b06167a.etc2.ctex"]
 
 [params]
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Make the crowd's sheet for Medium and High (assets/crowd/crowd_atlas_hi*): the eight people of render_crowd.gd's
-sheet and eight more, the same people in other colours: the Sikh man's turban saffron and maroon, the salwar kameez
+"""Make the crowd's second sheet for Medium and High (assets/crowd/crowd_atlas_hi*): beside the eight people of
+render_crowd.gd's sheet, eight more, the same people in other colours: the Sikh man's turban saffron and maroon, the salwar kameez
 magenta and mustard, the saree green and royal blue, the girl's frock yellow and sky blue. Low keeps the eight-person
 sheet; these are only loaded on Medium and High (game/arena.gd).
 
 Each garment is found by its colour: the texels near its own hue and saturated enough, never the skin's hue. Its hue is
-turned to the new one, keeping its shading. The top masks (the fans' tops the game recolours) are copied; none of the
-recoloured people wear one.
+turned to the new one, keeping its shading. None of the recoloured people wear a top the game recolours, so the sheet
+has no top mask; crowd_atlas_hi.json lists all sixteen.
 
     python3 tools/crowd/variants.py            # reads and writes assets/crowd
 """
@@ -74,8 +74,7 @@ def main():
     for side in ["", "_back"]:
         sheets[side] = (np.asarray(Image.open(os.path.join(CROWD, "crowd_atlas%s.webp" % side)).convert("RGBA")),
                         np.asarray(Image.open(os.path.join(CROWD, "crowd_mask%s.png" % side)).convert("L")))
-    cols = {s: [sheets[s][0]] for s in sheets}
-    masks = {s: [sheets[s][1]] for s in sheets}
+    cols = {s: [] for s in sheets}
     for i, p in enumerate(people):
         if p["file"] not in VARIANTS:
             continue
@@ -85,16 +84,17 @@ def main():
                 col = sheets[side][0][:, i * cw:(i + 1) * cw]
                 new, share = recolour(col, hue, width, min_sat, nh, sk, vk)
                 cols[side].append(new)
-                masks[side].append(sheets[side][1][:, i * cw:(i + 1) * cw])
                 if side == "":
                     print("%s %s: %.0f%% of the figure recoloured" % (p["file"][:-11], name, share * 100))
             hi["people"].append(dict(p, file=p["file"].replace("_rigged.glb", "_" + name), base=i))
     assert len(hi["people"]) <= 16, "the game's crowd shader takes 16 people"
+    # The sheet beside Low's: only the people in other colours (the first eight are Low's own sheet). They wear their
+    # own clothes, so they need no top mask.
+    hi["columns"] = len(people)
+    hi["columns2"] = len(hi["people"]) - len(people)
     for side in sheets:
         Image.fromarray(np.concatenate(cols[side], axis=1)).save(
             os.path.join(CROWD, "crowd_atlas_hi%s.webp" % side), lossless=True, method=6)
-        Image.fromarray(np.concatenate(masks[side], axis=1)).save(
-            os.path.join(CROWD, "crowd_mask_hi%s.png" % side), optimize=True)
     json.dump(hi, open(os.path.join(CROWD, "crowd_atlas_hi.json"), "w"), indent=1)
     print("wrote crowd_atlas_hi: %d people" % len(hi["people"]))
 

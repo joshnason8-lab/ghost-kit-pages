@@ -329,8 +329,8 @@ static func _texture_part(d: Dictionary, tex: Dictionary) -> void:
 	if ResourceLoader.exists(String(tex.get("albedo", ""))) and ResourceLoader.exists(String(tex.get("kit", ""))):
 		d.albedo = load(String(tex.albedo))
 		d.kit = load(String(tex.kit))
-		# The 2K albedo Medium and High wear (tools/rig/albedo_2k.py), loaded only when one of them first needs it.
-		var hi := String(tex.albedo).replace("_albedo.", "_albedo_2k.")
+		# The sharper albedo Medium and High wear (tools/rig/albedo_2k.py), loaded only when one of them first needs it.
+		var hi := String(tex.albedo).replace("_albedo.", "_albedo_hi.")
 		if hi != String(tex.albedo) and ResourceLoader.exists(hi):
 			d.albedo_2k_path = hi
 		var r: Array = tex.get("skin_ref", [1, 1, 1])
@@ -538,7 +538,7 @@ func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float
 
 
 ## The shirt number, stuck to the back of the chest bone.
-## A body's albedo at this graphics level: the 2K one on Medium and High where it has one, the 1K one on Low.
+## A body's albedo at this graphics level: the 1536 px one on Medium and High where it has one, the 1K one on Low.
 static func albedo_for(d: Dictionary) -> Texture2D:
 	if Game.detail_textures() and d.has("albedo_2k_path"):
 		if not d.has("albedo_2k"):

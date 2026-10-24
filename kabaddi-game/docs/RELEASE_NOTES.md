@@ -1,10 +1,10 @@
-**New in 0.12.0: sharper players, courts and crowds on Medium and High.** On Medium and High graphics the
-players' faces, skin and kit are twice as sharp (their 2K textures), the courts' mat, earth, sand and floor are
+**New in 0.12.1 (0.12.0 slimmed to about 103 MB): sharper players, courts and crowds on Medium and High.** On Medium and High graphics the
+players' faces, skin and kit are half as sharp again (from their models' own textures), the courts' mat, earth and sand are
 sharper, and the crowd has twice as many different people: the Sikh fans in saffron and maroon turbans, women in
 magenta, mustard, green and royal-blue salwars and sarees, girls in yellow and sky-blue frocks. The crowd's murmur
 and each ground's rain, sea and birds now run two to three times as long before they repeat, the crowd cheers a point
 three different ways, and claps and chants in time as a do-or-die raid starts. Low is exactly as it was. The download
-is bigger (about 97 MB).
+is bigger (about 103 MB).
 
 **In 0.11.1: one signing key, and a real referee's whistle.** Every beta from now on is signed with the same
 key, so each installs over the last and keeps your saves. **Once only**: uninstall your current Kabaddi Raid

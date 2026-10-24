@@ -63,7 +63,11 @@ uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D atlas_back : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D top_mask : filter_linear_mipmap, repeat_disable;
 uniform sampler2D top_mask_back : filter_linear_mipmap, repeat_disable;
-uniform float people = 8.0;
+// Medium and High's second sheet (tools/crowd/variants.py): people from index people on, in their own clothes.
+uniform sampler2D atlas2 : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D atlas2_back : source_color, filter_linear_mipmap, repeat_disable;
+uniform float people = 8.0;   // people on the first sheet
+uniform float people2 = 8.0;  // on the second
 uniform float frames = 8.0;
 uniform bool standing = false;
 uniform float excitement = 0.0;
@@ -107,8 +111,14 @@ void vertex() {
 }
 void fragment() {
 	vec2 uv = vec2(mix(UV.x, 1.0 - UV.x, mirror), UV.y);
-	uv = (cell + uv) / vec2(people, frames);
-	vec4 c = back > 0.5 ? texture(atlas_back, uv) : texture(atlas, uv);
+	vec4 c;
+	if (cell.x < people) {
+		uv = (cell + uv) / vec2(people, frames);
+		c = back > 0.5 ? texture(atlas_back, uv) : texture(atlas, uv);
+	} else {
+		uv = (cell - vec2(people, 0.0) + uv) / vec2(people2, frames);
+		c = back > 0.5 ? texture(atlas2_back, uv) : texture(atlas2, uv);
+	}
 	vec3 col = c.rgb;
 	if (lum > 0.0 && tint.r + tint.g + tint.b > 0.003) {
 		float m = back > 0.5 ? texture(top_mask_back, uv).r : texture(top_mask, uv).r;
@@ -687,24 +697,30 @@ func _crowd(positions: Array, palette: Array, skin: Color, facing: Vector3 = Vec
 	add_child(mmi)
 
 
-## The crowd's sprite sheet for this graphics level: on Medium and High the sixteen-person one (the eight in other
-## colours as well: tools/crowd/variants.py), on Low the eight-person one. hi forces one or the other.
+## The crowd's sprite sheet for this graphics level: on Low the eight people; on Medium and High sixteen, the eight
+## and, on a second sheet beside theirs, the eight again in other colours (tools/crowd/variants.py). hi forces one or
+## the other.
 static func crowd_sheet(hi := -1) -> Dictionary:
 	var detail := Game.detail_textures() if hi < 0 else hi == 1
 	var sfx := "_hi" if detail and ResourceLoader.exists(CROWD_DIR + "crowd_atlas_hi.webp") else ""
 	if not _crowd_sheets.has(sfx):
 		var sheet := {}
-		var f := FileAccess.open(CROWD_DIR + "crowd_atlas%s.json" % sfx, FileAccess.READ)
-		if f and ResourceLoader.exists(CROWD_DIR + "crowd_atlas%s.webp" % sfx):
+		var f := FileAccess.open(CROWD_DIR + "crowd_atlas.json", FileAccess.READ)
+		if f and ResourceLoader.exists(CROWD_DIR + "crowd_atlas.webp"):
 			var info = JSON.parse_string(f.get_as_text())
 			if info is Dictionary:
-				sheet = {"info": info, "atlas": load(CROWD_DIR + "crowd_atlas%s.webp" % sfx),
-					"mask": load(CROWD_DIR + "crowd_mask%s.png" % sfx)}
+				sheet = {"info": info, "atlas": load(CROWD_DIR + "crowd_atlas.webp"),
+					"mask": load(CROWD_DIR + "crowd_mask.png")}
 				# From behind, if drawn (tools/crowd/render_crowd.gd); else the front again.
-				var back := CROWD_DIR + "crowd_atlas%s_back.webp" % sfx
-				var has_back := ResourceLoader.exists(back)
-				sheet["atlas_back"] = load(back) if has_back else sheet.atlas
-				sheet["mask_back"] = load(CROWD_DIR + "crowd_mask%s_back.png" % sfx) if has_back else sheet.mask
+				var has_back := ResourceLoader.exists(CROWD_DIR + "crowd_atlas_back.webp")
+				sheet["atlas_back"] = load(CROWD_DIR + "crowd_atlas_back.webp") if has_back else sheet.atlas
+				sheet["mask_back"] = load(CROWD_DIR + "crowd_mask_back.png") if has_back else sheet.mask
+				var g := FileAccess.open(CROWD_DIR + "crowd_atlas_hi.json", FileAccess.READ) if sfx != "" else null
+				var hi_info = JSON.parse_string(g.get_as_text()) if g else null
+				if hi_info is Dictionary:
+					sheet.info = hi_info
+					sheet["atlas2"] = load(CROWD_DIR + "crowd_atlas_hi.webp")
+					sheet["atlas2_back"] = load(CROWD_DIR + "crowd_atlas_hi_back.webp")
 		_crowd_sheets[sfx] = sheet
 	return _crowd_sheets[sfx]
 
@@ -780,7 +796,11 @@ func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumbe
 	sm.set_shader_parameter("atlas_back", sheet.atlas_back)
 	sm.set_shader_parameter("top_mask", sheet.mask)
 	sm.set_shader_parameter("top_mask_back", sheet.mask_back)
-	sm.set_shader_parameter("people", float(people.size()))
+	sm.set_shader_parameter("people", float(info.get("columns", people.size())))
+	if sheet.has("atlas2"):
+		sm.set_shader_parameter("atlas2", sheet.atlas2)
+		sm.set_shader_parameter("atlas2_back", sheet.atlas2_back)
+		sm.set_shader_parameter("people2", float(info.get("columns2", 8)))
 	sm.set_shader_parameter("frames", float((info.frames as Array).size()))
 	sm.set_shader_parameter("standing", standing)
 	sm.set_shader_parameter("top_lum", lums)
