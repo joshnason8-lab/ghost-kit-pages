@@ -127,6 +127,39 @@ front, so whoever a camera saw from behind still showed it their face.
   dome 150 → 164 MB and Gaon Maidan 154 → 168 MB). The draw calls, primitives and objects are the same (on Low, the
   dome's 100 and 217, 634k, 315; Gaon Maidan's 102 and 220, 668k, 318).
 
+## 0.12.0: sharper on Medium and High (the size update)
+
+The owner let the APK grow toward about 100 MB to make the game look and sound better, with Low exactly as it was.
+How it is done: [GRAPHICS.md](GRAPHICS.md), "Medium and High's extra detail"; the sounds: [SOUNDS.md](SOUNDS.md).
+
+- **Players** (Medium, High): the models' own 2K/4K textures at 2048 px for every body's albedo (faces, skin, the kit's
+  folds), `tools/rig/albedo_2k.py`; ETC2 in video memory.
+- **Courts** (Medium, High): the mat's albedo at 2048 px, and Poly Haven's 2K albedos of the village's earth, Puri's
+  sand and the dome's floor (CC0, credited as before).
+- **Crowd** (Medium, High): sixteen people instead of eight, the eight again in other colours
+  (`tools/crowd/variants.py`): saffron and maroon turbans, magenta and mustard salwars, green and royal-blue sarees,
+  yellow and sky-blue frocks.
+- **Sound** (every level): the crowd's bed 18 → 30 s, the rain and birds 16 → 40 s, the sea 16 → 32 s (every wave
+  twice), so they repeat less; three cheers instead of one; the crowd's rhythmic clapping and chanting as a
+  do-or-die raid starts (all Gregor Quendel's, CC BY 4.0, already credited).
+- **Low**: the same files as before and none of the new ones (test_runner 7d). Against 0.11.1, the same seeded match
+  measures the same on Low to the triangle: dome 633,733 primitives, 317 objects, 164 MB; village 667,864, 319, 175 MB.
+- **Medium and High**, the same seeded match from the broadcast camera (`tests/perf_probe.tscn`; software rendering,
+  so frame times compare only with each other, run back to back):
+
+  | Ground | Level | Draw calls (3D / frame) | Primitives | Video memory, MB | Frame, ms (llvmpipe) |
+  |---|---|---|---|---|---|
+  | Mumbai Dome | Medium | 101 / 219 → same | 634,867 → same | 179 → 189 | 1832 → 1764 |
+  | Mumbai Dome | High | 101 / 219 → same | 636,075 → same | 204 → 213 | 2286 → 2245 |
+  | Puri Beach | Medium | 107 / 225 → same | 792,621 → same | 189 → 202 | 1369 → 1218 |
+
+  Nine to thirteen MB more video memory, for twice the texture detail on the players and courts and twice the
+  crowd: the 2K albedos are ETC2 (2.8 MB each with mipmaps), the 1K ones they replace uncompressed in video memory.
+  Before and after on Medium: [img/detail_0.12.0.jpg](img/detail_0.12.0.jpg) (top 0.11.1, bottom 0.12.0).
+- **Size**: the APK grows by about 22 MB (measured on the release).
+- **Checked**: test_runner (412: the new textures are 2K and GPU-compressed, Low loads none of them, Medium loads them,
+  the crowd sheet has eight and sixteen people), compile_check.
+
 ## 0.11.1: one beta signing key, and the referee's real whistle
 
 - **Signing**: every Android build made a new random key (`keytool -genkeypair`), and the APK was then signed with

@@ -1,18 +1,18 @@
 # Android beta: install and test
 
-Version **0.11.1-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.12.0-beta**. This page covers installing the beta on an Android phone, what to try, and how to report
 what you find.
 
 ## What phone
 
 - Android 7.0 or newer, 64-bit (almost every phone since 2017).
-- About 200 MB free.
+- About 250 MB free.
 - The game runs in landscape. Turn auto-rotate on, or hold the phone sideways before you open it.
 
 ## Install
 
 1. Get the APK on the phone. Either:
-   - Download `kabaddi-raid-0.11.1-beta.apk` from the chat, or
+   - Download `kabaddi-raid-0.12.0-beta.apk` from the chat, or
    - Open the latest **Android build** run on GitHub (Actions tab) and download the `kabaddi-raid-…-apk`
      artifact. It is a zip; unzip it on the phone (My Files) or on a computer. Builds too big to send in the
      chat come this way.
@@ -152,6 +152,11 @@ going from one of those to 0.11.1 or later, Android says **App not installed** o
   or back in their stance, they now stay low, knees bent, with short steps (movement recorded from real people, from
   the CMU motion capture library), where they used to stand up and stride, or jog backwards in slow motion. Running
   in to tackle, they still run. Does a defender still pop up as he creeps, glide, or slide his feet as he steps?
+- **Sharper on Medium and High** (0.12.0): with Graphics on Medium or High, look closely at the players (faces,
+  skin, kit folds), the court under them and the crowd (more different people: turbans, salwars, sarees and frocks in
+  more colours). Does anything look blotchy, blocky or wrong-coloured? Does a match run any slower than in 0.11, or
+  does the phone get hotter? On Low nothing should have changed. Also listen for the crowd clapping and chanting in
+  time as a do-or-die raid starts.
 - **Real sounds** (0.11.0): play a match on each ground with sound on, ideally with headphones.
   - The crowd is a recording of a real crowd now: does its murmur loop without a jump, and does it cheer, groan and
     applaud at the right moments?

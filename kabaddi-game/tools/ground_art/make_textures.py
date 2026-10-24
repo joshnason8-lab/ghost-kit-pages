@@ -57,9 +57,11 @@ def save_normal(rgb, name):
     Image.fromarray(rgb, "RGB").save(os.path.join(OUT, name), optimize=True)
 
 
-def mat(n=512):
+def mat(n=512, suffix=""):
     """A foam kabaddi mat: 1 m tiles (four to the texture) with fine seams, each tile a touch lighter or darker,
-    a fine grain, and faint scuffs and shoe marks where play goes."""
+    a fine grain, and faint scuffs and shoe marks where play goes. At 2048 px (suffix "_2k", for Medium and High) the
+    same mat, its seams as wide in metres, with four times the grain (its albedo only)."""
+    k = n / 512.0
     tile = n // 2
     y, x = np.mgrid[0:n, 0:n]
     shade = np.zeros((n, n))
@@ -72,11 +74,12 @@ def mat(n=512):
     # A seam: a 1.5 px groove at each tile edge, wrapping.
     dx = np.minimum(x % tile, tile - (x % tile))
     dy = np.minimum(y % tile, tile - (y % tile))
-    seam = np.exp(-(np.minimum(dx, dy) ** 2) / 1.2)
+    seam = np.exp(-((np.minimum(dx, dy) / k) ** 2) / 1.2)
     albedo = 0.9 + shade + grain + mottle - scuff * 0.05 - seam * 0.22
     height = noise(n, beta=0.9, lo=30) * 0.6 - seam * 3.0 + mottle * 4.0
-    save_gray(albedo, "mat_albedo.png")
-    save_normal(normal_map(height, 0.9), "mat_normal.png")
+    save_gray(albedo, "mat_albedo%s.png" % suffix)
+    if not suffix:   # the 2K mat keeps the 1K normal map: its seams and grain are in the albedo, and it costs less
+        save_normal(normal_map(height, 0.9), "mat_normal.png")
 
 
 IMPORT = """[remap]
@@ -127,9 +130,9 @@ def write_imports():
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    for f in (mat,):
-        f()
-        print("made", f.__name__)
+    mat()
+    mat(2048, "_2k")
+    print("made mat, mat_2k")
     write_imports()
 
 

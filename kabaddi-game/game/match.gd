@@ -546,6 +546,7 @@ func _begin_setup() -> void:
 		hud.hint(tr(raid_hint) if controlled == raider else tr("HINT_DEFEND"))
 	if raid.dod:
 		hud.hint(tr("HINT_DOD"))
+		Sfx.react("rhythm", -12.0)   # the crowd claps and chants him in
 	if not attract:
 		# Who is coming, and what he likes to do.
 		var sig := DB.signature(raider.data)
@@ -1236,6 +1237,9 @@ func lower_graphics() -> void:
 	Game.save_settings()
 	Game.apply_graphics(get_viewport())
 	arena.graphics_changed()
+	for a in athletes + [officials.referee] + officials.umpires:
+		if a and a.model and a.model.rig:
+			a.model.rig.detail_changed()
 	_floor_shadows()   # on Low the sun's shadows go: each body's own take their place
 	hud.event(tr("GFX_LOWERED").format({"level": tr(["GFX_LOW", "GFX_MEDIUM", "GFX_HIGH"][g])}), Game.C_MUTED, false, MatchHud.EV_INFO)
 

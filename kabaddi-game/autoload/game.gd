@@ -202,6 +202,12 @@ func load_settings() -> void:
 		settings.camera = CAM_TV
 
 
+## Medium and High wear the higher-resolution textures (the players' 2K albedos, the courts' 2K surfaces); Low never
+## loads them.
+func detail_textures() -> bool:
+	return int(settings.graphics) >= GFX_MEDIUM
+
+
 func save_settings() -> void:
 	_write_json(SETTINGS_PATH, settings)
 

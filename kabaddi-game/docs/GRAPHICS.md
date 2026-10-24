@@ -118,6 +118,27 @@ From the lead session's shared assets (Poly Haven's photographs and scans, CC0, 
 scuffs. On the field, the lobbies, the run-off and the sitting blocks, laid at its real size (2 m a repeat) by the size
 of each. Until 0.9.0 it made the concrete, stand, grass, mud and sand textures too; photographs took their place.
 
+## Medium and High's extra detail (0.12.0)
+
+The owner let the APK grow toward 100 MB to make the game look and sound better, on one condition: Low stays exactly
+as it was. So every addition is a file of its own that only Medium and High load (`Game.detail_textures()`); Low
+loads the same files as before and never the new ones (`tests/test_runner.gd`, 7d), and every new texture is
+compressed for the GPU (ETC2 on a phone), so the video memory stays in reach of a mid-range phone.
+
+- **The players' faces, skin and kit** (`assets/characters/bodies/*_albedo_2k.webp`, `tools/rig/albedo_2k.py`): the
+  models' own 2K and 4K textures at 2048 px, with the 1K albedo's work (logos and numbers painted out, islands
+  padded) brought over where it was done. The kit map stays at 1K (it marks colours, not detail).
+  `RiggedBody.albedo_for` picks the albedo for the level; a match lowered to Low by itself puts the 1K ones back on.
+  The 1K albedos are uncompressed in video memory; the 2K ones are ETC2 (2.8 MB each with mipmaps).
+- **The courts**: the mat's albedo at 2048 px (`tools/ground_art/make_textures.py`: the same mat, seams as wide in
+  metres, four times the grain), and Poly Haven's 2K albedos of the village's earth (`brown_mud_dry`,
+  `red_dirt_mud_01`), Puri's sand (`coast_sand_01`, `damp_beach_sand`) and the dome's floor (`concrete_floor`),
+  `*_albedo_2k.jpg` beside the 1K ones (`Scenery.texture`, `Arena._texture`). Their normal maps stay at 1K.
+- **The crowd** (`assets/crowd/crowd_atlas_hi*`, `tools/crowd/variants.py`): sixteen people where Low has eight, the
+  eight again in other colours: the Sikh man's turban saffron and maroon, the salwar kameez magenta and mustard,
+  the saree green and royal blue, the girl's frock yellow and sky blue. Each variant takes a share of its own
+  person's place in the crowd, so the mix of men, women and children is as before.
+
 ## Skin and kit
 
 The bodies' shader (`RiggedBody.SHADER_TEXTURED`): skin has a soft sheen that gets wetter as a player tires (his

@@ -152,6 +152,10 @@ static var _textures := {}
 
 
 static func texture(path: String) -> Texture2D:
+	# Medium and High take a surface's 2K texture where it has one (the courts' own); Low never loads it.
+	var hi := path.replace("_1k.", "_2k.")
+	if hi != path and Game.detail_textures() and ResourceLoader.exists(DIR + hi):
+		path = hi
 	if not _textures.has(path):
 		_textures[path] = load(DIR + path) if ResourceLoader.exists(DIR + path) else null
 	return _textures[path]

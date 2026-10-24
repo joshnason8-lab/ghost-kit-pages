@@ -8,7 +8,7 @@ extends Node
 const RATE := 22050
 const VOICES := {"grunt": 5, "oof": 3, "exhale": 2, "hup": 2}
 # Recorded one-shots with variants (name_1, name_2...): play("thud") picks one.
-const VARIED := {"whistle_short": 3, "whistle_long": 3, "thud": 3, "slap": 3, "step_mat": 3, "step_earth": 4, "step_sand": 4}
+const VARIED := {"crowd_cheer": 3, "whistle_short": 3, "whistle_long": 3, "thud": 3, "slap": 3, "step_mat": 3, "step_earth": 4, "step_sand": 4}
 # Each ground's own sound under the crowd (assets/audio/amb_<ground>.ogg); the dome is indoors and has none.
 const AMBIENCE := ["stadium", "village", "monsoon", "beach"]
 const AMB_DB := -12.0
@@ -281,7 +281,7 @@ func stop_all() -> void:
 
 # Every recording the game plays besides VARIED and VOICES (tests/test_runner checks each one is there and loads).
 const RECORDED := ["chant_raider", "crowd_chant", "chant_word_1", "chant_word_2", "yell_aaja", "yell_pakad",
-		"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch", "crowd_cheer", "crowd_ooh", "crowd_groan",
+		"yell_shabash", "yell_chal", "yell_haan", "yell_nahi", "yell_touch", "crowd_rhythm", "crowd_ooh", "crowd_groan",
 		"applause", "clap", "menu_music", "whistle_double", "whistle_final", "whistle_gym", "amb_stadium", "amb_village", "amb_monsoon", "amb_beach"]
 
 

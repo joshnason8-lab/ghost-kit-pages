@@ -151,15 +151,16 @@ def bed(root, name, f, dur, db, hp=0.0, quality=0):
 
 
 def waves(root):
-    """The sea: the four waves of one recording, overlapping one after another round a 16 s loop."""
-    x = np.zeros(16 * RATE)
+    """The sea: the four waves of one recording, overlapping one after another round a 32 s loop, each twice, the
+    second time a little softer and later, so no two come round alike."""
+    x = np.zeros(32 * RATE)
     at = 0.0
-    for i, f in enumerate(["wave_0%d_cc0-18363__jasinski__alkaibeach.flac" % k for k in (1, 3, 2, 4)]):
+    for i, f in enumerate(["wave_0%d_cc0-18363__jasinski__alkaibeach.flac" % k for k in (1, 3, 2, 4, 3, 1, 4, 2)]):
         w = load(find(root, f))
         s = int(at * RATE)
         for j in range(len(w)):   # wrapped round, so the last wave runs on into the first
-            x[(s + j) % len(x)] += w[j]
-        at += 4.0
+            x[(s + j) % len(x)] += w[j] * (1.0 if i < 4 else 0.8)
+        at += 4.0 if i < 4 else 4.3
     save("amb_beach", rms_to(x, -22.0), 0)
 
 
@@ -172,15 +173,21 @@ def main():
     # The UI's click (Kenney Interface Sounds).
     save("click", peak(fade(trim(load(find(root, "click_002.ogg"))), 0.0005, 0.005), -3.0), 2)
     # The crowd: Gregor Quendel's crowd at a match (CC-BY 4.0).
-    bed(root, "crowd_loop", QUENDEL + "10 - Ambience.mp3", 18.0, -18.0, 60.0)
-    save("crowd_cheer", rms_to(fade(loudest(load(find(root, QUENDEL + "04 - Strong cheering - II - Short.mp3")), 5.0),
-                                    0.15, 2.0), -14.0), 1)
+    # (0.12.0: the bed and the grounds' loops two to three times as long, so they come round less often; three
+    # cheers, one picked each time; the crowd's rhythmic chant for a do-or-die raid.)
+    bed(root, "crowd_loop", QUENDEL + "10 - Ambience.mp3", 30.0, -18.0, 60.0)
+    for i, (f, at) in enumerate([("04 - Strong cheering - II - Short", None), ("02 - Strong cheering and soft rhythmic"
+                                 " cheering", None), ("05 - Soft cheering - I", None)]):
+        save("crowd_cheer_%d" % (i + 1), rms_to(fade(loudest(load(find(root, QUENDEL + f + ".mp3")), 5.0),
+                                                     0.15, 2.0), -14.0), 1)
+    save("crowd_rhythm", rms_to(fade(loudest(load(find(root, QUENDEL + "08 - Rhythmic cheering.mp3")), 8.0), 0.5, 2.5),
+                                -16.0), 1)
     save("roar", rms_to(fade(loudest(load(find(root, QUENDEL + "03 - Strong cheering - I.mp3")), 3.5), 0.25, 1.5), -14.0), 1)
     save("applause", rms_to(fade(loudest(load(find(root, "applause-clapping-church-crowd-immersive.wav")), 5.0),
                                  0.2, 2.0), -16.0), 1)
     # Each ground's own sound under the crowd.
-    bed(root, "amb_monsoon", "amb_rain_loop_1.wav", 16.0, -22.0)                 # Kresiek The Furry, CC0
-    bed(root, "amb_village", "park_ambience_birds.wav", 16.0, -26.0, 150.0)      # Thimras, CC0
+    bed(root, "amb_monsoon", "amb_rain_loop_1.wav", 40.0, -22.0)                 # Kresiek The Furry, CC0
+    bed(root, "amb_village", "park_ambience_birds.wav", 40.0, -26.0, 150.0)      # Thimras, CC0
     bed(root, "amb_stadium", "crickets_1.mp3", 10.0, -28.0, 1500.0)              # Wolfgang_, CC0
     waves(root)                                                                 # jasinski, CC0
 

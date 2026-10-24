@@ -467,6 +467,43 @@ func _run() -> void:
 	var sheet := Arena.crowd_sheet()
 	check(not sheet.is_empty() and (sheet.info.people as Array).size() >= 8 and (sheet.info.frames as Array).size() == 8,
 		"crowd sprite sheet: eight people in eight poses")
+	# 7d. Medium and High's extra detail (0.12.0): the sixteen-person crowd, the players' 2K albedos, the courts' 2K
+	# surfaces, each a file of its own that only they load; Low's are the files it had before, and none of the 2K ones.
+	var low_sheet := Arena.crowd_sheet(0)
+	var hi_sheet := Arena.crowd_sheet(1)
+	check((low_sheet.info.people as Array).size() == 8 and (hi_sheet.info.people as Array).size() == 16
+		and (hi_sheet.atlas as Texture2D).get_width() == 2 * (low_sheet.atlas as Texture2D).get_width()
+		and String(low_sheet.atlas.resource_path).ends_with("crowd_atlas.webp"),
+		"the crowd: eight people on Low, sixteen on Medium and High, from a sheet of its own")
+	var gfx_was7 := int(Game.settings.graphics)
+	var detail_paths := {}
+	for gfx in [Game.GFX_LOW, Game.GFX_MEDIUM]:
+		Game.settings.graphics = gfx
+		var body: Dictionary = RiggedBody._load("player_01.krb")
+		detail_paths[gfx] = [String(Arena._texture("mat_albedo").resource_path),
+			String(Scenery.texture("surfaces/coast_sand_01/coast_sand_01_albedo_1k.jpg").resource_path),
+			String(RiggedBody.albedo_for(body).resource_path), String(Arena.crowd_sheet().atlas.resource_path)]
+	Game.settings.graphics = gfx_was7
+	check(detail_paths[Game.GFX_LOW].all(func(p): return not p.contains("_2k") and not p.contains("_hi")),
+		"Low loads none of the 2K or sixteen-person files %s" % str(detail_paths[Game.GFX_LOW]))
+	check(detail_paths[Game.GFX_MEDIUM].all(func(p): return p.contains("_2k") or p.contains("_hi")),
+		"Medium loads the 2K mat, sand and player albedo, and the sixteen-person crowd %s" % str(detail_paths[Game.GFX_MEDIUM]))
+	var tex2k := [load("res://assets/characters/bodies/player_01_albedo_2k.webp"), load("res://assets/grounds/textures/mat_albedo_2k.png"),
+		load("res://assets/scenery/surfaces/coast_sand_01/coast_sand_01_albedo_2k.jpg"), hi_sheet.atlas]
+	check(tex2k.all(func(t): return t is Texture2D and (t as Texture2D).get_width() >= 2048),
+		"the 2K textures and the sixteen-person sheet are 2048 px or wider")
+	# Each compressed for the GPU (ETC2/ASTC on a phone), so its video memory stays in reach of a mid-range one.
+	var hi_files := []
+	for dir in ["res://assets/characters/bodies", "res://assets/grounds/textures", "res://assets/crowd"]:
+		for f in DirAccess.get_files_at(dir):
+			if f.ends_with(".import") and (f.contains("_2k.") or f.contains("_hi")):
+				hi_files.append(dir + "/" + f)
+	for s in DirAccess.get_directories_at("res://assets/scenery/surfaces"):
+		for f in DirAccess.get_files_at("res://assets/scenery/surfaces/" + s):
+			if f.ends_with("_2k.jpg.import"):
+				hi_files.append("res://assets/scenery/surfaces/%s/%s" % [s, f])
+	var not_vram := hi_files.filter(func(f): return not FileAccess.get_file_as_string(f).contains("compress/mode=2"))
+	check(hi_files.size() >= 20 and not_vram.is_empty(), "every one of Medium and High's %d new textures is GPU-compressed %s" % [hi_files.size(), str(not_vram)])
 
 	# 7a. The scenery (game/scenery.gd): a photographed sky outdoors, its HDR light only on Medium and High; each kind of
 	# tree, seat and building drawn in one go, cut-outs and cut-down models on Low; the stands one mesh; few draws; and

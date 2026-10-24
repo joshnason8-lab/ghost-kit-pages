@@ -125,7 +125,8 @@ void fragment() {
 }
 """
 const CROWD_DIR := "res://assets/crowd/"
-static var _crowd_sheet = null   # the crowd's sprite sheet once loaded: {} when the game has none
+static var _crowd_sheets := {}   # the crowd's sprite sheet once loaded, by detail (Medium and High's has 16 people,
+                                 # Low's 8): {} when the game has none
 
 ## A body drawn a second time (its material's next pass), flattened onto the floor along the sun's light and see-through
 ## black: its shadow, for when the sun casts none (Low graphics). The stencil lets each pixel be darkened once, however
@@ -341,6 +342,9 @@ static var _tex := {}
 
 
 static func _texture(name: String) -> Texture2D:
+	# Medium and High lay the 2K texture where there is one (tools/ground_art: the mat's albedo); Low never loads it.
+	if Game.detail_textures() and ResourceLoader.exists(TEX + name + "_2k.png"):
+		name += "_2k"
 	if not _tex.has(name):
 		var path := TEX + name + ".png"
 		_tex[name] = load(path) if ResourceLoader.exists(path) else null
@@ -683,20 +687,26 @@ func _crowd(positions: Array, palette: Array, skin: Color, facing: Vector3 = Vec
 	add_child(mmi)
 
 
-static func crowd_sheet() -> Dictionary:
-	if _crowd_sheet == null:
-		_crowd_sheet = {}
-		var f := FileAccess.open(CROWD_DIR + "crowd_atlas.json", FileAccess.READ)
-		if f and ResourceLoader.exists(CROWD_DIR + "crowd_atlas.webp"):
+## The crowd's sprite sheet for this graphics level: on Medium and High the sixteen-person one (the eight in other
+## colours as well: tools/crowd/variants.py), on Low the eight-person one. hi forces one or the other.
+static func crowd_sheet(hi := -1) -> Dictionary:
+	var detail := Game.detail_textures() if hi < 0 else hi == 1
+	var sfx := "_hi" if detail and ResourceLoader.exists(CROWD_DIR + "crowd_atlas_hi.webp") else ""
+	if not _crowd_sheets.has(sfx):
+		var sheet := {}
+		var f := FileAccess.open(CROWD_DIR + "crowd_atlas%s.json" % sfx, FileAccess.READ)
+		if f and ResourceLoader.exists(CROWD_DIR + "crowd_atlas%s.webp" % sfx):
 			var info = JSON.parse_string(f.get_as_text())
 			if info is Dictionary:
-				_crowd_sheet = {"info": info, "atlas": load(CROWD_DIR + "crowd_atlas.webp"),
-					"mask": load(CROWD_DIR + "crowd_mask.png")}
+				sheet = {"info": info, "atlas": load(CROWD_DIR + "crowd_atlas%s.webp" % sfx),
+					"mask": load(CROWD_DIR + "crowd_mask%s.png" % sfx)}
 				# From behind, if drawn (tools/crowd/render_crowd.gd); else the front again.
-				var has_back := ResourceLoader.exists(CROWD_DIR + "crowd_atlas_back.webp")
-				_crowd_sheet["atlas_back"] = load(CROWD_DIR + "crowd_atlas_back.webp") if has_back else _crowd_sheet.atlas
-				_crowd_sheet["mask_back"] = load(CROWD_DIR + "crowd_mask_back.png") if has_back else _crowd_sheet.mask
-	return _crowd_sheet
+				var back := CROWD_DIR + "crowd_atlas%s_back.webp" % sfx
+				var has_back := ResourceLoader.exists(back)
+				sheet["atlas_back"] = load(back) if has_back else sheet.atlas
+				sheet["mask_back"] = load(CROWD_DIR + "crowd_mask%s_back.png" % sfx) if has_back else sheet.mask
+		_crowd_sheets[sfx] = sheet
+	return _crowd_sheets[sfx]
 
 
 ## Spectators as camera-facing cards, each facing the point facing (the court's middle): their instance's
@@ -718,11 +728,16 @@ func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumbe
 	var lums_back := PackedFloat32Array()
 	lums_back.resize(16)
 	var total := 0.0
+	# A person in other colours (the sixteen-person sheet) shares the person's own share of the crowd.
+	var alike := {}
+	for p in people:
+		alike[int(p.get("base", -1))] = int(alike.get(int(p.get("base", -1)), 0)) + 1
 	for i in people.size():
 		var file := String(people[i].file)
 		var wt := 3.0 if float(people[i].top_luminance) > 0.0 else 1.5
 		if file.contains("boy") or file.contains("girl"):
 			wt = 0.8
+		wt /= float(alike.get(int(people[i].get("base", -1)), 1))
 		weights.append(wt)
 		total += wt
 		lums[i] = float(people[i].top_luminance)

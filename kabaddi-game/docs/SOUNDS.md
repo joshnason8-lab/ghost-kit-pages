@@ -13,8 +13,9 @@ Made from the downloads by `tools/audio/make_recorded.py`: mono, 22.05 kHz, sile
 
 | File(s) in `assets/audio/` | What it is in the game | Source | Author | Licence |
 |---|---|---|---|---|
-| `crowd_loop.ogg` | The crowd's murmur under a match, louder as a raid gets tense (from "10 - Ambience", 18 s loop) | [Free Crowd Cheering Sounds](https://opengameart.org/content/free-crowd-cheering-sounds) | Gregor Quendel | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
-| `crowd_cheer.ogg` | The crowd cheering a point (from "04 - Strong cheering - II - Short") | same | Gregor Quendel | CC BY 4.0 |
+| `crowd_loop.ogg` | The crowd's murmur under a match, louder as a raid gets tense (from "10 - Ambience", 30 s loop; 18 s before 0.12.0) | [Free Crowd Cheering Sounds](https://opengameart.org/content/free-crowd-cheering-sounds) | Gregor Quendel | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `crowd_cheer_1..3.ogg` | The crowd cheering a point, one of three picked each time (from "04 - Strong cheering - II - Short", "02 - Strong cheering and soft rhythmic cheering", "05 - Soft cheering - I") | same | Gregor Quendel | CC BY 4.0 |
+| `crowd_rhythm.ogg` | The crowd clapping and chanting in time as a do-or-die raid starts (from "08 - Rhythmic cheering") | same | Gregor Quendel | CC BY 4.0 |
 | `roar.ogg` | The big roar: walk-outs, big points, the auction's big buys, trophies (from "03 - Strong cheering - I") | same | Gregor Quendel | CC BY 4.0 |
 | `applause.ogg` | Applause after a raid | [Applause in a large hall or church](https://opengameart.org/content/applause-in-a-large-hall-or-church) | eXpl0it3r | CC0 |
 | `step_mat_1..3.ogg` | Footsteps on the mats (dome, stadium, monsoon) (`footstep_carpet_000, 001, 003`) | [Impact Sounds](https://kenney.nl/assets/impact-sounds) | Kenney | CC0 |
@@ -23,9 +24,9 @@ Made from the downloads by `tools/audio/make_recorded.py`: mono, 22.05 kHz, sile
 | `thud_1..3.ogg` | A tackle's hold landing, a dash, a body on the mat (`impactSoft_heavy_000, 002, 003`) | [Impact Sounds](https://kenney.nl/assets/impact-sounds) | Kenney | CC0 |
 | `slap_1..3.ogg` | A raider's touch, the bonus line (`impactSoft_medium_000, 001, 003`) | [Impact Sounds](https://kenney.nl/assets/impact-sounds) | Kenney | CC0 |
 | `click.ogg` | Every button in the menus (`click_002`) | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | Kenney | CC0 |
-| `amb_monsoon.ogg` | Rain at the monsoon ground (16 s loop) | [AMB Rain Loop 1](https://opengameart.org/content/amb-rain-loop-1) | Kresiek The Furry | CC0 |
-| `amb_beach.ogg` | The sea at Puri: the recording's four waves, overlapping round a 16 s loop | [Beach Ocean Waves](https://opengameart.org/content/beach-ocean-waves) | jasinski | CC0 |
-| `amb_village.ogg` | Birds at the village ground at dusk (16 s loop of `park_ambience_birds`) | [Park ambiences](https://opengameart.org/content/park-ambiences) | Thimras | CC0 |
+| `amb_monsoon.ogg` | Rain at the monsoon ground (40 s loop) | [AMB Rain Loop 1](https://opengameart.org/content/amb-rain-loop-1) | Kresiek The Furry | CC0 |
+| `amb_beach.ogg` | The sea at Puri: the recording's four waves, overlapping round a 32 s loop, each twice | [Beach Ocean Waves](https://opengameart.org/content/beach-ocean-waves) | jasinski | CC0 |
+| `amb_village.ogg` | Birds at the village ground at dusk (40 s loop of `park_ambience_birds`) | [Park ambiences](https://opengameart.org/content/park-ambiences) | Thimras | CC0 |
 | `amb_stadium.ogg` | Crickets outside the floodlit stadium at night (10 s loop) | [Crickets Ambient Noise - loopable](https://opengameart.org/content/crickets-ambient-noise-loopable) | Wolfgang_ | CC0 |
 | `whistle_short_1..3.ogg` | The referee's short pip: an empty raid, a card (`short_a`, `_b`, `_c`) | Pixabay 568615, 291816, 6121 | charlesheffley009, framptones, freesound_community | Pixabay Content License |
 | `whistle_long_1..3.ogg` | The long blast: a raid starting, a point, half-time (`long_a`, `_b`, `_c`) | Pixabay 568615, 291816, 6121 | charlesheffley009, framptones, freesound_community | Pixabay Content License |

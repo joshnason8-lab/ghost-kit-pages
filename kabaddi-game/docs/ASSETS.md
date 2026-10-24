@@ -41,7 +41,8 @@ The crowd is eight generated people (men, women, an older man, a Sikh man, child
 sprite sheet in eight poses (sitting, clapping, standing, arms up), from the front and (since 0.9.1) from behind,
 by `tools/crowd/render_crowd.gd` (`assets/crowd/`). The stands draw each spectator as one camera-facing card,
 facing the court: a camera behind them, as over the stand it looks over, sees their back. Fans in shirts wear the
-teams' colours, and the crowd claps and stands with the match's excitement.
+teams' colours, and the crowd claps and stands with the match's excitement. On Medium and High (0.12.0) the
+sheet has sixteen people: the eight again in other colours (`tools/crowd/variants.py`, see GRAPHICS.md).
 
 ## Drop-in slot
 
@@ -110,7 +111,7 @@ running hand touch, dubki (ducking under a chain), frog jump and scorpion kick. 
 ## Mobile budgets (aim for these)
 
 - **Per athlete.** 8–15k triangles at LOD0, 3–5k at LOD1, one skinned mesh with 1–3 materials. Textures at
-  1024² (jersey, body), ETC2/ASTC compressed (already enabled in `project.godot`).
+  1024² on Low, the albedo at 2048² ETC2 on Medium and High (0.12.0).
 - **On screen.** 14 athletes plus a crowd. The crowd is already a single instanced mesh (`arena.gd`), so it costs
   one draw call.
 - **Today's placeholder** uses about 40 small meshes per athlete. It's fine on mid-range phones. A real skinned
