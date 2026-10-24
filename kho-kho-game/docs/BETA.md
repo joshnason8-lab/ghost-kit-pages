@@ -9,6 +9,14 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.7
+
+- **Sharper on Medium and High graphics:** the grounds' and walls' photographs at twice the detail, the players'
+  kit, skin and faces sharper, a crowd of sixteen different people (skin, height, shorts, how they stand), and on High
+  sharper skies. Low is exactly as it was.
+- **Longer sounds:** the crowd's murmur and the birds at the school run longer before they repeat; cheers and
+  applause come in more than one take.
+
 ## What's new in 0.6
 
 - **Real recorded sound:** footsteps where the players run (on the earth, or the hall's mat), the slap of a kho, a dive

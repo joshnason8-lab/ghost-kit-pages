@@ -27,19 +27,23 @@ players in India, Nepal, Bangladesh and Sri Lanka, in fourteen of their language
 | **Languages** | English, हिन्दी, मराठी, ಕನ್ನಡ, తెలుగు, தமிழ், മലയാളം, ଓଡ଼ିଆ, বাংলা, ગુજરાતી, ਪੰਜਾਬੀ, অসমীয়া, नेपाली, සිංහල ([docs/LANGUAGES.md](docs/LANGUAGES.md)). The game starts in the phone's language; the globe on the home screen changes it. A text-fit audit checks every screen in every language at 16:9, 19.5:9, 20:9 with a camera cut-out and 4:3 (`tests/fit_audit.gd`). |
 | **Phones** | GL Compatibility renderer. Each ground merged into three draw calls, the crowd one, every player's shadow one. Low graphics: lighter bodies, no outlines, no MSAA, 75% render scale, a thinner crowd; a phone with a small GPU or under 4.5 GB of memory starts on Low, and a match running under 36 frames a second drops a level. Battery saver: about 30 frames a second at 80%. The numbers are below. |
 
-Per frame in a match (`tests/perf_probe.tscn`, Godot 4.7.2, 1280 × 720), after the 0.4 graphics update (before it in
-brackets). Medium and High count fewer triangles than Low at the village because the full chair model has mesh levels
-of detail the engine thins with distance; the light chair (Low) does not:
+Per frame in a match (`tests/perf_probe.tscn`, Godot 4.7.2, 1280 × 720) in 0.7, and the video memory in use with that
+ground and the ones before it loaded (`KK_GFX=n` runs one level, so its memory is its own). Medium and High count fewer
+triangles than Low at the village because the full chair model has levels of detail the engine thins with distance:
 
 | Ground | Low | Medium | High |
 |---|---|---|---|
-| Village ground | 85 draws, 69k triangles (was 73, 40k) | 87 draws, 62k (was 73, 61k) | 89 draws, 63k (was 75, 62k) |
-| School ground | 80 draws, 38k (was 73, 39k) | 81 draws, 57k (was 73, 61k) | 83 draws, 58k (was 75, 61k) |
-| Indoor arena (fast game: 24 players) | 82 draws, 46k (was 82, 46k) | 82 draws, 65k (was 82, 65k) | 84 draws, 67k (was 84, 67k) |
-| Floodlit stadium | 77 draws, 39k (was 73, 38k) | 77 draws, 61k (was 73, 56k) | 79 draws, 63k (was 75, 58k) |
+| Village ground | 88 draws, 69k triangles, 47 MB | 90 draws, 62k, 86 MB | 92 draws, 63k, 101 MB |
+| School ground | 83 draws, 38k, 48 MB | 84 draws, 57k, 87 MB | 86 draws, 58k, 102 MB |
+| Indoor arena (fast game: 24 players) | 84 draws, 46k, 46 MB | 84 draws, 64k, 84 MB | 86 draws, 66k, 95 MB |
+| Floodlit stadium | 80 draws, 39k, 48 MB | 80 draws, 61k, 88 MB | 82 draws, 63k, 103 MB |
+
+Since 0.7 Medium and High load sharper art Low does not (2k ground and wall photos, a 2048 px players' texture, 16
+people in the crowd's sheet, and on High 4k skies), all VRAM-compressed; Low loads exactly what it did.
 
 Budgets: Low 90 draw calls and 90,000 triangles (a Mali-G52 at 720p, 30 frames a second), Medium 130 and 340,000,
-High 190 and 700,000. The beta APK (64-bit ARM) is about 54 MB: the players' model and its textures are 2.3 MB of it, the grounds' shared assets (skies, surfaces, trees, chairs, benches, buildings) about 18 MB; a phone downloads about that from Play. The fonts are 2.4 MB of it.
+High 190 and 700,000. The beta APK (64-bit ARM) is about 54 MB up to 0.6; 0.7 spends more on Medium and High (the owner
+allows up to about 100 MB): see docs/PROGRESS.md, round seven, for what and how much. The fonts are 2.4 MB of it.
 
 ## Controls
 

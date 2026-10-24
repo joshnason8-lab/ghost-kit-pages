@@ -3,6 +3,7 @@ extends Node
 ## crowd is the floodlit stadium's), and the frame time at each:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn
 ## The budgets (README, "Phones"): Low under 90 draw calls and 90k triangles, Medium 130 and 340k, High 190 and 700k.
+## Also the video memory in use (all of it, and the textures' share), in MB.
 
 const BUDGET := [[90, 90000], [130, 340000], [190, 700000]]
 
@@ -12,7 +13,11 @@ func _ready() -> void:
 	Game.settings.sound = false
 	var over := 0
 	for venue in DB.venue_ids():
-		for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
+		# KK_GFX=0, 1 or 2: one level only, so its video memory is its own (textures stay cached from match to match).
+		var levels := [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]
+		if OS.get_environment("KK_GFX") != "":
+			levels = [int(OS.get_environment("KK_GFX"))]
+		for g in levels:
 			Game.settings.graphics = g
 
 			Game.start_match({"home": "MAH", "away": "ODI", "venue": venue, "format": KhoRules.FAST if venue == "arena" else KhoRules.CLASSIC,
@@ -29,8 +34,10 @@ func _ready() -> void:
 			var ok: bool = dc <= BUDGET[g][0] and tris <= BUDGET[g][1]
 			if not ok:
 				over += 1
-			print("venue %s graphics %d: %d draw calls, %d triangles, %d objects; scale %.2f; %.1f ms a frame here%s" % [venue, g, dc, tris,
+			print("venue %s graphics %d: %d draw calls, %d triangles, %d objects; scale %.2f; %.1f ms a frame here; video memory %.1f MB (textures %.1f)%s" % [venue, g, dc, tris,
 				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME), get_viewport().scaling_3d_scale, ms,
+				rs.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0,
+				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED) / 1048576.0,
 				"" if ok else "  OVER BUDGET"])
 	Game.goto_menu()
 	await get_tree().process_frame

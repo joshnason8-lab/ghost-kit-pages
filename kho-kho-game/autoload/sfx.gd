@@ -11,9 +11,9 @@ const RATE := 22050
 const VOICES := {"grunt": 3, "hup": 2}
 const MUSIC_DB := -9.0
 ## Sounds with several takes, and how many.
-const TAKES := {"slap": 2, "thud": 2, "step_earth": 4, "step_mat": 3}
+const TAKES := {"slap": 2, "thud": 2, "step_earth": 4, "step_mat": 3, "crowd_cheer": 2, "applause": 3}
 ## Every recording the game loads from assets/audio/ (the test checks each is there).
-const FILES := ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music", "drums_loop", "crowd_loop",
+const FILES := ["crowd_ooh", "crowd_groan", "clap", "menu_music", "drums_loop", "crowd_loop",
 	"click", "amb_crickets", "amb_birds"]
 const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_crickets", "amb_birds"]
 ## A place's own sound under the crowd: kind of ground -> [bed, its level (dB)].

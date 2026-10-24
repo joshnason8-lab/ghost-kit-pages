@@ -10,6 +10,7 @@ owner's and are **not** in this public repository; what is here is what the game
 |---|---|
 | `assets/models/player.glb` | Two light copies of the model on its own skeleton (23 bones): `player_lod0`, 3,600 triangles with a 1024 px texture (Medium and High graphics), and `player_lod1`, 1,400 triangles with a 512 px texture (Low). 2 MB. |
 | `assets/models/anims/*.res` | The clips, baked onto that skeleton: `run`, `dive`, `reach`, `turn`, `kneel_down`, `kneel` (the owner's), `walk` (the model's own), `dodge` and `idle` (recorded motion capture, from the CMU library: below), and held poses for the officials, the crowd and a cheer: `stand`, `whistle`, `signal_out`, `signal_foul`, `signal_end`, `cheer`, `seated`, `clap`. |
+| `assets/models/player_lod0_2k.png` | Since 0.7: the source's texture baked again at 2048 px onto `player_lod0`'s UVs (`tools/models/bake_hd_texture.py`), VRAM-compressed; Medium and High draw it instead of the GLB's 1024 px. Low's mesh and 512 px texture are unchanged. |
 | `game/model_body.gd` | The body: the model, its AnimationPlayer, the kit recoloured in the shader, the head turned toward the play. |
 
 ## How a clip is chosen (`Athlete._animate`)

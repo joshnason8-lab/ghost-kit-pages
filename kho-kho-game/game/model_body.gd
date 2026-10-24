@@ -147,8 +147,16 @@ static func material(lk: Dictionary, p_low: bool) -> ShaderMaterial:
 static var _tex := {}
 
 
+## The model's texture: the light mesh's own 512 px on Low; on Medium and High (the 3,600-triangle mesh) a 2048 px bake
+## of the source's, VRAM-compressed (tools/models/bake_hd_texture.py), else the 1024 px the GLB carries.
+const HD_TEXTURE := "res://assets/models/player_lod0_2k.png"
+
+
 static func _texture(p_low: bool) -> Texture2D:
 	if _tex.has(p_low):
+		return _tex[p_low]
+	if not p_low and ResourceLoader.exists(HD_TEXTURE):
+		_tex[p_low] = load(HD_TEXTURE)
 		return _tex[p_low]
 	var m: Node = _scene.instantiate()
 	var t: Texture2D = null

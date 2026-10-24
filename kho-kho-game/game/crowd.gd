@@ -5,15 +5,17 @@ extends MultiMeshInstance3D
 ## fidget, and at an out (excite) brings some of them to their feet, cheering.
 ##
 ## The sheet is the players' own model (ModelBody), posed and lit and drawn once at load (render_sheet): row 0 the
-## crowd at rest, four sitting and four standing and clapping, in four skin tones; row 1 the same people cheering;
-## rows 2 and 3 the same again seen from behind. Their shirts are drawn in a key colour (magenta) that the shader paints
+## crowd at rest, half sitting and half standing; row 1 the same people cheering; rows 2 and 3 the same again seen from
+## behind. On Low eight people (four tones; standing, clapping); on Medium and High sixteen (six tones, four colours of
+## shorts, heights and turns, the standing ones still, clapping or shifting their weight as the recorded idle does). Their shirts are drawn in a key colour (magenta) that the shader paints
 ## with each person's colour. Where nothing can be drawn (the headless tests) the sheet is painted in code instead.
 ##
 ## Every spectator faces the court's centre (his instance's +Z, flattened to the ground). The card always turns to
 ## the camera, but shows his back when the camera is behind him: the near side's crowd, between the broadcast camera
 ## and the play, is seen from behind, watching the play (until 0.4.1 they all faced the camera).
 
-const FIGS := 8          # figures across the sheet
+const FIGS := 8          # figures across the sheet on Low (figs(): sixteen on Medium and High)
+const FIGS_HD := 16
 const FIG_W := 64
 const FIG_H := 128
 const CELL_M := Vector2(1.1, 2.2)   # the metres a cell covers
@@ -22,26 +24,58 @@ const ROWS := 4                     # at rest, cheering; from the front, from be
 
 static var _sheet: ImageTexture
 static var _mat: ShaderMaterial
-static var _rendered := false
+static var _rendered := 0     # figures in the sheet drawn from the model (0: not drawn)
+static var _painted_n := 0
 
 var spots: Array[Vector3] = []   # where people stand, or sit (their seat)
 var xforms: Array[Transform3D] = []   # each one's transform, as given to the multimesh (which keeps none headless)
 
 
+## How many people the sheet has at this graphics level.
+static func figs() -> int:
+	return FIGS if int(Game.settings.graphics) <= Game.GFX_LOW else FIGS_HD
+
+
+## The sheet for this graphics level: if it holds the wrong number of people (the level changed since it was drawn),
+## painted at once at the right size, and drawn from the model again as soon as it can be.
 static func sheet() -> ImageTexture:
-	if _sheet:
+	var n := figs()
+	if _sheet and (_rendered == n or (_rendered == 0 and _painted_n == n)):
 		return _sheet
-	_sheet = ImageTexture.create_from_image(_painted())
+	var redraw := _rendered != 0
+	_rendered = 0
+	_painted_n = n
+	if _sheet:
+		_sheet.set_image(_painted(n))
+	else:
+		_sheet = ImageTexture.create_from_image(_painted(n))
+	if redraw:
+		render_sheet.call_deferred(Engine.get_main_loop())
 	return _sheet
 
 
-## The sheet drawn from the model: 8 figures by 4 rows. Awaitable; a no-op where nothing renders.
+## Each figure's look and pose: [skin, shorts, height, turn (degrees), pose at rest (standing ones)].
+static func _figure(i: int, n: int) -> Array:
+	if n == FIGS:
+		# Low's eight, as they have always been.
+		var tones := [Color("d9a77a"), Color("c48a5c"), Color("a86b45"), Color("6e4430")]
+		return [tones[i % 4], Color("2a2a30"), 1.72 + 0.04 * float((i * 7) % 3), [0.0, 12.0, -10.0, 20.0][i % 4], "clap" if i % 2 == 0 else "stand"]
+	var tones := [Color("e0b38a"), Color("d9a77a"), Color("c48a5c"), Color("a86b45"), Color("8a5636"), Color("6e4430")]
+	var shorts := [Color("2a2a30"), Color("1d2b4a"), Color("8a7a5c"), Color("d8d8d0")]
+	var poses := ["clap", "stand", "idle", "clap", "idle", "stand", "clap", "idle"]
+	return [tones[(i * 5) % 6], shorts[(i * 3) % 4], 1.62 + 0.05 * float((i * 7) % 5),
+		[0.0, 14.0, -12.0, 22.0, -20.0, 6.0, 28.0, -4.0][i % 8], poses[i % 8]]
+
+
+## The sheet drawn from the model: figs() figures by 4 rows. Awaitable; a no-op where nothing renders. Drawn again if
+## the graphics level has changed how many people it holds.
 static func render_sheet(tree: SceneTree) -> void:
-	if _rendered or DisplayServer.get_name() == "headless":
+	var n := figs()
+	if _rendered == n or DisplayServer.get_name() == "headless":
 		return
-	_rendered = true
+	_rendered = n
 	var vp := SubViewport.new()
-	vp.size = Vector2i(FIG_W * FIGS, FIG_H * ROWS)
+	vp.size = Vector2i(FIG_W * n, FIG_H * ROWS)
 	vp.transparent_bg = true
 	vp.own_world_3d = true
 	vp.msaa_3d = Viewport.MSAA_4X
@@ -64,22 +98,31 @@ static func render_sheet(tree: SceneTree) -> void:
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
 	cam.size = CELL_M.y * ROWS
 	cam.keep_aspect = Camera3D.KEEP_HEIGHT
-	cam.position = Vector3(CELL_M.x * FIGS * 0.5, 0.0, 10.0)
+	cam.position = Vector3(CELL_M.x * n * 0.5, 0.0, 10.0)
 	vp.add_child(cam)
 	cam.current = true
-	var tones := [Color("d9a77a"), Color("c48a5c"), Color("a86b45"), Color("6e4430")]
+	var idles := []
 	for row in ROWS:
-		for i in FIGS:
-			var b := ModelBody.new({"skin": tones[i % 4], "jersey": Color(1, 0, 1), "shorts": Color("2a2a30"),
-				"height": 1.72 + 0.04 * float((i * 7) % 3)}, true)
+		for i in n:
+			var f := _figure(i, n)
+			var b := ModelBody.new({"skin": f[0], "jersey": Color(1, 0, 1), "shorts": f[1], "height": f[2]}, true)
 			vp.add_child(b)
-			var seated := i < 4
+			var seated := i < n / 2
 			var cheering := row % 2 == 1
 			var back := row >= 2
 			# Row r between (1 - r) and (2 - r) cells above the camera; each figure's feet at its cell's foot.
 			b.position = Vector3(CELL_M.x * (i + 0.5), (1.0 - row) * CELL_M.y + 0.05, 0.0)
-			b.rotation.y = deg_to_rad([0.0, 12.0, -10.0, 20.0][i % 4]) + (PI if back else 0.0)
-			b.play("cheer" if cheering else ("seated" if seated else ("clap" if i % 2 == 0 else "stand")), 1.0, 0.0)
+			b.rotation.y = deg_to_rad(f[3]) + (PI if back else 0.0)
+			var pose: String = "cheer" if cheering else ("seated" if seated else f[4])
+			b.play(pose, 1.0, 0.0)
+			if pose == "idle":
+				idles.append([b, i])
+	await tree.process_frame
+	for it in idles:
+		# Each from his own moment of the recorded idle, held.
+		var b: ModelBody = it[0]
+		b.anim.seek(fposmod(float(it[1]) * 0.83, b.clip_length("idle")), true)
+		b.anim.speed_scale = 0.0
 	for k in 4:
 		await tree.process_frame
 	await RenderingServer.frame_post_draw
@@ -92,33 +135,33 @@ static func render_sheet(tree: SceneTree) -> void:
 		img.save_png(OS.get_environment("KK_SHEET"))
 	img.generate_mipmaps()
 	if _sheet:
-		_sheet.update(img)
+		_sheet.set_image(img)
 	else:
 		_sheet = ImageTexture.create_from_image(img)
 	if _mat:
 		_mat.set_shader_parameter("sheet", _sheet)
+		_mat.set_shader_parameter("figs", float(n))
 
 
 ## The painted fallback: the same layout, in flat shapes.
-static func _painted() -> Image:
-	var img := Image.create_empty(FIG_W * FIGS, FIG_H * ROWS, false, Image.FORMAT_RGBA8)
+static func _painted(n := FIGS) -> Image:
+	var img := Image.create_empty(FIG_W * n, FIG_H * ROWS, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
-	var skins := [Color("d9a77a"), Color("c48a5c"), Color("a86b45"), Color("6e4430")]
 	for row in ROWS:
-		for f in FIGS:
+		for f in n:
 			var ox := f * FIG_W
 			var oy := row * FIG_H
-			var skin: Color = skins[f % 4]
+			var skin: Color = _figure(f, n)[0]
 			for y in FIG_H:
 				for x in FIG_W:
 					var u := (x + 0.5) / FIG_W - 0.5
 					var v := (y + 0.5) / FIG_H
 					var c := Color(0, 0, 0, 0)
-					var top := 0.55 if (f < 4 and row % 2 == 0) else 0.32
+					var top := 0.55 if (f < n / 2 and row % 2 == 0) else 0.32
 					if v > top + 0.12 and absf(u) < 0.2:
 						c = Color(1, 0, 1, 1)
 					if v > top + 0.45 and absf(u) < 0.18:
-						c = Color("2a2a30")
+						c = _figure(f, n)[1]
 					var hd := Vector2(u / 0.11, (v - top - 0.05) / 0.06)
 					if hd.length() < 1.0:
 						c = skin if row < 2 else Color("16110d")   # from behind: his hair
@@ -176,7 +219,7 @@ void fragment() {
 	_mat = ShaderMaterial.new()
 	_mat.shader = sh
 	_mat.set_shader_parameter("sheet", sheet())
-	_mat.set_shader_parameter("figs", float(FIGS))
+	_mat.set_shader_parameter("figs", float(figs()))
 	_mat.set_shader_parameter("rows", float(ROWS))
 	return _mat
 
@@ -198,6 +241,8 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, seated :=
 			keep.append(v)
 			sits.append(sit)
 	spots = keep
+	var n := figs()
+	var half := n / 2
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
@@ -212,11 +257,14 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, seated :=
 		xforms.append(Transform3D(Basis(Vector3.UP, facing(base)), base))
 		mm.set_instance_transform(i, xforms[i])
 		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 else Color(rng.randf(), rng.randf(), rng.randf())
-		var fig := rng.randi_range(0, 3) + (0 if sits[i] else 4)
+		var fig := rng.randi_range(0, half - 1) + (0 if sits[i] else half)
 		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase.
-		mm.set_instance_custom_data(i, Color((fig + 0.5) / FIGS, _code(col), rng.randf(), 0.0))
+		mm.set_instance_custom_data(i, Color((fig + 0.5) / n, _code(col), rng.randf(), 0.0))
 	multimesh = mm
 	material_override = material()
+	# The sheet as this level has it (drawn again, or painted, if the level changed since).
+	_mat.set_shader_parameter("sheet", sheet())
+	_mat.set_shader_parameter("figs", float(n))
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
