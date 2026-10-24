@@ -11,11 +11,12 @@ func _ready() -> void:
 	Game.settings.sound = false
 	Game.settings.coach = false
 	get_tree().root.size = Vector2i(1280, 720)
-	await Crowd.bake(self)
 	var args := OS.get_cmdline_user_args()
+	# The level measured is set before the crowd's sheet is baked, as the game does at loading.
+	Game.settings.graphics = int(args[2].split(",")[0]) if args.size() > 2 else Game.GFX_LOW
+	await Crowd.bake(self)
 	var venues: Array = Array(args[0].split(",")) if args.size() > 0 else DB.VENUE_ORDER
 	Body.use_rigged = not (args.size() > 1 and args[1] == "coded")
-	Game.settings.graphics = int(args[2].split(",")[0]) if args.size() > 2 else Game.GFX_LOW
 	for venue in venues:
 		var levels: Array = [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]
 		if args.size() > 2:

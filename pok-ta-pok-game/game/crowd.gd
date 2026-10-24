@@ -161,6 +161,9 @@ static func bake(host: Node) -> void:
 	tex.set_meta("baked", true)
 	tex.set_meta("hq", hq)
 	_sheet = tex
+	if not hq:
+		# Low after Medium or High: the extra townspeople are not needed; their textures are let go.
+		_fans.erase(true)
 	figs = nf
 	fig_w = fw
 	fig_h = fh

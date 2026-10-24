@@ -76,22 +76,25 @@ no permission but vibration.
 
 ## Performance
 
-Measured with `tests/perf_probe` in a match (ten players, two judges and the crowd), at the broadcast camera, in
-0.2.0 with the realistic bodies (and, for comparison, the code-built ones of 0.1.0 at the same camera). Low's budget
-is about 100 draw calls and 90k triangles in the 3D view. Draw calls and triangles are what a phone's GPU pays; the
-"ms a frame" of this CI machine (software OpenGL) is not a phone figure.
+Measured with `tests/perf_probe` in a match (ten players, two judges and the crowd), at the broadcast camera, one
+graphics level a run (`perf_probe.tscn -- village,stone rigged LEVEL`). Low's budget is about 100 draw calls and 90k
+triangles in the 3D view. Draw calls, triangles and video memory are what a phone's GPU pays; the "ms a frame" of this
+machine (software OpenGL) is not a phone figure. 0.4.0 put the extra detail on Medium and High only; Low is unchanged.
 
 | Court | | Low | Medium | High |
 |---|---|---|---|---|
-| **Village** (earth, crowd) | draw calls | 61 (58 code-built) | 61 (58) | 79 (71) |
-| | triangles counted | 21k (36k) | 28k (38k) | 116k (93k) |
-| **Stone court** (I-court, rings) | draw calls | 68 (61) | 68 (61) | 89 (75) |
-| | triangles counted | 37k (64k) | 44k (64k) | 159k (131k) |
+| **Village** (earth, crowd) | draw calls | 61 | 61 | 79 |
+| | triangles counted | 21k | 28k | 116k |
+| | video memory (0.3.0 → 0.4.0) | 70 → 70 MB | 83 → 98 MB | 100 → 127 MB |
+| **Stone court** (I-court, rings) | draw calls | 68 | 68 → 69 | 89 → 93 |
+| | triangles counted | 37k | 44k → 49k | 159k → 173k |
+| | video memory (0.3.0 → 0.4.0) | 75 → 75 MB | 88 → 104 MB | 106 → 139 MB |
 
+What Medium and High load beyond Low: the court surfaces at 1K and 2K (Poly Haven, VRAM-compressed with mipmaps), the
+4K sky on High, the Meshy bodies' 2048 textures, a 32-figure crowd sheet at 96 x 264 per figure, and the carved ring.
 The bodies are 9.4k triangles each on High, 4.7k on Medium and 3.0k to 4.7k on Low (tools/meshy/prepare.gd); the
 renderer's counter on Low and Medium comes out lower than that would suggest, so the Low figure to plan on is about
-the court plus 45k for twelve people, inside the budget. The frame times on this machine did not change. The crowd
-is still one draw call at every level (its sheet is rendered from the Meshy townspeople at loading).
+the court plus 45k for twelve people, inside the budget. The crowd is one draw call at every level.
 
 ## Project layout
 
