@@ -76,6 +76,8 @@ var settings := {
 	"language": "",         # "" follows the phone's language
 	"camera": CAM_TV,
 	"graphics": -1,         # -1 until the first run picks one for the phone (detect_graphics)
+	"gfx_auto": true,       # Auto: the graphics picked for this phone each time the game starts (detect_graphics)
+	"gfx_cap": GFX_HIGH,    # and no higher than a slow match left them (auto_gfx)
 	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
 	"fps": FPS_SMOOTH,
 	"sound": true,
@@ -87,6 +89,8 @@ var settings := {
 	"assist": 1,            # who runs your player to the ball: 0 you, every touch; 1 you for the first touch (the set and
 	                        # the spike he runs to himself); 2 he runs to every one. You time every touch yourself.
 	"game_speed": 0,        # the pace of a match you play: SPEEDS
+	"play_as": -1,          # -1 the whole side (every touch is yours); a DB.POS_ role: that one player, the others the
+	                        # computer's
 	"sets": 1,              # 0 one set, 1 best of three: the real match
 	"points": 0,            # 0 sets to 15 (the ISTAF rule), 1 to 21 (the long sets of the old rule)
 	"event": 0,             # the event in Quick Match: 0 Regu (3), 1 Team (three regus), 2 Quadrant (4), 3 Doubles (2)
@@ -116,8 +120,8 @@ var _defaults := {}
 func _ready() -> void:
 	_defaults = settings.duplicate(true)
 	load_settings()
-	if int(settings.graphics) < 0:
-		settings.graphics = detect_graphics()
+	if int(settings.graphics) < 0 or bool(settings.gfx_auto):
+		settings.graphics = auto_graphics()
 		save_settings()
 	apply_frame_rate()
 	TranslationServer.set_locale(language())
@@ -151,8 +155,9 @@ func go_back() -> void:
 		goto_menu()
 
 
-## The graphics level for this phone on its first run: Low on a phone with a small GPU or little memory (a Galaxy
-## A16's Mali-G57 MC2 or Mali-G68 MP2, Adreno 5xx and 6xx below 640, PowerVR), Medium on the rest; High is a choice.
+## The graphics level for this phone: Low on a phone with a small GPU or little memory (a Galaxy A16's Mali-G57 MC2 or
+## Mali-G68 MP2, Adreno 5xx and 6xx below 640, PowerVR), High on a flagship's GPU with 8 GB or more (Adreno 650, 660,
+## 690, 730 and later, Mali-G710 and later, Immortalis, Xclipse), Medium on the rest.
 func detect_graphics() -> int:
 	if not OS.has_feature("mobile"):
 		return GFX_HIGH
@@ -165,7 +170,18 @@ func detect_graphics() -> int:
 			"adreno (tm) 4", "img bxm", "ge8"]:
 		if gpu.contains(weak):
 			return GFX_LOW
+	if ram_gb >= 7.5:
+		for strong in ["adreno (tm) 650", "adreno (tm) 660", "adreno (tm) 690", "adreno (tm) 73", "adreno (tm) 74",
+				"adreno (tm) 75", "adreno (tm) 8", "mali-g710", "mali-g715", "mali-g720", "mali-g725", "mali-g925",
+				"immortalis", "xclipse"]:
+			if gpu.contains(strong):
+				return GFX_HIGH
 	return GFX_MEDIUM
+
+
+## Auto's level: the phone's (detect_graphics), but no higher than a slow match has left it (gfx_cap).
+func auto_graphics() -> int:
+	return mini(detect_graphics(), int(settings.get("gfx_cap", GFX_HIGH)))
 
 
 func language() -> String:
@@ -200,7 +216,10 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "game_speed", "sets", "points", "event"]:
+		# Saved before Auto: still Auto if the level is the one the game would pick, else the level chosen.
+		if not data.has("gfx_auto") and data.has("graphics") and int(data.graphics) >= 0:
+			settings.gfx_auto = int(data.graphics) == detect_graphics()
+	for k in ["camera", "graphics", "gfx_cap", "fps", "btn_size", "difficulty", "assist", "game_speed", "play_as", "sets", "points", "event"]:
 		settings[k] = int(settings[k])
 
 

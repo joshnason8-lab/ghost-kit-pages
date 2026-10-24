@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "TAGLINE": "Servis. Umpan. Rejam guling.",
   "MENU_EYEBROW": "Sepak takraw · Peraturan sebenar",
   "LOADING": "Menyediakan gelanggang…",
   "MENU_QUICK": "Perlawanan Pantas",
@@ -354,6 +353,16 @@
   "YOU_STAY_DIV1": "Kelab anda kekal dalam Divisyen 1. Layak ke perlawanan akhir untuk naik.",
   "SHIRT_N": "#{n}",
   "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed ialah permainan bebas. Ia tidak bergabung dengan, atau disokong oleh, mana-mana persekutuan, liga, kelab atau pemain sepak takraw. Nama jolokan kelab dicipta dan pemainnya rekaan; negara, tempat dan peraturannya adalah sebenar.",
-  "AUTO_GFX": "Grafik automatik",
-  "GFX_LOWERED": "Grafik diturunkan supaya permainan kekal lancar (Tetapan)."
+  "GFX_LOWERED": "Grafik diturunkan supaya permainan kekal lancar (Tetapan).",
+  "GFX_AUTO": "Auto",
+  "GFX_AUTO_PICK": "Auto: {level} pada telefon ini, dipilih mengikut cip dan memorinya.",
+  "GFX_NEXT_MATCH": "Semasa perlawanan, gelanggang dan penonton berubah mulai perlawanan seterusnya.",
+  "AUTO_LOWER": "Turunkan jika perlahan",
+  "PLAY_AS": "Main sebagai",
+  "PLAY_TEAM": "Pasukan",
+  "POS_TEKONG": "Tekong",
+  "POS_FEEDER": "Pengumpan",
+  "POS_STRIKER": "Penyerang",
+  "PLAY_AS_TEAM_NOTE": "Setiap sentuhan di pihak anda milik anda, kepada sesiapa pun bola itu datang.",
+  "PLAY_AS_ONE_NOTE": "Hanya sentuhan pemain itu milik anda (gelang putih); rakan sepasukan bermain sentuhan mereka. Dalam beregu, Pengumpan ialah penyerang."
 }

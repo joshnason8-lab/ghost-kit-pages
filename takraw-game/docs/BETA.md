@@ -11,7 +11,24 @@ about 2019, the Galaxy A16 included).
 
 ## What to try
 
-New in 0.6.0: the jumps are real. The block, the header spike and the jump for joy take off and land the way a
+New in 0.7.0, the owner's list:
+
+- **Play as one player** (Settings > Play as: the team, the tekong, the feeder or the striker). Only that player's
+  touches are yours (a white ring under him); your team-mates play theirs. Does it feel like being on a team?
+- **Settings in the pause menu**, so the graphics, the frame rate, the camera or the assist can be changed mid-match.
+  **Graphics: Auto** (the new default) picks Low, Medium or High from the phone's chip and memory. Which does it pick on
+  your phone, and does it run smoothly there?
+- **The crowd are whole people.** They stand up to cheer a point and sit down again, with legs. At the beach (and behind
+  the fences and stalls) people stand on their feet.
+- **The officials move:** they follow the ball with their heads, breathe, shift their weight, settle on their chairs;
+  the referee points to the side that won the point.
+- **The ball spins** in the air.
+- **No white beyond the ground.** At the beach the sea runs to the horizon (no square end), and in every outdoor venue
+  the ground fades into the haze. The night market's street is closed at both ends by more shophouses (the end camera).
+- **The home screen:** new pictures for Quick Match, League Season and International; bigger How to Play, Settings and
+  Records; the tagline is gone.
+
+In 0.6.0: the jumps are real. The block, the header spike and the jump for joy take off and land the way a
 real jump does (motion capture from the CMU library): the dip with the arms swung back, the spring, the landing taken
 on the knees, with the takraw part (the raised foot, the nod, the arms up) on top. Watch a block at the net: does it
 look right, and does the timing of the Block button feel the same? The kicks no longer slide the foot they stand on:

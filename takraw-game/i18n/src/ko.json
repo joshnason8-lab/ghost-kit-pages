@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "TAGLINE": "서브. 토스. 롤링 스파이크.",
   "MENU_EYEBROW": "세팍타크로 · 실제 규칙",
   "LOADING": "코트 준비 중…",
   "MENU_QUICK": "빠른 경기",
@@ -354,6 +353,16 @@
   "YOU_STAY_DIV1": "내 클럽은 디비전 1에 남습니다. 결승에 오르면 승격합니다.",
   "SHIRT_N": "#{n}",
   "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed는 독립 게임입니다. 어떤 세팍타크로 연맹, 리그, 클럽, 선수와도 제휴 관계가 없으며 보증을 받지도 않았습니다. 클럽 애칭은 창작이고 선수는 가상 인물입니다. 국가, 장소, 규칙은 실제입니다.",
-  "AUTO_GFX": "그래픽 자동 조절",
-  "GFX_LOWERED": "게임이 부드럽게 돌아가도록 그래픽을 낮췄습니다 (설정)."
+  "GFX_LOWERED": "게임이 부드럽게 돌아가도록 그래픽을 낮췄습니다 (설정).",
+  "GFX_AUTO": "자동",
+  "GFX_AUTO_PICK": "자동: 이 휴대폰은 {level} (칩과 메모리로 선택).",
+  "GFX_NEXT_MATCH": "경기 중에는 경기장과 관중이 다음 경기부터 바뀝니다.",
+  "AUTO_LOWER": "느리면 낮춤",
+  "PLAY_AS": "플레이 대상",
+  "PLAY_TEAM": "팀 전체",
+  "POS_TEKONG": "테콩",
+  "POS_FEEDER": "피더",
+  "POS_STRIKER": "킬러",
+  "PLAY_AS_TEAM_NOTE": "공이 누구에게 가든 우리 편의 모든 터치를 직접 합니다.",
+  "PLAY_AS_ONE_NOTE": "그 선수의 터치만 직접 합니다(흰색 링). 동료들은 자기 터치를 알아서 합니다. 더블에서는 피더가 킬러입니다."
 }

@@ -16,6 +16,8 @@ var women := false
 var home_colors: Array = []   # the home crowd's shirts
 var net_top := Court.NET_M
 var crowd: Crowd
+var _standing: Array = []      # where people stand (the others' spots are seats)
+const FAR_GROUND := Rect2(-300, -300, 600, 600)   # outdoors the ground reaches the camera's far plane
 var fans: Array[Node3D] = []  # ceiling fans to turn (the provincial gym)
 var _t := 0.0
 
@@ -69,33 +71,35 @@ func _ready() -> void:
 			spots = _gym()
 			_officials_furniture(false, true)
 		"temple":
-			_outdoor_env("day")
-			_court_on("concrete_floor", Color("1c4f8c"), Color("a8a39b"), Color("c8c4bc"), 0.9, 2.5)
+			_outdoor_env("day", Color(0.74, 0.76, 0.78))
+			_court_on("concrete_floor", Color("1c4f8c"), Color("a8a39b"), Color("c8c4bc"), 0.9, 2.5, 0.85, "", false, 0.0, FAR_GROUND)
 			spots = _temple()
 			_officials_furniture(true)
 		"park":
-			_outdoor_env("dusk")
-			_court_on("clean_asphalt", Color("1d5c3a"), Color(0.9, 0.9, 0.92), Color(0.6, 0.85, 0.45), 0.9, 2.5, 0.8, "grass_ground")
+			_outdoor_env("dusk", Color(0.16, 0.18, 0.2))
+			_court_on("clean_asphalt", Color("1d5c3a"), Color(0.9, 0.9, 0.92), Color(0.6, 0.85, 0.45), 0.9, 2.5, 0.8, "grass_ground", false,
+				0.0, FAR_GROUND)
 			spots = _park()
 			_officials_furniture(true)
 		"beach":
-			_outdoor_env("sunset")
-			_court_on("coast_sand_01", Color.WHITE, Color.WHITE, Color.WHITE, 0.0, 3.0, 0.95, "", true)
+			_outdoor_env("sunset", Color(0.42, 0.47, 0.53))
+			# (The dry sand stops at the damp sand by the water.)
+			_court_on("coast_sand_01", Color.WHITE, Color.WHITE, Color.WHITE, 0.0, 3.0, 0.95, "", true, 0.0, Rect2(-300, -300, 600, 321))
 			spots = _beach()
 			_officials_furniture(true)
 		"street":
-			_outdoor_env("night")
-			_court_on("asphalt_02", Color("21508f"), Color(0.5, 0.5, 0.53), Color(0.42, 0.42, 0.45), 0.9, 3.0, 0.8)
+			_outdoor_env("night", Color(0.06, 0.06, 0.08))
+			_court_on("asphalt_02", Color("21508f"), Color(0.5, 0.5, 0.53), Color(0.42, 0.42, 0.45), 0.9, 3.0, 0.8, "", false, 0.0, FAR_GROUND)
 			spots = _street()
 			_officials_furniture(true)
 	_net()
 	add_child(_lit.commit(Geo.material(true)))
 	add_child(_glow.commit(Geo.material(false)))
 	_sc.commit()
-	if not spots.is_empty():
+	if not spots.is_empty() or not _standing.is_empty():
 		crowd = Crowd.new()
 		var pal := home_colors.duplicate()
-		crowd.build(spots, Game.crowd_density(), pal, hash(venue))
+		crowd.build(spots, Game.crowd_density(), pal, hash(venue), _standing)
 		add_child(crowd)
 
 
@@ -156,14 +160,24 @@ func _glow_on(env: Environment) -> void:
 
 
 ## Outdoors: a photographed sky for each time of day (Scenery), its sun where the sky's is by day; at night the light
-## is the floodlights'.
-func _outdoor_env(time: String) -> void:
+## is the floodlights'. far: the colour of the ground (or the sea) far off in the haze: past 140 m everything fades into
+## it, and the sky takes it under the horizon, so the ground and the sea have no edge and there is nothing empty beyond.
+func _outdoor_env(time: String, far: Color) -> void:
 	var env := Environment.new()
+	env.fog_enabled = true
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_light_color = far
+	env.fog_light_energy = 1.0
+	env.fog_density = 1.0
+	env.fog_depth_begin = 140.0
+	env.fog_depth_end = 290.0
+	env.fog_sky_affect = 0.0
+	env.fog_sun_scatter = 0.0
 	var sun := DirectionalLight3D.new()
 	sun.shadow_enabled = Game.shadows_enabled()
 	var sky_name: String = {"day": "qwantani_noon_puresky", "dusk": "kloppenheim_02_puresky", "sunset": "qwantani_sunset_puresky",
 		"night": "kloppenheim_07_puresky"}[time]
-	Scenery.sky(env, sky_name, {"day": 1.0, "dusk": 0.6, "sunset": 1.0, "night": 0.45}[time])
+	Scenery.sky(env, sky_name, {"day": 1.0, "dusk": 0.6, "sunset": 1.0, "night": 0.45}[time], far)
 	match time:
 		"day":
 			Scenery.aim_sun(sun, sky_name)
@@ -214,10 +228,12 @@ func _court(court: Color, surround: Color, floor_col: Color) -> void:
 ## An outdoor court (or the gym's) on a photographed surface (Scenery): the ground, the surround (the 3 m free zone)
 ## tinted, the court painted in court (paint: how much paint, 0 none), tile metres a repeat; ground_surface: the
 ## ground beyond, if it is another surface (grass round a park's court). sand: lines are tapes.
+## reach: the ground's extent (outdoors as far as the camera sees, 300 m, into the haze).
 func _court_on(surface: String, court: Color, surround: Color, ground: Color, paint: float, tile: float, rough := 0.85,
-		ground_surface := "", sand := false, ground_paint := 0.0) -> void:
+		ground_surface := "", sand := false, ground_paint := 0.0, reach := Rect2(-60, -60, 120, 120)) -> void:
 	var fz := Court.FREE_ZONE
-	Scenery.plane(self, Scenery.surface(ground_surface if ground_surface != "" else surface, ground, ground_paint, tile, rough), -60, -60, 60, 60, -0.01)
+	Scenery.plane(self, Scenery.surface(ground_surface if ground_surface != "" else surface, ground, ground_paint, tile, rough),
+		reach.position.x, reach.position.y, reach.end.x, reach.end.y, -0.01)
 	Scenery.plane(self, Scenery.surface(surface, surround, 0.0, tile, rough), -Court.HALF - fz, -Court.HALF_W - fz, Court.HALF + fz,
 		Court.HALF_W + fz, -0.005)
 	if paint > 0.0:
@@ -537,12 +553,13 @@ func _bleachers(sections: int, front_z: float) -> Array:
 
 # ---------------------------------------------------------------- outdoor parts
 
-func _people_row(spots: Array, from: Vector3, to: Vector3, step: float, y := 0.0) -> void:
+## People standing in a row on the ground, from one point to another, step metres apart.
+func _people_row(from: Vector3, to: Vector3, step: float) -> void:
 	var d := from.distance_to(to)
 	var n := int(d / step)
 	for i in n:
 		var p := from.lerp(to, float(i) / maxf(1.0, n - 1))
-		spots.append(Vector3(p.x, y, p.z))
+		_standing.append(Vector3(p.x, 0.0, p.z))
 
 
 ## Rows of seats facing the court along the far side (a model each: plastic chairs, stools, benches), with a person
@@ -573,7 +590,7 @@ func _temple() -> Array:
 	_sc.add("buildings/thai_temple", Vector3(0, 0, 27.0), PI * 0.5)
 	spots.append_array(_seat_rows("seating/monobloc_chair", 2 if Scenery.low() else 3, 8.0, -9.0, 9.0, 0.62, 0.45))
 	# A few standing at the back, by the temple's steps.
-	_people_row(spots, Vector3(-6, 0, 11.4), Vector3(6, 0, 11.4), 0.7)
+	_people_row(Vector3(-6, 0, 11.4), Vector3(6, 0, 11.4), 0.7)
 	_trees(["coconut_palm", "rain_tree", "island_tree_a"], 7, -34.0, -15.0, 6.0, 26.0, 9.0, 13.0)
 	_trees(["coconut_palm", "island_tree_b", "rain_tree"], 7, 15.0, 34.0, 6.0, 26.0, 9.0, 13.0)
 	_trees(["coconut_palm"], 4, -16.0, 16.0, 36.0, 42.0, 14.0, 17.0)
@@ -610,7 +627,7 @@ func _park() -> Array:
 		for k: float in [-0.45, 0.0, 0.45]:
 			if _rng.randf() < 0.85:
 				spots.append(Vector3(x + k, 0.45, fz + 1.25))
-	_people_row(spots, Vector3(-11, 0, fz + 2.4), Vector3(11, 0, fz + 2.4), 0.7)
+	_people_row(Vector3(-11, 0, fz + 2.4), Vector3(11, 0, fz + 2.4), 0.7)
 	# The path behind with its lamps, and the next court with its hoop.
 	for x in range(-20, 21, 8):
 		_sc.add("props/street_lamp_tall", Vector3(x, 0, fz + 5.5))
@@ -631,8 +648,9 @@ func _park() -> Array:
 ## coconut palms along the beach, stilt houses back from it, bunting over the court and umbrellas.
 func _beach() -> Array:
 	var spots := []
-	Scenery.plane(self, Scenery.surface("damp_beach_sand", Color.WHITE, 0.0, 3.0, 0.7), -200, 21.0, 200, 27.0, -0.008)
-	Scenery.water(self, -300, 26.0, 300, 320, Color("3f8f96"), Color("1a4a66"), Color("9fb4cc"))
+	Scenery.plane(self, Scenery.surface("damp_beach_sand", Color.WHITE, 0.0, 3.0, 0.7), -300, 21.0, 300, 27.0, -0.008)
+	# (The sea runs on past the camera's far plane: it has no edge to see.)
+	Scenery.water(self, -600, 26.0, 600, 600, Color("3f8f96"), Color("1a4a66"), Color("9fb4cc"))
 	_trees(["coconut_palm"], 9, -34.0, -9.0, 10.0, 19.0, 8.0, 12.0)
 	_trees(["coconut_palm"], 9, 9.0, 34.0, 10.0, 19.0, 8.0, 12.0)
 	_trees(["coconut_palm", "island_tree_b"], 6, -40.0, -22.0, -12.0, 8.0, 8.0, 12.0)
@@ -650,8 +668,8 @@ func _beach() -> Array:
 	for x: float in [-12.0, -4.0, 5.0, 13.0]:
 		_lit.cylinder(Vector3(x, 0, 10.5), Vector3(x, 2.2, 10.5), 0.04, 0.04, Color("eeeeee"), 6, false)
 		_lit.cylinder(Vector3(x, 2.2, 10.5), Vector3(x, 2.7, 10.5), 1.4, 0.0, cols[int(absf(x)) % 5], 8)
-	_people_row(spots, Vector3(-12, 0, 8.0), Vector3(12, 0, 8.0), 0.6)
-	_people_row(spots, Vector3(-11, 0, 9.0), Vector3(11, 0, 9.0), 0.8)
+	_people_row(Vector3(-12, 0, 8.0), Vector3(12, 0, 8.0), 0.6)
+	_people_row(Vector3(-11, 0, 9.0), Vector3(11, 0, 9.0), 0.8)
 	return spots
 
 
@@ -667,6 +685,11 @@ func _street() -> Array:
 		_sc.add("buildings/shophouse_row_low" if absf(x) > 30.0 else "buildings/shophouse_row", Vector3(x, 0, 17.3),
 			PI if i % 2 == 0 else 0.0, 1.0, false, SHOPHOUSE_TINTS[i % 4])
 		_sc.add("buildings/shophouse_row_low", Vector3(x, 0, -21.0), 0.0 if i % 2 == 0 else PI, 1.0, false, SHOPHOUSE_TINTS[(i + 2) % 4])
+	# Across each end of the street, more of them: the street turns there, and the ends are closed.
+	for s: float in [-1.0, 1.0]:
+		for k in 2:
+			_sc.add("buildings/shophouse_row_low", Vector3(s * 55.0, 0, -11.75 + k * 18.5), s * PI * 0.5 + (PI if k == 1 else 0.0),
+				1.0, false, SHOPHOUSE_TINTS[(k + 1) % 4])
 	for i in 5:
 		var x := -30.0 + i * 15.0 + _rng.randf_range(-2.0, 2.0)
 		_sc.add("buildings/city_apartments_night", Vector3(x, 0, 27.0 + _rng.randf_range(-1.5, 1.5)), PI, 1.0, false)
@@ -706,5 +729,5 @@ func _street() -> Array:
 	spots.append_array(_seat_rows("seating/folding_stool", 1, 8.0, -12.0, 12.0, 0.55, 0.44))
 	for x: float in [-13.5, -12.8, 12.8, 13.5]:
 		_sc.add("seating/metal_stool", Vector3(x, 0, 9.6), _rng.randf_range(0.0, TAU))
-	_people_row(spots, Vector3(-13, 0, 9.3), Vector3(13, 0, 9.3), 0.7)
+	_people_row(Vector3(-13, 0, 9.3), Vector3(13, 0, 9.3), 0.7)
 	return spots

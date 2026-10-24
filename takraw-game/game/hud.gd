@@ -23,6 +23,7 @@ var _review_data := {}
 var _review_t := 0.0
 var _replay_tag: Control
 var _pause: Control
+var _settings: Control   # Settings, opened from the pause menu over the match
 var _break: Control
 var _intro: Control
 var _intro_t := 0.0
@@ -539,6 +540,7 @@ func show_pause(on: bool) -> void:
 		m.cam.toggle()
 		show_pause(false)
 		show_pause(true)), 80, 26))
+	v.add_child(_big(UI.button(tr("MENU_SETTINGS"), false, open_settings), 80, 26))
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 14)
 	v.add_child(gap)
@@ -548,6 +550,28 @@ func show_pause(on: bool) -> void:
 	v.add_child(quit)
 	root.add_child(_pause)
 	UI.keep_on_screen(card)
+
+
+## Settings over the paused match (the graphics, the frame rate, the sound, the buttons): back to the pause menu.
+func open_settings() -> void:
+	if _settings:
+		return
+	_settings = (load("res://ui/settings_screen.gd") as Script).new()
+	_settings.setup({"back": close_settings})
+	root.add_child(_settings)
+
+
+func close_settings() -> void:
+	if not _settings:
+		return
+	_settings.queue_free()
+	_settings = null
+	Game.apply_graphics(get_viewport())
+	Game.apply_frame_rate()
+
+
+func settings_open() -> bool:
+	return _settings != null
 
 
 func _big(b: Button, h: float, fs: int) -> Button:

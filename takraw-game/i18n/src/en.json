@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "TAGLINE": "Serve. Set. Roll spike.",
   "MENU_EYEBROW": "Sepak takraw · the real rules",
   "LOADING": "Getting the court ready…",
   "MENU_QUICK": "Quick Match",
@@ -354,6 +353,16 @@
   "YOU_STAY_DIV1": "Your club stays in Division 1. Reach the final to go up.",
   "SHIRT_N": "#{n}",
   "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed is an independent game. It is not affiliated with or endorsed by any sepak takraw federation, league, club or player. The clubs' nicknames are invented and the players are fictional; the countries, places and rules are real.",
-  "AUTO_GFX": "Auto graphics",
-  "GFX_LOWERED": "Graphics lowered to keep the game smooth (Settings)."
+  "GFX_LOWERED": "Graphics lowered to keep the game smooth (Settings).",
+  "GFX_AUTO": "Auto",
+  "GFX_AUTO_PICK": "Auto: {level} on this phone, picked from its chip and memory.",
+  "GFX_NEXT_MATCH": "In a match, the venue and the crowd change from the next match.",
+  "AUTO_LOWER": "Lower if slow",
+  "PLAY_AS": "Play as",
+  "PLAY_TEAM": "The team",
+  "POS_TEKONG": "Tekong",
+  "POS_FEEDER": "Feeder",
+  "POS_STRIKER": "Striker",
+  "PLAY_AS_TEAM_NOTE": "Every touch on your side is yours, whoever the ball comes to.",
+  "PLAY_AS_ONE_NOTE": "Only that player's touches are yours (the white ring); your team-mates play theirs. In doubles, Feeder is the striker."
 }

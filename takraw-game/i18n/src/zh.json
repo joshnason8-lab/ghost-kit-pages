@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "TAGLINE": "发球，传球，倒钩扣球！",
   "MENU_EYEBROW": "藤球 · 真实规则",
   "LOADING": "正在准备场地…",
   "MENU_QUICK": "快速比赛",
@@ -354,6 +353,16 @@
   "YOU_STAY_DIV1": "你的俱乐部留在甲级联赛。打进决赛即可升级。",
   "SHIRT_N": "#{n}",
   "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed是一款独立游戏，与任何藤球联合会、联赛、俱乐部或球员均无关联，也未获得其认可。俱乐部绰号均为虚构，球员亦为虚构人物；国家、地点和规则则真实存在。",
-  "AUTO_GFX": "自动画质",
-  "GFX_LOWERED": "已降低画质以保持游戏流畅（设置）。"
+  "GFX_LOWERED": "已降低画质以保持游戏流畅（设置）。",
+  "GFX_AUTO": "自动",
+  "GFX_AUTO_PICK": "自动：本机为“{level}”，按芯片和内存选择。",
+  "GFX_NEXT_MATCH": "比赛中，场馆和观众从下一场比赛起改变。",
+  "AUTO_LOWER": "卡顿时降低",
+  "PLAY_AS": "操控",
+  "PLAY_TEAM": "全队",
+  "POS_TEKONG": "发球员",
+  "POS_FEEDER": "二传手",
+  "POS_STRIKER": "攻球手",
+  "PLAY_AS_TEAM_NOTE": "无论球到谁那里，本方每一次触球都由你操控。",
+  "PLAY_AS_ONE_NOTE": "只有该球员的触球由你操控（白圈）；队友自行处理他们的触球。双人赛中，二传手即攻球手。"
 }

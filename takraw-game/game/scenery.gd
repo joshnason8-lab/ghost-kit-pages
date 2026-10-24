@@ -26,6 +26,7 @@ static var _parts := {}       # model path -> [[Mesh, Transform3D], ...]
 static var _tintable := {}    # Mesh -> its copy whose materials take each instance's colour
 static var _surface_shaders := {}  # on Low? -> Shader (Low filters the ground plainly, the others anisotropically)
 static var _water_shader: Shader
+static var _sky_shader: Shader
 
 var _root: Node3D
 var _placed := {}             # model name -> [Transform3D, ...]
@@ -161,10 +162,26 @@ static func _lit_glass(mesh: Mesh) -> Mesh:
 # ---------------------------------------------------------------- skies
 
 ## A sky from its panorama: the background on every level, and on Medium and High the light around the place too.
-static func sky(env: Environment, name: String, energy := 1.0) -> void:
-	var pm := PanoramaSkyMaterial.new()
-	pm.panorama = load(DIR + "skies/%s_sky_2k.jpg" % name)
-	pm.energy_multiplier = energy
+## below (if given): the colour under the horizon, past the ground's and the sea's far edge (the far ground in the
+## haze), not the photograph's empty lower half.
+static func sky(env: Environment, name: String, energy := 1.0, below := Color(0, 0, 0, 0)) -> void:
+	if _sky_shader == null:
+		_sky_shader = Shader.new()
+		_sky_shader.code = """
+shader_type sky;
+uniform sampler2D panorama : filter_linear, source_color, hint_default_black;
+uniform float energy = 1.0;
+uniform vec4 below : source_color;
+void sky() {
+	vec3 c = texture(panorama, SKY_COORDS).rgb * energy;
+	COLOR = mix(c, below.rgb, below.a * smoothstep(0.004, -0.02, EYEDIR.y));
+}
+"""
+	var pm := ShaderMaterial.new()
+	pm.shader = _sky_shader
+	pm.set_shader_parameter("panorama", load(DIR + "skies/%s_sky_2k.jpg" % name))
+	pm.set_shader_parameter("energy", energy)
+	pm.set_shader_parameter("below", below)
 	var s := Sky.new()
 	s.sky_material = pm
 	s.radiance_size = Sky.RADIANCE_SIZE_32 if low() else Sky.RADIANCE_SIZE_128

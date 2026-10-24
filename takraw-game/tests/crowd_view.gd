@@ -2,7 +2,8 @@ extends Node3D
 ## The crowd seen from the court, to check that every spectator faces the play: in each venue, cameras on the court
 ## looking at the near stand, the far stand and an end, and one behind the near stand looking over it at the court
 ## (where the spectators should show their backs). One sheet a graphics level, a row a venue:
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/crowd_view.tscn -- /out/dir [0,1,2]
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/crowd_view.tscn -- /out/dir [0,1,2] [up]
+## up: the crowd on its feet, as after a home point (Crowd.set_excite(1)).
 
 const TILE := Vector2i(480, 270)
 const VIEWS := [   # name, camera, looking at
@@ -17,6 +18,7 @@ func _ready() -> void:
 	var a := OS.get_cmdline_user_args()
 	var out: String = a[0] if a.size() > 0 else "/tmp"
 	var levels: Array = Array(a[1].split(",")).map(func(s): return int(s)) if a.size() > 1 else [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]
+	var up := a.size() > 2 and a[2] == "up"
 	get_window().size = TILE
 	for g in levels:
 		Game.settings.graphics = g
@@ -24,6 +26,7 @@ func _ready() -> void:
 		for row in DB.VENUES.size():
 			var arena := Arena.new(DB.VENUES[row][0], false, [Color("ff8a1f")])
 			add_child(arena)
+			Crowd.set_excite(1.0 if up else 0.0)
 			var cam := Camera3D.new()
 			cam.fov = 40
 			add_child(cam)
@@ -31,7 +34,7 @@ func _ready() -> void:
 			for col in VIEWS.size():
 				cam.position = VIEWS[col][1]
 				cam.look_at(VIEWS[col][2])
-				for i in 4:
+				for i in (30 if up and col == 0 else 4):   # (time for the crowd to get up)
 					await get_tree().process_frame
 				await RenderingServer.frame_post_draw
 				var img := get_viewport().get_texture().get_image()
@@ -41,6 +44,6 @@ func _ready() -> void:
 			arena.queue_free()
 			cam.queue_free()
 			await get_tree().process_frame
-		sheet.save_png(out.path_join("crowd_facing_%s.png" % ["low", "medium", "high"][g]))
+		sheet.save_png(out.path_join("crowd_%s_%s.png" % ["up" if up else "facing", ["low", "medium", "high"][g]]))
 		print("crowd sheet, graphics ", g)
 	get_tree().quit()

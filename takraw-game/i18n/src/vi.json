@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "TAGLINE": "Giao cầu. Chuyền. Đập lộn người.",
   "MENU_EYEBROW": "Cầu mây · Luật chơi thật",
   "LOADING": "Đang chuẩn bị sân…",
   "MENU_QUICK": "Đấu nhanh",
@@ -354,6 +353,16 @@
   "YOU_STAY_DIV1": "Câu lạc bộ của bạn ở lại Hạng 1. Vào chung kết để lên hạng.",
   "SHIRT_N": "#{n}",
   "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed là một game độc lập. Game không liên kết với, cũng không được bảo trợ bởi, bất kỳ liên đoàn, giải đấu, câu lạc bộ hay cầu thủ cầu mây nào. Biệt danh của các câu lạc bộ là do sáng tác và các cầu thủ đều là nhân vật hư cấu; còn các quốc gia, địa điểm và luật chơi là có thật.",
-  "AUTO_GFX": "Đồ họa tự động",
-  "GFX_LOWERED": "Đã giảm đồ họa để game chạy mượt (Cài đặt)."
+  "GFX_LOWERED": "Đã giảm đồ họa để game chạy mượt (Cài đặt).",
+  "GFX_AUTO": "Tự động",
+  "GFX_AUTO_PICK": "Tự động: mức {level} trên máy này, chọn theo chip và bộ nhớ.",
+  "GFX_NEXT_MATCH": "Trong trận, sân và khán giả thay đổi từ trận sau.",
+  "AUTO_LOWER": "Hạ khi chậm",
+  "PLAY_AS": "Chơi vai",
+  "PLAY_TEAM": "Cả đội",
+  "POS_TEKONG": "Tekong",
+  "POS_FEEDER": "Chuyền",
+  "POS_STRIKER": "Chủ công",
+  "PLAY_AS_TEAM_NOTE": "Mọi lần chạm cầu bên bạn đều do bạn đá, cầu đến ai cũng vậy.",
+  "PLAY_AS_ONE_NOTE": "Bạn chỉ đá những lần chạm của cầu thủ đó (vòng trắng); đồng đội tự đá phần mình. Ở nội dung đôi, Chuyền là chủ công."
 }

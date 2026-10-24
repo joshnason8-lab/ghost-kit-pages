@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "TAGLINE": "Mag-serve. Mag-set. Mag-roll spike.",
   "MENU_EYEBROW": "Sepak takraw · Totoong patakaran",
   "LOADING": "Inihahanda ang court…",
   "MENU_QUICK": "Mabilisang Laban",
@@ -354,6 +353,16 @@
   "YOU_STAY_DIV1": "Mananatili sa Division 1 ang club mo. Umabot sa finals para umakyat.",
   "SHIRT_N": "#{n}",
   "ABOUT_DISCLAIMER": "Ang Sepak Takraw Unleashed ay isang independiyenteng laro. Hindi ito kaugnay o ineendorso ng anumang pederasyon, liga, club, o manlalaro ng sepak takraw. Imbento ang mga palayaw ng mga club at kathang-isip ang mga manlalaro; totoo ang mga bansa, lugar, at patakaran.",
-  "AUTO_GFX": "Auto graphics",
-  "GFX_LOWERED": "Ibinaba ang graphics para manatiling smooth ang laro (Settings)."
+  "GFX_LOWERED": "Ibinaba ang graphics para manatiling smooth ang laro (Settings).",
+  "GFX_AUTO": "Auto",
+  "GFX_AUTO_PICK": "Auto: {level} sa phone na ito, pinili ayon sa chip at memory nito.",
+  "GFX_NEXT_MATCH": "Sa gitna ng laro, ang venue at ang crowd ay magbabago sa susunod na laro.",
+  "AUTO_LOWER": "Ibaba kung mabagal",
+  "PLAY_AS": "Maglaro bilang",
+  "PLAY_TEAM": "Ang team",
+  "POS_TEKONG": "Tekong",
+  "POS_FEEDER": "Feeder",
+  "POS_STRIKER": "Striker",
+  "PLAY_AS_TEAM_NOTE": "Sa iyo ang bawat touch sa panig mo, kanino man pumunta ang bola.",
+  "PLAY_AS_ONE_NOTE": "Sa iyo lang ang mga touch ng player na iyon (ang puting singsing); sa mga kakampi ang kanila. Sa doubles, ang Feeder ay ang striker."
 }

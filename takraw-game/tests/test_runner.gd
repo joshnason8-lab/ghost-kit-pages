@@ -21,6 +21,10 @@ func _ready() -> void:
 	_team_event_lineups()
 	await _crowd_facing()
 	_mocap_moves()
+	await _crowd_people()
+	_ball_spins()
+	_graphics_auto()
+	await _play_as_and_officials()
 	await _matches()
 	Game.settings = keep
 	Game.delete_season()
@@ -225,6 +229,93 @@ func _crowd_facing() -> void:
 			a.queue_free()
 			await frames(1)
 	Game.settings.graphics = keep
+
+
+## The spectators are whole people: seated ones' feet on the floor under their seats, standing ones' on the ground;
+## the sheet has both, from the front and from behind.
+func _crowd_people() -> void:
+	var size := Crowd.sheet().get_size()
+	check(size == Vector2(Crowd.FIG_W * Crowd.FIGS, Crowd.FIG_H * Crowd.ROWS), "the crowd sheet has its %d rows (%s)" % [Crowd.ROWS, size])
+	for v in ["beach", "national"]:
+		var a := Arena.new(v, false, [Color("ff8a1f")])
+		add_child(a)
+		await frames(1)
+		var standing := 0
+		var seated_ok := true
+		for i in a.crowd.spots.size():
+			var spot: Vector3 = a.crowd.spots[i]
+			var feet: Vector3 = a.crowd.placed[i].origin
+			if is_equal_approx(feet.y, spot.y):
+				standing += 1
+			else:
+				seated_ok = seated_ok and is_equal_approx(feet.y, spot.y - Crowd.SEAT)
+		check(seated_ok, "%s: seated spectators' feet are a seat's height under them" % v)
+		if v == "beach":
+			check(standing > 20, "beach: people stand on the sand (%d)" % standing)
+		else:
+			check(standing == 0, "national: everyone in the stands is seated (%d standing)" % standing)
+		a.queue_free()
+		await frames(1)
+
+
+## The ball spins in the air: a spin once it is kicked, and the ball's mesh turns with it.
+func _ball_spins() -> void:
+	var b := Ball.new()
+	add_child(b)
+	b.launch(Vector3(0, 1, 0), Vector3(4, 6, 1), 0.0)
+	check(absf(b.spin_rate) >= 5.0, "the ball spins once kicked (%.1f rad/s)" % b.spin_rate)
+	var before: Basis = b._mesh.global_transform.basis
+	b.turn(0.1)
+	check(not before.is_equal_approx(b._mesh.global_transform.basis), "the ball turns as it flies")
+	b.queue_free()
+
+
+## Graphics on Auto by default, and Auto never above what a slow match lowered it to.
+func _graphics_auto() -> void:
+	check(bool(Game.settings.gfx_auto), "graphics are on Auto for a new player")
+	var keep: int = Game.settings.gfx_cap
+	Game.settings.gfx_cap = Game.GFX_LOW
+	check(Game.auto_graphics() == Game.GFX_LOW, "Auto stays at the level a slow match lowered it to")
+	Game.settings.gfx_cap = keep
+	check(Game.auto_graphics() == Game.detect_graphics(), "Auto is the level picked for the phone")
+
+
+## Play as one player: only his touches are yours (the team's: all of them); the white ring is under him. The officials
+## move: their heads follow the ball.
+func _play_as_and_officials() -> void:
+	var keep: int = Game.settings.play_as
+	for role in [-1, DB.POS_STRIKER, DB.POS_TEKONG]:
+		Game.settings.play_as = role
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 1, "points": 15, "user_team": 0,
+			"seed": 3, "mode": "quick"}
+		add_child(m)
+		await frames(3)
+		var yours := 0
+		var theirs := 0
+		var ringed := 0
+		for side in 2:
+			for p in m.players_on(side):
+				var pl: Player = p
+				if m._is_user(pl):
+					yours += 1
+					check(role < 0 or pl.role == role, "playing as %d: %s is yours" % [role, pl.data.id])
+				if pl.side != m._user_side():
+					theirs += int(m._is_user(pl))
+				ringed += int(pl.is_mine())
+		check(yours == (3 if role < 0 else 1), "playing as %d: %d of yours" % [role, yours])
+		check(theirs == 0, "playing as %d: none of theirs is yours" % role)
+		check(ringed == (0 if role < 0 else 1), "playing as %d: the ring under %d" % [role, ringed])
+		if role == -1:
+			var o: RealBody = m.officials[0]
+			m._officials.tick(1.0, Vector3(-6, 2, 0), true)
+			var left: Vector3 = o.pose.head
+			m._officials.tick(1.0, Vector3(6, 2, 0), true)
+			var right: Vector3 = o.pose.head
+			check(absf(left.y - right.y) > 30.0, "the referee's head follows the ball (%.0f° to %.0f°)" % [left.y, right.y])
+		m.queue_free()
+		await frames(2)
+	Game.settings.play_as = keep
 
 
 ## Every move from motion capture (the Mixamo kicks and the CMU jumps) loads, and on both models a foot on the floor

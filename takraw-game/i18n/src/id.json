@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "TAGLINE": "Servis. Umpan. Smash salto.",
   "MENU_EYEBROW": "Sepak takraw · Aturan sungguhan",
   "LOADING": "Menyiapkan lapangan…",
   "MENU_QUICK": "Laga Cepat",
@@ -354,6 +353,16 @@
   "YOU_STAY_DIV1": "Klubmu tetap di Divisi 1. Lolos ke final untuk naik divisi.",
   "SHIRT_N": "#{n}",
   "ABOUT_DISCLAIMER": "Sepak Takraw Unleashed adalah game independen. Game ini tidak berafiliasi dengan, maupun didukung oleh, federasi, liga, klub, atau pemain sepak takraw mana pun. Julukan klub-klubnya rekaan dan para pemainnya fiktif; negara, tempat, dan aturannya sungguhan.",
-  "AUTO_GFX": "Grafis otomatis",
-  "GFX_LOWERED": "Grafis diturunkan agar game tetap lancar (Pengaturan)."
+  "GFX_LOWERED": "Grafis diturunkan agar game tetap lancar (Pengaturan).",
+  "GFX_AUTO": "Otomatis",
+  "GFX_AUTO_PICK": "Otomatis: {level} di ponsel ini, dipilih dari chip dan memorinya.",
+  "GFX_NEXT_MATCH": "Saat pertandingan, arena dan penonton berubah mulai pertandingan berikutnya.",
+  "AUTO_LOWER": "Turunkan jika lambat",
+  "PLAY_AS": "Main sebagai",
+  "PLAY_TEAM": "Tim",
+  "POS_TEKONG": "Tekong",
+  "POS_FEEDER": "Feeder",
+  "POS_STRIKER": "Smasher",
+  "PLAY_AS_TEAM_NOTE": "Setiap sentuhan di pihak Anda milik Anda, ke siapa pun bola datang.",
+  "PLAY_AS_ONE_NOTE": "Hanya sentuhan pemain itu milik Anda (lingkaran putih); rekan setim memainkan sentuhan mereka. Di ganda, Feeder adalah smasher."
 }

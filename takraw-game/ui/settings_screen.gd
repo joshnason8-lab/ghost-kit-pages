@@ -3,15 +3,26 @@ extends Control
 
 var _fps_note: Label
 var _assist_note: Label
+var _play_note: Label
+var _gfx_note: Label
+var _back := Callable()   # in a match (the pause menu's Settings): back to it
+var _in_match := false
 
 
-func setup(_args: Dictionary) -> void:
-	pass
+func setup(args: Dictionary) -> void:
+	_back = args.get("back", Callable())
+	_in_match = _back.is_valid()
+
+
+## Under the graphics: what Auto picked for this phone; in a match, that the court and crowd change from the next.
+func _gfx_text(levels: Array) -> String:
+	var t := tr("GFX_AUTO_PICK").format({"level": tr(levels[int(Game.settings.graphics)])}) if bool(Game.settings.gfx_auto) else tr("GFX_NOTE")
+	return t + ("\n" + tr("GFX_NEXT_MATCH") if _in_match else "")
 
 
 func _ready() -> void:
 	UI.screen(self)
-	var v := UI.page(self, tr("MENU_SETTINGS"), func(): Game.goto_menu())
+	var v := UI.page(self, tr("MENU_SETTINGS"), _back if _in_match else func(): Game.goto_menu())
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 20)
 	var left := VBoxContainer.new()
@@ -32,10 +43,20 @@ func _ready() -> void:
 	for pair in Game.LANGUAGES:
 		codes.append(pair[0])
 		names.append(pair[1])
-	game[1].add_child(UI.field(tr("LANGUAGE"), UI.chips(names, codes.find(String(Game.settings.language)), func(i):
-		Game.set_language(codes[i])
-		Game.show_screen("res://ui/settings_screen.gd"))))
+	if not _in_match:   # (the language is changed from the home screen: in a match the screens are already made)
+		game[1].add_child(UI.field(tr("LANGUAGE"), UI.chips(names, codes.find(String(Game.settings.language)), func(i):
+			Game.set_language(codes[i])
+			Game.show_screen("res://ui/settings_screen.gd"))))
 	game[1].add_child(UI.difficulty_field(self))
+	# The whole side, or one player (the others the computer's).
+	var roles := [-1, DB.POS_TEKONG, DB.POS_FEEDER, DB.POS_STRIKER]
+	var pnote := func(r: int) -> String: return tr("PLAY_AS_TEAM_NOTE" if r < 0 else "PLAY_AS_ONE_NOTE")
+	_play_note = UI.wrap(pnote.call(int(Game.settings.play_as)), "MutedLabel", 17)
+	game[1].add_child(UI.field(tr("PLAY_AS"), UI.chips([tr("PLAY_TEAM"), tr("POS_TEKONG"), tr("POS_FEEDER"), tr("POS_STRIKER")], maxi(0, roles.find(int(Game.settings.play_as))), func(i):
+		Game.settings.play_as = roles[i]
+		Game.save_settings()
+		_play_note.text = pnote.call(roles[i]))))
+	game[1].add_child(_play_note)
 	var akeys := ["ASSIST_OFF", "ASSIST_RUN", "ASSIST_FULL"]
 	_assist_note = UI.wrap(tr(akeys[int(Game.settings.assist)] + "_NOTE"), "MutedLabel", 17)
 	game[1].add_child(UI.field(tr("ASSIST"), UI.chips([tr("ASSIST_OFF"), tr("ASSIST_RUN"), tr("ASSIST_FULL")], int(Game.settings.assist), func(i):
@@ -51,11 +72,20 @@ func _ready() -> void:
 	# The screen.
 	var disp: Array = UI.section(tr("SET_DISPLAY"), "display")
 	right.add_child(disp[0])
-	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")], int(Game.settings.graphics), func(i):
-		Game.settings.graphics = i
-		Game.save_settings())))
-	disp[1].add_child(UI.wrap(tr("GFX_NOTE"), "MutedLabel", 17))
-	disp[1].add_child(UI.field(tr("AUTO_GFX"), UI.chips_row([tr("ON"), tr("OFF")], 0 if bool(Game.settings.get("auto_gfx", true)) else 1, func(i):
+	# Auto (the level for this phone, picked each time the game starts) or a level chosen.
+	var levels := ["GFX_LOW", "GFX_MEDIUM", "GFX_HIGH"]
+	_gfx_note = UI.wrap("", "MutedLabel", 17)
+	var gfx_shown := 0 if bool(Game.settings.gfx_auto) else int(Game.settings.graphics) + 1
+	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_AUTO"), tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")], gfx_shown, func(i):
+		Game.settings.gfx_auto = i == 0
+		Game.settings.graphics = Game.auto_graphics() if i == 0 else i - 1
+		Game.save_settings()
+		if _in_match:
+			Game.apply_graphics(get_viewport())
+		_gfx_note.text = _gfx_text(levels))))
+	_gfx_note.text = _gfx_text(levels)
+	disp[1].add_child(_gfx_note)
+	disp[1].add_child(UI.field(tr("AUTO_LOWER"), UI.chips_row([tr("ON"), tr("OFF")], 0 if bool(Game.settings.get("auto_gfx", true)) else 1, func(i):
 		Game.settings.auto_gfx = i == 0
 		Game.save_settings())))
 	var hz := Game.screen_hz()

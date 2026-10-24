@@ -24,9 +24,11 @@ var _ph := 0.0             # running stride's phase
 var _w := 0.0              # how much the move holds the pose (eases in and out)
 var _yaw := 0.0
 var _ring: MeshInstance3D
+var _mine: MeshInstance3D  # the thin ring under the one you play as (Settings: Play as one player)
 var _shadow: MeshInstance3D
 
 static var _ring_mat: StandardMaterial3D
+static var _mine_mat: StandardMaterial3D
 
 
 func _init(p_data := {}, p_side := 0, p_role := 0, look := {}) -> void:
@@ -58,6 +60,23 @@ func _ready() -> void:
 	_ring.material_override = ring_material()
 	_ring.visible = false
 	add_child(_ring)
+	_mine = MeshInstance3D.new()
+	var mm := TorusMesh.new()
+	mm.inner_radius = 0.3
+	mm.outer_radius = 0.34
+	mm.rings = 24
+	mm.ring_segments = 4
+	_mine.mesh = mm
+	_mine.scale = Vector3(1, 0.05, 1)
+	_mine.position.y = 0.02
+	if _mine_mat == null:
+		_mine_mat = StandardMaterial3D.new()
+		_mine_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_mine_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_mine_mat.albedo_color = Color(1, 1, 1, 0.7)
+	_mine.material_override = _mine_mat
+	_mine.visible = false
+	add_child(_mine)
 	_yaw = Court.facing(side)
 	body.rotation.y = _yaw
 
@@ -88,6 +107,15 @@ func _carry(name: String, mirror: bool) -> void:
 ## Shows him as the one you control.
 func set_selected(on: bool) -> void:
 	_ring.visible = on
+
+
+## Marks him as the one you play as, between his touches too.
+func set_mine(on: bool) -> void:
+	_mine.visible = on
+
+
+func is_mine() -> bool:
+	return _mine.visible
 
 
 ## The way he faces when he faces the net.

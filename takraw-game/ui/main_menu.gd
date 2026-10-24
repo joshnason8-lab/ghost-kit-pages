@@ -98,9 +98,6 @@ func _build_ui() -> void:
 	# The sport's name in Thai, where the game was born; in Thailand, its Malay name instead.
 	var native := UI.label("ตะกร้อ" if not TranslationServer.get_locale().begins_with("th") else "SEPAK TAKRAW", "TitleLabel", 56, Game.C_SAFFRON)
 	col.add_child(native)
-	var tag := UI.wrap(tr("TAGLINE"), "SubLabel", 24)
-	tag.add_theme_color_override("font_color", Game.C_GOLD)
-	col.add_child(tag)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(spacer)
@@ -114,7 +111,7 @@ func _build_ui() -> void:
 	for item in [["MENU_HOWTO", "book", "res://ui/howto_screen.gd"], ["MENU_SETTINGS", "gear", "res://ui/settings_screen.gd"],
 			["MENU_RECORDS", "trophy", "res://ui/records_screen.gd"]]:
 		var path: String = item[2]
-		var b := _link(tr(item[0]), item[1], func(): _go(path))
+		var b := _link(tr(item[0]), item[1], func(): _go(path), 68, 26)
 		links.add_child(b)
 		_cards.append(b)
 	col.add_child(links)
@@ -208,7 +205,7 @@ func _continue_card() -> Control:
 	return b
 
 
-func _link(text: String, icon_kind: String, cb: Callable, height := 54) -> Button:
+func _link(text: String, icon_kind: String, cb: Callable, height := 54, text_size := 20) -> Button:
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(0, height)
 	var sb := StyleBoxFlat.new()
@@ -231,10 +228,10 @@ func _link(text: String, icon_kind: String, cb: Callable, height := 54) -> Butto
 	h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	h.offset_left = 16
 	h.offset_right = -18
-	var ic := Icon.make(icon_kind, 24, Game.C_SAFFRON)
+	var ic := Icon.make(icon_kind, roundi(text_size * 1.2), Game.C_SAFFRON)
 	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(ic)
-	var l := UI.label(text, "SubLabel", 20)
+	var l := UI.label(text, "SubLabel", text_size)
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(l)

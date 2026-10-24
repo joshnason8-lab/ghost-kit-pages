@@ -11,7 +11,8 @@ const MODEL_RADIUS := 0.93   # the model's size
 
 var vel := Vector3.ZERO
 var flying := false
-var spin := Vector3.ZERO  # rad/s, for the look of it
+var spin_axis := Vector3.RIGHT   # the ball turns about this (world space), spin_rate rad/s: for the look of it
+var spin_rate := 0.0
 var p_launch := Vector3.ZERO
 var v_launch := Vector3.ZERO
 var t_launch := 0.0
@@ -107,7 +108,13 @@ func launch(p0: Vector3, v: Vector3, t0: float, trail := false) -> void:
 	vel = v
 	flying = true
 	global_position = p0
-	spin = Vector3(randf_range(-20, 20), randf_range(-10, 10), randf_range(-20, 20))
+	# Kicked, it turns over the way it goes (mostly topspin, now and then back), a little off square, faster the
+	# harder it was hit (kept slow enough that its weave doesn't seem to stand still).
+	var flat := Vector3(v.x, 0, v.z)
+	var axis := flat.cross(Vector3.UP).normalized() if flat.length() > 0.2 else Vector3.RIGHT
+	axis = axis.rotated(Vector3.UP, randf_range(-0.5, 0.5)) + Vector3(0, randf_range(-0.35, 0.35), 0)
+	spin_axis = axis.normalized()
+	spin_rate = clampf(v.length() * 0.8, 5.0, 16.0) * (1.0 if randf() < 0.75 else -1.0)
 	_trail_on = 0.5 if trail else 0.0
 
 
@@ -123,7 +130,7 @@ func update_to(t: float, dt: float) -> void:
 		var k := t - t_launch
 		global_position = Ball.pos_at(p_launch, v_launch, k)
 		vel = v_launch + Vector3(0, -G * k, 0)
-		_mesh.rotation += spin * dt
+		turn(dt)
 		# Down on the floor (the rally is over by now): it bounces, lower each time, and rolls to a stop.
 		if global_position.y < RADIUS and vel.y < 0.0:
 			var p := Vector3(global_position.x, RADIUS, global_position.z)
@@ -132,6 +139,12 @@ func update_to(t: float, dt: float) -> void:
 				hold(p)
 			else:
 				launch(p, Vector3(vel.x * 0.6, up, vel.z * 0.6), t)
+
+
+## Turns the ball by its spin over dt (s): in flight, and in a replay.
+func turn(dt: float) -> void:
+	if spin_rate != 0.0:
+		_mesh.global_rotate(spin_axis, spin_rate * dt)
 
 
 func _process(delta: float) -> void:

@@ -109,6 +109,29 @@ each venue from cameras on the court looking at each stand, and from behind the 
 [`venues/crowd_facing.jpg`](venues/crowd_facing.jpg) (before and after, close up) and
 [`venues/crowd_facing_all_venues.jpg`](venues/crowd_facing_all_venues.jpg).
 
+## Whole people, and no edge to the world (0.7.0)
+
+The owner saw the crowd had no legs when it jumped to cheer, the beach's fans standing on stumps, white nothingness
+past the ground at the beach (and the sea ending in a square), and the same at the night market from the end camera.
+
+- **The crowd sheet** (`tools/models/crowd_sheet.tscn`) has whole people now, from their feet up (2.2 m a figure, so
+  a hand held up fits): seated from the front and from behind, and standing from the front and from behind (arms at
+  their sides, clapping, hands on hips, a fist or both arms up, the weight on one leg). 1152 × 768 px, lossless.
+- **Seated and standing:** a seated spectator's feet are on the floor under their seat; those on the sand, behind the
+  park's benches and by the stalls stand (`Arena._standing`), as people there do.
+- **Cheering:** when the crowd goes up after a point, the seated get to their feet (each at their own point of the
+  excitement, so they rise over half a second, not as one) and jump; as it settles they sit down one by one.
+- **The far ground:** outdoors the ground now reaches the camera's far plane (300 m; it was 60 m), and the sea at the
+  beach runs past it (it ended 300 m out, square). Past 140 m everything fades into the colour of the far ground in
+  the haze (depth fog), and the sky takes that colour under the horizon (`Scenery.sky`'s `below`) instead of the
+  photograph's empty lower half. The beach's dry sand had been laid over the first 34 m of the sea: it stops at the
+  damp sand now, so the water starts at the water's edge.
+- **The night market's street** is closed at both ends by two more rows of shophouses across it (the cut-outs), so
+  the end camera looks down a street, not into the dark.
+
+`tests/venue_view.tscn -- <dir> <venues>,around` renders the outdoor venues from the end camera at each end, the side
+camera and looking out from the court; `tests/crowd_view.tscn -- <dir> 2 up` the crowd on its feet.
+
 ## Gaps that need the owner
 
 None. The two raised in 0.5.0 are filled in 0.5.1:

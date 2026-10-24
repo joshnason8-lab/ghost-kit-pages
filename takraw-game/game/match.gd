@@ -101,6 +101,7 @@ var _replay_frames: Array = []
 var officials: Array[RealBody] = []
 var _ref: RealBody
 var _judges: Array[RealBody] = []
+var _officials := Officials.new()   # their life between the calls
 
 
 func _ready() -> void:
@@ -261,12 +262,10 @@ func _make_officials() -> void:
 		if i > 0:
 			_judges.append(b)
 	for o in officials:
-		o.apply(Moves.READY)
-	_ref.apply(Moves.static_pose("sit"))
+		_officials.add(o, Moves.static_pose("sit" if o != officials[1] else "stand"), o == officials[1])
 	# Line judges sit on low chairs at the corners, as they do; each with its chair.
 	var g := Geo.new()
 	for j in _judges:
-		j.apply(Moves.static_pose("sit"))
 		var back := -Vector3(sin(j.rotation.y), 0, cos(j.rotation.y)) * 0.18
 		g.box(j.position + back + Vector3(0, 0.22, 0), Vector3(0.42, 0.44, 0.42), Color("2b3c55"), j.rotation.y)
 	add_child(g.commit(Geo.material(true)))
@@ -293,11 +292,13 @@ func _process(delta: float) -> void:
 			pl.look_at_pos = ball.global_position
 			pl.tick(dt, now)
 	ball.update_to(now, dt)
+	_officials.tick(dt, ball.global_position, state == S.RALLY or state == S.TOSS)
 	cam.follow(ball.global_position, delta, self)
 	hud.tick(delta)
 	_record()
 	if controls.visible:
 		_joy = controls.joystick
+		_mark_mine()
 		_user_steer(dt)
 	_check_frame_rate(delta)
 
@@ -1335,6 +1336,11 @@ func _home_team_index() -> int:
 ## one player claps or pumps a fist; often nobody does. After a big one, a loser may slump.
 func _celebrate(team: int, why: String) -> void:
 	var side := side_of_team(team)
+	# The referee's arm out to the side that won it (side 0 on his left as he faces along the net).
+	if side == 0:
+		_officials.show_signal(_ref, {"upperarm_l": Vector3(-10, 0, 80), "forearm_l": Vector3.ZERO}, 1.4)
+	else:
+		_officials.show_signal(_ref, {"upperarm_r": Vector3(-10, 0, -80), "forearm_r": Vector3.ZERO}, 1.4)
 	var big := why.begins_with("kill") or why in ["ace", "block"] or rally_len >= 6 or int(points[team]) >= set_points - 1
 	var ways := ["celebrate", "fist", "clap", "point"]
 	var mine := players_on(side).duplicate()
@@ -1360,14 +1366,8 @@ func _judge_signal(p: Vector3, called_in: bool) -> void:
 	for j in _judges:
 		if j.global_position.distance_to(p) < nearest.global_position.distance_to(p):
 			nearest = j
-	var sig := Moves.static_pose("sit")
 	var arm := Moves.static_pose("signal_in" if called_in else "signal_out")
-	sig.upperarm_r = arm.upperarm_r
-	sig.forearm_r = arm.forearm_r
-	nearest.apply(sig)
-	await get_tree().create_timer(1.6).timeout
-	if is_instance_valid(nearest):
-		nearest.apply(Moves.static_pose("sit"))
+	_officials.show_signal(nearest, {"upperarm_r": arm.upperarm_r, "forearm_r": arm.forearm_r}, 1.6)
 
 
 ## After the point: a set or the match won, the ends changed, or the next serve.
@@ -1549,7 +1549,10 @@ func _replay_step(delta: float) -> void:
 		end_replay()
 		return
 	var f: Dictionary = _replay_frames[i]
+	if (f.ball as Vector3).distance_to(ball.global_position) > 0.002:
+		ball.turn(delta * 0.4)   # (the replay runs at 0.4 of real time)
 	ball.global_position = f.ball
+	_officials.tick(delta * 0.4, ball.global_position, true)
 	var k := 0
 	for side in 2:
 		for pp in players_on(side):
@@ -1581,8 +1584,34 @@ func _user_side() -> int:
 	return side_of_team(user_team) if user_team >= 0 else -1
 
 
+## Yours: on your side, and the one you play as if you play as one player (Settings: Play as).
 func _is_user(pl: Player) -> bool:
-	return user_team >= 0 and pl.side == _user_side()
+	if user_team < 0 or pl.side != _user_side():
+		return false
+	var me := _mine()
+	return me == null or pl == me
+
+
+## The one you play as, or null when the whole side is yours. Doubles has no feeder: its striker sets as well.
+func _mine() -> Player:
+	var role := int(Game.settings.get("play_as", -1))
+	if role < 0 or user_team < 0:
+		return null
+	var side := _user_side()
+	for p in players_on(side):
+		if (p as Player).role == role:
+			return p
+	return _role_player(side, DB.POS_STRIKER)
+
+
+## The thin ring under the one you play as (none when the whole side is yours).
+func _mark_mine() -> void:
+	var me := _mine()
+	for side in 2:
+		for p in players_on(side):
+			var pl: Player = p
+			if pl.is_mine() != (pl == me):
+				pl.set_mine(pl == me)
 
 
 func _is_opponent(pl: Player) -> bool:
@@ -1738,7 +1767,13 @@ func _whiff(label: String) -> void:
 		return
 	pick.until = until
 	plan = pick
-	_take_control(pick)
+	if bool(pick.user):
+		_take_control(pick)
+		return
+	var other: Player = pick.player   # a team-mate's (you play as one player)
+	other.hurry = 1.0
+	other.target = pick.stand
+	other.queue_move(String(pick.move), float(pick.t) - Moves.contact_time(String(pick.move)), bool(pick.mirror))
 
 
 ## The joystick: as seen from the camera, up the screen is away from it.
@@ -1886,6 +1921,9 @@ func set_paused(on: bool) -> void:
 
 
 func on_back() -> void:
+	if hud.settings_open():
+		hud.close_settings()
+		return
 	set_paused(not paused)
 
 
@@ -1938,6 +1976,7 @@ func _check_frame_rate(real_delta: float) -> void:
 	var want := minf(36.0, 0.8 * float(cap)) if cap > 0 else 36.0
 	if fps < want:
 		Game.settings.graphics = int(Game.settings.graphics) - 1
+		Game.settings.gfx_cap = int(Game.settings.graphics)   # and Auto keeps to it from now on
 		Game.save_settings()
 		Game.apply_graphics(get_viewport())
 		hud.call_line(tr("GFX_LOWERED"))
