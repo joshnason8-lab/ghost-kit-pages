@@ -90,6 +90,22 @@ From the lead's brief and shared assets (plans/floorball-unleashed.md on claude/
   its cap), a red Nordic break-glass alarm point by the hall's doors (Medium and High), and a pale birch gym bench
   along the walls. perf_probe Low after: arena 82 / 49.4k, hall 86 / 77.0k, school 87 / 74.8k.
 
+### 0.5.0-beta: motion capture (24 October 2026)
+
+From the lead's brief (the owner added the CMU motion capture library):
+- **Walk, jog and run from real people** (CMU 35_01, 35_17, 16_55): one cycle each, retargeted onto the game's
+  skeleton with foot locks by tools/mocap/bvh_to_clip.py, 30 frames a second, 9-14 KB each (assets/mocap). The
+  cycle moves with the ground covered, so a foot that is down stays put (the test measures 2-4 mm at 1 to 7.6 m/s,
+  ahead, on a slant and backward); the cadence is a runner's (6 steps a second at a sprint, against the old code's
+  9-10). The floorball stance goes on top: lower hips with the knees bent by IK (Medium, High), the trunk bent over
+  the stick, the arms on it. Referees run with the captured arms. Goalkeepers, standing, the shot, the tackle stay
+  the code's. docs/MOCAP.md has the clips, the method, what was looked at and left (turns, stops, side steps, dives,
+  swings, throws, idles) and why.
+- **Perf**: posing 14 people 1.2 -> 2.0 ms a frame on this machine (Low 1.3 -> 1.7, without the knee IK); draw calls
+  and triangles unchanged.
+- Credit in Licences: "Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF
+  EIA-0196217."
+
 ## Next (in order)
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's

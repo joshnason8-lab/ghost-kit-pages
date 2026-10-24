@@ -241,7 +241,10 @@ func _animate(dt: float) -> void:
 		var stride_m: float = lerpf(g[0].stride, g[1].stride, g[2]) * size
 		var stride_p := STRIDE * clampf(0.45 + sp / MAX_SPEED * 0.55, 0.45, 1.0)
 		_phase = fposmod(_phase + along * dt / lerpf(stride_p, stride_m, moc), 1.0)
-		gait = Mocap.blend(Mocap.sample(g[0], _phase), Mocap.sample(g[1], _phase), g[2])
+		var w: float = g[2]
+		var arms := role == "R"
+		gait = Mocap.sample(g[0], _phase, arms) if w < 0.02 else (Mocap.sample(g[1], _phase, arms) if w > 0.98 else
+			Mocap.blend(Mocap.sample(g[0], _phase, arms), Mocap.sample(g[1], _phase, arms), w))
 		gait.lean = lerpf(g[0].lean, g[1].lean, g[2])
 	else:
 		var stride := STRIDE * clampf(0.45 + sp / MAX_SPEED * 0.55, 0.45, 1.0)
@@ -309,13 +312,15 @@ func _mocap_legs(p: Dictionary, g: Dictionary, w: float, legs_yaw: float) -> voi
 		for b in ["upperarm_l", "forearm_l", "upperarm_r", "forearm_r"]:
 			trunk[b] = g[b]
 	# The floorball stance: the hips lower than a jogger's, the knees bending to keep each foot where the capture put it
-	# (so a foot that is down stays down where it is).
+	# (so a foot that is down stays down where it is). Not on Low, where the picture is small and the phone slow: there
+	# they run as captured.
 	var cap := {"hips": hips, "hips_side": off.x, "hips_y": off.y, "hips_fwd": off.z}
 	cap.merge(legs)
-	var feet := [Body.leg(cap, "l")[2], Body.leg(cap, "r")[2]]
-	cap.hips_y = off.y - _crouch * 0.1
-	Body.leg_ik(cap, "l", feet[0])
-	Body.leg_ik(cap, "r", feet[1])
+	if int(Game.settings.graphics) != Game.GFX_LOW:
+		var feet := [Body.leg(cap, "l")[2], Body.leg(cap, "r")[2]]
+		cap.hips_y = off.y - _crouch * 0.1
+		Body.leg_ik(cap, "l", feet[0])
+		Body.leg_ik(cap, "r", feet[1])
 	for b in legs:
 		p[b] = Body._q(p[b]).slerp(cap[b], w)
 	for b in trunk:

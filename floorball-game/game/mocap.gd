@@ -24,11 +24,26 @@ static func clip(name: String) -> Dictionary:
 		if d is Dictionary:
 			var frames: Array[PackedFloat32Array] = []
 			for row in d.frames:
-				frames.append(PackedFloat32Array(row))
+				var fr := PackedFloat32Array(row)
+				for k in range(3, fr.size(), 4):   # stored to 3 decimals: made whole again once, here
+					var q := Quaternion(fr[k], fr[k + 1], fr[k + 2], fr[k + 3]).normalized()
+					fr[k] = q.x
+					fr[k + 1] = q.y
+					fr[k + 2] = q.z
+					fr[k + 3] = q.w
+				frames.append(fr)
 			c = {"stride": float(d.stride), "speed": float(d.speed), "lean": float(d.get("lean", 0.0)), "contacts": d.get("contacts", {}), "bones": d.bones, "frames": frames,
+				"index": _index(d.bones),
 				"source": String(d.get("source", ""))}
 	_clips[name] = c
 	return c
+
+
+static func _index(bones: Array) -> Dictionary:
+	var out := {}
+	for i in bones.size():
+		out[bones[i]] = i
+	return out
 
 
 static func available() -> bool:
@@ -49,8 +64,13 @@ static func gaits_at(speed: float) -> Array:
 	return [lo, lo, 0.0]
 
 
-## The pose of a cycle at a phase (0..1): bone name -> Quaternion, and "hips_off" (Vector3, m).
-static func sample(c: Dictionary, phase: float) -> Dictionary:
+## The bones the game takes from a cycle: the legs, hips and trunk; the arms only for a referee.
+const LEGS := ["hips", "spine", "chest", "head", "thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
+const ARMS := ["upperarm_l", "forearm_l", "upperarm_r", "forearm_r"]
+
+
+## The pose of a cycle at a phase (0..1): bone name -> Quaternion for the bones asked for, and "hips_off" (Vector3, m).
+static func sample(c: Dictionary, phase: float, arms := false) -> Dictionary:
 	var frames: Array = c.frames
 	var n := frames.size()
 	var fi := fposmod(phase, 1.0) * n
@@ -58,12 +78,12 @@ static func sample(c: Dictionary, phase: float) -> Dictionary:
 	var b: PackedFloat32Array = frames[(int(fi) + 1) % n]
 	var u := fi - floorf(fi)
 	var out := {"hips_off": Vector3(a[0], a[1], a[2]).lerp(Vector3(b[0], b[1], b[2]), u)}
-	var bones: Array = c.bones
-	for i in bones.size():
-		var k := 3 + i * 4
+	var index: Dictionary = c.index
+	for name in (LEGS + ARMS if arms else LEGS):
+		var k: int = 3 + int(index[name]) * 4
 		var qa := Quaternion(a[k], a[k + 1], a[k + 2], a[k + 3])
 		var qb := Quaternion(b[k], b[k + 1], b[k + 2], b[k + 3])
-		out[bones[i]] = qa.normalized().slerp(qb.normalized(), u)
+		out[name] = qa.slerp(qb, u)
 	return out
 
 

@@ -80,10 +80,14 @@ never under the floor. `tools/mocap/gait_view.tscn` takes a strip of pictures of
 
 ## Performance
 
-`tests/perf_probe.tscn` (xvfb, this machine's software renderer; the CPU figure is what matters here):
+`tests/perf_probe.tscn` (xvfb, this machine's software renderer; for the CPU time, what matters is the difference):
 
 | | Before (0.4.1, code only) | After (0.5.0, motion capture) |
 |---|---|---|
-| Posing 14 people a frame (12 players, 2 referees, running) | see docs/PROGRESS.md | see docs/PROGRESS.md |
+| Posing 14 people a frame (12 players, 2 referees, running), Medium and High | 1.16 to 1.26 ms | 1.93 to 2.09 ms |
+| The same on Low (no knee IK under the captured legs) | 1.26 ms | 1.59 to 1.72 ms |
+| Arena, Low / Medium / High: draw calls, triangles | 79 / 48,800; 79 / 80,700; 122 / 414,100 | the same |
+| Hall, Low / Medium / High | 83 / 70,200; 87 / 101,900; 130 / 450,300 | the same |
 
-Draw calls and triangles do not change (the same meshes, the same skeletons).
+About 0.03 ms more a person a frame on Low and 0.05 on Medium and High here (two cycles sampled and blended, ten
+bones, and on Medium and High two legs' IK). The meshes and skeletons are the same, so the GPU's work is unchanged.

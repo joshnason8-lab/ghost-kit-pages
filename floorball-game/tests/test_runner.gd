@@ -769,7 +769,11 @@ func _mocap() -> void:
 					ok = ok and absf(q.length() - 1.0) < 0.01
 			ok = ok and c.contacts.get("l", []).size() > 0 and c.contacts.get("r", []).size() > 0
 		check(ok, "mocap: the %s cycle loads (%s, %d frames, stride %.2f m at %.2f m/s)" % [g, c.get("source", "?"), c.get("frames", []).size(), c.get("stride", 0.0), c.get("speed", 0.0)])
-	for ang in [0.0, 45.0, 180.0]:
+	var gfx: int = Game.settings.graphics
+	# Medium and High bend the knees by IK under the captured legs; Low plays the legs as captured: both, ahead.
+	for run in [[Game.GFX_MEDIUM, 0.0], [Game.GFX_MEDIUM, 45.0], [Game.GFX_MEDIUM, 180.0], [Game.GFX_LOW, 0.0]]:
+		Game.settings.graphics = run[0]
+		var ang: float = run[1]
 		for speed in [1.0, 1.3, 2.2, 3.1, 4.2, 6.0, 7.6]:
 			var p := Player.new({"id": "SWE07", "height": 1.84, "num": 7}, 0, "F", 1)
 			p.off_boards = true   # a long straight run, the boards out of the way
@@ -800,8 +804,9 @@ func _mocap() -> void:
 					else:
 						start.erase(side)
 			check(down > 20 and worst < SLIDE and highest < 0.12 and lowest > 0.0,
-				"mocap: running %.1f m/s at %d degrees, a foot down stays put (slides %.3f m, %d frames down, at most %.3f m up then, lowest %.3f m)" % [speed, int(ang), worst, down, highest, lowest])
+				"mocap: running %.1f m/s at %d degrees (graphics %d), a foot down stays put (slides %.3f m, %d frames down, at most %.3f m up then, lowest %.3f m)" % [speed, int(ang), run[0], worst, down, highest, lowest])
 			p.queue_free()
+	Game.settings.graphics = gfx
 
 
 # ---------------------------------------------------------------- matches
