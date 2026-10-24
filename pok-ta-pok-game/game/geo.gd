@@ -106,9 +106,12 @@ static func surface(name: String, tint_col := Color.WHITE, rough := 0.9) -> Stan
 	m.vertex_color_is_srgb = true
 	m.roughness = rough
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC if g > Game.GFX_LOW else BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	if g > Game.GFX_LOW and ResourceLoader.exists(dir + name + "_normal_" + res + ".jpg"):
+	# The normal maps at 1K on High too: at a match's distance their extra detail does not show, and compressed for
+	# phones a 2K normal map is twice an albedo's size.
+	var nres := "1k" if res == "2k" else res
+	if g > Game.GFX_LOW and ResourceLoader.exists(dir + name + "_normal_" + nres + ".jpg"):
 		m.normal_enabled = true
-		m.normal_texture = load(dir + name + "_normal_" + res + ".jpg")
+		m.normal_texture = load(dir + name + "_normal_" + nres + ".jpg")
 		m.normal_scale = 0.8
 	if g == Game.GFX_LOW:
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX

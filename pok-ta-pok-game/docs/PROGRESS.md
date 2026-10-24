@@ -89,7 +89,8 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   the torches' fire at night. Pause holds every sound. Players grunt or breathe on half their strikes. Audio went from
   748 KB to 1.4 MB. A test checks every sound file loads and that nothing plays while paused.
 - **0.4.0, the size update** (the owner allowed the APK to grow for looks and sound; Low unchanged, tested):
-  - Medium and High load sharper surfaces: the six Poly Haven surfaces at 1K (Medium) and 2K (High), albedo and normal,
+  - Medium and High load sharper surfaces: the six Poly Haven surfaces at 1K (Medium) and 2K (High; its normal maps at
+    1K, as a 2K normal map compressed for phones is 5.6 MB and its detail does not show at a match's distance),
     VRAM-compressed (ETC2 on phones) with mipmaps. Low keeps the 512 files.
   - High's skies at 4K (Poly Haven, tone-matched to the 2K ones within 2/255); Low and Medium keep the 2K.
   - The Meshy players' and judge's own 2048 textures on Medium and High (VRAM-compressed); Low keeps the 1024.
