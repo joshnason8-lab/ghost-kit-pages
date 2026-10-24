@@ -158,12 +158,23 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
 
+      # The beta key: the owner's (the BETA_KEYSTORE_B64 secret, a PKCS12 keystore, alias androiddebugkey, password
+      # android), the same for every build so each beta installs over the last and keeps the player's saves.
       - name: Configure Android export
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
         run: |
           KEYSTORE=$HOME/debug.keystore
-          keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
-            -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
-            -keyalg RSA -keysize 2048 -validity 10000
+          if [ -n "$BETA_KEYSTORE_B64" ]; then
+            echo "$BETA_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "BETA_KEY=1" >> "$GITHUB_ENV"
+          else
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+            echo "BETA_KEY=0" >> "$GITHUB_ENV"
+          fi
+          echo "KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
           SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
           mkdir -p ~/.config/godot
           # Let the editor create its settings file, then point it at the runner's SDK and JDK.
@@ -199,14 +210,30 @@ jobs:
           python3 tools/check_pages.py build/unsigned.apk
           ls -la build
 
-      # Signed with uber-apk-signer's built-in debug key, the key the chat APKs use, so either installs over
-      # the other and keeps the player's saves.
+      # Signed with the owner's beta key (above); without it, with uber-apk-signer's built-in debug key (fixed too,
+      # but not the owner's: a build signed with it does not install over one signed with his). Both APKs, then the
+      # signing certificate's SHA-256 checked: with the owner's key it must be his.
       - name: Sign APKs
         run: |
           curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
-          java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk ${PROJECT_DIR}/build/unsigned-armv7.apk --out ${PROJECT_DIR}/build/signed
-          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-debugSigned.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk
-          mv ${PROJECT_DIR}/build/signed/unsigned-armv7-aligned-debugSigned.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}-32bit.apk
+          if [ "$BETA_KEY" = "1" ]; then
+            KS="--ks $KEYSTORE --ksAlias androiddebugkey --ksPass android --ksKeyPass android"
+          else
+            KS=""
+            echo "::warning::BETA_KEYSTORE_B64 is not set: signed with uber-apk-signer's debug key, not the owner's beta key; this build will not install over one signed with the owner's key"
+          fi
+          java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk ${PROJECT_DIR}/build/unsigned-armv7.apk --out ${PROJECT_DIR}/build/signed $KS
+          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-*igned.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk
+          mv ${PROJECT_DIR}/build/signed/unsigned-armv7-aligned-*igned.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}-32bit.apk
+          WANT="6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3"
+          for apk in ${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}-32bit.apk; do
+            FP=$(keytool -printcert -jarfile "$apk" | sed -n 's/.*SHA256: *//p' | head -1)
+            echo "Signing certificate SHA-256 of $(basename "$apk"): $FP"
+            if [ "$BETA_KEY" = "1" ] && [ "$FP" != "$WANT" ]; then
+              echo "::error::$(basename "$apk") is not signed with the owner's beta key"
+              exit 1
+            fi
+          done
           ls -la ${PROJECT_DIR}/build
 
       - uses: actions/upload-artifact@v4

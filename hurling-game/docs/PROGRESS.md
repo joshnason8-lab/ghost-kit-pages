@@ -232,6 +232,17 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.8.2-beta, one beta key, 24 October 2026)
+
+Every game's betas are now signed with the owner's beta key (the BETA_KEYSTORE_B64 repository secret, a PKCS12
+keystore), so Obtainium and Android install each over the last. Hurling Heroes' betas were already signed with one
+fixed key (uber-apk-signer's built-in debug key, SHA-256 FA:75:FA:DC:...:CC:76), so they did not have the other
+games' new-key-every-build fault; but that is not the owner's key, so 0.8.2 is a one-time reinstall (uninstall
+first; saves are lost once). `.github/workflows/hurling-android.yml` (and the standalone copy) decodes the secret,
+signs both APKs with it and fails if their certificate's SHA-256 is not the owner's
+(6F:23:A9:36:...:69:7B:A3); without the secret it falls back to the uber-apk-signer key with a warning. The Play
+bundle's upload key is unchanged.
+
 ## Done (0.8.1-beta, the referee's whistle, 24 October 2026)
 
 The owner found real whistle recordings (Pixabay, credited on Licences and in docs/SOUNDS.md; trimmed and levelled

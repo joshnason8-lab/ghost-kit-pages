@@ -9,6 +9,13 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.8.2
+
+- **Signed with the owner's beta key**, the same one every game's beta now uses, so every later beta installs over
+  this one and keeps your saves. Once only: 0.8.2 will not install over 0.8.1 or earlier (they were signed with a
+  different key). Uninstall Hurling Heroes, then install 0.8.2; this clears your saves (the championship and
+  settings) this one time.
+
 ## New in 0.8.1
 
 - **A real referee's whistle**: recorded pea-whistle blasts in place of the made one, from where the referee
