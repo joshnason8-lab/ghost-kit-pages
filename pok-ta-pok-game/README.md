@@ -68,12 +68,21 @@ no permission but vibration.
 
 ## Performance
 
-Measured with `tests/perf_probe` in a match: ten players, two judges and the crowd. Low's budget is about 100 draw
-calls and 90k triangles. The table is filled in by perf_probe; see docs/PROGRESS.md.
+Measured with `tests/perf_probe` in a match (ten players, two judges and the crowd), at the broadcast camera. Low's
+budget is about 100 draw calls and 90k triangles in the 3D view; both courts sit well inside it. Draw calls and
+triangles are what a phone's GPU pays; the "ms a frame" of this CI machine (software OpenGL) is not a phone figure.
 
-| Court | Low | Medium | High |
-|---|---|---|---|
-| (see docs/PROGRESS.md) | | | |
+| Court | | Low | Medium | High |
+|---|---|---|---|---|
+| **Village** (earth, crowd) | draw calls | 59 | 59 | 75 |
+| | triangles | 53k | 55k | 138k |
+| | crowd drawn | 121 | 378 | 546 |
+| **Stone court** (I-court, rings) | draw calls | 60 | 60 | 74 |
+| | triangles | 64k | 64k | 131k |
+| | crowd drawn | 119 | 405 | 560 |
+
+The festival court is close to the village and the torch-lit court to the stone court. The whole crowd is one draw
+call at every level; Low uses the lighter bodies (a third of the triangles), cut-out plants and no normal maps.
 
 ## Project layout
 

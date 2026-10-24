@@ -53,7 +53,13 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   - The result screen with a box score.
   - Settings, How to Play (four tabs, including the story), the licences, and Move buttons.
 - **Six languages** (es, en, pt, fr, de, it): fit_audit is clean on every screen at four screen shapes.
-- **CI**: the root and standalone workflows. A local unsigned export works and passes the 16 KB page check.
+- **CI**: the root and standalone workflows, both green on the PR. The beta APK (64- and 32-bit) is on the
+  `pok-ta-pok-rivals-beta` release, and the Play bundle workflow passes (unsigned).
+- **Store**: `store/PLAY_STORE.md`, listings in 11 Play locales (`store/listing/`), the 512 icon and the feature
+  graphic rendered from the stone ring, and six 1920x1080 screenshots (`store/graphics/`).
+- **Performance** (perf_probe, after the body reduction): village Low 59 draws / 53k triangles, stone Low 60 / 64k,
+  both well inside the Low budget (100 draws, 90k triangles). High: village 75 / 138k, stone 74 / 131k. The crowd is
+  one draw call at every level.
 - **Pages**: `pok-ta-pok-rivals/` (index, privacy, support).
 
 ## Next
