@@ -71,7 +71,9 @@ func _environment() -> void:
 	env = Environment.new()
 	var sky := Sky.new()
 	var pm := PanoramaSkyMaterial.new()
-	pm.panorama = load("res://assets/env/sky/%s_sky_2k.jpg" % sky_name)
+	# High: the same Poly Haven sky at 4K (VRAM-compressed, tone-matched to the 2K one); Low and Medium the 2K as before.
+	var sky4 := "res://assets/env/sky/%s_sky_4k.jpg" % sky_name
+	pm.panorama = load(sky4 if int(Game.settings.graphics) >= Game.GFX_HIGH and ResourceLoader.exists(sky4) else "res://assets/env/sky/%s_sky_2k.jpg" % sky_name)
 	pm.energy_multiplier = {"day": 1.0, "dusk": 1.0, "night": 1.0}.get(time(), 1.0)
 	sky.sky_material = pm
 	sky.radiance_size = Sky.RADIANCE_SIZE_32 if g == Game.GFX_LOW else Sky.RADIANCE_SIZE_128
@@ -330,7 +332,23 @@ func _stone_court() -> void:
 	# plain stone (not the walls' coursed blocks).
 	var rings := Geo.new(0.9)
 	rings.tint = Color(0.92, 0.88, 0.8)
+	# Medium and High: the carved ring made with Meshy (feathered serpents round the face), fitted to the ring's size
+	# exactly (tools/meshy/fit_ring.gd). Low: the plain stone washers as before.
+	var carved := int(Game.settings.graphics) >= Game.GFX_MEDIUM and ResourceLoader.exists("res://assets/people/court_ring.res")
 	for c in court.rings():
+		if carved:
+			var mi := MeshInstance3D.new()
+			mi.mesh = load("res://assets/people/court_ring.res")
+			var rm := StandardMaterial3D.new()
+			rm.albedo_texture = load("res://assets/people/court_ring.jpg")
+			rm.albedo_color = Color(0.93, 0.87, 0.77)
+			rm.roughness = 0.9
+			mi.material_override = rm
+			mi.position = c
+			mi.rotation = Vector3(0, PI * 0.5, 0)   # its hole along the alley
+			mi.name = "carved_ring"
+			add_child(mi)
+			continue
 		rings.washer(c, Court.RING_IN, Court.RING_OUT, Court.RING_DEPTH, 28)
 		# A raised rim round the hole and round the edge, as the carved rings have.
 		rings.washer(c, Court.RING_IN, Court.RING_IN + 0.06, Court.RING_DEPTH + 0.025, 28)

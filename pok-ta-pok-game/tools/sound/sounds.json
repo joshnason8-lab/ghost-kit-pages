@@ -222,5 +222,69 @@
   "author": "pauliuw",
   "licence": "CC0 1.0",
   "url": "https://opengameart.org/content/forest-bird-sounds"
+ },
+ {
+  "file": "amb_village_hq.ogg",
+  "what": "the village at dusk (Medium, High)",
+  "source_file": "AMB_Nature Pack Vol 1_Weather_Summer Evening.mp3",
+  "author": "JC Sounds",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1"
+ },
+ {
+  "file": "amb_forest_hq.ogg",
+  "what": "the forest round the stone court by day (Medium, High)",
+  "source_file": "AMB_Nature Pack Vol 1_Forest Enviroments_Rainforest Canopy.mp3",
+  "author": "JC Sounds",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1"
+ },
+ {
+  "file": "amb_night_hq.ogg",
+  "what": "the forest at night round the torch-lit court (Medium, High)",
+  "source_file": "AMB_Nature Pack Vol 1_Forest Enviroments_Forest Night.mp3",
+  "author": "JC Sounds",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1"
+ },
+ {
+  "file": "amb_torch_hq.ogg",
+  "what": "the torches' flames (Medium, High)",
+  "source_file": "AMB_Nature Pack Vol 1_ Fire & Elemental_Torch Flame.mp3",
+  "author": "JC Sounds",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1"
+ },
+ {
+  "file": "crowd_loop_hq.ogg",
+  "what": "the crowd round the court, longer, with its chatter (Medium, High)",
+  "source_file": "Gregor Quendel - Crowd Cheering Sounds - 07 - Soft cheering and chatter.mp3",
+  "author": "Gregor Quendel",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/free-crowd-cheering-sounds"
+ },
+ {
+  "file": "crowd_cheer_2.ogg",
+  "what": "the crowd going up, another (Medium, High)",
+  "source_file": "Gregor Quendel - Crowd Cheering Sounds - 03 - Strong cheering - I.mp3",
+  "author": "Gregor Quendel",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/free-crowd-cheering-sounds"
+ },
+ {
+  "file": "crowd_cheer_3.ogg",
+  "what": "the crowd going up and clapping in time (Medium, High)",
+  "source_file": "Gregor Quendel - Crowd Cheering Sounds - 01 - Strong cheering and strong rhythmic cheering.mp3",
+  "author": "Gregor Quendel",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/free-crowd-cheering-sounds"
+ },
+ {
+  "file": "applause_2.ogg",
+  "what": "applause, another (Medium, High)",
+  "source_file": "Gregor Quendel - Crowd Cheering Sounds - 06 - Soft cheering - II.mp3",
+  "author": "Gregor Quendel",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/free-crowd-cheering-sounds"
  }
 ]

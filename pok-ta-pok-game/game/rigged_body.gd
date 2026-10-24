@@ -130,9 +130,11 @@ func setup(body: Body, p_file: String, look: Dictionary) -> void:
 		_shader.code = SHADER
 	material = ShaderMaterial.new()
 	material.shader = _shader
-	if not _textures.has(file):
-		_textures[file] = load(DIR + file + ".jpg")
-	material.set_shader_parameter("albedo_tex", _textures[file])
+	# Low: the 1024 texture as before. Medium and High: Meshy's own 2048, VRAM-compressed with mipmaps.
+	var tex := file + ("_2k" if gfx >= Game.GFX_MEDIUM and ResourceLoader.exists(DIR + file + "_2k.jpg") else "")
+	if not _textures.has(tex):
+		_textures[tex] = load(DIR + tex + ".jpg")
+	material.set_shader_parameter("albedo_tex", _textures[tex])
 	material.set_shader_parameter("rim", 0.4 if gfx >= Game.GFX_MEDIUM else 0.0)
 	# The texture's skin as a middle tone; a darker or lighter player's in proportion, in linear light.
 	var ref := Color("a8754f").srgb_to_linear()

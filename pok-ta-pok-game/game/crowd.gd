@@ -16,6 +16,16 @@ const CARD := Vector2(0.66, 1.82)  # a standing person's card, metres (a hat on 
 ## The townspeople (tools/meshy/prepare.gd): mesh and texture, each at its height (m).
 const FANS := [["fan_ranchero", 1.72], ["fan_blouse", 1.6], ["fan_elder", 1.65], ["fan_tshirt", 1.74], ["fan_rebozo", 1.52],
 	["fan_boy", 1.38], ["fan_young_woman", 1.62], ["fan_guayabera", 1.7]]
+## Medium and High: eight more, for a crowd of 32 different figures, each drawn half as large again (FIGS_HQ).
+const FANS_HQ := [["fan_huipil", 1.5], ["fan_texana", 1.73], ["fan_cane", 1.62], ["fan_girl", 1.25], ["fan_mother", 1.58],
+	["fan_jersey", 1.72], ["fan_yucatec", 1.6], ["fan_apron", 1.55]]
+const FIGS_HQ := 32
+const FIG_W_HQ := 96
+const FIG_H_HQ := 264
+## The sheet as baked: how many figures, and each one's size in pixels (Low: FIGS at FIG_W x FIG_H, as always).
+static var figs := FIGS
+static var fig_w := FIG_W
+static var fig_h := FIG_H
 
 static var _sheet: Texture2D
 static var _mat: ShaderMaterial
@@ -46,13 +56,15 @@ static func sheet() -> Texture2D:
 	return _sheet
 
 
-static var _fans: Array = []
+static var _fans := {}
 
 
-## The townspeople's meshes and materials: [[mesh, material, height]], or [] when they are not in the build.
-static func fan_meshes() -> Array:
-	if _fans.is_empty():
-		for f in FANS:
+## The townspeople's meshes and materials: [[mesh, material, height]], or [] when they are not in the build. hq: all
+## sixteen (Medium, High); otherwise Low's eight.
+static func fan_meshes(hq := false) -> Array:
+	if not _fans.has(hq):
+		_fans[hq] = []
+		for f in (FANS + FANS_HQ if hq else FANS):
 			var path := "res://assets/people/%s.res" % f[0]
 			if not ResourceLoader.exists(path):
 				continue
@@ -60,23 +72,39 @@ static func fan_meshes() -> Array:
 			m.albedo_texture = load("res://assets/people/%s.jpg" % f[0])
 			m.roughness = 0.85
 			m.cull_mode = BaseMaterial3D.CULL_DISABLED
-			_fans.append([load(path), m, float(f[1])])
-	return _fans
+			_fans[hq].append([load(path), m, float(f[1])])
+	return _fans[hq]
+
+
+## Medium and High, with all sixteen townspeople in the build.
+static func hq_sheet() -> bool:
+	return int(Game.settings.graphics) >= Game.GFX_MEDIUM and fan_meshes(true).size() >= FANS.size() + FANS_HQ.size()
+
+
+## Is the sheet not yet baked, or baked for the other kind of graphics level?
+static func needs_bake() -> bool:
+	if DisplayServer.get_name() == "headless":
+		return false
+	return not (_sheet is ImageTexture and _sheet.has_meta("baked") and bool(_sheet.get_meta("hq")) == hq_sheet())
 
 
 ## Renders the sheet from the townspeople (awaitable: it takes a few frames). Does nothing headless.
 static func bake(host: Node) -> void:
-	if DisplayServer.get_name() == "headless" or _sheet is ImageTexture and _sheet.has_meta("baked"):
+	if not needs_bake():
 		return
+	var hq := hq_sheet()
+	var nf := FIGS_HQ if hq else FIGS
+	var fw := FIG_W_HQ if hq else FIG_W
+	var fh := FIG_H_HQ if hq else FIG_H
 	var sv := SubViewport.new()
-	sv.size = Vector2i(FIG_W * FIGS, FIG_H)
+	sv.size = Vector2i(fw * nf, fh)
 	sv.transparent_bg = true
 	sv.own_world_3d = true
 	sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	host.add_child(sv)
 	var cam := Camera3D.new()
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	var w := float(FIGS) * CARD.x
+	var w := float(nf) * CARD.x
 	cam.size = CARD.y
 	cam.keep_aspect = Camera3D.KEEP_HEIGHT
 	cam.position = Vector3(w * 0.5, CARD.y * 0.5, 10.0)
@@ -94,9 +122,9 @@ static func bake(host: Node) -> void:
 	we.environment = env
 	sv.add_child(we)
 	var bodies := []
-	var fans := fan_meshes()
+	var fans := fan_meshes(hq)
 	var ps := people()
-	for i in FIGS:
+	for i in nf:
 		var b: Node3D
 		if not fans.is_empty():
 			# A townsperson: the model stands 1.9 m tall about its middle (prepare.gd); scaled to their height.
@@ -117,23 +145,28 @@ static func bake(host: Node) -> void:
 			b = body
 		b.position = Vector3((i + 0.5) * CARD.x, 0, 0)
 		bodies.append(b)
-	var img := Image.create_empty(FIG_W * FIGS, FIG_H * 2, false, Image.FORMAT_RGBA8)
+	var img := Image.create_empty(fw * nf, fh * 2, false, Image.FORMAT_RGBA8)
 	for view in 2:
-		for i in FIGS:
+		for i in nf:
 			# The second of each pair turned a little, so the two read as different people in the stands.
-			(bodies[i] as Node3D).rotation = Vector3(0, (PI if view == 1 else 0.0) + (0.35 if i >= FIGS / 2 else 0.0), 0)
+			(bodies[i] as Node3D).rotation = Vector3(0, (PI if view == 1 else 0.0) + (0.35 if i >= nf / 2 else 0.0), 0)
 		for k in 3:
 			await RenderingServer.frame_post_draw
 		var shot := sv.get_texture().get_image()
 		shot.convert(Image.FORMAT_RGBA8)
-		img.blit_rect(shot, Rect2i(0, 0, FIG_W * FIGS, FIG_H), Vector2i(0, FIG_H * view))
+		img.blit_rect(shot, Rect2i(0, 0, fw * nf, fh), Vector2i(0, fh * view))
 	sv.queue_free()
 	img.generate_mipmaps()
 	var tex := ImageTexture.create_from_image(img)
 	tex.set_meta("baked", true)
+	tex.set_meta("hq", hq)
 	_sheet = tex
+	figs = nf
+	fig_w = fw
+	fig_h = fh
 	if _mat:
 		_mat.set_shader_parameter("sheet", _sheet)
+		_mat.set_shader_parameter("figs", float(figs))
 
 
 ## The stand-in sheet: simple standing figures, front and back.
@@ -198,7 +231,7 @@ void fragment() {
 	_mat = ShaderMaterial.new()
 	_mat.shader = sh
 	_mat.set_shader_parameter("sheet", sheet())
-	_mat.set_shader_parameter("figs", float(FIGS))
+	_mat.set_shader_parameter("figs", float(figs))
 	return _mat
 
 

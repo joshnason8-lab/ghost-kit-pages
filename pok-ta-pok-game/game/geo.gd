@@ -93,15 +93,22 @@ static func surface(name: String, tint_col := Color.WHITE, rough := 0.9) -> Stan
 	var g := int(Game.settings.graphics)
 	var m := StandardMaterial3D.new()
 	var dir := "res://assets/env/surfaces/"
-	m.albedo_texture = load(dir + name + "_albedo_512.jpg")
+	# Low: the 512 maps as they always were. Medium and High: the same Poly Haven surfaces at 1K and 2K, VRAM-compressed
+	# (ETC2 on phones) with mipmaps, so they are sharper up close and no heavier on video memory than they need be.
+	var res := "512"
+	if g == Game.GFX_MEDIUM and ResourceLoader.exists(dir + name + "_albedo_1k.jpg"):
+		res = "1k"
+	elif g >= Game.GFX_HIGH and ResourceLoader.exists(dir + name + "_albedo_2k.jpg"):
+		res = "2k"
+	m.albedo_texture = load(dir + name + "_albedo_" + res + ".jpg")
 	m.albedo_color = tint_col
 	m.vertex_color_use_as_albedo = true
 	m.vertex_color_is_srgb = true
 	m.roughness = rough
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC if g > Game.GFX_LOW else BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	if g > Game.GFX_LOW and ResourceLoader.exists(dir + name + "_normal_512.jpg"):
+	if g > Game.GFX_LOW and ResourceLoader.exists(dir + name + "_normal_" + res + ".jpg"):
 		m.normal_enabled = true
-		m.normal_texture = load(dir + name + "_normal_512.jpg")
+		m.normal_texture = load(dir + name + "_normal_" + res + ".jpg")
 		m.normal_scale = 0.8
 	if g == Game.GFX_LOW:
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX

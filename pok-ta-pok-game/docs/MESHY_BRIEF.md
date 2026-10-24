@@ -4,13 +4,16 @@
 
 The owner allowed credits. `tools/meshy/meshy_batch.py` (from the kabaddi game) made these from
 `tools/meshy/assets.json`; `tools/meshy/prepare.gd` (from the floorball game) cut them for phones into
-`assets/people/`. 560 credits in all (1,763 before, 1,203 after); previews first, checked, then textured and rigged.
+`assets/people/`. 560 credits in 0.2.0 (1,763 before, 1,203 after) and 440 in 0.4.0 (763 left); previews first, checked, then textured and rigged.
 
 | Model | What | Use |
 |---|---|---|
 | player_lean, player_tall, player_stocky | bare-chested, barefoot, tight leather shorts (the gamuza), rigged | every player; gear in code |
 | judge_cap | older man, blue shirt, cotton trousers, rigged | both judges (one with a code-built straw hat) |
 | fan_ranchero, fan_blouse, fan_elder, fan_tshirt, fan_rebozo, fan_boy, fan_young_woman, fan_guayabera | townspeople, standing | the crowd's sheet |
+| fan_huipil, fan_texana, fan_cane, fan_girl, fan_mother, fan_jersey, fan_yucatec, fan_apron (0.4.0) | more townspeople | the 32-figure sheet on Medium and High |
+| court_ring (0.4.0) | the carved stone ring, fitted to the court's ring by tools/meshy/fit_ring.gd | the stone court on Medium and High |
+| court_stela (0.4.0) | a stela; it came back like a classical column | not used |
 
 The raw downloads stay out of the repo (`assets/meshy/.gitignore`); the manifest keeps the task ids, so the script
 fetches them again without spending credits.

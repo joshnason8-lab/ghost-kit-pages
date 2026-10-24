@@ -129,6 +129,102 @@
    "pose": "",
    "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican man in his fifties in a white guayabera shirt, beige trousers, a straw fedora hat and dark shoes. Neutral face, mouth closed.",
    "texture_prompt": "Photorealistic skin, face and hair; a Mexican man in his fifties in a white guayabera shirt, beige trousers, a straw fedora hat and dark shoes; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_huipil",
+   "kind": "crowd",
+   "height_m": 1.5,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic an older Maya woman from Yucat\u00e1n in a white cotton huipil dress with a band of bright embroidered flowers at the neckline and hem, a dark shawl folded over one shoulder, grey hair in a bun, sandals. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; an older Maya woman from Yucat\u00e1n in a white cotton huipil dress with a band of bright embroidered flowers at the neckline and hem, a dark shawl folded over one shoulder, grey hair in a bun, sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_texana",
+   "kind": "crowd",
+   "height_m": 1.73,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican man from Sinaloa in his forties in a cream felt cowboy hat, a red and blue plaid long-sleeve shirt, dark jeans with a large belt buckle and brown leather boots. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Mexican man from Sinaloa in his forties in a cream felt cowboy hat, a red and blue plaid long-sleeve shirt, dark jeans with a large belt buckle and brown leather boots; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_cane",
+   "kind": "crowd",
+   "height_m": 1.62,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic an elderly Mexican man with a white moustache, a palm straw hat, a white long-sleeve shirt, grey trousers and sandals, holding a wooden walking cane in his right hand. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; an elderly Mexican man with a white moustache, a palm straw hat, a white long-sleeve shirt, grey trousers and sandals, holding a wooden walking cane in his right hand; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_girl",
+   "kind": "crowd",
+   "height_m": 1.25,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican girl about eight years old with black hair in two braids, a pink cotton dress and white sandals. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Mexican girl about eight years old with black hair in two braids, a pink cotton dress and white sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_mother",
+   "kind": "crowd",
+   "height_m": 1.58,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican woman in her twenties carrying a sleeping baby wrapped in a blue striped rebozo on her chest, a plain grey blouse, a long black skirt and sandals. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Mexican woman in her twenties carrying a sleeping baby wrapped in a blue striped rebozo on her chest, a plain grey blouse, a long black skirt and sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_jersey",
+   "kind": "crowd",
+   "height_m": 1.72,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a young Mexican man with short black hair in a plain green football shirt with no logos and no numbers, black shorts and white sneakers. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; a young Mexican man with short black hair in a plain green football shirt with no logos and no numbers, black shorts and white sneakers; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_yucatec",
+   "kind": "crowd",
+   "height_m": 1.6,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Maya man from Yucat\u00e1n in his sixties dressed all in white cotton, a white long-sleeve shirt and white trousers, a palm straw hat, a red cotton sash at the waist and sandals. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Maya man from Yucat\u00e1n in his sixties dressed all in white cotton, a white long-sleeve shirt and white trousers, a palm straw hat, a red cotton sash at the waist and sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_apron",
+   "kind": "crowd",
+   "height_m": 1.55,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican woman in her fifties in a flowered cotton dress with a checked apron over it, short dark hair, flat shoes. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Mexican woman in her fifties in a flowered cotton dress with a checked apron over it, short dark hair, flat shoes; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "court_ring",
+   "kind": "gear",
+   "faces": 3000,
+   "topology": "triangle",
+   "prompt": "A Postclassic Maya ballcourt stone ring, carved limestone, a thick flat disc with a round hole through its centre, shallow relief of two intertwined feathered serpents around the face, weathered pale limestone with grey lichen, realistic photogrammetry style, isolated object, no base, no tenon",
+   "texture_prompt": "Weathered pale limestone with grey lichen and dark weathering in the carved grooves, realistic, matte, even lighting, no baked shadows."
+  },
+  {
+   "name": "court_stela",
+   "kind": "gear",
+   "faces": 2500,
+   "topology": "triangle",
+   "prompt": "A Maya limestone stela, a tall carved upright slab with a standing ruler figure in low relief on the front and columns of square glyph blocks on its sides, weathered and slightly broken at the top edge, standing on the ground, realistic museum quality photogrammetry, isolated object",
+   "texture_prompt": "Weathered pale grey limestone with lichen and dark weathering in the carved relief, realistic, matte, even lighting, no baked shadows."
   }
  ]
 }

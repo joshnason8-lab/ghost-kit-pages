@@ -203,5 +203,105 @@
   "credits": {
    "model": 20
   }
+ },
+ "fan_huipil": {
+  "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic an older Maya woman from Yucat\u00e1n in a white cotton huipil dress with a band of bright embroidered flowers at the neckline and hem, a dark shawl folded over one shoulder, grey hair in a bun, sandals. Neutral face, mouth closed. No logos, no text.",
+  "preview_id": "01a16c78-b7a3-72c3-b57b-dc8328c3f266",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c7a-02dc-752c-a51d-3bc170247e7a",
+  "textured": "fan_huipil.glb"
+ },
+ "fan_texana": {
+  "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican man from Sinaloa in his forties in a cream felt cowboy hat, a red and blue plaid long-sleeve shirt, dark jeans with a large belt buckle and brown leather boots. Neutral face, mouth closed. No logos, no text.",
+  "preview_id": "01a16c78-c1bc-73c6-b288-cbd85e5d4ef2",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c79-eb70-73f4-a0d8-236954a75531",
+  "textured": "fan_texana.glb"
+ },
+ "fan_cane": {
+  "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic an elderly Mexican man with a white moustache, a palm straw hat, a white long-sleeve shirt, grey trousers and sandals, holding a wooden walking cane in his right hand. Neutral face, mouth closed. No logos, no text.",
+  "preview_id": "01a16c78-cd88-77fb-99f7-e8b9fef124de",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c79-f747-7638-9e1a-dd55f7dedd99",
+  "textured": "fan_cane.glb"
+ },
+ "fan_girl": {
+  "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican girl about eight years old with black hair in two braids, a pink cotton dress and white sandals. Neutral face, mouth closed. No logos, no text.",
+  "preview_id": "01a16c78-e1a5-714d-887e-02fe7757c1a7",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c7c-4946-716b-be98-42cc89f36b2c",
+  "textured": "fan_girl.glb"
+ },
+ "fan_mother": {
+  "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican woman in her twenties carrying a sleeping baby wrapped in a blue striped rebozo on her chest, a plain grey blouse, a long black skirt and sandals. Neutral face, mouth closed. No logos, no text.",
+  "preview_id": "01a16c78-e63d-741f-8452-4380f3d1fbb3",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c7c-cf5a-7000-b26d-a8ec05c3f1e4",
+  "textured": "fan_mother.glb"
+ },
+ "fan_jersey": {
+  "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a young Mexican man with short black hair in a plain green football shirt with no logos and no numbers, black shorts and white sneakers. Neutral face, mouth closed. No logos, no text.",
+  "preview_id": "01a16c78-f0c4-7368-a1a3-e293b944e5e4",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c7d-1b75-75db-89f9-05f2ca5630c9",
+  "textured": "fan_jersey.glb"
+ },
+ "fan_yucatec": {
+  "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Maya man from Yucat\u00e1n in his sixties dressed all in white cotton, a white long-sleeve shirt and white trousers, a palm straw hat, a red cotton sash at the waist and sandals. Neutral face, mouth closed. No logos, no text.",
+  "preview_id": "01a16c78-fc3b-724e-b189-73b011548d86",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c7c-a4ae-740d-850f-41c8c06a4cb1",
+  "textured": "fan_yucatec.glb"
+ },
+ "fan_apron": {
+  "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican woman in her fifties in a flowered cotton dress with a checked apron over it, short dark hair, flat shoes. Neutral face, mouth closed. No logos, no text.",
+  "preview_id": "01a16c79-0811-72e0-8532-f29faf550681",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c7c-f2dc-74c4-a7ec-37694c67d73b",
+  "textured": "fan_apron.glb"
+ },
+ "court_ring": {
+  "prompt": "A Postclassic Maya ballcourt stone ring, carved limestone, a thick flat disc with a round hole through its centre, shallow relief of two intertwined feathered serpents around the face, weathered pale limestone with grey lichen, realistic photogrammetry style, isolated object, no base, no tenon",
+  "preview_id": "01a16c7c-c5a2-7684-9fc6-cca4d548c690",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c7e-2ee4-72f7-b835-5b110f2f94fd",
+  "textured": "court_ring.glb"
+ },
+ "court_stela": {
+  "prompt": "A Maya limestone stela, a tall carved upright slab with a standing ruler figure in low relief on the front and columns of square glyph blocks on its sides, weathered and slightly broken at the top edge, standing on the ground, realistic museum quality photogrammetry, isolated object",
+  "preview_id": "01a16c7c-d164-717b-b4e3-7dd7cefc1cfd",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a16c7e-3b80-745f-8c4c-7112045e198e",
+  "textured": "court_stela.glb"
  }
 }

@@ -37,6 +37,17 @@ Only CC0 and CC-BY sources are used (kenney.nl and opengameart.org).
 | `bird_4.ogg` | a bird in the forest round the stone court | Forest Birds 5.wav | pauliuw | CC0 1.0 | https://opengameart.org/content/forest-bird-sounds |
 | `bird_5.ogg` | a bird in the forest round the stone court | Forest Birds 7.wav | pauliuw | CC0 1.0 | https://opengameart.org/content/forest-bird-sounds |
 | `bird_6.ogg` | a bird in the forest round the stone court | Forest Birds 4.wav | pauliuw | CC0 1.0 | https://opengameart.org/content/forest-bird-sounds |
+| `amb_village_hq.ogg` | the village at dusk (Medium, High) | AMB_Nature Pack Vol 1_Weather_Summer Evening.mp3 | JC Sounds | CC-BY 4.0 | https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1 |
+| `amb_forest_hq.ogg` | the forest round the stone court by day (Medium, High) | AMB_Nature Pack Vol 1_Forest Enviroments_Rainforest Canopy.mp3 | JC Sounds | CC-BY 4.0 | https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1 |
+| `amb_night_hq.ogg` | the forest at night round the torch-lit court (Medium, High) | AMB_Nature Pack Vol 1_Forest Enviroments_Forest Night.mp3 | JC Sounds | CC-BY 4.0 | https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1 |
+| `amb_torch_hq.ogg` | the torches' flames (Medium, High) | AMB_Nature Pack Vol 1_ Fire & Elemental_Torch Flame.mp3 | JC Sounds | CC-BY 4.0 | https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1 |
+| `crowd_loop_hq.ogg` | the crowd round the court, longer, with its chatter (Medium, High) | Gregor Quendel - Crowd Cheering Sounds - 07 - Soft cheering and chatter.mp3 | Gregor Quendel | CC-BY 4.0 | https://opengameart.org/content/free-crowd-cheering-sounds |
+| `crowd_cheer_2.ogg` | the crowd going up, another (Medium, High) | Gregor Quendel - Crowd Cheering Sounds - 03 - Strong cheering - I.mp3 | Gregor Quendel | CC-BY 4.0 | https://opengameart.org/content/free-crowd-cheering-sounds |
+| `crowd_cheer_3.ogg` | the crowd going up and clapping in time (Medium, High) | Gregor Quendel - Crowd Cheering Sounds - 01 - Strong cheering and strong rhythmic cheering.mp3 | Gregor Quendel | CC-BY 4.0 | https://opengameart.org/content/free-crowd-cheering-sounds |
+| `applause_2.ogg` | applause, another (Medium, High) | Gregor Quendel - Crowd Cheering Sounds - 06 - Soft cheering - II.mp3 | Gregor Quendel | CC-BY 4.0 | https://opengameart.org/content/free-crowd-cheering-sounds |
+
+Medium and High hear the long stereo beds and the extra cheers and applause (`Sfx.AMBIENCE_HQ`, `Sfx.react`); Low keeps
+the short mono beds and the one cheer, exactly as in 0.3.0.
 
 ## Made for the game
 

@@ -129,6 +129,9 @@ func _ready() -> void:
 	if not attract:
 		Sfx.crowd(0.35)
 		Sfx.ambience(venue.id if venue else "")
+	if Crowd.needs_bake():
+		# The graphics level changed since the crowd's sheet was made: made again for this one (a few frames).
+		Crowd.bake(self)
 	phase = P.INTRO
 	phase_t = 0.0
 

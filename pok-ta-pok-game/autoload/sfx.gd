@@ -19,6 +19,15 @@ const AMBIENCE := {
 	"stone": ["amb_crickets", -30.0, "", 0.0, "bird", Vector2(3.0, 9.0), -18.0],
 	"night": ["amb_crickets", -18.0, "amb_fire", -20.0, "", Vector2.ZERO, 0.0],
 }
+## Medium and High: long stereo recordings of the same places (Low keeps the short beds above).
+const AMBIENCE_HQ := {
+	"village": ["amb_village_hq", -17.0, "", 0.0, "dog_bark", Vector2(30.0, 70.0), -24.0],
+	"festival": ["", 0.0, "", 0.0, "dog_bark", Vector2(40.0, 90.0), -26.0],
+	"stone": ["amb_forest_hq", -17.0, "", 0.0, "bird", Vector2(8.0, 18.0), -20.0],
+	"night": ["amb_night_hq", -17.0, "amb_torch_hq", -19.0, "", Vector2.ZERO, 0.0],
+}
+const HQ_SOUNDS := ["amb_village_hq", "amb_forest_hq", "amb_night_hq", "amb_torch_hq", "crowd_loop_hq", "crowd_cheer_2", "crowd_cheer_3",
+	"applause_2"]
 const MUSIC_DB := -9.0
 
 var streams := {}
@@ -96,7 +105,7 @@ func _ensure() -> void:
 
 func _process(delta: float) -> void:
 	if _amb_kind != "" and not _paused:
-		var a: Array = AMBIENCE[_amb_kind]
+		var a: Array = _amb_table()[_amb_kind]
 		if String(a[4]) != "":
 			_amb_next -= delta
 			if _amb_next <= 0.0:
@@ -145,7 +154,7 @@ func ambience(kind: String) -> void:
 		p.stop()
 	if _amb_kind == "":
 		return
-	var a: Array = AMBIENCE[_amb_kind]
+	var a: Array = _amb_table()[_amb_kind]
 	for i in 2:
 		var k := String(a[i * 2])
 		if k != "" and streams.has(k):
@@ -153,6 +162,15 @@ func ambience(kind: String) -> void:
 			_amb[i].volume_db = float(a[i * 2 + 1])
 			_amb[i].play()
 	_amb_next = randf_range(2.0, 6.0)
+
+
+## Medium and High hear the long recordings, when they are in the build.
+func hq() -> bool:
+	return int(Game.settings.graphics) >= Game.GFX_MEDIUM and streams.has("amb_forest_hq")
+
+
+func _amb_table() -> Dictionary:
+	return AMBIENCE_HQ if hq() else AMBIENCE
 
 
 ## Everything held still (the match paused): the beds, the crowd, the sounds in flight; nothing new plays.
@@ -178,7 +196,14 @@ func voice(kind: String, volume_db := -10.0, pitch := 1.0) -> void:
 
 ## The crowd reacting: "cheer", "ooh", "groan" or "applause".
 func react(kind: String, volume_db := -6.0) -> void:
-	play("crowd_" + kind if kind != "applause" else kind, volume_db, randf_range(0.96, 1.04))
+	var k := "crowd_" + kind if kind != "applause" else kind
+	if hq():
+		# More than one cheer and applause on Medium and High, so a match's big moments do not all sound alike.
+		if kind == "cheer":
+			k = ["crowd_cheer", "crowd_cheer_2", "crowd_cheer_3"][randi() % 3]
+		elif kind == "applause":
+			k = ["applause", "applause_2"][randi() % 2]
+	play(k, volume_db, randf_range(0.96, 1.04))
 
 
 func click() -> void:
@@ -192,6 +217,10 @@ func crowd(intensity: float) -> void:
 		_crowd.stop()
 		return
 	_crowd_target = lerpf(-26.0, -6.0, clampf(intensity, 0.0, 1.0))
+	var bed: AudioStream = streams.get("crowd_loop_hq" if hq() and streams.has("crowd_loop_hq") else "crowd_loop")
+	if _crowd.stream != bed:
+		_crowd.stop()
+		_crowd.stream = bed
 	if not _crowd.playing:
 		_crowd.volume_db = -40.0
 		_crowd.play()
@@ -231,7 +260,7 @@ func _plan() -> void:
 		["crowd_loop", _crowd_loop],
 	]
 	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music", "ui_select", "amb_crickets", "amb_fire",
-			"dog_bark"]:
+			"dog_bark"] + HQ_SOUNDS:
 		_todo.append([k, null])
 	for kind in VARIANTS:
 		for i in int(VARIANTS[kind]):
@@ -244,7 +273,8 @@ func _plan() -> void:
 
 func _finish() -> void:
 	_built = true
-	for k in ["crowd_loop", "menu_music", "amb_crickets", "amb_fire"]:
+	for k in ["crowd_loop", "menu_music", "amb_crickets", "amb_fire", "amb_village_hq", "amb_forest_hq", "amb_night_hq", "amb_torch_hq",
+			"crowd_loop_hq"]:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
 	_crowd.stream = streams.get("crowd_loop")

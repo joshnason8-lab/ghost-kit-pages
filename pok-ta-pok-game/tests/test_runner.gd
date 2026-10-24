@@ -37,6 +37,7 @@ func _ready() -> void:
 	await _crowd_faces()
 	await _mocap()
 	_sounds()
+	_levels()
 	await _ring_replay()
 	await _match_and_motion("village", "ulama")
 	await _match_and_motion("stone", "classic")
@@ -470,6 +471,37 @@ func _crowd_faces() -> void:
 	Game.settings.graphics = keep
 
 
+# ---------------------------------------------------------------- graphics levels
+
+## Low loads exactly what it always has (the 512 surfaces, the 1024 bodies, the 2K skies, sixteen figures in the crowd,
+## the short beds); Medium and High load their sharper files, and every one of those is in the build.
+func _levels() -> void:
+	var keep := int(Game.settings.graphics)
+	var want := {Game.GFX_LOW: "_512.jpg", Game.GFX_MEDIUM: "_1k.jpg", Game.GFX_HIGH: "_2k.jpg"}
+	for g in want:
+		Game.settings.graphics = g
+		for n in ["dry_ground_01", "brown_mud_dry", "plastered_wall", "sandstone_blocks", "broken_wall", "sparse_grass"]:
+			var m := Geo.surface(n)
+			check(m.albedo_texture != null and m.albedo_texture.resource_path.ends_with(n + "_albedo" + String(want[g])),
+				"Levels: %s at graphics %d is the %s map (%s)" % [n, g, want[g], m.albedo_texture.resource_path if m.albedo_texture else "none"])
+	Game.settings.graphics = Game.GFX_LOW
+	check(not Crowd.hq_sheet() and not Sfx.hq(), "Levels: Low keeps its sixteen-figure crowd and its short beds")
+	Game.settings.graphics = Game.GFX_HIGH
+	check(Crowd.hq_sheet() and Sfx.hq(), "Levels: High has the 32-figure crowd and the long stereo beds")
+	var missing := []
+	for f in ["res://assets/people/court_ring.res", "res://assets/people/court_ring.jpg"]:
+		if not ResourceLoader.exists(f):
+			missing.append(f)
+	for b in RiggedBody.BODIES:
+		if not ResourceLoader.exists("res://assets/people/%s_2k.jpg" % b[0]):
+			missing.append(b[0] + "_2k")
+	for sky in ["qwantani_dusk_2_puresky", "kloofendal_48d_partly_cloudy_puresky", "kloppenheim_02_puresky", "qwantani_noon_puresky"]:
+		if not ResourceLoader.exists("res://assets/env/sky/%s_sky_4k.jpg" % sky):
+			missing.append(sky + "_4k")
+	check(missing.is_empty(), "Levels: the Medium and High files are all in the build (missing %s)" % [missing])
+	Game.settings.graphics = keep
+
+
 # ---------------------------------------------------------------- sound
 
 ## Every recorded sound the game names is in the build and loads (docs/SOUNDS.md lists them), every court's
@@ -477,7 +509,7 @@ func _crowd_faces() -> void:
 func _sounds() -> void:
 	Sfx._ensure()
 	var names: Array = ["click", "ui_select", "crowd_loop", "crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music",
-		"amb_crickets", "amb_fire", "dog_bark"]
+		"amb_crickets", "amb_fire", "dog_bark"] + Sfx.HQ_SOUNDS
 	for kind in Sfx.VARIANTS:
 		for i in int(Sfx.VARIANTS[kind]):
 			names.append("%s_%d" % [kind, i + 1])
@@ -491,8 +523,7 @@ func _sounds() -> void:
 			missing.append(n)
 	check(missing.is_empty(), "Sound: every recorded sound is in the build and loads (%d; missing %s)" % [names.size(), missing])
 	var amb_ok := true
-	for k in Sfx.AMBIENCE:
-		var a: Array = Sfx.AMBIENCE[k]
+	for a: Array in Sfx.AMBIENCE.values() + Sfx.AMBIENCE_HQ.values():
 		for i in [0, 2, 4]:
 			var n := String(a[i])
 			if n != "" and not Sfx.streams.has(n) and not Sfx.VARIANTS.has(n):

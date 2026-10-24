@@ -88,6 +88,20 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   clicks, and each court's surroundings: crickets and a far dog in the village, birds in the Yucatán forest, crickets and
   the torches' fire at night. Pause holds every sound. Players grunt or breathe on half their strikes. Audio went from
   748 KB to 1.4 MB. A test checks every sound file loads and that nothing plays while paused.
+- **0.4.0, the size update** (the owner allowed the APK to grow for looks and sound; Low unchanged, tested):
+  - Medium and High load sharper surfaces: the six Poly Haven surfaces at 1K (Medium) and 2K (High), albedo and normal,
+    VRAM-compressed (ETC2 on phones) with mipmaps. Low keeps the 512 files.
+  - High's skies at 4K (Poly Haven, tone-matched to the 2K ones within 2/255); Low and Medium keep the 2K.
+  - The Meshy players' and judge's own 2048 textures on Medium and High (VRAM-compressed); Low keeps the 1024.
+  - Eight more Meshy townspeople (a Yucatec woman in a huipil, a Sinaloa man in a texana, an old man with a cane, a
+    girl, a mother with a baby in a rebozo, a young man in a plain football shirt, a Maya man in white with a red sash,
+    a woman in an apron): Medium and High bake a crowd sheet of 32 figures at 96 x 264 pixels each; Low
+    keeps sixteen at 64 x 176.
+  - The carved stone ring (Meshy), fitted to the ring's exact hole and size, on Medium and High.
+    The stela came back looking like a classical column, so it was not used.
+  - Long stereo recordings for each court's surroundings and a longer crowd bed with chatter on Medium and High (JC
+    Sounds, CC-BY 4.0; Gregor Quendel), and three cheers and two applause takes in turn.
+  - Meshy credits for this update: 440 (1,203 before, 763 after), for the eight townspeople, the ring and the stela.
 
 ## Next
 
