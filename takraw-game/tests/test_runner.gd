@@ -25,6 +25,7 @@ func _ready() -> void:
 	_ball_spins()
 	_sounds()
 	_graphics_auto()
+	_detail_by_level()
 	await _play_as_and_officials()
 	await _matches()
 	Game.settings = keep
@@ -235,8 +236,10 @@ func _crowd_facing() -> void:
 ## The spectators are whole people: seated ones' feet on the floor under their seats, standing ones' on the ground;
 ## the sheet has both, from the front and from behind.
 func _crowd_people() -> void:
-	var size := Crowd.sheet().get_size()
+	var size := Crowd.sheet(false).get_size()
 	check(size == Vector2(Crowd.FIG_W * Crowd.FIGS, Crowd.FIG_H * Crowd.ROWS), "the crowd sheet has its %d rows (%s)" % [Crowd.ROWS, size])
+	size = Crowd.sheet(true).get_size()
+	check(size == Vector2(Crowd.FIG_W_HI * Crowd.FIGS_HI, Crowd.FIG_H_HI * Crowd.ROWS), "the bigger crowd sheet has its %d figures (%s)" % [Crowd.FIGS_HI, size])
 	for v in ["beach", "national"]:
 		var a := Arena.new(v, false, [Color("ff8a1f")])
 		add_child(a)
@@ -304,6 +307,30 @@ func _ball_spins() -> void:
 	b.turn(0.1)
 	check(not before.is_equal_approx(b._mesh.global_transform.basis), "the ball turns as it flies")
 	b.queue_free()
+
+
+## Low loads what it always has (the surfaces at 512 px, the 2K skies, the players' 1024 px textures, the 16-figure
+## crowd); Medium and High their own bigger files (2K surfaces, 4K skies, 2048 px players, the 32-figure crowd).
+func _detail_by_level() -> void:
+	var keep: int = Game.settings.graphics
+	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		var low: bool = g == Game.GFX_LOW
+		var m := Scenery.surface("concrete_floor")
+		var tex: Texture2D = m.get_shader_parameter("albedo_tex")
+		check(tex.resource_path.ends_with("_1k.jpg" if low else "_2k.jpg") and tex.get_width() == (512 if low else 2048),
+			"graphics %d: the surfaces' %s (%d px)" % [g, tex.resource_path.get_file(), tex.get_width()])
+		var env := Environment.new()
+		Scenery.sky(env, "qwantani_noon_puresky")
+		var pano: Texture2D = (env.sky.sky_material as ShaderMaterial).get_shader_parameter("panorama")
+		check(pano.get_width() == (2048 if low else 4096), "graphics %d: the sky %d px wide" % [g, pano.get_width()])
+		var mat := RealBody.material_for({"jersey": Color(0.1, 0.2, 0.3)})
+		var skin: Texture2D = mat.get_shader_parameter("albedo_tex")
+		check(skin.get_width() == (1024 if low else 2048), "graphics %d: the players' texture %d px" % [g, skin.get_width()])
+		check(Crowd.hi() != low and Crowd.material().get_shader_parameter("figs") == float(Crowd.FIGS if low else Crowd.FIGS_HI),
+			"graphics %d: the crowd's sheet (%d figures)" % [g, Crowd.material().get_shader_parameter("figs")])
+	Game.settings.graphics = keep
+	Crowd.material()
 
 
 ## Graphics on Auto by default, and Auto never above what a slow match lowered it to.

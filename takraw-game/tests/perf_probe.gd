@@ -1,5 +1,6 @@
 extends Node
-## Draw calls, primitives and objects drawn per frame in a match, at each graphics level:
+## Draw calls, primitives and objects drawn per frame in a match, and the video memory in use (all of it, and the
+## textures'), at each graphics level:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn [-- venues [levels]]
 ## venues: comma-separated ids, or "all" (default: the Grand Dome, the biggest); levels: 0,1,2 (Low, Medium, High).
 
@@ -22,8 +23,10 @@ func _ready() -> void:
 			for i in 150:
 				await get_tree().process_frame
 			var rs := RenderingServer
-			print("%s graphics %d: %d draw calls, %d primitives, %d objects; scale %.2f" % [venue, g,
+			print("%s graphics %d: %d draw calls, %d primitives, %d objects; scale %.2f; video memory %.1f MB, textures %.1f MB" % [venue, g,
 				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
 				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
-				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME), get_viewport().scaling_3d_scale])
+				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME), get_viewport().scaling_3d_scale,
+				rs.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0,
+				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED) / 1048576.0])
 	get_tree().quit()

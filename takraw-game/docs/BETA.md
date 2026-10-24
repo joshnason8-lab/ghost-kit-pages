@@ -11,7 +11,14 @@ about 2019, the Galaxy A16 included).
 
 ## What to try
 
-New in 0.8.0: the sound of the game. The ball's knocks, its bounce on the court and on sand and into the net are
+New in 0.9.0: more detail on Medium and High (Low is exactly as it was). The ground and courts are photographed at
+2K (four times the pixels), the skies at 4K, the players' skin and kit at twice the resolution; the crowd has twice
+as many different people in it (more skin tones and builds, shorts of their own colours, new poses: elbows on knees,
+filming on a phone). The sound beds are longer (a minute of sea, birds or a market), and the crowd has more ways to
+cheer and applaud, and claps in time when the home side is a point from the set. The download is bigger (about
+130 MB). On a mid-range phone on Medium or High: is it still smooth, and does it look sharper close up?
+
+In 0.8.0: the sound of the game. The ball's knocks, its bounce on the court and on sand and into the net are
 recordings now, and come from where the ball is (left or right in the picture); the players' footsteps on the court
 (a trainer's squeak now and then) and on sand; a real crowd's murmur, cheer and applause, a groan when the home side
 gives a point away and an "ooh" for a ball on the line; the sea at the beach, birds at the temple, a summer evening at

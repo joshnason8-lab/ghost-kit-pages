@@ -4,20 +4,38 @@ extends Node
 ## from behind (what a camera behind a stand sees), then standing (arms at their sides, clapping, hands on hips, a fist
 ## or both arms up) from the front and from behind. The shirt is left white with its shading, and marked in the alpha
 ## (0.7: the shirt, 1: the rest), for Crowd's shader to dye.
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/models/crowd_sheet.tscn
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/models/crowd_sheet.tscn [-- hi]
+## hi: Medium's and High's bigger sheet (crowd_sheet_hi.png): 32 figures at 96 x 256 px, from the 2048 px textures;
+## six skin tones, heights from 1.55 to 1.88 m, shorts in their own colours (only the shirt is dyed), more poses
+## (elbows on the knees, hands in the lap, filming with a phone).
 
 const SCALE := 4   # rendered this much larger, then shrunk, for clean edges
+const SKINS := [Color("e0b48c"), Color("c98a5a"), Color("b07448"), Color("8d5a36")]
+const SKINS_HI := [Color("f1cfa8"), Color("e0b48c"), Color("c98a5a"), Color("b07448"), Color("8d5a36"), Color("6b432a")]
+const SHORTS_HI := [Color("1f2a44"), Color("1a1a1a"), Color("6b5a43"), Color("8a8f96"), Color("34507a"), Color("d8d8d8"),
+	Color("3b4a3a")]
+
+var _hi := false
+
 
 func _ready() -> void:
+	_hi = "hi" in OS.get_cmdline_user_args()
 	Game.settings.graphics = Game.GFX_HIGH
-	var w := Crowd.FIG_W * SCALE
-	var h := Crowd.FIG_H * SCALE
-	var sheet := Image.create_empty(Crowd.FIG_W * Crowd.FIGS, Crowd.FIG_H * Crowd.ROWS, false, Image.FORMAT_RGBA8)
-	var skins := [Color("e0b48c"), Color("c98a5a"), Color("b07448"), Color("8d5a36")]
-	for f in Crowd.FIGS:
+	RealBody.textures = 1 if _hi else 0
+	var figs := Crowd.FIGS_HI if _hi else Crowd.FIGS
+	var fw := Crowd.FIG_W_HI if _hi else Crowd.FIG_W
+	var fh := Crowd.FIG_H_HI if _hi else Crowd.FIG_H
+	var w := fw * SCALE
+	var h := fh * SCALE
+	var sheet := Image.create_empty(fw * figs, fh * Crowd.ROWS, false, Image.FORMAT_RGBA8)
+	for f in figs:
 		var women := f % 2 == 1
-		var look := {"women": women, "jersey": Color.WHITE, "shorts": Color("d8d8d8"), "skin": skins[(f / 2) % 4],
+		var look := {"women": women, "jersey": Color.WHITE, "shorts": Color("d8d8d8"), "skin": SKINS[(f / 2) % 4],
 			"height": 1.75 if not women else 1.65}
+		if _hi:
+			look.skin = SKINS_HI[(f / 2 + f / 12) % SKINS_HI.size()]
+			look.shorts = SHORTS_HI[(f * 3 + f / 7) % SHORTS_HI.size()]
+			look.height = (1.68 + 0.2 * float((f * 5) % 9) / 8.0) if not women else (1.55 + 0.15 * float((f * 7) % 9) / 8.0)
 		for row in Crowd.ROWS:
 			var behind := row % 2 == 1
 			var pose := _seated(f) if row < 2 else _standing(f)
@@ -31,10 +49,10 @@ func _ready() -> void:
 						continue
 					var shirt := mask.get_pixel(x, y).r > 0.5
 					out.set_pixel(x, y, Color(c.r, c.g, c.b, 0.7 if shirt else 1.0))
-			out.resize(Crowd.FIG_W, Crowd.FIG_H, Image.INTERPOLATE_LANCZOS)
-			sheet.blit_rect(out, Rect2i(0, 0, Crowd.FIG_W, Crowd.FIG_H), Vector2i(f * Crowd.FIG_W, row * Crowd.FIG_H))
-	sheet.save_png(ProjectSettings.globalize_path(Crowd.SHEET))
-	print("crowd sheet: %d figures, %d rows" % [Crowd.FIGS, Crowd.ROWS])
+			out.resize(fw, fh, Image.INTERPOLATE_LANCZOS)
+			sheet.blit_rect(out, Rect2i(0, 0, fw, fh), Vector2i(f * fw, row * fh))
+	sheet.save_png(ProjectSettings.globalize_path(Crowd.SHEET_HI if _hi else Crowd.SHEET))
+	print("crowd sheet: %d figures, %d rows%s" % [figs, Crowd.ROWS, " (hi)" if _hi else ""])
 	get_tree().quit()
 
 
@@ -47,6 +65,22 @@ func _seated(f: int) -> Dictionary:
 			pose.upperarm_r = Vector3(-55, 0, -2)
 			pose.forearm_l = Vector3(-62, 0, 0)
 			pose.forearm_r = Vector3(-62, 0, 0)
+	if _hi:
+		match f % 8:
+			3:   # elbows on the knees, leaning in
+				pose.spine = Vector3(24, 0, 0)
+				pose.upperarm_l = Vector3(-62, 0, 6)
+				pose.upperarm_r = Vector3(-62, 0, -6)
+				pose.forearm_l = Vector3(-75, 0, 0)
+				pose.forearm_r = Vector3(-75, 0, 0)
+			5:   # hands in the lap
+				pose.upperarm_l = Vector3(-18, 0, -2)
+				pose.upperarm_r = Vector3(-18, 0, 2)
+				pose.forearm_l = Vector3(-72, 0, 0)
+				pose.forearm_r = Vector3(-72, 0, 0)
+			7:   # filming with a phone
+				pose.upperarm_r = Vector3(-75, 0, -8)
+				pose.forearm_r = Vector3(-95, 0, 0)
 	if f % 7 == 3:   # a hand up
 		pose.upperarm_r = Vector3(-165, 0, -12)
 		pose.forearm_r = Vector3(-15, 0, 0)
@@ -71,6 +105,9 @@ func _standing(f: int) -> Dictionary:
 		4:   # a fist up
 			pose.upperarm_r = Vector3(-160, 0, -14)
 			pose.forearm_r = Vector3(-35, 0, 0)
+	if _hi and f % 9 == 6:   # filming with a phone
+		pose.upperarm_r = Vector3(-80, 0, -10)
+		pose.forearm_r = Vector3(-90, 0, 0)
 	if f % 7 == 5:   # both arms up
 		pose.upperarm_l = Vector3(-165, 0, 16)
 		pose.upperarm_r = Vector3(-165, 0, -16)
@@ -115,11 +152,13 @@ func _shot(look: Dictionary, pose: Dictionary, w: int, h: int, mask: bool, behin
 shader_type spatial;
 render_mode unshaded;
 uniform sampler2D kit_tex : filter_linear_mipmap;
-void fragment() { vec3 k = texture(kit_tex, UV).rgb; ALBEDO = vec3(step(0.5, k.r + k.g)); }
+uniform float panels = 1.0;
+void fragment() { vec3 k = texture(kit_tex, UV).rgb; ALBEDO = vec3(step(0.5, k.r + k.g * panels)); }
 """
 		var m := ShaderMaterial.new()
 		m.shader = sh
-		m.set_shader_parameter("kit_tex", load(RealBody.KITS[bool(look.women)]))
+		m.set_shader_parameter("kit_tex", load((RealBody.KITS_HI if _hi else RealBody.KITS)[bool(look.women)]))
+		m.set_shader_parameter("panels", 0.0 if _hi else 1.0)   # (hi: the shorts and panels keep their own colour)
 		b.mesh_instance.material_override = m
 	var cam := Camera3D.new()
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL

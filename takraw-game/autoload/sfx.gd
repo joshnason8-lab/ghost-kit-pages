@@ -13,10 +13,11 @@ const RATE := 22050
 const VOICES := {"grunt": 3, "hup": 2}
 const MUSIC_DB := -9.0
 ## Sounds recorded in more than one take: <name>, <name>_2 ... one picked at random each time.
-const VARIANTS := {"kick": 3, "knee": 2, "bounce": 2, "step_court": 3, "step_sand": 3}
+const VARIANTS := {"kick": 3, "knee": 2, "bounce": 2, "step_court": 3, "step_sand": 3, "crowd_cheer": 3, "applause": 3}
 ## Every recorded sound the game plays (assets/audio/<name>.ogg).
 const FILES := ["kick", "kick_2", "kick_3", "knee", "knee_2", "spike", "block", "bounce", "bounce_2", "bounce_sand", "net",
-	"crowd_loop", "crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "amb_beach", "amb_temple", "amb_park",
+	"crowd_loop", "crowd_cheer", "crowd_cheer_2", "crowd_cheer_3", "crowd_rhythm", "crowd_ooh", "crowd_groan", "applause",
+	"applause_2", "applause_3", "clap", "amb_beach", "amb_temple", "amb_park",
 	"amb_chatter", "step_court", "step_court_2", "step_court_3", "step_sand", "step_sand_2", "step_sand_3", "click",
 	"menu_music", "drums_loop", "grunt_1", "grunt_2", "grunt_3", "hup_1", "hup_2"]
 const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_beach", "amb_temple", "amb_park", "amb_chatter"]
@@ -210,7 +211,7 @@ func voice(kind: String, volume_db := -10.0, pitch := 1.0) -> void:
 		play("%s_%d" % [kind, 1 + randi() % n], volume_db, pitch * randf_range(0.95, 1.05))
 
 
-## The crowd reacting: "cheer", "ooh", "groan" or "applause".
+## The crowd reacting: "cheer", "ooh", "groan", "applause" or "rhythm" (clapping in time).
 func react(kind: String, volume_db := -6.0) -> void:
 	play("crowd_" + kind if kind != "applause" else kind, volume_db, randf_range(0.96, 1.04))
 

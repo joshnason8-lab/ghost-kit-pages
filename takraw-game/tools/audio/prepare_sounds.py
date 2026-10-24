@@ -49,14 +49,20 @@ SOUNDS = {
     # Into the net: a soft thud and the mesh's rustle.
     "net": ("soft", 22050, [(KI + "impactSoft_medium_001.ogg", 0, 0), ("kenney-rpg-audio/extracted/Audio/cloth1.ogg", -3, 0)], 0, 0.5, 0.0, 0.2, 0),
     # The crowd: its murmur (the bed, louder as a rally builds), a cheer, applause.
-    "crowd_loop": ("bed", 32000, [(GQ + "10 - Ambience.mp3", 0, 0)], 3.0, 24.0, 0.0, 0.0, 1.5),
+    "crowd_loop": ("bed", 32000, [(GQ + "10 - Ambience.mp3", 0, 0)], 2.0, 30.0, 0.0, 0.0, 1.5),
     "crowd_cheer": ("react", 32000, [(GQ + "03 - Strong cheering - I.mp3", 0, 0)], 0.0, 3.6, 0.05, 1.2, 0),
+    "crowd_cheer_2": ("react", 32000, [(GQ + "04 - Strong cheering - II - Short.mp3", 0, 0)], 0.0, 3.8, 0.05, 1.2, 0),
+    "crowd_cheer_3": ("react", 32000, [(GQ + "02 - Strong cheering and soft rhythmic cheering.mp3", 0, 0)], 0.0, 4.0, 0.05, 1.4, 0),
+    # The crowd clapping in time at a set point or match point.
+    "crowd_rhythm": ("react", 32000, [(GQ + "08 - Rhythmic cheering.mp3", 0, 0)], 0.0, 7.0, 0.3, 1.5, 0),
     "applause": ("react", 32000, [("oga-applause-in-a-large-hall-or-church/applause-clapping-church-crowd-immersive.wav", 0, 0)], 4.0, 4.0, 0.3, 1.5, 0),
+    "applause_2": ("react", 32000, [("oga-applause-in-a-large-hall-or-church/applause-clapping-church-crowd-immersive.wav", 0, 0)], 18.0, 4.0, 0.3, 1.5, 0),
+    "applause_3": ("react", 32000, [("oga-applause/applause.wav", 0, 0)], 0.5, 4.0, 0.2, 1.5, 0),
     # Each outdoor venue's own sound, and the chatter of a mall or a market.
-    "amb_beach": ("amb", 32000, [(JC + "Water Enviroments/AMB_Nature Pack Vol 1_Water Enviroments_Ocean Waves.mp3", 0, 0)], 5.0, 28.0, 0.0, 0.0, 2.0),
-    "amb_temple": ("amb", 32000, [(JC + "Forest Enviroments/AMB_Nature Pack Vol 1_Forest Enviroments_Rainforest Canopy.mp3", 0, 0)], 5.0, 28.0, 0.0, 0.0, 2.0),
-    "amb_park": ("amb", 32000, [(JC + "Weather/AMB_Nature Pack Vol 1_Weather_Summer Evening.mp3", 0, 0)], 40.0, 28.0, 0.0, 0.0, 2.0),
-    "amb_chatter": ("amb", 32000, [("oga-free-general-ambience-sounds/crowd_-_mall_ambience.mp3", 0, 0)], 5.0, 28.0, 0.0, 0.0, 2.0),
+    "amb_beach": ("amb", 32000, [(JC + "Water Enviroments/AMB_Nature Pack Vol 1_Water Enviroments_Ocean Waves.mp3", 0, 0)], 4.0, 60.0, 0.0, 0.0, 2.5),
+    "amb_temple": ("amb", 32000, [(JC + "Forest Enviroments/AMB_Nature Pack Vol 1_Forest Enviroments_Rainforest Canopy.mp3", 0, 0)], 12.0, 60.0, 0.0, 0.0, 2.5),
+    "amb_park": ("amb", 32000, [(JC + "Weather/AMB_Nature Pack Vol 1_Weather_Summer Evening.mp3", 0, 0)], 38.5, 36.0, 0.0, 0.0, 2.5),
+    "amb_chatter": ("amb", 32000, [("oga-free-general-ambience-sounds/crowd_-_mall_ambience.mp3", 0, 0)], 3.0, 52.0, 0.0, 0.0, 2.5),
     # Footsteps: trainers on a court (a squeak in some), bare feet on sand.
     "step_court": ("step", 22050, [(FT + "0.ogg", 0, 0)], 0, None, 0.0, 0.03, 0),
     "step_court_2": ("step", 22050, [(FT + "3.ogg", 0, 0)], 0, None, 0.0, 0.03, 0),

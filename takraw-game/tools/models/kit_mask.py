@@ -1,6 +1,9 @@
 """Splits a player model's colour texture into what a team's colours repaint.
 
-    python3 tools/models/kit_mask.py COLOUR.png OUT_COLOUR.jpg OUT_MASK.png
+    python3 tools/models/kit_mask.py COLOUR.png OUT_COLOUR.jpg OUT_MASK.png [SIZE MASK_SIZE]
+
+(The game's: SIZE 1024 and MASK_SIZE 512 for Low, man.jpg and man_kit.png; 2048 and 1024 for Medium and High,
+man_2k.jpg and man_kit_1k.png, from the model's own 4096 px texture.)
 
 The models come in a light blue shirt with navy panels and navy shorts. The mask says, for each texel, how much of it
 is the shirt's light blue (red), the navy (green) and skin (blue); the game's player shader paints those in the team's
@@ -20,7 +23,10 @@ def smooth(x, lo, hi):
     return t * t * (3 - 2 * t)
 
 
-def main(src, out_colour, out_mask):
+def main(src, out_colour, out_mask, size=None, mask_size=None):
+    global SIZE, MASK
+    SIZE = int(size) if size else SIZE
+    MASK = int(mask_size) if mask_size else MASK
     im = Image.open(src).convert("RGB")
     if im.size != (SIZE, SIZE):
         im = im.resize((SIZE, SIZE), Image.LANCZOS)
@@ -42,4 +48,4 @@ def main(src, out_colour, out_mask):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:4])
+    main(*sys.argv[1:6])

@@ -15,9 +15,16 @@ const FIG_H_M := 2.2
 const ROWS := 4          # the sheet's rows: seated from the front, seated from behind, standing from the front, behind
 const SEAT := 0.45       # a seat's height: a seated spectator's feet are this far under their spot
 const SHEET := "res://assets/models/crowd_sheet.png"
+## On Medium and High a bigger sheet: twice the figures (more skin tones and heights, shorts of their own colours,
+## more poses), a third more pixels each; compressed for the GPU. The figures' size in metres is the same.
+const FIGS_HI := 32
+const FIG_W_HI := 96
+const FIG_H_HI := 256
+const SHEET_HI := "res://assets/models/crowd_sheet_hi.png"
 
-static var _sheet: Texture2D
+static var _sheets := {}          # hi (bool) -> the sheet
 static var _mat: ShaderMaterial
+static var _mat_hi := false
 
 var spots: Array[Vector3] = []   # where people sit (the seat) or stand
 var placed: Array[Transform3D] = []   # each one's place (their feet) and the way they face (as the MultiMesh has them)
@@ -25,15 +32,25 @@ static var _excite := 0.0         # how excited the crowd is: what it is going t
 static var _shown := 0.0
 
 
-## The sheet: people from the players' models, seated and standing, rendered by tools/models/crowd_sheet.tscn.
-static func sheet() -> Texture2D:
-	if _sheet == null:
-		_sheet = load(SHEET)
-	return _sheet
+## The sheet: people from the players' models, seated and standing, rendered by tools/models/crowd_sheet.tscn (the
+## bigger one with -- hi).
+static func sheet(big := hi()) -> Texture2D:
+	if not _sheets.has(big):
+		_sheets[big] = load(SHEET_HI if big else SHEET)
+	return _sheets[big]
+
+
+## Whether this graphics level has the bigger sheet (Medium and High).
+static func hi() -> bool:
+	return int(Game.settings.graphics) >= Game.GFX_MEDIUM and ResourceLoader.exists(SHEET_HI)
 
 
 static func material() -> ShaderMaterial:
 	if _mat:
+		if _mat_hi != hi():
+			_mat_hi = hi()
+			_mat.set_shader_parameter("sheet", sheet())
+			_mat.set_shader_parameter("figs", float(FIGS_HI if _mat_hi else FIGS))
 		return _mat
 	var sh := Shader.new()
 	sh.code = """
@@ -78,8 +95,9 @@ void fragment() {
 """
 	_mat = ShaderMaterial.new()
 	_mat.shader = sh
+	_mat_hi = hi()
 	_mat.set_shader_parameter("sheet", sheet())
-	_mat.set_shader_parameter("figs", float(FIGS))
+	_mat.set_shader_parameter("figs", float(FIGS_HI if _mat_hi else FIGS))
 	return _mat
 
 

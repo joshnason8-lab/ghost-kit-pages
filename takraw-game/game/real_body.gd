@@ -55,6 +55,12 @@ const SOLE_DOWN := 0.13
 const MODELS := {false: "res://assets/models/man.glb", true: "res://assets/models/woman.glb"}
 const SKINS := {false: "res://assets/models/man.jpg", true: "res://assets/models/woman.jpg"}
 const KITS := {false: "res://assets/models/man_kit.png", true: "res://assets/models/woman_kit.png"}
+## On Medium and High: the models' own textures at 2048 px (and the kit's masks at 1024), compressed for the GPU.
+const SKINS_HI := {false: "res://assets/models/man_2k.jpg", true: "res://assets/models/woman_2k.jpg"}
+const KITS_HI := {false: "res://assets/models/man_kit_1k.png", true: "res://assets/models/woman_kit_1k.png"}
+## Which textures: by the graphics level (-1), or the 1024 px ones (0) or the 2048 (1) whatever it is (the crowd
+## sheet's tool, rendering each sheet from the textures its level's players wear).
+static var textures := -1
 ## The models' own colours, that the kit and skin are painted over (sRGB): the shirt, the panels and shorts, skin.
 const MODEL_SHIRT := Color("7cc4dd")
 const MODEL_NAVY := Color("123a7a")
@@ -115,7 +121,8 @@ static func material_for(l: Dictionary) -> ShaderMaterial:
 	var jersey: Color = l.get("jersey", MODEL_SHIRT)
 	var shorts: Color = l.get("shorts", MODEL_NAVY)
 	var skin: Color = l.get("skin", MODEL_SKIN)
-	var key := "%s|%s|%s|%s" % [w, jersey.to_html(), shorts.to_html(), skin.to_html()]
+	var hi := int(Game.settings.graphics) >= Game.GFX_MEDIUM if textures < 0 else textures == 1
+	var key := "%s|%s|%s|%s|%s" % [w, jersey.to_html(), shorts.to_html(), skin.to_html(), hi]
 	if _mats.has(key):
 		return _mats[key]
 	if _mats.size() > 64:
@@ -150,8 +157,8 @@ void fragment() {
 """
 	var m := ShaderMaterial.new()
 	m.shader = _shader
-	m.set_shader_parameter("albedo_tex", load(SKINS[w]))
-	m.set_shader_parameter("kit_tex", load(KITS[w]))
+	m.set_shader_parameter("albedo_tex", load((SKINS_HI if hi else SKINS)[w]))
+	m.set_shader_parameter("kit_tex", load((KITS_HI if hi else KITS)[w]))
 	m.set_shader_parameter("shirt", jersey)
 	m.set_shader_parameter("navy", shorts)
 	m.set_shader_parameter("skin", skin)

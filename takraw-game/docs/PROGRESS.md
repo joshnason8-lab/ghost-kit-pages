@@ -137,6 +137,49 @@ and the far ground cost no draw calls; the crowd's bigger cut-outs none either (
 `tests/venue_view.tscn -- <dir> <venues>,around` renders the outdoor venues from the end camera at each end, the side
 camera and looking out from the court; `tests/crowd_view.tscn -- <dir> 2 up` the crowd on its feet.
 
+## More detail on Medium and High (0.9.0)
+
+The owner allows a bigger download for a game that looks and sounds better. Low loads exactly what it did; Medium and
+High load their own bigger files, compressed for the GPU (ETC2 on a phone, so a 2K texture takes 2.7 MB of video
+memory with its mipmaps, not the 21 MB it would as plain pixels):
+
+- **The ground and courts:** Poly Haven's 2K scans of the same surfaces (colour and relief), not the 512 px ones
+  (`Scenery.surface`). The grain of the concrete, the asphalt, the sand and the maple stays sharp close to the camera.
+- **The skies:** the 4K panoramas (from Poly Haven's full-size ones), their colours fitted to the 2K ones Low shows
+  (each channel by a curve, within 2 levels of 255), so the place looks the same on every level, only sharper.
+- **The players:** their textures at 2048 px and the kits' masks at 1024 (`RealBody.SKINS_HI`), cut from the models'
+  own 4096 px textures (`tools/models/kit_mask.py`).
+- **The crowd:** a 32-figure sheet at 96 × 256 px a figure (`crowd_sheet_hi.png`, `crowd_sheet.tscn -- hi`): six
+  skin tones, heights from 1.55 to 1.88 m, shorts in their own colours (only the shirt is dyed), and more poses
+  (elbows on the knees, hands in the lap, filming on a phone). Low keeps its 16 figures.
+- **The sound** (on every level; it costs the GPU nothing): the venues' loops 36 to 60 s, the crowd's murmur 30 s, two
+  more cheers, two more applause takes, the crowd clapping in time at a set point (docs/SOUNDS.md).
+
+`tests/test_runner` checks what each level loads: Low the same files as before, Medium and High the bigger ones.
+
+### Performance and video memory
+
+`perf_probe` with `--fixed-fps 30`, each venue and level in a process of its own (so nothing loaded for one venue or
+level is counted in the next): the draw calls, triangles and video memory (all of it: textures, meshes, buffers) of
+one frame of a match.
+
+| Venue | Low (0.8.0 = 0.9.0) | Medium 0.8.0 → 0.9.0 | High 0.8.0 → 0.9.0 |
+|---|---|---|---|
+| National Arena | 72 calls, 102k tris, 31.4 MB | 74 calls, 114k tris, 53.2 → 54.4 MB | 88 → 89 calls, 221k tris, 72.5 → 73.6 MB |
+| Grand Dome | 72 calls, 102k tris, 31.4 MB | 74 calls, 116k tris, 53.3 → 54.5 MB | 88 calls, 224k tris, 72.6 → 73.7 MB |
+| Mall atrium | 73 calls, 124k tris, 33.8 MB | 75 calls, 135k tris, 55.6 → 56.7 MB | 91 calls, 290k tris, 74.8 → 76.0 MB |
+| Provincial gym | 78 calls, 124k tris, 38.5 MB | 80 calls, 136k tris, 61.0 → 74.2 MB | 106 calls, 294k tris, 80.3 → 93.4 MB |
+| Temple court | 77 calls, 140k tris, 52.8 MB | 79 calls, 126k tris, 70.2 → 74.7 MB | 97 calls, 264k tris, 89.4 → 93.9 MB |
+| Park court | 81 calls, 107k tris, 58.7 MB | 83 calls, 137k tris, 76.1 → 83.6 MB | 102 calls, 285k tris, 95.4 → 102.9 MB |
+| Beach | 76 calls, 102k tris, 49.8 MB | 78 calls, 116k tris, 63.8 → 74.3 MB | 98 calls, 276k tris, 83.0 → 93.5 MB |
+| Night market | 86 calls, 111k tris, 50.6 MB | 88 calls, 161k tris, 73.4 → 83.9 MB | 122 calls, 315k tris, 92.6 → 103.1 MB |
+
+Low is the same in every venue, to the draw call and the tenth of a megabyte. Medium and High draw the same (the
+National Arena's High frame caught a different moment: one object more); their video memory is up by 1 MB in the
+halls (the players' 2K textures, less the crowd sheet, which is smaller compressed than the old one is as plain
+pixels) and 4 to 13 MB outdoors and in the gym (the 2K surfaces and 4K skies). The most, the night market and the park
+on High, is 103 MB: within a mid-range phone's means.
+
 ## Gaps that need the owner
 
 None. The two raised in 0.5.0 are filled in 0.5.1:

@@ -14,7 +14,8 @@ Licences screen.
 | `net` | the ball into the net | from the ball |
 | `step_court` (3) / `step_sand` (3) | a footstep each half stride while a player runs, louder the faster (none in the home screen's match) | from his feet |
 | `crowd_loop` | the crowd's murmur, under every match, louder as a rally builds | all round |
-| `crowd_cheer`, `applause`, `crowd_ooh`, `crowd_groan` | the crowd is the home side's: a cheer for a point after a long rally or a kill, applause after a short one; a groan when their side gives a point away (out, into the net, a fault); an "ooh" for a block and for a ball right on a line | all round |
+| `crowd_cheer` (3 takes), `applause` (3), `crowd_ooh`, `crowd_groan` | the crowd is the home side's: a cheer for a point after a long rally or a kill, applause after a short one; a groan when their side gives a point away (out, into the net, a fault); an "ooh" for a block and for a ball right on a line | all round |
+| `crowd_rhythm` | the home side a point from the set or the match: the crowd claps in time | all round |
 | `amb_beach`, `amb_temple`, `amb_park`, `amb_chatter` | each outdoor venue's own sound (the sea, birds, a summer evening), a mall's and a night market's chatter | all round, under the crowd |
 | `drums_loop` | the arenas' drums, louder in a long rally | all round |
 | `whistle`, `whistle_long` | the serve, a fault, the end of a set (made in code) | all round |
@@ -36,11 +37,13 @@ all of them off, Settings > Music the music.
 | `bounce.ogg`, `bounce_2.ogg` | Impact Sounds | Kenney | CC0 | `impactWood_medium_000`, `_002` |
 | `bounce_sand.ogg` | Impact Sounds; [Fantozzi's Footsteps](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone) | Kenney; Fantozzi (submitted by qubodup) | CC0 | `impactSoft_heavy_000` with `Fantozzi-SandL1` under it (-6 dB) |
 | `net.ogg` | Impact Sounds; [RPG Audio](https://kenney.nl/assets/rpg-audio) | Kenney | CC0 | `impactSoft_medium_001` and the cloth rustle `cloth1` (-3 dB) |
-| `crowd_loop.ogg` | [Free Crowd Cheering Sounds](https://opengameart.org/content/free-crowd-cheering-sounds) | Gregor Quendel | CC BY 4.0 | "10 - Ambience", 3 to 27 s, looped |
-| `crowd_cheer.ogg` | the same | Gregor Quendel | CC BY 4.0 | "03 - Strong cheering - I", the first 3.6 s |
-| `applause.ogg` | [Applause in a large hall or church](https://opengameart.org/content/applause-in-a-large-hall-or-church) | eXpl0it3r | CC0 | 4 to 8 s |
-| `amb_beach.ogg`, `amb_temple.ogg`, `amb_park.ogg` | [Nature Ambient Pack Vol 1](https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1) | JC Sounds | CC BY 4.0 | "Ocean Waves", "Rainforest Canopy" (5 to 33 s), "Summer Evening" (40 to 68 s: before it, a car passing), looped |
-| `amb_chatter.ogg` | [Free General Ambience Sounds](https://opengameart.org/content/free-general-ambience-sounds) | Gregor Quendel | CC BY-SA 4.0 (this cut of it too) | "crowd - mall ambience", 5 to 33 s, looped |
+| `crowd_loop.ogg` | [Free Crowd Cheering Sounds](https://opengameart.org/content/free-crowd-cheering-sounds) | Gregor Quendel | CC BY 4.0 | "10 - Ambience", 2 to 32 s, looped |
+| `crowd_cheer.ogg`, `_2`, `_3` | the same | Gregor Quendel | CC BY 4.0 | "03 - Strong cheering - I", "04 - Strong cheering - II", "02 - Strong cheering and soft rhythmic cheering": the first 3.6 to 4 s of each |
+| `crowd_rhythm.ogg` | the same | Gregor Quendel | CC BY 4.0 | "08 - Rhythmic cheering", the first 7 s |
+| `applause.ogg`, `applause_2.ogg` | [Applause in a large hall or church](https://opengameart.org/content/applause-in-a-large-hall-or-church) | eXpl0it3r | CC0 | 4 to 8 s, 18 to 22 s |
+| `applause_3.ogg` | [Applause](https://opengameart.org/content/applause) | Blender Foundation (submitted by LeeZH) | CC BY 3.0 | 0.5 to 4.5 s |
+| `amb_beach.ogg`, `amb_temple.ogg`, `amb_park.ogg` | [Nature Ambient Pack Vol 1](https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1) | JC Sounds | CC BY 4.0 | "Ocean Waves" (4 to 64 s), "Rainforest Canopy" (12 to 72 s: before it, a loud call), "Summer Evening" (38.5 to 74.5 s: before it, a car passing), looped |
+| `amb_chatter.ogg` | [Free General Ambience Sounds](https://opengameart.org/content/free-general-ambience-sounds) | Gregor Quendel | CC BY-SA 4.0 (this cut of it too) | "crowd - mall ambience", 3 to 55 s, looped |
 | `step_court.ogg`, `_2`, `_3` | [Footsteps on different surfaces](https://opengameart.org/content/footsteps-on-different-surfaces) | congusbongus, from recordings by swuing and ceberation (freesound.org) | CC BY 3.0 | `tile/0`, `3`, `6`: a trainer's step, some with a squeak |
 | `step_sand.ogg`, `_2`, `_3` | Fantozzi's Footsteps | Fantozzi | CC0 | `SandL1`, `SandR1`, `SandL2` |
 | `click.ogg` | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | Kenney | CC0 | `click_002` |
@@ -63,7 +66,9 @@ above into one folder, under the pack's own file names (the paths are in the scr
 
 ## Size
 
-The sounds went from 0.29 MB to 1.83 MB (the four venue loops about 200 KB each, the music 660 KB).
+The sounds went from 0.29 MB to 1.83 MB in 0.8.0 (the four venue loops about 200 KB each, the music 660 KB), and to
+2.72 MB in 0.9.0: the venues' loops a minute long or near it (36 to 60 s, 260 to 420 KB each), the crowd's murmur 30 s,
+two more cheers, two more applause takes and the crowd's clapping in time.
 
 ## Not found (to source by hand)
 

@@ -419,6 +419,9 @@ func _begin_setup() -> void:
 	hud.call_line(_score_call())
 	if not bool(config.get("attract", false)):
 		Sfx.crowd(arena.atmosphere() * (0.45 + _tension() * 0.5))
+		# The home side a point from the set (or the match): the crowd claps in time.
+		if set_point_for() == _home_team_index():
+			Sfx.react("rhythm", -8.0)
 
 
 ## The score as the referee calls it: the server's score first.

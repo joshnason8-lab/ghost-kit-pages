@@ -179,7 +179,9 @@ void sky() {
 """
 	var pm := ShaderMaterial.new()
 	pm.shader = _sky_shader
-	pm.set_shader_parameter("panorama", load(DIR + "skies/%s_sky_2k.jpg" % name))
+	# (Medium and High: the panorama at 4K, compressed for the GPU, where there is one; Low: 2K.)
+	var path := DIR + "skies/%s_sky_%s.jpg" % [name, "2k" if low() else "4k"]
+	pm.set_shader_parameter("panorama", load(path if ResourceLoader.exists(path) else DIR + "skies/%s_sky_2k.jpg" % name))
 	pm.set_shader_parameter("energy", energy)
 	pm.set_shader_parameter("below", below)
 	var s := Sky.new()
@@ -246,8 +248,10 @@ void fragment() {
 		_surface_shaders[low()] = sh
 	var m := ShaderMaterial.new()
 	m.shader = _surface_shaders[low()]
-	m.set_shader_parameter("albedo_tex", load(DIR + "surfaces/%s/%s_albedo_1k.jpg" % [name, name]))
-	m.set_shader_parameter("normal_tex", load(DIR + "surfaces/%s/%s_normal_1k.jpg" % [name, name]))
+	# Low: the scans cut to 512 px (WebP); Medium and High: the 2K scans, compressed for the GPU (ETC2 on a phone).
+	var res := "1k" if low() else "2k"
+	m.set_shader_parameter("albedo_tex", load(DIR + "surfaces/%s/%s_albedo_%s.jpg" % [name, name, res]))
+	m.set_shader_parameter("normal_tex", load(DIR + "surfaces/%s/%s_normal_%s.jpg" % [name, name, res]))
 	m.set_shader_parameter("tint", tint)
 	m.set_shader_parameter("paint", paint)
 	m.set_shader_parameter("mean", float(MEAN.get(name, 0.45)))
