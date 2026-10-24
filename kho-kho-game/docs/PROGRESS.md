@@ -176,6 +176,36 @@ Performance (perf_probe, before and after, every ground on Low, Medium and High)
 (Low: village 88 and 69k, school 83 and 38k, arena 84 and 46k, stadium 80 and 39k). The milliseconds a frame on this
 machine's software renderer were lower after, by run-to-run noise, not by the change.
 
+## Round seven: 0.7.0-beta, a bigger APK for Medium and High (24 October 2026, the owner via the lead)
+
+The owner allowed the APK to grow (to about 100 MB, India first) to look and sound better, on two conditions: Low
+exactly as it was, and the extra detail on Medium and High as separate, VRAM-compressed files. Spent, in the lead's
+order:
+
+1. **The ground and the players.** The four grounds' photos at 2k (Poly Haven's own, CC0; the 1k stay for Low).
+   The players: the owner's source texture (4096 px) baked again at 2048 px onto `player_lod0`'s UVs
+   (`tools/models/bake_hd_texture.py`; the model is not rebuilt, so Low's mesh and 512 px texture are untouched).
+   Faces, lettering and the kit's folds are visibly sharper close up. The walls' and roofs' 2k photos were tried and
+   dropped: they are drawn from far off, where the GPU samples small mip levels anyway, and they were 13.6 MB.
+2. **The crowd.** Sixteen people in the sheet on Medium and High (Low keeps its eight, drawn as before): six skin
+   tones, four colours of shorts, five heights, eight turns, standing ones clapping, still, or held at different
+   moments of the recorded idle. The sheet is drawn again (or painted at once, then drawn) if the level changes.
+3. **The sounds.** The crowd's murmur 13 → 23 s and the school's birds 19 → 59 s before they repeat; two takes of
+   the cheer, three of the applause (docs/SOUNDS.md).
+4. **The skies** at 4k on High: Poly Haven's tonemapped photographs (CC0), their colours matched to the 2k ones
+   (`tools/env/make_sky_4k.py`), so the sky is the same, only sharper.
+
+`tests/perf_probe.gd` now prints the video memory in use, and `KK_GFX=n` runs one level per process so each level's
+memory is its own (the figure below is with all four grounds loaded, the most a session reaches):
+
+| | Low | Medium | High |
+|---|---|---|---|
+| Video memory, before → after | 47.8 → 47.8 MB | 77.2 → 85.8 MB | 88.3 → 100.9 MB |
+| Draw calls and triangles | unchanged | unchanged | unchanged |
+
+The APK, both architectures and unsigned (local): 80.4 → 112.9 MB; the beta's (64-bit ARM): see the release. A test
+checks Low still loads the 1k photos, the eight-person sheet and the 512 px texture, and Medium and High the new ones.
+
 ## Round six: 0.6.0-beta, recorded sounds (24 October 2026, the owner via the lead)
 
 The owner asked every game for better sounds, from Kenney's packs and OpenGameArt (freesound and pixabay block cloud
