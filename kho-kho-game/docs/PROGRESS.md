@@ -176,6 +176,31 @@ Performance (perf_probe, before and after, every ground on Low, Medium and High)
 (Low: village 88 and 69k, school 83 and 38k, arena 84 and 46k, stadium 80 and 39k). The milliseconds a frame on this
 machine's software renderer were lower after, by run-to-run noise, not by the change.
 
+## Round six: 0.6.0-beta, recorded sounds (24 October 2026, the owner via the lead)
+
+The owner asked every game for better sounds, from Kenney's packs and OpenGameArt (freesound and pixabay block cloud
+servers). Before: the whistles, the kho's slap, the whoosh, the click and the crowd's murmur were synthesised (the
+murmur was filtered noise); there were no footsteps, no sound of the place, and a pause left the crowd and drums
+playing. Now (docs/SOUNDS.md lists every file, its source, author and licence; the Licences screen credits them):
+
+- **Footsteps**, from each runner's feet in 3D, two to each stride as the run or walk clip plays: on earth outdoors
+  (Kenney's grass), on the hall's mat (Kenney's carpet). Not in the menu's backdrop match.
+- **The kho's slap** (CGEffex, CC-BY 3.0) and **a dive's landing** (Kenney), where it happens.
+- **The crowd**: a real stand's murmur, looped, and a cheer (Gregor Quendel, CC-BY 4.0); applause (eXpl0it3r, CC0).
+- **The place**: crickets at the village's dusk and, quieter, the stadium's night (Wolfgang_, CC0); birds at the
+  school's noon (Thimras, CC0); in the hall, a little reverb on the match's own bus.
+- **The menus' click** (Kenney). **A pause** holds every sound playing, and starts none on the field.
+
+Made by `tools/audio/make_sfx.py` from the sources: cut, mono 22,050 Hz, one-shots set by peak and swells and beds by
+their average, beds crossfaded into seamless loops, Ogg Vorbis. Chosen by measurement (length, loudness envelope,
+brightness, low end), not by ear: this machine has no speakers, so a listen on a phone is still owed. 18 files,
+`assets/audio` 380 → 752 KB; the APK +293 KB (both architectures, unsigned: 80,130,505 → 80,423,493 bytes). Draw
+calls and triangles unchanged. The test (`_sounds`) checks every referenced file is there and loads, the beds loop,
+every sound played by name is made, and a pause holds them.
+
+Not found, for the owner (docs/SOUNDS.md): a real referee's pea whistle, the chaser's "Kho!" call, an Indian crowd
+(chants, dhol, whistles), a recorded "ooh" and groan, an Indian city at night.
+
 ## Shared assets (from 22 October 2026)
 
 The owner made the orchestrator session (`session_016XKAyHkTQRNMGEgZbjNK28`) the lead for all six mobile games.
