@@ -43,12 +43,22 @@ static func run(phase: float, speed: float, low := 0.3) -> Dictionary:
 	}
 
 
-## Blends two poses (w of the second).
+## A bone's turn as a quaternion, from Euler degrees (YXZ) or already one.
+static func quat(e: Variant) -> Quaternion:
+	if e is Quaternion:
+		return e
+	var v: Vector3 = e
+	return Basis.from_euler(Vector3(deg_to_rad(v.x), deg_to_rad(v.y), deg_to_rad(v.z)), EULER_ORDER_YXZ).get_rotation_quaternion()
+
+
+## Blends two poses (w of the second). Recorded turns (quaternions) blend by slerp.
 static func blend(a: Dictionary, b: Dictionary, w: float) -> Dictionary:
 	var out := {}
 	for k in a:
 		if b.has(k):
-			if a[k] is Vector3:
+			if a[k] is Quaternion or b[k] is Quaternion:
+				out[k] = quat(a[k]).slerp(quat(b[k]), w)
+			elif a[k] is Vector3:
 				out[k] = (a[k] as Vector3).lerp(b[k], w)
 			else:
 				out[k] = lerpf(float(a[k]), float(b[k]), w)
@@ -56,7 +66,10 @@ static func blend(a: Dictionary, b: Dictionary, w: float) -> Dictionary:
 			out[k] = a[k]
 	for k in b:
 		if not out.has(k):
-			out[k] = (b[k] * w) if b[k] is Vector3 else float(b[k]) * w
+			if b[k] is Quaternion:
+				out[k] = Quaternion.IDENTITY.slerp(b[k], w)
+			else:
+				out[k] = (b[k] * w) if b[k] is Vector3 else float(b[k]) * w
 	return out
 
 
@@ -64,8 +77,8 @@ const STRIKE_T := 0.62        # the hip strike's length, s
 const STRIKE_HIT := 0.4       # the moment the hip meets the ball, as a fraction of it
 const DIVE_T := 1.35
 const DIVE_HIT := 0.3
-const SERVE_T := 0.9
-const SERVE_HIT := 0.55
+const SERVE_T := 1.6          # the recorded underhand toss at its own speed (Mocap.TOSS)
+const SERVE_HIT := 0.64       # its release
 
 
 ## The hip strike with the side's hip (1 the left, -1 the right), u from 0 to 1: he sinks, swings the hip into the ball
@@ -120,8 +133,17 @@ static func dive(u: float, side: float) -> Dictionary:
 	return p
 
 
-## The serve (the male), right-handed: abajo, bowled low along the ground; arriba, thrown up in a long underarm arc.
+## The serve (the male), right-handed: the recorded underhand toss (Mocap.toss), bowled lower for abajo by blending in
+## the hand-made one; the hand-made one alone if the recording is missing.
 static func serve(u: float, high: bool) -> Dictionary:
+	var rec := Mocap.toss(u)
+	if rec.is_empty():
+		return serve_made(u, high)
+	return rec if high else blend(rec, serve_made(u, false), 0.35)
+
+
+## The hand-made serve: abajo, bowled low along the ground; arriba, thrown up in a long underarm arc.
+static func serve_made(u: float, high: bool) -> Dictionary:
 	var p := stance(0.0, 0.7 if not high else 0.4)
 	var back := smoothstep(0.0, SERVE_HIT * 0.8, u) * (1.0 - smoothstep(SERVE_HIT * 0.8, SERVE_HIT, u))
 	var fwd := smoothstep(SERVE_HIT * 0.7, SERVE_HIT + 0.15, u) * (1.0 - smoothstep(0.8, 1.0, u))

@@ -119,13 +119,22 @@ func hip_world(side: float) -> Vector3:
 	return t * Vector3(0.17 * side, -0.06, -0.02)
 
 
+## The right hand's palm, in the world (the ball rests there before a serve).
+func hand_world() -> Vector3:
+	var i := bone("hand_r")
+	if i < 0 or skeleton == null:
+		return global_position + global_transform.basis * Moves.HAND_BALL
+	var t := skeleton.global_transform * skeleton.get_bone_global_pose(i)
+	return t * Vector3(0, -0.1, 0.06)
+
+
+## Each bone's turn is Euler angles in degrees (Vector3, YXZ) or a Quaternion (recorded movement, Mocap).
 func apply(p: Dictionary) -> void:
 	pose = p
 	if skeleton == null:
 		return
 	for i in BONES.size():
-		var e: Variant = p.get(BONES[i][0], Vector3.ZERO)
-		skeleton.set_bone_pose_rotation(i, Basis.from_euler(Vector3(deg_to_rad(e.x), deg_to_rad(e.y), deg_to_rad(e.z)), EULER_ORDER_YXZ).get_rotation_quaternion())
+		skeleton.set_bone_pose_rotation(i, Moves.quat(p.get(BONES[i][0], Vector3.ZERO)))
 	skeleton.set_bone_pose_position(0, _hips + Vector3(float(p.get("hips_side", 0.0)), float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
 
 

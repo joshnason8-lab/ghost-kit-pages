@@ -35,6 +35,7 @@ func _ready() -> void:
 	_cup()
 	_sim()
 	await _crowd_faces()
+	await _mocap()
 	await _match_and_motion("village", "ulama")
 	await _match_and_motion("stone", "classic")
 	Game.settings = keep
@@ -465,6 +466,72 @@ func _crowd_faces() -> void:
 			v.queue_free()
 			await frames(1)
 	Game.settings.graphics = keep
+
+
+# ---------------------------------------------------------------- recorded movement
+
+## Every recorded clip loads, and a planted foot stays planted: the run played as a player plays it (moving at the
+## clip's speed, stepping at the game's stride, at two heights), and the serve's toss standing still.
+func _mocap() -> void:
+	for name in Mocap.ALL:
+		var c := Mocap.clip(name)
+		check(not c.is_empty() and (c.frames as Array).size() >= 10 and is_equal_approx(float(c.fps), 30.0),
+			"Mocap: %s loads (%d frames at 30 fps)" % [name, (c.get("frames", []) as Array).size()])
+		check(Mocap.sample(name, 0.3).has("thigh_l"), "Mocap: %s samples to a pose" % name)
+	var run := Mocap.clip(Mocap.RUN)
+	for h in [1.8, 1.62]:
+		var b := Body.new({"kind": "ulama", "height": h})
+		add_child(b)
+		var v := float(run.speed)
+		var stride := Player.stride_at(v) * b.scale.x
+		var slide := _foot_slide(b, func(t: float) -> Dictionary: return Mocap.run(t * v / (2.0 * stride)), v, float(run.duration) * 3.0)
+		check(slide < MOCAP_SLIDE, "Mocap: the run's planted feet stay put (height %.2f, worst slide %.3f m)" % [h, slide])
+		b.queue_free()
+	var toss := Mocap.clip(Mocap.TOSS)
+	var bt := Body.new({"kind": "ulama", "height": 1.8})
+	add_child(bt)
+	var s2 := _foot_slide(bt, func(t: float) -> Dictionary: return Mocap.sample(Mocap.TOSS, t), 0.0, float(toss.held))
+	check(s2 < MOCAP_SLIDE, "Mocap: the serve's feet stay put through the toss (worst slide %.3f m)" % s2)
+	check(Moves.SERVE_HIT * Moves.SERVE_T > 0.9 * float(toss.hit) and Moves.SERVE_HIT * Moves.SERVE_T < 1.1 * float(toss.hit),
+		"Mocap: the serve's release is the recorded release")
+	bt.queue_free()
+	Mocap.light = true
+	check(Mocap.run(0.37).has("hips_fwd"), "Mocap: Low graphics plays the nearest frame")
+	Mocap.light = false
+	await frames(1)
+
+
+const MOCAP_SLIDE := 0.03    # metres a planted foot may slip
+
+
+## The worst slip of a planted foot: the body moved at speed along +Z and posed by pose_at(t) every thirtieth of a
+## second; a foot is planted while its heel or toe is near the ground, and from then its point is held to where it was.
+func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> float:
+	var worst := 0.0
+	var start := {}
+	var t := 0.0
+	var k := b.scale.x
+	while t <= length + 0.001:
+		b.position = Vector3(0, 0, speed * t)
+		b.apply(pose_at.call(t))
+		for side in ["l", "r"]:
+			var i := b.bone("foot_" + side)
+			var g := b.skeleton.global_transform * b.skeleton.get_bone_global_pose(i)
+			var heel := g.origin
+			var toe := g * Vector3(0, -0.025, 0.14)
+			var hh := heel.y - 0.04 * k
+			var th := toe.y - 0.015 * k
+			if minf(hh, th) < 0.02 * k:
+				var pt := heel if hh <= th else toe
+				var key := side + ("h" if hh <= th else "t")
+				if not start.has(side) or start[side][0] != key:
+					start[side] = [key, pt]
+				var d := Vector2(pt.x - start[side][1].x, pt.z - start[side][1].z).length()
+				worst = maxf(worst, d)
+			else:
+				start.erase(side)
+		t += 1.0 / 30.0
+	return worst
 
 
 # ---------------------------------------------------------------- a match

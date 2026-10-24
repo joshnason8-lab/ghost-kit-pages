@@ -196,7 +196,7 @@ func _process(delta: float) -> void:
 		_acc -= STEP
 		_ball_step(STEP)
 	if ball.held and server != null:
-		ball.pos = server.global_position + Basis(Vector3.UP, server.yaw) * Moves.HAND_BALL
+		ball.pos = server.body.hand_world() if server.body and server.action == Player.A.SERVE else server.global_position + Basis(Vector3.UP, server.yaw) * Moves.HAND_BALL
 	ball.show_at(ball.pos, delta)
 	cam.follow(self, delta)
 	if hud:
@@ -414,7 +414,7 @@ func _on_action(id: String) -> void:
 			var side := _side_toward_ball(user_player)
 			var aim := _user_aim()
 			if id == "HIP":
-				user_player.start_strike(side, aim)
+				user_player.start_strike(side, aim, ring_shot(user_player, _user_stick()))
 			else:
 				user_player.start_dive(side, aim)
 
@@ -431,6 +431,76 @@ func _side_toward_ball(p: Player) -> float:
 
 ## Your aim, from the joystick as you strike: toward their end, a long high ball; back toward yours, a low hard one that
 ## skids on the earth; across, to that side. No thumb on it: as your teammates would choose.
+func _user_stick() -> Vector3:
+	var j: Vector2 = hud.joystick() if hud else Vector2.ZERO
+	return screen_to_world(j) if j.length() >= 0.3 else Vector3.ZERO
+
+
+## The ring shot (classic court): striking within reach of the middle with the stick held toward a wall aims the ball
+## at that wall's ring. Returns the ring's side, or 0 when this is no ring shot.
+func ring_shot(p: Player, stick: Vector3) -> int:
+	if not court.classic() or absf(stick.z) < 0.7:
+		return 0
+	var ax := absf(p.global_position.x)
+	if ax < RING_SHOT_X.x or ax > RING_SHOT_X.y:
+		return 0
+	return int(signf(stick.z))
+
+
+const RING_SHOT_X := Vector2(2.5, 11.0)   # how far from the middle a ring shot can be struck from (m)
+const RING_SPREAD := 1.0                  # scales the ring shot's error (tests)
+
+
+## The ring shot's flight: through the ring's centre, rising steeply enough to clear its stone, with the strike's
+## error (a perfect strike still misses most times: the hole leaves the ball under ten centimetres).
+func _ring_launch(p: Player, from: Vector3, quality: float) -> Vector3:
+	var c: Vector3 = court.rings()[0] if p.action_ring < 0 else court.rings()[1]
+	var h := Vector2(c.x - from.x, c.z - from.z)
+	var dist := h.length()
+	var dy := c.y - from.y
+	var ang := clampf(atan2(dy, dist) + deg_to_rad(18.0), deg_to_rad(40.0), deg_to_rad(68.0))
+	var err := (1.0 - quality) * (1.0 - p.skill * 0.5)
+	ang += deg_to_rad(rng.randf_range(-1.0, 1.0) * (0.8 + 7.0 * err) * RING_SPREAD)
+	var hn := h.normalized().rotated(rng.randf_range(-1.0, 1.0) * (0.01 + 0.2 * err) * RING_SPREAD)
+	var sp := _ring_speed(from, c, hn, ang)
+	sp *= 1.0 + rng.randf_range(-1.0, 1.0) * (0.006 + 0.05 * err) * RING_SPREAD
+	return Vector3(hn.x * cos(ang) * sp, sin(ang) * sp, hn.y * cos(ang) * sp)
+
+
+class _Probe:
+	var pos: Vector3
+	var vel: Vector3
+	var grounded := false
+
+
+## The launch speed that carries the ball (air drag and all) through the ring's centre at that angle.
+func _ring_speed(from: Vector3, c: Vector3, hn: Vector2, ang: float) -> float:
+	var lo := 4.0
+	var hi := 30.0
+	var probe := _Probe.new()
+	var ev := []
+	for it in 16:
+		var sp := (lo + hi) * 0.5
+		probe.pos = from
+		probe.vel = Vector3(hn.x * cos(ang) * sp, sin(ang) * sp, hn.y * cos(ang) * sp)
+		probe.grounded = false
+		ev.clear()
+		var y_at := -1.0
+		for k in 600:
+			var a := probe.pos
+			probe.pos = Ball.simulate(probe, STEP, court, "stone", ev)
+			if (a.x - c.x) * (probe.pos.x - c.x) <= 0.0:
+				y_at = lerpf(a.y, probe.pos.y, (c.x - a.x) / (probe.pos.x - a.x)) if not is_equal_approx(a.x, probe.pos.x) else probe.pos.y
+				break
+			if probe.grounded or probe.pos.y < 0.0:
+				break
+		if y_at < c.y:
+			lo = sp
+		else:
+			hi = sp
+	return (lo + hi) * 0.5
+
+
 func _user_aim() -> Vector3:
 	var ai: TeamAI = teams[user_team].ai
 	var j: Vector2 = hud.joystick() if hud else Vector2.ZERO
@@ -492,11 +562,21 @@ func _ball_step(dt: float) -> void:
 
 ## The hips meeting the ball (a strike or a dive at its moment, close enough), and the ball touching anyone anywhere
 ## else (R6).
+var _told_low := false
+var ring_shots := 0
+
+
 func _contacts() -> void:
 	for p in all_players():
 		var pl: Player = p
 		var w := pl.hit_window()
 		if w < 0.0:
+			continue
+		if pl.action == Player.A.STRIKE and ball.pos.y < Player.STRIKE_MIN_Y:
+			# A rolling or skimming ball goes under a standing hip: only the dive gets down to it.
+			if pl.user and hud and not _told_low and ball.pos.distance_to(pl.hip_point()) < 1.2:
+				_told_low = true
+				hud.banner(tr("TOO_LOW_DIVE"), Game.C_GOLD)
 			continue
 		var hip := pl.hip_point()
 		var reach := Player.REACH + (0.12 if pl.user and int(Game.settings.assist) > 0 else 0.0)
@@ -547,6 +627,9 @@ func _strike(p: Player, window: float, off: float) -> void:
 		ang = maxf(ang, deg_to_rad(12.0))
 	var sp := minf(need, cap)
 	var v := Vector3(hn.x * cos(ang) * sp, sin(ang) * sp, hn.y * cos(ang) * sp)
+	if p.action_ring != 0 and p.action == Player.A.STRIKE:
+		v = _ring_launch(p, from, quality)
+		ring_shots += 1
 	ball.launch(from + Vector3(hn.x, 0.0, hn.y) * 0.05, v, p.team, p)
 	ball_flight += 1
 	p.hit_done = true

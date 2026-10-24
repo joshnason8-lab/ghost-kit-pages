@@ -114,10 +114,11 @@ func _plan(path: Array) -> void:
 		var grounded: bool = path[i][1]
 		if pt.y >= 0.42 and pt.y < 1.15:
 			kind = "hip"
-		elif pt.y < 0.42 and not grounded:
+		elif pt.y >= Player.STRIKE_MIN_Y + 0.02 and not grounded:
 			# A low ball still in the air: a player sinks right down for it, not quite a dive.
 			kind = "hip"
-		elif grounded or pt.y < 0.3:
+		elif grounded or pt.y < Player.STRIKE_MIN_Y + 0.02:
+			# Lower, or rolling on the earth: only by going down to the ground with the hip (the dive).
 			kind = "dive"
 		else:
 			continue
@@ -169,6 +170,9 @@ func _place(p: Player, i: int, live: bool, path: Array, _dt: float) -> void:
 	var ball_z: float = m.ball.pos.z
 	p.face_to = m.ball.pos
 	p.face_yaw = NAN
+	if m.server == p and m.ball.held:
+		# The ball is in his hand: he faces the other side, not the ball (which would turn with him).
+		p.face_yaw = atan2(dirn(), 0.0)
 	if not live:
 		if m.server == p and m.phase == m.P.SERVE:
 			p.want = m.serve_spot(team)

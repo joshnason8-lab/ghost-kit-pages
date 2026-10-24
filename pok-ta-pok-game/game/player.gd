@@ -11,6 +11,7 @@ const TURN := 9.0             # how quickly he turns to face where he is going (
 const HIP_H := 0.7            # how high his hip meets the ball in a hip strike (m), sunk in the stance
 const DIVE_H := 0.24          # and in a dive, on the ground
 const REACH := 0.62           # how far from his hip the ball can be and still be met
+const STRIKE_MIN_Y := 0.34    # standing, the hip cannot get under a ball lower than this (its centre, m): dive for it
 const BODY_R := 0.16          # his body, for the ball touching it (R6)
 
 enum A { NONE, STRIKE, DIVE, SERVE, CELEBRATE, DEJECTED }
@@ -39,6 +40,7 @@ var hit_done := false         # this strike has met the ball
 var immune := 0.0             # just struck it: the ball leaving him is not a touch
 var recent_attempt := 0.0     # swung at it lately: a near miss is not then a body-touch fault
 var phase := 0.0              # the run's cycle
+var action_ring := 0          # a strike aimed at the ring on that side (classic court), or 0
 var steps_taken := 0          # steps since the tests last read it
 var blocked := false          # stopped by a line or wall this frame (the audit counts these apart)
 var written := Vector3.INF     # where update() last put him (the movement audit: nothing else moves him)
@@ -67,9 +69,10 @@ func busy() -> bool:
 
 
 ## Starts a hip strike with the side's hip (1 left, -1 right), aiming the ball toward aim.
-func start_strike(side: float, aim: Vector3) -> bool:
+func start_strike(side: float, aim: Vector3, ring := 0) -> bool:
 	if busy():
 		return false
+	action_ring = ring
 	action = A.STRIKE
 	action_t = 0.0
 	action_side = side
@@ -242,9 +245,10 @@ func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 				face = atan2(f.x, f.z)
 		yaw = rotate_toward(yaw, face, TURN * dt)
 	rotation = Vector3(0, yaw, 0)
-	# Strides: a cycle is two steps; a step about 0.9 m at a jog to 1.7 at a sprint.
+	# Strides: a cycle is two steps; a step about 0.9 m at a jog to 1.7 at a sprint, for a man of 1.80 (shorter legs,
+	# shorter steps: the recorded run's feet stay planted at any height).
 	var speed := Vector2(vel.x, vel.z).length()
-	var stride := 0.9 + 0.12 * speed
+	var stride := Player.stride_at(speed) * (body.scale.x if body else 1.0)
 	phase += speed / (2.0 * stride) * dt
 	var hs2 := int(floor(phase * 2.0))
 	if hs2 != _half_step:
@@ -260,6 +264,11 @@ func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 		action = A.NONE
 	elif action in [A.CELEBRATE, A.DEJECTED] and action_t > 2.6:
 		action = A.NONE
+
+
+## A step's length (m) at a speed, for a man of 1.80.
+static func stride_at(speed: float) -> float:
+	return 0.9 + 0.12 * speed
 
 
 func _pose(speed: float) -> void:
@@ -281,7 +290,14 @@ func _pose(speed: float) -> void:
 			var st := Moves.stance(_t + num, low)
 			if speed > 0.25:
 				var w := clampf(speed / 2.0, 0.0, 1.0)
-				p = Moves.blend(st, Moves.run(phase, speed, low * 0.5), w)
+				var run := Moves.run(phase, speed, low * 0.5)
+				# At a run, the recorded run (Mocap.RUN) takes over from the hand-made one; crouched less so.
+				var rw := smoothstep(2.0, 3.2, speed) * (1.0 - low * 0.6)
+				if rw > 0.0:
+					var rec := Mocap.run(phase)
+					if not rec.is_empty():
+						run = Moves.blend(run, rec, rw)
+				p = Moves.blend(st, run, w)
 			else:
 				p = st
 	body.apply(p)

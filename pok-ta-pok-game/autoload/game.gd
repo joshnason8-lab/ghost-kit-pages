@@ -341,6 +341,7 @@ func on_match_finished(result: Dictionary) -> void:
 # ---------------------------------------------------------------- graphics
 
 func apply_graphics(viewport: Viewport) -> void:
+	Mocap.light = int(settings.graphics) == GFX_LOW
 	match int(settings.graphics):
 		GFX_LOW:
 			viewport.msaa_3d = Viewport.MSAA_DISABLED
