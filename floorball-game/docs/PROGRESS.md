@@ -106,6 +106,21 @@ From the lead's brief (the owner added the CMU motion capture library):
 - Credit in Licences: "Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF
   EIA-0196217."
 
+### 0.6.0-beta: the sound update (24 October 2026)
+
+From the lead's brief (better sounds, from kenney.nl and opengameart.org):
+- **A recorded crowd**: the bed under play (looped seamlessly, its level following the play as before), the goal's
+  cheer and roar (Gregor Quendel, CC BY 4.0), and applause from a large hall at the horn ending each period
+  (eXpl0it3r, CC0). They replace synthesised noise and Kabaddi Raid's cheer.
+- **Footsteps** on the hall floor (Kenney, CC0): played as each foot comes down in the motion capture, for your player
+  and those within 6 m of the ball, heard from where they are (3D, softer far away), never in the menu's match or a
+  pause. A menu click (Kenney) for the synthesised beep.
+- All cut, faded, mono 22 kHz, levelled (EBU R128) and Ogg Vorbis q2 by tools/audio/prepare_sounds.py: 210 KB added.
+  APK 0.5.0: 41.60 MB.
+- A test: every sound the game plays is there, every recording loads, the crowd bed loops. docs/SOUNDS.md lists every
+  sound with its source, author and licence, and what could not be found (a pea whistle, the plastic ball and the
+  boards, stick on stick, shoe squeaks, a hall horn, a Nordic floorball crowd's drums and chants).
+
 ## Next (in order)
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's
