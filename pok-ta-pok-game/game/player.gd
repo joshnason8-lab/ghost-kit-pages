@@ -8,10 +8,10 @@ extends Node3D
 const ACCEL := 9.0            # m/s²: from a standstill to full speed in about two-thirds of a second
 const DECEL := 13.0
 const TURN := 9.0             # how quickly he turns to face where he is going (rad/s at most, eased)
-const HIP_H := 0.78           # how high his hip meets the ball in a hip strike (m), sunk in the stance
+const HIP_H := 0.7            # how high his hip meets the ball in a hip strike (m), sunk in the stance
 const DIVE_H := 0.24          # and in a dive, on the ground
-const REACH := 0.55           # how far from his hip the ball can be and still be met
-const BODY_R := 0.2           # his body, for the ball touching it (R6)
+const REACH := 0.62           # how far from his hip the ball can be and still be met
+const BODY_R := 0.16          # his body, for the ball touching it (R6)
 
 enum A { NONE, STRIKE, DIVE, SERVE, CELEBRATE, DEJECTED }
 
@@ -37,6 +37,7 @@ var action_side := 1.0
 var action_aim := Vector3.ZERO
 var hit_done := false         # this strike has met the ball
 var immune := 0.0             # just struck it: the ball leaving him is not a touch
+var recent_attempt := 0.0     # swung at it lately: a near miss is not then a body-touch fault
 var phase := 0.0              # the run's cycle
 var steps_taken := 0          # steps since the tests last read it
 var blocked := false          # stopped by a line or wall this frame (the audit counts these apart)
@@ -157,6 +158,9 @@ func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 	if action != A.NONE:
 		action_t += dt
 	immune = maxf(0.0, immune - dt)
+	recent_attempt = maxf(0.0, recent_attempt - dt)
+	if action in [A.STRIKE, A.DIVE]:
+		recent_attempt = 0.5
 	var desired := Vector3.ZERO
 	var top := max_speed
 	if action == A.STRIKE:

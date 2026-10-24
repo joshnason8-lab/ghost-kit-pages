@@ -1,0 +1,47 @@
+# Ficha de Google Play, español (España). Cada parte se pega en Play Console > Grow users > Store presence
+# > Main store listing > Manage translations. Límites: nombre de la aplicación 30 caracteres, descripción breve 80,
+# descripción completa 4000.
+
+== App name ==
+Pok Ta Pok Rivals
+
+== Short description ==
+Ulama, el juego de pelota de cadera de México: caucho pesado y la cuenta a ocho.
+
+== Full description ==
+Pok Ta Pok Rivals es el juego de pelota mesoamericano en el teléfono, tal como se sigue jugando hoy. Se golpea con la cadera una pesada pelota de caucho a través del analco de un largo campo de tierra; hay que leer su bote bajo, lanzarse a por ella cuando se desliza a ras de suelo y llevarla más allá del fondo del pueblo rival.
+
+EL JUEGO VIVO: ULAMA DE CADERA
+• El juego que aún se juega en los pueblos del sur de Sinaloa, México: cuatro o cinco por equipo en el taste, una franja de tierra apisonada de 60 metros de largo y 4 de ancho.
+• Solo la cadera. Si la pelota toca cualquier otra cosa, la raya es para el otro equipo.
+• Se gana una raya cuando la pelota muere en la otra mitad, pasa la línea de fondo rival o el rival la saca fuera.
+• La cuenta real: un equipo la tiene, las rayas suben y bajan, y en urria se puede borrar una cuenta entera. Gana quien llega antes a ocho.
+• El male es el saque: rodando por la tierra (abajo) o lanzado alto (arriba).
+• Dos jueces, los veedores, cantan cada raya desde el analco.
+
+EL CAMPO CLÁSICO (RECONSTRUIDO)
+Un campo de piedra en forma de I con muros en talud, reconstruido a partir de las antiguas crónicas: la pelota rebota en la piedra, y un aro de piedra situado en lo alto de cada muro da la victoria directa. Casi nunca ocurre.
+
+MODOS DE JUEGO
+• Partido: elegir un campo y dos pueblos.
+• Torneo de pueblos: ocho pueblos, eliminatoria directa, hasta la final.
+• Ver un partido entre dos pueblos jugado por la máquina.
+
+CUATRO CAMPOS
+Un campo de pueblo en Sinaloa al atardecer, un campo de fiesta de día, un campo de piedra en la selva del Yucatán bajo una pirámide, y el mismo campo a la luz de las antorchas.
+
+DIECISÉIS PUEBLOS
+De Sinaloa, el Yucatán, Quintana Roo, Chiapas, Guatemala, Belize y Honduras, cada uno con su propio apodo y sus colores.
+
+PENSADO PARA EL TELÉFONO
+• Joystick flotante y botones grandes, disposición para zurdos, tamaño de botones ajustable y botones que se pueden mover.
+• Funciona en teléfonos corrientes: gráficos que se ajustan solos y ahorro de batería.
+• En español, inglés, portugués, francés, alemán e italiano.
+• Cómo jugar explica las reglas, la cuenta y la historia del juego y de sus palabras.
+
+Sin anuncios, sin compras en la aplicación, sin cuenta, sin recogida de datos.
+
+Pok Ta Pok Rivals es un juego independiente, sin relación con ningún organismo deportivo, federación, torneo o club, ni respaldado por ellos. Los pueblos aparecen solo por su nombre geográfico; todos los jugadores son inventados.
+
+== Release notes (0.1.0) ==
+La primera beta: ulama de cadera y el campo clásico de piedra, cuatro campos, dieciséis pueblos, un torneo de pueblos, en seis idiomas.

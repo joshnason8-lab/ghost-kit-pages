@@ -80,7 +80,9 @@ func _ready() -> void:
 	if not (side in Rules.side_sizes(rules)):
 		side = Rules.default_side(rules)
 	var level := int(config.get("difficulty", Game.settings.difficulty))
-	var lod := 1 if int(Game.settings.graphics) == Game.GFX_LOW else 0
+	# The full body on High; the lighter one (a third of the triangles) on Low and Medium, which at the court-side
+	# camera's distance looks the same.
+	var lod := 0 if int(Game.settings.graphics) >= Game.GFX_HIGH else 1
 	for k in 2:
 		var tid := String(config.get("home" if k == 0 else "away", "ESC" if k == 0 else "LLA"))
 		var roster := DB.roster(tid, side, "classic" if rules == Rules.CLASSIC else "ulama")
@@ -504,15 +506,18 @@ func _contacts() -> void:
 			return
 	for p in all_players():
 		var pl: Player = p
-		if pl.immune > 0.0 or pl.hit_window() >= 0.0 or pl.action == Player.A.DIVE:
+		# A player who is striking, diving, or has just played it is not faulted for the ball near him.
+		if pl.immune > 0.0 or pl.action in [Player.A.STRIKE, Player.A.DIVE] or pl.recent_attempt > 0.0:
 			continue
 		var feet := pl.global_position
-		var a := feet + Vector3(0, 0.12, 0)
-		var b := feet + Vector3(0, 1.55, 0)
+		var a := feet + Vector3(0, 0.25, 0)
+		var b := feet + Vector3(0, 1.4, 0)
 		var q := Geometry3D.get_closest_point_to_segment(ball.pos, a, b)
 		if q.distance_to(ball.pos) < Player.BODY_R + Ball.RADIUS:
-			var rel := (ball.vel - pl.vel).length()
-			if rel > 0.4:
+			# Only a ball coming at him with real pace, moving toward him, counts (a slow ball grazing him does not).
+			var rel := ball.vel - pl.vel
+			var toward := rel.dot((pl.global_position - ball.pos).normalized())
+			if rel.length() > 2.5 and toward > 1.0:
 				pl.stats.faults += 1
 				tstats[pl.team].faults_touch += 1
 				_award(Rules.body_touch(pl.team), "touch", true, pl)

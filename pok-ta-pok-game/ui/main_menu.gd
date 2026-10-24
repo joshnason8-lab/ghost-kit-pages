@@ -133,16 +133,25 @@ func _build_ui() -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	right.add_child(spacer)
-	var foot := UI.label(tr("MENU_FOOT"), "MutedLabel", 15)
+	# The note and the version on a dark glass card, so they read over the match.
+	var card := UI.card("GlassPanel")
+	card.size_flags_horizontal = Control.SIZE_SHRINK_END
+	card.custom_minimum_size = Vector2(300, 0)
+	right.add_child(card)
+	var cv := VBoxContainer.new()
+	cv.add_theme_constant_override("separation", 2)
+	card.add_child(cv)
+	var foot := UI.label(tr("MENU_FOOT"), "MutedLabel", 15, Game.C_INK)
 	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	foot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	foot.custom_minimum_size = Vector2(300, 0)
 	UI.fit(foot, 3)
-	right.add_child(foot)
+	cv.add_child(foot)
 	var ver := UI.label("v" + String(ProjectSettings.get_setting("application/config/version", "0.1")), "MutedLabel", 15)
 	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	ver.mouse_filter = Control.MOUSE_FILTER_STOP
 	ver.gui_input.connect(_on_version_input)
-	right.add_child(ver)
+	cv.add_child(ver)
 
 
 ## A glyph block: a squared cartouche cut into the stone, its sign above its words.
@@ -210,13 +219,10 @@ func _lang_button() -> Button:
 	b.text = Game.language_names(Game.language())[0]
 	b.icon = null
 	b.custom_minimum_size = Vector2(0, 54)
-	b.add_child(Icon.make("globe", 0))
-	var ic: Icon = b.get_child(0)
-	ic.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	ic.custom_minimum_size = Vector2(26, 26)
+	var ic := Icon.make("globe", 26, Game.C_SAFFRON)
 	ic.position = Vector2(14, 14)
 	ic.size = Vector2(26, 26)
-	ic.color = Game.C_SAFFRON
+	b.add_child(ic)
 	b.add_theme_constant_override("h_separation", 8)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(Game.C_PANEL, 0.85)

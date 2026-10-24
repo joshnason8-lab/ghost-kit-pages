@@ -17,6 +17,18 @@ func _ready() -> void:
 		Game.settings.camera = int(args[5])
 	get_tree().root.size = Vector2i(1600, 900)
 	await Crowd.bake(self)
+	if venue.begins_with("res://"):
+		# A screen, not a match: OUT_PREFIX res://ui/x.gd GFX lang secs
+		Game.settings.language = String(args[3]) if args.size() > 3 else "en"
+		TranslationServer.set_locale(Game.language())
+		Game._size_theme()
+		Game.show_screen(venue)
+		for i in int(float(times[0]) * 30.0):
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_jpg("%s_%s_%s.jpg" % [out, venue.get_file().get_basename(), Game.language()], 0.85)
+		get_tree().quit()
+		return
 	Game.start_match({"home": "ESC", "away": "LLA" if DB.venue(venue).rules == "ulama" else "PIS", "venue": venue, "user_team": user,
 		"seed": 5, "mode": "quick", "length": 10, "difficulty": 1})
 	var t0 := Time.get_ticks_msec()

@@ -1,0 +1,47 @@
+# Google-Play-Store-Eintrag, Deutsch (Deutschland). Füge jeden Teil in Play Console > Grow users > Store presence
+# > Main store listing > Manage translations ein. Limits: App-Name 30 Zeichen, Kurzbeschreibung 80, vollständige
+# Beschreibung 4000.
+
+== App name ==
+Pok Ta Pok Rivals
+
+== Short description ==
+Ulama, das Hüftballspiel Mexikos: ein schwerer Kautschukball, gezählt bis acht.
+
+== Full description ==
+Pok Ta Pok Rivals ist das mesoamerikanische Ballspiel auf deinem Handy, so gespielt, wie es heute noch gespielt wird. Schlag einen schweren Kautschukball mit der Hüfte über den Analco (die Mittellinie) eines langen Erdplatzes, lies seinen flachen Aufsprung, wirf dich nach ihm, wenn er über den Boden schlittert, und treib ihn über das Ende des anderen Dorfes hinaus.
+
+DAS LEBENDIGE SPIEL: ULAMA DE CADERA (HÜFT-ULAMA)
+• Das Spiel, das in den Dörfern im Süden von Sinaloa, Mexiko, noch gespielt wird: vier oder fünf pro Seite auf dem Taste (dem Spielfeld), einem Streifen aus festgestampfter Erde, 60 Meter lang und 4 breit.
+• Nur die Hüfte. Berührt der Ball etwas anderes, geht die Raya (der Punkt) an die andere Seite.
+• Eine Raya gewinnt man, wenn der Ball in der anderen Hälfte liegen bleibt, über ihre Endlinie geht oder sie ihn ins Aus schlagen.
+• Die echte Zählung: Eine Seite hält sie, die Rayas gehen hoch und runter, und in der Urria kann ein ganzer Stand gelöscht werden. Wer zuerst bei acht ist, gewinnt.
+• Der Male ist der Aufschlag: über die Erde gerollt (abajo) oder hoch geworfen (arriba).
+• Zwei Schiedsrichter, die Veedores, entscheiden am Analco jede Raya.
+
+DER KLASSISCHE PLATZ (REKONSTRUIERT)
+Ein I-förmiger Steinplatz mit schrägen Mauern, nach den alten Chroniken wiederaufgebaut: Der Ball prallt vom Stein ab, und ein Steinring hoch oben in jeder Mauer entscheidet das Spiel sofort. Das passiert fast nie.
+
+SPIELMODI
+• Spiel ein Match: Wähl einen Platz und zwei Dörfer.
+• Dorfturnier: acht Dörfer, K.-o.-System, bis ins Finale.
+• Schau dir ein Match zwischen zwei Dörfern an, gespielt vom Computer.
+
+VIER PLÄTZE
+Ein Dorfplatz in Sinaloa in der Abenddämmerung, ein Festplatz bei Tag, ein Steinplatz im Wald von Yucatán unter einer Pyramide und derselbe Platz im Fackelschein.
+
+SECHZEHN DÖRFER
+Aus Sinaloa, Yucatán, Quintana Roo, Chiapas, Guatemala, Belize und Honduras, jedes mit eigenem Spitznamen und eigenen Farben.
+
+GEMACHT FÜR DEIN HANDY
+• Schwebender Joystick und große Buttons, Linkshänder-Layout, Buttongrößen und Buttons, die du verschieben kannst.
+• Läuft auf ganz normalen Handys: Grafik, die sich selbst einstellt, und ein Akkusparmodus.
+• Auf Spanisch, Englisch, Portugiesisch, Französisch, Deutsch und Italienisch.
+• „So wird gespielt“ erklärt die Regeln, die Zählung und die Geschichte des Spiels und seiner Wörter.
+
+Keine Werbung, keine In-App-Käufe, kein Konto, keine Datenerfassung.
+
+Pok Ta Pok Rivals ist ein unabhängiges Spiel und steht in keiner Verbindung zu einem Sportverband, einer Föderation, einem Turnier oder Verein und wird von keinem davon unterstützt. Dörfer erscheinen nur mit ihren Ortsnamen; alle Spieler sind erfunden.
+
+== Release notes (0.1.0) ==
+Die erste Beta: Ulama de cadera und der klassische Steinplatz, vier Plätze, sechzehn Dörfer, ein Dorfturnier, in sechs Sprachen.

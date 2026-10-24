@@ -143,7 +143,7 @@ func _mesh() -> ArrayMesh:
 	if _cache.has(key):
 		return _cache[key]
 	var m := MeshBuilder.new()
-	m.seg_k = 1.0 if _lod == 0 else 0.55
+	m.seg_k = 1.0 if _lod == 0 else 0.6
 	var kind := String(look.get("kind", "ulama"))
 	var skin: Color = look.get("skin", Color("9a6a48"))
 	var skin_dk := skin.darkened(0.12)
@@ -326,7 +326,7 @@ class MeshBuilder:
 		weights.append_array([1.0, 0.0, 0.0, 0.0])
 
 	## A rounded, tapered limb from a to b.
-	func capsule(a: Vector3, b: Vector3, ra: float, rb: float, c: Color, bone: int, squash := Vector3.ONE, seg := 12) -> void:
+	func capsule(a: Vector3, b: Vector3, ra: float, rb: float, c: Color, bone: int, squash := Vector3.ONE, seg := 10) -> void:
 		seg = maxi(5, roundi(seg * seg_k))
 		var axis := b - a
 		var length := axis.length()
@@ -336,7 +336,7 @@ class MeshBuilder:
 		var side := up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
 		var fwd := side.cross(up).normalized()
 		var rings := []
-		var caps := 3 if seg_k >= 1.0 else 2
+		var caps := 2 if seg_k >= 1.0 else 1
 		for k in range(caps, 0, -1):
 			var ang := PI * 0.5 * float(k) / caps
 			rings.append([a - up * ra * sin(ang) * 0.85, ra * cos(ang), -sin(ang)])
@@ -366,7 +366,7 @@ class MeshBuilder:
 
 	## An ellipsoid at centre with radii r. cut keeps only its top part above that fraction of its height (from the
 	## bottom): a cap of hair over the crown.
-	func ellipsoid(centre: Vector3, r: Vector3, c: Color, bone: int, cut := -1.0, seg := 14, rings := 9) -> void:
+	func ellipsoid(centre: Vector3, r: Vector3, c: Color, bone: int, cut := -1.0, seg := 12, rings := 7) -> void:
 		seg = maxi(6, roundi(seg * seg_k))
 		rings = maxi(4, roundi(rings * seg_k))
 		var base := verts.size()

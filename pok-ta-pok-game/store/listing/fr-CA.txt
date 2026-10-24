@@ -1,0 +1,47 @@
+# Fiche Google Play, français (Canada). Collez chaque partie dans Play Console > Grow users > Store presence
+# > Main store listing > Manage translations. Limites : nom de l'application 30 caractères, description courte 80,
+# description complète 4000.
+
+== App name ==
+Pok Ta Pok Rivals
+
+== Short description ==
+L'ulama, jeu de balle à la hanche du Mexique : caoutchouc lourd, compte à huit.
+
+== Full description ==
+Pok Ta Pok Rivals, c'est le jeu de balle mésoaméricain sur votre téléphone, joué comme on le joue encore aujourd'hui. Frappez de la hanche une lourde balle en caoutchouc par-dessus l'analco (la ligne centrale) d'un long terrain en terre, lisez son rebond bas, plongez quand elle file au ras du sol et envoyez-la au-delà du fond du village adverse.
+
+LE JEU VIVANT : L'ULAMA DE CADERA (ULAMA DE HANCHE)
+• Le jeu qu'on pratique encore dans les villages du sud du Sinaloa, au Mexique : quatre ou cinq par équipe sur le taste (le terrain), une bande de terre battue de 60 mètres de long et 4 de large.
+• La hanche seulement. Si la balle touche autre chose, la raya (le point) revient à l'autre camp.
+• On gagne une raya quand la balle meurt dans l'autre moitié, dépasse leur ligne de fond ou qu'ils l'envoient dehors.
+• Le vrai décompte : un camp le tient, les rayas montent et descendent, et en urria tout un compte peut être effacé. Le premier à huit l'emporte.
+• Le male, c'est le service : roulé sur la terre (abajo) ou lancé haut (arriba).
+• Deux juges, les veedores, annoncent chaque raya depuis l'analco.
+
+LE TERRAIN CLASSIQUE (RECONSTITUÉ)
+Un terrain de pierre en forme de I aux murs inclinés, reconstitué d'après les anciennes chroniques : la balle rebondit sur la pierre, et un anneau de pierre placé haut dans chaque mur fait gagner la partie d'un coup. Cela n'arrive presque jamais.
+
+MODES DE JEU
+• Jouer un match : choisissez un terrain et deux villages.
+• Tournoi des villages : huit villages, élimination directe, jusqu'à la finale.
+• Regarder un match entre deux villages joué par l'ordinateur.
+
+QUATRE TERRAINS
+Un terrain de village au Sinaloa au crépuscule, un terrain de fête en plein jour, un terrain de pierre dans la forêt du Yucatán au pied d'une pyramide, et le même terrain à la lueur des torches.
+
+SEIZE VILLAGES
+Du Sinaloa, du Yucatán, du Quintana Roo, du Chiapas, du Guatemala, du Belize et du Honduras, chacun avec son surnom et ses couleurs.
+
+PENSÉ POUR VOTRE TÉLÉPHONE
+• Joystick flottant et gros boutons, disposition pour gauchers, taille des boutons réglable et boutons déplaçables.
+• Tourne sur les téléphones de tous les jours : graphismes qui se règlent tout seuls et économiseur de batterie.
+• En espagnol, anglais, portugais, français, allemand et italien.
+• Comment jouer explique les règles, le décompte et l'histoire du jeu et de ses mots.
+
+Sans publicité, sans achats intégrés, sans compte, aucune donnée collectée.
+
+Pok Ta Pok Rivals est un jeu indépendant, sans lien avec aucun organisme sportif, fédération, tournoi ou club, et non approuvé par eux. Les villages n'apparaissent que sous leur nom de lieu ; tous les joueurs sont inventés.
+
+== Release notes (0.1.0) ==
+La première bêta : l'ulama de cadera et le terrain de pierre classique, quatre terrains, seize villages, un tournoi des villages, en six langues.

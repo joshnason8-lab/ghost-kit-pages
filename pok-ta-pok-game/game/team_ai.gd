@@ -111,9 +111,13 @@ func _plan(path: Array) -> void:
 		if fy > 0.05:
 			continue
 		var kind := ""
-		if pt.y > 0.5 and pt.y < 1.12:
+		var grounded: bool = path[i][1]
+		if pt.y >= 0.42 and pt.y < 1.15:
 			kind = "hip"
-		elif pt.y < 0.42:
+		elif pt.y < 0.42 and not grounded:
+			# A low ball still in the air: a player sinks right down for it, not quite a dive.
+			kind = "hip"
+		elif grounded or pt.y < 0.3:
 			kind = "dive"
 		else:
 			continue
@@ -206,12 +210,12 @@ func choose_aim() -> Vector3:
 	var court: Court = m.court
 	var hl := Court.ALLEY_HALF_L if court.classic() else Court.ULAMA_HALF_L
 	var drive: bool = rng.randf() < float(DRIVES[level])
-	var depth := rng.randf_range(0.45, 0.92) if not drive else rng.randf_range(0.3, 0.7)
+	var depth := rng.randf_range(0.4, 0.85) if not drive else rng.randf_range(0.3, 0.65)
 	var x := dirn() * depth * hl
 	var hw := court.half_w_at(x)
 	var z := rng.randf_range(-hw * 0.7, hw * 0.7)
 	var e: float = AIM_ERR[level]
 	x += rng.randf_range(-e, e) * 1.5
 	z += rng.randf_range(-e, e) * 0.35
-	var ang := rng.randf_range(7.0, 13.0) if drive else rng.randf_range(22.0, 36.0)
+	var ang := rng.randf_range(8.0, 14.0) if drive else rng.randf_range(26.0, 42.0)
 	return Vector3(x, ang, z)

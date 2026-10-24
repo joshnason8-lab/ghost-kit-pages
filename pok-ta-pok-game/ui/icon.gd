@@ -158,10 +158,22 @@ func _draw() -> void:
 			_line([[0.12, 0.32], [0.62, 0.32], [0.62, 0.72], [0.12, 0.72], [0.12, 0.32]])
 			_fill([[0.66, 0.44], [0.88, 0.3], [0.88, 0.74], [0.66, 0.6]])
 		"ball":
-			# The woven ball: a circle with its crossing strips.
-			_circle(0.5, 0.5, 0.36)
-			_line([[0.24, 0.3], [0.76, 0.7]])
-			_line([[0.24, 0.7], [0.76, 0.3]])
-			_line([[0.14, 0.5], [0.86, 0.5]])
+			# The solid rubber ball, with a highlight.
+			_circle(0.5, 0.5, 0.36, true)
+			draw_circle(_p(0.4, 0.38), minf(size.x, size.y) * 0.08, Color(1, 1, 1, 0.35))
+		"eye":
+			# Watching: an eye.
+			var pts := []
+			for i in 13:
+				var a := PI * i / 12.0
+				pts.append([0.5 - 0.4 * cos(a), 0.5 - 0.24 * sin(a)])
+			for i in 13:
+				var a := PI * i / 12.0
+				pts.append([0.5 + 0.4 * cos(a), 0.5 + 0.24 * sin(a)])
+			_line(pts)
+			_circle(0.5, 0.5, 0.13, true)
+		"continue":
+			_fill([[0.24, 0.2], [0.58, 0.5], [0.24, 0.8]])
+			_fill([[0.5, 0.2], [0.84, 0.5], [0.5, 0.8]])
 		_:
 			_circle(0.5, 0.5, 0.3, true)
