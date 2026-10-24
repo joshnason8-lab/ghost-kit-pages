@@ -1,8 +1,7 @@
 extends Node
 ## Draw calls, primitives and objects drawn per frame in a match, at each graphics level, in the biggest venue (the
 ## city arena, 5,200 in the stands) and the sports hall; and the frame time this machine takes (a guide only: a
-## phone's GPU is what counts), with the CPU time of the frame's game logic (process) and of posing the people on the
-## rink (game/player.gd, game/body.gd, game/rigged_body.gd: motion capture and the pose in code). Needs a window:
+## phone's GPU is what counts), and the CPU time of posing the people on the rink (game/player.gd, game/body.gd, game/rigged_body.gd: motion capture and the pose in code). Needs a window:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/perf_probe.tscn
 
 func _ready() -> void:
@@ -17,15 +16,13 @@ func _ready() -> void:
 				await get_tree().process_frame
 			var rs := RenderingServer
 			var t0 := Time.get_ticks_usec()
-			var process := 0.0
 			for i in 60:
 				await get_tree().process_frame
-				process += Performance.get_monitor(Performance.TIME_PROCESS)
 			var ms := float(Time.get_ticks_usec() - t0) / 60000.0
-			print("%s graphics %d: %d draw calls, %d primitives, %d objects; render scale %.2f; %.1f ms a frame here (game logic %.2f ms)" % [venue, g,
+			print("%s graphics %d: %d draw calls, %d primitives, %d objects; render scale %.2f; %.1f ms a frame here" % [venue, g,
 				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
 				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
-				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME), get_viewport().scaling_3d_scale, ms, process / 60.0 * 1000.0])
+				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME), get_viewport().scaling_3d_scale, ms])
 	# Posing: the twelve players and two referees of a match, running, for 300 frames.
 	Game.show_screen("res://ui/main_menu.gd")
 	await get_tree().process_frame
