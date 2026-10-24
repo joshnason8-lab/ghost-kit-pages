@@ -1,11 +1,12 @@
 extends Node
-## Sound effects, most synthesised at startup so the game ships few audio files. Drop an .ogg or .wav with the same
-## name into res://assets/audio/ to replace any of them (assets/audio/whistle.ogg, assets/audio/kick.ogg ...).
+## Sound effects: recordings where a good one could be had (the crowd, birdsong, boots on grass, the knocks of the
+## game: docs/SOUNDS.md, made by tools/audio/sounds.py), the rest synthesised at startup. An .ogg or .wav with a
+## sound's name in res://assets/audio/ takes the place of the made one.
 ## They are made a sound at a time by the loading screen (build_step), so it can show its progress; anything that
 ## needs one before then makes the rest at once (_ensure).
 
 const RATE := 22050
-const VOICES := {"grunt": 3, "hup": 2}
+const VOICES := {"grunt": 3, "hup": 2, "step": 4}
 const MUSIC_DB := -9.0
 
 var streams := {}
@@ -15,6 +16,7 @@ var _crowd: AudioStreamPlayer
 var _crowd_target := -60.0
 var _music: AudioStreamPlayer
 var _music_target := -80.0
+var _amb: AudioStreamPlayer         # the ground's own sound under the crowd: birdsong
 var _todo := []
 var _planned := false
 var _built := false
@@ -32,6 +34,8 @@ func _ready() -> void:
 	_music = AudioStreamPlayer.new()
 	_music.volume_db = -80.0
 	add_child(_music)
+	_amb = AudioStreamPlayer.new()
+	add_child(_amb)
 
 
 ## Make the next sound; false once they are all made.
@@ -121,6 +125,25 @@ func crowd(intensity: float) -> void:
 		_crowd.play()
 
 
+## Birdsong round the ground (on), or none.
+func ambience(on: bool, volume_db := -14.0) -> void:
+	_ensure()
+	if on and enabled() and _amb.stream != null:
+		_amb.volume_db = volume_db
+		if not _amb.playing:
+			_amb.play()
+	else:
+		_amb.stop()
+
+
+## Everything in a match held while it is paused, and carried on after.
+func pause_all(on: bool) -> void:
+	_crowd.stream_paused = on
+	_amb.stream_paused = on
+	for p in _pool:
+		p.stream_paused = on
+
+
 ## The menus' music: on in the menus, carrying on from one screen to the next; faded out for a match.
 func music(on: bool) -> void:
 	_ensure()
@@ -135,6 +158,7 @@ func music(on: bool) -> void:
 
 func stop_all() -> void:
 	_crowd.stop()
+	_amb.stop()
 	for p in _pool:
 		p.stop()
 
@@ -150,6 +174,7 @@ func _plan() -> void:
 		["tap", func(): return _wood(1.6, 0.03, 0.25)],     # the sliotar hopped on the bas
 		["clash", func(): return _wood(0.9, 0.09, 0.8)],    # hurleys meeting
 		["catch", func(): return _slap()],                  # leather into the palm
+		["shoulder", func(): return _thud(0.1)],            # a shoulder charge
 		["post", func(): return _wood(0.55, 0.16, 0.6)],    # off the upright
 		["save", func(): return _wood(0.75, 0.06, 0.9)],
 		["bounce", func(): return _thud(0.06)],             # on the grass
@@ -157,7 +182,7 @@ func _plan() -> void:
 		["roar", _roar],
 		["crowd_loop", _crowd_loop],
 	]
-	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music"]:
+	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music", "birds_loop"]:
 		_todo.append([k, null])
 	for kind in VOICES:
 		for i in int(VOICES[kind]):
@@ -167,11 +192,12 @@ func _plan() -> void:
 
 func _finish() -> void:
 	_built = true
-	for k in ["crowd_loop", "menu_music"]:
+	for k in ["crowd_loop", "menu_music", "birds_loop"]:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
 	_crowd.stream = streams.get("crowd_loop")
 	_music.stream = streams.get("menu_music")
+	_amb.stream = streams.get("birds_loop")
 
 
 func _to_stream(samples: PackedFloat32Array, loop := false) -> AudioStreamWAV:

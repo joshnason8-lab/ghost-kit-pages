@@ -142,6 +142,9 @@ func _ready() -> void:
 		Sfx.crowd(0.12)
 	else:
 		Sfx.crowd(stadium.atmosphere() * 0.55)
+		# Birdsong round the smaller grounds by day (the stadium's crowd drowns it; none at night).
+		Sfx.ambience(String(config.get("venue", "")) in ["parish", "county"] and stadium.time != "night",
+			-12.0 if String(config.get("venue", "")) == "parish" else -18.0)
 	for k in 2:
 		var t := TeamAI.new(self, k)
 		var diff := int(config.get("difficulty", Game.settings.get("difficulty", 1)))
@@ -358,6 +361,7 @@ func _process(delta: float) -> void:
 		P.OVER:
 			_brains(dt)
 	_move_all(dt)
+	_footsteps()
 	_carry_ball(dt)
 	var cross: Array = ball.step(dt)
 	if phase in [P.THROW_IN, P.LIVE, P.SHOOTOUT] and ball.state == Sliotar.FREE:
@@ -411,6 +415,24 @@ func _run_pending() -> void:
 			f.call()
 		else:
 			i += 1
+
+
+## A sound at p as loud as db when the camera is close, quieter with distance (to -12 dB more at 60 m).
+func _near_db(p: Vector3, db: float) -> float:
+	return db - clampf(cam.camera.global_position.distance_to(p) / 60.0, 0.0, 1.0) * 12.0
+
+
+## Your man's boots on the grass, a step at a time (only his: the rest are lost under the crowd).
+func _footsteps() -> void:
+	if active == null or replay.playing or user_team < 0:
+		return
+	if active.step_n != _last_step:
+		_last_step = active.step_n
+		var sp := Vector2(active.vel.x, active.vel.z).length()
+		Sfx.voice("step", lerpf(-24.0, -14.0, clampf(sp / 7.0, 0.0, 1.0)), randf_range(0.92, 1.08))
+
+
+var _last_step := 0
 
 
 func _after(t: float, f: Callable) -> void:
@@ -1415,6 +1437,8 @@ func _tackle(d: Player, c: Player) -> void:
 			return
 		if d.global_position.distance_to(c.global_position) > 2.8:
 			return
+		if kind == "tackle":
+			Sfx.play("shoulder", _near_db(c.global_position, -6.0), rng.randf_range(0.9, 1.1))
 		var r := rng.randf()
 		if r < foul_p:
 			var foul := "FOUL_PUSH"
@@ -2572,6 +2596,7 @@ func _pull(a: Player) -> void:
 func set_paused(on: bool) -> void:
 	paused = on
 	hud.show_pause(on)
+	Sfx.pause_all(on)
 
 
 func on_back() -> void:
@@ -2580,8 +2605,16 @@ func on_back() -> void:
 	set_paused(not paused)
 
 
+## Leaving the match however it ends: the ground's birdsong with it, nothing left paused.
+func _exit_tree() -> void:
+	Sfx.pause_all(false)
+	Sfx.ambience(false)
+
+
 func quit_match() -> void:
+	Sfx.pause_all(false)
 	Sfx.crowd(-1.0)
+	Sfx.ambience(false)
 	Game.goto_menu()
 
 

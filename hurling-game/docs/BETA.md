@@ -9,6 +9,13 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.7.0
+
+- **Real sounds**: a stadium crowd recorded live (its murmur under the play, a cheer for a point, a roar for a goal),
+  birdsong round the parish field and the county ground by day, your man's boots on the grass, hurleys clashing,
+  the ball off the post, a shoulder going in. Everything stops while the game is paused. Turn the sound up: does it
+  sound like a match?
+
 ## New in 0.6.0
 
 - **Real walking and jogging**: players off the ball walk and jog with motion capture from the CMU library (a real

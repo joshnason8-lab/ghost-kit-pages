@@ -64,6 +64,7 @@ var vel := Vector3.ZERO
 var want_vel := Vector3.ZERO
 var face_to := Vector3.ZERO      # a point to face when standing (else the way he runs)
 var yaw := 0.0
+var step_n := 0                  # every foot put down (the footsteps' sound follows it)
 var steps_taken := 0             # feet put down since the match last read them (the carry rules count them)
 
 var action := ""
@@ -249,6 +250,7 @@ func integrate(dt: float, now: float) -> void:
 	_ph += sp / stride * PI * dt
 	if floor(_ph / PI) != floor(_prev_ph / PI) and sp > 0.4:
 		steps_taken += 1
+		step_n += 1
 	if action != "":
 		action_t += dt
 		if action_t >= action_len and not action.begins_with("sig_"):

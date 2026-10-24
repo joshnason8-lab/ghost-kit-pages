@@ -42,6 +42,7 @@ func _ready() -> void:
 	await _hero_body()
 	await _replay()
 	await _match_and_motion()
+	_sounds()
 	Game.settings = keep
 	Game.delete_champ()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -889,6 +890,30 @@ func _replay() -> void:
 	check(w.replay._buf.is_empty() and w.hud._half.text != "", "Watching a match: no replay kept, the scoreboard ticking")
 	w.queue_free()
 	await frames(2)
+
+
+## Every sound the game plays is there and loads: each file in assets/audio, and every name Sfx makes or loads
+## (docs/SOUNDS.md lists where each recording came from).
+func _sounds() -> void:
+	var files := 0
+	var bad := []
+	for f in DirAccess.get_files_at("res://assets/audio"):
+		if f.ends_with(".ogg"):
+			files += 1
+			var st: AudioStream = load("res://assets/audio/" + f)
+			if st == null or st.get_length() <= 0.0:
+				bad.append(f)
+	check(files >= 24 and bad.is_empty(), "Sounds: the %d files in assets/audio load (%s)" % [files, bad])
+	Sfx._ensure()
+	var names := ["whistle", "whistle_long", "strike", "tap", "clash", "catch", "shoulder", "post", "save", "bounce",
+		"click", "roar", "crowd_loop", "crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music",
+		"birds_loop"]
+	for kind in Sfx.VOICES:
+		for i in int(Sfx.VOICES[kind]):
+			names.append("%s_%d" % [kind, i + 1])
+	var missing := names.filter(func(n): return not (Sfx.streams.get(n) is AudioStream))
+	check(missing.is_empty(), "Sounds: every sound the game plays is there (%s missing)" % [missing])
+	check(Sfx.streams.crowd_loop is AudioStreamOggVorbis and (Sfx.streams.crowd_loop as AudioStreamOggVorbis).loop and (Sfx.streams.birds_loop as AudioStreamOggVorbis).loop, "Sounds: the crowd's murmur and the birdsong loop")
 
 
 # ---------------------------------------------------------------- a match, and the movement audit

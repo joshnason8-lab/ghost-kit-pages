@@ -41,6 +41,9 @@ PLAY YOUR WAY
 
 Hurling Heroes is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.
 
+== Release notes (0.7.0) ==
+Real sounds: a stadium crowd recorded live, birdsong round the smaller grounds, boots on the grass, hurleys clashing and shoulders going in. Sound now pauses with the game.
+
 == Release notes (0.6.0) ==
 Players now walk and jog with real motion capture, their feet planted on the grass, blending into the sprint.
 

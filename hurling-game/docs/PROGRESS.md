@@ -212,6 +212,26 @@ and jogs for most of a match, so that is where a recording helps most.
 - Licences: "Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF
   EIA-0196217.", with the clip ids.
 
+## Done (0.7.0-beta, sounds, 24 October 2026)
+
+The owner asked every game for better sounds from Kenney (CC0) and OpenGameArt (CC0, CC-BY, CC-BY-SA only). Before:
+everything made in code but the crowd's reactions, the players' grunts and the music. Now (docs/SOUNDS.md has each
+file's source, author and licence; `tools/audio/sounds.py` downloads, trims, levels, loops and encodes them):
+
+- **The crowd**: a stadium crowd recorded live by Gregor Quendel (CC-BY 4.0): its murmur as the bed under the play
+  (a 20 s seamless loop, louder in a bigger crowd), its cheer for a point and its roar for a goal, in place of the
+  made ones.
+- **The grounds**: birdsong (Thimras, CC0) round the parish field and, quieter, the county ground, by day and at
+  dusk; none at the stadium (the crowd drowns it) or at night.
+- **The game's knocks** (Kenney, CC0): hurleys clashing, the ball off the aluminium upright, on the grass, into the
+  hand; a shoulder charge (new: the tackle had no sound); boots on grass for the man you play, louder as he runs.
+  The menu click.
+- **Pause**: the crowd, the birds and every sound now hold while the game is paused (they played on before).
+- **Not found** (the owner might source them): a referee's pea whistle, the crack of ash on leather, an Irish crowd's
+  chants. The made whistle and strike stay.
+- Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
+- Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
+
 ## Next (in order)
 
 1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev
@@ -222,7 +242,8 @@ and jogs for most of a match, so that is where a recording helps most.
 3. **More frees and shots**: real matches have about 26 frees and 77 shots; the game about 17 and 70.
 4. **Temporary substitutes** (blood, a head injury) and injuries, and the sin-binned player's replacement rules.
 5. **Umpires who now and then get a close one wrong**, and Hawk-Eye at the stadium (as the real one has).
-6. **Commentary-style call-outs** and crowd songs ("Come on the ...", "[County] abú!").
+6. **Commentary-style call-outs** and crowd songs ("Come on the ...", "[County] abú!"), and a recorded referee's
+   whistle and hurley strike (none to be had from Kenney or OpenGameArt: docs/SOUNDS.md).
 7. **A native Irish speaker** to read `i18n/src/ga.json` (docs/LANGUAGES.md lists the terms to check).
 8. **Camogie**, with its own rules done properly (60 minutes, the 45, hand-passed goals, its contact rules).
 9. **Club hurling**: invented parish clubs in a county championship, at the parish field.

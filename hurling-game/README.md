@@ -4,7 +4,7 @@ Hurling for Android phones, built with [Godot 4.7](https://godotengine.org) (fre
 the same way as Kabaddi Raid and Takraw Smash. It plays the GAA's playing rules as they stand in 2026, fifteen a side,
 for the people who play and follow hurling: Ireland, and the Irish abroad. In English and in Irish.
 
-> **Status: playable beta (0.6.0).** The hurlers are the owner's own model, animated with four Mixamo clips and a
+> **Status: playable beta (0.7.0).** The hurlers are the owner's own model, animated with four Mixamo clips and a
 > CMU motion-capture walk and jog (`tools/mocap/`), baked for phones (`tools/player/`); the officials and the
 > crowd's fans are Meshy models baked the same way (`game/person_body.gd`, `tools/crowd/`). Everything else is the
 > game as it will ship.
@@ -79,6 +79,7 @@ xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/kit_view.tscn 
 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/venue_view.tscn -- /out "" 0   # every ground on Low (2: High): TV, end, wide
 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/clip_view.tscn -- /out Baseball_Hit 0.2 1.4   # a Mixamo clip as stills
 tools/player/build.sh                                                                                       # re-bake the players' model (tools/player/README.md)
+python3 tools/audio/sounds.py /tmp/snd                                                                      # rebuild the recorded sounds (docs/SOUNDS.md)
 tools/mocap/fetch.sh /tmp/cmu                                                                               # rebuild the CMU walk and jog (assets/player/cmu.json)
 ```
 
