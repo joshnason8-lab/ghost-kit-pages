@@ -1045,13 +1045,16 @@ func _plan_chase() -> Dictionary:
 		best.at = Vector3(clampf(p.x + float(chase.dir) * 1.0, -6, 6), 0, float(chase.half) * 3.0)
 		return best
 	var fz := KhoRules.in_free_zone(f, p)
+	# A foul being whistled: no touch of his counts until he puts it right, by a kho or the free zone, so that is his
+	# plan; any seated chaser ahead will do.
+	var fouled := chase.foul != ""
 	for d in live:
 		var dp: Vector3 = d.position
 		var dist := (dp - p).length()
 		# Chase him where he is: on this side, and ahead (or anywhere for the wazir, or from the free zone).
 		var same := KhoRules.half_of(dp.z) == chase.half or absf(dp.z) < 0.3
 		var ahead: bool = chase.dir == 0 or chase.wazir or fz or (dp.x - p.x) * float(chase.dir) > -0.4
-		if same and ahead:
+		if same and ahead and not fouled:
 			var t := dist / (v * 0.34) + 0.3
 			if t < float(best.t):
 				best = {"kind": "chase", "d": d, "at": dp, "t": t}
@@ -1065,7 +1068,7 @@ func _plan_chase() -> Dictionary:
 			var ahead_k: bool = chase.dir == 0 or chase.wazir or (sx - p.x) * float(chase.dir) > 0.15
 			if not ahead_k and not fz:
 				continue
-			if not (KhoRules.half_of(dp.z) == int(sq_face[i]) or absf(dp.z) < 0.3):
+			if not fouled and not (KhoRules.half_of(dp.z) == int(sq_face[i]) or absf(dp.z) < 0.3):
 				continue
 			var kp := Vector3(sx - float(chase.dir if chase.dir != 0 else signf(sx - p.x)) * 0.25, 0, float(chase.half) * 0.55)
 			var t2 := (kp - p).length() / v + 0.5 + (dp - Vector3(sx, 0, 0)).length() / (v * 0.34)
@@ -1415,6 +1418,13 @@ func reach_time(q: Vector3) -> float:
 	return t
 
 
+## A defender is out of danger when the chase is this far off (reach_time, s); then he stands unless a spot is better
+## than his own by STAY_BONUS, and walks rather than jogs (docs/AI.md, "Watched").
+const SAFE_S := 3.2
+const STAY_BONUS := 0.8
+const SETTLE_M := 1.0
+
+
 func _defender_think(a: Athlete, dt: float) -> void:
 	var ai: Dictionary = _ai[a]
 	ai.cool = float(ai.cool) - dt
@@ -1465,8 +1475,18 @@ func _defender_think(a: Athlete, dt: float) -> void:
 	var tgt: Vector3 = ai.target
 	var to2: Vector3 = tgt - a.position
 	to2.y = 0
+	# Out of danger he settles: stands where he is, facing the chase, saving his legs (both real matches watched,
+	# docs/AI.md): he moves only to a spot clearly better than his own, and walks there unless the chase is coming.
+	if active:
+		a.face_to = active.position
+		a.watch = active.position
+	var safe := here > SAFE_S
+	if safe and to2.length() < SETTLE_M:
+		a.want = Vector3.ZERO
+		_stamina(a, dt)
+		return
 	var urgency := clampf((4.2 - here) / 2.8, 0.0, 1.0)
-	var spd := lerpf(3.4, top, urgency)
+	var spd := lerpf(1.6 if safe else 3.4, top, urgency)
 	var w := to2.normalized() * minf(spd, to2.length() * 3.0 + 0.5) if to2.length() > 0.05 else Vector3.ZERO
 	w = _avoid(a, w)
 	a.want = _keep_in(a, w)
@@ -1474,11 +1494,13 @@ func _defender_think(a: Athlete, dt: float) -> void:
 
 
 ## The defender's next spot: the safest within a few strides, from the threat (reach_time), the lines, the seated
-## chasers and his team-mates; a little wander so that he keeps moving, as defenders do.
+## chasers and his team-mates. In danger, a little wander, so he is hard to pin; out of it, his own spot unless another
+## is clearly safer: real defenders out of danger stand still and watch (docs/AI.md, "Watched").
 func _pick_spot(a: Athlete, here: float, read: float) -> Vector3:
 	var best := a.position
 	var bs := -99.0
 	var p := a.position
+	var safe := here > SAFE_S
 	var ai: Dictionary = _ai[a]
 	ai.wander = float(ai.wander) + rng.randf_range(-0.6, 0.6)
 	var wander_dir := Vector3(cos(float(ai.wander)), 0, sin(float(ai.wander)))
@@ -1499,8 +1521,10 @@ func _pick_spot(a: Athlete, here: float, read: float) -> Vector3:
 					var dm: float = (m.position - q).length()
 					if dm < 2.5:
 						s -= (2.5 - dm) * 0.35
-			if ring > 0.0:
+			if ring > 0.0 and not safe:
 				s += wander_dir.dot((q - p).normalized()) * 0.25
+			elif ring == 0.0 and safe:
+				s += STAY_BONUS
 			s += rng.randf_range(-noise, noise) * 0.3
 			if s > bs:
 				bs = s

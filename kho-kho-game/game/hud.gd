@@ -282,11 +282,18 @@ func _process(delta: float) -> void:
 		_call_t -= delta
 		_call.modulate.a = clampf(_call_t * 3.0, 0.0, 1.0)
 		_call.scale = _call.scale.lerp(Vector2.ONE, minf(1.0, delta * 10.0))
-	if _foul_t > 0.0 or m.chase.foul != "":
-		_foul_t -= delta
-		_foul_l.modulate.a = 1.0 if m.chase.foul != "" else clampf(_foul_t * 3.0, 0.0, 1.0)
-		if m.chase.foul != "" and _foul_l.text == "":
+	# The foul's bar: held while the foul stands, then fading; cleared once both are over (a foul put right after the
+	# fade's time used to leave it on screen).
+	_foul_t -= delta
+	if m.chase.foul != "":
+		_foul_l.modulate.a = 1.0
+		if _foul_l.text == "":
 			_foul_l.text = tr("FOUL") + " · " + tr("FOUL_" + String(m.chase.foul).to_upper())
+	elif _foul_t > 0.0:
+		_foul_l.modulate.a = clampf(_foul_t * 3.0, 0.0, 1.0)
+	elif _foul_l.modulate.a > 0.0:
+		_foul_l.modulate.a = 0.0
+		_foul_l.text = ""
 	_refresh()
 
 

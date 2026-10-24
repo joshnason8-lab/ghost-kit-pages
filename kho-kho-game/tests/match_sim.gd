@@ -8,11 +8,26 @@ extends Node
 
 var bot := false
 var cur: Node = null
+var safe_t := 0.0      # defender-seconds spent safe (the chase over SAFE_S away), on the field
+var safe_still := 0.0  # ... of them standing (under 0.5 m/s)
+var safe_dist := 0.0   # ... and the metres run in them
+const SAFE_S := 3.2
 
 
 ## The playtest tester's thumb, when the home side defends.
 func _process(_d: float) -> void:
-	if cur == null or not is_instance_valid(cur) or cur.controls == null:
+	if cur == null or not is_instance_valid(cur):
+		return
+	# Real defenders out of danger stand still and watch (docs/AI.md, "Watched"): how much do these?
+	if cur.phase == "play" and cur.active != null:
+		for d in cur.batch:
+			if cur.d_state.get(d, "") == "in" and cur.reach_time(d.position) > SAFE_S:
+				var v: float = Vector2(d.vel.x, d.vel.z).length()
+				safe_t += _d
+				safe_dist += v * _d
+				if v < 0.5:
+					safe_still += _d
+	if cur.controls == null:
 		return
 	var m = cur
 	if m.phase == "interval":   # "Next turn"
@@ -110,4 +125,6 @@ func _ready() -> void:
 		await get_tree().process_frame
 	print("ALL: outs %.2f a min, khos %.1f a min, a dive every %.0f s, fouls %.2f a min, dream points %d" % [tot.outs / (tot.secs / 60.0),
 		tot.khos / (tot.secs / 60.0), tot.secs / maxf(1, tot.dives + tot.pole), tot.fouls / (tot.secs / 60.0), tot.dream])
+	print("SAFE defenders: %.0f%% of their safe time standing, %.1f m/s on average (%.0f defender-seconds safe)" % [
+		100.0 * safe_still / maxf(safe_t, 0.001), safe_dist / maxf(safe_t, 0.001), safe_t])
 	get_tree().quit()
