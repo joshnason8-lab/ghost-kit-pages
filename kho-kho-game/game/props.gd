@@ -72,8 +72,12 @@ static func at(p: Vector3, yaw := 0.0, s := 1.0) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * s), p)
 
 
-## A tileable photo-scanned surface's colour texture (its normal map is left out: see docs/PROGRESS.md, round four).
+## A tileable photo-scanned surface's colour texture (its normal map is left out: see docs/PROGRESS.md, round four):
+## the 1k photo on Low, the 2k on Medium and High (VRAM-compressed, so it costs the phone a quarter of its size).
 static func surface(name: String) -> Array:
+	var hd := ENV + "surfaces/%s/%s_albedo_2k.jpg" % [name, name]
+	if int(Game.settings.graphics) > Game.GFX_LOW and ResourceLoader.exists(hd):
+		return [load(hd)]
 	return [load(ENV + "surfaces/%s/%s_albedo_1k.jpg" % [name, name])]
 
 

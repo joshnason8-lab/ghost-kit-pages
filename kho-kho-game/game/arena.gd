@@ -128,8 +128,10 @@ func _env(top: Color, horizon: Color, ambient: Color, energy: float, sun_rot: Ve
 		env.fog_sky_affect = 0.0   # a photographed sky has its own haze
 	if sky_name != "":
 		# A photographed sky (Poly Haven, CC0) as the background on every level: a panorama, nothing computed from it.
+		# High has it at 4k (the same photograph, its colours matched to the 2k: tools/env/make_sky_4k.py).
 		var sky_mat := PanoramaSkyMaterial.new()
-		sky_mat.panorama = load(Props.ENV + "skies/%s_sky_2k.jpg" % sky_name)
+		var sky_4k := Props.ENV + "skies/%s_sky_4k.jpg" % sky_name
+		sky_mat.panorama = load(sky_4k if int(Game.settings.graphics) == Game.GFX_HIGH and ResourceLoader.exists(sky_4k) else Props.ENV + "skies/%s_sky_2k.jpg" % sky_name)
 		sky_mat.energy_multiplier = sky_energy
 		var sky := Sky.new()
 		sky.sky_material = sky_mat

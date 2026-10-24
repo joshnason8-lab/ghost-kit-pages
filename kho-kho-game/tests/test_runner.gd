@@ -399,6 +399,15 @@ func _grounds() -> void:
 				check(chairs > 0 and (g != Game.GFX_LOW or chairs < 60), "graphics %d, village: chairs under the front row (%d)" % [g, chairs])
 			a.queue_free()
 			await frames(1)
+	# The extra detail is for Medium and High only: Low loads what it always has.
+	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		var ground: Texture2D = Props.surface("dry_ground_01")[0]
+		var want := 1024 if g == Game.GFX_LOW else 2048
+		check(ground.get_width() == want and Crowd.figs() == (8 if g == Game.GFX_LOW else 16),
+			"graphics %d: ground photos %d px (want %d), %d people in the crowd's sheet" % [g, ground.get_width(), want, Crowd.figs()])
+	check(ModelBody._texture(true).get_width() == 512 and ModelBody._texture(false).get_width() == 2048,
+		"the players' texture: 512 px on Low (unchanged), 2048 px on Medium and High")
 	Game.settings.graphics = keep_g
 
 

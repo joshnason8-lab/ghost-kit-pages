@@ -42,13 +42,16 @@ SOUNDS = {
     # The menus' tap (Kenney, UI Audio).
     "click": ("ui-audio/Audio/click1.ogg", 0.0, 0.2, "hit", None, -6.0),
     # The crowd: a stand's murmur and cheering, a cheer, applause (Gregor Quendel; eXpl0it3r).
-    "crowd_loop": ("cheering/Gregor Quendel - Free Crowd Cheering Sounds - MP3/Gregor Quendel - Crowd Cheering Sounds - 10 - Ambience.mp3", 10.0, 24.0, "bed", "highpass=f=80", -20.0),
-    "crowd_cheer": ("cheering/Gregor Quendel - Free Crowd Cheering Sounds - MP3/Gregor Quendel - Crowd Cheering Sounds - 04 - Strong cheering - II - Short.mp3", 5.0, 10.0, "swell", None, -15.0),
-    "applause": ("applause-clapping-church-crowd-immersive.wav", 1.0, 5.5, "swell", None, -17.0),
+    "crowd_loop": ("cheering/Gregor Quendel - Free Crowd Cheering Sounds - MP3/Gregor Quendel - Crowd Cheering Sounds - 10 - Ambience.mp3", 10.0, 34.0, "bed", "highpass=f=80", -20.0),
+    "crowd_cheer_1": ("cheering/Gregor Quendel - Free Crowd Cheering Sounds - MP3/Gregor Quendel - Crowd Cheering Sounds - 04 - Strong cheering - II - Short.mp3", 5.0, 10.0, "swell", None, -15.0),
+    "crowd_cheer_2": ("cheering/Gregor Quendel - Free Crowd Cheering Sounds - MP3/Gregor Quendel - Crowd Cheering Sounds - 03 - Strong cheering - I.mp3", 5.0, 10.0, "swell", None, -15.0),
+    "applause_1": ("applause-clapping-church-crowd-immersive.wav", 1.0, 5.5, "swell", None, -17.0),
+    "applause_2": ("applause-clapping-church-crowd-immersive.wav", 12.0, 16.5, "swell", None, -17.0),
+    "applause_3": ("applause-clapping-church-crowd-immersive.wav", 24.0, 28.5, "swell", None, -17.0),
     # The places: crickets at the village's dusk and the stadium's night (Wolfgang_), birds at the school's noon
     # (Thimras, a park; its traffic's rumble filtered out).
     "amb_crickets": ("crickets_1.mp3", 0.0, 11.4, "bed", None, -24.0),
-    "amb_birds": ("park_ambience_birds.wav", 185.0, 205.0, "bed", "highpass=f=300", -26.0),
+    "amb_birds": ("park_ambience_birds.wav", 185.0, 245.0, "bed", "highpass=f=300", -26.0),
 }
 FADE_IN = 0.004
 LOOP_XFADE = 0.8
