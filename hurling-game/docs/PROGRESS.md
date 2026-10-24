@@ -232,6 +232,40 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.8.0-beta, the size update, 24 October 2026)
+
+The owner allows the APK to grow (to about 150 MB) for a better look and sound, with Low exactly as it was. Every
+addition is a separate, sharper file that only Medium and High load (`Game.hd(path)`: "x_1k.jpg" becomes "x_2k.jpg",
+anything else "x_hd.<ext>"), VRAM-compressed (ETC2/ASTC on phones) with mipmaps:
+
+- **The pitch and fields**: Poly Haven's 2K scans (grass_ground albedo and normal, sparse, withered and leafy
+  grass; the 1K files Low loads are the same scans at half the size).
+- **The players**: hero_albedo_hd.jpg at 2048 and hero_mask_hd.png at 1024, from the owner's 4096 texture
+  (`tools/player/make_textures.py`); **the officials**: referee_hd.jpg and umpire_hd.jpg at 1024.
+- **The crowd**: four more Meshy fans (an older man in a tweed jacket and scarf, a red-haired teenager, a blonde
+  woman, a bearded man; `tools/meshy/tasks.json` fan3 to fan6, about 140 credits), all six in four poses, rendered
+  at 128 x 256 a figure into sheet_hd.png (24 figures, front above and back below) and its shirt mask (nothing above
+  the collar: grey hair is as pale as a white shirt). `tools/crowd/render_fans.tscn -- hd`.
+- **Sound** (for every level; sound is not video memory): the crowd's murmur 32 s and the birdsong 90 s before they
+  loop (were 20 s), three cheers and three roars from the same recordings, picked at random (`Sfx.VARIANTS`), Vorbis
+  quality 3.
+- **Measured** (`tests/perf_probe.tscn -- <venue> <level>`, one level a run; video memory as the driver reports it):
+
+  | | draw calls | triangles | video memory before | after |
+  |---|---|---|---|---|
+  | stadium Low | 90 | 119,379 | 40.1 MB | 40.1 MB |
+  | stadium Medium | 90 | 186,813 | 57.3 MB | 75.5 MB |
+  | stadium High | 138 | 324,507 | 68.7 MB | 86.9 MB |
+  | parish Low | 93 | 118,253 | 40.7 MB | 40.7 MB |
+  | parish Medium | 93 | 163,899 | 57.2 MB | 75.4 MB |
+  | parish High | 131 | 268,883 | 68.3 MB | 86.4 MB |
+
+  Draw calls and triangles the same at every level; Low's video memory unchanged.
+- Test: Low loads exactly the files it did; Medium and High find a texture twice as sharp for each; the crowd on
+  High has its 24 figures.
+- Not done, and why: 4K skies (the gantry camera sees little sky), the High meshes of the cottages and terraces (100
+  to 200 m off, the Low meshes look the same there).
+
 ## Next (in order)
 
 1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """The officials' textures for phones: each Meshy model's 2048 atlas down to 512 (the officials are small on the
-screen). On the referee's black kit, the generator painted a sportswear maker's marks: any pale speck inside a dark
+screen), or to the size given (1024 for Medium and High: <who>_hd.jpg). On the referee's black kit, the generator painted a sportswear maker's marks: any pale speck inside a dark
 patch is filled with the dark around it, so the kit is plain (the game shows no brands).
 
-Usage: python3 people_textures.py <texture.jpg> <out.jpg> [clean]   (needs Pillow and numpy)
+Usage: python3 people_textures.py <texture.jpg> <out.jpg> [clean|plain] [size]   (needs Pillow and numpy)
 """
 import sys
 
@@ -27,7 +27,8 @@ def main():
         a[speck] = fill[speck]
         print("cleaned", int(speck.sum()), "pixels")
         img = Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8))
-    img.resize((512, 512), Image.LANCZOS).save(out, quality=88, optimize=True)
+    size = int(sys.argv[4]) if len(sys.argv) > 4 else 512
+    img.resize((size, size), Image.LANCZOS).save(out, quality=88, optimize=True)
     print("wrote", out)
 
 

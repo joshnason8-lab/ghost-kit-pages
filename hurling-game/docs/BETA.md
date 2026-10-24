@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.8.0
+
+- **Sharper on Medium and High** (Settings > Graphics; Low is exactly as it was): the pitch's grass at twice the
+  detail, the players' kit and skin from a texture twice as sharp, the officials too.
+- **A more varied crowd** on Medium and High: six different fans (an older man in a cap and scarf, a red-haired
+  teenager, and more) in four poses each, 24 figures where there were 8.
+- **Longer crowd and birdsong**, and the crowd cheers and roars three different ways.
+
 ## New in 0.7.0
 
 - **Real sounds**: a stadium crowd recorded live (its murmur under the play, a cheer for a point, a roar for a goal),

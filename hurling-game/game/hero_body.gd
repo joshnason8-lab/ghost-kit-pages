@@ -12,8 +12,7 @@ const DIR := "res://assets/player/"
 static var _data := {}
 static var _meshes := []        # [hi, lo]
 static var _shader: Shader
-static var _albedo: Texture2D
-static var _kit: Texture2D
+static var _tex := {}             # Medium or High (true) or Low -> [the albedo, the kit mask]
 static var _mats := {}          # look key -> ShaderMaterial
 static var _sticks := {}        # hurley, lod -> ArrayMesh
 static var _q := {}             # clip -> its frames as Quaternions
@@ -102,19 +101,21 @@ func _dress() -> void:
 
 
 func _material() -> ShaderMaterial:
-	var key := "%s|%s|%s|%s|%s|%d" % [look.get("jersey"), look.get("trim"), look.get("shorts"), look.get("socks"),
-		look.get("skin"), int(look.get("design", 0))]
+	var hd := int(Game.settings.graphics) > Game.GFX_LOW
+	var key := "%s|%s|%s|%s|%s|%d|%s" % [look.get("jersey"), look.get("trim"), look.get("shorts"), look.get("socks"),
+		look.get("skin"), int(look.get("design", 0)), hd]
 	if _mats.has(key):
 		return _mats[key]
 	if _shader == null:
 		_shader = Shader.new()
 		_shader.code = SHADER
-		_albedo = load(DIR + "hero_albedo.jpg")
-		_kit = load(DIR + "hero_mask.png")
+	# The textures: 1024 (and the kit's mask at 512) on Low, 2048 (1024) on Medium and High.
+	if not _tex.has(hd):
+		_tex[hd] = [load(Game.hd(DIR + "hero_albedo.jpg")), load(Game.hd(DIR + "hero_mask.png"))]
 	var mat := ShaderMaterial.new()
 	mat.shader = _shader
-	mat.set_shader_parameter("albedo", _albedo)
-	mat.set_shader_parameter("kit", _kit)
+	mat.set_shader_parameter("albedo", _tex[hd][0])
+	mat.set_shader_parameter("kit", _tex[hd][1])
 	var jersey: Color = look.get("jersey", Color("c8202f"))
 	mat.set_shader_parameter("jersey", jersey)
 	mat.set_shader_parameter("trim", look.get("trim", Color.WHITE))

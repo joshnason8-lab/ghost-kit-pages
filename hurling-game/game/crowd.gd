@@ -14,26 +14,34 @@ const FIG_W := 64
 const FIG_H := 128
 const SHEET := "res://assets/crowd/sheet.png"
 const MASK := "res://assets/crowd/mask.png"
+## Medium and High: all six fans, 24 figures at twice the size, the front in the top row and the back below
+## (sheet_hd.png, tools/crowd/render_fans.gd hd).
+const FIGS_HD := 24
 
-static var _sheet: Texture2D
-static var _mask: Texture2D
-static var _mat: ShaderMaterial
+static var _sheets := {}         # Medium or High (true) or Low -> [sheet, mask]
+static var _mats := {}
 
 var spots: Array[Vector3] = []   # where people stand or sit (their feet)
 var facings: Array[Vector3] = [] # the way each faces: toward the centre of the field, flat
 
 
-## The sheet: eight people from the front, then the same eight from behind (and its shirt mask).
+static func _hd() -> bool:
+	return int(Game.settings.graphics) > Game.GFX_LOW and ResourceLoader.exists(Game.hd(SHEET))
+
+
+## The sheet: on Low eight people from the front, then the same eight from behind, in one row; on Medium and High
+## twenty-four, front above and back below (and its shirt mask).
 static func sheet() -> Texture2D:
-	if _sheet == null:
-		_sheet = load(SHEET)
-		_mask = load(MASK)
-	return _sheet
+	var hd := _hd()
+	if not _sheets.has(hd):
+		_sheets[hd] = [load(Game.hd(SHEET) if hd else SHEET), load(Game.hd(MASK) if hd else MASK)]
+	return _sheets[hd][0]
 
 
 static func material() -> ShaderMaterial:
-	if _mat:
-		return _mat
+	var hd := _hd()
+	if _mats.has(hd):
+		return _mats[hd]
 	var sh := Shader.new()
 	sh.code = """
 shader_type spatial;
@@ -41,6 +49,7 @@ render_mode unshaded, cull_disabled, depth_draw_opaque;
 uniform sampler2D sheet : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D mask : filter_linear_mipmap, repeat_disable;
 uniform float figs = 8.0;
+uniform bool rows = false;     // the sheet in two rows (front, back), not one
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
@@ -61,7 +70,8 @@ void vertex() {
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
 }
 void fragment() {
-	vec2 uv = vec2((UV.x + floor(data.x * figs) + back * figs) / (figs * 2.0), UV.y);
+	vec2 uv = rows ? vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + back) * 0.5)
+		: vec2((UV.x + floor(data.x * figs) + back * figs) / (figs * 2.0), UV.y);
 	vec4 c = texture(sheet, uv);
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
@@ -73,12 +83,14 @@ void fragment() {
 	ALBEDO = pow(col, vec3(2.2)) * light;
 }
 """
-	_mat = ShaderMaterial.new()
-	_mat.shader = sh
-	_mat.set_shader_parameter("sheet", sheet())
-	_mat.set_shader_parameter("mask", _mask)
-	_mat.set_shader_parameter("figs", float(FIGS))
-	return _mat
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("sheet", sheet())
+	m.set_shader_parameter("mask", _sheets[hd][1])
+	m.set_shader_parameter("figs", float(FIGS_HD if hd else FIGS))
+	m.set_shader_parameter("rows", hd)
+	_mats[hd] = m
+	return m
 
 
 ## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours).

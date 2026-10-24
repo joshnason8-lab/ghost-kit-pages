@@ -43,6 +43,7 @@ func _ready() -> void:
 	await _replay()
 	await _match_and_motion()
 	_sounds()
+	_hd_textures()
 	Game.settings = keep
 	Game.delete_champ()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -892,6 +893,33 @@ func _replay() -> void:
 	await frames(2)
 
 
+## Low loads exactly the textures it always has; Medium and High the sharper ones beside them (2K grass, the
+## player's 2048 texture and 1024 kit mask, the officials' 1024 ones, the crowd's 24-figure sheet).
+func _hd_textures() -> void:
+	var keep := int(Game.settings.graphics)
+	var files := ["res://assets/env/ground/grass_ground_albedo_1k.jpg", "res://assets/env/ground/grass_ground_normal_1k.jpg",
+		"res://assets/env/ground/sparse_grass_albedo_1k.jpg", "res://assets/env/ground/withered_grass_albedo_1k.jpg",
+		"res://assets/env/ground/leafy_grass_albedo_1k.jpg", "res://assets/player/hero_albedo.jpg",
+		"res://assets/player/hero_mask.png", "res://assets/people/referee.jpg", "res://assets/people/umpire.jpg",
+		"res://assets/crowd/sheet.png", "res://assets/crowd/mask.png"]
+	Game.settings.graphics = Game.GFX_LOW
+	var low := files.filter(func(f): return Game.hd(f) != f)
+	check(low.is_empty(), "Low: the same textures as before (%s)" % [low])
+	for g in [Game.GFX_MEDIUM, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		var bad := []
+		for f in files:
+			var h := Game.hd(f)
+			var a: Texture2D = load(f)
+			var b: Texture2D = load(h) if h != f else null
+			if b == null or b.get_width() < a.get_width() * 2:
+				bad.append(f.get_file())
+		check(bad.is_empty(), "Graphics %d: each texture has one twice as sharp (%s)" % [g, bad])
+	Game.settings.graphics = Game.GFX_HIGH
+	check(Crowd.material().get_shader_parameter("figs") == float(Crowd.FIGS_HD) and Crowd.sheet().get_width() == 128 * Crowd.FIGS_HD, "Crowd on High: the 24 figures")
+	Game.settings.graphics = keep
+
+
 ## Every sound the game plays is there and loads: each file in assets/audio, and every name Sfx makes or loads
 ## (docs/SOUNDS.md lists where each recording came from).
 func _sounds() -> void:
@@ -903,7 +931,7 @@ func _sounds() -> void:
 			var st: AudioStream = load("res://assets/audio/" + f)
 			if st == null or st.get_length() <= 0.0:
 				bad.append(f)
-	check(files >= 24 and bad.is_empty(), "Sounds: the %d files in assets/audio load (%s)" % [files, bad])
+	check(files >= 28 and bad.is_empty(), "Sounds: the %d files in assets/audio load (%s)" % [files, bad])
 	Sfx._ensure()
 	var names := ["whistle", "whistle_long", "strike", "tap", "clash", "catch", "shoulder", "post", "save", "bounce",
 		"click", "roar", "crowd_loop", "crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music",
@@ -911,6 +939,9 @@ func _sounds() -> void:
 	for kind in Sfx.VOICES:
 		for i in int(Sfx.VOICES[kind]):
 			names.append("%s_%d" % [kind, i + 1])
+	for k in Sfx.VARIANTS:
+		for i in range(1, int(Sfx.VARIANTS[k])):
+			names.append("%s_%d" % [k, i + 1])
 	var missing := names.filter(func(n): return not (Sfx.streams.get(n) is AudioStream))
 	check(missing.is_empty(), "Sounds: every sound the game plays is there (%s missing)" % [missing])
 	check(Sfx.streams.crowd_loop is AudioStreamOggVorbis and (Sfx.streams.crowd_loop as AudioStreamOggVorbis).loop and (Sfx.streams.birds_loop as AudioStreamOggVorbis).loop, "Sounds: the crowd's murmur and the birdsong loop")

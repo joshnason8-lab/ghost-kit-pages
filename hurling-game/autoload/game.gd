@@ -163,6 +163,15 @@ func detect_graphics() -> int:
 	return GFX_MEDIUM
 
 
+## The sharper version of a texture, for Medium and High (Low always loads the file named): "x_1k.jpg" becomes
+## "x_2k.jpg", anything else "x_hd.<ext>", when that file is in the game.
+func hd(path: String) -> String:
+	if int(settings.graphics) == GFX_LOW:
+		return path
+	var p := path.replace("_1k.", "_2k.") if path.contains("_1k.") else path.get_basename() + "_hd." + path.get_extension()
+	return p if ResourceLoader.exists(p) else path
+
+
 func language() -> String:
 	return String(settings.language) if String(settings.language) != "" else phone_language()
 

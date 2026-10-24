@@ -112,5 +112,61 @@
    "pose_mode": "a-pose"
   },
   "preview": "01a16bdc-ac71-7450-b07c-f3ce3b9f3d14"
+ },
+ "fan3": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, older Irish man in his sixties, grey hair, tweed flat cap, plain white polo shirt, beige trousers, brown shoes, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16c76-8558-75c8-9d0c-bdb87409cbc9",
+  "refine": "01a16c79-32cb-724a-8adf-5b0bfba6188d",
+  "rig": "01a16c7c-8c9f-752b-92fe-f5198eaab784"
+ },
+ "fan4": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, Irish teenage boy, short red hair, freckles, plain white t-shirt, black tracksuit bottoms, trainers, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16c76-8de9-714c-bd4f-30a4440b14cf",
+  "refine": "01a16c79-39f1-7353-b752-24fb6cc6cb49",
+  "rig": "01a16c7c-96f4-76d4-81c6-7169a72942c7"
+ },
+ "fan5": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, Irish woman in her forties, short blonde hair, plain white long-sleeved top, blue jeans, trainers, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16c76-94c1-7687-9c3f-2ca47f225a92",
+  "refine": "01a16c79-4096-7323-adcd-ffbde94a270f",
+  "rig": "01a16c7c-9ffd-77dc-b090-8ad6263c5ae9"
+ },
+ "fan6": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, stocky bald Irish man with a dark beard, plain white sports jersey, dark grey trousers, black shoes, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16c76-9c20-770e-aae6-b71fd1da489e",
+  "refine": "01a16c79-4888-73dc-9964-bd681e259df7",
+  "rig": "01a16c7c-a98b-7366-87e2-1a43611c3901"
  }
 }

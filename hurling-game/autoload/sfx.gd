@@ -7,6 +7,8 @@ extends Node
 
 const RATE := 22050
 const VOICES := {"grunt": 3, "hup": 2, "step": 4}
+## Sounds recorded more than once: play("roar") picks roar, roar_2 or roar_3, so a crowd never cheers twice alike.
+const VARIANTS := {"crowd_cheer": 3, "roar": 3}
 const MUSIC_DB := -9.0
 
 var streams := {}
@@ -89,9 +91,12 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
 	if not enabled() or not streams.has(sound):
 		return
+	var n := int(VARIANTS.get(sound, 1))
+	var pick := randi() % n
+	var key := sound if pick == 0 or not streams.has("%s_%d" % [sound, pick + 1]) else "%s_%d" % [sound, pick + 1]
 	var p := _pool[_next]
 	_next = (_next + 1) % _pool.size()
-	p.stream = streams[sound]
+	p.stream = streams[key]
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
 	p.play()
@@ -187,6 +192,9 @@ func _plan() -> void:
 	for kind in VOICES:
 		for i in int(VOICES[kind]):
 			_todo.append(["%s_%d" % [kind, i + 1], null])
+	for k in VARIANTS:
+		for i in range(1, int(VARIANTS[k])):
+			_todo.append(["%s_%d" % [k, i + 1], null])
 	_total = _todo.size()
 
 

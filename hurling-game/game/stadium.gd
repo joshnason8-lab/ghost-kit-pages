@@ -272,8 +272,9 @@ static var _field_mats := {}
 ## The fields: the photo-scanned leafy grass, in each field's own green (the vertex colour), unlit in the time of
 ## day's light as the pitch is. Two sizes of the texture over each other so the tiling does not show from the gantry.
 static func field_material(t: String) -> ShaderMaterial:
-	if _field_mats.has(t):
-		return _field_mats[t]
+	var key := "%s|%d" % [t, int(Game.settings.graphics)]
+	if _field_mats.has(key):
+		return _field_mats[key]
 	var sh := Shader.new()
 	sh.code = """
 shader_type spatial;
@@ -291,9 +292,9 @@ void fragment() {
 """
 	var m := ShaderMaterial.new()
 	m.shader = sh
-	m.set_shader_parameter("tex", load("res://assets/env/ground/leafy_grass_albedo_1k.jpg"))
+	m.set_shader_parameter("tex", load(Game.hd("res://assets/env/ground/leafy_grass_albedo_1k.jpg")))
 	m.set_shader_parameter("light", {"day": 0.95, "dusk": 0.8, "night": 0.85}.get(t, 1.0))
-	_field_mats[t] = m
+	_field_mats[key] = m
 	return m
 
 

@@ -4,10 +4,12 @@ extends Node3D
 ## from behind, head to waist, into one sheet (assets/crowd/sheet.png: the eight from the front, then the same eight
 ## from behind) and a mask of where their white shirts are (assets/crowd/mask.png), so Crowd can put every
 ## spectator in a colour of their own.
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/crowd/render_fans.tscn
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/crowd/render_fans.tscn [-- hd]
+## With hd, the sheet Medium and High draw (assets/crowd/sheet_hd.png and mask_hd.png): all six fans, 24 figures at
+## twice the size, the front in the top row and the back in the bottom one.
 
-const W := 64
-const H := 128
+var W := 64
+var H := 128
 const DIR := "res://tools/crowd/models/"
 const POSES := [
 	{},
@@ -18,13 +20,21 @@ const POSES := [
 
 
 func _ready() -> void:
-	Game.settings.graphics = Game.GFX_HIGH
-	var sheet := Image.create_empty(W * 16, H, false, Image.FORMAT_RGBA8)
-	var mask := Image.create_empty(W * 16, H, false, Image.FORMAT_RGBA8)
+	var hd := "hd" in OS.get_cmdline_user_args()
+	# Low's sheet from the fans' 512 textures; the HD one from their 1024 ones (fan_hd.jpg: Game.hd).
+	Game.settings.graphics = Game.GFX_HIGH if hd else Game.GFX_LOW
+	var models := ["fan", "fan2", "fan3", "fan4", "fan5", "fan6"] if hd else ["fan", "fan2"]
+	var figs := models.size() * POSES.size()
+	if hd:
+		W = 128
+		H = 256
+	var size := Vector2i(W * figs, H * 2) if hd else Vector2i(W * figs * 2, H)
+	var sheet := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
+	var mask := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
 	sheet.fill(Color(0, 0, 0, 0))
 	mask.fill(Color(0, 0, 0, 0))
 	var vp := SubViewport.new()
-	vp.size = Vector2i(W * 4, H * 4)
+	vp.size = Vector2i(W * 4, H * 4) if not hd else Vector2i(W * 2, H * 2)
 	vp.transparent_bg = true
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(vp)
@@ -47,7 +57,7 @@ void fragment() {
 """
 	mask_mat.shader = msh
 	var i := 0
-	for model in ["fan", "fan2"]:
+	for model in models:
 		for pose in POSES:
 			var body := PersonBody.new({"model": model, "dir": DIR, "kind": "fan"})
 			vp.add_child(body)
@@ -66,17 +76,22 @@ void fragment() {
 					var img := vp.get_texture().get_image()
 					img.resize(W, H, Image.INTERPOLATE_LANCZOS)
 					var dst := sheet if pass_ == 0 else mask
-					dst.blit_rect(img, Rect2i(0, 0, W, H), Vector2i((i + side * 8) * W, 0))
+					var at := Vector2i(i * W, side * H) if hd else Vector2i((i + side * figs) * W, 0)
+					dst.blit_rect(img, Rect2i(0, 0, W, H), at)
 					body.mesh_instance.material_override = mm
 			body.queue_free()
 			i += 1
 	# The mask keeps the figure's outline in its alpha, so the shader can tell shirt from background.
-	for y in H:
-		for x in W * 16:
+	for y in size.y:
+		# (In the HD sheet nothing above the collar is shirt: grey hair is as pale as a white shirt.)
+		var head := hd and (y % H) < int(H * 0.3)
+		for x in size.x:
 			var c := mask.get_pixel(x, y)
-			mask.set_pixel(x, y, Color(c.r, c.r, c.r, sheet.get_pixel(x, y).a))
+			var r := 0.0 if head else c.r
+			mask.set_pixel(x, y, Color(r, r, r, sheet.get_pixel(x, y).a))
 	DirAccess.make_dir_recursive_absolute("res://assets/crowd")
-	sheet.save_png("res://assets/crowd/sheet.png")
-	mask.save_png("res://assets/crowd/mask.png")
-	print("wrote assets/crowd/sheet.png and mask.png")
+	var sfx := "_hd" if hd else ""
+	sheet.save_png("res://assets/crowd/sheet%s.png" % sfx)
+	mask.save_png("res://assets/crowd/mask%s.png" % sfx)
+	print("wrote assets/crowd/sheet%s.png and mask%s.png (%d figures)" % [sfx, sfx, figs])
 	get_tree().quit()

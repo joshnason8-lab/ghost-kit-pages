@@ -37,12 +37,14 @@ func _dress() -> void:
 	if not _meshes.has(who):
 		_meshes[who] = load(dir + who + ".res")
 	mesh_instance.mesh = _meshes[who]
-	if not _mats.has(who):
+	# The texture: 512 on Low, 1024 (<who>_hd.jpg) on Medium and High.
+	var tex := Game.hd(dir + who + ".jpg")
+	if not _mats.has(tex):
 		var m := ShaderMaterial.new()
 		m.shader = _shader()
-		m.set_shader_parameter("albedo", load(dir + who + ".jpg"))
-		_mats[who] = m
-	mesh_instance.material_override = _mats[who]
+		m.set_shader_parameter("albedo", load(tex))
+		_mats[tex] = m
+	mesh_instance.material_override = _mats[tex]
 
 
 static var _sh: Shader

@@ -8,10 +8,10 @@ rest are made in code at startup (`autoload/sfx.gd`). `tests/test_runner.gd` che
 
 | File | What | Source | Author | Licence |
 |---|---|---|---|---|
-| `crowd_loop.ogg` | The crowd's murmur under the play (a 20 s seamless loop; louder in a bigger crowd) | "Free Crowd Cheering Sounds", 10 - Ambience, https://opengameart.org/content/free-crowd-cheering-sounds | Gregor Quendel | CC-BY 4.0 |
-| `crowd_cheer.ogg` | The cheer for a point | the same, 04 - Strong cheering - II - Short | Gregor Quendel | CC-BY 4.0 |
-| `roar.ogg` | The roar for a goal | the same, 03 - Strong cheering - I | Gregor Quendel | CC-BY 4.0 |
-| `birds_loop.ogg` | Birdsong round the parish field and the county ground by day (a 20 s loop) | "Park ambiences", park_ambience_birds.wav, https://opengameart.org/content/park-ambiences | Thimras | CC0 |
+| `crowd_loop.ogg` | The crowd's murmur under the play (a 32 s seamless loop; louder in a bigger crowd) | "Free Crowd Cheering Sounds", 10 - Ambience, https://opengameart.org/content/free-crowd-cheering-sounds | Gregor Quendel | CC-BY 4.0 |
+| `crowd_cheer.ogg`, `crowd_cheer_2.ogg`, `crowd_cheer_3.ogg` | The cheer for a point (one of three) | the same, 04 - Strong cheering - II - Short, 05 - Soft cheering - I, 06 - Soft cheering - II | Gregor Quendel | CC-BY 4.0 |
+| `roar.ogg`, `roar_2.ogg`, `roar_3.ogg` | The roar for a goal (one of three) | the same, 03 - Strong cheering - I, 01 - Strong cheering and strong rhythmic cheering, 02 - Strong cheering and soft rhythmic cheering | Gregor Quendel | CC-BY 4.0 |
+| `birds_loop.ogg` | Birdsong round the parish field and the county ground by day (a 90 s loop) | "Park ambiences", park_ambience_birds.wav, https://opengameart.org/content/park-ambiences | Thimras | CC0 |
 | `step_1.ogg` to `step_4.ogg` | Boots on grass: the man you play | "Impact Sounds", footstep_grass_000 to 003, https://kenney.nl/assets/impact-sounds | Kenney | CC0 |
 | `clash.ogg` | Hurleys meeting | the same, impactWood_medium_002 | Kenney | CC0 |
 | `post.ogg` | The ball off an (aluminium) upright | the same, impactMetal_light_001 | Kenney | CC0 |

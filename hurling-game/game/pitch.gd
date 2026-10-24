@@ -203,11 +203,11 @@ void fragment() {
 	m.set_shader_parameter("half_l", HALF_L)
 	m.set_shader_parameter("half_w", HALF_W)
 	m.set_shader_parameter("detail", g > Game.GFX_LOW)
-	m.set_shader_parameter("grass", load("res://assets/env/ground/grass_ground_albedo_1k.jpg"))
+	m.set_shader_parameter("grass", load(Game.hd("res://assets/env/ground/grass_ground_albedo_1k.jpg")))
 	if g > Game.GFX_LOW:
-		m.set_shader_parameter("grass_n", load("res://assets/env/ground/grass_ground_normal_1k.jpg"))
-		m.set_shader_parameter("sparse", load("res://assets/env/ground/sparse_grass_albedo_1k.jpg"))
-		m.set_shader_parameter("withered", load("res://assets/env/ground/withered_grass_albedo_1k.jpg"))
+		m.set_shader_parameter("grass_n", load(Game.hd("res://assets/env/ground/grass_ground_normal_1k.jpg")))
+		m.set_shader_parameter("sparse", load(Game.hd("res://assets/env/ground/sparse_grass_albedo_1k.jpg")))
+		m.set_shader_parameter("withered", load(Game.hd("res://assets/env/ground/withered_grass_albedo_1k.jpg")))
 	var light: float = {"day": 1.0, "dusk": 0.78, "night": 0.86}.get(time_of_day, 1.0)
 	m.set_shader_parameter("light", light)
 	if time_of_day == "dusk":
