@@ -103,6 +103,10 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   - Long stereo recordings for each court's surroundings and a longer crowd bed with chatter on Medium and High (JC
     Sounds, CC-BY 4.0; Gregor Quendel), and three cheers and two applause takes in turn.
   - Meshy credits for this update: 440 (1,203 before, 763 after), for the eight townspeople, the ring and the stela.
+- **0.4.1, the beta key**: both APKs are signed with the owner's beta keystore (repository secret BETA_KEYSTORE_B64)
+  instead of a build tool's own debug key, so every beta from now on installs over the last. CI logs each APK's
+  certificate SHA-256 and fails if it is not the beta key's. Without the secret it warns and falls back. A phone with
+  an earlier beta (signed with the old key) has to uninstall it once.
 
 ## Next
 
