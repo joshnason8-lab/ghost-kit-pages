@@ -176,6 +176,13 @@ Performance (perf_probe, before and after, every ground on Low, Medium and High)
 (Low: village 88 and 69k, school 83 and 38k, arena 84 and 46k, stadium 80 and 39k). The milliseconds a frame on this
 machine's software renderer were lower after, by run-to-run noise, not by the change.
 
+**0.7.1-beta, real whistles (24 October 2026, the owner via the lead).** The owner found recorded pea whistles (Pixabay;
+the lead cut and matched them on the shared-assets branch). They replace the synthesised ones, used as RULES.md has the
+officials use them: the timekeeper's long and short at a turn's start and long at its end (from the table), the
+final whistle as the last turn's, one short pip from that half's umpire for an out, pips every 0.32 s until a foul is
+put right, the gym's take for every long blast in the hall. Random takes, in 3D from the official on their own players
+(a footstep cannot cut one short), silent in the menu's backdrop match. docs/SOUNDS.md has each file and its credit.
+
 ## Round seven: 0.7.0-beta, a bigger APK for Medium and High (24 October 2026, the owner via the lead)
 
 The owner allowed the APK to grow (to about 100 MB, India first) to look and sound better, on two conditions: Low

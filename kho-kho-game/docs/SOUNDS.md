@@ -20,13 +20,23 @@ Ogg Vorbis); the sources themselves are not in the repository. `autoload/sfx.gd`
 | `amb_crickets.ogg` | The village at dusk, and (quieter) the stadium at night. | [Crickets Ambient Noise - loopable](https://opengameart.org/content/crickets-ambient-noise-loopable) | Wolfgang_ | CC0 |
 | `amb_birds.ogg` | The school at noon. | [Park ambiences](https://opengameart.org/content/park-ambiences) (`park_ambience_birds`, 185-245 s, the traffic's rumble filtered out) | Thimras | CC0 |
 
+| `whistle_short_1-3.ogg` | A short pip: an out (one, from that half's umpire), a foul (again and again until it is put right), the second of the timekeeper's two at a turn's start. | Pixabay 568615 "Referee whistle"; 291816 "Referee whistle / coach whistle / sports whistle"; 6121 "Metal whistle" | charlesheffley009; framptones; freesound_community | Pixabay Content License |
+| `whistle_long_1-3.ogg` | A long blast: the timekeeper's at a turn's start and end. | the same three | charlesheffley009; framptones; freesound_community | Pixabay Content License |
+| `whistle_gym.ogg` | The long blast in the hall, with its echo. | Pixabay 6320 "Referee whistle blow, gymnasium" | freesound_community | Pixabay Content License |
+| `whistle_final.ogg` | Short, short, long: the end of the match (the last turn's whistle). | Pixabay 568615 | charlesheffley009 | Pixabay Content License |
+| `whistle_double.ogg` | Two quick pips (loaded; kho kho's umpires have no use for it yet). | Pixabay 568615 | charlesheffley009 | Pixabay Content License |
+
+The whistles were found by the owner and cut, faded and loudness-matched by the lead (shared assets, `sounds/whistle/`);
+they are played in 3D from the official who blows them (the timekeeper at the table, the umpire of that half), and
+not in the menu's backdrop match. The Pixabay licence asks no credit and does not allow the sounds to be passed on
+on their own; here they are part of the game.
+
 In the hall (the arena) the match's sounds carry a little of a hall's echo (a reverb on the game's own bus).
 
 ## Made for the game
 
 | File, or name in `sfx.gd` | What | How |
 |---|---|---|
-| `whistle`, `whistle_long`, `whistle_short` | The umpires' and the timekeeper's whistles. | Synthesised at startup (`Sfx._whistle`). |
 | `whoosh` | A dive, a dodge. | Synthesised (`Sfx._whoosh`). |
 | `menu_music.ogg`, `drums_loop.ogg` | The menus' music; the crowd's drums as a chase builds. | Written for the game (`tools/audio/make_music.py`). |
 | `crowd_ooh.ogg`, `crowd_groan.ogg`, `clap.ogg` | The crowd at a near thing, at an out against the home side; one clap. | From Kabaddi Raid, by the same maker. |
@@ -36,7 +46,6 @@ In the hall (the arena) the match's sounds carry a little of a hall's echo (a re
 
 Neither Kenney nor OpenGameArt has these; the game makes do as above.
 
-- **A referee's pea whistle** (a real one, short and long blasts): the whistles are still synthesised.
 - **The kho call**: a chaser's sharp "Kho!" as he touches the seated one's back. The game plays a "hup" for now.
 - **An Indian crowd**: chants, a dhol, whistling and shouting as at a kho kho ground. The recordings here are a
   European crowd's murmur and cheer (no words to be heard); the drums are written for the game.

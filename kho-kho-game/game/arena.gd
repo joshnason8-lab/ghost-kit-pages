@@ -304,6 +304,11 @@ func _poles() -> void:
 		_lit.cylinder(Vector3(s * pg, 0, 0), Vector3(s * pg, 0.04, 0), r * 1.8, r * 1.8, Color("8a5a2b"), 10, true)
 
 
+## Where the timekeeper sits: the officials' table, at his whistle's height.
+func table_pos() -> Vector3:
+	return Vector3(0, 1.2, -(f.width * 0.5 + f.lobby + 1.4))
+
+
 ## The officials' table and the benches, on the far side line.
 func _table() -> void:
 	var z: float = -(f.width * 0.5 + f.lobby + 1.4)

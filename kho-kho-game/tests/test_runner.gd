@@ -280,7 +280,8 @@ func _sounds() -> void:
 			not_looping.append(k)
 	check(not_looping.is_empty(), "the beds and the music loop (%s)" % str(not_looping))
 	var unmade := []
-	for k in ["whistle", "whistle_long", "whistle_short", "whoosh", "slap", "thud", "step_earth", "step_mat", "click"]:
+	for k in ["whistle_long", "whistle_short", "whistle_final", "whistle_double", "whistle_gym", "whoosh", "slap", "thud",
+			"step_earth", "step_mat", "click"]:
 		if not Sfx.streams.has(Sfx._take(k)):
 			unmade.append(k)
 	for kind in Sfx.AMBIENCE:
