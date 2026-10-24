@@ -9,7 +9,9 @@ The players are Josh Nason's own 3D model. Umpires, venues, crowd, ball, flags a
 game; the menu music written for it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
 Venue models by Josh Nason: the arena's courtside stands, gym and park benches, oak trees, grass, terraced houses
 and the street hoop. From Poly Haven (polyhaven.com), CC0: the skies, floor and wall textures, jacaranda and
-broadleaf trees, painted benches, hall lights, clock, fire alarm, wet floor sign and street lamps."""
+broadleaf trees, painted benches, hall lights, clock, fire alarm, wet floor sign and street lamps.
+Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+(The side-step and the landing: clips 102_27 and 16_08, in Bruce Hahne's BVH conversion.)"""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans, Noto Sans Sinhala, Noto Sans Tamil and Noto Sans SC: Copyright The Noto Project Authors (https://github.com/notofonts).

@@ -40,9 +40,9 @@ static func run(phase: float, speed: float) -> Dictionary:
 static func hold() -> Dictionary:
 	var p := ready(1.0)
 	p.upperarm_l = Vector3(-40, 0, 18)
-	p.forearm_l = Vector3(-80, 30, 0)
+	p.forearm_l = Vector3(-80, -30, 0)
 	p.upperarm_r = Vector3(-40, 0, -18)
-	p.forearm_r = Vector3(-80, -30, 0)
+	p.forearm_r = Vector3(-80, 30, 0)
 	return p
 
 

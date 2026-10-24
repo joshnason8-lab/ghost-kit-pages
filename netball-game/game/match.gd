@@ -366,8 +366,11 @@ func _give(pl: Player, caught := true) -> void:
 	hold_ready = caught
 	from_free = false
 	footwork = Rules.Footwork.new()
-	footwork.land("both" if pl.vel.length() < 1.0 else ("l" if rng.randf() < 0.5 else "r"))
+	var foot := "both" if pl.vel.length() < 1.0 else ("l" if rng.randf() < 0.5 else "r")
+	footwork.land(foot)
 	pl.landing = pl.p + pl.vel * 0.12
+	if caught:
+		pl.start_landing(foot)   # her body lands on that foot (motion capture) and stops on it
 	pl.stopped = true
 	pl.set_act("hold")
 	pl.look_on = false

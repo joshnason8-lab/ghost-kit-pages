@@ -10,6 +10,9 @@ const ACCEL := 9.0           # m/s² speeding up
 const DECEL := 12.0          # m/s² stopping (a landing on the catch takes about one step)
 const TURN := 9.0            # rad/s
 const TOP := 7.2             # m/s, a sprint at speed 99
+const LAND_DECEL := 40.0     # m/s² at most, landing with the ball: the landing's own pace (it takes about a step)
+const LAND_MIN := 1.5        # m/s: caught slower than this, she simply stops (no landing)
+const SLIDE_TOP := 4.0       # m/s: side-stepping faster than this, she runs
 
 var match_ref = null         # the Match
 var team := 0
@@ -49,6 +52,15 @@ var fenced := true           # she keeps to her areas (the AI always; you with K
                              # rather than running over it
 var clip_body := 0.0         # how much of her legs and body the stride clips take now (0-1), eased
 var clip_arms := 0.0         # and of her arms
+var slide := 0.0             # how much of the run is the defensive side-step (motion capture), eased
+var slide_phase := 0.0       # through its cycle (0-1)
+var slide_side := 1.0        # +1 stepping to her left, -1 to her right (eased between)
+var land_clip := ""          # the landing (motion capture) she is in: land_l or land_r (her landing foot), or ""
+var land_d := 0.0            # how far along the clip's path she is (m of the clip)
+var land_w := 0.0            # how much of her legs and body it has
+var land_dir := Vector2.ZERO # the way she was going as she caught it
+var land_t := 0.0            # seconds since she caught it
+var land_t0 := 0.0           # the clip's time she came in at
 var _pose := {}
 var _airborne := 0.0
 
@@ -104,8 +116,13 @@ func advance(dt: float) -> void:
 		var room := _room_along(desired.normalized())
 		if room < 3.0:
 			desired = desired.limit_length(sqrt(2.0 * DECEL * 0.85 * maxf(0.0, room - 0.12)))
-	var dv := desired - vel
 	var rate := ACCEL if desired.length() > vel.length() else DECEL
+	if stopped and land_clip != "":
+		# Landing with the ball: she stops as the landing does (motion capture), at its pace, never faster than she
+		# was going, so the landing foot stays where it came down.
+		desired = land_dir * minf(HeroBody.mocap_speed(land_clip, land_d) * _scale(), vel.length())
+		rate = LAND_DECEL
+	var dv := desired - vel
 	var step := rate * dt
 	vel = vel + dv.limit_length(step)
 	var next := p + vel * dt
@@ -113,6 +130,8 @@ func advance(dt: float) -> void:
 		# At the line: she stops on her side of it.
 		next = Rules.onside_point(pos, next, dir, 0.02)
 		vel = (next - p) / maxf(dt, 0.001)
+	if land_clip != "":
+		land_d += (next - p).length() / _scale()
 	p = next
 	position = Vector3(p.x, 0, p.y)
 	# Facing: the ball (or a look target) when set, else where she runs.
@@ -181,12 +200,53 @@ func _animate(dt: float) -> void:
 	var kc := 1.0 - exp(-8.0 * dt)
 	clip_body = lerpf(clip_body, smoothstep(0.3, 1.1, spd) if moving else 0.0, kc)
 	clip_arms = lerpf(clip_arms, clip_body if arms_free else 0.0, kc)
+	# Side-on to where she is going (marking, or keeping her eyes on the ball), she side-steps as a defender does
+	# rather than running crabwise: the motion-capture slide, its cycle locked to how far she goes sideways.
+	var lat := vel.dot(Vector2(cos(facing), -sin(facing)))   # toward her left (+) or right (-), m/s
+	var want_slide := 0.0
+	if moving:
+		want_slide = smoothstep(0.6, 0.85, absf(lat) / maxf(spd, 0.01)) * (1.0 - smoothstep(SLIDE_TOP - 0.8, SLIDE_TOP, spd))
+	slide = lerpf(slide, want_slide, kc)
+	if absf(lat) > 0.2:
+		slide_side = move_toward(slide_side, signf(lat), dt * 6.0)
+	if slide > 0.01:
+		slide_phase = fposmod(slide_phase + absf(lat) / (HeroBody.mocap_travel("slide_left") * _scale()) * dt, 1.0)
+	# The landing with the ball: her legs and body from the motion capture while she holds it where she came down.
+	if land_clip != "":
+		land_t += dt
+		var keep := stopped and act in ["hold", "catch"]
+		land_w = lerpf(land_w, 1.0 if keep else 0.0, 1.0 - exp(-(30.0 if keep else 6.0) * dt))
+		if not keep and land_w < 0.02:
+			land_clip = ""
+			land_w = 0.0
 	if body:
-		body.apply(_with_clips(_pose, spd) if clip_body > 0.01 and body is HeroBody else _pose)
+		var out: Dictionary = _with_clips(_pose, spd) if clip_body > 0.01 and body is HeroBody else _pose
+		if land_w > 0.01:
+			out = _with_landing(out)
+		body.apply(out)
+
+
+## The landing laid over pose p (her legs and body; her arms, on the ball, stay p's), at the point of the clip
+## that matches how far she has come since the catch.
+func _with_landing(p: Dictionary) -> Dictionary:
+	var t := maxf(HeroBody.mocap_time_at(land_clip, land_d), land_t0 + land_t - 0.15)
+	var c := HeroBody.mocap_pose(land_clip, t)
+	var out := p.duplicate()
+	for i in ToonBody.BONES.size():
+		var n: String = ToonBody.BONES[i][0]
+		if n in _MOCAP_BONES:
+			out[n] = HeroBody.turn(p.get(n, Vector3.ZERO)).slerp(c[0][i], land_w)
+	var sh: Vector3 = c[1]
+	out.hips_y = lerpf(float(p.get("hips_y", 0.0)), sh.y, land_w)
+	out.hips_x = lerpf(float(p.get("hips_x", 0.0)), sh.x, land_w)
+	out.hips_fwd = lerpf(float(p.get("hips_fwd", 0.0)), sh.z, land_w)
+	return out
 
 
 const _BODY_BONES := ["hips", "spine", "chest", "neck", "head", "thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
 const _ARM_BONES := ["upperarm_l", "forearm_l", "hand_l", "upperarm_r", "forearm_r", "hand_r"]
+## The bones the motion capture moves under her own pose: not her neck and head, which keep watching the play.
+const _MOCAP_BONES := ["hips", "spine", "chest", "thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
 
 
 ## The stride clips at her speed, phase-locked to her stride: the model's own walk, then her run, then the sprint
@@ -197,17 +257,61 @@ func _with_clips(p: Dictionary, spd: float) -> Dictionary:
 	var sprint := HeroBody.stride_pose("Fast_Run", stride_phase)
 	var a := smoothstep(1.8, 3.2, spd)       # walk -> run
 	var b := smoothstep(4.0, 5.6, spd)       # run -> sprint
+	# The side-step (slide_left or slide_right, the way she is going), and how much of it: through the middle of a
+	# change of direction it gives way to the run.
+	var ws := slide * absf(slide_side)
+	var sl: Array = []
+	if ws > 0.01:
+		var sname := "slide_left" if slide_side > 0.0 else "slide_right"
+		sl = HeroBody.mocap_pose(sname, slide_phase * HeroBody.mocap_length(sname), true)
 	var out := p.duplicate()
 	for i in ToonBody.BONES.size():
 		var n: String = ToonBody.BONES[i][0]
-		var w := clip_body if n in _BODY_BONES else clip_arms
+		var body_bone: bool = n in _BODY_BONES
+		var w := clip_body if body_bone else clip_arms
+		var q: Quaternion = (walk[0][i] as Quaternion).slerp(jog[0][i], a).slerp(sprint[0][i], b)
+		if not sl.is_empty():
+			# The whole of her goes with the slide, arms out wide and balanced as a defender's are (the run's
+			# swinging arms and its head, set for an upright torso, do not sit on the slide's crouch).
+			q = q.slerp(sl[0][i], ws)
+			if not body_bone:
+				w = maxf(w, clip_body * ws)
 		if w <= 0.0:
 			continue
-		var q: Quaternion = (walk[0][i] as Quaternion).slerp(jog[0][i], a).slerp(sprint[0][i], b)
 		out[n] = HeroBody.turn(p.get(n, Vector3.ZERO)).slerp(q, w)
 	var lift := lerpf(lerpf(float(walk[1]), float(jog[1]), a), float(sprint[1]), b)
-	out.hips_y = lerpf(float(p.get("hips_y", 0.0)), lift, clip_body)
+	var shift := Vector3(0.0, lift, 0.0)
+	if not sl.is_empty():
+		shift = shift.lerp(sl[1], ws)
+	out.hips_y = lerpf(float(p.get("hips_y", 0.0)), shift.y, clip_body)
+	out.hips_x = shift.x * clip_body
+	out.hips_fwd = shift.z * clip_body
 	return out
+
+
+## Her body's size against the model's (the clips' metres are the model's).
+func _scale() -> float:
+	return body.scale.x if body else 1.0
+
+
+## She has caught the ball on the move and lands on foot ("l", "r"; "both" when she was all but stopped): the
+## landing from the motion capture, picked up at the moment of its stride that matches her speed.
+func start_landing(foot: String) -> void:
+	land_clip = ""
+	var spd := vel.length()
+	if foot == "both" or spd < LAND_MIN or not (body is HeroBody):
+		return
+	land_clip = "land_" + foot
+	land_dir = vel / spd
+	land_d = HeroBody.mocap_travel_at_speed(land_clip, spd / _scale())
+	land_t = 0.0
+	land_t0 = HeroBody.mocap_time_at(land_clip, land_d)
+	# Where her landing foot comes down: ahead of her by what is left of the clip's path to that moment.
+	var at := HeroBody.mocap_plant_at(land_clip, foot)   # the foot against the clip's path then (her left, ahead)
+	var left := Vector2(land_dir.y, -land_dir.x)
+	landing = p + (land_dir * (maxf(0.0, HeroBody.mocap_plant_travel(land_clip, foot) - land_d) + at.y) + left * at.x) * _scale()
+	if fenced and Rules.offside(pos, landing, dir) and not Rules.offside(pos, p, dir):
+		landing = Rules.onside_point(pos, landing, dir, 0.02)
 
 
 func set_act(a: String, kind := "") -> void:

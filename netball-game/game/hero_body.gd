@@ -23,6 +23,8 @@ static var _kit: Texture2D
 static var _letters: Texture2D
 static var _mats := {}          # look key -> ShaderMaterial
 static var _q := {}             # clip -> its frames as Quaternions
+static var _mocap := {}         # motion-capture clip -> its frames, made once (mocap())
+static var _mocap_src := {}
 
 
 ## The baked model's data (offsets, the torso, clips, the kit's mean colours), loaded once.
@@ -76,6 +78,110 @@ static func _frames(name: String) -> Array:
 		row.append(float(fr.hips_y))
 		out.append(row)
 	return out
+
+
+## The motion-capture clips (assets/player/mocap.json, from the CMU library by tools/player/cmu_bvh.py), loaded
+## once: name -> {fps, frames: [17 turns as Quaternions, the hips' shift from rest (m)] a frame, plant: a letter a
+## frame (l, r, b(oth) or -: the planted feet), travel: how far along her path she has come at each frame (m)}.
+static func mocap(name: String) -> Dictionary:
+	if not _mocap.has(name):
+		if _mocap_src.is_empty():
+			_mocap_src = JSON.parse_string(FileAccess.get_file_as_string(DIR + "mocap.json")).clips
+		var c: Dictionary = _mocap_src[name]
+		var frames := []
+		for row: Array in c.frames:
+			var fr := []
+			for j in BONES.size():
+				fr.append(turn(Vector3(row[j * 3], row[j * 3 + 1], row[j * 3 + 2])))
+			var k := BONES.size() * 3
+			fr.append(Vector3(row[k], row[k + 1], row[k + 2]))
+			frames.append(fr)
+		_mocap[name] = {"fps": float(c.fps), "frames": frames, "plant": String(c.plant),
+			"travel": PackedFloat32Array(c.get("travel", [])), "turn": PackedFloat32Array(c.get("turn", [])),
+			"plant_at": c.get("plant_at", {})}
+	return _mocap[name]
+
+
+## How long a motion-capture clip runs (s); a looped clip's cycle.
+static func mocap_length(name: String) -> float:
+	var c := mocap(name)
+	return float(c.frames.size() - 1) / c.fps
+
+
+## A motion-capture clip at t seconds (looped if loop): [the 17 turns, the hips' shift (Vector3, m)].
+static func mocap_pose(name: String, t: float, loop := false) -> Array:
+	var c := mocap(name)
+	var frames: Array = c.frames
+	var n := frames.size()
+	var f := t * float(c.fps)
+	f = fposmod(f, float(n - 1)) if loop else clampf(f, 0.0, float(n - 1))
+	var i := mini(int(f), n - 2)
+	var w := f - i
+	var a: Array = frames[i]
+	var b: Array = frames[i + 1]
+	var turns := []
+	turns.resize(BONES.size())
+	for j in BONES.size():
+		turns[j] = (a[j] as Quaternion).slerp(b[j], w)
+	return [turns, (a[BONES.size()] as Vector3).lerp(b[BONES.size()], w)]
+
+
+## The time (s) at which a clip has carried her d metres along her path (its travel), for playing a clip in step
+## with how far the player has really gone, so her planted feet stay put.
+static func mocap_time_at(name: String, d: float) -> float:
+	var c := mocap(name)
+	var tr: PackedFloat32Array = c.travel
+	var n := tr.size()
+	if n < 2 or d <= tr[0]:
+		return 0.0
+	for i in range(1, n):
+		if tr[i] >= d:
+			var w := (d - tr[i - 1]) / maxf(tr[i] - tr[i - 1], 0.0001)
+			return (float(i - 1) + w) / c.fps
+	return float(n - 1) / c.fps
+
+
+## How far a clip carries her along her path, start to end (a cycle's stride, m of the model).
+static func mocap_travel(name: String) -> float:
+	var tr: PackedFloat32Array = mocap(name).travel
+	return tr[tr.size() - 1] if tr.size() > 0 else 0.0
+
+
+## How far along a clip's path she is when foot ("l" or "r") first comes down (m of the model).
+static func mocap_plant_travel(name: String, foot: String) -> float:
+	var c := mocap(name)
+	var pl: String = c.plant
+	var tr: PackedFloat32Array = c.travel
+	for i in pl.length():
+		if pl[i] == foot or pl[i] == "b":
+			return tr[i] if i < tr.size() else 0.0
+	return 0.0
+
+
+## Where a landing's foot ("l" or "r") first comes down, against her position then: (to her left, ahead), m.
+static func mocap_plant_at(name: String, foot: String) -> Vector2:
+	var a: Array = mocap(name).plant_at.get(foot, [0.0, 0.0])
+	return Vector2(a[0], a[1])
+
+
+## How fast a clip carries her along her path (m/s of the model) once she is d metres along it.
+static func mocap_speed(name: String, d: float) -> float:
+	var c := mocap(name)
+	var tr: PackedFloat32Array = c.travel
+	for i in range(1, tr.size()):
+		if tr[i] > d:
+			return (tr[i] - tr[i - 1]) * c.fps
+	return 0.0
+
+
+## Where along a clip's path (m) it first goes no faster than spd (m/s of the model): where to come into a landing.
+static func mocap_travel_at_speed(name: String, spd: float) -> float:
+	var c := mocap(name)
+	var tr: PackedFloat32Array = c.travel
+	for i in range(1, tr.size()):
+		if (tr[i] - tr[i - 1]) * c.fps <= spd:
+			return tr[i - 1]
+	return tr[tr.size() - 1] if tr.size() > 0 else 0.0
 
 
 ## A pose's turn as a Quaternion, whether it is held as degrees (Euler YXZ) or already a Quaternion.

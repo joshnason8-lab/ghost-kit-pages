@@ -24,6 +24,7 @@ func _ready() -> void:
 	await _matches()
 	await _rules_in_play()
 	await _motion()
+	await _mocap()
 	await _controls()
 	await _league_options()
 	await _sanctions_and_injury()
@@ -433,6 +434,106 @@ func _motion() -> void:
 	check(lt.z > 0.25, "the sprint clip: the left thigh forward at the stride's phase 1/4 (%.2f)" % lt.z)
 	m.queue_free()
 	await frames(2)
+
+
+## The motion capture (assets/player/mocap.json, tools/player/cmu_bvh.py): every clip loads on the game's bones, and
+## as the match plays them a planted foot stays put. The limit is 2 cm over a planted phase: under a sole's grip on a
+## court, about a third of a shoe's width, and less than a pixel at the match camera's distance; a foot that skates
+## shows at 5 cm and up.
+const PLANT_SLIDE := 0.02
+
+
+func _mocap() -> void:
+	var names := ["slide_left", "slide_right", "land_l", "land_r"]
+	for nm in names:
+		var c := HeroBody.mocap(nm)
+		var fr: Array = c.frames
+		check(fr.size() >= 10 and (fr[0] as Array).size() == ToonBody.BONES.size() + 1 and fr[0][0] is Quaternion,
+			"motion capture %s loads: %d frames on the game's %d bones" % [nm, fr.size(), ToonBody.BONES.size()])
+		check(String(c.plant).length() == fr.size() and is_equal_approx(float(c.fps), 30.0), "%s: 30 fps, its planted feet marked" % nm)
+	var sq: Array = DB.squad("NZL")
+	# The side-step: a marker going sideways (her right, then her left) at 3 m/s, eyes on the ball ahead.
+	for side: float in [-1.0, 1.0]:
+		var pl := Player.new(0, sq[5], "GD")
+		add_child(pl)
+		await frames(1)
+		pl.fenced = false
+		pl.place(Vector2.ZERO, 0.0)
+		var drive := func(_f: int) -> void:
+			pl.set_act("mark")
+			pl.look_on = true
+			pl.look_at_p = pl.p + Vector2(0, 8)
+			pl.target = pl.p + Vector2(side * 5.0, 0)
+			pl.want_speed = 3.0
+		var planted := func() -> String:
+			if pl.slide < 0.97:
+				return ""
+			var nm := "slide_left" if pl.slide_side > 0.0 else "slide_right"
+			var plant: String = HeroBody.mocap(nm).plant
+			return plant[int(pl.slide_phase * (plant.length() - 1) + 0.5) % (plant.length() - 1)]
+		var worst := _plant_slide(pl, drive, planted, 90)
+		check(pl.slide > 0.97, "a marker going sideways side-steps (%.2f of the slide)" % pl.slide)
+		check(worst < PLANT_SLIDE, "the side-step to her %s: planted feet move %.1f cm at most" % ["left" if side > 0 else "right", worst * 100.0])
+		pl.queue_free()
+	# The landing: caught at a jog and at a sprint, on either foot; the landing foot stays where it came down.
+	for case: Array in [[3.5, "l"], [6.5, "r"], [5.0, "l"]]:
+		var pl := Player.new(0, sq[2], "WA")
+		add_child(pl)
+		await frames(1)
+		pl.fenced = false
+		pl.place(Vector2.ZERO, 0.0)
+		var spd: float = case[0]
+		var foot: String = case[1]
+		pl.vel = Vector2(0, spd)
+		var landed := [Vector2.INF]
+		var drive := func(f: int) -> void:
+			if f < 20:
+				pl.set_act("run")
+				pl.target = pl.p + Vector2(0, 8)
+				pl.want_speed = spd
+			elif f == 20:
+				pl.stopped = true
+				pl.set_act("hold")
+				pl.start_landing(foot)
+				landed[0] = pl.landing
+		var planted := func() -> String:
+			if pl.land_clip == "" or pl.land_w < 0.97:
+				return ""
+			var c := HeroBody.mocap(pl.land_clip)
+			var plant: String = c.plant
+			var t := HeroBody.mocap_time_at(pl.land_clip, pl.land_d)
+			var ch := plant[mini(int(t * float(c.fps) + 0.5), plant.length() - 1)]
+			# Only the landing foot is held to the line: the other may step.
+			return foot if ch == foot or ch == "b" else ""
+		var worst := _plant_slide(pl, drive, planted, 60)
+		check(worst < PLANT_SLIDE, "a landing on the %s foot from %.1f m/s: the landing foot moves %.1f cm at most" % [foot, spd, worst * 100.0])
+		var ankle := pl.body.bone_world("foot_" + foot)
+		check(Vector2(ankle.x, ankle.z).distance_to(landed[0]) < 0.3, "she comes down on her landing spot (%.2f m off)" % Vector2(ankle.x, ankle.z).distance_to(landed[0]))
+		check(pl.vel.length() < 0.05 and pl.land_clip != "", "she stops on the landing (%.2f m/s)" % pl.vel.length())
+		pl.queue_free()
+	await frames(1)
+
+
+## Runs a player frame by frame (drive(f) sets what she does, then she advances 1/30 s): for each frame, planted()
+## names her planted feet ("l", "r", "b" or ""); returns the furthest a foot moved over the floor in one planted run.
+func _plant_slide(pl: Player, drive: Callable, planted: Callable, n: int) -> float:
+	var start := {}
+	var worst := 0.0
+	for f in n:
+		drive.call(f)
+		pl.advance(1.0 / 30.0)
+		var ch: String = planted.call()
+		for s in ["l", "r"]:
+			var down: bool = ch == s or ch == "b"
+			var w := pl.body.bone_world("foot_" + s)
+			var at := Vector2(w.x, w.z)
+			if down:
+				if not start.has(s):
+					start[s] = at
+				worst = maxf(worst, at.distance_to(start[s]))
+			else:
+				start.erase(s)
+	return worst
 
 
 ## Your controls: a scripted thumb plays a match as the team. With the ball it picks a team-mate and passes (or

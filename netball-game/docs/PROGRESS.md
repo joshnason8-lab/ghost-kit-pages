@@ -55,6 +55,18 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   under the paint) and, on Medium and High, sections of the owner's metal stand as courtside seating with people
   in its seats. The models are baked by tools/venue/bake.gd into one mesh and one atlas per venue (VenueProps, one
   draw call). Credits in Settings > About > Licences. Store screenshots refreshed.
+- Motion capture (October 2026, the owner's CMU library, `shared-assets/motion/CMU.md`): each move compared with the
+  library's candidates against RULES.md; real recorded movement now where it is clearly better. CMU clips used:
+  **102_27** (DefensiveMoveSideToSide: the side-step, for any player going sideways to where she faces under 4 m/s,
+  marking or leading with her eyes on the ball, instead of a run crabwise) and **16_08** (run/jog, sudden stop: the
+  landing on a catch on the move, on the landing foot the footwork rule gave her, the other foot stepping down
+  beside it, played in step with how far she goes so the landing foot stays put; the rules' landing spot is where
+  that foot comes down). Retargeted by `tools/player/cmu_bvh.py` (foot locks, root motion kept apart: Player.advance
+  still writes her position) into `assets/player/mocap.json` (25 KB); rebuilt by `tools/player/fetch_cmu.sh`.
+  Planted feet move 0.2-0.8 cm (test limit 2 cm). Kept as they were, with the reasons in tools/player/README.md: the
+  run (Mixamo), cuts, the pivot (102_29), the shot (124_03-06 are basketball shots), passes and catches (33/34),
+  the leap, defending the ball. Holding the ball, her hands now meet on it (the hold pose's forearms were twisted
+  outward on the owner's model). Credit in Licences.
 
 ## Next
 

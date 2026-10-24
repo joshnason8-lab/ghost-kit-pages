@@ -160,7 +160,7 @@ func apply(p: Dictionary) -> void:
 			skeleton.set_bone_pose_rotation(i, e)
 		else:
 			skeleton.set_bone_pose_rotation(i, Basis.from_euler(Vector3(deg_to_rad(e.x), deg_to_rad(e.y), deg_to_rad(e.z)), EULER_ORDER_YXZ).get_rotation_quaternion())
-	skeleton.set_bone_pose_position(0, _hips + Vector3(0, float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
+	skeleton.set_bone_pose_position(0, _hips + Vector3(float(p.get("hips_x", 0.0)), float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
 
 
 # ---------------------------------------------------------------- the mesh
