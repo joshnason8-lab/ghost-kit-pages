@@ -1,8 +1,8 @@
 extends Node
 ## The smoke test CI runs before building: every screen opens in every language; a season and a tournament play
 ## through to their champions; AI matches in each event finish with scores the laws allow; a team event's regus never
-## use a player twice; every spectator in every venue faces the court; the moves built on the CMU library's jumps load
-## and keep their feet from sliding; the save files read back. Headless:
+## use a player twice; every spectator in every venue faces the court; every move from motion capture loads and keeps
+## its feet from sliding; the save files read back. Headless:
 ##   godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
 ## Exits 1 on any failure.
 
@@ -227,27 +227,18 @@ func _crowd_facing() -> void:
 	Game.settings.graphics = keep
 
 
-## The moves built on real jumps (Moves.CMU): each loads from its clip, and while a foot is on the floor it doesn't
-## slide more than 3 cm from one frame to the next (30 a second), on the man's model and on the woman's.
+## Every move from motion capture (the Mixamo kicks and the CMU jumps) loads, and on both models a foot on the floor
+## moves less than 3 cm from one frame to the next (0.9 m/s at 30 frames a second).
 func _mocap_moves() -> void:
+	var conv := preload("res://tools/models/fbx_to_move.gd")
 	for w in [false, true]:
 		var rig := RealBody.rig(w)
-		for name in Moves.CMU:
+		for name in Moves.CLIPS:
+			if name in ["run", "walk"]:
+				continue   # (strides: the feet move, the runner with them)
 			check(Moves.is_clip(name), "%s: its motion capture loads" % name)
-			var frames := int(round(Moves.length(name) * 30.0)) + 1
-			var worst := 0.0
-			var last := {}
-			for i in frames:
-				var p := Moves.sample(name, float(i) / float(frames - 1))
-				rig.solve(p)
-				var yaw := deg_to_rad(float(p.get("yaw", 0.0)))
-				for side in ["Left", "Right"]:
-					var at := (rig.sole(side) + Vector3(0, float(p.get("y", 0.0)), 0)).rotated(Vector3.UP, yaw)
-					var down := at.y < RealBody.SOLE_DOWN
-					if down and last.has(side) and last[side][1]:
-						worst = maxf(worst, Vector2(at.x - last[side][0].x, at.z - last[side][0].z).length())
-					last[side] = [at, down]
-			check(worst < 0.03, "%s (%s): feet on the floor don't slide (worst %.3f m a frame)" % [name, "woman" if w else "man", worst])
+			var s: Array = conv.slide(rig, name)
+			check(float(s[0]) < 0.03, "%s (%s): feet on the floor don't slide (worst %.3f m a frame)" % [name, "woman" if w else "man", float(s[0])])
 
 
 func _matches() -> void:

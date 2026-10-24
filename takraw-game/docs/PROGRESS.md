@@ -72,6 +72,9 @@ match runs in real time, and on a slow machine the frame lands at another moment
 scale.) Low stays well inside its budget of about 100 draw calls everywhere. Most of the added triangles on Low are the
 temple's plastic chairs and the bleachers.
 
+0.6.0 (motion capture for the jumps, the kicks' feet locked) draws exactly the same: every venue and level gave the
+same draw calls and triangles as 0.5.2 (docs/MOCAP.md).
+
 ## Download size (0.5.1)
 
 0.5.0's APK was 89 MB (0.4.0's 38 MB): GPU-compressed textures are stored in the APK as they are, unzipped, and the

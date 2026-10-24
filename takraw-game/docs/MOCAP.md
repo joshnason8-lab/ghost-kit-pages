@@ -49,7 +49,34 @@ A jump is converted on the spot (`root: "feet"`), so where a player stands stays
 - **Horizontal (the lock, `_lock_feet`):** while both feet are down, the hips are moved so that, on our own model, the feet stay where they stood. Our legs aren't the subject's, so his planted feet would otherwise move a little on ours. In the air, the correction carries over from take-off to landing.
 - **Blends:** the dip and the landing ease in and out of the ready stance over longer (`blend_in`, `blend_out`).
 
-`tests/test_runner` checks each of these moves on the man's and the woman's models: it loads, and while a foot is on the floor it moves less than 3 cm from one frame to the next (0.9 m/s at 30 frames a second). On the man they move at most 2.4 cm (block), 1.8 cm (header spike) and 1.3 cm (celebration).
+### The kicks (Mixamo), off one foot
+
+The kicks used to slide their planted feet badly as they blended from the ready stance and back to it: on the man, up to 9.5 cm in one frame (the serve), 21 cm (the roll spike), 21 cm (the sunback), 14 cm (the sole spike) and 10 cm (the knee). They are converted with a lock of their own now (`"lock": "support"`, `_lock_support`):
+
+- **The standing foot held:** the hips are moved so the foot he stands on stays where it is: the left while it is down (the kicks are the right foot's), else the one that is down, until it leaves the floor. Landing (the roll spike), a foot is held a frame or two before it is down, so it comes to rest as it meets the floor.
+- **The other foot steps:** where it would move along the floor while still down (the ready stance's feet are not the kick's), it is lifted into a step: raised straight up by its hip and knee (`_lift_foot`, a two-bone solve on our own model), a little more each pass until it no longer slides on either model.
+- **Kept on the floor:** the kicks keep a foot on the floor (`plant`), as the jumps do: the woman's legs are shorter, and on the roll spike's landing her feet went up to 10 cm into the floor. (RealBody stopped planting once the hips came within 35 cm of the feet, a guard meant for upside-down poses; a deep crouch on her shorter legs crossed it. It is 8 to 23 cm now.)
+- **Where he finishes:** with his feet no longer sliding back to where they started, some kicks end away from it: the roll spike 65 cm (he lands behind and to the side of his take-off), the sunback 24 cm, the sole spike 18 cm. As a kick ends, `Player` moves him there, so the ready stance takes over where the kick left him.
+- **Timing unchanged:** each kick's length and contact moment are as they were. Where the ball is met moved with the hips: the sunback now meets it 0.79 m in front of him (1.15 m before: his standing foot had slid forward 36 cm with the step into the kick), the sole spike 0.97 m (1.32 m), the serve 0.92 m (0.70 m), the roll spike 0.73 m (0.58 m). The converter printed the new `Moves.CONTACT` rows; the players stand where the new rows say.
+
+### The test
+
+`tests/test_runner` checks every move from motion capture on the man's and the woman's models (`fbx_to_move.gd`'s `slide`; `godot --headless --path . res://tools/models/fbx_to_move.tscn -- slide` prints it frame by frame): it loads, and while a foot is on the floor it moves less than 3 cm from one frame to the next (0.9 m/s at 30 frames a second).
+
+| Move | Man | Woman |
+|---|---|---|
+| Serve | 0.0 cm (9.5 before) | 0.5 cm (8.6) |
+| Roll spike | 0.0 cm (21.2) | 0.9 cm (19.5) |
+| Sunback | 0.0 cm (20.6) | 1.6 cm (19.6) |
+| Sole spike | 0.0 cm (13.6) | 0.8 cm (13.1) |
+| Knee | 0.0 cm (9.8) | 0.5 cm (8.8) |
+| Block | 2.4 cm | 2.0 cm |
+| Header spike | 1.8 cm | 1.6 cm |
+| Celebration | 1.3 cm | 1.2 cm |
+
+## Performance
+
+Unchanged. The moves are poses read from JSON, as before; nothing new is drawn. `tests/perf_probe.tscn -- all 0,1,2` (`--fixed-fps 30`, a match in each venue) gives the same draw calls and triangles in 0.6.0 as in 0.5.2 at every venue and level: from 72 draw calls and 102k triangles (the National Arena, Low) to 122 draw calls and 315k triangles (the night market, High). The full table is in [PROGRESS.md](PROGRESS.md).
 
 ## Rebuilding them
 
@@ -61,6 +88,8 @@ The BVH files aren't in the repository (they run to megabytes). Fetch the clip f
 Then run the converter. It prints each move's `Moves.CONTACT` row:
 
     godot --headless --path . res://tools/models/fbx_to_move.tscn -- /tmp/cmu block
+
+The kicks come from the owner's Mixamo FBX files (not in the repository either): put them in a folder of their own and run the converter on it, a move at a time (`serve`, `roll`, `sunback`, `tapak`, `thigh`) or all of them.
 
 `tools/models/bvh.gd` reads a BVH into a Skeleton3D and an Animation, as an FBX would be read:
 

@@ -74,6 +74,17 @@ func left_footed() -> bool:
 	return bool(data.get("left", false))
 
 
+## A kick from motion capture can finish away from where it started (the roll spike's landing, the step after the
+## sunback): he is moved there as it ends, so the ready stance takes over where the kick left him.
+func _carry(name: String, mirror: bool) -> void:
+	if not Moves.is_clip(name):
+		return
+	var last := Moves.sample(name, 1.0, mirror)
+	var off := Vector3(-float(last.get("hips_side", 0.0)), 0, float(last.get("hips_fwd", 0.0)))
+	if off.length() > 0.005:
+		position += off.rotated(Vector3.UP, body.rotation.y)
+
+
 ## Shows him as the one you control.
 func set_selected(on: bool) -> void:
 	_ring.visible = on
@@ -151,6 +162,7 @@ func tick(dt: float, now: float) -> void:
 	if move != "":
 		var t := (now - move_start) / Moves.length(move)
 		if t >= 1.0:
+			_carry(move, move_mirror)
 			move = ""
 		else:
 			_w = minf(1.0, _w + dt * 14.0)

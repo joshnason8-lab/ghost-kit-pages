@@ -336,9 +336,10 @@ class Rig:
 				var y := (out_pos[feet[i]] as Vector3).y
 				low = minf(low, y - float(feet_rest[i]))
 				lowest_foot = minf(lowest_foot, y)
-			# Only while he is on his feet: not in the air, not upside down.
+			# Only while he is on his feet: not in the air, not upside down (a deep crouch, the hips a short way over
+			# the feet, still is: the woman's legs are shorter).
 			var w := plant * clampf(1.0 - float(p.get("y", 0.0)) / 0.15, 0.0, 1.0)
-			w *= clampf((((out_pos[hips] as Vector3).y - lowest_foot) * unit - 0.15) / 0.2, 0.0, 1.0)
+			w *= clampf((((out_pos[hips] as Vector3).y - lowest_foot) * unit - 0.08) / 0.15, 0.0, 1.0)
 			var dy := clampf(-low, -0.2 / unit, 0.2 / unit) * w
 			out_hips.y += dy
 			for b in count:

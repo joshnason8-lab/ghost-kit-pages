@@ -17,15 +17,15 @@ const SPECS := {
 	# move: clip, mirrored, source times [start, contact, end], game length (s), contact fraction, the part that
 	# meets the ball (and the ball's centre above it, m), a jump added at contact (m), extra turn (degrees)
 	"serve": {"file": "Kicking.fbx", "mirror": true, "t": [0.62, 1.15, 1.9], "length": 1.1, "contact": 0.5,
-		"at": "instep", "ball": 0.08, "lift": 0.0, "turn": 0.0},
+		"at": "instep", "ball": 0.08, "lift": 0.0, "turn": 0.0, "lock": "support"},
 	"roll": {"file": "Scissor Kick.fbx", "mirror": false, "t": [0.12, 0.8, 2.65], "length": 1.65, "contact": 0.36,
-		"at": "foot", "ball": 0.0, "lift": 0.3, "turn": 0.0},
+		"at": "foot", "ball": 0.0, "lift": 0.3, "turn": 0.0, "lock": "support"},
 	"sunback": {"file": "Mma Kick.fbx", "mirror": false, "t": [0.25, 0.7, 1.6], "length": 1.05, "contact": 0.43,
-		"at": "foot", "ball": 0.0, "lift": 0.55, "turn": 0.0},
+		"at": "foot", "ball": 0.0, "lift": 0.55, "turn": 0.0, "lock": "support"},
 	"tapak": {"file": "Roundhouse Kick.fbx", "mirror": false, "t": [0.45, 1.0, 2.1], "length": 1.05, "contact": 0.42,
-		"at": "foot", "ball": 0.0, "lift": 0.5, "turn": 0.0},
+		"at": "foot", "ball": 0.0, "lift": 0.5, "turn": 0.0, "lock": "support"},
 	"thigh": {"file": "Knee Kick Lead.fbx", "mirror": true, "t": [0.5, 0.72, 1.45], "length": 0.62, "contact": 0.42,
-		"at": "thigh", "ball": 0.07, "lift": 0.0, "turn": 0.0},
+		"at": "thigh", "ball": 0.07, "lift": 0.0, "turn": 0.0, "lock": "support"},
 	# A real two-footed jump (the CMU library's 118_04: the dip, the spring, the landing taken on the knees), as high as
 	# the move's own; in the air the takraw part laid over it from the keys in Moves: the block's raised leg, side on,
 	# the arms out (never up); the header's nod and the arms' swing.
@@ -53,6 +53,8 @@ const LOOPS := {
 }
 const BLEND_IN := 0.14
 const BLEND_OUT := 0.22
+const STEP := 0.03       # a foot sliding while it is down is lifted this much more at a time (m): a step
+const STEP_MAX := 0.15
 
 var _sk: Skeleton3D
 var _xf := Transform3D.IDENTITY   # the skeleton's place in the clip's scene
@@ -75,6 +77,14 @@ func _ready() -> void:
 		var yaw := deg_to_rad(float(p.get("yaw", 0.0)))
 		at = at.rotated(Vector3.UP, yaw)
 		print('	"%s": %s,' % [w[1], str([snappedf(at.y, 0.01), snappedf(at.z, 0.01), snappedf(-at.x, 0.01), c[3], c[4]])])
+		get_tree().quit()
+		return
+	if dir == "slide":
+		# How far each move's planted feet slide, on both models (what tests/test_runner checks).
+		for w in [false, true]:
+			for name in SPECS:
+				var s := slide(RealBody.rig(w), name)
+				print("%s (%s): worst %.3f m a frame, the %s foot at %.2f; on the floor %s" % [name, "woman" if w else "man", s[0], s[2], s[1], s[3]])
 		get_tree().quit()
 		return
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(Moves.CLIP_DIR))
@@ -105,6 +115,32 @@ func _ready() -> void:
 		print("%s: %d frames, highest off the floor %.2f m" % [name, frames.size(), top])
 		print('	"%s": %s,' % [name, str(row)])
 	get_tree().quit()
+
+
+## How far a move's feet slide on a model: while a foot is on the floor (the middle of it under RealBody.SOLE_DOWN),
+## its worst movement along the floor from one frame (1/30 s) to the next. [metres, when (0-1), "Left"/"Right", and a
+## frame by frame record of which are down: L, R, B (both) or . (neither)].
+static func slide(rig: RealBody.Rig, name: String) -> Array:
+	var frames := int(round(Moves.length(name) * FPS)) + 1
+	var worst := [0.0, 0.0, "", ""]
+	var last := {}
+	for i in frames:
+		var f := float(i) / float(frames - 1)
+		var p := Moves.sample(name, f)
+		rig.solve(p)
+		var yaw := deg_to_rad(float(p.get("yaw", 0.0)))
+		var code := 0
+		for side in ["Left", "Right"]:
+			var at := (rig.sole(side) + Vector3(0, float(p.get("y", 0.0)), 0)).rotated(Vector3.UP, yaw)
+			var down := at.y < RealBody.SOLE_DOWN
+			code += (1 if side == "Left" else 2) if down else 0
+			if down and last.has(side) and last[side][1]:
+				var d := Vector2(at.x - last[side][0].x, at.z - last[side][0].z).length()
+				if d > float(worst[0]):
+					worst = [d, f, side, worst[3]]
+			last[side] = [at, down]
+		worst[3] = String(worst[3]) + ".LRB"[code]
+	return worst
 
 
 func _save(name: String, out: Dictionary, frames: Array) -> void:
@@ -350,6 +386,10 @@ func _convert(path: String, spec: Dictionary, move := "") -> Array:
 		for p in out:
 			p["plant"] = 1.0   # RealBody keeps a foot on the floor while he is on it (the subject's legs aren't his)
 		_lock_feet(out)
+	elif String(spec.get("lock", "")) == "support":
+		for p in out:
+			p["plant"] = 1.0
+		_lock_support(out)
 	return out
 
 
@@ -382,6 +422,153 @@ func _lock_feet(frames: Array) -> void:
 		last = fix[i]
 		frames[i].hips_fwd = float(frames[i].get("hips_fwd", 0.0)) + (fix[i] as Vector2).y
 		frames[i].hips_side = float(frames[i].get("hips_side", 0.0)) - (fix[i] as Vector2).x
+
+
+## A kick off one foot, its feet locked to the floor on the players' own model. The hips are moved so the foot he stands
+## on stays where it is: the one down (the left, his standing foot, while both are), kept until it leaves the floor;
+## through the air the correction is held. The other foot, where it moves along the floor while it is still down (the
+## ready stance blending into the kick's and back), is lifted into a step: raised straight up by its hip and knee.
+## Where his feet finish is left as the move's travel (Player moves him by it as the move ends).
+func _lock_support(frames: Array) -> void:
+	var man := RealBody.rig(false)
+	var woman := RealBody.rig(true)
+	var base := []
+	for p in frames:
+		base.append((p as Dictionary).duplicate())
+	# The foot he stands on, frame by frame (0 left, 1 right, -1 neither), from the kick as it is.
+	var locks := []
+	var lock := -1
+	var low := []   # how high each sole is
+	for p in base:
+		man.solve(p)
+		var down := [false, false]
+		var h := Vector2.ZERO
+		for k in 2:
+			h[k] = man.sole(["Left", "Right"][k]).y + float(p.get("y", 0.0))
+			down[k] = h[k] < RealBody.SOLE_DOWN
+		low.append(h)
+		if lock < 0 or not down[lock]:
+			lock = 0 if down[0] else (1 if down[1] else -1)
+		locks.append(lock)
+	# Landing, the foot is held a frame or two before it is down (it comes to rest as it meets the floor: on the
+	# woman's shorter legs it is down sooner).
+	for i in range(locks.size() - 1, 0, -1):
+		var k := int(locks[i])
+		if k >= 0 and int(locks[i - 1]) < 0:
+			for j in [i - 1, i - 2]:
+				if j > 0 and int(locks[j]) < 0 and float((low[j] as Vector2)[k]) < RealBody.SOLE_DOWN + 0.1:
+					locks[j] = k
+	var lift := []   # per frame: how far each foot (left, right) is lifted into a step (m)
+	lift.resize(frames.size())
+	lift.fill(Vector2.ZERO)
+	for pass_no in 10:
+		_step_and_hold(frames, base, lift, locks, man)
+		# The other foot, sliding while it is down: lifted into a step there (and a few frames either side).
+		var need := []
+		need.resize(frames.size())
+		need.fill(Vector2.ZERO)
+		var any := false
+		for rig in [man, woman]:   # (on both models: the woman's legs are shorter)
+			var last := []
+			for i in frames.size():
+				var p: Dictionary = frames[i]
+				rig.solve(p)
+				var yaw := deg_to_rad(float(p.get("yaw", 0.0)))
+				var now := []
+				for k in 2:
+					var v: Vector3 = rig.sole(["Left", "Right"][k]).rotated(Vector3.UP, yaw) + Vector3(0, float(p.get("y", 0.0)), 0)
+					now.append(v)
+					var stood := i > 0 and int(locks[i]) == k and int(locks[i - 1]) == k   # (held there)
+					if i > 0 and not stood and v.y < RealBody.SOLE_DOWN and (last[k] as Vector3).y < RealBody.SOLE_DOWN:
+						if Vector2(v.x - last[k].x, v.z - last[k].z).length() > 0.012:
+							var n: Vector2 = need[i]
+							n[k] = 1.0
+							need[i] = n
+							any = true
+				last = now
+		if not any:
+			break
+		for i in range(1, frames.size() - 1):   # (the first and last frames stay the ready stance)
+			var w: Vector2 = lift[i]
+			for k in 2:
+				if int(locks[i]) == k or int(locks[i]) < 0:
+					continue   # never the foot he stands on, nor in the air
+				var more := 0.0
+				for j in range(maxi(0, i - 3), mini(frames.size(), i + 4)):
+					more = maxf(more, float((need[j] as Vector2)[k]) * (1.0 - absf(float(j - i)) / 4.0))
+				w[k] = minf(STEP_MAX, w[k] + more * STEP)
+			lift[i] = w
+	_step_and_hold(frames, base, lift, locks, man)
+	_debug_feet(frames, lift, woman if OS.get_environment("TAKRAW_DEBUG") == "woman" else man)
+
+
+func _debug_feet(frames: Array, lift: Array, man: RealBody.Rig) -> void:
+	if not OS.has_environment("TAKRAW_DEBUG"):
+		return
+	for i in frames.size():
+		var p: Dictionary = frames[i]
+		man.solve(p)
+		var yaw := deg_to_rad(float(p.get("yaw", 0.0)))
+		var l := man.sole("Left").rotated(Vector3.UP, yaw) + Vector3(0, float(p.get("y", 0.0)), 0)
+		var r := man.sole("Right").rotated(Vector3.UP, yaw) + Vector3(0, float(p.get("y", 0.0)), 0)
+		print("%2d L %s R %s lift %s hips %.3f %.3f" % [i, l.snappedf(0.001), r.snappedf(0.001), (lift[i] as Vector2).snappedf(0.01), float(p.hips_fwd), float(p.hips_side)])
+
+
+## frames made from base: each foot lifted into a step as far as lift says, and the hips moved so the foot he stands on
+## (locks) stays put.
+func _step_and_hold(frames: Array, base: Array, lift: Array, locks: Array, man: RealBody.Rig) -> void:
+	for i in frames.size():
+		var p: Dictionary = base[i].duplicate()
+		for k in 2:
+			var h := float((lift[i] as Vector2)[k])
+			if h > 0.0:
+				_lift_foot(man, p, k, h)
+		frames[i] = p
+	var anchor := Vector2.ZERO
+	var cur := Vector2.ZERO
+	for i in frames.size():
+		var p: Dictionary = frames[i]
+		man.solve(p)
+		var yaw := deg_to_rad(float(p.get("yaw", 0.0)))
+		var k := int(locks[i])
+		if k >= 0:
+			var v := man.sole(["Left", "Right"][k]).rotated(Vector3.UP, yaw)
+			if i == 0 or int(locks[i - 1]) != k:
+				anchor = Vector2(v.x, v.z) + cur
+			cur = anchor - Vector2(v.x, v.z)
+		var off := Vector3(cur.x, 0, cur.y).rotated(Vector3.UP, -yaw)
+		p.hips_fwd = float(base[i].get("hips_fwd", 0.0)) + off.z
+		p.hips_side = float(base[i].get("hips_side", 0.0)) - off.x
+
+
+## The foot k (0 left, 1 right) raised h metres straight up by its hip and knee (the knee bending the way it bends
+## now), the foot turned as it was.
+func _lift_foot(man: RealBody.Rig, p: Dictionary, k: int, h: float) -> void:
+	man.solve(p)
+	var side: String = ["Left", "Right"][k]
+	var sfx: String = ["_l", "_r"][k]
+	var ti := 11 if k == 0 else 14   # thigh_l / thigh_r in RealBody.BONES, the shin and foot after it
+	var hip: Vector3 = man.out_pos[man.index[side + "UpLeg"]]
+	var knee: Vector3 = man.out_pos[man.index[side + "Leg"]]
+	var ankle: Vector3 = man.out_pos[man.index[side + "Foot"]]
+	var a := hip.distance_to(knee)
+	var b := knee.distance_to(ankle)
+	var to := ankle + Vector3(0, h, 0)
+	var d := clampf(hip.distance_to(to), absf(a - b) + 0.001, a + b - 0.001)
+	var axis := (to - hip).normalized()
+	var bend := (knee - hip) - axis * (knee - hip).dot(axis)
+	if bend.length() < 0.001:
+		bend = Vector3.BACK - axis * axis.z   # (a straight leg: the knee forward)
+	bend = bend.normalized()
+	var along := (a * a - b * b + d * d) / (2.0 * d)
+	var knee2 := hip + axis * along + bend * sqrt(maxf(0.0, a * a - along * along))
+	var turn1 := Quaternion((knee - hip).normalized(), (knee2 - hip).normalized())
+	var thigh := turn1 * (man._q[ti] as Quaternion)
+	var turn2 := Quaternion(turn1 * (ankle - knee).normalized(), (hip + axis * d - knee2).normalized())
+	var shin := turn2 * turn1 * (man._q[ti + 1] as Quaternion)
+	p["thigh" + sfx] = (man._q[0] as Quaternion).inverse() * thigh
+	p["shin" + sfx] = thigh.inverse() * shin
+	p["foot" + sfx] = shin.inverse() * (man._q[ti + 2] as Quaternion)
 
 
 func _source_of(pose_bone: String) -> String:

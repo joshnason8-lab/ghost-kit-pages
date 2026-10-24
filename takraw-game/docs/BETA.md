@@ -14,7 +14,9 @@ about 2019, the Galaxy A16 included).
 New in 0.6.0: the jumps are real. The block, the header spike and the jump for joy take off and land the way a
 real jump does (motion capture from the CMU library): the dip with the arms swung back, the spring, the landing taken
 on the knees, with the takraw part (the raised foot, the nod, the arms up) on top. Watch a block at the net: does it
-look right, and does the timing of the Block button feel the same?
+look right, and does the timing of the Block button feel the same? The kicks no longer slide the foot they stand on:
+the serve, the roll spike, the sunback, the sole spike and the knee keep it planted and step with the other, and after
+a roll spike the striker lands where the jump takes him.
 
 In 0.5.2: the crowd watches the court from every side. Seen from behind a stand, people show their backs instead
 of turning round to face the camera.
