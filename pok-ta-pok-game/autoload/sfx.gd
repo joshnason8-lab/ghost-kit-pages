@@ -1,11 +1,24 @@
 extends Node
-## Sound effects, most synthesised at startup so the game ships few audio files. Drop an .ogg or .wav with the same
-## name into res://assets/audio/ to replace any of them (assets/audio/whistle.ogg, assets/audio/kick.ogg ...).
+## Sound effects: some synthesised at startup (the slap of the rubber ball on a hip, the judges' drum), the rest
+## recorded (assets/audio/, docs/SOUNDS.md lists every file's source and licence; tools/sound/process.py makes them).
+## A file with a sound's name in res://assets/audio/ replaces the synthesised one; numbered variants (hip_body_1..3,
+## step_earth_1..4 ...) are picked at random (play_var). Each court has its own surroundings (ambience): crickets at
+## dusk and by night, the torches' fire, birds in the Yucatán forest, a dog in the village.
 ## They are made a sound at a time by the loading screen (build_step), so it can show its progress; anything that
 ## needs one before then makes the rest at once (_ensure).
 
 const RATE := 22050
 const VOICES := {"grunt": 3, "hup": 2}
+## Recorded sounds in numbered variants: name -> how many.
+const VARIANTS := {"hip_body": 3, "thud_earth": 3, "step_earth": 4, "step_stone": 4, "bird": 6}
+## The bed and the occasional sounds of each kind of court: [bed loop or "", its dB, second bed or "", its dB,
+## occasional sound ("" none), every so many seconds (min, max), its dB].
+const AMBIENCE := {
+	"village": ["amb_crickets", -20.0, "", 0.0, "dog_bark", Vector2(25.0, 60.0), -24.0],
+	"festival": ["", 0.0, "", 0.0, "dog_bark", Vector2(40.0, 90.0), -26.0],
+	"stone": ["amb_crickets", -30.0, "", 0.0, "bird", Vector2(3.0, 9.0), -18.0],
+	"night": ["amb_crickets", -18.0, "amb_fire", -20.0, "", Vector2.ZERO, 0.0],
+}
 const MUSIC_DB := -9.0
 
 var streams := {}
@@ -15,6 +28,10 @@ var _crowd: AudioStreamPlayer
 var _crowd_target := -60.0
 var _music: AudioStreamPlayer
 var _music_target := -80.0
+var _amb: Array[AudioStreamPlayer] = []
+var _amb_kind := ""
+var _amb_next := 0.0
+var _paused := false
 var _todo := []
 var _planned := false
 var _built := false
@@ -29,6 +46,10 @@ func _ready() -> void:
 	_crowd = AudioStreamPlayer.new()
 	_crowd.volume_db = -60.0
 	add_child(_crowd)
+	for i in 2:
+		var a := AudioStreamPlayer.new()
+		add_child(a)
+		_amb.append(a)
 	_music = AudioStreamPlayer.new()
 	_music.volume_db = -80.0
 	# Cane flute, frame drum, slit drum and seed rattles: the game's own piece (tools/music/compose.py).
@@ -74,6 +95,17 @@ func _ensure() -> void:
 
 
 func _process(delta: float) -> void:
+	if _amb_kind != "" and not _paused:
+		var a: Array = AMBIENCE[_amb_kind]
+		if String(a[4]) != "":
+			_amb_next -= delta
+			if _amb_next <= 0.0:
+				var span: Vector2 = a[5]
+				_amb_next = randf_range(span.x, span.y)
+				if String(a[4]) in VARIANTS:
+					play_var(String(a[4]), float(a[6]) + randf_range(-4.0, 0.0), randf_range(0.95, 1.05))
+				else:
+					play(String(a[4]), float(a[6]) + randf_range(-4.0, 0.0), randf_range(0.93, 1.05))
 	if _crowd.playing:
 		_crowd.volume_db = move_toward(_crowd.volume_db, _crowd_target, 30.0 * delta)
 	if _music.playing:
@@ -88,7 +120,7 @@ func enabled() -> bool:
 
 func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
-	if not enabled() or not streams.has(sound):
+	if not enabled() or _paused or not streams.has(sound):
 		return
 	var p := _pool[_next]
 	_next = (_next + 1) % _pool.size()
@@ -96,6 +128,45 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
 	p.play()
+
+
+## One of a sound's recorded variants, at random: play_var("step_earth").
+func play_var(kind: String, volume_db := 0.0, pitch := 1.0) -> void:
+	var n := int(VARIANTS.get(kind, 0))
+	if n > 0:
+		play("%s_%d" % [kind, 1 + randi() % n], volume_db, pitch)
+
+
+## The court's surroundings (AMBIENCE: "village", "festival", "stone", "night"); "" stops them.
+func ambience(kind: String) -> void:
+	_ensure()
+	_amb_kind = kind if AMBIENCE.has(kind) and enabled() else ""
+	for p in _amb:
+		p.stop()
+	if _amb_kind == "":
+		return
+	var a: Array = AMBIENCE[_amb_kind]
+	for i in 2:
+		var k := String(a[i * 2])
+		if k != "" and streams.has(k):
+			_amb[i].stream = streams[k]
+			_amb[i].volume_db = float(a[i * 2 + 1])
+			_amb[i].play()
+	_amb_next = randf_range(2.0, 6.0)
+
+
+## Everything held still (the match paused): the beds, the crowd, the sounds in flight; nothing new plays.
+func pause(on: bool) -> void:
+	_paused = on
+	_crowd.stream_paused = on
+	for p in _amb:
+		p.stream_paused = on
+	for p in _pool:
+		p.stream_paused = on
+
+
+func select() -> void:
+	play("ui_select", -10.0)
 
 
 ## A player's effort: voice("grunt") or "hup"; pitch gives each player his own voice.
@@ -140,6 +211,7 @@ func music(on: bool) -> void:
 
 func stop_all() -> void:
 	_crowd.stop()
+	ambience("")
 	for p in _pool:
 		p.stop()
 
@@ -158,8 +230,12 @@ func _plan() -> void:
 		["roar", _roar],
 		["crowd_loop", _crowd_loop],
 	]
-	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music"]:
+	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music", "ui_select", "amb_crickets", "amb_fire",
+			"dog_bark"]:
 		_todo.append([k, null])
+	for kind in VARIANTS:
+		for i in int(VARIANTS[kind]):
+			_todo.append(["%s_%d" % [kind, i + 1], null])
 	for kind in VOICES:
 		for i in int(VOICES[kind]):
 			_todo.append(["%s_%d" % [kind, i + 1], null])
@@ -168,7 +244,7 @@ func _plan() -> void:
 
 func _finish() -> void:
 	_built = true
-	for k in ["crowd_loop", "menu_music"]:
+	for k in ["crowd_loop", "menu_music", "amb_crickets", "amb_fire"]:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
 	_crowd.stream = streams.get("crowd_loop")

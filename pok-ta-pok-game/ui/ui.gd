@@ -469,7 +469,7 @@ static func _fill_chips(row: Container, labels: Array, selected: int, on_pick: C
 		b.custom_minimum_size = Vector2(0, 50)
 		var idx := i
 		b.pressed.connect(func():
-			Sfx.click()
+			Sfx.select()
 			on_pick.call(idx))
 		row.add_child(b)
 

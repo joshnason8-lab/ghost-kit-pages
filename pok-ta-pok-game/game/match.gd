@@ -128,6 +128,7 @@ func _ready() -> void:
 	Game.apply_graphics(get_viewport())
 	if not attract:
 		Sfx.crowd(0.35)
+		Sfx.ambience(venue.id if venue else "")
 	phase = P.INTRO
 	phase_t = 0.0
 
@@ -159,7 +160,7 @@ func set_paused(p: bool) -> void:
 	paused = p
 	if hud:
 		hud.show_pause(p)
-	Sfx.crowd(0.0 if p else 0.35)
+	Sfx.pause(p)
 
 
 func on_back() -> void:
@@ -192,6 +193,7 @@ func _process(delta: float) -> void:
 		(t.ai as TeamAI).update(delta)
 	for p in all_players():
 		(p as Player).update(delta, court, Rules.dir(p.team), phase == P.INTRO or phase == P.OVER)
+	_footsteps()
 	_phase_logic(delta)
 	# The ball, in small steps.
 	_acc += delta
@@ -364,6 +366,33 @@ func result() -> Dictionary:
 	return {"config": config, "home": teams[0].id, "away": teams[1].id, "rules": rules, "count": count.to_dict(),
 		"winner": count.winner, "user_team": user_team, "tstats": tstats, "pstats": ps, "log": log_rayas,
 		"longest_rally": longest_rally, "minutes": clock / 60.0, "timed": limit_s > 0.0 and clock >= limit_s, "star": star}
+
+
+## Bare feet on the court: heard for your player and whoever is going for the ball, quieter the further from the
+## camera. Earth or stone by the court.
+func _footsteps() -> void:
+	var near := []
+	if user_player:
+		near.append(user_player)
+	for t in teams:
+		var tk: Player = (t.ai as TeamAI).taker
+		if tk and not tk in near:
+			near.append(tk)
+	var cam_at: Vector3 = cam.camera.global_position if cam and cam.camera else Vector3.ZERO
+	var kind := "step_stone" if court.classic() else "step_earth"
+	for p in all_players():
+		var pl: Player = p
+		if pl.stepped and pl in near and not attract:
+			var d := pl.global_position.distance_to(cam_at)
+			var speed := Vector2(pl.vel.x, pl.vel.z).length()
+			Sfx.play_var(kind, -16.0 - clampf((d - 8.0) * 0.6, 0.0, 14.0) + clampf(speed - 3.0, 0.0, 3.0), randf_range(0.9, 1.1))
+		pl.stepped = false
+
+
+func _exit_tree() -> void:
+	if not attract:
+		Sfx.pause(false)
+		Sfx.ambience("")
 
 
 # ---------------------------------------------------------------- the replay
@@ -698,7 +727,11 @@ func _ball_step(dt: float) -> void:
 			"bounce":
 				var sp := float(e.speed)
 				if sp > 1.0:
-					Sfx.play("thud_stone" if String(e.surface) != "earth" else "thud", clampf(-20.0 + sp * 1.6, -20.0, -2.0), rng.randf_range(0.92, 1.05))
+					var vol := clampf(-20.0 + sp * 1.6, -20.0, -2.0)
+					if String(e.surface) == "earth":
+						Sfx.play_var("thud_earth", vol - 2.0, rng.randf_range(0.8, 0.95))
+					else:
+						Sfx.play("thud_stone", vol, rng.randf_range(0.92, 1.05))
 			"ring":
 				# R13: through the ring.
 				_award(ball.last_team, "ring", false, ball.last_player)
@@ -805,6 +838,9 @@ func _strike(p: Player, window: float, off: float) -> void:
 	cam.shake = 0.4 + 0.6 * quality if p.user else 0.15
 	if not attract:
 		Sfx.play("hip", -3.0 + quality * 3.0, rng.randf_range(0.94, 1.04))
+		Sfx.play_var("hip_body", -8.0 + quality * 4.0, rng.randf_range(0.85, 0.95))
+		if rng.randf() < 0.5:
+			Sfx.voice("grunt" if p.action == Player.A.DIVE else "hup", -14.0, 0.92 + float(p.num % 4) * 0.04)
 		if quality > 0.85:
 			Sfx.react("ooh", -12.0)
 	if p.user and not attract:

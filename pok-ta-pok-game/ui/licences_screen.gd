@@ -8,7 +8,11 @@ Made by Josh Nason.
 The players' bodies, a judge and the townspeople in the stands were made with Meshy (meshy.ai) for the game; their gear
 (the faja, the chimali, the yoke), the courts, the ball, the agave, the stands and the sounds are made in code. The skies, the earth, grass, plaster and stone surfaces, the tropical trees, palms, dry grass and boulders: Poly
 Haven (polyhaven.com), CC0, through the shared assets of the maker's games; the rain tree, coconut palm and dry grass
-models are the maker's own. Crowd reactions from Kabaddi Raid, by the same maker.
+models are the maker's own.
+Sounds (docs/SOUNDS.md has each file): impacts, footsteps and interface clicks by Kenney (kenney.nl), CC0. Crowd
+ambience, cheers and applause: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org), CC-BY 4.0. Crickets
+by Wolfgang_ (Ted Kerr), fire by PagDev, forest birds by pauliuw, a dog by Brandon Morris (opengameart.org), CC0. The
+crowd's ooh and groan and the players' efforts are synthesised (from Kabaddi Raid, by the same maker).
 The menus' music is the game's own piece for cane flute, drum, slit drum and rattles, made in code.
 Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
 (The run: take 09_02; the serve's underhand toss: take 124_12. Bruce Hahne's BVH conversion.)

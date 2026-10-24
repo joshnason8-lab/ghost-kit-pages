@@ -1,0 +1,226 @@
+[
+ {
+  "file": "hip_body_1.ogg",
+  "what": "the hip strike's body",
+  "source_file": "impactPunch_heavy_000.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "hip_body_2.ogg",
+  "what": "the hip strike's body",
+  "source_file": "impactPunch_heavy_002.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "hip_body_3.ogg",
+  "what": "the hip strike's body",
+  "source_file": "impactPunch_heavy_004.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "thud_earth_1.ogg",
+  "what": "the ball down on earth",
+  "source_file": "impactSoft_heavy_000.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "thud_earth_2.ogg",
+  "what": "the ball down on earth",
+  "source_file": "impactSoft_heavy_002.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "thud_earth_3.ogg",
+  "what": "the ball down on earth",
+  "source_file": "impactSoft_heavy_004.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "step_earth_1.ogg",
+  "what": "a bare foot on earth",
+  "source_file": "footstep00.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/rpg-audio"
+ },
+ {
+  "file": "step_earth_2.ogg",
+  "what": "a bare foot on earth",
+  "source_file": "footstep02.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/rpg-audio"
+ },
+ {
+  "file": "step_earth_3.ogg",
+  "what": "a bare foot on earth",
+  "source_file": "footstep04.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/rpg-audio"
+ },
+ {
+  "file": "step_earth_4.ogg",
+  "what": "a bare foot on earth",
+  "source_file": "footstep06.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/rpg-audio"
+ },
+ {
+  "file": "step_stone_1.ogg",
+  "what": "a bare foot on stone",
+  "source_file": "footstep_concrete_000.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "step_stone_2.ogg",
+  "what": "a bare foot on stone",
+  "source_file": "footstep_concrete_001.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "step_stone_3.ogg",
+  "what": "a bare foot on stone",
+  "source_file": "footstep_concrete_002.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "step_stone_4.ogg",
+  "what": "a bare foot on stone",
+  "source_file": "footstep_concrete_003.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/impact-sounds"
+ },
+ {
+  "file": "click.ogg",
+  "what": "a button pressed",
+  "source_file": "click_002.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/interface-sounds"
+ },
+ {
+  "file": "ui_select.ogg",
+  "what": "a choice made (a chip, a team)",
+  "source_file": "select_001.ogg",
+  "author": "Kenney (kenney.nl)",
+  "licence": "CC0 1.0",
+  "url": "https://kenney.nl/assets/interface-sounds"
+ },
+ {
+  "file": "amb_crickets.ogg",
+  "what": "crickets: the village at dusk, the stone court by torchlight",
+  "source_file": "crickets_1.mp3",
+  "author": "Wolfgang_ (Ted Kerr)",
+  "licence": "CC0 1.0",
+  "url": "https://opengameart.org/content/crickets-ambient-noise-loopable"
+ },
+ {
+  "file": "amb_fire.ogg",
+  "what": "the torches' fire round the stone court at night",
+  "source_file": "fire.wav",
+  "author": "PagDev",
+  "licence": "CC0 1.0",
+  "url": "https://opengameart.org/content/fireplace-sound-loop"
+ },
+ {
+  "file": "crowd_loop.ogg",
+  "what": "the crowd's murmur round the court",
+  "source_file": "Gregor Quendel - Crowd Cheering Sounds - 10 - Ambience.mp3",
+  "author": "Gregor Quendel",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/free-crowd-cheering-sounds"
+ },
+ {
+  "file": "crowd_cheer.ogg",
+  "what": "the crowd going up (a raya, the ring)",
+  "source_file": "Gregor Quendel - Crowd Cheering Sounds - 04 - Strong cheering - II - Short.mp3",
+  "author": "Gregor Quendel",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/free-crowd-cheering-sounds"
+ },
+ {
+  "file": "applause.ogg",
+  "what": "applause and soft cheering after a raya",
+  "source_file": "Gregor Quendel - Crowd Cheering Sounds - 05 - Soft cheering - I.mp3",
+  "author": "Gregor Quendel",
+  "licence": "CC-BY 4.0",
+  "url": "https://opengameart.org/content/free-crowd-cheering-sounds"
+ },
+ {
+  "file": "dog_bark.ogg",
+  "what": "a dog in the village, far off",
+  "source_file": "dog_barking_mono.wav",
+  "author": "Brandon Morris (submitted by HaelDB)",
+  "licence": "CC0 1.0 (or OGA-BY 3.0)",
+  "url": "https://opengameart.org/content/dog-barking-mono"
+ },
+ {
+  "file": "bird_1.ogg",
+  "what": "a bird in the forest round the stone court",
+  "source_file": "Forest Birds 1.wav",
+  "author": "pauliuw",
+  "licence": "CC0 1.0",
+  "url": "https://opengameart.org/content/forest-bird-sounds"
+ },
+ {
+  "file": "bird_2.ogg",
+  "what": "a bird in the forest round the stone court",
+  "source_file": "Forest Birds 2.wav",
+  "author": "pauliuw",
+  "licence": "CC0 1.0",
+  "url": "https://opengameart.org/content/forest-bird-sounds"
+ },
+ {
+  "file": "bird_3.ogg",
+  "what": "a bird in the forest round the stone court",
+  "source_file": "Forest Birds 3.wav",
+  "author": "pauliuw",
+  "licence": "CC0 1.0",
+  "url": "https://opengameart.org/content/forest-bird-sounds"
+ },
+ {
+  "file": "bird_4.ogg",
+  "what": "a bird in the forest round the stone court",
+  "source_file": "Forest Birds 5.wav",
+  "author": "pauliuw",
+  "licence": "CC0 1.0",
+  "url": "https://opengameart.org/content/forest-bird-sounds"
+ },
+ {
+  "file": "bird_5.ogg",
+  "what": "a bird in the forest round the stone court",
+  "source_file": "Forest Birds 7.wav",
+  "author": "pauliuw",
+  "licence": "CC0 1.0",
+  "url": "https://opengameart.org/content/forest-bird-sounds"
+ },
+ {
+  "file": "bird_6.ogg",
+  "what": "a bird in the forest round the stone court",
+  "source_file": "Forest Birds 4.wav",
+  "author": "pauliuw",
+  "licence": "CC0 1.0",
+  "url": "https://opengameart.org/content/forest-bird-sounds"
+ }
+]

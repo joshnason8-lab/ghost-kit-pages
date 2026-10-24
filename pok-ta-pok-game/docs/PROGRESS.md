@@ -82,6 +82,13 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
     in his own hand: a bug); a standing hip cannot meet a ball below 34 cm (dive for it); the ring shot (see RULES);
     a slowed replay from below the ring after a ball through it; Settings: play the whole team or one player.
 
+- **0.3.0, the sound update** (docs/SOUNDS.md): recorded sounds from kenney.nl (CC0) and opengameart.org (CC0, one
+  CC-BY 4.0 crowd pack), made by `tools/sound/process.py`. A recorded body thump under the hip strike, the ball on
+  earth, bare feet on earth and stone, the crowd's murmur, cheer and applause (real crowd recordings, softened), interface
+  clicks, and each court's surroundings: crickets and a far dog in the village, birds in the Yucatán forest, crickets and
+  the torches' fire at night. Pause holds every sound. Players grunt or breathe on half their strikes. Audio went from
+  748 KB to 1.4 MB. A test checks every sound file loads and that nothing plays while paused.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
@@ -89,7 +96,7 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
 2. New store screenshots and feature graphic with the realistic bodies.
 3. Yucatec Maya touches: the judges' count on the stone court (*jun, ka', óox…*). It is listed for a native speaker
    in docs/CULTURE.md.
-4. The sound update the lead asked for (kenney.nl and opengameart.org sounds, docs/SOUNDS.md).
+4. Field recordings the open sites do not have (docs/SOUNDS.md, "Not found").
 5. Meshy court pieces (docs/MESHY_BRIEF.md: the carved ring, the talud, the pyramid).
 6. A Classic-period court variant with floor markers and no rings.
 

@@ -36,6 +36,7 @@ func _ready() -> void:
 	_sim()
 	await _crowd_faces()
 	await _mocap()
+	_sounds()
 	await _ring_replay()
 	await _match_and_motion("village", "ulama")
 	await _match_and_motion("stone", "classic")
@@ -467,6 +468,49 @@ func _crowd_faces() -> void:
 			v.queue_free()
 			await frames(1)
 	Game.settings.graphics = keep
+
+
+# ---------------------------------------------------------------- sound
+
+## Every recorded sound the game names is in the build and loads (docs/SOUNDS.md lists them), every court's
+## surroundings name sounds that exist, and nothing plays while the match is paused.
+func _sounds() -> void:
+	Sfx._ensure()
+	var names: Array = ["click", "ui_select", "crowd_loop", "crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music",
+		"amb_crickets", "amb_fire", "dog_bark"]
+	for kind in Sfx.VARIANTS:
+		for i in int(Sfx.VARIANTS[kind]):
+			names.append("%s_%d" % [kind, i + 1])
+	for kind in Sfx.VOICES:
+		for i in int(Sfx.VOICES[kind]):
+			names.append("%s_%d" % [kind, i + 1])
+	var missing := []
+	for n in names:
+		var path := "res://assets/audio/%s.ogg" % n
+		if not ResourceLoader.exists(path) or not (load(path) is AudioStream) or not (Sfx.streams.get(n) is AudioStream):
+			missing.append(n)
+	check(missing.is_empty(), "Sound: every recorded sound is in the build and loads (%d; missing %s)" % [names.size(), missing])
+	var amb_ok := true
+	for k in Sfx.AMBIENCE:
+		var a: Array = Sfx.AMBIENCE[k]
+		for i in [0, 2, 4]:
+			var n := String(a[i])
+			if n != "" and not Sfx.streams.has(n) and not Sfx.VARIANTS.has(n):
+				amb_ok = false
+	check(amb_ok, "Sound: every court's surroundings name sounds that exist")
+	var keep := bool(Game.settings.sound)
+	Game.settings.sound = true
+	Sfx.pause(true)
+	var before := 0
+	for p in Sfx._pool:
+		before += 1 if p.playing else 0
+	Sfx.play("click")
+	var after := 0
+	for p in Sfx._pool:
+		after += 1 if p.playing else 0
+	Sfx.pause(false)
+	Game.settings.sound = keep
+	check(after == before, "Sound: nothing new plays while paused")
 
 
 # ---------------------------------------------------------------- the ring

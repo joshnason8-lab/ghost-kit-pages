@@ -40,7 +40,8 @@ var hit_done := false         # this strike has met the ball
 var immune := 0.0             # just struck it: the ball leaving him is not a touch
 var recent_attempt := 0.0     # swung at it lately: a near miss is not then a body-touch fault
 var phase := 0.0              # the run's cycle
-var action_ring := 0          # a strike aimed at the ring on that side (classic court), or 0
+var action_ring := 0
+var stepped := false          # a foot came down this frame (Match plays the step for the players it hears)          # a strike aimed at the ring on that side (classic court), or 0
 var steps_taken := 0          # steps since the tests last read it
 var blocked := false          # stopped by a line or wall this frame (the audit counts these apart)
 var written := Vector3.INF     # where update() last put him (the movement audit: nothing else moves him)
@@ -254,6 +255,7 @@ func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 	if hs2 != _half_step:
 		if speed > 0.3:
 			steps_taken += absi(hs2 - _half_step)
+			stepped = true
 		_half_step = hs2
 	_pose(speed)
 	if action == A.STRIKE and action_t >= Moves.STRIKE_T:
