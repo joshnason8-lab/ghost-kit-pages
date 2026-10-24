@@ -6,7 +6,9 @@ extends Control
 const CREDITS := """[b]Kho Kho Rush[/b]
 Made by Josh Nason.
 The players and officials: the maker's own athlete model, moved by animations from Mixamo (Adobe), fitted to it for the
-game. The grounds' skies, surfaces, plastic chairs, stools, benches, lights and tropical trees: Poly Haven
+game; their dodge and their standing at ease from the CMU Graphics Lab Motion Capture Database (clips 127_11 and 77_02).
+Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+The grounds' skies, surfaces, plastic chairs, stools, benches, lights and tropical trees: Poly Haven
 (polyhaven.com), CC0. The rain trees, palms, grass, scorers' table, apartment blocks and village temple: the maker's own
 models. Grounds otherwise made in code for the game; the crowd drawn from the players' model; sounds, the menu music
 and the crowd's drums written for it (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.

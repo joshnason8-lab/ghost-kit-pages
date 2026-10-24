@@ -854,6 +854,7 @@ func _dodge() -> void:
 	if bool(Game.settings.lane_assist):
 		dir = _keep_in(a, dir)
 	_dodge_dir = dir.normalized()
+	a.dodge(_dodge_dir, DODGE_TIME)
 	_dodge_until = t_match + DODGE_TIME
 	_dodge_ready = t_match + DODGE_COOL
 	a.vel = a.vel * 0.3 + _dodge_dir * maxf(a.vel.length(), 5.0)
@@ -1420,6 +1421,9 @@ func _defender_think(a: Athlete, dt: float) -> void:
 		a.want = to.normalized() * top * 0.9
 		return
 	if ai.has("dodge_at") and t_match >= float(ai.dodge_at) and t_match < float(ai.dodge_at) + 0.4:
+		if float(ai.get("dodge_seen", -1.0)) != float(ai.dodge_at):
+			ai.dodge_seen = ai.dodge_at
+			a.dodge(ai.dodge_dir, 0.4)
 		a.top = top * 1.15
 		a.want = _keep_in(a, (ai.dodge_dir as Vector3) * a.top)
 		a.vel += _keep_in(a, (ai.dodge_dir as Vector3)) * 9.0 * dt   # a quick, hard step aside
