@@ -1,0 +1,172 @@
+{
+ "sliotar": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A hurling sliotar: a small white leather ball, two leather panels stitched together with a raised ridge rim around its middle, like a cork-core ball from Irish hurling, realistic, clean",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 1500
+  },
+  "preview": "01a16bda-08dd-765e-8997-ef00c6d10309"
+ },
+ "floodlight": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports stadium floodlight head: a flat rectangular grey steel frame holding twelve rectangular floodlight lamps in three rows of four, lamps angled forward, mounted on top of a short steel post, realistic, metal",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 3000
+  },
+  "preview": "01a16bda-0fdd-71fe-9036-3b4e49e0f98c"
+ },
+ "hurler": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "An Irish hurler, athletic man, plain short-sleeved green sports jersey, white shorts, green knee-length socks, black football boots, black hurling helmet with a steel face guard, holding a wooden ash hurley (hurling stick with a wide flat curved blade) in his right hand pointing down, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 10000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16bda-1794-7209-a927-0505735a20b2"
+ },
+ "referee": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A GAA hurling referee, fit man, black short-sleeved referee shirt with collar, black shorts, black socks, black football boots, short hair, a whistle on a lanyard, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 8000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16bda-1e8b-73b7-973c-8930da6a385c",
+  "refine": "01a16bdc-877b-77c0-a6ad-c8672a2fefa4",
+  "rig": "01a16be3-e6c1-748f-b322-09086aacf575"
+ },
+ "umpire": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A Gaelic games umpire, middle-aged Irish man wearing a long white coat down to the knees over dark trousers, white peaked cap, black shoes, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 8000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16bda-260f-729c-80dd-61d97acf2add",
+  "refine": "01a16bdc-8e52-74f1-91b8-e0d796921f25",
+  "rig": "01a16be3-f03a-7793-9665-5862aa86e473"
+ },
+ "fan": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, young Irish man, plain white t-shirt, blue jeans, trainers, short brown hair, friendly, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16bda-2f23-7594-a74a-0903202a4160",
+  "refine": "01a16bdc-95ce-7522-a9d8-168e2f3b270e",
+  "rig": "01a16be3-f995-70b4-8f44-eb887665409b"
+ },
+ "fan2": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, Irish woman with long dark hair tied back, plain white sports jersey, dark jeans, trainers, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16bda-35b8-773f-8a4b-7eb7282b6c86",
+  "refine": "01a16bdc-9d8b-71b0-b165-a1f6a8296769",
+  "rig": "01a16be4-03ce-7126-943a-1efb46c8ec0f"
+ },
+ "floodlight2": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A stadium floodlight lamp array: a square steel lattice frame with sixteen identical round floodlight lamps arranged in a four by four grid, each lamp a short cylinder with a glass front, the frame on a thick steel pole stub, realistic, galvanised steel",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 4000
+  },
+  "preview": "01a16bdc-a4a0-73ce-9c6e-11a4fd5f6f74",
+  "refine": "01a16be3-e022-765d-a993-7be92ea39036"
+ },
+ "hurler2": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "Full body Irish hurling player standing in A-pose, he grips a long wooden hurling stick (a hurley: a straight ash handle about 85 cm long ending in a broad flat curved blade) in his right hand, the stick hanging down beside his right leg with the blade near the ground; he wears a slim hurling helmet with a steel grille face guard (not an American football helmet), a plain short-sleeved jersey, white shorts, long socks, boots; realistic",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 10000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16bdc-ac71-7450-b07c-f3ce3b9f3d14"
+ },
+ "fan3": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, older Irish man in his sixties, grey hair, tweed flat cap, plain white polo shirt, beige trousers, brown shoes, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16c76-8558-75c8-9d0c-bdb87409cbc9",
+  "refine": "01a16c79-32cb-724a-8adf-5b0bfba6188d",
+  "rig": "01a16c7c-8c9f-752b-92fe-f5198eaab784"
+ },
+ "fan4": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, Irish teenage boy, short red hair, freckles, plain white t-shirt, black tracksuit bottoms, trainers, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16c76-8de9-714c-bd4f-30a4440b14cf",
+  "refine": "01a16c79-39f1-7353-b752-24fb6cc6cb49",
+  "rig": "01a16c7c-96f4-76d4-81c6-7169a72942c7"
+ },
+ "fan5": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, Irish woman in her forties, short blonde hair, plain white long-sleeved top, blue jeans, trainers, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16c76-94c1-7687-9c3f-2ca47f225a92",
+  "refine": "01a16c79-4096-7323-adcd-ffbde94a270f",
+  "rig": "01a16c7c-9ffd-77dc-b090-8ad6263c5ae9"
+ },
+ "fan6": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan standing in a stadium crowd, stocky bald Irish man with a dark beard, plain white sports jersey, dark grey trousers, black shoes, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "a-pose"
+  },
+  "preview": "01a16c76-9c20-770e-aae6-b71fd1da489e",
+  "refine": "01a16c79-4888-73dc-9964-bd681e259df7",
+  "rig": "01a16c7c-a98b-7366-87e2-1a43611c3901"
+ }
+}

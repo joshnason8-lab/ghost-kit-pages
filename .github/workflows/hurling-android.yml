@@ -1,0 +1,272 @@
+name: Hurling Heroes · Android build
+
+# Builds the Godot project in hurling-game/ into the beta APKs you can sideload (64-bit, and 32-bit for older
+# phones), after running the headless test suite: the playing rules, every screen in English and Irish, text fit,
+# scrolling, the championship, an AI match and the movement audit.
+
+on:
+  push:
+    paths:
+      - "hurling-game/**"
+      - ".github/workflows/hurling-android.yml"
+  # No pull_request trigger: the push run reports its checks on the PR's head commit already, and a second run
+  # doubled every failure email (the owner's request, round two).
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: hurling-game
+
+jobs:
+  # The scoring check (tests/score_check.tscn): AI matches at every length, held to real hurling's numbers
+  # (docs/AI.md). The full-length match takes a while, so it runs beside the build.
+  score-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        lengths: ["8,14,20", "35"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Scores at ${{ matrix.lengths }} minutes against real hurling
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 3300 godot --headless --path . --fixed-fps 30 res://tests/score_check.tscn -- 3 ${{ matrix.lengths }} 2>&1 | tee score.log
+          if grep -q "SCRIPT ERROR" score.log; then grep -A4 "SCRIPT ERROR" score.log; exit 1; fi
+
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write   # to publish the beta release (below)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Compile check
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: godot --headless --path . res://tests/compile_check.tscn
+
+      - name: Tests (the rules, screens, scrolling, championship, an AI match, the movement audit)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          # A script error does not stop Godot or fail a check, so the log is read for them too.
+          set -o pipefail
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn 2>&1 | tee test_runner.log
+          if grep -q "SCRIPT ERROR" test_runner.log; then grep -A4 "SCRIPT ERROR" test_runner.log; exit 1; fi
+
+      - name: Text fit (every screen, both languages, four screen shapes)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- fit.jsonl 2>&1 | tee fit.log
+          if grep -q "SCRIPT ERROR" fit.log; then grep -A4 "SCRIPT ERROR" fit.log; exit 1; fi
+
+      - name: AI matches (how they go)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 2 8 2>&1 | tee sim.log
+          if grep -q "SCRIPT ERROR" sim.log; then grep -A4 "SCRIPT ERROR" sim.log; exit 1; fi
+
+      - name: Controls (a thumb on the buttons plays and scores; hands off, nothing is played for you)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- play 4 2>&1 | tee bot.log
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- idle 4 2>&1 | tee -a bot.log
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- pull 4 2>&1 | tee -a bot.log
+          if grep -q "SCRIPT ERROR" bot.log; then grep -A4 "SCRIPT ERROR" bot.log; exit 1; fi
+
+      - name: Touch input (scrolling from anywhere on a page, taps)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
+
+      # The beta key: the owner's (the BETA_KEYSTORE_B64 secret, a PKCS12 keystore, alias androiddebugkey, password
+      # android), the same for every build so each beta installs over the last and keeps the player's saves.
+      - name: Configure Android export
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
+        run: |
+          KEYSTORE=$HOME/debug.keystore
+          if [ -n "$BETA_KEYSTORE_B64" ]; then
+            echo "$BETA_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "BETA_KEY=1" >> "$GITHUB_ENV"
+          else
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+            echo "BETA_KEY=0" >> "$GITHUB_ENV"
+          fi
+          echo "KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
+          SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
+          mkdir -p ~/.config/godot
+          # Let the editor create its settings file, then point it at the runner's SDK and JDK.
+          godot --headless --editor --quit --path ${PROJECT_DIR} || true
+          if [ ! -f "$SETTINGS" ]; then
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
+          fi
+          sed -i '/export\/android\//d' "$SETTINGS"
+          {
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK_ROOT\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$KEYSTORE\""
+            echo "export/android/debug_keystore_user = \"androiddebugkey\""
+            echo "export/android/debug_keystore_pass = \"android\""
+          } >> "$SETTINGS"
+          grep android "$SETTINGS"
+
+      - name: Export APKs
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p build
+          cp export_presets.cfg export_presets.keep
+          # 64-bit ARM (nearly every phone sold since 2019), then 32-bit ARM for the older and Android Go phones
+          # (some 2-3 GB Galaxy A0x run 32-bit Android). Play serves each phone its own from the one bundle.
+          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          godot --headless --path . --export-release "Android" build/unsigned.apk
+          cp export_presets.keep export_presets.cfg
+          sed -i 's/architectures\/arm64-v8a=true/architectures\/arm64-v8a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          godot --headless --path . --export-release "Android" build/unsigned-armv7.apk
+          mv export_presets.keep export_presets.cfg
+          python3 tools/check_pages.py build/unsigned.apk
+          ls -la build
+
+      # Signed with the owner's beta key (above). Without it uber-apk-signer signs with whatever debug key the runner
+      # has, a different one each build, so a build will not install over the last (the fault this fixes). Both
+      # APKs, then the signing certificate's SHA-256 logged, and checked: with the owner's key it must be his.
+      - name: Sign APKs
+        run: |
+          curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
+          if [ "$BETA_KEY" = "1" ]; then
+            KS="--ks $KEYSTORE --ksAlias androiddebugkey --ksPass android --ksKeyPass android"
+          else
+            KS=""
+            echo "::warning::BETA_KEYSTORE_B64 is not set: signed with the runner's debug key, not the owner's beta key; this build will not install over earlier builds"
+          fi
+          java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk ${PROJECT_DIR}/build/unsigned-armv7.apk --out ${PROJECT_DIR}/build/signed $KS
+          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-*igned.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk
+          mv ${PROJECT_DIR}/build/signed/unsigned-armv7-aligned-*igned.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}-32bit.apk
+          WANT="6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3"
+          for apk in ${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}-32bit.apk; do
+            FP=$(keytool -printcert -jarfile "$apk" | sed -n 's/.*SHA256: *//p' | head -1)
+            echo "Signing certificate SHA-256 of $(basename "$apk"): $FP"
+            if [ "$BETA_KEY" = "1" ] && [ "$FP" != "$WANT" ]; then
+              echo "::error::$(basename "$apk") is not signed with the owner's beta key"
+              exit 1
+            fi
+          done
+          ls -la ${PROJECT_DIR}/build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hurling-heroes-${{ env.VERSION }}-apk
+          path: |
+            ${{ env.PROJECT_DIR }}/build/hurling-heroes-${{ env.VERSION }}.apk
+            ${{ env.PROJECT_DIR }}/build/hurling-heroes-${{ env.VERSION }}-32bit.apk
+          if-no-files-found: error
+
+      # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
+      # "ash-and-leather-beta", always the latest build of this branch, made afresh on every push that passes the
+      # tests. Pull request runs build the same APK and leave the release alone.
+      - name: Publish the beta release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=ash-and-leather-beta
+          APK=${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk
+          APK32=${PROJECT_DIR}/build/hurling-heroes-${VERSION}-32bit.apk
+          cat > notes.md <<EOF
+          The latest beta of **Hurling Heroes** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+
+          **Android**: tap \`hurling-heroes-${VERSION}.apk\` under Assets below (an older or Android Go phone that
+          says it cannot install it: \`hurling-heroes-${VERSION}-32bit.apk\`). When it has downloaded, open it; if
+          Android asks, allow your browser or Files to install unknown apps. It installs over any earlier Hurling Heroes
+          beta and keeps your saves.
+
+          This release is replaced by every new beta build: this page always has the newest one.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
+            --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
+          gh release view "$TAG"
