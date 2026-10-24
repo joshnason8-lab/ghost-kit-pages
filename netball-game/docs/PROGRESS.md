@@ -8,7 +8,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 
 - Branch `claude/netball-game`, folder `netball-game/` (self-contained Godot 4.7.2 project), pages folder
   `netball-unleashed/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
-- Version 0.6.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
+- Version 0.6.1-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
   https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta.
 
 ## Done

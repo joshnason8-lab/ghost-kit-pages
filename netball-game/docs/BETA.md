@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.6.1-beta
+
+- Signed with the owner's beta key: from this version on, each beta installs over the last. **This one does not
+  install over 0.6.0 or earlier: uninstall the old one first, once.**
+
 ## New in 0.6.0-beta
 
 - **New sounds**: catches, bounces on timber and asphalt, footsteps and shoe squeaks, the ring and net, a better
