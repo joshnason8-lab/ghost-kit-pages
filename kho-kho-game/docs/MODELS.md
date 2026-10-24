@@ -59,7 +59,8 @@ How they are made:
    test. Saved compressed (Animation.compress): 4 KB and 18 KB.
 
 `tests/test_runner.gd` (`_mocap`) plays each clip on the model with its root and checks no planted toe slides more
-than 3 cm (both hold within a millimetre), and that a dodge cuts the way the player goes.
+than 3 cm (the bake measures the worst at 0.0 cm on the dodge and 0.4 cm on the idle, from 2.0 and 1.3 cm
+before the locks), and that a dodge cuts the way the player goes.
 
 **Considered and left out** (the CMU index has about 2,500 clips): its runs and sprints (subjects 09, 16, 35, 127,
 143) are jogs at 3-4 m/s, where a chaser here runs at up to 7, and the owner's Mixamo run is itself recorded; its dives

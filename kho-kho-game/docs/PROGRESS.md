@@ -157,6 +157,25 @@ spectator's forward against the direction to the centre (dot product over 0.7) a
 High. Seen from a camera on the court looking at each stand, and from high behind the near side:
 `docs/img/crowd-facing-0.4.2.jpg`. No change to draw calls or triangles (the same one quad per person).
 
+## Round five: 0.5.0-beta, motion capture (24 October 2026, the owner via the lead)
+
+The owner added the CMU motion capture library and asked each game to use real recorded movement where it beats what
+it has. Here six of the players' movements were already recorded (the owner's Mixamo run, dive, reach, turn, kneel
+down and kneel); what was not was the dodge (the run clip, the body swung round to the new direction) and standing
+still (one held pose, frozen). Those two are now mocap, from **CMU 127_11** (a running cut, the outside foot planted;
+mirrored for the other side) and **CMU 77_02** (standing at ease, looped). Everything else in the library was weighed
+against the game and left out; docs/MODELS.md says what and why for each. The clips' travel over the ground is taken
+out (the movement system still writes every position), planted feet are locked with two-bone IK, and the clips are
+stored compressed: 22 KB between them. Credited in the Licences screen. New tools: `tools/models/bvh_to_json.py`,
+`tools/models/retarget_bvh.gd`; the BVH files are not committed.
+
+Also fixed on the way: after a mirrored act (a pole dive round the other side) a player kept running mirrored, his
+shirt's number reversed; the mirror now ends with the act.
+
+Performance (perf_probe, before and after, every ground on Low, Medium and High): draw calls and triangles unchanged
+(Low: village 88 and 69k, school 83 and 38k, arena 84 and 46k, stadium 80 and 39k). The milliseconds a frame on this
+machine's software renderer were lower after, by run-to-run noise, not by the change.
+
 ## Shared assets (from 22 October 2026)
 
 The owner made the orchestrator session (`session_016XKAyHkTQRNMGEgZbjNK28`) the lead for all six mobile games.
