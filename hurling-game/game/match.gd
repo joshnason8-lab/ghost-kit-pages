@@ -417,6 +417,14 @@ func _run_pending() -> void:
 			i += 1
 
 
+## The referee's whistle (a recording, one of its takes: Sfx.VARIANTS), from where he stands: a short pip for a free
+## or a stoppage, a long blast to throw the ball in and end a half, short-short-long at full time. Quiet behind the
+## home screen.
+func _ref_whistle(kind: String) -> void:
+	var at: Vector3 = officials.referee.global_position if officials != null and officials.referee != null else cam.camera.global_position
+	Sfx.play(kind, -24.0 if attract else _near_db(at, -3.0), randf_range(0.98, 1.02))
+
+
 ## A sound at p as loud as db when the camera is close, quieter with distance (to -12 dB more at 60 m).
 func _near_db(p: Vector3, db: float) -> float:
 	return db - clampf(cam.camera.global_position.distance_to(p) / 60.0, 0.0, 1.0) * 12.0
@@ -1357,7 +1365,7 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 ## The referee's whistle: the ball dead. A restart is about to be awarded.
 func _whistle_dead(sound := true) -> void:
 	if sound:
-		Sfx.play("whistle", -4.0)
+		_ref_whistle("whistle")
 	phase = P.DEAD
 	phase_t = 0.0
 	if carrier != null:
@@ -1922,7 +1930,7 @@ func _begin_throw_in() -> void:
 	ball.place(Vector3(0, 1.6, 0))
 	officials.throw_in()
 	_after(0.55, func():
-		Sfx.play("whistle", -4.0)
+		_ref_whistle("whistle_long")
 		ball.global_position = Vector3(0, 1.7, 0)
 		ball.launch(Vector3(rng.randf_range(-0.6, 0.6), 7.5, rng.randf_range(-0.6, 0.6)), null, "throw_in")
 		ball.last_team = -1
@@ -1961,7 +1969,7 @@ func _check_added() -> void:
 
 
 func _end_half() -> void:
-	Sfx.play("whistle_long", -2.0)
+	_ref_whistle("whistle_long")
 	phase = P.HALF_TIME
 	phase_t = 0.0
 	if carrier != null:
@@ -2122,6 +2130,7 @@ func _run_subs() -> void:
 		var team: Dictionary = teams[k]
 		team.bench.erase(pd)
 		bench.leave(k, pd)
+		_ref_whistle("whistle_double")      # the referee waves the substitute on
 		team.subs = int(team.subs) + 1
 		tstats[k].subs += 1
 		var ghost := Player.new(off.data, k, off.body.look)
@@ -2248,7 +2257,7 @@ func _shootout_result(kind: String, _c: Vector3) -> void:
 func _finish(shootout_winner := -1) -> void:
 	phase = P.OVER
 	phase_t = 0.0
-	Sfx.play("whistle_long", -2.0)
+	_ref_whistle("whistle_final")
 	var a := Rules.total(score[0][0], score[0][1])
 	var b := Rules.total(score[1][0], score[1][1])
 	var winner := 0 if a > b else (1 if b > a else shootout_winner)

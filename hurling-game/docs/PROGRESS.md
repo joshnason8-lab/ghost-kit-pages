@@ -232,6 +232,14 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.8.1-beta, the referee's whistle, 24 October 2026)
+
+The owner found real whistle recordings (Pixabay, credited on Licences and in docs/SOUNDS.md; trimmed and levelled
+in the shared assets). `Match._ref_whistle` plays them from the referee's position (quieter with distance, -12 dB
+at 60 m), a take picked at random: a short pip for a free or a stoppage, a long blast for the throw-in and the end
+of a half, the final whistle (short, short, long) at full time, a double pip when a substitute comes on; quiet
+behind the home screen. The made whistle is only the fallback now. Not used: the gym take (hurling is outdoors).
+
 ## Done (0.8.0-beta, the size update, 24 October 2026)
 
 The owner allows the APK to grow (to about 150 MB) for a better look and sound, with Low exactly as it was. Every

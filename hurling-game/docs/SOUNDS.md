@@ -18,6 +18,10 @@ rest are made in code at startup (`autoload/sfx.gd`). `tests/test_runner.gd` che
 | `bounce.ogg` | The sliotar on the grass | the same, impactSoft_medium_000 | Kenney | CC0 |
 | `catch.ogg` | The sliotar into the hand | the same, impactPunch_medium_000 | Kenney | CC0 |
 | `shoulder.ogg` | A shoulder charge | the same, impactSoft_heavy_001 | Kenney | CC0 |
+| `whistle.ogg`, `whistle_2.ogg`, `whistle_3.ogg` | The referee's short pip: a free, a stoppage (one of three takes) | Pixabay 568615 "Referee whistle", 291816 "Referee whistle / coach whistle / sports whistle", 6121 "Metal whistle", trimmed and levelled in the shared assets (shared-assets/sounds/whistle) | charlesheffley009, framptones, freesound_community | Pixabay Content License |
+| `whistle_long.ogg`, `whistle_long_2.ogg`, `whistle_long_3.ogg` | The long blast: the throw-in, the end of a half | the same three | charlesheffley009, framptones, freesound_community | Pixabay Content License |
+| `whistle_final.ogg` | Short, short, long: full time | Pixabay 568615 | charlesheffley009 | Pixabay Content License |
+| `whistle_double.ogg` | Two pips: a substitute waved on | Pixabay 568615 | charlesheffley009 | Pixabay Content License |
 | `click.ogg` | A tap on the menus | "Interface Sounds", click_001, https://kenney.nl/assets/interface-sounds | Kenney | CC0 |
 | `crowd_ooh.ogg`, `crowd_groan.ogg`, `applause.ogg`, `clap.ogg` | The crowd's ooh at a near miss, groan at a wide, applause | Kabaddi Raid, by the same maker | Josh Nason | the game's own |
 | `grunt_1.ogg` to `grunt_3.ogg`, `hup_1.ogg`, `hup_2.ogg` | Players' effort | Kabaddi Raid, by the same maker | Josh Nason | the game's own |
@@ -25,17 +29,14 @@ rest are made in code at startup (`autoload/sfx.gd`). `tests/test_runner.gd` che
 
 ## Made in code (autoload/sfx.gd)
 
-`whistle`, `whistle_long` (the referee's whistle), `strike` (ash on leather), `tap` (the sliotar hopped on the bas),
-`save`; and, if their files were missing, every sound above with a fallback (`clash`, `catch`, `shoulder`, `post`,
+`strike` (ash on leather), `tap` (the sliotar hopped on the bas),
+`save`; and, if their files were missing, every sound above with a fallback (the whistles, `clash`, `catch`, `shoulder`, `post`,
 `bounce`, `click`, `roar`, `crowd_loop`).
 
 ## Looked for and not found
 
-- **A referee's whistle** (a pea whistle, a long blast and short pips): nothing on OpenGameArt or Kenney is a
-  sports whistle (only tunes whistled and steam whistles). The made one stays. A recording from the owner would be
-  the biggest single improvement.
 - **The strike, ash on leather**: the crack of a hurley on a sliotar; no recording of it, or of a cricket or
-  baseball bat close enough. The made one stays.
+  baseball bat close enough. The made one stays; a recording from the owner would be the biggest improvement now.
 - **An Irish crowd**: a chant ("Come on the ..."), a county's name roared. Only general stadium cheering was to be
   had (Gregor Quendel's, above).
 - **Rain** and **a town's evening** for the night match: none that fit under a crowd without being heard as noise.

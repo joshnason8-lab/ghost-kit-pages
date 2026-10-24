@@ -1,14 +1,14 @@
 extends Node
 ## Sound effects: recordings where a good one could be had (the crowd, birdsong, boots on grass, the knocks of the
 ## game: docs/SOUNDS.md, made by tools/audio/sounds.py), the rest synthesised at startup. An .ogg or .wav with a
-## sound's name in res://assets/audio/ takes the place of the made one.
+## sound's name in res://assets/audio/ takes the place of the made one. The referee's whistle is recorded (Pixabay).
 ## They are made a sound at a time by the loading screen (build_step), so it can show its progress; anything that
 ## needs one before then makes the rest at once (_ensure).
 
 const RATE := 22050
 const VOICES := {"grunt": 3, "hup": 2, "step": 4}
 ## Sounds recorded more than once: play("roar") picks roar, roar_2 or roar_3, so a crowd never cheers twice alike.
-const VARIANTS := {"crowd_cheer": 3, "roar": 3}
+const VARIANTS := {"crowd_cheer": 3, "roar": 3, "whistle": 3, "whistle_long": 3}
 const MUSIC_DB := -9.0
 
 var streams := {}
@@ -175,6 +175,8 @@ func _plan() -> void:
 	_todo = [
 		["whistle", _whistle],
 		["whistle_long", func(): return _whistle(1.1)],
+		["whistle_final", func(): return _whistle(1.8)],
+		["whistle_double", func(): return _whistle(0.9)],
 		["strike", _strike],                                # ash on leather: the crack of a full strike
 		["tap", func(): return _wood(1.6, 0.03, 0.25)],     # the sliotar hopped on the bas
 		["clash", func(): return _wood(0.9, 0.09, 0.8)],    # hurleys meeting

@@ -41,6 +41,9 @@ PLAY YOUR WAY
 
 Hurling Heroes is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.
 
+== Release notes (0.8.1) ==
+A real referee's whistle: recorded blasts from where the referee stands, short for a free, long for the throw-in and half time, the final whistle at full time.
+
 == Release notes (0.8.0) ==
 Sharper grass, kits and officials on Medium and High graphics, a crowd of 24 different fans, and longer, more varied crowd sound. Low graphics unchanged.
 

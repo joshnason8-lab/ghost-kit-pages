@@ -16,8 +16,8 @@ The referee, the umpires, the people in the crowd and the floodlights: the maker
 (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
 Sounds: the stadium crowd's murmur, cheer and roar from "Free Crowd Cheering Sounds" by Gregor Quendel
 (opengameart.org), CC-BY 4.0; birdsong from "Park ambiences" by Thimras (opengameart.org), CC0; footsteps, knocks and
-the menu click from Kenney's Impact Sounds and Interface Sounds (kenney.nl), CC0; the whistle and the strike made in
-code. Every sound's source: docs/SOUNDS.md.
+the menu click from Kenney's Impact Sounds and Interface Sounds (kenney.nl), CC0; whistle sounds from Pixabay
+(charlesheffley009, framptones, freesound_community), Pixabay Content License; the strike made in code. Every sound's source: docs/SOUNDS.md.
 The game is not connected with, or endorsed by, any sporting body, county board or club. Counties appear by their
 place names, in colours of the game's own design; every player is invented."""
 

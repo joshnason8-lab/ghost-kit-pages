@@ -931,9 +931,9 @@ func _sounds() -> void:
 			var st: AudioStream = load("res://assets/audio/" + f)
 			if st == null or st.get_length() <= 0.0:
 				bad.append(f)
-	check(files >= 28 and bad.is_empty(), "Sounds: the %d files in assets/audio load (%s)" % [files, bad])
+	check(files >= 36 and bad.is_empty(), "Sounds: the %d files in assets/audio load (%s)" % [files, bad])
 	Sfx._ensure()
-	var names := ["whistle", "whistle_long", "strike", "tap", "clash", "catch", "shoulder", "post", "save", "bounce",
+	var names := ["whistle", "whistle_long", "whistle_final", "whistle_double", "strike", "tap", "clash", "catch", "shoulder", "post", "save", "bounce",
 		"click", "roar", "crowd_loop", "crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music",
 		"birds_loop"]
 	for kind in Sfx.VOICES:
@@ -944,6 +944,7 @@ func _sounds() -> void:
 			names.append("%s_%d" % [k, i + 1])
 	var missing := names.filter(func(n): return not (Sfx.streams.get(n) is AudioStream))
 	check(missing.is_empty(), "Sounds: every sound the game plays is there (%s missing)" % [missing])
+	check(Sfx.streams.whistle is AudioStreamOggVorbis and Sfx.streams.whistle_long_3 is AudioStreamOggVorbis and Sfx.streams.whistle_final is AudioStreamOggVorbis, "Sounds: the referee's whistle is the recorded one, three takes of each")
 	check(Sfx.streams.crowd_loop is AudioStreamOggVorbis and (Sfx.streams.crowd_loop as AudioStreamOggVorbis).loop and (Sfx.streams.birds_loop as AudioStreamOggVorbis).loop, "Sounds: the crowd's murmur and the birdsong loop")
 
 

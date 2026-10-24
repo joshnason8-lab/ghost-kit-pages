@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.8.1
+
+- **A real referee's whistle**: recorded pea-whistle blasts in place of the made one, from where the referee
+  stands (quieter when he is far off): a short pip for a free, a long blast for the throw-in and the end of a half,
+  short-short-long at full time, two pips when a substitute comes on. Three takes of each, so no two sound alike.
+
 ## New in 0.8.0
 
 - **Sharper on Medium and High** (Settings > Graphics; Low is exactly as it was): the pitch's grass at twice the
