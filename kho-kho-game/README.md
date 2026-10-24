@@ -33,12 +33,12 @@ triangles than Low at the village because the full chair model has levels of det
 
 | Ground | Low | Medium | High |
 |---|---|---|---|
-| Village ground | 88 draws, 69k triangles, 47 MB | 90 draws, 62k, 86 MB | 92 draws, 63k, 101 MB |
-| School ground | 83 draws, 38k, 48 MB | 84 draws, 57k, 87 MB | 86 draws, 58k, 102 MB |
+| Village ground | 88 draws, 69k triangles, 47 MB | 90 draws, 62k, 80 MB | 92 draws, 63k, 95 MB |
+| School ground | 83 draws, 38k, 48 MB | 84 draws, 57k, 85 MB | 86 draws, 58k, 100 MB |
 | Indoor arena (fast game: 24 players) | 84 draws, 46k, 46 MB | 84 draws, 64k, 84 MB | 86 draws, 66k, 95 MB |
-| Floodlit stadium | 80 draws, 39k, 48 MB | 80 draws, 61k, 88 MB | 82 draws, 63k, 103 MB |
+| Floodlit stadium | 80 draws, 39k, 48 MB | 80 draws, 61k, 86 MB | 82 draws, 63k, 101 MB |
 
-Since 0.7 Medium and High load sharper art Low does not (2k ground and wall photos, a 2048 px players' texture, 16
+Since 0.7 Medium and High load sharper art Low does not (2k ground photos, a 2048 px players' texture, 16
 people in the crowd's sheet, and on High 4k skies), all VRAM-compressed; Low loads exactly what it did.
 
 Budgets: Low 90 draw calls and 90,000 triangles (a Mali-G52 at 720p, 30 frames a second), Medium 130 and 340,000,

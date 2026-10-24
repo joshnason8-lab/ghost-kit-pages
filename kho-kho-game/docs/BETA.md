@@ -11,7 +11,7 @@ since about 2019. The Play bundle also carries a 32-bit build for older Android 
 
 ## What's new in 0.7
 
-- **Sharper on Medium and High graphics:** the grounds' and walls' photographs at twice the detail, the players'
+- **Sharper on Medium and High graphics:** the grounds' photographs at twice the detail, the players'
   kit, skin and faces sharper, a crowd of sixteen different people (skin, height, shorts, how they stand), and on High
   sharper skies. Low is exactly as it was.
 - **Longer sounds:** the crowd's murmur and the birds at the school run longer before they repeat; cheers and
