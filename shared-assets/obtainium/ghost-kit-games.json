@@ -1,0 +1,168 @@
+{
+ "schemaVersion": 2,
+ "exportedAt": "2026-10-24T04:59:27.141257",
+ "appVersion": "",
+ "apps": [
+  {
+   "id": "com.kabaddiraid.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Kabaddi Raid",
+   "installedVersion": null,
+   "latestVersion": "unknown",
+   "apkUrls": "[]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Kabaddi Raid \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Kabaddi Raid\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": null,
+   "changeLog": null,
+   "releaseUrl": null,
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.takrawsmash.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Sepak Takraw Unleashed",
+   "installedVersion": null,
+   "latestVersion": "unknown",
+   "apkUrls": "[]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Sepak Takraw Unleashed \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Sepak Takraw Unleashed\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": null,
+   "changeLog": null,
+   "releaseUrl": null,
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.netballunleashed.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Netball Unleashed",
+   "installedVersion": null,
+   "latestVersion": "unknown",
+   "apkUrls": "[]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Netball Unleashed \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Netball Unleashed\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": null,
+   "changeLog": null,
+   "releaseUrl": null,
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.khokhorush.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Kho Kho Rush",
+   "installedVersion": null,
+   "latestVersion": "unknown",
+   "apkUrls": "[]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Kho Kho Rush \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Kho Kho Rush\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": null,
+   "changeLog": null,
+   "releaseUrl": null,
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.floorballunleashed.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Floorball Unleashed",
+   "installedVersion": null,
+   "latestVersion": "unknown",
+   "apkUrls": "[]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Floorball Unleashed \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Floorball Unleashed\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": null,
+   "changeLog": null,
+   "releaseUrl": null,
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.ashandleather.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Hurling Heroes",
+   "installedVersion": null,
+   "latestVersion": "unknown",
+   "apkUrls": "[]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Hurling Heroes \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Hurling Heroes\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": null,
+   "changeLog": null,
+   "releaseUrl": null,
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.poktapokrivals.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Pok Ta Pok Rivals",
+   "installedVersion": null,
+   "latestVersion": "unknown",
+   "apkUrls": "[]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Pok Ta Pok Rivals \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Pok Ta Pok Rivals\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": null,
+   "changeLog": null,
+   "releaseUrl": null,
+   "overrideSource": null,
+   "allowIdChange": false
+  }
+ ]
+}
