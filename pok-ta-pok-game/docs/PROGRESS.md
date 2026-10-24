@@ -70,7 +70,7 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
     a small drawing-only offset of the hips holds a planted heel or toe still while the root moves on. The run blends
     in from 2 to 3.2 m/s over the hand-made one; strides are matched to the clip. The serve plays the toss at its own
     speed (SERVE_T 1.6 s, release at 0.64), abajo bowled lower by blending in the hand-made serve; the ball sits in the
-    hand bone. Low plays the nearest frame. Tests: each clip loads, and a planted foot slips under 3 cm (worst 2.7 cm).
+    hand bone. Low plays the nearest frame. With low balls now dived for, a dive's return is a scramble (least error 0.55, 62% of the power), or the hard level kept rallies alive for a minute. Tests: each clip loads, and a planted foot slips under 3 cm (worst 2.7 cm).
   - **Meshy people**: three ulama players (lean, tall, stocky), a judge and eight townspeople, made with Meshy (560
     credits: 1,763 before, 1,203 after). The players are rigged and follow the game's skeleton bone by bone
     (`game/rigged_body.gd`); the gear (faja in the team's colour, chimali, yoke, knee pad, a judge's hat) stays code-built

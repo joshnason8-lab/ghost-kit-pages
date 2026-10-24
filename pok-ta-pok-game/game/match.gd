@@ -720,6 +720,7 @@ func _ball_step(dt: float) -> void:
 ## The hips meeting the ball (a strike or a dive at its moment, close enough), and the ball touching anyone anywhere
 ## else (R6).
 var _told_low := false
+const DIVE_ERR := 0.55          # the least error a dive's return has (a hip strike's runs 0 to 1 with its timing)
 var ring_shots := 0
 
 
@@ -772,6 +773,9 @@ func _strike(p: Player, window: float, off: float) -> void:
 		h.x = d * maxf(4.0, absf(h.x))
 	var dist := h.length()
 	var err := (1.0 - quality) * (1.0 - p.skill * 0.5)
+	if p.action == Player.A.DIVE:
+		# Down on the ground, the hip under a low ball: a scramble to keep it alive, never a clean shot.
+		err = maxf(err, DIVE_ERR) + 0.25 * err
 	var ang := deg_to_rad(aim.y + rng.randf_range(-9.0, 9.0) * err)
 	var turn := rng.randf_range(-0.3, 0.3) * err
 	var hn := h.normalized().rotated(turn)
@@ -780,7 +784,7 @@ func _strike(p: Player, window: float, off: float) -> void:
 	var need := sqrt(Ball.GRAVITY * dist * dist / maxf(denom, 0.01))
 	var cap := (8.5 + 7.5 * p.power) * (0.5 + 0.5 * quality)
 	if p.action == Player.A.DIVE:
-		cap *= 0.8
+		cap *= 0.62
 		ang = maxf(ang, deg_to_rad(12.0))
 	var sp := minf(need, cap)
 	var v := Vector3(hn.x * cos(ang) * sp, sin(ang) * sp, hn.y * cos(ang) * sp)
