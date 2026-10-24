@@ -326,11 +326,18 @@ func _stone_court() -> void:
 		stone.box(Vector3(s * (el + 0.5), Court.END_WALL_H * 0.5, 0), Vector3(1.0, Court.END_WALL_H, ew * 2.0 + 2.0))
 		for zs in [-1.0, 1.0]:
 			stone.box(Vector3(s * (al + el) * 0.5, Court.END_WALL_H * 0.5, zs * (ew + 0.5)), Vector3(el - al, Court.END_WALL_H, 1.0))
-	# The rings, out from each wall at the centre line, their holes along the alley.
+	# The rings, out from each wall at the centre line, their holes along the alley: each cut from one stone, so a
+	# plain stone (not the walls' coursed blocks).
+	var rings := Geo.new(0.9)
+	rings.tint = Color(0.92, 0.88, 0.8)
 	for c in court.rings():
-		stone.washer(c, Court.RING_IN, Court.RING_OUT, Court.RING_DEPTH, 28)
+		rings.washer(c, Court.RING_IN, Court.RING_OUT, Court.RING_DEPTH, 28)
+		# A raised rim round the hole and round the edge, as the carved rings have.
+		rings.washer(c, Court.RING_IN, Court.RING_IN + 0.06, Court.RING_DEPTH + 0.025, 28)
+		rings.washer(c, Court.RING_OUT - 0.05, Court.RING_OUT, Court.RING_DEPTH + 0.02, 28)
 		# The tenon into the wall.
-		stone.box(Vector3(0, c.y, c.z + signf(c.z) * Court.RING_OFF * 0.5 + signf(c.z) * 0.12), Vector3(0.26, 0.4, Court.RING_OFF), Color(-1, 0, 0))
+		rings.box(Vector3(0, c.y, c.z + signf(c.z) * Court.RING_OFF * 0.5 + signf(c.z) * 0.12), Vector3(0.26, 0.4, Court.RING_OFF))
+	_mesh(rings.commit(), Geo.surface("broken_wall", Color(0.95, 0.92, 0.86), 0.9), "rings")
 	# A stela at each end, beyond the end court (plain: their carving would need a model, docs/MESHY_BRIEF.md).
 	for s in [-1.0, 1.0]:
 		stone.box(Vector3(s * (el + 5.0), 1.6, -3.0), Vector3(1.3, 3.2, 0.5))

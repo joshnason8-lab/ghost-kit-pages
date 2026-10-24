@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cxgn4c680wp2d"
-path="res://.godot/imported/red_dirt_mud_01_albedo_512.jpg-06110193dbc378e95e9491887ab1a267.ctex"
+uid="uid://cw1yoxcl5g7ih"
+path="res://.godot/imported/icon_bg_432.png-4bf8135bcc5ea42e8583db768ffc952e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/env/surfaces/red_dirt_mud_01_albedo_512.jpg"
-dest_files=["res://.godot/imported/red_dirt_mud_01_albedo_512.jpg-06110193dbc378e95e9491887ab1a267.ctex"]
+source_file="res://assets/icon/icon_bg_432.png"
+dest_files=["res://.godot/imported/icon_bg_432.png-4bf8135bcc5ea42e8583db768ffc952e.ctex"]
 
 [params]
 

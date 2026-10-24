@@ -99,8 +99,13 @@ func _team_box() -> Control:
 	sec[1].add_child(g)
 	var ts: Array = r.get("tstats", [{}, {}])
 	_cell(g, "", "")
-	_cell(g, DB.short_name(String(r.home)), "SubLabel")
-	_cell(g, DB.short_name(String(r.away)), "SubLabel")
+	for id in [String(r.home), String(r.away)]:
+		var h := UI.label(DB.short_name(id), "SubLabel", 16)
+		h.custom_minimum_size = Vector2(124, 0)
+		h.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		UI.fit(h, 2)
+		g.add_child(h)
 	for row in [["BOX_RAYAS", "rayas"], ["BOX_DEAD", "dead"], ["BOX_END", "end"], ["BOX_WON_OUT", "won_out"], ["BOX_WON_TOUCH", "won_touch"],
 			["BOX_RING", "ring"], ["BOX_STRIKES", "strikes"], ["BOX_DIVES", "dives"], ["BOX_SERVES", "serves"],
 			["BOX_FAULT_TOUCH", "faults_touch"], ["BOX_FAULT_OUT", "faults_out"]]:
@@ -148,5 +153,6 @@ func _cell(g: GridContainer, text: String, variation: String) -> void:
 	if variation == "MutedLabel":
 		l.custom_minimum_size = Vector2(150, 0)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.fit(l, 2 if variation == "MutedLabel" else 1)
+		UI.fit(l, 2)
+	# Numbers and short headings take the room they need.
 	g.add_child(l)

@@ -572,7 +572,7 @@ static func fixture_line(owner: Control, pair: Array, highlight: String) -> HBox
 			mid.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			h.add_child(mid)
 			h.add_child(Colours.make(id, 26))
-		var n := fit(label(DB.team_name(id), "SubLabel" if w == k else "", 18, col), 2)
+		var n := fit(label(DB.team_name(id), "SubLabel" if w == k else "", 18, col), 3)
 		n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		n.custom_minimum_size = Vector2(90, 0)
 		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if k == 0 else HORIZONTAL_ALIGNMENT_LEFT

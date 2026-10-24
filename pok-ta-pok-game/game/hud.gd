@@ -15,6 +15,7 @@ var _names: Array[Label] = []
 var _time: Label
 var _banner: Label
 var _banner_t := 0.0
+var _banner_total := 2.4
 var _call: Label
 var _call_t := 0.0
 var _tag: Label
@@ -157,11 +158,12 @@ func _build_board() -> void:
 		chip.custom_minimum_size = Vector2(8, 34)
 		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var n := UI.label(String(t.town), "SubLabel", 20)
-		n.custom_minimum_size = Vector2(150, 0)
+		n.custom_minimum_size = Vector2(160, 0)
 		n.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if k == 0 else HORIZONTAL_ALIGNMENT_LEFT
 		n.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		UI.fit(n, 1)
+		n.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		UI.shrink(n, 20, 0.7, 1)
 		_names.append(n)
 		if k == 0:
 			row.add_child(n)
@@ -242,7 +244,8 @@ func refresh() -> void:
 	if _banner_t > 0.0:
 		_banner_t -= delta
 		_banner.modulate.a = clampf(_banner_t / 0.4, 0.0, 1.0)
-		_banner.scale = Vector2.ONE * (1.0 + maxf(0.0, _banner_t - 1.8) * 0.4)
+		# A small pop as it comes up, never bigger than the screen allows.
+		_banner.scale = Vector2.ONE * (1.0 + clampf(_banner_t - (_banner_total - 0.3), 0.0, 0.3) * 0.25)
 		_banner.pivot_offset = _banner.size * 0.5
 	if _call_t > 0.0:
 		_call_t -= delta
@@ -289,6 +292,7 @@ func banner(text: String, col: Color = Game.C_GOLD) -> void:
 	_banner.add_theme_color_override("font_color", col)
 	UI.refit(_banner)
 	_banner_t = 2.4
+	_banner_total = 2.4
 
 
 func call_line(text: String) -> void:
@@ -347,6 +351,7 @@ func full_time(winner: int) -> void:
 		return
 	banner(tr("WINS").format({"team": DB.short_name(String(m.teams[winner].id))}), Game.C_GOLD)
 	_banner_t = 3.4
+	_banner_total = 3.4
 
 
 ## How well you met it: a word for a moment over your player.

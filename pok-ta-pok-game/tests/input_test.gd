@@ -66,9 +66,10 @@ func _scrolling() -> void:
 ## The real screens that scroll: dragging on them moves them.
 func _real_pages() -> void:
 	Game.settings.language = "en"
-	Game.delete_champ()
-	Game.new_champ("KIL")
-	for path in ["res://ui/howto_screen.gd", "res://ui/settings_screen.gd", "res://ui/licences_screen.gd", "res://ui/quick_setup.gd"]:
+	Game.delete_cup()
+	Game.new_cup("ESC")
+	for path in ["res://ui/howto_screen.gd", "res://ui/settings_screen.gd", "res://ui/licences_screen.gd", "res://ui/quick_setup.gd",
+			"res://ui/cup_screen.gd"]:
 		var s := Game.show_screen(path)
 		await frames(4)
 		var sc := _first_scroll(s)
@@ -80,7 +81,7 @@ func _real_pages() -> void:
 		await _drag(from, from - Vector2(0, r.size.y * 0.5))
 		var most := sc.get_v_scroll_bar().max_value - sc.get_v_scroll_bar().page
 		check(sc.scroll_vertical >= minf(40.0, most) - 1.0, "%s scrolls when dragged (%d of %d)" % [path, sc.scroll_vertical, most])
-	Game.delete_champ()
+	Game.delete_cup()
 
 
 func _first_scroll(n: Node) -> ScrollContainer:
