@@ -17,7 +17,16 @@ when the game loads (so the game ships few audio files). The Licences screen cre
 | `crowd_ooh.ogg`, `crowd_groan.ogg`, `clap.ogg` | a near miss, a goal against | Kabaddi Raid, by the same maker | Josh Nason | the game's own |
 | `grunt_1/2.ogg`, `hup_1/2.ogg` | a hard tackle, a big shot | Kabaddi Raid | Josh Nason | the game's own |
 | `menu_music.ogg` | the menus | made for the game (tools/audio/make_music.py) | Josh Nason | the game's own |
-| made in code | the referees' whistle (one, long, double), the ball off the blade (shot, pass, touch), the boards, the post, the net, stick on stick, a save, the period horn, the drum; and the crowd bed, roar and click if their recordings were missing | autoload/sfx.gd | | the game's own |
+| `whistle_short_a/b/c.ogg` | the referee's short pip: a stoppage (a foul, out of play, a penalty), a free-hit for delay, a penalty shot awarded or taken (one take at random) | Pixabay: "Referee whistle" (568615), "Referee whistle / coach whistle / sports whistle" (291816), "Metal whistle" (6121) | charlesheffley009, framptones, freesound_community | Pixabay Content License |
+| `whistle_long_a/b/c.ogg` | a long blast: a face-off, a goal, a penalty shot's start | the same three | the same | Pixabay Content License |
+| `whistle_double.ogg` | two pips: a time-out | "Referee whistle" (568615) | charlesheffley009 | Pixabay Content License |
+| `whistle_gym.ogg` | a long blast in a gym, its echo with it: the end of a period | "Referee whistle blow, gymnasium" (6320) | freesound_community | Pixabay Content License |
+| `whistle_final.ogg` | short, short, long: the end of the match | "Referee whistle" (568615) | charlesheffley009 | Pixabay Content License |
+| made in code | the ball off the blade (shot, pass, touch), the boards, the post, the net, stick on stick, a save, the period horn, the drum; and any recording above if it were missing | autoload/sfx.gd | | the game's own |
+
+The whistles came from the owner (Pixabay, via the shared assets, already cut and levelled; the Pixabay licence lets
+them be built into a game but not handed out on their own). They are heard from the nearer referee (3D) through a
+little of the hall's reverb, and not in the home screen's match.
 
 The crowd recordings are of a stadium crowd; in the game they are the hall's crowd at a level that fits its size
 (the arena's 5,200, the sports hall's few hundred: the bed's volume follows the play, not the venue).
@@ -45,8 +54,6 @@ roar and applause; 0.6.0's set was 0.21 MB). APK before and after: docs/PROGRESS
 These stay made in code; a real recording of each would make the game better. Searched opengameart.org (CC0, CC-BY,
 CC-BY-SA only) and kenney.nl; freesound.org and pixabay.com are not reachable from here.
 
-- **A referee's pea whistle** (Fox 40 or similar): short blasts, a long one, a double. The library's "whistles" are
-  people whistling a tune (1-1.4 kHz, no pea trill).
 - **The floorball itself**: the hollow plastic ball off a composite blade (a sharp, high "tick"), a slap shot, the
   ball against the boards (a plastic knock), off the post, into the net.
 - **Stick on stick** (composite shafts clacking).

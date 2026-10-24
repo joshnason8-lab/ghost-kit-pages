@@ -572,7 +572,7 @@ func _award_penalty_shot(v: Player, why: String) -> void:
 	ball.release()
 	_shot_live = {}
 	_ref_signal("penalty_shot", Vector2.ZERO)
-	Sfx.play("whistle", -2.0)
+	_whistle("short", -2.0)
 	calls.append({"kind": "penalty_shot", "team": v.team, "why": why, "period": rules.period, "t": rules.clock})
 	rules.log.append({"kind": "penalty_shot", "team": v.team, "id": String(v.data.id), "period": rules.period, "t": rules.clock})
 	if hud:
@@ -949,7 +949,7 @@ func _goal(t: int, own: bool) -> void:
 	_set_phase("goal")
 	if hud and user_team >= 0:
 		hud.coach("TIP_GOAL")
-	Sfx.play("whistle_double", -3.0)
+	_whistle("long", -3.0)
 	Sfx.play("horn", -8.0)
 	Sfx.play("roar", -4.0)
 	Sfx.react("cheer", -2.0)
@@ -1110,7 +1110,7 @@ func _stop(kind: String, d: Dictionary) -> void:
 	r.kind = kind
 	restart = r
 	_set_phase("whistle")
-	Sfx.play("whistle", -2.0)
+	_whistle("short", -2.0)
 	passive = {"team": -1, "t": 0.0, "warned": false, "w": 0.0}
 	for t in 2:
 		# Still behind: the net stays empty (the goalkeeper still on his way off comes back).
@@ -1284,7 +1284,7 @@ func _setup(dt: float) -> void:
 
 
 func _faceoff() -> void:
-	Sfx.play("whistle", -4.0)
+	_whistle("long", -4.0)
 	# 501: on the whistle; the better stick and quicker hands win it, back to a team-mate.
 	var c0: Player = _slot(0, 0)
 	var c1: Player = _slot(1, 0)
@@ -1318,7 +1318,7 @@ func _delay_of_game(taker: Player) -> void:
 	var spot: Vector2 = restart.spot
 	calls.append({"kind": "free_hit", "team": t, "why": "delay", "period": rules.period, "t": rules.clock})
 	_ref_signal("free_hit", Vector2(attack_dir(t), 0))
-	Sfx.play("whistle", -2.0)
+	_whistle("short", -2.0)
 	if hud:
 		hud.call_card(tr("CALL_FREE_HIT"), _offence_line("delay"), t)
 	_begin_restart({"kind": "free_hit", "team": t, "spot": Rules.free_hit_spot(spot), "why": "delay", "sanction": "free_hit", "line": _offence_line("delay")})
@@ -1366,6 +1366,7 @@ func _period_over() -> void:
 	ball.held_by = null
 	advantage = {}
 	var next := rules.end_period()
+	_whistle("final" if next == "done" else "hall", -2.0)
 	match next:
 		"interval":
 			_set_phase("interval")
@@ -1447,7 +1448,7 @@ func _shootout(dt: float) -> void:
 			gk.want_face = PI if s > 0.0 else 0.0
 			_step_all(dt)
 			if (ready and _so.t > 1.0) or _so.t > 6.0:
-				Sfx.play("whistle", -4.0)
+				_whistle("long", -4.0)
 				_so.stage = "run"
 				_so.t = 0.0
 				ball.carrier = _so.shooter
@@ -1485,7 +1486,7 @@ func _shootout(dt: float) -> void:
 				var scored := ball.in_goal != 0
 				shooters_used[t].append(String(sh.data.id))
 				var decided := rules.shootout_shot(t, scored)
-				Sfx.play("whistle", -4.0)
+				_whistle("short", -4.0)
 				if scored:
 					Sfx.react("cheer", -4.0)
 					Sfx.play("horn", -10.0)
@@ -1585,6 +1586,15 @@ func _officials(dt: float) -> void:
 
 
 ## The nearer referee whistles and shows the sign: the consequence first, then the offence where needed (306).
+## The nearer referee's whistle, heard from where he stands. Not in the menu's match (the music plays there).
+func _whistle(kind: String, volume_db := 0.0) -> void:
+	if demo:
+		return
+	var b := ball.floor_pos()
+	var r: Player = refs[0] if refs[0].pos.distance_to(b) < refs[1].pos.distance_to(b) else refs[1]
+	Sfx.whistle(kind, Vector3(r.pos.x, 1.6, r.pos.y), volume_db)
+
+
 func _ref_signal(kind: String, dir: Vector2) -> void:
 	var b := ball.floor_pos()
 	var r: Player = refs[0] if refs[0].pos.distance_to(b) < refs[1].pos.distance_to(b) else refs[1]
@@ -1805,6 +1815,7 @@ func _take_timeout() -> void:
 		return
 	rules.log.append({"kind": "timeout", "team": _timeout_team, "period": rules.period, "t": rules.clock})
 	_ref_signal("timeout", Vector2.ZERO)
+	_whistle("double", -3.0)
 	if hud:
 		hud.banner(tr("SIGN_TIMEOUT") + " · " + DB.team_name(String(config.home if _timeout_team == 0 else config.away)))
 	_timeout_team = -1

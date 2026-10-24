@@ -5,8 +5,9 @@ extends Node
 ## needs one before then makes the rest at once (_ensure).
 ##
 ## A floorball hall's sounds: the plastic ball's sharp "tick" off a composite blade, the hollow knock of the boards,
-## the clack of stick on stick, the referees' whistles, the period horn and the drum are made here; the crowd (its
-## murmur, cheers, applause), the footsteps on the hall floor and the menus' click are recordings (docs/SOUNDS.md).
+## the clack of stick on stick, the period horn and the drum are made here; the referees' whistles, the crowd (its
+## murmur, cheers, chant, applause), the footsteps on the hall floor and the menus' click are recordings
+## (docs/SOUNDS.md).
 
 const RATE := 22050
 const VOICES := {"grunt": 2, "hup": 2, "step": 5}
@@ -17,6 +18,16 @@ var _pool: Array[AudioStreamPlayer] = []
 var _next := 0
 var _steps: Array[AudioStreamPlayer3D] = []   # footsteps, heard from where they are, in a pool of their own
 var _next_step := 0
+var _whistles: Array[AudioStreamPlayer3D] = []   # the referees' whistles, from where the referee is, in the hall's echo
+var _next_whistle := 0
+## The referees' whistles (recordings, docs/SOUNDS.md): the takes of each kind, one picked at random.
+const WHISTLES := {
+	"short": ["whistle_short_a", "whistle_short_b", "whistle_short_c"],
+	"long": ["whistle_long_a", "whistle_long_b", "whistle_long_c"],
+	"double": ["whistle_double"],
+	"final": ["whistle_final"],
+	"hall": ["whistle_gym"],
+}
 var _crowd: AudioStreamPlayer
 var _drums: AudioStreamPlayer
 var _chant: AudioStreamPlayer          # the crowd's rhythmic cheering, over the bed as an attack nears the goal
@@ -36,6 +47,25 @@ func _ready() -> void:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
 		_pool.append(p)
+	# The hall: a little reverb for the whistles (a whistle in a sports hall rings off the walls).
+	var bus := AudioServer.bus_count
+	AudioServer.add_bus(bus)
+	AudioServer.set_bus_name(bus, "Hall")
+	AudioServer.set_bus_send(bus, "Master")
+	var verb := AudioEffectReverb.new()
+	verb.room_size = 0.55
+	verb.damping = 0.45
+	verb.wet = 0.22
+	verb.dry = 0.9
+	verb.predelay_msec = 30.0
+	AudioServer.add_bus_effect(bus, verb)
+	for i in 3:
+		var w := AudioStreamPlayer3D.new()
+		w.unit_size = 12.0
+		w.max_distance = 90.0
+		w.bus = "Hall"
+		add_child(w)
+		_whistles.append(w)
 	for i in 4:
 		var p := AudioStreamPlayer3D.new()
 		p.unit_size = 4.0
@@ -134,6 +164,30 @@ func voice(kind: String, volume_db := -12.0, pitch := 1.0) -> void:
 		play("%s_%d" % [kind, 1 + randi() % n], volume_db, pitch * randf_range(0.95, 1.05))
 
 
+## A referee's whistle: "short" (a stoppage, a free-hit, a penalty), "long" (a face-off, a goal), "double" (a time-out),
+## "final" (the end of the match), "hall" (a long blast as a period ends), heard from where he stands. Made in code if
+## the recordings are missing.
+func whistle(kind: String, at: Vector3, volume_db := 0.0) -> void:
+	_ensure()
+	if not enabled():
+		return
+	var takes := []
+	for t in WHISTLES.get(kind, []):
+		if streams.has(t):
+			takes.append(t)
+	if takes.is_empty():
+		play({"long": "whistle_long", "hall": "whistle_long", "final": "whistle_long", "double": "whistle_double"}.get(kind, "whistle"), volume_db)
+		return
+	var p := _whistles[_next_whistle]
+	_next_whistle = (_next_whistle + 1) % _whistles.size()
+	p.stream = streams[takes[randi() % takes.size()]]
+	p.global_position = at
+	p.volume_db = volume_db
+	p.pitch_scale = randf_range(0.98, 1.02)
+	p.stream_paused = false
+	p.play()
+
+
 ## A footstep on the hall floor at a place on the rink (heard from the camera, softer far away); louder when he runs.
 func step(at: Vector3, speed: float) -> void:
 	if not enabled() or not _built:
@@ -205,6 +259,8 @@ func set_paused(on: bool) -> void:
 		p.stream_paused = on
 	for p in _steps:
 		p.stream_paused = on
+	for p in _whistles:
+		p.stream_paused = on
 
 
 func stop_all() -> void:
@@ -214,6 +270,8 @@ func stop_all() -> void:
 	for p in _pool:
 		p.stop()
 	for p in _steps:
+		p.stop()
+	for p in _whistles:
 		p.stop()
 
 
@@ -246,6 +304,9 @@ func _plan_list() -> Array:
 		["crowd_loop", _crowd_loop],
 		["drums_loop", _drums_loop],
 	]
+	for kind in WHISTLES:
+		for k in WHISTLES[kind]:
+			todo.append([k, null])
 	for k in ["crowd_cheer", "crowd_cheer_2", "crowd_cheer_3", "roar_2", "crowd_ooh", "crowd_groan", "applause",
 			"applause_2", "clap", "chant_loop", "menu_music"]:
 		todo.append([k, null])

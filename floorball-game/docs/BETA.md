@@ -1,6 +1,6 @@
 # Floorball Unleashed beta: install and test
 
-Version **0.7.0-beta** (0.7: on Medium and High, sharper floors and kits and a fuller crowd; a richer crowd sound with chants; 0.6: a real crowd in the hall (its murmur, cheers and applause) and footsteps on the floor; 0.5: the players and referees walk, jog and run with real people's motion capture, their feet planted as they run; 0.4: the halls rebuilt: birch walls, ceilings with lights, folded-up basketball boards, a wooden school gym, steel bleachers in the arena; 0.4.1: an aluminium stand in the sports hall, Nordic fire alarms, pale birch gym benches). This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.7.1-beta** (0.7.1: real referee whistles, heard from the referee, and the beta signed with the owner's key; 0.7: on Medium and High, sharper floors and kits and a fuller crowd; a richer crowd sound with chants; 0.6: a real crowd in the hall (its murmur, cheers and applause) and footsteps on the floor; 0.5: the players and referees walk, jog and run with real people's motion capture, their feet planted as they run; 0.4: the halls rebuilt: birch walls, ceilings with lights, folded-up basketball boards, a wooden school gym, steel bleachers in the arena; 0.4.1: an aluminium stand in the sports hall, Nordic fire alarms, pale birch gym benches). This page covers installing the beta on an Android phone, what to try, and how to report
 what you find. docs/PLAYTEST.md has what the last playtest found and what was fixed.
 
 ## What phone
@@ -16,7 +16,7 @@ what you find. docs/PLAYTEST.md has what the last playtest found and what was fi
 2. Open the downloaded file. Android asks you to allow installs from your browser (or Files). Allow it, go back and
    tap **Install**.
 3. If Play Protect warns about an unknown app, tap **More details**, then **Install anyway**. The beta is signed
-   with a public test key, not a Play Store key, so this is expected.
+   with the beta's own key, not a Play Store key, so this is expected.
 
 ### Updating
 
@@ -25,9 +25,12 @@ what you find. docs/PLAYTEST.md has what the last playtest found and what was fi
 and saves stay with the old app). The old beta's page,
 https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorstorm-beta, is no longer updated.
 
-From 0.3 on, every beta on the page above is signed with the same key, so a new one installs over the old and keeps
-your settings, your World Finals and your club season. If Android says **App not installed**, uninstall Floorball
-Unleashed first (that clears the saves).
+**From 0.7.0 or earlier to 0.7.1: uninstall once.** 0.7.1 is signed with the owner's beta key, the one every game's
+beta now uses (0.3 to 0.7.0 used a public debug key), so Android will not install it over 0.7.0 ("App not installed",
+or "failure conflict" in Obtainium). Uninstall Floorball Unleashed, then install 0.7.1 (this clears the saves, once).
+
+From 0.7.1 on, every beta on the page above is signed with that same key, so a new one installs over the old and keeps
+your settings, your World Finals and your club season.
 
 ## First run
 

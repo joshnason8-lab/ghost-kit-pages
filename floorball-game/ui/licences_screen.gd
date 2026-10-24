@@ -7,7 +7,9 @@ const CREDITS := """[b]Floorball Unleashed[/b]
 Made by Josh Nason.
 Players, referees, the stick, the sports hall's aluminium stand, the gym benches and the fire alarm points: the
 maker's own models, made with Meshy. The halls' lamps, clock and floor sign, and their surfaces (block wall, maple,
-wood floor, rubber floor): Poly Haven (polyhaven.com), CC0. The rink, the basketball boards, the rest of the halls and the ball made in code for the game; the whistles, the ball's sounds, the horn, the drum and the menu music made for it. The crowd in the hall, its
+wood floor, rubber floor): Poly Haven (polyhaven.com), CC0. The rink, the basketball boards, the rest of the halls and the ball made in code for the game; the ball's sounds, the horn, the drum and the menu music made for it. Whistle sounds from Pixabay
+(Pixabay Content License): "Referee whistle" by charlesheffley009, "Referee whistle / coach whistle / sports whistle"
+by framptones, "Metal whistle" and "Referee whistle blow, gymnasium" by freesound_community; trimmed and levelled. The crowd in the hall, its
 cheers and its chant: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org), CC BY 4.0, cut and levelled. Applause:
 "Applause in a large hall or church" by eXpl0it3r (opengameart.org), CC0. Footsteps and the menus' click: Kenney
 (kenney.nl), Impact Sounds and Interface Sounds, CC0. The crowd's "ooh" and groan, from Kabaddi Raid, by the same

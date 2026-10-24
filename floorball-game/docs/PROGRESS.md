@@ -34,7 +34,7 @@ on with "Next".
   docs/LANGUAGES.md); fit_audit clean: 15 languages x 16:9, 19.5:9, 20:9 with a cut-out, 4:3 (Thai's space-free lines
   exempt from the whole-word check, as Japanese is).
 - input_test: every scrolling page scrolls when a drag starts on its text. test_runner: 436 checks green.
-- CI: floorball-android.yml (tests, fit audit, input test, APK signed with the public debug key, release
+- CI: floorball-android.yml (tests, fit audit, input test, APK signed with the owner's beta key since 0.7.1 (the public debug key before), release
   floorball-unleashed-beta), floorball-play-bundle.yml (passed, unsigned); standalone workflows in floorball-game/.github.
 - Draft PR #7, subscribed. Pages in floorball-unleashed/. Icon, menu music. README, RULES, LANGUAGES, MESHY_BRIEF, PLAY_STORE.
 
@@ -141,6 +141,18 @@ From the lead's brief (the APK may grow, up to about 150 MB, for looks and sound
 - perf_probe, before -> after (draw calls / triangles the same at every level; video memory, this machine):
   Low arena 29.8 -> 29.8 MB, hall 30.4 -> 30.4, school 30.5 -> 30.5; Medium 44.5-45.4 -> 58.6-59.6 MB; High
   57.6-59.3 -> 71.8-73.5 MB. APK 0.6.0: 41.79 MB.
+
+### 0.7.1-beta: whistles and the beta key (24 October 2026)
+
+- **Real referee whistles** (the owner's, from Pixabay, via the shared assets): a short pip at a stoppage, a free-hit
+  or a penalty shot; a long blast for a face-off, a goal and a penalty shot's start; two pips for a time-out; the gym
+  take as a period ends; short-short-long at the end of the match. Takes at random, heard from the nearer referee
+  (3D) through a touch of the hall's reverb (an audio bus of its own); not in the home screen's match. The made-in-code
+  whistle stays only as a fallback.
+- **The beta's signing key**: the Android workflow (and the copy in this folder) signs with the owner's key from the
+  BETA_KEYSTORE_B64 secret (zipalign, apksigner), logs the certificate's SHA-256 and fails if it is not the owner's;
+  without the secret (a fork) it makes a key and warns. 0.3 to 0.7.0 were signed with uber-apk-signer's public debug
+  key, so 0.7.1 needs one uninstall (docs/BETA.md); from then on every beta installs over the last.
 
 ## Next (in order)
 
