@@ -10,8 +10,8 @@ motion capture (Mixamo). The jumps in the block, the header spike and the celebr
 mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217. The temple, the stilt houses, the
 shophouses, the apartment blocks, the trees, the bleachers, benches, tables and the basketball hoop made for the
 game too; skies (at 4K on Medium and High), surfaces (at 2K there) and the other venue pieces from Poly Haven
-(polyhaven.com), CC0. The referee's whistle and
-the buzzer made in code for the game; the crowd's drums written for it (tools/audio/make_music.py). The crowd's "ooh"
+(polyhaven.com), CC0. The review's buzzer made in code for the
+game; the crowd's drums written for it (tools/audio/make_music.py). The crowd's "ooh"
 and groan, the claps and the players' calls from Kabaddi Raid, by the same maker."""
 
 const SOUNDS := """[b]Sounds[/b] (each with its source in docs/SOUNDS.md)
@@ -21,6 +21,7 @@ The sea at the beach, the birds at the temple and the evening at the park: "Natu
 Footsteps on the court: "Footsteps on different surfaces" by congusbongus, from recordings by swuing and ceberation (opengameart.org/content/footsteps-on-different-surfaces), CC BY 3.0.
 The slap in a spike: "Punch, slap, n' kick" by CGEffex (opengameart.org/content/punch-slap-n-kick), CC BY 3.0.
 Applause (one of three takes): "Applause" by the Blender Foundation (opengameart.org/content/applause), CC BY 3.0.
+The referee's whistle: whistle sounds from Pixabay (Pixabay Content License): "Referee whistle" by charlesheffley009, "Referee whistle / coach whistle / sports whistle" by framptones, "Metal whistle" and "Referee whistle blow, gymnasium" by freesound_community.
 Under CC0, with thanks: the ball's knocks from "Wood and Metal Sound Effects: Volume 2" by Ogrebane; impacts, the net's rustle and the click from Kenney (kenney.nl); applause by eXpl0it3r; footsteps on sand by Fantozzi; the menu music, "Kingdom of a Million Elephants under a White Parasol" by Spring Spring (Julie Damsgaard)."""
 
 const FONTS := """[b]Fonts[/b]

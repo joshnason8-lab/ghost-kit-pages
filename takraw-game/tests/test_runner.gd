@@ -290,6 +290,8 @@ func _sounds() -> void:
 	for v in Arena.AMBIENCE:
 		asked[String(Arena.AMBIENCE[v][0])] = "arena.gd"
 	asked["bounce_sand"] = "sfx.gd"
+	for k in ["whistle", "whistle_long", "whistle_double", "whistle_final", "whistle_gym"]:
+		asked[k] = "match.gd (_whistle)"
 	asked["step_court"] = "sfx.gd"
 	asked["step_sand"] = "sfx.gd"
 	check(asked.size() > 15, "the sounds asked for are found in the code (%d)" % asked.size())

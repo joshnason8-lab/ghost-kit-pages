@@ -450,7 +450,7 @@ func _server() -> Player:
 func _begin_toss() -> void:
 	state = S.TOSS
 	state_t = 0.0
-	Sfx.play("whistle", -8.0)
+	_whistle("long" if points[0] + points[1] == 0 else "short")   # (a set's first serve: a long blast)
 	var thrower := _thrower()
 	var srv := _server()
 	srv.hurry = 1.0
@@ -1228,6 +1228,7 @@ func _block_at_net(attacker: Player, from: Vector3, v: Vector3, mv: String) -> v
 
 func _landed(p: Vector3) -> void:
 	Sfx.bounce(p)
+	_whistle("long")   # the rally is over
 	var side := Court.side_of(p.x)
 	var inside := Court.in_court(p, side)
 	var winner_side := 1 - side if inside else (1 - touch_side if touch_side >= 0 else 1 - side)
@@ -1283,7 +1284,7 @@ func _fault(fault_side: int, key: String, who: Player, stop_ball := true) -> voi
 	_why = key
 	if OS.has_environment("TAKRAW_DEBUG"):
 		print("FAULT %s after %s" % [key, _last_kind])
-	Sfx.play("whistle", -6.0)
+	_whistle("short")
 	hud.call_line(tr(key))
 	if who:
 		stats[who.data.id].errors += 1
@@ -1417,7 +1418,7 @@ func _set_won(team: int) -> void:
 	sets[team] += 1
 	set_scores.append([points[0], points[1]])
 	hud.banner(tr("SET_TO").format({"n": set_no, "t": DB.team_name(String(teams[team].id))}), teams[team].c1)
-	Sfx.play("whistle_long", -4.0)
+	_whistle("final" if sets[team] >= sets_to_win else "long")
 	Sfx.react("cheer", -2.0)
 	if sets[team] >= sets_to_win:
 		_finish(team)
@@ -1502,6 +1503,7 @@ func _challenge(team: int) -> void:
 	state = S.REVIEW
 	state_t = 0.0
 	hud.show_review(c, team)
+	_whistle("double")   # play stopped for the review
 	Sfx.play("buzzer", -10.0)
 
 
@@ -1592,6 +1594,18 @@ func end_replay() -> void:
 	state = S.DEAD
 	state_t = DEAD_TIME
 	_after_point()
+
+
+## The referee's whistle, from his chair (a recording, one of its takes at random): "short" for a serve or a fault,
+## "long" for a set's first serve and the end of a rally (indoors the take with a hall's echo), "double" when play
+## stops for a review, "final" for the match won. Not in the home screen's match.
+func _whistle(kind: String) -> void:
+	if bool(config.get("attract", false)):
+		return
+	var name: String = {"short": "whistle", "long": "whistle_long", "double": "whistle_double", "final": "whistle_final"}[kind]
+	if kind == "long" and arena.indoor():
+		name = "whistle_gym"
+	Sfx.play_at(name, _ref.global_position, -6.0 if kind == "short" else -4.0)
 
 
 # ---------------------------------------------------------------- your controls

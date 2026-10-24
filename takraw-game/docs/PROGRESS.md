@@ -143,8 +143,10 @@ The owner allows a bigger download for a game that looks and sounds better. Low 
 High load their own bigger files, compressed for the GPU (ETC2 on a phone, so a 2K texture takes 2.7 MB of video
 memory with its mipmaps, not the 21 MB it would as plain pixels):
 
-- **The ground and courts:** Poly Haven's 2K scans of the same surfaces (colour and relief), not the 512 px ones
-  (`Scenery.surface`). The grain of the concrete, the asphalt, the sand and the maple stays sharp close to the camera.
+- **The ground and courts:** Poly Haven's 2K scans of the same surfaces, not the 512 px ones (`Scenery.surface`): the
+  colour at 2048 px, the relief (normal map) at 1024 (0.9.1: at 2048 a relief map took 5.6 MB in the download, as two
+  channels compressed apart, 50 MB for the nine, for a difference hard to see). The grain of the concrete, the asphalt,
+  the sand and the maple stays sharp close to the camera.
 - **The skies:** the 4K panoramas (from Poly Haven's full-size ones), their colours fitted to the 2K ones Low shows
   (each channel by a curve, within 2 levels of 255), so the place looks the same on every level, only sharper.
 - **The players:** their textures at 2048 px and the kits' masks at 1024 (`RealBody.SKINS_HI`), cut from the models'

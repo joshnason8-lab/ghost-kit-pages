@@ -1,7 +1,7 @@
 # Sounds: what plays, and where each comes from
 
-Every sound is Ogg Vorbis, mono, in `assets/audio/`, apart from a few the game makes in code (`autoload/sfx.gd`):
-the referee's whistle, the buzzer, the whoosh. The recordings are cut, faded, looped and brought to one level by
+Every sound is Ogg Vorbis, mono, in `assets/audio/`, apart from two the game makes in code (`autoload/sfx.gd`): the
+review's buzzer and a whoosh. The recordings are cut, faded, looped and brought to one level by
 `tools/audio/prepare_sounds.py` (below), from packs downloaded from the pages listed here. Their credits are on the
 Licences screen.
 
@@ -18,7 +18,7 @@ Licences screen.
 | `crowd_rhythm` | the home side a point from the set or the match: the crowd claps in time | all round |
 | `amb_beach`, `amb_temple`, `amb_park`, `amb_chatter` | each outdoor venue's own sound (the sea, birds, a summer evening), a mall's and a night market's chatter | all round, under the crowd |
 | `drums_loop` | the arenas' drums, louder in a long rally | all round |
-| `whistle`, `whistle_long` | the serve, a fault, the end of a set (made in code) | all round |
+| `whistle` (3 takes), `whistle_long` (3), `whistle_gym`, `whistle_double`, `whistle_final` | the referee (`Match._whistle`): a short pip for a serve or a fault; a long blast for a set's first serve, the end of a rally and the end of a set (indoors the take recorded in a gym, with its echo); two pips when play stops for a review; short-short-long for the match won. None in the home screen's match | from the referee's chair |
 | `hup`, `grunt` | the players' efforts | all round |
 | `click` | a button | all round |
 | `menu_music` | the home screen and the menus | all round |
@@ -47,6 +47,10 @@ all of them off, Settings > Music the music.
 | `step_court.ogg`, `_2`, `_3` | [Footsteps on different surfaces](https://opengameart.org/content/footsteps-on-different-surfaces) | congusbongus, from recordings by swuing and ceberation (freesound.org) | CC BY 3.0 | `tile/0`, `3`, `6`: a trainer's step, some with a squeak |
 | `step_sand.ogg`, `_2`, `_3` | Fantozzi's Footsteps | Fantozzi | CC0 | `SandL1`, `SandR1`, `SandL2` |
 | `click.ogg` | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | Kenney | CC0 | `click_002` |
+| `whistle.ogg`, `whistle_long.ogg`, `whistle_double.ogg`, `whistle_final.ogg` | Pixabay 568615 "Referee whistle" | charlesheffley009 | Pixabay Content License | the owner's cuts (shared assets, `shared-assets/sounds/whistle/`): trimmed, faded, about -16 LUFS |
+| `whistle_2.ogg`, `whistle_long_2.ogg` | Pixabay 291816 "Referee whistle / coach whistle / sports whistle" | framptones | Pixabay Content License | the same |
+| `whistle_3.ogg`, `whistle_long_3.ogg` | Pixabay 6121 "Metal whistle" | freesound_community | Pixabay Content License | the same |
+| `whistle_gym.ogg` | Pixabay 6320 "Referee whistle blow, gymnasium" | freesound_community | Pixabay Content License | the same |
 | `menu_music.ogg` | [Kingdom of a Million Elephants under a White Parasol](https://opengameart.org/content/kingdom-of-a-million-elephants-under-a-white-parasol) | Spring Spring (Julie Damsgaard) | CC0 | the whole piece (92 s), looped |
 | `crowd_ooh.ogg`, `crowd_groan.ogg`, `clap.ogg`, `hup_*.ogg`, `grunt_*.ogg` | Kabaddi Raid | the same maker | the game's own | kept |
 | `drums_loop.ogg` | `tools/audio/make_music.py` | written for the game | the game's own | kept |
@@ -74,8 +78,7 @@ two more cheers, two more applause takes and the crowd's clapping in time.
 
 Nothing under a free licence on the sites the game can use (Kenney, OpenGameArt) for these; the game keeps what it had:
 
-- **A referee's pea whistle**, a short and a long blast: only lip whistles and synthesised tones. The whistle stays the
-  game's own, made in code.
+- (A referee's pea whistle: found by the owner on Pixabay in 0.9.1, above.)
 - **A real takraw ball** (a hollow woven or plastic ball) being kicked: the nearest are wooden knocks.
 - **A ball into a net:** made from a soft thud and a cloth's rustle.
 - **A crowd's groan and "ooh":** only single voices. Kabaddi Raid's stay.
