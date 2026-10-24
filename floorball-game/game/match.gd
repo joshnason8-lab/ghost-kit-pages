@@ -1359,6 +1359,8 @@ func _resume() -> void:
 
 func _period_over() -> void:
 	Sfx.play("horn", -2.0)
+	if not demo:
+		Sfx.react("applause", -4.0)   # the hall applauds the teams off
 	ball.live = false
 	ball.release()
 	ball.held_by = null

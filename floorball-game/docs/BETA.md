@@ -1,6 +1,6 @@
 # Floorball Unleashed beta: install and test
 
-Version **0.5.0-beta** (0.5: the players and referees walk, jog and run with real people's motion capture, their feet planted as they run; 0.4: the halls rebuilt: birch walls, ceilings with lights, folded-up basketball boards, a wooden school gym, steel bleachers in the arena; 0.4.1: an aluminium stand in the sports hall, Nordic fire alarms, pale birch gym benches). This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.6.0-beta** (0.6: a real crowd in the hall (its murmur, cheers and applause) and footsteps on the floor; 0.5: the players and referees walk, jog and run with real people's motion capture, their feet planted as they run; 0.4: the halls rebuilt: birch walls, ceilings with lights, folded-up basketball boards, a wooden school gym, steel bleachers in the arena; 0.4.1: an aluminium stand in the sports hall, Nordic fire alarms, pale birch gym benches). This page covers installing the beta on an Android phone, what to try, and how to report
 what you find. docs/PLAYTEST.md has what the last playtest found and what was fixed.
 
 ## What phone
@@ -65,6 +65,10 @@ Unleashed first (that clears the saves).
   closes the game. Leave the app mid-match and come back: the match should be paused.
 
 ## What to look for
+
+- **The sound** (new in 0.6): the crowd under play, its cheer at a goal, the applause at the end of a period, the
+  footsteps of the players near the ball. Too loud, too quiet, anything that sounds wrong? The whistle, the ball and
+  the horn are still made in code (docs/SOUNDS.md says what is wanted).
 
 - **How the players run** (new in 0.5): do they look like people running? Watch the feet: a foot on the floor should
   stay put, not skate. Running backward and at an angle too. Anything that looks wrong (a leg crossing through the

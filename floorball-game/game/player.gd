@@ -45,6 +45,7 @@ var _lean := 0.0
 var _crouch := 0.0
 var _blade := Vector3(0.2, 0.0, 0.62)   # where the blade is (local), smoothed toward where it should be
 var _wob := 0.0
+var _down := {"l": true, "r": true}   # each foot on the floor in the captured cycle, for the footsteps
 const ARM_REACH := 0.47       # shoulder to the grip at most (m, a 1.80 m player): the hands always reach the stick
 
 
@@ -246,6 +247,7 @@ func _animate(dt: float) -> void:
 		gait = Mocap.sample(g[0], _phase, arms) if w < 0.02 else (Mocap.sample(g[1], _phase, arms) if w > 0.98 else
 			Mocap.blend(Mocap.sample(g[0], _phase, arms), Mocap.sample(g[1], _phase, arms), w))
 		gait.lean = lerpf(g[0].lean, g[1].lean, g[2])
+		_footsteps(g[0] if g[2] < 0.5 else g[1], sp, moc)
 	else:
 		var stride := STRIDE * clampf(0.45 + sp / MAX_SPEED * 0.55, 0.45, 1.0)
 		_phase = fposmod(_phase + absf(along) * dt / stride, 1.0)
@@ -285,6 +287,25 @@ func _animate(dt: float) -> void:
 	if role != "G" and role != "R":
 		_stick(dt, t)
 	body.sync()
+
+
+## A footstep as a foot comes down in the captured cycle: your player's, and those of the players near the ball (where
+## the play and the camera are; a rink of twelve all heard would be a clatter). Not in the menu's match, nor in a pause.
+func _footsteps(c: Dictionary, sp: float, moc: float) -> void:
+	for side in ["l", "r"]:
+		var d := Mocap.down(c, side, _phase)
+		if d and not _down[side] and moc > 0.5 and _heard():
+			Sfx.step(Vector3(pos.x, 0.05, pos.y), sp)
+		_down[side] = d
+
+
+func _heard() -> bool:
+	if match_node == null or bool(match_node.get("demo")) or bool(match_node.get("paused")):
+		return false
+	if match_node.get("user_player") == self:
+		return true
+	var b: Variant = match_node.get("ball")
+	return b != null and Vector2(b.pos.x, b.pos.z).distance_to(pos) < 6.0
 
 
 ## Motion capture under the floorball stance: the captured legs, hips and trunk, the legs turned to the way he

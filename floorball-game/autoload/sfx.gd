@@ -5,15 +5,18 @@ extends Node
 ## needs one before then makes the rest at once (_ensure).
 ##
 ## A floorball hall's sounds: the plastic ball's sharp "tick" off a composite blade, the hollow knock of the boards,
-## the clack of stick on stick, the referees' whistles, the period horn, and a crowd with drums.
+## the clack of stick on stick, the referees' whistles, the period horn and the drum are made here; the crowd (its
+## murmur, cheers, applause), the footsteps on the hall floor and the menus' click are recordings (docs/SOUNDS.md).
 
 const RATE := 22050
-const VOICES := {"grunt": 2, "hup": 2}
+const VOICES := {"grunt": 2, "hup": 2, "step": 5}
 const MUSIC_DB := -10.0
 
 var streams := {}
 var _pool: Array[AudioStreamPlayer] = []
 var _next := 0
+var _steps: Array[AudioStreamPlayer3D] = []   # footsteps, heard from where they are, in a pool of their own
+var _next_step := 0
 var _crowd: AudioStreamPlayer
 var _drums: AudioStreamPlayer
 var _crowd_target := -60.0
@@ -31,6 +34,13 @@ func _ready() -> void:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
 		_pool.append(p)
+	for i in 4:
+		var p := AudioStreamPlayer3D.new()
+		p.unit_size = 4.0
+		p.max_distance = 24.0
+		p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		add_child(p)
+		_steps.append(p)
 	_crowd = AudioStreamPlayer.new()
 	_crowd.volume_db = -60.0
 	add_child(_crowd)
@@ -109,6 +119,19 @@ func voice(kind: String, volume_db := -12.0, pitch := 1.0) -> void:
 		play("%s_%d" % [kind, 1 + randi() % n], volume_db, pitch * randf_range(0.95, 1.05))
 
 
+## A footstep on the hall floor at a place on the rink (heard from the camera, softer far away); louder when he runs.
+func step(at: Vector3, speed: float) -> void:
+	if not enabled() or not _built:
+		return
+	var p := _steps[_next_step]
+	_next_step = (_next_step + 1) % _steps.size()
+	p.stream = streams.get("step_%d" % (1 + randi() % int(VOICES.step)))
+	p.global_position = at
+	p.volume_db = lerpf(-14.0, -4.0, clampf(speed / 7.0, 0.0, 1.0))
+	p.pitch_scale = randf_range(0.92, 1.08)
+	p.play()
+
+
 ## The crowd reacting: "cheer", "ooh", "groan" or "applause".
 func react(kind: String, volume_db := -6.0) -> void:
 	play("crowd_" + kind if kind != "applause" else kind, volume_db, randf_range(0.96, 1.04))
@@ -158,13 +181,22 @@ func stop_all() -> void:
 	_drums.stop()
 	for p in _pool:
 		p.stop()
+	for p in _steps:
+		p.stop()
 
 
 # ---------------------------------------------------------------- synthesis
 
 func _plan() -> void:
 	_planned = true
-	_todo = [
+	_todo = _plan_list()
+	_total = _todo.size()
+
+
+## Every sound: [name, how to make it in code, or null for a recording only (assets/audio)]. A recording in
+## assets/audio/ of the same name is used first (docs/SOUNDS.md).
+func _plan_list() -> Array:
+	var todo := [
 		["whistle", _whistle],
 		["whistle_long", func(): return _whistle(1.0)],
 		["whistle_double", _whistle_double],
@@ -183,11 +215,11 @@ func _plan() -> void:
 		["drums_loop", _drums_loop],
 	]
 	for k in ["crowd_cheer", "crowd_ooh", "crowd_groan", "applause", "clap", "menu_music"]:
-		_todo.append([k, null])
+		todo.append([k, null])
 	for kind in VOICES:
 		for i in int(VOICES[kind]):
-			_todo.append(["%s_%d" % [kind, i + 1], null])
-	_total = _todo.size()
+			todo.append(["%s_%d" % [kind, i + 1], null])
+	return todo
 
 
 func _finish() -> void:

@@ -33,6 +33,7 @@ func _ready() -> void:
 	await _coach()
 	await _crowd_faces()
 	_mocap()
+	_sounds()
 	await _matches()
 	Game.settings = keep
 	Game.delete_cup()
@@ -807,6 +808,27 @@ func _mocap() -> void:
 				"mocap: running %.1f m/s at %d degrees (graphics %d), a foot down stays put (slides %.3f m, %d frames down, at most %.3f m up then, lowest %.3f m)" % [speed, int(ang), run[0], worst, down, highest, lowest])
 			p.queue_free()
 	Game.settings.graphics = gfx
+
+
+## Sounds (autoload/sfx.gd): every sound the game asks for is made or loaded, and every recorded one (assets/audio,
+## docs/SOUNDS.md) is there, loads, and has length; the crowd bed loops.
+func _sounds() -> void:
+	Sfx._ensure()
+	var missing := []
+	for item in Sfx._plan_list():
+		if not Sfx.streams.has(item[0]) or Sfx.streams[item[0]] == null:
+			missing.append(item[0])
+	check(missing.is_empty(), "sounds: every sound the game plays is there (missing: %s)" % [missing])
+	var bad := []
+	for f in DirAccess.get_files_at("res://assets/audio"):
+		if not f.ends_with(".ogg"):
+			continue
+		var st := load("res://assets/audio/" + f) as AudioStream
+		if st == null or st.get_length() <= 0.0:
+			bad.append(f)
+	check(bad.is_empty(), "sounds: every recorded sound loads (bad: %s)" % [bad])
+	var loop: Variant = Sfx.streams.get("crowd_loop")
+	check(loop is AudioStreamOggVorbis and (loop as AudioStreamOggVorbis).loop, "sounds: the crowd bed is the recording, looping")
 
 
 # ---------------------------------------------------------------- matches

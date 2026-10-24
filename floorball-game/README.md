@@ -6,10 +6,11 @@ Finland, Switzerland and Czechia: five and a goalkeeper a side, a plastic ball w
 low boards. Floorball Unleashed plays the international Rules of the Game in force from 1 July 2026, and dresses its menus as
 the coach's whiteboard in a Nordic sports hall.
 
-> **Status: beta 0.5.0.** The players, goalkeepers and referees are the owner's Meshy models (a man for the men's
+> **Status: beta 0.6.0.** The players, goalkeepers and referees are the owner's Meshy models (a man for the men's
 > game, a woman for the women's), in each team's colours, with the owner's stick; the rink, hall and crowd were made
 > to match them (docs/MESHY_BRIEF.md). Since 0.5 they walk, jog and run with real people's motion capture (CMU),
-> their feet planted on the floor as they run (docs/MOCAP.md). 0.2 added a coach for the first match, the club season, the empty net and
+> their feet planted on the floor as they run (docs/MOCAP.md); 0.6 brought a recorded crowd and footsteps
+> (docs/SOUNDS.md). 0.2 added a coach for the first match, the club season, the empty net and
 > passive play, after a playtest in a browser on phone-shaped screens (docs/PLAYTEST.md). docs/BETA.md says how to
 > install and what to try; docs/PROGRESS.md has what is done and what is next.
 
@@ -133,11 +134,12 @@ assets/     characters/ (the owner's Meshy man, woman and stick, made fit for ph
 tools/      meshy/ (prepare.gd: the models cut down for phones; views and the grip check), mocap/ (bvh_to_clip.py,
             gait_view), ci_local.sh (CI's checks,
             run before a push), build_i18n.py, subset_fonts.py, check_scripts.py,
-            check_pages.py, audio/make_music.py,
+            check_pages.py, audio/make_music.py, audio/prepare_sounds.py (the recordings),
             store/ (icons, feature graphic, screenshots)
 tests/      test_runner, fit_audit, input_test, perf_probe, ai_bench, screenshots, compile_check
 store/      PLAY_STORE.md, the listing in 15 languages, the icon, feature graphic and screenshots
-docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md (install and test), PLAYTEST.md, MESHY_BRIEF.md, MOCAP.md
+docs/       RULES.md, LANGUAGES.md, PROGRESS.md, BETA.md (install and test), PLAYTEST.md, MESHY_BRIEF.md, MOCAP.md,
+            SOUNDS.md
 ```
 
 ## Moving it to its own repository
