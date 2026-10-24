@@ -36,6 +36,7 @@ func _ready() -> void:
 	_sim()
 	await _crowd_faces()
 	await _mocap()
+	await _ring_replay()
 	await _match_and_motion("village", "ulama")
 	await _match_and_motion("stone", "classic")
 	Game.settings = keep
@@ -468,6 +469,72 @@ func _crowd_faces() -> void:
 	Game.settings.graphics = keep
 
 
+# ---------------------------------------------------------------- the ring
+
+## The ring shot can be made (a perfect strike from a good spot goes in some of the time, never always), and the ball
+## through the ring is replayed: on the bodies only (the players stay where they are), then the match ends.
+func _ring_replay() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "ESC", "away": "LLA", "venue": "stone", "rules": "classic", "user_team": -1, "seed": 5, "length": 6.0, "mode": "test", "difficulty": 1}
+	add_child(m)
+	var p: Player = m.teams[0].players[0]
+	check(m.ring_shot(p, Vector3(0, 0, 1)) == 0 or absf(p.global_position.x) >= m.RING_SHOT_X.x, "Ring: no ring shot from the middle")
+	var made := 0
+	for i in 40:
+		p.action = Player.A.STRIKE
+		p.action_ring = 1
+		var spot := Vector3(-6, 0.7, 3.2)
+		var pr = m._Probe.new()
+		pr.pos = spot
+		pr.vel = m._ring_launch(p, spot, 1.0)
+		var ev := []
+		for k in 500:
+			pr.pos = Ball.simulate(pr, m.STEP, m.court, "stone", ev)
+			if pr.grounded:
+				break
+		for e in ev:
+			if e.kind == "ring":
+				made += 1
+				break
+	p.action = Player.A.NONE
+	p.action_ring = 0
+	check(made > 2 and made < 38, "Ring: a perfect ring shot goes in sometimes, not always (%d of 40)" % made)
+	var n := 0
+	var turned := 0.0
+	var last := NAN
+	while m.phase != m.P.LIVE and n < 30 * 30:
+		await get_tree().process_frame
+		n += 1
+		if m.server != null:
+			if not is_nan(last):
+				turned += absf(angle_difference(last, m.server.yaw))
+			last = m.server.yaw
+	check(turned < 4.0, "Serve: the server holding the ball does not spin on the spot (turned %.1f rad)" % turned)
+	for i in 60:
+		await get_tree().process_frame
+	m._award(0, "ring", false, null)
+	var seen := false
+	var still := true
+	n = 0
+	while m.phase != m.P.OVER and n < 30 * 40:
+		var before := []
+		for q in m.all_players():
+			before.append((q as Player).global_position)
+		await get_tree().process_frame
+		n += 1
+		if m.phase == m.P.REPLAY:
+			seen = true
+			var ps: Array = m.all_players()
+			for k in ps.size():
+				if (ps[k] as Player).global_position.distance_to(before[k]) > 0.0001:
+					still = false
+	check(seen, "Ring: the ball through the ring is replayed")
+	check(still, "Ring: the replay moves the bodies only, not the players")
+	check(m.phase == m.P.OVER and int(m.count.winner) == 0, "Ring: after the replay the match is over, won by the ring")
+	m.queue_free()
+	await frames(2)
+
+
 # ---------------------------------------------------------------- recorded movement
 
 ## Every recorded clip loads, and a planted foot stays planted: the run played as a player plays it (moving at the
@@ -502,10 +569,12 @@ func _mocap() -> void:
 
 
 const MOCAP_SLIDE := 0.03    # metres a planted foot may slip
+const MOCAP_DOWN := 0.012    # a heel or toe this close to the ground is planted (higher, it is lifting off)
 
 
 ## The worst slip of a planted foot: the body moved at speed along +Z and posed by pose_at(t) every thirtieth of a
-## second; a foot is planted while its heel or toe is near the ground, and from then its point is held to where it was.
+## second; a foot is planted while its heel or toe is on the ground (MOCAP_DOWN), and from then that point is held to
+## where it was.
 func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> float:
 	var worst := 0.0
 	var start := {}
@@ -521,12 +590,13 @@ func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> flo
 			var toe := g * Vector3(0, -0.025, 0.14)
 			var hh := heel.y - 0.04 * k
 			var th := toe.y - 0.015 * k
-			if minf(hh, th) < 0.02 * k:
+			if minf(hh, th) < MOCAP_DOWN * k:
 				var pt := heel if hh <= th else toe
-				var key := side + ("h" if hh <= th else "t")
+				var key: String = String(side) + ("h" if hh <= th else "t")
 				if not start.has(side) or start[side][0] != key:
 					start[side] = [key, pt]
-				var d := Vector2(pt.x - start[side][1].x, pt.z - start[side][1].z).length()
+				var s0: Vector3 = start[side][1]
+				var d := Vector2(pt.x - s0.x, pt.z - s0.z).length()
 				worst = maxf(worst, d)
 			else:
 				start.erase(side)

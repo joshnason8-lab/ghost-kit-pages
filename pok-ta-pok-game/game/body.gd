@@ -91,10 +91,11 @@ static func material() -> StandardMaterial3D:
 		m.roughness = 0.72
 		m.metallic_specular = 0.3
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX if g == Game.GFX_LOW else BaseMaterial3D.SHADING_MODE_PER_PIXEL
-		if g >= Game.GFX_HIGH:
+		if g >= Game.GFX_MEDIUM:
+			# The light behind them catching their edges: what keeps brown skin and leather apart from brown earth.
 			m.rim_enabled = true
-			m.rim = 0.25
-			m.rim_tint = 0.6
+			m.rim = 0.4
+			m.rim_tint = 0.55
 		_mats[g] = m
 	return _mats[g]
 

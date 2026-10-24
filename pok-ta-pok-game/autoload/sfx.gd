@@ -31,6 +31,11 @@ func _ready() -> void:
 	add_child(_crowd)
 	_music = AudioStreamPlayer.new()
 	_music.volume_db = -80.0
+	# Cane flute, frame drum, slit drum and seed rattles: the game's own piece (tools/music/compose.py).
+	var st: AudioStream = load("res://assets/audio/menu_music.ogg") if ResourceLoader.exists("res://assets/audio/menu_music.ogg") else null
+	if st is AudioStreamOggVorbis:
+		(st as AudioStreamOggVorbis).loop = true
+	_music.stream = st
 	add_child(_music)
 
 

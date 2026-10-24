@@ -30,7 +30,7 @@ func setup(m: Node) -> void:
 
 
 func _side_z(m: Node) -> float:
-	return 13.0 if m.court.classic() else 11.5
+	return 13.0 if m.court.classic() else 10.0
 
 
 func _want_pos(f: Vector3, m: Node) -> Vector3:
@@ -46,7 +46,7 @@ func _want_pos(f: Vector3, m: Node) -> Vector3:
 			var back := hl + 5.0 if not court.classic() else Court.END_HALF_L - 1.0
 			var x := clampf(f.x - d * 16.0, -back, back)
 			return Vector3(x, 4.2 if not court.classic() else 6.5, f.z * 0.3)
-	var h := 9.0 if not court.classic() else 13.5
+	var h := 7.6 if not court.classic() else 13.5
 	return Vector3(clampf(f.x * 0.85, -hl * 0.8, hl * 0.8), h, _side_z(m))
 
 
@@ -60,7 +60,8 @@ func _want_focus(m: Node) -> Vector3:
 
 
 func _want_fov(m: Node) -> float:
-	var base := 40.0 if mode == Game.CAM_TV else (40.0 if mode == Game.CAM_HIGH else 52.0)
+	# The ulama taste is narrow (4 m): the side camera sits closer and tighter, so the players and the ball read on a phone.
+	var base := (36.0 if not m.court.classic() else 40.0) if mode == Game.CAM_TV else (40.0 if mode == Game.CAM_HIGH else 52.0)
 	var sp: float = Vector2(m.ball.vel.x, m.ball.vel.z).length()
 	base += clampf((sp - 6.0) * 0.6, 0.0, 9.0) + clampf(m.ball.pos.y * 0.8, 0.0, 6.0)
 	return base

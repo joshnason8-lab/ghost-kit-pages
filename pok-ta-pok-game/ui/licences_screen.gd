@@ -9,6 +9,9 @@ The players, judges and spectators, the courts, the ball, the agave, the stands 
 game. The skies, the earth, grass, plaster and stone surfaces, the tropical trees, palms, dry grass and boulders: Poly
 Haven (polyhaven.com), CC0, through the shared assets of the maker's games; the rain tree, coconut palm and dry grass
 models are the maker's own. Crowd reactions from Kabaddi Raid, by the same maker.
+The menus' music is the game's own piece for cane flute, drum, slit drum and rattles, made in code.
+Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+(The run: take 09_02; the serve's underhand toss: take 124_12. Bruce Hahne's BVH conversion.)
 The rules follow the published research on ulama and the Mesoamerican ballgame (docs/RULES.md in the game's source),
 above all Manuel Aguilar-Moreno's work on ulama de cadera. The classic court is a reconstruction.
 The game is not connected with, or endorsed by, any sporting body, federation, tournament or club. Towns appear by their

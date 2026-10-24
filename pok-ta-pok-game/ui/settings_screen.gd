@@ -44,6 +44,13 @@ func _ready() -> void:
 		Game.save_settings()
 		_assist_note.text = tr(akeys[i] + "_NOTE"))))
 	game[1].add_child(_assist_note)
+	var ckeys := ["CONTROL_TEAM", "CONTROL_ONE"]
+	var cnote := UI.wrap(tr(ckeys[clampi(int(Game.settings.control), 0, 1)] + "_NOTE"), "MutedLabel", 17)
+	game[1].add_child(UI.field(tr("CONTROL"), UI.chips([tr("CONTROL_TEAM"), tr("CONTROL_ONE")], clampi(int(Game.settings.control), 0, 1), func(i):
+		Game.settings.control = i
+		Game.save_settings()
+		cnote.text = tr(ckeys[i] + "_NOTE"))))
+	game[1].add_child(cnote)
 	var lens := []
 	for n in Game.LENGTHS:
 		lens.append(tr("MINUTES_N").format({"n": n}) if n > 0 else tr("TO_EIGHT"))

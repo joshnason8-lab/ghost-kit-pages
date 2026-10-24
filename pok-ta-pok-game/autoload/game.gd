@@ -81,6 +81,7 @@ var settings := {
 	"btn_size": 0,          # the match buttons: 0 Normal, 1 Large, 2 Extra large
 	"btn_pos": {},          # buttons you have moved: id -> [x, y] as a fraction of the screen
 	"difficulty": 0,        # 0 Village, 1 Regional, 2 Champion
+	"control": 0,           # 0 the whole team (you play whoever goes for the ball); 1 one player, yours all match
 	"assist": 1,            # 0 none; 1 your player is moved to meet the ball when your thumb is off the stick
 	"length": 1,            # LENGTHS
 	"mode": "ulama",        # "ulama": hip ulama on an earth court; "classic": the reconstructed stone court with rings
@@ -197,7 +198,7 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "length", "side_ulama", "side_classic", "tags"]:
+	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "control", "length", "side_ulama", "side_classic", "tags"]:
 		settings[k] = int(settings[k])
 	if not (settings.btn_pos is Dictionary):
 		settings.btn_pos = {}

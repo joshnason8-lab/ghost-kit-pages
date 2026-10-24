@@ -300,6 +300,16 @@ def planted(f, side, lift):
     return "ankle_" + side if a <= t else "toe_" + side
 
 
+def down(f, side, lift):
+    """The points of that foot on the ground: its heel (the ankle point), its toe, both or neither."""
+    out = set()
+    if f["ankle_" + side][1] + lift - ANKLE_H < SOLE:
+        out.add("ankle_" + side)
+    if f["toe_" + side][1] + lift - TOE_H < SOLE:
+        out.add("toe_" + side)
+    return out
+
+
 def foot_lock(mats, duration, speed, loop):
     """Feet that stay put. The game moves the player's root at a steady speed; the clip's own root motion is gone.
     So: the hips are lifted or lowered (hips_y) so the lowest foot stands on the ground, and a small offset of the
@@ -319,9 +329,10 @@ def foot_lock(mats, duration, speed, loop):
         a, b = feet[k], feet[(k + 1) % m]
         moves = []
         for side in ("l", "r"):
-            pa, pb = planted(a, side, lift), planted(b, side, lift)
-            if pa and pb:
-                pt = pa if pa == pb else "ankle_" + side
+            # The point that stays down from one frame to the next (the toe as the heel lifts, the heel as it lands).
+            common = down(a, side, lift) & down(b, side, lift)
+            if common:
+                pt = "toe_" + side if "toe_" + side in common else "ankle_" + side
                 d = b[pt] - a[pt]
                 moves.append(np.array([d[0], d[2] + v * dt]))
         deltas.append(-np.mean(moves, axis=0) if moves else np.zeros(2))

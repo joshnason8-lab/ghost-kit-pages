@@ -83,13 +83,13 @@ func _environment() -> void:
 		# Low: a flat ambient light the colour of the sky, read from its HDR once (tools/env/sky_light.py).
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		env.ambient_light_color = amb_c
-		env.ambient_light_energy = {"day": 0.55, "dusk": 0.6, "night": 0.22}.get(time(), 0.5)
+		env.ambient_light_energy = {"day": 0.55, "dusk": 0.78, "night": 0.22}.get(time(), 0.5)
 	else:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_energy = {"day": 0.6, "dusk": 0.65, "night": 0.14}.get(time(), 0.6)
+		env.ambient_light_energy = {"day": 0.6, "dusk": 0.85, "night": 0.14}.get(time(), 0.6)
 		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = {"day": 0.95, "dusk": 1.05, "night": 0.8}.get(time(), 1.0)
+	env.tonemap_exposure = {"day": 0.95, "dusk": 1.25, "night": 0.8}.get(time(), 1.0)
 	env.tonemap_white = 6.0
 	var hor: Array = d.get("horizon", [0.8, 0.8, 0.8])
 	env.fog_enabled = true
@@ -113,7 +113,7 @@ func _environment() -> void:
 	sun.rotation = Vector3(-elev, az, 0)
 	var sc: Array = d.get("sun_colour", [1, 1, 1])
 	sun.light_color = Color(float(sc[0]), float(sc[1]), float(sc[2]))
-	sun.light_energy = {"day": 1.25, "dusk": 1.1, "night": 0.12}.get(time(), 1.0)
+	sun.light_energy = {"day": 1.25, "dusk": 1.3, "night": 0.12}.get(time(), 1.0)
 	sun.shadow_enabled = Game.shadows_enabled()
 	sun.directional_shadow_max_distance = 60.0
 	add_child(sun)

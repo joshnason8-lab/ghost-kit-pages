@@ -266,9 +266,13 @@ func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 		action = A.NONE
 
 
-## A step's length (m) at a speed, for a man of 1.80.
+## A step's length (m) at a speed, for a man of 1.80: matched to the recorded run's own step at its speed.
 static func stride_at(speed: float) -> float:
-	return 0.9 + 0.12 * speed
+	var c := Mocap.clip(Mocap.RUN)
+	var k := 1.0
+	if not c.is_empty():
+		k = float(c.cycle_m) * 0.5 / (0.9 + 0.12 * float(c.speed))
+	return (0.9 + 0.12 * speed) * k
 
 
 func _pose(speed: float) -> void:

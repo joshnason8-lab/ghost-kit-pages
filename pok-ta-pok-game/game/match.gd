@@ -8,7 +8,7 @@ extends Node3D
 ## config: home, away (team ids), venue, rules ("ulama" | "classic"), side (players a side), user_team (0, 1, -1),
 ## mode ("quick" | "cup" | "watch" | "attract" | "test"), stage, length (real minutes, 0 none), seed, difficulty, urria.
 
-enum P { INTRO, SERVE, LIVE, CALL, OVER }
+enum P { INTRO, SERVE, LIVE, CALL, OVER, REPLAY }
 
 const STEP := 1.0 / 120.0     # the ball's physics step
 const INTRO_T := 2.6
@@ -178,6 +178,9 @@ func _process(delta: float) -> void:
 		_hitstop -= delta
 		delta *= 0.3
 	phase_t += delta
+	if phase == P.REPLAY:
+		_replay_step(delta)
+		return
 	if phase == P.LIVE:
 		clock += delta
 	_user_input()
@@ -201,6 +204,7 @@ func _process(delta: float) -> void:
 	cam.follow(self, delta)
 	if hud:
 		hud.refresh()
+	_record(delta)
 
 
 func _phase_logic(_delta: float) -> void:
@@ -211,6 +215,9 @@ func _phase_logic(_delta: float) -> void:
 		P.SERVE:
 			_serve_logic()
 		P.CALL:
+			if String(last_call.get("reason", "")) == "ring" and not _replayed and not attract and phase_t >= REPLAY_AFTER:
+				_start_replay()
+				return
 			if phase_t >= CALL_T:
 				for p in all_players():
 					(p as Player).calm()
@@ -250,7 +257,7 @@ func _to_serve() -> void:
 
 func _pick_server() -> void:
 	server = teams[serve_team].players[0]
-	if user_team == serve_team and user_player != server:
+	if user_team == serve_team and user_player != server and not one_player():
 		_set_user(server)
 
 
@@ -359,7 +366,118 @@ func result() -> Dictionary:
 		"longest_rally": longest_rally, "minutes": clock / 60.0, "timed": limit_s > 0.0 and clock >= limit_s, "star": star}
 
 
+# ---------------------------------------------------------------- the replay
+
+## The ball through the ring is the rarest thing in the game: it is shown again, slowed, from below the ring. The
+## last seconds of play are kept (where each player and the ball were, and each body's pose) and played back on the
+## bodies and the ball alone: the players' own positions are not touched.
+const REPLAY_KEEP := 5.0       # seconds of play kept
+const REPLAY_AFTER := 1.4      # seconds of the call before the replay
+const REPLAY_SPEED := 0.4
+
+var _rec: Array = []           # [time, ball position, [[body position, yaw, pose], ...]]
+var _rec_t := 0.0
+var _replayed := false
+var _rp_t := 0.0
+var _rp_cam: Camera3D
+var _rp_keep: Array = []
+
+
+func _record(delta: float) -> void:
+	if attract or not court.classic() or not (phase in [P.LIVE, P.CALL]):
+		return
+	_rec_t += delta
+	var bodies := []
+	for p in all_players():
+		var pl: Player = p
+		bodies.append([pl.global_position, pl.yaw, pl.body.pose if pl.body else {}])
+	_rec.append([_rec_t, ball.pos, bodies])
+	while _rec.size() > 2 and _rec_t - float(_rec[0][0]) > REPLAY_KEEP:
+		_rec.pop_front()
+
+
+func replaying() -> bool:
+	return phase == P.REPLAY
+
+
+func _start_replay() -> void:
+	_replayed = true
+	if _rec.size() < 10:
+		return
+	phase = P.REPLAY
+	phase_t = 0.0
+	_rp_t = 0.0
+	_rp_keep = []
+	for p in all_players():
+		_rp_keep.append((p as Player).body.transform if (p as Player).body else Transform3D())
+	# Below the ring, on the far side of the alley, looking up at it.
+	var ring: Vector3 = court.rings()[0] if float(ball.pos.z) < 0.0 else court.rings()[1]
+	var from: Vector3 = _rec[0][1]
+	_rp_cam = Camera3D.new()
+	_rp_cam.fov = 48.0
+	add_child(_rp_cam)
+	_rp_cam.global_position = Vector3(signf(from.x) * 4.5 if absf(from.x) > 0.5 else -4.5, 1.7, -ring.z * 0.35)
+	_rp_cam.look_at(ring, Vector3.UP)
+	_rp_cam.current = true
+	if hud:
+		hud.banner(tr("REPLAY"), Game.C_GOLD)
+
+
+func _replay_step(delta: float) -> void:
+	_rp_t += delta * REPLAY_SPEED
+	var t0 := float(_rec[0][0])
+	var t := t0 + _rp_t
+	var i := 0
+	while i < _rec.size() - 2 and float(_rec[i + 1][0]) < t:
+		i += 1
+	var a: Array = _rec[i]
+	var b: Array = _rec[i + 1]
+	var w := clampf((t - float(a[0])) / maxf(0.0001, float(b[0]) - float(a[0])), 0.0, 1.0)
+	var bp: Vector3 = (a[1] as Vector3).lerp(b[1], w)
+	ball.show_at(bp, delta * REPLAY_SPEED)
+	var ps := all_players()
+	for k in mini(ps.size(), (a[2] as Array).size()):
+		var pl: Player = ps[k]
+		if pl.body == null:
+			continue
+		var ra: Array = a[2][k]
+		var rb: Array = b[2][k]
+		var pos: Vector3 = (ra[0] as Vector3).lerp(rb[0], w)
+		var yaw := lerp_angle(float(ra[1]), float(rb[1]), w)
+		pl.body.global_transform = Transform3D(Basis(Vector3.UP, yaw).scaled(pl.body.scale), pos)
+		pl.body.apply(rb[2] if w > 0.5 else ra[2])
+	if _rp_cam:
+		var to := _rp_cam.global_transform.looking_at(bp.lerp(court.rings()[0] if bp.z < 0.0 else court.rings()[1], 0.3), Vector3.UP)
+		_rp_cam.global_transform = _rp_cam.global_transform.interpolate_with(to, minf(1.0, delta * 4.0))
+	if t >= float(_rec[-1][0]) or _skip_replay:
+		_end_replay()
+
+
+var _skip_replay := false
+
+
+func _end_replay() -> void:
+	_skip_replay = false
+	var ps := all_players()
+	for k in mini(ps.size(), _rp_keep.size()):
+		var pl: Player = ps[k]
+		if pl.body:
+			pl.body.transform = _rp_keep[k]
+	if _rp_cam:
+		_rp_cam.queue_free()
+		_rp_cam = null
+	cam.camera.current = true
+	ball.show_at(ball.pos, 0.0)
+	phase = P.CALL
+	phase_t = CALL_T
+
+
 # ---------------------------------------------------------------- you
+
+## One player all match (the setting): yours is the team's first, the server; the others are the computer's.
+func one_player() -> bool:
+	return int(Game.settings.get("control", 0)) == 1 and not attract
+
 
 func _set_user(p: Player) -> void:
 	if user_player == p:
@@ -376,7 +494,7 @@ func _user_input() -> void:
 	if user_team < 0 or hud == null:
 		return
 	var ai: TeamAI = teams[user_team].ai
-	if phase == P.LIVE and ai.taker != null and ai.taker != user_player and not user_player.busy():
+	if phase == P.LIVE and ai.taker != null and ai.taker != user_player and not user_player.busy() and not one_player():
 		_set_user(ai.taker)
 	var j: Vector2 = hud.joystick()
 	if j.length() > 0.15 and phase != P.SERVE:
@@ -402,6 +520,9 @@ func screen_to_world(j: Vector2) -> Vector3:
 
 
 func _on_action(id: String) -> void:
+	if phase == P.REPLAY:
+		_skip_replay = true
+		return
 	if paused or user_player == null:
 		return
 	match id:
@@ -444,26 +565,40 @@ func ring_shot(p: Player, stick: Vector3) -> int:
 	var ax := absf(p.global_position.x)
 	if ax < RING_SHOT_X.x or ax > RING_SHOT_X.y:
 		return 0
-	return int(signf(stick.z))
+	var side := int(signf(stick.z))
+	# The hole runs along the alley: from too far across, the ball cannot line up with it.
+	var rz := side * (Court.TALUD_Z - Court.RING_OFF)
+	if absf(rz - p.global_position.z) > ax * RING_SHOT_SLANT:
+		return 0
+	return side
 
 
-const RING_SHOT_X := Vector2(2.5, 11.0)   # how far from the middle a ring shot can be struck from (m)
+## Now and then a computer player goes for the ring when he is placed for it (more often at a harder level).
+func ai_ring_shot(p: Player) -> int:
+	if not court.classic() or rng.randf() > [0.04, 0.08, 0.14][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 2)]:
+		return 0
+	return ring_shot(p, Vector3(0, 0, signf(p.global_position.z) if absf(p.global_position.z) > 0.1 else 1.0))
+
+
+const RING_SHOT_X := Vector2(4.0, 12.0)   # how far from the middle a ring shot can be struck from (m)
+const RING_SHOT_SLANT := 0.4              # and how far across for each metre along
 const RING_SPREAD := 1.0                  # scales the ring shot's error (tests)
 
 
-## The ring shot's flight: through the ring's centre, rising steeply enough to clear its stone, with the strike's
-## error (a perfect strike still misses most times: the hole leaves the ball under ten centimetres).
+## The ring shot's flight: through the ring's centre at the top of its arc (the hole is a short tube along the alley:
+## a ball still climbing or falling steeply catches its stone), with the strike's error. A perfect strike goes in
+## about one time in three; a good one one in ten; an ordinary one hardly ever.
 func _ring_launch(p: Player, from: Vector3, quality: float) -> Vector3:
 	var c: Vector3 = court.rings()[0] if p.action_ring < 0 else court.rings()[1]
 	var h := Vector2(c.x - from.x, c.z - from.z)
-	var dist := h.length()
-	var dy := c.y - from.y
-	var ang := clampf(atan2(dy, dist) + deg_to_rad(18.0), deg_to_rad(40.0), deg_to_rad(68.0))
+	var hn := h.normalized()
+	var sol := _ring_solve(from, c, hn)
+	var ang: float = sol[0]
+	var sp: float = sol[1]
 	var err := (1.0 - quality) * (1.0 - p.skill * 0.5)
-	ang += deg_to_rad(rng.randf_range(-1.0, 1.0) * (0.8 + 7.0 * err) * RING_SPREAD)
-	var hn := h.normalized().rotated(rng.randf_range(-1.0, 1.0) * (0.01 + 0.2 * err) * RING_SPREAD)
-	var sp := _ring_speed(from, c, hn, ang)
-	sp *= 1.0 + rng.randf_range(-1.0, 1.0) * (0.006 + 0.05 * err) * RING_SPREAD
+	ang += deg_to_rad(rng.randf_range(-1.0, 1.0) * (1.6 + 10.0 * err) * RING_SPREAD)
+	hn = hn.rotated(rng.randf_range(-1.0, 1.0) * (0.018 + 0.2 * err) * RING_SPREAD)
+	sp *= 1.0 + rng.randf_range(-1.0, 1.0) * (0.016 + 0.08 * err) * RING_SPREAD
 	return Vector3(hn.x * cos(ang) * sp, sin(ang) * sp, hn.y * cos(ang) * sp)
 
 
@@ -473,32 +608,54 @@ class _Probe:
 	var grounded := false
 
 
-## The launch speed that carries the ball (air drag and all) through the ring's centre at that angle.
-func _ring_speed(from: Vector3, c: Vector3, hn: Vector2, ang: float) -> float:
+## The angle and speed that carry the ball (air drag and all) through the ring's centre at the top of its arc.
+func _ring_solve(from: Vector3, c: Vector3, hn: Vector2) -> Array:
+	var lo := deg_to_rad(20.0)
+	var hi := deg_to_rad(75.0)
+	var sp := 10.0
+	for it in 12:
+		var ang := (lo + hi) * 0.5
+		var r := _ring_speed(from, c, hn, ang)
+		sp = r[0]
+		# Already falling at the ring: too steep (the top of the arc came before it).
+		if r[1] < 0.0:
+			hi = ang
+		else:
+			lo = ang
+	var ang2 := (lo + hi) * 0.5
+	return [ang2, _ring_speed(from, c, hn, ang2)[0]]
+
+
+## The launch speed that carries the ball through the ring's height at that angle, and its climb there.
+func _ring_speed(from: Vector3, c: Vector3, hn: Vector2, ang: float) -> Array:
 	var lo := 4.0
 	var hi := 30.0
 	var probe := _Probe.new()
 	var ev := []
-	for it in 16:
+	var vy := 0.0
+	for it in 14:
 		var sp := (lo + hi) * 0.5
 		probe.pos = from
 		probe.vel = Vector3(hn.x * cos(ang) * sp, sin(ang) * sp, hn.y * cos(ang) * sp)
 		probe.grounded = false
 		ev.clear()
 		var y_at := -1.0
-		for k in 600:
+		for k in 400:
 			var a := probe.pos
-			probe.pos = Ball.simulate(probe, STEP, court, "stone", ev)
+			# The flight alone (no court): what the ball would do in the open air.
+			probe.vel += (Vector3(0, -Ball.GRAVITY, 0) - probe.vel * probe.vel.length() * Ball.DRAG) * STEP
+			probe.pos += probe.vel * STEP
 			if (a.x - c.x) * (probe.pos.x - c.x) <= 0.0:
 				y_at = lerpf(a.y, probe.pos.y, (c.x - a.x) / (probe.pos.x - a.x)) if not is_equal_approx(a.x, probe.pos.x) else probe.pos.y
+				vy = probe.vel.y
 				break
-			if probe.grounded or probe.pos.y < 0.0:
+			if probe.pos.y < 0.0:
 				break
 		if y_at < c.y:
 			lo = sp
 		else:
 			hi = sp
-	return (lo + hi) * 0.5
+	return [(lo + hi) * 0.5, vy]
 
 
 func _user_aim() -> Vector3:

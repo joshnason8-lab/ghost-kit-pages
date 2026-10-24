@@ -1,0 +1,134 @@
+{
+ "assets": [
+  {
+   "name": "player_lean",
+   "kind": "player",
+   "height_m": 1.7,
+   "faces": 9000,
+   "topology": "triangle",
+   "pose": "t-pose",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic full-body Indigenous Mexican man from rural Sinaloa, an ulama hip-ball player: a lean, wiry young man in his twenties, 1.70 m, bare-chested and barefoot, wearing only a thick dark-brown deerskin leather hip guard wrapped tightly around his hips, buttocks and upper thighs like short wrapped shorts, held by a narrow off-white cotton band at the waist. Feet flat, neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic warm brown skin with natural tone variation and pores, short black hair, a thick matte dark-brown suede deerskin leather hip wrap with worn creases, a narrow off-white cotton band at the waist, bare feet, no jewellery, no tattoos, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "player_stocky",
+   "kind": "player",
+   "height_m": 1.68,
+   "faces": 9000,
+   "topology": "triangle",
+   "pose": "t-pose",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic full-body Indigenous Mexican man from rural Sinaloa, an ulama hip-ball player: a stocky, powerful man in his forties with a short black moustache, 1.68 m, bare-chested and barefoot, wearing only a thick dark-brown deerskin leather hip guard wrapped tightly around his hips, buttocks and upper thighs like short wrapped shorts, held by a narrow off-white cotton band at the waist. Feet flat, neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic warm brown skin with natural tone variation and pores, short black hair, a thick matte dark-brown suede deerskin leather hip wrap with worn creases, a narrow off-white cotton band at the waist, bare feet, no jewellery, no tattoos, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "player_tall",
+   "kind": "player",
+   "height_m": 1.78,
+   "faces": 9000,
+   "topology": "triangle",
+   "pose": "t-pose",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic full-body Indigenous Mexican man from rural Sinaloa, an ulama hip-ball player: a tall athletic man in his thirties, broad shoulders, 1.78 m, bare-chested and barefoot, wearing only a thick dark-brown deerskin leather hip guard wrapped tightly around his hips, buttocks and upper thighs like short wrapped shorts, held by a narrow off-white cotton band at the waist. Feet flat, neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic warm brown skin with natural tone variation and pores, short black hair, a thick matte dark-brown suede deerskin leather hip wrap with worn creases, a narrow off-white cotton band at the waist, bare feet, no jewellery, no tattoos, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "judge_hat",
+   "kind": "referee",
+   "height_m": 1.7,
+   "faces": 9000,
+   "topology": "triangle",
+   "pose": "t-pose",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic full-body an older Mexican village man with a grey moustache, a wide-brimmed palm straw hat, a plain white long-sleeve cotton shirt, dark-blue jeans, a brown leather belt and brown leather boots. Feet flat, neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; an older Mexican village man with a grey moustache, a wide-brimmed palm straw hat, a plain white long-sleeve cotton shirt, dark-blue jeans, a brown leather belt and brown leather boots; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "judge_cap",
+   "kind": "referee",
+   "height_m": 1.72,
+   "faces": 9000,
+   "topology": "triangle",
+   "pose": "t-pose",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic full-body a Mexican man in his fifties, short grey hair, a light-blue short-sleeve button shirt tucked into beige cotton trousers, a dark belt and black leather shoes. Feet flat, neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Mexican man in his fifties, short grey hair, a light-blue short-sleeve button shirt tucked into beige cotton trousers, a dark belt and black leather shoes; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_ranchero",
+   "kind": "crowd",
+   "height_m": 1.72,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a middle-aged Mexican ranchero man in a wide-brimmed palm straw hat, a white long-sleeve cotton shirt, dark jeans, a leather belt and brown boots. Neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; a middle-aged Mexican ranchero man in a wide-brimmed palm straw hat, a white long-sleeve cotton shirt, dark jeans, a leather belt and brown boots; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_blouse",
+   "kind": "crowd",
+   "height_m": 1.6,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican woman in her thirties with long black hair in a braid, a white cotton blouse with colourful embroidered flowers at the neckline, a long dark-blue skirt and sandals. Neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Mexican woman in her thirties with long black hair in a braid, a white cotton blouse with colourful embroidered flowers at the neckline, a long dark-blue skirt and sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_elder",
+   "kind": "crowd",
+   "height_m": 1.65,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic an elderly Mexican man with a grey moustache, a red baseball cap, a light-blue short-sleeve button shirt, grey trousers and sandals. Neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; an elderly Mexican man with a grey moustache, a red baseball cap, a light-blue short-sleeve button shirt, grey trousers and sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_tshirt",
+   "kind": "crowd",
+   "height_m": 1.74,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a young Mexican man with short black hair, a plain red t-shirt, blue jeans and white sneakers. Neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; a young Mexican man with short black hair, a plain red t-shirt, blue jeans and white sneakers; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_rebozo",
+   "kind": "crowd",
+   "height_m": 1.52,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic an elderly Indigenous Mexican woman with a long grey braid, a dark striped rebozo shawl over her shoulders, a simple patterned cotton dress and sandals. Neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; an elderly Indigenous Mexican woman with a long grey braid, a dark striped rebozo shawl over her shoulders, a simple patterned cotton dress and sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_boy",
+   "kind": "crowd",
+   "height_m": 1.38,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican boy about ten years old with short black hair, a green t-shirt, khaki shorts and sneakers. Neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Mexican boy about ten years old with short black hair, a green t-shirt, khaki shorts and sneakers; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_young_woman",
+   "kind": "crowd",
+   "height_m": 1.62,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a young Mexican woman with long dark hair, a mustard-yellow blouse, blue jeans and white sneakers. Neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; a young Mexican woman with long dark hair, a mustard-yellow blouse, blue jeans and white sneakers; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  },
+  {
+   "name": "fan_guayabera",
+   "kind": "crowd",
+   "height_m": 1.7,
+   "faces": 6000,
+   "topology": "triangle",
+   "pose": "",
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Mexican man in his fifties in a white guayabera shirt, beige trousers, a straw fedora hat and dark shoes. Neutral face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Mexican man in his fifties in a white guayabera shirt, beige trousers, a straw fedora hat and dark shoes; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+  }
+ ]
+}

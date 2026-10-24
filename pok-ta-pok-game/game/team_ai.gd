@@ -192,7 +192,7 @@ func _place(p: Player, i: int, live: bool, path: Array, _dt: float) -> void:
 			if t <= go_at + 0.017 and Vector2(p.global_position.x - intercept.stand.x, p.global_position.z - intercept.stand.z).length() < 0.7:
 				var aim := choose_aim()
 				if intercept.kind == "hip":
-					p.start_strike(side, aim)
+					p.start_strike(side, aim, m.ai_ring_shot(p))
 				else:
 					p.start_dive(side, aim)
 		return

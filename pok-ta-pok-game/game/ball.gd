@@ -54,6 +54,50 @@ func setup(p_court: Court, p_floor: String) -> void:
 	_shadow.material_override = shadow_material()
 	_shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_shadow)
+	# A faint pale ring round the ball, turned to the camera: a dark rubber ball over dark earth, small on a phone's
+	# screen, would otherwise be lost (the dusk court above all). It thins as the ball comes near the camera.
+	_halo = MeshInstance3D.new()
+	var hq := QuadMesh.new()
+	hq.size = Vector2(RADIUS * 2.0 * HALO, RADIUS * 2.0 * HALO)
+	_halo.mesh = hq
+	_halo.material_override = halo_material()
+	_halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_mesh.add_child(_halo)
+
+
+const HALO := 2.6             # the halo's size, in ball diameters
+var _halo: MeshInstance3D
+static var _halo_mat: ShaderMaterial
+
+
+static func halo_material() -> ShaderMaterial:
+	if _halo_mat == null:
+		var sh := Shader.new()
+		sh.code = """
+shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
+uniform float halo = 2.6;
+void vertex() {
+	// Face the camera, whatever the ball's spin.
+	vec3 c = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	float s = length(MODEL_MATRIX[0].xyz);
+	vec3 r = INV_VIEW_MATRIX[0].xyz;
+	vec3 u = INV_VIEW_MATRIX[1].xyz;
+	vec3 w = c + (r * VERTEX.x + u * VERTEX.y) * s;
+	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(w, 1.0);
+}
+void fragment() {
+	float d = length(UV - vec2(0.5)) * 2.0 * halo;   // 1.0 at the ball's edge
+	float near = clamp((length(CAMERA_POSITION_WORLD - NODE_POSITION_WORLD) - 4.0) / 10.0, 0.0, 1.0);
+	float ring = smoothstep(1.05, 1.25, d) * (1.0 - smoothstep(1.35, 1.9, d));
+	ALBEDO = vec3(1.0, 0.95, 0.85);
+	ALPHA = ring * 0.55 * near;
+}
+"""
+		_halo_mat = ShaderMaterial.new()
+		_halo_mat.shader = sh
+		_halo_mat.set_shader_parameter("halo", HALO)
+	return _halo_mat
 
 
 static var _mat: StandardMaterial3D
@@ -65,8 +109,11 @@ static func material() -> StandardMaterial3D:
 	if _mat == null:
 		_mat = StandardMaterial3D.new()
 		_mat.albedo_color = Color("2a211b")
-		_mat.roughness = 0.55
-		_mat.metallic_specular = 0.35
+		_mat.roughness = 0.5
+		_mat.metallic_specular = 0.45
+		_mat.rim_enabled = true
+		_mat.rim = 0.5
+		_mat.rim_tint = 0.4
 	return _mat
 
 
