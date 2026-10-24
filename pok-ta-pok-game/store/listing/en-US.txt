@@ -1,0 +1,47 @@
+# Google Play store listing, English (United States). Paste each part into Play Console > Grow users > Store presence
+# > Main store listing > Manage translations. Limits: app name 30 characters, short description 80, full description
+# 4000.
+
+== App name ==
+Pok Ta Pok Rivals
+
+== Short description ==
+The hip ballgame of Mexico: ulama, the heavy rubber ball, the count to eight.
+
+== Full description ==
+Pok Ta Pok Rivals is the Mesoamerican ballgame on your phone, played as it is still played today. Strike a heavy rubber ball with your hip across the analco of a long earth court, read its low bounce, dive for it as it skids along the ground, and drive it past the other town's end.
+
+THE LIVING GAME: ULAMA DE CADERA
+• The game still played in the villages of southern Sinaloa, Mexico: four or five a side on the taste, a strip of packed earth 60 meters long and 4 wide.
+• The hip only. Touch the ball with anything else and the raya goes to the other side.
+• A raya is won when the ball dies in the other half, goes past their end line, or they knock it out.
+• The real count: one side holds it, rayas go up and down, and in urria a whole count can be wiped out. First to eight.
+• The male serves: rolled along the earth (abajo) or thrown high (arriba).
+• Two judges, the veedores, at the analco call every raya.
+
+THE CLASSIC COURT (RECONSTRUCTED)
+An I-shaped stone court with sloped walls, rebuilt from the old chronicles: the ball plays off the stone, and a stone ring set high in each wall wins the game outright. It almost never happens.
+
+WAYS TO PLAY
+• Play a match: pick a court and two towns.
+• Town tournament: eight towns, knock-out, to the final.
+• Watch a match between two towns played by the computer.
+
+FOUR COURTS
+A village court in Sinaloa at dusk, a festival court by day, a stone court in the Yucatán forest under a pyramid, and the same court by torchlight.
+
+SIXTEEN TOWNS
+From Sinaloa, the Yucatán, Quintana Roo, Chiapas, Guatemala, Belize and Honduras, each with its own nickname and colors.
+
+MADE FOR YOUR PHONE
+• A floating joystick and big buttons, left-handed layout, button sizes, and buttons you can move.
+• Runs on everyday phones: graphics that set themselves, and a battery saver.
+• In Spanish, English, Portuguese, French, German and Italian.
+• How to Play explains the rules, the count and the story of the game and its words.
+
+No ads, no in-app purchases, no account, no data collected.
+
+Pok Ta Pok Rivals is an independent game, not connected with or endorsed by any sporting body, federation, tournament or club. Towns appear by their place names only; every player is invented.
+
+== Release notes (0.1.0) ==
+The first beta: ulama de cadera and the classic stone court, four courts, sixteen towns, a town tournament, in six languages.
