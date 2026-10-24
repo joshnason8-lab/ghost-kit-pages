@@ -1,0 +1,35 @@
+# Scheda dello store Google Play, italiano (Italia). Incolla ogni parte in Play Console > Crescita > Presenza sullo store >
+# Scheda dello store principale. Limiti: nome dell'app 30 caratteri, descrizione breve 80, descrizione completa 4000.
+
+== App name ==
+Floorball Unleashed
+
+== Short description ==
+Unihockey a cinque più il portiere, con le regole vere. Tira, passa, segna!
+
+== Full description ==
+Floorball Unleashed è l'unihockey (floorball) sul tuo telefono: il veloce gioco con il bastone indoor di Svezia, Finlandia, Svizzera e Cechia, cinque giocatori più il portiere per squadra, su un campo di 40 per 20 metri cinto dalle balaustre.
+
+IL GIOCO VERO
+• Il regolamento di gioco internazionale dell'unihockey, nell'edizione in vigore dal 1° luglio 2026: tre tempi a tempo effettivo, ingaggi, rimesse e punizioni con la distanza di 3 metri, area di porta e area del portiere, penalità di due e cinque minuti, superiorità numerica, supplementare e rigori.
+• Anche le nuove regole del 2026: nessun giocatore di movimento attraverso l'area del portiere, il lancio del portiere può valere un gol, e le penalità simultanee non tolgono più giocatori dal campo.
+• Due arbitri che fischiano e segnalano ogni decisione come quelli veri: punizione, vantaggio, penalità ritardata, due minuti, gioco passivo, gol.
+• Nel finale la squadra in svantaggio toglie il portiere per un sesto giocatore di movimento; un giocatore punito va sulla panchina dei puniti e sconta il suo tempo.
+• Squadre che giocano come si gioca a unihockey: difesa 2-1-2, cambi di linea volanti ogni cinquanta secondi, ali larghe e il centro nello slot.
+
+MODALITÀ DI GIOCO
+• Partita rapida: 22 nazionali, maschili e femminili, in un'arena cittadina, un palazzetto o una palestra scolastica. Tempi da 4 a 20 minuti, tempo effettivo o tempo continuo.
+• Finali mondiali: sedici nazioni in quattro gironi, play-off, quarti di finale, semifinali e le partite per le medaglie.
+• Stagione di club: dieci club, un campionato con punti 3-2-1-0 (3 per una vittoria nei tempi regolamentari, 2 dopo supplementare o rigori, 1 per una sconfitta al supplementare), poi semifinali e finale.
+• Un tabellino dopo ogni partita: tiri in porta, parate, minuti di penalità, gol in superiorità, ogni gol e ogni penalità con la sua regola.
+
+GIOCA A MODO TUO
+• Quindici lingue: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 e ไทย.
+• Un allenatore ti guida nella tua prima partita. Un joystick e tre pulsanti, anche per mancini, in tre dimensioni, e spostabili dove vogliono i tuoi pollici.
+• Pensato per girare fluido su telefoni economici e di fascia media, con risparmio batteria.
+• Si gioca offline. Niente pubblicità, niente acquisti, nessun account e nessun dato raccolto.
+
+Floorball Unleashed è un gioco indipendente. Non è affiliato né sostenuto da alcuna federazione, lega, società o giocatore di unihockey. I giocatori sono inventati; i paesi e le regole sono veri.
+
+== Release notes (first release) ==
+La prima versione di Floorball Unleashed: Partita rapida, le Finali mondiali e una stagione di club, con un allenatore per la tua prima partita, in quindici lingue.
