@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.5
+
+- **Real recorded movement** for two moves, from a motion capture library: **DODGE** is now a runner's hard cut, the
+  outside foot planted and a low push off (the AI's defenders dodge the same way), and a player or umpire **standing
+  still** stands at ease, shifting his weight, instead of frozen.
+
 ## What's new in 0.4.2
 
 - **The crowd faces the play** on every side. The near side's spectators, between the broadcast camera and the court,

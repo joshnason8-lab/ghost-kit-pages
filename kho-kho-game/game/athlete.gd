@@ -15,7 +15,7 @@ var want := Vector3.ZERO    # the velocity he is trying for (m/s, flat)
 var vel := Vector3.ZERO
 var top := 7.0              # his flat-out speed now (m/s)
 var face_to := Vector3.ZERO # a point to face when still (a seated chaser faces his half; an umpire the play)
-var act := ""               # "", "sit", "rise", "kho", "dive", "pole_dive", "lie", "getup", "whistle", "out", "foul", "end", "cheer"
+var act := ""               # "", "sit", "rise", "kho", "dive", "pole_dive", "lie", "getup", "whistle", "out", "foul", "end", "cheer", "dodge"
 var act_t := 0.0            # seconds into it
 var act_len := 0.0          # its length (0: held until changed)
 var mirror := false         # play the act mirrored (left-handed for a pole dive round the other side)
@@ -52,6 +52,12 @@ func do(p_act: String, len := 0.0, p_mirror := false) -> void:
 	act_t = 0.0
 	act_len = len
 	mirror = p_mirror
+
+
+## A dodge: a hard cut aside, over len seconds, to dir (the match moves him; this is how he looks doing it). The
+## recorded cut goes to his left; a cut to his right plays it mirrored.
+func dodge(dir: Vector3, len: float) -> void:
+	do("dodge", len, dir.dot(Vector3(cos(yaw), 0.0, -sin(yaw))) < 0.0)
 
 
 func busy() -> bool:
@@ -114,8 +120,10 @@ func _finish_act() -> void:
 			act_t = 0.0
 			act_len = 0.45
 			return
-		"getup", "out", "foul", "end", "cheer", "pole_turn":
+		"getup", "out", "foul", "end", "cheer", "pole_turn", "dodge":
 			act = ""
+	if act == "":
+		mirror = false   # his run after a mirrored act is his own again
 	act_len = 0.0
 	act_t = 0.0
 
@@ -157,7 +165,7 @@ func _animate(dt: float, spd: float) -> void:
 			c = "dive"
 			rate = 0.0001
 		"getup":
-			c = "stand"
+			c = "idle"
 			blend = 0.35
 		"whistle":
 			c = "whistle"
@@ -169,6 +177,12 @@ func _animate(dt: float, spd: float) -> void:
 			c = "signal_end"
 		"cheer":
 			c = "cheer"
+		"dodge":
+			# The recorded cut, fitted to the dodge, faster still if he moves faster than the actor did.
+			c = "dodge"
+			rate = maxf(body.clip_length("dodge") / maxf(act_len, 0.2), ModelBody.rate_for("dodge", spd))
+			at = 0.0
+			blend = 0.08
 		"pole_turn":
 			c = "turn"
 			rate = body.clip_length("turn") * 0.6 / maxf(act_len, 0.2)
@@ -182,7 +196,10 @@ func _animate(dt: float, spd: float) -> void:
 			c = "walk"
 			rate = ModelBody.rate_for("walk", spd)
 		else:
-			c = "stand"
+			# Standing at ease: the recorded idle, each man at his own point in it so a line of them does not sway
+			# as one.
+			c = "idle"
+			at = fposmod(float(get_instance_id() % 997) * 0.37, body.clip_length("idle"))
 	if act != "sit":
 		_knelt = false
 	body.play(c, rate, blend, at)

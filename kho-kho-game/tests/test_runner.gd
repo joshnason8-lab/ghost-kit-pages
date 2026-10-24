@@ -253,6 +253,69 @@ func _bodies() -> void:
 	check(ran, "the active chaser runs his run, at the rate his speed asks")
 	m.queue_free()
 	await frames(2)
+	await _mocap()
+
+
+## The clips from the CMU motion capture library (docs/MODELS.md): each loads, carries its root (its travel over the
+## ground, taken out of it), and through it no planted toe slides more than SLIDE_M; the dodge cuts the way it goes.
+const SLIDE_M := 0.03
+
+func _mocap() -> void:
+	for c in ["dodge", "idle"]:
+		var a: Animation = load("res://assets/models/anims/%s.res" % c)
+		check(a != null and a.length > 0.3 and a.has_meta("root") and a.has_meta("fps"), "the %s clip loads, with its root" % c)
+		if a == null or not a.has_meta("root"):
+			continue
+		var b := ModelBody.new({}, false)
+		add_child(b)
+		await frames(1)
+		var root: PackedVector3Array = a.get_meta("root")
+		var fps := float(a.get_meta("fps"))
+		var toes := [b.skeleton.find_bone("mixamorig_LeftToeBase"), b.skeleton.find_bone("mixamorig_RightToeBase")]
+		var paths := [[], []]
+		b.play(c, 1.0, 0.0)
+		for f in root.size():
+			b.anim.seek(minf(f / fps, a.length), true)
+			for k in 2:
+				var p := b.skeleton.global_transform * b.skeleton.get_bone_global_pose(toes[k]).origin
+				var r := root[f]
+				paths[k].append(Vector3(r.x, 0, r.y) + Basis(Vector3.UP, r.z) * p)
+		var worst := 0.0
+		var contacts := 0
+		for k in 2:
+			var low := INF
+			for p: Vector3 in paths[k]:
+				low = minf(low, p.y)
+			var f0 := -1
+			var n: int = paths[k].size()
+			for f in n + 1:
+				# Planted: on the floor and nearly still (a foot skimming the floor as it swings is not).
+				var down := false
+				if f < n:
+					var dv := (paths[k][mini(f + 1, n - 1)] as Vector3) - (paths[k][maxi(f - 1, 0)] as Vector3)
+					down = (paths[k][f] as Vector3).y < low + 0.03 and Vector2(dv.x, dv.z).length() * fps / 2.0 < 0.8
+				if down and f0 < 0:
+					f0 = f
+				elif not down and f0 >= 0:
+					if f - f0 >= 2:
+						contacts += 1
+						for g in range(f0, f):
+							var d := (paths[k][g] as Vector3) - (paths[k][f0] as Vector3)
+							worst = maxf(worst, Vector2(d.x, d.z).length())
+					f0 = -1
+		check(contacts >= 2 and worst <= SLIDE_M, "%s: planted feet hold (%d contacts, worst slide %.1f cm)" % [c, contacts, worst * 100.0])
+		b.queue_free()
+	var ath := Athlete.new({}, 0, {})
+	add_child(ath)
+	await frames(1)
+	ath.dodge(Vector3(1, 0, 0.3), 0.4)
+	var to_left: bool = not ath.mirror
+	ath.dodge(Vector3(-1, 0, 0.3), 0.4)
+	var to_right: bool = ath.mirror
+	for i in 20:
+		ath.integrate(1.0 / 30.0)
+	check(to_left and to_right and ath.act == "" and not ath.mirror, "a dodge cuts the way he goes, and his run after it is his own")
+	ath.queue_free()
 
 
 # ---------------------------------------------------------------- the grounds

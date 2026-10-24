@@ -11,7 +11,7 @@ extends Node3D
 ## Local space: he faces +Z, soles at y = 0; height from look.height (the model stands 1.75 m).
 
 const CLIPS := ["run", "walk", "stand", "dive", "reach", "turn", "kneel_down", "kneel", "whistle", "signal_out",
-	"signal_foul", "signal_end", "cheer", "seated", "clap"]
+	"signal_foul", "signal_end", "cheer", "seated", "clap", "dodge", "idle"]
 const MODEL_HEIGHT := 1.75
 
 static var _scene: PackedScene

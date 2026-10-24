@@ -35,5 +35,5 @@ PLAY YOUR WAY
 
 Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
 
-== Release notes (0.4.2) ==
-Spectators on every side now face the play. New grounds from photographs, and a village temple: real skies (a village dusk, a hot school noon, a floodlit night), photo-scanned red earth and dry ground, rain trees, coconut palms and tropical trees, houses in plaster under thatch and tiles, white plastic chairs under the village crowd, painted benches, a scorers' table, apartment blocks on the skyline, concrete terraces and the hall's lights. High graphics no longer looks washed out.
+== Release notes (0.5.0) ==
+Real recorded movement from a motion capture library: DODGE is now a runner's hard cut, and players standing still stand at ease. Spectators on every side now face the play.
