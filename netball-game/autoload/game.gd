@@ -422,6 +422,41 @@ func apply_graphics(viewport: Viewport) -> void:
 		viewport.scaling_3d_scale = minf(viewport.scaling_3d_scale, 0.8)
 
 
+## Sharper copies of these textures for Medium and High: [Medium's, High's] ("" keeps the original). Low loads the
+## originals, exactly as before (tests/test_runner.gd _low_unchanged). VRAM-compressed with mipmaps like the
+## originals (the sky without). The floor and wall textures are 2K on High only: they repeat every 2-3 m, so even 1K
+## gives more texels than the screen shows from the cameras; the sky (magnified about five times at 2K) and the
+## players are sharper on both.
+const HD_TEX := {
+	"res://assets/venue/surfaces/white_maple_veneer_albedo_1k.jpg": ["", "res://assets/venue/surfaces/white_maple_veneer_albedo_2k.jpg"],
+	"res://assets/venue/surfaces/concrete_block_wall_normal_1k.jpg": ["", "res://assets/venue/surfaces/concrete_block_wall_normal_2k.jpg"],
+	"res://assets/venue/surfaces/ceiling_interior_albedo_1k.jpg": ["", "res://assets/venue/surfaces/ceiling_interior_albedo_2k.jpg"],
+	"res://assets/venue/surfaces/clean_asphalt_albedo_1k.jpg": ["", "res://assets/venue/surfaces/clean_asphalt_albedo_2k.jpg"],
+	"res://assets/venue/surfaces/asphalt_02_albedo_1k.jpg": ["", "res://assets/venue/surfaces/asphalt_02_albedo_2k.jpg"],
+	"res://assets/venue/skies/netball_court_sky_2k.jpg": ["res://assets/venue/skies/netball_court_sky_4k.jpg", "res://assets/venue/skies/netball_court_sky_4k.jpg"],
+	"res://assets/player/hero_albedo.jpg": ["res://assets/player/hero_albedo_2k.jpg", "res://assets/player/hero_albedo_2k.jpg"],
+	"res://assets/player/hero_mask.png": ["res://assets/player/hero_mask_1k.png", "res://assets/player/hero_mask_1k.png"],
+}
+
+
+## Medium or High: the levels that load sharper textures, the crowd's 32 people and the richer sounds.
+func hd() -> bool:
+	return int(settings.graphics) > GFX_LOW
+
+
+## Which file a texture is loaded from at graphics level g: its sharper copy (HD_TEX) where it has one, else itself.
+func tex_path(path: String, g: int) -> String:
+	if g <= GFX_LOW or not HD_TEX.has(path):
+		return path
+	var p: String = HD_TEX[path][mini(g, GFX_HIGH) - 1]
+	return p if p != "" else path
+
+
+## A texture at the current graphics level (tex_path).
+func tex(path: String) -> Texture2D:
+	return load(tex_path(path, int(settings.graphics)))
+
+
 func screen_hz() -> int:
 	var hz := roundi(DisplayServer.screen_get_refresh_rate())
 	return hz if hz > 0 else 60

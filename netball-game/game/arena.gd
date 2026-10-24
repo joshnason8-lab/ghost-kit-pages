@@ -339,7 +339,7 @@ func _arena() -> Array:
 		"gloss": 300.0, "vig_size": Vector2(25.0, 16.5), "vig_dark": 0.32, "seat_col": Color("1c2560"),
 		"stair_col": Color("39447a"), "density": 0.86, "aisle_every": 9.0, "lamp_col": Color("dfe8ff"),
 		"pad": Color("17256a"), "pool_lo": 0.45, "pool_hi": 1.15 if _low else 0.98, "pool_glow": 0.1,
-		"tex_wood": load(MAPLE_TEX)}
+		"tex_wood": Game.tex(MAPLE_TEX)}
 	# A painted sprung timber court, the grain under the paint.
 	_court(Color("5a8cc8"), Color("3a95a8"), Color("0a1a44"), VenueLook.FLOOR, VenueLook.PAINTED, VenueLook.PAINTED)
 	_runoff_edge(Color("2fd6e0"))
@@ -530,7 +530,7 @@ func _hall() -> Array:
 		"vig_size": Vector2(34.0, 22.0), "vig_dark": 0.86, "seat_col": Color("2a4f8e"), "stair_col": Color("8c929c"),
 		"density": 0.62, "aisle_every": 8.0, "lamp_col": Color("f2f6ff"), "pad": Color("1d4fa0"),
 		"stand_tint": Color(0.92, 0.93, 0.96), "pool_lo": 0.9, "pool_hi": 1.04, "pool_glow": 0.0,
-		"tex_wood": load(MAPLE_TEX), "tex_block": load(BLOCK_TEX), "tex_ceil": load(CEIL_TEX)}
+		"tex_wood": Game.tex(MAPLE_TEX), "tex_block": Game.tex(BLOCK_TEX), "tex_ceil": Game.tex(CEIL_TEX)}
 	if not _low:
 		_look["refl_pan"] = load(GYM_HDR)
 		_look["refl_amt"] = 0.22 if _gfx == Game.GFX_MEDIUM else 0.3
@@ -996,7 +996,7 @@ const TARMAC_TEX := "res://assets/venue/surfaces/asphalt_02_albedo_1k.jpg"
 func _outdoor() -> Array:
 	var sky := Sky.new()
 	var mat := VenueLook.sky()
-	mat.set_shader_parameter("bg", load(COURT_SKY))
+	mat.set_shader_parameter("bg", Game.tex(COURT_SKY))
 	mat.set_shader_parameter("yaw", 0.35)
 	mat.set_shader_parameter("bg_energy", 1.0 if _low else 0.95)
 	if not _low:
@@ -1018,7 +1018,7 @@ func _outdoor() -> Array:
 	_look = {"night": Color("26324a"), "fade_amt": 0.0, "sheen": 0.2 if _low else 0.26, "gloss": 140.0,
 		"vig_size": Vector2(34.0, 24.0), "vig_dark": 0.82, "density": 0.75, "lamp_col": Color("fff1dc"),
 		"pad": Color("1b4fa8"), "pool_lo": 0.86 if not _low else 1.0, "pool_hi": 1.06 if not _low else 1.24, "pool_glow": 0.04,
-		"tex_asph": load(ASPH_TEX), "tex_tarmac": load(TARMAC_TEX)}
+		"tex_asph": Game.tex(ASPH_TEX), "tex_tarmac": Game.tex(TARMAC_TEX)}
 	var hl := Court.HALF_L + Court.RUNOFF
 	var hw := Court.HALF_W + Court.RUNOFF
 	var fz := -hw - 1.5      # the far fence

@@ -8,7 +8,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 
 - Branch `claude/netball-game`, folder `netball-game/` (self-contained Godot 4.7.2 project), pages folder
   `netball-unleashed/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
-- Version 0.6.1-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
+- Version 0.7.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
   https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta.
 
 ## Done
@@ -78,6 +78,30 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   pass's release, the crowd's ooh and groan (Kabaddi Raid). The crowd's reactions had never played (match.gd asked
   for "crowd_crowd_ooh"): fixed. Sounds on court are 3D (eight speakers under the match, the oldest giving way); the
   pause menu holds every sound. About 0.5 MB added. Tests `_sounds` and `_sounds_in_play`.
+
+- The size update (October 2026, the owner: "the APK may grow, to make the game look and sound better"): Medium
+  and High load more, Low loads exactly what it did. Medium and High: the park court's sky at 4096 x 2048 (Poly
+  Haven's 8K tone-mapped netball_court, its tones matched to the 2K one; the 2K was magnified about five times on
+  screen, the clearest gain), the players' texture at 2048 and kit mask at 1024 (tools/player/make_textures.py, from
+  the owner's 4096 atlas), a crowd of 32 different people (tools/art/make_crowd.py: eight skin tones, hair styles
+  from cropped to afro, braids, buns and ponytails, builds, beanies, caps, sun hats, team scarves, glasses, an arm
+  up; a mask so shirts take each fan's colour and scarves and hats the team's; still one draw call), the venues'
+  beds as long stereo loops (65 s, 46 s, 2 min, where Low's repeat every 16-17 s) and four more big cheers, three
+  smaller, three more applause takes in the arena and two in the hall, two more each of the ooh and the groan
+  (tools/audio/make_sounds_hd.py, assets/audio/hd/). High also: the floor, wall and ceiling surfaces at 2K (Poly
+  Haven, CC0). All through `Game.tex` / `Game.HD_TEX` and `Game.hd()`. On every level: the owner's recorded referee
+  whistles (Pixabay, via the shared assets) replace the synthesised one: a short pip (three takes) for an
+  infringement or restart, a long blast (three takes) for the centre pass and a quarter's end, two pips for an
+  injury or a time-out, the final whistle, the gym take for long blasts in the hall; from the umpire who blows
+  (3D), quieter in the home screen's match. Draw calls and triangles unchanged at every level; video memory
+  (tests/perf_probe.gd now prints it; one level per process) Low unchanged (arena 29.7 MB, hall 29.5, outdoor
+  36.6), Medium 53.7 / 49.3 / 62.2 MB to 62.6 / 58.2 / 75.2, High 72.0 / 67.6 / 80.5 to 82.9 / 82.5 / 97.5. The Web
+  build's index.pck went from 38.9 MB to 89.5 MB (it carries each texture twice, S3TC and ETC2; the APK only ETC2,
+  so it grows by about half that: roughly 51 MB to 76 MB); 12.3 MB of new files in the repository. Tests:
+  `_low_unchanged` (each venue's Low textures and sizes as recorded from 0.6.0-beta, its bed; High the sharper
+  copies and the 32-person crowd), the whistle and the Medium/High sounds in `_sounds`. Low's screenshots before and
+  after: the play shots pixel-identical, the others differ only in the umpires' stride (driven by the wall clock),
+  the players' close-ups identical.
 
 ## Next
 
@@ -195,3 +219,15 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   debug key, as before, with a warning. The first build on the owner's key does not install over earlier betas
   (a one-time uninstall); every one after it does.
 
+- **The size update: where the bytes went, and where not.** Low is untouched (same files, draw calls, triangles,
+  video memory; a test holds it). The floors and walls repeat every 2-3 m, so their 1K textures already give
+  400-500 texels a metre, more than any camera shows (the broadcast camera sees about 40 pixels a metre of court,
+  the courtside one about 130): the 2K copies are on High only, and side by side at 1080p the floor looks the same;
+  4K was not used. What shows is the sky (magnified about five times at 2K), the crowd (32 people where there were
+  8 from one template), the players up close (slightly crisper faces and kit edges) and the sound (beds that no
+  longer loop audibly, a different cheer each goal). The crowd's sheet is drawn by a script (antialiased, 64 x 128
+  a person) rather than painted at startup: painting 32 at that size in GDScript would take seconds on a phone.
+  The beds are stereo 44.1 kHz on Medium and High (mono 22 kHz on Low); sounds are loaded only by the levels that
+  play them. No 8K sky: OpenGL ES 3.0 only promises 2048, and 4096 is safe on the phones that run Medium.
+- **Whistles: the owner's recordings on every level** (sound costs no frame time; about 0.1 MB). Picked by a
+  generator of the sounds' own so the match's random draws (the umpires', the players') stay as they were.

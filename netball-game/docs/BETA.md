@@ -9,6 +9,14 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.7.0-beta
+
+- **Real referee whistles**: short pips for infringements, a long blast for the centre pass and the end of a
+  quarter, a double for stoppages and the final whistle, with the hall's own echo.
+- **On Medium and High**: a sharper sky at the park court, sharper players up close, a crowd of 32 different people
+  (hats, scarves in the team's colours, hair, builds) and longer, livelier crowd sounds with more cheers and
+  applause. Low is exactly as before.
+
 ## New in 0.6.1-beta
 
 - Signed with the owner's beta key: from this version on, each beta installs over the last. **This one does not

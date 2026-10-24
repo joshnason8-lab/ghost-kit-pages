@@ -211,4 +211,4 @@ func _on_version_input(e: InputEvent) -> void:
 		Game.settings.dev = not bool(Game.settings.dev)
 		Game.save_settings()
 		_ver.text = tr("DEV_ON") if Game.settings.dev else tr("DEV_OFF")
-		Sfx.play("whistle", -10.0)
+		Sfx.whistle("short", Vector3.ZERO, -10.0)

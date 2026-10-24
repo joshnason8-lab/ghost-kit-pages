@@ -361,7 +361,7 @@ func _go_live() -> void:
 	if String(restart.kind) == Rules.CENTRE:
 		_cp_whistled = true
 		cp_n += 1
-	Sfx.play("whistle", -6.0, 1.05)
+	_whistle("long" if String(restart.kind) == Rules.CENTRE else "short", -6.0)
 	game_event.emit("whistle", {"kind": restart.kind})
 
 
@@ -551,7 +551,6 @@ func _run_loose() -> void:
 	if not Court.on_court(b) and ball.pos.y < 0.4:
 		var crossed := Court.clamp_court(b)
 		_award(Rules.throw_in(last_touch, crossed), null, "throw_in")
-		Sfx.play("whistle", -8.0)
 		return
 	if ball.pos.y > 2.6:
 		return
@@ -599,9 +598,25 @@ func _gain(pl: Player, how: String) -> void:
 
 # ---------------------------------------------------------------- sounds on court
 
+## The umpire's whistle (Sfx.whistle: "short", "long", "double" or "final"), from the umpire controlling where it
+## happened (at; the ball by default), her whistle at head height. The home screen's match whistles quietly.
+func _whistle(kind: String, volume_db: float, at = null) -> void:
+	var spot: Vector2 = at if at is Vector2 else ball.court_pos()
+	var from := Vector3(spot.x, 1.6, spot.y)
+	var best := INF
+	for u in umpires:
+		var d: float = Vector2(u.global_position.x, u.global_position.z).distance_to(spot) - (1000.0 if u.controls(spot) else 0.0)
+		if d < best:
+			best = d
+			from = (u.global_position as Vector3) + Vector3(0, 1.6, 0)
+	if bool(config.get("attract", false)):
+		volume_db -= 12.0
+	Sfx.whistle(kind, from, volume_db)
+
+
 func _goal_whistle() -> void:
 	if is_inside_tree() and not paused:
-		Sfx.play("whistle_long", -8.0)
+		_whistle("long", -8.0)
 
 
 ## The ball on the floor (a bounce pass, a loose ball): timber indoors, asphalt outdoors; louder the harder it lands.
@@ -859,7 +874,7 @@ func _award(a: Dictionary, by: Player, kind: String) -> void:
 	for u in umpires:
 		if u.controls(at):
 			u.call_signal(_signal_for(kind), team_dir(int(a.to)))
-	Sfx.play("whistle", -4.0)
+	_whistle("short", -4.0, at)
 	# Now and then a player is hurt in the contact: the umpire will hold time (R10).
 	if kind == "contact" and by and not bool(config.get("no_injuries", false)) and rng.randf() < 0.04:
 		var hurt: Player = null
@@ -911,7 +926,7 @@ func _end_period() -> void:
 	if shot_info.get("released", false):
 		return
 	var nxt := Rules.next_period(q, score, need_winner)
-	Sfx.play("whistle" if demo else "whistle_long", -2.0, 0.95)
+	_whistle("final" if nxt == 0 else "long", -2.0)
 	game_event.emit("period_end", {"q": q})
 	if nxt == 0:
 		_enter("over")
@@ -957,7 +972,7 @@ func call_timeout(t: int) -> void:
 		_setup_centre()
 	_enter("timeout")
 	_break_skip = false
-	Sfx.play("whistle", -6.0)
+	_whistle("double", -6.0)
 	game_event.emit("timeout", {"team": t})
 	if hud:
 		hud.show_break(-1, q, t)
@@ -973,6 +988,7 @@ func _injury_stop() -> void:
 	for u in umpires:
 		if u.controls(hurt.p):
 			u.call_signal("time", 1)
+	_whistle("double", -6.0, hurt.p)
 	game_event.emit("injury", {"team": hurt.team, "by": hurt.pos})
 	log.append({"t": _elapsed(), "q": q, "injury": hurt.pos, "team": hurt.team})
 	if hud:

@@ -35,6 +35,7 @@ func _ready() -> void:
 	await _crowd_facing()
 	_sounds()
 	await _sounds_in_play()
+	await _low_unchanged()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -887,7 +888,7 @@ func _sounds() -> void:
 			if f.ends_with(".gd"):
 				for m in re.search_all(FileAccess.get_file_as_string(dir + "/" + f)):
 					names[m.get_string(2)] = f
-	check(names.size() >= 8, "found the scripts' sounds (%d)" % names.size())
+	check(names.size() >= 6, "found the scripts' sounds (%d)" % names.size())
 	for n in names:
 		check(Sfx.streams.has(n) or Sfx.VARIANTS.has(n), "%s plays \"%s\": it exists" % [names[n], n])
 	for v in ["arena", "hall", "outdoor"]:
@@ -899,7 +900,33 @@ func _sounds() -> void:
 	Sfx.pause(true)
 	Sfx.pause(false)
 	Sfx.venue("arena")
-	check(Sfx._crowd.stream == Sfx.streams.get("amb_arena"), "the arena's bed is the one set")
+	check(Sfx._crowd.stream == Sfx.bed("arena"), "the arena's bed is the one set")
+	# The whistle: recorded takes of each kind, the gym's in a hall.
+	for k in ["whistle_short_1", "whistle_short_2", "whistle_short_3", "whistle_long_1", "whistle_long_2", "whistle_long_3",
+			"whistle_double", "whistle_final", "whistle_gym"]:
+		check(Sfx.streams.get(k) is AudioStreamOggVorbis, "the whistle: %s" % k)
+	Sfx.asked.clear()
+	for kind in ["short", "long", "double", "final"]:
+		Sfx.whistle(kind, Vector3.ZERO)
+	check(int(Sfx.asked.get("whistle", 0)) == 4 and Sfx.asked.size() == 1, "every whistle counts as the whistle (%s)" % [Sfx.asked])
+	# Medium and High: the long beds and the extra takes, each loading and credited; Low's beds are Low's.
+	var was: int = int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_HIGH
+	for v in ["arena", "hall", "outdoor"]:
+		var b: AudioStream = Sfx.bed(v)
+		check(b is AudioStreamOggVorbis and (b as AudioStreamOggVorbis).loop and b.get_length() > 40.0
+			and b != Sfx.streams.get("amb_" + v), "High: the %s's long bed (%.0f s)" % [v, b.get_length() if b else 0.0])
+	for k in Sfx.HD_TAKES:
+		for i in int(Sfx.HD_TAKES[k]):
+			check(Sfx.streams.get("hd/%s_%d" % [k, i + 2]) is AudioStreamOggVorbis, "High: the take hd/%s_%d" % [k, i + 2])
+	for f in DirAccess.get_files_at("res://assets/audio/hd"):
+		if f.ends_with(".ogg"):
+			var stem := RegEx.create_from_string("_[0-9]+$").sub(f.trim_suffix(".ogg"), "")
+			check(credits.contains("`hd/" + stem), "sound hd/%s is credited in docs/SOUNDS.md" % f)
+	Game.settings.graphics = Game.GFX_LOW
+	for v in ["arena", "hall", "outdoor"]:
+		check(Sfx.bed(v) == Sfx.streams.get("amb_" + v), "Low: the %s's bed as before" % v)
+	Game.settings.graphics = was
 
 
 ## The sounds at work: a match you play has the catches, the whistle and the steps of its surface, its venue's bed,
@@ -919,7 +946,7 @@ func _sounds_in_play() -> void:
 		check(int(Sfx.asked.get("squeak", 0)) <= 900 / 27 + 1, "%s: squeaks kept sparse (%d)" % [venue, int(Sfx.asked.get("squeak", 0))])
 		check(int(Sfx.asked.get(surface, 0)) <= 900 / 3 + 1, "%s: steps kept sparse (%d)" % [venue, int(Sfx.asked.get(surface, 0))])
 		check(m.find_children("*", "AudioStreamPlayer3D", false, false).size() == Sfx.VOICES_3D, "%s: %d speakers on court, no more" % [venue, Sfx.VOICES_3D])
-		check(Sfx._crowd.stream == Sfx.streams.get("amb_" + venue), "%s: the venue's own bed" % venue)
+		check(Sfx._crowd.stream == Sfx.bed(venue), "%s: the venue's own bed" % venue)
 		m.set_paused(true)
 		check(not Sfx._crowd.playing or Sfx._crowd.stream_paused, "%s: the pause menu holds the crowd" % venue)
 		m.set_paused(false)
@@ -938,3 +965,102 @@ func _sounds_in_play() -> void:
 	d.queue_free()
 	await frames(2)
 	Sfx.stop_all()
+
+
+## The textures Low draws with in each venue, as they were before Medium and High got sharper ones (recorded from
+## 0.6.0-beta): Low loads exactly these, at these sizes; Medium and High load the sharper copies (Game.HD_TEX) and
+## the crowd's 32-figure sheet instead.
+const LOW_TEXTURES := {
+	"arena": ["<ImageTexture> 128x64", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
+		"res://assets/ui/bib_letters.png 896x128", "res://assets/venue/arena_atlas.jpg 1024x2048",
+		"res://assets/venue/surfaces/white_maple_veneer_albedo_1k.jpg 1024x1024"],
+	"hall": ["<ImageTexture> 128x64", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
+		"res://assets/ui/bib_letters.png 896x128", "res://assets/venue/hall_atlas.jpg 1024x1024",
+		"res://assets/venue/surfaces/ceiling_interior_albedo_1k.jpg 1024x1024",
+		"res://assets/venue/surfaces/concrete_block_wall_normal_1k.jpg 1024x1024",
+		"res://assets/venue/surfaces/white_maple_veneer_albedo_1k.jpg 1024x1024"],
+	"outdoor": ["<ImageTexture> 128x64", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
+		"res://assets/ui/bib_letters.png 896x128", "res://assets/venue/outdoor_atlas.jpg 2048x2048",
+		"res://assets/venue/outdoor_cards.png 2048x1024", "res://assets/venue/skies/netball_court_sky_2k.jpg 2048x1024",
+		"res://assets/venue/surfaces/asphalt_02_albedo_1k.jpg 1024x1024",
+		"res://assets/venue/surfaces/clean_asphalt_albedo_1k.jpg 1024x1024"],
+}
+
+
+## Low is as it was: in each venue a Low match draws with exactly the textures it did before (LOW_TEXTURES), none of
+## the sharper copies, and its crowd and sounds are Low's; on High the same match uses the sharper copies.
+func _low_unchanged() -> void:
+	var was: int = int(Game.settings.graphics)
+	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		for venue in ["arena", "hall", "outdoor"]:
+			var m: Match = (load("res://game/match.gd") as Script).new()
+			m.config = {"home": "AUS", "away": "NZL", "venue": venue, "user_team": 0, "seed": 4, "quarter": 15, "mode": "quick"}
+			add_child(m)
+			await frames(3)
+			var got := textures_in(m)
+			if g == Game.GFX_LOW:
+				var want := PackedStringArray(LOW_TEXTURES[venue])
+				check(got == want, "Low, %s: the same textures as before (got %s)" % [venue, ", ".join(got)])
+				check(Sfx._crowd.stream == Sfx.streams.get("amb_" + venue), "Low, %s: the same bed as before" % venue)
+			else:
+				var hd := 0
+				for t in got:
+					for k in Game.HD_TEX:
+						if t.begins_with(Game.tex_path(k, g) + " ") and Game.tex_path(k, g) != k:
+							hd += 1
+						check(not t.begins_with(String(k) + " "), "High, %s: not the Low copy of %s" % [venue, k])
+				check(hd >= 3, "High, %s: the sharper textures (%d)" % [venue, hd])
+				check(", ".join(got).contains("crowd_hd.png 2048x512"), "High, %s: the crowd's 32 people" % venue)
+			m.queue_free()
+			await frames(2)
+	Game.settings.graphics = was
+
+
+## Every texture a match's scene draws with (its materials' textures, the sky's), as "path WxH" (a texture made in
+## code: "<ClassName> WxH"), sorted and without repeats.
+static func textures_in(root: Node) -> PackedStringArray:
+	var seen := {}
+	var mats: Array[Material] = []
+	for n in root.find_children("*", "", true, false):
+		if n is GeometryInstance3D:
+			var g := n as GeometryInstance3D
+			if g.material_override:
+				mats.append(g.material_override)
+			if g is MeshInstance3D and (g as MeshInstance3D).mesh:
+				var mi := g as MeshInstance3D
+				for s in mi.mesh.get_surface_count():
+					for m in [mi.get_surface_override_material(s), mi.mesh.surface_get_material(s)]:
+						if m:
+							mats.append(m)
+			if g is MultiMeshInstance3D and (g as MultiMeshInstance3D).multimesh and (g as MultiMeshInstance3D).multimesh.mesh:
+				var mm := (g as MultiMeshInstance3D).multimesh.mesh
+				for s in mm.get_surface_count():
+					if mm.surface_get_material(s):
+						mats.append(mm.surface_get_material(s))
+		elif n is WorldEnvironment and (n as WorldEnvironment).environment and (n as WorldEnvironment).environment.sky:
+			mats.append((n as WorldEnvironment).environment.sky.sky_material)
+	var done := {}
+	while not mats.is_empty():
+		var m: Material = mats.pop_back()
+		if m == null or done.has(m):
+			continue
+		done[m] = true
+		if m.next_pass:
+			mats.append(m.next_pass)
+		var texs: Array = []
+		if m is ShaderMaterial and (m as ShaderMaterial).shader:
+			for u in (m as ShaderMaterial).shader.get_shader_uniform_list():
+				texs.append((m as ShaderMaterial).get_shader_parameter(u.name))
+		elif m is BaseMaterial3D:
+			for p in m.get_property_list():
+				if String(p.name).ends_with("_texture"):
+					texs.append(m.get(p.name))
+		for t in texs:
+			if t is Texture2D:
+				var tex := t as Texture2D
+				var name := tex.resource_path if tex.resource_path != "" else "<%s>" % tex.get_class()
+				seen["%s %dx%d" % [name, tex.get_width(), tex.get_height()]] = true
+	var out := PackedStringArray(seen.keys())
+	out.sort()
+	return out
