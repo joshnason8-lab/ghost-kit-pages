@@ -28,8 +28,9 @@ game's limbs hang straight down; the models stand in an A-pose), and from then o
 After that the model's own arms reach for the stick (two-bone IK on its own arm lengths), sliding along the shaft
 when the place the game wants is beyond reach, so the hands never leave the stick.
 
-The models' own Running and Walking clips are kept in the scenes but not played: the game's stride is matched to
-the ground covered, and the arms are on the stick.
+The models' own Running and Walking clips are kept in the scenes but not played. Since 0.5.0 the legs, hips and
+trunk of a moving player or referee come from motion capture instead (docs/MOCAP.md), played on the game's skeleton
+like everything else, the stride matched to the ground covered and the arms on the stick.
 
 ## Remaking them
 

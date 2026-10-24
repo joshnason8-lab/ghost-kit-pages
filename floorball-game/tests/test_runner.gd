@@ -32,6 +32,7 @@ func _ready() -> void:
 	await _match_parts()
 	await _coach()
 	await _crowd_faces()
+	_mocap()
 	await _matches()
 	Game.settings = keep
 	Game.delete_cup()
@@ -749,6 +750,58 @@ func _crowd_faces() -> void:
 		check(n > 50 and bad == 0, "%s: every spectator faces the rink (%d of %d turned away, worst %.2f)" % [venue, bad, n, worst])
 		m.queue_free()
 		await frames(2)
+
+
+## Motion capture (game/mocap.gd): every cycle loads whole, and a player running at any speed (ahead, on a slant,
+## backward) keeps a foot that is down (in the captured cycle, at the phase he is at) on the floor where it landed: it
+## slides no more than SLIDE while down, its ankle stays low then (the heel rises as it pushes off), and no foot goes
+## through the floor.
+func _mocap() -> void:
+	const SLIDE := 0.02
+	for g in Mocap.GAITS:
+		var c := Mocap.clip(g)
+		var ok: bool = not c.is_empty() and c.frames.size() >= 10 and c.bones.size() == Body.BONES.size() - 1 and c.stride > 0.5
+		if ok:
+			for f: PackedFloat32Array in c.frames:
+				ok = ok and f.size() == 3 + c.bones.size() * 4
+				for i in c.bones.size():
+					var q := Quaternion(f[3 + i * 4], f[4 + i * 4], f[5 + i * 4], f[6 + i * 4])
+					ok = ok and absf(q.length() - 1.0) < 0.01
+			ok = ok and c.contacts.get("l", []).size() > 0 and c.contacts.get("r", []).size() > 0
+		check(ok, "mocap: the %s cycle loads (%s, %d frames, stride %.2f m at %.2f m/s)" % [g, c.get("source", "?"), c.get("frames", []).size(), c.get("stride", 0.0), c.get("speed", 0.0)])
+	for ang in [0.0, 45.0, 180.0]:
+		for speed in [1.0, 1.3, 2.2, 3.1, 4.2, 6.0, 7.6]:
+			var p := Player.new({"id": "SWE07", "height": 1.84, "num": 7}, 0, "F", 1)
+			p.off_boards = true   # a long straight run, the boards out of the way
+			add_child(p)
+			var size := 1.84 / 1.8
+			var gaits: Array = Mocap.gaits_at(speed / size)
+			var worst := 0.0
+			var down := 0
+			var highest := 0.0
+			var lowest := 1.0
+			var start := {}
+			for n in 300:
+				p.want_vel = Vector2(speed, 0)
+				p.want_face = -deg_to_rad(ang)
+				p.step(1.0 / 60.0)
+				if n < 120:
+					continue
+				for side in ["l", "r"]:
+					var f := p.body.global_transform * p.body._fk("foot_" + side).origin
+					lowest = minf(lowest, f.y)
+					var is_down: bool = Mocap.down(gaits[0], side, p._phase) and (gaits[2] < 0.05 or Mocap.down(gaits[1], side, p._phase))
+					if is_down:
+						down += 1
+						highest = maxf(highest, f.y - 0.04 * size)
+						if not start.has(side):
+							start[side] = f
+						worst = maxf(worst, Vector2(f.x - start[side].x, f.z - start[side].z).length())
+					else:
+						start.erase(side)
+			check(down > 20 and worst < SLIDE and highest < 0.12 and lowest > 0.0,
+				"mocap: running %.1f m/s at %d degrees, a foot down stays put (slides %.3f m, %d frames down, at most %.3f m up then, lowest %.3f m)" % [speed, int(ang), worst, down, highest, lowest])
+			p.queue_free()
 
 
 # ---------------------------------------------------------------- matches

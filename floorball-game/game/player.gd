@@ -200,15 +200,15 @@ func _place() -> void:
 # ---------------------------------------------------------------- the body's motion
 
 ## The pose for this frame from what he is doing: the run's stride from distance covered, the stance, the stick.
+## On the move the legs, hips and trunk are motion capture (game/mocap.gd: walk, jog and run blended by speed, the
+## cycle advanced by the ground covered so the feet stay put while down); over that go the floorball stance (bent
+## forward over the stick, knees bent) and the arms on the stick. Standing, turning on the spot and a goalkeeper's
+## work are posed here in code.
 func _animate(dt: float) -> void:
 	if body == null:
 		return
 	var sp := vel.length()
-	var stride := STRIDE * clampf(0.45 + sp / MAX_SPEED * 0.55, 0.45, 1.0)
-	_phase = fposmod(_phase + sp * dt / stride, 1.0)
 	var run := clampf(sp / 3.0, 0.0, 1.0)
-	var k := sin(_phase * TAU)
-	var k2 := sin(_phase * TAU + PI)
 	# Forward lean with speed, a low stance near the ball (a floorball player plays bent at the knees).
 	var lean_want := 26.0 + run * 8.0   # a floorball player plays bent forward over his stick
 	if act == "tackle":
@@ -224,23 +224,50 @@ func _animate(dt: float) -> void:
 			crouch_want = 0.6
 	_lean = lerpf(_lean, lean_want, minf(1.0, 6.0 * dt))
 	_crouch = lerpf(_crouch, crouch_want, minf(1.0, 6.0 * dt))
+	# The legs run the way he moves; the trunk keeps facing where he faces. Moving backward the cycle runs backward.
+	var size := float(data.get("height", 1.8)) / 1.8
+	var mv := Vector2(vel.dot(dir()), vel.dot(dir().orthogonal()))   # ahead, and to his left
+	var yaw := atan2(mv.y, mv.x) if sp > 0.05 else 0.0   # the way he moves, turned from his facing (left +)
+	var back := absf(yaw) > deg_to_rad(105.0)
+	if back:
+		yaw -= signf(yaw) * PI
+	var legs_yaw := clampf(yaw, -deg_to_rad(70.0), deg_to_rad(70.0))
+	var along := sp * cos(yaw - legs_yaw) * (-1.0 if back else 1.0)   # ground covered along the legs' way
+	var moc := 0.0
+	var gait := {}
+	if role != "G" and Mocap.available():
+		moc = smoothstep(0.15, 0.9, sp)
+		var g: Array = Mocap.gaits_at(sp / size)
+		var stride_m: float = lerpf(g[0].stride, g[1].stride, g[2]) * size
+		var stride_p := STRIDE * clampf(0.45 + sp / MAX_SPEED * 0.55, 0.45, 1.0)
+		_phase = fposmod(_phase + along * dt / lerpf(stride_p, stride_m, moc), 1.0)
+		gait = Mocap.blend(Mocap.sample(g[0], _phase), Mocap.sample(g[1], _phase), g[2])
+		gait.lean = lerpf(g[0].lean, g[1].lean, g[2])
+	else:
+		var stride := STRIDE * clampf(0.45 + sp / MAX_SPEED * 0.55, 0.45, 1.0)
+		_phase = fposmod(_phase + absf(along) * dt / stride, 1.0)
+	# The cycle's phase 0 is the left foot at its farthest forward.
+	var k := cos(_phase * TAU)
+	var k2 := -k
 	var swing := 34.0 * run
 	var p := {}
 	var knee := 12.0 + _crouch * 30.0
 	p.thigh_l = Vector3(-k * swing - knee * 0.6, 0, 3)
 	p.thigh_r = Vector3(-k2 * swing - knee * 0.6, 0, -3)
-	p.shin_l = Vector3(knee + maxf(0.0, -k) * 55.0 * run, 0, 0)
-	p.shin_r = Vector3(knee + maxf(0.0, -k2) * 55.0 * run, 0, 0)
+	p.shin_l = Vector3(knee + maxf(0.0, -sin(_phase * TAU)) * 55.0 * run, 0, 0)
+	p.shin_r = Vector3(knee + maxf(0.0, sin(_phase * TAU)) * 55.0 * run, 0, 0)
 	p.foot_l = Vector3(-knee * 0.4, 0, 0)
 	p.foot_r = Vector3(-knee * 0.4, 0, 0)
 	p.hips_y = -0.03 - _crouch * 0.12 + absf(sin(_phase * TAU * 2.0)) * 0.035 * run
 	p.spine = Vector3(_lean * 0.45, 0, 0)
 	p.chest = Vector3(_lean * 0.4, k * 4.0 * run, 0)
 	p.head = Vector3(-_lean * 0.6, 0, 0)
-	p.upperarm_l = Vector3(k2 * 28.0 * run, 0, 8)
-	p.upperarm_r = Vector3(k * 28.0 * run, 0, -8)
+	p.upperarm_l = Vector3(k * 28.0 * run, 0, 8)
+	p.upperarm_r = Vector3(k2 * 28.0 * run, 0, -8)
 	p.forearm_l = Vector3(-35, 0, 0)
 	p.forearm_r = Vector3(-35, 0, 0)
+	if moc > 0.0:
+		_mocap_legs(p, gait, moc, legs_yaw)
 	var t := act_t / maxf(0.01, act_len) if act != "" else 0.0
 	if role == "G":
 		_keeper_pose(p, t)
@@ -255,6 +282,47 @@ func _animate(dt: float) -> void:
 	if role != "G" and role != "R":
 		_stick(dt, t)
 	body.sync()
+
+
+## Motion capture under the floorball stance: the captured legs, hips and trunk, the legs turned to the way he
+## moves (the trunk turned back to face where he faces), the knees bent a little deeper and the trunk bent forward over
+## the stick as a layer on top; mixed with the pose in code by w.
+func _mocap_legs(p: Dictionary, g: Dictionary, w: float, legs_yaw: float) -> void:
+	var turn := Quaternion(Vector3.UP, legs_yaw)
+	var hips: Quaternion = turn * g.hips
+	var off: Vector3 = turn * (g.hips_off as Vector3)
+	var legs := {}
+	for b in ["thigh_l", "thigh_r", "shin_l", "shin_r", "foot_l", "foot_r"]:
+		legs[b] = g[b]
+	# The trunk: the captured sway, turned back to his facing, then bent forward by the stance's lean, less what the
+	# captured runner already leans.
+	var extra := deg_to_rad(maxf(0.0, _lean - float(g.lean)))
+	var spine: Quaternion = hips.inverse() * Quaternion(Vector3.UP, -legs_yaw) * hips * g.spine * Quaternion(Vector3.RIGHT, extra * 0.45)
+	var trunk := {
+		"hips": hips,
+		"spine": spine,
+		"chest": (g.chest as Quaternion) * Quaternion(Vector3.RIGHT, extra * 0.4),
+		"head": (g.head as Quaternion) * Quaternion(Vector3.RIGHT, -extra * 0.6),
+	}
+	if role == "R" and not act.begins_with("signal_"):
+		# A referee runs with his arms free: theirs too.
+		for b in ["upperarm_l", "forearm_l", "upperarm_r", "forearm_r"]:
+			trunk[b] = g[b]
+	# The floorball stance: the hips lower than a jogger's, the knees bending to keep each foot where the capture put it
+	# (so a foot that is down stays down where it is).
+	var cap := {"hips": hips, "hips_side": off.x, "hips_y": off.y, "hips_fwd": off.z}
+	cap.merge(legs)
+	var feet := [Body.leg(cap, "l")[2], Body.leg(cap, "r")[2]]
+	cap.hips_y = off.y - _crouch * 0.1
+	Body.leg_ik(cap, "l", feet[0])
+	Body.leg_ik(cap, "r", feet[1])
+	for b in legs:
+		p[b] = Body._q(p[b]).slerp(cap[b], w)
+	for b in trunk:
+		p[b] = Body._q(p.get(b, Vector3.ZERO)).slerp(trunk[b], w)
+	p.hips_y = lerpf(p.hips_y, cap.hips_y, w)
+	p.hips_side = off.x * w
+	p.hips_fwd = off.z * w
 
 
 ## The stick: blade on the floor in front, to his stick side; drawn back and swept through in a shot, never above the

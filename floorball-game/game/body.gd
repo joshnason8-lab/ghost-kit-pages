@@ -145,12 +145,15 @@ func apply(p: Dictionary) -> void:
 		return
 	for i in BONES.size() - 1:
 		var n: String = BONES[i][0]
-		var e: Vector3 = p.get(n, Vector3.ZERO)
-		skeleton.set_bone_pose_rotation(i, _q(e))
+		skeleton.set_bone_pose_rotation(i, _q(p.get(n, Vector3.ZERO)))
 	skeleton.set_bone_pose_position(0, BONES[0][2] + Vector3(float(p.get("hips_side", 0.0)), float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
 
 
-static func _q(e: Vector3) -> Quaternion:
+## A bone's turn in a pose: Euler degrees (YXZ), or a Quaternion as it is (motion capture, game/mocap.gd).
+static func _q(v: Variant) -> Quaternion:
+	if v is Quaternion:
+		return v
+	var e: Vector3 = v
 	return Basis.from_euler(Vector3(deg_to_rad(e.x), deg_to_rad(e.y), deg_to_rad(e.z)), EULER_ORDER_YXZ).get_rotation_quaternion()
 
 
@@ -169,6 +172,38 @@ func _fk(name: String) -> Transform3D:
 			off += Vector3(float(pose.get("hips_side", 0.0)), float(pose.get("hips_y", 0.0)), float(pose.get("hips_fwd", 0.0)))
 		xf = xf * Transform3D(Basis(_q(pose.get(BONES[b][0], Vector3.ZERO))), off)
 	return xf
+
+
+## A leg in a pose (model space): [hip, knee, ankle] and the thigh's and hips' turns, the same sums as the skeleton.
+static func leg(p: Dictionary, side: String) -> Array:
+	var hips := Basis(_q(p.get("hips", Vector3.ZERO)))
+	var root: Vector3 = BONES[0][2] + Vector3(float(p.get("hips_side", 0.0)), float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0)))
+	var i := 11 if side == "l" else 14
+	var hip: Vector3 = root + hips * (BONES[i][2] as Vector3)
+	var thigh := hips * Basis(_q(p.get("thigh_" + side, Vector3.ZERO)))
+	var knee: Vector3 = hip + thigh * (BONES[i + 1][2] as Vector3)
+	var shin := thigh * Basis(_q(p.get("shin_" + side, Vector3.ZERO)))
+	var ankle: Vector3 = knee + shin * (BONES[i + 2][2] as Vector3)
+	return [hip, knee, ankle, thigh, hips]
+
+
+## Bends a leg of a pose so its ankle reaches target (model space): the knee about its own hinge, then the whole leg
+## swung from the hip, the foot kept as it was turned. Out of reach, the leg straightens toward it.
+static func leg_ik(p: Dictionary, side: String, target: Vector3) -> void:
+	var l := leg(p, side)
+	var was := (l[3] as Basis) * Basis(_q(p.get("shin_" + side, Vector3.ZERO)))
+	var a := 0.44
+	var b := 0.42
+	var d := clampf((target - (l[0] as Vector3)).length(), 0.05, a + b - 0.001)
+	var want := acos(clampf((a * a + b * b - d * d) / (2.0 * a * b), -1.0, 1.0))
+	var now := acos(clampf(((l[0] as Vector3) - (l[1] as Vector3)).normalized().dot(((l[2] as Vector3) - (l[1] as Vector3)).normalized()), -1.0, 1.0))
+	p["shin_" + side] = _q(p.get("shin_" + side, Vector3.ZERO)) * Quaternion(Vector3.RIGHT, now - want)
+	l = leg(p, side)
+	var swing := _from_to(((l[2] as Vector3) - (l[0] as Vector3)).normalized(), (target - (l[0] as Vector3)).normalized())
+	var hips: Basis = l[4]
+	p["thigh_" + side] = (hips.inverse() * swing * (l[3] as Basis)).get_rotation_quaternion()
+	var now_shin := Basis(_q(p["thigh_" + side])) * Basis(_q(p["shin_" + side]))
+	p["foot_" + side] = ((hips * now_shin).inverse() * was * Basis(_q(p.get("foot_" + side, Vector3.ZERO)))).get_rotation_quaternion()
 
 
 ## The stick: its grip end at top, its blade's heel at heel (both in model space), the blade running from the heel

@@ -1,6 +1,6 @@
 # Floorball Unleashed beta: install and test
 
-Version **0.4.1-beta** (0.4: the halls rebuilt: birch walls, ceilings with lights, folded-up basketball boards, a wooden school gym, steel bleachers in the arena; 0.4.1: an aluminium stand in the sports hall, Nordic fire alarms, pale birch gym benches). This page covers installing the beta on an Android phone, what to try, and how to report
+Version **0.5.0-beta** (0.5: the players and referees walk, jog and run with real people's motion capture, their feet planted as they run; 0.4: the halls rebuilt: birch walls, ceilings with lights, folded-up basketball boards, a wooden school gym, steel bleachers in the arena; 0.4.1: an aluminium stand in the sports hall, Nordic fire alarms, pale birch gym benches). This page covers installing the beta on an Android phone, what to try, and how to report
 what you find. docs/PLAYTEST.md has what the last playtest found and what was fixed.
 
 ## What phone
@@ -65,6 +65,10 @@ Unleashed first (that clears the saves).
   closes the game. Leave the app mid-match and come back: the match should be paused.
 
 ## What to look for
+
+- **How the players run** (new in 0.5): do they look like people running? Watch the feet: a foot on the floor should
+  stay put, not skate. Running backward and at an angle too. Anything that looks wrong (a leg crossing through the
+  stick, a twist at the hips), with what he was doing.
 
 - Can you follow the ball? Can you always find your player?
 - Do the buttons sit where your thumbs are? Is anything under your thumbs that you need to see?

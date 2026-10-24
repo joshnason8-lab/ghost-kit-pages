@@ -9,6 +9,8 @@ Players, referees, the stick, the sports hall's aluminium stand, the gym benches
 maker's own models, made with Meshy. The halls' lamps, clock and floor sign, and their surfaces (block wall, maple,
 wood floor, rubber floor): Poly Haven (polyhaven.com), CC0. The rink, the basketball boards, the rest of the halls and the ball made in code for the game; the whistles, the ball's sounds, the horn, the drum and the menu music made for it. Crowd reactions
 from Kabaddi Raid, by the same maker.
+How the players and referees walk and run: motion capture data from mocap.cs.cmu.edu. The database was created with
+funding from NSF EIA-0196217.
 Floorball's rules: the international Rules of the Game, as the game understands them. The game is not made or
 endorsed by any federation, league or team."""
 
