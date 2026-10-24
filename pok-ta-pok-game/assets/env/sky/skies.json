@@ -1,0 +1,86 @@
+{
+ "qwantani_dusk_2_puresky": {
+  "sun_u": 0.6079,
+  "sun_v": 0.4404,
+  "sun_elevation": 10.7,
+  "sun_colour": [
+   1.0,
+   0.446,
+   0.342
+  ],
+  "ambient": [
+   0.912,
+   0.731,
+   1.0
+  ],
+  "ambient_strength": 1.58,
+  "horizon": [
+   1.0,
+   0.637,
+   0.753
+  ]
+ },
+ "qwantani_noon_puresky": {
+  "sun_u": 0.6001,
+  "sun_v": 0.2236,
+  "sun_elevation": 49.7,
+  "sun_colour": [
+   1.0,
+   0.969,
+   0.934
+  ],
+  "ambient": [
+   0.944,
+   0.958,
+   1.0
+  ],
+  "ambient_strength": 1.42,
+  "horizon": [
+   0.74,
+   0.86,
+   1.0
+  ]
+ },
+ "kloofendal_48d_partly_cloudy_puresky": {
+  "sun_u": 0.5952,
+  "sun_v": 0.2373,
+  "sun_elevation": 47.3,
+  "sun_colour": [
+   0.988,
+   1.0,
+   0.914
+  ],
+  "ambient": [
+   0.838,
+   0.892,
+   1.0
+  ],
+  "ambient_strength": 1.304,
+  "horizon": [
+   0.766,
+   0.823,
+   1.0
+  ]
+ },
+ "kloppenheim_02_puresky": {
+  "sun_u": 0.5991,
+  "sun_v": 0.4033,
+  "sun_elevation": 17.4,
+  "sun_colour": [
+   0.801,
+   0.863,
+   1.0
+  ],
+  "ambient": [
+   0.703,
+   0.809,
+   1.0
+  ],
+  "ambient_strength": 0.603,
+  "horizon": [
+   0.713,
+   0.843,
+   1.0
+  ]
+ }
+}
