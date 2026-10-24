@@ -1,8 +1,23 @@
 # Meshy brief
 
-No Meshy credits were spent on this game. The account has very few left; the owner or the lead decides. Everything
-in the game is built in code or taken from the shared assets. These are the models that would improve it most, in
-order. Each entry gives the prompt to paste, its real-world size, and a triangle budget for the High model; a `_low`
+## Made (0.2.0)
+
+The owner allowed credits. `tools/meshy/meshy_batch.py` (from the kabaddi game) made these from
+`tools/meshy/assets.json`; `tools/meshy/prepare.gd` (from the floorball game) cut them for phones into
+`assets/people/`. 560 credits in all (1,763 before, 1,203 after); previews first, checked, then textured and rigged.
+
+| Model | What | Use |
+|---|---|---|
+| player_lean, player_tall, player_stocky | bare-chested, barefoot, tight leather shorts (the gamuza), rigged | every player; gear in code |
+| judge_cap | older man, blue shirt, cotton trousers, rigged | both judges (one with a code-built straw hat) |
+| fan_ranchero, fan_blouse, fan_elder, fan_tshirt, fan_rebozo, fan_boy, fan_young_woman, fan_guayabera | townspeople, standing | the crowd's sheet |
+
+The raw downloads stay out of the repo (`assets/meshy/.gitignore`); the manifest keeps the task ids, so the script
+fetches them again without spending credits.
+
+## Still to make
+
+These are the models that would improve it most, in order. Each entry gives the prompt to paste, its real-world size, and a triangle budget for the High model; a `_low`
 model about a quarter of that should be cut as the shared assets do. Scale it to the size given, stand it on y = 0,
 and centre it on x/z.
 

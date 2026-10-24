@@ -61,16 +61,37 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   both well inside the Low budget (100 draws, 90k triangles). High: village 75 / 138k, stone 74 / 131k. The crowd is
   one draw call at every level.
 - **Pages**: `pok-ta-pok-rivals/` (index, privacy, support).
+- **0.2.0 (October 2026)**:
+  - **Motion capture** (CMU Graphics Lab library, mocap.cs.cmu.edu; credited in Licences). The run is take **09_02**
+    (subject 9, "run"), the serve's underhand toss **124_12** (subject 124, "Underhand Toss", 4.4–6.0 s, release at
+    5.43 s). `tools/mocap/bvh_retarget.py` retargets them to the 17 bones: one gait cycle cut between left-foot strikes,
+    resampled to 30 fps, root motion dropped (the player is still the one writer of position; only the clip's speed
+    and cycle length are kept), the upper arms' and thighs' twist from the elbow's and knee's plane, and foot locks:
+    a small drawing-only offset of the hips holds a planted heel or toe still while the root moves on. The run blends
+    in from 2 to 3.2 m/s over the hand-made one; strides are matched to the clip. The serve plays the toss at its own
+    speed (SERVE_T 1.6 s, release at 0.64), abajo bowled lower by blending in the hand-made serve; the ball sits in the
+    hand bone. Low plays the nearest frame. Tests: each clip loads, and a planted foot slips under 3 cm (worst 2.7 cm).
+  - **Meshy people**: three ulama players (lean, tall, stocky), a judge and eight townspeople, made with Meshy (560
+    credits: 1,763 before, 1,203 after). The players are rigged and follow the game's skeleton bone by bone
+    (`game/rigged_body.gd`); the gear (faja in the team's colour, chimali, yoke, knee pad, a judge's hat) stays code-built
+    over them. The crowd's sheet is rendered from the townspeople at loading. Prepared for phones by
+    `tools/meshy/prepare.gd` (9.4k triangles High, 4.7k Medium, 3–4.7k Low; 1024 textures; the fans 512).
+  - **The owner's list**: menu music (an original piece for cane flute, frame drum, slit drum and seed rattles,
+    `tools/music/compose.py`); the dusk court readable (brighter, rim light on the bodies, a faint pale ring round the
+    ball, the ulama camera closer); the server no longer spins on the spot holding the ball (he turned to face the ball
+    in his own hand: a bug); a standing hip cannot meet a ball below 34 cm (dive for it); the ring shot (see RULES);
+    a slowed replay from below the ring after a ball through it; Settings: play the whole team or one player.
 
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
    documented: one strike per side, end line +4 or +5, foul points, a ring that wins outright, halves of 13 minutes.
-2. Yucatec Maya touches: the judges' count on the stone court (*jun, ka', óox…*). It is listed for a native speaker
+2. New store screenshots and feature graphic with the realistic bodies.
+3. Yucatec Maya touches: the judges' count on the stone court (*jun, ka', óox…*). It is listed for a native speaker
    in docs/CULTURE.md.
-3. Menu music from the region, properly credited.
-4. Meshy models (docs/MESHY_BRIEF.md) when the owner allows credits.
-5. A Classic-period court variant with floor markers and no rings.
+4. The sound update the lead asked for (kenney.nl and opengameart.org sounds, docs/SOUNDS.md).
+5. Meshy court pieces (docs/MESHY_BRIEF.md: the carved ring, the talud, the pyramid).
+6. A Classic-period court variant with floor markers and no rings.
 
 ## Decisions and why
 
@@ -85,8 +106,17 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
 - **Time limit:** a 2022 national meet used 30 minutes. The game offers 6, 10, 15 or none; at time, the holder wins,
   and if level the next raya wins.
 - **Each side stays in its own half.** It is implied by the sources (the analco divides the sides) though not stated.
-- **Code-built realistic bodies, no Meshy.** Ulama players are mostly skin and leather, which suits a smooth lit
-  body. The other games' owner models are hurling and floorball players in kit, so they are not reused.
+- **Meshy bodies over the game's skeleton** (0.2.0, the owner allowed credits): the realistic mesh follows the code
+  skeleton, so every pose, the recorded clips and the hit points stay the game's; the team colours stay code-built gear.
+  The prompts put the T-pose first and spell out "no headdress, no feathers": the first players came back flexing, in
+  fringed skirts and once with horns. A second hat-wearing judge kept coming back hatless and hands in pockets, so both
+  judges wear the one judge model, one with a code-built straw hat.
+- **Mocap: what was not used.** The CMU dives (subjects 127/128) are forward parkour rolls, not ulama's sideways drop
+  onto the hip; the soccer kicks (10, 11) would teach a foot touch, which is a fault; nothing in the library is a hip
+  strike; the judges' signals are the game's own and seen from afar. Those stay hand-made. Of the runs, 09_02 has the
+  smallest hip correction (±12 cm); the jogs (35_17, 35_22) ran at the same speed, so one clip serves.
+- **The ring stays rare** (the chroniclers' "very seldom"), but it is a skill now, not luck: a perfect strike from a
+  good spot goes in about one time in three, a good one about one in ten, an ordinary one hardly ever (tested).
 - **Crowd from the bodies:** the painted cut-outs looked cartoonish, so the sheet is rendered from the 3D bodies at
   loading. Headless, a painted sheet stands in.
 - **No real place copied.** The stone court is generic and modelled on the smaller ringed courts. No site or tourist

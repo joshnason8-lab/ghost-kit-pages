@@ -37,6 +37,8 @@ const BONES := [
 
 var skeleton: Skeleton3D
 var mesh_instance: MeshInstance3D
+var rigged: RiggedBody           # the realistic body that follows this skeleton, or null
+static var use_rigged := true    # off: the code-built bodies everywhere (tests compare)
 var look := {}          # kind ("ulama", "classic", "judge"), skin, hair, team (Color), trim (Color), band (bool), height (m), build (0-1)
 var pose := {}
 var _idx := {}
@@ -72,6 +74,16 @@ func _ready() -> void:
 	_rest = acc
 	_hips = BONES[0][2]
 	scale = Vector3.ONE * (float(look.get("height", 1.7)) / 1.80)
+	# A realistic body when the build has them (not for the crowd's sheet, nor when a test asks for the code-built one).
+	var kind := String(look.get("kind", "ulama"))
+	if use_rigged and bool(look.get("rigged", true)) and RiggedBody.available(kind):
+		var f := RiggedBody.pick(kind, float(look.get("build", 0.5)), int(look.get("seed", get_instance_id())))
+		if f != "":
+			rigged = RiggedBody.new()
+			add_child(rigged)
+			rigged.setup(self, f, look)
+			look = look.duplicate()
+			look["gear_only"] = true
 	mesh_instance = MeshInstance3D.new()
 	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	skeleton.add_child(mesh_instance)
@@ -137,6 +149,8 @@ func apply(p: Dictionary) -> void:
 	for i in BONES.size():
 		skeleton.set_bone_pose_rotation(i, Moves.quat(p.get(BONES[i][0], Vector3.ZERO)))
 	skeleton.set_bone_pose_position(0, _hips + Vector3(float(p.get("hips_side", 0.0)), float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
+	if rigged:
+		rigged.follow(self)
 
 
 # ---------------------------------------------------------------- the mesh
@@ -163,6 +177,11 @@ func _mesh() -> ArrayMesh:
 	var build := float(look.get("build", 0.5))
 	var w := 0.94 + build * 0.12          # how broad
 	var r := _rest
+	if bool(look.get("gear_only", false)):
+		_gear_only(m, r, kind, team, trim)
+		var gm := m.commit()
+		_cache[key] = gm
+		return gm
 	# A judge or a spectator is dressed: a shirt, trousers or a skirt, sandals, maybe a hat.
 	var judge := kind == "judge" or kind == "spectator"
 	var shirt: Color = look.get("shirt", Color("eeeae0"))
@@ -278,6 +297,36 @@ func _head(m: MeshBuilder, r: Dictionary, skin: Color, hair: Color, team: Color,
 		m.capsule(hc + Vector3(0, 0.055, 0.08), hc + Vector3(0, 0.05, 0.16), 0.06, 0.05, cap, hb, Vector3(1.0, 1, 0.15), 8)
 	elif bool(look.get("band", false)):
 		m.band(hc + Vector3(0, 0.045, -0.004), 0.094, 0.106, 0.035, team, hb)
+
+
+## Over a realistic body (RiggedBody) only the gear is drawn: the faja in the team's colour and the chimali (the
+## body's own leather shorts are the gamuza), the classic court's yoke, knee pad and wrist guard, a judge's straw hat.
+## A little larger than on the code-built body, as the model's waist is fuller.
+func _gear_only(m: MeshBuilder, r: Dictionary, kind: String, team: Color, trim: Color) -> void:
+	var hb := bone("hips")
+	var w := (0.94 + float(look.get("build", 0.5)) * 0.12) * GEAR_FIT
+	match kind:
+		"ulama":
+			m.band(r.hips + Vector3(0, 0.03, -0.01), 0.165 * w, 0.125 * w, 0.05, Color("4a2e1c"), hb)
+			m.band(r.hips + Vector3(0, 0.085, -0.01), 0.15 * w, 0.115 * w, 0.065, team, hb)
+			m.band(r.hips + Vector3(0, 0.085, -0.01), 0.153 * w, 0.118 * w, 0.014, trim, hb)
+			m.ellipsoid(r.hips + Vector3(0.145 * w, 0.075, 0.02), Vector3(0.03, 0.05, 0.03), team.darkened(0.1), hb)
+			m.capsule(r.hips + Vector3(0.15 * w, 0.065, 0.025), r.hips + Vector3(0.16 * w, -0.08, 0.04), 0.022, 0.018, team.darkened(0.15), hb, Vector3(1, 1, 0.5), 6)
+		"classic":
+			m.torus(r.hips + Vector3(0, 0.07, -0.005), 0.19 * w, 0.14 * w, 0.05, team, hb)
+			m.torus(r.hips + Vector3(0, 0.07, -0.005), 0.195 * w, 0.145 * w, 0.018, trim, hb)
+			m.ellipsoid(r.shin_r + Vector3(0, 0.01, 0.05), Vector3(0.075, 0.085, 0.045), Color("cbb994"), bone("shin_r"))
+			m.band(r.hand_r + Vector3(0, 0.03, 0), 0.046, 0.046, 0.06, Color("d8ccb2"), bone("forearm_r"))
+		"judge":
+			if int(look.get("hat", 0)) == 1:
+				var hc: Vector3 = r.head + Vector3(0, 0.085, -0.01)
+				var straw := Color("cdb27a")
+				m.ellipsoid(hc + Vector3(0, 0.075, -0.005), Vector3(0.1, 0.07, 0.11), straw, bone("head"), 0.4)
+				m.disc(hc + Vector3(0, 0.07, 0.0), 0.21, 0.012, straw.darkened(0.06), bone("head"))
+				m.band(hc + Vector3(0, 0.09, -0.004), 0.101, 0.111, 0.02, Color("3a2416"), bone("head"))
+
+
+const GEAR_FIT := 1.0
 
 
 ## The ulama player's gear (Aguilar-Moreno): the gamuza, a deerskin loincloth wrapped round the hips and between the
@@ -471,5 +520,8 @@ class MeshBuilder:
 		arrays[Mesh.ARRAY_WEIGHTS] = weights
 		arrays[Mesh.ARRAY_INDEX] = idx
 		var mesh := ArrayMesh.new()
+		if verts.is_empty():
+			# Nothing to draw (a hatless judge over a realistic body).
+			return mesh
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 		return mesh

@@ -1,7 +1,8 @@
 extends Node
 ## Draw calls, triangles and objects drawn a frame in a match at each graphics level and court (ten players, two
 ## judges, the crowd), and the frame time this machine takes:
-##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn [-- venues]
+##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn [-- venues [coded]]
+## (venues comma-separated; "coded": the code-built bodies instead of the realistic ones, to compare)
 ## (README.md has the numbers.) Budgets on Low: about 100 draw calls and 90k triangles.
 
 func _ready() -> void:
@@ -12,6 +13,7 @@ func _ready() -> void:
 	await Crowd.bake(self)
 	var args := OS.get_cmdline_user_args()
 	var venues: Array = Array(args[0].split(",")) if args.size() > 0 else DB.VENUE_ORDER
+	Body.use_rigged = not (args.size() > 1 and args[1] == "coded")
 	for venue in venues:
 		for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
 			Game.settings.graphics = g

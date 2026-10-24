@@ -89,7 +89,7 @@ Main sources:
 | | |
 |---|---|
 | **Documented** | The ball is struck with the **hip** only; some sources say the hip and the top of the thigh [AM-AI]. It may be passed among a side and volleyed with the hips [AM-AI]. A raya goes to the other side for touching the ball with any other part of the body (hands and feet included), hitting out of turn, missing it, knocking it out of bounds, touching a teammate, or letting it stop before it reaches the analco [WP-U]. The ball may bounce and roll [AM-AI]. |
-| **In the game** | R5: the hip strike, and the **dive** (a hip strike made low with the player down on the ground, as ulama players do for a low ball). Teammates may play it one after another in their own half. R6: if the ball touches a player anywhere but his hip, the raya goes to the other side. That happens when a strike misses the ball and it runs into him, or when he stands in its way. The AI steps out of its way (`TeamAI._place`). |
+| **In the game** | R5: the hip strike, and the **dive** (a hip strike made low with the player down on the ground, as ulama players do for a low ball). A ball whose centre is below 34 cm (rolling, or skimming the earth) goes under a standing hip: only the dive reaches it, as on a real taste. Teammates may play it one after another in their own half. R6: if the ball touches a player anywhere but his hip, the raya goes to the other side. That happens when a strike misses the ball and it runs into him, or when he stands in its way. The AI steps out of its way (`TeamAI._place`). |
 | **Simplified** | *Hitting out of turn* is not modelled: the sources do not say what the turn is. Neither is *touching a teammate*: the players never collide. A "missed" ball is covered by R6 (it touches the body) and R8 (it dies in your half). Each side stays on its own side of the analco, which the sources imply but do not state. |
 
 ### R8. The ball dies in a half
@@ -156,7 +156,7 @@ Penn Museum's summary [PENN], and on the courts themselves [MET].
 | | |
 |---|---|
 | **Documented** | Passing the ball through a ring won the game outright, whatever the score. The chroniclers Durán and Motolinía describe it as extremely rare [PENN]. |
-| **In the game** | The ball's centre passing through a ring's hole wins the match at once (`Rules.award_ring`). The hole is barely twice the ball's width and stands 4 m up a wall. A ring takes a clean, high, well-aimed hip strike close to the centre line. It is meant to be rare and spectacular: the camera cuts to it and the crowd goes up. |
+| **In the game** | The ball's centre passing through a ring's hole wins the match at once (`Rules.award_ring`). The hole is barely twice the ball's width and stands 4 m up a wall. It is meant to be rare and spectacular, but a skill, not luck: a strike from 4 to 12 m out, near the wall, with the stick held toward it, is aimed at the ring so that the ball meets it at the top of its arc (the hole is a short tube along the alley; a ball still climbing or already dropping catches the stone). The strike's timing sets the error: a perfect one goes in about one time in three, a good one about one in ten, an ordinary one hardly ever. The computer tries it now and then, more often at a harder level. A ball through the ring is replayed, slowed, from below it. |
 
 ### R15–R16. Points
 

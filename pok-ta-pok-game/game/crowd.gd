@@ -1,9 +1,10 @@
 class_name Crowd
 extends MultiMeshInstance3D
 ## The spectators: cut-outs from one sheet of people, every one an instance of the same quad, so a crowd of thousands
-## is one draw call. The sheet is rendered once, at loading, from the same lit 3D bodies as the players (bake): sixteen
-## people in everyday clothes (shirts, trousers or long skirts, straw hats and caps), each from the front and from
-## behind. Headless (the tests) there is nothing to render with, so a plain painted sheet stands in.
+## is one draw call. The sheet is rendered once, at loading, from the realistic townspeople made with Meshy
+## (assets/people/fan_*: a ranchero in a palm hat, a grandmother in a rebozo, a boy, a man in a guayabera...), each from
+## the front and from behind, every one twice (the second turned a little and in another light). Without them, the
+## code-built bodies stand in; headless (the tests) there is nothing to render with, so a plain painted sheet does.
 ## Each person faces the court (their instance's +Z, toward its centre, flat); the shader turns the cut-out to the
 ## camera so it is never seen edge-on, and draws the person from the front when the camera is in front of them and
 ## from behind when it is behind them. They fidget, and jump when the crowd goes up (excite).
@@ -11,7 +12,10 @@ extends MultiMeshInstance3D
 const FIGS := 16
 const FIG_W := 64
 const FIG_H := 176
-const CARD := Vector2(0.62, 1.7)   # a standing person's card, metres
+const CARD := Vector2(0.66, 1.82)  # a standing person's card, metres (a hat on a tall man fits)
+## The townspeople (tools/meshy/prepare.gd): mesh and texture, each at its height (m).
+const FANS := [["fan_ranchero", 1.72], ["fan_blouse", 1.6], ["fan_elder", 1.65], ["fan_tshirt", 1.74], ["fan_rebozo", 1.52],
+	["fan_boy", 1.38], ["fan_young_woman", 1.62], ["fan_guayabera", 1.7]]
 
 static var _sheet: Texture2D
 static var _mat: ShaderMaterial
@@ -42,7 +46,25 @@ static func sheet() -> Texture2D:
 	return _sheet
 
 
-## Renders the sheet from the bodies (awaitable: it takes a few frames). Does nothing headless.
+static var _fans: Array = []
+
+
+## The townspeople's meshes and materials: [[mesh, material, height]], or [] when they are not in the build.
+static func fan_meshes() -> Array:
+	if _fans.is_empty():
+		for f in FANS:
+			var path := "res://assets/people/%s.res" % f[0]
+			if not ResourceLoader.exists(path):
+				continue
+			var m := StandardMaterial3D.new()
+			m.albedo_texture = load("res://assets/people/%s.jpg" % f[0])
+			m.roughness = 0.85
+			m.cull_mode = BaseMaterial3D.CULL_DISABLED
+			_fans.append([load(path), m, float(f[1])])
+	return _fans
+
+
+## Renders the sheet from the townspeople (awaitable: it takes a few frames). Does nothing headless.
 static func bake(host: Node) -> void:
 	if DisplayServer.get_name() == "headless" or _sheet is ImageTexture and _sheet.has_meta("baked"):
 		return
@@ -72,17 +94,34 @@ static func bake(host: Node) -> void:
 	we.environment = env
 	sv.add_child(we)
 	var bodies := []
+	var fans := fan_meshes()
 	var ps := people()
 	for i in FIGS:
-		var b := Body.new(ps[i])
-		sv.add_child(b)
+		var b: Node3D
+		if not fans.is_empty():
+			# A townsperson: the model stands 1.9 m tall about its middle (prepare.gd); scaled to their height.
+			var f: Array = fans[i % fans.size()]
+			var mi := MeshInstance3D.new()
+			mi.mesh = f[0]
+			mi.material_override = f[1]
+			var k := float(f[2]) / 1.9 * (1.0 if i < fans.size() else 0.97)
+			mi.scale = Vector3.ONE * k
+			mi.position = Vector3(0, 0.95 * k, 0)
+			b = Node3D.new()
+			b.add_child(mi)
+			sv.add_child(b)
+		else:
+			var body := Body.new(ps[i])
+			sv.add_child(body)
+			body.apply(Moves.judge_idle(float(i)))
+			b = body
 		b.position = Vector3((i + 0.5) * CARD.x, 0, 0)
-		b.apply(Moves.judge_idle(float(i)))
 		bodies.append(b)
 	var img := Image.create_empty(FIG_W * FIGS, FIG_H * 2, false, Image.FORMAT_RGBA8)
 	for view in 2:
 		for i in FIGS:
-			(bodies[i] as Body).rotation = Vector3(0, PI if view == 1 else 0.0, 0)
+			# The second of each pair turned a little, so the two read as different people in the stands.
+			(bodies[i] as Node3D).rotation = Vector3(0, (PI if view == 1 else 0.0) + (0.35 if i >= FIGS / 2 else 0.0), 0)
 		for k in 3:
 			await RenderingServer.frame_post_draw
 		var shot := sv.get_texture().get_image()

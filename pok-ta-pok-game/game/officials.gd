@@ -16,7 +16,7 @@ var _t := 0.0
 
 func build(court: Court) -> void:
 	for s in [-1.0, 1.0]:
-		var j := Body.new({"kind": "judge", "skin": Color("9a6c4a") if s < 0 else Color("85593b"), "hair": Color("15110e"), "height": 1.7 if s < 0 else 1.66, "build": 0.6})
+		var j := Body.new({"kind": "judge", "skin": Color("9a6c4a") if s < 0 else Color("85593b"), "hair": Color("15110e"), "height": 1.7 if s < 0 else 1.66, "build": 0.6, "hat": 0 if s < 0 else 1})
 		var at := Vector3(0.0, 0.0, s * 3.4)
 		if court.classic():
 			at = Vector3(0.6 * s, Court.WALL_H, s * (Court.TALUD_Z + 0.9))

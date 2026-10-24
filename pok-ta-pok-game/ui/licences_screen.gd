@@ -5,8 +5,8 @@ extends Control
 
 const CREDITS := """[b]Pok Ta Pok Rivals[/b]
 Made by Josh Nason.
-The players, judges and spectators, the courts, the ball, the agave, the stands and the sounds are made in code for the
-game. The skies, the earth, grass, plaster and stone surfaces, the tropical trees, palms, dry grass and boulders: Poly
+The players' bodies, a judge and the townspeople in the stands were made with Meshy (meshy.ai) for the game; their gear
+(the faja, the chimali, the yoke), the courts, the ball, the agave, the stands and the sounds are made in code. The skies, the earth, grass, plaster and stone surfaces, the tropical trees, palms, dry grass and boulders: Poly
 Haven (polyhaven.com), CC0, through the shared assets of the maker's games; the rain tree, coconut palm and dry grass
 models are the maker's own. Crowd reactions from Kabaddi Raid, by the same maker.
 The menus' music is the game's own piece for cane flute, drum, slit drum and rattles, made in code.

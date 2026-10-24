@@ -4,11 +4,14 @@ The hip ballgame of Mexico, for Android phones: **ulama de cadera** as it is sti
 Sinaloa, and the **classic stone court** of the old game, reconstructed from the chroniclers. Made in Godot 4.7 with
 the GL Compatibility renderer, for low, mid and high-end phones.
 
-> **Status: beta 0.1.0.** A full match by touch against the computer, both games, four courts, a town tournament,
-> six languages. See [docs/PROGRESS.md](docs/PROGRESS.md) for what is done and what comes next.
+> **Status: beta 0.2.0.** A full match by touch against the computer, both games, four courts, a town tournament,
+> six languages; realistic players and townspeople (made with Meshy), a recorded run and serve (CMU motion capture),
+> the ring shot with its replay, and the menus' own flute-and-drum music. See [docs/PROGRESS.md](docs/PROGRESS.md) for what is done and what comes next.
 
 ## What's in it
 
+- **Realistic people**: three ulama players, a judge and eight townspeople made with Meshy; the run and the serve's
+  underhand toss are real recorded movement (the CMU motion capture library), the feet held planted.
 - **Ulama de cadera**:
   - A heavy rubber ball (3.6 kg) struck with the hip only, across the analco of a 60 m earth court, by four or five a
     side.
@@ -17,10 +20,14 @@ the GL Compatibility renderer, for low, mid and high-end phones.
   - Two judges (veedores) at the analco call each raya.
 - **The classic court (reconstructed)**:
   - An I-shaped stone court with sloped taluds, walls and end courts. Points to eight.
-  - A stone ring in each wall. The ball through it wins outright, and it is rare.
+  - A stone ring in each wall. The ball through it wins outright, and it is rare: strike 4 to 12 m from the middle,
+    near the wall, with the stick held toward it, and the ball must reach the ring at the top of its arc. A ball
+    through the ring is shown again, slowed, from below.
 - **Your thumb on the hip**:
   - Move with the left thumb.
-  - Tap HIP as the heavy ball reaches you, or DIVE to the ground for a low one.
+  - Tap HIP as the heavy ball reaches you, or DIVE to the ground for a low one (a rolling or skimming ball goes
+    under a standing hip).
+  - Play the whole team (you become whoever goes for the ball) or one player all match (Settings).
   - Aim deep, low and skidding, or across.
   - The ball's shadow and a ring on the earth help you read the bounce.
 - **Sixteen towns** of Sinaloa and the Maya region, each with its own nickname and faja colours. All players are
@@ -68,21 +75,22 @@ no permission but vibration.
 
 ## Performance
 
-Measured with `tests/perf_probe` in a match (ten players, two judges and the crowd), at the broadcast camera. Low's
-budget is about 100 draw calls and 90k triangles in the 3D view; both courts sit well inside it. Draw calls and
-triangles are what a phone's GPU pays; the "ms a frame" of this CI machine (software OpenGL) is not a phone figure.
+Measured with `tests/perf_probe` in a match (ten players, two judges and the crowd), at the broadcast camera, in
+0.2.0 with the realistic bodies (and, for comparison, the code-built ones of 0.1.0 at the same camera). Low's budget
+is about 100 draw calls and 90k triangles in the 3D view. Draw calls and triangles are what a phone's GPU pays; the
+"ms a frame" of this CI machine (software OpenGL) is not a phone figure.
 
 | Court | | Low | Medium | High |
 |---|---|---|---|---|
-| **Village** (earth, crowd) | draw calls | 59 | 59 | 75 |
-| | triangles | 53k | 55k | 138k |
-| | crowd drawn | 121 | 378 | 546 |
-| **Stone court** (I-court, rings) | draw calls | 60 | 60 | 74 |
-| | triangles | 64k | 64k | 131k |
-| | crowd drawn | 119 | 405 | 560 |
+| **Village** (earth, crowd) | draw calls | 61 (58 code-built) | 61 (58) | 79 (71) |
+| | triangles counted | 21k (36k) | 28k (38k) | 116k (93k) |
+| **Stone court** (I-court, rings) | draw calls | 68 (61) | 68 (61) | 89 (75) |
+| | triangles counted | 37k (64k) | 44k (64k) | 159k (131k) |
 
-The festival court is close to the village and the torch-lit court to the stone court. The whole crowd is one draw
-call at every level; Low uses the lighter bodies (a third of the triangles), cut-out plants and no normal maps.
+The bodies are 9.4k triangles each on High, 4.7k on Medium and 3.0k to 4.7k on Low (tools/meshy/prepare.gd); the
+renderer's counter on Low and Medium comes out lower than that would suggest, so the Low figure to plan on is about
+the court plus 45k for twelve people, inside the budget. The frame times on this machine did not change. The crowd
+is still one draw call at every level (its sheet is rendered from the Meshy townspeople at loading).
 
 ## Project layout
 
@@ -96,9 +104,11 @@ pok-ta-pok-game/
   ui/         main_menu.gd (the stela), quick_setup.gd, court_diagram.gd, cup_screen.gd, result_screen.gd, settings_screen.gd,
               howto_screen.gd, licences_screen.gd, buttons_screen.gd, language_picker.gd, loading_screen.gd, ui.gd (fit helpers)
   i18n/src/   en.json (the source), es, pt, fr, de, it; tools/build_i18n.py makes strings.csv
-  assets/     env/ (skies, surfaces, plant cut-outs from the shared assets and Poly Haven), icon/, audio/
+  assets/     env/ (skies, surfaces, plant cut-outs from the shared assets and Poly Haven), icon/, audio/ (and the
+              menu music), anim/ (the retargeted motion capture), people/ (the Meshy bodies, prepared for phones)
   tests/      test_runner, fit_audit, input_test, user_bot, match_sim, perf_probe, compile_check, shot (pictures)
-  tools/      build_i18n.py, subset_fonts.py, check_pages.py, check_scripts.py, env/sky_light.py, store/ (icons, store pictures)
+  tools/      build_i18n.py, subset_fonts.py, check_pages.py, check_scripts.py, env/sky_light.py, store/ (icons, store pictures),
+              mocap/bvh_retarget.py (CMU BVH to clips), meshy/ (make and prepare the models), music/compose.py
   docs/       RULES.md, LANGUAGES.md, CULTURE.md, MESHY_BRIEF.md, PROGRESS.md
   store/      PLAY_STORE.md, listing/, graphics/
 ```
