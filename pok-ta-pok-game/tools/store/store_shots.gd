@@ -15,6 +15,7 @@ func _ready() -> void:
 	Game.settings.coach = false
 	Game.settings.dev = false
 	Game.settings.graphics = Game.GFX_HIGH
+	Game.settings.auto_gfx = false   # the software renderer here is slow; keep High for the pictures
 	TouchControls.key_hints = false
 	get_tree().root.size = Vector2i(1920, 1080)
 	await Crowd.bake(self)
@@ -38,7 +39,25 @@ func _ready() -> void:
 			var cfg: Dictionary = s[3]
 			var rules := String(DB.venue(cfg.venue).rules)
 			Game.start_match({"home": cfg.home, "away": cfg.away, "venue": cfg.venue, "rules": rules, "side": 5 if rules == "ulama" else 3,
-				"user_team": 0, "seed": 7, "mode": "quick", "length": 10, "difficulty": 2, "stage": tr("FRIENDLY")})
+				"user_team": -1, "seed": 7, "mode": "watch", "length": 10, "difficulty": 2, "stage": tr("FRIENDLY")})
+			var m: Node = Game.current
+			for i in int(float(s[4]) * 30.0):
+				await get_tree().process_frame
+			# Roll on until someone is mid hip-strike or dive, for a lively picture.
+			var guard := 0
+			while guard < 300:
+				guard += 1
+				await get_tree().process_frame
+				var acting := false
+				for pl in m.all_players():
+					if pl.action in [Player.A.STRIKE, Player.A.DIVE] and pl.action_u() > 0.3 and pl.action_u() < 0.6:
+						acting = true
+				if acting:
+					break
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("%s/%s.png" % [out, s[0]])
+			print("shot ", s[0])
+			continue
 		else:
 			if String(s[2]).ends_with("cup_screen.gd"):
 				Game.settings.mode = "classic"

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Make the fonts small enough to ship: Noto Sans (the text) and Oswald (the headings), cut to Latin, Latin
-Extended-A (every Irish letter with its fada, and the dotted consonants of the old script), general punctuation,
-the euro and the arrows, the weight axis kept. Uncial Antiqua (the title) has a Reserved Font Name, so it ships as it
-is. The full fonts are fetched from github.com/google/fonts once into ~/.cache/ash-fonts.
+"""Make the fonts small enough to ship: Noto Sans (the text) and Oswald (the headings and the title), cut to Latin and
+Latin Extended-A (every accented letter of Spanish, Portuguese, French, German and Italian: á é í ó ú ñ ü ç ã õ â ê ô à
+è ì ò ù ë ï œ ß, and the Maya apostrophe), general punctuation, the euro and the arrows, the weight axis kept. The full
+fonts are fetched from github.com/google/fonts once into ~/.cache/pokta-fonts.
 
 Usage: python3 tools/subset_fonts.py   (needs fonttools: pip install fonttools)
 """
@@ -12,9 +12,8 @@ import sys
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-CACHE = pathlib.Path.home() / ".cache" / "ash-fonts"
-UNICODES = ("U+0000-017F,U+0218-021B,U+02C6-02DC,U+0300-036F,U+1E02-1E03,U+1E0A-1E0B,U+1E1E-1E1F,U+1E40-1E41,"
-            "U+1E56-1E57,U+1E60-1E61,U+1E6A-1E6B,U+2000-206F,U+20AC,U+2190-21FF,U+2212,U+2423,U+25CF")
+CACHE = pathlib.Path.home() / ".cache" / "pokta-fonts"
+UNICODES = ("U+0000-017F,U+0218-021B,U+02BC,U+02C6-02DC,U+0300-036F,U+2000-206F,U+20AC,U+2190-21FF,U+2212,U+2423,U+25CF")
 FONTS = {
     "NotoSans.ttf": ("https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans%5Bwdth,wght%5D.ttf", True),
     "Oswald.ttf": ("https://raw.githubusercontent.com/google/fonts/main/ofl/oswald/Oswald%5Bwght%5D.ttf", False),
