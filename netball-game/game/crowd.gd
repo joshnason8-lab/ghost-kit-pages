@@ -8,8 +8,104 @@ const FIGS := 8          # figures across the sheet
 const FIG_W := 48
 const FIG_H := 96
 
+## Medium and High: 32 people drawn by tools/art/make_crowd.py (assets/venue/crowd_hd.png: their colour rows, then
+## the mask rows that say what is shirt and what is scarf or hat in their team's colour). Low keeps the 8 above.
+const FIGS_HD := 32
+const SHEET_HD := "res://assets/venue/crowd_hd.png"
+
+const SHADER := """shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_opaque;
+uniform sampler2D sheet : source_color, filter_linear_mipmap;
+uniform float figs = 8.0;
+uniform float excite = 0.0;
+uniform float time_s = 0.0;
+uniform float light = 1.0;
+uniform vec3 tint = vec3(1.0);
+// People this close to the camera are left out: seen from just behind (the Courtside camera over a hall's stand) the
+// flat figures read as blocks across the bottom of the screen.
+uniform float near_hide = 6.0;
+varying vec4 data;
+varying float back;
+void vertex() {
+	data = INSTANCE_CUSTOM;
+	// Each spectator faces the court (the instance's +Z, Crowd.build): with the camera behind her, her back shows.
+	vec3 seat = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	vec2 facing = normalize((MODEL_MATRIX * vec4(0.0, 0.0, 1.0, 0.0)).xz);
+	vec2 to_cam = normalize(INV_VIEW_MATRIX[3].xz - seat.xz);
+	back = dot(facing, to_cam) < -0.25 ? 1.0 : 0.0;
+	float ph = data.z * 6.2831;
+	float jump = max(0.0, sin(time_s * 9.0 + ph)) * excite * 0.28;
+	float fidget = sin(time_s * 1.3 + ph) * 0.02;
+	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
+	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
+	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
+	vec3 cam = INV_VIEW_MATRIX[3].xyz;
+	if (distance(cam.xz, (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xz) < near_hide) {
+		POSITION = vec4(2.0, 2.0, 2.0, 1.0);   // outside the view: the figure is not drawn
+	}
+}
+void fragment() {
+	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + back) * 0.5);
+	vec4 c = texture(sheet, uv);
+	if (c.a < 0.5) discard;
+	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
+	shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
+	float is_shirt = step(0.84, min(c.r, min(c.g, c.b)));
+	vec3 col = mix(c.rgb, shirt * c.r, is_shirt);
+	ALBEDO = pow(col, vec3(2.2)) * light * tint;
+}
+"""
+const SHADER_HD := """shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_opaque;
+uniform sampler2D sheet : source_color, filter_linear_mipmap;
+uniform float figs = 8.0;
+uniform float excite = 0.0;
+uniform float time_s = 0.0;
+uniform float light = 1.0;
+uniform vec3 tint = vec3(1.0);
+// People this close to the camera are left out: seen from just behind (the Courtside camera over a hall's stand) the
+// flat figures read as blocks across the bottom of the screen.
+uniform float near_hide = 6.0;
+varying vec4 data;
+varying float back;
+void vertex() {
+	data = INSTANCE_CUSTOM;
+	// Each spectator faces the court (the instance's +Z, Crowd.build): with the camera behind her, her back shows.
+	vec3 seat = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	vec2 facing = normalize((MODEL_MATRIX * vec4(0.0, 0.0, 1.0, 0.0)).xz);
+	vec2 to_cam = normalize(INV_VIEW_MATRIX[3].xz - seat.xz);
+	back = dot(facing, to_cam) < -0.25 ? 1.0 : 0.0;
+	float ph = data.z * 6.2831;
+	float jump = max(0.0, sin(time_s * 9.0 + ph)) * excite * 0.28;
+	float fidget = sin(time_s * 1.3 + ph) * 0.02;
+	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
+	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
+	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
+	vec3 cam = INV_VIEW_MATRIX[3].xyz;
+	if (distance(cam.xz, (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xz) < near_hide) {
+		POSITION = vec4(2.0, 2.0, 2.0, 1.0);   // outside the view: the figure is not drawn
+	}
+}
+void fragment() {
+	// The sheet's rows: front, back (colour); front, back (mask). Mask red: the shirt; green: the team colour.
+	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + back) * 0.25);
+	vec4 c = texture(sheet, uv);
+	if (c.a < 0.5) discard;
+	vec4 m = texture(sheet, uv + vec2(0.0, 0.5));
+	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
+	shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
+	vec3 team = vec3(fract(data.w * 7.13), fract(data.w * 3.77), fract(data.w * 5.31));
+	vec3 col = mix(c.rgb, shirt * c.r, m.r);
+	col = mix(col, team * c.r, m.g);
+	ALBEDO = pow(col, vec3(2.2)) * light * tint;
+}
+"""
+
 static var _sheet: ImageTexture
 static var _mat: ShaderMaterial
+static var _mat_hd: ShaderMaterial
 
 var spots: Array[Vector3] = []   # where people stand or sit (their feet)
 
@@ -60,59 +156,33 @@ static func sheet() -> ImageTexture:
 	return _sheet
 
 
+## The crowd's material at this graphics level (both made once).
 static func material() -> ShaderMaterial:
+	return _material_hd() if Game.hd() else _material_low()
+
+
+static func _material_low() -> ShaderMaterial:
 	if _mat:
 		return _mat
 	var sh := Shader.new()
-	sh.code = """
-shader_type spatial;
-render_mode unshaded, cull_disabled, depth_draw_opaque;
-uniform sampler2D sheet : source_color, filter_linear_mipmap;
-uniform float figs = 8.0;
-uniform float excite = 0.0;
-uniform float time_s = 0.0;
-uniform float light = 1.0;
-uniform vec3 tint = vec3(1.0);
-// People this close to the camera are left out: seen from just behind (the Courtside camera over a hall's stand) the
-// flat figures read as blocks across the bottom of the screen.
-uniform float near_hide = 6.0;
-varying vec4 data;
-varying float back;
-void vertex() {
-	data = INSTANCE_CUSTOM;
-	// Each spectator faces the court (the instance's +Z, Crowd.build): with the camera behind her, her back shows.
-	vec3 seat = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-	vec2 facing = normalize((MODEL_MATRIX * vec4(0.0, 0.0, 1.0, 0.0)).xz);
-	vec2 to_cam = normalize(INV_VIEW_MATRIX[3].xz - seat.xz);
-	back = dot(facing, to_cam) < -0.25 ? 1.0 : 0.0;
-	float ph = data.z * 6.2831;
-	float jump = max(0.0, sin(time_s * 9.0 + ph)) * excite * 0.28;
-	float fidget = sin(time_s * 1.3 + ph) * 0.02;
-	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
-	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
-	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
-	vec3 cam = INV_VIEW_MATRIX[3].xyz;
-	if (distance(cam.xz, (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xz) < near_hide) {
-		POSITION = vec4(2.0, 2.0, 2.0, 1.0);   // outside the view: the figure is not drawn
-	}
-}
-void fragment() {
-	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + back) * 0.5);
-	vec4 c = texture(sheet, uv);
-	if (c.a < 0.5) discard;
-	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
-	shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
-	float is_shirt = step(0.84, min(c.r, min(c.g, c.b)));
-	vec3 col = mix(c.rgb, shirt * c.r, is_shirt);
-	ALBEDO = pow(col, vec3(2.2)) * light * tint;
-}
-"""
+	sh.code = SHADER
 	_mat = ShaderMaterial.new()
 	_mat.shader = sh
 	_mat.set_shader_parameter("sheet", sheet())
 	_mat.set_shader_parameter("figs", float(FIGS))
 	return _mat
+
+
+static func _material_hd() -> ShaderMaterial:
+	if _mat_hd:
+		return _mat_hd
+	var sh := Shader.new()
+	sh.code = SHADER_HD
+	_mat_hd = ShaderMaterial.new()
+	_mat_hd.shader = sh
+	_mat_hd.set_shader_parameter("sheet", load(SHEET_HD))
+	_mat_hd.set_shader_parameter("figs", float(FIGS_HD))
+	return _mat_hd
 
 
 ## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours).
@@ -132,11 +202,20 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
 	q.center_offset = Vector3(0, 0.52, 0)
 	mm.mesh = q
 	mm.instance_count = keep.size()
+	# Medium and High: each also has a scarf or hat in a team's colour (mostly the home team's), w; from a second
+	# generator, so the people, their shirts and seats are those Low would draw.
+	var hd := Game.hd()
+	var rng2 := RandomNumberGenerator.new()
+	rng2.seed = seed_ + 7
+	var codes := palette.map(func(c): return _code(c))
 	for i in keep.size():
 		mm.set_instance_transform(i, Transform3D(facing(keep[i]), keep[i]))
 		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 else Color(rng.randf(), rng.randf(), rng.randf())
-		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase.
-		mm.set_instance_custom_data(i, Color(rng.randf(), _code(col), rng.randf(), 0.0))
+		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase, w: the team colour.
+		var w := 0.0
+		if hd:
+			w = float(codes[rng2.randi_range(0, codes.size() - 1)]) if not codes.is_empty() and rng2.randf() < 0.8 else rng2.randf()
+		mm.set_instance_custom_data(i, Color(rng.randf(), _code(col), rng.randf(), w))
 	multimesh = mm
 	material_override = material()
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

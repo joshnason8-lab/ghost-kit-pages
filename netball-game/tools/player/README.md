@@ -12,7 +12,10 @@ Mixamo file is needed to rebuild.
   every rest rotation the identity, arms and legs hanging straight) and cut down for phones: 187,060 triangles to
   5,840 (with levels of 2,920 and 1,460 for far away) for Medium and High, and 1,460 for Low. The vertex colour and
   UV2 carry each point's rest position, for the bib.
-- **`hero_albedo.jpg`**: the model's 4096 texture at 1024.
+- **`hero_albedo.jpg`**: the model's 4096 texture at 1024 (Low); **`hero_albedo_2k.jpg`** the same at 2048 for
+  Medium and High (VRAM-compressed with mipmaps, as the 1024 is), and **`hero_mask_1k.png`** the mask below at 1024,
+  its classes found at the full 4096 (imported as the 512 one is). `game/hero_body.gd` loads them through
+  `Game.tex` (autoload/game.gd `HD_TEX`).
 - **`hero_mask.png`**: where the kit is (red the dress's navy, green the light blue panels and trim, blue the hair,
   alpha the skin), so `game/hero_body.gd`'s shader paints each team's colours on the one model and gives each player
   her own skin tone; the white socks and shoes stay white. Imported without mipmaps or compression (the atlas's

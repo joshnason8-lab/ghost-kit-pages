@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Make the game's recorded sounds: trims, layers, levels and loops the CC0 / CC-BY / CC-BY-SA recordings listed in
-docs/SOUNDS.md, makes the whistle and the shoe squeaks, and writes them to assets/audio/ as mono Ogg Vorbis.
+docs/SOUNDS.md, makes the shoe squeaks, and writes them to assets/audio/ as mono Ogg Vorbis.
 
 The downloads are not kept in the repository. Fetch each pack named in SOURCES into its own folder under SRC (the
 folder names are the keys below), unpack the zips in place (into x/), then run:
@@ -198,23 +198,6 @@ def old_click():
 
 # ---------------------------------------------------------------- made for the game
 
-def whistle(dur, blast=1.0):
-    """An umpire's pea whistle: a bright tone near 3 kHz warbled by the pea (an uneven 35-45 Hz flutter of pitch and
-    level), its octave, breath noise around it, a quick chirp up at the start."""
-    n = int(dur * RATE)
-    t = np.arange(n) / RATE
-    flutter_rate = 38 + smooth_noise(n, 0.0005) * 40
-    fl = np.sin(np.cumsum(2 * np.pi * flutter_rate / RATE))
-    f = 3050 * (0.93 + 0.07 * np.minimum(1, t / 0.03)) + fl * 210 + smooth_noise(n, 0.002) * 300
-    ph = np.cumsum(2 * np.pi * f / RATE)
-    tone = np.sin(ph) + 0.18 * np.sin(2 * ph + 0.4) + 0.05 * np.sin(3 * ph)
-    am = 0.62 + 0.38 * (0.5 + 0.5 * fl)
-    breath = hp(lp(rng.standard_normal(n), 4200), 1800) * 0.25
-    env = np.minimum(1, t / 0.012) * np.clip((dur - t) / 0.07, 0, 1) ** 1.5
-    env *= 1.0 + (blast - 1.0) * np.exp(-t / 0.15)   # a harder first puff on a long blast
-    return reverb((tone * am + breath * (0.5 + 0.5 * am)) * env * 0.4, 0.5, 0.12)
-
-
 def squeak(f0, dur):
     """A shoe on a sprung floor: rubber stick-slip, a rough tone gliding up, with its harmonics."""
     n = int(dur * RATE)
@@ -231,9 +214,9 @@ def squeak(f0, dur):
 
 def main():
     k = "kenney_impact/x/Audio/"
-    # The whistle: short (a call), long (a goal, the quarter's end); as loud as the synthesised one was.
-    write("whistle", level(whistle(0.42), loud(old_whistle())))
-    write("whistle_long", level(whistle(1.05, 1.15), loud(old_whistle(1.1))))
+    # The whistle is recorded now (whistle_short_1..3, whistle_long_1..3, whistle_double, whistle_final, whistle_gym:
+    # the owner's Pixabay recordings, prepared on the shared-assets branch, shared-assets/sounds/whistle/, and copied
+    # in as they are); this script no longer makes it.
     # The ball into two hands: Kenney's medium punches, a dull slap.
     for i in range(3):
         write("catch_%d" % (i + 1), level(fade(trim(hp(load(k + "impactPunch_medium_%03d.ogg" % i), 110)), 0.002, 0.08), -15.0))

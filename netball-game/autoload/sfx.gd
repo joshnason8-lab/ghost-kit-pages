@@ -9,11 +9,25 @@ const RATE := 22050
 const VOICES := {}
 const MUSIC_DB := -9.0
 ## Sounds recorded more than once: play("catch") picks one of catch_1..catch_3 at random.
-const VARIANTS := {"catch": 3, "bounce_floor": 2, "bounce_court": 2, "step_floor": 4, "step_court": 4, "squeak": 3}
+const VARIANTS := {"catch": 3, "bounce_floor": 2, "bounce_court": 2, "step_floor": 4, "step_court": 4, "squeak": 3,
+	"whistle_short": 3, "whistle_long": 3}
 ## Recorded only (nothing synthesised stands in for them).
-const FILES := ["crowd_cheer", "crowd_cheer_small", "crowd_ooh", "crowd_groan", "applause", "applause_hall",
+const FILES := ["whistle_double", "whistle_final", "whistle_gym", "crowd_cheer", "crowd_cheer_small", "crowd_ooh", "crowd_groan", "applause", "applause_hall",
 	"applause_small", "clap", "menu_music", "amb_arena", "amb_hall", "amb_outdoor"]
 const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_arena", "amb_hall", "amb_outdoor"]
+## The umpire's whistle (recorded: docs/SOUNDS.md), by kind: a short pip (an infringement, a restart), a long blast
+## (the centre pass after a goal, the end of a quarter), a double pip (a stoppage: an injury, a time-out), the final
+## whistle (short, short, long). In a hall the long blast is the take recorded in a gym, with its echo.
+const WHISTLES := {"short": "whistle_short", "long": "whistle_long", "double": "whistle_double", "final": "whistle_final"}
+## The recordings are about 4.5 dB quieter than the synthesised whistle they replace (the loudest 100 ms): this lifts
+## them back to where it was; from the umpire (3D, some 15-25 m from the camera) a little more again.
+const WHISTLE_DB := 4.5
+const WHISTLE_3D_DB := 3.0
+## Medium and High (Game.hd()): the venues' beds as long stereo loops and more takes of each reaction, from
+## assets/audio/hd/ (tools/audio/make_sounds_hd.py); Low plays the set above, as before. Takes beyond the first.
+const HD_TAKES := {"crowd_cheer": 4, "crowd_cheer_small": 3, "applause": 3, "applause_hall": 2, "crowd_ooh": 2,
+	"crowd_groan": 2}
+const HD_DIR := "res://assets/audio/hd/"
 ## Sounds on court come from where they happen, through this many speakers at most (the oldest gives way).
 const VOICES_3D := 8
 
@@ -33,6 +47,8 @@ var _total := 1
 var _venue := "arena"
 var _pool3d: Array[AudioStreamPlayer3D] = []
 var _next3d := 0
+var _hd_loaded := false
+var _rng := RandomNumberGenerator.new()   # the whistle's and the extra takes' picks
 var asked := {}                      # sound -> times asked for (sound on or off): the tests see what a match plays
 
 
@@ -104,7 +120,10 @@ func enabled() -> bool:
 func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
 	asked[sound] = int(asked.get(sound, 0)) + 1
-	sound = _pick(sound)
+	_play(_pick(sound), volume_db, pitch)
+
+
+func _play(sound: String, volume_db: float, pitch: float) -> void:
 	if not enabled() or not streams.has(sound):
 		return
 	var p := _pool[_next]
@@ -125,8 +144,14 @@ func play_at(sound: String, at: Vector3, volume_db := 0.0, pitch := 1.0) -> void
 		return
 	_ensure()
 	asked[sound] = int(asked.get(sound, 0)) + 1
-	sound = _pick(sound)
+	_play_at(_pick(sound), at, volume_db, pitch)
+
+
+func _play_at(sound: String, at: Vector3, volume_db: float, pitch: float) -> void:
 	if not enabled() or not streams.has(sound):
+		return
+	if _pool3d.is_empty() or not is_instance_valid(_pool3d[0]):
+		_play(sound, volume_db, pitch)
 		return
 	var p := _pool3d[_next3d]
 	_next3d = (_next3d + 1) % _pool3d.size()
@@ -161,7 +186,7 @@ func _pick(sound: String) -> String:
 func venue(kind: String) -> void:
 	_ensure()
 	_venue = kind
-	var s: AudioStream = streams.get("amb_" + kind, streams.get("crowd_loop"))
+	var s := bed(kind)
 	if _crowd.stream != s:
 		var was := _crowd.playing
 		_crowd.stop()
@@ -203,7 +228,58 @@ func react(kind: String, volume_db := -6.0) -> void:
 		volume_db -= 3.0
 	if not streams.has(key):
 		key = base
+	# Medium and High: one of the takes, Low's own among them.
+	if Game.hd() and HD_TAKES.has(key):
+		_ensure()
+		_load_hd()
+		asked[key] = int(asked.get(key, 0)) + 1
+		var n := _rng.randi() % (int(HD_TAKES[key]) + 1)
+		var take := "hd/%s_%d" % [key, n + 1]
+		_play(take if n > 0 and streams.has(take) else key, volume_db, randf_range(0.96, 1.04))
+		return
 	play(key, volume_db, randf_range(0.96, 1.04))
+
+
+## The umpire's whistle of a kind (WHISTLES) from where she stands (at), a take at random; in a hall the long blast
+## is the gym's. Counted as "whistle" in asked.
+func whistle(kind: String, at: Vector3, volume_db := -6.0) -> void:
+	_ensure()
+	asked["whistle"] = int(asked.get("whistle", 0)) + 1
+	# (Takes picked by a generator of its own: the match's draws from the global one are left as they were.)
+	var key: String = WHISTLES.get(kind, "whistle_short")
+	if kind == "long" and _venue == "hall" and streams.has("whistle_gym"):
+		key = "whistle_gym"
+	elif VARIANTS.has(key):
+		key = "%s_%d" % [key, 1 + _rng.randi() % int(VARIANTS[key])]
+	var in_3d := not _pool3d.is_empty() and is_instance_valid(_pool3d[0])
+	_play_at(key, at, volume_db + WHISTLE_DB + (WHISTLE_3D_DB if in_3d else 0.0), _rng.randf_range(0.98, 1.02))
+
+
+## The venue's bed: on Medium and High its long loop (assets/audio/hd/), else the Low one.
+func bed(kind: String) -> AudioStream:
+	if Game.hd():
+		_load_hd()
+		if streams.has("hd/amb_%s_long" % kind):
+			return streams["hd/amb_%s_long" % kind]
+	return streams.get("amb_" + kind, streams.get("crowd_loop"))
+
+
+## The Medium and High sounds, loaded the first time a match on those levels wants them (Low never loads them).
+func _load_hd() -> void:
+	if _hd_loaded:
+		return
+	_hd_loaded = true
+	for v in ["arena", "hall", "outdoor"]:
+		var path := HD_DIR + "amb_%s_long.ogg" % v
+		if ResourceLoader.exists(path):
+			var s: AudioStreamOggVorbis = load(path)
+			s.loop = true
+			streams["hd/amb_%s_long" % v] = s
+	for k in HD_TAKES:
+		for i in int(HD_TAKES[k]):
+			var path := HD_DIR + "%s_%d.ogg" % [k, i + 2]
+			if ResourceLoader.exists(path):
+				streams["hd/%s_%d" % [k, i + 2]] = load(path)
 
 
 func click() -> void:
@@ -264,8 +340,6 @@ func stop_all() -> void:
 func _plan() -> void:
 	_planned = true
 	_todo = [
-		["whistle", _whistle],
-		["whistle_long", func(): return _whistle(1.1)],
 		["pass", _slap],                                     # the ball pushed away on a pass (catch_* is the catch)
 		["bounce", func(): return _tock(0.45, 0.1, 0.7)],   # a bounce pass on the floor
 		["rim", _rim],                                       # the ball off the steel ring
@@ -288,7 +362,7 @@ func _finish() -> void:
 	for k in LOOPS:
 		if streams.get(k) is AudioStreamOggVorbis:
 			(streams[k] as AudioStreamOggVorbis).loop = true
-	_crowd.stream = streams.get("amb_" + _venue, streams.get("crowd_loop"))
+	_crowd.stream = bed(_venue)
 	_drums.stream = streams.get("drums_loop")
 	_music.stream = streams.get("menu_music")
 
@@ -317,19 +391,6 @@ func _tone_env(dur: float, f: Callable, attack: float, release: float) -> AudioS
 	for i in n:
 		var t := float(i) / RATE
 		out[i] = float(f.call(t)) * minf(1.0, t / attack) * clampf((dur - t) / release, 0.0, 1.0)
-	return _to_stream(out)
-
-
-func _whistle(dur := 0.5) -> AudioStreamWAV:
-	var n := int(dur * RATE)
-	var out := PackedFloat32Array()
-	out.resize(n)
-	var phase := 0.0
-	for i in n:
-		var t := float(i) / RATE
-		phase += TAU * (2900.0 + sin(TAU * 34.0 * t) * 180.0) / RATE
-		var env := minf(1.0, t / 0.02) * clampf((dur - t) / 0.08, 0.0, 1.0)
-		out[i] = sin(phase) * (0.65 + 0.35 * sin(TAU * 34.0 * t)) * env * 0.45
 	return _to_stream(out)
 
 

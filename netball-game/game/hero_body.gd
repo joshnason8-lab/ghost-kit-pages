@@ -20,6 +20,8 @@ static var _meshes := []        # [hi, lo]
 static var _shader: Shader
 static var _albedo: Texture2D
 static var _kit: Texture2D
+static var _albedo_hd: Texture2D   # Medium and High
+static var _kit_hd: Texture2D
 static var _letters: Texture2D
 static var _mats := {}          # look key -> ShaderMaterial
 static var _q := {}             # clip -> its frames as Quaternions
@@ -215,6 +217,10 @@ func _dress() -> void:
 func _material() -> ShaderMaterial:
 	var key := "%s|%s|%s|%s|%s|%s" % [look.get("dress"), look.get("trim"), look.get("bib"), look.get("skin"),
 		look.get("hair"), look.get("pos", "")]
+	# Medium and High: the model's texture at 2048 and its kit mask at 1024 (Game.HD_TEX); Low the 1024 and 512.
+	var hd := Game.hd()
+	if hd:
+		key = "hd|" + key
 	if _mats.has(key):
 		return _mats[key]
 	if _shader == null:
@@ -225,8 +231,11 @@ func _material() -> ShaderMaterial:
 		_letters = load("res://assets/ui/bib_letters.png")
 	var mat := ShaderMaterial.new()
 	mat.shader = _shader
-	mat.set_shader_parameter("albedo", _albedo)
-	mat.set_shader_parameter("kit", _kit)
+	if hd and _albedo_hd == null:
+		_albedo_hd = Game.tex(DIR + "hero_albedo.jpg")
+		_kit_hd = Game.tex(DIR + "hero_mask.png")
+	mat.set_shader_parameter("albedo", _albedo_hd if hd else _albedo)
+	mat.set_shader_parameter("kit", _kit_hd if hd else _kit)
 	mat.set_shader_parameter("letters", _letters)
 	mat.set_shader_parameter("dress", look.get("dress", Color("2f6fc4")))
 	mat.set_shader_parameter("trim", look.get("trim", Color.WHITE))
