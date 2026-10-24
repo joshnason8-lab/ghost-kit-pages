@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dde1bsbms2354"
+
+[deps]
+
+files=["res://i18n/strings.en.translation", "res://i18n/strings.af.translation", "res://i18n/strings.zu.translation", "res://i18n/strings.xh.translation", "res://i18n/strings.st.translation", "res://i18n/strings.tn.translation", "res://i18n/strings.ny.translation", "res://i18n/strings.lg.translation", "res://i18n/strings.sn.translation", "res://i18n/strings.sw.translation", "res://i18n/strings.ms.translation", "res://i18n/strings.zh.translation", "res://i18n/strings.si.translation", "res://i18n/strings.ta.translation", "res://i18n/strings.cy.translation", "res://i18n/strings.mi.translation", "res://i18n/strings.to.translation", "res://i18n/strings.sm.translation", "res://i18n/strings.fj.translation"]
+
+source_file="res://i18n/strings.csv"
+dest_files=["res://i18n/strings.en.translation", "res://i18n/strings.af.translation", "res://i18n/strings.zu.translation", "res://i18n/strings.xh.translation", "res://i18n/strings.st.translation", "res://i18n/strings.tn.translation", "res://i18n/strings.ny.translation", "res://i18n/strings.lg.translation", "res://i18n/strings.sn.translation", "res://i18n/strings.sw.translation", "res://i18n/strings.ms.translation", "res://i18n/strings.zh.translation", "res://i18n/strings.si.translation", "res://i18n/strings.ta.translation", "res://i18n/strings.cy.translation", "res://i18n/strings.mi.translation", "res://i18n/strings.to.translation", "res://i18n/strings.sm.translation", "res://i18n/strings.fj.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

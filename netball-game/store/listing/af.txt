@@ -1,0 +1,41 @@
+# Google Play store listing, Afrikaans (af). Paste each part into Play Console > Grow >
+# Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Netball Unleashed
+
+== Short description ==
+Netbal volgens die regte reëls: maak lope, gee aan, verdedig op 0,9 m, skiet.
+
+== Full description ==
+Netball Unleashed is netbal vir jou foon, gespeel volgens die Netbalreëls soos hulle vandag lui. Neem die senterpas, sny in die oop ruimte in, voer die sirkel en skiet, en wen dan die bal terug met 'n onderskepping.
+
+DIE REGTE SPEL
+• Sewe per span, elkeen in haar eie areas: GS, GA, WA, C, WD, GD en GK, met borslappe aan.
+• Die senterpas, wat ná elke doel afwissel en in die middelderde gevang moet word.
+• Voetwerk en die landingsvoet, die drie sekondes, obstruksie op 0,9 m, kontak, buitespel, oor 'n derde en die kort aangee, alles gefluit deur twee skeidsregters wat elke beslissing aandui.
+• Vrypasse, strafpasse, die strafpas of -skoot in die sirkel, ingooie en voordeel.
+• Vier kwarte met regte pouses, en ekstra tyd tot een span twee doele voor is wanneer 'n wedstryd 'n wenner moet hê.
+• Net die Doelskut en die Doelaanval kan doele aanteken, en net van binne die sirkel.
+
+SPEEL SOOS JY WIL
+• Speel die hele span, of kies 'n borslap en speel die hele wedstryd lank een posisie.
+• Vinnige wedstryd: enige twee van 23 netballande, van Australië, Nieu-Seeland, Engeland, Jamaika en Suid-Afrika tot Malawi, Uganda, Tonga, Fidji, Singapoer en Sri Lanka.
+• Die Nasiesbeker: twee poele, halfeindstryde, die wedstryd om brons en die eindstryd, met punteleers volgens doelpersentasie.
+• 'n Statistiekblad vir elke wedstryd: doele uit pogings, voere, senterpasse ontvang, balwinste, onderskeppings, terugkaatsballe en strawwe.
+• 'n Ligareël om aan te skakel: die Double Zone, waar lang skote laat in elke kwart twee tel.
+• Kwarte van 5, 8, 10 of die volle 15 minute.
+
+DRIE SPEELPLEKKE
+'n Stampvol arena, 'n sportsaal en 'n buitebaan onder 'n aandhemel.
+
+GEMAAK VIR JOU FOON
+• Negentien tale: English, Afrikaans, isiZulu, isiXhosa, Sesotho, Setswana, Chichewa, Luganda, chiShona, Kiswahili, Bahasa Melayu, 中文, සිංහල, தமிழ், Cymraeg, Te Reo Māori, Lea Faka-Tonga, Gagana Sāmoa en Na Vosa Vakaviti.
+• Niks word vir jou gespeel nie: jy gee aan, jy skiet, jy verdedig.
+• Loop glad op bekostigbare en middelklasfone, met 'n batterybespaarder ook. Knoppies wat jy kan vergroot, verklein en skuif, en 'n uitleg vir linkshandiges.
+• Speel vanlyn. Geen advertensies, geen aankope, geen rekening nie, en geen data word ingesamel nie.
+
+Netball Unleashed is 'n onafhanklike speletjie. Dit is nie verbonde aan of onderskryf deur enige netbalbeheerliggaam, liga, klub of speler nie. Die spelers is versin; die lande en die reëls is eg.
+
+== Release notes (first release) ==
+Die eerste vrystelling van Netball Unleashed: Vinnige wedstryd en die Nasiesbeker, in negentien tale.
