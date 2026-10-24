@@ -4,10 +4,12 @@ extends SceneTree
 ## sizes for phones, and the four Mixamo clips turned into the game's poses on that skeleton.
 ##
 ## Run by build.sh in a scratch project where Godot has imported the model and the clips with the humanoid retarget
-## (mixamo_map.tres; the .import files here), so all of them share Godot's humanoid bone names.
-##   godot --headless --path <scratch> -s bake.gd -- <out dir>
-## Writes <out>/hero_hi.res and hero_lo.res (the body's mesh: rest space, bone indices into ToonBody.BONES, the rest
-## position and the part in the vertex colour) and <out>/hero.json (the skeleton's offsets; the clips).
+## (mixamo_map.tres, or meshy_map.tres for a Meshy rig; the .import files here), so all of them share Godot's humanoid
+## bone names.
+##   godot --headless --path <scratch> -s bake.gd -- <out dir> [model.glb name] [prefix] [tris hi] [tris lo] [clips 0/1]
+## (by default: player hero 6000 2000 1). Writes <out>/<prefix>_hi.res and _lo.res (the body's mesh: rest space, bone
+## indices into ToonBody.BONES, the rest position and the part in the vertex colour) and <out>/<prefix>.json (the
+## skeleton's offsets; the clips, when asked for). The officials are Meshy models baked the same way (build_people.sh).
 
 const NAMES := ["hips", "spine", "chest", "neck", "head", "upperarm_l", "forearm_l", "hand_l", "upperarm_r",
 	"forearm_r", "hand_r", "thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
@@ -18,7 +20,8 @@ const CARRIER := {"Hips": "hips", "Spine": "spine", "Chest": "spine", "UpperChes
 	"LeftUpperArm": "upperarm_l", "LeftLowerArm": "forearm_l", "LeftHand": "hand_l",
 	"RightUpperArm": "upperarm_r", "RightLowerArm": "forearm_r", "RightHand": "hand_r",
 	"LeftUpperLeg": "thigh_l", "LeftLowerLeg": "shin_l", "LeftFoot": "foot_l", "LeftToes": "foot_l",
-	"RightUpperLeg": "thigh_r", "RightLowerLeg": "shin_r", "RightFoot": "foot_r", "RightToes": "foot_r"}
+	"RightUpperLeg": "thigh_r", "RightLowerLeg": "shin_r", "RightFoot": "foot_r", "RightToes": "foot_r",
+	"head_end": "head"}
 ## Each game bone's joint (where it turns) and the model's bone whose turning it takes in a clip.
 const JOINT := {"hips": "Hips", "spine": "Spine", "chest": "UpperChest", "neck": "Neck", "head": "Head",
 	"upperarm_l": "LeftUpperArm", "forearm_l": "LeftLowerArm", "hand_l": "LeftHand",
@@ -40,8 +43,13 @@ var k := 1.0
 
 
 func _init() -> void:
-	var out: String = OS.get_cmdline_user_args()[0]
-	var p: Node3D = load("res://src/player.glb").instantiate()
+	var a := OS.get_cmdline_user_args()
+	var out: String = a[0]
+	var model := a[1] if a.size() > 1 else "player"
+	var prefix := a[2] if a.size() > 2 else "hero"
+	var tris := [int(a[3]), int(a[4])] if a.size() > 4 else TRIS
+	var with_clips := (a[5] == "1") if a.size() > 5 else true
+	var p: Node3D = load("res://src/%s.glb" % model).instantiate()
 	sk = p.find_children("*", "Skeleton3D", true, false)[0]
 	var mi: MeshInstance3D = sk.find_children("*", "MeshInstance3D", true, false)[0]
 	_stance()
@@ -51,12 +59,13 @@ func _init() -> void:
 		var at := _joint(NAMES[i])
 		var par := _joint(NAMES[PARENT[i]]) if PARENT[i] >= 0 else Vector3.ZERO
 		json.offsets[NAMES[i]] = _v(at - par)
-	for lod in TRIS.size():
-		var mesh := _cut(arrays, TRIS[lod])
-		var path := "%s/hero_%s.res" % [out, ["hi", "lo"][lod]]
+	for lod in tris.size():
+		var mesh := _cut(arrays, tris[lod])
+		var path := "%s/%s_%s.res" % [out, prefix, ["hi", "lo"][lod]]
 		print(path, " ", ResourceSaver.save(mesh, path, ResourceSaver.FLAG_COMPRESS))
-	json.clips = _clips()
-	var f := FileAccess.open(out + "/hero.json", FileAccess.WRITE)
+	if with_clips:
+		json.clips = _clips()
+	var f := FileAccess.open("%s/%s.json" % [out, prefix], FileAccess.WRITE)
 	f.store_string(JSON.stringify(json, "", false))
 	f.close()
 	p.free()

@@ -443,6 +443,9 @@ func _subs() -> void:
 	var pd: Dictionary = t.bench[0]
 	var bench_n: int = t.bench.size()
 	check(m.subs_left(0) == 5, "Subs: five a match")
+	# The substitutes sit in their dugouts (round five: "add players waiting on the bench").
+	var mm: MultiMesh = m.bench._mmi[0].multimesh if m.bench._mmi[0] != null else null
+	check(m.bench.seated[0].size() == bench_n and m.bench.seated[1].size() == m.teams[1].bench.size() and mm != null and mm.instance_count == bench_n, "Bench: the %d substitutes sitting in the dugout" % bench_n)
 	check(m.ask_sub(off, pd), "Subs: one asked for")
 	check(not m.ask_sub(off, t.bench[1]), "Subs: not the same man twice")
 	check(m.subs_left(0) == 4, "Subs: the one asked for counts")
@@ -451,6 +454,11 @@ func _subs() -> void:
 	check(off.data.id == pd.id and off.pos_num == 11 and off.num == int(pd.num), "Subs: the substitute takes the place in the shape (%s, wearing %d)" % [off.data.id, off.num])
 	check(off.fatigue == 0.0 and off.came_on == 1, "Subs: fresh legs")
 	check(t.bench.size() == bench_n - 1 and int(t.subs) == 1, "Subs: off the bench, one made")
+	check(m.bench.seated[0].size() == bench_n - 1 and m.bench._mmi[0].multimesh.instance_count == bench_n - 1, "Bench: the substitute's seat empty")
+	var walk: Player = m._leaving[0] if not m._leaving.is_empty() else null
+	check(walk != null and walk.has_meta("seat") and absf((walk.get_meta("seat") as Vector3).z - Bench.SEAT_Z) < 1.5, "Bench: the man taken off walks to the dugout")
+	m.bench.sit_down(0, walk.data if walk != null else {})
+	check(m.bench.seated[0].size() == bench_n, "Bench: and sits down with the substitutes")
 	var red: Player = m.player_by_num(0, 5)
 	red.sent_off = true
 	check(not m.sub_ok(red, t.bench[0]), "Subs: a man sent off is not replaced")
@@ -473,6 +481,22 @@ func _subs() -> void:
 	check(drop != Vector3.INF and not hit.is_empty() and Vector2(drop.x - hit[1].x, drop.z - hit[1].z).length() < 0.01, "Ball: a high ball is marked where it comes down")
 	m.ball.global_position = me.global_position + Vector3(0, 1, 0)
 	check(m.hud._drop_spot() == Vector3.INF, "Ball: no ring for a ball at hand height")
+	# Switched to a man standing in the ring: CATCH and PULL up at once, and pressed early, kept till the ball comes
+	# into reach (round five: "the buttons should come up quicker so you can plan what to do").
+	m.phase = m.P.LIVE
+	m.controls.visible = true
+	m.carrier = null
+	m.ball.global_position = me.global_position + Vector3(-25, 12, 0)
+	var land := Sliotar.first_at_height(m.ball.global_position, m.ball.vel, m.CATCH_H)
+	if not land.is_empty():
+		me.position = Vector3(land[1].x + 1.5, 0.0, land[1].z)
+	m.active = me
+	m.hud.set_active(me)
+	var ids: Array = m.user_buttons()
+	check("CATCH" in ids and "PULL" in ids, "Buttons: CATCH and PULL as soon as you are switched to the man under a dropping ball (%s)" % [ids])
+	m._on_action("CATCH")
+	check(String(m._queued.get("id", "")) == "CATCH", "Buttons: CATCH pressed early waits for the ball")
+	m._queued = {}
 	# Tiredness: a sprint tires a man more than a walk, and a man with stamina less.
 	var a := Player.new({"stamina": 90, "speed": 80}, 0, {})
 	var b := Player.new({"stamina": 50, "speed": 80}, 0, {})
@@ -674,11 +698,15 @@ func _scenery() -> void:
 					if bad < 4:
 						print("  ", v, " ", name, " at ", o)
 		check(bad == 0, "Scenery %s: nothing on the field or in front of the camera (%d)" % [v, bad])
-		check(sc.get_child_count() <= 12, "Scenery %s: %d draw calls" % [v, sc.get_child_count()])
+		# One a kind: the parish field the most (its village and hedgerows, and since 0.5.0 the floodlights).
+		check(sc.get_child_count() <= 13, "Scenery %s: %d draw calls" % [v, sc.get_child_count()])
+		if v != "parish":
+			check(sc.count("floodlight") >= 4, "Scenery %s: the floodlights (%d)" % [v, sc.count("floodlight")])
 		# The crowd faces the play: every spectator toward the centre of the field; from the television gantry (behind
 		# the near stand) the near stand is seen from behind, the far one from the front (round four: "the crowd to the
 		# near side is looking the wrong direction").
 		var cr: Crowd = st.crowd
+		check(cr.material_override is ShaderMaterial and (cr.material_override as ShaderMaterial).get_shader_parameter("mask") != null and Crowd.sheet().get_width() == Crowd.FIG_W * Crowd.FIGS * 2, "Crowd %s: the rendered fans and their shirt mask" % v)
 		var wrong := 0
 		var near_back := 0
 		var near := 0
@@ -726,7 +754,12 @@ func _hero_body() -> void:
 	var ref := Player.new({}, -1, {"kind": "referee"}, "referee")
 	add_child(ref)
 	await frames(1)
-	check(not (ref.body is HeroBody), "An official keeps the cel-shaded figure")
+	check(ref.body is PersonBody and (ref.body as PersonBody).who == "referee", "A referee is drawn with the referee's model")
+	var ump := Player.new({}, -1, {"kind": "umpire"}, "umpire")
+	add_child(ump)
+	await frames(1)
+	check(ump.body is PersonBody and (ump.body as PersonBody).who == "umpire", "An umpire is drawn with the umpire's model, in his white coat")
+	ump.queue_free()
 	# The sprint: at full speed, phase pi/2, the left thigh swung forward and the right back.
 	pl.vel = Vector3(0, 0, 7.5)
 	pl._ph = PI * 0.5
@@ -788,6 +821,16 @@ func _replay() -> void:
 	await frames(5)
 	m.replay.stop()
 	check(not m.replay.playing and m.controls.visible, "Replay: a tap skips it")
+	# Every score shown again (round five: "I'm not seeing replays after scores").
+	m._score(0, "point", {})
+	n = 0
+	while not m.replay.playing and n < 90:
+		await frames(1)
+		n += 1
+	check(m.replay.playing, "Replay: a score shown again (%d frames after)" % n)
+	m.replay.stop()
+	var rim: Array = m.ball.find_children("*", "MeshInstance3D", true, false).filter(func(x): return x.mesh is TorusMesh)
+	check(rim.size() == 1, "Sliotar: its rim (the stitched band)")
 	m.queue_free()
 	await frames(2)
 	# Watching a match (no side yours): nothing kept for a replay, the scoreboard still running.

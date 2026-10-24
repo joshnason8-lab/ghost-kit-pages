@@ -35,25 +35,63 @@ var _mesh: MeshInstance3D
 var _shadow: MeshInstance3D
 var _prev := Vector3.ZERO
 
-static var _mat: StandardMaterial3D
+static var _mat: ShaderMaterial
+static var _rim_mat: ShaderMaterial
+
+
+## The leather: off-white with a fine grain, lit from above and the sun's side so it reads as a ball, never a flat
+## dot; the rim the same leather a shade darker, with its stitches.
+static func _leather(rim: bool) -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded;
+uniform bool rim = false;
+varying vec3 wn;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+void vertex() { wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz); }
+void fragment() {
+	vec3 c = rim ? vec3(0.86, 0.83, 0.74) : vec3(0.97, 0.95, 0.89);
+	c *= 0.94 + 0.06 * hash(floor(UV * (rim ? vec2(60.0, 6.0) : vec2(90.0, 50.0))));
+	if (rim && fract(UV.x * 56.0) < 0.35) { c = vec3(0.45, 0.32, 0.22); }   // the stitches
+	float l = 0.62 + 0.45 * clamp(dot(normalize(wn), normalize(vec3(0.35, 0.85, 0.4))), 0.0, 1.0);
+	ALBEDO = c * l;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("rim", rim)
+	return m
 
 
 func _ready() -> void:
+	# The ball: white leather, a little grain, lit from the sun's side; and its raised rim, the stitched seam where
+	# the cover's two pieces meet, a ring round it (it shows the spin in flight and on a replay).
 	_mesh = MeshInstance3D.new()
 	var sm := SphereMesh.new()
 	sm.radius = RADIUS
 	sm.height = RADIUS * 2.0
-	sm.radial_segments = 10
-	sm.rings = 6
+	sm.radial_segments = 20
+	sm.rings = 12
 	_mesh.mesh = sm
 	if _mat == null:
-		_mat = StandardMaterial3D.new()
-		_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_mat.albedo_color = Color(0.98, 0.97, 0.92)
+		_mat = _leather(false)
+		_rim_mat = _leather(true)
 	_mesh.material_override = _mat
 	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_mesh.scale = Vector3.ONE * LOOK_SCALE
 	add_child(_mesh)
+	var rim := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = RADIUS * 0.93
+	tm.outer_radius = RADIUS * 1.09
+	tm.rings = 28
+	tm.ring_segments = 6
+	rim.mesh = tm
+	rim.material_override = _rim_mat
+	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	rim.rotation_degrees = Vector3(0, 0, 70)
+	_mesh.add_child(rim)
 	_shadow = MeshInstance3D.new()
 	var q := QuadMesh.new()
 	q.size = Vector2(0.22, 0.22)

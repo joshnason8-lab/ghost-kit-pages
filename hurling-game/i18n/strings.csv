@@ -2,7 +2,6 @@ keys,en,ga
 GAME_TITLE,Hurling Heroes,Hurling Heroes
 TAGLINE,"Hurling, as it is played.","An iománaíocht, mar a imrítear í."
 PROGRAMME,Clár an Lae · Match programme,Clár an Lae
-COVER_FOOT,Fifteen a side · Two halves · Every rule,Cúigear déag sa taobh · Dhá leath · Gach riail
 CONTENTS,In this programme,Sa chlár seo
 LOADING,Lining the pitch…,Ag marcáil na páirce…
 MENU_QUICK,Throw-in,Caitheamh isteach
@@ -15,7 +14,6 @@ MENU_HOWTO,How to Play,Conas imirt
 MENU_HOWTO_DESC,"The rules, the controls and the officials' signals.","Na rialacha, na rialuithe agus comharthaí na n-oifigeach."
 MENU_SETTINGS,Settings,Socruithe
 MENU_SETTINGS_DESC,"Language, graphics, controls, sound.","Teanga, grafaic, rialuithe, fuaim."
-MENU_FOOT,"No real players or competitions: counties by their place names, every hurler invented.","Gan imreoirí ná comórtais fhíora: contaetha de réir a logainmneacha, gach iománaí cumtha."
 CONTINUE,Continue,Ar aghaidh
 PLAY,Play,Imir
 THROW_IN,Throw in,Caith isteach

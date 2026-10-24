@@ -9,6 +9,20 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.5.0
+
+- **Every score shown again** from behind the goal (tap to skip), as a wide is. The still white ball that sat in the
+  middle of a replay is gone (it was the ball's marker, drawn for the match camera).
+- **The buttons come up sooner**: switch to a man standing in the gold ring under a dropping ball and CATCH and PULL
+  are there at once. Press one early and he does it when the ball comes to him.
+- **New people**: real fans in the stands (from the front, or the backs of their heads behind a stand), a referee in
+  black and umpires in white coats, all modelled. The substitutes sit in the dugouts, and the men taken off walk
+  over and sit down with them.
+- **A new sliotar** (cream leather, the stitched rim) and new floodlights on every mast and the stadium roof, lit at
+  dusk and at night.
+- **The run**: the hurley carried lower, clear of the legs, the free arm swinging.
+- The home screen is quieter: no line of small print under the title.
+
 ## New in 0.4.1
 
 - **The crowd faces the play**: the people in the stand under the television camera were drawn facing the camera,

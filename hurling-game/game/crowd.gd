@@ -1,66 +1,33 @@
 class_name Crowd
 extends MultiMeshInstance3D
-## The spectators: flat cut-outs from one small sheet of painted figures, every one an instance of the same quad, so a
-## stand of thousands is one draw call. Each person faces the pitch (their instance's +Z, toward the centre of the
-## field); the shader turns the cut-out to the camera so it is never seen edge-on, and draws the person from the front
-## when the camera is in front of them, from behind (the back of the head, no face) when it is behind them, as the
-## television camera is behind the near stand. It picks the figure and shirt from the sheet, and makes them fidget,
-## and jump and wave when the crowd goes up (excite).
+## The spectators: flat cut-outs from one sheet of people, every one an instance of the same quad, so a stand of
+## thousands is one draw call. The sheet is rendered from the maker's own models (two fans made with Meshy, in four
+## poses each: tools/crowd/render_fans.gd), head to waist, from the front and from behind. Each person faces the pitch
+## (their instance's +Z, toward the centre of the field); the shader turns the cut-out to the camera so it is never
+## seen edge-on, and draws the person from the front when the camera is in front of them, from behind (the back of
+## the head, no face) when it is behind them, as the television camera is behind the near stand. It picks the figure
+## and shirt (the sheet's mask says where the shirt is), and makes them fidget, and jump and wave when the crowd goes
+## up (excite). (Round five: "upgrade the look of the fans, they just look like shapes".)
 
 const FIGS := 8          # figures across the sheet, each drawn twice: from the front, then (FIGS more) from behind
-const FIG_W := 48
-const FIG_H := 96
+const FIG_W := 64
+const FIG_H := 128
+const SHEET := "res://assets/crowd/sheet.png"
+const MASK := "res://assets/crowd/mask.png"
 
-static var _sheet: ImageTexture
+static var _sheet: Texture2D
+static var _mask: Texture2D
 static var _mat: ShaderMaterial
 
 var spots: Array[Vector3] = []   # where people stand or sit (their feet)
 var facings: Array[Vector3] = [] # the way each faces: toward the centre of the field, flat
 
 
-## The sheet: eight people, head and shoulders and a shirt, a few skin and hair tones, drawn once.
-static func sheet() -> ImageTexture:
-	if _sheet:
-		return _sheet
-	var img := Image.create_empty(FIG_W * FIGS * 2, FIG_H, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-	var skins := [Color("e0b48c"), Color("c98a5a"), Color("b07448"), Color("8d5a36")]
-	var hairs := [Color("15100c"), Color("2b1d14"), Color("15100c"), Color("4a3a2a")]
-	for f in FIGS * 2:
-		var back := f >= FIGS
-		var ox := f * FIG_W
-		var skin: Color = skins[f % 4]
-		var hair: Color = hairs[(f + 1) % 4]
-		var bald := f % FIGS == 6
-		# The shirt is white here: the shader tints it with each person's colour.
-		for y in FIG_H:
-			for x in FIG_W:
-				var u := (x + 0.5) / FIG_W - 0.5
-				var v := (y + 0.5) / FIG_H
-				var c := Color(0, 0, 0, 0)
-				# Body: shoulders from 0.42 down, a rounded top.
-				var shoulder := 0.45 + 0.04 * float(f % 3)
-				if v > shoulder and absf(u) < 0.42 - maxf(0.0, (shoulder + 0.08 - v)) * 2.2:
-					c = Color(1, 1, 1, 1)
-				# Arms a shade darker at the sides.
-				if c.a > 0.0 and absf(u) > 0.3:
-					c = Color(0.85, 0.85, 0.85, 1)
-				# Head.
-				var hd := Vector2(u / 0.2, (v - 0.3) / 0.15)
-				if hd.length() < 1.0:
-					c = skin
-					if back:
-						# From behind: the back of the head, all hair (a bald man's crown and a fringe of hair).
-						if not bald or v > 0.36:
-							c = hair
-					elif v < 0.26 + 0.02 * float(f % 2) or (f % 4 == 3 and absf(u) > 0.13):
-						c = hair
-				# Neck.
-				if v > 0.42 and v < shoulder + 0.02 and absf(u) < 0.07:
-					c = skin.darkened(0.25 if back else 0.1)
-				img.set_pixel(ox + x, y, c)
-	img.generate_mipmaps()
-	_sheet = ImageTexture.create_from_image(img)
+## The sheet: eight people from the front, then the same eight from behind (and its shirt mask).
+static func sheet() -> Texture2D:
+	if _sheet == null:
+		_sheet = load(SHEET)
+		_mask = load(MASK)
 	return _sheet
 
 
@@ -71,7 +38,8 @@ static func material() -> ShaderMaterial:
 	sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_opaque;
-uniform sampler2D sheet : source_color, filter_linear_mipmap;
+uniform sampler2D sheet : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D mask : filter_linear_mipmap, repeat_disable;
 uniform float figs = 8.0;
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
@@ -98,14 +66,17 @@ void fragment() {
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
 	shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
-	float is_shirt = step(0.84, min(c.r, min(c.g, c.b)));
-	vec3 col = mix(c.rgb, shirt * c.r, is_shirt);
+	// The shirt is white on the sheet: its shading kept, its colour each person's.
+	float is_shirt = smoothstep(0.3, 0.7, texture(mask, uv).r);
+	float shade = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722)) / 0.86;
+	vec3 col = mix(c.rgb, shirt * shade, is_shirt);
 	ALBEDO = pow(col, vec3(2.2)) * light;
 }
 """
 	_mat = ShaderMaterial.new()
 	_mat.shader = sh
 	_mat.set_shader_parameter("sheet", sheet())
+	_mat.set_shader_parameter("mask", _mask)
 	_mat.set_shader_parameter("figs", float(FIGS))
 	return _mat
 

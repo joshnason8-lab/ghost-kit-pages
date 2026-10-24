@@ -365,6 +365,16 @@ func replay(on: bool, skip: Callable) -> void:
 	box.add_child(hint)
 
 
+## Redraws the marks (the replay steps the picture while the match, and so tick, stands still).
+## Where a high ball near your player comes down to catching height (Vector3.INF when there is none).
+func drop_spot() -> Vector3:
+	return _drop
+
+
+func redraw_marks() -> void:
+	_marks.queue_redraw()
+
+
 func call_line(text: String) -> void:
 	_call.text = text
 	UI.refit(_call)
@@ -395,6 +405,9 @@ func restart_tag(r: Dictionary) -> void:
 
 func set_active(pl: Player) -> void:
 	_active = pl
+	# Where a high ball comes down, for him, now (not at the next look): his buttons come with it.
+	_drop = _drop_spot()
+	_drop_t = 0.15
 
 
 func intro(text: String, how := "") -> void:
@@ -442,7 +455,10 @@ func _next_camera() -> void:
 
 ## The marks drawn over the 3D picture: the sliotar's dot (or an arrow to it), your player's ring and steps.
 func _draw_marks() -> void:
-	var cam: Camera3D = m.cam.camera
+	# Through whichever camera is showing (a replay has its own): the ball's marker follows the ball on the screen.
+	var cam: Camera3D = root.get_viewport().get_camera_3d()
+	if cam == null:
+		cam = m.cam.camera
 	var vp := root.get_viewport_rect().size
 	var b: Vector3 = m.ball.global_position
 	if m.ball.state != Sliotar.HELD or m.carrier == null:

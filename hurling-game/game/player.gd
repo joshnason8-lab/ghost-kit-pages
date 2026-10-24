@@ -1,6 +1,6 @@
 class_name Player
 extends Node3D
-## One hurler (or an official) on the pitch: his body (HeroBody; an official's ToonBody), how he moves and the move he is making. The match
+## One hurler (or an official) on the pitch: his body (HeroBody; an official's PersonBody), how he moves and the move he is making. The match
 ## and the AI decide what he does by setting want_vel, face_to and starting actions; this is the only code that moves
 ## him (integrate), so nothing else writes his position and nothing jumps in a frame: his speed changes by at most
 ## his acceleration, he turns at a person's rate, and his strides lengthen and quicken with his speed.
@@ -114,11 +114,12 @@ func _ready() -> void:
 	body.rotation.y = yaw
 
 
-## A hurler is drawn with the owner's model; an official with the cel-shaded figure.
+## A hurler is drawn with the owner's model; an official with a Meshy model (the referee's for the referee and the
+## linesmen, the umpire's in his white coat for the umpires).
 func _new_body(look: Dictionary) -> ToonBody:
 	if role == "" and String(look.get("kind", "player")) == "player":
 		return HeroBody.new(look)
-	return ToonBody.new(look)
+	return PersonBody.new(look)
 
 
 static func speed_of(pd: Dictionary) -> float:
@@ -337,6 +338,13 @@ func _pose(now: float) -> Dictionary:
 		for i in (RUN_ARMS if is_official() else (RUN_BODY if ball_stick or ball_hand else RUN_ARM_L)):
 			p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(run_p[0][i], wr)
 		p.hips_y = lerpf(float(p.get("hips_y", 0.0)), float(run_p[1]), wr)
+		if not is_official() and not ball_stick:
+			# The hurley carried as hurlers carry it at a run (round five: "running looks a bit awkward with the
+			# hurley"): the right arm swings with the stride, a little less than the free arm, and the wrist turns
+			# the hurley up to point forward, clear of the legs and the grass, rather than hanging straight down.
+			for i in [8, 9]:
+				p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(run_p[0][i], wr * 0.65)
+			p.hand_r = HeroBody.turn(p.get("hand_r", Vector3.ZERO)).slerp(HeroBody.turn(Vector3(-42.0, 0, 0)), wr)
 	if action != "" and action_t <= action_len + 0.001:
 		var t := clampf(action_t / maxf(0.01, action_len), 0.0, 1.0)
 		if SWING_CLIP.has(action):

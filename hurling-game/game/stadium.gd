@@ -1,7 +1,7 @@
 class_name Stadium
 extends Node3D
 ## The venue round the pitch, built in code and merged: the structure in one draw call (vertex-coloured, lit per
-## vertex), the nets in one more (see-through), the floodlights' lamps in one, the crowd in one (Crowd), the grass and
+## vertex), the nets in one more (see-through), the crowd in one (Crowd), the grass and
 ## its lines in two (Pitch.build). Sky and light for the time of day. The camera's stand is on the near (+z) side,
 ## so that side has only what the camera can see over: a rail, the dugouts and the advertising-free hoarding.
 ##   parish   a club's field at dusk: a small covered stand, a grass bank, a rail round the field, ball-stop nets
@@ -31,19 +31,19 @@ func _ready() -> void:
 	add_child(Pitch.build(time))
 	var g := Geo.new()
 	var nets := Geo.new()
-	var lamps := Geo.new()
 	var fields := Geo.new()
 	var spots: Array[Vector3] = []
 	scenery = Scenery.new(time)
 	_goals(g, nets)
+	_dugouts(g)
 	_countryside(g, fields)
 	match kind:
 		"parish":
-			_parish(g, nets, lamps, spots)
+			_parish(g, nets, spots)
 		"stadium":
-			_stadium(g, lamps, spots)
+			_stadium(g, spots)
 		_:
-			_county(g, lamps, spots)
+			_county(g, spots)
 	add_child(g.commit(Geo.material(true)))
 	add_child(fields.commit(field_material(time)))
 	scenery.commit()
@@ -55,9 +55,6 @@ func _ready() -> void:
 	nm.vertex_color_use_as_albedo = true
 	nm.albedo_color = Color(1, 1, 1, 0.22)
 	add_child(nets.commit(nm))
-	if not lamps.verts.is_empty():
-		var lm := Geo.material(false)
-		add_child(lamps.commit(lm))
 	crowd = Crowd.new()
 	var palette := home_colours.duplicate()
 	crowd.build(spots, Game.crowd_density() * (0.55 if kind == "parish" else 1.0), palette, hash(kind))
@@ -97,7 +94,11 @@ func _rail(g: Geo, inset: float, h := 1.0) -> void:
 	var c := Color("b9bfc4")
 	var x := H + inset
 	var z := W + inset
-	for e in [[Vector3(-x, 0, -z), Vector3(x, 0, -z)], [Vector3(-x, 0, z), Vector3(x, 0, z)],
+	# The far side's rail stops at the dugouts (they stand in its line) and goes on between them.
+	var gap := Bench.FIRST + (Bench.SEATS - 1) * Bench.STEP + 1.0
+	var gap_in := Bench.FIRST - 1.0
+	for e in [[Vector3(-x, 0, -z), Vector3(-gap, 0, -z)], [Vector3(-gap_in, 0, -z), Vector3(gap_in, 0, -z)],
+			[Vector3(gap, 0, -z), Vector3(x, 0, -z)], [Vector3(-x, 0, z), Vector3(x, 0, z)],
 			[Vector3(-x, 0, -z), Vector3(-x, 0, z)], [Vector3(x, 0, -z), Vector3(x, 0, z)]]:
 		var a: Vector3 = e[0]
 		var b: Vector3 = e[1]
@@ -153,16 +154,30 @@ func _terrace(g: Geo, z0: float, z1: float, x0: float, dir: float, rows: int, co
 var mast_spots: Array[Vector3] = []   # where the floodlight masts stand (tests: none between the camera and the field)
 
 
-func _mast(g: Geo, lamps: Geo, p: Vector3, h: float, face: Vector3) -> void:
+func _mast(g: Geo, p: Vector3, h: float, face: Vector3) -> void:
 	mast_spots.append(p)
 	g.cylinder(p, p + Vector3(0, h, 0), 0.35, 0.22, Color("9aa2aa"), 6, false)
-	var head := p + Vector3(0, h, 0)
-	var side := face.cross(Vector3.UP).normalized()
-	g.box(head + Vector3(0, 0.8, 0), Vector3(4.0, 2.4, 0.4), Color("6a737c"), atan2(side.x, side.z) + PI * 0.5)
-	for i in 3:
-		for j in 2:
-			var lp := head + side * (float(i) - 1.0) * 1.2 + Vector3(0, 0.2 + j * 1.2, 0) + face * 0.25
-			lamps.box(lp, Vector3(0.9, 0.8, 0.9), Color(1.0, 0.97, 0.85) if time != "day" else Color(0.8, 0.8, 0.78), 0.0, false)
+	# The lamp array on top (the Meshy floodlight, 4.5 m across), aimed down at the field.
+	scenery.add("floodlight", p + Vector3(0, h + 1.6, 0), atan2(face.x, face.z), 2.4, deg_to_rad(22.0))
+
+
+## The dugouts on the far touchline either side of halfway, where the substitutes sit (Bench) and come on: a
+## shelter (back wall, sides and a sloping roof) with a row of wooden benches in it, facing the field.
+func _dugouts(g: Geo) -> void:
+	var shell := Color("2c3640")
+	var roof := Color("8a96a0")
+	for sx: float in [-1.0, 1.0]:
+		var x0 := sx * (Bench.FIRST - 0.9)
+		var x1 := sx * (Bench.FIRST + (Bench.SEATS - 1) * Bench.STEP + 0.9)
+		var cx := (x0 + x1) * 0.5
+		var w := absf(x1 - x0)
+		var back := Bench.SEAT_Z - 0.85
+		g.box(Vector3(cx, 1.15, back), Vector3(w, 2.3, 0.15), shell)
+		for x: float in [x0, x1]:
+			g.box(Vector3(x, 1.1, back + 0.95), Vector3(0.12, 2.2, 1.9), shell)
+		g.box(Vector3(cx, 2.3, back + 1.0), Vector3(w + 0.3, 0.08, 2.2), roof)
+		for i in int(w / 1.2):
+			scenery.add("painted_bench_low", Vector3(minf(x0, x1) + 0.65 + i * 1.2, 0, Bench.SEAT_Z - 0.05), 0.0)
 
 
 ## Trees as Irish grounds have them round the field: oak and the darker broadleaves (ash, sycamore), cut-outs of
@@ -282,7 +297,7 @@ void fragment() {
 	return m
 
 
-func _parish(g: Geo, nets: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
+func _parish(g: Geo, nets: Geo, spots: Array[Vector3]) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	_rail(g, 3.0)
@@ -304,8 +319,6 @@ func _parish(g: Geo, nets: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 	# People along the rail on the near side, and the dugouts.
 	for i in 90:
 		spots.append(Vector3(rng.randf_range(-H, H), 0.0, W + 4.0 + rng.randf_range(0, 1.5)))
-	for s: float in [-1.0, 1.0]:
-		g.box(Vector3(10.0 * s, 1.1, -W - 3.2), Vector3(8.0, 2.2, 1.6), Color("3a4652"))
 	# Ball-stop nets behind each goal: tall poles and a net between them.
 	for s: float in [-1.0, 1.0]:
 		var x := (H + 9.0) * s
@@ -322,7 +335,7 @@ func _parish(g: Geo, nets: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 		for sz: float in [-1.0, 1.0]:
 			# The near side's masts stand back behind the camera's gantry, out of the picture.
 			var p := Vector3((H - 10.0) * sx, 0, (W + 9.0) * sz if sz < 0.0 else W + 32.0)
-			_mast(g, lamps, p, 24.0, (-p).normalized())
+			_mast(g, p, 24.0, (-p).normalized())
 	# Trees round the field.
 	_trees(rng, -H - 40.0, H + 40.0, -W - 40.0, -W - 18.0, 60)
 	_trees(rng, H + 16.0, H + 40.0, -W, W, 18)
@@ -344,16 +357,13 @@ func _parish(g: Geo, nets: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 		scenery.add("mossy_rocks_low", Vector3(-H - 30.0 + i * 9.5, 0, -W - 44.0 + rng.randf_range(-0.6, 0.6)), rng.randf_range(-0.2, 0.2) + (PI if i % 2 else 0.0), rng.randf_range(0.8, 1.0))
 	# A lough beyond the village, as many clubs have: it catches the sunset.
 	add_child(_lake(Vector3(LAKE.get_center().x, 0.02, LAKE.get_center().y), LAKE.size))
-	# Benches: by the clubhouse, and in front of the dugouts for the subs.
+	# Benches by the clubhouse.
 	for i in 3:
 		var p := Vector3(-H - 13.5, 0, -24.0 + i * 6.0)
 		scenery.add("park_bench_low", p, PI * 0.5)
-	for sx: float in [-1.0, 1.0]:
-		for i in 4:
-			scenery.add("painted_bench_low", Vector3(10.0 * sx - 3.0 + i * 2.0 * 1.0, 0, -W - 2.0), 0.0)
 
 
-func _county(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
+func _county(g: Geo, spots: Array[Vector3]) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	g.box(Vector3(0, 0.5, -W - 4.5), Vector3(Pitch.LENGTH + 20.0, 1.0, 0.4), Color("1f4a32"))
@@ -381,14 +391,14 @@ func _county(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 	for sx: float in [-1.0, 1.0]:
 		for sz: float in [-1.0, 1.0]:
 			var p := Vector3((H + 12.0) * sx, 0, (W + 14.0) * sz if sz < 0.0 else W + 32.0)
-			_mast(g, lamps, p, 38.0, (-p).normalized())
+			_mast(g, p, 38.0, (-p).normalized())
 	_trees(rng, -H - 60.0, H + 60.0, -W - 70.0, -W - 40.0, 30)
 	# The county town round the ground: terraced rows on the streets behind the ends and beyond the far stand, the
 	# street lamps outside.
 	_town(rng, H + 34.0, 120.0)
 
 
-func _stadium(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
+func _stadium(g: Geo, spots: Array[Vector3]) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 13
 	g.box(Vector3(0, 0.6, -W - 5.0), Vector3(Pitch.LENGTH + 30.0, 1.2, 0.4), Color("1f5a3a"))
@@ -417,9 +427,10 @@ func _stadium(g: Geo, lamps: Geo, spots: Array[Vector3]) -> void:
 		for sz: float in [-1.0]:
 			var p := Vector3((H + 14.0) * sx, 0, (W + 14.0) * sz)
 			g.box(p + Vector3(0, 12.0, 0), Vector3(18.0, 24.0, 18.0), Color("5e6a76"), PI * 0.25)
-	for i in 9:
-		var x := lerpf(-78.0, 78.0, float(i) / 8.0)
-		lamps.box(Vector3(x, 38.5, -W - 40.0), Vector3(3.0, 0.6, 1.0), Color(1.0, 0.97, 0.85) if time != "day" else Color(0.85, 0.85, 0.82), 0.0, false)
+	# Floodlights along the front of the far stand's roof, aimed down at the field.
+	for i in 7:
+		var x := lerpf(-72.0, 72.0, float(i) / 6.0)
+		scenery.add("floodlight", Vector3(x, 31.2, -W - 23.5), 0.0, 1.8, deg_to_rad(35.0))
 	# Dublin's terraced streets round the national stadium, on the skyline beyond the stands.
 	_town(rng, H + 52.0, 170.0)
 

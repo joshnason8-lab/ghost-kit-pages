@@ -135,6 +135,53 @@ Moved or skipped, and why:
   from the gantry the near side is seen from behind and the far side from the front. `tests/venue_view.tscn` adds
   shots from the pitch at both stands and from behind the near one (`docs/graphics/crowd_low.jpg`, `crowd_high.jpg`).
 
+## Done (0.5.0-beta, round five, 24 October 2026)
+
+The owner's round-five list, item by item:
+
+- **The menu's small print** ("fifteen a side, two halves, every rule" under the cover, and the line that no real
+  players or competitions are shown): both gone. The disclaimer is not needed on the home screen; it stays in
+  Settings > About > Licences and in the store listing, which is where a reader looks for it.
+- **The fans** ("they just look like shapes"): the crowd sheet is now rendered from two fans made with Meshy (text to
+  3D, refined, rigged, then baked onto the game's bones like the referee), each in four poses (still, clapping, an
+  arm up, looking along the stand), from the front and from behind (`tools/crowd/render_fans.tscn`, writing
+  `assets/crowd/sheet.png` and its shirt mask). Still one quad a person and one draw call a crowd; the shirt is
+  tinted per person through the mask, so a home crowd still wears its county's colours.
+- **The sliotar** (Meshy's preview was egg-shaped): made in code instead, a cream leather ball with grain and the
+  raised stitched rim, two small meshes. **The floodlights**: a Meshy model (sixteen lamps in a frame; the first
+  try came back as a bar, the second was right) on every mast and along the stadium's roof, aimed at the field,
+  the glass lit warm white at dusk and at night. The old code-built lamp boxes are gone.
+- **Replays after scores**: every score is shown again from behind the goal, as a wide was. **The still white ball
+  in a replay** was the HUD's ball marker, still drawn from the match camera's view while the replay camera was on;
+  the marks now follow whichever camera is drawing, and are redrawn each replay frame.
+- **The run with the hurley**: two Meshy hurlers were tried (a hurley in hand was asked for both times); neither had
+  a hurley and both wore an American-football helmet, so the owner's model stays and the run was fixed instead: the
+  hurley is carried lower and in front (the hand at -42 degrees, blended in at speed), the free arm swings with the
+  stride. Checked frame by frame in a strip of the sprint: the bas clear of the legs.
+- **Buttons sooner after a switch**: switched to a man standing in the gold ring where a high ball comes down, CATCH
+  and PULL are up at once (before, only once the ball was within reach); the ring is worked out the moment you
+  switch. Pressed early, the catch or pull is kept and done when the ball comes into reach (or forgotten if he moves
+  off or it does not come), and the button flashes to say so.
+- **The referee and umpires**: Meshy models (a referee in black; umpires in long white coats), rigged, retargeted
+  onto the game's 17 bones (`tools/player/meshy_map.tres`) and baked like the hurlers (about 4,200 triangles each),
+  with a cel-shaded texture. The brand marks Meshy painted on their chests were cleaned out of the textures
+  (`tools/player/people_textures.py`). Every signal plays on them as before.
+- **The bench**: each side's eleven substitutes sit in a covered dugout on the far touchline either side of halfway
+  (every ground), one baked seated model per side drawn as a MultiMesh (two draw calls). A substitute's seat empties
+  when he goes on; the man taken off walks to the dugout and sits down.
+
+Meshy: nine text-to-3D tasks (referee, umpire, two fans and the second floodlight refined; the referee, umpire and
+fans rigged), each kept in `tools/meshy/tasks.json` with its prompt (`tools/meshy/meshy.py` fetches or rebuilds
+them; the key is the session proxy's, never in the repository). The raw GLBs are not committed, only the baked meshes.
+
+Perf (`tests/perf_probe.tscn`, the stadium, Low / Medium / High): 90 / 90 / 138 draw calls and 119,000 / 187,000 /
+325,000 triangles (0.4.0: 87 / 105 / 178, 82,000 / 164,000 / 320,000). The benches add two draw calls and about
+37,000 triangles at every level (22 seated men of the lighter mesh), the officials' models about 3,000 each; the
+officials lost their outline pass, so Medium and High draw fewer calls than before.
+
+`docs/graphics/round5.jpg`: the new crowd from the front (High) and from behind (Low), the substitutes in the parish
+field's dugout, the referee and umpires signalling.
+
 ## Next (in order)
 
 1. **On a real phone**: the beta on a 2-3 GB Mali-G52/G57 phone (Galaxy A0x/A1x): frame times on Low (the dev
@@ -151,8 +198,9 @@ Moved or skipped, and why:
 9. **Club hurling**: invented parish clubs in a county championship, at the parish field.
 10. A stand model for the stadium and the county ground (a section with its seat rows at a known rise and depth, so
     the crowd can be seated on it), if the owner wants one: the only gap the graphics update left.
-11. Officials and goalkeepers in the owner's style, and a number per man on the back (the owner's model, without the
-    11 in its texture, or a texture of numbers).
+11. Goalkeepers in their own jerseys, and a number per man on the back (the owner's model, without the 11 in its
+    texture, or a texture of numbers).
+12. A hurler model with the hurley in hand, if a later Meshy model gets it right (two tries did not).
 
 ## Shared assets
 

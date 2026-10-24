@@ -1,9 +1,11 @@
 # Meshy brief: models the owner may choose to generate
 
-**No Meshy credits have been spent on this game.** Since 0.3.0 the hurlers are the owner's own model (a GLB, with four
-Mixamo clips), baked for the game by `tools/player/` (its README says how; the same route takes any humanoid GLB with
-a Mixamo-named skeleton). The officials, the crowd and the venues are built in code (`game/body.gd`,
-`game/stadium.gd`, `game/crowd.gd`). This is what to order if more models are wanted, and how they would slot in.
+**What has been made (0.5.0, round five):** the referee, the umpire, two fans for the crowd sheet and the
+floodlight, each kept in `tools/meshy/tasks.json` with its prompt (`tools/meshy/meshy.py` makes and fetches them;
+`docs/PROGRESS.md` says how each went in). Tried and not used: the sliotar (egg-shaped; made in code instead), a
+first floodlight (a bar), and two hurlers with a hurley in hand (neither had the hurley; both wore an
+American-football helmet). The hurlers stay the owner's own model (`tools/player/`). The rest of this brief is what
+could still be ordered, and how it slots in.
 
 ## How a model replaces the code-built body
 

@@ -113,17 +113,14 @@ func _build_ui() -> void:
 		_cards.append(r)
 	var foot := HBoxContainer.new()
 	right.add_child(foot)
-	var note := UI.label(tr("MENU_FOOT"), "MutedLabel", 15)
-	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UI.fit(note, 2)
-	foot.add_child(note)
+	foot.alignment = BoxContainer.ALIGNMENT_END
 	var ver := UI.label("v" + String(ProjectSettings.get_setting("application/config/version", "0.1")), "MutedLabel", 15)
 	ver.mouse_filter = Control.MOUSE_FILTER_STOP
 	ver.gui_input.connect(_on_version_input)
 	foot.add_child(ver)
 
 
-## The programme's cover, printed on cream paper: the masthead, the picture with the name over it, the foot line.
+## The programme's cover, printed on cream paper: the masthead, the picture with the name over it.
 func _cover() -> Control:
 	var card := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
@@ -184,10 +181,6 @@ func _cover() -> Control:
 	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.fit(tag, 2)
 	iv.add_child(tag)
-	var bottom := UI.label(tr("COVER_FOOT"), "EyebrowLabel", 14, Color(Game.C_PRINT, 0.7))
-	bottom.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UI.fit(bottom, 2)
-	v.add_child(bottom)
 	_cards.append(card)
 	return card
 

@@ -9,7 +9,8 @@ The hurlers: the maker's own player model, moving with motion capture from Adobe
 The skies, the grass and field textures, the small broadleaf and fern cut-outs, the painted bench, the street lamps
 and the mossy rocks: Poly Haven (polyhaven.com), CC0. The oak and broadleaf trees, the hedgerow grasses, the
 thatched cottages, the terraced houses and the park bench: the maker's own models.
-Officials, stands, crowd, sliotar and sounds made in code for the game; the menu music written for it
+The referee, the umpires, the people in the crowd and the floodlights: the maker's own models, made with Meshy
+(meshy.ai). Stands, sliotar and sounds made in code for the game; the menu music written for it
 (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
 The game is not connected with, or endorsed by, any sporting body, county board or club. Counties appear by their
 place names, in colours of the game's own design; every player is invented."""

@@ -42,7 +42,8 @@ func _ready() -> void:
 		# And from behind the near stand, where the television camera is: the backs of their heads.
 		for side in [["near", Vector3(-20.0, 2.0, Pitch.HALF_W - 6.0), Vector3(-20.0, 3.5, Pitch.HALF_W + 9.0)],
 				["far", Vector3(-20.0, 2.0, -Pitch.HALF_W + 6.0), Vector3(-20.0, 4.5, -Pitch.HALF_W - 10.0)],
-				["near_behind", Vector3(-20.0, 7.5, Pitch.HALF_W + 17.0), Vector3(-20.0, 2.0, Pitch.HALF_W + 7.0)]]:
+				["near_behind", Vector3(-20.0, 7.5, Pitch.HALF_W + 17.0), Vector3(-20.0, 2.0, Pitch.HALF_W + 7.0)],
+				["bench", Vector3(4.0, 1.7, -Pitch.HALF_W + 9.0), Vector3(14.0, 0.9, -Pitch.HALF_W - 3.4)]]:
 			var c := Camera3D.new()
 			m.add_child(c)
 			c.fov = 34.0

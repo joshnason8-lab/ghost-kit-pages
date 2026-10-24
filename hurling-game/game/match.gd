@@ -55,7 +55,8 @@ var live_real := 0.0         # real seconds the ball has been live this match (t
 var _subs_due: Array = []    # substitutions asked for, made at the next break: [{off: Player, pd: Dictionary}]
 var _leaving: Array = []     # the men substituted, walking off
 var coach: Coach = null      # the coach's tips, in your first match (Settings > Coach's tips)
-var replay: Replay           # the last seconds kept, and a wide shown again from behind the goal
+var replay: Replay           # the last seconds kept, and a score or a wide shown again from behind the goal
+var bench: Bench             # each side's substitutes, sitting in its dugout
 ## What a stoppage costs on the watch in a real match, in seconds: the ball is in play only about 38% of a real
 ## game's 70 minutes (2023 league statistics; docs/AI.md). The game's restarts are quicker than that, so when the
 ## players are set the clock is moved on to what the stoppage would have taken.
@@ -122,6 +123,8 @@ func _ready() -> void:
 	officials = Officials.new(self)
 	add_child(officials)
 	replay = Replay.new(self)
+	bench = Bench.new(self)
+	add_child(bench)
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
@@ -429,13 +432,15 @@ func _move_all(dt: float) -> void:
 		p.set_pose_rate(1 if d < 60.0 else (2 if d < 95.0 or not low else 3))
 		p.animate(now)
 	for g in _leaving.duplicate():
+		# The man taken off walks to the dugout and sits down with the substitutes.
 		var gp: Player = g
-		var off := Vector3(gp.global_position.x, 0, -Pitch.HALF_W - 7.0)
+		var off: Vector3 = gp.get_meta("seat", Vector3(gp.global_position.x, 0, -Pitch.HALF_W - 7.0))
 		_steer(gp, off, 2.6)
 		gp.integrate(dt, now)
 		gp.animate(now)
 		if gp.global_position.distance_to(off) < 0.8:
 			_leaving.erase(gp)
+			bench.sit_down(gp.team, gp.data)
 			gp.queue_free()
 	_separate(dt)
 
@@ -1320,6 +1325,11 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 	_stop_cost("score")
 	hud.set_score()
 	_award(Rules.after_score(team, dir(team)), 3.2)
+	if user_team >= 0:
+		# Every score shown again from behind the goal (as a wide is), once the ball is in the net or past the posts.
+		var t := now
+		var c := ball.global_position
+		_after(Replay.AFTER + 0.1, func(): replay.start(t, signf(s), c))
 
 
 ## The referee's whistle: the ball dead. A restart is about to be awarded.
@@ -2087,9 +2097,11 @@ func _run_subs() -> void:
 		var k := off.team
 		var team: Dictionary = teams[k]
 		team.bench.erase(pd)
+		bench.leave(k, pd)
 		team.subs = int(team.subs) + 1
 		tstats[k].subs += 1
 		var ghost := Player.new(off.data, k, off.body.look)
+		ghost.set_meta("seat", bench.next_seat(k))
 		add_child(ghost)
 		ghost.global_position = off.global_position
 		ghost.yaw = off.yaw
@@ -2395,6 +2407,9 @@ func user_buttons() -> Array:
 		var hd := Vector2(b.x - a.global_position.x, b.z - a.global_position.z).length()
 		if hd < REACH + 1.4 and b.y < CATCH_H + 0.6:
 			out = ["CATCH" if b.y > 1.3 else "LIFT", "PULL"]
+		elif _under_drop(a):
+			# Standing in the ring where a high ball comes down: the buttons now, to choose in time (round five).
+			out = ["CATCH", "PULL"]
 	elif carrier != null and carrier.team != a.team:
 		var cd := carrier.global_position.distance_to(a.global_position)
 		if cd < 3.5:
@@ -2426,6 +2441,34 @@ func _user_buttons() -> void:
 	var ids := user_buttons()
 	if ids != controls.ids:
 		controls.set_buttons(ids)
+	# CATCH or PULL pressed early, under a dropping ball: done when the ball comes into reach (or forgotten if it
+	# does not come, or you move him away).
+	if not _queued.is_empty():
+		var b := ball.global_position
+		var a := active
+		if a == null or ball.state != Sliotar.FREE or now > float(_queued.until) or not (_under_drop(a) or _in_reach(a)):
+			_queued = {}
+		elif _in_reach(a):
+			var id: String = _queued.id
+			_queued = {}
+			_on_action("LIFT" if id == "CATCH" and b.y <= 1.3 else id)
+
+
+var _queued := {}   # an early CATCH or PULL: {id, until}
+
+
+## The ball is within reach of a's hand or hurley now.
+func _in_reach(a: Player) -> bool:
+	var b := ball.global_position
+	return Vector2(b.x - a.global_position.x, b.z - a.global_position.z).length() < REACH + 1.4 and b.y < CATCH_H + 0.6
+
+
+## a stands in the ring on the grass where a high ball is coming down (the HUD draws it).
+func _under_drop(a: Player) -> bool:
+	if hud == null or a != active:
+		return false
+	var d: Vector3 = hud.drop_spot()
+	return d != Vector3.INF and Vector2(d.x - a.global_position.x, d.z - a.global_position.z).length() < 3.0
 
 
 func _on_action(id: String) -> void:
@@ -2478,10 +2521,18 @@ func _on_action(id: String) -> void:
 			_do_to_hand(a)
 		"CATCH", "LIFT":
 			if ball.state == Sliotar.FREE:
+				if not _in_reach(a) and _under_drop(a):
+					_queued = {"id": id, "until": now + 4.0}
+					controls.flash(id)
+					return
 				_attempt(a, "catch" if id == "CATCH" else "lift")
 		"PULL":
 			# First time: struck on the run, on the ground or in the air, without taking it.
 			if ball.state == Sliotar.FREE:
+				if not _in_reach(a) and _under_drop(a):
+					_queued = {"id": id, "until": now + 4.0}
+					controls.flash(id)
+					return
 				_pull(a)
 		"TACKLE":
 			if carrier != null and carrier.team != a.team:

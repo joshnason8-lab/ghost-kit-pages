@@ -21,11 +21,12 @@ func _init(p_time := "day") -> void:
 	time = p_time
 
 
-## Puts a name (a file in assets/env/models, without .glb) at p, turned yaw radians, scaled s.
-func add(name: String, p: Vector3, yaw := 0.0, s := 1.0) -> void:
+## Puts a name (a file in assets/env/models, without .glb) at p, turned yaw radians, scaled s, tipped forward tilt
+## radians (a floodlight aimed down at the field).
+func add(name: String, p: Vector3, yaw := 0.0, s := 1.0, tilt := 0.0) -> void:
 	if not _xf.has(name):
 		_xf[name] = []
-	_xf[name].append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * s), p))
+	_xf[name].append(Transform3D((Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, tilt)).scaled(Vector3.ONE * s), p))
 
 
 ## How many of each are placed (tests and the perf notes).
@@ -95,6 +96,9 @@ func _material(name: String, mesh: Mesh) -> Material:
 	var key := "%s|%s|%d" % [name, time, g]
 	if _mats.has(key):
 		return _mats[key]
+	if name == "floodlight":
+		_mats[key] = _floodlight(mesh.surface_get_material(0))
+		return _mats[key]
 	var src := mesh.surface_get_material(0)
 	var m: StandardMaterial3D = src.duplicate() if src is StandardMaterial3D else StandardMaterial3D.new()
 	if name in CARDS:
@@ -111,6 +115,31 @@ func _material(name: String, mesh: Mesh) -> Material:
 		m.albedo_color = {"day": Color(0.78, 0.78, 0.78), "dusk": Color(0.72, 0.68, 0.66), "night": Color(0.3, 0.32, 0.36)}.get(time, Color.WHITE)
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_mats[key] = m
+	return m
+
+
+## The floodlights (a Meshy model: sixteen lamps in a steel frame): the frame in the time of day's light, the lamps'
+## glass lit, warm white, from dusk on.
+func _floodlight(src: Material) -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled;
+uniform sampler2D tex : source_color, filter_linear_mipmap;
+uniform vec3 light = vec3(1.0);
+uniform float on = 0.0;
+void fragment() {
+	vec3 c = texture(tex, UV).rgb;
+	float glass = smoothstep(0.55, 0.75, dot(c, vec3(0.2126, 0.7152, 0.0722)));
+	ALBEDO = mix(c * light, vec3(1.0, 0.97, 0.86), glass * on);
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("tex", (src as BaseMaterial3D).albedo_texture if src is BaseMaterial3D else null)
+	var l := light(time)
+	m.set_shader_parameter("light", Vector3(l.r, l.g, l.b))
+	m.set_shader_parameter("on", 0.0 if time == "day" else 1.0)
 	return m
 
 

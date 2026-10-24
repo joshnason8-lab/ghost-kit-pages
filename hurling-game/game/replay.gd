@@ -4,7 +4,8 @@ extends RefCounted
 ## sliotar), and a wide shown again from a better seat: from behind the goal, looking back up the field at the
 ## strike, the posts in the picture and the ball going past them into the net behind. A little slower than life,
 ## about four seconds; a tap skips it. The match stands still meanwhile (its clock too) and goes on as it was.
-## (Round three: "if a shot goes wide maybe a quick replay at a better angle showing the ball going wide".)
+## (Round three: "if a shot goes wide maybe a quick replay at a better angle showing the ball going wide"; round
+## five: "I'm not seeing replays after scores, we should have them".)
 
 const KEEP := 4.0         # seconds of play kept
 const BEFORE := 2.3       # seconds shown before the ball crossed the end line
@@ -41,7 +42,7 @@ func record() -> void:
 		_buf.pop_front()
 
 
-## Show the wide that crossed the end line at s (+1 or -1 on x) at the match's time t_cross, at c.
+## Show the score or wide that crossed the end line at s (+1 or -1 on x) at the match's time t_cross, at c.
 func start(t_cross: float, s: float, c: Vector3) -> void:
 	if _buf.size() < 10:
 		return
@@ -90,6 +91,7 @@ func step(delta: float) -> void:
 	m.ball.show_at(f[1])
 	for e in f[2]:
 		_put(e)
+	m.hud.redraw_marks()
 
 
 func _put(e: Array) -> void:
@@ -115,4 +117,5 @@ func stop() -> void:
 		_cam = null
 	m.cam.camera.make_current()
 	m.hud.replay(false, Callable())
+	m.hud.redraw_marks()
 	m.controls.visible = bool(m.controls.get_meta("was_visible", m.controls.visible))
