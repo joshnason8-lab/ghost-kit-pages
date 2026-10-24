@@ -56,3 +56,6 @@ Courtside stands in the arena on Low graphics too.
 
 == Release notes (0.4.2) ==
 The crowd now faces the play from every camera.
+
+== Release notes (0.5.0) ==
+Real motion capture for defenders' side-steps and for landing a catch on the run.

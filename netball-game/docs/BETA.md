@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.5.0-beta
+
+- **Real motion capture** (CMU) for two moves: the defensive side-step when a player shuffles sideways, and the
+  landing when she catches on the run (the landing foot plants and stays put, as the footwork rule wants).
+- The ball held in both hands sits in the hands again.
+
 ## New in 0.4.2-beta
 
 - The crowd faces the play: seen from behind (the hall's stand from the Courtside camera, any stand behind the
