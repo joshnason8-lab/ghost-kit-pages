@@ -36,13 +36,16 @@ const CONTACT := {
 	"roll": [2.07, 0.58, 0.0, 1.65, 0.36],
 	"sunback": [1.95, 1.15, -0.11, 1.05, 0.43],
 	"tapak": [1.91, 1.32, 0.03, 1.05, 0.42],
-	"head_spike": [2.25, 0.30, 0.0, 0.95, 0.45],
+	"head_spike": [2.34, 0.34, -0.05, 0.95, 0.45],
 	"feint": [1.80, 0.46, 0.1, 0.75, 0.45],
-	"block": [1.95, 0.64, -0.22, 0.9, 0.45],
+	"block": [2.1, 0.68, -0.28, 0.9, 0.45],
 }
 
 ## The moves taken from motion capture (tools/models/fbx_to_move.gd): a pose for each frame.
-const CLIPS := ["serve", "roll", "sunback", "tapak", "thigh", "run", "walk"]
+const CLIPS := ["serve", "roll", "sunback", "tapak", "thigh", "run", "walk", "block", "head_spike", "celebrate"]
+## Of those, the ones built on a real jump from the CMU library (mocap.cs.cmu.edu; the clip each comes from), with the
+## part of the move that is takraw's own (the raised leg, the nod) laid over it from the keys written here (drawn).
+const CMU := {"block": "118_04", "head_spike": "118_04", "celebrate": "118_04"}
 const CLIP_DIR := "res://assets/moves/"
 
 static var _moves := {}
@@ -254,6 +257,12 @@ static func has(name: String) -> bool:
 	return _moves.has(name) or _clips.has(name)
 
 
+## Whether a move plays from motion capture (its clip loaded).
+static func is_clip(name: String) -> bool:
+	_build()
+	return _clips.has(name)
+
+
 static func length(name: String) -> float:
 	if CONTACT.has(name):
 		return float(CONTACT[name][3])
@@ -276,6 +285,13 @@ static func sample(name: String, t: float, mirror := false) -> Dictionary:
 		var i := mini(int(f), frames.size() - 2)
 		var pc := blend(frames[i], frames[i + 1], f - float(i))
 		return Moves.mirrored(pc) if mirror else pc
+	return drawn(name, t, mirror)
+
+
+## The pose part way through a move as its keys here have it (not motion capture).
+static func drawn(name: String, t: float, mirror := false) -> Dictionary:
+	_build()
+	t = clampf(t, 0.0, 1.0)
 	var keys: Array = _moves.get(name, [])
 	if keys.is_empty():
 		return READY.duplicate()

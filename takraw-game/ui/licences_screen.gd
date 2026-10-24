@@ -6,10 +6,12 @@ extends Control
 const CREDITS := """[b]Sepak Takraw Unleashed[/b]
 Made by Josh Nason.
 The players (a man and a woman), the ball and the app's icon made for the game; the kicks, runs and walks from
-motion capture (Mixamo). The temple, the stilt houses, the shophouses, the apartment blocks, the trees, the bleachers, benches,
-tables and the basketball hoop made for the game too; skies, surfaces and the other venue pieces from Poly Haven
-(polyhaven.com), CC0. Sounds made in code for the game; the menu music and crowd drums written for it
-(tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker."""
+motion capture (Mixamo). The jumps in the block, the header spike and the celebration: motion capture data from
+mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217. The temple, the stilt houses, the
+shophouses, the apartment blocks, the trees, the bleachers, benches, tables and the basketball hoop made for the
+game too; skies, surfaces and the other venue pieces from Poly Haven (polyhaven.com), CC0. Sounds made in code for
+the game; the menu music and crowd drums written for it (tools/audio/make_music.py). Crowd reactions from Kabaddi
+Raid, by the same maker."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans, Noto Sans Thai, Lao, Myanmar, Khmer, Devanagari, JP, KR and SC: Copyright The Noto Project Authors (https://github.com/notofonts).

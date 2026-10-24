@@ -11,7 +11,12 @@ about 2019, the Galaxy A16 included).
 
 ## What to try
 
-New in 0.5.2: the crowd watches the court from every side. Seen from behind a stand, people show their backs instead
+New in 0.6.0: the jumps are real. The block, the header spike and the jump for joy take off and land the way a
+real jump does (motion capture from the CMU library): the dip with the arms swung back, the spring, the landing taken
+on the knees, with the takraw part (the raised foot, the nod, the arms up) on top. Watch a block at the net: does it
+look right, and does the timing of the Block button feel the same?
+
+In 0.5.2: the crowd watches the court from every side. Seen from behind a stand, people show their backs instead
 of turning round to face the camera.
 
 In 0.5.1: a much smaller download (under 50 MB instead of 89 MB). Shophouses line the night market's street and

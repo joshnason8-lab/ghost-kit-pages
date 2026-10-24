@@ -50,6 +50,8 @@ const RIG := {
 }
 ## A foot at rest, flat on the floor: its toe joint ahead of the ankle and as far below it.
 const FOOT := Vector3(0, -0.7071, 0.7071)
+## A foot is on the floor while the middle of it (Rig.sole) is lower than this (m).
+const SOLE_DOWN := 0.13
 const MODELS := {false: "res://assets/models/man.glb", true: "res://assets/models/woman.glb"}
 const SKINS := {false: "res://assets/models/man.jpg", true: "res://assets/models/woman.jpg"}
 const KITS := {false: "res://assets/models/man_kit.png", true: "res://assets/models/woman_kit.png"}
@@ -294,6 +296,11 @@ class Rig:
 		solve({"plant": 0.0})
 		for i in 4:
 			feet_rest[i] = (out_pos[feet[i]] as Vector3).y / unit
+
+	## The middle of a foot (between its ankle and its toe) after solve(), in the body's space: about 0.09 m up when
+	## it stands on the floor, and counted on it below SOLE_DOWN.
+	func sole(side: String) -> Vector3:
+		return ((out_pos[index[side + "Foot"]] as Vector3) + (out_pos[index[side + "ToeBase"]] as Vector3)) * 0.5
 
 	## Poses the skeleton (without a skeleton node: the results are left in out_local, out_hips and out_pos).
 	## Unless the pose says otherwise ("plant" 0: a move from motion capture, already on the floor), the body is

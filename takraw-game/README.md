@@ -5,8 +5,9 @@ royalties), the same way as Kabaddi Raid. It is aimed at the sport's heartland, 
 laws as they stand, with real-looking players, ball and crowds.
 
 > **Status: playable beta.** The players are a man's and a woman's model (`assets/models/`), dressed in each team's
-> colours, moving to motion capture (the spikes, the serve, the knee, the run and walk) and to the game's own key
-> poses (`game/real_body.gd`, `game/moves.gd`).
+> colours, moving to motion capture (the spikes, the serve, the knee, the run and walk from Mixamo; the jumps in the
+> block, the header spike and the celebration from the CMU library) and to the game's own key poses
+> (`game/real_body.gd`, `game/moves.gd`, [docs/MOCAP.md](docs/MOCAP.md)).
 
 ## What's in it
 
@@ -88,10 +89,11 @@ fonts/      Noto Sans for Latin and Vietnamese, Thai, Lao, Myanmar, Khmer, Devan
             Chinese cut to the characters used (tools/subset_fonts.py); Teko. All SIL OFL.
 tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py,
             ui_art/render_art.tscn (the menu figures), store/ (icons, screenshots), meshy/ (the character order),
-            models/ (shrinking the models, the kit masks, the crowd sheet, the kicks from motion capture)
+            models/ (shrinking the models, the kit masks, the crowd sheet, the moves from motion capture, bvh.gd)
 tests/      test_runner, fit_audit, match_sim, screenshots, venue_view, crowd_view, pose_view, rally_frames, compile_check
 store/      PLAY_STORE.md, the listing in five languages, the icon, feature graphic and screenshots
-docs/       TAKRAW.md (the sport, with sources), MESHY_BRIEF.md, BETA.md, ROADMAP.md
+docs/       TAKRAW.md (the sport, with sources), MOCAP.md (the motion capture, clip by clip), MESHY_BRIEF.md, BETA.md,
+            ROADMAP.md, PROGRESS.md
 ```
 
 ## Moving it to its own repository

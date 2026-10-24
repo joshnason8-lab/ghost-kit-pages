@@ -1153,7 +1153,7 @@ func _prepare_block(atk: Dictionary) -> void:
 	var def_side := 1 - int(atk.side)
 	var blocker := _role_player(def_side, DB.POS_STRIKER)
 	var cp: Vector3 = atk.pos
-	var spot := Court.spot(def_side, 0.55, 0.0)   # his raised foot reaches the net
+	var spot := Court.spot(def_side, float(Moves.CONTACT["block"][1]) - 0.09, 0.0)   # his raised foot reaches the net
 	spot.z = clampf(cp.z, -Court.HALF_W + 0.5, Court.HALF_W - 0.5)
 	blocker.hurry = 1.0
 	blocker.target = spot

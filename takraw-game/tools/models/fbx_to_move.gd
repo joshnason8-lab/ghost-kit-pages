@@ -11,6 +11,7 @@ extends Node
 ##
 ## It prints each move's CONTACT row (game/moves.gd): where the ball is met, measured on the man's model in that pose.
 
+const Bvh := preload("res://tools/models/bvh.gd")
 const FPS := 30.0
 const SPECS := {
 	# move: clip, mirrored, source times [start, contact, end], game length (s), contact fraction, the part that
@@ -25,6 +26,25 @@ const SPECS := {
 		"at": "foot", "ball": 0.0, "lift": 0.5, "turn": 0.0},
 	"thigh": {"file": "Knee Kick Lead.fbx", "mirror": true, "t": [0.5, 0.72, 1.45], "length": 0.62, "contact": 0.42,
 		"at": "thigh", "ball": 0.07, "lift": 0.0, "turn": 0.0},
+	# A real two-footed jump (the CMU library's 118_04: the dip, the spring, the landing taken on the knees), as high as
+	# the move's own; in the air the takraw part laid over it from the keys in Moves: the block's raised leg, side on,
+	# the arms out (never up); the header's nod and the arms' swing.
+	"block": {"file": "118_04.bvh", "mirror": false, "t": [1.6, 2.56, 3.1], "length": 0.9, "contact": 0.45,
+		"at": "foot", "ball": 0.0, "lift": 0.0, "turn": 0.0, "face": "start", "lift_to": 0.6, "blend_in": 0.22, "blend_out": 0.45, "root": "feet",
+		"layer": {"yaw": 1.0, "hips": 1.0, "spine": 1.0, "chest": 1.0, "head": 1.0, "upperarm_l": 1.0, "upperarm_r": 1.0,
+			"forearm_l": 1.0, "forearm_r": 1.0, "thigh_r": 1.0, "shin_r": 1.0, "foot_r": 1.0, "thigh_l": 0.5, "shin_l": 0.5,
+			"foot_l": 0.5},
+		"steady": {"head": 1.0, "neck": 1.0, "spine": 0.5, "chest": 0.5, "foot_l": 0.7, "foot_r": 0.7}},
+	"head_spike": {"file": "118_04.bvh", "mirror": false, "t": [1.6, 2.56, 3.1], "length": 0.95, "contact": 0.45,
+		"at": "head", "ball": 0.0, "lift": 0.0, "turn": 0.0, "face": "start", "lift_to": 0.68, "blend_in": 0.22, "blend_out": 0.45, "root": "feet",
+		"layer": {"head": 1.0, "neck": 1.0, "spine": 0.7, "chest": 0.7, "upperarm_l": 0.8, "upperarm_r": 0.8,
+			"forearm_l": 0.8, "forearm_r": 0.8},
+		"steady": {"head": 0.7, "neck": 0.7, "spine": 0.4, "chest": 0.4, "foot_l": 0.7, "foot_r": 0.7}},
+	# A jump for joy: the same real jump's legs (the dip, the spring, the landing), upright, both arms thrown up.
+	"celebrate": {"file": "118_04.bvh", "mirror": false, "t": [1.6, 2.56, 3.3], "length": 1.3, "contact": 0.45,
+		"at": "head", "ball": 0.0, "lift": 0.0, "turn": 0.0, "face": "start", "lift_to": 0.38, "blend_in": 0.22, "blend_out": 0.45, "root": "feet",
+		"steady": {"upperarm_l": 1.0, "upperarm_r": 1.0, "forearm_l": 1.0, "forearm_r": 1.0, "head": 0.8, "neck": 0.8,
+			"spine": 0.85, "chest": 0.85, "hips": 0.6, "foot_l": 0.7, "foot_r": 0.7}},
 }
 ## Strides, from the models' own animations: one cycle each, in place (Moves.run).
 const LOOPS := {
@@ -68,7 +88,7 @@ func _ready() -> void:
 		if only != "" and name != only:
 			continue
 		var spec: Dictionary = SPECS[name]
-		var frames := _convert(dir.path_join(spec.file), spec)
+		var frames := _convert(dir.path_join(spec.file), spec, name)
 		if frames.is_empty():
 			continue
 		# Where the ball is met: on the man's model, in the pose at the contact frame.
@@ -76,6 +96,7 @@ func _ready() -> void:
 		var p: Dictionary = frames[cf]
 		man.solve(p)
 		var at := _point(man, String(spec.at)) + Vector3(0, float(p.get("y", 0.0)) + float(spec.ball), 0)
+		at = at.rotated(Vector3.UP, deg_to_rad(float(p.get("yaw", 0.0))))
 		var row := [snappedf(at.y, 0.01), snappedf(at.z, 0.01), snappedf(-at.x, 0.01), float(spec.length), float(spec.contact)]
 		_save(name, {"name": name, "source": spec.file, "fps": FPS, "length": spec.length, "contact": row}, frames)
 		var top := 0.0
@@ -129,6 +150,11 @@ func _load(path: String, anim_name := "") -> Array:
 	var scene: Node3D
 	if path.begins_with("res://"):
 		scene = (load(path) as PackedScene).instantiate()
+	elif path.get_extension() == "bvh":
+		var read := Bvh.load_scene(path)
+		if read.is_empty():
+			return []
+		scene = read[0]
 	else:
 		var doc := FBXDocument.new()
 		var st := FBXState.new()
@@ -206,7 +232,7 @@ func _convert_loop(spec: Dictionary) -> Array:
 	return frames
 
 
-func _convert(path: String, spec: Dictionary) -> Array:
+func _convert(path: String, spec: Dictionary, move := "") -> Array:
 	var loaded := _load(path)
 	if loaded.is_empty():
 		return []
@@ -222,8 +248,8 @@ func _convert(path: String, spec: Dictionary) -> Array:
 	var kick := "Right" if not bool(spec.mirror) else "Left"
 	var reach := _pos(at_contact, kick + "Foot").lerp(_pos(at_contact, kick + "ToeBase"), 0.5) - root
 	var turn := Basis(Vector3.UP, -atan2(reach.x, reach.z) + deg_to_rad(float(spec.turn)))
-	if String(spec.at) == "thigh":
-		turn = Basis(Vector3.UP, -_yaw(start) + deg_to_rad(float(spec.turn)))   # a knee lifts in front of him
+	if String(spec.at) == "thigh" or String(spec.get("face", "")) == "start":
+		turn = Basis(Vector3.UP, -_yaw(start) + deg_to_rad(float(spec.turn)))   # a knee lifts (or he jumps) in front of him
 	var hips_rest := _pos(rest, "Hips").y
 	var feet_rest := {}
 	for nm in ["LeftFoot", "LeftToeBase", "RightFoot", "RightToeBase"]:
@@ -233,6 +259,7 @@ func _convert(path: String, spec: Dictionary) -> Array:
 	var cf := float(spec.contact)
 	var lift := float(spec.lift)
 	var frames := []
+	var under := []   # where his feet are (between them, on the floor), and whether both are down
 	for i in count:
 		var f := float(i) / float(count - 1)
 		var ts := lerpf(float(t[0]), float(t[1]), f / cf) if f <= cf else lerpf(float(t[1]), float(t[2]), (f - cf) / (1.0 - cf))
@@ -258,12 +285,103 @@ func _convert(path: String, spec: Dictionary) -> Array:
 		p["hips_fwd"] = hp.z
 		p["hips_side"] = -hp.x
 		p["plant"] = 0.0
+		frames.append(p)
+		var mid := turn * ((_pos(g, "LeftFoot") + _pos(g, "RightFoot")) * 0.5 - root)
+		var down := maxf(_pos(g, "LeftFoot").y - float(feet_rest.LeftFoot), _pos(g, "RightFoot").y - float(feet_rest.RightFoot)) < 0.04
+		under.append([Vector2(mid.x, mid.z), down])
+	scene.free()
+	# Jumping on the spot ("root": "feet"): the hips measured from his feet while both are down (and from where they
+	# were and will be, through the air), so the clip's own travel is left out and his feet stay where they are; where
+	# he is stays the movement's to say.
+	if String(spec.get("root", "")) == "feet":
+		var ref := []
+		for i in under.size():
+			ref.append(under[i][0] if under[i][1] else null)
+		var last = null
+		for i in ref.size():
+			if ref[i] == null:
+				var nxt = null
+				var j := i
+				while j < ref.size() and ref[j] == null:
+					j += 1
+				nxt = ref[j] if j < ref.size() else last
+				if last == null:
+					last = nxt
+				var a := i - 1
+				ref[i] = (last as Vector2).lerp(nxt as Vector2, float(i - a) / float(j - a)) if nxt != null else last
+			last = ref[i]
+		var first: Vector2 = ref[0]
+		for i in frames.size():
+			var d: Vector2 = (ref[i] as Vector2) - first
+			frames[i].hips_fwd = float(frames[i].hips_fwd) - d.y
+			frames[i].hips_side = float(frames[i].hips_side) + d.x
+	# A real jump as high as the move's own (lift_to, m), and the move's own part laid over it while he is off the floor
+	# (layer: the bones, and "yaw", from the keys in Moves; each with its weight) and all through (steady: his eyes on
+	# the ball, not folding over the net).
+	var peak := 0.0
+	for p in frames:
+		peak = maxf(peak, float(p.y))
+	var layer: Dictionary = spec.get("layer", {})
+	var steady: Dictionary = spec.get("steady", {})
+	for i in frames.size():
+		var p: Dictionary = frames[i]
+		var air := smoothstep(0.15, 0.6, float(p.y) / maxf(peak, 0.001))
+		if spec.has("lift_to") and peak > 0.0:
+			# (The first 2 cm off the floor are the subject's feet rolling, not a jump: on the floor.)
+			p.y = maxf(0.0, float(p.y) - 0.02) * float(spec.lift_to) / (peak - 0.02)
+		if not layer.is_empty() or not steady.is_empty():
+			var drawn := Moves.drawn(move, float(i) / float(frames.size() - 1))
+			p["yaw"] = 0.0
+			for key in layer.keys() + steady.keys():
+				var k := 1.0 - (1.0 - air * float(layer.get(key, 0.0))) * (1.0 - float(steady.get(key, 0.0)))
+				var one := Moves.blend({key: p[key]}, {key: drawn[key]}, k)
+				p[key] = one[key]
+	var out := []
+	for i in frames.size():
+		var p: Dictionary = frames[i]
 		if bool(spec.mirror):
 			p = Moves.mirrored(p)
-		var w := minf(smoothstep(0.0, BLEND_IN, f), 1.0 - smoothstep(1.0 - BLEND_OUT, 1.0, f))
-		frames.append(Moves.blend(Moves.READY, p, w))
-	scene.free()
-	return frames
+		var f := float(i) / float(frames.size() - 1)
+		# (A jump's dip and landing settle in and out of the ready stance over longer, so the feet don't slide:
+		# blend_in, blend_out.)
+		var w := minf(smoothstep(0.0, float(spec.get("blend_in", BLEND_IN)), f), 1.0 - smoothstep(1.0 - float(spec.get("blend_out", BLEND_OUT)), 1.0, f))
+		out.append(Moves.blend(Moves.READY, p, w))
+	if String(spec.get("root", "")) == "feet":
+		for p in out:
+			p["plant"] = 1.0   # RealBody keeps a foot on the floor while he is on it (the subject's legs aren't his)
+		_lock_feet(out)
+	return out
+
+
+## Feet locked to the floor, on the players' own model: while both are down, the hips are moved so the feet stay where
+## they stood at the start (its legs aren't the subject's, so the subject's planted feet move a little on it); in the
+## air the correction carries over from take-off to landing.
+func _lock_feet(frames: Array) -> void:
+	var man := RealBody.rig(false)
+	var fix := []
+	var start := Vector2.ZERO
+	for i in frames.size():
+		var p: Dictionary = frames[i]
+		man.solve(p)
+		var yaw := deg_to_rad(float(p.get("yaw", 0.0)))
+		var l := man.sole("Left").rotated(Vector3.UP, yaw)
+		var r := man.sole("Right").rotated(Vector3.UP, yaw)
+		var mid := Vector2(l.x + r.x, l.z + r.z) * 0.5
+		if i == 0:
+			start = mid
+		var down := maxf(l.y, r.y) + float(p.get("y", 0.0)) < RealBody.SOLE_DOWN
+		fix.append(start - mid if down else null)
+	var last: Vector2 = Vector2.ZERO
+	for i in fix.size():
+		if fix[i] == null:
+			var j := i
+			while j < fix.size() and fix[j] == null:
+				j += 1
+			var nxt: Vector2 = fix[j] if j < fix.size() else last
+			fix[i] = last.lerp(nxt, 1.0 / float(j - i + 1))
+		last = fix[i]
+		frames[i].hips_fwd = float(frames[i].get("hips_fwd", 0.0)) + (fix[i] as Vector2).y
+		frames[i].hips_side = float(frames[i].get("hips_side", 0.0)) - (fix[i] as Vector2).x
 
 
 func _source_of(pose_bone: String) -> String:
@@ -297,8 +415,11 @@ func _rest_put(rest: Array) -> void:
 			if to.begins_with("="):
 				q = turned.get(to.substr(1), Quaternion.IDENTITY)
 			elif _bone.has(to):
-				var d := (_pos(rest, to) - _pos(rest, nm)).normalized()
-				q = Quaternion(d, spec[3])
+				var d := _pos(rest, to) - _pos(rest, nm)
+				var further: String = RealBody.RIG.get(to, ["", "", ""])[2]
+				if d.length() < 0.001 and _bone.has(further):
+					d = _pos(rest, further) - _pos(rest, nm)   # (a CMU skeleton's lower back sits on its hips)
+				q = Quaternion(d.normalized(), spec[3])
 			turned[nm] = q
 		_put.append(Basis(q) * g)
 
