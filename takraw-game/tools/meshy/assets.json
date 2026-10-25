@@ -80,6 +80,126 @@
    "pose": "t-pose",
    "height_m": 1.6,
    "batch": 1
+  },
+  {
+   "name": "mall_escalator",
+   "kind": "prop",
+   "prompt": "A modern shopping mall escalator, one straight flight rising 4.5 metres over 9 metres, clear glass side balustrades with brushed stainless steel handrails and trim, grey metal steps, a short flat landing at the top and bottom. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Brushed stainless steel, clear glass balustrades, dark grey grooved steps, black rubber handrails. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 8000,
+   "batch": "venue"
+  },
+  {
+   "name": "mall_shopfront",
+   "kind": "prop",
+   "prompt": "The front of a modern shopping mall shop, 8 metres wide and 4 metres tall, one flat facade: floor-to-ceiling glass windows and a wide glass door, behind them a brightly lit shop interior with clothing racks, shelves and display tables, a plain backlit sign band across the top, a slim metal frame. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Bright warm interior light behind clear glass, colourful clothes on racks, white walls inside, a plain glowing white sign band, dark metal frame. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 6000,
+   "batch": "venue"
+  },
+  {
+   "name": "mall_planter",
+   "kind": "prop",
+   "prompt": "A large modern indoor planter: a square light grey stone planter box 1.2 metres wide, with a tall leafy indoor palm tree about 3 metres tall growing from it. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Smooth light grey stone planter, rich green palm fronds, dark soil. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 5000,
+   "batch": "venue"
+  },
+  {
+   "name": "mall_kiosk",
+   "kind": "prop",
+   "prompt": "A modern shopping mall retail kiosk: a rounded white and light wood counter about 3 metres long with glass display shelves, a slim canopy frame on four posts above it with warm lights. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Glossy white panels, light oak wood, clear glass shelves with small colourful products, warm light. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 5000,
+   "batch": "venue"
+  },
+  {
+   "name": "arena_scoreboard",
+   "kind": "prop",
+   "prompt": "A centre-hung four-sided arena video scoreboard: a black box frame with a large rectangular video screen on each of its four sides and a smaller ring of screens below, suspended from cables. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Black metal frame, screens glowing deep blue with an abstract light gradient, no text and no numbers on the screens. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 4000,
+   "batch": "venue"
+  },
+  {
+   "name": "gym_scoreboard",
+   "kind": "prop",
+   "prompt": "A wall-mounted electronic school gymnasium scoreboard: a wide black rectangular box with two large red LED digit panels and small amber lights, a white border. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Matte black face, glowing red seven-segment digits showing 00 and 00, white trim. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 3000,
+   "batch": "venue"
+  },
+  {
+   "name": "lifeguard_tower",
+   "kind": "prop",
+   "prompt": "A wooden lifeguard tower on a tropical beach: a small square hut with a sloped roof on four tall wooden stilts about 3 metres high, a wooden ramp up to it, a railing round its deck. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Weathered white-painted wood with red trim, sun-faded, sand at the base of the stilts. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 5000,
+   "batch": "venue"
+  },
+  {
+   "name": "longtail_boat",
+   "kind": "prop",
+   "prompt": "A traditional Thai longtail boat pulled up on the sand: a long narrow wooden hull about 9 metres long with a high curved bow wrapped in colourful ribbons and a flower garland, a long-shaft engine at the stern. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Natural varnished teak wood hull, faded blue paint inside, bright pink, yellow and green ribbons at the bow. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 6000,
+   "batch": "venue"
+  },
+  {
+   "name": "beach_bar",
+   "kind": "prop",
+   "prompt": "A small tropical beach bar shack: an open wooden hut with a steep thatched palm-leaf roof on bamboo posts, a bamboo counter in front with four wooden bar stools, shelves of bottles behind. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Dry golden palm thatch, pale bamboo, warm wood, colourful glass bottles. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 6000,
+   "batch": "venue"
+  },
+  {
+   "name": "sun_lounger",
+   "kind": "prop",
+   "prompt": "A wooden beach sun lounger with a raised back rest and a thin white cushion, about 2 metres long. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Teak wood slats, off-white canvas cushion. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 2500,
+   "batch": "venue"
+  },
+  {
+   "name": "food_cart",
+   "kind": "prop",
+   "prompt": "A Thai street food cart: a small stainless steel cart on bicycle wheels with a glass display case on top, a cooking wok and gas burner, a big round faded red parasol over it. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Stainless steel, clear glass case with food inside, faded red parasol, black tyres. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 5000,
+   "batch": "venue"
+  },
+  {
+   "name": "scooter",
+   "kind": "prop",
+   "prompt": "A small Asian step-through motorbike scooter (underbone moped) parked on its side stand, with a basket on the front. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Glossy red and silver bodywork, black seat, chrome mirrors, black tyres. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 4000,
+   "batch": "venue"
+  },
+  {
+   "name": "temple_chedi",
+   "kind": "prop",
+   "prompt": "A white Thai Buddhist chedi (stupa) about 9 metres tall: a bell-shaped dome on a square stepped base, a tall slender ringed spire on top tipped in gold. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Whitewashed plaster, slightly weathered, gold leaf on the spire tip, grey stone base. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 6000,
+   "batch": "venue"
+  },
+  {
+   "name": "temple_sala",
+   "kind": "prop",
+   "prompt": "A Thai open-sided temple pavilion (sala): a raised floor on white columns, no walls, a two-tiered steep roof of orange and green glazed tiles with gold chofa finials at the gable ends, about 8 by 5 metres. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "White columns, orange and green glazed roof tiles, gold trim, red wooden gables. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 7000,
+   "batch": "venue"
+  },
+  {
+   "name": "spirit_house",
+   "kind": "prop",
+   "prompt": "A Thai spirit house: a small ornate gilded shrine like a tiny temple on a white pillar about 2 metres tall, with flower garlands and offerings on its platform. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+   "texture_prompt": "Gold and red lacquer, white pillar, bright orange and yellow marigold garlands. Realistic materials and colours, even lighting, no baked shadows; no text, no letters, no logos, no brand names.",
+   "faces": 4000,
+   "batch": "venue"
   }
  ]
 }

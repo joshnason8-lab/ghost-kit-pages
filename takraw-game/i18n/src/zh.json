@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "MENU_EYEBROW": "藤球 · 真实规则",
   "LOADING": "正在准备场地…",
   "MENU_QUICK": "快速比赛",
   "MENU_QUICK_DESC": "任选两队、任选场馆，马上开打。",
@@ -100,6 +99,7 @@
   "LAST_ROUND": "上一轮",
   "SIM_MATCH": "自动模拟",
   "SIM_REST": "模拟剩余比赛",
+  "SIM_TO_END": "模拟至比赛结束",
   "ABANDON": "放弃",
   "ABANDON_SEASON_Q": "确定放弃本赛季？此操作无法撤销。",
   "CHAMPIONS": "冠军",
@@ -140,6 +140,7 @@
   "TIE_LOST": "团体赛失利",
   "SET_N_TO": "第{n}局 · {p}分制",
   "SET_POINT": "局点",
+  "HUD_SETS": "胜局: {n}",
   "MATCH_POINT": "赛点",
   "SET_TO": "第{n}局 {t}胜",
   "SET_BREAK": "局间休息",

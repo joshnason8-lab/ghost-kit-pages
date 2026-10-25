@@ -1,6 +1,5 @@
 keys,en,th,ms,id,vi,lo,my,km,fil,ja,ko,zh,hi
 GAME_TITLE,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed,Sepak Takraw Unleashed
-MENU_EYEBROW,Sepak takraw · the real rules,เซปักตะกร้อ · กติกาจริง,Sepak takraw · Peraturan sebenar,Sepak takraw · Aturan sungguhan,Cầu mây · Luật chơi thật,ກະຕໍ້ · ກະຕິກາແທ້,ပိုက်ကျော်ခြင်း · စည်းမျဉ်းအစစ်,សេប៉ាក់តាក្រ៉ូ · ច្បាប់ពិតប្រាកដ,Sepak takraw · Totoong patakaran,セパタクロー · 本物のルール,세팍타크로 · 실제 규칙,藤球 · 真实规则,सेपक टकरा · असली नियम
 LOADING,Getting the court ready…,กำลังเตรียมสนาม…,Menyediakan gelanggang…,Menyiapkan lapangan…,Đang chuẩn bị sân…,ກຳລັງກຽມເດີ່ນ…,ကွင်း ပြင်ဆင်နေသည်…,កំពុងរៀបចំទីលាន…,Inihahanda ang court…,コートを準備中…,코트 준비 중…,正在准备场地…,कोर्ट तैयार हो रहा है…
 MENU_QUICK,Quick Match,แข่งด่วน,Perlawanan Pantas,Laga Cepat,Đấu nhanh,ແຂ່ງດ່ວນ,အမြန်ပွဲ,ប្រកួតរហ័ស,Mabilisang Laban,クイックマッチ,빠른 경기,快速比赛,क्विक मैच
 MENU_QUICK_DESC,"Any two teams, any venue. Play now.",เลือกสองทีม เลือกสนาม แล้วลุยเลย,"Mana-mana dua pasukan, mana-mana gelanggang. Main sekarang.","Dua tim mana saja, arena mana saja. Main sekarang.","Hai đội bất kỳ, sân bất kỳ. Chơi ngay.",ເລືອກສອງທີມ ເລືອກເດີ່ນ ແລ້ວຫຼິ້ນເລີຍ.,မည်သည့်အသင်း၊ မည်သည့်ကွင်းမဆို။ ယခုပဲ ကစားပါ။,ក្រុមណាក៏បាន ទីលានណាក៏បាន។ លេងភ្លាម។,"Kahit anong dalawang koponan, kahit saang venue. Laro na.",好きなチーム、好きな会場ですぐプレー。,"원하는 두 팀, 원하는 경기장. 바로 시작!",任选两队、任选场馆，马上开打。,"कोई भी दो टीमें, कोई भी वेन्यू। अभी खेलें।"
@@ -100,6 +99,7 @@ NEXT_MATCH,Next match,นัดต่อไป,Perlawanan seterusnya,Laga beriku
 LAST_ROUND,Last round,นัดล่าสุด,Pusingan lepas,Pekan lalu,Vòng trước,ນັດຫຼ້າສຸດ,ပြီးခဲ့သည့်ပွဲစဉ်,ជុំមុន,Nakaraang round,前節,지난 라운드,上一轮,पिछला राउंड
 SIM_MATCH,Play it for me,ให้ระบบเล่นแทน,Mainkan untuk saya,Mainkan untukku,Máy đá giúp,ໃຫ້ລະບົບຫຼິ້ນແທນ,အလိုအလျောက် ကစား,ឲ្យម៉ាស៊ីនលេងជំនួស,Laruin para sa akin,おまかせ,자동 진행,自动模拟,ऑटो खेलें
 SIM_REST,Play out the rest,เล่นที่เหลืออัตโนมัติ,Mainkan selebihnya,Selesaikan sisanya,Đá nốt các trận,ຫຼິ້ນທີ່ເຫຼືອອັດຕະໂນມັດ,ကျန်ပွဲများ ကစားပေး,លេងដែលនៅសល់ស្វ័យប្រវត្តិ,Tapusin ang natitira,残りをおまかせ,남은 경기 자동 진행,模拟剩余比赛,बाकी ऑटो खेलें
+SIM_TO_END,Simulate to the end,ให้ระบบเล่นต่อจนจบ,Simulasi hingga tamat,Simulasikan sampai selesai,Máy đá nốt đến hết,ໃຫ້ລະບົບຫຼິ້ນຕໍ່ຈົນຈົບ,အဆုံးထိ အလိုအလျောက် ကစား,ឲ្យម៉ាស៊ីនលេងបន្តរហូតចប់,I-simulate hanggang dulo,最後までおまかせ,끝까지 자동 진행,模拟至比赛结束,अंत तक ऑटो खेलें
 ABANDON,Abandon,ยกเลิก,Tinggalkan,Tinggalkan,Bỏ dở,ຍົກເລີກ,စွန့်လွှတ်,បោះបង់,Iwanan,放棄,포기,放弃,छोड़ें
 ABANDON_SEASON_Q,Abandon this season? It cannot be undone.,ยกเลิกฤดูกาลนี้? ย้อนกลับไม่ได้นะ,Tinggalkan musim ini? Tindakan ini tidak boleh dibatalkan.,Tinggalkan musim ini? Tidak bisa dibatalkan.,Bỏ mùa giải này? Không thể hoàn tác.,ຍົກເລີກລະດູການນີ້ບໍ? ຍ້ອນຄືນບໍ່ໄດ້ເດີ້.,ဤရာသီကို စွန့်လွှတ်မလား? ပြန်ပြင်၍ မရပါ။,បោះបង់រដូវកាលនេះ? មិនអាចត្រឡប់វិញបានទេ។,Iwanan ang season na ito? Hindi na ito maibabalik.,このシーズンを放棄しますか？元に戻せません。,이번 시즌을 포기할까요? 되돌릴 수 없습니다.,确定放弃本赛季？此操作无法撤销。,यह सीज़न छोड़ें? इसे वापस नहीं लिया जा सकता।
 CHAMPIONS,Champions,แชมป์,Juara,Juara,Vô địch,ແຊ້ມ,ချန်ပီယံ,ជើងឯក,Mga Kampeon,優勝,우승,冠军,चैंपियन
@@ -140,6 +140,7 @@ TIE_WON,Tie won,ชนะนัดนี้,Menang pertembungan,Menang beregu,Th
 TIE_LOST,Tie lost,แพ้นัดนี้,Kalah pertembungan,Kalah beregu,Thua chung cuộc,ແພ້ນັດນີ້,ပွဲစဉ် ရှုံး,ចាញ់ការជួប,Talo sa tie,対戦に敗北,단체전 패배,团体赛失利,मुक़ाबला हारा
 SET_N_TO,Set {n} · to {p},เซต {n} · {p} แต้ม,Set {n} · hingga {p},Set {n} · sampai {p},Séc {n} · tới {p},ເຊັດ {n} · {p} ຄະແນນ,ဆက် {n} · {p} မှတ်,សិត {n} · ដល់ {p},Set {n} · hanggang {p},第{n}セット · {p}点,{n}세트 · {p}점,第{n}局 · {p}分制,सेट {n} · {p} तक
 SET_POINT,Set point,เซตพอยต์,Mata set,Set point,Điểm séc,ເຊັດພອຍ,ဆက်ပွိုင့်,ពិន្ទុសម្រេចសិត,Set point,セットポイント,세트 포인트,局点,सेट पॉइंट
+HUD_SETS,Sets: {n},เซต: {n},Set: {n},Set: {n},Hiệp: {n},ເຊັດ: {n},ဆက်: {n},សិត: {n},Set: {n},セット: {n},세트: {n},胜局: {n},सेट: {n}
 MATCH_POINT,Match point,แมตช์พอยต์,Mata perlawanan,Match point,Điểm trận,ແມັດພອຍ,မက်ချ်ပွိုင့်,ពិន្ទុសម្រេចជ័យ,Match point,マッチポイント,매치 포인트,赛点,मैच पॉइंट
 SET_TO,Set {n} to {t},เซต {n} เป็นของ {t},Set {n} milik {t},Set {n} untuk {t},{t} thắng séc {n},ເຊັດ {n} ເປັນຂອງ {t},ဆက် {n}: {t} နိုင်,សិត {n} ជារបស់ {t},Set {n} sa {t},第{n}セットは{t},{n}세트 {t} 승리,第{n}局 {t}胜,सेट {n} {t} के नाम
 SET_BREAK,Between sets,พักระหว่างเซต,Rehat antara set,Jeda antarset,Nghỉ giữa séc,ພັກລະຫວ່າງເຊັດ,ဆက်ကြား နားချိန်,សម្រាករវាងសិត,Pahinga sa pagitan ng set,セット間,세트 휴식,局间休息,सेटों के बीच

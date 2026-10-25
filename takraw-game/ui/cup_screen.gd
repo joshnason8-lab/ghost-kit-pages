@@ -41,10 +41,9 @@ func _choose() -> void:
 	(parts[1] as HBoxContainer).add_child(UI.chips_row([tr("MEN"), tr("WOMEN")], 1 if _women else 0, func(i):
 		_women = i == 1
 		_refresh()))
-	var ids: Array = (Cup.KINDS[_kind].field as Array).duplicate()
-	for id in DB.countries_ranked(_women):
-		if not (id in ids):
-			ids.append(id)   # any country can enter: an underdog's run
+	# The countries that take part in this event (the strongest first): no United States at the Asian Championship.
+	var field: Array = Cup.KINDS[_kind].field
+	var ids := DB.countries_ranked(_women).filter(func(id): return id in field)
 	var grid := UI.team_grid(self, ids, 2, func(id):
 		Game.new_cup(_kind, id, _women, _event)
 		Game.show_screen("res://ui/cup_screen.gd"))

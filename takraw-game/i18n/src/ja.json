@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "MENU_EYEBROW": "セパタクロー · 本物のルール",
   "LOADING": "コートを準備中…",
   "MENU_QUICK": "クイックマッチ",
   "MENU_QUICK_DESC": "好きなチーム、好きな会場ですぐプレー。",
@@ -100,6 +99,7 @@
   "LAST_ROUND": "前節",
   "SIM_MATCH": "おまかせ",
   "SIM_REST": "残りをおまかせ",
+  "SIM_TO_END": "最後までおまかせ",
   "ABANDON": "放棄",
   "ABANDON_SEASON_Q": "このシーズンを放棄しますか？元に戻せません。",
   "CHAMPIONS": "優勝",
@@ -140,6 +140,7 @@
   "TIE_LOST": "対戦に敗北",
   "SET_N_TO": "第{n}セット · {p}点",
   "SET_POINT": "セットポイント",
+  "HUD_SETS": "セット: {n}",
   "MATCH_POINT": "マッチポイント",
   "SET_TO": "第{n}セットは{t}",
   "SET_BREAK": "セット間",

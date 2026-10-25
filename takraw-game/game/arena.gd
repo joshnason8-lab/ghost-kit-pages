@@ -52,7 +52,7 @@ func _ready() -> void:
 			_led_boards(Color("0b1a33"))
 			_roof(15.0, Color("0d1320"))
 			_officials_furniture()
-			_scoreboard_cube(Vector3(0, 10.5, 0))
+			_sc.add("props/arena_scoreboard", Vector3(0, 10.0, 0), PI / 8.0, 1.0, false)
 		"dome":
 			_indoor_env(Color("0d1119"), Color(0.6, 0.64, 0.72), 1.1)
 			_court(Color("1f6fc2"), Color("e8722a"), Color("123355"))
@@ -60,10 +60,10 @@ func _ready() -> void:
 			_led_boards(Color("071225"))
 			_roof(22.0, Color("0b111c"))
 			_officials_furniture()
-			_scoreboard_cube(Vector3(0, 13.0, 0))
+			_sc.add("props/arena_scoreboard", Vector3(0, 13.0, 0), PI / 8.0, 1.2, false)
 		"mall":
 			_indoor_env(Color("2a2420"), Color(0.85, 0.8, 0.72), 1.15)
-			_court(Color("2b6cc4"), Color("1d2a40"), Color("d9d2c4"))
+			_court(Color("2b6cc4"), Color("1d2a40"), Color(0, 0, 0, 0))
 			spots = _mall()
 			_led_boards(Color("1a1410"))
 			_officials_furniture()
@@ -231,7 +231,8 @@ func _outdoor_env(time: String, far: Color) -> void:
 ## the lines.
 func _court(court: Color, surround: Color, floor_col: Color) -> void:
 	var fz := Court.FREE_ZONE
-	_lit.floor_rect(-40, -40, 40, 40, -0.002, floor_col)
+	if floor_col.a > 0.0:   # (clear: the venue lays its own floor)
+		_lit.floor_rect(-40, -40, 40, 40, -0.002, floor_col)
 	# The playing surface has a sheen under the lights (alpha: gloss, Geo.material).
 	_lit.floor_rect(-Court.HALF - fz, -Court.HALF_W - fz, Court.HALF + fz, Court.HALF_W + fz, 0.0, Color(surround, 0.65))
 	_lit.floor_rect(-Court.HALF, -Court.HALF_W, Court.HALF, Court.HALF_W, 0.001, Color(court, 0.45))
@@ -408,10 +409,36 @@ func _stands(rows: int, side_z: float, end_x: float, concrete: Color, seat: Colo
 			while z2 < side_z * 0.8:
 				spots.append(Vector3(x2 + s * 0.1, h2 + 0.42, z2))
 				z2 += 0.55
-	# A wall behind the top rows.
+	# A wall right round, behind the top rows of the sides and the ends (the corners closed), up to the roof.
 	var top := rows * step_h + 2.5
+	var sz := side_z + rows * step_d + 0.6
+	var ex := end_x + (rows / 2) * step_d + 0.6
 	for s: float in [-1.0, 1.0]:
-		_lit.box(Vector3(0, top * 0.5, s * (side_z + rows * step_d + 0.6)), Vector3((end_x + 2.0) * 2.0, top, 0.3), concrete.darkened(0.3))
+		_lit.box(Vector3(0, 15.0, s * sz), Vector3(ex * 2.0, 30.0, 0.3), concrete.darkened(0.3))
+		_lit.box(Vector3(s * ex, 15.0, 0), Vector3(0.3, 30.0, sz * 2.0), concrete.darkened(0.3))
+		# The corners' floor raised to the stands' height behind them, and a banner on each end wall.
+		for t: float in [-1.0, 1.0]:
+			var cx := s * (end_x + 2.0 + ex) * 0.5
+			var cz := t * (side_z * 0.8 + sz) * 0.5
+			_lit.box(Vector3(cx, top * 0.25, cz), Vector3(ex - end_x - 2.0, top * 0.5, sz - side_z * 0.8), concrete.darkened(0.1))
+	# A ribbon of LED boards round the top of the stands, and the upper walls' lit panels (the suites) above it.
+	var ribbon := [Color("ff9a1f"), Color("19b3a3"), Color("1f6fc2"), Color("e8336d")]
+	for s: float in [-1.0, 1.0]:
+		var i := 0
+		var x := -ex
+		while x < ex - 0.1:
+			var x1 := minf(x + 4.0, ex)
+			_glow.wall(Vector3(x1 * s, 0, s * (sz - 0.16)), Vector3(x * s, 0, s * (sz - 0.16)), top - 0.2, top + 0.6, ribbon[i % 4].darkened(0.15))
+			_glow.wall(Vector3(x1 * s, 0, s * (sz - 0.16)), Vector3(x * s, 0, s * (sz - 0.16)), top + 2.2, top + 3.4, Color("ffe7b8").darkened(0.35))
+			i += 1
+			x = x1
+		var z := -sz
+		while z < sz - 0.1:
+			var z1 := minf(z + 4.0, sz)
+			_glow.wall(Vector3(s * (ex - 0.16), 0, z * s), Vector3(s * (ex - 0.16), 0, z1 * s), top - 0.2, top + 0.6, ribbon[(i + 1) % 4].darkened(0.15))
+			_glow.wall(Vector3(s * (ex - 0.16), 0, z * s), Vector3(s * (ex - 0.16), 0, z1 * s), top + 2.2, top + 3.4, Color("ffe7b8").darkened(0.35))
+			i += 1
+			z = z1
 	return spots
 
 
@@ -448,67 +475,155 @@ func _led_boards(face: Color) -> void:
 
 
 func _roof(h: float, col: Color) -> void:
-	_lit.floor_rect(-30, -30, 30, 30, h, col)
+	_ceiling(-30, -30, 30, 30, h, col)
 	# Rows of lights under the roof.
 	for x in range(-12, 13, 4):
 		for z in range(-8, 9, 4):
 			_glow.box(Vector3(x, h - 0.3, z), Vector3(1.2, 0.08, 0.5), Color("fff6e0"))
 
 
-func _scoreboard_cube(c: Vector3) -> void:
-	_lit.box(c, Vector3(4.0, 2.4, 4.0), Color("111821"))
-	for yaw in [0.0, PI * 0.5, PI, PI * 1.5]:
-		var b := Basis(Vector3.UP, yaw)
-		var n := b * Vector3(0, 0, 1)
-		var right := b * Vector3(1, 0, 0)
-		var center := c + n * 2.01
-		_glow._tri_quad(center - right * 1.8 + Vector3(0, 1.0, 0), center + right * 1.8 + Vector3(0, 1.0, 0),
-			center + right * 1.8 - Vector3(0, 1.0, 0), center - right * 1.8 - Vector3(0, 1.0, 0), n, Color("1c3b63"))
+## The mall: the court in the middle of a three-storey atrium. Shops all round on every floor (their fronts from
+## pictures of shops, Meshy's: a boutique, trainers, phones, a cafe, toys, jewellery), the upper floors' balconies with
+## glass railings and people leaning on them, escalators up from each end, palms in planters and kiosks on the polished
+## stone floor, temporary metal bleachers along the far side and the near one, and over it all the skylight.
+const MALL_X := 22.0       # the atrium's ends: the end shops' fronts
+const MALL_FAR := 13.6     # the far side's shop fronts
+const MALL_NEAR := -20.0   # the near side's, behind the cameras
+const MALL_LEVEL := 4.6    # floor to floor
+const MALL_DEEP := 3.6     # a balcony's depth, from the shops to its railing
+const MALL_ROOF := 13.8
 
 
-## The mall: the court in a three-storey atrium, shop fronts on every floor, people at the railings above and on
-## temporary metal bleachers.
 func _mall() -> Array:
 	var spots := []
-	var shops := [Color("e8336d"), Color("19b3a3"), Color("ffd27a"), Color("4c7ad3"), Color("ff9a1f"), Color("8ad36a")]
-	for floor_i in 3:
-		var y := floor_i * 4.5
-		for s: float in [1.0]:   # the far side only: the camera's side is open
-			var z := s * 13.0
-			if floor_i > 0:
-				_lit.box(Vector3(0, y - 0.15, s * 11.5), Vector3(40, 0.3, 3.0), Color("e9e2d6"))
-				_lit.box(Vector3(0, y + 0.55, s * 10.05), Vector3(40, 1.1, 0.06), Color("bfe3ea"))  # glass railing
-				var x := -18.0
-				while x < 18.0:
-					spots.append(Vector3(x, y, s * 10.4))
-					x += 0.7
-			var k := 0
-			var sx := -19.0
-			while sx < 19.0:
-				_lit.box(Vector3(sx + 2.0, y + 1.9, z), Vector3(3.8, 3.8, 0.3), Color("efe8dc"))
-				_glow.wall(Vector3(sx + 0.3, 0, z - s * 0.17), Vector3(sx + 3.7, 0, z - s * 0.17), y + 3.0, y + 3.6, shops[(k + floor_i) % 6])
-				_glow.wall(Vector3(sx + 0.5, 0, z - s * 0.16), Vector3(sx + 3.5, 0, z - s * 0.16), y + 0.2, y + 2.7, Color("fff3d6").darkened(0.1 * float(k % 2)))
+	Scenery.plane(self, Scenery.surface("granite_tile_04", Color(1.08, 1.03, 0.96), 0.0, 3.2, 0.3), -MALL_X, MALL_NEAR, MALL_X,
+		MALL_FAR, -0.002)
+	var shops := Geo.new()
+	var glass := Geo.new()
+	var wall := Color("ece6db")
+	var k := 0
+	# Each side: its shop fronts' line (from one end to the other) and the way they face.
+	var sides := [[Vector3(-MALL_X, 0, MALL_FAR), Vector3(MALL_X, 0, MALL_FAR), Vector3.BACK * -1.0],
+		[Vector3(MALL_X, 0, MALL_NEAR), Vector3(-MALL_X, 0, MALL_NEAR), Vector3.BACK],
+		[Vector3(MALL_X, 0, MALL_FAR), Vector3(MALL_X, 0, MALL_NEAR), Vector3.LEFT],
+		[Vector3(-MALL_X, 0, MALL_NEAR), Vector3(-MALL_X, 0, MALL_FAR), Vector3.RIGHT]]
+	for f in 3:
+		var y := f * MALL_LEVEL
+		for side in sides:
+			var a: Vector3 = side[0]
+			var b: Vector3 = side[1]
+			var n: Vector3 = side[2]
+			var count := 5 if absf(a.z - b.z) < 1.0 else 4
+			var w := a.distance_to(b) / count
+			for i in count:
+				var c: Vector3 = a.lerp(b, (i + 0.5) / count) + n * 0.02 + Vector3(0, y, 0)
+				_shopfront(shops, c, n, w - 0.3, 4.0, (k * 5 + f * 2 + i) % 6)
 				k += 1
-				sx += 4.0
-	# Temporary metal bleachers along the far side.
+			# The wall round the shops (between them and up to the next floor), facing in.
+			_lit.wall(b, a, y, y + MALL_LEVEL, wall)
+			if f == 0:
+				continue
+			# The balcony in front of them: its floor, the light under its edge, its glass railing and handrail.
+			var inward := n * MALL_DEEP
+			var mid := (a + b) * 0.5 + inward * 0.5
+			var size := Vector3(absf(b.x - a.x) + 0.01, 0.6, absf(b.z - a.z) + 0.01) + Vector3(absf(inward.x), 0, absf(inward.z))
+			_lit.box(mid + Vector3(0, y - 0.3, 0), size, Color("f1ece3"))
+			var e0: Vector3 = a + inward
+			var e1: Vector3 = b + inward
+			_glow.wall(e1 + n * 0.01, e0 + n * 0.01, y - 0.42, y - 0.36, Color("fff1d6"))
+			glass.wall(e0, e1, y, y + 1.05, Color(0.75, 0.88, 0.92, 0.28), true)
+			_lit.box((e0 + e1) * 0.5 + Vector3(0, y + 1.08, 0), Vector3(absf(e1.x - e0.x) + 0.06, 0.06, absf(e1.z - e0.z) + 0.06), Color("c9ccd0"))
+			# People at the railing, looking down at the court (corners left clear).
+			var along := (b - a).normalized()
+			var len := a.distance_to(b) - MALL_DEEP * 2.0 - 1.0
+			var at := 0.0
+			while at < len:
+				_standing.append(e0 + along * (MALL_DEEP + 0.5 + at) - n * 0.35 + Vector3(0, y, 0))
+				at += 0.75
+	# Columns at the balconies' corners and along the long sides, floor to roof.
+	for z: float in [MALL_FAR - MALL_DEEP, MALL_NEAR + MALL_DEEP]:
+		var mid_x := 12.5 if z > 0.0 else 6.0   # (clear of the far bleachers)
+		for x: float in [-(MALL_X - MALL_DEEP), -mid_x, mid_x, MALL_X - MALL_DEEP]:
+			_lit.cylinder(Vector3(x, 0, z), Vector3(x, MALL_ROOF, z), 0.32, 0.32, Color("e6e0d5"), 10, false)
+	# The roof, and the skylight's glass in its frame.
+	_ceiling(-MALL_X, MALL_NEAR, MALL_X, MALL_FAR, MALL_ROOF, Color("dcd8d0"))
+	_ceiling(-13.0, -9.0, 13.0, 8.0, MALL_ROOF - 0.05, Color("eaf4fb"), true)
+	for x in range(-12, 13, 3):
+		_lit.box(Vector3(x, MALL_ROOF - 0.12, -0.5), Vector3(0.12, 0.16, 17.0), Color("7b8189"))
+	for z in range(-9, 9, 4):
+		_lit.box(Vector3(0, MALL_ROOF - 0.14, z), Vector3(26.0, 0.12, 0.12), Color("7b8189"))
+	add_child(shops.commit(_shop_material()))
+	var gm := StandardMaterial3D.new()
+	gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	gm.vertex_color_use_as_albedo = true
+	gm.cull_mode = BaseMaterial3D.CULL_DISABLED
+	gm.roughness = 0.1
+	add_child(glass.commit(gm))
+	# Escalators up to the first floor in the near corners, two side by side, rising toward the ends' balconies, clear of
+	# the cameras and the bleachers (Meshy's, stretched to an escalator's size: 1.7 m wide, 9 m long).
+	for s: float in [-1.0, 1.0]:
+		for z: float in [-13.4, -15.2]:
+			var xf := Transform3D(Basis(Vector3.UP, -s * PI * 0.5) * Basis.from_scale(Vector3(0.44, 0.84, 1.26)),
+				Vector3(s * (MALL_X - MALL_DEEP - 4.4), 0, z))
+			_sc.add_xf("props/mall_escalator", xf)
+		# Palms in planters and a kiosk or two on the floor.
+		for p: Vector3 in [Vector3(s * 12.8, 0, 8.6), Vector3(s * 12.8, 0, -8.6), Vector3(s * 19.6, 0, 10.6), Vector3(s * 19.6, 0, -16.6)]:
+			_sc.add("props/mall_planter", p, _rng.randf_range(0, TAU))
+		_sc.add("props/mall_kiosk", Vector3(s * 15.6, 0, 7.6), _rng.randf_range(0, TAU))
+		_sc.add("props/mall_kiosk", Vector3(s * 15.6, 0, -8.4), _rng.randf_range(0, TAU))
+	# Temporary metal bleachers along the far side and the near one.
 	spots.append_array(_bleachers(3, 7.0))
-	_lit.floor_rect(-30, -30, 30, 30, 14.0, Color("cfd6dc"))
-	_glow.floor_rect(-6, -4, 6, 4, 13.95, Color("eaf6ff"))   # the skylight
+	spots.append_array(_bleachers(3, -9.0))
 	return spots
 
 
-## The provincial gym: a maple floor, painted block walls, metal bleachers along one side, fluorescent battens under
-## the roof, a clock over the doors and the small things by them (a fire alarm, a wet-floor sign), basketball boards
-## on the end walls, banners and ceiling fans.
+## One shop's front: a picture of tile (of the six in shopfronts.jpg) w by h, its bottom's middle at c, facing n.
+func _shopfront(g: Geo, c: Vector3, n: Vector3, w: float, h: float, tile: int) -> void:
+	var along := Vector3.UP.cross(n)
+	var p0 := c - along * w * 0.5
+	var p1 := c + along * w * 0.5
+	var uv := Rect2(Vector2((tile % 2) * 0.5, (tile / 2) / 3.0), Vector2(0.5, 1.0 / 3.0))
+	g._tri_quad(p0 + Vector3(0, h, 0), p1 + Vector3(0, h, 0), p1, p0, n, Color.WHITE, uv)
+
+
+func _shop_material() -> Material:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_texture = load("res://assets/venue/mall/shopfronts.jpg")
+	m.albedo_color = Color(0.9, 0.9, 0.9)
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	return m
+
+
+## A ceiling: a rectangle at height y seen from below (glow: in the glowing material, a skylight).
+func _ceiling(x0: float, z0: float, x1: float, z1: float, y: float, col: Color, glow := false) -> void:
+	(_glow if glow else _lit)._tri_quad(Vector3(x0, y, z1), Vector3(x1, y, z1), Vector3(x1, y, z0), Vector3(x0, y, z0), Vector3.DOWN, col)
+
+
+## The provincial gym: a maple floor, painted block walls with windows high up, metal bleachers along both sides,
+## fluorescent battens under the roof, a clock and a scoreboard over the doors and the small things by them (a fire
+## alarm, a wet-floor sign), basketball boards on the end walls, banners and ceiling fans.
 func _gym() -> Array:
 	var spots := _bleachers(3, 10.1)
-	var wall := Scenery.surface("concrete_block_wall", Color("e9e4d8"), 1.0, 2.4, 0.9)
+	spots.append_array(_bleachers(3, -9.6))
+	var wall := Scenery.surface("concrete_block_wall", Color("d6d2c8"), 1.0, 2.4, 0.9)
 	Scenery.box(self, wall, Vector3(0, 5, 12.6), Vector3(30, 10, 0.3))
-	Scenery.box(self, wall, Vector3(14.5, 5, -6.5), Vector3(0.3, 10, 38))
-	Scenery.box(self, wall, Vector3(-14.5, 5, -6.5), Vector3(0.3, 10, 38))
-	_lit.box(Vector3(0, 5, -26.0), Vector3(30, 10, 0.3), Color("d8d2c4"))   # well behind the camera
+	# The walls the hall's light falls on full (the ends and the near side) a shade darker, or on High they burn white.
+	var lit_wall := Scenery.surface("concrete_block_wall", Color("aaa79f"), 1.0, 2.4, 0.9)
+	lit_wall.set_shader_parameter("relief", false)
+	Scenery.box(self, lit_wall, Vector3(14.5, 5, -2.5), Vector3(0.3, 10, 30))
+	Scenery.box(self, lit_wall, Vector3(-14.5, 5, -2.5), Vector3(0.3, 10, 30))
+	Scenery.box(self, lit_wall, Vector3(0, 5, -17.6), Vector3(30, 10, 0.3))   # (behind the cameras)
+	# Windows high on every wall: daylight through frosted glass.
 	for x in range(-12, 13, 4):
-		_glow.wall(Vector3(x - 1.2, 0, 12.44), Vector3(x + 1.2, 0, 12.44), 6.8, 8.6, Color("cfe8ff"))
+		_glow.wall(Vector3(x + 1.2, 0, 12.44), Vector3(x - 1.2, 0, 12.44), 6.8, 8.6, Color("cfe8ff"))
+		_glow.wall(Vector3(x - 1.2, 0, -17.44), Vector3(x + 1.2, 0, -17.44), 6.8, 8.6, Color("cfe8ff"))
+	for s: float in [-1.0, 1.0]:
+		for z in range(-14, 11, 4):
+			_glow.wall(Vector3(s * 14.34, 0, z - s * 1.2), Vector3(s * 14.34, 0, z + s * 1.2), 6.8, 8.6, Color("cfe8ff"))
+	_sc.add("props/gym_scoreboard", Vector3(0, 4.9, 12.4), PI, 1.6)
+	for x: float in [-9.0, 9.0]:
+		_lit.box(Vector3(x, 1.1, -17.43), Vector3(1.8, 2.2, 0.06), Color("5a6470"))
 	var banners := [Color("e8336d"), Color("19b3a3"), Color("ffd27a"), Color("1f6fc2")]
 	for i in 4:
 		_lit.box(Vector3(-9 + i * 6, 5.2, 12.42), Vector3(2.0, 1.2, 0.04), banners[i])
@@ -531,7 +646,7 @@ func _gym() -> Array:
 			var a0 := TAU * k / 12.0
 			var a1 := TAU * (k + 1) / 12.0
 			_lit.cylinder(Vector3(rim + cos(a0) * 0.23, 3.05, sin(a0) * 0.23), Vector3(rim + cos(a1) * 0.23, 3.05, sin(a1) * 0.23), 0.012, 0.012, Color("e05a1a"), 4, false)
-	_lit.floor_rect(-16, -27, 16, 14, 10.0, Color("6b625a"))
+	_ceiling(-16, -18, 16, 14, 10.0, Color("6b625a"))
 	for x in range(-10, 11, 4):
 		for z in range(-6, 7, 4):
 			_sc.add("hall/fluorescent_light", Vector3(x, 9.95, z + 0.3), 0.0, 1.6, false)
@@ -548,31 +663,33 @@ func _gym() -> Array:
 	return spots
 
 
-## Metal bleachers along the far side: sections (7.5 m wide, five rows) side by side centred on the court, their front
-## at front_z; a person on most seats. Returns where people sit.
+## Metal bleachers along a long side: sections (7.5 m wide, five rows) side by side centred on the court, their front
+## at front_z (the far side's positive, the near side's negative), facing the court; a person on most seats. Returns
+## where people sit.
 func _bleachers(sections: int, front_z: float) -> Array:
 	var spots := []
 	var w := 7.5
+	var s := signf(front_z)
 	for i in sections:
 		var x := (i - (sections - 1) * 0.5) * w
-		_sc.add("stands/bleacher_metal", Vector3(x, 0, front_z + 2.07), PI)
+		_sc.add("stands/bleacher_metal", Vector3(x, 0, front_z + s * 2.07), PI if s > 0.0 else 0.0)
 		for r in 5:
 			var px := x - w * 0.5 + 0.35
 			while px < x + w * 0.5 - 0.3:
-				spots.append(Vector3(px, 0.42 + r * 0.52, front_z + 0.35 + r * 0.72))
+				spots.append(Vector3(px, 0.42 + r * 0.52, front_z + s * (0.35 + r * 0.72)))
 				px += 0.55
 	return spots
 
 
 # ---------------------------------------------------------------- outdoor parts
 
-## People standing in a row on the ground, from one point to another, step metres apart.
+## People standing in a row, from one point to another (on the ground, or on a floor at their height), step metres
+## apart.
 func _people_row(from: Vector3, to: Vector3, step: float) -> void:
 	var d := from.distance_to(to)
 	var n := int(d / step)
 	for i in n:
-		var p := from.lerp(to, float(i) / maxf(1.0, n - 1))
-		_standing.append(Vector3(p.x, 0.0, p.z))
+		_standing.append(from.lerp(to, float(i) / maxf(1.0, n - 1)))
 
 
 ## Rows of seats facing the court along the far side (a model each: plastic chairs, stools, benches), with a person
@@ -597,7 +714,9 @@ func _trees(names: Array, n: int, x0: float, x1: float, z0: float, z1: float, h0
 
 
 ## A temple court in Thailand: the court on the wat's paved forecourt, the hall behind with its tiered gold-trimmed
-## roofs, people on white plastic chairs as at a temple fair, coconut palms and rain trees round about.
+## roofs, people on white plastic chairs as at a temple fair, coconut palms and rain trees round about; on the near side
+## an open pavilion (a sala) with people in its shade, white chedis, the spirit house, food carts and the scooters
+## people came on, more watching from there.
 func _temple() -> Array:
 	var spots := []
 	_sc.add("buildings/thai_temple", Vector3(0, 0, 27.0), PI * 0.5)
@@ -607,6 +726,20 @@ func _temple() -> Array:
 	_trees(["coconut_palm", "rain_tree", "island_tree_a"], 7, -34.0, -15.0, 6.0, 26.0, 9.0, 13.0)
 	_trees(["coconut_palm", "island_tree_b", "rain_tree"], 7, 15.0, 34.0, 6.0, 26.0, 9.0, 13.0)
 	_trees(["coconut_palm"], 4, -16.0, 16.0, 36.0, 42.0, 14.0, 17.0)
+	# The near side: the sala, people watching from its floor and standing by the court; chedis, the spirit house.
+	_sc.add("props/temple_sala", Vector3(-15.0, 0, -12.5), 0.0)
+	_people_row(Vector3(-18.5, 0.7, -11.2), Vector3(-11.5, 0.7, -11.2), 0.75)
+	_people_row(Vector3(-9.0, 0, -9.2), Vector3(9.0, 0, -9.2), 0.7)
+	_people_row(Vector3(-8.0, 0, -10.2), Vector3(8.0, 0, -10.2), 0.85)
+	for p: Vector3 in [Vector3(16.0, 0, -15.0), Vector3(24.0, 0, -12.0), Vector3(-26.0, 0, -6.0)]:
+		_sc.add("props/temple_chedi", p, _rng.randf_range(0, TAU), _rng.randf_range(0.8, 1.05))
+	_sc.add("props/spirit_house", Vector3(12.5, 0, 11.0), PI)
+	# Food carts at the edge of the forecourt, scooters parked in a row.
+	for p: Vector3 in [Vector3(-12.0, 0, 11.5), Vector3(11.5, 0, -10.5), Vector3(-6.0, 0, -13.0)]:
+		_sc.add("props/food_cart", p, _rng.randf_range(-0.4, 0.4))
+	for i in 7:
+		_sc.add("props/scooter", Vector3(4.0 + i * 1.0, 0, -14.0 + _rng.randf_range(-0.2, 0.2)), PI * 0.5 + _rng.randf_range(-0.2, 0.2))
+	_trees(["rain_tree", "coconut_palm", "island_tree_a"], 9, -36.0, 36.0, -40.0, -25.0, 9.0, 14.0)   # (clear of the cameras)
 	return spots
 
 
@@ -648,6 +781,13 @@ func _park() -> Array:
 	_sc.add("hall/basketball_hoop", Vector3(27.2, 0, 0.0), -PI * 0.5)
 	_trees(["rain_tree", "rain_tree", "island_tree_a"], 12, -36.0, 36.0, 16.0, 26.0, 9.0, 13.0)
 	_trees(["rain_tree", "island_tree_b"], 6, -40.0, -18.0, -6.0, 14.0, 8.0, 12.0)
+	# The open side and the near side: more trees, food carts on the path, scooters parked by it.
+	_trees(["rain_tree", "island_tree_a", "island_tree_b"], 8, 32.0, 44.0, -14.0, 14.0, 8.0, 13.0)
+	_trees(["rain_tree", "island_tree_a"], 10, -40.0, 40.0, -40.0, -25.0, 8.0, 13.0)   # (clear of the cameras)
+	for x: float in [-14.5, 14.0]:
+		_sc.add("props/food_cart", Vector3(x, 0, fz + 4.6), _rng.randf_range(-0.3, 0.3))
+	for i in 6:
+		_sc.add("props/scooter", Vector3(-24.0 + i * 0.95, 0, fz + 4.4), PI * 0.5 + _rng.randf_range(-0.2, 0.2))
 	# A row of shophouses past the trees (their cut-outs, 45 m off), apartment blocks behind with lit windows.
 	for i in 4:
 		_sc.add("buildings/shophouse_row_low", Vector3(-27.75 + i * 18.5, 0, 30.0), PI if i % 2 == 0 else 0.0, 1.0, false,
@@ -683,6 +823,26 @@ func _beach() -> Array:
 		_lit.cylinder(Vector3(x, 2.2, 10.5), Vector3(x, 2.7, 10.5), 1.4, 0.0, cols[int(absf(x)) % 5], 8)
 	_people_row(Vector3(-12, 0, 8.0), Vector3(12, 0, 8.0), 0.6)
 	_people_row(Vector3(-11, 0, 9.0), Vector3(11, 0, 9.0), 0.8)
+	# The side that was bare: palms, a thatched beach bar, sun loungers under umbrellas, a food cart and people watching
+	# on that side too.
+	_trees(["coconut_palm"], 9, 22.0, 40.0, -12.0, 8.0, 8.0, 12.0)
+	_trees(["coconut_palm", "island_tree_b"], 10, -40.0, 40.0, -40.0, -25.0, 8.0, 13.0)   # (clear of the cameras)
+	_sc.add("props/beach_bar", Vector3(-15.0, 0, -12.5), 0.0)
+	_sc.add("props/beach_bar", Vector3(26.0, 0, -4.0), -PI * 0.5)
+	for i in 6:
+		var x := 9.0 + (i % 3) * 3.2
+		var z := -11.0 - (i / 3) * 3.6
+		_sc.add("props/sun_lounger", Vector3(x, 0, z), PI + _rng.randf_range(-0.15, 0.15))
+		if i % 3 != 2:
+			_lit.cylinder(Vector3(x + 1.6, 0, z), Vector3(x + 1.6, 2.2, z), 0.04, 0.04, Color("eeeeee"), 6, false)
+			_lit.cylinder(Vector3(x + 1.6, 2.2, z), Vector3(x + 1.6, 2.7, z), 1.4, 0.0, cols[(i + 2) % 5], 8)
+	_sc.add("props/food_cart", Vector3(-12.5, 0, 9.6), 0.2)
+	_people_row(Vector3(-11, 0, -8.8), Vector3(11, 0, -8.8), 0.65)
+	_people_row(Vector3(-10, 0, -9.8), Vector3(10, 0, -9.8), 0.9)
+	# By the water: the lifeguards' tower, longtail boats pulled up on the sand.
+	_sc.add("props/lifeguard_tower", Vector3(-27.0, 0, 20.5), 0.0)
+	for p: Vector3 in [Vector3(-38.0, 0, 23.5), Vector3(13.0, 0, 23.8), Vector3(31.0, 0, 23.2), Vector3(40.0, 0, 24.0)]:
+		_sc.add("props/longtail_boat", p, _rng.randf_range(-0.25, 0.25) + (PI if p.x < 0.0 else 0.0))
 	return spots
 
 
@@ -743,4 +903,10 @@ func _street() -> Array:
 	for x: float in [-13.5, -12.8, 12.8, 13.5]:
 		_sc.add("seating/metal_stool", Vector3(x, 0, 9.6), _rng.randf_range(0.0, TAU))
 	_people_row(Vector3(-13, 0, 9.3), Vector3(13, 0, 9.3), 0.7)
+	# Scooters parked along the shophouses, food carts at the stalls' ends.
+	for i in 9:
+		_sc.add("props/scooter", Vector3(-30.0 + i * 1.0, 0, 14.6), PI * 0.5 + _rng.randf_range(-0.2, 0.2))
+		_sc.add("props/scooter", Vector3(19.0 + i * 1.0, 0, 14.6), PI * 0.5 + _rng.randf_range(-0.2, 0.2))
+	for x: float in [-21.5, 22.5]:
+		_sc.add("props/food_cart", Vector3(x, 0, 11.2), _rng.randf_range(-0.3, 0.3))
 	return spots

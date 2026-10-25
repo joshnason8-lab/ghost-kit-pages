@@ -2,7 +2,9 @@ extends SceneTree
 ## Makes a model small enough for a phone: its mesh simplified to about TRIS triangles (meshoptimizer's level of
 ## detail, the same vertices and skin weights, only fewer of them), its textures cut to SIZE pixels. Run it on each
 ## model as it comes (a Meshy character, the ball); the game loads what it writes.
-##   godot --headless -s tools/models/prepare_model.gd -- IN.glb OUT.glb TRIS SIZE
+##   godot --headless -s tools/models/prepare_model.gd -- IN.glb OUT.glb TRIS SIZE [h=METRES | l=METRES]
+## A Meshy prop comes in a box about 2 units across, centred: h= (its height) or l= (its longest side on the ground) makes
+## it its real size, standing on the ground (y 0) and centred there.
 
 func _init() -> void:
 	var a := OS.get_cmdline_user_args()
@@ -14,18 +16,37 @@ func _init() -> void:
 	var out: String = a[1]
 	var want := int(a[2])
 	var size := int(a[3])
+	var fit := a[4] if a.size() > 4 else ""
 	var doc := GLTFDocument.new()
 	var st := GLTFState.new()
 	if doc.append_from_file(src, st) != OK:
 		push_error("can't read " + src)
 		quit(1)
 		return
+	var xf := Transform3D.IDENTITY
+	if fit != "":
+		var box := AABB()
+		var first := true
+		for gm in st.get_meshes():
+			var im: ImporterMesh = (gm as GLTFMesh).mesh
+			for s in im.get_surface_count():
+				for v in (im.get_surface_arrays(s)[Mesh.ARRAY_VERTEX] as PackedVector3Array):
+					box = AABB(v, Vector3.ZERO) if first else box.expand(v)
+					first = false
+		var k := float(fit.substr(2)) / (box.size.y if fit.begins_with("h=") else maxf(box.size.x, box.size.z))
+		xf = Transform3D(Basis.from_scale(Vector3.ONE * k), -Vector3(box.get_center().x, box.position.y, box.get_center().z) * k)
+		print("size %s -> %s" % [box.size, box.size * k])
 	for gm in st.get_meshes():
 		var im: ImporterMesh = (gm as GLTFMesh).mesh
 		im.generate_lods(25.0, 60.0, [])
 		var made := ImporterMesh.new()
 		for s in im.get_surface_count():
 			var arrays: Array = im.get_surface_arrays(s)
+			if fit != "":
+				var vs: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+				for i in vs.size():
+					vs[i] = xf * vs[i]
+				arrays[Mesh.ARRAY_VERTEX] = vs
 			var full: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
 			var best := full
 			var sizes := ["%d" % (full.size() / 3)]

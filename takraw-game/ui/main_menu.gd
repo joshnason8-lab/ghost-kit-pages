@@ -85,7 +85,6 @@ func _build_ui() -> void:
 	var lang := _link(Game.language_names(Game.language())[0], "globe", _open_language, 48)
 	lang_row.add_child(lang)
 	_cards.append(lang)
-	col.add_child(UI.label(tr("MENU_EYEBROW").to_upper(), "EyebrowLabel", 16, Game.C_SAFFRON))
 	var tsize := int(clampf(get_viewport_rect().size.x * 0.066, 78.0, 116.0))
 	_title = UI.label(tr("GAME_TITLE"), "TitleLabel", tsize)
 	_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.55))
@@ -223,11 +222,12 @@ func _link(text: String, icon_kind: String, cb: Callable, height := 54, text_siz
 	b.add_theme_stylebox_override("pressed", sbh)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 10)
+	h.add_theme_constant_override("separation", roundi(text_size * 0.45))
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	h.offset_left = 16
-	h.offset_right = -18
+	var pad := roundi(height * 0.36)
+	h.offset_left = pad - 2
+	h.offset_right = -pad
 	var ic := Icon.make(icon_kind, roundi(text_size * 1.2), Game.C_SAFFRON)
 	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(ic)
@@ -236,8 +236,10 @@ func _link(text: String, icon_kind: String, cb: Callable, height := 54, text_siz
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(l)
 	b.add_child(h)
-	# The button as wide as its words.
-	b.custom_minimum_size.x = 16 + 24 + 10 + Game.font_bold.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, Game.ts(20)).x + 30
+	# The button as wide as its icon and words (in the font and size they are drawn in), with room either side.
+	var widen := func(): b.custom_minimum_size.x = h.get_combined_minimum_size().x + pad * 2 - 2
+	h.minimum_size_changed.connect(widen)
+	widen.call()
 	b.pressed.connect(Sfx.click)
 	b.pressed.connect(cb)
 	return b

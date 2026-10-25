@@ -238,10 +238,11 @@ static func static_pose(name: String) -> Dictionary:
 			p.thigh_r = Vector3(-88, 0, -6)
 			p.shin_l = Vector3(80, 0, 0)
 			p.shin_r = Vector3(80, 0, 0)
-			p.upperarm_l = Vector3(-30, 0, 10)
-			p.upperarm_r = Vector3(-30, 0, -10)
-			p.forearm_l = Vector3(-50, 0, 0)
-			p.forearm_r = Vector3(-50, 0, 0)
+			# The hands resting on the thighs, the arms relaxed (not held out in front).
+			p.upperarm_l = Vector3(-12, 0, 5)
+			p.upperarm_r = Vector3(-12, 0, -5)
+			p.forearm_l = Vector3(-45, 0, 0)
+			p.forearm_r = Vector3(-45, 0, 0)
 		"signal_out":
 			p.upperarm_r = Vector3(-176, 0, -6)
 			p.forearm_r = Vector3(0, 0, 0)

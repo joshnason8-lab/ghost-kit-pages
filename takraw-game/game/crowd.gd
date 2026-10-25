@@ -1,9 +1,10 @@
 class_name Crowd
 extends MultiMeshInstance3D
 ## The spectators: flat cut-outs from one small sheet of figures, every one an instance of the same quad, so a
-## stand of thousands is one draw call. Each one faces the court's centre (its instance turned that way); a shader
-## turns the cut-out to the camera, shows the figure from the front or, when the camera is behind the spectator, from
-## behind, picks its shirt, and makes it fidget. The figures are whole, legs and feet too: seated (on a seat, a step,
+## stand of thousands is one draw call. Each one faces the court's centre (its instance turned that way), and turns
+## partly to follow the ball (set_look); a shader turns the cut-out to the camera and shows the figure from the side
+## the camera sees of them (the front, three-quarters, the side, from behind: Crowd.VIEWS), picks its shirt, and makes
+## it fidget. The figures are whole, legs and feet too: seated (on a seat, a step,
 ## a bench) or standing (on the sand, by the stalls). When the crowd goes up (excite) the seated get to their feet, a
 ## few at a time, and jump and cheer; as it settles they sit down again.
 
@@ -12,7 +13,8 @@ const FIG_W := 72        # each one's pixels
 const FIG_H := 192
 const FIG_W_M := 0.825   # and metres: from the floor (the feet) to above a hand held up
 const FIG_H_M := 2.2
-const ROWS := 4          # the sheet's rows: seated from the front, seated from behind, standing from the front, behind
+const VIEWS := [0.0, 45.0, 90.0, 135.0, 180.0]   # the sides each figure is drawn from, in degrees from the front
+const ROWS := 10         # the sheet's rows: seated from each of the VIEWS, then standing from each
 const SEAT := 0.45       # a seat's height: a seated spectator's feet are this far under their spot
 const SHEET := "res://assets/models/crowd_sheet.png"
 ## On Medium and High a bigger sheet: twice the figures (more skin tones and heights, shorts of their own colours,
@@ -30,6 +32,8 @@ var spots: Array[Vector3] = []   # where people sit (the seat) or stand
 var placed: Array[Transform3D] = []   # each one's place (their feet) and the way they face (as the MultiMesh has them)
 static var _excite := 0.0         # how excited the crowd is: what it is going toward, and what it shows now
 static var _shown := 0.0
+static var _look := Vector3.ZERO  # where the crowd looks (the ball), and where it looks now (following it, a little late)
+static var _looking := Vector3.ZERO
 
 
 ## The sheet: people from the players' models, seated and standing, rendered by tools/models/crowd_sheet.tscn (the
@@ -61,8 +65,11 @@ uniform float figs = 8.0;
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
+uniform vec3 look_at = vec3(0.0);   // where the play is (the ball): spectators turn partly toward it
+uniform float look_amt = 0.5;
 varying vec4 data;
 varying float row;
+varying float mirror;
 void vertex() {
 	data = INSTANCE_CUSTOM;
 	float ph = data.z * 6.2831;
@@ -72,17 +79,24 @@ void vertex() {
 	float fidget = sin(time_s * 1.3 + ph) * 0.02;
 	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-	// The way the spectator faces (the court), and whether the camera is behind them.
-	vec3 facing = (MODEL_MATRIX * vec4(0.0, 0.0, 1.0, 0.0)).xyz;
-	vec3 to_cam = CAMERA_POSITION_WORLD - world;
-	float behind = step(dot(facing.xz, to_cam.xz), 0.0);
-	row = behind + 2.0 * standing;
+	// The way the spectator faces: the court's centre, turned partly toward the play.
+	vec2 facing = normalize((MODEL_MATRIX * vec4(0.0, 0.0, 1.0, 0.0)).xz);
+	vec2 to_play = look_at.xz - world.xz;
+	if (dot(to_play, to_play) > 0.01) facing = normalize(mix(facing, normalize(to_play), look_amt));
+	// The side of them the camera sees: how far round from their front (each a little different, so they don't all
+	// turn at once), and whether on their left (as the sheet draws them) or their right (mirrored).
+	vec2 to_cam = normalize((CAMERA_POSITION_WORLD - world).xz);
+	float round_from = acos(clamp(dot(facing, to_cam), -1.0, 1.0)) + (data.z - 0.5) * 0.3;
+	float view = clamp(floor(round_from / 0.7853982 + 0.5), 0.0, 4.0);
+	mirror = step(dot(vec2(facing.y, -facing.x), to_cam), 0.0);
+	row = view + 5.0 * standing;
 	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
 }
 void fragment() {
 	// (Kept a texel inside its row, or the filtering picks up the edge of the row next to it.)
-	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (clamp(UV.y, 0.005, 0.995) + floor(row + 0.5)) / 4.0);
+	float u = mix(UV.x, 1.0 - UV.x, mirror);
+	vec2 uv = vec2((u + floor(data.x * figs)) / figs, (clamp(UV.y, 0.005, 0.995) + floor(row + 0.5)) / 10.0);
 	vec4 c = texture(sheet, uv);
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
@@ -116,7 +130,10 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, standing 
 	spots = keep
 	_excite = 0.0
 	_shown = 0.0
+	_look = Vector3.ZERO
+	_looking = Vector3.ZERO
 	material().set_shader_parameter("excite", 0.0)
+	material().set_shader_parameter("look_at", Vector3.ZERO)
 	placed.clear()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -166,10 +183,18 @@ func _process(delta: float) -> void:
 		if _shown != _excite:
 			_shown = move_toward(_shown, _excite, delta * (2.5 if _excite > _shown else 0.35))
 			material().set_shader_parameter("excite", _shown)
+		if _looking != _look:
+			_looking = _look if _looking.distance_to(_look) < 0.01 else _looking.lerp(_look, minf(1.0, delta * 2.5))
+			material().set_shader_parameter("look_at", _looking)
 
 
 static func set_excite(k: float) -> void:
 	_excite = clampf(k, 0.0, 1.0)
+
+
+## Where the play is (the ball, on the ground): the crowd turns partly toward it, following it a little late.
+static func set_look(at: Vector3) -> void:
+	_look = Vector3(at.x, 0.0, at.z)
 
 
 static func set_light(k: float) -> void:

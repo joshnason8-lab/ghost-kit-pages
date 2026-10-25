@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "MENU_EYEBROW": "เซปักตะกร้อ · กติกาจริง",
   "LOADING": "กำลังเตรียมสนาม…",
   "MENU_QUICK": "แข่งด่วน",
   "MENU_QUICK_DESC": "เลือกสองทีม เลือกสนาม แล้วลุยเลย",
@@ -100,6 +99,7 @@
   "LAST_ROUND": "นัดล่าสุด",
   "SIM_MATCH": "ให้ระบบเล่นแทน",
   "SIM_REST": "เล่นที่เหลืออัตโนมัติ",
+  "SIM_TO_END": "ให้ระบบเล่นต่อจนจบ",
   "ABANDON": "ยกเลิก",
   "ABANDON_SEASON_Q": "ยกเลิกฤดูกาลนี้? ย้อนกลับไม่ได้นะ",
   "CHAMPIONS": "แชมป์",
@@ -140,6 +140,7 @@
   "TIE_LOST": "แพ้นัดนี้",
   "SET_N_TO": "เซต {n} · {p} แต้ม",
   "SET_POINT": "เซตพอยต์",
+  "HUD_SETS": "เซต: {n}",
   "MATCH_POINT": "แมตช์พอยต์",
   "SET_TO": "เซต {n} เป็นของ {t}",
   "SET_BREAK": "พักระหว่างเซต",

@@ -3,17 +3,20 @@ extends RefCounted
 ## An international tournament with your country, on the pattern of the real ones (docs/TAKRAW.md): eight nations in
 ## two groups of four, each playing the others once; the top two of each group into the semi-finals (A1 against B2,
 ## B1 against A2); both losing semi-finalists take bronze, as at the real world cup; then the final. The names are the
-## game's own (the real events' names are theirs); the formats, venues and fields are the real events':
-##   world: the World Championship, the strongest nations, in the big dome;
+## game's own (the real events' names are theirs); the formats, venues and fields are the real events', and only a
+## country in an event's field can enter it (no United States at the Asian Championship):
+##   world: the World Championship, open to every nation, the strongest eight in the big dome;
 ##   royal: the Royal Cup, a yearly invitational played in a shopping mall's atrium, as Thailand's is;
 ##   asia: the Asian Championship, the Asian nations;
 ##   sea: the Southeast Asian Championship, the region's nations, as at the SEA Games.
 ## The event is the regu, or the team event: three regus a tie, the first to win two.
 
 const KINDS := {
-	"world": {"name": "CUP_WORLD", "venue": "dome", "field": ["THA", "MAS", "JPN", "VIE", "INA", "MYA", "KOR", "IND", "PHI", "LAO", "SGP", "IRN", "CHN", "USA", "FRA", "GER"]},
+	"world": {"name": "CUP_WORLD", "venue": "dome", "field": ["THA", "MAS", "JPN", "VIE", "INA", "MYA", "KOR", "IND", "PHI", "LAO", "SGP", "IRN",
+		"CAM", "BRU", "CHN", "NEP", "SRI", "PAK", "USA", "FRA", "GER", "AUS"]},
 	"royal": {"name": "CUP_ROYAL", "venue": "mall", "field": ["THA", "MAS", "VIE", "INA", "JPN", "KOR", "PHI", "LAO", "MYA", "IND", "SGP", "BRU"]},
-	"asia": {"name": "CUP_ASIA", "venue": "national", "field": ["THA", "MAS", "JPN", "VIE", "INA", "MYA", "KOR", "IND", "PHI", "LAO", "IRN", "CHN", "SGP", "NEP"]},
+	"asia": {"name": "CUP_ASIA", "venue": "national", "field": ["THA", "MAS", "JPN", "VIE", "INA", "MYA", "KOR", "IND", "PHI", "LAO", "IRN", "CHN", "SGP", "NEP",
+		"CAM", "BRU", "SRI", "PAK"]},
 	"sea": {"name": "CUP_SEA", "venue": "provincial", "field": ["THA", "MAS", "VIE", "INA", "MYA", "PHI", "LAO", "SGP", "CAM", "BRU"]},
 }
 

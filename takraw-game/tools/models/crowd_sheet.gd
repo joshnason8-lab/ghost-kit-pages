@@ -1,9 +1,11 @@
 extends Node
 ## Renders the spectators' sheet (assets/models/crowd_sheet.png) from the players' own models: men and women of a
-## few skin tones, whole (from the feet up), in four rows: seated (some clapping, a hand up) from the front, the same
-## from behind (what a camera behind a stand sees), then standing (arms at their sides, clapping, hands on hips, a fist
-## or both arms up) from the front and from behind. The shirt is left white with its shading, and marked in the alpha
-## (0.7: the shirt, 1: the rest), for Crowd's shader to dye.
+## few skin tones, whole (from the feet up). Seated (some clapping, a hand up) in the first five rows, standing (arms at
+## their sides, clapping, hands on hips, a fist or both arms up) in the next five, each seen from five sides
+## (Crowd.VIEWS: the front, three-quarters, the side, three-quarters from behind, behind; the camera on the figure's
+## left, Crowd's shader mirrors them for the right), so a spectator turned to the play shows the side the camera sees
+## of them. The shirt is left white with its shading, and marked in the alpha (0.7: the shirt, 1: the rest), for
+## Crowd's shader to dye.
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/models/crowd_sheet.tscn [-- hi]
 ## hi: Medium's and High's bigger sheet (crowd_sheet_hi.png): 32 figures at 96 x 256 px, from the 2048 px textures;
 ## six skin tones, heights from 1.55 to 1.88 m, shorts in their own colours (only the shirt is dyed), more poses
@@ -37,10 +39,12 @@ func _ready() -> void:
 			look.shorts = SHORTS_HI[(f * 3 + f / 7) % SHORTS_HI.size()]
 			look.height = (1.68 + 0.2 * float((f * 5) % 9) / 8.0) if not women else (1.55 + 0.15 * float((f * 7) % 9) / 8.0)
 		for row in Crowd.ROWS:
-			var behind := row % 2 == 1
-			var pose := _seated(f) if row < 2 else _standing(f)
-			var colour := await _shot(look, pose, w, h, false, behind)
-			var mask := await _shot(look, pose, w, h, true, behind)
+			var view: float = Crowd.VIEWS[row % Crowd.VIEWS.size()]
+			var pose := _seated(f) if row < Crowd.VIEWS.size() else _standing(f)
+			# (Seated, the knees reach forward: from the side the frame is centred a little in front of them.)
+			var ahead := 0.16 if row < Crowd.VIEWS.size() else 0.0
+			var colour := await _shot(look, pose, w, h, false, view, ahead)
+			var mask := await _shot(look, pose, w, h, true, view, ahead)
 			var out := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
 			for y in h:
 				for x in w:
@@ -122,9 +126,9 @@ func _standing(f: int) -> Dictionary:
 	return pose
 
 
-## One figure, from the front (or from behind), the frame from the floor to above a hand held up; with mask, just the
-## shirt in white.
-func _shot(look: Dictionary, pose: Dictionary, w: int, h: int, mask: bool, behind := false) -> Image:
+## One figure seen from view degrees round from the front (toward their left), the frame from the floor to above a
+## hand held up; with mask, just the shirt in white.
+func _shot(look: Dictionary, pose: Dictionary, w: int, h: int, mask: bool, view := 0.0, ahead := 0.0) -> Image:
 	var sv := SubViewport.new()
 	sv.size = Vector2i(w, h)
 	sv.transparent_bg = true
@@ -163,8 +167,9 @@ void fragment() { vec3 k = texture(kit_tex, UV).rgb; ALBEDO = vec3(step(0.5, k.r
 	var cam := Camera3D.new()
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
 	cam.size = Crowd.FIG_H_M
-	var mid := Vector3(0, Crowd.FIG_H_M * 0.5, 0)
-	cam.position = mid + Vector3(0, 0.55, -4.0 if behind else 4.0)   # a little from above, as from the court
+	var mid := Vector3(0, Crowd.FIG_H_M * 0.5, ahead)
+	var a := deg_to_rad(view)
+	cam.position = mid + Vector3(4.0 * sin(a), 0.55, 4.0 * cos(a))   # a little from above, as from the court
 	sv.add_child(cam)
 	cam.look_at(mid)
 	cam.current = true

@@ -9,8 +9,10 @@ The players (a man and a woman), the ball and the app's icon made for the game; 
 motion capture (Mixamo). The jumps in the block, the header spike and the celebration: motion capture data from
 mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217. The temple, the stilt houses, the
 shophouses, the apartment blocks, the trees, the bleachers, benches, tables and the basketball hoop made for the
-game too; skies (at 4K on Medium and High), surfaces (at 2K there) and the other venue pieces from Poly Haven
-(polyhaven.com), CC0. The review's buzzer made in code for the
+game too; the mall's shop fronts, escalators, palms and kiosks, the scoreboards, the beach bar, sun loungers,
+lifeguards' tower and longtail boats, the temple's sala, chedis and spirit house, the food carts and scooters made for
+the game with Meshy (meshy.ai); skies (at 4K on Medium and High), surfaces (at 2K there; the mall's granite floor too)
+and the other venue pieces from Poly Haven (polyhaven.com), CC0. The review's buzzer made in code for the
 game; the crowd's drums written for it (tools/audio/make_music.py). The crowd's "ooh"
 and groan, the claps and the players' calls from Kabaddi Raid, by the same maker."""
 

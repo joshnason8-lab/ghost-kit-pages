@@ -28,6 +28,7 @@ func _ready() -> void:
 	_detail_by_level()
 	await _play_as_and_officials()
 	await _matches()
+	await _sim_to_end()
 	Game.settings = keep
 	Game.delete_season()
 	Game.delete_cup()
@@ -191,6 +192,12 @@ func _cup() -> void:
 			check(String(c.medals.get("gold", "")) != "" and (c.medals.get("bronze", []) as Array).size() == 2, "%s: gold and two bronzes" % kind)
 			check(c.group_table(0).size() == 4 and c.group_table(1).size() == 4, "%s: two groups of four" % kind)
 			check(c.user in c.groups[0] or c.user in c.groups[1], "%s: your country is in it" % kind)
+			check((c.groups[0] + c.groups[1]).all(func(id): return id in Cup.KINDS[kind].field), "%s: only the event's nations play in it" % kind)
+	# The regional events are their regions' nations only.
+	for id in Cup.KINDS["asia"].field + Cup.KINDS["sea"].field:
+		check(not (id in ["USA", "FRA", "GER", "AUS"]), "%s: an Asian nation in an Asian event" % id)
+	for id in Cup.KINDS["sea"].field:
+		check(id in ["THA", "MAS", "VIE", "INA", "MYA", "PHI", "LAO", "SGP", "CAM", "BRU"], "%s: a Southeast Asian nation at the Southeast Asian event" % id)
 
 
 func _team_event_lineups() -> void:
@@ -414,5 +421,32 @@ func _matches() -> void:
 		for id in res.stats:
 			kills += int(res.stats[id].kills)
 		check(kills > 0, "%s: spikes won points" % c[0])
+		m.queue_free()
+		await frames(2)
+
+
+## Simulate to the end (the pause menu): offered in a season's or a tournament's match, not a quick one; from the score
+## as it stands, it finishes the match with a winner and legal sets.
+func _sim_to_end() -> void:
+	for mode in ["quick", "cup"]:
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 3, "points": 15, "user_team": 0,
+			"demo": true, "seed": 5, "mode": mode}
+		add_child(m)
+		await frames(3)
+		check(m.can_sim_to_end() == (mode == "cup"), "simulate to the end offered in a %s match: %s" % [mode, mode == "cup"])
+		if mode == "cup":
+			m.points = [9, 6]
+			m.sets = [1, 0]
+			m.set_scores = [[15, 11]]
+			m.set_no = 2
+			m.set_paused(true)
+			m.sim_to_end()
+			var res: Dictionary = await m.finished
+			check(maxi(int(res.sets[0]), int(res.sets[1])) == 2 and int(res.sets[0]) != int(res.sets[1]), "simulated to the end: a winner, %s" % [res.sets])
+			check((res.set_scores[0] as Array) == [15, 11], "simulated to the end: the sets already played kept")
+			for sc in res.set_scores:
+				check(valid_set(int(sc[0]), int(sc[1]), 15), "simulated to the end: set %s is legal" % [sc])
+			check(int((res.set_scores[1] as Array)[0]) >= 9 and int((res.set_scores[1] as Array)[1]) >= 6, "simulated to the end: from the score as it stood")
 		m.queue_free()
 		await frames(2)

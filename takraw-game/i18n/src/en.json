@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "MENU_EYEBROW": "Sepak takraw · the real rules",
   "LOADING": "Getting the court ready…",
   "MENU_QUICK": "Quick Match",
   "MENU_QUICK_DESC": "Any two teams, any venue. Play now.",
@@ -100,6 +99,7 @@
   "LAST_ROUND": "Last round",
   "SIM_MATCH": "Play it for me",
   "SIM_REST": "Play out the rest",
+  "SIM_TO_END": "Simulate to the end",
   "ABANDON": "Abandon",
   "ABANDON_SEASON_Q": "Abandon this season? It cannot be undone.",
   "CHAMPIONS": "Champions",
@@ -140,6 +140,7 @@
   "TIE_LOST": "Tie lost",
   "SET_N_TO": "Set {n} · to {p}",
   "SET_POINT": "Set point",
+  "HUD_SETS": "Sets: {n}",
   "MATCH_POINT": "Match point",
   "SET_TO": "Set {n} to {t}",
   "SET_BREAK": "Between sets",

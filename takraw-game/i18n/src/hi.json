@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "MENU_EYEBROW": "सेपक टकरा · असली नियम",
   "LOADING": "कोर्ट तैयार हो रहा है…",
   "MENU_QUICK": "क्विक मैच",
   "MENU_QUICK_DESC": "कोई भी दो टीमें, कोई भी वेन्यू। अभी खेलें।",
@@ -100,6 +99,7 @@
   "LAST_ROUND": "पिछला राउंड",
   "SIM_MATCH": "ऑटो खेलें",
   "SIM_REST": "बाकी ऑटो खेलें",
+  "SIM_TO_END": "अंत तक ऑटो खेलें",
   "ABANDON": "छोड़ें",
   "ABANDON_SEASON_Q": "यह सीज़न छोड़ें? इसे वापस नहीं लिया जा सकता।",
   "CHAMPIONS": "चैंपियन",
@@ -140,6 +140,7 @@
   "TIE_LOST": "मुक़ाबला हारा",
   "SET_N_TO": "सेट {n} · {p} तक",
   "SET_POINT": "सेट पॉइंट",
+  "HUD_SETS": "सेट: {n}",
   "MATCH_POINT": "मैच पॉइंट",
   "SET_TO": "सेट {n} {t} के नाम",
   "SET_BREAK": "सेटों के बीच",

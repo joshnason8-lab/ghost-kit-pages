@@ -13,10 +13,7 @@ static func play(home: String, away: String, women := false, best_of := 3, set_p
 		rng = RandomNumberGenerator.new()
 		rng.randomize()
 	var lineups := [_lineup(home, women, regu_no), _lineup(away, women, regu_no)]
-	var ra := _rating(lineups[0])
-	var rb := _rating(lineups[1])
-	# The chance the home side wins a rally: a few rating points are worth a lot over a set.
-	var p_home := clampf(0.5 + (ra - rb) * 0.011 + 0.01, 0.2, 0.8)
+	var p_home := rally_chance(lineups[0], lineups[1])
 	var cap := 17 if set_points == 15 else 25
 	var to_win := 2 if best_of >= 3 else 1
 	var sets := [0, 0]
@@ -28,9 +25,7 @@ static func play(home: String, away: String, women := false, best_of := 3, set_p
 	while sets[0] < to_win and sets[1] < to_win:
 		var pts := [0, 0]
 		while true:
-			var w := 0 if rng.randf() < p_home else 1
-			pts[w] += 1
-			_credit(stats, lineups[w], w, rng)
+			pts[rally(stats, lineups, p_home, rng)] += 1
 			var a: int = pts[0]
 			var b: int = pts[1]
 			if ((a >= set_points or b >= set_points) and absi(a - b) >= 2) or a >= cap or b >= cap:
@@ -38,6 +33,18 @@ static func play(home: String, away: String, women := false, best_of := 3, set_p
 		scores.append(pts)
 		sets[0 if pts[0] > pts[1] else 1] += 1
 	return {"winner": 0 if sets[0] > sets[1] else 1, "sets": sets, "set_scores": scores, "stats": stats, "home": home, "away": away}
+
+
+## The chance the home lineup wins a rally against the away one: a few rating points are worth a lot over a set.
+static func rally_chance(home: Array, away: Array) -> float:
+	return clampf(0.5 + (_rating(home) - _rating(away)) * 0.011 + 0.01, 0.2, 0.8)
+
+
+## One rally of a played-out match: who wins it (0 home, 1 away), the point credited to one of their players.
+static func rally(stats: Dictionary, lineups: Array, p_home: float, rng: RandomNumberGenerator) -> int:
+	var w := 0 if rng.randf() < p_home else 1
+	_credit(stats, lineups[w], w, rng)
+	return w
 
 
 static func _lineup(id: String, women: bool, regu_no: int) -> Array:

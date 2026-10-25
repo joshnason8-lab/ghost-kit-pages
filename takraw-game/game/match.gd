@@ -297,6 +297,7 @@ func _process(delta: float) -> void:
 			pl.tick(dt, now)
 	ball.update_to(now, dt)
 	_officials.tick(dt, ball.global_position, state == S.RALLY or state == S.TOSS)
+	Crowd.set_look(ball.global_position)
 	cam.follow(ball.global_position, delta, self)
 	hud.tick(delta)
 	_record()
@@ -1452,7 +1453,7 @@ func _change_ends() -> void:
 		cam.snap())
 
 
-func _finish(team: int) -> void:
+func _finish(team: int, wait := 3.0) -> void:
 	state = S.OVER
 	state_t = 0.0
 	Sfx.crowd(0.9)
@@ -1462,7 +1463,8 @@ func _finish(team: int) -> void:
 		"home": String(teams[0].id), "away": String(teams[1].id), "stats": stats.duplicate(true), "user_team": user_team,
 		"potm": _player_of_match(team), "log": log.duplicate(true),
 	}
-	await get_tree().create_timer(3.0).timeout
+	if wait > 0.0:
+		await get_tree().create_timer(wait).timeout
 	if not bool(config.get("attract", false)):
 		Sfx.crowd(-1.0)
 		Sfx.drums(-1.0)
@@ -1956,6 +1958,38 @@ func on_back() -> void:
 		hud.close_settings()
 		return
 	set_paused(not paused)
+
+
+## Whether the pause menu offers to simulate the rest: a season's or a tournament's match of yours, not yet over.
+func can_sim_to_end() -> bool:
+	return String(config.get("mode", "quick")) in ["season", "cup"] and user_team >= 0 and state != S.OVER
+
+
+## Simulate to the end (the pause menu): the rest of the match played out point by point from the score as it
+## stands, from the two sides' ratings, as the matches you don't play are (Sim); then its result, as if played.
+func sim_to_end() -> void:
+	if not can_sim_to_end():
+		return
+	set_paused(false)
+	state = S.OVER
+	var lineups := [teams[0].players.map(func(pl): return pl.data), teams[1].players.map(func(pl): return pl.data)]
+	var p_home := Sim.rally_chance(lineups[0], lineups[1])
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	while true:
+		points[Sim.rally(stats, lineups, p_home, rng)] += 1
+		var a: int = points[0]
+		var b: int = points[1]
+		if ((a >= set_points or b >= set_points) and absi(a - b) >= 2) or a >= set_cap or b >= set_cap:
+			var won := 0 if a > b else 1
+			sets[won] += 1
+			set_scores.append([a, b])
+			if sets[won] >= sets_to_win:
+				hud.set_score()
+				_finish(won, 0.0)
+				return
+			set_no += 1
+			points = [0, 0]
 
 
 func quit_match() -> void:

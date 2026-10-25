@@ -20,7 +20,7 @@ const FULL_ON_LOW := ["stands/bleacher_metal"]
 ## The photographs' mean brightness (linear), so a surface painted over keeps its grain at the paint's own shade.
 const MEAN := {"clean_asphalt": 0.06, "asphalt_02": 0.11, "concrete_floor": 0.28, "coast_sand_01": 0.18,
 	"damp_beach_sand": 0.12, "white_maple_veneer": 0.68, "concrete_block_wall": 0.05, "corrugated_iron": 0.44,
-	"grass_ground": 0.12}
+	"grass_ground": 0.12, "granite_tile_04": 0.14}
 
 static var _parts := {}       # model path -> [[Mesh, Transform3D], ...]
 static var _tintable := {}    # Mesh -> its copy whose materials take each instance's colour
@@ -47,10 +47,15 @@ static func low() -> bool:
 ## Puts a model (a name under assets/venue/, without ".glb") at a place: p on the floor, turned yaw (radians),
 ## scaled s, its colour multiplied by tint (a row of houses a little different each).
 func add(name: String, p: Vector3, yaw := 0.0, s := 1.0, shadows := true, tint := Color.WHITE) -> void:
+	add_xf(name, Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * s), p), shadows, tint)
+
+
+## Puts a model where xf says, turned and scaled as it says (a model stretched to its real size).
+func add_xf(name: String, xf: Transform3D, shadows := true, tint := Color.WHITE) -> void:
 	if not _placed.has(name):
 		_placed[name] = []
 		_tints[name] = []
-	(_placed[name] as Array).append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * s), p))
+	(_placed[name] as Array).append(xf)
 	(_tints[name] as Array).append(tint)
 	_shadows[name] = shadows and not name.ends_with("_card")
 

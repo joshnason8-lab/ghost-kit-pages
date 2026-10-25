@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "MENU_EYEBROW": "세팍타크로 · 실제 규칙",
   "LOADING": "코트 준비 중…",
   "MENU_QUICK": "빠른 경기",
   "MENU_QUICK_DESC": "원하는 두 팀, 원하는 경기장. 바로 시작!",
@@ -100,6 +99,7 @@
   "LAST_ROUND": "지난 라운드",
   "SIM_MATCH": "자동 진행",
   "SIM_REST": "남은 경기 자동 진행",
+  "SIM_TO_END": "끝까지 자동 진행",
   "ABANDON": "포기",
   "ABANDON_SEASON_Q": "이번 시즌을 포기할까요? 되돌릴 수 없습니다.",
   "CHAMPIONS": "우승",
@@ -140,6 +140,7 @@
   "TIE_LOST": "단체전 패배",
   "SET_N_TO": "{n}세트 · {p}점",
   "SET_POINT": "세트 포인트",
+  "HUD_SETS": "세트: {n}",
   "MATCH_POINT": "매치 포인트",
   "SET_TO": "{n}세트 {t} 승리",
   "SET_BREAK": "세트 휴식",

@@ -15,7 +15,27 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
-New in 0.9.1: a real referee's whistle (recordings, not a made-up tone): a short pip for a serve or a fault, a long
+New in 0.10.0, the owner's list:
+
+- **The venues filled in.** The mall atrium is a mall now: three floors of shops all round, balconies with glass
+  railings and people leaning on them, escalators, palms, kiosks, a granite floor, the skylight; bleachers on both
+  sides. The beach's bare side has a thatched bar, sun loungers and umbrellas, palms, and people watching from there
+  too; a lifeguards' tower and longtail boats by the water. The temple court has a sala, chedis, a spirit house, food
+  carts and scooters on its near side; the arenas a lit ribbon round the top of the stands and a scoreboard over the
+  court; the gym windows, a scoreboard and bleachers on both sides. From every camera (try the end camera): is
+  anything still bare?
+- **The fans watch the game.** Each spectator is drawn from the side the camera sees of them (front, three-quarters,
+  side, from behind) and turns a little to follow the ball, instead of all of them facing the camera.
+- **Simulate to the end**, in the pause menu of a season's or a tournament's match: the rest is played out from the
+  score as it stands, and you get the result.
+- **The score:** the sets each side has won in words ("Sets: 1"), not two dots.
+- **The seated line judges** rest their hands on their knees.
+- **The home screen:** How to Play, Settings and Records fit their buttons in every language; the "real rules" line
+  is gone.
+- **International:** only the nations that take part in an event can enter it (no United States at the Asian
+  Championship).
+
+In 0.9.1: a real referee's whistle (recordings, not a made-up tone): a short pip for a serve or a fault, a long
 blast at the end of a rally and of a set (with a hall's echo indoors), two pips for a video review, and short, short,
 long when the match is won; from the referee's chair. And a smaller download than 0.9.0's (about 117 MB, from 154):
 the ground's relief at 1K on Medium and High, where 2K made little difference.

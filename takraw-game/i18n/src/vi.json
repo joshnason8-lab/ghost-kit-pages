@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "MENU_EYEBROW": "Cầu mây · Luật chơi thật",
   "LOADING": "Đang chuẩn bị sân…",
   "MENU_QUICK": "Đấu nhanh",
   "MENU_QUICK_DESC": "Hai đội bất kỳ, sân bất kỳ. Chơi ngay.",
@@ -100,6 +99,7 @@
   "LAST_ROUND": "Vòng trước",
   "SIM_MATCH": "Máy đá giúp",
   "SIM_REST": "Đá nốt các trận",
+  "SIM_TO_END": "Máy đá nốt đến hết",
   "ABANDON": "Bỏ dở",
   "ABANDON_SEASON_Q": "Bỏ mùa giải này? Không thể hoàn tác.",
   "CHAMPIONS": "Vô địch",
@@ -140,6 +140,7 @@
   "TIE_LOST": "Thua chung cuộc",
   "SET_N_TO": "Séc {n} · tới {p}",
   "SET_POINT": "Điểm séc",
+  "HUD_SETS": "Hiệp: {n}",
   "MATCH_POINT": "Điểm trận",
   "SET_TO": "{t} thắng séc {n}",
   "SET_BREAK": "Nghỉ giữa séc",

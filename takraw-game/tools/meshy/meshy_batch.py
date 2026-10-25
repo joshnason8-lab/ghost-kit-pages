@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Make the assets in docs/MESHY_BRIEF.md with Meshy's API: model, texture, rig, download.
 
-For each asset in tools/meshy/assets.json (built from the brief by build_assets.py):
+For each asset in tools/meshy/assets.json (built from the brief by build_assets.py; the venues' props, kind "prop",
+added by hand: no rig, and tools/models/prepare_model.gd cuts them down for the game):
 1. Text to 3D preview (realistic, quad topology, the asset's face count, A-pose for people). With
    --stage preview the script stops here, saving NAME_preview.glb and .png: check the shape and clothes
    before paying for the texture and rig.
@@ -98,7 +99,7 @@ def download(url, dest):
 
 
 def preview_body(a, model):
-    person = a["kind"] != "gear"
+    person = a["kind"] not in ("gear", "prop")
     body = {
         "mode": "preview",
         "prompt": a["prompt"],
@@ -167,7 +168,7 @@ def make(a, out, state, key, model, rig, stage):
         download(t["thumbnail_url"], out / f"{name}.png")
     s["textured"] = glb.name
     save_state(out, state, name)
-    if not rig or a["kind"] == "gear":
+    if not rig or a["kind"] in ("gear", "prop"):
         return
     body = {"input_task_id": s["refine_id"], "height_meters": a.get("height_m", 1.75)}
     t = step(s, out, state, key, "rig_id", lambda: call("POST", "/openapi/v1/rigging", body, key)["result"],
@@ -196,7 +197,7 @@ def save_state(out, state, only=None):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", nargs="*", help="asset names")
-    ap.add_argument("--kind", choices=["player", "gear", "referee", "crowd"])
+    ap.add_argument("--kind", choices=["player", "gear", "referee", "crowd", "prop"])
     ap.add_argument("--batch", type=int, help="only assets in this batch (the brief's First batch is 1)")
     ap.add_argument("--out", default=str(ROOT / "assets" / "meshy"))
     ap.add_argument("--model", default="latest", help="Meshy ai_model (default: latest)")
@@ -221,7 +222,7 @@ def main():
         for x in assets:
             print(x["name"], json.dumps(preview_body(x, a.model)))
             print("  refine", json.dumps(refine_body(x, "<preview id>")))
-            if x["kind"] != "gear" and not a.no_rig:
+            if x["kind"] not in ("gear", "prop") and not a.no_rig:
                 print("  rig", json.dumps({"input_task_id": "<refine id>", "height_meters": x.get("height_m", 1.75)}))
         return
     key = os.environ.get("MESHY_API_KEY", "")

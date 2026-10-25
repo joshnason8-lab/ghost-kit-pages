@@ -124,8 +124,10 @@ func _build_scoreboard() -> void:
 		var nm := UI.label("", "HeaderLabel", 24)
 		name_row.add_child(nm)
 		col.add_child(name_row)
+		# The sets each side has won (in a best-of-three match), in words: not dots, which read as time-outs.
 		var sets_row := HBoxContainer.new()
 		sets_row.add_theme_constant_override("separation", 4)
+		sets_row.add_child(UI.label("", "EyebrowLabel", 13, Color(1, 1, 1, 0.75)))
 		col.add_child(sets_row)
 		var pts := UI.label("0", "ScoreLabel", 0)
 		pts.add_theme_font_size_override("font_size", 44)
@@ -182,11 +184,8 @@ func set_score() -> void:
 		(s.sb as StyleBoxFlat).border_width_left = 5 if panel_i == 0 else 1
 		(s.sb as StyleBoxFlat).border_width_right = 5 if panel_i == 1 else 1
 		var sets_row: HBoxContainer = s.sets
-		for c in sets_row.get_children():
-			c.queue_free()
-		for i in int(m.sets_to_win):
-			var dot := Icon.make("dot" if i < int(m.sets[team]) else "ring", 12, t.c1.lightened(0.2))
-			sets_row.add_child(dot)
+		sets_row.visible = int(m.sets_to_win) > 1
+		(sets_row.get_child(0) as Label).text = tr("HUD_SETS").format({"n": int(m.sets[team])})
 		(s.serve as Control).modulate.a = 1.0 if int(m.server) == team else 0.0
 	_mid_set.text = tr("SET_N_TO").format({"n": m.set_no, "p": m.set_points})
 	var mp: int = m.match_point_for()
@@ -541,6 +540,9 @@ func show_pause(on: bool) -> void:
 		show_pause(false)
 		show_pause(true)), 80, 26))
 	v.add_child(_big(UI.button(tr("MENU_SETTINGS"), false, open_settings), 80, 26))
+	# In a season or a tournament: the result without playing the rest.
+	if m.can_sim_to_end():
+		v.add_child(_big(UI.button(tr("SIM_TO_END"), false, func(): m.sim_to_end()), 80, 26))
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 14)
 	v.add_child(gap)

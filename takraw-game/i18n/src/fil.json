@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "MENU_EYEBROW": "Sepak takraw · Totoong patakaran",
   "LOADING": "Inihahanda ang court…",
   "MENU_QUICK": "Mabilisang Laban",
   "MENU_QUICK_DESC": "Kahit anong dalawang koponan, kahit saang venue. Laro na.",
@@ -100,6 +99,7 @@
   "LAST_ROUND": "Nakaraang round",
   "SIM_MATCH": "Laruin para sa akin",
   "SIM_REST": "Tapusin ang natitira",
+  "SIM_TO_END": "I-simulate hanggang dulo",
   "ABANDON": "Iwanan",
   "ABANDON_SEASON_Q": "Iwanan ang season na ito? Hindi na ito maibabalik.",
   "CHAMPIONS": "Mga Kampeon",
@@ -140,6 +140,7 @@
   "TIE_LOST": "Talo sa tie",
   "SET_N_TO": "Set {n} · hanggang {p}",
   "SET_POINT": "Set point",
+  "HUD_SETS": "Set: {n}",
   "MATCH_POINT": "Match point",
   "SET_TO": "Set {n} sa {t}",
   "SET_BREAK": "Pahinga sa pagitan ng set",

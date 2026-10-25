@@ -1,6 +1,5 @@
 {
   "GAME_TITLE": "Sepak Takraw Unleashed",
-  "MENU_EYEBROW": "Sepak takraw · Peraturan sebenar",
   "LOADING": "Menyediakan gelanggang…",
   "MENU_QUICK": "Perlawanan Pantas",
   "MENU_QUICK_DESC": "Mana-mana dua pasukan, mana-mana gelanggang. Main sekarang.",
@@ -100,6 +99,7 @@
   "LAST_ROUND": "Pusingan lepas",
   "SIM_MATCH": "Mainkan untuk saya",
   "SIM_REST": "Mainkan selebihnya",
+  "SIM_TO_END": "Simulasi hingga tamat",
   "ABANDON": "Tinggalkan",
   "ABANDON_SEASON_Q": "Tinggalkan musim ini? Tindakan ini tidak boleh dibatalkan.",
   "CHAMPIONS": "Juara",
@@ -140,6 +140,7 @@
   "TIE_LOST": "Kalah pertembungan",
   "SET_N_TO": "Set {n} · hingga {p}",
   "SET_POINT": "Mata set",
+  "HUD_SETS": "Set: {n}",
   "MATCH_POINT": "Mata perlawanan",
   "SET_TO": "Set {n} milik {t}",
   "SET_BREAK": "Rehat antara set",
