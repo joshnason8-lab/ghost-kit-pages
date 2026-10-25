@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.9.1
+
+- **More from the real grounds:** scaffold stands full of people at the ends (both ends at the school, one at the
+  village), people standing at the barricades at the ends and on the near side, and at the school a second court
+  next door, an electronic scoreboard on a scaffold, and a green and white umbrella over the scorers' table.
+
 ## What's new in 0.9
 
 - **The outdoor grounds dressed for a tournament**, as at the two real matches: steel barricades between the court
