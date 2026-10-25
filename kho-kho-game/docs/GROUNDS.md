@@ -57,5 +57,10 @@ The cost, measured with `tests/perf_probe.gd` (draw calls unchanged at every lev
 `tests/test_runner.gd` (`_grounds`) checks each outdoor ground has what the table says on every level and that over
 70% of every crowd is in everyday clothes.
 
+Every spectator faces the court's centre and is drawn as the camera sees him (`game/crowd.gd`): square on, his
+front or back; otherwise turned three-quarters toward the play (since 0.9.2; before, the crowds at the ends showed
+their fronts and seemed to watch the camera). The sheet has eight rows for it: 1.4 MB more video memory on Low, 2.7 MB
+on Medium and High.
+
 Built in code rather than with Meshy: each model from Meshy would be a draw call more, and the village on Low is
 at 88 of its 90.

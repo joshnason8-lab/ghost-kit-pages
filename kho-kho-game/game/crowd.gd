@@ -6,13 +6,15 @@ extends MultiMeshInstance3D
 ##
 ## The sheet is the players' own model (ModelBody), posed and lit and drawn once at load (render_sheet): row 0 the
 ## crowd at rest, half sitting and half standing; row 1 the same people cheering; rows 2 and 3 the same again seen from
-## behind. On Low eight people (four tones; standing, clapping); on Medium and High sixteen (six tones, four colours of
+## behind; rows 4 to 7 the same turned three-quarters to the right, from the front and from behind (the shader
+## mirrors them to face left). On Low eight people (four tones; standing, clapping); on Medium and High sixteen (six tones, four colours of
 ## shorts, heights and turns, the standing ones still, clapping or shifting their weight as the recorded idle does). Their shirts are drawn in a key colour (magenta) that the shader paints
 ## with each person's colour. Where nothing can be drawn (the headless tests) the sheet is painted in code instead.
 ##
 ## Every spectator faces the court's centre (his instance's +Z, flattened to the ground). The card always turns to
-## the camera, but shows his back when the camera is behind him: the near side's crowd, between the broadcast camera
-## and the play, is seen from behind, watching the play (until 0.4.1 they all faced the camera).
+## the camera, but shows him as the camera sees him: his front, his back (the near side's crowd, between the broadcast
+## camera and the play), or, when the camera is off to his side, three-quarters turned the way he looks (the crowds
+## at the ends and on the scaffolds; until 0.9.2 they showed their fronts there and seemed to watch the camera).
 
 const FIGS := 8          # figures across the sheet on Low (figs(): sixteen on Medium and High)
 const FIGS_HD := 16
@@ -20,7 +22,7 @@ const FIG_W := 64
 const FIG_H := 128
 const CELL_M := Vector2(1.1, 2.2)   # the metres a cell covers
 const SEAT_DROP := 0.88             # a seated figure's hips are this far above its cell's foot
-const ROWS := 4                     # at rest, cheering; from the front, from behind
+const ROWS := 8                     # at rest, cheering; from the front, behind, three-quarter front and back (facing right)
 
 static var _sheet: ImageTexture
 static var _mat: ShaderMaterial
@@ -109,10 +111,10 @@ static func render_sheet(tree: SceneTree) -> void:
 			vp.add_child(b)
 			var seated := i < n / 2
 			var cheering := row % 2 == 1
-			var back := row >= 2
-			# Row r between (1 - r) and (2 - r) cells above the camera; each figure's feet at its cell's foot.
-			b.position = Vector3(CELL_M.x * (i + 0.5), (1.0 - row) * CELL_M.y + 0.05, 0.0)
-			b.rotation.y = deg_to_rad(f[3]) + (PI if back else 0.0)
+			var view := row / 2   # 0 the front, 1 the back, 2 three-quarter front, 3 three-quarter back
+			# Row r between (ROWS/2 - 1 - r) and (ROWS/2 - r) cells above the camera; each figure's feet at its cell's foot.
+			b.position = Vector3(CELL_M.x * (i + 0.5), (ROWS / 2 - 1 - row) * CELL_M.y + 0.05, 0.0)
+			b.rotation.y = [deg_to_rad(f[3]), deg_to_rad(f[3]) + PI, deg_to_rad(55.0 + f[3] * 0.3), deg_to_rad(125.0 + f[3] * 0.3)][view]
 			var pose: String = "cheer" if cheering else ("seated" if seated else f[4])
 			b.play(pose, 1.0, 0.0)
 			if pose == "idle":
@@ -164,7 +166,7 @@ static func _painted(n := FIGS) -> Image:
 						c = _figure(f, n)[1]
 					var hd := Vector2(u / 0.11, (v - top - 0.05) / 0.06)
 					if hd.length() < 1.0:
-						c = skin if row < 2 else Color("16110d")   # from behind: his hair
+						c = Color("16110d") if row in [2, 3, 6, 7] else skin   # from behind: his hair
 					img.set_pixel(ox + x, oy + y, c)
 	img.generate_mipmaps()
 	return img
@@ -187,7 +189,8 @@ uniform float rows = 4.0;
 uniform vec3 clothes[CLOTHES_N];
 varying vec4 data;
 varying float up;
-varying float back;
+varying float view;
+varying float mirror;
 void vertex() {
 	data = INSTANCE_CUSTOM;
 	float ph = data.z * 6.2831;
@@ -197,16 +200,21 @@ void vertex() {
 	float fidget = sin(time_s * 1.3 + ph) * 0.015;
 	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-	// He faces the court (his +Z); the camera behind him sees his back.
+	// He faces the court (his +Z): the camera in front of him sees his front, behind him his back, and off to his
+	// side his profile, turned to the side of the screen he looks toward.
 	vec2 face = normalize(MODEL_MATRIX[2].xz + vec2(1e-5));
-	vec2 to_cam = INV_VIEW_MATRIX[3].xz - world.xz;
-	back = step(dot(face, to_cam), 0.0);
+	vec2 to_cam = normalize(INV_VIEW_MATRIX[3].xz - world.xz + vec2(1e-5));
+	float d = dot(face, to_cam);
+	// Square on (within 25 degrees) his front or back; otherwise three-quarters, front or back.
+	view = d > 0.9 ? 0.0 : (d < -0.9 ? 1.0 : (d >= 0.0 ? 2.0 : 3.0));
+	mirror = step(dot(face, right.xz), 0.0) * step(1.5, view);
 	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
 }
 void fragment() {
-	float row = up + 2.0 * back;
-	vec2 uv = vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + row) / rows);
+	float row = up + 2.0 * view;
+	float u = mirror > 0.5 ? 1.0 - UV.x : UV.x;
+	vec2 uv = vec2((u + floor(data.x * figs)) / figs, (UV.y + row) / rows);
 	vec4 c = texture(sheet, uv);
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));

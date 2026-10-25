@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.9.2
+
+- **The crowd watches the game.** Spectators at the ends and on the scaffold stands showed their full front to the
+  camera, so they seemed to be watching you rather than the play. Each is now drawn as the camera sees him: from the
+  front, from behind, or turned three-quarters toward the court.
+
 ## What's new in 0.9.1
 
 - **More from the real grounds:** scaffold stands full of people at the ends (both ends at the school, one at the
