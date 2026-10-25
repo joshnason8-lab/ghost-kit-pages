@@ -49,7 +49,45 @@ What changed (0.8):
 
 Outs a minute, before → after (6 classic matches of 3-minute turns; 4 fast): classic 1.60-1.78 → 1.38-1.65 (real
 close finals 1.3-1.6); fast 1.83 → 2.08 (real fast final about 1.6; four matches vary by about that much). Khos 12.8
-→ 13.4 a minute, a dive every 21 → 18 s.
+→ 13.4 a minute, a dive every 21 → 18 s. Ten matches later gave 1.32 classic and 1.68 fast.
+
+### Watched again, end to end (25 October 2026)
+
+For 0.8 about a quarter of the two matches was looked at. Both were then watched in full, all 18 minutes a second
+at a time, to see whether the play changes late in a turn. It does not change with the clock. It changes with how
+many of the batch are left:
+
+- **Three in:** one plays the pole and the chain while the other two wait wide, standing still 4-6 m off the lane,
+  most often one on each side (in the night match one waited ~50 s in one spot).
+- **One left:** he lives on the chain and round the poles, crossing between the seated chasers, and never goes wide.
+  The day match's last man did this for 48 s (7:28-8:16) until a pole dive got him.
+- **At the pole:** a defender holds it with a hand and swings round as the chaser comes; the chasers answer by
+  passing the kho to the chaser nearest the pole, so the attack comes from the far side.
+- **Outs that could be seen:** 3 at a side line (a chaser running at a wide defender from the inside) and 2 at a
+  pole. Many outs at the far end were out of shot, so this is not a count of where outs happen.
+- A new batch comes on together at the pole and is attacked straight away. A chaser who dives stays down a moment.
+
+`tests/match_sim.gd` now measures these (10 matches of 3-minute turns each, classic / fast):
+
+| | AI (0.8) | The real matches |
+|---|---|---|
+| Last defender's time on the chain or by a pole | 83% / 84% | nearly all |
+| Three in: the two waiting on opposite sides | 50% / 48% | most of the time |
+| Outs at a pole / at a side line / elsewhere | 40% / 1% / 59% | of those seen: 2 / 3 / 0 |
+| Outs a minute | 1.32 / 1.68 | 1.3-1.6 / about 1.6 |
+
+Three changes were tried against this and none was kept:
+
+- **Cross the lane to wait on the other side** from a waiting team-mate (a cost for sharing a side, the mirror spot
+  as a choice): 50 → 59-62% on opposite sides, but the crossings cut standing out of danger (76 → 71%) and put the
+  fast game's outs up to 1.8-2.0 a minute.
+- **Come at a wide defender from the lane's side** (the chaser's line 0.35 m inside him for every metre between
+  them): side-line outs stayed at 1%.
+- **A fresh batch spreads to both sides as it comes on:** no change; once in, defenders choose their spots afresh.
+
+So the AI stays as in 0.8. Its outs a minute, standing out of danger and play with one man left match the real
+games. Its waiting defenders still pick their side of the lane at random, and chasers do not drive defenders to the
+side line. Both are left for a change that moves them without costing the rest.
 
 ## What `tests/match_sim.gd` measures
 

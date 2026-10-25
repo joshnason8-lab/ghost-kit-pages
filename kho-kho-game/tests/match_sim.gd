@@ -12,6 +12,13 @@ var safe_t := 0.0      # defender-seconds spent safe (the chase over SAFE_S away
 var safe_still := 0.0  # ... of them standing (under 0.5 m/s)
 var safe_dist := 0.0   # ... and the metres run in them
 const SAFE_S := 3.2
+var lone_t := 0.0      # seconds with one defender left in his batch
+var lone_chain := 0.0  # ... of them within 3 m of the lane, or by a pole
+var wide_t := 0.0      # seconds with three in, the two furthest from the chase off the lane
+var wide_split := 0.0  # ... of them those two on opposite sides of it
+var out_where := {"side line": 0, "pole": 0, "end line": 0, "field": 0}
+var in_t := [0.0, 0.0, 0.0, 0.0]   # seconds with 0, 1, 2, 3 of the batch in
+var out_dz := [0, 0, 0, 0]   # outs (not at a pole) by distance off the lane: 0-2, 2-4, 4-6, 6+ m
 
 
 ## The playtest tester's thumb, when the home side defends.
@@ -27,6 +34,26 @@ func _process(_d: float) -> void:
 				safe_dist += v * _d
 				if v < 0.5:
 					safe_still += _d
+	# Both matches watched end to end: the last of a batch lives on the chain and round the poles; with three in,
+	# the two out of danger wait on opposite sides of the lane.
+	if cur.phase == "play" and cur.active != null:
+		var live: Array = []
+		for d in cur.batch:
+			if cur.d_state.get(d, "") == "in":
+				live.append(d)
+		in_t[mini(live.size(), 3)] += _d
+		if live.size() == 1:
+			var q: Vector3 = live[0].position
+			lone_t += _d
+			if absf(q.z) < 3.0 or absf(absf(q.x) - cur.f.pole_gap * 0.5) < 2.5:
+				lone_chain += _d
+		elif live.size() == 3:
+			# The two the chase is furthest from: on opposite sides of the lane?
+			live.sort_custom(func(x, y): return cur.reach_time(x.position) > cur.reach_time(y.position))
+			if absf(live[0].position.z) > 1.0 and absf(live[1].position.z) > 1.0:
+				wide_t += _d
+				if signf(live[0].position.z) != signf(live[1].position.z):
+					wide_split += _d
 	if cur.controls == null:
 		return
 	var m = cur
@@ -87,6 +114,21 @@ func _ready() -> void:
 					fouls[String(e.get("how", ""))] = int(fouls.get(String(e.get("how", "")), 0)) + 1
 				"dream":
 					c.dream += int(e.pts)
+		# Where the outs came: by a pole, at a side or end line, or in the field (and how far off the lane).
+		for e in res.log:
+			if String(e.kind) == "out" and e.has("dz"):
+				var dz := float(e.dz)
+				var ax := absf(float(e.x))
+				if absf(ax - m.f.pole_gap * 0.5) < 2.5 and dz < 3.0:
+					out_where.pole += 1
+					continue
+				out_dz[mini(int(dz / 2.0), 3)] += 1
+				if m.f.width * 0.5 - dz < 2.0:
+					out_where["side line"] += 1
+				elif m.f.length * 0.5 - ax < 2.0:
+					out_where["end line"] += 1
+				else:
+					out_where.field += 1
 		var kinds := {}
 		for e in res.log:
 			if String(e.kind) == "out":
@@ -127,4 +169,8 @@ func _ready() -> void:
 		tot.khos / (tot.secs / 60.0), tot.secs / maxf(1, tot.dives + tot.pole), tot.fouls / (tot.secs / 60.0), tot.dream])
 	print("SAFE defenders: %.0f%% of their safe time standing, %.1f m/s on average (%.0f defender-seconds safe)" % [
 		100.0 * safe_still / maxf(safe_t, 0.001), safe_dist / maxf(safe_t, 0.001), safe_t])
+	print("LONE defender: %.0f%% of his time on the chain or by a pole (%.0f s)" % [100.0 * lone_chain / maxf(lone_t, 0.001), lone_t])
+	print("THREE in: the two the chase is furthest from on opposite sides %.0f%% of the time (%.0f s)" % [100.0 * wide_split / maxf(wide_t, 0.001), wide_t])
+	print("BATCH: time with 0/1/2/3 in: %.0f / %.0f / %.0f / %.0f s" % in_t)
+	print("OUTS where: ", out_where, "  away from the poles, by metres off the lane 0-2/2-4/4-6/6+: ", out_dz)
 	get_tree().quit()
