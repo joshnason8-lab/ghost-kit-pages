@@ -20,8 +20,9 @@ final, at 2 points an out with some dream-run points, came to about 1.6 a minute
 
 ## Watched: two real matches (October 2026)
 
-The owner sent two full 9-minute turns filmed from behind a pole (a day match, blue chasing yellow, from a steady
-high camera; a night match, purple chasing white, handheld), and they were watched a second at a time (the footage is
+The owner sent two full 9-minute turns filmed from behind a pole, both from a fixed camera (a day match, blue chasing
+yellow, from higher up; a night match, purple chasing white, from behind the fence, the steadier of the two: measured
+shake 0.8 px a fifth of a second against 1.0, with a few small pans), and they were watched a second at a time (the footage is
 not kept). What they show, the same in both:
 
 - **A defender out of danger stands still and watches.** Most of the time only one defender is under threat; the
