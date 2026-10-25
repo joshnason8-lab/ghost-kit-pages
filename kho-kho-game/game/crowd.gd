@@ -176,6 +176,7 @@ static func material() -> ShaderMaterial:
 	var sh := Shader.new()
 	sh.code = """
 shader_type spatial;
+#define CLOTHES_N %d
 render_mode unshaded, cull_disabled, depth_draw_opaque;
 uniform sampler2D sheet : source_color, filter_linear_mipmap;
 uniform float figs = 8.0;
@@ -183,6 +184,7 @@ uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
 uniform float rows = 4.0;
+uniform vec3 clothes[CLOTHES_N];
 varying vec4 data;
 varying float up;
 varying float back;
@@ -209,19 +211,36 @@ void fragment() {
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
 	shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
+	// Everyday clothes (CLOTHES), by number: most of a crowd at a real ground.
+	if (data.w > 0.0) {
+		shirt = clothes[int(clamp(data.w * float(CLOTHES_N), 0.0, float(CLOTHES_N) - 1.0))];
+	}
 	// The key colour: magenta, its brightness the cloth's shading.
 	float key = clamp((min(c.r, c.b) - c.g) * 3.0, 0.0, 1.0);
 	float shade = max(c.r, c.b);
 	vec3 col = mix(c.rgb, shirt * shade, key);
 	ALBEDO = col * light;
 }
-"""
+""" % CLOTHES.size()
 	_mat = ShaderMaterial.new()
 	_mat.shader = sh
+	var cl := PackedVector3Array()
+	for c: Color in CLOTHES:
+		var lin := c.srgb_to_linear()
+		cl.append(Vector3(lin.r, lin.g, lin.b))
+	_mat.set_shader_parameter("clothes", cl)
 	_mat.set_shader_parameter("sheet", sheet())
 	_mat.set_shader_parameter("figs", float(figs()))
 	_mat.set_shader_parameter("rows", float(ROWS))
 	return _mat
+
+
+## What a crowd wears (sRGB, as the sheet is): whites and pale shirts most, dark trousers' colours, browns and greys,
+## and a share of bright cloth: saffron, pink, red, yellow, green and blue.
+const CLOTHES := [Color("f2f0ea"), Color("e8e6e0"), Color("dfe6ee"), Color("c9d4e2"), Color("b9b8b2"), Color("8f8a80"),
+	Color("2a2d36"), Color("1f2a44"), Color("4a3a30"), Color("7a6a52"), Color("c8b896"), Color("6a2a2a"),
+	Color("e8873a"), Color("d0407a"), Color("c8322a"), Color("e6c23a"), Color("2e7a4a"), Color("2850a8")]
+const SUPPORTERS := 0.18   # the share in their side's colours
 
 
 ## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours). A spot
@@ -256,10 +275,14 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, seated :=
 		var base := keep[i] - Vector3(0, SEAT_DROP if sits[i] else 0.0, 0)
 		xforms.append(Transform3D(Basis(Vector3.UP, facing(base)), base))
 		mm.set_instance_transform(i, xforms[i])
-		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 else Color(rng.randf(), rng.randf(), rng.randf())
+		# A few in their side's colours; the rest in what they wear any day (both real matches watched: whites and pale
+		# shirts, dark ones, and the brighter colours of saris and kurtas here and there).
+		var fan := not palette.is_empty() and rng.randf() < SUPPORTERS
+		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if fan else Color.WHITE
+		var everyday := 0.0 if fan else (rng.randi_range(0, CLOTHES.size() - 1) + 0.5) / float(CLOTHES.size())
 		var fig := rng.randi_range(0, half - 1) + (0 if sits[i] else half)
-		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase.
-		mm.set_instance_custom_data(i, Color((fig + 0.5) / n, _code(col), rng.randf(), 0.0))
+		# x: figure, y: the palette colour coded (_code), z: phase, w: everyday clothes by number (0: the palette's).
+		mm.set_instance_custom_data(i, Color((fig + 0.5) / n, _code(col), rng.randf(), everyday))
 	multimesh = mm
 	material_override = material()
 	# The sheet as this level has it (drawn again, or painted, if the level changed since).

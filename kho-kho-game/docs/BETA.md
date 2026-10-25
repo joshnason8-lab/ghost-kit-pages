@@ -9,6 +9,16 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.9
+
+- **The outdoor grounds dressed for a tournament**, as at the two real matches: steel barricades between the court
+  and the crowd, white tents over the teams' benches, flags on poles and printed banners on the barricades. The
+  village ground has a stage behind the crowd (guests, a lit backdrop, trophies, speakers) and two towers of lamps;
+  the school has green turf round the court and bunting over the crowd.
+- **The crowd in everyday clothes**: whites, pale shirts, dark colours and some bright saris and kurtas, with a few
+  fans in their side's colours, instead of everyone in team colours.
+- No change to how the game plays. docs/GROUNDS.md has the details and the cost.
+
 ## What's new in 0.8
 
 - **Defenders who play like the real ones**, learned from two real matches: a defender out of danger stands and

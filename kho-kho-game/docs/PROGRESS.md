@@ -183,6 +183,14 @@ final whistle as the last turn's, one short pip from that half's umpire for an o
 put right, the gym's take for every long blast in the hall. Random takes, in 3D from the official on their own players
 (a footstep cannot cut one short), silent in the menu's backdrop match. docs/SOUNDS.md has each file and its credit.
 
+## Round nine: 0.9.0-beta, the grounds dressed as at the real matches (25 October 2026, the owner's request)
+
+The owner asked for both matches to be watched in full (tactics late in a turn) and for their surroundings to be
+looked at for the outdoor grounds. The play does not change with the clock, only with how many of a batch are left;
+three AI changes were tried against it and none kept (docs/AI.md, "Watched again"). The surroundings: barricades,
+tents, flags, banners, a stage, temporary lights and a crowd in everyday clothes. All of it is now on the village,
+school and stadium grounds, built in code with no draw call more (docs/GROUNDS.md).
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from
