@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dxljmf6pko88g"
-path="res://.godot/imported/spirit_house_0.jpg-ef73828b62570e6f42a503a757158500.ctex"
+path.s3tc="res://.godot/imported/spirit_house_0.jpg-ef73828b62570e6f42a503a757158500.s3tc.ctex"
+path.etc2="res://.godot/imported/spirit_house_0.jpg-ef73828b62570e6f42a503a757158500.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "58b27252f42821a2d8f97fa97ef9434a"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/spirit_house_0.jpg"
-dest_files=["res://.godot/imported/spirit_house_0.jpg-ef73828b62570e6f42a503a757158500.ctex"]
+dest_files=["res://.godot/imported/spirit_house_0.jpg-ef73828b62570e6f42a503a757158500.s3tc.ctex", "res://.godot/imported/spirit_house_0.jpg-ef73828b62570e6f42a503a757158500.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

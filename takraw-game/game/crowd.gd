@@ -26,6 +26,8 @@ const SHEET_HI := "res://assets/models/crowd_sheet_hi.png"
 
 static var _sheets := {}          # hi (bool) -> the sheet
 static var _mat: ShaderMaterial
+static var _flag_mat: ShaderMaterial
+static var _flag_mesh: ArrayMesh
 static var _mat_hi := false
 
 var spots: Array[Vector3] = []   # where people sit (the seat) or stand
@@ -155,6 +157,95 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, standing 
 	multimesh = mm
 	material_override = material()
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_flags(rng, keep, stands, palette)
+
+
+## Flags in the home side's colours held up here and there in the crowd (one in thirty), waving, harder when the crowd
+## is up: a pole and a cloth each, all of them one draw call.
+func _flags(rng: RandomNumberGenerator, keep: Array[Vector3], stands: Array, palette: Array) -> void:
+	if palette.size() < 2:
+		return
+	var xf: Array[Transform3D] = []
+	for i in keep.size():
+		if rng.randf() < 0.033:
+			var feet: Vector3 = keep[i] - (Vector3.ZERO if stands[i] else Vector3(0, SEAT, 0))
+			xf.append(Transform3D(facing(keep[i]).rotated(Vector3.UP, rng.randf_range(-0.7, 0.7)), feet + Vector3(0.18, 0, 0)))
+	if xf.is_empty():
+		return
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.use_custom_data = true
+	mm.mesh = _flag()
+	mm.instance_count = xf.size()
+	for i in xf.size():
+		mm.set_instance_transform(i, xf[i])
+		mm.set_instance_color(i, palette[0])
+		var c2: Color = palette[1]
+		mm.set_instance_custom_data(i, Color(c2.r, c2.g, c2.b, rng.randf()))
+	var mi := MultiMeshInstance3D.new()
+	mi.multimesh = mm
+	mi.material_override = _flag_material()
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+
+
+## A flag on its pole, as held up by a seated spectator: the pole from the hands to 2.5 m, the cloth (UV.x along it,
+## from the pole) in four strips so it can wave; UV.x below 0 marks the pole.
+static func _flag() -> ArrayMesh:
+	if _flag_mesh:
+		return _flag_mesh
+	var v := PackedVector3Array()
+	var uv := PackedVector2Array()
+	var idx := PackedInt32Array()
+	v.append_array([Vector3(-0.012, 1.1, 0), Vector3(0.012, 1.1, 0), Vector3(0.012, 2.5, 0), Vector3(-0.012, 2.5, 0)])
+	uv.append_array([Vector2(-1, 0), Vector2(-1, 0), Vector2(-1, 1), Vector2(-1, 1)])
+	idx.append_array([0, 1, 2, 0, 2, 3])
+	for k in 5:
+		var u := k / 4.0
+		v.append_array([Vector3(u * 0.75, 1.98, 0), Vector3(u * 0.75, 2.48, 0)])
+		uv.append_array([Vector2(u, 0), Vector2(u, 1)])
+		if k > 0:
+			var b := 4 + (k - 1) * 2
+			idx.append_array([b, b + 2, b + 3, b, b + 3, b + 1])
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = v
+	arrays[Mesh.ARRAY_TEX_UV] = uv
+	arrays[Mesh.ARRAY_INDEX] = idx
+	_flag_mesh = ArrayMesh.new()
+	_flag_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return _flag_mesh
+
+
+static func _flag_material() -> ShaderMaterial:
+	if _flag_mat:
+		return _flag_mat
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled;
+uniform float excite = 0.0;
+uniform float light = 1.0;
+varying vec4 cols;
+varying vec3 top;
+void vertex() {
+	cols = INSTANCE_CUSTOM;
+	top = COLOR.rgb;
+	if (UV.x >= 0.0) {
+		float ph = cols.a * 6.2831;
+		VERTEX.z += sin(TIME * (5.0 + 4.0 * excite) + ph - UV.x * 3.0) * 0.16 * UV.x * (0.5 + excite);
+		VERTEX.y -= 0.06 * UV.x * UV.x;
+	}
+}
+void fragment() {
+	vec3 c = UV.x < 0.0 ? vec3(0.55) : (UV.y > 0.5 ? top : cols.rgb);
+	ALBEDO = c * light;
+}
+"""
+	_flag_mat = ShaderMaterial.new()
+	_flag_mat.shader = sh
+	return _flag_mat
 
 
 ## A spectator at spot faces the court's centre: their +Z turned toward it, on the ground.
@@ -183,6 +274,7 @@ func _process(delta: float) -> void:
 		if _shown != _excite:
 			_shown = move_toward(_shown, _excite, delta * (2.5 if _excite > _shown else 0.35))
 			material().set_shader_parameter("excite", _shown)
+			_flag_material().set_shader_parameter("excite", _shown)
 		if _looking != _look:
 			_looking = _look if _looking.distance_to(_look) < 0.01 else _looking.lerp(_look, minf(1.0, delta * 2.5))
 			material().set_shader_parameter("look_at", _looking)
@@ -199,3 +291,4 @@ static func set_look(at: Vector3) -> void:
 
 static func set_light(k: float) -> void:
 	material().set_shader_parameter("light", k)
+	_flag_material().set_shader_parameter("light", k)

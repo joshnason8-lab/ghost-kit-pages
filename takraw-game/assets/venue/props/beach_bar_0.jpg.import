@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dn7e52argfe3o"
-path="res://.godot/imported/beach_bar_0.jpg-cce27dc2bd8854eca4b887dcf7aa0ac0.ctex"
+path.s3tc="res://.godot/imported/beach_bar_0.jpg-cce27dc2bd8854eca4b887dcf7aa0ac0.s3tc.ctex"
+path.etc2="res://.godot/imported/beach_bar_0.jpg-cce27dc2bd8854eca4b887dcf7aa0ac0.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "bdae90d43c133c47d75f0f9218f603e9"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/beach_bar_0.jpg"
-dest_files=["res://.godot/imported/beach_bar_0.jpg-cce27dc2bd8854eca4b887dcf7aa0ac0.ctex"]
+dest_files=["res://.godot/imported/beach_bar_0.jpg-cce27dc2bd8854eca4b887dcf7aa0ac0.s3tc.ctex", "res://.godot/imported/beach_bar_0.jpg-cce27dc2bd8854eca4b887dcf7aa0ac0.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

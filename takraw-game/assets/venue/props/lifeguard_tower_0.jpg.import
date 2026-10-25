@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://duruotjvppa"
-path="res://.godot/imported/lifeguard_tower_0.jpg-a745f20c243085d5312c522a253caca1.ctex"
+path.s3tc="res://.godot/imported/lifeguard_tower_0.jpg-a745f20c243085d5312c522a253caca1.s3tc.ctex"
+path.etc2="res://.godot/imported/lifeguard_tower_0.jpg-a745f20c243085d5312c522a253caca1.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "011a185fb7ca8c15db0edd57e75b04f7"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/lifeguard_tower_0.jpg"
-dest_files=["res://.godot/imported/lifeguard_tower_0.jpg-a745f20c243085d5312c522a253caca1.ctex"]
+dest_files=["res://.godot/imported/lifeguard_tower_0.jpg-a745f20c243085d5312c522a253caca1.s3tc.ctex", "res://.godot/imported/lifeguard_tower_0.jpg-a745f20c243085d5312c522a253caca1.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

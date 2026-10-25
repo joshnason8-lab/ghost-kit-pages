@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cf8kvjyfwh2mx"
-path="res://.godot/imported/gym_scoreboard_low_texture_0.jpg-e107f4afadbb60041e41f176f99c0c3c.ctex"
+path.s3tc="res://.godot/imported/gym_scoreboard_low_texture_0.jpg-e107f4afadbb60041e41f176f99c0c3c.s3tc.ctex"
+path.etc2="res://.godot/imported/gym_scoreboard_low_texture_0.jpg-e107f4afadbb60041e41f176f99c0c3c.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "c65555e8da6be4512695a84028292bfc"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/gym_scoreboard_low_texture_0.jpg"
-dest_files=["res://.godot/imported/gym_scoreboard_low_texture_0.jpg-e107f4afadbb60041e41f176f99c0c3c.ctex"]
+dest_files=["res://.godot/imported/gym_scoreboard_low_texture_0.jpg-e107f4afadbb60041e41f176f99c0c3c.s3tc.ctex", "res://.godot/imported/gym_scoreboard_low_texture_0.jpg-e107f4afadbb60041e41f176f99c0c3c.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

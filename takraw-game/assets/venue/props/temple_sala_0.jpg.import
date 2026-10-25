@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b3iy0674o72kv"
-path="res://.godot/imported/temple_sala_0.jpg-2c01e807575bc8de9fe015094d4fbbdc.ctex"
+path.s3tc="res://.godot/imported/temple_sala_0.jpg-2c01e807575bc8de9fe015094d4fbbdc.s3tc.ctex"
+path.etc2="res://.godot/imported/temple_sala_0.jpg-2c01e807575bc8de9fe015094d4fbbdc.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "22a203c9eb1654987d088f358bbdf1b0"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/temple_sala_0.jpg"
-dest_files=["res://.godot/imported/temple_sala_0.jpg-2c01e807575bc8de9fe015094d4fbbdc.ctex"]
+dest_files=["res://.godot/imported/temple_sala_0.jpg-2c01e807575bc8de9fe015094d4fbbdc.s3tc.ctex", "res://.godot/imported/temple_sala_0.jpg-2c01e807575bc8de9fe015094d4fbbdc.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

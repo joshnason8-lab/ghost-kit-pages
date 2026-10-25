@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bekgbay7idoel"
-path="res://.godot/imported/spirit_house_low_texture_0.jpg-7f8fbe675fb7a200ce30622d38e68bdc.ctex"
+path.s3tc="res://.godot/imported/spirit_house_low_texture_0.jpg-7f8fbe675fb7a200ce30622d38e68bdc.s3tc.ctex"
+path.etc2="res://.godot/imported/spirit_house_low_texture_0.jpg-7f8fbe675fb7a200ce30622d38e68bdc.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "3bf2ca5cc1fa212e34e5381397b0ca29"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/spirit_house_low_texture_0.jpg"
-dest_files=["res://.godot/imported/spirit_house_low_texture_0.jpg-7f8fbe675fb7a200ce30622d38e68bdc.ctex"]
+dest_files=["res://.godot/imported/spirit_house_low_texture_0.jpg-7f8fbe675fb7a200ce30622d38e68bdc.s3tc.ctex", "res://.godot/imported/spirit_house_low_texture_0.jpg-7f8fbe675fb7a200ce30622d38e68bdc.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

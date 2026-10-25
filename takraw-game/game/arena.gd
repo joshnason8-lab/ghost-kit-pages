@@ -21,6 +21,7 @@ const FAR_GROUND := Rect2(-300, -300, 600, 600)   # outdoors the ground reaches 
 const AMBIENCE := {"beach": ["amb_beach", -8.0], "temple": ["amb_temple", -12.0], "park": ["amb_park", -10.0],
 	"street": ["amb_chatter", -10.0], "mall": ["amb_chatter", -16.0]}
 var fans: Array[Node3D] = []  # ceiling fans to turn (the provincial gym)
+var _board: Array[Label3D] = []   # the courtside scoreboard's two lines (the tournament venues)
 var _t := 0.0
 
 var _lit: Geo
@@ -52,6 +53,7 @@ func _ready() -> void:
 			_led_boards(Color("0b1a33"))
 			_roof(15.0, Color("0d1320"))
 			_officials_furniture()
+			_tournament_dressing()
 			_sc.add("props/arena_scoreboard", Vector3(0, 10.0, 0), PI / 8.0, 1.0, false)
 		"dome":
 			_indoor_env(Color("0d1119"), Color(0.6, 0.64, 0.72), 1.1)
@@ -60,6 +62,7 @@ func _ready() -> void:
 			_led_boards(Color("071225"))
 			_roof(22.0, Color("0b111c"))
 			_officials_furniture()
+			_tournament_dressing()
 			_sc.add("props/arena_scoreboard", Vector3(0, 13.0, 0), PI / 8.0, 1.2, false)
 		"mall":
 			_indoor_env(Color("2a2420"), Color(0.85, 0.8, 0.72), 1.15)
@@ -67,6 +70,7 @@ func _ready() -> void:
 			spots = _mall()
 			_led_boards(Color("1a1410"))
 			_officials_furniture()
+			_tournament_dressing()
 		"gym":
 			_indoor_env(Color("1c1712"), Color(0.74, 0.73, 0.7), 0.95, 0.85)
 			_court_on("white_maple_veneer", Color("247048"), Color(0.66, 0.52, 0.36), Color(0.6, 0.47, 0.32), 0.9, 2.0, 0.7)
@@ -377,6 +381,72 @@ func _officials_furniture(outdoor := false, gym := false) -> void:
 		_lit.box(Vector3(s * 4.5, 0.42, post_z + 2.4), Vector3(3.0, 0.06, 0.42), Color("2b3c55") if not outdoor else Color("6a4a32"))
 		for k: float in [-1.3, 1.3]:
 			_lit.box(Vector3(s * 4.5 + k, 0.2, post_z + 2.4), Vector3(0.06, 0.4, 0.4), Color("1a1a1a"))
+
+
+## The big events' dressing (the arenas and the mall, as at the World Cup and the Asian championships): padded red
+## cones round the net posts with a box at each one's foot, the ball stand by the near post, TV cameras on tripods at
+## the court's corners, the game's name painted on the floor behind each back line, and a scoreboard by the scorers'
+## table that shows the score (show_score).
+func _tournament_dressing() -> void:
+	var post_z := Court.HALF_W + Court.POST_OUT
+	var red := Color("c8202a")
+	for s: float in [-1.0, 1.0]:
+		_lit.cylinder(Vector3(0, 0, s * post_z), Vector3(0, 1.5, s * post_z), 0.12, 0.05, red, 12)
+		_lit.box(Vector3(0, 0.2, s * (post_z + 0.42)), Vector3(0.42, 0.4, 0.4), red)
+	# The ball stand: a pole with a little tray and the match balls on it.
+	var bs := Vector3(-0.9, 0, -(post_z + 0.45))
+	_lit.cylinder(bs, bs + Vector3(0, 1.15, 0), 0.025, 0.025, Color("222222"), 6)
+	_lit.cylinder(bs + Vector3(0, 1.15, 0), bs + Vector3(0, 1.19, 0), 0.16, 0.16, Color("222222"), 8)
+	for dz: float in [-0.07, 0.07]:
+		_lit.cylinder(bs + Vector3(0, 1.19, dz), bs + Vector3(0, 1.33, dz), 0.07, 0.07, Color("f2c14e"), 8)
+	# TV cameras on tripods at the four corners, turned to the court.
+	for sx: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			var c := Vector3(sx * (Court.HALF + Court.FREE_ZONE + 0.9), 0, sz * (Court.HALF_W + Court.FREE_ZONE + 0.7))
+			for k in 3:
+				var a := TAU * k / 3.0
+				_lit.cylinder(c + Vector3(cos(a) * 0.35, 0, sin(a) * 0.35), c + Vector3(0, 1.35, 0), 0.015, 0.015, Color("2a2a2a"), 4, false)
+			var yaw := atan2(-c.x, -c.z)
+			_lit.box(c + Vector3(0, 1.5, 0), Vector3(0.22, 0.26, 0.45), Color("1c1c1c"), yaw)
+			_lit.cylinder(c + Vector3(0, 1.52, 0), c + Vector3(0, 1.52, 0) + Vector3(-c.x, 0, -c.z).normalized() * 0.42, 0.06, 0.07, Color("111111"), 8)
+	# The game's name on the floor behind each back line, to be read from behind it (as the sponsors' are).
+	for s: float in [-1.0, 1.0]:
+		var lbl := Label3D.new()
+		lbl.text = "SEPAK TAKRAW UNLEASHED"
+		lbl.font = Game.font_display
+		lbl.font_size = 128
+		lbl.pixel_size = 0.0065
+		lbl.modulate = Color("f2c14e")
+		lbl.outline_size = 0
+		lbl.shaded = false
+		lbl.double_sided = false
+		lbl.alpha_cut = Label3D.ALPHA_CUT_DISCARD
+		lbl.transform = Transform3D(Basis(Vector3.UP, s * PI * 0.5) * Basis(Vector3.RIGHT, -PI * 0.5), Vector3(s * (Court.HALF + 1.7), 0.004, 0))
+		add_child(lbl)
+	# The scoreboard: a black box on a stand by the scorers' table, its two lines lit amber.
+	var bc := Vector3(-3.4, 0, post_z + 2.5)
+	_lit.cylinder(bc, bc + Vector3(0, 1.4, 0), 0.04, 0.04, Color("222222"), 6)
+	_lit.box(bc + Vector3(0, 1.85, 0), Vector3(1.9, 0.9, 0.12), Color("0c0c0e"))
+	for i in 2:
+		var l := Label3D.new()
+		l.font = Game.font_display
+		l.font_size = 96
+		l.pixel_size = 0.0034 if i == 0 else 0.0024
+		l.modulate = Color("ffb23a") if i == 0 else Color("ffd27a")
+		l.outline_size = 0
+		l.shaded = false
+		l.position = bc + Vector3(0, 2.02 if i == 0 else 1.62, -0.065)
+		l.rotation.y = PI
+		add_child(l)
+		_board.append(l)
+
+
+## The courtside scoreboard (the tournament venues): the two teams' names and points, and the sets each has won.
+func show_score(home: String, a: int, sets_a: int, away: String, b: int, sets_b: int) -> void:
+	if _board.is_empty():
+		return
+	_board[0].text = "%s  %d  -  %d  %s" % [home, a, b, away]
+	_board[1].text = "%d   SETS   %d" % [sets_a, sets_b]
 
 
 # ---------------------------------------------------------------- indoor parts

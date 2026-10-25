@@ -187,6 +187,8 @@ func set_score() -> void:
 		sets_row.visible = int(m.sets_to_win) > 1
 		(sets_row.get_child(0) as Label).text = tr("HUD_SETS").format({"n": int(m.sets[team])})
 		(s.serve as Control).modulate.a = 1.0 if int(m.server) == team else 0.0
+	m.arena.show_score(String(m.teams[0].short), int(m.points[0]), int(m.sets[0]), String(m.teams[1].short), int(m.points[1]),
+		int(m.sets[1]))
 	_mid_set.text = tr("SET_N_TO").format({"n": m.set_no, "p": m.set_points})
 	var mp: int = m.match_point_for()
 	var sp: int = m.set_point_for()

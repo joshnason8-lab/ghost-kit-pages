@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dbh7nk8f83dt3"
-path="res://.godot/imported/mall_planter_0.jpg-d489f878a9712e72db8563b953d39a5c.ctex"
+path.s3tc="res://.godot/imported/mall_planter_0.jpg-d489f878a9712e72db8563b953d39a5c.s3tc.ctex"
+path.etc2="res://.godot/imported/mall_planter_0.jpg-d489f878a9712e72db8563b953d39a5c.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "f992ed17de3dbcdfe77de11c5d092af0"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/mall_planter_0.jpg"
-dest_files=["res://.godot/imported/mall_planter_0.jpg-d489f878a9712e72db8563b953d39a5c.ctex"]
+dest_files=["res://.godot/imported/mall_planter_0.jpg-d489f878a9712e72db8563b953d39a5c.s3tc.ctex", "res://.godot/imported/mall_planter_0.jpg-d489f878a9712e72db8563b953d39a5c.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

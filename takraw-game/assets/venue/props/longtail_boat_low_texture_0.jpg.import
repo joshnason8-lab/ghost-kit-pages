@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dyooqdeqynshr"
-path="res://.godot/imported/longtail_boat_low_texture_0.jpg-0414f4cd336f56637ed037c2a21763f4.ctex"
+path.s3tc="res://.godot/imported/longtail_boat_low_texture_0.jpg-0414f4cd336f56637ed037c2a21763f4.s3tc.ctex"
+path.etc2="res://.godot/imported/longtail_boat_low_texture_0.jpg-0414f4cd336f56637ed037c2a21763f4.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "e3facde6db2783d17ccb7998aae126df"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/longtail_boat_low_texture_0.jpg"
-dest_files=["res://.godot/imported/longtail_boat_low_texture_0.jpg-0414f4cd336f56637ed037c2a21763f4.ctex"]
+dest_files=["res://.godot/imported/longtail_boat_low_texture_0.jpg-0414f4cd336f56637ed037c2a21763f4.s3tc.ctex", "res://.godot/imported/longtail_boat_low_texture_0.jpg-0414f4cd336f56637ed037c2a21763f4.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

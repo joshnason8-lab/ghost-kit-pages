@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ca2enq107neop"
-path="res://.godot/imported/mall_escalator_low_texture_0.jpg-df0f69c51de689a512c5b2cab2a98f96.ctex"
+path.s3tc="res://.godot/imported/mall_escalator_low_texture_0.jpg-df0f69c51de689a512c5b2cab2a98f96.s3tc.ctex"
+path.etc2="res://.godot/imported/mall_escalator_low_texture_0.jpg-df0f69c51de689a512c5b2cab2a98f96.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "6c17ff4c04cdff7e2b3f053d56ba01b6"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/venue/props/mall_escalator_low_texture_0.jpg"
-dest_files=["res://.godot/imported/mall_escalator_low_texture_0.jpg-df0f69c51de689a512c5b2cab2a98f96.ctex"]
+dest_files=["res://.godot/imported/mall_escalator_low_texture_0.jpg-df0f69c51de689a512c5b2cab2a98f96.s3tc.ctex", "res://.godot/imported/mall_escalator_low_texture_0.jpg-df0f69c51de689a512c5b2cab2a98f96.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
