@@ -80,7 +80,7 @@ func _ready() -> void:
 			_floodlights()
 			_skyline(low, 80.0, 6 if not low else 4)
 	if kind != "arena":
-		_tournament(low)
+		spots.append_array(_tournament(low))
 	if kind == "village":
 		spots.append_array(_stage(low))
 	add_child(_ground.commit(ground_material(kind, f)))
@@ -332,7 +332,7 @@ func _table() -> void:
 			for k in 4:
 				_benches.append(Props.at(Vector3(s * 6.5 - 1.8 + k * 1.2, 0, z - 0.3)))
 	# A shamiana over the table: a striped canopy on four poles.
-	if int(Game.settings.graphics) > Game.GFX_LOW and surface() != "mat":
+	if int(Game.settings.graphics) > Game.GFX_LOW and surface() != "mat" and kind != "school":
 		for sx: float in [-1.8, 1.8]:
 			for sz: float in [-0.9, 0.9]:
 				_lit.cylinder(Vector3(sx, 0, z + sz), Vector3(sx, 2.4, z + sz), 0.03, 0.03, Color("d8d0c0"), 6, false)
@@ -343,8 +343,9 @@ func _table() -> void:
 
 # ---------------------------------------------------------------- the places
 
-## People round a ground: on white plastic chairs in front (on benches, at the school), sitting on the earth behind
-## them, then standing, four or five deep.
+## People round a ground: on the far side on white plastic chairs in front (on benches, at the school); at the ends
+## and on the near side the front row standing at the barricades, as at the real matches; sitting on the earth
+## behind them, then standing, four or five deep.
 func _ground_crowd(low: bool, kids := false) -> Array:
 	var spots := []
 	var L: float = f.length * 0.5 + f.lobby + 1.0
@@ -355,9 +356,9 @@ func _ground_crowd(low: bool, kids := false) -> Array:
 	for r in rows:
 		var d := 1.0 + r * 0.9
 		var seat := r == 0          # the front row: chairs (benches at the school)
-		# Low: chairs only on the far side, which the camera faces (a low chair is 618 triangles; a ring of 118 was
-		# 73,000 on the budget of 90,000). Elsewhere that row sits on the earth.
-		var seat_ends := seat and not low
+		# Chairs only on the far side, which the camera faces (a low chair is 618 triangles); at the ends and on the
+		# near side the front row stands at the barricade.
+		var at_rail := seat
 		var ground := r == 1        # the next: on the earth
 		var step := (0.6 if kids else 0.75) if seat else (0.75 if ground else 0.6)
 		var y := 0.45 if seat else (-0.42 if ground else 0.0)
@@ -369,18 +370,14 @@ func _ground_crowd(low: bool, kids := false) -> Array:
 			if seat and not kids:
 				_chairs.append(Props.at(Vector3(far.x, 0, far.z), rng.randf_range(-0.12, 0.12)))
 			if absf(x) > 9.0:
-				var nr := Vector3(x + (0.0 if seat else rng.randf_range(-0.2, 0.2)), y if (seat_ends or not seat) else -0.42, W + d)
+				var nr := Vector3(x + rng.randf_range(-0.2, 0.2), 0.0 if at_rail else y, W + d)
 				spots.append(nr)
-				if seat_ends and not kids:
-					_chairs.append(Props.at(Vector3(nr.x, 0, nr.z), PI + rng.randf_range(-0.12, 0.12)))
 			x += step
 		var zz := -W
 		while zz < W:
 			for s: float in [-1.0, 1.0]:
-				var e := Vector3(s * (L + d), y if (seat_ends or not seat) else -0.42, zz + (0.0 if seat else rng.randf_range(-0.2, 0.2)))
+				var e := Vector3(s * (L + d), 0.0 if at_rail else y, zz + rng.randf_range(-0.2, 0.2))
 				spots.append(e)
-				if seat_ends and not kids:
-					_chairs.append(Props.at(Vector3(e.x, 0, e.z), -s * PI * 0.5 + rng.randf_range(-0.12, 0.12)))
 			zz += step
 		if seat and kids:
 			# Pupils on painted benches, two to a bench.
@@ -628,7 +625,8 @@ func _string_lights(low: bool) -> void:
 ## benches, flags on tall poles, printed banners tied to the barricades (colour and pattern only: no words, no
 ## names), and at the school a strip of green turf round the lobby and bunting over the crowd. All of it merged into
 ## the structure's meshes: no draw call more on any level.
-func _tournament(low: bool) -> void:
+func _tournament(low: bool) -> Array:
+	var more: Array = []   # spectators on what is put up here
 	var L: float = f.length * 0.5 + f.lobby
 	var W: float = f.width * 0.5 + f.lobby
 	var stands := kind == "stadium"
@@ -705,6 +703,116 @@ func _tournament(low: bool) -> void:
 				var sag := 3.85 - 0.7 * sin(PI * fposmod(x, 10.0) / 10.0)
 				_lit.box(Vector3(x, sag - 0.12, bz), Vector3(0.26, 0.24, 0.01), flag_cols[i % flag_cols.size()], 0.0, false)
 
+	if kind == "school":
+		dressing.append_array(["scaffold", "second court", "umbrella"])
+		for sx: float in [-1.0, 1.0]:
+			more.append_array(_scaffold(sx, low))
+		_second_court()
+		_umbrella(Vector3(0, 0, -(f.width * 0.5 + f.lobby + 1.4)), low)
+	elif kind == "village":
+		dressing.append("scaffold")
+		more.append_array(_scaffold(1.0, low))
+	if kind == "school":
+		dressing.append("scoreboard")
+		_scoreboard(Vector3(end_x + 5.5, 0, far_z - 3.5))
+	return more
+
+
+## Scaffold stands at an end, as behind the day match's court: steel tubes and plank tiers, five rows rising (three
+## on Low), people sitting on them. sx: which end. Returns their seats.
+func _scaffold(sx: float, low: bool) -> Array:
+	var seats: Array = []
+	var tube := Color("a8adb4")
+	var plank := Color("8a6a48")
+	var x0: float = f.length * 0.5 + f.lobby + 7.0
+	var zr := 8.5
+	var rows := 3 if low else 5
+	var step := 4.25 if low else 2.125
+	for r in rows:
+		var x := sx * (x0 + r * 0.85)
+		var h := 0.6 + r * 0.55
+		_lit.box(Vector3(x, h, 0), Vector3(0.8, 0.06, zr * 2.0), plank)
+		_lit.box(Vector3(x - sx * 0.3, h - 0.45, 0), Vector3(0.25, 0.04, zr * 2.0), plank.darkened(0.15))   # the foot board
+		var z := -zr
+		while z <= zr + 0.01:
+			_lit.cylinder(Vector3(x + sx * 0.38, 0, z), Vector3(x + sx * 0.38, h + (1.1 if r == rows - 1 else 0.0), z), 0.03, 0.03, tube, 4, false)
+			z += step
+		var k := -zr + 0.3
+		while k < zr:
+			seats.append(Vector3(x, h + 0.45, k))
+			k += 0.6
+	# The back rail, and cross braces under the top row.
+	var xb := sx * (x0 + (rows - 1) * 0.85 + 0.38)
+	var top := 0.6 + (rows - 1) * 0.55
+	_lit.box(Vector3(xb, top + 1.05, 0), Vector3(0.05, 0.05, zr * 2.0), tube)
+	if not low:
+		var z2 := -zr
+		while z2 < zr - 0.1:
+			_lit.cylinder(Vector3(xb, 0.1, z2), Vector3(xb, top - 0.1, z2 + step), 0.025, 0.025, tube, 4, false)
+			z2 += step
+	return seats
+
+
+## A second court beside the school's, as the day match had: a synthetic court in teal with white lines and its two
+## poles, out past the right end.
+func _second_court() -> void:
+	var c := Vector3(f.length * 0.5 + f.lobby + 22.0, 0, 6.0)
+	var L: float = f.length * 0.5
+	var W: float = f.width * 0.5
+	_lit.floor_rect(c.x - L - 1.5, c.z - W - 1.5, c.x + L + 1.5, c.z + W + 1.5, 0.004, Color("2f6f6a"))
+	_lit.floor_rect(c.x - L, c.z - W, c.x + L, c.z + W, 0.006, Color("3a8f86"))
+	var line := Color("eef2ee")
+	var lw := 0.08
+	for z: float in [c.z - W, c.z + W - lw]:
+		_lit.floor_rect(c.x - L, z, c.x + L, z + lw, 0.008, line)
+	for x: float in [c.x - L, c.x + L - lw]:
+		_lit.floor_rect(x, c.z - W, x + lw, c.z + W, 0.008, line)
+	var pg: float = f.pole_gap * 0.5
+	_lit.floor_rect(c.x - pg, c.z - 0.15, c.x + pg, c.z + 0.15, 0.008, line)
+	for s: float in [-1.0, 1.0]:
+		_lit.floor_rect(c.x + s * pg - lw * 0.5, c.z - W, c.x + s * pg + lw * 0.5, c.z + W, 0.008, line)
+		_lit.cylinder(Vector3(c.x + s * pg, 0, c.z), Vector3(c.x + s * pg, f.pole_h, c.z), 0.05, 0.045, Color("d8b07a"), 8, true)
+
+
+## A beach umbrella over the scorers' table, green and white, as at the day match.
+func _umbrella(c: Vector3, low: bool) -> void:
+	var seg := 8 if low else 12
+	var hgt := 2.5
+	var r := 1.7
+	_lit.cylinder(c, c + Vector3(0, hgt + 0.35, 0), 0.025, 0.025, Color("e8e8e8"), 5, false)
+	var apex := c + Vector3(0, hgt + 0.4, 0)
+	for i in seg:
+		var a0 := TAU * i / seg
+		var a1 := TAU * (i + 1) / seg
+		var p0 := c + Vector3(cos(a0) * r, hgt, sin(a0) * r)
+		var p1 := c + Vector3(cos(a1) * r, hgt, sin(a1) * r)
+		var n := (p0 - apex).cross(p1 - apex).normalized()
+		if n.y < 0.0:
+			n = -n
+		_lit._tri_quad(apex, apex, p0, p1, n, Color("2e8b57") if i % 2 == 0 else Color("f4f1ea"))
+		_lit._tri_quad(apex, apex, p1, p0, -n, Color("2e8b57") if i % 2 == 0 else Color("f4f1ea"))
+
+
+## An LED scoreboard on a scaffold at the far corner, as at the day match: a dark screen with lit panels (no words).
+func _scoreboard(base: Vector3) -> void:
+	var yaw := atan2(-base.x, -base.z)
+	var fwd := Vector3(sin(yaw), 0, cos(yaw))
+	var right := Vector3(cos(yaw), 0, -sin(yaw))
+	var tube := Color("a8adb4")
+	for sxz: float in [-1.6, 1.6]:
+		for d: float in [-0.5, 0.5]:
+			var foot := base + right * sxz + fwd * d
+			_lit.cylinder(foot, foot + Vector3(0, 6.6, 0), 0.04, 0.04, tube, 4, false)
+	_lit.box(base + Vector3(0, 3.0, 0), Vector3(3.6, 0.06, 1.2), Color("8a6a48"), yaw)
+	var screen := base + Vector3(0, 5.2, 0) + fwd * 0.55
+	_lit.box(screen, Vector3(4.2, 2.4, 0.2), Color("15171c"), yaw)
+	var face := screen + fwd * 0.11
+	# Two team panels and the clock between them.
+	_glow.box(face + right * -1.25 + Vector3(0, 0.45, 0), Vector3(1.3, 0.5, 0.02), Color("ff9933"), yaw, false)
+	_glow.box(face + right * 1.25 + Vector3(0, 0.45, 0), Vector3(1.3, 0.5, 0.02), Color("3a8fd8"), yaw, false)
+	_glow.box(face + Vector3(0, 0.45, 0), Vector3(0.9, 0.5, 0.02), Color("f6d24a"), yaw, false)
+	for i in 3:
+		_glow.box(face + right * (-1.2 + i * 1.2) + Vector3(0, -0.4, 0), Vector3(0.9, 0.7, 0.02), Color("e8f0ff").darkened(0.1 * i), yaw, false)
 
 ## Crowd barriers along a line: galvanised steel panels 2 m long and 1.1 m high on flat feet, a rail top and bottom
 ## and bars between (on Low the rails only).

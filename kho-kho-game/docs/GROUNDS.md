@@ -24,7 +24,7 @@ grounds, one by day and one at night, and their surroundings were looked at as w
 - **The crowd in everyday clothes**: white and pale shirts, dark trousers, some bright saris and kurtas. Not dressed
   in the teams' colours.
 
-## What the grounds have now (0.9)
+## What the grounds have now (0.9.1)
 
 | | Village (dusk) | School (day) | Stadium (night) |
 |---|---|---|---|
@@ -35,6 +35,11 @@ grounds, one by day and one at night, and their surroundings were looked at as w
 | Green turf round the lobby | | yes | |
 | Bunting over the far crowd | (string lights, as before) | yes | |
 | A stage with guests, backdrop, truss lights, trophies and speakers; two truss towers of lamps | yes | | |
+| Scaffold stands: steel tubes and plank tiers, full of people | at one end | at both ends | |
+| A second court (teal, with its lines and poles) out past one end | | yes | |
+| An LED scoreboard on a scaffold at the far corner (lit panels, no words) | | yes | |
+| A green and white beach umbrella over the scorers (instead of the striped canopy) | | yes | |
+| The front row at the ends and on the near side standing at the barricades (the far side on chairs) | yes | yes | |
 | The crowd: 18% in their side's colours, the rest in everyday clothes (`Crowd.CLOTHES`) | yes | yes | yes |
 
 Low keeps all of it but simpler: the barricades are rails without bars, the banners plain, no valance scallops, no
@@ -43,15 +48,14 @@ sponsor or place is named or suggested.
 
 The cost, measured with `tests/perf_probe.gd` (draw calls unchanged at every level):
 
-| | Before | After |
+| | Before (0.8) | 0.9.1 |
 |---|---|---|
-| Village, Low | 69k triangles | 78k (budget 90k) |
-| Village, Medium / High | 62k / 63k | 72k / 73k |
-| School, Low / Medium / High | 38k / 57k / 58k | 40k / 67k / 68k |
+| Village, Low / Medium / High | 69k / 62k / 63k triangles | 78k (budget 90k) / 72k / 73k |
+| School, Low / Medium / High | 38k / 57k / 58k | 41k / 69k / 70k |
 | Stadium, Low / Medium / High | 39k / 61k / (not logged) | 41k / 68k / 70k |
 
 `tests/test_runner.gd` (`_grounds`) checks each outdoor ground has what the table says on every level and that over
 70% of every crowd is in everyday clothes.
 
-Not done yet, from the same matches: scaffold stands, a second court beside the school's, an LED scoreboard, a
-beach umbrella over the scorers, and people standing at the barricades rather than seated behind them.
+Built in code rather than with Meshy: each model from Meshy would be a draw call more, and the village on Low is
+at 88 of its 90.

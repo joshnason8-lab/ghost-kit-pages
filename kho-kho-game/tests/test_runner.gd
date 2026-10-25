@@ -397,7 +397,8 @@ func _grounds() -> void:
 			check(people > 0 and astray == 0, "graphics %d, %s: all %d spectators face the court (%d astray)" % [g, v, people, astray])
 			# Dressed as a tournament ground (the two real matches, docs/GROUNDS.md); the crowd mostly in everyday clothes.
 			var want: Array = [] if not outdoor else (["barricades", "banners", "flags"] + (["tents"] if a.kind != "stadium" else []) \
-				+ (["stage"] if a.kind == "village" else []) + (["turf"] if a.kind == "school" else []))
+				+ (["stage", "scaffold"] if a.kind == "village" else []) \
+				+ (["turf", "scaffold", "second court", "umbrella", "scoreboard"] if a.kind == "school" else []))
 			var have: Array = a.dressing.duplicate()
 			have.sort()
 			want.sort()
