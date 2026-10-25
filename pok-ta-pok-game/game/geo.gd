@@ -83,6 +83,8 @@ func triangles() -> int:
 
 
 func commit() -> ArrayMesh:
+	if _n == 0:
+		return ArrayMesh.new()
 	st.generate_tangents()
 	return st.commit()
 

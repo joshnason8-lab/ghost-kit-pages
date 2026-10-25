@@ -867,8 +867,11 @@ func _strike(p: Player, window: float, off: float) -> void:
 	var need := sqrt(Ball.GRAVITY * dist * dist / maxf(denom, 0.01))
 	var cap := (8.5 + 7.5 * p.power) * (0.5 + 0.5 * quality)
 	if p.action == Player.A.DIVE:
-		cap *= 0.62
-		ang = maxf(ang, deg_to_rad(12.0))
+		# A dive is a scramble. On the stone court, where the lively ball would otherwise be dived back and forth for
+		# minutes, well timed it carries and badly timed it barely moves the ball, which may die short.
+		cap *= 0.62 * (clampf((quality - 0.1) / 0.6, 0.45, 1.0) if court.classic() else 1.0)
+		# Up off the floor: on the stone court a dive scoops the ball up to come down and bounce for a standing hip.
+		ang = maxf(ang, deg_to_rad(26.0 if court.classic() else 12.0))
 	var sp := minf(need, cap)
 	var v := Vector3(hn.x * cos(ang) * sp, sin(ang) * sp, hn.y * cos(ang) * sp)
 	if p.action_ring != 0 and p.action == Player.A.STRIKE:

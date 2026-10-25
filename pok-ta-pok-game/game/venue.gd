@@ -336,6 +336,8 @@ func _stone_court() -> void:
 	# exactly (tools/meshy/fit_ring.gd). Low: the plain stone washers as before.
 	var carved := int(Game.settings.graphics) >= Game.GFX_MEDIUM and ResourceLoader.exists("res://assets/people/court_ring.res")
 	for c in court.rings():
+		# The tenon into the wall, under either ring.
+		rings.box(Vector3(0, c.y, c.z + signf(c.z) * Court.RING_OFF * 0.5 + signf(c.z) * 0.12), Vector3(0.26, 0.4, Court.RING_OFF))
 		if carved:
 			var mi := MeshInstance3D.new()
 			mi.mesh = load("res://assets/people/court_ring.res")
@@ -353,8 +355,6 @@ func _stone_court() -> void:
 		# A raised rim round the hole and round the edge, as the carved rings have.
 		rings.washer(c, Court.RING_IN, Court.RING_IN + 0.06, Court.RING_DEPTH + 0.025, 28)
 		rings.washer(c, Court.RING_OUT - 0.05, Court.RING_OUT, Court.RING_DEPTH + 0.02, 28)
-		# The tenon into the wall.
-		rings.box(Vector3(0, c.y, c.z + signf(c.z) * Court.RING_OFF * 0.5 + signf(c.z) * 0.12), Vector3(0.26, 0.4, Court.RING_OFF))
 	_mesh(rings.commit(), Geo.surface("broken_wall", Color(0.95, 0.92, 0.86), 0.9), "rings")
 	# A stela at each end, beyond the end court (plain: their carving would need a model, docs/MESHY_BRIEF.md).
 	for s in [-1.0, 1.0]:

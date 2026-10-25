@@ -18,7 +18,7 @@ const DRAG := 0.5 * 1.2 * 0.47 * PI * RADIUS * RADIUS / MASS
 const BOUNCE := {"earth": 0.42, "stone": 0.68, "talud": 0.62, "wall": 0.66, "end_wall": 0.64, "ring": 0.5}
 const KEEP := {"earth": 0.78, "stone": 0.86, "talud": 0.8, "wall": 0.85, "end_wall": 0.85, "ring": 0.7}
 ## Rolling resistance, as a slowing in m/s per second: packed earth, then stone.
-const ROLL_DECEL := {"earth": 1.5, "stone": 0.7}
+const ROLL_DECEL := {"earth": 1.5, "stone": 1.3}
 const DEAD_SPEED := 0.35      # rolling slower than this the ball has as good as stopped (R8)
 
 var pos := Vector3.ZERO

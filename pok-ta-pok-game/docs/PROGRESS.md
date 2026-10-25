@@ -111,8 +111,11 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   and a court game in a park with sloped benches and wall rings):
   - The stone courts serve *de bote*: thrown up and over to come down just past the analco and played off the bounce
     (the receivers wait for it to bounce; tested). Ulama's earth courts keep their documented rolled and thrown serves.
-  - The ball is livelier on stone (0.58 to 0.68 bounce; talud and walls likewise); earth unchanged. On stone the AI
-    waits for a ball to come up off a bounce rather than diving for it.
+  - The ball is livelier on stone (0.58 to 0.68 bounce; talud and walls likewise) and a rolling ball slows sooner
+    (0.7 to 1.3 m/s²); earth unchanged. On stone the AI waits for a ball to come up off a bounce rather than diving,
+    a dive scoops the ball up (at least 26°), and its power follows its timing: at the hard level the stone court
+    had become minutes-long rallies of dives back and forth (CI caught it); now most balls are hip strikes, as in
+    the videos. Ulama's dives are as they were.
   - The copal offering before games on the stone courts (game/ritual.gd; docs/CULTURE.md has what was decided and
     why): an elder in white with a smoking censer, players' arms raised to the sky, a conch; skippable; not on the
     Sinaloa courts.
