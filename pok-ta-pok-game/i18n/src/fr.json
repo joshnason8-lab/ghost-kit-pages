@@ -164,7 +164,7 @@
   "RULES_FAULTS": "Fautes",
   "RULES_FAULTS_TEXT": "Mains, pieds, genoux ou corps : tout contact autre que la hanche est une faute, et la raya va à l'autre équipe. Sortir la balle sur le côté aussi. Écartez-vous si vous ne la frappez pas.",
   "RULES_SERVE": "Le service",
-  "RULES_SERVE_TEXT": "Le serveur, le male, met la balle en jeu à la main par-dessus l'analco : roulée sur la terre (male abajo) ou lancée haut (male arriba). Dans le jeu, elle est roulée à égalité et lancée quand une équipe tient le décompte ; l'équipe qui a gagné la dernière raya sert.",
+  "RULES_SERVE_TEXT": "Le serveur, le male, met la balle en jeu à la main à travers l'analco. Sur les terrains de terre de l'ulama : roulée au sol (male abajo) ou lancée haut (male arriba) ; roulée à égalité, lancée quand un camp tient le compte. Sur le terrain de pierre, comme dans les jeux du Yucatán d'aujourd'hui : lancée vers le sol pour rebondir avant l'autre camp et remonter vers lui, jouée au rebond. Le camp qui a gagné la dernière raya sert.",
   "RULES_TIME": "Le temps",
   "RULES_TIME_TEXT": "Un vrai match dure jusqu'à ce qu'une équipe atteigne huit. Avec une durée limite, l'équipe qui tient le décompte à la fin gagne ; en cas d'égalité, la raya suivante l'emporte.",
   "RULES_CLASSIC": "Le terrain classique (reconstitué)",
@@ -259,5 +259,8 @@
   "CONTROL_TEAM_NOTE": "Vous devenez celui de vos joueurs qui va vers la balle.",
   "CONTROL_ONE_NOTE": "Vous êtes un seul joueur tout le match, le serveur. Vos coéquipiers jouent le reste.",
   "REPLAY": "RALENTI",
-  "TOO_LOW_DIVE": "Trop basse pour la hanche debout : PLONGE"
+  "TOO_LOW_DIVE": "Trop basse pour la hanche debout : PLONGE",
+  "RITUAL_COPAL": "Offrande de copal avant le jeu",
+  "BTN_SKIP": "PASSER",
+  "SERVE_BOTE": "{team} sert au rebond"
 }

@@ -52,6 +52,8 @@ func _want_pos(f: Vector3, m: Node) -> Vector3:
 
 ## The point to look at: the ball, led toward where it is going.
 func _want_focus(m: Node) -> Vector3:
+	if m.has_method("in_ritual") and m.in_ritual():
+		return m.ritual.focus()
 	var b: Vector3 = m.ball.pos
 	var f := Vector3(b.x, minf(b.y, 3.0) * 0.35 + 0.6, b.z * 0.5)
 	var v: Vector3 = m.ball.vel

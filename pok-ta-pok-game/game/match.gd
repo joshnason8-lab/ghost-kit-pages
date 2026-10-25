@@ -134,6 +134,24 @@ func _ready() -> void:
 		Crowd.bake(self)
 	phase = P.INTRO
 	phase_t = 0.0
+	# On the Yucatán stone courts the game opens with an offering of copal (Ritual).
+	if bool(config.get("ritual", not attract and String(config.get("mode", "")) != "test")) and venue and venue.id in RITUAL_VENUES:
+		ritual = Ritual.new()
+		add_child(ritual)
+		ritual.setup(self)
+		if hud:
+			hud.banner(tr("RITUAL_COPAL"), Game.C_GOLD)
+		if not attract:
+			Sfx.crowd(0.12)
+
+
+const RITUAL_VENUES := ["stone", "night"]
+var ritual: Ritual
+
+
+## Is the opening offering still going on?
+func in_ritual() -> bool:
+	return ritual != null and not ritual.done
 
 
 # ---------------------------------------------------------------- what the others ask
@@ -215,6 +233,13 @@ func _process(delta: float) -> void:
 func _phase_logic(_delta: float) -> void:
 	match phase:
 		P.INTRO:
+			if in_ritual():
+				ritual.step(_delta)
+				if not ritual.done:
+					return
+				phase_t = INTRO_T
+				if not attract:
+					Sfx.crowd(0.35)
 			if phase_t >= INTRO_T:
 				_to_serve()
 		P.SERVE:
@@ -285,7 +310,7 @@ func _serve_logic() -> void:
 func _begin_serve() -> void:
 	# He faces the other side to bowl or throw.
 	server.yaw = atan2(Rules.dir(serve_team), 0.0)
-	server.start_serve(Rules.serve_kind(count) == "arriba")
+	server.start_serve(Rules.serve_kind(count) != "abajo")
 	_serve_launched = true
 
 
@@ -302,12 +327,23 @@ func _launch_serve() -> void:
 		var sp := rng.randf_range(8.0, 10.0)
 		v = Vector3(d * sp, 0.0, (zt - hand.z) / 4.0)
 		hand = Vector3(hand.x, Ball.RADIUS, hand.z)
+	elif kind == "bote":
+		# Thrown down and across so it first bounces a few metres short of the other side's front player, and comes
+		# up to them off the stone.
+		var land_x := d * rng.randf_range(BOTE_LAND.x, BOTE_LAND.y)
+		var dist := maxf(2.0, absf(land_x - hand.x))
+		var ang := deg_to_rad(rng.randf_range(BOTE_ANGLE.x, BOTE_ANGLE.y))
+		var dy := hand.y - Ball.RADIUS
+		var denom := 2.0 * cos(ang) * cos(ang) * (dist * tan(ang) + dy)
+		var sp := sqrt(Ball.GRAVITY * dist * dist / maxf(denom, 0.01)) * 1.03
+		v = Vector3(d * cos(ang) * sp, sin(ang) * sp, (zt - hand.z) / maxf(1.0, dist / 3.0))
 	else:
 		var dist := rng.randf_range(10.0, 17.0) if not court.classic() else rng.randf_range(7.0, 11.0)
 		var ang := deg_to_rad(40.0)
 		var sp := sqrt(Ball.GRAVITY * dist / sin(2.0 * ang))
 		v = Vector3(d * cos(ang) * sp, sin(ang) * sp, (zt - hand.z) / maxf(1.0, dist / 6.0))
 	ball.launch(hand, v, serve_team, server)
+	serve_bounced = kind != "bote"
 	ball_flight += 1
 	server.stats.serves += 1
 	tstats[serve_team].serves += 1
@@ -529,13 +565,15 @@ func _user_input() -> void:
 	if phase == P.LIVE and ai.taker != null and ai.taker != user_player and not user_player.busy() and not one_player():
 		_set_user(ai.taker)
 	var j: Vector2 = hud.joystick()
-	if j.length() > 0.15 and phase != P.SERVE:
+	if j.length() > 0.15 and phase != P.SERVE and not in_ritual():
 		user_player.steer_by_dir = true
 		user_player.want_dir = screen_to_world(j)
 	else:
 		user_player.steer_by_dir = false
 	var ids: Array = []
-	if phase == P.LIVE:
+	if in_ritual():
+		ids = ["SKIP"]
+	elif phase == P.LIVE:
 		ids = ["HIP", "DIVE"]
 	elif phase == P.SERVE and serve_team == user_team and not _serve_launched:
 		ids = ["SERVE"]
@@ -552,6 +590,9 @@ func screen_to_world(j: Vector2) -> Vector3:
 
 
 func _on_action(id: String) -> void:
+	if id == "SKIP" and in_ritual():
+		ritual.finish()
+		return
 	if phase == P.REPLAY:
 		_skip_replay = true
 		return
@@ -610,6 +651,11 @@ func ai_ring_shot(p: Player) -> int:
 	if not court.classic() or rng.randf() > [0.04, 0.08, 0.14][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 2)]:
 		return 0
 	return ring_shot(p, Vector3(0, 0, signf(p.global_position.z) if absf(p.global_position.z) > 0.1 else 1.0))
+
+
+var serve_bounced := true    # the bounced serve has come down (its receivers wait for it to: TeamAI)
+const BOTE_LAND := Vector2(0.8, 2.6)     # how far past the analco the bounced serve first comes down (m)
+const BOTE_ANGLE := Vector2(28.0, 38.0)  # thrown up and over, so it comes down hard enough to rise to the hip
 
 
 const RING_SHOT_X := Vector2(4.0, 12.0)   # how far from the middle a ring shot can be struck from (m)
@@ -728,6 +774,7 @@ func _ball_step(dt: float) -> void:
 	for e in events:
 		match String(e.kind):
 			"bounce":
+				serve_bounced = true
 				var sp := float(e.speed)
 				if sp > 1.0:
 					var vol := clampf(-20.0 + sp * 1.6, -20.0, -2.0)

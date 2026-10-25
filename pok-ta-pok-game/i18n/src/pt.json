@@ -164,7 +164,7 @@
   "RULES_FAULTS": "Faltas",
   "RULES_FAULTS_TEXT": "Mãos, pés, joelhos ou corpo: qualquer toque que não seja o quadril é falta, e a raya vai para o outro lado. Mandar a bola para fora pela lateral também. Saia do caminho dela se não for golpeá-la.",
   "RULES_SERVE": "O saque",
-  "RULES_SERVE_TEXT": "O sacador, o male, põe a bola em jogo com a mão por cima do analco: rolada pela terra (male abajo) ou lançada alto (male arriba). No jogo, ela é rolada no empate e lançada quando um lado tem a contagem; saca o lado que ganhou a última raya.",
+  "RULES_SERVE_TEXT": "Quem saca, o male, põe a bola em jogo com a mão através do analco. Nas quadras de terra do ulama: rolando pelo chão (male abajo) ou lançada alto (male arriba); rola quando empatados e é lançada quando um lado tem a contagem. Na quadra de pedra, como nos jogos de Yucatán de hoje: lançada para baixo para quicar antes do outro lado e subir até eles, jogada de rebote. Saca o lado que ganhou a última raya.",
   "RULES_TIME": "Tempo",
   "RULES_TIME_TEXT": "Os jogos reais vão até um lado chegar a oito. Se você definir um tempo limite, vence o lado que tem a contagem quando ele acabar; se a contagem estiver empatada, a próxima raya decide.",
   "RULES_CLASSIC": "O campo clássico (reconstruído)",
@@ -259,5 +259,8 @@
   "CONTROL_TEAM_NOTE": "Você passa a ser o jogador do seu time que vai na bola.",
   "CONTROL_ONE_NOTE": "Você é um só jogador a partida toda, o que saca. Seus colegas jogam o resto.",
   "REPLAY": "REPLAY",
-  "TOO_LOW_DIVE": "Baixa demais para o quadril em pé: MERGULHO"
+  "TOO_LOW_DIVE": "Baixa demais para o quadril em pé: MERGULHO",
+  "RITUAL_COPAL": "Oferenda de copal antes do jogo",
+  "BTN_SKIP": "PULAR",
+  "SERVE_BOTE": "{team} saca quicando"
 }

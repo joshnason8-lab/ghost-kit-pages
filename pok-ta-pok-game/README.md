@@ -4,7 +4,7 @@ The hip ballgame of Mexico, for Android phones: **ulama de cadera** as it is sti
 Sinaloa, and the **classic stone court** of the old game, reconstructed from the chroniclers. Made in Godot 4.7 with
 the GL Compatibility renderer, for low, mid and high-end phones.
 
-> **Status: beta 0.4.0.** A full match by touch against the computer, both games, four courts, a town tournament,
+> **Status: beta 0.5.0.** A full match by touch against the computer, both games, four courts, a town tournament,
 > six languages; realistic players and townspeople (made with Meshy), a recorded run and serve (CMU motion capture),
 > the ring shot with its replay, the menus' own flute-and-drum music, and recorded sounds for the ball, the feet,
 > the crowd and each court's surroundings (docs/SOUNDS.md). See [docs/PROGRESS.md](docs/PROGRESS.md) for what is done and what comes next.
@@ -21,6 +21,8 @@ the GL Compatibility renderer, for low, mid and high-end phones.
   - Two judges (veedores) at the analco call each raya.
 - **The classic court (reconstructed)**:
   - An I-shaped stone court with sloped taluds, walls and end courts. Points to eight.
+  - Played as in Yucatán today: the serve thrown to bounce and taken off the bounce, a lively ball on the stone, and
+    the game opened with an offering of copal (an elder, the censer's smoke, the players' arms raised to the sky).
   - A stone ring in each wall. The ball through it wins outright, and it is rare: strike 4 to 12 m from the middle,
     near the wall, with the stick held toward it, and the ball must reach the ring at the top of its arc. A ball
     through the ring is shown again, slowed, from below.

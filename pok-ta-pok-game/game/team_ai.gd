@@ -100,9 +100,18 @@ func _plan(path: Array) -> void:
 	var best := {}
 	var best_p: Player = null
 	var court: Court = m.court
+	# On the lively stone of the Yucatán courts players wait for the ball to come up off the bounce and take it with the
+	# hip standing, as in the games played there; on ulama's dead earth a low ball is dived for sooner.
+	var dive_cost := 0.9 if m.court.classic() else 0.25
+	# The bounced serve is let come down and played off the bounce, never taken on the full.
+	var bounced: bool = m.serve_bounced
 	for i in path.size():
 		var pt: Vector3 = path[i][0]
 		var t: float = path[i][2]
+		if not bounced:
+			if pt.y < Ball.RADIUS + 0.04:
+				bounced = true
+			continue
 		if Rules.half_of(pt.x) != team or absf(pt.x) < 0.7:
 			continue
 		if absf(pt.z) > court.half_w_at(pt.x) + 0.3:
@@ -132,11 +141,11 @@ func _plan(path: Array) -> void:
 			var need: float = dist / (p.max_speed * 0.85) + float(REACT[level]) + lead
 			if dist < 0.35:
 				need = lead
-			var score := t + (0.25 if kind == "dive" else 0.0)
+			var score := t + (dive_cost if kind == "dive" else 0.0)
 			if need <= t + 0.02 and (best.is_empty() or score < float(best.score)):
 				best = {"pos": pt, "stand": stand, "t": t, "kind": kind, "side": side, "score": score, "lead": lead}
 				best_p = p
-		if not best.is_empty() and t > float(best.score) + 0.3:
+		if not best.is_empty() and t > float(best.score) + maxf(0.3, dive_cost + 0.1):
 			break
 	if best_p == null:
 		# Nobody can be there in time at the right height: the nearest goes toward where it will come down anyway.

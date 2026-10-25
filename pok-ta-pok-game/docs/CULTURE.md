@@ -24,6 +24,24 @@ Maya. Sources for the rules are in docs/RULES.md.
   Guatemalan and Belizean families), combined at random. No player's real name is used on purpose. One family
   known to keep ulama alive in Escuinapa is left out of the name lists so it cannot appear by chance.
 
+## The copal offering (0.5.0)
+
+Games of pelota maya in Yucatán today open with a ceremony: an elder burns copal in a clay censer and passes its smoke
+over the players, who raise their arms to the sky (seen in the court game the owner sent from a Yucatán park, at its
+start and its end; widely reported for the revived games, often with a conch shell blown). The game honours it before
+each match on its two Yucatán stone courts:
+
+- An elder dressed in white walks among the players with a smoking clay censer; each raises his arms as the smoke
+  reaches him, and all of them together at the end. A conch is blown at the start and the crowd falls quiet.
+- It is short (about a second and a half a player), shown plainly, with no words put in anyone's mouth, no invented
+  prayer, deity or chant, and no theatre of sacrifice. A tap passes it (SKIP).
+- It is **not** shown on the Sinaloa courts: no such ceremony is documented for ulama, and the game does not borrow
+  one region's practice for another's game.
+
+**For the reviewer:** is the order of the offering right (the elder, the censer, the arms raised to the sky)? Would
+a Maya *h-men* or a pelota maya team want anything different, or would they rather it were not shown at all? Should
+it name the four directions, as some ceremonies do (the game does not)?
+
 ## Clothing
 
 | Who | In the game | Source | Check |

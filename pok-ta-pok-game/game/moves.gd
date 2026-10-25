@@ -171,6 +171,16 @@ static func celebrate(t: float) -> Dictionary:
 	}
 
 
+## Arms raised to the sky, palms up, face lifted: receiving the copal's smoke before the game (Ritual).
+static func offering(t: float) -> Dictionary:
+	var b := sin(t * 1.4) * 3.0
+	return {
+		"spine": _v(-6.0), "chest": _v(-4.0), "head": _v(-22.0),
+		"upperarm_l": _v(-160.0 + b, 0, 22), "forearm_l": _v(-12.0),
+		"upperarm_r": _v(-160.0 - b, 0, -22), "forearm_r": _v(-12.0),
+	}
+
+
 ## Hands on knees, head down: the raya went the other way.
 static func dejected(t: float) -> Dictionary:
 	return {

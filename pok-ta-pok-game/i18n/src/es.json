@@ -164,7 +164,7 @@
   "RULES_FAULTS": "Faltas",
   "RULES_FAULTS_TEXT": "Manos, pies, rodillas o cuerpo: cualquier toque que no sea de cadera es falta, y la raya es para el otro lado. También sacar la pelota por el lado. Si no vas a golpearla, quítate de su camino.",
   "RULES_SERVE": "El saque",
-  "RULES_SERVE_TEXT": "El que saca, el male, pone la pelota en juego con la mano a través del analco: rodando por la tierra (male abajo) o lanzada alta (male arriba). En el juego rueda cuando hay empate y se lanza cuando un lado tiene la cuenta; saca el lado que ganó la última raya.",
+  "RULES_SERVE_TEXT": "El que saca, el male, pone la pelota en juego con la mano a través del analco. En las canchas de tierra del ulama: rodando por el suelo (male abajo) o lanzada en alto (male arriba); rueda cuando van parejos y se lanza cuando un lado tiene la cuenta. En la cancha de piedra, como en los juegos de Yucatán de hoy: se lanza hacia abajo para que bote antes del otro lado y les suba, y se juega de bote. Saca el lado que ganó la última raya.",
   "RULES_TIME": "Tiempo",
   "RULES_TIME_TEXT": "Los juegos reales duran hasta que un lado llega a ocho. Si pones límite de tiempo, gana el lado que tiene la cuenta cuando se acaba; si hay empate, gana la siguiente raya.",
   "RULES_CLASSIC": "La cancha clásica (reconstruida)",
@@ -259,5 +259,8 @@
   "CONTROL_TEAM_NOTE": "Pasas al jugador de tu equipo que va por la pelota.",
   "CONTROL_ONE_NOTE": "Eres un solo jugador todo el partido, el que saca. Tus compañeros juegan el resto.",
   "REPLAY": "REPETICIÓN",
-  "TOO_LOW_DIVE": "Muy baja para la cadera de pie: TIRARSE"
+  "TOO_LOW_DIVE": "Muy baja para la cadera de pie: TIRARSE",
+  "RITUAL_COPAL": "Ofrenda de copal antes del juego",
+  "BTN_SKIP": "SALTAR",
+  "SERVE_BOTE": "{team} saca de bote"
 }

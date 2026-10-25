@@ -107,6 +107,17 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   instead of a build tool's own debug key, so every beta from now on installs over the last. CI logs each APK's
   certificate SHA-256 and fails if it is not the beta key's. Without the secret it warns and falls back. A phone with
   an earlier beta (signed with the old key) has to uninstall it once.
+- **0.5.0, from the owner's two videos of pok ta pok in Yucatán** (a night street game in Mérida with a ring on a post,
+  and a court game in a park with sloped benches and wall rings):
+  - The stone courts serve *de bote*: thrown up and over to come down just past the analco and played off the bounce
+    (the receivers wait for it to bounce; tested). Ulama's earth courts keep their documented rolled and thrown serves.
+  - The ball is livelier on stone (0.58 to 0.68 bounce; talud and walls likewise); earth unchanged. On stone the AI
+    waits for a ball to come up off a bounce rather than diving for it.
+  - The copal offering before games on the stone courts (game/ritual.gd; docs/CULTURE.md has what was decided and
+    why): an elder in white with a smoking censer, players' arms raised to the sky, a conch; skippable; not on the
+    Sinaloa courts.
+  - Not changed: the many variations in the videos (the Mérida game's freestanding ring on a post, its street court,
+    the park show's painted figures). The ring on a post belongs to the revival rule set still on the Next list.
 
 ## Next
 

@@ -316,7 +316,7 @@ func serve_tag(team: int, kind: String) -> void:
 		_tag.text = ""
 		return
 	var who := DB.short_name(String(m.teams[team].id))
-	_tag.text = tr("SERVE_ABAJO" if kind == "abajo" else "SERVE_ARRIBA").format({"team": who})
+	_tag.text = tr({"abajo": "SERVE_ABAJO", "bote": "SERVE_BOTE"}.get(kind, "SERVE_ARRIBA")).format({"team": who})
 	UI.refit(_tag)
 
 

@@ -38,6 +38,7 @@ func _ready() -> void:
 	await _mocap()
 	_sounds()
 	_levels()
+	await _yucatan()
 	await _ring_replay()
 	await _match_and_motion("village", "ulama")
 	await _match_and_motion("stone", "classic")
@@ -166,6 +167,8 @@ func _rules_serve() -> void:
 	check(Rules.serve_kind(c) == "arriba", "R11: with a side holding the count the serve is thrown high (male arriba)")
 	check(Rules.server(c) == 1, "R11: the side that won the last raya serves")
 	check(Rules.serve_short(0) == 1, "R11: a serve short of the analco loses the raya")
+	var cc := Rules.Count.new(Rules.CLASSIC)
+	check(Rules.serve_kind(cc) == "bote", "R11: on the stone court the serve is bounced, to be played off the bounce")
 
 
 func _court() -> void:
@@ -471,6 +474,71 @@ func _crowd_faces() -> void:
 	Game.settings.graphics = keep
 
 
+# ---------------------------------------------------------------- the Yucatán stone courts
+
+## The opening offering of copal: on the stone courts (not on ulama's), the elder visits every player, arms go up, it
+## ends by itself or at SKIP, then the serve; the stone court's serve comes down past the analco and rises off the
+## bounce to be played.
+func _yucatan() -> void:
+	var cfg := {"home": "PIS", "away": "VAL", "venue": "stone", "rules": "classic", "user_team": -1, "seed": 7, "length": 6.0,
+		"mode": "test", "difficulty": 1, "ritual": true}
+	var m: Node = load("res://game/match.gd").new()
+	m.config = cfg
+	add_child(m)
+	await frames(2)
+	check(m.in_ritual(), "Ritual: the stone court's game opens with the copal offering")
+	var raised := {}
+	var n := 0
+	while m.in_ritual() and n < 30 * 40:
+		await get_tree().process_frame
+		n += 1
+		for p in m.all_players():
+			if (p as Player).offering > 0.9:
+				raised[p] = true
+	check(not m.in_ritual() and n < 30 * 40, "Ritual: it ends by itself (%.1f s)" % (n / 30.0))
+	check(raised.size() == m.all_players().size(), "Ritual: every player raises his arms to the copal (%d of %d)" % [raised.size(), m.all_players().size()])
+	var land_x := INF
+	var serve_team := -1
+	var off_bounce := false
+	var touched := false
+	n = 0
+	while n < 30 * 20 and m.phase != m.P.CALL and not touched:
+		var bounced_before: bool = m.serve_bounced
+		await get_tree().process_frame
+		n += 1
+		if m.phase != m.P.LIVE:
+			continue
+		serve_team = m.serve_team
+		if land_x == INF and m.serve_bounced:
+			land_x = m.ball.pos.x
+		if m.rally > 0:
+			touched = true
+			off_bounce = bounced_before or m.serve_bounced
+	var d := Rules.dir(serve_team) if serve_team >= 0 else 1.0
+	check(land_x != INF and land_x * d > 0.3 and land_x * d < 4.0,
+		"Bote: the stone court's serve comes down just past the analco (%.1f m)" % (land_x * d if land_x != INF else -1.0))
+	check(touched and off_bounce, "Bote: the receivers play it off the bounce, never on the full")
+	m.queue_free()
+	await frames(2)
+	var m2: Node = load("res://game/match.gd").new()
+	cfg.ritual = true
+	m2.config = cfg.duplicate()
+	add_child(m2)
+	await frames(2)
+	m2._on_action("SKIP")
+	check(not m2.in_ritual(), "Ritual: SKIP passes it")
+	m2.queue_free()
+	await frames(2)
+	var m3: Node = load("res://game/match.gd").new()
+	m3.config = {"home": "ESC", "away": "LLA", "venue": "village", "rules": "ulama", "user_team": -1, "seed": 7, "length": 6.0,
+		"mode": "test", "difficulty": 1, "ritual": true}
+	add_child(m3)
+	await frames(2)
+	check(not m3.in_ritual(), "Ritual: none on ulama's village court (none is documented there)")
+	m3.queue_free()
+	await frames(2)
+
+
 # ---------------------------------------------------------------- graphics levels
 
 ## Low loads exactly what it always has (the 512 surfaces, the 1024 bodies, the 2K skies, sixteen figures in the crowd,
@@ -595,9 +663,12 @@ func _ring_replay() -> void:
 		var before := []
 		for q in m.all_players():
 			before.append((q as Player).global_position)
+		var was_replay: bool = m.phase == m.P.REPLAY
 		await get_tree().process_frame
 		n += 1
 		if m.phase == m.P.REPLAY:
+			seen = true
+		if was_replay and m.phase == m.P.REPLAY:
 			seen = true
 			var ps: Array = m.all_players()
 			for k in ps.size():

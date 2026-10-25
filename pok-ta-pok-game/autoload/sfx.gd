@@ -255,6 +255,7 @@ func _plan() -> void:
 		["thud_stone", func(): return _thud_stone()],       # on plastered stone
 		["throw", func(): return _swish(0.22)],             # the serve leaving the hand
 		["call", func(): return _drum()],                   # the judges' call
+		["conch", func(): return _conch()],                 # the conch shell before the copal offering (Ritual)
 		["click", func(): return _tone_env(0.035, func(t): return sin(TAU * 1500.0 * t) * 0.5, 0.001, 0.03)],
 		["roar", _roar],
 		["crowd_loop", _crowd_loop],
@@ -348,6 +349,25 @@ func _swish(dur: float) -> AudioStreamWAV:
 		var t := float(i) / RATE
 		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.12 + 0.3 * t / dur)
 		out[i] = lp * sin(PI * t / dur) * 0.5
+	return _to_stream(out)
+
+
+## A conch shell blown: a breathy horn, rising into its note, held, falling away.
+func _conch() -> AudioStreamWAV:
+	var dur := 2.4
+	var n := int(dur * RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var f := 196.0 * (0.94 + 0.06 * minf(1.0, t / 0.35)) * (1.0 - 0.03 * maxf(0.0, t - 1.9))
+		ph += TAU * f / RATE
+		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.08)
+		var tone := sin(ph) + 0.45 * sin(2.0 * ph) + 0.25 * sin(3.0 * ph) + 0.1 * sin(4.0 * ph)
+		var env := minf(1.0, t / 0.3) * clampf((dur - t) / 0.6, 0.0, 1.0) * (1.0 + 0.04 * sin(TAU * 4.5 * t))
+		out[i] = (tone * 0.32 + lp * 0.25) * env * 0.6
 	return _to_stream(out)
 
 

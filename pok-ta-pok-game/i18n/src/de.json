@@ -164,7 +164,7 @@
   "RULES_FAULTS": "Fehler",
   "RULES_FAULTS_TEXT": "Hände, Füße, Knie oder Körper: Jede Berührung außer mit der Hüfte ist ein Fehler, und die raya geht an die andere Seite. Ebenso, wenn du den Ball seitlich ins Aus schlägst. Geh ihm aus dem Weg, wenn du ihn nicht spielst.",
   "RULES_SERVE": "Das Anspiel",
-  "RULES_SERVE_TEXT": "Der Anspieler, der male, bringt den Ball mit der Hand über den analco ins Spiel: über die Erde gerollt (male abajo) oder hoch geworfen (male arriba). Im Spiel wird bei Gleichstand gerollt und geworfen, wenn eine Seite die Zählung hält; es spielt die Seite an, die die letzte raya gewonnen hat.",
+  "RULES_SERVE_TEXT": "Der Aufschläger, der male, bringt den Ball mit der Hand über den analco ins Spiel. Auf den Erdplätzen des Ulama: über den Boden gerollt (male abajo) oder hoch geworfen (male arriba); gerollt bei Gleichstand, geworfen, wenn eine Seite die Zählung hält. Auf dem Steinplatz, wie in den heutigen Spielen in Yucatán: nach unten geworfen, sodass er vor der anderen Seite aufspringt und zu ihr hochkommt, und nach dem Aufsprung gespielt. Es schlägt die Seite auf, die die letzte raya gewonnen hat.",
   "RULES_TIME": "Zeit",
   "RULES_TIME_TEXT": "Echte Spiele laufen, bis eine Seite acht erreicht. Mit Zeitlimit gewinnt die Seite, die bei Ablauf die Zählung hält; steht es gleich, entscheidet die nächste raya.",
   "RULES_CLASSIC": "Der klassische Platz (rekonstruiert)",
@@ -259,5 +259,8 @@
   "CONTROL_TEAM_NOTE": "Du wirst jeweils der Spieler deines Teams, der zum Ball geht.",
   "CONTROL_ONE_NOTE": "Du bist das ganze Spiel ein Spieler, der Aufschläger. Deine Mitspieler machen den Rest.",
   "REPLAY": "WIEDERHOLUNG",
-  "TOO_LOW_DIVE": "Zu tief für die Hüfte im Stehen: HECHT"
+  "TOO_LOW_DIVE": "Zu tief für die Hüfte im Stehen: HECHT",
+  "RITUAL_COPAL": "Kopal-Opfer vor dem Spiel",
+  "BTN_SKIP": "WEITER",
+  "SERVE_BOTE": "{team} schlägt auf, mit Aufsprung"
 }

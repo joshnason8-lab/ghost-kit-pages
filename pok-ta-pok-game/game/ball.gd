@@ -13,7 +13,9 @@ const DRAG := 0.5 * 1.2 * 0.47 * PI * RADIUS * RADIUS / MASS
 ## How much of its speed into a surface comes back (the coefficient of restitution), and how much along it is kept.
 ## Measured values for heavy solid rubber were not found (docs/RULES.md); these are chosen so a ball dropped from hip
 ## height on earth comes back to about 15 cm, on stone to about 30 cm.
-const BOUNCE := {"earth": 0.42, "stone": 0.58, "talud": 0.55, "wall": 0.6, "end_wall": 0.6, "ring": 0.5}
+# Packed earth deadens the heavy ball (ulama in Sinaloa); on the smooth plastered stone of the Yucatán courts it comes up
+# lively, to knee or hip height, and is played off the bounce, as in the games played there today.
+const BOUNCE := {"earth": 0.42, "stone": 0.68, "talud": 0.62, "wall": 0.66, "end_wall": 0.64, "ring": 0.5}
 const KEEP := {"earth": 0.78, "stone": 0.86, "talud": 0.8, "wall": 0.85, "end_wall": 0.85, "ring": 0.7}
 ## Rolling resistance, as a slowing in m/s per second: packed earth, then stone.
 const ROLL_DECEL := {"earth": 1.5, "stone": 0.7}

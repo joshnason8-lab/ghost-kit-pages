@@ -204,9 +204,12 @@ static func legal_strike(part: String) -> bool:
 ## ground; male arriba, thrown high. The kind changes with the score (Aguilar-Moreno); which score calls for which is
 ## not documented, so the game rolls it from level (CONADE: play starts with the low serve) and throws it high once a
 ## side holds the count (reconstructed).
+##
+## The stone court (classic): the server throws the ball down so it bounces short of the other side and comes up to
+## them, who play it off the bounce ("bote"), as the Yucatán games played today do.
 static func serve_kind(c: Count) -> String:
 	if c.rules == CLASSIC:
-		return "arriba"
+		return "bote"
 	return "abajo" if c.holder < 0 else "arriba"
 
 

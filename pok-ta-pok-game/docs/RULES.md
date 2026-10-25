@@ -120,6 +120,7 @@ Main sources:
 | **Documented** | The **male** puts the ball in play across the analco: **male arriba**, a high throw, or **male abajo**, rolled along the ground. The kind changes with the score [AM-AI] [AM-AA]. Play starts with the low serve [CONADE]. |
 | **In the game** | The server (the malero) bowls or throws the ball by hand from 5 m behind the analco. *Abajo* when the count is level (including the first serve); *arriba* when a side holds the count. A serve that dies short of the analco loses the raya (R8). |
 | **Reconstructed** | No source says which score calls for which serve, or who serves after a raya. The game rolls the ball from level and throws it once a side holds the count. The side that won the last raya serves. |
+| **Stone court (0.5.0)** | Pelota maya as played in Yucatán today (two videos the owner sent: a street game in Mérida and a court game in a Yucatán park) serves differently: the ball is thrown down so it bounces short of the other side and comes up to them, who play it off the bounce. On the smooth court it bounces lively, to knee and hip height. So on the stone court the serve is *de bote*: thrown up and over to come down 0.8–2.6 m past the analco, and the receivers let it bounce and take it as it rises (`Rules.serve_kind`, `Match._launch_serve`, `TeamAI`); the stone floor's bounce went from 0.58 to 0.68 and the talud's and walls' with it. Ulama's earth courts keep the documented rolled and thrown serves and the earth's dead bounce. |
 
 ### R14. Time (the game's own)
 

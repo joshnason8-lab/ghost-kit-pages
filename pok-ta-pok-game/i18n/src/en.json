@@ -164,7 +164,7 @@
   "RULES_FAULTS": "Faults",
   "RULES_FAULTS_TEXT": "Hands, feet, knees or body: any touch but the hip is a fault, and the raya goes to the other side. So is knocking the ball out at the side. Stand out of its way if you are not striking it.",
   "RULES_SERVE": "The serve",
-  "RULES_SERVE_TEXT": "The server, the male, puts the ball in play by hand across the analco: rolled along the earth (male abajo) or thrown high (male arriba). In the game it rolls from level and is thrown when a side holds the count; the side that won the last raya serves.",
+  "RULES_SERVE_TEXT": "The server, the male, puts the ball in play by hand across the analco. On the earth courts of ulama: rolled along the earth (male abajo) or thrown high (male arriba); it rolls from level and is thrown when a side holds the count. On the stone court, as in the Yucatán games of today: thrown down so it bounces short of the other side and comes up to them, to be played off the bounce. The side that won the last raya serves.",
   "RULES_TIME": "Time",
   "RULES_TIME_TEXT": "Real games run until a side reaches eight. If you set a time limit, the side holding the count when it runs out wins; if the count is level, the next raya wins.",
   "RULES_CLASSIC": "The classic court (reconstructed)",
@@ -259,5 +259,8 @@
   "CONTROL_TEAM_NOTE": "You become whichever of your players goes for the ball.",
   "CONTROL_ONE_NOTE": "You are one player all match, the server. Your teammates play the rest.",
   "REPLAY": "REPLAY",
-  "TOO_LOW_DIVE": "Too low for the hip standing: DIVE"
+  "TOO_LOW_DIVE": "Too low for the hip standing: DIVE",
+  "RITUAL_COPAL": "An offering of copal before the game",
+  "BTN_SKIP": "SKIP",
+  "SERVE_BOTE": "{team} serve off the bounce"
 }
