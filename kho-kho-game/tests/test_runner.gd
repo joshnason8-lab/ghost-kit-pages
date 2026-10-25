@@ -395,6 +395,20 @@ func _grounds() -> void:
 					if fwd.dot(to_c) <= 0.7:
 						astray += 1
 			check(people > 0 and astray == 0, "graphics %d, %s: all %d spectators face the court (%d astray)" % [g, v, people, astray])
+			# Dressed as a tournament ground (the two real matches, docs/GROUNDS.md); the crowd mostly in everyday clothes.
+			var want: Array = [] if not outdoor else (["barricades", "banners", "flags"] + (["tents"] if a.kind != "stadium" else []) \
+				+ (["stage"] if a.kind == "village" else []) + (["turf"] if a.kind == "school" else []))
+			var have: Array = a.dressing.duplicate()
+			have.sort()
+			want.sort()
+			check(have == want, "graphics %d, %s: dressed with %s (want %s)" % [g, v, have, want])
+			var everyday := 0
+			for c in a.find_children("*", "Crowd", true, false):
+				var mm: MultiMesh = (c as Crowd).multimesh
+				for i in mm.instance_count:
+					if mm.get_instance_custom_data(i).a > 0.0:
+						everyday += 1
+			check(people > 0 and float(everyday) / people > 0.7, "graphics %d, %s: %d of %d spectators in everyday clothes" % [g, v, everyday, people])
 			if a.kind == "village":
 				var chairs: int = a._chairs.size()
 				check(chairs > 0 and (g != Game.GFX_LOW or chairs < 60), "graphics %d, village: chairs under the front row (%d)" % [g, chairs])

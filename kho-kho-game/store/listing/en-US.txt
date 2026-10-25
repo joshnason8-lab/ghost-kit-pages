@@ -35,5 +35,5 @@ PLAY YOUR WAY
 
 Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
 
-== Release notes (0.8.0) ==
-Defenders learned from real matches: out of danger they stand and watch the chase instead of jogging about, as real defenders do. Real referee whistles: the timekeeper's long and short to start a turn, a short pip for an out, pips until a foul is put right, the final whistle, and a gym's echo in the hall. Sharper on Medium and High graphics: finer ground photos, sharper players, a more varied crowd and, on High, sharper skies. Longer crowd and venue sounds.
+== Release notes (0.9.0) ==
+Outdoor grounds dressed for a tournament, as at real matches: steel barricades, tents over the teams, flags and banners, a stage at the village ground, and a crowd in everyday clothes. Defenders learned from real matches: out of danger they stand and watch the chase. Real referee whistles, from where the officials stand. Sharper on Medium and High graphics: finer ground photos, sharper players and skies. Longer crowd and venue sounds.

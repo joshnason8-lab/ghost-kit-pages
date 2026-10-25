@@ -22,6 +22,7 @@ var _concrete: Geo    # the stands' concrete
 var kind := ""
 var _chairs: Array = []    # monobloc chairs under the front row of a village crowd
 var _benches: Array = []   # painted benches (pupils at the school, the teams at a ground)
+var dressing: Array = []   # what was put up for the tournament (_tournament, _stage), for the tests
 
 
 func _init(p_venue := "maidan", p_fmt := KhoRules.CLASSIC, p_home_colors := []) -> void:
@@ -78,6 +79,10 @@ func _ready() -> void:
 			spots = _stands(16 if not low else 10, false)
 			_floodlights()
 			_skyline(low, 80.0, 6 if not low else 4)
+	if kind != "arena":
+		_tournament(low)
+	if kind == "village":
+		spots.append_array(_stage(low))
 	add_child(_ground.commit(ground_material(kind, f)))
 	add_child(_lit.commit(Geo.material(true)))
 	add_child(_glow.commit(Geo.material(false)))
@@ -614,6 +619,198 @@ func _string_lights(low: bool) -> void:
 			_glow.box(Vector3(x, sag, zz), Vector3(0.12, 0.12, 0.12), [Color("ffcf6a"), Color("ff7a4a"), Color("fff2c0"), Color("7ad0ff")][i % 4])
 	for x: float in [-20.0, -10.0, 0.0, 10.0, 20.0]:
 		_lit.cylinder(Vector3(x, 0, z), Vector3(x, 3.8, z), 0.05, 0.05, Color("6b4a2a"), 5, false)
+
+
+# ---------------------------------------------------------------- a tournament's dressing
+
+## What a ground puts up for a tournament, as at the two real matches the owner sent (docs/GROUNDS.md): galvanised
+## steel barricades between the court and the crowd, white cloth tents with a coloured valance over the teams'
+## benches, flags on tall poles, printed banners tied to the barricades (colour and pattern only: no words, no
+## names), and at the school a strip of green turf round the lobby and bunting over the crowd. All of it merged into
+## the structure's meshes: no draw call more on any level.
+func _tournament(low: bool) -> void:
+	var L: float = f.length * 0.5 + f.lobby
+	var W: float = f.width * 0.5 + f.lobby
+	var stands := kind == "stadium"
+	dressing.append_array(["barricades", "banners", "flags"])
+	# The barricades: behind the teams' benches on the far side, across the ends, and on the near side clear of the
+	# broadcast camera.
+	var far_z := -(W + (2.4 if stands else 2.9))
+	var end_x := L + (2.2 if stands else 1.4)
+	_barricade(Vector3(-end_x, 0, far_z), Vector3(end_x, 0, far_z), low)
+	for s: float in [-1.0, 1.0]:
+		_barricade(Vector3(s * end_x, 0, far_z), Vector3(s * end_x, 0, W + 1.4), low)
+		if not stands:
+			_barricade(Vector3(s * 8.5, 0, W + 1.4), Vector3(s * end_x, 0, W + 1.4), low)
+	# Banners on the far barricade, either side of the officials' table.
+	var looks := [[Color("f7f3ea"), Color("ff9933"), Color("2e8b57")], [Color("f6d24a"), Color("c8322a"), Color("7a1f1f")],
+		[Color("bfe0f5"), Color("1f3f8a"), Color("f7f3ea")], [Color("ffd9b0"), Color("d2542a"), Color("5a2a6a")]]
+	var k := 0
+	for x: float in [-11.0, -5.5, 5.5, 11.0]:
+		if absf(x) + 1.6 > end_x:
+			continue
+		var lk: Array = looks[k % looks.size()]
+		var c := Vector3(x, 0.62, far_z + 0.05)
+		_lit.box(c, Vector3(3.2, 0.9, 0.02), lk[0], 0.0, false)
+		_lit.box(c + Vector3(0, 0.36, 0.012), Vector3(3.2, 0.18, 0.01), lk[1], 0.0, false)
+		_lit.box(c + Vector3(0, -0.36, 0.012), Vector3(3.2, 0.18, 0.01), lk[2], 0.0, false)
+		if not low:
+			# The print: a round emblem and blocks where lettering would be.
+			_lit.cylinder(c + Vector3(-1.2, 0, 0.012), c + Vector3(-1.2, 0, 0.022), 0.22, 0.22, lk[2], 10, true)
+			_lit.box(c + Vector3(0.25, 0.08, 0.016), Vector3(2.0, 0.16, 0.01), lk[2].darkened(0.2), 0.0, false)
+			_lit.box(c + Vector3(0.0, -0.13, 0.016), Vector3(1.5, 0.1, 0.01), lk[1], 0.0, false)
+		k += 1
+	# Tents over the teams' benches (not in the stadium, which has its stand's roof).
+	if not stands:
+		dressing.append("tents")
+		var z: float = -(f.width * 0.5 + f.lobby + 1.4) - 0.3
+		for s: float in [-1.0, 1.0]:
+			_tent(Vector3(s * 6.5, 0, z), 5.2, 2.6, low)
+	# Flags on poles, behind the far crowd and at the corners.
+	var flag_cols := [Color("ff9933"), Color("2e8b57"), Color("2850a8"), Color("f2c230"), Color("f7f3ea"), Color("d23a2a"), Color("e0508a")]
+	var flag_spots: Array = []
+	var back := -(W + 9.0) if kind == "village" else (-(W + 8.0) if kind == "school" else -(W + 3.2 + 16 * 0.85 + 0.5))
+	var base_y := 0.0 if not stands else 16 * 0.45 + 4.0
+	for i in (5 if low else 9):
+		if kind == "village" and absf(-22.0 + i * 44.0 / float((5 if low else 9) - 1)) < 8.0:
+			continue   # the stage is there
+		flag_spots.append(Vector3(-22.0 + i * 44.0 / float((5 if low else 9) - 1), base_y, back))
+	if not stands:
+		for sx: float in [-1.0, 1.0]:
+			for sz: float in [-1.0, 1.0]:
+				flag_spots.append(Vector3(sx * (end_x + 0.8), 0, sz * (W + 2.2) if sz > 0 else far_z - 0.8))
+	for i in flag_spots.size():
+		var p: Vector3 = flag_spots[i]
+		var hgt := 6.5 if p.y == 0.0 else 4.0
+		_lit.cylinder(p, p + Vector3(0, hgt, 0), 0.04, 0.03, Color("d8d4cc"), 5, false)
+		var fc: Color = flag_cols[(i * 3) % flag_cols.size()]
+		_lit.box(p + Vector3(0.62, hgt - 0.45, 0), Vector3(1.2, 0.8, 0.02), fc, 0.25 * sin(float(i) * 1.7), false)
+	if kind == "school":
+		dressing.append("turf")
+		# Green turf round the lobby, as the day match's ground had.
+		var tw := 1.0
+		var tc := Color("3d8c4c")
+		var y := 0.003
+		_lit.floor_rect(-L - tw, -W - tw, L + tw, -W, y, tc)
+		_lit.floor_rect(-L - tw, W, L + tw, W + tw, y, tc)
+		_lit.floor_rect(-L - tw, -W, -L, W, y, tc)
+		_lit.floor_rect(L, -W, L + tw, W, y, tc)
+		# Bunting over the crowd on the far side.
+		if not low:
+			var bz := far_z - 1.5
+			for x0: float in [-20.0, -10.0, 0.0, 10.0, 20.0]:
+				_lit.cylinder(Vector3(x0, 0, bz), Vector3(x0, 4.0, bz), 0.04, 0.04, Color("8a6a4a"), 5, false)
+			for i in 80:
+				var x := -20.0 + i * 0.5
+				var sag := 3.85 - 0.7 * sin(PI * fposmod(x, 10.0) / 10.0)
+				_lit.box(Vector3(x, sag - 0.12, bz), Vector3(0.26, 0.24, 0.01), flag_cols[i % flag_cols.size()], 0.0, false)
+
+
+## Crowd barriers along a line: galvanised steel panels 2 m long and 1.1 m high on flat feet, a rail top and bottom
+## and bars between (on Low the rails only).
+func _barricade(p0: Vector3, p1: Vector3, low: bool) -> void:
+	var steel := Color("c4c8cd")
+	var d := p1 - p0
+	var length := d.length()
+	if length < 0.5:
+		return
+	var dir := d / length
+	var yaw := atan2(-dir.z, dir.x)   # a box's length (its x) along the line
+	var mid := (p0 + p1) * 0.5
+	for hgt: float in ([1.08, 0.12] if not low else [1.08, 0.55, 0.12]):
+		_lit.box(mid + Vector3(0, hgt, 0), Vector3(length, 0.04, 0.04), steel, yaw)
+	var n := maxi(1, int(round(length / 2.0)))
+	for i in n + 1:
+		var p := p0 + dir * (length * float(i) / float(n))
+		_lit.box(p + Vector3(0, 0.55, 0), Vector3(0.05, 1.1, 0.05), steel.darkened(0.1))
+		_lit.box(p + Vector3(0, 0.015, 0), Vector3(0.08, 0.03, 0.7), steel.darkened(0.25), yaw)
+		if not low and i < n:
+			for b in range(1, 13):
+				var q := p + dir * (length / float(n) * float(b) / 13.0)
+				_lit.box(q + Vector3(0, 0.6, 0), Vector3(0.022, 0.96, 0.022), steel)
+
+
+## A pandal: white cloth on four poles, a pitched roof, and a valance of red and yellow scallops round its eaves.
+func _tent(c: Vector3, w: float, d: float, low: bool) -> void:
+	var cloth := Color("f4f1ea")
+	var eave := 2.45
+	for sx: float in [-0.5, 0.5]:
+		for sz: float in [-0.5, 0.5]:
+			_lit.cylinder(c + Vector3(sx * w, 0, sz * d), c + Vector3(sx * w, eave, sz * d), 0.035, 0.035, Color("d8d4cc"), 5, false)
+	_lit.prism(c + Vector3(0, eave, 0), w + 0.3, d + 0.3, 0.75, cloth)
+	# The valance: a band round the eaves, and its scallops.
+	for sz: float in [-1.0, 1.0]:
+		_lit.box(c + Vector3(0, eave - 0.12, sz * (d * 0.5 + 0.15)), Vector3(w + 0.3, 0.24, 0.02), cloth.darkened(0.05), 0.0, false)
+	for sx: float in [-1.0, 1.0]:
+		_lit.box(c + Vector3(sx * (w * 0.5 + 0.15), eave - 0.12, 0), Vector3(0.02, 0.24, d + 0.3), cloth.darkened(0.05), 0.0, false)
+	if not low:
+		var n := int(w / 0.4)
+		for i in n:
+			var x := -w * 0.5 + (i + 0.5) * w / float(n)
+			var col := Color("d23a2a") if i % 2 == 0 else Color("f2c230")
+			for sz: float in [-1.0, 1.0]:
+				_lit.box(c + Vector3(x, eave - 0.3, sz * (d * 0.5 + 0.16)), Vector3(0.3, 0.14, 0.015), col, 0.0, false)
+
+
+## The village's stage, behind the far crowd, as at the night match: a carpeted platform with guests on chairs, a
+## printed backdrop (colour and pattern only), a truss over it carrying a row of lamps, a table of trophies at its
+## front and speakers either side; and two truss towers of lamps at the far corners. Returns the guests' seats.
+func _stage(low: bool) -> Array:
+	dressing.append("stage")
+	var W: float = f.width * 0.5 + f.lobby
+	var z := -(W + 11.0)
+	var w := 12.0
+	var top := 1.2
+	_lit.box(Vector3(0, top * 0.5, z), Vector3(w, top, 4.0), Color("5a1e26"))
+	_lit.box(Vector3(0, top + 0.01, z), Vector3(w - 0.2, 0.02, 3.8), Color("a8302f"), 0.0, false)
+	# The backdrop, lit: a sunset of colour, a band, an emblem and blocks where the lettering would be.
+	var bz := z - 1.95
+	_glow.box(Vector3(0, top + 2.4, bz), Vector3(w - 0.6, 4.4, 0.06), Color("f0b090"), 0.0, false)
+	_glow.box(Vector3(0, top + 3.9, bz + 0.04), Vector3(w - 0.6, 0.5, 0.02), Color("e06a3a"), 0.0, false)
+	_glow.box(Vector3(0, top + 0.5, bz + 0.04), Vector3(w - 0.6, 0.35, 0.02), Color("c0392b"), 0.0, false)
+	if not low:
+		_glow.cylinder(Vector3(-4.2, top + 2.4, bz + 0.04), Vector3(-4.2, top + 2.4, bz + 0.06), 0.9, 0.9, Color("f6d24a"), 16, true)
+		for i in 3:
+			_glow.box(Vector3(1.0, top + 3.0 - i * 0.65, bz + 0.05), Vector3(6.0 - i * 1.4, 0.32, 0.02), Color("7a1f3a"), 0.0, false)
+	# The truss: two columns and a beam, with lamps along it facing the field.
+	var truss := Color("b8bcc2")
+	for sx: float in [-1.0, 1.0]:
+		_lit.box(Vector3(sx * (w * 0.5 + 0.2), 3.6, bz), Vector3(0.3, 7.2, 0.3), truss)
+	_lit.box(Vector3(0, 7.1, bz), Vector3(w + 0.7, 0.3, 0.3), truss)
+	for i in (5 if low else 9):
+		var x := -w * 0.5 + 0.8 + i * (w - 1.6) / float((5 if low else 9) - 1)
+		_lit.box(Vector3(x, 6.75, bz + 0.25), Vector3(0.36, 0.36, 0.3), Color("2a2a2e"))
+		_glow.box(Vector3(x, 6.75, bz + 0.41), Vector3(0.28, 0.28, 0.02), Color("fffbe8"), 0.0, false)
+	# The trophies, on a white-clothed table at the stage's front.
+	_lit.box(Vector3(0, top + 0.38, z + 1.6), Vector3(3.0, 0.76, 0.6), Color("f4f1ea"))
+	for i in 5:
+		var tx := -1.2 + i * 0.6
+		var th := 0.5 if i % 2 == 0 else 0.35
+		_lit.cylinder(Vector3(tx, top + 0.76, z + 1.6), Vector3(tx, top + 0.76 + th, z + 1.6), 0.06, 0.12, Color("e2b84a"), 8, true)
+	# Speakers on stands either side.
+	for sx: float in [-1.0, 1.0]:
+		var sp := Vector3(sx * (w * 0.5 + 1.2), 0, z + 1.0)
+		_lit.cylinder(sp, sp + Vector3(0, 1.6, 0), 0.03, 0.03, Color("2a2a2e"), 5, false)
+		_lit.box(sp + Vector3(0, 2.1, 0), Vector3(0.55, 0.95, 0.45), Color("1c1c20"))
+	# Truss towers of lamps at the far corners.
+	var L: float = f.length * 0.5 + f.lobby
+	for sx: float in [-1.0, 1.0]:
+		var b := Vector3(sx * (L + 8.0), 0, -(W + 5.5))
+		_lit.box(b + Vector3(0, 4.5, 0), Vector3(0.45, 9.0, 0.45), truss)
+		var yaw := atan2(-b.x, -b.z)
+		_lit.box(b + Vector3(0, 9.1, 0), Vector3(1.8, 1.0, 0.25), Color("2a2a2e"), yaw)
+		var fwd := Vector3(sin(yaw), 0, cos(yaw))
+		var right := Vector3(cos(yaw), 0, -sin(yaw))
+		for r in 2:
+			for col in 3:
+				_glow.box(b + Vector3(0, 8.85 + r * 0.5, 0) + right * (-0.55 + col * 0.55) + fwd * 0.14, Vector3(0.4, 0.36, 0.02), Color("fffbe8"), yaw, false)
+	# The guests: a row of chairs on the stage.
+	var seats: Array = []
+	for i in 10:
+		var p := Vector3(-4.05 + i * 0.9, 0, z - 0.6)
+		_chairs.append(Props.at(p + Vector3(0, top, 0), 0.0))
+		seats.append(p + Vector3(0, top + 0.45, 0))
+	return seats
 
 
 ## The school: two storeys with a verandah of pillars on each, windows with frames, a parapet, a water tank on the
