@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://yfvjk68g812i"
-path="res://.godot/imported/food_cart_low_0.jpg-750ef28ab039d18ac1f478a1a45205e5.ctex"
+uid="uid://b2mawjtlqjrvl"
+path="res://.godot/imported/temple_sala_low_texture_0.jpg-df3b1006b3ebb11a342797bba62319cb.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "3973b5b4501a395548dcc46fb637f7db"
+"md5": "e1ca65b578b1ec63208ed72bf027b108"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/food_cart_low_0.jpg"
-dest_files=["res://.godot/imported/food_cart_low_0.jpg-750ef28ab039d18ac1f478a1a45205e5.ctex"]
+source_file="res://assets/venue/props/temple_sala_low_texture_0.jpg"
+dest_files=["res://.godot/imported/temple_sala_low_texture_0.jpg-df3b1006b3ebb11a342797bba62319cb.ctex"]
 
 [params]
 

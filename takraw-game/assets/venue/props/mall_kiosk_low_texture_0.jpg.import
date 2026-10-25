@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2b7ltj76lrd2"
-path="res://.godot/imported/mall_planter_low_0.jpg-c3a44b333b6bd9b987f7f611216c419a.ctex"
+uid="uid://bs1h8lnp48yal"
+path="res://.godot/imported/mall_kiosk_low_texture_0.jpg-79ee254a900b0d5887958c357f37995c.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "7a08a028469c9a7d3f9d93d0ddddcca9"
+"md5": "8884b3b1c9ef50a6c7bcb2e3c66bc5dd"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/mall_planter_low_0.jpg"
-dest_files=["res://.godot/imported/mall_planter_low_0.jpg-c3a44b333b6bd9b987f7f611216c419a.ctex"]
+source_file="res://assets/venue/props/mall_kiosk_low_texture_0.jpg"
+dest_files=["res://.godot/imported/mall_kiosk_low_texture_0.jpg-79ee254a900b0d5887958c357f37995c.ctex"]
 
 [params]
 

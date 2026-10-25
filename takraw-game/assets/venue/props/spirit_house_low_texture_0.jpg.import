@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b4b20ko2q0tyk"
-path="res://.godot/imported/temple_sala_low_0.jpg-c751ab691fe2cbe4868a520098c90ab0.ctex"
+uid="uid://bekgbay7idoel"
+path="res://.godot/imported/spirit_house_low_texture_0.jpg-7f8fbe675fb7a200ce30622d38e68bdc.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "bdb9ac26acfdbc9bf44372b38eaf5f0e"
+"md5": "3bf2ca5cc1fa212e34e5381397b0ca29"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/temple_sala_low_0.jpg"
-dest_files=["res://.godot/imported/temple_sala_low_0.jpg-c751ab691fe2cbe4868a520098c90ab0.ctex"]
+source_file="res://assets/venue/props/spirit_house_low_texture_0.jpg"
+dest_files=["res://.godot/imported/spirit_house_low_texture_0.jpg-7f8fbe675fb7a200ce30622d38e68bdc.ctex"]
 
 [params]
 

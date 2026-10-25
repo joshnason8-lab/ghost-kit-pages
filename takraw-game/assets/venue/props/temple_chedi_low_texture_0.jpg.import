@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://brw5i7bcni17i"
-path="res://.godot/imported/gym_scoreboard_low_0.jpg-c8e4063226b7ce605ca55f447859de77.ctex"
+uid="uid://8fk68ycdnf5m"
+path="res://.godot/imported/temple_chedi_low_texture_0.jpg-3222edd2635f383dfb0a135cb8412d99.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "f29b5e1d1cac8a902bae17071965c440"
+"md5": "e70dac33d8900678d690e10ee1415413"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/gym_scoreboard_low_0.jpg"
-dest_files=["res://.godot/imported/gym_scoreboard_low_0.jpg-c8e4063226b7ce605ca55f447859de77.ctex"]
+source_file="res://assets/venue/props/temple_chedi_low_texture_0.jpg"
+dest_files=["res://.godot/imported/temple_chedi_low_texture_0.jpg-3222edd2635f383dfb0a135cb8412d99.ctex"]
 
 [params]
 

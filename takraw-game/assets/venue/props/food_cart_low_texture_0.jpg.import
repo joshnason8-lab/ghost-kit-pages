@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://co1advq3i4hav"
-path="res://.godot/imported/longtail_boat_low_0.jpg-ebcb211135755ceebe95faa99c3c0c4c.ctex"
+uid="uid://dv77kjmi1f5fm"
+path="res://.godot/imported/food_cart_low_texture_0.jpg-d4ceeb852e4fb6912bf5322f6982b0f6.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "875d5fd6586c4b9b35390a7bc8ce2705"
+"md5": "47512599fdf859342ae0e582903bf7af"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/longtail_boat_low_0.jpg"
-dest_files=["res://.godot/imported/longtail_boat_low_0.jpg-ebcb211135755ceebe95faa99c3c0c4c.ctex"]
+source_file="res://assets/venue/props/food_cart_low_texture_0.jpg"
+dest_files=["res://.godot/imported/food_cart_low_texture_0.jpg-d4ceeb852e4fb6912bf5322f6982b0f6.ctex"]
 
 [params]
 

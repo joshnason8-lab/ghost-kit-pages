@@ -1986,7 +1986,7 @@ func sim_to_end() -> void:
 			set_scores.append([a, b])
 			if sets[won] >= sets_to_win:
 				hud.set_score()
-				_finish(won, 0.0)
+				_finish.call_deferred(won, 0.0)   # (after the pause menu's button has let go)
 				return
 			set_no += 1
 			points = [0, 0]

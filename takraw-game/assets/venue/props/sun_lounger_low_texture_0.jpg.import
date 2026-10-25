@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://e6cs6ej4p7di"
-path="res://.godot/imported/mall_escalator_low_0.jpg-acd0e7a7313afcd61e5a0a094760acfd.ctex"
+uid="uid://c2gtb4t0kcpjx"
+path="res://.godot/imported/sun_lounger_low_texture_0.jpg-53a5ea40974d2fde3d02ed6ab13b98e1.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "935c2cb5ede1c06e7fe7f1b16fe39f0c"
+"md5": "3b855a51a4c63339ce1730122de79730"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/mall_escalator_low_0.jpg"
-dest_files=["res://.godot/imported/mall_escalator_low_0.jpg-acd0e7a7313afcd61e5a0a094760acfd.ctex"]
+source_file="res://assets/venue/props/sun_lounger_low_texture_0.jpg"
+dest_files=["res://.godot/imported/sun_lounger_low_texture_0.jpg-53a5ea40974d2fde3d02ed6ab13b98e1.ctex"]
 
 [params]
 

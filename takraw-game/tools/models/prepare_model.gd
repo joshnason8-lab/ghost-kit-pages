@@ -59,6 +59,20 @@ func _init() -> void:
 			made.add_surface(im.get_surface_primitive_type(s), _compact(arrays, best), [], {}, im.get_surface_material(s),
 				im.get_surface_name(s), im.get_surface_format(s))
 		(gm as GLTFMesh).mesh = made
+	# Cut to 256 px or less (a Low model): its colour only, no relief, roughness or metal maps (Meshy's remeshed models
+	# come with them at 2048 px).
+	if size <= 256:
+		for m in st.get_materials():
+			if m is BaseMaterial3D:
+				var bm: BaseMaterial3D = m
+				bm.normal_enabled = false
+				bm.normal_texture = null
+				bm.ao_enabled = false
+				bm.ao_texture = null
+				bm.metallic_texture = null
+				bm.roughness_texture = null
+				bm.metallic = 0.0
+				bm.roughness = 0.9
 	var imgs: Array = st.get_images()
 	for i in imgs.size():
 		var tex: Texture2D = imgs[i]

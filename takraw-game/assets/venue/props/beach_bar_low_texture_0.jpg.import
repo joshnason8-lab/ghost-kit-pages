@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://mt5b8v8u6vhp"
-path="res://.godot/imported/sun_lounger_low_0.jpg-63def2deed5e4a9afe9e842040b0296c.ctex"
+uid="uid://bixwr7xbif6yk"
+path="res://.godot/imported/beach_bar_low_texture_0.jpg-a15cd129a456f059cde4cdf7414bfe02.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "99359947745d3f90bfdea4f4739d521f"
+"md5": "3422cfc3a3a2e6f99c86ea211cdc6831"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/sun_lounger_low_0.jpg"
-dest_files=["res://.godot/imported/sun_lounger_low_0.jpg-63def2deed5e4a9afe9e842040b0296c.ctex"]
+source_file="res://assets/venue/props/beach_bar_low_texture_0.jpg"
+dest_files=["res://.godot/imported/beach_bar_low_texture_0.jpg-a15cd129a456f059cde4cdf7414bfe02.ctex"]
 
 [params]
 

@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dxwfv2tp5y05s"
-path="res://.godot/imported/arena_scoreboard_low_0.jpg-f64e8aec84d011e2f67a4954d28dcf01.ctex"
+uid="uid://c0fg4h3np606d"
+path="res://.godot/imported/scooter_low_texture_0.jpg-69a6746f58927ad6eb2668dbdb30b8d1.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "3d6cbca8ca0045667ff6bcecf2675af8"
+"md5": "831f2bdb960331a9ad63ffba96b99361"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/arena_scoreboard_low_0.jpg"
-dest_files=["res://.godot/imported/arena_scoreboard_low_0.jpg-f64e8aec84d011e2f67a4954d28dcf01.ctex"]
+source_file="res://assets/venue/props/scooter_low_texture_0.jpg"
+dest_files=["res://.godot/imported/scooter_low_texture_0.jpg-69a6746f58927ad6eb2668dbdb30b8d1.ctex"]
 
 [params]
 

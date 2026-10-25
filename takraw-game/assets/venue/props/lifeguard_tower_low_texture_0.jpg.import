@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cp2guuyy442ul"
-path="res://.godot/imported/scooter_low_0.jpg-f8c57b5a33e3707aab28b8e36753ed23.ctex"
+uid="uid://rbdo4pq0ntvi"
+path="res://.godot/imported/lifeguard_tower_low_texture_0.jpg-725cfe41787ba8b805714fb9bb86cfa9.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "593d4d00bdea66a18c6ee15ce53e9b98"
+"md5": "0ebf7e6547e69e8e1789c338ed7bdf99"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/scooter_low_0.jpg"
-dest_files=["res://.godot/imported/scooter_low_0.jpg-f8c57b5a33e3707aab28b8e36753ed23.ctex"]
+source_file="res://assets/venue/props/lifeguard_tower_low_texture_0.jpg"
+dest_files=["res://.godot/imported/lifeguard_tower_low_texture_0.jpg-725cfe41787ba8b805714fb9bb86cfa9.ctex"]
 
 [params]
 

@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://f5d0s2t8l0ho"
-path="res://.godot/imported/spirit_house_low_0.jpg-65680f8b5b370396b26591d4038db837.ctex"
+uid="uid://cf8kvjyfwh2mx"
+path="res://.godot/imported/gym_scoreboard_low_texture_0.jpg-e107f4afadbb60041e41f176f99c0c3c.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "280c096fc5f749d8f42bddd28050ff74"
+"md5": "c65555e8da6be4512695a84028292bfc"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/spirit_house_low_0.jpg"
-dest_files=["res://.godot/imported/spirit_house_low_0.jpg-65680f8b5b370396b26591d4038db837.ctex"]
+source_file="res://assets/venue/props/gym_scoreboard_low_texture_0.jpg"
+dest_files=["res://.godot/imported/gym_scoreboard_low_texture_0.jpg-e107f4afadbb60041e41f176f99c0c3c.ctex"]
 
 [params]
 

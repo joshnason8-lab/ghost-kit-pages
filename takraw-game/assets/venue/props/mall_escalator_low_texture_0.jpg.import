@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://jfrxj7cme2t4"
-path="res://.godot/imported/lifeguard_tower_low_0.jpg-18434476ae21e4a93e20ed8f60d0fcd0.ctex"
+uid="uid://ca2enq107neop"
+path="res://.godot/imported/mall_escalator_low_texture_0.jpg-df0f69c51de689a512c5b2cab2a98f96.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "e6897bcd3a0feedad16d251dd66b2c8b"
+"md5": "6c17ff4c04cdff7e2b3f053d56ba01b6"
 }
 
 [deps]
 
-source_file="res://assets/venue/props/lifeguard_tower_low_0.jpg"
-dest_files=["res://.godot/imported/lifeguard_tower_low_0.jpg-18434476ae21e4a93e20ed8f60d0fcd0.ctex"]
+source_file="res://assets/venue/props/mall_escalator_low_texture_0.jpg"
+dest_files=["res://.godot/imported/mall_escalator_low_texture_0.jpg-df0f69c51de689a512c5b2cab2a98f96.ctex"]
 
 [params]
 

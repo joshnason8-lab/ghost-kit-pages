@@ -182,6 +182,59 @@ than the old one is as plain pixels) and by up to 5 MB outdoors and in the gym (
 park the smaller crowd sheet outweighs them, 0.5 MB less). The most, the night market on High, is 95 MB: within a
 mid-range phone's means. (0.9.0, with the relief at 2048 px, took up to 13 MB more: 103 MB at the most.)
 
+## The venues filled in, the fans watching the game (0.10.0)
+
+The owner found the mall atrium's surroundings blank, the beach bare on one side, the fans all looking at the camera,
+the seated line judges with their arms held out, two dots in the score read as time-outs, and the United States in the
+Asian Championship.
+
+- **The mall** is an atrium now (`Arena._mall`): three floors of shops on all four sides (their fronts six pictures of
+  shops made with Meshy's text-to-image, `assets/venue/mall/shopfronts.jpg`, drawn as one mesh), the upper floors'
+  balconies with glass railings and people leaning on them, columns, escalators in the near corners, palms in planters
+  and kiosks, a granite tile floor (Poly Haven), the roof and its skylight seen from below; metal bleachers on both
+  long sides.
+- **The other venues:** the beach's bare side has palms, two beach bars, sun loungers and umbrellas, a food cart and
+  people watching; a lifeguards' tower and longtail boats by the water. The temple court's near side a sala with people
+  on its floor, chedis, the spirit house, food carts and parked scooters. The arenas: the corners walled in, a lit
+  ribbon and the suites round the top of the stands, a scoreboard over the court; their roofs (and the mall's and the
+  gym's) were built facing up and so never drawn from below: they face down now. The gym: its windows faced out (never
+  seen) and face in now, a scoreboard over the doors, bleachers on both sides, the near wall behind the cameras, and the
+  walls the light falls on full a shade darker (on High they burned white). Carts and scooters at the park and the
+  market; trees on the near sides kept 25 m back, clear of the cameras.
+- **Fifteen props from Meshy** (`tools/meshy/assets.json`, kind "prop"; `tools/models/prepare_model.gd` now sizes a
+  Meshy model to its real height or length): on Medium and High as made (2,000-8,000 triangles, 1024 px), on Low
+  Meshy's remesh of each (300-1,500 triangles, 256 px, colour only).
+- **The fans watch the game:** the crowd sheet draws each figure from five sides (front, three-quarters, side,
+  three-quarters from behind, behind; `tools/models/crowd_sheet.tscn`); the shader shows each spectator from the side
+  the camera sees of them, mirrored for the other side, and turns them partly toward the ball (`Crowd.set_look`), each
+  at their own moment. 10 rows instead of 4; the Low sheet is compressed for the GPU now (2.9 MB of video memory with
+  its mipmaps, from 3.9 MB for the four rows uncompressed).
+- **The seated pose** (`Moves` "sit"): the hands rest on the thighs; the arms were held out in front. The line judges
+  and the seated crowd both use it.
+- **The score:** "Sets: 1" under each team's name in a best-of-three match, nothing in a one-set match; the two dots
+  were the sets won.
+- **Simulate to the end** (the pause menu, a season's or a tournament's match): the rest of the match played out
+  rally by rally from the score as it stands, from the two sides' ratings (`Sim.rally`), then its result as if played.
+- **International:** each event's entry list is its field only (`Cup.KINDS`): the World Championship open to every
+  nation, the Asian Championship Asia's eighteen, the Southeast Asian Championship the region's ten.
+- **The home screen:** the links sized from their own text (they were sized for 20 px text drawn at 26); the eyebrow
+  line gone.
+
+Performance on Low (`perf_probe`, `--fixed-fps 30`, each venue in its own process), 0.9.1 → 0.10.0:
+
+| Venue | Draw calls | Triangles | Video memory |
+|---|---|---|---|
+| National Arena | 72 → 66 | 102k → 101k | 31.4 → 30.0 MB |
+| Grand Dome | 72 → 66 | 102k → 102k | 31.4 → 30.0 MB |
+| Mall atrium | 73 → 73 | 124k → 165k | 33.8 → 37.1 MB |
+| Provincial gym | 78 → 74 | 124k → 149k | 38.5 → 37.1 MB |
+| Temple court | 77 → 73 | 140k → 146k | 52.8 → 52.6 MB |
+| Park court | 81 → 77 | 107k → 114k | 58.7 → 57.6 MB |
+| Beach | 76 → 74 | 102k → 112k | 49.8 → 49.6 MB |
+| Night market | 86 → 82 | 111k → 129k | 50.6 → 49.5 MB |
+
+(The draw calls fall: the crowd's compressed sheet and the arenas' scoreboard in place of the cube's lit faces.)
+
 ## Gaps that need the owner
 
 None. The two raised in 0.5.0 are filled in 0.5.1:
