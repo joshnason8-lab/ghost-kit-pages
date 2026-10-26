@@ -9,6 +9,10 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.10.1
+
+- The HD pack has a release of its own, so the beta page is new with every build again (Obtainium sees each beta).
+
 ## New in 0.10.0
 
 - **Ultra graphics** (Settings > Graphics, on recent high-end phones only; off unless you pick it): the Vulkan

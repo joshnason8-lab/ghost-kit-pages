@@ -240,9 +240,11 @@ The owner asked for an Ultra level for high-end phones, with Low, Medium and Hig
 - **Ultra**: an opt-in fourth level, offered on 64-bit phones with 6 GB and a Vulkan-class GPU (Adreno 640+,
   Mali-G710+, Immortalis, Xclipse). Godot's Mobile (Vulkan) renderer by the project's settings override, a reopen to
   switch; back to High if Vulkan, the pack or the last start fails (`game/ultra.gd`, `ui/ultra_screen.gd`).
-- **The HD pack** (115 MB): a download of its own from the beta release, resumed in 4 MB pieces, retried, checked by
-  SHA-256, mounted at start. CI builds it, uploads it only when its content changes, and now updates the release in
-  place so the pack stays (`tools/ultra/`).
+- **The HD pack** (114 MB, content only): a download of its own from its own release (`hurling-heroes-hd`), resumed
+  in 4 MB pieces, retried, checked by SHA-256, mounted at start. CI builds it and uploads it only when its content
+  changes (`tools/ultra/`). 0.10.1: the pack moved there from the beta release, which is made afresh on every push
+  again (0.10.0 updated it in place, so its date stood still and Obtainium, reading the date as the version, saw no
+  update).
 - **Content**: real-time sun shadows, floodlights at night, ACES tonemapping and glow, sky light and reflections;
   the hurlers at 23,468 triangles and 4K with cloth and skin shading; PBR officials (Meshy); 60 fps clips and a
   0.18 s blend between actions; 4K lit grass; a denser, sharper crowd; textured concrete; a touchline replay camera.

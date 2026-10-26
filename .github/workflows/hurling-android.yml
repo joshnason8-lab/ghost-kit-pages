@@ -13,7 +13,7 @@ on:
   # doubled every failure email (the owner's request, round two).
   workflow_dispatch:
 
-# One run at a time per branch: two would race on the beta release's assets (the APKs, the HD pack and its
+# One run at a time per branch: two would race on the releases (the beta's APKs, the HD pack and its
 # manifest). A newer push waits for the running one rather than stopping it part-way through an upload.
 concurrency:
   group: hurling-android-${{ github.ref }}
@@ -252,15 +252,15 @@ jobs:
           done
           ls -la ${PROJECT_DIR}/build
 
-      # The HD pack (Ultra graphics, docs/ULTRA.md): not in the APK, a download of its own from the release. Built and
-      # uploaded only when what it is made from has changed (the "source" hash in its manifest), so a player who has
-      # it keeps it across betas.
+      # The HD pack (Ultra graphics, docs/ULTRA.md): not in the APK, a download of its own from a release of its own
+      # ("hurling-heroes-hd", kept, never remade). Built and uploaded only when what it is made from has changed (the
+      # "source" hash in its manifest), so a player who has it keeps it across betas.
       - name: Build the HD pack (if its content changed)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           PACK=$(sed -n 's/^const PACK := \([0-9]*\).*/\1/p' game/ultra.gd)
           SOURCE=$(tools/ultra/build_pack.sh --source)
-          HAVE=$(curl -sSfL "https://github.com/${GITHUB_REPOSITORY}/releases/download/ash-and-leather-beta/hurling-heroes-hd-${PACK}.json" \
+          HAVE=$(curl -sSfL "https://github.com/${GITHUB_REPOSITORY}/releases/download/hurling-heroes-hd/hurling-heroes-hd-${PACK}.json" \
             | python3 -c 'import json,sys; print(json.load(sys.stdin).get("source",""))' || true)
           echo "HD pack ${PACK}: source ${SOURCE}, on the release ${HAVE:-none}"
           if [ "$SOURCE" = "$HAVE" ]; then
@@ -279,9 +279,31 @@ jobs:
             ${{ env.PROJECT_DIR }}/build/hurling-heroes-${{ env.VERSION }}-32bit.apk
           if-no-files-found: error
 
+      # The HD pack's own release: made once, its pack and manifest replaced only when the pack changes. Its title does
+      # not start "Hurling Heroes " so Obtainium (which filters the beta by title) never takes it for a beta, and it is
+      # never marked latest.
+      - name: Publish the HD pack (if it changed)
+        if: github.event_name == 'push' && env.PACK_NEW == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=hurling-heroes-hd
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            printf '%s\n' "The optional HD pack for Ultra graphics in the Hurling Heroes betas (docs/ULTRA.md). The game downloads it" \
+              "itself when Ultra is picked in Settings, on recent high-end phones: there is nothing to download here." > hd-notes.md
+            gh release create "$TAG" --target "$GITHUB_SHA" --latest=false --title "Ultra HD pack (for the Hurling Heroes betas)" \
+              --notes-file hd-notes.md
+          fi
+          # The pack, then its manifest (the game reads the manifest first).
+          gh release upload "$TAG" "${PROJECT_DIR}/build/hurling-heroes-hd-${PACK}.pck" --clobber
+          gh release upload "$TAG" "${PROJECT_DIR}/build/hurling-heroes-hd-${PACK}.json" --clobber
+          gh release view "$TAG"
+
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
-      # "ash-and-leather-beta", always the latest build of this branch, updated on every push that passes the
-      # tests. Pull request runs build the same APK and leave the release alone.
+      # "ash-and-leather-beta", always the latest build of this branch, made afresh on every push that passes the
+      # tests, so its date moves on (Obtainium reads the release date as the version). Pull request runs build the
+      # same APK and leave the release alone.
       - name: Publish the beta release
         if: github.event_name == 'push'
         env:
@@ -299,29 +321,11 @@ jobs:
           Android asks, allow your browser or Files to install unknown apps. It installs over any earlier Hurling Heroes
           beta and keeps your saves.
 
-          \`hurling-heroes-hd-*.pck\` is the optional HD pack for Ultra graphics: the game downloads it itself when you
-          pick Ultra in Settings (recent high-end phones only); you do not need to download it here.
+          Ultra graphics' optional HD pack is on a release of its own; the game downloads it itself when you pick Ultra.
 
-          This page is updated by every new beta build: it always has the newest one.
+          This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          # Updated in place (not deleted and made again), so the HD pack stays on it: the tag moves to this commit,
-          # the new APKs go up, then the last beta's APKs come off.
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            gh api -X PATCH "repos/${GH_REPO}/git/refs/tags/${TAG}" -f sha="$GITHUB_SHA" -F force=true > /dev/null
-            gh release edit "$TAG" --prerelease --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
-            gh release upload "$TAG" "$APK" "$APK32" --clobber
-            for a in $(gh release view "$TAG" --json assets -q '.assets[].name' | grep '\.apk$'); do
-              if [ "$a" != "$(basename "$APK")" ] && [ "$a" != "$(basename "$APK32")" ]; then
-                gh release delete-asset "$TAG" "$a" --yes
-              fi
-            done
-          else
-            gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
-              --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
-          fi
-          # The pack, then its manifest (the game reads the manifest first).
-          if [ "$PACK_NEW" = "1" ]; then
-            gh release upload "$TAG" "${PROJECT_DIR}/build/hurling-heroes-hd-${PACK}.pck" --clobber
-            gh release upload "$TAG" "${PROJECT_DIR}/build/hurling-heroes-hd-${PACK}.json" --clobber
-          fi
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
+            --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
           gh release view "$TAG"

@@ -10,7 +10,8 @@ extends Node
 ## fallback_to_opengl3) and the next start goes back to High; if a start in Ultra never gets as far as the home
 ## screen (a crash), the one after that goes back to High too.
 ##
-## The pack: hurling-heroes-hd-<PACK>.pck on the beta release, with its manifest (size and SHA-256) beside it.
+## The pack: hurling-heroes-hd-<PACK>.pck on its own release (hurling-heroes-hd), with its manifest (size and SHA-256)
+## beside it.
 ## Downloaded in pieces (resumed where it stopped, retried), checked whole, then mounted at start with
 ## ProjectSettings.load_resource_pack: its files appear under res://ultra/.
 
@@ -18,7 +19,7 @@ const OVERRIDE := "user://renderer.cfg"
 const BOOT_FLAG := "user://ultra_boot.flag"
 const DIR := "user://hd/"
 const PACK := 1                           # the pack this build of the game expects
-const RELEASE := "https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/ash-and-leather-beta/"
+const RELEASE := "https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/hurling-heroes-hd/"
 const CHUNK := 4 * 1024 * 1024
 const PROBE := "res://ultra/ground/grass_ground_albedo_4k.jpg"   # a file the pack brings
 
