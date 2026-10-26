@@ -92,6 +92,7 @@ static func material(outline: bool) -> ShaderMaterial:
 		sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_back;
+#include "res://game/shaders/look.gdshaderinc"
 uniform vec3 light_dir = vec3(0.35, 0.85, 0.4);
 uniform float shade = 0.72;
 varying vec3 wn;
@@ -101,7 +102,7 @@ void fragment() {
 	float k = d > 0.15 ? 1.0 : (d > -0.35 ? mix(shade, 1.0, 0.45) : shade);
 	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0) * 0.18;
 	vec3 c = pow(COLOR.rgb, vec3(2.2));   // the parts' colours are sRGB
-	ALBEDO = c * k + rim * 0.5;
+	ALBEDO = compat_to_scene(c * k + rim * 0.5);
 }
 """
 		_toon_mat = ShaderMaterial.new()

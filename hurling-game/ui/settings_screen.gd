@@ -61,9 +61,24 @@ func _ready() -> void:
 	# The screen.
 	var disp: Array = UI.section(tr("SET_DISPLAY"), "display")
 	right.add_child(disp[0])
-	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")], int(Game.settings.graphics), func(i):
+	# Ultra, on a phone that can take it: its own screen (the HD pack, then the game opened again: game/ultra.gd).
+	if Ultra.fell_back != "":
+		disp[1].add_child(UI.wrap(tr("ULTRA_BACK_" + Ultra.fell_back), "MutedLabel", 17))
+		Ultra.fell_back = ""
+	var levels := [tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")]
+	if Ultra.capable() or int(Game.settings.graphics) == Game.GFX_ULTRA:
+		levels.append(tr("GFX_ULTRA"))
+	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips(levels, int(Game.settings.graphics), func(i):
+		var was := int(Game.settings.graphics)
+		if i == Game.GFX_ULTRA:
+			if was != Game.GFX_ULTRA:
+				Game.show_screen("res://ui/ultra_screen.gd")
+			return
 		Game.settings.graphics = i
-		Game.save_settings())))
+		Game.save_settings()
+		if was == Game.GFX_ULTRA:
+			Ultra.set_renderer(false)
+			Game.show_screen("res://ui/ultra_screen.gd", {"mode": "leave"}))))
 	disp[1].add_child(UI.field(tr("GFX_AUTO"), UI.chips_row([tr("ON"), tr("OFF")], 0 if bool(Game.settings.auto_gfx) else 1, func(i):
 		Game.settings.auto_gfx = i == 0
 		Game.save_settings())))

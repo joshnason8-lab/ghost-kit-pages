@@ -51,6 +51,24 @@ def main():
         if len(sys.argv) > 3:
             body["texture_prompt"] = sys.argv[3]
         e["refine"] = call("POST", "/v2/text-to-3d", body)["result"]
+    elif cmd == "refine_pbr":
+        # Refine an earlier model's preview again with physically based maps (normal, roughness, metallic): for
+        # Ultra. name is the new entry; sys.argv[3] the entry whose preview it starts from.
+        src = t[sys.argv[3]]
+        e["preview"] = src["preview"]
+        e["prompt"] = src.get("prompt", {})
+        body = {"mode": "refine", "preview_task_id": src["preview"], "enable_pbr": True}
+        if len(sys.argv) > 4:
+            body["texture_prompt"] = sys.argv[4]
+        e["refine"] = call("POST", "/v2/text-to-3d", body)["result"]
+    elif cmd == "credits":
+        # The balance, kept in the log (tasks.json "credit_log") with what it was spent on since the last entry.
+        b = call("GET", "/v1/balance").get("balance")
+        t.setdefault("credit_log", []).append({"time": time.strftime("%Y-%m-%d %H:%M"), "balance": b,
+                                               "note": " ".join(sys.argv[3:])})
+        print("balance", b)
+        save(t)
+        return
     elif cmd == "rig":
         body = {"input_task_id": e["refine"], "height_meters": float(sys.argv[3]) if len(sys.argv) > 3 else 1.8}
         e["rig"] = call("POST", "/v1/rigging", body)["result"]
@@ -76,9 +94,12 @@ def main():
         else:
             urls["model"] = (r.get("model_urls") or {}).get("glb")
             urls["thumb"] = r.get("thumbnail_url")
+            for i, tex in enumerate(r.get("texture_urls") or []):
+                for k, u in tex.items():
+                    urls[f"tex{i}_{k}"] = u
         for k, u in urls.items():
             if u:
-                ext = ".png" if k == "thumb" else ".glb"
+                ext = ".png" if k == "thumb" or k.startswith("tex") else ".glb"
                 urllib.request.urlretrieve(u, out / f"{name}_{stage}_{k}{ext}")
                 print("fetched", out / f"{name}_{stage}_{k}{ext}")
     save(t)

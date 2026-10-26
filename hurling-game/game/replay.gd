@@ -21,6 +21,9 @@ var _i := 0
 var _saved: Array = []
 var _ball_saved := Vector3.ZERO
 var _cam: Camera3D
+var _cut := false          # Ultra: cut to the second angle yet
+var _t0 := 0.0
+var _side := 1.0
 
 
 func _init(p_match: Node) -> void:
@@ -71,6 +74,9 @@ func start(t_cross: float, s: float, c: Vector3) -> void:
 	var span := Vector2(from.x - _cam.global_position.x, from.z - _cam.global_position.z).length()
 	_cam.fov = clampf(30.0 + 900.0 / maxf(span, 20.0), 34.0, 58.0)
 	_cam.make_current()
+	_cut = false
+	_t0 = _t
+	_side = 1.0 if c.z >= 0.0 else -1.0
 	m.hud.replay(true, stop)
 	m.controls.set_meta("was_visible", m.controls.visible)
 	m.controls.visible = false
@@ -89,9 +95,23 @@ func step(delta: float) -> void:
 		return
 	var f := _frame_at(_t)
 	m.ball.show_at(f[1])
+	if Ultra.active():
+		_broadcast(f[1])
 	for e in f[2]:
 		_put(e)
 	m.hud.redraw_marks()
+
+
+## Ultra: as television does, the second half of the replay from another camera: low on the touchline on the side
+## the ball went, tight, following it into the posts.
+func _broadcast(ball: Vector3) -> void:
+	if not _cut and _t > lerpf(_t0, _t1, 0.45):
+		_cut = true
+		_cam.fov = 26.0
+	if _cut:
+		var at := Vector3(clampf(ball.x * 0.85, -Pitch.HALF_L + 6.0, Pitch.HALF_L - 6.0), 2.4, _side * (Pitch.HALF_W + 7.0))
+		_cam.global_position = _cam.global_position.lerp(at, 0.2) if _cam.global_position.distance_to(at) < 30.0 else at
+		_cam.look_at(ball.lerp(Vector3(ball.x, 1.2, ball.z), 0.5))
 
 
 func _put(e: Array) -> void:

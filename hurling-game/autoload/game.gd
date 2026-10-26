@@ -24,6 +24,7 @@ const CAM_END := 2      # behind the goal you are attacking
 const GFX_LOW := 0
 const GFX_MEDIUM := 1
 const GFX_HIGH := 2
+const GFX_ULTRA := 3    # recent high-end phones, opt-in: the Mobile (Vulkan) renderer and the HD pack (game/ultra.gd)
 
 ## Frame rate (Settings): Battery saver, about 30 frames a second at 80% render scale; Smooth, 60 a second (the
 ## default); Max, as many as the screen shows. Each is a whole fraction of the screen's refresh rate.
@@ -112,6 +113,8 @@ func _ready() -> void:
 	if int(settings.graphics) < 0:
 		settings.graphics = detect_graphics()
 		save_settings()
+	Ultra.boot()
+	loaded.connect(Ultra.started)
 	apply_frame_rate()
 	TranslationServer.set_locale(language())
 	_build_theme()

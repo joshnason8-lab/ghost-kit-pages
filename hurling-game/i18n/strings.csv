@@ -76,6 +76,27 @@ GFX_HIGH,High,Ard
 GFX_AUTO,Lower it by itself if a match runs slowly,Ísligh í féin má bhíonn cluiche mall
 GFX_NOTE,"Low suits phones with 2-4 GB of memory: simpler players, fewer people in the stands, no outlines, a smaller picture. The game picks one for your phone the first time it runs.","Oireann Íseal d'fhóin le 2-4 GB cuimhne: imreoirí níos simplí, níos lú daoine sna seastáin, gan imlínte, pictiúr níos lú. Roghnaíonn an cluiche ceann d'fhón an chéad uair."
 GFX_LOWERED,The match was running slowly: graphics lowered a step (Settings).,Bhí an cluiche ag rith go mall: ísliodh an ghrafaic céim (Socruithe).
+GFX_ULTRA,Ultra,Ultra
+ULTRA_TITLE,Ultra graphics,Grafaic Ultra
+ULTRA_INTRO,"For recent high-end phones: real-time shadows and floodlights, sharper players with cloth and skin shading, a fuller crowd and stadium, broadcast replays. Ultra draws with Vulkan and needs the HD pack, a separate download.","D'fhóin nua ardleibhéil: scáthanna agus tuilsoilse fíor-ama, imreoirí níos géire le scáthú éadaigh agus craicinn, slua agus staid níos iomláine, athimirt mar a bheadh ar an teilifís. Úsáideann Ultra Vulkan agus teastaíonn an pacáiste HD, íoslódáil ar leith."
+ULTRA_SIZE,HD pack: %d MB. Use Wi-Fi.,Pacáiste HD: %d MB. Úsáid Wi-Fi.
+ULTRA_CHECKING,Finding the HD pack...,Ag aimsiú an phacáiste HD...
+ULTRA_GET,Download the HD pack,Íoslódáil an pacáiste HD
+ULTRA_GETTING,Downloading: %d of %d MB,Á íoslódáil: %d as %d MB
+ULTRA_CHECKING_FILE,Checking the download...,Ag seiceáil na híoslódála...
+ULTRA_RETRY,Try again,Bain triail eile as
+ULTRA_READY,The HD pack is downloaded.,Tá an pacáiste HD íoslódáilte.
+ULTRA_SWITCH,Switch to Ultra,Athraigh go Ultra
+ULTRA_REOPEN,Close Hurling Heroes and open it again to finish switching the graphics.,Dún Hurling Heroes agus oscail arís é chun an ghrafaic a athrú.
+ULTRA_CLOSE,Close the game now,Dún an cluiche anois
+ULTRA_REMOVE,Remove the HD pack,Bain an pacáiste HD
+ULTRA_FAIL_net,The download stopped (no connection?). Try again: it carries on where it stopped.,Stop an íoslódáil (gan cheangal?). Bain triail eile as: leanann sé ar aghaidh ón áit ar stop sé.
+ULTRA_FAIL_corrupt,The download was damaged and has been deleted. Try again.,Bhí an íoslódáil lochtach agus scriosadh í. Bain triail eile as.
+ULTRA_FAIL_space,There is not enough space on the phone for the HD pack.,Níl dóthain spáis ar an bhfón don phacáiste HD.
+ULTRA_FAIL_manifest,The HD pack for this version is not available yet.,Níl an pacáiste HD don leagan seo ar fáil fós.
+ULTRA_BACK_crash,Ultra did not start last time: the graphics are back on High.,Níor thosaigh Ultra an uair dheireanach: tá an ghrafaic ar Ard arís.
+ULTRA_BACK_vulkan,This phone could not start Vulkan: the graphics are back on High.,Níorbh fhéidir leis an bhfón seo Vulkan a thosú: tá an ghrafaic ar Ard arís.
+ULTRA_BACK_pack,The HD pack was missing or damaged: the graphics are back on High.,Bhí an pacáiste HD in easnamh nó lochtach: tá an ghrafaic ar Ard arís.
 FRAME_RATE,Frame rate,Ráta fráma
 FPS_SAVER,Battery saver,Spáráil cadhnra
 FPS_N,{n} a second,{n} sa soicind

@@ -45,7 +45,9 @@ func _ready() -> void:
 	_sounds()
 	_hd_textures()
 	await _shadows()
+	await _ultra()
 	Game.settings = keep
+	Game.save_settings()
 	Game.delete_champ()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures > 0 else 0)
@@ -946,6 +948,87 @@ func _shadows() -> void:
 		m.queue_free()
 		await frames(2)
 	Game.settings.graphics = keep
+
+
+## Ultra (game/ultra.gd): offered on a computer, never on unless picked, back to High when the Vulkan renderer or the
+## HD pack is missing; the renderer switch's file; the pack's check; Low, Medium and High draw as before with Ultra's
+## code in (the materials are the same whether or not Ultra was picked).
+func _ultra() -> void:
+	var keep := int(Game.settings.graphics)
+	check(Ultra._model_number("adreno (tm) 740", "adreno") == 740 and Ultra._model_number("mali-g710 mc10", "mali-g") == 710
+		and Ultra._model_number("mali-g78", "mali-g") == 78 and Ultra._model_number("powervr", "adreno") == 0, "Ultra: GPU model numbers read")
+	check(Ultra.capable(), "Ultra: offered on a computer")
+	check(not Ultra.renderer_ready() and not Ultra.active(), "Ultra: off under GL Compatibility")
+	check(Game.detect_graphics() != Game.GFX_ULTRA, "Ultra: never picked for you")
+	Ultra.set_renderer(true)
+	var cfg := ConfigFile.new()
+	check(cfg.load(Ultra.OVERRIDE) == OK and cfg.get_value("rendering", "renderer/rendering_method.mobile", "") == "mobile", "Ultra: the switch writes the renderer override")
+	Ultra.set_renderer(false)
+	check(not FileAccess.file_exists(Ultra.OVERRIDE), "Ultra: switching back removes it")
+	# A start in Ultra without the Vulkan renderer goes back to High and says why.
+	Game.settings.graphics = Game.GFX_ULTRA
+	Ultra.set_renderer(true)
+	Ultra.boot()
+	check(int(Game.settings.graphics) == Game.GFX_HIGH and Ultra.fell_back == "vulkan" and not FileAccess.file_exists(Ultra.OVERRIDE),
+		"Ultra: no Vulkan, back to High (%s)" % Ultra.fell_back)
+	var s := Game.show_screen("res://ui/settings_screen.gd")
+	await frames(3)
+	check(_find_text(s, tr("ULTRA_BACK_vulkan")) and Ultra.fell_back == "", "Ultra: Settings says why, once")
+	check(_find_text(s, tr("GFX_ULTRA")), "Ultra: in Settings' graphics")
+	var u := Game.show_screen("res://ui/ultra_screen.gd", {"mode": "leave"})
+	await frames(3)
+	check(is_instance_valid(u) and _find_text(u, tr("ULTRA_REOPEN")), "Ultra: the reopen screen")
+	# The pack: whole by its manifest's size, checked by its SHA-256 (a finished download goes straight to the check).
+	Ultra.remove_pack()
+	check(not Ultra.pack_ready(), "Ultra: no pack")
+	DirAccess.make_dir_recursive_absolute(Ultra.DIR)
+	var body := "hurling".repeat(1000).to_utf8_buffer()
+	var sha := body.hex_encode()
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update(body)
+	sha = ctx.finish().hex_encode()
+	for want in ["0".repeat(64), sha]:
+		var f := FileAccess.open(Ultra.pack_path() + ".part", FileAccess.WRITE)
+		f.store_buffer(body)
+		f.close()
+		var dl := Ultra.new()
+		add_child(dl)
+		dl.use(Ultra.pack_name(), body.size(), want, Ultra.pack_path())
+		var got := []
+		dl.finished.connect(func(ok, why): got.append([ok, why]))
+		dl.download()
+		for i in 20:
+			if not got.is_empty():
+				break
+			await frames(1)
+		check(got == ([[false, "corrupt"]] if want != sha else [[true, ""]]), "Ultra: a pack %s its check (%s)" % ["failing" if want != sha else "passing", got])
+		dl.queue_free()
+	var man := FileAccess.open(Ultra.DIR + Ultra.manifest_name(), FileAccess.WRITE)
+	man.store_string(JSON.stringify({"pack": Ultra.PACK, "size": body.size(), "sha256": sha}))
+	man.close()
+	check(Ultra.pack_ready(), "Ultra: the pack, whole")
+	Ultra.remove_pack()
+	check(not Ultra.pack_ready() and not FileAccess.file_exists(Ultra.pack_path()), "Ultra: the pack removed")
+	# Low, Medium and High: no Ultra content, whatever the graphics setting says.
+	Game.settings.graphics = Game.GFX_HIGH
+	var hi := Geo.material()
+	Game.settings.graphics = Game.GFX_ULTRA
+	var ul := Geo.material()
+	check(not hi.vertex_color_is_srgb and hi.shading_mode == ul.shading_mode and hi.vertex_color_is_srgb == ul.vertex_color_is_srgb,
+		"Ultra: without its renderer, the same materials as High")
+	Game.settings.graphics = keep
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(2)
+
+
+func _find_text(n: Node, text: String) -> bool:
+	if (n is Label or n is Button) and n.text.contains(text):
+		return true
+	for c in n.get_children():
+		if _find_text(c, text):
+			return true
+	return false
 
 
 ## Every sound the game plays is there and loads: each file in assets/audio, and every name Sfx makes or loads

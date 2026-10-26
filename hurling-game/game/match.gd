@@ -127,7 +127,8 @@ func _ready() -> void:
 	replay = Replay.new(self)
 	bench = Bench.new(self)
 	add_child(bench)
-	if int(Game.settings.graphics) > Game.GFX_LOW:
+	# (On Ultra the sun's own shadows fall on the lit grass instead.)
+	if int(Game.settings.graphics) > Game.GFX_LOW and not Ultra.active():
 		shadows = PlayerShadows.new(self)
 		add_child(shadows)
 	cam = CameraRig.new()
@@ -387,7 +388,9 @@ func _frame_stats(delta: float) -> void:
 	if _fps_hist.size() > 240:
 		_fps_hist.pop_front()
 	# The auto graphics level: if the first seconds of play run under about 36 frames a second, drop a level.
-	if phase in [P.LIVE, P.THROW_IN] and bool(Game.settings.get("auto_gfx", true)) and not attract and _early_frames < 600:
+	# (Not from Ultra: its renderer is fixed until the game is opened again; the player chose it.)
+	if phase in [P.LIVE, P.THROW_IN] and bool(Game.settings.get("auto_gfx", true)) and not attract and _early_frames < 600 \
+			and int(Game.settings.graphics) != Game.GFX_ULTRA:
 		_early_frames += 1
 		if delta > 1.0 / 36.0:
 			_early_slow += 1

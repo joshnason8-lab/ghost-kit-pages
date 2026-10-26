@@ -286,7 +286,41 @@ func animate(now: float) -> void:
 	if _lod_skip < _pose_every:
 		return
 	_lod_skip = 0
-	body.apply(_pose(now))
+	var p := _pose(now)
+	if Ultra.active():
+		p = _crossfade(p, now)
+	body.apply(p)
+
+
+const FADE := 0.18               # Ultra: seconds to blend from one move into the next
+var _fade_from := {}
+var _fade := 0.0
+var _fade_action := ""
+var _fade_now := 0.0
+
+
+## Ultra: a move starting or ending blends from where the body was over FADE seconds, rather than jumping to the
+## move's first frame (every level's moves are clips sampled in time; Ultra also smooths the joins between them).
+func _crossfade(p: Dictionary, now: float) -> Dictionary:
+	var dt := clampf(now - _fade_now, 0.0, 0.1)
+	_fade_now = now
+	if action != _fade_action:
+		_fade_action = action
+		if not _fade_from.is_empty():
+			_fade = FADE
+	if _fade > 0.0:
+		_fade = maxf(0.0, _fade - dt)
+		var w := 1.0 - _fade / FADE
+		w = w * w * (3.0 - 2.0 * w)
+		for b in BONE_NAMES:
+			p[b] = HeroBody.turn(_fade_from.get(b, Quaternion.IDENTITY)).slerp(HeroBody.turn(p.get(b, Vector3.ZERO)), w)
+		p.hips_y = lerpf(float(_fade_from.get("hips_y", 0.0)), float(p.get("hips_y", 0.0)), w)
+	var keep := {}
+	for b in BONE_NAMES:
+		keep[b] = HeroBody.turn(p.get(b, Vector3.ZERO))
+	keep.hips_y = float(p.get("hips_y", 0.0))
+	_fade_from = keep
+	return p
 
 
 # ---------------------------------------------------------------- poses

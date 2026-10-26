@@ -120,6 +120,47 @@ func commit(mat: Material) -> MeshInstance3D:
 static func material(lit := true) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.vertex_color_use_as_albedo = true
+	# (The colours were chosen under GL Compatibility; Ultra's Vulkan renderer decodes them: game/shaders/look.)
+	m.vertex_color_is_srgb = Ultra.renderer_ready()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX if lit else BaseMaterial3D.SHADING_MODE_UNSHADED
+	if lit and Ultra.active():
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 	m.roughness = 0.9
 	return m
+
+
+## Ultra's structure: the colours lit per pixel by the scene's light, with cast concrete's grain and relief over
+## them (Poly Haven's concrete_wall_008, laid over every face from the side it faces).
+static func ultra_material() -> Material:
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+#include "res://game/shaders/look.gdshaderinc"
+uniform sampler2D detail : filter_linear_mipmap, repeat_enable;
+uniform sampler2D detail_n : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform float scale = 0.33;
+uniform float mean = 0.73;
+varying vec3 wp;
+varying vec3 wn;
+void vertex() {
+	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	wn = abs(normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz));
+}
+void fragment() {
+	vec3 w = wn / (wn.x + wn.y + wn.z);
+	vec2 a = wp.zy * scale;
+	vec2 b = wp.xz * scale;
+	vec2 c = wp.xy * scale;
+	float d = texture(detail, a).r * w.x + texture(detail, b).r * w.y + texture(detail, c).r * w.z;
+	ALBEDO = compat_to_scene(COLOR.rgb) * mix(1.0, d / mean, 0.4);
+	NORMAL_MAP = texture(detail_n, a).rgb * w.x + texture(detail_n, b).rgb * w.y + texture(detail_n, c).rgb * w.z;
+	NORMAL_MAP_DEPTH = 0.5;
+	ROUGHNESS = 0.85;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("detail", load("res://ultra/structure/concrete_detail_2k.jpg"))
+	m.set_shader_parameter("detail_n", load("res://ultra/structure/concrete_normal_2k.jpg"))
+	return m
+

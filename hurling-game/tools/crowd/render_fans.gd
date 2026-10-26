@@ -20,21 +20,22 @@ const POSES := [
 
 
 func _ready() -> void:
-	var hd := "hd" in OS.get_cmdline_user_args()
+	var ultra := "ultra" in OS.get_cmdline_user_args()   # Ultra's: the HD sheet at twice its size again (ultra/crowd)
+	var hd := "hd" in OS.get_cmdline_user_args() or ultra
 	# Low's sheet from the fans' 512 textures; the HD one from their 1024 ones (fan_hd.jpg: Game.hd).
 	Game.settings.graphics = Game.GFX_HIGH if hd else Game.GFX_LOW
 	var models := ["fan", "fan2", "fan3", "fan4", "fan5", "fan6"] if hd else ["fan", "fan2"]
 	var figs := models.size() * POSES.size()
 	if hd:
-		W = 128
-		H = 256
+		W = 256 if ultra else 128
+		H = 512 if ultra else 256
 	var size := Vector2i(W * figs, H * 2) if hd else Vector2i(W * figs * 2, H)
 	var sheet := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
 	var mask := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
 	sheet.fill(Color(0, 0, 0, 0))
 	mask.fill(Color(0, 0, 0, 0))
 	var vp := SubViewport.new()
-	vp.size = Vector2i(W * 4, H * 4) if not hd else Vector2i(W * 2, H * 2)
+	vp.size = Vector2i(W * 4, H * 4) if not hd else (Vector2i(W * 2, H * 2) if not ultra else Vector2i(W, H) * 2)
 	vp.transparent_bg = true
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(vp)
@@ -91,7 +92,9 @@ void fragment() {
 			mask.set_pixel(x, y, Color(r, r, r, sheet.get_pixel(x, y).a))
 	DirAccess.make_dir_recursive_absolute("res://assets/crowd")
 	var sfx := "_hd" if hd else ""
-	sheet.save_png("res://assets/crowd/sheet%s.png" % sfx)
-	mask.save_png("res://assets/crowd/mask%s.png" % sfx)
-	print("wrote assets/crowd/sheet%s.png and mask%s.png (%d figures)" % [sfx, sfx, figs])
+	var where := "res://ultra/crowd/" if ultra else "res://assets/crowd/"
+	DirAccess.make_dir_recursive_absolute(where)
+	sheet.save_png(where + "sheet%s.png" % ("" if ultra else sfx))
+	mask.save_png(where + "mask%s.png" % ("" if ultra else sfx))
+	print("wrote %ssheet and mask (%d figures)" % [where, figs])
 	get_tree().quit()

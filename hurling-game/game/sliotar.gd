@@ -46,6 +46,7 @@ static func _leather(rim: bool) -> ShaderMaterial:
 	sh.code = """
 shader_type spatial;
 render_mode unshaded;
+#include "res://game/shaders/look.gdshaderinc"
 uniform bool rim = false;
 varying vec3 wn;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -55,7 +56,7 @@ void fragment() {
 	c *= 0.94 + 0.06 * hash(floor(UV * (rim ? vec2(60.0, 6.0) : vec2(90.0, 50.0))));
 	if (rim && fract(UV.x * 56.0) < 0.35) { c = vec3(0.45, 0.32, 0.22); }   // the stitches
 	float l = 0.62 + 0.45 * clamp(dot(normalize(wn), normalize(vec3(0.35, 0.85, 0.4))), 0.0, 1.0);
-	ALBEDO = c * l;
+	ALBEDO = compat_to_scene(c * l);
 }
 """
 	var m := ShaderMaterial.new()

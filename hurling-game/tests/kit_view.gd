@@ -1,11 +1,12 @@
 extends Node3D
 ## Close-ups of the players and officials: each county's kit, the helmet and face guard, the hurley, the poses.
-##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/kit_view.tscn -- /out/dir
+##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/kit_view.tscn -- /out/dir [level]
 
 func _ready() -> void:
 	var out := OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "user://kits"
 	Game.main = self
-	Game.settings.graphics = Game.GFX_HIGH
+	# (A second argument picks the level: 3 for Ultra, run with --rendering-method mobile.)
+	Game.settings.graphics = int(OS.get_cmdline_user_args()[1]) if OS.get_cmdline_user_args().size() > 1 else Game.GFX_HIGH
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
 	e.background_mode = Environment.BG_COLOR

@@ -9,6 +9,15 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.10.0
+
+- **Ultra graphics** (Settings > Graphics, on recent high-end phones only; off unless you pick it): the Vulkan
+  renderer, real shadows from every player, floodlights that light the field at night, sharper hurlers with cloth and
+  skin shading, 4K grass, a denser crowd, smoother animation and a touchline camera in replays. Picking it downloads
+  the HD pack (about 115 MB, best on Wi-Fi; it carries on if the connection drops), then asks you to open the game
+  again. Low, Medium and High are exactly as they were. If Ultra will not start on your phone, the game goes back to
+  High by itself and says so.
+
 ## New in 0.9.0
 
 - **Shadows**: every player has a shadow on the grass (Medium and High), long and hard on a summer afternoon, so you

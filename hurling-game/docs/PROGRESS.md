@@ -232,6 +232,26 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.10.0-beta, Ultra graphics, 26 October 2026)
+
+The owner asked for an Ultra level for high-end phones, with Low, Medium and High left exactly as they were
+(docs/ULTRA.md has it all).
+
+- **Ultra**: an opt-in fourth level, offered on 64-bit phones with 6 GB and a Vulkan-class GPU (Adreno 640+,
+  Mali-G710+, Immortalis, Xclipse). Godot's Mobile (Vulkan) renderer by the project's settings override, a reopen to
+  switch; back to High if Vulkan, the pack or the last start fails (`game/ultra.gd`, `ui/ultra_screen.gd`).
+- **The HD pack** (115 MB): a download of its own from the beta release, resumed in 4 MB pieces, retried, checked by
+  SHA-256, mounted at start. CI builds it, uploads it only when its content changes, and now updates the release in
+  place so the pack stays (`tools/ultra/`).
+- **Content**: real-time sun shadows, floodlights at night, ACES tonemapping and glow, sky light and reflections;
+  the hurlers at 23,468 triangles and 4K with cloth and skin shading; PBR officials (Meshy); 60 fps clips and a
+  0.18 s blend between actions; 4K lit grass; a denser, sharper crowd; textured concrete; a touchline replay camera.
+- **Low, Medium and High unchanged**: perf_probe gives the same draw calls, triangles and video memory as 0.9.0, the
+  same textures load, and CI fails a build with any Ultra file in the APK.
+- **Internet permission**, for the HD pack alone (privacy page and Play listing notes updated).
+- Meshy: 30 credits (189 to 159). Tests: Ultra's checks in test_runner (offer, switch file, fall back, the pack's
+  check, the screens) and its screen in the text-fit audit.
+
 ## Done (0.9.0-beta, shadows, the stadium, a real match watched, 26 October 2026)
 
 The owner asked for player shadows and modelled stands, and for a 40-minute broadcast of Galway v Limerick at Croke

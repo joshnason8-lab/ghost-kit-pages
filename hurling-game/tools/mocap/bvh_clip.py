@@ -175,10 +175,10 @@ def game_fk(turns):
     return at
 
 
-def clip(path, first=0, count=None):
+def clip(path, first=0, count=None, fps=30):
     joints, data, ft = read_bvh(path)
     idx = {j[0]: n for n, j in enumerate(joints)}
-    step = max(1, int(round((1.0 / 30.0) / ft)))
+    step = max(1, int(round((1.0 / fps) / ft)))
     rows = data[first::step]
     frames = [pose(joints, r) for r in rows]
     # The rest stance: each mapped bone turned from the recording's rest direction onto the game's.
@@ -210,7 +210,8 @@ def clip(path, first=0, count=None):
 
     la = [left_ahead(f) for f in range(len(frames))]
     # (the highest within a third of a second either side: a peak of the stride, not a tremor in the recording)
-    peaks = [f for f in range(1, len(la) - 1) if la[f] > 0 and la[f] == max(la[max(0, f - 10):f + 11])]
+    w = fps // 3
+    peaks = [f for f in range(1, len(la) - 1) if la[f] > 0 and la[f] == max(la[max(0, f - w):f + w + 1])]
     a, b = peaks[0], peaks[1]
     if count:
         b = a + count
@@ -248,19 +249,22 @@ def clip(path, first=0, count=None):
     out[-1] = dict(out[0])          # the cycle closes on its first frame
     # The left thigh furthest forward: the stride's phase pi/2 in the game (Player._pose), as for the Mixamo sprint.
     fwd = min(range(len(out) - 1), key=lambda i: out[i]["thigh_l"][0])
-    secs = (b - a) / 30.0
+    secs = (b - a) / float(fps)
     speed = float(np.linalg.norm(travel)) * k / secs
-    print(f"{path}: frames {a}-{b} at 30 fps ({secs:.2f} s), travels {speed:.2f} m/s at the game's leg length, "
+    print(f"{path}: frames {a}-{b} at {fps} fps ({secs:.2f} s), travels {speed:.2f} m/s at the game's leg length, "
           f"turned {math.degrees(yaw):.0f} degrees", file=sys.stderr)
-    return {"fps": 30, "left_forward": round(fwd / 30.0, 3), "speed": round(speed, 2), "source": "CMU " + pathlib.Path(path).stem,
+    return {"fps": fps, "left_forward": round(fwd / float(fps), 3), "speed": round(speed, 2), "source": "CMU " + pathlib.Path(path).stem,
             "frames": out}
 
 
 def main():
-    if sys.argv[1] == "--all":
+    if sys.argv[1] in ("--all", "--ultra"):
+        # --ultra: the same clips at 60 frames a second, for Ultra (the HD pack's ultra/anim/cmu60.json).
+        fps = 60 if sys.argv[1] == "--ultra" else 30
         src = pathlib.Path(sys.argv[2])
-        clips = {name: clip(src / f"{cid}.bvh", first) for name, (cid, first) in CLIPS.items()}
-        dst = ROOT / "assets/player/cmu.json"
+        clips = {name: clip(src / f"{cid}.bvh", first, None, fps) for name, (cid, first) in CLIPS.items()}
+        dst = ROOT / ("ultra/anim/cmu60.json" if fps == 60 else "assets/player/cmu.json")
+        dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_text(json.dumps({"clips": clips}, separators=(",", ":")))
         print("wrote", dst.relative_to(ROOT), dst.stat().st_size, "bytes")
     else:

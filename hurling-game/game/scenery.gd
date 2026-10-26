@@ -125,13 +125,14 @@ func _floodlight(src: Material) -> ShaderMaterial:
 	sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_disabled;
+#include "res://game/shaders/look.gdshaderinc"
 uniform sampler2D tex : source_color, filter_linear_mipmap;
 uniform vec3 light = vec3(1.0);
 uniform float on = 0.0;
 void fragment() {
 	vec3 c = texture(tex, UV).rgb;
 	float glass = smoothstep(0.55, 0.75, dot(c, vec3(0.2126, 0.7152, 0.0722)));
-	ALBEDO = mix(c * light, vec3(1.0, 0.97, 0.86), glass * on);
+	ALBEDO = compat_to_scene(mix(c * light, vec3(1.0, 0.97, 0.86), glass * on));
 }
 """
 	var m := ShaderMaterial.new()

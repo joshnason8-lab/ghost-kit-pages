@@ -168,5 +168,59 @@
   "preview": "01a16c76-9c20-770e-aae6-b71fd1da489e",
   "refine": "01a16c79-4888-73dc-9964-bd681e259df7",
   "rig": "01a16c7c-a98b-7366-87e2-1a43611c3901"
- }
+ },
+ "log": {},
+ "credit_log": [
+  {
+   "time": "2026-10-26 06:37",
+   "balance": 189,
+   "note": "before the Ultra update (other games had spent from the shared account)"
+  },
+  {
+   "time": "2026-10-26 06:40",
+   "balance": 169,
+   "note": ""
+  },
+  {
+   "time": "2026-10-26 06:41",
+   "balance": 159,
+   "note": ""
+  },
+  {
+   "time": "2026-10-26 07:11",
+   "balance": 159,
+   "note": ""
+  }
+ ],
+ "referee_pbr": {
+  "preview": "01a16bda-1e8b-73b7-973c-8930da6a385c",
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A GAA hurling referee, fit man, black short-sleeved referee shirt with collar, black shorts, black socks, black football boots, short hair, a whistle on a lanyard, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 8000,
+   "pose_mode": "a-pose"
+  },
+  "refine": "01a176ee-1ab9-700e-8963-bd050cf4070d",
+  "rig": "01a176f0-84d3-7252-80e6-5068d4a56820"
+ },
+ "umpire_pbr": {
+  "preview": "01a16bda-260f-729c-80dd-61d97acf2add",
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A Gaelic games umpire, middle-aged Irish man wearing a long white coat down to the knees over dark trousers, white peaked cap, black shoes, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 8000,
+   "pose_mode": "a-pose"
+  },
+  "refine": "01a176ee-22c5-7734-a761-9ed3a0db45ba",
+  "rig": "01a176f0-91f9-7467-aa73-2847f20a17c5"
+ },
+ "after the referee and umpire PBR refines": {},
+ "after rigging the PBR referee and umpire": {},
+ "after the Ultra update": {}
 }

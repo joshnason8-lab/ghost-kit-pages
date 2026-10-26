@@ -461,6 +461,14 @@ func _menus() -> void:
 		_scroll_to_end()
 		await frames(4)
 		await audit("setup_%s_end" % watch)
+	# Ultra's screen (the "leave" mode: no download started), with each of its messages in turn.
+	var ultra := Game.show_screen("res://ui/ultra_screen.gd", {"mode": "leave"})
+	await frames(8)
+	await audit("ultra")
+	for k in ["ULTRA_SIZE", "ULTRA_GETTING", "ULTRA_READY", "ULTRA_FAIL_net", "ULTRA_FAIL_corrupt", "ULTRA_FAIL_space", "ULTRA_FAIL_manifest"]:
+		ultra._status.text = tr(k).replace("%d", "388")
+		await frames(3)
+		await audit("ultra_" + k.to_lower())
 	Game.show_screen("res://ui/buttons_screen.gd")
 	await frames(8)
 	await audit("move_buttons")

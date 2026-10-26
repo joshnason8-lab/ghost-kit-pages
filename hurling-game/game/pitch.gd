@@ -144,14 +144,36 @@ static var _grass := {}
 ## of day's light in the colour (as the players are); on Medium and High the scan's normal map catches the sun.
 ## Low draws the grass and the bands only (two texture reads a pixel).
 static func grass_material(time_of_day: String) -> ShaderMaterial:
+	return _grass_material(time_of_day)
+
+
+## Ultra's grass, from the same shader: lit (the sun's and the floodlights' light and the stands' and players'
+## shadows fall on it), the 4K scan's normal and roughness, the stripes crossed by a diagonal cut as at Croke Park,
+## and wear in the middle where the throw-ins and the midfield battles are.
+static func _ultra_grass(code: String) -> String:
+	code = code.replace("render_mode unshaded, cull_back;", "render_mode cull_back;")
+	code = code.replace("uniform float light = 1.0;", "uniform float light = 1.0;\nuniform sampler2D rough : hint_roughness_r, filter_linear_mipmap, repeat_enable;")
+	code = code.replace("		c *= 0.9 + 0.2 * clamp(dot(normalize(vec3(n.x, n.z * 2.0, -n.y)), normalize(sun)), 0.0, 1.0);\n",
+		"		c *= 1.0 + 0.06 * (step(0.5, fract((wp.x + wp.z) / 14.0)) - 0.5);\n"
+		+ "		float mid = smoothstep(14.0, 3.0, length(wp.xz)) * smoothstep(0.3, 0.7, texture(sparse, wp.xz / 23.0).r);\n"
+		+ "		c = mix(c, c * 0.82 + vec3(0.03, 0.025, 0.0), mid * 0.5);\n")
+	code = code.replace("	ALBEDO = compat_to_scene(c * light);",
+		"	ALBEDO = compat_to_scene(c) * 1.15;\n	NORMAL_MAP = texture(grass_n, uv).rgb;\n	NORMAL_MAP_DEPTH = 0.8;\n"
+		+ "	ROUGHNESS = 0.75 + 0.25 * texture(rough, uv).r;\n	SPECULAR = 0.3;")
+	return code
+
+
+static func _grass_material(time_of_day: String) -> ShaderMaterial:
 	var g := int(Game.settings.graphics)
-	var key := "%s|%d" % [time_of_day, g]
+	var ultra := Ultra.active()
+	var key := "%s|%d|%s" % [time_of_day, g, ultra]
 	if _grass.has(key):
 		return _grass[key]
 	var sh := Shader.new()
-	sh.code = """
+	var code := """
 shader_type spatial;
 render_mode unshaded, cull_back;
+#include "res://game/shaders/look.gdshaderinc"
 uniform sampler2D grass : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D grass_n : hint_normal, filter_linear_mipmap, repeat_enable;
 uniform sampler2D sparse : source_color, filter_linear_mipmap, repeat_enable;
@@ -195,9 +217,12 @@ void fragment() {
 		c = mix(c, worn, smoothstep(9.0, 2.0, goal) * 0.3);
 	}
 	c = mix(c, c * 0.8, smoothstep(half_l + 2.0, half_l + 9.0, abs(wp.x)));
-	ALBEDO = c * light;
+	ALBEDO = compat_to_scene(c * light);
 }
 """
+	if ultra:
+		code = _ultra_grass(code)
+	sh.code = code
 	var m := ShaderMaterial.new()
 	m.shader = sh
 	m.set_shader_parameter("half_l", HALF_L)
@@ -210,6 +235,11 @@ void fragment() {
 		m.set_shader_parameter("withered", load(Game.hd("res://assets/env/ground/withered_grass_albedo_1k.jpg")))
 	var light: float = {"day": 1.0, "dusk": 0.78, "night": 0.86}.get(time_of_day, 1.0)
 	m.set_shader_parameter("light", light)
+	if ultra:
+		m.set_shader_parameter("grass", load("res://ultra/ground/grass_ground_albedo_4k.jpg"))
+		m.set_shader_parameter("grass_n", load("res://ultra/ground/grass_ground_normal_4k.jpg"))
+		m.set_shader_parameter("rough", load("res://ultra/ground/grass_ground_rough_4k.jpg"))
+		m.set_shader_parameter("light", 1.0)
 	if time_of_day == "dusk":
 		m.set_shader_parameter("g1", Vector3(0.22, 0.38, 0.15))
 		m.set_shader_parameter("g2", Vector3(0.19, 0.33, 0.13))

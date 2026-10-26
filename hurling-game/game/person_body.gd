@@ -7,6 +7,7 @@ extends ToonBody
 ## and more realistic".)
 
 const DIR := "res://assets/people/"
+const ULTRA_DIR := "res://ultra/people/"
 
 static var _data := {}         # name -> its offsets
 static var _meshes := {}
@@ -20,12 +21,15 @@ func _init(p_look := {}) -> void:
 	super(p_look)
 	who = String(p_look.get("model", "umpire" if String(p_look.get("kind", "")) == "umpire" else "referee"))
 	dir = String(p_look.get("dir", DIR))   # tools/crowd draws the fans this way
+	# Ultra: the officials re-made by Meshy with their physically based maps (normal, roughness), at full detail.
+	if dir == DIR and Ultra.active() and ResourceLoader.exists(ULTRA_DIR + who + ".res"):
+		dir = ULTRA_DIR
 
 
 func _offsets() -> Array:
-	if not _data.has(who):
-		_data[who] = JSON.parse_string(FileAccess.get_file_as_string(dir + who + ".json")).offsets
-	var off: Dictionary = _data[who]
+	if not _data.has(dir + who):
+		_data[dir + who] = JSON.parse_string(FileAccess.get_file_as_string(dir + who + ".json")).offsets
+	var off: Dictionary = _data[dir + who]
 	var out := []
 	for b in BONES:
 		var a: Array = off[b[0]]
@@ -34,20 +38,50 @@ func _offsets() -> Array:
 
 
 func _dress() -> void:
-	if not _meshes.has(who):
-		_meshes[who] = load(dir + who + ".res")
-	mesh_instance.mesh = _meshes[who]
-	# The texture: 512 on Low, 1024 (<who>_hd.jpg) on Medium and High.
-	var tex := Game.hd(dir + who + ".jpg")
+	if not _meshes.has(dir + who):
+		_meshes[dir + who] = load(dir + who + ".res")
+	mesh_instance.mesh = _meshes[dir + who]
+	# The texture: 512 on Low, 1024 (<who>_hd.jpg) on Medium and High, 2048 with its maps on Ultra.
+	var ultra := dir == ULTRA_DIR
+	var tex := dir + who + ".jpg" if ultra else Game.hd(dir + who + ".jpg")
 	if not _mats.has(tex):
 		var m := ShaderMaterial.new()
-		m.shader = _shader()
+		m.shader = _ultra_shader() if ultra else _shader()
 		m.set_shader_parameter("albedo", load(tex))
+		if ultra:
+			m.set_shader_parameter("normal_map", load(dir + who + "_normal.png"))
+			m.set_shader_parameter("rough", load(dir + who + "_rough.jpg"))
 		_mats[tex] = m
 	mesh_instance.material_override = _mats[tex]
 
 
 static var _sh: Shader
+
+
+static var _ush: Shader
+
+
+## Ultra's: lit by the scene's light, with the model's own normal and roughness maps.
+static func _ultra_shader() -> Shader:
+	if _ush == null:
+		_ush = Shader.new()
+		_ush.code = """
+shader_type spatial;
+render_mode cull_back;
+#include "res://game/shaders/look.gdshaderinc"
+uniform sampler2D albedo : source_color, filter_linear_mipmap;
+uniform sampler2D normal_map : hint_normal, filter_linear_mipmap;
+uniform sampler2D rough : hint_roughness_r, filter_linear_mipmap;
+void fragment() {
+	ALBEDO = compat_to_scene(texture(albedo, UV).rgb);
+	NORMAL_MAP = texture(normal_map, UV).rgb;
+	ROUGHNESS = texture(rough, UV).r;
+	SPECULAR = 0.35;
+	RIM = 0.2;
+	RIM_TINT = 0.5;
+}
+"""
+	return _ush
 
 
 static func _shader() -> Shader:
@@ -56,6 +90,7 @@ static func _shader() -> Shader:
 		_sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_back;
+#include "res://game/shaders/look.gdshaderinc"
 uniform sampler2D albedo : source_color, filter_linear_mipmap;
 uniform vec3 light_dir = vec3(0.35, 0.85, 0.4);
 uniform float shade = 0.72;
@@ -66,7 +101,7 @@ void fragment() {
 	float d = dot(normalize(wn), normalize(light_dir));
 	float k = mix(shade, 1.0, smoothstep(-0.35, 0.3, d));
 	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0) * 0.18;
-	ALBEDO = c * k + rim * 0.5;
+	ALBEDO = compat_to_scene(c * k + rim * 0.5);
 }
 """
 	return _sh

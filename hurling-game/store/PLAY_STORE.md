@@ -11,7 +11,8 @@ stand in October 2026.
   - targets Android 16 (API 36), required for new apps since 31 August 2026;
   - 64-bit, with 16 KB memory pages (checked on every bundle);
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
-  - one permission (vibration) and no internet access.
+  - two permissions: vibration, and internet (used only to download the optional HD pack for Ultra graphics from
+    the game's GitHub release, when the player asks; nothing is sent about the player).
 - **The privacy policy, help page and a page for the game**, in `ash-and-leather/` at the top of this repository,
   served by GitHub Pages once this branch is merged into `main`:
   https://joshnason8-lab.github.io/ghost-kit-pages/ash-and-leather/privacy.html and `/support.html`. The game's

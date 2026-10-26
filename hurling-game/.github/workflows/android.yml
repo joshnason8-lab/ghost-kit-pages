@@ -57,6 +57,9 @@ jobs:
       - name: Build translations
         run: python3 ${PROJECT_DIR}/tools/build_i18n.py
 
+      - name: Fetch the HD pack's large sources (so the import has every file it lists)
+        run: python3 ${PROJECT_DIR}/tools/ultra/fetch.py
+
       - name: Import project
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
@@ -110,6 +113,9 @@ jobs:
 
       - name: Build translations
         run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Fetch the HD pack's large sources (Poly Haven, checked against their SHA-256)
+        run: python3 ${PROJECT_DIR}/tools/ultra/fetch.py
 
       - name: Import project
         working-directory: ${{ env.PROJECT_DIR }}
@@ -208,6 +214,10 @@ jobs:
           godot --headless --path . --export-release "Android" build/unsigned-armv7.apk
           mv export_presets.keep export_presets.cfg
           python3 tools/check_pages.py build/unsigned.apk
+          # Ultra's content is the HD pack's alone: none of it in the APK (Low, Medium and High as they were).
+          if unzip -l build/unsigned.apk | grep -E 'ultra/|_4k\.|hero_ultra|cmu60|hero60'; then
+            echo "::error::Ultra content in the APK"; exit 1
+          fi
           ls -la build
 
       # Signed with the owner's beta key (above). Without it uber-apk-signer signs with whatever debug key the runner
@@ -236,6 +246,25 @@ jobs:
           done
           ls -la ${PROJECT_DIR}/build
 
+      # The HD pack (Ultra graphics, docs/ULTRA.md): not in the APK, a download of its own from the release. Built and
+      # uploaded only when what it is made from has changed (the "source" hash in its manifest), so a player who has
+      # it keeps it across betas.
+      - name: Build the HD pack (if its content changed)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          PACK=$(sed -n 's/^const PACK := \([0-9]*\).*/\1/p' game/ultra.gd)
+          SOURCE=$(tools/ultra/build_pack.sh --source)
+          HAVE=$(curl -sSfL "https://github.com/${GITHUB_REPOSITORY}/releases/download/ash-and-leather-beta/hurling-heroes-hd-${PACK}.json" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin).get("source",""))' || true)
+          echo "HD pack ${PACK}: source ${SOURCE}, on the release ${HAVE:-none}"
+          if [ "$SOURCE" = "$HAVE" ]; then
+            echo "PACK_NEW=0" >> "$GITHUB_ENV"
+          else
+            tools/ultra/build_pack.sh
+            echo "PACK_NEW=1" >> "$GITHUB_ENV"
+          fi
+          echo "PACK=$PACK" >> "$GITHUB_ENV"
+
       - uses: actions/upload-artifact@v4
         with:
           name: hurling-heroes-${{ env.VERSION }}-apk
@@ -245,7 +274,7 @@ jobs:
           if-no-files-found: error
 
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
-      # "ash-and-leather-beta", always the latest build of this branch, made afresh on every push that passes the
+      # "ash-and-leather-beta", always the latest build of this branch, updated on every push that passes the
       # tests. Pull request runs build the same APK and leave the release alone.
       - name: Publish the beta release
         if: github.event_name == 'push'
@@ -264,9 +293,29 @@ jobs:
           Android asks, allow your browser or Files to install unknown apps. It installs over any earlier Hurling Heroes
           beta and keeps your saves.
 
-          This release is replaced by every new beta build: this page always has the newest one.
+          \`hurling-heroes-hd-*.pck\` is the optional HD pack for Ultra graphics: the game downloads it itself when you
+          pick Ultra in Settings (recent high-end phones only); you do not need to download it here.
+
+          This page is updated by every new beta build: it always has the newest one.
           EOF
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
-            --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
+          # Updated in place (not deleted and made again), so the HD pack stays on it: the tag moves to this commit,
+          # the new APKs go up, then the last beta's APKs come off.
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh api -X PATCH "repos/${GH_REPO}/git/refs/tags/${TAG}" -f sha="$GITHUB_SHA" -F force=true > /dev/null
+            gh release edit "$TAG" --prerelease --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
+            gh release upload "$TAG" "$APK" "$APK32" --clobber
+            for a in $(gh release view "$TAG" --json assets -q '.assets[].name' | grep '\.apk$'); do
+              if [ "$a" != "$(basename "$APK")" ] && [ "$a" != "$(basename "$APK32")" ]; then
+                gh release delete-asset "$TAG" "$a" --yes
+              fi
+            done
+          else
+            gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
+              --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
+          fi
+          # The pack, then its manifest (the game reads the manifest first).
+          if [ "$PACK_NEW" = "1" ]; then
+            gh release upload "$TAG" "${PROJECT_DIR}/build/hurling-heroes-hd-${PACK}.pck" --clobber
+            gh release upload "$TAG" "${PROJECT_DIR}/build/hurling-heroes-hd-${PACK}.json" --clobber
+          fi
           gh release view "$TAG"

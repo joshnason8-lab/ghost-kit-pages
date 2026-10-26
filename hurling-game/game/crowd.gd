@@ -29,17 +29,25 @@ static func _hd() -> bool:
 	return int(Game.settings.graphics) > Game.GFX_LOW and ResourceLoader.exists(Game.hd(SHEET))
 
 
+## The sheet's level: "ultra" (the HD pack's, the 24 figures at 256 x 512), true (Medium and High) or false (Low).
+static func _level() -> Variant:
+	return "ultra" if Ultra.active() else _hd()
+
+
 ## The sheet: on Low eight people from the front, then the same eight from behind, in one row; on Medium and High
 ## twenty-four, front above and back below (and its shirt mask).
 static func sheet() -> Texture2D:
-	var hd := _hd()
+	var hd: Variant = _level()
 	if not _sheets.has(hd):
-		_sheets[hd] = [load(Game.hd(SHEET) if hd else SHEET), load(Game.hd(MASK) if hd else MASK)]
+		if hd is String:
+			_sheets[hd] = [load("res://ultra/crowd/sheet.png"), load("res://ultra/crowd/mask.png")]
+		else:
+			_sheets[hd] = [load(Game.hd(SHEET) if hd else SHEET), load(Game.hd(MASK) if hd else MASK)]
 	return _sheets[hd][0]
 
 
 static func material() -> ShaderMaterial:
-	var hd := _hd()
+	var hd: Variant = _level()
 	if _mats.has(hd):
 		return _mats[hd]
 	var sh := Shader.new()
@@ -87,8 +95,8 @@ void fragment() {
 	m.shader = sh
 	m.set_shader_parameter("sheet", sheet())
 	m.set_shader_parameter("mask", _sheets[hd][1])
-	m.set_shader_parameter("figs", float(FIGS_HD if hd else FIGS))
-	m.set_shader_parameter("rows", hd)
+	m.set_shader_parameter("figs", float(FIGS if hd is bool and not hd else FIGS_HD))
+	m.set_shader_parameter("rows", not (hd is bool and not hd))
 	_mats[hd] = m
 	return m
 

@@ -47,7 +47,10 @@ func _ready() -> void:
 			_stadium(g, spots)
 		_:
 			_county(g, spots)
-	add_child(g.commit(Geo.material(true)))
+	var structure := g.commit(Geo.ultra_material() if Ultra.active() else Geo.material(true))
+	if Ultra.active():
+		structure.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # the stands' shadow on the field
+	add_child(structure)
 	add_child(fields.commit(field_material(time)))
 	scenery.commit()
 	add_child(scenery)
@@ -122,9 +125,11 @@ func _stand(g: Geo, x0: float, x1: float, z0: float, dir: float, rows: int, rise
 		var z := z0 + dir * (r * depth)
 		var y := base + r * rise
 		g.box(Vector3((x0 + x1) * 0.5, y * 0.5, z + dir * depth * 0.5), Vector3(x1 - x0, y, depth), seat.darkened(0.05 * float(r % 2)), 0.0)
-		var n := int((x1 - x0) / 0.62)
+		# (A seat every 0.62 m; on Ultra 0.52 m, as close as real seats: a fuller stand.)
+		var gap := 0.52 if Ultra.active() else 0.62
+		var n := int((x1 - x0) / gap)
 		for i in n:
-			spots.append(Vector3(x0 + 0.31 + i * 0.62 + (0.15 if r % 2 == 1 else 0.0), y, z + dir * depth * 0.45))
+			spots.append(Vector3(x0 + gap * 0.5 + i * gap + (0.15 if r % 2 == 1 else 0.0), y, z + dir * depth * 0.45))
 	var back_z := z0 + dir * rows * depth
 	var top := base + rows * rise
 	g.box(Vector3((x0 + x1) * 0.5, (top + 3.0) * 0.5, back_z + dir * 0.3), Vector3(x1 - x0, top + 3.0, 0.6), col.darkened(0.3))
@@ -283,6 +288,7 @@ static func field_material(t: String) -> ShaderMaterial:
 	sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_back;
+#include "res://game/shaders/look.gdshaderinc"
 uniform sampler2D tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform float light = 1.0;
 varying vec3 wp;
@@ -291,7 +297,7 @@ void fragment() {
 	vec3 a = mix(texture(tex, wp.xz / 4.0).rgb, texture(tex, wp.xz / 23.0 + vec2(0.3, 0.7)).rgb, 0.5);
 	float MEAN_LUM = max(dot(textureLod(tex, vec2(0.5), 10.0).rgb, vec3(0.2126, 0.7152, 0.0722)), 0.002);   // its 1 x 1 mip
 	float k = dot(a, vec3(0.2126, 0.7152, 0.0722)) / MEAN_LUM;
-	ALBEDO = mix(COLOR.rgb * k, a * (dot(COLOR.rgb, vec3(0.2126, 0.7152, 0.0722)) / MEAN_LUM), 0.3) * light;
+	ALBEDO = compat_to_scene(mix(COLOR.rgb * k, a * (dot(COLOR.rgb, vec3(0.2126, 0.7152, 0.0722)) / MEAN_LUM), 0.3) * light);
 }
 """
 	var m := ShaderMaterial.new()
@@ -501,6 +507,7 @@ func _lake(c: Vector3, size: Vector2) -> MeshInstance3D:
 	sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_back;
+#include "res://game/shaders/look.gdshaderinc"
 uniform sampler2D waves : hint_normal, filter_linear_mipmap, repeat_enable;
 uniform vec3 deep : source_color = vec3(0.10, 0.14, 0.15);
 uniform vec3 sky : source_color = vec3(0.9, 0.7, 0.6);
@@ -526,7 +533,7 @@ void fragment() {
 	vec3 refl = sky * (0.55 + 0.45 * clamp(n.x * 3.0 + 0.5, 0.0, 1.0));
 	vec3 c = mix(deep, refl, clamp(fres * 0.85, 0.0, 0.7));
 	c = mix(c * 0.8, c, smoothstep(0.95, 0.7, edge));   // darker in the shallows by the bank
-	ALBEDO = c * light;
+	ALBEDO = compat_to_scene(c * light);
 }
 """
 	var m := ShaderMaterial.new()
@@ -627,11 +634,69 @@ func _environment() -> void:
 		env.fog_light_color = Color(hc[0], hc[1], hc[2]).lerp(Color(0.72, 0.75, 0.82), 0.5 if time == "day" else 0.75) * (0.35 if time == "night" else 1.0)
 		env.fog_density = 0.0009 if time == "day" else 0.0006
 		env.fog_sky_affect = 0.0
+	if Ultra.active():
+		_ultra_light(env, sun, sky)
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 	add_child(sun)
 	Crowd.set_light({"day": 1.0, "dusk": 0.72, "night": 0.75}[time])
+
+
+## Ultra's light (the Mobile renderer): the sun's real shadows over the whole ground in four cascades, soft at the
+## edges, the stands' shadow across the field as on a summer afternoon; the sky's own light and reflections; ACES
+## tone mapping and a glow on what is brightest (the floodlights, the sun on white); at night the floodlights' beams
+## from the masts or the stand's roof. (SSAO is not in the Mobile renderer: the players' and stands' own shading
+## stands in for it.)
+func _ultra_light(env: Environment, sun: DirectionalLight3D, sky: Sky) -> void:
+	sun.shadow_enabled = true
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	sun.directional_shadow_max_distance = 220.0
+	sun.directional_shadow_blend_splits = true
+	sun.light_angular_distance = 0.6
+	sun.shadow_bias = 0.04
+	sun.shadow_normal_bias = 1.2
+	sun.light_energy *= {"day": 2.2, "dusk": 1.8, "night": 0.7}[time]
+	sky.radiance_size = Sky.RADIANCE_SIZE_128
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_sky_contribution = 0.85
+	env.ambient_light_energy = {"day": 0.7, "dusk": 0.6, "night": 0.35}[time]
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.tonemap_exposure = {"day": 0.95, "dusk": 1.05, "night": 1.2}[time]
+	env.tonemap_white = 6.0
+	env.glow_enabled = true
+	env.glow_intensity = 0.55
+	env.glow_bloom = 0.04
+	env.glow_hdr_threshold = 1.1
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.08
+	env.adjustment_contrast = 1.04
+	if time == "night":
+		for sp in _floodlight_spots():
+			var l := SpotLight3D.new()
+			l.position = sp
+			l.look_at_from_position(sp, Vector3(sp.x * 0.15, 0, sp.z * 0.15))
+			l.spot_range = 190.0
+			l.spot_angle = 34.0
+			l.spot_attenuation = 0.6
+			l.light_energy = 9.0
+			l.light_color = Color(1.0, 0.97, 0.9)
+			l.shadow_enabled = false
+			add_child(l)
+
+
+## Where the floodlights are (the masts' lamp arrays, or along the stadium's roof): at most eight (the Mobile
+## renderer lights each mesh with up to eight).
+func _floodlight_spots() -> Array:
+	var out := []
+	for t: Transform3D in scenery.placed("floodlight"):
+		out.append(t.origin)
+	if out.size() > 8:
+		var every := ceili(out.size() / 8.0)
+		out = out.filter(func(p): return out.find(p) % every == 0)
+	return out
 
 
 ## What stops a ball behind each goal: [metres behind the end line, half its width, its height]. The parish field's

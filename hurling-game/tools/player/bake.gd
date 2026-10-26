@@ -36,6 +36,7 @@ const TRIS := [6000, 2000]    # about how many triangles each size keeps
 ## tee for seconds before they swing. The run is kept whole (one stride of each leg).
 const WINDOW := {"Baseball_Hit": [0.8, 0.7], "Baseball_Strike": [0.8, 0.7], "Golf_Drive": [0.9, 0.7]}
 
+var fps := 30.0              # the clips' frames a second (60 for Ultra: the 7th argument)
 var sk: Skeleton3D
 var rest_g := []              # the model's bones in the game's rest stance (skeleton space)
 var shift := Vector3.ZERO
@@ -49,6 +50,8 @@ func _init() -> void:
 	var prefix := a[2] if a.size() > 2 else "hero"
 	var tris := [int(a[3]), int(a[4])] if a.size() > 4 else TRIS
 	var with_clips := (a[5] == "1") if a.size() > 5 else true
+	fps = float(a[6]) if a.size() > 6 else 30.0
+	var meshes := not (a.size() > 7 and a[7] == "clips_only")
 	var p: Node3D = load("res://src/%s.glb" % model).instantiate()
 	sk = p.find_children("*", "Skeleton3D", true, false)[0]
 	var mi: MeshInstance3D = sk.find_children("*", "MeshInstance3D", true, false)[0]
@@ -59,7 +62,7 @@ func _init() -> void:
 		var at := _joint(NAMES[i])
 		var par := _joint(NAMES[PARENT[i]]) if PARENT[i] >= 0 else Vector3.ZERO
 		json.offsets[NAMES[i]] = _v(at - par)
-	for lod in tris.size():
+	for lod in (tris.size() if meshes else 0):
 		var mesh := _cut(arrays, tris[lod])
 		var path := "%s/%s_%s.res" % [out, prefix, ["hi", "lo"][lod]]
 		print(path, " ", ResourceSaver.save(mesh, path, ResourceSaver.FLAG_COMPRESS))
@@ -247,9 +250,9 @@ func _clips() -> Dictionary:
 		var an: Animation = ap.get_animation("mixamo_com")
 		var frames := []
 		var hand := []
-		var n := int(round(an.length * 30.0))
+		var n := int(round(an.length * fps))
 		for f in n + 1:
-			var g := _sample(an, minf(f / 30.0, an.length))
+			var g := _sample(an, minf(f / fps, an.length))
 			var turn := []
 			for i in NAMES.size():
 				var j := sk.find_bone(TURN.get(NAMES[i], JOINT[NAMES[i]]))
@@ -271,7 +274,7 @@ func _clips() -> Dictionary:
 		var best := 1
 		var top := 0.0
 		for f in range(1, hand.size()):
-			var sp: float = (hand[f] - hand[f - 1]).length() * 30.0
+			var sp: float = (hand[f] - hand[f - 1]).length() * fps
 			if sp > top:
 				top = sp
 				best = f
@@ -284,11 +287,11 @@ func _clips() -> Dictionary:
 				cross = f - 1 + (-za) / (zb - za)
 				d = hand[f] - hand[f - 1]
 				break
-		var c := {"fps": 30}
+		var c := {"fps": int(fps)}
 		if WINDOW.has(name):
-			var a := maxi(0, int(cross) - int(WINDOW[name][0] * 30.0))
-			var b := mini(frames.size() - 1, int(cross) + int(WINDOW[name][1] * 30.0))
-			c.contact = snappedf((cross - a) / 30.0, 0.001)
+			var a := maxi(0, int(cross) - int(WINDOW[name][0] * fps))
+			var b := mini(frames.size() - 1, int(cross) + int(WINDOW[name][1] * fps))
+			c.contact = snappedf((cross - a) / fps, 0.001)
 			c.yaw = snappedf(rad_to_deg(atan2(-d.x, d.z)), 0.1)
 			frames = frames.slice(a, b + 1)
 		else:
@@ -297,7 +300,7 @@ func _clips() -> Dictionary:
 			for f in frames.size():
 				if frames[f].thigh_l[0] < frames[fwd].thigh_l[0]:
 					fwd = f
-			c.left_forward = snappedf(fwd / 30.0, 0.001)
+			c.left_forward = snappedf(fwd / fps, 0.001)
 		c.frames = frames
 		out[name] = c
 		print(name, ": ", frames.size(), " frames kept of ", snappedf(an.length, 0.01), " s; ", c.keys().filter(func(x): return x != "frames").map(func(x): return "%s %s" % [x, c[x]]))
