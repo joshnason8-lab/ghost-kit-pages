@@ -7,8 +7,11 @@ var _tab := 0
 var _body: VBoxContainer
 
 
-func setup(_args: Dictionary) -> void:
-	pass
+var _sim_line := {}      # your game just simulated, shown at the top of the page
+
+
+func setup(args: Dictionary) -> void:
+	_sim_line = args.get("sim", {})
 
 
 var _byes := 0
@@ -96,7 +99,19 @@ func _hub() -> void:
 				again.set_meta("sure", true)
 				again.text = tr("START_AGAIN_SURE"))
 		right.add_child(again)
-		right.add_child(UI.button(tr("PLAY"), true, func(): _play(f)))
+		var sim := UI.button(tr("SIMULATE"), false, func():
+			Game.clear_suspended()
+			_sim_line = _c.sim_user()
+			Game.save_champ()
+			_tab = 0
+			Game.show_screen("res://ui/champ_screen.gd", {"sim": _sim_line}))
+		sim.custom_minimum_size = Vector2(0, 56)
+		right.add_child(sim)
+		var resume := Game.suspended_for(f)
+		if not resume.is_empty():
+			right.add_child(UI.button(tr("RESUME_MATCH"), true, func(): Game.resume_match(resume)))
+		else:
+			right.add_child(UI.button(tr("PLAY"), true, func(): _play(f)))
 	v.add_child(UI.chips([tr("CHAMP_NEXT"), tr("CHAMP_TABLES"), tr("CHAMP_RESULTS")], _tab, func(i):
 		_tab = i
 		_fill()))
@@ -143,11 +158,27 @@ func _fill() -> void:
 
 
 func _next() -> void:
+	if not _sim_line.is_empty():
+		var sc := UI.card()
+		_body.add_child(sc)
+		var sv := VBoxContainer.new()
+		sv.add_theme_constant_override("separation", 6)
+		sc.add_child(sv)
+		sv.add_child(UI.label(tr("SIMULATED").to_upper(), "EyebrowLabel", 15, Game.C_SAFFRON))
+		sv.add_child(UI.fixture_line(self, _sim_line, _c.user))
 	var card := UI.card()
 	_body.add_child(card)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	card.add_child(v)
+	if not _c.user_out() and _c.phase != "done" and not _c.next_fixture().is_empty():
+		var rest := UI.button(tr("SIMULATE_REST"), false, func():
+			Game.clear_suspended()
+			_c.sim_rest()
+			Game.save_champ()
+			Game.show_screen("res://ui/champ_screen.gd"))
+		rest.size_flags_horizontal = Control.SIZE_SHRINK_END
+		_body.add_child(rest)
 	if _c.phase == "done":
 		v.add_child(UI.label(tr("CHAMPIONS").format({"team": DB.team_name(_c.champion)}), "HeaderLabel", 38, Game.C_GOLD))
 		v.add_child(UI.wrap(tr("CHAMP_WON") if _c.champion == _c.user else tr("CHAMP_OVER"), "", 18))

@@ -49,6 +49,54 @@ static func play(home: String, away: String, rng: RandomNumberGenerator = null, 
 	return {"score": score, "winner": winner, "scorers": scorers, "home": home, "away": away, "extra_time": et, "pens": pens}
 
 
+## The rest of a match being played (the player asked to simulate to the end): from the score now, with frac of the
+## normal time still to play (0..1 of both halves); in a knock-out game, extra time if level (et_frac of it still to
+## play if it has begun, in_et) and then penalties. Returns as play() does, the scorers being only those added.
+static func finish(home: String, away: String, score_now: Array, frac: float, knockout: bool, in_et := false,
+		et_frac := 1.0, rng: RandomNumberGenerator = null) -> Dictionary:
+	if rng == null:
+		rng = RandomNumberGenerator.new()
+		rng.randomize()
+	var ra := DB.team_rating(home)
+	var rb := DB.team_rating(away)
+	var score := [[int(score_now[0][0]), int(score_now[0][1])], [int(score_now[1][0]), int(score_now[1][1])]]
+	var scorers := {}
+	frac = clampf(frac, 0.0, 1.0)
+	if frac > 0.0 and not in_et:
+		for k in 2:
+			var mine := ra if k == 0 else rb
+			var theirs := rb if k == 0 else ra
+			var edge := (mine - theirs) * 0.28 + (0.6 if k == 0 else 0.0)
+			var pts := maxi(0, roundi(rng.randfn((23.0 + edge) * frac, 3.8 * sqrt(frac))))
+			var goals := _poisson(rng, clampf(1.15 + edge * 0.05, 0.3, 2.6) * frac)
+			score[k][0] += goals
+			score[k][1] += pts
+			_share(String([home, away][k]), goals, pts, scorers, rng)
+	var et := in_et
+	var pens := []
+	var winner := _winner(score)
+	if winner < 0 and knockout:
+		var most := 5 if not in_et else roundi(5.0 * clampf(et_frac, 0.0, 1.0))
+		et = true
+		for k in 2:
+			var add := rng.randi_range(1 if not in_et else 0, maxi(most, 1 if not in_et else 0))
+			score[k][1] += add
+			_share(String([home, away][k]), 0, add, scorers, rng)
+		winner = _winner(score)
+		if winner < 0:
+			var g := [0, 0]
+			var t := [0, 0]
+			var k := 0
+			while Rules.shootout_winner(g, t) < 0:
+				t[k] += 1
+				if rng.randf() < 0.62:
+					g[k] += 1
+				k = 1 - k
+			pens = g
+			winner = Rules.shootout_winner(g, t)
+	return {"score": score, "winner": winner, "scorers": scorers, "home": home, "away": away, "extra_time": et, "pens": pens}
+
+
 static func _winner(score: Array) -> int:
 	var a := Rules.total(score[0][0], score[0][1])
 	var b := Rules.total(score[1][0], score[1][1])

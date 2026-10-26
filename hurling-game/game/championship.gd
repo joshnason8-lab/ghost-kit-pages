@@ -144,6 +144,31 @@ func _user_in_later_stage() -> bool:
 	return false
 
 
+## Your next game simulated instead of played (the championship page's Simulate): as the others are (Sim), then the
+## rest of the round. The result, as {home, away, score, winner, et, pens}, or {} if there was none to play.
+func sim_user(rng: RandomNumberGenerator = null) -> Dictionary:
+	var f := next_fixture()
+	if f.is_empty():
+		return {}
+	var r := Sim.play(String(f.home), String(f.away), rng, bool(f.knockout))
+	_set_result(f, r.score, int(r.winner), bool(r.extra_time), r.pens)
+	play_others()
+	play_byes()
+	return {"home": String(f.home), "away": String(f.away), "score": f.score, "winner": int(f.winner), "et": bool(f.et),
+		"pens": f.pens, "stage": String(f.stage), "played": true}
+
+
+## Every game left simulated, yours too, until your county is out or the championship is won (Simulate the rest).
+func sim_rest(rng: RandomNumberGenerator = null) -> int:
+	var n := 0
+	while not user_out() and phase != "done" and n < 40:
+		if sim_user(rng).is_empty():
+			if play_byes() == 0:
+				break
+		n += 1
+	return n
+
+
 ## Play every game of the round but yours (Sim), then move on if the round is done.
 func play_others(rng: RandomNumberGenerator = null) -> void:
 	if rng == null:

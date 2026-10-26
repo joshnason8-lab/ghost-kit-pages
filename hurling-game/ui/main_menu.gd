@@ -241,6 +241,13 @@ func _continue_row() -> Control:
 	var what := tr(c.name_key())
 	if not f.is_empty():
 		what += " · " + tr(String(f.stage)) + " · " + DB.team_name(String(f.home)) + " " + tr("VS") + " " + DB.team_name(String(f.away))
+	# A match left part-way: Continue carries on with it, from the minute it was left.
+	var snap := Game.suspended_for(f)
+	if not snap.is_empty():
+		var sc: Array = snap.score
+		what = tr("RESUME_LINE").format({"home": DB.short_name(String(f.home)), "away": DB.short_name(String(f.away)),
+			"a": Rules.fmt(int(sc[0][0]), int(sc[0][1])), "b": Rules.fmt(int(sc[1][0]), int(sc[1][1])), "min": int(snap.get("minute", 0))})
+		return _row("»", tr("CONTINUE"), what, func(): Game.resume_match(snap), true)
 	return _row("»", tr("CONTINUE"), what, func(): Game.show_screen("res://ui/champ_screen.gd"), true)
 
 

@@ -414,5 +414,12 @@
   "HELP_IRISH": "The Irish looks wrong",
   "HELP_IRISH_TEXT": "Please tell us which screen and what it says; we want it right.",
   "HELP_CONTACT": "Get in touch",
-  "HELP_CONTACT_TEXT": "Email joshnason8@gmail.com with your phone's model and what happened. We read everything."
+  "HELP_CONTACT_TEXT": "Email joshnason8@gmail.com with your phone's model and what happened. We read everything.",
+  "SIMULATE": "Simulate",
+  "SIMULATE_REST": "Simulate the rest of the championship",
+  "SIMULATED": "Your game, simulated",
+  "RESUME_MATCH": "Carry on",
+  "RESUME_LINE": "Carry on: {home} {a} v {b} {away}, {min}'",
+  "RESUMED_AT": "carrying on at {min}'",
+  "SIM_TO_END": "Simulate to the end"
 }

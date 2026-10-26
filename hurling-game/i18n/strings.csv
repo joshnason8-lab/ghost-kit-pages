@@ -415,3 +415,10 @@ HELP_IRISH,The Irish looks wrong,Tá an Ghaeilge mícheart
 HELP_IRISH_TEXT,Please tell us which screen and what it says; we want it right.,"Inis dúinn cén scáileán agus cad a deir sé, le do thoil; ba mhaith linn é a bheith ceart."
 HELP_CONTACT,Get in touch,Déan teagmháil linn
 HELP_CONTACT_TEXT,Email joshnason8@gmail.com with your phone's model and what happened. We read everything.,Seol ríomhphost chuig joshnason8@gmail.com le samhail d'fhóin agus cad a tharla. Léimid gach rud.
+SIMULATE,Simulate,Ionsamhail
+SIMULATE_REST,Simulate the rest of the championship,Ionsamhail an chuid eile den chraobhchomórtas
+SIMULATED,"Your game, simulated","Do chluiche, ionsamhlaithe"
+RESUME_MATCH,Carry on,Lean ar aghaidh
+RESUME_LINE,"Carry on: {home} {a} v {b} {away}, {min}'","Lean ar aghaidh: {home} {a} v {b} {away}, {min}'"
+RESUMED_AT,carrying on at {min}',ag leanúint ar aghaidh ag {min}'
+SIM_TO_END,Simulate to the end,Ionsamhail go dtí an deireadh

@@ -4,6 +4,7 @@ extends Node
 const SETTINGS_PATH := "user://settings.json"
 const CHAMP_PATH := "user://championship.json"
 const RECORDS_PATH := "user://records.json"
+const SUSPENDED_PATH := "user://suspended.json"   # a championship match left part-way (Match.snapshot)
 
 ## Code, name in the language itself, name in English. Hurling is played and watched in Ireland and by the Irish
 ## abroad (Britain, North America, Australia): English for everyone, and Irish, the game's own language
@@ -281,6 +282,41 @@ func save_champ() -> void:
 func delete_champ() -> void:
 	champ = null
 	delete_file(CHAMP_PATH)
+	clear_suspended()
+
+
+## A championship match left part-way: kept to carry on with (Match.snapshot()), {} if none.
+func save_suspended(snap: Dictionary) -> void:
+	_write_json(SUSPENDED_PATH, snap)
+
+
+func suspended() -> Dictionary:
+	if not FileAccess.file_exists(SUSPENDED_PATH):
+		return {}
+	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(SUSPENDED_PATH))
+	return d if d is Dictionary and d.has("config") else {}
+
+
+func clear_suspended() -> void:
+	delete_file(SUSPENDED_PATH)
+
+
+## The suspended match, if it is the championship's next one for the player's county; else none (and it goes).
+func suspended_for(f: Dictionary) -> Dictionary:
+	var s := suspended()
+	if s.is_empty() or f.is_empty():
+		return {}
+	if String(s.config.get("home", "")) == String(f.home) and String(s.config.get("away", "")) == String(f.away):
+		return s
+	clear_suspended()
+	return {}
+
+
+func resume_match(snap: Dictionary) -> void:
+	var cfg: Dictionary = (snap.config as Dictionary).duplicate(true)
+	cfg.user_team = int(cfg.get("user_team", 0))
+	cfg.resume = snap
+	start_match(cfg)
 
 
 func save_records() -> void:

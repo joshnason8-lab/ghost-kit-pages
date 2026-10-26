@@ -47,6 +47,7 @@ func _ready() -> void:
 	await _shadows()
 	await _ultra()
 	await _auto_pickup()
+	await _champ_sim_resume()
 	Game.settings = keep
 	Game.save_settings()
 	Game.delete_champ()
@@ -1052,6 +1053,60 @@ func _auto_pickup() -> void:
 		m.queue_free()
 		await frames(2)
 	Game.settings.assist = keep
+
+
+## The championship as the owner asked: your own game simulated (and every game left), a match left for the menu
+## carried on from where it was, and the rest of a match simulated to full time.
+func _champ_sim_resume() -> void:
+	var c: Championship = Championship.create("KIL")
+	c.play_byes()
+	var f := c.next_fixture()
+	var r := c.sim_user()
+	check(not r.is_empty() and bool(f.played) and int(r.winner) in [-1, 0, 1], "Championship: your game simulated (%s)" % [r.get("score")])
+	c.sim_rest()
+	check(c.user_out() or c.phase == "done", "Championship: simulate the rest runs to the end or till you are out (%s)" % c.phase)
+	# Carry on: the score, the minute, who is on and their cards, through a save and a load.
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": 0, "seed": 4, "length": 8.0, "mode": "champ",
+		"knockout": true}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(4)
+	m.score = [[1, 9], [0, 11]]
+	m.half = 2
+	m.clock = 600.0
+	var booked: Player = m.teams[1].players[5]
+	booked.yellows = 1
+	var gone: Player = m.teams[0].players[10]
+	var sub_pd: Dictionary = m.teams[0].bench[0]
+	gone.take_over(sub_pd, m._look(0, sub_pd, false))
+	m.teams[0].bench.erase(sub_pd)
+	m.teams[0].subs = 1
+	var snap: Dictionary = JSON.parse_string(JSON.stringify(m.snapshot()))
+	m.queue_free()
+	await frames(2)
+	var cfg: Dictionary = (snap.config as Dictionary).duplicate(true)
+	cfg.resume = snap
+	var m2: Node = load("res://game/match.gd").new()
+	m2.config = cfg
+	m2.set_meta("test", true)
+	add_child(m2)
+	await frames(4)
+	var same: bool = m2.score == [[1, 9], [0, 11]] and int(m2.half) == 2 and is_equal_approx(float(m2.clock), 600.0) \
+		and int(m2.teams[1].players[5].yellows) == 1 and String(m2.teams[0].players[10].data.id) == String(sub_pd.id) \
+		and int(m2.teams[0].subs) == 1 and not (sub_pd in m2.teams[0].bench)
+	check(same, "Carry on: score, half, clock, a booking and a substitution as they were left")
+	# Simulate to the end: level in a knock-out game, so a winner after extra time or penalties; never fewer scores.
+	m2.score = [[1, 10], [0, 13]]
+	m2.sim_to_end()
+	var t0: Array = m2.score
+	check(m2.phase == m2.P.OVER and Rules.total(t0[0][0], t0[0][1]) >= 13 and Rules.total(t0[1][0], t0[1][1]) >= 13,
+		"Simulate to the end: full time, scores only added (%s)" % [t0])
+	var tot := [Rules.total(t0[0][0], t0[0][1]), Rules.total(t0[1][0], t0[1][1])]
+	check(tot[0] != tot[1] or not m2.shootout.is_empty(), "Simulate to the end: a knock-out game has a winner")
+	m2.queue_free()
+	await frames(2)
+	Game.clear_suspended()
 
 
 func _find_text(n: Node, text: String) -> bool:

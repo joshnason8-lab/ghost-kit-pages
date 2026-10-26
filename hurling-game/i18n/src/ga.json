@@ -420,5 +420,12 @@
   "HELP_IRISH": "Tá an Ghaeilge mícheart",
   "HELP_IRISH_TEXT": "Inis dúinn cén scáileán agus cad a deir sé, le do thoil; ba mhaith linn é a bheith ceart.",
   "HELP_CONTACT": "Déan teagmháil linn",
-  "HELP_CONTACT_TEXT": "Seol ríomhphost chuig joshnason8@gmail.com le samhail d'fhóin agus cad a tharla. Léimid gach rud."
+  "HELP_CONTACT_TEXT": "Seol ríomhphost chuig joshnason8@gmail.com le samhail d'fhóin agus cad a tharla. Léimid gach rud.",
+  "SIMULATE": "Ionsamhail",
+  "SIMULATE_REST": "Ionsamhail an chuid eile den chraobhchomórtas",
+  "SIMULATED": "Do chluiche, ionsamhlaithe",
+  "RESUME_MATCH": "Lean ar aghaidh",
+  "RESUME_LINE": "Lean ar aghaidh: {home} {a} v {b} {away}, {min}'",
+  "RESUMED_AT": "ag leanúint ar aghaidh ag {min}'",
+  "SIM_TO_END": "Ionsamhail go dtí an deireadh"
 }

@@ -122,6 +122,7 @@ func _ready() -> void:
 	add_child(ball)
 	ball.place(Vector3.ZERO)
 	_make_teams()
+	_resume_state()
 	officials = Officials.new(self)
 	add_child(officials)
 	replay = Replay.new(self)
@@ -164,6 +165,8 @@ func _ready() -> void:
 			t.pick_tactics(String(config.home if k == 0 else config.away), rng)
 		if config.has("tactics"):
 			t.tactics.merge(config.tactics[k], true)
+		if config.has("resume"):
+			t.tactics.merge(config.resume.tactics[k], true)
 		ai.append(t)
 	_place_for_throw_in(true)
 	phase = P.INTRO
@@ -175,13 +178,156 @@ func _ready() -> void:
 		hook.m = self
 		add_child(hook)
 	if not attract:
+		hud.set_score()
 		hud.intro(_intro_line(), tr("COACH_INTRO") if coach != null else "")
 
 
 func _intro_line() -> String:
 	var stage := String(config.get("stage", ""))
 	var venue_name := tr(String(DB.venue(String(config.get("venue", "county")))[0]))
-	return ("%s · %s" % [stage, venue_name]) if stage != "" else venue_name
+	var line := ("%s · %s" % [stage, venue_name]) if stage != "" else venue_name
+	if config.has("resume"):
+		line += " · " + tr("RESUMED_AT").format({"min": match_minute()})
+	return line
+
+
+# ---------------------------------------------------------------- leaving and coming back
+
+## The match as it stands, to carry on with later (a championship match left for the menu, or the game closed): the
+## score, the half and its clock, who is on (and their cards and legs), the substitutions, the scorers and the
+## tactics. It comes back at the same minute with a throw-in. Nothing in a shoot-out or once it is over.
+func snapshot() -> Dictionary:
+	if attract or phase in [P.SHOOTOUT, P.OVER]:
+		return {}
+	var h := half
+	var c := clock
+	if phase == P.HALF_TIME:
+		h = half + 1
+		c = 0.0
+	var slots := []
+	var bench_ids := []
+	for k in 2:
+		var arr := []
+		for pl in teams[k].players:
+			var p: Player = pl
+			arr.append({"id": String(p.data.id), "y": p.yellows, "b": p.blacks, "r": p.sent_off, "bin": p.sin_bin_until,
+				"f": p.fatigue})
+		slots.append(arr)
+		var ids := []
+		for pd in teams[k].bench:
+			ids.append(String(pd.id))
+		bench_ids.append(ids)
+	var cfg := config.duplicate(true)
+	cfg.erase("resume")
+	return {"v": 1, "config": cfg, "score": score.duplicate(true), "half": h, "clock": c, "stoppage": _stoppage,
+		"events": events.duplicate(true), "pstats": pstats.duplicate(true), "tstats": tstats.duplicate(true),
+		"subs": [int(teams[0].subs), int(teams[1].subs)], "bench": bench_ids, "slots": slots,
+		"tactics": [ai[0].tactics.duplicate(true), ai[1].tactics.duplicate(true)], "minute": match_minute()}
+
+
+## Back where it was left (config.resume, a snapshot()): before the benches sit their men.
+func _resume_state() -> void:
+	var r: Dictionary = config.get("resume", {})
+	if r.is_empty():
+		return
+	score = [[int(r.score[0][0]), int(r.score[0][1])], [int(r.score[1][0]), int(r.score[1][1])]]
+	half = int(r.half)
+	clock = float(r.clock)
+	_stoppage = float(r.get("stoppage", 0.0))
+	events = (r.events as Array).duplicate(true)
+	for e in events:
+		e.t = int(e.t)
+		e.team = int(e.team)
+	pstats = {}
+	for id in r.pstats:
+		var st: Dictionary = {}
+		for key in r.pstats[id]:
+			st[key] = int(r.pstats[id][key])
+		pstats[id] = st
+	for k in 2:
+		for key in r.tstats[k]:
+			tstats[k][key] = int(r.tstats[k][key])
+		var team: Dictionary = teams[k]
+		team.subs = int(r.subs[k])
+		var squad := DB.squad(String(team.id))
+		var keep_bench := []
+		for pd in squad.slice(15):
+			if String(pd.id) in r.bench[k]:
+				keep_bench.append(pd)
+		team.bench = keep_bench
+		var slots: Array = r.slots[k]
+		for i in mini(slots.size(), team.players.size()):
+			var sl: Dictionary = slots[i]
+			var pl: Player = team.players[i]
+			if String(pl.data.id) != String(sl.id):
+				for pd in squad:
+					if String(pd.id) == String(sl.id):
+						pl.take_over(pd, _look(k, pd, int(pd.line) == DB.POS_GK))
+						carries[pl] = Rules.Carry.new()
+						break
+			pl.yellows = int(sl.y)
+			pl.blacks = int(sl.b)
+			pl.sent_off = bool(sl.r)
+			pl.sin_bin_until = float(sl.bin)
+			pl.fatigue = float(sl.f)
+			if not pl.on_pitch():
+				pl.visible = false
+	_set_lods()
+
+
+## Leaving a championship match for the menu, or the game being closed or put away: kept to carry on with.
+func _keep_for_later() -> void:
+	if String(config.get("mode", "")) != "champ" or user_team < 0:
+		return
+	var snap := snapshot()
+	if not snap.is_empty():
+		Game.save_suspended(snap)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_keep_for_later()
+
+
+## The rest of the match simulated (the pause menu's Simulate to the end): the score from now on from the teams'
+## ratings (Sim.finish), extra time and penalties in a knock-out game, then full time as if it had been played.
+func sim_to_end() -> void:
+	if phase in [P.SHOOTOUT, P.OVER] or attract:
+		return
+	set_paused(false)
+	var frac := 0.0
+	var et_frac := 1.0
+	if half <= 2:
+		var left := maxf(0.0, half_len - clock) + (half_len if half == 1 else 0.0)
+		if phase == P.HALF_TIME:
+			left = half_len if half == 1 else 0.0
+		frac = left / (2.0 * half_len)
+	else:
+		var eh := half_len_now()
+		et_frac = (maxf(0.0, eh - clock) + (eh if half == 3 else 0.0)) / (2.0 * eh)
+	var r := Sim.finish(String(teams[0].id), String(teams[1].id), score, frac, knockout, half >= 3, et_frac, rng)
+	score = r.score
+	for id in r.scorers:
+		var sc: Array = r.scorers[id]
+		if not pstats.has(id):
+			for k in 2:
+				for pd in DB.squad(String(teams[k].id)):
+					if String(pd.id) == String(id):
+						pstats[id] = {"goals": 0, "points": 0, "free_g": 0, "free_p": 0, "wides": 0, "team": k, "num": int(pd.num)}
+		if pstats.has(id):
+			pstats[id].goals += int(sc[0])
+			pstats[id].points += int(sc[1])
+	if bool(r.extra_time) and half < 3:
+		half = 3
+	if not (r.pens as Array).is_empty():
+		shootout = {"goals": r.pens, "taken": [5, 5]}
+	if carrier != null:
+		_release(carrier)
+	ball.state = Sliotar.DEAD
+	_pending.clear()
+	advantage = {}
+	hud.set_score()
+	_finish(int(r.winner))
 
 
 # ---------------------------------------------------------------- the teams
@@ -2286,6 +2432,8 @@ func _finish(shootout_winner := -1) -> void:
 		_after(3.0, func(): _restart_attract())
 		return
 	hud.full_time(winner)
+	if String(config.get("mode", "")) == "champ":
+		Game.clear_suspended()
 	var result := {"config": config, "home": String(teams[0].id), "away": String(teams[1].id), "score": score.duplicate(true),
 		"winner": winner, "user_team": user_team, "pstats": pstats, "tstats": tstats, "events": events,
 		"extra_time": half >= 3, "shootout": shootout.duplicate(true) if not shootout.is_empty() else {},
@@ -2638,6 +2786,7 @@ func _exit_tree() -> void:
 
 
 func quit_match() -> void:
+	_keep_for_later()
 	Sfx.pause_all(false)
 	Sfx.crowd(-1.0)
 	Sfx.ambience(false)
