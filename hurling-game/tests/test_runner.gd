@@ -46,6 +46,7 @@ func _ready() -> void:
 	_hd_textures()
 	await _shadows()
 	await _ultra()
+	await _auto_pickup()
 	Game.settings = keep
 	Game.save_settings()
 	Game.delete_champ()
@@ -1020,6 +1021,37 @@ func _ultra() -> void:
 	Game.settings.graphics = keep
 	Game.show_screen("res://ui/main_menu.gd")
 	await frames(2)
+
+
+## With help with the ball on, your player picks up a ball he runs onto by himself (the owner found the LIFT button
+## too quick to hit); with it off, he waits for the button.
+func _auto_pickup() -> void:
+	var keep := int(Game.settings.get("assist", 1))
+	for assist in [1, 0]:
+		Game.settings.assist = assist
+		var m: Node = load("res://game/match.gd").new()
+		m.config = {"home": "KIL", "away": "TIP", "venue": "parish", "user_team": 0, "seed": 8, "length": 8.0, "mode": "test"}
+		add_child(m)
+		await frames(5)
+		for q in m.all_players():
+			(q as Player).global_position = Vector3(0, 0, 60)
+		var me: Player = m.player_by_num(0, 10)
+		me.global_position = Vector3.ZERO
+		m._set_active(me)
+		m.carrier = null
+		m.phase = m.P.LIVE
+		m.ball.state = Sliotar.FREE
+		m.ball.holder = null
+		m.ball.vel = Vector3.ZERO
+		m.ball.global_position = Vector3(0.9, 0.04, 0)
+		m.ball.last_touch = null
+		await frames(45)
+		var got: bool = m.carrier == me
+		check(got == (assist == 1), "Auto pick-up: help %s, ball on the ground at his feet, %s (got: %s)" % [
+			"on" if assist == 1 else "off", "lifted by himself" if assist == 1 else "left for the button", got])
+		m.queue_free()
+		await frames(2)
+	Game.settings.assist = keep
 
 
 func _find_text(n: Node, text: String) -> bool:

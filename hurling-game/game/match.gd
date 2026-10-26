@@ -524,6 +524,11 @@ func _carry_ball(dt: float) -> void:
 		_technical_foul(carrier, foul)
 
 
+## Your player plays a ball that reaches him by himself (help with the ball on, open play).
+func _auto_take() -> bool:
+	return phase == P.LIVE and int(Game.settings.get("assist", 1)) >= 1
+
+
 func _wants_auto_solo(pl: Player) -> bool:
 	if pl.busy():
 		return false
@@ -797,8 +802,9 @@ func _keeper_may_come(pl: Player) -> bool:
 	return Pitch.from_goal_line(land, -dir(pl.team)) < 14.0 and absf(land.z) < 14.0
 
 
-## The ball is within someone's reach: the AI's players play it; yours waits for your button (CATCH, LIFT, PULL),
-## unless the ball comes straight to him.
+## The ball is within someone's reach: the AI's players play it; yours does too, with help with the ball on (Solo or
+## Full: he lifts a ball on the ground onto his hurley, or catches one dropping to him, by himself; PULL pressed first
+## still pulls), else he waits for your button (CATCH, LIFT, PULL).
 func _try_contacts() -> void:
 	var b := ball.global_position
 	if b.y > CATCH_H + 0.6:
@@ -817,7 +823,7 @@ func _try_contacts() -> void:
 			continue
 		if _puck_out_blocked(p):
 			continue
-		if p == active and controls.visible:
+		if p == active and controls.visible and not _auto_take():
 			continue
 		bd = hd
 		best = p
