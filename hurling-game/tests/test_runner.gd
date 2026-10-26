@@ -49,6 +49,7 @@ func _ready() -> void:
 	await _auto_pickup()
 	await _champ_sim_resume()
 	await _crowd_builds()
+	_backpedal()
 	Game.settings = keep
 	Game.save_settings()
 	Game.delete_champ()
@@ -1131,6 +1132,27 @@ func _crowd_builds() -> void:
 	check(near > 0.6 and far < 0.15, "Crowd: rises as a man nears the posts with the ball (%.2f), falls back far out (%.2f)" % [near, far])
 	m.queue_free()
 	await frames(2)
+
+
+## A man moving away from where he looks: slowly, he backpedals (still facing, his stride run backward); faster
+## than a backpedal, he turns and runs.
+func _backpedal() -> void:
+	for sp in [2.0, 6.0]:
+		var p := Player.new({"num": 5, "line": 3, "speed": 70}, 0, {"jersey": Color.RED, "kind": "player"})
+		add_child(p)
+		p.yaw = 0.0                                 # facing +z
+		p.face_to = Vector3(0, 0, 50)
+		p.want_vel = Vector3(0, 0, -sp)
+		p.vel = p.want_vel
+		var ph0: float = p._ph
+		for i in 60:
+			p.integrate(1.0 / 60.0, i / 60.0)
+		var faces := p.forward().dot(Vector3(0, 0, 1))
+		if sp < Player.BACKPEDAL:
+			check(faces > 0.9 and p._ph < ph0, "Backpedal at %.0f m/s: still facing, the stride backward" % sp)
+		else:
+			check(faces < -0.9 and p._ph > ph0, "Away at %.0f m/s: turned round, running forward" % sp)
+		p.queue_free()
 
 
 func _find_text(n: Node, text: String) -> bool:

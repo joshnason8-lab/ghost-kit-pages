@@ -8,6 +8,7 @@ extends Node3D
 const ACCEL := 6.5          # m/s^2 to speed up
 const DECEL := 9.0          # m/s^2 to slow down
 const TURN := 7.0           # rad/s he can turn his body at a jog (slower at a sprint)
+const BACKPEDAL := 3.2      # m/s: the fastest a man moves backward facing the way he came; faster, he turns
 ## The man under your thumb answers it quicker than the computer's men move: a game's player has to feel the stick
 ## (round three: "the players barely react to the joystick"; 6.5 m/s^2 took well over a second to top speed).
 const USER_ACCEL_K := 2.0
@@ -230,24 +231,31 @@ func integrate(dt: float, now: float) -> void:
 		dv = dv.normalized() * rate * dt
 	vel += dv
 	position += vel * dt
-	# Facing: where he runs, or where he is told to look when standing.
+	# Facing: where he runs, or where he is told to look. A man told to look one way while moving the other
+	# backpedals if he is slow about it; faster than a backpedal, he turns and runs (a man facing the ball while
+	# running away from it looked to run forward while sliding backward: the owner's report).
 	var sp := vel.length()
 	var want_yaw := yaw
-	if sp > 1.2 and face_to == Vector3.ZERO:
+	var look := Vector3.ZERO
+	if face_to != Vector3.ZERO:
+		look = face_to - position
+		look.y = 0.0
+	var away := sp > 0.5 and look.length() > 0.2 and look.normalized().dot(vel / sp) < -0.3
+	if sp > 1.2 and (face_to == Vector3.ZERO or (away and sp > BACKPEDAL)):
 		want_yaw = atan2(vel.x, vel.z)
-	elif face_to != Vector3.ZERO:
-		var d := face_to - position
-		if Vector2(d.x, d.z).length() > 0.2:
-			want_yaw = atan2(d.x, d.z)
+	elif look.length() > 0.2:
+		want_yaw = atan2(look.x, look.z)
 	elif sp > 0.3:
 		want_yaw = atan2(vel.x, vel.z)
 	var turn := TURN * (1.0 - clampf((sp - 5.0) / 6.0, 0.0, 0.5)) * dt * (USER_TURN_K if agility > 1.0 else 1.0)
 	yaw += clampf(wrapf(want_yaw - yaw, -PI, PI), -turn, turn)
 	body.rotation.y = yaw
-	# The stride: a foot down twice a cycle.
+	# The stride: a foot down twice a cycle; run backward (the clip in reverse) when he moves the way he faces away
+	# from: a backpedal.
 	var stride := stride_at(sp, body.scale.x if body != null else DRAW_SCALE)
 	_prev_ph = _ph
-	_ph += sp / stride * PI * dt
+	var back := sp > 0.3 and forward().dot(vel / sp) < -0.3
+	_ph += sp / stride * PI * dt * (-1.0 if back else 1.0)
 	if floor(_ph / PI) != floor(_prev_ph / PI) and sp > 0.4:
 		steps_taken += 1
 		step_n += 1
@@ -373,13 +381,19 @@ func _pose(now: float) -> Dictionary:
 		for i in (RUN_ARMS if is_official() else (RUN_BODY if ball_stick or ball_hand else RUN_ARM_L)):
 			p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(run_p[0][i], wg)
 		p.hips_y = lerpf(float(p.get("hips_y", 0.0)), float(run_p[1]), wg)
+		if sp > 0.3 and forward().dot(Vector3(vel.x, 0, vel.z) / sp) < -0.3:
+			# A backpedal: the clip run in reverse (integrate), the body upright rather than leaning into a run.
+			for bn in ["spine", "chest"]:
+				p[bn] = HeroBody.turn(p.get(bn, Vector3.ZERO)).slerp(Quaternion.IDENTITY, 0.6)
 		if wr > 0.0 and not is_official() and not ball_stick:
-			# The hurley carried as hurlers carry it at a run (round five: "running looks a bit awkward with the
-			# hurley"): the right arm swings with the stride, a little less than the free arm, and the wrist turns
-			# the hurley up to point forward, clear of the legs and the grass, rather than hanging straight down.
-			for i in [8, 9]:
-				p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(run_p[0][i], wr * 0.65)
-			p.hand_r = HeroBody.turn(p.get("hand_r", Vector3.ZERO)).slerp(HeroBody.turn(Vector3(-42.0, 0, 0)), wr)
+			# The hurley carried as hurlers carry it at a run: the arm forward and bent, swinging a little with the
+			# stride, the stick held steady forward and down across the body. (Taking the sprint clip's pumping arm
+			# swung the hurley through half a circle each stride, up over the head and back: the owner found it
+			# unnatural, not smooth.)
+			var carry := [Vector3(-40.0 - s * 5.0, 0, -12), Vector3(52.0 + c * 4.0, 0, 0), Vector3(-42.0, 0, 0)]
+			for j in 3:
+				var bn: String = ["upperarm_r", "forearm_r", "hand_r"][j]
+				p[bn] = HeroBody.turn(p.get(bn, Vector3.ZERO)).slerp(HeroBody.turn(carry[j]), wr)
 	if action != "" and action_t <= action_len + 0.001:
 		var t := clampf(action_t / maxf(0.01, action_len), 0.0, 1.0)
 		if SWING_CLIP.has(action):
