@@ -222,7 +222,7 @@ jobs:
 
       # Signed with the owner's beta key (above). Without it uber-apk-signer signs with whatever debug key the runner
       # has, a different one each build, so a build will not install over the last (the fault this fixes). Both
-      # APKs, then the signing certificate's SHA-256 logged, and checked: with the owner's key it must be his.
+      # APKs, then the signing certificate's SHA-256 logged, and checked: with the owner's key it must be theirs.
       - name: Sign APKs
         run: |
           curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
