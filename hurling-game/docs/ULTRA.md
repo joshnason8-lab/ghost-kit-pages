@@ -90,6 +90,9 @@ The pack holds content only, no code: an export always adds the project's settin
 made from has changed (the manifest's `source`); the release is updated in place, so the pack stays across betas.
 A change to the pack that an older game could not read: raise `Ultra.PACK` (the file names carry it).
 
+After a release, `tests/hd_download.tscn` fetches the real pack from it through the game's own downloader, checks
+and mounts it (needs the internet, so not in CI): 114 MB in 21 s here, whole and mounted.
+
 Content tools: `tools/crowd/render_fans.gd -- ultra`, `tools/mocap/bvh_clip.py --ultra ultra/anim`,
 `tools/player/bake.gd` (its 7th argument the frame rate, 8th `clips_only`), `tests/kit_view.gd <out> 3` for a picture.
 
