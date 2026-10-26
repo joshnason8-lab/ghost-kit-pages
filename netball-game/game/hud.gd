@@ -69,6 +69,8 @@ func show_card(half_time := false) -> void:
 		card.queue_free()
 	card = TeamCard.make(m, half_time)
 	root.add_child(card)
+	# Over the pause button too, which the match adds after the HUD.
+	(func(): if is_instance_valid(card): root.move_child(card, -1)).call_deferred()
 
 
 func add_controls(c: TouchControls) -> void:
