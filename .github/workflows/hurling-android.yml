@@ -13,6 +13,12 @@ on:
   # doubled every failure email (the owner's request, round two).
   workflow_dispatch:
 
+# One run at a time per branch: two would race on the beta release's assets (the APKs, the HD pack and its
+# manifest). A newer push waits for the running one rather than stopping it part-way through an upload.
+concurrency:
+  group: hurling-android-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   GODOT_VERSION: "4.7.2"
   PROJECT_DIR: hurling-game

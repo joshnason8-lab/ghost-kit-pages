@@ -71,7 +71,7 @@ measured it yet: the beta's developer readout (tap the version on the home scree
 way to read it on one. Ultra is never dropped a level by the game itself (Low to High are, under about 36 fps):
 the player chose it.
 
-**The HD pack**: 120,323,560 bytes (115 MB) for pack 1. The owner's target was 300-600 MB; it is what the content
+**The HD pack**: 119,586,976 bytes (114 MB) for pack 1. The owner's target was 300-600 MB; it is what the content
 comes to (a 4K texture is about 12 MB once compressed for the GPU with its mipmaps), and padding it out with larger
 files would add download without anything a phone's screen shows.
 
@@ -83,6 +83,8 @@ godot --headless --path . --import
 tools/ultra/build_pack.sh         # build/hurling-heroes-hd-<PACK>.pck and .json
 ```
 
+The pack holds content only, no code: an export always adds the project's settings and its autoload scripts, so
+`tools/ultra/repack.gd` rewrites it with the files under `ultra/` and their imported textures alone.
 `tools/ultra/pack_preset.py` (run by `build_pack.sh`) writes the "Android HD pack" export preset with every file under
 `ultra/`. The Android presets leave `ultra/*` out. CI builds the pack on each push and uploads it only when what it is
 made from has changed (the manifest's `source`); the release is updated in place, so the pack stays across betas.

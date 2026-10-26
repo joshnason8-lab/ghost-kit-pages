@@ -128,9 +128,9 @@ jobs:
           grep -o 'android:targetSdkVersion="[0-9]*"\|android:minSdkVersion="[0-9]*"\|android:versionCode="[0-9]*"\|android:versionName="[^"]*"\|android:isGame="[a-z]*"\|android:appCategory="[a-z]*"\|uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | sort -u
           grep -q 'android:isGame="true"' "$RUNNER_TEMP/manifest.xml"
           grep -q 'android:targetSdkVersion="36"' "$RUNNER_TEMP/manifest.xml"
-          # The only permission: vibrate.
-          test "$(grep -o 'uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | grep -v 'VIBRATE' | wc -l)" = "0"
-          ! grep -q 'android.permission.INTERNET' "$RUNNER_TEMP/manifest.xml"
+          # Two permissions: vibrate, and internet (only for the optional HD pack, docs/ULTRA.md; the privacy page and
+          # store/PLAY_STORE.md say so). Nothing else.
+          test "$(grep -o 'uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | grep -v 'VIBRATE\|INTERNET' | wc -l)" = "0"
           python3 tools/check_pages.py "$AAB"
 
       - uses: actions/upload-artifact@v4
