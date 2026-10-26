@@ -353,7 +353,8 @@ func _graphics_auto() -> void:
 
 
 ## Play as one player: only his touches are yours (the team's: all of them); the white ring is under him. The officials
-## move: their heads follow the ball.
+## move (their heads follow the ball) and wear suits: the jacket and trousers, the shirt, the tie and the shoes each
+## somewhere on the model.
 func _play_as_and_officials() -> void:
 	var keep: int = Game.settings.play_as
 	for role in [-1, DB.POS_STRIKER, DB.POS_TEKONG]:
@@ -385,6 +386,20 @@ func _play_as_and_officials() -> void:
 			m._officials.tick(1.0, Vector3(6, 2, 0), true)
 			var right: Vector3 = o.pose.head
 			check(absf(left.y - right.y) > 30.0, "the referee's head follows the ball (%.0f° to %.0f°)" % [left.y, right.y])
+			var suited := 0
+			for b in m.officials:
+				var mat := (b as RealBody).mesh_instance.material_override as ShaderMaterial
+				suited += int(mat != null and mat.get_shader_parameter("suit_tex") != null)
+			check(suited == m.officials.size(), "the officials in suits (%d of %d)" % [suited, m.officials.size()])
+			var img := (load(RealBody.SUIT) as Texture2D).get_image()
+			var parts := [0, 0, 0, 0]
+			for y in range(0, img.get_height(), 2):
+				for x in range(0, img.get_width(), 2):
+					var c := img.get_pixel(x, y)
+					for k in 4:
+						parts[k] += int(c[k] > 0.5)
+			check(parts[0] > 20000 and parts[1] > 300 and parts[2] > 40 and parts[3] > 2000,
+				"the suit: cloth, shirt, tie and shoes (%s texels)" % [parts])
 		m.queue_free()
 		await frames(2)
 	Game.settings.play_as = keep

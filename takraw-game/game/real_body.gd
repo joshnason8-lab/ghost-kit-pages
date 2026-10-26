@@ -58,6 +58,9 @@ const KITS := {false: "res://assets/models/man_kit.png", true: "res://assets/mod
 ## On Medium and High: the models' own textures at 2048 px (and the kit's masks at 1024), compressed for the GPU.
 const SKINS_HI := {false: "res://assets/models/man_2k.jpg", true: "res://assets/models/woman_2k.jpg"}
 const KITS_HI := {false: "res://assets/models/man_kit_1k.png", true: "res://assets/models/woman_kit_1k.png"}
+## The officials' suit over the man's model: the jacket and trousers (red), the white shirt (green), the tie (blue),
+## the shoes (alpha); made by tools/models/suit_mask.gd.
+const SUIT := "res://assets/models/man_suit.png"
 ## Which textures: by the graphics level (-1), or the 1024 px ones (0) or the 2048 (1) whatever it is (the crowd
 ## sheet's tool, rendering each sheet from the textures its level's players wear).
 static var textures := -1
@@ -75,6 +78,7 @@ var _rig: Rig
 
 static var _rigs := {}
 static var _shader: Shader
+static var _suit_shader: Shader
 static var _mats := {}  # look key -> ShaderMaterial (players in the same kit share one)
 
 
@@ -112,11 +116,14 @@ static func warm() -> void:
 	for w in [false, true]:
 		rig(w)
 	material_for({})
+	material_for({"suit": Color("1b2030")})
 
 
 ## The material for a kit: the model's texture with its shirt, panels and shorts painted in the team's colours (the
 ## folds and shading kept) and the skin in the player's tone.
 static func material_for(l: Dictionary) -> ShaderMaterial:
+	if l.has("suit"):
+		return _suit_material(l)
 	var w := bool(l.get("women", false))
 	var jersey: Color = l.get("jersey", MODEL_SHIRT)
 	var shorts: Color = l.get("shorts", MODEL_NAVY)
@@ -161,6 +168,68 @@ void fragment() {
 	m.set_shader_parameter("kit_tex", load((KITS_HI if hi else KITS)[w]))
 	m.set_shader_parameter("shirt", jersey)
 	m.set_shader_parameter("navy", shorts)
+	m.set_shader_parameter("skin", skin)
+	m.set_shader_parameter("ref_shirt", MODEL_SHIRT)
+	m.set_shader_parameter("ref_navy", MODEL_NAVY)
+	m.set_shader_parameter("ref_skin", MODEL_SKIN)
+	_mats[key] = m
+	return m
+
+
+## An official's: the man's model in a suit (look.suit, its cloth), a white shirt and a tie (look.tie), black shoes;
+## his face, neck and hands his own, in his skin tone. The cloth keeps the folds and shading the model's texture has.
+static func _suit_material(l: Dictionary) -> ShaderMaterial:
+	var cloth: Color = l.suit
+	var tie: Color = l.get("tie", Color("7a1c26"))
+	var skin: Color = l.get("skin", MODEL_SKIN)
+	var hi := int(Game.settings.graphics) >= Game.GFX_MEDIUM if textures < 0 else textures == 1
+	var key := "suit|%s|%s|%s|%s" % [cloth.to_html(), tie.to_html(), skin.to_html(), hi]
+	if _mats.has(key):
+		return _mats[key]
+	if _suit_shader == null:
+		_suit_shader = Shader.new()
+		_suit_shader.code = """
+shader_type spatial;
+render_mode cull_back, diffuse_burley, specular_schlick_ggx;
+uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D kit_tex : filter_linear_mipmap, repeat_disable;
+uniform sampler2D suit_tex : filter_linear_mipmap, repeat_disable;
+uniform vec3 cloth : source_color;
+uniform vec3 tie : source_color;
+uniform vec3 skin : source_color;
+uniform vec3 ref_shirt : source_color;
+uniform vec3 ref_navy : source_color;
+uniform vec3 ref_skin : source_color;
+float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+void fragment() {
+	vec3 c = texture(albedo_tex, UV).rgb;
+	vec3 k = texture(kit_tex, UV).rgb;
+	vec4 m = texture(suit_tex, UV);
+	// The folds and shading the model's texture has here, against the colour it was painted (its kit or skin).
+	float kw = k.r + k.g + k.b;
+	float ref = (k.r * lum(ref_shirt) + k.g * lum(ref_navy) + k.b * lum(ref_skin)) / max(kw, 0.001);
+	float fold = kw > 0.3 ? mix(1.0, clamp(lum(c) / ref, 0.6, 1.35), 0.55) : 1.0;
+	c = mix(c, c * skin / ref_skin, k.b);
+	// Where he is his own (his head, neck, hands), the kit's cloth left at the neckline is the shirt's collar.
+	float own = 1.0 - clamp(m.r + m.g + m.b + m.a, 0.0, 1.0);
+	c = mix(c, vec3(0.82) * fold, own * clamp(k.r + k.g, 0.0, 1.0));
+	c = mix(c, cloth * fold, m.r);
+	c = mix(c, vec3(0.82) * fold, m.g);
+	c = mix(c, tie * fold, m.b);
+	c = mix(c, vec3(0.025) * fold, m.a);
+	ALBEDO = c;
+	ROUGHNESS = mix(mix(0.82, 0.6, k.b), 0.72, clamp(m.r + m.g + m.b, 0.0, 1.0));
+	ROUGHNESS = mix(ROUGHNESS, 0.32, m.a);
+	SPECULAR = 0.35 + 0.2 * m.a;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = _suit_shader
+	m.set_shader_parameter("albedo_tex", load((SKINS_HI if hi else SKINS)[false]))
+	m.set_shader_parameter("kit_tex", load((KITS_HI if hi else KITS)[false]))
+	m.set_shader_parameter("suit_tex", load(SUIT))
+	m.set_shader_parameter("cloth", cloth)
+	m.set_shader_parameter("tie", tie)
 	m.set_shader_parameter("skin", skin)
 	m.set_shader_parameter("ref_shirt", MODEL_SHIRT)
 	m.set_shader_parameter("ref_navy", MODEL_NAVY)

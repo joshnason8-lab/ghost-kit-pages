@@ -289,6 +289,27 @@ Performance on Low (`perf_probe`, `--fixed-fps 30`, each venue in its own proces
 (The tournament venues' added draw calls: the floor's lettering, the scoreboard's lines, the flags. Video memory
 falls elsewhere: the props' textures compressed for the GPU.)
 
+## The officials in suits (0.11.1)
+
+The referee, his assistant and the line judges wear suits, as at the World Cup and the Asian championships: a dark
+jacket and trousers, a white shirt with its collar and cuffs, a red tie, black shoes. They were the players' model in
+a white shirt and dark shorts.
+
+- **The same model, dressed by a mask:** `tools/models/suit_mask.gd` classes each texel of the man's texture by where
+  it is on the body in its rest pose and which bones move it (the arms, hands, legs, feet, head). It writes
+  `assets/models/man_suit.png` (512 px): the cloth, the shirt, the tie and the shoes, one channel each. His face, neck
+  and hands stay his own.
+- **The officials' shader** (`RealBody._suit_material`) paints those in the suit's colours, keeping the folds and
+  shading of the model's own texture. So the suit follows every pose: the referee in his chair, the signals, the line
+  judges' weight shifts.
+- **On every level, one draw call each as before;** the mask costs about 1.4 MB of video memory with its mipmaps
+  (lossless, so the tie's few texels stay sharp).
+- `test_runner` checks every official wears the suit, and the mask has each of its parts.
+
+Performance on Low (`perf_probe`, 0.11.0 → 0.11.1): the same draw calls within a frame's noise (±2), and 1.3 to
+1.9 MB more video memory in each venue (the mask): the National Arena 32.7 MB, the night market 50.4 MB, the park
+58.6 MB, the most.
+
 ## Gaps that need the owner
 
 None. The two raised in 0.5.0 are filled in 0.5.1:

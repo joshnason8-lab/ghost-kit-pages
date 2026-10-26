@@ -55,8 +55,8 @@ Pro (x0.92). This is on top of the touch quality it already scaled.
 - `SEED=n`: start the matches' seeds from n, to run several at once.
 - `PAIR=THA,KOR`: only that match.
 
+The officials wear suits as at those two events (0.11.1, docs/PROGRESS.md).
+
 ## Not copied
 
-- **Officials in suits:** the officials are the players' model in a white shirt and dark shorts; a suit needs a model
-  of its own.
 - **Feints and where the spikes land:** the broadcasts' frame rate doesn't show them.

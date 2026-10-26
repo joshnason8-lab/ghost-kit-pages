@@ -15,6 +15,9 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.11.1: **the officials in suits**: the referee, his assistant and the line judges in dark jackets and
+trousers, white shirts and red ties, black shoes, as at the World Cup and the Asian championships.
+
 New in 0.11.0, from the two matches the owner sent (the 2024 World Cup's Thailand v the Philippines, the Asian Cup's
 India v the Philippines; docs/AI.md):
 

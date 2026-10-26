@@ -255,7 +255,8 @@ func _role_player(side: int, role: int, nth := 0) -> Player:
 
 func _make_officials() -> void:
 	var post_z := Court.HALF_W + Court.POST_OUT
-	var look := {"jersey": Color("f3efe6"), "shorts": Color("1a1a1a"), "skin": Color("c98a5a")}
+	# In suits, as at the World Cup and the Asian championships: dark jackets and trousers, white shirts, ties.
+	var look := {"suit": Color("1b2030"), "tie": Color("7a1c26"), "skin": Color("c98a5a")}
 	_ref = RealBody.new(look)
 	add_child(_ref)
 	_ref.position = Vector3(0, 0.8, post_z + 0.82)
