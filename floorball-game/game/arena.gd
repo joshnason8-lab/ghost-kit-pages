@@ -127,6 +127,9 @@ func _ready() -> void:
 			_wall_bars(1, 24.0, 16.0)
 	_env(venue, float(v.light))
 	_floor()
+	if venue == "arena":
+		_floor_decals()
+		_make_light_show()
 	_boards()
 	_goals()
 	_benches()
@@ -230,6 +233,12 @@ func _floor() -> void:
 	m.set_shader_parameter("tile_m", float(src[2]))
 	m.set_shader_parameter("surface_mean", float(src[3]))
 	m.set_shader_parameter("wood", 1.0 if kind == "wood" else 0.0)
+	# The city arena's flooring a light sky blue with navy creases, as the Swedish league's arenas lay it; the halls keep
+	# the deeper blue.
+	if venue == "arena":
+		m.set_shader_parameter("rink_col", Color("7fa9d4"))
+		m.set_shader_parameter("crease_col", Color("2b4f8c"))
+		m.set_shader_parameter("crease_x", Vector3(Rules.CREASE_FRONT, Rules.CREASE_BACK, Rules.CREASE_HALF_W))
 	# Round the rink: the arena's grey sports floor over its concrete, the sports hall's own floor a darker blue-grey of
 	# the same flooring; the school's boards run under the rink too.
 	var surround: Color = {"arena": Color("5d636c"), "hall": Color("4f6680")}.get(venue, Color("d6c09c"))
@@ -243,6 +252,134 @@ func _floor() -> void:
 	mi.material_override = m
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
+
+
+## The city arena's floor decals (assets/crowd/floor_decals.png, tools/venue/make_decals.py): a disc in the centre
+## circle and four panels, two each side of the centre line, as a league arena prints its sponsors on the floor (here
+## the game's own name and slogans). One mesh, one draw call, a few millimetres over the floor.
+func _floor_decals() -> void:
+	var tex: Texture2D = load("res://assets/crowd/floor_decals.png")
+	if tex == null:
+		return
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var disc := Rect2(0.0, 0.0, 0.5, 1.0)
+	var go := Rect2(0.5, 0.0, 0.5, 0.5)
+	var tag := Rect2(0.5, 0.5, 0.5, 0.5)
+	# [centre (x, z), size (along x, along z), turn (radians), the sheet's part]
+	var pieces := [
+		[Vector2(0, 0), Vector2(3.4, 3.4), 0.0, disc],
+		[Vector2(-7.5, 5.2), Vector2(4.2, 2.0), 0.0, go],
+		[Vector2(7.5, 5.2), Vector2(4.2, 2.0), 0.0, tag],
+		[Vector2(-7.5, -5.2), Vector2(4.2, 2.0), PI, tag],
+		[Vector2(7.5, -5.2), Vector2(4.2, 2.0), PI, go],
+	]
+	var corners := [Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(0.5, 0.5), Vector2(-0.5, 0.5)]
+	for pc: Array in pieces:
+		var c: Vector2 = pc[0]
+		var sz: Vector2 = pc[1]
+		var r: Rect2 = pc[3]
+		var uvs := [r.position, r.position + Vector2(r.size.x, 0), r.position + r.size, r.position + Vector2(0, r.size.y)]
+		var pts := []
+		for k in 4:
+			var v: Vector2 = ((corners[k] as Vector2) * sz).rotated(float(pc[2])) + c
+			pts.append(Vector3(v.x, 0.004, v.y))
+		for k: int in [0, 2, 1, 0, 3, 2]:
+			st.set_normal(Vector3.UP)
+			st.set_uv(uvs[k])
+			st.add_vertex(pts[k])
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = tex
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.roughness = 0.5
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+
+
+# ---------------------------------------------------------------- the goal light show
+
+var _show: MultiMeshInstance3D
+var _show_t := 0.0
+var _show_end := 1
+const SHOW_S := 6.5      # how long the lights play after a goal
+const SPOTS := 14        # coloured spots roaming the floor (and one more: the scoring goal's crease)
+
+## The arena's light show after a goal, as in the Swedish league: pink and blue spots roam the rink and the crease of
+## the goal just scored in glows. One MultiMesh of glowing quads on the floor, drawn only while it plays.
+func _make_light_show() -> void:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	var q := PlaneMesh.new()
+	q.size = Vector2.ONE
+	mm.mesh = q
+	mm.instance_count = SPOTS + 1
+	_show = MultiMeshInstance3D.new()
+	_show.multimesh = mm
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled;
+varying vec4 col;
+void vertex() { col = COLOR; }
+void fragment() {
+	vec2 d = UV * 2.0 - 1.0;
+	// A spot (alpha 1): a soft round pool of light. The crease (alpha 0): a soft-edged rectangle.
+	float spot = 1.0 - smoothstep(0.35, 1.0, length(d));
+	float box = (1.0 - smoothstep(0.8, 1.0, abs(d.x))) * (1.0 - smoothstep(0.8, 1.0, abs(d.y)));
+	ALBEDO = col.rgb * mix(box, spot, col.a);
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	_show.material_override = m
+	_show.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_show.visible = false
+	add_child(_show)
+
+
+## A goal scored in the goal at end (-1 or 1): the lights play for SHOW_S seconds (the city arena only).
+func goal_lights(end: int) -> void:
+	if _show == null:
+		return
+	_show_end = end
+	_show_t = SHOW_S
+	_show.visible = true
+
+
+func _process(delta: float) -> void:
+	if _show == null or _show_t <= 0.0:
+		return
+	_show_t -= delta
+	if _show_t <= 0.0:
+		_show.visible = false
+		return
+	var t := SHOW_S - _show_t
+	var fade := clampf(t / 0.4, 0.0, 1.0) * clampf(_show_t / 1.2, 0.0, 1.0)
+	var mm := _show.multimesh
+	for i in SPOTS:
+		# Each spot sweeps a slow figure of its own over the rink.
+		var ph := float(i) * 1.7
+		var x := sin(t * (0.45 + 0.05 * (i % 4)) + ph) * 15.0
+		var z := cos(t * (0.38 + 0.04 * (i % 3)) + ph * 1.3) * 7.5
+		var size := 1.6 + 0.9 * float(i % 3)
+		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY.scaled(Vector3(size, 1, size)), Vector3(x, 0.012, z)))
+		var c := Color(1.0, 0.35, 0.6) if i % 2 == 0 else Color(0.35, 0.65, 1.0)
+		if i % 5 == 0:
+			c = Color(0.9, 0.9, 1.0)
+		var k := 0.55 * fade * (0.75 + 0.25 * sin(t * 6.0 + ph))
+		mm.set_instance_color(i, Color(c.r * k, c.g * k, c.b * k, 1.0))
+	# The crease of the goal scored in, lit pink and pulsing.
+	var cx := (Rules.CREASE_FRONT + Rules.CREASE_BACK) * 0.5 * _show_end
+	var cl := absf(Rules.CREASE_FRONT - Rules.CREASE_BACK)
+	mm.set_instance_transform(SPOTS, Transform3D(Basis.IDENTITY.scaled(Vector3(cl + 0.6, 1, Rules.CREASE_HALF_W * 2.0 + 0.6)), Vector3(cx, 0.014, 0)))
+	var g := fade * (0.45 + 0.25 * sin(t * 9.0))
+	mm.set_instance_color(SPOTS, Color(1.0 * g, 0.3 * g, 0.5 * g, 0.0))
 
 
 ## The sports floor: its markings' texture inside the rink, the hall's floor colour outside it, a scanned surface for
@@ -264,6 +401,9 @@ uniform sampler2D surface_n : hint_normal, filter_linear_mipmap, repeat_enable;
 uniform float tile_m = 2.0;
 uniform float surface_mean = 0.13;
 uniform float wood = 0.0;
+uniform vec4 rink_col : source_color = vec4(0.0);   // a flooring colour of the venue's own (alpha 1), else the markings texture's blue
+uniform vec3 crease_col : source_color = vec3(0.1, 0.2, 0.45);   // and its goal creases
+uniform vec3 crease_x = vec3(13.15, 17.15, 2.5);   // the creases: from, to (|x|), half width
 uniform vec3 surround : source_color = vec3(0.3, 0.4, 0.5);
 uniform vec2 rink_half = vec2(20.0, 10.0);
 uniform float corner_r = 1.5;
@@ -288,7 +428,11 @@ void fragment() {
 	// The scanned surface: the wood's boards run along the hall.
 	vec2 suv = (wood > 0.5 ? p.yx : p) / tile_m;
 	vec3 st = texture(surface, suv).rgb;
-	vec3 base = mix(surround, m, inside);
+	// The rink's flooring: the markings texture's blue, or the venue's own colour (the crease, darker in the texture,
+	// its own darker one).
+	float crease = step(crease_x.x, abs(p.x)) * step(abs(p.x), crease_x.y) * step(abs(p.y), crease_x.z);
+	vec3 rink = mix(m, mix(mix(rink_col.rgb, crease_col, crease), m, line), rink_col.a);
+	vec3 base = mix(surround, rink, inside);
 	if (wood > 0.5) {
 		// Varnished beech: the scan lifted and cooled a little.
 		vec3 w = mix(st, vec3(dot(st, vec3(0.333))), 0.42) * vec3(1.5, 1.47, 1.42);
@@ -355,8 +499,12 @@ static func floor_texture() -> ImageTexture:
 	_disc(img, to_px.call(0.0, 0.0), 0.12 * FLOOR_PX, line)
 	for end: int in [-1, 1]:
 		# The goal crease, 4 x 5 m (102.3), and the goalkeeper area, 1 x 2.5 m, its rear line the goal line (102.4).
+		# The crease is laid in a darker blue, as on the floors of the Nordic leagues and the World Championships.
 		var cx0: float = minf(Rules.CREASE_FRONT * end, Rules.CREASE_BACK * end)
 		var cx1: float = maxf(Rules.CREASE_FRONT * end, Rules.CREASE_BACK * end)
+		var f0: Vector2i = to_px.call(cx0, -Rules.CREASE_HALF_W)
+		var f1: Vector2i = to_px.call(cx1, Rules.CREASE_HALF_W)
+		img.fill_rect(Rect2i(f0, f1 - f0), base.darkened(0.38))
 		_rect_outline(img, to_px.call(cx0, -Rules.CREASE_HALF_W), to_px.call(cx1, Rules.CREASE_HALF_W), lw, line)
 		var gx0: float = minf(Rules.GK_AREA_FRONT * end, Rules.GOAL_LINE * end)
 		var gx1: float = maxf(Rules.GK_AREA_FRONT * end, Rules.GOAL_LINE * end)

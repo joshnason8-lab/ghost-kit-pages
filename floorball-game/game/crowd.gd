@@ -74,9 +74,10 @@ void vertex() {
 	vec2 to_cam = normalize(cam.xz - world.xz);
 	float fa = d.w * 6.2831853;
 	vec2 face = vec2(sin(fa), cos(fa));
+	// Which of the five views, and mirrored or not: as Crowd.view() works it out (tested there).
 	float ang = atan(face.y * to_cam.x - face.x * to_cam.y, dot(face, to_cam));
 	float view = clamp(floor(abs(ang) / 0.7853982 + 0.5), 0.0, 4.0);
-	mirror = ang < 0.0 ? 1.0 : 0.0;
+	mirror = ang > 0.0 ? 1.0 : 0.0;
 	float idx = (model * 5.0 + pose) * 5.0 + view;
 	cell = vec2(mod(idx, grid.x), floor(idx / grid.x));
 	tone = mix(vec3(1.0), vec3(0.42, 0.33, 0.27), d.y);
@@ -109,6 +110,17 @@ void fragment() {
 	m.set_shader_parameter("grid", Vector2(COLS, ROWS_HD if k else ROWS))
 	_mats[k] = m
 	return m
+
+
+## The cut-out the shader shows of a person facing `facing` (turns) seen from to_cam (the floor direction from them to
+## the camera): [view 0-4 (0 the front, 4 the back), mirrored]. The shader works it out the same way. Mirrored when
+## the angle is positive: checked by eye from all round (tools/crowd/facing_view.tscn), the person facing the rink from
+## every side. (Until 0.7.2 it was the other way round, and side-on spectators faced away from the rink.)
+static func view(facing: float, to_cam: Vector2) -> Array:
+	var fa := facing * TAU
+	var face := Vector2(sin(fa), cos(fa))
+	var ang := atan2(face.y * to_cam.x - face.x * to_cam.y, face.dot(to_cam))
+	return [clampi(int(floor(absf(ang) / (PI / 4.0) + 0.5)), 0, 4), ang > 0.0]
 
 
 ## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours), the

@@ -100,7 +100,7 @@ func mark(on: bool) -> void:
 func _look() -> Dictionary:
 	var kit: Array = data.get("kit", [Color("1d4ed8"), Color("1d4ed8"), Color.WHITE])
 	if role == "R":
-		return {"kind": "referee", "skin": Color(String(data.get("skin", "e8b48f"))), "jersey": Color("f2d21b"), "shorts": Color("15171a"),
+		return {"kind": "referee", "skin": Color(String(data.get("skin", "e8b48f"))), "jersey": Color(String(data.get("shirt", "f2d21b"))), "shorts": Color("15171a"),
 			"socks": Color("15171a"), "trim": Color("15171a"), "hair": Color(String(data.get("hair", "3b2a20"))), "hair_style": int(data.get("hair_style", 0)), "height": float(data.get("height", 1.8))}
 	var keeper := role == "G"
 	var jersey: Color = kit[0]

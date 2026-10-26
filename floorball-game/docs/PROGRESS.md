@@ -154,6 +154,27 @@ From the lead's brief (the APK may grow, up to about 150 MB, for looks and sound
   without the secret (a fork) it makes a key and warns. 0.3 to 0.7.0 were signed with uber-apk-signer's public debug
   key, so 0.7.1 needs one uninstall (docs/BETA.md); from then on every beta installs over the last.
 
+### 0.8.0-beta: what a Swedish league match showed (26 October 2026)
+
+The owner shared a 7-minute highlights video of a Swedish league match (white against red, 7-6, shot from high on
+the side). Watched as stills every 3 seconds and two goals frame by frame. What went into the game:
+- **How they play** (docs/RULES.md, "How the AI plays"): the defending team's box round the slot with the ball in
+  its end; the attacking centre at the edge of the goalkeeper area, screening; passes into and across the slot shot
+  first time; the long pass on the counter after a turnover. AI v AI per 60 minutes: 8.3 -> 10.8 goals, 98 -> 117
+  shots (real: about 10 goals).
+- **A goal's celebration**: the scorer wheels away toward the boards, his team-mates run to him and pile round him.
+- **The city arena as a league arena**: a light sky-blue floor with the goal creases laid in navy (the halls keep
+  their deeper blue; every venue's crease is now filled darker), big floor decals (a disc in the centre circle with
+  the game's name, four panels with its slogans, no real sponsor), and after a goal **a light show**: pink and blue
+  spots roam the rink and the scoring goal's crease glows, for six and a half seconds.
+- **Referees in black**, as in the league; in yellow when either team wears a dark shirt.
+- **Fixed: the crowd facing the wrong way.** The owner noticed it: the crowd shader mirrored its side views the wrong
+  way round, so every spectator seen side-on faced away from the rink (since the crowd was first made; the facing
+  test checked the numbers, not the picture). Now Crowd.view() works out the view and the mirroring, a test pins it,
+  and tools/crowd/facing_view.tscn shows one spectator from all round.
+- Looked at and left: an emptier crowd (the league's stands were a third full; a full stand reads better on a phone),
+  "GOAL" on the stands' LED ribbons (a later job).
+
 ## Next (in order)
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's

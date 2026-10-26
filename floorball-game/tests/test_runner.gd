@@ -750,6 +750,12 @@ func _crowd_faces() -> void:
 				if d <= 0.7:
 					bad += 1
 		check(n > 50 and bad == 0, "%s: every spectator faces the rink (%d of %d turned away, worst %.2f)" % [venue, bad, n, worst])
+		if venue == "arena":
+			# And is drawn so: a spectator facing +x, seen from in front, behind and both sides (the cut-out's view and
+			# its mirroring, Crowd.view(); the pictures checked by eye with tools/crowd/facing_view.tscn).
+			var v: Array = [Crowd.view(0.25, Vector2(1, 0)), Crowd.view(0.25, Vector2(-1, 0)), Crowd.view(0.25, Vector2(0, 1)), Crowd.view(0.25, Vector2(0, -1))]
+			check(v[0][0] == 0 and v[1][0] == 4 and v[2] == [2, false] and v[3] == [2, true],
+				"crowd: a spectator is drawn facing the way he faces from every side (%s)" % [v])
 		m.queue_free()
 		await frames(2)
 

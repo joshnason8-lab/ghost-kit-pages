@@ -138,7 +138,11 @@ func _support(p: Player, b: Vector2, carrier) -> Vector2:
 	var gx := Rules.GOAL_LINE * a
 	var deep := clampf((b.x * a + 20.0) / 40.0, 0.0, 1.0)   # 0 own end .. 1 their end
 	match int(p.slot):
-		0:   # centre: the slot in front of their goal, or in support behind the ball
+		0:   # centre: the slot in front of their goal, or in support behind the ball; with the ball deep in their end,
+			# on the edge of the goalkeeper area, screening the goalkeeper and waiting for the rebound (as the Swedish
+			# league's forwards do: most goals come from the crease)
+			if deep > 0.75:
+				return Vector2(a * (Rules.GK_AREA_FRONT - 1.3), clampf(b.y * 0.15, -1.2, 1.2))
 			var x := lerpf(b.x - a * 3.0, gx - a * 6.5, deep)
 			return Vector2(x, clampf(b.y * -0.3, -3.0, 3.0))
 		6:   # the sixth player, the goalkeeper pulled: in front of their goal, for the rebound and the screen
@@ -147,6 +151,9 @@ func _support(p: Player, b: Vector2, carrier) -> Vector2:
 			var s := -1.0 if p.slot == 1 else 1.0
 			s *= a
 			var x := clampf(b.x + a * 4.0, -16.0, 16.0) if deep < 0.7 else gx - a * 3.5
+			if deep < 0.55 and m.possession_time < 2.5:
+				# The ball just won: away up the rink for the long pass (the counter the league's teams score from).
+				x = clampf(b.x + a * 10.0, -15.0, 15.0)
 			return Vector2(x, s * 6.2)
 		_:   # defenders: back and wide, the safety valve
 			var s := -1.0 if p.slot == 3 else 1.0
@@ -184,6 +191,10 @@ func _shape_defence(p: Player, b: Vector2) -> Vector2:
 			s *= a
 			if deep > 0.7:
 				return Vector2(b.x - a * 2.0, s * 3.5 + b.y * 0.3)   # forecheck: high and on the ball
+			if deep < 0.3:
+				# The ball in our end: down into the box round the slot, the shooting lanes shut (the slot is where
+				# goals come from; a shot from out wide is the goalkeeper's).
+				return Vector2(gx + a * 8.0, s * 3.0 + b.y * 0.2)
 			return Vector2(lerpf(gx + a * 12.0, b.x - a * 2.0, 0.45), s * 4.2 + b.y * 0.3)
 		_:
 			var s := -1.0 if p.slot == 3 else 1.0
@@ -244,6 +255,10 @@ func _carry(p: Player, dt: float) -> void:
 	if m.pulled[1 - t] and not behind and dist < 32.0 and m.shot_lane_open(p, g) > 0.7 and _rng.randf() < 0.35:
 		m.shoot(p, Vector3(g.x, 0.25, _rng.randf_range(-0.4, 0.4)), false)
 		return
+	# A pass into the slot shot first time, before the goalkeeper has moved across (the league's most common goal).
+	if angle_ok and dist < 10.0 and m.carry_time < 0.6 and held > 0.6 and absf(p.pos.y) < 4.5 and _rng.randf() < 0.16 * level:
+		m.shoot(p, _aim(p, g), false)
+		return
 	if angle_ok and dist < 14.0:
 		var open: float = m.shot_lane_open(p, g)
 		var want := clampf((14.0 - dist) / 10.0, 0.0, 1.0) * (0.25 + open * 0.75) * (0.55 + p.stat("shot") / 200.0)
@@ -286,6 +301,12 @@ func _pass_value(p: Player, q: Player) -> float:
 	if lead.x * a < -10.0 and absf(lead.y) < 4.0:
 		danger = 0.8   # across the front of our own goal: never
 	var value := open * 0.8 + clampf(near_q / 4.0, 0.0, 1.0) * 0.6 + clampf(forward, -0.5, 0.8) - danger - d / 60.0
+	var g := target_goal()
+	if lead.distance_to(g) < 10.0 and absf(lead.y) < 4.0 and lead.x * a < Rules.GOAL_LINE:
+		# Into the slot, and better still across it from the side: the pass goals come from.
+		value += 0.3 + (0.15 if absf(p.pos.y) > 2.0 and signf(p.pos.y) != signf(lead.y) else 0.0)
+	if m.possession_time < 2.5 and p.pos.x * a < 0.0 and forward > 0.6:
+		value += 0.25   # the ball just won: the long pass ahead to the forward away
 	if p.pos.x * a < 0.0 and (lead.x - p.pos.x) * a < 1.5:
 		# Back or across in our own end: worth less the longer we have had the ball.
 		value -= 0.25 + clampf(m.possession_time / 6.0, 0.0, 1.0) * 0.6

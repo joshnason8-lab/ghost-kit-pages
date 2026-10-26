@@ -6,7 +6,7 @@ Finland, Switzerland and Czechia: five and a goalkeeper a side, a plastic ball w
 low boards. Floorball Unleashed plays the international Rules of the Game in force from 1 July 2026, and dresses its menus as
 the coach's whiteboard in a Nordic sports hall.
 
-> **Status: beta 0.7.1.** The players, goalkeepers and referees are the owner's Meshy models (a man for the men's
+> **Status: beta 0.8.0.** The players, goalkeepers and referees are the owner's Meshy models (a man for the men's
 > game, a woman for the women's), in each team's colours, with the owner's stick; the rink, hall and crowd were made
 > to match them (docs/MESHY_BRIEF.md). Since 0.5 they walk, jog and run with real people's motion capture (CMU),
 > their feet planted on the floor as they run (docs/MOCAP.md); 0.6 brought a recorded crowd and footsteps

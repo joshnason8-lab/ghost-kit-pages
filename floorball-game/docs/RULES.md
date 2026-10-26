@@ -173,13 +173,19 @@ How to Play > Referees' signs draws each one.
   (https://floorball.sport, "Tactics: defensive systems"), [verify].
 - **Attack**: wingers wide along the boards and ahead, the centre to the slot, the defenders back as the safety; the
   carrier reads shoot, pass or carry a few times a second; passes picked for open lanes, never across his own goal.
+- **From a Swedish league match** (a 7-6 highlights video the owner shared, October 2026; how the teams played it):
+  with the ball in their own end the defending team **drops into a box round the slot** (the wingers come down to
+  its edges, one man presses the carrier), so the slot is crowded and shots from out wide are the goalkeeper's; the
+  attacking centre **stands at the edge of the goalkeeper area** to screen and pick up rebounds; most goals come
+  from **a pass into or across the slot shot first time** and from scrambles at the crease; a turnover sends the
+  wingers **away up the rink for the long pass** on the counter. All four are in game/team_ai.gd (since 0.8.0).
 - **Shifts**: three lines, changes on the fly every 40-60 s of play (top teams change about every 45 s).
 - **The numbers** (men's World Championship 2016 analysis: about 10.2 goals a match, 10.6% of all shots scored, 27%
   of shots on target scored, so about 73% saved; 69% of possessions shorter than 15 s). Source: the study cited in
   the market research (research notes, "Tactics and stats").
-- **Measured** with `tests/ai_bench.tscn` (AI v AI, per 60 minutes of play, 4 matches): **10.0 goals, 120 shots
-  (62 on goal), 75.7% saved, 5 penalties, 30 face-offs.** Real: about 10 goals, about 95 shots, about 73% saved,
-  4-6 penalties. Shots run a little high; noted for tuning.
+- **Measured** with `tests/ai_bench.tscn` (AI v AI, per 60 minutes of play, 6 matches, 0.8.0): **10.8 goals, 117
+  shots (66 on goal), 89% of shots on goal saved, 4 penalties, 26 face-offs** (0.7: 8.3 goals, 98 shots). Real: about
+  10 goals, about 95 shots. Shots run a little high; noted for tuning.
 
 ## Where competitions differ (offered as options where they matter)
 

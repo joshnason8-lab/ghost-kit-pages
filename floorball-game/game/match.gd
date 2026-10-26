@@ -39,6 +39,8 @@ var phase := "intro"
 var phase_t := 0.0
 var restart := {}
 var possession_time := 0.0
+var _goal_scorer: Player = null   # the last goal's scorer, whom his team-mates run to
+var carry_time := 0.0          # how long the carrier has had the ball himself (a first-time shot comes before 0.6 s)
 var stats := {}                  # player id -> {g, a, sog, pim, saves, sa, name, num, team}
 var team_stats := [{}, {}]
 var advantage := {}              # a foul being played on: {team (fouled), offence, at, sanction, offender, left}
@@ -109,7 +111,8 @@ func _ready() -> void:
 			s.set_meta("sits", "")
 			sitters[t].append(s)
 	for i in 2:
-		var r := Player.new({"skin": DB.SKIN[_rng.randi_range(0, 2)], "hair": DB.HAIR[_rng.randi_range(0, 5)], "height": 1.82, "hair_style": _rng.randi_range(0, 1)}, -1, "R", i)
+		var r := Player.new({"skin": DB.SKIN[_rng.randi_range(0, 2)], "hair": DB.HAIR[_rng.randi_range(0, 5)], "height": 1.82, "hair_style": _rng.randi_range(0, 1),
+			"shirt": _referee_shirt()}, -1, "R", i)
 		r.match_node = self
 		add_child(r)
 		r.pos = Vector2(-4.0 + i * 8.0, 8.8 if i == 0 else -8.8)
@@ -318,6 +321,7 @@ func _tick_clock(dt: float, live: bool) -> void:
 
 func _live(dt: float) -> void:
 	possession_time += dt
+	carry_time += dt
 	for t in 2:
 		ai[t].play(dt)
 		if not pulled[t]:
@@ -429,6 +433,7 @@ func _take(p: Player) -> void:
 		_on_turnover(p.team)
 	ball.carrier = p
 	ball.last_player = p
+	carry_time = 0.0
 	ball.last_team = p.team
 	ball.last_how = "stick"
 	gk_throw_air = false
@@ -635,6 +640,15 @@ func _update_boxes() -> void:
 				ball.release()
 			if p.in_box and p == user_player:
 				_set_user(null)
+
+
+## The referees' shirts: black, as in the Nordic leagues; yellow when either team plays in a dark shirt (they must
+## stand out from both).
+func _referee_shirt() -> String:
+	for k: Array in kits:
+		if (k[0] as Color).get_luminance() < 0.3:
+			return "f2d21b"
+	return "1c1e22"
 
 
 func _kit(d: Dictionary, t: int) -> Dictionary:
@@ -933,6 +947,7 @@ func _goal(t: int, own: bool) -> void:
 		if String(adv.sanction) not in ["free_hit", "pen2"]:
 			_penalise(adv.offender, String(adv.sanction), String(adv.offence))
 	rules.goal(t, {"scorer": String(scorer.data.id) if scorer else "", "assist": String(assist.data.id) if assist else "", "own": own})
+	_goal_scorer = scorer
 	if scorer:
 		stats[scorer.data.id].g += 1
 		stats[scorer.data.id].sog += 1
@@ -954,6 +969,7 @@ func _goal(t: int, own: bool) -> void:
 	Sfx.play("roar", -4.0)
 	Sfx.react("cheer", -2.0)
 	Crowd.set_excite(1.0)
+	arena.goal_lights(int(signf(attack_dir(t))))
 	_ref_signal("goal", Vector2(-ball.pos.x, -ball.pos.z).normalized())
 	if user_team >= 0:
 		Game.haptic("goal" if t == user_team else "conceded")
@@ -968,11 +984,21 @@ func _goal(t: int, own: bool) -> void:
 
 func _celebrate() -> void:
 	var t = rules.log.back().team if not rules.log.is_empty() and String(rules.log.back().kind) == "goal" else 0
+	var scorer: Player = _goal_scorer if _goal_scorer != null and is_instance_valid(_goal_scorer) and _goal_scorer.team == t else null
 	for p: Player in skaters(t):
 		if p.act == "":
 			p.do("celebrate", 1.2)
-		var to: Vector2 = ball.floor_pos() * 0.5 - p.pos
-		p.want_vel = to.normalized() * minf(3.0, to.length())
+		var to: Vector2
+		if scorer == null:
+			to = ball.floor_pos() * 0.5 - p.pos
+		elif p == scorer:
+			# The scorer wheels away toward the boards on his side, arms up...
+			to = Vector2(p.pos.x * 0.85, signf(p.pos.y if p.pos.y != 0.0 else 1.0) * 7.5) - p.pos
+		else:
+			# ... and his team-mates run to him and pile round him (as the league's players do), a step apart.
+			var at := scorer.pos - p.pos
+			to = at - at.normalized() * 0.9 if at.length() > 0.9 else Vector2.ZERO
+		p.want_vel = to.normalized() * minf(4.5 if p != scorer else 3.0, to.length() * 2.0) if to.length() > 0.05 else Vector2.ZERO
 	for p: Player in skaters(1 - t):
 		p.want_vel = Vector2.ZERO
 
