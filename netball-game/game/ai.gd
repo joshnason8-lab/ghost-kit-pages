@@ -17,7 +17,14 @@ var last_passer: Player = null
 var _decide := {}           # holder -> when she passes (s held)
 var _arms := {}             # player -> seconds left with arms up (your DEFEND)
 var _cp_spots := {}         # player -> centre pass spot
+var _drive := {}            # player -> true while she drives on the centre pass whistle
+var _reset := false         # after a goal: the walk back to the next centre pass has begun
+var _cp_taker: Player = null
 var _user_target: Player = null
+
+const JOG := 2.8            # m/s: back to the spots after a goal (nobody sprints; the taking C hurries, Match)
+const HUDDLE_R := 1.05      # m: the ring of seven at a break
+const HUDDLE_PACE := 3.6    # m/s: off to the huddle
 
 
 func _init(p_match) -> void:
@@ -42,6 +49,8 @@ func sharp(t: int) -> float:
 ## defenders beside them, goal-side. snap: put them there at once (the start of a quarter).
 func place_centre(t: int, snap: bool) -> void:
 	_cp_spots.clear()
+	_drive.clear()
+	_cp_taker = m.player_at(t, "C")
 	var d: int = m.team_dir(t)       # the end team t attacks
 	var tl := Court.THIRD_X
 	var a := {
@@ -81,7 +90,27 @@ func _set_cp(pl: Player, spot: Vector2, snap: bool, d: int) -> void:
 	if snap:
 		pl.place(spot, PI * 0.5 * d)
 	pl.target = spot
-	pl.want_speed = 4.2
+	pl.want_speed = JOG
+
+
+## The centre pass whistle (Match): the GA and WA of the side taking it drive, two or three hard strides straight
+## into the centre third, away from their markers, for the first pass.
+func on_centre_whistle(t: int) -> void:
+	for pos in ["GA", "WA"]:
+		var pl: Player = m.player_at(t, pos)
+		if pl == null or pl.away() or pl == me:
+			continue
+		pl.lead_to = drive_spot(pl)
+		pl.lead_t = 1.1
+		_drive[pl] = true
+
+
+## Where her drive goes: 2.6 m inside the centre third from the transverse line, a stride across away from her marker.
+func drive_spot(pl: Player) -> Vector2:
+	var mk := marker_of(pl)
+	var away := signf(pl.p.y - mk.p.y) if mk and absf(pl.p.y - mk.p.y) > 0.05 else signf(pl.p.y + 0.01)
+	var to := Vector2(pl.dir * (Court.THIRD_X - 2.6), clampf(pl.p.y + away * 1.2, -Court.HALF_W + 1.0, Court.HALF_W - 1.0))
+	return Rules.onside_point(pl.pos, to, pl.dir, 0.3)
 
 
 ## Everyone is on her spot (or near enough) for the restart.
@@ -103,6 +132,13 @@ func think(dt: float) -> void:
 		if float(_arms[pl]) <= 0.0:
 			_arms.erase(pl)
 	var centre_setup: bool = m.phase == "setup" and String(m.restart.get("kind", "")) == Rules.CENTRE
+	# After a goal, a beat to celebrate, then everyone walks back to the next centre pass.
+	var walk_back: bool = m.phase == "goal" and m.phase_t > 0.9
+	if m.phase == "goal" and not walk_back:
+		_reset = false
+	elif walk_back and not _reset:
+		_reset = true
+		place_centre(Rules.centre_pass_team(m.cp_first, m.cp_n), false)
 	for t in 2:
 		for pl in m.players[t]:
 			pl.reaction -= dt
@@ -122,10 +158,11 @@ func think(dt: float) -> void:
 			if pl.away():
 				_out_of_play(pl)
 				continue
-			if centre_setup:
-				if _cp_spots.has(pl) and pl != m.restart.get("taker"):
+			if centre_setup or walk_back:
+				if _cp_spots.has(pl) and (walk_back or pl != m.restart.get("taker")):
 					pl.target = _cp_spots[pl]
-					pl.want_speed = 4.0
+					# The C taking it hurries to the centre circle; the others jog.
+					pl.want_speed = 4.5 if walk_back and pl == _cp_taker else JOG
 					pl.look_on = true
 					pl.look_at_p = Vector2.ZERO
 				continue
@@ -197,6 +234,43 @@ static func bench_spot(t: int) -> Vector2:
 	return Vector2(-6.5 if t == 0 else 6.5, Court.HALF_W + Court.RUNOFF * 0.6)
 
 
+## The middle of team t's huddle at a break: in front of its bench, in the run-off.
+static func huddle_centre(t: int) -> Vector2:
+	return bench_spot(t) - Vector2(0.0, 0.9)
+
+
+## Everyone is in her huddle (Match brings the interval screen up then).
+func huddled() -> bool:
+	for t in 2:
+		for pl in m.players[t]:
+			if pl.p.distance_to(huddle_spot(pl)) > 0.5:
+				return false
+	return true
+
+
+## Her place in her team's huddle: the seven in a tight ring, a place each by position.
+func huddle_spot(pl: Player) -> Vector2:
+	var k := Rules.POSITIONS.find(pl.pos)
+	return huddle_centre(pl.team) + Vector2.from_angle(TAU * float(k) / 7.0 - PI * 0.5) * HUDDLE_R
+
+
+## A break (quarter time, half time): each team walks to its huddle by the bench and stands in the ring facing in
+## (Match then puts everyone on her spot for the next centre pass).
+func huddle() -> void:
+	for t in 2:
+		for pl in m.players[t]:
+			var at := huddle_spot(pl)
+			var near: float = pl.p.distance_to(at)
+			pl.fenced = false
+			pl.stopped = false
+			pl.out_until = 0.0
+			pl.target = at
+			pl.want_speed = HUDDLE_PACE
+			pl.look_on = near < 1.2
+			pl.look_at_p = huddle_centre(t)
+			pl.set_act("huddle" if near < 0.35 else "run")
+
+
 ## One player in open play (or as a restart is set up): chase a loose ball, meet a pass, take a cut at one, or move
 ## with the play: lead and post in attack, mark in defence.
 func _play(pl: Player, dt: float) -> void:
@@ -210,6 +284,9 @@ func _play(pl: Player, dt: float) -> void:
 		if m.pass_info.get("cut") == pl:
 			_cut(pl)
 			return
+	if m.shot_info.has("by") and not (pl == marker_of(m.shot_info.by) and not m.shot_info.get("released", false)):
+		_rebound(pl)
+		return
 	if m.ball.state == "loose":
 		if _chaser(pl):
 			var to := Rules.onside_point(pl.pos, b, pl.dir, 0.1)
@@ -224,6 +301,43 @@ func _play(pl: Player, dt: float) -> void:
 		_attack(pl, dt)
 	else:
 		_defend(pl, dt)
+
+
+## A shot going up: the shooters turn to the post for the rebound, the GK and GD box out round them; the rest hold.
+func _rebound(pl: Player) -> void:
+	var at := rebound_spot(pl, m.shot_info.by)
+	pl.look_on = true
+	pl.look_at_p = Court.goal_post(int(m.shot_info.by.dir))
+	if at == Vector2.INF:
+		pl.target = pl.p + pl.vel * 0.15
+		pl.want_speed = 1.0
+		pl.set_act("ready")
+		return
+	pl.target = at
+	pl.want_speed = pl.speed_cap() * 0.8
+	pl.set_act("run" if pl.p.distance_to(at) > 0.4 else "ready")
+
+
+## Where she goes for the rebound of shooter's shot (Vector2.INF: she holds where she is): the GS and GA inside, 0.9 m
+## off the post, either side of it (each on the side she is on, not both on one); the GK and GD outside each of them,
+## 1.8 m off it.
+func rebound_spot(pl: Player, shooter: Player) -> Vector2:
+	var d := shooter.dir
+	var gs: Player = m.player_at(shooter.team, "GS")
+	var side := signf(gs.p.y + 0.01) if gs else 1.0
+	var r := 0.0
+	var s := 0.0
+	if pl.team == shooter.team and pl.pos in ["GS", "GA"]:
+		r = 0.9
+		s = side if pl.pos == "GS" else -side
+	elif pl.team != shooter.team and pl.pos in ["GK", "GD"]:
+		r = 1.8
+		s = side if pl.pos == "GK" else -side
+	else:
+		return Vector2.INF
+	var a := 0.7 * s
+	var at := Court.goal_post(d) + Vector2(-d * cos(a), sin(a)) * r
+	return Rules.onside_point(pl.pos, at, pl.dir, 0.1)
 
 
 ## Is she one of the two nearest her team's players to a loose ball (and allowed where it is)?
@@ -254,15 +368,19 @@ func _anchor(pl: Player) -> Vector2:
 	var z := 0.0
 	match pl.pos:
 		"GS":
-			ax = hl - (2.0 if bax > tl else 3.6)
+			ax = hl - (1.7 if bax > tl else 3.6)
 			z = -0.8
 		"GA":
 			ax = clampf(bax + 6.0, -tl + 1.0, hl - 4.6)
 			z = -2.6
 		"WA":
+			if bax > tl:
+				return _edge(pl, FEED_WA)   # the pocket at the corner of the circle
 			ax = clampf(bax + 5.0, -tl + 1.0, hl - 5.6)
 			z = 4.2
 		"C":
+			if bax > tl:
+				return _edge(pl, FEED_C)    # the top of the circle
 			ax = clampf(bax + 3.5, -hl + 5.6, hl - 5.6)
 			z = 1.0
 		"WD":
@@ -277,18 +395,46 @@ func _anchor(pl: Player) -> Vector2:
 	return Vector2(ax * d, z)
 
 
+## The feeders' angles round the circle's edge from its top (radians, toward +z in the team's frame).
+const FEED_WA := 1.0
+const FEED_C := -0.2
+
+
+## A spot on the circle's edge she attacks, ang from its top (toward the WA's side line when positive), off the line
+## by out metres; the WA's side is the +z one.
+func _edge(pl: Player, ang: float, out := 0.55) -> Vector2:
+	var r := Court.CIRCLE_R + out
+	return Vector2(pl.dir * (Court.HALF_L - r * cos(ang)), r * sin(ang))
+
+
+## The ball in her goal third: the GS holds (posts) by the post, the WA and C work the circle's edge.
+func _ball_deep(pl: Player) -> bool:
+	return m.ball.court_pos().x * pl.dir > Court.THIRD_X
+
+
 func _attack(pl: Player, dt: float) -> void:
 	pl.lead_t -= dt
 	var anchor := _anchor(pl)
+	var deep := _ball_deep(pl)
+	var hold := pl.pos == "GS" and deep
+	var feed := pl.pos in ["WA", "C"] and deep
 	if pl.lead_t <= 0.0 or pl.lead_to.distance_to(anchor) > 7.0:
+		_drive.erase(pl)
 		# A new lead: a few spots round the anchor; the one furthest from her marker and her team-mates.
 		var mk := marker_of(pl)
 		var best := anchor
 		var bv := -INF
 		for i in 5:
 			var c := anchor + Vector2(rng().randf_range(-2.5, 2.5), rng().randf_range(-3.0, 3.0))
-			if pl.pos == "GS" or (pl.pos == "GA" and anchor.x * pl.dir > Court.HALF_L - 5.0):
+			if hold:
+				# Posting: small moves round her spot by the post, her defender on her back.
+				c = anchor + Vector2(rng().randf_range(-0.7, 0.7), rng().randf_range(-1.1, 1.1))
+			elif pl.pos == "GS" or (pl.pos == "GA" and anchor.x * pl.dir > Court.HALF_L - 5.0):
 				c = anchor + Vector2(rng().randf_range(-1.6, 1.6), rng().randf_range(-2.4, 2.4))
+			elif feed:
+				# Sliding along the circle's edge for a passing lane.
+				var base := FEED_WA if pl.pos == "WA" else FEED_C
+				c = _edge(pl, base + rng().randf_range(-0.4, 0.4), rng().randf_range(0.35, 1.1))
 			c = Rules.onside_point(pl.pos, c, pl.dir, 0.3)
 			var v := 0.0
 			if mk:
@@ -301,12 +447,22 @@ func _attack(pl: Player, dt: float) -> void:
 				bv = v
 				best = c
 		pl.lead_to = best
-		pl.lead_t = rng().randf_range(1.2, 2.4)
+		pl.lead_t = rng().randf_range(1.8, 3.2) if hold else (rng().randf_range(0.9, 1.6) if feed else rng().randf_range(1.2, 2.4))
 	var dist := pl.p.distance_to(pl.lead_to)
 	pl.target = pl.lead_to
 	# Drive hard into the space, then hold it (posting) for the ball.
 	pl.want_speed = pl.speed_cap() * (0.95 if dist > 1.5 else 0.5)
-	pl.set_act("run")
+	if _drive.has(pl):
+		pl.want_speed = pl.speed_cap()   # the centre pass drive: flat out
+	if hold and dist < 0.9:
+		# Holding: feet wide, facing out to the ball, an arm out where she wants it, away from her defender; she
+		# only edges on to her spot.
+		pl.want_speed = 1.0
+		var mk := marker_of(pl)
+		var left := Vector2(cos(pl.facing), -sin(pl.facing))
+		pl.set_act("post", "r" if mk and (mk.p - pl.p).dot(left) > 0.0 else "l")
+	else:
+		pl.set_act("run")
 
 
 ## The opponent marking her (her opposite number).
@@ -335,14 +491,40 @@ func _defend(pl: Player, _dt: float) -> void:
 	# Mark: goal-side of her player and toward the ball, reacting a beat late (sharper players sooner).
 	if pl.reaction <= 0.0:
 		pl.reaction = lerpf(0.34, 0.12, clampf(float(pl.data.defend) / 99.0 * sharp(pl.team), 0.0, 1.0))
-		var to := mark.p + mark.vel * 0.25
-		var toward_ball := (b - to).normalized()
-		var toward_goal := (own_goal - to).normalized()
-		to += toward_ball * 0.7 + toward_goal * 0.55
-		pl.lead_to = Rules.onside_point(pl.pos, to, pl.dir, 0.1)
+		pl.lead_to = mark_spot(pl, mark, b)
 	pl.target = pl.lead_to
 	pl.want_speed = minf(pl.speed_cap(), maxf(2.5, mark.vel.length() * 1.15))
 	pl.set_act("mark" if pl.p.distance_to(mark.p) < 2.5 else "run")
+
+
+## Where a defender marks her player off the ball (b: the ball): goal-side and toward the ball. With the ball in the
+## goal third she defends, the GK and GD front the shooters (between ball and shooter, arms up) while it is outside
+## the circle, and drop goal-side once it is on the circle's edge or in it; the others shade toward the front of the
+## circle, zoning the space the feed goes through. The lower levels front less (they stand side-on).
+func mark_spot(pl: Player, mark: Player, b: Vector2) -> Vector2:
+	var own_goal := Court.goal_post(-pl.dir)
+	var to := mark.p + mark.vel * 0.25
+	var toward_ball := (b - to).normalized()
+	var toward_goal := (own_goal - to).normalized()
+	var deep := b.x * -pl.dir > Court.THIRD_X
+	if deep and pl.pos in ["GK", "GD"]:
+		if b.distance_to(own_goal) < Court.CIRCLE_R + 0.6:
+			to += toward_goal * 0.75 + toward_ball * 0.25
+		else:
+			var w := front_weight(pl.team)
+			to += toward_ball * lerpf(0.7, 0.85, w) + toward_goal * 0.55 * (1.0 - w)
+	else:
+		to += toward_ball * 0.7 + toward_goal * 0.55
+		if deep and pl.pos in ["WD", "C"]:
+			var front := own_goal + Vector2(pl.dir * (Court.CIRCLE_R + 1.2), 0.0)
+			to = to.lerp(front, 0.3)
+	return Rules.onside_point(pl.pos, to, pl.dir, 0.1)
+
+
+## How fully the circle defenders front the shooters (0-1): fully for AI v AI and the hardest levels; side-on on the
+## easiest.
+func front_weight(t: int) -> float:
+	return clampf((sharp(t) - 0.6) / 0.4, 0.3, 1.0)
 
 
 func nearest_defender(team: int, except: Player = null) -> Player:

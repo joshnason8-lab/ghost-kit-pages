@@ -29,6 +29,13 @@ func _ready() -> void:
 	await _league_options()
 	await _sanctions_and_injury()
 	await _break_screen()
+	await _cp_drive()
+	await _goal_reset()
+	await _front_mark()
+	await _rebound_spots()
+	await _umpire_goal_line()
+	await _huddle()
+	await _reserves()
 	_tags()
 	await _coach()
 	await _navigation()
@@ -690,6 +697,297 @@ func _break_screen() -> void:
 		check(String(gs.data.name) == coming, "tapping it brings her on")
 	m.queue_free()
 	await frames(2)
+
+
+# ---------------------------------------------------------------- the match study (docs/MATCH_STUDY.md)
+
+func _study_match(seed: int, cfg := {}) -> Match:
+	var m: Match = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "AUS", "away": "NZL", "venue": "arena", "user_team": -1, "demo": true, "seed": seed, "quarter": 15,
+		"mode": "quick", "no_injuries": true}
+	m.config.merge(cfg, true)
+	add_child(m)
+	return m
+
+
+func _wait_live(m: Match, limit := 600) -> void:
+	var guard := 0
+	while m.phase != "live" and guard < limit:
+		await frames(1)
+		guard += 1
+
+
+## The centre pass: on the whistle the GA and WA drive flat out, straight into the centre third, away from their
+## markers; and through play the GS holds (posts) by the post when the ball is in her goal third, arm out.
+func _cp_drive() -> void:
+	var m := _study_match(31)
+	await _wait_live(m)
+	var t := int(m.restart.to)
+	var d := m.team_dir(t)
+	var ok := true
+	for pos in ["GA", "WA"]:
+		var pl: Player = m.player_at(t, pos)
+		var spot: Vector2 = m.ai.drive_spot(pl)
+		ok = ok and m.ai._drive.has(pl) and absf(pl.lead_to.x) < Court.THIRD_X - 2.0 and pl.lead_to.x * d < pl.p.x * d - 1.5
+		ok = ok and absf(spot.x - d * (Court.THIRD_X - 2.6)) < 0.05
+		var mk: Player = m.ai.marker_of(pl)
+		ok = ok and (spot.y - pl.p.y) * (pl.p.y - mk.p.y) >= 0.0   # across away from her marker
+	check(ok, "the centre pass whistle: the GA and WA drive into the centre third, away from their markers")
+	var ga0: Player = m.player_at(t, "GA")
+	var flat: bool = ga0.want_speed == ga0.speed_cap() or m.pass_info.get("to") == ga0
+	await frames(15)
+	var fast := 0
+	for pos in ["GA", "WA"]:
+		var pl: Player = m.player_at(t, pos)
+		if flat and pl.vel.length() > 3.0 and pl.vel.x * d < 0.0:
+			fast += 1
+	check(fast >= 1, "they go flat out (%d of 2 over 4 m/s toward the centre third)" % fast)
+	# Through play: the GS posts (stands holding, arm out) when the ball is in her goal third.
+	var posts := 0
+	var deep := 0
+	for f in 1800:
+		await frames(1)
+		if m.phase != "live":
+			continue
+		for tt in 2:
+			var gs: Player = m.player_at(tt, "GS")
+			if m.ball.court_pos().x * gs.dir > Court.THIRD_X and m.holder != null and m.holder.team == tt and gs != m.holder:
+				deep += 1
+				if gs.act == "post":
+					posts += 1
+	check(deep > 0 and posts > deep / 3, "the GS holds by the post while her team has the ball in her goal third (%d of %d frames)" % [posts, deep])
+	m.queue_free()
+	await frames(2)
+
+
+## After a goal nobody sprints: everyone walks or jogs back to the next centre pass (the C taking it may hurry), and
+## the whistle comes within a few seconds.
+func _goal_reset() -> void:
+	var m := _study_match(32)
+	await _wait_live(m)
+	await frames(20)
+	var t := int(m.restart.to)
+	var gs: Player = m.player_at(t, "GS")
+	m.pass_info = {}
+	m._release_holder()
+	m._goal(gs, 1)
+	var nxt := Rules.centre_pass_team(m.cp_first, m.cp_n)
+	var taker: Player = m.player_at(nxt, "C")
+	var fastest := 0.0
+	var secs := 0.0
+	while not (m.phase == "live" and m.cp_n == 2) and secs < 15.0:
+		await frames(1)
+		secs += 1.0 / 30.0
+		if (m.phase == "goal" and m.phase_t > 1.0) or m.phase == "setup":
+			for tt in 2:
+				for pl in m.players[tt]:
+					if pl != taker:
+						fastest = maxf(fastest, pl.vel.length())
+	check(fastest <= TeamAI.JOG + 0.05, "after a goal the players jog back (fastest %.1f m/s)" % fastest)
+	check(m.phase == "live" and secs < 8.5, "the next centre pass is whistled within a few seconds (%.1f s)" % secs)
+	m.queue_free()
+	await frames(2)
+
+
+## Circle defence: the GK and GD front the shooters (between ball and shooter) while the ball is outside the circle
+## in their goal third, drop goal-side once it is on the circle's edge; the lower levels front less; off the ball
+## the others shade toward the front of the circle. Feeders sit on the circle's edge.
+func _front_mark() -> void:
+	var m := _study_match(33)
+	await frames(3)
+	var a := 0
+	var gs: Player = m.player_at(a, "GS")
+	var gk: Player = m.player_at(1 - a, "GK")
+	var post := Court.goal_post(gs.dir)
+	gs.p = post + Vector2(-gs.dir * 2.0, 0.5)
+	gs.vel = Vector2.ZERO
+	var b_out := post + Vector2(-gs.dir * 7.5, 3.0)
+	var s: Vector2 = m.ai.mark_spot(gk, gs, b_out)
+	check(s.distance_to(b_out) < gs.p.distance_to(b_out) - 0.5, "ball outside the circle: the GK fronts the GS (%s)" % s)
+	var b_edge := post + Vector2(-gs.dir * 5.2, 0.0)
+	var s2: Vector2 = m.ai.mark_spot(gk, gs, b_edge)
+	check(s2.distance_to(post) < gs.p.distance_to(post), "ball on the circle's edge: she drops goal-side (%s)" % s2)
+	m.user_team = a
+	m.config.difficulty = 0
+	var s3: Vector2 = m.ai.mark_spot(gk, gs, b_out)
+	check(s3.distance_to(b_out) > s.distance_to(b_out) + 0.2 and m.ai.front_weight(1 - a) < 0.5, "on the easiest level she fronts less")
+	m.user_team = -1
+	m.config.erase("difficulty")
+	var wd: Player = m.player_at(1 - a, "WD")
+	var wa: Player = m.player_at(a, "WA")
+	wa.p = post + Vector2(-gs.dir * 9.0, 4.5)
+	wa.vel = Vector2.ZERO
+	var own := Court.goal_post(-wd.dir)
+	var front := own + Vector2(wd.dir * (Court.CIRCLE_R + 1.2), 0.0)
+	var plain := wa.p + (b_out - wa.p).normalized() * 0.7 + (own - wa.p).normalized() * 0.55
+	var z: Vector2 = m.ai.mark_spot(wd, wa, b_out)
+	check(z.distance_to(front) < plain.distance_to(front) - 0.5, "off the ball the WD shades toward the front of the circle")
+	# Feeders: with the ball in the goal third, the WA's and C's spots are on the circle's edge, outside it.
+	m.ball.dead(Vector3(b_out.x, 1.0, b_out.y))
+	var feed_ok := true
+	for pos in ["WA", "C"]:
+		var pl: Player = m.player_at(a, pos)
+		var at: Vector2 = m.ai._anchor(pl)
+		var r := at.distance_to(post)
+		feed_ok = feed_ok and r > Court.CIRCLE_R and r < Court.CIRCLE_R + 1.2 and not Rules.offside(pl.pos, at, pl.dir)
+	check(feed_ok, "the WA and C feed from the circle's edge")
+	m.queue_free()
+	await frames(2)
+
+
+## Rebounds: as a shot goes up the GS and GA turn to the post inside, either side of it; the GK and GD box out round
+## them; the others hold.
+func _rebound_spots() -> void:
+	var m := _study_match(34)
+	await _wait_live(m)
+	var guard := 0
+	while (m.holder == null or m.phase != "live") and guard < 300:
+		await frames(1)
+		guard += 1
+	var a := m.holder.team
+	var gs: Player = m.player_at(a, "GS")
+	var post := Court.goal_post(gs.dir)
+	var spots := {}
+	var ok := true
+	for t in 2:
+		for pl in m.players[t]:
+			var at: Vector2 = m.ai.rebound_spot(pl, gs)
+			spots[pl] = at
+			var key: String = ("A" if t == a else "D") + pl.pos
+			if key in ["AGS", "AGA"]:
+				ok = ok and absf(at.distance_to(post) - 0.9) < 0.05
+			elif key in ["DGK", "DGD"]:
+				ok = ok and absf(at.distance_to(post) - 1.8) < 0.05 and not Rules.offside(pl.pos, at, pl.dir)
+			else:
+				ok = ok and at == Vector2.INF
+	var ga: Player = m.player_at(a, "GA")
+	ok = ok and signf((spots[gs] as Vector2).y) != signf((spots[ga] as Vector2).y)
+	ok = ok and signf((spots[m.player_at(1 - a, "GK")] as Vector2).y) == signf((spots[gs] as Vector2).y)
+	check(ok, "rebound spots: GS and GA inside either side of the post, GK and GD outside them, the rest hold")
+	# A shot that misses: everyone goes to it as it flies.
+	m.pass_info = {}
+	m._release_holder()
+	gs.vel = Vector2.ZERO
+	gs.p = post + Vector2(-gs.dir * 2.5, 0.3)
+	m._give(gs, false)
+	m.ai._decide[gs] = 99.0
+	m.shoot()
+	m.shot_info.goal = false
+	var d0 := ga.p.distance_to(post)
+	await frames(30)
+	var targets := true
+	for pos in ["GA"]:
+		targets = targets and m.player_at(a, pos).target.distance_to(m.ai.rebound_spot(m.player_at(a, pos), gs)) < 0.05
+	for pos in ["GK", "GD"]:
+		var pl: Player = m.player_at(1 - a, pos)
+		if pl != m.ai.marker_of(gs):
+			targets = targets and pl.target.distance_to(m.ai.rebound_spot(pl, gs)) < 0.05
+	check(m.shot_info.has("by") and targets, "during the shot they run to their rebound spots")
+	check(d0 < 1.2 or ga.p.distance_to(post) < d0, "the GA closes on the post (%.1f m from %.1f)" % [ga.p.distance_to(post), d0])
+	m.queue_free()
+	await frames(2)
+
+
+## The umpire: round the corner onto her goal line when the ball is in her circle (never across the court), back to
+## her side line when it goes up the court; she jogs; she stands still to signal; a light teal shirt.
+func _umpire_goal_line() -> void:
+	var u := Umpire.new(1)
+	add_child(u)
+	await frames(1)
+	var dt := 1.0 / 30.0
+	u.p = Vector2(11.0, u.side * (Court.HALF_W + Umpire.LINE))
+	var on_court := 0
+	var fastest := 0.0
+	var ball := Vector2(13.5, 1.0)
+	for i in 300:
+		u.follow(ball)
+		u.advance(dt, ball)
+		on_court += 1 if Court.on_court(u.p) else 0
+		fastest = maxf(fastest, u.vel.length())
+	check(fastest <= Umpire.JOG + 0.01, "she jogs to the goal line (%.1f m/s)" % fastest)
+	check(u.at_end and u.p.distance_to(u.end_spot()) < 0.3 and absf(u.p.x) > Court.HALF_L + 0.5, "ball in her circle: the umpire on her goal line (%s)" % u.p)
+	ball = Vector2(2.0, -1.0)
+	for i in 400:
+		u.follow(ball)
+		u.advance(dt, ball)
+		on_court += 1 if Court.on_court(u.p) else 0
+		fastest = maxf(fastest, u.vel.length())
+	check(not u.at_end and u.p.distance_to(Vector2(2.0, u.side * (Court.HALF_W + Umpire.LINE))) < 0.3, "ball up the court: back on her side line (%s)" % u.p)
+	check(on_court == 0, "round the corner, never across the court (%d frames on it)" % on_court)
+	check(fastest <= Umpire.SPEED + 0.01, "never faster than a run to catch up with play (%.1f m/s)" % fastest)
+	ball = Vector2(13.5, 1.0)
+	for i in 10:
+		u.follow(ball)
+		u.advance(dt, ball)
+	var moving := u.vel.length()
+	u.call_signal("contact", 1)
+	for i in 20:
+		u.follow(ball)
+		u.advance(dt, ball)
+	check(moving > 1.0 and u.sig != "" and u.vel.length() < 0.05, "she stops and stands still while she signals")
+	var shirt: Color = u.body.look.dress
+	check(shirt.g > shirt.r + 0.2 and shirt.b > shirt.r + 0.2 and shirt.v > 0.6, "a light teal shirt (%s)" % shirt.to_html(false))
+	u.queue_free()
+	await frames(1)
+
+
+## A break: each team huddles by its bench, the seven in a tight ring facing in, the umpires in the middle; the
+## interval screen comes up over it; after it, everyone is back on her spot for the centre pass.
+func _huddle() -> void:
+	var m := _study_match(35, {"user_team": 0, "demo": false})
+	await frames(10)
+	m._end_period()
+	check(m.phase == "break" and m.hud._break == null, "the break: the teams walk to their huddles first")
+	await frames(330)
+	check(m.hud._break != null, "then the interval screen")
+	var worst := 0.0
+	var facing_in := true
+	for t in 2:
+		var c: Vector2 = TeamAI.huddle_centre(t)
+		for pl in m.players[t]:
+			worst = maxf(worst, pl.p.distance_to(m.ai.huddle_spot(pl)))
+			var want := atan2(c.x - pl.p.x, c.y - pl.p.y)
+			facing_in = facing_in and absf(angle_difference(pl.facing, want)) < 0.5 and pl.act == "huddle"
+		check(c.distance_to(TeamAI.bench_spot(t)) < 1.5, "team %d's huddle is by its bench" % t)
+	check(worst < 0.4, "each team in a tight ring at its huddle (worst %.2f m off)" % worst)
+	check(facing_in, "facing in")
+	var mid := true
+	for u in m.umpires:
+		mid = mid and u.p.distance_to(Vector2(u.half * 0.8, 0.0)) < 0.4
+	check(mid, "the umpires in the middle")
+	m.skip_break()
+	await frames(3)
+	var back := m.phase == "setup" and m.q == 2
+	for t in 2:
+		for pl in m.players[t]:
+			back = back and Court.on_court(pl.p) and not Rules.offside(pl.pos, pl.p, pl.dir) and pl.act != "huddle"
+			back = back and pl.fenced == (pl != m.me or bool(Game.settings.onside))
+	check(back, "after the break everyone is on her spot for the centre pass")
+	m.queue_free()
+	await frames(2)
+
+
+## The reserves stand in front of their benches on Medium and High; Low draws none (it stays as it was).
+func _reserves() -> void:
+	var was := int(Game.settings.graphics)
+	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		var m := _study_match(36)
+		await frames(3)
+		var r := m.get_node_or_null("Reserves")
+		if g == Game.GFX_LOW:
+			check(r == null, "Low: no reserves drawn")
+		else:
+			var n: int = m.bench[0].size() + m.bench[1].size()
+			var by_bench := r != null and r.get_child_count() == n and n > 0
+			if by_bench:
+				for b in r.get_children():
+					var p := Vector2(b.position.x, b.position.z)
+					by_bench = by_bench and not Court.on_court(p) and p.distance_to(TeamAI.bench_spot(0 if p.x < 0.0 else 1)) < 3.0
+			check(by_bench, "High: the %d reserves stand by their benches" % n)
+		m.queue_free()
+		await frames(2)
+	Game.settings.graphics = was
 
 
 ## Name tags over players standing together are stacked, not printed over each other (playtest: "GSK", "GD/D").

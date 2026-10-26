@@ -66,6 +66,8 @@ var _cp_whistled := false
 var _stop_award := {}
 var _goal_team := -1
 var _break_skip := false
+var _break_next := 0                # the period after this break (the HUD's interval screen)
+var _break_shown := false
 var _ended := false
 var _auto_gfx_t := 0.0
 var _auto_gfx_frames := 0
@@ -112,6 +114,7 @@ func _ready() -> void:
 		for entry in squad:
 			if not _on_court(String(entry.id)):
 				bench[t].append(entry)
+	_reserves()
 	for h in [-1, 1]:
 		var u := Umpire.new(h)
 		add_child(u)
@@ -141,6 +144,34 @@ func _ready() -> void:
 		ball.bounced.connect(_on_bounce)
 	if Game.settings.dev and not demo:
 		add_child(DevOverlay.new(self))
+
+
+## The reserves (bench) standing in a row in front of their team's bench, in tracksuits (the code-built figure, one
+## shared mesh a team, no shadow): Medium and High only, so Low draws what it did. Rebuilt after a team change.
+func _reserves() -> void:
+	var old := get_node_or_null("Reserves")
+	if old:
+		old.name = "ReservesOld"
+		old.queue_free()
+	if int(Game.settings.graphics) <= Game.GFX_LOW:
+		return
+	var root := Node3D.new()
+	root.name = "Reserves"
+	add_child(root)
+	for t in 2:
+		var tm := DB.team(team_id(t))
+		var n: int = bench[t].size()
+		for i in n:
+			var e: Dictionary = bench[t][i]
+			var b := ToonBody.new({"umpire": true, "skin": Color(String(e.get("skin", "c48f62"))), "dress": tm.get("c1", Color.WHITE),
+				"trim": tm.get("c2", Color.BLACK), "hair": Color("15100c"), "hair_style": int(e.get("hair", 0)),
+				"height": float(e.get("height", 1.75)), "pos": ""})
+			root.add_child(b)
+			b.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			var at := TeamAI.bench_spot(t) + Vector2((float(i) - (n - 1) * 0.5) * 0.75, 1.3)
+			b.position = Vector3(at.x, 0.0, at.y)
+			b.rotation.y = PI
+			b.apply(Poses.at_ease())
 
 
 func _blank_stats(t: int, entry: Dictionary) -> Dictionary:
@@ -217,12 +248,17 @@ func _process(delta: float) -> void:
 	if phase != "break" and phase != "over":
 		ai.think(dt)
 		_drive_me(dt)
+	elif phase == "break":
+		ai.huddle()
 	for t in 2:
 		for pl in players[t]:
 			pl.moves = 0
 			pl.advance(dt)
 	for u in umpires:
-		u.follow(ball.court_pos())
+		if phase == "break":
+			u.to_middle()
+		else:
+			u.follow(ball.court_pos())
 		u.advance(dt, ball.court_pos())
 	ball.step(dt)
 	if not demo and phase in ["setup", "live", "goal"]:
@@ -233,7 +269,8 @@ func _process(delta: float) -> void:
 			"buttons": button_set(), "holder": holder.pos if holder else "", "mine": holder != null and holder.team == user_team}))
 	var att := team_dir(possession) if possession >= 0 else 0
 	cam.end_dir = team_dir(maxi(user_team, 0))
-	cam.track(ball.court_pos(), att, dt)
+	# At a break the camera looks over to the huddles by the benches.
+	cam.track(Vector2(0.0, Court.HALF_W) if phase == "break" else ball.court_pos(), 0 if phase == "break" else att, dt)
 
 
 func _clock_runs() -> bool:
@@ -362,6 +399,8 @@ func _go_live() -> void:
 		_cp_whistled = true
 		cp_n += 1
 	_whistle("long" if String(restart.kind) == Rules.CENTRE else "short", -6.0)
+	if String(restart.kind) == Rules.CENTRE:
+		ai.on_centre_whistle(int(restart.to))
 	game_event.emit("whistle", {"kind": restart.kind})
 
 
@@ -944,17 +983,30 @@ func _end_period() -> void:
 	if not demo:
 		Sfx.react("applause", -10.0)
 	_break_skip = false
+	_break_next = nxt
+	_break_shown = false
+	if holder:
+		holder.stopped = false
 	holder = null
 	pass_info = {}
 	shot_info = {}
 	ball.dead(ball.pos)
-	if hud:
-		hud.show_break(q, nxt)
+
+
+## Seconds of the teams going to their huddles before the interval screen comes up over them: once they are all
+## there, after HUDDLE_MIN at least and HUDDLE_S at most.
+const HUDDLE_S := 6.5
+const HUDDLE_MIN := 2.5
 
 
 func _run_break(_dt: float) -> void:
-	# A demo match goes straight on; yours waits for Continue (the interval's real length is shown on the HUD).
-	if demo and phase_t > 0.6 or _break_skip:
+	# The teams huddle by their benches (TeamAI.huddle), then the interval screen; yours waits for Continue (the
+	# interval's real length is shown on the HUD). A demo match goes straight on (the home screen's after its huddle).
+	if hud and not _break_shown and (phase_t > HUDDLE_S or phase_t > HUDDLE_MIN and ai.huddled()):
+		_break_shown = true
+		hud.show_break(q, _break_next)
+	var demo_wait := HUDDLE_S if bool(config.get("attract", false)) else 0.6
+	if demo and phase_t > demo_wait or _break_skip:
 		_next_period()
 
 
@@ -1031,6 +1083,8 @@ func _next_period() -> void:
 	for t in 2:
 		for pl in players[t]:
 			pl.out_until = 0.0
+			pl.fenced = pl != me or bool(Game.settings.onside)   # back from the huddle, to her areas
+			pl.look_on = false
 	if hud:
 		hud.hide_break()
 	_setup_centre(true)
@@ -1221,6 +1275,7 @@ func substitute(pl: Player) -> bool:
 		pl.body.queue_free()
 		pl._ready()
 		pl.place(pl.p, pl.facing)
+		_reserves()
 		game_event.emit("substitution", {"team": t, "pos": pl.pos})
 		return true
 	return false

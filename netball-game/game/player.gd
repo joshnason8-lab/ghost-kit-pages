@@ -30,7 +30,7 @@ var look_at_p := Vector2.ZERO
 var look_on := false         # face look_at_p (the ball) rather than where she runs
 
 var act := "ready"           # what her body does: ready, run, hold, pass, catch, shoot, defend, defend_shot, mark,
-                             # leap, out_of_play, cheer
+                             # leap, out_of_play, cheer, post (a shooter holding by the post), huddle (a break)
 var act_t := 0.0
 var act_kind := ""           # the pass's kind, for "pass"
 var act_up := 0.0            # where the ball is met, for "catch" (-1 low .. 1 high)
@@ -184,6 +184,10 @@ func _animate(dt: float) -> void:
 			want = Poses.blend(Poses.ready(0.2), Poses.out_of_play(), 1.0)
 		"cheer":
 			want = Poses.cheer(act_t)
+		"post":
+			want = Poses.with_arms(Poses.run(stride_phase, spd), Poses.post(act_kind)) if spd > 0.3 else Poses.post(act_kind)
+		"huddle":
+			want = Poses.huddle()
 		"mark":
 			want = Poses.with_arms(Poses.run(stride_phase, spd), Poses.mark(1.0 if int(act_t * 0.7) % 2 == 0 else -1.0)) if spd > 0.6 else Poses.mark()
 		_:
@@ -195,7 +199,7 @@ func _animate(dt: float) -> void:
 	_pose = Poses.blend(_pose, want, k)
 	# On her feet and moving, the legs and body (and, when they are free, the arms) come from the owner's Mixamo
 	# clips in step with her stride; what her arms are doing (a catch, a pass, marking) stays the code's pose.
-	var moving := spd > 0.3 and act in ["run", "ready", "mark"]
+	var moving := spd > 0.3 and act in ["run", "ready", "mark", "post"]
 	var arms_free := act == "run" or act == "ready"
 	var kc := 1.0 - exp(-8.0 * dt)
 	clip_body = lerpf(clip_body, smoothstep(0.3, 1.1, spd) if moving else 0.0, kc)

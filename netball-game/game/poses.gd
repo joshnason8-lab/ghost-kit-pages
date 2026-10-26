@@ -159,6 +159,47 @@ static func mark(side := 1.0) -> Dictionary:
 	return p
 
 
+## A shooter holding (posting) by the post: feet wide, low, her defender on her back, one arm out where she wants the
+## ball (side "l" or "r": her left or right arm), the other bent back to feel for her defender.
+static func post(side := "l") -> Dictionary:
+	var p := ready(1.0)
+	var o := "r" if side == "l" else "l"
+	var sx := 1.0 if side == "l" else -1.0
+	p.hips_y = -0.08
+	p.thigh_l = Vector3(-18, 0, 16)
+	p.thigh_r = Vector3(-18, 0, -16)
+	p.shin_l = Vector3(30, 0, 0)
+	p.shin_r = Vector3(30, 0, 0)
+	p["upperarm_" + side] = Vector3(-95, 0, 28.0 * sx)
+	p["forearm_" + side] = Vector3(-12, 0, 0)
+	p["upperarm_" + o] = Vector3(10, 0, -30.0 * sx)
+	p["forearm_" + o] = Vector3(-40, 0, 0)
+	return p
+
+
+## In the huddle at a break: leaning in, arms out round her team-mates' shoulders.
+static func huddle() -> Dictionary:
+	var p := ready(0.5)
+	p.spine = Vector3(16, 0, 0)
+	p.chest = Vector3(6, 0, 0)
+	p.head = Vector3(6, 0, 0)
+	p.upperarm_l = Vector3(-55, 0, 55)
+	p.forearm_l = Vector3(-25, 0, 0)
+	p.upperarm_r = Vector3(-55, 0, -55)
+	p.forearm_r = Vector3(-25, 0, 0)
+	return p
+
+
+## A reserve on the bench: standing at ease, hands together in front.
+static func at_ease() -> Dictionary:
+	var p := ready(0.2)
+	p.upperarm_l = Vector3(-14, 0, 6)
+	p.forearm_l = Vector3(-40, -30, 0)
+	p.upperarm_r = Vector3(-14, 0, -6)
+	p.forearm_r = Vector3(-40, 30, 0)
+	return p
+
+
 ## A leap for the ball (an intercept, a rebound, a high catch): t 0-1 through the jump, both arms stretched to it.
 static func leap(t: float) -> Dictionary:
 	var air := sin(clampf(t, 0.0, 1.0) * PI)

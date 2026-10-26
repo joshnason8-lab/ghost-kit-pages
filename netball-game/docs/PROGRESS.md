@@ -103,6 +103,24 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   after: the play shots pixel-identical, the others differ only in the umpires' stride (driven by the wall clock),
   the players' close-ups identical.
 
+- 0.8.0-beta (in progress) — match study: play (docs/MATCH_STUDY.md, the owner's video of an international). On the
+  centre pass whistle the GA and WA drive flat out 2.6 m into the centre third, a stride away from their markers
+  (`TeamAI.on_centre_whistle`, `drive_spot`). After a goal a beat to celebrate, then everyone jogs back at 2.8 m/s (the
+  taking C hurries); the walk starts in the goal phase, so the next whistle comes no later than before (6 AI v AI
+  matches: goal to whistle median 5.8 s, from 6.0; the longest about 9 s as before). With the ball in her goal third the
+  GS holds 1.7 m off the post, facing out, an arm out where she wants it (`Poses.post`); the WA and C work the circle's
+  edge (the pocket, the top) and slide along it for a lane; the GK and GD front the shooters while the ball is outside
+  the circle and drop goal-side once it is on the edge (`mark_spot`, less on the easier levels, `front_weight`); the WD
+  and C shade toward the front of the circle. As a shot goes up the GS and GA go in either side of the post, the GK and
+  GD box out round them, the rest hold (`rebound_spot`). The umpires jog (3.5 m/s; 5 to catch up), stand still to
+  signal, go round the corner onto the goal line when the ball is in their circle and back by the corner, and wear a
+  light teal shirt. At quarter and half time each team huddles in a ring by its bench, facing in (`Poses.huddle`), the
+  umpires walk to the middle, the camera looks over; the interval screen comes up once they are there (2.5-6.5 s). The
+  reserves stand in front of their benches in tracksuits on Medium and High (code-built figures, no shadow: Medium +8
+  draw calls and about 33k triangles); Low unchanged (89-90 draw calls, 53-72k triangles). Six 10-minute AI matches,
+  before and after: shooting 74% and 74%, goals a team an hour 78 and 78.5, centre passes to goals 58% and 52%. Tests
+  `_cp_drive`, `_goal_reset`, `_front_mark`, `_rebound_spots`, `_umpire_goal_line`, `_huddle`, `_reserves`.
+
 ## Next
 
 1. Native speakers' review of every translation (docs/translation_notes/), the lower-resource languages first; the
