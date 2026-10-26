@@ -570,5 +570,11 @@ func _match() -> void:
 	m.hud.show_break(2, 3)
 	await frames(6)
 	await audit("match_break")
+	# The team card, before the match and at half-time (fully faded in).
+	m.hud.hide_break()
+	for half in [false, true]:
+		m.hud.show_card(half)
+		await frames(15)
+		await audit("match_card_half" if half else "match_card")
 	Game.goto_menu()
 	await frames(4)

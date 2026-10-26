@@ -434,6 +434,117 @@ void fragment() {
 """ % (", vertex_lighting" if low else ""))
 
 
+## The courtside LED boards, the floor's painted wordmark and the goal lights (Medium and High, indoors): one draw call.
+## UV2.x: 0 a board (UV: metres along the row, 0-1 up the band), 1 the wordmark (UV into msgs, the vertex colour's
+## alpha its paint), 2 a goal light (UV2.y 1 its lens). A board runs a programme for six seconds, then the next: a
+## message scrolling past (msgs: a row of white text each), the two teams' colours in sweeping bands, or a message
+## blinking between them; for a few seconds after a goal (goal_t) "GOAL!" races along in the scorer's colour
+## (goal_col), and the goal light on that post (goal_side) flashes.
+static func led() -> ShaderMaterial:
+	return _make("led", """
+shader_type spatial;
+render_mode unshaded, blend_mix, cull_back, depth_draw_opaque, shadows_disabled, fog_disabled;
+uniform sampler2D msgs : filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec3 led_a : source_color = vec3(1.0, 0.8, 0.1);
+uniform vec3 led_b : source_color = vec3(0.1, 0.4, 0.9);
+uniform vec3 goal_col : source_color = vec3(1.0, 0.8, 0.1);
+uniform float goal_t = 99.0;
+uniform float goal_side = 1.0;
+varying vec3 wpos;
+const float ROWS = 8.0;
+const float REP = 10.5;      // metres along a board per repeat of a message
+const float GOAL_ROW = 6.0;
+
+float hash11(float p) {
+	p = fract(p * 0.1031);
+	p *= p + 33.33;
+	p *= p + p;
+	return fract(p);
+}
+
+// A light colour stays as it is for text; a dark one is lifted toward white so it reads on the dark board.
+vec3 ink(vec3 c) {
+	return dot(c, vec3(0.3, 0.55, 0.15)) > 0.3 ? c : mix(c, vec3(1.0), 0.55);
+}
+
+// Row row of msgs at x along it (in repeats), v up the band (the image runs top down).
+float text(float row, float x, float v) {
+	return texture(msgs, vec2(x, (row + 0.06 + (1.0 - clamp(v, 0.0, 1.0)) * 0.88) / ROWS)).r;
+}
+
+void vertex() {
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+
+void fragment() {
+	int k = int(UV2.x + 0.5);
+	vec3 col;
+	float a = 1.0;
+	if (k == 1) {
+		col = COLOR.rgb;
+		a = texture(msgs, UV).r * COLOR.a;
+	} else if (k == 2) {
+		float on = 0.0;
+		if (UV2.y > 0.5 && goal_t < 3.5 && sign(wpos.x) == goal_side) {
+			on = step(0.35, fract(goal_t * 2.5));
+		}
+		col = mix(COLOR.rgb * (UV2.y > 0.5 ? 0.6 : 1.0), vec3(3.2, 0.7, 0.25), on);
+	} else {
+		float u = UV.x;
+		float v = UV.y;
+		float slot = floor(TIME / 6.0);
+		float st = TIME - slot * 6.0;
+		float h = hash11(slot + 3.0);
+		vec3 bg;
+		vec3 fg;
+		float m;
+		if (goal_t < 4.0) {
+			float flash = step(0.5, fract(goal_t * 3.0));
+			bg = goal_col * mix(0.25, 0.6, flash);
+			fg = mix(vec3(1.3), ink(goal_col) * 1.4, flash);
+			// The word alone, at its own shape, every three metres (its gradient taken unwrapped: no seam).
+			float gx = u / (REP * 0.3) + goal_t * 0.8;
+			float gy = (GOAL_ROW + 0.06 + (1.0 - clamp(v, 0.0, 1.0)) * 0.88) / ROWS;
+			vec2 d = vec2(gx * 0.3, gy);
+			m = textureGrad(msgs, vec2(0.5 + (fract(gx) - 0.5) * 0.3, gy), dFdx(d), dFdy(d)).r;
+		} else if (h < 0.45) {
+			// A message scrolling past, in one team's colour on the other's.
+			float row = mod(slot * 5.0, 7.0);
+			row = row == GOAL_ROW ? 7.0 : row;
+			bool swap = hash11(slot + 11.0) < 0.5;
+			bg = (swap ? led_b : led_a) * 0.3;
+			fg = ink(swap ? led_a : led_b) * 1.35;
+			m = text(row, u / REP + TIME * 0.12, v);
+		} else if (h < 0.75) {
+			// The teams' colours in bands sweeping along, a bright edge on each.
+			float s = fract((u + v * 0.5) / 1.6 - TIME * 0.7);
+			bg = mix(led_a, led_b, step(0.5, s)) * 0.85;
+			fg = vec3(1.4);
+			m = smoothstep(0.06, 0.0, abs(fract(s * 2.0) - 0.04)) * 0.7;
+		} else {
+			// A message standing still, blinking between the teams' colours.
+			float row = mod(floor(h * 37.0), 6.0);
+			bool blink = fract(TIME * 0.9) < 0.5;
+			bg = vec3(0.02, 0.025, 0.05);
+			fg = ink(blink ? led_a : led_b) * 1.4;
+			m = text(row, u / REP, v);
+		}
+		col = mix(bg, fg, m);
+		// The diodes: a grid of dots near to, an even glow far off. A short fade between programmes.
+		vec2 g = vec2(u / 0.022, v * 26.0);
+		vec2 f = abs(fract(g) - 0.5);
+		float aa = clamp(max(fwidth(g.x), fwidth(g.y)) * 1.5, 0.0, 1.0);
+		col *= mix(1.0 - 0.55 * smoothstep(0.25, 0.48, max(f.x, f.y)), 0.82, aa);
+		if (goal_t >= 4.0) {
+			col *= 0.2 + 0.8 * smoothstep(0.0, 0.2, st) * smoothstep(6.0, 5.8, st);
+		}
+	}
+	ALBEDO = col;
+	ALPHA = a;
+}
+""")
+
+
 ## Glass (a basketball backboard): faintly tinted, clearer face on, the room reflected at a glancing angle.
 static func glass() -> ShaderMaterial:
 	return _make("glass", """

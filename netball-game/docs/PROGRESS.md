@@ -102,6 +102,19 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   copies and the 32-person crowd), the whistle and the Medium/High sounds in `_sounds`. Low's screenshots before and
   after: the play shots pixel-identical, the others differ only in the umpires' stride (driven by the wall clock),
   the players' close-ups identical.
+- 0.8.0-beta (in progress) — match study: venue (docs/MATCH_STUDY.md). Indoors on Medium and High: LED boards
+  round the run-off in the arena and a row of portable ones on the hall's far side, running invented messages
+  (assets/venue/led_atlas.png, drawn by tools/venue/led_atlas.py in the game's display face), the two teams' colours
+  in sweeping bands, and "GOAL!" in the scorer's colour after a goal; the game's wordmark painted in the run-off by
+  each side line; a goal light on each post that flashes for a goal. All one shader (VenueLook.led), one draw call;
+  Low and the outdoor court as they were. The TV camera cuts to a close shot of the post: for every shot in an AI v
+  AI match, in yours only once the ball is through the ring (never mid-play, so no setting; the stick steers by the
+  wide shot through it). The team card (TeamCard: the teams' colours, crests, names, competition and stage, venue;
+  at half-time the score) opens a match started from the menus and comes back at half-time; a tap skips it. The
+  scoreboard already showed the quarter and the clock. Tests: `_venue_study`; fit audit `match_card`,
+  `match_card_half`; venue_shots saves a goal's close-up. perf_probe (TV camera): Low unchanged in every venue (arena 89 draw calls /
+  55.6k primitives, hall 90 / 74.2k, outdoor 89 / 58.6k); arena Medium 106 to 107, High 147 to 148; hall Medium 107
+  to 108, High 148 to 149 (a few hundred triangles); about 0.4 MB more video memory; outdoor unchanged.
 
 - 0.8.0-beta (in progress) — match study: play (docs/MATCH_STUDY.md, the owner's video of an international). On the
   centre pass whistle the GA and WA drive flat out 2.6 m into the centre third, a stride away from their markers

@@ -5,7 +5,8 @@ extends CanvasLayer
 ## call (the infringement, the award and to whom), the bibs over players' heads, your player's ring, the 0.9 m ring
 ## round the landing foot of the player with the ball when you defend her, the three seconds running out round the
 ## ball, the Double Zone when it is live. And the overlays: a break between quarters (the quarter scores, team changes,
-## Continue) and the pause menu.
+## Continue) and the pause menu. A match started from the menus (config "card") opens on the broadcast's team card
+## (TeamCard), and shows it again at half-time.
 ##
 ## A CanvasLayer does not take the window's theme: the theme is set on its root Control (lesson 3 of Kabaddi Raid's
 ## betas), or its text falls back to a font with no glyphs for half the game's languages.
@@ -31,6 +32,7 @@ var _pause_btn: Button
 var _controls: TouchControls = null
 var _layout_panel: Control = null
 var _me_ring := 0.0
+var card: TeamCard = null
 
 
 func _init(p_match) -> void:
@@ -57,6 +59,18 @@ func _ready() -> void:
 	m.game_event.connect(_on_event)
 	if m.demo:
 		_board.visible = not bool(m.config.get("attract", false))
+	elif bool(m.config.get("card", false)):
+		show_card()
+
+
+## The team card over everything (before the match; at half-time with the score). A tap skips it.
+func show_card(half_time := false) -> void:
+	if card and is_instance_valid(card):
+		card.queue_free()
+	card = TeamCard.make(m, half_time)
+	root.add_child(card)
+	# Over the pause button too, which the match adds after the HUD.
+	(func(): if is_instance_valid(card): root.move_child(card, -1)).call_deferred()
 
 
 func add_controls(c: TouchControls) -> void:
@@ -304,7 +318,8 @@ func _draw_overlay() -> void:
 	if m.phase in ["break", "timeout", "injury"]:
 		return
 	var font: Font = Game.font_bold
-	var show_tags := int(Game.settings.tags) != 2 and not bool(m.config.get("attract", false))
+	# Not over the broadcast's close shot of the post.
+	var show_tags: bool = int(Game.settings.tags) != 2 and not bool(m.config.get("attract", false)) and m.cam.close_dir == 0
 	# Your player: a lime ring at her feet; the team-mate you would pass to, a dashed one.
 	if m.me and m.user_team >= 0:
 		_floor_ring(m.me.p, 0.62 + 0.04 * sin(_me_ring * 6.0), Game.C_ACCENT, 4.0)
@@ -424,6 +439,8 @@ func show_break(q: int, next: int, timeout_team := -1) -> void:
 	go.custom_minimum_size = Vector2(320, 66)
 	go.size_flags_horizontal = Control.SIZE_SHRINK_END
 	v.add_child(go)
+	if q == 2 and timeout_team < 0 and bool(m.config.get("card", false)):
+		show_card(true)
 
 
 func hide_break() -> void:

@@ -9,7 +9,9 @@ extends Node3D
 ## call, what glows (lines, light strips, boards, nets) in a second and its lights in a third, however many parts. The
 ## stands' seated people are painted by the shader, so a full house costs nothing more; on Medium and High the front
 ## rows are people of their own who jump and wave (Crowd, one more draw call). Low graphics leaves out the small
-## things and the bloom.
+## things and the bloom. Indoors on Medium and High the courtside boards are LED boards running messages and the
+## teams' colours, the game's wordmark is painted in the run-off and each post has a goal light that flashes for a goal
+## (VenueLook.led: one draw call more); Low keeps its plain glowing boards.
 
 var venue := "arena"
 var home_colors: Array = []
@@ -18,6 +20,9 @@ var _lit: Geo
 var _glow: Geo
 var _fx: Geo
 var _glass: Geo                   # see-through faces (a backboard's glass): a draw call of their own, if any
+var _led: Geo                     # LED boards, the floor's wordmark, the goal lights (VenueLook.led), if any
+var _led_mat: ShaderMaterial
+var _goal_t := 99.0               # seconds since a goal (the boards and the goal light celebrate it)
 var _props: VenueProps            # the venue's models (shared assets), one draw call
 var _low := false
 var _gfx := 0
@@ -35,6 +40,7 @@ func _ready() -> void:
 	_glow = Geo.new()
 	_fx = Geo.new()
 	_glass = Geo.new()
+	_led = Geo.new()
 	_gfx = int(Game.settings.graphics)
 	_low = _gfx == Game.GFX_LOW
 	var kind := String(DB.venue(venue)[2])
@@ -63,6 +69,19 @@ func _ready() -> void:
 		add_child(_props.commit(props))
 	if not _glass.verts.is_empty():
 		add_child(_glass.commit(glass))
+	if not _led.verts.is_empty():
+		_led_mat = VenueLook.led()
+		_led_mat.set_shader_parameter("msgs", load(LED_TEX))
+		var cols := _team_colors()
+		_led_mat.set_shader_parameter("led_a", cols[0])
+		_led_mat.set_shader_parameter("led_b", cols[1])
+		var li := _led.commit(_led_mat)
+		li.name = "Boards"
+		add_child(li)
+		var m := get_parent()
+		if m and m.has_signal("game_event"):
+			m.game_event.connect(_on_event)
+	set_process(_led_mat != null)
 	var fx := VenueLook.flare()
 	fx.set_shader_parameter("intensity", 1.25 if _low else 1.6)
 	fx.set_shader_parameter("halo", 0.8 if _low else 1.0)
@@ -74,6 +93,47 @@ func _ready() -> void:
 		Crowd.set_tint(_look.get("stand_tint", Color.WHITE))
 		crowd.build(spots, Game.crowd_density(), home_colors.duplicate(), hash(venue))
 		add_child(crowd)
+
+
+## The two teams' colours (home, away) for the boards: the match's, else the home colours.
+func _team_colors() -> Array:
+	var m := get_parent()
+	var cfg = m.get("config") if m else null
+	if cfg is Dictionary and cfg.has("home") and cfg.has("away"):
+		var a: Color = DB.team(String(cfg.home)).get("c1", Color.WHITE)
+		var b: Color = DB.team(String(cfg.away)).get("c1", Color.WHITE)
+		if _close(a, b):
+			b = DB.team(String(cfg.away)).get("c2", b)
+		return [a, b]
+	var h: Array = home_colors if home_colors.size() >= 2 else [Color("ffcc1a"), Color("1a66e6")]
+	return [h[0], h[1]]
+
+
+static func _close(a: Color, b: Color) -> bool:
+	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length() < 0.25
+
+
+## A goal: the boards cry it in the scorer's colour and the goal light on that post flashes.
+func _on_event(kind: String, info: Dictionary) -> void:
+	if kind != "goal" or _led_mat == null:
+		return
+	var m := get_parent()
+	var t := int(info.get("team", 0))
+	_goal_t = 0.0
+	_led_mat.set_shader_parameter("goal_side", float(m.team_dir(t)) if m.has_method("team_dir") else 1.0)
+	_led_mat.set_shader_parameter("goal_col", _team_colors()[t])
+	_led_mat.set_shader_parameter("goal_t", 0.0)
+
+
+func _process(delta: float) -> void:
+	if _goal_t < 6.0 and _led_mat:
+		_goal_t += delta
+		_led_mat.set_shader_parameter("goal_t", _goal_t if _goal_t < 6.0 else 99.0)
+
+
+## Whether this venue has the LED boards, wordmark and goal lights: indoors, on Medium and High.
+func _leds() -> bool:
+	return not _low and String(DB.venue(venue)[2]) != "outdoor"
 
 
 ## How loud the place is (0-1).
@@ -223,6 +283,8 @@ func _posts() -> void:
 			var p1 := ring_c + Vector3(cos(a1), 0, sin(a1)) * (Court.RING_R + 0.01)
 			_lit.cylinder(p0, p1, 0.011, 0.011, orange, 4 if _low else 6, false)
 		_lit.kind = Vector2.ZERO
+		if _leds():
+			_goal_light(base, sx)
 		# The net: a corded skirt from the ring down to a narrower opening 42 cm below (the shader knots the cords).
 		_glow.kind = Vector2(VenueLook.NET, 0)
 		var n := 16
@@ -237,6 +299,23 @@ func _posts() -> void:
 			var u1 := 8.0 * (i + 1) / n
 			_glow.quad(t0, t1, b1, b0, Color("f4f6fa"), [Vector2(u0, 0), Vector2(u1, 0), Vector2(u1, 3), Vector2(u0, 3)])
 		_glow.kind = Vector2.ZERO
+
+
+## The goal light: a box on the post under the ring, its lenses toward the court and the broadcast side, dark until a
+## goal at this end (VenueLook.led).
+func _goal_light(base: Vector3, sx: float) -> void:
+	var c := base + Vector3(0, 2.62, 0.1)
+	_led.kind = Vector2(2, 0)
+	_led.box(c, Vector3(0.14, 0.22, 0.1), Color("23262c"))
+	_led.kind = Vector2(2, 1)
+	var h := Vector3(0, 0.085, 0)
+	# Toward the broadcast side (+z) and toward the court (-sx).
+	var f := c + Vector3(0, 0, 0.052)
+	_led.quad(f + Vector3(-0.055, 0, 0) + h, f + Vector3(0.055, 0, 0) + h, f + Vector3(0.055, 0, 0) - h, f + Vector3(-0.055, 0, 0) - h, Color("ff5a3c"))
+	var e := c + Vector3(-sx * 0.072, 0, 0)
+	var w := Vector3(0, 0, 0.035 * sx)
+	_led.quad(e - w + h, e + w + h, e + w - h, e - w - h, Color("ff5a3c"))
+	_led.kind = Vector2.ZERO
 
 
 ## The officials' bench: the scorers' and timekeepers' table at the middle of one side line, with a glowing front,
@@ -344,6 +423,8 @@ func _arena() -> Array:
 	_court(Color("5a8cc8"), Color("3a95a8"), Color("0a1a44"), VenueLook.FLOOR, VenueLook.PAINTED, VenueLook.PAINTED)
 	_runoff_edge(Color("2fd6e0"))
 	_boards()
+	if _leds():
+		_wordmarks(Color(1, 1, 1, 0.3))
 	# The bowl: front corners of the seating, X0 along, Z0 across.
 	var x0 := Court.HALF_L + Court.RUNOFF + 3.3
 	var z0 := Court.HALF_W + Court.RUNOFF + 1.55
@@ -453,11 +534,41 @@ func _boards() -> void:
 		var inward := (b - a).cross(Vector3.UP).normalized()
 		_lit.wall(a, b, 0.0, h, Color("0b1030"), true)
 		_lit.kind = Vector2.ZERO
-		_glow.kind = Vector2(VenueLook.LED, 0.15)
-		_glow.wall(a + inward * 0.01, b + inward * 0.01, 0.18, h - 0.1, cols[int(r[2]) % 3])
-		_glow.kind = Vector2.ZERO
+		if _leds():
+			_led_band(a + inward * 0.01, b + inward * 0.01, 0.18, h - 0.1)
+		else:
+			_glow.kind = Vector2(VenueLook.LED, 0.15)
+			_glow.wall(a + inward * 0.01, b + inward * 0.01, 0.18, h - 0.1, cols[int(r[2]) % 3])
+			_glow.kind = Vector2.ZERO
 		var t0 := a - inward * 0.08
 		_lit.quad(Vector3(a.x, h, a.z), Vector3(t0.x, h, t0.z), Vector3(t0.x + b.x - a.x, h, t0.z + b.z - a.z), Vector3(b.x, h, b.z), Color("1a2350"))
+
+
+## An LED board's face from a to b (facing the side right of a -> b), y0 to y1 high: UV in metres along the row (the
+## same along a whole side, so a message runs on from board to board), 0-1 up it.
+func _led_band(a: Vector3, b: Vector3, y0: float, y1: float) -> void:
+	var along := Vector2(b.x - a.x, b.z - a.z).normalized()
+	var ua := Vector2(a.x, a.z).dot(along)
+	var ub := Vector2(b.x, b.z).dot(along)
+	_led.kind = Vector2.ZERO
+	_led.quad(Vector3(a.x, y1, a.z), Vector3(b.x, y1, b.z), Vector3(b.x, y0, b.z), Vector3(a.x, y0, a.z), Color.WHITE,
+		[Vector2(ua, 1), Vector2(ub, 1), Vector2(ub, 0), Vector2(ua, 0)])
+
+
+## The game's wordmark painted in the run-off by each side line, reading from the broadcast side, in col (its alpha
+## the paint's strength). Medium and High, indoors.
+func _wordmarks(col: Color) -> void:
+	const H := 0.8
+	var w := H * (LED_SPAN.y - LED_SPAN.x) * 1024.0 / 64.0 / 0.88
+	for sz: float in [-1.0, 1.0]:
+		var z := (Court.HALF_W + Court.RUNOFF * 0.5) * sz
+		_led.kind = Vector2(1, 0)
+		var y := 0.006
+		var v0 := 0.06 / 8.0
+		var v1 := 0.94 / 8.0
+		_led.quad(Vector3(-w * 0.5, y, z - H * 0.5), Vector3(w * 0.5, y, z - H * 0.5), Vector3(w * 0.5, y, z + H * 0.5), Vector3(-w * 0.5, y, z + H * 0.5), col,
+			[Vector2(LED_SPAN.x, v0), Vector2(LED_SPAN.y, v0), Vector2(LED_SPAN.y, v1), Vector2(LED_SPAN.x, v1)])
+	_led.kind = Vector2.ZERO
 
 
 ## The roof and the floodlight rigs under it: trusses along both sides and across both ends, each with banks of lamps
@@ -512,6 +623,8 @@ func _twinkles(x0: float, z0: float, o0: float, y0: float, o1: float, y1: float)
 
 # ---------------------------------------------------------------- the hall
 
+const LED_TEX := "res://assets/venue/led_atlas.png"
+const LED_SPAN := Vector2(0.2363, 0.7637)   # row 0's text across the atlas (tools/venue/led_atlas.py)
 const MAPLE_TEX := "res://assets/venue/surfaces/white_maple_veneer_albedo_1k.jpg"
 const BLOCK_TEX := "res://assets/venue/surfaces/concrete_block_wall_normal_1k.jpg"
 const CEIL_TEX := "res://assets/venue/surfaces/ceiling_interior_albedo_1k.jpg"
@@ -539,6 +652,9 @@ func _hall() -> Array:
 	var maple := Color("e1d7c6")
 	_court(maple, maple, maple.darkened(0.03), VenueLook.MAPLE, VenueLook.MAPLE)
 	_other_lines()
+	if _leds():
+		_hall_boards()
+		_wordmarks(Color(0.11, 0.31, 0.63, 0.4))
 	var hl := Court.HALF_L + 12.5   # room for the camera behind the goal
 	var hw := Court.HALF_W + Court.RUNOFF + 1.0
 	var h := 11.5
@@ -594,6 +710,21 @@ func _hall() -> Array:
 		_lit.kind = Vector2.ZERO
 	_hall_bench(Court.HALF_W + Court.RUNOFF + 0.75)
 	return spots
+
+
+## A row of portable LED boards along the far side line, as wheeled out for a league match. Medium and High.
+func _hall_boards() -> void:
+	var z := -(Court.HALF_W + Court.RUNOFF + 0.45)
+	var h := 0.9
+	var n := 4
+	for i in n:
+		var a := Vector3(-15.0 + 30.0 * i / n + 0.08, 0, z)
+		var b := Vector3(-15.0 + 30.0 * (i + 1) / n - 0.08, 0, z)
+		_lit.wall(a, b, 0.0, h, Color("1e2228"), true)
+		_lit.box((a + b) * 0.5 + Vector3(0, h + 0.02, -0.04), Vector3(b.x - a.x, 0.04, 0.12), Color("2a2f36"))
+		for x: float in [a.x + 0.3, b.x - 0.3]:
+			_lit.box(Vector3(x, 0.03, z - 0.25), Vector3(0.08, 0.06, 0.5), Color("2a2f36"))
+		_led_band(a + Vector3(0, 0, 0.01), b + Vector3(0, 0, 0.01), 0.16, h - 0.08)
 
 
 ## The hall's stand: rows stepped up from z0 (each depth deep, rise high, the first at front), a tip-up seat every
