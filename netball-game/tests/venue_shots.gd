@@ -3,7 +3,8 @@ extends Node
 ## costs to draw (the frame's draw calls and primitives with the venue shown, less the same frame with it hidden):
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/venue_shots.tscn -- OUT_DIR [levels] [venues]
 ## levels: low,medium,high (low,high by default); venues: arena,hall,outdoor (all by default). OUT_DIR "-" saves no
-## pictures, only the numbers. Besides the broadcast camera's centre pass and play, a shot from each other camera.
+## pictures, only the numbers. Besides the broadcast camera's centre pass and play, its close shot of the post after a
+## goal, and a shot from each other camera.
 
 var out := "-"
 var levels := ["low", "high"]
@@ -42,6 +43,11 @@ func _ready() -> void:
 				all.x, all.y, all.x - bare.x, all.y - bare.y])
 			await frames(200)
 			await shot("%s_%s_play" % [v, lv])
+			# A goal: the TV camera's close shot of the post, its goal light flashing, the boards crying it.
+			m._goal(m.player_at(0, "GS"), 1)
+			await frames(20)
+			await shot("%s_%s_goal_close" % [v, lv])
+			await frames(80)
 			# The other two cameras: courtside, and behind the goal.
 			for c: Array in [[Game.CAM_LOW, "low_cam"], [Game.CAM_END, "end_cam"]]:
 				m.cam.set_mode(c[0])

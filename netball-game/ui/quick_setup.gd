@@ -154,6 +154,6 @@ func _play() -> void:
 	Game.settings.last_away = _away
 	Game.save_settings()
 	Game.start_match({"home": _home, "away": _away, "venue": _venue, "quarter": Game.quarter_minutes(),
-		"difficulty": int(Game.settings.difficulty), "mode": "quick", "user_team": 0, "control": int(Game.settings.control),
+		"difficulty": int(Game.settings.difficulty), "mode": "quick", "card": true, "user_team": 0, "control": int(Game.settings.control),
 		"bib": String(Game.settings.bib), "double_zone": bool(Game.settings.double_zone), "timeouts": bool(Game.settings.timeouts),
 		"rolling": bool(Game.settings.rolling), "need_winner": false})

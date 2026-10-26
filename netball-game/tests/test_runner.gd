@@ -36,6 +36,7 @@ func _ready() -> void:
 	_sounds()
 	await _sounds_in_play()
 	await _low_unchanged()
+	await _venue_study()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -1064,3 +1065,104 @@ static func textures_in(root: Node) -> PackedStringArray:
 	var out := PackedStringArray(seen.keys())
 	out.sort()
 	return out
+
+
+## The match study's venue and broadcast (docs/MATCH_STUDY.md): indoors on Medium and High, LED boards, the floor's
+## wordmark and the goal lights in one draw call of their own, none of it on Low or outdoors; the goal light flashes
+## at the post scored in; the TV camera's close shot of the post for every shot in an AI v AI match, in yours only
+## after a goal, steering unchanged; the team card from the menus, skippable, again at half-time; the scoreboard's
+## quarter and clock.
+func _venue_study() -> void:
+	var was: int = int(Game.settings.graphics)
+	for g in [Game.GFX_LOW, Game.GFX_MEDIUM]:
+		Game.settings.graphics = g
+		for venue in ["arena", "hall", "outdoor"]:
+			var m: Match = (load("res://game/match.gd") as Script).new()
+			m.config = {"home": "AUS", "away": "NZL", "venue": venue, "user_team": -1, "demo": true, "seed": 4, "quarter": 15, "mode": "quick"}
+			add_child(m)
+			await frames(2)
+			var boards: MeshInstance3D = m.arena.get_node_or_null("Boards")
+			var want: bool = g != Game.GFX_LOW and venue != "outdoor"
+			check((boards != null) == want, "%s, graphics %d: LED boards %s" % [venue, g, "there" if want else "left out"])
+			if boards and want:
+				var mat := boards.material_override as ShaderMaterial
+				check(mat.get_shader_parameter("msgs") is Texture2D, "%s: the boards' messages are loaded" % venue)
+				check(boards.mesh.get_surface_count() == 1, "%s: boards, wordmark and goal lights are one draw call" % venue)
+				m.game_event.emit("goal", {"team": 1, "by": "GS", "value": 1})
+				await frames(2)
+				var gt: float = mat.get_shader_parameter("goal_t")
+				check(gt > 0.0 and gt < 1.0 and is_equal_approx(float(mat.get_shader_parameter("goal_side")), float(m.team_dir(1))),
+					"%s: a goal flashes the goal light at the post scored in (t %.2f)" % [venue, gt])
+				m.arena._goal_t = 5.99
+				await frames(3)
+				check(float(mat.get_shader_parameter("goal_t")) > 50.0, "%s: and the boards go back to their programme" % venue)
+			m.queue_free()
+			await frames(2)
+	Game.settings.graphics = was
+	# The close shot of the post.
+	for demo in [true, false]:
+		var m: Match = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "AUS", "away": "NZL", "venue": "arena", "user_team": -1 if demo else 0, "demo": demo, "seed": 4,
+			"quarter": 15, "mode": "quick"}
+		add_child(m)
+		await frames(3)
+		m.cam.set_mode(Game.CAM_TV)
+		var wide: Vector2 = m.cam.court_dir(Vector2(1, 0))
+		var gs: Player = m.player_at(0, "GS")
+		m.phase = "live"
+		m.shot_info = {"by": gs, "goal": true, "value": 1, "dist": 2.0, "t": 0.0, "released": false}
+		m.cam.track(m.ball.court_pos(), gs.dir, 1.0 / 30.0)
+		check(m.cam.close_dir == (gs.dir if demo else 0), "a shot: the close shot of the post %s (%d)" % ["in an AI v AI match" if demo else "not in yours, mid-play", m.cam.close_dir])
+		m.shot_info = {}
+		m.phase = "goal"
+		m.phase_t = 0.2
+		m.ball.dead(Court.ring_centre(gs.dir) - Vector3(0, 1.0, 0))
+		m.cam.track(m.ball.court_pos(), 0, 1.0 / 30.0)
+		check(m.cam.close_dir == gs.dir, "a goal: the close shot of the post it went through (%d)" % m.cam.close_dir)
+		check(m.cam.fov < 30.0 and m.cam.global_position.distance_to(Court.ring_centre(gs.dir)) < 15.0, "the close shot is close")
+		check(m.cam.court_dir(Vector2(1, 0)).distance_to(wide) < 0.15, "the stick steers as on the wide shot through a close-up")
+		m.phase_t = 2.0
+		for i in 30:
+			m.cam.track(m.ball.court_pos(), 0, 1.0 / 30.0)
+		check(m.cam.close_dir == 0 and m.cam.fov > 30.0, "then back to the wide shot")
+		m.cam.set_mode(Game.CAM_LOW)
+		m.phase_t = 0.2
+		m.cam.track(m.ball.court_pos(), 0, 1.0 / 30.0)
+		check(m.cam.close_dir == 0, "no close-ups on the courtside camera")
+		m.queue_free()
+		await frames(2)
+	# The team card, and the scoreboard.
+	for card in [true, false]:
+		var m: Match = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "ENG", "away": "WAL", "venue": "hall", "user_team": 0, "seed": 5, "quarter": 15, "mode": "cup",
+			"stage": tr("STAGE_SEMI"), "card": card}
+		add_child(m)
+		await frames(15)
+		var c: TeamCard = m.hud.card
+		check((c != null and is_instance_valid(c)) == card, "the team card %s" % ("opens a match from the menus" if card else "only from the menus"))
+		if card:
+			var texts := []
+			for n in c.find_children("*", "Label", true, false):
+				texts.append((n as Label).text)
+			check(DB.team_name("ENG") in texts and DB.team_name("WAL") in texts and tr("VENUE_HALL") in texts
+				and TeamCard.competition(m.config) in texts, "it names both teams, the competition and stage, and the venue (%s)" % [texts])
+			check(c.modulate.a > 0.3, "it fades in")
+			await frames(100)
+			check(not is_instance_valid(c), "it goes after a couple of seconds")
+			m.hud.show_break(2, 3)
+			await frames(2)
+			c = m.hud.card
+			check(is_instance_valid(c) and c.half_time, "half-time brings it back, with the score")
+			var tap := InputEventMouseButton.new()
+			tap.button_index = MOUSE_BUTTON_LEFT
+			tap.pressed = true
+			c._gui_input(tap)
+			await frames(20)
+			check(not is_instance_valid(c), "a tap skips it")
+			m.hud.hide_break()
+		var hud = m.hud
+		hud._process(0.0)
+		check(hud._period_l.text == hud.period_name(m.q) and hud._period_l.text != "", "the scoreboard shows the quarter (%s)" % hud._period_l.text)
+		check(hud._clock_l.text == "%d:%02d" % [int(m.time_left) / 60, int(m.time_left) % 60], "and the clock counting down (%s)" % hud._clock_l.text)
+		m.queue_free()
+		await frames(2)
