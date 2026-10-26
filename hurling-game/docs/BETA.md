@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.10.2
+
+- **Clean kits** on every graphics level: the grime and the streaks of the model's own texture are gone from the
+  shirts, shorts and helmets; each county's colours are solid.
+
 ## New in 0.10.1
 
 - The HD pack has a release of its own, so the beta page is new with every build again (Obtainium sees each beta).

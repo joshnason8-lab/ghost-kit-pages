@@ -232,6 +232,16 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.10.2-beta, clean kits, 26 October 2026)
+
+The owner asked for the dirt layer to go. The kit is now the county's colour alone (the texture's creases and grime
+no longer scale it), and the streaks that were left came from the mask: along the model's UV seams it thinned and
+picked up the next piece of the atlas, so the model's texture or the shorts' white showed through. The shader now
+lets the strongest part win and fills a point that is mostly kit (`game/hero_body.gd`), and
+`tools/player/clean_mask.py` fills the mask's thin gaps and small holes and grows the kit 2 px past its edges (all
+three masks). Every level; the skin keeps its texture (the faces). Some mottling stays at the sock tops, where the
+model's texture has gold bands.
+
 ## Done (0.10.0-beta, Ultra graphics, 26 October 2026)
 
 The owner asked for an Ultra level for high-end phones, with Low, Medium and High left exactly as they were

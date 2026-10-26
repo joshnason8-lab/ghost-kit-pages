@@ -180,7 +180,7 @@ func set_lod(l: int) -> void:
 ## a cloth's sheen at the edges; the skin smoother, and warm where light comes through from behind.
 static func _ultra_code() -> String:
 	var c := SHADER.replace("render_mode unshaded, cull_back;", "render_mode cull_back;")
-	# (The 4096 texture's creases and grime, kept at half on the phones' smaller one, are kept at a quarter here.)
+	# (The 4096 texture's light and dark in the skin, kept at half on the phones' smaller one, at a quarter here.)
 	c = c.replace("clamp(lum(tex) / max(lum(from), 0.002), 0.0, 1.6), 0.5)", "clamp(lum(tex) / max(lum(from), 0.002), 0.0, 1.6), 0.25)")
 	c = c.replace("uniform float shade = 0.72;", "uniform float shade = 0.72;\nuniform sampler2D detail_n : hint_normal, filter_linear_mipmap, repeat_enable;\nuniform sampler2D detail_r : hint_roughness_r, filter_linear_mipmap, repeat_enable;")
 	var tail := c.substr(c.find("	float d = dot(normalize(wn), normalize(light_dir));"))
@@ -226,7 +226,8 @@ varying vec3 rp;
 varying float leg;
 
 float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
-// The texture's light and dark kept, but softened: the model's creases read as stains on a light colour.
+// The skin keeps the texture's light and dark, softened (the face, the hands). The kit is the county's colour and
+// nothing else: the texture's creases and grime read as stains on it (the owner had them taken off).
 vec3 paint(vec3 tex, vec3 to, vec3 from) { return to * mix(1.0, clamp(lum(tex) / max(lum(from), 0.002), 0.0, 1.6), 0.5); }
 
 void vertex() {
@@ -238,6 +239,12 @@ void vertex() {
 void fragment() {
 	vec3 t = texture(albedo, UV).rgb;
 	vec4 m = texture(kit, UV);
+	// Along the model's UV seams the mask thins and picks up the next piece of the atlas (a line of the shorts' white
+	// across a jersey), and the model's own texture showed through as streaks: the strongest part wins (sharpened, so a
+	// real edge between two parts stays soft) and a point that is mostly kit is wholly kit.
+	float cover = m.r + m.g + m.b + m.a;
+	vec4 w = pow(m, vec4(6.0));
+	m = mix(m, w / max(w.r + w.g + w.b + w.a, 1e-6), smoothstep(0.2, 0.45, cover));
 	vec3 shirt = jersey;
 	if (leg > 0.5) {
 		shirt = socks;
@@ -253,9 +260,9 @@ void fragment() {
 		shirt = trim;
 	}
 	vec3 c = t;
-	c = mix(c, paint(t, shirt, ref_jersey), m.r);
-	c = mix(c, paint(t, trim, ref_trim), m.g);
-	c = mix(c, paint(t, shorts, ref_shorts), m.b);
+	c = mix(c, shirt, m.r);
+	c = mix(c, trim, m.g);
+	c = mix(c, shorts, m.b);
 	c = mix(c, paint(t, skin, ref_skin), m.a);
 	float d = dot(normalize(wn), normalize(light_dir));
 	float k = mix(shade, 1.0, smoothstep(-0.35, 0.3, d));
