@@ -352,7 +352,6 @@ COACH_PENALTY,"A penalty: aim with the joystick, then GOAL. Only the goalkeeper 
 COACH_STEPS,Too many steps: a free to them. SOLO it onto your hurley before the fourth step.,An iomarca coiscéimeanna: saorphoc dóibh. Cuir SOLO ar do chamán roimh an gceathrú coiscéim.
 SET_COACH,Coach's tips,Leideanna an traenálaí
 SET_COACH_NOTE,"Short tips through a match, each the first time it is needed. On for your first match.","Leideanna gearra le linn cluiche, gach ceann an chéad uair a bhíonn gá leis. Ar siúl do do chéad chluiche."
-SUB_LINE,{team} change: {on} on for {off},Athrú {team}: {on} isteach in áit {off}
 SUBS,Substitutions,Ionadaithe
 SUBS_LEFT_one,{n} left,{n} fágtha
 SUBS_LEFT_other,{n} left,{n} fágtha
@@ -422,3 +421,4 @@ RESUME_MATCH,Carry on,Lean ar aghaidh
 RESUME_LINE,"Carry on: {home} {a} v {b} {away}, {min}'","Lean ar aghaidh: {home} {a} v {b} {away}, {min}'"
 RESUMED_AT,carrying on at {min}',ag leanúint ar aghaidh ag {min}'
 SIM_TO_END,Simulate to the end,Ionsamhail go dtí an deireadh
+SUB_BOARD,Substitution,Ionadú

@@ -35,6 +35,9 @@ var _coach_t := 0.0
 var _drop := Vector3.INF     # where a high ball near your player comes down to catching height (INF none)
 var _drop_t := 0.0
 var _replay: Control = null   # "Replay", over the whole screen while one plays: a tap anywhere skips it
+var _sub_board: Control = null   # the fourth official's board: a substitution, its county, who comes on and off
+var _sub_queue: Array = []       # [team id, on, off] still to show, one after another
+var _sub_t := 0.0
 
 
 func setup(p_match: Node) -> void:
@@ -304,6 +307,7 @@ func tick(delta: float) -> void:
 	if _call_t > 0.0:
 		_call_t -= delta
 		_call.modulate.a = clampf(_call_t / 0.5, 0.0, 1.0)
+	_sub_step(delta)
 	_drop_t -= delta
 	if _drop_t <= 0.0:
 		_drop_t = 0.15
@@ -380,6 +384,63 @@ func call_line(text: String) -> void:
 	UI.refit(_call)
 	_call_t = 2.6
 	_call.modulate.a = 1.0
+
+
+## A substitution on the fourth official's board, below the score: the county's colours, the man coming on (green)
+## and the man going off (red), four seconds each; two or three at once are shown in turn.
+func substitution(team_id: String, on_name: String, off_name: String) -> void:
+	_sub_queue.append([team_id, on_name, off_name])
+	if _sub_board == null:
+		_show_next_sub()
+
+
+func _show_next_sub() -> void:
+	if _sub_queue.is_empty():
+		return
+	var it: Array = _sub_queue.pop_front()
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.04, 0.07, 0.05, 0.92)
+	sb.set_corner_radius_all(8)
+	sb.border_color = Game.C_GOLD
+	sb.border_width_left = 4
+	sb.content_margin_left = 14
+	sb.content_margin_right = 16
+	sb.content_margin_top = 8
+	sb.content_margin_bottom = 8
+	panel.add_theme_stylebox_override("panel", sb)
+	var sm := UI.safe_margins(root, 24.0)
+	panel.position = Vector2(sm.x, 112)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 12)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(h)
+	var chip := Colours.make(String(it[0]), 40)
+	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(chip)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 0)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(v)
+	v.add_child(UI.label(tr("SUB_BOARD").to_upper() + "  ·  " + DB.short_name(String(it[0])), "EyebrowLabel", 14, Game.C_GOLD))
+	v.add_child(UI.label("↑  " + String(it[1]), "SubLabel", 21, Color("6fdc7a")))
+	v.add_child(UI.label("↓  " + String(it[2]), "SubLabel", 21, Color("ff6b5e")))
+	root.add_child(panel)
+	_sub_board = panel
+	_sub_t = 4.0
+
+
+func _sub_step(delta: float) -> void:
+	if _sub_board == null:
+		return
+	_sub_t -= delta
+	_sub_board.modulate.a = clampf(_sub_t / 0.4, 0.0, 1.0)
+	_sub_board.visible = _replay == null
+	if _sub_t <= 0.0:
+		_sub_board.queue_free()
+		_sub_board = null
+		_show_next_sub()
 
 
 func banner(text: String, col: Color = Game.C_GOLD) -> void:

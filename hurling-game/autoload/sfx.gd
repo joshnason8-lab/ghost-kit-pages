@@ -16,6 +16,8 @@ var _pool: Array[AudioStreamPlayer] = []
 var _next := 0
 var _crowd: AudioStreamPlayer
 var _crowd_target := -60.0
+var _crowd_base := -60.0   # the bed's level for the ground (crowd())
+var _swell := 0.0          # 0..1: the crowd rising as a score comes (crowd_swell())
 var _music: AudioStreamPlayer
 var _music_target := -80.0
 var _amb: AudioStreamPlayer         # the ground's own sound under the crowd: birdsong
@@ -123,11 +125,19 @@ func crowd(intensity: float) -> void:
 	_ensure()
 	if intensity < 0.0 or not enabled():
 		_crowd.stop()
+		_swell = 0.0
 		return
-	_crowd_target = lerpf(-26.0, -6.0, clampf(intensity, 0.0, 1.0))
+	_crowd_base = lerpf(-26.0, -6.0, clampf(intensity, 0.0, 1.0))
+	_crowd_target = _crowd_base + _swell * 9.0
 	if not _crowd.playing:
 		_crowd.volume_db = -40.0
 		_crowd.play()
+
+
+## The crowd rising with an attack: 0 as it was, 1 a shot in the air (up to 9 dB louder, never above -2 dB).
+func crowd_swell(k: float) -> void:
+	_swell = clampf(k, 0.0, 1.0)
+	_crowd_target = minf(_crowd_base + _swell * 9.0, -2.0)
 
 
 ## Birdsong round the ground (on), or none.

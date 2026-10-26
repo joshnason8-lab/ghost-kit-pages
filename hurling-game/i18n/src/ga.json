@@ -355,7 +355,6 @@
   "COACH_STEPS": "An iomarca coiscéimeanna: saorphoc dóibh. Cuir SOLO ar do chamán roimh an gceathrú coiscéim.",
   "SET_COACH": "Leideanna an traenálaí",
   "SET_COACH_NOTE": "Leideanna gearra le linn cluiche, gach ceann an chéad uair a bhíonn gá leis. Ar siúl do do chéad chluiche.",
-  "SUB_LINE": "Athrú {team}: {on} isteach in áit {off}",
   "SUBS": "Ionadaithe",
   "SUBS_LEFT_one": "{n} fágtha",
   "SUBS_LEFT_two": "{n} fágtha",
@@ -427,5 +426,6 @@
   "RESUME_MATCH": "Lean ar aghaidh",
   "RESUME_LINE": "Lean ar aghaidh: {home} {a} v {b} {away}, {min}'",
   "RESUMED_AT": "ag leanúint ar aghaidh ag {min}'",
-  "SIM_TO_END": "Ionsamhail go dtí an deireadh"
+  "SIM_TO_END": "Ionsamhail go dtí an deireadh",
+  "SUB_BOARD": "Ionadú"
 }

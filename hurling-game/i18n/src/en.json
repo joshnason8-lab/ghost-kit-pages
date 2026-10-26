@@ -352,7 +352,6 @@
   "COACH_STEPS": "Too many steps: a free to them. SOLO it onto your hurley before the fourth step.",
   "SET_COACH": "Coach's tips",
   "SET_COACH_NOTE": "Short tips through a match, each the first time it is needed. On for your first match.",
-  "SUB_LINE": "{team} change: {on} on for {off}",
   "SUBS": "Substitutions",
   "SUBS_LEFT_one": "{n} left",
   "SUBS_LEFT_other": "{n} left",
@@ -421,5 +420,6 @@
   "RESUME_MATCH": "Carry on",
   "RESUME_LINE": "Carry on: {home} {a} v {b} {away}, {min}'",
   "RESUMED_AT": "carrying on at {min}'",
-  "SIM_TO_END": "Simulate to the end"
+  "SIM_TO_END": "Simulate to the end",
+  "SUB_BOARD": "Substitution"
 }

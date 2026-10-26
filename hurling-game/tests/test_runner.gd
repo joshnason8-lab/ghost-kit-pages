@@ -48,6 +48,7 @@ func _ready() -> void:
 	await _ultra()
 	await _auto_pickup()
 	await _champ_sim_resume()
+	await _crowd_builds()
 	Game.settings = keep
 	Game.save_settings()
 	Game.delete_champ()
@@ -1107,6 +1108,29 @@ func _champ_sim_resume() -> void:
 	m2.queue_free()
 	await frames(2)
 	Game.clear_suspended()
+
+
+## The crowd senses a score coming: up as a man runs at the posts with the ball, down again when he is far out.
+func _crowd_builds() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "TIP", "venue": "stadium", "user_team": 0, "seed": 8, "length": 8.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(5)
+	for q in m.all_players():
+		(q as Player).global_position = Vector3(0, 0, 60)
+	var me: Player = m.player_by_num(0, 14)
+	m.phase = m.P.LIVE
+	me.global_position = Vector3(m.dir(0) * (Pitch.HALF_L - 18.0), 0, 0)
+	m._gain(me, "lift")
+	await frames(60)
+	var near: float = m._hype
+	me.global_position = Vector3(-m.dir(0) * 30.0, 0, 0)
+	await frames(90)
+	var far: float = m._hype
+	check(near > 0.6 and far < 0.15, "Crowd: rises as a man nears the posts with the ball (%.2f), falls back far out (%.2f)" % [near, far])
+	m.queue_free()
+	await frames(2)
 
 
 func _find_text(n: Node, text: String) -> bool:

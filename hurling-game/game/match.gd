@@ -98,6 +98,8 @@ var tstats := [{}, {}]       # shots, wides, frees, 65s, puckouts, puckouts_won,
 var _cooldown := {}          # player -> earliest time he tries another tackle
 var _spot_plan := {}         # player -> [where he means to stand, when to look again]
 var _hold_still := 0.0
+var _hype := 0.0             # the crowd's sense of a score coming, 0..1 (_crowd_anticipation)
+var _cheer_until := 0.0      # the crowd's cheer for a score runs till then
 var _fps_hist: Array = []    # recent frame times (ms) for the dev overlay and the auto graphics level
 var _early_frames := 0
 var _early_slow := 0
@@ -519,6 +521,8 @@ func _process(delta: float) -> void:
 	if phase in [P.THROW_IN, P.LIVE, P.SHOOTOUT] and ball.state == Sliotar.FREE:
 		_check_ball(cross[0], cross[1])
 	officials.tick(dt)
+	if not attract:
+		_crowd_anticipation(dt)
 	cam.follow(self, delta)
 	if user_team >= 0:
 		replay.record()
@@ -527,6 +531,25 @@ func _process(delta: float) -> void:
 		_user_buttons()
 		if coach != null and active != null and phase in [P.LIVE, P.SET]:
 			hud.coach(coach.step(dt, coach_state()))
+
+
+## The crowd senses a score coming: louder as the side with the ball nears the posts (from about 60 m out, most
+## inside 22 m), more when the man on the ball winds up to strike, most while a shot is in the air; and the stands
+## stir with it. It falls back when the move breaks down.
+func _crowd_anticipation(dt: float) -> void:
+	var want := 0.0
+	if phase in [P.LIVE, P.SET]:
+		if carrier != null and is_instance_valid(carrier):
+			var d := Pitch.from_goal_line(carrier.global_position, dir(carrier.team))
+			want = 1.0 - smoothstep(22.0, 60.0, d)
+			if String(carrier.action) == "strike":
+				want = minf(1.0, want + 0.35)
+		elif ball.state == Sliotar.FREE and not (ball.get_meta("shot", {}) as Dictionary).is_empty():
+			want = 1.0
+	_hype = move_toward(_hype, want, dt * (1.6 if want > _hype else 0.7))
+	Sfx.crowd_swell(_hype * 0.85 + (0.15 if want >= 1.0 else 0.0))
+	if now >= _cheer_until:
+		Crowd.set_excite(_hype * 0.4)
 
 
 func _frame_stats(delta: float) -> void:
@@ -1490,6 +1513,7 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 		hud.banner(tr("CALL_POINT"), Game.C_INK)
 		Sfx.react("cheer", -5.0)
 	Crowd.set_excite(1.0 if kind == "goal" else 0.6)
+	_cheer_until = now + 2.5
 	_after(2.5, func(): Crowd.set_excite(0.0))
 	var pid := ""
 	if by is Player and is_instance_valid(by) and (by as Player).team == team:
@@ -2312,7 +2336,7 @@ func _run_subs() -> void:
 		carries[off] = Rules.Carry.new()
 		pstats[pd.id] = {"goals": 0, "points": 0, "free_g": 0, "free_p": 0, "wides": 0, "team": k, "num": int(pd.num)}
 		events.append({"t": match_minute(), "team": k, "kind": "sub", "by": String(pd.id), "how": old_id})
-		hud.call_line(tr("SUB_LINE").format({"team": DB.short_name(String(team.id)), "on": DB.player_name(pd, true), "off": old_name}))
+		hud.substitution(String(team.id), DB.player_name(pd, true), old_name)
 		if off == active:
 			_set_active(off)
 	_set_lods()
