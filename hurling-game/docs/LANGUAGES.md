@@ -31,7 +31,7 @@ Europe, at low priority.
 The game starts in the phone's language when it is Irish (Android locale `ga`), else English; the globe on the home
 screen (and Settings > Language) changes it.
 
-**Fonts**: Noto Sans for the text, Oswald for headings and Uncial Antiqua for the title, all with every Irish letter
+**Fonts**: Noto Sans for the text, Oswald for headings and the title, all with every Irish letter
 (á é í ó ú Á É Í Ó Ú). `tests/fit_audit.gd` checks every character on every screen has a glyph.
 
 **Fitting**: Irish runs about a fifth longer than English. Irish text is set 4% smaller, and every label that can

@@ -221,7 +221,7 @@ func _plurals() -> void:
 # ---------------------------------------------------------------- screens
 
 const SCREENS := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
-	"res://ui/champ_screen.gd", "res://ui/licences_screen.gd", "res://ui/buttons_screen.gd"]
+	"res://ui/champ_screen.gd", "res://ui/licences_screen.gd", "res://ui/buttons_screen.gd", "res://ui/info_screen.gd"]
 
 
 func _screens() -> void:

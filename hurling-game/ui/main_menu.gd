@@ -75,15 +75,11 @@ func _build_ui() -> void:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 10)
 	row.add_child(right)
-	# The top line: the contents heading, the language.
+	# The top line: the language, on the right.
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 12)
+	top.alignment = BoxContainer.ALIGNMENT_END
 	right.add_child(top)
-	var head := UI.label(tr("CONTENTS").to_upper(), "EyebrowLabel", 17, Game.C_GOLD)
-	head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	UI.fit(head, 1)
-	top.add_child(head)
 	var lang := _lang_button()
 	top.add_child(lang)
 	_cards.append(lang)
@@ -132,11 +128,11 @@ func _cover() -> Control:
 	sb.content_margin_left = 0
 	sb.content_margin_right = 0
 	sb.content_margin_top = 0
-	sb.content_margin_bottom = 14
+	sb.content_margin_bottom = 0
 	card.add_theme_stylebox_override("panel", sb)
 	card.custom_minimum_size = Vector2(clampf(get_viewport_rect().size.x * 0.34, 360.0, 470.0), 0)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 6)
+	v.add_theme_constant_override("separation", 0)
 	card.add_child(v)
 	# The masthead: a red band, the programme's name in Irish and English.
 	var band := PanelContainer.new()
@@ -173,7 +169,7 @@ func _cover() -> Control:
 	iv.add_theme_constant_override("separation", 0)
 	iv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pic.add_child(iv)
-	var title := UI.label(tr("GAME_TITLE"), "LogoLabel", 58, Game.C_PRINT)
+	var title := UI.label(tr("GAME_TITLE").to_upper(), "LogoLabel", 58, Game.C_PRINT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.shrink(title, 58, 0.6, 1)
 	iv.add_child(title)

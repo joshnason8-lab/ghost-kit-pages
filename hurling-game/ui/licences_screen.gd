@@ -24,7 +24,6 @@ place names, in colours of the game's own design; every player is invented."""
 const FONTS := """[b]Fonts[/b]
 Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic).
 Oswald: Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont).
-Uncial Antiqua: Copyright (c) 2011 by Brian J. Bonislawsky DBA Astigmatic (AOETI), with Reserved Font Name "Uncial Antiqua".
 All under the SIL Open Font License, Version 1.1:"""
 
 

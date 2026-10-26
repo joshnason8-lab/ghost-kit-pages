@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Make the fonts small enough to ship: Noto Sans (the text) and Oswald (the headings), cut to Latin, Latin
 Extended-A (every Irish letter with its fada, and the dotted consonants of the old script), general punctuation,
-the euro and the arrows, the weight axis kept. Uncial Antiqua (the title) has a Reserved Font Name, so it ships as it
-is. The full fonts are fetched from github.com/google/fonts once into ~/.cache/ash-fonts.
+the euro and the arrows, the weight axis kept. The full fonts are fetched from github.com/google/fonts once into
+~/.cache/ash-fonts.
 
 Usage: python3 tools/subset_fonts.py   (needs fonttools: pip install fonttools)
 """

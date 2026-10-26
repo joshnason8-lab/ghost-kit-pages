@@ -102,7 +102,7 @@ ui/         home screen (the programme), match setup (the team sheets), the cham
 i18n/       src/en.json, src/ga.json, strings.csv (generated)
 assets/     player/ (the baked model: mesh, texture, kit mask, clips), env/ (skies, ground scans, water, the
             surrounds' models, from the shared assets), art/ (the home screen's cover), icon/, audio/
-fonts/      Noto Sans and Oswald (cut to the letters used), Uncial Antiqua; all SIL OFL
+fonts/      Noto Sans and Oswald (cut to the letters used); both SIL OFL
 tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py (the jig),
             store/ (icons, feature graphic, screenshots), player/ (bakes the owner's model and clips for the game),
             env/sky_light.py (each sky's sun and light from its HDR)

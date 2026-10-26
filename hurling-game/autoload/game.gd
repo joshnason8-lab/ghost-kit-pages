@@ -5,10 +5,6 @@ const SETTINGS_PATH := "user://settings.json"
 const CHAMP_PATH := "user://championship.json"
 const RECORDS_PATH := "user://records.json"
 
-## The game's privacy policy and help pages (Settings > About).
-const PRIVACY_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/ash-and-leather/privacy.html"
-const SUPPORT_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/ash-and-leather/support.html"
-
 ## Code, name in the language itself, name in English. Hurling is played and watched in Ireland and by the Irish
 ## abroad (Britain, North America, Australia): English for everyone, and Irish, the game's own language
 ## (docs/LANGUAGES.md).
@@ -423,15 +419,13 @@ func _build_theme() -> void:
 	_fallbacks = fallbacks
 	font_body = _variation(latin, 450, fallbacks)
 	font_bold = _variation(latin, 650, fallbacks)
-	# Headings in a condensed face, like a match programme's; the game's name in an uncial hand.
+	# Headings in a condensed face, like a match programme's; the game's name in it too, at its heaviest.
 	var oswald := _font("res://fonts/Oswald.ttf")
 	var display_fallbacks: Array[Font] = []
 	display_fallbacks.append(_variation(latin, 700, fallbacks))
 	oswald.fallbacks = display_fallbacks
 	font_display = _variation(oswald, 600, display_fallbacks)
-	var uncial := _font("res://fonts/UncialAntiqua.ttf")
-	uncial.fallbacks = display_fallbacks
-	font_title = uncial
+	font_title = _variation(oswald, 700, display_fallbacks)
 
 	theme = Theme.new()
 	theme.default_font = font_body

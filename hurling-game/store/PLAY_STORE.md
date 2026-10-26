@@ -11,12 +11,12 @@ stand in October 2026.
   - targets Android 16 (API 36), required for new apps since 31 August 2026;
   - 64-bit, with 16 KB memory pages (checked on every bundle);
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
-  - two permissions: vibration, and internet (used only to download the optional HD pack for Ultra graphics from
+  - two permissions: vibration, and internet (used only to download the optional HD pack for High graphics from
     the game's GitHub release, when the player asks; nothing is sent about the player).
 - **The privacy policy, help page and a page for the game**, in `ash-and-leather/` at the top of this repository,
   served by GitHub Pages once this branch is merged into `main`:
   https://joshnason8-lab.github.io/ghost-kit-pages/ash-and-leather/privacy.html and `/support.html`. The game's
-  Settings > About opens them, as Google asks, and shows the licences there.
+  Settings > About has the same privacy policy and help in the game itself (no browser), and the licences.
 - **The store listing**: the text for English (United Kingdom, the default, which Ireland sees), English (United
   States), English (Australia) and English (Canada) (`store/listing/`). Google Play has no Irish store listing, so
   each says the game is in Irish too, and two screenshots show it in Irish. The 512 × 512 icon, the 1024 × 500

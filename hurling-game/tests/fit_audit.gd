@@ -475,6 +475,13 @@ func _menus() -> void:
 	Game.show_screen("res://ui/licences_screen.gd")
 	await frames(8)
 	await audit("licences")
+	for pg in ["privacy", "help"]:
+		Game.show_screen("res://ui/info_screen.gd", {"page": pg})
+		await frames(8)
+		await audit(pg)
+		_scroll_to_end()
+		await frames(4)
+		await audit(pg + "_end")
 	var ps := {"KIL_14": {"goals": 1, "points": 3, "free_g": 0, "free_p": 2, "wides": 1, "team": 0, "num": 14},
 		"KIL_12": {"goals": 0, "points": 4, "free_g": 0, "free_p": 0, "wides": 1, "team": 0, "num": 12},
 		"KIL_10": {"goals": 1, "points": 2, "free_g": 0, "free_p": 0, "wides": 1, "team": 0, "num": 10},
