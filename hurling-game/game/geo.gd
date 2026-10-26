@@ -97,10 +97,25 @@ func blob(c: Vector3, r: Vector3, col: Color) -> void:
 		_tri_quad(a, b, bot, bot, (n - Vector3.UP * 1.2).normalized(), col.darkened(0.15))
 
 
-func commit(mat: Material) -> MeshInstance3D:
-	var mi := MeshInstance3D.new()
-	if verts.is_empty():
-		return mi
+## A triangle, a b c clockwise seen from the side n points to.
+func tri(a: Vector3, b: Vector3, c: Vector3, n: Vector3, col: Color) -> void:
+	var base := verts.size()
+	verts.append_array([a, b, c])
+	var lin := col.srgb_to_linear()
+	for i in 3:
+		normals.append(n)
+		colors.append(lin)
+		uvs.append(Vector2.ZERO)
+	idx.append_array([base, base + 1, base + 2])
+
+
+## A quad, a b c d clockwise round it seen from the side n points to.
+func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, col: Color) -> void:
+	_tri_quad(a, b, c, d, n, col)
+
+
+## What has been built, as a mesh (to place many times: Scenery's houses).
+func mesh() -> ArrayMesh:
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
@@ -110,7 +125,14 @@ func commit(mat: Material) -> MeshInstance3D:
 	arrays[Mesh.ARRAY_INDEX] = idx
 	var m := ArrayMesh.new()
 	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	mi.mesh = m
+	return m
+
+
+func commit(mat: Material) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	if verts.is_empty():
+		return mi
+	mi.mesh = mesh()
 	mi.material_override = mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mi

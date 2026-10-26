@@ -357,10 +357,10 @@ func _parish(g: Geo, nets: Geo, spots: Array[Vector3]) -> void:
 	g.box(Vector3(0, -0.03, road_z), Vector3(520.0, 0.08, 6.5), Color("4a4d50") if time != "night" else Color("1c1e20"), 0.0, false)
 	for x: float in [-150.0, -105.0, 95.0, 160.0]:
 		var p := Vector3(x + rng.randf_range(-6, 6), 0, road_z - 13.0 - rng.randf_range(0, 6))
-		scenery.add("thatched_cottage_low", p, Scenery.facing(p, Vector3(p.x, 0, 0)) + rng.randf_range(-0.15, 0.15))
+		scenery.add("house_cottage", p, Scenery.facing(p, Vector3(p.x, 0, 0)) + rng.randf_range(-0.15, 0.15))
 	for x: float in [-30.0, 10.0]:
 		var p := Vector3(x, 0, road_z - 16.0)
-		scenery.add("terrace_row_low", p, 0.0)
+		scenery.add("house_row", p, 0.0)
 	for i in 14:
 		var p := Vector3(-195.0 + i * 30.0, 0, road_z + 4.2)
 		scenery.add("street_lamp_tall_low", p, PI, 1.6)
@@ -481,17 +481,59 @@ func _stadium(g: Geo, spots: Array[Vector3]) -> void:
 		g.box(Vector3(0, y * 0.5, z + 0.4), Vector3(Pitch.LENGTH + 20.0, y, 0.8), Color("6c7884"))
 		for i in 230:
 			spots.append(Vector3(-H - 10.0 + 0.35 + i * 0.7, y, z + 0.4))
-	# The corners closed with stands at an angle, and lights on the roof's edge.
+	# The corners closed with stands at an angle (the owner: "two big black blocks in the corners ... make those into
+	# something"): seats and a crowd, and over them the press box at one corner and the big screen at the other.
 	for sx: float in [-1.0, 1.0]:
-		for sz: float in [-1.0]:
-			var p := Vector3((H + 14.0) * sx, 0, (W + 14.0) * sz)
-			g.box(p + Vector3(0, 12.0, 0), Vector3(18.0, 24.0, 18.0), Color("5e6a76"), PI * 0.25)
+		_corner(g, sx, spots, sx > 0.0, hd)
 	# Floodlights along the front of the far stand's roof, aimed down at the field.
 	for i in 7:
 		var x := lerpf(-72.0, 72.0, float(i) / 6.0)
 		scenery.add("floodlight", Vector3(x, 31.2 + (3.0 if hd else 0.0), -W - 23.5), 0.0, 1.8, deg_to_rad(35.0))
 	# Dublin's terraced streets round the national stadium, on the skyline beyond the stands.
 	_town(rng, H + 52.0, 170.0)
+
+
+## A corner of the national stadium, between the far stand and an end (sx -1 the left, 1 the right): tiers of seats
+## angled to the field with their crowd, a back wall to the height of the stands round it, and on top a glazed press
+## and media box under a flat roof, its front lit (press) or the big screen in a dark frame (screen).
+func _corner(g: Geo, sx: float, spots: Array[Vector3], press: bool, hd: bool) -> void:
+	var c := Vector3((H + 12.0) * sx, 0, -(W + 12.0))
+	var toward := Vector3(-sx, 0, 1).normalized()      # to the field
+	var along := Vector3(1, 0, sx).normalized()         # across the corner
+	var yaw := -sx * PI * 0.25
+	var rows := 20
+	var width := 24.0
+	var top := 1.4 + rows * 0.6
+	for r in rows:
+		var y := 1.4 + r * 0.6
+		var at := c - toward * (r * 0.85 + 0.42)
+		g.box(at + Vector3(0, y * 0.5, 0), Vector3(width + r * 0.9, y, 0.85), Color("66727e").darkened(0.04 * float(r % 2)), yaw)
+		var n := int((width + r * 0.9 - 0.8) / 0.72)
+		for i in n:
+			spots.append(at + along * (-(width + r * 0.9) * 0.5 + 0.4 + i * 0.72) + Vector3(0, y, 0))
+	# The back: a wall up to the box, the stands' grey.
+	var back := c - toward * (rows * 0.85 + 0.8)
+	g.box(back + Vector3(0, (top + 9.0) * 0.5, 0), Vector3(width + rows * 0.9 + 2.0, top + 9.0, 1.6), Color("5e6a76"), yaw)
+	var box_c := back + toward * 3.2 + Vector3(0, top + 4.6, 0)
+	var bw := width + rows * 0.9 - 2.0
+	if press:
+		# The press box: a band of glass in white mullions, a lit fascia, a flat roof with a lip.
+		g.box(box_c, Vector3(bw, 7.0, 5.6), Color("2f3b48"), yaw)
+		g.box(box_c + toward * 2.82, Vector3(bw - 0.6, 4.2, 0.08), Color("1b2a3a"), yaw)
+		for i in int(bw / 2.4) + 1:
+			g.box(box_c + toward * 2.88 + along * (-bw * 0.5 + 0.3 + i * 2.4), Vector3(0.14, 4.4, 0.08), Color("e6e9ec"), yaw)
+		g.box(box_c + toward * 2.9 + Vector3(0, -2.6, 0), Vector3(bw, 0.6, 0.1), Color("b0287e"), yaw)
+		g.box(box_c + Vector3(0, 3.7, 0) + toward * 0.4, Vector3(bw + 1.0, 0.4, 7.2), Color("c9ced3"), yaw)
+	else:
+		# The big screen: a deep frame on legs over the seats, its face a dark glow in the ground's colours.
+		g.box(box_c + Vector3(0, 0.8, 0), Vector3(bw * 0.8, 9.0, 1.8), Color("22272d"), yaw)
+		g.box(box_c + Vector3(0, 0.8, 0) + toward * 0.92, Vector3(bw * 0.8 - 1.2, 7.8, 0.06), Color("142b3a"), yaw)
+		if hd:
+			for k in 3:
+				g.box(box_c + Vector3(0, -1.8 + k * 2.6, 0) + toward * 0.96, Vector3(bw * 0.8 - 1.6, 0.5, 0.04),
+					[Color("5c2a8a"), Color("b0287e"), Color("1f6f8b")][k], yaw)
+		for lx in [-0.3, 0.3]:
+			g.box(back + toward * 2.0 + along * (lx * bw) + Vector3(0, top * 0.5, 0), Vector3(0.6, top, 0.6), Color("9aa2aa"), yaw)
 
 
 ## A stretch of water: the shared water normal map scrolled two ways at once, the sky's horizon colour in it at a
@@ -560,12 +602,12 @@ func _town(rng: RandomNumberGenerator, end: float, far: float) -> void:
 	for sx: float in [-1.0, 1.0]:
 		for i in 4:
 			var p := Vector3(sx * (end + rng.randf_range(0, 3)), 0, -45.0 + i * 31.0)
-			scenery.add("terrace_row_low", p, -sx * PI * 0.5)
+			scenery.add("house_row", p, -sx * PI * 0.5)
 		for i in 8:
 			scenery.add("street_lamp_tall_low", Vector3(sx * (end - 6.0), 0, -56.0 + i * 16.0), -sx * PI * 0.5, 1.6)
 	for i in 9:
 		var p := Vector3(-124.0 + i * 31.0, 0, -far - rng.randf_range(0, 4))
-		scenery.add("terrace_row_low", p, 0.0)
+		scenery.add("house_row", p, 0.0)
 
 
 ## Each ground's sky: a real one (Poly Haven's skies, as 2K panoramas): the parish field under a Northern Irish

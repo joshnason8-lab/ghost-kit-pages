@@ -73,8 +73,10 @@ func commit() -> void:
 		add_child(mi)
 
 
-## The mesh in a model file, and where the file puts it.
+## The mesh in a model file, and where the file puts it ("house_..." are made in code: game/houses.gd).
 static func mesh_of(name: String) -> Array:
+	if not _meshes.has(name) and name.begins_with("house_"):
+		_meshes[name] = [Houses.mesh(name), Transform3D.IDENTITY]
 	if not _meshes.has(name):
 		var n: Node = load(DIR + name + ".glb").instantiate()
 		var mi: MeshInstance3D = n.find_children("*", "MeshInstance3D", true, false)[0]
@@ -99,6 +101,9 @@ func _material(name: String, mesh: Mesh) -> Material:
 	if name == "floodlight":
 		_mats[key] = _floodlight(mesh.surface_get_material(0))
 		return _mats[key]
+	if name.begins_with("house_"):
+		_mats[key] = _house_material(g)
+		return _mats[key]
 	var src := mesh.surface_get_material(0)
 	var m: StandardMaterial3D = src.duplicate() if src is StandardMaterial3D else StandardMaterial3D.new()
 	if name in CARDS:
@@ -115,6 +120,67 @@ func _material(name: String, mesh: Mesh) -> Material:
 		m.albedo_color = {"day": Color(0.78, 0.78, 0.78), "dusk": Color(0.72, 0.68, 0.66), "night": Color(0.3, 0.32, 0.36)}.get(time, Color.WHITE)
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_mats[key] = m
+	return m
+
+
+## The houses' material: their colours (by vertex) lit by the sun and the sky, toned for the time of day as the
+## other buildings are; the windows' glass (vertex alpha 0) a dark sheen by day, and at dusk and night about two in
+## five lit, warm, the rest dark.
+func _house_material(g: int) -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode cull_back%s;
+#include "res://game/shaders/look.gdshaderinc"
+uniform vec3 tone = vec3(1.0);
+uniform float lit_share = 0.0;
+uniform vec3 render[%d];
+uniform vec3 doors[%d];
+varying vec3 wp;
+varying flat float seed;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+void vertex() {
+	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	seed = hash(vec2(float(INSTANCE_ID) * 0.731 + 0.37, 1.3));   // each row's own colours
+}
+void fragment() {
+	vec3 base = COLOR.rgb;
+	float a = COLOR.a;
+	// A house's render or its door: its colour from the palettes by the row's seed and its place in the row.
+	if (a > 0.2 && a < 0.55) {
+		float slot = floor((a - 0.3) / 0.05 + 0.5);
+		base = render[int(hash(vec2(seed * 91.0, slot)) * %d.0) %% %d] * (0.94 + 0.06 * hash(vec2(slot, seed)));
+	} else if (a >= 0.55 && a < 0.95) {
+		float slot = floor((a - 0.6) / 0.05 + 0.5);
+		base = doors[int(hash(vec2(slot * 7.0, seed * 53.0)) * %d.0) %% %d];
+	}
+	vec3 c = compat_to_scene(base * tone);
+	ROUGHNESS = 0.9;
+	if (a < 0.1) {
+		ROUGHNESS = 0.25;
+		SPECULAR = 0.6;
+		// One light a window: the same for every pixel of it (its place, rounded to the window's size).
+		float on = step(1.0 - lit_share, hash(floor(wp.xz * vec2(0.8, 0.8)) + floor(wp.y * 0.4)));
+		EMISSION = compat_to_scene(vec3(1.0, 0.72, 0.38)) * on * 1.6;
+	}
+	ALBEDO = c;
+}
+""" % [", vertex_lighting" if g == Game.GFX_LOW else "", Houses.RENDER.size(), Houses.DOORS.size(), Houses.RENDER.size(),
+		Houses.RENDER.size(), Houses.DOORS.size(), Houses.DOORS.size()]
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	var rs := PackedVector3Array()
+	for hx in Houses.RENDER:
+		var cl := Color(hx).srgb_to_linear()
+		rs.append(Vector3(cl.r, cl.g, cl.b))
+	var ds := PackedVector3Array()
+	for hx in Houses.DOORS:
+		var cl := Color(hx).srgb_to_linear()
+		ds.append(Vector3(cl.r, cl.g, cl.b))
+	m.set_shader_parameter("render", rs)
+	m.set_shader_parameter("doors", ds)
+	m.set_shader_parameter("tone", {"day": Vector3(0.84, 0.84, 0.84), "dusk": Vector3(0.78, 0.73, 0.7), "night": Vector3(0.34, 0.36, 0.4)}.get(time, Vector3.ONE))
+	m.set_shader_parameter("lit_share", {"dusk": 0.3, "night": 0.45}.get(time, 0.0))
 	return m
 
 

@@ -687,7 +687,7 @@ func _scenery() -> void:
 		var trees := sc.count("oak_tree_card") + sc.count("broadleaf_tree_dark_card")
 		check(trees >= 20 and sc.count("small_broadleaf_card") >= 100, "Scenery %s: trees (%d) and hedgerows (%d bushes)" % [v, trees, sc.count("small_broadleaf_card")])
 		if v == "parish":
-			check(sc.count("thatched_cottage_low") >= 3 and sc.count("mossy_rocks_low") > 0 and sc.count("painted_bench_low") > 0, "Scenery parish: the village, the stone wall, the subs' benches")
+			check(_count_prefix(sc, "house_cottage") >= 3 and sc.count("mossy_rocks_low") > 0 and sc.count("painted_bench_low") > 0, "Scenery parish: the village, the stone wall, the subs' benches")
 			var through := 0
 			for name in ["small_broadleaf_card", "grass_wispy_card", "grass_clumps_card", "fern_card"]:
 				for t: Transform3D in sc.placed(name):
@@ -695,7 +695,7 @@ func _scenery() -> void:
 						through += 1
 			check(through == 0, "Scenery parish: no hedgerow through the village's houses (%d)" % through)
 		else:
-			check(sc.count("terrace_row_low") >= 8 and sc.count("street_lamp_tall_low") > 0, "Scenery %s: the town's terraced rows and street lamps" % v)
+			check(_count_prefix(sc, "house_row") >= 8 and sc.count("street_lamp_tall_low") > 0, "Scenery %s: the town's terraced rows and street lamps" % v)
 		var bad := 0
 		for name in sc.names():
 			for t: Transform3D in sc.placed(name):
@@ -1153,6 +1153,14 @@ func _backpedal() -> void:
 		else:
 			check(faces < -0.9 and p._ph > ph0, "Away at %.0f m/s: turned round, running forward" % sp)
 		p.queue_free()
+
+
+func _count_prefix(sc: Scenery, prefix: String) -> int:
+	var n := 0
+	for name in sc.names():
+		if String(name).begins_with(prefix):
+			n += sc.count(name)
+	return n
 
 
 func _find_text(n: Node, text: String) -> bool:
