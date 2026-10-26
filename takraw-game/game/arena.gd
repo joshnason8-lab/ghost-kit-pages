@@ -54,6 +54,7 @@ func _ready() -> void:
 			_roof(15.0, Color("0d1320"))
 			_officials_furniture()
 			_tournament_dressing()
+			spots.append_array(_jury_tables())
 			_sc.add("props/arena_scoreboard", Vector3(0, 10.0, 0), PI / 8.0, 1.0, false)
 		"dome":
 			_indoor_env(Color("0d1119"), Color(0.6, 0.64, 0.72), 1.1)
@@ -63,6 +64,7 @@ func _ready() -> void:
 			_roof(22.0, Color("0b111c"))
 			_officials_furniture()
 			_tournament_dressing()
+			spots.append_array(_jury_tables())
 			_sc.add("props/arena_scoreboard", Vector3(0, 13.0, 0), PI / 8.0, 1.2, false)
 		"mall":
 			_indoor_env(Color("2a2420"), Color(0.85, 0.8, 0.72), 1.15)
@@ -414,8 +416,8 @@ func _tournament_dressing() -> void:
 		var lbl := Label3D.new()
 		lbl.text = "SEPAK TAKRAW UNLEASHED"
 		lbl.font = Game.font_display
-		lbl.font_size = 128
-		lbl.pixel_size = 0.0065
+		lbl.font_size = 64
+		lbl.pixel_size = 0.013
 		lbl.modulate = Color("f2c14e")
 		lbl.outline_size = 0
 		lbl.shaded = false
@@ -430,8 +432,8 @@ func _tournament_dressing() -> void:
 	for i in 2:
 		var l := Label3D.new()
 		l.font = Game.font_display
-		l.font_size = 96
-		l.pixel_size = 0.0034 if i == 0 else 0.0024
+		l.font_size = 48
+		l.pixel_size = 0.0068 if i == 0 else 0.0048
 		l.modulate = Color("ffb23a") if i == 0 else Color("ffd27a")
 		l.outline_size = 0
 		l.shaded = false
@@ -439,6 +441,22 @@ func _tournament_dressing() -> void:
 		l.rotation.y = PI
 		add_child(l)
 		_board.append(l)
+
+
+## The jury's tables behind the far boards (the arenas), as the big events have them: white cloths to the floor, a
+## band in the event's colour, chairs behind. Returns their seats, for the crowd to fill.
+func _jury_tables() -> Array:
+	var z := Court.HALF_W + 5.05
+	var seats := []
+	for s: float in [-1.0, 1.0]:
+		var x := s * 6.2
+		_lit.box(Vector3(x, 0.38, z), Vector3(3.6, 0.76, 0.75), Color("eeeeea"))
+		_lit.box(Vector3(x, 0.66, z - 0.385), Vector3(3.6, 0.1, 0.02), Color("c8202a"))
+		for k: float in [-1.1, 0.0, 1.1]:
+			_lit.box(Vector3(x + k, 0.23, z + 0.75), Vector3(0.44, 0.46, 0.44), Color("1a1a1a"))
+			_lit.box(Vector3(x + k, 0.7, z + 0.95), Vector3(0.44, 0.5, 0.05), Color("1a1a1a"))
+			seats.append(Vector3(x + k, 0.46, z + 0.72))
+	return seats
 
 
 ## The courtside scoreboard (the tournament venues): the two teams' names and points, and the sets each has won.

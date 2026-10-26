@@ -15,6 +15,25 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.11.0, from the two matches the owner sent (the 2024 World Cup's Thailand v the Philippines, the Asian Cup's
+India v the Philippines; docs/AI.md):
+
+- **The computer serves like the top sides:** hard and flat every time, at the one receiver it picks for the set,
+  and it misses more often for it (into the net, wide or long). Receive it well and you are in the rally; a spilled
+  reception off its serve goes out, dies at the receiver's feet or floats back over to be put away.
+- **Its formation:** a flat line 3-4 m off the net to receive; the pass to the setter in the middle; one blocker
+  against a spike (the inside player on its side), the cover behind its own spiker for a block's rebound; a loose ball
+  that comes over is headed or soled straight back.
+- **Shorter rallies:** spikes are harder to dig and go out less often, a block stuffs a spike less often.
+- **Difficulty** works on the serve and the reception: on Rookie the computer misses more serves, spills more
+  receptions and serves a little softer at you; on Legend fewer and harder.
+- **A serve into the net** is a fault called at once ("the serve didn't cross"): before, the serving side could play
+  it on.
+- **The arenas and the dome** as at those two events: red pads round the posts with a box at their feet, a ball stand
+  by the near post, TV cameras on tripods at the corners, the game's name on the floor behind each back line, a
+  scoreboard by the scorers' table that keeps the score, the jury's tables in white cloths behind the far boards, and
+  flags in the home side's colours waving in the crowd (the mall has the same but the jury's tables).
+
 New in 0.10.0, the owner's list:
 
 - **The venues filled in.** The mall atrium is a mall now: three floors of shops all round, balconies with glass

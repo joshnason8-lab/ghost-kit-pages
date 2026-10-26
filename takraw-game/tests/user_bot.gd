@@ -71,11 +71,16 @@ func _process(_d: float) -> void:
 
 
 func _done(r: Dictionary) -> void:
-	# For CI: nothing is played for you (idle wins no point and makes no touch), and a good player wins plenty.
+	# For CI: nothing is played for you (idle makes no touch and wins no point in play: only the other side's service
+	# faults), and a good player wins plenty.
 	var mine: int = r.set_scores[0][0] if not r.set_scores.is_empty() else 0
+	var in_play := 0
+	for x in r.log:
+		if int(x[2]) == 0 and int(x[0]) > 1:
+			in_play += 1
 	var ok := true
 	if mode == "idle":
-		ok = mine == 0 and stats.presses == 0
+		ok = in_play == 0 and stats.presses == 0
 	elif mode == "perfect":
 		ok = mine >= 8
 	print("user_bot: %s" % ("ok" if ok else "FAIL (%d points)" % mine))

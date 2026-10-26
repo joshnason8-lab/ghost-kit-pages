@@ -92,6 +92,15 @@ var log: Array = []     # each rally: [touches, how it ended, the team that won 
 var _why := ""
 var _last_kind := ""
 var _block_kill := false
+var _came := ""              # what came over to the touch being made (the serve or attack it answers)
+var _last_touch := ""        # the kind of the last touch made (a free ball comes over off a pass or a set)
+var _free_ball := false      # the ball coming over is a free one: a pass or a set over the net, to be punished
+var _set_cp := Vector3.ZERO  # where the set is to be spiked (the cover goes behind it)
+var _marks := {}             # "side:set" -> the receiver that side's servers aim at this set
+var _seq := ""               # the rally's touches, for the log: "serve receive set attack|dig ..." (| the net crossed)
+var _spilled_by: Player = null   # who spilled the reception just made (he can't recover it himself)
+var _server_q := 0.0         # the power serve in flight: how well it was struck (0-1) and its server's serve rating
+var _server_r := 60.0
 
 # The replay: frames of the last few seconds.
 var _rec: Array = []
@@ -379,6 +388,15 @@ func _serve_spot(pl: Player, side: int, serving: bool) -> Vector3:
 				if pl.role == DB.POS_TEKONG:
 					return Court.spot(side, Court.HALF + 0.4, 0.0)
 				return Court.spot(side, 1.6, -1.2)
+	if n_players == 3:
+		# A regu receives in a flat line 3-4 m off the net, nobody at it (as both matches did): the tekong in the middle
+		# on his circle, the feeder (to his left) a little deeper than the striker.
+		match pl.role:
+			DB.POS_TEKONG:
+				return Court.spot(side, 4.2, 0.0)
+			DB.POS_FEEDER:
+				return Court.spot(side, 3.9, 1.7)
+		return Court.spot(side, 3.1, -1.6)
 	match pl.role:
 		DB.POS_TEKONG:
 			return Court.spot(side, 4.7, 0.0)
@@ -408,6 +426,8 @@ func _begin_setup() -> void:
 	touch_side = -1
 	last_toucher = null
 	rally_len = 0
+	_seq = ""
+	_spilled_by = null
 	net_t = -1.0
 	land_t = -1.0
 	ball.flying = false
@@ -557,6 +577,10 @@ func _touch(p: Dictionary) -> void:
 	rally_len += 1
 	var from := ball.at(now)
 	_last_kind = "%s/%s q%.2f" % [kind, String(p.move), q]
+	_came = _attack_kind
+	_last_touch = kind
+	_spilled_by = null
+	_seq += ("|" if touches == 1 and rally_len > 1 else " ") + ("%s%s" % [kind, "!" if q < 0.14 else ""])
 	# A first touch against an attack is a dig, whatever it is played with.
 	if kind in ["receive", "dig"] and _attack_kind in ["roll", "sunback", "tapak", "head_spike", "feint"]:
 		kind = "dig"
@@ -656,8 +680,10 @@ func _serve_kick(pl: Player, from: Vector3, q: float, mv: String) -> void:
 		return
 	var err := lerpf(2.6, 0.25, q) * (1.25 if horse else 1.0)
 	target += Vector3(rng.randfn(0, err * 0.5), 0, rng.randfn(0, err * 0.5))
-	# Servers miss now and then: long, wide, or into the net (the horse kick more often).
-	if not _is_user(pl) and rng.randf() < (0.05 if not horse else 0.09) + (1.0 - q) * 0.08:
+	# Servers miss now and then: long, wide, or into the net (the horse kick more often). Hit as hard as the top
+	# tekongs hit it, about one in six (a fifth of the points at the 2024 World Cup and Asian Cup were service faults).
+	var into_net := false
+	if not _is_user(pl) and rng.randf() < (0.16 + (1.0 - q) * 0.24 + (0.03 if horse else 0.0)) * _err_scale(pl):
 		var so := Court.sgn(opp)
 		match rng.randi_range(0, 2):
 			0:
@@ -665,16 +691,25 @@ func _serve_kick(pl: Player, from: Vector3, q: float, mv: String) -> void:
 			1:
 				target.z = signf(target.z if target.z != 0.0 else 1.0) * (Court.HALF_W + rng.randf_range(0.2, 0.8))
 			_:
-				q = 0.0   # into the net, below
+				into_net = true
 	target.y = Ball.RADIUS
 	var v: Vector3
+	_server_q = q
+	_server_r = float(pl.data.get("serve", 60))
 	if horse:
 		v = _drive(from, target, lerpf(11.0, 16.5, q), 0.25)
+	elif not _is_user(pl) or q >= 0.6:
+		# The power serve: struck hard and flat over the tape, the leg high (every serve in both matches was). At you a
+		# little softer on Rookie and Pro; yours when you time it well.
+		var pace: float = [0.82, 0.92, 1.0, 1.04][difficulty] if _is_opponent(pl) else 1.0
+		var speed := lerpf(9.5, 14.0, q) if not _is_user(pl) else lerpf(10.0, 14.0, (q - 0.6) / 0.4)
+		v = _drive(from, target, speed * pace, 0.3)
+		_attack_kind = "power"
 	else:
 		var sol := Ball.solve_apex(from, target, lerpf(2.4, 3.1, rng.randf()) + (0.4 if q < 0.4 else 0.0))
 		v = sol[0]
 	# A poor serve catches the net: it is struck too flat to clear the tape.
-	if q < 0.22 and rng.randf() < 0.55:
+	if into_net or (q < 0.22 and rng.randf() < 0.55):
 		v = Ball.solve_apex(from, target, arena.net_top - 0.15)[0]
 	Sfx.play_at("kick", from, -2.0, 1.1 if horse else 1.0)
 	_launch(from, v, pl.side, horse)
@@ -701,15 +736,34 @@ func _drive(p0: Vector3, target: Vector3, speed: float, clearance: float) -> Vec
 func _serve_target(pl: Player, opp: int) -> Vector3:
 	if _is_user(pl):
 		return _aim_target(opp, Vector3(Court.sgn(opp) * 5.0, 0, 0), 2.6)
-	# Deep corners, or at the receiver who passes worst.
-	var weakest: Player = null
-	for p in players_on(opp):
-		var o: Player = p
-		if weakest == null or float(o.data.receive) < float(weakest.data.receive):
-			weakest = o
-	if rng.randf() < 0.4 and weakest:
-		return Vector3(weakest.position.x, 0, weakest.position.z) + Vector3(Court.sgn(opp) * 0.6, 0, rng.randf_range(-1.0, 1.0))
+	# As the top sides serve: at one receiver all set long (the Philippines served every serve at India's same player),
+	# at him or just past him; now and then deep into a corner instead.
+	var mark := _mark(opp)
+	if mark and rng.randf() < 0.75:
+		return Vector3(mark.position.x, 0, mark.position.z) + Vector3(Court.sgn(opp) * rng.randf_range(-0.2, 0.7), 0,
+			rng.randf_range(-0.7, 0.7))
 	return Court.spot(opp, rng.randf_range(4.5, 6.1), rng.randf_range(-2.4, 2.4))
+
+
+## The receiver a side's servers aim at this set: a wing player (not the tekong, in a regu), the one who passes worst.
+func _mark(side: int) -> Player:
+	var key := "%d:%d" % [side, set_no]
+	if not _marks.has(key):
+		var worst: Player = null
+		for p in players_on(side):
+			var o: Player = p
+			if n_players == 3 and o.role == DB.POS_TEKONG:
+				continue
+			if worst == null or float(o.data.receive) + rng.randf_range(-3, 3) < float(worst.data.receive):
+				worst = o
+		_marks[key] = worst
+	return _marks[key]
+
+
+## The computer's errors (a serve missed, a reception spilled) as the difficulty has them: more against Rookie, fewer
+## against Legend; its own team's (yours, playing as one player) as they are.
+func _err_scale(pl: Player) -> float:
+	return [1.35, 1.15, 1.0, 0.85][difficulty] if _is_opponent(pl) else 1.0
 
 
 ## A first touch: to the feeder's spot by the net (a dig: up in the air near the digger, for anyone to set).
@@ -720,11 +774,25 @@ func _pass(pl: Player, from: Vector3, q: float, kind: String) -> void:
 	var setter := _role_player(side, DB.POS_FEEDER if n_players != 2 else DB.POS_TEKONG)
 	if setter == pl and n_players > 2:
 		setter = _role_player(side, DB.POS_TEKONG)
+	# Up to the setter: in a regu in the middle, 2.4 m off the net, where the top sides' setters take it.
 	var spot := Court.spot(side, 1.3, _lane(setter) * 1.1 if setter.role == DB.POS_FEEDER else 0.6)
+	if n_players == 3 and setter.role == DB.POS_FEEDER:
+		spot = Court.spot(side, 2.4, _lane(setter) * 0.4)
 	var apex := lerpf(2.6, 3.6, rng.randf())
 	if kind == "dig":
 		spot = Vector3(pl.position.x, 0, pl.position.z).lerp(spot, 0.45)
 		apex = lerpf(2.6, 4.2, q)
+	# A power serve spilled: a third of the points in those matches were decided by the reception failing (off the
+	# body, out, or straight back over). The harder the serve and the better its server against the receiver, the more
+	# often.
+	if kind == "receive" and _came in ["power", "horse"] and not _is_user(pl):
+		var rec := float(pl.data.get("receive", 60))
+		var spill := clampf(0.24 + (_server_r - rec) * 0.006 + (1.0 - rec / 100.0) * 0.3, 0.06, 0.5)
+		spill *= lerpf(0.6, 1.3, _server_q) * (1.2 if _came == "horse" else 1.0)
+		if rng.randf() < minf(spill * _err_scale(pl), 0.55):
+			_seq += "~"
+			_spill(pl, from)
+			return
 	if q < 0.14:
 		# A shank: off the body anywhere.
 		Sfx.play_at("knee", from, -4.0)
@@ -742,6 +810,30 @@ func _pass(pl: Player, from: Vector3, q: float, kind: String) -> void:
 	var sol := Ball.solve_apex(from, spot, apex)
 	Sfx.play_at("kick" if String(_last_move(pl)) in ["sila", "kuda", "dig"] else "knee", from, -4.0)
 	_launch(from, sol[0], side, false)
+	_after_touch(side)
+
+
+## A reception spilled (as at the World Cup and the Asian Cup, where they lost a third of the points): off the body and
+## out, dead at his feet before anyone gets to it, or floated straight back over the net for the servers to put away.
+func _spill(pl: Player, from: Vector3) -> void:
+	var side := pl.side
+	_spilled_by = pl
+	var r := rng.randf()
+	var v: Vector3
+	if r < 0.4:
+		# Out: behind him, or off to the side.
+		var out := Court.spot(side, rng.randf_range(Court.HALF + 1.5, Court.HALF + 4.0), rng.randf_range(-5.0, 5.0))
+		if rng.randf() < 0.5:
+			var wide := rng.randf_range(Court.HALF_W + 1.2, Court.HALF_W + 3.5)
+			out = Court.spot(side, rng.randf_range(0.5, 5.5), wide if rng.randf() < 0.5 else -wide)
+		v = Ball.solve_apex(from, out, from.y + rng.randf_range(0.2, 0.8))[0]
+	elif r < 0.7:
+		v = Vector3(rng.randf_range(-1.5, 1.5), rng.randf_range(-0.3, 0.5), rng.randf_range(-1.5, 1.5))   # dead
+	else:
+		var over := Court.spot(1 - side, rng.randf_range(1.5, 3.5), rng.randf_range(-2.2, 2.2))
+		v = Ball.solve_apex(from, over, maxf(from.y, arena.net_top) + rng.randf_range(1.0, 1.8))[0]
+	Sfx.play_at("knee", from, -4.0)
+	_launch(from, v, side, false)
 	_after_touch(side)
 
 
@@ -777,6 +869,7 @@ func _make_set(pl: Player, from: Vector3, q: float, p: Dictionary) -> void:
 	var sol := Ball.solve_apex(from, cp, apex)
 	Sfx.play_at("kick", from, -6.0, 1.05)
 	_set_for = {"player": striker, "move": spike_move}
+	_set_cp = cp
 	_launch(from, sol[0], side, false)
 	_after_touch(side)
 
@@ -812,7 +905,7 @@ func _attack(pl: Player, from: Vector3, q: float, p: Dictionary) -> void:
 	var err := lerpf(2.0, 0.22, q)
 	target += Vector3(rng.randfn(0, err * 0.45), 0, rng.randfn(0, err * 0.45))
 	# A spike is a risk: the harder the spike, the likelier it goes long or wide (a roll spike most of all).
-	var risk: float = {"roll": 0.13, "sunback": 0.1, "tapak": 0.08, "head_spike": 0.07}.get(mv, 0.0) + (1.0 - q) * 0.2
+	var risk: float = {"roll": 0.045, "sunback": 0.035, "tapak": 0.03, "head_spike": 0.025}.get(mv, 0.0) + (1.0 - q) * 0.1
 	if not _is_user(pl) and rng.randf() < risk:
 		var s := Court.sgn(opp)
 		if rng.randf() < 0.55:
@@ -920,6 +1013,7 @@ func _at_net(t: float) -> void:
 		touches = 1
 		last_toucher = bp
 		rally_len += 1
+		_seq += "|block" + ("!" if bool(d.get("kill", false)) else "")
 		Sfx.play_at("block", p, 0.0)
 		if _is_user(bp):
 			Game.haptic("block")
@@ -952,8 +1046,9 @@ func _at_net(t: float) -> void:
 		ball.launch(Vector3(Court.sgn(from_side) * 0.09, p.y, p.z), back, t)
 		land_t = ball.when_height(Ball.RADIUS)
 		net_t = -1.0
-		if String(_attack_kind) != "" and touches >= 3:
-			pass
+		if rally_len == 1:
+			_fault(from_side, "FAULT_SERVE_NET", last_toucher, false)   # a serve must cross: nobody may play it
+			return
 		_plan_next()
 		return
 	if p.y <= bottom:
@@ -990,6 +1085,11 @@ func _plan_next() -> void:
 	var touch_no := 1 if next_side != touch_side else touches + 1
 	if touch_no > 3:
 		return   # a fourth touch is a fault: nobody plays it, it falls
+	# A free ball: a pass, a set or a soft kick that comes over (the top sides put it straight away: five of five in those
+	# matches).
+	_free_ball = touch_no == 1 and next_side != touch_side and _last_touch in ["receive", "dig", "set", "over"]
+	if touch_no == 1:
+		_set_cp = Vector3.ZERO
 	var land := ball.at(land_t)
 	# Leave a ball going out (a good player reads it; now and then one misjudges and plays it).
 	if touch_no == 1 and not Court.in_court(land, next_side, Ball.RADIUS) and Court.side_of(land.x) == next_side:
@@ -1049,10 +1149,15 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 	while t < t_end:
 		var p := ball.at(t)
 		if p.x * s > 0.05 and absf(p.z) < Court.HALF_W + 1.8 and p.x * s < Court.HALF + 2.0:
-			for m in _moves_for_height(p.y, touch_no):
+			var free := _free_ball and touch_no == 1 and p.x * s < 1.5
+			for m in _moves_for_height(p.y, touch_no, free):
 				var mv := String(m)
 				for pp in players_on(side):
 					var pl: Player = pp
+					if mv in ["head_spike", "tapak"] and touch_no == 1 and _is_user(pl):
+						continue   # (yours you play yourself)
+					if pl == _spilled_by:
+						continue
 					var mirror := pl.left_footed()
 					var stand := Player.stand_for(p, mv, side, mirror)
 					if stand.x * s < 0.02:
@@ -1061,7 +1166,7 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 					var hard := _attack_kind in ["roll", "sunback", "tapak", "head_spike", "horse"] and touch_no == 1
 					if hard:
 						# Against a spike: a good defender reads it off the striker's approach and is moving as it is hit.
-						react = 0.12 - float(pl.data.get("receive", 60)) * 0.0022
+						react = 0.16 - float(pl.data.get("receive", 60)) * 0.0016
 					var dist := Vector2(stand.x - pl.position.x, stand.z - pl.position.z).length()
 					var speed := 5.2 * (0.82 + float(pl.data.get("agility", 70)) * 0.0028)
 					var need := react + dist / speed
@@ -1071,6 +1176,8 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 					if need > have:
 						continue
 					var cost := _touch_cost(pl, mv, touch_no) + (t - now) * 0.05 + dist * 0.04
+					if free and mv in ["head_spike", "tapak"]:
+						cost -= 0.45   # put it away
 					if cost < best_cost:
 						best_cost = cost
 						var kind := _kind_for(mv, touch_no)
@@ -1078,7 +1185,9 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 						if mv == "dig":
 							ease = 0.8
 						if touch_no == 1 and _attack_kind in ["roll", "sunback", "horse"]:
-							ease *= 0.78 if dist > 0.5 else 0.88
+							ease *= 0.72 if dist > 0.5 else 0.85
+						elif touch_no == 1 and _attack_kind == "power":
+							ease *= 0.86 if dist > 0.5 else 0.93
 						best = {"player": pl, "kind": kind, "move": mv, "t": t, "pos": p, "stand": stand, "touch": touch_no,
 							"mirror": mirror, "user": _is_user(pl), "side": side, "ease": ease, "alt": "sunback"}
 			if not best.is_empty() and best_cost < 0.6:
@@ -1088,6 +1197,8 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 
 
 func _kind_for(mv: String, touch_no: int) -> String:
+	if touch_no == 1 and mv in ["head_spike", "tapak"]:
+		return "attack"   # a free ball put away
 	if touch_no == 2:
 		return "set"
 	if touch_no == 3:
@@ -1095,11 +1206,14 @@ func _kind_for(mv: String, touch_no: int) -> String:
 	return "dig" if mv == "dig" else "receive"
 
 
-## Ways to meet a ball at height h, for the touch it is (the third touch, near the net and high enough, a spike).
-func _moves_for_height(h: float, touch_no: int) -> Array:
+## Ways to meet a ball at height h, for the touch it is (the third touch, near the net and high enough, a spike; a free
+## ball high by the net too).
+func _moves_for_height(h: float, touch_no: int, free := false) -> Array:
 	var out := []
-	if touch_no == 3 and h > 1.9:
+	if (touch_no == 3 or free) and h > 1.9:
 		out.append("head_spike")
+	if free and h > 1.75 and h < 2.15:
+		out.append("tapak")
 	if touch_no == 3 and h > 1.45 and h < 2.3:
 		out.append("feint")   # a soft tap over the net when no spike is on
 	if h < 0.42:
@@ -1143,6 +1257,9 @@ func _position_others() -> void:
 				continue
 			pl.hurry = 0.6
 			var bz := clampf(ball.global_position.z * 0.3, -1.0, 1.0)
+			if n_players == 3:
+				pl.target = _regu_spot(pl, side, attacking, bz)
+				continue
 			match pl.role:
 				DB.POS_TEKONG:
 					pl.target = Court.spot(side, 4.2 if not attacking else 3.4, 0.0) + Vector3(0, 0, bz)
@@ -1155,6 +1272,27 @@ func _position_others() -> void:
 						pl.target = Court.spot(side, 0.9, -1.0) + Vector3(0, 0, bz)
 
 
+## A regu player's place off the ball, as the top sides stand (measured on the 2024 World Cup's broadcast). With the
+## ball: the setter in the middle 2.5 m off the net, the striker by it, the tekong deep; once the set is up, the two
+## who are not spiking close in behind the spiker, where a blocked spike drops. Without it: the striker at the net to
+## block, the setter 2.7 m back on his side, the tekong deep in the middle.
+func _regu_spot(pl: Player, side: int, attacking: bool, bz: float) -> Vector3:
+	var set_up := attacking and touches == 2 and touch_side == side and _set_cp != Vector3.ZERO
+	if set_up and pl.role != DB.POS_STRIKER:
+		# Cover: the tekong 2.5 m behind where the spike is hit, the setter short on the other side of it.
+		if pl.role == DB.POS_TEKONG:
+			return Court.spot(side, 2.5, _set_cp.z * 0.7)
+		return Court.spot(side, 1.6, -signf(_set_cp.z if _set_cp.z != 0.0 else 1.0) * 1.3)
+	match pl.role:
+		DB.POS_TEKONG:
+			return Court.spot(side, 3.8 if not attacking else 4.4, 0.0) + Vector3(0, 0, bz)
+		DB.POS_FEEDER:
+			return Court.spot(side, 2.7, 1.6) if not attacking else Court.spot(side, 2.4, 0.4) + Vector3(0, 0, bz * 0.5)
+	if attacking:
+		return Court.spot(side, 1.2, _lane(pl) * 1.4)
+	return Court.spot(side, 0.8, -1.0) + Vector3(0, 0, bz)
+
+
 ## Against a spike coming (planned at the set): the defending side's striker goes up to the net in front of where it
 ## will be hit and jumps as it is. Yours jumps when you press BLOCK.
 func _prepare_block(atk: Dictionary) -> void:
@@ -1162,6 +1300,12 @@ func _prepare_block(atk: Dictionary) -> void:
 	var def_side := 1 - int(atk.side)
 	var blocker := _role_player(def_side, DB.POS_STRIKER)
 	var cp: Vector3 = atk.pos
+	# One blocker, the inside player on the side the spike comes from: the striker, unless the feeder is clearly nearer
+	# (yours stays yours: the computer doesn't take your block from you).
+	var feeder := _role_player(def_side, DB.POS_FEEDER)
+	if n_players == 3 and feeder and feeder != blocker and not _is_user(blocker) and not _is_user(feeder) \
+			and absf(feeder.position.z - cp.z) + 1.5 < absf(blocker.position.z - cp.z):
+		blocker = feeder
 	var spot := Court.spot(def_side, float(Moves.CONTACT["block"][1]) - 0.09, 0.0)   # his raised foot reaches the net
 	spot.z = clampf(cp.z, -Court.HALF_W + 0.5, Court.HALF_W - 0.5)
 	blocker.hurry = 1.0
@@ -1216,7 +1360,7 @@ func _block_at_net(attacker: Player, from: Vector3, v: Vector3, mv: String) -> v
 	var covers := at_net and absf(pn.z - bz) < 0.6 and pn.y < arena.net_top + 0.95
 	var p_stop := tq * (0.2 + float(blocker.data.get("block", 60)) * 0.0022) - (0.08 if mv == "roll" else 0.0)
 	if covers and rng.randf() < p_stop:
-		var kill := rng.randf() < 0.45
+		var kill := rng.randf() < 0.22
 		var back_v: Vector3
 		if kill:
 			back_v = Vector3(Court.sgn(attacker.side) * rng.randf_range(3.0, 6.0), rng.randf_range(-1.0, 1.5), rng.randf_range(-1.5, 1.5))
@@ -1314,7 +1458,7 @@ func _point(team: int) -> void:
 	net_t = -1.0
 	land_t = -1.0
 	points[team] += 1
-	log.append([rally_len, _why, team])
+	log.append([rally_len, _why, team, _seq.strip_edges()])
 	var why := _why
 	_why = ""
 	run[team] += 1

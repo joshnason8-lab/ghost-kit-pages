@@ -235,6 +235,60 @@ Performance on Low (`perf_probe`, `--fixed-fps 30`, each venue in its own proces
 
 (The draw calls fall: the crowd's compressed sheet and the arenas' scoreboard in place of the cube's lit faces.)
 
+## The computer plays like the top sides; the arenas dressed as for the big events (0.11.0)
+
+The owner sent two broadcasts: the 2024 World Cup's Thailand v the Philippines and the Asian Cup's India v the
+Philippines. What they showed, point by point, and what the computer copies from them: docs/AI.md.
+
+- **The serve decides points:** the computer's tekongs serve hard and flat every time, at the receiver they pick for
+  the set, and miss more often for it. A reception can spill: out off the body, dead at the receiver's feet, or back
+  over the net to be put away; the likelier the harder the serve and the better its server against the receiver.
+  Your serve, timed well, is the same power serve.
+- **The formation:** the receiving line flat 3-4 m off the net; the pass to the setter in the middle 2.4 m off it;
+  one blocker, the inside player on the spike's side; the cover behind its own spiker; a loose ball that comes over
+  put away at once.
+- **Shorter rallies:** spikes harder to dig, out less often; a block stuffs a spike less often (22% of the blocks it
+  gets a foot to, from 45%).
+- **Difficulty** scales what decided the real points: the computer's service faults and spilled receptions (x1.35 on
+  Rookie to x0.85 on Legend), and the pace of its serve at you (x0.82 on Rookie to x1.04 on Legend).
+- **A serve into the net** is a fault at once ("the serve didn't cross", in every language): before, the serving side
+  could play it on.
+- **The arenas, the dome and the mall dressed as the big events are** (`Arena._tournament_dressing`): red pads round
+  the posts with a box at their feet, a ball stand by the near post, TV cameras on tripods at the corners, the game's
+  name on the floor behind each back line, a courtside scoreboard that keeps the score; the jury's tables in white
+  cloths behind the far boards (the arenas and the dome); flags in the home side's colours waving in the crowd (one
+  spectator in thirty, `Crowd._flags`, one draw call); the props' textures compressed for the GPU.
+- `tests/match_sim.tscn` reports how the points were decided in the real matches' terms, and each rally's touches
+  with `SEQ=1` (`SEED=n` to run several at once, `PAIR=THA,KOR` for one match).
+
+How the points were decided (eight AI-v-AI regu matches, the same eight each time; the real matches: 32 points):
+
+| | Real | 0.10.0 | 0.11.0 |
+|---|---|---|---|
+| A kill | 40% | 59% | 46% |
+| The serve (the reception failing) | 34% | 1% | 25% |
+| A service fault | 19% | 4% | 17% |
+| A block | 6% | 19% | 5% |
+| Another error | 3% | 17% | 7% |
+
+The stronger side wins more often now: Thailand (93) beat Korea (78) in 5 of 6 matches, from 2 of 6.
+
+Performance on Low (`perf_probe`, `--fixed-fps 30`, each venue in its own process), 0.10.0 → 0.11.0:
+
+| Venue | Draw calls | Triangles | Video memory |
+|---|---|---|---|
+| National Arena | 66 → 70 | 101k → 102k | 30.0 → 31.0 MB |
+| Grand Dome | 66 → 70 | 102k → 103k | 30.0 → 31.0 MB |
+| Mall atrium | 73 → 77 | 165k → 165k | 37.1 → 37.7 MB |
+| Provincial gym | 74 → 75 | 149k → 149k | 37.1 → 36.8 MB |
+| Temple court | 73 → 74 | 146k → 146k | 52.6 → 51.5 MB |
+| Park court | 77 → 77 | 114k → 114k | 57.6 → 57.2 MB |
+| Beach | 74 → 74 | 112k → 112k | 49.6 → 48.5 MB |
+| Night market | 82 → 82 | 129k → 129k | 49.5 → 49.1 MB |
+
+(The tournament venues' added draw calls: the floor's lettering, the scoreboard's lines, the flags. Video memory
+falls elsewhere: the props' textures compressed for the GPU.)
+
 ## Gaps that need the owner
 
 None. The two raised in 0.5.0 are filled in 0.5.1:
