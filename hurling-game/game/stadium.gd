@@ -15,16 +15,19 @@ var time := "day"
 var crowd: Crowd
 var scenery: Scenery
 var home_colours: Array = []
+var away_colours: Array = []    # with them, the crowd is both counties' (a championship day)
+var to_sun := Vector3(0.3, 0.8, 0.5).normalized()   # where the light comes from (PlayerShadows reads it)
 
 const H := Pitch.HALF_L
 const W := Pitch.HALF_W
 
 
-func _init(venue_id := "county", p_home_colours := []) -> void:
+func _init(venue_id := "county", p_home_colours := [], p_away_colours := []) -> void:
 	var v: Array = DB.venue(venue_id)
 	kind = String(v[1])
 	time = String(v[3])
 	home_colours = p_home_colours
+	away_colours = p_away_colours
 
 
 func _ready() -> void:
@@ -57,7 +60,8 @@ func _ready() -> void:
 	add_child(nets.commit(nm))
 	crowd = Crowd.new()
 	var palette := home_colours.duplicate()
-	crowd.build(spots, Game.crowd_density() * (0.55 if kind == "parish" else 1.0), palette, hash(kind))
+	crowd.build(spots, Game.crowd_density() * (0.55 if kind == "parish" else 1.0), palette, hash(kind),
+		away_colours if kind != "parish" else [], 0.75 if kind != "parish" and not away_colours.is_empty() else 0.45)
 	add_child(crowd)
 	_environment()
 
@@ -364,11 +368,42 @@ func _parish(g: Geo, nets: Geo, spots: Array[Vector3]) -> void:
 		scenery.add("park_bench_low", p, PI * 0.5)
 
 
+## Pitchside advertising boards' faces at z (facing the field: dir +1 faces +z), panels of a few colours as a
+## board's ads change along it; the county ground's in its painted greens and whites rather than lit.
+func _boards(g: Geo, z: float, dir: float, length: float, h := 1.0, painted := false) -> void:
+	var cols := [Color("b0287e"), Color("7a2a9a"), Color("d0388e"), Color("5c2a8a")] if not painted \
+		else [Color("2a6a44"), Color("e8e4d8"), Color("1f4a32"), Color("c8b45a")]
+	var n := int(length / 6.0)
+	for i in n:
+		var x := -length * 0.5 + (i + 0.5) * (length / n)
+		g.box(Vector3(x, h * 0.55, z + dir * 0.02), Vector3(length / n - 0.15, h * 0.8, 0.04), cols[(i * 7 + 3) % cols.size()])
+
+
+## The terracotta strip between the grass and the boards (the national stadium's).
+func _perimeter(g: Geo, z0: float, z1: float) -> void:
+	g.floor_rect(-H - 12.0, z0, H + 12.0, z1, 0.02, Color("7a4636"))
+
+
+## A cantilevered roof's white truss: a deep beam along its front edge and a rib every 10 m arching back over it.
+func _truss(g: Geo, x0: float, x1: float, front_z: float, back_z: float, y: float) -> void:
+	var white := Color("e6eaee")
+	g.box(Vector3((x0 + x1) * 0.5, y - 0.4, front_z), Vector3(x1 - x0, 1.6, 0.5), white)
+	var n := int((x1 - x0) / 10.0)
+	for i in n + 1:
+		var x := lerpf(x0, x1, float(i) / n)
+		var mid := Vector3(x, y + 3.2, lerpf(front_z, back_z, 0.4))
+		g.cylinder(Vector3(x, y + 0.4, front_z), mid, 0.22, 0.22, white, 5, false)
+		g.cylinder(mid, Vector3(x, y + 0.4, back_z), 0.22, 0.22, white, 5, false)
+
+
 func _county(g: Geo, spots: Array[Vector3]) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	g.box(Vector3(0, 0.5, -W - 4.5), Vector3(Pitch.LENGTH + 20.0, 1.0, 0.4), Color("1f4a32"))
 	g.box(Vector3(0, 0.5, W + 4.5), Vector3(Pitch.LENGTH + 20.0, 1.0, 0.4), Color("1f4a32"))
+	if int(Game.settings.graphics) > Game.GFX_LOW:
+		_boards(g, -W - 4.28, 1.0, Pitch.LENGTH + 20.0, 0.85, true)
+		_boards(g, W + 4.28, -1.0, Pitch.LENGTH + 20.0, 0.85, true)
 	# The long covered stand on the far side.
 	_stand(g, -62.0, 62.0, -W - 6.0, -1.0, 24, 0.42, 0.8, Color("6a7682"), spots, true, Color("4a5560"), 1.4)
 	# The open terraces on the far side beyond it and at both ends.
@@ -402,11 +437,28 @@ func _county(g: Geo, spots: Array[Vector3]) -> void:
 func _stadium(g: Geo, spots: Array[Vector3]) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 13
-	g.box(Vector3(0, 0.6, -W - 5.0), Vector3(Pitch.LENGTH + 30.0, 1.2, 0.4), Color("1f5a3a"))
-	g.box(Vector3(0, 0.6, W + 5.0), Vector3(Pitch.LENGTH + 30.0, 1.2, 0.4), Color("1f5a3a"))
-	# The far stand: lower and upper tiers, a roof over all.
+	# The advertising boards round the field, lit magenta and purple as the national stadium's are (no names).
+	g.box(Vector3(0, 0.6, -W - 5.0), Vector3(Pitch.LENGTH + 30.0, 1.2, 0.4), Color("6a1f55"))
+	g.box(Vector3(0, 0.6, W + 5.0), Vector3(Pitch.LENGTH + 30.0, 1.2, 0.4), Color("6a1f55"))
+	var hd := int(Game.settings.graphics) > Game.GFX_LOW
+	if hd:
+		_boards(g, -W - 4.78, 1.0, Pitch.LENGTH + 30.0)
+		_boards(g, W + 4.78, -1.0, Pitch.LENGTH + 30.0)
+		_perimeter(g, W + 2.6, W + 4.8)
+		_perimeter(g, -W - 4.8, -W - 2.6)
+	# The far stand: lower and upper tiers, a roof over all; on Medium and High the level of boxes between them
+	# (a band of glass), a lit ribbon on the upper tier's front, and the roof's white truss (Croke Park's look).
+	var upper := 14.0 if hd else 11.0
 	_stand(g, -80.0, 80.0, -W - 6.0, -1.0, 22, 0.42, 0.8, Color("6c7884"), spots, false, Color(), 1.4)
-	_stand(g, -80.0, 80.0, -W - 26.0, -1.0, 24, 0.6, 0.85, Color("5e6a76"), spots, true, Color("c9ced3"), 11.0)
+	_stand(g, -80.0, 80.0, -W - 26.0, -1.0, 24, 0.6, 0.85, Color("5e6a76"), spots, true, Color("c9ced3"), upper)
+	if hd:
+		var lower_top := 1.4 + 22 * 0.42
+		g.box(Vector3(0, (lower_top + upper) * 0.5, -W - 25.95), Vector3(160.0, upper - lower_top, 0.1), Color("1b2a3a"))
+		for i in 41:
+			g.box(Vector3(-80.0 + i * 4.0, (lower_top + upper) * 0.5, -W - 25.88), Vector3(0.12, upper - lower_top, 0.08), Color("c9ced3"))
+		g.box(Vector3(0, upper - 0.35, -W - 25.86), Vector3(160.0, 0.7, 0.12), Color("b0287e"))
+		g.box(Vector3(0, lower_top + 0.3, -W - 23.55), Vector3(160.0, 0.6, 0.12), Color("5c2a8a"))
+		_truss(g, -81.0, 81.0, -W - 23.0, -W - 49.4, upper + 24 * 0.6 + 4.5)
 	# One end: a tall stand; the other: the terrace.
 	for r in 30:
 		var x := H + 9.0 + r * 0.85
@@ -431,7 +483,7 @@ func _stadium(g: Geo, spots: Array[Vector3]) -> void:
 	# Floodlights along the front of the far stand's roof, aimed down at the field.
 	for i in 7:
 		var x := lerpf(-72.0, 72.0, float(i) / 6.0)
-		scenery.add("floodlight", Vector3(x, 31.2, -W - 23.5), 0.0, 1.8, deg_to_rad(35.0))
+		scenery.add("floodlight", Vector3(x, 31.2 + (3.0 if hd else 0.0), -W - 23.5), 0.0, 1.8, deg_to_rad(35.0))
 	# Dublin's terraced streets round the national stadium, on the skyline beyond the stands.
 	_town(rng, H + 52.0, 170.0)
 
@@ -554,7 +606,7 @@ func _environment() -> void:
 	# would leave the stands black); at night the floodlights, from high up.
 	var elev := deg_to_rad(clampf(float(d.sun_elevation), 28.0, 60.0)) if time != "night" else deg_to_rad(70.0)
 	var az := sun_yaw + turn
-	var to_sun := Vector3(sin(az) * cos(elev), sin(elev), cos(az) * cos(elev))
+	to_sun = Vector3(sin(az) * cos(elev), sin(elev), cos(az) * cos(elev))
 	sun.look_at_from_position(Vector3.ZERO, -to_sun, Vector3.UP if absf(to_sun.y) < 0.99 else Vector3.FORWARD)
 	var sc: Array = d.sun_colour
 	sun.light_color = Color(1.0, 0.95, 0.85) if time == "night" else Color(sc[0], sc[1], sc[2]).lerp(Color.WHITE, 0.45)

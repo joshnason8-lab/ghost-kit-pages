@@ -44,6 +44,7 @@ func _ready() -> void:
 	await _match_and_motion()
 	_sounds()
 	_hd_textures()
+	await _shadows()
 	Game.settings = keep
 	Game.delete_champ()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -917,6 +918,33 @@ func _hd_textures() -> void:
 		check(bad.is_empty(), "Graphics %d: each texture has one twice as sharp (%s)" % [g, bad])
 	Game.settings.graphics = Game.GFX_HIGH
 	check(Crowd.material().get_shader_parameter("figs") == float(Crowd.FIGS_HD) and Crowd.sheet().get_width() == 128 * Crowd.FIGS_HD, "Crowd on High: the 24 figures")
+	Game.settings.graphics = keep
+
+
+## Every man's shadow on the grass on Medium and High (one draw call), from his feet away from the sun; none on Low.
+func _shadows() -> void:
+	var keep := int(Game.settings.graphics)
+	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		var m: Node = load("res://game/match.gd").new()
+		m.config = {"home": "KIL", "away": "TIP", "venue": "stadium", "user_team": -1, "seed": 5, "length": 8.0, "mode": "test"}
+		m.set_meta("test", true)
+		add_child(m)
+		await frames(5)
+		if g == Game.GFX_LOW:
+			check(m.shadows == null, "Shadows: none on Low")
+		else:
+			var sh: PlayerShadows = m.shadows
+			var n := 0
+			for pl in m.all_players() + m.officials.people:
+				n += 1 if (pl as Player).visible else 0
+			var ok := sh != null and sh.multimesh.visible_instance_count == n
+			# (Headless, the renderer keeps no instance transforms to read back: the direction they are laid along.)
+			var away: bool = ok and sh._dir.dot(Vector3(-m.stadium.to_sun.x, 0, -m.stadium.to_sun.z).normalized()) > 0.99 \
+				and sh._len > 0.6
+			check(ok and away, "Shadows on High: one for each of the %d men, all away from the sun" % n)
+		m.queue_free()
+		await frames(2)
 	Game.settings.graphics = keep
 
 

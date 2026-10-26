@@ -57,6 +57,7 @@ var _leaving: Array = []     # the men substituted, walking off
 var coach: Coach = null      # the coach's tips, in your first match (Settings > Coach's tips)
 var replay: Replay           # the last seconds kept, and a score or a wide shown again from behind the goal
 var bench: Bench             # each side's substitutes, sitting in its dugout
+var shadows: PlayerShadows   # every man's shadow on the grass (Medium and High)
 ## What a stoppage costs on the watch in a real match, in seconds: the ball is in play only about 38% of a real
 ## game's 70 minutes (2023 league statistics; docs/AI.md). The game's restarts are quicker than that, so when the
 ## players are set the clock is moved on to what the stoppage would have taken.
@@ -113,7 +114,8 @@ func _ready() -> void:
 	clock_k = live_clock_k(half_len * 2.0, length_min)
 	var venue := String(config.get("venue", "county"))
 	var home_t := DB.team(String(config.home))
-	stadium = Stadium.new(venue, [home_t.c1, home_t.c2])
+	var away_t := DB.team(String(config.away))
+	stadium = Stadium.new(venue, [home_t.c1, home_t.c2], [away_t.c1, away_t.c2])
 	add_child(stadium)
 	ball = Sliotar.new()
 	ball.backstop = stadium.backstop()
@@ -125,6 +127,9 @@ func _ready() -> void:
 	replay = Replay.new(self)
 	bench = Bench.new(self)
 	add_child(bench)
+	if int(Game.settings.graphics) > Game.GFX_LOW:
+		shadows = PlayerShadows.new(self)
+		add_child(shadows)
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
@@ -588,7 +593,9 @@ func _brains(dt: float) -> void:
 		if carrier != null and carrier.team != k and phase == P.LIVE:
 			press = _presser(k)
 		var press2: Player = null
-		if press != null and carrier != null and Pitch.from_goal_line(carrier.global_position, dir(carrier.team)) < 45.0:
+		# A second man in on the carrier within 65 m of goal: hurling's defenders swarm the man in possession in twos
+		# and threes (watching the 2026 championship).
+		if press != null and carrier != null and Pitch.from_goal_line(carrier.global_position, dir(carrier.team)) < 65.0:
 			press2 = _presser(k, press)
 		for q in teams[k].players:
 			var pl: Player = q
@@ -727,8 +734,9 @@ func _pick_chasers(k: int) -> Array:
 			continue
 		best.append([t, pl])
 	best.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+	# Three from each side for a ball on the ground: it becomes a ruck, as it does in the real game.
 	var out := []
-	for i in mini(2, best.size()):
+	for i in mini(3, best.size()):
 		out.append(best[i][1])
 	return out
 

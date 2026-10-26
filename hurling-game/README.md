@@ -4,7 +4,7 @@ Hurling for Android phones, built with [Godot 4.7](https://godotengine.org) (fre
 the same way as Kabaddi Raid and Takraw Smash. It plays the GAA's playing rules as they stand in 2026, fifteen a side,
 for the people who play and follow hurling: Ireland, and the Irish abroad. In English and in Irish.
 
-> **Status: playable beta (0.8.2).** The hurlers are the owner's own model, animated with four Mixamo clips and a
+> **Status: playable beta (0.9.0).** The hurlers are the owner's own model, animated with four Mixamo clips and a
 > CMU motion-capture walk and jog (`tools/mocap/`), baked for phones (`tools/player/`); the officials and the
 > crowd's fans are Meshy models baked the same way (`game/person_body.gd`, `tools/crowd/`). Everything else is the
 > game as it will ship.
@@ -90,7 +90,7 @@ autoload/   game.gd (settings, saves, theme, screens), db.gd (counties, players,
 game/       rules.gd (the playing rules, pure), match.gd (the match: play, restarts, fouls, cards, time, your player),
             team_ai.gd (shape, marking, decisions), officials.gd, player.gd (movement and poses), hero_body.gd (the
             owner's model, its clips and its kit shader), body.gd (the skeleton and its poses),
-            person_body.gd (the officials' models), replay.gd (a score or wide again from behind the goal),
+            person_body.gd (the officials' models), player_shadows.gd, replay.gd (a score or wide again from behind the goal),
             bench.gd (the substitutes in the dugouts), scenery.gd (the shared models round a ground), sliotar.gd,
             pitch.gd, stadium.gd + geo.gd + crowd.gd (the grounds),
             camera_rig.gd, hud.gd, touch_controls.gd, championship.gd, sim.gd, records.gd, plural.gd, coach.gd,

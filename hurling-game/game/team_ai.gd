@@ -80,7 +80,8 @@ func home_spot(pl: Player) -> Vector3:
 	if ln == DB.POS_MF:
 		z = -place * 14.0 * d
 	if ln != DB.POS_GK:
-		z = lerpf(z, bz, 0.22 if ln in [DB.POS_FB, DB.POS_FF] else 0.3)
+		# Squeezed across toward the ball: the game is played in a band 40 m wide round it, not across the field.
+		z = lerpf(z, bz, 0.3 if ln in [DB.POS_FB, DB.POS_FF] else 0.42)
 	else:
 		z = clampf(bz * 0.06, -2.0, 2.0)
 	var x := (x_from_own - Pitch.HALF_L) * d

@@ -232,6 +232,34 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.9.0-beta, shadows, the stadium, a real match watched, 26 October 2026)
+
+The owner asked for player shadows and modelled stands, and for a 40-minute broadcast of Galway v Limerick at Croke
+Park (2026) to be studied for movement, strategy and the ground's look and feel (docs/VIDEO_NOTES.md; nothing from
+the broadcast is in the game).
+
+- **Shadows** (PlayerShadows, Medium and High): the grass is drawn unlit, so the sun's shadow maps never fell on it.
+  Each man now has a soft shadow from his feet away from the sun, its length the sun's (a man's height over the
+  tangent of its elevation), shorter in the air, faint at night; one MultiMesh, one draw call. Test: one each, all
+  away from the sun; none on Low.
+- **The stadium** (Medium and High): the far stand's upper deck raised 3 m over a band of glass-fronted boxes with
+  white mullions, a lit magenta ribbon on its front, the roof's white truss (a deep front beam, ribs arching back every
+  10 m), the floodlights up with it, lit panel boards round the field, a terracotta strip between grass and boards;
+  the county ground's boards painted panels. All in the ground's one merged mesh: no new draw calls; about 18,000 more
+  triangles on High. Low as it was. A model of a stand (asked for) is not needed: the stands are built to seat the
+  crowd row by row, and these details carry the look.
+- **The crowd**: at the stadium and the county ground three in four wear one county's colours or the other's, by
+  section (12 m of stand leaning one way), as at Croke Park; the parish field as before.
+- **The AI** (from the broadcast): lines squeeze across toward the ball (the game is played in a band about 40 m wide),
+  a second man presses the carrier within 65 m of goal (was 45), three from each side go for a loose ball (was two:
+  a ruck). score_check passes at every length (35 min: 2.3 goals, 42 points a match; 1.67 points a live minute,
+  real 1.58).
+- **The strike** (Sfx._strike): fitted to strikes measured in the broadcast: 12 dB down in 3 ms (was 25 ms of ringing
+  at 1.2 and 2.4 kHz), its energy under 500 Hz and at 4-8 kHz. The recording itself is RTÉ's and is not used.
+- Perf (perf_probe, stadium Low / Medium / High): 91 / 92 / 132 draw calls, 101,000 / 191,000 / 343,000 triangles;
+  video memory unchanged (40.1 / 75.5 / 87.0 MB). Low's counts move with where the more compact sides stand at the
+  measured moment, not with anything drawn.
+
 ## Done (0.8.2-beta, one beta key, 24 October 2026)
 
 Every game's betas are now signed with the owner's beta key (the BETA_KEYSTORE_B64 repository secret, a PKCS12

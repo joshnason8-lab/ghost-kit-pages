@@ -9,6 +9,19 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.9.0
+
+- **Shadows**: every player has a shadow on the grass (Medium and High), long and hard on a summer afternoon, so you
+  can see where everyone is.
+- **The national stadium looks like Croke Park** on Medium and High: a level of glass-fronted boxes between the two
+  decks, a lit magenta ribbon on the upper deck, the roof's white truss, lit advertising boards round the field and a
+  terracotta border. The crowd at the stadium and the county ground is in the two counties' colours, section by
+  section.
+- **Played like the real thing**: from watching a 2026 championship match, sides now squeeze across toward the ball,
+  close the man in possession in twos further out, and a ball on the ground becomes a ruck. Scoring still matches real
+  hurling.
+- **The strike** sounds sharper: a crack, made to the measure of real strikes.
+
 ## New in 0.8.2
 
 - **One signing key from now on.** Until now each beta was signed with a key of its own, so Android refused to

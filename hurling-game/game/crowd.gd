@@ -93,8 +93,10 @@ void fragment() {
 	return m
 
 
-## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours).
-func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
+## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours). With
+## away too (a championship day at a county ground or the stadium), most wear one county's colours or the other's,
+## in sections of the stand that lean one way, as at Croke Park: share of them in county colours, the rest anything.
+func build(p_spots: Array, density: float, palette: Array, seed_ := 1, away: Array = [], share := 0.45) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_
 	var keep: Array[Vector3] = []
@@ -115,7 +117,15 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
 		var f := facing_at(keep[i])
 		facings.append(f)
 		mm.set_instance_transform(i, Transform3D(Basis(Vector3.UP, atan2(f.x, f.z)), keep[i]))
-		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 else Color(rng.randf(), rng.randf(), rng.randf())
+		var col := Color(rng.randf(), rng.randf(), rng.randf())
+		if not palette.is_empty() and rng.randf() < share:
+			var pal := palette
+			if not away.is_empty():
+				# The section (about 12 m of stand): leaning home or away; most in it follow, a few the others.
+				var sec := hash(Vector2i(floori(keep[i].x / 12.0), floori(keep[i].z / 10.0)))
+				var home_side := (sec % 100) < 50
+				pal = palette if (rng.randf() < 0.8) == home_side else away
+			col = pal[rng.randi_range(0, pal.size() - 1)]
 		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase.
 		mm.set_instance_custom_data(i, Color(rng.randf(), _code(col), rng.randf(), 0.0))
 	multimesh = mm
