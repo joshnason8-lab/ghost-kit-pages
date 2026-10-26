@@ -102,7 +102,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   copies and the 32-person crowd), the whistle and the Medium/High sounds in `_sounds`. Low's screenshots before and
   after: the play shots pixel-identical, the others differ only in the umpires' stride (driven by the wall clock),
   the players' close-ups identical.
-- 0.8.0-beta (in progress) — match study: venue (docs/MATCH_STUDY.md). Indoors on Medium and High: LED boards
+- 0.8.0-beta — match study: venue (docs/MATCH_STUDY.md). Indoors on Medium and High: LED boards
   round the run-off in the arena and a row of portable ones on the hall's far side, running invented messages
   (assets/venue/led_atlas.png, drawn by tools/venue/led_atlas.py in the game's display face), the two teams' colours
   in sweeping bands, and "GOAL!" in the scorer's colour after a goal; the game's wordmark painted in the run-off by
@@ -116,7 +116,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   55.6k primitives, hall 90 / 74.2k, outdoor 89 / 58.6k); arena Medium 106 to 107, High 147 to 148; hall Medium 107
   to 108, High 148 to 149 (a few hundred triangles); about 0.4 MB more video memory; outdoor unchanged.
 
-- 0.8.0-beta (in progress) — match study: play (docs/MATCH_STUDY.md, the owner's video of an international). On the
+- 0.8.0-beta — match study: play (docs/MATCH_STUDY.md, the owner's video of an international). On the
   centre pass whistle the GA and WA drive flat out 2.6 m into the centre third, a stride away from their markers
   (`TeamAI.on_centre_whistle`, `drive_spot`). After a goal a beat to celebrate, then everyone jogs back at 2.8 m/s (the
   taking C hurries); the walk starts in the goal phase, so the next whistle comes no later than before (6 AI v AI

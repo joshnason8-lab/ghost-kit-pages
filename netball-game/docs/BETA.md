@@ -9,6 +9,23 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.0-beta
+
+Learnt from the owner's video of an international (docs/MATCH_STUDY.md):
+
+- **Smarter movement**: attackers drive hard into the centre third on the centre-pass whistle; after a goal everyone
+  jogs back; the GS holds near the post with an arm out while keepers front her; feeders work the circle edge;
+  everyone turns to the post for the rebound; defenders cover the front of the circle.
+- **Umpires** in teal, jogging the side line and going round onto the goal line for circle play.
+- **Breaks**: both teams huddle by their benches, the umpires meet in the middle; on Medium and High the reserves
+  stand by the bench.
+- **Venue (Medium and High, indoors)**: LED boards with team colours and messages ("GOAL!" after a score), the
+  game's name painted by the side lines, and a goal light on each post that flashes on a goal.
+- **TV touches**: a close shot of the post after a goal (and for every shot in AI v AI), and a team card before the
+  match and at half time (tap to skip).
+
+Low graphics is exactly as before.
+
 ## New in 0.7.0-beta
 
 - **Real referee whistles**: short pips for infringements, a long blast for the centre pass and the end of a
