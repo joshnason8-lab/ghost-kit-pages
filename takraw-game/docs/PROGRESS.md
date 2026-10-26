@@ -305,6 +305,7 @@ a white shirt and dark shorts.
 - **On every level, one draw call each as before;** the mask costs about 1.4 MB of video memory with its mipmaps
   (lossless, so the tie's few texels stay sharp).
 - `test_runner` checks every official wears the suit, and the mask has each of its parts.
+- Before and after: `docs/venues/officials_suits.jpg`.
 
 Performance on Low (`perf_probe`, 0.11.0 → 0.11.1): the same draw calls within a frame's noise (±2), and 1.3 to
 1.9 MB more video memory in each venue (the mask): the National Arena 32.7 MB, the night market 50.4 MB, the park
