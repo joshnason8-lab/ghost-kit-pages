@@ -52,8 +52,8 @@ func _ready() -> void:
 	await _screen("11_how_to_play_controls", "res://ui/howto_screen.gd", {"tab": 1})
 	await _screen("12_how_to_play_officials", "res://ui/howto_screen.gd", {"tab": 2})
 	await _screen("13_move_buttons", "res://ui/buttons_screen.gd")
-	# A match: the pause menu over it; then a match played for a minute (nothing drawn) and the rest simulated, as the
-	# pause menu's Simulate to the end does, for a real result (a whole match takes hours on a software renderer).
+	# A match: the pause menu over it; then a match thrown in and simulated to the end, as the pause menu's Simulate to
+	# the end does, for a real result (each frame of a match takes about a second on a software renderer, drawn or not).
 	Game.start_match({"home": "KIL", "away": "TIP", "venue": "county", "user_team": 0, "seed": 5, "length": 8, "mode": "quick"})
 	var m: Node = Game.current
 	await _wait(4.0)
@@ -64,7 +64,7 @@ func _ready() -> void:
 	Game.clear_suspended()
 	Game.start_match({"home": "KIL", "away": "TIP", "venue": "county", "user_team": -1, "seed": 8, "length": 8, "mode": "watch"})
 	RenderingServer.render_loop_enabled = false
-	await _wait(60.0)
+	await _wait(3.0)
 	if _where() == "match.gd":
 		Game.current.sim_to_end()
 	var guard := 0

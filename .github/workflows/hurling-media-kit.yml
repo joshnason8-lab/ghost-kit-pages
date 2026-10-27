@@ -21,11 +21,18 @@ concurrency:
 env:
   GODOT_VERSION: "4.7.2"
   PROJECT_DIR: hurling-game
+  # Parts already made by an earlier run of this workflow (its artifacts are kept 3 days), taken from that run instead
+  # of made again: a run id, and the parts (as their artifacts are named, media-<part>). Empty: everything is made.
+  REUSE_RUN: "40499792559"
+  REUSE_PARTS: "shots footage_0_1 footage_2_3 footage_4_5"
 
 jobs:
   pictures:
     runs-on: ubuntu-latest
     timeout-minutes: 340
+    permissions:
+      contents: read
+      actions: read     # to take a part from an earlier run (REUSE_RUN)
     strategy:
       fail-fast: true
       matrix:
@@ -33,7 +40,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Made already?
+        id: name
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          n=$(echo '${{ matrix.part }}' | tr ' ,' '__')
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+          if [ -n "$REUSE_RUN" ] && [[ " $REUSE_PARTS " == *" $n "* ]] && \
+              gh run download "$REUSE_RUN" -n "media-$n" -D "${PROJECT_DIR}/build/media"; then
+            echo "reused=true" >> "$GITHUB_OUTPUT"
+            find "${PROJECT_DIR}/build/media" -type f | wc -l
+          fi
+
       - name: Cache Godot and export templates
+        if: steps.name.outputs.reused != 'true'
         id: cache-godot
         uses: actions/cache@v4
         with:
@@ -43,7 +65,7 @@ jobs:
           key: godot-${{ env.GODOT_VERSION }}-templates
 
       - name: Install Godot ${{ env.GODOT_VERSION }}
-        if: steps.cache-godot.outputs.cache-hit != 'true'
+        if: steps.name.outputs.reused != 'true' && steps.cache-godot.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/godot ~/.local/share/godot/export_templates
           cd ~/godot
@@ -54,25 +76,25 @@ jobs:
           mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
 
       - name: Put Godot on PATH
+        if: steps.name.outputs.reused != 'true'
         run: |
           ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
           godot --version --headless
 
       - name: A display and software Vulkan (Mesa's lavapipe)
+        if: steps.name.outputs.reused != 'true'
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q xvfb mesa-vulkan-drivers libvulkan1
 
       - name: Build translations
+        if: steps.name.outputs.reused != 'true'
         run: python3 ${PROJECT_DIR}/tools/build_i18n.py
 
       - name: Make ${{ matrix.part }}
+        if: steps.name.outputs.reused != 'true'
         working-directory: ${{ env.PROJECT_DIR }}
         run: tools/media/make_media_kit.sh build/media ${{ matrix.part }}
-
-      - name: Keep them for the assembly
-        id: name
-        run: echo "n=$(echo '${{ matrix.part }}' | tr ' ,' '__')" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
