@@ -21,9 +21,9 @@ BODY = str(ROOT / "fonts" / "NotoSans.ttf")
 MUSIC = str(ROOT / "assets" / "audio" / "menu_music.ogg")
 CREAM, SAFFRON, GOLD, INK = (247, 239, 226), (255, 176, 32), (255, 217, 122), (20, 12, 10)
 # The moments, in order: (ground, kind, caption). Each clip starts LEAD s before its moment and runs CLIP s.
-PLAN = [("maidan", "kho", ""), ("school", "pole_turn", "Swing round the pole"), ("floodlit", "dive", "Dive for the tag"),
-        ("arena", "out", ""), ("school", "dive", ""), ("maidan", "out", "")]
-VERTICAL = [("floodlit", "dive"), ("school", "pole_turn"), ("arena", "out")]
+PLAN = [("maidan", "kho", ""), ("school", "pole_turn", "Swing round the pole"), ("school", "dive", "Dive for the tag"),
+        ("floodlit", "pole_dive", ""), ("arena", "out", ""), ("maidan", "out", "")]
+VERTICAL = [("school", "dive"), ("floodlit", "pole_turn"), ("arena", "out")]
 FALLBACK = ["dive", "pole_turn", "out", "kho", "swerve", "pole_dive"]
 LEAD, CLIP, VCLIP = 1.6, 4.6, 3.8
 
@@ -105,7 +105,7 @@ def join(parts: list, out: pathlib.Path, work: pathlib.Path, total: float) -> No
     run(["-i", str(cut), "-stream_loop", "-1", "-i", MUSIC, "-filter_complex",
          f"[1:a]volume=0.45,afade=in:0:d=1.5,afade=out:st={total - 2.0}:d=2.0,atrim=0:{total}[m];"
          "[0:a][m]amix=inputs=2:duration=first:normalize=0[a]", "-map", "0:v", "-map", "[a]", "-c:v", "libx264",
-         "-crf", "20", "-preset", "slow", "-profile:v", "high", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+         "-crf", "21", "-maxrate", "11M", "-bufsize", "22M", "-preset", "slow", "-profile:v", "high", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
          "-movflags", "+faststart", str(out)])
 
 
