@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.1-beta
+
+- **Settings > About**: Licences, Help and the Privacy policy now open inside the game (they work offline); the two
+  web links they used to open were not online.
+
 ## New in 0.8.0-beta
 
 Learnt from the owner's video of an international (docs/MATCH_STUDY.md):

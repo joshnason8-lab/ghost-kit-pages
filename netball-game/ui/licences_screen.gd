@@ -5,11 +5,12 @@ extends Control
 
 const CREDITS := """[b]Netball Unleashed[/b]
 Made by Josh Nason.
-The players are Josh Nason's own 3D model. Umpires, venues, crowd, ball and flags made in code for the game (the
+The players are Josh Nason's own 3D model, made with Meshy (meshy.ai) and rigged and animated with Mixamo (Adobe,
+mixamo.com): its Walking and Running clips and the Fast_Run sprint, used under Mixamo's terms. Umpires, venues, crowd, ball and flags made in code for the game (the
 crowd's 32 people on Medium and High drawn for it by tools/art/make_crowd.py); the
 menu music and the shoe squeaks written for it (tools/audio). The crowd's ooh and groan from Kabaddi
 Raid, by the same maker.
-Venue models by Josh Nason: the arena's courtside stands, gym and park benches, oak trees, grass, terraced houses
+Venue models by Josh Nason, made with Meshy (meshy.ai): the arena's courtside stands, gym and park benches, oak trees, grass, terraced houses
 and the street hoop. From Poly Haven (polyhaven.com), CC0: the skies, floor and wall textures, jacaranda and
 broadleaf trees, painted benches, hall lights, clock, fire alarm, wet floor sign and street lamps.
 Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
@@ -69,8 +70,13 @@ func _ready() -> void:
 		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
 
 
-## Licence texts are long: a big one is laid out off the main thread.
 func _text(bb: String, big := false) -> RichTextLabel:
+	return text_block(bb, big)
+
+
+## A block of formatted text for the About pages (Licences, Help, Privacy), its height its own, inside a page's
+## scroll box. Licence texts are long: a big one is laid out off the main thread.
+static func text_block(bb: String, big := false) -> RichTextLabel:
 	var rt := RichTextLabel.new()
 	rt.bbcode_enabled = true
 	rt.fit_content = true
@@ -88,6 +94,20 @@ func _text(bb: String, big := false) -> RichTextLabel:
 	rt.add_theme_color_override("default_color", Color(Game.C_INK, 0.85))
 	rt.text = bb
 	return rt
+
+
+## Text written wrapped in the code, as paragraphs: a paragraph (blank lines between) is one flowing line, its bold
+## heading line kept on its own.
+static func flow(s: String) -> String:
+	var out := PackedStringArray()
+	for para in s.split("\n\n"):
+		var lines := para.split("\n")
+		var head := ""
+		if lines.size() > 1 and lines[0].begins_with("[b]") and lines[0].ends_with("[/b]"):
+			head = lines[0] + "\n"
+			lines.remove_at(0)
+		out.append(head + " ".join(lines))
+	return "\n\n".join(out)
 
 
 ## Text shown as it is: square brackets in a licence are not formatting.

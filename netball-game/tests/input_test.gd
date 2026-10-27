@@ -70,7 +70,8 @@ func _real_pages() -> void:
 	Game.delete_cup()
 	Game.new_cup("ENG")
 	var pages := [["res://ui/howto_screen.gd", {"tab": 0}], ["res://ui/howto_screen.gd", {"tab": 1}], ["res://ui/howto_screen.gd", {"tab": 2}],
-		["res://ui/howto_screen.gd", {"tab": 3}], ["res://ui/licences_screen.gd", {}], ["res://ui/settings_screen.gd", {}],
+		["res://ui/howto_screen.gd", {"tab": 3}], ["res://ui/licences_screen.gd", {}], ["res://ui/help_screen.gd", {}],
+		["res://ui/privacy_screen.gd", {}], ["res://ui/settings_screen.gd", {}],
 		["res://ui/cup_screen.gd", {}], ["res://ui/quick_setup.gd", {}]]
 	for pg in pages:
 		var path: String = pg[0]

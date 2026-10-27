@@ -61,6 +61,10 @@ func _menus() -> void:
 	Game.show_screen("res://ui/settings_screen.gd")
 	await frames(10)
 	await shot("04_settings")
+	for about in ["help", "privacy"]:
+		Game.show_screen("res://ui/%s_screen.gd" % about)
+		await frames(8)
+		await shot("04_%s" % about)
 	Game.show_screen("res://ui/result_screen.gd", {"result": (load("res://tests/fit_audit.gd") as Script).fake_result()})
 	await frames(10)
 	await shot("05_result")

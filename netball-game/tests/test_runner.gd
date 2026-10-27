@@ -16,6 +16,7 @@ func _ready() -> void:
 	Game.settings.sound = false
 	var keep: Dictionary = Game.settings.duplicate(true)
 	await _screens()
+	await _about_pages()
 	_rules()
 	_footwork()
 	_sim()
@@ -65,7 +66,8 @@ func frames(n: int) -> void:
 ## Every screen, in every language: it opens and builds.
 func _screens() -> void:
 	var screens := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
-		"res://ui/records_screen.gd", "res://ui/cup_screen.gd", "res://ui/league_screen.gd", "res://ui/licences_screen.gd"]
+		"res://ui/records_screen.gd", "res://ui/cup_screen.gd", "res://ui/league_screen.gd", "res://ui/licences_screen.gd",
+		"res://ui/help_screen.gd", "res://ui/privacy_screen.gd"]
 	for pair in Game.LANGUAGES:
 		Game.settings.language = pair[0]
 		TranslationServer.set_locale(pair[0])
@@ -79,6 +81,37 @@ func _screens() -> void:
 	Game.settings.language = "en"
 	TranslationServer.set_locale("en")
 	Game._size_theme()
+
+
+## Settings > About: Licences, Help and the privacy policy each open in the game (offline), from Settings' own
+## buttons, with their words in them and a way back.
+func _about_pages() -> void:
+	var want := {"LICENCES": ["res://ui/licences_screen.gd", ["Godot Engine", "mocap.cs.cmu.edu", "Pixabay", "Kenney", "Poly Haven", "SIL Open Font License"]],
+		"HELP_SUPPORT": ["res://ui/help_screen.gd", [tr("CTRL_MOVE"), tr("RULES_FOOTWORK"), tr("GFX_LOW"), "Report a bug", "@"]],
+		"PRIVACY_POLICY": ["res://ui/privacy_screen.gd", ["no personal data", "internet permission", "Last updated", "Contact", "@"]]}
+	for key in want:
+		var settings := Game.show_screen("res://ui/settings_screen.gd")
+		await frames(3)
+		var btn: Button = null
+		for b in settings.find_children("*", "Button", true, false):
+			if (b as Button).text == tr(key):
+				btn = b
+		check(btn != null, "Settings has a %s button" % key)
+		if btn == null:
+			continue
+		btn.pressed.emit()
+		await frames(4)
+		var s: Node = Game.current
+		check(is_instance_valid(s) and s.get_script() != null and String(s.get_script().resource_path) == want[key][0], "%s opens %s in the game" % [key, want[key][0]])
+		var words := ""
+		for rt in s.find_children("*", "RichTextLabel", true, false):
+			words += (rt as RichTextLabel).get_parsed_text() + "\n"
+		check(words.length() > 600, "%s is not empty (%d characters)" % [key, words.length()])
+		for w in want[key][1]:
+			check(words.contains(w), "%s mentions %s" % [key, w])
+		check(s.find_children("*", "ScrollContainer", true, false).size() > 0, "%s scrolls" % key)
+	Game.show_screen("res://ui/settings_screen.gd")
+	await frames(2)
 
 
 # ---------------------------------------------------------------- the rules, one by one

@@ -102,6 +102,14 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   copies and the 32-person crowd), the whistle and the Medium/High sounds in `_sounds`. Low's screenshots before and
   after: the play shots pixel-identical, the others differ only in the umpires' stride (driven by the wall clock),
   the players' close-ups identical.
+- 0.8.1-beta — Settings > About in the game: Licences, Help (`ui/help_screen.gd`: the controls and the rules in
+  brief from How to Play's own translated words, the graphics levels, what to do if something is wrong and how to
+  report a bug) and the Privacy policy (`ui/privacy_screen.gd`: no data collected, no ads or analytics, no internet
+  permission, the date and a contact) all open offline. Settings used to open two web pages
+  (github.io/ghost-kit-pages/netball-unleashed/privacy.html and support.html) that return 404: GitHub Pages does not
+  serve this branch; the buttons no longer leave the game. The licences now also credit Meshy (the owner's models)
+  and Mixamo (the rig and clips). Test: `_about_pages` (each opens from Settings' own button, scrolls, and holds its
+  words); the fit audit and input test cover both new screens.
 - 0.8.0-beta — match study: venue (docs/MATCH_STUDY.md). Indoors on Medium and High: LED boards
   round the run-off in the arena and a row of portable ones on the hall's far side, running invented messages
   (assets/venue/led_atlas.png, drawn by tools/venue/led_atlas.py in the game's display face), the two teams' colours
