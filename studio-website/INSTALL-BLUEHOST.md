@@ -148,8 +148,8 @@ Each game is building a media kit: a trailer, screenshots, menus, a 1024 px icon
 
 1. Download the trailers from
    [`studio-website/dist/trailers/`](https://github.com/joshnason8-lab/ghost-kit-pages/tree/claude/studio-website/studio-website/dist/trailers).
-   These are web-sized versions (720p, about 5–8 MB each) of the trailers in the games' media kits. So far there are
-   Netball Unleashed's and Sepak Takraw Unleashed's.
+   These are web-sized versions (720p, about 5–9 MB each) of the trailers in the games' media kits: every game except
+   Kabaddi Raid, whose kit isn't out yet.
 2. Go to **Media > Add New Media File** and drop them in. Keep the file names, for example
    `netball-unleashed-trailer.mp4`.
 3. Go to **Appearance > Site setup** and press **Set up the site**.
@@ -171,9 +171,8 @@ game's Play Store screenshots. To change one:
 1. Click it, then **Replace**.
 2. Upload the new picture and write its **Alternative text**, a few words on what it shows.
 
-**Media kit links**: Netball Unleashed's and Sepak Takraw Unleashed's media kits are already linked, on the Press kit
-page and on their game pages. Each other game shows "Media kit … coming soon". When the release `<game>-media`
-exists on GitHub:
+**Media kit links**: six games' media kits are already linked, on the Press kit page and on each game's page. Kabaddi
+Raid shows "Media kit … coming soon". When the release `kabaddi-raid-media` exists on GitHub:
 
 1. Open **Pages > Press kit**.
 2. Select the words "Media kit" for that game, press the link button, and paste the zip's download address from the

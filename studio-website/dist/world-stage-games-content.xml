@@ -16,7 +16,7 @@
 <!-- 7. WordPress will then import each of the posts, pages, comments, categories, etc. -->
 <!--    contained in this file into your site. -->
 
-	<!-- generator="WordPress/7.1.3" created="2026-10-27 20:21" -->
+	<!-- generator="WordPress/7.1.3" created="2026-10-27 22:54" -->
 <rss version="2.0"
 	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
 	xmlns:content="http://purl.org/rss/1.0/modules/content/"
@@ -29,7 +29,7 @@
 	<title>World Stage Games</title>
 	<link>https://worldstagegames.com</link>
 	<description>Every game deserves a stage.</description>
-	<pubDate>Tue, 27 Oct 2026 20:21:11 +0000</pubDate>
+	<pubDate>Tue, 27 Oct 2026 22:54:32 +0000</pubDate>
 	<language>en-US</language>
 	<wp:wxr_version>1.2</wp:wxr_version>
 	<wp:base_site_url>https://worldstagegames.com</wp:base_site_url>
@@ -37,7 +37,7 @@
 
 		<wp:author><wp:author_id>1</wp:author_id><wp:author_login><![CDATA[admin]]></wp:author_login><wp:author_email><![CDATA[admin@example.com]]></wp:author_email><wp:author_display_name><![CDATA[admin]]></wp:author_display_name><wp:author_first_name><![CDATA[]]></wp:author_first_name><wp:author_last_name><![CDATA[]]></wp:author_last_name></wp:author>
 
-						
+							
 	<generator>https://wordpress.org/?v=7.1.3</generator>
 
 <image>
@@ -4070,7 +4070,7 @@
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"className":"gk-facts gk-facts--grid"} -->
-<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Hurling</td></tr><tr><th>Players</th><td>15 v 15</td></tr><tr><th>Ways to play</th><td>Throw-in, The Summer Championship, Watch a match</td></tr><tr><th>Languages</th><td>2: English, Irish</td></tr><tr><th>Graphics</th><td>Low · Medium · High + HD pack</td></tr><tr><th>Plays offline</th><td>Yes (the optional HD pack downloads over the internet)</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration; internet, only to download the HD pack</td></tr><tr><th>Status</th><td>Beta on Android · Google Play coming soon</td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Hurling</td></tr><tr><th>Players</th><td>15 v 15</td></tr><tr><th>Ways to play</th><td>Throw-in, The Summer Championship, Watch a match, Free-taking practice</td></tr><tr><th>Languages</th><td>2: English, Irish</td></tr><tr><th>Graphics</th><td>Low · Medium · High + HD pack</td></tr><tr><th>Plays offline</th><td>Yes (the optional HD pack downloads over the internet)</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration; internet, only to download the HD pack</td></tr><tr><th>Status</th><td>Beta on Android · Google Play coming soon</td></tr></tbody></table></figure>
 <!-- /wp:table --></div>
 <!-- /wp:column --></div>
 <!-- /wp:columns -->
@@ -4169,7 +4169,7 @@
 
 <!-- wp:group {"align":"wide","layout":{"type":"default"}} -->
 <div class="wp-block-group alignwide"><!-- wp:paragraph {"className":"gk-game__links"} -->
-<p class="gk-game__links"><a href="/games/hurling-heroes/privacy/">Privacy policy</a> · <a href="/games/hurling-heroes/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#hurling-heroes">Press kit</a></p>
+<p class="gk-game__links"><a href="/games/hurling-heroes/privacy/">Privacy policy</a> · <a href="/games/hurling-heroes/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#hurling-heroes">Press kit</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/hurling-heroes-media/media-kit-hurling-heroes.zip">Media kit (zip)</a></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"className":"gk-small gk-muted"} -->
@@ -4180,8 +4180,8 @@
 		<wp:post_id>72</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[hurling-heroes]]></wp:post_name>
@@ -4193,7 +4193,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[6154d4d173a5bed830ff7cd14d4eb6d8]]></wp:meta_value>
+		<wp:meta_value><![CDATA[ad10930abf8da969ac9c18f4876b1131]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -5477,7 +5477,7 @@
 
 <!-- wp:group {"align":"wide","layout":{"type":"default"}} -->
 <div class="wp-block-group alignwide"><!-- wp:paragraph {"className":"gk-game__links"} -->
-<p class="gk-game__links"><a href="/games/kho-kho-rush/privacy/">Privacy policy</a> · <a href="/games/kho-kho-rush/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#kho-kho-rush">Press kit</a></p>
+<p class="gk-game__links"><a href="/games/kho-kho-rush/privacy/">Privacy policy</a> · <a href="/games/kho-kho-rush/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#kho-kho-rush">Press kit</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/kho-kho-rush-media/media-kit-kho-kho-rush.zip">Media kit (zip)</a></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"className":"gk-small gk-muted"} -->
@@ -5488,8 +5488,8 @@
 		<wp:post_id>81</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[kho-kho-rush]]></wp:post_name>
@@ -5501,7 +5501,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[52f3fc25a4f2309d11b5f8bc9f1b5605]]></wp:meta_value>
+		<wp:meta_value><![CDATA[3661c5964dd26e19e20818e5196cbcdb]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -5989,7 +5989,7 @@
 
 <!-- wp:group {"align":"wide","layout":{"type":"default"}} -->
 <div class="wp-block-group alignwide"><!-- wp:paragraph {"className":"gk-game__links"} -->
-<p class="gk-game__links"><a href="/games/floorball-unleashed/privacy/">Privacy policy</a> · <a href="/games/floorball-unleashed/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#floorball-unleashed">Press kit</a></p>
+<p class="gk-game__links"><a href="/games/floorball-unleashed/privacy/">Privacy policy</a> · <a href="/games/floorball-unleashed/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#floorball-unleashed">Press kit</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/floorball-unleashed-media/media-kit-floorball-unleashed.zip">Media kit (zip)</a></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"className":"gk-small gk-muted"} -->
@@ -6000,8 +6000,8 @@
 		<wp:post_id>84</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[floorball-unleashed]]></wp:post_name>
@@ -6013,7 +6013,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[6623151205d818669c4acca6f246599b]]></wp:meta_value>
+		<wp:meta_value><![CDATA[1d0fda6c416503447b66ed76467aa6ed]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -6423,7 +6423,7 @@
 
 <!-- wp:group {"align":"wide","layout":{"type":"default"}} -->
 <div class="wp-block-group alignwide"><!-- wp:paragraph {"className":"gk-game__links"} -->
-<p class="gk-game__links"><a href="/games/pok-ta-pok-rivals/privacy/">Privacy policy</a> · <a href="/games/pok-ta-pok-rivals/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#pok-ta-pok-rivals">Press kit</a></p>
+<p class="gk-game__links"><a href="/games/pok-ta-pok-rivals/privacy/">Privacy policy</a> · <a href="/games/pok-ta-pok-rivals/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#pok-ta-pok-rivals">Press kit</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/pok-ta-pok-rivals-media/media-kit-pok-ta-pok-rivals.zip">Media kit (zip)</a></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"className":"gk-small gk-muted"} -->
@@ -6434,8 +6434,8 @@
 		<wp:post_id>87</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[pok-ta-pok-rivals]]></wp:post_name>
@@ -6447,7 +6447,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[96a55aabd0ef40ddc43a59bc345a1448]]></wp:meta_value>
+		<wp:meta_value><![CDATA[2b2ceb0ec2d352867d1a9882d28e906e]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -9862,7 +9862,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>By around 300 BC courts are found across Mesoamerica, and well over 1,300 ancient ballcourts are now known. Most are long, narrow alleys between sloping or vertical walls. Later courts closed off both ends, giving the classic <strong>I-shape</strong> seen from above. Some cities had many: El Tajín in Veracruz has around 17–20.</p>
+<p>By around 300 BC courts are found across Mesoamerica. More than 1,300 ancient ballcourts are known, and the count keeps rising as surveys continue. Most are long, narrow alleys between sloping or vertical walls. Later courts closed off both ends, giving the classic <strong>I-shape</strong> seen from above. Some cities had many: El Tajín in Veracruz has around 17–20.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph -->
@@ -10260,8 +10260,8 @@
 		<wp:post_id>97</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[ulama]]></wp:post_name>
@@ -10273,7 +10273,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[ff801b74bcb054026988833c1880a706]]></wp:meta_value>
+		<wp:meta_value><![CDATA[b7fe9620a4bc702c83ab89d0bf3d8ea5]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -10447,7 +10447,7 @@
 
 <!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><strong>Media kit</strong> (zip, with screenshots, the 1024 px icon, the trailer and the text): coming soon.</li>
+<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/hurling-heroes-media/media-kit-hurling-heroes.zip"><strong>Media kit</strong> (zip)</a>: screenshots, menus, the 1024 px icon, the trailer and the text.</li>
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
@@ -10573,7 +10573,7 @@
 
 <!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><strong>Media kit</strong> (zip, with screenshots, the 1024 px icon, the trailer and the text): coming soon.</li>
+<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/kho-kho-rush-media/media-kit-kho-kho-rush.zip"><strong>Media kit</strong> (zip)</a>: screenshots, menus, the 1024 px icon, the trailer and the text.</li>
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
@@ -10615,7 +10615,7 @@
 
 <!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><strong>Media kit</strong> (zip, with screenshots, the 1024 px icon, the trailer and the text): coming soon.</li>
+<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/floorball-unleashed-media/media-kit-floorball-unleashed.zip"><strong>Media kit</strong> (zip)</a>: screenshots, menus, the 1024 px icon, the trailer and the text.</li>
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
@@ -10657,7 +10657,7 @@
 
 <!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><strong>Media kit</strong> (zip, with screenshots, the 1024 px icon, the trailer and the text): coming soon.</li>
+<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/pok-ta-pok-rivals-media/media-kit-pok-ta-pok-rivals.zip"><strong>Media kit</strong> (zip)</a>: screenshots, menus, the 1024 px icon, the trailer and the text.</li>
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
@@ -10680,8 +10680,8 @@
 		<wp:post_id>99</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[press-kit]]></wp:post_name>
@@ -10693,7 +10693,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[f62950514865c4de144853ab6bc229d2]]></wp:meta_value>
+		<wp:meta_value><![CDATA[45f02c2ac4ac497abcf937cc7289050a]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>

@@ -70,7 +70,7 @@ The oldest balls are even earlier. At **El Manatí**, a waterlogged spring in Ve
 
 ### Spread across Mesoamerica
 
-By around 300 BC courts are found across Mesoamerica, and well over 1,300 ancient ballcourts are now known. Most are long, narrow alleys between sloping or vertical walls. Later courts closed off both ends, giving the classic **I-shape** seen from above. Some cities had many: El Tajín in Veracruz has around 17–20.
+By around 300 BC courts are found across Mesoamerica. More than 1,300 ancient ballcourts are known, and the count keeps rising as surveys continue. Most are long, narrow alleys between sloping or vertical walls. Later courts closed off both ends, giving the classic **I-shape** seen from above. Some cities had many: El Tajín in Veracruz has around 17–20.
 
 The famous **stone rings** high on the side walls are a late feature, not part of the original game. They appear in the Postclassic period among the Maya and continue with the Toltecs and Aztecs. Putting the ball through a ring was rare and seems to have ended the game; most games were probably decided on points.
 

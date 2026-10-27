@@ -635,7 +635,7 @@
     "slug": "hurling-heroes",
     "app_id": "com.ashandleather.game",
     "branch": "claude/hurling-game",
-    "version": "0.11.2-beta",
+    "version": "0.13.0-beta",
     "sport": "Hurling",
     "region_label": "Ireland",
     "regions": [
@@ -652,7 +652,8 @@
     "modes": [
       "Throw-in",
       "The Summer Championship",
-      "Watch a match"
+      "Watch a match",
+      "Free-taking practice"
     ],
     "languages": [
       "English",
@@ -736,9 +737,7 @@
       "players": [
         "hurling-game/store/listing/en-US.txt (\"fifteen a side\")"
       ],
-      "modes": [
-        "hurling-game/store/listing/en-US.txt"
-      ],
+      "modes": "claude/hurling-game:hurling-game/README.md (Modes row) and hurling-game/store/listing/en-US.txt (\"Free-taking: ten frees and 65s at the posts\"), version 0.13.0-beta",
       "languages": [
         "hurling-game/store/listing/en-US.txt",
         "hurling-game/i18n/src/ (en, ga)",

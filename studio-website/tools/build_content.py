@@ -95,7 +95,7 @@ def load_games():
         g.setdefault("card_players", g["players"])
         rs = RELEASE_SLUG[g["slug"]]
         g["beta_url"] = "%s/releases/tag/%s-beta" % (REPO_URL, rs)
-        g["media_tag"] = "%s-media" % rs
+        g["media_tag"] = "%s-media" % g["slug"]  # media kits are published as <game>-media
         g["url"] = "/games/%s/" % g["slug"]
         g["hd"] = g["slug"] == "hurling-heroes"
         g["web"] = "https://kabaddi-raid-beta.netlify.app" if g["slug"] == "kabaddi-raid" else None
