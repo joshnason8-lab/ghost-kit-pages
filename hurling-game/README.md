@@ -4,7 +4,7 @@ Hurling for Android phones, built with [Godot 4.7](https://godotengine.org) (fre
 the same way as Kabaddi Raid and Takraw Smash. It plays the GAA's playing rules as they stand in 2026, fifteen a side,
 for the people who play and follow hurling: Ireland, and the Irish abroad. In English and in Irish.
 
-> **Status: playable beta (0.11.1).** The hurlers are the owner's own model, animated with four Mixamo clips and a
+> **Status: playable beta (0.11.2).** The hurlers are the owner's own model, animated with four Mixamo clips and a
 > CMU motion-capture walk and jog (`tools/mocap/`), baked for phones (`tools/player/`); the officials and the
 > crowd's fans are Meshy models baked the same way (`game/person_body.gd`, `tools/crowd/`). Everything else is the
 > game as it will ship.

@@ -378,7 +378,9 @@ func _pose(now: float) -> Dictionary:
 	var wr := smoothstep(2.6, 5.5, sp)
 	if wg > 0.0:
 		var run_p := gait_pose(sp, _ph)
-		for i in (RUN_ARMS if is_official() else (RUN_BODY if ball_stick or ball_hand else RUN_ARM_L)):
+		# (An official's arms are the swing above, beside the body: the clips' arms, retargeted onto the officials'
+		# models, came up in front of the chest like a boxer's guard.)
+		for i in (RUN_BODY if is_official() or ball_stick or ball_hand else RUN_ARM_L):
 			p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(run_p[0][i], wg)
 		p.hips_y = lerpf(float(p.get("hips_y", 0.0)), float(run_p[1]), wg)
 		if sp > 0.3 and forward().dot(Vector3(vel.x, 0, vel.z) / sp) < -0.3:
@@ -456,7 +458,6 @@ const BONE_NAMES := ["hips", "spine", "chest", "neck", "head", "upperarm_l", "fo
 	"forearm_r", "hand_r", "thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]   # ToonBody.BONES' order
 const RUN_BODY := [0, 1, 2, 3, 4, 11, 12, 13, 14, 15, 16]   # the body and legs
 const RUN_ARM_L := RUN_BODY + [5, 6, 7]                    # and the free (left) arm
-const RUN_ARMS := RUN_ARM_L + [8, 9, 10]                   # an official: both arms
 ## The swings from the owner's Mixamo clips: from the hand and off the hurley a baseball hit (the backswing over
 ## the right shoulder, level through the ball), the overhead pull the bigger swing, along the ground the golf drive.
 const SWING_CLIP := {"strike": "Baseball_Hit", "strike_stick": "Baseball_Hit", "puck_out": "Baseball_Hit",
@@ -635,6 +636,9 @@ func _show_flag(kind: String) -> void:
 		_flag.mesh = g.commit(Geo.material(false)).mesh
 		_flag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_flag_att.add_child(_flag)
+		if body is PersonBody:
+			# Held as before: the officials' hands are turned to hang naturally (PersonBody.TWIST).
+			_flag.rotation.y = -deg_to_rad((body as PersonBody).right_turn())
 		var mat := StandardMaterial3D.new()
 		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		mat.cull_mode = BaseMaterial3D.CULL_DISABLED

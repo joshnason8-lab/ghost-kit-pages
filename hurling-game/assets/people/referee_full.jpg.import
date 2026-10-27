@@ -2,22 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://qwja5mhyrfya"
-path.s3tc="res://.godot/imported/referee_hd.jpg-0aab1e71649c8926ae60cf316a7f1c49.s3tc.ctex"
-path.etc2="res://.godot/imported/referee_hd.jpg-0aab1e71649c8926ae60cf316a7f1c49.etc2.ctex"
+uid="uid://d1n5dvht1xdcj"
+path="res://.godot/imported/referee_full.jpg-0055324f3c251abc5a35fee217db45d1.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/people/referee_hd.jpg"
-dest_files=["res://.godot/imported/referee_hd.jpg-0aab1e71649c8926ae60cf316a7f1c49.s3tc.ctex", "res://.godot/imported/referee_hd.jpg-0aab1e71649c8926ae60cf316a7f1c49.etc2.ctex"]
+source_file="res://assets/people/referee_full.jpg"
+dest_files=["res://.godot/imported/referee_full.jpg-0055324f3c251abc5a35fee217db45d1.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -25,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

@@ -1000,8 +1000,7 @@ func _hd_textures() -> void:
 	var files := ["res://assets/env/ground/grass_ground_albedo_1k.jpg", "res://assets/env/ground/grass_ground_normal_1k.jpg",
 		"res://assets/env/ground/sparse_grass_albedo_1k.jpg", "res://assets/env/ground/withered_grass_albedo_1k.jpg",
 		"res://assets/env/ground/leafy_grass_albedo_1k.jpg", "res://assets/player/hero_albedo.jpg",
-		"res://assets/player/hero_mask.png", "res://assets/people/referee.jpg", "res://assets/people/umpire.jpg",
-		"res://assets/crowd/sheet.png", "res://assets/crowd/mask.png"]
+		"res://assets/player/hero_mask.png", "res://assets/crowd/sheet.png", "res://assets/crowd/mask.png"]
 	Game.settings.graphics = Game.GFX_LOW
 	var low := files.filter(func(f): return Game.hd(f) != f)
 	check(low.is_empty(), "Low: the same textures as before (%s)" % [low])
@@ -1015,8 +1014,20 @@ func _hd_textures() -> void:
 			if b == null or b.get_width() < a.get_width() * 2:
 				bad.append(f.get_file())
 		check(bad.is_empty(), "Graphics %d: each texture has one twice as sharp (%s)" % [g, bad])
+	# The officials: Low's lighter models with their 512 textures; Medium and High (no HD pack) the whole Meshy models
+	# and textures twice as sharp.
+	Ultra.removed = true     # (as a phone without the HD pack has it: the pack's files are in the project here)
+	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		for who in ["referee", "umpire"]:
+			var pb := PersonBody.new({"kind": who, "model": who})
+			add_child(pb)
+			var tex: Texture2D = pb.mesh_instance.material_override.get_shader_parameter("albedo")
+			var tris: int = pb.mesh_instance.mesh.surface_get_array_index_len(0) / 3
+			var ok: bool = (tris < 5000 and tex.get_width() == 512) if g == Game.GFX_LOW else (tris > 8000 and tex.get_width() == 1024)
+			check(ok, "Graphics %d: the %s, %d triangles, a %d texture" % [g, who, tris, tex.get_width()])
+			pb.free()
 	Game.settings.graphics = Game.GFX_HIGH
-	Ultra.removed = true     # (High as a phone without the HD pack has it: the pack's files are in the project here)
 	check(Crowd.material().get_shader_parameter("figs") == float(Crowd.FIGS_HD) and Crowd.sheet().get_width() == 128 * Crowd.FIGS_HD, "Crowd on High: the 24 figures")
 	Ultra.removed = false
 	Game.settings.graphics = keep

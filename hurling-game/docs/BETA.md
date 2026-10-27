@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.11.2
+
+- **The referee and umpires look right**: no more dark cracks across their faces, arms and legs (the step that
+  cleaned a sportswear maker's marks off the referee's kit was also blacking out the edges of his skin), no pale
+  flecks on the umpires' trousers (Medium and High now draw the whole model, not one cut down), hands hanging with the
+  palms to the thighs rather than forward like a shop dummy, and arms that swing beside the body when they run rather
+  than coming up in front like a boxer's. Their flags and cards are held as before.
+
 ## New in 0.11.1
 
 - **Licences, Help and the privacy policy**, all in Settings > About and in the game itself (no browser, so they work

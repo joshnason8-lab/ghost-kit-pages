@@ -19,7 +19,7 @@ three levels. 0.10's Ultra is High now.)
 |---|---|---|---|
 | **For** | Phones under 4.5 GB or with a small GPU (Mali-G52/G57, Adreno 5xx/61x, PowerVR) | The rest | Recent high-end phones (`Ultra.capable`: 64-bit, 6 GB, Adreno 640+, Mali-G710+, Immortalis, Xclipse) |
 | **Picked** | By the game on the first run (`Game.detect_graphics`), changed in Settings any time; the game drops a level by itself if a match runs under about 36 fps (Settings can turn that off) | | |
-| **Players** | 1,757 triangles, no outlines | 5,866, 2K texture | as Medium; with the HD pack 23,468 and 4K |
+| **Players** | 1,757 triangles, no outlines; officials about 4,200, 512 texture | 5,866, 2K texture; officials the whole Meshy model, about 8,400, 1024 | as Medium; with the HD pack 23,468 and 4K, the officials' 2048 textures with their normal and roughness maps |
 | **Light** | the time of day's light in the colours, unlit | as Low, the grass's normal map catching the sun, a shadow under each man | **real lighting (on Vulkan)**: the sun's shadows from everything on lit grass, lit players (cloth and skin shading) and officials, the sky's light and reflections, filmic tonemapping and glow, floodlights that light the field at night |
 | **Crowd** | 5,400 at the stadium | 17,300 | 24,600; with the HD pack 26,800, sharper |
 | **Moves** | the clips | the clips | blended into each other (0.18 s); with the HD pack the Mixamo moves (the swings, catches, the sprint) at 60 fps |
@@ -31,7 +31,7 @@ On the GL fallback High has its textures, crowd and anti-aliasing but not the re
 ## The HD pack (optional, for High)
 
 The hurlers at full detail (23,468 triangles, 11,734 far off) with a 4K texture and the cotton jersey's weave as a
-normal and roughness map; the officials' Meshy PBR models; the pitch's grass at 4K; the crowd's sheet twice as sharp
+normal and roughness map; the officials' 2048 textures with their normal and roughness maps (the Meshy PBR models, whose meshes Medium and High draw without the pack too); the pitch's grass at 4K; the crowd's sheet twice as sharp
 and seats closer together; the stands' concrete texture; the Mixamo moves at 60 fps (the CMU walk and jog stay at 30: their strides were measured there). 114 MB.
 
 | | |

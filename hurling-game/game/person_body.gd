@@ -15,21 +15,61 @@ static var _mats := {}
 
 var who := "referee"
 var dir := DIR
+var stem := "referee"   # the model's files: <who> on Low (and with the HD pack, in ULTRA_DIR), <who>_full otherwise
 
 
 func _init(p_look := {}) -> void:
 	super(p_look)
 	who = String(p_look.get("model", "umpire" if String(p_look.get("kind", "")) == "umpire" else "referee"))
 	dir = String(p_look.get("dir", DIR))   # tools/crowd draws the fans this way
+	stem = who
 	# High with the HD pack: the officials re-made by Meshy with their physically based maps (normal, roughness), at full detail.
 	if dir == DIR and Ultra.active() and ResourceLoader.exists(ULTRA_DIR + who + ".res"):
 		dir = ULTRA_DIR
+	elif dir == DIR and int(Game.settings.graphics) != Game.GFX_LOW and ResourceLoader.exists(DIR + who + "_full.res"):
+		# Medium and High: the Meshy model whole (about 8,400 triangles, with its own levels for far away). Cut down
+		# to half, as Low still is, its triangles' edges crossed the borders between the pieces of its texture and
+		# showed slivers of the wrong colour (dark cracks across the face, pale flecks on the trousers).
+		stem = who + "_full"
+
+
+## The Meshy models were made with their arms out and palms up (an A-pose); brought down to the game's stance the
+## palms faced forward, like a shop dummy. Each arm is turned about its own length so the palms face the thighs as the
+## hurlers' do, and every pose the game gives the arms reads on the officials as on the hurlers: degrees at the
+## shoulder and in the forearm (the left arm; the right mirrors it), each model its own (Low's are the older, lighter
+## models). The forearm takes it where it can: turning the upper arm turns the way the elbow bends, and a running
+## referee's hands flew out to the sides; the umpire's model needs some there for his elbow to bend forward. Found by
+## eye, standing, signalling and running.
+const TWIST := {"referee": [0.0, -90.0], "umpire": [45.0, 45.0], "referee_low": [0.0, -90.0],
+	"umpire_low": [0.0, -90.0]}
+
+
+func apply(p: Dictionary) -> void:
+	super(p)
+	if skeleton == null or dir not in [DIR, ULTRA_DIR]:
+		return
+	var tw: Array = TWIST.get(_twist_key(), [0.0, 0.0])
+	for side in [[5, 6, 1.0], [8, 9, -1.0]]:
+		for j in 2:
+			var b: int = side[j]
+			var q := skeleton.get_bone_pose_rotation(b)
+			skeleton.set_bone_pose_rotation(b, q * Quaternion(Vector3.UP, deg_to_rad(float(tw[j]) * float(side[2]))))
+
+
+func _twist_key() -> String:
+	return who if stem != who or dir == ULTRA_DIR else who + "_low"
+
+
+## How far the right hand is turned (degrees about the arm), for what it holds (a flag, a card) to be turned back.
+func right_turn() -> float:
+	var tw: Array = TWIST.get(_twist_key(), [0.0, 0.0])
+	return -(float(tw[0]) + float(tw[1]))
 
 
 func _offsets() -> Array:
-	if not _data.has(dir + who):
-		_data[dir + who] = JSON.parse_string(FileAccess.get_file_as_string(dir + who + ".json")).offsets
-	var off: Dictionary = _data[dir + who]
+	if not _data.has(dir + stem):
+		_data[dir + stem] = JSON.parse_string(FileAccess.get_file_as_string(dir + stem + ".json")).offsets
+	var off: Dictionary = _data[dir + stem]
 	var out := []
 	for b in BONES:
 		var a: Array = off[b[0]]
@@ -38,14 +78,14 @@ func _offsets() -> Array:
 
 
 func _dress() -> void:
-	if not _meshes.has(dir + who):
-		_meshes[dir + who] = load(dir + who + ".res")
-	mesh_instance.mesh = _meshes[dir + who]
-	# The texture: 512 on Low, 1024 (<who>_hd.jpg) on Medium and High, 2048 with its maps with the HD pack; lit on
-	# High (on Vulkan).
+	if not _meshes.has(dir + stem):
+		_meshes[dir + stem] = load(dir + stem + ".res")
+	mesh_instance.mesh = _meshes[dir + stem]
+	# The texture: 512 on Low, 1024 (<who>_full.jpg) on Medium and High, 2048 with its maps with the HD pack; lit on
+	# High (on Vulkan). (The crowd's fans: <model>.jpg, or <model>_hd.jpg for the sharper sheet.)
 	var ultra := dir == ULTRA_DIR
 	var lit := Ultra.lit() and dir in [DIR, ULTRA_DIR]
-	var tex := dir + who + ".jpg" if ultra else Game.hd(dir + who + ".jpg")
+	var tex := dir + stem + ".jpg" if ultra or stem != who or dir == DIR else Game.hd(dir + who + ".jpg")
 	if not _mats.has(tex + str(lit)):
 		var m := ShaderMaterial.new()
 		m.shader = _ultra_shader() if lit else _shader()

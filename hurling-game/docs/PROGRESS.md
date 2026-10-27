@@ -232,6 +232,26 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.11.2-beta, the officials, 27 October 2026)
+
+The owner: "The refs body and arms still look very weird". Looked at close up (front, side, standing, signalling,
+running, every level) and at the source models:
+
+- **Dark cracks** on the referee's skin and socks: `tools/player/people_textures.py`'s clean (the generator's brand
+  marks off the black kit) took any pale, low-colour speck near dark for a mark, and Meshy's atlas packs small pieces
+  of skin and grey sock right against black ones: it blacked out 187,000 pixels of skin and sock edge (4.5% of the
+  texture). Now only white marks, never within reach of skin: 9,000 pixels, the marks alone. All three of the
+  referee's textures rebuilt from the originals.
+- **Slivers and flecks** on Medium (the umpires' trousers, the faces): the officials' meshes cut to half for
+  Medium had their triangles' edges cross the borders between the atlas's pieces. Medium and High now draw the whole
+  model (8,353 and 8,606 triangles, with their own levels for far away; `assets/people/<who>_full.*`, the same mesh
+  the HD pack has, with a 1024 texture); Low keeps its lighter models.
+- **Hands like a shop dummy's**: the models were made in an A-pose (arms out, palms up), so brought down to the
+  stance the palms faced forward. Each arm is turned about its length (`PersonBody.TWIST`, per model, found by eye);
+  the flag or card in the hand turned back so it is held as before.
+- **Running like a boxer**: an official's arms came from the run clips, which on these models came up in front of the
+  chest; now they swing beside the body (the procedural swing), the legs and body still from the clips.
+
 ## Done (0.11.1-beta, the legal pages, 27 October 2026)
 
 The owner found links to the help, privacy and licence pages returning 404 across the games (the lead's task):

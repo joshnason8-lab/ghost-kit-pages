@@ -22,8 +22,15 @@ def main():
         blur = lambda x: np.asarray(Image.fromarray((x * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(14))).astype(np.float32) / 255.0
         share = blur(dark)
         fill = np.stack([blur(a[..., i] * dark) for i in range(3)], -1) / np.maximum(share[..., None], 1e-3)
-        speck = (lum > 0.3) & (share > 0.35) & ((a.max(-1) - a.min(-1)) < 0.25)
+        # Only white marks (the grey socks and boots meet the black kit too): skin is a pale colour as well, and the atlas puts small pieces of skin right
+        # against the black kit, so a looser test (chroma under 0.25) blacked out the edge of every piece of skin,
+        # which showed as dark cracks across the referee's face, arms and legs.
+        speck = (lum > 0.6) & (share > 0.35) & ((a.max(-1) - a.min(-1)) < 0.09)
         speck = np.asarray(Image.fromarray(speck.astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(5))) > 0
+        # Never near skin: where a piece of skin meets the kit its edge blends to grey, which passes the test above.
+        skin = (lum > 0.3) & ((a[..., 0] - a[..., 2]) > 0.12)
+        near_skin = np.asarray(Image.fromarray(skin.astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(9))) > 0
+        speck &= ~near_skin
         a[speck] = fill[speck]
         print("cleaned", int(speck.sum()), "pixels")
         img = Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8))
