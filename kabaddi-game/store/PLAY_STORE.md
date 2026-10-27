@@ -3,27 +3,54 @@
 Everything Google Play asks for, and the steps to put the game on it. Checked against Google's requirements as they
 stand in October 2026.
 
+## What only you can do
+
+Everything else is ready (below). These steps need you, your Google account or your money:
+
+1. **Make the developer account** and verify your identity (step 1; US$25).
+2. **Make the upload key** and add it to GitHub as three secrets (step 2). Then run the Play bundle workflow to get
+   a signed `.aab`.
+3. **Create the app** in Play Console and **answer the App content forms**: copy the answers from
+   `store/PLAY_CONSOLE_ANSWERS.md` (step 4).
+4. **Fill in the store listing**: the text from `store/listing/`, the pictures from `store/graphics/`, and a
+   **contact email** you are happy to show publicly (step 5).
+5. **Run the closed test**: at least 12 testers for 14 days in a row, then apply for production (step 6).
+6. **Choose the countries** and press **Release** (step 7).
+
 ## What is ready
 
-- **The Play bundle (.aab)**, built by GitHub Actions ("Kabaddi Raid · Play Store bundle"). It is unsigned until
-  your upload key is in the repository (step 2), then signed with it.
-- **The game meets Google's technical rules**:
-  - targets Android 16 (API 36), required for new apps since 31 August 2026;
-  - 64-bit, with 16 KB memory pages (checked on every bundle);
+- **The Play bundle (.aab)**, built by GitHub Actions ("Kabaddi Raid · Play Store bundle") on every new version.
+  It is unsigned until your upload key is in the repository (step 2), then signed with it. 0.12.3's bundle:
+  - about 104 MB, with both the 64-bit (arm64-v8a) and 32-bit (armeabi-v7a) builds; Play gives each phone only its
+    own, **about 78 MB to download** (bundletool, measured on every bundle; the limit is 200 MB, so no Play Asset
+    Delivery is needed);
+  - **targets Android 16 (API 36)**, required for new apps since 31 August 2026 (API 35 before), and runs on
+    Android 7.0 (API 24) and later;
+  - **16 KB memory pages**: every 64-bit library's LOAD segments are aligned to 16 KB (`tools/check_pages.py`, run
+    on every bundle and APK);
+  - **one permission**, `android.permission.VIBRATE`, and no internet access (CI fails the bundle if
+    `INTERNET` appears); nothing stray, such as `DUMP`;
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
-  - one permission (vibration) and no internet access.
+  - **package name `com.kabaddiraid.game`**, the same as the beta APK and the Obtainium entry
+    (`shared-assets/obtainium/ghost-kit-games.json`); it is final once the first bundle is uploaded. The **version
+    code** (`version/code` in `export_presets.cfg`, 34 for 0.12.3) goes up by one with every version and never
+    goes down: Play refuses a bundle whose code is not higher than the last one's.
+- **Soak tested** (`tests/soak.gd`, 0.12.3): thousands of random taps, drags, Back presses and trips to the
+  background through every screen on Low and on High, and AI-v-AI matches on every ground on both. The results are
+  in `docs/PROGRESS.md`.
 - **The privacy policy, help page and a page for the game**, in `kabaddi-raid/` at the top of this repository:
-  - live on thekabaddipulse.com (plugin and theme 0.4.2, installed 20 October 2026):
-    https://thekabaddipulse.com/kabaddi-raid/, `/kabaddi-raid/privacy/` and `/kabaddi-raid/support/`;
-  - the game's Settings > About opens them there, and the web version's old addresses
-    (https://kabaddi-raid-beta.netlify.app/privacy.html and `/support.html`, which builds up to 0.8.6 open) forward
-    there (`tools/web/netlify.toml`);
-  - on GitHub Pages once this branch is merged, as copies that name the site's pages as the originals.
-
-  The game links to them from **Settings > About**, as Google asks, and shows the licences there.
-- **The store listing**: the text in English and Hindi (`store/listing/`), and the 512 × 512 icon, the
-  1024 × 500 feature graphic and eight 1920 × 1080 screenshots (`store/graphics/`).
-- **The answers to every App content form** (step 4).
+  - live on thekabaddipulse.com: https://thekabaddipulse.com/kabaddi-raid/, `/kabaddi-raid/privacy/` and
+    `/kabaddi-raid/support/` (all HTTP 200 on 27 October 2026);
+  - in the game too, readable offline (Settings > About: Help, Privacy policy, Licences, since 0.12.2), each with a
+    View online button for the web page;
+  - the web version's old addresses (https://kabaddi-raid-beta.netlify.app/privacy.html and `/support.html`, which
+    builds up to 0.8.6 open) forward there (`tools/web/netlify.toml`).
+- **The store listing** in all eight of the game's languages (`store/listing/`: English, Hindi, Marathi, Tamil,
+  Telugu, Kannada, Bengali, Punjabi; `tools/check_listing.py` checks Play's length limits), the 512 × 512 icon,
+  the 1024 × 500 feature graphic and eight 1920 × 1080 screenshots rendered from the game on High
+  (`store/graphics/`).
+- **The answers to every App content form** (`store/PLAY_CONSOLE_ANSWERS.md`): data safety, content rating,
+  target audience, ads, purchases, category and tags.
 
 ## 1. Your developer account (once)
 
@@ -40,8 +67,12 @@ test with at least **12 testers** who stay opted in for **14 days in a row** (st
 
 ## 2. The upload key (once)
 
-Google signs the game for phones with its own key (Play App Signing). You sign each bundle you upload with your own
-**upload key**, so Google knows it came from you.
+Google signs the game for phones with its own key (**Play App Signing**, which Play Console turns on for every new
+app). You sign each bundle you upload with your own **upload key**, so Google knows it came from you.
+
+**Keep the beta key as it is.** The beta APKs on GitHub stay signed with the beta key (the `BETA_KEYSTORE_B64`
+secret), so each beta keeps installing over the last. The Play build uses only the upload key below; the two never
+mix, and the beta key must not be uploaded to Play.
 
 1. Make the key, on a computer with Java (Android Studio includes it). In a terminal, run:
 
@@ -79,7 +110,8 @@ Google signs the game for phones with its own key (Play App Signing). You sign e
 
 ## 4. App content (Policy and programs > App content)
 
-Answer each form like this:
+Answer each form like this (`store/PLAY_CONSOLE_ANSWERS.md` has each answer with the reason it is true, and the
+full IARC questionnaire):
 
 | Form | Answer |
 |---|---|
@@ -116,8 +148,9 @@ and shows no ads, but the 13+ groups are the simpler start.
 ## 5. The store listing (Grow users > Store presence > Main store listing)
 
 1. **App name, short description, full description**: copy them from `store/listing/en-US.txt`.
-2. **Hindi** (optional): **Manage translations > Add your own translations > Hindi**, with the text in
-   `store/listing/hi-IN.txt`.
+2. **The other seven languages** (optional): **Manage translations > Add your own translations**, then Hindi
+   (`hi-IN.txt`), Marathi (`mr-IN.txt`), Tamil (`ta-IN.txt`), Telugu (`te-IN.txt`), Kannada (`kn-IN.txt`),
+   Bengali (`bn-BD.txt`) and Punjabi (`pa-IN.txt`, if Play Console offers it), all in `store/listing/`.
 3. **App icon**: `store/graphics/icon-512.png`.
 4. **Feature graphic**: `store/graphics/feature-1024x500.png`.
 5. **Phone screenshots**: upload the eight in `store/graphics/screenshots/`, in order. Games need at least three,

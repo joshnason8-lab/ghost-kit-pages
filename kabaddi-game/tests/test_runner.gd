@@ -56,6 +56,14 @@ func _run() -> void:
 	check(fl.text_overrun_behavior == TextServer.OVERRUN_TRIM_ELLIPSIS and fl.max_lines_visible == 2
 		and fl.autowrap_mode != TextServer.AUTOWRAP_OFF, "a label out of room takes two lines, then ends in an ellipsis")
 	fl.free()
+	# Saves are written beside the file and moved over it, so being killed mid-write leaves the old save whole.
+	var save_t := "user://_test_save.json"
+	Game._write_json(save_t, {"a": 1})
+	Game._write_json(save_t, {"a": 2, "b": [1, 2]})
+	var save_back = Game._read_json(save_t)
+	check(save_back is Dictionary and int(save_back.a) == 2 and (save_back.b as Array).size() == 2
+		and not FileAccess.file_exists(save_t + ".tmp"), "a save is written whole, with no half-file left beside it")
+	Game.delete_file(save_t)
 	await _languages()
 
 	# 2. Data.

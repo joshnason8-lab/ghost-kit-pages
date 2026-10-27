@@ -127,6 +127,11 @@ jobs:
           grep -q 'android:isGame="true"' "$RUNNER_TEMP/manifest.xml"
           ! grep -q 'android.permission.INTERNET' "$RUNNER_TEMP/manifest.xml"
           python3 tools/check_pages.py "$AAB"
+          # What a phone downloads, per CPU type: Play takes a base module of up to 200 MB compressed (more would need
+          # Play Asset Delivery, store/PLAY_STORE.md).
+          java -jar "$RUNNER_TEMP/bundletool.jar" build-apks --bundle="$AAB" --output="$RUNNER_TEMP/sizes.apks"
+          java -jar "$RUNNER_TEMP/bundletool.jar" get-size total --apks="$RUNNER_TEMP/sizes.apks" --dimensions=ABI | tee "$RUNNER_TEMP/sizes.csv"
+          python3 -c "import csv,sys; rows=list(csv.DictReader(open(sys.argv[1]))); big=max(int(r['MAX']) for r in rows); print('largest download: %.1f MB' % (big/1e6)); sys.exit(big > 200*1000*1000)" "$RUNNER_TEMP/sizes.csv"
 
       - uses: actions/upload-artifact@v4
         with:

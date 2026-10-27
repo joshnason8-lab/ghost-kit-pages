@@ -1,4 +1,10 @@
-**New in 0.12.2: Help, Privacy policy and Licences in the game.** Settings > About opens all three as pages in the
+**New in 0.12.3: ready for Google Play.** Saves are now written safely: if Android closes the game while it is
+saving (in the background, or the battery dies), your season, cup and settings stay as they were instead of being
+lost. The game was put through a long soak test (thousands of random taps, Back presses and trips to the
+background on every screen, and AI-v-AI matches on every ground, on Low and on High). Gameplay and graphics are
+unchanged.
+
+**In 0.12.2: Help, Privacy policy and Licences in the game.** Settings > About opens all three as pages in the
 game itself, with no connection needed: Help (how to play, the controls, the rules in brief, the graphics levels, and
 how to report a problem), the Privacy policy (the game collects nothing and has no internet permission) and the
 Licences (every asset source with its credit, and the Godot Engine's notices). Each has a View online button for its

@@ -24,8 +24,9 @@ REAL KABADDI
 
 PLAY YOUR WAY
 • Eight languages: English, हिन्दी, मराठी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা and ਪੰਜਾਬੀ.
-• Touch controls with a stick wherever your thumb lands, a left-handed layout and four levels, from Rookie to Legend.
+• Touch controls with a stick wherever your thumb lands, a left-handed layout, buttons you can move and resize, and four levels, from Rookie to Legend.
+• Low, Medium or High graphics, to suit your phone.
 • Plays offline. No ads, no purchases, no account, and no data collected.
 
 == Release notes (first release) ==
-The first release of Kabaddi Raid: Quick Match, League Season and the Nations Cup, in eight languages.
+The first release of Kabaddi Raid: Quick Match, League Season and the Nations Cup, in eight languages. Plays offline, with no ads, purchases or data collected.

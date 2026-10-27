@@ -250,10 +250,21 @@ func _read_json(path: String):
 	return parsed
 
 
+## Written beside the save and then moved over it, so the app being killed mid-write (Android closing it in the
+## background, the battery dying) leaves the old save whole rather than half a file the game can no longer read.
 func _write_json(path: String, data) -> void:
-	var f := FileAccess.open(path, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(data, "  "))
+	var tmp := path + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_string(JSON.stringify(data, "  "))
+	f.close()
+	if DirAccess.rename_absolute(tmp, path) != OK:
+		# A file system that will not move one file over another: write it in place, as before.
+		DirAccess.remove_absolute(tmp)
+		f = FileAccess.open(path, FileAccess.WRITE)
+		if f:
+			f.store_string(JSON.stringify(data, "  "))
 
 
 func delete_file(path: String) -> void:
