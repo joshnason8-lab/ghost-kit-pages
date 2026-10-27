@@ -92,7 +92,7 @@ static func build(time_of_day: String) -> Node3D:
 	root.add_child(grass)
 	var g := Geo.new()
 	var white := Color(0.95, 0.95, 0.92)
-	var y := 0.03   # above the grass by enough that the far lines never fight it for depth (Vulkan: dashes at 12 mm)
+	var y := 0.012
 	var w := drawn_line_w()
 	# Side lines and end lines.
 	g.floor_rect(-HALF_L - w, -HALF_W - w, HALF_L + w, -HALF_W, y, white)

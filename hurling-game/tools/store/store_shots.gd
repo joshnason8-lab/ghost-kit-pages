@@ -2,7 +2,8 @@ extends Node
 ## The store's screenshots, 1920 x 1080, from the game itself: matches at their moments (a strike for a point, a
 ## catch in the air), at each ground, and the menus, two of them in Irish. Writes store/graphics/screenshots/ (the
 ## feature graphic is the owner's artwork: make_feature.py):
-##   xvfb-run -a -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 30 res://tools/store/store_shots.tscn [-- only]
+##   xvfb-run -a -s "-screen 0 1920x1080x24" godot --path . --resolution 1920x1080 --fixed-fps 30 res://tools/store/store_shots.tscn [-- only]
+## (On Vulkan, the game's renderer, at High: as a recent phone shows it.)
 
 var out := "res://store/graphics/screenshots"
 

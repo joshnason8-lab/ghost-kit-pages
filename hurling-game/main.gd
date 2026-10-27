@@ -3,6 +3,7 @@ extends Node
 
 func _ready() -> void:
 	Game.main = self
+	Ultra.arm()
 	# The loading screen first: it gets the sounds, clips and bodies ready, then the home screen behind it.
 	var loading: Node = (load("res://ui/loading_screen.gd") as Script).new()
 	add_child(loading)

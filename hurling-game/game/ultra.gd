@@ -132,11 +132,16 @@ static func boot() -> void:
 			DirAccess.remove_absolute(BOOT_FLAG)
 		elif weak_vulkan(RenderingServer.get_video_adapter_name()):
 			use_gl(true)
-		else:
-			var f := FileAccess.open(BOOT_FLAG, FileAccess.WRITE)
-			if f:
-				f.store_string(Time.get_datetime_string_from_system())
 	mount_now()
+
+
+## The game itself is starting (main.gd, not a test or a tool): on Vulkan, the flag that says so until the home
+## screen is up (started), so a start that crashes on the way is known at the next.
+static func arm() -> void:
+	if renderer_ready():
+		var f := FileAccess.open(BOOT_FLAG, FileAccess.WRITE)
+		if f:
+			f.store_string(Time.get_datetime_string_from_system())
 
 
 ## The pack mounted (at start, or as soon as it is downloaded): no restart needed, its files are new to the game.

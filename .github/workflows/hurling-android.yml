@@ -252,7 +252,7 @@ jobs:
           done
           ls -la ${PROJECT_DIR}/build
 
-      # The HD pack (Ultra graphics, docs/ULTRA.md): not in the APK, a download of its own from a release of its own
+      # The HD pack (for High graphics, docs/GRAPHICS.md): not in the APK, a download of its own from a release of its own
       # ("hurling-heroes-hd", kept, never remade). Built and uploaded only when what it is made from has changed (the
       # "source" hash in its manifest), so a player who has it keeps it across betas.
       - name: Build the HD pack (if its content changed)
@@ -290,8 +290,8 @@ jobs:
         run: |
           TAG=hurling-heroes-hd
           if ! gh release view "$TAG" > /dev/null 2>&1; then
-            printf '%s\n' "The optional HD pack for Ultra graphics in the Hurling Heroes betas (docs/ULTRA.md). The game downloads it" \
-              "itself when Ultra is picked in Settings, on recent high-end phones: there is nothing to download here." > hd-notes.md
+            printf '%s\n' "The optional HD pack for High graphics in the Hurling Heroes betas (docs/GRAPHICS.md). The game downloads it" \
+              "itself from Settings, on recent high-end phones: there is nothing to download here." > hd-notes.md
             gh release create "$TAG" --target "$GITHUB_SHA" --latest=false --title "Ultra HD pack (for the Hurling Heroes betas)" \
               --notes-file hd-notes.md
           fi
@@ -321,7 +321,7 @@ jobs:
           Android asks, allow your browser or Files to install unknown apps. It installs over any earlier Hurling Heroes
           beta and keeps your saves.
 
-          Ultra graphics' optional HD pack is on a release of its own; the game downloads it itself when you pick Ultra.
+          High graphics' optional HD pack is on a release of its own; the game downloads it itself from Settings.
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF

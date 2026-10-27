@@ -969,6 +969,9 @@ func _ultra() -> void:
 		and Ultra._model_number("mali-g78", "mali-g") == 78 and Ultra._model_number("powervr", "adreno") == 0, "Graphics: GPU model numbers read")
 	check(Ultra.capable() and Game.detect_graphics() == Game.GFX_HIGH, "Graphics: High and the HD pack offered on a computer")
 	check(not Ultra.weak_vulkan("Adreno (TM) 740") and not Ultra.weak_vulkan("Mali-G52 MC2"), "Graphics: a computer never sent to GL")
+	# Only the game itself (main.gd) marks a start on Vulkan: a test or a tool leaves no flag, so the next start is not
+	# taken for a crash and sent to GL.
+	check(not FileAccess.file_exists(Ultra.BOOT_FLAG) and not FileAccess.file_exists(Ultra.OVERRIDE), "Graphics: no start flag or override from a test run")
 	# High's extras need Vulkan; Low and Medium have none of them.
 	Game.settings.graphics = Game.GFX_MEDIUM
 	check(not Ultra.lit() and not Ultra.active(), "Graphics: Medium, none of High's extras")

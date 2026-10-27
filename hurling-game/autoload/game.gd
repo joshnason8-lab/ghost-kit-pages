@@ -380,7 +380,8 @@ func apply_graphics(viewport: Viewport) -> void:
 			viewport.msaa_3d = Viewport.MSAA_DISABLED
 			viewport.scaling_3d_scale = 0.75
 		GFX_MEDIUM:
-			viewport.msaa_3d = Viewport.MSAA_2X
+			# 4x, not 2x: on Vulkan 2x left the far lines in dashes; a phone's tiled GPU smooths 4x almost for free.
+			viewport.msaa_3d = Viewport.MSAA_4X
 			viewport.scaling_3d_scale = 0.9
 		_:
 			viewport.msaa_3d = Viewport.MSAA_4X

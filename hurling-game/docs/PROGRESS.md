@@ -232,6 +232,29 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.11.0-beta, the owner's list, 27 October 2026)
+
+- **Vulkan everywhere** (docs/GRAPHICS.md): the Mobile renderer for every level, GL Compatibility only as the
+  fallback (Godot's own when Vulkan will not start; a list of weak GPUs and Android 9 or older; a crashed start),
+  set quietly for the next start. Low, Medium, High with no restart; High on Vulkan lit (real shadows on lit grass,
+  lit players and officials, floodlights, ACES, glow, blended moves, the touchline replay camera); the HD pack an
+  optional download for High from Settings, mounted at once. Every shader reads as written and decodes once at the
+  end, so the look is the same on both renderers (checked frame by frame); kit colours as plain values; the lines 3 cm
+  up. Strong phones start on High.
+- **Gameplay**: auto pick-up (help with the ball on: lift or catch by himself); backpedal or turn-and-run when moving
+  away from where he looks; the hurley carried steady (the clip's arm pump had swung it through half a circle).
+- **Championship**: Simulate (your next game), Simulate the rest; Simulate to the end in a match (Sim.finish: the
+  rest from the ratings, extra time and penalties in a knock-out); a match left (menu, or the game put away or
+  closed) carried on at the same minute (Match.snapshot: score, half, clock, who is on, cards, subs, scorers,
+  tactics; back with a throw-in).
+- **Presentation**: the crowd's swell as a score comes; the substitution board; houses made in code (game/houses.gd:
+  terraces coloured row by row in the shader, cottages, lit windows at night); the stadium's corners as seated stands
+  with the press box and the big screen.
+- **Menu and pages**: Oswald title; no cream strip, no "In this programme"; Privacy and Help in the game; no keyboard
+  notes. Uncial Antiqua and the scanned house models out of the APK.
+- Tests: auto pick-up, the championship's simulate and carry-on, the crowd's swell, backpedal, the graphics and
+  fallback, the HD pack screen; screenshots and the fit audit for the new pages. Tools: run_view, house_view.
+
 ## Done (0.10.2-beta, clean kits, 26 October 2026)
 
 The owner asked for the dirt layer to go. The kit is now the county's colour alone (the texture's creases and grime
@@ -245,7 +268,7 @@ model's texture has gold bands.
 ## Done (0.10.0-beta, Ultra graphics, 26 October 2026)
 
 The owner asked for an Ultra level for high-end phones, with Low, Medium and High left exactly as they were
-(docs/ULTRA.md has it all).
+(docs/GRAPHICS.md has it all, as since 0.11).
 
 - **Ultra**: an opt-in fourth level, offered on 64-bit phones with 6 GB and a Vulkan-class GPU (Adreno 640+,
   Mali-G710+, Immortalis, Xclipse). Godot's Mobile (Vulkan) renderer by the project's settings override, a reopen to

@@ -9,6 +9,28 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.11.0
+
+- **One renderer, three levels**: the game draws with Vulkan on every phone that suits it, and Graphics is Low,
+  Medium or High again, changed at once (no closing and opening the game). High on Vulkan has real shadows from every
+  player, lit grass and players, floodlights that light the field and filmic colour; the HD pack (Settings) makes it
+  sharper still, in use as soon as it is downloaded. Phones that Vulkan does not suit carry on with the older renderer
+  by themselves.
+- **Pick-up by itself**: run onto the sliotar and your player lifts it onto his hurley (or catches a dropping ball)
+  and solos, with Settings > Help with the ball on Solo or Full (the default).
+- **The Summer Championship**: Simulate your next game, or the rest of the championship; Simulate to the end from
+  the pause menu in a match; leave a match for the menu (or close the game) and Continue carries on from the same
+  minute and score.
+- **Moving**: a man running away from where he is looking turns and runs (or backpedals, if slow), no more running
+  forward while sliding back; the hurley is carried steady at a run, not swung round.
+- **The crowd** rises as an attack nears the posts and roars as the shot goes up; **substitutions** come up on the
+  fourth official's board, one after another.
+- **The grounds**: real-looking houses round them (Irish terraces in their colours, thatched cottages, lit windows at
+  night); the national stadium's two corner blocks are now seated corner stands, with the press box and the big
+  screen.
+- **The menu**: the game's name in a new face; no strip under the picture or "In this programme". Privacy and Help
+  are in the game (Settings > About); How to Play no longer lists keyboard keys.
+
 ## New in 0.10.2
 
 - **Clean kits** on every graphics level: the grime and the streaks of the model's own texture are gone from the
