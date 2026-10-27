@@ -28,6 +28,8 @@ var clip := ""
 var _turner: HeadTurn
 var head_yaw := 0.0          # degrees, + to his left: the head and neck turn to follow the play
 var grip := Vector3.INF      # a point (world) both hands reach for and hold (the pole, in a pole turn), INF none
+var grip_arms := 2           # 2 both arms (the pole), 1 his right only (a touch on the run)
+var _low_bones := []
 var _gripper: Grip
 
 
@@ -127,6 +129,38 @@ class HeadTurn extends SkeletonModifier3D:
 			share = 0.6
 
 
+## How far forward the clip already leans his torso (radians, hips to head, 0 upright, + forward), in his own frame.
+func torso_lean() -> float:
+	if skeleton == null:
+		return 0.0
+	var hips := skeleton.find_bone("mixamorig_Hips")
+	var head := skeleton.find_bone("mixamorig_Head")
+	if hips < 0 or head < 0:
+		return 0.0
+	var to_body := global_transform.affine_inverse() * skeleton.global_transform
+	var v := to_body * skeleton.get_bone_global_pose(head).origin - to_body * skeleton.get_bone_global_pose(hips).origin
+	return atan2(v.z, v.y)
+
+
+## The height of his lowest part above the ground (world y, relative to his feet's ground): his head, hands, chest,
+## hips and knees, as last posed. A dive keeps it above the ground.
+func lowest_point() -> float:
+	if skeleton == null:
+		return 0.0
+	if _low_bones.is_empty():
+		for n in ["Head", "HeadTop_End", "LeftHand", "RightHand", "Spine2", "Hips", "LeftLeg", "RightLeg", "LeftForeArm",
+				"RightForeArm"]:
+			var b := skeleton.find_bone("mixamorig_" + n)
+			if b >= 0:
+				_low_bones.append(b)
+	var low := INF
+	var xf := skeleton.global_transform
+	for b in _low_bones:
+		low = minf(low, (xf * skeleton.get_bone_global_pose(b).origin).y)
+	var ground := (get_parent() as Node3D).global_position.y if get_parent() is Node3D else 0.0
+	return low - ground - position.y if low != INF else 0.0
+
+
 ## After the animation: both arms out to a point and holding it (grip), the upper arm and forearm turned to point at
 ## it, so his hands are on the pole as he swings round it whatever the clip's arms are doing.
 class Grip extends SkeletonModifier3D:
@@ -142,7 +176,7 @@ class Grip extends SkeletonModifier3D:
 				_bones.append([sk.find_bone("mixamorig_%sArm" % side), sk.find_bone("mixamorig_%sForeArm" % side),
 					sk.find_bone("mixamorig_%sHand" % side)])
 		var target: Vector3 = sk.global_transform.affine_inverse() * (body.grip as Vector3)
-		for chain in _bones:
+		for chain in (_bones if body.grip_arms == 2 else [_bones[1]]):
 			for k in 2:
 				var b: int = chain[k]
 				var child: int = chain[k + 1]

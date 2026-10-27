@@ -239,21 +239,23 @@ func _owner_round() -> void:
 	# The pole turn: round the pole on its circle, out the far side at speed.
 	a.position = Vector3(11.45, 0, 0)
 	a.vel = Vector3(5.0, 0, 0)
-	a.pole_swing(Vector3(12, 0, 0), 0.55, 0.55, PI, PI * 2.4, 5.0, 6.0)
+	a.pole_swing(Vector3(12, 0, 0), 0.55, 0.55, PI, PI * 2.4, 6.5, 4.8)
 	var off := 0.0
 	var out_v := Vector3.ZERO
 	var last := a.position
 	var jump := 0.0
+	var turn_t := 0.0
 	for i in 30:
 		a.integrate(1.0 / 30.0)
 		jump = maxf(jump, (a.position - last).length() * 30.0)
 		last = a.position
 		if a.act == "pole_turn":
 			off = maxf(off, absf((a.position - Vector3(12, 0, 0)).length() - 0.55))
+			turn_t += 1.0 / 30.0
 		elif out_v == Vector3.ZERO:
 			out_v = a.vel
-	check(off < 0.05 and out_v.length() > 5.5 and out_v.x < 0.0 and jump < 7.5,
-		"pole turn: on the circle (off by %.2f m), out back down the field at %.1f m/s, never faster than %.1f m/s" % [off, out_v.length(), jump])
+	check(off < 0.05 and out_v.length() > 4.0 and out_v.length() < 5.2 and out_v.x < 0.0 and jump < 7.0 and turn_t > 0.35,
+		"pole turn: on the circle (off by %.2f m) for %.2f s, out back down the field at %.1f m/s, never faster than %.1f m/s" % [off, turn_t, out_v.length(), jump])
 	a.queue_free()
 	# A match: the camera button beside pause; each tap a different view at once.
 	var m: Node = (load("res://game/match.gd") as Script).new()
@@ -822,6 +824,7 @@ class MotionAudit extends Node:
 	var m
 	var last := {}
 	var snaps := 0
+	var hover := 0
 	var jerks := 0
 	var worst := 0.0
 	var frames_seen := 0
@@ -850,6 +853,13 @@ class MotionAudit extends Node:
 				var v := step / maxf(delta, 0.001)
 				if v > 11.0:
 					snaps += 1
+				# Moving with his feet still (the owner: "running but the feet aren't moving"): a clip that stands
+				# while he goes along at a run's pace.
+				if v > 1.5 and a.body and a.body.clip in ["idle", "stand", "kneel", "kneel_down", "reach", "seated", "whistle",
+						"signal_out", "signal_foul", "signal_end", "clap"]:
+					hover += 1
+					if hover <= 3:
+						print("  hovering: act '%s' clip '%s' at %.1f m/s" % [a.act, a.body.clip, v])
 				var dv := absf(v - float(prev[1]))
 				if dv / maxf(delta, 0.001) > 40.0 and not (a.act in ["dive", "pole_dive"]):
 					jerks += 1
@@ -861,6 +871,7 @@ class MotionAudit extends Node:
 	func report(t, name: String) -> void:
 		t.check(frames_seen > 100, "%s: the motion audit watched the play (%d frames)" % [name, frames_seen])
 		t.check(snaps == 0, "%s: no player snaps (%d frames over 11 m/s; fastest %.1f m/s)" % [name, snaps, worst])
+		t.check(hover == 0, "%s: no player glides with his feet still (%d frames)" % [name, hover])
 		t.check(jerks <= frames_seen / 200, "%s: speeds change smoothly (%d jerks)" % [name, jerks])
 		# As in the real matches watched (docs/AI.md): a defender out of danger stands and watches.
 		if safe_t > 5.0:

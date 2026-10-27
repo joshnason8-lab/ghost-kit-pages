@@ -9,6 +9,16 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.10.1
+
+- **Dives stay above the ground.** The diver lies level on the ground (his body is laid flat from where the dive
+  animation already leans him, and lifted by however far any part of him would go under).
+- **The pole turn at a real pace:** he slows to take hold, swings round in about half a second and comes out at a
+  jog, not spinning round at full speed.
+- **No more gliding.** A chaser slowing into a kho, or reaching for a defender on the run, now keeps his legs moving
+  (only his arm reaches); a diver gets up where he lies. The tests now fail if anyone moves at a run's pace with his
+  feet still.
+
 ## What's new in 0.10
 
 - **The pole turn**, from the owner's video: the chaser takes hold of the pole, swings round it close and lets go

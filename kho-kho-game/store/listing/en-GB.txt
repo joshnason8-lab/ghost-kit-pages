@@ -35,5 +35,5 @@ PLAY YOUR WAY
 
 Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.
 
-== Release notes (0.10.0) ==
+== Release notes (0.10.1) ==
 The pole turn: chasers grab the pole, swing round it and come out faster. Dives now land: down on the ground, then back up. Every tag attempt is seen, and harder difficulties really catch you. A camera button beside pause, with three distinct views. Difficulty in Quick match and Championships. The crowd follows the play and roars at the big moments. A real slap for the kho; quieter birds and crickets. Licences, Help and Privacy policy inside the game.
