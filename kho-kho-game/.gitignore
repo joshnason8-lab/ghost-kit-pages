@@ -6,3 +6,4 @@ export_credentials.cfg
 __pycache__/
 android/
 *.jks
+override.cfg

@@ -140,6 +140,10 @@ func _notification(what: int) -> void:
 		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT:
 			if current and is_instance_valid(current) and current.has_method("set_paused") and not bool(current.get("paused")):
 				current.set_paused(true)
+			# Android may close a game in the background without warning: what is kept is on disk before it can.
+			save_settings()
+			if cup != null:
+				save_cup()
 
 
 ## Back: pause or resume a match, leave a screen the way its Back button does, and quit from the main menu.

@@ -9,6 +9,15 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.10.2
+
+- **Saves when the phone puts the game away.** Your settings and the championship in play are written the moment
+  the game goes to the background (a call, the home button), not only when you leave a screen.
+- **Move buttons from the pause menu** no longer stops the game if the match ended while you were moving them (found
+  by the new monkey test, `tools/soak.sh`).
+- Behind the scenes, for Google Play: the store pictures and the media kit are made by a script from the build
+  (`tools/store/make_kit.sh`), and every Play Console answer is written down (`store/PLAY_CONSOLE_ANSWERS.md`).
+
 ## What's new in 0.10.1
 
 - **Dives stay above the ground.** The diver lies level on the ground (his body is laid flat from where the dive
