@@ -27,7 +27,8 @@ other side presses and covers like a championship team.
 There are four grounds to play at: a parish field at dusk, a county ground by day and under floodlights, and a full
 national stadium, each with its crowd, its sound and its weather of sky. Matches run from eight minutes to the full
 seventy. Play a single match, take your county through the Summer Championship (with the Tier Two Cup for the rest),
-or sit back and watch two counties play.
+sit back and watch two counties play, or practise your frees: ten from all round the pitch, each struck by timing, to
+beat your best score.
 
 It is made to play well on the phones people actually have: three graphics levels, picked for your phone the first
 time it runs, with an optional HD download for the sharpest look on recent high-end phones. It plays offline, with no

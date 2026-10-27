@@ -49,6 +49,7 @@ func _ready() -> void:
 	await _ultra()
 	await _auto_pickup()
 	await _aimed_shots()
+	await _practice_frees()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	_backpedal()
@@ -1241,6 +1242,67 @@ func _aimed_shots() -> void:
 		steps[PlacedAim.zone(a.target())] += 1
 	a.queue_free()
 	check(steps.point > steps.goal * 2, "Aimed shots: the target lingers between the posts (%d steps) and hurries through the goal (%d)" % [steps.point, steps.goal])
+
+
+## Free-taking practice (game/practice.gd): ten frees, each aimed by timing; a point over the bar one, wide nothing;
+## the score kept as the best; the match's pause menu without substitutions or tactics.
+func _practice_frees() -> void:
+	var kept := int(Game.settings.get("practice_best", -1))
+	Game.settings.practice_best = -1
+	var m: Node = load("res://game/practice.gd").new()
+	m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": 0, "seed": 7, "mode": "practice"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(5)
+	var on_pitch := true
+	for sp in m.practice.spots:
+		on_pitch = on_pitch and Pitch.in_play(sp) and Pitch.from_goal_line(sp, m.dir(0)) >= 18.0
+	check(m.phase == m.P.SHOOTOUT and m.taker == m.active and String(m.taker.data.id) == String(DB.free_taker("KIL").id)
+		and (m.practice.spots as Array).size() == m.FREES and on_pitch and not m.hud._bug.visible,
+		"Practice: the county's free-taker over the ball, ten spots on the pitch, the practice panel for the scorebug")
+	# Eight aimed over the bar between the posts, then two out wide.
+	var aimed := 0
+	for i in m.FREES:
+		var f := 0
+		while m.placed_aim == null and f < 30 * 12:
+			await frames(1)
+			f += 1
+		if m.placed_aim == null or m.user_buttons() != ["SHOOT"]:
+			break
+		aimed += 1
+		m.placed_aim.angle = PI * 0.5 if i < 8 else 0.0
+		m.placed_aim._place()
+		m._on_action("SHOOT")
+		f = 0
+		while String(m.practice.state) != "done" and String(m.practice.state) != "over" and f < 30 * 12:
+			await frames(1)
+			f += 1
+		f = 0
+		while m.placed_aim != null and f < 30 * 6:
+			await frames(1)
+			f += 1
+	var f2 := 0
+	while String(m.practice.state) != "over" and f2 < 30 * 8:
+		await frames(1)
+		f2 += 1
+	var marks: Array = m.practice.marks
+	var pts := marks.count("P") + marks.count("G") * 3
+	check(aimed == m.FREES and marks.size() == m.FREES and String(m.practice.state) == "over" and int(m.practice.points) == pts,
+		"Practice: ten frees aimed and taken, the score adds up (%s, %d)" % [marks, int(m.practice.points)])
+	check(marks.slice(0, 8).count("P") >= 7 and marks.slice(8).count("P") == 0,
+		"Practice: aimed between the posts over the bar, points; aimed outside the posts, none (%s)" % [marks])
+	check(int(Game.settings.practice_best) == int(m.practice.points) and m.hud._card != null,
+		"Practice: the score kept as the best, the card with Go again at the end")
+	m.set_paused(true)
+	var labels := []
+	for b in m.hud._pause.find_children("*", "Button", true, false):
+		labels.append((b as Button).text)
+	check(not tr("TACTICS") in labels and tr("PRACTICE_RESTART") in labels and tr("PRACTICE_QUIT") in labels,
+		"Practice: the pause menu has Start again and Leave, no tactics or substitutions (%s)" % [labels])
+	m.set_paused(false)
+	m.queue_free()
+	await frames(2)
+	Game.settings.practice_best = kept
 
 
 ## The championship as the owner asked: your own game simulated (and every game left), a match left for the menu

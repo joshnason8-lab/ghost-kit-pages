@@ -9,6 +9,29 @@ MENU_CHAMP,The Summer Championship,Craobh an tSamhraidh
 MENU_CHAMP_DESC,"Groups, then knock-out games to the final.","Grúpaí, ansin cluichí cnaguirlis go dtí an cluiche ceannais."
 MENU_WATCH,Watch a match,Féach ar chluiche
 MENU_WATCH_DESC,"Sit back: two counties, played by the computer.","Suigh siar: dhá chontae, agus an ríomhaire ag imirt."
+MENU_PRACTICE,Free-taking,Saorbhuillí
+MENU_PRACTICE_DESC,Ten frees and 65s at the posts. Time your strike; beat your best.,Deich saorbhuille agus 65anna ag na cuaillí. Buail in am; sáraigh do scór is fearr.
+PRACTICE_EYEBROW,Practice,Cleachtadh
+PRACTICE_START,Start,Tosaigh
+PRACTICE_TAKER,On the frees: #{num} {name},Ar na saorbhuillí: #{num} {name}
+PRACTICE_FREES_STAT,Free-taking,Saorbhuillí
+PRACTICE_HOW_TITLE,How it works,Conas a oibríonn sé
+PRACTICE_HOW,"Ten frees and 65s from all round the pitch: near, wide and far out. Behind your free-taker, a target goes round the goal. Tap SHOOT to stop it, and that is where the sliotar goes. It lingers between the posts above the bar and hurries through the net. A point is worth one, a goal three.","Deich saorbhuille agus 65anna ó gach cearn den pháirc: gar, ar an taobh agus i bhfad amach. Taobh thiar de do bhuailteoir, téann sprioc timpeall an chúil. Brúigh SCAOIL chun í a stopadh, agus is ansin a rachaidh an sliotar. Moillíonn sí idir na cuaillí os cionn an trasnáin agus deifríonn sí tríd an líon. Is fiú pointe amháin cúilín agus trí phointe cúl."
+PRACTICE_BEST_WAS,Your best: {n},Do scór is fearr: {n}
+PRACTICE_NO_BEST,No score yet: set one.,Gan scór fós: socraigh ceann.
+PRACTICE_FREE_N,Free {n} of {of},Saorbhuille {n} as {of}
+PRACTICE_SCORE_N,Score {n},Scór {n}
+PRACTICE_BEST_N,Best {n},Is fearr {n}
+PRACTICE_SHORT,Short,Gearr
+PRACTICE_DONE,Ten frees taken,Deich saorbhuille tógtha
+PRACTICE_RATE_3,All-Star form. The county's frees are yours.,Foirm Réalta. Is leatsa saorbhuillí an chontae.
+PRACTICE_RATE_2,County standard: steady over the bar.,Caighdeán contae: seasmhach thar an trasnán.
+PRACTICE_RATE_1,Club standard. A few more evenings at it.,Caighdeán club. Cúpla tráthnóna eile air.
+PRACTICE_RATE_0,Back to the ball alley for a while.,Ar ais chuig an bpinniúr ar feadh tamaill.
+PRACTICE_NEW_BEST,A new best!,Do scór is fearr riamh!
+PRACTICE_AGAIN,Go again,Arís
+PRACTICE_RESTART,Start the ten again,Tosaigh na deich arís
+PRACTICE_QUIT,Leave practice,Fág an cleachtadh
 MENU_HOWTO,How to Play,Conas imirt
 MENU_HOWTO_DESC,"The rules, the controls and the officials' signals.","Na rialacha, na rialuithe agus comharthaí na n-oifigeach."
 MENU_SETTINGS,Settings,Socruithe

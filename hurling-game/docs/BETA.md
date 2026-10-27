@@ -9,6 +9,15 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.13.0
+
+- **Free-taking practice** (the home screen's fourth row): your county's free-taker takes ten frees and 65s at the
+  posts, from close in and central to out on the wing and back at the 65, each aimed the new way (the low camera, the
+  target going round the goal, SHOOT to stop it). A point is one, a goal three; the panel at the top keeps the score
+  and a mark for each free, and at the end you get your score, a word on it, your best (kept on the phone) and Go
+  again. Pick the county and the ground first; the spots move a little each round.
+- **Simulate to the end** fills in the match in numbers (it left them at nothing).
+
 ## New in 0.12.0
 
 - **Frees, 65s and penalties at the posts are yours to strike.** Press STRIKE on a free in range (or GOAL on a

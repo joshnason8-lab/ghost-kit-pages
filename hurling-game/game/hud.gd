@@ -24,6 +24,8 @@ var _marks: Control
 var _pause: Control
 var _card: Control
 var _shoot: Control
+var _bug: Control              # the scorebug, top left (hidden in free-taking practice)
+var _practice: Control         # free-taking practice: the free, the score, the marks (in the scorebug's place)
 var _intro: Control
 var _intro_t := 0.0
 var _dev: Label
@@ -219,6 +221,7 @@ func _build_scorebug() -> void:
 	panel.add_theme_stylebox_override("panel", sb)
 	panel.position = Vector2(sm.x, 16)
 	root.add_child(panel)
+	_bug = panel
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 12)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -576,18 +579,25 @@ func show_pause(on: bool) -> void:
 		var t := UI.label(tr("PAUSED"), "HeaderLabel", 44)
 		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(t)
-		var s := UI.label("%s %s  ·  %s %s" % [DB.short_name(String(m.teams[0].id)), m.score_text(0), DB.short_name(String(m.teams[1].id)), m.score_text(1)], "SubLabel", 22, Game.C_MUTED)
+		var line := "%s %s  ·  %s %s" % [DB.short_name(String(m.teams[0].id)), m.score_text(0), DB.short_name(String(m.teams[1].id)), m.score_text(1)]
+		if m.is_practice():
+			line = _practice_line(m.practice)
+		var s := UI.label(line, "SubLabel", 22, Game.C_MUTED)
 		s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.fit(s, 2)
 		v.add_child(s)
 		var b1 := UI.button(tr("RESUME"), true, func(): m.set_paused(false))
 		b1.custom_minimum_size = Vector2(320, 64)
 		v.add_child(b1)
-		if m.user_team >= 0:
+		if m.is_practice():
+			var ba := UI.button(tr("PRACTICE_RESTART"), false, func(): m.again())
+			ba.custom_minimum_size = Vector2(320, 56)
+			v.add_child(ba)
+		if m.user_team >= 0 and not m.is_practice():
 			var bs := UI.button(tr("SUBS") + "  ·  " + (Plural.word("SUBS_LEFT", m.subs_left(m.user_team)) if m.subs_left(m.user_team) > 0 else tr("SUBS_NONE")), false, func(): open_subs())
 			bs.custom_minimum_size = Vector2(320, 56)
 			v.add_child(bs)
-		if m.user_team >= 0:
+		if m.user_team >= 0 and not m.is_practice():
 			var bt := UI.button(tr("TACTICS"), false, func(): open_tactics())
 			bt.custom_minimum_size = Vector2(320, 56)
 			v.add_child(bt)
@@ -595,7 +605,7 @@ func show_pause(on: bool) -> void:
 			var bsim := UI.button(tr("SIM_TO_END"), false, func(): m.sim_to_end())
 			bsim.custom_minimum_size = Vector2(320, 56)
 			v.add_child(bsim)
-		var b2 := UI.button(tr("QUIT_MATCH"), false, func(): m.quit_match())
+		var b2 := UI.button(tr("PRACTICE_QUIT") if m.is_practice() else tr("QUIT_MATCH"), false, func(): m.quit_match())
 		b2.custom_minimum_size = Vector2(320, 56)
 		v.add_child(b2)
 	elif not on and _pause != null:
@@ -723,3 +733,119 @@ func shootout(so: Dictionary) -> void:
 				marks += "• " if bool(e[1]) else "× "
 		var l := UI.label(marks + "  %d" % int(so.goals[k]), "SubLabel", 22, Game.C_GOLD)
 		grid.add_child(l)
+
+
+# ---------------------------------------------------------------- free-taking practice
+
+## The practice in the scorebug's place, top left: which free of the ten, the score, a mark for each one taken
+## (gold a point, green a goal, a cross for the rest), the best so far. first: the match's intro and scorebug go.
+func practice(st: Dictionary, first := false) -> void:
+	if first:
+		_bug.visible = false
+		if _intro != null and is_instance_valid(_intro):
+			_intro.queue_free()
+			_intro = null
+		_added.visible = false
+	if _practice == null:
+		var sm := UI.safe_margins(root, 24.0)
+		_practice = PanelContainer.new()
+		_practice.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.04, 0.07, 0.05, 0.88)
+		sb.set_corner_radius_all(8)
+		sb.content_margin_left = 14
+		sb.content_margin_right = 14
+		sb.content_margin_top = 8
+		sb.content_margin_bottom = 10
+		_practice.add_theme_stylebox_override("panel", sb)
+		_practice.position = Vector2(sm.x, 16)
+		root.add_child(_practice)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 4)
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_practice.add_child(v)
+		var head := UI.label("", "EyebrowLabel", 15, Game.C_SAFFRON)
+		v.add_child(head)
+		var score := UI.label("", "ScoreLabel", 30, Game.C_INK)
+		v.add_child(score)
+		var marks := HBoxContainer.new()
+		marks.add_theme_constant_override("separation", 5)
+		marks.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(marks)
+		_practice.set_meta("parts", [head, score, marks])
+	var parts: Array = _practice.get_meta("parts")
+	var n := mini(int(st.n) + (1 if String(st.get("state", "")) in ["walk", "aim", "struck"] else 0), m.FREES)
+	(parts[0] as Label).text = (tr("MENU_PRACTICE") + "  ·  " + tr("PRACTICE_FREE_N").format({"n": n, "of": m.FREES})).to_upper()
+	(parts[1] as Label).text = _practice_line(st)
+	_fill_marks(parts[2], st.marks, m.FREES, 14)
+
+
+## "Score 4  ·  Best 7".
+func _practice_line(st: Dictionary) -> String:
+	var line := tr("PRACTICE_SCORE_N").format({"n": int(st.points)})
+	if int(st.get("best", -1)) >= 0:
+		line += "  ·  " + tr("PRACTICE_BEST_N").format({"n": int(st.best)})
+	return line
+
+
+## A row of round marks: gold a point, green a goal, red-brown a miss, hollow one to come.
+func _fill_marks(row: HBoxContainer, marks: Array, total: int, px: int) -> void:
+	for c in row.get_children():
+		c.queue_free()
+	for i in total:
+		var dot := Panel.new()
+		dot.custom_minimum_size = Vector2(px, px)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sb := StyleBoxFlat.new()
+		sb.set_corner_radius_all(px)
+		if i < marks.size():
+			match String(marks[i]):
+				"P":
+					sb.bg_color = Game.C_GOLD
+				"G":
+					sb.bg_color = Color(0.35, 0.85, 0.45)
+				_:
+					sb.bg_color = Color(0.75, 0.3, 0.25)
+		else:
+			sb.bg_color = Color(1, 1, 1, 0.0)
+			sb.border_color = Color(1, 1, 1, 0.55)
+			sb.set_border_width_all(2)
+		dot.add_theme_stylebox_override("panel", sb)
+		row.add_child(dot)
+
+
+## The ten taken: the score, how it stands, the best (a new one marked), and go again or home.
+func practice_done(st: Dictionary, best: int, new_best: bool) -> void:
+	if _practice != null:
+		_practice.visible = false
+	_card = _overlay()
+	var v: VBoxContainer = _card.get_meta("col")
+	var t := UI.label(tr("PRACTICE_DONE"), "HeaderLabel", 38)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.shrink(t, 38, 0.6, 1)
+	v.add_child(t)
+	var big := UI.label(str(int(st.points)), "TitleLabel", 96, Game.C_GOLD)
+	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(big)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fill_marks(row, st.marks, m.FREES, 20)
+	row.add_theme_constant_override("separation", 8)
+	v.add_child(row)
+	var pts := int(st.points)
+	var rate := tr("PRACTICE_RATE_3" if pts >= 10 else ("PRACTICE_RATE_2" if pts >= 8 else ("PRACTICE_RATE_1" if pts >= 5 else "PRACTICE_RATE_0")))
+	var r := UI.label(rate, "SubLabel", 22)
+	r.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.fit(r, 2)
+	v.add_child(r)
+	var b := UI.label(tr("PRACTICE_NEW_BEST") if new_best else tr("PRACTICE_BEST_WAS").format({"n": best}), "SubLabel", 22,
+		Game.C_GOLD if new_best else Game.C_MUTED)
+	b.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(b)
+	var again := UI.button(tr("PRACTICE_AGAIN"), true, func(): m.again())
+	again.custom_minimum_size = Vector2(320, 64)
+	v.add_child(again)
+	var home := UI.button(tr("HOME"), false, func(): m.quit_match())
+	home.custom_minimum_size = Vector2(320, 56)
+	v.add_child(home)

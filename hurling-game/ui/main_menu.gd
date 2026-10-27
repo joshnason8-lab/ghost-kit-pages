@@ -93,8 +93,9 @@ func _build_ui() -> void:
 		["1", tr("MENU_QUICK"), tr("MENU_QUICK_DESC"), func(): Game.show_screen("res://ui/quick_setup.gd"), cont == null],
 		["2", tr("MENU_CHAMP"), tr("MENU_CHAMP_DESC"), func(): Game.show_screen("res://ui/champ_screen.gd"), false],
 		["3", tr("MENU_WATCH"), tr("MENU_WATCH_DESC"), func(): Game.show_screen("res://ui/quick_setup.gd", {"watch": true}), false],
-		["4", tr("MENU_HOWTO"), tr("MENU_HOWTO_DESC"), func(): Game.show_screen("res://ui/howto_screen.gd"), false],
-		["5", tr("MENU_SETTINGS"), tr("MENU_SETTINGS_DESC"), func(): Game.show_screen("res://ui/settings_screen.gd"), false],
+		["4", tr("MENU_PRACTICE"), tr("MENU_PRACTICE_DESC"), func(): Game.show_screen("res://ui/practice_screen.gd"), false],
+		["5", tr("MENU_HOWTO"), tr("MENU_HOWTO_DESC"), func(): Game.show_screen("res://ui/howto_screen.gd"), false],
+		["6", tr("MENU_SETTINGS"), tr("MENU_SETTINGS_DESC"), func(): Game.show_screen("res://ui/settings_screen.gd"), false],
 	]
 	var list := VBoxContainer.new()
 	list.add_theme_constant_override("separation", 6)

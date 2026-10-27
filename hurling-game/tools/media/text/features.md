@@ -1,7 +1,7 @@
 # Features
 
 - **The real rules**: the 2026 playing rules: four steps, the solo, two catches, puck-outs, frees, 65s, sideline cuts, penalties, advantage and added time.
-- **Three ways to play**: Throw-in for a quick match, the Summer Championship (groups, then knock-out to the final, with the Tier Two Cup), and Watch a match.
+- **Four ways to play**: Throw-in for a quick match, the Summer Championship (groups, then knock-out to the final, with the Tier Two Cup), Watch a match, and Free-taking: ten frees and 65s at the posts, struck by timing, to beat your best score.
 - **A championship your way**: simulate any match you would rather not play, finish one early with a simulated result, or leave one and pick it up later where you left it.
 - **Four grounds**: a parish field at dusk, a county ground by day and under floodlights, and a national stadium with its stands full.
 - **Officials who do their job**: the referee's whistle, frees and cards (yellow, red and black); linesmen's flags; umpires' white and green flags and their signals for a wide and a 65.

@@ -24,7 +24,7 @@ env:
   # Parts already made by an earlier run of this workflow (its artifacts are kept 3 days), taken from that run instead
   # of made again: a run id, and the parts (as their artifacts are named, media-<part>). Empty: everything is made.
   REUSE_RUN: "40552234675"
-  REUSE_PARTS: "shots menus footage_0_1 footage_2_3 footage_4_5"
+  REUSE_PARTS: "shots footage_0_1 footage_2_3 footage_4_5"
 
 jobs:
   pictures:

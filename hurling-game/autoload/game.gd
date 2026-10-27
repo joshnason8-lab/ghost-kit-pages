@@ -79,6 +79,8 @@ var settings := {
 	"tags": 0,              # the numbers over players' heads: 0 on, 2 off
 	"seen_howto": false,
 	"venue": "county",      # the ground last picked in match setup
+	"practice_team": "",    # the county last picked for free-taking practice
+	"practice_best": -1,    # the best score from ten frees in practice (-1 none yet)
 	"tactics": {"sweeper": false, "two_ff": false, "puckout": 1},   # your side's set-up (TeamAI.tactics)
 	"auto_subs": true,      # the manager makes your substitutions (else you do, from the pause menu)
 	"coach": true,          # coach's tips in a match (game/coach.gd); off by itself after your first match
@@ -203,7 +205,7 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "length", "grade", "draw_rule", "tags"]:
+	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "length", "grade", "draw_rule", "tags", "practice_best"]:
 		settings[k] = int(settings[k])
 	if not (settings.btn_pos is Dictionary):
 		settings.btn_pos = {}
@@ -350,10 +352,10 @@ func goto_menu() -> void:
 
 
 ## config keys: home, away (team ids), venue (DB.VENUES id), user_team (0, 1 or -1 for none), mode ("quick"|"champ"
-## |"watch"), stage (a line naming the game: "Semi-final"), knockout (bool: a draw goes to extra time), half (minutes
+## |"watch"|"practice": free-taking, game/practice.gd), stage (a line naming the game: "Semi-final"), knockout (bool: a draw goes to extra time), half (minutes
 ## of the clock in a half), length (real minutes the match takes), seed, difficulty.
 func start_match(config: Dictionary) -> void:
-	var s: Script = load("res://game/match.gd")
+	var s: Script = load("res://game/practice.gd" if String(config.get("mode", "")) == "practice" else "res://game/match.gd")
 	var m: Node = s.new()
 	m.config = config
 	Sfx.music(false)

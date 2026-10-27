@@ -22,6 +22,7 @@ var _pulse := 0.0
 var _keys := {}
 var _paras := {}             # id -> TextParagraph (its label, fitted to the circle)
 var edit := false            # Move buttons: drags move the buttons instead of pressing them
+var show_joystick := true    # off where nothing runs (free-taking practice)
 static var key_hints := true # the keyboard's keys beside the buttons on a computer (off for the store's pictures)
 static var touch_seen := false   # a thumb has touched the screen: no keyboard here to hint at
 var last_fired := ""             # the last button pressed (the playtest hook reads it)
@@ -229,8 +230,9 @@ func _draw() -> void:
 		rest.x = size.x - rest.x
 	var base := _joy_base if _joy_touch >= 0 else rest
 	var knob := _joy_knob if _joy_touch >= 0 else rest
-	draw_arc(base, JOY_R, 0, TAU, 48, Color(Game.C_INK, 0.28 if _joy_touch >= 0 else 0.12), 3.0, true)
-	draw_circle(knob, 34.0, Color(Game.C_INK, 0.7 if _joy_touch >= 0 else 0.18))
+	if show_joystick:
+		draw_arc(base, JOY_R, 0, TAU, 48, Color(Game.C_INK, 0.28 if _joy_touch >= 0 else 0.12), 3.0, true)
+		draw_circle(knob, 34.0, Color(Game.C_INK, 0.7 if _joy_touch >= 0 else 0.18))
 	# The buttons.
 	for i in _layout().size():
 		var b: Array = _layout()[i]

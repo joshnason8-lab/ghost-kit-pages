@@ -5,7 +5,7 @@
 | **Game** | Hurling Heroes |
 | **Sport** | Hurling, the Irish field game |
 | **Players per side** | 15 (with substitutes: five changes a match) |
-| **Game modes** | Throw-in (a single match), the Summer Championship (with the Tier Two Cup), Watch a match |
+| **Game modes** | Throw-in (a single match), the Summer Championship (with the Tier Two Cup), Watch a match, Free-taking practice |
 | **Grounds** | A parish field (at dusk), a county ground (by day, and at night under floodlights), the national stadium |
 | **Match length** | 8, 14, 20 or 35 minutes to play (the full 70 minutes of match time at the longest) |
 | **Languages** | English, Irish (Gaeilge) |

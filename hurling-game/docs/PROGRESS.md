@@ -250,6 +250,30 @@ posts; SHOOT stops it, and that is where the ball goes.
 - Tests: a point, a wide, a 65 and a penalty aimed and struck through the match, back to the match camera after each;
   the target lingers between the posts and hurries through the goal. How to Play's controls say how.
 
+## Done (0.13.0-beta, free-taking practice, 27 October 2026)
+
+The owner: "Build a mini game that can be played where you can practice your free hits or whatever they are called,
+users might like it."
+
+- `game/practice.gd` (a match that runs only its penalty shoot-out's loop): your county's free-taker
+  (`DB.free_taker`) takes ten frees and 65s at the posts, the other side's goalkeeper in goal and both panels at the
+  far 45. The spots, in order: 21 m central, then out to the right and left, 45 m, a tight angle, a 65, 50 m, 26 m on
+  the wing, 56 m, a 65 from the other side; each moves up to 3 m each round. Each is aimed by timing (`PlacedAim`, as
+  in a match: the target comes up as soon as he is over the ball). Over the bar a point (1), in the net a goal (3), the
+  umpires' flags; wide, short or saved nothing. The best score is kept (`Game.settings.practice_best`).
+- The home screen's fourth row, Free-taking (How to Play and Settings move down one); before it, the county (its
+  free-taker named, with his free-taking), the ground, how it works and your best (`ui/practice_screen.gd`). In it,
+  the scorebug gives way to the practice's panel (the free, the score and best, a mark for each); the pause menu has
+  Start the ten again and Leave practice, no substitutions or tactics; at the end, the score, a word on it (Back to the
+  ball alley, Club standard, County standard, All-Star form), the best or A new best!, and Go again or Home.
+- Test: ten frees aimed and taken through the real flight, eight between the posts over the bar (points) and two
+  outside the posts (none), the score adding up, the best kept, the pause menu's buttons.
+- Simulate to the end (the pause menu) fills in the box score: the simulated scores as scores from play and placed
+  balls, with shots, wides, frees, 65s and puck-outs to match (it left them at nothing). Test.
+- The media kit: its menus are made with the practice in, and the result screen comes from a match thrown in and
+  simulated to the end (a whole match took hours on the software renderer); the trailer is held under 60 MB and the
+  vertical cut shows the middle of each shot at full height.
+
 ## Done (Play readiness and the media kit, 27 October 2026)
 
 The owner (through the lead): the game ready for Google Play but for the owner's own steps, and a media kit for the

@@ -2902,6 +2902,11 @@ func _exit_tree() -> void:
 	Sfx.ambience(false)
 
 
+## A free-taking practice (game/practice.gd), not a match: the HUD and the pause menu change with it.
+func is_practice() -> bool:
+	return false
+
+
 func quit_match() -> void:
 	_keep_for_later()
 	Sfx.pause_all(false)
