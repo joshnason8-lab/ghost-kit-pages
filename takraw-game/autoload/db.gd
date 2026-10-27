@@ -127,9 +127,9 @@ const STL_GPS := [
 	["Perak", "Ipoh", "national"],
 	["Penang", "Balik Pulau", "provincial"],
 	["Melaka", "Melaka", "national"],
-	["Kuala Lumpur", "Kuala Lumpur", "dome"],
+	["Kuala Lumpur", "Kuala Lumpur", "mall"],
 	["Negeri Sembilan", "Seremban", "national"],
-	["Johor", "Johor Bahru", "dome"],
+	["Johor", "Johor Bahru", "national"],
 	["Selangor", "Serdang", "national"],
 ]
 ## The two clubs the real Division 1 of 2026 sent up (they start in the Premier League; pick a Division 1 club and
@@ -142,13 +142,10 @@ const GP_POINTS := {"1": 32, "2": 28, "3": 24, "4": 21, "qf": 15, "g1": 8, "g0":
 ## Venues: [id, name key, indoor, kind]. kind picks how Arena builds it.
 const VENUES := [
 	["national", "VENUE_NATIONAL", true, "arena"],       # the home of takraw: 3,000 seats, LED boards
-	["dome", "VENUE_DOME", true, "dome"],                # the big indoor stadium, 5,000 seats, a final's venue
 	["mall", "VENUE_MALL", true, "mall"],                # a court in a shopping mall's atrium, as the world championship is
 	["provincial", "VENUE_PROVINCIAL", true, "gym"],     # a provincial gymnasium: a few rows of seats, fans on the walls
-	["temple", "VENUE_TEMPLE", false, "temple"],         # an outdoor court in front of a temple
 	["park", "VENUE_PARK", false, "park"],               # a park court in the evening, floodlit
 	["beach", "VENUE_BEACH", false, "beach"],            # a beach court at sunset
-	["street", "VENUE_STREET", false, "street"],         # a street court by a night market
 ]
 
 var _teams := {}      # id -> team dict
@@ -355,5 +352,5 @@ func venue(id: String) -> Array:
 func home_venue(id: String) -> String:
 	var t := team(id)
 	if t.get("kind", "") == "club":
-		return ["national", "provincial", "dome", "provincial", "national"][hash(id) % 5]
-	return "dome" if id in ["THA", "MAS"] else ("national" if strength(id) > 75 else "provincial")
+		return ["national", "provincial", "mall", "provincial", "national"][hash(id) % 5]
+	return "national" if strength(id) > 75 else "provincial"

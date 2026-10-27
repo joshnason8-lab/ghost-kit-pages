@@ -7,8 +7,6 @@ const CUP_PATH := "user://cup.json"
 const RECORDS_PATH := "user://records.json"
 
 ## The game's privacy policy and help pages (Settings > About).
-const PRIVACY_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/takraw-smash/privacy.html"
-const SUPPORT_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/takraw-smash/support.html"
 
 ## Code, name in the language itself, name in English. The sport's heartland first: Thailand, Malaysia, Indonesia,
 ## Vietnam, Laos, Myanmar, Cambodia and the Philippines, then Japan, Korea, China and India, which field national
@@ -519,11 +517,13 @@ func _build_theme() -> void:
 	_latin = latin
 	_fallbacks = fallbacks
 
-	font_body = _variation(latin, 450, fallbacks)
-	font_bold = _variation(latin, 650, fallbacks)
+	# Each weight's fallbacks at that weight too: the Chinese, Japanese and Korean fonts would otherwise draw at their
+	# own default, the thinnest (100).
+	font_body = _variation(latin, 450, _weighted(fallbacks, 450))
+	font_bold = _variation(latin, 650, _weighted(fallbacks, 650))
 	var teko := _font("res://fonts/Teko.ttf")
 	var display_fallbacks: Array[Font] = []
-	display_fallbacks.append(_variation(latin, 700, fallbacks))
+	display_fallbacks.append(_variation(latin, 700, _weighted(fallbacks, 700)))
 	teko.fallbacks = display_fallbacks
 	font_display = _variation(teko, 600, display_fallbacks)
 
@@ -601,16 +601,32 @@ func _order_fallbacks() -> void:
 	if _fallbacks.is_empty():
 		return
 	var first: String = {"ja": "NotoSansJP", "ko": "NotoSansKR", "zh": "NotoSansSC"}.get(TranslationServer.get_locale().left(2), "")
+	_latin.fallbacks = _first(_fallbacks, first)
+	for v in [font_body, font_bold, (font_display as FontVariation).fallbacks[0]]:
+		(v as FontVariation).fallbacks = _first((v as FontVariation).fallbacks, first)
+
+
+## The fonts with the one whose file is named first put first.
+static func _first(fonts: Array[Font], first: String) -> Array[Font]:
 	var ordered: Array[Font] = []
-	for f in _fallbacks:
-		if first != "" and String(f.resource_path).contains(first):
+	for f in fonts:
+		var path := String((f as FontVariation).base_font.resource_path if f is FontVariation else f.resource_path)
+		if first != "" and path.contains(first):
 			ordered.insert(0, f)
 		else:
 			ordered.append(f)
-	for f in [_latin]:
-		(f as FontFile).fallbacks = ordered
-	for v in [font_body, font_bold]:
-		(v as FontVariation).fallbacks = ordered
+	return ordered
+
+
+## Each of the fonts at this weight (those without a weight axis are as they are).
+func _weighted(fonts: Array[Font], weight: int) -> Array[Font]:
+	var out: Array[Font] = []
+	for f in fonts:
+		var v := FontVariation.new()
+		v.base_font = f
+		v.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): weight}
+		out.append(v)
+	return out
 
 
 func _size_theme() -> void:

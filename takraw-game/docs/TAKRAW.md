@@ -101,8 +101,8 @@ line-ups' states, provinces and services under invented nicknames: the real club
 ## Venues
 The elite game is played **indoors** on a synthetic mat: Titiwangsa Stadium ("Home of Sepak Takraw", about 3,000),
 Juara Stadium (1,000-2,500), and shopping-mall halls for the King's Cup. Grassroots takraw is outdoors: school and
-temple courts, park courts in the evening, beach takraw (Asian Beach Games). The game has four indoor and four outdoor
-venues.
+temple courts, park courts in the evening, beach takraw (Asian Beach Games). The game has three indoor venues (the national
+arena, a mall's atrium, a provincial gym) and two outdoor (a park court, a beach).
 
 ## Fans
 Thailand against Malaysia is the great rivalry; Vietnam's women are the rising force. Crowds are loud ("Malaysia

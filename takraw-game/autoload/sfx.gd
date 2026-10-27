@@ -17,11 +17,11 @@ const VARIANTS := {"kick": 3, "knee": 2, "bounce": 2, "step_court": 3, "step_san
 ## Every recorded sound the game plays (assets/audio/<name>.ogg).
 const FILES := ["kick", "kick_2", "kick_3", "knee", "knee_2", "spike", "block", "bounce", "bounce_2", "bounce_sand", "net",
 	"crowd_loop", "crowd_cheer", "crowd_cheer_2", "crowd_cheer_3", "crowd_rhythm", "crowd_ooh", "crowd_groan", "applause",
-	"applause_2", "applause_3", "clap", "amb_beach", "amb_temple", "amb_park",
+	"applause_2", "applause_3", "clap", "amb_beach", "amb_park",
 	"amb_chatter", "step_court", "step_court_2", "step_court_3", "step_sand", "step_sand_2", "step_sand_3", "click",
 	"menu_music", "drums_loop", "grunt_1", "grunt_2", "grunt_3", "hup_1", "hup_2", "whistle", "whistle_2", "whistle_3",
 	"whistle_long", "whistle_long_2", "whistle_long_3", "whistle_double", "whistle_final", "whistle_gym"]
-const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_beach", "amb_temple", "amb_park", "amb_chatter"]
+const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_beach", "amb_park", "amb_chatter"]
 
 var streams := {}
 var _pool: Array[AudioStreamPlayer] = []

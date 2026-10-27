@@ -32,7 +32,8 @@ const CONTACT := {
 	"dig": [0.28, 0.95, 0.25, 0.8, 0.38],
 	"serve": [1.19, 0.92, -0.13, 1.1, 0.5],
 	"horse": [1.62, 0.42, 0.1, 1.1, 0.55],
-	"toss": [1.05, 0.35, 0.0, 0.7, 0.5],
+	"toss": [1.05, 0.35, 0.0, 0.95, 0.55],
+	"pick": [0.1, 0.38, 0.1, 0.85, 0.5],
 	"roll": [2.07, 0.73, 0.14, 1.65, 0.36],
 	"sunback": [1.95, 0.79, -0.17, 1.05, 0.43],
 	"tapak": [1.91, 0.97, -0.15, 1.05, 0.42],
@@ -109,10 +110,23 @@ static func _build() -> void:
 			[0.8, {"yaw": 100.0, "spine": Vector3(30, 0, 0), "thigh_r": Vector3(60, 0, -8), "shin_r": Vector3(40, 0, 0)}],
 			[1.0, {}],
 		],
+		# The throw to the server: the ball held in both hands in front of him, the arms swung back low as the knees
+		# bend, then up and through, let go at chest height with the arms out toward him, the follow-through, and set.
 		"toss": [
-			[0.0, {"upperarm_l": Vector3(-48, 0, 12), "upperarm_r": Vector3(-48, 0, -12), "forearm_l": Vector3(-40, 0, 0), "forearm_r": Vector3(-40, 0, 0)}],
-			[0.28, {"spine": Vector3(18, 0, 0), "upperarm_l": Vector3(22, 0, 10), "upperarm_r": Vector3(22, 0, -10), "forearm_l": Vector3(-15, 0, 0), "forearm_r": Vector3(-15, 0, 0)}],
-			[0.5, {"spine": Vector3(4, 0, 0), "upperarm_l": Vector3(-78, 0, 8), "upperarm_r": Vector3(-78, 0, -8), "forearm_l": Vector3(-25, 0, 0), "forearm_r": Vector3(-25, 0, 0)}],
+			[0.0, {"upperarm_l": Vector3(-34, 0, -10), "upperarm_r": Vector3(-34, 0, 10), "forearm_l": Vector3(-72, 0, 0), "forearm_r": Vector3(-72, 0, 0)}],
+			[0.3, {"hips_y": -0.1, "spine": Vector3(20, 0, 0), "thigh_l": Vector3(-34, 0, 7), "thigh_r": Vector3(-34, 0, -7), "shin_l": Vector3(55, 0, 0), "shin_r": Vector3(55, 0, 0),
+				"upperarm_l": Vector3(14, 0, -6), "upperarm_r": Vector3(14, 0, 6), "forearm_l": Vector3(-22, 0, 0), "forearm_r": Vector3(-22, 0, 0)}],
+			[0.55, {"hips_y": -0.04, "spine": Vector3(6, 0, 0), "upperarm_l": Vector3(-70, 0, -6), "upperarm_r": Vector3(-70, 0, 6), "forearm_l": Vector3(-18, 0, 0), "forearm_r": Vector3(-18, 0, 0)}],
+			[0.75, {"spine": Vector3(2, 0, 0), "upperarm_l": Vector3(-86, 0, 4), "upperarm_r": Vector3(-86, 0, -4), "forearm_l": Vector3(-14, 0, 0), "forearm_r": Vector3(-14, 0, 0)}],
+			[1.0, {}],
+		],
+		# Picking the ball up off the floor: a step in, the knees and the back bent, his right hand down to it.
+		"pick": [
+			[0.0, {}],
+			[0.5, {"hips_y": -0.3, "spine": Vector3(52, 0, 0), "chest": Vector3(12, 0, 0), "neck": Vector3(-22, 0, 0), "head": Vector3(-10, 0, 0),
+				"thigh_l": Vector3(-62, 0, 9), "shin_l": Vector3(88, 0, 0), "foot_l": Vector3(-22, 0, 0),
+				"thigh_r": Vector3(-48, 0, -9), "shin_r": Vector3(74, 0, 0), "foot_r": Vector3(-18, 0, 0),
+				"upperarm_r": Vector3(-38, 0, -6), "forearm_r": Vector3(-8, 0, 0), "upperarm_l": Vector3(-14, 0, 24), "forearm_l": Vector3(-46, 0, 0)}],
 			[1.0, {}],
 		],
 		"head_spike": [

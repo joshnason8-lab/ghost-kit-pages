@@ -440,6 +440,10 @@ func _menus() -> void:
 	Game.show_screen("res://ui/settings_screen.gd")
 	await frames(10)
 	await audit("settings")
+	for kind in ["privacy", "help"]:
+		Game.show_screen("res://ui/doc_screen.gd", {"kind": kind})
+		await frames(10)
+		await audit(kind)
 	for tab in 3:
 		Game.show_screen("res://ui/howto_screen.gd", {"tab": tab})
 		await frames(10)

@@ -3,8 +3,8 @@
 ## Next
 
 - **Meshy players and referees** (docs/MESHY_BRIEF.md): order the eight models, then fit them to the moves.
-- **A phone test on a Galaxy A16** (or any Mali-G57 phone): frame times on Low and Medium in the Grand Dome, the
-  biggest venue; trim the crowd or the render scale if it drops below 60.
+- **A phone test on a Galaxy A16** (or any Mali-G57 phone): frame times on Low and Medium at the beach and the
+  National Arena, the busiest venues; trim the crowd or the render scale if it drops below 60.
 - **Native speakers' review** of the translations' sport terms: the horse-kick serve, the sunback and the sole spike
   have no settled names in some languages (the translators' notes are in the pull request).
 - **The release key and the closed test** (store/PLAY_STORE.md).

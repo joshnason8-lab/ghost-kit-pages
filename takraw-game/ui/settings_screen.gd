@@ -7,6 +7,7 @@ var _play_note: Label
 var _gfx_note: Label
 var _back := Callable()   # in a match (the pause menu's Settings): back to it
 var _in_match := false
+var _over: Control        # a page from About open over this one (the privacy policy, the help, the licences)
 
 
 func setup(args: Dictionary) -> void:
@@ -22,7 +23,8 @@ func _gfx_text(levels: Array) -> String:
 
 func _ready() -> void:
 	UI.screen(self)
-	var v := UI.page(self, tr("MENU_SETTINGS"), _back if _in_match else func(): Game.goto_menu())
+	var leave: Callable = _back if _in_match else func(): Game.goto_menu()
+	var v := UI.page(self, tr("MENU_SETTINGS"), func(): _close_over() if is_instance_valid(_over) else leave.call())
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 20)
 	var left := VBoxContainer.new()
@@ -133,10 +135,25 @@ func _ready() -> void:
 	var links := HFlowContainer.new()
 	links.add_theme_constant_override("h_separation", 10)
 	links.add_theme_constant_override("v_separation", 10)
-	links.add_child(UI.button(tr("PRIVACY_POLICY"), false, func(): OS.shell_open(Game.PRIVACY_URL)))
-	links.add_child(UI.button(tr("HELP_SUPPORT"), false, func(): OS.shell_open(Game.SUPPORT_URL)))
-	links.add_child(UI.button(tr("LICENCES"), false, func(): Game.show_screen("res://ui/licences_screen.gd")))
+	links.add_child(UI.button(tr("PRIVACY_POLICY"), false, func(): _open_over("res://ui/doc_screen.gd", {"kind": "privacy"})))
+	links.add_child(UI.button(tr("HELP_SUPPORT"), false, func(): _open_over("res://ui/doc_screen.gd", {"kind": "help"})))
+	links.add_child(UI.button(tr("LICENCES"), false, func(): _open_over("res://ui/licences_screen.gd", {})))
 	about[1].add_child(links)
+
+
+## A page from About over Settings, in the game (from the home screen or over a paused match, which goes on waiting).
+func _open_over(path: String, args: Dictionary) -> void:
+	_close_over()
+	_over = (load(path) as Script).new()
+	args["back"] = _close_over
+	_over.setup(args)
+	add_child(_over)
+
+
+func _close_over() -> void:
+	if is_instance_valid(_over):
+		_over.queue_free()
+	_over = null
 
 
 func _fps_text(opt: int, smooth: int, hz: int) -> String:

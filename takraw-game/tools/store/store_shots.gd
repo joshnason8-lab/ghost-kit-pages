@@ -18,10 +18,10 @@ func _ready() -> void:
 	TranslationServer.set_locale("en")
 	var only := OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else ""
 	if only == "feature":
-		await _moment("01_roll_spike", {"home": "THA", "away": "MAS", "venue": "dome", "seed": 11}, "attack", "roll")
+		await _moment("01_roll_spike", {"home": "THA", "away": "MAS", "venue": "national", "seed": 11}, "attack", "roll")
 		get_tree().quit()
 		return
-	await _moment("01_roll_spike", {"home": "THA", "away": "MAS", "venue": "dome", "seed": 11}, "attack", "roll")
+	await _moment("01_roll_spike", {"home": "THA", "away": "MAS", "venue": "national", "seed": 11}, "attack", "roll")
 	await _moment("02_serve", {"home": "VIE", "away": "INA", "venue": "national", "seed": 3}, "serve", "")
 	await _moment("03_mall", {"home": "MAS", "away": "THA", "venue": "mall", "seed": 21, "stage": "Final"}, "set", "")
 	await _moment("04_beach", {"home": "PHI", "away": "LAO", "venue": "beach", "seed": 8}, "attack", "")

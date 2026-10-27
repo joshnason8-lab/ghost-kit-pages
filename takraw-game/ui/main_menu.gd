@@ -3,8 +3,8 @@ extends Control
 ## English and in Thai script (ตะกร้อ), the language, the modes as big tiles, and a card to carry on a season or
 ## tournament.
 
-const ATTRACT := [["THA", "MAS", "dome"], ["SPB", "NPT", "national"], ["VIE", "INA", "mall"], ["KLC", "SLA", "provincial"],
-	["JPN", "KOR", "beach"], ["PHI", "LAO", "temple"], ["MYA", "IND", "street"], ["ACR", "PRE", "park"]]
+const ATTRACT := [["THA", "MAS", "national"], ["SPB", "NPT", "mall"], ["VIE", "INA", "beach"], ["KLC", "SLA", "provincial"],
+	["JPN", "KOR", "park"], ["PHI", "LAO", "national"], ["MYA", "IND", "mall"], ["ACR", "PRE", "beach"]]
 
 var _sv: SubViewport
 var _match: Node = null

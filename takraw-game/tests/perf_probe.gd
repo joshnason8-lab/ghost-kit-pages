@@ -2,13 +2,13 @@ extends Node
 ## Draw calls, primitives and objects drawn per frame in a match, and the video memory in use (all of it, and the
 ## textures'), at each graphics level:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn [-- venues [levels]]
-## venues: comma-separated ids, or "all" (default: the Grand Dome, the biggest); levels: 0,1,2 (Low, Medium, High).
+## venues: comma-separated ids, or "all" (default: the National Arena); levels: 0,1,2 (Low, Medium, High).
 
 func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
 	var a := OS.get_cmdline_user_args()
-	var venues: Array = ["dome"]
+	var venues: Array = ["national"]
 	if a.size() > 0:
 		venues = DB.VENUES.map(func(v): return v[0]) if a[0] == "all" else Array(a[0].split(","))
 	var levels: Array = [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]

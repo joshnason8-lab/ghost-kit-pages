@@ -101,6 +101,15 @@ var _seq := ""               # the rally's touches, for the log: "serve receive 
 var _spilled_by: Player = null   # who spilled the reception just made (he can't recover it himself)
 var _server_q := 0.0         # the power serve in flight: how well it was struck (0-1) and its server's serve rating
 var _server_r := 60.0
+# Between points the ball is in someone's hands, or on its way to them: never left hanging (_between_points).
+var _carrier: Player = null   # who has it (it goes where his hands are)
+var _fetcher: Player = null   # going to pick it up where it lies
+var _pick_t := -1.0           # when his hand reaches it
+var _passer: Player = null    # has it, and throws it to the thrower
+var _pass_t := -1.0           # when it leaves his hands
+var _catcher: Player = null   # the thrower, the ball on its way to him
+var _catch_t := -1.0
+var _ball_keep := []          # the ball as it was when a replay began (put back after it)
 
 # The replay: frames of the last few seconds.
 var _rec: Array = []
@@ -111,6 +120,8 @@ var officials: Array[RealBody] = []
 var _ref: RealBody
 var _judges: Array[RealBody] = []
 var _officials := Officials.new()   # their life between the calls
+var _bench := Officials.new()       # the substitutes on the benches: as alive, watching the ball
+var _subs := [[], []]               # each team's substitutes (RealBody)
 
 
 func _ready() -> void:
@@ -129,7 +140,13 @@ func _ready() -> void:
 	var home_t := DB.team(String(config.home))
 	arena = Arena.new(venue, women, [home_t.get("c1", Game.C_SAFFRON), home_t.get("c2", Color.WHITE)])
 	add_child(arena)
+	if arena.crowd:
+		arena.crowd.show_teams(String(config.home), String(config.away))   # the two teams' flags in the crowd
 	ball = Ball.new()
+	ball.bounds = arena.bounds
+	ball.soft = arena.sand()
+	# Every bounce off the floor or a wall heard, as loud as it was hard (the rally's landing too).
+	ball.bounced.connect(func(at: Vector3, speed: float): Sfx.bounce(at, lerpf(-16.0, -2.0, clampf((speed - 1.2) / 6.0, 0.0, 1.0))))
 	add_child(ball)
 	ball.hold(Vector3(0, -5, 0))
 	# Your team on the left of the broadcast picture (side 1, x > 0: the camera looks across from the far side).
@@ -137,6 +154,7 @@ func _ready() -> void:
 		side_team = [1, 0]
 	_make_teams()
 	_make_officials()
+	_make_bench()
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
@@ -262,27 +280,64 @@ func _make_officials() -> void:
 	_ref.position = Vector3(0, 0.8, post_z + 0.82)
 	_ref.rotation.y = PI
 	officials.append(_ref)
-	var low := int(Game.settings.graphics) == Game.GFX_LOW
-	var spots := [Vector3(-0.9, 0, -post_z - 1.6)]   # the assistant referee, at the near post (off the middle of the picture)
-	spots.append_array([Vector3(-Court.HALF - 0.8, 0, Court.HALF_W + 0.8), Vector3(Court.HALF + 0.8, 0, -Court.HALF_W - 0.8)])
-	if not low:
-		spots.append_array([Vector3(-Court.HALF - 0.8, 0, -Court.HALF_W - 0.8), Vector3(Court.HALF + 0.8, 0, Court.HALF_W + 0.8)])
+	# The assistant referee standing at the other post (off the middle of the picture); a line judge standing at each
+	# end, off the far corner, watching his half's back line and the side line (in the picture, never in front of it).
+	var spots := [Vector3(-0.9, 0, -post_z - 1.6), Vector3(-Court.HALF - 0.35, 0, Court.HALF_W + 1.35),
+		Vector3(Court.HALF + 0.35, 0, Court.HALF_W + 1.35)]
 	for i in spots.size():
 		var b := RealBody.new(look.merged({"skin": [Color("e0b48c"), Color("b07448"), Color("8d5a36")][i % 3]}, true))
 		add_child(b)
 		b.position = spots[i]
-		b.rotation.y = atan2(-spots[i].x, -spots[i].z)
+		var to: Vector3 = -spots[i] if i == 0 else Vector3(signf(spots[i].x) * Court.HALF * 0.5, 0, 0) - spots[i]
+		b.rotation.y = atan2(to.x, to.z)
 		officials.append(b)
 		if i > 0:
 			_judges.append(b)
 	for o in officials:
-		_officials.add(o, Moves.static_pose("sit" if o != officials[1] else "stand"), o == officials[1])
-	# Line judges sit on low chairs at the corners, as they do; each with its chair.
-	var g := Geo.new()
-	for j in _judges:
-		var back := -Vector3(sin(j.rotation.y), 0, cos(j.rotation.y)) * 0.18
-		g.box(j.position + back + Vector3(0, 0.22, 0), Vector3(0.42, 0.44, 0.42), Color("2b3c55"), j.rotation.y)
-	add_child(g.commit(Geo.material(true)))
+		_officials.add(o, Moves.static_pose("sit" if o == _ref else "stand"), o != _ref, _judges.has(o))
+
+
+## The substitutes: the squad's players not playing, in the team's kit, on its bench by the scorers' table (two a side
+## in a regu, one in doubles; one on Low). They change benches with the ends.
+func _make_bench() -> void:
+	var n := 1 if n_players == 2 or int(Game.settings.graphics) == Game.GFX_LOW else 2
+	for k in 2:
+		var t: Dictionary = teams[k]
+		var on := {}
+		for p in t.players:
+			on[String((p as Player).data.id)] = true
+		var c2: Color = t.c2
+		for pd in DB.squad(String(t.id), women):
+			if (_subs[k] as Array).size() >= n:
+				break
+			if on.has(String(pd.id)):
+				continue
+			var b := RealBody.new({"skin": pd.get("skin", Color("c98a5a")), "jersey": t.c1,
+				"shorts": c2.darkened(0.3) if c2.get_luminance() > 0.7 else c2, "height": float(pd.get("height", 1.76)), "women": women})
+			add_child(b)
+			b.rotation.y = PI   # facing the court
+			_subs[k].append(b)
+			_bench.add(b, Moves.static_pose("sit"))
+	_seat_bench()
+
+
+## Each team's substitutes on the bench at its own end.
+func _seat_bench() -> void:
+	var z := Court.HALF_W + Court.POST_OUT + 2.45
+	for k in 2:
+		var x := Court.sgn(side_of_team(k)) * 4.5
+		var subs: Array = _subs[k]
+		for i in subs.size():
+			(subs[i] as RealBody).position = Vector3(x + (0.0 if subs.size() == 1 else (i - 0.5) * 1.15), 0, z)
+
+
+## The substitutes up with their arms when their side wins a big point.
+func _bench_cheer(team: int) -> void:
+	for b in _subs[team]:
+		if rng.randf() < 0.75:
+			var up := rng.randf_range(-165.0, -135.0)
+			_bench.show_signal(b, {"upperarm_l": Vector3(up, 0, 18), "upperarm_r": Vector3(up, 0, -18),
+				"forearm_l": Vector3(-25, 0, 0), "forearm_r": Vector3(-25, 0, 0)}, rng.randf_range(1.0, 1.6))
 
 
 # ---------------------------------------------------------------- the clock
@@ -300,13 +355,18 @@ func _process(delta: float) -> void:
 	now += dt
 	state_t += dt
 	_step(dt)
+	if state in [S.SETUP, S.DEAD, S.BREAK]:
+		_between_points()
 	for side in 2:
 		for p in players_on(side):
 			var pl: Player = p
-			pl.look_at_pos = ball.global_position
+			pl.look_at_pos = pl.look_to if pl.look_to.is_finite() else ball.global_position
 			pl.tick(dt, now)
 	ball.update_to(now, dt)
+	if _carrier:
+		ball.hold(_carrier.carry_point())
 	_officials.tick(dt, ball.global_position, state == S.RALLY or state == S.TOSS)
+	_bench.tick(dt, ball.global_position, state == S.RALLY or state == S.TOSS)
 	Crowd.set_look(ball.global_position)
 	cam.follow(ball.global_position, delta, self)
 	hud.tick(delta)
@@ -324,8 +384,12 @@ func _step(_dt: float) -> void:
 			if state_t > 2.6:
 				_begin_setup()
 		S.SETUP:
-			# The serve waits for everyone to reach his place (a long rally ends far from it), up to 7 s.
-			if state_t > SETUP_TIME and (_all_in_place() or state_t > 7.0):
+			# The serve waits for the ball to be in the thrower's hands and him turned to the server, and for everyone
+			# to reach his place (a long rally ends far from it), up to 9 s; if the ball is still on its way after 14,
+			# the thrower is given it.
+			if state_t > 14.0 and _carrier != _thrower():
+				_give(_thrower())
+			if state_t > SETUP_TIME and _carrier == _thrower() and _thrower_set() and (_all_in_place() or state_t > 9.0):
 				_begin_toss()
 		S.TOSS, S.RALLY:
 			_rally_events()
@@ -431,10 +495,8 @@ func _begin_setup() -> void:
 	_spilled_by = null
 	net_t = -1.0
 	land_t = -1.0
-	ball.flying = false
 	_setup_positions()
-	var thrower := _thrower()
-	ball.hold(thrower.position + thrower.net_dir() * 0.25 + Vector3(0, 1.0, 0))
+	_fetch_ball()
 	hud.set_score()
 	if not _intro_done:
 		_intro_done = true
@@ -469,6 +531,154 @@ func _server() -> Player:
 	return _role_player(_serving_side(), DB.POS_TEKONG)
 
 
+## Between points the ball goes to the serving side's thrower, in his hands: whoever has it throws it to him; if it is
+## lying loose, the nearest player (the serving side's rather) walks over and picks it up, and if he is not the thrower
+## he throws it to him. Before the first serve (the ball not yet out) the thrower walks on with it.
+func _fetch_ball() -> void:
+	var thrower := _thrower()
+	_fetcher = null
+	_passer = null
+	_catcher = null
+	_pick_t = -1.0
+	_pass_t = -1.0
+	for side in 2:
+		for pp in players_on(side):
+			var pl: Player = pp
+			pl.face_to = Vector3.INF
+			pl.look_to = Vector3.INF
+			pl.carrying = pl == _carrier
+	if _carrier == thrower:
+		return
+	if _carrier:
+		_passer = _carrier
+		return
+	var bp := ball.global_position
+	if bp.y < -1.0:
+		_give(thrower)
+		return
+	var best: Player = null
+	var bd := INF
+	for side in 2:
+		for pp in players_on(side):
+			var pl: Player = pp
+			var d := Vector2(pl.position.x - bp.x, pl.position.z - bp.z).length() - (1.5 if side == _serving_side() else 0.0)
+			if d < bd:
+				bd = d
+				best = pl
+	_fetcher = best
+
+
+func _give(pl: Player) -> void:
+	if _carrier and _carrier != pl:
+		_carrier.carrying = false
+	_carrier = pl
+	pl.carrying = true
+	_fetcher = null if _fetcher == pl else _fetcher
+
+
+## A frame between points: the fetcher to the ball and picking it up, the throw to the thrower and his catch, the
+## thrower at his place turned to the server, the receivers on their toes.
+func _between_points() -> void:
+	var thrower := _thrower()
+	var srv := _server()
+	var ss := _serving_side()
+	if _fetcher:
+		var f := _fetcher
+		var bp := ball.global_position
+		var flat := Vector3(bp.x, 0, bp.z)
+		var to := flat - f.position
+		to.y = 0.0
+		var dir := to.normalized() if to.length() > 0.05 else f.net_dir()
+		f.target = flat - dir * float(Moves.CONTACT["pick"][1])
+		f.hurry = 0.5
+		f.face_to = flat
+		f.look_to = bp
+		if _pick_t < 0.0 and f.move == "" and to.length() < 0.7 and bp.y < 0.35 and ball.vel.length() < 1.5 \
+				and state != S.DEAD:
+			f.play_now("pick", now)
+			_pick_t = now + Moves.contact_time("pick")
+		if _pick_t > 0.0 and now >= _pick_t:
+			_pick_t = -1.0
+			_give(f)
+			f.face_to = Vector3.INF
+			f.look_to = Vector3.INF
+			if f != thrower:
+				_passer = f
+			_back_to_place(f)
+	if _passer and _carrier == _passer and _pass_t < 0.0 and _passer.move == "":
+		var pz := _passer
+		pz.face_to = thrower.position
+		pz.look_to = thrower.position + Vector3(0, 1.4, 0)
+		thrower.face_to = pz.position
+		thrower.look_to = pz.carry_point()
+		thrower.target = thrower.position   # he stops to take it
+		if _turned_to(pz, thrower.position) and _turned_to(thrower, pz.position):
+			pz.play_now("toss", now)
+			_pass_t = now + Moves.contact_time("toss")
+	if _passer and _pass_t > 0.0 and now >= _pass_t:
+		_pass_t = -1.0
+		var from := _passer.carry_point()
+		var to_him := Vector3(_passer.position.x - thrower.position.x, 0, _passer.position.z - thrower.position.z).normalized()
+		var catch := thrower.position + to_him * 0.42 + Vector3(0, 1.12, 0)
+		var sol := Ball.solve_apex(from, catch, maxf(from.y, catch.y) + 0.4 + from.distance_to(catch) * 0.13)   # (a lob, higher the further)
+		_carrier = null
+		_passer.carrying = false
+		ball.launch(from, sol[0], now)
+		_catcher = thrower
+		_catch_t = now + float(sol[1])
+		_passer.face_to = Vector3.INF
+		_passer.look_to = Vector3.INF
+		_back_to_place(_passer)
+		_passer = null
+	if _catcher:
+		_catcher.look_to = ball.global_position
+		if now >= _catch_t:
+			var c := _catcher
+			_catcher = null
+			_give(c)
+			c.face_to = Vector3.INF
+			c.look_to = Vector3.INF
+			_back_to_place(c)
+	# The thrower with the ball at his place: turned to the server, his eyes on him; the server's on the ball.
+	if state == S.SETUP and _carrier == thrower and thrower != srv and _at_place(thrower):
+		thrower.face_to = srv.position
+		thrower.look_to = srv.position + Vector3(0, 1.5, 0)
+		srv.look_to = thrower.carry_point()
+	# Waiting for the serve: the receivers on their toes, the servers' inside players ready too.
+	for side in 2:
+		for pp in players_on(side):
+			var pl: Player = pp
+			var waiting := state == S.SETUP and _at_place(pl) and pl != thrower and pl != srv
+			pl.ready_bounce = (1.0 if side != ss else 0.5) if waiting else 0.0
+
+
+func _back_to_place(pl: Player) -> void:
+	pl.target = _serve_spot(pl, pl.side, pl.side == _serving_side())
+	pl.hurry = 0.55
+
+
+func _at_place(pl: Player) -> bool:
+	var spot := _serve_spot(pl, pl.side, pl.side == _serving_side())
+	return Vector2(pl.position.x - spot.x, pl.position.z - spot.z).length() < 0.35
+
+
+## He is turned (within 25 degrees) to face p.
+func _turned_to(pl: Player, p: Vector3) -> bool:
+	var to := Vector3(p.x - pl.position.x, 0, p.z - pl.position.z)
+	if to.length() < 0.1:
+		return true
+	return absf(angle_difference(pl.body.rotation.y, atan2(to.x, to.z))) < deg_to_rad(25.0)
+
+
+## The thrower ready to throw: at his place and turned to the server (or, serving himself, at his place).
+func _thrower_set() -> bool:
+	var thrower := _thrower()
+	var srv := _server()
+	if not _at_place(thrower):
+		return false
+	return thrower == srv or _turned_to(thrower, srv.position)
+
+
 func _begin_toss() -> void:
 	state = S.TOSS
 	state_t = 0.0
@@ -488,13 +698,20 @@ func _begin_toss() -> void:
 	var kp := srv.target + srv.net_dir() * float(Moves.CONTACT[mv][1]) + Vector3(0, kick_h, 0)
 	var right := Vector3(-srv.net_dir().z, 0, srv.net_dir().x)
 	kp += right * float(Moves.CONTACT[mv][2]) * (-1.0 if mirror else 1.0)
-	var hand := thrower.position + thrower.net_dir() * 0.0 + Vector3(0, 1.05, 0)
-	if thrower == srv:
-		hand = srv.target + srv.net_dir() * 0.3 + Vector3(0, 1.1, 0)
-	var sol := Ball.solve_apex(hand, kp, kp.y + (0.9 if thrower != srv else 0.6))
-	var t_kick := t_release + float(sol[1])
-	ball.hold(hand)
-	_schedule(t_release, func(): ball.launch(hand, sol[0], t_release))
+	# From his hands (where they will be as he lets go is nearly where they are now: the flight is timed from there).
+	var hand := thrower.carry_point()
+	var flight := float(Ball.solve_apex(hand, kp, kp.y + (0.9 if thrower != srv else 0.6))[1])
+	var t_kick := t_release + flight
+	_schedule(t_release, func():
+		var from := thrower.carry_point()
+		_carrier = null
+		thrower.carrying = false
+		ball.launch(from, Ball.solve_time(from, kp, maxf(0.2, t_kick - now))[0], now))
+	# Then he turns back to the net and is set to play.
+	_schedule(t_release + 0.3, func():
+		thrower.face_to = Vector3.INF
+		thrower.look_to = Vector3.INF
+		srv.look_to = Vector3.INF)
 	plan = {"player": srv, "kind": "serve", "move": mv, "t": t_kick, "pos": kp, "stand": srv.target, "touch": 0,
 		"mirror": mirror, "user": _is_user(srv), "side": srv.side, "started": false, "auto": true}
 	if plan.user:
@@ -712,7 +929,7 @@ func _serve_kick(pl: Player, from: Vector3, q: float, mv: String) -> void:
 	# A poor serve catches the net: it is struck too flat to clear the tape.
 	if into_net or (q < 0.22 and rng.randf() < 0.55):
 		v = Ball.solve_apex(from, target, arena.net_top - 0.15)[0]
-	Sfx.play_at("kick", from, -2.0, 1.1 if horse else 1.0)
+	Sfx.play_at("kick", from, 1.0, 1.1 if horse else 1.0)   # (the kicks: a real ball's, low and soft; 3 dB up)
 	_launch(from, v, pl.side, horse)
 	_after_touch(pl.side)
 
@@ -809,7 +1026,8 @@ func _pass(pl: Player, from: Vector3, q: float, kind: String) -> void:
 		spot.x = Court.sgn(side) * 0.35
 	spot.y = 1.0
 	var sol := Ball.solve_apex(from, spot, apex)
-	Sfx.play_at("kick" if String(_last_move(pl)) in ["sila", "kuda", "dig"] else "knee", from, -4.0)
+	var foot := String(_last_move(pl)) in ["sila", "kuda", "dig"]
+	Sfx.play_at("kick" if foot else "knee", from, -1.0 if foot else -4.0)
 	_launch(from, sol[0], side, false)
 	_after_touch(side)
 
@@ -868,7 +1086,7 @@ func _make_set(pl: Player, from: Vector3, q: float, p: Dictionary) -> void:
 	if cp.x * Court.sgn(side) < 0.25:
 		cp.x = Court.sgn(side) * 0.3
 	var sol := Ball.solve_apex(from, cp, apex)
-	Sfx.play_at("kick", from, -6.0, 1.05)
+	Sfx.play_at("kick", from, -3.0, 1.05)
 	_set_for = {"player": striker, "move": spike_move}
 	_set_cp = cp
 	_launch(from, sol[0], side, false)
@@ -922,7 +1140,7 @@ func _attack(pl: Player, from: Vector3, q: float, p: Dictionary) -> void:
 		var speed: float = {"roll": 30.0, "sunback": 27.0, "tapak": 22.0, "head_spike": 20.0}.get(mv, 24.0) * lerpf(0.68, 1.04, q)
 		# A poor one, now and then, is driven flat into the tape.
 		v = _drive(from, target, speed, 0.04 if q > 0.3 or rng.randf() < 0.6 else -0.25)
-	Sfx.play_at("spike" if mv != "feint" else "kick", from, 0.0 if mv != "feint" else -6.0)
+	Sfx.play_at("spike" if mv != "feint" else "kick", from, 0.0 if mv != "feint" else -3.0)
 	if _is_user(pl):
 		Game.haptic("spike")
 	_launch(from, v, side, mv != "feint")
@@ -980,7 +1198,7 @@ func _kick_over(pl: Player, from: Vector3, q: float) -> void:
 	target += Vector3(rng.randfn(0, err * 0.5), 0, rng.randfn(0, err * 0.5))
 	target.y = Ball.RADIUS
 	var sol := Ball.solve_apex(from, target, maxf(from.y + 1.0, arena.net_top + 1.8))
-	Sfx.play_at("kick", from, -4.0)
+	Sfx.play_at("kick", from, -1.0)
 	_launch(from, sol[0], pl.side, false)
 	_after_touch(pl.side)
 
@@ -1373,7 +1591,6 @@ func _block_at_net(attacker: Player, from: Vector3, v: Vector3, mv: String) -> v
 # ---------------------------------------------------------------- the end of a rally
 
 func _landed(p: Vector3) -> void:
-	Sfx.bounce(p)
 	_whistle("long")   # the rally is over
 	var side := Court.side_of(p.x)
 	var inside := Court.in_court(p, side)
@@ -1437,7 +1654,7 @@ func _fault(fault_side: int, key: String, who: Player, stop_ball := true) -> voi
 		if _is_user(who):
 			Game.haptic("fault")
 	if stop_ball:
-		ball.flying = false
+		ball.set_loose(now)   # play stops; the ball falls where it was going
 	_point(side_team[1 - fault_side])
 
 
@@ -1515,6 +1732,7 @@ func _celebrate(team: int, why: String) -> void:
 		var pl: Player = pp
 		if rng.randf() < 0.85:
 			pl.play_now(ways[rng.randi_range(0, ways.size() - 1)], now + rng.randf_range(0.05, 0.45), rng.randf() < 0.5)
+	_bench_cheer(team)
 	if rng.randf() < 0.4:
 		var other := players_on(1 - side)
 		var sad: Player = other[rng.randi_range(0, other.size() - 1)]
@@ -1590,6 +1808,7 @@ func _change_ends() -> void:
 	side_team = [side_team[1], side_team[0]]
 	_place_sides()
 	hud.cut(func():
+		_seat_bench()
 		for side in 2:
 			for pp in players_on(side):
 				var pl: Player = pp
@@ -1699,6 +1918,7 @@ func _start_replay() -> void:
 		_after_point()
 		return
 	_replay_frames = _rec.slice(maxi(0, _rec.size() - 200), _rec.size())
+	_ball_keep = [ball.global_position, ball.vel, ball.loose, ball.flying]
 	_rec.clear()
 	_rec_frozen = false
 	_replay_i = 0.0
@@ -1718,6 +1938,7 @@ func _replay_step(delta: float) -> void:
 		ball.turn(delta * 0.4)   # (the replay runs at 0.4 of real time)
 	ball.global_position = f.ball
 	_officials.tick(delta * 0.4, ball.global_position, true)
+	_bench.tick(delta * 0.4, ball.global_position, true)
 	var k := 0
 	for side in 2:
 		for pp in players_on(side):
@@ -1738,6 +1959,12 @@ func end_replay() -> void:
 		return
 	hud.replay(false)
 	cam.replay_end()
+	if not _ball_keep.is_empty():
+		ball.global_position = _ball_keep[0]
+		ball.vel = _ball_keep[1]
+		ball.loose = _ball_keep[2]
+		ball.flying = _ball_keep[3]
+		_ball_keep = []
 	state = S.DEAD
 	state_t = DEAD_TIME
 	_after_point()

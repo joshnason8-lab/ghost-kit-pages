@@ -15,6 +15,30 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.12.0, the owner's list:
+
+- **The ball is never left hanging:** after a point it falls, bounces and rolls, and bounces off the walls, boards
+  and fences (an ace no longer rolls through them). A player picks it up and lobs it to the thrower (the server in
+  doubles), who catches it and carries it to his place.
+- **The serve's toss:** the thrower faces the tekong, the ball in both hands, and tosses it in one smooth movement
+  from his hands, then turns back to play.
+- **Players alive while they wait:** breathing, swaying, shifting their weight, the receivers on their toes.
+- **The ball sounds like a ball:** real recordings of balls kicked, touched and bouncing, in place of the wooden
+  knocks.
+- **Four officials:** the referee in his chair, the assistant at the other post, and a line judge standing at each
+  end off the far corner with a flag: he bends to watch his lines when play is at his end, signals in or out, and
+  gets out of the ball's way when it comes at him.
+- **Substitutes** sitting on the team benches in their kit, cheering their side's big points.
+- **The crowd** turns smoothly with the ball, cheers in four ways mixed through the stands (clapping, jumping, fist
+  pumps, arms up), and waves the two teams' flags.
+- **The score at the top** is narrower, with no empty space.
+- **The gym:** real basketball hoops, block walls with high windows, aluminium bleachers. **The beach:** islands,
+  headlands, a fishing village, hotels and boats behind it.
+- **The words on the floor and the boards** are in your language.
+- **Privacy policy and Help** in Settings open in the game. League Season no longer says "the real leagues".
+- **Five venues:** the night market, the temple court and the Grand Dome are gone; the world championship is at the
+  mall.
+
 New in 0.11.1: **the officials in suits**: the referee, his assistant and the line judges in dark jackets and
 trousers, white shirts and red ties, black shoes, as at the World Cup and the Asian championships.
 

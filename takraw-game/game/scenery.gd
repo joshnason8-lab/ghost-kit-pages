@@ -10,17 +10,14 @@ const DIR := "res://assets/venue/"
 ## The sun in each sky (the brightest point of its panorama): across the image (0-1, from -Z toward +X) and its height
 ## above the horizon (degrees); the venue's sunlight comes from there. tools: the skies' 2K images, measured once.
 const SUNS := {
-	"qwantani_noon_puresky": [0.598, 49.0],
 	"qwantani_sunset_puresky": [0.598, 16.0],   # (the sun is at 7 degrees: lit from a little higher, or every shadow crosses the court)
 	"kloppenheim_02_puresky": [0.598, 18.0],
-	"kloppenheim_07_puresky": [0.621, 41.0],
 }
 ## Models whose cut-down version is no smaller to speak of and comes out broken: the full one on Low too.
 const FULL_ON_LOW := ["stands/bleacher_metal"]
 ## The photographs' mean brightness (linear), so a surface painted over keeps its grain at the paint's own shade.
-const MEAN := {"clean_asphalt": 0.06, "asphalt_02": 0.11, "concrete_floor": 0.28, "coast_sand_01": 0.18,
-	"damp_beach_sand": 0.12, "white_maple_veneer": 0.68, "concrete_block_wall": 0.05, "corrugated_iron": 0.44,
-	"grass_ground": 0.12, "granite_tile_04": 0.14}
+const MEAN := {"clean_asphalt": 0.06, "coast_sand_01": 0.18, "damp_beach_sand": 0.12, "white_maple_veneer": 0.68,
+	"concrete_block_wall": 0.05, "grass_ground": 0.12, "granite_tile_04": 0.14}
 
 static var _parts := {}       # model path -> [[Mesh, Transform3D], ...]
 static var _tintable := {}    # Mesh -> its copy whose materials take each instance's colour
@@ -29,7 +26,7 @@ static var _water_shader: Shader
 static var _sky_shader: Shader
 
 var _root: Node3D
-var _placed := {}             # model name -> [Transform3D, ...]
+var _placed := {}             # model name (and "|flat": those casting no shadow) -> [Transform3D, ...]
 var _shadows := {}            # model name -> casts shadows
 var _tints := {}              # model name -> [Color, ...], one an instance
 var _made := {}               # key -> [Mesh, [Transform3D, ...], casts shadows]: meshes made in code
@@ -50,14 +47,17 @@ func add(name: String, p: Vector3, yaw := 0.0, s := 1.0, shadows := true, tint :
 	add_xf(name, Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * s), p), shadows, tint)
 
 
-## Puts a model where xf says, turned and scaled as it says (a model stretched to its real size).
+## Puts a model where xf says, turned and scaled as it says (a model stretched to its real size). Those of a model
+## that cast shadows and those that don't (far off, where a shadow would only cost) are drawn apart (with no shadows at
+## all, as on Low, together: one draw call).
 func add_xf(name: String, xf: Transform3D, shadows := true, tint := Color.WHITE) -> void:
-	if not _placed.has(name):
-		_placed[name] = []
-		_tints[name] = []
-	(_placed[name] as Array).append(xf)
-	(_tints[name] as Array).append(tint)
-	_shadows[name] = shadows and not name.ends_with("_card")
+	var key := name if shadows or not Game.shadows_enabled() else name + "|flat"
+	if not _placed.has(key):
+		_placed[key] = []
+		_tints[key] = []
+	(_placed[key] as Array).append(xf)
+	(_tints[key] as Array).append(tint)
+	_shadows[key] = shadows and not name.ends_with("_card")
 
 
 ## A tree's cut-out, turned so both its planes face the broadcast camera, a little different each time.
@@ -75,13 +75,13 @@ func add_mesh(key: String, mesh: Mesh, xf: Transform3D, shadows := true) -> void
 
 ## Makes everything added so far: one MultiMesh for each part of each model, and for each mesh made in code.
 func commit() -> void:
-	for name in _placed:
-		var xf: Array = _placed[name]
-		var tints: Array = _tints[name]
+	for key in _placed:
+		var xf: Array = _placed[key]
+		var tints: Array = _tints[key]
 		var tinted := tints.any(func(c): return c != Color.WHITE)
-		for part in parts(name):
+		for part in parts(String(key).get_slice("|", 0)):
 			_multi(_tinted(part[0]) if tinted else part[0], xf.map(func(t): return (t as Transform3D) * (part[1] as Transform3D)),
-				_shadows[name], tints if tinted else [])
+				_shadows[key], tints if tinted else [])
 	for key in _made:
 		_multi(_made[key][0], _made[key][1], _made[key][2])
 	_placed.clear()
@@ -214,8 +214,9 @@ static func aim_sun(sun: DirectionalLight3D, sky_name: String) -> void:
 
 ## A photographed surface (assets/venue/surfaces/), laid in world space: tile metres a repeat; tint multiplies it,
 ## or with paint 1 paints it in tint keeping the grain (a court painted on concrete). Its relief (normal map) on
-## Medium and High.
-static func surface(name: String, tint := Color.WHITE, paint := 0.0, tile := 2.5, rough := 0.85) -> ShaderMaterial:
+## Medium and High. vcolor: each vertex's colour multiplies it too, its alpha the relief's depth (a Geo's bands of
+## paint over one wall, drawn together).
+static func surface(name: String, tint := Color.WHITE, paint := 0.0, tile := 2.5, rough := 0.85, vcolor := false) -> ShaderMaterial:
 	if not _surface_shaders.has(low()):
 		var sh := Shader.new()
 		sh.code = """
@@ -229,6 +230,7 @@ uniform float mean = 0.4;
 uniform float tile = 2.5;
 uniform float rough = 0.85;
 uniform bool relief = true;
+uniform bool vcolor = false;
 varying vec3 wpos;
 varying vec3 wnrm;
 void vertex() {
@@ -241,12 +243,12 @@ void fragment() {
 	vec3 c = texture(albedo_tex, uv).rgb;
 	float l = dot(c, vec3(0.299, 0.587, 0.114));
 	vec3 painted = tint * clamp(1.0 + 0.35 * (l / mean - 1.0), 0.55, 1.35);
-	ALBEDO = mix(c * tint, painted, paint);
+	ALBEDO = mix(c * tint, painted, paint) * (vcolor ? COLOR.rgb : vec3(1.0));
 	ROUGHNESS = rough;
 	SPECULAR = 0.25;
 	if (relief) {
 		NORMAL_MAP = texture(normal_tex, uv).rgb;
-		NORMAL_MAP_DEPTH = 0.8;
+		NORMAL_MAP_DEPTH = 0.8 * (vcolor ? COLOR.a : 1.0);
 	}
 }
 """.replace("FILTER", "filter_linear_mipmap" if low() else "filter_linear_mipmap_anisotropic")
@@ -263,6 +265,7 @@ void fragment() {
 	m.set_shader_parameter("tile", tile)
 	m.set_shader_parameter("rough", rough)
 	m.set_shader_parameter("relief", not low())
+	m.set_shader_parameter("vcolor", vcolor)
 	return m
 
 
@@ -308,6 +311,7 @@ uniform vec3 deep : source_color;
 uniform vec3 sky_col : source_color;
 uniform float shore = 22.0;
 uniform bool relief = true;
+uniform bool vcolor = false;
 varying vec3 wpos;
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;

@@ -1,7 +1,9 @@
 class_name Ball
 extends Node3D
 ## The ball: a woven synthetic sphere, flying under gravity alone, so where it will be is known exactly (at(), and
-## the time it reaches a height or crosses the net) and the players can plan their touches.
+## the time it reaches a height or crosses the net) and the players can plan their touches. Once a rally is over it
+## is loose: it falls, bounces, rolls to a stop and comes off the venue's walls and boards (bounds), stepped frame by
+## frame, until a player picks it up (carried: it goes where his hands are).
 
 const G := 9.81
 const RADIUS := 0.068     # 0.43 m round
@@ -16,6 +18,9 @@ var spin_rate := 0.0
 var p_launch := Vector3.ZERO
 var v_launch := Vector3.ZERO
 var t_launch := 0.0
+var loose := false          # the rally is over: bouncing and rolling by itself
+var bounds := Rect2(-12.0, -9.0, 24.0, 18.0)   # x and z the walls and boards keep it within (Arena.bounds)
+var soft := false           # on sand: it hardly bounces and stops soon
 var _mesh: MeshInstance3D
 var _shadow: MeshInstance3D
 var _trail: Array[MeshInstance3D] = []
@@ -102,6 +107,7 @@ static func shadow_material() -> StandardMaterial3D:
 ## Sends the ball from p0 at velocity v at match time t0. Its flight is worked out from these (pos_at), not stepped,
 ## so where it will be is exactly where it goes.
 func launch(p0: Vector3, v: Vector3, t0: float, trail := false) -> void:
+	loose = false
 	p_launch = p0
 	v_launch = v
 	t_launch = t0
@@ -120,25 +126,107 @@ func launch(p0: Vector3, v: Vector3, t0: float, trail := false) -> void:
 
 func hold(p: Vector3) -> void:
 	flying = false
+	loose = false
 	vel = Vector3.ZERO
 	global_position = p
 
 
-## Moves the ball to where its flight has it at match time t.
+## The rally is over (at match time t): from here it goes where it was going by itself (falls, bounces, rolls),
+## never left hanging in the air.
+func set_loose(t: float) -> void:
+	if flying:
+		var k := t - t_launch
+		global_position = Ball.pos_at(p_launch, v_launch, k)
+		vel = v_launch + Vector3(0, -G * k, 0)
+	flying = false
+	loose = true
+
+
+## Moves the ball to where its flight has it at match time t; loose, a step of its bounces and roll.
 func update_to(t: float, dt: float) -> void:
+	if loose:
+		_step_loose(dt)
+		return
 	if flying:
 		var k := t - t_launch
 		global_position = Ball.pos_at(p_launch, v_launch, k)
 		vel = v_launch + Vector3(0, -G * k, 0)
 		turn(dt)
-		# Down on the floor (the rally is over by now): it bounces, lower each time, and rolls to a stop.
+		# Down on the floor (the rally is over by now): from here it bounces and rolls by itself.
 		if global_position.y < RADIUS and vel.y < 0.0:
-			var p := Vector3(global_position.x, RADIUS, global_position.z)
-			var up := -vel.y * 0.45
-			if up < 0.7:
-				hold(p)
-			else:
-				launch(p, Vector3(vel.x * 0.6, up, vel.z * 0.6), t)
+			global_position.y = RADIUS
+			flying = false
+			loose = true
+			_floor_bounce()
+
+
+signal bounced(at: Vector3, speed: float)   # off the floor or a wall, after a rally: for its sound
+
+const BOUNCE := 0.5         # how much of its speed into the floor it bounces back with (sand: far less)
+const ROLL_DRAG := 1.6      # m/s each second rolling on a court (sand: far more)
+
+
+## Loose: gravity, the floor, the walls; rolling, it slows and turns over as it goes. Small steps, so a fast ball
+## can't pass through a wall in one frame.
+func _step_loose(dt: float) -> void:
+	var n := maxi(1, ceili(dt / 0.01))
+	var h := dt / float(n)
+	for i in n:
+		var p := global_position
+		if p.y > RADIUS + 0.0005 or vel.y > 0.0:
+			vel.y -= G * h
+			p += vel * h
+			if p.y <= RADIUS:
+				p.y = RADIUS
+				global_position = p
+				_floor_bounce()
+				p = global_position
+		else:
+			var flat := Vector2(vel.x, vel.z)
+			var sp := maxf(0.0, flat.length() - ROLL_DRAG * (4.0 if soft else 1.0) * h)
+			flat = flat.normalized() * sp if sp > 0.0 else Vector2.ZERO
+			vel = Vector3(flat.x, 0.0, flat.y)
+			p += vel * h
+		# The walls and boards: off them, with most of its speed lost.
+		var hit := 0.0
+		if p.x < bounds.position.x + RADIUS or p.x > bounds.end.x - RADIUS:
+			p.x = clampf(p.x, bounds.position.x + RADIUS, bounds.end.x - RADIUS)
+			hit = absf(vel.x)
+			vel.x = -vel.x * 0.4
+			vel.z *= 0.8
+		if p.y <= RADIUS + 0.4 and (p.z < bounds.position.y + RADIUS or p.z > bounds.end.y - RADIUS):
+			p.z = clampf(p.z, bounds.position.y + RADIUS, bounds.end.y - RADIUS)
+			hit = maxf(hit, absf(vel.z))
+			vel.z = -vel.z * 0.4
+			vel.x *= 0.8
+		elif p.z < bounds.position.y - 0.5 or p.z > bounds.end.y + 0.5:
+			p.z = clampf(p.z, bounds.position.y - 0.5, bounds.end.y + 0.5)   # (over a low board: it stops at the stand)
+			hit = maxf(hit, absf(vel.z))
+			vel.z = -vel.z * 0.3
+		global_position = p
+		if hit > 1.0:
+			bounced.emit(p, hit)
+	# Rolling: it turns over the way it goes.
+	var flat_v := Vector3(vel.x, 0, vel.z)
+	if flat_v.length() > 0.05 and global_position.y <= RADIUS + 0.01:
+		spin_axis = Vector3.UP.cross(flat_v).normalized()
+		spin_rate = flat_v.length() / (RADIUS * LOOK_SCALE)
+	elif global_position.y <= RADIUS + 0.01:
+		spin_rate = 0.0
+	turn(dt)
+
+
+func _floor_bounce() -> void:
+	var into := -vel.y
+	var up := into * BOUNCE * (0.35 if soft else 1.0)
+	vel = Vector3(vel.x * (0.45 if soft else 0.78), up if up > 0.5 else 0.0, vel.z * (0.45 if soft else 0.78))
+	if into > 1.2:
+		bounced.emit(global_position, into)
+
+
+## Loose and come to rest on the floor (or carried, or held).
+func settled() -> bool:
+	return not flying and (not loose or (global_position.y <= RADIUS + 0.01 and vel.length() < 0.05))
 
 
 ## Turns the ball by its spin over dt (s): in flight, and in a replay.

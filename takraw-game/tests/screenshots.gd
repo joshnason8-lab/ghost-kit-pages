@@ -27,6 +27,7 @@ func _ready() -> void:
 		["settings", "res://ui/settings_screen.gd", {}, 0.4], ["howto", "res://ui/howto_screen.gd", {}, 0.4],
 		["moves", "res://ui/howto_screen.gd", {"tab": 2}, 0.4], ["season_pick", "res://ui/season_hub.gd", {}, 0.4],
 		["cup_pick", "res://ui/cup_screen.gd", {}, 0.4], ["records", "res://ui/records_screen.gd", {}, 0.4],
+		["privacy", "res://ui/doc_screen.gd", {"kind": "privacy"}, 0.4], ["help", "res://ui/doc_screen.gd", {"kind": "help"}, 0.4],
 	]
 	for t in tour:
 		if only != "" and not String(t[0]).begins_with(only):

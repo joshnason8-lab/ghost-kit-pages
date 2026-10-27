@@ -311,6 +311,117 @@ Performance on Low (`perf_probe`, 0.11.0 → 0.11.1): the same draw calls within
 1.9 MB more video memory in each venue (the mask): the National Arena 32.7 MB, the night market 50.4 MB, the park
 58.6 MB, the most.
 
+## The owner's list: the ball in hand, the officials and the bench, the crowd, the venues (0.12.0)
+
+**The home screen and Settings.** League Season says "A full league season in Malaysia, Thailand or Indonesia." (not
+"the real leagues": the clubs are invented). Settings > About's Privacy policy and Help went to a web page that isn't
+there: they open in the game now (`ui/doc_screen.gd`, no internet needed). The privacy policy says what the game
+keeps (settings, saves and records, on the phone only), that it collects and sends nothing, asks for no permissions,
+has no ads, accounts or tracking, and is fine for children; the help covers playing, serving, attacking, slowing the
+game down, a phone that struggles, the takraw words, and an "Email us" button. Both in all thirteen languages; Help
+opens How to Play. They and Licences open over Settings, so Licences from a paused match no longer ends the match.
+`takraw-smash/privacy.html` says the same.
+
+**The ball is never left in the air.** When a rally ends the ball comes down: it falls, bounces (less on sand), rolls
+and stops, and bounces off the boards, walls and fences instead of going through them (`Ball.set_loose`, each venue's
+`Arena.bounds`). Every bounce is heard, as loud as it was hard. Between points a player fetches it: the nearest picks
+it up (bends, his right hand to the floor), carries it, and passes it with an underarm lob to the thrower (the regu)
+or the server (doubles), who catches it and carries it to his place in both hands. Before, it hung in the air where
+the rally ended, then jumped to the thrower.
+
+**The serve's toss.** The thrower stands at his place facing the tekong, the ball held in both hands in front of him,
+and watches him. The toss is one movement: the ball lowered, the knees bent, the swing up, the release from his
+hands with his arms out to the tekong, the follow-through; then he turns back to the net (`Moves` "toss"). The
+ball's flight starts from his hands, on the same arc as before.
+
+**Alive while they wait.** Every player breathes, sways a little, shifts his weight from foot to foot now and then
+and keeps his head on the ball; the receivers wait on their toes, the knees working (the servers' side less);
+`Player._life_pose`, over the stance, eased out as he runs or plays. Measured over the set-up: each player's head moves
+7 to 24 cm, his hips 9-10 cm up and down.
+
+**The ball's sounds.** The kicks were wooden knocks (bright, ringing at 1.7 or 4 kHz). Now real balls: a soccer ball
+kicked with a rubber ball hit by hand under it; a rubber ball hit and caught for a thigh or chest touch; a hard hit for
+the spike; a slap and thump for the block; a basketball's bounce (Mixkit, docs/SOUNDS.md). The kicks play 3 dB louder.
+
+**The officials: four, the line judges standing.** The referee in his high chair and the assistant at the other post;
+a line judge at each end, standing off the far corner (in the broadcast picture, never in front of it), a red flag in
+his right hand. While the ball is in play at his end he bends to his lines, his hands on his knees; when a ball comes
+at him (it would pass within 85 cm below 2.1 m in the next 0.7 s) he steps 1.25 m out of its way, across its line and
+away from the court, and back to his place a second or so after. His flag goes up for out, down at the court for in.
+Before: six officials, the line judges sitting on chairs at all four corners. `test_runner` drives a ball at a line
+judge and checks he gets out of the way and back.
+
+**Substitutes on the benches.** Two a side in a regu (one in doubles, one on Low): the squad's players not playing,
+in their team's kit, sitting on their team's bench, watching the ball; up with their arms when their side wins a big
+point; they change benches with the ends.
+
+**The score at the top** is narrower: no space between the name and the score (each panel as wide as its name and
+score need, 128 px at least, from 178), 48 px high (from 66), the middle panel 84 px (from 108) and its "set point"
+line shown only when there is one.
+
+**The crowd** (`game/crowd.gd`, `tools/models/crowd_sheet.gd`):
+- It turns with the ball in short steps (every 1.2 m the ball moves, over 0.7 s), each fan at his own moment with a
+  quick dissolve from one drawn angle to the next, so a turn ripples through the stand. Before, the whole stand
+  snapped between two angles 45° apart.
+- Four cheers, mixed through the crowd: clapping (about 3 in 8), a real jump (a crouch, the spring, in the air with
+  the arms up), a fist pump, both arms up swaying; three frames each, dissolved into each other, each fan at his own
+  speed and phase, starting and stopping one by one. Before, everyone bounced up and down on one frame.
+- At rest: arms at the sides, hands on hips, arms folded, hands together (standing); hands on the knees, in the lap,
+  leaning in or back (sitting).
+- Its flags are the two teams': about 65% the home side's, 35% the away side's; national flags for nations, a club's
+  colours with a sash for clubs.
+
+**Three venues gone:** the night market, the temple court and the Grand Dome (154 files, 38.7 MB of models,
+textures, skies and sounds). The world championship is played at the mall, the season's finals at the National Arena,
+and the clubs' and nations' home venues are among the five left.
+
+**The provincial gym** (`Arena._gym`):
+- **The basketball hoops** are the netball and floorball halls' regulation boards: a steel bracket off the wall, a
+  glass board with its white border and box, an orange ring and a white net, blue wall pads under each (built in
+  code, `_backboard`; the glass one see-through material, one more draw call in the gym only). Before, a flat grey
+  board.
+- **The walls** are painted concrete block (relief on the far wall), a teal band low down, a mustard line and cream
+  above; a band of frosted windows high up in aluminium frames; steel roof trusses holding the lights and fans; doors
+  with lit exit signs; the scoreboard, clock and banners on the far wall. Before, flat white walls with square windows.
+- **The stands** are the floorball hall's aluminium bleachers (`assets/venue/stands/bleacher_hall*.glb`), three
+  sections a side, two deep, six rows, the back ones on a raised steel deck: 576 seats (from 390). The far wall moved
+  back from 12.6 m to 15.4 m to fit them; the benches, the scorers' table and the referee's chair stay where they were.
+
+**The beach's background** (`Arena._beach_far`): more palms, umbrellas, loungers and kayaks along the sand and a
+volleyball net; a fishing village (stilt houses and boats), five resort hotels with some windows lit, a jetty with a
+boat tied up; longtails, yachts and trawlers out on the water; limestone islands in the bay, wooded headlands at both
+ends and hills inland. The beach's haze starts at 175 m (from 140) so the islands keep their colour. None of it casts
+a shadow; Low has fewer palms and boats.
+
+**The words in 3D are in the player's language:** the game's name on the floor behind each back line, the boards'
+words and the scoreboard's "SETS" (three new keys, all thirteen languages), in a bold font chain that draws every
+script (`Arena._words_font`), made smaller where a language's words run longer (`_fit`). Before, always English.
+
+**Chinese, Japanese and Korean at the right weight:** those fonts are variable with their thinnest weight (100) as
+the default, and only the Latin font was set to the weights the game uses, so the menus' Chinese, Japanese and Korean
+text drew at its thinnest. Each weight's fallbacks are now set to that weight too (`Game._weighted`).
+
+Performance on Low (`perf_probe`, `--fixed-fps 30`, each venue in its own process), 0.11.0 → 0.12.0 (0.11.1 added
+1.3-1.9 MB of video memory everywhere, the suits' mask):
+
+| Venue | Draw calls | Triangles | Video memory |
+|---|---|---|---|
+| National Arena | 70 → 74 | 102k → 108k | 31.0 → 35.7 MB |
+| Mall atrium | 77 → 81 | 165k → 171k | 37.7 → 42.4 MB |
+| Provincial gym | 75 → 77 | 149k → 137k | 36.8 → 37.8 MB |
+| Park court | 77 → 80 | 114k → 119k | 57.2 → 61.0 MB |
+| Beach | 74 → 77 | 112k → 133k | 48.5 → 52.6 MB |
+
+The draw calls added: the two substitutes and the line judges' flags (one each); the crowd's flags and cheers are
+still a draw call each. The video memory: the crowd's sheet (three cheering frames for each of its people: 1440 x 2688
+on Low, compressed, about 2.5 MB more), and the suits' mask. Two fixes on the way: each flag one mesh (from two), and
+a model's copies drawn together when there are no shadows (Low and Medium): drawn apart, those that cast shadows from
+those that don't, they had cost the mall five draw calls for nothing.
+
+Tests: compile_check 52 scripts, 0 broken; test_runner 1549 checks, 0 failures (new: four officials, a line judge
+stepping out of the ball's way and back, substitutes on both benches, the crowd's sheet and the teams' flags);
+user_bot perfect 15-1, idle 3-15 (its points the other side's faults); input_test 10 checks, 0 failures.
+
 ## Gaps that need the owner
 
 None. The two raised in 0.5.0 are filled in 0.5.1:

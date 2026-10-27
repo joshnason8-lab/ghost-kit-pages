@@ -564,7 +564,7 @@ func _build_finals(ev: Dictionary) -> void:
 		seconds.append(t[1].id)
 	var a := [winners[0], winners[2], winners[4], seconds[1], seconds[3]]
 	var b := [winners[1], winners[3], seconds[0], seconds[2], seconds[4]]
-	var fin := _event("finals", "LSI_FINALS", {}, "dome", "Jakarta", a + b)
+	var fin := _event("finals", "LSI_FINALS", {}, "national", "Jakarta", a + b)
 	fin.stages.append(_group_stage([a, b], true))
 	events.append(fin)
 	if team in a or team in b:

@@ -13,6 +13,10 @@ var hurry := 0.0           # 0 a walk back to his place .. 1 a sprint to the bal
 var vel := Vector3.ZERO
 var look_at_pos := Vector3.ZERO
 var watch := true          # turn to face the ball (else the net)
+var face_to := Vector3.INF # a point he turns to face, in a move too (the thrower to the server); INF: none
+var look_to := Vector3.INF # what he watches, if not the ball (Match: the thrower watches the server)
+var carrying := false      # the ball in his hands (Match keeps it there): in one hand as he walks, both standing
+var ready_bounce := 0.0    # 0 at ease .. 1 on his toes waiting for the serve (knees working, a little bounce)
 
 var move := ""             # the move playing, if any
 var move_start := 0.0      # when it started (match time)
@@ -24,6 +28,15 @@ var _ph := 0.0             # running stride's phase
 var _half := 0             # half strides run (a footstep each)
 var _w := 0.0              # how much the move holds the pose (eases in and out)
 var _yaw := 0.0
+var _carry_w := 0.0        # eased: how much his arms hold the ball
+var _two := 1.0            # eased: both hands (standing) .. one (walking)
+var _life := 0.0           # his own clock for the small movements of a man standing (each his own pace)
+var _life_rate := 1.0
+var _shift := 0.0          # his weight: -1 on his left foot .. 1 on his right
+var _shift_to := 0.0
+var _next_shift := 0.0
+var _head := Vector2.ZERO  # his head turned to what he watches: yaw, pitch (degrees)
+var _ready_w := 0.0
 var _ring: MeshInstance3D
 var _mine: MeshInstance3D  # the thin ring under the one you play as (Settings: Play as one player)
 var _shadow: MeshInstance3D
@@ -80,6 +93,9 @@ func _ready() -> void:
 	add_child(_mine)
 	_yaw = Court.facing(side)
 	body.rotation.y = _yaw
+	_life = randf() * TAU
+	_life_rate = randf_range(0.85, 1.15)
+	_next_shift = randf_range(0.5, 4.0)
 
 
 static func ring_material() -> StandardMaterial3D:
@@ -168,15 +184,18 @@ func tick(dt: float, now: float) -> void:
 	vel = vel.move_toward(want, 16.0 * dt)
 	position += vel * dt
 	position.y = 0.0
-	# Facing: the net, turned toward the ball a little.
+	# Facing: the net, turned toward the ball a little (or to what he must face: the server, for the throw).
 	var face := net_dir()
-	if watch:
+	var facing_to := face_to.is_finite() and Vector2(face_to.x - position.x, face_to.z - position.z).length() > 0.1
+	if facing_to:
+		face = Vector3(face_to.x - position.x, 0, face_to.z - position.z).normalized()
+	elif watch:
 		var tb := look_at_pos - position
 		tb.y = 0
 		if tb.length() > 0.3:
 			face = (face * 1.2 + tb.normalized()).normalized()
 	var want_yaw := atan2(face.x, face.z)
-	if move != "":
+	if move != "" and not facing_to:
 		want_yaw = Court.facing(side)   # moves are made facing the net
 	_yaw = lerp_angle(_yaw, want_yaw, minf(1.0, 10.0 * dt))
 	# The pose: the move if one is playing, blended over the run or the ready stance.
@@ -207,7 +226,98 @@ func tick(dt: float, now: float) -> void:
 			yaw_add = deg_to_rad(float(mp.get("yaw", 0.0)))
 	if move == "":
 		_w = 0.0
+	_life_pose(p, dt, now, speed)
 	body.rotation.y = _yaw + yaw_add
 	body.position.y = lift
 	_shadow.scale = Vector3.ONE * clampf(1.0 - lift * 0.4, 0.5, 1.0)
 	body.apply(p)
+
+
+## A man standing is never still: his breath, his weight from one foot to the other now and then, his head on the
+## ball, his arms; waiting for a serve, on his toes, the knees working (ready_bounce). Carrying the ball: in his right
+## hand as he walks, in both in front of him standing. Laid over the stance or the stride, eased out as he runs or
+## plays a move.
+func _life_pose(p: Dictionary, dt: float, now: float, speed: float) -> void:
+	_life += dt * _life_rate
+	var still := (1.0 - clampf(speed / 0.8, 0.0, 1.0)) * (1.0 - _w)
+	_ready_w = move_toward(_ready_w, ready_bounce, dt * 2.0)
+	if now >= _next_shift:
+		_next_shift = now + randf_range(2.5, 6.5) * (0.5 if ready_bounce > 0.5 else 1.0)
+		_shift_to = (1.0 if _shift_to <= 0.0 else -1.0) * randf_range(0.4, 1.0)
+	_shift += (_shift_to - _shift) * (1.0 - exp(-dt * (3.0 if _ready_w > 0.5 else 1.5)))
+	var b := sin(_life * 1.6)            # the breath, every 4 s or so
+	var sway := sin(_life * 0.7) * 1.5
+	var s := _shift * (1.0 - _ready_w * 0.6) * (1.0 - _carry_w * 0.7)   # (holding the ball, his body steadier)
+	var free := absf(s)
+	var k := still
+	_add(p, "spine", Vector3(0.8 * b, 0, sway - s * 3.0) * k)
+	_add(p, "chest", Vector3(1.4 * b, 0, sway * 0.4) * k)
+	_add(p, "hips", Vector3(0, 0, s * 3.0) * k)
+	_add(p, "thigh_l", Vector3(-6.0 * free * float(s > 0.0), 0, -s * 2.5) * k)
+	_add(p, "thigh_r", Vector3(-6.0 * free * float(s < 0.0), 0, -s * 2.5) * k)
+	_add(p, "shin_l", Vector3(11.0 * free * float(s > 0.0), 0, 0) * k)
+	_add(p, "shin_r", Vector3(11.0 * free * float(s < 0.0), 0, 0) * k)
+	_add(p, "upperarm_l", Vector3(2.0 * sin(_life * 0.9), 0, 0.8 * b) * k)
+	_add(p, "upperarm_r", Vector3(-2.0 * sin(_life * 0.9 + 1.0), 0, -0.8 * b) * k)
+	_add(p, "forearm_l", Vector3(-5.0 * sin(_life * 1.1), 0, 0) * k)
+	_add(p, "forearm_r", Vector3(-5.0 * sin(_life * 1.3 + 2.0), 0, 0) * k)
+	# Ready for the serve: lower, on the balls of his feet, a small bounce in the knees and the weight moving.
+	if _ready_w > 0.0:
+		var r := _ready_w * k
+		var bounce := 0.5 + 0.5 * sin(_life * 6.5)
+		p["hips_y"] = float(p.get("hips_y", 0.0)) - (0.035 + 0.025 * bounce) * r
+		p["hips_side"] = float(p.get("hips_side", 0.0)) + 0.035 * sin(_life * 2.1) * r
+		_add(p, "spine", Vector3(6.0, 0, 0) * r)
+		for leg in ["l", "r"]:
+			_add(p, "thigh_" + leg, Vector3(-10.0 - 8.0 * bounce, 0, 0) * r)
+			_add(p, "shin_" + leg, Vector3(18.0 + 14.0 * bounce, 0, 0) * r)
+			_add(p, "foot_" + leg, Vector3(-6.0 - 6.0 * bounce, 0, 0) * r)
+		_add(p, "upperarm_l", Vector3(-10.0, 0, 6.0) * r)
+		_add(p, "upperarm_r", Vector3(-10.0, 0, -6.0) * r)
+	# His head on what he watches (the ball, the server), the neck taking a little of the turn.
+	var d: Vector3 = body.global_transform.affine_inverse() * look_at_pos
+	var want := Vector2(clampf(rad_to_deg(atan2(d.x, d.z)), -70.0, 70.0),
+		clampf(-rad_to_deg(atan2(d.y - 1.55, Vector2(d.x, d.z).length())), -30.0, 25.0))
+	_head += (want - _head) * (1.0 - exp(-dt * 6.0))
+	var hw := 1.0 - _w
+	_add(p, "neck", Vector3(_head.y * 0.35, _head.x * 0.3, 0) * hw)
+	_add(p, "head", Vector3(_head.y * 0.55, _head.x * 0.5, 0) * hw)
+	# The ball in his hands.
+	_carry_w = move_toward(_carry_w, 1.0 if carrying and move == "" else 0.0, dt * 6.0)
+	_two = move_toward(_two, 1.0 if speed < 0.6 else 0.0, dt * 4.0)
+	if _carry_w > 0.0:
+		for bone in CARRY_TWO:
+			var to = Moves._mix(p.get(bone, Vector3.ZERO), CARRY_TWO[bone], _two)
+			if CARRY_ONE.has(bone):
+				to = Moves._mix(CARRY_ONE[bone], CARRY_TWO[bone], _two)
+			p[bone] = Moves._mix(p.get(bone, Vector3.ZERO), to, _carry_w)
+
+
+## The arms carrying the ball: both hands holding it in front of him, or the right hand by his hip as he walks.
+const CARRY_TWO := {"upperarm_l": Vector3(-34, 0, -10), "forearm_l": Vector3(-72, 0, 0), "hand_l": Vector3(0, 0, -20),
+	"upperarm_r": Vector3(-34, 0, 10), "forearm_r": Vector3(-72, 0, 0), "hand_r": Vector3(0, 0, 20)}
+const CARRY_ONE := {"upperarm_r": Vector3(-16, 0, -14), "forearm_r": Vector3(-58, 0, 0), "hand_r": Vector3(0, 0, 10)}
+
+
+## Where the ball sits when he carries it: between his hands, or in his right hand.
+func carry_point() -> Vector3:
+	var r := _palm("r")
+	if _two < 0.5:
+		return r
+	return (r + _palm("l")) * 0.5
+
+
+func _palm(lr: String) -> Vector3:
+	var hand := body.bone_world("hand_" + lr)
+	var fore := body.bone_world("forearm_" + lr)
+	return hand + (hand - fore).normalized() * 0.07
+
+
+## Turns a bone of the pose further by v (degrees), whether the pose has it in degrees or (motion capture) as a turn.
+static func _add(p: Dictionary, bone: String, v: Vector3) -> void:
+	var cur = p.get(bone, Vector3.ZERO)
+	if cur is Quaternion:
+		p[bone] = (cur as Quaternion) * RealBody.local_rot(v)
+	else:
+		p[bone] = (cur as Vector3) + v
+

@@ -30,21 +30,28 @@ GQ = "oga-free-crowd-cheering-sounds/extracted/Gregor Quendel - Free Crowd Cheer
 JC = "oga-jc-sounds-nature-ambient-pack-vol-1/extracted/Nature Ambient Pack Vol 1 - mp3/"
 FT = "oga-footsteps-on-different-surfaces/extracted/footsteps/tile/"
 FZ = "oga-fantozzis-footsteps-grasssand-stone/extracted/Fantozzi-footsteps/flac/"
+MX = "mixkit/"                  # each https://assets.mixkit.co/active_storage/sfx/N/N.wav saved as mixkit/N.wav
+HP = "highpass=f=120:poles=2"   # the boom and rumble under ~100 Hz out (a phone speaker can't play it)
+LP = "lowpass=f=1500:poles=2"   # duller, for a thigh or chest touch
 
 # name: kind, rate, layers [(source, gain dB, offset s)], start s, length s (None: to the end), fade in, fade out, loop
 # crossfade s (0: a one-shot).
 SOUNDS = {
     # The ball: a hollow knock for a kick (three takes), a duller one for a thigh, chest or head touch, a knock with a
     # slap for a spike, a heavy thud for a block; on the court and on sand.
-    "kick": ("hit", 22050, [(KW + "wood14.aif", 0, 0)], 0, 0.25, 0.0, 0.08, 0),
-    "kick_2": ("hit", 22050, [(KW + "wood7.aif", 0, 0)], 0, 0.25, 0.0, 0.08, 0),
-    "kick_3": ("hit", 22050, [(KW + "wood10.aif", 0, 0)], 0, 0.25, 0.0, 0.08, 0),
-    "knee": ("soft", 22050, [(KI + "impactSoft_medium_000.ogg", 0, 0)], 0, 0.2, 0.0, 0.05, 0),
-    "knee_2": ("soft", 22050, [(KI + "impactSoft_medium_002.ogg", 0, 0)], 0, 0.2, 0.0, 0.05, 0),
-    "spike": ("hit", 22050, [(KW + "wood1.aif", 0, 0), ("oga-punch-slap-n-kick/extracted/11.ogg", -4, 0)], 0, 0.4, 0.0, 0.12, 0),
-    "block": ("hit", 22050, [(KI + "impactPunch_heavy_000.ogg", 0, 0), (KW + "wood1.aif", -8, 0)], 0, 0.35, 0.0, 0.1, 0),
-    "bounce": ("soft", 22050, [(KI + "impactWood_medium_000.ogg", 0, 0)], 0, 0.35, 0.0, 0.1, 0),
-    "bounce_2": ("soft", 22050, [(KI + "impactWood_medium_002.ogg", 0, 0)], 0, 0.35, 0.0, 0.1, 0),
+    # The ball (0.12.0; it was wooden knocks): a soccer ball kicked, with a rubber ball's hit 6 dB under it (a light
+    # ball's "pok"), three takes; a rubber ball hit by and caught in the hands, duller, for a thigh, chest or head touch;
+    # a hard hit on a ball with a kick's thump under it for a spike; a ball smacked for a block; a ball's first bounce
+    # on an indoor floor. (Start: 5 ms before the hit; a second layer's offset lines its main attack up with the first's.)
+    "kick": ("hit", 22050, [(MX + "2099.wav", 0, 0, HP), (MX + "2091.wav", -6, 0.0342, HP)], 0.1504, 0.25, 0.0, 0.10, 0),
+    "kick_2": ("hit", 22050, [(MX + "2112.wav", 0, 0, HP), (MX + "2082.wav", -6, 0.0644, HP)], 0.2167, 0.25, 0.0, 0.10, 0),
+    "kick_3": ("hit", 22050, [(MX + "2108.wav", 0, 0, HP), (MX + "2091.wav", -6, 0.0065, HP)], 0.1227, 0.25, 0.0, 0.10, 0),
+    "knee": ("soft", 22050, [(MX + "2096.wav", 0, 0, LP)], 0.1116, 0.2, 0.0, 0.07, 0),
+    "knee_2": ("soft", 22050, [(MX + "2090.wav", 0, 0, LP)], 0.1038, 0.2, 0.0, 0.07, 0),
+    "spike": ("hit", 22050, [(MX + "2082.wav", 0, 0, HP), (MX + "2108.wav", -6, 0.0334, HP)], 0.1523, 0.35, 0.0, 0.12, 0),
+    "block": ("hit", 22050, [(MX + "2091.wav", 0, 0, HP)], 0.1162, 0.3, 0.0, 0.10, 0),
+    "bounce": ("soft", 22050, [(MX + "2089.wav", 0, 0, HP)], 0.0084, 0.35, 0.0, 0.10, 0),
+    "bounce_2": ("soft", 22050, [(MX + "2076.wav", 0, 0, HP)], 0.0, 0.35, 0.0, 0.10, 0),
     "bounce_sand": ("soft", 22050, [(KI + "impactSoft_heavy_000.ogg", 0, 0), (FZ + "Fantozzi-SandL1.flac", -6, 0)], 0, 0.45, 0.0, 0.15, 0),
     # Into the net: a soft thud and the mesh's rustle.
     "net": ("soft", 22050, [(KI + "impactSoft_medium_001.ogg", 0, 0), ("kenney-rpg-audio/extracted/Audio/cloth1.ogg", -3, 0)], 0, 0.5, 0.0, 0.2, 0),
@@ -60,7 +67,6 @@ SOUNDS = {
     "applause_3": ("react", 32000, [("oga-applause/applause.wav", 0, 0)], 0.5, 4.0, 0.2, 1.5, 0),
     # Each outdoor venue's own sound, and the chatter of a mall or a market.
     "amb_beach": ("amb", 32000, [(JC + "Water Enviroments/AMB_Nature Pack Vol 1_Water Enviroments_Ocean Waves.mp3", 0, 0)], 4.0, 60.0, 0.0, 0.0, 2.5),
-    "amb_temple": ("amb", 32000, [(JC + "Forest Enviroments/AMB_Nature Pack Vol 1_Forest Enviroments_Rainforest Canopy.mp3", 0, 0)], 12.0, 60.0, 0.0, 0.0, 2.5),
     "amb_park": ("amb", 32000, [(JC + "Weather/AMB_Nature Pack Vol 1_Weather_Summer Evening.mp3", 0, 0)], 38.5, 36.0, 0.0, 0.0, 2.5),
     "amb_chatter": ("amb", 32000, [("oga-free-general-ambience-sounds/crowd_-_mall_ambience.mp3", 0, 0)], 3.0, 52.0, 0.0, 0.0, 2.5),
     # Footsteps: trainers on a court (a squeak in some), bare feet on sand.
@@ -76,9 +82,9 @@ SOUNDS = {
 }
 
 
-def decode(path: pathlib.Path, rate: int) -> np.ndarray:
-    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-ac", "1", "-ar", str(rate), "-f", "f32le", "-"],
-                         check=True, capture_output=True).stdout
+def decode(path: pathlib.Path, rate: int, af: str = "") -> np.ndarray:
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-ac", "1", "-ar", str(rate)] + (["-af", af] if af else [])
+                         + ["-f", "f32le", "-"], check=True, capture_output=True).stdout
     return np.frombuffer(raw, dtype=np.float32).astype(np.float64)
 
 
@@ -90,8 +96,8 @@ def loudest_50ms(x: np.ndarray, rate: int) -> float:
 def make(name: str, src: pathlib.Path) -> None:
     kind, rate, layers, start, length, fade_in, fade_out, xfade = SOUNDS[name]
     mix = None
-    for path, gain, offset in layers:
-        x = decode(src / path, rate) * 10 ** (gain / 20)
+    for path, gain, offset, *af in layers:   # (a 4th element: an ffmpeg filter for that layer)
+        x = decode(src / path, rate, af[0] if af else "") * 10 ** (gain / 20)
         x = np.concatenate([np.zeros(int(offset * rate)), x])
         if mix is None:
             mix = x

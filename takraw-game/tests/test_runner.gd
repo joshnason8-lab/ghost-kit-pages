@@ -241,12 +241,19 @@ func _crowd_facing() -> void:
 
 
 ## The spectators are whole people: seated ones' feet on the floor under their seats, standing ones' on the ground;
-## the sheet has both, from the front and from behind.
+## the sheet has both, from the front and from behind, and the cheering's frames (within 4096 px for older phones);
+## the flags in the crowd are the two teams'.
 func _crowd_people() -> void:
-	var size := Crowd.sheet(false).get_size()
-	check(size == Vector2(Crowd.FIG_W * Crowd.FIGS, Crowd.FIG_H * Crowd.ROWS), "the crowd sheet has its %d rows (%s)" % [Crowd.ROWS, size])
-	size = Crowd.sheet(true).get_size()
-	check(size == Vector2(Crowd.FIG_W_HI * Crowd.FIGS_HI, Crowd.FIG_H_HI * Crowd.ROWS), "the bigger crowd sheet has its %d figures (%s)" % [Crowd.FIGS_HI, size])
+	for hi in [false, true]:
+		var figs := Crowd.FIGS_HI if hi else Crowd.FIGS
+		var cell := Vector2(Crowd.FIG_W_HI, Crowd.FIG_H_HI) if hi else Vector2(Crowd.FIG_W, Crowd.FIG_H)
+		var size := Crowd.sheet(hi).get_size()
+		check(size == cell * Vector2(Crowd.cols(figs), Crowd.SHEET_ROWS) and size.x <= 4096 and size.y <= 4096,
+			"the %s crowd sheet: %d figures, their cheering (%s)" % ["bigger" if hi else "small", figs, size])
+		var last := Crowd.cheer_cell(figs / 2 - 1, Crowd.CHEER_FRAMES - 1, Crowd.VIEWS.size() - 1, figs)
+		check(Crowd.cell(last, figs).y < Crowd.SHEET_ROWS and Crowd.cell(Crowd.ROWS * figs, figs) == Vector2i(0, 8),
+			"the %s crowd sheet's cells fit it" % ["bigger" if hi else "small"])
+	check(Crowd.CHEERS.size() >= Crowd.FIGS_HI / 2, "a cheer for each person on the bigger sheet")
 	for v in ["beach", "national"]:
 		var a := Arena.new(v, false, [Color("ff8a1f")])
 		add_child(a)
@@ -265,6 +272,12 @@ func _crowd_people() -> void:
 			check(standing > 20, "beach: people stand on the sand (%d)" % standing)
 		else:
 			check(standing == 0, "national: everyone in the stands is seated (%d standing)" % standing)
+		a.crowd.show_teams("THA", "LAO")
+		var tex: Texture2D = Crowd._flag_material().get_shader_parameter("flags")
+		var img := tex.get_image() if tex else null
+		check(img != null and img.get_pixel(Crowd.FLAG_W / 2, Crowd.FLAG_H / 2).is_equal_approx(Flags.image("THA", Crowd.FLAG_W, Crowd.FLAG_H).get_pixel(Crowd.FLAG_W / 2, Crowd.FLAG_H / 2))
+			and img.get_pixel(Crowd.FLAG_W + 4, 4).is_equal_approx(Flags.image("LAO", Crowd.FLAG_W, Crowd.FLAG_H).get_pixel(4, 4)),
+			"%s: the crowd waves Thailand's and Laos' flags" % v)
 		a.queue_free()
 		await frames(1)
 
@@ -325,12 +338,12 @@ func _detail_by_level() -> void:
 	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
 		Game.settings.graphics = g
 		var low: bool = g == Game.GFX_LOW
-		var m := Scenery.surface("concrete_floor")
+		var m := Scenery.surface("clean_asphalt")
 		var tex: Texture2D = m.get_shader_parameter("albedo_tex")
 		check(tex.resource_path.ends_with("_1k.jpg" if low else "_2k.jpg") and tex.get_width() == (512 if low else 2048),
 			"graphics %d: the surfaces' %s (%d px)" % [g, tex.resource_path.get_file(), tex.get_width()])
 		var env := Environment.new()
-		Scenery.sky(env, "qwantani_noon_puresky")
+		Scenery.sky(env, "qwantani_sunset_puresky")
 		var pano: Texture2D = (env.sky.sky_material as ShaderMaterial).get_shader_parameter("panorama")
 		check(pano.get_width() == (2048 if low else 4096), "graphics %d: the sky %d px wide" % [g, pano.get_width()])
 		var mat := RealBody.material_for({"jersey": Color(0.1, 0.2, 0.3)})
@@ -386,6 +399,21 @@ func _play_as_and_officials() -> void:
 			m._officials.tick(1.0, Vector3(6, 2, 0), true)
 			var right: Vector3 = o.pose.head
 			check(absf(left.y - right.y) > 30.0, "the referee's head follows the ball (%.0f° to %.0f°)" % [left.y, right.y])
+			# Four officials: the referee sitting, the assistant and a line judge at each end standing. A ball driven
+			# at a line judge's knees: he steps out of its way, and back to his place after.
+			check(m.officials.size() == 4 and m._judges.size() == 2, "four officials, two line judges (%d, %d)" % [m.officials.size(), m._judges.size()])
+			var j: RealBody = m._judges[0]
+			var home := j.position
+			var bp := home + Vector3(-signf(home.x) * 6.0, 1.0, 0.0)
+			var moved := 0.0
+			for f in 30:
+				bp += Vector3(signf(home.x) * 9.0 / 30.0, 0, 0)
+				m._officials.tick(1.0 / 30.0, bp, true)
+				moved = maxf(moved, j.position.distance_to(home))
+			for f in 120:
+				m._officials.tick(1.0 / 30.0, Vector3(0, 2, 0), true)
+			check(moved > 0.8 and j.position.distance_to(home) < 0.1, "the line judge gets out of the ball's way (%.2f m) and back (%.2f m)" % [moved, j.position.distance_to(home)])
+			check((m._subs[0] as Array).size() > 0 and (m._subs[1] as Array).size() > 0, "substitutes on both benches")
 			var suited := 0
 			for b in m.officials:
 				var mat := (b as RealBody).mesh_instance.material_override as ShaderMaterial
@@ -420,7 +448,7 @@ func _mocap_moves() -> void:
 
 
 func _matches() -> void:
-	var cases := [["regu", 3, 15, "THA", "MAS", "dome"], ["quadrant", 1, 15, "JPN", "VIE", "beach"], ["doubles", 1, 15, "PHI", "LAO", "street"],
+	var cases := [["regu", 3, 15, "THA", "MAS", "national"], ["quadrant", 1, 15, "JPN", "VIE", "beach"], ["doubles", 1, 15, "PHI", "LAO", "park"],
 		["regu", 1, 21, "KLC", "SLA", "provincial"]]
 	for c in cases:
 		var m: Node = (load("res://game/match.gd") as Script).new()

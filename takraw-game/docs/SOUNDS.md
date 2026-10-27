@@ -16,7 +16,7 @@ Licences screen.
 | `crowd_loop` | the crowd's murmur, under every match, louder as a rally builds | all round |
 | `crowd_cheer` (3 takes), `applause` (3), `crowd_ooh`, `crowd_groan` | the crowd is the home side's: a cheer for a point after a long rally or a kill, applause after a short one; a groan when their side gives a point away (out, into the net, a fault); an "ooh" for a block and for a ball right on a line | all round |
 | `crowd_rhythm` | the home side a point from the set or the match: the crowd claps in time | all round |
-| `amb_beach`, `amb_temple`, `amb_park`, `amb_chatter` | each outdoor venue's own sound (the sea, birds, a summer evening), a mall's and a night market's chatter | all round, under the crowd |
+| `amb_beach`, `amb_park`, `amb_chatter` | each outdoor venue's own sound (the sea, a summer evening), a mall's chatter | all round, under the crowd |
 | `drums_loop` | the arenas' drums, louder in a long rally | all round |
 | `whistle` (3 takes), `whistle_long` (3), `whistle_gym`, `whistle_double`, `whistle_final` | the referee (`Match._whistle`): a short pip for a serve or a fault; a long blast for a set's first serve, the end of a rally and the end of a set (indoors the take recorded in a gym, with its echo); two pips when play stops for a review; short-short-long for the match won. None in the home screen's match | from the referee's chair |
 | `hup`, `grunt` | the players' efforts | all round |
@@ -30,11 +30,11 @@ all of them off, Settings > Music the music.
 
 | File | Source | Author | Licence | Made from |
 |---|---|---|---|---|
-| `kick.ogg`, `kick_2.ogg`, `kick_3.ogg` | [Wood and Metal Sound Effects: Volume 2](https://opengameart.org/content/wood-and-metal-sound-effects-volume-2) | Ogrebane | CC0 | `wood14`, `wood7`, `wood10`: a dry, hollow knock |
-| `spike.ogg` | the same; [Punch, slap, n' kick](https://opengameart.org/content/punch-slap-n-kick) | Ogrebane; CGEffex (submitted by congusbongus) | CC0; CC BY 3.0 | `wood1` with the slap `11.ogg` under it (-4 dB) |
-| `block.ogg` | [Impact Sounds](https://kenney.nl/assets/impact-sounds); Wood and Metal vol. 2 | Kenney; Ogrebane | CC0 | `impactPunch_heavy_000` with `wood1` under it (-8 dB) |
-| `knee.ogg`, `knee_2.ogg` | [Impact Sounds](https://kenney.nl/assets/impact-sounds) | Kenney | CC0 | `impactSoft_medium_000`, `_002` |
-| `bounce.ogg`, `bounce_2.ogg` | Impact Sounds | Kenney | CC0 | `impactWood_medium_000`, `_002` |
+| `kick.ogg`, `kick_2.ogg`, `kick_3.ogg` | Mixkit: "Soccer ball kick" (2099), "Hitting soccer ball" (2112), "Soccer ball quick kick" (2108) ([Soccer](https://mixkit.co/free-sound-effects/soccer/), [Kick](https://mixkit.co/free-sound-effects/kick/)); "Basketball ball hit" (2091, [Basketball](https://mixkit.co/free-sound-effects/basketball/)), "Sports ball hit" (2082, [Ball](https://mixkit.co/free-sound-effects/ball/)) | Mixkit (Envato) | [Mixkit Sound Effects Free License](https://mixkit.co/license/#sfxFree) | a soccer ball kicked, with a rubber ball hit by hand 6 dB under it for a light ball's "pok", the two lined up on their attacks: `2099` + `2091`, `2112` + `2082`, `2108` + `2091`; high-passed at 120 Hz |
+| `spike.ogg` | Mixkit: "Sports ball hit" (2082), "Soccer ball quick kick" (2108) | Mixkit (Envato) | Mixkit Sound Effects Free License | `2082`, a hard hit on a ball, with the kick `2108` 6 dB under it, lined up on their attacks; high-passed at 120 Hz |
+| `block.ogg` | Mixkit: "Basketball ball hit" (2091) | Mixkit (Envato) | Mixkit Sound Effects Free License | `2091`: a ball smacked (a slap, then a thump), high-passed at 120 Hz |
+| `knee.ogg`, `knee_2.ogg` | Mixkit: "Hitting the basketball ball" (2096), "Hand receiving a basketball" (2090) | Mixkit (Envato) | Mixkit Sound Effects Free License | `2096`, `2090`: a rubber ball hit by, and caught in, the hands, low-passed at 1.5 kHz (duller) |
+| `bounce.ogg`, `bounce_2.ogg` | Mixkit: "Ball bouncing to a stop" (2089), "Basketball ball bouncing in the floor" (2076) | Mixkit (Envato) | Mixkit Sound Effects Free License | the first and loudest bounce of each (the next comes after the cut), high-passed at 120 Hz |
 | `bounce_sand.ogg` | Impact Sounds; [Fantozzi's Footsteps](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone) | Kenney; Fantozzi (submitted by qubodup) | CC0 | `impactSoft_heavy_000` with `Fantozzi-SandL1` under it (-6 dB) |
 | `net.ogg` | Impact Sounds; [RPG Audio](https://kenney.nl/assets/rpg-audio) | Kenney | CC0 | `impactSoft_medium_001` and the cloth rustle `cloth1` (-3 dB) |
 | `crowd_loop.ogg` | [Free Crowd Cheering Sounds](https://opengameart.org/content/free-crowd-cheering-sounds) | Gregor Quendel | CC BY 4.0 | "10 - Ambience", 2 to 32 s, looped |
@@ -42,7 +42,7 @@ all of them off, Settings > Music the music.
 | `crowd_rhythm.ogg` | the same | Gregor Quendel | CC BY 4.0 | "08 - Rhythmic cheering", the first 7 s |
 | `applause.ogg`, `applause_2.ogg` | [Applause in a large hall or church](https://opengameart.org/content/applause-in-a-large-hall-or-church) | eXpl0it3r | CC0 | 4 to 8 s, 18 to 22 s |
 | `applause_3.ogg` | [Applause](https://opengameart.org/content/applause) | Blender Foundation (submitted by LeeZH) | CC BY 3.0 | 0.5 to 4.5 s |
-| `amb_beach.ogg`, `amb_temple.ogg`, `amb_park.ogg` | [Nature Ambient Pack Vol 1](https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1) | JC Sounds | CC BY 4.0 | "Ocean Waves" (4 to 64 s), "Rainforest Canopy" (12 to 72 s: before it, a loud call), "Summer Evening" (38.5 to 74.5 s: before it, a car passing), looped |
+| `amb_beach.ogg`, `amb_park.ogg` | [Nature Ambient Pack Vol 1](https://opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1) | JC Sounds | CC BY 4.0 | "Ocean Waves" (4 to 64 s), "Summer Evening" (38.5 to 74.5 s: before it, a car passing), looped |
 | `amb_chatter.ogg` | [Free General Ambience Sounds](https://opengameart.org/content/free-general-ambience-sounds) | Gregor Quendel | CC BY-SA 4.0 (this cut of it too) | "crowd - mall ambience", 3 to 55 s, looped |
 | `step_court.ogg`, `_2`, `_3` | [Footsteps on different surfaces](https://opengameart.org/content/footsteps-on-different-surfaces) | congusbongus, from recordings by swuing and ceberation (freesound.org) | CC BY 3.0 | `tile/0`, `3`, `6`: a trainer's step, some with a squeak |
 | `step_sand.ogg`, `_2`, `_3` | Fantozzi's Footsteps | Fantozzi | CC0 | `SandL1`, `SandR1`, `SandL2` |
@@ -68,6 +68,17 @@ above into one folder, under the pack's own file names (the paths are in the scr
   murmur -26, the venues' sounds -24, the music -18; nothing over -1 dBFS.
 - **Encoded** as Ogg Vorbis, mono: one-shots at 22 kHz (quality 3), the long ones at 32 kHz (quality 2).
 
+## The ball's sounds (0.12.0)
+
+The kicks were wooden knocks: bright (nearly all their energy above 800 Hz), ringing at 1.7 or 4 kHz for 80 ms after
+the hit. The ball's contacts and bounces are now real balls (Mixkit): the kicks' energy is low (a thump and a "pok"),
+soft at the attack and with no ring; the thigh and chest touches duller and softer; the spike the punchiest; the block
+a slap and a thump. They sit 3-4 dB quieter K-weighted than the knocks did at the same level, so the game plays the
+kicks 3 dB louder (`game/match.gd`). Mixkit's licence allows them in a game and asks no credit (the Licences screen
+gives one anyway); it doesn't allow a sound to be passed on by itself, and the cut files are in this repository next to
+the game's source, as the Pixabay whistles are. The nearest recordings to a takraw ball are a soccer ball and a
+basketball: lower and heavier than a light hollow ball.
+
 ## Size
 
 The sounds went from 0.29 MB to 1.83 MB in 0.8.0 (the four venue loops about 200 KB each, the music 660 KB), and to
@@ -79,10 +90,10 @@ two more cheers, two more applause takes and the crowd's clapping in time.
 Nothing under a free licence on the sites the game can use (Kenney, OpenGameArt) for these; the game keeps what it had:
 
 - (A referee's pea whistle: found by the owner on Pixabay in 0.9.1, above.)
-- **A real takraw ball** (a hollow woven or plastic ball) being kicked: the nearest are wooden knocks.
+- **A real takraw ball** (a hollow woven or plastic ball) being kicked: none on the sites reachable (Mixkit, OpenGameArt,
+  Kenney, archive.org). Since 0.12.0 real recordings stand in, a soccer ball kicked with a rubber ball hit by hand under
+  it (Mixkit); before, wooden knocks (the owner: "sounds like wood clacking").
 - **A ball into a net:** made from a soft thud and a cloth's rustle.
 - **A crowd's groan and "ooh":** only single voices. Kabaddi Raid's stay.
-- **A Southeast Asian night market** (Thai, Malay or Indonesian voices, motorbikes, food stalls): only a European mall's
-  chatter.
 - **A sports hall's echoing room tone**, and **longer trainer squeaks** on a sprung floor.
 - **Thai, Malay or Indonesian music** (piphat, gamelan, angklung), and players' calls in the region's languages.

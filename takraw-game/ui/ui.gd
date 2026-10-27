@@ -225,7 +225,7 @@ static func tile(title: String, desc: String, accent: Color, pose_name: String, 
 	v.offset_right = -18
 	v.offset_bottom = -14
 	if fig and not tall:
-		v.anchor_right = 0.53   # the words on the left, the figure on the right
+		v.anchor_right = 0.49   # the words on the left, clear of the figure on the right
 		v.offset_right = 0
 	v.add_theme_constant_override("separation", 2)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE

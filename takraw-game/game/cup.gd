@@ -5,14 +5,14 @@ extends RefCounted
 ## B1 against A2); both losing semi-finalists take bronze, as at the real world cup; then the final. The names are the
 ## game's own (the real events' names are theirs); the formats, venues and fields are the real events', and only a
 ## country in an event's field can enter it (no United States at the Asian Championship):
-##   world: the World Championship, open to every nation, the strongest eight in the big dome;
+##   world: the World Championship, open to every nation, the strongest eight in the mall's atrium;
 ##   royal: the Royal Cup, a yearly invitational played in a shopping mall's atrium, as Thailand's is;
 ##   asia: the Asian Championship, the Asian nations;
 ##   sea: the Southeast Asian Championship, the region's nations, as at the SEA Games.
 ## The event is the regu, or the team event: three regus a tie, the first to win two.
 
 const KINDS := {
-	"world": {"name": "CUP_WORLD", "venue": "dome", "field": ["THA", "MAS", "JPN", "VIE", "INA", "MYA", "KOR", "IND", "PHI", "LAO", "SGP", "IRN",
+	"world": {"name": "CUP_WORLD", "venue": "mall", "field": ["THA", "MAS", "JPN", "VIE", "INA", "MYA", "KOR", "IND", "PHI", "LAO", "SGP", "IRN",
 		"CAM", "BRU", "CHN", "NEP", "SRI", "PAK", "USA", "FRA", "GER", "AUS"]},
 	"royal": {"name": "CUP_ROYAL", "venue": "mall", "field": ["THA", "MAS", "VIE", "INA", "JPN", "KOR", "PHI", "LAO", "MYA", "IND", "SGP", "BRU"]},
 	"asia": {"name": "CUP_ASIA", "venue": "national", "field": ["THA", "MAS", "JPN", "VIE", "INA", "MYA", "KOR", "IND", "PHI", "LAO", "IRN", "CHN", "SGP", "NEP",

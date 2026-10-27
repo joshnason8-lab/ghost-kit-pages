@@ -3,6 +3,7 @@ extends Control
 ## and the moves fans know by name.
 
 var _tab := 0
+var _back := Callable()   # back to whatever opened it over itself (the help); else the home screen
 var _body: VBoxContainer
 
 const TABS := [
@@ -14,13 +15,14 @@ const TABS := [
 
 func setup(args: Dictionary) -> void:
 	_tab = int(args.get("tab", 0))
+	_back = args.get("back", Callable())
 
 
 func _ready() -> void:
 	UI.screen(self)
 	Game.settings.seen_howto = true
 	Game.save_settings()
-	var v := UI.page(self, tr("MENU_HOWTO"), func(): Game.goto_menu())
+	var v := UI.page(self, tr("MENU_HOWTO"), _back if _back.is_valid() else func(): Game.goto_menu())
 	var names := []
 	for t in TABS:
 		names.append(tr(t[0]))

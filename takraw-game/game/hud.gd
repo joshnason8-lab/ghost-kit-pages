@@ -104,14 +104,14 @@ func _build_scoreboard() -> void:
 		sb.set_corner_radius_all(10)
 		sb.border_color = Color(1, 1, 1, 0.1)
 		sb.set_border_width_all(1)
-		sb.content_margin_left = 10
-		sb.content_margin_right = 10
-		sb.content_margin_top = 3
-		sb.content_margin_bottom = 3
+		sb.content_margin_left = 9
+		sb.content_margin_right = 9
+		sb.content_margin_top = 1
+		sb.content_margin_bottom = 1
 		panel.add_theme_stylebox_override("panel", sb)
-		panel.custom_minimum_size = Vector2(178, 66)
+		panel.custom_minimum_size = Vector2(128, 48)   # snug round the name and the score: no space between them
 		var h := HBoxContainer.new()
-		h.add_theme_constant_override("separation", 8)
+		h.add_theme_constant_override("separation", 5)
 		panel.add_child(h)
 		var col := VBoxContainer.new()
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -119,21 +119,21 @@ func _build_scoreboard() -> void:
 		col.add_theme_constant_override("separation", 2)
 		var name_row := HBoxContainer.new()
 		name_row.add_theme_constant_override("separation", 6)
-		var crest := Crest.make("", 20)
+		var crest := Crest.make("", 18)
 		name_row.add_child(crest)
-		var nm := UI.label("", "HeaderLabel", 24)
+		var nm := UI.label("", "HeaderLabel", 21)
 		name_row.add_child(nm)
 		col.add_child(name_row)
 		# The sets each side has won (in a best-of-three match), in words: not dots, which read as time-outs.
 		var sets_row := HBoxContainer.new()
 		sets_row.add_theme_constant_override("separation", 4)
-		sets_row.add_child(UI.label("", "EyebrowLabel", 13, Color(1, 1, 1, 0.75)))
+		sets_row.add_child(UI.label("", "EyebrowLabel", 12, Color(1, 1, 1, 0.75)))
 		col.add_child(sets_row)
 		var pts := UI.label("0", "ScoreLabel", 0)
-		pts.add_theme_font_size_override("font_size", 44)
-		pts.custom_minimum_size = Vector2(46, 0)
+		pts.add_theme_font_size_override("font_size", 36)
+		pts.custom_minimum_size = Vector2(40, 0)
 		pts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var serve := Icon.make("ball", 16, Game.C_GOLD)
+		var serve := Icon.make("ball", 14, Game.C_GOLD)
 		serve.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		if side == 0:
 			h.add_child(col)
@@ -152,18 +152,18 @@ func _build_scoreboard() -> void:
 			var mid := PanelContainer.new()
 			var msb: StyleBoxFlat = sb.duplicate()
 			mid.add_theme_stylebox_override("panel", msb)
-			mid.custom_minimum_size = Vector2(108, 66)
+			mid.custom_minimum_size = Vector2(84, 48)
 			var mv := VBoxContainer.new()
 			mv.alignment = BoxContainer.ALIGNMENT_CENTER
 			mv.add_theme_constant_override("separation", 0)
 			mid.add_child(mv)
-			_mid_set = UI.label("", "EyebrowLabel", 13)
+			_mid_set = UI.label("", "EyebrowLabel", 12)
 			_mid_set.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			UI.shrink(_mid_set, 13, 0.7)
+			UI.shrink(_mid_set, 12, 0.7)
 			mv.add_child(_mid_set)
-			_mid_tag = UI.label("", "HeaderLabel", 21, Game.C_SAFFRON)
+			_mid_tag = UI.label("", "HeaderLabel", 18, Game.C_SAFFRON)
 			_mid_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			UI.shrink(_mid_tag, 21, 0.6)
+			UI.shrink(_mid_tag, 18, 0.6)
 			mv.add_child(_mid_tag)
 			bar.add_child(mid)
 
@@ -193,6 +193,7 @@ func set_score() -> void:
 	var mp: int = m.match_point_for()
 	var sp: int = m.set_point_for()
 	_mid_tag.text = tr("MATCH_POINT") if mp >= 0 else (tr("SET_POINT") if sp >= 0 else "")
+	_mid_tag.visible = _mid_tag.text != ""
 	UI.refit(_mid_tag)
 
 
