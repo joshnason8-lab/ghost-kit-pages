@@ -305,6 +305,8 @@ func _check_saves(level: String, when: String) -> void:
 # ---------------------------------------------------------------- AI v AI
 
 func _matches(n: int, level: String) -> int:
+	if Game.main == null:
+		Game.main = self   # no random inputs before: nothing has made the game's root yet
 	Game.goto_menu()
 	await _frames(5)
 	# The home screen's match behind it would play alongside: leave it for a screen with none.
