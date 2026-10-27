@@ -34,6 +34,7 @@ var _pause: Control
 var _follow: Control
 var _pause_btn: Button
 var _cam_btn: Button
+var _layout_panel: Control   # Move buttons, opened from the pause menu
 
 
 func _init(p_match) -> void:
@@ -472,6 +473,11 @@ func show_pause(on: bool) -> void:
 	if _pause and is_instance_valid(_pause):
 		_pause.queue_free()
 		_pause = null
+	if _layout_panel and is_instance_valid(_layout_panel):
+		# Resumed with Move buttons open: it closes with the pause menu (what was moved is kept as it is).
+		controls.editing = false
+		_layout_panel.queue_free()
+		_layout_panel = null
 	controls.enabled = not on
 	if not on:
 		return
@@ -508,6 +514,11 @@ func _move_buttons() -> void:
 	controls.editing = true
 	var panel := ButtonLayoutPanel.new(controls, func():
 		controls.editing = false
-		controls.enabled = false
-		_pause.visible = true)
+		# Back to the pause menu, if the match is still paused (it may have been resumed meanwhile, by Back).
+		if _pause and is_instance_valid(_pause):
+			controls.enabled = false
+			_pause.visible = true
+		else:
+			controls.enabled = not m.paused)
+	_layout_panel = panel
 	root.add_child(panel)

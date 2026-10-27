@@ -125,6 +125,13 @@ jobs:
           java -jar "$RUNNER_TEMP/bundletool.jar" dump manifest --bundle "$AAB" > "$RUNNER_TEMP/manifest.xml"
           grep -o 'android:targetSdkVersion="[0-9]*"\|android:minSdkVersion="[0-9]*"\|android:versionCode="[0-9]*"\|android:versionName="[^"]*"\|android:isGame="[a-z]*"\|android:appCategory="[a-z]*"\|uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | sort -u
           grep -q 'android:isGame="true"' "$RUNNER_TEMP/manifest.xml"
+          # Play takes new apps only at API 36 (Android 16) or higher, since 31 August 2026.
+          TARGET=$(grep -o 'android:targetSdkVersion="[0-9]*"' "$RUNNER_TEMP/manifest.xml" | grep -o '[0-9]*' | head -1)
+          test "$TARGET" -ge 36 || { echo "::error::targetSdkVersion $TARGET is below 36"; exit 1; }
+          # Vibration is the one permission the game asks for: any other fails the bundle.
+          EXTRA=$(grep -o 'uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | grep -v '"android.permission.VIBRATE"' || true)
+          test -z "$EXTRA" || { echo "::error::unexpected permissions: $EXTRA"; exit 1; }
+          ls -l "$AAB" | awk '{printf "bundle size: %.1f MB (Play: base module up to 200 MB)\n", $5 / 1048576}'
           ! grep -q 'android.permission.INTERNET' "$RUNNER_TEMP/manifest.xml"
           python3 tools/check_pages.py "$AAB"
 

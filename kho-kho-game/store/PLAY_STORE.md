@@ -12,14 +12,12 @@ stand in October 2026.
   - 64-bit, with 16 KB memory pages (checked on every bundle);
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - one permission (vibration) and no internet access.
-- **The privacy policy, help page and a page for the game**, in `khamba-dash/` at the top of this repository,
-  served by GitHub Pages once this branch is merged into `main`:
-  https://joshnason8-lab.github.io/ghost-kit-pages/khamba-dash/privacy.html and `/support.html`. The game's
-  Settings > About opens them, as Google asks, and shows the licences there.
+- **The privacy policy, help and licences in the game** (Settings > About), offline. The public privacy policy URL
+  Play asks for is the owner's own site (TBD); `khamba-dash/privacy.html` here has the same text.
 - **The store listing**: the text in English (US and India) and in the eleven Play listing languages of the kho kho
   countries: Hindi, Marathi, Kannada, Telugu, Tamil, Malayalam, Bengali, Gujarati, Punjabi, Nepali and Sinhala
   (`store/listing/`); the 512 × 512 icon, the 1024 × 500 feature graphic and seven 1920 × 1080 screenshots
-  (`store/graphics/`). Odia and Assamese are in the game but have no Play listing language: their players see the
+  (`store/graphics/`, drafts: "Graphics" below). Odia and Assamese are in the game but have no Play listing language: their players see the
   Indian English listing, which names the sport in both.
 - **The answers to every App content form** (step 4).
 
@@ -40,6 +38,11 @@ test with at least **12 testers** who stay opted in for **14 days in a row** (st
 
 Google signs the game for phones with its own key (Play App Signing). You sign each bundle you upload with your own
 **upload key**, so Google knows it came from you.
+
+This is a separate key from the beta's (`BETA_KEYSTORE_B64`, which signs the APKs on the beta release page). Keep the
+beta key as it is: it is what lets each beta install over the last. The Play build never uses it, and the beta never
+uses the upload key. (A phone with the beta installed cannot update it from Play, and the other way round: the two are
+signed differently. Uninstall the beta first.)
 
 1. Make the key, on a computer with Java (Android Studio includes it). In a terminal, run:
 
@@ -81,7 +84,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/khamba-dash/privacy.html` |
+| **Privacy policy** | TBD: the owner's privacy site (the policy is also in the game). Every answer, with reasons: `store/PLAY_CONSOLE_ANSWERS.md` |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |
@@ -130,6 +133,21 @@ and shows no ads, but the 13+ groups are the simpler start.
      joshnason8@gmail.com; change it there too if you use another).
    - **Website**: https://joshnason8-lab.github.io/ghost-kit-pages/khamba-dash/
 
+## Graphics: making them again
+
+The pictures in `store/graphics/` are drafts from the build of the day they were made. Just before submitting, make
+them again from the build you upload (about 20 minutes; Linux or WSL with Godot 4.7, `xvfb-run` and Pillow):
+
+```
+tools/store/make_kit.sh build/kit
+```
+
+- It rewrites `store/graphics/`: `icon-512.png` (Play's icon), `icon-1024.png`, `feature-1024x500.png` and the seven
+  screenshots in `screenshots/`.
+- In `build/kit/` it leaves every screen of the game (`menus/`, 1920 × 1080) and each ground in play (`action/`: a
+  kho, a dive, a pole turn and an out), to choose other screenshots from.
+- It runs with an empty user folder, so the pictures show a new player's settings, in English, on High graphics.
+
 ## 6. The closed test (required for new personal accounts)
 
 1. Go to **Test and release > Testing > Closed testing**, open the **Closed testing (Alpha)** track, and choose
@@ -156,8 +174,8 @@ and shows no ads, but the 13+ groups are the simpler start.
 
 ## Notes
 
-- **The beta APK on GitHub** is signed with a public debug key, not Play's, so a phone with the beta has to uninstall
-  it (and lose its saves) before installing the game from Play.
+- **The beta APK on GitHub** is signed with the beta key (`BETA_KEYSTORE_B64`), not Play's, so a phone with the beta
+  has to uninstall it (and lose its saves) before installing the game from Play.
 - **Android's developer verification** covers apps installed from outside the stores too: in Brazil, Indonesia,
   Singapore and Thailand since September 2026, and worldwide from 2027 (India included). Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
