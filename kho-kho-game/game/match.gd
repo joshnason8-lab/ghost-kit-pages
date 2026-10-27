@@ -52,6 +52,7 @@ var _cheer_t := 99.0          # seconds since an out, for the crowd
 var _tension := 0.0            # 0-1: how close the crowd is to its feet (_crowd_roar)
 var _roar_t := 0.0
 var _was_diving := false
+var _reach_ready := 0.0       # a chaser's reach for a touch: one at a time, not one every frame he is close
 var cam_locked := false       # the camera left where it is (pictures for the store and the docs)
 var khos_since := 0
 var powerplay_used := false
@@ -967,6 +968,8 @@ func _give_kho(i: int) -> void:
 	active.want = Vector3.ZERO
 	active.face_to = squares[i].position
 	active.do("kho", 0.3)
+	active.body.grip_arms = 1
+	active.body.grip = squares[i].position + Vector3(0, 0.75, 0)
 	_pending_kho = {"i": i, "t": 0.16, "giver": active}
 	_kho_armed = {}
 	_last_kho_t = t_match
@@ -1148,12 +1151,14 @@ func _plan_chase() -> Dictionary:
 
 
 ## The pole turn, as the owner's video of real chasers shows it (docs/AI.md, "The pole turn"): running at the pole,
-## the chaser takes hold of it with both hands at his chest, swings round it close (about half a metre out) in under
-## half a second, and lets go running down the other side, faster than he came: the pole slings him on. He comes out
+## the chaser takes hold of it with both hands at his chest, swings round it close (about half a metre out) in about
+## half a second, and lets go running down the other side, still moving: the pole slings him on, where turning
+## without it he would have to stop. He comes out
 ## on the side the play needs: the AI's plan, your stick, or the side he is on.
 const SWING_R := 0.55
-const SWING_BOOST := 1.05     # his speed out, against his speed in
-const SWING_MIN_OUT := 4.6    # m/s at the least
+const SWING_OUT := 0.75       # his speed out, against his speed in: not stopped, as a turn without the pole would
+const SWING_MIN_OUT := 4.2    # m/s; he is then off at his own acceleration
+const SWING_MAX_OUT := 5.2
 
 
 func _pole_turn() -> void:
@@ -1180,7 +1185,7 @@ func _pole_turn() -> void:
 	sweep = minf(sweep, PI * 1.25)
 	var a1 := a0 + sweep * turn
 	var v_in := maxf(Vector2(active.vel.x, active.vel.z).length(), 3.0)
-	var v_out := minf(maxf(v_in * SWING_BOOST, SWING_MIN_OUT), active.top * 1.08)
+	var v_out := clampf(v_in * SWING_OUT, SWING_MIN_OUT, SWING_MAX_OUT)
 	# He takes hold from where he is and is drawn in to the tight circle as he swings.
 	active.pole_swing(pole, rel.length(), SWING_R, a0, a1, v_in, v_out)
 	stats[active.data.id].pole_turns = int(stats[active.data.id].get("pole_turns", 0)) + 1
@@ -1273,8 +1278,11 @@ func _touches() -> void:
 		var gap := Vector2(d.position.x - hand.x, d.position.z - hand.z).length()
 		if gap < hand_r and KhoRules.touch_counts(f, chase, active.position, d.position):
 			# The attempt is seen: his arm goes out for the touch, whether it lands or slips off.
-			if active.act == "":
-				active.do("reach", 0.28)
+			if active.act == "" and t_match > _reach_ready:
+				active.do("reach", 0.3)
+				active.body.grip_arms = 1
+				active.body.grip = d.position + Vector3(0, 1.0, 0)
+				_reach_ready = t_match + 0.9
 			if _swerves(d, kind):
 				continue
 			_out(d, kind, active)
@@ -1285,7 +1293,7 @@ func _touches() -> void:
 ## against the chaser's reach (and a dive is harder to escape). Calibrated so that equal sides put out about
 ## 1.3-2 defenders a minute, as real matches do (docs/AI.md). Once a defender has swerved a hand, it has missed him.
 const SWERVE_TOUCH := 0.78
-const SWERVE_DIVE := 0.42
+const SWERVE_DIVE := 0.5
 
 
 func _swerves(d: Athlete, kind: String) -> bool:

@@ -99,14 +99,19 @@ near the pole (about two seconds), with only the "turn" clip played.
 
 Now (`match.gd` `_pole_turn`, `athlete.gd` `pole_swing`): when his direction turns about at a pole and he is within
 1.6 m of it with at least 70 degrees still to turn, he takes hold where he is and swings round the far side of the
-pole on to the side the play needs (the AI's plan, your stick, or the side he is on). He is drawn in to a 0.55 m
-circle over a quarter of a second, and his speed rises evenly from his speed in to 5% more (at least 4.6 m/s), so it
-never jumps. His legs run, his hands hold the pole (`ModelBody.Grip` turns both arms to it) and he leans out. In AI
-matches it happens about 3 times a minute.
+pole on to the side the play needs (the AI's plan, your stick, or the side he is on), drawn in to a 0.55 m circle
+over a quarter of a second. His legs run, his hands hold the pole (`ModelBody.Grip` turns both arms to it) and he
+leans out. In AI matches it happens about 3 times a minute.
 
-It made chasers much better (classic outs 1.5 to 2.0 a minute, because turning at the pole no longer cost two
-seconds), so the defenders' last-moment swerve was raised to match (`SWERVE_TOUCH` 0.72 to 0.78). Ten matches each:
-classic 1.51 outs a minute (real 1.3-1.6), fast 1.82 (real about 1.6; it was 1.7-2.1 before this round).
+Its pace (0.10.1, after the owner found 0.10's far too fast): he comes in at his speed, slows as he takes the pole's
+weight, swings round at 3.6 m/s on average (half a turn in about half a second, as in the video) and lets go at 75%
+of his speed in, between 4.2 and 5.2 m/s: still moving, where turning without the pole he would have to stop. His
+speed follows one smooth curve through it, so it never jumps. (0.10 kept him at full speed, up to 7 m/s, round the
+half-metre circle: a spin.)
+
+With it, and the defenders' swerve set to match (`SWERVE_TOUCH` 0.78, `SWERVE_DIVE` 0.5: the slower turn keeps a
+chaser by the pole longer, and pole dives went up), ten matches each: classic 1.30 outs a minute (real 1.3-1.6),
+fast 1.75 (real about 1.6).
 
 ## Tags that slip, and difficulty (0.10)
 
