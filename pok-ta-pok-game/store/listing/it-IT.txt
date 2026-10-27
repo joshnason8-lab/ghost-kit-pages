@@ -1,0 +1,54 @@
+# Scheda Google Play, italiano (Italia). Incolla ogni parte in Play Console > Grow users > Store presence
+# > Main store listing > Manage translations. Limiti: nome dell'app 30 caratteri, descrizione breve 80, descrizione
+# completa 4000.
+
+== App name ==
+Pok Ta Pok Rivals
+
+== Short description ==
+Ulama, il gioco di palla d'anca del Messico: gomma pesante e conta fino a otto.
+
+== Full description ==
+Pok Ta Pok Rivals è il gioco della palla mesoamericano sul tuo telefono, giocato come si gioca ancora oggi. Colpisci con l'anca una pesante palla di gomma oltre l'analco (la linea centrale) di un lungo campo di terra, leggi il suo rimbalzo basso, tuffati quando scivola rasoterra e spingila oltre il fondo della città avversaria.
+
+IL GIOCO VIVO: ULAMA DE CADERA (ULAMA D'ANCA)
+• Il gioco che si pratica ancora nei villaggi del sud del Sinaloa, in Messico: quattro o cinque per parte sul taste (il campo), una striscia di terra battuta lunga 60 metri e larga 4.
+• Solo l'anca. Se la palla tocca qualsiasi altra cosa, la raya (il punto) va all'altra parte.
+• Si vince una raya quando la palla muore nell'altra metà, supera la loro linea di fondo o la mandano fuori.
+• Il vero conteggio: una parte lo tiene, le rayas salgono e scendono, e in urria un intero conteggio può essere azzerato. Vince chi arriva prima a otto.
+• Il male è la battuta: fatta rotolare sulla terra (abajo) o lanciata in alto (arriba).
+• Due giudici, i veedores, assegnano ogni raya dall'analco.
+
+IL CAMPO CLASSICO (RICOSTRUITO)
+Un campo di pietra a forma di I con muri inclinati, ricostruito dalle antiche cronache: la palla rimbalza sulla pietra, e un anello di pietra posto in alto su ciascun muro fa vincere la partita all'istante. Non succede quasi mai.
+
+MODALITÀ DI GIOCO
+• Gioca una partita: scegli un campo e due città.
+• Torneo delle città: otto città, eliminazione diretta, fino alla finale.
+• Guarda una partita tra due città giocata dal computer.
+
+QUATTRO CAMPI
+Un campo di villaggio nel Sinaloa al tramonto, un campo di festa di giorno, un campo di pietra nella foresta dello Yucatán sotto una piramide e lo stesso campo alla luce delle torce.
+
+SEDICI CITTÀ
+Da Sinaloa, Yucatán, Quintana Roo, Chiapas, Guatemala, Belize e Honduras, ognuna con il suo soprannome e i suoi colori.
+
+IN CAMPO
+• Giocatori e pubblico realistici, con una corsa e una battuta prese dalla motion capture.
+• Sui campi di pietra la battuta scende a rimbalzare davanti all'altra squadra, che la gioca di rimbalzo, come si gioca oggi la pelota maya nello Yucatán.
+• Prima di quelle partite, un anziano passa tra i giocatori con copal fumante mentre suona una conchiglia, come iniziano oggi quei giochi. Un tocco lo salta.
+• Una palla nell'anello ha il suo replay.
+• Gioca con tutta la squadra, o sii un solo giocatore per tutta la partita.
+
+PENSATO PER IL TUO TELEFONO
+• Joystick mobile e pulsanti grandi, layout per mancini, dimensione dei pulsanti regolabile e pulsanti che puoi spostare.
+• Funziona sui telefoni di tutti i giorni: grafica che si regola da sola e risparmio batteria.
+• In spagnolo, inglese, portoghese, francese, tedesco e italiano.
+• Come si gioca spiega le regole, il conteggio e la storia del gioco e delle sue parole.
+
+Niente pubblicità, niente acquisti in-app, nessun account, nessun dato raccolto.
+
+Pok Ta Pok Rivals è un gioco indipendente, non collegato né approvato da alcun ente sportivo, federazione, torneo o club. Le città compaiono solo con il loro nome geografico; tutti i giocatori sono inventati.
+
+== Release notes (first Google Play release) ==
+La prima versione su Google Play. L'ulama de cadera del Sinaloa e i campi di pietra dello Yucatán: quattro campi, sedici paesi e un torneo dei paesi, in sei lingue. Giocatori realistici, la battuta di rimbalzo sui campi di pietra, l'offerta di copal prima di quelle partite e il replay di una palla nell'anello. Niente pubblicità, niente acquisti, nessun dato raccolto.

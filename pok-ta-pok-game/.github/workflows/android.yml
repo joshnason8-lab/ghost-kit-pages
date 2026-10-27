@@ -1,0 +1,219 @@
+name: Pok Ta Pok Rivals · Android build
+
+# Builds the Godot project in pok-ta-pok-game/ into the beta APKs you can sideload (64-bit, and 32-bit for older
+# phones), after running the headless test suite: the rules, every screen in six languages, text fit at four screen
+# shapes, scrolling, the town tournament, the crowd facing the court, AI matches and the movement audit.
+
+on:
+  push:
+    paths:
+      - "**"
+  # No pull_request trigger: the push run reports its checks on the PR's head commit already, and a second run
+  # doubled every failure email (the owner's request, round two).
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: .
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write   # to publish the beta release (below)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Compile check
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: godot --headless --path . res://tests/compile_check.tscn
+
+      - name: Tests (the rules, screens, scrolling, the tournament, the crowd, AI matches, the movement audit)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          # A script error does not stop Godot or fail a check, so the log is read for them too.
+          set -o pipefail
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn 2>&1 | tee test_runner.log
+          if grep -q "SCRIPT ERROR" test_runner.log; then grep -A4 "SCRIPT ERROR" test_runner.log; exit 1; fi
+
+      - name: Text fit (every screen, six languages, four screen shapes)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- fit.jsonl 2>&1 | tee fit.log
+          if grep -q "SCRIPT ERROR" fit.log; then grep -A4 "SCRIPT ERROR" fit.log; exit 1; fi
+
+      - name: AI matches (how they go)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 2 4 ulama 2>&1 | tee sim.log
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 1 4 classic 2>&1 | tee -a sim.log
+          if grep -q "SCRIPT ERROR" sim.log; then grep -A4 "SCRIPT ERROR" sim.log; exit 1; fi
+
+      - name: Controls (a thumb on the buttons plays and wins rayas; hands off, nothing is played for you)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- play 3 2>&1 | tee bot.log
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/user_bot.tscn -- idle 3 2>&1 | tee -a bot.log
+          if grep -q "SCRIPT ERROR" bot.log; then grep -A4 "SCRIPT ERROR" bot.log; exit 1; fi
+
+      - name: Touch input (scrolling from anywhere on a page, taps)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
+
+      # The beta key: the owner's keystore (secret BETA_KEYSTORE_B64, PKCS12, alias androiddebugkey, passwords
+      # "android"), the same for every build, so each beta installs over the last. Without it, a warning.
+      - name: Configure Android export
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
+        run: |
+          KEYSTORE=$HOME/debug.keystore
+          if [ -n "$BETA_KEYSTORE_B64" ]; then
+            echo "$BETA_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "BETA_KEY=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::BETA_KEYSTORE_B64 is not set: this build is signed with another key, and it will not install as an update over builds signed with the beta key."
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+            echo "BETA_KEY=0" >> "$GITHUB_ENV"
+          fi
+          SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
+          mkdir -p ~/.config/godot
+          # Let the editor create its settings file, then point it at the runner's SDK and JDK.
+          godot --headless --editor --quit --path ${PROJECT_DIR} || true
+          if [ ! -f "$SETTINGS" ]; then
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
+          fi
+          sed -i '/export\/android\//d' "$SETTINGS"
+          {
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK_ROOT\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$KEYSTORE\""
+            echo "export/android/debug_keystore_user = \"androiddebugkey\""
+            echo "export/android/debug_keystore_pass = \"android\""
+          } >> "$SETTINGS"
+          grep android "$SETTINGS"
+
+      - name: Export APKs
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p build
+          cp export_presets.cfg export_presets.keep
+          # 64-bit ARM (nearly every phone sold since 2019), then 32-bit ARM for the older and Android Go phones
+          # (some 2-3 GB Galaxy A0x run 32-bit Android). Play serves each phone its own from the one bundle.
+          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          godot --headless --path . --export-release "Android" build/unsigned.apk
+          cp export_presets.keep export_presets.cfg
+          sed -i 's/architectures\/arm64-v8a=true/architectures\/arm64-v8a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          godot --headless --path . --export-release "Android" build/unsigned-armv7.apk
+          mv export_presets.keep export_presets.cfg
+          python3 tools/check_pages.py build/unsigned.apk
+          ls -la build
+
+      # Both APKs signed with the beta key (above) and checked: the certificate's SHA-256 is logged, and with the beta
+      # key it must be the owner's, or the job fails. Without the secret, uber-apk-signer's built-in debug key.
+      - name: Sign APKs
+        run: |
+          EXPECTED="6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3"
+          curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
+          B=${PROJECT_DIR}/build
+          if [ "$BETA_KEY" = "1" ]; then
+            java -jar ~/uber-apk-signer.jar --apks $B/unsigned.apk $B/unsigned-armv7.apk --out $B/signed \
+              --ks "$HOME/debug.keystore" --ksAlias androiddebugkey --ksPass android --ksKeyPass android
+          else
+            java -jar ~/uber-apk-signer.jar --apks $B/unsigned.apk $B/unsigned-armv7.apk --out $B/signed
+          fi
+          mv $B/signed/unsigned-aligned-*.apk $B/pok-ta-pok-rivals-${VERSION}.apk
+          mv $B/signed/unsigned-armv7-aligned-*.apk $B/pok-ta-pok-rivals-${VERSION}-32bit.apk
+          APKSIGNER=$(ls -d $ANDROID_SDK_ROOT/build-tools/*/ | sort -V | tail -1)apksigner
+          for apk in $B/pok-ta-pok-rivals-${VERSION}.apk $B/pok-ta-pok-rivals-${VERSION}-32bit.apk; do
+            SHA=$("$APKSIGNER" verify --print-certs "$apk" | sed -n 's/.*certificate SHA-256 digest: //p' | head -1 | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
+            echo "Signing certificate SHA-256 of $(basename $apk): $SHA"
+            if [ "$BETA_KEY" = "1" ] && [ "$SHA" != "$EXPECTED" ]; then
+              echo "::error::$(basename $apk) is not signed with the beta key (got $SHA)"
+              exit 1
+            fi
+          done
+          ls -la $B
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pok-ta-pok-rivals-${{ env.VERSION }}-apk
+          path: |
+            ${{ env.PROJECT_DIR }}/build/pok-ta-pok-rivals-${{ env.VERSION }}.apk
+            ${{ env.PROJECT_DIR }}/build/pok-ta-pok-rivals-${{ env.VERSION }}-32bit.apk
+          if-no-files-found: error
+
+      # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
+      # "pok-ta-pok-rivals-beta", always the latest build of this branch, made afresh on every push that passes the
+      # tests.
+      - name: Publish the beta release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=pok-ta-pok-rivals-beta
+          APK=${PROJECT_DIR}/build/pok-ta-pok-rivals-${VERSION}.apk
+          APK32=${PROJECT_DIR}/build/pok-ta-pok-rivals-${VERSION}-32bit.apk
+          cat > notes.md <<EOF
+          The latest beta of **Pok Ta Pok Rivals** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+
+          **Android**: tap \`pok-ta-pok-rivals-${VERSION}.apk\` under Assets below (an older or Android Go phone that
+          says it cannot install it: \`pok-ta-pok-rivals-${VERSION}-32bit.apk\`). When it has downloaded, open it; if
+          Android asks, allow your browser or Files to install unknown apps. It installs over any earlier Pok Ta Pok Rivals
+          beta and keeps your saves.
+
+          This release is replaced by every new beta build: this page always has the newest one.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
+            --title "Pok Ta Pok Rivals ${VERSION} (latest beta)" --notes-file notes.md
+          gh release view "$TAG"
