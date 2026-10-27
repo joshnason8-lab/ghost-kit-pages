@@ -276,4 +276,7 @@ dated 27 October 2026.
   images.
 - **The home page shows a list of posts**: go to **Settings > Reading** and pick **A static page**, with Home as the
   homepage.
+- **The import says "Failed to import Media"**: the server couldn't download the pictures from GitHub. The pages still
+  show them, loaded from GitHub. To keep the pictures on your own site, use the Site setup route (2a) on a fresh
+  install instead.
 - **Anything else**: run **Appearance > Site setup** again. It's safe.
