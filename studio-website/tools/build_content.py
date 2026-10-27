@@ -264,7 +264,7 @@ def page_games(games):
         beta_section(games), policies, play_band()])
 
 
-def page_game(g):
+def page_game(g, kits=None):
     s = g["slug"]
     pills = [g["card_players"], langs_label(g), "Offline", "No ads"] + (["HD pack"] if g["hd"] else [])
     actions = [("Join the beta", g["beta_url"], None)]
@@ -321,6 +321,8 @@ def page_game(g):
         '<a href="/licences/">Licences</a>',
         '<a href="/press-kit/#%s">Press kit</a>' % s,
     ]
+    if (kits or {}).get(g["media_tag"]):
+        links.append('<a href="%s">Media kit (zip)</a>' % kits[g["media_tag"]])
     footer = group([
         paragraph(" · ".join(links), cls="gk-game__links"),
     ] + ([paragraph(esc(g["disclaimer"]), cls="gk-small gk-muted")] if g["disclaimer"] else []),
@@ -582,7 +584,7 @@ def build():
         "All seven games: Kabaddi Raid, Hurling Heroes, Sepak Takraw Unleashed, Netball Unleashed, Kho Kho Rush, "
         "Floorball Unleashed and Pok Ta Pok Rivals. Free betas on Android.", template="page-wide", order=1)
     for i, g in enumerate(games):
-        add("games/" + g["slug"], g["name"], page_game(g), g["short_description"] + " Free beta on Android, no ads.",
+        add("games/" + g["slug"], g["name"], page_game(g, kits), g["short_description"] + " Free beta on Android, no ads.",
             template="page-wide", og=g["slug"], order=i)
         content, p = page_privacy(g)
         add("games/%s/privacy" % g["slug"], "%s privacy policy" % g["name"], content,

@@ -24,6 +24,7 @@ SPORTS = [("kabaddi", "kabaddi-raid"), ("hurling", "hurling-heroes"), ("sepak-ta
           ("netball", "netball-unleashed"), ("kho-kho", "kho-kho-rush"), ("floorball", "floorball-unleashed"),
           ("ulama", "pok-ta-pok-rivals")]
 SPORT_OF_GAME = {g: s for s, g in SPORTS}
+TITLES = {"ulama": "Ulama: the Mesoamerican ballgame"}
 
 
 def load(slug):
@@ -35,6 +36,7 @@ def load(slug):
     meta = json.loads(m.group(1))
     meta["body"] = m.group(2)
     meta["slug"] = slug
+    meta.setdefault("title", TITLES.get(slug))
     return meta
 
 

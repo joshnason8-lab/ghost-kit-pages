@@ -23,6 +23,7 @@ def _svg(slug, w, h, title, desc, body, pad=40):
 
 def _t(x, y, s, size=26, fill=LABEL, anchor="middle", weight=600, rotate=None):
     rot = ' transform="rotate(%g %g %g)"' % (rotate, x, y) if rotate is not None else ""
+    size *= 1.2  # read well on a phone
     return ('<text x="%g" y="%g" font-size="%g" fill="%s" text-anchor="%s" font-weight="%d" '
             'dominant-baseline="middle"%s>%s</text>' % (x, y, size, fill, anchor, weight, rot, s))
 

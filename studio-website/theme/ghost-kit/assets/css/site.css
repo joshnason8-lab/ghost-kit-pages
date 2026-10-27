@@ -98,7 +98,7 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 .gk-main.gk-prose { padding-top: 24px; }
 .gk-page-title { font-size: clamp(34px, 5vw, 52px) !important; margin-top: 8px; }
 .gk-prose h2 { font-size: clamp(24px, 3vw, 30px); margin-top: 1.6em; }
-.gk-prose h3 { margin-top: 1.4em; }
+.gk-prose h3 { margin-top: 1.4em; font-size: 20px !important; }
 .gk-prose :where(p, li) { color: var(--gk-soft); }
 .gk-prose :where(p, li) strong { color: var(--gk-ink); }
 .gk-prose ul, .gk-prose ol { padding-left: 1.3em; }
@@ -312,7 +312,8 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 .gk-prose .wp-element-caption, .gk-diagram figcaption, .gk-video figcaption { color: var(--gk-mute); font-size: 13px; line-height: 1.5; margin-top: 8px; }
 .wp-element-caption a { color: var(--gk-soft); }
 .gk-diagram { margin: 28px 0; background: var(--gk-panel); border: 1px solid var(--gk-line); border-radius: 16px; padding: 14px; }
-.gk-diagram__svg { display: block; width: 100%; height: auto; }
+.gk-diagram { overflow-x: auto; }
+.gk-diagram__svg { display: block; width: 100%; min-width: 520px; height: auto; }
 .gk-diagram figcaption { margin-top: 10px; }
 .gk-video { margin: 28px 0; }
 .gk-video__frame { position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--gk-line); }
