@@ -7,7 +7,11 @@ const CREDITS := """[b]Kabaddi Raid[/b]
 Made by Josh Nason.
 Players, referees and the crowd modelled with Meshy; movement from Mixamo (Adobe), the CMU Graphics Lab Motion Capture Database and match footage.
 Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
-Skies, ground surfaces, the plastic chairs, folding stools and broadleaf trees: Poly Haven (polyhaven.com), CC0. Rain trees, coconut palms, dry grass, the scorers' table, the apartment blocks, the village temple and the Jagannath temple's tower modelled with Meshy for the game.
+Rain trees, coconut palms, dry grass, the scorers' table, the apartment blocks, the village temple and the Jagannath temple's tower modelled with Meshy for the game. The sea's ripples were made for the game.
+From Poly Haven (polyhaven.com), all CC0:
+Skies: Kloppenheim 07, Qwantani Dusk 2 and Qwantani Sunset (Pure Sky) by Greg Zaal and Jarod Guest; Overcast Soil (Pure Sky) by Jarod Guest and Sergej Majboroda.
+Ground and walls: Brown Mud, Brown Mud Dry, Coast Sand 01, Red Dirt Mud 01 and Thatch Roof Angled by Rob Tuytel (the thatch with Dimitrios Savva); Damp Beach Sand by Dimitrios Savva; Clay Plaster and Clay Roof Tiles by Amal Kumar; Concrete Floor by eye-candy.xyz; Grass Ground by Charlotte Baglioni.
+Models: Plastic Monobloc Chair 01 by Kuutti Siitonen; Folding Wooden Stool by Ulan Cabanilla; Island Tree 01 and 02 by Rob Tuytel and Rico Cilliers.
 Menu music: "Indian" by LNPLUSMUSIC, from Pixabay (Pixabay Content License)."""
 
 # Every recorded sound, with where it is from and its licence (docs/SOUNDS.md has each file).
@@ -58,24 +62,8 @@ func _ready() -> void:
 		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
 
 
-## Licence texts are long: a big one is laid out off the main thread.
 func _text(bb: String, big := false) -> RichTextLabel:
-	var rt := RichTextLabel.new()
-	rt.bbcode_enabled = true
-	rt.fit_content = true
-	rt.scroll_active = false
-	rt.threaded = big
-	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# A drag that starts on the words must reach the scroll box: the text takes no input.
-	rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rt.add_theme_font_override("normal_font", Game.font_body)
-	rt.add_theme_font_override("bold_font", Game.font_bold)
-	rt.add_theme_font_size_override("normal_font_size", Game.ts(15))
-	rt.add_theme_font_size_override("bold_font_size", Game.ts(18))
-	rt.add_theme_color_override("default_color", Color(Game.C_INK, 0.85))
-	rt.text = bb
-	return rt
+	return UI.rich_text(bb, big)
 
 
 ## Text shown as it is: square brackets in a licence are not formatting.

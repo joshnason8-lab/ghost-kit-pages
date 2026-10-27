@@ -439,6 +439,11 @@ func _menus() -> void:
 	Game.show_screen("res://ui/settings_screen.gd")
 	await frames(10)
 	await audit("settings")
+	# Settings > About's pages in the game: Privacy policy, Help and Licences.
+	for pg in ["privacy", "help", "licences"]:
+		Game.show_screen("res://ui/%s_screen.gd" % pg)
+		await frames(10)
+		await audit(pg)
 	# Move buttons, for either hand (the card on the joystick's side), and showing the defence's buttons.
 	var lh_was: bool = Game.settings.left_handed
 	for lh in [false, true]:

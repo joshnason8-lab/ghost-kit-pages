@@ -1,4 +1,10 @@
-**New in 0.12.1 (0.12.0 slimmed to about 103 MB): sharper players, courts and crowds on Medium and High.** On Medium and High graphics the
+**New in 0.12.2: Help, Privacy policy and Licences in the game.** Settings > About opens all three as pages in the
+game itself, with no connection needed: Help (how to play, the controls, the rules in brief, the graphics levels, and
+how to report a problem), the Privacy policy (the game collects nothing and has no internet permission) and the
+Licences (every asset source with its credit, and the Godot Engine's notices). Each has a View online button for its
+web page as well.
+
+**In 0.12.1: (0.12.0 slimmed to about 103 MB): sharper players, courts and crowds on Medium and High.** On Medium and High graphics the
 players' faces, skin and kit are half as sharp again (from their models' own textures), the courts' mat, earth and sand are
 sharper, and the crowd has twice as many different people: the Sikh fans in saffron and maroon turbans, women in
 magenta, mustard, green and royal-blue salwars and sarees, girls in yellow and sky-blue frocks. The crowd's murmur

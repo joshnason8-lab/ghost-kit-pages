@@ -1346,6 +1346,28 @@ func _languages() -> void:
 	var about := st.find_children("*", "Button", true, false).map(func(b): return String(b.text))
 	check(about.has(tr("PRIVACY_POLICY")) and about.has(tr("HELP_SUPPORT")) and about.has(tr("LICENCES")),
 		"Settings links to the privacy policy, help and the licences")
+	# Each opens a page in the game (no connection needed), with a Back button, scrolling, and words on it.
+	var pages := {"PRIVACY_POLICY": ["privacy_screen.gd", ["collect", "Permissions", "vibration", "Last updated", "thekabaddipulse.com/contact"]],
+		"HELP_SUPPORT": ["help_screen.gd", ["Raiding", "Defending", "The rules in brief", "Controls", "Graphics", "contact page"]],
+		"LICENCES": ["licences_screen.gd", ["Godot Engine", "Poly Haven", "Kenney", "Pixabay", "Meshy", "Mixamo", "SIL Open Font License"]]}
+	for key in pages:
+		var set_page := Game.show_screen("res://ui/settings_screen.gd")
+		await frames(2)
+		var btn: Button = set_page.find_children("*", "Button", true, false).filter(func(b): return b.text == tr(key))[0]
+		btn.pressed.emit()
+		await frames(3)
+		var shown: Node = Game.current
+		var words := ""
+		for rt in shown.find_children("*", "RichTextLabel", true, false):
+			words += String(rt.text)
+		var spec: Array = pages[key]
+		check(String(shown.get_script().resource_path).ends_with(spec[0]) and shown.has_meta("back")
+			and not shown.find_children("*", "ScrollContainer", true, false).is_empty() and words.length() > 1500
+			and (spec[1] as Array).all(func(w): return words.contains(w)),
+			"Settings > %s opens its page in the game, with Back, scrolling and its text (%d characters)" % [tr(key), words.length()])
+		(shown.get_meta("back") as Callable).call()
+		await frames(2)
+		check(String(Game.current.get_script().resource_path).ends_with("settings_screen.gd"), "Back from %s returns to Settings" % tr(key))
 	var lic := Game.show_screen("res://ui/licences_screen.gd")
 	await frames(3)
 	var all := ""

@@ -28,13 +28,16 @@ var _title: Label
 var _cur := 0
 
 
-func setup(_args: Dictionary) -> void:
-	pass
+var _back := ""   # the screen Back returns to (Help opens this page); the home screen otherwise
+
+
+func setup(args: Dictionary) -> void:
+	_back = String(args.get("back", ""))
 
 
 func _ready() -> void:
 	UI.screen(self)
-	var v := UI.page(self, tr("HOW_TITLE"), func(): Game.goto_menu())
+	var v := UI.page(self, tr("HOW_TITLE"), func(): Game.goto_menu() if _back == "" else Game.show_screen(_back))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 18)
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL

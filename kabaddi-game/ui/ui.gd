@@ -703,3 +703,24 @@ static func fixture_line(owner: Control, f: Dictionary, highlight: String) -> HB
 	h.add_child(b)
 	h.add_child(Crest.make(f.away, 30))
 	return h
+
+
+## A page of formatted text in the body font (the Licences, Help and Privacy screens), size its text's (the headings 3
+## more); a long one (big) is laid out off the main thread.
+static func rich_text(bb: String, big := false, size := 15) -> RichTextLabel:
+	var rt := RichTextLabel.new()
+	rt.bbcode_enabled = true
+	rt.fit_content = true
+	rt.scroll_active = false
+	rt.threaded = big
+	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# A drag that starts on the words must reach the scroll box: the text takes no input.
+	rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rt.add_theme_font_override("normal_font", Game.font_body)
+	rt.add_theme_font_override("bold_font", Game.font_bold)
+	rt.add_theme_font_size_override("normal_font_size", Game.ts(size))
+	rt.add_theme_font_size_override("bold_font_size", Game.ts(size + 3))
+	rt.add_theme_color_override("default_color", Color(Game.C_INK, 0.85))
+	rt.text = bb
+	return rt

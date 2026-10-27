@@ -127,6 +127,32 @@ front, so whoever a camera saw from behind still showed it their face.
   dome 150 → 164 MB and Gaon Maidan 154 → 168 MB). The draw calls, primitives and objects are the same (on Low, the
   dome's 100 and 217, 634k, 315; Gaon Maidan's 102 and 220, 668k, 318).
 
+## 0.12.2: Help, Privacy policy and Licences in the game
+
+The owner found Settings links returning 404 across the games, and asked for all three pages in the game, working
+offline. Kabaddi's two web links (thekabaddipulse.com's privacy and support pages) worked; the pages are now in the
+game anyway.
+
+- **Settings > About** has Privacy policy, Help and Licences; each opens a screen in the game (`ui/privacy_screen.gd`,
+  `ui/help_screen.gd`, `ui/licences_screen.gd`) with Back, scrolling and the body font at a reading size
+  (`UI.rich_text`). The text is in English, as the legal texts are; Help's How to play button opens the translated
+  guide (and Back returns to Help). Each page but Licences has a View online button (translated in all eight languages).
+- **Privacy policy** (dated 27 October 2026): nothing collected, sent or sold; no account, ads, analytics or tracking;
+  settings and saves only on the phone; one permission, vibration (the APK's manifest asks for VIBRATE and Godot's
+  DUMP, which Android grants only to system apps, and nothing else: no INTERNET); the browser version on Netlify; contact
+  https://thekabaddipulse.com/contact/.
+- **Help**: playing, raiding, defending, the rules in brief (revival, all out, do or die, bonus, the three raid
+  rules), the modes, the controls, the graphics levels, saves, and how to report a problem (the contact page and the
+  developer's overlay).
+- **Licences**: Poly Haven's assets now listed one by one with their authors (from Poly Haven's own records), beside
+  Meshy, Mixamo, the CMU database, every sound, the fonts and the Godot Engine's licence and notices.
+- **Links checked** (HTTP 200, 27 October 2026): thekabaddipulse.com/kabaddi-raid/privacy/ and /support/ (the View
+  online buttons; the privacy one is the Play listing's), /contact/, /kabaddi-raid/, and the old Netlify
+  /privacy.html and /support.html (forwarding there).
+- **Checked**: test_runner (420: each page opens from Settings' own button, has Back, scrolling and its text, and Back
+  returns to Settings), fit_audit (0 problems, the three pages included), compile_check. No gameplay or graphics
+  change.
+
 ## 0.12.0 and 0.12.1: sharper on Medium and High (the size update)
 
 The owner let the APK grow toward about 100 MB to make the game look and sound better, with Low exactly as it was.
