@@ -126,6 +126,12 @@ jobs:
           grep -o 'android:targetSdkVersion="[0-9]*"\|android:minSdkVersion="[0-9]*"\|android:versionCode="[0-9]*"\|android:versionName="[^"]*"\|android:isGame="[a-z]*"\|android:appCategory="[a-z]*"\|uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | sort -u
           grep -q 'android:isGame="true"' "$RUNNER_TEMP/manifest.xml"
           ! grep -q 'android.permission.INTERNET' "$RUNNER_TEMP/manifest.xml"
+          # Only the permissions the game needs (vibration): fail on any other.
+          EXTRA=$(grep -o 'uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | grep -v '"android.permission.VIBRATE"' || true)
+          if [ -n "$EXTRA" ]; then echo "::error::Unexpected permissions: $EXTRA"; exit 1; fi
+          # Play's target API for new apps (Android 16, since 31 August 2026).
+          TARGET=$(grep -o 'android:targetSdkVersion="[0-9]*"' "$RUNNER_TEMP/manifest.xml" | grep -o '[0-9]*')
+          if [ "$TARGET" -lt 36 ]; then echo "::error::targetSdkVersion $TARGET is below 36"; exit 1; fi
           python3 tools/check_pages.py "$AAB"
 
       - uses: actions/upload-artifact@v4
