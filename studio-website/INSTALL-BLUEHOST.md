@@ -1,9 +1,13 @@
 # Putting the studio website on Bluehost
 
-You need two files from the release (or from `studio-website/dist/` in this repository):
+You need two files from `studio-website/dist/` in this repository:
 
-- **`ghost-kit-theme.zip`**: the theme. It holds the design, the fonts, the game pictures and all the pages' words.
-- **`ghost-kit-content.xml`**: the same pages as a WordPress import file. This is only a back-up route (step 2b).
+- **[`ghost-kit-theme.zip`](https://github.com/joshnason8-lab/ghost-kit-pages/raw/claude/studio-website/studio-website/dist/ghost-kit-theme.zip)**:
+  the theme. It holds the design, the fonts, the game pictures and all the pages' words.
+- **[`ghost-kit-content.xml`](https://github.com/joshnason8-lab/ghost-kit-pages/raw/claude/studio-website/studio-website/dist/ghost-kit-content.xml)**:
+  the same pages as a WordPress import file. This is only a back-up route (step 2b).
+
+If your browser shows the `.xml` file as text instead of saving it, right-click the link and choose **Save link as**.
 
 It takes about 15 minutes. You don't need any plugins.
 
