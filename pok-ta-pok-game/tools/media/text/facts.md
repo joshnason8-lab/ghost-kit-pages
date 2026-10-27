@@ -17,7 +17,7 @@
 | **Platform** | Android, phones and tablets, landscape |
 | **Minimum Android** | Android 7.0 (API 24) |
 | **Download size** | Beta APK about 122 MB. From Google Play, about 95 MB for one phone |
-| **Current version** | 0.5.3-beta |
+| **Current version** | 0.5.4-beta |
 | **Engine** | Godot Engine 4 |
 | **Developer** | Josh Nason |
 | **Contact** | joshnason8@gmail.com |

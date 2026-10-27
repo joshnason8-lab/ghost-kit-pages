@@ -140,7 +140,7 @@ and shows no ads, but the 13+ groups are the simpler start.
 1. Go to **Test and release > Testing > Closed testing**, open the **Closed testing (Alpha)** track, and choose
    **Create new release**.
 2. Upload the signed `.aab` from step 2.
-3. Release name: the version, such as `0.5.3`. Release notes: `store/RELEASE_NOTES.md`, each language between its tags.
+3. Release name: the version, such as `0.5.4`. Release notes: `store/RELEASE_NOTES.md`, each language between its tags.
 4. Choose **Save > Review release > Start rollout to Closed testing**. Google's first review takes a few days.
 5. Under **Testers**, make an email list with at least 12 people's Google (Gmail) addresses: family and friends
    with Android phones.
@@ -163,7 +163,7 @@ and shows no ads, but the 13+ groups are the simpler start.
 - **The application ID is final: `com.poktapokrivals.game`** (`package/unique_name` in `export_presets.cfg`; the same
   in the shared Obtainium list, `shared-assets/obtainium/ghost-kit-games.json`). Play ties the listing to it for good:
   never change it.
-- **The version code only goes up**: 9 for 0.5.3, raised with every beta. Play refuses a bundle whose
+- **The version code only goes up**: 10 for 0.5.4, raised with every beta. Play refuses a bundle whose
   code is not higher than the last one uploaded.
 - **The beta APK on GitHub** is signed with the beta key, not Play's, so a phone with the beta has to uninstall it (and
   lose its saves) before installing the game from Play.

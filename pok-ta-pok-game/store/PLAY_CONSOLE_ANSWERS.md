@@ -1,7 +1,7 @@
 # Pok Ta Pok Rivals: Play Console answers
 
 The answers to every form in **Play Console > Policy and programs > App content** and **Store settings**, with the
-reason for each, checked against this build (0.5.3-beta: one permission, no internet, nothing collected). If the game
+reason for each, checked against this build (0.5.4-beta: one permission, no internet, nothing collected). If the game
 ever changes in a way that touches one of these (an ad, a leaderboard, a link, a crash reporter), the answer has to
 change before that build is uploaded.
 

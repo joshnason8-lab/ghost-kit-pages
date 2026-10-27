@@ -151,6 +151,10 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
     - the 32-bit 512 icon;
     - new screenshots on High;
     - every Play Console answer with its reason (store/PLAY_CONSOLE_ANSWERS.md).
+- **0.5.4**: the ring replay is no longer hidden. The big "REPLAY" banner and the call's "Through the ring!" sat over
+  the ring just as the ball went through it. Now a small REPLAY tag sits in the corner, and the call clears when the
+  replay starts. The store drafts are regenerated from this build (tools/store/make_store_graphics.sh), and the media
+  kit's tools are in tools/media (make_media_kit.sh).
 
 ## Next
 
