@@ -3,8 +3,9 @@ extends Node
 ## shot plays its match with nothing drawn until its moment comes (a shot at the posts, a catch, a tackle, a goal's
 ## celebration), then saves every frame for a few seconds as seg_<n>/NNNN.jpg. tools/media/assemble.py cuts them into
 ## the trailer with its title and end cards and the game's own sounds.
-##   xvfb-run -a -s "-screen 0 1920x1080x24" godot --path . --resolution 1920x1080 --fixed-fps 30 res://tools/media/trailer.tscn -- <out dir>
-## (Run by tools/media/make_media_kit.sh.) Writes <out dir>/shots.json: each shot's frames and when its moment came.
+##   xvfb-run -a -s "-screen 0 1920x1080x24" godot --path . --resolution 1920x1080 --fixed-fps 30 res://tools/media/trailer.tscn -- <out dir> [0,1,2]
+## (Run by tools/media/make_media_kit.sh.) Each shot writes seg_<n>/ and seg_<n>/info.json (its name and frames); the
+## numbers, if given, are the only shots made (the CI workflow makes them in parallel jobs).
 
 const SHOTS := [
 	# name, the match, the moves that start it, seconds kept, a shot at the posts only (near the goal)
@@ -28,15 +29,16 @@ func _ready() -> void:
 	Game.settings.dev = false
 	Game.settings.coach = false
 	TouchControls.key_hints = false
-	var info := []
-	for i in SHOTS.size():
+	var which := range(SHOTS.size())
+	if OS.get_cmdline_user_args().size() > 1:
+		which = Array(OS.get_cmdline_user_args()[1].split(",")).map(func(x): return int(x))
+	for i in which:
 		var s: Array = SHOTS[i]
 		var n := await _shot(i, s)
-		info.append({"name": s[0], "frames": n, "dir": "seg_%d" % i})
+		var f := FileAccess.open(out.path_join("seg_%d/info.json" % i), FileAccess.WRITE)
+		f.store_string(JSON.stringify({"name": s[0], "frames": n}))
+		f.close()
 		print("trailer: ", s[0], " ", n, " frames")
-	var f := FileAccess.open(out.path_join("shots.json"), FileAccess.WRITE)
-	f.store_string(JSON.stringify(info, " "))
-	f.close()
 	get_tree().quit()
 
 

@@ -90,6 +90,7 @@ def card(size, lines, path, art=True):
     else:
         d.text((x, y), title, font=big, fill=INK)
         y += int(big.size * 1.15)
+    y += int(big.size * 0.3)   # (the capitals stand tall: room under them)
     for t in lines:
         tw = d.textlength(t, font=small)
         d.text((x if w > h else (w - tw) / 2, y), t, font=small, fill=INK)
@@ -170,7 +171,7 @@ def mux(video, audio, out):
 
 def main():
     foot, kit = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
-    shots = {s["name"]: foot / s["dir"] for s in json.loads((foot / "shots.json").read_text())}
+    shots = {json.loads((d / "info.json").read_text())["name"]: d for d in sorted(foot.glob("seg_*")) if (d / "info.json").exists()}
     work = foot / "work"
     work.mkdir(exist_ok=True)
     (kit / "trailer").mkdir(parents=True, exist_ok=True)
