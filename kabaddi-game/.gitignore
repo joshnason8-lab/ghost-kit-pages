@@ -6,3 +6,5 @@ export_credentials.cfg
 __pycache__/
 android/
 *.jks
+# make_kit.py writes this while it records the trailer (the 1920x1080 window), then removes it
+override.cfg
