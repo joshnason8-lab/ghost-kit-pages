@@ -1,7 +1,7 @@
 extends Node
 ## Screenshots rendered from the game at 1920 x 1080 on High graphics, with no debug overlays or key hints:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/store/store_shots.tscn -- OUT_DIR [SET] [only]
-## SET "store" (the default): the eight store screenshots, matches on each court and four menus, in the listing's
+## SET "menus": every menu screen in English (for the media kit). SET "store" (the default): the eight store screenshots, matches on each court and four menus, in the listing's
 ## languages. SET "media": twelve for the media kit, in English: the courts, a dive, the copal offering, a ball sent
 ## through the ring with its replay and the celebration after, and the menus. tools/store/make_store_graphics.sh and
 ## tools/media/make_media_kit.sh run this.
@@ -31,6 +31,28 @@ const MEDIA := [
 	["11_setup", "en", "res://ui/quick_setup.gd", {}, 2.0, ""],
 	["12_cup", "en", "res://ui/cup_screen.gd", {}, 2.0, ""],
 ]
+## Every menu screen, in English, for the media kit's menus/ folder: name, the screen, its settings, how to show it
+## ("" as it opens, "end" scrolled to the end, "new" with no tournament under way).
+const MENUS := [
+	["01_home", "res://ui/main_menu.gd", {}, ""],
+	["02_play_setup", "res://ui/quick_setup.gd", {}, ""],
+	["03_play_setup_options", "res://ui/quick_setup.gd", {}, "end"],
+	["04_watch_setup", "res://ui/quick_setup.gd", {"watch": true}, ""],
+	["05_tournament_start", "res://ui/cup_screen.gd", {}, "new"],
+	["06_tournament", "res://ui/cup_screen.gd", {}, ""],
+	["07_settings", "res://ui/settings_screen.gd", {}, ""],
+	["08_settings_more", "res://ui/settings_screen.gd", {}, "end"],
+	["09_move_buttons", "res://ui/buttons_screen.gd", {}, ""],
+	["10_howto_rules", "res://ui/howto_screen.gd", {"tab": 0}, ""],
+	["11_howto_controls", "res://ui/howto_screen.gd", {"tab": 1}, ""],
+	["12_howto_judges", "res://ui/howto_screen.gd", {"tab": 2}, ""],
+	["13_howto_story", "res://ui/howto_screen.gd", {"tab": 3}, ""],
+	["14_pause", "pause", {}, ""],
+	["15_result", "result", {}, ""],
+	["16_licences", "res://ui/licences_screen.gd", {}, ""],
+	["17_help", "res://ui/help_screen.gd", {}, ""],
+	["18_privacy", "res://ui/privacy_screen.gd", {}, ""],
+]
 
 
 func _ready() -> void:
@@ -48,6 +70,10 @@ func _ready() -> void:
 	TouchControls.key_hints = false
 	get_tree().root.size = Vector2i(1920, 1080)
 	await Crowd.bake(self)
+	if which == "menus":
+		await _menus(only)
+		get_tree().quit()
+		return
 	for s in (MEDIA if which == "media" else STORE):
 		if only != "" and not String(s[0]).begins_with(only):
 			continue
@@ -96,7 +122,8 @@ func _match_shot(s: Array) -> void:
 			# Roll on until someone is mid hip-strike (or mid-dive), for a lively picture.
 			var want: Array = [Player.A.DIVE] if s[5] == "dive" else [Player.A.STRIKE, Player.A.DIVE]
 			var guard := 0
-			while guard < (1200 if s[5] == "dive" else 300):
+			RenderingServer.render_loop_enabled = s[5] != "dive"   # a dive can take a while: look for it fast
+			while guard < (30 * 240 if s[5] == "dive" else 300):
 				guard += 1
 				await get_tree().process_frame
 				var acting := false
@@ -105,6 +132,11 @@ func _match_shot(s: Array) -> void:
 						acting = true
 				if acting:
 					break
+			if not RenderingServer.render_loop_enabled:
+				# Found undrawn: let the dive play to its low point, drawn.
+				RenderingServer.render_loop_enabled = true
+				for k in 4:
+					await get_tree().process_frame
 			await _save(String(s[0]))
 		"ritual":
 			await _save(String(s[0]))
@@ -179,6 +211,48 @@ func _ring_moment(m: Node) -> void:
 		await get_tree().process_frame
 	await _wait(1.5)
 	await _save("09_celebration")
+
+
+func _menus(only: String) -> void:
+	Game.settings.language = "en"
+	TranslationServer.set_locale("en")
+	Game._size_theme()
+	for s in MENUS:
+		if only != "" and not String(s[0]).begins_with(only):
+			continue
+		var what := String(s[1])
+		if what == "pause":
+			Game.settings.camera = Game.CAM_TV
+			Game.start_match({"home": "ESC", "away": "LLA", "venue": "village", "rules": "ulama", "user_team": 0, "seed": 7,
+				"mode": "quick", "length": 10, "difficulty": 1, "stage": tr("FRIENDLY"), "ritual": false})
+			var m: Node = Game.current
+			await _wait(12.0, false)
+			m.set_paused(true)
+			await _wait(1.0)
+		elif what == "result":
+			# A real match, a short one, played by the computer to its end (nothing drawn meanwhile).
+			Game.start_match({"home": "PIS", "away": "VAL", "venue": "stone", "rules": "classic", "user_team": -1, "seed": 9,
+				"mode": "watch", "length": 1, "difficulty": 1, "stage": tr("FRIENDLY"), "ritual": false})
+			var m: Node = Game.current
+			var guard := 0
+			RenderingServer.render_loop_enabled = false
+			while is_instance_valid(m) and Game.current == m and guard < 30 * 60 * 6:
+				guard += 1
+				await get_tree().process_frame
+			RenderingServer.render_loop_enabled = true
+			await _wait(1.5)
+		else:
+			if String(s[3]) == "new":
+				Game.delete_cup()
+			elif what.ends_with("cup_screen.gd"):
+				_cup_under_way()
+			Game.show_screen(what, s[2])
+			await _wait(2.0)
+			if String(s[3]) == "end":
+				for sc in Game.current.find_children("*", "ScrollContainer", true, false):
+					(sc as ScrollContainer).scroll_vertical = 100000
+				await _wait(0.5)
+		await _save(String(s[0]))
 
 
 ## The tournament screen part-way through: the user's first game played and won.

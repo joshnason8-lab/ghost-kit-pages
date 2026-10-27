@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # The media kit for the website, rendered from the game as it is now:
 #   media-kit-pok-ta-pok-rivals/screenshots/   twelve 1920 x 1080 PNGs on High graphics (tools/store/store_shots.gd, "media")
+#   media-kit-pok-ta-pok-rivals/menus/         every menu screen in English, 1920 x 1080 PNGs ("menus" set)
+#   media-kit-pok-ta-pok-rivals/text/          the website's copy: about, features, facts, the sport, a press blurb
 #   media-kit-pok-ta-pok-rivals/icons/         the icon at 1024 and 512, and the 1024 x 500 feature graphic
 #   media-kit-pok-ta-pok-rivals/trailer/       the trailer (1920 x 1080, ~36 s) and a 15 s vertical cut (1080 x 1920)
 #   media-kit-pok-ta-pok-rivals/CREDITS.txt    every outside work in the pictures and the sound
@@ -15,7 +17,7 @@ KIT="$OUT/media-kit-pok-ta-pok-rivals"
 WORK="$OUT/work"
 GODOT=${GODOT:-godot}
 XVFB=(xvfb-run -a -s "-screen 0 1920x1080x24")
-mkdir -p "$KIT/screenshots" "$KIT/icons" "$KIT/trailer" "$WORK/clips" "$WORK/cards"
+mkdir -p "$KIT/screenshots" "$KIT/menus" "$KIT/text" "$KIT/icons" "$KIT/trailer" "$WORK/clips" "$WORK/cards"
 
 python3 tools/build_i18n.py >/dev/null
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
@@ -23,12 +25,17 @@ python3 tools/build_i18n.py >/dev/null
 echo "== screenshots"
 "${XVFB[@]}" "$GODOT" --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/store/store_shots.tscn -- "$KIT/screenshots" media \
   | grep '^shot'
-python3 - "$KIT/screenshots" <<'PY'
+echo "== menus"
+"${XVFB[@]}" "$GODOT" --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/store/store_shots.tscn -- "$KIT/menus" menus \
+  | grep '^shot'
+python3 - "$KIT/screenshots" "$KIT/menus" <<'PY'
 import pathlib, sys
 from PIL import Image
-for p in sorted(pathlib.Path(sys.argv[1]).glob("*.png")):
-    Image.open(p).convert("RGB").save(p, optimize=True)
+for d in sys.argv[1:]:
+    for p in sorted(pathlib.Path(d).glob("*.png")):
+        Image.open(p).convert("RGB").save(p, optimize=True)
 PY
+cp tools/media/text/*.md "$KIT/text/"
 
 echo "== icons"
 python3 - "$KIT/icons" <<'PY'
