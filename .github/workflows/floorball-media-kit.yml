@@ -44,8 +44,8 @@ jobs:
         run: |
           sudo ln -sf ~/godot-editor/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
           sudo apt-get update -q
-          sudo apt-get install -y -q xvfb libgl1-mesa-dri ffmpeg fonts-dejavu-core
-          python3 -m pip install --quiet pillow
+          sudo apt-get install -y -q xvfb libgl1-mesa-dri ffmpeg python3-pil
+          python3 -I -c "import PIL; print('Pillow', PIL.__version__)"
           godot --version --headless
 
       - name: Build translations
