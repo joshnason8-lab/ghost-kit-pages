@@ -21,7 +21,7 @@ var _i := 0
 var _saved: Array = []
 var _ball_saved := Vector3.ZERO
 var _cam: Camera3D
-var _cut := false          # Ultra: cut to the second angle yet
+var _cut := false          # High: cut to the second angle yet
 var _t0 := 0.0
 var _side := 1.0
 
@@ -95,14 +95,14 @@ func step(delta: float) -> void:
 		return
 	var f := _frame_at(_t)
 	m.ball.show_at(f[1])
-	if Ultra.active():
+	if Ultra.lit():
 		_broadcast(f[1])
 	for e in f[2]:
 		_put(e)
 	m.hud.redraw_marks()
 
 
-## Ultra: as television does, the second half of the replay from another camera: low on the touchline on the side
+## High (on Vulkan): as television does, the second half of the replay from another camera: low on the touchline on the side
 ## the ball went, tight, following it into the posts.
 func _broadcast(ball: Vector3) -> void:
 	if not _cut and _t > lerpf(_t0, _t1, 0.45):

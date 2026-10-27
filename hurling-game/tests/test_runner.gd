@@ -923,14 +923,17 @@ func _hd_textures() -> void:
 				bad.append(f.get_file())
 		check(bad.is_empty(), "Graphics %d: each texture has one twice as sharp (%s)" % [g, bad])
 	Game.settings.graphics = Game.GFX_HIGH
+	Ultra.removed = true     # (High as a phone without the HD pack has it: the pack's files are in the project here)
 	check(Crowd.material().get_shader_parameter("figs") == float(Crowd.FIGS_HD) and Crowd.sheet().get_width() == 128 * Crowd.FIGS_HD, "Crowd on High: the 24 figures")
+	Ultra.removed = false
 	Game.settings.graphics = keep
 
 
-## Every man's shadow on the grass on Medium and High (one draw call), from his feet away from the sun; none on Low.
+## Every man's shadow on the grass on Medium (one draw call), from his feet away from the sun; none on Low; on High
+## with Vulkan the sun's own shadows instead (cast on the lit grass).
 func _shadows() -> void:
 	var keep := int(Game.settings.graphics)
-	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
+	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
 		Game.settings.graphics = g
 		var m: Node = load("res://game/match.gd").new()
 		m.config = {"home": "KIL", "away": "TIP", "venue": "stadium", "user_team": -1, "seed": 5, "length": 8.0, "mode": "test"}
@@ -939,6 +942,9 @@ func _shadows() -> void:
 		await frames(5)
 		if g == Game.GFX_LOW:
 			check(m.shadows == null, "Shadows: none on Low")
+		elif g == Game.GFX_HIGH and Ultra.lit():
+			var sun: DirectionalLight3D = m.stadium.find_children("*", "DirectionalLight3D", true, false)[0]
+			check(m.shadows == null and sun.shadow_enabled, "Shadows on High (Vulkan): the sun's own")
 		else:
 			var sh: PlayerShadows = m.shadows
 			var n := 0
@@ -948,40 +954,52 @@ func _shadows() -> void:
 			# (Headless, the renderer keeps no instance transforms to read back: the direction they are laid along.)
 			var away: bool = ok and sh._dir.dot(Vector3(-m.stadium.to_sun.x, 0, -m.stadium.to_sun.z).normalized()) > 0.99 \
 				and sh._len > 0.6
-			check(ok and away, "Shadows on High: one for each of the %d men, all away from the sun" % n)
+			check(ok and away, "Shadows on %s: one for each of the %d men, all away from the sun" % ["Medium" if g == 1 else "High", n])
 		m.queue_free()
 		await frames(2)
 	Game.settings.graphics = keep
 
 
-## Ultra (game/ultra.gd): offered on a computer, never on unless picked, back to High when the Vulkan renderer or the
-## HD pack is missing; the renderer switch's file; the pack's check; Low, Medium and High draw as before with Ultra's
-## code in (the materials are the same whether or not Ultra was picked).
+## The renderer and High (game/ultra.gd): High and the HD pack offered on a strong phone (a computer here); High's
+## extras only on High and Vulkan; the fallback to GL written for the next start and said once in Settings; the HD
+## pack's screen and its check.
 func _ultra() -> void:
 	var keep := int(Game.settings.graphics)
 	check(Ultra._model_number("adreno (tm) 740", "adreno") == 740 and Ultra._model_number("mali-g710 mc10", "mali-g") == 710
-		and Ultra._model_number("mali-g78", "mali-g") == 78 and Ultra._model_number("powervr", "adreno") == 0, "Ultra: GPU model numbers read")
-	check(Ultra.capable(), "Ultra: offered on a computer")
-	check(not Ultra.renderer_ready() and not Ultra.active(), "Ultra: off under GL Compatibility")
-	check(Game.detect_graphics() != Game.GFX_ULTRA, "Ultra: never picked for you")
-	Ultra.set_renderer(true)
+		and Ultra._model_number("mali-g78", "mali-g") == 78 and Ultra._model_number("powervr", "adreno") == 0, "Graphics: GPU model numbers read")
+	check(Ultra.capable() and Game.detect_graphics() == Game.GFX_HIGH, "Graphics: High and the HD pack offered on a computer")
+	check(not Ultra.weak_vulkan("Adreno (TM) 740") and not Ultra.weak_vulkan("Mali-G52 MC2"), "Graphics: a computer never sent to GL")
+	# High's extras need Vulkan; Low and Medium have none of them.
+	Game.settings.graphics = Game.GFX_MEDIUM
+	check(not Ultra.lit() and not Ultra.active(), "Graphics: Medium, none of High's extras")
+	Game.settings.graphics = Game.GFX_HIGH
+	check(Ultra.lit() == Ultra.renderer_ready(), "Graphics: High's lighting on Vulkan (%s)" % RenderingServer.get_current_rendering_method())
+	# The fallback to GL Compatibility: written for the next start, and taken back.
+	Ultra.use_gl(true)
 	var cfg := ConfigFile.new()
-	check(cfg.load(Ultra.OVERRIDE) == OK and cfg.get_value("rendering", "renderer/rendering_method.mobile", "") == "mobile", "Ultra: the switch writes the renderer override")
-	Ultra.set_renderer(false)
-	check(not FileAccess.file_exists(Ultra.OVERRIDE), "Ultra: switching back removes it")
-	# A start in Ultra without the Vulkan renderer goes back to High and says why.
-	Game.settings.graphics = Game.GFX_ULTRA
-	Ultra.set_renderer(true)
-	Ultra.boot()
-	check(int(Game.settings.graphics) == Game.GFX_HIGH and Ultra.fell_back == "vulkan" and not FileAccess.file_exists(Ultra.OVERRIDE),
-		"Ultra: no Vulkan, back to High (%s)" % Ultra.fell_back)
+	check(cfg.load(Ultra.OVERRIDE) == OK and cfg.get_value("rendering", "renderer/rendering_method.mobile", "") == "gl_compatibility",
+		"Graphics: the fallback writes the GL renderer for the next start")
+	Ultra.use_gl(false)
+	check(not FileAccess.file_exists(Ultra.OVERRIDE), "Graphics: and takes it back")
+	# A start on Vulkan that never reached the home screen: GL from the next start, said once in Settings.
+	if Ultra.renderer_ready():
+		var flag := FileAccess.open(Ultra.BOOT_FLAG, FileAccess.WRITE)
+		flag.store_string("x")
+		flag.close()
+		Ultra.boot()
+		check(Ultra.fell_back == "crash" and FileAccess.file_exists(Ultra.OVERRIDE), "Graphics: a failed start on Vulkan, GL from the next")
+		Ultra.use_gl(false)
+	else:
+		Ultra.fell_back = "crash"
 	var s := Game.show_screen("res://ui/settings_screen.gd")
 	await frames(3)
-	check(_find_text(s, tr("ULTRA_BACK_vulkan")) and Ultra.fell_back == "", "Ultra: Settings says why, once")
-	check(_find_text(s, tr("GFX_ULTRA")), "Ultra: in Settings' graphics")
-	var u := Game.show_screen("res://ui/ultra_screen.gd", {"mode": "leave"})
+	check(_find_text(s, tr("VULKAN_BACK_crash")) and Ultra.fell_back == "", "Graphics: Settings says so, once")
+	check(_find_text(s, tr("GFX_HIGH")) and _find_text(s, tr("HD_OPEN")), "Graphics: Low, Medium, High, and the HD pack")
+	var u := Game.show_screen("res://ui/hd_pack_screen.gd")
+	if u._dl != null:
+		u._dl.cancel()
 	await frames(3)
-	check(is_instance_valid(u) and _find_text(u, tr("ULTRA_REOPEN")), "Ultra: the reopen screen")
+	check(is_instance_valid(u) and _find_text(u, tr("HD_INTRO")), "Graphics: the HD pack screen")
 	# The pack: whole by its manifest's size, checked by its SHA-256 (a finished download goes straight to the check).
 	Ultra.remove_pack()
 	check(not Ultra.pack_ready(), "Ultra: no pack")
@@ -1006,7 +1024,7 @@ func _ultra() -> void:
 			if not got.is_empty():
 				break
 			await frames(1)
-		check(got == ([[false, "corrupt"]] if want != sha else [[true, ""]]), "Ultra: a pack %s its check (%s)" % ["failing" if want != sha else "passing", got])
+		check(got == ([[false, "corrupt"]] if want != sha else [[true, ""]]), "HD pack: a pack %s its check (%s)" % ["failing" if want != sha else "passing", got])
 		dl.queue_free()
 	var man := FileAccess.open(Ultra.DIR + Ultra.manifest_name(), FileAccess.WRITE)
 	man.store_string(JSON.stringify({"pack": Ultra.PACK, "size": body.size(), "sha256": sha}))
@@ -1014,13 +1032,13 @@ func _ultra() -> void:
 	check(Ultra.pack_ready(), "Ultra: the pack, whole")
 	Ultra.remove_pack()
 	check(not Ultra.pack_ready() and not FileAccess.file_exists(Ultra.pack_path()), "Ultra: the pack removed")
-	# Low, Medium and High: no Ultra content, whatever the graphics setting says.
+	# The vertex-coloured structure lit per vertex below High; per pixel on High with Vulkan.
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var med := Geo.material()
 	Game.settings.graphics = Game.GFX_HIGH
 	var hi := Geo.material()
-	Game.settings.graphics = Game.GFX_ULTRA
-	var ul := Geo.material()
-	check(not hi.vertex_color_is_srgb and hi.shading_mode == ul.shading_mode and hi.vertex_color_is_srgb == ul.vertex_color_is_srgb,
-		"Ultra: without its renderer, the same materials as High")
+	check(med.shading_mode == BaseMaterial3D.SHADING_MODE_PER_VERTEX and (hi.shading_mode == BaseMaterial3D.SHADING_MODE_PER_PIXEL) == Ultra.lit(),
+		"Graphics: Medium lit per vertex, High per pixel on Vulkan")
 	Game.settings.graphics = keep
 	Game.show_screen("res://ui/main_menu.gd")
 	await frames(2)

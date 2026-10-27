@@ -2,7 +2,7 @@ extends Node
 ## Each ground as the match camera sees it at the throw-in and from behind a goal, and a wide shot from high in a
 ## corner (the sky and the surrounds), and from the pitch looking at the near and far stands (the crowd faces the
 ## field), for checking how it looks:
-##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/venue_view.tscn -- /out [venue] [graphics 0-2]
+##   xvfb-run -a godot --path . --fixed-fps 30 res://tests/venue_view.tscn -- /out [venue] [graphics 0-2] [nopack]
 
 func _ready() -> void:
 	var a := OS.get_cmdline_user_args()
@@ -11,6 +11,7 @@ func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
 	Game.settings.graphics = int(a[2]) if a.size() > 2 else Game.GFX_HIGH
+	Ultra.removed = "nopack" in a        # High as a phone without the HD pack draws it
 	for v in DB.VENUES:
 		if only != "" and v != only:
 			continue

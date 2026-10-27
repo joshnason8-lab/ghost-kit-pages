@@ -295,20 +295,20 @@ func animate(now: float) -> void:
 		return
 	_lod_skip = 0
 	var p := _pose(now)
-	if Ultra.active():
+	if Ultra.lit():
 		p = _crossfade(p, now)
 	body.apply(p)
 
 
-const FADE := 0.18               # Ultra: seconds to blend from one move into the next
+const FADE := 0.18               # High: seconds to blend from one move into the next
 var _fade_from := {}
 var _fade := 0.0
 var _fade_action := ""
 var _fade_now := 0.0
 
 
-## Ultra: a move starting or ending blends from where the body was over FADE seconds, rather than jumping to the
-## move's first frame (every level's moves are clips sampled in time; Ultra also smooths the joins between them).
+## High (on Vulkan): a move starting or ending blends from where the body was over FADE seconds, rather than jumping
+## to the move's first frame (every level's moves are clips sampled in time; High also smooths the joins between them).
 func _crossfade(p: Dictionary, now: float) -> Dictionary:
 	var dt := clampf(now - _fade_now, 0.0, 0.1)
 	_fade_now = now

@@ -142,16 +142,16 @@ func commit(mat: Material) -> MeshInstance3D:
 static func material(lit := true) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.vertex_color_use_as_albedo = true
-	# (The colours were chosen under GL Compatibility; Ultra's Vulkan renderer decodes them: game/shaders/look.)
+	# (The colours were chosen under GL Compatibility; the Vulkan renderer decodes them: game/shaders/look.)
 	m.vertex_color_is_srgb = Ultra.renderer_ready()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX if lit else BaseMaterial3D.SHADING_MODE_UNSHADED
-	if lit and Ultra.active():
+	if lit and Ultra.lit():
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 	m.roughness = 0.9
 	return m
 
 
-## Ultra's structure: the colours lit per pixel by the scene's light, with cast concrete's grain and relief over
+## High's structure with the HD pack: the colours lit per pixel by the scene's light, with cast concrete's grain and relief over
 ## them (Poly Haven's concrete_wall_008, laid over every face from the side it faces).
 static func ultra_material() -> Material:
 	var sh := Shader.new()

@@ -20,7 +20,7 @@ const POSES := [
 
 
 func _ready() -> void:
-	var ultra := "ultra" in OS.get_cmdline_user_args()   # Ultra's: the HD sheet at twice its size again (ultra/crowd)
+	var ultra := "ultra" in OS.get_cmdline_user_args()   # the HD pack's: the HD sheet at twice its size again (ultra/crowd)
 	var hd := "hd" in OS.get_cmdline_user_args() or ultra
 	# Low's sheet from the fans' 512 textures; the HD one from their 1024 ones (fan_hd.jpg: Game.hd).
 	Game.settings.graphics = Game.GFX_HIGH if hd else Game.GFX_LOW

@@ -73,29 +73,8 @@ GFX_LOW,Low,Íseal
 GFX_MEDIUM,Medium,Meánach
 GFX_HIGH,High,Ard
 GFX_AUTO,Lower it by itself if a match runs slowly,Ísligh í féin má bhíonn cluiche mall
-GFX_NOTE,"Low suits phones with 2-4 GB of memory: simpler players, fewer people in the stands, no outlines, a smaller picture. The game picks one for your phone the first time it runs.","Oireann Íseal d'fhóin le 2-4 GB cuimhne: imreoirí níos simplí, níos lú daoine sna seastáin, gan imlínte, pictiúr níos lú. Roghnaíonn an cluiche ceann d'fhón an chéad uair."
+GFX_NOTE,"Low suits phones with 2-4 GB of memory: simpler players, fewer people in the stands, no outlines, a smaller picture. High adds real shadows, floodlights that light the field and filmic colour. The game picks one for your phone the first time it runs.","Oireann Íseal d'fhóin le 2-4 GB cuimhne: imreoirí níos simplí, níos lú daoine sna seastáin, gan imlínte, pictiúr níos lú. Cuireann Ard scáthanna fíora, tuilsoilse a lasann an pháirc agus dath scannánach leis. Roghnaíonn an cluiche ceann d'fhón an chéad uair."
 GFX_LOWERED,The match was running slowly: graphics lowered a step (Settings).,Bhí an cluiche ag rith go mall: ísliodh an ghrafaic céim (Socruithe).
-GFX_ULTRA,Ultra,Ultra
-ULTRA_TITLE,Ultra graphics,Grafaic Ultra
-ULTRA_INTRO,"For recent high-end phones: real-time shadows and floodlights, sharper players with cloth and skin shading, a fuller crowd and stadium, broadcast replays. Ultra draws with Vulkan and needs the HD pack, a separate download.","D'fhóin nua ardleibhéil: scáthanna agus tuilsoilse fíor-ama, imreoirí níos géire le scáthú éadaigh agus craicinn, slua agus staid níos iomláine, athimirt mar a bheadh ar an teilifís. Úsáideann Ultra Vulkan agus teastaíonn an pacáiste HD, íoslódáil ar leith."
-ULTRA_SIZE,HD pack: %d MB. Use Wi-Fi.,Pacáiste HD: %d MB. Úsáid Wi-Fi.
-ULTRA_CHECKING,Finding the HD pack...,Ag aimsiú an phacáiste HD...
-ULTRA_GET,Download the HD pack,Íoslódáil an pacáiste HD
-ULTRA_GETTING,Downloading: %d of %d MB,Á íoslódáil: %d as %d MB
-ULTRA_CHECKING_FILE,Checking the download...,Ag seiceáil na híoslódála...
-ULTRA_RETRY,Try again,Bain triail eile as
-ULTRA_READY,The HD pack is downloaded.,Tá an pacáiste HD íoslódáilte.
-ULTRA_SWITCH,Switch to Ultra,Athraigh go Ultra
-ULTRA_REOPEN,Close Hurling Heroes and open it again to finish switching the graphics.,Dún Hurling Heroes agus oscail arís é chun an ghrafaic a athrú.
-ULTRA_CLOSE,Close the game now,Dún an cluiche anois
-ULTRA_REMOVE,Remove the HD pack,Bain an pacáiste HD
-ULTRA_FAIL_net,The download stopped (no connection?). Try again: it carries on where it stopped.,Stop an íoslódáil (gan cheangal?). Bain triail eile as: leanann sé ar aghaidh ón áit ar stop sé.
-ULTRA_FAIL_corrupt,The download was damaged and has been deleted. Try again.,Bhí an íoslódáil lochtach agus scriosadh í. Bain triail eile as.
-ULTRA_FAIL_space,There is not enough space on the phone for the HD pack.,Níl dóthain spáis ar an bhfón don phacáiste HD.
-ULTRA_FAIL_manifest,The HD pack for this version is not available yet.,Níl an pacáiste HD don leagan seo ar fáil fós.
-ULTRA_BACK_crash,Ultra did not start last time: the graphics are back on High.,Níor thosaigh Ultra an uair dheireanach: tá an ghrafaic ar Ard arís.
-ULTRA_BACK_vulkan,This phone could not start Vulkan: the graphics are back on High.,Níorbh fhéidir leis an bhfón seo Vulkan a thosú: tá an ghrafaic ar Ard arís.
-ULTRA_BACK_pack,The HD pack was missing or damaged: the graphics are back on High.,Bhí an pacáiste HD in easnamh nó lochtach: tá an ghrafaic ar Ard arís.
 FRAME_RATE,Frame rate,Ráta fráma
 FPS_SAVER,Battery saver,Spáráil cadhnra
 FPS_N,{n} a second,{n} sa soicind
@@ -422,3 +401,22 @@ RESUME_LINE,"Carry on: {home} {a} v {b} {away}, {min}'","Lean ar aghaidh: {home}
 RESUMED_AT,carrying on at {min}',ag leanúint ar aghaidh ag {min}'
 SIM_TO_END,Simulate to the end,Ionsamhail go dtí an deireadh
 SUB_BOARD,Substitution,Ionadú
+HD_TITLE,HD pack,Pacáiste HD
+HD_INTRO,"Sharper graphics on High for recent high-end phones: the hurlers in full detail with cloth and skin shading, the officials, 4K grass, a fuller crowd and the stands' concrete. A download of its own, in use as soon as it is in.","Grafaic níos géire ar Ard d'fhóin nua ardleibhéil: na hiománaithe go mion le scáthú éadaigh agus craicinn, na hoifigigh, féar 4K, slua níos iomláine agus coincréit na seastán. Íoslódáil ar leith, in úsáid chomh luath agus atá sé istigh."
+HD_SIZE,HD pack: %d MB. Use Wi-Fi.,Pacáiste HD: %d MB. Úsáid Wi-Fi.
+HD_CHECKING,Finding the HD pack...,Ag aimsiú an phacáiste HD...
+HD_GET,Download the HD pack,Íoslódáil an pacáiste HD
+HD_GETTING,Downloading: %d of %d MB,Á íoslódáil: %d as %d MB
+HD_CHECKING_FILE,Checking the download...,Ag seiceáil na híoslódála...
+HD_RETRY,Try again,Bain triail eile as
+HD_IN,The HD pack is in: High graphics use it.,Tá an pacáiste HD istigh: úsáideann grafaic Ard é.
+HD_REMOVED,The HD pack is removed: High goes without it from the next start.,Baineadh an pacáiste HD: beidh Ard gan é ón gcéad tosú eile.
+HD_REMOVE,Remove the HD pack,Bain an pacáiste HD
+HD_FAIL_net,The download stopped (no connection?). Try again: it carries on where it stopped.,Stop an íoslódáil (gan cheangal?). Bain triail eile as: leanann sé ar aghaidh ón áit ar stop sé.
+HD_FAIL_corrupt,The download was damaged and has been deleted. Try again.,Bhí an íoslódáil lochtach agus scriosadh í. Bain triail eile as.
+HD_FAIL_space,There is not enough space on the phone for the HD pack.,Níl dóthain spáis ar an bhfón don phacáiste HD.
+HD_FAIL_manifest,The HD pack for this version is not available yet.,Níl an pacáiste HD don leagan seo ar fáil fós.
+HD_LINE_IN,"HD pack: in, used on High.","Pacáiste HD: istigh, in úsáid ar Ard."
+HD_LINE_OUT,"HD pack: not downloaded. Optional, for sharper players, grass and crowd on High.","Pacáiste HD: gan íoslódáil. Roghnach, d'imreoirí, féar agus slua níos géire ar Ard."
+HD_OPEN,HD pack,Pacáiste HD
+VULKAN_BACK_crash,The game did not start properly last time: from now on it uses the older graphics renderer on this phone.,Níor thosaigh an cluiche i gceart an uair dheireanach: as seo amach úsáideann sé an seanléiritheoir grafaice ar an bhfón seo.

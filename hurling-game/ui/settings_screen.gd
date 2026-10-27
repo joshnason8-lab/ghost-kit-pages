@@ -61,24 +61,25 @@ func _ready() -> void:
 	# The screen.
 	var disp: Array = UI.section(tr("SET_DISPLAY"), "display")
 	right.add_child(disp[0])
-	# Ultra, on a phone that can take it: its own screen (the HD pack, then the game opened again: game/ultra.gd).
+	# A start on Vulkan that failed: said once (game/ultra.gd; the game draws with GL Compatibility from now on).
 	if Ultra.fell_back != "":
-		disp[1].add_child(UI.wrap(tr("ULTRA_BACK_" + Ultra.fell_back), "MutedLabel", 17))
+		disp[1].add_child(UI.wrap(tr("VULKAN_BACK_" + Ultra.fell_back), "MutedLabel", 17))
 		Ultra.fell_back = ""
-	var levels := [tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")]
-	if Ultra.capable() or int(Game.settings.graphics) == Game.GFX_ULTRA:
-		levels.append(tr("GFX_ULTRA"))
-	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips(levels, int(Game.settings.graphics), func(i):
-		var was := int(Game.settings.graphics)
-		if i == Game.GFX_ULTRA:
-			if was != Game.GFX_ULTRA:
-				Game.show_screen("res://ui/ultra_screen.gd")
-			return
-		Game.settings.graphics = i
-		Game.save_settings()
-		if was == Game.GFX_ULTRA:
-			Ultra.set_renderer(false)
-			Game.show_screen("res://ui/ultra_screen.gd", {"mode": "leave"}))))
+	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")],
+		int(Game.settings.graphics), func(i):
+			Game.settings.graphics = i
+			Game.save_settings())))
+	# The HD pack, on a phone that can use it: its line and its screen.
+	if Ultra.capable():
+		var hd := HBoxContainer.new()
+		hd.add_theme_constant_override("separation", 12)
+		var line := UI.wrap(tr("HD_LINE_IN") if Ultra.pack_ready() and not Ultra.removed else tr("HD_LINE_OUT"), "MutedLabel", 17)
+		line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hd.add_child(line)
+		var open := UI.button(tr("HD_OPEN"), false, func(): Game.show_screen("res://ui/hd_pack_screen.gd"))
+		open.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		hd.add_child(open)
+		disp[1].add_child(hd)
 	disp[1].add_child(UI.field(tr("GFX_AUTO"), UI.chips_row([tr("ON"), tr("OFF")], 0 if bool(Game.settings.auto_gfx) else 1, func(i):
 		Game.settings.auto_gfx = i == 0
 		Game.save_settings())))

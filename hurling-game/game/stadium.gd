@@ -48,7 +48,7 @@ func _ready() -> void:
 		_:
 			_county(g, spots)
 	var structure := g.commit(Geo.ultra_material() if Ultra.active() else Geo.material(true))
-	if Ultra.active():
+	if Ultra.lit():
 		structure.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # the stands' shadow on the field
 	add_child(structure)
 	add_child(fields.commit(field_material(time)))
@@ -125,7 +125,7 @@ func _stand(g: Geo, x0: float, x1: float, z0: float, dir: float, rows: int, rise
 		var z := z0 + dir * (r * depth)
 		var y := base + r * rise
 		g.box(Vector3((x0 + x1) * 0.5, y * 0.5, z + dir * depth * 0.5), Vector3(x1 - x0, y, depth), seat.darkened(0.05 * float(r % 2)), 0.0)
-		# (A seat every 0.62 m; on Ultra 0.52 m, as close as real seats: a fuller stand.)
+		# (A seat every 0.62 m; with the HD pack 0.52 m, as close as real seats: a fuller stand.)
 		var gap := 0.52 if Ultra.active() else 0.62
 		var n := int((x1 - x0) / gap)
 		for i in n:
@@ -289,7 +289,7 @@ static func field_material(t: String) -> ShaderMaterial:
 shader_type spatial;
 render_mode unshaded, cull_back;
 #include "res://game/shaders/look.gdshaderinc"
-uniform sampler2D tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D tex : filter_linear_mipmap, repeat_enable;
 uniform float light = 1.0;
 varying vec3 wp;
 void vertex() { wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
@@ -551,8 +551,8 @@ shader_type spatial;
 render_mode unshaded, cull_back;
 #include "res://game/shaders/look.gdshaderinc"
 uniform sampler2D waves : hint_normal, filter_linear_mipmap, repeat_enable;
-uniform vec3 deep : source_color = vec3(0.10, 0.14, 0.15);
-uniform vec3 sky : source_color = vec3(0.9, 0.7, 0.6);
+uniform vec3 deep = vec3(0.10, 0.14, 0.15);
+uniform vec3 sky = vec3(0.9, 0.7, 0.6);
 uniform float light = 1.0;
 varying vec3 wp;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -583,8 +583,9 @@ void fragment() {
 	m.set_shader_parameter("waves", load("res://assets/env/water/water_normal_512.png"))
 	var d: Dictionary = _sky_data_for(sky_name())
 	var hc: Array = d.horizon
-	m.set_shader_parameter("sky", Color(hc[0], hc[1], hc[2]).lerp(Color(0.62, 0.64, 0.74), 0.5))
-	m.set_shader_parameter("deep", Color(0.07, 0.1, 0.11))
+	var hz := Color(hc[0], hc[1], hc[2]).lerp(Color(0.62, 0.64, 0.74), 0.5)
+	m.set_shader_parameter("sky", Vector3(hz.r, hz.g, hz.b))     # (plain values: look.gdshaderinc)
+	m.set_shader_parameter("deep", Vector3(0.07, 0.1, 0.11))
 	m.set_shader_parameter("light", Scenery.light(time).v)
 	mi.material_override = m
 	return mi
@@ -676,7 +677,7 @@ func _environment() -> void:
 		env.fog_light_color = Color(hc[0], hc[1], hc[2]).lerp(Color(0.72, 0.75, 0.82), 0.5 if time == "day" else 0.75) * (0.35 if time == "night" else 1.0)
 		env.fog_density = 0.0009 if time == "day" else 0.0006
 		env.fog_sky_affect = 0.0
-	if Ultra.active():
+	if Ultra.lit():
 		_ultra_light(env, sun, sky)
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -685,7 +686,7 @@ func _environment() -> void:
 	Crowd.set_light({"day": 1.0, "dusk": 0.72, "night": 0.75}[time])
 
 
-## Ultra's light (the Mobile renderer): the sun's real shadows over the whole ground in four cascades, soft at the
+## High's light (on Vulkan): the sun's real shadows over the whole ground in four cascades, soft at the
 ## edges, the stands' shadow across the field as on a summer afternoon; the sky's own light and reflections; ACES
 ## tone mapping and a glow on what is brightest (the floodlights, the sun on white); at night the floodlights' beams
 ## from the masts or the stand's roof. (SSAO is not in the Mobile renderer: the players' and stands' own shading

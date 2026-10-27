@@ -8,12 +8,11 @@ Made by Josh Nason.
 The hurlers: the maker's own player model, moving with motion capture from Adobe Mixamo (mixamo.com) and the
 CMU Graphics Lab Motion Capture Database (clips 35_01 and 35_17). Motion capture data from mocap.cs.cmu.edu. The
 database was created with funding from NSF EIA-0196217.
-The skies, the grass and field textures, the shirts' cloth and the stands' concrete (Ultra), the small broadleaf and fern cut-outs, the painted bench, the street lamps
+The skies, the grass and field textures, the shirts' cloth and the stands' concrete (the HD pack), the small broadleaf and fern cut-outs, the painted bench, the street lamps
 and the mossy rocks: Poly Haven (polyhaven.com), CC0. The oak and broadleaf trees, the hedgerow grasses and the
 park bench: the maker's own models. The houses, the cottages, the stands and the sliotar: made in code for the game.
 The referee, the umpires, the people in the crowd and the floodlights: the maker's own models, made with Meshy
-(meshy.ai). The menu music written for it
-(tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
+(meshy.ai). The menu music: written for the game (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
 Sounds: the stadium crowd's murmur, cheer and roar from "Free Crowd Cheering Sounds" by Gregor Quendel
 (opengameart.org), CC-BY 4.0; birdsong from "Park ambiences" by Thimras (opengameart.org), CC0; footsteps, knocks and
 the menu click from Kenney's Impact Sounds and Interface Sounds (kenney.nl), CC0; whistle sounds from Pixabay

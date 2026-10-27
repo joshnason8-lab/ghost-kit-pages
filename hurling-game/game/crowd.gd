@@ -54,7 +54,8 @@ static func material() -> ShaderMaterial:
 	sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_opaque;
-uniform sampler2D sheet : source_color, filter_linear_mipmap, repeat_disable;
+#include "res://game/shaders/look.gdshaderinc"
+uniform sampler2D sheet : filter_linear_mipmap, repeat_disable;
 uniform sampler2D mask : filter_linear_mipmap, repeat_disable;
 uniform float figs = 8.0;
 uniform bool rows = false;     // the sheet in two rows (front, back), not one
@@ -88,7 +89,7 @@ void fragment() {
 	float is_shirt = smoothstep(0.3, 0.7, texture(mask, uv).r);
 	float shade = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722)) / 0.86;
 	vec3 col = mix(c.rgb, shirt * shade, is_shirt);
-	ALBEDO = pow(col, vec3(2.2)) * light;
+	ALBEDO = compat_to_scene(pow(col, vec3(2.2)) * light);
 }
 """
 	var m := ShaderMaterial.new()

@@ -192,7 +192,7 @@ func _floodlight(src: Material) -> ShaderMaterial:
 shader_type spatial;
 render_mode unshaded, cull_disabled;
 #include "res://game/shaders/look.gdshaderinc"
-uniform sampler2D tex : source_color, filter_linear_mipmap;
+uniform sampler2D tex : filter_linear_mipmap;
 uniform vec3 light = vec3(1.0);
 uniform float on = 0.0;
 void fragment() {

@@ -21,7 +21,7 @@ func _init(p_look := {}) -> void:
 	super(p_look)
 	who = String(p_look.get("model", "umpire" if String(p_look.get("kind", "")) == "umpire" else "referee"))
 	dir = String(p_look.get("dir", DIR))   # tools/crowd draws the fans this way
-	# Ultra: the officials re-made by Meshy with their physically based maps (normal, roughness), at full detail.
+	# High with the HD pack: the officials re-made by Meshy with their physically based maps (normal, roughness), at full detail.
 	if dir == DIR and Ultra.active() and ResourceLoader.exists(ULTRA_DIR + who + ".res"):
 		dir = ULTRA_DIR
 
@@ -41,18 +41,20 @@ func _dress() -> void:
 	if not _meshes.has(dir + who):
 		_meshes[dir + who] = load(dir + who + ".res")
 	mesh_instance.mesh = _meshes[dir + who]
-	# The texture: 512 on Low, 1024 (<who>_hd.jpg) on Medium and High, 2048 with its maps on Ultra.
+	# The texture: 512 on Low, 1024 (<who>_hd.jpg) on Medium and High, 2048 with its maps with the HD pack; lit on
+	# High (on Vulkan).
 	var ultra := dir == ULTRA_DIR
+	var lit := Ultra.lit() and dir in [DIR, ULTRA_DIR]
 	var tex := dir + who + ".jpg" if ultra else Game.hd(dir + who + ".jpg")
-	if not _mats.has(tex):
+	if not _mats.has(tex + str(lit)):
 		var m := ShaderMaterial.new()
-		m.shader = _ultra_shader() if ultra else _shader()
+		m.shader = _ultra_shader() if lit else _shader()
 		m.set_shader_parameter("albedo", load(tex))
 		if ultra:
 			m.set_shader_parameter("normal_map", load(dir + who + "_normal.png"))
 			m.set_shader_parameter("rough", load(dir + who + "_rough.jpg"))
-		_mats[tex] = m
-	mesh_instance.material_override = _mats[tex]
+		_mats[tex + str(lit)] = m
+	mesh_instance.material_override = _mats[tex + str(lit)]
 
 
 static var _sh: Shader
@@ -61,7 +63,7 @@ static var _sh: Shader
 static var _ush: Shader
 
 
-## Ultra's: lit by the scene's light, with the model's own normal and roughness maps.
+## High (on Vulkan): lit by the scene's light; with the HD pack, the model's own normal and roughness maps.
 static func _ultra_shader() -> Shader:
 	if _ush == null:
 		_ush = Shader.new()
@@ -69,7 +71,7 @@ static func _ultra_shader() -> Shader:
 shader_type spatial;
 render_mode cull_back;
 #include "res://game/shaders/look.gdshaderinc"
-uniform sampler2D albedo : source_color, filter_linear_mipmap;
+uniform sampler2D albedo : filter_linear_mipmap;
 uniform sampler2D normal_map : hint_normal, filter_linear_mipmap;
 uniform sampler2D rough : hint_roughness_r, filter_linear_mipmap;
 void fragment() {
@@ -91,7 +93,7 @@ static func _shader() -> Shader:
 shader_type spatial;
 render_mode unshaded, cull_back;
 #include "res://game/shaders/look.gdshaderinc"
-uniform sampler2D albedo : source_color, filter_linear_mipmap;
+uniform sampler2D albedo : filter_linear_mipmap;
 uniform vec3 light_dir = vec3(0.35, 0.85, 0.4);
 uniform float shade = 0.72;
 varying vec3 wn;

@@ -9,9 +9,9 @@ extends ToonBody
 
 const DIR := "res://assets/player/"
 
-static var _datas := {}         # Ultra (true) or not -> the data
+static var _datas := {}         # with the HD pack (true) or not -> the data
 static var _meshes := []        # [hi, lo]
-static var _ultra_meshes := []  # Ultra's: the owner's model at full detail (the HD pack's ultra/player)
+static var _ultra_meshes := []  # the HD pack's: the owner's model at full detail (the HD pack's ultra/player)
 static var _ultra_shader: Shader
 const ULTRA_DIR := "res://ultra/player/"
 static var _shader: Shader
@@ -28,7 +28,7 @@ static func data() -> Dictionary:
 	var u := Ultra.active()
 	if not _datas.has(u):
 		var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "hero.json"))
-		# The walk and the jog from the CMU motion-capture library (tools/mocap), with the Mixamo clips; on Ultra
+		# The walk and the jog from the CMU motion-capture library (tools/mocap), with the Mixamo clips; with the HD pack
 		# all of them at 60 frames a second (the HD pack's ultra/anim).
 		var cmu: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "cmu.json"))
 		d.clips.merge(cmu.clips)
@@ -91,7 +91,7 @@ func _offsets() -> Array:
 	return out
 
 
-## The meshes for this graphics level: on Ultra the model at 23,000 triangles near and 12,000 further off (the
+## The meshes for this graphics level: on High with the HD pack the model at 23,000 triangles near and 12,000 further off (the
 ## renderer's own levels of detail below that), else the phone's 5,866 and 1,757.
 static func _mesh_pair() -> Array:
 	if Ultra.active():
@@ -124,41 +124,43 @@ func _dress() -> void:
 func _material() -> ShaderMaterial:
 	var hd := int(Game.settings.graphics) > Game.GFX_LOW
 	var ultra := Ultra.active()
-	var key := "%s|%s|%s|%s|%s|%d|%s|%s" % [look.get("jersey"), look.get("trim"), look.get("shorts"), look.get("socks"),
-		look.get("skin"), int(look.get("design", 0)), hd, ultra]
+	var lit := Ultra.lit()
+	var key := "%s|%s|%s|%s|%s|%d|%s|%s|%s" % [look.get("jersey"), look.get("trim"), look.get("shorts"), look.get("socks"),
+		look.get("skin"), int(look.get("design", 0)), hd, ultra, lit]
 	if _mats.has(key):
 		return _mats[key]
 	if _shader == null:
 		_shader = Shader.new()
 		_shader.code = SHADER
 	# The textures: 1024 (and the kit's mask at 512) on Low, 2048 (1024) on Medium and High, the model's own 4096
-	# (2048) on Ultra.
+	# (2048) with the HD pack. Lit on High (on Vulkan); the cloth's weave with the HD pack.
 	var tk: Variant = "ultra" if ultra else hd
 	if not _tex.has(tk):
 		_tex[tk] = [load(ULTRA_DIR + "hero_albedo_4k.jpg"), load(ULTRA_DIR + "hero_mask_2k.png")] if ultra \
 			else [load(Game.hd(DIR + "hero_albedo.jpg")), load(Game.hd(DIR + "hero_mask.png"))]
 	var mat := ShaderMaterial.new()
 	mat.shader = _shader
-	if ultra:
+	if lit:
 		if _ultra_shader == null:
 			_ultra_shader = Shader.new()
 			_ultra_shader.code = _ultra_code()
 		mat.shader = _ultra_shader
+	if ultra:
 		mat.set_shader_parameter("detail_n", load(ULTRA_DIR + "cotton_jersey_nor_gl_2k.jpg"))
 		mat.set_shader_parameter("detail_r", load(ULTRA_DIR + "cotton_jersey_rough_2k.jpg"))
 	mat.set_shader_parameter("albedo", _tex[tk][0])
 	mat.set_shader_parameter("kit", _tex[tk][1])
 	var jersey: Color = look.get("jersey", Color("c8202f"))
-	mat.set_shader_parameter("jersey", jersey)
-	mat.set_shader_parameter("trim", look.get("trim", Color.WHITE))
-	mat.set_shader_parameter("shorts", look.get("shorts", Color("f6f6f2")))
-	mat.set_shader_parameter("socks", look.get("socks", jersey))
-	mat.set_shader_parameter("skin", look.get("skin", Color("e8bc9a")))
+	mat.set_shader_parameter("jersey", _v(jersey))
+	mat.set_shader_parameter("trim", _v(look.get("trim", Color.WHITE)))
+	mat.set_shader_parameter("shorts", _v(look.get("shorts", Color("f6f6f2"))))
+	mat.set_shader_parameter("socks", _v(look.get("socks", jersey)))
+	mat.set_shader_parameter("skin", _v(look.get("skin", Color("e8bc9a"))))
 	mat.set_shader_parameter("design", int(look.get("design", 0)))
 	var ref: Dictionary = data().ref
 	for k in ["jersey", "trim", "shorts", "skin"]:
 		var c: Array = ref[k]
-		mat.set_shader_parameter("ref_" + k, Color(c[0], c[1], c[2]))
+		mat.set_shader_parameter("ref_" + k, Vector3(c[0], c[1], c[2]))
 	# Where the kit's design goes, from the skeleton at rest: the hoop round the chest, the sash from the right
 	# shoulder to the left hip, the shoulders.
 	mat.set_shader_parameter("chest_y", float(_rest.chest.y))
@@ -175,7 +177,13 @@ func set_lod(l: int) -> void:
 		mesh_instance.mesh = _mesh_pair()[1 if _lod > 0 else 0]
 
 
-## Ultra's: the same kit and colours, lit by the scene's real light (the sun, the sky, the floodlights; shadows on
+## A colour as the shader takes it: a plain Vector3 (a Color would be decoded to linear light by the Vulkan renderer,
+## and the shader decodes its colours itself: game/shaders/look.gdshaderinc).
+static func _v(c: Color) -> Vector3:
+	return Vector3(c.r, c.g, c.b)
+
+
+## High with the HD pack: the same kit and colours, lit by the scene's real light (the sun, the sky, the floodlights; shadows on
 ## him and from him): the kit knitted (Poly Haven's cotton_jersey scan, its relief and roughness, tiled small), with
 ## a cloth's sheen at the edges; the skin smoother, and warm where light comes through from behind.
 static func _ultra_code() -> String:
@@ -205,17 +213,18 @@ const SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_back;
 #include "res://game/shaders/look.gdshaderinc"
-uniform sampler2D albedo : source_color, filter_linear_mipmap;
+uniform sampler2D albedo : filter_linear_mipmap;
 uniform sampler2D kit : filter_linear_mipmap;
-uniform vec3 jersey : source_color;
-uniform vec3 trim : source_color;
-uniform vec3 shorts : source_color;
-uniform vec3 socks : source_color;
-uniform vec3 skin : source_color;
-uniform vec3 ref_jersey : source_color;
-uniform vec3 ref_trim : source_color;
-uniform vec3 ref_shorts : source_color;
-uniform vec3 ref_skin : source_color;
+// (Colours and textures are read as written, the same on both renderers: look.gdshaderinc.)
+uniform vec3 jersey;
+uniform vec3 trim;
+uniform vec3 shorts;
+uniform vec3 socks;
+uniform vec3 skin;
+uniform vec3 ref_jersey;
+uniform vec3 ref_trim;
+uniform vec3 ref_shorts;
+uniform vec3 ref_skin;
 uniform int design = 0;
 uniform float chest_y = 1.3;
 uniform float spine_y = 1.1;

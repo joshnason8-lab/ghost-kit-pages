@@ -92,7 +92,7 @@ static func build(time_of_day: String) -> Node3D:
 	root.add_child(grass)
 	var g := Geo.new()
 	var white := Color(0.95, 0.95, 0.92)
-	var y := 0.012
+	var y := 0.03   # above the grass by enough that the far lines never fight it for depth (Vulkan: dashes at 12 mm)
 	var w := drawn_line_w()
 	# Side lines and end lines.
 	g.floor_rect(-HALF_L - w, -HALF_W - w, HALF_L + w, -HALF_W, y, white)
@@ -147,15 +147,15 @@ static func grass_material(time_of_day: String) -> ShaderMaterial:
 	return _grass_material(time_of_day)
 
 
-## Ultra's grass, from the same shader: lit (the sun's and the floodlights' light and the stands' and players'
-## shadows fall on it), the 4K scan's normal and roughness, the stripes crossed by a diagonal cut as at Croke Park,
+## High's grass (on Vulkan), from the same shader: lit (the sun's and the floodlights' light and the stands' and
+## players' shadows fall on it), the scan's normal (the HD pack's 4K and its roughness, else the 2K in the game), the stripes crossed by a diagonal cut as at Croke Park,
 ## and wear in the middle where the throw-ins and the midfield battles are.
 static func _ultra_grass(code: String) -> String:
 	code = code.replace("render_mode unshaded, cull_back;", "render_mode cull_back;")
 	code = code.replace("uniform float light = 1.0;", "uniform float light = 1.0;\nuniform sampler2D rough : hint_roughness_r, filter_linear_mipmap, repeat_enable;")
 	code = code.replace("		c *= 0.9 + 0.2 * clamp(dot(normalize(vec3(n.x, n.z * 2.0, -n.y)), normalize(sun)), 0.0, 1.0);\n",
 		"		c *= 1.0 + 0.06 * (step(0.5, fract((wp.x + wp.z) / 14.0)) - 0.5);\n"
-		+ "		float mid = smoothstep(14.0, 3.0, length(wp.xz)) * smoothstep(0.3, 0.7, texture(sparse, wp.xz / 23.0).r);\n"
+		+ "		float mid = smoothstep(14.0, 3.0, length(wp.xz)) * smoothstep(0.3, 0.7, texture(sparse, wp.xz / 23.0).rgb.r);\n"
 		+ "		c = mix(c, c * 0.82 + vec3(0.03, 0.025, 0.0), mid * 0.5);\n")
 	code = code.replace("	ALBEDO = compat_to_scene(c * light);",
 		"	ALBEDO = compat_to_scene(c) * 1.15;\n	NORMAL_MAP = texture(grass_n, uv).rgb;\n	NORMAL_MAP_DEPTH = 0.8;\n"
@@ -165,8 +165,9 @@ static func _ultra_grass(code: String) -> String:
 
 static func _grass_material(time_of_day: String) -> ShaderMaterial:
 	var g := int(Game.settings.graphics)
-	var ultra := Ultra.active()
-	var key := "%s|%d|%s" % [time_of_day, g, ultra]
+	var ultra := Ultra.lit()
+	var pack := Ultra.active()
+	var key := "%s|%d|%s|%s" % [time_of_day, g, ultra, pack]
 	if _grass.has(key):
 		return _grass[key]
 	var sh := Shader.new()
@@ -174,10 +175,10 @@ static func _grass_material(time_of_day: String) -> ShaderMaterial:
 shader_type spatial;
 render_mode unshaded, cull_back;
 #include "res://game/shaders/look.gdshaderinc"
-uniform sampler2D grass : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D grass : filter_linear_mipmap, repeat_enable;
 uniform sampler2D grass_n : hint_normal, filter_linear_mipmap, repeat_enable;
-uniform sampler2D sparse : source_color, filter_linear_mipmap, repeat_enable;
-uniform sampler2D withered : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D sparse : filter_linear_mipmap, repeat_enable;
+uniform sampler2D withered : filter_linear_mipmap, repeat_enable;
 uniform bool detail = true;
 uniform vec3 g1 = vec3(0.20, 0.42, 0.16);
 uniform vec3 g2 = vec3(0.17, 0.36, 0.13);
@@ -209,7 +210,7 @@ void fragment() {
 		c = mix(c, mix(green * 0.85, s * (lum(green) / SPARSE_LUM) * 0.9, 0.35) * (lum(s) / SPARSE_LUM), edge * 0.55);
 		// Withered in the goalmouth, where the keeper and the backs stand.
 		vec3 w = texture(withered, wp.xz / 2.3).rgb;
-		float mouth = smoothstep(8.5, 2.0, goal) * smoothstep(0.25, 0.65, texture(withered, wp.xz / 17.0).r);
+		float mouth = smoothstep(8.5, 2.0, goal) * smoothstep(0.25, 0.65, texture(withered, wp.xz / 17.0).rgb.r);
 		c = mix(c, w * (lum(green) * 1.15 / mean_lum(withered)), mouth * 0.6);
 		vec3 n = texture(grass_n, uv).rgb * 2.0 - 1.0;
 		c *= 0.9 + 0.2 * clamp(dot(normalize(vec3(n.x, n.z * 2.0, -n.y)), normalize(sun)), 0.0, 1.0);
@@ -236,10 +237,11 @@ void fragment() {
 	var light: float = {"day": 1.0, "dusk": 0.78, "night": 0.86}.get(time_of_day, 1.0)
 	m.set_shader_parameter("light", light)
 	if ultra:
+		m.set_shader_parameter("light", 1.0)
+	if pack:
 		m.set_shader_parameter("grass", load("res://ultra/ground/grass_ground_albedo_4k.jpg"))
 		m.set_shader_parameter("grass_n", load("res://ultra/ground/grass_ground_normal_4k.jpg"))
 		m.set_shader_parameter("rough", load("res://ultra/ground/grass_ground_rough_4k.jpg"))
-		m.set_shader_parameter("light", 1.0)
 	if time_of_day == "dusk":
 		m.set_shader_parameter("g1", Vector3(0.22, 0.38, 0.15))
 		m.set_shader_parameter("g2", Vector3(0.19, 0.33, 0.13))

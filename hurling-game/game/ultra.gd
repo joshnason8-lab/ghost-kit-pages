@@ -1,33 +1,40 @@
 class_name Ultra
 extends Node
-## The Ultra graphics level: for recent high-end phones, opt-in, never chosen for you. It draws with Godot's Mobile
-## (Vulkan) renderer rather than GL Compatibility, and its content (sharper players, grass, crowd, stadium: the HD
-## pack) is a separate download, not in the APK, so Low, Medium and High are exactly as they were.
+## The renderer, High graphics' extras and the HD pack. (The name is the 0.10 betas' Ultra level, which since 0.11 is
+## High: the game draws with Godot's Mobile (Vulkan) renderer at every level, so changing level needs no restart.)
 ##
-## The renderer is fixed when the game starts, so switching to Ultra or back writes user://renderer.cfg (the project's
-## settings override: project.godot application/config/project_settings_override) and the game has to be opened
-## again. If Vulkan will not start, Godot falls back to OpenGL by itself (rendering/rendering_device/
-## fallback_to_opengl3) and the next start goes back to High; if a start in Ultra never gets as far as the home
-## screen (a crash), the one after that goes back to High too.
+## The renderer: Vulkan, the project's own (project.godot). A phone that cannot start it gets OpenGL from Godot itself
+## (rendering/rendering_device/fallback_to_opengl3); a phone whose graphics are known to struggle with Vulkan (older
+## Mali, PowerVR, Adreno 3xx-5xx), or whose last start on Vulkan never reached the home screen (a crash), is set to
+## GL Compatibility from its next start, quietly, by user://renderer.cfg (the project's settings override,
+## project.godot application/config/project_settings_override). Every level draws the same on either renderer
+## (game/shaders/look.gdshaderinc); High's extras below need Vulkan.
 ##
-## The pack: hurling-heroes-hd-<PACK>.pck on its own release (hurling-heroes-hd), with its manifest (size and SHA-256)
-## beside it.
-## Downloaded in pieces (resumed where it stopped, retried), checked whole, then mounted at start with
-## ProjectSettings.load_resource_pack: its files appear under res://ultra/.
+## High on Vulkan (lit()): the sun's real shadows, floodlights that light the field, filmic tonemapping and glow, the
+## moves blended into each other, the touchline camera in replays. With the HD pack too (active()): the hurlers at
+## 23,000 triangles and 4K with cloth and skin shading, the officials with their PBR maps, 4K lit grass, a denser,
+## sharper crowd, the stands' concrete. The pack: hurling-heroes-hd-<PACK>.pck on its own release
+## (hurling-heroes-hd) with its manifest (size and SHA-256) beside it, an optional download from Settings; fetched in
+## pieces (resumed where it stopped, retried), checked whole, mounted with ProjectSettings.load_resource_pack (its
+## files appear under res://ultra/), at once and at every start after.
 
 const OVERRIDE := "user://renderer.cfg"
-const BOOT_FLAG := "user://ultra_boot.flag"
+const BOOT_FLAG := "user://vulkan_boot.flag"
 const DIR := "user://hd/"
 const PACK := 1                           # the pack this build of the game expects
 const RELEASE := "https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/hurling-heroes-hd/"
 const CHUNK := 4 * 1024 * 1024
 const PROBE := "res://ultra/ground/grass_ground_albedo_4k.jpg"   # a file the pack brings
+## Graphics that struggle with Vulkan: these phones draw with GL Compatibility (adapter names, lower case).
+const WEAK_VULKAN := ["mali-t", "mali-4", "mali-g31", "mali-g51", "mali-g52", "powervr", "img ", "ge8", "adreno (tm) 3",
+	"adreno (tm) 4", "adreno (tm) 50", "adreno (tm) 51"]
 
 signal progress(done: int, total: int)
 signal finished(ok: bool, message: String)
 
 static var mounted := false
-static var fell_back := ""                # why the last start left Ultra (shown once in Settings)
+static var fell_back := ""                # "crash": the last start on Vulkan failed (said once, in Settings)
+static var removed := false               # the pack deleted while mounted: none of it is read till the next start
 
 
 static func pack_name() -> String:
@@ -42,8 +49,8 @@ static func pack_path() -> String:
 	return DIR + pack_name()
 
 
-## A phone that can take Ultra: 64-bit, Vulkan-class GPU (Adreno 640 and later, Mali-G710 and later, Immortalis,
-## Xclipse), 6 GB of memory or more. On a computer (testing), always.
+## A phone for High and the HD pack: 64-bit, Vulkan-class GPU (Adreno 640 and later, Mali-G710 and later,
+## Immortalis, Xclipse), 6 GB of memory or more. On a computer (testing), always.
 static func capable() -> bool:
 	if OS.has_feature("web"):
 		return false
@@ -79,56 +86,71 @@ static func _model_number(gpu: String, key: String) -> int:
 	return int(digits) if not digits.is_empty() else 0
 
 
+## Graphics known to struggle with Vulkan (WEAK_VULKAN), or a phone older than Android 10.
+static func weak_vulkan(gpu: String) -> bool:
+	if not OS.has_feature("mobile"):
+		return false
+	gpu = gpu.to_lower()
+	for w in WEAK_VULKAN:
+		if gpu.contains(w):
+			return true
+	return OS.has_feature("android") and int(OS.get_version().get_slice(".", 0)) < 10
+
+
 ## The game is drawing with the Mobile (Vulkan) renderer.
 static func renderer_ready() -> bool:
 	return RenderingServer.get_current_rendering_method() != "gl_compatibility"
 
 
-## Ultra is on and working: the renderer and the pack.
+## High's extras that need only Vulkan: real shadows, the lighting, the blended moves, the replays' touchline camera.
+static func lit() -> bool:
+	return int(Game.settings.graphics) == Game.GFX_HIGH and renderer_ready()
+
+
+## High's extras with the HD pack: its players, grass, crowd and concrete.
 static func active() -> bool:
-	return int(Game.settings.graphics) == Game.GFX_ULTRA and renderer_ready() and (mounted or ResourceLoader.exists(PROBE))
+	return lit() and not removed and (mounted or ResourceLoader.exists(PROBE))
 
 
-## For the next start: the Mobile renderer (on) or the project's own, GL Compatibility (off).
-static func set_renderer(on: bool) -> void:
+## For the next start: GL Compatibility (on), or the project's own Vulkan (off).
+static func use_gl(on: bool) -> void:
 	if on:
 		var f := FileAccess.open(OVERRIDE, FileAccess.WRITE)
 		if f:
-			f.store_string('[rendering]\n\nrenderer/rendering_method="mobile"\nrenderer/rendering_method.mobile="mobile"\n')
+			f.store_string('[rendering]\n\nrenderer/rendering_method="gl_compatibility"\nrenderer/rendering_method.mobile="gl_compatibility"\n')
 	elif FileAccess.file_exists(OVERRIDE):
 		DirAccess.remove_absolute(OVERRIDE)
 
 
-## At start, before anything is drawn: keep Ultra if it can work, else go back to High and say why.
+## At start, before anything is drawn: on Vulkan, a phone whose last start crashed, or whose graphics struggle with
+## Vulkan, goes to GL Compatibility from its next start; the HD pack mounted if it is here.
 static func boot() -> void:
-	if int(Game.settings.graphics) != Game.GFX_ULTRA:
-		if FileAccess.file_exists(OVERRIDE):
-			set_renderer(false)   # a switch away from Ultra finished: the override is no longer wanted
-		return
-	var why := ""
-	if FileAccess.file_exists(BOOT_FLAG):
-		why = "crash"             # the last start in Ultra never reached the home screen
-	elif not renderer_ready():
-		why = "vulkan"            # Vulkan would not start: Godot fell back to OpenGL
-	elif ResourceLoader.exists(PROBE):
-		pass                      # the content is in the project itself (the editor, the tests): nothing to mount
-	elif not FileAccess.file_exists(pack_path()) or ProjectSettings.load_resource_pack(pack_path(), false) == false:
-		why = "pack"
-	if why != "":
-		fell_back = why
-		Game.settings.graphics = Game.GFX_HIGH
-		set_renderer(false)
+	if renderer_ready():
 		if FileAccess.file_exists(BOOT_FLAG):
+			fell_back = "crash"             # the last start on Vulkan never reached the home screen
+			use_gl(true)
 			DirAccess.remove_absolute(BOOT_FLAG)
-		Game.save_settings()
-		return
-	mounted = true
-	var f := FileAccess.open(BOOT_FLAG, FileAccess.WRITE)
-	if f:
-		f.store_string(Time.get_datetime_string_from_system())
+		elif weak_vulkan(RenderingServer.get_video_adapter_name()):
+			use_gl(true)
+		else:
+			var f := FileAccess.open(BOOT_FLAG, FileAccess.WRITE)
+			if f:
+				f.store_string(Time.get_datetime_string_from_system())
+	mount_now()
 
 
-## The home screen is up: this start in Ultra worked.
+## The pack mounted (at start, or as soon as it is downloaded): no restart needed, its files are new to the game.
+static func mount_now() -> bool:
+	if removed:
+		return false
+	if mounted or ResourceLoader.exists(PROBE):
+		return true
+	if FileAccess.file_exists(pack_path()) and ProjectSettings.load_resource_pack(pack_path(), false):
+		mounted = true
+	return mounted
+
+
+## The home screen is up: this start worked.
 static func started() -> void:
 	if FileAccess.file_exists(BOOT_FLAG):
 		DirAccess.remove_absolute(BOOT_FLAG)
@@ -143,7 +165,9 @@ static func pack_ready() -> bool:
 	return man is Dictionary and f != null and f.get_length() == int(man.get("size", -1))
 
 
+## The pack deleted (it stays mounted till the game is next started).
 static func remove_pack() -> void:
+	removed = removed or mounted
 	for n in [pack_name(), pack_name() + ".part", manifest_name()]:
 		if FileAccess.file_exists(DIR + n):
 			DirAccess.remove_absolute(DIR + n)

@@ -5,7 +5,7 @@ extends Node3D
 func _ready() -> void:
 	var out := OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "user://kits"
 	Game.main = self
-	# (A second argument picks the level: 3 for Ultra, run with --rendering-method mobile.)
+	# (A second argument picks the level, 0-2.)
 	Game.settings.graphics = int(OS.get_cmdline_user_args()[1]) if OS.get_cmdline_user_args().size() > 1 else Game.GFX_HIGH
 	var env := WorldEnvironment.new()
 	var e := Environment.new()

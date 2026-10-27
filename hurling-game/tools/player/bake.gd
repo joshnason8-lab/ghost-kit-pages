@@ -36,7 +36,7 @@ const TRIS := [6000, 2000]    # about how many triangles each size keeps
 ## tee for seconds before they swing. The run is kept whole (one stride of each leg).
 const WINDOW := {"Baseball_Hit": [0.8, 0.7], "Baseball_Strike": [0.8, 0.7], "Golf_Drive": [0.9, 0.7]}
 
-var fps := 30.0              # the clips' frames a second (60 for Ultra: the 7th argument)
+var fps := 30.0              # the clips' frames a second (60 for the HD pack: the 7th argument)
 var sk: Skeleton3D
 var rest_g := []              # the model's bones in the game's rest stance (skeleton space)
 var shift := Vector3.ZERO

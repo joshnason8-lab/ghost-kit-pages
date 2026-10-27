@@ -21,7 +21,6 @@ const CAM_END := 2      # behind the goal you are attacking
 const GFX_LOW := 0
 const GFX_MEDIUM := 1
 const GFX_HIGH := 2
-const GFX_ULTRA := 3    # recent high-end phones, opt-in: the Mobile (Vulkan) renderer and the HD pack (game/ultra.gd)
 
 ## Frame rate (Settings): Battery saver, about 30 frames a second at 80% render scale; Smooth, 60 a second (the
 ## default); Max, as many as the screen shows. Each is a whole fraction of the screen's refresh rate.
@@ -110,6 +109,9 @@ func _ready() -> void:
 	if int(settings.graphics) < 0:
 		settings.graphics = detect_graphics()
 		save_settings()
+	elif int(settings.graphics) > GFX_HIGH:
+		settings.graphics = GFX_HIGH       # the 0.10 betas' Ultra is High now
+		save_settings()
 	Ultra.boot()
 	loaded.connect(Ultra.started)
 	apply_frame_rate()
@@ -147,7 +149,8 @@ func go_back() -> void:
 
 
 ## The graphics level for this phone on its first run: Low on a phone with a small GPU or under 4.5 GB of memory (a
-## Galaxy A0x/A1x's Mali-G52 or G57, Adreno 5xx and 61x, PowerVR), Medium on the rest; High is a choice.
+## Galaxy A0x/A1x's Mali-G52 or G57, Adreno 5xx and 61x, PowerVR), High on a recent high-end phone (Ultra.capable:
+## Adreno 640 and later, Mali-G710 and later, Immortalis, Xclipse, with 6 GB), Medium on the rest.
 func detect_graphics() -> int:
 	if not OS.has_feature("mobile"):
 		return GFX_HIGH
@@ -160,7 +163,7 @@ func detect_graphics() -> int:
 			"adreno (tm) 4", "img bxm", "ge8"]:
 		if gpu.contains(weak):
 			return GFX_LOW
-	return GFX_MEDIUM
+	return GFX_HIGH if Ultra.capable() else GFX_MEDIUM
 
 
 ## The sharper version of a texture, for Medium and High (Low always loads the file named): "x_1k.jpg" becomes

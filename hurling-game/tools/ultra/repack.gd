@@ -1,5 +1,5 @@
 extends SceneTree
-## Rewrites an exported HD pack with Ultra's content alone: each file under res://ultra/ (its .import and the
+## Rewrites an exported HD pack with the pack's content alone: each file under res://ultra/ (its .import and the
 ## imported texture it points to, or the file itself), and none of what an export always adds (project.binary, the
 ## autoload scripts, main.tscn, translations). The game never used those (it mounts the pack without replacing its own
 ## files), and a download should carry content only, no code.
