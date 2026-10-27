@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Cuts the trailer from the clips tools/media/trailer_clip.tscn recorded (each a folder of numbered frames, the game's
-sound as f.wav, and marks.txt with the "MARK <name> <frame>" lines it printed) and the cards tools/media/cards.py made.
+sound as f.wav, and marks.txt with the "MARK <name> <frame>" lines it printed; or the frames already encoded as
+clip.mp4) and the cards tools/media/cards.py made.
 
   trailer/pok-ta-pok-rivals-trailer.mp4           1920 x 1080, 30 fps, H.264 + AAC, about 36 s
   trailer/pok-ta-pok-rivals-trailer-vertical.mp4  1080 x 1920, 15 s, for social media
@@ -71,7 +72,11 @@ def segment(i: int, seg: tuple, clips: pathlib.Path, cards: pathlib.Path, tmp: p
     m = marks(clip)
     first = max(0, m[mark] - int(round(before * FPS)))
     frames = int(round(length * FPS))
-    pic = ["-framerate", FPS, "-start_number", first, "-i", clip / "f%08d.png"]
+    if (clip / "clip.mp4").exists():
+        # The recording as make_media_kit.sh keeps it: its frames encoded near-losslessly.
+        pic = ["-ss", f"{first / FPS:.3f}", "-i", clip / "clip.mp4"]
+    else:
+        pic = ["-framerate", FPS, "-start_number", first, "-i", clip / "f%08d.png"]
     snd = ["-ss", f"{first / FPS:.3f}", "-t", length, "-i", clip / "f.wav"]
     if vertical:
         # The game's picture across the middle, over a blurred, filled copy of itself.
@@ -98,8 +103,12 @@ def cut(plan: list, clips: pathlib.Path, cards: pathlib.Path, out: pathlib.Path,
     segs = [segment(i, s, clips, cards, tmp, vertical) for i, s in enumerate(plan)]
     lst = tmp / "list.txt"
     lst.write_text("".join(f"file '{p.resolve()}'\n" for p in segs))
-    run(["-f", "concat", "-safe", "0", "-i", lst, "-c:v", "libx264", "-crf", crf, "-preset", "slow", "-profile:v", "high",
-         "-pix_fmt", "yuv420p", "-r", FPS, "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", out])
+    # Capped so the landscape trailer stays well under 60 MB: the game's crowds and stone are fine detail that
+    # H.264 would otherwise spend a lot on.
+    run(["-f", "concat", "-safe", "0", "-i", lst, "-c:v", "libx264", "-crf", crf, "-maxrate", "10M", "-bufsize", "20M",
+         "-preset", "slow", "-profile:v", "high",
+         "-pix_fmt", "yuv420p", "-r", FPS, "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",   # the game's mix, to web loudness
+         "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", out])
     for p in segs:
         p.unlink()
     lst.unlink()
