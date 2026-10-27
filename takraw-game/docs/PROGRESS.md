@@ -504,13 +504,21 @@ kit's captures showed.
 **The soak test** (`tests/soak_test.gd`, run by `tools/soak.sh [events] [matches]`, on a desktop with software OpenGL):
 a monkey of random input on every screen (taps on whatever buttons show, taps anywhere, drags, the phone's Back on
 every screen but the home one, the app paused and resumed, which must keep a match paused and as it was), then AI-v-AI
-matches played to the end, alternating Low and High, through the five venues and the four events. It reports the
-slowest frames and where, memory as it goes, and any match that stops getting on with it; any script or engine error
-fails it. The settings, saves and records are put back at the end.
-- Memory: up from 191 MB after 500 events to 300 MB after 2,500, the climb slowing. Not a leak: the same match started
-  and left fifteen times holds at 144 MB, the same objects and nodes each time and no orphans, and going through the
-  five venues levels off at 155-161 MB. The rest is what the monkey loads once and keeps: the venues at each graphics
-  level, and each language's fonts as it changes languages.
+matches played to the end, alternating Low and High, through the five venues and the events. It reports the slowest
+frames and where, memory as it goes, and any match that stops getting on with it; any script or engine error fails it.
+The settings, saves and records are put back at the end.
+- **The monkey, 5,000 events** (2,724 taps on buttons, 669 taps anywhere, 534 drags, 415 Backs, 253 pauses and
+  resumes of the app, 331 waits), over every screen and into matches: no script or engine error, no match lost or
+  changed by a pause.
+- **Memory** went from 191 MB after 500 events to 300 MB after 2,500 and 317 MB after 5,000, levelling off. Not a leak:
+  the same match started and left fifteen times holds at 144 MB, the same objects and nodes each time and no orphans,
+  and going through the five venues levels off at 155-161 MB. The rest is what the monkey loads once and keeps: the
+  venues at each graphics level, and each language's fonts as it changes languages.
+- **Twelve AI-v-AI matches** (a set to 15 each), Low and High in turn, regu, doubles and quadrant, through the five
+  venues: every one played to a legal end (15-9, 15-2, 15-9, 12-15, 15-11, 15-10, 8-15, 14-16, 12-15, 10-15, 15-10,
+  13-15) in 3.3 to 6.6 match minutes, none stalled; slowest frame 272 ms. `soak: clean`. They run headless (`soak.sh 0
+  12`): software OpenGL draws a match at about a frame a second, so a whole one would take hours; the monkey's
+  matches are drawn.
 
 **The store kit** (`store/`, drafts until submission):
 - The listing in all thirteen languages (`store/listing/`): the eight new ones Lao, Burmese, Khmer, Filipino, Japanese,
@@ -536,20 +544,41 @@ it and publishes it as the release `sepak-takraw-unleashed-media`):
   block (mall), a doubles rally (park), a kill (gym), a celebration, and the home screen, a league season, the World
   Championship and How to Play. The game is landscape only, so no portrait ones.
 - Icons: 1024 and 512 px, and the feature graphic.
-- The trailer, about 34 s, 1920 × 1080 at 30 fps, H.264 with AAC: a title card, six moments from real AI-v-AI matches in
+- The trailer, 33.7 s, 1920 × 1080 at 30 fps, H.264 with AAC (36.5 MB): a title card, six moments from real AI-v-AI matches in
   the five venues with captions over them, and an end card ("Coming soon to Google Play"). Filmed with Godot's Movie
   Maker (`tools/media/trailer.gd`) at the window size an `override.cfg` sets for the run (Movie Maker films at the
   project's 1280 × 720 otherwise, whatever `--resolution` says): each moment is found by playing its match on unseen
   within one frame, then the same match (the same seed) is played again to a little before it and filmed; the game's own
   sound, the menu music under it. The mall's chatter (CC BY-SA) is silenced in its shot so the trailer carries no
-  share-alike sound. A 15-second vertical cut (1080 × 1920) from three of the moments.
+  share-alike sound. A 15-second vertical cut (1080 × 1920, 15.5 MB) from three of the moments, its camera wide of the
+  assistant referee and its captions broken by hand. Both at most 10 Mbit/s: the crowds take twice that at the same
+  quality, which would have put the trailer near 100 MB.
 - `CREDITS.txt`: every sound and piece in it, under its licence.
+- The zip: 79.2 MB, at
+  https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/sepak-takraw-unleashed-media/media-kit-sepak-takraw-unleashed.zip
+  (a prerelease, never marked latest).
 - The workflow checks what it made before publishing it: both videos H.264 + AAC at 30 fps, at their sizes, the trailer
   30-45 s and the cut at most 15 s, each under 60 MB, and every PNG 1920 × 1080.
 
 Tests: test_runner 1619 checks, 0 failures (new: the controls hidden under the pause menu and its Settings, and back
 after); fit_audit 0 problems (13 languages, three phone shapes, every part); user_bot perfect 15-1, idle 3-15;
 input_test 10 checks, 0 failures; compile_check 53 scripts, 0 broken.
+
+## Back closes what is open first (0.12.4)
+
+Found checking "Back on every screen" for Play: on the home screen with the language picker open, the phone's Back
+closed the whole game (the home screen's Back leaves the game, and nothing caught it for the picker); with a team
+picker's list open (Quick Match) or a question (League Season's "Abandon?"), it left the screen under it.
+- `Game.go_back` closes an open list or question first; the home screen's `on_back` closes the picker, and leaves
+  the game only with nothing open.
+- test_runner presses Back on every screen: it leaves each of Quick Match, Settings, How to Play, Records, League
+  Season, International, the licences and the help; it closes the picker, a team list and "Abandon?" (the season
+  kept); in a match it pauses, closes the pause menu's Settings, and resumes. The soak presses Back on the home screen
+  when the picker is open.
+
+The build: 0.12.4-beta, version code 20; the bundle 116.3 MB, target API 36, `VIBRATE` only, both libraries 16 KB
+aligned (the bundle workflow's checks); the APK 127.7 MB, signed with the beta key. Tests: test_runner 1633 checks,
+0 failures (CI 1615, its matches ending differently); input_test 10 checks, 0 failures.
 
 ## Gaps that need the owner
 
