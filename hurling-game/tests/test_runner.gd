@@ -780,13 +780,18 @@ func _hero_body() -> void:
 	# speed the foot on the ground stays put (the stride's length is the recording's), within 0.35 m/s (tools/mocap).
 	for g in Player.GAITS:
 		check(HeroBody.data().clips.has(g[0]) and HeroBody.data().clips[g[0]].frames.size() > 10, "The %s clip loads" % g[0])
-	for g in [["CMU_Walk", 1.3], ["CMU_Jog", 2.6]]:
-		var slide := _foot_slide(float(g[1]))
-		check(slide < 0.35, "The %s clip: the planted foot slides %.2f m/s at %.2f m/s" % [g[0], slide, g[1]])
-	# The sprint's feet cannot sit still at a sprinter's cadence (the clip is a short-strided run), but slide half
-	# what they did before 0.6.0 (3.2 m/s at 7 m/s).
-	var sprint := _foot_slide(7.0)
-	check(sprint < 1.8, "The sprint: the planted foot slides %.2f m/s at 7 m/s" % sprint)
+	# On Low and on High (with the HD pack's clips where it has them), whatever level this machine picked.
+	var level = Game.settings.graphics
+	for lv in [Game.GFX_LOW, Game.GFX_HIGH]:
+		Game.settings.graphics = lv
+		for g in [["CMU_Walk", 1.3], ["CMU_Jog", 2.6]]:
+			var slide := _foot_slide(float(g[1]))
+			check(slide < 0.35, "The %s clip (graphics %d): the planted foot slides %.2f m/s at %.2f m/s" % [g[0], lv, slide, g[1]])
+		# The sprint's feet cannot sit still at a sprinter's cadence (the clip is a short-strided run), but slide half
+		# what they did before 0.6.0 (3.2 m/s at 7 m/s).
+		var sprint := _foot_slide(7.0)
+		check(sprint < 1.8, "The sprint (graphics %d): the planted foot slides %.2f m/s at 7 m/s" % [lv, sprint])
+	Game.settings.graphics = level
 	# The swings: at the contact time the bas comes past him going the way he faces (where the ball goes), within
 	# his reach, below the shoulder.
 	pl.vel = Vector3.ZERO
@@ -797,12 +802,33 @@ func _hero_body() -> void:
 		var at := []
 		for dt in [-0.02, 0.0, 0.02]:
 			pl.action_t = pl.contact_time(a) + dt
-			pl.animate(0.0)
+			pl.body.apply(pl._pose(0.0))     # the clip itself (High's blend into it is checked below)
 			at.append(pl.body.bas_world() - pl.global_position)
 		var mv: Vector3 = at[2] - at[0]
 		var bas: Vector3 = at[1]
 		var ok := mv.z > absf(mv.x) and bas.z > -0.5 and Vector2(bas.x, bas.z).length() < 1.9 and bas.y < 1.7 * Player.DRAW_SCALE
 		check(ok, "The %s clip: the bas comes past him going forward at contact (at %.2f across, %.2f forward, %.2f up; moving %.2f across, %.2f forward)" % [a, bas.x, bas.z, bas.y, mv.x, mv.z])
+	# High's blend from one move into the next: under way just after the change, done FADE seconds on (the body then
+	# as the move's own pose).
+	var keep_g = Game.settings.graphics
+	Game.settings.graphics = Game.GFX_HIGH
+	if Ultra.lit():
+		pl.play("strike")
+		pl.action_t = 0.1
+		pl._crossfade(pl._pose(0.0), 0.0)
+		pl.play("ground")
+		pl.action_t = pl.contact_time("ground")
+		var raw: Dictionary = pl._pose(0.0)
+		var mid: Dictionary = pl._crossfade(raw.duplicate(), 1.0 / 30.0)
+		var t := 1.0 / 30.0
+		var done := {}
+		while t < Player.FADE + 0.1:
+			t += 1.0 / 30.0
+			done = pl._crossfade(raw.duplicate(), t)
+		var off_mid: float = HeroBody.turn(mid.thigh_r).angle_to(HeroBody.turn(raw.thigh_r))
+		var off_done: float = HeroBody.turn(done.thigh_r).angle_to(HeroBody.turn(raw.thigh_r))
+		check(off_done < 0.01 and pl._fade == 0.0, "High: the blend into the next move is done after %.2f s (%.3f rad off at the end, %.3f a frame in)" % [Player.FADE, off_done, off_mid])
+	Game.settings.graphics = keep_g
 	pl.queue_free()
 	ref.queue_free()
 	await frames(1)

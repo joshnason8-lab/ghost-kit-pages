@@ -258,12 +258,12 @@ def clip(path, first=0, count=None, fps=30):
 
 
 def main():
-    if sys.argv[1] in ("--all", "--ultra"):
-        # --ultra: the same clips at 60 frames a second, for Ultra (the HD pack's ultra/anim/cmu60.json).
-        fps = 60 if sys.argv[1] == "--ultra" else 30
+    if sys.argv[1] == "--all":
+        # (Only at 30 frames a second: at 60 the planted foot slid more at the game's strides, so the HD pack has none.)
+        fps = 30
         src = pathlib.Path(sys.argv[2])
         clips = {name: clip(src / f"{cid}.bvh", first, None, fps) for name, (cid, first) in CLIPS.items()}
-        dst = ROOT / ("ultra/anim/cmu60.json" if fps == 60 else "assets/player/cmu.json")
+        dst = ROOT / "assets/player/cmu.json"
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_text(json.dumps({"clips": clips}, separators=(",", ":")))
         print("wrote", dst.relative_to(ROOT), dst.stat().st_size, "bytes")

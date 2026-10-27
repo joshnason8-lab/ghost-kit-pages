@@ -29,11 +29,12 @@ static func data() -> Dictionary:
 	if not _datas.has(u):
 		var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "hero.json"))
 		# The walk and the jog from the CMU motion-capture library (tools/mocap), with the Mixamo clips; with the HD pack
-		# all of them at 60 frames a second (the HD pack's ultra/anim).
+		# the Mixamo clips at 60 frames a second (the HD pack's ultra/anim). The CMU gaits stay at 30: the game's strides
+		# were measured on those, and at 60 the planted foot slides more (tests/test_runner.gd's foot-slide checks).
 		var cmu: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "cmu.json"))
 		d.clips.merge(cmu.clips)
 		if u:
-			for f in ["hero60.json", "cmu60.json"]:
+			for f in ["hero60.json"]:
 				var more: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://ultra/anim/" + f))
 				d.clips.merge(more.clips, true)
 		_datas[u] = d

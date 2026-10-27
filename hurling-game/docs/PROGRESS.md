@@ -234,6 +234,8 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 
 ## Done (0.11.0-beta, the owner's list, 27 October 2026)
 
+- **High's walk and jog stay at 30 fps**: the HD pack's 60 fps CMU gaits slid the planted foot more at the game's
+  strides (0.40 m/s at a jog against 0.31); the Mixamo moves stay at 60. The foot-slide checks now run on Low and High.
 - **Vulkan everywhere** (docs/GRAPHICS.md): the Mobile renderer for every level, GL Compatibility only as the
   fallback (Godot's own when Vulkan will not start; a list of weak GPUs and Android 9 or older; a crashed start),
   set quietly for the next start. Low, Medium, High with no restart; High on Vulkan lit (real shadows on lit grass,

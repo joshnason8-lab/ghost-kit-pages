@@ -22,7 +22,7 @@ three levels. 0.10's Ultra is High now.)
 | **Players** | 1,757 triangles, no outlines | 5,866, 2K texture | as Medium; with the HD pack 23,468 and 4K |
 | **Light** | the time of day's light in the colours, unlit | as Low, the grass's normal map catching the sun, a shadow under each man | **real lighting (on Vulkan)**: the sun's shadows from everything on lit grass, lit players (cloth and skin shading) and officials, the sky's light and reflections, filmic tonemapping and glow, floodlights that light the field at night |
 | **Crowd** | 5,400 at the stadium | 17,300 | 24,600; with the HD pack 26,800, sharper |
-| **Moves** | the clips | the clips | blended into each other (0.18 s); with the HD pack all at 60 fps |
+| **Moves** | the clips | the clips | blended into each other (0.18 s); with the HD pack the Mixamo moves (the swings, catches, the sprint) at 60 fps |
 | **Replays** | from behind the goal | | then cut to a low touchline camera, as television does |
 | **Picture** | 75% scale, no anti-aliasing | 90%, 4× MSAA | 100%, 4× MSAA |
 
@@ -32,7 +32,7 @@ On the GL fallback High has its textures, crowd and anti-aliasing but not the re
 
 The hurlers at full detail (23,468 triangles, 11,734 far off) with a 4K texture and the cotton jersey's weave as a
 normal and roughness map; the officials' Meshy PBR models; the pitch's grass at 4K; the crowd's sheet twice as sharp
-and seats closer together; the stands' concrete texture; every move at 60 fps. 114 MB.
+and seats closer together; the stands' concrete texture; the Mixamo moves at 60 fps (the CMU walk and jog stay at 30: their strides were measured there). 114 MB.
 
 | | |
 |---|---|
@@ -57,7 +57,7 @@ beta. A change to the pack that an older game could not read: raise `Ultra.PACK`
 
 After a release, `tests/hd_download.tscn` fetches the real pack through the game's own downloader, checks and mounts
 it (needs the internet, so not in CI). Content tools: `tools/crowd/render_fans.gd -- ultra`,
-`tools/mocap/bvh_clip.py --ultra ultra/anim`, `tools/player/bake.gd` (its 7th argument the frame rate, 8th
+`tools/player/bake.gd` (its 7th argument the frame rate, 8th
 `clips_only`). Pictures: `tests/kit_view.tscn -- <out> <level>`, `tests/venue_view.tscn -- <out> <venue> <level>
 [nopack]`, `tests/house_view.tscn`, `tests/run_view.tscn`.
 
