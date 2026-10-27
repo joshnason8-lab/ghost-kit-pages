@@ -146,7 +146,11 @@ def caption(path: pathlib.Path, size, text: str, small: str = ""):
     shade.putalpha(band.filter(ImageFilter.GaussianBlur(s // 14)))
     img = Image.alpha_composite(img, shade)
     d = ImageDraw.Draw(img)
-    f = store_art.font("Teko.ttf", s * 11 // 100, 600)
+    size = s * 11 // 100
+    f = store_art.font("Teko.ttf", size, 600)
+    while d.textlength(text, font=f) > w * 0.9 and size > 20:   # a long caption made smaller to fit
+        size -= 4
+        f = store_art.font("Teko.ttf", size, 600)
     tw = d.textlength(text, font=f)
     y = h - s * (23 if small else 18) // 100
     d.text(((w - tw) / 2, y), text, font=f, fill=INK)
@@ -198,7 +202,7 @@ def segment(avi, out, start, dur, vf_extra="", overlay=None, size=(W, H), crop=N
                 "[v][c]overlay=0:0:shortest=1[o]" % (vf, max(0.5, dur - 0.45)), "-map", "[o]", "-map", "0:a?"]
     else:
         cmd += ["-vf", vf, "-map", "0:v", "-map", "0:a?"]
-    cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", "19", "-pix_fmt", "yuv420p", "-r", str(FPS),
+    cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", "22", "-pix_fmt", "yuv420p", "-r", str(FPS),
             "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2", "-shortest", str(out)]
     subprocess.run(cmd, check=True)
 
@@ -211,7 +215,7 @@ def still(png, out, dur, fade_in=True, fade_out=True):
         vf += ",fade=t=out:st=%.2f:d=0.6" % (dur - 0.6)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-t", "%.3f" % dur, "-i", str(png),
                     "-f", "lavfi", "-t", "%.3f" % dur, "-i", "anullsrc=r=48000:cl=stereo", "-vf", vf,
-                    "-c:v", "libx264", "-preset", "medium", "-crf", "19", "-pix_fmt", "yuv420p", "-r", str(FPS),
+                    "-c:v", "libx264", "-preset", "medium", "-crf", "22", "-pix_fmt", "yuv420p", "-r", str(FPS),
                     "-c:a", "aac", "-b:a", "160k", "-shortest", str(out)], check=True)
 
 
