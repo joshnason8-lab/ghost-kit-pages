@@ -185,6 +185,12 @@ def concat(parts, out):
 	run("-f", "concat", "-safe", 0, "-i", lst, "-c", "copy", out)
 
 
+def final(video, audio, out):
+	"""The cut, encoded once more at a capped rate (the kit asks under 60 MB): H.264 High, AAC."""
+	run("-i", video, "-i", audio, "-c:v", "libx264", "-preset", "slow", "-crf", "20", "-maxrate", "9M", "-bufsize", "18M",
+		"-profile:v", "high", "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart", "-shortest", out)
+
+
 def soundtrack(total, action, events, out):
 	"""The menu music under the cards, the crowd under the play, a whistle and a cheer at each moment."""
 	a0, a1 = action
@@ -240,7 +246,7 @@ def wide(media, work, out):
 	events.append((action1 + 0.2, "whistle_final", 0.7))
 	concat(parts, work / "wide_v.mp4")
 	soundtrack(t, (action0, action1), events, work / "wide_a.m4a")
-	run("-i", work / "wide_v.mp4", "-i", work / "wide_a.m4a", "-c", "copy", "-movflags", "+faststart", "-shortest", out)
+	final(work / "wide_v.mp4", work / "wide_a.m4a", out)
 	return t
 
 
@@ -269,7 +275,7 @@ def tall(media, work, out):
 	t += TALL_END_S
 	concat(parts, work / "tall_v.mp4")
 	soundtrack(t, (a0, a1), events, work / "tall_a.m4a")
-	run("-i", work / "tall_v.mp4", "-i", work / "tall_a.m4a", "-c", "copy", "-movflags", "+faststart", "-shortest", out)
+	final(work / "tall_v.mp4", work / "tall_a.m4a", out)
 	return t
 
 

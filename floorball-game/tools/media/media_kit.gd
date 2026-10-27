@@ -205,8 +205,7 @@ func _menus() -> void:
 	await frames(12)
 	await _shot(n, "world_finals_pick")
 	var cup = Game.new_cup("FIN", false)
-	for i in 3:
-		cup.sim_next()
+	cup.sim_next()   # one round: the groups under way, your team still in it
 	Game.save_cup()
 	Game.show_screen("res://ui/cup_screen.gd")
 	await frames(12)
