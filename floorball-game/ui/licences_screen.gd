@@ -68,18 +68,26 @@ func _ready() -> void:
 			lines.append("(" + String(part.license) + ")")
 		parts.append("[b]%s[/b]\n%s" % [_plain(String(c.name)), "\n".join(lines)])
 	col.add_child(_text("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts)))
+	_add_licences(col)
+
+
+## The licences' own texts (long): one a frame after the page shows, so it opens at once. Laid out on the main thread:
+## laid out on threads, a page left before they had finished could crash the engine as it was freed.
+func _add_licences(col: VBoxContainer) -> void:
 	var info: Dictionary = Engine.get_license_info()
 	for name in info:
-		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
+		await get_tree().process_frame
+		if not is_instance_valid(col) or not col.is_inside_tree():
+			return
+		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())]))
 
 
-## Licence texts are long: a big one is laid out off the main thread.
-func _text(bb: String, big := false) -> RichTextLabel:
+## A block of a licence's text.
+func _text(bb: String) -> RichTextLabel:
 	var rt := RichTextLabel.new()
 	rt.bbcode_enabled = true
 	rt.fit_content = true
 	rt.scroll_active = false
-	rt.threaded = big
 	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# A drag that starts on the words must reach the scroll box: the text takes no input.

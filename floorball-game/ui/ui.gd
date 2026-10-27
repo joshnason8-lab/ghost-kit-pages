@@ -615,13 +615,12 @@ static func outline(l: Label, w := 8) -> void:
 
 
 ## A block of formatted text for a reading page (licences, help, privacy): wraps, takes no touch (a drag on the words
-## reaches the page's scroll box). A big one is laid out off the main thread.
-static func rich(bb: String, big := false) -> RichTextLabel:
+## reaches the page's scroll box).
+static func rich(bb: String) -> RichTextLabel:
 	var rt := RichTextLabel.new()
 	rt.bbcode_enabled = true
 	rt.fit_content = true
 	rt.scroll_active = false
-	rt.threaded = big
 	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
