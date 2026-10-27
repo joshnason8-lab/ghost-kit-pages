@@ -20,6 +20,7 @@ func _ready() -> void:
 	await _matches()
 	await _your_controls()
 	await _bodies()
+	await _owner_round()
 	await _grounds()
 	Game.settings = keep
 	Game.delete_cup()
@@ -217,6 +218,71 @@ func _screens() -> void:
 
 ## The owner's model: the lighter mesh on Low and the fuller one above it, each in its side's kit; every clip there;
 ## seated chasers kneel, the active chaser runs his run, at a rate that keeps his feet with the ground.
+## The owner's round after 0.9 (docs/PROGRESS.md, round ten): the dive lands and he gets up; the pole turn swings him
+## round the pole and out faster; the camera changes at once, from a button by pause; difficulty in Quick match and
+## the championships; the crowd turns to follow the play.
+func _owner_round() -> void:
+	# A dive: down flat, then up on his feet and running again, never left leaning in the air.
+	var a := Athlete.new({"id": "t", "speed": 80}, 0)
+	add_child(a)
+	await frames(1)
+	a.vel = Vector3(5.6, 0, 0)
+	a.do("dive", 0.5)
+	var flat := 0.0
+	var acts := {}
+	for i in 75:
+		a.integrate(1.0 / 30.0)
+		flat = maxf(flat, a.body.rotation.x)
+		acts[a.act] = true
+	check(flat > 1.3 and acts.has("lie") and acts.has("getup") and a.act == "" and absf(a.body.rotation.x) < 0.01,
+		"a dive: down flat (%.2f rad), on the ground, up again (now '%s')" % [flat, a.act])
+	# The pole turn: round the pole on its circle, out the far side at speed.
+	a.position = Vector3(11.45, 0, 0)
+	a.vel = Vector3(5.0, 0, 0)
+	a.pole_swing(Vector3(12, 0, 0), 0.55, 0.55, PI, PI * 2.4, 5.0, 6.0)
+	var off := 0.0
+	var out_v := Vector3.ZERO
+	var last := a.position
+	var jump := 0.0
+	for i in 30:
+		a.integrate(1.0 / 30.0)
+		jump = maxf(jump, (a.position - last).length() * 30.0)
+		last = a.position
+		if a.act == "pole_turn":
+			off = maxf(off, absf((a.position - Vector3(12, 0, 0)).length() - 0.55))
+		elif out_v == Vector3.ZERO:
+			out_v = a.vel
+	check(off < 0.05 and out_v.length() > 5.5 and out_v.x < 0.0 and jump < 7.5,
+		"pole turn: on the circle (off by %.2f m), out back down the field at %.1f m/s, never faster than %.1f m/s" % [off, out_v.length(), jump])
+	a.queue_free()
+	# A match: the camera button beside pause; each tap a different view at once.
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "MAH", "away": "ODI", "venue": "school", "format": KhoRules.CLASSIC, "turn_len": 60.0,
+		"user_team": 0, "seed": 2, "mode": "quick", "chase_first": 0, "test": true}
+	add_child(m)
+	await frames(30)
+	check(m.hud and m.hud._cam_btn and m.hud._cam_btn.visible, "a camera button beside pause")
+	var seen := {}
+	for k in 3:
+		seen[m.cam.global_position.snapped(Vector3(0.5, 0.5, 0.5))] = true
+		m.hud._cam_btn.pressed.emit()
+	check(seen.size() == 3, "three camera views, each different (%d)" % seen.size())
+	await frames(20)
+	check(Crowd.watch_target != Vector3.INF, "the crowd follows the play")
+	m.queue_free()
+	await frames(2)
+	check(Crowd.watch_target == Vector3.INF, "and stops when the match ends")
+	# Difficulty where you pick a match or a championship.
+	Game.delete_cup()
+	for path in ["res://ui/match_setup.gd", "res://ui/cup_screen.gd"]:
+		var sc := Game.show_screen(path)
+		await frames(3)
+		var found := false
+		for l in sc.find_children("*", "Label", true, false):
+			found = found or (l as Label).text == tr("DIFFICULTY").to_upper() or (l as Label).text == tr("DIFFICULTY")
+		check(found, "%s: the difficulty to choose" % path)
+
+
 func _bodies() -> void:
 	ModelBody.warm()
 	for c in ModelBody.CLIPS:

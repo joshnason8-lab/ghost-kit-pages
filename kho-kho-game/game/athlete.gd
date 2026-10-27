@@ -27,6 +27,7 @@ var _head := 0.0
 var _prev_act := ""
 var _knelt := false
 var _stride := 0.0          # through his stride: a footstep at each half
+var swing := {}             # round the pole, a hand on it: {c: the pole, r, a0, a1, v: speed out} (pole_swing)
 
 
 func _init(p_data := {}, p_side := 0, look := {}) -> void:
@@ -61,6 +62,17 @@ func dodge(dir: Vector3, len: float) -> void:
 	do("dodge", len, dir.dot(Vector3(cos(yaw), 0.0, -sin(yaw))) < 0.0)
 
 
+## Round the pole as the real chasers do (docs/AI.md, "The pole turn"): a hand on it, he swings round it from angle
+## a0 to a1 (radians round c, from +x toward +z), drawn in from where he took hold (r0 out) to a tight circle (r),
+## his speed rising evenly from v_in to v_out, faster than he came in: the pole's slingshot. The swing takes as long
+## as that speed needs to cover it.
+func pole_swing(c: Vector3, r0: float, r: float, a0: float, a1: float, v_in: float, v_out: float) -> void:
+	var arc := absf(a1 - a0) * (r0 + r) * 0.5
+	var len := 2.0 * arc / maxf(v_in + v_out, 0.1)
+	swing = {"c": c, "r0": r0, "r": r, "a0": a0, "a1": a1, "v_in": v_in, "v": v_out, "arc": arc}
+	do("pole_turn", len, a1 > a0)
+
+
 func busy() -> bool:
 	return act in ["rise", "kho", "dive", "pole_dive", "lie", "getup"]
 
@@ -71,6 +83,9 @@ func integrate(dt: float) -> void:
 	act_t += dt
 	if act_len > 0.0 and act_t >= act_len:
 		_finish_act()
+	if act == "pole_turn" and not swing.is_empty():
+		_swing_step()
+		return
 	var w := want
 	w.y = 0.0
 	match act:
@@ -102,10 +117,45 @@ func integrate(dt: float) -> void:
 	var turn_rate := 14.0 if act == "sit" or act == "rise" else 9.0
 	yaw = lerp_angle(yaw, want_yaw, minf(1.0, turn_rate * dt))
 	body.rotation.y = yaw
+	_dive_body()
 	_animate(dt, spd)
 
 
+func _swing_step() -> void:
+	var f := clampf(act_t / maxf(act_len, 0.01), 0.0, 1.0)
+	var c: Vector3 = swing.c
+	var v_in: float = swing.v_in
+	var v_out: float = swing.v
+	# Distance round, with the speed rising evenly from v_in to v_out: s = (v_in f + (v_out - v_in) f^2 / 2) T.
+	var done := (v_in * f + (v_out - v_in) * f * f * 0.5) * act_len / maxf(float(swing.arc), 0.001)
+	var a := lerpf(float(swing.a0), float(swing.a1), clampf(done, 0.0, 1.0))
+	var r := lerpf(float(swing.r0), float(swing.r), smoothstep(0.0, 0.25, act_t))
+	var dir := signf(float(swing.a1) - float(swing.a0))
+	var tangent := Vector3(-sin(a), 0, cos(a)) * dir
+	position = c + Vector3(cos(a), 0, sin(a)) * r
+	vel = tangent * lerpf(v_in, v_out, f)
+	# He leans out from the pole, facing between it and the way he swings; his hands reach for it.
+	var to_pole := (c - position).normalized()
+	var face := (tangent + to_pole * 0.9).normalized()
+	yaw = atan2(face.x, face.z)
+	body.rotation.y = yaw
+	body.rotation.x = 0.0
+	body.position.y = 0.0
+	# Leaning out from the pole, his arms holding him in, as the turn pulls him round.
+	var right := Vector3(cos(yaw), 0, -sin(yaw))
+	body.rotation.z = signf(to_pole.dot(right)) * 0.3 * sin(PI * f)
+	body.grip = c + Vector3(0, 1.1, 0)
+	if act_t + get_physics_process_delta_time() >= act_len:
+		# Letting go: out along the tangent, at the swing's speed and more.
+		vel = tangent * float(swing.v)
+		yaw = atan2(tangent.x, tangent.z)
+		swing = {}
+		body.grip = Vector3.INF
+	_animate(0.0, vel.length())
+
+
 func _finish_act() -> void:
+	body.grip = Vector3.INF
 	match act:
 		"rise":
 			act = ""
@@ -114,13 +164,13 @@ func _finish_act() -> void:
 		"dive", "pole_dive":
 			act = "lie"
 			act_t = 0.0
-			act_len = 0.55
+			act_len = LIE_S
 			Sfx.play_at("thud", global_position, -2.0, randf_range(0.9, 1.05))   # down on the ground
 			return
 		"lie":
 			act = "getup"
 			act_t = 0.0
-			act_len = 0.45
+			act_len = GETUP_S
 			return
 		"getup", "out", "foul", "end", "cheer", "pole_turn", "dodge":
 			act = ""
@@ -128,6 +178,34 @@ func _finish_act() -> void:
 		mirror = false   # his run after a mirrored act is his own again
 	act_len = 0.0
 	act_t = 0.0
+
+
+## A dive, start to finish (the dive clip alone is a dive into water, and held, it left him leaning in the air): he
+## launches, his body pitches forward from the feet until he is down flat, arms reaching (DIVE_PITCH), a little off the
+## ground on the way; he slides on the ground (lie); then he pushes up through a kneel to his feet (getup).
+const DIVE_PITCH := 1.4     # radians: down on the ground, the chest just above it
+const DIVE_CLIP := Vector2(0.2, 0.36)   # the stretch of the dive clip a dive plays (s)
+const LIE_S := 0.55
+const GETUP_S := 0.7
+
+
+func _dive_body() -> void:
+	var pitch := 0.0
+	var lift := 0.0
+	var f := clampf(act_t / act_len, 0.0, 1.0) if act_len > 0.0 else 1.0
+	match act:
+		"dive", "pole_dive":
+			pitch = DIVE_PITCH * smoothstep(0.0, 1.0, f)
+			lift = 0.3 * sin(PI * minf(f * 1.15, 1.0))
+		"lie":
+			pitch = DIVE_PITCH
+			lift = 0.05
+		"getup":
+			# The first half brings his chest up to kneeling; the rest is the kneel, backwards, to standing.
+			pitch = DIVE_PITCH * (1.0 - smoothstep(0.0, 0.55, f))
+	body.rotation.x = pitch
+	body.rotation.z = 0.0
+	body.position.y = lift
 
 
 ## Which of the model's clips he plays, and how fast: his run or walk at the rate that keeps his feet with the
@@ -159,16 +237,18 @@ func _animate(dt: float, spd: float) -> void:
 			at = body.clip_length("reach") - span
 			blend = 0.08
 		"dive", "pole_dive":
+			# Only the clip's spring and stretch (DIVE_CLIP): after it the recorded diver tumbles into the water.
 			c = "dive"
-			rate = body.clip_length("dive") / maxf(act_len, 0.2) * 0.6
-			at = 0.25
+			rate = (DIVE_CLIP.y - DIVE_CLIP.x) / maxf(act_len, 0.2)
+			at = DIVE_CLIP.x
 			blend = 0.06
 		"lie":
 			c = "dive"
 			rate = 0.0001
 		"getup":
-			c = "idle"
-			blend = 0.35
+			# Up from the ground: on to his knees as his chest comes up, then to his feet.
+			c = "kneel" if f < 0.5 else "idle"
+			blend = 0.15 if f < 0.5 else 0.3
 		"whistle":
 			c = "whistle"
 		"out":
@@ -186,9 +266,9 @@ func _animate(dt: float, spd: float) -> void:
 			at = 0.0
 			blend = 0.08
 		"pole_turn":
-			c = "turn"
-			rate = body.clip_length("turn") * 0.6 / maxf(act_len, 0.2)
-			at = body.clip_length("turn") * 0.2
+			# His feet run round the pole; his hands hold it (body.grip, set in _swing_step).
+			c = "run"
+			rate = ModelBody.rate_for("run", spd)
 			blend = 0.1
 	if c == "":
 		if spd > 2.6:

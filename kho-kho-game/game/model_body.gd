@@ -27,6 +27,8 @@ var skeleton: Skeleton3D
 var clip := ""
 var _turner: HeadTurn
 var head_yaw := 0.0          # degrees, + to his left: the head and neck turn to follow the play
+var grip := Vector3.INF      # a point (world) both hands reach for and hold (the pole, in a pole turn), INF none
+var _gripper: Grip
 
 
 func _init(p_look := {}, p_low := false) -> void:
@@ -74,6 +76,9 @@ func _ready() -> void:
 	_turner = HeadTurn.new()
 	_turner.body = self
 	skeleton.add_child(_turner)
+	_gripper = Grip.new()
+	_gripper.body = self
+	skeleton.add_child(_gripper)
 	play("stand")
 
 
@@ -120,6 +125,38 @@ class HeadTurn extends SkeletonModifier3D:
 			var local := Quaternion((gp.inverse() * turn * gp).orthonormalized())
 			sk.set_bone_pose_rotation(b, local * sk.get_bone_pose_rotation(b))
 			share = 0.6
+
+
+## After the animation: both arms out to a point and holding it (grip), the upper arm and forearm turned to point at
+## it, so his hands are on the pole as he swings round it whatever the clip's arms are doing.
+class Grip extends SkeletonModifier3D:
+	var body
+	var _bones := []   # [arm, forearm, hand] for each side
+
+	func _process_modification_with_delta(_delta: float) -> void:
+		var sk := get_skeleton()
+		if sk == null or body == null or body.grip == Vector3.INF:
+			return
+		if _bones.is_empty():
+			for side in ["Left", "Right"]:
+				_bones.append([sk.find_bone("mixamorig_%sArm" % side), sk.find_bone("mixamorig_%sForeArm" % side),
+					sk.find_bone("mixamorig_%sHand" % side)])
+		var target: Vector3 = sk.global_transform.affine_inverse() * (body.grip as Vector3)
+		for chain in _bones:
+			for k in 2:
+				var b: int = chain[k]
+				var child: int = chain[k + 1]
+				if b < 0 or child < 0:
+					continue
+				var gb := sk.get_bone_global_pose(b)
+				var d := sk.get_bone_global_pose(child).origin - gb.origin
+				var t := target - gb.origin
+				if d.length() < 0.001 or t.length() < 0.001:
+					continue
+				var q := Quaternion(d.normalized(), t.normalized())
+				var pg := sk.get_bone_global_pose(sk.get_bone_parent(b)).basis.orthonormalized()
+				var nb := Basis(q) * gb.basis.orthonormalized()
+				sk.set_bone_pose_rotation(b, Quaternion((pg.inverse() * nb).orthonormalized()))
 
 
 static func material(lk: Dictionary, p_low: bool) -> ShaderMaterial:

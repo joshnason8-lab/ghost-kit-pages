@@ -33,6 +33,9 @@ func _ready() -> void:
 
 
 func _build_left(left: VBoxContainer) -> void:
+	# How hard the other side plays, first, where it is seen without scrolling (the owner, 0.9).
+	if not watch:
+		left.add_child(UI.difficulty_field(self))
 	left.add_child(UI.label(tr("SETUP_STEP_FORMAT").to_upper(), "EyebrowLabel", 15, Game.C_SAFFRON))
 	for f in [KhoRules.CLASSIC, KhoRules.FAST]:
 		var key := "FORMAT_CLASSIC" if f == KhoRules.CLASSIC else "FORMAT_FAST"
@@ -62,8 +65,6 @@ func _build_left(left: VBoxContainer) -> void:
 			Game.settings.turn_len = i
 			Game.save_settings())))
 	left.add_child(UI.wrap(tr("TURN_NOTE"), "MutedLabel", 16))
-	if not watch:
-		left.add_child(UI.difficulty_field(self))
 
 
 func _build_right(right: VBoxContainer) -> void:

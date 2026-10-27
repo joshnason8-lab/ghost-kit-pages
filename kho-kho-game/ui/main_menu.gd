@@ -93,9 +93,6 @@ func _build_ui() -> void:
 	head.add_theme_constant_override("separation", -10)
 	head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(head)
-	var eye := UI.label(tr("MENU_EYEBROW").to_upper(), "EyebrowLabel", 16, Game.C_SAFFRON)
-	UI.fit(eye)
-	head.add_child(eye)
 	var tsize := int(clampf(get_viewport_rect().size.x * 0.064, 70.0, 104.0))
 	var title := UI.label(tr("GAME_TITLE"), "TitleLabel", tsize)
 	title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.55))

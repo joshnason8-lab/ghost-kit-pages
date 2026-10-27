@@ -48,6 +48,7 @@ func _pick() -> void:
 		_women = i == 1
 		_clear()
 		_pick()))
+	left.add_child(UI.difficulty_field(self))
 	var right := VBoxContainer.new()
 	right.add_theme_constant_override("separation", 10)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -142,6 +143,9 @@ func _hub(c) -> void:
 				Game.save_cup()
 				_clear()
 				_hub(c)))
+	# How hard your opponents play: the same setting as Quick match and Settings, changed here between matches.
+	if String(c.stage) != "done":
+		left.add_child(UI.difficulty_field(self))
 	# The knockout results so far.
 	for r in c.ko_results:
 		var line := UI.label("%s · %s %d – %d %s" % [_stage_word(String(r[0])), DB.team_name(r[1]), int(r[3]), int(r[4]), DB.team_name(r[2])],

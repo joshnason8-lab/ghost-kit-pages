@@ -9,6 +9,22 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.10
+
+- **The pole turn**, from the owner's video: the chaser takes hold of the pole, swings round it close and lets go
+  running down the other side, faster than he came, instead of braking and turning about.
+- **Dives land.** The diver goes down flat on the ground, slides, gets to his knees and stands; he no longer hangs in
+  the air or runs straight off.
+- **Tags you can see, and difficulty that bites.** A chaser's arm goes out for every touch he gets to, landed or
+  not. On State and International the AI's chasers catch your defender far more often.
+- **The camera:** a camera button beside pause changes the view at once, named as it changes. Three views that
+  differ: the broadcast, a low close one and behind the pole. The pause menu's button now works too.
+- **Difficulty** at the top of Quick match, and in the Championships.
+- **The crowd follows the play**, turning to watch the chase as it moves, and its roar builds as a chaser closes in,
+  in a dive and late in a turn, with an "ooh" at a near miss.
+- **Sounds:** the kho is the slap of a palm (the raised "hup" over it is gone); birds and crickets quieter.
+- The "Kho kho · the real rules" line is gone from the home screen.
+
 ## What's new in 0.9.3
 
 - **Licences, Help and Privacy policy in the game.** Settings > About has three buttons that open screens inside the

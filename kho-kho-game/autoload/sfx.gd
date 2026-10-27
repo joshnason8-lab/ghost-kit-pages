@@ -19,7 +19,7 @@ const FILES := ["crowd_ooh", "crowd_groan", "clap", "menu_music", "drums_loop", 
 	"click", "amb_crickets", "amb_birds", "whistle_double", "whistle_final", "whistle_gym"]
 const LOOPS := ["crowd_loop", "drums_loop", "menu_music", "amb_crickets", "amb_birds"]
 ## A place's own sound under the crowd: kind of ground -> [bed, its level (dB)].
-const AMBIENCE := {"village": ["amb_crickets", -4.0], "school": ["amb_birds", -2.0], "stadium": ["amb_crickets", -12.0]}
+const AMBIENCE := {"village": ["amb_crickets", -11.0], "school": ["amb_birds", -9.0], "stadium": ["amb_crickets", -18.0]}   # quieter since 0.10 (the owner)
 const BUS := "Venue"   # the match's sounds; in the hall it carries the hall's echo
 
 var streams := {}
