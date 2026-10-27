@@ -12,17 +12,21 @@ stand in October 2026.
   - 64-bit, with 16 KB memory pages (checked on every bundle);
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - one permission (vibration) and no internet access.
-- **The privacy policy, help and licences in the game** (Settings > About), offline. The public privacy policy for
-  Play is `netball-game/PRIVACY.md`, at
-  https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/netball-game/netball-game/PRIVACY.md (loads today).
-  The web pages in `netball-unleashed/` at the top of this repository are not online yet (GitHub Pages does not serve
-  this branch: they return 404); once they are, that address can replace it.
+- **The privacy policy, help and licences in the game** (Settings > About), offline. Play also needs the policy at a
+  public address: **TBD: the owner's privacy site** (the text to put there is `netball-game/PRIVACY.md`, the same as
+  the game's).
 - **Every Play Console answer**, ready to copy: `store/PLAY_CONSOLE_ANSWERS.md`; release notes:
   `store/RELEASE_NOTES.md`.
-- **The store listing**: the text in English (en-GB, the default, and en-AU, en-ZA, en-US, en-IN, en-SG) and in
+- **The store listing (drafts, to refresh just before submitting)**: the text in English (en-GB, the default, and en-AU, en-ZA, en-US, en-IN, en-SG) and in
   Afrikaans, isiZulu, Kiswahili, Malay, Chinese, Sinhala and Tamil (`store/listing/`), and the 512 × 512 icon, the
   1024 × 500 feature graphic and the 1920 × 1080 screenshots (`store/graphics/`).
 - **The answers to every App content form** (step 4).
+
+**Refreshing the drafts.** The game will change before it is submitted, so the screenshots, feature graphic and icon
+are regenerated from the current build with one command, from `netball-game/` on a machine with xvfb:
+`tools/store/refresh.sh` (screenshots on High at 1920 × 1080 from `tests/screenshots.gd`'s `store` part, then the
+feature graphic and icon, then `tools/store/check_listing.py`, which checks the text against Play's limits). Update
+the listing text in `store/listing/` by hand if features change.
 
 ## 1. Your developer account (once)
 
@@ -82,7 +86,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/netball-game/netball-game/PRIVACY.md` |
+| **Privacy policy** | TBD: the owner's privacy site (its text: `netball-game/PRIVACY.md`) |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |

@@ -6,13 +6,8 @@ against the game's manifest: `com.netballunleashed.game`, target API 36, minimum
 
 ## Privacy policy
 
-URL: **https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/netball-game/netball-game/PRIVACY.md**
-(HTTP 200 on 27 October 2026; the same text is in the game under Settings > About).
-
-The game's own page, `https://joshnason8-lab.github.io/ghost-kit-pages/netball-unleashed/privacy.html`, returns 404:
-GitHub Pages does not serve the game's branch. If the `netball-unleashed/` folder reaches the branch Pages serves,
-use that address instead and check it loads. Whichever address you give Play must keep working while the game is on
-the store (so the branch above must not be deleted while it is the policy's address).
+URL: **TBD: the owner's privacy site.** Its text is `netball-game/PRIVACY.md` (the same as the game's own, under
+Settings > About). The address given to Play must keep working while the game is on the store.
 
 ## Data safety
 
@@ -90,7 +85,7 @@ parents it suits every age.
 | Category | **Sports** |
 | Tags (up to 5) | Sports, Simulation, Offline, Single player, Casual (choose from Play's list; "Netball" is not one of its tags) |
 | Contact email (public) | **joshnason8@gmail.com** |
-| Website (optional) | Leave empty until a page for the game loads (see the privacy policy note above) |
+| Website (optional) | The owner's site, once it is up |
 | Phone (optional) | Leave empty |
 
 ## The listing and graphics
