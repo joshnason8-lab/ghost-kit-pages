@@ -137,8 +137,11 @@ func _match_shot(s: Array) -> void:
 				guard += 1
 				await get_tree().process_frame
 				var acting := false
+				var eye: Vector3 = get_viewport().get_camera_3d().global_position
 				for pl in m.all_players():
-					if pl.action in want and pl.action_u() > 0.3 and pl.action_u() < 0.6:
+					# A dive near the camera, big enough to see.
+					var near: bool = s[5] != "dive" or pl.global_position.distance_to(eye) < 14.0
+					if pl.action in want and pl.action_u() > 0.3 and pl.action_u() < 0.6 and near:
 						acting = true
 				if acting:
 					break

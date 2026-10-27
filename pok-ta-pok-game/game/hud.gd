@@ -299,6 +299,10 @@ func frame_percentiles() -> Array:
 func replay_tag(on: bool) -> void:
 	if _replay_tag:
 		_replay_tag.visible = on
+	if on and _banner:
+		# The call's banner ("Through the ring!") has had its moment: clear it off the ring for the replay.
+		_banner_t = 0.0
+		_banner.modulate.a = 0.0
 
 
 func banner(text: String, col: Color = Game.C_GOLD) -> void:

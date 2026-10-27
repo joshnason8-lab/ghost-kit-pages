@@ -98,8 +98,10 @@ func _start(venue: String, home: String, away: String, ritual: bool, cam: int) -
 
 
 func _acting(m: Node, want: Array) -> bool:
+	# Near the camera, big enough to see.
+	var eye: Vector3 = get_viewport().get_camera_3d().global_position
 	for pl in m.all_players():
-		if pl.action in want and pl.action_u() > 0.25 and pl.action_u() < 0.5:
+		if pl.action in want and pl.action_u() > 0.25 and pl.action_u() < 0.5 and pl.global_position.distance_to(eye) < 16.0:
 			return true
 	return false
 
