@@ -89,6 +89,13 @@ func _dress(m: Node, c: Dictionary) -> void:
 	m.cam.mode = int(c.cam)
 
 
+## The interval's card waits for a tap in a match you play; here nobody taps, and the match goes on by itself.
+func _tidy(m: Node) -> void:
+	var card = m.hud.get("_interval") if m.hud else null
+	if card and is_instance_valid(card):
+		card.visible = false
+
+
 ## The frame (from the match's first) the clip's moment happens on, or -1.
 func _moment(m: Node, c: Dictionary, f: int, st: Dictionary) -> bool:
 	var hit := false
@@ -129,6 +136,7 @@ func _clip(c: Dictionary) -> void:
 	while f < int(SEARCH_S * FPS) and is_instance_valid(m) and m.phase != "over":
 		await frames(1)
 		f += 1
+		_tidy(m)
 		if _moment(m, c, f, st):
 			at = f
 			break
@@ -156,6 +164,7 @@ func _clip(c: Dictionary) -> void:
 			RenderingServer.render_loop_enabled = true   # a few frames to settle the camera's history
 		await frames(1)
 		f += 1
+		_tidy(m)
 		if _moment(m, c, f, st) and again < 0:
 			again = f
 		if f >= first:

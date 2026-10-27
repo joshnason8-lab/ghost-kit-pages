@@ -100,14 +100,22 @@ def card(frame, size, line2=None, icon=True):
 			img.paste(ic, (box[0] + 70, h // 2 - 200), mask)
 		name_block(d, box[0] + 530, h // 2 - 250, 1.0, line2)
 	else:
-		box = (70, h // 2 - 520, w - 70, h // 2 + 520)
+		box = (70, h // 2 - 560, w - 70, h // 2 + 560)
 		img = whiteboard(img, box)
 		d = ImageDraw.Draw(img)
-		ic = Image.open(ROOT / "store" / "graphics" / "icon-512.png").convert("RGBA").resize((360, 360), Image.LANCZOS)
+		ic = Image.open(ROOT / "store" / "graphics" / "icon-512.png").convert("RGBA").resize((440, 440), Image.LANCZOS)
 		mask = Image.new("L", ic.size, 0)
-		ImageDraw.Draw(mask).rounded_rectangle((0, 0, 359, 359), 64, fill=255)
-		img.paste(ic, ((w - 360) // 2, box[1] + 60), mask)
-		name_block(d, box[0] + 90, box[1] + 450, 0.95, line2)
+		ImageDraw.Draw(mask).rounded_rectangle((0, 0, 439, 439), 78, fill=255)
+		img.paste(ic, ((w - 440) // 2, box[1] + 70), mask)
+		title = font("Caveat.ttf", 165, 700)
+		d.text((w / 2, box[1] + 640), "Floorball", font=title, fill=BLUE, anchor="mm")
+		d.text((w / 2, box[1] + 780), "Unleashed", font=title, fill=RED, anchor="mm")
+		d.line([(w / 2 - 330, box[1] + 880), (w / 2 + 330, box[1] + 872)], fill=INK, width=7)
+		sub = font("BarlowCondensed-SemiBold.ttf", 56)
+		d.text((w / 2, box[1] + 940), line2 or "FLOORBALL · 5 v 5 · REAL RULES", font=sub, fill=INK, anchor="mm")
+		for i, c in enumerate([BLUE, RED, (15, 139, 95), (240, 138, 36)]):
+			cx = w / 2 + (i - 1.5) * 70
+			d.ellipse([cx - 22, box[1] + 1018, cx + 22, box[1] + 1062], fill=c)
 	return img.convert("RGB")
 
 
