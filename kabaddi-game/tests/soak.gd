@@ -57,10 +57,16 @@ var stalls := 0
 var _main: Node = null
 var _building := false  # the next frame builds a match the soak made itself
 var _load_frames := 0
+var _recent: Array[int] = []   # the last frames' times (not building), for what a typical frame takes
 
 
 func _ready() -> void:
 	OS.add_logger(errors)
+	# A match being built (one played, or the home screen's own behind it, which starts a few frames after the menu)
+	# takes its frame or two to load: those frames count as building, not as a freeze.
+	get_tree().node_added.connect(func(n: Node):
+		if n.get_script() != null and String(n.get_script().resource_path).ends_with("game/match.gd"):
+			_load_frames = 3)
 	rng.seed = 20261027
 	var args := OS.get_cmdline_user_args()
 	var inputs := int(args[0]) if args.size() > 0 else 4000
@@ -127,7 +133,17 @@ func _frame() -> void:
 			worst_load_ms = maxi(worst_load_ms, ms)
 		else:
 			worst_ms = maxi(worst_ms, ms)
-		if ms > (LOAD_MS if load else STALL_MS):
+			_recent.append(ms)
+			if _recent.size() > 90:
+				_recent.pop_front()
+		# A freeze stands out from the frames around it: drawn without a GPU, High's every frame can take seconds, so
+		# the limit is also ten times the recent typical frame.
+		var typical := 0
+		if _recent.size() >= 15:
+			var sorted := _recent.duplicate()
+			sorted.sort()
+			typical = sorted[sorted.size() / 2]
+		if ms > maxi(LOAD_MS if load else STALL_MS, 10 * typical):
 			stalls += 1
 			_problem("a %d ms frame on %s" % [ms, _screen_name()])
 	_last_tick = now
