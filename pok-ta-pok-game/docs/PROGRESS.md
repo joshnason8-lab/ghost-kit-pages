@@ -129,6 +129,9 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   this build does: no data collected, no ads or analytics, no internet permission, vibration only. Both in six
   languages; a test opens each from Settings in every language and checks it has its text and Back. The public
   privacy page (pok-ta-pok-rivals/privacy.html) says the same and is what the Play listing links to once merged.
+- **0.5.2**: the fonts' notice no longer credits Uncial Antiqua (a font this game does not ship; the notice came from
+  another game), and gives the Oswald project's current address beside the one its font file carries (which no longer
+  exists).
 
 ## Next
 

@@ -43,7 +43,8 @@ const NOT_USED := "Not used in this game: Mixamo animations, Pixabay sounds (the
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic).
-Oswald: Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont).
+Oswald: Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont), as the font file gives it;
+the project's sources are now at https://github.com/vernnobile/OswaldFont.
 Both under the SIL Open Font License, Version 1.1:"""
 
 

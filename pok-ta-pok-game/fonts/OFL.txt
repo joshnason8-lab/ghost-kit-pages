@@ -1,10 +1,9 @@
 Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)
 Oswald: Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)
-Uncial Antiqua: Copyright (c) 2011 by Brian J. Bonislawsky DBA Astigmatic (AOETI) (astigma@astigmatic.com), with
-Reserved Font Names "Uncial Antiqua"
 
-Each of these fonts is licensed under the SIL Open Font License, Version 1.1. Noto Sans and Oswald are cut down to the
-letters the game uses (tools/subset_fonts.py); Uncial Antiqua, which has a Reserved Font Name, ships unchanged.
+Each of these fonts is licensed under the SIL Open Font License, Version 1.1. Both are cut down to the letters the
+game uses (tools/subset_fonts.py). The notices above are as the font files give them; the Oswald project's sources
+are now at https://github.com/vernnobile/OswaldFont.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
