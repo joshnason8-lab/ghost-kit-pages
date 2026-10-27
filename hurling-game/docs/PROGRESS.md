@@ -232,6 +232,31 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (Play readiness and the media kit, 27 October 2026)
+
+The owner (through the lead): the game ready for Google Play but for the owner's own steps, and a media kit for the
+owner's website.
+
+- **The build** (store/PLAY_STORE.md, "The build"): target API 36, minimum 24 (Android 7.0), Vulkan with OpenGL ES
+  3.0 as the fallback; 64- and 32-bit; the 64-bit libraries aligned to 16 KB (checked on every bundle); two
+  permissions; the bundle 80 MB of Play's 200; versionCode only up; `com.ashandleather.game` final. The HD pack holds
+  no code (`tools/ultra/repack.gd` now refuses any), and Play Asset Delivery is written up as the cleaner route for
+  the Play build, with what it would take.
+- **Soak test** (`tests/soak.tscn`): on Low and on High, each 4,000 random touches (taps, drags, Back, the app sent
+  away and back) across every screen and into matches, Back on every screen (each leaves it; in a match it pauses and
+  resumes), the app sent to the background mid-championship-match (kept, and Continue picks it up where it was), then
+  six AI v AI matches at every ground to full time: 0 failures at both levels, 12 matches, no script errors; the
+  slowest frame 1.2 s on Low and 1.5 s on High (building a match). Nothing to fix.
+- **Store kit drafts** (store/): the listings brought up to date with first-release notes, an Irish draft (`ga.txt`;
+  Play offers no Irish listing yet), `tools/store/check_listing.py` for Play's limits, the store icon a 32-bit PNG,
+  `store/PLAY_CONSOLE_ANSWERS.md` (Data safety, IARC, target audience 13+ and why, ads, purchases, store settings;
+  the privacy URL "TBD: the owner's privacy site"), and `tools/store/make_store_kit.sh` to make the graphics again
+  from the build just before submission.
+- **Media kit** (`tools/media/make_media_kit.sh`, published by the "Hurling Heroes · Media kit" workflow on the
+  `hurling-heroes-media` release): twelve screenshots and every menu screen at 1920 x 1080, the icon at 1024 and 512,
+  the feature graphic, a trailer cut from real matches with the game's own music, crowd and whistle (and a 15 s
+  vertical cut), the website's copy (`tools/media/text/`), CREDITS.txt.
+
 ## Done (0.11.2-beta, the officials, 27 October 2026)
 
 The owner: "The refs body and arms still look very weird". Looked at close up (front, side, standing, signalling,
