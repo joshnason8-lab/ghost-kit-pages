@@ -12,12 +12,10 @@ stand in October 2026.
   - 64-bit, with 16 KB memory pages (checked on every bundle);
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - one permission (vibration) and no internet access.
-- **The privacy policy, help page and a page for the game**, in `pok-ta-pok-rivals/` at the top of this repository,
-  served by GitHub Pages once this branch is merged into `main`:
-  https://joshnason8-lab.github.io/ghost-kit-pages/pok-ta-pok-rivals/privacy.html and `/support.html`. The game
-  carries the same privacy policy, a help page and the licences inside it (Settings > About), so they work offline;
-  it opens no web pages. The Play listing still needs the public privacy policy address above.
-- **The store listing**: the text for Spanish (Latin America, the default), Spanish (United States), Spanish (Spain),
+- **The privacy policy's text**: inside the game (Settings > About > Privacy policy, with Help and the Licences; they
+  work offline and the game opens no web pages) and in `pok-ta-pok-rivals/privacy.html`. The Play listing needs it
+  at a public address: **TBD: the owner's privacy site**.
+- **The store listing (drafts, to refresh just before submitting)**: the text for Spanish (Latin America, the default), Spanish (United States), Spanish (Spain),
   English (United States, United Kingdom, Canada), Portuguese (Brazil), French (France, Canada), German and Italian
   (`store/listing/`). Google Play has no Yucatec Maya listing. The 512 × 512 icon, the 1024 × 500 feature graphic and
   the 1920 × 1080 screenshots are in `store/graphics/`.
@@ -90,7 +88,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/pok-ta-pok-rivals/privacy.html` |
+| **Privacy policy** | TBD: owner's privacy site (see `store/PLAY_CONSOLE_ANSWERS.md`) |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect PEGI 3 / ESRB Everyone (a ball sport; no violence) |
@@ -135,7 +133,7 @@ and shows no ads, but the 13+ groups are the simpler start.
 8. **Contact details**:
    - **Email** (required, shown publicly): an address you are happy to show (the help page uses
      joshnason8@gmail.com; change it there too if you use another).
-   - **Website**: https://joshnason8-lab.github.io/ghost-kit-pages/pok-ta-pok-rivals/
+   - **Website**: TBD: the owner's site
 
 ## 6. The closed test (required for new personal accounts)
 
@@ -184,8 +182,9 @@ and shows no ads, but the 13+ groups are the simpler start.
 - **Category**: the bundle declares itself a game (`android:isGame`, checked by the bundle workflow), so Play files it
   under Games; choose **Sports** in the store settings.
 - **Size**: the beta APK is about 122 MB (Medium and High graphics carry sharper textures, which Low leaves unused).
-  The bundle workflow prints the bundle's sizes (`tools/aab_size.py`) and fails if the base module is over Play's
-  200 MB compressed limit; it is about 125 MB, so nothing needs Play Asset Delivery. Each phone downloads only its own
-  build (64- or 32-bit), about 117 MB.
+  The Play bundle is about 120 MB: a 51 MB base module (the engine and code) and a 69 MB asset pack installed with it
+  (the game's data). The bundle workflow prints these (`tools/aab_size.py`) and fails if the base module is over
+  Play's 200 MB compressed limit, so nothing needs Play Asset Delivery beyond the install-time pack Godot makes. Each
+  phone downloads only its own build (64- or 32-bit), about 95 MB.
 - **Soak test** before each store release: `tests/soak.gd` (random input through every screen and match, AI matches
   on every court, Back everywhere, the app paused and resumed), at Low and at High.

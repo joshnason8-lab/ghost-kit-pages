@@ -3,7 +3,7 @@
 
 Play's limit is 200 MB for the base module, compressed (assets beyond it need Play Asset Delivery). This prints the
 bundle's size, each module's compressed size, and what one phone downloads (the base without the other ABI's native
-libraries), and exits 1 if the base module is over the limit.
+libraries, plus the asset packs installed with it), and exits 1 if the base module is over the limit.
 
 Usage: python3 tools/aab_size.py path/to/game.aab
 """
@@ -30,9 +30,11 @@ def main() -> int:
     for m, n in sorted(modules.items()):
         print(f"  module {m}: {n / MB:.1f} MB compressed")
     base = modules.get("base", 0)
+    # Asset packs delivered at install (Godot puts the game's data in one) come with the base.
+    packs = sum(n for m, n in modules.items() if m not in ("base", "(bundle)", "BUNDLE-METADATA"))
     for abi, n in sorted(libs.items()):
         other = sum(v for k, v in libs.items() if k != abi)
-        print(f"  a {abi} phone downloads about {(base - other) / MB:.1f} MB")
+        print(f"  a {abi} phone downloads about {(base - other + packs) / MB:.1f} MB (base and asset packs)")
     ok = base <= LIMIT
     print(f"base module {base / MB:.1f} MB of Play's 200 MB: {'ok' if ok else 'OVER: needs Play Asset Delivery'}")
     return 0 if ok else 1

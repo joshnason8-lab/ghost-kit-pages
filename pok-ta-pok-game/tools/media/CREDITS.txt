@@ -1,0 +1,37 @@
+POK TA POK RIVALS: MEDIA KIT CREDITS
+
+Every screenshot and every second of the trailers is the game itself, rendered and recorded by the game (Godot
+Engine's Movie Maker) on High graphics. Nothing is painted over it except the title and end cards and the captions,
+which are set in the game's own fonts. The game is made by Josh Nason.
+
+THE PICTURES
+- The game, its code, the courts, the ball, the players' gear, the stands and the menus: made for the game.
+- The players, the judge, the townspeople in the stands and the carved stone ring: made with Meshy for this game.
+  Owned by the game's maker.
+- The run and the serve's toss: motion capture from the CMU Graphics Lab Motion Capture Database
+  (mocap.cs.cmu.edu), created with funding from NSF EIA-0196217. Free for research and commercial use.
+- The surfaces (dry ground, brown mud, plastered wall, white sandstone blocks, broken wall, sparse grass), the skies
+  (Qwantani Dusk 2, Qwantani Noon, Kloofendal 48d Partly Cloudy, Kloppenheim 02), the island trees and the boulder:
+  Poly Haven (polyhaven.com), CC0 1.0.
+- Fonts: Oswald (Copyright 2016 The Oswald Project Authors) and Noto Sans (Copyright 2022 The Noto Project
+  Authors), SIL Open Font License 1.1.
+
+THE SOUND (each clip keeps the game's own sound)
+- Title and end cards: the game's menu music (cane flute, drum, slit drum and rattles), made for the game in code.
+- The conch before the stone-court games and the crowd's ooh and groan: made for the game in code.
+- The hip strike, the ball on the ground and bare feet: Kenney, "Impact Sounds" and "RPG Audio" (kenney.nl),
+  CC0 1.0.
+- The crowd's murmur, cheers and applause: "Free Crowd Cheering Sounds" by Gregor Quendel
+  (opengameart.org/content/free-crowd-cheering-sounds), licensed under CC BY 4.0
+  (creativecommons.org/licenses/by/4.0). Softened and cut for the game.
+- The village at dusk, the forest by day and by night, the torches: "Nature Ambient Pack Vol 1" by JC Sounds
+  (opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1), licensed under CC BY 4.0
+  (creativecommons.org/licenses/by/4.0). Cut into loops for the game.
+- Crickets: "Crickets Ambient Noise - loopable" by Wolfgang_ (Ted Kerr), CC0 1.0.
+- Torch fire: "Fireplace Sound loop" by PagDev, CC0 1.0.
+- Forest birds: "Forest bird sounds" by pauliuw, CC0 1.0.
+- A dog far off: "Dog barking mono" by Brandon Morris (submitted by HaelDB), CC0 1.0.
+No other music or sound is used.
+
+Pok Ta Pok Rivals is an independent game, not connected with or endorsed by any sporting body, federation,
+tournament or club. Towns appear by their place names only; every player is invented.

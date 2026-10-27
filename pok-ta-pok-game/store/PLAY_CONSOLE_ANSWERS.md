@@ -9,11 +9,11 @@ change before that build is uploaded.
 
 | | |
 |---|---|
-| URL | `https://joshnason8-lab.github.io/ghost-kit-pages/pok-ta-pok-rivals/privacy.html` |
-| Status on 27 October 2026 | **404**: GitHub Pages serves the `main` branch, and `claude/pok-ta-pok-game` is not merged yet. The repository's Pages root (`https://joshnason8-lab.github.io/ghost-kit-pages/`) answers 200. |
-| Before you submit | Merge the branch into `main` (or otherwise publish `pok-ta-pok-rivals/privacy.html`), open the URL in a browser and check it loads. Play rejects a privacy policy URL that does not load. |
+| URL | **TBD: owner's privacy site** |
+| Before you submit | Put the policy on your privacy site, open its address in a browser to check it loads, and give that address here. Play rejects a privacy policy URL that does not load. |
 
-The same policy is inside the game (Settings > About > Privacy policy), dated 27 October 2026.
+Use the text of the policy inside the game (Settings > About > Privacy policy, dated 27 October 2026; `PRIV_*` in
+`i18n/src/`) or `pok-ta-pok-rivals/privacy.html`, which says the same.
 
 ## Ads
 
@@ -126,7 +126,7 @@ The listing will show "No data collected" and "No data shared with third parties
 | Category | **Sports** |
 | Tags (choose up to five from Play's list) | Sports; Offline; Single player; Realistic; Casual (pick the nearest names Play offers) |
 | Contact email (shown publicly) | **joshnason8@gmail.com** (the in-game Help and Privacy pages give the same address; change them together if you use another) |
-| Website (optional) | `https://joshnason8-lab.github.io/ghost-kit-pages/pok-ta-pok-rivals/`. It is also 404 until the branch is merged into `main`, so leave it empty until then. |
+| Website (optional) | TBD: the owner's site |
 | Phone (optional) | Leave empty |
 | External marketing | Your choice |
 
