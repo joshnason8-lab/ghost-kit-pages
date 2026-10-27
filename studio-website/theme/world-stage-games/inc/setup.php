@@ -10,12 +10,14 @@
  * Shared hosts often stop a request after 30 seconds, so the work is done in rounds of about 15 seconds; the page
  * carries on by itself until it is done.
  *
- * @package ghost-kit
+ * @package world-stage-games
  */
 
 defined( 'ABSPATH' ) || exit;
 
-const GHOSTKIT_SETUP_OPTION = 'ghostkit_setup';
+const GHOSTKIT_SETUP_OPTION  = 'ghostkit_setup';
+const GHOSTKIT_STUDIO_NAME    = 'World Stage Games';
+const GHOSTKIT_STUDIO_TAGLINE = 'Every game deserves a stage.';
 
 /** The pages and images to create, from the theme. */
 function ghostkit_content() {
@@ -71,6 +73,43 @@ function ghostkit_import_asset( $asset ) {
 		wp_update_post( array( 'ID' => $id, 'post_excerpt' => $asset['caption'] ) );
 	}
 	return $id;
+}
+
+/** A theme image in the Media Library (added the first time): its attachment ID, or 0 if it couldn't be added. */
+function ghostkit_ensure_asset( $key, $file, $title ) {
+	$id = ghostkit_asset_id( $key );
+	if ( ! $id ) {
+		$id = ghostkit_import_asset(
+			array(
+				'key'   => $key,
+				'file'  => $file,
+				'alt'   => get_bloginfo( 'name' ),
+				'title' => $title,
+			)
+		);
+	}
+	return is_wp_error( $id ) ? 0 : (int) $id;
+}
+
+/**
+ * Asks the site for its own Games page, the way a visitor would, and says whether the links work. Some hosts don't
+ * let a site call itself; then it says so instead of guessing.
+ */
+function ghostkit_check_links() {
+	$page = get_page_by_path( 'games' );
+	if ( ! $page ) {
+		return 'Link check skipped: the Games page isn\'t there yet.';
+	}
+	$url      = get_permalink( $page );
+	$response = wp_remote_get( $url, array( 'timeout' => 8, 'redirection' => 3, 'sslverify' => false ) );
+	if ( is_wp_error( $response ) ) {
+		return 'Link check: this server can\'t open its own pages to test them (' . $response->get_error_message() . '). Open the site and click a game to check.';
+	}
+	$code = (int) wp_remote_retrieve_response_code( $response );
+	if ( 200 === $code ) {
+		return 'Link check: ' . wp_make_link_relative( $url ) . ' opens (200). The links work.';
+	}
+	return 'Link check: ' . wp_make_link_relative( $url ) . ' answered ' . $code . '. Go to Settings > Permalinks and press Save Changes; if pages still say "not found", ask Bluehost to make the site\'s .htaccess file writable.';
 }
 
 /** Puts the real attachment IDs and URLs where the content has %%ID:key%% and %%URL:key:size%%. */
@@ -249,30 +288,31 @@ function ghostkit_run_setup() {
 	}
 	update_option( 'default_comment_status', 'closed' );
 	update_option( 'default_ping_status', 'closed' );
-	$tagline = (string) get_option( 'blogdescription' );
-	if ( '' === $tagline || 'Just another WordPress site' === $tagline ) {
-		update_option( 'blogdescription', 'Mobile sports games' );
+	// The studio's name and tagline, unless the site already has its own.
+	$name = (string) get_option( 'blogname' );
+	if ( in_array( $name, array( '', 'Ghost Kit Games', 'My WordPress Website', 'My WordPress Site', 'My Blog', 'WordPress' ), true ) ) {
+		update_option( 'blogname', GHOSTKIT_STUDIO_NAME );
+		$log[] = 'Site Title set to "' . GHOSTKIT_STUDIO_NAME . '" (change it under Settings > General).';
 	}
-	if ( ! get_theme_mod( 'custom_logo' ) ) {
-		$logo = ghostkit_asset_id( 'site-logo' );
-		if ( ! $logo ) {
-			$logo = ghostkit_import_asset(
-				array(
-					'key'   => 'site-logo',
-					'file'  => 'logo.png',
-					'alt'   => '',
-					'title' => 'Site logo',
-				)
-			);
-		}
-		if ( ! is_wp_error( $logo ) ) {
-			set_theme_mod( 'custom_logo', $logo );
-			update_option( 'site_logo', $logo );
-			if ( ! get_option( 'site_icon' ) ) {
-				update_option( 'site_icon', $logo );
-			}
-			$log[] = 'Logo and site icon set (change them under Appearance > Editor or Settings > General).';
-		}
+	$tagline = (string) get_option( 'blogdescription' );
+	if ( in_array( $tagline, array( '', 'Just another WordPress site', 'Mobile sports games' ), true ) ) {
+		update_option( 'blogdescription', GHOSTKIT_STUDIO_TAGLINE );
+	}
+	// The logo (the wordmark in the header) and the site icon (the browser tab), unless the site already has its own.
+	// The placeholder ghost logo from the first version of this theme counts as "not its own".
+	$old_ghost = ghostkit_asset_id( 'site-logo' );
+	$logo      = ghostkit_ensure_asset( 'site-logo-wordmark', 'logo.png', 'Site logo' );
+	$icon      = ghostkit_ensure_asset( 'site-icon-ticket', 'icon.png', 'Site icon' );
+	$current   = (int) get_theme_mod( 'custom_logo' ) ?: (int) get_option( 'site_logo' );
+	if ( $logo && ( ! $current || $current === $old_ghost ) ) {
+		set_theme_mod( 'custom_logo', $logo );
+		update_option( 'site_logo', $logo );
+		$log[] = 'Logo set (change it under Appearance > Editor, by clicking the logo in the header).';
+	}
+	$current_icon = (int) get_option( 'site_icon' );
+	if ( $icon && ( ! $current_icon || $current_icon === $old_ghost ) ) {
+		update_option( 'site_icon', $icon );
+		$log[] = 'Site icon set (change it under Settings > General > Site Icon).';
 	}
 	// WordPress's own sample post and page, if nobody has touched them, go to the Trash (they can be restored).
 	foreach ( array( array( 'sample-page', 'page' ), array( 'hello-world', 'post' ) ) as $sample ) {
@@ -282,7 +322,9 @@ function ghostkit_run_setup() {
 			$log[] = sprintf( 'Moved WordPress\'s sample "%s" to the Trash.', $s->post_title );
 		}
 	}
-	flush_rewrite_rules();
+	require_once ABSPATH . 'wp-admin/includes/misc.php';
+	flush_rewrite_rules( true ); // also writes .htaccess where the server allows it
+	$log[] = ghostkit_check_links();
 	update_option( GHOSTKIT_SETUP_OPTION, array( 'version' => GHOSTKIT_VERSION, 'time' => time() ) );
 	return array(
 		'done' => true,

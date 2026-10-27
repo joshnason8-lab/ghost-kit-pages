@@ -1,30 +1,34 @@
-# Putting the studio website on Bluehost
+# Putting World Stage Games on Bluehost
+
+The website for **World Stage Games** ("Every game deserves a stage.") at **https://worldstagegames.com**.
 
 You need two files from `studio-website/dist/` in this repository:
 
-- **[`ghost-kit-theme.zip`](https://github.com/joshnason8-lab/ghost-kit-pages/raw/claude/studio-website/studio-website/dist/ghost-kit-theme.zip)**:
-  the theme. It holds the design, the fonts, the game pictures and all the pages' words.
-- **[`ghost-kit-content.xml`](https://github.com/joshnason8-lab/ghost-kit-pages/raw/claude/studio-website/studio-website/dist/ghost-kit-content.xml)**:
+- **[`world-stage-games-website.zip`](https://github.com/joshnason8-lab/ghost-kit-pages/raw/claude/studio-website/studio-website/dist/world-stage-games-website.zip)**:
+  the theme. It holds the design, the logo, the fonts, the pictures and all the pages' words.
+- **[`world-stage-games-content.xml`](https://github.com/joshnason8-lab/ghost-kit-pages/raw/claude/studio-website/studio-website/dist/world-stage-games-content.xml)**:
   the same pages as a WordPress import file. This is only a back-up route (step 2b).
 
 If your browser shows the `.xml` file as text instead of saving it, right-click the link and choose **Save link as**.
 
 It takes about 15 minutes. You don't need any plugins.
 
+**Already installed the earlier "Ghost Kit" version?** Follow "Moving from Ghost Kit" at the end instead.
+
 ## 1. Make the WordPress site and upload the theme
 
-1. In Bluehost, add a new WordPress site for the studio's domain, the same way you did for thekabaddipulse.com and
-   beyondhaunted. Log in to its WordPress dashboard (`https://{domain}/wp-admin`).
+1. In Bluehost, add a WordPress site for **worldstagegames.com**, the same way you did for thekabaddipulse.com and
+   beyondhaunted. Log in to its dashboard at `https://worldstagegames.com/wp-admin`.
 2. Bluehost starts new sites in **Coming Soon** mode. Leave it on while you set up. You turn it off in step 7.
 3. Go to **Appearance > Themes > Add New Theme > Upload Theme**.
-4. Choose `ghost-kit-theme.zip`, then **Install Now**, then **Activate**.
+4. Choose `world-stage-games-website.zip`, then **Install Now**, then **Activate**.
 
 If WordPress says the file is too big ("exceeds the upload_max_filesize"), upload it another way:
 
 1. Open Bluehost's **File Manager**.
 2. Go to `public_html/wp-content/themes/` (or your site's folder) and upload the zip there.
-3. Right-click the zip and choose **Extract**. This makes a `ghost-kit` folder.
-4. Activate **Ghost Kit** under **Appearance > Themes**.
+3. Right-click the zip and choose **Extract**. This makes a `world-stage-games` folder.
+4. Activate **World Stage Games** under **Appearance > Themes**.
 
 ## 2. Make the pages
 
@@ -36,14 +40,18 @@ If WordPress says the file is too big ("exceeds the upload_max_filesize"), uploa
 It takes under a minute. If the page says *Carrying on…*, leave it open. It works in short rounds so a busy server
 doesn't stop it, and it carries on by itself until it shows a green box. Then it has:
 
-- added the 60 pictures (the games' art and screenshots, and the sport pages' photos) to the **Media Library**. WordPress makes smaller WebP copies of each one, and phones get
-  the small ones;
+- added the pictures (the games' art and screenshots, the sport pages' photos, the logo and the icon) to the
+  **Media Library**. WordPress makes smaller WebP copies of each one, and phones get the small ones;
 - made all 36 pages at their fixed addresses (list below), including the seven sport pages;
 - made **Home** the front page;
-- set the links to `/%postname%/` if the site still had plain links;
+- set the **Site Title** to "World Stage Games" and the **Tagline** to "Every game deserves a stage.", unless you had
+  already chosen your own;
+- set the **logo** (in the header) and the **site icon** (the browser tab), unless you had already chosen your own;
+- set the links to `/%postname%/` if the site still had plain links, and saved them;
 - turned comments off;
-- set the logo and the browser-tab icon;
-- moved WordPress's sample "Hello world!" post and "Sample Page" to the Trash, if nobody has edited them.
+- moved WordPress's sample "Hello world!" post and "Sample Page" to the Trash, if nobody has edited them;
+- **checked the links**: the last line of the green box says whether `/games/` opens. If it doesn't, see "If something
+  goes wrong" below.
 
 You can press the button again at any time:
 
@@ -65,11 +73,11 @@ You can press the button again at any time:
 Use this only if Site setup can't run on the server.
 
 1. Go to **Tools > Import > WordPress** and press **Install Now**, then **Run Importer**.
-2. Choose `ghost-kit-content.xml`, then **Upload file and import**.
+2. Choose `world-stage-games-content.xml`, then **Upload file and import**.
 3. Under "Assign posts to", pick your own user.
 4. Tick **Download and import file attachments**, then **Submit**.
 5. Then go to **Appearance > Site setup** and press **Set up the site**. It sees the imported pages and pictures and
-   doesn't copy them again. It just sets the home page, the links and the logo.
+   doesn't copy them again. It just sets the home page, the name, the links and the logo.
 
 Use one way or the other, not both.
 
@@ -77,19 +85,21 @@ Use one way or the other, not both.
 
 Site setup does these for you, but check them once:
 
+- **Settings > General**: the Site Title is **World Stage Games**, the Tagline **Every game deserves a stage.**, and
+  both addresses are `https://worldstagegames.com`.
 - **Settings > Reading**: "Your homepage displays" is **A static page**, and "Homepage" is **Home**.
-- **Settings > Permalinks**: **Post name** is selected. Press **Save Changes** once even if it already is; this also
-  fixes any page that shows "not found".
-- **Settings > Discussion**: you can untick "Allow people to submit comments". The theme already turns comments off.
+- **Settings > Permalinks**: **Post name** is selected. Press **Save Changes** once even if it already is. This
+  rewrites the server's link rules and fixes any page that shows "not found".
 
 ## 4. The menus
 
 The menus are already in place:
 
-- **Header**: Games, About, Press kit, Support.
-- **Footer**: Privacy, Licences, Press kit, Contact.
+- **Header**: Games, Sports, About, Press kit, Support. On a phone, they fold into a ☰ button.
+- **Footer**: the language menu, then Privacy, Licences, Press kit, Contact.
 
-On a phone, the header menu folds into a ☰ button.
+Every link works whatever the permalink setting, and wherever WordPress is installed. The theme turns each link into
+the page's real address as the page is shown.
 
 This theme is a block theme, so there is no Appearance > Menus. To change a menu:
 
@@ -97,34 +107,38 @@ This theme is a block theme, so there is no Appearance > Menus. To change a menu
 2. Open **Header** or **Footer**.
 3. Click the menu, change it, then **Save**.
 
-The links are written like `/games/`, so they work on any domain.
+## 5. The name, the logo and the languages
 
-## 5. The studio name and the domain
+**The name** is one setting: **Settings > General > Site Title**. It appears in:
 
-**The studio name** ("Ghost Kit Games" is a placeholder) is one setting: **Settings > General > Site Title**. It
-appears in:
-
-- the header and the footer's © line;
+- the footer's © line;
 - every browser-tab title;
-- link previews (when someone shares a page).
+- link previews (when someone shares a page);
+- the logo's text for screen readers.
 
-The page text never names the studio, so nothing else needs changing. The **Tagline** on the same screen goes after
-the name in the home page's title ("Mobile sports games").
+The **Tagline** on the same screen goes after the name in the home page's browser-tab title. The page text never
+names the studio, so nothing else needs changing.
 
-To change the logo or the icon:
+**The logo** in the header is the World Stage Games wordmark. To change it, go to **Appearance > Editor**, click the
+logo in the header, then **Replace**. While a logo is set, the header shows the logo and not the Site Title as text,
+because the logo already spells the name.
 
-- **Logo**: in **Appearance > Editor**, click the logo in the header, then **Replace**.
-- **Browser-tab icon**: **Settings > General > Site Icon**.
+**The browser-tab icon** is the ticket. To change it, go to **Settings > General > Site Icon**.
 
-The ghost logo is only a starting point. If the studio gets another name, replace it.
+**Languages**: the site is written in English, and it opens in all 54 languages the games are played in.
 
-**The domain**: Bluehost sets it when you make the site.
+- The footer has a **🌐 Language** menu listing every language by its own name (हिन्दी, Gaeilge, isiZulu,
+  Te Reo Māori…). Choosing one opens the same page through Google Translate.
+- A visitor whose browser is set to one of those languages sees a small "🌐 हिन्दी →" button at the bottom of the
+  page. One tap opens the page in that language; × hides the button for good on that device.
+- Nothing is sent to Google until the visitor chooses a language, and the **Privacy policy** page says so.
+  Translations are made by machine. The English text stays the official version, which matters most for the
+  privacy policies.
 
-- If you move the site to another domain later, change **WordPress Address** and **Site Address** under
-  **Settings > General**.
-- Turn on Bluehost's free SSL so the addresses start with `https://`.
-- The pages link to each other by path (`/games/…`), so they keep working after a move. The site must sit at the top
-  of the domain (`https://{domain}/`), not in a sub-folder.
+Why not translate every page into 54 languages? A human translation of 36 pages, including the privacy policies,
+into 54 languages would take months and need checking by native speakers. Unchecked machine translations stored on
+the site would look official but could be wrong. If you ever want full human translations for a few languages, the
+site can add them later.
 
 ## 6. Adding the media later
 
@@ -157,8 +171,9 @@ game's Play Store screenshots. To change one:
 1. Click it, then **Replace**.
 2. Upload the new picture and write its **Alternative text**, a few words on what it shows.
 
-**Media kit links** (Press kit page): Netball Unleashed's and Sepak Takraw Unleashed's media kits are already linked. Each other game shows
-"Media kit … coming soon". When the release `<game>-media` exists on GitHub:
+**Media kit links**: Netball Unleashed's and Sepak Takraw Unleashed's media kits are already linked, on the Press kit
+page and on their game pages. Each other game shows "Media kit … coming soon". When the release `<game>-media`
+exists on GitHub:
 
 1. Open **Pages > Press kit**.
 2. Select the words "Media kit" for that game, press the link button, and paste the zip's download address from the
@@ -204,6 +219,7 @@ The game pages' "About the sport" panels link to them, and **Sports** is in the 
     the page.
   - If you install an SEO plugin (Yoast, Rank Math, All in One SEO, SEOPress or The SEO Framework), the theme notices
     and leaves the page descriptions and link previews to it.
+- **HTTPS**: turn on Bluehost's free SSL for worldstagegames.com, so every address starts with `https://`.
 - **Coming Soon**: turn it off in Bluehost (or **Settings > General** / the Bluehost menu in WordPress) when you're
   happy.
 - **Search engines**: under **Settings > Reading**, make sure "Discourage search engines" is **not** ticked.
@@ -215,9 +231,25 @@ The game pages' "About the sport" panels link to them, and **Sports** is in the 
 3. Press **Appearance > Site setup > Set up the site**. It updates only the pages you have not edited, and adds any
    new ones.
 
-## The addresses
+## Moving from Ghost Kit
 
-Every page has a fixed address. Replace `{domain}` with the studio's domain.
+If you installed the first version (the theme called **Ghost Kit**, from `ghost-kit-theme.zip`), keep your pages and
+switch theme:
+
+1. Upload `world-stage-games-website.zip` as in step 1 and **Activate** it. It is a separate theme, so WordPress
+   installs it beside Ghost Kit.
+2. Press **Appearance > Site setup > Set up the site**. It:
+   - keeps your pages;
+   - refreshes the ones you haven't edited (for example, the home page loses its old picture background);
+   - renames the site to World Stage Games, unless you had already renamed it;
+   - swaps the ghost logo and icon for the new ones;
+   - checks the links.
+3. Delete **Ghost Kit** under **Appearance > Themes** (click it, then **Delete**).
+
+If you edited the header or footer in the Site Editor under Ghost Kit, those edits don't carry over to the new theme.
+Make them again under **Appearance > Editor**.
+
+## The addresses
 
 ### Privacy policies, for the Google Play listings
 
@@ -226,22 +258,23 @@ listing:
 
 | Game | Android app ID | Privacy policy URL |
 |---|---|---|
-| Kabaddi Raid | `com.kabaddiraid.game` | `https://{domain}/games/kabaddi-raid/privacy/` |
-| Hurling Heroes | `com.ashandleather.game` | `https://{domain}/games/hurling-heroes/privacy/` |
-| Sepak Takraw Unleashed | `com.takrawsmash.game` | `https://{domain}/games/sepak-takraw-unleashed/privacy/` |
-| Netball Unleashed | `com.netballunleashed.game` | `https://{domain}/games/netball-unleashed/privacy/` |
-| Kho Kho Rush | `com.khokhorush.game` | `https://{domain}/games/kho-kho-rush/privacy/` |
-| Floorball Unleashed | `com.floorballunleashed.game` | `https://{domain}/games/floorball-unleashed/privacy/` |
-| Pok Ta Pok Rivals | `com.poktapokrivals.game` | `https://{domain}/games/pok-ta-pok-rivals/privacy/` |
+| Kabaddi Raid | `com.kabaddiraid.game` | `https://worldstagegames.com/games/kabaddi-raid/privacy/` |
+| Hurling Heroes | `com.ashandleather.game` | `https://worldstagegames.com/games/hurling-heroes/privacy/` |
+| Sepak Takraw Unleashed | `com.takrawsmash.game` | `https://worldstagegames.com/games/sepak-takraw-unleashed/privacy/` |
+| Netball Unleashed | `com.netballunleashed.game` | `https://worldstagegames.com/games/netball-unleashed/privacy/` |
+| Kho Kho Rush | `com.khokhorush.game` | `https://worldstagegames.com/games/kho-kho-rush/privacy/` |
+| Floorball Unleashed | `com.floorballunleashed.game` | `https://worldstagegames.com/games/floorball-unleashed/privacy/` |
+| Pok Ta Pok Rivals | `com.poktapokrivals.game` | `https://worldstagegames.com/games/pok-ta-pok-rivals/privacy/` |
 
-Each policy page is copied word for word from the policy inside that game (dated 26 or 27 October 2026). Kabaddi
-Raid's policy currently lives at `https://thekabaddipulse.com/kabaddi-raid/privacy/`, and the game links there. If
-Kabaddi Raid's Play listing should use the new site, use the address above. The words are the game's newest policy,
-dated 27 October 2026.
+Each policy page is copied word for word from the policy inside that game (dated 26 or 27 October 2026).
+
+Kabaddi Raid's policy currently lives at `https://thekabaddipulse.com/kabaddi-raid/privacy/`, and the game links
+there. If Kabaddi Raid's Play listing should use the new site, use the address above. The words are the game's newest
+policy, dated 27 October 2026.
 
 ### Support pages, for each listing's "Website" or support field
 
-`https://{domain}/games/<game>/support/`, where `<game>` is one of:
+`https://worldstagegames.com/games/<game>/support/`, where `<game>` is one of:
 
 - `kabaddi-raid`
 - `hurling-heroes`
@@ -253,6 +286,8 @@ dated 27 October 2026.
 
 ### All the pages
 
+All under `https://worldstagegames.com`:
+
 | Address | Page |
 |---|---|
 | `/` | Home |
@@ -260,17 +295,21 @@ dated 27 October 2026.
 | `/games/<game>/` | One page per game |
 | `/games/<game>/privacy/` | That game's privacy policy |
 | `/games/<game>/support/` | That game's help and support |
+| `/sports/` | Sports: all seven sports |
+| `/sports/<sport>/` | One page per sport: `kabaddi`, `hurling`, `sepak-takraw`, `netball`, `kho-kho`, `floorball`, `ulama` |
 | `/about/` | About |
 | `/press-kit/` | Press kit |
 | `/support/` | Contact and support |
 | `/privacy/` | Privacy policy for the website, with links to every game's |
 | `/licences/` | Licences (the games' are in each game: Settings > About > Licences), and every photo's credit |
-| `/sports/` | Sports: all seven sports |
-| `/sports/<sport>/` | One page per sport: `kabaddi`, `hurling`, `sepak-takraw`, `netball`, `kho-kho`, `floorball`, `ulama` |
 
 ## If something goes wrong
 
-- **A page says "not found"**: go to **Settings > Permalinks** and press **Save Changes**.
+- **Clicking a game or a menu item says "not found"**: go to **Settings > Permalinks** and press **Save Changes**. If
+  it still happens, Site setup's link check will say so. In that case, ask Bluehost support to "make the site's
+  .htaccess file writable and add the WordPress rewrite rules". As a stop-gap, choose **Plain** under **Settings >
+  Permalinks**: the theme then links with `?page_id=` addresses, which always work. Only use Plain for a short time:
+  the privacy policy addresses you give Google Play (`/games/<game>/privacy/`) need **Post name** to work.
 - **Site setup stops with a red message about a picture**: the server could not process the picture. Press the
   button again. If it keeps failing, ask Bluehost support to check that PHP's GD or Imagick extension supports WebP
   images.

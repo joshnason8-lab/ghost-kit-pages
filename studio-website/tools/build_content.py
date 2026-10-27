@@ -3,7 +3,7 @@
 
 Reads studio-website/content-src/games.json (facts gathered from each game branch, with their sources) and each game's
 privacy policy and help page straight from its branch (read-only, git show). Writes the theme's content file,
-theme/ghost-kit/inc/content/pages.json, which the theme's "Set up the site" button turns into pages.
+theme/world-stage-games/inc/content/pages.json, which the theme's "Set up the site" button turns into pages.
 
 Run from anywhere:  python3 studio-website/tools/build_content.py
 """
@@ -19,7 +19,7 @@ from blocks import (buttons, columns, esc, esc_attr, gallery, grid, group, headi
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.dirname(HERE)
-OUT = os.path.join(SITE, "theme", "ghost-kit", "inc", "content")
+OUT = os.path.join(SITE, "theme", "world-stage-games", "inc", "content")
 
 REPO_URL = "https://github.com/joshnason8-lab/ghost-kit-pages"
 EMAIL = "joshnason8@gmail.com"
@@ -223,9 +223,6 @@ def beta_section(games):
 # ---------------------------------------------------------------------------------------------------------- pages
 
 def page_home(games):
-    hero_bg = group([image(s + "-feature", "", size="large") for s in
-                     ("kabaddi-raid", "hurling-heroes", "sepak-takraw-unleashed", "pok-ta-pok-rivals")],
-                    cls="gk-hero__bg")
     stats = row([
         paragraph("<strong>7</strong> Games", cls="gk-stat"),
         paragraph("<strong>54</strong> Languages across the games", cls="gk-stat"),
@@ -233,7 +230,6 @@ def page_home(games):
         paragraph("<strong>0</strong> Personal data collected", cls="gk-stat"),
     ], cls="gk-stats")
     hero = group([
-        hero_bg,
         group([
             paragraph("Mobile sports games · Made for every phone", cls="gk-eyebrow"),
             heading(1, 'The sports the world <mark style="background-color:rgba(0, 0, 0, 0)" '
@@ -406,6 +402,12 @@ def page_studio_privacy(games):
         paragraph("Some sport pages show videos from YouTube. A video loads nothing from YouTube until you press play. "
                   "When you do, it plays from YouTube's privacy-enhanced mode (youtube-nocookie.com), and YouTube's own "
                   "privacy policy covers what happens there."),
+        heading(2, "Translation"),
+        paragraph("The site is written in English. The language menu at the bottom of each page, and the suggestion "
+                  "that may appear for a browser set to another language, open the page in Google Translate. Nothing is "
+                  "sent to Google until you choose a language; once you do, Google's own privacy policy covers the "
+                  "translated page. Translations are made by machine; the English text is the official version, "
+                  "including for every privacy policy."),
         heading(2, "Links to other sites"),
         paragraph("Beta downloads and media kits are on GitHub; some pages link to Google Play, Netlify and other sites. "
                   "What those sites do is covered by their own privacy policies."),

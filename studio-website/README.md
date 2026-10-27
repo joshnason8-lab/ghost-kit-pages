@@ -1,14 +1,14 @@
-# Studio website
+# World Stage Games website
 
-The studio's WordPress site: a block theme in the approved design (`shared-assets/website-mockup/`), and every page's
-content. For putting it on Bluehost, read **[INSTALL-BLUEHOST.md](INSTALL-BLUEHOST.md)**.
+The WordPress site for **World Stage Games** ("Every game deserves a stage.") at https://worldstagegames.com: a block
+theme in the approved design (`shared-assets/website-mockup/`), and every page's content. For putting it on Bluehost, read **[INSTALL-BLUEHOST.md](INSTALL-BLUEHOST.md)**.
 
 | Path | What it is |
 |---|---|
-| `dist/ghost-kit-theme.zip` | The theme, ready for Appearance > Themes > Upload. Includes the content and the pictures. |
-| `dist/ghost-kit-content.xml` | The same pages as a WordPress import file (the back-up route). |
+| `dist/world-stage-games-website.zip` | The theme, ready for Appearance > Themes > Upload. Includes the content and the pictures. |
+| `dist/world-stage-games-content.xml` | The same pages as a WordPress import file (the back-up route). |
 | `screenshots/` | The site at 360, 390, 768, 1024 and 1440 px, taken from a local WordPress 7.1.3. |
-| `theme/ghost-kit/` | The theme's source. |
+| `theme/world-stage-games/` | The theme's source. |
 | `content-src/games.json` | Each game's facts, with the file each one came from on the game's branch. |
 | `content-src/claims-check.md` | Each claim on the home page, with its evidence from the games. |
 | `content-src/sports/<sport>.md` | The seven sport pages: text, photos (with licences), videos and sources. See `FORMAT.md`. |
@@ -19,15 +19,22 @@ content. For putting it on Bluehost, read **[INSTALL-BLUEHOST.md](INSTALL-BLUEHO
 
 ## How it fits together
 
-- **The studio's name** is WordPress's Site Title. The theme and the pages never write it, so the placeholder "Ghost
-  Kit Games" changes in one place.
-- **The pages** are in `theme/ghost-kit/inc/content/pages.json`. `tools/build_content.py` builds them from:
+- **The studio's name** is WordPress's Site Title, set to "World Stage Games" by Site setup (`GHOSTKIT_STUDIO_NAME`
+  and `GHOSTKIT_STUDIO_TAGLINE` in `inc/setup.php`). The page text never names the studio. The logo
+  (`assets/images/logo.png`) and the site icon (`assets/images/icon.png`) are the studio's own artwork, trimmed of
+  empty space.
+- **Links**: the pages and menus link by path (`/games/…`). `inc/links.php` turns each path into the page's real
+  address as it is shown, so links work with any permalink setting and in any install folder.
+- **Languages**: the footer's language menu and a one-tap suggestion for browsers set to another language open the
+  page in Google Translate, in any of the 54 languages the games use (`inc/languages.php`, `assets/js/language.js`).
+  Nothing goes to Google until the visitor chooses a language.
+- **The pages** are in `theme/world-stage-games/inc/content/pages.json`. `tools/build_content.py` builds them from:
   - `content-src/games.json`;
   - each game's privacy policy and help page, read straight from its branch with `git show` (read-only). The
     policies are copied word for word. Only line wraps are joined, and web addresses are made into links. One
     clause is dropped: Sepak Takraw's policy mentions "privacy.html next to this file", which means nothing on the
     web.
-- **Appearance > Site setup** (`theme/ghost-kit/inc/setup.php`) turns that file into pages:
+- **Appearance > Site setup** (`theme/world-stage-games/inc/setup.php`) turns that file into pages:
   - It adds the pictures to the Media Library, so WordPress makes the WebP sizes and `srcset`.
   - It makes the pages at fixed addresses and sets the front page and links.
   - Pressing it again is safe: it fills gaps and refreshes only the pages nobody has edited.
@@ -53,7 +60,7 @@ sh studio-website/tools/package.sh      # rebuild pages.json from the game branc
 To rebuild the import file, run Site setup in a local WordPress with the theme, then:
 
 1. Export the site with `tools/export_wxr.php`.
-2. Run `tools/fix_wxr.py exported.xml dist/ghost-kit-content.xml <commit>`. This keeps only the pages and pictures,
+2. Run `tools/fix_wxr.py exported.xml dist/world-stage-games-content.xml <commit>`. This keeps only the pages and pictures,
    and points each picture at its file on GitHub at `<commit>`, so the import can download it.
 
 When a game's media kit release (`<release>-media`) is published:
@@ -89,3 +96,5 @@ Everything below ran in WordPress 7.1.3 on PHP 8.3 with SQLite, on 27 October 20
   - A privacy page: about 200 KB.
 - **Videos**: every video on the sport pages was checked with YouTube's oEmbed (it exists, allows embedding and comes from the named channel). A page makes no request to YouTube until play is pressed; then the player loads from youtube-nocookie.com.
 - **Trailers**: with `netball-unleashed-trailer.mp4` in the Media Library, Site setup swapped the game page's "Trailer coming soon" for a video player; the other games kept the placeholder.
+- **Links with plain permalinks**: switched a site to plain permalinks and crawled it. Every link became a `?page_id=` address, and all of them opened.
+- **Languages**: a browser set to Hindi got the "हिन्दी →" suggestion; closing it kept it closed; an English browser got none. The footer menu lists all 53 other languages. Neither sends anything anywhere until a language is chosen.

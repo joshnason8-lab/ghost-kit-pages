@@ -1,11 +1,11 @@
 <?php
 /**
- * Ghost Kit: a block theme for a studio of mobile sports games.
+ * World Stage Games: a block theme for a studio of mobile sports games.
  *
  * The studio's name is the Site Title (Settings > General); nothing else in the theme names it. The pages come from
  * inc/content/pages.json through Appearance > Site setup (inc/setup.php). No plugins are needed.
  *
- * @package ghost-kit
+ * @package world-stage-games
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -14,6 +14,8 @@ define( 'GHOSTKIT_VERSION', wp_get_theme( get_template() )->get( 'Version' ) );
 
 require get_template_directory() . '/inc/setup.php';
 require get_template_directory() . '/inc/seo.php';
+require get_template_directory() . '/inc/links.php';
+require get_template_directory() . '/inc/languages.php';
 
 add_action(
 	'after_setup_theme',
@@ -21,7 +23,7 @@ add_action(
 		add_theme_support( 'wp-block-styles' );
 		add_theme_support( 'editor-styles' );
 		add_theme_support( 'responsive-embeds' );
-		add_theme_support( 'custom-logo', array( 'height' => 68, 'width' => 68, 'flex-width' => true ) );
+		add_theme_support( 'custom-logo', array( 'height' => 160, 'width' => 738, 'flex-width' => true, 'flex-height' => true ) );
 		add_editor_style( 'assets/css/site.css' );
 		add_post_type_support( 'page', 'excerpt' );
 	}
@@ -116,7 +118,7 @@ add_shortcode(
 			$items[] = sprintf( '<li><a href="%s">%s</a></li>', esc_url( get_permalink( $id ) ), esc_html( get_the_title( $id ) ) );
 		}
 		$items[] = sprintf( '<li aria-current="page">%s</li>', esc_html( ghostkit_short_title( $post ) ) );
-		return '<nav class="gk-crumb" aria-label="' . esc_attr__( 'Breadcrumb', 'ghost-kit' ) . '"><ol>' . implode( '', $items ) . '</ol></nav>';
+		return '<nav class="gk-crumb" aria-label="' . esc_attr__( 'Breadcrumb', 'world-stage-games' ) . '"><ol>' . implode( '', $items ) . '</ol></nav>';
 	}
 );
 
@@ -129,6 +131,17 @@ function ghostkit_short_title( $post ) {
 	}
 	return $title;
 }
+
+/**
+ * The header logo already spells out the studio's name, so its text alternative is the Site Title: it stays right if
+ * the name changes, and screen readers hear the name once (the text title beside it is hidden while there is a logo).
+ */
+add_filter(
+	'render_block_core/site-logo',
+	function ( $html ) {
+		return preg_replace( '/ alt="[^"]*"/', ' alt="' . esc_attr( get_bloginfo( 'name' ) ) . '"', $html, 1 );
+	}
+);
 
 /**
  * Pages brought in with Tools > Import keep their old image IDs, so WordPress can't add the smaller sizes (srcset)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Makes the exported WXR portable: keeps only the published pages and the theme's images, points each image at its
 file on GitHub (pinned to a commit, so the address never changes) for Tools > Import to download, and swaps the
-local test address for example.com.
+local test address for https://worldstagegames.com.
 
   python3 fix_wxr.py <exported.xml> <out.xml> <commit-sha>
 """
@@ -11,8 +11,8 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-THEME = os.path.join(os.path.dirname(HERE), "theme", "ghost-kit")
-RAW = "https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/%s/studio-website/theme/ghost-kit/assets/images/"
+THEME = os.path.join(os.path.dirname(HERE), "theme", "world-stage-games")
+RAW = "https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/%s/studio-website/theme/world-stage-games/assets/images/"
 LOCAL = "http://localhost:8881"
 
 src, out, sha = sys.argv[1:4]
@@ -51,7 +51,7 @@ for old in sorted(remap, key=len, reverse=True):
 doc = head + body + tail
 # Drop the menu/term lists in the header (the site uses none) and the local address.
 doc = re.sub(r"\t<wp:(term|category|tag)>.*?</wp:\1>\n", "", doc, flags=re.S)
-doc = doc.replace(LOCAL, "https://example.com")
+doc = doc.replace(LOCAL, "https://worldstagegames.com")
 assert "localhost" not in doc
 open(out, "w", encoding="utf-8").write(doc)
 print("items: %d (pages %d, images %d)" % (len(kept), body.count("<wp:post_type><![CDATA[page]]>"),

@@ -17,7 +17,7 @@ import diagrams
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.dirname(HERE)
 SRC = os.path.join(SITE, "content-src", "sports")
-THEME_IMG = os.path.join(SITE, "theme", "ghost-kit", "assets", "images", "sports")
+THEME_IMG = os.path.join(SITE, "theme", "world-stage-games", "assets", "images", "sports")
 
 # Sport page slug -> the game that plays it, in the order of the Sports index.
 SPORTS = [("kabaddi", "kabaddi-raid"), ("hurling", "hurling-heroes"), ("sepak-takraw", "sepak-takraw-unleashed"),
@@ -244,7 +244,7 @@ def credits_markdown(entries):
     for meta, game in entries:
         lines += ["## %s (`/sports/%s/`)" % (meta["sport"], meta["slug"]), ""]
         for p in meta.get("photos", []):
-            lines.append("- **%s**: %s. Author: %s. Licence: [%s](%s). Source: <%s>. File: `theme/ghost-kit/assets/images/sports/%s-%s.webp`." % (
+            lines.append("- **%s**: %s. Author: %s. Licence: [%s](%s). Source: <%s>. File: `theme/world-stage-games/assets/images/sports/%s-%s.webp`." % (
                 p.get("caption") or p["alt"], p["alt"], p["author"], p["licence"], p["licence_url"], p["source_url"],
                 meta["slug"], p["id"]))
         if meta.get("videos"):

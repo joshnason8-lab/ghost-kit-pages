@@ -6,7 +6,7 @@
  * image is the page's featured image if it has one, otherwise the game's title art for a game's pages, otherwise the
  * studio image. If an SEO plugin is active, this steps aside so the tags aren't doubled.
  *
- * @package ghost-kit
+ * @package world-stage-games
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -79,5 +79,5 @@ add_action(
 	5
 );
 
-// The home page's title is the site's name and tagline ("Ghost Kit Games – Mobile sports games"), WordPress's default.
+// The home page's title is the site's name and tagline ("World Stage Games – Every game deserves a stage."), WordPress's default.
 // Every other page is "Page – Site", also the default. Nothing to change there.

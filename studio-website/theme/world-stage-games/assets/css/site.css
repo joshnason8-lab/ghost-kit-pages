@@ -1,4 +1,4 @@
-/* Ghost Kit: the parts of the design theme.json can't say. Colours and fonts come from theme.json's presets. */
+/* World Stage Games: the parts of the design theme.json can't say. Colours and fonts come from theme.json's presets. */
 
 :root {
 	--gk-bg: var(--wp--preset--color--base);
@@ -39,7 +39,12 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 .gk-header { border-bottom: 1px solid var(--gk-line); position: relative; z-index: 20; }
 .gk-header__bar { min-height: 76px; gap: 24px; }
 .gk-brand { gap: 12px; flex: 0 1 auto; min-width: 0; }
-.gk-brand .wp-block-site-logo img { width: 34px; height: 34px; border-radius: 10px; display: block; }
+.gk-brand .wp-block-site-logo img { width: auto !important; height: 44px !important; max-width: 100%; display: block; }
+.gk-brand .wp-block-site-logo a { display: flex; align-items: center; min-height: 44px; }
+/* The logo spells out the name, so the text title is only for screen readers while a logo is set. */
+.gk-brand:has(.wp-block-site-logo img) .wp-block-site-title {
+	position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
 .gk-brand .wp-block-site-title { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .gk-brand .wp-block-site-logo { flex: none; }
 .gk-nav { margin-left: auto; }
@@ -71,6 +76,7 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 	.gk-header .gk-header__cta { display: none; }
 	.gk-header__bar { min-height: 64px; }
 	.gk-brand .wp-block-site-title { font-size: 20px !important; }
+	.gk-brand .wp-block-site-logo img { height: 36px !important; }
 }
 
 /* ------------------------------------------------------------------ footer */
@@ -119,18 +125,22 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 
 /* ------------------------------------------------------------------ home: hero */
 
-.gk-hero { position: relative; overflow: hidden; padding-top: clamp(48px, 8vw, 80px); padding-bottom: clamp(44px, 7vw, 70px); margin-top: 0 !important; }
-.gk-hero__bg {
-	position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
-	opacity: .22; margin: 0 !important; max-width: none !important;
-}
-.gk-hero__bg > * { margin: 0 !important; height: 100%; }
-.gk-hero__bg img { width: 100%; height: 100% !important; object-fit: cover; display: block; }
-.gk-hero::after {
-	content: ""; position: absolute; inset: 0; pointer-events: none;
+.gk-hero {
+	position: relative; overflow: hidden; padding-top: clamp(48px, 8vw, 88px); padding-bottom: clamp(44px, 7vw, 80px); margin-top: 0 !important;
+	/* The stage: deep night blue, an orange spotlight and a teal glow, and the logo's globe drawn in faint lines. */
 	background:
-		linear-gradient(90deg, var(--gk-bg) 35%, rgba(13, 17, 23, .55) 75%, rgba(13, 17, 23, .85)),
-		linear-gradient(0deg, var(--gk-bg), transparent 40%);
+		radial-gradient(55% 75% at 88% 10%, rgba(255, 138, 31, .20), transparent 62%),
+		radial-gradient(45% 60% at 70% 100%, rgba(43, 212, 164, .12), transparent 60%),
+		linear-gradient(180deg, #121a28 0%, var(--gk-bg) 100%);
+}
+.gk-hero::before {
+	content: ""; position: absolute; pointer-events: none; opacity: .07;
+	width: min(620px, 70vw); aspect-ratio: 1; right: max(-80px, -6vw); top: 50%; transform: translateY(-50%);
+	background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%23ffffff' stroke-width='2.2'><circle cx='100' cy='100' r='96'/><ellipse cx='100' cy='100' rx='44' ry='96'/><line x1='100' y1='4' x2='100' y2='196'/><path d='M12 62 Q100 76 188 62'/><path d='M4 100 H196'/><path d='M12 138 Q100 124 188 138'/></svg>") center / contain no-repeat;
+}
+.gk-hero::after {
+	content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; pointer-events: none;
+	background: linear-gradient(90deg, transparent, rgba(255, 138, 31, .5), transparent);
 }
 .gk-hero__content { position: relative; z-index: 1; }
 .gk-hero__content > * { max-width: 780px; }
@@ -141,8 +151,7 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 .gk-stat { margin: 0; color: var(--gk-mute); font-size: 14px; max-width: 9.5em; line-height: 1.35; }
 .gk-stat strong { display: block; font-family: var(--gk-heading); font-size: 38px; color: var(--gk-ink); line-height: 1.15; }
 @media (max-width: 640px) {
-	.gk-hero__bg { grid-template-columns: repeat(2, 1fr); }
-	.gk-hero::after { background: linear-gradient(0deg, var(--gk-bg) 10%, rgba(13, 17, 23, .7)); }
+	.gk-hero::before { width: 90vw; right: -30vw; top: 4%; transform: none; opacity: .06; }
 	.gk-stats { display: grid !important; grid-template-columns: 1fr 1fr; }
 }
 
@@ -336,3 +345,41 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 .gk-sources { font-size: 14px; }
 .gk-sources a { overflow-wrap: anywhere; }
 .gk-card--sport .gk-card__body { padding: 18px; gap: 6px !important; }
+
+/* ------------------------------------------------------------------ languages */
+
+.gk-lang { position: relative; font-size: 14px; }
+.gk-lang summary {
+	list-style: none; cursor: pointer; color: var(--gk-mute); min-height: 44px; display: inline-flex; align-items: center; gap: 6px;
+}
+.gk-lang summary::-webkit-details-marker { display: none; }
+.gk-lang summary::after { content: "▾"; font-size: 11px; }
+.gk-lang[open] summary, .gk-lang summary:hover { color: var(--gk-ink); }
+.gk-lang__panel {
+	position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 30; width: min(560px, calc(100vw - 32px));
+	max-height: min(420px, 70vh); overflow: auto; background: var(--gk-panel); border: 1px solid var(--gk-line);
+	border-radius: 14px; padding: 14px; box-shadow: 0 16px 50px rgba(0, 0, 0, .55);
+}
+.gk-lang__note { margin: 0 0 10px; color: var(--gk-mute); font-size: 13px; line-height: 1.45; }
+.gk-lang__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 2px 10px; }
+.gk-lang__list a { display: block; padding: 11px 6px; color: var(--gk-soft); text-decoration: none; border-radius: 6px; }
+.gk-lang__list a:hover { background: var(--gk-chip); color: var(--gk-ink); }
+
+.gk-langbar {
+	position: fixed; z-index: 40; left: 50%; bottom: 16px; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px);
+	display: flex; align-items: center; gap: 12px; padding: 6px 6px 6px 16px; border-radius: 14px;
+	background: var(--gk-panel); border: 1px solid var(--gk-line); box-shadow: 0 16px 50px rgba(0, 0, 0, .55); font-size: 14px;
+}
+.gk-langbar__go { font-weight: 600; color: var(--gk-ink); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.gk-langbar__go:hover { color: var(--gk-accent); }
+.gk-langbar__hint { color: var(--gk-mute); font-size: 12px; }
+.gk-langbar__close {
+	min-width: 44px; min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--gk-mute);
+	font-size: 22px; cursor: pointer;
+}
+.gk-langbar__close:hover { background: var(--gk-chip); color: var(--gk-ink); }
+@media (max-width: 480px) { .gk-langbar__hint { display: none; } }
+
+/* The home page's hero meets the header with no strip of page between them. */
+.gk-main > .wp-block-post-content:first-child,
+.gk-main > .wp-block-post-content > .gk-hero:first-child { margin-top: 0 !important; }
