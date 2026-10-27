@@ -7,8 +7,9 @@ OUT is a working folder outside the repository (the renders and the video are bi
 needs Godot, xvfb-run and ffmpeg. Steps:
   1. tests/media.tscn renders the screenshots (raids on every ground, caught as they happen) and every menu screen,
      on High, in English, at 1920x1080.
-  2. tests/trailer.tscn records the trailer's footage with Movie Maker at 30 fps, with the game's own sound
-     (an override.cfg beside project.godot sets the 1920x1080 window while it records, then is removed).
+  2. tests/trailer.tscn finds each seeded match's moments headless, then records the trailer's footage with Movie
+     Maker at 30 fps, with the game's own sound, drawing each match only round its moment (an override.cfg beside
+     project.godot sets the 1920x1080 window while it records, then is removed).
   3. With --store, the Play store's pictures are made again too (tests/screenshots.tscn "store", then
      tools/store_art.py), so the listing's screenshots and feature graphic follow the build.
   4. The icons (1024 and 512 px, from the icon's source painting), the feature graphic, the website copy
@@ -62,12 +63,16 @@ def render(raw: pathlib.Path, store: bool):
         shutil.rmtree(d, ignore_errors=True)
         run(XVFB + GODOT + ["--resolution", "%dx%d" % (W, H), "res://tests/media.tscn", "--", str(d), what],
             log=raw / ("%s.log" % what))
+    # Where each seeded match's moments fall (headless, a minute), so the recording only draws round them.
+    run(["godot", "--headless", "--path", str(ROOT), "--fixed-fps", str(FPS), "res://tests/trailer.tscn", "--", "scan",
+         str(raw / "trailer_plan.json")], log=raw / "trailer_scan.log")
     override = ROOT / "override.cfg"
     override.write_text("[display]\n\nwindow/size/window_width_override=%d\nwindow/size/window_height_override=%d\n"
                         % (W, H))
     try:
         run(XVFB + GODOT + ["--write-movie", str(raw / "trailer.avi"), "--fixed-fps", str(FPS),
-                            "res://tests/trailer.tscn"], log=raw / "trailer.log")
+                            "res://tests/trailer.tscn", "--", "record", str(raw / "trailer_plan.json")],
+            log=raw / "trailer.log")
     finally:
         override.unlink()
     if store:

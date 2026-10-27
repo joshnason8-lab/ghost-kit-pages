@@ -48,6 +48,9 @@ func _ground_shots(arena: String, home: String, away: String, hud: bool, n: int)
 		"difficulty": 3})
 	var m: Node = Game.current
 	m.hud.visible = hud
+	await frames(2)
+	# Drawn without a GPU, High takes seconds a frame: the world is only drawn for the frames just before a shot.
+	m.cam.cam.cull_mask = 0
 	var pending := []   # [frame to shoot at, name]
 	var seen := {}
 	var state := {"frame": 0}
@@ -64,6 +67,7 @@ func _ground_shots(arena: String, home: String, away: String, hud: bool, n: int)
 		await get_tree().process_frame
 		state.frame += 1
 		m.hud.visible = hud
+		m.cam.cam.cull_mask = 0xFFFFF if not pending.is_empty() and state.frame >= int(pending[0][0]) - 4 else 0
 		if not pending.is_empty() and state.frame >= int(pending[0][0]):
 			var p: Array = pending.pop_front()
 			n += 1
@@ -135,11 +139,15 @@ func _media_menus() -> void:
 	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
 		"difficulty": 1, "first_raider": 0, "passive": true})
 	var m: Node = Game.current
+	await frames(2)
+	m.cam.cam.cull_mask = 0   # the walk-out, not drawn (see _ground_shots)
 	var guard := 0
 	while m.phase != "raid" and guard < 1200:
 		await get_tree().process_frame
 		guard += 1
-	await frames(60)
+	await frames(56)
+	m.cam.cam.cull_mask = 0xFFFFF
+	await frames(4)
 	await take.call("match")
 	m.set_paused(true)
 	await frames(20)
