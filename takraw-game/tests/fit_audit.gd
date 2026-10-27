@@ -387,6 +387,15 @@ func _check_chars(c: Control, text: String, font: Font) -> void:
 ## Text outside a box that clips what is in it (a scrolling list may run on down or across, as it scrolls).
 func _check_clip(c: Control, text: String, ink: Rect2) -> void:
 	var x := c.get_parent()
+	# A button's words stay on the button: it does not clip them, and past its edge they run under the next one.
+	var y: Node = x
+	while y and not (y is CanvasLayer):
+		if y is BaseButton and (y as Control).is_visible_in_tree():
+			var br: Rect2 = (y as Control).get_global_rect().grow(1.0)
+			if not br.encloses(ink):
+				_report("out_of_button", c, text, ink.end.x, br.end.x, _short_path(y))
+			break
+		y = y.get_parent()
 	while x:
 		if x is Control and x.clip_contents and x.is_visible_in_tree():
 			var r: Rect2 = x.get_global_rect().grow(1.0)

@@ -38,13 +38,13 @@ def main():
     eyebrow.set_variation_by_axes([700])
     line = ImageFont.truetype(teko, 44)
     line.set_variation_by_axes([500])
-    d.text((54, 84), "THE ISTAF RULES · REAL PLAYERS", font=eyebrow, fill=(255, 154, 31))
+    d.text((54, 84), "SEPAK TAKRAW FOR ANDROID", font=eyebrow, fill=(255, 154, 31))
     for dx, dy in [(-3, 0), (3, 0), (0, -3), (0, 3)]:
         d.text((50 + dx, 116 + dy), "SEPAK TAKRAW", font=title, fill=(4, 10, 18))
         d.text((50 + dx, 216 + dy), "UNLEASHED", font=title, fill=(4, 10, 18))
     d.text((50, 116), "SEPAK TAKRAW", font=title, fill=(243, 239, 230))
     d.text((50, 216), "UNLEASHED", font=title, fill=(255, 154, 31))
-    d.text((54, 360), "Serve. Set. Roll spike.", font=line, fill=(255, 210, 122))
+    d.text((54, 360), "Five venues. Thirteen languages.", font=line, fill=(255, 210, 122))
     out = ROOT / "store/graphics/feature-1024x500.png"
     img.convert("RGB").save(out)
     print("wrote", out.relative_to(ROOT))

@@ -472,9 +472,92 @@ from the replay's low angle looking back at the near side, on High and Low.
 Performance on Low (`perf_probe`): the park 80 → 78 draw calls, 61.0 → 61.5 MB; the beach 77 → 75 draw calls.
 Tests: test_runner 1615 checks, 0 failures; user_bot perfect 15-1, idle 3-15; input_test 10 checks, 0 failures.
 
+## Ready for Play, and a media kit (0.12.3)
+
+For the owner's Play submission (the lead's checklist) and the owner's website, and two bugs in the game that the media
+kit's captures showed.
+
+**The build, checked** (every Play bundle checks it again, `.github/workflows/takraw-play-bundle.yml`):
+- Target API 36 (Android 16), minimum 24 (Android 7.0); 64-bit ARM (arm64-v8a).
+- 16 KB pages: both native libraries (`libgodot_android.so`, `libc++_shared.so`) have LOAD alignment 0x4000
+  (`tools/check_pages.py`).
+- The bundle: 116.3 MB (Play's limit for the base module is 200 MB, compressed), so no Play Asset Delivery needed.
+- Permissions: `VIBRATE` only. No `INTERNET`. The bundle workflow now fails on any other permission (it only ruled out
+  `INTERNET` before), and on a target other than API 36 or a version code other than the preset's.
+- Version code 19, rising with every version; application id `com.takrawsmash.game` (the same as Obtainium's entry in
+  the shared assets; it stays, since Play never lets it change, and changing it now would stop the beta updating in
+  place).
+- Signing: Play App Signing with an upload key the owner makes (store/PLAY_STORE.md step 2: the `keytool` command and
+  the three secrets `ANDROID_UPLOAD_KEYSTORE_BASE64`, `ANDROID_UPLOAD_KEY_ALIAS`, `ANDROID_UPLOAD_KEY_PASSWORD`, which
+  the bundle workflow uses when they are there). The beta key stays as it is, for the beta APKs only.
+
+**Two bugs, found in the captures of the menus:**
+- **The joystick and the match buttons showed over the pause menu and its Settings**, and, since they read touches
+  before the menus do, a tap on a setting that lay under a button went to the button (ignored, the match being paused)
+  and not to the setting. They are hidden while the pause menu is open (as in a replay), and a thumb held on the
+  joystick as the menu opens no longer holds it after. test_runner checks both ways.
+- **The language picker's "Bahasa Melayu" and "Bahasa Indonesia" ran out of their tiles** into the next ones on a 16:9
+  screen. The tiles are wider and a long name shrinks to fit (to 75%, then "…"). The fit audit (`tests/fit_audit.gd`)
+  now reports words that run out of their button (which does not clip them, so it missed these); every screen in the 13
+  languages at the three phone shapes is clean.
+
+**The soak test** (`tests/soak_test.gd`, run by `tools/soak.sh [events] [matches]`, on a desktop with software OpenGL):
+a monkey of random input on every screen (taps on whatever buttons show, taps anywhere, drags, the phone's Back on
+every screen but the home one, the app paused and resumed, which must keep a match paused and as it was), then AI-v-AI
+matches played to the end, alternating Low and High, through the five venues and the four events. It reports the
+slowest frames and where, memory as it goes, and any match that stops getting on with it; any script or engine error
+fails it. The settings, saves and records are put back at the end.
+- Memory: up from 191 MB after 500 events to 300 MB after 2,500, the climb slowing. Not a leak: the same match started
+  and left fifteen times holds at 144 MB, the same objects and nodes each time and no orphans, and going through the
+  five venues levels off at 155-161 MB. The rest is what the monkey loads once and keeps: the venues at each graphics
+  level, and each language's fonts as it changes languages.
+
+**The store kit** (`store/`, drafts until submission):
+- The listing in all thirteen languages (`store/listing/`): the eight new ones Lao, Burmese, Khmer, Filipino, Japanese,
+  Korean, Chinese and Hindi; each within Play's limits (name 22 of 30 characters, short description at most 80, full at
+  most 4000), and honest (invented clubs, offline, no ads, no data).
+- Eight screenshots and the feature graphic remade from the current build: `tools/store/store_shots.tscn` now finds each
+  moment by playing its match on within a frame (tools/media/trailer.gd), so it takes minutes, not most of an hour;
+  `tools/store/make_feature.py` crops the feature graphic (its lines now "Sepak takraw for Android" and "Five venues.
+  Thirteen languages.": no "real players", which the players are not).
+- `store/PLAY_CONSOLE_ANSWERS.md`: the Data safety form (no data collected or shared), the IARC questionnaire (expected
+  PEGI 3 / ESRB Everyone), target audience (13+, and why not the Families programme), ads (no), purchases (none),
+  category (Sports), tags, contact, the privacy policy's address (TBD: the owner's site), and the first release's notes.
+
+**The media kit** (`tools/media/make_media_kit.sh`, and the "Sepak Takraw Unleashed · Media kit" workflow, which makes
+it and publishes it as the release `sepak-takraw-unleashed-media`):
+- Every menu screen (`menus/`): 25 PNGs, 1920 × 1080, in English, named by screen (the loading screen, the home screen
+  and its language picker, Quick Match, League Season and International new and under way, Records, Settings, How to
+  Play's three tabs, Help, the privacy policy, the licences, a match, its pause menu and Settings, a result), and for
+  each that scrolls its last part too.
+- The website's copy (`text/`): about, features, facts (the version and download size filled in), the sport, and a press
+  blurb.
+- Screenshots: ten 1920 × 1080 PNGs from the game on High: a roll spike that scores (National Arena), a serve (beach), a
+  block (mall), a doubles rally (park), a kill (gym), a celebration, and the home screen, a league season, the World
+  Championship and How to Play. The game is landscape only, so no portrait ones.
+- Icons: 1024 and 512 px, and the feature graphic.
+- The trailer, about 34 s, 1920 × 1080 at 30 fps, H.264 with AAC: a title card, six moments from real AI-v-AI matches in
+  the five venues with captions over them, and an end card ("Coming soon to Google Play"). Filmed with Godot's Movie
+  Maker (`tools/media/trailer.gd`) at the window size an `override.cfg` sets for the run (Movie Maker films at the
+  project's 1280 × 720 otherwise, whatever `--resolution` says): each moment is found by playing its match on unseen
+  within one frame, then the same match (the same seed) is played again to a little before it and filmed; the game's own
+  sound, the menu music under it. The mall's chatter (CC BY-SA) is silenced in its shot so the trailer carries no
+  share-alike sound. A 15-second vertical cut (1080 × 1920) from three of the moments.
+- `CREDITS.txt`: every sound and piece in it, under its licence.
+- The workflow checks what it made before publishing it: both videos H.264 + AAC at 30 fps, at their sizes, the trailer
+  30-45 s and the cut at most 15 s, each under 60 MB, and every PNG 1920 × 1080.
+
+Tests: test_runner 1619 checks, 0 failures (new: the controls hidden under the pause menu and its Settings, and back
+after); fit_audit 0 problems (13 languages, three phone shapes, every part); user_bot perfect 15-1, idle 3-15;
+input_test 10 checks, 0 failures; compile_check 53 scripts, 0 broken.
+
 ## Gaps that need the owner
 
-None. The two raised in 0.5.0 are filled in 0.5.1:
+For the Play Store, what only the owner can do is in `store/PLAY_STORE.md`: the developer account, the upload key and
+its three secrets, the privacy policy's address on the owner's site, the closed test with 12 testers, and a last read
+of the listing drafts (a native speaker's, for the twelve translations).
+
+In the game, none. The two raised in 0.5.0 are filled in 0.5.1:
 - The shophouse row, at the night market and the park.
 - Apartment blocks with lit windows.
 

@@ -25,6 +25,10 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(queue_redraw)
+	# Hidden (the pause menu, a replay), they hear no touches: a thumb held down then would hold the joystick after.
+	visibility_changed.connect(func():
+		if not visible:
+			_let_go())
 
 
 func _k() -> float:
@@ -124,10 +128,14 @@ func _hit(at: Vector2) -> String:
 ## Leaving the app mid-touch loses the lift: the joystick lets go rather than run on.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
-		_joy_touch = -1
-		joystick = Vector2.ZERO
-		_keys.clear()
-		queue_redraw()
+		_let_go()
+
+
+func _let_go() -> void:
+	_joy_touch = -1
+	joystick = Vector2.ZERO
+	_keys.clear()
+	queue_redraw()
 
 
 func _keys_to_joystick() -> void:

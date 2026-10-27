@@ -517,6 +517,17 @@ func _sim_to_end() -> void:
 		add_child(m)
 		await frames(3)
 		check(m.can_sim_to_end() == (mode == "cup"), "simulate to the end offered in a %s match: %s" % [mode, mode == "cup"])
+		if mode == "quick":
+			# The pause menu and its Settings over the match: your joystick and buttons hidden (they read touches
+			# before the menus, and would take the taps meant for them), and back when the match goes on.
+			check(m.controls.visible, "your controls showing in a match of yours")
+			m.set_paused(true)
+			check(not m.controls.visible, "your controls hidden under the pause menu")
+			m.hud.open_settings()
+			check(not m.controls.visible, "your controls hidden under the pause menu's Settings")
+			m.hud.close_settings()
+			m.set_paused(false)
+			check(m.controls.visible, "your controls back when the match goes on")
 		if mode == "cup":
 			m.points = [9, 6]
 			m.sets = [1, 0]

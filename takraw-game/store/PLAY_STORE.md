@@ -9,18 +9,23 @@ stand in October 2026.
   your upload key is in the repository (step 2), then signed with it.
 - **The game meets Google's technical rules**:
   - targets Android 16 (API 36), required for new apps since 31 August 2026;
-  - 64-bit, with 16 KB memory pages (checked on every bundle);
+  - 64-bit, with 16 KB memory pages;
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - one permission (vibration) and no internet access.
+  Every bundle is checked for all four: the bundle workflow fails on a target other than API 36, a native library not
+  aligned to 16 KB, or any permission but vibration (so none can creep in without the Play answers changing too).
 - **The privacy policy, help page and a page for the game**, in `takraw-smash/` at the top of this repository,
   served by GitHub Pages once this branch is merged into `main`:
   https://joshnason8-lab.github.io/ghost-kit-pages/takraw-smash/privacy.html and `/support.html` (they return 404
   until then: Pages serves `main`). Until the merge, the policy loads (HTTP 200) on GitHub as
   https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/kind-clarke-3g5fqs/takraw-smash/PRIVACY.md. The game
   itself needs neither: Settings > About shows the privacy policy, the help and the licences in the game, offline.
-- **The store listing**: the text in English, Thai, Malay, Indonesian and Vietnamese (`store/listing/`), and the
-  512 × 512 icon, the 1024 × 500 feature graphic and eight 1920 × 1080 screenshots (`store/graphics/`).
-- **The answers to every App content form** (step 4).
+- **The store listing** (drafts until the game is ready to submit): the text in all thirteen of the game's languages
+  (`store/listing/`), and the 512 × 512 icon, the 1024 × 500 feature graphic and eight 1920 × 1080 screenshots from
+  the game (`store/graphics/`), each remade from the current build by a script (step 5).
+- **The answers to every App content form**: `store/PLAY_CONSOLE_ANSWERS.md` (step 4).
+- **A soak test**: `tools/soak.sh` (random input on every screen, the phone's Back, the app paused and resumed, then
+  AI-v-AI matches on Low and High), clean before each release.
 
 ## 1. Your developer account (once)
 
@@ -37,8 +42,11 @@ test with at least **12 testers** who stay opted in for **14 days in a row** (st
 
 ## 2. The upload key (once)
 
-Google signs the game for phones with its own key (Play App Signing). You sign each bundle you upload with your own
-**upload key**, so Google knows it came from you.
+Google signs the game for phones with its own key (**Play App Signing**: accept it when Play Console offers it on the
+first upload). You sign each bundle you upload with your own **upload key**, so Google knows it came from you.
+**Don't use the beta key for Play, and don't replace it**: the beta key (`BETA_KEYSTORE_B64`, certificate SHA-256
+6F:23:…:7B:A3) keeps signing the beta APKs on GitHub so they keep installing over each other; the upload key is a
+separate key, for Play only.
 
 1. Make the key, on a computer with Java (Android Studio includes it). In a terminal, run:
 
@@ -80,7 +88,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/takraw-smash/privacy.html` once this branch is in `main` (check it loads first); before that, `https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/kind-clarke-3g5fqs/takraw-smash/PRIVACY.md` |
+| **Privacy policy** | TBD: the owner's privacy site (the text is `takraw-smash/PRIVACY.md`, the same as the game's own). Check the address loads before submitting. |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |
@@ -113,18 +121,29 @@ and shows no ads, but the 13+ groups are the simpler start.
 ## 5. The store listing (Grow users > Store presence > Main store listing)
 
 1. **App name, short description, full description**: copy them from `store/listing/en-US.txt`.
-2. **Translations**: **Manage translations > Add your own translations**: Thai (`th-TH.txt`), Malay (`ms.txt`),
-   Indonesian (`id.txt`) and Vietnamese (`vi.txt`), from `store/listing/`. The sport's players read these first.
+2. **Translations**: **Manage translations > Add your own translations**, one for each of the game's other twelve
+   languages, from `store/listing/`: Thai (`th-TH.txt`), Malay (`ms.txt`), Indonesian (`id.txt`), Vietnamese (`vi.txt`),
+   Lao (`lo-LA.txt`), Burmese (`my-MM.txt`), Khmer (`km-KH.txt`), Filipino (`fil.txt`), Japanese (`ja-JP.txt`), Korean
+   (`ko-KR.txt`), Chinese (Simplified, `zh-CN.txt`) and Hindi (`hi-IN.txt`). The sport's players read these first.
 3. **App icon**: `store/graphics/icon-512.png`.
 4. **Feature graphic**: `store/graphics/feature-1024x500.png`.
 5. **Phone screenshots**: upload the eight in `store/graphics/screenshots/`, in order. Games need at least three,
-   landscape at 1920 × 1080, to be recommended by Play.
+   landscape at 1920 × 1080, to be recommended by Play. They are drafts: just before submitting, remake them (and the
+   feature graphic) from the current build, on a computer with Godot 4.7 and Python 3 with Pillow:
+
+   ```
+   cd takraw-game
+   xvfb-run -a -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 --resolution 1920x1080 res://tools/store/store_shots.tscn
+   python3 tools/store/make_feature.py
+   ```
+
+   (Without `xvfb-run`, on a desktop: the same `godot` line without it.)
 6. **7-inch and 10-inch tablet screenshots**: upload the same eight. They are 16:9, which Play accepts for tablets.
 7. **Category**: **Store settings > App category: Game > Sports**. Add tags such as Sports.
 8. **Contact details**:
    - **Email** (required, shown publicly): an address you are happy to show (the help page uses
      joshnason8@gmail.com; change it there too if you use another).
-   - **Website**: https://joshnason8-lab.github.io/ghost-kit-pages/takraw-smash/
+   - **Website**: the owner's site, when it is up (optional).
 
 ## 6. The closed test (required for new personal accounts)
 
@@ -151,13 +170,13 @@ and shows no ads, but the 13+ groups are the simpler start.
 
 ## Notes
 
-- **The beta APK on GitHub** is signed with a public debug key, not Play's, so a phone with the beta has to uninstall
-  it (and lose its saves) before installing the game from Play.
+- **The beta APK on GitHub** is signed with the owner's beta key, not Play's, so a phone with the beta has to
+  uninstall it (and lose its saves) before installing the game from Play.
 - **Android's developer verification** covers apps installed from outside the stores too: in Brazil, Indonesia,
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
-- **The privacy policy's address must keep working** while the game is on Play: keep `takraw-smash/` in this
-  repository's GitHub Pages (the game links to no web page: its Settings show the policy in the game).
+- **The privacy policy's address must keep working** while the game is on Play (the game links to no web page: its
+  Settings show the policy in the game).
 - **Names**: the clubs, leagues, tournaments and players are made up (`autoload/db.gd`); countries appear with flags
   drawn in code. No federation's, league's, club's or player's names or logos are used, so no rights are involved.
   Keep it that way: the World Cup, Royal Cup and the championships are the game's own names, not ISTAF's events.

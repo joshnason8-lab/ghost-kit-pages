@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.12.3: **the pause menu takes every tap**: the joystick and the match buttons no longer show over it or its
+Settings, where they could take a tap meant for a setting under them. **The language picker's** long names ("Bahasa
+Indonesia") fit their tiles. The rest of 0.12.3 is for the Play Store and the website, outside the game.
+
 New in 0.12.2: **players walk between points** (turned to where they go, walking back to their places and jogging
 to fetch the ball, their feet stepping back when they back up) instead of gliding backwards. **The park** is dressed on
 its near side too (benches and people, the path and lamps, the town behind the trees), and **the beach's** hills and

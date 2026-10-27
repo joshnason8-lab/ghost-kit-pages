@@ -125,7 +125,14 @@ jobs:
           java -jar "$RUNNER_TEMP/bundletool.jar" dump manifest --bundle "$AAB" > "$RUNNER_TEMP/manifest.xml"
           grep -o 'android:targetSdkVersion="[0-9]*"\|android:minSdkVersion="[0-9]*"\|android:versionCode="[0-9]*"\|android:versionName="[^"]*"\|android:isGame="[a-z]*"\|android:appCategory="[a-z]*"\|uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | sort -u
           grep -q 'android:isGame="true"' "$RUNNER_TEMP/manifest.xml"
-          ! grep -q 'android.permission.INTERNET' "$RUNNER_TEMP/manifest.xml"
+          grep -q 'android:targetSdkVersion="36"' "$RUNNER_TEMP/manifest.xml"
+          grep -q "android:versionCode=\"${CODE}\"" "$RUNNER_TEMP/manifest.xml"
+          # Permissions: exactly the ones store/PLAY_CONSOLE_ANSWERS.md declares (VIBRATE); any other fails the bundle,
+          # so a plugin or preset change cannot add one (INTERNET above all) without the Play answers changing too.
+          ALLOWED="android.permission.VIBRATE"
+          FOUND=$(grep -o '<uses-permission[a-z0-9-]*[^>]*android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | sed 's/.*android:name="\([^"]*\)"/\1/' | sort -u)
+          echo "permissions: ${FOUND:-none}"
+          test "$FOUND" = "$ALLOWED" || { echo "::error::The bundle's permissions are $(echo ${FOUND:-none}); expected exactly $ALLOWED"; exit 1; }
           python3 tools/check_pages.py "$AAB"
 
       - uses: actions/upload-artifact@v4

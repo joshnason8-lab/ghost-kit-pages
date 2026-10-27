@@ -502,7 +502,13 @@ func _make_replay_tag() -> Control:
 
 func replay(on: bool) -> void:
 	_replay_tag.visible = on
-	m.controls.visible = not on and m.user_team >= 0
+	_show_controls()
+
+
+## Your joystick and buttons: not during a replay, and not over the pause menu or its Settings (they read touches
+## before the menus do, and would take the taps meant for what lies under them).
+func _show_controls() -> void:
+	m.controls.visible = m.user_team >= 0 and not _replay_tag.visible and _pause == null
 
 
 # ---------------------------------------------------------------- pause
@@ -512,6 +518,7 @@ func show_pause(on: bool) -> void:
 		if _pause:
 			_pause.queue_free()
 			_pause = null
+		_show_controls()
 		return
 	if _pause:
 		return
@@ -555,6 +562,7 @@ func show_pause(on: bool) -> void:
 	v.add_child(quit)
 	root.add_child(_pause)
 	UI.keep_on_screen(card)
+	_show_controls()
 
 
 ## Settings over the paused match (the graphics, the frame rate, the sound, the buttons): back to the pause menu.

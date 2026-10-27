@@ -62,7 +62,7 @@ func close() -> void:
 
 func _choice(code: String, title: String, sub: String, on: bool, wide := false) -> Button:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(0, 72) if wide else Vector2(200, 96)
+	b.custom_minimum_size = Vector2(0, 72) if wide else Vector2(252, 96)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(Game.C_PANEL_HI, 0.8)
 	sb.set_corner_radius_all(16)
@@ -103,7 +103,10 @@ func _choice(code: String, title: String, sub: String, on: bool, wide := false) 
 		row.add_child(what)
 		tv.add_child(row)
 	else:
-		tv.add_child(UI.label(title, "SubLabel", 28))
+		# A long name ("Bahasa Indonesia") shrinks a little to its tile rather than running out of it.
+		var name := UI.label(title, "SubLabel", 28)
+		name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		tv.add_child(UI.shrink(name, 0, 0.75))
 		if sub != "":
 			tv.add_child(UI.label(sub, "MutedLabel", 16))
 	if on:

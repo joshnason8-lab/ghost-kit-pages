@@ -1,0 +1,36 @@
+# Google Play store listing, Filipino. Paste each part into Play Console > Grow > Store presence > Main store listing
+# (Manage translations). Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Sepak Takraw Unleashed
+
+== Short description ==
+Sepak takraw sa telepono: roll spike, horse-kick serve at block sa net.
+
+== Full description ==
+Ang Sepak Takraw Unleashed ay sepak takraw sa iyong telepono: ang volleyball na sinisipa ng Timog-Silangang Asya. Mag-serve nang may isang paa sa bilog, tumanggap gamit ang loob ng paa, itaas ang bola malapit sa net, at magpakawala ng roll spike sa ibabaw ng block.
+
+ANG TOTOONG LARO
+• Ang mga patakaran ngayon: hanggang 15 ang bawat set (lamang ng dalawa, hanggang 17), best of three, nagpapalitan ng serve bawat puntos, tatlong hawak bawat panig.
+• Regu, quadrant, doubles at team event, para sa kalalakihan at kababaihan, sa court at net na eksakto ang sukat.
+• Mga galaw na kilala ng mga fan: sepak sila, instep dig, header, horse-kick serve, roll spike, sunback, sole spike, drop at block.
+• Mga foul na tinatawag ng referee, mga tawag ng line judge, at video challenge para baligtarin ang mga ito.
+
+PARAAN NG PAGLALARO
+• Mabilisang Laban: alinmang dalawang koponan, alinmang venue.
+• Season ng Liga: isang buong season ng club sa mga format ng Malaysia, Thailand at Indonesia, na may mga gawa-gawang club. Malaysia: pitong Grand Prix, puntos sa bawat puwesto, promotion at relegation. Thailand: home at away, bawat tapatan ay dalawang laban ng regu. Indonesia: limang rehiyon, saka ang pambansang finals sa Jakarta.
+• Internasyonal: Kampeonato ng Mundo, Royal Cup, mga kampeonato ng Asya at Timog-Silangang Asya, kasama ang Thailand, Malaysia, Vietnam, Indonesia, Myanmar, Japan, Korea at iba pa.
+
+LIMANG VENUE
+Ang pambansang arena, isang court sa mall, isang panlalawigang gym, isang court sa parke sa ilalim ng ilaw, at isang dalampasigan sa paglubog ng araw.
+
+MAGLARO SA SARILI MONG PARAAN
+• Labintatlong wika: English, ไทย, Bahasa Melayu, Bahasa Indonesia, Tiếng Việt, ລາວ, မြန်မာ, ខ្មែរ, Filipino, 日本語, 한국어, 中文 at हिन्दी.
+• Walang awtomatikong laro: patakbuhin ang iyong manlalaro papunta sa bola gamit ang joystick at sumipa habang lumiliit ang singsing sa bola. Piliin kung gaano ka tutulungan sa pagtakbo, at kung gaano kabilis ang laban.
+• Ginawa para tumakbo nang maayos sa mga murang telepono at mid-range.
+• Nalalaro offline. Walang ads, walang bilihan, walang account, at walang kinokolektang data.
+
+Ang Sepak Takraw Unleashed ay isang independiyenteng laro. Hindi ito kaanib o ineendorso ng anumang federation, liga, club o manlalaro ng sepak takraw. Gawa-gawa ang mga palayaw ng mga club at kathang-isip ang mga manlalaro; totoo ang mga bansa, lugar at patakaran.
+
+== Release notes (first release) ==
+Ang unang release ng Sepak Takraw Unleashed: Mabilisang Laban, Season ng Liga at Internasyonal, sa labintatlong wika.
