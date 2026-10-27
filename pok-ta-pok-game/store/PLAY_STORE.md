@@ -14,8 +14,9 @@ stand in October 2026.
   - one permission (vibration) and no internet access.
 - **The privacy policy, help page and a page for the game**, in `pok-ta-pok-rivals/` at the top of this repository,
   served by GitHub Pages once this branch is merged into `main`:
-  https://joshnason8-lab.github.io/ghost-kit-pages/pok-ta-pok-rivals/privacy.html and `/support.html`. The game's
-  Settings > About opens them, as Google asks, and shows the licences there.
+  https://joshnason8-lab.github.io/ghost-kit-pages/pok-ta-pok-rivals/privacy.html and `/support.html`. The game
+  carries the same privacy policy, a help page and the licences inside it (Settings > About), so they work offline;
+  it opens no web pages. The Play listing still needs the public privacy policy address above.
 - **The store listing**: the text for Spanish (Latin America, the default), Spanish (United States), Spanish (Spain),
   English (United States, United Kingdom, Canada), Portuguese (Brazil), French (France, Canada), German and Italian
   (`store/listing/`). Google Play has no Yucatec Maya listing. The 512 × 512 icon, the 1024 × 500 feature graphic and
@@ -158,7 +159,8 @@ and shows no ads, but the 13+ groups are the simpler start.
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
 - **The privacy policy's address must keep working** while the game is on Play: keep `pok-ta-pok-rivals/` in this
-  repository's GitHub Pages (or move the pages and update `PRIVACY_URL` and `SUPPORT_URL` in `autoload/game.gd`).
+  repository's GitHub Pages (or move the pages and give Play Console the new address). Keep its text in step with the
+  game's own copy (`PRIV_*` in `i18n/src/`).
 - **Names**: towns appear by their place names only, with nicknames and colours of the game's own; no real club,
   league, federation, tournament or governing body is named (not the national federation, not the world
   championship), and no real player's name is used on purpose (`autoload/db.gd`). The About page and the store listing

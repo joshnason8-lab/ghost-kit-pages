@@ -4,24 +4,42 @@ extends Control
 ## texts are in English, as they are written.
 
 const CREDITS := """[b]Pok Ta Pok Rivals[/b]
-Made by Josh Nason.
-The players' bodies, a judge, the sixteen townspeople in the stands and the carved ring were made with Meshy (meshy.ai)
-for the game; their gear (the faja, the chimali, the yoke), the courts, the ball, the agave and the stands are made in
-code. The skies, the earth, grass, plaster and stone surfaces (and their sharper versions on Medium and High), the
-tropical trees, palms, dry grass and boulders: Poly Haven (polyhaven.com), CC0, through the shared assets of the
-maker's games and from Poly Haven itself; the rain tree, coconut palm and dry grass models are the maker's own.
-Sounds (docs/SOUNDS.md has each file): impacts, footsteps and interface clicks by Kenney (kenney.nl), CC0. Crowd
-ambience, cheers and applause: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org), CC-BY 4.0. Crickets
-by Wolfgang_ (Ted Kerr), fire by PagDev, forest birds by pauliuw, a dog by Brandon Morris (opengameart.org), CC0. The
-long forest, evening and torch recordings: "Nature Ambient Pack Vol 1" by JC Sounds (opengameart.org), CC-BY 4.0. The
-crowd's ooh and groan and the players' efforts are synthesised (from Kabaddi Raid, by the same maker).
-The menus' music is the game's own piece for cane flute, drum, slit drum and rattles, made in code.
-Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
-(The run: take 09_02; the serve's underhand toss: take 124_12. Bruce Hahne's BVH conversion.)
-The rules follow the published research on ulama and the Mesoamerican ballgame (docs/RULES.md in the game's source),
-above all Manuel Aguilar-Moreno's work on ulama de cadera. The classic court is a reconstruction.
-The game is not connected with, or endorsed by, any sporting body, federation, tournament or club. Towns appear by their
-place names only, with nicknames and colours of the game's own design; every player is invented."""
+Made by Josh Nason. The game's code, its bodies' gear (the faja, the chimali, the yoke), the courts, the ball, the agave, the stands, the hip's slap, the judges' drum, the conch and the menus' music (cane flute, drum, slit drum and rattles) are made for the game, in code.
+The rules follow the published research on ulama and the Mesoamerican ballgame (docs/RULES.md in the game's source), above all Manuel Aguilar-Moreno's work on ulama de cadera; the stone court's serve and copal offering follow pelota maya as played in Yucatán today. The classic court is a reconstruction.
+The game is not connected with, or endorsed by, any sporting body, federation, tournament or club. Towns appear by their place names only, with nicknames and colours of the game's own design; every player is invented."""
+
+## Every outside work in the game: what it is, who made it, its licence, where it is from. (docs/SOUNDS.md and
+## docs/MESHY_BRIEF.md in the game's source list each file.)
+const SOURCES := [
+	["Motion capture: the run (take 09_02) and the serve's underhand toss (take 124_12)",
+		"Carnegie Mellon University Graphics Lab; BVH conversion by Bruce Hahne",
+		"Free for research and commercial use. Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.",
+		"mocap.cs.cmu.edu"],
+	["The players' bodies, the judge, the sixteen townspeople in the stands, the carved ring",
+		"Made with Meshy for this game by its maker", "Owned by the game's maker (Meshy's terms for paid plans)", "meshy.ai"],
+	["The rain tree, coconut palm, dry grass and grass clump cut-outs", "Made with Meshy by the game's maker, for the maker's games",
+		"Owned by the game's maker", "meshy.ai"],
+	["Surfaces: dry ground, brown mud, plastered wall, white sandstone blocks, broken wall, sparse grass (512, 1K and 2K)",
+		"Poly Haven", "CC0 1.0 (public domain)", "polyhaven.com"],
+	["Skies: Qwantani Dusk 2, Qwantani Noon, Kloofendal 48d Partly Cloudy, Kloppenheim 02 (pure sky)",
+		"Poly Haven", "CC0 1.0 (public domain)", "polyhaven.com"],
+	["The island trees (cut-outs) and the boulder", "Poly Haven", "CC0 1.0 (public domain)", "polyhaven.com"],
+	["Impact Sounds, Interface Sounds and RPG Audio packs (the hip's thump, the ball on earth, bare feet, clicks)",
+		"Kenney (kenney.nl)", "CC0 1.0 (public domain)", "kenney.nl/assets"],
+	["\"Free Crowd Cheering Sounds\" (the crowd's murmur, cheers, applause)", "Gregor Quendel",
+		"CC BY 4.0 (creativecommons.org/licenses/by/4.0); softened and cut for the game", "opengameart.org/content/free-crowd-cheering-sounds"],
+	["\"Nature Ambient Pack Vol 1\" (summer evening, rainforest canopy, forest night, torch flame)", "JC Sounds",
+		"CC BY 4.0 (creativecommons.org/licenses/by/4.0); cut into loops for the game", "opengameart.org/content/jc-sounds-nature-ambient-pack-vol-1"],
+	["\"Crickets Ambient Noise - loopable\"", "Wolfgang_ (Ted Kerr)", "CC0 1.0", "opengameart.org/content/crickets-ambient-noise-loopable"],
+	["\"Fireplace Sound loop\"", "PagDev", "CC0 1.0", "opengameart.org/content/fireplace-sound-loop"],
+	["\"Forest bird sounds\"", "pauliuw", "CC0 1.0", "opengameart.org/content/forest-bird-sounds"],
+	["\"Dog barking mono\"", "Brandon Morris (submitted by HaelDB)", "CC0 1.0", "opengameart.org/content/dog-barking-mono"],
+	["The crowd's ooh and groan, a clap, the players' efforts", "Synthesised by the maker for Kabaddi Raid",
+		"The maker's own", "-"],
+]
+## Asked about and not used in this game: listed so nobody looks for them.
+const NOT_USED := "Not used in this game: Mixamo animations, Pixabay sounds (the whistles), freesound.org sounds. There are no ads or analytics libraries."
+
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic).
@@ -40,9 +58,13 @@ func _ready() -> void:
 	col.add_theme_constant_override("separation", 18)
 	v.add_child(UI.scroll(col))
 	col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
-	col.add_child(_text(CREDITS))
-	col.add_child(_text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
-	col.add_child(_text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
+	_add(col, _text(CREDITS))
+	var src_lines := PackedStringArray()
+	for src in SOURCES:
+		src_lines.append("[b]%s[/b]\n%s. %s. %s" % [src[0], src[1], String(src[2]).trim_suffix("."), src[3]])
+	_add(col, _text("[b]Sources[/b]\n\n" + "\n\n".join(src_lines) + "\n\n" + NOT_USED))
+	_add(col, _text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
+	_add(col, _text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
 	# The engine's own parts, each with its copyright and licence, then the licences' texts.
 	var parts := PackedStringArray()
 	for c in Engine.get_copyright_info():
@@ -52,10 +74,19 @@ func _ready() -> void:
 				lines.append(_plain(String(who)))
 			lines.append("(" + String(part.license) + ")")
 		parts.append("[b]%s[/b]\n%s" % [_plain(String(c.name)), "\n".join(lines)])
-	col.add_child(_text("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts)))
+	_add(col, _text("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts)))
 	var info: Dictionary = Engine.get_license_info()
 	for name in info:
-		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
+		_add(col, _text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
+
+
+## A block of text on a dark card, readable over any sky at any graphics level; a drag on it reaches the scroll box.
+func _add(col: VBoxContainer, rt: RichTextLabel) -> void:
+	var c := UI.card()
+	c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	c.mouse_filter = Control.MOUSE_FILTER_PASS
+	c.add_child(rt)
+	col.add_child(c)
 
 
 ## Licence texts are long, but are laid out on the main thread: laid out on its own thread (RichTextLabel.threaded),

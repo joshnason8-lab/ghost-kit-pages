@@ -121,6 +121,14 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
     Sinaloa courts.
   - Not changed: the many variations in the videos (the Mérida game's freestanding ring on a post, its street court,
     the park show's painted figures). The ring on a post belongs to the revival rule set still on the Next list.
+- **0.5.1, the legal pages in the game**: Settings > About opens Licences, Help and the Privacy policy as the game's
+  own screens (they scroll, have Back, and work offline); the game opens no web pages. Licences lists every outside
+  work by what it is, who made it, its licence and where it is from (CMU motion capture, Meshy, Poly Haven, Kenney,
+  Gregor Quendel, JC Sounds and the four CC0 OpenGameArt sounds), then the fonts, Godot and the engine's parts. Help
+  has how to play, the controls, the rules in brief, the graphics levels and how to report a bug. Privacy says what
+  this build does: no data collected, no ads or analytics, no internet permission, vibration only. Both in six
+  languages; a test opens each from Settings in every language and checks it has its text and Back. The public
+  privacy page (pok-ta-pok-rivals/privacy.html) says the same and is what the Play listing links to once merged.
 
 ## Next
 

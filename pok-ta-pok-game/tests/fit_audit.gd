@@ -468,6 +468,13 @@ func _menus() -> void:
 	Game.show_screen("res://ui/licences_screen.gd")
 	await frames(8)
 	await audit("licences")
+	for page in ["help", "privacy"]:
+		Game.show_screen("res://ui/%s_screen.gd" % page)
+		await frames(8)
+		await audit(page)
+		_scroll_to_end()
+		await frames(4)
+		await audit(page + "_end")
 	for rules in ["ulama", "classic"]:
 		var r := _result(rules)
 		Game.show_screen("res://ui/result_screen.gd", {"result": r})

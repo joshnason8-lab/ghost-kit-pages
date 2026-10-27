@@ -5,9 +5,6 @@ const SETTINGS_PATH := "user://settings.json"
 const CUP_PATH := "user://cup.json"
 const RECORDS_PATH := "user://records.json"
 
-## The game's privacy policy and help pages (Settings > About).
-const PRIVACY_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/pok-ta-pok-rivals/privacy.html"
-const SUPPORT_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/pok-ta-pok-rivals/support.html"
 
 ## Code, name in the language itself, name in English. The game is played in Mexico (Sinaloa, Yucatán) and
 ## Central America and watched by their people at home and abroad: Spanish first, English (the US, Belize, visitors),

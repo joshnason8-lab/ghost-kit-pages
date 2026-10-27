@@ -8,7 +8,8 @@ extends Node
 ## Exits 1 on any failure.
 
 const SCREENS := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
-	"res://ui/licences_screen.gd", "res://ui/buttons_screen.gd", "res://ui/cup_screen.gd"]
+	"res://ui/licences_screen.gd", "res://ui/help_screen.gd", "res://ui/privacy_screen.gd", "res://ui/buttons_screen.gd",
+	"res://ui/cup_screen.gd"]
 
 var failures := 0
 var checks := 0
@@ -32,6 +33,7 @@ func _ready() -> void:
 	_languages()
 	await _screens()
 	await _scroll_on_text()
+	await _legal_pages()
 	_cup()
 	_sim()
 	await _crowd_faces()
@@ -321,11 +323,80 @@ static func fake_result() -> Dictionary:
 		"longest_rally": 9, "minutes": 12.0, "timed": false, "star": "ESC_1"}
 
 
+## Settings > About opens Licences, Help and the Privacy policy inside the game (no browser, no link), in every language:
+## each has its own text, with no key left untranslated and no name left unfilled, and Back returns to Settings.
+func _legal_pages() -> void:
+	var pages := {"LICENCES": ["licences_screen", 6000, ["CC0", "CC BY 4.0", "Gregor Quendel", "JC Sounds", "Poly Haven",
+		"Kenney", "Carnegie Mellon", "Meshy", "Godot Engine", "Open Font License"]],
+		"HELP_SUPPORT": ["help_screen", 900, ["joshnason8@gmail.com"]],
+		"PRIVACY_POLICY": ["privacy_screen", 900, ["joshnason8@gmail.com", "2026"]]}
+	for pair in Game.LANGUAGES:
+		TranslationServer.set_locale(pair[0])
+		Game.settings.language = pair[0]
+		for key in pages:
+			var st := Game.show_screen("res://ui/settings_screen.gd")
+			await frames(3)
+			var btn := _button_named(st, tr(key))
+			check(btn != null, "%s: Settings has %s" % [pair[0], key])
+			if btn == null:
+				continue
+			btn.pressed.emit()
+			await frames(4)
+			var page: Node = Game.current
+			var want: Array = pages[key]
+			check(page != null and String(page.get_script().resource_path).ends_with(want[0] + ".gd"),
+				"%s: %s opens in the game" % [pair[0], key])
+			if page == null:
+				continue
+			check(_first_scroll(page) != null, "%s: %s scrolls" % [pair[0], key])
+			var text := _all_text(page)
+			check(text.length() >= int(want[1]), "%s: %s is not empty (%d characters)" % [pair[0], key, text.length()])
+			for must in want[2]:
+				check(text.contains(must), "%s: %s says %s" % [pair[0], key, must])
+			var left := RegEx.create_from_string("\\b(HELP|PRIV|CTRL|RULES)_[A-Z_]+\\b|\\{[a-z]+\\}").search(text)
+			check(left == null, "%s: %s has no untranslated key or unfilled name (%s)" % [pair[0], key, left.get_string() if left else ""])
+			check(page.has_meta("back"), "%s: %s has a Back button" % [pair[0], key])
+			if page.has_meta("back"):
+				(page.get_meta("back") as Callable).call()
+				await frames(3)
+				check(String(Game.current.get_script().resource_path).ends_with("settings_screen.gd"),
+					"%s: Back from %s goes to Settings" % [pair[0], key])
+	TranslationServer.set_locale("en")
+	Game.settings.language = "en"
+	Game.goto_menu()
+	await frames(2)
+
+
+## The first button whose text is t.
+func _button_named(n: Node, t: String) -> Button:
+	if n is Button and (n as Button).text == t:
+		return n
+	for c in n.get_children():
+		var f := _button_named(c, t)
+		if f:
+			return f
+	return null
+
+
+## Every word on a page.
+func _all_text(n: Node) -> String:
+	var s := ""
+	if n is RichTextLabel:
+		s = (n as RichTextLabel).get_parsed_text()
+	elif n is Label:
+		s = (n as Label).text
+	elif n is Button:
+		s = (n as Button).text
+	for c in n.get_children():
+		s += "\n" + _all_text(c)
+	return s
+
+
 ## Each scrolling page scrolls when a drag starts on its words (Kabaddi's How to Play did not).
 func _scroll_on_text() -> void:
 	Game.new_cup("ESC")
-	for path in ["res://ui/howto_screen.gd", "res://ui/licences_screen.gd", "res://ui/settings_screen.gd", "res://ui/quick_setup.gd",
-			"res://ui/result_screen.gd", "res://ui/cup_screen.gd"]:
+	for path in ["res://ui/howto_screen.gd", "res://ui/licences_screen.gd", "res://ui/help_screen.gd", "res://ui/privacy_screen.gd",
+			"res://ui/settings_screen.gd", "res://ui/quick_setup.gd", "res://ui/result_screen.gd", "res://ui/cup_screen.gd"]:
 		var args := {"result": fake_result()} if path.ends_with("result_screen.gd") else {}
 		var s := Game.show_screen(path, args)
 		await frames(4)
