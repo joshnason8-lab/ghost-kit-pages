@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.2-beta
+
+- **Steadier**: Back from the pause menu's Move buttons or team changes now returns to the pause menu (it used to
+  resume the match underneath); a match pauses when the game loses focus (the notification shade, another app's
+  window), as it does for the home button. Found by a long soak test: thousands of random taps and dozens of AI
+  matches on Low and High with no crash or freeze.
+
 ## New in 0.8.1-beta
 
 - **Settings > About**: Licences, Help and the Privacy policy now open inside the game (they work offline); the two

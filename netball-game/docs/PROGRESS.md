@@ -102,7 +102,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   copies and the 32-person crowd), the whistle and the Medium/High sounds in `_sounds`. Low's screenshots before and
   after: the play shots pixel-identical, the others differ only in the umpires' stride (driven by the wall clock),
   the players' close-ups identical.
-- 0.8.2-beta (in progress) — soak test (Play Store readiness: crashes, freezes, stalls, dead ends).
+- 0.8.2-beta — soak test (Play Store readiness: crashes, freezes, stalls, dead ends).
   `tests/soak.gd` (soak.tscn), args `graphics inputs matches quarter_s [seed=N stall=S parts=...]`: Back (Esc and
   the phone's button) on every screen and in a match (paused, team card, moving buttons, rolling changes, interval,
   final whistle, result); the home button / screen off (APPLICATION_PAUSED, APPLICATION_FOCUS_OUT,
