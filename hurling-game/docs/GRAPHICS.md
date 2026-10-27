@@ -21,7 +21,7 @@ three levels. 0.10's Ultra is High now.)
 | **Picked** | By the game on the first run (`Game.detect_graphics`), changed in Settings any time; the game drops a level by itself if a match runs under about 36 fps (Settings can turn that off) | | |
 | **Players** | 1,757 triangles, no outlines | 5,866, 2K texture | as Medium; with the HD pack 23,468 and 4K |
 | **Light** | the time of day's light in the colours, unlit | as Low, the grass's normal map catching the sun, a shadow under each man | **real lighting (on Vulkan)**: the sun's shadows from everything on lit grass, lit players (cloth and skin shading) and officials, the sky's light and reflections, filmic tonemapping and glow, floodlights that light the field at night |
-| **Crowd** | thinner | 16,000 at the stadium | 22,800; with the HD pack 25,000, sharper |
+| **Crowd** | 5,400 at the stadium | 17,300 | 24,600; with the HD pack 26,800, sharper |
 | **Moves** | the clips | the clips | blended into each other (0.18 s); with the HD pack all at 60 fps |
 | **Replays** | from behind the goal | | then cut to a low touchline camera, as television does |
 | **Picture** | 75% scale, no anti-aliasing | 90%, 4× MSAA | 100%, 4× MSAA |
@@ -67,10 +67,22 @@ it (needs the internet, so not in CI). Content tools: `tools/crowd/render_fans.g
 is that level's own). On Mesa's software Vulkan here, so the frame times are this machine's CPU, not a phone's: the
 draw calls, triangles and memory are what a phone draws.
 
-PERF_TABLE
+| | Draw calls | Triangles | Video memory | Crowd |
+|---|---|---|---|---|
+| **Stadium, Low** (Vulkan / GL) | 90 / 91 | 140,378 / 140,378 | 48.9 / 40.0 MB | 5,356 |
+| **Stadium, Medium** | 91 / 92 | 231,672 / 231,672 | 103.3 / 86.9 MB | 17,298 |
+| **Stadium, High** (no HD pack; GL without the real lighting) | 129 / 132 | 530,529 / 384,845 | 159.0 / 87.0 MB | 24,564 |
+| **Stadium, High with the HD pack** (Vulkan) | 129 | 660,736 | 377.6 MB | 26,818 |
+| **Parish, Low** | 94 / 95 | 96,820 / 96,820 | 49.2 / 40.1 MB | 120 |
+| **Parish, Medium** | 95 / 96 | 163,092 / 163,092 | 102.6 / 86.1 MB | 347 |
+| **Parish, High** (no HD pack) | 127 / 136 | 407,486 / 295,560 | 157.3 / 85.8 MB | 493 |
+| **Parish, High with the HD pack** (Vulkan) | 127 | 529,317 | 375.7 MB | 553 |
 
-Vulkan counts a few more triangles than GL for the same scene (its depth pass); High's count includes the shadow
-cascades, each drawing the casters again.
+Against 0.10 (GL): the stadium's Low, Medium and High were 91 / 101,000, 92 / 191,000 and 132 / 343,000; the new
+corner stands and their crowd are the difference (the same on both renderers).
+
+High's triangles on Vulkan include the shadow cascades (each draws the casters again). Vulkan keeps a little more in
+video memory than GL for the same level (its buffers); the HD pack's 4K textures are most of High's 378 MB.
 
 **The budget**: Low and Medium for the phones they are picked for, at 30 to 60 fps; High at 60 fps on a 2023 or
 later flagship (Snapdragon 8 Gen 2 / Adreno 740, Dimensity 9200 / Immortalis-G715, Exynos 2400 / Xclipse 940,
