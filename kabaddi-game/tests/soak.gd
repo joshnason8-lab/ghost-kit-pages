@@ -165,6 +165,8 @@ func _monkey(steps: int, level: String) -> void:
 	var last := ""
 	for step in steps:
 		var name := _screen_name()
+		if step % 200 == 0:
+			print("SOAK %s input %d on %s, %d errors, %d problems so far" % [level, step, name, errors.count(), problems.size()])
 		screens[name] = int(screens.get(name, 0)) + 1
 		same = same + 1 if name == last else 0
 		last = name
