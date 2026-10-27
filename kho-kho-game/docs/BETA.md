@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.9.3
+
+- **Licences, Help and Privacy policy in the game.** Settings > About has three buttons that open screens inside the
+  game, which work offline: the licences and every asset's credit; how to play, the controls, the rules in brief,
+  the graphics levels and how to report a bug; and the privacy policy (nothing collected, no ads, no analytics, no
+  internet permission). The old buttons opened web pages that were not online (404).
+
 ## What's new in 0.9.2
 
 - **The crowd watches the game.** Spectators at the ends and on the scaffold stands showed their full front to the

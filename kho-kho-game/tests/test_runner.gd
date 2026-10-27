@@ -168,7 +168,8 @@ func _sim() -> void:
 
 func _screens() -> void:
 	var screens := ["res://ui/main_menu.gd", "res://ui/match_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
-		"res://ui/records_screen.gd", "res://ui/cup_screen.gd", "res://ui/licences_screen.gd"]
+		"res://ui/records_screen.gd", "res://ui/cup_screen.gd", "res://ui/licences_screen.gd", "res://ui/help_screen.gd",
+		"res://ui/privacy_screen.gd"]
 	for pair in Game.LANGUAGES:
 		Game.settings.language = pair[0]
 		TranslationServer.set_locale(pair[0])
@@ -182,6 +183,7 @@ func _screens() -> void:
 	Game.settings.language = "en"
 	TranslationServer.set_locale("en")
 	Game._size_theme()
+	await _legal_pages()
 	# The home screen's menu: one row of six buttons, all on the screen, none over another (the owner's 0.3 ask).
 	var home := Game.show_screen("res://ui/main_menu.gd")
 	await frames(4)
@@ -200,7 +202,7 @@ func _screens() -> void:
 		"the toss coin's tails is the value in the player's currency")
 	# Labels on scrolling pages pass the touch to the scroll box (the How to Play lesson from Kabaddi Raid).
 	for path in ["res://ui/howto_screen.gd", "res://ui/licences_screen.gd", "res://ui/settings_screen.gd", "res://ui/match_setup.gd",
-			"res://ui/records_screen.gd", "res://ui/cup_screen.gd"]:
+			"res://ui/records_screen.gd", "res://ui/cup_screen.gd", "res://ui/help_screen.gd", "res://ui/privacy_screen.gd"]:
 		var s := Game.show_screen(path)
 		await frames(3)
 		var bad := 0
@@ -358,6 +360,44 @@ func _mocap() -> void:
 	check(to_left and to_right and ath.act == "" and not ath.mirror, "a dodge cuts the way he goes, and his run after it is his own")
 	ath.queue_free()
 
+
+
+## Settings > About: Licences, Help and Privacy Policy are three buttons that open screens in the game (no link out:
+## the game has no internet permission). Each one opens with a Back button, scrolls, and says what it must: the
+## Godot Engine's licence and the assets' credits, the controls and contact, the policy's date and contact.
+func _legal_pages() -> void:
+	var st := Game.show_screen("res://ui/settings_screen.gd")
+	await frames(3)
+	var names := {}
+	for b in st.find_children("*", "Button", true, false):
+		names[(b as Button).text] = b
+	for k in ["LICENCES", "HELP_SUPPORT", "PRIVACY_POLICY"]:
+		check(names.has(tr(k)), "settings: a %s button" % tr(k))
+	var src := FileAccess.get_file_as_string("res://ui/settings_screen.gd")
+	check(not src.contains("shell_open"), "settings: nothing opens outside the game")
+	var want := {
+		"res://ui/licences_screen.gd": ["Godot Engine", "MIT", "mocap.cs.cmu.edu", "NSF EIA-0196217", "Kenney", "CC0",
+			"OpenGameArt", "CC-BY 4.0", "Pixabay Content License", "charlesheffley009", "framptones", "freesound_community",
+			"Poly Haven", "Meshy", "Mixamo", "SIL Open Font License"],
+		"res://ui/help_screen.gd": [tr("HELP_PLAY"), tr("CTRL_KHO_TEXT"), tr("RULES_OUTS"), tr("GFX_LOW"), Game.CONTACT_EMAIL],
+		"res://ui/privacy_screen.gd": [tr("PRIVACY_SUMMARY"), "Last updated", "internet", "vibration", Game.CONTACT_EMAIL],
+	}
+	for path in want:
+		var s := Game.show_screen(path)
+		await frames(3)
+		var text := ""
+		for n in s.find_children("*", "", true, false):
+			if n is Label:
+				text += (n as Label).text + "\n"
+			elif n is RichTextLabel:
+				text += (n as RichTextLabel).get_parsed_text() + "\n"
+		var missing := []
+		for w in want[path]:
+			if not text.contains(String(w)):
+				missing.append(w)
+		check(text.length() > 600 and missing.is_empty(), "%s: not empty (%d characters), missing %s" % [path, text.length(), missing])
+		check(s.find_children("*", "ScrollContainer", true, false).size() > 0, "%s: scrolls" % path)
+		check(s.has_meta("back") and (s.get_meta("back") as Callable).is_valid(), "%s: a Back button (and the phone's back)" % path)
 
 # ---------------------------------------------------------------- the grounds
 

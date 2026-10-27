@@ -335,5 +335,15 @@
   "CUP_LEAGUE_DESC": "Eight city sides play each other home and away, then the top four play the semi-finals and the final. Fast rules; 3 points for a win, 2 for a tie, 1 for losing by 3 or fewer.",
   "CUP_TABLE": "League table",
   "CUP_STAGE_LEAGUE": "League",
-  "TEAMS_CITIES": "Cities"
+  "TEAMS_CITIES": "Cities",
+  "HELP_PLAY": "How to play",
+  "HELP_PLAY_TEXT": "Two sides take turns to chase and to defend. The chasers sit in a line down the middle, facing alternate ways, and one of them runs. Touch a defender to put him out. When he is out of reach, give a kho: touch a seated team-mate's back, and he runs instead. Defenders come on three at a time. The chasers score for every defender they put out, and after four turns the side with more points wins.",
+  "HELP_RULES": "The rules in brief",
+  "HELP_ALL_RULES": "All the rules",
+  "HELP_GFX": "Graphics levels",
+  "HELP_GFX_TEXT": "{low} suits older and smaller phones: simpler grounds, a thinner crowd and a lower render scale. {med} and {high} add sharper ground photos, players and skies, and more round the grounds. With \"{auto}\" on, the game drops a level if a match runs slowly. Change it in Settings, under {screen}.",
+  "HELP_CONTACT": "Contact and bug reports",
+  "HELP_CONTACT_TEXT": "Found a bug, or have a question? Email {email}. Say what happened and what you expected, your phone's model, and the game's version ({v}). A screenshot helps.",
+  "PRIVACY_SUMMARY": "Kho Kho Rush collects no personal data. There is no account, no advertising, no analytics and no in-app purchase, and the game has no permission to use the internet. Your settings and progress stay on your phone.",
+  "PRIVACY_FULL": "The full policy (in English)"
 }
