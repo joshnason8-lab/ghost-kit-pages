@@ -31,6 +31,7 @@ var _pause: Control = null
 var _pause_btn: Button
 var _controls: TouchControls = null
 var _layout_panel: Control = null
+var _changes_layer: Control = null   # rolling changes, from the pause menu
 var _me_ring := 0.0
 var card: TeamCard = null
 
@@ -608,6 +609,7 @@ func _rolling_changes() -> void:
 	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.mouse_filter = Control.MOUSE_FILTER_STOP
 	root.add_child(layer)
+	_changes_layer = layer
 	var dim := ColorRect.new()
 	dim.color = Color(Game.C_BG, 0.86)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -622,10 +624,28 @@ func _rolling_changes() -> void:
 	v.add_theme_constant_override("separation", 12)
 	card.add_child(v)
 	v.add_child(_changes())
-	v.add_child(UI.button(tr("DONE"), true, func():
-		layer.queue_free()
-		show_pause(true)))
+	v.add_child(UI.button(tr("DONE"), true, _close_changes))
 	UI.keep_on_screen(card)
+
+
+func _close_changes() -> void:
+	if _changes_layer and is_instance_valid(_changes_layer):
+		_changes_layer.queue_free()
+	_changes_layer = null
+	show_pause(true)
+
+
+## Back from what the pause menu opened (rolling changes, moving the buttons): back to the pause menu, as Done does
+## (soak test: Back resumed the match with the buttons still being moved, or the changes still over it). Returns
+## whether there was one to close.
+func close_layer() -> bool:
+	if _layout_panel and is_instance_valid(_layout_panel):
+		_layout_panel.finish()
+		return true
+	if _changes_layer and is_instance_valid(_changes_layer):
+		_close_changes()
+		return true
+	return false
 
 
 func keep_pause_card(card: Control) -> void:

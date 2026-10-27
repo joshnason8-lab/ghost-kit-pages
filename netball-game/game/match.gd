@@ -1233,6 +1233,8 @@ func set_paused(p: bool) -> void:
 
 
 func on_back() -> void:
+	if paused and hud and hud.close_layer():
+		return
 	set_paused(not paused)
 
 

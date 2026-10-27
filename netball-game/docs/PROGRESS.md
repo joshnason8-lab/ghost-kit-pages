@@ -102,6 +102,30 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   copies and the 32-person crowd), the whistle and the Medium/High sounds in `_sounds`. Low's screenshots before and
   after: the play shots pixel-identical, the others differ only in the umpires' stride (driven by the wall clock),
   the players' close-ups identical.
+- 0.8.2-beta (in progress) — soak test (Play Store readiness: crashes, freezes, stalls, dead ends).
+  `tests/soak.gd` (soak.tscn), args `graphics inputs matches quarter_s [seed=N stall=S parts=...]`: Back (Esc and
+  the phone's button) on every screen and in a match (paused, team card, moving buttons, rolling changes, interval,
+  final whistle, result); the home button / screen off (APPLICATION_PAUSED, APPLICATION_FOCUS_OUT,
+  WM_WINDOW_FOCUS_OUT) in a cup match, the saves checked on disk; AI v AI matches in all three venues, each run to a
+  result and watched for stalls (nothing moves on for 45 s of game time); a monkey of random taps (most aimed at
+  buttons), drags, two-thumb touches, clicks, Back and the home button from the home screen into matches. Any
+  SCRIPT ERROR or ERROR logged fails it (an OS Logger; the no-sound-card ALSA lines aside). It never presses Back on
+  the home screen (that quits on a phone; it checks MainMenu.quits_on_back) and puts the player's saves back at the
+  end (and after a run that died part way). Results, xvfb + llvmpipe unless headless:
+  - Low, 640x360: 3000 inputs (1496 taps, 620 drags, 258 two-thumb, 276 clicks, 329 Back, 101 home button; 23
+    matches entered from the menus) and 12 AI matches of 20 s quarters: 238 checks, 0 failures, 0 log errors, 46 min.
+  - High, 320x180 (High draws about two frames a second in llvmpipe): 3000 inputs (1487 taps, 615 drags, 248 two-thumb, 319 clicks,
+    310 Back, 77 home button; 23 matches entered) and 2 AI matches: 145 checks, 0 failures, 0 log errors, 58 min.
+  - Headless, 30 AI matches of 40 s quarters each on Low and High (4 with extra time) plus the Back and home-button
+    parts: 540 checks each, 0 failures, about 5.5 min each.
+  Found and fixed: Back from what the pause menu opens (Move buttons, rolling changes) resumed the match with the
+  buttons still in editing mode or the changes still over the court: it now goes back to the pause menu, as Done
+  does (`Hud.close_layer`, `Match.on_back`); a window losing focus (NOTIFICATION_WM_WINDOW_FOCUS_OUT: the notification
+  shade, another window, a browser tab) did not pause your match: it now does, like the home button. Both checked in
+  `_navigation`. No crash, freeze, stall or script error in any run. Saves were already written as they change
+  (settings, cup and league after each match, records), so the home button loses nothing saved; a match itself is
+  not saved mid-play: if the phone kills the game in the background the cup or league match is replayed from the
+  start (it pauses on the home button, so a player who comes back finds it waiting).
 - 0.8.1-beta — Settings > About in the game: Licences, Help (`ui/help_screen.gd`: the controls and the rules in
   brief from How to Play's own translated words, the graphics levels, what to do if something is wrong and how to
   report a bug) and the Privacy policy (`ui/privacy_screen.gd`: no data collected, no ads or analytics, no internet
