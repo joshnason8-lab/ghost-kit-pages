@@ -75,7 +75,7 @@ func _ready() -> void:
 		get_tree().quit()
 		return
 	for s in (MEDIA if which == "media" else STORE):
-		if only != "" and not String(s[0]).begins_with(only):
+		if not _picked(String(s[0]), only):
 			continue
 		Game.settings.language = s[1]
 		TranslationServer.set_locale(s[1])
@@ -94,6 +94,16 @@ func _ready() -> void:
 
 ## Waits, playing on; with draw off, nothing is drawn meanwhile (the game runs many times faster), but the last
 ## second is, so the picture is of a settled frame.
+## Whether a shot is among those asked for ("" all, else prefixes separated by commas).
+func _picked(name: String, only: String) -> bool:
+	if only == "":
+		return true
+	for p in only.split(","):
+		if name.begins_with(p):
+			return true
+	return false
+
+
 func _wait(secs: float, draw := true) -> void:
 	var n := int(secs * 30.0)
 	for i in n:
@@ -191,6 +201,7 @@ func _ring_moment(m: Node) -> void:
 	# In the replay: the frame where the ball is nearest the ring (kept as the replay runs), and one a moment in.
 	var best := INF
 	var best_img: Image = null
+	var best_at := -1
 	guard = 0
 	while m.phase == m.P.REPLAY and guard < 30 * 20:
 		guard += 1
@@ -198,8 +209,10 @@ func _ring_moment(m: Node) -> void:
 		var d: float = m.ball.global_position.distance_to(ring)
 		if d < best:
 			best = d
+			best_at = guard
 			best_img = get_viewport().get_texture().get_image()
-		if guard == 30 * 3:
+		elif best_at > 0 and guard == best_at + 18:
+			# Just after: the ball out through the far side of the ring.
 			get_viewport().get_texture().get_image().save_png("%s/08_ring_replay.png" % out)
 			print("shot 08_ring_replay")
 	if best_img:
@@ -218,7 +231,7 @@ func _menus(only: String) -> void:
 	TranslationServer.set_locale("en")
 	Game._size_theme()
 	for s in MENUS:
-		if only != "" and not String(s[0]).begins_with(only):
+		if not _picked(String(s[0]), only):
 			continue
 		var what := String(s[1])
 		if what == "pause":

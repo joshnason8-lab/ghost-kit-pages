@@ -488,7 +488,7 @@ func _start_replay() -> void:
 	_rp_cam.look_at(ring, Vector3.UP)
 	_rp_cam.current = true
 	if hud:
-		hud.banner(tr("REPLAY"), Game.C_GOLD)
+		hud.replay_tag(true)
 
 
 func _replay_step(delta: float) -> void:
@@ -534,6 +534,8 @@ func _end_replay() -> void:
 	if _rp_cam:
 		_rp_cam.queue_free()
 		_rp_cam = null
+	if hud:
+		hud.replay_tag(false)
 	cam.camera.current = true
 	ball.show_at(ball.pos, 0.0)
 	phase = P.CALL

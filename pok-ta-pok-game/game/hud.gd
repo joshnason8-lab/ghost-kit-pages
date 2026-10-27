@@ -14,6 +14,7 @@ var _board: Control
 var _names: Array[Label] = []
 var _time: Label
 var _banner: Label
+var _replay_tag: Label        # "REPLAY" in a corner while a replay runs, clear of the ring it shows
 var _banner_t := 0.0
 var _banner_total := 2.4
 var _call: Label
@@ -71,6 +72,12 @@ func _ready() -> void:
 	UI.shrink(_banner, 96, 0.5, 1)
 	_banner.modulate.a = 0.0
 	root.add_child(_banner)
+	_replay_tag = _outlined(tr("REPLAY"), "TitleLabel", 54, Game.C_GOLD)
+	_replay_tag.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	_replay_tag.offset_left = 36
+	_replay_tag.offset_top = 22
+	_replay_tag.visible = false
+	root.add_child(_replay_tag)
 	_toast = _outlined("", "SubLabel", 21, Game.C_INK)
 	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	_toast.offset_top = -64
@@ -286,6 +293,13 @@ func frame_percentiles() -> Array:
 
 
 # ---------------------------------------------------------------- calls
+
+## A replay is running (or has ended): its tag in the top corner. The big centre banner would sit over the ring the
+## replay is there to show.
+func replay_tag(on: bool) -> void:
+	if _replay_tag:
+		_replay_tag.visible = on
+
 
 func banner(text: String, col: Color = Game.C_GOLD) -> void:
 	_banner.text = text
