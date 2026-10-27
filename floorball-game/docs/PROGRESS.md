@@ -175,6 +175,24 @@ the side). Watched as stills every 3 seconds and two goals frame by frame. What 
 - Looked at and left: an emptier crowd (the league's stands were a third full; a full stand reads better on a phone),
   "GOAL" on the stands' LED ribbons (a later job).
 
+### 0.8.1-beta: licences, help and privacy in the game (27 October 2026)
+
+From the lead's brief (the owner found the games' links returning 404; this game's did: its privacy and help pages
+live in `floorball-unleashed/`, which GitHub Pages serves only from `main`):
+- Settings > About has **Licences, Help and Privacy policy**, each a page in the game (works offline, scrolls, Back
+  returns to Settings), readable on Low and on a small phone. No button opens a browser any more.
+- **Licences**: every source by name, author and licence (the Meshy models; Poly Haven's lamps, clock, sign and
+  surfaces with their authors; the CMU motion capture line and clips; the Pixabay whistles and their authors; Gregor
+  Quendel's crowd, CC BY 4.0; eXpl0it3r's applause; Kenney; the fonts under the OFL), the Godot Engine's licence and
+  every notice it ships (Engine.get_copyright_info, get_license_info).
+- **Help**: playing, the controls, the rules in brief, the graphics levels, what to try if something is wrong, and how
+  to report a problem (with the version).
+- **Privacy policy**, true to the build: no personal data, no account, no ads, no analytics, no internet permission,
+  what stays on the phone, the one permission (vibration), dated, with a contact. The same text is public at
+  docs/PRIVACY.md for the store listing (store/PLAY_STORE.md).
+- A test opens each page from Settings and checks its words, its scrolling and its way back; the fit audit covers
+  them in every language and screen shape.
+
 ## Next (in order)
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's

@@ -7,9 +7,6 @@ const SEASON_PATH := "user://season.json"
 const RECORDS_PATH := "user://records.json"
 
 const SLUG := "floorball-unleashed"
-## The game's privacy policy and help pages (Settings > About).
-const PRIVACY_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/floorball-unleashed/privacy.html"
-const SUPPORT_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/floorball-unleashed/support.html"
 
 ## Code, name in the language itself, name in English. The sport's heartland first (Sweden, Finland, Switzerland,
 ## Czechia), then the rest of its Europe, then Japan and Thailand, and English for everyone else (docs/LANGUAGES.md).

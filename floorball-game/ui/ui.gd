@@ -612,3 +612,41 @@ static func note(title: String, desc: String, accent: Color, cb: Callable, big :
 static func outline(l: Label, w := 8) -> void:
 	l.add_theme_constant_override("outline_size", w)
 	l.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.05, 0.85))
+
+
+## A block of formatted text for a reading page (licences, help, privacy): wraps, takes no touch (a drag on the words
+## reaches the page's scroll box). A big one is laid out off the main thread.
+static func rich(bb: String, big := false) -> RichTextLabel:
+	var rt := RichTextLabel.new()
+	rt.bbcode_enabled = true
+	rt.fit_content = true
+	rt.scroll_active = false
+	rt.threaded = big
+	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rt.add_theme_font_override("normal_font", Game.font_body)
+	rt.add_theme_font_override("bold_font", Game.font_bold)
+	rt.add_theme_font_size_override("normal_font_size", Game.ts(16))
+	rt.add_theme_font_size_override("bold_font_size", Game.ts(19))
+	rt.add_theme_color_override("default_color", Color(Game.C_INK, 0.92))
+	rt.text = bb
+	return rt
+
+
+## Text written wrapped in the source as running text: a single line break is a space, a blank line a new paragraph,
+## a line that is all a heading ([b]...[/b]) stays on a line of its own, and a line starting "- " starts a new one.
+static func flow(text: String) -> String:
+	var out := ""
+	var prev := ""
+	for line in text.strip_edges().split("\n"):
+		if line.strip_edges() == "":
+			out += "\n\n"
+		elif out == "" or out.ends_with("\n"):
+			out += line
+		elif (prev.begins_with("[b]") and prev.ends_with("[/b]")) or line.begins_with("- "):
+			out += "\n" + line
+		else:
+			out += " " + line
+		prev = line.strip_edges()
+	return out

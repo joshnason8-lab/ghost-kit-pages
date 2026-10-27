@@ -102,9 +102,10 @@ func _ready() -> void:
 	var links := HFlowContainer.new()
 	links.add_theme_constant_override("h_separation", 10)
 	links.add_theme_constant_override("v_separation", 10)
-	links.add_child(UI.button(tr("PRIVACY_POLICY"), false, func(): OS.shell_open(Game.PRIVACY_URL)))
-	links.add_child(UI.button(tr("HELP_SUPPORT"), false, func(): OS.shell_open(Game.SUPPORT_URL)))
+	# Each a page in the game itself: they work offline (the game has no internet permission).
 	links.add_child(UI.button(tr("LICENCES"), false, func(): Game.show_screen("res://ui/licences_screen.gd")))
+	links.add_child(UI.button(tr("HELP_SUPPORT"), false, func(): Game.show_screen("res://ui/help_screen.gd")))
+	links.add_child(UI.button(tr("PRIVACY_POLICY"), false, func(): Game.show_screen("res://ui/privacy_screen.gd")))
 	about[1].add_child(links)
 	if bool(Game.settings.dev):
 		about[1].add_child(UI.label(tr("DEV_ON"), "MutedLabel", 15, Game.C_RED))

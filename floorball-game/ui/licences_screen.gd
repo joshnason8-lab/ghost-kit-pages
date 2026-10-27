@@ -4,20 +4,38 @@ extends Control
 ## texts are in English, as they are written.
 
 const CREDITS := """[b]Floorball Unleashed[/b]
-Made by Josh Nason.
-Players, referees, the stick, the sports hall's aluminium stand, the gym benches and the fire alarm points: the
-maker's own models, made with Meshy. The halls' lamps, clock and floor sign, and their surfaces (block wall, maple,
-wood floor, rubber floor): Poly Haven (polyhaven.com), CC0. The rink, the basketball boards, the rest of the halls and the ball made in code for the game; the ball's sounds, the horn, the drum and the menu music made for it. Whistle sounds from Pixabay
-(Pixabay Content License): "Referee whistle" by charlesheffley009, "Referee whistle / coach whistle / sports whistle"
-by framptones, "Metal whistle" and "Referee whistle blow, gymnasium" by freesound_community; trimmed and levelled. The crowd in the hall, its
-cheers and its chant: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org), CC BY 4.0, cut and levelled. Applause:
-"Applause in a large hall or church" by eXpl0it3r (opengameart.org), CC0. Footsteps and the menus' click: Kenney
-(kenney.nl), Impact Sounds and Interface Sounds, CC0. The crowd's "ooh" and groan, from Kabaddi Raid, by the same
-maker.
-How the players and referees walk and run: motion capture data from mocap.cs.cmu.edu. The database was created with
-funding from NSF EIA-0196217.
-Floorball's rules: the international Rules of the Game, as the game understands them. The game is not made or
-endorsed by any federation, league or team."""
+Made by Josh Nason. The rink, the boards, the goals, the halls' walls, ceilings and basketball boards, the ball, its
+floor decals and the menu music were made for the game. Floorball's rules are the international Rules of the Game,
+as the game understands them; the game is not made or endorsed by any federation, league or team. The teams' and
+players' names are invented.
+
+[b]3D models[/b]
+- Players, goalkeepers, referees and the stick; the sports hall's aluminium stand, the gym benches and the Nordic fire
+alarm points: the maker's own models, made with Meshy (meshy.ai). The players are rigged with Mixamo's bone names;
+no Mixamo model or animation is used.
+- The halls' fluorescent lights ("Mounted Fluorescent Lights", Ulan Cabanilla), hanging lamps ("Hanging Industrial
+Lamp", Kuutti Siitonen), wall clock ("Wall Clock", PierreB3D) and wet floor sign ("Wet Floor Sign 01", Fran
+Calvente): Poly Haven (polyhaven.com), CC0.
+
+[b]Surfaces[/b]
+- Rubber floor ("Rubber Tiles", Amal Kumar), wood floor ("Wood Floor", Dimitrios Savva), block wall ("Concrete Block
+Wall", Charlotte Baglioni), birch slats ("White Maple Veneer", Jenelle van Heerden): Poly Haven (polyhaven.com), CC0.
+
+[b]Motion capture[/b]
+- How the players and referees walk and run: motion capture data from mocap.cs.cmu.edu. The database was created
+with funding from NSF EIA-0196217. (Clips 35_01, 35_17 and 16_55.)
+
+[b]Sounds[/b]
+- The referees' whistles: from Pixabay, under the Pixabay Content License: "Referee whistle" by charlesheffley009,
+"Referee whistle / coach whistle / sports whistle" by framptones, "Metal whistle" and "Referee whistle blow,
+gymnasium" by freesound_community; trimmed and levelled.
+- The crowd, its cheers and its chant: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org,
+gregorquendel.com), CC BY 4.0; cut and levelled.
+- The applause: "Applause in a large hall or church" by eXpl0it3r (opengameart.org), CC0.
+- Footsteps and the menus' click: Kenney (kenney.nl), "Impact Sounds" and "Interface Sounds", CC0.
+- The crowd's "ooh" and groan, and the players' calls: from Kabaddi Raid, by the same maker.
+- The ball, the boards, the posts, the net, stick on stick, the horn and the drum: made for the game.
+"""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans, Noto Sans Thai and Noto Sans JP: Copyright The Noto Project Authors (https://github.com/notofonts).
@@ -37,7 +55,7 @@ func _ready() -> void:
 	col.add_theme_constant_override("separation", 18)
 	v.add_child(UI.scroll(col))
 	col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
-	col.add_child(_text(CREDITS))
+	col.add_child(UI.rich(UI.flow(CREDITS)))
 	col.add_child(_text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
 	col.add_child(_text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
 	# The engine's own parts, each with its copyright and licence, then the licences' texts.

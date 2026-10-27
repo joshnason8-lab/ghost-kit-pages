@@ -12,10 +12,10 @@ stand in October 2026.
   - 64-bit, with 16 KB memory pages (checked on every bundle);
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - one permission (vibration) and no internet access.
-- **The privacy policy, help page and a page for the game**, in `floorball-unleashed/` at the top of this repository,
-  served by GitHub Pages once this branch is merged into `main`:
-  https://joshnason8-lab.github.io/ghost-kit-pages/floorball-unleashed/privacy.html and `/support.html`. The game's
-  Settings > About opens them, as Google asks, and shows the licences there.
+- **The privacy policy, help and licences in the game**: Settings > About opens each as a page in the game itself
+  (works offline; the game has no internet permission). For the store's privacy address, the same policy is public at
+  https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/floorball-game/floorball-game/docs/PRIVACY.md (checked: HTTP 200). The web pages in `floorball-unleashed/` at the top of this repository are served by GitHub
+  Pages only once this branch is merged into `main` (until then their github.io addresses return 404).
 - **The store listing**: the text in fifteen languages (`store/listing/`: en-US, sv-SE, fi-FI, de-DE, fr-FR, it-IT,
   cs-CZ, sk, no-NO, da-DK, lv, et, pl-PL, ja-JP, th), and the 512 × 512 icon, the 1024 × 500 feature graphic and
   the 1920 × 1080 screenshots (`store/graphics/`).
@@ -79,7 +79,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/floorball-unleashed/privacy.html` |
+| **Privacy policy** | `https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/floorball-game/floorball-game/docs/PRIVACY.md` (or the github.io page once `floorball-unleashed/` is served from `main`) |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |
@@ -159,8 +159,8 @@ and shows no ads, but the 13+ groups are the simpler start.
 - **Android's developer verification** covers apps installed from outside the stores too: in Brazil, Indonesia,
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
-- **The privacy policy's address must keep working** while the game is on Play: keep `floorball-unleashed/` in this
-  repository's GitHub Pages (or move the pages and update `PRIVACY_URL` and `SUPPORT_URL` in `autoload/game.gd`).
+- **The privacy policy's address must keep working** while the game is on Play: keep `docs/PRIVACY.md` (or the
+  github.io page) where the listing points, and the same text as the game's Settings > About > Privacy policy.
 - **Names**: only national teams appear, under their countries' names with flags drawn in code; the players are
   made up from each country's common names (`autoload/db.gd`). The game never names the IFF, a league, a club or a
   competition: the rules are "the international Rules of the Game" and the tournament is the game's own "World

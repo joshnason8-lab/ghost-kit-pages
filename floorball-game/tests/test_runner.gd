@@ -28,6 +28,7 @@ func _ready() -> void:
 	_cup()
 	_season()
 	await _screens()
+	await _about_pages()
 	await _penalty_shot()
 	await _match_parts()
 	await _coach()
@@ -450,9 +451,45 @@ func _season() -> void:
 
 # ---------------------------------------------------------------- screens
 
+## Settings > About: Licences, Help and the privacy policy are pages in the game (they work offline; the game has no
+## internet permission), each opened from its own button, each with its words: the credits and every licence, the
+## controls, the rules and how to get in touch, the policy with its date and a contact. No page opens a browser.
+func _about_pages() -> void:
+	var st := Game.show_screen("res://ui/settings_screen.gd")
+	await frames(2)
+	var labels := []
+	for b in st.find_children("*", "Button", true, false):
+		labels.append((b as Button).text)
+	for key in ["LICENCES", "HELP_SUPPORT", "PRIVACY_POLICY"]:
+		check(tr(key) in labels, "Settings > About has a %s button" % tr(key))
+	var src := FileAccess.get_file_as_string("res://ui/settings_screen.gd")
+	check(not src.contains("shell_open"), "Settings opens no web page (they 404ed; the pages are in the game)")
+	var want := {"res://ui/licences_screen.gd": ["mocap.cs.cmu.edu", "Pixabay", "Kenney", "Poly Haven", "Gregor Quendel", "Meshy", "Godot Engine"],
+		"res://ui/help_screen.gd": ["Shoot", "Pass", "Graphics", "joshnason8@gmail.com"],
+		"res://ui/privacy_screen.gd": ["no personal data", "Last updated", "INTERNET", "joshnason8@gmail.com"]}
+	for path: String in want:
+		var s := Game.show_screen(path)
+		await frames(3)
+		var text := ""
+		for rt in s.find_children("*", "RichTextLabel", true, false):
+			text += (rt as RichTextLabel).get_parsed_text() + "\n"
+		var missing := []
+		for w: String in want[path]:
+			if not text.contains(w):
+				missing.append(w)
+		var back := false
+		for b in s.find_children("*", "Button", true, false):
+			back = back or (b as Button).visible
+		check(text.length() > 800 and missing.is_empty() and s.find_children("*", "ScrollContainer", true, false).size() > 0 and back,
+			"%s: a page with its words, scrolling, a way back (%d characters, missing %s)" % [path.get_file(), text.length(), missing])
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(2)
+
+
 func _screens() -> void:
 	var screens := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
-		"res://ui/cup_screen.gd", "res://ui/season_screen.gd", "res://ui/licences_screen.gd", "res://ui/button_layout_screen.gd"]
+		"res://ui/cup_screen.gd", "res://ui/season_screen.gd", "res://ui/licences_screen.gd", "res://ui/help_screen.gd",
+		"res://ui/privacy_screen.gd", "res://ui/button_layout_screen.gd"]
 	var langs: Array = Game.LANGUAGES if not quick else [Game.LANGUAGES[0], Game.LANGUAGES[2]]
 	for pair in langs:
 		Game.settings.language = pair[0]
