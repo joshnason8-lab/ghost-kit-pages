@@ -102,14 +102,15 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 .gk-prose :where(p, li) { color: var(--gk-soft); }
 .gk-prose :where(p, li) strong { color: var(--gk-ink); }
 .gk-prose ul, .gk-prose ol { padding-left: 1.3em; }
-.gk-prose li + li { margin-top: 6px; }
+.gk-prose .wp-block-list li + li { margin-top: 6px; }
 .gk-note {
 	background: var(--gk-panel); border: 1px solid var(--gk-line); border-left: 3px solid var(--gk-accent);
 	border-radius: 10px; padding: 14px 18px; font-size: 15px;
 }
 .gk-lead { font-size: var(--wp--preset--font-size--large); color: var(--gk-soft); line-height: 1.55; max-width: 640px; }
 
-.gk-crumb ol { list-style: none; display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; color: var(--gk-mute); font-size: 14px; }
+.gk-crumb li { display: flex; align-items: center; }
+.gk-crumb ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; padding: 0; color: var(--gk-mute); font-size: 14px; }
 .gk-crumb li + li::before { content: "›"; margin-right: 4px; }
 .gk-crumb a { color: var(--gk-mute); text-decoration: none; display: inline-block; padding: 12px 0; }
 .gk-crumb a:hover { color: var(--gk-ink); text-decoration: underline; }
@@ -299,3 +300,6 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 /* WordPress's own image lightbox, in the site's colours. */
 .wp-lightbox-overlay .scrim { background-color: rgba(13, 17, 23, .94) !important; }
 .wp-lightbox-overlay .close-button { color: #fff; min-width: 44px; min-height: 44px; }
+.wp-lightbox-container button.lightbox-trigger { width: 44px; height: 44px; }
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content,
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__container { align-items: flex-start !important; }

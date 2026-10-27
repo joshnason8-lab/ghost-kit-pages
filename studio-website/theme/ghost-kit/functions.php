@@ -120,3 +120,24 @@ function ghostkit_short_title( $post ) {
 	}
 	return $title;
 }
+
+/**
+ * Pages brought in with Tools > Import keep their old image IDs, so WordPress can't add the smaller sizes (srcset)
+ * to those images. Find the image by its file instead and add them. Costs nothing when the IDs already match.
+ */
+add_filter(
+	'wp_content_img_tag',
+	function ( $tag, $context, $attachment_id ) {
+		if ( str_contains( $tag, ' srcset=' ) || ! preg_match( '/ src="([^"]+)"/', $tag, $m ) ) {
+			return $tag;
+		}
+		$id = attachment_url_to_postid( preg_replace( '/-\d+x\d+(\.\w+)$/', '$1', $m[1] ) );
+		if ( ! $id || $id === (int) $attachment_id ) {
+			return $tag;
+		}
+		$meta = wp_get_attachment_metadata( $id );
+		return is_array( $meta ) ? wp_image_add_srcset_and_sizes( $tag, $meta, $id ) : $tag;
+	},
+	10,
+	3
+);

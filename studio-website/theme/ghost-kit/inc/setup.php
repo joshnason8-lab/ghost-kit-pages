@@ -93,13 +93,15 @@ function ghostkit_fill_tokens( $content, $ids ) {
 }
 
 /**
- * Does as much of the setup as fits in about 15 seconds. Returns array( done => bool, log => string[] ).
+ * Does as much of the setup as fits in about 15 seconds (the ghostkit_setup_seconds filter). Returns array( done => bool, log => string[] ).
  */
 function ghostkit_run_setup() {
 	if ( function_exists( 'set_time_limit' ) ) {
 		@set_time_limit( 120 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors -- some hosts forbid it; we stop early anyway.
 	}
 	$start   = microtime( true );
+	/** Seconds of work per round. Lower it if a host stops requests sooner than 30 seconds. */
+	$budget  = (float) apply_filters( 'ghostkit_setup_seconds', 15 );
 	$content = ghostkit_content();
 	$log     = array();
 
@@ -108,7 +110,7 @@ function ghostkit_run_setup() {
 	foreach ( $content['assets'] as $asset ) {
 		$id = ghostkit_asset_id( $asset['key'] );
 		if ( ! $id ) {
-			if ( microtime( true ) - $start > 15 ) {
+			if ( microtime( true ) - $start > $budget ) {
 				$done = count( $ids );
 				return array(
 					'done' => false,
@@ -277,11 +279,11 @@ function ghostkit_setup_page() {
 	echo '<form method="post" action="' . esc_url( $action ) . '" id="ghostkit-setup-form">';
 	wp_nonce_field( 'ghostkit_setup' );
 	echo '<input type="hidden" name="action" value="ghostkit_setup">';
-	submit_button( $going ? 'Carrying on…' : 'Set up the site', 'primary', 'submit', false );
+	submit_button( $going ? 'Carrying on…' : 'Set up the site', 'primary', 'ghostkit_go', false );
 	echo '</form>';
 	if ( $going ) {
 		echo '<p>Still working: this page carries on by itself. Please leave it open.</p>';
-		echo '<script>setTimeout(function(){document.getElementById("ghostkit-setup-form").submit();},500);</script>';
+		echo '<script>setTimeout(function(){HTMLFormElement.prototype.submit.call(document.getElementById("ghostkit-setup-form"));},500);</script>';
 	}
 	echo '<h2>Pages</h2><table class="widefat striped"><thead><tr><th>Address</th><th>Page</th></tr></thead><tbody>';
 	foreach ( $content['pages'] as $page ) {
