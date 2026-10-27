@@ -1,0 +1,67 @@
+# Google Play store listing, English (United Kingdom), the default. Paste each part into Play Console > Grow >
+# Store presence > Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Netball Unleashed
+
+== Short description ==
+Netball by the real rules: lead, pass, defend at 0.9 m, shoot from the circle.
+
+== Full description ==
+Netball Unleashed is netball for your phone, played to the Rules of Netball as they stand today. Take the centre pass, drive into space, feed the circle and shoot, then win the ball back with an intercept.
+
+THE REAL GAME
+• Seven a side, each in her own areas: GS, GA, WA, C, WD, GD and GK, with bibs on.
+• The centre pass, alternating after every goal, caught in the centre third.
+• Footwork and the landing foot, the three seconds, obstruction at 0.9 m, contact, offside, over a third and the short pass, all called by two umpires who signal every decision.
+• Free passes, penalty passes, the penalty pass or shot in the circle, throw-ins and advantage; warnings, suspensions and ordering off.
+• Four quarters with real intervals, and extra time to a two-goal lead when a match must have a winner.
+• Only the Goal Shooter and Goal Attack can score, from inside the circle.
+
+PLAY YOUR WAY
+• Play the whole team, or pick a bib and play one position all match.
+• Quick Match: any two of 23 netball nations, from Australia, New Zealand, England, Jamaica and South Africa to Malawi, Uganda, Tonga, Fiji, Singapore and Sri Lanka.
+• The Nations Cup: two pools, semi-finals, the bronze-medal match and the final, with tables by goal percentage.
+• The Club Season: eight clubs, seven rounds, then semi-finals and a grand final.
+• A box score for every match: goals from attempts, feeds, centre pass receives, gains, intercepts, rebounds and penalties.
+• A league rule to switch on: the Double Zone, where long shots late in each quarter count two.
+• Quarters of 5, 8, 10 or the full 15 minutes.
+
+THREE VENUES
+A packed arena, a sports hall and an outdoor court under an evening sky.
+
+MADE FOR YOUR PHONE
+• Nineteen languages: English, Afrikaans, isiZulu, isiXhosa, Sesotho, Setswana, Chichewa, Luganda, chiShona, Kiswahili, Bahasa Melayu, 中文, සිංහල, தமிழ், Cymraeg, Te Reo Māori, Lea Faka-Tonga, Gagana Sāmoa and Na Vosa Vakaviti.
+• A coach's tips in your first match, so you know what to do within a minute.
+• Nothing is played for you: you pass, you shoot, you defend.
+• Runs smoothly on budget and mid-range phones; a battery saver too. Buttons you can resize and move, and a left-handed layout.
+• Plays offline. No ads, no purchases, no account, and no data collected.
+
+Netball Unleashed is an independent game. It is not affiliated with or endorsed by any netball governing body, league, club or player. The players are fictional; the countries and the rules are real.
+
+== Release notes (first release) ==
+The first release of Netball Unleashed: netball by the real rules for your phone. Seven a side, footwork, three seconds, obstruction at 0.9 m and two umpires who signal every call. Quick Match with 23 nations, the Nations Cup and the Club Season, in an arena, a sports hall and a park court. Play the whole team or one position. Works offline, collects no data, no ads.
+
+== Release notes (0.2.0) ==
+The Club Season: eight clubs, a season and a grand final. A coach's tips for your first match. Umpires now advance and escalate penalties and can order a player off; choose how often they blow in Settings. A fuller interval screen, clearer name tags, and fixes from playtesting on phones.
+
+== Release notes (0.3.0) ==
+Netball Unleashed: a new name and icon. New players, modelled in 3D, in your team's colours with a proper sprint. A floodlit arena with fuller stands and a polished court, and the hall and outdoor court relit.
+
+== Release notes (0.4.0) ==
+A real sports hall with proper backboards, a maple floor and a stand; an outdoor park court under a sunset sky; a timber court and courtside stands in the arena.
+
+== Release notes (0.4.1) ==
+Courtside stands in the arena on Low graphics too.
+
+== Release notes (0.4.2) ==
+The crowd now faces the play from every camera.
+
+== Release notes (0.5.0) ==
+Real motion capture for defenders' side-steps and for landing a catch on the run.
+
+== Release notes (0.6.0) ==
+New sounds: catches, bounces, footsteps, the ring and net, the whistle, and a crowd that reacts to the play in every venue.
+
+== Release notes (0.7.0) ==
+Real referee whistles. Sharper graphics, a varied crowd and livelier crowd sound on Medium and High.
