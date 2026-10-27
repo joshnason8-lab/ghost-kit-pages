@@ -19,7 +19,7 @@ stand in October 2026.
 - **The store listing**: the text in fifteen languages (`store/listing/`: en-US, sv-SE, fi-FI, de-DE, fr-FR, it-IT,
   cs-CZ, sk, no-NO, da-DK, lv, et, pl-PL, ja-JP, th), and the 512 × 512 icon, the 1024 × 500 feature graphic and
   the 1920 × 1080 screenshots (`store/graphics/`).
-- **The answers to every App content form** (step 4).
+- **The answers to every App content form** (step 4, and in full in `store/PLAY_CONSOLE_ANSWERS.md`).
 
 ## 1. Your developer account (once)
 
@@ -36,13 +36,16 @@ test with at least **12 testers** who stay opted in for **14 days in a row** (st
 
 ## 2. The upload key (once)
 
-Google signs the game for phones with its own key (Play App Signing). You sign each bundle you upload with your own
-**upload key**, so Google knows it came from you.
+**The Play build uses Play App Signing with an upload key you create.** Google keeps the app signing key and signs the
+game for phones with it; you sign each bundle you upload with your own **upload key**, so Google knows it came from
+you. **Do not use the beta key** (the one the GitHub beta APK is signed with, SHA-256 `6F:23:…:7B:A3`) for Play: it
+stays the beta's, unchanged, and the Play upload key is a separate, new one. When Play Console asks at your first
+upload, choose **Use Google-generated key** (Play App Signing).
 
 1. Make the key, on a computer with Java (Android Studio includes it). In a terminal, run:
 
    ```
-   keytool -genkeypair -v -keystore floorball-unleashed-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+   keytool -genkeypair -v -keystore floorball-unleashed-upload.jks -storetype PKCS12 -alias upload -keyalg RSA -keysize 2048 -validity 10000
    ```
 
    - Pick a strong password, and give the same one when asked for the key's password.
@@ -57,6 +60,10 @@ Google signs the game for phones with its own key (Play App Signing). You sign e
    - `ANDROID_UPLOAD_KEYSTORE_BASE64`: paste what you copied in step 3.
    - `ANDROID_UPLOAD_KEY_ALIAS`: `upload`
    - `ANDROID_UPLOAD_KEY_PASSWORD`: your password.
+
+   The bundle workflow (`.github/workflows/floorball-play-bundle.yml`) reads these three if they are there and signs
+   the `.aab` with them; without them it builds the bundle unsigned. Never commit the key file or the password: this
+   repository is public.
 5. Build the signed bundle:
    1. On GitHub, go to **Actions > Floorball Unleashed · Play Store bundle > Run workflow**.
    2. Pick the branch `claude/floorball-game` (or `main` once merged), then **Run workflow**.
@@ -154,7 +161,7 @@ and shows no ads, but the 13+ groups are the simpler start.
 
 ## Notes
 
-- **The beta APK on GitHub** is signed with a public debug key, not Play's, so a phone with the beta has to uninstall
+- **The beta APK on GitHub** is signed with the beta key, not Play's, so a phone with the beta has to uninstall
   it (and lose its saves) before installing the game from Play.
 - **Android's developer verification** covers apps installed from outside the stores too: in Brazil, Indonesia,
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,

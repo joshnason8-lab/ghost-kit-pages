@@ -2,7 +2,7 @@
 # Fiche principale. Limites : nom de l'appli 30 caractères, description courte 80, description complète 4000.
 
 == App name ==
-Floorball Unleashed : Aréna Unihockey
+Floorball Unleashed
 
 == Short description ==
 Unihockey à cinq plus un gardien, selon les vraies règles. Tire, passe, marque !
