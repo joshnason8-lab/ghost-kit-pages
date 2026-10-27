@@ -101,14 +101,18 @@ func _ready() -> void:
 	Game.save_settings()
 	for line in errors.lines.slice(0, 40):
 		print("ERROR ", line)
-	for p in problems.slice(0, 40):
-		print("PROBLEM ", p)
 	var bad := errors.count() + stalls + problems.size()
 	print("soak: %d errors, %d stalls, %d problems" % [errors.count(), stalls, problems.size()])
 	get_tree().quit(1 if bad else 0)
 
 
 ## A frame has gone by: was it a freeze?
+## A problem, kept for the summary and printed as it happens (with the frame's time, to find it in a recording).
+func _problem(what: String) -> void:
+	problems.append(what)
+	print("PROBLEM (%.0f s) %s" % [Time.get_ticks_msec() / 1000.0, what])
+
+
 func _frame() -> void:
 	var screen = Game.current
 	await get_tree().process_frame
@@ -125,7 +129,7 @@ func _frame() -> void:
 			worst_ms = maxi(worst_ms, ms)
 		if ms > (LOAD_MS if load else STALL_MS):
 			stalls += 1
-			problems.append("a %d ms frame on %s" % [ms, _screen_name()])
+			_problem("a %d ms frame on %s" % [ms, _screen_name()])
 	_last_tick = now
 	_building = false
 
@@ -154,7 +158,7 @@ func _monkey(steps: int, level: String) -> void:
 			await _frame()
 			waited += 1
 		if _screen_name() != "main_menu.gd":
-			problems.append("the home screen never came up after the loading screen")
+			_problem("the home screen never came up after the loading screen")
 			return
 	else:
 		Game.goto_menu()
@@ -174,7 +178,7 @@ func _monkey(steps: int, level: String) -> void:
 		in_match = in_match + 1 if is_match else 0
 		var buttons := _buttons()
 		if same > TRAP_STEPS and buttons.is_empty() and not is_match:
-			problems.append("%s: stuck, nothing to press for %d inputs (%s)" % [level, same, name])
+			_problem("%s: stuck, nothing to press for %d inputs (%s)" % [level, same, name])
 			Game.goto_menu()
 			same = 0
 		var r := rng.randf()
@@ -277,13 +281,13 @@ func _background(level: String) -> void:
 	Game.notification(NOTIFICATION_APPLICATION_FOCUS_IN)
 	await _frame()
 	if Game.current != before:
-		problems.append("%s: the screen changed while the app was in the background (%s)" % [level, _screen_name()])
+		_problem("%s: the screen changed while the app was in the background (%s)" % [level, _screen_name()])
 	elif was_match:
 		var m = Game.current
 		if String(m.phase) != "fulltime" and not bool(m.paused):
-			problems.append("%s: a match came back from the background unpaused" % level)
+			_problem("%s: a match came back from the background unpaused" % level)
 		if float(m.clock) < clock - 0.5:
-			problems.append("%s: the match clock ran on in the background (%.1f to %.1f)" % [level, clock, m.clock])
+			_problem("%s: the match clock ran on in the background (%.1f to %.1f)" % [level, clock, m.clock])
 	await _check_saves(level, "after the background")
 
 
@@ -293,9 +297,9 @@ func _check_saves(level: String, when: String) -> void:
 			continue
 		var f := FileAccess.open(p, FileAccess.READ)
 		if f == null or not (JSON.parse_string(f.get_as_text()) is Dictionary):
-			problems.append("%s: %s no longer reads back %s" % [level, p, when])
+			_problem("%s: %s no longer reads back %s" % [level, p, when])
 		if FileAccess.file_exists(p + ".tmp"):
-			problems.append("%s: %s.tmp left behind %s" % [level, p, when])
+			_problem("%s: %s.tmp left behind %s" % [level, p, when])
 
 
 # ---------------------------------------------------------------- AI v AI
@@ -331,10 +335,10 @@ func _matches(n: int, level: String) -> int:
 				m.set_paused(true)
 				await _frames(30)
 				if absf(float(m.clock) - clock) > 0.01:
-					problems.append("%s match %d: the clock ran while paused" % [level, i + 1])
+					_problem("%s match %d: the clock ran while paused" % [level, i + 1])
 				m.set_paused(false)
 		if not done[0]:
-			problems.append("%s match %d (%s v %s, %s): no final whistle after %d frames, phase %s" % [
+			_problem("%s match %d (%s v %s, %s): no final whistle after %d frames, phase %s" % [
 					level, i + 1, pr[0], pr[1], arena, frames, m.phase])
 		else:
 			var res: Dictionary = done[1]
