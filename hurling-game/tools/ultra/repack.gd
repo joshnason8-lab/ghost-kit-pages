@@ -33,6 +33,10 @@ func _init() -> void:
 				printerr("repack: missing ", p)
 				quit(1)
 				return
+			if _is_code(p, bytes):
+				printerr("repack: code in the HD pack: ", p)
+				quit(1)
+				return
 			var src := tmp.path_join("%d.bin" % n)
 			var w := FileAccess.open(src, FileAccess.WRITE)
 			w.store_buffer(bytes)
@@ -41,8 +45,25 @@ func _init() -> void:
 			n += 1
 	pk.flush()
 	DirAccess.remove_absolute(tmp)
-	print("repack: %d files -> %s" % [n, a[1]])
+	print("repack: %d files, content only (no scripts, no native code) -> %s" % [n, a[1]])
 	quit()
+
+
+## Google Play does not allow an app to download code: the pack must hold pictures, meshes and data alone. Code is
+## a script or native file by its name, or a resource (a mesh, a scene) that is a script or carries one.
+const CODE := ["gd", "gdc", "gde", "cs", "gdextension", "so", "dll", "dylib", "dex", "jar", "apk", "py", "js", "wasm"]
+
+
+func _is_code(p: String, bytes: PackedByteArray) -> bool:
+	if p.get_extension().to_lower() in CODE:
+		return true
+	if p.get_extension().to_lower() in ["res", "tres", "scn", "tscn"]:
+		var r := ResourceLoader.load(p)
+		if r == null or r is Script or r.get_script() != null:
+			return true
+		if bytes.get_string_from_ascii().contains("GDScript"):
+			return true
+	return false
 
 
 ## The source files under a folder (as the project has them: not their .import, .uid or .remap).

@@ -13,15 +13,15 @@ stand in October 2026.
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - two permissions: vibration, and internet (used only to download the optional HD pack for High graphics from
     the game's GitHub release, when the player asks; nothing is sent about the player).
-- **The privacy policy, help page and a page for the game**, in `ash-and-leather/` at the top of this repository,
-  served by GitHub Pages once this branch is merged into `main`:
-  https://joshnason8-lab.github.io/ghost-kit-pages/ash-and-leather/privacy.html and `/support.html`. The game's
-  Settings > About has the same privacy policy and help in the game itself (no browser), and the licences.
+- **The privacy policy, help and licences in the game itself** (Settings > About; no browser, so they work
+  offline). The privacy policy's web address for Play is **TBD: the owner's privacy site** (the owner is building it);
+  `ash-and-leather/privacy.html` in this repository has the same words to put there.
 - **The store listing**: the text for English (United Kingdom, the default, which Ireland sees), English (United
   States), English (Australia) and English (Canada) (`store/listing/`). Google Play has no Irish store listing, so
   each says the game is in Irish too, and two screenshots show it in Irish. The 512 × 512 icon, the 1024 × 500
   feature graphic and the 1920 × 1080 screenshots are in `store/graphics/`.
-- **The answers to every App content form** (step 4).
+- **The answers to every App content form**: `store/PLAY_CONSOLE_ANSWERS.md` (step 4).
+- **The technical checks**, below ("The build"), each made on every bundle or in the soak test.
 
 ## 1. Your developer account (once)
 
@@ -60,8 +60,10 @@ Google signs the game for phones with its own key (Play App Signing). You sign e
    - `ANDROID_UPLOAD_KEY_ALIAS`: `upload`
    - `ANDROID_UPLOAD_KEY_PASSWORD`: your password.
 5. Build the signed bundle:
-   1. On GitHub, go to **Actions > Hurling Heroes · Play Store bundle > Run workflow**.
-   2. Pick the branch `claude/hurling-game` (or `main` once merged), then **Run workflow**.
+   1. The bundle is built on every new version pushed (and signed once the secrets are there). To build it by hand,
+      go to **Actions > Hurling Heroes · Play Store bundle > Run workflow** (GitHub offers this button once the
+      workflow is on `main`).
+   2. Pick the branch, then **Run workflow**.
    3. When it finishes (about 15 minutes), open the run. Under **Artifacts**, download
       `hurling-heroes-<version>-play-signed`, a zip with the `.aab` inside.
 
@@ -77,39 +79,9 @@ Google signs the game for phones with its own key (Play App Signing). You sign e
 
 ## 4. App content (Policy and programs > App content)
 
-Answer each form like this:
-
-| Form | Answer |
-|---|---|
-| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/ash-and-leather/privacy.html` |
-| **Ads** | No, my app does not contain ads |
-| **App access** | All functionality is available without any access restrictions |
-| **Content rating** | See below. Expect PEGI 3 / ESRB Everyone (a team sport; tackles within its rules) |
-| **Target audience and content** | 13–15, 16–17 and 18+. Store listing appealing to children: No |
-| **News apps** | No |
-| **Data safety** | Collects or shares any of the required user data types: **No**. Account creation: the game has no accounts. The listing then shows "No data collected" and "No data shared" |
-| **Government apps** | No |
-| **Financial features** | My app doesn't provide any financial features |
-| **Health apps** | My app does not have any health features |
-| **Advertising ID** | No (the game does not use it) |
-
-**Target audience.** The game suits every age, and the content rating says so to parents. Choosing an under-13 age
-group would bring Google's Families policy and its extra review; the game would pass it, since it collects nothing
-and shows no ads, but the 13+ groups are the simpler start.
-
-**Content rating questionnaire (IARC).** Category: **Game**. Then:
-
-| Question | Answer |
-|---|---|
-| Violence | No. It is a field sport: shoulder-to-shoulder tackles within the rules, no injury shown, no blood |
-| Fear, horror | No |
-| Sexuality, nudity | No |
-| Language | No |
-| Controlled substances | No |
-| Gambling, including simulated gambling | No |
-| Users interact with each other, or share content | No |
-| Shares the user's location | No |
-| Digital purchases | No |
+Answer each form as `store/PLAY_CONSOLE_ANSWERS.md` says: privacy policy, ads (none), app access, content rating
+(IARC: expect PEGI 3 / ESRB Everyone), target audience (13+ recommended, and why), data safety (no data collected or
+shared, and why the HD pack download does not change that), and the rest.
 
 ## 5. The store listing (Grow users > Store presence > Main store listing)
 
@@ -121,13 +93,14 @@ and shows no ads, but the 13+ groups are the simpler start.
 3. **App icon**: `store/graphics/icon-512.png`.
 4. **Feature graphic**: `store/graphics/feature-1024x500.png`.
 5. **Phone screenshots**: upload those in `store/graphics/screenshots/`, in order. Games need at least three,
-   landscape at 1920 × 1080, to be recommended by Play.
+   landscape at 1920 × 1080, to be recommended by Play. They are drafts: make them again from the build you upload,
+   just before you submit (`tools/store/make_store_kit.sh`, below).
 6. **7-inch and 10-inch tablet screenshots**: upload the same ones. They are 16:9, which Play accepts for tablets.
 7. **Category**: **Store settings > App category: Game > Sports**. Add tags such as Sports.
 8. **Contact details**:
    - **Email** (required, shown publicly): an address you are happy to show (the help page uses
      joshnason8@gmail.com; change it there too if you use another).
-   - **Website**: https://joshnason8-lab.github.io/ghost-kit-pages/ash-and-leather/
+   - **Website**: TBD: the owner's site.
 
 ## 6. The closed test (required for new personal accounts)
 
@@ -153,15 +126,57 @@ and shows no ads, but the 13+ groups are the simpler start.
 2. Every upload needs a higher version code. Each new version of the game raises it (`version/code` in
    `export_presets.cfg`).
 
+## The build: Google Play's technical rules
+
+Checked for 0.11.2 (versionCode 18). The bundle workflow ("Hurling Heroes · Play Store bundle") fails if any of the
+first four stops being true.
+
+| Rule | The game |
+|---|---|
+| **Target API** (35 or higher for new apps; 36 since 31 August 2026) | `targetSdkVersion 36` (Android 16), set by the bundle workflow and checked in the bundle's manifest |
+| **Minimum Android** | `minSdkVersion 24`: Android 7.0 (Godot 4.7's minimum). |
+| **Graphics API** | Vulkan (Godot's Mobile renderer) on every level. A phone without usable Vulkan (some Android 7–9 phones, older Mali, PowerVR and Adreno 3xx–5xx GPUs) is switched to OpenGL ES 3.0 (GL Compatibility) by itself: Godot falls back when Vulkan will not start, and the game sets GL from the next start on a phone known to struggle with Vulkan, on Android 9 or older, or after a start that crashed (`game/ultra.gd`, docs/GRAPHICS.md). On GL, High has everything but the real lighting. So the game runs on any phone with Android 7 and OpenGL ES 3.0, nearly all phones sold since 2015. |
+| **64-bit**, 16 KB memory pages | arm64-v8a and armeabi-v7a (the 32-bit build kept for older phones; Play serves each phone its own). The 64-bit libraries' LOAD segments are aligned to 16 KB (`tools/check_pages.py` on every bundle: `libgodot_android.so` and `libc++_shared.so`, 0x4000). The beta APKs store the libraries compressed (extracted at install), so the APK's zip alignment does not apply to them; Play builds the bundle's APKs itself. |
+| **Permissions** | Two: `INTERNET` (only the optional HD pack download) and `VIBRATE`. The workflow fails on any other. |
+| **Bundle size** | 78 MB (0.11.1's .aab, zipped as the artifact), well under Play's 200 MB for the base module: no Play Asset Delivery needed. |
+| **versionCode** | 18 for 0.11.2; it goes up by one with every version (`version/code` in `export_presets.cfg`) and has never gone down. Play refuses an upload whose code is not higher than the last. |
+| **applicationId** | `com.ashandleather.game`: final (it is the beta's, and Obtainium's in `shared-assets/obtainium`; Play would treat any other as a new app). The name dates from the game's first title, Ash & Leather; players never see it. |
+| **Downloaded code** | None. Play forbids an app to download executable code; the HD pack (docs/GRAPHICS.md) holds textures, meshes and animation data only. `tools/ultra/repack.gd` builds it from the files under `ultra/` alone and refuses any script, native library or resource carrying a script (42 files, content only). |
+| **Stability** | `tests/soak.tscn`: thousands of random touches across every screen and into matches, the back button on every screen, the app sent to the background and back (the match kept and resumed), and AI v AI matches at every ground, on Low and on High. Results in docs/PROGRESS.md. |
+
+**The HD pack and Play Asset Delivery.** The pack (114 MB, optional, High only, on recent high-end phones) is
+downloaded by the game from its GitHub release when the player asks, checked by SHA-256 and mounted. That is allowed
+(content only, no code), and the privacy policy and Data safety answers cover it. **Play Asset Delivery would be the
+cleaner route for the Play build**: an **on-demand asset pack** in the bundle, served by Play from Google's servers
+(no GitHub, no internet permission needed for it, Play's own download UI and storage accounting, updates with the
+app). What it would take: Godot 4.7 exports asset packs only with a Gradle build and a plugin (the Play Asset Delivery
+plugin for Godot, or the Play Core library in the Android build template); an `ultra` asset pack module with the
+pack's files; the game's `Ultra` downloader asking Play for the pack instead of GitHub on the Play build (the beta
+keeps GitHub); and testing through Play's internal app sharing. About two days' work, best done once the game's
+other updates settle. Until then the GitHub download is policy-compliant as it is.
+
+## 8. Refresh the store graphics before you submit
+
+The screenshots, feature graphic and icon are drafts of the current build. To make them again (on a computer or in a
+session with Godot 4.7, the HD pack's sources and a display or `xvfb-run`), from `hurling-game/`:
+
+```
+tools/store/make_store_kit.sh
+```
+
+It renders the nine screenshots on High with the HD pack (`tools/store/store_shots.tscn`, Vulkan), remakes the icon
+and the feature graphic, and checks the listing text's lengths.
+
 ## Notes
 
-- **The beta APK on GitHub** is signed with a public debug key, not Play's, so a phone with the beta has to uninstall
-  it (and lose its saves) before installing the game from Play.
+- **The beta APK on GitHub** is signed with the owner's beta key (fingerprint 6F:23…7B:A3), not with Play's app
+  signing key, so a phone with the beta has to uninstall it (and lose its saves) before installing the game from Play.
+  Keep the beta key as it is: it is not the upload key.
 - **Android's developer verification** covers apps installed from outside the stores too: in Brazil, Indonesia,
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
-- **The privacy policy's address must keep working** while the game is on Play: keep `ash-and-leather/` in this
-  repository's GitHub Pages (or move the pages and update `PRIVACY_URL` and `SUPPORT_URL` in `autoload/game.gd`).
+- **The privacy policy's address must keep working** while the game is on Play: once the owner's site is up, put
+  its address in Play Console and in `store/PLAY_CONSOLE_ANSWERS.md`. (The game itself opens no web pages.)
 - **Names**: the counties appear by their place names (in English and Irish), in their traditional colours but in
   kit designs of the game's own: no county board's crest, jersey design, sponsor or nickname. The competition is the
   game's own ("the Summer Championship", "the Tier Two Cup"), not the GAA's. Every player is invented, from common

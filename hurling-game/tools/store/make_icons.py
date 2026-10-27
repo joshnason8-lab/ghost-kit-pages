@@ -60,7 +60,8 @@ def main():
     # The store icon: the full artwork, square (Play rounds it itself).
     store = ROOT / "store/graphics"
     store.mkdir(parents=True, exist_ok=True)
-    icon512.convert("RGB").save(store / "icon-512.png")
+    # Play asks for a 32-bit PNG (with alpha) for the store icon.
+    icon512.convert("RGBA").save(store / "icon-512.png")
     # The home screen's cover: the hurler, cut down for a phone (a 470-wide card at most, twice for sharpness).
     cover = Image.open(SRC / "cover_source.webp").convert("RGB")
     w = 720

@@ -25,7 +25,7 @@ The referee whistles, points the free and holds up the card; the linesmen flag t
 
 WAYS TO PLAY
 • Throw-in: pick two counties and a ground, and play.
-• The Summer Championship: two groups of five, then group finals, quarter-finals, semi-finals and the final. The other ten counties play the Tier Two Cup.
+• The Summer Championship: two groups of five, then group finals, quarter-finals, semi-finals and the final. The other ten counties play the Tier Two Cup. Simulate any match you would rather not play, finish one early with a simulated result, or leave one and pick it up later where you left it.
 • Watch a match: two counties played by the computer, from the television gantry.
 
 THE GROUNDS
@@ -36,10 +36,13 @@ PLAY YOUR WAY
 • English or Irish, with the game's own Irish terms: camán, sliotar, cúl, cúilín, poc amach.
 • A joystick on the left, the buttons for what your player can do on the right: make them bigger, move them where your thumb wants them, or swap the sides if you are left-handed.
 • Choose how long a match takes: 8 minutes, or the full 70 with the ball in play as long as in a real match (about 35 minutes to play), how hard the other side plays, and how much help you get with the ball.
-• Made to run smoothly on budget and mid-range phones.
-• Plays offline. No ads, no purchases, no account, and no data collected.
+• Low, Medium and High graphics, picked for your phone and changed any time: High adds real lighting and shadows, and an optional HD download for the sharpest players and grass on recent high-end phones.
+• Plays offline (only the optional HD download uses the internet). No ads, no purchases, no account, and no data collected.
 
 Hurling Heroes is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.
+
+== Release notes (first Play release) ==
+Hurling Heroes comes to Google Play: hurling to the 2026 rules, every county, the Summer Championship and the Tier Two Cup, in English and Irish. Plays offline, with no ads and no purchases.
 
 == Release notes (0.9.0) ==
 Player shadows, a national stadium that looks like the real one, county-coloured crowds, and sides that press and swarm like a championship team. A sharper crack when the sliotar is struck.
