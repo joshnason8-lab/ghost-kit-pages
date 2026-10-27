@@ -33,6 +33,7 @@ var _interval: Control
 var _pause: Control
 var _follow: Control
 var _pause_btn: Button
+var _cam_btn: Button
 
 
 func _init(p_match) -> void:
@@ -83,16 +84,50 @@ func _ready() -> void:
 	_curtain.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_curtain)
 	_build_card()
-	_pause_btn = UI.round_button("pause", func(): m.set_paused(true), 56.0)
-	_pause_btn.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	# Pause, and beside it the camera (a tap moves to the next view at once, named as it changes): one pill, drawn
+	# together, so the pair costs about what the pause button alone did (the Low budget's draw calls).
 	var sm := UI.safe_margins(root, 18.0)
-	_pause_btn.offset_left = -56 - sm.z
-	_pause_btn.offset_right = -sm.z
-	_pause_btn.offset_top = 14
-	_pause_btn.offset_bottom = 70
-	root.add_child(_pause_btn)
-	# Watching a match (no side yours) it is how you leave it: the pause menu's Quit match.
-	_pause_btn.visible = true
+	var pill := PanelContainer.new()
+	var psb := StyleBoxFlat.new()
+	psb.bg_color = Color(Game.C_PANEL, 0.9)
+	psb.set_corner_radius_all(28)
+	psb.border_color = Color(1, 1, 1, 0.12)
+	psb.set_border_width_all(1)
+	pill.add_theme_stylebox_override("panel", psb)
+	pill.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	pill.offset_left = -122 - sm.z
+	pill.offset_right = -sm.z
+	pill.offset_top = 14
+	pill.offset_bottom = 70
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	pill.add_child(row)
+	_cam_btn = _pill_button("camera_solid", func(): m.cycle_camera())
+	_pause_btn = _pill_button("pause", func(): m.set_paused(true))
+	row.add_child(_cam_btn)
+	row.add_child(_pause_btn)
+	root.add_child(pill)
+
+
+## A button in the pause pill: the icon alone, the pill's panel behind it (a tap lights the icon).
+func _pill_button(icon_kind: String, cb: Callable) -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(56, 56)
+	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+		b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+	var ic := Icon.make(icon_kind, 26.0)
+	ic.custom_minimum_size = Vector2.ZERO
+	ic.set_anchors_preset(Control.PRESET_FULL_RECT)
+	for side in ["offset_left", "offset_top"]:
+		ic.set(side, 15.0)
+	for side in ["offset_right", "offset_bottom"]:
+		ic.set(side, -15.0)
+	b.add_child(ic)
+	b.button_down.connect(func(): ic.set_color(Game.C_SAFFRON))
+	b.button_up.connect(func(): ic.set_color(Game.C_INK))
+	b.pressed.connect(Sfx.click)
+	b.pressed.connect(cb)
+	return b
 
 
 func _build_scoreboard() -> void:
@@ -263,6 +298,11 @@ func on_turn_end(reason: String) -> void:
 
 
 ## A call: big in the middle for a moment. foul: on the bar at the foot of the screen instead, with what it was.
+## A camera's name, as Settings shows it.
+static func camera_name(mode: int) -> String:
+	return TranslationServer.translate(["CAM_TV", "CAM_CLOSE", "CAM_POLE"][clampi(mode, 0, 2)])
+
+
 func callout(text: String, col: Color, _at := Vector3.ZERO, foul := false) -> void:
 	if foul:
 		_foul_l.text = tr("FOUL") + " · " + text
@@ -441,7 +481,11 @@ func show_pause(on: bool) -> void:
 	UI.fit(t)
 	v.add_child(t)
 	v.add_child(UI.button(tr("RESUME"), true, func(): m.set_paused(false)))
-	v.add_child(UI.button(tr("CAMERA_CHANGE"), false, func(): m.cycle_camera()))
+	var cam_b := UI.button(tr("CAMERA_CHANGE") + ": " + camera_name(m._cam_mode), false)
+	cam_b.pressed.connect(func():
+		m.cycle_camera()
+		cam_b.text = tr("CAMERA_CHANGE") + ": " + camera_name(m._cam_mode))
+	v.add_child(cam_b)
 	if m.user >= 0:
 		v.add_child(UI.button(tr("MOVE_BUTTONS"), false, _move_buttons))
 	var snd := UI.button(tr("SOUND") + ": " + (tr("ON") if Game.settings.sound else tr("OFF")), false)

@@ -157,6 +157,10 @@ func _draw() -> void:
 		"camera":
 			_line([[0.12, 0.32], [0.62, 0.32], [0.62, 0.72], [0.12, 0.72], [0.12, 0.32]])
 			_fill([[0.66, 0.44], [0.88, 0.3], [0.88, 0.74], [0.66, 0.6]])
+		"camera_solid":
+			# Filled shapes only: cheap to draw over a match (the button beside pause).
+			_fill([[0.1, 0.3], [0.64, 0.3], [0.64, 0.74], [0.1, 0.74]])
+			_fill([[0.68, 0.45], [0.9, 0.3], [0.9, 0.74], [0.68, 0.59]])
 		"ball":
 			# The woven ball: a circle with its crossing strips.
 			_circle(0.5, 0.5, 0.36)

@@ -49,6 +49,9 @@ var batch_time := 0.0
 var dream_paid := 0
 var since_out := 0.0
 var _cheer_t := 99.0          # seconds since an out, for the crowd
+var _tension := 0.0            # 0-1: how close the crowd is to its feet (_crowd_roar)
+var _roar_t := 0.0
+var _was_diving := false
 var cam_locked := false       # the camera left where it is (pictures for the store and the docs)
 var khos_since := 0
 var powerplay_used := false
@@ -84,10 +87,15 @@ var _ring: MeshInstance3D
 var _target_ring: MeshInstance3D
 var _foul_rate := 0.02
 var _diff := [0.0, 0.0]        # the AI's rating change per side (difficulty)
+var _user_slip := 0.55         # how often a touch slips off your defender as you steer him (difficulty: USER_SLIP)
 var _end_reason := ""
 var _last_kho_t := 0.0
 var _kho_armed := {}           # a kho pressed a moment early: {i, until}
 var _min_turns := 0            # minimum-chase turns played, plus one
+
+
+func _exit_tree() -> void:
+	Crowd.watch_target = Vector3.INF
 
 
 func _ready() -> void:
@@ -103,6 +111,7 @@ func _ready() -> void:
 	teams = [String(config.get("home", "IND")), String(config.get("away", "NEP"))]
 	var diff := int(config.get("difficulty", Game.settings.difficulty))
 	var ai_k: float = [-16.0, -7.0, 0.0, 5.0][clampi(diff, 0, 3)]
+	_user_slip = USER_SLIP[clampi(diff, 0, 3)]
 	if user >= 0:
 		_diff[1 - user] = ai_k
 	_foul_rate = [0.05, 0.035, 0.02, 0.012][clampi(diff, 0, 3)]
@@ -566,6 +575,10 @@ func _process(delta: float) -> void:
 	for a in everyone():
 		a.integrate(dt)
 	_update_markers()
+	# The crowd follows the chase: where the active chaser and the defender nearest him are.
+	if active and phase == "play":
+		var near := _nearest_defender(active.position, 6.0)
+		Crowd.watch_target = active.position if near == null else active.position.lerp(near.position, 0.4)
 	_camera(dt)
 	_auto_graphics(delta)
 
@@ -601,13 +614,56 @@ func next_turn() -> void:
 var _drum_t := 0.0
 
 
+## The crowd's roar: it builds as a chaser closes on a defender, through a dive, with the last of a batch left, and
+## in a turn's last half-minute, and falls back as the chase draws off; a near thing (a dive or touch that just
+## misses, _near_miss) brings it up at once. The murmur's level and how many are on their feet follow it.
+func _crowd_roar(dt: float) -> void:
+	if attract:
+		return
+	var want := 0.0
+	if active:
+		var d := _nearest_defender(active.position, 3.0)
+		if d and KhoRules.touch_counts(f, chase, active.position, d.position):
+			want += clampf((3.0 - (d.position - active.position).length()) / 2.2, 0.0, 1.0) * 0.6
+		var diving: bool = active.act in ["dive", "pole_dive"]
+		if diving:
+			want += 0.4
+		elif _was_diving and _cheer_t > 0.8:
+			# Down, and no one out: a dive that just missed, if a defender is still close.
+			if _nearest_defender(active.position, 2.8):
+				_near_miss(true)
+		_was_diving = diving
+	var left := 0
+	for a in batch:
+		if d_state.get(a, "") == "in":
+			left += 1
+	if left == 1:
+		want += 0.15
+	if clock < 30.0:
+		want += 0.15
+	want = clampf(want, 0.0, 1.0)
+	_tension = move_toward(_tension, want, dt * (2.5 if want > _tension else 0.5))
+	_roar_t -= dt
+	if _roar_t <= 0.0:
+		_roar_t = 0.25
+		Sfx.crowd((0.4 + 0.6 * _tension) * arena.atmosphere())
+
+
+func _near_miss(loud: bool) -> void:
+	if attract:
+		return
+	Sfx.react("ooh", -3.0 if loud else -8.0)
+	_tension = 1.0
+
+
 func _play(dt: float) -> void:
 	clock -= dt
 	since_out += dt
 	# The crowd up on its feet at an out, settling over a few seconds.
 	_cheer_t += dt
+	_crowd_roar(dt)
 	if arena.crowd:
-		Crowd.set_excite(0.75 * exp(-_cheer_t / 2.5))
+		Crowd.set_excite(maxf(0.75 * exp(-_cheer_t / 2.5), 0.4 * _tension))
 	# The crowd's drums: up with an out, settling back as the chase goes on.
 	_drum_t -= dt
 	if _drum_t <= 0.0 and not attract:
@@ -661,11 +717,9 @@ func _play(dt: float) -> void:
 	if active and not active.busy():
 		var dir_was := chase.dir
 		var foul := KhoRules.step_chase(f, chase, active.position, active.vel, dt)
-		# Round the pole: the hand on it as his direction turns about.
+		# Round the pole: he takes hold of it and swings round, coming out faster (the pole turn).
 		if dir_was != 0 and chase.dir == -dir_was and active.act == "":
-			var pole := Vector3(signf(active.position.x) * f.pole_gap * 0.5, 0, 0)
-			if (active.position - pole).length() < 1.6:
-				active.do("pole_turn", 0.45, (active.position.z - pole.z) * signf(pole.x) > 0.0)
+			_pole_turn()
 		if foul != "":
 			_on_foul(foul)
 	if chase.foul != "":
@@ -916,8 +970,9 @@ func _give_kho(i: int) -> void:
 	_pending_kho = {"i": i, "t": 0.16, "giver": active}
 	_kho_armed = {}
 	_last_kho_t = t_match
-	Sfx.voice("hup", -4.0, 1.25)
-	Sfx.play("slap", -8.0)
+	# The palm on his back, as it sounds: a slap (the owner: the voice raised a pitch over it sounded like a
+	# cartoon), from where it lands.
+	Sfx.play_at("slap", squares[i].position + Vector3(0, 1.0, 0), -3.0, randf_range(0.9, 1.04))
 	if hud:
 		hud.callout(tr("CALL_KHO"), Game.C_SAFFRON, active.position)
 	if _user_chasing():
@@ -1092,6 +1147,46 @@ func _plan_chase() -> Dictionary:
 	return best
 
 
+## The pole turn, as the owner's video of real chasers shows it (docs/AI.md, "The pole turn"): running at the pole,
+## the chaser takes hold of it with both hands at his chest, swings round it close (about half a metre out) in under
+## half a second, and lets go running down the other side, faster than he came: the pole slings him on. He comes out
+## on the side the play needs: the AI's plan, your stick, or the side he is on.
+const SWING_R := 0.55
+const SWING_BOOST := 1.05     # his speed out, against his speed in
+const SWING_MIN_OUT := 4.6    # m/s at the least
+
+
+func _pole_turn() -> void:
+	var px: float = signf(active.position.x) * f.pole_gap * 0.5
+	var pole := Vector3(px, 0, 0)
+	var rel := active.position - pole
+	rel.y = 0.0
+	if rel.length() > 1.6:
+		return
+	# The side he comes out on.
+	var out_half := KhoRules.half_of(active.position.z)
+	if _user_chasing() and controls and absf(controls.joystick.y) > 0.3:
+		out_half = 1 if controls.joystick.y > 0.0 else -1
+	elif not _user_chasing() and String(_chase_plan.get("kind", "")) == "pole":
+		out_half = int(_chase_plan.get("half", out_half))
+	# He lets go just past the pole on that side, heading back down the field (toward the middle).
+	var exit := Vector3(-signf(px) * 0.35, 0, float(out_half)).normalized()
+	var a_exit := atan2(exit.z, exit.x)
+	var a0 := atan2(rel.z, rel.x)
+	var turn := signf(px) * float(out_half)   # the way round: behind the pole, away from the field
+	var sweep := fposmod((a_exit - a0) * turn, TAU)
+	if sweep < 1.2:
+		return   # already round, or nearly: he runs on out of it
+	sweep = minf(sweep, PI * 1.25)
+	var a1 := a0 + sweep * turn
+	var v_in := maxf(Vector2(active.vel.x, active.vel.z).length(), 3.0)
+	var v_out := minf(maxf(v_in * SWING_BOOST, SWING_MIN_OUT), active.top * 1.08)
+	# He takes hold from where he is and is drawn in to the tight circle as he swings.
+	active.pole_swing(pole, rel.length(), SWING_R, a0, a1, v_in, v_out)
+	stats[active.data.id].pole_turns = int(stats[active.data.id].get("pole_turns", 0)) + 1
+	game_event.emit("pole_turn")
+
+
 func _dive_at(d: Athlete) -> void:
 	var p := active.position
 	var dir := Vector3(sin(active.yaw), 0, cos(active.yaw))
@@ -1177,6 +1272,9 @@ func _touches() -> void:
 			continue
 		var gap := Vector2(d.position.x - hand.x, d.position.z - hand.z).length()
 		if gap < hand_r and KhoRules.touch_counts(f, chase, active.position, d.position):
+			# The attempt is seen: his arm goes out for the touch, whether it lands or slips off.
+			if active.act == "":
+				active.do("reach", 0.28)
 			if _swerves(d, kind):
 				continue
 			_out(d, kind, active)
@@ -1186,7 +1284,7 @@ func _touches() -> void:
 ## The last-moment swerve: as the hand comes, a defender may twist away from it. The chance is his turn rating
 ## against the chaser's reach (and a dive is harder to escape). Calibrated so that equal sides put out about
 ## 1.3-2 defenders a minute, as real matches do (docs/AI.md). Once a defender has swerved a hand, it has missed him.
-const SWERVE_TOUCH := 0.72
+const SWERVE_TOUCH := 0.78
 const SWERVE_DIVE := 0.42
 
 
@@ -1200,13 +1298,18 @@ func _swerves(d: Athlete, kind: String) -> bool:
 	var steered := d == user_def and not _user_auto()
 	if d == user_def and dodging() and rng.randf() < DODGE_SLIP:
 		ai.slip_until = t_match + 0.5
-		Sfx.react("ooh", -10.0)
+		_near_miss(false)
 		game_event.emit("swerve")
 		return true
 	var turn := float(d.data.get("turn", 70)) + float(_diff[d.side])
 	var reach := float(active.data.get("reach", 70)) + float(_diff[active.side])
 	var base := SWERVE_TOUCH if kind == KhoRules.OUT_TOUCH else SWERVE_DIVE
-	var p := clampf(base + (turn - reach) / 150.0, 0.15, 0.85) * (USER_REFLEX if steered else 1.0)
+	var p := clampf(base + (turn - reach) / 150.0, 0.15, 0.85)
+	if steered:
+		# Yours: the difficulty decides, so a harder side's chasers really do catch you (the owner: on the hardest
+		# they still ran past). Your defender's own turn against the chaser's reach still counts a little.
+		var raw := float(d.data.get("turn", 70)) - float(active.data.get("reach", 70))
+		p = clampf((_user_slip + raw / 300.0) * (1.0 if kind == KhoRules.OUT_TOUCH else 0.6), 0.08, 0.85)
 	if rng.randf() >= p:
 		return false
 	ai.slip_until = t_match + (0.5 if kind == KhoRules.OUT_TOUCH else 0.6)
@@ -1219,7 +1322,7 @@ func _swerves(d: Athlete, kind: String) -> bool:
 	ai.juke_dir = dir
 	if steered:
 		d.vel += dir * 3.0
-	Sfx.react("ooh", -10.0)
+	_near_miss(kind != KhoRules.OUT_TOUCH)
 	game_event.emit("swerve")
 	return true
 
@@ -1596,7 +1699,9 @@ func _stamina(a: Athlete, dt: float) -> void:
 
 
 const USER_IDLE := 0.5
-const USER_REFLEX := 0.75
+## How often a touch slips off your defender as you steer him, by difficulty (Beginner, Club, State,
+## International). The AI's own defenders keep SWERVE_TOUCH, calibrated against real matches.
+const USER_SLIP := [0.7, 0.55, 0.4, 0.25]
 
 
 func _user_defender(dt: float) -> void:
@@ -1713,8 +1818,9 @@ func _camera(dt: float) -> void:
 	var W: float = f.width * 0.5
 	match _cam_mode:
 		Game.CAM_CLOSE:
-			cam.position = Vector3(_cam_x, 7.5, W + 9.0)
-			cam.look_at(Vector3(_cam_x, 0.0, -0.5))
+			# Low and near, at the chase's level: the players large, the crowd behind them.
+			cam.position = Vector3(_cam_x, 4.0, W + 5.0)
+			cam.look_at(Vector3(_cam_x, 0.6, -1.0))
 		Game.CAM_POLE:
 			cam.position = Vector3(-L - 7.0, 6.5, 0.0)
 			cam.look_at(Vector3(active.position.x if active else 0.0, 0.0, 0.0) * 0.4 + Vector3(L * 0.2, 0, 0))
@@ -1726,10 +1832,14 @@ func _camera(dt: float) -> void:
 			cam.look_at(Vector3(_cam_x, 0.0, -1.2))
 
 
+## The next camera: there at once (paused too, so the pause menu's button shows it behind the menu), its name called.
 func cycle_camera() -> void:
 	_cam_mode = (_cam_mode + 1) % 3
 	Game.settings.camera = _cam_mode
 	Game.save_settings()
+	_camera(0.0)
+	if hud and not paused:
+		hud.callout(hud.camera_name(_cam_mode), Game.C_INK)
 
 
 # ---------------------------------------------------------------- pause and back

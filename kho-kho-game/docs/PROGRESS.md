@@ -183,6 +183,14 @@ final whistle as the last turn's, one short pip from that half's umpire for an o
 put right, the gym's take for every long blast in the hall. Random takes, in 3D from the official on their own players
 (a footstep cannot cut one short), silent in the menu's backdrop match. docs/SOUNDS.md has each file and its credit.
 
+## Round ten: 0.10.0-beta, the owner's playtest list (27 October 2026)
+
+Thirteen notes from the owner's own play: Licences, Help and Privacy as screens in the game (0.9.3, the lead's
+request too); the pole turn, from a video of real chasers; dives that land; tags that slip explained, seen, and
+set by difficulty; the camera button; difficulty in both menus; the crowd following the play and roaring at the big
+moments; the kho's sound and quieter birds and crickets; and the home screen's "real rules" line gone. What was
+measured: docs/AI.md, "The pole turn" and "Tags that slip".
+
 ## Round nine: 0.9.0-beta, the grounds dressed as at the real matches (25 October 2026, the owner's request)
 
 The owner asked for both matches to be watched in full (tactics late in a turn) and for their surroundings to be

@@ -6,8 +6,8 @@ extends MultiMeshInstance3D
 ##
 ## The sheet is the players' own model (ModelBody), posed and lit and drawn once at load (render_sheet): row 0 the
 ## crowd at rest, half sitting and half standing; row 1 the same people cheering; rows 2 and 3 the same again seen from
-## behind; rows 4 to 7 the same turned three-quarters to the right, from the front and from behind (the shader
-## mirrors them to face left). On Low eight people (four tones; standing, clapping); on Medium and High sixteen (six tones, four colours of
+## behind; rows 4 to 7 the same turned three-quarters to the right, from the front and from behind; rows 8 and 9 side
+## on, facing right (the shader mirrors the turned ones to face left). On Low eight people (four tones; standing, clapping); on Medium and High sixteen (six tones, four colours of
 ## shorts, heights and turns, the standing ones still, clapping or shifting their weight as the recorded idle does). Their shirts are drawn in a key colour (magenta) that the shader paints
 ## with each person's colour. Where nothing can be drawn (the headless tests) the sheet is painted in code instead.
 ##
@@ -22,7 +22,7 @@ const FIG_W := 64
 const FIG_H := 128
 const CELL_M := Vector2(1.1, 2.2)   # the metres a cell covers
 const SEAT_DROP := 0.88             # a seated figure's hips are this far above its cell's foot
-const ROWS := 8                     # at rest, cheering; from the front, behind, three-quarter front and back (facing right)
+const ROWS := 10                    # at rest, cheering; front, back, three-quarter front and back, side (facing right)
 
 static var _sheet: ImageTexture
 static var _mat: ShaderMaterial
@@ -111,10 +111,11 @@ static func render_sheet(tree: SceneTree) -> void:
 			vp.add_child(b)
 			var seated := i < n / 2
 			var cheering := row % 2 == 1
-			var view := row / 2   # 0 the front, 1 the back, 2 three-quarter front, 3 three-quarter back
+			var view := row / 2   # 0 the front, 1 the back, 2 three-quarter front, 3 three-quarter back, 4 side on
 			# Row r between (ROWS/2 - 1 - r) and (ROWS/2 - r) cells above the camera; each figure's feet at its cell's foot.
 			b.position = Vector3(CELL_M.x * (i + 0.5), (ROWS / 2 - 1 - row) * CELL_M.y + 0.05, 0.0)
-			b.rotation.y = [deg_to_rad(f[3]), deg_to_rad(f[3]) + PI, deg_to_rad(55.0 + f[3] * 0.3), deg_to_rad(125.0 + f[3] * 0.3)][view]
+			b.rotation.y = [deg_to_rad(f[3]), deg_to_rad(f[3]) + PI, deg_to_rad(50.0 + f[3] * 0.3), deg_to_rad(130.0 + f[3] * 0.3),
+				deg_to_rad(90.0 + f[3] * 0.2)][view]
 			var pose: String = "cheer" if cheering else ("seated" if seated else f[4])
 			b.play(pose, 1.0, 0.0)
 			if pose == "idle":
@@ -186,6 +187,8 @@ uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
 uniform float rows = 4.0;
+uniform vec3 watch = vec3(0.0);   // where the play is: the crowd turns to follow it
+uniform float follow = 0.0;       // how far they turn from the court's centre toward it (0-1)
 uniform vec3 clothes[CLOTHES_N];
 varying vec4 data;
 varying float up;
@@ -203,10 +206,16 @@ void vertex() {
 	// He faces the court (his +Z): the camera in front of him sees his front, behind him his back, and off to his
 	// side his profile, turned to the side of the screen he looks toward.
 	vec2 face = normalize(MODEL_MATRIX[2].xz + vec2(1e-5));
+	// Following the play: turned from the court's centre toward where it is, each a little his own way.
+	vec2 to_play = normalize(watch.xz - world.xz + vec2(1e-5));
+	face = normalize(mix(face, to_play, follow) + vec2(1e-5));
+	float own = (fract(data.z * 7.31) - 0.5) * 0.5;
+	face = vec2(face.x * cos(own) - face.y * sin(own), face.x * sin(own) + face.y * cos(own));
 	vec2 to_cam = normalize(INV_VIEW_MATRIX[3].xz - world.xz + vec2(1e-5));
-	float d = dot(face, to_cam);
-	// Square on (within 25 degrees) his front or back; otherwise three-quarters, front or back.
-	view = d > 0.9 ? 0.0 : (d < -0.9 ? 1.0 : (d >= 0.0 ? 2.0 : 3.0));
+	float a = acos(clamp(dot(face, to_cam), -1.0, 1.0));
+	// The camera's angle to the way he faces picks the drawing: front, three-quarters, side, three-quarters from
+	// behind, back (25, 65, 115 and 155 degrees between).
+	view = a < 0.44 ? 0.0 : (a < 1.13 ? 2.0 : (a < 2.01 ? 4.0 : (a < 2.71 ? 3.0 : 1.0)));
 	mirror = step(dot(face, right.xz), 0.0) * step(1.5, view);
 	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
@@ -318,9 +327,24 @@ static func _code(col: Color) -> float:
 	return best
 
 
-func _process(_delta: float) -> void:
+## Where the play is, set by the match each frame (Vector3.INF: nowhere, they face the court's centre). The crowd's
+## eyes follow it smoothly: their gaze eases after it, as people's heads turn after a chase.
+static var watch_target := Vector3.INF
+static var _watch := Vector3.ZERO
+static var _follow := 0.0
+const FOLLOW := 0.75
+
+
+func _process(delta: float) -> void:
 	if material_override:
-		(material_override as ShaderMaterial).set_shader_parameter("time_s", Time.get_ticks_msec() / 1000.0)
+		var m := material_override as ShaderMaterial
+		m.set_shader_parameter("time_s", Time.get_ticks_msec() / 1000.0)
+		var on := watch_target != Vector3.INF
+		if on:
+			_watch = _watch.lerp(watch_target, minf(1.0, delta * 2.2))
+		_follow = lerpf(_follow, FOLLOW if on else 0.0, minf(1.0, delta * 1.5))
+		m.set_shader_parameter("watch", _watch)
+		m.set_shader_parameter("follow", _follow)
 
 
 static func set_excite(k: float) -> void:

@@ -89,6 +89,37 @@ So the AI stays as in 0.8. Its outs a minute, standing out of danger and play wi
 games. Its waiting defenders still pick their side of the lane at random, and chasers do not drive defenders to the
 side line. Both are left for a change that moves them without costing the rest.
 
+## The pole turn (0.10, from the owner's video)
+
+The owner sent a 33-second clip of chasers turning at the pole. Watched at 10 frames a second, each turn goes: the
+chaser runs at the pole, takes hold of it with both hands at chest height, leans out from it, steps quickly round it
+close in (about half a metre), and lets go running back down the other side of the lane. Half a turn takes about
+half a second, and he comes out without having stopped. Before 0.10 the game's chaser braked and turned about
+near the pole (about two seconds), with only the "turn" clip played.
+
+Now (`match.gd` `_pole_turn`, `athlete.gd` `pole_swing`): when his direction turns about at a pole and he is within
+1.6 m of it with at least 70 degrees still to turn, he takes hold where he is and swings round the far side of the
+pole on to the side the play needs (the AI's plan, your stick, or the side he is on). He is drawn in to a 0.55 m
+circle over a quarter of a second, and his speed rises evenly from his speed in to 5% more (at least 4.6 m/s), so it
+never jumps. His legs run, his hands hold the pole (`ModelBody.Grip` turns both arms to it) and he leans out. In AI
+matches it happens about 3 times a minute.
+
+It made chasers much better (classic outs 1.5 to 2.0 a minute, because turning at the pole no longer cost two
+seconds), so the defenders' last-moment swerve was raised to match (`SWERVE_TOUCH` 0.72 to 0.78). Ten matches each:
+classic 1.51 outs a minute (real 1.3-1.6), fast 1.82 (real about 1.6; it was 1.7-2.1 before this round).
+
+## Tags that slip, and difficulty (0.10)
+
+The owner saw chasers run right past defenders, on the hardest difficulty too. By design most touches slip off at
+the last moment (the swerve above), which holds the AI's outs to real rates, and a chaser who misses may not turn
+back (the direction rule), so he runs on past. But nothing showed the attempt, and against your defender the slip
+barely changed with difficulty (64% on Beginner, 54% on International). Now:
+
+- Every touch the chaser gets to is seen: his arm goes out for it (the reach), landed or slipped.
+- Against your defender, as you steer him, the slip is set by the difficulty (`USER_SLIP`): Beginner 70%, Club 55%,
+  State 40%, International 25%. Six matches with the playtest's steering: your side lost 5-8 defenders a match on
+  Beginner and 11-17 on International.
+
 ## What `tests/match_sim.gd` measures
 
 `godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 2 classic 180` plays AI-v-AI matches and

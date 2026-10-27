@@ -89,7 +89,7 @@ func _ready() -> void:
 	var you := 0 if args.size() > 3 and args[3] in ["user", "bot"] else -1
 	bot = args.size() > 3 and args[3] == "bot"
 	var pairs := [["MAH", "ODI"], ["KAR", "KER"], ["IND", "NEP"], ["TEL", "DEL"]]
-	var tot := {"outs": 0, "khos": 0, "dives": 0, "pole": 0, "fouls": 0, "dream": 0, "limits": 0, "late": 0, "secs": 0.0}
+	var tot := {"outs": 0, "khos": 0, "dives": 0, "pole": 0, "fouls": 0, "dream": 0, "limits": 0, "late": 0, "turns": 0, "secs": 0.0}
 	for i in n:
 		var p: Array = pairs[i % pairs.size()]
 		var m: Node = (load("res://game/match.gd") as Script).new()
@@ -100,7 +100,7 @@ func _ready() -> void:
 		var res: Dictionary = await m.finished
 		cur = null
 		var fouls := {}
-		var c := {"outs": 0, "khos": 0, "dives": 0, "pole": 0, "fouls": 0, "dream": 0, "limits": 0, "late": 0}
+		var c := {"outs": 0, "khos": 0, "dives": 0, "pole": 0, "fouls": 0, "dream": 0, "limits": 0, "late": 0, "turns": 0}
 		for e in res.log:
 			match String(e.kind):
 				"out":
@@ -157,6 +157,7 @@ func _ready() -> void:
 		for id in res.stats:
 			c.dives += int(res.stats[id].dives)
 			c.pole += int(res.stats[id].pole_dives)
+			c.turns += int(res.stats[id].get("pole_turns", 0))
 		var secs: float = tl * float(res.turns.size())
 		print("%s v %s: %s  outs %d (%.2f a min)  khos %d (%.1f a min)  dives %d  pole dives %d  fouls %d  dream %d" % [p[0], p[1],
 			str(res.score), c.outs, c.outs / (secs / 60.0), c.khos, c.khos / (secs / 60.0), c.dives, c.pole, c.fouls, c.dream])
@@ -167,6 +168,7 @@ func _ready() -> void:
 		await get_tree().process_frame
 	print("ALL: outs %.2f a min, khos %.1f a min, a dive every %.0f s, fouls %.2f a min, dream points %d" % [tot.outs / (tot.secs / 60.0),
 		tot.khos / (tot.secs / 60.0), tot.secs / maxf(1, tot.dives + tot.pole), tot.fouls / (tot.secs / 60.0), tot.dream])
+	print("POLE TURNS: %.1f a minute" % (tot.turns / (tot.secs / 60.0)))
 	print("SAFE defenders: %.0f%% of their safe time standing, %.1f m/s on average (%.0f defender-seconds safe)" % [
 		100.0 * safe_still / maxf(safe_t, 0.001), safe_dist / maxf(safe_t, 0.001), safe_t])
 	print("LONE defender: %.0f%% of his time on the chain or by a pole (%.0f s)" % [100.0 * lone_chain / maxf(lone_t, 0.001), lone_t])
