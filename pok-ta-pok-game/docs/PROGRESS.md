@@ -132,6 +132,25 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
 - **0.5.2**: the fonts' notice no longer credits Uncial Antiqua (a font this game does not ship; the notice came from
   another game), and gives the Oswald project's current address beside the one its font file carries (which no longer
   exists).
+- **0.5.3, ready for Google Play** (the steps only the owner can take are in store/PLAY_STORE.md):
+  - The soak test (tests/soak.gd), at Low and at High:
+    - 5,000 random taps, drags, Back presses and trips to the background through every screen and the matches they
+      lead to;
+    - twelve AI matches over the four courts, paused and resumed and Backed out of during play;
+    - Back on every screen;
+    - a tournament match paused and resumed, with its save checked.
+
+    No crash, script error or lost save. One stall found and fixed: Licences laid out all the engine's licence texts
+    at once (over a second on opening). Now each is listed by name and opens on a tap.
+  - The bundle workflow prints the bundle's sizes and fails over Play's 200 MB base module (tools/aab_size.py). It
+    also checks the per-device APKs Play would serve with zipalign -P 16.
+  - The store kit:
+    - the listing in eleven languages, updated for the realistic players, the stone courts' serve and offering, the
+      replay and one-player mode;
+    - the first release's notes (store/RELEASE_NOTES.md);
+    - the 32-bit 512 icon;
+    - new screenshots on High;
+    - every Play Console answer with its reason (store/PLAY_CONSOLE_ANSWERS.md).
 
 ## Next
 

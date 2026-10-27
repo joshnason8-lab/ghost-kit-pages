@@ -33,6 +33,13 @@ A village court in Sinaloa at dusk, a festival court by day, a stone court in th
 SIXTEEN TOWNS
 From Sinaloa, the Yucatán, Quintana Roo, Chiapas, Guatemala, Belize and Honduras, each with its own nickname and colours.
 
+ON THE COURT
+• Lifelike players and townspeople, with a run and a serve taken from motion capture.
+• On the stone courts the serve comes down to bounce in front of the other side, who play it off the bounce, as pelota maya is played in Yucatán today.
+• Before games there, an elder carries smoking copal among the players while a conch sounds, as those games begin today. A tap skips it.
+• A ball through the ring gets its replay.
+• Play as the whole team, or be one player for the whole match.
+
 MADE FOR YOUR PHONE
 • A floating joystick and big buttons, left-handed layout, button sizes, and buttons you can move.
 • Runs on everyday phones: graphics that set themselves, and a battery saver.
@@ -43,5 +50,5 @@ No ads, no in-app purchases, no account, no data collected.
 
 Pok Ta Pok Rivals is an independent game, not connected with or endorsed by any sporting body, federation, tournament or club. Towns appear by their place names only; every player is invented.
 
-== Release notes (0.1.0) ==
-The first beta: ulama de cadera and the classic stone court, four courts, sixteen towns, a town tournament, in six languages.
+== Release notes (first Google Play release) ==
+The first release on Google Play. Ulama de cadera from Sinaloa and the stone courts of the Yucatán: four courts, sixteen towns and a town tournament, in six languages. Lifelike players, the serve off the bounce on the stone courts, the copal offering before games there, and a replay for a ball through the ring. No ads, no purchases, no data collected.

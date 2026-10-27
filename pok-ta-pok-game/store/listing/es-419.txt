@@ -33,6 +33,13 @@ Una cancha de pueblo en Sinaloa al atardecer, una cancha de fiesta de día, una 
 DIECISÉIS PUEBLOS
 De Sinaloa, el Yucatán, Quintana Roo, Chiapas, Guatemala, Belize y Honduras, cada uno con su propio apodo y sus colores.
 
+EN LA CANCHA
+• Jugadores y público realistas, con una carrera y un saque tomados de captura de movimiento.
+• En las canchas de piedra el saque baja a botar delante del otro lado, que la juega de bote, como se juega hoy la pelota maya en Yucatán.
+• Antes de esos partidos, un anciano pasa entre los jugadores con copal humeante mientras suena un caracol, como empiezan hoy esos juegos. Un toque lo salta.
+• Una pelota por el anillo tiene su repetición.
+• Juega con todo el equipo, o sé un solo jugador todo el partido.
+
 HECHO PARA TU CELULAR
 • Joystick flotante y botones grandes, modo para zurdos, tamaño de botones y botones que puedes mover.
 • Funciona en celulares comunes: gráficos que se ajustan solos y ahorro de batería.
@@ -43,5 +50,5 @@ Sin anuncios, sin compras dentro de la app, sin cuenta, sin recopilar datos.
 
 Pok Ta Pok Rivals es un juego independiente, sin relación con ningún organismo deportivo, federación, torneo o club, ni respaldado por ellos. Los pueblos aparecen solo por su nombre geográfico; todos los jugadores son inventados.
 
-== Release notes (0.1.0) ==
-La primera beta: ulama de cadera y la cancha clásica de piedra, cuatro canchas, dieciséis pueblos, un torneo de pueblos, en seis idiomas.
+== Release notes (first Google Play release) ==
+El primer lanzamiento en Google Play. El ulama de cadera de Sinaloa y las canchas de piedra de Yucatán: cuatro canchas, dieciséis pueblos y un torneo de pueblos, en seis idiomas. Jugadores realistas, el saque de bote en las canchas de piedra, la ofrenda de copal antes de esos partidos y la repetición de una pelota por el anillo. Sin anuncios, sin compras, sin recopilar datos.

@@ -4,7 +4,7 @@ The hip ballgame of Mexico, for Android phones: **ulama de cadera** as it is sti
 Sinaloa, and the **classic stone court** of the old game, reconstructed from the chroniclers. Made in Godot 4.7 with
 the GL Compatibility renderer, for low, mid and high-end phones.
 
-> **Status: beta 0.5.2.** A full match by touch against the computer, both games, four courts, a town tournament,
+> **Status: beta 0.5.3.** A full match by touch against the computer, both games, four courts, a town tournament,
 > six languages; realistic players and townspeople (made with Meshy), a recorded run and serve (CMU motion capture),
 > the ring shot with its replay, the menus' own flute-and-drum music, and recorded sounds for the ball, the feet,
 > the crowd and each court's surroundings (docs/SOUNDS.md). See [docs/PROGRESS.md](docs/PROGRESS.md) for what is done and what comes next.

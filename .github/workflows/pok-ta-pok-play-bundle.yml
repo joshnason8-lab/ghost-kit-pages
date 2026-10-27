@@ -132,6 +132,22 @@ jobs:
           test "$(grep -o 'uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | grep -v 'VIBRATE' | wc -l)" = "0"
           ! grep -q 'android.permission.INTERNET' "$RUNNER_TEMP/manifest.xml"
           python3 tools/check_pages.py "$AAB"
+          # Play's limit: the base module at most 200 MB compressed.
+          python3 tools/aab_size.py "$AAB"
+          # What a phone gets from Play: the per-device APKs bundletool makes from the bundle (signed here with a
+          # throwaway key, only to build them). Their 64-bit native libraries must sit on 16 KB pages: zipalign -P 16.
+          keytool -genkeypair -keystore "$RUNNER_TEMP/throwaway.jks" -alias t -storepass throwaway -keypass throwaway \
+            -keyalg RSA -keysize 2048 -validity 1 -dname "CN=throwaway" >/dev/null 2>&1
+          java -jar "$RUNNER_TEMP/bundletool.jar" build-apks --bundle "$AAB" --output "$RUNNER_TEMP/game.apks" \
+            --ks "$RUNNER_TEMP/throwaway.jks" --ks-key-alias t --ks-pass pass:throwaway --key-pass pass:throwaway
+          mkdir -p "$RUNNER_TEMP/apks" && unzip -q -o "$RUNNER_TEMP/game.apks" -d "$RUNNER_TEMP/apks"
+          ZIPALIGN=$(ls -d $ANDROID_SDK_ROOT/build-tools/*/ | sort -V | tail -1)zipalign
+          for apk in $(find "$RUNNER_TEMP/apks" -name '*.apk' | sort); do
+            if unzip -l "$apk" | grep -q 'lib/arm64-v8a/.*\.so$'; then   # Play's 16 KB rule is for 64-bit
+              echo "$(basename $apk): $("$ZIPALIGN" -c -P 16 -v 4 "$apk" | tail -1)"
+              "$ZIPALIGN" -c -P 16 -v 4 "$apk" > /dev/null
+            fi
+          done
 
       - uses: actions/upload-artifact@v4
         with:

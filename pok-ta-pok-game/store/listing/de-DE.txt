@@ -33,6 +33,13 @@ Ein Dorfplatz in Sinaloa in der Abenddämmerung, ein Festplatz bei Tag, ein Stei
 SECHZEHN DÖRFER
 Aus Sinaloa, Yucatán, Quintana Roo, Chiapas, Guatemala, Belize und Honduras, jedes mit eigenem Spitznamen und eigenen Farben.
 
+AUF DEM PLATZ
+• Lebensechte Spieler und Zuschauer, mit einem Lauf und einem Anspiel aus Motion Capture.
+• Auf den Steinplätzen kommt das Anspiel herunter und springt vor der anderen Seite auf, die es nach dem Aufsprung spielt, wie Pelota Maya heute in Yucatán gespielt wird.
+• Vor diesen Spielen geht ein Ältester mit rauchendem Kopal zwischen den Spielern umher, während ein Muschelhorn erklingt, so wie diese Spiele heute beginnen. Ein Tippen überspringt es.
+• Ein Ball durch den Ring bekommt seine Wiederholung.
+• Spiele die ganze Mannschaft oder sei das ganze Spiel über ein Spieler.
+
 GEMACHT FÜR DEIN HANDY
 • Schwebender Joystick und große Buttons, Linkshänder-Layout, Buttongrößen und Buttons, die du verschieben kannst.
 • Läuft auf ganz normalen Handys: Grafik, die sich selbst einstellt, und ein Akkusparmodus.
@@ -43,5 +50,5 @@ Keine Werbung, keine In-App-Käufe, kein Konto, keine Datenerfassung.
 
 Pok Ta Pok Rivals ist ein unabhängiges Spiel und steht in keiner Verbindung zu einem Sportverband, einer Föderation, einem Turnier oder Verein und wird von keinem davon unterstützt. Dörfer erscheinen nur mit ihren Ortsnamen; alle Spieler sind erfunden.
 
-== Release notes (0.1.0) ==
-Die erste Beta: Ulama de cadera und der klassische Steinplatz, vier Plätze, sechzehn Dörfer, ein Dorfturnier, in sechs Sprachen.
+== Release notes (first Google Play release) ==
+Die erste Version bei Google Play. Ulama de cadera aus Sinaloa und die Steinplätze Yucatáns: vier Plätze, sechzehn Dörfer und ein Dorfturnier, in sechs Sprachen. Lebensechte Spieler, das Anspiel nach dem Aufsprung auf den Steinplätzen, die Kopal-Opfergabe vor diesen Spielen und eine Wiederholung für einen Ball durch den Ring. Keine Werbung, keine Käufe, keine Datenerfassung.

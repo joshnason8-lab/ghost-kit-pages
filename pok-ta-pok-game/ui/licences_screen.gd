@@ -66,7 +66,10 @@ func _ready() -> void:
 	_add(col, _text("[b]Sources[/b]\n\n" + "\n\n".join(src_lines) + "\n\n" + NOT_USED))
 	_add(col, _text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
 	_add(col, _text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
-	# The engine's own parts, each with its copyright and licence, then the licences' texts.
+	# The engine's own parts, each with its copyright and licence (in cards of a dozen), then the licences' texts. The
+	# texts are long: laid out all at once they held the screen still for over a second on opening (the soak test
+	# caught it). So each licence is listed by its name and opens to its full text when tapped, as phones' own
+	# open-source licence pages do.
 	var parts := PackedStringArray()
 	for c in Engine.get_copyright_info():
 		var lines := PackedStringArray()
@@ -75,10 +78,44 @@ func _ready() -> void:
 				lines.append(_plain(String(who)))
 			lines.append("(" + String(part.license) + ")")
 		parts.append("[b]%s[/b]\n%s" % [_plain(String(c.name)), "\n".join(lines)])
-	_add(col, _text("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts)))
+	const PER_CARD := 12
+	for i in range(0, parts.size(), PER_CARD):
+		var head := "[b]Parts of the Godot Engine[/b]\n\n" if i == 0 else ""
+		_add(col, _text(head + "\n\n".join(parts.slice(i, i + PER_CARD))))
+	col.add_child(UI.wrap("The licences of the engine's parts (tap one to read it):", "MutedLabel", 17))
 	var info: Dictionary = Engine.get_license_info()
 	for name in info:
-		_add(col, _text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
+		col.add_child(_licence(String(name), String(info[name])))
+
+
+## A licence by name; a tap shows its full text below the name, and another hides it.
+func _licence(name: String, text: String) -> Control:
+	var card := UI.card()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
+	var v := VBoxContainer.new()
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(v)
+	var b := Button.new()
+	b.flat = true
+	b.text = "+  " + name
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.mouse_filter = Control.MOUSE_FILTER_PASS
+	b.add_theme_font_override("font", Game.font_bold)
+	b.add_theme_font_size_override("font_size", Game.ts(17))
+	b.custom_minimum_size = Vector2(0, 52)
+	v.add_child(b)
+	var body: Array = [null]
+	b.pressed.connect(func():
+		if body[0] == null:
+			body[0] = _text(_plain(text.strip_edges()), true)
+			v.add_child(body[0])
+			b.text = "–  " + name
+		else:
+			(body[0] as Node).queue_free()
+			body[0] = null
+			b.text = "+  " + name)
+	return card
 
 
 ## A block of text on a dark card, readable over any sky at any graphics level; a drag on it reaches the scroll box.

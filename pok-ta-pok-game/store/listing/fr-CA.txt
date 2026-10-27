@@ -33,6 +33,13 @@ Un terrain de village au Sinaloa au crépuscule, un terrain de fête en plein jo
 SEIZE VILLAGES
 Du Sinaloa, du Yucatán, du Quintana Roo, du Chiapas, du Guatemala, du Belize et du Honduras, chacun avec son surnom et ses couleurs.
 
+SUR LE TERRAIN
+• Des joueurs et un public réalistes, avec une course et un service tirés de la capture de mouvement.
+• Sur les terrains de pierre, le service descend rebondir devant l'autre camp, qui le joue au rebond, comme la pelota maya se joue aujourd'hui au Yucatán.
+• Avant ces matchs, un ancien passe parmi les joueurs avec du copal fumant au son d'une conque, comme ces jeux commencent aujourd'hui. Une touche le passe.
+• Une balle à travers l'anneau a droit à son ralenti.
+• Jouez toute l'équipe, ou soyez un seul joueur tout le match.
+
 PENSÉ POUR VOTRE TÉLÉPHONE
 • Joystick flottant et gros boutons, disposition pour gauchers, taille des boutons réglable et boutons déplaçables.
 • Tourne sur les téléphones de tous les jours : graphismes qui se règlent tout seuls et économiseur de batterie.
@@ -43,5 +50,5 @@ Sans publicité, sans achats intégrés, sans compte, aucune donnée collectée.
 
 Pok Ta Pok Rivals est un jeu indépendant, sans lien avec aucun organisme sportif, fédération, tournoi ou club, et non approuvé par eux. Les villages n'apparaissent que sous leur nom de lieu ; tous les joueurs sont inventés.
 
-== Release notes (0.1.0) ==
-La première bêta : l'ulama de cadera et le terrain de pierre classique, quatre terrains, seize villages, un tournoi des villages, en six langues.
+== Release notes (first Google Play release) ==
+La première version sur Google Play. L'ulama de cadera du Sinaloa et les terrains de pierre du Yucatán : quatre terrains, seize villages et un tournoi des villages, en six langues. Des joueurs réalistes, le service au rebond sur les terrains de pierre, l'offrande de copal avant ces matchs et le ralenti d'une balle à travers l'anneau. Sans publicité, sans achats, aucune donnée collectée.

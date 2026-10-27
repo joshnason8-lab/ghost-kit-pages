@@ -21,7 +21,8 @@ stand in October 2026.
   English (United States, United Kingdom, Canada), Portuguese (Brazil), French (France, Canada), German and Italian
   (`store/listing/`). Google Play has no Yucatec Maya listing. The 512 × 512 icon, the 1024 × 500 feature graphic and
   the 1920 × 1080 screenshots are in `store/graphics/`.
-- **The answers to every App content form** (step 4).
+- **The answers to every App content form** (step 4, and in full with the reasons in `store/PLAY_CONSOLE_ANSWERS.md`).
+- **The first release's notes**, in every listing language: `store/RELEASE_NOTES.md`.
 
 ## 1. Your developer account (once)
 
@@ -38,8 +39,13 @@ test with at least **12 testers** who stay opted in for **14 days in a row** (st
 
 ## 2. The upload key (once)
 
-Google signs the game for phones with its own key (Play App Signing). You sign each bundle you upload with your own
-**upload key**, so Google knows it came from you.
+Use **Play App Signing**: when you create the first release, accept **"Let Google manage and protect your app signing
+key"** (the default). Google then signs the game for phones with its own key, and you sign each bundle you upload
+with your own **upload key**, so Google knows it came from you.
+
+**Do not use the beta key for Play.** The GitHub betas are signed with the beta keystore (secret `BETA_KEYSTORE_B64`,
+certificate SHA-256 6F:23:A9:…:7B:A3) so each beta installs over the last; keep it for that only. The upload key below
+is a new, separate key that never leaves your hands and GitHub's secrets.
 
 1. Make the key, on a computer with Java (Android Studio includes it). In a terminal, run:
 
@@ -59,6 +65,9 @@ Google signs the game for phones with its own key (Play App Signing). You sign e
    - `ANDROID_UPLOAD_KEYSTORE_BASE64`: paste what you copied in step 3.
    - `ANDROID_UPLOAD_KEY_ALIAS`: `upload`
    - `ANDROID_UPLOAD_KEY_PASSWORD`: your password.
+
+   The bundle workflow (`.github/workflows/pok-ta-pok-play-bundle.yml`) reads these three: with all of them present
+   it signs the `.aab` with the upload key; without them it builds an unsigned one, which Play does not accept.
 5. Build the signed bundle:
    1. On GitHub, go to **Actions > Pok Ta Pok Rivals · Play Store bundle > Run workflow**.
    2. Pick the branch `claude/pok-ta-pok-game` (or `main` once merged), then **Run workflow**.
@@ -133,7 +142,7 @@ and shows no ads, but the 13+ groups are the simpler start.
 1. Go to **Test and release > Testing > Closed testing**, open the **Closed testing (Alpha)** track, and choose
    **Create new release**.
 2. Upload the signed `.aab` from step 2.
-3. Release name: the version, such as `0.1.0`. Release notes: copy them from `store/listing/es-419.txt`.
+3. Release name: the version, such as `0.5.3`. Release notes: `store/RELEASE_NOTES.md`, each language between its tags.
 4. Choose **Save > Review release > Start rollout to Closed testing**. Google's first review takes a few days.
 5. Under **Testers**, make an email list with at least 12 people's Google (Gmail) addresses: family and friends
    with Android phones.
@@ -153,8 +162,13 @@ and shows no ads, but the 13+ groups are the simpler start.
 
 ## Notes
 
-- **The beta APK on GitHub** is signed with a public debug key, not Play's, so a phone with the beta has to uninstall
-  it (and lose its saves) before installing the game from Play.
+- **The application ID is final: `com.poktapokrivals.game`** (`package/unique_name` in `export_presets.cfg`; the same
+  in the shared Obtainium list, `shared-assets/obtainium/ghost-kit-games.json`). Play ties the listing to it for good:
+  never change it.
+- **The version code only goes up**: 9 for 0.5.3, raised with every beta. Play refuses a bundle whose
+  code is not higher than the last one uploaded.
+- **The beta APK on GitHub** is signed with the beta key, not Play's, so a phone with the beta has to uninstall it (and
+  lose its saves) before installing the game from Play.
 - **Android's developer verification** covers apps installed from outside the stores too: in Brazil, Indonesia,
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
@@ -169,4 +183,9 @@ and shows no ads, but the 13+ groups are the simpler start.
 - **Cultural care**: docs/CULTURE.md. The store text and screenshots show the sport only, with no sacrifice imagery.
 - **Category**: the bundle declares itself a game (`android:isGame`, checked by the bundle workflow), so Play files it
   under Games; choose **Sports** in the store settings.
-- **Size**: the 64-bit APK is about 40 MB (Godot's engine library is 23 MB of it).
+- **Size**: the beta APK is about 122 MB (Medium and High graphics carry sharper textures, which Low leaves unused).
+  The bundle workflow prints the bundle's sizes (`tools/aab_size.py`) and fails if the base module is over Play's
+  200 MB compressed limit; it is about 125 MB, so nothing needs Play Asset Delivery. Each phone downloads only its own
+  build (64- or 32-bit), about 117 MB.
+- **Soak test** before each store release: `tests/soak.gd` (random input through every screen and match, AI matches
+  on every court, Back everywhere, the app paused and resumed), at Low and at High.

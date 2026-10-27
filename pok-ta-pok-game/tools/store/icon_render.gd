@@ -1,12 +1,17 @@
 extends Node
 ## Renders the launcher icon and the feature graphic's picture from the game's own pieces: the stone ring of the
 ## classic court, the heavy rubber ball passing through it, in the low sun.
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/store/icon_render.tscn -- OUT_DIR
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/store/icon_render.tscn -- OUT_DIR [icon|feature]
 
 func _ready() -> void:
-	var out := OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "/tmp"
+	var args := OS.get_cmdline_user_args()
+	var out := String(args[0]) if args.size() > 0 else "/tmp"
+	var only := String(args[1]) if args.size() > 1 else ""
 	Game.settings.graphics = Game.GFX_HIGH
+	await Crowd.bake(self)
 	for job in [["icon", Vector2i(1024, 1024)], ["feature", Vector2i(2048, 1000)]]:
+		if only != "" and job[0] != only:
+			continue
 		var sv := SubViewport.new()
 		sv.size = job[1]
 		sv.own_world_3d = true
