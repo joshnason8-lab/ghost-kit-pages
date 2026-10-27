@@ -1,0 +1,168 @@
+{
+ "schemaVersion": 2,
+ "exportedAt": "2026-10-24T04:59:27.141257",
+ "appVersion": "",
+ "apps": [
+  {
+   "id": "com.kabaddiraid.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Kabaddi Raid",
+   "installedVersion": null,
+   "latestVersion": "1792784634000000",
+   "apkUrls": "[[\"kabaddi-raid-0.9.1-beta.apk\", \"https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/kabaddi-raid-beta/kabaddi-raid-0.9.1-beta.apk\"]]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Kabaddi Raid \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Kabaddi Raid\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": 1792784634000000,
+   "changeLog": null,
+   "releaseUrl": "https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/kabaddi-raid-beta",
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.takrawsmash.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Sepak Takraw Unleashed",
+   "installedVersion": null,
+   "latestVersion": "1792818690000000",
+   "apkUrls": "[[\"sepak-takraw-unleashed-0.7.0-beta.apk\", \"https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/sepak-takraw-unleashed-beta/sepak-takraw-unleashed-0.7.0-beta.apk\"]]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Sepak Takraw Unleashed \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Sepak Takraw Unleashed\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": 1792818690000000,
+   "changeLog": null,
+   "releaseUrl": "https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/sepak-takraw-unleashed-beta",
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.netballunleashed.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Netball Unleashed",
+   "installedVersion": null,
+   "latestVersion": "1792819006000000",
+   "apkUrls": "[[\"netball-unleashed-0.6.0-beta.apk\", \"https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/netball-unleashed-beta/netball-unleashed-0.6.0-beta.apk\"]]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Netball Unleashed \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Netball Unleashed\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": 1792819006000000,
+   "changeLog": null,
+   "releaseUrl": "https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta",
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.khokhorush.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Kho Kho Rush",
+   "installedVersion": null,
+   "latestVersion": "1792817786000000",
+   "apkUrls": "[[\"kho-kho-rush-0.6.0-beta.apk\", \"https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/khamba-dash-beta/kho-kho-rush-0.6.0-beta.apk\"]]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Kho Kho Rush \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Kho Kho Rush\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": 1792817786000000,
+   "changeLog": null,
+   "releaseUrl": "https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/khamba-dash-beta",
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.floorballunleashed.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Floorball Unleashed",
+   "installedVersion": null,
+   "latestVersion": "1792817969000000",
+   "apkUrls": "[[\"floorball-unleashed-0.6.0-beta.apk\", \"https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/floorball-unleashed-beta/floorball-unleashed-0.6.0-beta.apk\"]]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Floorball Unleashed \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Floorball Unleashed\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": 1792817969000000,
+   "changeLog": null,
+   "releaseUrl": "https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorball-unleashed-beta",
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.ashandleather.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Hurling Heroes",
+   "installedVersion": null,
+   "latestVersion": "1792818213000000",
+   "apkUrls": "[[\"hurling-heroes-0.7.0-beta.apk\", \"https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/ash-and-leather-beta/hurling-heroes-0.7.0-beta.apk\"]]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Hurling Heroes \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Hurling Heroes\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": 1792818213000000,
+   "changeLog": null,
+   "releaseUrl": "https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/ash-and-leather-beta",
+   "overrideSource": null,
+   "allowIdChange": false
+  },
+  {
+   "id": "com.poktapokrivals.game",
+   "url": "https://github.com/joshnason8-lab/ghost-kit-pages",
+   "author": "joshnason8-lab",
+   "name": "Pok Ta Pok Rivals",
+   "installedVersion": null,
+   "latestVersion": "1792818240000000",
+   "apkUrls": "[[\"pok-ta-pok-rivals-0.3.0-beta.apk\", \"https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/pok-ta-pok-rivals-beta/pok-ta-pok-rivals-0.3.0-beta.apk\"]]",
+   "otherAssetUrls": "[]",
+   "preferredApkIndex": 0,
+   "additionalSettings": "{\"includePrereleases\": true, \"fallbackToOlderReleases\": true, \"filterReleaseTitlesByRegEx\": \"^Pok Ta Pok Rivals \", \"apkFilterRegEx\": \"^(?!.*32bit).*\\\\.apk$\", \"releaseDateAsVersion\": true, \"versionDetection\": false, \"trackOnly\": false, \"appName\": \"Pok Ta Pok Rivals\", \"appAuthor\": \"joshnason8-lab\"}",
+   "lastUpdateCheck": null,
+   "pinned": false,
+   "disabled": false,
+   "categories": [
+    "Ghost Kit Games"
+   ],
+   "releaseDate": 1792818240000000,
+   "changeLog": null,
+   "releaseUrl": "https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/pok-ta-pok-rivals-beta",
+   "overrideSource": null,
+   "allowIdChange": false
+  }
+ ]
+}

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Ghost Kit Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--panel:#161c26;--line:#263040;--ink:#f2f4f8;--mute:#9aa6b8;--accent:#ff8a1f;--accent2:#2bd4a4}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1280px;margin:0 auto;padding:0 40px}
+nav{display:flex;align-items:center;justify-content:space-between;height:76px;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:12px;font-family:Oswald;font-weight:700;font-size:24px;letter-spacing:.5px}
+.logo i{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#ff3d6e);display:grid;place-items:center;font-style:normal;font-size:18px}
+nav ul{display:flex;gap:32px;list-style:none;color:var(--mute);font-weight:500}
+nav ul li:first-child{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;border-radius:12px;font-weight:600}
+.btn.pri{background:var(--accent);color:#14100a}
+.btn.sec{border:1px solid var(--line);color:var(--ink)}
+.hero{position:relative;padding:80px 0 70px;overflow:hidden}
+.hero .bg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);opacity:.22;filter:saturate(1.1)}
+.hero .bg img{width:100%;height:100%;object-fit:cover}
+.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--bg) 35%,rgba(13,17,23,.55) 75%,rgba(13,17,23,.85)),linear-gradient(0deg,var(--bg),transparent 40%)}
+.hero .wrap{position:relative;z-index:1}
+.eyebrow{color:var(--accent2);font-weight:600;letter-spacing:2px;font-size:13px;text-transform:uppercase}
+h1{font-family:Oswald;font-size:76px;line-height:1.02;margin:16px 0 20px;max-width:760px}
+h1 span{color:var(--accent)}
+.lead{font-size:20px;color:#c8d0dc;max-width:620px;line-height:1.55}
+.cta{display:flex;gap:14px;margin-top:34px}
+.stats{display:flex;gap:48px;margin-top:52px}
+.stats b{font-family:Oswald;font-size:38px;display:block}
+.stats span{color:var(--mute);font-size:14px}
+section{padding:64px 0}
+.head{display:flex;justify-content:space-between;align-items:end;margin-bottom:28px}
+h2{font-family:Oswald;font-size:40px}
+.chips{display:flex;gap:10px}
+.chip{padding:9px 16px;border-radius:999px;border:1px solid var(--line);color:var(--mute);font-size:14px;font-weight:500}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.card .art{aspect-ratio:1024/500;position:relative}
+.card .art img{width:100%;height:100%;object-fit:cover;display:block}
+.card .tag{position:absolute;top:12px;right:12px;background:rgba(13,17,23,.8);backdrop-filter:blur(6px);padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600}
+.card .body{display:flex;gap:14px;padding:18px}
+.card .ico{width:56px;height:56px;border-radius:14px;flex:none}
+.card h3{font-size:18px;font-weight:600}
+.card p{color:var(--mute);font-size:14px;margin-top:4px;line-height:1.45}
+.card .meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.card .meta em{font-style:normal;font-size:12px;color:#c8d0dc;background:#1f2733;padding:4px 8px;border-radius:6px}
+.card.wide{grid-column:span 1}
+.feat{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.feat div{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}
+.feat b{display:block;font-size:17px;margin:14px 0 6px}
+.feat p{color:var(--mute);font-size:14px;line-height:1.5}
+.feat .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:20px;background:#1f2733}
+.band{background:linear-gradient(135deg,#1c2433,#121822);border:1px solid var(--line);border-radius:22px;padding:44px;display:flex;justify-content:space-between;align-items:center}
+.band h3{font-family:Oswald;font-size:34px}
+.band p{color:var(--mute);margin-top:8px;font-size:16px}
+.play{display:flex;align-items:center;gap:12px;background:#000;border:1px solid #444;border-radius:12px;padding:10px 20px;color:#fff}
+.play small{display:block;font-size:11px;color:#ccc}
+.play strong{font-size:19px}
+footer{border-top:1px solid var(--line);padding:32px 0;color:var(--mute);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between}
+footer a{margin-left:24px}
+</style></head><body>
+<nav class="wrap"><div class="logo"><i>👻</i>GHOST KIT GAMES</div>
+<ul><li>Games</li><li>News</li><li>About</li><li>Press kit</li><li>Support</li></ul>
+<a class="btn pri" href="#">Get the games</a></nav>
+
+<header class="hero">
+  <div class="bg"><img src="img/kabaddi_feature.png"><img src="img/hurling_feature.png"><img src="img/takraw_feature.png"><img src="img/poktapok_feature.png"></div>
+  <div class="wrap">
+    <div class="eyebrow">Mobile sports games · Made for every phone</div>
+    <h1>The sports the world <span>actually plays.</span></h1>
+    <p class="lead">Kabaddi, hurling, sepak takraw, kho kho, netball, floorball and the ancient Mesoamerican ballgame — built with real rules, real motion capture and stadiums that run on budget phones and flagships alike.</p>
+    <div class="cta"><a class="btn pri" href="#">Browse the games →</a><a class="btn sec" href="#">▶ Watch trailers</a></div>
+    <div class="stats"><div><b>7</b><span>Games</span></div><div><b>20+</b><span>Languages</span></div><div><b>100%</b><span>Offline play</span></div><div><b>0</b><span>Ads or tracking</span></div></div>
+  </div>
+</header>
+
+<section class="wrap">
+  <div class="head"><h2>Our games</h2>
+    <div class="chips"><span class="chip on">All</span><span class="chip">South Asia</span><span class="chip">Southeast Asia</span><span class="chip">Europe</span><span class="chip">Americas</span><span class="chip">Oceania</span></div></div>
+  <div class="grid">
+    <a class="card"><div class="art"><img src="img/kabaddi_feature.png"><span class="tag">Beta</span></div><div class="body"><img class="ico" src="img/kabaddi_icon.png"><div><h3>Kabaddi Raid</h3><p>Raid, touch and race home in 3D kabaddi with league seasons and a Nations Cup.</p><div class="meta"><em>7 v 7</em><em>8 languages</em><em>India</em></div></div></div></a>
+    <a class="card"><div class="art"><img src="img/hurling_feature.png"><span class="tag">New · HD pack</span></div><div class="body"><img class="ico" src="img/hurling_icon.png"><div><h3>Hurling Heroes</h3><p>Fifteen a side, every rule, under the floodlights. As Gaeilge too.</p><div class="meta"><em>15 v 15</em><em>English · Irish</em><em>Ireland</em></div></div></div></a>
+    <a class="card"><div class="art"><img src="img/takraw_feature.png"><span class="tag">Beta</span></div><div class="body"><img class="ico" src="img/takraw_icon.png"><div><h3>Sepak Takraw Unleashed</h3><p>Serve, set and roll-spike over the net with ISTAF rules and real players.</p><div class="meta"><em>3 v 3</em><em>13 languages</em><em>SE Asia</em></div></div></div></a>
+    <a class="card"><div class="art"><img src="img/netball_feature.png"><span class="tag">Beta</span></div><div class="body"><img class="ico" src="img/netball_icon.png"><div><h3>Netball Unleashed</h3><p>The real rules, learnt from real matches — centre passes, rebounds and TV replays.</p><div class="meta"><em>7 v 7</em><em>19 languages</em><em>Oceania · UK</em></div></div></div></a>
+    <a class="card"><div class="art"><img src="img/khokho_feature.png"><span class="tag">Beta</span></div><div class="body"><img class="ico" src="img/khokho_icon.png"><div><h3>Kho Kho Rush</h3><p>Sit, kho, chase. India's fastest tag game across four village and stadium grounds.</p><div class="meta"><em>9 v 9</em><em>14 languages</em><em>India</em></div></div></div></a>
+    <a class="card"><div class="art"><img src="img/floorball_feature.png"><span class="tag">Beta</span></div><div class="body"><img class="ico" src="img/floorball_icon.png"><div><h3>Floorball Unleashed</h3><p>Fast 5-v-5 indoor floorball with real rules and Nordic sports-hall atmosphere.</p><div class="meta"><em>5 v 5</em><em>15 languages</em><em>Nordics</em></div></div></div></a>
+    <a class="card"><div class="art"><img src="img/poktapok_feature.png"><span class="tag">Beta</span></div><div class="body"><img class="ico" src="img/poktapok_icon.png"><div><h3>Pok Ta Pok Rivals</h3><p>The hip ballgame of Mexico, as it is played — ulama courts, stone rings and the opening ritual.</p><div class="meta"><em>Hip ball</em><em>6 languages</em><em>Mexico</em></div></div></div></a>
+    <div class="card" style="display:grid;place-items:center;text-align:center;padding:30px;border-style:dashed;background:transparent"><div><div style="font-size:34px">＋</div><h3 style="margin-top:8px">More sports coming</h3><p style="color:var(--mute);font-size:14px;margin-top:6px">Tell us which game we should make next.</p><a class="btn sec" style="margin-top:16px">Suggest a sport</a></div></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2 style="margin-bottom:28px">Why our games feel different</h2>
+  <div class="feat">
+    <div><span class="ic">📐</span><b>Real rules</b><p>Every game follows the sport's official rulebook, refereed by on-pitch officials and whistles.</p></div>
+    <div><span class="ic">🎥</span><b>Real movement</b><p>Motion capture and studied match footage shape how every player runs, dives and strikes.</p></div>
+    <div><span class="ic">📱</span><b>Runs on any phone</b><p>Low, Medium and High graphics — from a budget handset to the latest flagship.</p></div>
+    <div><span class="ic">🔒</span><b>No ads. No tracking.</b><p>Play fully offline. We collect no personal data — ever.</p></div>
+  </div>
+</section>
+
+<section class="wrap" style="padding-top:0">
+  <div class="band"><div><h3>Coming soon to Google Play</h3><p>Join the beta and help shape the games before launch.</p></div>
+  <div style="display:flex;gap:14px"><a class="play"><span style="font-size:26px">▶</span><span><small>COMING SOON ON</small><strong>Google Play</strong></span></a><a class="btn sec">Join the beta</a></div></div>
+</section>
+
+<footer><div class="wrap"><span>© 2026 Ghost Kit Games</span><span><a>Privacy</a><a>Licences</a><a>Press kit</a><a>Contact</a></span></div></footer>
+</body></html>
