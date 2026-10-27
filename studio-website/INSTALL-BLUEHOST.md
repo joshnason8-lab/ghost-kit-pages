@@ -130,15 +130,26 @@ The ghost logo is only a starting point. If the studio gets another name, replac
 
 Each game is building a media kit: a trailer, screenshots, menus, a 1024 px icon and text. When one is ready:
 
-**Trailer** (each game's page, "Trailer coming soon"):
+**Trailers** (each game's page shows "Trailer coming soon" until its trailer is in):
 
-1. Open the game's page under **Pages**, for example *Hurling Heroes*.
-2. Click the big title picture, then the block's **⋮ > Delete**.
-3. Add a **Video** block in its place, and upload the trailer `.mp4` to the Media Library.
-4. Delete the "Trailer coming soon" label.
+1. Download the trailers from
+   [`studio-website/dist/trailers/`](https://github.com/joshnason8-lab/ghost-kit-pages/tree/claude/studio-website/studio-website/dist/trailers).
+   These are web-sized versions (720p, about 5–6 MB each) of the trailers in the games' media kits. So far there is
+   Netball Unleashed's.
+2. Go to **Media > Add New Media File** and drop them in. Keep the file names, for example
+   `netball-unleashed-trailer.mp4`.
+3. Go to **Appearance > Site setup** and press **Set up the site**.
 
-A video uploaded to your own site keeps the privacy page true. If you use a **YouTube** block instead, YouTube sets
-its own cookies. In that case, add a sentence about it under "Links to other sites" on the **Privacy policy** page.
+Site setup puts each trailer on its game's page as a video player, with the title art as its cover. Nothing loads
+until the visitor presses play. If you have edited a game page, Site setup leaves it alone; add the video by hand
+instead:
+
+1. Click the title picture and delete it.
+2. Add a **Video** block in its place and choose the trailer.
+3. Delete the "Trailer coming soon" label.
+
+A video on your own site keeps the privacy page true. If you put a game trailer on YouTube and use a **YouTube**
+block instead, add a sentence about it to the **Privacy policy** page.
 
 **Screenshots**: the four pictures under the trailer are real screenshots from the Android betas, taken from each
 game's Play Store screenshots. To change one:
@@ -146,8 +157,8 @@ game's Play Store screenshots. To change one:
 1. Click it, then **Replace**.
 2. Upload the new picture and write its **Alternative text**, a few words on what it shows.
 
-**Media kit links** (Press kit page): each game shows "Media kit … coming soon". When the release
-`<game>-media` exists on GitHub:
+**Media kit links** (Press kit page): Netball Unleashed's media kit is already linked. Each other game shows
+"Media kit … coming soon". When the release `<game>-media` exists on GitHub:
 
 1. Open **Pages > Press kit**.
 2. Select the words "Media kit" for that game, press the link button, and paste the zip's download address from the

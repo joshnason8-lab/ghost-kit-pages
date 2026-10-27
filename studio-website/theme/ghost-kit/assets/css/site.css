@@ -303,3 +303,35 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 .wp-lightbox-container button.lightbox-trigger { width: 44px; height: 44px; }
 .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content,
 .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__container { align-items: flex-start !important; }
+
+/* ------------------------------------------------------------------ sport pages */
+
+.gk-more { margin-top: 18px !important; font-weight: 600; }
+.gk-more a { display: inline-block; padding: 10px 0; }
+.gk-photo img { border-radius: 14px; }
+.gk-prose .wp-element-caption, .gk-diagram figcaption, .gk-video figcaption { color: var(--gk-mute); font-size: 13px; line-height: 1.5; margin-top: 8px; }
+.wp-element-caption a { color: var(--gk-soft); }
+.gk-diagram { margin: 28px 0; background: var(--gk-panel); border: 1px solid var(--gk-line); border-radius: 16px; padding: 14px; }
+.gk-diagram__svg { display: block; width: 100%; height: auto; }
+.gk-diagram figcaption { margin-top: 10px; }
+.gk-video { margin: 28px 0; }
+.gk-video__frame { position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--gk-line); }
+.gk-video__frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.gk-video__play {
+	position: absolute; inset: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+	gap: 10px; padding: 20px; cursor: pointer; border: 0; font: inherit; color: var(--gk-ink); text-align: center;
+	background: radial-gradient(circle at center, #1d2636, #0d1117);
+}
+.gk-video__icon {
+	width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font-size: 26px;
+	background: var(--gk-accent); color: #14100a; box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+}
+.gk-video__play:hover .gk-video__icon { background: #ffa04a; }
+.gk-video__title { font-weight: 600; font-size: 16px; max-width: 34em; }
+.gk-video__note { font-size: 13px; color: var(--gk-mute); }
+.gk-play-cta { background: var(--gk-panel); border: 1px solid var(--gk-line); border-radius: 18px; padding: clamp(16px, 3vw, 24px); }
+.gk-play-cta figure { margin: 0 0 16px; }
+.gk-play-cta img { border-radius: 12px; }
+.gk-sources { font-size: 14px; }
+.gk-sources a { overflow-wrap: anywhere; }
+.gk-card--sport .gk-card__body { padding: 18px; gap: 6px !important; }

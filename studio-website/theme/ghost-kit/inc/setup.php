@@ -66,6 +66,10 @@ function ghostkit_import_asset( $asset ) {
 	}
 	update_post_meta( $id, '_ghostkit_asset', $asset['key'] );
 	update_post_meta( $id, '_wp_attachment_image_alt', $asset['alt'] );
+	if ( ! empty( $asset['caption'] ) ) {
+		// The credit line, so it travels with the photo in the Media Library.
+		wp_update_post( array( 'ID' => $id, 'post_excerpt' => $asset['caption'] ) );
+	}
 	return $id;
 }
 
@@ -87,6 +91,53 @@ function ghostkit_fill_tokens( $content, $ids ) {
 			}
 			$url = 'full' === $m[2] ? wp_get_attachment_url( $id ) : wp_get_attachment_image_url( $id, $m[2] );
 			return (string) $url;
+		},
+		$content
+	);
+}
+
+/**
+ * The game's trailer, if a video named <game>-trailer….mp4 is in the Media Library: its attachment ID, or 0.
+ */
+function ghostkit_trailer_id( $game ) {
+	$videos = get_posts(
+		array(
+			'post_type'      => 'attachment',
+			'post_status'    => 'inherit',
+			'post_mime_type' => 'video',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+		)
+	);
+	foreach ( $videos as $id ) {
+		if ( str_starts_with( basename( (string) get_attached_file( $id ) ), $game . '-trailer' ) ) {
+			return (int) $id;
+		}
+	}
+	return 0;
+}
+
+/**
+ * On a game page, the trailer slot: a video player when the trailer is in the Media Library, otherwise the title art
+ * with "Trailer coming soon". The markers around the slot are removed either way.
+ */
+function ghostkit_fill_trailers( $content, $ids ) {
+	return preg_replace_callback(
+		'#<!--gk-trailer:([a-z0-9-]+)-->(.*?)<!--/gk-trailer-->#s',
+		function ( $m ) use ( $ids ) {
+			$video = ghostkit_trailer_id( $m[1] );
+			if ( ! $video ) {
+				return $m[2];
+			}
+			$poster = isset( $ids[ $m[1] . '-feature' ] ) ? wp_get_attachment_image_url( $ids[ $m[1] . '-feature' ], 'large' ) : '';
+			return sprintf(
+				"<!-- wp:group {\"className\":\"gk-trailer\"} -->\n<div class=\"wp-block-group gk-trailer\"><!-- wp:video {\"id\":%1\$d} -->\n" .
+				"<figure class=\"wp-block-video\"><video controls poster=\"%2\$s\" preload=\"none\" src=\"%3\$s\"></video></figure>\n" .
+				"<!-- /wp:video --></div>\n<!-- /wp:group -->",
+				$video,
+				esc_url( $poster ),
+				esc_url( wp_get_attachment_url( $video ) )
+			);
 		},
 		$content
 	);
@@ -138,7 +189,7 @@ function ghostkit_run_setup() {
 		$parts     = explode( '/', $page['path'] );
 		$slug      = array_pop( $parts );
 		$parent    = $parts ? get_page_by_path( implode( '/', $parts ) ) : null;
-		$body      = ghostkit_fill_tokens( $page['content'], $ids );
+		$body      = ghostkit_fill_trailers( ghostkit_fill_tokens( $page['content'], $ids ), $ids );
 		$existing  = get_page_by_path( $page['path'] );
 		$postarr   = array(
 			'post_type'    => 'page',
@@ -177,6 +228,10 @@ function ghostkit_run_setup() {
 		update_post_meta( $id, '_ghostkit_path', $page['path'] );
 		if ( $page['template'] ) {
 			update_post_meta( $id, '_wp_page_template', $page['template'] );
+		}
+		// The featured image is used for link previews (Open Graph); the page itself shows the photo in its text.
+		if ( ! empty( $page['featured'] ) && ! empty( $ids[ $page['featured'] ] ) ) {
+			set_post_thumbnail( $id, $ids[ $page['featured'] ] );
 		}
 	}
 	$log[] = sprintf( 'Pages: %d created, %d refreshed, %d left as they were.', $made, $updated, $kept );

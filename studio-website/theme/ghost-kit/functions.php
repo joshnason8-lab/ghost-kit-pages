@@ -32,6 +32,15 @@ add_action(
 	'wp_enqueue_scripts',
 	function () {
 		wp_enqueue_style( 'ghostkit', get_theme_file_uri( 'assets/css/site.css' ), array(), GHOSTKIT_VERSION );
+		if ( is_singular() && str_contains( (string) get_post_field( 'post_content' ), 'gk-video' ) ) {
+			wp_enqueue_script(
+				'ghostkit-video',
+				get_theme_file_uri( 'assets/js/video.js' ),
+				array(),
+				GHOSTKIT_VERSION,
+				array( 'strategy' => 'defer', 'in_footer' => true )
+			);
+		}
 		if ( ghostkit_has_filter() ) {
 			wp_enqueue_script(
 				'ghostkit-filter',

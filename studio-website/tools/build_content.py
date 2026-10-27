@@ -13,6 +13,7 @@ import os
 import re
 
 import sources
+import sports
 from blocks import (buttons, columns, esc, esc_attr, gallery, grid, group, heading, image, lst, paragraph, raw_html,
                     row, separator, stack, table)
 
@@ -282,11 +283,12 @@ def page_game(g):
         ("Permissions", esc(perms)),
         ("Status", "Beta" + (" on Android and in the browser" if g["web"] else " on Android") + " · Google Play coming soon"),
     ]
+    # Site setup swaps the part between the markers for a video player once <game>-trailer.mp4 is in the Media Library.
     left = [
-        group([
+        "<!--gk-trailer:%s-->" % s + group([
             image(s + "-feature", "%s title art" % g["name"], size="large"),
             paragraph("Trailer coming soon", cls="gk-trailer__badge"),
-        ], cls="gk-trailer"),
+        ], cls="gk-trailer") + "<!--/gk-trailer-->",
         gallery([(s + "-screenshot-%d" % i, SHOTS[s][i - 1]) for i in range(1, 5)], cls="gk-shots"),
         paragraph(PAGE_SIZE_NOTE, cls="gk-caption"),
     ]
@@ -309,7 +311,7 @@ def page_game(g):
     ], align="wide", layout={"type": "default"})
     sport = group([
         columns([
-            (None, [heading(2, "About the sport"), paragraph(esc(g["about_sport"]))]),
+            (None, [heading(2, "About the sport"), paragraph(esc(g["about_sport"]))] + sport_link(g)),
             (None, [image(s + "-screenshot-3", SHOTS[s][2], size="large")]),
         ], cls="gk-sport__cols"),
     ], cls="gk-sport", align="wide", layout={"type": "default"})
@@ -325,6 +327,14 @@ def page_game(g):
         align="wide", layout={"type": "default"})
     top = columns([("57%", left), ("43%", right)], cls="gk-game__top", align="wide")
     return "\n\n".join([top, features, sport, footer])
+
+
+def sport_link(g):
+    meta = sports.load(sports.SPORT_OF_GAME[g["slug"]])
+    if not meta:
+        return []
+    name = meta.get("short_name") or meta["sport"].split(" (")[0]
+    return [paragraph('<a href="/sports/%s/">Learn more about %s →</a>' % (meta["slug"], esc(name)), cls="gk-more")]
 
 
 def _blocks(blocks, h2_from=None):
@@ -390,6 +400,10 @@ def page_studio_privacy(games):
                   "service."),
         paragraph("WordPress, the software that runs the site, sets cookies only for the people who log in to manage "
                   "it."),
+        heading(2, "Videos"),
+        paragraph("Some sport pages show videos from YouTube. A video loads nothing from YouTube until you press play. "
+                  "When you do, it plays from YouTube's privacy-enhanced mode (youtube-nocookie.com), and YouTube's own "
+                  "privacy policy covers what happens there."),
         heading(2, "Links to other sites"),
         paragraph("Beta downloads and media kits are on GitHub; some pages link to Google Play, Netlify and other sites. "
                   "What those sites do is covered by their own privacy policies."),
@@ -405,7 +419,7 @@ def page_studio_privacy(games):
     return "\n\n".join(out)
 
 
-def page_licences(games):
+def page_licences(games, sport_entries=()):
     out = [
         heading(2, "The games"),
         paragraph("Every game is made with the Godot Engine and with other works shared under open licences. Each game lists them all, with their full "
@@ -422,6 +436,18 @@ def page_licences(games):
             "The games' icons, title art and screenshots belong to the games.",
         ]),
     ]
+    photo_credits = sports.licences_list(sport_entries)
+    if photo_credits:
+        out += [
+            heading(2, "Photos on the sport pages"),
+            paragraph("From Wikimedia Commons, under licences that let anyone reuse them with credit. Each is credited "
+                      "under the photo, too."),
+            lst(photo_credits),
+        ]
+    if any(m.get("videos") for m, g in sport_entries):
+        out += [heading(2, "Videos"),
+                paragraph("The videos on the sport pages are embedded from their owners' YouTube channels, not copied; "
+                          "each one is credited to its channel.")]
     return "\n\n".join(out)
 
 
@@ -541,9 +567,13 @@ def build():
     kits = media_kits()
     pages = []
 
-    def add(path, title, content, excerpt_text, template="", og=None, order=0):
+    def add(path, title, content, excerpt_text, template="", og=None, order=0, featured=None):
         pages.append({"path": path, "title": title, "content": content, "excerpt": excerpt(excerpt_text),
-                      "template": template, "og": og, "menu_order": order})
+                      "template": template, "og": og, "menu_order": order, "featured": featured})
+
+    by_slug = {g["slug"]: g for g in games}
+    sports._SHOT_ALTS.update({g["slug"]: SHOTS[g["slug"]][0] for g in games})
+    sport_entries = [(m, by_slug[gs]) for m, gs in ((sports.load(s), gs) for s, gs in sports.SPORTS) if m]
 
     add("home", "Home", page_home(games),
         "Mobile sports games of kabaddi, hurling, sepak takraw, kho kho, netball, floorball and the Mesoamerican "
@@ -562,6 +592,14 @@ def build():
         add("games/%s/support" % g["slug"], "%s help and support" % g["name"], content,
             "How to play %s, what to do if something is wrong, and how to get in touch." % g["name"],
             og=g["slug"], order=2)
+    if sport_entries:
+        add("sports", "Sports", sports.page_index(sport_entries),
+            "Kabaddi, hurling, sepak takraw, netball, kho kho, floorball and ulama: where each sport comes from, how "
+            "it's played and where to watch it.", template="page-wide", order=2)
+        for i, (meta, game) in enumerate(sport_entries):
+            first = (meta.get("photos") or [None])[0]
+            add("sports/" + meta["slug"], meta.get("title") or meta["sport"], sports.page_sport(meta, game),
+                meta["summary"], order=i, featured=sports.photo_key(meta["slug"], first["id"]) if first else None)
     add("about", "About", page_about(games),
         "Mobile games of the sports the world actually plays, made by an independent developer.", order=2)
     add("press-kit", "Press kit", page_press(games, kits),
@@ -571,7 +609,7 @@ def build():
     add("privacy", "Privacy policy", page_studio_privacy(games),
         "The privacy policy for this website, with links to each game's own policy. No ads, no analytics, no tracking.",
         order=5)
-    add("licences", "Licences", page_licences(games),
+    add("licences", "Licences", page_licences(games, sport_entries),
         "Where to find the licences of the works each game is made with, and the licences of this website.", order=6)
 
     assets = []
@@ -584,6 +622,14 @@ def build():
         for i in range(1, 5):
             assets.append({"key": "%s-screenshot-%d" % (s, i), "file": "games/%s-screenshot-%d.webp" % (s, i),
                            "alt": SHOTS[s][i - 1], "title": "%s screenshot %d" % (g["name"], i)})
+
+    assets += sports.assets(sport_entries)
+    with open(os.path.join(SITE, "MEDIA_CREDITS.md"), "w") as f:
+        f.write(sports.credits_markdown(sport_entries))
+    for meta, game in sport_entries:
+        print("  /sports/%s/: %d words, %d photos, %d videos, %d sources" % (
+            meta["slug"], sports.word_count(meta), len(meta.get("photos", [])), len(meta.get("videos", [])),
+            len(meta.get("sources", []))))
 
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, "pages.json"), "w") as f:
