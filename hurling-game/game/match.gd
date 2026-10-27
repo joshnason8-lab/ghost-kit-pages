@@ -26,6 +26,8 @@ var cam: CameraRig
 var hud: MatchHud
 var controls: TouchControls
 var officials: Officials
+var placed_aim: PlacedAim = null      # your free, 65 or penalty at the posts, aimed by timing (game/placed_aim.gd)
+var _aim_point := Vector3.INF
 var rng := RandomNumberGenerator.new()
 
 # The teams: [home, away]: {id, name, short, c1, c2, players (on the field), bench (data), subs}.
@@ -1158,6 +1160,56 @@ func _shoot(pl: Player, for_goal: bool, placed := "") -> void:
 	_after(ct, func(): _strike_contact(pl, target, shot))
 
 
+## A strike at a point you picked (PlacedAim): the sliotar goes there, near enough; a goal if it is under the bar.
+func _shoot_at(pl: Player, target: Vector3, placed: String) -> void:
+	_wind_dir(pl, target)
+	pl.play("strike")
+	var shot := {"goal": PlacedAim.zone(target) == "goal", "placed": placed, "aimed": true}
+	_after(pl.contact_time("strike"), func(): _strike_contact(pl, target, shot))
+
+
+## Is this press the start of an aimed shot: your free or 65 at the posts in range (STRIKE or GOAL), your penalty
+## (GOAL), or your penalty in a shoot-out?
+func _aim_wanted(a: Player, id: String) -> bool:
+	if a != taker or user_team < 0 or a.team != user_team:
+		return false
+	if phase == P.SHOOTOUT:
+		return id == "GOAL" and String(shootout.get("state", "")) == "ready"
+	if phase != P.SET or restart.is_empty():
+		return false
+	var kind := String(restart.kind)
+	if kind == "penalty":
+		return id == "GOAL"
+	if kind in ["free", "65"]:
+		return id in ["STRIKE", "GOAL"] and Pitch.from_goal_line(restart.spot, dir(a.team)) <= AIM_RANGE
+	return false
+
+
+const AIM_RANGE := 66.0        # frees this near the goal line, and every 65, are aimed at the posts by timing
+
+
+func _start_aim(a: Player) -> void:
+	var spot: Vector3 = restart.spot if not restart.is_empty() else ball.global_position
+	placed_aim = PlacedAim.new()
+	add_child(placed_aim)
+	placed_aim.setup(spot, a.global_position, dir(a.team), float(a.data.get("free", 70)) / 100.0, rng)
+	placed_aim.shot.connect(func(p: Vector3):
+		_aim_point = p
+		if phase == P.SHOOTOUT:
+			_shootout_strike("AIMED")
+		elif phase == P.SET:
+			_take_restart(taker, "AIMED"))
+	placed_aim.done.connect(_end_aim)
+	Game.haptic("free")
+
+
+func _end_aim() -> void:
+	if placed_aim != null:
+		placed_aim.queue_free()
+		placed_aim = null
+	cam.camera.make_current()
+
+
 ## The moment of the strike: the sliotar leaves the bas toward target, with the striker's error. For a point the
 ## error grows with distance and pressure; struck too short it drops under the bar or short.
 func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
@@ -1180,6 +1232,9 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 	if bool(shot.get("goal", false)):
 		sigma = (0.4 + dist * 0.03) * (1.5 - acc) * (1.0 + pressure)
 	var aim := target + Vector3(0, rng.randfn(0.0, sigma * 0.5), rng.randfn(0.0, sigma))
+	if bool(shot.get("aimed", false)):
+		# Aimed by timing (PlacedAim): where you stopped the target, give or take a hand's width.
+		aim = target + Vector3(0, rng.randfn(0.0, 0.08), rng.randfn(0.0, 0.1))
 	var power := float(pl.data.get("striking", 70)) / 100.0
 	var speed := clampf(dist * 0.42 + 16.0, 22.0, 30.0 + power * 12.0)
 	if bool(shot.get("goal", false)):
@@ -1957,7 +2012,7 @@ func _set_step(_dt: float) -> void:
 	if taker.busy():
 		return
 	var yours := user_team >= 0 and taker.team == user_team and controls.visible
-	if yours and phase_t < 8.0:
+	if placed_aim != null or (yours and phase_t < 8.0):
 		return
 	if phase_t < _set_t:
 		return
@@ -1998,7 +2053,10 @@ func _take_restart(pl: Player, choice: String) -> void:
 					land = Pitch.clamp_in(spot + _cam_dir(controls.joystick) * 80.0, 6.0)
 				_strike_to(pl, land, "puck_out")
 		"penalty":
-			_shoot(pl, true, "penalty")
+			if choice == "AIMED":
+				_shoot_at(pl, _aim_point, "penalty")
+			else:
+				_shoot(pl, true, "penalty")
 		"sideline":
 			var dist := Pitch.from_goal_line(spot, d)
 			if (choice == "STRIKE" and dist < 60.0) or (choice == "" and dist < 38.0 and rng.randf() < 0.5):
@@ -2020,7 +2078,9 @@ func _take_restart(pl: Player, choice: String) -> void:
 			elif choice == "STRIKE" or choice == "GOAL":
 				shoot = true
 			var placed := "65" if kind == "65" else "free"
-			if shoot:
+			if choice == "AIMED":
+				_shoot_at(pl, _aim_point, placed)
+			elif shoot:
 				_shoot(pl, choice == "GOAL" or (choice == "" and dist <= 21.0 and rng.randf() < 0.15), placed)
 			else:
 				var to: Player = _pass_option(pl, controls.joystick if choice != "" else Vector2.ZERO)
@@ -2411,7 +2471,10 @@ func _shootout_strike(_choice: String) -> void:
 	ball.state = Sliotar.HELD
 	taker.ball_hand = false
 	taker.ball_stick = false
-	_shoot(taker, true, "penalty")
+	if _choice == "AIMED":
+		_shoot_at(taker, _aim_point, "penalty")
+	else:
+		_shoot(taker, true, "penalty")
 
 
 func _shootout_result(kind: String, _c: Vector3) -> void:
@@ -2593,6 +2656,8 @@ func _user_move(pl: Player, dt: float) -> void:
 func user_buttons() -> Array:
 	if user_team < 0 or active == null or not controls.visible:
 		return []
+	if placed_aim != null:
+		return [] if placed_aim.stopped else ["SHOOT"]
 	var a := active
 	var b := ball.global_position
 	if phase == P.SET and a == taker:
@@ -2695,8 +2760,15 @@ func _on_action(id: String) -> void:
 	if paused or active == null:
 		return
 	var a := active
+	if placed_aim != null:
+		if id == "SHOOT":
+			placed_aim.stop()
+		return
 	if id == "SWITCH":
 		_switch()
+		return
+	if _aim_wanted(a, id):
+		_start_aim(a)
 		return
 	if phase == P.SET and a == taker:
 		_take_restart(a, id)

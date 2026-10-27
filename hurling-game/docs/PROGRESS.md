@@ -232,6 +232,24 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.12.0-beta, aimed frees, 27 October 2026)
+
+The owner: "the penalty shots need to be more interesting": in range, the camera at ground level beyond the shooter, a
+SHOOT button, and a target going round in and out of the goal and the posts, quick through the goal and longer in the
+posts; SHOOT stops it, and that is where the ball goes.
+
+- `game/placed_aim.gd`: the low camera (eight metres behind the taker and a little to his side, past his shoulder:
+  straight behind him, his back hid the goal), and the target, a ring that faces the camera, gold over the bar between
+  the posts, green in the goal, red wide, going round an oval through all three (at 0.55 speed between the posts, 1.9
+  in the goal). A round takes 2.9 s from 14 m and 1.8 s from 65 m; a good free-taker's goes a little slower. Left
+  alone it stops after 12 s.
+- `match.gd`: your free (within 66 m) or 65, STRIKE or GOAL; your penalty, GOAL; your penalty in a shoot-out: the
+  buttons become SHOOT, nothing is taken for you while you aim, and the sliotar goes where the target stopped, within
+  a hand's width; under the bar it is a shot at goal and the keeper can still save it. The low camera stays on the
+  flight for 2.6 s, then back to the match camera. The computer's frees as before; PASS as before.
+- Tests: a point, a wide, a 65 and a penalty aimed and struck through the match, back to the match camera after each;
+  the target lingers between the posts and hurries through the goal. How to Play's controls say how.
+
 ## Done (Play readiness and the media kit, 27 October 2026)
 
 The owner (through the lead): the game ready for Google Play but for the owner's own steps, and a media kit for the

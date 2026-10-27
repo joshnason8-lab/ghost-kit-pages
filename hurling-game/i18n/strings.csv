@@ -180,6 +180,7 @@ BTN_BLOCK,BLOCK,BAC
 BTN_SWITCH,SWITCH,ATHRAIGH
 BTN_SHORT,SHORT,GEARR
 BTN_LONG,LONG,FADA
+BTN_SHOOT,SHOOT,SCAOIL
 RESULT_WON,Victory,Bua
 RESULT_LOST,Beaten,Buailte
 RESULT_DRAW,A draw,Comhscór
@@ -292,7 +293,7 @@ CTRL_PULL_TEXT,"PULL strikes a loose ball first time, on the ground or in the ai
 CTRL_TACKLE,Tackle and block,Tacláil agus bac
 CTRL_TACKLE_TEXT,"Near the man on the ball: TACKLE (a shoulder, a hook or a flick, as the moment needs); BLOCK when he goes to strike. From behind, or too late, it is a free.","In aice leis an imreoir leis an sliotar: TACLÁIL (gualainn, hiúcáil nó bain de, de réir mar is gá); BAC nuair a théann sé chun buailte. Ón gcúl, nó rómhall, is saorphoc é."
 CTRL_RESTART,Restarts,Atosuithe
-CTRL_RESTART_TEXT,"Your puck-out: LONG (aim with the joystick) or SHORT to a back. Your free, 65 or sideline: STRIKE at the posts or PASS to a teammate. A penalty: aim, then GOAL.","Do phoc amach: FADA (aimsigh leis an luamhán) nó GEARR chuig cúlaí. Do shaorphoc, 65 nó poc sleasa: BUAIL ar na cuaillí nó PAS chuig comhimreoir. Poc éirice: aimsigh, ansin CÚL."
+CTRL_RESTART_TEXT,"Your puck-out: LONG (aim with the joystick) or SHORT to a back. Your free or 65 at the posts: STRIKE, and the camera drops behind your man with a target going round the goal: press SHOOT as it passes where you want the sliotar to go (between the posts above the bar for a point, in the net for a goal). A penalty is the same, after GOAL. PASS gives a free to a teammate.","Do phoc amach: FADA (aimsigh leis an luamhán) nó GEARR chuig cúlaí. Do shaorphoc nó 65 ar na cuaillí: BUAIL, agus tagann an ceamara anuas taobh thiar d'fhear le sprioc ag dul timpeall an chúil: brúigh SCAOIL agus é ag dul thar an áit ar mhaith leat an sliotar a chur (idir na cuaillí os cionn an trasnáin le haghaidh cúilín, sa líon le haghaidh cúil). Mar an gcéanna le poc éirice, tar éis CÚL. Tugann PAS an saorphoc do chomhimreoir."
 CTRL_ASSIST,Help,Cabhair
 CTRL_ASSIST_TEXT,"Settings > Help with the ball: Off, Solo (he picks up the ball and solos by himself) or Full (he runs for loose balls too).","Socruithe > Cabhair leis an sliotar: Múchta, Solo (tógann sé an liathróid agus déanann sé solo leis féin) nó Iomlán (ritheann sé i ndiaidh liathróidí scaoilte freisin)."
 SIG_POINT,A point,Cúilín

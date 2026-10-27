@@ -48,6 +48,7 @@ func _ready() -> void:
 	await _shadows()
 	await _ultra()
 	await _auto_pickup()
+	await _aimed_shots()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	_backpedal()
@@ -1180,6 +1181,66 @@ func _auto_pickup() -> void:
 		m.queue_free()
 		await frames(2)
 	Game.settings.assist = keep
+
+
+## Your free at the posts, a 65 and a penalty, aimed by timing (game/placed_aim.gd): STRIKE (or GOAL) brings the low
+## camera and the SHOOT button; SHOOT stops the target, and the sliotar goes there: over the bar between the posts a
+## point, out past an upright a wide, under the bar a shot at goal. The target hurries through the goal and lingers
+## between the posts.
+func _aimed_shots() -> void:
+	check(PlacedAim.zone(Vector3(0, 5.0, 0)) == "point" and PlacedAim.zone(Vector3(0, 1.0, 1.0)) == "goal"
+		and PlacedAim.zone(Vector3(0, 4.0, 5.0)) == "wide", "Aimed shots: over the bar a point, under it a goal, outside the posts wide")
+	for c in [["free", PI * 0.5, "point"], ["free", 0.0, "wide"], ["65", PI * 0.5, "point"], ["penalty", PI * 1.5, "goal"]]:
+		var m: Node = load("res://game/match.gd").new()
+		m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": 0, "seed": 11, "length": 8.0, "mode": "test"}
+		add_child(m)
+		await frames(5)
+		var d: float = m.dir(0)
+		var dist := 30.0 if c[0] == "free" else (65.0 if c[0] == "65" else 20.0)
+		var spot := Vector3((Pitch.HALF_L - dist) * d, 0, 0)
+		m._award({"kind": c[0], "team": 0, "spot": spot}, 0.1)
+		var f := 0
+		while not (m.phase == m.P.SET and m.taker != null) and f < 30 * 30:
+			await frames(1)
+			f += 1
+		m._set_active(m.taker)
+		var before: Array = m.score[0].duplicate()
+		var wides: int = m.tstats[0].wides
+		m._on_action("GOAL" if c[0] == "penalty" else "STRIKE")
+		await frames(2)
+		var aiming: bool = m.placed_aim != null and m.user_buttons() == ["SHOOT"] and m.placed_aim.camera.current
+		check(aiming, "Aimed %s: STRIKE brings the low camera and SHOOT (%s)" % [c[0], m.user_buttons()])
+		if not aiming:
+			m.queue_free()
+			await frames(2)
+			continue
+		m.placed_aim.angle = c[1]
+		m.placed_aim._place()
+		var at: Vector3 = m.placed_aim.target()
+		m._on_action("SHOOT")
+		f = 0
+		while f < 30 * 8 and (m.placed_aim != null or m.phase == m.P.LIVE):
+			await frames(1)
+			f += 1
+		var shot: Dictionary = m.ball.get_meta("shot", {})
+		var got := "point" if m.score[0][1] > before[1] else ("goal" if m.score[0][0] > before[0] else ("wide" if m.tstats[0].wides > wides else "?"))
+		var ok: bool = got == c[2] or (c[2] == "goal" and bool(shot.get("goal", false)))   # (a shot at goal may be saved)
+		check(ok and m.placed_aim == null and m.cam.camera.current, "Aimed %s, the target stopped %s (%.1f up, %.1f across): %s; back to the match camera" % [
+			c[0], c[2], at.y, absf(at.z), got])
+		m.queue_free()
+		await frames(2)
+	# Speed: through the goal faster than between the posts.
+	var a := PlacedAim.new()
+	add_child(a)
+	var rng := RandomNumberGenerator.new()
+	a.setup(Vector3(Pitch.HALF_L - 30.0, 0, 0), Vector3(Pitch.HALF_L - 30.9, 0, 0), 1.0, 0.7, rng)
+	var steps := {"goal": 0, "point": 0, "wide": 0}
+	a.angle = 0.0
+	for i in 3000:
+		a._process(1.0 / 300.0)
+		steps[PlacedAim.zone(a.target())] += 1
+	a.queue_free()
+	check(steps.point > steps.goal * 2, "Aimed shots: the target lingers between the posts (%d steps) and hurries through the goal (%d)" % [steps.point, steps.goal])
 
 
 ## The championship as the owner asked: your own game simulated (and every game left), a match left for the menu

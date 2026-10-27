@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.12.0
+
+- **Frees, 65s and penalties at the posts are yours to strike.** Press STRIKE on a free in range (or GOAL on a
+  penalty) and the camera drops to the ground behind your man, looking at the posts. A target goes round in front of
+  the goal: through the net, out wide, up between the posts over the bar and out the other side. Press SHOOT and it
+  stops: that is where the sliotar goes. It hurries through the goal (a small space, with the keeper in it) and
+  lingers between the posts; further out it goes round faster. The camera stays low to watch it go over.
+
 ## New in 0.11.2
 
 - **The referee and umpires look right**: no more dark cracks across their faces, arms and legs (the step that
