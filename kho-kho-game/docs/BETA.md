@@ -16,7 +16,7 @@ since about 2019. The Play bundle also carries a 32-bit build for older Android 
 - **Move buttons from the pause menu** no longer stops the game if the match ended while you were moving them (found
   by the new monkey test, `tools/soak.sh`).
 - Behind the scenes, for Google Play: the store pictures and the media kit are made by a script from the build
-  (`tools/store/make_kit.sh`), and every Play Console answer is written down (`store/PLAY_CONSOLE_ANSWERS.md`).
+  (`tools/store/make_kit.sh`; the media kit with its trailer by `tools/store/make_media_kit.sh`, which CI runs and publishes on the `kho-kho-rush-media` release), and every Play Console answer is written down (`store/PLAY_CONSOLE_ANSWERS.md`).
 
 ## What's new in 0.10.1
 
