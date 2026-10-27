@@ -16,8 +16,8 @@ const ACTION := ["touch", "hold", "escape", "takedown"]
 const GROUNDS := [["stadium", "IND", "IRN", 11], ["village", "HYD", "JAI", 12], ["dome", "MUM", "PAT", 13],
 	["beach", "BAN", "NEP", 14], ["monsoon", "KOL", "CHE", 15]]
 const PREFER := ["takedown", "escape", "hold", "touch"]
-const BEFORE := 60   # frames drawn before the moment
-const AFTER := 75    # and after it
+const BEFORE := 50   # frames drawn before the moment
+const AFTER := 64    # and after it
 
 var _mode := "record"
 var _plan := {}
@@ -137,6 +137,9 @@ func _record(arena: String, home: String, away: String, seed: int) -> void:
 	Game.start_match(_config(arena, home, away, seed))
 	var m: Node = Game.current
 	m.hud.visible = false
+	# High as it is, but for its 4x multisampling, which costs a software renderer more than the rest of High put
+	# together (each frame of footage took 15-20 s with it).
+	get_viewport().msaa_3d = Viewport.MSAA_DISABLED
 	var fr := [0]
 	m.game_event.connect(func(kind, _info):
 		if kind == what:

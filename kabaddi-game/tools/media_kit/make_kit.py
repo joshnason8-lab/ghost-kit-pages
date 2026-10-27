@@ -295,7 +295,8 @@ def trailer(raw: pathlib.Path, out: pathlib.Path, tmp: pathlib.Path):
 
 CREDITS = """Kabaddi Raid media kit: credits
 
-Everything in this kit was captured from the game itself (version {version}), on High graphics.
+Everything in this kit was captured from the game itself (version {version}), on High graphics (the trailer's
+footage without High's 4x anti-aliasing: it was drawn without a graphics card).
 
 Trailer audio
 - Music: "Indian" by LNPLUSMUSIC (Pixabay track 611803), Pixabay Content License, https://pixabay.com/service/license-summary/
