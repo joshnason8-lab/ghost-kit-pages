@@ -139,9 +139,12 @@ func _notification(what: int) -> void:
 				current.set_paused(true)
 
 
-## Back: pause or resume a match, leave a screen the way its Back button does, and quit from the main menu.
+## Back: close what is open over the screen (a list being picked from, a question), pause or resume a match, leave a
+## screen the way its Back button does, and quit from the main menu.
 func go_back() -> void:
 	if current == null or not is_instance_valid(current):
+		return
+	if _close_popup():
 		return
 	if current.has_method("on_back"):
 		current.on_back()
@@ -151,6 +154,20 @@ func go_back() -> void:
 		get_tree().quit()
 	else:
 		goto_menu()
+
+
+## A team picker's list or a question (League Season's "Abandon?") open over the screen: Back closes it, as on any
+## Android screen, rather than leaving the screen under it.
+func _close_popup() -> bool:
+	for w in current.find_children("*", "Window", true, false):
+		if (w as Window).visible:
+			(w as Window).hide()
+			return true
+	for o in current.find_children("*", "OptionButton", true, false):
+		if (o as OptionButton).get_popup().visible:
+			(o as OptionButton).get_popup().hide()
+			return true
+	return false
 
 
 ## The graphics level for this phone: Low on a phone with a small GPU or little memory (a Galaxy A16's Mali-G57 MC2 or

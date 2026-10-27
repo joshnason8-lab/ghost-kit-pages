@@ -27,6 +27,7 @@ func _ready() -> void:
 	_graphics_auto()
 	_detail_by_level()
 	await _legal_pages()
+	await _back_everywhere()
 	await _play_as_and_officials()
 	await _matches()
 	await _sim_to_end()
@@ -402,6 +403,69 @@ func _legal_pages() -> void:
 			s.queue_free()
 			await frames(1)
 	TranslationServer.set_locale(keep)
+
+
+## The phone's Back on every screen: it leaves the screen (as its own Back button does); what is open over a screen
+## (the language picker, a team picker's list, League Season's "Abandon?") closes first and the screen stays; in a
+## match it pauses and resumes, and closes the pause menu's Settings first. (On the home screen with nothing open it
+## leaves the game: not pressed here.)
+func _back_everywhere() -> void:
+	Game.goto_menu()
+	await frames(2)
+	var menu: Node = Game.current
+	menu._open_language()
+	await frames(2)
+	Game.go_back()
+	await frames(2)
+	check(Game.current == menu and not is_instance_valid(menu.get("_picker")), "Back closes the language picker, on the home screen")
+	for path in ["res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd", "res://ui/records_screen.gd",
+			"res://ui/season_hub.gd", "res://ui/cup_screen.gd", "res://ui/licences_screen.gd", "res://ui/doc_screen.gd"]:
+		var s: Node = Game.show_screen(path, {"kind": "help"} if path.ends_with("doc_screen.gd") else {})
+		await frames(2)
+		Game.go_back()
+		await frames(2)
+		check(Game.current != s and is_instance_valid(Game.current), "Back leaves %s" % path.get_file().get_basename())
+	# A team picker's list.
+	var qs: Node = Game.show_screen("res://ui/quick_setup.gd")
+	await frames(2)
+	var ob: OptionButton = qs.find_children("*", "OptionButton", true, false)[0]
+	ob.show_popup()
+	await frames(2)
+	var listed := ob.get_popup().visible
+	Game.go_back()
+	await frames(2)
+	check(listed and not ob.get_popup().visible and Game.current == qs, "Back closes a team picker's list, on Quick Match")
+	# "Abandon the season?"
+	Game.new_season("TH", "SPB")
+	var hub: Node = Game.show_screen("res://ui/season_hub.gd")
+	await frames(2)
+	hub._confirm_abandon()
+	await frames(2)
+	var asked: Array = hub.find_children("*", "ConfirmationDialog", true, false).filter(func(d): return d.visible)
+	Game.go_back()
+	await frames(2)
+	check(asked.size() == 1 and not asked[0].visible and Game.current == hub and Game.season != null,
+		"Back closes League Season's \"Abandon?\" and keeps the season")
+	Game.delete_season()
+	# A match: Back pauses; with the pause menu's Settings open, closes them; then resumes.
+	Game.start_match({"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 1, "points": 15,
+		"difficulty": 2, "mode": "quick", "user_team": 0, "women": false, "seed": 3})
+	await frames(3)
+	var m: Node = Game.current
+	Game.go_back()
+	await frames(1)
+	var paused := bool(m.paused)
+	m.hud.open_settings()
+	await frames(1)
+	Game.go_back()
+	await frames(1)
+	var settings_closed: bool = not m.hud.settings_open() and bool(m.paused)
+	Game.go_back()
+	await frames(1)
+	check(paused and settings_closed and not bool(m.paused) and Game.current == m,
+		"Back in a match: pauses, closes the pause menu's Settings, resumes")
+	Game.goto_menu()
+	await frames(2)
 
 
 ## Play as one player: only his touches are yours (the team's: all of them); the white ring is under him. The officials

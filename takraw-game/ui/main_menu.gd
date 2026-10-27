@@ -249,6 +249,14 @@ func _go(path: String) -> void:
 	Game.show_screen(path)
 
 
+## The phone's Back: closes the language picker if it is open, else leaves the game.
+func on_back() -> void:
+	if _picker and is_instance_valid(_picker) and not _picker.is_queued_for_deletion():
+		_picker.close()
+		return
+	get_tree().quit()
+
+
 func _open_language() -> void:
 	if _picker and is_instance_valid(_picker):
 		return

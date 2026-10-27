@@ -150,9 +150,10 @@ func _drag() -> void:
 	Input.parse_input_event(up)
 
 
-## The phone's Back (not on the home screen, where it quits the game).
+## The phone's Back (not on the home screen, where it quits the game, unless its language picker is open: Back closes
+## that).
 func _back() -> void:
-	if _screen_name() == "main_menu":
+	if _screen_name() == "main_menu" and not is_instance_valid(Game.current.get("_picker")):
 		_count("back (home screen: would quit)")
 		return
 	_count("back")
