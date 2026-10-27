@@ -42,7 +42,8 @@ run 1920x1080 "$RAW" trailer "$RAW/trailer.avi"
 echo "== vertical cut (1080 x 1920)"
 run 1080x1920 "$RAW" vertical "$RAW/vertical.avi"
 
-# The game's sound as filmed, the menu music under it (faded in and out), H.264 + AAC for every player and site.
+# The game's sound as filmed, the menu music under it (faded in and out), H.264 + AAC for every player and site. At
+# most 10 Mbit/s (the crowds would take twice that at this quality): the trailer stays well under 60 MB.
 encode() {   # in, out, longest seconds
 	local in=$1 out=$2 most=$3
 	local dur
@@ -52,7 +53,7 @@ encode() {   # in, out, longest seconds
 	fo=$(python3 -c "print(max(0.0, $dur - 2.5))")
 	ffmpeg -y -v error -i "$in" -i assets/audio/menu_music.ogg -t "$dur" -filter_complex \
 		"[1:a]volume=0.30,afade=t=in:d=1.5,afade=t=out:st=$fo:d=2.5[mu];[0:a][mu]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.9[a];[0:v]format=yuv420p,fade=t=out:st=$(python3 -c "print(max(0.0, $dur - 0.5))"):d=0.5[v]" \
-		-map "[v]" -map "[a]" -c:v libx264 -preset slow -crf 19 -profile:v high -r 30 -c:a aac -b:a 192k -ar 48000 \
+		-map "[v]" -map "[a]" -c:v libx264 -preset slow -crf 20 -maxrate 10M -bufsize 20M -profile:v high -r 30 -c:a aac -b:a 192k -ar 48000 \
 		-movflags +faststart "$out"
 	echo "$(basename "$out"): $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$out") s, $(du -h "$out" | cut -f1)"
 }

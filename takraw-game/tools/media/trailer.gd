@@ -2,8 +2,10 @@ extends Node
 ## The media kit's trailer and stills, filmed from the game itself (tools/media/make_media_kit.sh runs this and cuts
 ## the result): a title card, six moments from real AI-v-AI matches in the five venues (a roll spike that scores, a
 ## serve, a block, a doubles rally, a kill in the gym, a celebration), captions over them, and an end card.
-##   trailer: godot --path . --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 30 --write-movie raw.avi
-##            res://tools/media/trailer.tscn -- OUTDIR trailer        (vertical: --resolution 1080x1920 ... vertical)
+##   trailer: godot --path . --rendering-driver opengl3 --fixed-fps 30 --write-movie raw.avi
+##            res://tools/media/trailer.tscn -- OUTDIR trailer [SHOT]   (vertical: ... vertical [SHOT])
+##            Movie Maker films at the window size: make_media_kit.sh sets it (1920 x 1080, or 1080 x 1920 for the
+##            vertical cut) in an override.cfg for the run. SHOT: that one moment alone, to look at it again.
 ##   stills:  godot --path . --rendering-driver opengl3 --resolution 1920x1080 res://tools/media/trailer.tscn -- OUTDIR stills
 ##   store:   the Play listing's screenshots and feature picture (tools/store/store_shots.tscn sets this mode)
 ##   menus:   every menu screen, in English (the same line as stills, with menus)
@@ -35,11 +37,14 @@ const SHOTS := [
 		"kind": "attack", "move": "", "ends": "kill", "lead": 0.5, "len": 3.6, "camera": "close",
 		"caption": "Thirteen languages. Plays offline. No ads."},
 ]
-# The vertical cut (15 s): three of them, shorter.
+# The vertical cut (15 s): three of them, shorter, their captions broken for the narrow picture.
 const VERTICAL := {"roll_spike": 4.0, "serve": 3.0, "celebration": 3.2}
+const VERTICAL_CAPTIONS := {"roll_spike": "Roll spikes, sunback spikes,\nhorse-kick serves",
+	"serve": "Five venues, from the\nnational arena to the beach", "celebration": "Thirteen languages.\nPlays offline. No ads."}
 
 var out := ""
 var mode := "trailer"
+var only := ""              # (trailer, vertical) one shot alone, by name: to look at it again quickly
 var vertical := false
 var m: Node = null
 var cam: Camera3D
@@ -60,6 +65,7 @@ func _ready() -> void:
 	if out == "":   # (store_shots sets both before adding this)
 		out = a[0] if a.size() > 0 else "/tmp/media"
 		mode = a[1] if a.size() > 1 else "trailer"
+		only = a[2] if a.size() > 2 else ""
 	vertical = mode == "vertical"
 	DirAccess.make_dir_recursive_absolute(out)
 	Game.main = self
@@ -89,11 +95,14 @@ func _ready() -> void:
 func _trailer() -> void:
 	var shots := []
 	for s in SHOTS:
+		if only != "" and s.name != only:
+			continue
 		if not vertical:
 			shots.append(s.duplicate())
 		elif VERTICAL.has(s.name):
 			var v: Dictionary = s.duplicate()
 			v.len = VERTICAL[s.name]
+			v.caption = VERTICAL_CAPTIONS.get(s.name, s.caption)
 			v.lead = minf(float(s.lead), float(v.len) * 0.5)
 			shots.append(v)
 	# The title over the dark, the first moment made ready under it.
@@ -491,11 +500,15 @@ func _aim(dt: float, snap := false) -> void:
 			mid /= maxf(1, m.players_on(_side).size())
 			pos = Vector3(sg * 1.2, 1.55, -4.6)
 			look = mid + Vector3(0, 1.1, 0)
+			if vertical:
+				# Further back for the narrow picture, and wide of the assistant referee by the near post (straight
+				# back from here, he would fill half of it).
+				pos = Vector3(sg * 2.2, 1.8, -5.9)
 		_:
 			# (Vertical: the game's cameras are made for a wide picture) closer, high, following the ball.
 			pos = Vector3(clampf(b.x * 0.6, -4.0, 4.0), 5.5, -10.5)
 			look = Vector3(b.x * 0.8, 0.8 + b.y * 0.3, b.z * 0.3)
-	if vertical and c in ["low", "server", "close"]:
+	if vertical and c in ["low", "server"]:
 		pos += (pos - look).normalized() * 1.2
 	if snap:
 		_cam_pos = pos
@@ -571,6 +584,8 @@ func _overlay() -> void:
 		_caption.autowrap_mode = TextServer.AUTOWRAP_WORD
 		_caption.custom_minimum_size = Vector2(880, 0)
 		_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		# Two lines sit close (the display font leaves a wide gap between them).
+		_caption.add_theme_constant_override("line_spacing", -roundi(Game.font_display.get_height(64) - 64 * 0.95))
 	_cap_box.add_child(_caption)
 	layer.add_child(_cap_box)
 	if vertical:
