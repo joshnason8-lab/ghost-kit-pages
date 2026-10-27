@@ -232,6 +232,22 @@ file's source, author and licence; `tools/audio/sounds.py` downloads, trims, lev
 - Size: 300 KB of audio before, 596 KB after; the APK 39.65 MB before (0.6.0), see the release for after.
 - Test: every file in assets/audio loads, every sound the game plays is there, the beds loop.
 
+## Done (0.11.1-beta, the legal pages, 27 October 2026)
+
+The owner found links to the help, privacy and licence pages returning 404 across the games (the lead's task):
+
+- **In the game, offline**: Settings > About > Licences, Help, Privacy policy, each a screen of its own with Back.
+  Licences lists every asset by source, author and licence (from docs/SOUNDS.md, the shared assets' README and
+  docs/GRAPHICS.md), the HD pack's included, then the fonts' OFL, Godot's MIT licence and its parts
+  (Engine.get_copyright_info / get_license_info). Help gained the graphics levels and how to report a bug (with the
+  version); the privacy policy its date. Licences' text on cards, like the other two (it was hard to read over the
+  field on a small phone).
+- **The game opens no web page.** The web copies (`ash-and-leather/privacy.html`, `support.html`) say the same, but
+  GitHub Pages serves this repository's `main`, so their addresses answer 404 until this branch is merged (checked
+  with curl); the Play listing's privacy URL (store/PLAY_STORE.md) works from then.
+- **Test**: `_legal_pages` presses each button in Settings, checks the page opens in the game with its words (each
+  credit, the date, the contact), scrolls, and Back returns to Settings, in English and Irish.
+
 ## Done (0.11.0-beta, the owner's list, 27 October 2026)
 
 - **High's walk and jog stay at 30 fps**: the HD pack's 60 fps CMU gaits slid the planted foot more at the game's

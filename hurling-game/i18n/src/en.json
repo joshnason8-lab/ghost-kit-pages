@@ -101,7 +101,7 @@
   "PRIVACY_POLICY": "Privacy policy",
   "HELP_SUPPORT": "Help",
   "LICENCES": "Licences",
-  "LICENCES_INTRO": "Hurling Heroes is made with the Godot Engine and the fonts below. Their licences ask that these notices be shown.",
+  "LICENCES_INTRO": "Hurling Heroes is made with the Godot Engine, the fonts below and the work of the people credited here. Their licences ask that these notices be shown.",
   "HALF_1": "1st half",
   "HALF_2": "2nd half",
   "HALF_ET1": "Extra time",
@@ -385,6 +385,8 @@
   "HELP_RULES_TEXT": "The playing rules of hurling in force in 2026: two halves of 35 minutes (30 at club level), a goal worth three points, four steps and two catches, the 13-metre and 20-metre rules at restarts, yellow, red and black cards, extra time and penalties in knock-out games. How to Play has the whole of it.",
   "HELP_SLOW": "The game runs slowly or the phone gets warm",
   "HELP_SLOW_TEXT": "Settings > Graphics > Low, and Frame rate > Battery saver. Phones with less memory start on Low by themselves.",
+  "HELP_GRAPHICS": "Graphics: Low, Medium and High",
+  "HELP_GRAPHICS_TEXT": "Settings > The screen. Low is for phones with less memory: simpler players, a smaller crowd, a smaller picture. Medium is sharper and smoother. High adds real lighting and shadows, floodlights that light the field and moves that blend into each other; on recent high-end phones the HD pack button adds full-detail players and 4K grass (a download of about 114 MB, only if you ask for it). The game picks a level the first time it runs and drops one by itself if a match runs slowly. The change is at once; no restart.",
   "HELP_BUTTONS": "The buttons are hard to reach",
   "HELP_BUTTONS_TEXT": "Settings > Button size, Move buttons to drag them where you want them, and Left-handed to swap the sides.",
   "HELP_INSTALL": "The beta will not install",
@@ -392,7 +394,7 @@
   "HELP_IRISH": "The Irish looks wrong",
   "HELP_IRISH_TEXT": "Please tell us which screen and what it says; we want it right.",
   "HELP_CONTACT": "Get in touch",
-  "HELP_CONTACT_TEXT": "Email joshnason8@gmail.com with your phone's model and what happened. We read everything.",
+  "HELP_CONTACT_TEXT": "To report a bug or ask anything, email joshnason8@gmail.com with your phone's model, the game's version (on the home screen, bottom right) and what happened. We read everything.",
   "SIMULATE": "Simulate",
   "SIMULATE_REST": "Simulate the rest of the championship",
   "SIMULATED": "Your game, simulated",
@@ -419,5 +421,6 @@
   "HD_LINE_IN": "HD pack: in, used on High.",
   "HD_LINE_OUT": "HD pack: not downloaded. Optional, for sharper players, grass and crowd on High.",
   "HD_OPEN": "HD pack",
-  "VULKAN_BACK_crash": "The game did not start properly last time: from now on it uses the older graphics renderer on this phone."
+  "VULKAN_BACK_crash": "The game did not start properly last time: from now on it uses the older graphics renderer on this phone.",
+  "PRIV_DATE": "Last updated 27 October 2026."
 }

@@ -1,6 +1,6 @@
 extends Node
 ## Renders a tour of the screens to PNGs. Needs a display (xvfb works):
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /out/dir [lang] [only]
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /out/dir [lang] [only] [graphics 0-2]
 
 var out := "user://shots"
 var only := ""
@@ -19,7 +19,7 @@ func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(out)
 	Game.main = self
 	Game.settings.sound = false
-	Game.settings.graphics = Game.GFX_HIGH
+	Game.settings.graphics = int(a[3]) if a.size() > 3 else Game.GFX_HIGH
 	Game.delete_champ()
 	var tour := [
 		["menu", "res://ui/main_menu.gd", {}, 2.5], ["setup", "res://ui/quick_setup.gd", {}, 0.4],
@@ -27,6 +27,7 @@ func _ready() -> void:
 		["howto_controls", "res://ui/howto_screen.gd", {"tab": 1}, 0.4], ["champ_pick", "res://ui/champ_screen.gd", {}, 0.4],
 		["move_buttons", "res://ui/buttons_screen.gd", {}, 0.4],
 		["info_privacy", "res://ui/info_screen.gd", {"page": "privacy"}, 0.4], ["info_help", "res://ui/info_screen.gd", {"page": "help"}, 0.4],
+		["info_licences", "res://ui/licences_screen.gd", {}, 0.4],
 	]
 	for t in tour:
 		if only != "" and not String(t[0]).begins_with(only):

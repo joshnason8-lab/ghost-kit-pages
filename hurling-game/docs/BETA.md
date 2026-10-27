@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.11.1
+
+- **Licences, Help and the privacy policy**, all in Settings > About and in the game itself (no browser, so they work
+  offline): Licences now lists every asset with its source, author and licence (the Godot Engine and its parts, the
+  fonts, Mixamo, the CMU motion capture, Poly Haven, Meshy, Gregor Quendel, Thimras, Kenney, the Pixabay whistles, and
+  the HD pack's own); Help has a section on the graphics levels and how to report a bug; the privacy policy carries
+  its date. Easier to read on a small phone (each part on a card).
+
 ## New in 0.11.0
 
 - **One renderer, three levels**: the game draws with Vulkan on every phone that suits it, and Graphics is Low,

@@ -30,6 +30,7 @@ func _ready() -> void:
 	_plurals()
 	await _screens()
 	await _scroll_on_text()
+	await _legal_pages()
 	_championship()
 	_sim_scores()
 	_clock_lengths()
@@ -262,6 +263,72 @@ func _fake_result() -> Dictionary:
 	return {"config": {"mode": "quick", "stage": "Final"}, "home": "KIL", "away": "TIP", "score": [[2, 15], [1, 17]], "winner": 0,
 		"user_team": 0, "pstats": ps, "tstats": [ts, ts.duplicate()], "events": [], "extra_time": true,
 		"shootout": {}, "star": "KIL_14"}
+
+
+## Settings' Licences, Help and Privacy policy: each a button in Settings opening a screen in the game (no browser, so
+## offline), with its words in it, a scrolling box and Back to Settings; in both languages.
+func _legal_pages() -> void:
+	var musts := {
+		"LICENCES": ["Permission is hereby granted", "Godot", "SIL Open Font License", "Gregor Quendel", "CC-BY 4.0", "Thimras",
+			"Kenney", "charlesheffley009", "framptones", "freesound_community", "Pixabay Content License", "Poly Haven",
+			"mocap.cs.cmu.edu", "NSF EIA-0196217", "Mixamo", "Meshy", "HD pack", "cotton_jersey", "concrete_wall_008"],
+		"HELP_SUPPORT": ["joshnason8@gmail.com", "HD pack", "Low", "Medium", "High", "version"],
+		"PRIVACY_POLICY": ["27 October 2026", "joshnason8@gmail.com", "no analytics, no advertising", "internet", "HD pack"],
+	}
+	for pair in Game.LANGUAGES:
+		Game.settings.language = pair[0]
+		TranslationServer.set_locale(pair[0])
+		Game._size_theme()
+		for key in musts:
+			var set_s := Game.show_screen("res://ui/settings_screen.gd")
+			await frames(3)
+			var b := _button_with(set_s, tr(key))
+			check(b != null, "%s: Settings has a %s button" % [pair[0], key])
+			if b == null:
+				continue
+			b.pressed.emit()
+			await frames(4)
+			var s := Game.current
+			var text := _all_text(s)
+			check(s != set_s and text.length() > (20000 if key == "LICENCES" else 1200),
+				"%s: %s opens a page in the game (%d characters)" % [pair[0], key, text.length()])
+			check(_first_scroll(s) != null, "%s: %s scrolls" % [pair[0], key])
+			if pair[0] == "en":
+				var missing := []
+				for m in musts[key]:
+					if not text.contains(m):
+						missing.append(m)
+				check(missing.is_empty(), "%s says what it must (missing: %s)" % [key, ", ".join(missing)])
+			check(s.has_meta("back"), "%s: %s has Back" % [pair[0], key])
+			if s.has_meta("back"):
+				(s.get_meta("back") as Callable).call()
+				await frames(2)
+				check(String(Game.current.get_script().resource_path).ends_with("settings_screen.gd"),
+					"%s: Back from %s is Settings" % [pair[0], key])
+	Game.settings.language = "en"
+	TranslationServer.set_locale("en")
+	Game._size_theme()
+
+
+func _button_with(n: Node, text: String) -> Button:
+	if n is Button and (n as Button).text == text:
+		return n
+	for c in n.get_children():
+		var f := _button_with(c, text)
+		if f:
+			return f
+	return null
+
+
+func _all_text(n: Node) -> String:
+	var t := ""
+	if n is Label:
+		t = (n as Label).text + "\n"
+	elif n is RichTextLabel:
+		t = (n as RichTextLabel).get_parsed_text() + "\n"
+	for c in n.get_children():
+		t += _all_text(c)
+	return t
 
 
 ## Each scrolling page scrolls when a drag starts on its words (Kabaddi's How to Play did not).

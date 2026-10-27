@@ -6,8 +6,8 @@ extends Control
 const PAGES := {
 	"privacy": ["PRIVACY_POLICY", ["PRIV_SUMMARY", "PRIV_KEPT", "PRIV_HD", "PRIV_PERMS", "PRIV_CHILDREN", "PRIV_CHANGES",
 		"PRIV_CONTACT"]],
-	"help": ["HELP_SUPPORT", ["HELP_PLAYING", "HELP_RULES", "HELP_SLOW", "HELP_BUTTONS", "HELP_INSTALL", "HELP_IRISH",
-		"HELP_CONTACT"]],
+	"help": ["HELP_SUPPORT", ["HELP_PLAYING", "HELP_RULES", "HELP_GRAPHICS", "HELP_SLOW", "HELP_BUTTONS", "HELP_INSTALL",
+		"HELP_IRISH", "HELP_CONTACT"]],
 }
 
 var page := "privacy"
@@ -24,6 +24,8 @@ func _ready() -> void:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 12)
 	v.add_child(UI.scroll(col))
+	if page == "privacy":
+		col.add_child(UI.wrap(tr("PRIV_DATE"), "MutedLabel", 16))
 	for k in p[1]:
 		var card := UI.card()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL

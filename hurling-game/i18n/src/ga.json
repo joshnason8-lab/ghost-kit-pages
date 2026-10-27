@@ -101,7 +101,7 @@
   "PRIVACY_POLICY": "Polasaí príobháideachta",
   "HELP_SUPPORT": "Cabhair",
   "LICENCES": "Ceadúnais",
-  "LICENCES_INTRO": "Rinneadh Hurling Heroes le hInneall Godot agus leis na clónna thíos. Iarrann a gceadúnais go dtaispeánfaí na fógraí seo (as Béarla, mar a scríobhadh iad).",
+  "LICENCES_INTRO": "Rinneadh Hurling Heroes le hInneall Godot, leis na clónna thíos agus le saothar na ndaoine a luaitear anseo. Iarrann a gceadúnais go dtaispeánfaí na fógraí seo (as Béarla, mar a scríobhadh iad).",
   "HALF_1": "1ú leath",
   "HALF_2": "2ú leath",
   "HALF_ET1": "Am breise",
@@ -391,6 +391,8 @@
   "HELP_RULES_TEXT": "Rialacha imeartha na hiománaíochta i bhfeidhm in 2026: dhá leath de 35 nóiméad (30 ag leibhéal club), cúl ar fiú trí chúilín é, ceithre chéim agus dhá ghabháil, rialacha 13 mhéadar agus 20 méadar ag atosuithe, cártaí buí, dearga agus dubha, am breise agus pocanna éirice i gcluichí cnaguirlis. Tá sé ar fad in Conas imirt.",
   "HELP_SLOW": "Ritheann an cluiche go mall nó éiríonn an fón te",
   "HELP_SLOW_TEXT": "Socruithe > Grafaic > Íseal, agus Ráta fráma > Spáráil cadhnra. Tosaíonn fóin le níos lú cuimhne ar Íseal leo féin.",
+  "HELP_GRAPHICS": "Grafaic: Íseal, Meánach agus Ard",
+  "HELP_GRAPHICS_TEXT": "Socruithe > An scáileán. Is d'fhóin le níos lú cuimhne Íseal: imreoirí níos simplí, slua níos lú, pictiúr níos lú. Tá Meánach níos géire agus níos míne. Cuireann Ard solas agus scáthanna fíora leis, tuilsoilse a lasann an pháirc agus gluaiseachtaí a shníonn isteach ina chéile; ar fhóin nua ardleibhéil cuireann an cnaipe Pacáiste HD imreoirí lánmhionsonraithe agus féar 4K leis (íoslódáil de thart ar 114 MB, ach amháin má iarrann tú í). Roghnaíonn an cluiche leibhéal an chéad uair agus íslíonn sé leibhéal leis féin má ritheann cluiche go mall. Tarlaíonn an t-athrú láithreach; níl gá le hatosú.",
   "HELP_BUTTONS": "Tá na cnaipí deacair a shroicheadh",
   "HELP_BUTTONS_TEXT": "Socruithe > Méid na gcnaipí, Bog na cnaipí chun iad a tharraingt san áit is mian leat, agus Ciotach chun na taobhanna a mhalartú.",
   "HELP_INSTALL": "Ní shuiteálfaidh an béite",
@@ -398,7 +400,7 @@
   "HELP_IRISH": "Tá an Ghaeilge mícheart",
   "HELP_IRISH_TEXT": "Inis dúinn cén scáileán agus cad a deir sé, le do thoil; ba mhaith linn é a bheith ceart.",
   "HELP_CONTACT": "Déan teagmháil linn",
-  "HELP_CONTACT_TEXT": "Seol ríomhphost chuig joshnason8@gmail.com le samhail d'fhóin agus cad a tharla. Léimid gach rud.",
+  "HELP_CONTACT_TEXT": "Chun fabht a thuairisciú nó aon rud a fhiafraí, seol ríomhphost chuig joshnason8@gmail.com le samhail d'fhóin, leagan an chluiche (ar an scáileán baile, thíos ar dheis) agus cad a tharla. Léimid gach rud.",
   "SIMULATE": "Ionsamhail",
   "SIMULATE_REST": "Ionsamhail an chuid eile den chraobhchomórtas",
   "SIMULATED": "Do chluiche, ionsamhlaithe",
@@ -425,5 +427,6 @@
   "HD_LINE_IN": "Pacáiste HD: istigh, in úsáid ar Ard.",
   "HD_LINE_OUT": "Pacáiste HD: gan íoslódáil. Roghnach, d'imreoirí, féar agus slua níos géire ar Ard.",
   "HD_OPEN": "Pacáiste HD",
-  "VULKAN_BACK_crash": "Níor thosaigh an cluiche i gceart an uair dheireanach: as seo amach úsáideann sé an seanléiritheoir grafaice ar an bhfón seo."
+  "VULKAN_BACK_crash": "Níor thosaigh an cluiche i gceart an uair dheireanach: as seo amach úsáideann sé an seanléiritheoir grafaice ar an bhfón seo.",
+  "PRIV_DATE": "Nuashonraithe 27 Deireadh Fómhair 2026."
 }

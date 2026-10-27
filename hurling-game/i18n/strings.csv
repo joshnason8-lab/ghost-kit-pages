@@ -101,7 +101,7 @@ ABOUT_DISCLAIMER,"Hurling Heroes is not connected with, or endorsed by, any spor
 PRIVACY_POLICY,Privacy policy,Polasaí príobháideachta
 HELP_SUPPORT,Help,Cabhair
 LICENCES,Licences,Ceadúnais
-LICENCES_INTRO,Hurling Heroes is made with the Godot Engine and the fonts below. Their licences ask that these notices be shown.,"Rinneadh Hurling Heroes le hInneall Godot agus leis na clónna thíos. Iarrann a gceadúnais go dtaispeánfaí na fógraí seo (as Béarla, mar a scríobhadh iad)."
+LICENCES_INTRO,"Hurling Heroes is made with the Godot Engine, the fonts below and the work of the people credited here. Their licences ask that these notices be shown.","Rinneadh Hurling Heroes le hInneall Godot, leis na clónna thíos agus le saothar na ndaoine a luaitear anseo. Iarrann a gceadúnais go dtaispeánfaí na fógraí seo (as Béarla, mar a scríobhadh iad)."
 HALF_1,1st half,1ú leath
 HALF_2,2nd half,2ú leath
 HALF_ET1,Extra time,Am breise
@@ -385,6 +385,8 @@ HELP_RULES,The rules,Na rialacha
 HELP_RULES_TEXT,"The playing rules of hurling in force in 2026: two halves of 35 minutes (30 at club level), a goal worth three points, four steps and two catches, the 13-metre and 20-metre rules at restarts, yellow, red and black cards, extra time and penalties in knock-out games. How to Play has the whole of it.","Rialacha imeartha na hiománaíochta i bhfeidhm in 2026: dhá leath de 35 nóiméad (30 ag leibhéal club), cúl ar fiú trí chúilín é, ceithre chéim agus dhá ghabháil, rialacha 13 mhéadar agus 20 méadar ag atosuithe, cártaí buí, dearga agus dubha, am breise agus pocanna éirice i gcluichí cnaguirlis. Tá sé ar fad in Conas imirt."
 HELP_SLOW,The game runs slowly or the phone gets warm,Ritheann an cluiche go mall nó éiríonn an fón te
 HELP_SLOW_TEXT,"Settings > Graphics > Low, and Frame rate > Battery saver. Phones with less memory start on Low by themselves.","Socruithe > Grafaic > Íseal, agus Ráta fráma > Spáráil cadhnra. Tosaíonn fóin le níos lú cuimhne ar Íseal leo féin."
+HELP_GRAPHICS,"Graphics: Low, Medium and High","Grafaic: Íseal, Meánach agus Ard"
+HELP_GRAPHICS_TEXT,"Settings > The screen. Low is for phones with less memory: simpler players, a smaller crowd, a smaller picture. Medium is sharper and smoother. High adds real lighting and shadows, floodlights that light the field and moves that blend into each other; on recent high-end phones the HD pack button adds full-detail players and 4K grass (a download of about 114 MB, only if you ask for it). The game picks a level the first time it runs and drops one by itself if a match runs slowly. The change is at once; no restart.","Socruithe > An scáileán. Is d'fhóin le níos lú cuimhne Íseal: imreoirí níos simplí, slua níos lú, pictiúr níos lú. Tá Meánach níos géire agus níos míne. Cuireann Ard solas agus scáthanna fíora leis, tuilsoilse a lasann an pháirc agus gluaiseachtaí a shníonn isteach ina chéile; ar fhóin nua ardleibhéil cuireann an cnaipe Pacáiste HD imreoirí lánmhionsonraithe agus féar 4K leis (íoslódáil de thart ar 114 MB, ach amháin má iarrann tú í). Roghnaíonn an cluiche leibhéal an chéad uair agus íslíonn sé leibhéal leis féin má ritheann cluiche go mall. Tarlaíonn an t-athrú láithreach; níl gá le hatosú."
 HELP_BUTTONS,The buttons are hard to reach,Tá na cnaipí deacair a shroicheadh
 HELP_BUTTONS_TEXT,"Settings > Button size, Move buttons to drag them where you want them, and Left-handed to swap the sides.","Socruithe > Méid na gcnaipí, Bog na cnaipí chun iad a tharraingt san áit is mian leat, agus Ciotach chun na taobhanna a mhalartú."
 HELP_INSTALL,The beta will not install,Ní shuiteálfaidh an béite
@@ -392,7 +394,7 @@ HELP_INSTALL_TEXT,"On an older or Android Go phone, use the file ending in -32bi
 HELP_IRISH,The Irish looks wrong,Tá an Ghaeilge mícheart
 HELP_IRISH_TEXT,Please tell us which screen and what it says; we want it right.,"Inis dúinn cén scáileán agus cad a deir sé, le do thoil; ba mhaith linn é a bheith ceart."
 HELP_CONTACT,Get in touch,Déan teagmháil linn
-HELP_CONTACT_TEXT,Email joshnason8@gmail.com with your phone's model and what happened. We read everything.,Seol ríomhphost chuig joshnason8@gmail.com le samhail d'fhóin agus cad a tharla. Léimid gach rud.
+HELP_CONTACT_TEXT,"To report a bug or ask anything, email joshnason8@gmail.com with your phone's model, the game's version (on the home screen, bottom right) and what happened. We read everything.","Chun fabht a thuairisciú nó aon rud a fhiafraí, seol ríomhphost chuig joshnason8@gmail.com le samhail d'fhóin, leagan an chluiche (ar an scáileán baile, thíos ar dheis) agus cad a tharla. Léimid gach rud."
 SIMULATE,Simulate,Ionsamhail
 SIMULATE_REST,Simulate the rest of the championship,Ionsamhail an chuid eile den chraobhchomórtas
 SIMULATED,"Your game, simulated","Do chluiche, ionsamhlaithe"
@@ -420,3 +422,4 @@ HD_LINE_IN,"HD pack: in, used on High.","Pacáiste HD: istigh, in úsáid ar Ard
 HD_LINE_OUT,"HD pack: not downloaded. Optional, for sharper players, grass and crowd on High.","Pacáiste HD: gan íoslódáil. Roghnach, d'imreoirí, féar agus slua níos géire ar Ard."
 HD_OPEN,HD pack,Pacáiste HD
 VULKAN_BACK_crash,The game did not start properly last time: from now on it uses the older graphics renderer on this phone.,Níor thosaigh an cluiche i gceart an uair dheireanach: as seo amach úsáideann sé an seanléiritheoir grafaice ar an bhfón seo.
+PRIV_DATE,Last updated 27 October 2026.,Nuashonraithe 27 Deireadh Fómhair 2026.

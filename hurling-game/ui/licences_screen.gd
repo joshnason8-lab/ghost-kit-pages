@@ -4,21 +4,35 @@ extends Control
 ## texts are in English, as they are written.
 
 const CREDITS := """[b]Hurling Heroes[/b]
-Made by Josh Nason.
-The hurlers: the maker's own player model, moving with motion capture from Adobe Mixamo (mixamo.com) and the
-CMU Graphics Lab Motion Capture Database (clips 35_01 and 35_17). Motion capture data from mocap.cs.cmu.edu. The
-database was created with funding from NSF EIA-0196217.
-The skies, the grass and field textures, the shirts' cloth and the stands' concrete (the HD pack), the small broadleaf and fern cut-outs, the painted bench, the street lamps
-and the mossy rocks: Poly Haven (polyhaven.com), CC0. The oak and broadleaf trees, the hedgerow grasses and the
-park bench: the maker's own models. The houses, the cottages, the stands and the sliotar: made in code for the game.
-The referee, the umpires, the people in the crowd and the floodlights: the maker's own models, made with Meshy
-(meshy.ai). The menu music: written for the game (tools/audio/make_music.py). Crowd reactions from Kabaddi Raid, by the same maker.
-Sounds: the stadium crowd's murmur, cheer and roar from "Free Crowd Cheering Sounds" by Gregor Quendel
-(opengameart.org), CC-BY 4.0; birdsong from "Park ambiences" by Thimras (opengameart.org), CC0; footsteps, knocks and
-the menu click from Kenney's Impact Sounds and Interface Sounds (kenney.nl), CC0; whistle sounds from Pixabay
-(charlesheffley009, framptones, freesound_community), Pixabay Content License; the strike made in code. Every sound's source: docs/SOUNDS.md.
-The game is not connected with, or endorsed by, any sporting body, county board or club. Counties appear by their
-place names, in colours of the game's own design; every player is invented."""
+Made by Josh Nason. The game's code, the menu music (written for the game, tools/audio/make_music.py), the cover art and the icon, the hurlers' model and the houses, cottages, stands and sliotar (made in code) are the maker's own. The game is not connected with, or endorsed by, any sporting body, county board or club. Counties appear by their place names, in colours of the game's own design; every player is invented.
+
+[b]Movement[/b]
+- The hurlers' moves (strikes, catches, the sprint and others): Adobe Mixamo (mixamo.com), used under Adobe's Mixamo terms, which allow the animations in games.
+- The walk and the jog: the CMU Graphics Lab Motion Capture Database, clips 35_01 and 35_17. "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Free to use.
+
+[b]Pictures and models[/b]
+- The skies (belfast_sunset_puresky, kloofendal_overcast_puresky, kloofendal_48d_partly_cloudy_puresky, kloppenheim_07_puresky): Poly Haven (polyhaven.com), CC0.
+- The pitch and fields (grass_ground, leafy_grass, sparse_grass, withered_grass): Poly Haven, CC0.
+- The small broadleaf and fern cut-outs, the painted bench, the tall street lamps and the mossy rocks: Poly Haven, CC0.
+- The oak and dark broadleaf trees, the hedgerow grasses (grass_clumps, grass_wispy), the park bench, the floodlights, the referee, the umpires and the people in the crowd: the maker's own models, made with Meshy (meshy.ai).
+- The lough's water ripples (water_normal): made for the maker's games from random waves, the maker's own.
+
+[b]The HD pack (an optional download for High graphics)[/b]
+- The pitch's grass at 4K (grass_ground), the shirts' cloth (cotton_jersey) and the stands' concrete (concrete_wall_008): Poly Haven (polyhaven.com), CC0.
+- The hurlers at full detail and their 4K texture: the maker's own model.
+- The referee's and umpires' detailed textures: the maker's own models, made with Meshy (meshy.ai).
+- The crowd's sharper sheet: rendered from the maker's own Meshy models.
+- The moves at 60 frames a second: Adobe Mixamo, as above.
+
+[b]Sounds[/b]
+- The stadium crowd's murmur, cheers and roars: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org/content/free-crowd-cheering-sounds), CC-BY 4.0 (creativecommons.org/licenses/by/4.0). Trimmed, levelled and looped for the game.
+- Birdsong: "Park ambiences" by Thimras (opengameart.org/content/park-ambiences), CC0.
+- Footsteps, hurleys meeting, the ball off the upright, the bounce, the catch and the shoulder charge: "Impact Sounds" by Kenney (kenney.nl), CC0.
+- The menu click: "Interface Sounds" by Kenney (kenney.nl), CC0.
+- The referee's whistles: Pixabay (pixabay.com) 568615 "Referee whistle" by charlesheffley009, 291816 "Referee whistle / coach whistle / sports whistle" by framptones and 6121 "Metal whistle" by freesound_community, under the Pixabay Content License.
+- The crowd's ooh, groan and applause and the players' effort: from Kabaddi Raid, by the same maker, the maker's own.
+- The strike, the tap and the save: made in code for the game.
+Every sound's file and source: docs/SOUNDS.md in the game's source."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic).
@@ -57,8 +71,13 @@ func _ready() -> void:
 
 ## Licence texts are long, but are laid out on the main thread: laid out on its own thread (RichTextLabel.threaded),
 ## a text freed while still being laid out (leaving the screen at once) crashed the engine in a CI run.
-func _text(bb: String, big := false) -> RichTextLabel:
+## Each on a card, like the privacy and help pages: words straight over the field were hard to read on a small phone.
+func _text(bb: String, _big := false) -> PanelContainer:
+	var card := UI.card()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	var rt := RichTextLabel.new()
+	card.add_child(rt)
 	rt.bbcode_enabled = true
 	rt.fit_content = true
 	rt.scroll_active = false
@@ -69,11 +88,11 @@ func _text(bb: String, big := false) -> RichTextLabel:
 	rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rt.add_theme_font_override("normal_font", Game.font_body)
 	rt.add_theme_font_override("bold_font", Game.font_bold)
-	rt.add_theme_font_size_override("normal_font_size", Game.ts(15))
+	rt.add_theme_font_size_override("normal_font_size", Game.ts(16))
 	rt.add_theme_font_size_override("bold_font_size", Game.ts(18))
 	rt.add_theme_color_override("default_color", Color(Game.C_INK, 0.85))
 	rt.text = bb
-	return rt
+	return card
 
 
 ## Text shown as it is: square brackets in a licence are not formatting.
