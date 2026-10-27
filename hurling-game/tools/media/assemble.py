@@ -4,8 +4,8 @@
 - trailer/hurling-heroes-trailer-1080p.mp4: about 32 s, 1920 x 1080, 30 fps, H.264 with AAC sound: a title card,
   six shots from real matches (tools/media/trailer.gd), three captions, the home screen, an end card ("Coming soon to
   Google Play");
-- trailer/hurling-heroes-vertical-15s.mp4: 15 s, 1080 x 1920, for social media (the shots over a blurred copy of
-  themselves);
+- trailer/hurling-heroes-vertical-15s.mp4: 15 s, 1080 x 1920, for social media (the middle of each shot, full
+  height);
 - icons/: the icon at 1024 and 512 (PNG with alpha) and the 1024 x 500 feature graphic;
 - text/: the website's copy (tools/media/text/: about, features, facts, the sport, a press blurb);
 - CREDITS.txt; then the zip, media-kit-hurling-heroes.zip.
@@ -127,8 +127,8 @@ def encode_shot(seg_dir, secs, out, cap=None, vertical=False):
     frames = int(secs * FPS)
     inputs = ["-framerate", str(FPS), "-i", str(seg_dir / "%04d.jpg")]
     if vertical:
-        fc = ("[0:v]split[a][b];[a]scale=3414:1920,crop=1080:1920,boxblur=30:3,eq=brightness=-0.08[bg];"
-              "[b]scale=1080:-2[fg];[bg][fg]overlay=0:(H-h)/2,format=yuv420p[v]")
+        # Full height, the middle of the picture: the camera keeps the ball there.
+        fc = "[0:v]scale=3414:1920,crop=1080:1920,format=yuv420p[v]"
     elif cap:
         inputs += ["-loop", "1", "-i", str(cap)]
         fc = ("[1:v]format=rgba,fade=t=in:st=0.3:d=0.4:alpha=1[c];[0:v][c]overlay=0:0:shortest=1,format=yuv420p[v]")
@@ -165,7 +165,10 @@ def soundtrack(total, hits, out, title_s, end_s):
 
 
 def mux(video, audio, out):
-    run(["ffmpeg", "-y", "-i", str(video), "-i", str(audio), "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "copy",
+    """The cut and its sound in one file, encoded once more with the bitrate held to 11 Mb/s at most (grass and crowds
+    take all a constant quality gives them): a 45 s trailer stays under 60 MB."""
+    run(["ffmpeg", "-y", "-i", str(video), "-i", str(audio), "-map", "0:v", "-map", "1:a", "-c:v", "libx264",
+         "-preset", "slow", "-crf", "20", "-maxrate", "11M", "-bufsize", "22M", "-pix_fmt", "yuv420p", "-c:a", "copy",
          "-shortest", "-movflags", "+faststart", str(out)])
 
 
