@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Hurling Heroes · Ghost Kit Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--panel:#161c26;--line:#263040;--ink:#f2f4f8;--mute:#9aa6b8;--accent:#ff8a1f;--green:#2e8b57}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:0 40px}
+nav{display:flex;align-items:center;justify-content:space-between;height:76px;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:12px;font-family:Oswald;font-weight:700;font-size:24px}
+.logo i{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#ff3d6e);display:grid;place-items:center;font-style:normal;font-size:18px}
+nav ul{display:flex;gap:32px;list-style:none;color:var(--mute);font-weight:500}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;border-radius:12px;font-weight:600;color:var(--ink);border:1px solid var(--line)}
+.btn.pri{background:var(--accent);color:#14100a;border-color:var(--accent)}
+.crumb{color:var(--mute);font-size:14px;padding:22px 0}
+.top{display:grid;grid-template-columns:1.35fr 1fr;gap:40px;align-items:start}
+.video{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--line);aspect-ratio:16/9;background:#000}
+.video img{width:100%;height:100%;object-fit:cover;opacity:.9}
+.video .pl{position:absolute;inset:0;display:grid;place-items:center}
+.video .pl span{width:84px;height:84px;border-radius:50%;background:rgba(255,138,31,.95);display:grid;place-items:center;font-size:30px;color:#14100a;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.video .cap{position:absolute;left:18px;bottom:16px;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:8px;font-size:13px}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+.thumbs div{aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.thumbs img{width:100%;height:100%;object-fit:cover}
+.thumbs div:first-child{outline:2px solid var(--accent)}
+.info .hd{display:flex;gap:18px;align-items:center}
+.info .ico{width:88px;height:88px;border-radius:22px}
+h1{font-family:Oswald;font-size:46px;line-height:1}
+.sub{color:var(--mute);margin-top:6px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}
+.pills em{font-style:normal;font-size:13px;background:#1f2733;padding:6px 10px;border-radius:8px;color:#c8d0dc}
+.desc{color:#c8d0dc;line-height:1.65;font-size:16px}
+.cta{display:flex;gap:12px;margin-top:26px}
+.facts{margin-top:28px;border:1px solid var(--line);border-radius:16px;display:grid;grid-template-columns:1fr 1fr}
+.facts div{padding:14px 18px;border-bottom:1px solid var(--line)}
+.facts div:nth-child(odd){border-right:1px solid var(--line)}
+.facts span{display:block;color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+.facts b{font-size:15px;font-weight:600}
+section{padding:60px 0 0}
+h2{font-family:Oswald;font-size:34px;margin-bottom:22px}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.fgrid div{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.fgrid b{display:block;margin-bottom:6px;font-size:16px}
+.fgrid p{color:var(--mute);font-size:14px;line-height:1.5}
+.sport{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;background:linear-gradient(135deg,#1a2a20,#121822);border:1px solid var(--line);border-radius:22px;padding:36px;margin:60px 0}
+.sport img{width:100%;border-radius:14px}
+.sport p{color:#c8d0dc;line-height:1.65}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--mute);font-size:14px}
+</style></head><body>
+<nav class="wrap"><div class="logo"><i>👻</i>GHOST KIT GAMES</div>
+<ul><li style="color:var(--ink)">Games</li><li>News</li><li>About</li><li>Press kit</li><li>Support</li></ul>
+<a class="btn pri">Get the games</a></nav>
+<div class="wrap crumb">Games › Hurling Heroes</div>
+<main class="wrap">
+ <div class="top">
+  <div>
+   <div class="video"><img src="img/hurling_feature.png"><div class="pl"><span>▶</span></div><div class="cap">Official trailer · 0:42</div></div>
+   <div class="thumbs"><div><img src="img/hurling_feature.png"></div><div><img src="img/kabaddi_feature.png" style="filter:hue-rotate(80deg)"></div><div><img src="img/floorball_feature.png" style="filter:hue-rotate(60deg)"></div><div><img src="img/khokho_feature.png" style="filter:hue-rotate(100deg)"></div></div>
+   <p style="color:var(--mute);font-size:12px;margin-top:8px">Placeholder thumbnails — real screenshots arrive with the media kit.</p>
+  </div>
+  <div class="info">
+   <div class="hd"><img class="ico" src="img/hurling_icon.png"><div><h1>Hurling Heroes</h1><div class="sub">Ireland's ancient field sport · Iománaíocht</div></div></div>
+   <div class="pills"><em>15 v 15</em><em>English · Gaeilge</em><em>Offline</em><em>No ads</em><em>HD pack</em></div>
+   <p class="desc">The fastest game on grass, fifteen a side and every rule in. Strike the sliotar off the hurley, solo up the field and split the posts under the floodlights — from a parish pitch to a packed stadium.</p>
+   <div class="cta"><a class="btn pri">▶ Coming soon to Google Play</a><a class="btn">Join the beta</a></div>
+   <div class="facts">
+    <div><span>Players</span><b>15 v 15</b></div><div><span>Modes</span><b>TBC</b></div>
+    <div><span>Languages</span><b>English, Irish</b></div><div><span>Graphics</span><b>Low · Medium · High + HD</b></div>
+    <div><span>Size</span><b>64 MB (+114 MB HD)</b></div><div><span>Android</span><b>TBC</b></div>
+   </div>
+  </div>
+ </div>
+
+ <section><h2>Features</h2>
+  <div class="fgrid">
+   <div><b>Every rule, refereed</b><p>Frees, 65s, wides and puck-outs called by on-pitch officials.</p></div>
+   <div><b>Real strike physics</b><p>Ground strokes, sideline cuts and catches built from motion capture.</p></div>
+   <div><b>Day and night</b><p>Sun shadows by day, stadium floodlights at night.</p></div>
+   <div><b>Parish to stadium</b><p>Play a local club pitch or a full championship ground.</p></div>
+   <div><b>As Gaeilge</b><p>Play the whole game in Irish or English.</p></div>
+   <div><b>HD pack for flagships</b><p>An optional download with 4K textures and four times the player detail.</p></div>
+  </div>
+ </section>
+
+ <div class="sport"><div><h2>About the sport</h2><p>Hurling is one of the oldest field games in the world, played in Ireland for thousands of years. Two teams of fifteen use the hurley — an ash stick — to strike a small leather ball, the sliotar, over the bar for a point or under it for a goal.</p></div><img src="img/hurling_feature.png"></div>
+</main>
+<footer><div class="wrap">© 2026 Ghost Kit Games · Privacy · Licences · Press kit · Contact</div></footer>
+</body></html>
