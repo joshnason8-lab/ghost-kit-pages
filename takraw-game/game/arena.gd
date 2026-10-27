@@ -80,7 +80,7 @@ func _ready() -> void:
 				0.0, FAR_GROUND)
 			spots = _park()
 			_officials_furniture(true)
-			bounds = Rect2(-10.2, -12.0, 20.4, 18.55)  # the fence (and the benches on the near side)
+			bounds = Rect2(-10.2, -7.2, 20.4, 13.75)   # the fence, and the benches on the near side
 		"beach":
 			_outdoor_env("sunset", Color(0.42, 0.47, 0.53), 175.0)   # (the haze from past the islands in the bay)
 			# (The dry sand stops at the damp sand by the water.)
@@ -1045,6 +1045,27 @@ func _park() -> Array:
 			SHOPHOUSE_TINTS[(i + 1) % 4])
 	for i in 6:
 		_sc.add("buildings/city_apartments_night", Vector3(-30.0 + i * 12.0, 0, 48.0 + _rng.randf_range(-3, 3)), PI, 1.0, false)
+	# The near side, open (the broadcast camera looks in over it): seen from the end camera and the replays, as lived in
+	# as the far side. Benches along it with people on them and more standing behind, all low enough to see over;
+	# the path behind with its lamps, a food cart and scooters; trees, and the town past them.
+	for x in range(-9, 10, 3):
+		_sc.add("seating/park_bench", Vector3(x, 0, -fz - 1.0))
+		for k: float in [-0.45, 0.0, 0.45]:
+			if _rng.randf() < 0.75:
+				spots.append(Vector3(x + k, 0.45, -fz - 1.05))
+	_people_row(Vector3(-11, 0, -fz - 2.3), Vector3(11, 0, -fz - 2.3), 0.9)
+	for x in range(-20, 21, 8):
+		_sc.add("props/street_lamp_tall", Vector3(x, 0, -fz - 6.5), PI)
+	_sc.add("props/food_cart", Vector3(17.0, 0, -fz - 5.4), PI + _rng.randf_range(-0.3, 0.3))
+	for i in 4:
+		_sc.add("props/scooter", Vector3(-22.0 + i * 0.95, 0, -fz - 5.2), PI * 0.5 + _rng.randf_range(-0.2, 0.2))
+	_trees(["rain_tree", "island_tree_b"], 6, -40.0, -20.0, -24.0, -12.0, 8.0, 12.0)
+	_trees(["rain_tree", "island_tree_a"], 6, 20.0, 40.0, -24.0, -12.0, 8.0, 12.0)
+	for i in 4:
+		_sc.add("buildings/shophouse_row_low", Vector3(-27.75 + i * 18.5, 0, -50.0), 0.0 if i % 2 == 0 else PI, 1.0, false,
+			SHOPHOUSE_TINTS[i % 4])
+	for i in 5:
+		_sc.add("buildings/city_apartments_night", Vector3(-24.0 + i * 12.0, 0, -66.0 + _rng.randf_range(-3, 3)), 0.0, 1.0, false)
 	return spots
 
 
@@ -1174,14 +1195,19 @@ func _beach_far() -> void:
 	# Headlands closing the bay at both ends, and green hills inland behind the beach: ridges of overlapping mounds.
 	var hill := [[0.0, 1.0], [0.18, 0.92], [0.42, 0.76], [0.64, 0.55], [0.84, 0.3], [1.0, 0.0]]
 	var jungle := [Color("34502e"), Color("2e4a29"), Color("2a4426"), Color("273f23"), Color("243a21")]
+	# A hundred metres and more off, mostly in their own shade against the low sun: hazed blue-green with the distance,
+	# not black (the hills inland, straight into the sun, the more).
+	var hazed := jungle.map(func(c: Color) -> Color: return c.lerp(Color("8fa3ad"), 0.42))
+	var ends := jungle.map(func(c: Color) -> Color: return c.lerp(Color("8fa3ad"), 0.3))
 	for hl: Array in [[Vector3(-168, 0, 45), 48.0, 60.0, 42.0], [Vector3(-192, 0, -30), 50.0, 50.0, 55.0],
 			[Vector3(172, 0, 40), 48.0, 62.0, 40.0], [Vector3(194, 0, -35), 50.0, 50.0, 52.0],
 			[Vector3(-110, 0, -125), 70.0, 40.0, 38.0], [Vector3(0, 0, -140), 80.0, 40.0, 45.0],
 			[Vector3(110, 0, -125), 70.0, 40.0, 40.0]]:
-		_mound(hl[0], hl[1], hl[2], hl[3], hill, jungle, seg)
+		var shades: Array = hazed if (hl[0] as Vector3).z < -100.0 else ends
+		_mound(hl[0], hl[1], hl[2], hl[3], hill, shades, seg)
 		for k in (1 if low else 2):
 			var off := Vector3(_rng.randf_range(-0.6, 0.6) * hl[1], 0, _rng.randf_range(-0.5, 0.5) * hl[2])
-			_mound(hl[0] + off, hl[1] * 0.55, hl[2] * 0.55, hl[3] * _rng.randf_range(0.7, 1.15), hill, jungle, seg)
+			_mound(hl[0] + off, hl[1] * 0.55, hl[2] * 0.55, hl[3] * _rng.randf_range(0.7, 1.15), hill, shades, seg)
 
 
 ## A mound (an island, a hill): rings from its foot to its top, each [height, radius] as fractions of h and of the
@@ -1225,7 +1251,7 @@ func _mound(c: Vector3, rx: float, rz: float, h: float, profile: Array, cols: Ar
 			var a1 := base + k * seg + (i + 1) % seg
 			var b0 := a0 + seg
 			var b1 := a1 + seg
-			g.idx.append_array([b0, b1, a1, b0, a1, a0])
+			g.idx.append_array([b0, a1, b1, b0, a0, a1])   # (clockwise from outside: Godot's front)
 
 
 ## A resort hotel behind the beach, facing the sea (+z): w metres long, floors storeys; a balcony with its rail along

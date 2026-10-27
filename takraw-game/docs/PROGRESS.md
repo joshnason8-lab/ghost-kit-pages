@@ -442,6 +442,36 @@ and have a back button; each in the player's language, at every graphics level a
   404 until this branch is merged. Until then the policy loads from `takraw-smash/PRIVACY.md` on GitHub (HTTP 200,
   store/PLAY_STORE.md). The game links to no web page.
 
+## Walking, not gliding; every venue from every camera (0.12.2)
+
+The owner: "When the player goes to get the ball he glides back for the most part instead of walking", and "park court
+is missing assets on one side. Noticeable when changing camera. Might be a problem. On other maps too."
+
+**Walking between points** (`Player.stroll`, set by the match in the set-up, after a point and at a break):
+- A player always faced the net (turned a little to the ball), even walking several metres back to his place, so he
+  moved backwards while his legs ran forwards: a glide. Now, between points, he turns to where he is going and walks
+  there, and turns to the net again for his last half metre. He walks back to his place (about 2.2 m/s) and jogs to
+  fetch the ball (2.6 m/s), slowing sooner as he arrives; before, all of it at a run (4.2 m/s).
+- Stepping backwards at any time (backpedalling in a rally, the last steps into his place) plays the stride backwards,
+  so his feet step back too.
+- Measured over a set's set-ups: of the frames a player moves in, he faces where he goes in 76% (regu) and 85%
+  (doubles), from 58%; the rest are his slow last steps (under 1 m/s) as he turns into place. A set-up still takes
+  about 4 s.
+
+**Every venue from every camera:** each was rendered from the broadcast, side and end cameras (from both ends) and
+from the replay's low angle looking back at the near side, on High and Low.
+- **The park's near side** (behind the broadcast camera) was bare grass out to the trees, plain from the end camera
+  and the replays. It has what the far side has now: benches along it with people on them and more standing behind
+  (low enough for the broadcast and side cameras to see the court over them), the path with its lamps, a food cart and
+  scooters, trees, and shophouses and apartment blocks past them. The ball now bounces back off the benches' line.
+- **The beach's islands, headlands and hills were inside out** (their faces wound the wrong way for the renderer, so
+  only their insides showed): from the replay and end cameras the hills inland were black shapes. Turned the right way
+  out, and hazed blue-green with the distance, against the low sun.
+- The National Arena, the mall and the gym are dressed all round already.
+
+Performance on Low (`perf_probe`): the park 80 → 78 draw calls, 61.0 → 61.5 MB; the beach 77 → 75 draw calls.
+Tests: test_runner 1615 checks, 0 failures; user_bot perfect 15-1, idle 3-15; input_test 10 checks, 0 failures.
+
 ## Gaps that need the owner
 
 None. The two raised in 0.5.0 are filled in 0.5.1:

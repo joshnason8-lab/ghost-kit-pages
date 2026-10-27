@@ -15,6 +15,11 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.12.2: **players walk between points** (turned to where they go, walking back to their places and jogging
+to fetch the ball, their feet stepping back when they back up) instead of gliding backwards. **The park** is dressed on
+its near side too (benches and people, the path and lamps, the town behind the trees), and **the beach's** hills and
+headlands are no longer black from the end and replay cameras.
+
 New in 0.12.1: **Settings > About** has the licences, the help and the privacy policy in the game (no internet
 needed). The help now has the rules in brief, what each graphics level does, and how to report a bug.
 

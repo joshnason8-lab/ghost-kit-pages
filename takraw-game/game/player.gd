@@ -13,6 +13,7 @@ var hurry := 0.0           # 0 a walk back to his place .. 1 a sprint to the bal
 var vel := Vector3.ZERO
 var look_at_pos := Vector3.ZERO
 var watch := true          # turn to face the ball (else the net)
+var stroll := false        # between points: walking somewhere, he turns to where he is going and walks there
 var face_to := Vector3.INF # a point he turns to face, in a move too (the thrower to the server); INF: none
 var look_to := Vector3.INF # what he watches, if not the ball (Match: the thrower watches the server)
 var carrying := false      # the ball in his hands (Match keeps it there): in one hand as he walks, both standing
@@ -174,11 +175,13 @@ func tick(dt: float, now: float) -> void:
 	# Moving: toward the target, quicker the more he hurries (his agility his top speed), slowing as he arrives.
 	var airborne := move != "" and float(Moves.sample(move, (now - move_start) / Moves.length(move)).get("y", 0.0)) > 0.05
 	var top := (2.2 + 3.6 * hurry) * (0.82 + float(data.get("agility", 70)) * 0.0028)
+	if stroll:
+		top = 1.6 + 2.0 * hurry   # a walk back to his place, a jog to fetch the ball
 	var to := target - position
 	to.y = 0
 	var want := Vector3.ZERO
 	if to.length() > 0.03:
-		want = to.normalized() * minf(top, to.length() * 4.5)
+		want = to.normalized() * minf(top, to.length() * (2.5 if stroll else 4.5))   # (a walk slows sooner)
 	if airborne:
 		want = vel   # no changing course in the air
 	vel = vel.move_toward(want, 16.0 * dt)
@@ -189,6 +192,8 @@ func tick(dt: float, now: float) -> void:
 	var facing_to := face_to.is_finite() and Vector2(face_to.x - position.x, face_to.z - position.z).length() > 0.1
 	if facing_to:
 		face = Vector3(face_to.x - position.x, 0, face_to.z - position.z).normalized()
+	elif stroll and to.length() > 0.45 and vel.length() > 0.5:
+		face = Vector3(vel.x, 0, vel.z).normalized()   # turned to where he walks; to the net again as he arrives
 	elif watch:
 		var tb := look_at_pos - position
 		tb.y = 0
@@ -200,14 +205,16 @@ func tick(dt: float, now: float) -> void:
 	_yaw = lerp_angle(_yaw, want_yaw, minf(1.0, 10.0 * dt))
 	# The pose: the move if one is playing, blended over the run or the ready stance.
 	var speed := vel.length()
-	_ph += dt * (4.0 + speed * 2.2)
+	var local := vel.rotated(Vector3.UP, -_yaw)
+	# Stepping backwards (backpedalling, facing the net): the stride played backwards, so his feet step back too.
+	var back := speed > 0.4 and local.z < -0.5 * speed
+	_ph += dt * (4.0 + speed * 2.2) * (-1.0 if back else 1.0)
 	# A footstep each half stride while he runs (two to a turn of the stride's phase).
-	var half := int(_ph / PI)
+	var half := floori(_ph / PI)
 	if half != _half:
 		_half = half
 		if speed > 1.2 and move == "":
 			Sfx.step(global_position, speed)
-	var local := vel.rotated(Vector3.UP, -_yaw)
 	var sidestep := clampf(local.x / maxf(speed, 0.01), -1.0, 1.0) if speed > 0.4 else 0.0
 	var base := Moves.run(_ph, clampf(speed / 5.0, 0.0, 1.0), sidestep * 0.8)
 	var p := base

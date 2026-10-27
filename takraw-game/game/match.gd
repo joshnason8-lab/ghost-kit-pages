@@ -361,6 +361,7 @@ func _process(delta: float) -> void:
 		for p in players_on(side):
 			var pl: Player = p
 			pl.look_at_pos = pl.look_to if pl.look_to.is_finite() else ball.global_position
+			pl.stroll = state in [S.SETUP, S.DEAD, S.BREAK]
 			pl.tick(dt, now)
 	ball.update_to(now, dt)
 	if _carrier:
@@ -419,7 +420,7 @@ func _setup_positions() -> void:
 		var serving := side == ss
 		for p in players_on(side):
 			var pl: Player = p
-			pl.hurry = 0.55
+			pl.hurry = 0.3   # a brisk walk (Player.stroll)
 			pl.target = _serve_spot(pl, side, serving)
 
 
@@ -654,7 +655,7 @@ func _between_points() -> void:
 
 func _back_to_place(pl: Player) -> void:
 	pl.target = _serve_spot(pl, pl.side, pl.side == _serving_side())
-	pl.hurry = 0.55
+	pl.hurry = 0.3
 
 
 func _at_place(pl: Player) -> bool:
