@@ -1,0 +1,1084 @@
+[
+  {
+    "name": "Kabaddi Raid",
+    "slug": "kabaddi-raid",
+    "app_id": "com.kabaddiraid.game",
+    "branch": "claude/kabaddi-game-concept-asnz07",
+    "version": "0.12.3-beta",
+    "sport": "Kabaddi",
+    "region_label": "India",
+    "regions": [
+      "South Asia"
+    ],
+    "subtitle": "3D kabaddi for your phone · Raid, touch and race home",
+    "card_blurb": "Raid on one breath, touch a defender and race home. Own a franchise or win the Nations Cup.",
+    "short_description": "Raid, touch and race home in 3D kabaddi. Own a franchise. Win the Nations Cup.",
+    "description": [
+      "Kabaddi Raid is a 3D kabaddi game for your phone. Cross the baulk line on one breath, touch a defender and race back over the midline before they bring you down.",
+      "Or defend: read the raid, take him by the ankle, the thigh or the waist, and chain up with a team-mate."
+    ],
+    "players": "7 v 7",
+    "modes": [
+      "Quick Match",
+      "League Season",
+      "Nations Cup"
+    ],
+    "languages": [
+      "English",
+      "Hindi",
+      "Marathi",
+      "Tamil",
+      "Telugu",
+      "Kannada",
+      "Bengali",
+      "Punjabi"
+    ],
+    "languages_count": 8,
+    "graphics": "Low · Medium · High",
+    "offline": {
+      "value": true,
+      "note": "Listing: \"Plays offline.\" No INTERNET permission (store/PLAY_STORE.md)."
+    },
+    "min_android": "Android 7.0+",
+    "download_size": "about 78 MB (Play download per phone, 0.12.3 bundle, per store/PLAY_STORE.md)",
+    "permissions": [
+      "android.permission.VIBRATE"
+    ],
+    "features": [
+      {
+        "title": "Three ways to play",
+        "text": "Quick Match, a League Season with your own franchise and the player auction, and the Nations Cup."
+      },
+      {
+        "title": "Raid and tackle",
+        "text": "Hand and toe touches, kicks, the dubki and the lion jump; ankle, thigh and waist holds and chain tackles."
+      },
+      {
+        "title": "The rules as played",
+        "text": "Bonus points, revivals, all outs, do-or-die raids, super tackles and the golden raid, with referees signalling every call."
+      },
+      {
+        "title": "Breath or the clock",
+        "text": "Raid on one breath of the cant, or against the 30-second clock: your choice."
+      },
+      {
+        "title": "Five grounds",
+        "text": "Twelve franchises, twelve countries and five grounds, from a village mat to a stadium under lights."
+      },
+      {
+        "title": "Controls your way",
+        "text": "A stick wherever your thumb lands, a left-handed layout, movable buttons and four levels from Rookie to Legend."
+      }
+    ],
+    "about_sport": "Kabaddi is a contact team sport from South Asia, played seven a side. A raider crosses into the other half, touches as many defenders as he can and must get back over the midline before they bring him down, either on one breath while chanting the cant or against a 30-second clock. Defenders score by stopping him: ankle holds, thigh holds, chain tackles.",
+    "disclaimer": null,
+    "sources": {
+      "name": [
+        "kabaddi-game/store/listing/en-US.txt"
+      ],
+      "app_id": [
+        "kabaddi-game/export_presets.cfg (package/unique_name)",
+        "kabaddi-game/store/PLAY_STORE.md"
+      ],
+      "version": [
+        "kabaddi-game/project.godot (config/version)",
+        "kabaddi-game/export_presets.cfg (version/name, version/code=34)"
+      ],
+      "sport": [
+        "kabaddi-game/store/listing/en-US.txt"
+      ],
+      "region_label": [
+        "kabaddi-game/store/PLAY_STORE.md (closed test countries: India)",
+        "kabaddi-game/store/listing/ (Indian languages)"
+      ],
+      "regions": [
+        "kabaddi-game/general knowledge of where kabaddi is played; i18n/src/"
+      ],
+      "subtitle": [
+        "kabaddi-game/store/listing/en-US.txt"
+      ],
+      "card_blurb": [
+        "kabaddi-game/store/listing/en-US.txt"
+      ],
+      "short_description": [
+        "kabaddi-game/store/listing/en-US.txt"
+      ],
+      "description": [
+        "kabaddi-game/store/listing/en-US.txt"
+      ],
+      "players": [
+        "kabaddi-game/store/listing/en-US.txt (\"pick your seven\")",
+        "kabaddi-game/docs/KABADDI.md"
+      ],
+      "modes": [
+        "kabaddi-game/store/listing/en-US.txt"
+      ],
+      "languages": [
+        "kabaddi-game/store/listing/en-US.txt",
+        "kabaddi-game/i18n/src/ (bn,en,hi,kn,mr,pa,ta,te)"
+      ],
+      "languages_count": [
+        "kabaddi-game/i18n/src/"
+      ],
+      "graphics": [
+        "kabaddi-game/store/listing/en-US.txt",
+        "kabaddi-game/docs/BETA.md"
+      ],
+      "offline": [
+        "kabaddi-game/store/listing/en-US.txt",
+        "kabaddi-game/store/PLAY_STORE.md",
+        "kabaddi-game/store/PLAY_CONSOLE_ANSWERS.md"
+      ],
+      "min_android": [
+        "kabaddi-game/store/PLAY_STORE.md (\"runs on Android 7.0 (API 24) and later\")",
+        "kabaddi-game/docs/BETA.md"
+      ],
+      "download_size": [
+        "kabaddi-game/store/PLAY_STORE.md"
+      ],
+      "permissions": [
+        "kabaddi-game/export_presets.cfg",
+        "kabaddi-game/store/PLAY_STORE.md",
+        "kabaddi-game/store/PLAY_CONSOLE_ANSWERS.md"
+      ],
+      "features": [
+        "kabaddi-game/store/listing/en-US.txt"
+      ],
+      "about_sport": [
+        "kabaddi-game/store/listing/en-US.txt",
+        "kabaddi-game/docs/KABADDI.md"
+      ],
+      "disclaimer": [
+        "kabaddi-game/store/listing/en-US.txt (none in listing; store/PLAY_STORE.md notes the league, franchises and players are made up)"
+      ]
+    }
+  },
+  {
+    "name": "Sepak Takraw Unleashed",
+    "slug": "sepak-takraw-unleashed",
+    "app_id": "com.takrawsmash.game",
+    "branch": "claude/kind-clarke-3g5fqs",
+    "version": "0.12.2-beta",
+    "sport": "Sepak takraw",
+    "region_label": "SE Asia",
+    "regions": [
+      "Southeast Asia"
+    ],
+    "subtitle": "The kick volleyball of Southeast Asia",
+    "card_blurb": "The kick volleyball of Southeast Asia: roll spikes, horse-kick serves and blocks at the net.",
+    "short_description": "Sepak takraw: roll spikes, horse-kick serves and blocks at the net. Real rules.",
+    "description": [
+      "Sepak Takraw Unleashed is sepak takraw for your phone: the kick volleyball of Southeast Asia.",
+      "Serve with a foot in the circle, receive with the inside of your foot, set it high by the net, and launch a roll spike over the block."
+    ],
+    "players": "3 v 3 (regu) · 4 v 4 (quadrant) · 2 v 2 (doubles)",
+    "modes": [
+      "Quick Match",
+      "League Season",
+      "International"
+    ],
+    "languages": [
+      "English",
+      "Thai",
+      "Malay",
+      "Indonesian",
+      "Vietnamese",
+      "Lao",
+      "Burmese",
+      "Khmer",
+      "Filipino",
+      "Japanese",
+      "Korean",
+      "Chinese",
+      "Hindi"
+    ],
+    "languages_count": 13,
+    "graphics": "Low · Medium · High",
+    "offline": {
+      "value": true,
+      "note": "Listing: \"Plays offline.\" No internet access (store/PLAY_STORE.md)."
+    },
+    "min_android": "Android 7.0+",
+    "download_size": null,
+    "permissions": [
+      "android.permission.VIBRATE"
+    ],
+    "features": [
+      {
+        "title": "The laws as today",
+        "text": "Sets to 15 (win by two, up to 17), best of three, serve alternating every point, three touches a side."
+      },
+      {
+        "title": "Every event",
+        "text": "Regu, quadrant, doubles and the team event, for men and women, on a court and net to exact measurements."
+      },
+      {
+        "title": "The moves fans know",
+        "text": "Sepak sila, the instep dig, the header, the horse-kick serve, the roll spike, the sunback, the feint and the block."
+      },
+      {
+        "title": "Officials and video challenge",
+        "text": "Faults called by the referee, line judges' calls, and a video challenge to overturn them."
+      },
+      {
+        "title": "Leagues and internationals",
+        "text": "Club seasons in Malaysian, Thai and Indonesian formats; the World Championship, Royal Cup, Asian and Southeast Asian championships."
+      },
+      {
+        "title": "Nothing played for you",
+        "text": "Run your player to the ball with the joystick and kick as the ring closes on it."
+      }
+    ],
+    "about_sport": "Sepak takraw is the kick volleyball of Southeast Asia. Players keep a small ball in the air with their feet, knees, chest and head, never their hands, and send it over a net on a badminton-sized court, with at most three touches a side. The main event, the regu, is three a side: the tekong serves from the circle and strikers attack with acrobatic overhead spikes.",
+    "disclaimer": "Sepak Takraw Unleashed is an independent game. It is not affiliated with or endorsed by any sepak takraw federation, league, club or player. The clubs' nicknames are invented and the players are fictional; the countries, places and rules are real.",
+    "sources": {
+      "name": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "app_id": [
+        "takraw-game/export_presets.cfg (package/unique_name)"
+      ],
+      "version": [
+        "takraw-game/project.godot (config/version)",
+        "takraw-game/export_presets.cfg (version/code=18)"
+      ],
+      "sport": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "region_label": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "regions": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "subtitle": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "card_blurb": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "short_description": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "description": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "players": [
+        "takraw-game/README.md (Events: Regu (3), quadrant (4), doubles (2))",
+        "takraw-game/docs/TAKRAW.md"
+      ],
+      "modes": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "languages": [
+        "takraw-game/store/listing/en-US.txt",
+        "takraw-game/i18n/src/ (en,fil,hi,id,ja,km,ko,lo,ms,my,th,vi,zh)"
+      ],
+      "languages_count": [
+        "takraw-game/i18n/src/"
+      ],
+      "graphics": [
+        "takraw-game/README.md (Phones: Auto, Low, Medium, High)",
+        "takraw-game/docs/BETA.md (\"what each graphics level does\")"
+      ],
+      "offline": [
+        "takraw-game/store/listing/en-US.txt",
+        "takraw-game/store/PLAY_STORE.md"
+      ],
+      "min_android": [
+        "takraw-game/derived: export_presets.cfg gradle_build/min_sdk is empty (Godot default) and the build uses Godot 4.7.2 (.github/workflows/android.yml); hurling-game/store/PLAY_STORE.md states minSdkVersion 24 = Android 7.0 is Godot 4.7's minimum. Not stated in this game's own docs."
+      ],
+      "download_size": [
+        "takraw-game/none current (docs/BETA.md mentions ~117 MB only for an old 0.9.x beta)"
+      ],
+      "permissions": [
+        "takraw-game/export_presets.cfg",
+        "takraw-game/store/PLAY_STORE.md"
+      ],
+      "features": [
+        "takraw-game/store/listing/en-US.txt"
+      ],
+      "about_sport": [
+        "takraw-game/store/listing/en-US.txt",
+        "takraw-game/docs/TAKRAW.md"
+      ],
+      "disclaimer": [
+        "takraw-game/store/listing/en-US.txt"
+      ]
+    }
+  },
+  {
+    "name": "Netball Unleashed",
+    "slug": "netball-unleashed",
+    "app_id": "com.netballunleashed.game",
+    "branch": "claude/netball-game",
+    "version": "0.8.1-beta",
+    "sport": "Netball",
+    "region_label": "Commonwealth",
+    "regions": [
+      "Oceania",
+      "Europe",
+      "Americas"
+    ],
+    "subtitle": "Netball by the real rules · Seven a side",
+    "card_blurb": "Netball by the real rules: seven a side, two umpires, 23 nations. Play the whole team or one position.",
+    "short_description": "Netball by the real rules: lead, pass, defend at 0.9 m, shoot from the circle.",
+    "description": [
+      "Netball Unleashed is netball for your phone, played to the Rules of Netball as they stand today.",
+      "Take the centre pass, drive into space, feed the circle and shoot, then win the ball back with an intercept."
+    ],
+    "players": "7 v 7",
+    "modes": [
+      "Quick Match",
+      "Nations Cup",
+      "Club Season"
+    ],
+    "languages": [
+      "English",
+      "Afrikaans",
+      "Zulu",
+      "Xhosa",
+      "Sesotho",
+      "Setswana",
+      "Chichewa",
+      "Luganda",
+      "Shona",
+      "Swahili",
+      "Malay",
+      "Chinese",
+      "Sinhala",
+      "Tamil",
+      "Welsh",
+      "Māori",
+      "Tongan",
+      "Samoan",
+      "Fijian"
+    ],
+    "languages_count": 19,
+    "graphics": "Low · Medium · High",
+    "offline": {
+      "value": true,
+      "note": "Listing: \"Plays offline.\" No internet permission (store/PLAY_CONSOLE_ANSWERS.md)."
+    },
+    "min_android": "Android 7.0+",
+    "download_size": null,
+    "permissions": [
+      "android.permission.VIBRATE"
+    ],
+    "features": [
+      {
+        "title": "Seven positions, real areas",
+        "text": "GS, GA, WA, C, WD, GD and GK, each in her own areas, with bibs on."
+      },
+      {
+        "title": "Two umpires, every call",
+        "text": "Footwork, three seconds, obstruction at 0.9 m, contact, offside and over a third, signalled by two umpires."
+      },
+      {
+        "title": "Team or one position",
+        "text": "Play the whole team, or pick a bib and play one position all match."
+      },
+      {
+        "title": "Three ways to play",
+        "text": "Quick Match with 23 nations, the Nations Cup, and the Club Season: eight clubs and a grand final."
+      },
+      {
+        "title": "A box score",
+        "text": "Goals from attempts, feeds, centre pass receives, gains, intercepts, rebounds and penalties for every match."
+      },
+      {
+        "title": "Nineteen languages",
+        "text": "From Afrikaans, isiZulu and Kiswahili to Cymraeg, Te Reo Māori, Lea Faka-Tonga and Na Vosa Vakaviti."
+      }
+    ],
+    "about_sport": "Netball is a fast passing game, seven a side, played most in Australia, New Zealand, the UK, southern Africa, the Caribbean and the Pacific. Players may not run with the ball or hold it for more than three seconds, each position keeps to its own areas of the court, and only the Goal Shooter and Goal Attack can score, from inside the circle.",
+    "disclaimer": "Netball Unleashed is an independent game. It is not affiliated with or endorsed by any netball governing body, league, club or player. The players are fictional; the countries and the rules are real.",
+    "sources": {
+      "name": [
+        "netball-game/store/listing/en-US.txt"
+      ],
+      "app_id": [
+        "netball-game/export_presets.cfg (package/unique_name)",
+        "netball-game/store/PLAY_CONSOLE_ANSWERS.md"
+      ],
+      "version": [
+        "netball-game/project.godot (config/version)",
+        "netball-game/export_presets.cfg (version/code=12)"
+      ],
+      "sport": [
+        "netball-game/store/listing/en-US.txt"
+      ],
+      "region_label": [
+        "netball-game/docs/LANGUAGES.md (where netball is played)"
+      ],
+      "regions": [
+        "netball-game/docs/LANGUAGES.md (Australia, NZ, England/Wales/Scotland, Jamaica/Caribbean, Pacific; Africa has no tag in the allowed set)"
+      ],
+      "subtitle": [
+        "netball-game/store/listing/en-US.txt"
+      ],
+      "card_blurb": [
+        "netball-game/store/listing/en-US.txt"
+      ],
+      "short_description": [
+        "netball-game/store/listing/en-US.txt"
+      ],
+      "description": [
+        "netball-game/store/listing/en-US.txt"
+      ],
+      "players": [
+        "netball-game/store/listing/en-US.txt (\"Seven a side\")"
+      ],
+      "modes": [
+        "netball-game/store/listing/en-US.txt (\"Quick Match\", \"The Nations Cup\", \"The Club Season\")"
+      ],
+      "languages": [
+        "netball-game/store/listing/en-US.txt",
+        "netball-game/i18n/src/ (af,cy,en,fj,lg,mi,ms,ny,si,sm,sn,st,sw,ta,tn,to,xh,zh,zu)",
+        "netball-game/docs/LANGUAGES.md"
+      ],
+      "languages_count": [
+        "netball-game/i18n/src/"
+      ],
+      "graphics": [
+        "netball-game/autoload/game.gd (GFX_LOW, GFX_MEDIUM, GFX_HIGH)",
+        "netball-game/store/listing/en-US.txt (release notes 0.4.1 and 0.7.0 mention Low, Medium and High)"
+      ],
+      "offline": [
+        "netball-game/store/listing/en-US.txt",
+        "netball-game/store/PLAY_STORE.md",
+        "netball-game/store/PLAY_CONSOLE_ANSWERS.md"
+      ],
+      "min_android": [
+        "netball-game/store/PLAY_CONSOLE_ANSWERS.md (\"minimum API 24\")"
+      ],
+      "download_size": [
+        "netball-game/not stated"
+      ],
+      "permissions": [
+        "netball-game/export_presets.cfg",
+        "netball-game/store/PLAY_CONSOLE_ANSWERS.md"
+      ],
+      "features": [
+        "netball-game/store/listing/en-US.txt"
+      ],
+      "about_sport": [
+        "netball-game/store/listing/en-US.txt",
+        "netball-game/docs/LANGUAGES.md"
+      ],
+      "disclaimer": [
+        "netball-game/store/listing/en-US.txt"
+      ]
+    }
+  },
+  {
+    "name": "Kho Kho Rush",
+    "slug": "kho-kho-rush",
+    "app_id": "com.khokhorush.game",
+    "branch": "claude/kho-kho-game",
+    "version": "0.10.0-beta",
+    "sport": "Kho kho",
+    "region_label": "India",
+    "regions": [
+      "South Asia"
+    ],
+    "subtitle": "The chasing game of India",
+    "card_blurb": "The chasing game of India: sit in the lane, give the kho, chase and pole dive. Two rule books.",
+    "short_description": "Kho kho to the real rules: sit in the lane, give the kho, chase and pole dive.",
+    "description": [
+      "Kho Kho Rush is kho kho for your phone: the chasing game of India.",
+      "Sit in the lane with your side, rise on a kho, chase the defenders to the pole, and dive to touch them out before the turn runs down."
+    ],
+    "players": "9 a side (Classic) · 7 a side (Fast)",
+    "modes": [
+      "Quick Match",
+      "Championships",
+      "City League",
+      "Watch a Match"
+    ],
+    "languages": [
+      "English",
+      "Hindi",
+      "Marathi",
+      "Kannada",
+      "Telugu",
+      "Tamil",
+      "Malayalam",
+      "Odia",
+      "Bengali",
+      "Gujarati",
+      "Punjabi",
+      "Assamese",
+      "Nepali",
+      "Sinhala"
+    ],
+    "languages_count": 14,
+    "graphics": "Low · Medium · High",
+    "offline": {
+      "value": true,
+      "note": "Listing: \"Plays offline.\" No internet access (store/PLAY_STORE.md)."
+    },
+    "min_android": "Android 7.0+",
+    "download_size": null,
+    "permissions": [
+      "android.permission.VIBRATE"
+    ],
+    "features": [
+      {
+        "title": "Two rule books",
+        "text": "Classic, nine a side as the national championships play it; Fast, seven a side from the 2025 world championship."
+      },
+      {
+        "title": "Every chaser rule",
+        "text": "Keep your direction, never cross the central lane, turn only round a pole, and give the kho from behind."
+      },
+      {
+        "title": "Touch, sky dive, pole dive",
+        "text": "Defenders on in batches of three. Out by a touch, a sky dive, a pole dive or a late entry."
+      },
+      {
+        "title": "Umpires on both lines",
+        "text": "Umpires on both side lines whistle a foul until it is put right, with a referee and a timekeeper."
+      },
+      {
+        "title": "Championships and City League",
+        "text": "Sixteen nations or sixteen states, men's and women's, or eight invented city sides home and away."
+      },
+      {
+        "title": "Four grounds",
+        "text": "A village ground at dusk, a school ground in the morning, an indoor arena on mats, a floodlit stadium."
+      }
+    ],
+    "about_sport": "Kho kho is a traditional chasing game from India. The chasing side sits in a line of squares down the middle of the field, with a pole at each end, while one active chaser runs after the defenders. He may not cross the central lane or turn back, so he hands on the chase by touching a seated team-mate from behind and calling \"kho\".",
+    "disclaimer": "Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.",
+    "sources": {
+      "name": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ],
+      "app_id": [
+        "kho-kho-game/export_presets.cfg (package/unique_name)"
+      ],
+      "version": [
+        "kho-kho-game/project.godot (config/version)",
+        "kho-kho-game/export_presets.cfg (version/code=16)",
+        "kho-kho-game/store/listing/en-US.txt (release notes 0.10.0)"
+      ],
+      "sport": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ],
+      "region_label": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ],
+      "regions": [
+        "kho-kho-game/store/listing/en-US.txt",
+        "kho-kho-game/store/PLAY_STORE.md (Nepal, Sri Lanka, Bangladesh listings)"
+      ],
+      "subtitle": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ],
+      "card_blurb": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ],
+      "short_description": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ],
+      "description": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ],
+      "players": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ],
+      "modes": [
+        "kho-kho-game/store/listing/en-US.txt",
+        "kho-kho-game/README.md"
+      ],
+      "languages": [
+        "kho-kho-game/store/listing/en-US.txt",
+        "kho-kho-game/README.md",
+        "kho-kho-game/i18n/src/ (as,bn,en,gu,hi,kn,ml,mr,ne,or,pa,si,ta,te)"
+      ],
+      "languages_count": [
+        "kho-kho-game/i18n/src/"
+      ],
+      "graphics": [
+        "kho-kho-game/README.md (Low / Medium / High table)"
+      ],
+      "offline": [
+        "kho-kho-game/store/listing/en-US.txt",
+        "kho-kho-game/store/PLAY_STORE.md"
+      ],
+      "min_android": [
+        "kho-kho-game/derived: export_presets.cfg gradle_build/min_sdk is empty (Godot default) and the build uses Godot 4.7.2 (.github/workflows/android.yml); hurling-game/store/PLAY_STORE.md states minSdkVersion 24 = Android 7.0 is Godot 4.7's minimum. Not stated in this game's own docs."
+      ],
+      "download_size": [
+        "kho-kho-game/not stated (README: beta APK about 54 MB up to 0.6 only)"
+      ],
+      "permissions": [
+        "kho-kho-game/export_presets.cfg",
+        "kho-kho-game/store/PLAY_STORE.md"
+      ],
+      "features": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ],
+      "about_sport": [
+        "kho-kho-game/store/listing/en-US.txt",
+        "kho-kho-game/docs/RULES.md",
+        "kho-kho-game/README.md"
+      ],
+      "disclaimer": [
+        "kho-kho-game/store/listing/en-US.txt"
+      ]
+    }
+  },
+  {
+    "name": "Hurling Heroes",
+    "slug": "hurling-heroes",
+    "app_id": "com.ashandleather.game",
+    "branch": "claude/hurling-game",
+    "version": "0.11.2-beta",
+    "sport": "Hurling",
+    "region_label": "Ireland",
+    "regions": [
+      "Europe"
+    ],
+    "subtitle": "Ireland's ancient field sport · Iománaíocht",
+    "card_blurb": "Ireland's ancient field sport, fifteen a side, to the 2026 rules. In English or Irish.",
+    "short_description": "Hurling, Ireland's ancient field sport: fifteen a side, the real rules.",
+    "description": [
+      "Hurling Heroes is hurling for your phone, Ireland's ancient field sport: the clash of the ash, fifteen a side, goals and points.",
+      "Play on a parish field at dusk or in front of a full stadium. Lift the sliotar, solo through, and strike it over the bar."
+    ],
+    "players": "15 v 15",
+    "modes": [
+      "Throw-in",
+      "The Summer Championship",
+      "Watch a match"
+    ],
+    "languages": [
+      "English",
+      "Irish"
+    ],
+    "languages_count": 2,
+    "graphics": "Low · Medium · High + HD pack",
+    "offline": {
+      "value": true,
+      "note": "Listing: \"Plays offline (only the optional HD download uses the internet).\""
+    },
+    "min_android": "Android 7.0+",
+    "download_size": null,
+    "permissions": [
+      "android.permission.VIBRATE",
+      "android.permission.INTERNET (only for the optional HD pack download)"
+    ],
+    "features": [
+      {
+        "title": "The 2026 playing rules",
+        "text": "Two halves of 35 minutes, a goal worth three points, puck-outs, frees, 65s, sideline cuts and penalties."
+      },
+      {
+        "title": "Solo and strike",
+        "text": "Four steps with the sliotar in your hand, then solo it on your hurley."
+      },
+      {
+        "title": "Every official on the field",
+        "text": "The referee whistles and shows cards; linesmen flag sideline cuts; umpires wave white for a point, green for a goal."
+      },
+      {
+        "title": "The Summer Championship",
+        "text": "Two groups of five, then knock-outs to the final; the other ten counties play the Tier Two Cup."
+      },
+      {
+        "title": "As Gaeilge",
+        "text": "English or Irish, with the game's own Irish terms: camán, sliotar, cúl, cúilín, poc amach."
+      },
+      {
+        "title": "Graphics for your phone",
+        "text": "Low, Medium and High, changed any time, plus an optional HD download for recent high-end phones."
+      }
+    ],
+    "about_sport": "Hurling is Ireland's ancient field sport, played fifteen a side. Players carry an ash stick, the hurley (camán), and a small leather ball, the sliotar, which can be caught, balanced on the stick while running, or struck the length of the field. A goal under the bar is worth three points; a point goes over the bar between the posts.",
+    "disclaimer": "Hurling Heroes is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.",
+    "sources": {
+      "name": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "app_id": [
+        "hurling-game/export_presets.cfg (package/unique_name)",
+        "hurling-game/store/PLAY_STORE.md (applicationId)"
+      ],
+      "version": [
+        "hurling-game/project.godot (config/version)",
+        "hurling-game/export_presets.cfg (version/code=18)",
+        "hurling-game/store/PLAY_STORE.md (\"Checked for 0.11.2 (versionCode 18)\")"
+      ],
+      "sport": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "region_label": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "regions": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "subtitle": [
+        "hurling-game/store/listing/en-US.txt",
+        "hurling-game/store/listing/ga.txt (\"Iománaíocht\")"
+      ],
+      "card_blurb": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "short_description": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "description": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "players": [
+        "hurling-game/store/listing/en-US.txt (\"fifteen a side\")"
+      ],
+      "modes": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "languages": [
+        "hurling-game/store/listing/en-US.txt",
+        "hurling-game/i18n/src/ (en, ga)",
+        "hurling-game/docs/LANGUAGES.md"
+      ],
+      "languages_count": [
+        "hurling-game/i18n/src/"
+      ],
+      "graphics": [
+        "hurling-game/store/listing/en-US.txt",
+        "hurling-game/docs/GRAPHICS.md",
+        "hurling-game/docs/BETA.md (HD pack, 'Ultra')"
+      ],
+      "offline": [
+        "hurling-game/store/listing/en-US.txt",
+        "hurling-game/store/PLAY_CONSOLE_ANSWERS.md"
+      ],
+      "min_android": [
+        "hurling-game/store/PLAY_STORE.md (\"minSdkVersion 24: Android 7.0\")"
+      ],
+      "download_size": [
+        "hurling-game/not stated per phone (store/PLAY_STORE.md: .aab 78 MB; optional HD pack 114 MB)"
+      ],
+      "permissions": [
+        "hurling-game/export_presets.cfg",
+        "hurling-game/store/PLAY_STORE.md"
+      ],
+      "features": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "about_sport": [
+        "hurling-game/store/listing/en-US.txt"
+      ],
+      "disclaimer": [
+        "hurling-game/store/listing/en-US.txt"
+      ]
+    }
+  },
+  {
+    "name": "Floorball Unleashed",
+    "slug": "floorball-unleashed",
+    "app_id": "com.floorballunleashed.game",
+    "branch": "claude/floorball-game",
+    "version": "0.8.1-beta",
+    "sport": "Floorball",
+    "region_label": "Europe",
+    "regions": [
+      "Europe"
+    ],
+    "subtitle": "The fast indoor stick game · Five and a goalkeeper a side",
+    "card_blurb": "The fast indoor stick game: five and a goalkeeper a side, to the 2026 international rules.",
+    "short_description": "Floorball five a side with goalkeepers, to the real rules. Shoot, pass, score!",
+    "description": [
+      "Floorball Unleashed is floorball for your phone: the fast indoor stick game of Sweden, Finland, Switzerland and Czechia.",
+      "Five and a goalkeeper a side on a 40 by 20 metre rink inside the boards, to floorball's international Rules of the Game in force from 1 July 2026."
+    ],
+    "players": "5 + goalkeeper a side",
+    "modes": [
+      "Quick match",
+      "World Finals",
+      "Club season"
+    ],
+    "languages": [
+      "English",
+      "Swedish",
+      "Finnish",
+      "German",
+      "French",
+      "Italian",
+      "Czech",
+      "Slovak",
+      "Norwegian",
+      "Danish",
+      "Latvian",
+      "Estonian",
+      "Polish",
+      "Japanese",
+      "Thai"
+    ],
+    "languages_count": 15,
+    "graphics": "Low · Medium · High",
+    "offline": {
+      "value": true,
+      "note": "Listing: \"Plays offline.\" No internet permission (store/PLAY_STORE.md)."
+    },
+    "min_android": "Android 7.0+",
+    "download_size": null,
+    "permissions": [
+      "android.permission.VIBRATE"
+    ],
+    "features": [
+      {
+        "title": "The 2026 rules",
+        "text": "Three periods, face-offs, hit-ins and free-hits, the goalkeeper area, two- and five-minute penalties, power plays and penalty shots."
+      },
+      {
+        "title": "Two referees",
+        "text": "Two referees who whistle and signal every call: free-hit, advantage, delayed penalty, two minutes, passive play, goal."
+      },
+      {
+        "title": "Pull the goalkeeper",
+        "text": "Late in a match the team behind pulls its goalkeeper for a sixth outfield player."
+      },
+      {
+        "title": "Teams that play floorball",
+        "text": "A 2-1-2 defence, flying line changes every fifty seconds, wingers wide and the centre in the slot."
+      },
+      {
+        "title": "World Finals and club season",
+        "text": "Sixteen nations at the World Finals, or ten clubs in a league with 3-2-1-0 points and a final."
+      },
+      {
+        "title": "A box score",
+        "text": "Shots on goal, saves, penalty minutes, power-play goals, every goal and every penalty with its rule."
+      }
+    ],
+    "about_sport": "Floorball is a fast indoor stick game, played most in Sweden, Finland, Switzerland and Czechia. Each side has five outfield players and a goalkeeper, on a 40 by 20 metre rink inside low boards. Outfield players use light plastic sticks and a plastic ball with holes; the goalkeeper plays without a stick.",
+    "disclaimer": "Floorball Unleashed is an independent game. It is not affiliated with or endorsed by any floorball federation, league, club or player. The players are fictional; the countries and the rules are real.",
+    "sources": {
+      "name": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "app_id": [
+        "floorball-game/export_presets.cfg (package/unique_name)"
+      ],
+      "version": [
+        "floorball-game/project.godot (config/version)",
+        "floorball-game/export_presets.cfg (version/code=11)",
+        "floorball-game/docs/BETA.md"
+      ],
+      "sport": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "region_label": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "regions": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "subtitle": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "card_blurb": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "short_description": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "description": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "players": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "modes": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "languages": [
+        "floorball-game/store/listing/en-US.txt",
+        "floorball-game/i18n/src/ (cs,da,de,en,et,fi,fr,it,ja,lv,nb,pl,sk,sv,th)"
+      ],
+      "languages_count": [
+        "floorball-game/i18n/src/"
+      ],
+      "graphics": [
+        "floorball-game/README.md (Low / Medium / High table)"
+      ],
+      "offline": [
+        "floorball-game/store/listing/en-US.txt",
+        "floorball-game/store/PLAY_STORE.md"
+      ],
+      "min_android": [
+        "floorball-game/docs/BETA.md (\"Android 7.0 or newer\")"
+      ],
+      "download_size": [
+        "floorball-game/not stated"
+      ],
+      "permissions": [
+        "floorball-game/export_presets.cfg",
+        "floorball-game/store/PLAY_STORE.md"
+      ],
+      "features": [
+        "floorball-game/store/listing/en-US.txt"
+      ],
+      "about_sport": [
+        "floorball-game/store/listing/en-US.txt",
+        "floorball-game/README.md"
+      ],
+      "disclaimer": [
+        "floorball-game/store/listing/en-US.txt"
+      ]
+    }
+  },
+  {
+    "name": "Pok Ta Pok Rivals",
+    "slug": "pok-ta-pok-rivals",
+    "app_id": "com.poktapokrivals.game",
+    "branch": "claude/pok-ta-pok-game",
+    "version": "0.5.3-beta",
+    "sport": "Mesoamerican ballgame (ulama)",
+    "region_label": "Mexico",
+    "regions": [
+      "Americas"
+    ],
+    "subtitle": "The hip ballgame of Mexico · Ulama de cadera",
+    "card_blurb": "The Mesoamerican hip ballgame: ulama from Sinaloa and the stone courts of the Yucatán.",
+    "short_description": "The hip ballgame of Mexico: ulama, the heavy rubber ball, the count to eight.",
+    "description": [
+      "Pok Ta Pok Rivals is the Mesoamerican ballgame on your phone, played as it is still played today.",
+      "Strike a heavy rubber ball with your hip across the analco of a long earth court, read its low bounce, dive for it as it skids along the ground, and drive it past the other town's end."
+    ],
+    "players": "4 or 5 a side",
+    "modes": [
+      "Play a match",
+      "Town tournament",
+      "Watch a match"
+    ],
+    "languages": [
+      "Spanish",
+      "English",
+      "Portuguese",
+      "French",
+      "German",
+      "Italian"
+    ],
+    "languages_count": 6,
+    "graphics": "Low · Medium · High",
+    "offline": {
+      "value": true,
+      "note": "The listing does not say \"plays offline\"; store/PLAY_STORE.md: \"one permission (vibration) and no internet access\"; Play tags include Offline (store/PLAY_CONSOLE_ANSWERS.md)."
+    },
+    "min_android": "Android 7.0+",
+    "download_size": "about 117 MB (Play download per phone, per store/PLAY_STORE.md)",
+    "permissions": [
+      "android.permission.VIBRATE"
+    ],
+    "features": [
+      {
+        "title": "Ulama de cadera",
+        "text": "The game still played in southern Sinaloa: four or five a side on a strip of packed earth."
+      },
+      {
+        "title": "The hip only",
+        "text": "Touch the ball with anything else and the raya goes to the other side."
+      },
+      {
+        "title": "The real count",
+        "text": "Rayas go up and down, and in urria a whole count can be wiped out. First to eight."
+      },
+      {
+        "title": "The classic stone court",
+        "text": "An I-shaped court rebuilt from the old chronicles, with a stone ring that wins the game outright."
+      },
+      {
+        "title": "Four courts, sixteen towns",
+        "text": "Towns from Sinaloa, the Yucatán, Quintana Roo, Chiapas, Guatemala, Belize and Honduras, each with its own colors."
+      },
+      {
+        "title": "Team or one player",
+        "text": "Play as the whole team, or be one player for the whole match."
+      }
+    ],
+    "about_sport": "The Mesoamerican ballgame is more than 3,000 years old. Its living form, ulama de cadera, is still played in villages of southern Sinaloa, Mexico: two sides strike a heavy rubber ball with the hip only along a long strip of packed earth, while judges called veedores keep the count. In the Yucatán and Central America, teams have revived pelota maya on stone courts.",
+    "disclaimer": "Pok Ta Pok Rivals is an independent game, not connected with or endorsed by any sporting body, federation, tournament or club. Towns appear by their place names only; every player is invented.",
+    "sources": {
+      "name": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "app_id": [
+        "pok-ta-pok-game/export_presets.cfg (package/unique_name)"
+      ],
+      "version": [
+        "pok-ta-pok-game/project.godot (config/version)",
+        "pok-ta-pok-game/export_presets.cfg (version/code=9)"
+      ],
+      "sport": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "region_label": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "regions": [
+        "pok-ta-pok-game/store/listing/en-US.txt",
+        "pok-ta-pok-game/docs/CULTURE.md"
+      ],
+      "subtitle": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "card_blurb": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "short_description": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "description": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "players": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "modes": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "languages": [
+        "pok-ta-pok-game/store/listing/en-US.txt",
+        "pok-ta-pok-game/i18n/src/ (de,en,es,fr,it,pt)"
+      ],
+      "languages_count": [
+        "pok-ta-pok-game/i18n/src/",
+        "pok-ta-pok-game/store/listing/en-US.txt (\"in six languages\")"
+      ],
+      "graphics": [
+        "pok-ta-pok-game/README.md (\"graphics (Auto, Low, Medium, High)\")"
+      ],
+      "offline": [
+        "pok-ta-pok-game/store/PLAY_STORE.md",
+        "pok-ta-pok-game/store/PLAY_CONSOLE_ANSWERS.md"
+      ],
+      "min_android": [
+        "pok-ta-pok-game/derived: export_presets.cfg gradle_build/min_sdk is empty (Godot default) and the build uses Godot 4.7.2 (.github/workflows/android.yml); hurling-game/store/PLAY_STORE.md states minSdkVersion 24 = Android 7.0 is Godot 4.7's minimum. Not stated in this game's own docs."
+      ],
+      "download_size": [
+        "pok-ta-pok-game/store/PLAY_STORE.md (\"Each phone downloads only its own build (64- or 32-bit), about 117 MB\")"
+      ],
+      "permissions": [
+        "pok-ta-pok-game/export_presets.cfg",
+        "pok-ta-pok-game/store/PLAY_STORE.md",
+        "pok-ta-pok-game/README.md"
+      ],
+      "features": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ],
+      "about_sport": [
+        "pok-ta-pok-game/store/listing/en-US.txt",
+        "pok-ta-pok-game/docs/CULTURE.md",
+        "pok-ta-pok-game/general knowledge (age of the ballgame)"
+      ],
+      "disclaimer": [
+        "pok-ta-pok-game/store/listing/en-US.txt"
+      ]
+    }
+  }
+]

@@ -1,0 +1,301 @@
+/* Ghost Kit: the parts of the design theme.json can't say. Colours and fonts come from theme.json's presets. */
+
+:root {
+	--gk-bg: var(--wp--preset--color--base);
+	--gk-panel: var(--wp--preset--color--panel);
+	--gk-chip: var(--wp--preset--color--chip);
+	--gk-line: var(--wp--preset--color--line);
+	--gk-ink: var(--wp--preset--color--ink);
+	--gk-soft: var(--wp--preset--color--soft);
+	--gk-mute: var(--wp--preset--color--mute);
+	--gk-accent: var(--wp--preset--color--accent);
+	--gk-accent-2: var(--wp--preset--color--accent-2);
+	--gk-heading: var(--wp--preset--font-family--heading);
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: clip; }
+img { max-width: 100%; height: auto; }
+
+/* Keyboard focus: a bright teal ring everywhere. */
+:where(a, button, input, summary, [tabindex]):focus-visible {
+	outline: 3px solid var(--gk-accent-2);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+.screen-reader-text {
+	border: 0; clip: rect(1px, 1px, 1px, 1px); clip-path: inset(50%); height: 1px; margin: -1px;
+	overflow: hidden; padding: 0; position: absolute; width: 1px; word-wrap: normal !important;
+}
+
+.gk-muted { color: var(--gk-mute); }
+.gk-small { font-size: 13px; }
+.gk-caption { color: var(--gk-mute); font-size: 13px; margin-top: 8px !important; }
+code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); padding: 1px 5px; border-radius: 5px; }
+
+/* ------------------------------------------------------------------ header */
+
+.gk-header { border-bottom: 1px solid var(--gk-line); position: relative; z-index: 20; }
+.gk-header__bar { min-height: 76px; gap: 24px; }
+.gk-brand { gap: 12px; flex: 0 1 auto; min-width: 0; }
+.gk-brand .wp-block-site-logo img { width: 34px; height: 34px; border-radius: 10px; display: block; }
+.gk-brand .wp-block-site-title { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.gk-brand .wp-block-site-logo { flex: none; }
+.gk-nav { margin-left: auto; }
+.gk-nav .wp-block-navigation__container { gap: 8px 28px; }
+.gk-nav .wp-block-navigation-item__content { color: var(--gk-mute); padding: 12px 0; display: inline-block; }
+.gk-nav .wp-block-navigation-item__content:hover,
+.gk-nav .current-menu-item > .wp-block-navigation-item__content,
+.gk-nav [aria-current="page"] { color: var(--gk-ink); }
+.gk-header__cta { flex: none; }
+
+/* The menu button on phones: a 44 px target. */
+.wp-block-navigation__responsive-container-open,
+.wp-block-navigation__responsive-container-close {
+	min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+	color: var(--gk-ink);
+}
+.wp-block-navigation__responsive-container.is-menu-open {
+	padding: 24px clamp(16px, 4vw, 40px) !important;
+}
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content {
+	padding-top: 56px !important;
+}
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation-item__content {
+	font-family: var(--gk-heading); font-size: 30px; font-weight: 600; color: var(--gk-ink); padding: 8px 0;
+}
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__container { gap: 12px; }
+
+@media (max-width: 640px) {
+	.gk-header .gk-header__cta { display: none; }
+	.gk-header__bar { min-height: 64px; }
+	.gk-brand .wp-block-site-title { font-size: 20px !important; }
+}
+
+/* ------------------------------------------------------------------ footer */
+
+.gk-footer { border-top: 1px solid var(--gk-line); margin-top: 0; padding-top: 16px; padding-bottom: 16px; color: var(--gk-mute); font-size: 14px; }
+.gk-footer__bar { gap: 8px 24px; align-items: center; }
+.gk-copyright { margin: 0; }
+.gk-footer__nav .wp-block-navigation__container { gap: 0 24px; }
+.gk-footer__nav .wp-block-navigation-item__content { color: var(--gk-mute); padding: 12px 0; display: inline-block; }
+.gk-footer__nav .wp-block-navigation-item__content:hover { color: var(--gk-ink); }
+
+/* ------------------------------------------------------------------ buttons */
+
+.wp-block-button__link { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }
+.wp-block-button.is-style-outline > .wp-block-button__link {
+	background: transparent; color: var(--gk-ink); border: 1px solid var(--gk-line);
+	padding: 12px 21px;
+}
+.wp-block-button.is-style-outline > .wp-block-button__link:hover,
+.wp-block-button.is-style-outline > .wp-block-button__link:focus-visible { border-color: var(--gk-ink); background: transparent; color: var(--gk-ink); }
+
+/* ------------------------------------------------------------------ page frame */
+
+.gk-main { padding-bottom: clamp(48px, 7vw, 80px); }
+.gk-main.gk-prose { padding-top: 24px; }
+.gk-page-title { font-size: clamp(34px, 5vw, 52px) !important; margin-top: 8px; }
+.gk-prose h2 { font-size: clamp(24px, 3vw, 30px); margin-top: 1.6em; }
+.gk-prose h3 { margin-top: 1.4em; }
+.gk-prose :where(p, li) { color: var(--gk-soft); }
+.gk-prose :where(p, li) strong { color: var(--gk-ink); }
+.gk-prose ul, .gk-prose ol { padding-left: 1.3em; }
+.gk-prose li + li { margin-top: 6px; }
+.gk-note {
+	background: var(--gk-panel); border: 1px solid var(--gk-line); border-left: 3px solid var(--gk-accent);
+	border-radius: 10px; padding: 14px 18px; font-size: 15px;
+}
+.gk-lead { font-size: var(--wp--preset--font-size--large); color: var(--gk-soft); line-height: 1.55; max-width: 640px; }
+
+.gk-crumb ol { list-style: none; display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; color: var(--gk-mute); font-size: 14px; }
+.gk-crumb li + li::before { content: "›"; margin-right: 4px; }
+.gk-crumb a { color: var(--gk-mute); text-decoration: none; display: inline-block; padding: 12px 0; }
+.gk-crumb a:hover { color: var(--gk-ink); text-decoration: underline; }
+.gk-crumb [aria-current] { padding: 12px 0; }
+.gk-wide-crumb { margin-top: 8px; margin-bottom: 0; }
+
+/* ------------------------------------------------------------------ home: hero */
+
+.gk-hero { position: relative; overflow: hidden; padding-top: clamp(48px, 8vw, 80px); padding-bottom: clamp(44px, 7vw, 70px); margin-top: 0 !important; }
+.gk-hero__bg {
+	position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+	opacity: .22; margin: 0 !important; max-width: none !important;
+}
+.gk-hero__bg > * { margin: 0 !important; height: 100%; }
+.gk-hero__bg img { width: 100%; height: 100% !important; object-fit: cover; display: block; }
+.gk-hero::after {
+	content: ""; position: absolute; inset: 0; pointer-events: none;
+	background:
+		linear-gradient(90deg, var(--gk-bg) 35%, rgba(13, 17, 23, .55) 75%, rgba(13, 17, 23, .85)),
+		linear-gradient(0deg, var(--gk-bg), transparent 40%);
+}
+.gk-hero__content { position: relative; z-index: 1; }
+.gk-hero__content > * { max-width: 780px; }
+.gk-eyebrow { color: var(--gk-accent-2); font-weight: 600; letter-spacing: 2px; font-size: 13px; text-transform: uppercase; margin: 0; }
+.gk-hero__title { margin: 16px 0 20px !important; font-size: clamp(42px, 7.2vw, 76px) !important; }
+.gk-hero .wp-block-buttons { margin-top: 32px; gap: 14px; }
+.gk-stats { gap: 20px 48px; margin-top: 48px !important; }
+.gk-stat { margin: 0; color: var(--gk-mute); font-size: 14px; max-width: 9.5em; line-height: 1.35; }
+.gk-stat strong { display: block; font-family: var(--gk-heading); font-size: 38px; color: var(--gk-ink); line-height: 1.15; }
+@media (max-width: 640px) {
+	.gk-hero__bg { grid-template-columns: repeat(2, 1fr); }
+	.gk-hero::after { background: linear-gradient(0deg, var(--gk-bg) 10%, rgba(13, 17, 23, .7)); }
+	.gk-stats { display: grid !important; grid-template-columns: 1fr 1fr; }
+}
+
+/* ------------------------------------------------------------------ game cards */
+
+.gk-games, .gk-why, .gk-band, .gk-beta { margin-top: clamp(48px, 7vw, 72px) !important; }
+.gk-section-head { gap: 16px; align-items: flex-end; margin-bottom: 28px; }
+.gk-section-head h2 { margin: 0; }
+.gk-filter { display: flex; flex-wrap: wrap; gap: 8px; }
+.gk-filter[hidden] { display: none; }
+.gk-chip {
+	font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; min-height: 44px; padding: 0 16px;
+	border-radius: 999px; border: 1px solid var(--gk-line); background: transparent; color: var(--gk-mute);
+}
+.gk-chip:hover { color: var(--gk-ink); border-color: var(--gk-mute); }
+.gk-chip[aria-pressed="true"] { background: var(--gk-ink); color: var(--gk-bg); border-color: var(--gk-ink); }
+
+.gk-grid { gap: 24px !important; }
+.gk-card {
+	position: relative; background: var(--gk-panel); border: 1px solid var(--gk-line); border-radius: 18px;
+	overflow: hidden; margin: 0 !important; display: flex; flex-direction: column;
+}
+.gk-card[hidden] { display: none; }
+.gk-card:focus-within { outline: 3px solid var(--gk-accent-2); outline-offset: 2px; }
+.gk-card:hover { border-color: #3a475c; }
+.gk-card__art { position: relative; aspect-ratio: 1024 / 500; margin: 0 !important; }
+.gk-card__art figure { margin: 0; height: 100%; }
+.gk-card__art img { width: 100%; height: 100% !important; object-fit: cover; display: block; }
+.gk-tag {
+	position: absolute; top: 12px; right: 12px; margin: 0; background: rgba(13, 17, 23, .85);
+	padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; line-height: 1.5;
+}
+.gk-card__body { padding: 18px; gap: 14px !important; align-items: flex-start !important; margin: 0 !important; }
+.gk-card__icon { flex: none; margin: 0 !important; }
+.gk-card__icon img { width: 56px; height: 56px; border-radius: 14px; display: block; }
+.gk-card__text { gap: 4px !important; min-width: 0; }
+.gk-card__title { font-size: 18px !important; margin: 0; }
+.gk-card__title a { color: var(--gk-ink); text-decoration: none; }
+.gk-card__title a::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.gk-card__title a:focus-visible { outline: none; }
+.gk-card:hover .gk-card__title a { text-decoration: underline; }
+.gk-card__blurb { color: var(--gk-mute); font-size: 14px; line-height: 1.45; margin: 0; }
+.gk-meta, .gk-pills { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; padding: 0; }
+.gk-meta li, .gk-pills li { font-size: 12px; color: var(--gk-soft); background: var(--gk-chip); padding: 4px 8px; border-radius: 6px; margin: 0; }
+.gk-pills { margin: 20px 0 !important; }
+.gk-pills li { font-size: 13px; padding: 6px 10px; border-radius: 8px; }
+
+.gk-card--more {
+	border-style: dashed; background: transparent; justify-content: center; align-items: center; text-align: center;
+	padding: 30px; gap: 6px; min-height: 260px;
+}
+.gk-card--more > * { margin: 0 !important; }
+.gk-card--more .wp-block-buttons { margin-top: 14px !important; justify-content: center; position: relative; z-index: 2; }
+.gk-card__plus { font-size: 34px; line-height: 1; }
+
+/* ------------------------------------------------------------------ tiles, band */
+
+.gk-tiles { gap: 20px !important; }
+.gk-tile { background: var(--gk-panel); border: 1px solid var(--gk-line); border-radius: 16px; padding: 24px; margin: 0 !important; }
+.gk-tile > * { margin: 0; }
+.gk-tile h3 { font-size: 17px !important; margin: 14px 0 6px !important; }
+.gk-tile h3:first-child { margin-top: 0 !important; }
+.gk-tile p { font-size: 14px; line-height: 1.5; }
+.gk-tile__icon span { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; background: var(--gk-chip); }
+.gk-why h2 { margin-bottom: 28px; }
+
+.gk-band {
+	background: linear-gradient(135deg, #1c2433, #121822); border: 1px solid var(--gk-line); border-radius: 22px;
+	padding: clamp(24px, 4vw, 44px); gap: 24px !important; align-items: center !important;
+}
+.gk-band > * { margin: 0 !important; }
+.gk-band__title { font-size: clamp(26px, 3vw, 34px) !important; margin: 0 0 8px !important; }
+.gk-band .gk-muted { margin: 0; }
+.gk-band__actions { gap: 14px !important; align-items: center !important; }
+.gk-band__actions > * { margin: 0 !important; }
+.gk-play-badge {
+	display: inline-flex; align-items: center; gap: 12px; background: #000; border: 1px solid #444; border-radius: 12px;
+	padding: 8px 20px; color: #fff; margin: 0; min-height: 44px;
+}
+.gk-play-badge__icon { font-size: 24px; }
+.gk-play-badge small { display: block; font-size: 11px; color: #ccc; text-transform: uppercase; letter-spacing: .5px; line-height: 1.2; }
+.gk-play-badge strong { font-size: 19px; line-height: 1.2; }
+
+/* ------------------------------------------------------------------ game page */
+
+.gk-game__top { gap: 40px !important; margin-top: 8px !important; }
+.gk-trailer { position: relative; border-radius: 20px; overflow: hidden; border: 1px solid var(--gk-line); background: #000; margin: 0 !important; }
+.gk-trailer figure { margin: 0; }
+.gk-trailer img { display: block; width: 100%; }
+.gk-trailer .wp-block-embed, .gk-trailer .wp-block-video { margin: 0; }
+.gk-trailer__badge {
+	position: absolute; right: 14px; bottom: 14px; margin: 0; background: rgba(0, 0, 0, .7); padding: 6px 12px;
+	border-radius: 8px; font-size: 13px;
+}
+.gk-shots { gap: 12px !important; margin-top: 12px !important; }
+.gk-shots .wp-block-image img { border-radius: 10px; aspect-ratio: 16 / 9; object-fit: cover; }
+.gk-game__head { gap: 18px !important; align-items: center !important; }
+.gk-game__head > * { margin: 0 !important; }
+.gk-game__head .wp-block-group { gap: 4px; }
+.gk-game__icon, .gk-press__icon { flex: none; }
+.gk-game__icon img { width: 88px; height: 88px; border-radius: 22px; display: block; }
+.gk-game__title { font-size: clamp(34px, 4.4vw, 52px) !important; margin: 0 !important; }
+.gk-game__subtitle { margin: 0; }
+.gk-desc { color: var(--gk-soft); line-height: 1.65; }
+.gk-game__cta { margin-top: 24px !important; gap: 12px; }
+.gk-soon { color: var(--gk-mute); font-size: 14px; margin-top: 12px !important; }
+.gk-soon span { color: var(--gk-accent); }
+
+.gk-facts { margin-top: 24px !important; }
+.gk-facts table { border: 1px solid var(--gk-line); border-radius: 16px; border-collapse: separate; border-spacing: 0; overflow: hidden; width: 100%; }
+.gk-facts th, .gk-facts td { border: 0 !important; padding: 12px 16px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.gk-facts tr { border-bottom: 1px solid var(--gk-line); }
+.gk-facts tr:last-child { border-bottom: 0; }
+.gk-facts th { color: var(--gk-mute); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 500; width: 36%; }
+.gk-facts td { font-weight: 600; font-size: 15px; }
+.gk-facts th, .gk-facts td { border-bottom: 1px solid var(--gk-line) !important; }
+.gk-facts tr:last-child > * { border-bottom: 0 !important; }
+
+/* On a game page the facts sit two to a row, each label over its value, as in the design. */
+@media (min-width: 420px) {
+	.gk-facts--grid tbody { display: grid; grid-template-columns: 1fr 1fr; }
+	.gk-facts--grid tr { display: flex; flex-direction: column; padding: 12px 16px; border-bottom: 1px solid var(--gk-line); }
+	.gk-facts--grid tr:nth-child(odd) { border-right: 1px solid var(--gk-line); }
+	.gk-facts--grid tr:last-child:nth-child(odd) { grid-column: 1 / -1; border-right: 0; }
+	.gk-facts--grid tr:nth-last-child(2):nth-child(odd),
+	.gk-facts--grid tr:last-child { border-bottom: 0; }
+	.gk-facts--grid th, .gk-facts--grid td { padding: 0; width: auto; border: 0 !important; }
+	.gk-facts--grid th { margin-bottom: 2px; }
+}
+
+.gk-sport {
+	background: linear-gradient(135deg, #1a2a20, #121822); border: 1px solid var(--gk-line); border-radius: 22px;
+	padding: clamp(20px, 3.5vw, 36px); margin-top: clamp(40px, 6vw, 60px) !important;
+}
+.gk-sport__cols { gap: 30px !important; align-items: center !important; margin: 0 !important; }
+.gk-sport p { color: var(--gk-soft); line-height: 1.65; }
+.gk-sport img { border-radius: 14px; display: block; }
+.gk-sport figure { margin: 0; }
+.gk-game__links { color: var(--gk-mute); margin-top: 32px !important; }
+.gk-game__links a { display: inline-block; padding: 10px 0; }
+
+@media (max-width: 781px) {
+	/* On a phone, the game's name and facts come first, then the pictures. */
+	.gk-game__top > .wp-block-column:last-child { order: -1; }
+	.gk-game__icon img { width: 64px; height: 64px; border-radius: 16px; }
+}
+
+/* ------------------------------------------------------------------ press kit */
+
+.gk-press__head { gap: 18px !important; align-items: center !important; margin-top: 24px !important; }
+.gk-press__head > * { margin: 0 !important; }
+.gk-press__head h2 { margin: 0 !important; }
+.gk-press__icon img { width: 72px; height: 72px; border-radius: 18px; display: block; }
+
+/* WordPress's own image lightbox, in the site's colours. */
+.wp-lightbox-overlay .scrim { background-color: rgba(13, 17, 23, .94) !important; }
+.wp-lightbox-overlay .close-button { color: #fff; min-width: 44px; min-height: 44px; }
