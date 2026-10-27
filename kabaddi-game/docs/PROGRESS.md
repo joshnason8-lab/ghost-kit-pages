@@ -127,6 +127,38 @@ front, so whoever a camera saw from behind still showed it their face.
   dome 150 → 164 MB and Gaon Maidan 154 → 168 MB). The draw calls, primitives and objects are the same (on Low, the
   dome's 100 and 217, 634k, 315; Gaon Maidan's 102 and 220, 668k, 318).
 
+## 0.12.3: ready for Google Play (soak test, safe saves, store kit)
+
+The owner asked (through the lead) for every game to be ready to upload to Google Play by morning, with only the
+owner's own steps left (`store/PLAY_STORE.md`, "What only you can do").
+
+**Build.** Targets Android 16 (API 36, Play's minimum for new apps since 31 August 2026), runs on Android 7.0 (API 24)
+and later, 64- and 32-bit ARM. Every 64-bit library is 16 KB-aligned (`tools/check_pages.py`). One permission,
+`VIBRATE`; the Play bundle workflow now fails on any other, and on a target below 36. The bundle is about 104 MB and
+a phone downloads about 78 MB of it (bundletool, measured on every bundle; Play's limit is 200 MB, so no Play Asset
+Delivery). `com.kabaddiraid.game`, as in Obtainium's list; version code 34.
+
+**Saves.** A save is now written beside its file and moved over it (`Game._write_json`): Android closing the game
+mid-write leaves the old season, cup or settings whole instead of half a file the game could not read.
+
+**Soak test** (`tests/soak.gd`, on a virtual screen with the software renderer):
+
+| Run | What | Result |
+|---|---|---|
+| Random inputs | 2,000 taps on buttons, taps and drags anywhere, Back, trips to the background and back, through 15 screens (the home screen, Quick Match, League Season with the auction, retentions, war room, match day, awards and hall of fame, Nations Cup with its squad, matches, results, settings, How to Play); started on Low, and Settings' taps soon put it on High | 0 script or engine errors; no screen that traps the player; every match sent to the background came back paused, its clock stopped; every save read back after each trip |
+| AI v AI | 10 matches on Low and 10 on High, every ground twice, each sent to the background and back partway | all 20 reached the final whistle (586 raids); 0 stalls; worst frame 457 ms |
+| Memory | six rounds of seven screens and a match | nodes steady at about 1,380, no orphans, objects and memory flat |
+
+The 12 frames over 5 s the random run counted were all on the software renderer drawing High (5 to 9 s a frame
+there), on the home screen's match and one played match, not freezes: the same screens took well under a second on
+Low. A dedicated High run of random inputs was cut short for the same reason (a frame every few seconds); High's
+game logic had its 10 full matches, and its screens were reached in the random run once it was on High.
+
+**Store kit.** The listing in all eight languages (`store/listing/`, checked by `tools/check_listing.py`), the
+answers to every Play Console form (`store/PLAY_CONSOLE_ANSWERS.md`), the icon, feature graphic and screenshots
+(`store/graphics/`, drafts the owner can make again from the build before submitting:
+`tools/media_kit/make_kit.py --store`), and the media kit for the owner's website (`tools/media_kit/make_kit.py`).
+
 ## 0.12.2: Help, Privacy policy and Licences in the game
 
 The owner found Settings links returning 404 across the games, and asked for all three pages in the game, working

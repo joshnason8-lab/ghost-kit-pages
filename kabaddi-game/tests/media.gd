@@ -22,6 +22,7 @@ func _ready() -> void:
 	Game.settings.language = "en"
 	TranslationServer.set_locale("en")
 	if what == "menus":
+		Game.settings.auto_gfx = true   # Settings shows the game as it ships
 		await _media_menus()
 	else:
 		await _media_shots()
