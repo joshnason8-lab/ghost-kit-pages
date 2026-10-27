@@ -20,7 +20,8 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     art.resize((512, 512), Image.LANCZOS).save(out / "icon_512.png")
     art.resize((192, 192), Image.LANCZOS).save(out / "icon_192.png")
-    art.resize((512, 512), Image.LANCZOS).save(ROOT / "store" / "graphics" / "icon-512.png")
+    # Play wants the hi-res icon as a 32-bit PNG (RGBA); the artwork fills it, so it is opaque.
+    art.resize((512, 512), Image.LANCZOS).convert("RGBA").save(ROOT / "store" / "graphics" / "icon-512.png")
     # Adaptive icon: the whole artwork as the background layer (the launcher shows its middle, the ball and blade),
     # nothing in front of it.
     art.resize((432, 432), Image.LANCZOS).save(out / "icon_bg_432.png")

@@ -193,6 +193,35 @@ live in `floorball-unleashed/`, which GitHub Pages serves only from `main`):
 - A test opens each page from Settings and checks its words, its scrolling and its way back; the fit audit covers
   them in every language and screen shape.
 
+### 0.8.2-beta: ready for Google Play; the media kit (27 October 2026)
+
+From the lead's Play Store readiness brief (and its update: the store pictures and text are drafts, the privacy
+address waits for the owner's own site), and the media kit brief:
+- **Play's technical rules, checked on the bundle**: targetSdkVersion 36 (Play asks 35+), minSdkVersion 24; both
+  ABIs in the bundle (arm64-v8a and armeabi-v7a, so 32-bit phones keep the game), the 64-bit libraries aligned to
+  16 KB pages (tools/check_pages.py, on every bundle); the bundle about 78 MB, well under the 200 MB base module
+  limit; one permission (VIBRATE); version code 12, only ever raised; applicationId com.floorballunleashed.game, the
+  same as the Obtainium list.
+- **The soak test** (tests/soak.tscn): thousands of random taps, drags, Backs and trips to the background across
+  every screen, then matches you play (mashed: leaving by the pause menu or Back is allowed) and AI v AI matches
+  played to the end, on Low and on High. It counts every engine or script error (a Logger), every frame over 2 s,
+  any screen lost, any match not paused or not kept when the app goes to the background, and reads the saves back.
+  Results below ("Soak").
+- **Signing for Play**: Play App Signing with an upload key the owner makes (the keytool line, the three repository
+  secrets, which the bundle workflow reads when they are there); the beta key stays the beta's.
+- **The store kit as drafts, made again by one command**: tools/store/refresh_store_kit.sh captures the screenshots
+  from the game on High, remakes the feature graphic and the 512 px icon (now 32-bit RGBA, as Play asks), and checks
+  every size and every listing's lengths (the French name was 37 characters: now "Floorball Unleashed").
+  store/PLAY_CONSOLE_ANSWERS.md has every Console form's true answer: Data safety (nothing collected or shared), the
+  IARC questionnaire, the target audience (13+, and why not the Families programme yet), no ads, no purchases, the
+  category, tags and contact; the privacy address TBD (the owner's site).
+- **The media kit** (tools/media/): media_kit.tscn captures every menu clean and, for each trailer clip, finds its
+  moment (a goal, a save, a penalty, the face-off) by playing the match unseen, then plays it again from the same seed
+  and records it; make_trailer.py cuts a 41 s 16:9 trailer and a 15 s 9:16 cut with the game's own music, crowd and
+  whistles, draws the cards in the game's fonts, and packs the zip with the website text (store/media-kit/text/) and
+  CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
+  floorball-unleashed-media (a prerelease, never "latest").
+
 ## Next (in order)
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's

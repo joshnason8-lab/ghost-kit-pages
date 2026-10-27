@@ -79,10 +79,15 @@ func _ready() -> void:
 		var m: Node = Game.current
 		Engine.time_scale = 4.0
 		var t0 := Time.get_ticks_msec()
+		# Every frame played, one in eight drawn: the match's code all runs, at the speed of the game, not the renderer.
+		var f := 0
 		while is_instance_valid(m) and m == Game.current and m.get("phase") != "over" and Time.get_ticks_msec() - t0 < 240000:
-			await _frames(5)
+			RenderingServer.render_loop_enabled = f % 8 == 0
+			f += 1
+			await _frames(1)
+		RenderingServer.render_loop_enabled = true
 		Engine.time_scale = 1.0
-		var done := is_instance_valid(m) and m.get("phase") == "over"
+		var done: bool = is_instance_valid(m) and m.get("phase") == "over"
 		if not done:
 			lost += 1
 		print("soak: AI v AI match %d %s (%s), %d errors, %d stalls, %d lost" % [k + 1, "over" if done else "NOT FINISHED",

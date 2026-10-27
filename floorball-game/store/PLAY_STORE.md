@@ -13,12 +13,12 @@ stand in October 2026.
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - one permission (vibration) and no internet access.
 - **The privacy policy, help and licences in the game**: Settings > About opens each as a page in the game itself
-  (works offline; the game has no internet permission). For the store's privacy address, the same policy is public at
-  https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/floorball-game/floorball-game/docs/PRIVACY.md (checked: HTTP 200). The web pages in `floorball-unleashed/` at the top of this repository are served by GitHub
-  Pages only once this branch is merged into `main` (until then their github.io addresses return 404).
+  (works offline; the game has no internet permission). The store's privacy address: TBD, the owner's own privacy
+  site (store/PLAY_CONSOLE_ANSWERS.md).
 - **The store listing**: the text in fifteen languages (`store/listing/`: en-US, sv-SE, fi-FI, de-DE, fr-FR, it-IT,
   cs-CZ, sk, no-NO, da-DK, lv, et, pl-PL, ja-JP, th), and the 512 × 512 icon, the 1024 × 500 feature graphic and
-  the 1920 × 1080 screenshots (`store/graphics/`).
+  the 1920 × 1080 screenshots (`store/graphics/`), as drafts: `bash tools/store/refresh_store_kit.sh` captures them
+  again from the game just before submitting and checks them and the text against Play's limits.
 - **The answers to every App content form** (step 4, and in full in `store/PLAY_CONSOLE_ANSWERS.md`).
 
 ## 1. Your developer account (once)
@@ -86,7 +86,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/floorball-game/floorball-game/docs/PRIVACY.md` (or the github.io page once `floorball-unleashed/` is served from `main`) |
+| **Privacy policy** | TBD: the owner's privacy site (store/PLAY_CONSOLE_ANSWERS.md) |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |
@@ -133,7 +133,7 @@ and shows no ads, but the 13+ groups are the simpler start.
 8. **Contact details**:
    - **Email** (required, shown publicly): an address you are happy to show (the help page uses
      joshnason8@gmail.com; change it there too if you use another).
-   - **Website**: https://joshnason8-lab.github.io/ghost-kit-pages/floorball-unleashed/
+   - **Website**: TBD: the owner's website.
 
 ## 6. The closed test (required for new personal accounts)
 

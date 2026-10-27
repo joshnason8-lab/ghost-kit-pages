@@ -16,11 +16,13 @@ The facts the answers rest on (checked on the 0.8.2 bundle):
 
 ### Privacy policy
 
-`https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/floorball-game/floorball-game/docs/PRIVACY.md`
+**TBD: owner's privacy site.** Put the address of the policy on your own website here once it is up. Its text must
+match the game's (Settings > About > Privacy policy; the same text is `docs/PRIVACY.md`): no personal data, no
+account, no ads, no analytics, no internet permission, the one permission (vibration), saves only on the phone.
 
-Checked 27 October 2026: **HTTP 200**. (The github.io page,
-`https://joshnason8-lab.github.io/ghost-kit-pages/floorball-unleashed/privacy.html`, returns **404** until the
-branch is merged into `main` and GitHub Pages serves it; switch the address to it then, if you prefer.)
+(Meanwhile the policy is public at
+`https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/floorball-game/floorball-game/docs/PRIVACY.md`,
+HTTP 200 on 27 October 2026, should a form need an address before then.)
 
 ### Ads
 
@@ -95,11 +97,16 @@ groups later.
 | Category | **Sports** |
 | Tags (pick up to five) | **Sports**, **Simulation**, **Offline**, **Single player**, **Casual** (whichever of these Play offers) |
 | Email (shown publicly) | **joshnason8@gmail.com** |
-| Website | https://joshnason8-lab.github.io/ghost-kit-pages/floorball-unleashed/ (works once merged into `main`; leave empty until then) |
+| Website | TBD: the owner's website (leave empty until it is up) |
 | Phone | leave empty |
 | External marketing | your choice (default on) |
 
 ## Main store listing
+
+**Drafts.** The text and pictures below are drafts: the game will change before it is submitted. Just before
+submitting, run `bash tools/store/refresh_store_kit.sh` (from `floorball-game/`): it captures the screenshots again
+from the game as it is then, remakes the feature graphic and icon, and checks every size and length against Play's
+limits. Read the listing text against the game once more too.
 
 - App name, short and full description, release notes: `store/listing/<language>.txt` (fifteen languages; every
   name ≤ 30, short description ≤ 80 and full description ≤ 4000 characters, checked).
