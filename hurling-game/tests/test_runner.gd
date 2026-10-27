@@ -1297,7 +1297,7 @@ func _practice_frees() -> void:
 	var labels := []
 	for b in m.hud._pause.find_children("*", "Button", true, false):
 		labels.append((b as Button).text)
-	check(not tr("TACTICS") in labels and tr("PRACTICE_RESTART") in labels and tr("PRACTICE_QUIT") in labels,
+	check(not tr("TACTICS") in labels and not tr("SIM_TO_END") in labels and tr("PRACTICE_RESTART") in labels and tr("PRACTICE_QUIT") in labels,
 		"Practice: the pause menu has Start again and Leave, no tactics or substitutions (%s)" % [labels])
 	m.set_paused(false)
 	m.queue_free()

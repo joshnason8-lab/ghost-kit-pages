@@ -192,6 +192,14 @@ func _end_round() -> void:
 	hud.practice_done(practice, maxi(best, int(practice.points)), record and best >= 0)
 
 
+## Back: the pause menu during the round; home from the card at the end of it.
+func on_back() -> void:
+	if phase == P.OVER:
+		quit_match()
+		return
+	super()
+
+
 ## Go again: a new round at the same ground, the spots moved a little.
 func again() -> void:
 	var cfg: Dictionary = config.duplicate()

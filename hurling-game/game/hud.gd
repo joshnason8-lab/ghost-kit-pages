@@ -601,7 +601,7 @@ func show_pause(on: bool) -> void:
 			var bt := UI.button(tr("TACTICS"), false, func(): open_tactics())
 			bt.custom_minimum_size = Vector2(320, 56)
 			v.add_child(bt)
-		if m.user_team >= 0 and m.phase != m.P.SHOOTOUT:
+		if m.user_team >= 0 and m.phase != m.P.SHOOTOUT and not m.is_practice():
 			var bsim := UI.button(tr("SIM_TO_END"), false, func(): m.sim_to_end())
 			bsim.custom_minimum_size = Vector2(320, 56)
 			v.add_child(bsim)
