@@ -83,10 +83,17 @@ def video_block(v):
         '</figure>' % (vid, esc_attr(v["title"]), esc(v["title"]), esc(v["channel"]), inline(v.get("why", "")), vid))
 
 
+def meta_title(slug):
+    return {"kabaddi": "Kabaddi court", "kho-kho": "Kho kho field", "hurling": "Hurling pitch",
+            "floorball": "Floorball rink", "netball": "Netball court", "sepak-takraw": "Sepak takraw court",
+            "ulama": "Ulama court"}[slug]
+
+
 def diagram_block(slug):
     svg, caption = diagrams.DIAGRAMS[slug]()
-    return raw_html('<figure class="gk-diagram">%s<figcaption class="wp-element-caption">%s</figcaption></figure>' % (
-        svg, esc(caption)))
+    # On a phone the diagram scrolls sideways inside its box, so the box takes keyboard focus too.
+    return raw_html('<figure class="gk-diagram" tabindex="0" role="group" aria-label="%s diagram (scrolls sideways on small screens)">%s<figcaption class="wp-element-caption">%s</figcaption></figure>' % (
+        esc_attr(meta_title(slug)), svg, esc(caption)))
 
 
 def body_blocks(meta):
@@ -190,7 +197,7 @@ def page_index(entries):
         cards.append(group([
             group([img], cls="gk-card__art"),
             group([
-                heading(3, '<a href="/sports/%s/">%s</a>' % (meta["slug"], esc(meta.get("title") or meta["sport"])),
+                heading(2, '<a href="/sports/%s/">%s</a>' % (meta["slug"], esc(meta.get("title") or meta["sport"])),
                         cls="gk-card__title"),
                 paragraph(esc(meta["summary"]), cls="gk-card__blurb"),
                 lst(["Our game: " + esc(game["name"])], cls="gk-meta"),

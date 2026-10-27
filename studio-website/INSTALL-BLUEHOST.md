@@ -36,9 +36,9 @@ If WordPress says the file is too big ("exceeds the upload_max_filesize"), uploa
 It takes under a minute. If the page says *Carrying on…*, leave it open. It works in short rounds so a busy server
 doesn't stop it, and it carries on by itself until it shows a green box. Then it has:
 
-- added the 42 game pictures to the **Media Library**. WordPress makes smaller WebP copies of each one, and phones get
+- added the 60 pictures (the games' art and screenshots, and the sport pages' photos) to the **Media Library**. WordPress makes smaller WebP copies of each one, and phones get
   the small ones;
-- made all 28 pages at their fixed addresses (list below);
+- made all 36 pages at their fixed addresses (list below), including the seven sport pages;
 - made **Home** the front page;
 - set the links to `/%postname%/` if the site still had plain links;
 - turned comments off;
@@ -134,8 +134,8 @@ Each game is building a media kit: a trailer, screenshots, menus, a 1024 px icon
 
 1. Download the trailers from
    [`studio-website/dist/trailers/`](https://github.com/joshnason8-lab/ghost-kit-pages/tree/claude/studio-website/studio-website/dist/trailers).
-   These are web-sized versions (720p, about 5–6 MB each) of the trailers in the games' media kits. So far there is
-   Netball Unleashed's.
+   These are web-sized versions (720p, about 5–8 MB each) of the trailers in the games' media kits. So far there are
+   Netball Unleashed's and Sepak Takraw Unleashed's.
 2. Go to **Media > Add New Media File** and drop them in. Keep the file names, for example
    `netball-unleashed-trailer.mp4`.
 3. Go to **Appearance > Site setup** and press **Set up the site**.
@@ -157,7 +157,7 @@ game's Play Store screenshots. To change one:
 1. Click it, then **Replace**.
 2. Upload the new picture and write its **Alternative text**, a few words on what it shows.
 
-**Media kit links** (Press kit page): Netball Unleashed's media kit is already linked. Each other game shows
+**Media kit links** (Press kit page): Netball Unleashed's and Sepak Takraw Unleashed's media kits are already linked. Each other game shows
 "Media kit … coming soon". When the release `<game>-media` exists on GitHub:
 
 1. Open **Pages > Press kit**.
@@ -170,6 +170,29 @@ linking to `https://play.google.com/store/apps/details?id=<app id>`. The app IDs
 Do the same for the "Coming soon to Google Play" box at the bottom of **Home** and **Games**.
 
 Changing pictures or words never needs the theme again.
+
+## The sport pages
+
+Each sport has a full page at `/sports/<sport>/`. Each page covers:
+
+- the sport's history and how it's played, with a court or pitch diagram;
+- its equipment;
+- where it's played today;
+- some famous moments;
+- a link to its game;
+- the sources used.
+
+The game pages' "About the sport" panels link to them, and **Sports** is in the menu.
+
+- **Photos**: they come from Wikimedia Commons, under licences that let anyone reuse them with credit (public
+  domain, CC0, CC BY or CC BY-SA). Each one is credited under the photo. All of them are listed on the **Licences**
+  page and in `studio-website/MEDIA_CREDITS.md`. If you swap a photo, keep a credit line under it.
+- **Videos**: they are official videos (GAA, RTÉ, Pro Kabaddi, Star Sports, World Netball, the IFF, the Kho Kho
+  Federation of India and others), embedded, not copied.
+  - A video loads nothing from YouTube until the visitor presses play. Then it plays from YouTube's
+    privacy-enhanced mode (youtube-nocookie.com).
+  - The **Privacy policy** page says so.
+- **Editing**: the pages are ordinary WordPress pages, so you can edit them like any other.
 
 ## 7. Before you go live
 
@@ -241,7 +264,9 @@ dated 27 October 2026.
 | `/press-kit/` | Press kit |
 | `/support/` | Contact and support |
 | `/privacy/` | Privacy policy for the website, with links to every game's |
-| `/licences/` | Licences (the games' are in each game: Settings > About > Licences) |
+| `/licences/` | Licences (the games' are in each game: Settings > About > Licences), and every photo's credit |
+| `/sports/` | Sports: all seven sports |
+| `/sports/<sport>/` | One page per sport: `kabaddi`, `hurling`, `sepak-takraw`, `netball`, `kho-kho`, `floorball`, `ulama` |
 
 ## If something goes wrong
 

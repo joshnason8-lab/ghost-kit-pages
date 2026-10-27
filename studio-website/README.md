@@ -11,6 +11,10 @@ content. For putting it on Bluehost, read **[INSTALL-BLUEHOST.md](INSTALL-BLUEHO
 | `theme/ghost-kit/` | The theme's source. |
 | `content-src/games.json` | Each game's facts, with the file each one came from on the game's branch. |
 | `content-src/claims-check.md` | Each claim on the home page, with its evidence from the games. |
+| `content-src/sports/<sport>.md` | The seven sport pages: text, photos (with licences), videos and sources. See `FORMAT.md`. |
+| `content-src/media-kits.json` | The media kits published so far (linked from the Press kit and game pages). |
+| `dist/trailers/` | Web-sized (720p) trailers from the media kits, for the Media Library. |
+| `MEDIA_CREDITS.md` | Every photo on the sport pages, with its author, licence and source. |
 | `tools/` | The scripts that build the pages and the package. |
 
 ## How it fits together
@@ -63,18 +67,18 @@ Everything below ran in WordPress 7.1.3 on PHP 8.3 with SQLite, on 27 October 20
 
 - **The owner's route, on a new WordPress:**
   1. Uploaded the zip in the browser and activated it.
-  2. Pressed Site setup: 28 pages and 42 pictures, the front page, links and logo, in about 9 seconds.
+  2. Pressed Site setup: 36 pages and 60 pictures, the front page, links and logo, in about 18 seconds.
   3. Repeated with a 1-second round limit: it carried on by itself over 9 rounds and finished.
 - **The import route, on another new WordPress:**
   1. Imported with WordPress Importer, which downloaded the pictures from GitHub.
   2. Ran Site setup afterwards: nothing was duplicated.
-- **Links**: crawled every internal link and asset on both sites: 50 pages and 165 files, all `200`.
+- **Links**: crawled every internal link and asset on a fresh site with the sport pages: 58 pages and 237 files, all `200`.
 - **The block editor**: opened every page; there were no invalid blocks.
-- **Widths** (360, 390, 768, 1024 and 1440 px, on 12 kinds of page):
+- **Widths** (360, 390, 768, 1024 and 1440 px, on 16 kinds of page, including four sport pages):
   - no horizontal scrolling;
   - every image has alt text;
   - every button and menu link is at least 44 px tall.
-- **Accessibility**: axe-core 4.10 (WCAG 2.2 AA and best practices) on 8 kinds of page at 390 and 1440 px: no
+- **Accessibility**: axe-core 4.10 (WCAG 2.2 AA and best practices) on 11 kinds of page, sport pages included, at 390 and 1440 px: no
   violations.
   - The mobile menu opens and closes with Escape.
   - "Skip to content" is the first Tab stop.
@@ -83,3 +87,5 @@ Everything below ran in WordPress 7.1.3 on PHP 8.3 with SQLite, on 27 October 20
 - **Page weight**:
   - Home: about 650 KB on a first visit at 390 px.
   - A privacy page: about 200 KB.
+- **Videos**: every video on the sport pages was checked with YouTube's oEmbed (it exists, allows embedding and comes from the named channel). A page makes no request to YouTube until play is pressed; then the player loads from youtube-nocookie.com.
+- **Trailers**: with `netball-unleashed-trailer.mp4` in the Media Library, Site setup swapped the game page's "Trailer coming soon" for a video player; the other games kept the placeholder.

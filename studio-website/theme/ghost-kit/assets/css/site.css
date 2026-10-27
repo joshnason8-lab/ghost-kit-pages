@@ -179,7 +179,7 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 .gk-card__icon { flex: none; margin: 0 !important; }
 .gk-card__icon img { width: 56px; height: 56px; border-radius: 14px; display: block; }
 .gk-card__text { gap: 4px !important; min-width: 0; }
-.gk-card__title { font-size: 18px !important; margin: 0; }
+.gk-card__title { font-size: 18px !important; margin: 0; font-family: var(--wp--preset--font-family--body) !important; font-weight: 600 !important; line-height: 1.3 !important; }
 .gk-card__title a { color: var(--gk-ink); text-decoration: none; }
 .gk-card__title a::after { content: ""; position: absolute; inset: 0; z-index: 1; }
 .gk-card__title a:focus-visible { outline: none; }

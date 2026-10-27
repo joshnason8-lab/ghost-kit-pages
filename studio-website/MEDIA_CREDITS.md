@@ -10,6 +10,22 @@ Every photo on the website's sport pages, with its author and licence. All come 
 - Video (embedded, not copied): "Kabaddi Rules: The Basics (English)" by Star Sports, https://www.youtube.com/watch?v=rY0IArPj7s4
 - Video (embedded, not copied): "Lobby Rule in Kabaddi Explained by E. Prasad Rao | Ultimate Panga Masterclass | Pro Kabaddi League" by Pro Kabaddi, https://www.youtube.com/watch?v=EXxlwZzOthE
 
+## Hurling (`/sports/hurling/`)
+
+- **Kilkenny v Tipperary, 2014 All-Ireland final replay, Croke Park.**: Kilkenny and Tipperary hurlers in helmets contest the ball with their hurleys during the 2014 All-Ireland final replay at Croke Park. Author: Florian Christoph from Dublin, Ireland. Licence: [CC BY 2.0](https://creativecommons.org/licenses/by/2.0). Source: <https://commons.wikimedia.org/wiki/File:All-Ireland_Hurling_final_replay_2014.jpg>. File: `theme/ghost-kit/assets/images/sports/hurling-p1.webp`.
+- **A penalty puck at Croke Park: struck from the 20 m line, with only the goalkeeper defending.**: View from behind the goal net: a player strikes a penalty from the 20-metre line while a lone goalkeeper waits on the goal line; the semicircular arc and other pitch lines are visible. Author: Sheila1988. Licence: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0). Source: <https://commons.wikimedia.org/wiki/File:Penalty_puck,_hurling_game.jpg>. File: `theme/ghost-kit/assets/images/sports/hurling-p2.webp`.
+- **The hurley used by Meelick captain Pat Madden in the 1887 All-Ireland final.**: An old wooden hurley with a wide, curved bas in a museum display case, with an old and a modern white sliotar below it and early team photographs behind. Author: Lár na Páirce. Licence: [CC BY 3.0](https://creativecommons.org/licenses/by/3.0). Source: <https://commons.wikimedia.org/wiki/File:Pat_Madden%27s_1887_All-Ireland_Hurley.jpg>. File: `theme/ghost-kit/assets/images/sports/hurling-p3.webp`.
+
+- Video (embedded, not copied): "What is Hurling" by GAALearning, https://www.youtube.com/watch?v=AShUFgFwlKI
+- Video (embedded, not copied): "Limerick win All-Ireland Hurling Championship final | #RTÉNews #GAA #hurling #limerick #galway" by RTÉ News, https://www.youtube.com/watch?v=KiTA6hN20xA
+
+## Sepak takraw (`/sports/sepak-takraw/`)
+
+- **Two players kick high at the net in a game on a public court in Bangkok's Pathum Wan district.**: Black-and-white photo of a street game in Bangkok: two players leap with legs raised high on either side of a low net on a concrete court, while teammates and onlookers watch. Author: Robertpollai. Licence: [CC BY 3.0](https://creativecommons.org/licenses/by/3.0). Source: <https://commons.wikimedia.org/wiki/File:Sepak_Takraw_Bangkok.jpg>. File: `theme/ghost-kit/assets/images/sports/sepak-takraw-p1.webp`.
+- **Match balls ready beside the net at the King's Cup in Thailand, 2011.**: Three yellow-and-red woven synthetic takraw balls on a rack beside the net post at an indoor court, with spectators and a Laos v China scoreboard behind. Author: B20180. Licence: [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0). Source: <https://commons.wikimedia.org/wiki/File:King%27s_Cup_Sepak_Takraw.jpg>. File: `theme/ghost-kit/assets/images/sports/sepak-takraw-p2.webp`.
+
+- Video (embedded, not copied): "Thailand vs Malaysia - Final Premier Regu-  ISTAF Sepaktakraw World Cup Kuala Lumpur 2024" by Persekutuan Sepaktakraw Malaysia, https://www.youtube.com/watch?v=a9-c-KjLor4
+
 ## Netball (`/sports/netball/`)
 
 - **Netball is played on all kinds of surfaces. Every player wears a bib with their position letters.**: An outdoor netball game on a dirt court: a player in a WD bib jumps to catch the ball while a player in a blue C bib waits nearby, with a goalpost and spectators behind. Author: Samson Ssemakadde. Licence: [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en). Source: <https://commons.wikimedia.org/wiki/File:Netball_match.jpg>. File: `theme/ghost-kit/assets/images/sports/netball-p1.webp`.
@@ -26,6 +42,15 @@ Every photo on the website's sport pages, with its author and licence. All come 
 
 - Video (embedded, not copied): "Kho Kho Rules | Kho Kho World Cup 2025 (English)" by India Kho Kho, https://www.youtube.com/watch?v=Fe0SvWcxpjE
 - Video (embedded, not copied): "Understanding The Game Play - KHO-KHO" by Ultimate Kho Kho, https://www.youtube.com/watch?v=wTPuIoPkM9g
+
+## Floorball (`/sports/floorball/`)
+
+- **Czech Republic v Latvia at the 2022 Men's World Floorball Championships in Zurich.**: Wide view of a packed arena: a goalkeeper in maroon kneels in front of a small red goal cage inside the marked crease, while players in white and red line up for play at the far end of the blue rink behind low boards. Author: Albinfo. Licence: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0). Source: <https://commons.wikimedia.org/wiki/File:IFF_Floorball_Championship_2022_CZE_vs_LVA_16_18_24_857000.jpeg>. File: `theme/ghost-kit/assets/images/sports/floorball-p1.webp`.
+- **Sparta v Liberec in Czechia's Superliga, 2025: note the goal crease and the small goalkeeper area.**: Overhead view of a floorball game: field players in red and white with light sticks contest the ball near the goal while a goalkeeper in a black mask kneels inside the marked goalkeeper area in front of the red goal cage. Author: Prikryl. Licence: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0). Source: <https://commons.wikimedia.org/wiki/File:Sparta_-_Liberec_Superliga_floorball_match_2025.jpg>. File: `theme/ghost-kit/assets/images/sports/floorball-p2.webp`.
+- **A floorball blade and ball: the ball is hollow plastic with 26 holes.**: Close-up of a plastic floorball stick blade resting next to a white plastic ball covered in round holes. Author: Santeri Viinamäki. Licence: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0). Source: <https://commons.wikimedia.org/wiki/File:Floorball_stick_blade_and_ball.jpg>. File: `theme/ghost-kit/assets/images/sports/floorball-p3.webp`.
+
+- Video (embedded, not copied): "IFF - THIS IS FLOORBALL" by IFF Floorball - Channel 1, https://www.youtube.com/watch?v=6Thy6-kPj3Q
+- Video (embedded, not copied): "WFC 2024 Day 9 - FINAL - Sweden vs Finland highlights" by IFF Floorball - Channel 1, https://www.youtube.com/watch?v=52NLF8EOv_s
 
 ## Ulama (the Mesoamerican ballgame) (`/sports/ulama/`)
 
