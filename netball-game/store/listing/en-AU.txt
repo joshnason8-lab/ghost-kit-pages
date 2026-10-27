@@ -40,7 +40,7 @@ MADE FOR YOUR PHONE
 Netball Unleashed is an independent game. It is not affiliated with or endorsed by any netball governing body, league, club or player. The players are fictional; the countries and the rules are real.
 
 == Release notes (first release) ==
-The first release of Netball Unleashed: Quick Match and the Nations Cup, in nineteen languages.
+The first release of Netball Unleashed: netball by the real rules for your phone. Seven a side, footwork, three seconds, obstruction at 0.9 m and two umpires who signal every call. Quick Match with 23 nations, the Nations Cup and the Club Season, in an arena, a sports hall and a park court. Play the whole team or one position. Works offline, collects no data, no ads.
 
 == Release notes (0.2.0) ==
 The Club Season: eight clubs, a season and a grand final. A coach's tips for your first match. Umpires now advance and escalate penalties and can order a player off; choose how often they blow in Settings. A fuller interval screen, clearer name tags, and fixes from playtesting on phones.

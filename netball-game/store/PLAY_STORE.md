@@ -12,10 +12,13 @@ stand in October 2026.
   - 64-bit, with 16 KB memory pages (checked on every bundle);
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - one permission (vibration) and no internet access.
-- **The privacy policy, help page and a page for the game**, in `netball-unleashed/` at the top of this
-  repository. Once this branch is merged and GitHub Pages serves the repository, they are at
-  https://joshnason8-lab.github.io/ghost-kit-pages/netball-unleashed/ (with `privacy.html` and `support.html`), the
-  addresses the game opens from **Settings > About**, as Google asks. The licences are shown there too.
+- **The privacy policy, help and licences in the game** (Settings > About), offline. The public privacy policy for
+  Play is `netball-game/PRIVACY.md`, at
+  https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/netball-game/netball-game/PRIVACY.md (loads today).
+  The web pages in `netball-unleashed/` at the top of this repository are not online yet (GitHub Pages does not serve
+  this branch: they return 404); once they are, that address can replace it.
+- **Every Play Console answer**, ready to copy: `store/PLAY_CONSOLE_ANSWERS.md`; release notes:
+  `store/RELEASE_NOTES.md`.
 - **The store listing**: the text in English (en-GB, the default, and en-AU, en-ZA, en-US, en-IN, en-SG) and in
   Afrikaans, isiZulu, Kiswahili, Malay, Chinese, Sinhala and Tamil (`store/listing/`), and the 512 × 512 icon, the
   1024 × 500 feature graphic and the 1920 × 1080 screenshots (`store/graphics/`).
@@ -79,7 +82,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/netball-unleashed/privacy.html` |
+| **Privacy policy** | `https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/netball-game/netball-game/PRIVACY.md` |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |
@@ -126,14 +129,14 @@ and shows no ads, but the 13+ groups are the simpler start.
 6. **7-inch and 10-inch tablet screenshots**: upload the same. They are 16:9, which Play accepts for tablets.
 7. **Category**: **Store settings > App category: Game > Sports**. Tags: Sports, Netball (if offered).
 8. **Contact details**: Email (required, shown publicly): joshnason8@gmail.com, as on the help page, or another
-   address you are happy to show. Website: https://joshnason8-lab.github.io/ghost-kit-pages/netball-unleashed/
+   address you are happy to show. Website: leave empty until the game's web page loads
 
 ## 6. The closed test (required for new personal accounts)
 
 1. Go to **Test and release > Testing > Closed testing**, open the **Closed testing (Alpha)** track, and choose
    **Create new release**.
 2. Upload the signed `.aab` from step 2.
-3. Release name: the version, such as `0.1.0`. Release notes: copy them from `store/listing/en-GB.txt`.
+3. Release name: the version, such as `0.1.0`. Release notes: copy them from `store/RELEASE_NOTES.md`.
 4. Choose **Save > Review release > Start rollout to Closed testing**. Google's first review takes a few days.
 5. Under **Testers**, make an email list with at least 12 people's Google (Gmail) addresses: family and friends
    with Android phones.
@@ -154,13 +157,18 @@ and shows no ads, but the 13+ groups are the simpler start.
 
 ## Notes
 
-- **The beta APK on GitHub** is signed with a public debug key, not Play's, so a phone with the beta has to uninstall
-  it (and lose its saves) before installing the game from Play.
+- **Two keys, kept apart.** The beta APK on GitHub is signed with the owner's beta key (SHA-256 `6F:23:…:7B:A3`,
+  secret `BETA_KEYSTORE_B64`); **do not replace it**, or Obtainium and sideloaded phones stop updating. The Play
+  build uses **Play App Signing**: Google holds the key phones see, and you sign uploads with the separate upload
+  key from step 2 (secrets `ANDROID_UPLOAD_KEYSTORE_BASE64`, `ANDROID_UPLOAD_KEY_ALIAS`, `ANDROID_UPLOAD_KEY_PASSWORD`,
+  which the bundle workflow reads when present). Because the signatures differ, a phone with the beta has to
+  uninstall it (and lose its saves) once before installing the game from Play.
 - **Android's developer verification** covers apps installed from outside the stores too: in Brazil, Indonesia,
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
-- **The privacy policy's address must keep working** while the game is on Play: keep the GitHub Pages address (or,
-  if the pages move, change `PRIVACY_URL` and `SUPPORT_URL` in `autoload/game.gd` in a new version first).
+- **The privacy policy's address must keep working** while the game is on Play: don't delete the branch it is on,
+  or move it (and change the address in Play Console) first. The game itself shows its own copy, so it needs no
+  address.
 - **Names**: the teams are countries under their plain names (flags drawn in code; Northern Ireland, which has no
   official flag, has a neutral green one), the national teams' nicknames are not used, every player's name is
   invented, and the competition (the Nations Cup) and the league rule (the Double Zone) have the game's own names. No
