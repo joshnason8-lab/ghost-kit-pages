@@ -42,7 +42,7 @@ The listing then shows **No data collected** and **No data shared with third par
 the 0.12.3 bundle:
 
 - **One permission**, `android.permission.VIBRATE` (the buzz on a tackle; it can be turned off in Settings). No
-  `INTERNET`, so the game cannot send anything anywhere; CI fails the bundle if `INTERNET` ever appears.
+  `INTERNET`, so the game cannot send anything anywhere; CI fails the bundle if any other permission ever appears.
 - **No accounts, ads, analytics or crash reporting.** Godot, the engine, sends nothing.
 - **What stays on the phone**: settings, the league season, the Nations Cup and the records, in the app's own
   storage. Uninstalling the app deletes them. Play counts only data sent off the phone as "collected".

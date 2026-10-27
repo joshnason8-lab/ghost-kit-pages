@@ -28,8 +28,8 @@ Everything else is ready (below). These steps need you, your Google account or y
     Android 7.0 (API 24) and later;
   - **16 KB memory pages**: every 64-bit library's LOAD segments are aligned to 16 KB (`tools/check_pages.py`, run
     on every bundle and APK);
-  - **one permission**, `android.permission.VIBRATE`, and no internet access (CI fails the bundle if
-    `INTERNET` appears); nothing stray, such as `DUMP`;
+  - **one permission**, `android.permission.VIBRATE`, and no internet access; CI fails the bundle on any other
+    permission (such as `INTERNET` or `DUMP`) and on a target below API 36;
   - marked as a game, so Android 16 keeps it in landscape on tablets and foldables;
   - **package name `com.kabaddiraid.game`**, the same as the beta APK and the Obtainium entry
     (`shared-assets/obtainium/ghost-kit-games.json`); it is final once the first bundle is uploaded. The **version

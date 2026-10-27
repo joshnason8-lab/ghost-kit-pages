@@ -125,7 +125,10 @@ jobs:
           java -jar "$RUNNER_TEMP/bundletool.jar" dump manifest --bundle "$AAB" > "$RUNNER_TEMP/manifest.xml"
           grep -o 'android:targetSdkVersion="[0-9]*"\|android:minSdkVersion="[0-9]*"\|android:versionCode="[0-9]*"\|android:versionName="[^"]*"\|android:isGame="[a-z]*"\|android:appCategory="[a-z]*"\|uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | sort -u
           grep -q 'android:isGame="true"' "$RUNNER_TEMP/manifest.xml"
-          ! grep -q 'android.permission.INTERNET' "$RUNNER_TEMP/manifest.xml"
+          grep -q 'android:targetSdkVersion="36"' "$RUNNER_TEMP/manifest.xml"   # Play's minimum for new apps since 31 August 2026
+          # The one permission the game needs (vibration); any other, such as INTERNET, fails the bundle.
+          EXTRA=$(grep -o 'uses-permission android:name="[^"]*"' "$RUNNER_TEMP/manifest.xml" | grep -v '"android.permission.VIBRATE"' || true)
+          if [ -n "$EXTRA" ]; then echo "::error::Unexpected permissions: $EXTRA"; exit 1; fi
           python3 tools/check_pages.py "$AAB"
           # What a phone downloads, per CPU type: Play takes a base module of up to 200 MB compressed (more would need
           # Play Asset Delivery, store/PLAY_STORE.md).
