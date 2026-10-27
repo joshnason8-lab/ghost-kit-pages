@@ -62,11 +62,16 @@ func _ready() -> void:
 	var only := String(args[2]) if args.size() > 2 else ""
 	DirAccess.make_dir_recursive_absolute(out)
 	Game.main = self
-	Game.settings.sound = false
-	Game.settings.coach = false
+	# The game's own defaults, not whatever this machine's saved settings hold (a test may have changed them).
+	var fresh: Node = (load("res://autoload/game.gd") as Script).new()
+	Game.settings = (fresh.settings as Dictionary).duplicate(true)
+	fresh.free()
+	Game.settings.sound = which == "menus"   # off for the matches (no sound here); on as the Settings page shows it
 	Game.settings.dev = false
 	Game.settings.graphics = Game.GFX_HIGH
-	Game.settings.auto_gfx = false   # the software renderer here is slow; keep High for the pictures
+	if which != "menus":   # the menus show the settings as a new player finds them
+		Game.settings.coach = false
+		Game.settings.auto_gfx = false   # the software renderer here is slow; keep High for the pictures
 	TouchControls.key_hints = false
 	get_tree().root.size = Vector2i(1920, 1080)
 	await Crowd.bake(self)

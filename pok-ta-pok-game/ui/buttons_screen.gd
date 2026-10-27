@@ -15,7 +15,8 @@ func _ready() -> void:
 	_tc = TouchControls.new()
 	add_child(_tc)
 	_tc.edit = true
-	_tc.set_buttons(["STRIKE", "PASS", "SOLO", "GOAL", "SWITCH"])
+	# The match's buttons: HIP in the corner (SERVE and SKIP take its place when they show), DIVE beside it.
+	_tc.set_buttons(["HIP", "DIVE"])
 	var v := UI.page(self, tr("MOVE_BUTTONS"), func(): Game.show_screen("res://ui/settings_screen.gd"), tr("MENU_SETTINGS"))
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var right: HBoxContainer = get_meta("header_right")

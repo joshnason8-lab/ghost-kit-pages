@@ -22,11 +22,12 @@ mkdir -p "$KIT/screenshots" "$KIT/menus" "$KIT/text" "$KIT/icons" "$KIT/trailer"
 python3 tools/build_i18n.py >/dev/null
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
 
+# Each step is skipped when its output is already there, so a run that was stopped picks up where it was.
 echo "== screenshots"
-"${XVFB[@]}" "$GODOT" --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/store/store_shots.tscn -- "$KIT/screenshots" media \
+[ -f "$KIT/screenshots/12_cup.png" ] || "${XVFB[@]}" "$GODOT" --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/store/store_shots.tscn -- "$KIT/screenshots" media \
   | grep '^shot'
 echo "== menus"
-"${XVFB[@]}" "$GODOT" --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/store/store_shots.tscn -- "$KIT/menus" menus \
+[ -f "$KIT/menus/18_privacy.png" ] || "${XVFB[@]}" "$GODOT" --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/store/store_shots.tscn -- "$KIT/menus" menus \
   | grep '^shot'
 python3 - "$KIT/screenshots" "$KIT/menus" <<'PY'
 import pathlib, sys
@@ -55,10 +56,12 @@ printf '[display]\n\nwindow/size/window_width_override=1920\nwindow/size/window_
 trap 'rm -f override.cfg' EXIT
 for clip in menu ritual village dive night festival ring; do
   dir="$WORK/clips/$clip"
+  if [ -f "$dir/done" ]; then echo "$clip: recorded already"; continue; fi
   rm -rf "$dir" && mkdir -p "$dir"
   "${XVFB[@]}" "$GODOT" --path . --rendering-driver opengl3 --fixed-fps 30 --write-movie "$dir/f.png" \
     res://tools/media/trailer_clip.tscn -- "$clip" 2>&1 | grep '^MARK' > "$dir/marks.txt"
   echo "$clip: $(ls "$dir" | grep -c png) frames; $(tr '\n' ' ' < "$dir/marks.txt")"
+  touch "$dir/done"
 done
 rm -f override.cfg
 

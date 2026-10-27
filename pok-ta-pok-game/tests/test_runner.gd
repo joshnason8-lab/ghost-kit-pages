@@ -34,6 +34,7 @@ func _ready() -> void:
 	await _screens()
 	await _scroll_on_text()
 	await _legal_pages()
+	await _move_buttons()
 	_cup()
 	_sim()
 	await _crowd_faces()
@@ -321,6 +322,22 @@ static func fake_result() -> Dictionary:
 		"rules": "ulama", "count": {"rules": "ulama", "holder": 0, "rayas": 8, "points": [0, 0], "winner": 0, "ring": false},
 		"winner": 0, "user_team": 0, "tstats": [ts, ts.duplicate()], "pstats": ps, "log": [[0, "dead", 0, 1, 1.0, "add"]],
 		"longest_rally": 9, "minutes": 12.0, "timed": false, "star": "ESC_1"}
+
+
+## Move buttons lays out the match's own buttons, each with its word in every language (the words are drawn, not
+## Labels, so the fit audit does not read them: the screen once showed another game's buttons as raw keys).
+func _move_buttons() -> void:
+	for pair in Game.LANGUAGES:
+		TranslationServer.set_locale(pair[0])
+		var s := Game.show_screen("res://ui/buttons_screen.gd")
+		await frames(3)
+		var tc: TouchControls = s.find_children("*", "TouchControls", true, false)[0]
+		check(tc.ids == ["HIP", "DIVE"], "%s: Move buttons shows the match's buttons (%s)" % [pair[0], tc.ids])
+		for id in tc.ids:
+			check(tr("BTN_" + id) != "BTN_" + id, "%s: Move buttons' %s has its word" % [pair[0], id])
+	TranslationServer.set_locale("en")
+	Game.goto_menu()
+	await frames(2)
 
 
 ## Settings > About opens Licences, Help and the Privacy policy inside the game (no browser, no link), in every language:

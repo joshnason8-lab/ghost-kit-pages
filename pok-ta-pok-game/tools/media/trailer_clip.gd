@@ -9,6 +9,10 @@ extends Node
 func _ready() -> void:
 	var clip := String(OS.get_cmdline_user_args()[0]) if OS.get_cmdline_user_args().size() > 0 else "village"
 	Game.main = self
+	# The game's own defaults, not whatever this machine's saved settings hold.
+	var fresh: Node = (load("res://autoload/game.gd") as Script).new()
+	Game.settings = (fresh.settings as Dictionary).duplicate(true)
+	fresh.free()
 	Game.settings.sound = true
 	Game.settings.music = true
 	Game.settings.coach = false
@@ -39,10 +43,7 @@ func _ready() -> void:
 			# A strike or a dive, then a little after.
 			await _until(func(): return _acting(m, [Player.A.STRIKE, Player.A.DIVE]), 30 * 30)
 			_mark("action")
-			await _frames(30 * 3)
-			await _until(func(): return _acting(m, [Player.A.STRIKE, Player.A.DIVE]), 30 * 20)
-			_mark("action2")
-			await _frames(30 * 3)
+			await _frames(30 * 4)
 		"dive":
 			var m := _start("village", "MOR", "CHL", false, Game.CAM_END)
 			await _until(func(): return m.phase == m.P.LIVE, 30 * 30)
@@ -98,10 +99,11 @@ func _start(venue: String, home: String, away: String, ritual: bool, cam: int) -
 
 
 func _acting(m: Node, want: Array) -> bool:
-	# Near the camera, big enough to see.
+	# Near the camera, big enough to see (the broadcast camera sits higher and further off than the end camera).
 	var eye: Vector3 = get_viewport().get_camera_3d().global_position
+	var reach := 16.0 if int(Game.settings.camera) == Game.CAM_END else 26.0
 	for pl in m.all_players():
-		if pl.action in want and pl.action_u() > 0.25 and pl.action_u() < 0.5 and pl.global_position.distance_to(eye) < 16.0:
+		if pl.action in want and pl.action_u() > 0.25 and pl.action_u() < 0.5 and pl.global_position.distance_to(eye) < reach:
 			return true
 	return false
 
