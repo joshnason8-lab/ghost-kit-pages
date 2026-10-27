@@ -1286,8 +1286,16 @@ func _champ_sim_resume() -> void:
 	check(same, "Carry on: score, half, clock, a booking and a substitution as they were left")
 	# Simulate to the end: level in a knock-out game, so a winner after extra time or penalties; never fewer scores.
 	m2.score = [[1, 10], [0, 13]]
+	var box0: Array = [int(m2.tstats[0].scores_play) + int(m2.tstats[0].scores_placed),
+		int(m2.tstats[1].scores_play) + int(m2.tstats[1].scores_placed)]
 	m2.sim_to_end()
 	var t0: Array = m2.score
+	var box_ok: bool = true
+	for k in 2:
+		var more: int = int(t0[k][0]) + int(t0[k][1]) - (11 if k == 0 else 13)
+		var box1: int = int(m2.tstats[k].scores_play) + int(m2.tstats[k].scores_placed)
+		box_ok = box_ok and box1 - int(box0[k]) == more and int(m2.tstats[k].shots) >= box1
+	check(box_ok, "Simulate to the end: the box score counts the simulated scores")
 	check(m2.phase == m2.P.OVER and Rules.total(t0[0][0], t0[0][1]) >= 13 and Rules.total(t0[1][0], t0[1][1]) >= 13,
 		"Simulate to the end: full time, scores only added (%s)" % [t0])
 	var tot := [Rules.total(t0[0][0], t0[0][1]), Rules.total(t0[1][0], t0[1][1])]

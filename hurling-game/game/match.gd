@@ -310,6 +310,7 @@ func sim_to_end() -> void:
 		var eh := half_len_now()
 		et_frac = (maxf(0.0, eh - clock) + (eh if half == 3 else 0.0)) / (2.0 * eh)
 	var r := Sim.finish(String(teams[0].id), String(teams[1].id), score, frac, knockout, half >= 3, et_frac, rng)
+	_sim_box(score, r.score)
 	score = r.score
 	for id in r.scorers:
 		var sc: Array = r.scorers[id]
@@ -334,7 +335,29 @@ func sim_to_end() -> void:
 	_finish(int(r.winner))
 
 
-# ---------------------------------------------------------------- the teams
+## The box score for the simulated rest of a match, so it agrees with the score: about a third of the scores from
+## placed balls (frees and 65s), a wide for every two scores or so, and a puck-out after each of the other side's
+## wides and scores.
+func _sim_box(before: Array, after: Array) -> void:
+	var added := [0, 0]
+	for k in 2:
+		added[k] = maxi(0, int(after[k][0]) - int(before[k][0])) + maxi(0, int(after[k][1]) - int(before[k][1]))
+	var wides := [0, 0]
+	for k in 2:
+		var ts: Dictionary = tstats[k]
+		var placed := roundi(added[k] * rng.randf_range(0.25, 0.4))
+		var s65 := mini(placed, rng.randi_range(0, 2))
+		wides[k] = roundi(added[k] * rng.randf_range(0.4, 0.65))
+		ts.scores_play += added[k] - placed
+		ts.scores_placed += placed
+		ts.shots_play += added[k] - placed + wides[k]
+		ts.shots_placed += placed
+		ts.shots += added[k] + wides[k]
+		ts.wides += wides[k]
+		ts.s65 += s65
+		ts.frees += placed - s65 + rng.randi_range(0, 3)
+	for k in 2:
+		tstats[k].puckouts += added[1 - k] + wides[1 - k]
 
 func _make_teams() -> void:
 	var ids := [String(config.home), String(config.away)]
