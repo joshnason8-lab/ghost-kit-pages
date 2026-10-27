@@ -1,0 +1,111 @@
+name: Netball Unleashed · Media kit
+
+# The website's media kit (screenshots, icons, a trailer and a vertical cut, the credits) made afresh by
+# netball-game/tools/media/make_media_kit.sh and published as the zip on the release "netball-unleashed-media"
+# (a prerelease, never "latest"; the beta APK's release "netball-unleashed-beta" is not touched).
+# Note: a push under netball-game/tools/media also runs the Android build (it watches all of netball-game/**).
+
+on:
+  push:
+    paths:
+      - "netball-game/tools/media/**"
+      - ".github/workflows/netball-media-kit.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: netball-media-kit-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: netball-game
+
+jobs:
+  media-kit:
+    runs-on: ubuntu-latest
+    # High graphics on the CPU (software GL): about 20-30 minutes for the trailer's frames.
+    timeout-minutes: 90
+    permissions:
+      contents: write   # to publish the media kit's release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Install ffmpeg, Xvfb, Mesa and Pillow
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg xvfb libgl1-mesa-dri python3-pil > /dev/null
+          ffmpeg -version | head -1
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Make the media kit
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: tools/media/make_media_kit.sh build/media
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: media-kit-netball-unleashed
+          path: ${{ env.PROJECT_DIR }}/build/media/media-kit-netball-unleashed.zip
+          if-no-files-found: error
+
+      # Its own release, "netball-unleashed-media": a prerelease and never "latest", so the beta APK's release and
+      # the repository's front page are left alone. The zip is replaced in place on each run.
+      - name: Publish the media kit release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=netball-unleashed-media
+          ZIP=${PROJECT_DIR}/build/media/media-kit-netball-unleashed.zip
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' ${PROJECT_DIR}/project.godot)
+          cat > notes.md <<EOF
+          The media kit for **Netball Unleashed** (${VERSION}), made from \`${GITHUB_SHA::7}\` by \`netball-game/tools/media/make_media_kit.sh\`.
+
+          \`media-kit-netball-unleashed.zip\` holds:
+          - \`screenshots/\`: 1920x1080 PNGs on High graphics (the three venues, the team card, the menus, a result)
+          - \`icons/\`: the icon at 1024 and 512 px, the 1024x500 feature graphic
+          - \`trailer/\`: the trailer (1920x1080, 30 fps, H.264 and AAC) and a 15 s vertical cut (1080x1920)
+          - \`CREDITS.txt\`: the licences and credits of everything in it
+
+          Updated on every run of the media kit workflow.
+          EOF
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$ZIP" --clobber
+            gh release edit "$TAG" --notes-file notes.md --prerelease --latest=false
+          else
+            gh release create "$TAG" "$ZIP" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Media kit: Netball Unleashed" --notes-file notes.md
+          fi
+          gh release view "$TAG"
