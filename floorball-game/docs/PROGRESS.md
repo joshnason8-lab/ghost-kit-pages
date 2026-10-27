@@ -206,7 +206,12 @@ address waits for the owner's own site), and the media kit brief:
   every screen, then matches you play (mashed: leaving by the pause menu or Back is allowed) and AI v AI matches
   played to the end, on Low and on High. It counts every engine or script error (a Logger), every frame over 2 s,
   any screen lost, any match not paused or not kept when the app goes to the background, and reads the saves back.
-  Results below ("Soak").
+  **Soak, 27 October 2026** (`soak.tscn -- <graphics> 3000 5`, xvfb, software OpenGL): Low, 5,000 steps (3,000
+  menu inputs over ten screens, 2,000 in five matches you play), five AI v AI matches to the end: 0 errors, 0 frames
+  over 2 s, 0 screens or matches lost, saves read back. High: the same, 5,000 steps and five more AI v AI matches,
+  0 errors, 0 stalls, 0 lost, saves ok. Ten AI v AI matches in all; Back pressed about 500 times on every screen but
+  the home screen (where it closes the game), and the app sent to the background and back about 250 times, each
+  time a match was on it was paused and kept. Nothing to fix.
 - **Signing for Play**: Play App Signing with an upload key the owner makes (the keytool line, the three repository
   secrets, which the bundle workflow reads when they are there); the beta key stays the beta's.
 - **The store kit as drafts, made again by one command**: tools/store/refresh_store_kit.sh captures the screenshots
