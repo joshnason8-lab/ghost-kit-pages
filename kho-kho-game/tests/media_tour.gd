@@ -2,7 +2,7 @@ extends Node
 ## The pictures for the store and the media kit, from the game itself (tools/store/make_kit.sh runs it):
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/media_tour.tscn -- OUT menus|action
 ## menus: every screen, in English, at 1920 x 1080, named by screen (01_home.png ...).
-## action: matches on each ground on High, caught at their moments: a kho, a dive, a pole turn, an out and the crowd
+## action [ground,ground...]: matches on each ground on High, caught at their moments: a kho, a dive, a pole turn, an out and the crowd
 ## up for it (the HUD on: what a player sees), and a wide view of each ground with the HUD off.
 
 var out := ""
@@ -35,7 +35,7 @@ func _ready() -> void:
 	if mode == "menus":
 		await _menus()
 	else:
-		await _action()
+		await _action(a[2].split(",") if a.size() > 2 else [])
 	get_tree().quit()
 
 
@@ -130,11 +130,13 @@ func _menus() -> void:
 
 
 ## Each ground, with a match on it (the AI on both sides, the camera low and close), caught at its moments.
-func _action() -> void:
+func _action(only: Array) -> void:
 	var specs := [["maidan", KhoRules.CLASSIC, "MAH", "ODI"], ["school", KhoRules.CLASSIC, "KAR", "KER"],
 		["floodlit", KhoRules.CLASSIC, "TEL", "DEL"], ["arena", KhoRules.FAST, "IND", "NEP"]]
 	for spec in specs:
 		var v: String = spec[0]
+		if not only.is_empty() and not v in only:
+			continue
 		Game.settings.camera = Game.CAM_TV
 		Game.start_match({"home": spec[2], "away": spec[3], "venue": v, "format": spec[1], "turn_len": 300.0,
 			"user_team": -1, "demo": true, "seed": 21, "mode": "quick", "chase_first": 0})
@@ -162,7 +164,8 @@ func _action() -> void:
 
 
 func _on_event(kind: String) -> void:
-	if not _want.has(kind):
+	# Not in a turn's first seconds, under its banner (the demo match starts itself again when it ends).
+	if not _want.has(kind) or _m.clock > _m.turn_len - 3.0:
 		return
 	var name: String = _want[kind]
 	_want.erase(kind)

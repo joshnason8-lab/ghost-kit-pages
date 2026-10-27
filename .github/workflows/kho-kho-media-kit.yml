@@ -1,0 +1,94 @@
+name: Kho Kho Rush · Media kit
+
+# The media kit (trailer, vertical cut, screenshots, every screen, icons, texts, credits), made from the game itself
+# by kho-kho-game/tools/store/make_media_kit.sh and published on the prerelease "kho-kho-rush-media". The videos are
+# never committed: they are made here. Runs when the kit's texts or scripts change, or by hand (Run workflow).
+
+on:
+  push:
+    paths:
+      - "kho-kho-game/store/media/**"
+      - "kho-kho-game/tools/store/make_media_kit.sh"
+      - "kho-kho-game/tools/store/make_trailer.py"
+      - ".github/workflows/kho-kho-media-kit.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: kho-kho-media-kit-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: kho-kho-game
+
+jobs:
+  media-kit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    permissions:
+      contents: write   # to publish the kit's release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Tools
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri ffmpeg zip libraqm0 > /dev/null
+          pip install --quiet Pillow
+
+      - name: Build translations and import
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          python3 tools/build_i18n.py
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Make the kit
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          tools/store/make_media_kit.sh build/media
+          ffprobe -v error -show_entries format=duration -of csv=p=0 build/media/trailer/kho-kho-rush-trailer.mp4
+          unzip -l build/media/media-kit-kho-kho-rush.zip | tail -1
+
+      - name: Publish the kit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=kho-kho-rush-media
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' ${PROJECT_DIR}/project.godot)
+          ZIP=${PROJECT_DIR}/build/media/media-kit-kho-kho-rush.zip
+          LEN=$(ffprobe -v error -show_entries format=duration -of csv=p=0 ${PROJECT_DIR}/build/media/trailer/kho-kho-rush-trailer.mp4 | cut -d. -f1)
+          SIZE=$(ls -l "$ZIP" | awk '{printf "%.0f MB", $5 / 1048576}')
+          cat > notes.md <<NOTES
+          The media kit for **Kho Kho Rush** (${VERSION}), made from the game itself (\`${GITHUB_SHA::7}\`).
+
+          \`media-kit-kho-kho-rush.zip\` (${SIZE}): a ${LEN} s trailer and a 15 s vertical cut, screenshots of the game
+          in play on its four grounds, every screen of the game (menus/), the icons and feature graphic, texts about the
+          game and the sport (text/), and the credits. See README.txt inside.
+          NOTES
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$ZIP" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Media kit: Kho Kho Rush" --notes-file notes.md
+          gh release view "$TAG"
