@@ -146,7 +146,8 @@ func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_WM_GO_BACK_REQUEST:
 			go_back()
-		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT:
+		# The home button, the screen going off, a call, the notification shade, another window: a match pauses.
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
 			if current and is_instance_valid(current) and current.has_method("set_paused") and not bool(current.get("paused")):
 				current.set_paused(true)
 

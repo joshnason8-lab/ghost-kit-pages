@@ -1155,7 +1155,26 @@ func _navigation() -> void:
 	b.pressed.emit()
 	await frames(2)
 	check(m.paused, "it pauses the match")
+	# Back from what the pause menu opens goes back to it (soak test: Back resumed the match with the buttons still
+	# being moved, or the rolling changes still over it).
+	m.hud._move_buttons()
+	await frames(2)
+	Game.go_back()
+	await frames(2)
+	check(m.paused and m.hud._layout_panel == null and not m.controls.editing and m.hud._pause != null,
+		"Back while moving buttons goes back to the pause menu")
+	m.hud.show_pause(false)
+	m.hud._rolling_changes()
+	await frames(2)
+	Game.go_back()
+	await frames(2)
+	check(m.paused and m.hud._changes_layer == null and m.hud._pause != null, "Back from rolling changes goes back to the pause menu")
 	m.set_paused(false)
+	# The home button, the screen going off, another window: the match pauses and waits for Resume.
+	for n in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT]:
+		Game.notification(n)
+		check(m.paused, "notification %d pauses the match" % n)
+		m.set_paused(false)
 	Game.goto_menu()
 	await frames(3)
 
