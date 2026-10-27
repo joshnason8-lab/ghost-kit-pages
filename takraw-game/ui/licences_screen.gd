@@ -24,7 +24,7 @@ Footsteps on the court: "Footsteps on different surfaces" by congusbongus, from 
 Applause (one of three takes): "Applause" by the Blender Foundation (opengameart.org/content/applause), CC BY 3.0.
 The referee's whistle: whistle sounds from Pixabay (Pixabay Content License): "Referee whistle" by charlesheffley009, "Referee whistle / coach whistle / sports whistle" by framptones, "Metal whistle" and "Referee whistle blow, gymnasium" by freesound_community.
 The ball's kicks, touches and bounces: sound effects from Mixkit (mixkit.co), Mixkit Sound Effects Free License.
-Under CC0, with thanks: impacts, the net's rustle and the click from Kenney (kenney.nl); applause by eXpl0it3r; footsteps on sand by Fantozzi; the menu music, "Kingdom of a Million Elephants under a White Parasol" by Spring Spring (Julie Damsgaard)."""
+Under CC0, with thanks: impacts, the net's rustle and the click from Kenney (kenney.nl); from opengameart.org, applause by eXpl0it3r, footsteps on sand by Fantozzi, and the menu music, "Kingdom of a Million Elephants under a White Parasol" by Spring Spring (Julie Damsgaard)."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans, Noto Sans Thai, Lao, Myanmar, Khmer, Devanagari, JP, KR and SC: Copyright The Noto Project Authors (https://github.com/notofonts).

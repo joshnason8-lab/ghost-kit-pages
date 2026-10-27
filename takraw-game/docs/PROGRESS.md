@@ -422,6 +422,26 @@ Tests: compile_check 52 scripts, 0 broken; test_runner 1549 checks, 0 failures (
 stepping out of the ball's way and back, substitutes on both benches, the crowd's sheet and the teams' flags);
 user_bot perfect 15-1, idle 3-15 (its points the other side's faults); input_test 10 checks, 0 failures.
 
+## Settings > About: the licences, the help and the privacy policy in the game (0.12.1)
+
+The three pages open over Settings, in the game itself (no internet: the app has no internet permission), scroll,
+and have a back button; each in the player's language, at every graphics level and screen size.
+- **Licences** (`ui/licences_screen.gd`): the game's credits (the players, ball and venues; CMU and Mixamo motion
+  capture; Meshy; Poly Haven; every sound's source, author and licence: Mixkit, Gregor Quendel, JC Sounds, congusbongus,
+  the Blender Foundation, the Pixabay whistles, Kenney and the other CC0 authors), the fonts' licence (OFL), the Godot
+  Engine's MIT licence and every third-party part the engine names (`Engine.get_copyright_info`,
+  `Engine.get_license_info`).
+- **Help** (`ui/doc_screen.gd`): playing, serving, attacking; the rules in brief (three touches, scoring, faults: How
+  to Play's own text); a slow phone, and what each graphics level and the battery saver do (new); the buttons; how to
+  report a bug (by email, with the phone's model) and the "Email us" button.
+- **Privacy policy**: no personal data, no account, server, analytics, ads or purchases; no internet permission;
+  vibration the only permission; what stays on the phone; children; changes; the date and a contact.
+- `test_runner` opens each page in English, Thai, Japanese and Burmese: words on it, no raw keys, a way back; the
+  licences name the engine and each source; the help has the rules and the graphics levels.
+- The web copies (`takraw-smash/privacy.html`, `support.html`) are served by GitHub Pages from `main`, so they return
+  404 until this branch is merged. Until then the policy loads from `takraw-smash/PRIVACY.md` on GitHub (HTTP 200,
+  store/PLAY_STORE.md). The game links to no web page.
+
 ## Gaps that need the owner
 
 None. The two raised in 0.5.0 are filled in 0.5.1:

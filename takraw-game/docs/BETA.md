@@ -15,6 +15,9 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.12.1: **Settings > About** has the licences, the help and the privacy policy in the game (no internet
+needed). The help now has the rules in brief, what each graphics level does, and how to report a bug.
+
 New in 0.12.0, the owner's list:
 
 - **The ball is never left hanging:** after a point it falls, bounces and rolls, and bounces off the walls, boards

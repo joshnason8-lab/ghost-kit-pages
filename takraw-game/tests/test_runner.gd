@@ -26,6 +26,7 @@ func _ready() -> void:
 	_sounds()
 	_graphics_auto()
 	_detail_by_level()
+	await _legal_pages()
 	await _play_as_and_officials()
 	await _matches()
 	await _sim_to_end()
@@ -363,6 +364,44 @@ func _graphics_auto() -> void:
 	check(Game.auto_graphics() == Game.GFX_LOW, "Auto stays at the level a slow match lowered it to")
 	Game.settings.gfx_cap = keep
 	check(Game.auto_graphics() == Game.detect_graphics(), "Auto is the level picked for the phone")
+
+
+## Settings > About's three pages, in the game (no internet): each opens with its words, in every language. The
+## licences name the engine and every source the game's assets and sounds come from; the privacy policy has its date
+## and the address to write to; the help has the rules and the graphics levels, and the button to email us.
+func _legal_pages() -> void:
+	var must := {"licences": ["Godot Engine", "MIT", "mocap.cs.cmu.edu", "Mixamo", "Meshy", "Poly Haven", "Kenney",
+			"opengameart.org", "Pixabay", "charlesheffley009", "framptones", "freesound_community", "Mixkit", "Gregor Quendel",
+			"JC Sounds", "SIL Open Font License", "FreeType"],
+		"privacy": ["joshnason8@gmail.com", "2026"], "help": ["joshnason8@gmail.com"]}
+	var keep := String(Game.settings.language)
+	for lang in ["en", "th", "ja", "my"]:
+		TranslationServer.set_locale(lang)
+		for kind in ["licences", "privacy", "help"]:
+			var s: Control = (load("res://ui/licences_screen.gd" if kind == "licences" else "res://ui/doc_screen.gd") as Script).new()
+			s.setup({"kind": kind, "back": func(): pass})
+			add_child(s)
+			await frames(2)
+			var text := ""
+			var buttons := 0
+			for n in s.find_children("*", "", true, false):
+				if n is Label:
+					text += (n as Label).text + "\n"
+				elif n is RichTextLabel:
+					text += (n as RichTextLabel).get_parsed_text() + "\n"
+				elif n is Button:
+					buttons += 1
+			check(text.length() > {"licences": 20000, "privacy": 250, "help": 600}[kind], "%s %s: words on the page (%d characters)" % [lang, kind, text.length()])
+			check(not text.contains("{") and not text.contains("PRIV_") and not text.contains("HELP_"), "%s %s: no raw keys or placeholders" % [lang, kind])
+			check(buttons >= 1, "%s %s: a way back" % [lang, kind])
+			if lang == "en":
+				for w in must[kind]:
+					check(text.contains(w), "%s names %s" % [kind, w])
+			if kind == "help":
+				check(text.contains(tr("RULES_SCORE")) and text.contains(tr("GFX_HIGH")), "%s help: the rules and the graphics levels" % lang)
+			s.queue_free()
+			await frames(1)
+	TranslationServer.set_locale(keep)
 
 
 ## Play as one player: only his touches are yours (the team's: all of them); the white ring is under him. The officials

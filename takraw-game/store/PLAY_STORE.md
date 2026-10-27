@@ -14,8 +14,10 @@ stand in October 2026.
   - one permission (vibration) and no internet access.
 - **The privacy policy, help page and a page for the game**, in `takraw-smash/` at the top of this repository,
   served by GitHub Pages once this branch is merged into `main`:
-  https://joshnason8-lab.github.io/ghost-kit-pages/takraw-smash/privacy.html and `/support.html`. The game's
-  Settings > About opens them, as Google asks, and shows the licences there.
+  https://joshnason8-lab.github.io/ghost-kit-pages/takraw-smash/privacy.html and `/support.html` (they return 404
+  until then: Pages serves `main`). Until the merge, the policy loads (HTTP 200) on GitHub as
+  https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/kind-clarke-3g5fqs/takraw-smash/PRIVACY.md. The game
+  itself needs neither: Settings > About shows the privacy policy, the help and the licences in the game, offline.
 - **The store listing**: the text in English, Thai, Malay, Indonesian and Vietnamese (`store/listing/`), and the
   512 × 512 icon, the 1024 × 500 feature graphic and eight 1920 × 1080 screenshots (`store/graphics/`).
 - **The answers to every App content form** (step 4).
@@ -78,7 +80,7 @@ Answer each form like this:
 
 | Form | Answer |
 |---|---|
-| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/takraw-smash/privacy.html` |
+| **Privacy policy** | `https://joshnason8-lab.github.io/ghost-kit-pages/takraw-smash/privacy.html` once this branch is in `main` (check it loads first); before that, `https://github.com/joshnason8-lab/ghost-kit-pages/blob/claude/kind-clarke-3g5fqs/takraw-smash/PRIVACY.md` |
 | **Ads** | No, my app does not contain ads |
 | **App access** | All functionality is available without any access restrictions |
 | **Content rating** | See below. Expect 3+ (PEGI 3, ESRB Everyone) |
@@ -155,7 +157,7 @@ and shows no ads, but the 13+ groups are the simpler start.
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
 - **The privacy policy's address must keep working** while the game is on Play: keep `takraw-smash/` in this
-  repository's GitHub Pages (or move the pages and update `PRIVACY_URL` and `SUPPORT_URL` in `autoload/game.gd`).
+  repository's GitHub Pages (the game links to no web page: its Settings show the policy in the game).
 - **Names**: the clubs, leagues, tournaments and players are made up (`autoload/db.gd`); countries appear with flags
   drawn in code. No federation's, league's, club's or player's names or logos are used, so no rights are involved.
   Keep it that way: the World Cup, Royal Cup and the championships are the game's own names, not ISTAF's events.
