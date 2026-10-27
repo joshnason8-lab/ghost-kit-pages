@@ -5,9 +5,8 @@ const SETTINGS_PATH := "user://settings.json"
 const CUP_PATH := "user://cup.json"
 const RECORDS_PATH := "user://records.json"
 
-## The game's privacy policy and help pages (Settings > About).
-const PRIVACY_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/khamba-dash/privacy.html"
-const SUPPORT_URL := "https://joshnason8-lab.github.io/ghost-kit-pages/khamba-dash/support.html"
+## Where questions and bug reports go (the Help and Privacy screens, Settings > About).
+const CONTACT_EMAIL := "joshnason8@gmail.com"
 
 ## Code, name in the language itself, name in English. India's languages first, the kho kho heartland's ahead
 ## (Marathi, Kannada, Telugu, Tamil, Malayalam, Odia, Bengali, Gujarati, Punjabi, Assamese), then Nepali and Sinhala for

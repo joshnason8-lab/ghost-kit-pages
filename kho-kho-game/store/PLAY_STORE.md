@@ -161,8 +161,11 @@ and shows no ads, but the 13+ groups are the simpler start.
 - **Android's developer verification** covers apps installed from outside the stores too: in Brazil, Indonesia,
   Singapore and Thailand since September 2026, and worldwide from 2027 (India included). Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
-- **The privacy policy's address must keep working** while the game is on Play: keep `khamba-dash/` in this
-  repository's GitHub Pages (or move the pages and update `PRIVACY_URL` and `SUPPORT_URL` in `autoload/game.gd`).
+- **The privacy policy**: the game shows it itself (Settings > About > Privacy policy, `ui/privacy_screen.gd`, with
+  Help and Licences beside it), offline, and opens no web page. Play's listing still needs a public address for it:
+  `khamba-dash/privacy.html` in this repository, which GitHub Pages serves only once it is on the branch Pages
+  publishes (`main`): https://joshnason8-lab.github.io/ghost-kit-pages/khamba-dash/privacy.html. Check it loads
+  (HTTP 200) before submitting, and keep it working while the game is on Play.
 - **Names**: the players are made up (`autoload/db.gd`, which also keeps a list of real players' names it will never
   make). Countries and Indian states appear as places, with flags drawn in code, and states with the game's own
   shields. No federation's, league's, club's, competition's or player's names, logos or kits are used: "World
