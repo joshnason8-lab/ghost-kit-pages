@@ -27,11 +27,12 @@ Made by Josh Nason. The game's code, the menu music (written for the game, tools
 [b]Sounds[/b]
 - The stadium crowd's murmur, cheers and roars: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org/content/free-crowd-cheering-sounds), CC-BY 4.0 (creativecommons.org/licenses/by/4.0). Trimmed, levelled and looped for the game.
 - Birdsong: "Park ambiences" by Thimras (opengameart.org/content/park-ambiences), CC0.
-- Footsteps, hurleys meeting, the ball off the upright, the bounce, the catch and the shoulder charge: "Impact Sounds" by Kenney (kenney.nl), CC0.
+- Footsteps, hurleys meeting, the bounce, the catch and the shoulder charge: "Impact Sounds" by Kenney (kenney.nl), CC0.
+- The strike and the sliotar off the posts: recordings supplied by the game's owner.
 - The menu click: "Interface Sounds" by Kenney (kenney.nl), CC0.
 - The referee's whistles: Pixabay (pixabay.com) 568615 "Referee whistle" by charlesheffley009, 291816 "Referee whistle / coach whistle / sports whistle" by framptones and 6121 "Metal whistle" by freesound_community, under the Pixabay Content License.
 - The crowd's ooh, groan and applause and the players' effort: from Kabaddi Raid, by the same maker, the maker's own.
-- The strike, the tap and the save: made in code for the game.
+- The tap and the save: made in code for the game.
 Every sound's file and source: docs/SOUNDS.md in the game's source."""
 
 const FONTS := """[b]Fonts[/b]

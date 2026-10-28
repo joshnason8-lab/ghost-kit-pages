@@ -14,7 +14,7 @@ rest are made in code at startup (`autoload/sfx.gd`). `tests/test_runner.gd` che
 | `birds_loop.ogg` | Birdsong round the parish field and the county ground by day (a 90 s loop) | "Park ambiences", park_ambience_birds.wav, https://opengameart.org/content/park-ambiences | Thimras | CC0 |
 | `step_1.ogg` to `step_4.ogg` | Boots on grass: the man you play | "Impact Sounds", footstep_grass_000 to 003, https://kenney.nl/assets/impact-sounds | Kenney | CC0 |
 | `clash.ogg` | Hurleys meeting | the same, impactWood_medium_002 | Kenney | CC0 |
-| `post.ogg` | The ball off an (aluminium) upright | the same, impactMetal_light_001 | Kenney | CC0 |
+| `post.ogg`, `post_2.ogg` | The sliotar off an aluminium upright or crossbar: the ping (one of two) | two recordings of a sliotar off the posts, supplied by the owner for the game; each ping cut from its clip, the wind under it taken out, and a short reverb tail added (the clips cut off while the posts still rang) | the owner | supplied for the game |
 | `bounce.ogg` | The sliotar on the grass | the same, impactSoft_medium_000 | Kenney | CC0 |
 | `catch.ogg` | The sliotar into the hand | the same, impactPunch_medium_000 | Kenney | CC0 |
 | `shoulder.ogg` | A shoulder charge | the same, impactSoft_heavy_001 | Kenney | CC0 |
@@ -25,18 +25,17 @@ rest are made in code at startup (`autoload/sfx.gd`). `tests/test_runner.gd` che
 | `click.ogg` | A tap on the menus | "Interface Sounds", click_001, https://kenney.nl/assets/interface-sounds | Kenney | CC0 |
 | `crowd_ooh.ogg`, `crowd_groan.ogg`, `applause.ogg`, `clap.ogg` | The crowd's ooh at a near miss, groan at a wide, applause | Kabaddi Raid, by the same maker | Josh Nason | the game's own |
 | `grunt_1.ogg` to `grunt_3.ogg`, `hup_1.ogg`, `hup_2.ogg` | Players' effort | Kabaddi Raid, by the same maker | Josh Nason | the game's own |
+| `strike.ogg` | The strike, ash on leather: the crack of a hurley on a sliotar | a recording supplied by the owner for the game; the crack cut from its clip (a small open-air tail added, the echo after it and the wind under it taken out) | the owner | supplied for the game |
 | `menu_music.ogg` | The menus' jig | written for the game, `tools/audio/make_music.py` | Josh Nason | the game's own |
 
 ## Made in code (autoload/sfx.gd)
 
-`strike` (ash on leather), `tap` (the sliotar hopped on the bas),
-`save`; and, if their files were missing, every sound above with a fallback (the whistles, `clash`, `catch`, `shoulder`, `post`,
+`tap` (the sliotar hopped on the bas), `save`; and, if their files were missing, every sound above with a fallback
+(the whistles, `strike`, `clash`, `catch`, `shoulder`, `post`,
 `bounce`, `click`, `roar`, `crowd_loop`).
 
 ## Looked for and not found
 
-- **The strike, ash on leather**: the crack of a hurley on a sliotar; no recording of it, or of a cricket or
-  baseball bat close enough. The made one stays; a recording from the owner would be the biggest improvement now.
 - **An Irish crowd**: a chant ("Come on the ..."), a county's name roared. Only general stadium cheering was to be
   had (Gregor Quendel's, above).
 - **Rain** and **a town's evening** for the night match: none that fit under a crowd without being heard as noise.

@@ -1308,14 +1308,21 @@ func _practice_frees() -> void:
 		aimed += 1
 		m.placed_aim.angle = PI * 1.5 if i == 0 else (PI * 0.5 if i < 9 else 0.0)
 		m.placed_aim._place()
+		var ch: String = m.placed_aim.challenge
+		check(ch == String(m.CHALLENGES.get(i, "")), "Practice: free %d's challenge (%s)" % [i + 1, ch])
 		m._on_action("SHOOT")
-		m.placed_aim.bar_x = 1.0 if i == 8 else 0.0
+		# The challenges: the target stopped a little off the woodwork named (it snaps onto it).
+		if ch != "":
+			var gx: float = m.placed_aim.goal_x
+			var pz: float = (Pitch.POST_GAP * 0.5 + Pitch.POST_W * 0.5) * m.placed_aim._right_sign()
+			m.placed_aim._aim_at = Vector3(gx, Pitch.BAR_H + 0.25, 1.0) if ch == "bar" else Vector3(gx, 4.0, (-pz if ch == "left" else pz) * 0.94)
+		m.placed_aim.bar_x = 1.0 if i == 7 else 0.0
 		m._on_action("SHOOT")
 		f = 0
 		var struck := false
 		while String(m.practice.state) != "done" and String(m.practice.state) != "over" and f < 30 * 12:
 			await frames(1)
-			struck = struck or (m.taker.action == "strike" and m.taker.visible_on_screen)
+			struck = struck or (m.taker.action in ["strike", "free_strike"] and m.taker.visible_on_screen)
 			own_cam = own_cam and m.get_viewport().get_camera_3d() == m.view
 			f += 1
 		swung += 1 if struck else 0
@@ -1329,7 +1336,7 @@ func _practice_frees() -> void:
 		var after: Vector3 = m.ball.global_position
 		if i == 0:
 			net_ok = absf(after.x) > Pitch.HALF_L and absf(after.x) < Pitch.HALF_L + Pitch.NET_DEPTH + 0.3 and absf(after.z) < Pitch.POST_GAP * 0.5 + 0.3 and after.y < 1.0
-		elif i < 8 and after.distance_to(at_result) > 2.0 and after.y < 3.0:
+		elif i in [1, 3, 4, 6] and after.distance_to(at_result) > 2.0 and after.y < 3.0:
 			landed += 1
 		f = 0
 		while m.placed_aim != null and f < 30 * 6:
@@ -1340,14 +1347,17 @@ func _practice_frees() -> void:
 		await frames(1)
 		f2 += 1
 	var marks: Array = m.practice.marks
-	var pts := marks.count("P") + marks.count("G") * 3
+	var pts := marks.count("P") + marks.count("G") * 3 + marks.count("C") * 2
 	check(aimed == m.FREES and marks.size() == m.FREES and String(m.practice.state) == "over" and int(m.practice.points) == pts,
 		"Practice: ten frees aimed and taken, the score adds up (%s, %d)" % [marks, int(m.practice.points)])
 	check(String(marks[0]) == "G" and net_ok, "Practice: a shot low in the middle of the goal is a goal, the sliotar in the net (%s)" % [marks])
-	check(marks.slice(1, 8).count("P") >= 6 and String(marks[8]) != "P" and String(marks[9]) != "P",
+	var plain := [String(marks[1]), String(marks[3]), String(marks[4]), String(marks[6])]
+	check(plain.count("P") >= 3 and String(marks[7]) != "P" and String(marks[9]) != "P",
 		"Practice: aimed between the posts over the bar with the bar in the green, points; off the bar's end or outside the posts, none (%s)" % [marks])
+	check(String(marks[2]) == "C" and String(marks[5]) == "C" and String(marks[8]) == "C",
+		"Practice: the challenges, the left post, the right post and the crossbar hit, double points each (%s)" % [marks])
 	check(swung == m.FREES and own_cam, "Practice: the taker swings at every free (%d of %d), the practice's camera throughout" % [swung, m.FREES])
-	check(landed >= 6, "Practice: after a point the sliotar flies on and comes down behind the goal (%d of 7)" % landed)
+	check(landed >= 3, "Practice: after a point the sliotar flies on and comes down behind the goal (%d of 4)" % landed)
 	check(int(Game.settings.practice_best) == int(m.practice.points) and m.hud._card != null,
 		"Practice: the score kept as the best, the card with Go again at the end")
 	m.set_paused(true)

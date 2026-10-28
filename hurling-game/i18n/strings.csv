@@ -16,7 +16,7 @@ PRACTICE_START,Start,Tosaigh
 PRACTICE_TAKER,On the frees: #{num} {name},Ar na saorbhuillí: #{num} {name}
 PRACTICE_FREES_STAT,Free-taking,Saorbhuillí
 PRACTICE_HOW_TITLE,How it works,Conas a oibríonn sé
-PRACTICE_HOW,"Ten frees and 65s from all round the pitch: near, wide and far out. Behind your free-taker, a target goes round the goal: tap SHOOT to stop it where you want the sliotar to go. Then a bar runs from side to side: SHOOT again with the marker in the green. Out to the red, the ball goes off that way. A point is worth one, a goal three.","Deich saorbhuille agus 65anna ó gach cearn den pháirc: gar, ar an taobh agus i bhfad amach. Taobh thiar de do bhuailteoir, téann sprioc timpeall an chúil: brúigh SCAOIL chun í a stopadh san áit ar mian leat an sliotar a chur. Ansin ritheann barra ó thaobh go taobh: brúigh SCAOIL arís agus an marcóir sa ghlas. Amach sa dearg, imeoidh an liathróid chun an taoibh sin. Is fiú pointe amháin cúilín agus trí phointe cúl."
+PRACTICE_HOW,"Ten frees and 65s from all round the pitch: near, wide and far out. Behind your free-taker, a target goes round the goal: tap SHOOT to stop it where you want the sliotar to go. Then a bar runs from side to side: SHOOT again with the marker in the green. Out to the red, the ball goes off that way. A point is worth one, a goal three. Every third free is a challenge: hit the left post, the right post, then the crossbar for double points.","Deich saorbhuille agus 65anna ó gach cearn den pháirc: gar, ar an taobh agus i bhfad amach. Taobh thiar de do bhuailteoir, téann sprioc timpeall an chúil: brúigh SCAOIL chun í a stopadh san áit ar mian leat an sliotar a chur. Ansin ritheann barra ó thaobh go taobh: brúigh SCAOIL arís agus an marcóir sa ghlas. Amach sa dearg, imeoidh an liathróid chun an taoibh sin. Is fiú pointe amháin cúilín agus trí phointe cúl. Dúshlán is ea gach tríú saorbhuille: buail an cuaille clé, an cuaille deas, ansin an trasnán le haghaidh pointí dúbailte."
 PRACTICE_BEST_WAS,Your best: {n},Do scór is fearr: {n}
 PRACTICE_NO_BEST,No score yet: set one.,Gan scór fós: socraigh ceann.
 PRACTICE_HD_HINT,"For the sharpest hurler, get the HD pack in Settings.","Don iománaí is géire, faigh an pacáiste HD sna Socruithe."
@@ -24,6 +24,11 @@ PRACTICE_FREE_N,Free {n} of {of},Saorbhuille {n} as {of}
 PRACTICE_SCORE_N,Score {n},Scór {n}
 PRACTICE_BEST_N,Best {n},Is fearr {n}
 PRACTICE_SHORT,Short,Gearr
+PRACTICE_CHALLENGE,Challenge: double points,Dúshlán: pointí dúbailte
+PRACTICE_CH_LEFT,Hit the left post!,Buail an cuaille clé!
+PRACTICE_CH_RIGHT,Hit the right post!,Buail an cuaille deas!
+PRACTICE_CH_BAR,Hit the crossbar!,Buail an trasnán!
+PRACTICE_CH_HIT,DOUBLE!,DÚBAILTE!
 PRACTICE_DONE,Ten frees taken,Deich saorbhuille tógtha
 PRACTICE_RATE_3,All-Star form. The county's frees are yours.,Foirm Réalta. Is leatsa saorbhuillí an chontae.
 PRACTICE_RATE_2,County standard: steady over the bar.,Caighdeán contae: seasmhach thar an trasnán.

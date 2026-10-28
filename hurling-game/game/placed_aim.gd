@@ -22,8 +22,8 @@ signal shot(target: Vector3)
 signal done                    # the shot has been seen: back to the match camera
 
 const WATCH := 2.6             # seconds the low camera stays on the flight after the strike
-const WAIT := 12.0             # left this long, it stops by itself
-const BAR_WAIT := 6.0          # and the bar, left this long after the target stopped
+# (No time limit: left alone, the target and the bar go on until you press; the owner: "Don't auto shoot the ball if
+# its idle and the user isn't playing just wait".)
 const GREEN := 0.17            # the bar's green, each side of the middle (the bar runs -1 to 1)
 
 var goal_x := 0.0              # the goal line it is in front of
@@ -35,6 +35,12 @@ var fired := false             # the bar stopped too (the second): the shot is o
 var bar_x := -1.0              # the bar's marker, -1 (the left end) to 1
 var bar_period := 1.4          # seconds for the marker to go from one end to the other and back
 var camera: Camera3D
+## A woodwork challenge (free-taking practice): "left" or "right" post (as the camera sees them) or "bar", "" none.
+## The target woodwork glows; the target stopped near it with the bar in the green, the sliotar goes exactly onto it
+## (snapped), so a well-timed challenge does ring the post.
+var challenge := ""
+var snapped := false
+const SNAP := 0.45             # how near the woodwork the target must stop (m)
 var _ring: MeshInstance3D
 var _mat: StandardMaterial3D
 var _t := 0.0
@@ -90,6 +96,8 @@ func setup(spot: Vector3, stand: Vector3, d: float, skill: float, rng: RandomNum
 	edge.material_override = edge_mat
 	edge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_ring.add_child(edge)
+	if challenge != "":
+		_show_challenge()
 	_place()
 
 
@@ -125,16 +133,12 @@ static func zone(p: Vector3) -> String:
 
 func _process(dt: float) -> void:
 	_t += dt
-	if not stopped and _t > WAIT:
-		stop()
 	if stopped and not fired:
 		# The target held where it stopped, pulsing; the bar's marker running end to end, from the left.
 		_bar_t += dt
 		bar_x = -cos(_bar_t * TAU / bar_period)
 		_mat.albedo_color.a = 0.75 + 0.25 * absf(sin(_bar_t * 6.0))
 		_bar.queue_redraw()
-		if _bar_t > BAR_WAIT:
-			stop()
 		return
 	if fired:
 		_hold += dt
@@ -155,6 +159,9 @@ func _process(dt: float) -> void:
 func _place() -> void:
 	var p := target()
 	_ring.global_position = p
+	if challenge != "" and woodwork_snap(p) != p:
+		_mat.albedo_color = Color(1.0, 0.97, 0.75, 1.0)    # on the woodwork: white-gold
+		return
 	match zone(p):
 		"point":
 			_mat.albedo_color = Color(Game.C_GOLD, 0.95)
@@ -188,13 +195,69 @@ func stop() -> Vector3:
 func strike_point(aim: Vector3, x: float) -> Vector3:
 	var out := maxf(0.0, (absf(x) - GREEN) / (1.0 - GREEN))
 	if out <= 0.0:
-		return aim
+		var w := woodwork_snap(aim)
+		snapped = w != aim
+		return w
 	var k := pow(out, 1.2)
 	var right := -camera.global_transform.basis.z.cross(Vector3.UP)
 	var p := aim
 	p.z += signf(x) * signf(right.z if absf(right.z) > 0.05 else 1.0) * k * (2.5 + _dist / 9.0)
 	p.y = maxf(0.4, p.y - k * 0.9)
 	return p
+
+
+## The challenge's woodwork, as a point on the goal line nearest p: the post's middle line at p's height, or the
+## crossbar's at p's place across; p itself if it is not within SNAP of it (or there is no challenge).
+func woodwork_snap(p: Vector3) -> Vector3:
+	if challenge == "":
+		return p
+	var post_z := Pitch.POST_GAP * 0.5 + Pitch.POST_W * 0.5
+	if challenge == "bar":
+		var bar_y := Pitch.BAR_H + Pitch.POST_W * 0.5
+		if absf(p.y - bar_y) < SNAP and absf(p.z) < Pitch.POST_GAP * 0.5 - 0.15:
+			return Vector3(p.x, bar_y, p.z)
+		return p
+	var z := post_z * (-1.0 if challenge == "left" else 1.0) * _right_sign()
+	if absf(p.z - z) < SNAP and p.y > 0.4 and p.y < Pitch.POST_H - 0.5:
+		return Vector3(p.x, p.y, z)
+	return p
+
+
+## Which way across the pitch is the right of the screen (+1: +z).
+func _right_sign() -> float:
+	var right := -camera.global_transform.basis.z.cross(Vector3.UP)
+	return signf(right.z) if absf(right.z) > 0.05 else 1.0
+
+
+## The challenge's woodwork lit gold, so it reads which to hit.
+func _show_challenge() -> void:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = Color(Game.C_GOLD, 0.55)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.no_depth_test = true
+	var glow := MeshInstance3D.new()
+	var post_z := Pitch.POST_GAP * 0.5 + Pitch.POST_W * 0.5
+	if challenge == "bar":
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.22, 0.22, Pitch.POST_GAP + 0.1)
+		glow.mesh = bm
+		glow.position = Vector3(goal_x, Pitch.BAR_H + Pitch.POST_W * 0.5, 0)
+	else:
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.11
+		cm.bottom_radius = 0.11
+		cm.height = Pitch.POST_H
+		glow.mesh = cm
+		glow.position = Vector3(goal_x, Pitch.POST_H * 0.5, post_z * (-1.0 if challenge == "left" else 1.0) * _right_sign())
+	glow.material_override = m
+	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(glow)
+	glow.top_level = true
+	_glow = glow
+
+
+var _glow: MeshInstance3D
 
 
 ## The bar: across the bottom of the screen, over the HUD, with a line above it saying what to do.

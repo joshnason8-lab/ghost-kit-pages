@@ -38,6 +38,8 @@ const ACTIONS := {
 	"puck_out": [0.7, 0.42],     # the goalkeeper's toss and long strike
 	"cut": [0.7, 0.44],          # a sideline cut: struck off the ground, low and side-on
 	"dejected": [2.0, 0.0],
+	"free_set": [600.0, 0.0],    # over a free on the grass, crouched by the ball with the hurley under it (held)
+	"free_strike": [2.4, 1.38],  # from there: the lift onto the hurley, the toss, the strike (the owner's videos)
 	# Officials' signals, held while the match wants them.
 	"sig_free": [1.8, 0.0],      # the referee's arm out towards the goal the free attacks
 	"sig_advantage": [5.0, 0.0], # one arm straight up for the five seconds
@@ -400,9 +402,39 @@ func _pose(now: float) -> Dictionary:
 		var t := clampf(action_t / maxf(0.01, action_len), 0.0, 1.0)
 		if SWING_CLIP.has(action):
 			_swing_pose(p, action, t, run)
+		elif action in ["free_set", "free_strike"]:
+			_free_pose(p, action, action_t)
 		else:
 			_action_pose(p, action, t, now)
 	return p
+
+
+## A free struck from the grass, as the owner's videos show it (tools/mocap/video_clip.py: Free_Strike): he bends
+## to the ball and settles over it, the hurley under it (free_set, held while the free is aimed), then rolls it up
+## onto the bas, tosses it and strikes it (free_strike). Turned so the strike goes the way he faces: in the clip it
+## goes 65 degrees to his left of where he stood facing (side-on to the target, as a right-handed hurler stands).
+const FREE_CLIP := "Free_Strike"
+const FREE_YAW := -65.0
+const FREE_SET := 1.45     # the clip's moment he is settled over the ball
+const FREE_LIFT := 2.05    # where the lift starts (the strike 1.38 s after)
+## Where the sliotar lies from his feet as he settles over it, in his own frame (+Z the way he faces): ahead of
+## him in the clip's own frame, so to his right-front once the clip is turned.
+static func free_ball_offset() -> Vector3:
+	return Quaternion(Vector3.UP, deg_to_rad(FREE_YAW)) * Vector3(0.05, 0, 0.62)
+
+
+func _free_pose(p: Dictionary, name: String, at: float) -> void:
+	var ct := minf(at * 1.25, FREE_SET) if name == "free_set" else FREE_LIFT + at
+	var cp := HeroBody.clip_pose(FREE_CLIP, ct)
+	var w := smoothstep(0.0, 0.25, at) if name == "free_set" else 1.0
+	var yaw := Quaternion(Vector3.UP, deg_to_rad(FREE_YAW))
+	for i in BONE_NAMES.size():
+		var q: Quaternion = cp[0][i] if i > 0 else yaw * cp[0][0]
+		p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(q, w)
+	var lift := float(cp[1])
+	if name == "free_set" and ct >= FREE_SET:
+		lift += sin(at * 1.7) * 0.006      # settled, breathing
+	p.hips_y = lerpf(float(p.get("hips_y", 0.0)), lift, w)
 
 
 ## The gaits, slowest first: [clip, the speed (m/s) at which it alone is shown]. Between two, both, blended.
@@ -584,20 +616,28 @@ func _action_pose(p: Dictionary, name: String, t: float, now: float) -> void:
 			var up := _k(t, 0.0, 0.4) * (1.0 - _k(t, 0.45, 0.8))
 			p.upperarm_r = Vector3(-60.0 - 100.0 * up, 0, -10)
 			p.upperarm_l = Vector3(-50.0, 0, 10)
+		# The umpires' signals: the arm raised out from the side with the elbow straight, as umpires do (raised
+		# forwards to overhead, the models' coats folded at the shoulder and the arm looked broken: the owner's
+		# report); eased up and down, the flag waved slowly side to side.
 		"sig_point", "sig_goal":
-			var wave := sin(now * 9.0) * 25.0
-			p.upperarm_r = Vector3(-150.0, 0, -20.0 + wave)
-			p.forearm_r = Vector3(10.0, 0, 0)
+			var up := _k(t, 0.0, 0.16) * (1.0 - _k(t, 0.86, 1.0))
+			var wave := sin(now * 3.6) * 9.0 * up
+			p.upperarm_r = Vector3(-12.0 * up, 0, -8.0 - 140.0 * up + wave)
+			p.forearm_r = Vector3(4.0, 0, 0)
 		"sig_wide":
-			var wave := sin(now * 6.0) * 20.0
-			p.upperarm_l = Vector3(-165.0, 0, -35.0 + wave)
-			p.upperarm_r = Vector3(-165.0, 0, 35.0 - wave)
-			p.forearm_l = Vector3(20.0, 0, 0)
-			p.forearm_r = Vector3(20.0, 0, 0)
+			# Both arms up from the sides to cross over his head, and swung there.
+			var up := _k(t, 0.0, 0.18) * (1.0 - _k(t, 0.86, 1.0))
+			var wave := sin(now * 3.0) * 7.0 * up
+			p.upperarm_l = Vector3(-14.0 * up, 0, 8.0 + 168.0 * up - wave)
+			p.upperarm_r = Vector3(-14.0 * up, 0, -8.0 - 168.0 * up + wave)
+			p.forearm_l = Vector3(4.0, 0, 0)
+			p.forearm_r = Vector3(4.0, 0, 0)
 		"sig_65":
-			var later := _k(t, 0.45, 0.6)
-			p.upperarm_r = Vector3(lerpf(-178.0, -90.0, later), 0, -5.0)
-			p.forearm_r = Vector3(0, 0, 0)
+			# Straight up, then down to point in at the 65.
+			var up := _k(t, 0.0, 0.15) * (1.0 - _k(t, 0.88, 1.0))
+			var later := _k(t, 0.45, 0.62)
+			p.upperarm_r = Vector3(lerpf(-8.0, -88.0, later) * up, 0, lerpf(-164.0, -6.0, later) * up - 8.0 * (1.0 - up))
+			p.forearm_r = Vector3(4.0, 0, 0)
 		"sig_sideline":
 			p.upperarm_r = Vector3(-90.0, 0, -80.0)
 			p.forearm_r = Vector3(0, 0, 0)

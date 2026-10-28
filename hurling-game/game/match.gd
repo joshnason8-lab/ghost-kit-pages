@@ -122,6 +122,7 @@ func _ready() -> void:
 	stadium = Stadium.new(venue, [home_t.c1, home_t.c2], [away_t.c1, away_t.c2])
 	add_child(stadium)
 	ball = Sliotar.new()
+	ball.look_scale = _ball_scale()
 	ball.backstop = stadium.backstop()
 	ball.net_hit.connect(func(p: Vector3, v: Vector3): stadium.net.ripple(p, v))
 	add_child(ball)
@@ -530,7 +531,9 @@ func _process(delta: float) -> void:
 			_setup_step()
 		P.SET:
 			_brains(dt)
-			_run_clock(dt)
+			# The clock held while you aim a free (it waits for you, however long).
+			if placed_aim == null:
+				_run_clock(dt)
 			_set_step(dt)
 		P.HALF_TIME:
 			if phase_t > (5.0 if not attract else 2.0):
@@ -543,6 +546,7 @@ func _process(delta: float) -> void:
 	_move_all(dt)
 	_footsteps()
 	_carry_ball(dt)
+	_lift_ball()
 	var cross: Array = ball.step(dt)
 	if phase in [P.THROW_IN, P.LIVE, P.SHOOTOUT] and ball.state == Sliotar.FREE:
 		_check_ball(cross[0], cross[1])
@@ -1190,11 +1194,77 @@ func _shoot(pl: Player, for_goal: bool, placed := "") -> void:
 
 
 ## A strike at a point you picked (PlacedAim): the sliotar goes there, near enough; a goal if it is under the bar.
+## Settled over it on the grass (free_set), he lifts it, tosses it and strikes it (free_strike, the owner's videos),
+## the sliotar following the hurley up and the toss (_lift_ball); else from the hand.
 func _shoot_at(pl: Player, target: Vector3, placed: String) -> void:
+	var shot := {"goal": PlacedAim.zone(target) == "goal", "placed": placed, "aimed": true,
+		"exact": placed_aim != null and placed_aim.snapped}
+	if pl.action == "free_set":
+		shot.lifted = true
+		_lift_strike(pl, func(): _strike_contact(pl, target, shot))
+		return
 	_wind_dir(pl, target)
 	pl.play("strike")
-	var shot := {"goal": PlacedAim.zone(target) == "goal", "placed": placed, "aimed": true}
 	_after(pl.contact_time("strike"), func(): _strike_contact(pl, target, shot))
+
+
+## He lifts the sliotar off the grass, tosses it and swings (free_strike); then, when the bas meets it.
+func _lift_strike(pl: Player, then: Callable) -> void:
+	pl.play("free_strike")
+	_lift = {"pl": pl, "t0": now, "ground": ball.global_position}
+	_after(pl.contact_time("free_strike"), then)
+
+
+## Your aimed free, 65 or penalty in a match: lifted and struck while the restart still stands (nobody moves in on
+## him while he lifts it), taken at the moment the bas meets it.
+func _aimed_restart(pl: Player) -> void:
+	if pl.action == "free_set":
+		_lift_strike(pl, func(): _take_restart(pl, "AIMED_LIFTED"))
+	else:
+		_take_restart(pl, "AIMED")
+
+
+func _aimed_now(pl: Player, placed: String, choice: String) -> void:
+	if choice == "AIMED_LIFTED":
+		_strike_contact(pl, _aim_point, {"goal": PlacedAim.zone(_aim_point) == "goal", "placed": placed, "aimed": true, "lifted": true})
+	else:
+		_shoot_at(pl, _aim_point, placed)
+
+
+## The sliotar through a free_strike: on the grass till the bas comes under it, up on the bas, tossed, and falling
+## to where he strikes it (seconds from the start of the strike).
+const LIFT_ON := 0.42
+const LIFT_TOSS := 0.78
+var _lift := {}
+
+
+func _lift_ball() -> void:
+	if _lift.is_empty():
+		return
+	var pl: Player = _lift.pl
+	if not is_instance_valid(pl) or pl.action != "free_strike":
+		_lift = {}
+		return
+	var t := now - float(_lift.t0)
+	var g: Vector3 = _lift.ground
+	var bas: Vector3 = pl.body.bas_world() + Vector3(0, 0.05, 0)
+	if t < LIFT_ON - 0.15:
+		ball.global_position = g
+	elif t < LIFT_ON:
+		ball.global_position = g.lerp(bas, smoothstep(LIFT_ON - 0.15, LIFT_ON, t))
+	elif t < LIFT_TOSS:
+		ball.global_position = bas
+		_lift.p0 = bas
+	else:
+		if not _lift.has("v"):
+			# Up from the bas and down again to where the swing meets it, in the time left.
+			var p0: Vector3 = _lift.get("p0", bas)
+			var tt := pl.contact_time("free_strike") - LIFT_TOSS
+			var p1 := pl.global_position + pl.forward() * 0.72 + Vector3(0, 1.15, 0)
+			_lift.p0 = p0
+			_lift.v = (p1 - p0) / tt + Vector3(0, 0.5 * 9.81 * tt, 0)
+		var u := t - LIFT_TOSS
+		ball.global_position = (_lift.p0 as Vector3) + (_lift.v as Vector3) * u + Vector3(0, -0.5 * 9.81 * u * u, 0)
 
 
 ## Is this press the start of an aimed shot: your free or 65 at the posts in range (STRIKE or GOAL), your penalty
@@ -1219,7 +1289,20 @@ const AIM_RANGE := 66.0        # frees this near the goal line, and every 65, ar
 
 func _start_aim(a: Player) -> void:
 	var spot: Vector3 = restart.spot if not restart.is_empty() else ball.global_position
+	# Over a ball on the grass (a free, a 65, a penalty): he settles beside it, the hurley under it, facing the posts.
+	if not restart.is_empty() and String(restart.kind) in ["free", "65", "penalty"]:
+		var to_goal := Vector3(Pitch.HALF_L * dir(a.team) - spot.x, 0, -spot.z).normalized()
+		a.global_position = free_stand(spot, a.team)
+		a.vel = Vector3.ZERO
+		a.want_vel = Vector3.ZERO
+		a.yaw = atan2(to_goal.x, to_goal.z)
+		a.face_to = Vector3(Pitch.HALF_L * dir(a.team), 0, 0)
+		a.ball_hand = false
+		a.ball_stick = false
+		ball.place(spot)
+		a.play("free_set")
 	placed_aim = PlacedAim.new()
+	placed_aim.challenge = _aim_challenge()
 	add_child(placed_aim)
 	placed_aim.setup(spot, a.global_position, dir(a.team), float(a.data.get("free", 70)) / 100.0, rng, _aim_view())
 	placed_aim.shot.connect(func(p: Vector3):
@@ -1227,9 +1310,31 @@ func _start_aim(a: Player) -> void:
 		if phase == P.SHOOTOUT:
 			_shootout_strike("AIMED")
 		elif phase == P.SET:
-			_take_restart(taker, "AIMED"))
+			_aimed_restart(taker))
 	placed_aim.done.connect(_end_aim)
 	Game.haptic("free")
+
+
+## Where a free's taker stands over the sliotar at spot, settled to lift it (Player.free_ball_offset), facing the
+## posts team k attacks.
+func free_stand(spot: Vector3, k: int) -> Vector3:
+	var to_goal := Vector3(Pitch.HALF_L * dir(k) - spot.x, 0, -spot.z).normalized()
+	return Vector3(spot.x, 0, spot.z) - Basis(Vector3.UP, atan2(to_goal.x, to_goal.z)) * Player.free_ball_offset()
+
+
+## A woodwork challenge for this aimed shot ("left", "right" post or "bar"; free-taking practice), "" none.
+func _aim_challenge() -> String:
+	return ""
+
+
+## The sliotar off a post or the crossbar (free-taking practice's challenges watch for it).
+func _woodwork(_c: Vector3, _post: bool) -> void:
+	pass
+
+
+## How much larger than life the sliotar is drawn: 2.2 for a match's wide camera (a 7 cm ball on a 140 m pitch).
+func _ball_scale() -> float:
+	return Sliotar.LOOK_SCALE
 
 
 ## The camera an aimed shot uses (null: it makes its own low one; free-taking practice has its own all along).
@@ -1252,6 +1357,9 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 	var from := pl.global_position + pl.forward() * 0.75 + Vector3(0, 1.05, 0)
 	if String(shot.get("placed", "")) in ["sideline", "free_ground"]:
 		from = pl.global_position + pl.forward() * 0.6 + Vector3(0, 0.1, 0)
+	if bool(shot.get("lifted", false)):
+		from = ball.global_position      # where the toss brought it (_lift_ball)
+		_lift = {}
 	var dist := Vector2(target.x - from.x, target.z - from.z).length()
 	var acc := float(pl.data.get("accuracy" if String(shot.get("placed", "")) == "" else "free", 70)) / 100.0
 	var pressure := 0.0
@@ -1267,8 +1375,9 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 		sigma = (0.4 + dist * 0.03) * (1.5 - acc) * (1.0 + pressure)
 	var aim := target + Vector3(0, rng.randfn(0.0, sigma * 0.5), rng.randfn(0.0, sigma))
 	if bool(shot.get("aimed", false)):
-		# Aimed by timing (PlacedAim): where you stopped the target, give or take a hand's width.
-		aim = target + Vector3(0, rng.randfn(0.0, 0.08), rng.randfn(0.0, 0.1))
+		# Aimed by timing (PlacedAim): where you stopped the target, give or take a hand's width (exactly, onto a
+		# challenge's woodwork).
+		aim = target if bool(shot.get("exact", false)) else target + Vector3(0, rng.randfn(0.0, 0.08), rng.randfn(0.0, 0.1))
 	var power := float(pl.data.get("striking", 70)) / 100.0
 	var speed := clampf(dist * 0.42 + 16.0, 22.0, 30.0 + power * 12.0)
 	if bool(shot.get("goal", false)):
@@ -1288,7 +1397,8 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 		how = placed if placed != "free_ground" else "free"
 	ball.launch(v, pl, how)
 	ball.set_meta("t_launch", now)
-	ball.set_meta("shot", {"by": pl, "placed": placed, "goal": bool(shot.get("goal", false)), "from": from})
+	ball.set_meta("shot", {"by": pl, "placed": placed, "goal": bool(shot.get("goal", false)), "from": from,
+		"exact": bool(shot.get("exact", false))})
 	tstats[pl.team].shots += 1
 	if placed == "" or placed == "pull":
 		tstats[pl.team].shots_play += 1
@@ -1508,9 +1618,13 @@ func _check_ball(prev: Vector3, cur: Vector3) -> void:
 		if (prev.x - gx) * (cur.x - gx) <= 0.0 and absf(cur.x - prev.x) > 0.0001:
 			var k := (gx - prev.x) / (cur.x - prev.x)
 			var c := prev.lerp(cur, k)
-			var hit_post := absf(absf(c.z) - (Pitch.POST_GAP * 0.5 + Pitch.POST_W * 0.5)) < Pitch.POST_W * 0.5 + Sliotar.RADIUS and c.y < Pitch.POST_H
-			var hit_bar := absf(c.z) < Pitch.POST_GAP * 0.5 and absf(c.y - (Pitch.BAR_H + Pitch.POST_W * 0.5)) < Pitch.POST_W * 0.5 + Sliotar.RADIUS
+			# (A shot snapped onto the woodwork, a challenge's, is given its few centimetres of the trajectory's
+			# error: the solve is not exact, and the bar is 12 cm.)
+			var give := 0.2 if bool((ball.get_meta("shot", {}) as Dictionary).get("exact", false)) else 0.0
+			var hit_post := absf(absf(c.z) - (Pitch.POST_GAP * 0.5 + Pitch.POST_W * 0.5)) < Pitch.POST_W * 0.5 + Sliotar.RADIUS + give and c.y < Pitch.POST_H
+			var hit_bar := absf(c.z) < Pitch.POST_GAP * 0.5 and absf(c.y - (Pitch.BAR_H + Pitch.POST_W * 0.5)) < Pitch.POST_W * 0.5 + Sliotar.RADIUS + give
 			if hit_post or hit_bar:
+				_woodwork(c, hit_post)
 				ball.global_position = Vector3(gx - s * 0.1, c.y, c.z)
 				ball.vel = Vector3(-ball.vel.x * 0.45, ball.vel.y * 0.6 + (2.0 if hit_bar else 0.0), ball.vel.z * 0.6 + rng.randf_range(-2, 2))
 				ball.last_kind = "deflect"
@@ -2087,8 +2201,8 @@ func _take_restart(pl: Player, choice: String) -> void:
 					land = Pitch.clamp_in(spot + _cam_dir(controls.joystick) * 80.0, 6.0)
 				_strike_to(pl, land, "puck_out")
 		"penalty":
-			if choice == "AIMED":
-				_shoot_at(pl, _aim_point, "penalty")
+			if choice.begins_with("AIMED"):
+				_aimed_now(pl, "penalty", choice)
 			else:
 				_shoot(pl, true, "penalty")
 		"sideline":
@@ -2112,8 +2226,8 @@ func _take_restart(pl: Player, choice: String) -> void:
 			elif choice == "STRIKE" or choice == "GOAL":
 				shoot = true
 			var placed := "65" if kind == "65" else "free"
-			if choice == "AIMED":
-				_shoot_at(pl, _aim_point, placed)
+			if choice.begins_with("AIMED"):
+				_aimed_now(pl, placed, choice)
 			elif shoot:
 				_shoot(pl, choice == "GOAL" or (choice == "" and dist <= 21.0 and rng.randf() < 0.15), placed)
 			else:

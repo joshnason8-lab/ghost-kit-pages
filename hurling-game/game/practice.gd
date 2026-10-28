@@ -19,6 +19,11 @@ const SPOTS := [
 	[21.0, 0.0, "free"], [30.0, -8.0, "free"], [35.0, 13.0, "free"], [45.0, 0.0, "free"], [38.0, -21.0, "free"],
 	[65.0, 16.0, "65"], [50.0, 9.0, "free"], [26.0, 24.0, "free"], [56.0, -14.0, "free"], [65.0, -22.0, "65"],
 ]
+## The woodwork challenges: the third, sixth and ninth frees, the left post, the right post and the crossbar (as the
+## camera sees them); hit it and that free is worth two, double a point (the owner: "a hit the pole challenge every
+## few shots that can give you double points. 3 times, if they hit the left pole, right pole, and top of goal").
+const CHALLENGES := {2: "left", 5: "right", 8: "bar"}
+const CHALLENGE_POINTS := 2
 const WALK_T := 2.2          # seconds for the taker to settle over the ball before the target comes up
 const DONE_T := 2.2          # the result shown this long (the sliotar landing) before the next free
 const FLIGHT_T := 7.0        # a ball still going after this long counts as missed
@@ -40,8 +45,27 @@ func _enter_tree() -> void:
 	Game.apply_frame_rate()
 
 
+## The look up close, as good as the phone gives: every mesh at full detail at any distance, the textures filtered
+## sharp at a low angle, the sun's shadows at four times a phone's usual resolution and soft. Put back when it ends.
+func _best_look() -> void:
+	var vp := get_viewport()
+	vp.mesh_lod_threshold = 0.0
+	vp.anisotropic_filtering_level = Viewport.ANISOTROPY_16X
+	RenderingServer.directional_shadow_atlas_set_size(4096, true)
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH)
+
+
+func _plain_look() -> void:
+	var vp := get_viewport()
+	vp.mesh_lod_threshold = float(ProjectSettings.get_setting_with_override("rendering/mesh_lod/lod_change/threshold_pixels"))
+	vp.anisotropic_filtering_level = int(ProjectSettings.get_setting_with_override("rendering/textures/default_filters/anisotropic_filtering_level")) as Viewport.AnisotropicFiltering
+	RenderingServer.directional_shadow_atlas_set_size(int(ProjectSettings.get_setting_with_override("rendering/lights_and_shadows/directional_shadow/size")), true)
+	RenderingServer.directional_soft_shadow_filter_set_quality(int(ProjectSettings.get_setting_with_override("rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality")) as RenderingServer.ShadowQuality)
+
+
 func _exit_tree() -> void:
 	super()
+	_plain_look()
 	# Go again: the next round is already in (it keeps High); else the player's own settings back.
 	var next: Node = Game.current
 	if next != null and next != self and is_instance_valid(next) and next.has_method("is_practice") and next.is_practice():
@@ -86,6 +110,7 @@ func _ready() -> void:
 		(l as Player).visible = false
 	view = Camera3D.new()
 	add_child(view)
+	_best_look()
 	practice = {"n": 0, "points": 0, "marks": [], "spots": [], "kinds": [], "state": "walk", "t": 0.0,
 		"best": int(Game.settings.get("practice_best", -1))}
 	for s in SPOTS:
@@ -136,23 +161,47 @@ func _next_free() -> void:
 	view.make_current()
 	practice.state = "walk"
 	practice.t = now
+	practice.challenge = String(CHALLENGES.get(i, ""))
+	practice.woodwork = ""
 	shootout.state = "walk"
 	hud.practice(practice)
 	hud.restart_tag(restart)
+	if practice.challenge != "":
+		hud.banner(tr("PRACTICE_CH_" + String(practice.challenge).to_upper()), Game.C_GOLD)
 
 
-## Where the taker stands: a stride behind the ball, looking at the posts. Everyone else is out of sight, where
-## they were put.
+## Where the taker stands: beside the ball, settled to lift it (Match.free_stand). Everyone else is out of sight,
+## where they were put.
 func _shootout_spot(pl: Player) -> Vector3:
 	if pl == taker:
-		var spot: Vector3 = restart.get("spot", Vector3.ZERO)
-		var to_goal := Vector3(Pitch.HALF_L * dir(0) - spot.x, 0, -spot.z).normalized()
-		return spot - to_goal * 1.1
+		return free_stand(restart.get("spot", Vector3.ZERO), 0)
 	return pl.global_position
 
 
 func _aim_view() -> Camera3D:
 	return view
+
+
+## Close up, the sliotar nearer its own size (a little larger, to follow in flight).
+func _ball_scale() -> float:
+	return 1.35
+
+
+func _aim_challenge() -> String:
+	return String(practice.get("challenge", ""))
+
+
+## The sliotar off the woodwork: which (left or right post, as the camera sees them, or the bar); on the challenge's
+## own, the free is won there and then.
+func _woodwork(c: Vector3, post: bool) -> void:
+	if String(practice.get("state", "")) != "struck":
+		return
+	var which := "bar"
+	if post:
+		which = "right" if c.z * dir(0) > 0.0 else "left"
+	practice.woodwork = which
+	if which == String(practice.get("challenge", "")):
+		_shootout_result("woodwork", c)
 
 
 ## The aim over: the practice's camera stays (the aim used it), no cut to the match's.
@@ -207,13 +256,22 @@ func _shootout_result(kind: String, c: Vector3) -> void:
 	practice.saved = false
 	var mark := "W" if over_line else ("K" if saved else "S")
 	match kind:
+		"woodwork":
+			_cheer(0.9)
+			mark = "C"
+			over_line = false
+			practice.points += CHALLENGE_POINTS
+			hud.banner(tr("PRACTICE_CH_HIT"), Game.C_GOLD)
+			Sfx.react("cheer", -3.0)
 		"point":
+			_cheer(0.75)
 			mark = "P"
 			practice.points += 1
 			hud.banner(tr("CALL_POINT"), Game.C_GOLD)
 			Sfx.react("cheer", -6.0)
 			officials.umpire_signal(signf(c.x), "sig_point", c.z)
 		"goal":
+			_cheer(1.0)
 			mark = "G"
 			practice.points += 3
 			hud.banner(tr("CALL_GOAL"), Game.C_GOLD)
@@ -249,6 +307,12 @@ func _gain(p: Player, kind: String) -> void:
 	ball.vel = Vector3.ZERO
 	practice.saved = p.is_keeper()
 	_shootout_result("", ball.global_position)
+
+
+## The crowd up for a score, and settling again.
+func _cheer(k: float) -> void:
+	Crowd.set_excite(k)
+	_cheer_until = now + 2.4      # (the match's own murmur of anticipation leaves it be till then)
 
 
 func _end_round() -> void:

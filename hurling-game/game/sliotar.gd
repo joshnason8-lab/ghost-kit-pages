@@ -66,31 +66,88 @@ void fragment() {
 	return m
 
 
+## The real leather (High, on Vulkan): lit by the scene, the cover's grain in its normal and a soft sheen, a few grass
+## scuffs; the rim's ridge the same leather a shade darker, two rows of stitches either side of it, as a sliotar's.
+static func _leather_lit(rim: bool) -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode cull_back;
+#include "res://game/shaders/look.gdshaderinc"
+uniform bool rim = false;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+void fragment() {
+	vec2 g = UV * (rim ? vec2(140.0, 10.0) : vec2(160.0, 80.0));
+	float n = vnoise(g);
+	float nx = vnoise(g + vec2(0.35, 0.0)) - n;
+	float ny = vnoise(g + vec2(0.0, 0.35)) - n;
+	vec3 c = rim ? vec3(0.84, 0.81, 0.72) : vec3(0.95, 0.93, 0.87);
+	c *= 0.95 + 0.05 * n;
+	// A few grass scuffs on the cover.
+	float scuff = smoothstep(0.72, 0.9, vnoise(UV * vec2(9.0, 5.0) + 3.1)) * (rim ? 0.0 : 0.22);
+	c = mix(c, vec3(0.55, 0.62, 0.38), scuff);
+	float stitch = 0.0;
+	if (rim) {
+		// Two rows of stitches, one either side of the ridge, along it.
+		float row = abs(UV.y - 0.5) * 2.0;
+		float along = fract(UV.x * 64.0);
+		stitch = step(0.55, row) * step(row, 0.85) * step(along, 0.42);
+		c = mix(c, vec3(0.42, 0.3, 0.2), stitch);
+	}
+	ALBEDO = compat_to_scene(c);
+	NORMAL_MAP = normalize(vec3(0.5 - nx * 0.6, 0.5 - ny * 0.6, 1.0)) * 0.5 + 0.5;
+	NORMAL_MAP_DEPTH = 0.6;
+	ROUGHNESS = rim ? 0.62 : 0.48 + 0.1 * n;
+	SPECULAR = 0.4;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("rim", rim)
+	return m
+
+
+static var _lit_mat: ShaderMaterial
+static var _lit_rim_mat: ShaderMaterial
+var look_scale := LOOK_SCALE   # drawn this much larger than life (to read on a phone across the pitch; nearer life close up)
+
+
 func _ready() -> void:
 	# The ball: white leather, a little grain, lit from the sun's side; and its raised rim, the stitched seam where
-	# the cover's two pieces meet, a ring round it (it shows the spin in flight and on a replay).
+	# the cover's two pieces meet, a ring round it (it shows the spin in flight and on a replay). On High the real
+	# leather, lit by the scene, and rounder.
+	var lit := Ultra.lit()
 	_mesh = MeshInstance3D.new()
 	var sm := SphereMesh.new()
 	sm.radius = RADIUS
 	sm.height = RADIUS * 2.0
-	sm.radial_segments = 20
-	sm.rings = 12
+	sm.radial_segments = 48 if lit else 20
+	sm.rings = 24 if lit else 12
 	_mesh.mesh = sm
 	if _mat == null:
 		_mat = _leather(false)
 		_rim_mat = _leather(true)
-	_mesh.material_override = _mat
+	if lit and _lit_mat == null:
+		_lit_mat = _leather_lit(false)
+		_lit_rim_mat = _leather_lit(true)
+	_mesh.material_override = _lit_mat if lit else _mat
 	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_mesh.scale = Vector3.ONE * LOOK_SCALE
+	_mesh.scale = Vector3.ONE * look_scale
 	add_child(_mesh)
 	var rim := MeshInstance3D.new()
 	var tm := TorusMesh.new()
 	tm.inner_radius = RADIUS * 0.93
 	tm.outer_radius = RADIUS * 1.09
-	tm.rings = 28
-	tm.ring_segments = 6
+	tm.rings = 64 if lit else 28
+	tm.ring_segments = 10 if lit else 6
 	rim.mesh = tm
-	rim.material_override = _rim_mat
+	rim.material_override = _lit_rim_mat if lit else _rim_mat
 	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rim.rotation_degrees = Vector3(0, 0, 70)
 	_mesh.add_child(rim)

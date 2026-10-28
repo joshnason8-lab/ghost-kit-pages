@@ -44,6 +44,11 @@ const TWIST := {"referee": [0.0, -90.0], "umpire": [45.0, 45.0], "referee_low": 
 	"umpire_low": [0.0, -90.0]}
 
 
+## The Meshy models' feet were made pitched up at the ankle (toes to the sky, the owner saw); each foot is turned down
+## by this much (degrees, toes down) so it stands flat. Found by eye from the side, each model its own.
+static var foot_pitch := {"referee": 35.0, "umpire": 38.0, "referee_low": 35.0, "umpire_low": 38.0}
+
+
 func apply(p: Dictionary) -> void:
 	super(p)
 	if skeleton == null or dir not in [DIR, ULTRA_DIR]:
@@ -54,6 +59,11 @@ func apply(p: Dictionary) -> void:
 			var b: int = side[j]
 			var q := skeleton.get_bone_pose_rotation(b)
 			skeleton.set_bone_pose_rotation(b, q * Quaternion(Vector3.UP, deg_to_rad(float(tw[j]) * float(side[2]))))
+	var fp := float(foot_pitch.get(_twist_key(), 0.0))
+	if fp != 0.0:
+		for b in [13, 16]:
+			var q := skeleton.get_bone_pose_rotation(b)
+			skeleton.set_bone_pose_rotation(b, q * Quaternion(Vector3.RIGHT, deg_to_rad(fp)))
 
 
 func _twist_key() -> String:

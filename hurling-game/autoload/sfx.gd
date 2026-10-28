@@ -8,7 +8,7 @@ extends Node
 const RATE := 22050
 const VOICES := {"grunt": 3, "hup": 2, "step": 4}
 ## Sounds recorded more than once: play("roar") picks roar, roar_2 or roar_3, so a crowd never cheers twice alike.
-const VARIANTS := {"crowd_cheer": 3, "roar": 3, "whistle": 3, "whistle_long": 3}
+const VARIANTS := {"crowd_cheer": 3, "roar": 3, "whistle": 3, "whistle_long": 3, "post": 2}
 const MUSIC_DB := -9.0
 
 var streams := {}

@@ -33,6 +33,9 @@ static func data() -> Dictionary:
 		# were measured on those, and at 60 the planted foot slides more (tests/test_runner.gd's foot-slide checks).
 		var cmu: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "cmu.json"))
 		d.clips.merge(cmu.clips)
+		# A free from the ground (the bend, the lift, the toss, the strike), from the owner's videos (tools/mocap/video_clip.py).
+		var free: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "free.json"))
+		d.clips.merge(free.clips)
 		if u:
 			for f in ["hero60.json"]:
 				var more: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://ultra/anim/" + f))
@@ -81,6 +84,20 @@ static func turn(v: Variant) -> Quaternion:
 		return v
 	var e: Vector3 = v * (PI / 180.0)
 	return Basis.from_euler(e, EULER_ORDER_YXZ).get_rotation_quaternion()
+
+
+## The model's feet were bound pitched up at the ankle: in every pose the boots' toes pointed at the sky (the owner
+## saw it). Each foot is turned down by this much (degrees, toes down), in every pose, so it stands flat.
+static var foot_pitch := 32.0
+
+
+func apply(p: Dictionary) -> void:
+	super(p)
+	if skeleton == null or foot_pitch == 0.0:
+		return
+	for b in [13, 16]:
+		var q := skeleton.get_bone_pose_rotation(b)
+		skeleton.set_bone_pose_rotation(b, q * Quaternion(Vector3.RIGHT, deg_to_rad(foot_pitch)))
 
 
 func _offsets() -> Array:

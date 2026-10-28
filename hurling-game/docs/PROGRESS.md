@@ -250,6 +250,47 @@ posts; SHOOT stops it, and that is where the ball goes.
 - Tests: a point, a wide, a 65 and a penalty aimed and struck through the match, back to the match camera after each;
   the target lingers between the posts and hurries through the goal. How to Play's controls say how.
 
+## Done (0.15.0-beta, free-taking round three, 28 October 2026)
+
+The owner's list: the officials' feet pointing at the sky and their arms looking broken when raised; no shot taken
+for an idle player; the crowd roaring but not moving (and no corny hopping); a hit-the-post challenge three times
+(left post, right post, crossbar) for double points; the players' toes up; the umpires facing the player after a
+score; the best graphics; a more realistic sliotar; three videos of a free from the ground to motion-capture; two
+recordings of the ball off the posts and one of the strike.
+
+- **Motion capture from video** (`tools/mocap/video_clip.py`): MediaPipe's pose landmarker (33 points a frame, in
+  metres) run over the owner's front-on video (192 frames, every one tracked), smoothed, and turned into the 17 bones'
+  turns: limbs the shortest way onto the directions seen, the trunk and head as frames, the elbows on their hinge,
+  the feet heel to toe; the hurley (not tracked) aimed along the two hands when both are on it and at the grass by
+  the ball when he is down over it. `assets/player/free.json`, Free_Strike: 4.5 s from standing to the
+  follow-through, the strike at 3.43 s, turned 65 degrees so it goes the way he faces. The videos themselves are not
+  in the repository.
+- `player.gd`: free_set (bent over the ball, the hurley under it, held while aiming) and free_strike (the lift, the
+  toss, the strike 1.38 s later). `match.gd`: an aimed free, 65 or penalty from the grass sets the taker beside the
+  ball (`free_stand`) and lifts it before the strike; the sliotar on the grass, then on the bas, then tossed up to
+  where the swing meets it (`_lift_ball`); in a match the restart stands while he lifts it (nobody moves in), taken
+  at the strike.
+- `placed_aim.gd`: no time limit (the target and the bar wait); the match clock held while aiming.
+- **Woodwork challenges** (`practice.gd`, `placed_aim.gd`): frees 3, 6 and 9, left post, right post, crossbar as the
+  camera sees them; the woodwork lit gold, the target white-gold over it; stopped within 45 cm with the bar in the
+  green the sliotar goes exactly onto it (and the hit is given the trajectory's few centimetres); hit, two points
+  ("DOUBLE!"), a white-and-gold mark. The ratings out of thirteen now.
+- **The crowd** (`crowd.gd`): excitement eased (up over about half a second, down over two); excited, each fan rises
+  a little and bobs and sways at their own rate (no hop in step); practice cheers it for each score.
+- **Sounds**: `strike.ogg` and `post.ogg`/`post_2.ogg` from the owner's recordings (the crack cut out, the wind
+  under it and the echo after it removed; each ping given a reverb tail where its clip cut off); docs/SOUNDS.md and
+  the Licences screen credit the owner.
+- **Feet** (`hero_body.gd`, `person_body.gd`): the models were bound with the feet pitched up; every pose turns each
+  foot down (players 32 degrees, the referee 35, the umpire 38), found by eye from the side.
+- **The umpires** (`player.gd`, `officials.gd`): signals raised from the side with the elbow straight (raised
+  forwards past about 130 degrees the coats folded at the shoulder), eased up and down, the flag waved slowly; with
+  the ball behind them they look at where the shot came from, not round at it.
+- **Up close** (`practice.gd`, `sliotar.gd`): the sliotar at 1.35 life size in practice (2.2 in a match); on High a
+  lit leather shader (grain in the normal, a sheen, grass scuffs, stitches each side of the rim) on a rounder ball;
+  in practice no mesh simplification, 16x anisotropic filtering, 4096 sun shadows, soft and high.
+- Tests: the challenges hit (left post, right post, crossbar) for double, the score adding up with them; every free
+  lifted and struck from the grass.
+
 ## Done (0.14.0-beta, free-taking fixes and the accuracy bar, 28 October 2026)
 
 The owner's list on free-taking: no wide camera and running officials after a shot; a better taker up close; no

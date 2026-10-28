@@ -779,7 +779,10 @@ func practice(st: Dictionary, first := false) -> void:
 		_practice.set_meta("parts", [head, score, marks])
 	var parts: Array = _practice.get_meta("parts")
 	var n := mini(int(st.n) + (1 if String(st.get("state", "")) in ["walk", "aim", "struck"] else 0), m.FREES)
-	(parts[0] as Label).text = (tr("MENU_PRACTICE") + "  ·  " + tr("PRACTICE_FREE_N").format({"n": n, "of": m.FREES})).to_upper()
+	var head := tr("MENU_PRACTICE") + "  ·  " + tr("PRACTICE_FREE_N").format({"n": n, "of": m.FREES})
+	if String(st.get("challenge", "")) != "" and String(st.get("state", "")) in ["walk", "aim", "struck"]:
+		head += "  ·  " + tr("PRACTICE_CHALLENGE")
+	(parts[0] as Label).text = head.to_upper()
 	(parts[1] as Label).text = _practice_line(st)
 	_fill_marks(parts[2], st.marks, m.FREES, 14)
 
@@ -808,6 +811,10 @@ func _fill_marks(row: HBoxContainer, marks: Array, total: int, px: int) -> void:
 					sb.bg_color = Game.C_GOLD
 				"G":
 					sb.bg_color = Color(0.35, 0.85, 0.45)
+				"C":
+					sb.bg_color = Color(1.0, 0.95, 0.72)
+					sb.border_color = Game.C_GOLD
+					sb.set_border_width_all(3)
 				_:
 					sb.bg_color = Color(0.75, 0.3, 0.25)
 		else:
@@ -838,7 +845,7 @@ func practice_done(st: Dictionary, best: int, new_best: bool) -> void:
 	row.add_theme_constant_override("separation", 8)
 	v.add_child(row)
 	var pts := int(st.points)
-	var rate := tr("PRACTICE_RATE_3" if pts >= 10 else ("PRACTICE_RATE_2" if pts >= 8 else ("PRACTICE_RATE_1" if pts >= 5 else "PRACTICE_RATE_0")))
+	var rate := tr("PRACTICE_RATE_3" if pts >= 12 else ("PRACTICE_RATE_2" if pts >= 9 else ("PRACTICE_RATE_1" if pts >= 6 else "PRACTICE_RATE_0")))
 	var r := UI.label(rate, "SubLabel", 22)
 	r.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.fit(r, 2)

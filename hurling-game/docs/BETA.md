@@ -9,6 +9,28 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.15.0
+
+- **Frees from the grass, as they are taken**: your free-taker settles over the sliotar with his hurley under it
+  while you aim, then rolls it up onto the bas, tosses it and strikes it: the motion taken from the owner's videos of
+  a free (pose-tracked frame by frame). The sliotar rides the hurley up and goes up in the toss to meet the swing.
+  In free-taking practice and for your aimed frees, 65s and penalties in a match.
+- **No more shots taken for you**: left alone, the target and the bar wait for you however long you take (in a
+  match the clock waits too).
+- **Woodwork challenges** in free-taking practice: the third, sixth and ninth frees ask you to hit the left post, the
+  right post, then the crossbar (lit gold); hit it and that free is worth two. Stop the target near it with the bar
+  in the green and the sliotar goes right onto it.
+- **The crowd cheers smoothly**: up off their seats and swaying, each at their own pace, easing in and settling
+  again (no more hopping up and down in step); in practice too, for every score.
+- **The sound of the ball**: the strike and the ping off the posts are now real recordings (supplied by the owner),
+  the ping given its ring.
+- **Feet flat on the grass**: the players' boots and the officials' shoes no longer point their toes at the sky.
+- **The umpires' signals**: the flag raised from the side with a straight arm (no more broken-looking shoulders),
+  eased up and down and waved slowly; after a score the umpires keep facing the play, not round at each other.
+- **Up close in practice**: the sliotar nearer its real size and, on High, real leather (grain, sheen, scuffs, two
+  rows of stitches by its rim); every model at full detail at any distance, sharper textures at a low angle and
+  finer, softer shadows.
+
 ## New in 0.14.0
 
 - **Aimed frees, 65s and penalties have a second tap**: after SHOOT stops the target, a bar runs from side to side

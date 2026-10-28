@@ -67,8 +67,14 @@ varying float back;
 void vertex() {
 	data = INSTANCE_CUSTOM;
 	float ph = data.z * 6.2831;
-	float jump = max(0.0, sin(time_s * 9.0 + ph)) * excite * 0.28;
-	float fidget = sin(time_s * 1.3 + ph) * 0.02;
+	// Excited, each one up off the seat a little (some more than others), then bobbing and swaying at their own
+	// pace, smoothly: no hopping in step (the owner: "no quick up/down animations that looks corny").
+	float own = fract(data.z * 13.7);
+	float rate = 1.5 + own * 0.9;
+	float rise = excite * (0.06 + own * 0.08);
+	float bob = (0.5 - 0.5 * cos(time_s * rate * 6.2831 + ph)) * excite * (0.05 + own * 0.05);
+	float jump = rise + bob;
+	float fidget = sin(time_s * 1.3 + ph) * 0.02 + sin(time_s * rate * 3.1416 + ph * 1.7) * 0.05 * excite;
 	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	// The person faces their instance's +Z (the pitch); seen from behind, draw them from behind (Crowd.seen_from_behind).
@@ -168,13 +174,22 @@ static func _code(col: Color) -> float:
 	return best
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if material_override:
 		(material_override as ShaderMaterial).set_shader_parameter("time_s", Time.get_ticks_msec() / 1000.0)
+	# The crowd's excitement eased toward what the play asks: up over about half a second, down over two.
+	var k := 1.0 - exp(-delta * (5.0 if _want > _now else 1.4))
+	_now = lerpf(_now, _want, k)
+	material().set_shader_parameter("excite", _now)
 
 
+static var _want := 0.0
+static var _now := 0.0
+
+
+## How excited the crowd should be (0-1); it gets there smoothly (_process).
 static func set_excite(k: float) -> void:
-	material().set_shader_parameter("excite", clampf(k, 0.0, 1.0))
+	_want = clampf(k, 0.0, 1.0)
 
 
 static func set_light(k: float) -> void:

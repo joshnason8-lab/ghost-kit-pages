@@ -97,7 +97,18 @@ func tick(_dt: float) -> void:
 		if u.action.begins_with("sig_") and u.action_t > u.action_len:
 			u.stop_action()
 		if u.action == "":
-			u.face_to = b
+			# The ball in front of them, they watch it; once it is over their line (a score, a wide, in the net behind
+			# them) they keep looking out at the play, where it came from, not round at it or at each other.
+			u.face_to = b if absf(b.x) < Pitch.HALF_L - 0.3 or signf(b.x) != signf(u.position.x) else _play_from(u)
+
+
+## Where an umpire looks while the ball is behind him: where the last shot was struck from, else out up the pitch.
+func _play_from(u: Player) -> Vector3:
+	var shot: Dictionary = m.ball.get_meta("shot", {})
+	if shot.has("from"):
+		var f: Vector3 = shot.from
+		return Vector3(f.x, 0, f.z)
+	return Vector3(signf(u.position.x) * (Pitch.HALF_L - 30.0), 0, u.position.z * 0.5)
 
 
 func _go(p: Player, target: Vector3, speed: float) -> void:
@@ -116,10 +127,11 @@ func umpire_signal(s: float, kind: String, z: float) -> void:
 	var base := 0 if s < 0.0 else 2
 	var near: Player = umpires[base + (0 if z < 0.0 else 1)]
 	near.play(kind)
-	near.face_to = Vector3(0, 0, 0)
+	near.face_to = _play_from(near)
 	if kind in ["sig_point", "sig_goal", "sig_wide"]:
 		var other: Player = umpires[base + (1 if z < 0.0 else 0)]
 		other.play(kind)
+		other.face_to = _play_from(other)
 
 
 func linesman_signal(c: Vector3, toward: float) -> void:
