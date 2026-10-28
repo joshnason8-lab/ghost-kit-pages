@@ -60,9 +60,10 @@ func _ready() -> void:
 					kept += 1
 				passes.remove_at(i)
 		var press := ""
-		var order := ["GOAL", "STRIKE", "CATCH", "LIFT", "TACKLE", "LONG"]
+		# An aimed free, 65 or penalty waits for SHOOT (it is never taken for you): stop the target, then the bar.
+		var order := ["SHOOT", "GOAL", "STRIKE", "CATCH", "LIFT", "TACKLE", "LONG"]
 		if mode == "pull":
-			order = ["PULL", "GOAL", "STRIKE", "TACKLE", "LONG"]
+			order = ["SHOOT", "PULL", "GOAL", "STRIKE", "TACKLE", "LONG"]
 		for want in order:
 			if want in ids:
 				press = want
