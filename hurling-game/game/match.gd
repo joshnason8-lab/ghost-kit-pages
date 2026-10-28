@@ -1292,6 +1292,7 @@ func _start_aim(a: Player) -> void:
 	# Over a ball on the grass (a free, a 65, a penalty): he settles beside it, the hurley under it, facing the posts.
 	if not restart.is_empty() and String(restart.kind) in ["free", "65", "penalty"]:
 		var to_goal := Vector3(Pitch.HALF_L * dir(a.team) - spot.x, 0, -spot.z).normalized()
+		a.measure_free_bas()
 		a.global_position = free_stand(spot, a.team)
 		a.vel = Vector3.ZERO
 		a.want_vel = Vector3.ZERO

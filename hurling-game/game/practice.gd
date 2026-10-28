@@ -99,6 +99,7 @@ func _ready() -> void:
 	user_team = 0
 	_set_active(_best_free_taker())
 	taker = active
+	taker.measure_free_bas()
 	# Alone on the pitch: the rest of both sides, the referee and the linesmen out of sight (the umpires stay, at the
 	# goal, for their flags).
 	for q in all_players():

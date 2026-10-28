@@ -417,10 +417,34 @@ const FREE_CLIP := "Free_Strike"
 const FREE_YAW := -65.0
 const FREE_SET := 1.45     # the clip's moment he is settled over the ball
 const FREE_LIFT := 2.05    # where the lift starts (the strike 1.38 s after)
-## Where the sliotar lies from his feet as he settles over it, in his own frame (+Z the way he faces): ahead of
-## him in the clip's own frame, so to his right-front once the clip is turned.
+## Where the sliotar lies from his feet as he settles over it, in his own frame (+Z the way he faces): under the bas
+## of his hurley as he holds it settled (free_set), measured once from a man posed so (measure_free_bas); till then,
+## ahead of him in the clip's own frame.
+static var _free_bas := Vector3.INF
+
+
 static func free_ball_offset() -> Vector3:
+	if _free_bas != Vector3.INF:
+		return _free_bas
 	return Quaternion(Vector3.UP, deg_to_rad(FREE_YAW)) * Vector3(0.05, 0, 0.62)
+
+
+## Poses this man settled over a free for a moment and notes where his bas is, from his feet in his own frame.
+func measure_free_bas() -> void:
+	if _free_bas != Vector3.INF or body == null:
+		return
+	var keep := [action, action_t, visible_on_screen]
+	play("free_set")
+	action_t = 60.0
+	visible_on_screen = true
+	_lod_skip = _pose_every
+	animate(0.0)
+	var b := body.bas_world()
+	var local := Basis(Vector3.UP, yaw).inverse() * (b - global_position)
+	_free_bas = Vector3(local.x, 0.0, local.z)
+	action = keep[0]
+	action_t = keep[1]
+	visible_on_screen = keep[2]
 
 
 func _free_pose(p: Dictionary, name: String, at: float) -> void:
