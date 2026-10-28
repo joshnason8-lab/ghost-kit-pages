@@ -16,7 +16,7 @@
 <!-- 7. WordPress will then import each of the posts, pages, comments, categories, etc. -->
 <!--    contained in this file into your site. -->
 
-	<!-- generator="WordPress/7.1.3" created="2026-10-27 22:54" -->
+	<!-- generator="WordPress/7.1.3" created="2026-10-28 03:27" -->
 <rss version="2.0"
 	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
 	xmlns:content="http://purl.org/rss/1.0/modules/content/"
@@ -29,7 +29,7 @@
 	<title>World Stage Games</title>
 	<link>https://worldstagegames.com</link>
 	<description>Every game deserves a stage.</description>
-	<pubDate>Tue, 27 Oct 2026 22:54:32 +0000</pubDate>
+	<pubDate>Wed, 28 Oct 2026 03:27:19 +0000</pubDate>
 	<language>en-US</language>
 	<wp:wxr_version>1.2</wp:wxr_version>
 	<wp:base_site_url>https://worldstagegames.com</wp:base_site_url>
@@ -2979,8 +2979,8 @@
 		<wp:post_id>67</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 02:56:16]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 02:56:16]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[home]]></wp:post_name>
@@ -3697,15 +3697,15 @@
 
 <!-- wp:group {"align":"wide","layout":{"type":"default"}} -->
 <div class="wp-block-group alignwide"><!-- wp:paragraph {"className":"gk-game__links"} -->
-<p class="gk-game__links"><a href="/games/kabaddi-raid/privacy/">Privacy policy</a> · <a href="/games/kabaddi-raid/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#kabaddi-raid">Press kit</a></p>
+<p class="gk-game__links"><a href="/games/kabaddi-raid/privacy/">Privacy policy</a> · <a href="/games/kabaddi-raid/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#kabaddi-raid">Press kit</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/kabaddi-raid-media/media-kit-kabaddi-raid.zip">Media kit (zip)</a></p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->]]></content:encoded>
 		<excerpt:encoded><![CDATA[Raid, touch and race home in 3D kabaddi. Own a franchise. Win the Nations Cup. Free beta on Android, no ads.]]></excerpt:encoded>
 		<wp:post_id>69</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 03:27:17]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 03:27:17]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[kabaddi-raid]]></wp:post_name>
@@ -3717,7 +3717,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[19df1d761a2bce79e721cf0a5ff1c1d5]]></wp:meta_value>
+		<wp:meta_value><![CDATA[94a5cc9fdaa20dde821fcd0704d0432d]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -10405,7 +10405,7 @@
 
 <!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
-<li><strong>Media kit</strong> (zip, with screenshots, the 1024 px icon, the trailer and the text): coming soon.</li>
+<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/kabaddi-raid-media/media-kit-kabaddi-raid.zip"><strong>Media kit</strong> (zip)</a>: screenshots, menus, the 1024 px icon, the trailer and the text.</li>
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
@@ -10680,8 +10680,8 @@
 		<wp:post_id>99</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 03:27:17]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 03:27:17]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[press-kit]]></wp:post_name>
@@ -10693,7 +10693,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[45f02c2ac4ac497abcf937cc7289050a]]></wp:meta_value>
+		<wp:meta_value><![CDATA[ffc77e7b33c2a7e1a10352e3c35e294b]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>

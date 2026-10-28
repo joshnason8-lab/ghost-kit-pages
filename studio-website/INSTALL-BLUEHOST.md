@@ -152,8 +152,7 @@ Each game is building a media kit: a trailer, screenshots, menus, a 1024 px icon
 
 1. Download the trailers from
    [`studio-website/dist/trailers/`](https://github.com/joshnason8-lab/ghost-kit-pages/tree/claude/studio-website/studio-website/dist/trailers).
-   These are web-sized versions (720p, about 5–9 MB each) of the trailers in the games' media kits: every game except
-   Kabaddi Raid, whose kit isn't out yet.
+   These are web-sized versions (720p, about 5–9 MB each) of the trailers in all seven games' media kits.
 2. Go to **Media > Add New Media File** and drop them in. Keep the file names, for example
    `netball-unleashed-trailer.mp4`.
 3. Go to **Appearance > Site setup** and press **Set up the site**.
@@ -175,13 +174,7 @@ game's Play Store screenshots. To change one:
 1. Click it, then **Replace**.
 2. Upload the new picture and write its **Alternative text**, a few words on what it shows.
 
-**Media kit links**: six games' media kits are already linked, on the Press kit page and on each game's page. Kabaddi
-Raid shows "Media kit … coming soon". When the release `kabaddi-raid-media` exists on GitHub:
-
-1. Open **Pages > Press kit**.
-2. Select the words "Media kit" for that game, press the link button, and paste the zip's download address from the
-   release.
-3. Delete "coming soon".
+**Media kit links**: all seven games' media kits are linked, on the Press kit page and on each game's page.
 
 **Google Play**: when a game is live on Play, open its page and change "Coming soon to Google Play" into a button
 linking to `https://play.google.com/store/apps/details?id=<app id>`. The app IDs are below and on the Press kit page.
