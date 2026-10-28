@@ -154,16 +154,14 @@ Each game is building a media kit: a trailer, screenshots, menus, a 1024 px icon
    [`studio-website/dist/trailers/`](https://github.com/joshnason8-lab/ghost-kit-pages/tree/claude/studio-website/studio-website/dist/trailers).
    These are web-sized versions (720p, about 5–9 MB each) of the trailers in all seven games' media kits.
 2. Go to **Media > Add New Media File** and drop them in. Keep the file names, for example
-   `netball-unleashed-trailer.mp4`.
-3. Go to **Appearance > Site setup** and press **Set up the site**.
+   `netball-unleashed-trailer.mp4`. A copy WordPress renames, such as `netball-unleashed-trailer-1.mp4`, works too.
 
-Site setup puts each trailer on its game's page as a video player, with the title art as its cover. Nothing loads
-until the visitor presses play. If you have edited a game page, Site setup leaves it alone; add the video by hand
-instead:
+That's all. Each game's page shows its trailer as soon as the file is in the Media Library. You don't need Site
+setup, and it works on pages you have edited. The title art is the cover, and nothing loads until the visitor presses
+play. Delete a trailer from the Media Library and its page goes back to "Trailer coming soon".
 
-1. Click the title picture and delete it.
-2. Add a **Video** block in its place and choose the trailer.
-3. Delete the "Trailer coming soon" label.
+If a page still shows "Trailer coming soon" after the upload, clear the site's cache (Bluehost's **Caching** settings,
+or the caching plugin's "purge" button), then reload the page.
 
 A video on your own site keeps the privacy page true. If you put a game trailer on YouTube and use a **YouTube**
 block instead, add a sentence about it to the **Privacy policy** page.

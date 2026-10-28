@@ -139,17 +139,30 @@ function ghostkit_fill_tokens( $content, $ids ) {
  * The game's trailer, if a video named <game>-trailer….mp4 is in the Media Library: its attachment ID, or 0.
  */
 function ghostkit_trailer_id( $game ) {
-	$videos = get_posts(
-		array(
-			'post_type'      => 'attachment',
-			'post_status'    => 'inherit',
-			'post_mime_type' => 'video',
-			'posts_per_page' => -1,
-			'fields'         => 'ids',
-		)
-	);
-	foreach ( $videos as $id ) {
-		if ( str_starts_with( basename( (string) get_attached_file( $id ) ), $game . '-trailer' ) ) {
+	static $videos = null;
+	if ( null === $videos ) {
+		$videos = array();
+		$ids    = get_posts(
+			array(
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'post_mime_type' => 'video',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+			)
+		);
+		foreach ( $ids as $id ) {
+			// The file name, or the title WordPress gave it (the file name without ".mp4"), in lower case.
+			$videos[ $id ] = strtolower( basename( (string) get_attached_file( $id ) ) . ' ' . get_the_title( $id ) );
+		}
+	}
+	// "hurling-heroes-trailer.mp4", and also "hurling-heroes-trailer-1.mp4" or "Hurling Heroes trailer" after a
+	// rename, but not a vertical or social cut.
+	$name = implode( '[- _]', array_map( 'preg_quote', explode( '-', $game ) ) );
+	foreach ( $videos as $id => $label ) {
+		if ( preg_match( '/' . $name . '[- _]trailer/', $label ) && ! preg_match( '/vertical|social|1080x1920/', $label ) ) {
 			return (int) $id;
 		}
 	}

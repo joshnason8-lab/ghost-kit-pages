@@ -389,3 +389,7 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 .gk-hero__bg { display: none !important; }
 /* WordPress spaces the page's main area 24 px below the header; when the page opens with the hero, close that gap. */
 .gk-main:has(> .wp-block-post-content > .gk-hero:first-child) { margin-top: 0 !important; }
+
+/* A game's trailer fills its slot at 16:9; the title art is its cover until play is pressed. */
+.gk-trailer .wp-block-video { margin: 0; }
+.gk-trailer video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; object-fit: contain; }
