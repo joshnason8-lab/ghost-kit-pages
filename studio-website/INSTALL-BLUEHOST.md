@@ -290,7 +290,7 @@ All under `https://worldstagegames.com`:
 | Address | Page |
 |---|---|
 | `/` | Home |
-| `/games/` | Games (all seven, the betas, every policy) |
+| `/games/` | Games (all seven, and every policy) |
 | `/games/<game>/` | One page per game |
 | `/games/<game>/privacy/` | That game's privacy policy |
 | `/games/<game>/support/` | That game's help and support |

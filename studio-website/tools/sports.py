@@ -169,7 +169,7 @@ def page_sport(meta, game):
         image(s + "-screenshot-1", "In-game: " + _shot_alt(s), size="large",
               caption="In-game: %s, from the Android beta." % esc(game["name"])),
         paragraph("<strong>%s</strong>: %s" % (esc(game["name"]), esc(game["short_description"]))),
-        buttons([("Play %s →" % esc(game["name"]), game["url"], None), ("Join the beta", game["beta_url"], "outline")]),
+        buttons([("See %s →" % esc(game["name"]), game["url"], None)]),
     ], cls="gk-play-cta", layout={"type": "default"}))
     out.append(heading(2, "Sources"))
     out.append(lst(['<a href="%s">%s</a>' % (esc_attr(x["url"]), esc(x["title"])) for x in meta.get("sources", [])],

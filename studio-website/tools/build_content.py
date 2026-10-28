@@ -165,12 +165,11 @@ def play_band():
     return group([
         stack([
             heading(2, "Coming soon to Google Play", cls="gk-band__title"),
-            paragraph("Every game is in beta on Android now. Try one and tell us what you think.", cls="gk-muted"),
+            paragraph("Every game is in beta on Android now, getting ready for Google Play.", cls="gk-muted"),
         ]),
         row([
             raw_html('<p class="gk-play-badge"><span class="gk-play-badge__icon" aria-hidden="true">▶</span>'
                      '<span><small>Coming soon on</small> <strong>Google Play</strong></span></p>'),
-            buttons([("Join the beta", "/games/#beta", "outline")]),
         ], cls="gk-band__actions"),
     ], cls="gk-band", align="wide", layout={"type": "flex", "flexWrap": "wrap", "justifyContent": "space-between"})
 
@@ -196,38 +195,12 @@ def why_tiles():
     ], cls="gk-why", align="wide", layout={"type": "default"})
 
 
-def beta_section(games):
-    items = []
-    for g in games:
-        extra = ""
-        if g["web"]:
-            extra = ' Or play it in a web browser on an iPhone, iPad or computer: <a href="%s">%s</a>.' % (
-                g["web"], g["web"].replace("https://", ""))
-        items.append('<a href="%s">%s beta</a> (Android).%s' % (g["beta_url"], esc(g["name"]), extra))
-    return group([
-        heading(2, "Try the betas", anchor="beta"),
-        paragraph("The games are in beta on Android while they get ready for Google Play. Each beta is a free download "
-                  "from the game's page on GitHub."),
-        lst(items),
-        heading(3, "How to install a beta"),
-        lst([
-            "On your Android phone, open the game's beta link above.",
-            "Under <strong>Assets</strong>, tap the file ending in <code>.apk</code> to download it. On an older or "
-            "Android Go phone, Hurling Heroes and Pok Ta Pok Rivals also have a file ending in <code>-32bit.apk</code>.",
-            "Open the download. If your phone asks, allow your browser (or Files) to install unknown apps. If Play "
-            "Protect warns you, tap <strong>More details</strong>, then <strong>Install anyway</strong>.",
-        ], ordered=True),
-        paragraph("A beta is a separate install from the Google Play version. When a game comes to Google Play you may "
-                  "need to uninstall its beta first, and that deletes the beta's saves.", cls="gk-muted"),
-    ], cls="gk-beta", layout={"type": "constrained"})
-
-
 # ---------------------------------------------------------------------------------------------------------- pages
 
 def page_home(games):
     stats = row([
         paragraph("<strong>7</strong> Games", cls="gk-stat"),
-        paragraph("<strong>54</strong> Languages across the games", cls="gk-stat"),
+        paragraph("<strong>54</strong> Languages", cls="gk-stat"),
         paragraph("<strong>0</strong> Ads", cls="gk-stat"),
         paragraph("<strong>0</strong> Personal data collected", cls="gk-stat"),
     ], cls="gk-stats")
@@ -238,7 +211,7 @@ def page_home(games):
                        'class="has-inline-color has-accent-color">actually plays.</mark>', cls="gk-hero__title"),
             paragraph("Kabaddi, hurling, sepak takraw, kho kho, netball, floorball and the Mesoamerican ballgame, played "
                       "the way they are really played, on phones of every budget.", cls="gk-lead"),
-            buttons([("Browse the games →", "/games/", None), ("Join the beta", "/games/#beta", "outline")]),
+            buttons([("Browse the games →", "/games/", None), ("Explore the sports", "/sports/", "outline")]),
             stats,
         ], cls="gk-hero__content", align="wide", layout={"type": "default"}),
     ], cls="gk-hero", align="full", layout={"type": "constrained"})
@@ -248,8 +221,8 @@ def page_home(games):
 def page_games(games):
     intro = group([
         heading(1, "The games", cls="gk-page-title"),
-        paragraph("Seven sports, each made for phones and played to its own rules. Every game is free to try in beta on "
-                  "Android, plays offline, and has no ads.", cls="gk-lead"),
+        paragraph("Seven sports, each made for phones and played to its own rules. Every game plays offline and has no "
+                  "ads, and all seven are coming to Google Play.", cls="gk-lead"),
     ], align="wide", layout={"type": "default"})
     policies = group([
         heading(2, "Privacy and help"),
@@ -259,15 +232,12 @@ def page_games(games):
     ], layout={"type": "constrained"})
     return "\n\n".join([intro, games_grid(games, cls="gk-games--page").replace(
         heading(2, "Our games", anchor="games"), heading(2, "All seven", anchor="games")),
-        beta_section(games), policies, play_band()])
+        policies, play_band()])
 
 
 def page_game(g, kits=None):
     s = g["slug"]
     pills = [g["card_players"], langs_label(g), "Offline", "No ads"] + (["HD pack"] if g["hd"] else [])
-    actions = [("Join the beta", g["beta_url"], None)]
-    if g["web"]:
-        actions.append(("Play in your browser", g["web"], "outline"))
     offline = "Yes" if not g["hd"] else "Yes (the optional HD pack downloads over the internet)"
     perms = "Vibration" if not g["hd"] else "Vibration; internet, only to download the HD pack"
     facts = [
@@ -279,7 +249,7 @@ def page_game(g, kits=None):
         ("Plays offline", esc(offline)),
         ("Android", esc(g["min_android"].replace("+", " or later")) if g["min_android"] else "TBC"),
         ("Permissions", esc(perms)),
-        ("Status", "Beta" + (" on Android and in the browser" if g["web"] else " on Android") + " · Google Play coming soon"),
+        ("Status", "In beta · Google Play coming soon"),
     ]
     # Site setup swaps the part between the markers for a video player once <game>-trailer.mp4 is in the Media Library.
     left = [
@@ -298,7 +268,6 @@ def page_game(g, kits=None):
         ], cls="gk-game__head", wrap=False),
         lst([esc(p) for p in pills], cls="gk-pills"),
     ] + [paragraph(esc(d), cls="gk-desc") for d in g["description"]] + [
-        buttons(actions, cls="gk-game__cta"),
         paragraph('<span aria-hidden="true">▶</span> Coming soon to Google Play', cls="gk-soon"),
         table(facts, cls="gk-facts gk-facts--grid"),
     ]
@@ -363,17 +332,23 @@ def page_privacy(g):
     for h, bs in p["sections"]:
         out.append(heading(2, esc(h)))
         out += _blocks(bs)
-    return "\n\n".join(out), p
+    # The policy still describes the browser version (word for word), but without a link to it until it is public.
+    body = re.sub(r'<a href="https://kabaddi-raid-beta\.netlify\.app"[^>]*>(.*?)</a>', r"\1", "\n\n".join(out))
+    return body, p
 
 
 def page_support(g):
     sup = sources.support(g["slug"], g["name"])
+    blocks = list(sup["blocks"])
+    # The browser version isn't public yet: leave out the help's answer that links to it.
+    for i, b in enumerate(blocks):
+        if b[0] == "h3" and "iPhone version" in b[1]:
+            del blocks[i:i + 2]
+            break
+    assert not any("netlify" in str(b) for b in blocks), g["slug"]
     out = [paragraph("Help for %s. The same help is in the game: Settings &gt; About &gt; Help." % esc(g["name"]),
                      cls="gk-note")]
-    out += _blocks(sup["blocks"])
-    out.append(heading(2, "Beta downloads"))
-    beta = 'The Android beta is on <a href="%s">the game\'s release page on GitHub</a>.' % g["beta_url"]
-    out.append(paragraph(beta + ' <a href="/games/#beta">How to install a beta</a>.'))
+    out += _blocks(blocks)
     out.append(paragraph('<a href="%sprivacy/">Privacy policy</a> · <a href="%s">About the game</a>' % (g["url"], g["url"]),
                          cls="gk-game__links"))
     return "\n\n".join(out), sup
@@ -475,8 +450,8 @@ def page_about(games):
             "games play offline.",
         ]),
         heading(2, "Where the games are"),
-        paragraph('All seven are in beta on Android, and they are coming to Google Play. <a href="/games/#beta">Try a '
-                  'beta</a>, or read about <a href="/games/">the games</a>.'),
+        paragraph('All seven are in beta on Android, and they are coming to Google Play. Read about '
+                  '<a href="/games/">the games</a>.'),
         heading(2, "Get in touch"),
         paragraph('E-mail <a href="mailto:%s">%s</a>. For press, see the <a href="/press-kit/">press kit</a>.' % (
             EMAIL, EMAIL)),
@@ -501,8 +476,6 @@ def page_contact(games):
             "what happened, and what you were doing just before.",
         ]),
         paragraph("A screenshot helps. We read everything."),
-        heading(2, "The betas"),
-        paragraph('How to install a beta, and the download for each game: <a href="/games/#beta">Try the betas</a>.'),
         heading(2, "Suggest a sport", anchor="suggest"),
         paragraph('Which sport should we make next? <a href="mailto:%s?subject=Sport%%20suggestion">Tell us</a>.' % EMAIL),
         heading(2, "Press"),
@@ -521,7 +494,7 @@ def page_press(games, kits):
             ("Games", "7 mobile sports games"),
             ("Made by", "Josh Nason, an independent developer"),
             ("Engine", "Godot Engine"),
-            ("Platform", "Android (beta now; Google Play coming soon). Kabaddi Raid also plays in a web browser."),
+            ("Platform", "Android (in beta now; Google Play coming soon)"),
             ("Business model", "Free. No ads, no in-app purchases, no personal data collected."),
             ("Languages", "54 across the seven games"),
             ("Contact", '<a href="mailto:%s">%s</a>' % (EMAIL, EMAIL)),
@@ -549,7 +522,7 @@ def page_press(games, kits):
                 'art</a> (1024 × 500)' % (s, s),
                 "Screenshots (1280 × 720): " + " · ".join(
                     '<a href="%%%%URL:%s-screenshot-%d:full%%%%">%d</a>' % (s, i, i) for i in range(1, 5)),
-                '<a href="%s">Game page</a> · <a href="%s">Android beta</a>' % (g["url"], g["beta_url"]),
+                '<a href="%s">Game page</a>' % g["url"],
             ]),
             table([
                 ("Sport", esc(g["sport"])),
@@ -586,9 +559,9 @@ def build():
         "ballgame. Real rules, every phone, no ads.", template="", order=0)
     add("games", "Games", page_games(games),
         "All seven games: Kabaddi Raid, Hurling Heroes, Sepak Takraw Unleashed, Netball Unleashed, Kho Kho Rush, "
-        "Floorball Unleashed and Pok Ta Pok Rivals. Free betas on Android.", template="page-wide", order=1)
+        "Floorball Unleashed and Pok Ta Pok Rivals. Coming soon to Google Play.", template="page-wide", order=1)
     for i, g in enumerate(games):
-        add("games/" + g["slug"], g["name"], page_game(g, kits), g["short_description"] + " Free beta on Android, no ads.",
+        add("games/" + g["slug"], g["name"], page_game(g, kits), g["short_description"] + " No ads. Coming soon to Google Play.",
             template="page-wide", og=g["slug"], order=i)
         content, p = page_privacy(g)
         add("games/%s/privacy" % g["slug"], "%s privacy policy" % g["name"], content,
