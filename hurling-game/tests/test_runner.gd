@@ -1219,6 +1219,10 @@ func _aimed_shots() -> void:
 		m.placed_aim._place()
 		var at: Vector3 = m.placed_aim.target()
 		m._on_action("SHOOT")
+		var barred: bool = m.placed_aim.stopped and not m.placed_aim.fired and m.user_buttons() == ["SHOOT"]
+		m.placed_aim.bar_x = 0.0
+		m._on_action("SHOOT")
+		check(barred and m.placed_aim.fired, "Aimed %s: the first SHOOT stops the target and starts the bar, the second strikes" % c[0])
 		f = 0
 		while f < 30 * 8 and (m.placed_aim != null or m.phase == m.P.LIVE):
 			await frames(1)
@@ -1230,6 +1234,21 @@ func _aimed_shots() -> void:
 			c[0], c[2], at.y, absf(at.z), got])
 		m.queue_free()
 		await frames(2)
+	# The bar: in the green the sliotar goes where the target stopped; off either end, well wide that side.
+	var b := PlacedAim.new()
+	add_child(b)
+	var brng := RandomNumberGenerator.new()
+	b.setup(Vector3(Pitch.HALF_L - 40.0, 0, 0), Vector3(Pitch.HALF_L - 41.0, 0, 0), 1.0, 0.7, brng)
+	var mid := Vector3(Pitch.HALF_L, 5.5, 0.0)
+	var r_end: Vector3 = b.strike_point(mid, 1.0)
+	var l_end: Vector3 = b.strike_point(mid, -1.0)
+	var edge: Vector3 = b.strike_point(mid, PlacedAim.GREEN - 0.01)
+	check(b.strike_point(mid, 0.0) == mid and edge == mid and PlacedAim.zone(r_end) == "wide" and PlacedAim.zone(l_end) == "wide"
+		and signf(r_end.z) == -signf(l_end.z) and absf(r_end.z - mid.z) > 6.0,
+		"Aimed shots: the bar's green keeps the target's spot; off its ends the sliotar goes %.1f m to one side, %.1f m to the other" % [r_end.z, l_end.z])
+	# Screen right is the taker's right: from behind him at +x, looking at the goal at +x, his right is +z.
+	check(r_end.z > 0.0, "Aimed shots: off the bar's right end, wide on the right of the screen (%.1f)" % r_end.z)
+	b.queue_free()
 	# Speed: through the goal faster than between the posts.
 	var a := PlacedAim.new()
 	add_child(a)
@@ -1244,11 +1263,15 @@ func _aimed_shots() -> void:
 	check(steps.point > steps.goal * 2, "Aimed shots: the target lingers between the posts (%d steps) and hurries through the goal (%d)" % [steps.point, steps.goal])
 
 
-## Free-taking practice (game/practice.gd): ten frees, each aimed by timing; a point over the bar one, wide nothing;
-## the score kept as the best; the match's pause menu without substitutions or tactics.
+## Free-taking practice (game/practice.gd): ten frees, each aimed by timing and struck off the bar; a goal into the
+## net (no goalkeeper), a point over the bar flying on to land, a miss off the bar's end or outside the posts; the
+## taker alone on the pitch, swinging every time, under the practice's own low camera throughout; High graphics while
+## it lasts and the player's own after; the score kept as the best; the pause menu without substitutions or tactics.
 func _practice_frees() -> void:
 	var kept := int(Game.settings.get("practice_best", -1))
+	var kept_gfx := int(Game.settings.graphics)
 	Game.settings.practice_best = -1
+	Game.settings.graphics = Game.GFX_LOW
 	var m: Node = load("res://game/practice.gd").new()
 	m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": 0, "seed": 7, "mode": "practice"}
 	m.set_meta("test", true)
@@ -1260,23 +1283,54 @@ func _practice_frees() -> void:
 	check(m.phase == m.P.SHOOTOUT and m.taker == m.active and String(m.taker.data.id) == String(DB.free_taker("KIL").id)
 		and (m.practice.spots as Array).size() == m.FREES and on_pitch and not m.hud._bug.visible,
 		"Practice: the county's free-taker over the ball, ten spots on the pitch, the practice panel for the scorebug")
-	# Eight aimed over the bar between the posts, then two out wide.
+	var seen := 0
+	for q in m.all_players():
+		seen += 1 if (q as Player).visible else 0
+	check(seen == 1 and m.taker.visible and not m.keeper_of(1).visible and not m.officials.referee.visible,
+		"Practice: the taker alone on the pitch (%d players seen), no goalkeeper, no referee" % seen)
+	check(int(Game.settings.graphics) == Game.GFX_HIGH and m.get_viewport().get_camera_3d() == m.view,
+		"Practice: High graphics while it lasts, and its own low camera")
+	# A goal first (low in the middle of the net), seven between the posts over the bar with the bar in the green,
+	# one off the bar's right end, one outside the posts.
 	var aimed := 0
+	var swung := 0
+	var own_cam := true
+	var net_ok := false
+	var landed := 0
 	for i in m.FREES:
 		var f := 0
 		while m.placed_aim == null and f < 30 * 12:
 			await frames(1)
+			own_cam = own_cam and m.get_viewport().get_camera_3d() == m.view
 			f += 1
 		if m.placed_aim == null or m.user_buttons() != ["SHOOT"]:
 			break
 		aimed += 1
-		m.placed_aim.angle = PI * 0.5 if i < 8 else 0.0
+		m.placed_aim.angle = PI * 1.5 if i == 0 else (PI * 0.5 if i < 9 else 0.0)
 		m.placed_aim._place()
 		m._on_action("SHOOT")
+		m.placed_aim.bar_x = 1.0 if i == 8 else 0.0
+		m._on_action("SHOOT")
 		f = 0
+		var struck := false
 		while String(m.practice.state) != "done" and String(m.practice.state) != "over" and f < 30 * 12:
 			await frames(1)
+			struck = struck or (m.taker.action == "strike" and m.taker.visible_on_screen)
+			own_cam = own_cam and m.get_viewport().get_camera_3d() == m.view
 			f += 1
+		swung += 1 if struck else 0
+		# The sliotar flies on after the result and comes down (the goal's into the net), not held in the air.
+		var at_result: Vector3 = m.ball.global_position
+		f = 0
+		while String(m.practice.state) == "done" and f < 45:
+			await frames(1)
+			own_cam = own_cam and m.get_viewport().get_camera_3d() == m.view
+			f += 1
+		var after: Vector3 = m.ball.global_position
+		if i == 0:
+			net_ok = absf(after.x) > Pitch.HALF_L and absf(after.x) < Pitch.HALF_L + Pitch.NET_DEPTH + 0.3 and absf(after.z) < Pitch.POST_GAP * 0.5 + 0.3 and after.y < 1.0
+		elif i < 8 and after.distance_to(at_result) > 2.0 and after.y < 3.0:
+			landed += 1
 		f = 0
 		while m.placed_aim != null and f < 30 * 6:
 			await frames(1)
@@ -1289,20 +1343,25 @@ func _practice_frees() -> void:
 	var pts := marks.count("P") + marks.count("G") * 3
 	check(aimed == m.FREES and marks.size() == m.FREES and String(m.practice.state) == "over" and int(m.practice.points) == pts,
 		"Practice: ten frees aimed and taken, the score adds up (%s, %d)" % [marks, int(m.practice.points)])
-	check(marks.slice(0, 8).count("P") >= 7 and marks.slice(8).count("P") == 0,
-		"Practice: aimed between the posts over the bar, points; aimed outside the posts, none (%s)" % [marks])
+	check(String(marks[0]) == "G" and net_ok, "Practice: a shot low in the middle of the goal is a goal, the sliotar in the net (%s)" % [marks])
+	check(marks.slice(1, 8).count("P") >= 6 and String(marks[8]) != "P" and String(marks[9]) != "P",
+		"Practice: aimed between the posts over the bar with the bar in the green, points; off the bar's end or outside the posts, none (%s)" % [marks])
+	check(swung == m.FREES and own_cam, "Practice: the taker swings at every free (%d of %d), the practice's camera throughout" % [swung, m.FREES])
+	check(landed >= 6, "Practice: after a point the sliotar flies on and comes down behind the goal (%d of 7)" % landed)
 	check(int(Game.settings.practice_best) == int(m.practice.points) and m.hud._card != null,
 		"Practice: the score kept as the best, the card with Go again at the end")
 	m.set_paused(true)
 	var labels := []
-	for b in m.hud._pause.find_children("*", "Button", true, false):
-		labels.append((b as Button).text)
+	for bt in m.hud._pause.find_children("*", "Button", true, false):
+		labels.append((bt as Button).text)
 	check(not tr("TACTICS") in labels and not tr("SIM_TO_END") in labels and tr("PRACTICE_RESTART") in labels and tr("PRACTICE_QUIT") in labels,
 		"Practice: the pause menu has Start again and Leave, no tactics or substitutions (%s)" % [labels])
 	m.set_paused(false)
 	m.queue_free()
 	await frames(2)
+	check(int(Game.settings.graphics) == Game.GFX_LOW, "Practice: the player's own graphics back after it (%d)" % int(Game.settings.graphics))
 	Game.settings.practice_best = kept
+	Game.settings.graphics = kept_gfx
 
 
 ## The championship as the owner asked: your own game simulated (and every game left), a match left for the menu

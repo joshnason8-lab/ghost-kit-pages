@@ -250,6 +250,34 @@ posts; SHOOT stops it, and that is where the ball goes.
 - Tests: a point, a wide, a 65 and a penalty aimed and struck through the match, back to the match camera after each;
   the target lingers between the posts and hurries through the goal. How to Play's controls say how.
 
+## Done (0.14.0-beta, free-taking fixes and the accuracy bar, 28 October 2026)
+
+The owner's list on free-taking: no wide camera and running officials after a shot; a better taker up close; no
+goalkeeper; the ball into the net; the taker not swinging half the time; the ball landing, not frozen, and the next
+shot sooner; a second layer of accuracy, a bar moving left to right, red at the ends and green in the middle, the
+ball going to the side it is stopped on, "how you hit free taking during penalties in game too"; a better net; the
+mode on graphics as high as possible with smooth movement.
+
+- `game/placed_aim.gd`: after the target stops, the bar (under the HUD's SHOOT, across the bottom of the screen):
+  its marker runs end to end in 1.6 s close in to 1.1 s from 65 m (a good free-taker's a little slower); the green is
+  the middle 17% each side. Out of the green the sliotar goes to that side of the screen, up to 2.5 m plus a ninth of
+  the distance at the bar's end, and a little lower. Left alone it stops after 6 s. Frees, 65s and penalties in
+  matches and in practice. `low_view()`: the low camera's place, shared with practice.
+- `match.gd`: players are posed by the camera in use (the low one while aiming), not always the match camera: the
+  taker stood frozen through his strike whenever the match camera looked elsewhere. A goal's sliotar ripples the net.
+- `game/practice.gd`: its own low camera all through (cut to each new spot 2.5 m back, easing in as he walks up; the
+  HUD's camera button gone); the other 29 players, the referee and the linesmen hidden (the umpires stay for their
+  flags), so no goalkeeper; over the end line the sliotar flies on (Sliotar.OUT: into the net or down behind the
+  goal); 2.2 s from the result to the next free; High graphics and the smooth frame rate from before the scene is
+  built, the player's own back when it ends (and never saved in between). The practice screen suggests the HD pack
+  where the phone can have it.
+- `game/goal_net.gd`: the nets as a mesh of 25 cm squares (the back sagging, the sides drawn in) with the diamond
+  cords and knots drawn in the shader (crisp near, fading to grey far off), a white frame (stadium.gd), and a ripple
+  where a sliotar goes in. Matches too.
+- Tests: the bar's green keeps the target's spot and its ends go wide to the right side of the screen; every aimed
+  shot takes two SHOOTs; in practice the taker alone, swinging at every free, the practice's camera throughout, a
+  goal ending in the net, points flying on and landing, High while it lasts and the player's own graphics after.
+
 ## Done (0.13.0-beta, free-taking practice, 27 October 2026)
 
 The owner: "Build a mini game that can be played where you can practice your free hits or whatever they are called,

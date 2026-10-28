@@ -9,6 +9,22 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.14.0
+
+- **Aimed frees, 65s and penalties have a second tap**: after SHOOT stops the target, a bar runs from side to side
+  under it, red at the ends and green in the middle. SHOOT again with the marker in the green and the sliotar goes
+  where the target stopped; out towards the red it goes off that side, further the further out. In free-taking
+  practice and in matches alike.
+- **Free-taking practice, closer and cleaner**: the camera stays low behind your free-taker the whole time (no cut
+  to the wide camera after a shot), easing in as he walks up to each ball; he is alone on the pitch but for the
+  umpires (no goalkeeper, no referee and linesmen running about); the sliotar flies on over the bar or into the net
+  and lands instead of stopping in the air, and the next free comes sooner. It draws on High with a smooth frame
+  rate whatever Settings says (your own settings come back after it), with the HD pack's hurler if you have it.
+- **He swings every time**: a man the match camera was not looking at was not being posed, so while you aimed from
+  the low camera your taker sometimes stood still through the strike. In matches too.
+- **New goal nets**: a fine diamond mesh of white cord with knots, sagging a little, on a white frame, and the net
+  shakes where the sliotar hits it.
+
 ## New in 0.13.0
 
 - **Free-taking practice** (the home screen's fourth row): your county's free-taker takes ten frees and 65s at the

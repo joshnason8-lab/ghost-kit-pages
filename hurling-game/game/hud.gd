@@ -26,6 +26,7 @@ var _card: Control
 var _shoot: Control
 var _bug: Control              # the scorebug, top left (hidden in free-taking practice)
 var _practice: Control         # free-taking practice: the free, the score, the marks (in the scorebug's place)
+var _cam_button: Control       # the match cameras (none in free-taking practice: its camera is its own)
 var _intro: Control
 var _intro_t := 0.0
 var _dev: Label
@@ -103,7 +104,8 @@ func setup(p_match: Node) -> void:
 	box.alignment = BoxContainer.ALIGNMENT_END
 	box.add_theme_constant_override("separation", 12)
 	root.add_child(box)
-	box.add_child(UI.round_button("camera", func(): _next_camera(), 60))
+	_cam_button = UI.round_button("camera", func(): _next_camera(), 60)
+	box.add_child(_cam_button)
 	box.add_child(UI.round_button("pause", func(): m.set_paused(not m.paused), 60))
 	_build_coach()
 	_dev = UI.label("", "MutedLabel", 15, Game.C_GOLD)
@@ -742,6 +744,7 @@ func shootout(so: Dictionary) -> void:
 func practice(st: Dictionary, first := false) -> void:
 	if first:
 		_bug.visible = false
+		_cam_button.visible = false
 		if _intro != null and is_instance_valid(_intro):
 			_intro.queue_free()
 			_intro = null

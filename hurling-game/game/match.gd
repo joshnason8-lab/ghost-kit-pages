@@ -123,6 +123,7 @@ func _ready() -> void:
 	add_child(stadium)
 	ball = Sliotar.new()
 	ball.backstop = stadium.backstop()
+	ball.net_hit.connect(func(p: Vector3, v: Vector3): stadium.net.ripple(p, v))
 	add_child(ball)
 	ball.place(Vector3.ZERO)
 	_make_teams()
@@ -650,7 +651,12 @@ func _after(t: float, f: Callable) -> void:
 ## Every player moved once a frame (Player.integrate is the only writer of a player's position), then posed. Players
 ## the camera cannot see are not posed; far ones every second or third frame.
 func _move_all(dt: float) -> void:
-	var camp: Vector3 = cam.camera.global_position
+	# The camera showing now (the low one behind a free's taker while he aims and strikes, else the match's): a man
+	# out of its view is not posed, so it must be the one in use, or the taker froze when the match camera looked away.
+	var view: Camera3D = get_viewport().get_camera_3d()
+	if view == null:
+		view = cam.camera
+	var camp: Vector3 = view.global_position
 	var low := int(Game.settings.graphics) == Game.GFX_LOW
 	for pl in all_players() + officials.people:
 		var p: Player = pl
@@ -658,7 +664,7 @@ func _move_all(dt: float) -> void:
 			continue
 		p.integrate(dt, now)
 		var d := p.global_position.distance_to(camp)
-		p.visible_on_screen = cam.camera.is_position_in_frustum(p.global_position + Vector3(0, 1, 0)) or d < 12.0
+		p.visible_on_screen = view.is_position_in_frustum(p.global_position + Vector3(0, 1, 0)) or d < 12.0
 		p.set_pose_rate(1 if d < 60.0 else (2 if d < 95.0 or not low else 3))
 		p.animate(now)
 	for g in _leaving.duplicate():
@@ -1215,7 +1221,7 @@ func _start_aim(a: Player) -> void:
 	var spot: Vector3 = restart.spot if not restart.is_empty() else ball.global_position
 	placed_aim = PlacedAim.new()
 	add_child(placed_aim)
-	placed_aim.setup(spot, a.global_position, dir(a.team), float(a.data.get("free", 70)) / 100.0, rng)
+	placed_aim.setup(spot, a.global_position, dir(a.team), float(a.data.get("free", 70)) / 100.0, rng, _aim_view())
 	placed_aim.shot.connect(func(p: Vector3):
 		_aim_point = p
 		if phase == P.SHOOTOUT:
@@ -1224,6 +1230,11 @@ func _start_aim(a: Player) -> void:
 			_take_restart(taker, "AIMED"))
 	placed_aim.done.connect(_end_aim)
 	Game.haptic("free")
+
+
+## The camera an aimed shot uses (null: it makes its own low one; free-taking practice has its own all along).
+func _aim_view() -> Camera3D:
+	return null
 
 
 func _end_aim() -> void:
@@ -2680,7 +2691,7 @@ func user_buttons() -> Array:
 	if user_team < 0 or active == null or not controls.visible:
 		return []
 	if placed_aim != null:
-		return [] if placed_aim.stopped else ["SHOOT"]
+		return [] if placed_aim.fired else ["SHOOT"]
 	var a := active
 	var b := ball.global_position
 	if phase == P.SET and a == taker:

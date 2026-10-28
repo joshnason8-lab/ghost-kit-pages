@@ -16,6 +16,7 @@ const ROLL_DECEL := 2.6       # m/s^2 on the ground
 const LOOK_SCALE := 2.2
 
 enum {FREE, HELD, ON_STICK, DEAD, OUT}   # OUT: dead, but still flying on (over the end line into a net)
+signal net_hit(pos: Vector3, vel: Vector3)   # into a goal's net (the stadium's GoalNet ripples there)
 
 ## What stops a ball over the end line, set by the ground (Stadium.backstop): the goal's net (sloping back from the bar
 ## to the ground Pitch.NET_DEPTH behind the line) and, further back, the ball-stop net or the terrace: [distance behind the line, half its
@@ -294,6 +295,7 @@ func _nets() -> void:
 	# The goal net slopes from the crossbar down to the ground NET_DEPTH behind the line.
 	var depth := maxf(0.3, Pitch.NET_DEPTH * (1.0 - clampf(p.y / Pitch.BAR_H, 0.0, 1.0)))
 	if in_mouth and past > depth and was <= depth + 0.6:
+		net_hit.emit(Vector3(s * (Pitch.HALF_L + depth), p.y, p.z), vel)
 		_net_hit(s * (Pitch.HALF_L + depth))
 	elif past > backstop.x and was <= backstop.x + 0.05 and absf(p.z) < backstop.y and p.y < backstop.z:
 		_net_hit(s * (Pitch.HALF_L + backstop.x))

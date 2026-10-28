@@ -352,8 +352,9 @@ func goto_menu() -> void:
 
 
 ## config keys: home, away (team ids), venue (DB.VENUES id), user_team (0, 1 or -1 for none), mode ("quick"|"champ"
-## |"watch"|"practice": free-taking, game/practice.gd), stage (a line naming the game: "Semi-final"), knockout (bool: a draw goes to extra time), half (minutes
-## of the clock in a half), length (real minutes the match takes), seed, difficulty.
+## |"watch"|"practice": free-taking, game/practice.gd), stage (a line naming the game: "Semi-final"), knockout (bool:
+## a draw goes to extra time), half (minutes of the clock in a half), length (real minutes the match takes), seed,
+## difficulty.
 func start_match(config: Dictionary) -> void:
 	var s: Script = load("res://game/practice.gd" if String(config.get("mode", "")) == "practice" else "res://game/match.gd")
 	var m: Node = s.new()

@@ -103,6 +103,9 @@ func _how_card() -> Control:
 		Game.C_GOLD)
 	UI.fit(b, 2)
 	v.add_child(b)
+	# The practice draws on High; the HD pack's hurler is the one to see up close, if the phone can have it.
+	if Ultra.capable() and Ultra.renderer_ready() and not Ultra.mount_now():
+		v.add_child(UI.wrap(tr("PRACTICE_HD_HINT"), "MutedLabel", 16))
 	return card
 
 

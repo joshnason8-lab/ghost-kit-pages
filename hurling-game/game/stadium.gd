@@ -17,6 +17,7 @@ var scenery: Scenery
 var home_colours: Array = []
 var away_colours: Array = []    # with them, the crowd is both counties' (a championship day)
 var to_sun := Vector3(0.3, 0.8, 0.5).normalized()   # where the light comes from (PlayerShadows reads it)
+var net: GoalNet               # the goals' nets (a sliotar into one ripples it)
 
 const H := Pitch.HALF_L
 const W := Pitch.HALF_W
@@ -61,6 +62,9 @@ func _ready() -> void:
 	nm.vertex_color_use_as_albedo = true
 	nm.albedo_color = Color(1, 1, 1, 0.22)
 	add_child(nets.commit(nm))
+	net = GoalNet.new()
+	net.build(H + Pitch.POST_W * 0.5, time)
+	add_child(net)
 	crowd = Crowd.new()
 	var palette := home_colours.duplicate()
 	crowd.build(spots, Game.crowd_density() * (0.55 if kind == "parish" else 1.0), palette, hash(kind),
@@ -80,14 +84,15 @@ func _goals(g: Geo, nets: Geo) -> void:
 			var z := (Pitch.POST_GAP * 0.5 + r) * zs
 			g.cylinder(Vector3(x, 0, z), Vector3(x, Pitch.POST_H, z), r, r, white, 8)
 		g.cylinder(Vector3(x, Pitch.BAR_H + r, -Pitch.POST_GAP * 0.5), Vector3(x, Pitch.BAR_H + r, Pitch.POST_GAP * 0.5), r, r, white, 8, false)
-		# The net's frame and the net.
+		# The net's frame: a white bar on the ground across the back and one down each side from the bar's ends (the
+		# net itself is GoalNet, added in _ready).
 		var back := x + Pitch.NET_DEPTH * s
-		var nc := Color(0.92, 0.92, 0.92)
 		var hz := Pitch.POST_GAP * 0.5
-		nets.wall(Vector3(x, 0, -hz), Vector3(x, 0, -hz), 0, 0, nc)
-		nets._tri_quad(Vector3(x, Pitch.BAR_H, -hz), Vector3(x, Pitch.BAR_H, hz), Vector3(back, 0, hz), Vector3(back, 0, -hz), Vector3(s, 1, 0).normalized(), nc)
-		nets._tri_quad(Vector3(x, Pitch.BAR_H, -hz), Vector3(back, 0, -hz), Vector3(back, 0, -hz), Vector3(x, 0, -hz), Vector3(0, 0, -1), nc)
-		nets._tri_quad(Vector3(x, Pitch.BAR_H, hz), Vector3(x, 0, hz), Vector3(back, 0, hz), Vector3(back, 0, hz), Vector3(0, 0, 1), nc)
+		var fr := 0.025
+		g.cylinder(Vector3(back, fr, -hz), Vector3(back, fr, hz), fr, fr, white, 6, false)
+		for zs: float in [-1.0, 1.0]:
+			g.cylinder(Vector3(x, Pitch.BAR_H, hz * zs), Vector3(back, fr, hz * zs), fr, fr, white, 6, false)
+			g.cylinder(Vector3(x, fr, hz * zs), Vector3(back, fr, hz * zs), fr, fr, white, 6, false)
 		# A corner flag at each corner, and the flags at the lines (Rule 1.2), as small posts.
 		for zs: float in [-1.0, 1.0]:
 			for d: float in [0.0, 13.0, 20.0, 45.0, 65.0]:
