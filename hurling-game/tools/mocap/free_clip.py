@@ -47,7 +47,7 @@ HURLEY_L = HURLEY * [-1, 1, 1]            # the left fist's grip, mirrored
 
 # Key frames, marked by eye on crops of 320 x 320 about the right wrist, drawn at twice the size: the bas's middle
 # and the sliotar there (None where it is hidden or still), and which way the hurley leans in depth: +1 toward the
-# camera, -1 away, 0 nearly flat across the picture (the nearer of the two kept).
+# camera, -1 away, 0 not plain from the picture (whichever keeps it nearer the key before).
 KEYS = {
     300: ((440, 262), None, 0),
     450: ((545, 410), None, 0),
@@ -112,10 +112,14 @@ def key_data(frames):
         d = bas_w - wr
         flat = float(np.linalg.norm(d))
         dz = math.sqrt(max(0.0, STICK * STICK - flat * flat))
-        # Game axes: x the picture's right, y up, z toward the camera.
-        vec = np.array([d[0], -d[1], dz * (1 if sign >= 0 else -1) if sign != 0 else 0.0])
-        if sign == 0:
-            vec[2] = dz * 0.25 * (1 if f < 1100 else -1)   # mostly across the picture: a little depth either way
+        # Game axes: x the picture's right, y up, z toward the camera. Its depth is all the length the picture does not
+        # show; marked 0, toward the camera or away, whichever is nearer the last key's hurley (it turns smoothly).
+        vec = np.array([d[0], -d[1], dz * (-1.0 if sign < 0 else 1.0)])
+        if sign == 0 and out:
+            prev = out[max(out)]["stick"]
+            away = np.array([d[0], -d[1], -dz])
+            if np.dot(unit(away), prev) > np.dot(unit(vec), prev):
+                vec = away
         ball_w = None
         if ball is not None:
             bw = to_world((x0 + ball[0] / 2.0, y0 + ball[1] / 2.0), s, t)
