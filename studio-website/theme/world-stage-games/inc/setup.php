@@ -112,6 +112,29 @@ function ghostkit_check_links() {
 	return 'Link check: ' . wp_make_link_relative( $url ) . ' answered ' . $code . '. Go to Settings > Permalinks and press Save Changes; if pages still say "not found", ask Bluehost to make the site\'s .htaccess file writable.';
 }
 
+/** Downloads a game's web trailer and adds it to the Media Library as <game>-trailer.mp4. */
+function ghostkit_fetch_trailer( $game, $url ) {
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+	$tmp = download_url( $url, 120 );
+	if ( is_wp_error( $tmp ) ) {
+		return $tmp;
+	}
+	$id = media_handle_sideload(
+		array(
+			'name'     => $game . '-trailer.mp4',
+			'tmp_name' => $tmp,
+		),
+		0,
+		$game . '-trailer'
+	);
+	if ( is_wp_error( $id ) ) {
+		wp_delete_file( $tmp );
+	}
+	return $id;
+}
+
 /** Puts the real attachment IDs and URLs where the content has %%ID:key%% and %%URL:key:size%%. */
 function ghostkit_fill_tokens( $content, $ids ) {
 	$content = preg_replace_callback(
@@ -138,9 +161,9 @@ function ghostkit_fill_tokens( $content, $ids ) {
 /**
  * The game's trailer, if a video named <game>-trailer….mp4 is in the Media Library: its attachment ID, or 0.
  */
-function ghostkit_trailer_id( $game ) {
+function ghostkit_trailer_id( $game, $refresh = false ) {
 	static $videos = null;
-	if ( null === $videos ) {
+	if ( null === $videos || $refresh ) {
 		$videos = array();
 		$ids    = get_posts(
 			array(
@@ -232,6 +255,31 @@ function ghostkit_run_setup() {
 		$ids[ $asset['key'] ] = $id;
 	}
 	$log[] = sprintf( 'Images: %d in the Media Library.', count( $ids ) );
+
+	// 1b. The trailers, fetched from GitHub straight into the Media Library (no upload from your computer), one at a
+	// time until the time is up. A game page shows its trailer as soon as it is in.
+	$have = 0;
+	foreach ( (array) ( $content['trailers'] ?? array() ) as $game => $url ) {
+		if ( ghostkit_trailer_id( $game, true ) ) {
+			++$have;
+			continue;
+		}
+		if ( microtime( true ) - $start > $budget ) {
+			return array(
+				'done' => false,
+				'log'  => array( sprintf( 'Adding the trailers to the Media Library: %d of %d…', $have, count( $content['trailers'] ) ) ),
+			);
+		}
+		$added = ghostkit_fetch_trailer( $game, $url );
+		if ( is_wp_error( $added ) ) {
+			$log[] = sprintf( 'Could not fetch the %s trailer (%s). You can upload it yourself under Media > Add New Media File.', $game, $added->get_error_message() );
+		} else {
+			++$have;
+		}
+	}
+	if ( ! empty( $content['trailers'] ) ) {
+		$log[] = sprintf( 'Trailers: %d of %d in the Media Library.', $have, count( $content['trailers'] ) );
+	}
 
 	// 2. Pages, parents first (the content lists them in that order).
 	$made    = 0;

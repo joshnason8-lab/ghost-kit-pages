@@ -148,20 +148,20 @@ site can add them later.
 
 Each game is building a media kit: a trailer, screenshots, menus, a 1024 px icon and text. When one is ready:
 
-**Trailers** (each game's page shows "Trailer coming soon" until its trailer is in):
+**Trailers**: Site setup adds them for you. Press **Appearance > Site setup > Set up the site**, and it fetches all
+seven games' trailers from GitHub straight into the Media Library, server to server, so nothing has to be uploaded
+from your computer. They are web-sized versions (720p, 5–9 MB each) of the trailers in the games' media kits. Each
+game's page shows its trailer as soon as it is in, on pages you have edited too. The title art is the cover, and
+nothing loads until the visitor presses play.
 
-1. Download the trailers from
-   [`studio-website/dist/trailers/`](https://github.com/joshnason8-lab/ghost-kit-pages/tree/claude/studio-website/studio-website/dist/trailers).
-   These are web-sized versions (720p, about 5–9 MB each) of the trailers in all seven games' media kits.
-2. Go to **Media > Add New Media File** and drop them in. Keep the file names, for example
-   `netball-unleashed-trailer.mp4`. A copy WordPress renames, such as `netball-unleashed-trailer-1.mp4`, works too.
-
-That's all. Each game's page shows its trailer as soon as the file is in the Media Library. You don't need Site
-setup, and it works on pages you have edited. The title art is the cover, and nothing loads until the visitor presses
-play. Delete a trailer from the Media Library and its page goes back to "Trailer coming soon".
-
-If a page still shows "Trailer coming soon" after the upload, clear the site's cache (Bluehost's **Caching** settings,
-or the caching plugin's "purge" button), then reload the page.
+- If the green box says it **could not fetch** a trailer, download it from
+  [`studio-website/dist/trailers/`](https://github.com/joshnason8-lab/ghost-kit-pages/tree/claude/studio-website/studio-website/dist/trailers)
+  and upload it under **Media > Add New Media File**, keeping its name (for example `kabaddi-raid-trailer.mp4`).
+- To check that a trailer is in, go to **Media > Library** and look for the video. If it isn't there, the page shows
+  "Trailer coming soon".
+- To take a trailer off its page, delete the video from the Media Library.
+- If a page still shows "Trailer coming soon" while its video is in the library, clear the site's cache (Bluehost's
+  **Caching** settings), then reload the page.
 
 A video on your own site keeps the privacy page true. If you put a game trailer on YouTube and use a **YouTube**
 block instead, add a sentence about it to the **Privacy policy** page.

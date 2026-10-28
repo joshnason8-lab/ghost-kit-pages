@@ -741,5 +741,14 @@
    "title": "Ulama (the Mesoamerican ballgame): Ballplayers from Mexico, drawn by Christoph Weiditz in Spain, c. 1528–29",
    "caption": "Photo: Christoph Weiditz the Elder, Public domain, via Wikimedia Commons."
   }
- ]
+ ],
+ "trailers": {
+  "kabaddi-raid": "https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/1db03a4419cf0f506f84593b0eb22d9932b005bf/studio-website/dist/trailers/kabaddi-raid-trailer.mp4",
+  "hurling-heroes": "https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/1db03a4419cf0f506f84593b0eb22d9932b005bf/studio-website/dist/trailers/hurling-heroes-trailer.mp4",
+  "sepak-takraw-unleashed": "https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/1db03a4419cf0f506f84593b0eb22d9932b005bf/studio-website/dist/trailers/sepak-takraw-unleashed-trailer.mp4",
+  "netball-unleashed": "https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/1db03a4419cf0f506f84593b0eb22d9932b005bf/studio-website/dist/trailers/netball-unleashed-trailer.mp4",
+  "kho-kho-rush": "https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/1db03a4419cf0f506f84593b0eb22d9932b005bf/studio-website/dist/trailers/kho-kho-rush-trailer.mp4",
+  "floorball-unleashed": "https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/1db03a4419cf0f506f84593b0eb22d9932b005bf/studio-website/dist/trailers/floorball-unleashed-trailer.mp4",
+  "pok-ta-pok-rivals": "https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/1db03a4419cf0f506f84593b0eb22d9932b005bf/studio-website/dist/trailers/pok-ta-pok-rivals-trailer.mp4"
+ }
 }

@@ -24,6 +24,8 @@ OUT = os.path.join(SITE, "theme", "world-stage-games", "inc", "content")
 REPO_URL = "https://github.com/joshnason8-lab/ghost-kit-pages"
 EMAIL = "joshnason8@gmail.com"
 POLICY_DATE = "27 October 2026"
+TRAILER_URL = ("https://raw.githubusercontent.com/joshnason8-lab/ghost-kit-pages/1db03a4419cf0f506f84593b0eb22d9932b005bf/"
+               "studio-website/dist/trailers/%s-trailer.mp4")
 
 # Each game's beta release tag (GitHub releases in joshnason8-lab/ghost-kit-pages). The media kit is <slug>-media.
 RELEASE_SLUG = {
@@ -628,6 +630,12 @@ def build():
                            "alt": SHOTS[s][i - 1], "title": "%s screenshot %d" % (g["name"], i)})
 
     assets += sports.assets(sport_entries)
+    # The web trailers in dist/trailers/, for Site setup to fetch into the Media Library. Pinned to the commit that
+    # holds them, so the addresses never change.
+    trailers = {}
+    for g in games:
+        if os.path.exists(os.path.join(SITE, "dist", "trailers", g["slug"] + "-trailer.mp4")):
+            trailers[g["slug"]] = TRAILER_URL % g["slug"]
     with open(os.path.join(SITE, "MEDIA_CREDITS.md"), "w") as f:
         f.write(sports.credits_markdown(sport_entries))
     for meta, game in sport_entries:
@@ -637,7 +645,7 @@ def build():
 
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, "pages.json"), "w") as f:
-        json.dump({"version": 1, "pages": pages, "assets": assets}, f, ensure_ascii=False, indent=1)
+        json.dump({"version": 1, "pages": pages, "assets": assets, "trailers": trailers}, f, ensure_ascii=False, indent=1)
     # Unused tokens would show up as broken images; check every token names an asset.
     keys = {a["key"] for a in assets}
     for p in pages:
