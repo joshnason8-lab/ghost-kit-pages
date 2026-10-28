@@ -16,7 +16,7 @@
 <!-- 7. WordPress will then import each of the posts, pages, comments, categories, etc. -->
 <!--    contained in this file into your site. -->
 
-	<!-- generator="WordPress/7.1.3" created="2026-10-28 03:27" -->
+	<!-- generator="WordPress/7.1.3" created="2026-10-28 04:40" -->
 <rss version="2.0"
 	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
 	xmlns:content="http://purl.org/rss/1.0/modules/content/"
@@ -29,7 +29,7 @@
 	<title>World Stage Games</title>
 	<link>https://worldstagegames.com</link>
 	<description>Every game deserves a stage.</description>
-	<pubDate>Wed, 28 Oct 2026 03:27:19 +0000</pubDate>
+	<pubDate>Wed, 28 Oct 2026 04:40:34 +0000</pubDate>
 	<language>en-US</language>
 	<wp:wxr_version>1.2</wp:wxr_version>
 	<wp:base_site_url>https://worldstagegames.com</wp:base_site_url>
@@ -2535,7 +2535,7 @@
 <!-- /wp:button -->
 
 <!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="/games/#beta">Join the beta</a></div>
+<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="/sports/">Explore the sports</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons -->
 
@@ -2545,7 +2545,7 @@
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"className":"gk-stat"} -->
-<p class="gk-stat"><strong>54</strong> Languages across the games</p>
+<p class="gk-stat"><strong>54</strong> Languages</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"className":"gk-stat"} -->
@@ -2959,28 +2959,22 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph {"className":"gk-muted"} -->
-<p class="gk-muted">Every game is in beta on Android now. Try one and tell us what you think.</p>
+<p class="gk-muted">Every game is in beta on Android now, getting ready for Google Play.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->
 
 <!-- wp:group {"className":"gk-band__actions","layout":{"type":"flex","flexWrap":"wrap"}} -->
 <div class="wp-block-group gk-band__actions"><!-- wp:html -->
 <p class="gk-play-badge"><span class="gk-play-badge__icon" aria-hidden="true">▶</span><span><small>Coming soon on</small> <strong>Google Play</strong></span></p>
-<!-- /wp:html -->
-
-<!-- wp:buttons -->
-<div class="wp-block-buttons"><!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="/games/#beta">Join the beta</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons --></div>
+<!-- /wp:html --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group -->]]></content:encoded>
 		<excerpt:encoded><![CDATA[Mobile sports games of kabaddi, hurling, sepak takraw, kho kho, netball, floorball and the Mesoamerican ballgame. Real rules, every phone, no ads.]]></excerpt:encoded>
 		<wp:post_id>67</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-28 02:56:16]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-28 02:56:16]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[home]]></wp:post_name>
@@ -2992,7 +2986,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[25e014166018bcc7afbdeac4ca3f9a00]]></wp:meta_value>
+		<wp:meta_value><![CDATA[36fcf38e506f9839fd641b6931cda094]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -3012,7 +3006,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph {"className":"gk-lead"} -->
-<p class="gk-lead">Seven sports, each made for phones and played to its own rules. Every game is free to try in beta on Android, plays offline, and has no ads.</p>
+<p class="gk-lead">Seven sports, each made for phones and played to its own rules. Every game plays offline and has no ads, and all seven are coming to Google Play.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->
 
@@ -3345,68 +3339,6 @@
 <!-- /wp:group --></div>
 <!-- /wp:group -->
 
-<!-- wp:group {"className":"gk-beta","layout":{"type":"constrained"}} -->
-<div class="wp-block-group gk-beta"><!-- wp:heading {"anchor":"beta"} -->
-<h2 id="beta" class="wp-block-heading">Try the betas</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>The games are in beta on Android while they get ready for Google Play. Each beta is a free download from the game's page on GitHub.</p>
-<!-- /wp:paragraph -->
-
-<!-- wp:list -->
-<ul class="wp-block-list"><!-- wp:list-item -->
-<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/kabaddi-raid-beta">Kabaddi Raid beta</a> (Android). Or play it in a web browser on an iPhone, iPad or computer: <a href="https://kabaddi-raid-beta.netlify.app">kabaddi-raid-beta.netlify.app</a>.</li>
-<!-- /wp:list-item -->
-
-<!-- wp:list-item -->
-<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/ash-and-leather-beta">Hurling Heroes beta</a> (Android).</li>
-<!-- /wp:list-item -->
-
-<!-- wp:list-item -->
-<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/sepak-takraw-unleashed-beta">Sepak Takraw Unleashed beta</a> (Android).</li>
-<!-- /wp:list-item -->
-
-<!-- wp:list-item -->
-<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta">Netball Unleashed beta</a> (Android).</li>
-<!-- /wp:list-item -->
-
-<!-- wp:list-item -->
-<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/khamba-dash-beta">Kho Kho Rush beta</a> (Android).</li>
-<!-- /wp:list-item -->
-
-<!-- wp:list-item -->
-<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorball-unleashed-beta">Floorball Unleashed beta</a> (Android).</li>
-<!-- /wp:list-item -->
-
-<!-- wp:list-item -->
-<li><a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/pok-ta-pok-rivals-beta">Pok Ta Pok Rivals beta</a> (Android).</li>
-<!-- /wp:list-item --></ul>
-<!-- /wp:list -->
-
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">How to install a beta</h3>
-<!-- /wp:heading -->
-
-<!-- wp:list {"ordered":true} -->
-<ol class="wp-block-list"><!-- wp:list-item -->
-<li>On your Android phone, open the game's beta link above.</li>
-<!-- /wp:list-item -->
-
-<!-- wp:list-item -->
-<li>Under <strong>Assets</strong>, tap the file ending in <code>.apk</code> to download it. On an older or Android Go phone, Hurling Heroes and Pok Ta Pok Rivals also have a file ending in <code>-32bit.apk</code>.</li>
-<!-- /wp:list-item -->
-
-<!-- wp:list-item -->
-<li>Open the download. If your phone asks, allow your browser (or Files) to install unknown apps. If Play Protect warns you, tap <strong>More details</strong>, then <strong>Install anyway</strong>.</li>
-<!-- /wp:list-item --></ol>
-<!-- /wp:list -->
-
-<!-- wp:paragraph {"className":"gk-muted"} -->
-<p class="gk-muted">A beta is a separate install from the Google Play version. When a game comes to Google Play you may need to uninstall its beta first, and that deletes the beta's saves.</p>
-<!-- /wp:paragraph --></div>
-<!-- /wp:group -->
-
 <!-- wp:group {"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:heading -->
 <h2 class="wp-block-heading">Privacy and help</h2>
@@ -3454,28 +3386,22 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph {"className":"gk-muted"} -->
-<p class="gk-muted">Every game is in beta on Android now. Try one and tell us what you think.</p>
+<p class="gk-muted">Every game is in beta on Android now, getting ready for Google Play.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->
 
 <!-- wp:group {"className":"gk-band__actions","layout":{"type":"flex","flexWrap":"wrap"}} -->
 <div class="wp-block-group gk-band__actions"><!-- wp:html -->
 <p class="gk-play-badge"><span class="gk-play-badge__icon" aria-hidden="true">▶</span><span><small>Coming soon on</small> <strong>Google Play</strong></span></p>
-<!-- /wp:html -->
-
-<!-- wp:buttons -->
-<div class="wp-block-buttons"><!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="/games/#beta">Join the beta</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons --></div>
+<!-- /wp:html --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[All seven games: Kabaddi Raid, Hurling Heroes, Sepak Takraw Unleashed, Netball Unleashed, Kho Kho Rush, Floorball Unleashed and Pok Ta Pok Rivals. Free…]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[All seven games: Kabaddi Raid, Hurling Heroes, Sepak Takraw Unleashed, Netball Unleashed, Kho Kho Rush, Floorball Unleashed and Pok Ta Pok Rivals. Coming…]]></excerpt:encoded>
 		<wp:post_id>68</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[games]]></wp:post_name>
@@ -3487,7 +3413,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[3a0798e839e49d719a790e095c2d92c0]]></wp:meta_value>
+		<wp:meta_value><![CDATA[0cccc5572c9fe5d7230725026004ed28]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -3583,22 +3509,12 @@
 <p class="gk-desc">Or defend: read the raid, take him by the ankle, the thigh or the waist, and chain up with a team-mate.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:buttons {"className":"gk-game__cta"} -->
-<div class="wp-block-buttons gk-game__cta"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/kabaddi-raid-beta">Join the beta</a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="https://kabaddi-raid-beta.netlify.app">Play in your browser</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons -->
-
 <!-- wp:paragraph {"className":"gk-soon"} -->
 <p class="gk-soon"><span aria-hidden="true">▶</span> Coming soon to Google Play</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"className":"gk-facts gk-facts--grid"} -->
-<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Kabaddi</td></tr><tr><th>Players</th><td>7 v 7</td></tr><tr><th>Ways to play</th><td>Quick Match, League Season, Nations Cup</td></tr><tr><th>Languages</th><td>8: English, Hindi, Marathi, Tamil, Telugu, Kannada, Bengali, Punjabi</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>Beta on Android and in the browser · Google Play coming soon</td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Kabaddi</td></tr><tr><th>Players</th><td>7 v 7</td></tr><tr><th>Ways to play</th><td>Quick Match, League Season, Nations Cup</td></tr><tr><th>Languages</th><td>8: English, Hindi, Marathi, Tamil, Telugu, Kannada, Bengali, Punjabi</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>In beta · Google Play coming soon</td></tr></tbody></table></figure>
 <!-- /wp:table --></div>
 <!-- /wp:column --></div>
 <!-- /wp:columns -->
@@ -3700,12 +3616,12 @@
 <p class="gk-game__links"><a href="/games/kabaddi-raid/privacy/">Privacy policy</a> · <a href="/games/kabaddi-raid/support/">Help and support</a> · <a href="/licences/">Licences</a> · <a href="/press-kit/#kabaddi-raid">Press kit</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/kabaddi-raid-media/media-kit-kabaddi-raid.zip">Media kit (zip)</a></p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[Raid, touch and race home in 3D kabaddi. Own a franchise. Win the Nations Cup. Free beta on Android, no ads.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[Raid, touch and race home in 3D kabaddi. Own a franchise. Win the Nations Cup. No ads. Coming soon to Google Play.]]></excerpt:encoded>
 		<wp:post_id>69</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-28 03:27:17]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-28 03:27:17]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:40:23]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:40:23]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[kabaddi-raid]]></wp:post_name>
@@ -3717,7 +3633,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[94a5cc9fdaa20dde821fcd0704d0432d]]></wp:meta_value>
+		<wp:meta_value><![CDATA[fbf3fbdf3accfa4cada0a55eac6785e2]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -3780,7 +3696,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>A version of the game also runs in a web browser, at <a href="https://kabaddi-raid-beta.netlify.app">kabaddi-raid-beta.netlify.app</a>. That page is served by Netlify, which keeps standard server logs (such as your IP address and browser type) under Netlify's privacy policy. The game sends nothing to us there either; its settings and saved games stay in your browser's storage on your device.</p>
+<p>A version of the game also runs in a web browser, at kabaddi-raid-beta.netlify.app. That page is served by Netlify, which keeps standard server logs (such as your IP address and browser type) under Netlify's privacy policy. The game sends nothing to us there either; its settings and saved games stay in your browser's storage on your device.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
@@ -3810,8 +3726,8 @@
 		<wp:post_id>70</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[privacy]]></wp:post_name>
@@ -3823,7 +3739,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[3463ccd7ffe09ed43ec94f8c89d355d8]]></wp:meta_value>
+		<wp:meta_value><![CDATA[6ffca2fdab43ea284d6deba31990a5c6]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -3919,28 +3835,12 @@
 <p>Tap the version number on the home screen seven times to turn on the developer's overlay. Play until the problem happens, tap <strong>Copy summary</strong> and paste it into your message. Seven more taps turn it off.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">Is there an iPhone version?</h3>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>Not yet. The browser version, at <a href="https://kabaddi-raid-beta.netlify.app">kabaddi-raid-beta.netlify.app</a>, plays on an iPhone, iPad or computer: turn a phone sideways, and tap once to start the sound.</p>
-<!-- /wp:paragraph -->
-
 <!-- wp:heading -->
 <h2 class="wp-block-heading">Contact</h2>
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
 <p>Through our contact page: <a href="https://thekabaddipulse.com/contact/">thekabaddipulse.com/contact</a>.</p>
-<!-- /wp:paragraph -->
-
-<!-- wp:heading -->
-<h2 class="wp-block-heading">Beta downloads</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>The Android beta is on <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/kabaddi-raid-beta">the game's release page on GitHub</a>. <a href="/games/#beta">How to install a beta</a>.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"className":"gk-game__links"} -->
@@ -3950,8 +3850,8 @@
 		<wp:post_id>71</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[support]]></wp:post_name>
@@ -3963,7 +3863,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[616874f6729ac6d4c427642ef11030c2]]></wp:meta_value>
+		<wp:meta_value><![CDATA[e17bfc19bd183c77dafcd0f030193089]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -4059,18 +3959,12 @@
 <p class="gk-desc">Play on a parish field at dusk or in front of a full stadium. Lift the sliotar, solo through, and strike it over the bar.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:buttons {"className":"gk-game__cta"} -->
-<div class="wp-block-buttons gk-game__cta"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/ash-and-leather-beta">Join the beta</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons -->
-
 <!-- wp:paragraph {"className":"gk-soon"} -->
 <p class="gk-soon"><span aria-hidden="true">▶</span> Coming soon to Google Play</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"className":"gk-facts gk-facts--grid"} -->
-<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Hurling</td></tr><tr><th>Players</th><td>15 v 15</td></tr><tr><th>Ways to play</th><td>Throw-in, The Summer Championship, Watch a match, Free-taking practice</td></tr><tr><th>Languages</th><td>2: English, Irish</td></tr><tr><th>Graphics</th><td>Low · Medium · High + HD pack</td></tr><tr><th>Plays offline</th><td>Yes (the optional HD pack downloads over the internet)</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration; internet, only to download the HD pack</td></tr><tr><th>Status</th><td>Beta on Android · Google Play coming soon</td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Hurling</td></tr><tr><th>Players</th><td>15 v 15</td></tr><tr><th>Ways to play</th><td>Throw-in, The Summer Championship, Watch a match, Free-taking practice</td></tr><tr><th>Languages</th><td>2: English, Irish</td></tr><tr><th>Graphics</th><td>Low · Medium · High + HD pack</td></tr><tr><th>Plays offline</th><td>Yes (the optional HD pack downloads over the internet)</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration; internet, only to download the HD pack</td></tr><tr><th>Status</th><td>In beta · Google Play coming soon</td></tr></tbody></table></figure>
 <!-- /wp:table --></div>
 <!-- /wp:column --></div>
 <!-- /wp:columns -->
@@ -4176,12 +4070,12 @@
 <p class="gk-small gk-muted">Hurling Heroes is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[Hurling, Ireland's ancient field sport: fifteen a side, the real rules. Free beta on Android, no ads.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[Hurling, Ireland's ancient field sport: fifteen a side, the real rules. No ads. Coming soon to Google Play.]]></excerpt:encoded>
 		<wp:post_id>72</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:40:33]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:40:33]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[hurling-heroes]]></wp:post_name>
@@ -4193,7 +4087,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[ad10930abf8da969ac9c18f4876b1131]]></wp:meta_value>
+		<wp:meta_value><![CDATA[1e18d5026fb32b929bc9144b837c3f4d]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -4373,14 +4267,6 @@
 <p>Email <a href="mailto:joshnason8@gmail.com?subject=Hurling%20Heroes%20help">joshnason8@gmail.com</a> with your phone's model and what happened. We read everything.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:heading -->
-<h2 class="wp-block-heading">Beta downloads</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>The Android beta is on <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/ash-and-leather-beta">the game's release page on GitHub</a>. <a href="/games/#beta">How to install a beta</a>.</p>
-<!-- /wp:paragraph -->
-
 <!-- wp:paragraph {"className":"gk-game__links"} -->
 <p class="gk-game__links"><a href="/games/hurling-heroes/privacy/">Privacy policy</a> · <a href="/games/hurling-heroes/">About the game</a></p>
 <!-- /wp:paragraph -->]]></content:encoded>
@@ -4388,8 +4274,8 @@
 		<wp:post_id>74</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[support]]></wp:post_name>
@@ -4401,7 +4287,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[48972da2f81f46fc60be001541a04d5b]]></wp:meta_value>
+		<wp:meta_value><![CDATA[ba2574587bd2b778f2a946957699a9da]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -4493,18 +4379,12 @@
 <p class="gk-desc">Serve with a foot in the circle, receive with the inside of your foot, set it high by the net, and launch a roll spike over the block.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:buttons {"className":"gk-game__cta"} -->
-<div class="wp-block-buttons gk-game__cta"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/sepak-takraw-unleashed-beta">Join the beta</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons -->
-
 <!-- wp:paragraph {"className":"gk-soon"} -->
 <p class="gk-soon"><span aria-hidden="true">▶</span> Coming soon to Google Play</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"className":"gk-facts gk-facts--grid"} -->
-<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Sepak takraw</td></tr><tr><th>Players</th><td>3 v 3 (regu) · 4 v 4 (quadrant) · 2 v 2 (doubles)</td></tr><tr><th>Ways to play</th><td>Quick Match, League Season, International</td></tr><tr><th>Languages</th><td>13: English, Thai, Malay, Indonesian, Vietnamese, Lao, Burmese, Khmer, Filipino, Japanese, Korean, Chinese, Hindi</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>Beta on Android · Google Play coming soon</td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Sepak takraw</td></tr><tr><th>Players</th><td>3 v 3 (regu) · 4 v 4 (quadrant) · 2 v 2 (doubles)</td></tr><tr><th>Ways to play</th><td>Quick Match, League Season, International</td></tr><tr><th>Languages</th><td>13: English, Thai, Malay, Indonesian, Vietnamese, Lao, Burmese, Khmer, Filipino, Japanese, Korean, Chinese, Hindi</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>In beta · Google Play coming soon</td></tr></tbody></table></figure>
 <!-- /wp:table --></div>
 <!-- /wp:column --></div>
 <!-- /wp:columns -->
@@ -4610,12 +4490,12 @@
 <p class="gk-small gk-muted">Sepak Takraw Unleashed is an independent game. It is not affiliated with or endorsed by any sepak takraw federation, league, club or player. The clubs' nicknames are invented and the players are fictional; the countries, places and rules are real.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[Sepak takraw: roll spikes, horse-kick serves and blocks at the net. Real rules. Free beta on Android, no ads.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[Sepak takraw: roll spikes, horse-kick serves and blocks at the net. Real rules. No ads. Coming soon to Google Play.]]></excerpt:encoded>
 		<wp:post_id>75</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:40:23]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:40:23]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[sepak-takraw-unleashed]]></wp:post_name>
@@ -4627,7 +4507,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[5fe1e5ed302e40cebb1cfea7950e3daa]]></wp:meta_value>
+		<wp:meta_value><![CDATA[91cee4e9e468fcf00714cd920db1dc95]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -4817,14 +4697,6 @@
 <p>Email <a href="mailto:joshnason8@gmail.com?subject=Sepak%20Takraw%20Unleashed%20help">joshnason8@gmail.com</a> with your phone's model and what happened. We read everything.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:heading -->
-<h2 class="wp-block-heading">Beta downloads</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>The Android beta is on <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/sepak-takraw-unleashed-beta">the game's release page on GitHub</a>. <a href="/games/#beta">How to install a beta</a>.</p>
-<!-- /wp:paragraph -->
-
 <!-- wp:paragraph {"className":"gk-game__links"} -->
 <p class="gk-game__links"><a href="/games/sepak-takraw-unleashed/privacy/">Privacy policy</a> · <a href="/games/sepak-takraw-unleashed/">About the game</a></p>
 <!-- /wp:paragraph -->]]></content:encoded>
@@ -4832,8 +4704,8 @@
 		<wp:post_id>77</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[support]]></wp:post_name>
@@ -4845,7 +4717,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[ea519517054adce5f7bd7538d7de82e0]]></wp:meta_value>
+		<wp:meta_value><![CDATA[eb103d67f0681e340c11ccaaaddeeaba]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -4937,18 +4809,12 @@
 <p class="gk-desc">Take the centre pass, drive into space, feed the circle and shoot, then win the ball back with an intercept.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:buttons {"className":"gk-game__cta"} -->
-<div class="wp-block-buttons gk-game__cta"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta">Join the beta</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons -->
-
 <!-- wp:paragraph {"className":"gk-soon"} -->
 <p class="gk-soon"><span aria-hidden="true">▶</span> Coming soon to Google Play</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"className":"gk-facts gk-facts--grid"} -->
-<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Netball</td></tr><tr><th>Players</th><td>7 v 7</td></tr><tr><th>Ways to play</th><td>Quick Match, Nations Cup, Club Season</td></tr><tr><th>Languages</th><td>19: English, Afrikaans, Zulu, Xhosa, Sesotho, Setswana, Chichewa, Luganda, Shona, Swahili, Malay, Chinese, Sinhala, Tamil, Welsh, Māori, Tongan, Samoan, Fijian</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>Beta on Android · Google Play coming soon</td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Netball</td></tr><tr><th>Players</th><td>7 v 7</td></tr><tr><th>Ways to play</th><td>Quick Match, Nations Cup, Club Season</td></tr><tr><th>Languages</th><td>19: English, Afrikaans, Zulu, Xhosa, Sesotho, Setswana, Chichewa, Luganda, Shona, Swahili, Malay, Chinese, Sinhala, Tamil, Welsh, Māori, Tongan, Samoan, Fijian</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>In beta · Google Play coming soon</td></tr></tbody></table></figure>
 <!-- /wp:table --></div>
 <!-- /wp:column --></div>
 <!-- /wp:columns -->
@@ -5054,12 +4920,12 @@
 <p class="gk-small gk-muted">Netball Unleashed is an independent game. It is not affiliated with or endorsed by any netball governing body, league, club or player. The players are fictional; the countries and the rules are real.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[Netball by the real rules: lead, pass, defend at 0.9 m, shoot from the circle. Free beta on Android, no ads.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[Netball by the real rules: lead, pass, defend at 0.9 m, shoot from the circle. No ads. Coming soon to Google Play.]]></excerpt:encoded>
 		<wp:post_id>78</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:40:23]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:40:23]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[netball-unleashed]]></wp:post_name>
@@ -5071,7 +4937,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[8761d8f9b407f66dfdb9fbd27a28a3a0]]></wp:meta_value>
+		<wp:meta_value><![CDATA[97f4df6e4fdbc73055e9194e00a9423b]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -5247,14 +5113,6 @@
 <p>Email <a href="mailto:joshnason8@gmail.com?subject=Netball%20Unleashed%20help">joshnason8@gmail.com</a> with your phone's model and what happened. We read everything.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:heading -->
-<h2 class="wp-block-heading">Beta downloads</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>The Android beta is on <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta">the game's release page on GitHub</a>. <a href="/games/#beta">How to install a beta</a>.</p>
-<!-- /wp:paragraph -->
-
 <!-- wp:paragraph {"className":"gk-game__links"} -->
 <p class="gk-game__links"><a href="/games/netball-unleashed/privacy/">Privacy policy</a> · <a href="/games/netball-unleashed/">About the game</a></p>
 <!-- /wp:paragraph -->]]></content:encoded>
@@ -5262,8 +5120,8 @@
 		<wp:post_id>80</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[support]]></wp:post_name>
@@ -5275,7 +5133,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[82dc2241f8401db6d790918fb3f04823]]></wp:meta_value>
+		<wp:meta_value><![CDATA[71015ae76a518e32b087288b867ee69e]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -5367,18 +5225,12 @@
 <p class="gk-desc">Sit in the lane with your side, rise on a kho, chase the defenders to the pole, and dive to touch them out before the turn runs down.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:buttons {"className":"gk-game__cta"} -->
-<div class="wp-block-buttons gk-game__cta"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/khamba-dash-beta">Join the beta</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons -->
-
 <!-- wp:paragraph {"className":"gk-soon"} -->
 <p class="gk-soon"><span aria-hidden="true">▶</span> Coming soon to Google Play</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"className":"gk-facts gk-facts--grid"} -->
-<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Kho kho</td></tr><tr><th>Players</th><td>9 a side (Classic) · 7 a side (Fast)</td></tr><tr><th>Ways to play</th><td>Quick Match, Championships, City League, Watch a Match</td></tr><tr><th>Languages</th><td>14: English, Hindi, Marathi, Kannada, Telugu, Tamil, Malayalam, Odia, Bengali, Gujarati, Punjabi, Assamese, Nepali, Sinhala</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>Beta on Android · Google Play coming soon</td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Kho kho</td></tr><tr><th>Players</th><td>9 a side (Classic) · 7 a side (Fast)</td></tr><tr><th>Ways to play</th><td>Quick Match, Championships, City League, Watch a Match</td></tr><tr><th>Languages</th><td>14: English, Hindi, Marathi, Kannada, Telugu, Tamil, Malayalam, Odia, Bengali, Gujarati, Punjabi, Assamese, Nepali, Sinhala</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>In beta · Google Play coming soon</td></tr></tbody></table></figure>
 <!-- /wp:table --></div>
 <!-- /wp:column --></div>
 <!-- /wp:columns -->
@@ -5484,12 +5336,12 @@
 <p class="gk-small gk-muted">Kho Kho Rush is an independent game. It is not affiliated with or endorsed by any kho kho federation, league, club or player. The players are fictional; the countries, states and rules are real.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[Kho kho to the real rules: sit in the lane, give the kho, chase and pole dive. Free beta on Android, no ads.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[Kho kho to the real rules: sit in the lane, give the kho, chase and pole dive. No ads. Coming soon to Google Play.]]></excerpt:encoded>
 		<wp:post_id>81</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:40:23]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:40:23]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[kho-kho-rush]]></wp:post_name>
@@ -5501,7 +5353,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[3661c5964dd26e19e20818e5196cbcdb]]></wp:meta_value>
+		<wp:meta_value><![CDATA[01c5e7327581776aea94f433f1dd9ef8]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -5677,14 +5529,6 @@
 <p>Email <a href="mailto:joshnason8@gmail.com?subject=Kho%20Kho%20Rush%20help">joshnason8@gmail.com</a> with your phone's model and what happened. We read everything.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:heading -->
-<h2 class="wp-block-heading">Beta downloads</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>The Android beta is on <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/khamba-dash-beta">the game's release page on GitHub</a>. <a href="/games/#beta">How to install a beta</a>.</p>
-<!-- /wp:paragraph -->
-
 <!-- wp:paragraph {"className":"gk-game__links"} -->
 <p class="gk-game__links"><a href="/games/kho-kho-rush/privacy/">Privacy policy</a> · <a href="/games/kho-kho-rush/">About the game</a></p>
 <!-- /wp:paragraph -->]]></content:encoded>
@@ -5692,8 +5536,8 @@
 		<wp:post_id>83</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[support]]></wp:post_name>
@@ -5705,7 +5549,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[c9d0f55b3c49ff17edb962fc80751f6a]]></wp:meta_value>
+		<wp:meta_value><![CDATA[b942a02804b9bae2f9467618bf61b2e3]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -5879,18 +5723,12 @@
 <p class="gk-desc">Five and a goalkeeper a side on a 40 by 20 metre rink inside the boards, to floorball's international Rules of the Game in force from 1 July 2026.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:buttons {"className":"gk-game__cta"} -->
-<div class="wp-block-buttons gk-game__cta"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorball-unleashed-beta">Join the beta</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons -->
-
 <!-- wp:paragraph {"className":"gk-soon"} -->
 <p class="gk-soon"><span aria-hidden="true">▶</span> Coming soon to Google Play</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"className":"gk-facts gk-facts--grid"} -->
-<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Floorball</td></tr><tr><th>Players</th><td>5 + goalkeeper a side</td></tr><tr><th>Ways to play</th><td>Quick match, World Finals, Club season</td></tr><tr><th>Languages</th><td>15: English, Swedish, Finnish, German, French, Italian, Czech, Slovak, Norwegian, Danish, Latvian, Estonian, Polish, Japanese, Thai</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>Beta on Android · Google Play coming soon</td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Floorball</td></tr><tr><th>Players</th><td>5 + goalkeeper a side</td></tr><tr><th>Ways to play</th><td>Quick match, World Finals, Club season</td></tr><tr><th>Languages</th><td>15: English, Swedish, Finnish, German, French, Italian, Czech, Slovak, Norwegian, Danish, Latvian, Estonian, Polish, Japanese, Thai</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>In beta · Google Play coming soon</td></tr></tbody></table></figure>
 <!-- /wp:table --></div>
 <!-- /wp:column --></div>
 <!-- /wp:columns -->
@@ -5996,12 +5834,12 @@
 <p class="gk-small gk-muted">Floorball Unleashed is an independent game. It is not affiliated with or endorsed by any floorball federation, league, club or player. The players are fictional; the countries and the rules are real.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[Floorball five a side with goalkeepers, to the real rules. Shoot, pass, score! Free beta on Android, no ads.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[Floorball five a side with goalkeepers, to the real rules. Shoot, pass, score! No ads. Coming soon to Google Play.]]></excerpt:encoded>
 		<wp:post_id>84</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:40:23]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:40:23]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[floorball-unleashed]]></wp:post_name>
@@ -6013,7 +5851,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[1d0fda6c416503447b66ed76467aa6ed]]></wp:meta_value>
+		<wp:meta_value><![CDATA[cbe0cd7aa48184c0dbf466b36fd975a6]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -6193,14 +6031,6 @@
 <p>Email <a href="mailto:joshnason8@gmail.com?subject=Floorball%20Unleashed%20help">joshnason8@gmail.com</a> with your phone's model and what happened. We read everything.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:heading -->
-<h2 class="wp-block-heading">Beta downloads</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>The Android beta is on <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorball-unleashed-beta">the game's release page on GitHub</a>. <a href="/games/#beta">How to install a beta</a>.</p>
-<!-- /wp:paragraph -->
-
 <!-- wp:paragraph {"className":"gk-game__links"} -->
 <p class="gk-game__links"><a href="/games/floorball-unleashed/privacy/">Privacy policy</a> · <a href="/games/floorball-unleashed/">About the game</a></p>
 <!-- /wp:paragraph -->]]></content:encoded>
@@ -6208,8 +6038,8 @@
 		<wp:post_id>86</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[support]]></wp:post_name>
@@ -6221,7 +6051,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[39934b72db4de871d5d950f60ef94a67]]></wp:meta_value>
+		<wp:meta_value><![CDATA[36a14cc6f0a041f292acc8f15543eab5]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -6313,18 +6143,12 @@
 <p class="gk-desc">Strike a heavy rubber ball with your hip across the analco of a long earth court, read its low bounce, dive for it as it skids along the ground, and drive it past the other town's end.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:buttons {"className":"gk-game__cta"} -->
-<div class="wp-block-buttons gk-game__cta"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/pok-ta-pok-rivals-beta">Join the beta</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons -->
-
 <!-- wp:paragraph {"className":"gk-soon"} -->
 <p class="gk-soon"><span aria-hidden="true">▶</span> Coming soon to Google Play</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"className":"gk-facts gk-facts--grid"} -->
-<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Mesoamerican ballgame (ulama)</td></tr><tr><th>Players</th><td>4 or 5 a side</td></tr><tr><th>Ways to play</th><td>Play a match, Town tournament, Watch a match</td></tr><tr><th>Languages</th><td>6: Spanish, English, Portuguese, French, German, Italian</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>Beta on Android · Google Play coming soon</td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Mesoamerican ballgame (ulama)</td></tr><tr><th>Players</th><td>4 or 5 a side</td></tr><tr><th>Ways to play</th><td>Play a match, Town tournament, Watch a match</td></tr><tr><th>Languages</th><td>6: Spanish, English, Portuguese, French, German, Italian</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>In beta · Google Play coming soon</td></tr></tbody></table></figure>
 <!-- /wp:table --></div>
 <!-- /wp:column --></div>
 <!-- /wp:columns -->
@@ -6430,12 +6254,12 @@
 <p class="gk-small gk-muted">Pok Ta Pok Rivals is an independent game, not connected with or endorsed by any sporting body, federation, tournament or club. Towns appear by their place names only; every player is invented.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[The hip ballgame of Mexico: ulama, the heavy rubber ball, the count to eight. Free beta on Android, no ads.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[The hip ballgame of Mexico: ulama, the heavy rubber ball, the count to eight. No ads. Coming soon to Google Play.]]></excerpt:encoded>
 		<wp:post_id>87</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:40:23]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:40:23]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[pok-ta-pok-rivals]]></wp:post_name>
@@ -6447,7 +6271,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[2b2ceb0ec2d352867d1a9882d28e906e]]></wp:meta_value>
+		<wp:meta_value><![CDATA[68a9d4fd9bbbe0e41809df6d74985449]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -6631,14 +6455,6 @@
 <p>Email <a href="mailto:joshnason8@gmail.com?subject=Pok%20Ta%20Pok%20Rivals%20help">joshnason8@gmail.com</a> with your phone's model and what happened. We read everything.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:heading -->
-<h2 class="wp-block-heading">Beta downloads</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>The Android beta is on <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/pok-ta-pok-rivals-beta">the game's release page on GitHub</a>. <a href="/games/#beta">How to install a beta</a>.</p>
-<!-- /wp:paragraph -->
-
 <!-- wp:paragraph {"className":"gk-game__links"} -->
 <p class="gk-game__links"><a href="/games/pok-ta-pok-rivals/privacy/">Privacy policy</a> · <a href="/games/pok-ta-pok-rivals/">About the game</a></p>
 <!-- /wp:paragraph -->]]></content:encoded>
@@ -6646,8 +6462,8 @@
 		<wp:post_id>89</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[support]]></wp:post_name>
@@ -6659,7 +6475,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[e45dacf43b9ac4f2d0a093ac22611d93]]></wp:meta_value>
+		<wp:meta_value><![CDATA[af0f16bea054684dc9b3e14b4fc6ff7a]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -7298,11 +7114,7 @@
 
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/kabaddi-raid/">Play Kabaddi Raid →</a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/kabaddi-raid-beta">Join the beta</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/kabaddi-raid/">See Kabaddi Raid →</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons --></div>
 <!-- /wp:group -->
@@ -7372,8 +7184,8 @@
 		<wp:post_id>91</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[kabaddi]]></wp:post_name>
@@ -7385,7 +7197,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[650061a998dd6118341e5ce166cb8dc0]]></wp:meta_value>
+		<wp:meta_value><![CDATA[e96eabe9e0f4c2121a1532aa5d9c8b5f]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -7798,11 +7610,7 @@
 
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/hurling-heroes/">Play Hurling Heroes →</a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/ash-and-leather-beta">Join the beta</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/hurling-heroes/">See Hurling Heroes →</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons --></div>
 <!-- /wp:group -->
@@ -7868,8 +7676,8 @@
 		<wp:post_id>92</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[hurling]]></wp:post_name>
@@ -7881,7 +7689,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[cd249aebdd9331f75e14771e8e6a24ac]]></wp:meta_value>
+		<wp:meta_value><![CDATA[23de965755c583816f901b35f9fac03a]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -8262,11 +8070,7 @@
 
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/sepak-takraw-unleashed/">Play Sepak Takraw Unleashed →</a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/sepak-takraw-unleashed-beta">Join the beta</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/sepak-takraw-unleashed/">See Sepak Takraw Unleashed →</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons --></div>
 <!-- /wp:group -->
@@ -8324,8 +8128,8 @@
 		<wp:post_id>93</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[sepak-takraw]]></wp:post_name>
@@ -8337,7 +8141,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[6a89298cc0605c43df3e49d93bef6fa8]]></wp:meta_value>
+		<wp:meta_value><![CDATA[9ac3d4bfde4547e22e596a84f171af58]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -8748,11 +8552,7 @@
 
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/netball-unleashed/">Play Netball Unleashed →</a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta">Join the beta</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/netball-unleashed/">See Netball Unleashed →</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons --></div>
 <!-- /wp:group -->
@@ -8818,8 +8618,8 @@
 		<wp:post_id>94</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[netball]]></wp:post_name>
@@ -8831,7 +8631,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[dd7de5086cfe718744aeca9e6b5a36b4]]></wp:meta_value>
+		<wp:meta_value><![CDATA[8714290cc8094debed6b39e192f6166c]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -9226,11 +9026,7 @@
 
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/kho-kho-rush/">Play Kho Kho Rush →</a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/khamba-dash-beta">Join the beta</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/kho-kho-rush/">See Kho Kho Rush →</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons --></div>
 <!-- /wp:group -->
@@ -9292,8 +9088,8 @@
 		<wp:post_id>95</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[kho-kho]]></wp:post_name>
@@ -9305,7 +9101,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[25876e351804d856bbd99a4dfaf7b773]]></wp:meta_value>
+		<wp:meta_value><![CDATA[c4db7e301f2b6d01c59f2ff6fca005ed]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -9710,11 +9506,7 @@
 
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/floorball-unleashed/">Play Floorball Unleashed →</a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorball-unleashed-beta">Join the beta</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/floorball-unleashed/">See Floorball Unleashed →</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons --></div>
 <!-- /wp:group -->
@@ -9772,8 +9564,8 @@
 		<wp:post_id>96</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[floorball]]></wp:post_name>
@@ -9785,7 +9577,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[4f4bc172d6c19541b15f9f3dcdff0208]]></wp:meta_value>
+		<wp:meta_value><![CDATA[023626141f955319623ebd64e154929a]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -10190,11 +9982,7 @@
 
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
-<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/pok-ta-pok-rivals/">Play Pok Ta Pok Rivals →</a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/pok-ta-pok-rivals-beta">Join the beta</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/games/pok-ta-pok-rivals/">See Pok Ta Pok Rivals →</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons --></div>
 <!-- /wp:group -->
@@ -10260,8 +10048,8 @@
 		<wp:post_id>97</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 22:53:55]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 22:53:55]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[ulama]]></wp:post_name>
@@ -10273,7 +10061,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[b7fe9620a4bc702c83ab89d0bf3d8ea5]]></wp:meta_value>
+		<wp:meta_value><![CDATA[b2e49e37d9aee2a1b5673239d4003993]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -10326,7 +10114,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>All seven are in beta on Android, and they are coming to Google Play. <a href="/games/#beta">Try a beta</a>, or read about <a href="/games/">the games</a>.</p>
+<p>All seven are in beta on Android, and they are coming to Google Play. Read about <a href="/games/">the games</a>.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
@@ -10340,8 +10128,8 @@
 		<wp:post_id>98</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[about]]></wp:post_name>
@@ -10353,7 +10141,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[eeecfd8ee07888576bd2b9f78e84e5f5]]></wp:meta_value>
+		<wp:meta_value><![CDATA[38e945aba71d477f3fe7ca2d7acfd705]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -10380,7 +10168,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:table {"className":"gk-facts"} -->
-<figure class="wp-block-table gk-facts"><table class="has-fixed-layout"><tbody><tr><th>Games</th><td>7 mobile sports games</td></tr><tr><th>Made by</th><td>Josh Nason, an independent developer</td></tr><tr><th>Engine</th><td>Godot Engine</td></tr><tr><th>Platform</th><td>Android (beta now; Google Play coming soon). Kabaddi Raid also plays in a web browser.</td></tr><tr><th>Business model</th><td>Free. No ads, no in-app purchases, no personal data collected.</td></tr><tr><th>Languages</th><td>54 across the seven games</td></tr><tr><th>Contact</th><td><a href="mailto:joshnason8@gmail.com">joshnason8@gmail.com</a></td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts"><table class="has-fixed-layout"><tbody><tr><th>Games</th><td>7 mobile sports games</td></tr><tr><th>Made by</th><td>Josh Nason, an independent developer</td></tr><tr><th>Engine</th><td>Godot Engine</td></tr><tr><th>Platform</th><td>Android (in beta now; Google Play coming soon)</td></tr><tr><th>Business model</th><td>Free. No ads, no in-app purchases, no personal data collected.</td></tr><tr><th>Languages</th><td>54 across the seven games</td></tr><tr><th>Contact</th><td><a href="mailto:joshnason8@gmail.com">joshnason8@gmail.com</a></td></tr></tbody></table></figure>
 <!-- /wp:table -->
 
 <!-- wp:separator -->
@@ -10417,7 +10205,7 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li><a href="/games/kabaddi-raid/">Game page</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/kabaddi-raid-beta">Android beta</a></li>
+<li><a href="/games/kabaddi-raid/">Game page</a></li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
@@ -10459,7 +10247,7 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li><a href="/games/hurling-heroes/">Game page</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/ash-and-leather-beta">Android beta</a></li>
+<li><a href="/games/hurling-heroes/">Game page</a></li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
@@ -10501,7 +10289,7 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li><a href="/games/sepak-takraw-unleashed/">Game page</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/sepak-takraw-unleashed-beta">Android beta</a></li>
+<li><a href="/games/sepak-takraw-unleashed/">Game page</a></li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
@@ -10543,7 +10331,7 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li><a href="/games/netball-unleashed/">Game page</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta">Android beta</a></li>
+<li><a href="/games/netball-unleashed/">Game page</a></li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
@@ -10585,7 +10373,7 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li><a href="/games/kho-kho-rush/">Game page</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/khamba-dash-beta">Android beta</a></li>
+<li><a href="/games/kho-kho-rush/">Game page</a></li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
@@ -10627,7 +10415,7 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li><a href="/games/floorball-unleashed/">Game page</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/floorball-unleashed-beta">Android beta</a></li>
+<li><a href="/games/floorball-unleashed/">Game page</a></li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
@@ -10669,7 +10457,7 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li><a href="/games/pok-ta-pok-rivals/">Game page</a> · <a href="https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/pok-ta-pok-rivals-beta">Android beta</a></li>
+<li><a href="/games/pok-ta-pok-rivals/">Game page</a></li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
@@ -10680,8 +10468,8 @@
 		<wp:post_id>99</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-28 03:27:17]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-28 03:27:17]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[press-kit]]></wp:post_name>
@@ -10693,7 +10481,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[ffc77e7b33c2a7e1a10352e3c35e294b]]></wp:meta_value>
+		<wp:meta_value><![CDATA[cccbdf2b361e8dfc1280d130c58575a5]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -10771,14 +10559,6 @@
 <p>A screenshot helps. We read everything.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:heading -->
-<h2 class="wp-block-heading">The betas</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>How to install a beta, and the download for each game: <a href="/games/#beta">Try the betas</a>.</p>
-<!-- /wp:paragraph -->
-
 <!-- wp:heading {"anchor":"suggest"} -->
 <h2 id="suggest" class="wp-block-heading">Suggest a sport</h2>
 <!-- /wp:heading -->
@@ -10798,8 +10578,8 @@
 		<wp:post_id>100</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[support]]></wp:post_name>
@@ -10811,7 +10591,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[f2b3c0c68f7855a3e028696c28dd81f6]]></wp:meta_value>
+		<wp:meta_value><![CDATA[d5dcaae8f60b4a60bcaf7333d8941d84]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
