@@ -812,6 +812,12 @@ func _brains(dt: float) -> void:
 			if not pl.on_pitch():
 				_walk_off(pl)
 				continue
+			# Over a free on the grass, and lifting and striking it: still, square to the posts (turned to look at the
+			# ball beside him, the hurley's bas was off it).
+			if pl.action in ["free_set", "free_strike"]:
+				pl.want_vel = Vector3.ZERO
+				pl.face_to = Vector3(Pitch.HALF_L * dir(pl.team), 0, 0)
+				continue
 			if pl == active and phase in [P.LIVE, P.THROW_IN, P.SET, P.SETUP] and controls.visible:
 				_user_move(pl, dt)
 				continue
