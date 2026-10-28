@@ -545,7 +545,8 @@ func _draw_marks() -> void:
 			var a := TAU * i / 24.0
 			pts.append(cam.unproject_position(_drop + Vector3(cos(a) * 1.3, 0.03, sin(a) * 1.3)))
 		_marks.draw_polyline(pts, Color(Game.C_GOLD, 0.85), 2.5, true)
-	if _active != null and is_instance_valid(_active) and _active.visible and m.controls.visible:
+	# Your player's ring and number (none in free-taking practice: he is the only one, and close).
+	if _active != null and is_instance_valid(_active) and _active.visible and m.controls.visible and not m.is_practice():
 		var p := _active.global_position
 		if not cam.is_position_behind(p):
 			var c := cam.unproject_position(p)

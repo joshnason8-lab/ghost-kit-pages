@@ -228,7 +228,7 @@ func _show_bar() -> void:
 func _bar_rect() -> Rect2:
 	var vp := get_viewport().get_visible_rect().size
 	var w := clampf(vp.x * 0.42, 360.0, 760.0)
-	return Rect2(Vector2((vp.x - w) * 0.5, vp.y * 0.8 - 17.0), Vector2(w, 34.0))
+	return Rect2(Vector2((vp.x - w) * 0.5, vp.y * 0.87 - 17.0), Vector2(w, 34.0))
 
 
 ## Red at the ends through amber to green in the middle; the marker a white line with a point above it.
