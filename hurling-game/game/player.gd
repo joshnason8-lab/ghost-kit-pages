@@ -440,7 +440,7 @@ func measure_free_bas() -> void:
 	_lod_skip = _pose_every
 	animate(0.0)
 	var b := body.bas_world()
-	var local := Basis(Vector3.UP, yaw).inverse() * (b - global_position)
+	var local := Basis(Vector3.UP, body.global_rotation.y).inverse() * (b - global_position)
 	_free_bas = Vector3(local.x, 0.0, local.z)
 	action = keep[0]
 	action_t = keep[1]
