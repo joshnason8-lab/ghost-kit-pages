@@ -357,6 +357,65 @@ add_action(
 	}
 );
 
+/** The theme's version of a page's content, with this site's image IDs and trailers filled in. */
+function ghostkit_theme_body( $page ) {
+	static $ids = null;
+	if ( null === $ids ) {
+		$ids = array();
+		foreach ( ghostkit_content()['assets'] as $asset ) {
+			$ids[ $asset['key'] ] = ghostkit_asset_id( $asset['key'] );
+		}
+	}
+	return ghostkit_fill_trailers( ghostkit_fill_tokens( $page['content'], $ids ), $ids );
+}
+
+/** Puts the theme's version back into an existing page (WordPress keeps the old content as a revision). */
+function ghostkit_reset_page( $page ) {
+	$existing = get_page_by_path( $page['path'] );
+	if ( ! $existing ) {
+		return false;
+	}
+	wp_update_post(
+		array(
+			'ID'           => $existing->ID,
+			'post_content' => wp_slash( ghostkit_theme_body( $page ) ),
+			'post_excerpt' => wp_slash( $page['excerpt'] ),
+		)
+	);
+	update_post_meta( $existing->ID, '_ghostkit_hash', md5( get_post_field( 'post_content', $existing->ID, 'raw' ) ) );
+	update_post_meta( $existing->ID, '_ghostkit_path', $page['path'] );
+	if ( $page['template'] ) {
+		update_post_meta( $existing->ID, '_wp_page_template', $page['template'] );
+	}
+	return true;
+}
+
+// "Reset to the theme's version": one page (path=…) or every page that differs (path=*).
+add_action(
+	'admin_post_ghostkit_reset',
+	function () {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Sorry, only an administrator can do this.' );
+		}
+		check_admin_referer( 'ghostkit_reset' );
+		$want = isset( $_POST['path'] ) ? sanitize_text_field( wp_unslash( $_POST['path'] ) ) : '';
+		$done = array();
+		foreach ( ghostkit_content()['pages'] as $page ) {
+			if ( '*' !== $want && $page['path'] !== $want ) {
+				continue;
+			}
+			$existing = get_page_by_path( $page['path'] );
+			if ( $existing && md5( $existing->post_content ) !== md5( ghostkit_theme_body( $page ) ) && ghostkit_reset_page( $page ) ) {
+				$done[] = $page['title'];
+			}
+		}
+		$log = $done ? array( 'Reset to the theme\'s version: ' . implode( ', ', $done ) . '. (The old content is kept as a revision of each page.)' ) : array( 'Nothing needed resetting.' );
+		set_transient( 'ghostkit_setup_log', array( 'done' => true, 'log' => $log ), 600 );
+		wp_safe_redirect( add_query_arg( 'page', 'ghostkit-setup', admin_url( 'themes.php' ) ) );
+		exit;
+	}
+);
+
 /** The Site setup screen. */
 function ghostkit_setup_page() {
 	$result  = get_transient( 'ghostkit_setup_log' );
@@ -382,15 +441,34 @@ function ghostkit_setup_page() {
 		echo '<p>Still working: this page carries on by itself. Please leave it open.</p>';
 		echo '<script>setTimeout(function(){HTMLFormElement.prototype.submit.call(document.getElementById("ghostkit-setup-form"));},500);</script>';
 	}
-	echo '<h2>Pages</h2><table class="widefat striped"><thead><tr><th>Address</th><th>Page</th></tr></thead><tbody>';
+	$confirm = 'This replaces the page with the theme\'s version. Any changes you made to it are replaced too; WordPress keeps the old version under the page\'s Revisions. Carry on?';
+	$reset   = function ( $path, $label, $class ) use ( $action, $confirm ) {
+		$form  = '<form method="post" action="' . esc_url( $action ) . '" style="display:inline" onsubmit="return confirm(' . esc_attr( wp_json_encode( $confirm ) ) . ')">';
+		$form .= wp_nonce_field( 'ghostkit_reset', '_wpnonce', true, false );
+		$form .= '<input type="hidden" name="action" value="ghostkit_reset"><input type="hidden" name="path" value="' . esc_attr( $path ) . '">';
+		return $form . '<button type="submit" class="button ' . esc_attr( $class ) . '">' . esc_html( $label ) . '</button></form>';
+	};
+	$rows    = '';
+	$differs = 0;
 	foreach ( $content['pages'] as $page ) {
 		$p   = get_page_by_path( $page['path'] );
 		$url = 'home' === $page['path'] ? home_url( '/' ) : home_url( '/' . $page['path'] . '/' );
-		echo '<tr><td><code>' . esc_html( wp_make_link_relative( $url ) ) . '</code></td><td>';
-		echo $p ? '<a href="' . esc_url( get_permalink( $p ) ) . '">' . esc_html( get_the_title( $p ) ) . '</a>' : '<em>not made yet</em>';
-		echo '</td></tr>';
+		$rows .= '<tr><td><code>' . esc_html( wp_make_link_relative( $url ) ) . '</code></td><td>';
+		$rows .= $p ? '<a href="' . esc_url( get_permalink( $p ) ) . '">' . esc_html( get_the_title( $p ) ) . '</a>' : '<em>not made yet</em>';
+		$rows .= '</td><td>';
+		if ( $p && md5( $p->post_content ) !== md5( ghostkit_theme_body( $page ) ) ) {
+			++$differs;
+			$rows .= 'Differs from the theme\'s version (edited, imported or from an older version) ' . $reset( $page['path'], 'Reset to the theme\'s version', 'button-small' );
+		} elseif ( $p ) {
+			$rows .= 'Up to date';
+		}
+		$rows .= '</td></tr>';
 	}
-	echo '</tbody></table></div>';
+	echo '<h2>Pages</h2>';
+	if ( $differs ) {
+		echo '<div class="notice notice-warning inline"><p>' . esc_html( sprintf( '%d of the pages differ from the theme\'s version. Set up the site never changes those, in case you edited them. To bring one up to date, reset it; to bring them all, ', $differs ) ) . '</p><p>' . $reset( '*', 'Reset every page that differs', 'button-secondary' ) . '</p></div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- built from escaped parts.
+	}
+	echo '<table class="widefat striped"><thead><tr><th>Address</th><th>Page</th><th>Status</th></tr></thead><tbody>' . $rows . '</tbody></table></div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- built from escaped parts.
 }
 
 // Until the setup has run, say so on the dashboard and the themes screen.

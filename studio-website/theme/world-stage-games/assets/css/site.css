@@ -383,3 +383,9 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 /* The home page's hero meets the header with no strip of page between them. */
 .gk-main > .wp-block-post-content:first-child,
 .gk-main > .wp-block-post-content > .gk-hero:first-child { margin-top: 0 !important; }
+
+/* The first version of the home page put four games' title art behind the hero. Pages made by that version keep it in
+   their content until they are reset (Appearance > Site setup), so it stays hidden here. */
+.gk-hero__bg { display: none !important; }
+/* WordPress spaces the page's main area 24 px below the header; when the page opens with the hero, close that gap. */
+.gk-main:has(> .wp-block-post-content > .gk-hero:first-child) { margin-top: 0 !important; }

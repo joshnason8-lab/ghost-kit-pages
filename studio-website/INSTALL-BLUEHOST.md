@@ -59,6 +59,10 @@ You can press the button again at any time:
 - It never changes a page you have edited.
 - It fills in anything that is missing, for example a page you deleted by mistake.
 
+Under the button, the **Pages** table shows each page's status. A page marked **Differs from the theme's version**
+has been edited, imported or made by an older version. **Reset to the theme's version** replaces it with the theme's
+version, and WordPress keeps the old content under the page's **Revisions**.
+
 **Why this way and not the import file?** It is more reliable on shared hosting such as Bluehost:
 
 - It needs no plugin.
@@ -243,7 +247,12 @@ switch theme:
    - renames the site to World Stage Games, unless you had already renamed it;
    - swaps the ghost logo and icon for the new ones;
    - checks the links.
-3. Delete **Ghost Kit** under **Appearance > Themes** (click it, then **Delete**).
+3. Look at the **Pages** table under the button. Any page marked **Differs from the theme's version** still has the
+   old version's content. This happens when the pages came from the import file, or when you edited them.
+   - If you didn't mean to change those pages, press **Reset every page that differs**.
+   - To update one page, press **Reset to the theme's version** on its row.
+   - WordPress keeps the old content under each page's **Revisions**, so a reset can be undone.
+4. Delete **Ghost Kit** under **Appearance > Themes** (click it, then **Delete**).
 
 If you edited the header or footer in the Site Editor under Ghost Kit, those edits don't carry over to the new theme.
 Make them again under **Appearance > Editor**.
@@ -317,4 +326,10 @@ All under `https://worldstagegames.com`:
 - **The import says "Failed to import Media"**: the server couldn't download the pictures from GitHub. The pages still
   show them, loaded from GitHub. To keep the pictures on your own site, use the Site setup route (2a) on a fresh
   install instead.
+- **Big banners of the games at the top of the home page**: the home page still has the first version's content,
+  which put the games' title art behind the headline. The theme hides those pictures now. To clean them out of the
+  page itself, go to **Appearance > Site setup** and press **Reset to the theme's version** on the Home row.
+- **A page looks out of date after updating the theme**: Site setup never changes a page that differs from the
+  theme's version, in case you edited it. Its **Pages** table marks those pages, and **Reset to the theme's version**
+  brings one up to date. WordPress keeps the old content under the page's **Revisions**.
 - **Anything else**: run **Appearance > Site setup** again. It's safe.
