@@ -59,6 +59,15 @@ func apply(p: Dictionary) -> void:
 			var b: int = side[j]
 			var q := skeleton.get_bone_pose_rotation(b)
 			skeleton.set_bone_pose_rotation(b, q * Quaternion(Vector3.UP, deg_to_rad(float(tw[j]) * float(side[2]))))
+	# The shoulder lifts with the arm: an arm raised high (a flag, a card) turned about a joint as low as the armpit,
+	# and came out of the coat's side under the shoulder, as if not joined to it (the owner's screenshot). Each
+	# shoulder rises and comes in as the arm goes above level, as a man's collarbone does.
+	var chest := skeleton.get_bone_global_pose(2).basis
+	for side in [[5, 1.0], [8, -1.0]]:
+		var b: int = side[0]
+		var arm := (chest.inverse() * skeleton.get_bone_global_pose(b).basis * Vector3.DOWN).normalized()
+		var up := smoothstep(0.1, 0.95, arm.y)   # 0 at level, 1 overhead
+		skeleton.set_bone_pose_position(b, skeleton.get_bone_rest(b).origin + Vector3(-0.025 * float(side[1]), 0.085, 0.0) * up)
 	var fp := float(foot_pitch.get(_twist_key(), 0.0))
 	if fp != 0.0:
 		for b in [13, 16]:

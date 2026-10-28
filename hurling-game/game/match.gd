@@ -1390,6 +1390,10 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 	if bool(shot.get("goal", false)):
 		speed = 30.0 + power * 10.0
 	var sol := Sliotar.solve(from, aim, speed)
+	if bool(shot.get("exact", false)):
+		var ev := _exact_launch(from, aim, speed)
+		if ev != Vector3.ZERO:
+			sol = [ev, 0.0]
 	var v: Vector3
 	if sol.is_empty():
 		var flat := Vector3(aim.x - from.x, 0, aim.z - from.z).normalized()
@@ -1419,6 +1423,61 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 	_keeper_reacts(pl.team)
 	if not advantage.is_empty() and int(advantage.team) == pl.team:
 		advantage.shot = true
+
+
+## The launch velocity that sends a strike from from at speed through want exactly (the solve searches by whole
+## degrees, so it can be half a metre out at the posts): the solve's arc flown as the ball flies (Sliotar.fly), its
+## climb and its heading worked by the secant onto where it crosses the goal line. [] if the solve finds no arc.
+func _exact_launch(from: Vector3, want: Vector3, speed: float) -> Vector3:
+	var sol := Sliotar.solve(from, want, speed)
+	if sol.is_empty():
+		return Vector3.ZERO
+	var v0: Vector3 = sol[0]
+	var flat := Vector3(v0.x, 0, v0.z)
+	var pitch := atan2(v0.y, flat.length())
+	var yaw := atan2(flat.x, flat.z)
+	var prev_p := pitch
+	var prev_e := INF
+	var best := v0
+	var best_e := INF
+	for i in 8:
+		var v := Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * speed
+		var c := _crossing(from, v, want.x)
+		if c == Vector3.INF:
+			break
+		var ey := want.y - c.y
+		var e := Vector2(ey, want.z - c.z).length()
+		if e < best_e:
+			best_e = e
+			best = v
+		if e < 0.02:
+			break
+		# The heading: turned by what it missed by sideways, as seen from the shot's length.
+		var to_c := Vector2(c.x - from.x, c.z - from.z)
+		var to_w := Vector2(want.x - from.x, want.z - from.z)
+		yaw += wrapf(atan2(to_w.x, to_w.y) - atan2(to_c.x, to_c.y), -PI, PI)
+		# The climb: the secant on the height it crosses at (a first guess from the distance).
+		var step := ey / maxf(to_w.length(), 1.0)
+		if prev_e != INF and absf(ey - prev_e) > 0.0001:
+			step = (pitch - prev_p) * ey / (prev_e - ey)
+		prev_p = pitch
+		prev_e = ey
+		pitch += clampf(step, -0.05, 0.05)
+	return best
+
+
+## Where a ball from p at v first crosses x = line, or Vector3.INF if it comes down before.
+func _crossing(p: Vector3, v: Vector3, line: float) -> Vector3:
+	for k in 900:
+		var r := Sliotar.fly(p, v, 1.0 / 120.0)
+		var q: Vector3 = r[0]
+		if (p.x - line) * (q.x - line) <= 0.0 and absf(q.x - p.x) > 0.00001:
+			return p.lerp(q, (line - p.x) / (q.x - p.x))
+		if bool(r[2]):
+			return Vector3.INF
+		p = q
+		v = r[1]
+	return Vector3.INF
 
 
 ## A strike to a teammate: long and dropping into his path at a height he can catch.

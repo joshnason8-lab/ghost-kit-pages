@@ -527,7 +527,8 @@ func _draw_marks() -> void:
 		cam = m.cam.camera
 	var vp := root.get_viewport_rect().size
 	var b: Vector3 = m.ball.global_position
-	if m.ball.state != Sliotar.HELD or m.carrier == null:
+	# The ball's marker (none in free-taking practice: up close it reads by itself).
+	if (m.ball.state != Sliotar.HELD or m.carrier == null) and not m.is_practice():
 		if not cam.is_position_behind(b):
 			var sp := cam.unproject_position(b)
 			if Rect2(Vector2.ZERO, vp).grow(-4).has_point(sp):

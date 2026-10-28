@@ -153,13 +153,24 @@ func _ready() -> void:
 	_mesh.add_child(rim)
 	_shadow = MeshInstance3D.new()
 	var q := QuadMesh.new()
-	q.size = Vector2(0.22, 0.22)
+	q.size = Vector2(0.22, 0.22) * (look_scale / LOOK_SCALE)
 	q.orientation = PlaneMesh.FACE_Y
 	_shadow.mesh = q
+	# A soft round shadow under it (a square read as a dark tile close up).
 	var shm := StandardMaterial3D.new()
 	shm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	shm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	shm.albedo_color = Color(0, 0, 0, 0.45)
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0, 0, 0, 0.5))
+	grad.set_color(1, Color(0, 0, 0, 0.0))
+	var gt := GradientTexture2D.new()
+	gt.gradient = grad
+	gt.fill = GradientTexture2D.FILL_RADIAL
+	gt.fill_from = Vector2(0.5, 0.5)
+	gt.fill_to = Vector2(1.0, 0.5)
+	gt.width = 64
+	gt.height = 64
+	shm.albedo_texture = gt
 	_shadow.material_override = shm
 	_shadow.top_level = true
 	_shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

@@ -26,7 +26,8 @@ Each new beta installs over the last and keeps your saves.
   the ping given its ring.
 - **Feet flat on the grass**: the players' boots and the officials' shoes no longer point their toes at the sky.
 - **The umpires' signals**: the flag raised from the side with a straight arm (no more broken-looking shoulders),
-  eased up and down and waved slowly; after a score the umpires keep facing the play, not round at each other.
+  eased up and down and waved slowly, the shoulder lifting with the arm so it stays joined at the shoulder (it came
+  out of the coat's side below it); after a score the umpires keep facing the play, not round at each other.
 - **Up close in practice**: the sliotar nearer its real size and, on High, real leather (grain, sheen, scuffs, two
   rows of stitches by its rim); every model at full detail at any distance, sharper textures at a low angle and
   finer, softer shadows.
