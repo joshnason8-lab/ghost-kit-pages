@@ -250,6 +250,48 @@ posts; SHOOT stops it, and that is where the ball goes.
 - Tests: a point, a wide, a 65 and a penalty aimed and struck through the match, back to the match camera after each;
   the target lingers between the posts and hurries through the goal. How to Play's controls say how.
 
+## Done (0.16.0-beta, free-taking round four, 28 October 2026)
+
+The owner's list: the taker came in on the wrong side; the camera to pull back to see the ball put down; the awful
+hunched stance before the strike; the ball to be set down and the taker in a hitting stance before SHOOT; the post
+challenge's text more exciting, with double points; a ball struck above the camera with no arrow, called wide ten
+seconds later with no ball seen landing; the referees' elbows bending the wrong way; the crossbar challenge out; the
+crowd swaying with no hands moving; the hand that does not look like it holds the hurley; the whole swing again from
+the videos, all angles; the swing's timing and where the ball is, mocapped from the video too. Then: the umpire's
+arms starting too low, as if not joined to the shoulders.
+
+- **The free from the slow-motion video** (`tools/mocap/free_clip.py`): the owner's third video is eight times slowed
+  (240 frames a second), from behind and to the side of the striker. MediaPipe's landmarks for the body; the bas and
+  the sliotar marked by eye on 27 key frames (no tracker followed the pale stick against the sky), the hurley's depth
+  from its length. Three clips at 60 frames a second (`assets/player/free.json`): Free_Ready (the stance: frame 300),
+  Free_Place (down to the grass and up, 1.1 s) and Free_Strike (the bend quickened to 0.6 s, then the lift, the
+  toss, the backswing and the strike at the real pace: the ball on the bas at 0.73 s, tossed at 1.16 s, struck at
+  1.8 s at waist height out in front). Both hands on the hurley by IK (the hurley drawn toward the left hand where
+  the game's proportions put it out of reach), the planted feet kept still (the hips' travel in the clip:
+  hips_side, hips_fwd).
+- `player.gd`: free_place, free_set (now the upright stance), free_strike; FREE_YAW -100 (the left shoulder to the
+  posts); the ball's place measured from the scoop, and the bas at contact measured too, so the toss comes down onto
+  it (`match.gd` `_lift_ball`, `Player.free_moment`).
+- `practice.gd`: the taker walks up on his side with the ball in his left hand, puts it down (free_place), stands
+  (free_set), then the aim. `placed_aim.gd` `low_view`: 10 m back, 1.75 m up, tilted and widened so the ball at his
+  feet and the posts are both in the picture. The camera follows a ball leaving the picture; the HUD's arrow to an
+  off-screen ball is back in practice.
+- **Fists** (`hero_body.gd` `_gripped`): the model has no finger bones, so each mesh's fingers are bent round the
+  handle's line as it loads (a bend deformer from the knuckles; the levels of detail kept); the handle passes
+  through the fist (HeroBody.GRIP). All three of the hero's meshes (and the HD pack's, without a new pack).
+- **Sliotar.solve** halves down to the angle that passes the target (it took the first whole degree within 15 cm,
+  and with the strike now at the waist that was sometimes the high arc: a 42 m free went up as a lob).
+- A ball out over the sideline in a shoot-out or practice ends the free there and then; FLIGHT_T 5 s.
+- **Post challenges** only (the crossbar's removed): left, right, then either; PRACTICE_CH_TITLE, "DOUBLE POINTS!"
+  and a bigger cheer.
+- **Officials' elbows** (`person_body.gd` TWIST): the shoulder turned 160 degrees so the elbow bends forward (the
+  forearm turned back as far, the palms still to the thighs), for the umpire and referee models, High and Low.
+- **The crowd's arms** (`tools/crowd/render_fans.gd`, `crowd.gd`): the Medium/High and HD-pack sheets re-rendered
+  with taller cells (0.6 x 1.5 m: room for the arms over the head) and two more rows, each fan cheering in four frames
+  (arms up and waved, a fist pumped); each spectator fades into their own cheer as the crowd passes their own point
+  and waves between the frames at their own pace. An HD pack fetched before keeps its old sheet and is drawn as
+  before. Low unchanged.
+
 ## Done (0.15.0-beta, free-taking round three, 28 October 2026)
 
 The owner's list: the officials' feet pointing at the sky and their arms looking broken when raised; no shot taken

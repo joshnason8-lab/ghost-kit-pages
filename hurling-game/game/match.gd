@@ -814,7 +814,7 @@ func _brains(dt: float) -> void:
 				continue
 			# Over a free on the grass, and lifting and striking it: still, square to the posts (turned to look at the
 			# ball beside him, the hurley's bas was off it).
-			if pl.action in ["free_set", "free_strike"]:
+			if pl.action in ["free_place", "free_set", "free_strike"]:
 				pl.want_vel = Vector3.ZERO
 				pl.face_to = Vector3(Pitch.HALF_L * dir(pl.team), 0, 0)
 				continue
@@ -1237,10 +1237,8 @@ func _aimed_now(pl: Player, placed: String, choice: String) -> void:
 		_shoot_at(pl, _aim_point, placed)
 
 
-## The sliotar through a free_strike: on the grass till the bas comes under it, up on the bas, tossed, and falling
-## to where he strikes it (seconds from the start of the strike).
-const LIFT_ON := 0.42
-const LIFT_TOSS := 0.78
+## The sliotar through a free_strike: on the grass till the bas comes under it, up on the bas as he lifts it to his
+## head, tossed off it, and falling to where the bas meets it (the clip's moments: Player.free_moment).
 var _lift := {}
 
 
@@ -1253,23 +1251,25 @@ func _lift_ball() -> void:
 		return
 	var t := now - float(_lift.t0)
 	var g: Vector3 = _lift.ground
+	var on := Player.free_moment("scoop")
+	var off := Player.free_moment("release")
 	var bas: Vector3 = pl.body.bas_world() + Vector3(0, 0.05, 0)
-	if t < LIFT_ON - 0.15:
+	if t < on - 0.12:
 		ball.global_position = g
-	elif t < LIFT_ON:
-		ball.global_position = g.lerp(bas, smoothstep(LIFT_ON - 0.15, LIFT_ON, t))
-	elif t < LIFT_TOSS:
+	elif t < on:
+		ball.global_position = g.lerp(bas, smoothstep(on - 0.12, on, t))
+	elif t < off:
 		ball.global_position = bas
 		_lift.p0 = bas
 	else:
 		if not _lift.has("v"):
-			# Up from the bas and down again to where the swing meets it, in the time left.
+			# Up off the bas and down again to where the swing meets it, in the time left.
 			var p0: Vector3 = _lift.get("p0", bas)
-			var tt := pl.contact_time("free_strike") - LIFT_TOSS
-			var p1 := pl.global_position + pl.forward() * 0.72 + Vector3(0, 1.15, 0)
+			var tt := Player.free_moment("contact") - off
+			var p1 := pl.global_position + Basis(Vector3.UP, pl.body.global_rotation.y) * Player.free_hit_offset()
 			_lift.p0 = p0
 			_lift.v = (p1 - p0) / tt + Vector3(0, 0.5 * 9.81 * tt, 0)
-		var u := t - LIFT_TOSS
+		var u := t - off
 		ball.global_position = (_lift.p0 as Vector3) + (_lift.v as Vector3) * u + Vector3(0, -0.5 * 9.81 * u * u, 0)
 
 
@@ -1329,7 +1329,7 @@ func free_stand(spot: Vector3, k: int) -> Vector3:
 	return Vector3(spot.x, 0, spot.z) - Basis(Vector3.UP, atan2(to_goal.x, to_goal.z)) * Player.free_ball_offset()
 
 
-## A woodwork challenge for this aimed shot ("left", "right" post or "bar"; free-taking practice), "" none.
+## A woodwork challenge for this aimed shot ("left" or "right" post; free-taking practice), "" none.
 func _aim_challenge() -> String:
 	return ""
 
@@ -1704,6 +1704,10 @@ func _check_ball(prev: Vector3, cur: Vector3) -> void:
 				return
 			_over_end_line(c, s)
 			return
+	if absf(cur.z) > Pitch.HALF_W + Sliotar.RADIUS and phase == P.SHOOTOUT:
+		# Out over the sideline (a free-taking practice's ball struck well wide): wide, now, not when it stops.
+		_shootout_result("", cur)
+		return
 	if absf(cur.z) > Pitch.HALF_W + Sliotar.RADIUS and phase == P.LIVE:
 		var k := (signf(cur.z) * Pitch.HALF_W - prev.z) / maxf(0.0001, cur.z - prev.z)
 		var c := prev.lerp(cur, clampf(k, 0.0, 1.0))

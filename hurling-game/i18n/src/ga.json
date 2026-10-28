@@ -16,7 +16,7 @@
   "PRACTICE_TAKER": "Ar na saorbhuillí: #{num} {name}",
   "PRACTICE_FREES_STAT": "Saorbhuillí",
   "PRACTICE_HOW_TITLE": "Conas a oibríonn sé",
-  "PRACTICE_HOW": "Deich saorbhuille agus 65anna ó gach cearn den pháirc: gar, ar an taobh agus i bhfad amach. Taobh thiar de do bhuailteoir, téann sprioc timpeall an chúil: brúigh SCAOIL chun í a stopadh san áit ar mian leat an sliotar a chur. Ansin ritheann barra ó thaobh go taobh: brúigh SCAOIL arís agus an marcóir sa ghlas. Amach sa dearg, imeoidh an liathróid chun an taoibh sin. Is fiú pointe amháin cúilín agus trí phointe cúl. Dúshlán is ea gach tríú saorbhuille: buail an cuaille clé, an cuaille deas, ansin an trasnán le haghaidh pointí dúbailte.",
+  "PRACTICE_HOW": "Deich saorbhuille agus 65anna ó gach cearn den pháirc: gar, ar an taobh agus i bhfad amach. Taobh thiar de do bhuailteoir, téann sprioc timpeall an chúil: brúigh SCAOIL chun í a stopadh san áit ar mian leat an sliotar a chur. Ansin ritheann barra ó thaobh go taobh: brúigh SCAOIL arís agus an marcóir sa ghlas. Amach sa dearg, imeoidh an liathróid chun an taoibh sin. Is fiú pointe amháin cúilín agus trí phointe cúl. Dúshlán cuaille is ea gach tríú saorbhuille: buail an cuaille a ainmnítear le haghaidh pointí dúbailte.",
   "PRACTICE_BEST_WAS": "Do scór is fearr: {n}",
   "PRACTICE_NO_BEST": "Gan scór fós: socraigh ceann.",
   "PRACTICE_HD_HINT": "Don iománaí is géire, faigh an pacáiste HD sna Socruithe.",
@@ -24,11 +24,10 @@
   "PRACTICE_SCORE_N": "Scór {n}",
   "PRACTICE_BEST_N": "Is fearr {n}",
   "PRACTICE_SHORT": "Gearr",
-  "PRACTICE_CHALLENGE": "Dúshlán: pointí dúbailte",
-  "PRACTICE_CH_LEFT": "Buail an cuaille clé!",
-  "PRACTICE_CH_RIGHT": "Buail an cuaille deas!",
-  "PRACTICE_CH_BAR": "Buail an trasnán!",
-  "PRACTICE_CH_HIT": "DÚBAILTE!",
+  "PRACTICE_CHALLENGE": "Dúshlán cuaille: pointí dúbailte!",
+  "PRACTICE_CH_LEFT": "Buail an cuaille clé le haghaidh POINTÍ DÚBAILTE!",
+  "PRACTICE_CH_RIGHT": "Buail an cuaille deas le haghaidh POINTÍ DÚBAILTE!",
+  "PRACTICE_CH_HIT": "POINTÍ DÚBAILTE!",
   "PRACTICE_DONE": "Deich saorbhuille tógtha",
   "PRACTICE_RATE_3": "Foirm Réalta. Is leatsa saorbhuillí an chontae.",
   "PRACTICE_RATE_2": "Caighdeán contae: seasmhach thar an trasnán.",
@@ -459,5 +458,7 @@
   "HD_LINE_OUT": "Pacáiste HD: gan íoslódáil. Roghnach, d'imreoirí, féar agus slua níos géire ar Ard.",
   "HD_OPEN": "Pacáiste HD",
   "VULKAN_BACK_crash": "Níor thosaigh an cluiche i gceart an uair dheireanach: as seo amach úsáideann sé an seanléiritheoir grafaice ar an bhfón seo.",
-  "PRIV_DATE": "Nuashonraithe 27 Deireadh Fómhair 2026."
+  "PRIV_DATE": "Nuashonraithe 27 Deireadh Fómhair 2026.",
+  "PRACTICE_CH_TITLE": "DÚSHLÁN CUAILLE!",
+  "PRACTICE_CH_HIT_SUB": "Den chuaille! +{n}"
 }

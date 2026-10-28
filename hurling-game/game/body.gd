@@ -35,7 +35,7 @@ const BONES := [
 var skeleton: Skeleton3D
 var mesh_instance: MeshInstance3D
 var look := {}          # skin, jersey, shorts, trim, shoe, hair, band (Colors), hair_style (int), height (m)
-var pose := {}          # bone name -> Vector3 degrees (or a Quaternion: the clips); plus "hips_y" (m above rest), "hips_x"/"hips_z" handled as bones
+var pose := {}          # bone name -> Vector3 degrees (or a Quaternion: the clips); plus "hips_y" (m above rest), "hips_x"/"hips_z" handled as bones, "hips_side"/"hips_fwd" (m, the hips moved over the ground)
 var _idx := {}
 var _rest := {}         # bone -> rest position (model space)
 var _hips := Vector3.ZERO
@@ -149,7 +149,7 @@ func apply(p: Dictionary) -> void:
 			skeleton.set_bone_pose_rotation(i, e)
 		else:
 			skeleton.set_bone_pose_rotation(i, Basis.from_euler(Vector3(deg_to_rad(e.x), deg_to_rad(e.y), deg_to_rad(e.z)), EULER_ORDER_YXZ).get_rotation_quaternion())
-	skeleton.set_bone_pose_position(0, _hips + Vector3(0, float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
+	skeleton.set_bone_pose_position(0, _hips + Vector3(float(p.get("hips_side", 0.0)), float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))))
 
 
 # ---------------------------------------------------------------- the mesh
@@ -261,7 +261,7 @@ func _mesh() -> ArrayMesh:
 ## blade) at its foot. 34 inches (0.86 m), the ash's colour.
 func _hurley(m: MeshBuilder) -> void:
 	var ash := Color("d8b27a")
-	var hh: Vector3 = _rest.hand_r + Vector3(0, -0.06, 0.01)
+	var hh: Vector3 = _rest.hand_r + _grip()
 	var dir := HURLEY_DIR
 	var length := 0.86 if int(look.get("hurley", 1)) == 1 else 0.9
 	var foot := hh + dir * length
@@ -275,13 +275,18 @@ func _hurley(m: MeshBuilder) -> void:
 const HURLEY_DIR := Vector3(0.05, -0.62, 0.78)
 
 
+## Where the hurley's handle passes through the right fist, from the wrist at rest.
+func _grip() -> Vector3:
+	return Vector3(0, -0.06, 0.01)
+
+
 ## Where the bas is now, in world space: what meets the sliotar.
 func bas_world() -> Vector3:
 	var i := bone("hand_r")
 	if i < 0 or skeleton == null:
 		return global_position
 	var t := skeleton.global_transform * skeleton.get_bone_global_pose(i)
-	var hh: Vector3 = _rest.hand_r + Vector3(0, -0.06, 0.01)
+	var hh: Vector3 = _rest.hand_r + _grip()
 	var rest_hand: Vector3 = _rest.hand_r
 	return t * ((hh - rest_hand) + HURLEY_DIR.normalized() * 0.78)
 

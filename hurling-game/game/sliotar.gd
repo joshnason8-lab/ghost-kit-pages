@@ -252,31 +252,58 @@ static func first_at_height(p: Vector3, v: Vector3, h: float, max_t := 6.0) -> A
 
 
 ## The launch velocity that sends a ball from a to pass through b, at the given speed (the flatter of the two
-## arcs, or the higher one when lob is true). Searched by angle, since drag has no closed form. [] if out of reach.
+## arcs, or the higher one when lob is true). Searched by angle, since drag has no closed form: a degree at a time
+## till the arc passes b's height, then halved down between the two (a whole degree is most of a metre at the posts,
+## and the next arc near enough was once the high one, a lob that went up for seconds). [] if out of reach.
 static func solve(a: Vector3, b: Vector3, speed: float, lob := false) -> Array:
 	var flat := Vector3(b.x - a.x, 0, b.z - a.z)
 	var dist := flat.length()
 	if dist < 0.01:
 		return [Vector3(0, speed, 0), 0.0]
 	var dir := flat / dist
+	var angles := range(-5, 71, 1) if not lob else range(70, 9, -1)
+	var prev_deg := 0.0
+	var prev_err := INF       # height at b's distance less b's height, at the last angle tried (INF: none yet)
 	var best := []
 	var best_err := 1e9
-	var angles := range(-5, 71, 1) if not lob else range(70, 9, -1)
 	for deg in angles:
-		var th := deg_to_rad(float(deg))
-		var v := dir * cos(th) * speed + Vector3(0, sin(th) * speed, 0)
-		var r := _height_at(a, v, dist, dir)
+		var r := _height_at(a, dir * cos(deg_to_rad(float(deg))) * speed + Vector3(0, sin(deg_to_rad(float(deg))) * speed, 0), dist, dir)
 		if r.is_empty():
+			prev_err = INF
 			continue
-		var err := absf(float(r[0]) - b.y)
-		if err < best_err:
-			best_err = err
-			best = [v, float(r[1])]
-		if err < 0.15:
+		var err := float(r[0]) - b.y
+		if absf(err) < best_err:
+			best_err = absf(err)
+			best = [_launch(dir, float(deg), speed), float(r[1])]
+		if prev_err != INF and signf(err) != signf(prev_err):
+			# Through b's height between the last angle and this one: halved down to it.
+			var lo := prev_deg
+			var hi := float(deg)
+			var e_lo := prev_err
+			for i in 7:
+				var mid := (lo + hi) * 0.5
+				var rm := _height_at(a, _launch(dir, mid, speed), dist, dir)
+				if rm.is_empty():
+					break
+				var em := float(rm[0]) - b.y
+				if absf(em) < best_err:
+					best_err = absf(em)
+					best = [_launch(dir, mid, speed), float(rm[1])]
+				if signf(em) == signf(e_lo):
+					lo = mid
+					e_lo = em
+				else:
+					hi = mid
 			break
+		prev_deg = float(deg)
+		prev_err = err
 	if best_err > 1.0:
 		return []
 	return best
+
+
+static func _launch(dir: Vector3, deg: float, speed: float) -> Vector3:
+	return dir * cos(deg_to_rad(deg)) * speed + Vector3(0, sin(deg_to_rad(deg)) * speed, 0)
 
 
 ## The height a ball reaches at horizontal distance dist along dir, and when: [] if it never gets there in the air.

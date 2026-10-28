@@ -9,6 +9,28 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.16.0
+
+- **A free taken as the owner's slow-motion video shows it**: your free-taker walks up on his own side of the ball
+  with it in his left hand, bends and puts it down, and stands over it side-on to the posts, his left shoulder to
+  them, the hurley in both hands, while you aim (no more hunched over it). On SHOOT he bends to it, slides the bas
+  under it and lifts it, the sliotar riding the hurley up to his head; he tosses it, swings back over his right
+  shoulder and strikes it as it drops past his waist out in front of him, then follows through to the posts. The
+  motion, the hurley and the sliotar all taken from the video, frame by frame.
+- **Hands that hold the hurley**: fists closed round the handle, both hands on it through the swing (the model's
+  hands were open, the fingers straight).
+- **The camera further back and higher**, so the ball is in the picture as it is put down and lifted; and it turns
+  to follow a ball going out of the picture, with an arrow to it if it is off the screen.
+- **A ball struck out over the sideline is called wide at once** (it was flying on for ten seconds before the call).
+- **Post challenges**: the crossbar challenge is gone (the target never really runs across it): the third, sixth and
+  ninth frees ask for the left post, the right post, then either. "POST CHALLENGE!", and "DOUBLE POINTS!" with a
+  roar when it rings.
+- **The officials' elbows bend forward**, the umpires' and the referee's (their hands were behind their hips).
+- **The crowd cheers with its arms**: on Medium and High, as the crowd goes up, each fan's arms go up and wave, or a
+  fist pumps, each at their own pace, blended smoothly.
+- **Every strike goes where it is aimed**: the flight is worked out to the centimetre (a long free could go up as a
+  lob before).
+
 ## New in 0.15.0
 
 - **Frees from the grass, as they are taken**: your free-taker settles over the sliotar with his hurley under it

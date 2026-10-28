@@ -35,7 +35,7 @@ var fired := false             # the bar stopped too (the second): the shot is o
 var bar_x := -1.0              # the bar's marker, -1 (the left end) to 1
 var bar_period := 1.4          # seconds for the marker to go from one end to the other and back
 var camera: Camera3D
-## A woodwork challenge (free-taking practice): "left" or "right" post (as the camera sees them) or "bar", "" none.
+## A woodwork challenge (free-taking practice): "left" or "right" post (as the camera sees them), "" none.
 ## The target woodwork glows; the target stopped near it with the bar in the green, the sliotar goes exactly onto it
 ## (snapped), so a well-timed challenge does ring the post.
 var challenge := ""
@@ -112,10 +112,21 @@ static func low_view(camera: Camera3D, spot: Vector3, stand: Vector3, d: float, 
 	var away := -signf(side.dot(spot - stand)) if (spot - stand).length() > 0.2 else 1.0
 	camera.near = 0.2
 	camera.far = 900.0
-	camera.global_position = Vector3(stand.x, 0, stand.z) - to_goal * (8.0 + back) + side * away * 1.25 + Vector3(0, 1.0 + back * 0.15, 0)
-	camera.look_at(Vector3(goal_x, CENTRE_Y + 0.6, 0))
-	var reach := Vector2(goal_x, 0).distance_to(Vector2(camera.global_position.x, camera.global_position.z))
-	camera.fov = clampf(rad_to_deg(2.0 * atan(6.5 / reach)), 17.0, 36.0)
+	# Back far enough, and high enough, to see the sliotar on the grass at his feet as well as the posts (the owner:
+	# "pull the camera back a bit so you can see that ball set down").
+	var at := Vector3(stand.x, 0, stand.z) - to_goal * (10.0 + back) + side * away * 1.5 + Vector3(0, 1.75 + back * 0.15, 0)
+	camera.global_position = at
+	var goal := Vector3(goal_x, CENTRE_Y + 0.6, 0)
+	var flat_goal := Vector2(goal.x - at.x, goal.z - at.z).length()
+	var flat_ball := maxf(1.0, Vector2(spot.x - at.x, spot.z - at.z).length())
+	var up_goal := atan2(goal.y - at.y, flat_goal)
+	var down_ball := atan2(0.0 - at.y, flat_ball)
+	# Tilted between the two, the lens just wide enough for both (and some room above the posts).
+	var fov := clampf(rad_to_deg((up_goal - down_ball) / 0.7), 26.0, 50.0)
+	var tilt := (up_goal + down_ball) * 0.5 + deg_to_rad(fov) * 0.06
+	var head := Vector3(goal.x - at.x, 0, goal.z - at.z).normalized()
+	camera.look_at(at + head * cos(tilt) + Vector3(0, sin(tilt), 0))
+	camera.fov = fov
 
 
 ## Where the target is now, on the goal line (world space).
@@ -206,17 +217,12 @@ func strike_point(aim: Vector3, x: float) -> Vector3:
 	return p
 
 
-## The challenge's woodwork, as a point on the goal line nearest p: the post's middle line at p's height, or the
-## crossbar's at p's place across; p itself if it is not within SNAP of it (or there is no challenge).
+## The challenge's post, as a point on the goal line nearest p: the post's middle line at p's height; p itself if it
+## is not within SNAP of it (or there is no challenge).
 func woodwork_snap(p: Vector3) -> Vector3:
 	if challenge == "":
 		return p
 	var post_z := Pitch.POST_GAP * 0.5 + Pitch.POST_W * 0.5
-	if challenge == "bar":
-		var bar_y := Pitch.BAR_H + Pitch.POST_W * 0.5
-		if absf(p.y - bar_y) < SNAP and absf(p.z) < Pitch.POST_GAP * 0.5 - 0.15:
-			return Vector3(p.x, bar_y, p.z)
-		return p
 	var z := post_z * (-1.0 if challenge == "left" else 1.0) * _right_sign()
 	if absf(p.z - z) < SNAP and p.y > 0.4 and p.y < Pitch.POST_H - 0.5:
 		return Vector3(p.x, p.y, z)
@@ -238,18 +244,12 @@ func _show_challenge() -> void:
 	m.no_depth_test = true
 	var glow := MeshInstance3D.new()
 	var post_z := Pitch.POST_GAP * 0.5 + Pitch.POST_W * 0.5
-	if challenge == "bar":
-		var bm := BoxMesh.new()
-		bm.size = Vector3(0.22, 0.22, Pitch.POST_GAP + 0.1)
-		glow.mesh = bm
-		glow.position = Vector3(goal_x, Pitch.BAR_H + Pitch.POST_W * 0.5, 0)
-	else:
-		var cm := CylinderMesh.new()
-		cm.top_radius = 0.11
-		cm.bottom_radius = 0.11
-		cm.height = Pitch.POST_H
-		glow.mesh = cm
-		glow.position = Vector3(goal_x, Pitch.POST_H * 0.5, post_z * (-1.0 if challenge == "left" else 1.0) * _right_sign())
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.11
+	cm.bottom_radius = 0.11
+	cm.height = Pitch.POST_H
+	glow.mesh = cm
+	glow.position = Vector3(goal_x, Pitch.POST_H * 0.5, post_z * (-1.0 if challenge == "left" else 1.0) * _right_sign())
 	glow.material_override = m
 	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(glow)

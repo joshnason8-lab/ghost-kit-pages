@@ -33,7 +33,8 @@ static func data() -> Dictionary:
 		# were measured on those, and at 60 the planted foot slides more (tests/test_runner.gd's foot-slide checks).
 		var cmu: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "cmu.json"))
 		d.clips.merge(cmu.clips)
-		# A free from the ground (the bend, the lift, the toss, the strike), from the owner's videos (tools/mocap/video_clip.py).
+		# A free from the ground (put down, the stance, the lift, the toss, the strike), from the owner's slow-motion video
+		# (tools/mocap/free_clip.py).
 		var free: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "free.json"))
 		d.clips.merge(free.clips)
 		if u:
@@ -62,10 +63,10 @@ static func clip_pose(name: String, t: float, loop := false) -> Array:
 	turns.resize(BONES.size())
 	for j in BONES.size():
 		turns[j] = (a[j] as Quaternion).slerp(b[j], w)
-	return [turns, lerpf(a[BONES.size()], b[BONES.size()], w)]
+	return [turns, lerpf(a[BONES.size()], b[BONES.size()], w), (a[BONES.size() + 1] as Vector2).lerp(b[BONES.size() + 1], w)]
 
 
-## A clip's frames as Quaternions (the file keeps degrees), made once: [17 turns..., hips_y] a frame.
+## A clip's frames as Quaternions (the file keeps degrees), made once: [17 turns..., hips_y, travel] a frame.
 static func _frames(name: String) -> Array:
 	var out := []
 	for fr: Dictionary in data().clips[name].frames:
@@ -74,6 +75,8 @@ static func _frames(name: String) -> Array:
 			var e: Array = fr[bn[0]]
 			row.append(turn(Vector3(e[0], e[1], e[2])))
 		row.append(float(fr.hips_y))
+		# The hips' travel over the ground (x across, z ahead), where a clip moves him (the free's step into the strike).
+		row.append(Vector2(float(fr.get("hips_side", 0.0)), float(fr.get("hips_fwd", 0.0))))
 		out.append(row)
 	return out
 
@@ -114,11 +117,96 @@ func _offsets() -> Array:
 static func _mesh_pair() -> Array:
 	if Ultra.active():
 		if _ultra_meshes.is_empty():
-			_ultra_meshes = [load(ULTRA_DIR + "hero_ultra_hi.res"), load(ULTRA_DIR + "hero_ultra_lo.res")]
+			_ultra_meshes = [_gripped(load(ULTRA_DIR + "hero_ultra_hi.res")), _gripped(load(ULTRA_DIR + "hero_ultra_lo.res"))]
 		return _ultra_meshes
 	if _meshes.is_empty():
-		_meshes = [load(DIR + "hero_hi.res"), load(DIR + "hero_lo.res")]
+		_meshes = [_gripped(load(DIR + "hero_hi.res")), _gripped(load(DIR + "hero_lo.res"))]
 	return _meshes
+
+
+## Where the hurley's handle passes through the right fist (the fingers curled round it: _gripped), from the wrist.
+const GRIP := Vector3(0.056, -0.1, 0.0)
+const GRIP_TILT := 20.0      # the fist's hole slants down toward the thumb, as the hurley does through it
+const GRIP_R := 0.032        # the fingers' middle wraps round the handle at this distance
+const GRIP_MAX := 3.2        # radians: as far as a fingertip curls, into the palm
+
+
+func _grip() -> Vector3:
+	return GRIP
+
+
+## The model's hands made into fists round a hurley's handle. The model has no finger bones (its hands were made
+## open, the fingers straight: holding the hurley they looked broken, the owner saw), so the fingers' points are bent
+## in the mesh, once as it loads: each finger, from the knuckles, wrapped round the handle's line (a line across the
+## palm in front of it, through GRIP), the way a bend wraps a strip round a rod. The thumb, on the palm's side of the
+## line, is left where it is, alongside the handle. Both hands: the left holds the handle below the right.
+static func _gripped(mesh: ArrayMesh) -> ArrayMesh:
+	var a := mesh.surface_get_arrays(0)
+	var vs: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+	var ns: PackedVector3Array = a[Mesh.ARRAY_NORMAL]
+	var ts: PackedFloat32Array = a[Mesh.ARRAY_TANGENT] if a[Mesh.ARRAY_TANGENT] != null else PackedFloat32Array()
+	var bs: PackedInt32Array = a[Mesh.ARRAY_BONES]
+	var ws: PackedFloat32Array = a[Mesh.ARRAY_WEIGHTS]
+	var off: Dictionary = data().offsets
+	var chest := Vector3.ZERO
+	for b in ["hips", "spine", "chest"]:
+		chest += Vector3(off[b][0], off[b][1], off[b][2])
+	for side in [["r", 10, 1.0], ["l", 7, -1.0]]:
+		var wrist := chest
+		for b in ["upperarm_", "forearm_", "hand_"]:
+			var o: Array = off[b + side[0]]
+			wrist += Vector3(o[0], o[1], o[2])
+		var sx: float = side[2]
+		var m := Vector3(sx, 0, 0)                          # from the palm toward the handle (inward, toward the body)
+		var tilt := deg_to_rad(GRIP_TILT)
+		var ax := Vector3(0, -sin(tilt), cos(tilt))         # the handle's line through the fist
+		var down := Vector3(0, -cos(tilt), -sin(tilt))      # the fingers' way, square to it
+		var turn_ax := (-m).cross(down).normalized()        # turning -m toward down: the fingers curling in
+		var a0 := wrist + Vector3(GRIP.x * sx, GRIP.y, GRIP.z)
+		for i in vs.size():
+			var w := 0.0
+			for j in 4:
+				if bs[i * 4 + j] == side[1]:
+					w += ws[i * 4 + j]
+			if w <= 0.0:
+				continue
+			var rel := vs[i] - a0
+			var along := rel.dot(ax)
+			var q := rel - ax * along
+			var s := q.dot(down)
+			var n := -q.dot(m)
+			if s <= 0.0 or n <= 0.004:
+				continue
+			var th := minf(s / GRIP_R, GRIP_MAX)
+			var rot := Basis(turn_ax, th)
+			var bent := a0 + ax * along + rot * (-m * n)
+			vs[i] = vs[i].lerp(bent, w)
+			ns[i] = ns[i].slerp((rot * ns[i]).normalized(), w).normalized() if ns[i].length() > 0.0 else ns[i]
+			if ts.size() >= (i + 1) * 4:
+				var tv := Vector3(ts[i * 4], ts[i * 4 + 1], ts[i * 4 + 2])
+				tv = tv.lerp(rot * tv, w).normalized()
+				ts[i * 4] = tv.x
+				ts[i * 4 + 1] = tv.y
+				ts[i * 4 + 2] = tv.z
+	a[Mesh.ARRAY_VERTEX] = vs
+	a[Mesh.ARRAY_NORMAL] = ns
+	if ts.size() > 0:
+		a[Mesh.ARRAY_TANGENT] = ts
+	# Its levels of detail kept as they were (the index lists, by the edge length each is for).
+	var lods := {}
+	var sd := RenderingServer.mesh_get_surface(mesh.get_rid(), 0)
+	var wide := vs.size() > 65535
+	for l: Dictionary in sd.get("lods", []):
+		var by: PackedByteArray = l.index_data
+		var ix := PackedInt32Array()
+		ix.resize(by.size() / (4 if wide else 2))
+		for k in ix.size():
+			ix[k] = by.decode_u32(k * 4) if wide else by.decode_u16(k * 2)
+		lods[float(l.edge_length)] = ix
+	var out := ArrayMesh.new()
+	out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, a, [], lods)
+	out.custom_aabb = mesh.custom_aabb
+	return out
 
 
 func _dress() -> void:

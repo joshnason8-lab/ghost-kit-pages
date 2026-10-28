@@ -19,14 +19,15 @@ const SPOTS := [
 	[21.0, 0.0, "free"], [30.0, -8.0, "free"], [35.0, 13.0, "free"], [45.0, 0.0, "free"], [38.0, -21.0, "free"],
 	[65.0, 16.0, "65"], [50.0, 9.0, "free"], [26.0, 24.0, "free"], [56.0, -14.0, "free"], [65.0, -22.0, "65"],
 ]
-## The woodwork challenges: the third, sixth and ninth frees, the left post, the right post and the crossbar (as the
-## camera sees them); hit it and that free is worth two, double a point (the owner: "a hit the pole challenge every
-## few shots that can give you double points. 3 times, if they hit the left pole, right pole, and top of goal").
-const CHALLENGES := {2: "left", 5: "right", 8: "bar"}
+## The post challenges: the third, sixth and ninth frees, the left post, the right post, then either (as the camera
+## sees them); hit it and that free is worth two, double a point (the owner: "a hit the pole challenge every few shots
+## that can give you double points"; the crossbar was one too, till the owner found the target never really moves
+## across it).
+const CHALLENGES := {2: "left", 5: "right", 8: ""}
 const CHALLENGE_POINTS := 2
 const WALK_T := 2.2          # seconds for the taker to settle over the ball before the target comes up
 const DONE_T := 2.2          # the result shown this long (the sliotar landing) before the next free
-const FLIGHT_T := 7.0        # a ball still going after this long counts as missed
+const FLIGHT_T := 5.0        # a ball still going after this long counts as missed
 
 # {n (frees taken), points, marks (P a point, G a goal, W wide, S short, K saved), spots, kinds, state, t, best}
 var practice := {}
@@ -149,12 +150,16 @@ func _next_free() -> void:
 	ball.state = Sliotar.DEAD
 	carrier = null
 	restart = {"kind": kind, "team": 0, "spot": spot}
-	# He comes in from a few strides back, not from the last spot (forty metres off, a long wait).
+	# He comes in from a few strides back, not from the last spot (forty metres off, a long wait), on his own side of
+	# the ball (it lies off his right foot as he stands side-on to the posts), the sliotar in his left hand.
 	var stand := _shootout_spot(taker)
 	var to_goal := Vector3(Pitch.HALF_L * dir(0) - spot.x, 0, -spot.z).normalized()
-	taker.global_position = stand - to_goal * 4.0
+	var away := Vector3(stand.x - spot.x, 0, stand.z - spot.z)
+	away = (away - to_goal * away.dot(to_goal)).normalized()
+	taker.global_position = stand - to_goal * 4.0 + away * 1.2
 	taker.vel = Vector3.ZERO
 	taker.stop_action()
+	_in_hand()
 	# The camera: straight to the new spot, a little further back, easing in to the aim's place as he walks up.
 	PlacedAim.low_view(view, spot, stand, dir(0))
 	_view_to = view.global_transform
@@ -162,13 +167,19 @@ func _next_free() -> void:
 	view.make_current()
 	practice.state = "walk"
 	practice.t = now
-	practice.challenge = String(CHALLENGES.get(i, ""))
+	practice.challenge = String(CHALLENGES.get(i, "-"))
+	if practice.challenge == "":
+		practice.challenge = "left" if rng.randf() < 0.5 else "right"
+	elif practice.challenge == "-":
+		practice.challenge = ""
 	practice.woodwork = ""
 	shootout.state = "walk"
 	hud.practice(practice)
 	hud.restart_tag(restart)
 	if practice.challenge != "":
-		hud.banner(tr("PRACTICE_CH_" + String(practice.challenge).to_upper()), Game.C_GOLD)
+		hud.banner(tr("PRACTICE_CH_TITLE"), Game.C_GOLD, 3.2)
+		hud.call_line(tr("PRACTICE_CH_" + String(practice.challenge).to_upper()))
+		Sfx.react("ooh", -10.0)
 
 
 ## Where the taker stands: beside the ball, settled to lift it (Match.free_stand). Everyone else is out of sight,
@@ -193,7 +204,7 @@ func _aim_challenge() -> String:
 
 
 ## The sliotar off the woodwork: which (left or right post, as the camera sees them, or the bar); on the challenge's
-## own, the free is won there and then.
+## own post, the free is won there and then.
 func _woodwork(c: Vector3, post: bool) -> void:
 	if String(practice.get("state", "")) != "struck":
 		return
@@ -216,25 +227,73 @@ func _end_aim() -> void:
 func _shootout_step(dt: float) -> void:
 	match String(practice.state):
 		"walk":
-			# Ease in behind him as he walks up.
+			# Ease in behind him as he walks up with the ball; there, he turns side-on and puts it down.
 			view.global_transform = view.global_transform.interpolate_with(_view_to, 1.0 - exp(-dt * 2.2))
-			var at: bool = taker.global_position.distance_to(_shootout_spot(taker)) < 0.6
-			if placed_aim == null and ((at and now - float(practice.t) > WALK_T) or now - float(practice.t) > WALK_T + 4.0):
+			_in_hand()
+			var at: bool = taker.global_position.distance_to(_shootout_spot(taker)) < 0.3
+			if (at and now - float(practice.t) > 1.0) or now - float(practice.t) > WALK_T + 4.0:
 				taker.global_position = _shootout_spot(taker)
+				taker.vel = Vector3.ZERO
+				taker.want_vel = Vector3.ZERO
+				taker.yaw = atan2(Pitch.HALF_L * dir(0) - taker.global_position.x, -taker.global_position.z)
 				taker.face_to = Vector3(Pitch.HALF_L * dir(0), 0, 0)
+				taker.play("free_place")
+				practice.state = "place"
+				practice.t = now
+		"place":
+			view.global_transform = view.global_transform.interpolate_with(_view_to, 1.0 - exp(-dt * 3.0))
+			# The sliotar from his hand to the grass as he bends, and left there.
+			var down := taker.contact_time("free_place")
+			var t := now - float(practice.t)
+			var spot: Vector3 = restart.spot
+			if t < down - 0.15:
+				_in_hand()
+			elif t < down:
+				var hand := taker.body.bone_world("hand_l") + Vector3(0, -0.06, 0)
+				ball.global_position = hand.lerp(Vector3(spot.x, Sliotar.RADIUS, spot.z), smoothstep(down - 0.15, down, t))
+			elif not bool(practice.get("down", false)):
+				ball.place(spot)
+				practice.down = true
+			if taker.action != "free_place" and placed_aim == null:
+				practice.down = false
 				view.global_transform = _view_to
 				practice.state = "aim"
 				shootout.state = "ready"
 				_start_aim(taker)
 		"struck":
+			_follow_ball(dt)
 			if now - float(practice.t) > FLIGHT_T:
 				_shootout_result("", ball.global_position)
 		"done":
+			_follow_ball(dt)
 			if now - float(practice.t) > DONE_T:
 				if int(practice.n) >= FREES:
 					_end_round()
 				else:
 					_next_free()
+
+
+## The camera turns to keep a sliotar going out of the picture in it (high over the bar, or wide), smoothly; the next
+## free puts it back behind the taker.
+func _follow_ball(dt: float) -> void:
+	var b := ball.global_position
+	if view.is_position_behind(b):
+		return
+	var vp := get_viewport().get_visible_rect().size
+	var sp := view.unproject_position(b) / vp
+	var out := maxf(maxf(0.1 - sp.y, sp.y - 0.92), maxf(0.06 - sp.x, sp.x - 0.94))
+	if out <= 0.0:
+		return
+	var fwd := -view.global_transform.basis.z
+	var to := (b - view.global_position).normalized()
+	var want := fwd.slerp(to, clampf(out * 2.5, 0.0, 1.0))
+	view.look_at(view.global_position + fwd.slerp(want, 1.0 - exp(-dt * 4.0)))
+
+
+## The sliotar in his left hand as he walks up with it.
+func _in_hand() -> void:
+	if taker.body != null:
+		ball.global_position = taker.body.bone_world("hand_l") + Vector3(0, -0.06, 0)
 
 
 func _shootout_strike(_choice: String) -> void:
@@ -262,8 +321,10 @@ func _shootout_result(kind: String, c: Vector3) -> void:
 			mark = "C"
 			over_line = false
 			practice.points += CHALLENGE_POINTS
-			hud.banner(tr("PRACTICE_CH_HIT"), Game.C_GOLD)
-			Sfx.react("cheer", -3.0)
+			hud.banner(tr("PRACTICE_CH_HIT"), Game.C_GOLD, 3.0)
+			hud.call_line(tr("PRACTICE_CH_HIT_SUB").format({"n": CHALLENGE_POINTS}))
+			Sfx.react("cheer", -1.0)
+			Game.haptic("score")
 		"point":
 			_cheer(0.75)
 			mark = "P"

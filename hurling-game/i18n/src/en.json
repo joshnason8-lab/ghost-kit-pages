@@ -16,7 +16,7 @@
   "PRACTICE_TAKER": "On the frees: #{num} {name}",
   "PRACTICE_FREES_STAT": "Free-taking",
   "PRACTICE_HOW_TITLE": "How it works",
-  "PRACTICE_HOW": "Ten frees and 65s from all round the pitch: near, wide and far out. Behind your free-taker, a target goes round the goal: tap SHOOT to stop it where you want the sliotar to go. Then a bar runs from side to side: SHOOT again with the marker in the green. Out to the red, the ball goes off that way. A point is worth one, a goal three. Every third free is a challenge: hit the left post, the right post, then the crossbar for double points.",
+  "PRACTICE_HOW": "Ten frees and 65s from all round the pitch: near, wide and far out. Behind your free-taker, a target goes round the goal: tap SHOOT to stop it where you want the sliotar to go. Then a bar runs from side to side: SHOOT again with the marker in the green. Out to the red, the ball goes off that way. A point is worth one, a goal three. Every third free is a post challenge: hit the post it names for double points.",
   "PRACTICE_BEST_WAS": "Your best: {n}",
   "PRACTICE_NO_BEST": "No score yet: set one.",
   "PRACTICE_HD_HINT": "For the sharpest hurler, get the HD pack in Settings.",
@@ -24,11 +24,10 @@
   "PRACTICE_SCORE_N": "Score {n}",
   "PRACTICE_BEST_N": "Best {n}",
   "PRACTICE_SHORT": "Short",
-  "PRACTICE_CHALLENGE": "Challenge: double points",
-  "PRACTICE_CH_LEFT": "Hit the left post!",
-  "PRACTICE_CH_RIGHT": "Hit the right post!",
-  "PRACTICE_CH_BAR": "Hit the crossbar!",
-  "PRACTICE_CH_HIT": "DOUBLE!",
+  "PRACTICE_CHALLENGE": "Post challenge: double points!",
+  "PRACTICE_CH_LEFT": "Hit the left post for DOUBLE POINTS!",
+  "PRACTICE_CH_RIGHT": "Hit the right post for DOUBLE POINTS!",
+  "PRACTICE_CH_HIT": "DOUBLE POINTS!",
   "PRACTICE_DONE": "Ten frees taken",
   "PRACTICE_RATE_3": "All-Star form. The county's frees are yours.",
   "PRACTICE_RATE_2": "County standard: steady over the bar.",
@@ -453,5 +452,7 @@
   "HD_LINE_OUT": "HD pack: not downloaded. Optional, for sharper players, grass and crowd on High.",
   "HD_OPEN": "HD pack",
   "VULKAN_BACK_crash": "The game did not start properly last time: from now on it uses the older graphics renderer on this phone.",
-  "PRIV_DATE": "Last updated 27 October 2026."
+  "PRIV_DATE": "Last updated 27 October 2026.",
+  "PRACTICE_CH_TITLE": "POST CHALLENGE!",
+  "PRACTICE_CH_HIT_SUB": "Off the post! +{n}"
 }

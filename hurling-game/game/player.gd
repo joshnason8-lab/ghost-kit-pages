@@ -38,8 +38,9 @@ const ACTIONS := {
 	"puck_out": [0.7, 0.42],     # the goalkeeper's toss and long strike
 	"cut": [0.7, 0.44],          # a sideline cut: struck off the ground, low and side-on
 	"dejected": [2.0, 0.0],
-	"free_set": [600.0, 0.0],    # over a free on the grass, crouched by the ball with the hurley under it (held)
-	"free_strike": [2.4, 1.38],  # from there: the lift onto the hurley, the toss, the strike (the owner's videos)
+	"free_place": [1.1, 0.55],   # a free: the sliotar put down on the grass (at 0.55 s) and up into the stance
+	"free_set": [600.0, 0.0],    # standing over it side-on, the hurley in both hands, while the free is aimed (held)
+	"free_strike": [2.45, 1.8],  # from there: down to it, the lift onto the hurley, the toss, the strike (assets/player/free.json)
 	# Officials' signals, held while the match wants them.
 	"sig_free": [1.8, 0.0],      # the referee's arm out towards the goal the free attacks
 	"sig_advantage": [5.0, 0.0], # one arm straight up for the five seconds
@@ -402,63 +403,90 @@ func _pose(now: float) -> Dictionary:
 		var t := clampf(action_t / maxf(0.01, action_len), 0.0, 1.0)
 		if SWING_CLIP.has(action):
 			_swing_pose(p, action, t, run)
-		elif action in ["free_set", "free_strike"]:
+		elif action in ["free_place", "free_set", "free_strike"]:
 			_free_pose(p, action, action_t)
 		else:
 			_action_pose(p, action, t, now)
 	return p
 
 
-## A free struck from the grass, as the owner's videos show it (tools/mocap/video_clip.py: Free_Strike): he bends
-## to the ball and settles over it, the hurley under it (free_set, held while the free is aimed), then rolls it up
-## onto the bas, tosses it and strikes it (free_strike). Turned so the strike goes the way he faces: in the clip it
-## goes 65 degrees to his left of where he stood facing (side-on to the target, as a right-handed hurler stands).
-const FREE_CLIP := "Free_Strike"
-const FREE_YAW := -65.0
-const FREE_SET := 1.45     # the clip's moment he is settled over the ball
-const FREE_LIFT := 2.05    # where the lift starts (the strike 1.38 s after)
-## Where the sliotar lies from his feet as he settles over it, in his own frame (+Z the way he faces): under the bas
-## of his hurley as he holds it settled (free_set), measured once from a man posed so (measure_free_bas); till then,
-## ahead of him in the clip's own frame.
+## A free struck from the grass, as the owner's slow-motion video shows it (tools/mocap/free_clip.py): he puts the
+## sliotar down (free_place), stands over it side-on to the posts, his left shoulder to them, the hurley in both hands
+## (free_set, held while the free is aimed), then bends to it, slides the bas under it and lifts it, the sliotar
+## rising on the hurley to his head, tosses it, swings back over his right shoulder and strikes it as it drops past
+## his waist out in front of him (free_strike). The clips face +Z in the stance; FREE_YAW turns him from the posts.
+const FREE_YAW := -100.0
+## Where the sliotar lies from his feet as he stands over it, in his own frame (+Z the way the player faces, the
+## posts): under the bas as he slides it under the ball in the strike (the clip's scoop), measured once from a man
+## posed so (measure_free_bas); till then, a stride ahead of his right foot.
 static var _free_bas := Vector3.INF
+static var _free_hit := Vector3(0.6, 0.95, 0.9)   # the bas at contact, the same way
 
 
 static func free_ball_offset() -> Vector3:
 	if _free_bas != Vector3.INF:
 		return _free_bas
-	return Quaternion(Vector3.UP, deg_to_rad(FREE_YAW)) * Vector3(0.05, 0, 0.62)
+	return Quaternion(Vector3.UP, deg_to_rad(FREE_YAW)) * Vector3(0.0, 0, 0.9)
 
 
-## Poses this man settled over a free for a moment and notes where his bas is, from his feet in his own frame.
+## Where the bas meets the sliotar in the strike, from his feet in his own frame.
+static func free_hit_offset() -> Vector3:
+	return _free_hit
+
+
+## The free's moments from the clip (seconds into free_strike): "scoop" (the bas under the ball, it comes up on it),
+## "release" (tossed off the bas) and "contact".
+static func free_moment(which: String) -> float:
+	return float(HeroBody.data().clips.Free_Strike.get(which, 0.0))
+
+
+## Poses this man at the free's scoop for a moment and notes where his bas is, from his feet in his own frame.
 func measure_free_bas() -> void:
 	if _free_bas != Vector3.INF or body == null:
 		return
 	var keep := [action, action_t, visible_on_screen]
-	play("free_set")
-	action_t = 60.0
+	play("free_strike")
+	action_t = free_moment("scoop")
 	visible_on_screen = true
 	_lod_skip = _pose_every
 	animate(0.0)
 	var b := body.bas_world()
 	var local := Basis(Vector3.UP, body.global_rotation.y).inverse() * (b - global_position)
 	_free_bas = Vector3(local.x, 0.0, local.z)
+	# And where it meets the ball, for the toss to come down to.
+	action_t = free_moment("contact")
+	_lod_skip = _pose_every
+	animate(0.0)
+	_free_hit = Basis(Vector3.UP, body.global_rotation.y).inverse() * (body.bas_world() - global_position)
 	action = keep[0]
 	action_t = keep[1]
 	visible_on_screen = keep[2]
 
 
 func _free_pose(p: Dictionary, name: String, at: float) -> void:
-	var ct := minf(at * 1.25, FREE_SET) if name == "free_set" else FREE_LIFT + at
-	var cp := HeroBody.clip_pose(FREE_CLIP, ct)
-	var w := smoothstep(0.0, 0.25, at) if name == "free_set" else 1.0
+	var cp: Array
+	var w := 1.0
+	match name:
+		"free_place":
+			cp = HeroBody.clip_pose("Free_Place", at)
+			w = smoothstep(0.0, 0.3, at)       # turned side-on from the walk as he bends
+		"free_set":
+			cp = HeroBody.clip_pose("Free_Ready", 0.0)
+			w = smoothstep(0.0, 0.3, at)
+		_:
+			cp = HeroBody.clip_pose("Free_Strike", at)
 	var yaw := Quaternion(Vector3.UP, deg_to_rad(FREE_YAW))
 	for i in BONE_NAMES.size():
 		var q: Quaternion = cp[0][i] if i > 0 else yaw * cp[0][0]
 		p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(q, w)
 	var lift := float(cp[1])
-	if name == "free_set" and ct >= FREE_SET:
-		lift += sin(at * 1.7) * 0.006      # settled, breathing
+	if name == "free_set":
+		lift += sin(at * 1.7) * 0.006      # standing over it, breathing
 	p.hips_y = lerpf(float(p.get("hips_y", 0.0)), lift, w)
+	var tr: Vector2 = cp[2]
+	var off := yaw * Vector3(tr.x, 0.0, tr.y)
+	p.hips_side = lerpf(float(p.get("hips_side", 0.0)), off.x, w)
+	p.hips_fwd = lerpf(float(p.get("hips_fwd", 0.0)), off.z, w)
 
 
 ## The gaits, slowest first: [clip, the speed (m/s) at which it alone is shown]. Between two, both, blended.

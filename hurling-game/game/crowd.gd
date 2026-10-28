@@ -6,8 +6,9 @@ extends MultiMeshInstance3D
 ## (their instance's +Z, toward the centre of the field); the shader turns the cut-out to the camera so it is never
 ## seen edge-on, and draws the person from the front when the camera is in front of them, from behind (the back of
 ## the head, no face) when it is behind them, as the television camera is behind the near stand. It picks the figure
-## and shirt (the sheet's mask says where the shirt is), and makes them fidget, and jump and wave when the crowd goes
-## up (excite). (Round five: "upgrade the look of the fans, they just look like shapes".)
+## and shirt (the sheet's mask says where the shirt is), and makes them fidget, and get up and cheer when the crowd
+## goes up (excite): on Medium and High their arms go up and wave, or a fist pumps, each at their own pace (the
+## sheet's cheering frames, eased between). (Round five: "upgrade the look of the fans, they just look like shapes".)
 
 const FIGS := 8          # figures across the sheet, each drawn twice: from the front, then (FIGS more) from behind
 const FIG_W := 64
@@ -58,12 +59,15 @@ render_mode unshaded, cull_disabled, depth_draw_opaque;
 uniform sampler2D sheet : filter_linear_mipmap, repeat_disable;
 uniform sampler2D mask : filter_linear_mipmap, repeat_disable;
 uniform float figs = 8.0;
-uniform bool rows = false;     // the sheet in two rows (front, back), not one
+uniform bool rows = false;     // the sheet in rows (front, back), not one
+uniform bool cheers = false;   // and two more rows: each fan cheering (render_fans.gd: CHEER)
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
 varying vec4 data;
 varying float back;
+varying float cheer;     // how far into cheering this one is (0-1)
+varying float wave;      // between the two frames of the cheer (0-1)
 void vertex() {
 	data = INSTANCE_CUSTOM;
 	float ph = data.z * 6.2831;
@@ -75,6 +79,11 @@ void vertex() {
 	float bob = (0.5 - 0.5 * cos(time_s * rate * 6.2831 + ph)) * excite * (0.05 + own * 0.05);
 	float jump = rise + bob;
 	float fidget = sin(time_s * 1.3 + ph) * 0.02 + sin(time_s * rate * 3.1416 + ph * 1.7) * 0.05 * excite;
+	// And the arms: each comes up into a cheer as the crowd goes past their own point (not all at once), waving at
+	// their own pace, eased between the two frames so it moves smoothly.
+	float from = 0.12 + own * 0.4;
+	cheer = cheers ? smoothstep(from, from + 0.18, excite) : 0.0;
+	wave = 0.5 - 0.5 * cos(time_s * (2.4 + own * 2.2) + ph * 3.0);
 	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	// The person faces their instance's +Z (the pitch); seen from behind, draw them from behind (Crowd.seen_from_behind).
@@ -84,15 +93,35 @@ void vertex() {
 	world += right * (VERTEX.x + fidget) + vec3(0.0, VERTEX.y + jump, 0.0);
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
 }
+vec2 cell(vec2 p, float fig, float row) {
+	float n = cheers ? 4.0 : 2.0;
+	return rows ? vec2((p.x + fig) / figs, (p.y + row) / n)
+		: vec2((p.x + fig + row * figs) / (figs * 2.0), p.y);
+}
 void fragment() {
-	vec2 uv = rows ? vec2((UV.x + floor(data.x * figs)) / figs, (UV.y + back) * 0.5)
-		: vec2((UV.x + floor(data.x * figs) + back * figs) / (figs * 2.0), UV.y);
+	float fig = floor(data.x * figs);
+	vec2 uv = cell(UV, fig, back);
 	vec4 c = texture(sheet, uv);
+	float m = texture(mask, uv).r;
+	if (cheer > 0.001) {
+		// The same fan's cheer (four frames a fan, two pairs: both arms waving, or a fist pumped).
+		float base = floor(fig / 4.0) * 4.0 + (fract(data.z * 7.31) < 0.6 ? 0.0 : 2.0);
+		vec2 u0 = cell(UV, base, back + 2.0);
+		vec2 u1 = cell(UV, base + 1.0, back + 2.0);
+		vec4 c0 = texture(sheet, u0);
+		vec4 c1 = texture(sheet, u1);
+		// Blended with the alpha taken in (so a raised arm fades across, never a ghost of colour round it).
+		vec4 cw = vec4(mix(c0.rgb * c0.a, c1.rgb * c1.a, wave), mix(c0.a, c1.a, wave));
+		float mw = mix(texture(mask, u0).r, texture(mask, u1).r, wave);
+		vec4 all_ = vec4(mix(c.rgb * c.a, cw.rgb, cheer), mix(c.a, cw.a, cheer));
+		c = vec4(all_.rgb / max(all_.a, 0.001), all_.a);
+		m = mix(m, mw, cheer);
+	}
 	if (c.a < 0.5) discard;
 	vec3 shirt = vec3(fract(data.y * 7.13), fract(data.y * 3.77), fract(data.y * 5.31));
 	shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
 	// The shirt is white on the sheet: its shading kept, its colour each person's.
-	float is_shirt = smoothstep(0.3, 0.7, texture(mask, uv).r);
+	float is_shirt = smoothstep(0.3, 0.7, m);
 	float shade = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722)) / 0.86;
 	vec3 col = mix(c.rgb, shirt * shade, is_shirt);
 	ALBEDO = compat_to_scene(pow(col, vec3(2.2)) * light);
@@ -100,12 +129,25 @@ void fragment() {
 """
 	var m := ShaderMaterial.new()
 	m.shader = sh
-	m.set_shader_parameter("sheet", sheet())
+	var tex := sheet()
+	var figs := float(FIGS if hd is bool and not hd else FIGS_HD)
+	m.set_shader_parameter("sheet", tex)
 	m.set_shader_parameter("mask", _sheets[hd][1])
-	m.set_shader_parameter("figs", float(FIGS if hd is bool and not hd else FIGS_HD))
+	m.set_shader_parameter("figs", figs)
 	m.set_shader_parameter("rows", not (hd is bool and not hd))
+	m.set_shader_parameter("cheers", tall())
 	_mats[hd] = m
 	return m
+
+
+## The sheet's cells are the tall ones, with the cheering rows (render_fans.gd hd and ultra; an HD pack fetched before
+## them has the shorter two-row sheet, drawn as it was).
+static func tall() -> bool:
+	var hd: Variant = _level()
+	if hd is bool and not hd:
+		return false
+	var tex := sheet()
+	return float(tex.get_height()) / (float(tex.get_width()) / FIGS_HD) > 6.0
 
 
 ## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours). With
@@ -126,6 +168,10 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, away: Arr
 	var q := QuadMesh.new()
 	q.size = Vector2(0.52, 1.04)
 	q.center_offset = Vector3(0, 0.52, 0)
+	if tall():
+		# The taller cells (room for the arms up): the head where it was, 0.21 m more above it.
+		q.size = Vector2(0.6, 1.5)
+		q.center_offset = Vector3(0, 0.54, 0)
 	mm.mesh = q
 	mm.instance_count = keep.size()
 	for i in keep.size():

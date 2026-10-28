@@ -37,11 +37,12 @@ func _init(p_look := {}) -> void:
 ## palms faced forward, like a shop dummy. Each arm is turned about its own length so the palms face the thighs as the
 ## hurlers' do, and every pose the game gives the arms reads on the officials as on the hurlers: degrees at the
 ## shoulder and in the forearm (the left arm; the right mirrors it), each model its own (Low's are the older, lighter
-## models). The forearm takes it where it can: turning the upper arm turns the way the elbow bends, and a running
-## referee's hands flew out to the sides; the umpire's model needs some there for his elbow to bend forward. Found by
-## eye, standing, signalling and running.
-const TWIST := {"referee": [0.0, -90.0], "umpire": [45.0, 45.0], "referee_low": [0.0, -90.0],
-	"umpire_low": [0.0, -90.0]}
+## models). The shoulder's turn sets the way the elbow bends: at 160 it bends forward, the hands coming up in front as a
+## man's do (with less, the officials' elbows bent backward, the hands behind the hips: the owner saw "the refs'
+## elbows bend the wrong way"); the forearm turns back by as much, so the palms still face the thighs. Found by eye from
+## the side, standing with the elbows bent, signalling and running.
+const TWIST := {"referee": [160.0, -250.0], "umpire": [160.0, -70.0], "referee_low": [160.0, -250.0],
+	"umpire_low": [160.0, -250.0]}
 
 
 ## The Meshy models' feet were made pitched up at the ankle (toes to the sky, the owner saw); each foot is turned down

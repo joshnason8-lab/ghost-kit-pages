@@ -12,9 +12,9 @@ a few frames first (the video's jitter). The hips set so the lower ankle stays a
   python3 tools/mocap/video_clip.py <landmarks.json> <name> <first frame> <last frame> <contact frame> [fps]
       -> prints the clip's JSON (fps, contact as a fraction of the clip, yaw 0, frames)
 
-The owner's videos (a free taken from the ground: the lift, the toss, the strike) are not kept in the repository; the
-clip made from them is (assets/player/free.json): the front-on one, frames 56 to 190, the strike at 159:
-  python3 tools/mocap/video_clip.py shot1.json Free_Strike 56 190 159   (wrapped as {"clips": ...})
+The owner's videos (a free taken from the ground: the lift, the toss, the strike) are not kept in the repository. The
+free's clips the game uses (assets/player/free.json) are made by tools/mocap/free_clip.py from the slow-motion one,
+with this module's turns_of for the body.
 """
 import json
 import math

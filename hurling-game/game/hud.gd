@@ -17,6 +17,7 @@ var _call: Label
 var _call_t := 0.0
 var _banner: Label
 var _banner_t := 0.0
+var _banner_len := 2.0
 var _tag: Label
 var _toast: Label
 var _toast_t := 0.0
@@ -308,7 +309,7 @@ func tick(delta: float) -> void:
 	if _banner_t > 0.0:
 		_banner_t -= delta
 		_banner.modulate.a = clampf(_banner_t / 0.4, 0.0, 1.0)
-		_banner.scale = Vector2.ONE * (1.0 + maxf(0.0, _banner_t - 1.6) * 0.3)
+		_banner.scale = Vector2.ONE * (1.0 + maxf(0.0, _banner_t - (_banner_len - 0.4)) * 0.3)
 	if _call_t > 0.0:
 		_call_t -= delta
 		_call.modulate.a = clampf(_call_t / 0.5, 0.0, 1.0)
@@ -448,11 +449,12 @@ func _sub_step(delta: float) -> void:
 		_show_next_sub()
 
 
-func banner(text: String, col: Color = Game.C_GOLD) -> void:
+func banner(text: String, col: Color = Game.C_GOLD, secs := 2.0) -> void:
 	_banner.text = text
 	_banner.add_theme_color_override("font_color", col)
 	UI.refit(_banner)
-	_banner_t = 2.0
+	_banner_t = secs
+	_banner_len = secs
 	_banner.pivot_offset = _banner.size * 0.5
 
 
@@ -527,13 +529,15 @@ func _draw_marks() -> void:
 		cam = m.cam.camera
 	var vp := root.get_viewport_rect().size
 	var b: Vector3 = m.ball.global_position
-	# The ball's marker (none in free-taking practice: up close it reads by itself).
-	if (m.ball.state != Sliotar.HELD or m.carrier == null) and not m.is_practice():
+	# The ball's marker (in free-taking practice no dot on it, up close it reads by itself, but still the arrow when it
+	# is off the screen: the owner lost a ball struck up out of the picture).
+	if m.ball.state != Sliotar.HELD or m.carrier == null:
 		if not cam.is_position_behind(b):
 			var sp := cam.unproject_position(b)
 			if Rect2(Vector2.ZERO, vp).grow(-4).has_point(sp):
-				_marks.draw_circle(sp, 5.5, Color(0.05, 0.05, 0.05, 0.75))
-				_marks.draw_circle(sp, 3.8, Color(1, 1, 0.92))
+				if not m.is_practice():
+					_marks.draw_circle(sp, 5.5, Color(0.05, 0.05, 0.05, 0.75))
+					_marks.draw_circle(sp, 3.8, Color(1, 1, 0.92))
 			else:
 				_edge_arrow(sp, vp)
 		else:
@@ -781,7 +785,7 @@ func practice(st: Dictionary, first := false) -> void:
 	var parts: Array = _practice.get_meta("parts")
 	var n := mini(int(st.n) + (1 if String(st.get("state", "")) in ["walk", "aim", "struck"] else 0), m.FREES)
 	var head := tr("MENU_PRACTICE") + "  ·  " + tr("PRACTICE_FREE_N").format({"n": n, "of": m.FREES})
-	if String(st.get("challenge", "")) != "" and String(st.get("state", "")) in ["walk", "aim", "struck"]:
+	if String(st.get("challenge", "")) != "" and String(st.get("state", "")) in ["walk", "place", "aim", "struck"]:
 		head += "  ·  " + tr("PRACTICE_CHALLENGE")
 	(parts[0] as Label).text = head.to_upper()
 	(parts[1] as Label).text = _practice_line(st)

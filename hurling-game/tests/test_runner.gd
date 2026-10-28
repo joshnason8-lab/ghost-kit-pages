@@ -1309,13 +1309,15 @@ func _practice_frees() -> void:
 		m.placed_aim.angle = PI * 1.5 if i == 0 else (PI * 0.5 if i < 9 else 0.0)
 		m.placed_aim._place()
 		var ch: String = m.placed_aim.challenge
-		check(ch == String(m.CHALLENGES.get(i, "")), "Practice: free %d's challenge (%s)" % [i + 1, ch])
+		var want_ch := String(m.CHALLENGES.get(i, "-"))
+		check(ch == want_ch or (want_ch == "" and ch in ["left", "right"]) or (want_ch == "-" and ch == ""),
+			"Practice: free %d's challenge (%s)" % [i + 1, ch])
 		m._on_action("SHOOT")
-		# The challenges: the target stopped a little off the woodwork named (it snaps onto it).
+		# The challenges: the target stopped a little off the post named (it snaps onto it).
 		if ch != "":
 			var gx: float = m.placed_aim.goal_x
 			var pz: float = (Pitch.POST_GAP * 0.5 + Pitch.POST_W * 0.5) * m.placed_aim._right_sign()
-			m.placed_aim._aim_at = Vector3(gx, Pitch.BAR_H + 0.25, 1.0) if ch == "bar" else Vector3(gx, 4.0, (-pz if ch == "left" else pz) * 0.94)
+			m.placed_aim._aim_at = Vector3(gx, 4.0, (-pz if ch == "left" else pz) * 0.94)
 		m.placed_aim.bar_x = 1.0 if i == 7 else 0.0
 		m._on_action("SHOOT")
 		f = 0
@@ -1355,7 +1357,7 @@ func _practice_frees() -> void:
 	check(plain.count("P") >= 3 and String(marks[7]) != "P" and String(marks[9]) != "P",
 		"Practice: aimed between the posts over the bar with the bar in the green, points; off the bar's end or outside the posts, none (%s)" % [marks])
 	check(String(marks[2]) == "C" and String(marks[5]) == "C" and String(marks[8]) == "C",
-		"Practice: the challenges, the left post, the right post and the crossbar hit, double points each (%s)" % [marks])
+		"Practice: the post challenges, the left post, the right post and either hit, double points each (%s)" % [marks])
 	check(swung == m.FREES and own_cam, "Practice: the taker swings at every free (%d of %d), the practice's camera throughout" % [swung, m.FREES])
 	check(landed >= 3, "Practice: after a point the sliotar flies on and comes down behind the goal (%d of 4)" % landed)
 	check(int(Game.settings.practice_best) == int(m.practice.points) and m.hud._card != null,
