@@ -16,6 +16,6 @@
 | Platform | Android |
 | Minimum Android | Android 7.0 (API 24) |
 | Download size | About 87 MB (APK) |
-| Current version | 0.10.3-beta |
+| Current version | 0.10.4-beta |
 | Developer | Josh Nason |
 | Contact | joshnason8@gmail.com |

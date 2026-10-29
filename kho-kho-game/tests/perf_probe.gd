@@ -18,27 +18,29 @@ func _ready() -> void:
 		if OS.get_environment("KK_GFX") != "":
 			levels = [int(OS.get_environment("KK_GFX"))]
 		for g in levels:
-			Game.settings.graphics = g
-
-			Game.start_match({"home": "MAH", "away": "ODI", "venue": venue, "format": KhoRules.FAST if venue == "arena" else KhoRules.CLASSIC,
-				"turn_len": 300.0, "user_team": 0, "seed": 4, "mode": "quick", "chase_first": 0})
-			for i in 90:
-				await get_tree().process_frame
-			var rs := RenderingServer
-			var dc := rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
-			var tris := rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)
-			var t0 := Time.get_ticks_usec()
-			for i in 30:
-				await get_tree().process_frame
-			var ms := float(Time.get_ticks_usec() - t0) / 30000.0
-			var ok: bool = dc <= BUDGET[g][0] and tris <= BUDGET[g][1]
-			if not ok:
-				over += 1
-			print("venue %s graphics %d: %d draw calls, %d triangles, %d objects; scale %.2f; %.1f ms a frame here; video memory %.1f MB (textures %.1f)%s" % [venue, g, dc, tris,
-				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME), get_viewport().scaling_3d_scale, ms,
-				rs.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0,
-				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED) / 1048576.0,
-				"" if ok else "  OVER BUDGET"])
+			for cam in [Game.CAM_TV, Game.CAM_POLE]:
+				Game.settings.graphics = g
+				# The broadcast camera, and the one behind the pole, which also sees the near side (Arena.show_near).
+				Game.settings.camera = cam
+				Game.start_match({"home": "MAH", "away": "ODI", "venue": venue, "format": KhoRules.FAST if venue == "arena" else KhoRules.CLASSIC,
+					"turn_len": 300.0, "user_team": 0, "seed": 4, "mode": "quick", "chase_first": 0})
+				for i in 90:
+					await get_tree().process_frame
+				var rs := RenderingServer
+				var dc := rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
+				var tris := rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)
+				var t0 := Time.get_ticks_usec()
+				for i in 30:
+					await get_tree().process_frame
+				var ms := float(Time.get_ticks_usec() - t0) / 30000.0
+				var ok: bool = dc <= BUDGET[g][0] and tris <= BUDGET[g][1]
+				if not ok:
+					over += 1
+				print("venue %s graphics %d%s: %d draw calls, %d triangles, %d objects; scale %.2f; %.1f ms a frame here; video memory %.1f MB (textures %.1f)%s" % [venue, g, " (behind the pole)" if cam == Game.CAM_POLE else "", dc, tris,
+					rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME), get_viewport().scaling_3d_scale, ms,
+					rs.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0,
+					rs.get_rendering_info(RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED) / 1048576.0,
+					"" if ok else "  OVER BUDGET"])
 	Game.goto_menu()
 	await get_tree().process_frame
 	get_tree().quit(1 if over > 0 else 0)

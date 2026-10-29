@@ -279,10 +279,13 @@ func _owner_round() -> void:
 	await frames(30)
 	check(m.hud and m.hud._cam_btn and m.hud._cam_btn.visible, "a camera button beside pause")
 	var seen := {}
+	var near_ok := true
 	for k in 3:
 		seen[m.cam.global_position.snapped(Vector3(0.5, 0.5, 0.5))] = true
+		near_ok = near_ok and m.arena.near_side.visible == (m._cam_mode == Game.CAM_POLE)
 		m.hud._cam_btn.pressed.emit()
 	check(seen.size() == 3, "three camera views, each different (%d)" % seen.size())
+	check(near_ok, "the near side drawn behind the pole, and only there")
 	await frames(20)
 	check(Crowd.watch_target != Vector3.INF, "the crowd follows the play")
 	m.queue_free()
@@ -517,6 +520,13 @@ func _grounds() -> void:
 					if fwd.dot(to_c) <= 0.7:
 						astray += 1
 			check(people > 0 and astray == 0, "graphics %d, %s: all %d spectators face the court (%d astray)" % [g, v, people, astray])
+			# The near side (the owner: blank behind the pole): built, with people on it, drawn only for that camera.
+			var near_people := 0
+			for c in a.near_side.find_children("*", "Crowd", true, false):
+				near_people += (c as Crowd).xforms.size()
+			var built := a.near_side.find_children("*", "MeshInstance3D", true, false).size()
+			check(near_people > 20 and built > 0 and not a.near_side.visible,
+				"graphics %d, %s: the near side built (%d people), hidden until the camera behind the pole" % [g, v, near_people])
 			# Dressed as a tournament ground (the two real matches, docs/GROUNDS.md); the crowd mostly in everyday clothes.
 			var want: Array = [] if not outdoor else (["barricades", "banners", "flags"] + (["tents"] if a.kind != "stadium" else []) \
 				+ (["stage", "scaffold"] if a.kind == "village" else []) \

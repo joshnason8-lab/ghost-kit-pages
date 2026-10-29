@@ -64,3 +64,18 @@ on Medium and High.
 
 Built in code rather than with Meshy: each model from Meshy would be a draw call more, and the village on Low is
 at 88 of its 90.
+
+## The near side (0.10.4)
+
+The near side line is where the broadcast and close cameras stand, so until 0.10.4 nothing was built there, and the
+camera behind the pole, looking along the lane, showed it empty on its right: black space in the arena, bare earth
+at the stadium, open field at the village and school. It is now built in full (`Arena._near_side`), as its own node
+that only that camera draws (`Arena.show_near`, from `Match._camera`): the others would be inside it.
+
+| Ground | On the near side |
+|---|---|
+| Arena, stadium | Tiers of seats as on the far side (9-16 rows by level), full of people; the back wall; the arena's boards |
+| Village, school | The crowd at the barricade the whole way along (its ends were there already), tents behind them, flags |
+
+Its cost, behind the pole (tests/perf_probe now measures both cameras): Low at most 90 draw calls (the village), as
+from the broadcast camera, since that view leaves other things out of the picture.

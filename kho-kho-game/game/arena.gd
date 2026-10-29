@@ -23,6 +23,7 @@ var kind := ""
 var _chairs: Array = []    # monobloc chairs under the front row of a village crowd
 var _benches: Array = []   # painted benches (pupils at the school, the teams at a ground)
 var dressing: Array = []   # what was put up for the tournament (_tournament, _stage), for the tests
+var near_side: Node3D      # the near side line's crowd and stands: only the camera behind the pole sees them (show_near)
 
 
 func _init(p_venue := "maidan", p_fmt := KhoRules.CLASSIC, p_home_colors := []) -> void:
@@ -102,6 +103,86 @@ func _ready() -> void:
 		crowd = Crowd.new()
 		crowd.build(spots, Game.crowd_density(), home_colors, hash(venue), kind in ["arena", "stadium"])
 		add_child(crowd)
+	_near_side(low)
+
+
+## The near side line, built in full but drawn only when the camera behind the pole looks along it (show_near): the
+## broadcast and close cameras stand there, looking away from it, and stands or a crowd there would be in their way
+## (and cost draw calls they never show). Indoors and at the stadium, tiers of seats as on the far side; at the
+## grounds, the crowd standing at the barricade the whole way along, tents behind them and flags.
+func _near_side(low: bool) -> void:
+	near_side = Node3D.new()
+	near_side.name = "NearSide"
+	near_side.visible = false
+	add_child(near_side)
+	var g := Geo.new()
+	var spots: Array = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 23
+	if kind in ["arena", "stadium"]:
+		var indoor := kind == "arena"
+		var rows := (14 if not low else 9) if indoor else (16 if not low else 10)
+		var L: float = f.length * 0.5 + f.lobby + 3.0
+		var W: float = f.width * 0.5 + f.lobby + 3.2
+		var seat := Color("2b3550") if indoor else Color(0.78, 0.78, 0.8)
+		var riser := Color("1c2233") if indoor else Color(0.6, 0.6, 0.64)
+		for r in rows:
+			var d := r * 0.85
+			var hgt := 0.45 + r * 0.45
+			g.box(Vector3(0, hgt - 0.22, W + d), Vector3(L * 2 + d * 2, 0.45, 0.85), seat if r % 2 == 0 else riser)
+			var x := -L - d + 0.4
+			while x < L + d:
+				spots.append(Vector3(x, hgt, W + d))
+				x += 0.62
+		var back := W + rows * 0.85 + 0.5
+		g.wall(Vector3(L + rows, 0, back), Vector3(-L - rows, 0, back), 0.0, rows * 0.45 + 4.0, Color("151a28") if indoor else Color("23262e"))
+		if indoor:
+			var bz: float = f.width * 0.5 + f.lobby + 0.6
+			for i in 12:
+				var x0 := -L + i * (L * 2.0 / 12.0)
+				g.box(Vector3(x0 + L / 12.0, 0.45, bz), Vector3(L * 2.0 / 12.0 - 0.1, 0.9, 0.08), [Color("2f86c9"), Color("f2e6c8"), Color("ff8a1f")][i % 3])
+	else:
+		# The crowd along the middle of the near side (its ends have theirs already: _ground_crowd), at a barricade.
+		var L: float = f.length * 0.5 + f.lobby + 1.0
+		var W: float = f.width * 0.5 + f.lobby + 1.0
+		var kids := kind == "school"
+		for r in (3 if low else 5):
+			var d := 1.0 + r * 0.9
+			var ground := r == 1
+			var step := 0.75 if ground else 0.6
+			var y := -0.42 if ground else 0.0
+			var x := -9.0
+			while x <= 9.0:
+				var v := Vector3(x + rng.randf_range(-0.2, 0.2), y, W + d)
+				if kids and v.y <= 0.0:
+					v.y -= 0.25
+				spots.append(v)
+				x += step
+		var keep := _lit
+		_lit = g
+		_barricade(Vector3(-8.5, 0, f.width * 0.5 + f.lobby + 1.4), Vector3(8.5, 0, f.width * 0.5 + f.lobby + 1.4), low)
+		# Tents behind them, and flags.
+		var tz := W + 7.5
+		for x: float in ([-13.0, 0.0, 13.0] if not low else [-7.0, 7.0]):
+			_tent(Vector3(x, 0, tz), 5.2, 2.6, low)
+		_lit = keep
+		var flag_cols := [Color("2e8b57"), Color("ff9933"), Color("f2c230"), Color("2850a8"), Color("d23a2a")]
+		for i in (5 if low else 9):
+			var p := Vector3(-22.0 + i * 44.0 / float((5 if low else 9) - 1), 0, W + 10.5)
+			g.cylinder(p, p + Vector3(0, 6.5, 0), 0.04, 0.03, Color("d8d4cc"), 5, false)
+			g.box(p + Vector3(0.62, 6.05, 0), Vector3(1.2, 0.8, 0.02), flag_cols[i % flag_cols.size()], 0.25 * sin(float(i) * 1.3), false)
+	if not g.verts.is_empty():
+		near_side.add_child(g.commit(Geo.material(true)))
+	if not spots.is_empty():
+		var c := Crowd.new()
+		c.build(spots, Game.crowd_density(), home_colors, hash(venue) + 7, kind in ["arena", "stadium"])
+		near_side.add_child(c)
+
+
+## Shows or hides the near side (the match: the camera behind the pole sees it, the others stand in it).
+func show_near(on: bool) -> void:
+	if near_side:
+		near_side.visible = on
 
 
 ## How loud the place is (0-1).
