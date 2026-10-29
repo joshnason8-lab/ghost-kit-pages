@@ -30,14 +30,14 @@ func _ready() -> void:
 
 	_teams_row = HBoxContainer.new()
 	_teams_row.add_theme_constant_override("separation", 18)
-	_teams_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(_teams_row)
 	_rebuild_teams()
 
-	# Grounds as picture cards.
+	# Grounds as picture cards, as big as the screen leaves room for (the teams take only what they need).
 	var grounds := HBoxContainer.new()
 	grounds.add_theme_constant_override("separation", 12)
-	grounds.custom_minimum_size = Vector2(0, 118)
+	grounds.custom_minimum_size = Vector2(0, 170)
+	grounds.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	for a in DB.ARENAS:
 		var card := _ground_card(String(a.id), tr(a.name))
 		grounds.add_child(card)
@@ -48,16 +48,16 @@ func _ready() -> void:
 	# Length, difficulty and Play.
 	var foot := HBoxContainer.new()
 	foot.add_theme_constant_override("separation", 26)
-	foot.add_child(UI.field(tr("MATCH_LENGTH"), UI.chips_row([tr("LEN_SHORT_S"), tr("LEN_MEDIUM_S"), tr("LEN_FULL_S")], int(Game.settings.length), func(i):
+	foot.add_child(_titled(tr("MATCH_LENGTH"), _big(UI.chips_row([tr("LEN_SHORT_S"), tr("LEN_MEDIUM_S"), tr("LEN_FULL_S")], int(Game.settings.length), func(i):
 		Game.settings.length = i
-		Game.save_settings())))
+		Game.save_settings()))))
 	var keys := ["DIFF_EASY", "DIFF_NORMAL", "DIFF_PRO", "DIFF_LEGEND"]
 	var dn := []
 	for k in keys:
 		dn.append(tr(k))
-	foot.add_child(UI.field(tr("DIFFICULTY"), UI.chips_row(dn, int(Game.settings.difficulty), func(i):
+	foot.add_child(_titled(tr("DIFFICULTY"), _big(UI.chips_row(dn, int(Game.settings.difficulty), func(i):
 		Game.settings.difficulty = i
-		Game.save_settings())))
+		Game.save_settings()))))
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(sp)
@@ -68,6 +68,22 @@ func _ready() -> void:
 	v.add_child(foot)
 
 
+## Length and difficulty chips big enough for a thumb, their words easy to read.
+func _big(row: HBoxContainer) -> HBoxContainer:
+	row.add_theme_constant_override("separation", 10)
+	for b in row.get_children():
+		(b as Button).custom_minimum_size = Vector2(110, 70)
+		(b as Button).add_theme_font_size_override("font_size", Game.ts(24))
+	return row
+
+
+## A chip row under its title, the title as easy to read as the chips.
+func _titled(title: String, row: Control) -> VBoxContainer:
+	var f := UI.field(title, row)
+	(f.get_child(0) as Label).add_theme_font_size_override("font_size", Game.ts(19))
+	return f
+
+
 func _ids() -> Array:
 	return DB.league_ids if source == 0 else DB.country_ids
 
@@ -76,7 +92,7 @@ func _rebuild_teams() -> void:
 	for c in _teams_row.get_children():
 		c.queue_free()
 	_teams_row.add_child(_team_card(home, tr("YOUR_TEAM"), true))
-	var vs := UI.label(tr("VS"), "TitleLabel", 64, Game.C_SAFFRON)
+	var vs := UI.label(tr("VS"), "TitleLabel", 44, Game.C_SAFFRON)
 	vs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_teams_row.add_child(vs)
 	_teams_row.add_child(_team_card(away, tr("OPPONENT"), false))
@@ -95,13 +111,13 @@ func _team_card(id: String, role: String, mine: bool) -> PanelContainer:
 	sb.border_width_bottom = 6
 	sb.content_margin_left = 18
 	sb.content_margin_right = 18
-	sb.content_margin_top = 12
-	sb.content_margin_bottom = 12
+	sb.content_margin_top = 8
+	sb.content_margin_bottom = 8
 	p.add_theme_stylebox_override("panel", sb)
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 10)
 	p.add_child(h)
-	var prev := UI.round_button("back", func(): _cycle(mine, -1), 52)
+	var prev := UI.round_button("back", func(): _cycle(mine, -1), 46)
 	prev.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(prev)
 	var mid := HBoxContainer.new()
@@ -109,7 +125,7 @@ func _team_card(id: String, role: String, mine: bool) -> PanelContainer:
 	mid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mid.alignment = BoxContainer.ALIGNMENT_CENTER
 	h.add_child(mid)
-	var crest := Crest.make(id, 130)
+	var crest := Crest.make(id, 80)
 	crest.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	mid.add_child(crest)
 	var info := VBoxContainer.new()
@@ -117,7 +133,7 @@ func _team_card(id: String, role: String, mine: bool) -> PanelContainer:
 	info.add_theme_constant_override("separation", 0)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_child(UI.label(role.to_upper(), "EyebrowLabel", 15, Game.C_SAFFRON if mine else Game.C_MUTED))
-	var nm := UI.label(DB.team_name(id), "HeaderLabel", 40)
+	var nm := UI.label(DB.team_name(id), "HeaderLabel", 30)
 	nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(nm)
 	var sub := "%s %d" % [tr("RATING"), DB.team_rating(t.squad)]
@@ -145,7 +161,7 @@ func _team_card(id: String, role: String, mine: bool) -> PanelContainer:
 	info.add_child(gap)
 	info.add_child(stars)
 	mid.add_child(info)
-	var nxt := UI.round_button("next", func(): _cycle(mine, 1), 52)
+	var nxt := UI.round_button("next", func(): _cycle(mine, 1), 46)
 	nxt.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(nxt)
 	return p
@@ -190,12 +206,12 @@ func _ground_card(id: String, name: String) -> Button:
 	var shade := ColorRect.new()
 	shade.color = Color(0, 0, 0, 0.45)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	shade.offset_top = -38
+	shade.offset_top = -46
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(shade)
-	var l := UI.label(name, "SubLabel", 18)
+	var l := UI.label(name, "SubLabel", 22)
 	l.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	l.offset_top = -36
+	l.offset_top = -42
 	l.offset_left = 12
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(l)

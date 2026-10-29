@@ -589,7 +589,27 @@ static func scroll(content: Control) -> ScrollContainer:
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.add_child(content)
+	# Once the screen has built what goes in it, and whenever something is added later.
+	s.ready.connect(func(): pass_drags.call_deferred(content))
+	content.child_entered_tree.connect(func(n): pass_drags.call_deferred(n))
 	return s
+
+
+## A finger dragging up or down a scroll box scrolls it from wherever it starts: on a card, a chip or a button too,
+## not only in the gaps between them (cards and buttons stopped the drag, so Settings would not scroll on a phone).
+## A tap still presses a button; sliders and text boxes keep their drags.
+static func pass_drags(root: Node) -> void:
+	if root == null or not is_instance_valid(root):
+		return
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is Range or n is LineEdit or n is TextEdit or n is ScrollContainer and n != root:
+			continue
+		if n is Control and (n as Control).mouse_filter == Control.MOUSE_FILTER_STOP:
+			(n as Control).mouse_filter = Control.MOUSE_FILTER_PASS
+		for c in n.get_children():
+			stack.append(c)
 
 
 static func swatch(c: Color, size := Vector2(14, 34)) -> ColorRect:

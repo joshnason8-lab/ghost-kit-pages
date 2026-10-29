@@ -944,8 +944,15 @@ func _run() -> void:
 	check(not rm.paused, "... and resumes it")
 	rm.queue_free()
 	await frames(3)
-	Game.show_screen("res://ui/settings_screen.gd")
+	var set_scr: Node = Game.show_screen("res://ui/settings_screen.gd")
 	await frames(2)
+	# A drag on a card, chip or button reaches the scroll box (Settings would only scroll from the gaps on a phone).
+	var stoppers := []
+	for sc in set_scr.find_children("*", "ScrollContainer", true, false):
+		for ctl in sc.find_children("*", "Control", true, false):
+			if (ctl as Control).mouse_filter == Control.MOUSE_FILTER_STOP and not (ctl is Range or ctl is LineEdit):
+				stoppers.append(ctl.get_class())
+	check(stoppers.is_empty(), "every card and button in Settings lets a drag scroll the page %s" % str(stoppers.slice(0, 5)))
 	Game.go_back()
 	await frames(2)
 	check(String(Game.current.get_script().resource_path).ends_with("main_menu.gd"), "back from a screen returns to the menu")
