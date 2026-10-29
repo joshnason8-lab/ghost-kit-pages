@@ -442,6 +442,7 @@
 			0.037,
 			0.025
 		],
+		"Left_foot_pitch_deg": 1.1,
 		"Left_hand_len": 0.178,
 		"Left_palm_tilt_deg": -25.9,
 		"Left_thumb_forward": true,
@@ -534,6 +535,7 @@
 			0.035,
 			0.024
 		],
+		"Right_foot_pitch_deg": 0.2,
 		"Right_hand_len": 0.183,
 		"Right_palm_tilt_deg": -28.0,
 		"Right_thumb_forward": true,

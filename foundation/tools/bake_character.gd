@@ -54,6 +54,7 @@ func _initialize() -> void:
 	var body := _skin_to_stance(meshes)
 	_square_hands(body)
 	var joints := _joints(body)
+	_flatten_feet(body, joints)
 	_fingers(body, joints)
 	joints = WsgRig.with_helpers(joints)
 	var arrays := _weights(body, joints)
@@ -176,6 +177,59 @@ func _skin_to_stance(meshes: Array) -> Dictionary:
 	report.source_height = snappedf(hi.y - lo.y, 0.001)
 	report.vertices = pos.size()
 	return {"pos": pos, "nrm": nrm, "uv": uv, "w": ws, "index": index, "shift": shift, "k": k}
+
+
+## The feet made to stand flat: some models (Meshy's officials) are made with the feet pitched up at the ankle, toes
+## to the sky. Each foot's sole is measured on the mesh (its lowest point toward the toe against its lowest point
+## at the heel) and the foot turned down about the ankle until only a shoe's own toe spring is left.
+const TOE_SPRING := 4.0      # degrees of a shoe's sole rising to the toe, left as it is
+
+
+func _flatten_feet(body: Dictionary, joints: Dictionary) -> void:
+	for side in ["Left", "Right"]:
+		var ank: Vector3 = joints[side + "Foot"]
+		var pts := []
+		for i in body.pos.size():
+			var w := float(body.w[i].get(side + "Foot", 0.0)) + float(body.w[i].get(side + "ToeBase", 0.0))
+			if w >= 0.5:
+				pts.append(body.pos[i])
+		if pts.size() < 10:
+			continue
+		var zmin := INF
+		var zmax := -INF
+		for p: Vector3 in pts:
+			zmin = minf(zmin, p.z)
+			zmax = maxf(zmax, p.z)
+		var span := zmax - zmin
+		var heel := INF
+		var front := INF
+		for p: Vector3 in pts:
+			if p.z < zmin + span * 0.25:
+				heel = minf(heel, p.y)
+			elif p.z > zmin + span * 0.6 and p.z < zmin + span * 0.85:
+				front = minf(front, p.y)
+		var pitch := rad_to_deg(atan2(front - heel, span * 0.47))
+		report[side + "_foot_pitch_deg"] = snappedf(pitch, 0.1)
+		var fix := pitch - TOE_SPRING
+		if absf(fix) < 4.0:
+			continue
+		var q := Quaternion(Vector3.RIGHT, deg_to_rad(fix))
+		for i in body.pos.size():
+			var w := float(body.w[i].get(side + "Foot", 0.0)) + float(body.w[i].get(side + "ToeBase", 0.0))
+			if w <= 0.0:
+				continue
+			var p: Vector3 = body.pos[i] - ank
+			body.pos[i] = ank + p.lerp(q * p, minf(w, 1.0))
+			body.nrm[i] = body.nrm[i].slerp(q * body.nrm[i], minf(w, 1.0)).normalized()
+		joints[side + "ToeBase"] = ank + q * ((joints[side + "ToeBase"] as Vector3) - ank)
+		# Back on the ground: the lowest point of the turned foot at the soles' height.
+		var low := INF
+		for i in body.pos.size():
+			if float(body.w[i].get(side + "Foot", 0.0)) + float(body.w[i].get(side + "ToeBase", 0.0)) >= 0.5:
+				low = minf(low, body.pos[i].y)
+		report[side + "_foot_turned_down_deg"] = snappedf(fix, 0.1)
+		report[side + "_foot_low_after"] = snappedf(low, 0.003)
+		print("turned the ", side, " foot down by ", snappedf(fix, 0.1), " degrees so it stands flat")
 
 
 ## The rig's body joints from the posed skeleton.

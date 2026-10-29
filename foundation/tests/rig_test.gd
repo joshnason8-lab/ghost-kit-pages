@@ -64,6 +64,7 @@ func _initialize() -> void:
 		if not helpers_on and not any_fail:
 			failures.append("with the helpers off every shape check still passed: the checks cannot see candy-wrap or collapse")
 	body.helpers.active = true
+	_soles()
 	await _hinges(poses)
 	await _grip(poses)
 	for l in lines:
@@ -243,6 +244,38 @@ func _hinges(poses: Dictionary) -> void:
 		elif bad.is_empty():
 			failures.append("with the normaliser off the broken pose still passed: the hinge check cannot see it")
 	body.normalize.active = true
+
+
+## The soles stand flat at rest: the lowest point toward the toe against the lowest at the heel, on the mesh itself
+## (a model made with its feet pitched up shows here even though every joint angle is fine).
+func _soles() -> void:
+	for side in ["Left", "Right"]:
+		var ids := {WsgRig.index(side + "Foot"): true, WsgRig.index(side + "ToeBase"): true}
+		var pts := []
+		for v in src.size():
+			var w := 0.0
+			for k in 4:
+				if ids.has(bones[v * 4 + k]):
+					w += weights[v * 4 + k]
+			if w >= 0.5:
+				pts.append(src[v])
+		var zmin := INF
+		var zmax := -INF
+		for p: Vector3 in pts:
+			zmin = minf(zmin, p.z)
+			zmax = maxf(zmax, p.z)
+		var span := zmax - zmin
+		var heel := INF
+		var front := INF
+		for p: Vector3 in pts:
+			if p.z < zmin + span * 0.25:
+				heel = minf(heel, p.y)
+			elif p.z > zmin + span * 0.6 and p.z < zmin + span * 0.85:
+				front = minf(front, p.y)
+		var pitch := rad_to_deg(atan2(front - heel, span * 0.47))
+		lines.append("sole  %-5s toes up %.1f degrees at rest" % [side, pitch])
+		if pitch > 10.0:
+			failures.append("%s foot: toes pitched up %.0f degrees at rest (the bake must flatten it)" % [side, pitch])
 
 
 ## The hinge's bend in degrees (+: the right way), from the joints' places and the parent's hinge axis.
