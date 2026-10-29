@@ -22,7 +22,8 @@ Footsteps on the sand: "Fantozzi's Footsteps (Grass/Sand & Stone)" by Fantozzi (
 Applause: "Applause in a large hall or church" by eXpl0it3r (opengameart.org), CC0.
 The grounds: "AMB Rain Loop 1" by Kresiek The Furry, "Beach Ocean Waves" by jasinski, "Park ambiences" by Thimras and "Crickets Ambient Noise - loopable" by Wolfgang_ (all opengameart.org), CC0.
 Whistle sounds from Pixabay (Pixabay Content License): "Referee whistle" by charlesheffley009, "Referee whistle / coach whistle / sports whistle" by framptones, "Metal whistle" and "Referee whistle blow, gymnasium" by freesound_community. Trimmed and loudness-matched for the game.
-The dhol, the chants and the players' voices were made for the game."""
+From freesound.org, all CC0: the crowd's gasp and disappointed sigh ("CRWDReac" by ShangusBurger), and the players' grunts, pain sounds and breaths ("Male Grunts" by Kodack, "Grunting" by randbsoundbites, "Voice_AdultMale_PainGrunts_09" by MrFossy, "male_hurt9" by micahlg, "Short Exertion" by SuddenDice, "Exhale_10115a" by otherthings). Cut and made mono for the game.
+The dhol, the chants and the players' shouts were made for the game."""
 
 const FONTS := """[b]Fonts[/b]
 Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic).

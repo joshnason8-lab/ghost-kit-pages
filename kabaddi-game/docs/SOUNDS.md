@@ -35,6 +35,23 @@ Made from the downloads by `tools/audio/make_recorded.py`: mono, 22.05 kHz, sile
 | `whistle_gym.ogg` | A long blast in a hall, with its echo: the dome's long blasts | Pixabay 6320 ("Referee whistle blow, gymnasium") | freesound_community | Pixabay Content License |
 | `menu_music.ogg` | The menus' music (an edited loop, `tools/audio/make_menu_music.py`) | "Indian", Pixabay track 611803 | LNPLUSMUSIC | Pixabay Content License |
 
+## From freesound.org (0.13.0)
+
+All CC0, each checked on its own page by `tools/audio/freesound_fetch.py`; made by `tools/audio/make_freesound.py`
+(a file with several takes cut at its silences; mono, 22.05 kHz, trimmed, faded, peak-normalised, Ogg Vorbis). They
+replace the synthetic crowd reactions and player voices of `tools/audio/make_sounds.py`.
+
+| File(s) in `assets/audio/` | What it is in the game | Source (freesound id) | Author | Licence |
+|---|---|---|---|---|
+| `crowd_ooh.ogg` | The crowd's gasp at a near miss | "CRWDReac_Crowd Gasping In Surprise, Voiced 01" (763875) | ShangusBurger | CC0 |
+| `crowd_groan.ogg` | The crowd's sigh at a lost point (its loudest 3.6 s) | "CRWDReac_Crowd Sigh In Disappointment" (763880) | ShangusBurger | CC0 |
+| `grunt_1..3.ogg` | Players' efforts in a struggle | "Male Grunts" (256603), takes 1-3 | Kodack | CC0 |
+| `grunt_4..5.ogg`, `oof_3.ogg` | The same | "Grunting" (795440), takes 1, 3 and 2 | randbsoundbites | CC0 |
+| `oof_1.ogg` | A player hitting the mat | "Voice_AdultMale_PainGrunts_09" (547209) | MrFossy | CC0 |
+| `oof_2.ogg` | The same | "male_hurt9" (413186) | micahlg | CC0 |
+| `hup_1..2.ogg` | A lion jump's spring | "AS016231_Short Exertion" (558489), takes 3 and 1 | SuddenDice | CC0 |
+| `exhale_1..2.ogg` | A raider's breath after the raid (the second a little deeper) | "Exhale_10115a" (65619) | otherthings | CC0 |
+
 The dome is indoors and has no ambience of its own: its crowd is its sound.
 
 ## Made for the game
@@ -43,8 +60,7 @@ The dome is indoors and has no ambience of its own: its crowd is its sound.
 |---|---|---|
 | `chant_raider`, `chant_word_1..2` | The raider's "kabaddi, kabaddi" | `tools/audio/make_voices.py` (MBROLA Indian voices through espeak-ng) |
 | `yell_aaja`, `yell_pakad`, `yell_shabash`, `yell_chal`, `yell_haan`, `yell_nahi`, `yell_touch` | Players' shouts in Hindi | `tools/audio/make_voices.py` |
-| `crowd_chant`, `crowd_ooh`, `crowd_groan`, `clap` | The crowd chanting, a near miss, a lost point, one clap | `tools/audio/make_sounds.py` (layered synthetic voices) |
-| `grunt_1..5`, `oof_1..3`, `exhale_1..2`, `hup_1..2` | Players' efforts and breaths | `tools/audio/make_sounds.py` (a source-filter voice) |
+| `crowd_chant`, `clap` | The crowd chanting, one clap | `tools/audio/make_sounds.py` (layered synthetic voices) |
 | buzzer, whoosh, gavel, dhol loop, bid | The clock's buzzer, moves through the air, the auction | Synthesised at startup in `autoload/sfx.gd` |
 
 The whistles (0.11.1) were supplied by the owner from Pixabay through the shared assets (`shared-assets/sounds/whistle/`,

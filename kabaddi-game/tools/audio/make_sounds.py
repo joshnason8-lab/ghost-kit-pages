@@ -320,17 +320,11 @@ def main():
             sys.exit("needs %s" % tool)
     save("crowd_loop", crowd_loop(), 2)
     save("crowd_cheer", crowd_cheer())
-    save("crowd_ooh", crowd_ooh())
-    save("crowd_groan", crowd_groan())
     save("applause", applause())
     save("clap", hand_slap())
-    for i in range(5):
-        save("grunt_%d" % (i + 1), grunt(i))
-    for i in range(3):
-        save("oof_%d" % (i + 1), oof(i))
-    for i in range(2):
-        save("exhale_%d" % (i + 1), exhale(i))
-        save("hup_%d" % (i + 1), hup(i))
+    # The crowd's ooh and groan and the players' grunts, oofs, breaths and hups are real recordings since 0.13.0
+    # (tools/audio/make_freesound.py); crowd_ooh(), crowd_groan(), grunt(), oof(), exhale() and hup() are kept for
+    # reference but no longer written.
 
 
 if __name__ == "__main__":
