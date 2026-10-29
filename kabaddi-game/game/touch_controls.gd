@@ -14,6 +14,7 @@ signal moved                  # editing: a button was let go in its new place (s
 
 var context := "none"   # none, intro, raid, defend
 var enabled := true
+var watch_only := false   # watching the computer play (Match "watch"): only pause, camera and skip
 var cant_mode := false  # raid with the tap-to-chant cant
 var beat_k := 0.0       # 0 right after a beat .. 1 just before the next one
 var chain_on := false
@@ -171,6 +172,8 @@ func _buttons() -> Array:
 			list.append(place.call("chain", tr("BTN_UNCHAIN") if chain_on else tr("BTN_CHAIN"), 4, 42.0,
 				Game.C_GOLD if chain_on else Color("3b4f6b"), {"lit": chain_on}))
 			list.append(place.call("switch", tr("BTN_SWITCH"), 5, 46.0, Game.C_INK, {}))
+	if watch_only:
+		return list.filter(func(b): return b.id in ["pause", "camera", "skip"])
 	return list
 
 

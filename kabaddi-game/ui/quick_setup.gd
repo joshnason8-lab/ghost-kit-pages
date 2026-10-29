@@ -61,6 +61,11 @@ func _ready() -> void:
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(sp)
+	# Watch: the two sides played by the computer, to sit back and see a match.
+	var watch := UI.button(tr("WATCH_AI"), false, _play.bind(true))
+	watch.custom_minimum_size = Vector2(150, 76)
+	watch.size_flags_vertical = Control.SIZE_SHRINK_END
+	foot.add_child(watch)
 	var play := UI.button(tr("PLAY"), true, _play)
 	play.custom_minimum_size = Vector2(300, 76)
 	play.size_flags_vertical = Control.SIZE_SHRINK_END
@@ -240,7 +245,7 @@ func _mark_ground() -> void:
 		card.modulate = Color.WHITE if id == arena else Color(0.75, 0.75, 0.8)
 
 
-func _play() -> void:
+func _play(watch := false) -> void:
 	if home == away:
 		var ids := _ids()
 		away = ids[(ids.find(home) + 1) % ids.size()]
@@ -248,4 +253,5 @@ func _play() -> void:
 		"home": home, "away": away, "arena": arena, "mode": "quick", "control": "all",
 		"length": int(Game.settings.length), "difficulty": int(Game.settings.difficulty), "knockout": false,
 		"featured": true,   # the featured bodies (bodies.json) on each side's first players, to see them in a match
+		"autoplay": watch, "watch": watch,
 	})

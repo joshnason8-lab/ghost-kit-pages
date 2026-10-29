@@ -496,8 +496,9 @@ func _run() -> void:
 		"the crowd claps while applause is heard, and stops after (%.2f, then %.2f)" % [mid, ab._clap_share])
 	ab.queue_free()
 	var sheet := Arena.crowd_sheet()
-	check(not sheet.is_empty() and (sheet.info.people as Array).size() >= 8 and (sheet.info.frames as Array).size() == 8,
-		"crowd sprite sheet: eight people in eight poses")
+	check(not sheet.is_empty() and (sheet.info.people as Array).size() >= 8 and (sheet.info.frames as Array).size() == 12
+		and (sheet.info.frames as Array).slice(8) == ["sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r"],
+		"crowd sprite sheet: eight people in twelve poses, the last four watching to either side")
 	# 7d. Medium and High's extra detail (0.12.0): the sixteen-person crowd, the players' 2K albedos, the courts' 2K
 	# surfaces, each a file of its own that only they load; Low's are the files it had before, and none of the 2K ones.
 	var low_sheet := Arena.crowd_sheet(0)
@@ -907,6 +908,12 @@ func _run() -> void:
 	check(rm.hud.tags.tags_now().all(func(e): return e.name != ""), "tags: names over everyone")
 	Game.settings.tags = 2
 	check(rm.hud.tags.tags_now().is_empty(), "tags: off")
+	var tc: TouchControls = rm.controls
+	tc.watch_only = true
+	var shown_ids: Array = tc._buttons().map(func(b): return b.id)
+	tc.watch_only = false
+	check(shown_ids.has("pause") and not shown_ids.has("touch") and not shown_ids.has("dodge"),
+		"watching the computer play: pause and camera, no move buttons %s" % str(shown_ids))
 	# A shout over the calls on the left is held back ("Tackle!" and "Shabash!" on top of each other).
 	rm.hud.event("Tackle!", Game.C_GOOD)
 	await frames(2)

@@ -730,5 +730,7 @@
   "BTNS_RAIDING": "Raiding",
   "BTNS_DEFENDING": "Defending",
   "RESET_PLACES": "Reset",
-  "HOW_BUTTONS": "Buttons too small, or out of your thumb's reach? In Settings, Button size makes them bigger and Move buttons puts them where you want them. Move buttons is in the pause menu too."
+  "HOW_BUTTONS": "Buttons too small, or out of your thumb's reach? In Settings, Button size makes them bigger and Move buttons puts them where you want them. Move buttons is in the pause menu too.",
+  "WATCH_AI": "Watch",
+  "WATCHING_AI": "Watching: AI v AI"
 }

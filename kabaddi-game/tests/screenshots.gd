@@ -120,6 +120,20 @@ func _tour() -> void:
 			fm.cam.set_process(true)
 			fm.cam.set_physics_process(true)
 		return
+	if args_only == "watch":
+		# Watch: the computer plays both sides, the score and pause shown, no touch buttons.
+		Game.show_screen("res://ui/quick_setup.gd")
+		await frames(10)
+		await shot("watch_1_setup")
+		Game.current._play(true)
+		var wm: Node = Game.current
+		var wg := 0
+		while wm.phase != "raid" and wg < 900:
+			await get_tree().process_frame
+			wg += 1
+		await frames(60)
+		await shot("watch_2_match")
+		return
 	if args_only == "signs":
 		# The league's name on the boards and the run-off, from the corner of the mat (in the tour's language).
 		Game.start_match({"home": "MUM", "away": "PUN", "arena": "dome", "mode": "quick", "length": 0, "difficulty": 1,

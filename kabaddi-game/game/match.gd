@@ -271,6 +271,10 @@ func _ready() -> void:
 		hud.visible = false
 		controls.enabled = false
 		cam.mode = Game.CAM_TV
+	elif bool(config.get("watch", false)):
+		# Watching the computer play both sides: the score and the pause button, no touch buttons.
+		controls.watch_only = true
+		hud.event(tr("WATCHING_AI"), Game.C_MUTED, false)
 	if String(config.get("mode", "")) == "tutorial":
 		tutorial = Tutorial.new()
 		add_child(tutorial)
@@ -1219,7 +1223,7 @@ func _haptic(kind: String) -> void:
 func _check_frame_rate(delta: float) -> void:
 	if _fps_done or phase != "raid":
 		return
-	if not bool(Game.settings.get("auto_gfx", true)) or bool(config.get("autoplay", false)) \
+	if not bool(Game.settings.get("auto_gfx", true)) or bool(config.get("autoplay", false)) and not bool(config.get("watch", false)) \
 			or DisplayServer.get_name() == "headless" or OS.get_cmdline_args().has("--write-movie"):
 		_fps_done = true
 		return
