@@ -151,3 +151,9 @@ Grounds are built in code in `game/arena.gd`. Each one is a function (`_build_do
 sets the sky, lights and fog, lays the court surface and lines, and places props, stands and the crowd. To use a
 modelled stadium, add the `.glb` under `assets/grounds/`, instance it in that ground's function, and keep the
 court itself from `_court()` so the line positions stay exact.
+
+## The auction's player figures (0.13.1)
+
+`assets/ui/auction/fig_*.png`: outlines of real players traced from the owner's own kabaddi videos (a raider's training
+drills; a Pro Kabaddi skills explainer) by `tools/ui_art/make_silhouettes.py`. Only the outline of each body is kept, and
+the videos are not in the repository.

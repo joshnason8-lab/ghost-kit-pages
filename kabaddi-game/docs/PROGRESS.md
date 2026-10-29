@@ -326,3 +326,15 @@ check where real recorded movement would make its players more real, and to use 
 
 Freesound's search pages and previews are public (no API key); the session was rate-limited (HTTP 403) for some minutes after
 about twenty searches.
+
+## 0.13.1: the auction's players
+
+The owner found the auction's player picture bad (on Medium and High, the game's own model turning on a stand; on Low, one
+pictogram for everyone) and asked for a different outline silhouette for each player, from better pictures of people than
+the game's players. `tools/ui_art/make_silhouettes.py` traces 22 real players from the owner's two kabaddi videos: picked
+by clustering every whole, unblocked person's pose (YOLO11 pose; 1,422 frames of the first video, 612 people in the
+second) and keeping the most typical of each cluster, then cut out with YOLO11's person segmentation, cleaned and drawn as
+a white outline over a faint fill (`assets/ui/auction/`, 290 KB). Only the outline is kept: no face, kit or picture.
+`UI.player_figure` gives each player his own from his id (raiders one of 13 reaching, lunging or kicking; defenders one of
+9 crouched ready; all-rounders either), facing either way and 0.9-1.1 as broad; the auction tints it in his last team's
+brighter colour. 72 players of six squads come out in 53 different looks (test_runner).

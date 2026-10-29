@@ -29,8 +29,6 @@ var _extra: Label            # age, last season's points or a young player's pot
 var _fit_row: HBoxContainer  # how well he fits your squad (League Season)
 var _strengths: Label
 var _bidders: HBoxContainer
-var _portrait_root: Node3D
-var _portrait: Athlete = null
 var _portrait_sil: TextureRect
 # The stage.
 var _price: Label
@@ -169,31 +167,20 @@ func _block_panel() -> PanelContainer:
 	_lot_pills = HBoxContainer.new()
 	_lot_pills.add_theme_constant_override("separation", 6)
 	v.add_child(_lot_pills)
-	# The player's likeness on a turning stand (a pictogram on Low graphics).
+	# The player as an outline of a real kabaddi player, his own (UI.player_figure), in his last team's colour.
 	var stand := Control.new()
 	stand.custom_minimum_size = Vector2(0, 90)
 	stand.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stand.clip_contents = true
 	v.add_child(stand)
-	if int(Game.settings.graphics) != Game.GFX_LOW:
-		var svc := SubViewportContainer.new()
-		svc.stretch = true
-		svc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		svc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stand.add_child(svc)
-		var sv := SubViewport.new()
-		sv.own_world_3d = true
-		sv.transparent_bg = true
-		sv.msaa_3d = Viewport.MSAA_2X
-		svc.add_child(sv)
-		_build_stand(sv)
-	else:
-		_portrait_sil = TextureRect.new()
-		_portrait_sil.texture = UI.pose("auction")
-		_portrait_sil.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		_portrait_sil.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		_portrait_sil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_portrait_sil.modulate = Color(Game.C_GOLD, 0.5)
-		stand.add_child(_portrait_sil)
+	_portrait_sil = TextureRect.new()
+	_portrait_sil.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_portrait_sil.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_portrait_sil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_portrait_sil.offset_top = 8
+	_portrait_sil.offset_bottom = -4
+	_portrait_sil.resized.connect(func(): _portrait_sil.pivot_offset = _portrait_sil.size * 0.5)
+	stand.add_child(_portrait_sil)
 	var nrow := HBoxContainer.new()
 	nrow.add_theme_constant_override("separation", 12)
 	var ncol := VBoxContainer.new()
@@ -231,62 +218,21 @@ func _block_panel() -> PanelContainer:
 	return pv[0]
 
 
-func _build_stand(sv: SubViewport) -> void:
-	_portrait_root = Node3D.new()
-	sv.add_child(_portrait_root)
-	var env := WorldEnvironment.new()
-	env.environment = Environment.new()
-	env.environment.background_mode = Environment.BG_CLEAR_COLOR
-	env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.environment.ambient_light_color = Color("8fa6c4")
-	env.environment.ambient_light_energy = 1.0
-	_portrait_root.add_child(env)
-	var key := DirectionalLight3D.new()
-	key.rotation = Vector3(deg_to_rad(-25), deg_to_rad(35), 0)
-	key.light_energy = 1.5
-	key.light_color = Color("fff0d8")
-	_portrait_root.add_child(key)
-	var rim := DirectionalLight3D.new()
-	rim.rotation = Vector3(deg_to_rad(-10), deg_to_rad(200), 0)
-	rim.light_energy = 1.4
-	rim.light_color = Game.C_SAFFRON
-	_portrait_root.add_child(rim)
-	var disc := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = 0.6
-	cyl.bottom_radius = 0.66
-	cyl.height = 0.08
-	disc.mesh = cyl
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color("21405f")
-	mat.metallic = 0.4
-	mat.roughness = 0.4
-	disc.material_override = mat
-	disc.position = Vector3(0, -0.04, 0)
-	_portrait_root.add_child(disc)
-	var cam := Camera3D.new()
-	cam.fov = 30
-	_portrait_root.add_child(cam)
-	# Aimed by its transform: the stand is built before it is in the tree, where look_at() cannot work.
-	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 0.95, 0) - Vector3(0, 1.1, 3.3)), Vector3(0, 1.1, 3.3))
-
-
 func _show_portrait(p: Dictionary, former: String) -> void:
-	if _portrait_root == null:
+	if _portrait_sil == null:
 		return
-	if _portrait and is_instance_valid(_portrait):
-		_portrait.queue_free()
-	var kit := Color("3b4f6b")
-	var trim := Game.C_INK
+	var fig := UI.player_figure(p)
+	_portrait_sil.texture = fig.get("texture")
+	_portrait_sil.flip_h = bool(fig.get("flip", false))
+	_portrait_sil.scale = Vector2(float(fig.get("width", 1.0)), 1.0)
+	var col := Game.C_GOLD
 	if former != "" and not DB.team(former).is_empty():
-		kit = DB.team(former).c1
-		trim = DB.team(former).c2
-	_portrait = Athlete.new()
-	_portrait.setup(p, 0, kit, trim, true)
-	_portrait_root.add_child(_portrait)
-	_portrait.facing = Vector3(0, 0, 1)
-	_portrait.lock_facing = true
-	_portrait.set_state("idle")
+		var c1: Color = DB.team(former).c1
+		var c2: Color = DB.team(former).c2
+		col = (c1 if c1.get_luminance() >= c2.get_luminance() else c2).lerp(Color.WHITE, 0.15)   # the brighter of the two
+	_portrait_sil.modulate = col
+	_portrait_sil.modulate.a = 0.0
+	create_tween().tween_property(_portrait_sil, "modulate:a", 1.0, 0.35)
 
 
 func _stage_panel() -> PanelContainer:
@@ -615,8 +561,6 @@ func _refresh() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	if _portrait and is_instance_valid(_portrait):
-		_portrait.rotation.y = PI + sin(_t * 0.6) * 0.5
 	if eng == null or _done or _fbm_panel.visible:
 		return
 	if _pause > 0.0:

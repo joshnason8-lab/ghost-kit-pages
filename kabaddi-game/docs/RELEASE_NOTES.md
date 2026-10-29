@@ -1,4 +1,8 @@
-**New in 0.13.0: a livelier crowd, a raider who looks the part, and Watch.**
+**New in 0.13.1: real players in the auction.** The player on the block is no longer a model from the game but an
+outline of a real kabaddi player, traced from match and training footage, and every player has his own: raiders
+reaching, lunging or kicking, defenders crouched ready, in their last team's colours.
+
+**In 0.13.0: a livelier crowd, a raider who looks the part, and Watch.**
 - **Watch**: Quick Match has a Watch button: the computer plays both sides while you sit back (pause and camera still work).
 - **The raider** waits and works the cover in a low, bouncing stance, dancing from foot to foot and now and then poking a toe
   out in front, as raiders do (measured from training footage); he no longer stands straight-legged.

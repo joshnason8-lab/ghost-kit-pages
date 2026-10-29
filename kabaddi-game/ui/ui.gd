@@ -148,6 +148,29 @@ static func pose(name: String) -> Texture2D:
 
 
 static var _art := {}
+static var _figures := {}   # kind -> [Texture2D] (player_figure)
+
+
+## A player's figure: an outline of a real kabaddi player (tools/ui_art/make_silhouettes.py), his own. Raiders get one
+## reaching, lunging or kicking, defenders one crouched ready, all-rounders either; which one, which way it faces and how
+## broad he is follow from his id, so he looks the same every time and two players rarely alike.
+## {"texture": Texture2D, "flip": bool, "width": float (1 is the figure as traced)}; {} if there are none.
+static func player_figure(p: Dictionary) -> Dictionary:
+	if _figures.is_empty():
+		var info = JSON.parse_string(FileAccess.get_file_as_string("res://assets/ui/auction/figures.json"))
+		_figures = {"raid": [], "defend": []}
+		if info is Dictionary:
+			for f in info.figures:
+				var path := "res://assets/ui/auction/" + String(f.file)
+				if ResourceLoader.exists(path):
+					(_figures[String(f.kind)] as Array).append(load(path))
+	var role := String(p.get("role", ""))
+	var pool: Array = _figures.raid if role == "raider" else (_figures.defend if role == "defender" else _figures.raid + _figures.defend)
+	if pool.is_empty():
+		return {}
+	var h := hash(String(p.get("id", p.get("name", ""))))
+	return {"texture": pool[absi(h) % pool.size()], "flip": (absi(h) >> 8) % 2 == 1,
+		"width": 0.9 + float((absi(h) >> 10) % 21) / 100.0}
 
 
 ## A figure for the menus, already in its colours (assets/ui/art_*.png, from tools/ui_art/import_art.py).

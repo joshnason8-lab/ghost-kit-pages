@@ -147,6 +147,28 @@ func _tour() -> void:
 			if k > 900:
 				break
 		return
+	if args_only == "auction_lot":
+		# The auction's lot on the block, a few lots in (the player shown, on this graphics level).
+		Game.delete_season()
+		var se = Game.new_season("PAT")
+		se.seed_value = 4242
+		Game.save_season()
+		Game.show_screen("res://ui/auction_screen.gd", {"mode": "owner"})
+		await frames(150)
+		await shot("auction_lot_1")
+		await frames(200)
+		await shot("auction_lot_2")
+		# Four more players on the block, to see their figures differ.
+		var scr: Node = Game.current
+		var k2 := 3
+		for t in ["MUM", "DEL", "KOL", "BLR"]:
+			var pl: Dictionary = DB.team(t).squad[k2]
+			k2 += 2
+			scr._show_portrait(pl, t)
+			await frames(25)
+			await shot("auction_fig_%s_%s" % [t, String(pl.role)])
+		Game.delete_season()
+		return
 	if args_only == "watch":
 		# Watch: the computer plays both sides, the score and pause shown, no touch buttons.
 		Game.show_screen("res://ui/quick_setup.gd")

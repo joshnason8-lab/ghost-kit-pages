@@ -1418,6 +1418,25 @@ func _languages() -> void:
 		(shown.get_meta("back") as Callable).call()
 		await frames(2)
 		check(String(Game.current.get_script().resource_path).ends_with("settings_screen.gd"), "Back from %s returns to Settings" % tr(key))
+	# The auction's figures: each player his own outline of a real player, a raider's reaching or lunging, a defender's
+	# crouched ready.
+	var looks := {}
+	var kinds_ok := true
+	var info = JSON.parse_string(FileAccess.get_file_as_string("res://assets/ui/auction/figures.json"))
+	var kind_of := {}
+	for f in info.figures:
+		kind_of["res://assets/ui/auction/" + String(f.file)] = String(f.kind)
+	var squad_n := 0
+	for t in ["MUM", "PAT", "DEL", "BLR", "KOL", "CHE"]:
+		for pl in DB.team(t).squad:
+			var fig := UI.player_figure(pl)
+			squad_n += 1
+			looks["%s/%s/%d" % [(fig.texture as Texture2D).resource_path, str(fig.flip), int(float(fig.width) * 20)]] = true
+			var k: String = kind_of.get((fig.texture as Texture2D).resource_path, "")
+			if String(pl.role) == "raider" and k != "raid" or String(pl.role) == "defender" and k != "defend":
+				kinds_ok = false
+	check(kind_of.size() >= 20 and kinds_ok and looks.size() >= squad_n * 0.7,
+		"auction figures: %d outlines, %d players, %d looks, raiders reaching and defenders crouched" % [kind_of.size(), squad_n, looks.size()])
 	var lic := Game.show_screen("res://ui/licences_screen.gd")
 	await frames(3)
 	var all := ""
