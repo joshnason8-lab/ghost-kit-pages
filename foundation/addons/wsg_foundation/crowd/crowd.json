@@ -1,0 +1,87 @@
+{
+	"clips": {
+		"cheer": {
+			"frames": 15,
+			"length": 1.0,
+			"loop": true,
+			"row": 92
+		},
+		"sit_clap": {
+			"frames": 8,
+			"length": 0.5,
+			"loop": true,
+			"row": 30
+		},
+		"sit_idle": {
+			"frames": 30,
+			"length": 2.0,
+			"loop": true,
+			"row": 0
+		},
+		"sit_to_stand": {
+			"frames": 16,
+			"length": 1.0,
+			"loop": false,
+			"row": 38
+		},
+		"stand_clap": {
+			"frames": 8,
+			"length": 0.5,
+			"loop": true,
+			"row": 84
+		},
+		"stand_idle": {
+			"frames": 30,
+			"length": 2.0,
+			"loop": true,
+			"row": 54
+		}
+	},
+	"fans": {
+		"fan": {
+			"far_triangles": 193,
+			"hips": 1.01,
+			"rows": 107,
+			"triangles": 389,
+			"vertices": 197,
+			"width": 199
+		},
+		"fan2": {
+			"far_triangles": 120,
+			"hips": 1.06,
+			"rows": 107,
+			"triangles": 496,
+			"vertices": 241,
+			"width": 243
+		},
+		"fan4": {
+			"far_triangles": 108,
+			"hips": 0.986,
+			"rows": 107,
+			"triangles": 447,
+			"vertices": 230,
+			"width": 232
+		},
+		"fan5": {
+			"far_triangles": 200,
+			"hips": 1.071,
+			"rows": 107,
+			"triangles": 408,
+			"vertices": 206,
+			"width": 208
+		},
+		"fan6": {
+			"far_triangles": 194,
+			"hips": 0.991,
+			"rows": 107,
+			"triangles": 388,
+			"vertices": 200,
+			"width": 202
+		}
+	},
+	"fps": 15.0,
+	"pivots": [
+		"Spine1",
+		"Neck"
+	]
+}
