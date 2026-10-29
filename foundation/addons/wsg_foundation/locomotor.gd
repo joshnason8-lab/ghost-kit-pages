@@ -74,6 +74,7 @@ var _last_dir := 0.0            # yaw of the velocity last frame (for curving)
 var _shot_rate := 1.0           # the one-off clip's playback rate now (speed-warped to the body's speed)
 var _prev_speed := 0.0
 var _facing := 0.0              # the facing the game asks for
+var _driven := false
 var _travelled := 0.0           # ground the body has covered since the one-off clip began
 var _cut_from := 0.0            # a cut: the way it was going, and the way it was asked to go (world yaw)
 var _cut_to := 0.0
@@ -292,7 +293,7 @@ func drive(delta: float, velocity: Vector3, facing: float, want_velocity := Vect
 	_accel = lerpf(_accel, (want - _prev_speed) / delta, 1.0 - exp(-delta / 0.15))
 	_prev_speed = want
 	var intent := Vector2(want_velocity.x, want_velocity.z) if want_velocity != Vector3.INF else flat
-	_want_speed = intent.length() if want_velocity != Vector3.INF else want + maxf(0.0, _accel) * 0.8
+	_want_speed = intent.length() if want_velocity != Vector3.INF else want + maxf(0.0, _accel) * 0.4
 	var k := 1.0 - exp(-delta / EASE)
 	speed = lerpf(speed, want, k)
 	# Velocity against the facing: x left (+X is the body's left), y forward.
@@ -302,6 +303,10 @@ func drive(delta: float, velocity: Vector3, facing: float, want_velocity := Vect
 	var turn_rate := wrapf(dir - _last_dir, -PI, PI) / delta if want > 0.2 else 0.0
 	_last_dir = dir
 	_facing = facing
+	if not _driven:
+		# A body just placed faces the way it is asked to, at once.
+		_driven = true
+		yaw = facing
 	var face_err := wrapf(facing - yaw, -PI, PI)
 	match state:
 		State.IDLE:
@@ -367,7 +372,9 @@ func drive(delta: float, velocity: Vector3, facing: float, want_velocity := Vect
 				_shot_len = maxf(_shot_len, 0.3)
 			elif state == State.JUMP and _shot.ends_with("_Air") and in_air:
 				_shot_t = minf(_shot_t, _shot_len * 0.5)
-			elif state == State.STOP and want > START_SPEED and _shot_t > 0.25:
+			elif (state == State.STOP and _shot_t > 0.25 or state == State.TURN) and want > START_SPEED:
+				# Asked to go while stopping or turning on the spot: set off at once (turning on the spot while the
+				# game carries the body away would drag the planted feet).
 				_start(flat, _want_speed)
 			elif state == State.START and (left < 0.35 or want < STOP_SPEED and _shot_t > 0.3):
 				_enter_move()
