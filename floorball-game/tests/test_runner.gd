@@ -1,0 +1,1104 @@
+extends Node
+## The tests CI runs before building. The rules module, rule by rule (docs/RULES.md lists the rule each check stands
+## for); every screen opens in every language; every scrolling page scrolls when dragged on its text; the World
+## Finals plays through to its medals and its save reads back; AI matches finish with results the laws allow and
+## numbers like real floorball's. Headless:
+##   godot --headless --path . --fixed-fps 60 res://tests/test_runner.tscn [-- quick]
+## Exits 1 on any failure.
+
+var failures := 0
+var checks := 0
+var quick := false
+
+
+func _ready() -> void:
+	quick = "quick" in OS.get_cmdline_user_args()
+	Game.main = self
+	Game.settings.sound = false
+	var keep: Dictionary = Game.settings.duplicate(true)
+	_rink()
+	_restarts()
+	_offences()
+	_goals()
+	_clock()
+	_penalties()
+	_overtime_shootout()
+	_plurals()
+	_translations()
+	_cup()
+	_season()
+	await _screens()
+	await _about_pages()
+	await _penalty_shot()
+	await _aimed_penalty()
+	await _practice()
+	await _watch()
+	_signage()
+	await _match_parts()
+	await _coach()
+	await _crowd_faces()
+	_mocap()
+	_sounds()
+	_detail_levels()
+	await _matches()
+	Game.settings = keep
+	Game.delete_cup()
+	print("test_runner: %d checks, %d failures" % [checks, failures])
+	get_tree().quit(1 if failures > 0 else 0)
+
+
+func check(ok: bool, what: String) -> void:
+	checks += 1
+	if not ok:
+		failures += 1
+		print("FAIL: ", what)
+
+
+func frames(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
+
+
+# ---------------------------------------------------------------- the rules, one by one
+
+## 101-103: the rink, its areas and the goals.
+func _rink() -> void:
+	check(Rules.LENGTH == 40.0 and Rules.WIDTH == 20.0, "101: the rink is 40 x 20 m")
+	check(is_equal_approx(Rules.HALF_L - Rules.GOAL_LINE, 3.5), "102: the goal line is 3.5 m from the end board")
+	check(is_equal_approx(Rules.CREASE_BACK - Rules.CREASE_FRONT, 4.0) and is_equal_approx(Rules.CREASE_HALF_W * 2.0, 5.0), "102.3: the goal crease is 4 x 5 m")
+	check(is_equal_approx(Rules.HALF_L - Rules.CREASE_BACK, 2.85), "102.3: the goal crease is 2.85 m from the end board")
+	check(is_equal_approx(Rules.GOAL_LINE - Rules.GK_AREA_FRONT, 1.0) and is_equal_approx(Rules.GK_AREA_HALF_W * 2.0, 2.5), "102.4: the goalkeeper area is 1 x 2.5 m")
+	check(is_equal_approx(Rules.CREASE_BACK - Rules.GOAL_LINE, 0.65), "102.4: the goalkeeper area 0.65 m in front of the crease's rear line")
+	check(is_equal_approx(Rules.GOAL_W, 1.6) and is_equal_approx(Rules.GOAL_H, 1.15), "103: the goal is 160 x 115 cm")
+	check(Rules.in_goal_crease(Vector2(15.0, 2.0), 1) and not Rules.in_goal_crease(Vector2(12.0, 0.0), 1), "the goal crease, inside and out")
+	check(Rules.in_gk_area(Vector2(16.0, 0.5), 1) and not Rules.in_gk_area(Vector2(15.0, 0.0), 1) and not Rules.in_gk_area(Vector2(16.0, 1.5), 1), "the goalkeeper area, inside and out")
+	check(not Rules.in_rink(Vector2(19.9, 9.9)) and Rules.in_rink(Vector2(19.9, 0.0)) and Rules.in_rink(Vector2(0.0, 9.9)), "101: the corners are rounded")
+	var dots := Rules.faceoff_dots()
+	check(dots.size() == 7 and dots.has(Vector2(16.5, 8.5)) and dots.has(Vector2(0, -8.5)), "102: the centre spot and six face-off dots, 1.5 m from the boards")
+	check(Rules.BALL_D == 0.072, "the ball is 72 mm")
+
+
+## 503, 504, 506: where play restarts.
+func _restarts() -> void:
+	check(Rules.nearest_faceoff(Vector2(14.0, 6.0)) == Vector2(16.5, 8.5), "503: a face-off at the nearest dot")
+	check(Rules.nearest_faceoff(Vector2(1.0, -3.0)) == Vector2(0, -8.5), "503: the centre spot is not one of the nearest dots")
+	var hi := Rules.hit_in_spot(Vector2(5.0, 10.0))
+	check(is_equal_approx(hi.y, 8.5) and is_equal_approx(hi.x, 5.0), "504: a hit-in 1.5 m from the board where it left (%s)" % hi)
+	check(Rules.hit_in_spot(Vector2(18.5, -9.0)) == Vector2(16.5, -8.5), "504: never behind the goal line's extension: the nearest dot on it")
+	var side := Rules.hit_in_spot(Vector2(-12.0, -10.0))
+	check(is_equal_approx(side.y, -8.5), "504: on the far side too (%s)" % side)
+	check(Rules.free_hit_spot(Vector2(0, 3)) == Vector2(0, 3), "506: a free-hit where the offence was")
+	check(Rules.free_hit_spot(Vector2(18.0, 2.0)) == Vector2(16.5, 8.5), "506: from behind the goal line's extension, the nearest dot on it")
+	var near := Rules.free_hit_spot(Vector2(14.0, 0.0))
+	check(is_equal_approx(near.x, Rules.GK_AREA_FRONT - 3.5) and is_equal_approx(near.y, 0.0), "506: moved straight out to 3.5 m from the goalkeeper area (%s)" % near)
+	check(Rules.free_hit_spot(Vector2(11.5, 1.0)) == Vector2(11.5, 1.0), "506: 3.5 m is from the goalkeeper area, not the goal crease (a free-hit 4 m out stays)")
+	var side_near := Rules.free_hit_spot(Vector2(14.5, 2.5))
+	var g := Vector2(Rules.GOAL_LINE, 0.0)
+	check(Rules.gk_area_distance(side_near, 1) >= 3.49 and absf((side_near - g).normalized().cross((Vector2(14.5, 2.5) - g).normalized())) < 0.01, "506: moved out along the line from the goal's centre (%s)" % side_near)
+	check(Rules.keeps_distance(Vector2(3.0, 0), Vector2.ZERO) and not Rules.keeps_distance(Vector2(2.5, 0), Vector2.ZERO), "504, 506: opponents 3 m from the ball")
+
+
+## 507, 605, 607: what each offence leads to.
+func _offences() -> void:
+	for id in ["stick_hit", "hook", "high_stick", "high_ball", "between_legs", "push", "obstruct", "head", "hand", "jump", "lying",
+			"gk_area", "gk_hold", "gk_over_centre", "gk_backpass", "gk_outside", "delay", "bad_restart"]:
+		check(Rules.sanction(id) == "free_hit", "507: %s is a free-hit" % id)
+		check(Rules.offence_rule(id).begins_with("507"), "507: %s has its rule number (%s)" % [id, Rules.offence_rule(id)])
+	check(Rules.sanction("hook", true) == "pen2", "605: dangerous hooking is 2 minutes")
+	check(Rules.sanction("stick_hit", false, true) == "pen5", "607: violent stick play is 5 minutes")
+	for id in ["trip", "slash", "hold", "too_many", "block_lying", "charge"]:
+		check(Rules.sanction(id) == "pen2", "605: %s is a minor bench penalty" % id)
+	check(Rules.sanction("rough_board") == "pen5", "607: pushing into the boards violently is a major")
+	check(Rules.sanction("unsporting") == "pen10", "610: unsportsmanlike behaviour is a personal penalty")
+	check(Rules.sanction("fight") == "match", "614: violent conduct is a match penalty")
+	check(Rules.sanction("slash", false, true) == "pen5", "a violent minor becomes a major")
+
+
+## 701-703: goals.
+func _goals() -> void:
+	var base := {"last_team": 0, "defending_team": 1, "how": "stick", "from_front": true}
+	check(bool(Rules.judge_goal(base).ok), "702: played in with the stick: a goal")
+	check(not bool(Rules.judge_goal(base.merged({"from_front": false}, true)).ok), "702: not from the front: no goal")
+	check(not bool(Rules.judge_goal(base.merged({"how": "kick"}, true)).ok), "703: kicked in: no goal")
+	check(not bool(Rules.judge_goal(base.merged({"how": "head"}, true)).ok), "703: headed in: no goal")
+	check(not bool(Rules.judge_goal(base.merged({"how": "hand"}, true)).ok), "703: by hand: no goal")
+	check(bool(Rules.judge_goal(base.merged({"how": "gk_throw"}, true)).ok), "702 (2026): a goalkeeper's throw may score")
+	check(bool(Rules.judge_goal(base.merged({"how": "deflect_defender"}, true)).ok), "702: off a defender: a goal")
+	check(bool(Rules.judge_goal(base.merged({"how": "body"}, true)).ok), "702: off an attacker's body without intent: a goal")
+	check(not bool(Rules.judge_goal(base.merged({"how": "body", "deliberate": true}, true)).ok), "703: directed in with the body: no goal")
+	check(not bool(Rules.judge_goal(base.merged({"attack_offence": true}, true)).ok), "703: after an attacking offence: no goal")
+	check(not bool(Rules.judge_goal(base.merged({"too_many": true}, true)).ok), "703: too many players: no goal")
+	check(not bool(Rules.judge_goal(base.merged({"clock_done": true}, true)).ok), "701: after the period's time: no goal")
+	var own := Rules.judge_goal({"last_team": 1, "defending_team": 1, "how": "kick", "from_front": true})
+	check(bool(own.ok) and bool(own.get("own_goal", false)), "702: an own goal counts however it went in")
+
+
+## 201: the clock.
+func _clock() -> void:
+	var s := Rules.State.new()
+	check(Rules.PERIODS == 3 and Rules.PERIOD_S == 1200.0 and Rules.INTERVAL_S == 600.0, "201: three periods of 20 minutes, 10-minute intervals")
+	s.tick(10.0, false)
+	check(s.clock == 0.0, "201: effective time: the clock stands at a stoppage")
+	s.tick(10.0, true)
+	check(is_equal_approx(s.clock, 10.0), "201: and runs in play")
+	var r := Rules.State.new()
+	r.clock_mode = Rules.CLOCK_RUNNING
+	r.tick(30.0, false)
+	check(is_equal_approx(r.clock, 30.0), "201: a league's running clock runs through stoppages")
+	r.period = 3
+	r.clock = Rules.PERIOD_S - 170.0
+	r.tick(5.0, false)
+	check(is_equal_approx(r.clock, Rules.PERIOD_S - 170.0), "201 (2026): the last 3 minutes are always effective time")
+	var q := Rules.State.new()
+	q.period_s = 60.0
+	check(q.tick(70.0, true) == "period_end" and is_equal_approx(q.clock, 60.0), "the period ends on its time, never past it")
+	check(q.end_period() == "interval" and q.period == 2 and q.clock == 0.0, "201: an interval, then the next period")
+	check(Rules.TIMEOUT_S == 30.0 and q.timeouts == [1, 1], "202: one 30-second time-out a team")
+	check(Rules.GK_HOLD_S == 3.0, "507.16: the goalkeeper holds the ball 3 seconds at most")
+
+
+## 601-614: the penalty bench.
+func _penalties() -> void:
+	var s := Rules.State.new()
+	s.add_penalty(0, "a", "pen2", "trip")
+	check(s.strength(0) == 4 and s.strength(1) == 5, "604: a minor penalty takes a player off")
+	s.tick(60.0, true)
+	check(is_equal_approx(float(s.penalties[0][0].left), 60.0), "604: penalty time runs with the game clock")
+	s.tick(60.0, true)
+	check(s.penalties[0].is_empty() and s.strength(0) == 5, "604: after 2 minutes he comes back")
+	s.add_penalty(0, "a", "pen2")
+	s.goal(1)
+	check(s.penalties[0].is_empty(), "604: a power-play goal ends the minor penalty")
+	s.add_penalty(0, "b", "pen5")
+	s.goal(1)
+	check(s.penalties[0].size() == 1 and s.strength(0) == 4, "606: a major is served in full, goals or not")
+	var e := Rules.State.new()
+	e.add_penalty(0, "a", "pen2")
+	e.add_penalty(1, "b", "pen2")
+	e.goal(1)
+	check(e.penalties[0].size() == 1, "604: at equal strength a goal ends no penalty")
+	var sh := Rules.State.new()
+	sh.add_penalty(0, "a", "pen2")
+	sh.goal(0)
+	check(sh.penalties[0].size() == 1, "604: a short-handed goal ends no penalty of the scorers")
+	var three := Rules.State.new()
+	three.add_penalty(0, "a", "pen2")
+	three.add_penalty(0, "b", "pen2")
+	three.add_penalty(0, "c", "pen2")
+	check(three.strength(0) == 3, "601: never fewer than three outfield players")
+	check(not bool(three.penalties[0][2].running), "601: a third penalty waits until one of the first two ends")
+	three.tick(120.0, true)
+	check(three.penalties[0].size() == 1 and bool(three.penalties[0][0].running), "601: then it starts")
+	var two := Rules.State.new()
+	two.add_penalty(0, "a", "pen2")
+	two.add_penalty(0, "b", "pen2")
+	two.tick(30.0, true)
+	two.add_penalty(0, "a", "pen2")   # a second offence by the same player waits too
+	two.goal(1)
+	check(two.penalties[0].size() == 2, "604: one goal ends one penalty (%d left)" % two.penalties[0].size())
+	var pers := Rules.State.new()
+	pers.add_penalty(0, "a", "pen10", "unsporting", "b")
+	check(pers.strength(0) == 4 and pers.in_box(0).has("a") and not pers.in_box(0).has("b"), "609: a personal penalty comes with a minor, both sat by the offender")
+	pers.tick(120.0, true)
+	check(pers.strength(0) == 5 and pers.in_box(0).has("a"), "609: the team is whole after 2 minutes, the player sits his 10")
+	pers.tick(599.0, true)
+	check(pers.in_box(0).has("a"), "609: the 10 minutes start when the minor ends (out 2 + 10)")
+	pers.tick(2.0, true)
+	check(not pers.in_box(0).has("a"), "609: the player may come back after 12 minutes")
+	var mp := Rules.State.new()
+	mp.add_penalty(0, "a", "match", "fight", "b")
+	check(mp.strength(0) == 4 and float(mp.penalties[0][0].left) == Rules.PEN_MAJOR_S, "613: a match penalty: the team serves 5 minutes")
+	var co := Rules.State.new()
+	co.add_penalty(0, "a", "pen2")
+	co.add_penalty(1, "b", "pen2")
+	co.mark_coincidental("pen2")
+	check(co.strength(0) == 5 and co.strength(1) == 5, "2026: coincidental penalties no longer take players off the rink")
+	check(co.in_box(0).has("a") and co.in_box(1).has("b"), "2026: the penalised players still sit")
+	var ot := Rules.State.new()
+	ot.period_s = 60.0
+	ot.knockout = true
+	ot.add_penalty(0, "a", "pen2")
+	for i in 3:
+		ot.tick(60.0, true)
+		ot.end_period()
+	check(ot.phase == "overtime" and ot.penalties[0].is_empty(), "the clock runs a penalty out across the periods")
+
+
+## 203, 204: overtime and the penalty-shot competition.
+func _overtime_shootout() -> void:
+	var s := Rules.State.new()
+	s.period_s = 10.0
+	for i in 2:
+		s.tick(10.0, true)
+		check(s.end_period() == "interval", "periods 1 and 2 end in an interval")
+	s.tick(10.0, true)
+	check(s.end_period() == "done" and s.winner == -1, "a level group match is a draw")
+	var k := Rules.State.new()
+	k.period_s = 10.0
+	k.knockout = true
+	for i in 3:
+		k.tick(10.0, true)
+		k.end_period()
+	check(k.phase == "overtime" and k.period == 4, "203: level and a winner needed: overtime")
+	check(Rules.OT_IFF_S == 600.0, "203: overtime of 10 minutes")
+	k.goal(1)
+	check(k.phase == "done" and k.winner == 1, "203: sudden victory, the first goal wins")
+	var so := Rules.State.new()
+	so.phase = "shootout"
+	var seq := [[true, false], [true, false], [true, false]]
+	var decided := false
+	for i in 3:
+		so.shootout_shot(0, seq[i][0])
+		decided = so.shootout_shot(1, seq[i][1])
+	check(decided and so.winner == 0, "204: decided early once one side cannot catch up (3-0 after three each)")
+	var sd := Rules.State.new()
+	sd.phase = "shootout"
+	var d := false
+	for i in 5:
+		sd.shootout_shot(0, i < 2)
+		d = sd.shootout_shot(1, i < 2)
+	check(not d and sd.phase == "shootout", "204: level after five each: on to one each")
+	sd.shootout_shot(0, true)
+	d = sd.shootout_shot(1, false)
+	check(d and sd.winner == 0, "204: then decided when one scores and the other does not")
+	check(sd.final_goals()[0] == 1, "a shoot-out win counts one goal")
+	var mv := Rules.State.new()
+	check(mv.may_shoot(0, "a", []) and not mv.may_shoot(0, "a", ["a"]), "204: the first five shots by five different players")
+	for i in 5:
+		mv.shootout[0].append(false)
+	check(mv.may_shoot(0, "a", ["a", "b", "c", "d", "e"]), "204 (2026): after five, any player, again")
+
+
+func _plurals() -> void:
+	check(Game.plural_form("cs", 1) == "ONE" and Game.plural_form("cs", 3) == "FEW" and Game.plural_form("cs", 8) == "OTHER", "Czech plurals")
+	check(Game.plural_form("pl", 1) == "ONE" and Game.plural_form("pl", 4) == "FEW" and Game.plural_form("pl", 12) == "MANY" and Game.plural_form("pl", 22) == "FEW", "Polish plurals")
+	check(Game.plural_form("lv", 0) == "ZERO" and Game.plural_form("lv", 1) == "ONE" and Game.plural_form("lv", 11) == "ZERO" and Game.plural_form("lv", 21) == "ONE" and Game.plural_form("lv", 4) == "OTHER", "Latvian plurals")
+	check(Game.plural_form("fr", 0) == "ONE" and Game.plural_form("en", 0) == "OTHER" and Game.plural_form("ja", 1) == "OTHER", "French, English, Japanese plurals")
+
+
+## Every language has every key, its plural forms, and no placeholder lost in translation.
+func _translations() -> void:
+	var en: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://i18n/src/en.json"))
+	var ph := RegEx.create_from_string("\\{[a-z_]+\\}")
+	for pair in Game.LANGUAGES:
+		var code: String = pair[0]
+		var path := "res://i18n/src/%s.json" % code
+		if code == "en":
+			continue
+		var d = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+		check(d is Dictionary, "%s: translation file reads" % code)
+		if not (d is Dictionary):
+			continue
+		var missing := 0
+		var bad := []
+		for k in en:
+			if k.ends_with("_ONE") or k.ends_with("_OTHER"):
+				continue
+			if not d.has(k):
+				missing += 1
+				continue
+			var want := {}
+			for m in ph.search_all(String(en[k])):
+				want[m.get_string()] = true
+			for w in want:
+				if not String(d[k]).contains(w):
+					bad.append(k)
+		check(missing == 0, "%s: every key translated (%d missing)" % [code, missing])
+		check(bad.is_empty(), "%s: placeholders kept %s" % [code, bad.slice(0, 5)])
+		for n in [1, 2, 5, 11, 22, 0]:
+			var form := Game.plural_form(code, n)
+			check(d.has("MINUTES_" + form) or (form == "OTHER" and d.has("MINUTES_OTHER")), "%s: plural form %s for %d" % [code, form, n])
+
+
+func _cup() -> void:
+	for women in [false, true]:
+		var c: Cup = Game.new_cup("LAT", women)
+		check(c.groups.size() == 4 and (c.groups[0] as Array).size() == 4, "the World Finals: four groups of four")
+		check("SWE" in c.groups[0] or "SWE" in c.groups[1], "the top seeds in groups A and B")
+		var guard := 0
+		while c.stage != "done" and guard < 40:
+			c.sim_next()
+			guard += 1
+		check(c.stage == "done" and String(c.medals.get("gold", "")) != "", "the World Finals reach their medals")
+		var draws := 0
+		for rnd in c.fixtures.groups:
+			for f in rnd:
+				if int(f.goals[0]) == int(f.goals[1]):
+					draws += 1
+		for st in ["playoffs", "qf", "sf", "medals"]:
+			for f in c.fixtures[st][0]:
+				check(int(f.goals[0]) != int(f.goals[1]), "%s: a knockout match has a winner" % st)
+		var t := c.group_table(0)
+		check(int(t[0].pts) >= int(t[1].pts) and int(t[0].p) == 3, "a group table: three matches each, in points order")
+		Game.save_cup()
+		Game.cup = null
+		var back = Game.get_cup()
+		check(back != null and back.medals.gold == c.medals.gold, "the World Finals save and load")
+	Game.delete_cup()
+
+
+## The club season: 3-2-1-0 points, the table's tiebreaks, every pair of the ten clubs met once, the play-offs
+## seeded 1 v 4 and 2 v 3, and the season saved and carried on.
+func _season() -> void:
+	var keep_season = Game.season
+	var reg := {"goals": [4, 2], "ot": false, "so": false}
+	var otw := {"goals": [2, 3], "ot": true, "so": false}
+	var sow := {"goals": [5, 4], "ot": true, "so": true}
+	check(Season.points(reg, 0) == 3 and Season.points(reg, 1) == 0, "season: 3 for a win in regulation, 0 for a loss in it")
+	check(Season.points(otw, 1) == 2 and Season.points(otw, 0) == 1, "season: 2 for a win in overtime, 1 for a loss in it")
+	check(Season.points(sow, 0) == 2 and Season.points(sow, 1) == 1, "season: 2 for a win on penalty shots, 1 for a loss on them")
+	check(DB.club_ids().size() == 10, "season: ten clubs")
+	for id in DB.club_ids():
+		check(not DB.TEAMS.has(id) and String(id).length() == 3, "season: %s is a three-letter code no national team has" % id)
+		check(DB.team_name(id) != "" and not DB.team_name(id).begins_with("TEAM_"), "season: %s has a name" % id)
+		check(DB.rating(id) < DB.rating("SWE") and DB.rating(id) < DB.rating("FIN"), "season: %s is below the top national teams" % id)
+		check(DB.squad(id).size() == DB.squad("SWE").size() and DB.kits(id, "FOX").size() == 2, "season: %s has a squad and a kit" % id)
+		var crest := UI.badge(id)
+		check(crest is Crest, "season: %s shows a crest" % id)
+		crest.free()
+	# Kits: no two sides ever take the rink in shirts that look alike (navy against charcoal did, in the playtest).
+	var sides: Array = DB.TEAMS.keys() + DB.club_ids()
+	var clashes := []
+	for h in sides:
+		for aw in sides:
+			if h != aw:
+				var k: Array = DB.kits(h, aw)
+				if DB._alike(k[0][0], k[1][0]):
+					clashes.append("%s v %s" % [h, aw])
+	check(clashes.is_empty(), "kits: the two sides' shirts never look alike (%s)" % ", ".join(clashes.slice(0, 6)))
+	# The table: points first, then goal difference, then goals scored.
+	var t := Season.create("FOX", false, 7)
+	var c: Array = t.clubs
+	t.fixtures.league = [[
+		{"home": c[0], "away": c[1], "played": true, "goals": [5, 1], "ot": false, "so": false, "user": false},
+		{"home": c[2], "away": c[3], "played": true, "goals": [3, 0], "ot": false, "so": false, "user": false},
+		{"home": c[4], "away": c[5], "played": true, "goals": [4, 1], "ot": false, "so": false, "user": false},
+		{"home": c[6], "away": c[7], "played": true, "goals": [2, 1], "ot": true, "so": false, "user": false},
+		{"home": c[8], "away": c[9], "played": false, "goals": [0, 0], "ot": false, "so": false, "user": false}]]
+	var order := []
+	for r in t.table():
+		order.append(r.id)
+	check(order[0] == c[0] and order[1] == c[4] and order[2] == c[2], "season: level on points, goal difference, then goals scored (%s)" % [order.slice(0, 3)])
+	check(order[3] == c[6] and order[4] == c[7], "season: an overtime win (2) above an overtime loss (1)")
+	check(order[7] == c[5] and order[8] == c[3] and order[9] == c[1], "season: losers by goal difference, then goals (%s)" % [order.slice(7, 10)])
+	var row6: Dictionary = t.table()[3]
+	check(int(row6.otw) == 1 and int(row6.pts) == 2 and int(row6.w) == 0, "season: an overtime win counts in OTW")
+	for women in [false, true]:
+		var s: Season = Game.new_season("OTR", women)
+		var pairs := {}
+		var ok_rounds := true
+		for rnd in s.fixtures.league:
+			var seen := {}
+			for f in rnd:
+				var k := "%s|%s" % ([f.home, f.away] if String(f.home) < String(f.away) else [f.away, f.home])
+				pairs[k] = int(pairs.get(k, 0)) + 1
+				seen[f.home] = true
+				seen[f.away] = true
+			if seen.size() != 10:
+				ok_rounds = false
+		var once := true
+		for k in pairs:
+			if int(pairs[k]) != 1:
+				once = false
+		check(s.fixtures.league.size() == 9 and pairs.size() == 45 and once, "season: nine rounds, all 45 pairings exactly once (%d)" % pairs.size())
+		check(ok_rounds, "season: every club plays in every round")
+		# Three rounds, the first your match played as a match ends (in overtime), then saved and carried on.
+		var mine: Dictionary = s.user_fixture()
+		var side := 0 if mine.home == "OTR" else 1
+		var g := [2, 2]
+		g[side] = 3
+		s.record_user_result({"goals": g, "ot": true, "so": false})
+		check(s.round == 1 and bool(mine.played), "season: your result plays the round")
+		var mrow := {}
+		for r in s.table():
+			if r.id == "OTR":
+				mrow = r
+		check(int(mrow.pts) == 2 and int(mrow.otw) == 1, "season: your overtime win is 2 points")
+		s.sim_next()
+		s.sim_next()
+		Game.save_season()
+		var before: Array = s.table()
+		Game.season = null
+		var back = Game.get_season()
+		check(back != null and back.round == 3 and back.stage == "league" and String(back.user) == "OTR" and bool(back.women) == women, "season: saves and carries on")
+		var after: Array = back.table()
+		check(String(after[0].id) == String(before[0].id) and int(after[0].pts) == int(before[0].pts) and String(after[9].id) == String(before[9].id), "season: the table reads back")
+		var guard := 0
+		while back.stage != "done" and guard < 20:
+			back.sim_next()
+			guard += 1
+		check(back.stage == "done" and String(back.champion) != "" and back.user_finish() != "", "season: reaches its champion (%s)" % back.user_finish())
+		var draws := 0
+		for rnd in back.fixtures.league:
+			for f in rnd:
+				if int(f.goals[0]) == int(f.goals[1]):
+					draws += 1
+		check(draws == 0, "season: no league match is drawn")
+		var tab: Array = back.table()
+		check(int(tab[0].p) == 9 and int(tab[0].pts) >= int(tab[1].pts), "season: nine matches each, in points order")
+		var sf: Array = back.fixtures.sf[0]
+		check(String(sf[0].home) == String(tab[0].id) and String(sf[0].away) == String(tab[3].id) and String(sf[1].home) == String(tab[1].id) and String(sf[1].away) == String(tab[2].id), "season: semi-finals 1 v 4 and 2 v 3")
+		var fin: Dictionary = back.fixtures.final[0][0]
+		check(int(fin.goals[0]) != int(fin.goals[1]) and String(back.champion) in [String(fin.home), String(fin.away)], "season: the final decides the champion")
+		check(String(fin.home) in [Season._winner_of(sf[0]), Season._winner_of(sf[1])] and String(fin.away) in [Season._winner_of(sf[0]), Season._winner_of(sf[1])], "season: the semi-finals' winners in the final")
+	# A club out of the top four: the play-offs are played without it.
+	var out := Season.create("OTR", false, 11)
+	var guard2 := 0
+	while out.stage == "league" and guard2 < 20:
+		out.sim_next()
+		guard2 += 1
+	if out.place("OTR") > 4:
+		check(out.stage == "done" and out.user_finish() == "missed", "season: out of the top four, the season ends with the league")
+	Game.delete_season()
+	Game.season = keep_season
+
+
+# ---------------------------------------------------------------- screens
+
+## Settings > About: Licences, Help and the privacy policy are pages in the game (they work offline; the game has no
+## internet permission), each opened from its own button, each with its words: the credits and every licence, the
+## controls, the rules and how to get in touch, the policy with its date and a contact. No page opens a browser.
+func _about_pages() -> void:
+	var st := Game.show_screen("res://ui/settings_screen.gd")
+	await frames(2)
+	var labels := []
+	for b in st.find_children("*", "Button", true, false):
+		labels.append((b as Button).text)
+	for key in ["LICENCES", "HELP_SUPPORT", "PRIVACY_POLICY"]:
+		check(tr(key) in labels, "Settings > About has a %s button" % tr(key))
+	var src := FileAccess.get_file_as_string("res://ui/settings_screen.gd")
+	check(not src.contains("shell_open"), "Settings opens no web page (they 404ed; the pages are in the game)")
+	var want := {"res://ui/licences_screen.gd": ["mocap.cs.cmu.edu", "Pixabay", "Kenney", "Poly Haven", "Gregor Quendel", "Meshy", "Godot Engine"],
+		"res://ui/help_screen.gd": ["Shoot", "Pass", "Graphics", "joshnason8@gmail.com"],
+		"res://ui/privacy_screen.gd": ["no personal data", "Last updated", "INTERNET", "joshnason8@gmail.com"]}
+	for path: String in want:
+		var s := Game.show_screen(path)
+		await frames(3)
+		var text := ""
+		for rt in s.find_children("*", "RichTextLabel", true, false):
+			text += (rt as RichTextLabel).get_parsed_text() + "\n"
+		var missing := []
+		for w: String in want[path]:
+			if not text.contains(w):
+				missing.append(w)
+		var back := false
+		for b in s.find_children("*", "Button", true, false):
+			back = back or (b as Button).visible
+		check(text.length() > 800 and missing.is_empty() and s.find_children("*", "ScrollContainer", true, false).size() > 0 and back,
+			"%s: a page with its words, scrolling, a way back (%d characters, missing %s)" % [path.get_file(), text.length(), missing])
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(2)
+
+
+func _screens() -> void:
+	var screens := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
+		"res://ui/cup_screen.gd", "res://ui/season_screen.gd", "res://ui/licences_screen.gd", "res://ui/help_screen.gd",
+		"res://ui/privacy_screen.gd", "res://ui/button_layout_screen.gd"]
+	var langs: Array = Game.LANGUAGES if not quick else [Game.LANGUAGES[0], Game.LANGUAGES[2]]
+	for pair in langs:
+		Game.settings.language = pair[0]
+		TranslationServer.set_locale(pair[0])
+		Game._size_theme()
+		check(tr("GAME_TITLE") != "GAME_TITLE", "%s: translations load" % pair[0])
+		check(tr("BTN_SHOOT") != "BTN_SHOOT" and tr("BTN_SHOOT") != "", "%s: button labels" % pair[0])
+		for path in screens:
+			var s := Game.show_screen(path)
+			await frames(3)
+			check(is_instance_valid(s) and s.get_child_count() > 0, "%s: %s builds" % [pair[0], path])
+		for tab in 3:
+			Game.show_screen("res://ui/howto_screen.gd", {"tab": tab})
+			await frames(2)
+	Game.settings.language = "en"
+	TranslationServer.set_locale("en")
+	Game._size_theme()
+	Game.new_cup("SWE")
+	Game.show_screen("res://ui/cup_screen.gd")
+	await frames(3)
+	check(Game.current.get_child_count() > 0, "the World Finals hub builds")
+	Game.delete_cup()
+	# The club season's hub in every language: the table, your match, the play-offs, the end.
+	for pair in langs:
+		TranslationServer.set_locale(pair[0])
+		Game._size_theme()
+		var season: Season = Game.new_season("WLV")
+		Game.show_screen("res://ui/season_screen.gd")
+		await frames(2)
+		check(Game.current.get_child_count() > 0, "%s: the club season hub builds" % pair[0])
+		for i in 9:
+			season.sim_next()
+		Game.show_screen("res://ui/season_screen.gd")
+		await frames(2)
+		check(Game.current.get_child_count() > 0, "%s: the club season's play-offs build" % pair[0])
+		while season.stage != "done":
+			season.sim_next()
+		Game.show_screen("res://ui/season_screen.gd")
+		await frames(2)
+		check(Game.current.get_child_count() > 0, "%s: the club season's end builds" % pair[0])
+		Game.show_screen("res://ui/main_menu.gd")
+		await frames(2)
+		Game.delete_season()
+	TranslationServer.set_locale("en")
+	Game._size_theme()
+
+
+## Chapter 8: a foul that stops a clear chance is a penalty shot, from the centre spot at the goal the fouled team
+## attacks, the clock stopped while it is taken; anywhere else it is a free-hit.
+func _penalty_shot() -> void:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 3, "period": 4.0}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var a: float = m.attack_dir(0)
+	var v: Player = m.skaters(0)[0]
+	var d: Player = m.skaters(1)[0]
+	# Everyone else of the defending side well behind the play.
+	for o: Player in m.skaters(1):
+		o.respawn(Vector2(-a * 12.0, -6.0 + m.skaters(1).find(o) * 3.0))
+	v.respawn(Vector2(a * 9.0, 0.5))
+	d.respawn(Vector2(a * 8.0, 0.5))
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	check(m._clear_chance(v, d), "a clear chance: in front of goal, nobody but the goalkeeper between")
+	var far: Player = m.skaters(0)[1]
+	far.respawn(Vector2(-a * 5.0, 3.0))
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	check(not m._clear_chance(far, d), "in his own half: no clear chance")
+	m.ball.carrier = v
+	m._whistle_offence(d, "hook", "free_hit", v.pos, v)
+	check(m.phase == "shootout" and bool(m._so.in_match) and int(m._so.team) == 0, "chapter 8: a penalty shot for the fouled team")
+	var clock: float = m.rules.clock
+	var guard := 0
+	while m.phase == "shootout" and guard < 60 * 20:
+		await get_tree().physics_frame
+		guard += 1
+	check(m.phase != "shootout", "the penalty shot is taken and play goes on (%s)" % m.phase)
+	check(is_equal_approx(m.rules.clock, clock), "2026: the clock stands during a penalty shot")
+	m.queue_free()
+	await frames(2)
+
+
+## Your penalty shot (match.gd _breakaway): the close camera behind the shooter, SHOOT held and let go takes the shot,
+## play goes on with the match camera back; a deke close in makes the goalkeeper bite; and whether he gets to a shot:
+## far out he does, close in after biting the wrong way he does not, a top corner is harder than low by his pads.
+func _aimed_penalty() -> void:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": 0, "seed": 4, "period": 4.0, "mode": "quick"}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var v: Player = m.skaters(0)[0]
+	m._award_penalty_shot(v, "hook")
+	var guard := 0
+	var close_seen := false
+	while (String(m._so.get("stage", "")) != "run" or (m._so.shooter as Player).pos.x * float(m._so.dir) < 6.0) and guard < 60 * 12:
+		await get_tree().physics_frame
+		close_seen = close_seen or not m.penalty_view().is_empty()
+		guard += 1
+	check(close_seen and m.cam._close, "your penalty shot: the close camera behind the shooter")
+	check(m.touch.ids == ["SHOOT", "DEKE"], "your penalty shot: SHOOT and DEKE (%s)" % [m.touch.ids])
+	m._on_action("SHOOT")
+	check(bool(m._so.get("winding", false)), "SHOOT winds up")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	check(bool(m._so.get("shot", false)) and m._shot_live.has("forced"), "let go: the shot is taken, saved or not settled")
+	guard = 0
+	while m.phase == "shootout" and guard < 60 * 12:
+		await get_tree().physics_frame
+		guard += 1
+	await get_tree().physics_frame
+	check(m.phase != "shootout" and not m.cam._close, "after the shot: play goes on, the match camera back")
+	m.queue_free()
+	await frames(2)
+	var g := Rules.GOAL_LINE
+	check(PenaltyShot.keeper_gets_there(Vector3(g, 0.22, 0.6), 0.0, 0.6, false), "from far out the goalkeeper gets across to a low corner")
+	check(not PenaltyShot.keeper_gets_there(Vector3(g, 0.22, 0.6), -0.6, 0.15, true), "close in, bitten the wrong way: he does not")
+	check(not PenaltyShot.keeper_gets_there(Vector3(g, 0.95, 0.65), 0.0, 0.18, false) and PenaltyShot.keeper_gets_there(Vector3(g, 0.22, 0.45), 0.0, 0.18, false),
+		"a top corner beats him where low by his pads does not")
+	check(PenaltyShot.top_corner(Vector3(g, 1.0, 0.68)) and not PenaltyShot.top_corner(Vector3(g, 0.3, 0.0)), "a top corner is a top corner")
+
+
+## Penalty shots, the home screen's mini game: ten aimed shots, each scored, the end card, the best kept.
+func _practice() -> void:
+	var keep_best = Game.settings.get("penalty_best", -1)
+	Game.settings.penalty_best = -1
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "arena", "user_team": 0, "mode": "practice", "practice": true, "period": 20.0, "seed": 7}
+	add_child(m)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2
+	var guard := 0
+	var hidden_ok := true
+	while m.phase != "over" and guard < 60 * 240:
+		await get_tree().physics_frame
+		guard += 1
+		if guard == 120:
+			for t in 2:
+				for p: Player in m.players[t]:
+					if p != m._practice.shooter and p != m.keeper(1) and p.visible:
+						hidden_ok = false
+		var st := String(m._so.get("stage", ""))
+		if st == "run" and not bool(m._so.get("shot", false)) and (m._so.shooter as Player).pos.x > 3.0 and rng.randf() < 0.05:
+			m._on_action("DEKE" if rng.randf() < 0.4 else "SHOOT")
+	check(hidden_ok, "practice: only the shooter and the goalkeeper on the rink")
+	check(m.phase == "over" and int(m._practice.shot) == 10 and (m._practice.marks as Array).size() == 10, "practice: ten shots taken (%d)" % int(m._practice.get("shot", 0)))
+	var pts := 0
+	for k in (m._practice.marks as Array):
+		pts += int(k)
+	check(not m.hud.root.find_children("*", "Button", true, false).any(func(b): return b.get_parent() is HBoxContainer and b.custom_minimum_size.x == 60.0 and b.get_index() == 0 and b.get_parent().get_child_count() == 2),
+		"practice: no camera button (its own close camera)")
+	check(pts == int(m._practice.points) and int(Game.settings.penalty_best) == pts, "practice: the points add up and the best is kept (%d)" % pts)
+	m.queue_free()
+	Game.settings.penalty_best = keep_best
+	await frames(2)
+
+
+## Watch a match: both teams the computer's, but a match with its scoreboard and pause, no touch buttons.
+func _watch() -> void:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SUI", "away": "CZE", "venue": "hall", "user_team": -1, "watch": true, "mode": "watch", "seed": 2, "period": 4.0}
+	add_child(m)
+	await frames(3)
+	check(not m.demo and m.hud != null and not m.hud.touch.visible, "watch a match: a match (not the menu's demo), its scoreboard, no buttons")
+	var guard := 0
+	while m.phase != "live" and guard < 600:
+		await get_tree().physics_frame
+		guard += 1
+	m._on_action("SHOOT")   # nothing to press: nobody is yours
+	check(m.user_player == null, "watch a match: nobody is yours")
+	m.queue_free()
+	await frames(2)
+
+
+## The hall's words in the phone's language (game/signage.gd); the game's name as it is.
+func _signage() -> void:
+	var keep := TranslationServer.get_locale()
+	TranslationServer.set_locale("sv")
+	check(Signage.text("ADS_GO_FLOORBALL") == "HEJA INNEBANDY" and Signage.text("") == "FLOORBALL UNLEASHED", "the boards in Swedish: innebandy; the name as it is")
+	TranslationServer.set_locale("fi")
+	check(Signage.text("ADS_GO_FLOORBALL") == "HYVÄ SALIBANDY", "the boards in Finnish: salibandy")
+	TranslationServer.set_locale(keep)
+
+
+## The match's own pieces, each on a live AI match: a won tackle keeps the ball, a penalty's player walks to the
+## penalty bench and comes back when it is over, the empty net, passive play.
+func _match_parts() -> void:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 5, "period": 4.0}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var a: float = m.attack_dir(0)
+	# A tackle won: the ball on the tackler's blade, and the player who lost it cannot take it straight back.
+	var won := false
+	for k in 60:
+		var car: Player = m.skaters(1)[0]
+		var def: Player = m.skaters(0)[0]
+		car.respawn(Vector2(0, 0))
+		def.respawn(Vector2(0.9, 0))
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		m.ball.release()
+		m.ball.carrier = car
+		def.act = ""
+		m._carry_ball()
+		def.pos = m.ball.floor_pos() + Vector2(0.35, 0.0)   # the test's own placing, by the ball
+		def.facing = PI
+		m.tackle(def, car)
+		if m.ball.carrier == def:
+			await get_tree().physics_frame
+			won = m.ball.carrier == def or (m.ball.last_team == 0)
+			break
+		if m.phase != "live":
+			while m.phase != "live":
+				await get_tree().physics_frame
+	check(won, "a tackle won keeps the ball (it does not go straight back to the carrier)")
+	while m.phase != "live":
+		await get_tree().physics_frame
+	# A minor: the player walks to the penalty bench, his team plays one fewer, and he is back when it is over.
+	var off: Player = m.skaters(0)[1]
+	var id := String(off.data.id)
+	m._penalise(off, "pen2", "trip")
+	var sitter: Player = m.sitters[0][0]
+	check(m.rules.strength(0) == 4 and sitter.visible and String(sitter.data.id) == id, "105: the penalised player is seen going to the penalty bench")
+	for i in 420:
+		await get_tree().physics_frame
+	check(sitter.pos.distance_to(m._box_seat(0, 0)) < 1.2, "105: he sits in his team's penalty bench (%s)" % sitter.pos)
+	m._tick_clock(Rules.PEN_MINOR_S + 1.0, true)
+	var short := 0
+	for i in range(1, 6):
+		if m.players[0][i].in_box:
+			short += 1
+	check(m.rules.strength(0) == 5 and short == 0 and not sitter.visible, "a penalty over: the team is whole again on the rink (%d places empty)" % short)
+	m.queue_free()
+	await frames(2)
+
+	# The empty net: one goal down late in the last period, the goalkeeper off for a sixth outfield player.
+	m = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 6, "period": 4.0}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	m.rules.period = Rules.PERIODS
+	m.rules.goals = [0, 1]
+	m.rules.clock = m.rules.period_s - 15.0
+	a = m.attack_dir(0)
+	check(m.ai[0].wants_empty_net() and not m.ai[1].wants_empty_net(), "the team behind wants an empty net late in the last period")
+	var c: Player = m.skaters(0)[0]
+	c.respawn(Vector2(a * 4.0, 0.0))
+	await get_tree().physics_frame
+	m.ball.release()
+	m.ball.carrier = c
+	m._empty_net()
+	check(m.pulled[0], "with the ball in their half, the goalkeeper goes off")
+	var gk: Player = m.keeper(0)
+	var zone: Vector2 = m.sub_zone(0)
+	gk.respawn(Vector2((zone.x + zone.y) * 0.5, -Rules.HALF_W + 0.4))
+	await get_tree().physics_frame
+	m._empty_net()
+	check(not gk.on_rink and m.skaters(0).size() == 6, "302: over the board in the substitution zone, a sixth outfield player on (%d)" % m.skaters(0).size())
+	m._set_phase("goal")
+	check(gk.on_rink and gk.visible and m.skaters(0).size() == 5 and not m.pulled[0], "after a goal the goalkeeper is back in his net")
+	m.queue_free()
+	await frames(2)
+
+	# 507.20: passive play warned, then a free-hit to the other team.
+	m = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 7, "period": 4.0}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	a = m.attack_dir(0)
+	c = m.skaters(0)[3]
+	c.respawn(Vector2(-a * 8.0, 2.0))
+	await get_tree().physics_frame
+	m.ball.set_spot(c.pos)   # the ball at his feet, in his own end
+	m.ball.carrier = c
+	m.passive = {"team": 0, "t": m.PASSIVE_S + 0.5, "warned": false, "w": 0.0}
+	m._passive_tick(0.02)
+	check(bool(m.passive.warned), "507.20: a team keeping the ball in its own end is warned of passive play")
+	m.passive.w = m.PASSIVE_WARN_S + 0.5
+	m._passive_tick(0.02)
+	check(m.phase == "whistle" and int(m.restart.team) == 1 and String(m.restart.why) == "delay", "507.20: still passive after the warning, a free-hit to the other team")
+	# A carrier behind the defenders' goal is pressed from the side he must come out on, not through the cage.
+	var behind: Player = m.skaters(0)[0]
+	behind.respawn(Vector2(a * 18.0, 2.0))
+	await get_tree().physics_frame
+	var presser: Player = m.skaters(1)[0]
+	var at: Vector2 = m.ai[1]._defend(presser, behind.pos, behind, presser)
+	check(is_equal_approx(at.x, behind.pos.x) and absf(at.y) < absf(behind.pos.y), "behind the goal, the carrier is pressed from the side (%s)" % at)
+	m.queue_free()
+	await frames(2)
+
+
+## A first match with you in it: the coach's first tip shows, each tip once, and none when they are turned off. Your
+## free-hit kept waiting goes to the other team.
+func _coach() -> void:
+	Game.settings.tips = true
+	Game.settings.tips_seen = []
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": 0, "seed": 8, "period": 4.0, "mode": "quick"}
+	add_child(m)
+	var guard := 0
+	while (m.phase != "live" or m.hud.coach_showing() == "") and guard < 600:
+		await get_tree().physics_frame
+		guard += 1
+	check(m.hud.coach_showing() == tr("TIP_MOVE"), "a first match: the coach's first tip is how to move (%s)" % m.hud.coach_showing())
+	check(not m.hud.coach("TIP_MOVE"), "each tip is said once")
+	Game.settings.tips = false
+	m.hud._coach_t = 0.0
+	m.hud._coach_gap = 0.0
+	check(not m.hud.coach("TIP_GOAL"), "no tips when they are turned off")
+	# Your free-hit, not taken.
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var spot := Vector2(-m.attack_dir(0) * 3.0, 2.0)
+	m._begin_restart({"kind": "free_hit", "team": 0, "spot": spot, "why": "push", "sanction": "free_hit", "line": ""})
+	check(m.user_player == m.restart.taker, "you take your team's free-hit")
+	check(m.touch.ids.has("SHOOT") and m.touch.ids.has("PASS"), "your free-hit: the buttons are Shoot and Pass (%s)" % [m.touch.ids])
+	guard = 0
+	while int(m.restart.get("team", 0)) == 0 and guard < 60 * 20:
+		await get_tree().physics_frame
+		guard += 1
+	check(int(m.restart.team) == 1 and String(m.restart.why) == "delay", "507.20: a free-hit kept waiting goes to the other team")
+	# Shoot from behind their goal: a pass out in front, not a shot into the back of the cage.
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var ad: float = m.attack_dir(0)
+	var me: Player = m.skaters(0)[0]
+	m._set_user(me)
+	me.respawn(Vector2(ad * 17.6, 2.0))
+	await get_tree().physics_frame
+	m.ball.set_spot(me.pos)
+	m.ball.carrier = me
+	m._on_action("SHOOT")
+	check(m.ball.carrier == null and m._pass_target != null and m.ball.vel.x * ad < 0.0, "behind their goal, Shoot passes it out in front")
+	# With the ball, you run where the joystick points.
+	while m.phase != "live":
+		await get_tree().physics_frame
+	me.respawn(Vector2(0.0, 2.0))
+	await get_tree().physics_frame
+	m.ball.set_spot(me.pos)
+	m.ball.carrier = me
+	m._set_user(me)
+	var x0: float = me.pos.x
+	for i in 60:
+		m.touch.joystick = Vector2(ad, 0.0)
+		await get_tree().physics_frame
+	check((me.pos.x - x0) * ad > 1.5 and m.ball.carrier == me, "with the ball you run where the joystick points (%.2f m)" % ((me.pos.x - x0) * ad))
+	# 2026: you are stopped at the goalkeeper area's edge, but never kept in it: from inside you can always leave.
+	var auto: bool = Game.settings.auto_switch
+	Game.settings.auto_switch = false
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var own := -int(ad)
+	me.respawn(Vector2(own * 16.0, 0.3))
+	m._set_user(me)
+	for i in 40:
+		m.touch.joystick = Vector2(ad, 0.0)
+		await get_tree().physics_frame
+	check(not Rules.in_gk_area(me.pos, own), "2026: a player inside the goalkeeper area can run out of it (%s)" % me.pos)
+	me.respawn(Vector2(own * 13.0, 0.0))
+	for i in 60:
+		m.touch.joystick = Vector2(-ad, 0.0)
+		await get_tree().physics_frame
+	check(not Rules.in_gk_area(me.pos, own), "2026: running at the goalkeeper area, you stop at its edge (%s)" % me.pos)
+	Game.settings.auto_switch = auto
+	m.queue_free()
+	await frames(2)
+
+
+## Every spectator faces the play, in every venue and stand (the near stand too, which the broadcast camera sees from
+## behind): each one's forward (the facing the crowd's shader turns its cut-out to) points at the rink's centre.
+func _crowd_faces() -> void:
+	for venue in ["arena", "hall", "school"]:
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "SWE", "away": "FIN", "venue": venue, "user_team": -1, "demo": true, "seed": 2, "period": 4.0}
+		add_child(m)
+		await frames(2)
+		var n := 0
+		var bad := 0
+		var worst := 1.0
+		for c in m.find_children("*", "Crowd", true, false):
+			var cr := c as Crowd
+			for i in cr.facings.size():
+				var pos: Vector3 = cr.global_transform * cr.spots_built[i]
+				var fa: float = cr.facings[i] * TAU
+				var fwd := Vector2(sin(fa), cos(fa))
+				var to_centre := Vector2(-pos.x, -pos.z).normalized()
+				var d := fwd.dot(to_centre)
+				worst = minf(worst, d)
+				n += 1
+				if d <= 0.7:
+					bad += 1
+		check(n > 50 and bad == 0, "%s: every spectator faces the rink (%d of %d turned away, worst %.2f)" % [venue, bad, n, worst])
+		if venue == "arena":
+			# And is drawn so: a spectator facing +x, seen from in front, behind and both sides (the cut-out's view and
+			# its mirroring, Crowd.view(); the pictures checked by eye with tools/crowd/facing_view.tscn).
+			var v: Array = [Crowd.view(0.25, Vector2(1, 0)), Crowd.view(0.25, Vector2(-1, 0)), Crowd.view(0.25, Vector2(0, 1)), Crowd.view(0.25, Vector2(0, -1))]
+			check(v[0][0] == 0 and v[1][0] == 4 and v[2] == [2, false] and v[3] == [2, true],
+				"crowd: a spectator is drawn facing the way he faces from every side (%s)" % [v])
+			# And watches the play: the crowd's focus follows the ball.
+			var guard := 0
+			while m.phase != "live" and guard < 600:
+				await get_tree().physics_frame
+				guard += 1
+			for i in 240:
+				await get_tree().physics_frame
+			var mat := Crowd.material()
+			var focus: Vector2 = mat.get_shader_parameter("focus")
+			check(float(mat.get_shader_parameter("follow")) > 0.5 and focus.distance_to(m.ball.floor_pos()) < 6.0,
+				"crowd: they watch the play (looking at %s, the ball at %s)" % [focus, m.ball.floor_pos()])
+		m.queue_free()
+		await frames(2)
+
+
+## Motion capture (game/mocap.gd): every cycle loads whole, and a player running at any speed (ahead, on a slant,
+## backward) keeps a foot that is down (in the captured cycle, at the phase he is at) on the floor where it landed: it
+## slides no more than SLIDE while down, its ankle stays low then (the heel rises as it pushes off), and no foot goes
+## through the floor.
+func _mocap() -> void:
+	const SLIDE := 0.02
+	for g in Mocap.GAITS:
+		var c := Mocap.clip(g)
+		var ok: bool = not c.is_empty() and c.frames.size() >= 10 and c.bones.size() == Body.BONES.size() - 1 and c.stride > 0.5
+		if ok:
+			for f: PackedFloat32Array in c.frames:
+				ok = ok and f.size() == 3 + c.bones.size() * 4
+				for i in c.bones.size():
+					var q := Quaternion(f[3 + i * 4], f[4 + i * 4], f[5 + i * 4], f[6 + i * 4])
+					ok = ok and absf(q.length() - 1.0) < 0.01
+			ok = ok and c.contacts.get("l", []).size() > 0 and c.contacts.get("r", []).size() > 0
+		check(ok, "mocap: the %s cycle loads (%s, %d frames, stride %.2f m at %.2f m/s)" % [g, c.get("source", "?"), c.get("frames", []).size(), c.get("stride", 0.0), c.get("speed", 0.0)])
+	var gfx: int = Game.settings.graphics
+	# Medium and High bend the knees by IK under the captured legs; Low plays the legs as captured: both, ahead.
+	for run in [[Game.GFX_MEDIUM, 0.0], [Game.GFX_MEDIUM, 45.0], [Game.GFX_MEDIUM, 180.0], [Game.GFX_LOW, 0.0]]:
+		Game.settings.graphics = run[0]
+		var ang: float = run[1]
+		for speed in [1.0, 1.3, 2.2, 3.1, 4.2, 6.0, 7.6]:
+			var p := Player.new({"id": "SWE07", "height": 1.84, "num": 7}, 0, "F", 1)
+			p.off_boards = true   # a long straight run, the boards out of the way
+			add_child(p)
+			var size := 1.84 / 1.8
+			var gaits: Array = Mocap.gaits_at(speed / size)
+			var worst := 0.0
+			var down := 0
+			var highest := 0.0
+			var lowest := 1.0
+			var start := {}
+			for n in 300:
+				p.want_vel = Vector2(speed, 0)
+				p.want_face = -deg_to_rad(ang)
+				p.step(1.0 / 60.0)
+				if n < 120:
+					continue
+				for side in ["l", "r"]:
+					var f := p.body.global_transform * p.body._fk("foot_" + side).origin
+					lowest = minf(lowest, f.y)
+					var is_down: bool = Mocap.down(gaits[0], side, p._phase) and (gaits[2] < 0.05 or Mocap.down(gaits[1], side, p._phase))
+					if is_down:
+						down += 1
+						highest = maxf(highest, f.y - 0.04 * size)
+						if not start.has(side):
+							start[side] = f
+						worst = maxf(worst, Vector2(f.x - start[side].x, f.z - start[side].z).length())
+					else:
+						start.erase(side)
+			check(down > 20 and worst < SLIDE and highest < 0.12 and lowest > 0.0,
+				"mocap: running %.1f m/s at %d degrees (graphics %d), a foot down stays put (slides %.3f m, %d frames down, at most %.3f m up then, lowest %.3f m)" % [speed, int(ang), run[0], worst, down, highest, lowest])
+			p.queue_free()
+	Game.settings.graphics = gfx
+
+
+## Sounds (autoload/sfx.gd): every sound the game asks for is made or loaded, and every recorded one (assets/audio,
+## docs/SOUNDS.md) is there, loads, and has length; the crowd bed loops.
+func _sounds() -> void:
+	Sfx._ensure()
+	var missing := []
+	for item in Sfx._plan_list():
+		if not Sfx.streams.has(item[0]) or Sfx.streams[item[0]] == null:
+			missing.append(item[0])
+	check(missing.is_empty(), "sounds: every sound the game plays is there (missing: %s)" % [missing])
+	var bad := []
+	for f in DirAccess.get_files_at("res://assets/audio"):
+		if not f.ends_with(".ogg"):
+			continue
+		var st := load("res://assets/audio/" + f) as AudioStream
+		if st == null or st.get_length() <= 0.0:
+			bad.append(f)
+	check(bad.is_empty(), "sounds: every recorded sound loads (bad: %s)" % [bad])
+	var loop: Variant = Sfx.streams.get("crowd_loop")
+	check(loop is AudioStreamOggVorbis and (loop as AudioStreamOggVorbis).loop, "sounds: the crowd bed is the recording, looping")
+
+
+## The graphics levels' files: Low loads exactly what it always has (the 1024 px player textures, the floor scan at
+## 512 px, the two-person crowd sheet); Medium and High their sharper files (2048 px, the five-person crowd sheet).
+func _detail_levels() -> void:
+	var gfx: int = Game.settings.graphics
+	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		var low: bool = g == Game.GFX_LOW
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 2, "period": 4.0}
+		add_child(m)
+		var p: Player = m.players[0][1]
+		var rb: RiggedBody = p.body.rig
+		var tex: Texture2D = rb.material.get_shader_parameter("albedo_tex") if rb else null
+		var floor_tex: Texture2D = null
+		for mi in m.find_children("*", "MeshInstance3D", true, false):
+			var mat := (mi as MeshInstance3D).material_override as ShaderMaterial
+			if mat and mat.get_shader_parameter("surface") is Texture2D:
+				floor_tex = mat.get_shader_parameter("surface")
+		var want_px := 1024 if low else 2048
+		var floor_px := 512 if low else 2048   # Low's floor scan is imported at 512 px
+		check(tex != null and tex.get_width() == want_px and floor_tex != null and floor_tex.get_width() == floor_px
+			and Crowd.sheet().resource_path.ends_with("crowd_atlas.png" if low else "crowd_atlas_hd.png"),
+			"graphics %d: the player textures at %d px, the floor at %d, the %s crowd sheet (player %s, floor %s, crowd %s)" % [g,
+			want_px, floor_px, "standard" if low else "HD", tex.get_width() if tex else -1, floor_tex.get_width() if floor_tex else -1,
+			Crowd.sheet().resource_path.get_file()])
+		m.queue_free()
+	Game.settings.graphics = gfx
+
+
+# ---------------------------------------------------------------- matches
+
+## AI matches: they finish, the score is the goals logged, the numbers look like floorball's (goals per match, shots,
+## save rate), and every player's position is written once a frame and moves no faster than a person runs.
+func _matches() -> void:
+	var cases := [["SWE", "FIN", "arena", false], ["SUI", "CZE", "hall", true], ["LAT", "THA", "school", false]]
+	if quick:
+		cases = cases.slice(0, 1)
+	var total_goals := 0
+	var total_sog := 0
+	var total_saves := 0
+	var total_sa := 0
+	var n := 0
+	for c in cases:
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": c[0], "away": c[1], "venue": c[2], "user_team": -1, "demo": true, "seed": 7 + n, "mode": "quick",
+			"period": 3.0, "knockout": c[3]}
+		add_child(m)
+		var audit := {"multi": 0, "fast": 0, "frames": 0}
+		var last := {}
+		var done := [false]
+		var res := {}
+		m.finished.connect(func(r):
+			res.merge(r)
+			done[0] = true)
+		var guard := 0
+		while not done[0] and guard < 60 * 60 * 25:
+			await get_tree().physics_frame
+			guard += 1
+			for t in 2:
+				for p in m.players[t]:
+					if p.writes > 1:
+						audit.multi += 1
+					var k := str(p.get_instance_id())
+					if last.has(k) and not p.respawned and p.visible:
+						var step: float = (p.pos - last[k]).length()
+						if step > Player.MAX_SPEED * (1.0 / 60.0) * 1.4 + 0.02:
+							audit.fast += 1
+					last[k] = p.pos
+			audit.frames += 1
+		check(done[0], "%s v %s: the match finishes" % [c[0], c[1]])
+		check(audit.multi == 0, "%s v %s: one write of each player's position a frame (%d)" % [c[0], c[1], audit.multi])
+		check(audit.fast == 0, "%s v %s: nobody moves faster than a sprint or jumps (%d of %d frames)" % [c[0], c[1], audit.fast, audit.frames])
+		var g: Array = res.get("goals", [0, 0])
+		var logged := [0, 0]
+		for e in res.get("log", []):
+			if String(e.kind) == "goal":
+				logged[int(e.team)] += 1
+		var so: Array = res.get("shootout", [[], []])
+		if not (so[0] as Array).is_empty():
+			logged[int(res.winner)] += 1
+		check(logged == [int(g[0]), int(g[1])], "%s v %s: the score is the goals logged (%s, %s)" % [c[0], c[1], logged, g])
+		if c[3]:
+			check(int(res.winner) >= 0, "%s v %s: a knockout match has a winner" % [c[0], c[1]])
+		var ts: Array = res.team_stats
+		total_goals += int(g[0]) + int(g[1])
+		total_sog += int(ts[0].sog) + int(ts[1].sog)
+		for id in res.stats:
+			total_saves += int(res.stats[id].saves)
+			total_sa += int(res.stats[id].sa)
+		print("match %s v %s: %d-%d, shots on goal %d-%d, all shots %d-%d, saves %d/%d, faceoffs %d-%d, penalties %d, calls %d" % [c[0], c[1], g[0], g[1],
+			ts[0].sog, ts[1].sog, ts[0].shots, ts[1].shots, total_saves, total_sa, ts[0].fo, ts[1].fo, _count(res.log, "penalty"), (res.calls as Array).size()])
+		n += 1
+		m.queue_free()
+		await frames(2)
+	# Over 3 x 3-minute periods a real match's 60 minutes would bring ~10 goals: scaled, about 1.5 a match.
+	check(total_sog > n * 4, "shots on goal are taken (%d in %d matches)" % [total_sog, n])
+	# Saves of shots on goal (saves + goals): three in four in real matches; over three short matches it varies, so
+	# the bounds are wide: a goalkeeper who saves everything or nothing is a bug (tests/ai_bench measures it closely).
+	if quick:
+		return
+	check(total_sa > 0 and float(total_saves) / float(total_sa) > 0.45 and float(total_saves) / float(total_sa) < 0.985, "goalkeepers save most, not all, shots on goal (%d/%d)" % [total_saves, total_sa])
+	check(total_saves < total_sa, "some shots on goal go in (%d saves of %d)" % [total_saves, total_sa])
+
+
+func _count(log: Array, kind: String) -> int:
+	var k := 0
+	for e in log:
+		if String(e.kind) == kind:
+			k += 1
+	return k

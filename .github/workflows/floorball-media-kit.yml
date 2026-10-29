@@ -1,0 +1,80 @@
+name: Floorball Unleashed · media kit
+
+# The media kit for the owner's website (tools/media/make_media_kit.sh): screenshots, menus, icons, the trailer and
+# its vertical cut, the website text, as one zip on the release "floorball-unleashed-media" (a prerelease, never
+# "latest", titled so Obtainium ignores it). Runs when the kit's tools or text change, or by hand.
+
+on:
+  push:
+    branches: [claude/floorball-game]
+    paths:
+      - "floorball-game/tools/media/**"
+      - "floorball-game/store/media-kit/**"
+      - ".github/workflows/floorball-media-kit.yml"
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: floorball-game
+
+jobs:
+  media-kit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write   # to publish the release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-editor
+          key: godot-editor-${{ env.GODOT_VERSION }}
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot-editor && cd ~/godot-editor
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+
+      - name: Tools (Godot, a virtual screen with software OpenGL, ffmpeg, Pillow)
+        run: |
+          sudo ln -sf ~/godot-editor/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          sudo apt-get update -q
+          sudo apt-get install -y -q xvfb libgl1-mesa-dri ffmpeg python3-pil
+          python3 -I -c "import PIL; print('Pillow', PIL.__version__)"
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Make the media kit
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          bash tools/media/make_media_kit.sh "$RUNNER_TEMP/media"
+          ls -la "$RUNNER_TEMP/media"
+          unzip -l "$RUNNER_TEMP/media/media-kit-floorball-unleashed.zip"
+
+      - name: Publish on the release floorball-unleashed-media
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ZIP="$RUNNER_TEMP/media/media-kit-floorball-unleashed.zip"
+          NOTES="The media kit for Floorball Unleashed's website: screenshots/, menus/ (1920 x 1080 PNG, from the game on High), icons/ (1024 and 512, the 1024 x 500 feature graphic), trailer/ (16:9 and a 15 s 9:16 cut, H.264 + AAC), text/ (about, features, facts, sport, press) and CREDITS.txt. Made by tools/media/make_media_kit.sh from commit ${GITHUB_SHA::7}. Not an app release."
+          if gh release view floorball-unleashed-media >/dev/null 2>&1; then
+            gh release upload floorball-unleashed-media "$ZIP" --clobber
+            gh release edit floorball-unleashed-media --title "Media kit: Floorball Unleashed" --notes "$NOTES" --prerelease --latest=false
+          else
+            gh release create floorball-unleashed-media "$ZIP" --target "$GITHUB_SHA" --title "Media kit: Floorball Unleashed" \
+              --notes "$NOTES" --prerelease --latest=false
+          fi
+          gh release view floorball-unleashed-media --json assets --jq '.assets[] | "\(.name) \(.size) \(.url)"'

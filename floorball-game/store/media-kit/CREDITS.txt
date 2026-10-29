@@ -1,0 +1,25 @@
+Floorball Unleashed: media kit credits
+
+Everything in this kit comes from the game itself: the screenshots, menu captures and trailer footage are rendered
+by the game (High graphics, 1920 x 1080); the cards and captions use the game's fonts.
+
+TRAILER SOUND
+- Music: the game's menu music, made for Floorball Unleashed (Josh Nason).
+- Crowd ambience and cheering: "Free Crowd Cheering Sounds" by Gregor Quendel
+  (https://opengameart.org/content/free-crowd-cheering-sounds), licensed CC BY 4.0
+  (https://creativecommons.org/licenses/by/4.0/). Cut and levelled for the game.
+- Referee whistles: from Pixabay, under the Pixabay Content License (https://pixabay.com/service/license-summary/):
+  "Referee whistle" (568615) by charlesheffley009, "Referee whistle / coach whistle / sports whistle" (291816) by
+  framptones, "Metal whistle" (6121) by freesound_community. Cut and levelled for the game; not to be extracted and
+  redistributed on their own.
+- Crowd "ooh": made for Kabaddi Raid by the same developer (Josh Nason).
+
+IN THE FOOTAGE
+- Players, goalkeepers, referees and stick: 3D models made for the game by Josh Nason (Meshy).
+- Movement: motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+- Hall fittings and surfaces: Poly Haven (CC0); the full list is on the game's Licences screen.
+- Fonts: Caveat, Barlow Condensed and Noto Sans, under the SIL Open Font License 1.1.
+- Engine: Godot Engine (MIT licence), https://godotengine.org
+
+Floorball Unleashed is an independent game. Its players and clubs are fictional; it is not affiliated with or
+endorsed by any floorball federation, league, club or player.
