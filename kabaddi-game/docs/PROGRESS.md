@@ -304,3 +304,25 @@ check where real recorded movement would make its players more real, and to use 
   calls, primitives, objects and video memory as 0.9.1; the players' animation takes 4.92 ms a frame for 14 players
   against 4.90 before, within the runs' spread. The two clips are 32 KB.
 
+
+## 0.13.0: the owner's list (crowd, raider, sounds, Watch)
+
+| Asked | Done | How it was checked |
+|---|---|---|
+| Settings won't scroll | Every card and button inside a scroll box passes a drag on (`UI.pass_drags`) | drags at 20/50/80 % scrolled 500/477/512 px (before 0/501/0); test_runner: nothing in Settings stops a drag |
+| Watch AI play | Quick Match's Watch button: `autoplay` and `watch`, only pause, camera and skip shown (`TouchControls.watch_only`) | render; test_runner |
+| Quick Match sizes | team cards 130 → 80 px crests, grounds 118 → 170 px and growing, chips 110 × 70 at 24 pt | render at 1560 × 720 |
+| Names and numbers over players | off by default, and off once for saves from before (`tags_v`); Settings can turn them on | test_runner |
+| The raider "standing stupid" | the straight-kneed `raid_idle` clip retired; his legs are the hand-made stance (crouch 0.45), dancing foot to foot at 0.85 cycles a second, the weight over the planted foot, a toe poked out every 2.2-4.5 s (`HumanModel` TAP_RATE, POKE_LEN); the low `raid_crouch_hunt` clip keeps his trunk and arms | the owner's training video through `tools/mocap/extract_pose.py` (YOLO11s-pose, 3,009 frames): hips at a median 0.92 of the straight leg (0.72 deepest), a bounce of 1.2-2 Hz, a sway of 0.35-0.6 Hz, feet 1.3 shoulder widths apart, hands at the hips; close renders |
+| Break free works every time | lower odds, and each further try in a raid has 0.4 of the last (`Match._break_tired`) | `tests/break_free.tscn` (AI matches, Break free pressed whenever it can be): 79 % of holds escaped, a try 70 % → 33 %, a try 16 % |
+| Arena text in the phone's language | the boards' and the run-off's league name is a translation key, redrawn when the language changes | test_runner (Hindi and back) |
+| Mumbai Dome fans without legs | a seated fan's card is drawn 0.6 m nearer the eye along its own line of sight (same place on screen): the tier no longer hides the legs | before/after renders |
+| Monsoon fans "chopped", fog | fans under the roof get light of their own (`lift` 0.3: they were black); fog 0.025 → 0.009 | renders |
+| Crowd watching, clapping when heard | four new frames in the crowd sheets, each person looking left and right, sitting and standing (`tools/crowd/render_crowd.gd`, the turn checked on each model's face); idle fans look to the raider's side of the screen; every crowd sound with clapping in it (`Sfx.crowd_heard`) sets how many clap and how fast (`Arena.CLAPS`: the rhythm's 2.6 claps a second together, applause at their own pace) | renders; test_runner |
+| Better match sounds (freesound) | crowd gasp and sigh, grunts, oofs, hups and breaths from CC0 freesound recordings (`tools/audio/make_freesound.py`; docs/SOUNDS.md) | each candidate's waveform and spectrogram looked at (no noise floor, voiced); noisy whooshes and body falls left as they were |
+| Slower music | menus: tanpura and kherwa tabla at 75 bpm (was 80); matches: tabla at 72 bpm (was a synthesised dhol at 100) (`tools/audio/make_music.py`) | tabla and tanpura tuned within 42 cents, then matched |
+| High on nicer phones | 4096 sun shadow map and a softer filter on High | renders |
+| Hurling Heroes' player work | read: its foot-plant IK and stride-measured gaits are the ideas worth borrowing; no code taken this time | — |
+
+Freesound's search pages and previews are public (no API key); the session was rate-limited (HTTP 403) for some minutes after
+about twenty searches.

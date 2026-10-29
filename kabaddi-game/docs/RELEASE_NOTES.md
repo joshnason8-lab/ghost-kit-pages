@@ -1,3 +1,19 @@
+**New in 0.13.0: a livelier crowd, a raider who looks the part, and Watch.**
+- **Watch**: Quick Match has a Watch button: the computer plays both sides while you sit back (pause and camera still work).
+- **The raider** waits and works the cover in a low, bouncing stance, dancing from foot to foot and now and then poking a toe
+  out in front, as raiders do (measured from training footage); he no longer stands straight-legged.
+- **Break free** is no longer a sure thing: mashing it got a raider out of 4 holds in 5; now about 1 in 3, and each
+  further try in a raid has less in it.
+- **The crowd** turns their heads to follow the raider, claps whenever clapping is heard, and the fans seated in the Mumbai Dome and the
+  other stands have their legs (the stands hid everything below the seat). At the Monsoon Ground the fans under the roof are
+  in colour instead of black shapes, and the rain's haze is lighter.
+- **Sounds**: a real crowd's gasp and groan, and real players' grunts, oofs and breaths, instead of the made-up ones; slower
+  music: a tanpura and tabla in the menus, a tabla under matches.
+- **Language**: the league's name on the boards and the court follows the game's language, and changes with it.
+- **Screens**: Settings scrolls from anywhere you drag; Quick Match has smaller team cards, bigger grounds and bigger
+  length and difficulty buttons. The names and numbers over players are off (Settings can turn them back on).
+- **High**: sharper, softer-edged sun shadows.
+
 **New in 0.12.3: ready for Google Play.** Saves are now written safely: if Android closes the game while it is
 saving (in the background, or the battery dies), your season, cup and settings stay as they were instead of being
 lost. The game was put through a long soak test (thousands of random taps, Back presses and trips to the
