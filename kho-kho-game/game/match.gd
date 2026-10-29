@@ -1824,6 +1824,7 @@ func _camera(dt: float) -> void:
 	fx = clampf(fx, -L + 7.0, L - 7.0)
 	_cam_x = lerpf(_cam_x, fx, minf(1.0, dt * 1.6))
 	var W: float = f.width * 0.5
+	arena.show_near(_cam_mode == Game.CAM_POLE)
 	match _cam_mode:
 		Game.CAM_CLOSE:
 			# Low and near, at the chase's level: the players large, the crowd behind them.

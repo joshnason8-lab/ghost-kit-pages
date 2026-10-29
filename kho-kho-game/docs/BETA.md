@@ -9,6 +9,14 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.10.4
+
+- **Every ground built all the way round.** From behind the pole you could see that the near side (where the
+  broadcast camera stands) had nothing on it: black space in the arena, bare earth at the stadium, empty field at
+  the village and school. It now has stands full of people indoors and at the stadium, and at the grounds a crowd at
+  the barricade the whole way along, with tents and flags behind them. It is drawn only from behind the pole: the
+  other cameras stand in it, so it would block them, and they never see it.
+
 ## What's new in 0.10.3
 
 - **A real dive.** Rebuilt by hand the way Kabaddi Raid's dive is, instead of the recorded dive into water (which,
