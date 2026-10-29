@@ -27,6 +27,7 @@ var _head := 0.0
 var _prev_act := ""
 var _knelt := false
 var _stride := 0.0          # through his stride: a footstep at each half
+var _dive_v0 := 0.0         # m/s he leaves the ground at in a dive
 var swing := {}             # round the pole, a hand on it: {c: the pole, r, a0, a1, v: speed out} (pole_swing)
 
 
@@ -54,6 +55,10 @@ func do(p_act: String, len := 0.0, p_mirror := false) -> void:
 	act_t = 0.0
 	act_len = len
 	mirror = p_mirror
+	if act in ["dive", "pole_dive"]:
+		_dive_v0 = Vector2(vel.x, vel.z).length()
+		if act == "dive":
+			_dive_v0 = maxf(_dive_v0, 5.6)   # a pole dive lunges out from the pole at its own pace
 
 
 ## A dodge: a hard cut aside, over len seconds, to dir (the match moves him; this is how he looks doing it). The
@@ -106,9 +111,17 @@ func integrate(dt: float) -> void:
 		w = w.normalized() * top
 	var dv := w - vel
 	var rate := ACCEL if w.length() >= vel.length() else DECEL
-	if act == "dive" and act_t > 0.25:
+	if act in ["dive", "pole_dive"]:
+		# Off the ground at his run's speed (no slower than a dive's), losing speed through the air to land with
+		# DIVE_LAND left; then he slides to a stop on his front (lie).
+		var f := clampf(act_t / maxf(act_len, 0.1), 0.0, 1.0)
+		var sp := vel.length()
+		if sp > 0.01:
+			vel = vel.normalized() * move_toward(sp, lerpf(_dive_v0, DIVE_LAND, f * f), 30.0 * dt)
+		dv = Vector3.ZERO
+	elif act == "lie":
 		dv = -vel
-		rate = 10.0   # he lands and slides to a stop
+		rate = 8.0
 	vel += dv.limit_length(rate * agility * dt)
 	position += vel * dt
 	position.y = 0.0
@@ -189,39 +202,54 @@ func _finish_act() -> void:
 	act_t = 0.0
 
 
-## A dive, start to finish (the dive clip alone is a dive into water, and held, it left him leaning in the air): he
-## launches, his body pitches forward from the feet until he is down flat, arms reaching (DIVE_PITCH), a little off the
-## ground on the way; he slides on the ground (lie); then he pushes up through a kneel to his feet (getup).
-const DIVE_PITCH := 1.45    # radians from upright: his torso level on the ground, the head a little up
-const DIVE_CLIP := Vector2(0.2, 0.36)   # the stretch of the dive clip a dive plays (s)
-const LIE_S := 0.55
-const GETUP_S := 0.7
+## A dive, start to finish, made by hand as Kabaddi Raid's is (ModelBody.DivePose; the only recorded dive is a dive
+## into water, which left him leaning on one leg in the air): off his run he tips over about his hips, arms reaching
+## out and down, legs trailing, his hips on a short arc from their running height down to lying on the ground as he
+## lands (dive); he slides on his front to a stop (lie); then pushes up onto his hands and knees, and from there gets
+## to his feet (getup). The time he is down is what it always was (LIE_S + GETUP_S).
+const DIVE_PITCH := 1.5     # radians from upright: lying on his front, his chest just off level
+const DIVE_LAND := 2.0      # m/s he has left as he lands; he slides the rest away on the ground
+const HIP_RUN := 0.92       # m: his hips running (the run clip's) ...
+const HIP_LIE := 0.13       # ... lying on his front ...
+const HIP_FOURS := 0.5      # ... and on his hands and knees
+const LIE_S := 0.3
+const GETUP_S := 0.95
+const FOURS_AT := 0.4       # the share of the get-up he takes to be on his hands and knees
 
 
 func _dive_body() -> void:
-	var pitch := 0.0
-	var lift := 0.0
+	body.rotation.x = 0.0
+	body.position.y = 0.0
 	var f := clampf(act_t / act_len, 0.0, 1.0) if act_len > 0.0 else 1.0
-	# Down flat: the clip (a dive into water) already leans him forward; add what lays his torso level, head a
-	# little up (DIVE_PITCH from upright in all), whatever the clip is doing.
-	var flat := clampf(DIVE_PITCH - body.torso_lean(), 0.0, DIVE_PITCH)
 	match act:
 		"dive", "pole_dive":
-			pitch = flat * smoothstep(0.0, 1.0, f)
-			lift = 0.3 * sin(PI * minf(f * 1.15, 1.0))
+			body.dive = smoothstep(0.0, 0.3, f)
+			body.dive_pitch = DIVE_PITCH * smoothstep(0.0, 0.8, f)
+			body.dive_push = 0.0
+			# Up a little off his last stride, then down onto the ground as he lands.
+			body.dive_h = HIP_RUN + 0.08 * sin(PI * minf(f / 0.6, 1.0)) - (HIP_RUN - HIP_LIE) * smoothstep(0.1, 1.0, f)
 		"lie":
-			pitch = flat
-			lift = 0.05
+			body.dive = 1.0
+			body.dive_pitch = DIVE_PITCH
+			body.dive_push = 0.0
+			body.dive_h = HIP_LIE
 		"getup":
-			# The first half brings his chest up to kneeling; the rest is the kneel, backwards, to standing.
-			pitch = flat * (1.0 - smoothstep(0.0, 0.55, f))
-	body.rotation.x = pitch
-	body.rotation.z = 0.0
-	body.position.y = lift
-	if pitch > 0.05:
-		# Never into the ground: lift him by as much as his lowest part (head, hands, chest, hips) went under it, as
-		# the clip posed him last frame.
-		body.position.y = maxf(lift, 0.06 - body.lowest_point())
+			if f < FOURS_AT:
+				# Hands under his shoulders, knees under his hips: up onto all fours.
+				var g := smoothstep(0.0, 1.0, f / FOURS_AT)
+				body.dive = 1.0
+				body.dive_pitch = lerpf(DIVE_PITCH, 1.35, g)
+				body.dive_push = g
+				body.dive_h = lerpf(HIP_LIE, HIP_FOURS, g)
+			else:
+				# From all fours up to his feet: the hand-made pose gives way to his standing one as his hips rise.
+				var g := smoothstep(0.0, 1.0, (f - FOURS_AT) / (1.0 - FOURS_AT))
+				body.dive = 1.0 - g
+				body.dive_pitch = lerpf(1.35, 0.25, g)
+				body.dive_push = 1.0
+				body.dive_h = lerpf(HIP_FOURS, HIP_RUN, g)
+		_:
+			body.dive = 0.0
 
 
 ## Which of the model's clips he plays, and how fast: his run or walk at the rate that keeps his feet with the
@@ -257,19 +285,15 @@ func _animate(dt: float, spd: float) -> void:
 			rate = span / maxf(act_len, 0.1)
 			at = body.clip_length("reach") - span
 			blend = 0.08
-		"dive", "pole_dive":
-			# Only the clip's spring and stretch (DIVE_CLIP): after it the recorded diver tumbles into the water.
-			c = "dive"
-			rate = (DIVE_CLIP.y - DIVE_CLIP.x) / maxf(act_len, 0.2)
-			at = DIVE_CLIP.x
-			blend = 0.06
-		"lie":
-			c = "dive"
-			rate = 0.0001
+		"dive", "pole_dive", "lie":
+			# Under the hand-made dive (_dive_body), his last stride, slowing to a stop.
+			c = "run"
+			rate = 0.25 if act != "lie" else 0.0001
+			blend = 0.25
 		"getup":
-			# Up from the ground: on to his knees as his chest comes up, then to his feet.
-			c = "kneel" if f < 0.5 else "idle"
-			blend = 0.15 if f < 0.5 else 0.3
+			# Under it as he gets up, his standing at ease, which he comes up into.
+			c = "idle"
+			blend = 0.4
 		"whistle":
 			c = "whistle"
 		"out":

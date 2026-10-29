@@ -9,6 +9,17 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.10.3
+
+- **A real dive.** Rebuilt by hand the way Kabaddi Raid's dive is, instead of the recorded dive into water (which,
+  it turned out, left him leaning on one leg about half a metre off the ground the whole time). He takes off from his
+  stride, flies out flat with his arms reaching ahead, lands on his front with his head up, slides to a stop, pushes
+  up onto his hands and knees and gets to his feet through a crouch. Nothing of him goes into the ground, and he is
+  down no longer than before.
+- **Running at a real pace.** The run was recorded at a jog and was being played nearly twice as fast to keep up
+  with a sprint: over five steps a second, like fast forward. Faster than a jog, his stride now lengthens more than
+  it quickens, as a runner's does: about four steps a second at full speed.
+
 ## What's new in 0.10.2
 
 - **Saves when the phone puts the game away.** Your settings and the championship in play are written the moment

@@ -226,16 +226,30 @@ func _owner_round() -> void:
 	var a := Athlete.new({"id": "t", "speed": 80}, 0)
 	add_child(a)
 	await frames(1)
+	# As drawn (ModelBody.DivePose, after the clip): lying, his hips at a body's depth off the ground and nothing of him
+	# under it or held up off it; never anything under the ground on the way down or up.
 	a.vel = Vector3(5.6, 0, 0)
 	a.do("dive", 0.5)
 	var flat := 0.0
 	var acts := {}
+	var lie_hips := 0.0
+	var lie_low := INF
+	var under := 0.0
 	for i in 75:
 		a.integrate(1.0 / 30.0)
-		flat = maxf(flat, a.body.rotation.x)
+		await frames(1)
+		flat = maxf(flat, a.body.dive_pitch)
 		acts[a.act] = true
-	check(flat > 1.3 and acts.has("lie") and acts.has("getup") and a.act == "" and absf(a.body.rotation.x) < 0.01,
-		"a dive: down flat (%.2f rad), on the ground, up again (now '%s')" % [flat, a.act])
+		var dr: Vector2 = a.body.dive_drawn
+		if dr != Vector2.INF:
+			under = maxf(under, -dr.y)
+			if a.act == "lie":
+				lie_hips = maxf(lie_hips, dr.x)
+				lie_low = minf(lie_low, dr.y)
+	check(flat > 1.4 and acts.has("lie") and acts.has("getup") and a.act == "" and a.body.dive == 0.0,
+		"a dive: over flat (%.2f rad), down, up again (now '%s')" % [flat, a.act])
+	check(lie_hips > 0.05 and lie_hips < 0.25 and lie_low > -0.005 and lie_low < 0.06 and under < 0.005,
+		"a dive lands: lying, hips %.2f m up, his lowest part %.3f m (none under the ground: %.3f m)" % [lie_hips, lie_low, under])
 	# The pole turn: round the pole on its circle, out the far side at speed.
 	a.position = Vector3(11.45, 0, 0)
 	a.vel = Vector3(5.0, 0, 0)

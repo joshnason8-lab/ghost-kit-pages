@@ -17,15 +17,15 @@ owner's and are **not** in this public repository; what is here is what the game
 
 | The player | Clip |
 |---|---|
-| running over 2.6 m/s | `run`, at his speed ÷ 3.5 m/s (0.5-1.9 times) |
+| running over 2.6 m/s | `run`: up to 3.5 m/s (its jog) at his speed ÷ 3.5; faster, at the square root of that, so his stride lengthens more than it quickens (about 4 steps a second at 7 m/s; at most 1.6 times) |
 | moving slower | `walk`, at his speed ÷ 1.4 m/s |
 | still (a player or an umpire) | `idle`, looping, each man from his own point in it |
 | dodging (DODGE, or an AI defender reading a dive) | `dodge`, fitted to the dodge (0.4 s) or faster if he moves faster; mirrored for a cut to his right |
 | sitting in his square | `kneel_down` (sped up), then `kneel` |
 | giving a kho or reaching | the second half of `reach`, fitted to the act |
-| diving (sky dive, pole dive) | `dive` from 0.25 s, ended at 0.9 s: Mixamo's clip is a dive into water and goes under the floor after that |
-| lying after a dive | `dive`'s last frame, held |
-| getting up | `idle`, blended in |
+| diving (sky dive, pole dive) | made by hand over his last stride (`ModelBody.DivePose`, as Kabaddi Raid's dive): he tips over about his hips, arms reaching ahead and down, legs trailing, head up, his hips on an arc down to the ground. Mixamo's `dive` (a dive into water) is no longer played: it left him leaning on one leg half a metre in the air |
+| lying after a dive | the same pose, flat on his front, sliding to a stop |
+| getting up | the pose pushed up onto hands and knees, then giving way to `idle` as he comes up through a crouch |
 | round the pole | `turn`, its middle, fitted to the turn |
 | an umpire's signals | `whistle`, `signal_out`, `signal_foul`, `signal_end` |
 
