@@ -1252,7 +1252,11 @@ func _run() -> void:
 			if r.get("chain_caught", false):
 				cc += 1
 		print("      moves landed %s, tried %s, caught crossing a chain %d" % [str(used), str(_match_result.get("move_tries", {})), cc])
-		check(used.size() >= 3, "raiders land a mix of moves (%d kinds)" % used.size())
+		# Escapes count among the moves landed, and since 0.13.0 a hold wins more often (Match._break_tired): a match
+		# can land only two kinds, so the mix is checked in what raiders try as well.
+		var tried: Dictionary = _match_result.get("move_tries", {})
+		check(used.size() >= 2 and tried.size() >= 2 and used.size() + tried.size() >= 4,
+			"raiders try and land a mix of moves (%d kinds landed, %d tried)" % [used.size(), tried.size()])
 		check(buzzes == 0, "a match the AI plays on its own (as behind the home screen) never buzzes the phone")
 		# The box score: both sides' seven, adding up to the match.
 		var box: Array = _match_result.get("box", [])

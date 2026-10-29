@@ -590,8 +590,10 @@ static func scroll(content: Control) -> ScrollContainer:
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.add_child(content)
 	# Once the screen has built what goes in it, and whenever something is added later.
-	s.ready.connect(func(): pass_drags.call_deferred(content))
-	content.child_entered_tree.connect(func(n): pass_drags.call_deferred(n))
+	# Deferred by id, not by the node: a screen left at once (Settings, then straight to another) frees its nodes
+	# before the call comes round, and a freed node handed to a deferred call crashed the engine.
+	s.ready.connect(func(): _pass_drags_id.call_deferred(content.get_instance_id()))
+	content.child_entered_tree.connect(func(n): _pass_drags_id.call_deferred(n.get_instance_id()))
 	return s
 
 
@@ -610,6 +612,13 @@ static func pass_drags(root: Node) -> void:
 			(n as Control).mouse_filter = Control.MOUSE_FILTER_PASS
 		for c in n.get_children():
 			stack.append(c)
+
+
+## pass_drags, for a node that may be gone by the time the call comes round.
+static func _pass_drags_id(id: int) -> void:
+	var n := instance_from_id(id)
+	if n is Node:
+		pass_drags(n)
 
 
 static func swatch(c: Color, size := Vector2(14, 34)) -> ColorRect:
