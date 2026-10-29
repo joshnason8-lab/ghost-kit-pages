@@ -16,10 +16,23 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   Quality: `Game.settings.graphics` 0/1/2, `Game.crowd_density()`.
 - Godot 4.7 has native TwoBoneIK3D, LookAtModifier3D, BoneTwistDisperser3D.
 - Gotcha: never set bone poses from inside `skeleton_updated` (Godot restores the pre-modifier poses after it).
+- Gotcha: each Mobility FBX has its OWN "rest" (not a T-pose; the run's hips at 0.84 m, arms swept back). Clips must
+  be measured from one reference T-pose: the pack's MotusMan_v55.fbx bind pose. Doing otherwise is what made
+  "Mobility clips float ~25 cm"; measured against MotusMan the grounding correction is at most 2.3 cm.
+- Mobility natural speeds (canonical 0.85 m leg): walk 1.30, jog 3.51, run 6.39 m/s; a body's strides scale with its
+  leg length (WsgLocomotor.leg_scale; the hurler's is 0.906).
+- Gotcha: skeleton modifiers can run several times per game frame; WsgFootPlanter does its contact logic once per
+  WsgLocomotor.drive() (tick) and its IK every update. Manual skeleton advance did not see the mixer's pose: not used.
 
 ## Milestones
 - [x] M1 rig: `rig.gd`, `rig_driver.gd`, `body.gd`, `grip.gd`, `tools/bake_character.*`, `tests/rig_test.gd` (PASS).
-- [ ] M2 locomotion
+- [x] M2 locomotion: `tools/bake_clips.*` (150 clips, 5 s, data/mobility.res 7.5 MB + .json), `clips.gd`,
+  `locomotor.gd` (AnimationTree built in code: idle, 8-direction walk/jog/run blend space, circle loops for curves,
+  two one-off slots; starts by direction and intended speed, stops by distance and lifted foot, cuts angle-matched,
+  turn-in-place, split jumps, look-at), `foot_planter.gd` (contacts found on the shown pose, lock on landing, drag
+  to reach, ease up-then-across), `tests/loco_test.gd` (PASS: planted slide 5.3 cm/s mean, 0.4 p90; raw clips
+  49.9 / 137.8), `tests/media/loco_video.tscn` (MP4 of the path).
+  Open: the 90 degree cut still drags 25 cm/s; the curving jog 25 cm/s; ActorCore sprint not here yet.
 - [ ] M3 crowd
 - [ ] M4 officials
 - [ ] Pilot in Hurling, MP4s, ADOPTING.md, CI private-asset step
