@@ -94,6 +94,32 @@ func _tour() -> void:
 		await shot("lang_3_picker_ta")
 		Game.set_language("")
 		return
+	if args_only.begins_with("fans"):
+		# The crowd on each ground (or one: "fans:dome"), from the broadcast camera and close up from the court.
+		var only := args_only.substr(5) if args_only.length() > 5 else ""
+		for g in ["dome", "stadium", "village", "monsoon", "beach"]:
+			if only != "" and g != only:
+				continue
+			Game.start_match({"home": "MUM", "away": "PUN", "arena": g, "mode": "quick", "length": 0, "difficulty": 1,
+				"autoplay": true})
+			var fm: Node = Game.current
+			var fg := 0
+			while fm.phase != "raid" and fg < 900:
+				await get_tree().process_frame
+				fg += 1
+			fm.hud.visible = false
+			await frames(30)
+			await shot("fans_%s_tv" % g)
+			var fc: Camera3D = fm.cam.cam
+			fm.cam.set_process(false)
+			fm.cam.set_physics_process(false)
+			fc.global_position = Vector3(0.0, 1.7, 6.0)
+			fc.look_at(Vector3(-11.0, 1.6, 2.0))
+			await frames(4)
+			await shot("fans_%s_near" % g)
+			fm.cam.set_process(true)
+			fm.cam.set_physics_process(true)
+		return
 	if args_only == "signs":
 		# The league's name on the boards and the run-off, from the corner of the mat (in the tour's language).
 		Game.start_match({"home": "MUM", "away": "PUN", "arena": "dome", "mode": "quick", "length": 0, "difficulty": 1,

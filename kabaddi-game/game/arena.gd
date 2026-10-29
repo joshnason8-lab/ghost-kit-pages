@@ -76,6 +76,7 @@ uniform float excitement = 0.0;
 uniform float top_lum[16];   // each person's shirt brightness, linear; 0 keeps their own clothes
 uniform float top_lum_back[16];   // the same from behind
 uniform float falloff = 0.0;  // under lights (an arena, floodlights at night): the back rows darker, 0 by day
+uniform float lift = 0.0;     // light of their own: under a roof on an overcast day they were black cut-outs
 varying flat vec2 cell;
 varying flat float dim;
 varying flat float mirror;
@@ -91,6 +92,17 @@ void vertex() {
 		vec4(0.0, 1.0, 0.0, 0.0), vec4(normalize(cross(INV_VIEW_MATRIX[0].xyz, vec3(0.0, 1.0, 0.0))), 0.0), MODEL_MATRIX[3]);
 	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0),
 		vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+	if (!standing) {
+		// Someone sitting on a tier has their legs down the front of it, but their card stands where they sit, half
+		// a tier back: the tier hid them from the seat down. Drawn 0.6 m nearer the eye along its own line of sight
+		// (and as much smaller, round the feet), they are where they were on screen, legs and all, in front of it.
+		float d = length(MODELVIEW_MATRIX[3].xyz);
+		float k = max(d - 0.6, 0.5) / d;
+		MODELVIEW_MATRIX[3].xyz *= k;
+		MODELVIEW_MATRIX[0].xyz *= k;
+		MODELVIEW_MATRIX[1].xyz *= k;
+		MODELVIEW_MATRIX[2].xyz *= k;
+	}
 	MODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);
 	float slot = INSTANCE_CUSTOM.a * 16.0;   // person index + a random phase
 	float person = floor(slot);
@@ -128,6 +140,7 @@ void fragment() {
 		col = mix(col, tint * clamp(l, 0.2, 1.5), m);
 	}
 	ALBEDO = col * dim;
+	EMISSION = col * dim * lift;
 	ALPHA = c.a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 	ROUGHNESS = 0.95;
@@ -246,8 +259,9 @@ func _env() -> void:
 			sun.light_color = Color("ffc98a")
 			_grade(Color(0.025, 0.012, 0.0), Color(1.0, 0.97, 0.92), 0.2)   # late afternoon: warm through
 		"monsoon":
+			# A light haze of rain (0.025 was a fog that greyed out the far stand and the trees).
 			_environment(Scenery.sky("overcast_soil_puresky", -0.023, 1.2, 0.31, 0.15, Color(0.16, 0.14, 0.12), 0.35), Color.BLACK,
-				0.6, 0.9, 0.025, Color("7f8a95"))
+				0.6, 0.9, 0.009, Color("7f8a95"))
 			sun.rotation = Vector3(deg_to_rad(-60), deg_to_rad(20), 0)
 			sun.light_color = Color("d6e0ea")
 			_grade(Color(0.03, 0.035, 0.045), Color(0.95, 0.97, 1.0), 0.08)   # overcast: soft, cool, a little hazy
@@ -828,6 +842,7 @@ func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumbe
 	sm.set_shader_parameter("top_lum", lums)
 	sm.set_shader_parameter("top_lum_back", lums_back)
 	sm.set_shader_parameter("falloff", {"dome": 0.5, "stadium": 0.4}.get(arena_id, 0.0))
+	sm.set_shader_parameter("lift", {"monsoon": 0.3}.get(arena_id, 0.0))
 	mmi.material_override = sm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	crowd_mats.append(sm)
