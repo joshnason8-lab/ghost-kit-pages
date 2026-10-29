@@ -30,6 +30,10 @@ func _ready() -> void:
 	await _screens()
 	await _about_pages()
 	await _penalty_shot()
+	await _aimed_penalty()
+	await _practice()
+	await _watch()
+	_signage()
 	await _match_parts()
 	await _coach()
 	await _crowd_faces()
@@ -575,6 +579,133 @@ func _penalty_shot() -> void:
 	await frames(2)
 
 
+## Your penalty shot, aimed by timing (game/penalty_aim.gd): the target round the goal mouth, then the bar; the ball
+## struck where the target stopped (green), out to the side the bar was stopped on (red); the goalkeeper's chance of a
+## save smaller in a corner than in the middle; the close camera behind the shooter and back to the match camera.
+func _aimed_penalty() -> void:
+	var rng := RandomNumberGenerator.new()
+	var aim := PenaltyAim.new()
+	add_child(aim)
+	aim.setup(1.0, 0.8, rng)
+	var got := []
+	aim.shot.connect(func(t: Vector3): got.append(t))
+	aim.angle = 0.0                      # the target out wide on +z (the camera's right)
+	aim.press()
+	check(aim.stopped and not aim.fired, "the first SHOOT stops the target, the bar runs")
+	aim.bar_x = 0.0
+	aim.press()
+	check(got.size() == 1 and (got[0] as Vector3).is_equal_approx(Vector3(Rules.GOAL_LINE, PenaltyAim.CENTRE_Y, PenaltyAim.RADIUS_Z)), "in the green: the shot goes where the target stopped")
+	aim.queue_free()
+	var aim2 := PenaltyAim.new()
+	add_child(aim2)
+	aim2.setup(1.0, 0.8, rng)
+	aim2.shot.connect(func(t: Vector3): got.append(t))
+	aim2.angle = PI * 0.5                # the top of the round, over the middle of the goal
+	aim2.press()
+	aim2.bar_x = 1.0                     # the bar's right end
+	aim2.press()
+	check(got.size() == 2 and (got[1] as Vector3).z > 0.5, "out of the green to the right: the shot pulls right (+z for a shot toward +x)")
+	aim2.queue_free()
+	check(PenaltyAim.top_corner(Vector3(Rules.GOAL_LINE, 1.05, 0.7)) and not PenaltyAim.top_corner(Vector3(Rules.GOAL_LINE, 0.3, 0.0)), "a top corner is a top corner")
+	# A penalty shot in a match you play: the close camera, SHOOT twice, the shot taken, the match camera back.
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": 0, "seed": 4, "period": 4.0, "mode": "quick"}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var v: Player = m.skaters(0)[0]
+	m._award_penalty_shot(v, "hook")
+	var guard := 0
+	var close_seen := false
+	while String(m._so.get("stage", "")) != "aim" and guard < 60 * 12:
+		await get_tree().physics_frame
+		close_seen = close_seen or not m.penalty_view().is_empty()
+		guard += 1
+	check(String(m._so.get("stage", "")) == "aim" and m._aim != null, "your penalty shot: the aim begins as he skates in")
+	check(close_seen and m.cam._close, "the close camera behind the shooter")
+	m._on_action("SHOOT")
+	for i in 20:
+		await get_tree().physics_frame
+	m._on_action("SHOOT")
+	await get_tree().physics_frame
+	check(bool(m._so.get("shot", false)), "the second SHOOT takes the shot")
+	guard = 0
+	while m.phase == "shootout" and guard < 60 * 12:
+		await get_tree().physics_frame
+		guard += 1
+	await get_tree().physics_frame
+	check(m.phase != "shootout" and not m.cam._close, "after the shot: play goes on, the match camera back")
+	m.queue_free()
+	await frames(2)
+	# The goalkeeper's chance of a save: the middle his, a top corner the hardest.
+	var saves := {}
+	for spot in [Vector3(Rules.GOAL_LINE, 0.4, 0.0), Vector3(Rules.GOAL_LINE, 1.05, 0.72)]:
+		var u: float = absf(spot.z) / (Rules.GOAL_W * 0.5)
+		var vv: float = spot.y / Rules.GOAL_H
+		saves[spot] = 0.92 - 0.55 * smoothstep(0.35, 0.92, u) - 0.25 * smoothstep(0.45, 0.95, vv) * (0.4 + 0.6 * u)
+	check(float(saves.values()[0]) > 0.85 and float(saves.values()[1]) < 0.25, "an aimed shot: the middle saved, a top corner hard to save (%s)" % str(saves.values()))
+
+
+## Penalty shots, the home screen's mini game: ten aimed shots, each scored, the end card, the best kept.
+func _practice() -> void:
+	var keep_best = Game.settings.get("penalty_best", -1)
+	Game.settings.penalty_best = -1
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "arena", "user_team": 0, "mode": "practice", "practice": true, "period": 20.0, "seed": 7}
+	add_child(m)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2
+	var guard := 0
+	var hidden_ok := true
+	while m.phase != "over" and guard < 60 * 240:
+		await get_tree().physics_frame
+		guard += 1
+		if guard == 120:
+			for t in 2:
+				for p: Player in m.players[t]:
+					if p != m._practice.shooter and p != m.keeper(1) and p.visible:
+						hidden_ok = false
+		var st := String(m._so.get("stage", ""))
+		if st == "aim" and m._aim and rng.randf() < 0.04:
+			m._on_action("SHOOT")
+	check(hidden_ok, "practice: only the shooter and the goalkeeper on the rink")
+	check(m.phase == "over" and int(m._practice.shot) == 10 and (m._practice.marks as Array).size() == 10, "practice: ten shots taken (%d)" % int(m._practice.get("shot", 0)))
+	var pts := 0
+	for k in (m._practice.marks as Array):
+		pts += int(k)
+	check(pts == int(m._practice.points) and int(Game.settings.penalty_best) == pts, "practice: the points add up and the best is kept (%d)" % pts)
+	m.queue_free()
+	Game.settings.penalty_best = keep_best
+	await frames(2)
+
+
+## Watch a match: both teams the computer's, but a match with its scoreboard and pause, no touch buttons.
+func _watch() -> void:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SUI", "away": "CZE", "venue": "hall", "user_team": -1, "watch": true, "mode": "watch", "seed": 2, "period": 4.0}
+	add_child(m)
+	await frames(3)
+	check(not m.demo and m.hud != null and not m.hud.touch.visible, "watch a match: a match (not the menu's demo), its scoreboard, no buttons")
+	var guard := 0
+	while m.phase != "live" and guard < 600:
+		await get_tree().physics_frame
+		guard += 1
+	m._on_action("SHOOT")   # nothing to press: nobody is yours
+	check(m.user_player == null, "watch a match: nobody is yours")
+	m.queue_free()
+	await frames(2)
+
+
+## The hall's words in the phone's language (game/signage.gd); the game's name as it is.
+func _signage() -> void:
+	var keep := TranslationServer.get_locale()
+	TranslationServer.set_locale("sv")
+	check(Signage.text("ADS_GO_FLOORBALL") == "HEJA INNEBANDY" and Signage.text("") == "FLOORBALL UNLEASHED", "the boards in Swedish: innebandy; the name as it is")
+	TranslationServer.set_locale("fi")
+	check(Signage.text("ADS_GO_FLOORBALL") == "HYVÄ SALIBANDY", "the boards in Finnish: salibandy")
+	TranslationServer.set_locale(keep)
+
+
 ## The match's own pieces, each on a live AI match: a won tackle keeps the ball, a penalty's player walks to the
 ## penalty bench and comes back when it is over, the empty net, passive play.
 func _match_parts() -> void:
@@ -793,6 +924,17 @@ func _crowd_faces() -> void:
 			var v: Array = [Crowd.view(0.25, Vector2(1, 0)), Crowd.view(0.25, Vector2(-1, 0)), Crowd.view(0.25, Vector2(0, 1)), Crowd.view(0.25, Vector2(0, -1))]
 			check(v[0][0] == 0 and v[1][0] == 4 and v[2] == [2, false] and v[3] == [2, true],
 				"crowd: a spectator is drawn facing the way he faces from every side (%s)" % [v])
+			# And watches the play: the crowd's focus follows the ball.
+			var guard := 0
+			while m.phase != "live" and guard < 600:
+				await get_tree().physics_frame
+				guard += 1
+			for i in 240:
+				await get_tree().physics_frame
+			var mat := Crowd.material()
+			var focus: Vector2 = mat.get_shader_parameter("focus")
+			check(float(mat.get_shader_parameter("follow")) > 0.5 and focus.distance_to(m.ball.floor_pos()) < 6.0,
+				"crowd: they watch the play (looking at %s, the ball at %s)" % [focus, m.ball.floor_pos()])
 		m.queue_free()
 		await frames(2)
 

@@ -319,7 +319,7 @@ static func pill(text: String, col: Color, filled := false) -> PanelContainer:
 	sb.content_margin_top = 2
 	sb.content_margin_bottom = 3
 	p.add_theme_stylebox_override("panel", sb)
-	p.add_child(label(text, "EyebrowLabel", 14, Color("1d1307") if filled else col.lightened(0.2)))
+	p.add_child(label(text, "EyebrowLabel", 14, Game.C_ON_ACCENT if filled else col.lightened(0.25)))
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return p
 
@@ -547,43 +547,49 @@ static func signed(n: int) -> String:
 
 
 
-## A note pinned to the whiteboard: white paper, a magnet holding its top corner, the title in marker, a line of
-## description under it. The menus' big choices are these.
+## A menu tile: a dark card leaning forward like a broadcast's graphics, a stripe of its colour down the left, the
+## title in the condensed headline face, a line of description under it. The menus' big choices are these.
 static func note(title: String, desc: String, accent: Color, cb: Callable, big := false) -> Button:
 	var b := Button.new()
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	b.custom_minimum_size = Vector2(0, 96 if not big else 120)
+	b.custom_minimum_size = Vector2(0, 88 if not big else 108)
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color.WHITE
-	sb.set_corner_radius_all(4)
-	sb.border_color = Color(Game.C_INK, 0.12)
+	sb.bg_color = Color(Game.C_PANEL, 0.93)
+	sb.set_corner_radius_all(6)
+	sb.border_color = Color(Game.C_FRAME, 1.0)
 	sb.set_border_width_all(1)
-	sb.border_width_bottom = 3
-	sb.shadow_color = Color(0, 0, 0, 0.12)
-	sb.shadow_size = 6
-	sb.shadow_offset = Vector2(2, 4)
+	sb.border_width_left = 8
+	sb.skew = Vector2(0.12, 0)
+	sb.shadow_color = Color(0, 0, 0, 0.35)
+	sb.shadow_size = 10
+	sb.shadow_offset = Vector2(0, 6)
+	sb.border_color = Color(Game.C_FRAME, 1.0)
 	var sbh: StyleBoxFlat = sb.duplicate()
-	sbh.bg_color = Color("f7f9fd")
+	sbh.bg_color = Color(Game.C_PANEL_HI, 0.97)
 	sbh.border_color = accent
 	sbh.set_border_width_all(2)
-	sbh.border_width_bottom = 4
+	sbh.border_width_left = 8
 	b.add_theme_stylebox_override("normal", sb)
 	b.add_theme_stylebox_override("hover", sbh)
 	b.add_theme_stylebox_override("pressed", sbh)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	var mg := Control.new()
-	mg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mg.custom_minimum_size = Vector2(26, 26)
-	mg.position = Vector2(10, -6)
-	mg.draw.connect(func(): Backdrop.magnet(mg, Vector2(13, 13), 11.0, accent))
-	b.add_child(mg)
+	# The colour stripe: the card's left edge in its accent (a StyleBoxFlat's border is one colour all round).
+	var stripe := Control.new()
+	stripe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stripe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	stripe.draw.connect(func():
+		var h := stripe.size.y
+		var k := 0.12 * h
+		stripe.draw_colored_polygon(PackedVector2Array([Vector2(k * 0.5 + 0, 0), Vector2(k * 0.5 + 9, 0), Vector2(-k * 0.5 + 9, h),
+			Vector2(-k * 0.5, h)]), accent))
+	b.add_child(stripe)
 	var m := MarginContainer.new()
 	m.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	m.add_theme_constant_override("margin_left", 22)
-	m.add_theme_constant_override("margin_right", 16)
-	m.add_theme_constant_override("margin_top", 12)
+	m.add_theme_constant_override("margin_left", 26)
+	m.add_theme_constant_override("margin_right", 18)
+	m.add_theme_constant_override("margin_top", 10)
 	m.add_theme_constant_override("margin_bottom", 10)
 	b.add_child(m)
 	var v := VBoxContainer.new()
@@ -591,17 +597,17 @@ static func note(title: String, desc: String, accent: Color, cb: Callable, big :
 	v.add_theme_constant_override("separation", 0)
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	m.add_child(v)
-	var t := label(title, "HeaderLabel", 50 if big else 40, accent.darkened(0.15))
+	var t := label(title.to_upper(), "HeaderLabel", 42 if big else 34, Game.C_INK)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_fit_line(t, 50 if big else 40)
+	_fit_line(t, 42 if big else 34)
 	v.add_child(t)
 	if desc != "":
 		var d := UI.wrap(desc, "MutedLabel", 16)
 		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(d)
 	var grow := func():
-		b.custom_minimum_size.y = maxf(96.0 if not big else 120.0, m.get_combined_minimum_size().y)
+		b.custom_minimum_size.y = maxf(88.0 if not big else 108.0, m.get_combined_minimum_size().y)
 	m.minimum_size_changed.connect(grow)
 	b.pressed.connect(Sfx.click)
 	b.pressed.connect(cb)

@@ -53,23 +53,26 @@ const HAPTICS := {
 	"save": [30, 0.7],                           # your goalkeeper saves (you play him)
 }
 
-# The whiteboard palette: white board and paper, marker inks, magnets, the hall's birch and the rink's blue floor.
-const C_BG := Color("e9ecea")        # the whiteboard
-const C_PANEL := Color("ffffff")     # paper pinned to it
-const C_PANEL_HI := Color("f1f5fb")
-const C_FRAME := Color("aab3bc")     # the board's aluminium frame
-const C_INK := Color("1f2933")       # black marker
-const C_MUTED := Color("5b6673")
-const C_BLUE := Color("1d4ed8")      # blue marker: your team, the primary action
-const C_RED := Color("d62839")       # red marker: the opponents, penalties
-const C_GREEN := Color("0f8b5f")     # green marker: good
-const C_MAGNET := Color("f08a24")    # an orange magnet: the thing to press
-const C_YELLOW := Color("f5c518")
+# Arena night: the menus are the hall with its lights down before a match. Deep navy, the flame orange and electric
+# blue of the game's icon (a ball on fire on a blue blade), white for the words.
+const C_BG := Color("0a1020")        # the hall in the dark
+const C_PANEL := Color("141c30")     # a card
+const C_PANEL_HI := Color("1d2844")
+const C_FRAME := Color("2c3a5c")     # a card's edge
+const C_INK := Color("eef2f9")       # the words
+const C_MUTED := Color("94a3bd")
+const C_BLUE := Color("3d8bff")      # electric blue: your team
+const C_RED := Color("ff4d5e")       # the opponents, penalties
+const C_GREEN := Color("2fd08a")     # good
+const C_MAGNET := Color("ff7a1a")    # flame orange: the thing to press
+const C_CYAN := Color("31e1ff")      # the blade's glow: accents
+const C_YELLOW := Color("ffd23f")
 const C_BIRCH := Color("d9c296")
 const C_FLOOR := Color("2c66ad")
-const C_GOOD := Color("0f8b5f")
-const C_DANGER := Color("d62839")
-const C_GOLD := Color("c8961e")
+const C_GOOD := Color("2fd08a")
+const C_DANGER := Color("ff4d5e")
+const C_GOLD := Color("f5b82e")
+const C_ON_ACCENT := Color("0a1020")  # words on an orange or gold button
 
 ## Period lengths a match can be played at (minutes); the laws' 20 is the last.
 const PERIODS := [4, 8, 12, 20]
@@ -92,6 +95,7 @@ var settings := {
 	"auto_switch": true,    # the player you run changes to the one nearest the ball by itself
 	"game_speed": 0,        # 0 Steady (80% of real pace, the default on a phone), 1 Real
 	"seen_howto": false,
+	"penalty_best": -1,      # penalty-shot practice: the best score out of 13 (-1 never played)
 	"tips": true,           # the coach's tips in a first match (game/hud.gd coach()), each once
 	"tips_seen": [],
 	"dev": false,
@@ -105,6 +109,7 @@ var loading := false
 var theme: Theme
 var font_body: Font
 var font_bold: Font
+var font_head: Font
 var font_marker: Font     # the whiteboard's hand
 var font_score: Font      # the scoreboard's numbers and the HUD
 var cup = null            # Cup (RefCounted), loaded lazily
@@ -115,6 +120,7 @@ var records := {}
 
 
 func _ready() -> void:
+	Renderer.boot()
 	load_settings()
 	if int(settings.graphics) < 0:
 		settings.graphics = detect_graphics()
@@ -162,6 +168,8 @@ func go_back() -> void:
 ## choice.
 func detect_graphics() -> int:
 	if not OS.has_feature("mobile"):
+		return GFX_HIGH
+	if Renderer.capable():
 		return GFX_HIGH
 	var gpu := RenderingServer.get_video_adapter_name().to_lower()
 	var mem: Dictionary = OS.get_memory_info()
@@ -421,11 +429,19 @@ func apply_graphics(viewport: Viewport) -> void:
 			viewport.msaa_3d = Viewport.MSAA_DISABLED
 			viewport.scaling_3d_scale = 0.75
 		GFX_MEDIUM:
-			viewport.msaa_3d = Viewport.MSAA_2X
+			# 4x, not 2x, on Vulkan: 2x leaves the far lines in dashes; a phone's tiled GPU smooths 4x almost for free.
+			viewport.msaa_3d = Viewport.MSAA_4X if Renderer.vulkan() else Viewport.MSAA_2X
 			viewport.scaling_3d_scale = 0.9
 		_:
 			viewport.msaa_3d = Viewport.MSAA_4X
 			viewport.scaling_3d_scale = 1.0
+	# High on Vulkan: the key light's shadows sharp and soft-edged (a 4096 map, filtered); else the project's 1024 hard.
+	if Renderer.lit():
+		RenderingServer.directional_shadow_atlas_set_size(4096, true)
+		RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM)
+	else:
+		RenderingServer.directional_shadow_atlas_set_size(1024, true)
+		RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_HARD)
 	if int(settings.get("fps", FPS_SMOOTH)) == FPS_SAVER:
 		viewport.scaling_3d_scale = minf(viewport.scaling_3d_scale, 0.8)
 
@@ -517,56 +533,63 @@ func _build_theme() -> void:
 	var barlow := _font("res://fonts/BarlowCondensed-Bold.ttf")
 	barlow.fallbacks = marker_fb
 	font_score = barlow
+	# The headings: Barlow Condensed Bold leaning forward, as a broadcast's graphics are set (Thai and Japanese in bold
+	# Noto, upright).
+	var head := FontVariation.new()
+	head.base_font = barlow
+	head.variation_transform = Transform2D(Vector2(1, 0), Vector2(-0.18, 1), Vector2.ZERO)
+	head.spacing_glyph = 1
+	font_head = head
 
 	theme = Theme.new()
 	theme.default_font = font_body
 
-	# Buttons: white cards pinned to the board, a marker line under them.
-	theme.set_stylebox("normal", "Button", _sb(C_PANEL, 10, Color(C_INK, 0.22), 2))
-	theme.set_stylebox("hover", "Button", _sb(C_PANEL_HI, 10, Color(C_BLUE, 0.6), 2))
-	theme.set_stylebox("pressed", "Button", _sb(Color("dfe8f7"), 10, C_BLUE, 3))
-	theme.set_stylebox("focus", "Button", _sb(Color(0, 0, 0, 0), 10, C_BLUE, 2))
-	theme.set_stylebox("disabled", "Button", _sb(Color("e3e6e8"), 10))
+	# Buttons: dark cards with a thin edge, cut on a slant like a sports broadcast's graphics; lit blue when touched.
+	theme.set_stylebox("normal", "Button", _sb(C_PANEL, 8, Color(C_FRAME, 1.0), 2))
+	theme.set_stylebox("hover", "Button", _sb(C_PANEL_HI, 8, Color(C_CYAN, 0.7), 2))
+	theme.set_stylebox("pressed", "Button", _sb(Color("223258"), 8, C_CYAN, 3))
+	theme.set_stylebox("focus", "Button", _sb(Color(0, 0, 0, 0), 8, C_CYAN, 2))
+	theme.set_stylebox("disabled", "Button", _sb(Color("10172a"), 8, Color(C_FRAME, 0.5), 1))
 	theme.set_color("font_color", "Button", C_INK)
-	theme.set_color("font_hover_color", "Button", C_INK)
-	theme.set_color("font_pressed_color", "Button", C_BLUE)
+	theme.set_color("font_hover_color", "Button", Color.WHITE)
+	theme.set_color("font_pressed_color", "Button", C_CYAN)
 	theme.set_color("font_focus_color", "Button", C_INK)
 	theme.set_color("font_disabled_color", "Button", Color(C_MUTED, 0.6))
 	theme.set_font("font", "Button", font_bold)
 
-	# The primary action: a blue marker block, white words.
+	# The primary action: flame orange, slanted, dark words.
 	theme.set_type_variation("PrimaryButton", "Button")
-	theme.set_stylebox("normal", "PrimaryButton", _sb(C_BLUE, 12))
-	theme.set_stylebox("hover", "PrimaryButton", _sb(C_BLUE.lightened(0.1), 12))
-	theme.set_stylebox("pressed", "PrimaryButton", _sb(C_BLUE.darkened(0.2), 12))
-	theme.set_stylebox("focus", "PrimaryButton", _sb(Color(0, 0, 0, 0), 12, C_INK, 2))
+	theme.set_stylebox("normal", "PrimaryButton", _sb(C_MAGNET, 8, Color(0, 0, 0, 0), 0, 14, 0.16))
+	theme.set_stylebox("hover", "PrimaryButton", _sb(C_MAGNET.lightened(0.12), 8, Color(0, 0, 0, 0), 0, 14, 0.16))
+	theme.set_stylebox("pressed", "PrimaryButton", _sb(C_MAGNET.darkened(0.18), 8, Color(0, 0, 0, 0), 0, 14, 0.16))
+	theme.set_stylebox("focus", "PrimaryButton", _sb(Color(0, 0, 0, 0), 8, Color.WHITE, 2, 14, 0.16))
 	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		theme.set_color(k, "PrimaryButton", Color.WHITE)
-	theme.set_font("font", "PrimaryButton", font_bold)
+		theme.set_color(k, "PrimaryButton", C_ON_ACCENT)
+	theme.set_font("font", "PrimaryButton", font_head)
 
-	# Chips: magnets on the board; the chosen one is a filled orange magnet.
+	# Chips: dark pills; the chosen one filled orange.
 	theme.set_type_variation("ChipButton", "Button")
-	theme.set_stylebox("normal", "ChipButton", _sb(C_PANEL, 999, Color(C_INK, 0.25), 2, 10))
+	theme.set_stylebox("normal", "ChipButton", _sb(C_PANEL, 999, Color(C_FRAME, 1.0), 2, 10))
 	theme.set_stylebox("hover", "ChipButton", _sb(C_PANEL_HI, 999, Color(C_MAGNET, 0.8), 2, 10))
-	theme.set_stylebox("pressed", "ChipButton", _sb(C_MAGNET, 999, C_MAGNET.darkened(0.25), 2, 10))
-	theme.set_stylebox("hover_pressed", "ChipButton", _sb(C_MAGNET.lightened(0.08), 999, C_MAGNET.darkened(0.25), 2, 10))
-	theme.set_color("font_pressed_color", "ChipButton", Color("1d1307"))
-	theme.set_color("font_hover_pressed_color", "ChipButton", Color("1d1307"))
+	theme.set_stylebox("pressed", "ChipButton", _sb(C_MAGNET, 999, C_MAGNET.lightened(0.2), 2, 10))
+	theme.set_stylebox("hover_pressed", "ChipButton", _sb(C_MAGNET.lightened(0.08), 999, C_MAGNET.lightened(0.2), 2, 10))
+	theme.set_color("font_pressed_color", "ChipButton", C_ON_ACCENT)
+	theme.set_color("font_hover_pressed_color", "ChipButton", C_ON_ACCENT)
 	theme.set_font("font", "ChipButton", font_bold)
 
-	theme.set_stylebox("panel", "PanelContainer", _sb(C_PANEL, 6, Color(C_INK, 0.12), 1, 20))
+	theme.set_stylebox("panel", "PanelContainer", _sb(Color(C_PANEL, 0.96), 10, Color(C_FRAME, 0.9), 1, 20))
 	theme.set_type_variation("CardPanel", "PanelContainer")
-	theme.set_stylebox("panel", "CardPanel", _sb(C_PANEL, 6, Color(C_INK, 0.12), 1, 20))
+	theme.set_stylebox("panel", "CardPanel", _sb(Color(C_PANEL, 0.96), 10, Color(C_FRAME, 0.9), 1, 20))
 	theme.set_type_variation("GlassPanel", "PanelContainer")
-	theme.set_stylebox("panel", "GlassPanel", _sb(Color(1, 1, 1, 0.93), 10, Color(C_INK, 0.18), 1, 12))
+	theme.set_stylebox("panel", "GlassPanel", _sb(Color(0.06, 0.09, 0.17, 0.92), 12, Color(C_FRAME, 1.0), 1, 12))
 	theme.set_type_variation("DarkPanel", "PanelContainer")
 	theme.set_stylebox("panel", "DarkPanel", _sb(Color(0.07, 0.09, 0.12, 0.86), 8, Color(1, 1, 1, 0.12), 1, 10))
 
 	theme.set_color("font_color", "Label", C_INK)
 	theme.set_type_variation("TitleLabel", "Label")
-	theme.set_font("font", "TitleLabel", font_marker)
+	theme.set_font("font", "TitleLabel", font_head)
 	theme.set_type_variation("HeaderLabel", "Label")
-	theme.set_font("font", "HeaderLabel", font_marker)
+	theme.set_font("font", "HeaderLabel", font_head)
 	theme.set_type_variation("SubLabel", "Label")
 	theme.set_font("font", "SubLabel", font_bold)
 	theme.set_type_variation("MutedLabel", "Label")
@@ -581,17 +604,17 @@ func _build_theme() -> void:
 	theme.set_font("font", "HudLabel", font_bold)
 	theme.set_color("font_color", "HudLabel", Color("f4f6f8"))
 
-	theme.set_stylebox("normal", "LineEdit", _sb(C_PANEL, 8, Color(C_INK, 0.25), 2))
+	theme.set_stylebox("normal", "LineEdit", _sb(C_PANEL, 8, C_FRAME, 2))
 	theme.set_stylebox("focus", "LineEdit", _sb(C_PANEL, 8, C_BLUE, 2))
 	theme.set_color("font_color", "LineEdit", C_INK)
 
-	theme.set_stylebox("panel", "PopupMenu", _sb(C_PANEL, 8, Color(C_INK, 0.2), 1, 8))
+	theme.set_stylebox("panel", "PopupMenu", _sb(C_PANEL, 8, C_FRAME, 1, 8))
 	theme.set_stylebox("hover", "PopupMenu", _sb(C_PANEL_HI, 6))
 	theme.set_color("font_color", "PopupMenu", C_INK)
 	theme.set_color("font_hover_color", "PopupMenu", C_BLUE)
 
 	theme.set_stylebox("background", "ProgressBar", _sb(Color(C_INK, 0.1), 999, Color(0, 0, 0, 0), 0, 0))
-	theme.set_stylebox("fill", "ProgressBar", _sb(C_BLUE, 999, Color(0, 0, 0, 0), 0, 0))
+	theme.set_stylebox("fill", "ProgressBar", _sb(C_MAGNET, 999, Color(0, 0, 0, 0), 0, 0))
 
 	var grabber := _sb(Color(C_INK, 0.25), 999, Color(0, 0, 0, 0), 0, 0)
 	theme.set_stylebox("grabber", "VScrollBar", grabber)
@@ -611,9 +634,13 @@ func _size_theme() -> void:
 	theme.set_font_size("font_size", "ScoreLabel", 56)
 
 
-func _sb(bg: Color, radius := 10, border := Color(0, 0, 0, 0), bw := 0, pad := 14) -> StyleBoxFlat:
+func _sb(bg: Color, radius := 10, border := Color(0, 0, 0, 0), bw := 0, pad := 14, slant := 0.0) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
+	if slant != 0.0:
+		sb.skew = Vector2(slant, 0)   # the box leans; its words do not
+		sb.expand_margin_left = 4
+		sb.expand_margin_right = 4
 	sb.set_corner_radius_all(radius)
 	sb.border_color = border
 	sb.set_border_width_all(bw)

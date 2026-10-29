@@ -180,8 +180,10 @@ static func material(lit := true) -> StandardMaterial3D:
 const SHEET_SHADER := """
 shader_type spatial;
 render_mode %s;
-uniform sampler2D atlas : source_color, %s, repeat_enable;
+#include "res://game/shaders/look.gdshaderinc"
+uniform sampler2D atlas : %s, repeat_enable;
 uniform float sheet_h = 1024.0;
+uniform float boost = 1.0;   // glow: brighter than white on High (Vulkan), so the bloom takes it
 varying vec2 strip;
 void vertex() {
 	strip = UV2;
@@ -211,10 +213,10 @@ static func sheet_material(kind: String, atlas: Texture2D, vertex_lit := false, 
 	var modes := {"lit": "cull_back" + (", vertex_lighting" if vertex_lit else ""), "glow": "cull_back, unshaded",
 		"cut": "cull_disabled" + (", vertex_lighting" if vertex_lit else ""), "blend": "cull_disabled, unshaded, depth_draw_never"}
 	var body := {
-		"lit": "ALBEDO = COLOR.rgb * t.rgb; ROUGHNESS = COLOR.a; SPECULAR = mix(0.6, 0.3, COLOR.a);",
-		"glow": "ALBEDO = COLOR.rgb * t.rgb;",
-		"cut": "if (t.a < 0.5) discard; ALBEDO = COLOR.rgb * t.rgb; ROUGHNESS = COLOR.a;",
-		"blend": "ALBEDO = COLOR.rgb * t.rgb; ALPHA = t.a * COLOR.a;",
+		"lit": "ALBEDO = compat_to_scene(COLOR.rgb * t.rgb); ROUGHNESS = COLOR.a; SPECULAR = mix(0.6, 0.3, COLOR.a);",
+		"glow": "ALBEDO = compat_to_scene(COLOR.rgb * t.rgb) * boost;",
+		"cut": "if (t.a < 0.5) discard; ALBEDO = compat_to_scene(COLOR.rgb * t.rgb); ROUGHNESS = COLOR.a;",
+		"blend": "ALBEDO = compat_to_scene(COLOR.rgb * t.rgb); ALPHA = t.a * COLOR.a;",
 	}
 	var sh := Shader.new()
 	sh.code = SHEET_SHADER % [modes[kind], "filter_linear_mipmap_anisotropic" if aniso else "filter_linear_mipmap", body[kind]]

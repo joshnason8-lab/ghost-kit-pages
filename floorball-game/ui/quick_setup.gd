@@ -3,7 +3,10 @@ extends Control
 ## with its flag; tap one, then a country from the grid of magnets below to put it there. On the right, the match:
 ## men's or women's, the venue, the length of a period (the laws' 20 minutes is one choice), the difficulty, the
 ## clock (the IFF's effective time, or a league's running clock), and whether a draw stands or goes to overtime and
-## penalty shots. FACE-OFF starts it.
+## penalty shots. FACE-OFF starts it. Watch a match (args "watch"): the same, both teams played by the computer, a
+## match like any other (its scoreboard, pause and result) that you only watch. Penalty shots (args "shootout"): the
+## first slot your shooter's country, the second the goalkeeper's; the division and the venue; how it works and your
+## best; then ten shots (match.gd's practice).
 
 var _side := 0
 var _teams := ["SWE", "FIN"]
@@ -12,15 +15,19 @@ var _grid: GridContainer
 var _women := false
 var _venue := "arena"
 var _knockout := false
+var _watch := false
+var _shootout := false
 
 
-func setup(_args: Dictionary) -> void:
-	pass
+func setup(args: Dictionary) -> void:
+	_watch = bool(args.get("watch", false))
+	_shootout = bool(args.get("shootout", false))
 
 
 func _ready() -> void:
 	UI.screen(self)
-	var v := UI.page(self, tr("QUICK_TITLE"), func(): Game.goto_menu(), tr("MENU_QUICK"))
+	var title := tr("SHOOTOUT_TITLE") if _shootout else (tr("WATCH_TITLE") if _watch else tr("QUICK_TITLE"))
+	var v := UI.page(self, title, func(): Game.goto_menu(), tr("MENU_SHOOTOUT") if _shootout else (tr("MENU_WATCH") if _watch else tr("MENU_QUICK")))
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 22)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -59,6 +66,16 @@ func _ready() -> void:
 		_fill_grid())))
 	var venues := ["arena", "hall", "school"]
 	opts.add_child(UI.field(tr("VENUE"), UI.chips([tr("VENUE_ARENA"), tr("VENUE_HALL"), tr("VENUE_SCHOOL")], venues.find(_venue), func(i): _venue = venues[i])))
+	if _shootout:
+		opts.add_child(UI.wrap(tr("SHOOTOUT_HOW"), "MutedLabel", 17))
+		var best := int(Game.settings.get("penalty_best", -1))
+		if best >= 0:
+			opts.add_child(UI.label(tr("PRACTICE_BEST_N").format({"n": best}), "SubLabel", 22, Game.C_GOLD))
+		var go_s := UI.button(tr("SHOOTOUT_GO"), true, _start)
+		go_s.custom_minimum_size = Vector2(0, 70)
+		right.add_child(go_s)
+		_refresh()
+		return
 	var mins := []
 	for p in Game.PERIODS:
 		mins.append(Game.plural("MINUTES", p))
@@ -66,7 +83,8 @@ func _ready() -> void:
 		Game.settings.period = i
 		Game.save_settings())))
 	opts.add_child(UI.wrap(tr("PERIOD_NOTE"), "MutedLabel", 16))
-	opts.add_child(UI.difficulty_field(self))
+	if not _watch:
+		opts.add_child(UI.difficulty_field(self))
 	var clock_note := UI.wrap(tr("CLOCK_IFF_NOTE") if int(Game.settings.rules) == 0 else tr("CLOCK_LEAGUE_NOTE"), "MutedLabel", 16)
 	opts.add_child(UI.field(tr("CLOCK"), UI.chips([tr("CLOCK_IFF"), tr("CLOCK_LEAGUE")], int(Game.settings.rules), func(i):
 		Game.settings.rules = i
@@ -74,7 +92,7 @@ func _ready() -> void:
 		clock_note.text = tr("CLOCK_IFF_NOTE") if i == 0 else tr("CLOCK_LEAGUE_NOTE"))))
 	opts.add_child(clock_note)
 	opts.add_child(UI.field(tr("A_DRAW"), UI.chips([tr("DRAW_STANDS"), tr("DRAW_DECIDED")], 1 if _knockout else 0, func(i): _knockout = i == 1)))
-	var go := UI.button(tr("FACE_OFF_GO"), true, _start)
+	var go := UI.button(tr("WATCH_GO") if _watch else tr("FACE_OFF_GO"), true, _start)
 	go.custom_minimum_size = Vector2(0, 70)
 	right.add_child(go)
 	_refresh()
@@ -101,7 +119,10 @@ func _slot(side: int) -> Button:
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_theme_constant_override("separation", 0)
-	var eb := UI.label(tr("YOUR_TEAM") if side == 0 else tr("OPPONENT"), "EyebrowLabel", 15, Game.C_BLUE if side == 0 else Game.C_RED)
+	var role := (tr("HOME_TEAM") if side == 0 else tr("AWAY_TEAM")) if _watch else (tr("YOUR_TEAM") if side == 0 else tr("OPPONENT"))
+	if _shootout:
+		role = tr("SHOOTOUT_SHOOTER") if side == 0 else tr("SHOOTOUT_KEEPER")
+	var eb := UI.label(role, "EyebrowLabel", 15, Game.C_BLUE if side == 0 else Game.C_RED)
 	eb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(eb)
 	var nm := UI.fit(UI.label("", "HeaderLabel", 38), 1)
@@ -128,9 +149,9 @@ func _refresh() -> void:
 		h.move_child(flag, 0)
 		var col := Game.C_BLUE if side == 0 else Game.C_RED
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color.WHITE
+		sb.bg_color = Game.C_PANEL_HI if side == _side else Game.C_PANEL
 		sb.set_corner_radius_all(8)
-		sb.border_color = col if side == _side else Color(Game.C_INK, 0.15)
+		sb.border_color = col if side == _side else Game.C_FRAME
 		sb.set_border_width_all(4 if side == _side else 1)
 		b.add_theme_stylebox_override("normal", sb)
 		b.add_theme_stylebox_override("hover", sb)
@@ -184,6 +205,11 @@ func _fill_grid() -> void:
 
 
 func _start() -> void:
-	Game.start_match({"home": _teams[0], "away": _teams[1], "venue": _venue, "user_team": 0, "mode": "quick", "women": _women,
+	if _shootout:
+		Game.start_match({"home": _teams[0], "away": _teams[1], "venue": _venue, "user_team": 0, "mode": "practice",
+			"practice": true, "women": _women, "period": 20.0, "difficulty": int(Game.settings.difficulty)})
+		return
+	Game.start_match({"home": _teams[0], "away": _teams[1], "venue": _venue, "user_team": -1 if _watch else 0,
+		"watch": _watch, "mode": "watch" if _watch else "quick", "women": _women,
 		"knockout": _knockout, "rules": int(Game.settings.rules), "difficulty": int(Game.settings.difficulty),
 		"stage": tr("FRIENDLY")})

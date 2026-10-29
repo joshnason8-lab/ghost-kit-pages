@@ -33,6 +33,9 @@ var _pause: Control
 var _interval: Control
 var _so: Label
 var _dev: Label
+var _board: PanelContainer
+var _practice: PanelContainer
+var _practice_end: Control
 var _frames: PackedFloat32Array = []
 
 
@@ -107,6 +110,9 @@ func _scoreboard() -> void:
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(panel)
+	_board = panel
+	if bool(m.config.get("practice", false)):
+		panel.visible = false   # penalty-shot practice has its own panel (practice_panel)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 2)
 	panel.add_child(col)
@@ -381,6 +387,69 @@ func shootout(tally: Array) -> void:
 	_so.text = "   |   ".join(rows)
 
 
+# ---------------------------------------------------------------- penalty-shot practice
+
+## The practice's panel where the scoreboard was: the shot (3 of 10), the points, the best, a mark for each shot.
+func practice_panel(p: Dictionary) -> void:
+	if _practice == null:
+		_practice = PanelContainer.new()
+		_practice.theme_type_variation = "DarkPanel"
+		_practice.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		_practice.offset_top = 10
+		_practice.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		_practice.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(_practice)
+	for c in _practice.get_children():
+		c.queue_free()
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 22)
+	_practice.add_child(row)
+	var n := mini(int(p.shot), m.PRACTICE_SHOTS)
+	row.add_child(UI.label(tr("PRACTICE_SHOT_N").format({"n": n, "of": m.PRACTICE_SHOTS}), "HudLabel", 20))
+	var pts := UI.label(Game.plural("POINTS_N", int(p.points)), "ScoreLabel", 0)
+	pts.add_theme_font_size_override("font_size", 34)
+	pts.add_theme_color_override("font_color", Game.C_YELLOW)
+	row.add_child(pts)
+	var marks := ""
+	for k in (p.marks as Array):
+		marks += ("◆ " if int(k) == 2 else ("● " if int(k) == 1 else "○ "))
+	for i in m.PRACTICE_SHOTS - (p.marks as Array).size():
+		marks += "· "
+	row.add_child(UI.label(marks.strip_edges(), "HudLabel", 20))
+	if int(p.best) >= 0:
+		row.add_child(UI.label(tr("PRACTICE_BEST_N").format({"n": int(p.best)}), "HudLabel", 18, Color(1, 1, 1, 0.7)))
+
+
+## The end of the ten: the score, a word on it, the best (or a new best), Go again or Home.
+func practice_end(points: int, best: int, new_best: bool) -> void:
+	if _practice_end:
+		_practice_end.queue_free()
+	_practice_end = _overlay()
+	var c: PanelContainer = _practice_end.get_meta("card")
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	c.add_child(v)
+	v.add_child(UI.label(tr("PRACTICE_OVER"), "HeaderLabel", 50))
+	var big := UI.label(Game.plural("POINTS_N", points), "TitleLabel", 80, Game.C_MAGNET)
+	v.add_child(big)
+	var word := "PRACTICE_RATING_0" if points < 4 else ("PRACTICE_RATING_1" if points < 7 else ("PRACTICE_RATING_2" if points < 10 else "PRACTICE_RATING_3"))
+	v.add_child(UI.wrap(tr(word), "SubLabel", 22))
+	v.add_child(UI.label(tr("PRACTICE_NEW_BEST") if new_best else tr("PRACTICE_BEST_N").format({"n": best}), "SubLabel", 20,
+		Game.C_GOLD if new_best else Game.C_MUTED))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	v.add_child(row)
+	var again := UI.button(tr("PRACTICE_AGAIN"), true, func():
+		_practice_end.queue_free()
+		_practice_end = null
+		m.practice_restart())
+	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(again)
+	var home := UI.button(tr("HOME"), false, func(): m.quit_to_menu())
+	home.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(home)
+
+
 # ---------------------------------------------------------------- the interval, pause
 
 ## Between periods (201: a 10-minute interval, skipped here): the score so far and the shots, and Continue.
@@ -440,14 +509,20 @@ func show_pause(on: bool) -> void:
 	c.add_child(v)
 	v.add_child(UI.label(tr("PAUSED"), "HeaderLabel", 54))
 	v.add_child(UI.button(tr("RESUME"), true, func(): m.set_paused(false)))
-	var to_left: int = m.rules.timeouts[m.user_team] if m.user_team >= 0 else 0
-	var tob := UI.button(tr("TIMEOUT_BTN") if to_left > 0 else tr("TIMEOUT_USED"), false, func():
-		if m.call_timeout():
-			hint(tr("TIMEOUT_CALLED"))
-			m.set_paused(false))
-	tob.disabled = to_left <= 0
-	v.add_child(tob)
-	v.add_child(UI.button(tr("MOVE_BUTTONS"), false, func(): _edit_buttons()))
+	if m.user_team >= 0 and not bool(m.config.get("practice", false)):
+		var to_left: int = m.rules.timeouts[m.user_team]
+		var tob := UI.button(tr("TIMEOUT_BTN") if to_left > 0 else tr("TIMEOUT_USED"), false, func():
+			if m.call_timeout():
+				hint(tr("TIMEOUT_CALLED"))
+				m.set_paused(false))
+		tob.disabled = to_left <= 0
+		v.add_child(tob)
+	if bool(m.config.get("practice", false)):
+		v.add_child(UI.button(tr("PRACTICE_RESTART"), false, func():
+			m.set_paused(false)
+			m.practice_restart()))
+	if m.user_team >= 0:
+		v.add_child(UI.button(tr("MOVE_BUTTONS"), false, func(): _edit_buttons()))
 	var snd := UI.button(tr("SOUND") + ": " + (tr("ON") if Game.settings.sound else tr("OFF")), false)
 	snd.pressed.connect(func():
 		Game.settings.sound = not Game.settings.sound

@@ -9,6 +9,7 @@ var mode := Game.CAM_TV
 var _look := Vector3.ZERO
 var _pos := Vector3.ZERO
 var _m: Node
+var _close := false        # on a penalty shot's close camera
 
 
 func setup(m: Node) -> void:
@@ -53,9 +54,26 @@ func _attack_dir() -> float:
 func follow(b: Vector3, delta: float, _match: Node) -> void:
 	var want := _want_pos(b)
 	var look := _want_look(b)
+	var rate := 2.0
+	# A penalty shot: the close camera low behind the shooter (match.gd penalty_view), wider; cut to it, then held.
+	var pv: Array = _m.penalty_view() if _m and _m.has_method("penalty_view") else []
+	if not pv.is_empty():
+		want = pv[0]
+		look = pv[1]
+		if not _close:
+			_close = true
+			_pos = want
+			_look = look
+		rate = 5.0
+		fov = lerpf(fov, 50.0, minf(1.0, 4.0 * delta))
+	elif _close:
+		_close = false
+		_pos = want   # and cut back
+		_look = look
+		fov = 38.0
 	# A camera operator's pan: smooth, a little behind the ball, never a jump.
-	_pos = _pos.lerp(want, minf(1.0, 2.0 * delta))
-	_look = _look.lerp(look, minf(1.0, 2.6 * delta))
+	_pos = _pos.lerp(want, minf(1.0, rate * delta))
+	_look = _look.lerp(look, minf(1.0, rate * 1.3 * delta))
 	global_position = _pos
 	look_at(_look)
 

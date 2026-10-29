@@ -62,6 +62,8 @@ var crowd: Crowd
 var bench_crowd: Crowd
 var _lit: Geo                 # opaque structure, lit
 var _glow: Geo                # lamps, screens, LED boards, windows: unshaded
+var _ads: Geo                 # the boards' advertising panels, on the signage's sheet
+var signage: Signage
 var _cut: Geo                 # cut-outs: roof trusses
 var _see: Geo                 # see-through: the nets, plexiglass
 var _low := false
@@ -95,6 +97,10 @@ func _ready() -> void:
 	_cut = Geo.new()
 	_see = Geo.new()
 	_low = int(Game.settings.graphics) == Game.GFX_LOW
+	# The boards' slogans and the floor's decals in the phone's language (game/signage.gd).
+	signage = Signage.new()
+	add_child(signage)
+	_ads = Geo.new()
 	var spots: Array = []
 	var walls := Color(String(v.walls))
 	match String(v.stands):
@@ -138,8 +144,14 @@ func _ready() -> void:
 		_fittings()
 	var atlas: Texture2D = sheet()
 	add_child(_lit.commit(Geo.sheet_material("lit", atlas, _low, int(Game.settings.graphics) >= Game.GFX_HIGH)))
-	add_child(_glow.commit(Geo.sheet_material("glow", atlas)))
+	var glow_mat := Geo.sheet_material("glow", atlas)
+	glow_mat.set_shader_parameter("boost", 1.5 if Renderer.lit() else 1.0)
+	add_child(_glow.commit(glow_mat))
 	add_child(_cut.commit(Geo.sheet_material("cut", atlas, _low)))
+	var ads_mat := Geo.sheet_material("lit", signage.boards, _low, int(Game.settings.graphics) >= Game.GFX_HIGH)
+	ads_mat.set_shader_parameter("sheet_h", float(Signage.BOARD_H))
+	signage.use(ads_mat, "atlas", signage.boards)
+	add_child(_ads.commit(ads_mat))
 	var see := _see.commit(Geo.sheet_material("blend", atlas))
 	add_child(see)
 	crowd = Crowd.new()
@@ -201,7 +213,7 @@ func _env(kind: String, energy: float) -> void:
 	sun.rotation_degrees = Vector3(-66, 14, 0)
 	# With its shadow on (High), GL Compatibility draws the light in a pass of its own that comes out much brighter
 	# and more saturated (measured on the floor, tests/arena_look.tscn): turned down there so every level looks alike.
-	sun.light_energy = 0.92 * energy * (0.45 if Game.shadows_enabled() else 1.0)
+	sun.light_energy = 0.92 * energy * (0.45 if Game.shadows_enabled() and not Renderer.vulkan() else 1.0)
 	sun.light_color = Color(0.97, 0.985, 1.0)
 	sun.light_specular = 0.6
 	sun.shadow_enabled = Game.shadows_enabled()
@@ -209,6 +221,63 @@ func _env(kind: String, energy: float) -> void:
 	sun.shadow_blur = 1.5
 	sun.directional_shadow_max_distance = 60.0
 	add_child(sun)
+	if Renderer.lit():
+		_lit_extras(env, sun, energy)
+
+
+## High on Vulkan (Renderer.lit): the hall lit as a television broadcast sees it. The key light's shadows soft and
+## sharp (game.gd sets their quality); a pool of light under each row of the rink's lamps (spotlights, no shadows: a
+## phone's tiled GPU draws eight a mesh cheaply); the lamps, screens and LED ribbons glowing (bloom); the polished
+## sports floor reflecting the boards, the benches and the stands (a reflection probe over the hall, drawn once).
+func _lit_extras(env: Environment, sun: DirectionalLight3D, energy: float) -> void:
+	sun.shadow_blur = 1.0
+	sun.shadow_opacity = 0.85
+	sun.light_energy *= 0.8   # the spots below make up the rest over the rink
+	env.glow_enabled = true
+	env.glow_intensity = 0.55
+	env.glow_strength = 0.9
+	env.glow_bloom = 0.04
+	env.glow_hdr_threshold = 1.05
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	env.adjustment_enabled = true
+	env.adjustment_contrast = 1.06
+	env.adjustment_saturation = 1.06
+	# Spotlights from the lamps over the rink: the middle row(s), at most eight, aimed straight down.
+	var h: float = _lamps.h
+	var st: Vector2 = _lamps.step
+	var n: Vector2i = _lamps.n
+	var placed := 0
+	for i in n.x:
+		for k in n.y:
+			var x := (i - (n.x - 1) * 0.5) * st.x
+			var z := (k - (n.y - 1) * 0.5) * st.y
+			if absf(x) > Rules.HALF_L + 2.0 or absf(z) > Rules.HALF_W + 1.0 or placed >= 8:
+				continue
+			var sp := SpotLight3D.new()
+			sp.position = Vector3(x, h - 0.2, z)
+			sp.rotation_degrees = Vector3(-90, 0, 0)
+			sp.spot_range = h + 4.0
+			sp.spot_angle = 52.0
+			sp.spot_angle_attenuation = 1.6
+			sp.spot_attenuation = 0.6
+			sp.light_energy = 1.25 * energy
+			sp.light_color = Color(1.0, 0.98, 0.94)
+			sp.light_specular = 0.35
+			sp.shadow_enabled = false
+			add_child(sp)
+			placed += 1
+	# The floor's reflections: the hall as seen from the rink, once. The floor shader keeps its lamps' reflections.
+	var probe := ReflectionProbe.new()
+	probe.size = Vector3(_half.x * 2.0, h + 2.0, _half.y * 2.0)
+	probe.position = Vector3(0, (h + 2.0) * 0.5, 0)
+	probe.origin_offset = Vector3(0, -(h + 2.0) * 0.5 + 1.2, 0)
+	probe.box_projection = true
+	probe.interior = true
+	probe.update_mode = ReflectionProbe.UPDATE_ONCE
+	probe.intensity = 0.55
+	probe.max_distance = 80.0
+	probe.ambient_mode = ReflectionProbe.AMBIENT_DISABLED
+	add_child(probe)
 
 
 # ---------------------------------------------------------------- the floor and its markings (102)
@@ -236,13 +305,13 @@ func _floor() -> void:
 	# The city arena's flooring a light sky blue with navy creases, as the Swedish league's arenas lay it; the halls keep
 	# the deeper blue.
 	if venue == "arena":
-		m.set_shader_parameter("rink_col", Color("7fa9d4"))
-		m.set_shader_parameter("crease_col", Color("2b4f8c"))
+		m.set_shader_parameter("rink_col", Vector4(0x7f / 255.0, 0xa9 / 255.0, 0xd4 / 255.0, 1.0))   # as written (no hint)
+		m.set_shader_parameter("crease_col", Vector3(0x2b / 255.0, 0x4f / 255.0, 0x8c / 255.0))
 		m.set_shader_parameter("crease_x", Vector3(Rules.CREASE_FRONT, Rules.CREASE_BACK, Rules.CREASE_HALF_W))
 	# Round the rink: the arena's grey sports floor over its concrete, the sports hall's own floor a darker blue-grey of
 	# the same flooring; the school's boards run under the rink too.
 	var surround: Color = {"arena": Color("5d636c"), "hall": Color("4f6680")}.get(venue, Color("d6c09c"))
-	m.set_shader_parameter("surround", surround)
+	m.set_shader_parameter("surround", Vector3(surround.r, surround.g, surround.b))
 	m.set_shader_parameter("lamp_h", float(_lamps.h))
 	m.set_shader_parameter("lamp_step", _lamps.step)
 	m.set_shader_parameter("lamp_n", Vector2(_lamps.n))
@@ -254,13 +323,11 @@ func _floor() -> void:
 	add_child(mi)
 
 
-## The city arena's floor decals (assets/crowd/floor_decals.png, tools/venue/make_decals.py): a disc in the centre
+## The city arena's floor decals (drawn by game/signage.gd in the phone's language): a disc in the centre
 ## circle and four panels, two each side of the centre line, as a league arena prints its sponsors on the floor (here
 ## the game's own name and slogans). One mesh, one draw call, a few millimetres over the floor.
 func _floor_decals() -> void:
-	var tex: Texture2D = load("res://assets/crowd/floor_decals.png")
-	if tex == null:
-		return
+	var tex: Texture2D = signage.decals
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var disc := Rect2(0.0, 0.0, 0.5, 1.0)
@@ -292,6 +359,7 @@ func _floor_decals() -> void:
 	mi.mesh = st.commit()
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = tex
+	signage.use(m, "albedo", tex)
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	m.roughness = 0.5
@@ -325,6 +393,7 @@ func _make_light_show() -> void:
 	sh.code = """
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled;
+#include "res://game/shaders/look.gdshaderinc"
 varying vec4 col;
 void vertex() { col = COLOR; }
 void fragment() {
@@ -332,7 +401,7 @@ void fragment() {
 	// A spot (alpha 1): a soft round pool of light. The crease (alpha 0): a soft-edged rectangle.
 	float spot = 1.0 - smoothstep(0.35, 1.0, length(d));
 	float box = (1.0 - smoothstep(0.8, 1.0, abs(d.x))) * (1.0 - smoothstep(0.8, 1.0, abs(d.y)));
-	ALBEDO = col.rgb * mix(box, spot, col.a);
+	ALBEDO = compat_to_scene(col.rgb * mix(box, spot, col.a));
 }
 """
 	var m := ShaderMaterial.new()
@@ -395,16 +464,17 @@ static func floor_shader(low := false) -> Shader:
 	sh.code = """
 shader_type spatial;
 render_mode cull_back;
-uniform sampler2D marks : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
-uniform sampler2D surface : source_color, filter_linear_mipmap, repeat_enable;
+#include "res://game/shaders/look.gdshaderinc"
+uniform sampler2D marks : filter_linear_mipmap_anisotropic, repeat_disable;
+uniform sampler2D surface : filter_linear_mipmap, repeat_enable;
 uniform sampler2D surface_n : hint_normal, filter_linear_mipmap, repeat_enable;
 uniform float tile_m = 2.0;
 uniform float surface_mean = 0.13;
 uniform float wood = 0.0;
-uniform vec4 rink_col : source_color = vec4(0.0);   // a flooring colour of the venue's own (alpha 1), else the markings texture's blue
-uniform vec3 crease_col : source_color = vec3(0.1, 0.2, 0.45);   // and its goal creases
+uniform vec4 rink_col = vec4(0.0);   // a flooring colour of the venue's own (alpha 1), else the markings texture's blue
+uniform vec3 crease_col = vec3(0.1, 0.2, 0.45);   // and its goal creases
 uniform vec3 crease_x = vec3(13.15, 17.15, 2.5);   // the creases: from, to (|x|), half width
-uniform vec3 surround : source_color = vec3(0.3, 0.4, 0.5);
+uniform vec3 surround = vec3(0.3, 0.4, 0.5);
 uniform vec2 rink_half = vec2(20.0, 10.0);
 uniform float corner_r = 1.5;
 uniform float lamp_h = 10.0;
@@ -464,7 +534,8 @@ void fragment() {
 	vec2 dd = max(abs(hit) - (lamp_n * lamp_step * 0.5), vec2(0.0));
 	float wide = exp(-dot(dd, dd) * 0.01) * 0.04;
 	float fres = 0.3 + 0.7 * pow(1.0 - clamp(-v.y, 0.0, 1.0), 5.0);
-	EMISSION = vec3(0.92, 0.95, 1.0) * (k * 1.1 + wide) * sheen * fres * (1.0 - line * 0.5);
+	EMISSION = compat_to_scene(vec3(0.92, 0.95, 1.0) * (k * 1.1 + wide) * sheen * fres * (1.0 - line * 0.5));
+	ALBEDO = compat_to_scene(ALBEDO);
 }
 """ % ("" if low else """// The surface's relief (tile joints, the boards' grain), faint under the paint.
 	vec3 nm = texture(surface_n, suv).rgb;
@@ -605,11 +676,14 @@ func _boards() -> void:
 		var strip := s("board")
 		var u0 := 0.0 if len_ > 1.5 else 0.1
 		var uv := Rect2(u0, 0, len_ / 8.0, 1)
+		var geo := _lit
 		if len_ > 1.5 and _ad_panel(mid):
-			strip = s("ads1") if ad % 8 < 4 else s("ads2")
+			# An advertising panel: from the signage's own sheet (its two rows), in the phone's language.
+			strip = Vector2(0.0, 0.5) if ad % 8 < 4 else Vector2(0.5, 0.5)
 			uv = Rect2((ad % 4) * 0.25 + 0.002, 0, 0.246, 1)
 			ad += 3
-		_lit.face(Vector3(a.x, 0, a.y), Vector3(b.x, 0, b.y), 0.0, h, Vector3.ZERO, Color(1, 1, 1, 0.32), strip, uv.position.x, uv.size.x)
+			geo = _ads
+		geo.face(Vector3(a.x, 0, a.y), Vector3(b.x, 0, b.y), 0.0, h, Vector3.ZERO, Color(1, 1, 1, 0.32), strip, uv.position.x, uv.size.x)
 		# The top's rounded edge and the back, white.
 		_lit._tri_quad(Vector3(a.x, h, a.y), Vector3(b.x, h, b.y), Vector3(bo.x, h, bo.y), Vector3(ao.x, h, ao.y), Vector3.UP, white)
 		_lit.face(Vector3(ao.x, 0, ao.y), Vector3(bo.x, 0, bo.y), 0.0, h, Vector3(mid.x * 3.0, 0, mid.y * 3.0), Color(0.9, 0.9, 0.91, 0.4),

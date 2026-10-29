@@ -44,11 +44,12 @@ const MAP := {
 const SHADER := """
 shader_type spatial;
 render_mode cull_back;
-uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_disable;
-uniform vec3 jersey_col : source_color = vec3(0.1, 0.25, 0.65);
-uniform vec3 shorts_col : source_color = vec3(0.1, 0.25, 0.65);
-uniform vec3 socks_col : source_color = vec3(0.1, 0.25, 0.65);
-uniform vec3 trim_col : source_color = vec3(0.6, 0.85, 0.95);
+#include "res://game/shaders/look.gdshaderinc"
+uniform sampler2D albedo_tex : filter_linear_mipmap, repeat_disable;
+uniform vec3 jersey_col = vec3(0.1, 0.25, 0.65);
+uniform vec3 shorts_col = vec3(0.1, 0.25, 0.65);
+uniform vec3 socks_col = vec3(0.1, 0.25, 0.65);
+uniform vec3 trim_col = vec3(0.6, 0.85, 0.95);
 uniform vec3 skin_ratio = vec3(1.0);
 uniform float keeper = 0.0;      // 1: the legs in long trousers (shorts_col)
 uniform float recolour = 1.0;
@@ -78,7 +79,7 @@ void fragment() {
 	// A goalkeeper's trousers: everything from the shoes to the waist that is not the shoes.
 	float legs = keeper * step(0.07, h) * step(h, 0.49) * (1.0 - step(0.75, mn));
 	c = mix(c, shorts_col * clamp(lum / 0.25, 0.4, 1.4), legs);
-	ALBEDO = c;
+	ALBEDO = compat_to_scene(c);
 	float cloth = clamp(main + trim + legs, 0.0, 1.0);
 	ROUGHNESS = mix(0.55, 0.85, cloth);
 	SPECULAR = mix(0.4, 0.25, cloth);
@@ -163,10 +164,10 @@ func _chain(n: Node3D) -> Transform3D:
 
 func recolour(look: Dictionary) -> void:
 	var kind := String(look.get("kind", "player"))
-	material.set_shader_parameter("jersey_col", look.get("jersey", Color.BLUE))
-	material.set_shader_parameter("shorts_col", look.get("shorts", Color.BLUE))
-	material.set_shader_parameter("socks_col", look.get("socks", Color.BLUE))
-	material.set_shader_parameter("trim_col", look.get("trim", Color.WHITE))
+	# Plain vectors, as written: a Color would be decoded for Vulkan, and the shader converts once at the end.
+	for k in [["jersey_col", "jersey", Color.BLUE], ["shorts_col", "shorts", Color.BLUE], ["socks_col", "socks", Color.BLUE], ["trim_col", "trim", Color.WHITE]]:
+		var c: Color = look.get(k[1], k[2])
+		material.set_shader_parameter(k[0], Vector3(c.r, c.g, c.b))
 	material.set_shader_parameter("keeper", 1.0 if kind == "keeper" else 0.0)
 	# The texture's skin as the lightest tone in the game (DB.SKIN[0]): darker tones darken it, in linear light; none
 	# lightens it (brightened, a light skin washed out to grey under the hall's lights).
@@ -231,7 +232,8 @@ func _make_helmet(look: Dictionary) -> void:
 	sh.code = """
 shader_type spatial;
 render_mode cull_disabled;
-uniform vec3 shell : source_color = vec3(0.1);
+#include "res://game/shaders/look.gdshaderinc"
+uniform vec3 shell = vec3(0.1);
 uniform vec3 fwd = vec3(0.0, 0.0, 1.0);
 varying vec3 n;
 void vertex() { n = NORMAL; }
@@ -241,11 +243,11 @@ void fragment() {
 		// The cage: thin bars across and down the face, the face seen through them.
 		vec2 g = fract(vec2(UV.x * 44.0, UV.y * 20.0));
 		if (g.x > 0.22 && g.y > 0.25) discard;
-		ALBEDO = vec3(0.82);
+		ALBEDO = compat_to_scene(vec3(0.82));
 		METALLIC = 0.6;
 		ROUGHNESS = 0.35;
 	} else {
-		ALBEDO = shell;
+		ALBEDO = compat_to_scene(shell);
 		ROUGHNESS = 0.4;
 	}
 }
@@ -253,7 +255,8 @@ void fragment() {
 	var m := ShaderMaterial.new()
 	m.shader = sh
 	var jersey: Color = look.get("jersey", Color(0.1, 0.1, 0.1))
-	m.set_shader_parameter("shell", jersey.lightened(0.15))
+	var sc := jersey.lightened(0.15)
+	m.set_shader_parameter("shell", Vector3(sc.r, sc.g, sc.b))
 	m.set_shader_parameter("fwd", (hr.basis.inverse() * (face - hr.origin)).normalized())
 	mi.material_override = m
 	mi.cast_shadow = mesh.cast_shadow

@@ -34,6 +34,7 @@ var kits: Array = []
 var user_team := -1
 var user_player = null
 var demo := false
+var watch := false
 var paused := false
 var phase := "intro"
 var phase_t := 0.0
@@ -66,7 +67,10 @@ var sitters := [[], []]          # each team's two figures for its penalised pla
 func _ready() -> void:
 	_rng.seed = int(config.get("seed", Time.get_ticks_usec()))
 	user_team = int(config.get("user_team", -1))
-	demo = bool(config.get("demo", false)) or user_team < 0
+	# Watch a match (config "watch"): nobody plays, but it is a match like any other, with its scoreboard, pause and
+	# result; the home screen's match behind the menus is a demo (no HUD, nothing kept).
+	watch = bool(config.get("watch", false))
+	demo = bool(config.get("demo", false)) or (user_team < 0 and not watch)
 	var minutes := float(config.get("period", Game.PERIODS[clampi(int(Game.settings.period), 0, Game.PERIODS.size() - 1)]))
 	rules = Rules.State.new()
 	rules.period_s = minutes * 60.0
@@ -135,12 +139,15 @@ func _ready() -> void:
 		hud.setup(self)
 		touch = hud.touch
 		touch.action.connect(_on_action)
+		touch.visible = user_team >= 0
 		Sfx.crowd(0.4)
 	_place_for_faceoff(Vector2.ZERO, true)
 	phase = "intro"
 	_intro_left = 2.6 if not demo else 0.2
 	if demo and config.has("sim_seconds"):
 		_sim_left = float(config.sim_seconds)
+	if bool(config.get("practice", false)):
+		_practice_start.call_deferred()
 
 
 func _make_player(d: Dictionary, t: int, role: String, slot: int) -> Player:
@@ -785,6 +792,16 @@ func _check_shot() -> void:
 			screen += 0.12
 	var sp: float = float(_shot_live.speed)
 	var save := clampf(1.01 - reach * 0.3 - (sp - 20.0) * 0.007 - screen + (gk.stat("reflex") - 70.0) / 160.0, 0.35, 0.95)
+	if bool(_shot_live.get("aimed", false)):
+		# An aimed penalty shot (penalty_aim.gd): the goalkeeper kneels in the middle of his goal, so the middle is his,
+		# low by the posts a fair chance, a top corner the hardest of all.
+		var u := clampf(absf(cross.z) / (Rules.GOAL_W * 0.5), 0.0, 1.0)
+		var v := clampf(cross.y / Rules.GOAL_H, 0.0, 1.0)
+		save = 0.92 - 0.55 * smoothstep(0.35, 0.92, u) - 0.25 * smoothstep(0.45, 0.95, v) * (0.4 + 0.6 * u)
+		save += (gk.stat("reflex") - 75.0) / 300.0
+		if bool(config.get("practice", false)):
+			save += 0.02 * float(_practice.get("shot", 0))   # each shot a little harder
+		save = clampf(save, 0.06, 0.95)
 	if gk.team != user_team and user_team >= 0:
 		save *= [0.9, 0.97, 1.0, 1.04][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 3)]
 	if _rng.randf() < save:
@@ -1449,6 +1466,8 @@ func _shootout(dt: float) -> void:
 				_bring_shooter(t)
 				shooter = skaters(t)[0]
 			_so.shooter = shooter
+			if touch and shooter.team == user_team and not demo:
+				touch.set_buttons(["SHOOT"])
 			for tt in 2:
 				for p: Player in skaters(tt):
 					p.set_meta("spot", Vector2((-8.0 + skaters(tt).find(p) * 1.2 + tt * 8.0) * s, -8.5) if p != shooter else Vector2(-0.6 * s, 0))
@@ -1481,6 +1500,16 @@ func _shootout(dt: float) -> void:
 				ball.last_team = t
 				ball.last_player = _so.shooter
 				_so.shot = false
+		"aim":
+			# Your aim: he glides on toward the goal (the ball must keep moving forward, 509), the goalkeeper set, until
+			# your second SHOOT (penalty_aim.gd's shot signal: _aimed_shot).
+			var sh: Player = _so.shooter
+			var gk := keeper(1 - t)
+			sh.want_vel = Vector2((0.9 if sh.pos.x * s < 12.0 else 0.0) * s, 0.0)
+			sh.want_face = 0.0 if s > 0.0 else PI
+			gk.want_vel = Vector2(((Rules.GOAL_LINE - 1.0) * s - gk.pos.x) * 2.0, (ball.pos.z * 0.25 - gk.pos.y) * 3.0)
+			gk.want_face = PI if s > 0.0 else 0.0
+			_step_all(dt)
 		"run":
 			var sh: Player = _so.shooter
 			var gk := keeper(1 - t)
@@ -1488,15 +1517,23 @@ func _shootout(dt: float) -> void:
 			if sh.team == user_team and not demo:
 				var j: Vector2 = touch.joystick if touch else Vector2.ZERO
 				sh.want_vel = Vector2(maxf(3.0, 5.5 + j.x * s * 1.5) * s, j.y * 3.5)
+				# In range: the aim (game/penalty_aim.gd), as he skates in.
+				if not bool(_so.shot) and _aim == null and sh.pos.x * s > 8.5:
+					_begin_aim(sh, s)
 			else:
 				sh.want_vel = Vector2(6.0 * s, clampf(-sh.pos.y * 0.6 + sin(_so.t * 2.0) * 2.0, -3.0, 3.0))
 			gk.want_vel = Vector2(((Rules.GOAL_LINE - 1.2) * s - gk.pos.x) * 2.0, (ball.pos.z * 0.25 - gk.pos.y) * 3.0)
 			gk.want_face = PI if s > 0.0 else 0.0
-			if not bool(_so.shot) and (sh.pos.x * s > 9.5 + _rng.randf() * 3.0 and sh.team != user_team or sh.pos.x * s > 13.2):
+			if not bool(_so.shot) and (sh.pos.x * s > 9.5 + _rng.randf() * 3.0 and (sh.team != user_team or demo)):
 				_so_shot(sh, g)
 			_check_shot()
 			_step_all(dt)
 			var done = ball.in_goal != 0 or (bool(_so.shot) and (ball.speed() < 1.0 or ball.vel.x * s < 0.0 or ball.held_by != null)) or _so.t > 7.0
+			if done and bool(_so.get("practice", false)):
+				_so.stage = "end"
+				ball.held_by = null
+				_practice_shot_done(ball.in_goal != 0)
+				return
 			if done and in_match:
 				_so.stage = "end"
 				ball.held_by = null
@@ -1702,16 +1739,22 @@ func _auto_switch(force: bool) -> void:
 
 
 func _on_action(id: String) -> void:
-	if paused or user_player == null:
+	if paused:
+		return
+	# Your penalty shot: the first SHOOT starts or stops the aim's target, the next stops its bar (penalty_aim.gd).
+	if phase == "shootout" and _so.get("shooter") != null and (_so.shooter as Player).team == user_team and not demo:
+		if (id == "SHOOT" or id == "TACKLE") and not bool(_so.get("shot", false)):
+			if String(_so.get("stage", "")) == "aim" and _aim:
+				_aim.press()
+			elif String(_so.get("stage", "")) == "run" and _aim == null:
+				_begin_aim(_so.shooter, float(_so.get("dir", 1.0)))
+		return
+	if user_player == null:
 		return
 	if phase == "setup" and restart.get("taker") == user_player:
 		# Your free-hit or hit-in: the buttons show SHOOT and PASS (a tap that came as the old ones still counts).
 		if id in ["SHOOT", "PASS", "TACKLE", "SWITCH"]:
 			_take_restart(user_player, id in ["SHOOT", "TACKLE"])
-		return
-	if phase == "shootout" and String(_so.get("stage", "")) == "run" and _so.get("shooter") == user_player and not bool(_so.get("shot", false)):
-		if id == "SHOOT" or id == "TACKLE":
-			_so_user_shot()
 		return
 	if phase != "live":
 		return
@@ -1770,8 +1813,54 @@ func _on_action(id: String) -> void:
 				_switch_cool = 1.2
 
 
-func _so_user_shot() -> void:
-	_so_shot(user_player, Vector2(Rules.GOAL_LINE * float(_so.get("dir", 1.0)), 0))
+var _aim: PenaltyAim = null
+
+
+## Your penalty shot's aim begins: the target round the goal mouth (game/penalty_aim.gd).
+func _begin_aim(sh: Player, s: float) -> void:
+	_aim = PenaltyAim.new()
+	_aim.challenge = bool(_so.get("challenge", false))
+	add_child(_aim)
+	_aim.setup(s, sh.stat("shot") / 100.0, _rng)
+	_aim.shot.connect(_aimed_shot)
+	_so.stage = "aim"
+	if hud:
+		hud.hint(tr("AIM_HINT"))
+
+
+## The second SHOOT: the ball struck at where you aimed (as near as a strike goes).
+func _aimed_shot(aim: Vector3) -> void:
+	var sh: Player = _so.shooter
+	_so.shot = true
+	_so.stage = "run"
+	_so.aim = aim
+	_so.t = minf(float(_so.t), 4.0)
+	shoot(sh, aim, false)
+	if not _shot_live.is_empty():
+		_shot_live.aimed = true
+	var a := _aim
+	_aim = null
+	get_tree().create_timer(1.0).timeout.connect(func():
+		if is_instance_valid(a):
+			a.queue_free())
+
+
+## The close camera for a penalty shot: low behind the shooter as he skates in, the goal ahead; after the shot it stays
+## and turns with the ball. [] when there is none.
+func penalty_view() -> Array:
+	if phase != "shootout" or _so.is_empty() or _so.get("shooter") == null or String(_so.get("stage", "")) in ["setup", "end"]:
+		ball.show_k = Ball.SHOW_K
+		return []
+	var sh: Player = _so.shooter
+	var s := float(_so.get("dir", 1.0))
+	ball.show_k = 1.15   # near its real size up close (Ball.show_k; back to SHOW_K after)
+	var behind := 2.9 if String(_so.stage) != "walk" else 4.2
+	# Low behind him and off his stick side, so he stands at the edge of the picture and the goal is clear.
+	var at := Vector3(sh.pos.x - s * behind, 1.25, sh.pos.y * 0.8 + s * 1.05)
+	var look := Vector3(Rules.GOAL_LINE * s, 0.45, sh.pos.y * 0.2 - s * 0.35)
+	if bool(_so.get("shot", false)):
+		look = look.lerp(ball.pos, 0.5)
+	return [at, look]
 
 
 ## Who a pass goes to: the team-mate most in the joystick's direction, or the best one by the AI's reading.
@@ -1809,6 +1898,104 @@ func on_back() -> void:
 	if hud and hud.has_method("on_back") and hud.on_back():
 		return
 	set_paused(not paused)
+
+
+# ---------------------------------------------------------------- penalty-shot practice
+
+## Penalty shots (the home screen's mini game, ui/shootout_screen.gd): your country's best shooter takes ten penalty
+## shots at the other side's goalkeeper, aimed by timing (penalty_aim.gd), as in a match. A goal is a point; shots 3,
+## 6 and 9 are challenges, the top corners lit gold: a goal in one is worth two. Each shot a little harder for him.
+## The rest of both teams are off the rink; the referees stay. The best score is kept (Game.settings.penalty_best).
+const PRACTICE_SHOTS := 10
+const PRACTICE_CHALLENGES := [3, 6, 9]
+var _practice := {}
+
+
+func _practice_start() -> void:
+	_practice = {"shot": 0, "points": 0, "marks": [], "best": int(Game.settings.get("penalty_best", -1))}
+	var shooter: Player = skaters(0)[0]
+	var best := -1.0
+	for p: Player in skaters(0):
+		if p.stat("shot") > best:
+			best = p.stat("shot")
+			shooter = p
+	_practice.shooter = shooter
+	for t in 2:
+		for p: Player in players[t]:
+			if p != shooter and p != keeper(1):
+				p.visible = false
+				p.on_rink = false if p.role == "G" else p.on_rink
+	Crowd.set_excite(0.2)
+	_practice_next()
+
+
+func _practice_next() -> void:
+	_practice.shot = int(_practice.shot) + 1
+	var n := int(_practice.shot)
+	_so = {"stage": "setup", "t": 0.0, "in_match": true, "team": 0, "dir": 1.0, "pick": _practice.shooter,
+		"practice": true, "challenge": n in PRACTICE_CHALLENGES}
+	_set_phase("shootout")
+	if hud:
+		hud.practice_panel(_practice)
+		if n in PRACTICE_CHALLENGES:
+			hud.banner(tr("PRACTICE_CHALLENGE"))
+
+
+func _practice_shot_done(scored: bool) -> void:
+	var aim: Vector3 = _so.get("aim", Vector3.ZERO)
+	var double := scored and bool(_so.get("challenge", false)) and PenaltyAim.top_corner(aim)
+	var pts := (2 if double else 1) if scored else 0
+	_practice.points = int(_practice.points) + pts
+	(_practice.marks as Array).append(pts)
+	_whistle("short", -4.0)
+	if scored:
+		Sfx.react("cheer", -4.0 if not double else -1.0)
+		Crowd.set_excite(1.0 if double else 0.8)
+		if hud:
+			hud.banner(tr("PRACTICE_DOUBLE") if double else tr("GOAL"))
+	else:
+		Sfx.react("groan", -6.0)
+		Crowd.set_excite(0.25)
+	if hud:
+		hud.practice_panel(_practice)
+	ball.release()
+	get_tree().create_timer(2.4).timeout.connect(func():
+		if not is_inside_tree():
+			return
+		Crowd.set_excite(0.2)
+		ball.in_goal = 0
+		ball.live = true
+		if int(_practice.shot) >= PRACTICE_SHOTS:
+			_practice_end()
+		else:
+			_practice_next())
+
+
+func _practice_end() -> void:
+	_set_phase("over")
+	var pts := int(_practice.points)
+	var new_best := pts > int(_practice.best)
+	if new_best:
+		Game.settings.penalty_best = pts
+		Game.save_settings()
+	if hud:
+		hud.practice_end(pts, maxi(pts, int(_practice.best)), new_best)
+
+
+## Start the ten again (the pause menu, the end card).
+func practice_restart() -> void:
+	if _aim:
+		_aim.queue_free()
+		_aim = null
+	_practice.shot = 0
+	_practice.points = 0
+	_practice.marks = []
+	_practice.best = int(Game.settings.get("penalty_best", -1))
+	_shot_live = {}
+	ball.release()
+	ball.in_goal = 0
+	ball.live = true
+	_practice_next()
 
 
 func quit_to_menu() -> void:
@@ -1894,10 +2081,16 @@ func _probe_fps(delta: float) -> void:
 			hud.hint(tr("GFX_LOWERED"))
 
 
+var _crowd_look := Vector2.ZERO
+
+
 func _crowd_noise() -> void:
+	var b := ball.floor_pos()
+	# The crowd watches the ball: their eyes on it, their bodies turning after it a moment behind.
+	_crowd_look = _crowd_look.lerp(b, 0.05)
+	Crowd.set_focus(_crowd_look, 0.9)
 	if demo:
 		return
-	var b := ball.floor_pos()
 	var near_goal := clampf((absf(b.x) - 8.0) / 8.0, 0.0, 1.0)
 	Sfx.crowd(0.35 + near_goal * 0.4)
 	Crowd.set_excite(near_goal * 0.3)

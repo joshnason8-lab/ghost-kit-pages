@@ -41,6 +41,8 @@ const SHOW_K := 1.8         # the ball is drawn this much bigger than it is: 72 
 static var _ring_tex: ImageTexture
 
 static var _tex: ImageTexture
+static var _holed: ShaderMaterial
+var show_k := SHOW_K        # how much bigger it is drawn: SHOW_K for the match cameras, near life size up close
 
 
 func _ready() -> void:
@@ -48,15 +50,19 @@ func _ready() -> void:
 	var s := SphereMesh.new()
 	s.radius = R
 	s.height = R * 2.0
-	s.radial_segments = 12
-	s.rings = 6
+	var hi := int(Game.settings.graphics) >= Game.GFX_HIGH
+	s.radial_segments = 32 if hi else 12
+	s.rings = 16 if hi else 6
 	_mesh.mesh = s
-	var m := StandardMaterial3D.new()
-	m.albedo_texture = texture()
-	m.roughness = 0.4
-	_mesh.material_override = m
+	if hi:
+		_mesh.material_override = holed_material()
+	else:
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = texture()
+		m.roughness = 0.4
+		_mesh.material_override = m
 	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_mesh.scale = Vector3.ONE * SHOW_K
+	_mesh.scale = Vector3.ONE * show_k
 	add_child(_mesh)
 	# A bright ring on the floor round the ball, so the eye finds it in a crowd of sticks and legs.
 	_halo = MeshInstance3D.new()
@@ -113,6 +119,52 @@ static func ring_texture() -> ImageTexture:
 	img.generate_mipmaps()
 	_ring_tex = ImageTexture.create_from_image(img)
 	return _ring_tex
+
+
+## High: the ball as it is up close (a penalty shot's camera): white plastic, its 26 holes cut through it (11 mm
+## across, spread evenly), the inside of the shell seen through them, a slight rim round each.
+static func holed_material() -> ShaderMaterial:
+	if _holed:
+		return _holed
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode cull_disabled;
+#include "res://game/shaders/look.gdshaderinc"
+uniform vec3 holes[26];
+varying vec3 lp;
+void vertex() { lp = normalize(VERTEX); }
+void fragment() {
+	vec3 n = normalize(lp);
+	float best = -1.0;
+	for (int i = 0; i < 26; i++) {
+		best = max(best, dot(n, holes[i]));
+	}
+	float ang = acos(clamp(best, -1.0, 1.0));
+	if (ang < 0.15) {
+		discard;
+	}
+	if (FRONT_FACING) {
+		float rim = 1.0 - smoothstep(0.15, 0.24, ang);
+		ALBEDO = compat_to_scene(mix(vec3(0.96, 0.965, 0.95), vec3(0.72, 0.73, 0.74), rim * 0.6));
+		ROUGHNESS = 0.32;
+		SPECULAR = 0.55;
+	} else {
+		ALBEDO = compat_to_scene(vec3(0.55, 0.56, 0.57));   // the inside of the shell
+		ROUGHNESS = 0.8;
+	}
+}
+"""
+	_holed = ShaderMaterial.new()
+	_holed.shader = sh
+	var pts := PackedVector3Array()
+	var golden := PI * (3.0 - sqrt(5.0))
+	for i in 26:
+		var y := 1.0 - (i + 0.5) / 26.0 * 2.0
+		var r := sqrt(1.0 - y * y)
+		pts.append(Vector3(cos(golden * i) * r, y, sin(golden * i) * r))
+	_holed.set_shader_parameter("holes", pts)
+	return _holed
 
 
 ## The ball's skin: white, its 26 holes as dark dots.
@@ -239,6 +291,8 @@ func step(dt: float) -> void:
 
 func _place() -> void:
 	position = pos
+	if _mesh:
+		_mesh.scale = Vector3.ONE * show_k
 	if _shadow:
 		_shadow.global_position = Vector3(pos.x, 0.004, pos.z)
 		var k := clampf(1.0 - pos.y * 0.5, 0.3, 1.0)

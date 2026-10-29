@@ -5,7 +5,9 @@ extends MultiMeshInstance3D
 ## tools/crowd/make_atlas.gd). Every person is an instance of the same upright quad, so a stand of thousands is one
 ## draw call. The shader turns each quad to the camera, picks the cut-out of that person's pose seen from where the
 ## camera is (mirrored for the other side), gives them their shirt's colour and their skin's tone, makes them fidget,
-## and stands them up to cheer when the crowd goes up (excite).
+## and stands them up to cheer when the crowd goes up (excite). They watch the play: each turns from facing the rink
+## toward the ball (focus), some more than others, never more than a body's turn (70 degrees), so the cut-out each
+## shows changes as the play moves from end to end.
 
 
 var spots_built := PackedVector3Array()   # where each spectator sits (this node's space), as built
@@ -48,11 +50,14 @@ static func material() -> ShaderMaterial:
 	sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_opaque, shadows_disabled;
-uniform sampler2D sheet : source_color, filter_linear_mipmap, repeat_disable;
+#include "res://game/shaders/look.gdshaderinc"
+uniform sampler2D sheet : filter_linear_mipmap, repeat_disable;
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light = 1.0;
 uniform vec2 grid = vec2(16.0, 4.0);   // the sheet's cut-outs across and down
+uniform vec2 focus = vec2(0.0);        // where the play is, on the floor (x, z)
+uniform float follow = 0.0;            // how much they turn to watch it (0 to 1)
 varying vec2 cell;       // the cut-out's column and row
 varying float mirror;
 varying vec3 shirt;
@@ -73,6 +78,11 @@ void vertex() {
 	vec3 cam = INV_VIEW_MATRIX[3].xyz;
 	vec2 to_cam = normalize(cam.xz - world.xz);
 	float fa = d.w * 6.2831853;
+	// Watching the play: turned toward it from facing the rink, each by their own amount, at most 70 degrees.
+	vec2 tf = focus - world.xz;
+	float diff = mod(atan(tf.x, tf.y) - fa + 3.14159265, 6.2831853) - 3.14159265;
+	float keen = 0.55 + 0.45 * fract(d.z * 13.7);
+	fa += clamp(diff * follow * keen, -1.22, 1.22);
 	vec2 face = vec2(sin(fa), cos(fa));
 	// Which of the five views, and mirrored or not: as Crowd.view() works it out (tested there).
 	float ang = atan(face.y * to_cam.x - face.x * to_cam.y, dot(face, to_cam));
@@ -101,7 +111,7 @@ void fragment() {
 	vec3 col = c.rgb;
 	col = mix(col, shirt * clamp(dot(c.rgb, vec3(0.3333)) / 0.5, 0.25, 1.6), is_shirt);
 	col = mix(col, col * tone, is_skin);
-	ALBEDO = col * light;
+	ALBEDO = compat_to_scene(col * light);
 }
 """
 	var m := ShaderMaterial.new()
@@ -176,6 +186,13 @@ func _process(_delta: float) -> void:
 
 static func set_excite(k: float) -> void:
 	material().set_shader_parameter("excite", clampf(k, 0.0, 1.0))
+
+
+## Where the play is (the floor, x and z) and how closely the crowd follows it (0 to 1).
+static func set_focus(at: Vector2, k := 1.0) -> void:
+	for m in _mats.values():
+		(m as ShaderMaterial).set_shader_parameter("focus", at)
+		(m as ShaderMaterial).set_shader_parameter("follow", k)
 
 
 static func set_light(k: float) -> void:

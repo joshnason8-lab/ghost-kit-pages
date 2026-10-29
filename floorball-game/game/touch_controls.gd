@@ -261,7 +261,7 @@ func _draw() -> void:
 		draw_circle(c + Vector2(0, 4), r, Color(0, 0, 0, 0.25))
 		draw_circle(c, r, col)
 		draw_arc(c, r, 0, TAU, 64, Color(0.1, 0.12, 0.15, 0.55), 3.0, true)
-		var ink := Color("1d1307") if primary else (Color.WHITE if id == "SPRINT" else Game.C_INK)
+		var ink := Color("1d1307") if primary else (Color.WHITE if id == "SPRINT" else Color("1f2933"))
 		if id != "":
 			_draw_label(id, c, r, ink, primary)
 		if not OS.has_feature("mobile") and not _touched and i < 3 and not editing:

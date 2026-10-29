@@ -275,7 +275,7 @@ func _animate(dt: float) -> void:
 		_mocap_legs(p, gait, moc, legs_yaw)
 	var t := act_t / maxf(0.01, act_len) if act != "" else 0.0
 	if role == "G":
-		_keeper_pose(p, t)
+		_keeper_pose(p, t, dt)
 	elif role == "R":
 		_referee_pose(p, t, dt)
 	elif act == "celebrate":
@@ -413,51 +413,111 @@ func ball_spot() -> Vector3:
 	return Vector3(b.x, Ball.R, b.y)
 
 
-func _keeper_pose(p: Dictionary, t: float) -> void:
-	# The ready stance: feet wide, knees bent, hands out in front at the hips (a floorball goalkeeper stands or kneels
-	# in the goal mouth, arms wide).
-	p.thigh_l = Vector3(-38, 0, 16)
-	p.thigh_r = Vector3(-38, 0, -16)
-	p.shin_l = Vector3(62, 0, 0)
-	p.shin_r = Vector3(62, 0, 0)
-	p.foot_l = Vector3(-24, 0, 0)
-	p.foot_r = Vector3(-24, 0, 0)
-	p.hips_y = -0.26
-	p.upperarm_l = Vector3(-30, 0, 35)
-	p.upperarm_r = Vector3(-30, 0, -35)
-	p.forearm_l = Vector3(-45, 0, 0)
-	p.forearm_r = Vector3(-45, 0, 0)
+var _kneel := 0.0              # a goalkeeper down on his knees (1) or standing in his crouch (0), eased between
+var _shuffle := 0.0           # his side-steps' (or knee-shuffles') phase, advanced by the ground covered sideways
+var _kp := {}                 # his last pose: every pose eases into the next (nothing snaps)
+
+
+## A floorball goalkeeper (no stick; 303) works mostly on his knees: down in a wide butterfly, upright, hands open in
+## front, when the ball is in front of his goal; up in a deep crouch, feet wide, when it is far off. He moves along
+## his line in side-steps standing and in short knee-shuffles kneeling. A low save is a leg kicked out flat to the
+## ball's side, the other knee down; a high one an arm thrown up and the body leaning after it; a catch both hands to
+## the chest; the throw-out overarm. Each pose eases into the next.
+func _keeper_pose(p: Dictionary, t: float, dt: float) -> void:
+	var b := _ball_floor()
+	var own_x := signf(pos.x) * Rules.GOAL_LINE if absf(pos.x) > 1.0 else Rules.GOAL_LINE
+	var ahead := (own_x - b.x) * signf(own_x)        # how far the ball is out in front of his goal line
+	var near := ahead > -0.5 and ahead < 10.0 and absf(b.y) < 7.0
+	if match_node and String(match_node.get("phase")) == "shootout":
+		near = ahead < 11.0
+	var down_want := 1.0 if near or act in ["kneel", "save_low"] else 0.0
+	if act in ["throw", "celebrate"]:
+		down_want = 0.0
+	_kneel = move_toward(_kneel, down_want, dt * (5.0 if down_want > _kneel else 2.5))
+	var k := _kneel
+	# Sideways: the side-step or knee-shuffle cycle, by ground covered across his facing.
+	var lat := vel.dot(dir().orthogonal())
+	_shuffle = fposmod(_shuffle + absf(lat) * dt / lerpf(0.55, 0.32, k), 1.0)
+	var step := sin(_shuffle * TAU) * clampf(absf(lat) / 1.5, 0.0, 1.0)
+	var lead_l := lat > 0.0                         # moving to his left: the left leg leads
+	# Standing: the ready crouch, feet wide, hands out in front at the hips.
+	var st := {
+		"thigh_l": Vector3(-38, 0, 16 + (step * 10.0 if lead_l else -step * 4.0)),
+		"thigh_r": Vector3(-38, 0, -16 - (step * 10.0 if not lead_l else -step * 4.0)),
+		"shin_l": Vector3(62, 0, 0), "shin_r": Vector3(62, 0, 0),
+		"foot_l": Vector3(-24, 0, 0), "foot_r": Vector3(-24, 0, 0),
+		"upperarm_l": Vector3(-34, 0, 32), "upperarm_r": Vector3(-34, 0, -32),
+		"forearm_l": Vector3(-48, 0, 0), "forearm_r": Vector3(-48, 0, 0),
+		"spine": Vector3(14, 0, 0), "chest": Vector3(10, 0, 0), "head": Vector3(-14, 0, 0),
+	}
+	# Kneeling: the butterfly, both knees down, the shins flared out along the line, the trunk upright, hands open
+	# in front at the chest, a little wide.
+	var kn := {
+		"thigh_l": Vector3(-8 + step * 6.0, 0, 20), "thigh_r": Vector3(-8 - step * 6.0, 0, -20),
+		"shin_l": Vector3(104, 0, 42), "shin_r": Vector3(104, 0, -42),
+		"foot_l": Vector3(-38, 0, 0), "foot_r": Vector3(-38, 0, 0),
+		"upperarm_l": Vector3(-46, 0, 40), "upperarm_r": Vector3(-46, 0, -40),
+		"forearm_l": Vector3(-62, 0, 0), "forearm_r": Vector3(-62, 0, 0),
+		"spine": Vector3(4, 0, 0), "chest": Vector3(2, 0, 0), "head": Vector3(-4, 0, 0),
+	}
+	for key in st:
+		p[key] = (st[key] as Vector3).lerp(kn[key], k)
+	p.hips_y = lerpf(-0.26, -0.56, k) - absf(step) * lerpf(0.02, 0.012, k)
+	p.hips_side = 0.0
+	# Which side of him the ball is on: + his left.
+	var side := 1.0 if (b - pos).dot(dir().orthogonal()) > 0.0 else -1.0
+	var sl := "l" if side > 0.0 else "r"
+	var ol := "r" if side > 0.0 else "l"
+	var rate := 12.0
 	match act:
-		"kneel", "save_low":
-			# The butterfly: both knees down, the shins flared out along the goal line, hands wide.
-			var w := clampf(t * 4.0, 0.0, 1.0) if act == "save_low" else 1.0
-			p.thigh_l = Vector3(-15, 0, 22 + 10 * w)
-			p.thigh_r = Vector3(-15, 0, -22 - 10 * w)
-			p.shin_l = Vector3(95, 0, 40)
-			p.shin_r = Vector3(95, 0, -40)
-			p.hips_y = -0.52
-			p.upperarm_l = Vector3(-20, 0, 50 + 20 * w)
-			p.upperarm_r = Vector3(-20, 0, -50 - 20 * w)
+		"save_low":
+			# The leg on the ball's side kicked out flat along the floor, the other knee down, the trunk over it, the
+			# near hand down to the floor.
+			var w := sin(clampf(t * 1.6, 0.0, 1.0) * PI * 0.5) * (1.0 - smoothstep(0.75, 1.0, t))
+			p["thigh_" + sl] = (p["thigh_" + sl] as Vector3).lerp(Vector3(-12, 0, 78 * side), w)
+			p["shin_" + sl] = (p["shin_" + sl] as Vector3).lerp(Vector3(6, 0, 0), w)
+			p["foot_" + sl] = Vector3(-50 * w, 0, 0)
+			p["upperarm_" + sl] = (p["upperarm_" + sl] as Vector3).lerp(Vector3(-25, 0, 70 * side), w)
+			p["forearm_" + sl] = Vector3(-15, 0, 0)
+			p.chest = Vector3(8, 0, 16 * side * w)
+			p.hips_side = 0.22 * side * w
+			p.hips_y = -0.6
+			rate = 26.0
 		"save_high_l", "save_high_r":
+			# An arm thrown up on the shot's side, the body leaning after it, the far knee pushing.
 			var s := 1.0 if act == "save_high_l" else -1.0
-			var w := sin(clampf(t, 0.0, 1.0) * PI)
-			p["upperarm_" + ("l" if s > 0 else "r")] = Vector3(-120 * w, 0, 60 * s * w)
-			p.chest = Vector3(10, 0, 18 * s * w)
-			p.hips_side = 0.25 * s * w
+			var hs := "l" if s > 0.0 else "r"
+			var w := sin(clampf(t * 1.4, 0.0, 1.0) * PI * 0.5) * (1.0 - smoothstep(0.7, 1.0, t))
+			p["upperarm_" + hs] = (p["upperarm_" + hs] as Vector3).lerp(Vector3(-150, 0, 55 * s), w)
+			p["forearm_" + hs] = Vector3(-8, 0, 0)
+			p["upperarm_" + ("r" if s > 0.0 else "l")] = (p["upperarm_" + ("r" if s > 0.0 else "l")] as Vector3).lerp(Vector3(-60, 0, -45 * s), w)
+			p.chest = Vector3(6, 0, 26 * s * w)
+			p.spine = Vector3(2, 0, 12 * s * w)
+			p.hips_side = 0.32 * s * w
+			p.hips_y = (p.hips_y as float) + 0.12 * w * (1.0 - k)
+			rate = 26.0
 		"catch":
-			p.upperarm_l = Vector3(-55, 0, 12)
-			p.upperarm_r = Vector3(-55, 0, -12)
-			p.forearm_l = Vector3(-60, 0, 0)
-			p.forearm_r = Vector3(-60, 0, 0)
+			# Both hands to the chest round the ball, the trunk curled over it.
+			p.upperarm_l = Vector3(-58, 0, 10)
+			p.upperarm_r = Vector3(-58, 0, -10)
+			p.forearm_l = Vector3(-88, 0, 0)
+			p.forearm_r = Vector3(-88, 0, 0)
+			p.chest = Vector3(16, 0, 0)
+			p.head = Vector3(-6, 0, 0)
+			rate = 18.0
 		"throw":
+			# Up, a step into it, the throwing arm from behind the head over the top.
 			var w := clampf(t, 0.0, 1.0)
-			p.thigh_l = Vector3(-20, 0, 6)
-			p.thigh_r = Vector3(10, 0, -6)
-			p.shin_l = Vector3(25, 0, 0)
-			p.shin_r = Vector3(25, 0, 0)
+			p.thigh_l = Vector3(-26, 0, 6)
+			p.thigh_r = Vector3(14, 0, -6)
+			p.shin_l = Vector3(22, 0, 0)
+			p.shin_r = Vector3(28, 0, 0)
 			p.hips_y = -0.08
-			p.upperarm_r = Vector3(lerpf(60.0, -150.0, w), 0, -10)
-			p.forearm_r = Vector3(-20, 0, 0)
+			p.upperarm_r = Vector3(lerpf(70.0, -160.0, smoothstep(0.25, 0.75, w)), 0, -12)
+			p.forearm_r = Vector3(lerpf(-70.0, -10.0, smoothstep(0.3, 0.8, w)), 0, 0)
+			p.upperarm_l = Vector3(lerpf(-70.0, 20.0, w), 0, 20)
+			p.chest = Vector3(lerpf(-12.0, 18.0, w), lerpf(-20.0, 15.0, w), 0)
+			rate = 16.0
 		"celebrate":
 			p.upperarm_l = Vector3(-160, 0, 25)
 			p.upperarm_r = Vector3(-160, 0, -25)
@@ -466,6 +526,26 @@ func _keeper_pose(p: Dictionary, t: float) -> void:
 			p.thigh_r = Vector3(0, 0, -4)
 			p.shin_l = Vector3(5, 0, 0)
 			p.shin_r = Vector3(5, 0, 0)
+	# Ease from his last pose into this one.
+	var a := 1.0 - exp(-rate * dt)
+	for key in p:
+		var v: Variant = p[key]
+		if _kp.has(key) and typeof(_kp[key]) == typeof(v):
+			if v is Vector3:
+				p[key] = (_kp[key] as Vector3).lerp(v, a)
+			elif v is float:
+				p[key] = lerpf(float(_kp[key]), float(v), a)
+		_kp[key] = p[key]
+
+
+## Where the ball is on the floor (the match's), or the middle of the rink.
+func _ball_floor() -> Vector2:
+	if match_node == null or not is_instance_valid(match_node):
+		return Vector2.ZERO
+	var bl: Variant = match_node.get("ball")
+	if bl == null:
+		return Vector2.ZERO
+	return (bl as Node).call("floor_pos")
 
 
 ## A referee's signals, as the IFF's signs show them (docs/RULES.md, "Officials"): the consequence first, then the

@@ -104,6 +104,7 @@ static func material() -> ShaderMaterial:
 		sh.code = """
 shader_type spatial;
 render_mode unshaded, cull_back;
+#include "res://game/shaders/look.gdshaderinc"
 uniform vec3 light_dir = vec3(0.25, 0.92, 0.3);
 varying vec3 wn;
 void vertex() { wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz); }
@@ -114,7 +115,7 @@ void fragment() {
 	float up = clamp(-n.y, 0.0, 1.0) * 0.08;
 	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0) * 0.12;
 	vec3 c = pow(COLOR.rgb, vec3(2.2));
-	ALBEDO = c * k + vec3(0.04, 0.07, 0.12) * up + rim;
+	ALBEDO = compat_to_scene(c * k + vec3(0.04, 0.07, 0.12) * up + rim);
 }
 """
 		_mat = ShaderMaterial.new()

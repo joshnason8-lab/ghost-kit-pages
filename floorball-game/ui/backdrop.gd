@@ -1,53 +1,64 @@
 class_name Backdrop
 extends Control
-## The menus' background: a coach's whiteboard on the wall of a Nordic sports hall. The board fills the screen: its
-## white face with the faint grey ghosts of old erased tactics, the aluminium frame round it and two magnets in the
-## corners (no marker tray: on a phone it read as a stray scroll bar). All drawn in code: no image ships for it.
+## The menus' background: the hall with its lights down before a match. Deep navy, lit from above in the middle; the
+## rink's lines faint on the floor, in perspective; two slanted streaks of the icon's colours (flame orange, electric
+## blue) across it. All drawn in code: no image ships for it.
 
-var with_frame := true
-var _ghosts := []
+var with_frame := true   # kept for the screens that ask; the hall has no frame
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	show_behind_parent = true
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 2026
-	# Old, half-erased marker strokes: loops, arrows and crosses, very faint.
-	for i in 14:
-		var pts := PackedVector2Array()
-		var c := Vector2(rng.randf(), rng.randf())
-		var r := rng.randf_range(0.03, 0.12)
-		var a0 := rng.randf() * TAU
-		var n := rng.randi_range(5, 12)
-		for k in n:
-			var a := a0 + k * rng.randf_range(0.3, 0.7)
-			pts.append(c + Vector2(cos(a) * r * 1.6, sin(a) * r) + Vector2(rng.randf_range(-0.01, 0.01), rng.randf_range(-0.01, 0.01)))
-		_ghosts.append(pts)
 	resized.connect(queue_redraw)
 
 
 func _draw() -> void:
 	var s := size
-	# The board's face, a touch darker toward the edges.
 	draw_rect(Rect2(Vector2.ZERO, s), Game.C_BG)
-	draw_rect(Rect2(s.x * 0.08, s.y * 0.08, s.x * 0.84, s.y * 0.78), Color(1, 1, 1, 0.35))
-	for g in _ghosts:
-		var pts := PackedVector2Array()
-		for p in g:
-			pts.append(p * s)
-		draw_polyline(pts, Color(0.55, 0.6, 0.66, 0.1), 6.0, true)
-	if not with_frame:
-		return
-	# The aluminium frame.
-	var f := 10.0
-	var frame := Game.C_FRAME
-	draw_rect(Rect2(0, 0, s.x, f), frame)
-	draw_rect(Rect2(0, s.y - f, s.x, f), frame.darkened(0.15))
-	draw_rect(Rect2(0, 0, f, s.y), frame.darkened(0.05))
-	draw_rect(Rect2(s.x - f, 0, f, s.y), frame.darkened(0.1))
-	draw_line(Vector2(f, f), Vector2(s.x - f, f), Color(0, 0, 0, 0.12), 2.0)
+	# The lights over the middle of the hall: soft rings of a lighter navy.
+	var c := Vector2(s.x * 0.62, -s.y * 0.15)
+	for i in 10:
+		var r := s.length() * (0.95 - i * 0.08)
+		draw_circle(c, r, Color(0.16, 0.24, 0.42, 0.05))
+	# The rink on the floor below, in perspective: its outline and centre line, faint electric blue.
+	var horizon := s.y * 0.42
+	var line := Color(Game.C_CYAN, 0.07)
+	var pts := PackedVector2Array([Vector2(s.x * 0.18, s.y * 1.05), Vector2(s.x * 0.36, horizon), Vector2(s.x * 0.88, horizon),
+		Vector2(s.x * 1.12, s.y * 1.05)])
+	draw_polyline(pts, line, 3.0, true)
+	draw_line(Vector2(s.x * 0.62, horizon), Vector2(s.x * 0.65, s.y * 1.05), line, 3.0, true)
+	var mid := Vector2(s.x * 0.635, horizon + (s.y * 1.05 - horizon) * 0.42)
+	_ellipse(mid, Vector2(s.x * 0.09, s.y * 0.06), line)
+	# Two slanted streaks: the icon's flame and blade.
+	_streak(Vector2(-s.x * 0.05, s.y * 0.92), Vector2(s.x * 0.55, s.y * 0.58), s.y * 0.05, Color(Game.C_MAGNET, 0.10))
+	_streak(Vector2(-s.x * 0.05, s.y * 1.0), Vector2(s.x * 0.62, s.y * 0.62), s.y * 0.02, Color(Game.C_CYAN, 0.10))
+	# Darker at the edges.
+	draw_rect(Rect2(0, s.y * 0.88, s.x, s.y * 0.12), Color(0, 0, 0, 0.18))
+
+
+func _ellipse(c: Vector2, r: Vector2, col: Color) -> void:
+	var pts := PackedVector2Array()
+	for i in 41:
+		var a := TAU * i / 40.0
+		pts.append(c + Vector2(cos(a) * r.x, sin(a) * r.y))
+	draw_polyline(pts, col, 3.0, true)
+
+
+## A band from a to b, w thick, fading out at both ends.
+func _streak(a: Vector2, b: Vector2, w: float, col: Color) -> void:
+	var d := (b - a).normalized()
+	var n := Vector2(-d.y, d.x) * w * 0.5
+	var steps := 12
+	for i in steps:
+		var t0 := float(i) / steps
+		var t1 := float(i + 1) / steps
+		var k := sin(PI * (t0 + t1) * 0.5)
+		var p0 := a.lerp(b, t0)
+		var p1 := a.lerp(b, t1)
+		draw_colored_polygon(PackedVector2Array([p0 - n, p1 - n, p1 + n, p0 + n]), Color(col, col.a * k))
+
 
 ## A magnet: a coloured disc with a highlight and its shadow, as the board's tactics are drawn with.
 static func magnet(ci: CanvasItem, at: Vector2, r: float, col: Color, label := "", font: Font = null, fs := 14) -> void:
