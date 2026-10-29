@@ -19,6 +19,10 @@ const CROWD_SOUNDS := ["crowd_", "applause", "roar", "chant", "clap"]
 const MUSIC_DB := -8.0             # the menus' music, faded in
 const MUSIC_LOOP := 13.915         # s: where menu_music.ogg comes round to (tools/audio/make_menu_music.py)
 
+## A crowd sound starting (its name, without a variant's number, and how long it lasts): the crowd on the ground is seen
+## doing what is heard (Arena: clapping when clapping is heard).
+signal crowd_heard(sound: String, seconds: float)
+
 var streams := {}
 var _pool: Array[AudioStreamPlayer] = []
 var _next := 0
@@ -135,8 +139,13 @@ func enabled() -> bool:
 
 func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
+	var named := sound
 	sound = _variant(sound)
-	if not enabled() or paused or not streams.has(sound):
+	if paused or not streams.has(sound):
+		return
+	if CROWD_SOUNDS.any(func(c): return sound.begins_with(c)):
+		crowd_heard.emit(named, (streams[sound] as AudioStream).get_length() / pitch)
+	if not enabled():
 		return
 	var p := _pool[_next]
 	_next = (_next + 1) % _pool.size()

@@ -31,6 +31,11 @@ var env: Environment
 var barefoot := false
 var _excite := 0.0
 var _banner_key := ""
+var watching := false          # the crowd turns its heads to watch_at (the match sets it to the raider)
+var watch_at := Vector3.ZERO
+var _clap := [0.0, 2.6, 0.0]   # what the crowd is clapping along to (clap)
+var _clap_t := 0.0
+var _clap_share := 0.0
 var _banner_labels := []
 
 const CROWD_SHADER := """
@@ -77,6 +82,14 @@ uniform float top_lum[16];   // each person's shirt brightness, linear; 0 keeps 
 uniform float top_lum_back[16];   // the same from behind
 uniform float falloff = 0.0;  // under lights (an arena, floodlights at night): the back rows darker, 0 by day
 uniform float lift = 0.0;     // light of their own: under a roof on an overcast day they were black cut-outs
+// Clapping that is heard (Arena.clap): the share of the crowd clapping, claps a second, and how together (1: in time).
+uniform float clap_share = 0.0;
+uniform float clap_rate = 2.6;
+uniform float clap_sync = 0.0;
+// Where the play is (the raider): those sitting or standing still turn their heads to it (the sheets' look frames).
+uniform vec3 watch = vec3(0.0);
+uniform bool watching = false;
+uniform float look_frame = 8.0;   // the first look frame (sit to the left, sit right, stand left, stand right)
 varying flat vec2 cell;
 varying flat float dim;
 varying flat float mirror;
@@ -111,15 +124,37 @@ void vertex() {
 	float beat = step(0.5, fract(TIME * (1.4 + excitement * 1.6) + ph * 5.0));
 	float base = standing ? 3.0 : 0.0;
 	float frame = base;
+	bool claps = fract(ph * 13.7) < clap_share;
+	float clap_beat = step(0.5, fract(TIME * clap_rate + ph * 5.0 * (1.0 - clap_sync)));
 	if (excitement > 0.5 + 0.45 * keen) {
-		frame = 6.0 + step(0.65, fract(TIME * 0.35 + ph * 3.0));   // on their feet, arms up or a fist
+		if (claps && fract(ph * 2.3) < 0.6) {
+			frame = 4.0 + clap_beat;   // on their feet, clapping
+		} else {
+			frame = 6.0 + step(0.65, fract(TIME * 0.35 + ph * 3.0));   // on their feet, arms up or a fist
+		}
 		VERTEX.y += max(0.0, sin(TIME * 6.0 + ph * 40.0)) * 0.07 * excitement;
+	} else if (claps) {
+		frame = base + 1.0 + clap_beat;   // clapping along with what is heard
 	} else if (excitement > 0.2 + 0.4 * keen || fract(TIME * 0.03 + ph * 9.1) < 0.05) {
 		frame = base + 1.0 + beat;   // clapping
 	}
+	mirror = step(0.5, fract(ph * 7.77));
+	if (watching && frame == base && frames > look_frame) {
+		// Watching the play: to their side of the screen it is on, unless it is right in front of them. The sheet's
+		// "left" is the drawn figure's: seen from behind, or drawn mirrored, the other way round.
+		vec3 to_play = watch - MODEL_MATRIX[3].xyz;
+		vec3 right = INV_VIEW_MATRIX[0].xyz;
+		float across = dot(normalize(to_play.xz + vec2(1e-4)), normalize(right.xz));
+		if (abs(across) > 0.3 + 0.25 * fract(ph * 5.3)) {
+			bool to_right = across > 0.0;
+			if ((back > 0.5) != (mirror > 0.5)) {
+				to_right = !to_right;
+			}
+			frame = look_frame + (standing ? 2.0 : 0.0) + (to_right ? 1.0 : 0.0);
+		}
+	}
 	cell = vec2(person, frame);
 	dim = 1.0 - falloff * clamp((length(MODEL_MATRIX[3].xz) - 10.0) / 12.0, 0.0, 1.0);
-	mirror = step(0.5, fract(ph * 7.77));
 	tint = INSTANCE_CUSTOM.rgb;
 	lum = back > 0.5 ? top_lum_back[int(person)] : top_lum[int(person)];
 }
@@ -344,10 +379,35 @@ func excite(amount: float) -> void:
 	_excite = clampf(maxf(_excite, amount), 0.0, 1.0)
 
 
+## How the crowd claps to each crowd sound with clapping in it: [share of them, claps a second, how together].
+## crowd_rhythm.ogg claps about every 0.38 s, all together; applause is everyone at their own pace.
+const CLAPS := {"crowd_rhythm": [0.9, 2.6, 0.92], "applause": [0.8, 3.4, 0.0], "crowd_cheer": [0.35, 2.6, 0.6]}
+
+
+## Seen clapping for as long as it is heard (Sfx.crowd_heard).
+func clap(sound: String, seconds: float) -> void:
+	var c: Array = CLAPS.get(sound, [])
+	if c.is_empty():
+		return
+	_clap = c if _clap_t <= 0.0 or float(c[0]) >= float(_clap[0]) else _clap
+	_clap_t = maxf(_clap_t, seconds * 0.9)
+
+
+func _ready() -> void:
+	Sfx.crowd_heard.connect(clap)
+
+
 func _process(delta: float) -> void:
 	_excite = move_toward(_excite, 0.12, delta * 0.35)
+	_clap_t -= delta
+	_clap_share = move_toward(_clap_share, float(_clap[0]) if _clap_t > 0.0 else 0.0, delta * 1.5)
 	for m in crowd_mats:
 		m.set_shader_parameter("excitement", _excite)
+		m.set_shader_parameter("clap_share", _clap_share)
+		m.set_shader_parameter("clap_rate", _clap[1])
+		m.set_shader_parameter("clap_sync", _clap[2])
+		m.set_shader_parameter("watching", watching)
+		m.set_shader_parameter("watch", watch_at)
 
 
 # ---------------------------------------------------------------- materials
@@ -838,6 +898,7 @@ func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumbe
 		sm.set_shader_parameter("atlas2_back", sheet.atlas2_back)
 		sm.set_shader_parameter("people2", float(info.get("columns2", 8)))
 	sm.set_shader_parameter("frames", float((info.frames as Array).size()))
+	sm.set_shader_parameter("look_frame", float((info.frames as Array).find("sit_look_l")) if (info.frames as Array).has("sit_look_l") else 99.0)
 	sm.set_shader_parameter("standing", standing)
 	sm.set_shader_parameter("top_lum", lums)
 	sm.set_shader_parameter("top_lum_back", lums_back)

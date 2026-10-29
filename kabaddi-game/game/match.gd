@@ -438,6 +438,11 @@ func _process(delta: float) -> void:
 	var dt := minf(delta, 0.05)
 	_check_frame_rate(delta)
 	phase_t += dt
+	# The crowd watches the raider while there is one to watch.
+	if arena:
+		arena.watching = phase in ["setup", "raid", "post"] and raider != null
+		if arena.watching:
+			arena.watch_at = raider.position
 	match phase:
 		"intro":
 			if walkout and phase_t < WALKOUT_HOLD:

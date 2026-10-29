@@ -485,6 +485,15 @@ func _run() -> void:
 	await frames(1)
 	check(boards.size() >= 4 and boards.all(func(l): return l.text == tr("LEAGUE_NAME").to_upper()),
 		"the boards' league name follows the language (%d boards)" % boards.size())
+	# Clapping heard is clapping seen: most of the crowd claps while applause plays, then stops.
+	Sfx.crowd_heard.emit("applause", 1.0)
+	await frames(30)
+	var mid: float = ab._clap_share
+	ab._clap_t = 0.0
+	await frames(60)
+	check(mid > 0.4 and ab._clap_share < 0.05 and (ab.crowd_mats.is_empty()
+		or float(ab.crowd_mats[0].get_shader_parameter("clap_share")) < 0.05),
+		"the crowd claps while applause is heard, and stops after (%.2f, then %.2f)" % [mid, ab._clap_share])
 	ab.queue_free()
 	var sheet := Arena.crowd_sheet()
 	check(not sheet.is_empty() and (sheet.info.people as Array).size() >= 8 and (sheet.info.frames as Array).size() == 8,

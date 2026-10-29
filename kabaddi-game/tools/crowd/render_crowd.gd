@@ -15,7 +15,11 @@ extends Node3D
 const CELL := Vector2i(144, 245)         # pixels a person
 const SS := 2                            # rendered at twice the size, then shrunk
 const CELL_H := 2.312                    # metres a cell covers top to bottom (9.4 mm a pixel)
-const FRAMES := ["sit", "clap_open", "clap", "stand", "stand_clap_open", "stand_clap", "stand_arms_up", "stand_pump"]
+const FRAMES := ["sit", "clap_open", "clap", "stand", "stand_clap_open", "stand_clap", "stand_arms_up", "stand_pump",
+	"sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r"]
+## Watching the play: "_look_l" frames turn the head (and a little of the chest) to the sheet's left as drawn from the
+## front, "_look_r" to its right, by these angles (degrees) about the vertical.
+const LOOK := {"Spine02": 10.0, "neck": 20.0, "Head": 22.0}
 ## The two sheets, by the end of their files' names: from the front, and from behind.
 const SIDES := ["", "_back"]
 ## Bones the top covers: the spine and the upper arms (sleeves); around the hips, where the hem falls,
@@ -252,8 +256,9 @@ func _ankle_y(sk: Skeleton3D, root: Node3D) -> float:
 
 
 ## Point the limbs where the frame wants them: each bone turns the shortest way from where it points now.
-func _pose(sk: Skeleton3D, frame: String) -> void:
+func _pose(sk: Skeleton3D, frame_name: String) -> void:
 	sk.reset_bone_poses()
+	var frame := frame_name.trim_suffix("_look_l").trim_suffix("_look_r")
 	var want := {}
 	for side in ["Left", "Right"]:
 		var arms: Dictionary = ARMS.get(frame, {})
@@ -287,6 +292,50 @@ func _pose(sk: Skeleton3D, frame: String) -> void:
 				sk.set_bone_pose_rotation(b, (parent_basis.inverse() * new_basis).get_rotation_quaternion())
 				g = Transform3D(new_basis, g.origin)
 		glob[b] = g
+	# The head turned to the side, each bone of the neck a part of the way, about the vertical. The models' skeletons
+	# are not all turned the same way, so the turn is checked on the face (the "headfront" bone, in front of the head):
+	# looking to the sheet's left is looking towards -x, the camera being on +z.
+	var look := 0.0
+	if frame_name.ends_with("_look_l"):
+		look = -1.0
+	elif frame_name.ends_with("_look_r"):
+		look = 1.0
+	if look != 0.0:
+		var before := {}
+		for name in LOOK:
+			var b := sk.find_bone(name)
+			if b >= 0:
+				before[b] = sk.get_bone_pose_rotation(b)
+		for attempt in [1.0, -1.0]:
+			for b in before:
+				sk.set_bone_pose_rotation(b, before[b])
+			_turn_head(sk, attempt)
+			if signf(_face_x(sk)) == look:
+				break
+
+
+func _turn_head(sk: Skeleton3D, sign: float) -> void:
+	var up := (sk.global_transform.basis.inverse() * Vector3.UP).normalized()
+	for name in LOOK:
+		var b := sk.find_bone(name)
+		if b < 0:
+			continue
+		var gb := sk.get_bone_global_pose(b).basis
+		var turned := Basis(up, deg_to_rad(float(LOOK[name])) * sign) * gb
+		var parent := sk.get_bone_parent(b)
+		var pb: Basis = sk.get_bone_global_pose(parent).basis if parent >= 0 else Basis()
+		sk.set_bone_pose_rotation(b, (pb.inverse() * turned).get_rotation_quaternion())
+
+
+## Which way the face looks across the sheet: + to the right as drawn, - to the left.
+func _face_x(sk: Skeleton3D) -> float:
+	var h := sk.find_bone("Head")
+	var f := sk.find_bone("headfront")
+	if h < 0 or f < 0:
+		return 0.0
+	var hp := sk.global_transform * sk.get_bone_global_pose(h).origin
+	var fp := sk.global_transform * sk.get_bone_global_pose(f).origin
+	return (fp - hp).x
 
 
 ## Import settings: the colour sheet stored lossy (small in the APK) with its edges padded so mipmaps don't

@@ -12,7 +12,11 @@
   "stand_clap_open",
   "stand_clap",
   "stand_arms_up",
-  "stand_pump"
+  "stand_pump",
+  "sit_look_l",
+  "sit_look_r",
+  "stand_look_l",
+  "stand_look_r"
  ],
  "people": [
   {
