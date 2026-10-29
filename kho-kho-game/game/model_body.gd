@@ -31,6 +31,14 @@ var grip := Vector3.INF      # a point (world) both hands reach for and hold (th
 var grip_arms := 2           # 2 both arms (the pole), 1 his right only (a touch on the run)
 var _low_bones := []
 var _gripper: Grip
+# The dive, made by hand over whatever the clip is doing (DivePose), as Kabaddi Raid's dive is: how much of it there
+# is (0 the clip, 1 all of it), how far over he is (0 upright, PI/2 flat), how far up onto his hands and knees he has
+# pushed (0 reaching, 1 on all fours) and how high his hips are (m, body space).
+var dive := 0.0
+var dive_pitch := 0.0
+var dive_push := 0.0
+var dive_h := 0.0
+var dive_drawn := Vector2.INF   # as DivePose last drew him: (hips height, lowest point's height) in body space (m)
 
 
 func _init(p_look := {}, p_low := false) -> void:
@@ -75,6 +83,9 @@ func _ready() -> void:
 	anim = AnimationPlayer.new()
 	m.add_child(anim)   # its root (..) is the model's root, where the clips' tracks start
 	anim.add_animation_library("", _lib)
+	var diver := DivePose.new()
+	diver.body = self
+	skeleton.add_child(diver)   # first: the head turn and the grip work on the pose it leaves
 	_turner = HeadTurn.new()
 	_turner.body = self
 	skeleton.add_child(_turner)
@@ -95,10 +106,16 @@ func play(c: String, rate := 1.0, blend := 0.18, at := -1.0) -> void:
 	anim.speed_scale = absf(rate)
 
 
-## The playback rate that makes a moving clip's stride keep up with the ground at spd m/s.
+## The playback rate for a moving clip at spd m/s: up to the clip's own speed, the rate that keeps its stride with the
+## ground. Faster than that, a runner lengthens his stride more than he quickens it, so the rate rises with the square
+## root of the speed: the run (recorded at a 3.5 m/s jog) at 7 m/s is about 4 steps a second, as a fast runner's are,
+## not the 5.4 that matching the ground would take (it looked like fast forward; Kabaddi Raid caps its run at 1.6).
 static func rate_for(c: String, spd: float) -> float:
 	var s: float = _speed.get(c, 0.0)
-	return clampf(spd / s, 0.5, 1.9) if s > 0.1 else 1.0
+	if s <= 0.1:
+		return 1.0
+	var r := spd / s
+	return clampf(sqrt(r) if r > 1.0 else r, 0.5, 1.6)
 
 
 func clip_length(c: String) -> float:
@@ -191,6 +208,100 @@ class Grip extends SkeletonModifier3D:
 				var pg := sk.get_bone_global_pose(sk.get_bone_parent(b)).basis.orthonormalized()
 				var nb := Basis(q) * gb.basis.orthonormalized()
 				sk.set_bone_pose_rotation(b, Quaternion((pg.inverse() * nb).orthonormalized()))
+
+
+## The dive, made by hand (the only recorded dive is a dive into water, which left him leaning on one leg in the air),
+## as Kabaddi Raid's dive is: over whatever the clip is doing, by body.dive. His body tips over about his hips (not his
+## feet), arms reaching out ahead and down to the ground, legs trailing, head up to see what he reaches for; pushing up
+## (body.dive_push), his arms and thighs go down under him onto hands and knees. His hips are put at body.dive_h, then
+## lifted by as much as anything (head, chest, hands, knees, feet) would go under the ground, in this frame's pose.
+class DivePose extends SkeletonModifier3D:
+	var body
+	var _chain := []    # [bone, child] pairs, parents first
+	var _hips := -1
+	var _floor := {}    # bone -> how far above the ground it must stay (m: the body round the bone)
+
+	func _process_modification_with_delta(_delta: float) -> void:
+		var sk := get_skeleton()
+		if sk == null or body == null or body.dive <= 0.001:
+			if body != null:
+				body.dive_drawn = Vector2.INF
+			return
+		if _chain.is_empty():
+			_setup(sk)
+		var w: float = clampf(body.dive, 0.0, 1.0)
+		var p: float = body.dive_pitch
+		var k: float = clampf(body.dive_push, 0.0, 1.0)
+		# His long axis (hips to head) and his front, tipped over by p about his left-right axis.
+		var up := Vector3(0.0, cos(p), sin(p))
+		var front := Vector3(0.0, -sin(p), cos(p))
+		var to_body: Transform3D = body.global_transform.affine_inverse() * sk.global_transform
+		var to_sk := to_body.affine_inverse().basis
+		var want := {
+			"Hips": up, "Spine": up, "Spine1": up, "Spine2": (up - front * 0.15).normalized(),
+			"Neck": (up - front * 0.35).normalized(), "Head": (up - front * 0.9).normalized(),
+		}
+		for s in [["Left", 1.0], ["Right", -1.0]]:
+			var x := Vector3(s[1], 0.0, 0.0)
+			# Reaching: out past his head, a little apart, angled down to the ground ahead. On all fours: straight down.
+			var reach := (up * 0.95 + front * 0.28 + x * 0.12).normalized()
+			var prop := (front + x * 0.08).normalized()
+			want[s[0] + "Arm"] = reach.slerp(prop, k)
+			want[s[0] + "ForeArm"] = reach.slerp(prop, k)
+			# Legs trailing, the knees a little bent so the feet come off the ground behind; on all fours the thighs go
+			# down under him and the shins lie back along the ground.
+			var thigh := (-up + front * 0.06 + x * 0.07).normalized()
+			want[s[0] + "UpLeg"] = thigh.slerp((front * 0.9 - up * 0.25 + x * 0.1).normalized(), k)
+			want[s[0] + "Leg"] = (-up * 0.88 - front * 0.45).normalized().slerp(-up, k)
+			want[s[0] + "Foot"] = (-up * 0.55 + front * 0.8).normalized()
+		for pair in _chain:
+			var b: int = pair[0]
+			var t: Vector3 = to_sk * (want[pair[2]] as Vector3)
+			var gb := sk.get_bone_global_pose(b)
+			var d := sk.get_bone_global_pose(pair[1]).origin - gb.origin
+			if d.length() < 0.0001:
+				continue
+			var q := Quaternion.IDENTITY.slerp(Quaternion(d.normalized(), t.normalized()), w)
+			var parent := sk.get_bone_parent(b)
+			var pg := sk.get_bone_global_pose(parent).basis.orthonormalized() if parent >= 0 else Basis()
+			sk.set_bone_pose_rotation(b, Quaternion((pg.inverse() * (Basis(q) * gb.basis.orthonormalized())).orthonormalized()))
+		# The hips: over his feet's point on the ground, at dive_h; then out of the ground if any part went into it.
+		var hg := sk.get_bone_global_pose(_hips)
+		var hb := to_body * hg.origin
+		var goal := Vector3(lerpf(hb.x, 0.0, w), lerpf(hb.y, float(body.dive_h), w), lerpf(hb.z, 0.0, w))
+		var under := 0.0
+		for b in _floor:
+			var y := (to_body * sk.get_bone_global_pose(b).origin).y - hb.y + goal.y
+			under = maxf(under, float(_floor[b]) - y)
+		goal.y += under
+		var lowest := INF
+		for b in _floor:
+			lowest = minf(lowest, (to_body * sk.get_bone_global_pose(b).origin).y - hb.y + goal.y)
+		body.dive_drawn = Vector2(goal.y, lowest)
+		var move := to_sk * (goal - hb)
+		var hp := sk.get_bone_parent(_hips)
+		if hp >= 0:
+			move = sk.get_bone_global_pose(hp).basis.orthonormalized().inverse() * move
+		sk.set_bone_pose_position(_hips, sk.get_bone_pose_position(_hips) + move)
+
+	func _setup(sk: Skeleton3D) -> void:
+		_hips = sk.find_bone("mixamorig_Hips")
+		var pairs := [["Hips", "Spine"], ["Spine", "Spine1"], ["Spine1", "Spine2"], ["Spine2", "Neck"], ["Neck", "Head"],
+			["Head", "HeadTop_End"]]
+		for s in ["Left", "Right"]:
+			pairs += [[s + "Arm", s + "ForeArm"], [s + "ForeArm", s + "Hand"], [s + "UpLeg", s + "Leg"],
+				[s + "Leg", s + "Foot"], [s + "Foot", s + "ToeBase"]]
+		for pr in pairs:
+			var b := sk.find_bone("mixamorig_" + pr[0])
+			var c := sk.find_bone("mixamorig_" + pr[1])
+			if b >= 0 and c >= 0:
+				_chain.append([b, c, pr[0]])
+		for n in [["Head", 0.11], ["HeadTop_End", 0.08], ["Spine2", 0.13], ["Spine1", 0.12], ["Hips", 0.1],
+				["LeftHand", 0.03], ["RightHand", 0.03], ["LeftForeArm", 0.04], ["RightForeArm", 0.04], ["LeftLeg", 0.06],
+				["RightLeg", 0.06], ["LeftFoot", 0.05], ["RightFoot", 0.05], ["LeftToeBase", 0.03], ["RightToeBase", 0.03]]:
+			var b := sk.find_bone("mixamorig_" + n[0])
+			if b >= 0:
+				_floor[b] = n[1]
 
 
 static func material(lk: Dictionary, p_low: bool) -> ShaderMaterial:
