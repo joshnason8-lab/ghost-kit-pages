@@ -130,17 +130,19 @@ func _tour() -> void:
 		while rm2.phase != "setup" and rg < 900:
 			await get_tree().process_frame
 			rg += 1
-		var c2: Camera3D = rm2.cam.cam
+		var c2 := Camera3D.new()
+		c2.fov = 22.0
+		rm2.add_child(c2)
+		c2.make_current()
 		var k := 0
 		while rm2.phase != "raid" or rm2.phase_t < 2.2:
 			await get_tree().process_frame
 			k += 1
 			if rm2.raider:
 				var at: Vector3 = rm2.raider.position
-				rm2.cam.set_process(false)
 				c2.global_position = at + Vector3(3.2, 1.3, 0.6)
 				c2.look_at(at + Vector3(0, 0.9, 0))
-			if k % 12 == 0 and (rm2.phase == "raid" or rm2.phase_t > 1.2):
+			if k % 6 == 0 and (rm2.phase == "raid" or rm2.phase_t > 1.2):
 				await shot("stance_%03d_%s_%.1f" % [k, rm2.phase, rm2.phase_t])
 			if k > 900:
 				break

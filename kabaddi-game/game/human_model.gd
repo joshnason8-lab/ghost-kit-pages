@@ -25,6 +25,8 @@ var wrench_side := 1.0      # ... toward his right (1) or left (-1)
 var celebrate := 0.0        # celebrating, 0..1
 var bounce := 0.0           # a raider's light, quick steps on the spot, 0..1
 var _tap := 0.0
+var _poke_t := 3.0          # s to a raider's next toe poke (counting down; below zero, it is happening)
+var _poke_leg := 1.0
 var ref_sig := 0            # an official's hand signal, see SIGNALS
 var ref_amt := 0.0          # ... how far into it, 0..1
 var cele := 0               # how: 0 arms up, 1 fist pump, 2 clap, 3 high five, 4 point to the crowd, 5 chest thump
@@ -94,6 +96,8 @@ var _pace := -1.0           # his speed, smoothed: how far a running clip is in 
 # an offset that fades out, so every transition starts from the pose on screen (see _settle).
 const SETTLE_TIME := 0.18
 const WAY_EASE := 0.18       # s over which the way he travels is smoothed for picking a running clip
+const TAP_RATE := 0.85       # a raider's dance from foot to foot: left-right cycles a second (a step each 0.6 s)
+const POKE_LEN := 0.45       # s a toe poke takes, out and back
 const READY_HINGE := 0.5     # rad the pelvis tips forward per unit of crouch, standing ready on his own legs ...
 const READY_WIDEN := 0.08    # ... and rad each leg goes further out: feet about 0.45 m apart
 const HELD_HINGE := 0.6      # share of that hinge a raider held round the middle bends into, struggling
@@ -599,16 +603,32 @@ func _animate(delta: float) -> void:
 	var rthigh := -sw * amp + c * 0.75 + hinge
 	var lknee := -(0.08 * minf(1.0, gait) + fold * pow(maxf(0.0, cw), 1.5)) - c * 1.35
 	var rknee := -(0.08 * minf(1.0, gait) + fold * pow(maxf(0.0, -cw), 1.5)) - c * 1.35
-	# A raider on his toes: quick light steps on the spot while he works the cover.
+	# A raider dancing on his toes as he works the cover, as raiders do in training footage (a raider drilling his bonus
+	# and back kick, 2026-10; tools/mocap/extract_pose.py): a step from foot to foot about 1.7 times a second, the
+	# weight going over onto the planted foot, and now and then a toe poked out in front, feeling for the line.
 	var tap := bounce * clampf(1.0 - gait * 0.7, 0.0, 1.0) * (1.0 - lie)
 	if tap > 0.01:
-		_tap = fmod(_tap + delta * TAU * 2.4, TAU)
+		_tap = fmod(_tap + delta * TAU * TAP_RATE, TAU)
 		var ts := sin(_tap)
-		lthigh += 0.16 * tap * maxf(0.0, ts)
-		rthigh += 0.16 * tap * maxf(0.0, -ts)
-		lknee -= 0.32 * tap * maxf(0.0, ts)
-		rknee -= 0.32 * tap * maxf(0.0, -ts)
-		pelvis.position.y += 0.018 * tap * absf(ts)
+		lthigh += 0.24 * tap * maxf(0.0, ts)
+		rthigh += 0.24 * tap * maxf(0.0, -ts)
+		lknee -= 0.5 * tap * maxf(0.0, ts)
+		rknee -= 0.5 * tap * maxf(0.0, -ts)
+		pelvis.position.y += 0.026 * tap * absf(ts)
+		pelvis.position.x += -0.04 * tap * ts   # over the foot that is down
+		# The toe poke: every few seconds, a leg (the one about to step) reaches out in front, nearly straight, and back.
+		_poke_t -= delta
+		if _poke_t <= -POKE_LEN:
+			_poke_t = randf_range(2.2, 4.5)
+			_poke_leg = 1.0 if ts < 0.0 else -1.0
+		if _poke_t < 0.0:
+			var pk := sin(clampf(-_poke_t / POKE_LEN, 0.0, 1.0) * PI) * tap
+			if _poke_leg > 0.0:
+				lthigh += 0.55 * pk
+				lknee += 0.4 * pk
+			else:
+				rthigh += 0.55 * pk
+				rknee += 0.4 * pk
 	# Side-shuffle: sit into it, the leading leg steps out, the trailing leg closes up.
 	var lead_r := move_side > 0.0
 	var step_w := 0.32 * side_w * minf(1.0, gait * 1.2)

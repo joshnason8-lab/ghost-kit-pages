@@ -367,7 +367,9 @@ func _pose(delta: float) -> void:
 	# are the braced stance underneath while he steps or is held by both legs. Standing ready, the same: the stance clip
 	# (a goalkeeper's) stood him with his knees and toes turned out and a leg straight out to the side, a foot left
 	# planted at its widest; his legs are the hand-made crouch (HumanModel._animate), the clip keeps his trunk and arms.
-	var own_legs := (state == "held" and held_leg == 0.0) or state == "ready"
+	# A raider working the cover the same: his legs dance (HumanModel's tap), the stance clip keeps his trunk and arms
+	# (the old clip's legs stood him nearly straight-kneed).
+	var own_legs := (state == "held" and held_leg == 0.0) or state in ["ready", "raid"]
 	m.clip_legs = move_toward(m.clip_legs, 0.0 if own_legs else 1.0, delta * 4.0)
 	var want_crouch := 0.0
 	var want_lean := 0.0
@@ -392,8 +394,9 @@ func _pose(delta: float) -> void:
 		"ready":
 			want_crouch = 0.85
 		"raid":
-			want_crouch = 0.35
-			want_lean = -0.15
+			# Hips about 0.9 of their standing height, as the footage's raider works the cover.
+			want_crouch = 0.45
+			want_lean = -0.2
 			want_bounce = 1.0
 		"touch":
 			want_reach = sin(p * PI)
