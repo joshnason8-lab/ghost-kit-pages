@@ -630,6 +630,17 @@ func _ref_whistle(kind: String) -> void:
 	Sfx.play(kind, -24.0 if attract else _near_db(at, -3.0), randf_range(0.98, 1.02))
 
 
+## The sliotar meeting the hurley without a full swing (lifted onto it, soloed, saved, hopped on the bas): the
+## owner's recording of a strike, quieter, from where it is and a little higher (so a game sounds as practice does).
+func _hurley_tap(at: Vector3, db: float, pitch := 1.18) -> void:
+	if attract:
+		return
+	Sfx.play("strike", _near_db(at, db), pitch * randf_range(0.95, 1.05))
+
+
+var _hop_n := 0
+
+
 ## A sound at p as loud as db when the camera is close, quieter with distance (to -12 dB more at 60 m).
 func _near_db(p: Vector3, db: float) -> float:
 	return db - clampf(cam.camera.global_position.distance_to(p) / 60.0, 0.0, 1.0) * 12.0
@@ -667,6 +678,8 @@ func _move_all(dt: float) -> void:
 		if not p.visible:
 			continue
 		p.integrate(dt, now)
+		if p.role != "umpire":
+			_out_of_goals(p)
 		var d := p.global_position.distance_to(camp)
 		p.visible_on_screen = view.is_position_in_frustum(p.global_position + Vector3(0, 1, 0)) or d < 12.0
 		p.set_pose_rate(1 if d < 60.0 else (2 if d < 95.0 or not low else 3))
@@ -715,6 +728,11 @@ func _carry_ball(dt: float) -> void:
 	elif carrier.ball_stick:
 		var hop := absf(sin(now * 7.0)) * 0.12
 		ball.global_position = carrier.body.bas_world() + Vector3(0, 0.06 + hop, 0)
+		# Each hop back onto the bas, a soft tap of the leather on the ash.
+		var n := int(floor(now * 7.0 / PI))
+		if n != _hop_n:
+			_hop_n = n
+			_hurley_tap(ball.global_position, -18.0, 1.3)
 	# The carrying rules: steps and time with it in the hand.
 	var c: Rules.Carry = carries[carrier]
 	var foul := Rules.carry_step(c, carrier.take_steps(), dt)
@@ -814,7 +832,7 @@ func _brains(dt: float) -> void:
 				continue
 			# Over a free on the grass, and lifting and striking it: still, square to the posts (turned to look at the
 			# ball beside him, the hurley's bas was off it).
-			if pl.action in ["free_place", "free_set", "free_strike"]:
+			if pl.action in ["free_set", "free_strike"]:
 				pl.want_vel = Vector3.ZERO
 				pl.face_to = Vector3(Pitch.HALF_L * dir(pl.team), 0, 0)
 				continue
@@ -872,21 +890,114 @@ func _brains(dt: float) -> void:
 			_steer(pl, target, speed)
 
 
+## Each goal as a player must go round it: the posts and the net behind them (s: the end, -1 or +1), in x and z.
+const GOAL_PAD := 0.35         # a man's half-width and a little
+
+static func goal_box(s: float, pad := GOAL_PAD) -> Rect2:
+	var x0 := Pitch.HALF_L * s - s * 0.12
+	var x1 := (Pitch.HALF_L + Pitch.NET_DEPTH) * s
+	var hz := Pitch.POST_GAP * 0.5 + Pitch.POST_W
+	return Rect2(Vector2(minf(x0, x1), -hz), Vector2(absf(x1 - x0), hz * 2.0)).grow(pad)
+
+
+## Where to go instead of target: never inside a goal (a ball in the net is fetched from in front of it, or not at
+## all), and for a goalkeeper never out over the lines.
+func _keep_out(target: Vector3, pl: Player) -> Vector3:
+	for s: float in [-1.0, 1.0]:
+		var box := goal_box(s)
+		if box.has_point(Vector2(target.x, target.z)):
+			target.x = (Pitch.HALF_L - 0.6) * s
+	if pl.is_keeper():
+		target.x = clampf(target.x, -Pitch.HALF_L + 0.4, Pitch.HALF_L - 0.4)
+		target.z = clampf(target.z, -Pitch.HALF_W + 0.4, Pitch.HALF_W - 0.4)
+	return target
+
+
+## The next place to make for on the way from p to target: target itself, or, if the straight line crosses a goal,
+## the corner of it to go round (the one that makes the way shortest).
+func _round_goals(p: Vector3, target: Vector3) -> Vector3:
+	var a := Vector2(p.x, p.z)
+	var b := Vector2(target.x, target.z)
+	for s: float in [-1.0, 1.0]:
+		var box := goal_box(s)
+		if not _crosses(a, b, box.grow(-0.05)):
+			continue
+		var best := target
+		var bd := INF
+		var r := box.grow(0.25)
+		for c: Vector2 in [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]:
+			if _crosses(a, c, box.grow(-0.05)):
+				continue
+			var d := a.distance_to(c) + c.distance_to(b)
+			if d < bd:
+				bd = d
+				best = Vector3(c.x, 0, c.y)
+		return best
+	return target
+
+
+## Does the line from a to b pass through the rectangle?
+static func _crosses(a: Vector2, b: Vector2, r: Rect2) -> bool:
+	var t0 := 0.0
+	var t1 := 1.0
+	var d := b - a
+	for ax in 2:
+		var lo: float = r.position[ax]
+		var hi: float = r.end[ax]
+		if absf(d[ax]) < 1e-6:
+			if a[ax] < lo or a[ax] > hi:
+				return false
+			continue
+		var u0: float = (lo - a[ax]) / d[ax]
+		var u1: float = (hi - a[ax]) / d[ax]
+		if u0 > u1:
+			var tmp := u0
+			u0 = u1
+			u1 = tmp
+		t0 = maxf(t0, u0)
+		t1 = minf(t1, u1)
+		if t0 > t1:
+			return false
+	return true
+
+
+## Anyone who has got into a goal (the posts and the net) put back out of it, the nearest way.
+func _out_of_goals(pl: Player) -> void:
+	var p := pl.global_position
+	for s: float in [-1.0, 1.0]:
+		var box := goal_box(s, 0.25)
+		var q := Vector2(p.x, p.z)
+		if not box.has_point(q):
+			continue
+		var outs := [Vector2(box.position.x - 0.01, q.y), Vector2(box.end.x + 0.01, q.y), Vector2(q.x, box.position.y - 0.01),
+			Vector2(q.x, box.end.y + 0.01)]
+		var best: Vector2 = outs[0]
+		for o: Vector2 in outs:
+			if o.distance_to(q) < best.distance_to(q):
+				best = o
+		pl.global_position = Vector3(best.x, p.y, best.y)
+
+
 func _jog(pl: Player, target: Vector3) -> float:
 	var d := pl.global_position.distance_to(target)
 	return clampf(d * 0.6, 0.0, pl.top_speed() * (0.92 if d > 10.0 else 0.6))
 
 
-## Run toward target at up to speed, easing in over the last metre or two so he stops on it.
+## Run toward target at up to speed, easing in over the last metre or two so he stops on it; round a goal, never
+## through its posts and net (the owner saw the goalkeeper run through the goal, and through the net to a ball in
+## it), and a goalkeeper inside the field.
 func _steer(pl: Player, target: Vector3, speed: float) -> void:
+	var goal := _keep_out(target, pl)
+	target = _round_goals(pl.global_position, goal)
 	var d := target - pl.global_position
 	d.y = 0
 	var l := d.length()
-	if l < 0.3:
+	var through := target != goal          # a corner on the way round: run on through it
+	if l < 0.3 and not through:
 		pl.want_vel = Vector3.ZERO
 		return
-	var s := minf(speed, l * 2.2)
-	pl.want_vel = d / l * s
+	var s := speed if through else minf(speed, l * 2.2)
+	pl.want_vel = d / maxf(l, 0.001) * s
 
 
 func _rest_spot(pl: Player) -> Vector3:
@@ -1126,7 +1237,7 @@ func _gain(p: Player, kind: String) -> void:
 		p.ball_hand = false
 		p.ball_stick = true
 		Rules.to_hurley(c)
-		Sfx.play("tap", -10.0)
+		_hurley_tap(p.global_position, -10.0)
 	p.take_steps()
 	ai[p.team].think_t[p] = now + 0.15
 	if user_team >= 0 and p.team == user_team:
@@ -1273,13 +1384,11 @@ func _lift_ball() -> void:
 		ball.global_position = (_lift.p0 as Vector3) + (_lift.v as Vector3) * u + Vector3(0, -0.5 * 9.81 * u * u, 0)
 
 
-## Is this press the start of an aimed shot: your free or 65 at the posts in range (STRIKE or GOAL), your penalty
-## (GOAL), or your penalty in a shoot-out?
+## Is this press the start of an aimed shot: your free or 65 at the posts in range (STRIKE or GOAL), or your penalty
+## (GOAL)? (A shoot-out's penalty is aimed without one: _shootout_step.)
 func _aim_wanted(a: Player, id: String) -> bool:
 	if a != taker or user_team < 0 or a.team != user_team:
 		return false
-	if phase == P.SHOOTOUT:
-		return id == "GOAL" and String(shootout.get("state", "")) == "ready"
 	if phase != P.SET or restart.is_empty():
 		return false
 	var kind := String(restart.kind)
@@ -1297,21 +1406,11 @@ func _start_aim(a: Player) -> void:
 	var spot: Vector3 = restart.spot if not restart.is_empty() else ball.global_position
 	# Over a ball on the grass (a free, a 65, a penalty): he settles beside it, the hurley under it, facing the posts.
 	if not restart.is_empty() and String(restart.kind) in ["free", "65", "penalty"]:
-		var to_goal := Vector3(Pitch.HALF_L * dir(a.team) - spot.x, 0, -spot.z).normalized()
-		a.measure_free_bas()
-		a.global_position = free_stand(spot, a.team)
-		a.vel = Vector3.ZERO
-		a.want_vel = Vector3.ZERO
-		a.yaw = atan2(to_goal.x, to_goal.z)
-		a.face_to = Vector3(Pitch.HALF_L * dir(a.team), 0, 0)
-		a.ball_hand = false
-		a.ball_stick = false
-		ball.place(spot)
-		a.play("free_set")
+		_take_stance(a, spot)
 	placed_aim = PlacedAim.new()
 	placed_aim.challenge = _aim_challenge()
 	add_child(placed_aim)
-	placed_aim.setup(spot, a.global_position, dir(a.team), float(a.data.get("free", 70)) / 100.0, rng, _aim_view())
+	placed_aim.setup(spot, a.global_position, _attack_dir(a.team), float(a.data.get("free", 70)) / 100.0, rng, _aim_view())
 	placed_aim.shot.connect(func(p: Vector3):
 		_aim_point = p
 		if phase == P.SHOOTOUT:
@@ -1322,11 +1421,33 @@ func _start_aim(a: Player) -> void:
 	Game.haptic("free")
 
 
+## A free's taker over the sliotar at spot, in his stance (free_set) at once, facing the posts his side attacks.
+func _take_stance(a: Player, spot: Vector3) -> void:
+	var d := _attack_dir(a.team)
+	var to_goal := Vector3(Pitch.HALF_L * d - spot.x, 0, -spot.z).normalized()
+	a.measure_free_bas()
+	a.global_position = free_stand(spot, a.team)
+	a.vel = Vector3.ZERO
+	a.want_vel = Vector3.ZERO
+	a.yaw = atan2(to_goal.x, to_goal.z)
+	a.face_to = Vector3(Pitch.HALF_L * d, 0, 0)
+	a.ball_hand = false
+	a.ball_stick = false
+	ball.place(spot)
+	if a.action != "free_set":
+		a.play("free_set")
+
+
 ## Where a free's taker stands over the sliotar at spot, settled to lift it (Player.free_ball_offset), facing the
 ## posts team k attacks.
 func free_stand(spot: Vector3, k: int) -> Vector3:
-	var to_goal := Vector3(Pitch.HALF_L * dir(k) - spot.x, 0, -spot.z).normalized()
+	var to_goal := Vector3(Pitch.HALF_L * _attack_dir(k) - spot.x, 0, -spot.z).normalized()
 	return Vector3(spot.x, 0, spot.z) - Basis(Vector3.UP, atan2(to_goal.x, to_goal.z)) * Player.free_ball_offset()
+
+
+## The way team k shoots: the half's, or in a shoot-out (and free-taking practice) the one goal everyone takes them at.
+func _attack_dir(k: int) -> float:
+	return _shootout_goal_dir() if phase == P.SHOOTOUT else dir(k)
 
 
 ## A woodwork challenge for this aimed shot ("left" or "right" post; free-taking practice), "" none.
@@ -1346,14 +1467,17 @@ func _ball_scale() -> float:
 
 ## The camera an aimed shot uses (null: it makes its own low one; free-taking practice has its own all along).
 func _aim_view() -> Camera3D:
-	return null
+	return _pen_view if phase == P.SHOOTOUT else null
 
 
 func _end_aim() -> void:
 	if placed_aim != null:
 		placed_aim.queue_free()
 		placed_aim = null
-	cam.camera.make_current()
+	if phase == P.SHOOTOUT and _pen_view != null:
+		_pen_view.make_current()
+	else:
+		cam.camera.make_current()
 
 
 ## The moment of the strike: the sliotar leaves the bas toward target, with the striker's error. For a point the
@@ -1576,7 +1700,7 @@ func _do_solo(pl: Player) -> void:
 		pl.ball_hand = false
 		pl.ball_stick = true
 		Rules.to_hurley(carries[pl])
-		Sfx.play("tap", -12.0))
+		_hurley_tap(pl.global_position, -12.0))
 
 
 ## Off the hurley back into the hand: his second catch of this possession, or a foul if it would be his third.
@@ -1646,6 +1770,7 @@ func _save(k: Player, shooter_dir: float) -> void:
 	if ball.state != Sliotar.FREE:
 		return
 	Sfx.play("save", -4.0)
+	_hurley_tap(k.global_position, -6.0, 0.92)
 	Sfx.react("ooh", -4.0)
 	if rng.randf() < 0.35:
 		# Held.
@@ -2621,7 +2746,9 @@ func _run_subs() -> void:
 # ---------------------------------------------------------------- the shoot-out
 
 ## Level after extra time in a knock-out game: five penalties each from the 20 m line, goals only, then sudden
-## death, the same five taking them again.
+## death, the same five taking them again. Taken as free-taking practice's frees are (the owner: "use this setup for
+## penalty shots in extra time as well"): each taker already in his stance over the ball, the low camera behind him;
+## yours aimed by timing (the target, then the bar), the other side's lifted and struck at a spot their taker picks.
 func _begin_shootout() -> void:
 	phase = P.SHOOTOUT
 	phase_t = 0.0
@@ -2631,9 +2758,15 @@ func _begin_shootout() -> void:
 		var ps: Array = teams[k].players.filter(func(p): return (p as Player).on_pitch() and not (p as Player).is_keeper())
 		ps.sort_custom(func(a, b): return int(a.data.accuracy) + int(a.data.free) > int(b.data.accuracy) + int(b.data.free))
 		order[k] = ps.slice(0, Rules.SHOOTOUT_TAKERS)
-	shootout = {"goals": [0, 0], "taken": [0, 0], "next": rng.randi() % 2, "order": order, "state": "walk", "t": 0.0}
+	shootout = {"goals": [0, 0], "taken": [0, 0], "next": rng.randi() % 2, "order": order, "state": "ready", "t": 0.0}
+	if _pen_view == null:
+		_pen_view = Camera3D.new()
+		add_child(_pen_view)
 	hud.shootout(shootout)
 	_shootout_next()
+
+
+var _pen_view: Camera3D     # the shoot-out's camera, low behind the taker
 
 
 func _shootout_goal_dir() -> float:
@@ -2643,9 +2776,9 @@ func _shootout_goal_dir() -> float:
 func _shootout_spot(pl: Player) -> Vector3:
 	var gx := Pitch.HALF_L * _shootout_goal_dir()
 	if pl == taker:
-		return Pitch.penalty_spot(1.0) + Vector3(-0.9, 0, 0)
+		return free_stand(Pitch.penalty_spot(_shootout_goal_dir()), pl.team)
 	if pl.is_keeper() and pl.team != int(shootout.next):
-		return Vector3(gx, 0, 0)
+		return Vector3(gx - _shootout_goal_dir() * 0.6, 0, 0)
 	# Everyone else at the halfway line, the goalkeeper waiting his turn beside them.
 	var i: int = teams[pl.team].players.find(pl)
 	return Vector3(-2.0 - (pl.team * 2.0), 0, -20.0 + i * 2.6)
@@ -2655,44 +2788,82 @@ func _shootout_next() -> void:
 	var k := int(shootout.next)
 	var n := int(shootout.taken[k])
 	var order: Array = shootout.order[k]
+	var last := taker
 	taker = order[n % order.size()]
-	shootout.state = "walk"
+	# The one who took the last back with the rest at once (walking back he passed in front of the camera), and
+	# everyone else in their places too: only the taker and the goalkeeper are in the picture.
+	for tm in teams:
+		for pl in tm.players:
+			if pl != taker:
+				pl.global_position = _shootout_spot(pl)
+				pl.vel = Vector3.ZERO
+	if last != null and is_instance_valid(last):
+		last.stop_action()
+	var spot := Pitch.penalty_spot(_shootout_goal_dir())
+	ball.vel = Vector3.ZERO
+	ball.state = Sliotar.DEAD
+	carrier = null
+	restart = {"kind": "penalty", "team": k, "spot": spot}
+	# Straight into his stance over the ball, the goalkeeper on his line, the camera behind the taker.
+	_take_stance(taker, spot)
+	taker.action_t = 1.0
+	var keep := keeper_of(1 - k)
+	if keep != null:
+		keep.global_position = _shootout_spot(keep)
+		keep.vel = Vector3.ZERO
+	PlacedAim.low_view(_pen_view, spot, taker.global_position, _shootout_goal_dir())
+	_pen_view.make_current()
+	shootout.state = "ready"
 	shootout.t = now
-	ball.place(Pitch.penalty_spot(1.0))
-	restart = {"kind": "penalty", "team": k, "spot": Pitch.penalty_spot(1.0)}
 	if user_team >= 0 and controls.visible:
 		_set_active(taker if k == user_team else keeper_of(user_team))
 
 
 func _shootout_step(_dt: float) -> void:
-	if String(shootout.state) == "walk":
-		if (taker.global_position.distance_to(restart.spot) < 1.5 and now - float(shootout.t) > 3.0) or now - float(shootout.t) > 8.0:
-			shootout.state = "ready"
-			shootout.t = now
-	elif String(shootout.state) == "ready":
-		var yours := user_team >= 0 and taker.team == user_team and controls.visible
-		if (not yours and now - float(shootout.t) > 1.2) or now - float(shootout.t) > 8.0:
-			_shootout_strike("")
-	elif String(shootout.state) == "done":
-		if now - float(shootout.t) > 2.2:
-			var w := Rules.shootout_winner(shootout.goals, shootout.taken)
-			if w >= 0:
-				_finish(w)
-				return
-			shootout.next = 1 - int(shootout.next)
-			_shootout_next()
+	var yours := user_team >= 0 and taker.team == user_team and controls.visible
+	match String(shootout.state):
+		"ready":
+			if yours:
+				# Yours: the target comes up after a beat (the aim's SHOOTs strike it: _shootout_strike).
+				if placed_aim == null and now - float(shootout.t) > 0.6:
+					_start_aim(taker)
+			elif now - float(shootout.t) > 1.4:
+				_aim_point = _ai_penalty_aim(taker)
+				_shootout_strike("AI")
+		"struck":
+			if now - float(shootout.t) > 6.0:
+				_shootout_result("", ball.global_position)
+		"done":
+			if taker.action == "":
+				taker.play("free_set")
+			if now - float(shootout.t) > 2.4:
+				var w := Rules.shootout_winner(shootout.goals, shootout.taken)
+				if w >= 0:
+					_finish(w)
+					return
+				shootout.next = 1 - int(shootout.next)
+				_shootout_next()
+
+
+## Where the other side's penalty taker aims: low in a corner or high under the bar, never at the goalkeeper, give or
+## take his skill.
+func _ai_penalty_aim(pl: Player) -> Vector3:
+	var gx := Pitch.HALF_L * _shootout_goal_dir()
+	var side := -1.0 if rng.randf() < 0.5 else 1.0
+	var z := side * rng.randf_range(0.9, Pitch.POST_GAP * 0.5 - 0.45)
+	var y := rng.randf_range(0.35, 1.0) if rng.randf() < 0.6 else rng.randf_range(1.4, Pitch.BAR_H - 0.4)
+	var miss := lerpf(0.5, 0.15, clampf(float(pl.data.get("free", 70)) / 100.0, 0.0, 1.0))
+	return Vector3(gx, y + rng.randfn(0.0, miss * 0.5), z + rng.randfn(0.0, miss))
 
 
 func _shootout_strike(_choice: String) -> void:
 	shootout.state = "struck"
+	shootout.t = now
 	carrier = taker
 	ball.state = Sliotar.HELD
 	taker.ball_hand = false
 	taker.ball_stick = false
-	if _choice == "AIMED":
-		_shoot_at(taker, _aim_point, "penalty")
-	else:
-		_shoot(taker, true, "penalty")
+	_shoot_at(taker, _aim_point, "penalty")
 
 
 func _shootout_result(kind: String, _c: Vector3) -> void:
@@ -2711,8 +2882,11 @@ func _shootout_result(kind: String, _c: Vector3) -> void:
 	if not shootout.has("log"):
 		shootout.log = []
 	(shootout.log as Array).append([k, scored])
-	ball.state = Sliotar.DEAD
-	ball.vel = Vector3.ZERO
+	if absf(ball.global_position.x) >= Pitch.HALF_L - 0.5:
+		ball.state = Sliotar.OUT        # over the line it flies on (into the net or behind the goal)
+	else:
+		ball.state = Sliotar.DEAD
+		ball.vel = Vector3.ZERO
 	shootout.state = "done"
 	shootout.t = now
 	hud.shootout(shootout)
@@ -2723,6 +2897,8 @@ func _shootout_result(kind: String, _c: Vector3) -> void:
 func _finish(shootout_winner := -1) -> void:
 	phase = P.OVER
 	phase_t = 0.0
+	if _pen_view != null and _pen_view.current:
+		cam.camera.make_current()
 	_ref_whistle("whistle_final")
 	var a := Rules.total(score[0][0], score[0][1])
 	var b := Rules.total(score[1][0], score[1][1])
@@ -2889,7 +3065,7 @@ func user_buttons() -> Array:
 			_:
 				return ["STRIKE", "PASS"] + (["GOAL"] if Pitch.from_goal_line(restart.spot, dir(a.team)) <= 21.0 else [])
 	if phase == P.SHOOTOUT:
-		return ["GOAL"] if a == taker and String(shootout.get("state", "")) == "ready" else []
+		return []           # (your penalty is aimed at once: the aim's SHOOT, above)
 	if phase != P.LIVE:
 		return []
 	if a == carrier:
@@ -2990,9 +3166,6 @@ func _on_action(id: String) -> void:
 		return
 	if phase == P.SET and a == taker:
 		_take_restart(a, id)
-		return
-	if phase == P.SHOOTOUT and a == taker and id == "GOAL":
-		_shootout_strike(id)
 		return
 	if phase != P.LIVE or a.busy():
 		return

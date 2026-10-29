@@ -6,11 +6,10 @@ no tracker follows a pale stick against a grey sky.
 
   python3 tools/mocap/free_clip.py <landmarks.json (shot 3)> > assets/player/free.json
 
-Three clips, each of the game's 17 bones' turns (Euler YXZ degrees, as ToonBody.apply reads them) a frame with the
+Two clips, each of the game's 17 bones' turns (Euler YXZ degrees, as ToonBody.apply reads them) a frame with the
 hips' lift and their travel (root):
 - Free_Ready: the stance he takes over the ball once it is down and holds while the free is aimed: upright, side-on to
   the posts (his left shoulder to them), the hurley in both hands in front of him (the video's frame 300).
-- Free_Place: bending to put the ball down and coming back up into the stance (frames 300 to 450 and back).
 - Free_Strike: from the stance, down to the ball (300 to 850, quickened), the bas slid under it and the lift, the
   ball rising on the hurley to his head, the toss, the backswing over his right shoulder and the strike as it drops
   past his waist out in front of him, and the follow-through (850 to 1300 at the real pace).
@@ -272,16 +271,6 @@ def main():
     clips = {}
     clips["Free_Ready"] = {"fps": OUT_FPS, "yaw": 0.0, "source": "video (owner's, slow motion)",
                            "frames": to_clip([pose_at(READY)], root=False)}
-    place = []
-    n = int(0.55 * OUT_FPS)
-    for i in range(n + 1):
-        k = i / float(n)
-        place.append(pose_at(READY + (450 - READY) * (0.5 - 0.5 * math.cos(math.pi * k))))
-    for i in range(1, n + 1):
-        k = i / float(n)
-        place.append(pose_at(450 - (450 - READY) * (0.5 - 0.5 * math.cos(math.pi * k))))
-    clips["Free_Place"] = {"fps": OUT_FPS, "yaw": 0.0, "source": "video (owner's, slow motion)",
-                           "frames": to_clip(place, root=False), "down": round(0.55, 3)}
     # The strike: 300 to 850 in DOWN seconds (eased), then the real pace.
     down = 0.6
     seq, src = [], []

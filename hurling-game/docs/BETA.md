@@ -9,6 +9,23 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.17.0
+
+- **Frees without the walk-up**: the taker is in his stance over the ball as each free starts, and goes back into it
+  after the shot, scored or missed (the walk and the putting down are gone).
+- **The penalty shoot-out in extra time is taken the same way**: the same low camera behind the taker, the same
+  stance and strike. You aim and SHOOT your own team's penalties; the other team's are taken for them. Only the taker
+  and the goalkeeper are in the picture.
+- **The free-taking practice is at the county ground**; the choice of ground is gone.
+- **The owner's hurley sounds in the matches too**: lifting the ball onto the hurley, the solo's hops and the
+  goalkeeper's saves.
+- **Running legs**: longer strides as the player speeds up (fewer, bigger steps), and each foot stays planted on the
+  grass while it is down, so the players no longer skate or float.
+- **Goalkeepers go round the goal**, not through the posts and the net, to the ball behind it or back to the line;
+  and they keep inside the pitch.
+- **The menu's picture fills its card** (the red "Clár an Lae" band across it is gone).
+- The hurley in the free's swing lies right (it was too flat and long at contact).
+
 ## New in 0.16.0
 
 - **A free taken as the owner's slow-motion video shows it**: your free-taker walks up on his own side of the ball

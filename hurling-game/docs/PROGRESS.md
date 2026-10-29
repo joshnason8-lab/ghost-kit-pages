@@ -250,6 +250,33 @@ posts; SHOOT stops it, and that is where the ball goes.
 - Tests: a point, a wide, a 65 and a penalty aimed and struck through the match, back to the match camera after each;
   the target lingers between the posts and hurries through the goal. How to Play's controls say how.
 
+## Done (0.17.0-beta, free-taking round five, 29 October 2026)
+
+The owner's list: one ground for practice; no walk and set-down between frees; the shoot-out taken as a free;
+the hurley sounds in matches; legs that match the running; goalkeepers round the goal, not through it, and inside
+the lines; and the menu's picture without its red band.
+
+- **Practice**: the county ground only (`ui/practice_screen.gd`). Each free starts with the taker in the Free_Ready
+  stance (`_take_stance`), the low camera straight on him; after the shot he goes back into it. The Free_Place clip
+  and its walk are gone (`tools/mocap/free_clip.py` makes two clips now).
+- **Shoot-out**: its own camera (`_pen_view`, `PlacedAim.low_view`), the taker in his stance on the penalty spot and
+  the goalkeeper on his line; yours aimed with the target and SHOOT, the other team's by `_ai_penalty_aim` (a corner,
+  low or high, the error by skill), struck lifted as a free is. Everyone else is put at halfway at once each penalty
+  (walking back, the last taker crossed the camera).
+- **Sounds**: `_hurley_tap` plays the owner's strike recording, quieter and higher, for a lift, a solo's hops and a
+  save (not in the menu's attract match).
+- **Gait**: the steps measured on the drawn man (walk 0.63 m, jog 1.04 m, the sprint clip 1.36 m), and past 4 m/s
+  the step grows to 2.2 m at 8.5 m/s, so a sprinter takes about 3.5 steps a second, not 4.4. A foot that comes
+  down is pinned where it landed and the leg reached to it by two-bone IK (`Player._plant_feet`), let go as it lifts
+  or the leg runs out of reach: no sliding at any speed (test: under 0.3 m of slide per planted foot at 4, 7 and
+  8.4 m/s, and the cadence).
+- **Goals as obstacles** (`goal_box`): a target in the net is moved out in front of the line; a path through the
+  goal goes round its nearer corner (`_round_goals`, Liang-Barsky clipping); anyone inside is pushed out; a
+  goalkeeper's target is kept inside the lines.
+- **Menu**: the cover's red masthead removed; the picture fills it.
+- Tests: the shoot-out to a winner (stance, camera, aimed, lifted, the match camera back after); keepers round the
+  goal three ways; 650-odd checks in all.
+
 ## Done (0.16.0-beta, free-taking round four, 28 October 2026)
 
 The owner's list: the taker came in on the wrong side; the camera to pull back to see the ball put down; the awful

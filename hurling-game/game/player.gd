@@ -38,7 +38,6 @@ const ACTIONS := {
 	"puck_out": [0.7, 0.42],     # the goalkeeper's toss and long strike
 	"cut": [0.7, 0.44],          # a sideline cut: struck off the ground, low and side-on
 	"dejected": [2.0, 0.0],
-	"free_place": [1.1, 0.55],   # a free: the sliotar put down on the grass (at 0.55 s) and up into the stance
 	"free_set": [600.0, 0.0],    # standing over it side-on, the hurley in both hands, while the free is aimed (held)
 	"free_strike": [2.45, 1.8],  # from there: down to it, the lift onto the hurley, the toss, the strike (assets/player/free.json)
 	# Officials' signals, held while the match wants them.
@@ -301,6 +300,95 @@ func animate(now: float) -> void:
 	if Ultra.lit():
 		p = _crossfade(p, now)
 	body.apply(p)
+	_plant_feet(now)
+
+
+## The feet kept still on the grass while he runs (the owner: "too many steps and the players are floating"): a foot
+## coming down is held where it lands, the leg turned to it (two-bone IK) as the body goes on over it, till the clip
+## lifts it or the leg is straight behind him; then it eases back to the clip's swing. So the planted foot never
+## slides, whatever his speed and step.
+var _lock := [Vector3.INF, Vector3.INF]     # where each foot is held (world), INF: free
+var _lock_w := [0.0, 0.0]                   # how much it is held (eases out when let go)
+var _lock_at := [Vector3.ZERO, Vector3.ZERO]
+var _lock_now := 0.0
+const LEGS := [[11, 12, 13], [14, 15, 16]]  # thigh, shin, foot (ToonBody.BONES)
+
+
+func _plant_feet(now: float) -> void:
+	var dt := clampf(now - _lock_now, 0.0, 0.1)
+	_lock_now = now
+	var sk := body.skeleton
+	var sp := Vector2(vel.x, vel.z).length()
+	if sk == null or sp < 0.6 or action != "":
+		_lock = [Vector3.INF, Vector3.INF]
+		_lock_w = [0.0, 0.0]
+		return
+	if _leg_len <= 0.0:
+		var hip_r := sk.get_bone_global_rest(LEGS[0][0]).origin
+		var ank_r := sk.get_bone_global_rest(LEGS[0][2]).origin
+		_leg_len = hip_r.distance_to(ank_r)
+		_rest_ankle = ank_r.y
+	var xf := sk.global_transform
+	var inv := xf.affine_inverse()
+	var ground := global_position.y + float(_rest_ankle) * body.scale.y
+	var ankles := []
+	for leg in LEGS:
+		ankles.append(xf * sk.get_bone_global_pose(leg[2]).origin)
+	for i in 2:
+		var leg: Array = LEGS[i]
+		var a: Vector3 = ankles[i]
+		var other: Vector3 = ankles[1 - i]
+		var down := a.y < ground + 0.035 and a.y <= other.y + 0.01
+		var hip := xf * sk.get_bone_global_pose(leg[0]).origin
+		var reach := _leg_len * body.scale.y * 0.995
+		if _lock[i] == Vector3.INF:
+			if down and _lock_w[i] <= 0.0:
+				_lock[i] = Vector3(a.x, ground, a.z)
+				_lock_at[i] = _lock[i]
+		elif not down and a.y > ground + 0.07 or hip.distance_to(_lock[i]) > reach:
+			_lock[i] = Vector3.INF          # let go: it eases back to the clip
+		if _lock[i] != Vector3.INF:
+			_lock_w[i] = 1.0
+			_lock_at[i] = _lock[i]
+		else:
+			_lock_w[i] = maxf(0.0, _lock_w[i] - dt / 0.1)
+		if _lock_w[i] <= 0.0:
+			continue
+		_leg_ik(sk, leg, inv * a.lerp(_lock_at[i], _lock_w[i]))
+
+
+## The leg (thigh, shin) turned so its ankle is at target (skeleton space), the knee bending the way it was; the foot
+## keeps its turn in the world.
+func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
+	var th := sk.get_bone_global_pose(leg[0])
+	var sh := sk.get_bone_global_pose(leg[1])
+	var ft := sk.get_bone_global_pose(leg[2])
+	var hip := th.origin
+	var knee := sh.origin
+	var a := hip.distance_to(knee)
+	var b := knee.distance_to(ft.origin)
+	var to := target - hip
+	var d := clampf(to.length(), absf(a - b) + 0.001, (a + b) * 0.999)
+	var dir := to.normalized()
+	var x := (a * a - b * b + d * d) / (2.0 * d)
+	var h := sqrt(maxf(0.0, a * a - x * x))
+	var pole := (knee - hip) - dir * (knee - hip).dot(dir)
+	if pole.length() < 0.0001:
+		pole = th.basis * Vector3(0, 0, 1)
+	var new_knee := hip + dir * x + pole.normalized() * h
+	var ankle := hip + dir * d
+	var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[0])).basis
+	var th_b := Basis(Quaternion((knee - hip).normalized(), (new_knee - hip).normalized())) * th.basis
+	sk.set_bone_pose_rotation(leg[0], (parent.inverse() * th_b).get_rotation_quaternion())
+	var sh_now := th_b * (th.basis.inverse() * sh.basis)
+	var sh_dir := sh_now * (sh.basis.inverse() * (ft.origin - knee)).normalized()
+	var sh_b := Basis(Quaternion(sh_dir.normalized(), (ankle - new_knee).normalized())) * sh_now
+	sk.set_bone_pose_rotation(leg[1], (th_b.inverse() * sh_b).get_rotation_quaternion())
+	sk.set_bone_pose_rotation(leg[2], (sh_b.inverse() * ft.basis).get_rotation_quaternion())
+
+
+var _rest_ankle := 0.0      # the ankles' height off the grass at rest (model units)
+var _leg_len := 0.0         # hip to ankle at rest
 
 
 const FADE := 0.18               # High: seconds to blend from one move into the next
@@ -403,16 +491,15 @@ func _pose(now: float) -> Dictionary:
 		var t := clampf(action_t / maxf(0.01, action_len), 0.0, 1.0)
 		if SWING_CLIP.has(action):
 			_swing_pose(p, action, t, run)
-		elif action in ["free_place", "free_set", "free_strike"]:
+		elif action in ["free_set", "free_strike"]:
 			_free_pose(p, action, action_t)
 		else:
 			_action_pose(p, action, t, now)
 	return p
 
 
-## A free struck from the grass, as the owner's slow-motion video shows it (tools/mocap/free_clip.py): he puts the
-## sliotar down (free_place), stands over it side-on to the posts, his left shoulder to them, the hurley in both hands
-## (free_set, held while the free is aimed), then bends to it, slides the bas under it and lifts it, the sliotar
+## A free struck from the grass, as the owner's slow-motion video shows it (tools/mocap/free_clip.py): he stands over
+## it side-on to the posts, his left shoulder to them, the hurley in both hands (free_set, held while the free is aimed), then bends to it, slides the bas under it and lifts it, the sliotar
 ## rising on the hurley to his head, tosses it, swings back over his right shoulder and strikes it as it drops past
 ## his waist out in front of him (free_strike). The clips face +Z in the stance; FREE_YAW turns him from the posts.
 const FREE_YAW := -100.0
@@ -467,9 +554,6 @@ func _free_pose(p: Dictionary, name: String, at: float) -> void:
 	var cp: Array
 	var w := 1.0
 	match name:
-		"free_place":
-			cp = HeroBody.clip_pose("Free_Place", at)
-			w = smoothstep(0.0, 0.3, at)       # turned side-on from the walk as he bends
 		"free_set":
 			cp = HeroBody.clip_pose("Free_Ready", 0.0)
 			w = smoothstep(0.0, 0.3, at)
@@ -490,7 +574,10 @@ func _free_pose(p: Dictionary, name: String, at: float) -> void:
 
 
 ## The gaits, slowest first: [clip, the speed (m/s) at which it alone is shown]. Between two, both, blended.
-const GAITS := [["CMU_Walk", 1.3], ["CMU_Jog", 2.6], ["Fast_Run", 5.5]]
+## Each with its own step at that speed (m, for the standard drawn man, measured on the clip: the planted foot's
+## speed back under the hips times a step's time).
+const GAITS := [["CMU_Walk", 1.3, 0.627], ["CMU_Jog", 2.6, 1.039], ["Fast_Run", 4.0, 1.364]]
+const TOP_STEP := [8.5, 2.2]   # past the sprint's own pace, the step grows to this at this speed
 
 
 ## The body's turns and the hips' lift moving at sp m/s, at stride phase ph: the gait clips nearest sp, blended, each
@@ -502,13 +589,17 @@ static func gait_pose(sp: float, ph: float) -> Array:
 	var b := mini(a + 1, GAITS.size() - 1)
 	var w := 0.0 if a == b else smoothstep(float(GAITS[a][1]), float(GAITS[b][1]), sp)
 	var pa := _gait_clip(String(GAITS[a][0]), ph)
-	if w <= 0.0:
-		return pa
-	var pb := _gait_clip(String(GAITS[b][0]), ph)
-	var turns := []
-	for i in pa[0].size():
-		turns.append((pa[0][i] as Quaternion).slerp(pb[0][i], w))
-	return [turns, lerpf(pa[1], pb[1], w)]
+	var out := pa
+	if w > 0.0:
+		var pb := _gait_clip(String(GAITS[b][0]), ph)
+		var turns := []
+		for i in pa[0].size():
+			turns.append((pa[0][i] as Quaternion).slerp(pb[0][i], w))
+		out = [turns, lerpf(pa[1], pb[1], w)]
+	return out
+
+
+
 
 
 static func _gait_clip(name: String, ph: float) -> Array:
@@ -517,25 +608,25 @@ static func _gait_clip(name: String, ph: float) -> Array:
 	return HeroBody.clip_pose(name, float(c.left_forward) + (ph / TAU - 0.25) * cycle, true)
 
 
-## A stride's length (m) at sp m/s for a man drawn scale times the model's size, so the foot on the ground stays put:
-## the CMU walk's and jog's own steps (measured on the drawn man: tests/test_runner.gd _foot_slide), then the sprint
-## at a sprinter's cadence, 4.4 steps a second (the Mixamo clip's feet sit still only at five, a whirl of legs).
+## A stride's length (m) at sp m/s for a man drawn scale times the model's size: the step of the gait clips blended
+## at that speed, just as gait_pose blends them; standing to a walk, from half a metre; past the sprint's own pace,
+## longer, to 2.2 m at full pelt. A walk is about two steps a second, a run three to just under four (the owner saw
+## "too many steps"); the planted foot is held still by _plant_feet (tests/test_runner.gd _foot_slide).
 static func stride_at(sp: float, scale := DRAW_SCALE) -> float:
 	var u := sp * DRAW_SCALE / scale           # the speed for a man of the standard drawn size
-	var s := u / 4.4
-	if u < 5.5:
-		var i := 0
-		while i < STEPS.size() - 2 and u > STEPS[i + 1].x:
-			i += 1
-		var a: Vector2 = STEPS[i]
-		var b: Vector2 = STEPS[i + 1]
-		s = lerpf(a.y, b.y, clampf((u - a.x) / (b.x - a.x), 0.0, 1.0))
+	var s: float
+	var last: Array = GAITS[GAITS.size() - 1]
+	if u <= float(GAITS[0][1]):
+		s = lerpf(0.5, float(GAITS[0][2]), u / float(GAITS[0][1]))
+	elif u >= float(last[1]):
+		s = lerpf(float(last[2]), float(TOP_STEP[1]), smoothstep(float(last[1]), float(TOP_STEP[0]), u))
+	else:
+		var a := 0
+		while u > float(GAITS[a + 1][1]):
+			a += 1
+		var w := smoothstep(float(GAITS[a][1]), float(GAITS[a + 1][1]), u)
+		s = lerpf(float(GAITS[a][2]), float(GAITS[a + 1][2]), w)
 	return s * scale / DRAW_SCALE
-
-
-## (speed m/s, stride m) for the standard drawn man: standing to a walk, the CMU walk, the jog, on to the sprint.
-const STEPS := [Vector2(0.0, 0.5), Vector2(1.3, 0.65), Vector2(2.0, 0.8), Vector2(2.6, 1.0), Vector2(3.25, 1.05),
-	Vector2(4.2, 1.2), Vector2(5.5, 5.5 / 4.4)]
 
 
 const BONE_NAMES := ["hips", "spine", "chest", "neck", "head", "upperarm_l", "forearm_l", "hand_l", "upperarm_r",

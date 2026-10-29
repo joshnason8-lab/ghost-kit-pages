@@ -1,9 +1,9 @@
 extends Control
-## Free-taking practice, before it starts: your county (its free-taker takes them), the ground, how it works and your
-## best score so far. Start goes to game/practice.gd.
+## Free-taking practice, before it starts: your county (its free-taker takes them), how it works and your best score
+## so far. Always at the county ground. Start goes to game/practice.gd.
 
 var _team := "KIL"         # the county last practised with (Game.settings.practice_team)
-var _venue := "county"
+const VENUE := "county"      # always the county ground (the owner: "just do the county ground as the arena")
 var _ids: Array = []
 var _body: VBoxContainer
 
@@ -15,7 +15,6 @@ func _ready() -> void:
 	if not _team in _ids:
 		var c = Game.get_champ()
 		_team = String(c.user) if c != null else "KIL"
-	_venue = String(Game.settings.get("venue", "county"))
 	var v := UI.page(self, tr("MENU_PRACTICE"), func(): Game.goto_menu(), tr("PRACTICE_EYEBROW"))
 	var go := UI.button(tr("PRACTICE_START"), true, _start)
 	go.custom_minimum_size = Vector2(230, 64)
@@ -34,16 +33,6 @@ func _build() -> void:
 	_body.add_child(cols)
 	cols.add_child(_county_card())
 	cols.add_child(_how_card())
-	var opts: Array = UI.section(tr("VENUE"), "whistle")
-	_body.add_child(opts[0])
-	var vids := ["parish", "county", "night", "stadium"]
-	var vnames := []
-	for id in vids:
-		vnames.append(tr(String(DB.venue(id)[0])))
-	opts[1].add_child(UI.chips(vnames, vids.find(_venue), func(i):
-		_venue = vids[i]
-		Game.settings.venue = _venue
-		Game.save_settings()))
 
 
 ## Your county: its colours and name with arrows to change it, and the man who takes the frees.
@@ -128,5 +117,5 @@ static func sparring(id: String) -> String:
 func _start() -> void:
 	Game.settings.practice_team = _team
 	Game.save_settings()
-	Game.start_match({"home": _team, "away": sparring(_team), "venue": _venue, "mode": "practice", "user_team": 0,
+	Game.start_match({"home": _team, "away": sparring(_team), "venue": VENUE, "mode": "practice", "user_team": 0,
 		"difficulty": int(Game.settings.difficulty), "grade": int(Game.settings.grade)})

@@ -783,9 +783,9 @@ func practice(st: Dictionary, first := false) -> void:
 		v.add_child(marks)
 		_practice.set_meta("parts", [head, score, marks])
 	var parts: Array = _practice.get_meta("parts")
-	var n := mini(int(st.n) + (1 if String(st.get("state", "")) in ["walk", "aim", "struck"] else 0), m.FREES)
+	var n := mini(int(st.n) + (1 if String(st.get("state", "")) in ["ready", "aim", "struck"] else 0), m.FREES)
 	var head := tr("MENU_PRACTICE") + "  ·  " + tr("PRACTICE_FREE_N").format({"n": n, "of": m.FREES})
-	if String(st.get("challenge", "")) != "" and String(st.get("state", "")) in ["walk", "place", "aim", "struck"]:
+	if String(st.get("challenge", "")) != "" and String(st.get("state", "")) in ["ready", "aim", "struck"]:
 		head += "  ·  " + tr("PRACTICE_CHALLENGE")
 	(parts[0] as Label).text = head.to_upper()
 	(parts[1] as Label).text = _practice_line(st)

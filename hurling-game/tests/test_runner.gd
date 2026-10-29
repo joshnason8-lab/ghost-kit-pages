@@ -50,6 +50,8 @@ func _ready() -> void:
 	await _auto_pickup()
 	await _aimed_shots()
 	await _practice_frees()
+	await _shootout_frees()
+	await _goals_round()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	_backpedal()
@@ -856,10 +858,13 @@ func _hero_body() -> void:
 		for g in [["CMU_Walk", 1.3], ["CMU_Jog", 2.6]]:
 			var slide := _foot_slide(float(g[1]))
 			check(slide < 0.35, "The %s clip (graphics %d): the planted foot slides %.2f m/s at %.2f m/s" % [g[0], lv, slide, g[1]])
-		# The sprint's feet cannot sit still at a sprinter's cadence (the clip is a short-strided run), but slide half
-		# what they did before 0.6.0 (3.2 m/s at 7 m/s).
-		var sprint := _foot_slide(7.0)
-		check(sprint < 1.8, "The sprint (graphics %d): the planted foot slides %.2f m/s at 7 m/s" % [lv, sprint])
+		# And at a run and flat out, the steps longer than the clip's own: the foot held where it lands (Player
+		# _plant_feet; it slid 1.6 m/s at 7 m/s, 3 at 8.5, before 0.17.0: the owner saw the players "floating").
+		for sp in [4.0, 7.0, 8.4]:
+			var slide := _foot_slide(sp)
+			check(slide < 0.3, "The run (graphics %d): the planted foot slides %.2f m/s at %.1f m/s" % [lv, slide, sp])
+		check(7.0 / Player.stride_at(7.0) < 3.8 and 4.0 / Player.stride_at(4.0) < 3.1,
+			"The run: a footballer's steps, %.1f a second at 4 m/s, %.1f at 7 (not a whirl)" % [4.0 / Player.stride_at(4.0), 7.0 / Player.stride_at(7.0)])
 	Game.settings.graphics = level
 	# The swings: at the contact time the bas comes past him going the way he faces (where the ball goes), within
 	# his reach, below the shoulder.
@@ -921,6 +926,7 @@ func _foot_slide(sp: float) -> float:
 		pl._ph += sp / Player.stride_at(sp, pl.body.scale.x) * PI * dt
 		pl.body.rotation.y = 0.0
 		pl.body.apply(pl._pose(f * dt))
+		pl._plant_feet(f * dt)
 		var at := []
 		for b in feet:
 			at.append(sk.global_transform * sk.get_bone_global_pose(b).origin)
@@ -933,7 +939,7 @@ func _foot_slide(sp: float) -> float:
 		for k in 2:
 			var a: Vector3 = rows[f - 1][k]
 			var b: Vector3 = rows[f][k]
-			if b.y < low + 0.012 and b.y <= rows[f][1 - k].y:
+			if b.y < low + 0.002 and b.y <= rows[f][1 - k].y:
 				speeds.append(Vector2(b.x - a.x, b.z - a.z).length() / dt)
 	pl.free()
 	speeds.sort()
@@ -1374,6 +1380,89 @@ func _practice_frees() -> void:
 	check(int(Game.settings.graphics) == Game.GFX_LOW, "Practice: the player's own graphics back after it (%d)" % int(Game.settings.graphics))
 	Game.settings.practice_best = kept
 	Game.settings.graphics = kept_gfx
+
+
+## The extra-time shoot-out taken as practice's frees are: every taker in his stance over the ball at once, the low
+## camera behind him; yours aimed by timing (the target, then the bar), theirs lifted and struck by themselves; it runs
+## to a winner.
+func _shootout_frees() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": 0, "seed": 5, "length": 8.0, "mode": "champ",
+		"knockout": true}
+	add_child(m)
+	await frames(5)
+	m._begin_shootout()
+	await frames(2)
+	var stances := 0
+	var cams := 0
+	var takes := 0
+	var yours := 0
+	var lifted := 0
+	var f := 0
+	var last := -1
+	while m.phase != m.P.OVER and f < 30 * 120:
+		var n: int = int(m.shootout.taken[0]) + int(m.shootout.taken[1])
+		if n != last and String(m.shootout.state) == "ready":
+			last = n
+			takes += 1
+			stances += 1 if m.taker.action == "free_set" and m.taker.global_position.distance_to(m.free_stand(m.restart.spot, m.taker.team)) < 0.05 else 0
+			cams += 1 if m.get_viewport().get_camera_3d() == m._pen_view else 0
+		if m.placed_aim != null and not m.placed_aim.stopped and m.user_buttons() == ["SHOOT"]:
+			yours += 1
+			m.placed_aim.angle = PI * 1.5
+			m.placed_aim._place()
+			m._on_action("SHOOT")
+			m.placed_aim.bar_x = 0.0
+			m._on_action("SHOOT")
+		if m.taker.action == "free_strike" and m.taker.action_t < 0.05:
+			lifted += 1
+		await frames(1)
+		f += 1
+	check(m.phase == m.P.OVER and int(m.shootout.goals[0]) != int(m.shootout.goals[1]),
+		"Shoot-out: runs to a winner (%s after %s)" % [m.shootout.goals, m.shootout.taken])
+	check(takes >= 6 and stances == takes and cams == takes,
+		"Shoot-out: each taker in his stance over the ball at once, the camera low behind him (%d, %d of %d)" % [stances, cams, takes])
+	check(yours >= 3 and yours == int(m.shootout.taken[0]),
+		"Shoot-out: your penalties aimed by timing, every one (%d of %d)" % [yours, int(m.shootout.taken[0])])
+	check(lifted >= takes - 1, "Shoot-out: every penalty lifted and struck as a free is (%d of %d)" % [lifted, takes])
+	check(m.get_viewport().get_camera_3d() == m.cam.camera, "Shoot-out: the match camera back at the end")
+	m.queue_free()
+	await frames(2)
+
+
+## Round a goal, not through it: a goalkeeper behind his net (where a ball went wide) going out to the front of it,
+## and a man running for a ball in the net, each the long way round the posts; nobody stays inside a goal; a
+## goalkeeper's way never over the lines.
+func _goals_round() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": -1, "seed": 2, "length": 8.0, "mode": "test"}
+	add_child(m)
+	await frames(5)
+	var k: Player = m.keeper_of(0)
+	var s: float = -m.dir(0)                    # his own end
+	var cases := [[Vector3((Pitch.HALF_L + 4.0) * s, 0, 0.5), Vector3((Pitch.HALF_L - 3.0) * s, 0, 0.0)],
+		[Vector3((Pitch.HALF_L - 6.0) * s, 0, -1.0), Vector3((Pitch.HALF_L + 1.0) * s, 0, 0.3)],
+		[Vector3((Pitch.HALF_L + 1.0) * s, 0, 8.0), Vector3((Pitch.HALF_L + 1.0) * s, 0, -8.0)]]
+	var inside := 0
+	var arrived := 0
+	var over := 0
+	for c in cases:
+		k.global_position = c[0]
+		k.vel = Vector3.ZERO
+		for f in 30 * 8:
+			m._steer(k, c[1], 6.0)
+			k.integrate(1.0 / 30.0, 0.0)
+			m._out_of_goals(k)
+			var q := Vector2(k.global_position.x, k.global_position.z)
+			if m.goal_box(s, 0.0).has_point(q):
+				inside += 1
+		var want: Vector3 = m._keep_out(c[1], k)
+		arrived += 1 if k.global_position.distance_to(want) < 1.0 else 0
+		over += 1 if absf(want.x) > Pitch.HALF_L else 0
+	check(inside == 0 and arrived == cases.size(), "Goals: round the posts and the net, never through (%d frames inside; %d of %d got there)" % [inside, arrived, cases.size()])
+	check(over == 0, "Goals: a goalkeeper's way stays inside the lines (%d over)" % over)
+	m.queue_free()
+	await frames(2)
 
 
 ## The championship as the owner asked: your own game simulated (and every game left), a match left for the menu

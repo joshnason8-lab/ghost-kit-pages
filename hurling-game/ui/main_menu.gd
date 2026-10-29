@@ -1,6 +1,6 @@
 extends Control
-## The home screen: a match day's printed programme. On the left its cover (the masthead, the game's name, the
-## hurler striking under a setting sun); on the right its contents page, the ways to play listed as a programme
+## The home screen: a match day's printed programme. On the left its cover (the game's name over the hurler
+## striking under a setting sun); on the right its contents page, the ways to play listed as a programme
 ## lists the day's games. Behind it, on Medium and High graphics, a match at the parish field at dusk (on Low, a
 ## still picture of it). The globe at the top changes the language.
 
@@ -117,7 +117,8 @@ func _build_ui() -> void:
 	foot.add_child(ver)
 
 
-## The programme's cover, printed on cream paper: the masthead, the picture with the name over it.
+## The programme's cover: the picture, the whole of the card, with the name over it (the red masthead band, "Clár an
+## Lae", is gone: the owner wanted the full image).
 func _cover() -> Control:
 	var card := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
@@ -135,19 +136,6 @@ func _cover() -> Control:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 0)
 	card.add_child(v)
-	# The masthead: a red band, the programme's name in Irish and English.
-	var band := PanelContainer.new()
-	var bsb := StyleBoxFlat.new()
-	bsb.bg_color = Game.C_MAGENTA
-	bsb.content_margin_left = 18
-	bsb.content_margin_right = 18
-	bsb.content_margin_top = 8
-	bsb.content_margin_bottom = 8
-	band.add_theme_stylebox_override("panel", bsb)
-	v.add_child(band)
-	var bl := UI.label(tr("PROGRAMME").to_upper(), "EyebrowLabel", 16, Game.C_PAPER)
-	UI.fit(bl, 1)
-	band.add_child(bl)
 	# The cover picture (the owner's artwork: a hurler in green striking at dusk), the game's name over its pale sky.
 	var pic := Control.new()
 	pic.size_flags_vertical = Control.SIZE_EXPAND_FILL
