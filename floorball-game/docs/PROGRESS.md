@@ -227,6 +227,49 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.0-beta: Vulkan, new menus, Penalty shots, Watch a match, a new goalkeeper (29 October 2026)
+
+The owner's list:
+- **"The colour scheme and menu look kind of lame"**: the whiteboard is gone. Arena night: deep navy, the icon's
+  flame orange (what to press) and electric blue (accents), white words; headings in Barlow Condensed leaning forward
+  as a broadcast sets them; dark cards cut on a slant; the home screen the live match full screen, darkened on the
+  left under the name and six tiles (Quick match, World Finals, Club season, Penalty shots, Watch a match, How to
+  play), Settings and the language top right. The same theme carries every screen (game.gd's palette and theme,
+  ui/backdrop.gd, UI.note).
+- **"Watch an AI match like the other games"**: Watch a match (the home screen): pick two teams, the division and the
+  venue; a match like any other (scoreboard, pause, camera, result screen), both teams the computer's, no buttons.
+  Nothing is recorded to your results.
+- **Better phones, better graphics, as Hurling did**: Vulkan at every level, GL Compatibility as the fallback
+  (game/renderer.gd, docs/GRAPHICS.md); every shader's colours the same on both; High on Vulkan lit like a
+  broadcast (soft 4096 shadows, light pools under the lamps, bloom, the floor reflecting the hall). Medium and High
+  are picked for recent phones on the first run. Meshy: no new models were needed (the owner's models are already
+  drawn whole on High); no credits spent.
+- **"A mini game like Free Taking, for penalty shots, used in real games too"**: Penalty shots (the home screen):
+  ten shots at a goalkeeper, aimed by timing (game/penalty_aim.gd, after Hurling's PlacedAim): a target round the
+  goal mouth, SHOOT stops it; a bar below, SHOOT again in the green and the ball goes there, out of it the shot
+  pulls wide. The goalkeeper kneels in the middle: the middle is his, a top corner the hardest (match.gd
+  _check_shot). Shots 3, 6 and 9: the top corners lit gold, worth double. Each shot a little harder; the best kept;
+  an end card with a word on it. In a match, your team's penalty shots (a clear chance fouled, and the penalty-shot
+  competition) are taken the same way. Every penalty shot has a close camera, low behind the shooter, and on High
+  the ball near life size with its 26 holes.
+- **"Make sure the crowd is actually watching the game"**: each spectator turns from facing the rink toward the
+  ball, by their own amount, up to 70 degrees, a moment behind it (crowd.gd focus, match.gd _crowd_noise).
+- **"Text around the arena in the phone's language"**: the boards' slogans and the arena's floor decals are drawn in
+  the phone's language (game/signage.gd; 14 languages, the sport's own word in each).
+- **"Find more animations for the goalie, the worst of the movements"**: rebuilt (player.gd _keeper_pose): down in
+  the butterfly on his knees when the ball is in front of his goal, up in his crouch when it is far; side-steps
+  standing and knee-shuffles kneeling as he moves along his line; a low save a leg kicked out flat to the ball's
+  side, a high one an arm thrown up and the body leaning after it; a catch to the chest; an overarm throw-out; every
+  pose easing into the next (nothing snaps). Sources looked at for real goalkeeper capture: none free for a
+  commercial game has one (CMU, Quaternius CC0, 100STYLE, and the non-commercial ones ruled out); Mixamo has
+  goalkeeper clips but needs the owner's Adobe login (Needs the owner, below).
+- **"Go through our new API that connects to free sounds"**: freesound.org is refused by this environment's network
+  (HTTP 403 from the proxy), and there is no sound connector in the session; Pixabay's API needs a key. Nothing new
+  could be fetched (Needs the owner, below).
+- Tests: an aimed penalty (green where aimed, red pulls to that side, the close camera and back), ten practice shots
+  through to the end card and the best, Watch a match (a match with no buttons and nobody yours), the crowd's focus
+  on the ball, the signage in Swedish and Finnish; the fit audit covers the new screens.
+
 ## Next (in order)
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's
@@ -282,6 +325,9 @@ it suits, and a message says what each new one is and how to fetch it.
 brief the lead session relays from the owner is started straight away.
 
 ## Needs the owner
+
+- **Mixamo goalkeeper clips** (needs an Adobe login, which this environment cannot do): download from mixamo.com, "Without Skin", FBX, 30 fps: Goalkeeper Idle, Goalkeeper Catch, Goalkeeper Diving Save, Goalkeeper Body Block, Goalkeeper Scoop, Goalkeeper Sidestep, Goalkeeper Overhand Throw (whichever exist under those names), and share them (a Google Drive folder, as for Hurling): they can be baked onto the game's skeleton like Hurling's.
+- **Sounds**: the freesound connection is not reachable from these sessions (the network refuses freesound.org). Either connect it to the session, or download and share: a floorball (plastic, holed) off a composite blade, stick on stick, shoes squeaking on a sports floor, a hall's period buzzer, a floorball crowd with drums.
 
 - Play Console account, the upload key as repository secrets (store/PLAY_STORE.md), a trademark search on the name.
 - A native speaker's check of each translation (docs/LANGUAGES.md lists the doubtful strings).
