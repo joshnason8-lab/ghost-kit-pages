@@ -33,7 +33,6 @@ Made from the downloads by `tools/audio/make_recorded.py`: mono, 22.05 kHz, sile
 | `whistle_double.ogg` | Two quick pips: a time-out | Pixabay 568615 ("Referee whistle") | charlesheffley009 | Pixabay Content License |
 | `whistle_final.ogg` | Short, short, long: full time | Pixabay 568615 | charlesheffley009 | Pixabay Content License |
 | `whistle_gym.ogg` | A long blast in a hall, with its echo: the dome's long blasts | Pixabay 6320 ("Referee whistle blow, gymnasium") | freesound_community | Pixabay Content License |
-| `menu_music.ogg` | The menus' music (an edited loop, `tools/audio/make_menu_music.py`) | "Indian", Pixabay track 611803 | LNPLUSMUSIC | Pixabay Content License |
 
 ## From freesound.org (0.13.0)
 
@@ -51,6 +50,11 @@ replace the synthetic crowd reactions and player voices of `tools/audio/make_sou
 | `oof_2.ogg` | The same | "male_hurt9" (413186) | micahlg | CC0 |
 | `hup_1..2.ogg` | A lion jump's spring | "AS016231_Short Exertion" (558489), takes 3 and 1 | SuddenDice | CC0 |
 | `exhale_1..2.ogg` | A raider's breath after the raid (the second a little deeper) | "Exhale_10115a" (65619) | otherthings | CC0 |
+| `menu_music.ogg` | The menus' music: the tanpura's drone (raised 42 cents to the tabla's tuning) under the tabla's kherwa, slowed from about 107 to 75 beats a minute, a 38.4 s loop (`tools/audio/make_music.py`) | "Tanpura 10" (153262); "Tabla Rhythm Bayan Tala Kherwa" (151176) | sankalp; afleetingspeck | CC0 |
+| `dhol_loop.ogg` | The drums under a match: a tabla loop slowed from 85 to 72 beats a minute, 40 s (`tools/audio/make_music.py`) | "tabla 5to4 85bpm -loop" (633150) | MieliTietty | CC0 |
+
+The menus' music was "Indian" by LNPLUSMUSIC (Pixabay) and the match's drums a dhol synthesised at 100 beats a minute
+until 0.13.0, when both were found too quick for the game.
 
 The dome is indoors and has no ambience of its own: its crowd is its sound.
 
@@ -61,7 +65,7 @@ The dome is indoors and has no ambience of its own: its crowd is its sound.
 | `chant_raider`, `chant_word_1..2` | The raider's "kabaddi, kabaddi" | `tools/audio/make_voices.py` (MBROLA Indian voices through espeak-ng) |
 | `yell_aaja`, `yell_pakad`, `yell_shabash`, `yell_chal`, `yell_haan`, `yell_nahi`, `yell_touch` | Players' shouts in Hindi | `tools/audio/make_voices.py` |
 | `crowd_chant`, `clap` | The crowd chanting, one clap | `tools/audio/make_sounds.py` (layered synthetic voices) |
-| buzzer, whoosh, gavel, dhol loop, bid | The clock's buzzer, moves through the air, the auction | Synthesised at startup in `autoload/sfx.gd` |
+| buzzer, whoosh, gavel, bid (and a dhol loop if the recording is missing) | The clock's buzzer, moves through the air, the auction | Synthesised at startup in `autoload/sfx.gd` |
 
 The whistles (0.11.1) were supplied by the owner from Pixabay through the shared assets (`shared-assets/sounds/whistle/`,
 trimmed, mono, loudness-matched to about -16 LUFS); they are copied in unchanged. The Pixabay licence asks for no
@@ -86,7 +90,7 @@ credit; they are credited anyway, as "Whistle sounds from Pixabay".
 
 Searched kenney.nl and opengameart.org (Freesound and Pixabay are blocked from here):
 
-- **A dhol** (or tabla, or any Indian drum). Only war drums turned up; the synthesised dhol loop stays.
+- **A dhol.** The match's drums are a tabla (freesound, 0.13.0); no CC0 dhol turned up.
 - **Regional chants:** a real crowd chanting "kabaddi, kabaddi", or in Marathi, Tamil, Telugu, Kannada, Bengali or
   Punjabi. The crowd's chant and the players' shouts are still synthesised.
 - **Bare feet on a mat**: the mats use Kenney's carpet footsteps, which are shod.

@@ -17,7 +17,7 @@ const BUSES := {"fx": "Effects", "crowd": "Crowd", "music": "Music"}
 # Sounds that are the crowd's, on its bus.
 const CROWD_SOUNDS := ["crowd_", "applause", "roar", "chant", "clap"]
 const MUSIC_DB := -8.0             # the menus' music, faded in
-const MUSIC_LOOP := 13.915         # s: where menu_music.ogg comes round to (tools/audio/make_menu_music.py)
+const MUSIC_LOOP := 0.0           # s: where menu_music.ogg comes round to (all of it: tools/audio/make_music.py)
 
 ## A crowd sound starting (its name, without a variant's number, and how long it lasts): the crowd on the ground is seen
 ## doing what is heard (Arena: clapping when clapping is heard).
@@ -253,8 +253,8 @@ func crowd(intensity: float) -> void:
 		_crowd.play()
 
 
-## The menus' music ("Indian" by LNPLUSMUSIC, Pixabay): on in the menus, carrying on from one screen to the next
-## (the opening once, then the middle minute round and round); faded out for a match, or with sound or music off.
+## The menus' music (a tanpura and a tabla at 75 beats a minute, tools/audio/make_music.py): on in the menus, carrying
+## on from one screen to the next, round and round; faded out for a match, or with sound or music off.
 func music(on: bool) -> void:
 	_ensure()
 	if on and enabled() and bool(Game.settings.get("music", true)) and _music.stream != null:
@@ -422,6 +422,7 @@ func _crowd_loop() -> AudioStreamWAV:
 	return _to_stream(out.slice(0, n - fade), true)
 
 
+## The drums under a match when there is no recording (assets/audio/dhol_loop.ogg, a tabla at 72 beats a minute, wins).
 func _dhol_loop() -> AudioStreamWAV:
 	# Bhangra-style dhol: heavy "dagga" on the beat, sharp "tilli" on the off-beats. 100 bpm.
 	var beat := 0.6

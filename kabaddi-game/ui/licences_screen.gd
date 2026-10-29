@@ -12,7 +12,7 @@ From Poly Haven (polyhaven.com), all CC0:
 Skies: Kloppenheim 07, Qwantani Dusk 2 and Qwantani Sunset (Pure Sky) by Greg Zaal and Jarod Guest; Overcast Soil (Pure Sky) by Jarod Guest and Sergej Majboroda.
 Ground and walls: Brown Mud, Brown Mud Dry, Coast Sand 01, Red Dirt Mud 01 and Thatch Roof Angled by Rob Tuytel (the thatch with Dimitrios Savva); Damp Beach Sand by Dimitrios Savva; Clay Plaster and Clay Roof Tiles by Amal Kumar; Concrete Floor by eye-candy.xyz; Grass Ground by Charlotte Baglioni.
 Models: Plastic Monobloc Chair 01 by Kuutti Siitonen; Folding Wooden Stool by Ulan Cabanilla; Island Tree 01 and 02 by Rob Tuytel and Rico Cilliers.
-Menu music: "Indian" by LNPLUSMUSIC, from Pixabay (Pixabay Content License)."""
+Music, from freesound.org, all CC0: "Tanpura 10" by sankalp and "Tabla Rhythm Bayan Tala Kherwa" by afleetingspeck (the menus), "tabla 5to4 85bpm -loop" by MieliTietty (the drums under a match). Slowed and mixed for the game."""
 
 # Every recorded sound, with where it is from and its licence (docs/SOUNDS.md has each file).
 const SOUNDS := """[b]Sounds[/b]

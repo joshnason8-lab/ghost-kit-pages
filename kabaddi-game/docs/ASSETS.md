@@ -134,10 +134,10 @@ override a synthesised one:
 
 `buzzer`, `whoosh`, `gavel`, `dhol_loop`, `bid`
 
-The menus' music, `assets/audio/menu_music.ogg`, is **"Indian" by LNPLUSMUSIC** (Pixabay, track 611803), under the
-[Pixabay Content License](https://pixabay.com/service/license-summary/): free to use in an app, edited, with no
-credit required (credited here anyway). The licence does not allow passing the track on by itself, so only the
-edited loop made from it by `tools/audio/make_menu_music.py` is in the repository, not the download.
+The menus' music, `assets/audio/menu_music.ogg`, and the drums under a match, `assets/audio/dhol_loop.ogg`, are made by
+`tools/audio/make_music.py` from CC0 recordings on freesound.org: "Tanpura 10" by sankalp and "Tabla Rhythm Bayan
+Tala Kherwa" by afleetingspeck, and "tabla 5to4 85bpm -loop" by MieliTietty (docs/SOUNDS.md). Before 0.13.0 the
+menus played "Indian" by LNPLUSMUSIC (Pixabay).
 
 High-value recordings (see SOUNDS.md, "Not found"):
 
