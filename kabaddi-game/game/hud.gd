@@ -89,7 +89,7 @@ class PlayerTags extends Control:
 		var out := []
 		if m == null or m.attract or m.paused or m.phase not in ["setup", "raid", "post"]:
 			return out
-		var mode := int(Game.settings.get("tags", TAG_KEY))
+		var mode := int(Game.settings.get("tags", TAG_OFF))
 		if mode == TAG_OFF:
 			return out
 		var keys := []

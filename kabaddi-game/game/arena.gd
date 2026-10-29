@@ -30,6 +30,8 @@ var sun: DirectionalLight3D
 var env: Environment
 var barefoot := false
 var _excite := 0.0
+var _banner_key := ""
+var _banner_labels := []
 
 const CROWD_SHADER := """
 shader_type spatial;
@@ -170,7 +172,10 @@ const SHADE := {"dome": 0.46, "stadium": 0.54, "village": 0.40, "monsoon": 0.68,
 const BAKE_SKY := {"beach": 0.45}
 
 
+## banner_text: the league's name on the boards and the run-off, a translation key (or words to show as they are), in
+## capitals in the game's language, and redrawn when the language changes.
 func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text: String) -> void:
+	_banner_key = banner_text
 	arena_id = p_arena_id if p_arena_id in ["stadium", "village", "monsoon", "beach"] else "dome"
 	_env()
 	var path := GROUNDS + "%s/%s.tscn" % [arena_id, arena_id]
@@ -189,7 +194,24 @@ func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text
 		shell.name = "Shell"
 		add_child(shell)
 		_shell()
-	_dress(home_color, away_color, banner_text)
+	var banner := _banner()
+	_dress(home_color, away_color, banner)
+	for l in find_children("*", "Label3D", true, false):
+		if (l as Label3D).text == banner:
+			l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+			_banner_labels.append(l)
+
+
+func _banner() -> String:
+	return tr(_banner_key).to_upper()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and not _banner_labels.is_empty():
+		var banner := _banner()
+		for l in _banner_labels:
+			if is_instance_valid(l):
+				(l as Label3D).text = banner
 
 
 ## The ground as tools/bake_lighting bakes it: the sky, the sun and the fixed parts, with the lights that are only

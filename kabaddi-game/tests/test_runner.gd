@@ -472,6 +472,20 @@ func _run() -> void:
 				people += (card as MultiMeshInstance3D).multimesh.instance_count
 			check(people > 20, "the crowd is people from the sprite sheet: " + a.id)
 		ar.queue_free()
+	# The league's name on the boards is in the game's language, and changes with it (the menu's ground stays built).
+	var ab := Arena.new()
+	add_child(ab)
+	ab.build("dome", Color.RED, Color.BLUE, "LEAGUE_NAME")
+	var was_loc := TranslationServer.get_locale()
+	TranslationServer.set_locale("hi")
+	await frames(1)
+	var hi_txt := tr("LEAGUE_NAME").to_upper()
+	var boards: Array = ab.find_children("*", "Label3D", true, false).filter(func(l): return l.text == hi_txt)
+	TranslationServer.set_locale(was_loc)
+	await frames(1)
+	check(boards.size() >= 4 and boards.all(func(l): return l.text == tr("LEAGUE_NAME").to_upper()),
+		"the boards' league name follows the language (%d boards)" % boards.size())
+	ab.queue_free()
 	var sheet := Arena.crowd_sheet()
 	check(not sheet.is_empty() and (sheet.info.people as Array).size() >= 8 and (sheet.info.frames as Array).size() == 8,
 		"crowd sprite sheet: eight people in eight poses")
@@ -869,7 +883,9 @@ func _run() -> void:
 	while rm.phase != "raid" and g13 < 900:
 		await get_tree().process_frame
 		g13 += 1
-	# Who is who: the tags over the players' heads, and the names with the points.
+	# Who is who: the tags over the players' heads (off unless picked in Settings), and the names with the points.
+	check(int(Game.settings.tags) == 2 and rm.hud.tags.tags_now().is_empty(), "tags: off by default")
+	Game.settings.tags = 0
 	var tg: Array = rm.hud.tags.tags_now()
 	var keyed: Array = tg.filter(func(e): return e.key)
 	check(tg.size() == rm.on_mat(0).size() + rm.on_mat(1).size() and keyed.size() == 2
@@ -882,7 +898,6 @@ func _run() -> void:
 	check(rm.hud.tags.tags_now().all(func(e): return e.name != ""), "tags: names over everyone")
 	Game.settings.tags = 2
 	check(rm.hud.tags.tags_now().is_empty(), "tags: off")
-	Game.settings.tags = 0
 	# A shout over the calls on the left is held back ("Tackle!" and "Shabash!" on top of each other).
 	rm.hud.event("Tackle!", Game.C_GOOD)
 	await frames(2)

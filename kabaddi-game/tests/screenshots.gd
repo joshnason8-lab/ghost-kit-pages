@@ -94,6 +94,19 @@ func _tour() -> void:
 		await shot("lang_3_picker_ta")
 		Game.set_language("")
 		return
+	if args_only == "signs":
+		# The league's name on the boards and the run-off, from the corner of the mat (in the tour's language).
+		Game.start_match({"home": "MUM", "away": "PUN", "arena": "dome", "mode": "quick", "length": 0, "difficulty": 1,
+			"autoplay": true})
+		var sm: Node = Game.current
+		await frames(20)
+		sm.set_process(false)
+		var c: Camera3D = sm.cam.cam
+		c.global_position = Vector3(5.5, 1.6, -9.0)
+		c.look_at(Vector3(0, 0.4, -12.5))
+		await frames(3)
+		await shot("signs_board")
+		return
 	if args_only == "walkout":
 		# The final's walk-out, and a derby's intro.
 		var s2: Script = load("res://game/match.gd")
@@ -298,7 +311,7 @@ func _tags() -> void:
 			guard += 1
 		await frames(50)
 		await shot(spec[2])
-	Game.settings.tags = 0
+	Game.settings.tags = 2
 
 
 ## The match's HUD in the tour's language, quickly (the 3D world is not drawn): the scoreboard and buttons with the

@@ -95,7 +95,7 @@ func _table(pos: Vector3) -> void:
 		top.position = pos + Vector3(0, 0.37, 0)
 		add_child(top)
 	var sign_l := Label3D.new()
-	sign_l.text = tr("SCORERS")
+	sign_l.text = "SCORERS"   # translated by the label, and again if the language changes
 	sign_l.font_size = 64
 	sign_l.pixel_size = 0.004
 	sign_l.modulate = Color("f3efe6")

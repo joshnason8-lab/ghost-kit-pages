@@ -88,8 +88,9 @@ var settings := {
 	"tutorial_done": [],
 	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
 	"fps": FPS_SMOOTH,      # frame rate: FPS_SAVER, FPS_SMOOTH or FPS_MAX (frame_cap)
-	"tags": 0,              # tags over players' heads: 0 names over you and the raider (numbers over the rest),
-	                        # 1 names over everyone, 2 none (MatchHud.PlayerTags)
+	"tags": 2,              # tags over players' heads: 0 names over you and the raider (numbers over the rest),
+	                        # 1 names over everyone, 2 none, the default (MatchHud.PlayerTags)
+	"tags_v": 2,            # settings version for tags: 2 turned them off
 	"dev": false,           # the developer's overlay in matches (DevOverlay): seven taps on the home screen's version
 }
 
@@ -196,6 +197,10 @@ func load_settings() -> void:
 		# move to it once.
 		settings.camera = CAM_TV
 		settings.cam_v = 2
+	if data is Dictionary and int(data.get("tags_v", 1)) < 2:
+		# Players found the tags over every head too busy: off for everyone once, back on from Settings.
+		settings.tags = 2
+		settings.tags_v = 2
 	if settings.raid_rule > 2:
 		settings.raid_rule = 2   # the spoken cant (3) is gone
 	if settings.camera == CAM_FIRST:

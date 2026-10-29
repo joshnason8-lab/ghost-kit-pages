@@ -213,7 +213,7 @@ func _ready() -> void:
 
 	arena = Arena.new()
 	add_child(arena)
-	var banner := tr("LEAGUE_NAME").to_upper() if DB.team(config.home).kind == "league" else tr("MENU_CUP").to_upper()
+	var banner := "LEAGUE_NAME" if DB.team(config.home).kind == "league" else "MENU_CUP"
 	arena.build(String(config.get("arena", "dome")), kit[0], kit[1], banner)
 
 	for t in 2:
