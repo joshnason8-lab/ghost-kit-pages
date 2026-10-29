@@ -157,6 +157,7 @@ var _hints_shown := 0
 var raid_log: Array = []      # one entry per raid, for stats and tuning
 var raid_rule := RULE_CANT_AUTO
 var move_tries := {}          # move -> attempts, for tuning
+const BREAK_TIRE := 0.4       # how much is left in each further try at getting out of holds in a raid (_break_tired)
 # Lab (tests/tackle_check): a scripted raid. The raider moves as lab_move says and makes only the moves he is
 # told to; defenders keep their place and go in only when told (with lab_force.help, team-mates come to help
 # once he is held); lab_force settles a chance ("hold", "escape", "pile") one way or the other so a scenario plays
@@ -1423,7 +1424,8 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 		var pick: Array = grapple.best_escape("dubki" if kind == "dubki" else "lion", holders) if grapple else [holders[0], 0.0]
 		var h: Athlete = pick[0]
 		var fit: float = pick[1]
-		var chance := 0.62 * fit * (0.4 + raider.move_skill(kind)) * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
+		var chance := 0.26 * fit * (0.4 + raider.move_skill(kind)) * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6)) \
+			* _break_tired()
 		var slips := fit > 0.0 and bool(lab_force.get("escape", rng.randf() < chance))
 		# Decided now, done with the body (_tick_escape). A lion jump: halfway from the end of the gather to the
 		# jump clip's own takeoff, so the foot is out of the holder's hands (Grapple.TORN_FREE) as he leaves the
@@ -1552,6 +1554,16 @@ func _move_moment(move: String) -> void:
 ## the holds on him best (Grapple.ESCAPES: a lion jump out of hands on his ankle, a dubki out of arms round him, a
 ## sidestep out of a thigh hold), rather than a sidestep, which no ankle hold gives way to. Dubki and Lion jump stay
 ## there to pick one himself.
+## Each try at getting out of holds in a raid has less in it than the last: he tires, and they have felt him go and
+## hold on harder. Mashing Break free used to get a raider out of 4 holds in 5 (79 %, a try at 70 %); now 1 in 3
+## (33 %, a try at 16 %), over six AI matches with it pressed whenever it could be (tests/break_free.tscn): a hold
+## that is on wins more often than not, as it does on the mat.
+func _break_tired() -> float:
+	var n := int(raid.get("breaks", 0))
+	raid.breaks = n + 1
+	return pow(BREAK_TIRE, n)
+
+
 func _break_free() -> void:
 	var holders: Array = raid.holders
 	if holders.is_empty() or grapple == null:
@@ -1599,7 +1611,8 @@ func _raider_dodge(dir: Vector3) -> void:
 		var pick: Array = grapple.best_escape("dodge", holders) if grapple else [holders[0], 0.0]
 		var h: Athlete = pick[0]
 		var fit: float = pick[1]
-		var chance := 0.5 * fit * raider.agility * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6))
+		var chance := 0.22 * fit * raider.agility * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6)) \
+			* _break_tired()
 		if fit > 0.0 and bool(lab_force.get("escape", rng.randf() < chance)):
 			var free := holders.size() == 1
 			_event("escape", {"how": "dodge", "from": h.pid(), "kind": h.kind(), "hold": grapple.style_of_hold(h),
