@@ -375,12 +375,10 @@
   "ADS_PLAY_FAIR_FAST": "FAIR · SCHNELL",
   "ADS_HALL_LOUD": "DIE HALLE BEBT",
   "MENU_SHOOTOUT": "Penaltys",
-  "MENU_SHOOTOUT_DESC": "Zehn Schüsse auf den Goalie: alles eine Frage des Timings",
-  "AIM_HINT": "SCHUSS stoppt das Ziel; nochmal SCHUSS im Grünen",
+  "MENU_SHOOTOUT_DESC": "Zehn Penaltys: anlaufen und den Goalie austricksen",
   "PRACTICE_SHOT_N": "Schuss {n} von {of}",
   "PRACTICE_BEST_N": "Bestwert {n}",
-  "PRACTICE_CHALLENGE": "Winkel-Challenge: doppelte Punkte!",
-  "PRACTICE_DOUBLE": "In den Winkel! Doppelt!",
+  "PRACTICE_DOUBLE": "In den Winkel! Zwei Punkte!",
   "PRACTICE_OVER": "Zehn Schüsse genommen",
   "PRACTICE_RATING_0": "Zurück in die Trainingshalle",
   "PRACTICE_RATING_1": "Vereinsniveau",
@@ -393,8 +391,10 @@
   "SHOOTOUT_SHOOTER": "Dein Schütze",
   "SHOOTOUT_KEEPER": "Im Tor",
   "SHOOTOUT_GO": "Los geht's",
-  "SHOOTOUT_HOW": "Dein Schütze läuft vom Mittelpunkt an; steuere mit dem Joystick. Ein Ziel kreist um das Tor: SCHUSS hält es an. Dann läuft unten ein Balken: nochmal SCHUSS im Grünen, und der Ball geht dorthin, wohin du gezielt hast, sonst verzieht der Schuss. Die Ecken schlagen den Goalie, die Mitte gehört ihm. Bei Schuss 3, 6 und 9 leuchten die oberen Ecken golden: ein Tor dort zählt doppelt.",
+  "SHOOTOUT_HOW": "Ein Penalty, wie er wirklich geschossen wird: Dein Schütze läuft vom Mittelpunkt mit dem Ball an und muss ihn vorwärts bewegen. Steuere mit dem Joystick (nach oben schneller). FINTE täuscht einen Schuss auf eine Seite an: Komm nah heran, dann fällt der Goalie darauf herein und geht auf diese Seite runter. Halte SCHUSS zum Ausholen (länger ist härter, aber zu lange und der Schuss wird wild) und lass los, um in die Ecke zu schießen, auf die der Joystick zeigt, nach oben für hoch; ohne Joystick schießt du auf die Seite, die er offen gelassen hat. Ein Tor ist ein Punkt, in den Winkel zwei.",
   "POINTS_N_ONE": "{n} Punkt",
   "POINTS_N_OTHER": "{n} Punkte",
-  "HOME": "Start"
+  "HOME": "Start",
+  "BTN_DEKE": "Finte",
+  "SO_HINT": "Steuere mit dem Joystick · FINTE täuscht · SCHUSS halten und loslassen (Joystick wählt die Ecke)"
 }

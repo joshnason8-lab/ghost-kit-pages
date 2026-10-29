@@ -375,12 +375,10 @@
   "ADS_PLAY_FAIR_FAST": "FAIR-PLAY · VITESSE",
   "ADS_HALL_LOUD": "LA SALLE VIBRE",
   "MENU_SHOOTOUT": "Tirs de pénalité",
-  "MENU_SHOOTOUT_DESC": "Dix tirs face au gardien : tout est dans le timing",
-  "AIM_HINT": "TIR arrête la cible ; TIR à nouveau dans le vert",
+  "MENU_SHOOTOUT_DESC": "Dix tirs de pénalité : élance-toi et trompe le gardien",
   "PRACTICE_SHOT_N": "Tir {n} sur {of}",
   "PRACTICE_BEST_N": "Record {n}",
-  "PRACTICE_CHALLENGE": "Défi lucarne : points doublés !",
-  "PRACTICE_DOUBLE": "Lucarne ! Doublé !",
+  "PRACTICE_DOUBLE": "Lucarne ! Deux points !",
   "PRACTICE_OVER": "Dix tirs effectués",
   "PRACTICE_RATING_0": "Retour à l'entraînement",
   "PRACTICE_RATING_1": "Niveau club",
@@ -393,8 +391,10 @@
   "SHOOTOUT_SHOOTER": "Ton tireur",
   "SHOOTOUT_KEEPER": "Dans les buts",
   "SHOOTOUT_GO": "C'est parti",
-  "SHOOTOUT_HOW": "Ton tireur part du point central ; dirige-le au joystick. Une cible tourne autour du but : TIR l'arrête. Puis une barre défile en bas : TIR à nouveau dans le vert et la balle part où tu as visé, sinon le tir s'écarte. Les coins battent le gardien ; le centre est à lui. Aux tirs 3, 6 et 9, les lucarnes s'allument en or : un but y compte double.",
+  "SHOOTOUT_HOW": "Un tir de pénalité comme en vrai : ton tireur part du point central avec la balle et doit la faire avancer. Dirige au joystick (vers le haut pour accélérer). FEINTE simule un tir d'un côté : approche-toi et le gardien mord, il part et se couche de ce côté. Garde TIR appuyé pour armer (plus long, plus fort, mais trop long et le tir part n'importe où) et relâche pour tirer dans le coin indiqué par le joystick, vers le haut pour la lucarne ; sans joystick, tu tires du côté qu'il a laissé ouvert. Un but vaut un point, dans la lucarne deux.",
   "POINTS_N_ONE": "{n} point",
   "POINTS_N_OTHER": "{n} points",
-  "HOME": "Accueil"
+  "HOME": "Accueil",
+  "BTN_DEKE": "Feinte",
+  "SO_HINT": "Dirige au joystick · FEINTE pour tromper · garde TIR appuyé et relâche (le joystick choisit le coin)"
 }

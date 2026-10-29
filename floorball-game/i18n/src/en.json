@@ -375,12 +375,10 @@
   "ADS_PLAY_FAIR_FAST": "PLAY FAIR · PLAY FAST",
   "ADS_HALL_LOUD": "THE HALL IS LOUD",
   "MENU_SHOOTOUT": "Penalty shots",
-  "MENU_SHOOTOUT_DESC": "Ten shots at the goalkeeper: it's all in the timing",
-  "AIM_HINT": "SHOOT stops the target; SHOOT again in the green",
+  "MENU_SHOOTOUT_DESC": "Ten penalty shots: skate in, fake the goalkeeper, pick your corner",
   "PRACTICE_SHOT_N": "Shot {n} of {of}",
   "PRACTICE_BEST_N": "Best {n}",
-  "PRACTICE_CHALLENGE": "Top corner challenge: double points!",
-  "PRACTICE_DOUBLE": "Top corner! Double!",
+  "PRACTICE_DOUBLE": "Top shelf! Two points!",
   "PRACTICE_OVER": "Ten shots taken",
   "PRACTICE_RATING_0": "Back to the training hall",
   "PRACTICE_RATING_1": "Club level",
@@ -393,8 +391,10 @@
   "SHOOTOUT_SHOOTER": "Your shooter",
   "SHOOTOUT_KEEPER": "In goal",
   "SHOOTOUT_GO": "Take the shots",
-  "SHOOTOUT_HOW": "Your shooter skates in from the centre spot; steer with the joystick. A target goes round the goal: SHOOT stops it there. Then a bar runs below: SHOOT again in the green and the ball goes where you aimed, out of it and the shot pulls wide. The corners beat the goalkeeper; the middle is his. Shots 3, 6 and 9 light the top corners gold: a goal there counts double.",
+  "SHOOTOUT_HOW": "A penalty shot as it is really taken: your shooter skates in from the centre spot with the ball, and must keep it going forward. Steer with the joystick (push it up to go faster). DEKE fakes a shot to one side: get close and the goalkeeper bites, going across and down that way. Hold SHOOT to wind up (longer is harder, but held too long the shot runs wild) and let go to shoot at the corner the joystick points to, up for high; leave the joystick alone and you shoot at the side he has left open. A goal is a point, one in a top corner two.",
   "POINTS_N_ONE": "{n} point",
   "POINTS_N_OTHER": "{n} points",
-  "HOME": "Home"
+  "HOME": "Home",
+  "BTN_DEKE": "Deke",
+  "SO_HINT": "Steer with the joystick · DEKE fakes · hold SHOOT and let go to shoot (push the joystick for a corner)"
 }

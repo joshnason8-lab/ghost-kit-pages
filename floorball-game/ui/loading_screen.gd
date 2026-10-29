@@ -43,7 +43,7 @@ func _ready() -> void:
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	col.add_child(icon)
-	var title := UI.label(tr("GAME_TITLE"), "TitleLabel", 80, Game.C_BLUE)
+	var title := UI.label(tr("GAME_TITLE").to_upper(), "TitleLabel", 56, Game.C_INK)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(title)
 	_bar = ProgressBar.new()

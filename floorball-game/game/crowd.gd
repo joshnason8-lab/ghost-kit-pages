@@ -69,11 +69,15 @@ void vertex() {
 	float model = floor(d.x + 0.001);
 	float idle = floor(fract(d.x) * 10.0 + 0.5);
 	float ph = d.z * 6.2831;
-	// Up on their feet when the crowd goes up: the keenest first.
-	float up = step(1.0 - excite, fract(d.z * 7.31)) * step(0.05, excite);
-	float pose = up > 0.5 ? (fract(d.z * 3.7) < 0.6 ? 3.0 : 4.0) : idle;
-	// A clapper claps.
-	if (idle > 1.5 && up < 0.5 && sin(time_s * 7.0 + ph) < 0.0) pose = 0.0;
+	// Up on their feet only when the crowd really goes up (a goal, a big chance): the keenest first, arms never held
+	// still up there: each waves between the arms-up and the fist-pump frames at their own pace, and sits again as
+	// the noise dies. Below that, as an attack builds, more of them lean in and clap.
+	float eager = fract(d.z * 7.31);
+	float up = step(1.0 - (excite - 0.35) / 0.65, eager) * step(0.4, excite);
+	float rate = 2.2 + fract(d.z * 5.3) * 1.6;
+	float pose = up > 0.5 ? (sin(time_s * rate * 3.1416 + ph) > 0.0 ? 3.0 : 4.0) : idle;
+	float clapping = step(1.0 - clamp(excite * 1.6, 0.0, 0.6), fract(d.z * 3.17));
+	if (up < 0.5 && (idle > 1.5 || clapping > 0.5)) pose = sin(time_s * 7.0 + ph) < 0.0 ? 1.0 : 2.0;
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	vec3 cam = INV_VIEW_MATRIX[3].xyz;
 	vec2 to_cam = normalize(cam.xz - world.xz);

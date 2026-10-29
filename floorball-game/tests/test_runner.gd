@@ -579,35 +579,10 @@ func _penalty_shot() -> void:
 	await frames(2)
 
 
-## Your penalty shot, aimed by timing (game/penalty_aim.gd): the target round the goal mouth, then the bar; the ball
-## struck where the target stopped (green), out to the side the bar was stopped on (red); the goalkeeper's chance of a
-## save smaller in a corner than in the middle; the close camera behind the shooter and back to the match camera.
+## Your penalty shot (match.gd _breakaway): the close camera behind the shooter, SHOOT held and let go takes the shot,
+## play goes on with the match camera back; a deke close in makes the goalkeeper bite; and whether he gets to a shot:
+## far out he does, close in after biting the wrong way he does not, a top corner is harder than low by his pads.
 func _aimed_penalty() -> void:
-	var rng := RandomNumberGenerator.new()
-	var aim := PenaltyAim.new()
-	add_child(aim)
-	aim.setup(1.0, 0.8, rng)
-	var got := []
-	aim.shot.connect(func(t: Vector3): got.append(t))
-	aim.angle = 0.0                      # the target out wide on +z (the camera's right)
-	aim.press()
-	check(aim.stopped and not aim.fired, "the first SHOOT stops the target, the bar runs")
-	aim.bar_x = 0.0
-	aim.press()
-	check(got.size() == 1 and (got[0] as Vector3).is_equal_approx(Vector3(Rules.GOAL_LINE, PenaltyAim.CENTRE_Y, PenaltyAim.RADIUS_Z)), "in the green: the shot goes where the target stopped")
-	aim.queue_free()
-	var aim2 := PenaltyAim.new()
-	add_child(aim2)
-	aim2.setup(1.0, 0.8, rng)
-	aim2.shot.connect(func(t: Vector3): got.append(t))
-	aim2.angle = PI * 0.5                # the top of the round, over the middle of the goal
-	aim2.press()
-	aim2.bar_x = 1.0                     # the bar's right end
-	aim2.press()
-	check(got.size() == 2 and (got[1] as Vector3).z > 0.5, "out of the green to the right: the shot pulls right (+z for a shot toward +x)")
-	aim2.queue_free()
-	check(PenaltyAim.top_corner(Vector3(Rules.GOAL_LINE, 1.05, 0.7)) and not PenaltyAim.top_corner(Vector3(Rules.GOAL_LINE, 0.3, 0.0)), "a top corner is a top corner")
-	# A penalty shot in a match you play: the close camera, SHOOT twice, the shot taken, the match camera back.
 	var m: Node = (load("res://game/match.gd") as Script).new()
 	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": 0, "seed": 4, "period": 4.0, "mode": "quick"}
 	add_child(m)
@@ -617,18 +592,17 @@ func _aimed_penalty() -> void:
 	m._award_penalty_shot(v, "hook")
 	var guard := 0
 	var close_seen := false
-	while String(m._so.get("stage", "")) != "aim" and guard < 60 * 12:
+	while (String(m._so.get("stage", "")) != "run" or (m._so.shooter as Player).pos.x * float(m._so.dir) < 6.0) and guard < 60 * 12:
 		await get_tree().physics_frame
 		close_seen = close_seen or not m.penalty_view().is_empty()
 		guard += 1
-	check(String(m._so.get("stage", "")) == "aim" and m._aim != null, "your penalty shot: the aim begins as he skates in")
-	check(close_seen and m.cam._close, "the close camera behind the shooter")
+	check(close_seen and m.cam._close, "your penalty shot: the close camera behind the shooter")
+	check(m.touch.ids == ["SHOOT", "DEKE"], "your penalty shot: SHOOT and DEKE (%s)" % [m.touch.ids])
 	m._on_action("SHOOT")
-	for i in 20:
-		await get_tree().physics_frame
-	m._on_action("SHOOT")
+	check(bool(m._so.get("winding", false)), "SHOOT winds up")
 	await get_tree().physics_frame
-	check(bool(m._so.get("shot", false)), "the second SHOOT takes the shot")
+	await get_tree().physics_frame
+	check(bool(m._so.get("shot", false)) and m._shot_live.has("forced"), "let go: the shot is taken, saved or not settled")
 	guard = 0
 	while m.phase == "shootout" and guard < 60 * 12:
 		await get_tree().physics_frame
@@ -637,13 +611,12 @@ func _aimed_penalty() -> void:
 	check(m.phase != "shootout" and not m.cam._close, "after the shot: play goes on, the match camera back")
 	m.queue_free()
 	await frames(2)
-	# The goalkeeper's chance of a save: the middle his, a top corner the hardest.
-	var saves := {}
-	for spot in [Vector3(Rules.GOAL_LINE, 0.4, 0.0), Vector3(Rules.GOAL_LINE, 1.05, 0.72)]:
-		var u: float = absf(spot.z) / (Rules.GOAL_W * 0.5)
-		var vv: float = spot.y / Rules.GOAL_H
-		saves[spot] = 0.92 - 0.55 * smoothstep(0.35, 0.92, u) - 0.25 * smoothstep(0.45, 0.95, vv) * (0.4 + 0.6 * u)
-	check(float(saves.values()[0]) > 0.85 and float(saves.values()[1]) < 0.25, "an aimed shot: the middle saved, a top corner hard to save (%s)" % str(saves.values()))
+	var g := Rules.GOAL_LINE
+	check(PenaltyShot.keeper_gets_there(Vector3(g, 0.22, 0.6), 0.0, 0.6, false), "from far out the goalkeeper gets across to a low corner")
+	check(not PenaltyShot.keeper_gets_there(Vector3(g, 0.22, 0.6), -0.6, 0.15, true), "close in, bitten the wrong way: he does not")
+	check(not PenaltyShot.keeper_gets_there(Vector3(g, 0.95, 0.65), 0.0, 0.18, false) and PenaltyShot.keeper_gets_there(Vector3(g, 0.22, 0.45), 0.0, 0.18, false),
+		"a top corner beats him where low by his pads does not")
+	check(PenaltyShot.top_corner(Vector3(g, 1.0, 0.68)) and not PenaltyShot.top_corner(Vector3(g, 0.3, 0.0)), "a top corner is a top corner")
 
 
 ## Penalty shots, the home screen's mini game: ten aimed shots, each scored, the end card, the best kept.
@@ -666,13 +639,15 @@ func _practice() -> void:
 					if p != m._practice.shooter and p != m.keeper(1) and p.visible:
 						hidden_ok = false
 		var st := String(m._so.get("stage", ""))
-		if st == "aim" and m._aim and rng.randf() < 0.04:
-			m._on_action("SHOOT")
+		if st == "run" and not bool(m._so.get("shot", false)) and (m._so.shooter as Player).pos.x > 3.0 and rng.randf() < 0.05:
+			m._on_action("DEKE" if rng.randf() < 0.4 else "SHOOT")
 	check(hidden_ok, "practice: only the shooter and the goalkeeper on the rink")
 	check(m.phase == "over" and int(m._practice.shot) == 10 and (m._practice.marks as Array).size() == 10, "practice: ten shots taken (%d)" % int(m._practice.get("shot", 0)))
 	var pts := 0
 	for k in (m._practice.marks as Array):
 		pts += int(k)
+	check(not m.hud.root.find_children("*", "Button", true, false).any(func(b): return b.get_parent() is HBoxContainer and b.custom_minimum_size.x == 60.0 and b.get_index() == 0 and b.get_parent().get_child_count() == 2),
+		"practice: no camera button (its own close camera)")
 	check(pts == int(m._practice.points) and int(Game.settings.penalty_best) == pts, "practice: the points add up and the best is kept (%d)" % pts)
 	m.queue_free()
 	Game.settings.penalty_best = keep_best

@@ -98,11 +98,31 @@ func _ready() -> void:
 	_shadow.mesh = q
 	var sm := StandardMaterial3D.new()
 	sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	sm.albedo_color = Color(0, 0, 0, 0.45)
+	sm.albedo_color = Color(0, 0, 0, 0.55)
+	sm.albedo_texture = shadow_texture()
 	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_shadow.material_override = sm
 	add_child(_shadow)
 	_place()
+
+
+static var _shadow_tex: ImageTexture
+
+
+## The shadow under it: a soft round spot, darkest in the middle.
+static func shadow_texture() -> ImageTexture:
+	if _shadow_tex:
+		return _shadow_tex
+	var n := 32
+	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
+	for y in n:
+		for x in n:
+			var r := Vector2(x + 0.5 - n * 0.5, y + 0.5 - n * 0.5).length() / (n * 0.5)
+			var a := clampf(1.0 - r, 0.0, 1.0)
+			img.set_pixel(x, y, Color(1, 1, 1, a * a))
+	img.generate_mipmaps()
+	_shadow_tex = ImageTexture.create_from_image(img)
+	return _shadow_tex
 
 
 ## The halo's ring: a soft bright band, clear in the middle.

@@ -227,6 +227,37 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.1-beta: a serious look, hands on the stick, a new penalty shot (29 October 2026)
+
+The owner's list:
+- **"The menu is too kid-like, no silly font"**: the headings upright (no forward lean), the buttons and cards square
+  cut, not slanted; the game's name plain capitals with a thin orange rule under it; the notes dark cards with a thin
+  accent line; one orange for every home tile (autoload/game.gd, ui/ui.gd, ui/main_menu.gd).
+- **"His hands don't look like they hold the stick up close"** (as Hurling did for the hurley): the model has no finger
+  bones, so the fingers are bent in the mesh into fists round a handle (rigged_body.gd _gripped, from the skin's bind
+  poses); each hand is turned so its fist's hole runs along the shaft and placed so the shaft goes through it; the
+  shoulder (clavicle) comes forward when an arm is short of the stick.
+- **"The stick looks flat at the base"**: the stick is now built in the game (rigged_body.gd stick_mesh): a round
+  shaft with a grip and a white band, and an upright blade at the stick's lie (33 degrees), a hook and a rocker, its
+  slots cut through, standing on its edge on the floor as a real one does.
+- **"A lot of the crowd has their hands frozen in the air"**: nobody holds a pose with the arms up: only when the hall
+  really goes up (a goal, a big chance) do the keenest stand, and they wave between arms up and a fist pump at their
+  own pace; otherwise they sit, lean in and clap (crowd.gd).
+- **"Remove the other camera button in the penalty mini game"**: gone in Penalty shots.
+- **"The player barely swings"** and **"a better system for the penalty mini game"**: the timing bars are gone. A
+  penalty shot is now a breakaway (match.gd _breakaway, game/penalty_shot.gd): you skate in with the joystick (faster
+  or slower, left or right); DEKE pulls the ball across as if to shoot there, and the goalkeeper may bite (the closer,
+  the likelier; less so the second time) and go down to that side for a moment; hold SHOOT to wind up (the stick drawn
+  back to the waist, the trunk turned away), let go to shoot: the longer the wind-up the harder (19 to 30 m/s), held
+  too long it runs wild; the joystick's side picks the corner, up on it the top. Whether he saves it is worked out
+  from where he is and where it goes: he sees it after a moment (later if he bit the other way) and moves across,
+  his reach smaller over the shoulder (a top corner). A top corner in Penalty shots is worth two. Your penalty shots
+  in a match are taken the same way. The swing is whole: from the wind-up through the ball to a follow-through at
+  the chest; the close camera stays on the goal after the shot.
+- Tests: the breakaway (the close camera, SHOOT and DEKE, the wind-up, the shot settled, the camera back), the
+  goalkeeper's reach (far out he gets across, close in and bitten he does not, a top corner beats him where low does
+  not), ten practice shots with no camera button.
+
 ### 0.9.0-beta: Vulkan, new menus, Penalty shots, Watch a match, a new goalkeeper (29 October 2026)
 
 The owner's list:

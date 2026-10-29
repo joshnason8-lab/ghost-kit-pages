@@ -378,12 +378,10 @@
   "ADS_PLAY_FAIR_FAST": "FÉR · RÝCHLO",
   "ADS_HALL_LOUD": "HALA BÚRI",
   "MENU_SHOOTOUT": "Trestné strieľanie",
-  "MENU_SHOOTOUT_DESC": "Desať striel na brankára: rozhoduje načasovanie",
-  "AIM_HINT": "STRELA zastaví cieľ; znova STRELA v zelenej",
+  "MENU_SHOOTOUT_DESC": "Desať trestných striel: rozbehni sa a obhoď brankára",
   "PRACTICE_SHOT_N": "Strela {n} z {of}",
   "PRACTICE_BEST_N": "Najlepšie {n}",
-  "PRACTICE_CHALLENGE": "Výzva do šibenice: dvojnásobné body!",
-  "PRACTICE_DOUBLE": "Do šibenice! Dvojnásobne!",
+  "PRACTICE_DOUBLE": "Do šibenice! Dva body!",
   "PRACTICE_OVER": "Desať striel za tebou",
   "PRACTICE_RATING_0": "Späť do tréningovej haly",
   "PRACTICE_RATING_1": "Klubová úroveň",
@@ -396,9 +394,11 @@
   "SHOOTOUT_SHOOTER": "Tvoj strelec",
   "SHOOTOUT_KEEPER": "V bránke",
   "SHOOTOUT_GO": "Do toho",
-  "SHOOTOUT_HOW": "Tvoj strelec sa rozbehne od stredu; riaď joystickom. Okolo bránky obieha cieľ: STRELA ho zastaví. Potom dole beží lišta: STRELA znova v zelenej a loptička letí, kam si mieril, inak strela uhne. Rohy brankára prekonajú; stred je jeho. Pri strelách 3, 6 a 9 sa horné rohy rozsvietia zlato: gól tam sa počíta dvakrát.",
+  "SHOOTOUT_HOW": "Trestné strieľanie ako naozaj: tvoj strelec sa rozbehne od stredu s loptičkou a musí ju viesť dopredu. Riaď joystickom (hore rýchlejšie). KLIČKA naznačí strelu na jednu stranu: príď blízko a brankár sa nechá nachytať a padne na tú stranu. Drž STRELA pre nápriah (dlhšie je tvrdšie, ale príliš dlho a strela uletí) a pusti pre strelu do rohu, kam ukazuje joystick, hore vysoko; bez joysticku strieľaš na stranu, ktorú nechal otvorenú. Gól je bod, do šibenice dva.",
   "POINTS_N_ONE": "{n} bod",
   "POINTS_N_FEW": "{n} body",
   "POINTS_N_OTHER": "{n} bodov",
-  "HOME": "Domov"
+  "HOME": "Domov",
+  "BTN_DEKE": "Klička",
+  "SO_HINT": "Riaď joystickom · KLIČKA klame · drž STRELA a pusti (joystick volí roh)"
 }

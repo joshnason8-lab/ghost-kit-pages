@@ -64,8 +64,8 @@ const C_MUTED := Color("94a3bd")
 const C_BLUE := Color("3d8bff")      # electric blue: your team
 const C_RED := Color("ff4d5e")       # the opponents, penalties
 const C_GREEN := Color("2fd08a")     # good
-const C_MAGNET := Color("ff7a1a")    # flame orange: the thing to press
-const C_CYAN := Color("31e1ff")      # the blade's glow: accents
+const C_MAGNET := Color("f2762e")    # the accent (the icon's flame, toned down): the thing to press
+const C_CYAN := Color("7fb8e6")      # a cool light blue: quiet accents
 const C_YELLOW := Color("ffd23f")
 const C_BIRCH := Color("d9c296")
 const C_FLOOR := Color("2c66ad")
@@ -533,18 +533,14 @@ func _build_theme() -> void:
 	var barlow := _font("res://fonts/BarlowCondensed-Bold.ttf")
 	barlow.fallbacks = marker_fb
 	font_score = barlow
-	# The headings: Barlow Condensed Bold leaning forward, as a broadcast's graphics are set (Thai and Japanese in bold
-	# Noto, upright).
-	var head := FontVariation.new()
-	head.base_font = barlow
-	head.variation_transform = Transform2D(Vector2(1, 0), Vector2(-0.18, 1), Vector2.ZERO)
-	head.spacing_glyph = 1
-	font_head = head
+	# The headings: Noto Sans at its heaviest, upright, as a sports federation's or a broadcaster's own pages set them
+	# (Thai and Japanese in their Noto, the same weight).
+	font_head = _variation(latin, 760, fallbacks)
 
 	theme = Theme.new()
 	theme.default_font = font_body
 
-	# Buttons: dark cards with a thin edge, cut on a slant like a sports broadcast's graphics; lit blue when touched.
+	# Buttons: dark cards with a thin edge; lit when touched.
 	theme.set_stylebox("normal", "Button", _sb(C_PANEL, 8, Color(C_FRAME, 1.0), 2))
 	theme.set_stylebox("hover", "Button", _sb(C_PANEL_HI, 8, Color(C_CYAN, 0.7), 2))
 	theme.set_stylebox("pressed", "Button", _sb(Color("223258"), 8, C_CYAN, 3))
@@ -557,12 +553,12 @@ func _build_theme() -> void:
 	theme.set_color("font_disabled_color", "Button", Color(C_MUTED, 0.6))
 	theme.set_font("font", "Button", font_bold)
 
-	# The primary action: flame orange, slanted, dark words.
+	# The primary action: the accent, plain, dark words.
 	theme.set_type_variation("PrimaryButton", "Button")
-	theme.set_stylebox("normal", "PrimaryButton", _sb(C_MAGNET, 8, Color(0, 0, 0, 0), 0, 14, 0.16))
-	theme.set_stylebox("hover", "PrimaryButton", _sb(C_MAGNET.lightened(0.12), 8, Color(0, 0, 0, 0), 0, 14, 0.16))
-	theme.set_stylebox("pressed", "PrimaryButton", _sb(C_MAGNET.darkened(0.18), 8, Color(0, 0, 0, 0), 0, 14, 0.16))
-	theme.set_stylebox("focus", "PrimaryButton", _sb(Color(0, 0, 0, 0), 8, Color.WHITE, 2, 14, 0.16))
+	theme.set_stylebox("normal", "PrimaryButton", _sb(C_MAGNET, 8, Color(0, 0, 0, 0), 0, 14))
+	theme.set_stylebox("hover", "PrimaryButton", _sb(C_MAGNET.lightened(0.12), 8, Color(0, 0, 0, 0), 0, 14))
+	theme.set_stylebox("pressed", "PrimaryButton", _sb(C_MAGNET.darkened(0.18), 8, Color(0, 0, 0, 0), 0, 14))
+	theme.set_stylebox("focus", "PrimaryButton", _sb(Color(0, 0, 0, 0), 8, Color.WHITE, 2, 14))
 	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		theme.set_color(k, "PrimaryButton", C_ON_ACCENT)
 	theme.set_font("font", "PrimaryButton", font_head)

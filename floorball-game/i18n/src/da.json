@@ -375,12 +375,10 @@
   "ADS_PLAY_FAIR_FAST": "FAIR · HURTIGT",
   "ADS_HALL_LOUD": "HALLEN KOGER",
   "MENU_SHOOTOUT": "Straffeslag",
-  "MENU_SHOOTOUT_DESC": "Ti skud mod målmanden: det handler om timing",
-  "AIM_HINT": "SKUD stopper sigtet; SKUD igen i det grønne",
+  "MENU_SHOOTOUT_DESC": "Ti straffeslag: kør ind og snyd målmanden",
   "PRACTICE_SHOT_N": "Skud {n} af {of}",
   "PRACTICE_BEST_N": "Bedste {n}",
-  "PRACTICE_CHALLENGE": "Kryds-udfordring: dobbelte point!",
-  "PRACTICE_DOUBLE": "I krydset! Dobbelt!",
+  "PRACTICE_DOUBLE": "I krydset! To point!",
   "PRACTICE_OVER": "Ti skud taget",
   "PRACTICE_RATING_0": "Tilbage til træningshallen",
   "PRACTICE_RATING_1": "Klubniveau",
@@ -393,8 +391,10 @@
   "SHOOTOUT_SHOOTER": "Din skytte",
   "SHOOTOUT_KEEPER": "I mål",
   "SHOOTOUT_GO": "Skyd",
-  "SHOOTOUT_HOW": "Din skytte kører fra midterpunktet; styr med pinden. Et sigte kører rundt om målet: SKUD stopper det. Så løber en bjælke nederst: SKUD igen i det grønne, og bolden går derhen, hvor du sigtede, ellers trækker skuddet skævt. Hjørnerne slår målmanden; midten er hans. Ved skud 3, 6 og 9 lyser krydsene guld: mål der tæller dobbelt.",
+  "SHOOTOUT_HOW": "Et straffeslag, som det tages i virkeligheden: din skytte kører fra midterpunktet med bolden og skal holde den i bevægelse fremad. Styr med pinden (op for fart). FINTE lader som om du skyder til den ene side: kom tæt på, så bider målmanden og går ned til den side. Hold SKUD for at lade op (længere er hårdere, men for længe og skuddet går vildt) og slip for at skyde mod hjørnet, pinden peger på, op for højt; rører du ikke pinden, skyder du mod den side, han har ladt åben. Mål giver et point, i krydset to.",
   "POINTS_N_ONE": "{n} point",
   "POINTS_N_OTHER": "{n} point",
-  "HOME": "Hjem"
+  "HOME": "Hjem",
+  "BTN_DEKE": "Finte",
+  "SO_HINT": "Styr med pinden · FINTE snyder · hold SKUD og slip (pinden vælger hjørne)"
 }

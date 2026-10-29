@@ -547,67 +547,59 @@ static func signed(n: int) -> String:
 
 
 
-## A menu tile: a dark card leaning forward like a broadcast's graphics, a stripe of its colour down the left, the
-## title in the condensed headline face, a line of description under it. The menus' big choices are these.
+## A menu tile: a dark card with a thin edge, a short rule of its colour at the left, the title in the heading face,
+## a line of description under it. The menus' big choices are these.
 static func note(title: String, desc: String, accent: Color, cb: Callable, big := false) -> Button:
 	var b := Button.new()
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	b.custom_minimum_size = Vector2(0, 88 if not big else 108)
+	b.custom_minimum_size = Vector2(0, 84 if not big else 104)
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(Game.C_PANEL, 0.93)
+	sb.bg_color = Color(Game.C_PANEL, 0.94)
 	sb.set_corner_radius_all(6)
 	sb.border_color = Color(Game.C_FRAME, 1.0)
 	sb.set_border_width_all(1)
-	sb.border_width_left = 8
-	sb.skew = Vector2(0.12, 0)
-	sb.shadow_color = Color(0, 0, 0, 0.35)
-	sb.shadow_size = 10
-	sb.shadow_offset = Vector2(0, 6)
-	sb.border_color = Color(Game.C_FRAME, 1.0)
 	var sbh: StyleBoxFlat = sb.duplicate()
 	sbh.bg_color = Color(Game.C_PANEL_HI, 0.97)
-	sbh.border_color = accent
-	sbh.set_border_width_all(2)
-	sbh.border_width_left = 8
+	sbh.border_color = Color(Game.C_INK, 0.45)
 	b.add_theme_stylebox_override("normal", sb)
 	b.add_theme_stylebox_override("hover", sbh)
 	b.add_theme_stylebox_override("pressed", sbh)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	# The colour stripe: the card's left edge in its accent (a StyleBoxFlat's border is one colour all round).
-	var stripe := Control.new()
-	stripe.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stripe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	stripe.draw.connect(func():
-		var h := stripe.size.y
-		var k := 0.12 * h
-		stripe.draw_colored_polygon(PackedVector2Array([Vector2(k * 0.5 + 0, 0), Vector2(k * 0.5 + 9, 0), Vector2(-k * 0.5 + 9, h),
-			Vector2(-k * 0.5, h)]), accent))
-	b.add_child(stripe)
+	# The rule: a short line of the tile's colour down its left edge.
+	var rule := ColorRect.new()
+	rule.color = accent.lerp(Game.C_PANEL, 0.25)
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rule.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	rule.offset_left = 0
+	rule.offset_right = 3
+	rule.offset_top = 14
+	rule.offset_bottom = -14
+	b.add_child(rule)
 	var m := MarginContainer.new()
 	m.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	m.add_theme_constant_override("margin_left", 26)
-	m.add_theme_constant_override("margin_right", 18)
+	m.add_theme_constant_override("margin_left", 22)
+	m.add_theme_constant_override("margin_right", 16)
 	m.add_theme_constant_override("margin_top", 10)
 	m.add_theme_constant_override("margin_bottom", 10)
 	b.add_child(m)
 	var v := VBoxContainer.new()
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_theme_constant_override("separation", 0)
+	v.add_theme_constant_override("separation", 2)
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	m.add_child(v)
-	var t := label(title.to_upper(), "HeaderLabel", 42 if big else 34, Game.C_INK)
+	var t := label(title, "HeaderLabel", 28 if big else 24, Game.C_INK)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_fit_line(t, 42 if big else 34)
+	_fit_line(t, 28 if big else 24)
 	v.add_child(t)
 	if desc != "":
 		var d := UI.wrap(desc, "MutedLabel", 16)
 		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(d)
 	var grow := func():
-		b.custom_minimum_size.y = maxf(88.0 if not big else 108.0, m.get_combined_minimum_size().y)
+		b.custom_minimum_size.y = maxf(84.0 if not big else 104.0, m.get_combined_minimum_size().y)
 	m.minimum_size_changed.connect(grow)
 	b.pressed.connect(Sfx.click)
 	b.pressed.connect(cb)

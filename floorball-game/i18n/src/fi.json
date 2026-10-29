@@ -375,12 +375,10 @@
   "ADS_PLAY_FAIR_FAST": "REILUSTI · NOPEASTI",
   "ADS_HALL_LOUD": "HALLI RAIKAA",
   "MENU_SHOOTOUT": "Rangaistuslaukaukset",
-  "MENU_SHOOTOUT_DESC": "Kymmenen laukausta maalivahtia vastaan: ajoitus ratkaisee",
-  "AIM_HINT": "LAUKAUS pysäyttää tähtäimen; LAUKAUS uudelleen vihreällä",
+  "MENU_SHOOTOUT_DESC": "Kymmenen rangaistuslaukausta: luistele sisään ja harhauta maalivahti",
   "PRACTICE_SHOT_N": "Laukaus {n}/{of}",
   "PRACTICE_BEST_N": "Paras {n}",
-  "PRACTICE_CHALLENGE": "Yläkulmahaaste: tuplapisteet!",
-  "PRACTICE_DOUBLE": "Yläkulmaan! Tuplat!",
+  "PRACTICE_DOUBLE": "Yläkulmaan! Kaksi pistettä!",
   "PRACTICE_OVER": "Kymmenen laukausta ammuttu",
   "PRACTICE_RATING_0": "Takaisin harjoitussaliin",
   "PRACTICE_RATING_1": "Seuratasoa",
@@ -393,8 +391,10 @@
   "SHOOTOUT_SHOOTER": "Laukojasi",
   "SHOOTOUT_KEEPER": "Maalissa",
   "SHOOTOUT_GO": "Laukomaan",
-  "SHOOTOUT_HOW": "Laukojasi luistelee keskipisteestä; ohjaa sauvalla. Tähtäin kiertää maalia: LAUKAUS pysäyttää sen. Sitten alhaalla kulkee palkki: LAUKAUS uudelleen vihreällä, niin pallo menee minne tähtäsit, muualla laukaus lähtee sivuun. Kulmat voittavat maalivahdin; keskusta on hänen. Laukauksissa 3, 6 ja 9 yläkulmat hehkuvat kultaisina: maali niihin tuo tuplapisteet.",
+  "SHOOTOUT_HOW": "Rangaistuslaukaus niin kuin se oikeasti lyödään: laukojasi luistelee keskipisteestä pallon kanssa, ja pallon on liikuttava eteenpäin. Ohjaa sauvalla (ylös vauhtia). HARHAUTA esittää laukausta toiselle puolelle: tule lähelle, niin maalivahti menee siihen ja kaatuu sille puolelle. Pidä LAUKAUS pohjassa latautuaksesi (pidempi on kovempi, mutta liian pitkään ja laukaus karkaa) ja päästä irti laukaistaksesi kohti kulmaa, johon sauva osoittaa, ylös korkealle; jos et koske sauvaan, laukaiset sille puolelle, jonka hän jätti auki. Maali on piste, yläkulmaan kaksi.",
   "POINTS_N_ONE": "{n} piste",
   "POINTS_N_OTHER": "{n} pistettä",
-  "HOME": "Alkuun"
+  "HOME": "Alkuun",
+  "BTN_DEKE": "Harhauta",
+  "SO_HINT": "Ohjaa sauvalla · HARHAUTA harhauttaa · pidä LAUKAUS pohjassa ja päästä irti (sauva valitsee kulman)"
 }

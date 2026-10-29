@@ -30,6 +30,8 @@ var act := ""                 # what the body does now: "", shoot, pass, tackle,
                               # signal_*, celebrate, kneel, down
 var act_t := 0.0              # time into act
 var act_len := 0.0
+var windup := 0.0             # a shot being wound up (0 to 1): the stick drawn back, the trunk turned away (match.gd)
+var deke_side := 1.0          # a deke's side (+ his left... as the match gives it): the blade pulls the ball that way
 var signal_arm := Vector2.ZERO  # a referee's signal: the floor direction an arm points
 var stamina := 1.0
 var on_rink := true
@@ -136,7 +138,12 @@ func dir() -> Vector2:
 	return Vector2(cos(facing), sin(facing))
 
 
+var _shot_from := 0.0         # the wind-up a shot started from (its follow-through goes with it)
+
+
 func do(a: String, length := 0.4) -> void:
+	if a == "shoot":
+		_shot_from = windup
 	act = a
 	act_t = 0.0
 	act_len = length
@@ -211,7 +218,7 @@ func _animate(dt: float) -> void:
 	var sp := vel.length()
 	var run := clampf(sp / 3.0, 0.0, 1.0)
 	# Forward lean with speed, a low stance near the ball (a floorball player plays bent at the knees).
-	var lean_want := 26.0 + run * 8.0   # a floorball player plays bent forward over his stick
+	var lean_want := 40.0 + run * 4.0   # a floorball player plays bent forward over his stick
 	if act == "tackle":
 		lean_want += 22.0   # and lunges into a tackle
 	var crouch_want := 0.0
@@ -222,7 +229,7 @@ func _animate(dt: float) -> void:
 		"R":
 			lean_want = 3.0 + run * 8.0
 		_:
-			crouch_want = 0.6
+			crouch_want = 0.8
 	_lean = lerpf(_lean, lean_want, minf(1.0, 6.0 * dt))
 	_crouch = lerpf(_crouch, crouch_want, minf(1.0, 6.0 * dt))
 	# The legs run the way he moves; the trunk keeps facing where he faces. Moving backward the cycle runs backward.
@@ -266,6 +273,20 @@ func _animate(dt: float) -> void:
 	p.hips_y = -0.03 - _crouch * 0.12 + absf(sin(_phase * TAU * 2.0)) * 0.035 * run
 	p.spine = Vector3(_lean * 0.45, 0, 0)
 	p.chest = Vector3(_lean * 0.4, k * 4.0 * run, 0)
+	# A shot: the trunk turns away to the stick's side as it winds up, and unwinds through the ball past the front.
+	if role != "G" and role != "R":
+		var sd := 1.0 if shoots_left() else -1.0
+		var tw := 0.0
+		if windup > 0.0 and act == "":
+			tw = 34.0 * windup
+		elif act == "shoot":
+			var tt := act_t / maxf(0.01, act_len)
+			var from := 34.0 * maxf(_shot_from, 0.45)
+			tw = lerpf(from, -26.0, clampf(tt / 0.6, 0.0, 1.0))
+		var ch: Vector3 = p.chest
+		ch.y += tw * 0.6 * sd
+		p.chest = ch
+		p.spine = Vector3(_lean * 0.45, tw * 0.4 * sd, 0)
 	p.head = Vector3(-_lean * 0.6, 0, 0)
 	p.upperarm_l = Vector3(k * 28.0 * run, 0, 8)
 	p.upperarm_r = Vector3(k2 * 28.0 * run, 0, -8)
@@ -355,32 +376,56 @@ func _mocap_legs(p: Dictionary, g: Dictionary, w: float, legs_yaw: float) -> voi
 ## waist (507.2: a high stick is an offence).
 func _stick(dt: float, t: float) -> void:
 	var side := 1.0 if shoots_left() else -1.0
-	var want := Vector3(0.22 * side, 0.0, 0.62)
+	var want := Vector3(0.24 * side, 0.0, 0.82)
 	var top_hand := "r" if shoots_left() else "l"
+	var lift := 0.0     # the hands drawn back and up across his chest with the wind-up (0 to 1)
+	var follow := 0.0   # and through, high in front, after the shot
+	if windup > 0.0 and act == "":
+		# Winding up a shot: the blade drawn back along the floor and up behind him, the harder the higher.
+		var w := windup
+		want = Vector3((0.45 + 0.2 * w) * side, 0.05 + 0.65 * w * w, 0.45 - 1.1 * w)
+		lift = w
 	match act:
 		"shoot", "pass":
 			var big := 1.0 if act == "shoot" else 0.55
-			if t < 0.45:
-				# The back-swing: the blade back and up, at most to the waist.
-				var w := t / 0.45
-				want = Vector3((0.3 + 0.25 * w * big) * side, 0.05 + 0.5 * w * big, 0.35 - 0.55 * w * big)
+			if act == "shoot" and _shot_from > 0.0:
+				# From a wind-up: the whole sweep through the ball at once, and up into the follow-through.
+				var w := clampf(t / 0.35, 0.0, 1.0)
+				var back := Vector3((0.45 + 0.2 * _shot_from) * side, 0.05 + 0.65 * _shot_from * _shot_from, 0.45 - 1.1 * _shot_from)
+				var thru := Vector3(0.1 * side, 0.03, 0.85)
+				var high := Vector3(-0.35 * side, 0.6 + 0.5 * _shot_from, 1.05)
+				want = back.lerp(thru, w) if t < 0.35 else thru.lerp(high, clampf((t - 0.35) / 0.4, 0.0, 1.0))
+				lift = _shot_from * (1.0 - w)
+				follow = clampf((t - 0.35) / 0.4, 0.0, 1.0) * (0.5 + 0.5 * _shot_from)
+			elif t < 0.4:
+				# The back-swing: the blade back and up, to the waist (a slap shot to the shoulder).
+				var w := t / 0.4
+				want = Vector3((0.35 + 0.3 * w * big) * side, 0.05 + 0.75 * w * big, 0.4 - 0.8 * w * big)
+				lift = 0.7 * w * big
 			else:
-				var w := (t - 0.45) / 0.55
-				want = Vector3((0.55 * big - 0.75 * w) * side * (1.0 if big > 0.6 else 0.6), maxf(0.0, 0.55 * big * (1.0 - w * 2.0)) + 0.25 * maxf(0.0, w - 0.6) * big, -0.2 * big + 1.15 * w)
+				# Through the ball and up into a follow-through at the chest.
+				var w := (t - 0.4) / 0.6
+				want = Vector3((0.65 * big - 1.05 * w) * side * (1.0 if big > 0.6 else 0.6), maxf(0.0, 0.8 * big * (1.0 - w * 2.2)) + 0.55 * maxf(0.0, w - 0.45) * big, -0.4 * big + 1.45 * w)
+				lift = 0.7 * big * maxf(0.0, 1.0 - w * 2.0)
+				follow = maxf(0.0, w - 0.45) / 0.55 * big
+		"deke":
+			# The blade pulls the ball across, as if to shoot that way, and back.
+			want = Vector3((0.1 + 0.42 * sin(clampf(t, 0.0, 1.0) * PI)) * deke_side, 0.0, 0.8)
 		"tackle":
 			want = Vector3(0.1 * side, 0.0, 0.95 + 0.2 * sin(t * PI))
 		"dribble":
 			pass
 		"celebrate":
 			want = Vector3(0.3 * side, 0.9, 0.2)
-	if act == "" and match_node and match_node.has_method("has_ball") and match_node.has_ball(self):
+	if act == "" and windup <= 0.0 and match_node and match_node.has_method("has_ball") and match_node.has_ball(self):
 		# Dribbling: the blade works the ball side to side in front of him.
 		_wob += dt * (7.0 + vel.length() * 0.6)
-		want = Vector3((0.12 + 0.16 * sin(_wob)) * side, 0.0, 0.58 + vel.length() * 0.03)
+		want = Vector3((0.14 + 0.16 * sin(_wob)) * side, 0.0, 0.76 + vel.length() * 0.03)
 	var rate := 26.0 if act in ["shoot", "pass", "tackle"] else 12.0
 	_blade = _blade.lerp(want, minf(1.0, rate * dt))
 	# Heel on the floor (or where the swing has it), the grip end near the top hand's hip.
-	var grip := Vector3(-0.08 * side, 0.98 - _crouch * 0.12, 0.2)
+	var grip := Vector3(-0.06 * side, 0.96 - _crouch * 0.14, 0.27)
+	grip = grip.lerp(Vector3(-0.18 * side, 1.12, 0.16), lift).lerp(Vector3(-0.28 * side, 1.18, 0.42), follow)
 	var heel := _blade + Vector3(-0.06 * side, 0.0, -0.06)
 	var shaft := heel - grip
 	if shaft.length() > Body.STICK_LEN:
@@ -397,8 +442,11 @@ func _stick(dt: float, t: float) -> void:
 			heel = sh + (heel - sh).normalized() * (Body.STICK_LEN + ARM_REACH)
 			heel.y = maxf(heel.y, 0.01)
 			grip = heel + (sh - heel).normalized() * Body.STICK_LEN
-	var toe := Vector3(0.2 * side, 0, 1.0).normalized()
-	body.place_stick(grip, heel, toe, top_hand, 0.3)
+	# The blade carries on from the shaft along the floor (the stick's lie), its toe away from him, its face to the
+	# ball.
+	var toe := Vector3(heel.x - grip.x, 0, heel.z - grip.z)
+	toe = toe.normalized() if toe.length() > 0.01 else Vector3(0.3 * side, 0, 1.0).normalized()
+	body.place_stick(grip, heel, toe, top_hand, 0.24)
 
 
 ## Where the blade is now, on the floor (for the ball to sit on and for tackles).
@@ -407,9 +455,16 @@ func blade_floor() -> Vector2:
 	return Vector2(w.x, w.z)
 
 
-## Where a dribbled ball sits: just in front of the blade.
+## Where a dribbled ball sits: against the blade's face, toward its middle (the blade runs on from the heel, away
+## from him, along the floor; its face is the side toward his front).
 func ball_spot() -> Vector3:
-	var b := blade_floor() + dir() * 0.08
+	var heel := blade_floor()
+	var out := heel - pos
+	out = out.normalized() if out.length() > 0.01 else dir()
+	var face := out.orthogonal()
+	if face.dot(dir()) < 0.0:
+		face = -face
+	var b := heel + out * 0.14 + face * 0.05
 	return Vector3(b.x, Ball.R, b.y)
 
 

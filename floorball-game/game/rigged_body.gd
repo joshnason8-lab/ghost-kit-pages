@@ -89,10 +89,14 @@ void fragment() {
 """
 
 static var _scenes := {}     # file -> PackedScene
+static var _fists := {}      # file -> its mesh with the hands made into fists (players: they hold a stick)
+static var _frames_cache := {}  # the open mesh's path + side -> its hand's frame (_hand_frame)
+var _src_path := ""
 static var _textures := {}   # file -> Texture2D
 static var _shader: Shader
 static var _stick_mesh: Mesh
 static var _stick_mat: Material
+static var _shaft_mat: Material
 static var _stick_fix := Transform3D()
 
 var character: Node3D
@@ -105,6 +109,8 @@ var _bones := []             # per model bone: [index, parent index, game bone i
 var _hips_rest := Vector3.ZERO
 var _leg_ratio := 1.0
 var _arm := {}               # side -> [arm, forearm, hand indices, upper length, fore length]
+var _fist := {}              # side -> [the fist's hole's axis, the grip's centre] in the hand bone's own space
+var _grip_off := {}          # side -> wrist to the fist's centre, as the hand was last turned (skeleton space)
 
 
 static func available() -> bool:
@@ -146,9 +152,122 @@ func setup(body: Body, look: Dictionary) -> void:
 	mesh.material_override = material
 	recolour(look)
 	if String(look.get("kind", "player")) == "player":
+		# Fists round the stick (the model's hands are open and have no finger bones: bent in the mesh, once a file).
+		_src_path = (mesh.mesh as Resource).resource_path
+		if not _fists.has(file):
+			_fists[file] = _gripped(mesh.mesh as ArrayMesh, mesh.skin, skeleton)
+		mesh.mesh = _fists[file]
+		_grip_frames()
 		_make_stick()
 	elif String(look.get("kind", "")) == "keeper":
 		_make_helmet(look)
+
+
+## The fist: where the stick's shaft runs through each hand, from the wrist (the model's metres), and how far the
+## fingers' middle is from it. As Hurling Heroes did for its hurley (hero_body.gd _gripped).
+const LIE := 33.0            # degrees the blade is tipped down the shaft from square to it (stick_mesh)
+const GRIP_ALONG := 0.082    # from the wrist toward the fingertips
+const GRIP_R := 0.026        # from the fingers' middle to the shaft's centre line
+const GRIP_MAX := 3.0        # radians: as far as a fingertip curls, into the palm
+
+
+## The hand's own frame in the mesh's space (from its bind pose): [wrist, fingers' way, palm's normal, the fist's
+## hole's axis (across the palm), its bind index].
+static func _hand_frame(skin: Skin, sk: Skeleton3D, side: String, src: ArrayMesh = null) -> Array:
+	var name := "mixamorig_%sHand" % ("Left" if side == "l" else "Right")
+	var bi := -1
+	for j in skin.get_bind_count():
+		if skin.get_bind_name(j) == name or (skin.get_bind_name(j) == "" and skin.get_bind_bone(j) == sk.find_bone(name)):
+			bi = j
+	if bi < 0:
+		return []
+	var rest := skin.get_bind_pose(bi).affine_inverse()
+	var b := rest.basis.orthonormalized()
+	var fingers := b.y.normalized()
+	# The model stands with its palms to its thighs: the palm faces the body's middle, square to the fingers.
+	var inward := Vector3(-signf(rest.origin.x), 0, 0)
+	var palm := (inward - fingers * inward.dot(fingers)).normalized()
+	var ax := fingers.cross(palm).normalized()
+	return [rest.origin, fingers, palm, ax, bi]
+
+
+## The model's hands made into fists round a stick's shaft: each finger, from where it passes the shaft's line, wrapped
+## round that line (a line across the palm, front to back, just inside it), as a bend wraps a strip round a rod. The
+## thumb, on the far side of the line, stays alongside the shaft. The mesh's levels of detail kept.
+static func _gripped(src: ArrayMesh, skin: Skin, sk: Skeleton3D) -> ArrayMesh:
+	if src == null or skin == null:
+		return src
+	var a := src.surface_get_arrays(0)
+	var vs: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+	var ns: PackedVector3Array = a[Mesh.ARRAY_NORMAL]
+	var bs: PackedInt32Array = a[Mesh.ARRAY_BONES]
+	var ws: PackedFloat32Array = a[Mesh.ARRAY_WEIGHTS]
+	var stride := bs.size() / maxi(1, vs.size())
+	for side in ["l", "r"]:
+		var f := _hand_frame(skin, sk, side, src)
+		if f.is_empty():
+			continue
+		_frames_cache[src.resource_path + side] = f
+		var fingers: Vector3 = f[1]
+		var palm: Vector3 = f[2]
+		var ax: Vector3 = f[3]
+		var bi: int = f[4]
+		var a0: Vector3 = f[0] + fingers * GRIP_ALONG + palm * GRIP_R
+		var turn_ax := (-palm).cross(fingers).normalized()
+		for i in vs.size():
+			var w := 0.0
+			for j in stride:
+				if bs[i * stride + j] == bi:
+					w += ws[i * stride + j]
+			if w <= 0.0:
+				continue
+			var rel := vs[i] - a0
+			var along := rel.dot(ax)
+			var q := rel - ax * along
+			var s := q.dot(fingers)
+			var n := -q.dot(palm)
+			if s <= 0.0 or n <= 0.004:
+				continue
+			var th := minf(s / maxf(n, GRIP_R * 0.6), GRIP_MAX)
+			var rot := Basis(turn_ax, th)
+			var bent := a0 + ax * along + rot * (-palm * n)
+			vs[i] = vs[i].lerp(bent, w)
+			if ns[i].length() > 0.0:
+				ns[i] = ns[i].slerp((rot * ns[i]).normalized(), w).normalized()
+	a[Mesh.ARRAY_VERTEX] = vs
+	a[Mesh.ARRAY_NORMAL] = ns
+	a[Mesh.ARRAY_TANGENT] = null
+	var lods := {}
+	var sd := RenderingServer.mesh_get_surface(src.get_rid(), 0)
+	var wide := vs.size() > 65535
+	for l: Dictionary in sd.get("lods", []):
+		var by: PackedByteArray = l.index_data
+		var ix := PackedInt32Array()
+		ix.resize(by.size() / (4 if wide else 2))
+		for k in ix.size():
+			ix[k] = by.decode_u32(k * 4) if wide else by.decode_u16(k * 2)
+		lods[float(l.edge_length)] = ix
+	var out := ArrayMesh.new()
+	out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, a, [], lods, src.surface_get_format(0) & Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS)
+	out.custom_aabb = src.custom_aabb
+	if src.get_blend_shape_count() == 0:
+		out.surface_set_material(0, src.surface_get_material(0))
+	return out
+
+
+## Each fist's hole (its axis) and centre (from the wrist), in its hand bone's own frame and the skeleton's units, to
+## put the shaft through it.
+func _grip_frames() -> void:
+	for side in ["l", "r"]:
+		var f: Array = _frames_cache.get(_src_path + side, [])
+		if f.is_empty():
+			continue
+		var h: int = _arm[side][2]
+		var rest := skeleton.get_bone_global_rest(h)
+		var unit := rest.origin.length() / maxf(0.001, (f[0] as Vector3).length())   # skeleton units a mesh metre
+		var inv := rest.basis.orthonormalized().inverse()
+		var centre: Vector3 = (f[1] as Vector3) * GRIP_ALONG + (f[2] as Vector3) * GRIP_R
+		_fist[side] = [(inv * (f[3] as Vector3)).normalized(), inv * (centre * unit)]
 
 
 ## The model's skeleton relative to this node, before it is in the tree.
@@ -265,47 +384,123 @@ void fragment() {
 
 func _make_stick() -> void:
 	if _stick_mesh == null:
-		_stick_mesh = load(DIR + "stick.res")
+		_stick_mesh = stick_mesh()
 		var m := StandardMaterial3D.new()
-		m.albedo_texture = load(DIR + "stick.jpg")
-		m.roughness = 0.45
+		m.albedo_texture = _blade_texture()
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		m.alpha_scissor_threshold = 0.5
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		m.roughness = 0.35
 		_stick_mat = m
-		_stick_fix = _fit_stick(_stick_mesh)
+		var sm := StandardMaterial3D.new()
+		sm.vertex_color_use_as_albedo = true
+		sm.roughness = 0.3
+		sm.metallic_specular = 0.6
+		_shaft_mat = sm
+		_stick_fix = Transform3D.IDENTITY
 	stick = MeshInstance3D.new()
 	stick.mesh = _stick_mesh
-	stick.material_override = _stick_mat
+	stick.set_surface_override_material(0, _shaft_mat)
+	stick.set_surface_override_material(1, _stick_mat)
 	stick.cast_shadow = mesh.cast_shadow
 	add_child(stick)
 
 
-## The stick model as the game holds its stick: the grip's end at the origin, the shaft down -Y, the blade toward +Z,
-## its length the game's (Body.STICK_LEN from the grip to the blade's heel, ~1 m in all).
-static func _fit_stick(m: Mesh) -> Transform3D:
-	var vs: PackedVector3Array = m.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
-	var top := -INF
-	var bottom := INF
-	for v in vs:
-		top = maxf(top, v.y)
-		bottom = minf(bottom, v.y)
-	var len := top - bottom
-	var grip := Vector3.ZERO
-	var toe := Vector3.ZERO
-	var ng := 0
-	var nt := 0
-	for v in vs:
-		if v.y > top - len * 0.05:
-			grip += v
-			ng += 1
-		elif v.y < bottom + len * 0.06:
-			toe += v
-			nt += 1
-	grip /= maxf(1, ng)
-	toe /= maxf(1, nt)
-	var blade := Vector2(toe.x - grip.x, toe.z - grip.z)
-	var turn := Basis(Vector3.UP, atan2(blade.x, blade.y))   # the blade's way round to +Z
-	var s := (Body.STICK_LEN + 0.05) / len
-	var b := Basis.from_scale(Vector3.ONE * s) * turn.inverse()
-	return Transform3D(b, -(b * Vector3(grip.x, top, grip.z)))
+## A floorball stick, as the game holds it (the grip's end at the origin, the shaft down -Y to the blade's heel,
+## Body.STICK_LEN; the blade toward +Z): a round composite shaft, 25 mm across, with a white band of print under the
+## grip; and a blade of perforated plastic, about 28 cm long and 8.5 cm tall, standing on its edge, its face to the
+## side, set at a lie of LIE degrees to the shaft (so it lies along the floor with the shaft leaning out toward the
+## ball as it is held), its toe hooked a little and its bottom edge rockered (the Material Regulations' blade).
+static func stick_mesh() -> ArrayMesh:
+	var out := ArrayMesh.new()
+	var L := Body.STICK_LEN
+	# The shaft: a tube, ten sides, from the grip's end to the heel; the print band by vertex colour.
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var r := 0.0125
+	var n := 10
+	var rings := [0.0, 0.16, 0.19, 0.25, L]
+	for k in rings.size() - 1:
+		var col := Color(0.92, 0.93, 0.94) if k == 2 else Color(0.08, 0.09, 0.1)
+		for i in n:
+			var a0 := TAU * i / n
+			var a1 := TAU * (i + 1) / n
+			var d0 := Vector3(cos(a0), 0, sin(a0))
+			var d1 := Vector3(cos(a1), 0, sin(a1))
+			var y0 := -float(rings[k])
+			var y1 := -float(rings[k + 1])
+			for q in [[d0, y0], [d1, y0], [d1, y1], [d0, y0], [d1, y1], [d0, y1]]:
+				st.set_color(col)
+				st.set_normal(q[0])
+				st.add_vertex((q[0] as Vector3) * r + Vector3(0, q[1], 0))
+	st.commit(out)
+	# The blade: a plate along u (from the heel, tipped down the shaft by the lie), v up its face, X its face's normal.
+	var lie := deg_to_rad(LIE)
+	var heel := Vector3(0, -L, 0)
+	var u := Vector3(0, -sin(lie), cos(lie))
+	var v := Vector3(0, cos(lie), sin(lie))
+	var sb := SurfaceTool.new()
+	sb.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var ns := 14
+	var nt := 4
+	var length := 0.28
+	var tall := 0.085
+	var grid := []
+	for i in ns + 1:
+		var row := []
+		var s := length * i / ns
+		var k := float(i) / ns
+		var hook := 0.03 * k * k                       # the toe hooked toward the face
+		var rocker := 0.012 * pow(2.0 * k - 1.0, 2.0)  # the bottom edge's rocker, lowest in the middle
+		var h := tall * (0.82 + 0.18 * sin(k * PI))    # taller in the middle, the heel and toe rounded off
+		for j in nt + 1:
+			var t := -0.012 + rocker + h * j / nt
+			row.append(heel + u * (s + 0.01) + v * t + Vector3(hook, 0, 0))
+		grid.append(row)
+	for i in ns:
+		for j in nt:
+			var p00: Vector3 = grid[i][j]
+			var p10: Vector3 = grid[i + 1][j]
+			var p11: Vector3 = grid[i + 1][j + 1]
+			var p01: Vector3 = grid[i][j + 1]
+			var nrm := (p10 - p00).cross(p01 - p00).normalized()
+			for q in [[p00, i, j], [p10, i + 1, j], [p11, i + 1, j + 1], [p00, i, j], [p11, i + 1, j + 1], [p01, i, j + 1]]:
+				sb.set_normal(nrm)
+				sb.set_uv(Vector2(float(q[1]) / ns, float(q[2]) / nt))
+				sb.add_vertex(q[0])
+	# The neck: from the shaft's end into the blade's heel.
+	for q in [[heel + Vector3(-r, 0, 0), heel + Vector3(r, 0, 0), grid[0][nt * 3 / 4]], [heel + Vector3(r, 0, 0), grid[0][0], grid[0][nt * 3 / 4]]]:
+		for p in q:
+			sb.set_normal(Vector3.RIGHT)
+			sb.set_uv(Vector2(0.0, 0.5))
+			sb.add_vertex(p)
+	sb.commit(out)
+	return out
+
+
+static var _blade_tex: ImageTexture
+
+
+## The blade's plastic: the model's cyan, perforated (rounded slots in rows, a solid rim round the edge).
+static func _blade_texture() -> ImageTexture:
+	if _blade_tex:
+		return _blade_tex
+	var w := 256
+	var h := 80
+	var img := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
+	var cyan := Color("2ec9ec")
+	for y in h:
+		for x in w:
+			var rim := x < 8 or x > w - 8 or y < 8 or y > h - 8
+			# Slots: rounded rectangles in a staggered grid.
+			var cx := fposmod(float(x) + (12.0 if (y / 24) % 2 == 1 else 0.0), 24.0) - 12.0
+			var cy := fposmod(float(y) - 4.0, 24.0) - 12.0
+			var hole := not rim and Vector2(maxf(absf(cx) - 3.0, 0.0), maxf(absf(cy) - 5.0, 0.0)).length() < 4.0
+			var shade := 1.0 - 0.15 * float(y) / h
+			img.set_pixel(x, y, Color(cyan.r * shade, cyan.g * shade, cyan.b * shade, 0.0 if hole else 1.0))
+	img.generate_mipmaps()
+	_blade_tex = ImageTexture.create_from_image(img)
+	return _blade_tex
 
 
 ## Follows the game's skeleton (body has posed it this frame), then the hands to the stick.
@@ -345,10 +540,26 @@ func follow(body: Body) -> void:
 	sides.sort_custom(func(x, y): return float(hands[x]) < float(hands[y]))
 	for side in sides:
 		var a: Array = _arm[side]
-		var reach: float = (float(a[3]) + float(a[4])) * 0.97
+		var off0: Vector3 = _grip_off.get(side, Vector3.ZERO)
+		# The fist's centre is beyond the wrist; the shoulder's swing (_reach) gives some back.
+		var reach: float = (float(a[3]) + float(a[4])) * 0.97 - off0.length() + 0.1 * inv_k
 		var t := _on_shaft(pos[a[0]], grip, down, float(hands[side]) * inv_k, reach, top_t)
 		top_t = t + 0.12 * inv_k
-		_reach(side, grip + down * t, g, pos)
+		var on_shaft := grip + down * t
+		if not _fist.has(side):
+			_reach(side, on_shaft, g, pos)
+			continue
+		# The wrist where the fist's centre is on the shaft (its offset as the hand was turned last frame), then the
+		# hand turned so the shaft runs through the fist.
+		var off: Vector3 = _grip_off.get(side, Vector3.ZERO)
+		var r: Array = _reach(side, on_shaft - off, g, pos)
+		var gf: Basis = r[0]
+		var gh: Basis = r[1]
+		var axis: Vector3 = gh * (_fist[side][0] as Vector3)
+		var want := down if axis.dot(down) >= 0.0 else -down
+		var gh2: Basis = Body._from_to(axis.normalized(), want) * gh
+		skeleton.set_bone_pose_rotation(int(a[2]), (gf.inverse() * gh2).get_rotation_quaternion())
+		_grip_off[side] = gh2.orthonormalized() * (_fist[side][1] as Vector3)
 
 
 ## How far down the shaft (from the grip's end at grip, along down) a hand at shoulder holds it: want, or the nearest
@@ -364,7 +575,7 @@ static func _on_shaft(shoulder: Vector3, grip: Vector3, down: Vector3, want: flo
 
 
 ## Two-bone IK on the model's arm: the hand to target (the model's skeleton space), the elbow out and down.
-func _reach(side: String, target: Vector3, g: Dictionary, pos: Dictionary) -> void:
+func _reach(side: String, target: Vector3, g: Dictionary, pos: Dictionary) -> Array:
 	var a: Array = _arm[side]
 	var ai: int = a[0]
 	var fi: int = a[1]
@@ -372,6 +583,27 @@ func _reach(side: String, target: Vector3, g: Dictionary, pos: Dictionary) -> vo
 	var l1: float = a[3]
 	var l2: float = a[4]
 	var sh: Vector3 = pos[ai]
+	# Out of the arm's reach: the shoulder (the collarbone) swings toward the stick first, up to 35 degrees, as a
+	# player's does when he reaches down his shaft.
+	var clav: int = skeleton.get_bone_parent(ai)
+	if (target - sh).length() > (l1 + l2) * 0.98 and clav >= 0 and g.has(clav) and pos.has(clav):
+		var cp: Vector3 = pos[clav]
+		var from_v := sh - cp
+		var to_v := target - cp
+		var ang := minf(from_v.angle_to(to_v), deg_to_rad(35.0))
+		var axis := from_v.cross(to_v)
+		if axis.length() > 0.0001 and ang > 0.001:
+			var rot := Basis(axis.normalized(), ang)
+			var gc2: Basis = rot * (g[clav] as Basis)
+			var cpar := skeleton.get_bone_parent(clav)
+			var gcp: Basis = g[cpar] if g.has(cpar) else Basis.IDENTITY
+			skeleton.set_bone_pose_rotation(clav, (gcp.inverse() * gc2).get_rotation_quaternion())
+			g[clav] = gc2
+			g[ai] = rot * (g[ai] as Basis)
+			g[fi] = rot * (g[fi] as Basis)
+			g[hi] = rot * (g[hi] as Basis)
+			sh = cp + rot * from_v
+			pos[ai] = sh
 	var to := target - sh
 	var d := clampf(to.length(), (l1 + l2) * 0.15, l1 + l2 - 0.01)
 	var dir := to.normalized()
@@ -393,3 +625,4 @@ func _reach(side: String, target: Vector3, g: Dictionary, pos: Dictionary) -> vo
 	skeleton.set_bone_pose_rotation(fi, (ga2.inverse() * gf2).get_rotation_quaternion())
 	var gh: Basis = gf2 * (gf.inverse() * (g[hi] as Basis))
 	skeleton.set_bone_pose_rotation(hi, (gf2.inverse() * gh).get_rotation_quaternion())
+	return [gf2, gh]

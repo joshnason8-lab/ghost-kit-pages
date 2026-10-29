@@ -375,12 +375,10 @@
   "ADS_PLAY_FAIR_FAST": "SPELA SCHYSST · SPELA SNABBT",
   "ADS_HALL_LOUD": "HALLEN LEVER",
   "MENU_SHOOTOUT": "Straffslag",
-  "MENU_SHOOTOUT_DESC": "Tio skott mot målvakten: allt handlar om timing",
-  "AIM_HINT": "SKJUT stoppar siktet; SKJUT igen på grönt",
+  "MENU_SHOOTOUT_DESC": "Tio straffslag: åk in, finta målvakten och välj hörn",
   "PRACTICE_SHOT_N": "Skott {n} av {of}",
   "PRACTICE_BEST_N": "Bästa {n}",
-  "PRACTICE_CHALLENGE": "Krysset-utmaning: dubbla poäng!",
-  "PRACTICE_DOUBLE": "Krysset! Dubbelt!",
+  "PRACTICE_DOUBLE": "Krysset! Två poäng!",
   "PRACTICE_OVER": "Tio skott tagna",
   "PRACTICE_RATING_0": "Tillbaka till träningshallen",
   "PRACTICE_RATING_1": "Klubbnivå",
@@ -393,8 +391,10 @@
   "SHOOTOUT_SHOOTER": "Din skytt",
   "SHOOTOUT_KEEPER": "I mål",
   "SHOOTOUT_GO": "Skjut",
-  "SHOOTOUT_HOW": "Din skytt åker in från mittpunkten; styr med spaken. Ett sikte går runt målet: SKJUT stoppar det. Sedan löper en stapel nedtill: SKJUT igen på grönt så går bollen dit du siktade, utanför drar skottet snett. Hörnen slår målvakten; mitten är hans. Skott 3, 6 och 9 lyser upp krysset i guld: mål där räknas dubbelt.",
+  "SHOOTOUT_HOW": "Ett straffslag som det slås på riktigt: din skytt åker in från mittpunkten med bollen och måste hålla den i rörelse framåt. Styr med spaken (uppåt för fart). FINT låtsas skjuta åt ena sidan: kom nära så biter målvakten och går ner åt det hållet. Håll SKJUT för att ladda (längre är hårdare, men för länge och skottet går vilt) och släpp för att skjuta mot hörnet spaken pekar, uppåt för högt; rör du inte spaken skjuter du mot sidan han lämnat öppen. Mål ger en poäng, i krysset två.",
   "POINTS_N_ONE": "{n} poäng",
   "POINTS_N_OTHER": "{n} poäng",
-  "HOME": "Hem"
+  "HOME": "Hem",
+  "BTN_DEKE": "Fint",
+  "SO_HINT": "Styr med spaken · FINT lurar · håll SKJUT och släpp för att skjuta (spaken väljer hörn)"
 }

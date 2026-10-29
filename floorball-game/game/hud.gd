@@ -85,7 +85,8 @@ func setup(p_match: Node) -> void:
 	tr_box.alignment = BoxContainer.ALIGNMENT_END
 	tr_box.add_theme_constant_override("separation", 12)
 	root.add_child(tr_box)
-	tr_box.add_child(UI.round_button("camera", func(): m.cam.toggle(), 60))
+	if not bool(m.config.get("practice", false)):   # penalty shots keep their own close camera
+		tr_box.add_child(UI.round_button("camera", func(): m.cam.toggle(), 60))
 	tr_box.add_child(UI.round_button("pause", func(): m.set_paused(not m.paused), 60))
 	if bool(Game.settings.dev):
 		_dev = UI.label("", "HudLabel", 15)
@@ -432,7 +433,7 @@ func practice_end(points: int, best: int, new_best: bool) -> void:
 	v.add_child(UI.label(tr("PRACTICE_OVER"), "HeaderLabel", 50))
 	var big := UI.label(Game.plural("POINTS_N", points), "TitleLabel", 80, Game.C_MAGNET)
 	v.add_child(big)
-	var word := "PRACTICE_RATING_0" if points < 4 else ("PRACTICE_RATING_1" if points < 7 else ("PRACTICE_RATING_2" if points < 10 else "PRACTICE_RATING_3"))
+	var word := "PRACTICE_RATING_0" if points < 5 else ("PRACTICE_RATING_1" if points < 9 else ("PRACTICE_RATING_2" if points < 14 else "PRACTICE_RATING_3"))
 	v.add_child(UI.wrap(tr(word), "SubLabel", 22))
 	v.add_child(UI.label(tr("PRACTICE_NEW_BEST") if new_best else tr("PRACTICE_BEST_N").format({"n": best}), "SubLabel", 20,
 		Game.C_GOLD if new_best else Game.C_MUTED))

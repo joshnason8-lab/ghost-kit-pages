@@ -375,12 +375,10 @@
   "ADS_PLAY_FAIR_FAST": "FAIR · RASKT",
   "ADS_HALL_LOUD": "HALLEN KOKER",
   "MENU_SHOOTOUT": "Straffeslag",
-  "MENU_SHOOTOUT_DESC": "Ti skudd mot keeperen: alt handler om timing",
-  "AIM_HINT": "SKUDD stopper siktet; SKUDD igjen i det grønne",
+  "MENU_SHOOTOUT_DESC": "Ti straffeslag: kjør inn og lur keeperen",
   "PRACTICE_SHOT_N": "Skudd {n} av {of}",
   "PRACTICE_BEST_N": "Beste {n}",
-  "PRACTICE_CHALLENGE": "Vinkel-utfordring: doble poeng!",
-  "PRACTICE_DOUBLE": "I vinkelen! Dobbelt!",
+  "PRACTICE_DOUBLE": "I vinkelen! To poeng!",
   "PRACTICE_OVER": "Ti skudd tatt",
   "PRACTICE_RATING_0": "Tilbake til treningshallen",
   "PRACTICE_RATING_1": "Klubbnivå",
@@ -393,8 +391,10 @@
   "SHOOTOUT_SHOOTER": "Din skytter",
   "SHOOTOUT_KEEPER": "I mål",
   "SHOOTOUT_GO": "Skyt",
-  "SHOOTOUT_HOW": "Skytteren din kjører fra midtpunktet; styr med spaken. Et sikte går rundt målet: SKUDD stopper det. Så løper en stolpe nederst: SKUDD igjen i det grønne, og ballen går dit du siktet, utenfor drar skuddet skjevt. Hjørnene slår keeperen; midten er hans. Ved skudd 3, 6 og 9 lyser vinklene i gull: mål der teller dobbelt.",
+  "SHOOTOUT_HOW": "Et straffeslag slik det slås på ekte: skytteren din kjører fra midtpunktet med ballen og må holde den i bevegelse fremover. Styr med spaken (opp for fart). FINTE later som om du skyter til én side: kom nær, så biter keeperen og går ned den veien. Hold SKUDD for å lade (lenger er hardere, men for lenge og skuddet blir vilt) og slipp for å skyte mot hjørnet spaken peker, opp for høyt; rører du ikke spaken, skyter du mot siden han lot stå åpen. Mål er ett poeng, i vinkelen to.",
   "POINTS_N_ONE": "{n} poeng",
   "POINTS_N_OTHER": "{n} poeng",
-  "HOME": "Hjem"
+  "HOME": "Hjem",
+  "BTN_DEKE": "Finte",
+  "SO_HINT": "Styr med spaken · FINTE lurer · hold SKUDD og slipp (spaken velger hjørne)"
 }

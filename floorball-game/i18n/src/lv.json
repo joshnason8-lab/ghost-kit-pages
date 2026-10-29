@@ -378,12 +378,10 @@
   "ADS_PLAY_FAIR_FAST": "GODĪGI · ĀTRI",
   "ADS_HALL_LOUD": "ZĀLE DUN",
   "MENU_SHOOTOUT": "Soda metieni",
-  "MENU_SHOOTOUT_DESC": "Desmit metieni pret vārtsargu: viss ir laika izjūtā",
-  "AIM_HINT": "METIENS aptur mērķi; METIENS vēlreiz zaļajā",
+  "MENU_SHOOTOUT_DESC": "Desmit soda metieni: ieskrien un apmāni vārtsargu",
   "PRACTICE_SHOT_N": "Metiens {n} no {of}",
   "PRACTICE_BEST_N": "Labākais {n}",
-  "PRACTICE_CHALLENGE": "Augšējā stūra izaicinājums: dubulti punkti!",
-  "PRACTICE_DOUBLE": "Augšējā stūrī! Dubulti!",
+  "PRACTICE_DOUBLE": "Augšējā stūrī! Divi punkti!",
   "PRACTICE_OVER": "Desmit metieni izpildīti",
   "PRACTICE_RATING_0": "Atpakaļ uz treniņu zāli",
   "PRACTICE_RATING_1": "Kluba līmenis",
@@ -396,9 +394,11 @@
   "SHOOTOUT_SHOOTER": "Tavs metējs",
   "SHOOTOUT_KEEPER": "Vārtos",
   "SHOOTOUT_GO": "Sāc",
-  "SHOOTOUT_HOW": "Tavs metējs uzsāk no centra punkta; vadi ar kursorsviru. Ap vārtiem riņķo mērķis: METIENS to aptur. Tad apakšā skrien josla: METIENS vēlreiz zaļajā, un bumba lido, kur tēmēji, ārpus tās metiens aiziet sānis. Stūri pārspēj vārtsargu; vidus ir viņa. Metienos 3, 6 un 9 augšējie stūri iedegas zelta krāsā: vārti tur skaitās divkārt.",
+  "SHOOTOUT_HOW": "Soda metiens kā īstenībā: tavs metējs uzsāk no centra ar bumbu, un tai jākustas uz priekšu. Vadi ar kursorsviru (uz augšu ātrāk). FINTS imitē metienu uz vienu pusi: pietuvojies, un vārtsargs uzķeras un krīt uz to pusi. Turi METIENU, lai atvēzētos (ilgāk ir stiprāk, bet pārāk ilgi un metiens aizlido), un atlaid, lai mestu stūrī, uz kuru rāda svira, uz augšu augstu; ja svirai nepieskaries, met uz pusi, ko viņš atstājis vaļā. Vārti ir punkts, augšējā stūrī divi.",
   "POINTS_N_ZERO": "{n} punktu",
   "POINTS_N_ONE": "{n} punkts",
   "POINTS_N_OTHER": "{n} punkti",
-  "HOME": "Sākums"
+  "HOME": "Sākums",
+  "BTN_DEKE": "Fints",
+  "SO_HINT": "Vadi ar kursorsviru · FINTS māna · turi METIENU un atlaid (svira izvēlas stūri)"
 }

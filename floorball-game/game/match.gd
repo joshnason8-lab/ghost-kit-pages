@@ -792,16 +792,10 @@ func _check_shot() -> void:
 			screen += 0.12
 	var sp: float = float(_shot_live.speed)
 	var save := clampf(1.01 - reach * 0.3 - (sp - 20.0) * 0.007 - screen + (gk.stat("reflex") - 70.0) / 160.0, 0.35, 0.95)
-	if bool(_shot_live.get("aimed", false)):
-		# An aimed penalty shot (penalty_aim.gd): the goalkeeper kneels in the middle of his goal, so the middle is his,
-		# low by the posts a fair chance, a top corner the hardest of all.
-		var u := clampf(absf(cross.z) / (Rules.GOAL_W * 0.5), 0.0, 1.0)
-		var v := clampf(cross.y / Rules.GOAL_H, 0.0, 1.0)
-		save = 0.92 - 0.55 * smoothstep(0.35, 0.92, u) - 0.25 * smoothstep(0.45, 0.95, v) * (0.4 + 0.6 * u)
-		save += (gk.stat("reflex") - 75.0) / 300.0
-		if bool(config.get("practice", false)):
-			save += 0.02 * float(_practice.get("shot", 0))   # each shot a little harder
-		save = clampf(save, 0.06, 0.95)
+	if _shot_live.has("forced"):
+		# Your penalty shot (_breakaway_shot): saved or not was settled by where the goalkeeper was and how fast he
+		# could get across to it.
+		save = 1.0 if String(_shot_live.forced) == "save" else 0.0
 	if gk.team != user_team and user_team >= 0:
 		save *= [0.9, 0.97, 1.0, 1.04][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 3)]
 	if _rng.randf() < save:
@@ -1467,7 +1461,7 @@ func _shootout(dt: float) -> void:
 				shooter = skaters(t)[0]
 			_so.shooter = shooter
 			if touch and shooter.team == user_team and not demo:
-				touch.set_buttons(["SHOOT"])
+				touch.set_buttons(["SHOOT", "DEKE"])
 			for tt in 2:
 				for p: Player in skaters(tt):
 					p.set_meta("spot", Vector2((-8.0 + skaters(tt).find(p) * 1.2 + tt * 8.0) * s, -8.5) if p != shooter else Vector2(-0.6 * s, 0))
@@ -1500,29 +1494,15 @@ func _shootout(dt: float) -> void:
 				ball.last_team = t
 				ball.last_player = _so.shooter
 				_so.shot = false
-		"aim":
-			# Your aim: he glides on toward the goal (the ball must keep moving forward, 509), the goalkeeper set, until
-			# your second SHOOT (penalty_aim.gd's shot signal: _aimed_shot).
-			var sh: Player = _so.shooter
-			var gk := keeper(1 - t)
-			sh.want_vel = Vector2((0.9 if sh.pos.x * s < 12.0 else 0.0) * s, 0.0)
-			sh.want_face = 0.0 if s > 0.0 else PI
-			gk.want_vel = Vector2(((Rules.GOAL_LINE - 1.0) * s - gk.pos.x) * 2.0, (ball.pos.z * 0.25 - gk.pos.y) * 3.0)
-			gk.want_face = PI if s > 0.0 else 0.0
-			_step_all(dt)
 		"run":
 			var sh: Player = _so.shooter
 			var gk := keeper(1 - t)
 			# The ball must keep moving toward the goal (no stopping, no going back): the shooter skates in.
 			if sh.team == user_team and not demo:
-				var j: Vector2 = touch.joystick if touch else Vector2.ZERO
-				sh.want_vel = Vector2(maxf(3.0, 5.5 + j.x * s * 1.5) * s, j.y * 3.5)
-				# In range: the aim (game/penalty_aim.gd), as he skates in.
-				if not bool(_so.shot) and _aim == null and sh.pos.x * s > 8.5:
-					_begin_aim(sh, s)
+				_breakaway(sh, gk, s, dt)
 			else:
 				sh.want_vel = Vector2(6.0 * s, clampf(-sh.pos.y * 0.6 + sin(_so.t * 2.0) * 2.0, -3.0, 3.0))
-			gk.want_vel = Vector2(((Rules.GOAL_LINE - 1.2) * s - gk.pos.x) * 2.0, (ball.pos.z * 0.25 - gk.pos.y) * 3.0)
+				_keeper_mirror(gk, s, dt)
 			gk.want_face = PI if s > 0.0 else 0.0
 			if not bool(_so.shot) and (sh.pos.x * s > 9.5 + _rng.randf() * 3.0 and (sh.team != user_team or demo)):
 				_so_shot(sh, g)
@@ -1741,13 +1721,14 @@ func _auto_switch(force: bool) -> void:
 func _on_action(id: String) -> void:
 	if paused:
 		return
-	# Your penalty shot: the first SHOOT starts or stops the aim's target, the next stops its bar (penalty_aim.gd).
+	# Your penalty shot (_breakaway): SHOOT held winds up, let go it shoots; DEKE fakes.
 	if phase == "shootout" and _so.get("shooter") != null and (_so.shooter as Player).team == user_team and not demo:
-		if (id == "SHOOT" or id == "TACKLE") and not bool(_so.get("shot", false)):
-			if String(_so.get("stage", "")) == "aim" and _aim:
-				_aim.press()
-			elif String(_so.get("stage", "")) == "run" and _aim == null:
-				_begin_aim(_so.shooter, float(_so.get("dir", 1.0)))
+		if String(_so.get("stage", "")) == "run" and not bool(_so.get("shot", false)):
+			if id == "SHOOT" or id == "TACKLE":
+				_so.winding = true
+				_so.wind = 0.0
+			elif id == "DEKE" or id == "PASS":
+				_deke(_so.shooter)
 		return
 	if user_player == null:
 		return
@@ -1813,42 +1794,122 @@ func _on_action(id: String) -> void:
 				_switch_cool = 1.2
 
 
-var _aim: PenaltyAim = null
+# ---------------------------------------------------------------- your penalty shot
+
+## Your penalty shot (509), as one is really taken: you skate in from the centre spot with the ball (the joystick:
+## left and right, and up for faster; the ball must keep going forward, so you cannot stop); DEKE fakes a shot to
+## one side, and a goalkeeper close enough bites on it, going across and down that way; SHOOT held winds the stick
+## back (the longer, the harder, but held too long the shot runs wild), let go it shoots, at the corner the joystick
+## points to (up for high), or, left alone, at the side the goalkeeper has left open. Whether he saves it is where
+## he is and how fast he can get across before the ball arrives (_breakaway_shot).
+const BITE_S := 0.9            # how long a goalkeeper who bit on a deke is out of position
+const WIND_S := 0.55           # seconds to a full wind-up
+const WILD_S := 1.1            # held longer than this, the shot runs wild
 
 
-## Your penalty shot's aim begins: the target round the goal mouth (game/penalty_aim.gd).
-func _begin_aim(sh: Player, s: float) -> void:
-	_aim = PenaltyAim.new()
-	_aim.challenge = bool(_so.get("challenge", false))
-	add_child(_aim)
-	_aim.setup(s, sh.stat("shot") / 100.0, _rng)
-	_aim.shot.connect(_aimed_shot)
-	_so.stage = "aim"
-	if hud:
-		hud.hint(tr("AIM_HINT"))
+func _breakaway(sh: Player, gk: Player, s: float, dt: float) -> void:
+	var j: Vector2 = touch.joystick if touch else Vector2.ZERO
+	# The camera is behind him: the joystick's right is his right (+z going toward +x), up is toward the goal.
+	var fwd := clampf(4.4 - j.y * 1.6, 3.0, 6.2)
+	sh.want_vel = Vector2(fwd * s, j.x * s * 3.6)
+	sh.want_face = 0.0 if s > 0.0 else PI
+	_so.bite = maxf(0.0, float(_so.get("bite", 0.0)) - dt)
+	if bool(_so.get("winding", false)):
+		_so.wind = float(_so.get("wind", 0.0)) + dt
+		sh.windup = clampf(float(_so.wind) / WIND_S, 0.0, 1.0)
+		var held: bool = touch != null and (touch.held("SHOOT") or touch.held("TACKLE"))
+		if not held or float(_so.wind) > WILD_S + 0.4 or sh.pos.x * s > Rules.GOAL_LINE - 2.2:
+			_breakaway_shot(sh, gk, s, j)
+	elif sh.pos.x * s > Rules.GOAL_LINE - 2.0 and not bool(_so.shot):
+		# Into the goalkeeper's lap without a shot: he smothers it.
+		_so.winding = true
+		_so.wind = 0.1
+		_breakaway_shot(sh, gk, s, Vector2.ZERO)
+	_keeper_mirror(gk, s, dt)
 
 
-## The second SHOOT: the ball struck at where you aimed (as near as a strike goes).
-func _aimed_shot(aim: Vector3) -> void:
-	var sh: Player = _so.shooter
+## The goalkeeper facing a penalty shot: out on his line, square to the ball, mirroring it across; down on his knees
+## as the shooter comes close; after biting on a deke, across and down to that side until he can recover.
+func _keeper_mirror(gk: Player, s: float, dt: float) -> void:
+	var want_z := clampf(ball.pos.z * 0.45, -0.55, 0.55)
+	if float(_so.get("bite", 0.0)) > 0.0:
+		want_z = float(_so.get("bite_side", 0.0)) * 0.75
+	var want_x := (Rules.GOAL_LINE - 0.9) * s
+	gk.want_vel = Vector2((want_x - gk.pos.x) * 2.5, clampf((want_z - gk.pos.y) * 5.0, -3.2, 3.2))
+
+
+## DEKE: the blade pulls the ball across to a side (the joystick's, or the other side from where it is), as if to
+## shoot there. A goalkeeper close enough reads it as the shot and goes: the closer, the surer he bites.
+func _deke(sh: Player) -> void:
+	if float(_so.get("deke_cool", -1.0)) > float(_so.t):
+		return
+	_so.deke_cool = float(_so.t) + 0.45
+	var s := float(_so.get("dir", 1.0))
+	var j: Vector2 = touch.joystick if touch else Vector2.ZERO
+	var side := signf(j.x) * s if absf(j.x) > 0.3 else -signf(ball.pos.z - sh.pos.y + 0.001)
+	sh.do("deke", 0.45)
+	sh.deke_side = side
+	var dist := absf(Rules.GOAL_LINE * s - sh.pos.x)
+	var gk := keeper(1 - sh.team)
+	var chance := clampf((9.0 - dist) / 5.5, 0.15, 0.95) * (0.75 if int(_so.get("dekes", 0)) > 0 else 1.0)
+	_so.dekes = int(_so.get("dekes", 0)) + 1
+	if _rng.randf() < chance:
+		_so.bite = BITE_S
+		_so.bite_side = side
+		if dist < 6.5:
+			gk.do("save_low", 0.8)
+	Sfx.play("tap", -10.0)
+
+
+## The shot: where at, how hard, and whether the goalkeeper gets there.
+func _breakaway_shot(sh: Player, gk: Player, s: float, j: Vector2) -> void:
+	_so.winding = false
+	var wind := float(_so.get("wind", 0.0))
+	var gz := gk.pos.y
+	var z := 0.0
+	if absf(j.x) > 0.25:
+		z = signf(j.x) * s * 0.6
+	else:
+		z = (-signf(gz) if absf(gz) > 0.05 else (1.0 if _rng.randf() < 0.5 else -1.0)) * 0.6
+	var high := j.y < -0.45
+	var aim := Vector3(Rules.GOAL_LINE * s, 0.95 if high else 0.22, z)
+	if wind > WILD_S:
+		aim += Vector3(0, _rng.randf_range(-0.15, 0.3), _rng.randf_range(-0.4, 0.4))
+	else:
+		aim += Vector3(0, _rng.randf_range(-0.05, 0.05), _rng.randf_range(-0.08, 0.08))
 	_so.shot = true
-	_so.stage = "run"
 	_so.aim = aim
 	_so.t = minf(float(_so.t), 4.0)
-	shoot(sh, aim, false)
-	if not _shot_live.is_empty():
-		_shot_live.aimed = true
-	var a := _aim
-	_aim = null
-	get_tree().create_timer(1.0).timeout.connect(func():
-		if is_instance_valid(a):
-			a.queue_free())
+	var k := clampf(wind / WIND_S, 0.0, 1.0)
+	sh.windup = maxf(k, 0.35)   # the swing comes from the wind-up (Player.do keeps it for the follow-through)
+	shoot(sh, aim, k > 0.6)
+	sh.windup = 0.0
+	sh.act_len = 0.85           # a penalty shot's swing seen whole, through to the follow-through
+	if _shot_live.is_empty():
+		return
+	# Faster with a full wind-up (a wrist shot 19 m/s, a slapped one 30).
+	var sp := lerpf(19.0, 30.0, k)
+	var v: Vector3 = ball.vel
+	var flat := Vector2(v.x, v.z).normalized()
+	var d := Vector2(aim.x - ball.pos.x, aim.z - ball.pos.z).length()
+	var tt := d / sp
+	ball.vel = Vector3(flat.x * sp, (aim.y - ball.pos.y) / tt + 0.5 * Ball.G * tt, flat.y * sp)
+	_shot_live.speed = sp
+	# Does he get there? He is on his knees (or standing), so far across; he sees it after a moment (later if he bit
+	# the other way), then moves across at his speed; his reach is his body, his pads and his arms, less over the
+	# shoulder of a kneeling goalkeeper.
+	var on_target: bool = PenaltyShot.in_goal(aim)
+	var bitten := float(_so.get("bite", 0.0)) > 0.0
+	var wrong_way := bitten and signf(float(_so.get("bite_side", 0.0))) != signf(aim.z - gz)
+	var saved: bool = on_target and PenaltyShot.keeper_gets_there(aim, gz, tt, wrong_way, gk.stat("reflex")) and _rng.randf() < 0.92
+	_shot_live.forced = "save" if saved else ("goal" if on_target else "wide")
 
 
 ## The close camera for a penalty shot: low behind the shooter as he skates in, the goal ahead; after the shot it stays
-## and turns with the ball. [] when there is none.
+## and turns with the ball (in Penalty shots, until the next shot comes). [] when there is none.
 func penalty_view() -> Array:
-	if phase != "shootout" or _so.is_empty() or _so.get("shooter") == null or String(_so.get("stage", "")) in ["setup", "end"]:
+	if phase != "shootout" or _so.is_empty() or _so.get("shooter") == null or String(_so.get("stage", "")) == "setup" \
+			or (String(_so.get("stage", "")) == "end" and not bool(_so.get("practice", false))):
 		ball.show_k = Ball.SHOW_K
 		return []
 	var sh: Player = _so.shooter
@@ -1902,12 +1963,11 @@ func on_back() -> void:
 
 # ---------------------------------------------------------------- penalty-shot practice
 
-## Penalty shots (the home screen's mini game, ui/shootout_screen.gd): your country's best shooter takes ten penalty
-## shots at the other side's goalkeeper, aimed by timing (penalty_aim.gd), as in a match. A goal is a point; shots 3,
-## 6 and 9 are challenges, the top corners lit gold: a goal in one is worth two. Each shot a little harder for him.
+## Penalty shots (the home screen's mini game): your country's best shooter takes ten penalty shots at the other side's
+## goalkeeper, taken as in a match (_breakaway): skate in, fake, pick your corner. A goal is a point; one in a top
+## corner ("top shelf") two.
 ## The rest of both teams are off the rink; the referees stay. The best score is kept (Game.settings.penalty_best).
 const PRACTICE_SHOTS := 10
-const PRACTICE_CHALLENGES := [3, 6, 9]
 var _practice := {}
 
 
@@ -1925,7 +1985,7 @@ func _practice_start() -> void:
 			if p != shooter and p != keeper(1):
 				p.visible = false
 				p.on_rink = false if p.role == "G" else p.on_rink
-	Crowd.set_excite(0.2)
+	Crowd.set_excite(0.0)
 	_practice_next()
 
 
@@ -1933,17 +1993,17 @@ func _practice_next() -> void:
 	_practice.shot = int(_practice.shot) + 1
 	var n := int(_practice.shot)
 	_so = {"stage": "setup", "t": 0.0, "in_match": true, "team": 0, "dir": 1.0, "pick": _practice.shooter,
-		"practice": true, "challenge": n in PRACTICE_CHALLENGES}
+		"practice": true}
 	_set_phase("shootout")
 	if hud:
 		hud.practice_panel(_practice)
-		if n in PRACTICE_CHALLENGES:
-			hud.banner(tr("PRACTICE_CHALLENGE"))
+		if n == 1:
+			hud.hint(tr("SO_HINT"))
 
 
 func _practice_shot_done(scored: bool) -> void:
 	var aim: Vector3 = _so.get("aim", Vector3.ZERO)
-	var double := scored and bool(_so.get("challenge", false)) and PenaltyAim.top_corner(aim)
+	var double: bool = scored and PenaltyShot.top_corner(aim)
 	var pts := (2 if double else 1) if scored else 0
 	_practice.points = int(_practice.points) + pts
 	(_practice.marks as Array).append(pts)
@@ -1962,7 +2022,7 @@ func _practice_shot_done(scored: bool) -> void:
 	get_tree().create_timer(2.4).timeout.connect(func():
 		if not is_inside_tree():
 			return
-		Crowd.set_excite(0.2)
+		Crowd.set_excite(0.0)
 		ball.in_goal = 0
 		ball.live = true
 		if int(_practice.shot) >= PRACTICE_SHOTS:
@@ -1984,9 +2044,6 @@ func _practice_end() -> void:
 
 ## Start the ten again (the pause menu, the end card).
 func practice_restart() -> void:
-	if _aim:
-		_aim.queue_free()
-		_aim = null
 	_practice.shot = 0
 	_practice.points = 0
 	_practice.marks = []

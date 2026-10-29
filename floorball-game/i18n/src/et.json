@@ -375,12 +375,10 @@
   "ADS_PLAY_FAIR_FAST": "AUSALT · KIIRELT",
   "ADS_HALL_LOUD": "SAAL MÜRISEB",
   "MENU_SHOOTOUT": "Karistusvisked",
-  "MENU_SHOOTOUT_DESC": "Kümme lööki väravavahile: kõik on ajastuses",
-  "AIM_HINT": "LÖÖK peatab sihiku; LÖÖK uuesti rohelises",
+  "MENU_SHOOTOUT_DESC": "Kümme karistusviset: sõida sisse ja peta väravavahti",
   "PRACTICE_SHOT_N": "Löök {n}/{of}",
   "PRACTICE_BEST_N": "Parim {n}",
-  "PRACTICE_CHALLENGE": "Ülanurga väljakutse: topeltpunktid!",
-  "PRACTICE_DOUBLE": "Ülanurka! Topelt!",
+  "PRACTICE_DOUBLE": "Ülanurka! Kaks punkti!",
   "PRACTICE_OVER": "Kümme lööki tehtud",
   "PRACTICE_RATING_0": "Tagasi treeningsaali",
   "PRACTICE_RATING_1": "Klubitase",
@@ -393,8 +391,10 @@
   "SHOOTOUT_SHOOTER": "Sinu lööja",
   "SHOOTOUT_KEEPER": "Väravas",
   "SHOOTOUT_GO": "Alusta",
-  "SHOOTOUT_HOW": "Sinu lööja sõidab keskpunktist peale; juhi juhtkangiga. Sihik tiirleb ümber värava: LÖÖK peatab selle. Siis jookseb all riba: LÖÖK uuesti rohelises ja pall läheb sinna, kuhu sihtisid, muidu läheb löök viltu. Nurgad löövad väravavahi üle; keskkoht on tema oma. Löökidel 3, 6 ja 9 löövad ülanurgad kullaselt särama: värav sinna loeb kahekordselt.",
+  "SHOOTOUT_HOW": "Karistusvise nagu päriselt: sinu lööja sõidab keskpunktist palliga peale ja peab palli edasi liigutama. Juhi juhtkangiga (üles kiiremini). PETTEMANÖÖVER teeskleb lööki ühele poole: tule lähedale ja väravavaht läheb lõksu ning kukub sinna poole. Hoia LÖÖKI hoo võtmiseks (kauem on kõvem, aga liiga kaua ja löök läheb metsa) ja lase lahti, et lüüa nurka, kuhu kang näitab, üles kõrgele; kangi puutumata lööd poolele, mille ta lahti jättis. Värav on punkt, ülanurka kaks.",
   "POINTS_N_ONE": "{n} punkt",
   "POINTS_N_OTHER": "{n} punkti",
-  "HOME": "Avaleht"
+  "HOME": "Avaleht",
+  "BTN_DEKE": "Pettemanööver",
+  "SO_HINT": "Juhi juhtkangiga · PETTEMANÖÖVER petab · hoia LÖÖKI ja lase lahti (kang valib nurga)"
 }
