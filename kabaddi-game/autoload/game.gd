@@ -415,6 +415,11 @@ func apply_graphics(viewport: Viewport) -> void:
 			viewport.scaling_3d_scale = 1.0
 	if int(settings.get("fps", FPS_SMOOTH)) == FPS_SAVER:
 		viewport.scaling_3d_scale *= 0.8   # the battery saver draws the court a little softer
+	# The sun's shadows: on High (a phone with power to spare) twice as sharp and with softer edges; the project's own
+	# 2048 and low filter elsewhere.
+	RenderingServer.directional_shadow_atlas_set_size(4096 if g == GFX_HIGH else 2048, true)
+	RenderingServer.directional_soft_shadow_filter_set_quality(
+		RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM if g == GFX_HIGH else RenderingServer.SHADOW_QUALITY_SOFT_LOW)
 
 
 ## The screen's refresh rate, a whole number (60 when the phone does not say).

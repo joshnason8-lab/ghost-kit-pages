@@ -120,6 +120,31 @@ func _tour() -> void:
 			fm.cam.set_process(true)
 			fm.cam.set_physics_process(true)
 		return
+	if args_only == "raider_stance":
+		# The raider at the midline before and as his raid starts, seen from the side close up, the AI raiding.
+		Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "length": 0,
+			"difficulty": 1, "first_raider": 0, "autoplay": true, "seed": 5})
+		var rm2: Node = Game.current
+		rm2.hud.visible = false
+		var rg := 0
+		while rm2.phase != "setup" and rg < 900:
+			await get_tree().process_frame
+			rg += 1
+		var c2: Camera3D = rm2.cam.cam
+		var k := 0
+		while rm2.phase != "raid" or rm2.phase_t < 2.2:
+			await get_tree().process_frame
+			k += 1
+			if rm2.raider:
+				var at: Vector3 = rm2.raider.position
+				rm2.cam.set_process(false)
+				c2.global_position = at + Vector3(3.2, 1.3, 0.6)
+				c2.look_at(at + Vector3(0, 0.9, 0))
+			if k % 12 == 0 and (rm2.phase == "raid" or rm2.phase_t > 1.2):
+				await shot("stance_%03d_%s_%.1f" % [k, rm2.phase, rm2.phase_t])
+			if k > 900:
+				break
+		return
 	if args_only == "watch":
 		# Watch: the computer plays both sides, the score and pause shown, no touch buttons.
 		Game.show_screen("res://ui/quick_setup.gd")
