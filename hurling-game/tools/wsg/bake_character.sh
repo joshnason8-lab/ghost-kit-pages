@@ -4,7 +4,8 @@
 # Needs godot 4.7 on the PATH. Works in a scratch project; writes <out>/<prefix>_hi.res, _lo.res, _rig.json.
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
-ADDON=$(cd "$HERE/../addons/wsg_foundation" && pwd)
+# (The foundation's own tools/, or a game's tools/wsg/ after vendor.sh.)
+if [ -d "$HERE/../addons/wsg_foundation" ]; then ADDON=$(cd "$HERE/../addons/wsg_foundation" && pwd); else ADDON=$(cd "$HERE/../../addons/wsg_foundation" && pwd); fi
 MODEL=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 OUT=$(mkdir -p "$2" && cd "$2" && pwd)
 WORK=$(mktemp -d)
