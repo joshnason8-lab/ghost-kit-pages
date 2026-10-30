@@ -280,6 +280,25 @@ Cost: about 2 MB of video memory per arena (the 2048 map, compressed) and a chea
   never two within 60 ms.
 - **One-offs** from the crowd: `react([take_1, take_2, take_3])` never repeats the take just played.
 
+## 5.9 Known gaps (a dry run of this guide on Kho Kho, a budget game)
+
+Vendoring, compiling, baking the player onto the rig (tools/wsg/bake_character.sh: fixed to run from a game) and
+the rig test all work as written. What this guide does not cover yet:
+- **A Mixamo AnimationPlayer game** (Kho Kho: `ModelBody`, the `mixamorig:` 23-bone skeleton, its own clips played
+  by an AnimationPlayer, three modifiers of its own - head turn, the pole grip, the dive). Section 4's link reads the
+  six games' 17-bone ToonBody (WsgLegacyPose); a Mixamo skeleton needs its own reader (the names are the rig's,
+  without the prefix: each bone's turn, rest-corrected, as tools/models/retarget.gd does) - to be written before Kho
+  Kho adopts.
+- **Holding something that is not in a hand** (Kho Kho's pole turn: both hands on a post in the ground):
+  `WsgPoseLayer.hold` anchors a hand to a bone, not to a point in the world.
+- **The game's own fans**: the 3D crowd's fans are Hurling's (an Irish crowd). Kho Kho needs its own (its cut-outs
+  are drawn from its player model) and its bleachers' seat height.
+- **Indoor light**: tools/blender/bake_light.py bakes a sun and a sky; Kho Kho's halls are lit by strip lights.
+- **Indic type**: give WsgBroadcastTheme the game's font (Kho Kho ships Tamil, Telugu, Marathi, Odia and more).
+- **Its automatic graphics** (Kho Kho's `auto_gfx` lowers the tier when a match runs slowly): set
+  `WsgFoundation.tier` there too.
+- **No replay of its own** yet: WsgReplay and WsgDirector are there for an out, but the game has to call them.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →
