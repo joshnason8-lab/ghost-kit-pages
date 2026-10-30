@@ -1,7 +1,8 @@
 extends Node
 ## Exports each venue's built stadium (its stands, walls and roofs as Stadium builds them on Low and Medium) and its
 ## light for the shared foundation's Cycles bake (WsgLightBake, tools/wsg/blender/bake_light.py). Run by
-## bake_light.sh, which bakes and puts the maps in assets/env/light (<kind>_<time>.json, _light.png, _ground.png).
+## bake_light.sh, which bakes and puts the maps in assets/env/light (<kind>_<time>.json, _light.png, _ground.png, and _probes.json:
+## the light at each fan's seat).
 ##   godot --headless --path . res://tools/env/bake_light.tscn -- <out dir>
 
 const GROUND_PAD := Vector2(20.0, 15.0)   # the grass beyond the field (Pitch.build's plane)
@@ -32,10 +33,13 @@ func _ready() -> void:
 			"sky_colour": [amb.r, amb.g, amb.b],
 			"sky_energy": env.ambient_light_energy,
 			"ground": [-hx, -hz, hx, hz, 0.0],
+			"probes": st._spots.map(func(p: Vector3) -> Array:
+				var f := Crowd.facing_at(p)
+				return [p.x, p.y + 1.05, p.z, f.x, f.z]),
 			"size": 2048,
 			"scale": 2.0,
 		}
-		var sig := WsgLightBake.export(st.structure.mesh as ArrayMesh, light, out.path_join(key))
+		var sig := WsgLightBake.export(st._built_mesh, light, out.path_join(key))
 		print("bake_light: %s (%d vertices) signature %d" % [key, (st.structure.mesh as ArrayMesh).surface_get_array_len(0), sig])
 		st.queue_free()
 		await get_tree().process_frame

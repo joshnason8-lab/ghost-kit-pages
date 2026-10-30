@@ -6,10 +6,13 @@
 //   claps fall on the clapping sound's beat (clap_time, clap_rate), each fan a little off it unless the sound is in
 //   unison (clap_sync);
 //   heads and shoulders turn to the ball (smoothed by the crowd), each fan a little their own way;
-//   shirts take a team's colours.
-// Works on the Compatibility (GLES3) and Mobile (Vulkan) renderers.
+//   shirts take a team's colours, or the colour the game gives each fan (as its cut-outs beside them);
+//   lit as the games light their people (a cel light from sun_dir, not the scene's lights: the same on every
+//   renderer and tier, no sky colour cast, cheap) and by their seat's baked light (under a roof, darker).
+// Works on the Compatibility (GLES3) and Mobile (Vulkan) renderers; colours are written as the games' cut-outs write
+// theirs (as_written).
 shader_type spatial;
-render_mode cull_back, diffuse_lambert, specular_disabled;
+render_mode unshaded, cull_back;
 
 uniform sampler2D vat_pos : filter_nearest, repeat_disable;
 uniform sampler2D vat_nrm : filter_nearest, repeat_disable;
@@ -31,8 +34,12 @@ uniform float watch = 1.0;           // how much they turn to it
 uniform vec4 team_a : source_color = vec4(0.1, 0.45, 0.2, 1.0);
 uniform vec4 team_b : source_color = vec4(0.8, 0.15, 0.1, 1.0);
 uniform float light = 1.0;           // the ground's light (night, shade)
+uniform vec3 sun_dir = vec3(0.35, 0.85, 0.4);   // where the light comes from (the game's sun)
+uniform float shade = 0.72;          // the side away from it
 
 varying vec3 colour;
+varying vec3 wn;
+varying float seat_light;
 
 float hash(float n) {
 	return fract(sin(n * 12.9898 + 4.1414) * 43758.5453);
@@ -77,8 +84,9 @@ void vertex() {
 	float r7 = hash(id * 11.3);
 	// How far up this fan is: each gets up at their own point of the excitement.
 	float thr = mix(0.32, 0.86, r1);
-	// INSTANCE_CUSTOM.g: 1 on a seat (gets up), 0 on a terrace (always standing).
-	float up = INSTANCE_CUSTOM.g > 0.5 ? smoothstep(thr, thr + 0.14, excite) : 1.0;
+	// INSTANCE_CUSTOM.g: the seat's baked light, positive on a seat (gets up), negative on a terrace (always
+	// standing). (The Compatibility renderer keeps custom data in half floats: small numbers only.)
+	float up = INSTANCE_CUSTOM.g > 0.0 ? smoothstep(thr, thr + 0.14, excite) : 1.0;
 	// How much they clap or cheer.
 	float keen = smoothstep(0.12 + 0.4 * r2, 0.3 + 0.4 * r2, excite);
 	float t_idle = TIME * (0.85 + 0.3 * r3) + r3 * 20.0;
@@ -132,15 +140,36 @@ void vertex() {
 	NORMAL = n;
 	// Colours: about half the shirts in a team's colours (dyed: the colour shaded by the cloth's folds), the rest in
 	// muted colours of their own, like the cut-outs beside them; a little variety in everything else.
+	// INSTANCE_CUSTOM.a: the fan's shirt as a code (the games' cut-outs' code; 0: none given).
+	seat_light = abs(INSTANCE_CUSTOM.g);
+	float code = INSTANCE_CUSTOM.a;
+	wn = normalize((MODEL_MATRIX * vec4(n, 0.0)).xyz);
 	vec3 team = r3 < 0.5 ? team_a.rgb : team_b.rgb;
 	float folds = clamp(dot(COLOR.rgb, vec3(0.3, 0.59, 0.11)) * 1.15, 0.5, 1.0);
 	vec3 own = mix(vec3(0.5), 0.5 + 0.5 * cos(6.2832 * (r5 + vec3(0.0, 0.33, 0.67))), 0.45) * 0.75;
 	vec3 shirt = r4 < 0.55 ? team : own;
+	if (code > 0.0005) {
+		shirt = vec3(fract(code * 7.13), fract(code * 3.77), fract(code * 5.31));
+		shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
+	}
 	vec3 base = COLOR.rgb * (0.85 + 0.3 * r2);
-	colour = mix(base, shirt * folds, COLOR.a) * 0.7;
+	// (The shirt's edge firm: the mask fades across the low-poly figure's big triangles. Nothing past 0.9: pale skin
+	// times each fan's variety went past white - the hands in a seated fan's lap.)
+	colour = min(mix(base, shirt * folds, smoothstep(0.2, 0.55, COLOR.a)), vec3(0.9));
+}
+
+// Written as the games' cut-outs write theirs: the colour (sRGB, as painted) squared up by 2.2, as it is on the screen
+// under GL Compatibility; the Mobile renderer decodes what it is given, so it is encoded first.
+vec3 as_written(vec3 c) {
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+	return c;
+#else
+	vec3 cc = max(c, vec3(0.0));
+	return mix(pow((cc + vec3(0.055)) / vec3(1.055), vec3(2.4)), cc / 12.92, lessThan(cc, vec3(0.04045)));
+#endif
 }
 
 void fragment() {
-	ALBEDO = colour * light;
-	ROUGHNESS = 0.9;
+	float k = mix(shade, 1.0, smoothstep(-0.35, 0.3, dot(normalize(wn), normalize(sun_dir))));
+	ALBEDO = as_written(pow(max(colour, vec3(0.0)), vec3(2.2)) * k * light * seat_light);
 }

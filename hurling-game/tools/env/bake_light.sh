@@ -11,6 +11,6 @@ for j in "$OUT"/*.json; do
 	b=${j%.json}
 	blender -b --python "$PROJ/tools/wsg/blender/bake_light.py" -- --base "$b" --samples "${1:-64}"
 	n=$(basename "$b")
-	cp "$b.json" "$b"_light.png "$b"_ground.png "$PROJ/assets/env/light/"
+	cp "$b.json" "$b"_light.png "$b"_ground.png "$b"_probes.json "$PROJ/assets/env/light/"
 done
 rm -rf "$OUT"

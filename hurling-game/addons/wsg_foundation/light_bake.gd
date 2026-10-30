@@ -130,8 +130,8 @@ static func signature(mesh: ArrayMesh, surface := 0) -> int:
 
 ## For the bake: the unwrapped mesh as OBJ (the second UVs as its UVs, Y up as Godot's) and the light as JSON.
 ## light: {"sun_dir": to the sun, "sun_colour": [r,g,b], "sun_energy", "sky_colour": [r,g,b], "sky_energy",
-## "spots": [[position, aimed at, colour, energy, angle deg, range]], "ground": [x0, z0, x1, z1, y] (a ground the
-## built geometry shades: the pitch), "size": map size}. Writes <base>.obj and <base>.json; returns the signature.
+## "ground": [x0, z0, x1, z1, y] (a ground the built geometry shades: the pitch), "probes": [[x, y, z, facing x,
+## facing z]] (points to bake the light at: a crowd's heads; probes()), "size": map size}. Writes <base>.obj and <base>.json; returns the signature.
 static func export(mesh: ArrayMesh, light: Dictionary, base: String) -> int:
 	var size := int(light.get("size", 2048))
 	var un := unwrap(mesh, size)
@@ -156,6 +156,12 @@ static func export(mesh: ArrayMesh, light: Dictionary, base: String) -> int:
 	f.close()
 	var sig := signature(mesh)
 	var info := light.duplicate()
+	# (The probes for the bake only, beside it: the JSON the game ships stays small.)
+	if info.has("probes"):
+		var pf := FileAccess.open(base + "_probe_points.json", FileAccess.WRITE)
+		pf.store_string(JSON.stringify(info.probes))
+		pf.close()
+		info.erase("probes")
 	info["signature"] = sig
 	info["texel"] = un[1]
 	info["size"] = size
@@ -179,6 +185,21 @@ static func load_for(mesh: ArrayMesh, base: String) -> Dictionary:
 	var g: Array = info.get("ground", [])
 	return {"mesh": un[0], "light": _texture(base + "_light.png"), "ground": _texture(base + "_ground.png"),
 		"ground_rect": g, "scale": float(info.get("scale", 2.0))}
+
+
+## The baked light at each probe given to export (a crowd's seats: "probes", [x, y, z, facing x, facing z] each), as a
+## share of an open seat's (1 open; under a roof, less), if it was baked for this geometry and that many probes;
+## else empty. Cheap enough for every tier (a JSON of numbers).
+static func probes(mesh: ArrayMesh, base: String, count: int) -> PackedFloat32Array:
+	if mesh == null or not FileAccess.file_exists(base + ".json") or not FileAccess.file_exists(base + "_probes.json"):
+		return PackedFloat32Array()
+	var info: Variant = JSON.parse_string(FileAccess.get_file_as_string(base + ".json"))
+	if not info is Dictionary or int((info as Dictionary).get("signature", 0)) != signature(mesh):
+		return PackedFloat32Array()
+	var got: Variant = JSON.parse_string(FileAccess.get_file_as_string(base + "_probes.json"))
+	if not got is Dictionary or ((got as Dictionary).get("values", []) as Array).size() != count:
+		return PackedFloat32Array()
+	return PackedFloat32Array((got as Dictionary).values)
 
 
 ## An imported texture, or a PNG as it is (user://: a map downloaded or baked on the device); null if neither.

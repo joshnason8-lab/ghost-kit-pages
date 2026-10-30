@@ -124,7 +124,8 @@ void fragment() {
 	float is_shirt = smoothstep(0.3, 0.7, m);
 	float shade = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722)) / 0.86;
 	vec3 col = mix(c.rgb, shirt * shade, is_shirt);
-	ALBEDO = compat_to_scene(pow(col, vec3(2.2)) * light);
+	// (w: the seat's baked light; 0 - none given - is open.)
+	ALBEDO = compat_to_scene(pow(col, vec3(2.2)) * light * (data.w > 0.0 ? data.w : 1.0));
 }
 """
 	var m := ShaderMaterial.new()
@@ -153,13 +154,18 @@ static func tall() -> bool:
 ## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours). With
 ## away too (a championship day at a county ground or the stadium), most wear one county's colours or the other's,
 ## in sections of the stand that lean one way, as at Croke Park: share of them in county colours, the rest anything.
-func build(p_spots: Array, density: float, palette: Array, seed_ := 1, away: Array = [], share := 0.45) -> void:
+## colours: a shirt a spot instead (Stadium._shirts: the same as the 3D fans', so a fan keeps theirs between the two);
+## lights: a number a spot, the seat's baked light (under a roof, darker).
+func build(p_spots: Array, density: float, palette: Array, seed_ := 1, away: Array = [], share := 0.45, colours: Array = [],
+		lights: Array = []) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_
 	var keep: Array[Vector3] = []
-	for s in p_spots:
+	var kept := []
+	for i in p_spots.size():
 		if rng.randf() < density:
-			keep.append(s)
+			keep.append(p_spots[i])
+			kept.append(i)
 	spots = keep
 	facings = []
 	var mm := MultiMesh.new()
@@ -187,8 +193,11 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1, away: Arr
 				var home_side := (sec % 100) < 50
 				pal = palette if (rng.randf() < 0.8) == home_side else away
 			col = pal[rng.randi_range(0, pal.size() - 1)]
-		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase.
-		mm.set_instance_custom_data(i, Color(rng.randf(), _code(col), rng.randf(), 0.0))
+		if kept[i] < colours.size():
+			col = colours[kept[i]]
+		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase, w: the seat's light.
+		var li := float(lights[kept[i]]) if kept[i] < lights.size() else 1.0
+		mm.set_instance_custom_data(i, Color(rng.randf(), WsgCrowd3D.shirt_code(col), rng.randf(), li))
 	multimesh = mm
 	material_override = material()
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -204,20 +213,6 @@ static func facing_at(p: Vector3) -> Vector3:
 static func seen_from_behind(p: Vector3, facing: Vector3, cam: Vector3) -> bool:
 	var to_cam := cam - p
 	return facing.dot(Vector3(to_cam.x, 0.0, to_cam.z)) < 0.0
-
-
-## Shirt colours come out of the shader from one number; find one whose colour is near col (a few tries).
-static func _code(col: Color) -> float:
-	var best := 0.0
-	var bd := 9.0
-	for i in 256:
-		var y := float(i) / 256.0 + 0.001
-		var c := Vector3(fposmod(y * 7.13, 1.0), fposmod(y * 3.77, 1.0), fposmod(y * 5.31, 1.0))
-		var d := c.distance_to(Vector3(col.r, col.g, col.b))
-		if d < bd:
-			bd = d
-			best = y
-	return best
 
 
 func _process(delta: float) -> void:

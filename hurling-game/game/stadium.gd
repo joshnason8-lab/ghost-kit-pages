@@ -30,6 +30,9 @@ var to_sun := Vector3(0.3, 0.8, 0.5).normalized()   # where the light comes from
 var net: GoalNet               # the goals' nets (a sliotar into one ripples it)
 var structure: MeshInstance3D  # the stands, walls and roofs, built
 var baked := false             # drawn under its baked light (Low and Medium: assets/env/light)
+var _built_mesh: ArrayMesh     # the stands as built (the bake's signature is of these)
+var _shirt_of := []            # each spot's fan's shirt (the 3D fan's and the cut-out's the same)
+var _light_of := PackedFloat32Array()   # each spot's baked light (the bake's probes; empty: none)
 
 const H := Pitch.HALF_L
 const W := Pitch.HALF_W
@@ -93,6 +96,7 @@ const LIGHT_DIR := "res://assets/env/light/"
 
 
 func _baked_light() -> void:
+	_built_mesh = structure.mesh as ArrayMesh
 	var grass_m := Pitch.grass_material(time)
 	grass_m.set_shader_parameter("shade_on", false)
 	baked = false
@@ -117,8 +121,12 @@ func _baked_light() -> void:
 ## goal they shoot at).
 func build_crowd(focus: Vector3, quality: int) -> void:
 	var palette := home_colours.duplicate()
+	if _shirt_of.size() != _spots.size():
+		_shirt_of = _shirts()
+		_light_of = WsgLightBake.probes(_built_mesh, LIGHT_DIR + "%s_%s" % [kind, time], _spots.size())
 	var density := Game.crowd_density() * (0.55 if kind == "parish" else 1.0)
 	var flat := _spots
+	var flat_i := range(_spots.size())
 	if crowd3d:
 		crowd3d.queue_free()
 		crowd3d = null
@@ -131,17 +139,47 @@ func build_crowd(focus: Vector3, quality: int) -> void:
 		for i in _spots.size():
 			seated.append(SEAT_H if _seats.has(i) else 0.0)
 			room.append(_seats.get(i, INF))
-		var used := crowd3d.build(_spots, facings, density, hash(kind), seated, quality, focus, room)
+		var used := crowd3d.build(_spots, facings, density, hash(kind), seated, quality, focus, room, _shirt_of, Array(_light_of))
 		crowd3d.set_teams(home_colours[0], away_colours[0] if not away_colours.is_empty() else home_colours[1])
 		var taken := {}
 		for i in used:
 			taken[i] = true
 		flat = []
+		flat_i = []
 		for i in _spots.size():
 			if not taken.has(i):
 				flat.append(_spots[i])
+				flat_i.append(i)
+	var shirts := []
+	var lights := []
+	for i in flat_i:
+		shirts.append(_shirt_of[i])
+		if not _light_of.is_empty():
+			lights.append(_light_of[i])
 	crowd.build(flat, density, palette, hash(kind),
-		away_colours if kind != "parish" else [], 0.75 if kind != "parish" and not away_colours.is_empty() else 0.45)
+		away_colours if kind != "parish" else [], 0.75 if kind != "parish" and not away_colours.is_empty() else 0.45, shirts, lights)
+
+
+## Each spot's fan's shirt, decided once by the spot (the 3D fan there and the cut-out wear the same: a fan keeps it
+## when the crowd is built again round another focus): a share in the counties' colours - on a championship day in
+## sections of the stand leaning one way, as at Croke Park - the rest anything.
+func _shirts() -> Array:
+	var away := away_colours if kind != "parish" else []
+	var share := 0.75 if kind != "parish" and not away.is_empty() else 0.45
+	var out := []
+	var rng := RandomNumberGenerator.new()
+	for i in _spots.size():
+		rng.seed = hash([hash(kind), i])
+		var col := Color(rng.randf(), rng.randf(), rng.randf())
+		if not home_colours.is_empty() and rng.randf() < share:
+			var pal: Array = home_colours
+			if not away.is_empty():
+				var p: Vector3 = _spots[i]
+				var sec := hash(Vector2i(floori(p.x / 12.0), floori(p.z / 10.0)))
+				pal = home_colours if (rng.randf() < 0.8) == ((sec % 100) < 50) else away
+			col = pal[rng.randi_range(0, pal.size() - 1)]
+		out.append(col)
+	return out
 
 
 ## The goals: two white uprights 6.5 m apart, at least 7 m high, the crossbar 2.5 m up, and the net behind (a fine
@@ -775,6 +813,7 @@ func _environment() -> void:
 	add_child(we)
 	add_child(sun)
 	Crowd.set_light({"day": 1.0, "dusk": 0.72, "night": 0.75}[time])
+	WsgCrowd3D.set_sun(to_sun)
 
 
 ## High's light (on Vulkan): the sun's real shadows over the whole ground in four cascades, soft at the

@@ -79,9 +79,11 @@ static func set_tension(k: float) -> void:
 ## behind the feet the step behind rises above the seat (m; one number, or one a spot): a fan who would sit back into
 ## it comes forward. quality: 1 Medium, 2 High, 3 Close (WsgFoundation.crowd_budget; Low: do not build; keep the
 ## billboards). Returns the indices of the
-## spots it drew, nearest the focus first; the game's billboards take the others.
+## spots it drew, nearest the focus first; the game's billboards take the others. shirts: a Color a spot (the colour
+## that spot's fan wears - give the cut-outs the same, and a fan keeps it between the two), or none (a team's colours
+## or anything); lights: a number a spot (the seat's baked light, WsgLightBake's probes: 1 open, less under a roof).
 func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Variant = true, quality := 1, focus := Vector3.ZERO,
-		room: Variant = INF) -> PackedInt32Array:
+		room: Variant = INF, shirts: Array = [], lights: Array = []) -> PackedInt32Array:
 	for m in meshes:
 		m.queue_free()
 	meshes.clear()
@@ -136,7 +138,11 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 				h = lerpf(h, clampf(seat_h / seat_of(f).x, 0.93, 1.07), 0.6)
 			var pl := place(spots[i], fwd, h, f, seat_h, _per_spot(room, i))
 			mm.set_instance_transform(k, pl[0])
-			mm.set_instance_custom_data(k, Color(rng.randf(), 1.0 if seat_h > 0.0 else 0.0, pl[1], 0))
+			# (g: the seat's light, its sign whether seated; a: the shirt's code. Small numbers: the Compatibility
+			# renderer keeps custom data in half floats.)
+			var code := shirt_code(shirts[i]) if i < shirts.size() and shirts[i] is Color else 0.0
+			var li := clampf(float(lights[i]) if i < lights.size() else 1.0, 0.05, 2.0)
+			mm.set_instance_custom_data(k, Color(rng.randf(), li if seat_h > 0.0 else -li, pl[1], code))
 			var tone := rng.randf_range(0.85, 1.1)
 			mm.set_instance_color(k, Color(tone, tone * rng.randf_range(0.95, 1.03), tone * rng.randf_range(0.93, 1.05), 1.0))
 		var mi := MultiMeshInstance3D.new()
@@ -254,6 +260,32 @@ static func set_light(k: float) -> void:
 	_light = k
 
 
+## Where the light comes from (world, toward the sun: the game's), for every crowd: the fans are lit as the games
+## light their people (a cel light, the side away from it shade of the side toward it).
+static func set_sun(to_sun: Vector3, shade := 0.72) -> void:
+	_sun = to_sun.normalized()
+	_shade = shade
+
+
+static var _sun := Vector3(0.35, 0.85, 0.4).normalized()
+static var _shade := 0.72
+
+
+## A shirt colour as the one number the shader reads (and the games' cut-outs: Hurling's Crowd._code), the nearest
+## of 256 it can make.
+static func shirt_code(col: Color) -> float:
+	var best := 0.0
+	var bd := 9.0
+	for i in 256:
+		var y := float(i) / 256.0 + 0.001
+		var c := Vector3(fposmod(y * 7.13, 1.0), fposmod(y * 3.77, 1.0), fposmod(y * 5.31, 1.0))
+		var d := c.distance_to(Vector3(col.r, col.g, col.b))
+		if d < bd:
+			bd = d
+			best = y
+	return best
+
+
 ## What they watch (world); eased so heads do not snap.
 func watch_ball(p: Vector3) -> void:
 	_ball = p if not _ball_set else _ball
@@ -292,3 +324,5 @@ func _process(delta: float) -> void:
 		m.set_shader_parameter("clap_rate", _clap_rate)
 		m.set_shader_parameter("clap_sync", _clap_sync)
 		m.set_shader_parameter("light", _light)
+		m.set_shader_parameter("sun_dir", _sun)
+		m.set_shader_parameter("shade", _shade)
