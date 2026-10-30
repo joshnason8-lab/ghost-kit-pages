@@ -95,8 +95,22 @@ or straight from a rigged model (Mixamo names, a Meshy auto-rig, a Mixamo or Act
 limb weights over the twist and joint helpers. Check one with
 `xvfb-run -a godot --path <foundation> --rendering-driver opengl3 -s tests/pose_view.gd -- <dir> hero <albedo.jpg> out.png`
 and run the rig test on it: `godot --headless --path <foundation> -s tests/rig_test.gd -- <dir> hero` (it fails on
-candy-wrap, collapsing joints, toes up, a hand that cannot close; with a long coat it may fail at the knees and
-elbows - tell the foundation session).
+candy-wrap, collapsing joints, toes up, a hand that cannot close, loose clothes that hang from an arm held out or
+rise with the arms up; with a long coat it may fail at the knees and elbows - tell the foundation session).
+
+Loose clothes (a coat, a jacket) modelled arms-down: posed into the rig's T they stretch from the side into the sleeve
+(a wing) and the side lifts with a raised arm. Fix both, then make the light mesh again from the fixed one:
+```
+godot --headless --path <game> -s tools/wsg/cloth_drape.gd -- res://assets/foundation umpire          # the webbing
+godot --headless --path <game> -s tools/wsg/cloth_weights.gd -- res://assets/foundation umpire res://assets/foundation/hero_hi.res
+tools/wsg/blender/make_lod.sh <game> res://assets/foundation/umpire_hi.res assets/foundation/umpire_lo.res 1600
+```
+(cloth_weights takes the weights of a well-skinned body in the same T - your player - for everything outside a
+sleeve.) A garment whose sleeves are fused into its body (a generated model with the arms at the sides) cannot be
+fixed this way: generate it again in an A-pose.
+
+**Clean light meshes**: `tools/wsg/blender/make_lod.sh <game> res://.../hero_hi.res .../hero_lo.res 2000` replaces the
+cut bake_character makes with Blender's (a quarter of the surface error; tools/blender/README.md).
 
 Your material keeps working: the vertex colour holds the rest position and the below-knee flag as your games' kit
 shaders expect, and the UVs are your mesh's own.

@@ -5,7 +5,8 @@ extends SceneTree
 ##   candy-wrap: a twisted forearm or upper arm thinning (the skin's distance from the bone falling) at its middle;
 ##   collapsing joints: the elbow, knee, shoulder or hip losing volume when bent hard;
 ##   inverted elbows or knees, and toes pointing up, even when the pose asks for them (the drivers must refuse);
-##   a hand that cannot close on a handle, or whose fingers go through it.
+##   a hand that cannot close on a handle, or whose fingers go through it;
+##   loose clothes that hang from an arm held out (a wing) or rise with the arms up.
 ## Every shape check is also run with the rig's helpers switched off, and must FAIL there: that proves the check can
 ## see the fault it is there for.
 
@@ -64,6 +65,7 @@ func _initialize() -> void:
 		if not helpers_on and not any_fail:
 			failures.append("with the helpers off every shape check still passed: the checks cannot see candy-wrap or collapse")
 	body.helpers.active = true
+	await _cloth(poses)
 	_soles()
 	await _hinges(poses)
 	await _grip(poses)
@@ -107,6 +109,43 @@ func _skin(pose: Dictionary, extra := Callable()) -> Dictionary:
 	# undone when the skeleton puts back the poses it had before its modifiers ran.
 	await process_frame
 	return {"pos": out, "g": g}
+
+
+## Loose clothes (an umpire's coat): in the T (an arm held out) nothing hangs from the arm far below it - a coat
+## modelled arms-down and posed into the T stretches from its side into the sleeve, a wing; and with the arms raised,
+## what hangs below the chest stays down (a coat's side skinned to the arm lifts with it).
+const SLEEVE_MAX := 0.14   # m below the arm's line the sleeve's underside may hang, between the shoulder and the wrist
+const LIFT_MAX := 0.06     # m the clothes below the chest may rise with the arms up
+
+
+func _cloth(poses: Dictionary) -> void:
+	var sk := body.skeleton
+	var rest := func(n: String) -> Vector3: return sk.get_bone_global_rest(sk.find_bone(n)).origin
+	for side in ["Left", "Right"]:
+		var sh: Vector3 = rest.call(side + "Arm")
+		var hand: Vector3 = rest.call(side + "Hand")
+		var x0 := absf(sh.x) + 0.08
+		var x1 := absf(hand.x) - 0.05
+		var deepest := 0.0
+		for p: Vector3 in src:
+			if signf(p.x) == signf(hand.x) and absf(p.x) > x0 and absf(p.x) < x1 and absf(p.z - sh.z) < 0.15:
+				deepest = maxf(deepest, sh.y - p.y)
+		var ok := deepest <= SLEEVE_MAX
+		lines.append("T            %-5s sleeve hangs %2d cm below the arm  %s" % [side, roundi(deepest * 100), "ok" if ok else "FAIL"])
+		if not ok:
+			failures.append("%s arm: the clothes hang %d cm below it in the T (a wing)" % [side, roundi(deepest * 100)])
+	var posed := await _skin(poses.arms_up)
+	var chest: float = rest.call("Spine1").y
+	var hips: float = rest.call("Hips").y
+	var lift := 0.0
+	for v in src.size():
+		var p: Vector3 = src[v]
+		if p.y < chest and p.y > hips - 0.4:
+			lift = maxf(lift, (posed.pos[v] as Vector3).y - p.y)
+	var ok := lift <= LIFT_MAX
+	lines.append("arms_up      the clothes below the chest rise %2d cm  %s" % [roundi(lift * 100), "ok" if ok else "FAIL"])
+	if not ok:
+		failures.append("arms up: the clothes below the chest rise %d cm with them" % roundi(lift * 100))
 
 
 ## Each region: the three points of the chain it bends or twists on (bone names; "^" before one: a point 22 cm

@@ -142,4 +142,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   skinned from the nearest point of the detailed surface. Hurling: the HD hurler's, and the officials' (1,600
   triangles where they had none: the full 4,200 at every distance). Rounder helmet and shoulders on Low. test_runner
   652 checks, 0 failures.
-  Next: 4 the umpire's sleeves and fan3, 5 crowd brightness (with the seats' baked light), the feet glitch.
+  4 Loose clothes: the umpire's coat, modelled arms-down, was stretched in the rig's T from its side into the
+  sleeve (17 cm below the arm, a shirt stops at 8) - a wing whenever an arm is out - and its side, skinned to the
+  shoulder helper, rose 13 cm with the arms up. tools/cloth_drape.gd takes the webbing out (sleeve's underside up to
+  the sleeve, the rest straight down the side); tools/cloth_weights.gd skins everything outside a sleeve as a
+  well-skinned body in the same T (the hurler: nearest point of its surface, without its arm bones). Umpire: 7 cm,
+  0 cm. The rig test checks both now (SLEEVE_MAX 14 cm, LIFT_MAX 6 cm; the hurler 8 and 5, the crowd's fans 4-9
+  and 3). Left: with an arm straight out the coat still hangs a clean panel from the sleeve - the coat's sleeve and
+  side are one sheet in the source; a seam there needs the model cut again.
+  fan3: the Meshy blazer's sleeves are fused into its body (generated arms-down): 37 cm of webbing, rising 25 cm;
+  weights fix the rise (0 cm) but not the cape. Stays out of the crowd; the fix is generating it again in an A-pose
+  (Meshy, about 35 credits: asked the lead).
+  Next: 5 crowd brightness (with the seats' baked light), the feet glitch.
