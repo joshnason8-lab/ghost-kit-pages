@@ -128,13 +128,14 @@ void vertex() {
 	n = turn_y(n, vec3(0.0), head * UV2.y);
 	VERTEX = p;
 	NORMAL = n;
-	// Colours: shirts in a team's colours (most fans), a little variety in everything else.
+	// Colours: about half the shirts in a team's colours (dyed: the colour shaded by the cloth's folds), the rest in
+	// muted colours of their own, like the cut-outs beside them; a little variety in everything else.
 	vec3 team = r3 < 0.5 ? team_a.rgb : team_b.rgb;
-	float wear = r4 < 0.8 ? COLOR.a * 0.85 : 0.0;
+	float folds = clamp(dot(COLOR.rgb, vec3(0.3, 0.59, 0.11)) * 1.15, 0.5, 1.0);
+	vec3 own = mix(vec3(0.5), 0.5 + 0.5 * cos(6.2832 * (r5 + vec3(0.0, 0.33, 0.67))), 0.45) * 0.75;
+	vec3 shirt = r4 < 0.55 ? team : own;
 	vec3 base = COLOR.rgb * (0.85 + 0.3 * r2);
-	// The shirt takes the team's colour as dyed cloth would: the colour, shaded by the texture's light and dark folds.
-	float folds = clamp(dot(COLOR.rgb, vec3(0.3, 0.59, 0.11)) * 1.25, 0.55, 1.1);
-	colour = mix(base, team * folds, wear);
+	colour = mix(base, shirt * folds, COLOR.a) * 0.7;
 }
 
 void fragment() {
