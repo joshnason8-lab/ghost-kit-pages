@@ -516,7 +516,14 @@ func _pose(now: float) -> Dictionary:
 			_free_pose(p, action, action_t)
 		else:
 			_action_pose(p, action, t, now)
+		# A knee is a hinge in every move of the game's own (a goalkeeper's dive turned the shins 50 degrees off it).
+		for b in ["shin_l", "shin_r"]:
+			if p.has(b):
+				p[b] = _limited(HeroBody.turn(p[b]), KNEE_HINGE)
 	return p
+
+
+const KNEE_HINGE := [Vector3(-2, -10, -8), Vector3(150, 10, 8)]
 
 
 ## A free struck from the grass, as the owner's slow-motion video shows it (tools/mocap/free_clip.py): he stands over

@@ -80,6 +80,9 @@ func _ready() -> void:
 	body.skeleton.move_child(legacy, 0)
 	loco = WsgLocomotor.attach(body)
 	legacy.lift_after = loco.planter.hips_offset     # the game's hips height is this body's already
+	# The forearms kept out of this body's chest (the game's model is slimmer: a free's follow-through swept the
+	# striking arm through it, the owner's screenshot).
+	legacy.torso_r = 0.1
 	reader = WsgLegacyPose.new(toon.skeleton, body.joints)
 	legacy.arms = reader
 	if toon is HeroBody:

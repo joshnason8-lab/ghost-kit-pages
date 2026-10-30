@@ -555,6 +555,9 @@ func _process(delta: float) -> void:
 			_shootout_step(dt)
 		P.OVER:
 			_brains(dt)
+	# (Ranked before they are posed: a body made full detail after its pose this frame showed its hand open on the
+	# hurley till its next pose.)
+	_rank_detail(dt)
 	_move_all(dt)
 	_footsteps()
 	_carry_ball(dt)
@@ -593,7 +596,6 @@ func _crowd_anticipation(dt: float) -> void:
 	WsgCrowd3D.set_tension(_hype)
 	if stadium.crowd3d:
 		stadium.crowd3d.watch_ball(ball.global_position)
-	_rank_detail(dt)
 	if now >= _cheer_until:
 		Crowd.set_excite(_hype * 0.4)
 

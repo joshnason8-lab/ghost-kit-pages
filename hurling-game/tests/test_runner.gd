@@ -55,6 +55,7 @@ func _ready() -> void:
 	await _champ_sim_resume()
 	await _crowd_builds()
 	await _auto_graphics()
+	await _bench_seats()
 	_backpedal()
 	Game.settings = keep
 	Game.save_settings()
@@ -1547,6 +1548,32 @@ func _crowd_builds() -> void:
 	await frames(90)
 	var far: float = m._hype
 	check(near > 0.6 and far < 0.15, "Crowd: rises as a man nears the posts with the ball (%.2f), falls back far out (%.2f)" % [near, far])
+	m.queue_free()
+	await frames(2)
+
+
+## The substitutes on the bench (the owner: "no feet, sunk into the bench"): each side's men with their soles on the
+## dugout's floor and their thighs on the seat, the benches with their backs to the wall.
+func _bench_seats() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": -1, "seed": 5, "length": 8.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(8)
+	var b: Bench = m.bench
+	for k in 2:
+		var mesh: ArrayMesh = b._mesh[k][0]
+		var vs: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var lo := INF
+		for v in vs:
+			lo = minf(lo, v.y)
+		var h: float = b.seat_h[k]
+		check(absf(lo) < 0.01 and absf(h - Bench.BENCH_SEAT) < 0.06,
+			"Bench %d: the men's soles on the floor (%.3f m) and their thighs on the seat (%.2f m, the seat %.2f)" % [k, lo, h, Bench.BENCH_SEAT])
+	var sc: Scenery = m.stadium.scenery
+	if sc != null and sc.count("painted_bench_low") > 0:
+		var x: Transform3D = sc._xf["painted_bench_low"][0]
+		check((x.basis * Vector3.BACK).z < 0.0, "Bench: its back to the dugout's wall (away from the pitch)")
 	m.queue_free()
 	await frames(2)
 

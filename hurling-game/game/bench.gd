@@ -20,6 +20,10 @@ const SIT := {"thigh_l": Vector3(-88, 0, 4), "thigh_r": Vector3(-88, 0, -4), "sh
 var m: Node
 var seated: Array = [[], []]       # each side's men on the bench: their squad data
 var _mmi: Array = [null, null]
+## The height of each side's men's thighs' undersides as they sit (m, unscaled), and the benches' seat (the model's).
+var seat_h := [0.0, 0.0]
+const THIGH_HALF := 0.07
+const BENCH_SEAT := 0.54
 var _mesh: Array = [null, null]
 
 
@@ -112,6 +116,8 @@ func _bake(k: int) -> void:
 		lo = minf(lo, v.y)
 	for v in pv.size():
 		pv[v].y -= lo
+	# (Where the thighs' undersides are now: tests check they rest on the seat.)
+	seat_h[k] = sk.get_bone_global_pose(sk.find_bone("thigh_l")).origin.y - lo - THIGH_HALF
 	var baked := ArrayMesh.new()
 	baked.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
 	_mesh[k] = [baked, body.mesh_instance.material_override]
