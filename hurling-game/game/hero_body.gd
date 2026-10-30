@@ -297,12 +297,15 @@ static func _ultra_code() -> String:
 	# (The 4096 texture's light and dark in the skin, kept at half on the phones' smaller one, at a quarter here.)
 	c = c.replace("clamp(lum(tex) / max(lum(from), 0.002), 0.0, 1.6), 0.5)", "clamp(lum(tex) / max(lum(from), 0.002), 0.0, 1.6), 0.25)")
 	c = c.replace("uniform float shade = 0.72;", "uniform float shade = 0.72;\nuniform sampler2D detail_n : hint_normal, filter_linear_mipmap, repeat_enable;\nuniform sampler2D detail_r : hint_roughness_r, filter_linear_mipmap, repeat_enable;")
-	var tail := c.substr(c.find("	float d = dot(normalize(wn), normalize(light_dir));"))
+	var tail := c.substr(c.find("	// The relief: the baked normal"))
 	tail = tail.substr(0, tail.find("}"))
 	c = c.replace(tail, """	float cloth = clamp(m.r + m.g + m.b + leg, 0.0, 1.0);
 	vec2 duv = UV * 36.0;
 	ALBEDO = compat_to_scene(c);
-	NORMAL_MAP = mix(vec3(0.5, 0.5, 1.0), texture(detail_n, duv).rgb, cloth);
+	// The cloth's weave on the sculpt's relief.
+	vec3 weave = mix(vec3(0.5, 0.5, 1.0), texture(detail_n, duv).rgb, cloth) * 2.0 - 1.0;
+	vec2 bxy = mix(vec2(0.0), texture(nmap, UV).rg * 2.0 - 1.0, nmap_k);
+	NORMAL_MAP = normalize(vec3(bxy + weave.xy, 1.0)) * 0.5 + 0.5;
 	NORMAL_MAP_DEPTH = 0.7;
 	ROUGHNESS = mix(0.48, 0.78 + 0.18 * texture(detail_r, duv).r, cloth);
 	SPECULAR = mix(0.4, 0.3, cloth);
@@ -336,7 +339,12 @@ uniform float chest_y = 1.3;
 uniform float spine_y = 1.1;
 uniform vec3 light_dir = vec3(0.35, 0.85, 0.4);
 uniform float shade = 0.72;
+// The sculpt's relief, baked from the HD model onto the body drawn (tools/blender): 0 none (the game's own body).
+uniform sampler2D nmap : hint_normal, filter_linear_mipmap;
+uniform float nmap_k = 0.0;
 varying vec3 wn;
+varying vec3 wt;
+varying vec3 wb;
 varying vec3 rp;
 varying float leg;
 
@@ -347,6 +355,8 @@ vec3 paint(vec3 tex, vec3 to, vec3 from) { return to * mix(1.0, clamp(lum(tex) /
 
 void vertex() {
 	wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	wt = normalize((MODEL_MATRIX * vec4(TANGENT, 0.0)).xyz);
+	wb = normalize((MODEL_MATRIX * vec4(BINORMAL, 0.0)).xyz);
 	rp = vec3((COLOR.r - 0.5) * 1.6, COLOR.g * 2.0, (COLOR.b - 0.5) * 1.6);
 	leg = COLOR.a;
 }
@@ -379,9 +389,14 @@ void fragment() {
 	c = mix(c, trim, m.g);
 	c = mix(c, shorts, m.b);
 	c = mix(c, paint(t, skin, ref_skin), m.a);
-	float d = dot(normalize(wn), normalize(light_dir));
+	// The relief: the baked normal (its z rebuilt: a compressed normal map keeps x and y) on the surface's own.
+	vec2 nxy = texture(nmap, UV).rg * 2.0 - 1.0;
+	vec3 nt = vec3(nxy, sqrt(max(1.0 - dot(nxy, nxy), 0.0)));
+	vec3 n = normalize(mix(normalize(wn), normalize(wt * nt.x + wb * nt.y + wn * nt.z), nmap_k));
+	vec3 vn = normalize(mix(NORMAL, normalize(TANGENT * nt.x + BINORMAL * nt.y + NORMAL * nt.z), nmap_k));
+	float d = dot(n, normalize(light_dir));
 	float k = mix(shade, 1.0, smoothstep(-0.35, 0.3, d));
-	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0) * 0.18;
+	float rim = pow(1.0 - clamp(dot(vn, VIEW), 0.0, 1.0), 3.0) * 0.18;
 	ALBEDO = compat_to_scene(c * k + rim * 0.5);
 }
 """

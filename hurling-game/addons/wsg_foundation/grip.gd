@@ -25,6 +25,21 @@ static func axis_point(joints: Dictionary, side: String, r: float) -> Vector3:
 	return Vector3(p.x, w.y - PALM_HALF - r, (joints[side + "HandIndex1"].z + joints[side + "HandPinky1"].z) * 0.5)
 
 
+## axis_point moved toward the palm's side just as far as it must for every finger's first bone (the knuckle to the
+## next joint) to clear a handle of radius r: on a hand whose knuckles sit low on the palm the handle through
+## axis_point ran into them. Hold a handle there with solve(..., [clear_axis_point(...), Vector3.BACK]).
+static func clear_axis_point(joints: Dictionary, side: String, r: float) -> Vector3:
+	var c := axis_point(joints, side, r)
+	var need := 0.0
+	for f in ["Index", "Middle", "Ring", "Pinky"]:
+		var a: Vector3 = joints[side + "Hand" + f + "1"]
+		var b: Vector3 = joints[side + "Hand" + f + "2"]
+		for t in [0.5, 1.0]:
+			var p := a.lerp(b, t)
+			need = maxf(need, r + FINGER_HALF - _dist_to_axis(p, c, Vector3.BACK))
+	return c - Vector3(0, need, 0)
+
+
 ## {bone: Quaternion} closing the hand on a handle of radius r: across the palm (axis_point), or along line - [a point
 ## on the handle's axis, its direction], in the rest (the joints' space) - when the handle is drawn where the game
 ## puts it (a hurley through the fist at its own angle): each finger curls till it touches that handle.
@@ -53,7 +68,9 @@ static func solve(joints: Dictionary, side: String, r: float, line := []) -> Dic
 				var hit := false
 				for m in range(k + 1, 4):
 					var p: Vector3 = pts[k] + q * (pts[m] - pts[k])
-					if _dist_to_axis(p, c, d) < r + FINGER_HALF:
+					# (And the middle of the bone before it: the joints can clear a handle the bone runs through.)
+					var mid: Vector3 = pts[k] + q * ((pts[m] + pts[m - 1]) * 0.5 - pts[k])
+					if _dist_to_axis(p, c, d) < r + FINGER_HALF or _dist_to_axis(mid, c, d) < r + FINGER_HALF:
 						hit = true
 						break
 				if hit:

@@ -48,12 +48,16 @@ func _ready() -> void:
 	var prefix := "hero"
 	if toon is PersonBody:
 		prefix = (toon as PersonBody).who
+	elif ResourceLoader.exists(DIR + "hero_hd_rig.json"):
+		prefix = "hero_hd"      # the HD model's own cuts, its sculpt baked into a normal map (foundation tools/blender)
 	var lod := 1 if int(Game.settings.graphics) == Game.GFX_LOW else 0
 	body = WsgBody.new(WsgBody.load_character(DIR, prefix), null, lod)
 	add_child(body)
 	body.visible = false        # till its first pose (a frame of the rig's T-pose with the hurley otherwise)
 	body.scale = toon.scale
 	body.mesh_instance.material_override = toon.mesh_instance.material_override
+	if prefix == "hero_hd":
+		body.mesh_instance.material_override = _hd_material(toon.mesh_instance.material_override)
 	body.mesh_instance.cast_shadow = toon.mesh_instance.cast_shadow
 	legacy = WsgPoseLayer.new()
 	legacy.name = "Legacy"
@@ -95,6 +99,24 @@ func _ready() -> void:
 		_handle_toon = rest_hand + (toon as HeroBody)._grip() + dir * 0.03
 		var cr: Quaternion = reader._corr["RightHand"].inverse()
 		_line_r = [(body.joints["RightHand"] as Vector3) + cr * (_handle_toon - rest_hand), cr * dir]
+
+
+static var _hd_mats := {}
+
+
+## The game's kit material for the HD model's cuts: its textures (the HD pack's, else the same scaled for the game),
+## and the sculpt's relief.
+static func _hd_material(m: Material) -> Material:
+	var key := m.get_instance_id()
+	if not _hd_mats.has(key):
+		var hd := (m as ShaderMaterial).duplicate() as ShaderMaterial
+		if not Ultra.active():
+			hd.set_shader_parameter("albedo", load(DIR + "hero_hd_albedo.jpg"))
+			hd.set_shader_parameter("kit", load(DIR + "hero_hd_mask.png"))
+		hd.set_shader_parameter("nmap", load(DIR + "hero_hd_normal.png"))
+		hd.set_shader_parameter("nmap_k", 1.0)
+		_hd_mats[key] = hd
+	return _hd_mats[key]
 
 
 ## After player.gd has posed the game's body this frame: drive this one.
@@ -217,7 +239,8 @@ func _two_hands() -> void:
 	var jr: Vector3 = body.joints["RightHand"]
 	var pt: Vector3 = (_line_r[0] as Vector3) - jr
 	var dr: Vector3 = _line_r[1]
-	var v := WsgGrip.axis_point(body.joints, "Left", HANDLE_R) - (body.joints["LeftHand"] as Vector3)
+	var c := WsgGrip.clear_axis_point(body.joints, "Left", HANDLE_R)
+	var v := c - (body.joints["LeftHand"] as Vector3)
 	var r0 := held.basis.get_rotation_quaternion()
 	var across := r0 * Vector3.BACK
 	var to := dr if across.dot(dr) >= 0.0 else -dr
@@ -225,7 +248,8 @@ func _two_hands() -> void:
 	var g := held.origin + rq * v
 	var on := pt + dr * (g - pt).dot(dr)
 	legacy.hold = {"Left": ["RightHand", Transform3D(Basis(rq), on - rq * v), w, dr, v]}
-	_left_grip = [HANDLE_R, w * w * w, []]    # (open as it comes onto the handle and goes)
+	# (Closing as it comes onto the handle; open at once when it lets go, before it moves off.)
+	_left_grip = [HANDLE_R, w * w * w if _on_handle else 0.0, [c, Vector3.BACK]]
 
 
 ## The hurley in this body's right hand, as the game's body holds it in its own. Placed when the skeleton has its

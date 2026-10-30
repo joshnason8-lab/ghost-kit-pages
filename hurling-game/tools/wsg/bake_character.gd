@@ -58,6 +58,14 @@ func _initialize() -> void:
 	_fingers(body, joints)
 	joints = WsgRig.with_helpers(joints)
 	var arrays := _weights(body, joints)
+	# Every joint near its parent (a joint left at the origin skinned a finger 1.6 m long).
+	for b in WsgRig.BONES:
+		if b[1] != "" and joints.has(b[0]) and joints.has(b[1]):
+			var gap := (joints[b[0]] as Vector3).distance_to(joints[b[1]])
+			if gap > 0.7:
+				printerr("bake_character: %s is %.2f m from its parent %s: not saved" % [b[0], gap, b[1]])
+				quit(1)
+				return
 	var meta := {"joints": {}, "height": HEIGHT, "report": report}
 	for k in joints:
 		meta.joints[k] = _v(joints[k])
@@ -433,7 +441,15 @@ func _finger_pieces(body: Dictionary, joints: Dictionary, side: String, weld: Pa
 		var names := [side + "Hand" + f + "1", side + "Hand" + f + "2", side + "Hand" + f + "3"]
 		var marks := [0.0, 0.42, 0.72] if f != "Thumb" else [0.0, 0.38, 0.7]
 		for k in 3:
-			joints[names[k]] = _ring(body, pc, marks[k], 0.06)
+			var at := _ring(body, pc, marks[k], 0.06)
+			if at == Vector3.INF:
+				# Nothing there: on along the finger from the joints before it.
+				var back: Vector3 = wrist if k == 0 else joints[names[k - 1]]
+				var before: Vector3 = wrist if k < 2 else joints[names[k - 2]]
+				var along := (back - before).normalized() if back != before else (back - wrist).normalized()
+				at = back + along * maxf(pc.len, 0.03) * 0.3
+				push_warning("%s: no vertices at %.0f%% of the finger: placed along it" % [names[k], marks[k] * 100.0])
+			joints[names[k]] = at
 		# The knuckle sits a little back inside the palm from where the finger leaves it.
 		var dir: Vector3 = ((joints[names[1]] as Vector3) - (joints[names[0]] as Vector3)).normalized()
 		joints[names[0]] = (joints[names[0]] as Vector3) - dir * 0.012
@@ -501,17 +517,22 @@ static func _geodesic(body: Dictionary, nbr: Dictionary, comp: Array, base: Arra
 
 
 ## The centre of the ring of a piece's vertices at fraction t (+- half a width) of its length from its base.
+## The middle of a finger's vertices at t (0 the knuckle, 1 the tip) of its length; INF when there are none even in a
+## wider band (it was the origin: a joint 1.6 m from its hand, and the finger's skin stretched to it when posed).
 static func _ring(body: Dictionary, pc: Dictionary, t: float, width: float) -> Vector3:
-	var sum := Vector3.ZERO
-	var n := 0
-	var lo: float = (t - width) * pc.len
-	var hi: float = (t + width) * pc.len
-	for v in pc.comp:
-		var d: float = pc.dist[v]
-		if d >= lo and d <= hi:
-			sum += body.pos[v]
-			n += 1
-	return sum / maxf(n, 1)
+	for w in [width, width * 2.0, width * 4.0]:
+		var sum := Vector3.ZERO
+		var n := 0
+		var lo: float = (t - w) * pc.len
+		var hi: float = (t + w) * pc.len
+		for v in pc.comp:
+			var d: float = pc.dist[v]
+			if d >= lo and d <= hi:
+				sum += body.pos[v]
+				n += 1
+		if n > 0:
+			return sum / n
+	return Vector3.INF
 
 
 ## Mitten fallback: the hand's vertices past the knuckles shared over the four fingers by where they lie across it.
@@ -716,6 +737,11 @@ func _cut(arrays: Array, tris: int) -> ArrayMesh:
 	out[Mesh.ARRAY_BONES] = bs
 	out[Mesh.ARRAY_WEIGHTS] = ws
 	out[Mesh.ARRAY_INDEX] = idx
+	# Tangents (MikkTSpace, as Blender bakes normal maps against: tools/blender), for a normal map on the cut.
+	var st := SurfaceTool.new()
+	st.create_from_arrays(out)
+	st.generate_tangents()
+	out = st.commit_to_arrays()
 	var cut := ImporterMesh.new()
 	cut.add_surface(Mesh.PRIMITIVE_TRIANGLES, out)
 	cut.generate_lods(25.0, 60.0, [])

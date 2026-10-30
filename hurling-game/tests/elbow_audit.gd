@@ -208,14 +208,15 @@ func _through(link: FoundationLink, side: String) -> float:
 		for j in [1, 2, 3]:
 			pts.append(link.body.global_transform * sk.get_bone_global_pose(sk.find_bone("%sHand%s%d" % [side, f, j])).origin)
 		# The segments' middles too, and the tip. (The thumb's first joint is where it meets the wrist, inside the ball
-		# of the thumb: a handle across the palm is always that near it. Its knuckle on are the thumb.)
+		# of the thumb: a handle across the palm is always that near it.)
 		var tip: Vector3 = (pts[2] as Vector3) + ((pts[2] as Vector3) - (pts[1] as Vector3)) * 0.85
 		pts.append(((pts[1] as Vector3) + (pts[2] as Vector3)) * 0.5)
 		pts.append(tip)
-		if f == "Thumb":
-			pts.remove_at(0)
-		else:
+		# (The fingers' first joints are the knuckles, in the palm the handle lies against: from the middle of the
+		# first bone on, the fingers.)
+		if f != "Thumb":
 			pts.append(((pts[0] as Vector3) + (pts[1] as Vector3)) * 0.5)
+		pts.remove_at(0)
 		for pi in pts.size():
 			var p: Vector3 = pts[pi]
 			var d: Vector3 = p - mid
