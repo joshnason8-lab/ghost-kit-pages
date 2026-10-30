@@ -8,9 +8,12 @@ it and the tests that keep it honest.
 |---|---|---|
 | **Rig** | 70 bones named as Mixamo / HumanIK: body, three-joint fingers, and 18 helpers (twist bones and joint correctives) driven at run time. Canonical rest: T-pose, every rest rotation the identity, facing +Z. Elbows and knees kept true hinges inside their range, ankles inside theirs, whatever poses them. | `rig.gd`, `rig_driver.gd`, `body.gd`, `grip.gd` |
 | **Characters** | Any Mixamo-named model (the owner's hurler, Meshy auto-rigs, Mixamo, ActorCore) baked onto the rig: posed into the T, fingers found on the mesh it really has, weights spread along each limb over the helpers, cut down for phones. | `tools/bake_character.sh`, `tools/bake_character.gd` |
-| **Locomotion** | (M2) | |
-| **Crowd** | (M3) | |
-| **Officials** | (M4) | |
+| **Locomotion** | Idle and fidgets, turns on the spot, directional starts, 8-direction walk/jog/run with backpedals, curves, cuts, stops by the lifted foot, split jumps, the ActorCore sprint as top speed; phase-matched, stride-matched to the body's own leg; feet planted (two-bone IK), toes kept out of the ground; head and chest look-at. Planted feet slide 5-7 cm/s on average (the raw clips: 50-60). | `locomotor.gd`, `foot_planter.gd`, `clips.gd`, `tools/bake_clips.*`, `tools/bake_actorcore.gd` |
+| **Crowd** | Whole 3D fans on Medium/High, instanced, animated on the GPU from baked textures: sit, get up and sit down, clap on the beat, cheer, watch the ball; seated or standing per spot; budgets in `docs/BUDGET.md`. From the ActorCore crowd motions when the build has them, else authored ones. | `crowd3d.gd`, `crowd_vat.gdshader`, `crowd_clips.gd`, `tools/bake_crowd.gd`, `tools/crowd_mocap.gd` |
+| **Officials** | Move with the play facing it, watch it, signal: whistle, point, score, foul, both arms up, arm out (arms up from the side with the collarbone lifting). | `official.gd`, `pose_layer.gd` |
+| **The games' own poses** | Every hand-made 17-bone move of six of the games, read off their own skeleton each frame onto the rig. | `legacy_pose.gd` |
+
+**Adopting it in a game: [ADOPTING.md](ADOPTING.md).** The Hurling pilot is on `claude/hurling-foundation-pilot`.
 
 ## Licensed data
 
