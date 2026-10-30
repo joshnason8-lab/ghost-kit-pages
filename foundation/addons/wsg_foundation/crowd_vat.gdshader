@@ -22,7 +22,6 @@ uniform vec4 clip_sit_to_stand;
 uniform vec4 clip_stand_idle;
 uniform vec4 clip_stand_clap;
 uniform vec4 clip_cheer;
-uniform float seated = 1.0;          // 1: seats (fans get up), 0: a terrace (always standing)
 uniform float excite = 0.0;          // 0..1, eased by the crowd
 uniform float clap_time = 0.0;       // s on the clapping sound's clock
 uniform float clap_rate = 2.4;       // claps a second
@@ -78,7 +77,8 @@ void vertex() {
 	float r7 = hash(id * 11.3);
 	// How far up this fan is: each gets up at their own point of the excitement.
 	float thr = mix(0.32, 0.86, r1);
-	float up = seated > 0.5 ? smoothstep(thr, thr + 0.14, excite) : 1.0;
+	// INSTANCE_CUSTOM.g: 1 on a seat (gets up), 0 on a terrace (always standing).
+	float up = INSTANCE_CUSTOM.g > 0.5 ? smoothstep(thr, thr + 0.14, excite) : 1.0;
 	// How much they clap or cheer.
 	float keen = smoothstep(0.12 + 0.4 * r2, 0.3 + 0.4 * r2, excite);
 	float t_idle = TIME * (0.85 + 0.3 * r3) + r3 * 20.0;

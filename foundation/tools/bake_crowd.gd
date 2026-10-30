@@ -13,6 +13,8 @@ const FPS := 15.0
 const PIVOTS := ["Spine1", "Neck"]     # extra columns: the torso's and the head's turning points, each frame
 
 var out_dir := ""
+var src = null          # WsgCrowdMocap when the build has the ActorCore crowd clips (licensed), else the authored
+var clips := {}         # name -> [length s, loop]
 
 
 func _initialize() -> void:
@@ -22,10 +24,17 @@ func _initialize() -> void:
 	var char_dir: String = a[2]
 	var tex_dir: String = a[3]
 	var fans: Array = a.slice(4)
-	var meta := {"fps": FPS, "clips": {}, "fans": {}, "pivots": PIVOTS}
+	if WsgCrowdMocap.available() and not OS.has_environment("AUTHORED"):
+		src = WsgCrowdMocap.new()
+		clips = src.clips
+	else:
+		clips = WsgCrowdClips.CLIPS
+	var meta := {"fps": FPS, "clips": {}, "fans": {}, "pivots": PIVOTS,
+		"source": "ActorCore (licensed: build only)" if src != null else "authored (WsgCrowdClips)"}
+	print("crowd motions: ", meta.source)
 	var rows := 0
 	for c in WsgCrowdClips.CLIPS:
-		var spec: Array = WsgCrowdClips.CLIPS[c]
+		var spec: Array = clips[c]
 		var n := int(round(spec[0] * FPS)) + (0 if spec[1] else 1)
 		meta.clips[c] = {"row": rows, "frames": n, "length": spec[0], "loop": spec[1]}
 		rows += n
@@ -182,11 +191,12 @@ func _bake_vat(ch: Dictionary, m: Dictionary, rows: int, meta: Dictionary) -> Ar
 	var row := 0
 	for c in WsgCrowdClips.CLIPS:
 		var info: Dictionary = meta.clips[c]
+		print("  %s: %d frames" % [c, info.frames])
 		for f in info.frames:
 			var t: float = float(f) / FPS
 			if not info.loop and info.frames > 1:
 				t = float(f) / (info.frames - 1) * float(info.length)
-			var pose := WsgCrowdClips.pose(c, t)
+			var pose: Dictionary = src.pose(c, t) if src != null else WsgCrowdClips.pose(c, t)
 			body.reset_pose()
 			for k in pose:
 				if k == "@hips":
@@ -194,6 +204,10 @@ func _bake_vat(ch: Dictionary, m: Dictionary, rows: int, meta: Dictionary) -> Ar
 					sk.set_bone_pose_position(h, sk.get_bone_rest(h).origin + (pose[k] as Vector3) * hips_scale)
 				else:
 					body.set_turn(k, pose[k])
+			# (A frame the same as the last would not make the skeleton update, and skeleton_updated would never come:
+			# the hips are nudged by a hair, alternately, so every frame is new.)
+			var h0 := sk.find_bone("Hips")
+			sk.set_bone_pose_position(h0, sk.get_bone_pose_position(h0) + Vector3(0, 1e-5 * float(row % 2 + 1), 0))
 			await process_frame
 			await sk.skeleton_updated
 			var mats := []

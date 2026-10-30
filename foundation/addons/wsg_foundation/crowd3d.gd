@@ -15,7 +15,9 @@ extends Node3D
 ##   crowd.set_teams(home_colour, away_colour)
 ## The data (the fans' meshes and textures) lives in DIR: tools/bake_crowd.gd makes it. Budget: see docs/BUDGET.md.
 
-const DIR := "res://addons/wsg_foundation/crowd/"
+## The crowd's data: baked from the ActorCore crowd motions at build time (licensed, data/crowd/) if this build has
+## it, else the authored motions that ship with the addon (crowd/).
+static var DIR := "res://addons/wsg_foundation/data/crowd/" if FileAccess.file_exists("res://addons/wsg_foundation/data/crowd/crowd.json") else "res://addons/wsg_foundation/crowd/"
 ## Fans the 3D crowd draws at most, by quality (1 Medium, 2 High): [near (the full figure), in all (the rest the far
 ## figure, about a third of the triangles)]. The rest of the spots stay with the game's billboards.
 const BUDGET := {1: [400, 1200], 2: [1000, 3000]}
@@ -59,10 +61,11 @@ static func set_tension(k: float) -> void:
 	_tension = clampf(k, 0.0, 1.0)
 
 
-## Places the fans: spots are their feet (world), facings the way each faces (flat; toward the pitch). quality: 1
-## Medium, 2 High (Low: do not build; keep the billboards). Returns the indices of the spots it drew, nearest the
-## middle (focus) first; the game's billboards take the others.
-func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated := true, quality := 1, focus := Vector3.ZERO) -> PackedInt32Array:
+## Places the fans: spots are their feet (world), facings the way each faces (flat; toward the pitch). seated: true
+## (all on seats), false (a terrace: all standing), or one bool a spot. quality: 1 Medium, 2 High (Low: do not
+## build; keep the billboards). Returns the indices of the spots it drew, nearest the focus first; the game's
+## billboards take the others.
+func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Variant = true, quality := 1, focus := Vector3.ZERO) -> PackedInt32Array:
 	for m in meshes:
 		m.queue_free()
 	meshes.clear()
@@ -112,13 +115,14 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated := tr
 			var h := rng.randf_range(0.93, 1.07)
 			var at: Vector3 = spots[i] - fwd * FEET_FORWARD * h
 			mm.set_instance_transform(k, Transform3D(b.scaled(Vector3.ONE * h), at))
-			mm.set_instance_custom_data(k, Color(rng.randf(), 0, 0, 0))
+			var sits: bool = seated if seated is bool else bool(seated[i])
+			mm.set_instance_custom_data(k, Color(rng.randf(), 1.0 if sits else 0.0, 0, 0))
 			var tone := rng.randf_range(0.85, 1.1)
 			mm.set_instance_color(k, Color(tone, tone * rng.randf_range(0.95, 1.03), tone * rng.randf_range(0.93, 1.05), 1.0))
 		var mi := MultiMeshInstance3D.new()
 		mi.multimesh = mm
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		var mat := _material(f, seated)
+		var mat := _material(f)
 		mi.material_override = mat
 		add_child(mi)
 		meshes.append(mi)
@@ -126,7 +130,7 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated := tr
 	return used
 
 
-func _material(fan: String, seated: bool) -> ShaderMaterial:
+func _material(fan: String) -> ShaderMaterial:
 	var md := meta()
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://addons/wsg_foundation/crowd_vat.gdshader")
@@ -137,7 +141,6 @@ func _material(fan: String, seated: bool) -> ShaderMaterial:
 	for c in md.clips:
 		var ci: Dictionary = md.clips[c]
 		mat.set_shader_parameter("clip_" + c, Vector4(ci.row, ci.frames, ci.length, 1.0 if ci.loop else 0.0))
-	mat.set_shader_parameter("seated", 1.0 if seated else 0.0)
 	return mat
 
 

@@ -48,10 +48,19 @@ static func _load() -> void:
 	_tried = true
 	if not ResourceLoader.exists(DIR + "mobility.res"):
 		return
-	_lib = load(DIR + "mobility.res")
+	_lib = (load(DIR + "mobility.res") as AnimationLibrary).duplicate()
 	var j = JSON.parse_string(FileAccess.get_file_as_string(DIR + "mobility.json"))
 	if j is Dictionary:
 		_meta = j.get("clips", {})
+	# The ActorCore motions (the sprint, the ready stance, catches and celebrations, the crowd's), in the same
+	# library under their own names, when this build has them.
+	if ResourceLoader.exists(DIR + "actorcore.res"):
+		var ac: AnimationLibrary = load(DIR + "actorcore.res")
+		for n in ac.get_animation_list():
+			_lib.add_animation(n, ac.get_animation(n))
+		var ja = JSON.parse_string(FileAccess.get_file_as_string(DIR + "actorcore.json"))
+		if ja is Dictionary:
+			_meta.merge(ja.get("clips", {}), true)
 
 
 ## Is that foot (0 left, 1 right) on the ground at fraction t (0..1) of the clip?

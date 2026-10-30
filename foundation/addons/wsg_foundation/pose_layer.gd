@@ -19,9 +19,15 @@ var _ix := {}
 var _for := -1
 
 
+## The pose: {bone: local Quaternion}, and "@hips" (the hips' offset from the rest) if it moves them.
 func set_pose(p: Dictionary) -> void:
+	if p.has("@hips"):
+		hips = p["@hips"]
+		p = p.duplicate()
+		p.erase("@hips")
+	if p.keys() != pose.keys():
+		_ix.clear()
 	pose = p
-	_ix.clear()
 
 
 ## Eases the weight to w over secs (called once; it then moves on its own).
@@ -40,7 +46,7 @@ func _process_modification_with_delta(delta: float) -> void:
 	var sk := get_skeleton()
 	if sk == null:
 		return
-	if _for != sk.get_instance_id() or _ix.is_empty():
+	if _for != sk.get_instance_id() or _ix.size() != pose.size():
 		_for = sk.get_instance_id()
 		_ix.clear()
 		for b in pose:

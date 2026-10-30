@@ -26,6 +26,8 @@ const PATH := [
 	[15.5, "side-step", Vector2(0, 3.0), 90.0],
 	[17.0, "stop", Vector2(0, 0), 90.0],
 	[19.0, "jog, turning", Vector2(0, 0), 0.0],
+	[24.0, "sprint", Vector2(0, 8.5), 0.0],
+	[25.5, "stop", Vector2(0, 0), 0.0],
 ]
 
 var lines := []
@@ -100,8 +102,8 @@ func _run(ch: Dictionary, plant: bool) -> Dictionary:
 			facing = a
 		var lim := (ACCEL if want.length() > vel.length() else DECEL) * DT
 		vel = vel.move_toward(want, lim)
-		if seg == "start and run":
-			facing = atan2(want.x, want.y)
+		if seg == "start and run" or seg == "sprint" or _t > 19.0:
+			facing = atan2(want.x, want.y) if want.length() > 0.1 else 0.0
 		pos += Vector3(vel.x, 0, vel.y) * DT
 		body.position = pos
 		loco.drive(DT, Vector3(vel.x, 0, vel.y), facing, Vector3(want.x, 0, want.y))

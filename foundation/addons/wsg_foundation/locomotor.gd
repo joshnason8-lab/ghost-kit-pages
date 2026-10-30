@@ -69,6 +69,7 @@ var _slot := 0                  # which of the two one-off slots is playing (the
 var _w_shot := 0.0
 var _w_move := 0.0
 var _w_slot := 0.0
+var _w_sprint := 0.0
 var _curve := 0.0
 var _last_dir := 0.0            # yaw of the velocity last frame (for curving)
 var _shot_rate := 1.0           # the one-off clip's playback rate now (speed-warped to the body's speed)
@@ -193,9 +194,18 @@ func _build() -> AnimationNodeBlendTree:
 	bt.connect_node("curve", 0, "cir_R")
 	bt.connect_node("curve", 1, "gait")
 	bt.connect_node("curve", 2, "cir_L")
+	# The sprint (ActorCore), over the forward run, as the top speed.
+	var top := AnimationNodeBlend2.new()
+	top.sync = true
+	bt.add_node("sprint_mix", top)
+	bt.connect_node("sprint_mix", 0, "curve")
+	var sp := AnimationNodeAnimation.new()
+	sp.animation = LIB + ("Sprint_F_Loop" if WsgClips.has("Sprint_F_Loop") else "Run_F_Loop")
+	bt.add_node("sprint", sp)
+	bt.connect_node("sprint_mix", 1, "sprint")
 	var ts := AnimationNodeTimeScale.new()
 	bt.add_node("gait_ts", ts)
-	bt.connect_node("gait_ts", 0, "curve")
+	bt.connect_node("gait_ts", 0, "sprint_mix")
 	var seek := AnimationNodeTimeSeek.new()
 	bt.add_node("gait_seek", seek)
 	bt.connect_node("gait_seek", 0, "gait_ts")
@@ -396,13 +406,22 @@ func drive(delta: float, velocity: Vector3, facing: float, want_velocity := Vect
 	var want_curve := clampf(rad_to_deg(turn_rate) / 100.0, -1.0, 1.0) * smoothstep(0.8, 1.5, speed) * (1.0 if local_vel.y > 0.5 else 0.0)
 	_curve = lerpf(_curve, want_curve, k * 0.5)
 	# Cadence: one gait cycle per stride covered.
+	# Sprinting: faster than the run, going forward.
+	var want_sprint := 0.0
+	if WsgClips.has("Sprint_F_Loop"):
+		want_sprint = smoothstep(RUN * leg_scale * 0.97, RUN * leg_scale * 1.12, speed) * smoothstep(0.85, 0.97, local_vel.y / maxf(speed, 0.01))
+	_w_sprint = lerpf(_w_sprint, want_sprint, k)
 	var stride := _stride(local_vel)
+	if _w_sprint > 0.0:
+		var sm := WsgClips.meta("Sprint_F_Loop")
+		stride = lerpf(stride, float(sm.stride) * leg_scale, _w_sprint)
 	var rate := speed / stride if stride > 0.01 else 1.0
 	phase = fposmod(phase + rate * delta, 1.0)
 	_p("gait/blend_position", local_vel)
 	_p("cir_L/blend_position", speed)
 	_p("cir_R/blend_position", speed)
 	_p("curve/blend_amount", _curve)
+	_p("sprint_mix/blend_amount", _w_sprint)
 	_p("gait_ts/scale", rate)
 	_p("idle_ts/scale", 1.0 / float(WsgClips.meta("Stand_Relaxed_Idle").get("cycle", 4.0)))
 	_p("move/blend_amount", _w_move)
