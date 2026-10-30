@@ -19,10 +19,9 @@ extends Node3D
 ## it, else the authored motions that ship with the addon (crowd/).
 static var DIR := "res://addons/wsg_foundation/data/crowd/" if FileAccess.file_exists("res://addons/wsg_foundation/data/crowd/crowd.json") else "res://addons/wsg_foundation/crowd/"
 ## Fans the 3D crowd draws at most, by quality (1 Medium, 2 High, 3 Close: a mode with the camera close and few
-## players on the pitch - a practice, a shoot-out - that spends what the players do not on full figures): [near
-## (the full figure), in all (the rest the far figure, about a third of the triangles)]. The rest of the spots stay
-## with the game's billboards.
-const BUDGET := {1: [400, 1200], 2: [1000, 3000], 3: [2000, 3000]}
+## players on the pitch - a practice, a shoot-out): WsgFoundation.crowd_budget, by the game's profile - [near (the
+## full figure), in all (the rest the far figure, about a third of the triangles)]. The rest of the spots stay with
+## the game's billboards.
 ## A fan's feet are this far in front of their origin (m): the spot given is the feet (WsgCrowdClips.FEET_FORWARD).
 const FEET_FORWARD := WsgCrowdClips.FEET_FORWARD
 
@@ -78,7 +77,8 @@ static func set_tension(k: float) -> void:
 ## (all on seats SEAT high), false (a terrace: all standing), one bool a spot, or one number a spot (the seat's
 ## height over the feet, m; 0 standing): each seated fan is lifted so they sit on it, not in it. room: how far
 ## behind the feet the step behind rises above the seat (m; one number, or one a spot): a fan who would sit back into
-## it comes forward. quality: 1 Medium, 2 High, 3 Close (see BUDGET; Low: do not build; keep the billboards). Returns the indices of the
+## it comes forward. quality: 1 Medium, 2 High, 3 Close (WsgFoundation.crowd_budget; Low: do not build; keep the
+## billboards). Returns the indices of the
 ## spots it drew, nearest the focus first; the game's billboards take the others.
 func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Variant = true, quality := 1, focus := Vector3.ZERO,
 		room: Variant = INF) -> PackedInt32Array:
@@ -97,7 +97,7 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 	# Nearest the focus along the stands first (whole sections, out from the middle of the view), so where the 3D
 	# fans end and the cut-outs begin is a line across the stand, as between two sections, not a ring.
 	order.sort_custom(func(a, b): return nearness(spots[a], focus) < nearness(spots[b], focus))
-	var budget: Array = BUDGET.get(quality, BUDGET[1])
+	var budget: Array = WsgFoundation.crowd_budget(quality)
 	var cap := int(budget[1] * clampf(density, 0.0, 1.0))
 	var near_cap := int(budget[0] * clampf(density, 0.0, 1.0))
 	var take := []

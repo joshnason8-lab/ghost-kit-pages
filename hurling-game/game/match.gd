@@ -581,6 +581,7 @@ func _crowd_anticipation(dt: float) -> void:
 	WsgCrowd3D.set_tension(_hype)
 	if stadium.crowd3d:
 		stadium.crowd3d.watch_ball(ball.global_position)
+	_rank_detail(dt)
 	if now >= _cheer_until:
 		Crowd.set_excite(_hype * 0.4)
 
@@ -2768,6 +2769,25 @@ func _begin_shootout() -> void:
 	hud.shootout(shootout)
 	_close_crowd()
 	_shootout_next()
+
+
+var _detail_t := 0.0
+
+
+## The foundation's bodies in full detail nearest the camera only, as the game's profile allows (WsgFoundation:
+## Hurling is "premium", every body in full; a "budget" game the nearest few), twice a second.
+func _rank_detail(dt: float) -> void:
+	_detail_t -= dt
+	if _detail_t > 0.0 or not FoundationLink.enabled():
+		return
+	_detail_t = 0.5
+	var bodies := []
+	for p in all_players() + officials.people:
+		var pl := p as Player
+		if pl.link and pl.link.body:
+			bodies.append(pl.link.body)
+	var cam3 := get_viewport().get_camera_3d()
+	WsgFoundation.rank_detail(bodies, cam3.global_position if cam3 else Vector3.ZERO)
 
 
 ## The shoot-out and the practice are shot close at one goal: the 3D crowd (the shared foundation's, on High) moves

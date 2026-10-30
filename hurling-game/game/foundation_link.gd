@@ -28,6 +28,12 @@ var _handle_toon := Vector3.ZERO   # the middle of the handle's grip tape (the g
 const HANDLE_R := 0.021
 
 
+## Hurling is made for the nicer phones (WsgFoundation: Medium by default, High for flagships, Vulkan); WSG_PROFILE
+## measures it as a budget game would draw it (tests/perf_probe.gd).
+static func _static_init() -> void:
+	WsgFoundation.profile = OS.get_environment("WSG_PROFILE") if OS.has_environment("WSG_PROFILE") else "premium"
+
+
 static func enabled() -> bool:
 	return WsgClips.available() and ResourceLoader.exists(DIR + "hero_rig.json") and not OS.has_environment("WSG_OFF")
 

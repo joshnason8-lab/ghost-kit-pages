@@ -40,6 +40,7 @@ static func load_character(dir: String, prefix: String) -> Dictionary:
 
 func _init(p_character := {}, material: Material = null, lod := 0) -> void:
 	character = p_character
+	_lod = clampi(lod, 0, 1)
 	joints = character.get("joints", WsgRig.default_joints())
 	skeleton = WsgRig.build_skeleton(joints)
 	add_child(skeleton)
@@ -65,6 +66,23 @@ func _init(p_character := {}, material: Material = null, lod := 0) -> void:
 
 ## Adds a modifier (IK, look-at...) between the two drivers, where it sees sound hinges and is followed by the
 ## helpers.
+## Full detail (twist and joint helpers, fingers closing on what they hold, the character's full mesh), or light (the
+## light mesh, plain joints, the fingers as the motion has them): a budget game draws only the bodies nearest the
+## camera in full (WsgFoundation.rank_detail).
+var full := true
+var _lod := 0
+
+
+func set_detail(p_full: bool) -> void:
+	if p_full == full:
+		return
+	full = p_full
+	helpers.active = full
+	var meshes: Array = character.get("meshes", [])
+	if mesh_instance and meshes.size() > 1:
+		mesh_instance.mesh = meshes[maxi(_lod, 0 if full else 1)]
+
+
 func add_modifier(m: SkeletonModifier3D) -> void:
 	skeleton.add_child(m)
 	skeleton.move_child(m, helpers.get_index())
@@ -94,6 +112,8 @@ func reset_pose() -> void:
 
 ## Closes a hand (side "Left" or "Right") round a handle of radius r (m); strength 0 leaves it as the clip has it.
 func grip(side: String, r := 0.016, strength := 1.0, line := []) -> void:
+	if not full:
+		return
 	var g := WsgGrip.solve(joints, side, r, line)
 	for b in g:
 		var i := bone(b)
