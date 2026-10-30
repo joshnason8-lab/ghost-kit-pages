@@ -68,6 +68,7 @@ func _ready() -> void:
 	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")],
 		int(Game.settings.graphics), func(i):
 			Game.settings.graphics = i
+			Game.settings.gfx_chosen = true
 			Game.save_settings())))
 	# The HD pack, on a phone that can use it: its line and its screen.
 	if Ultra.capable():

@@ -104,6 +104,14 @@ func _bake(k: int) -> void:
 	out[Mesh.ARRAY_TEX_UV] = a[Mesh.ARRAY_TEX_UV]
 	out[Mesh.ARRAY_COLOR] = a[Mesh.ARRAY_COLOR]
 	out[Mesh.ARRAY_INDEX] = a[Mesh.ARRAY_INDEX]
+	# Sitting on the seat, feet on the floor: the pose's soles are a seat's height below its thighs, so the body is
+	# lifted till the lowest of it is on the ground (it was 24 cm under it: the owner saw no feet, the men sunk into
+	# the bench).
+	var lo := INF
+	for v in pv:
+		lo = minf(lo, v.y)
+	for v in pv.size():
+		pv[v].y -= lo
 	var baked := ArrayMesh.new()
 	baked.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
 	_mesh[k] = [baked, body.mesh_instance.material_override]

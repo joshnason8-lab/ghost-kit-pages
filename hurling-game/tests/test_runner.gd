@@ -54,6 +54,7 @@ func _ready() -> void:
 	await _goals_round()
 	await _champ_sim_resume()
 	await _crowd_builds()
+	await _auto_graphics()
 	_backpedal()
 	Game.settings = keep
 	Game.save_settings()
@@ -1548,6 +1549,47 @@ func _crowd_builds() -> void:
 	check(near > 0.6 and far < 0.15, "Crowd: rises as a man nears the posts with the ball (%.2f), falls back far out (%.2f)" % [near, far])
 	m.queue_free()
 	await frames(2)
+
+
+## "Lower the graphics by itself" (WsgAutoTier): a match on High that hitches in play steps down to Medium within a
+## few seconds and applies it there and then (the sun's shadows off, the crowd and flags built again), then to Low;
+## one that runs smoothly stays.
+func _auto_graphics() -> void:
+	var keep := int(Game.settings.graphics)
+	var keep_auto: bool = Game.settings.get("auto_gfx", true)
+	for hitching in [false, true]:
+		Game.settings.graphics = Game.GFX_HIGH
+		Game.settings.auto_gfx = true
+		var m: Node = load("res://game/match.gd").new()
+		m.config = {"home": "KIL", "away": "TIP", "venue": "stadium", "user_team": -1, "seed": 5, "length": 8.0, "mode": "test"}
+		m.set_meta("test", true)
+		add_child(m)
+		await frames(5)
+		m.phase = m.P.LIVE
+		var steps := []
+		var t := 0.0
+		var i := 0
+		while t < 16.0:
+			var dt := 0.1 if hitching and i % 20 == 0 else 1.0 / 60.0
+			var was := int(Game.settings.graphics)
+			m._frame_stats(dt)
+			if int(Game.settings.graphics) != was:
+				steps.append([t, int(Game.settings.graphics)])
+			t += dt
+			i += 1
+		var sun: DirectionalLight3D = m.stadium._sun
+		if hitching:
+			var to_med: bool = steps.size() >= 1 and steps[0][1] == Game.GFX_MEDIUM and float(steps[0][0]) < 6.0
+			var to_low: bool = steps.size() == 2 and steps[1][1] == Game.GFX_LOW
+			check(to_med and to_low and not sun.shadow_enabled and WsgFoundation.tier == WsgFoundation.LOW and m.stadium.crowd3d == null,
+				"Auto graphics: a match hitching on High steps down to Medium within a few seconds, then Low, applied at once %s" % [steps])
+		else:
+			check(steps.is_empty() and int(Game.settings.graphics) == Game.GFX_HIGH, "Auto graphics: a smooth match stays on High %s" % [steps])
+		m.queue_free()
+		await frames(2)
+	Game.settings.graphics = keep
+	Game.settings.auto_gfx = keep_auto
+	Game.save_settings()
 
 
 ## A man moving away from where he looks: slowly, he backpedals (still facing, his stride run backward); faster

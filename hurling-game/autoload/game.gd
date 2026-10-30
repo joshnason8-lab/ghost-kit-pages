@@ -65,6 +65,8 @@ var settings := {
 	"camera": CAM_TV,
 	"graphics": -1,         # -1 until the first run picks one for the phone (detect_graphics)
 	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
+	"gfx_chosen": false,    # the player has set the graphics in Settings (else the phone decides: detect_graphics)
+	"gfx_detect": 0,        # which detect_graphics last decided it (GFX_DETECT)
 	"fps": FPS_SMOOTH,
 	"sound": true,
 	"music": true,
@@ -109,8 +111,11 @@ var records := {}  # the record book: titles won, biggest wins, top scorers
 
 func _ready() -> void:
 	load_settings()
-	if int(settings.graphics) < 0:
+	# The phone decides, until the player chooses: on the first run, and again when the way it decides has changed
+	# (an install over an older beta kept that beta's level: the owner's Galaxy A16 started the pilot on High).
+	if int(settings.graphics) < 0 or (not bool(settings.get("gfx_chosen", false)) and int(settings.get("gfx_detect", 0)) < GFX_DETECT):
 		settings.graphics = detect_graphics()
+		settings.gfx_detect = GFX_DETECT
 		save_settings()
 	elif int(settings.graphics) > GFX_HIGH:
 		settings.graphics = GFX_HIGH       # the 0.10 betas' Ultra is High now
@@ -154,6 +159,9 @@ func go_back() -> void:
 ## The graphics level for this phone on its first run: Low on a phone with a small GPU or under 4.5 GB of memory (a
 ## Galaxy A0x/A1x's Mali-G52 or G57, Adreno 5xx and 61x, PowerVR), High on a recent high-end phone (Ultra.capable:
 ## Adreno 640 and later, Mali-G710 and later, Immortalis, Xclipse, with 6 GB), Medium on the rest.
+const GFX_DETECT := 2
+
+
 func detect_graphics() -> int:
 	if not OS.has_feature("mobile"):
 		return GFX_HIGH

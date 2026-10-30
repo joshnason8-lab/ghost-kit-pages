@@ -23,6 +23,19 @@ const FEET_OFF := 5.0       # cm the lower ankle is above (or below) its standin
 const FEET_AIR := 30.0      # cm the lower ankle may be up under the motion capture (a sprint's flight)
 const FINGER_IN := 5.0      # mm of a finger's skin into the handle (flesh gives a little round a grip)
 const WRIST_MAX := 110.0    # degrees the hand may turn about the forearm (the forearm's own range is about 85 each way)
+## The legs and the back (the free's follow-through: "the shin looks very odd, the body seems to break"):
+const FOLD_MIN := 25.0     # degrees the elbow's inside angle stays open (a forearm can't lie on its upper arm)
+const TORSO_R := 0.11       # m: the chest's half-depth about the spine (a forearm closer is in it)
+const FOREARM_IN := 30.0    # mm of a forearm's middle inside that (flesh against flesh)
+const KNEE_BACK := 5.0      # degrees a knee may go past straight (hyperextended)
+const KNEE_SIDE := 30.0     # degrees a knee may turn off its hinge (bent sideways, or the shin wrung about its length)
+const ANKLE_DOWN := 60.0    # degrees a foot may point down from its shin (plantar flexion about 50; up on the toes at
+                            # the end of a free's swing, measured with the foot's turn, 57)
+const ANKLE_UP := 35.0      # degrees it may tip up (dorsiflexion about 20; a lunge's knee over the toes, 33)
+const SPINE_BACK := 30.0    # degrees the chest may lean back from the hips (the lumbar and thoracic spine's extension)
+const SPINE_SIDE := 35.0    # degrees it may lean to a side
+const SPINE_TWIST := 60.0   # degrees it may turn about the spine from the hips
+const NECK_BACK := 60.0     # degrees the head may tip back from the chest
 
 var worst := []             # [deg, kind, who, action, mode, time]
 var counts := {}
@@ -141,6 +154,7 @@ func _check(pl: Player, link: FoundationLink) -> void:
 		# The motion capture's legs, standing or jogging: a foot near the ground (a sprint's flight and a jump have
 		# both well up), never both feet far up (a leg dragged sideways).
 		_note(((rig_low - sk.global_transform.origin.y) - rig_rest) * 100.0, "rig feet in the air (cm)", pl, mode, t, FEET_AIR)
+	_legs_back(pl, link, mode, t)
 	for side in ["Left", "Right"]:
 		# Bent backwards about the hinge (the forearm's own turn, after every modifier).
 		var axis := Vector3.DOWN if side == "Left" else Vector3.UP
@@ -156,6 +170,17 @@ func _check(pl: Player, link: FoundationLink) -> void:
 		var e := sk.get_bone_global_pose(fi).origin
 		var w := sk.get_bone_global_pose(sk.find_bone(side + "Hand")).origin
 		_note(_twist(chest, s, e, w), "rig %s elbow turned" % side, pl, mode, t, TWIST_MAX)
+		# Folded flat (the owner's free: the forearm along the upper arm, the elbow gone) and into the chest.
+		_note(FOLD_MIN - (180.0 - rad_to_deg((e - s).angle_to(w - e))), "rig %s elbow folded flat" % side, pl, mode, t, 0.0)
+		var hips := sk.get_bone_global_pose(sk.find_bone("Hips")).origin
+		var neck := sk.get_bone_global_pose(sk.find_bone("Neck")).origin
+		var into := 0.0
+		for k in [0.35, 0.65]:
+			var q := e.lerp(w, k)
+			var ab := neck - hips
+			var tt := clampf((q - hips).dot(ab) / ab.length_squared(), 0.0, 1.0)
+			into = maxf(into, (TORSO_R - q.distance_to(hips + ab * tt)) * 1000.0)
+		_note(into, "rig %s forearm in the chest (mm)" % side, pl, mode, t, FOREARM_IN)
 		# The game's own arm.
 		var tk := link.toon.skeleton
 		var c := "l" if side == "Left" else "r"
@@ -183,9 +208,56 @@ func _check(pl: Player, link: FoundationLink) -> void:
 		var gt: Quaternion = WsgRig.swing_twist(tf.inverse() * th, Vector3.DOWN)[1]
 		_note(absf(rad_to_deg(WsgRig.twist_angle(gt, Vector3.DOWN))), "game %s wrist turned" % side, pl, mode, t, WRIST_MAX)
 		# The fingers: none through the hurley's handle (either hand that is on it).
-		if link.stick != null and link.stick.is_visible_in_tree():
+		# (A body in full detail: a light one's fingers are as the motion has them, by design - far from the camera.)
+		if link.stick != null and link.stick.is_visible_in_tree() and link.body.full:
 			var into := _through(link, side) * 1000.0
 			_note(into, "rig %s finger in the handle (mm)" % side, pl, mode, t, FINGER_IN)
+
+
+## The knees and the back, on the rig and on the game's own body (which the game poses: its clips' faults show there
+## too, and are told apart): a knee past straight or bent sideways, a back bent or turned past what a back does, a
+## head thrown back.
+func _legs_back(pl: Player, link: FoundationLink, mode: String, t: float) -> void:
+	var sk := link.body.skeleton
+	var tk := link.toon.skeleton
+	var rig := {"hips": "Hips", "chest": "Spine2", "head": "Head", "thigh_l": "LeftUpLeg", "shin_l": "LeftLeg",
+		"foot_l": "LeftFoot", "thigh_r": "RightUpLeg", "shin_r": "RightLeg", "foot_r": "RightFoot"}
+	for which in ["rig", "game"]:
+		var k: Skeleton3D = sk if which == "rig" else tk
+		var bn := func(b: String) -> int: return k.find_bone(rig[b] if which == "rig" else b)
+		# A bone's turn from its rest (the rig's and the game's rests differ; both stand facing +Z, their left +X).
+		var turn := func(b: String) -> Quaternion:
+			var i: int = bn.call(b)
+			return k.get_bone_global_pose(i).basis.get_rotation_quaternion() * k.get_bone_global_rest(i).basis.get_rotation_quaternion().inverse()
+		var at := func(b: String) -> Vector3: return k.get_bone_global_pose(bn.call(b)).origin
+		for c in ["l", "r"]:
+			var side := "Left" if c == "l" else "Right"
+			# The knee's own turn on its thigh (both bodies: legs down at rest, a knee bends about its own x, the shin
+			# back): past straight is backwards; any turn off that hinge, sideways. And the foot on the shin: pointed
+			# down or tipped up past what an ankle does (the free's feet were turned down twice: 50 degrees).
+			var kq: Quaternion = k.get_bone_pose_rotation(bn.call("shin_" + c))
+			var st: Array = WsgRig.swing_twist(kq, Vector3.RIGHT)
+			var hinge := rad_to_deg(WsgRig.twist_angle(st[1], Vector3.RIGHT))
+			_note(-hinge, "%s %s knee backwards" % [which, side], pl, mode, t, KNEE_BACK)
+			_note(rad_to_deg((st[0] as Quaternion).get_angle()), "%s %s knee sideways" % [which, side], pl, mode, t, KNEE_SIDE)
+			if which == "rig" and mode != "move":
+				var fe := k.get_bone_pose_rotation(bn.call("foot_" + c)).get_euler(EULER_ORDER_YXZ) * (180.0 / PI)
+				_note(fe.x, "rig %s ankle pointed" % side, pl, mode, t, ANKLE_DOWN)
+				_note(-fe.x, "rig %s ankle tipped up" % side, pl, mode, t, ANKLE_UP)
+		# (The back, the head and the ankles: in the game's own moves. The motion capture is people moving.)
+		if which == "rig" and mode == "move":
+			continue
+		var hq: Quaternion = turn.call("hips")
+		var cq: Quaternion = turn.call("chest")
+		var rel := hq.inverse() * cq
+		var up := rel * Vector3.UP
+		# (+X about: up goes toward +Z, forward; so back is the negative.)
+		_note(-rad_to_deg(atan2(up.z, up.y)), "%s spine back" % which, pl, mode, t, SPINE_BACK)
+		_note(absf(rad_to_deg(atan2(up.x, up.y))), "%s spine sideways" % which, pl, mode, t, SPINE_SIDE)
+		_note(absf(rad_to_deg(WsgRig.twist_angle(WsgRig.swing_twist(rel, Vector3.UP)[1], Vector3.UP))), "%s spine turned" % which, pl, mode, t, SPINE_TWIST)
+		var nq := cq.inverse() * (turn.call("head") as Quaternion)
+		var hu := nq * Vector3.UP
+		_note(-rad_to_deg(atan2(hu.z, hu.y)), "%s head back" % which, pl, mode, t, NECK_BACK)
 
 
 ## How far (m) the deepest finger of a hand goes into the hurley's handle, skin into wood (0: none; off it: 0).
@@ -256,6 +328,8 @@ static func _twist(chest: Quaternion, s: Vector3, e: Vector3, w: Vector3) -> flo
 
 
 func _note(deg: float, kind: String, pl: Player, mode: String, t: float, limit: float) -> void:
+	if OS.has_environment("AUDIT_TRACE") and pl.action == OS.get_environment("AUDIT_TRACE") and pl.role == "" and (kind.contains("knee") or kind.contains("spine") or kind.contains("head")):
+		print("TRACE %.2f %-26s %6.1f" % [pl.action_t, kind, deg])
 	if deg > limit:
 		counts[kind] = int(counts.get(kind, 0)) + 1
 	worst.append([deg, kind, _who(pl), pl.action if pl.action != "" else ("carry" if pl.ball_stick or pl.ball_hand else "run"), mode, t])
@@ -286,6 +360,26 @@ func _limit_of(kind: String) -> float:
 		return FEET_AIR
 	if kind.contains("feet"):
 		return FEET_OFF
+	if kind.contains("folded"):
+		return 0.0
+	if kind.contains("forearm in"):
+		return FOREARM_IN
+	if kind.contains("knee backwards"):
+		return KNEE_BACK
+	if kind.contains("knee sideways"):
+		return KNEE_SIDE
+	if kind.contains("ankle pointed"):
+		return ANKLE_DOWN
+	if kind.contains("ankle tipped"):
+		return ANKLE_UP
+	if kind.contains("spine back"):
+		return SPINE_BACK
+	if kind.contains("spine sideways"):
+		return SPINE_SIDE
+	if kind.contains("spine turned"):
+		return SPINE_TWIST
+	if kind.contains("head back"):
+		return NECK_BACK
 	return TWIST_MAX
 
 

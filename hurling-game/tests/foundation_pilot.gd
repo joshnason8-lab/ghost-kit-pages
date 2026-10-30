@@ -3,7 +3,7 @@ extends Node3D
 ## foundation (WSG_OFF=1: as the game is today), for the before / after / side-by-side videos.
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 --write-movie out.avi res://tests/foundation_pilot.tscn -- <part>
 ## part: "run" (a hurler starting, running, cutting, stopping, running backwards), "crowd" (a close-up of the
-## crowd reacting to a score), "official" (an umpire signalling a point).
+## crowd reacting to a score), "official" (an umpire signalling a point), "feet" (the front rows' feet, close).
 
 const PATH := [
 	[1.2, Vector3(0, 0, 0), "standing"],
@@ -112,6 +112,13 @@ func _process(delta: float) -> void:
 			label.text = "%s     the crowd: %s" % [tag, what]
 			cam.look_at_from_position(Vector3(-28.0 + t * 0.4, 6.0, -Pitch.HALF_W + 6.0), Vector3(-34.0 + t * 0.4, 5.0, -Pitch.HALF_W - 14.0))
 			if t > 14.0:
+				get_tree().quit()
+		"feet":
+			# The front rows' feet, close (the owner saw toes pointing at the sky): seated, then up for a score.
+			Crowd.set_excite(1.0 if t > 2.0 else 0.0)
+			label.text = "%s     the crowd's feet" % tag
+			cam.look_at_from_position(Vector3(-6.0, 2.2, -Pitch.HALF_W - 3.0), Vector3(-8.5, 1.4, -Pitch.HALF_W - 9.0))
+			if t > 4.0:
 				get_tree().quit()
 		"seats":
 			# Close on the far stand's seats: the fans sitting, up for a score, and down again.

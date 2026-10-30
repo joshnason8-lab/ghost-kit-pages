@@ -107,8 +107,7 @@ var _hold_still := 0.0
 var _hype := 0.0             # the crowd's sense of a score coming, 0..1 (_crowd_anticipation)
 var _cheer_until := 0.0      # the crowd's cheer for a score runs till then
 var _fps_hist: Array = []    # recent frame times (ms) for the dev overlay and the auto graphics level
-var _early_frames := 0
-var _early_slow := 0
+var _auto_gfx := WsgAutoTier.new()
 
 
 func _ready() -> void:
@@ -603,17 +602,33 @@ func _frame_stats(delta: float) -> void:
 	_fps_hist.append(delta * 1000.0)
 	if _fps_hist.size() > 240:
 		_fps_hist.pop_front()
-	# The auto graphics level: if the first seconds of play run under about 36 frames a second, drop a level.
-	if phase in [P.LIVE, P.THROW_IN] and bool(Game.settings.get("auto_gfx", true)) and not attract and _early_frames < 600:
-		_early_frames += 1
-		if delta > 1.0 / 36.0:
-			_early_slow += 1
-		if _early_frames == 600 and _early_slow > 300 and int(Game.settings.graphics) > Game.GFX_LOW:
-			Game.settings.graphics = int(Game.settings.graphics) - 1
-			Game.save_settings()
-			Game.apply_graphics(get_viewport())
-			ToonBody.material(int(Game.settings.graphics) > Game.GFX_LOW)
-			hud.toast(tr("GFX_LOWERED"))
+	# The auto graphics level (WsgAutoTier): within a few seconds of sustained stutter in play - slow on average, or
+	# hitching - a level down, applied at once; again later if it still stutters. (It watched only the first ten
+	# seconds of play and only the average, and lowered only the picture's resolution: the owner's High stuttered on.)
+	if phase in [P.LIVE, P.THROW_IN] and bool(Game.settings.get("auto_gfx", true)) and not attract and not (replay and replay.playing):
+		if _auto_gfx.feed(delta) and int(Game.settings.graphics) > Game.GFX_LOW:
+			lower_graphics()
+
+
+## A graphics level down, now, mid-match: the setting (kept), the picture, the stadium's shadows, sky, crowd and flags,
+## the players' cel material; a word on the screen.
+func lower_graphics() -> void:
+	print("auto graphics: %d -> %d (%.0f frames a second, %d hitches)" % [int(Game.settings.graphics), int(Game.settings.graphics) - 1,
+		_auto_gfx.last[0], _auto_gfx.last[1]])
+	Game.settings.graphics = int(Game.settings.graphics) - 1
+	Game.save_settings()
+	Game.apply_graphics(get_viewport())
+	ToonBody.material(int(Game.settings.graphics) > Game.GFX_LOW)
+	stadium.apply_graphics(Stadium.CROWD_FOCUS)
+	# The men's shadows on the grass: their own on Medium (High on Vulkan had the sun's, now off), none on Low.
+	if shadows and int(Game.settings.graphics) == Game.GFX_LOW:
+		shadows.visible = false
+	elif shadows == null and int(Game.settings.graphics) > Game.GFX_LOW:
+		shadows = PlayerShadows.new(self)
+		add_child(shadows)
+	_detail_t = 0.0      # (the bodies in full detail ranked again for the new level)
+	_auto_gfx.reset()
+	hud.toast(tr("GFX_LOWERED"))
 
 
 func frame_percentiles() -> Array:
@@ -692,7 +707,9 @@ func _move_all(dt: float) -> void:
 	if view == null:
 		view = cam.camera
 	var camp: Vector3 = view.global_position
-	var low := int(Game.settings.graphics) == Game.GFX_LOW
+	# Posed every frame within the first distance, every second frame within the second, else every third (the
+	# lower the graphics, the nearer: the phone's CPU is what Low saves).
+	var near: Array = [[30.0, 55.0], [45.0, 75.0], [60.0, 95.0]][clampi(int(Game.settings.graphics), 0, 2)]
 	for pl in all_players() + officials.people:
 		var p: Player = pl
 		if not p.visible:
@@ -702,7 +719,7 @@ func _move_all(dt: float) -> void:
 			_out_of_goals(p)
 		var d := p.global_position.distance_to(camp)
 		p.visible_on_screen = view.is_position_in_frustum(p.global_position + Vector3(0, 1, 0)) or d < 12.0
-		p.set_pose_rate(1 if d < 60.0 else (2 if d < 95.0 or not low else 3))
+		p.set_pose_rate(1 if d < near[0] else (2 if d < near[1] else 3))
 		p.animate(now)
 	for g in _leaving.duplicate():
 		# The man taken off walks to the dugout and sits down with the substitutes.

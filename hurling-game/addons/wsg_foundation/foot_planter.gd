@@ -179,8 +179,12 @@ func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
 	var x := (a * a - b * b + d * d) / (2.0 * d)
 	var h := sqrt(maxf(0.0, a * a - x * x))
 	var pole := (knee - hip) - dir * (knee - hip).dot(dir)
-	if pole.length() < 0.0001:
-		pole = th.basis * Vector3(0, 0, 1)
+	# Forward of the thigh, the way a knee bends: a knee that was a hair past straight (a standing clip's locked
+	# knees) was bent on the wrong side, backwards, as the foot was held nearer (the officials stood so, 29 degrees).
+	var fwd := th.basis * Vector3(0, 0, 1)
+	fwd -= dir * fwd.dot(dir)
+	if pole.length() < 0.0001 or pole.dot(fwd) <= 0.0:
+		pole = fwd
 	var new_knee := hip + dir * x + pole.normalized() * h
 	var ankle := hip + dir * d
 	var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[0])).basis

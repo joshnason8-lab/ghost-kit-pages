@@ -102,6 +102,9 @@ func _init(p_data := {}, p_team := 0, look := {}, p_role := "") -> void:
 	role = p_role
 	num = int(p_data.get("num", 0))
 	pos_num = num
+	# (Far men are posed every second or third frame: each on his own frame, not all on the same one - a frame that
+	# posed them all at once was a hitch.)
+	_lod_skip = (num + p_team * 7 + p_role.length()) % 3
 	body = _new_body(look)
 	if p_data.has("speed"):
 		max_speed = speed_of(p_data)
@@ -578,8 +581,22 @@ func _free_pose(p: Dictionary, name: String, at: float) -> void:
 		_:
 			cp = HeroBody.clip_pose("Free_Strike", at)
 	var yaw := Quaternion(Vector3.UP, deg_to_rad(FREE_YAW))
+	# Standing tall while he waits and aims (the owner: "more upright before the swing"), settling into the video's
+	# address - hips hinged, eyes on the ball - in the strike's first 0.4 s: lift and set, then strike.
+	var up := 1.0 if name == "free_set" else 1.0 - smoothstep(0.0, 0.4, at)
+	if up > 0.0 and not OS.has_environment("NO_UP"):
+		cp = [_free_upright(cp[0], up), cp[1], cp[2]]
+	# (The follow-through only: from just before contact. The set-up, the lift and the toss are as the video has them.)
+	var c := free_moment("contact")
+	var lw := smoothstep(c - 0.15, c + 0.05, at) if name == "free_strike" else 0.0
 	for i in BONE_NAMES.size():
 		var q: Quaternion = cp[0][i] if i > 0 else yaw * cp[0][0]
+		# (The shins and feet throughout: the video's shins turn 40 degrees about their length and its ankles point
+		# down, tip up and turn past an ankle's range from the set on - the owner saw the skin wrung thin above the
+		# ankle, a "pinched shin".)
+		var wi := 1.0 if BONE_NAMES[i].begins_with("foot") or BONE_NAMES[i].begins_with("shin") else lw
+		if wi > 0.0 and FREE_LIMITS.has(BONE_NAMES[i]):
+			q = q.slerp(_limited(q, FREE_LIMITS[BONE_NAMES[i]]), wi)
 		p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(q, w)
 	var lift := float(cp[1])
 	if name == "free_set":
@@ -589,6 +606,41 @@ func _free_pose(p: Dictionary, name: String, at: float) -> void:
 	var off := yaw * Vector3(tr.x, 0.0, tr.y)
 	p.hips_side = lerpf(float(p.get("hips_side", 0.0)), off.x, w)
 	p.hips_fwd = lerpf(float(p.get("hips_fwd", 0.0)), off.z, w)
+
+
+## The free's stance made upright by `up` (0 as the clip has it, 1 standing tall): the hips' 30-degree hinge forward
+## taken out but 6 (the thighs turned back as much, so the legs stay as they stand), the head up from the ball and
+## level.
+static func _free_upright(turns: Array, up: float) -> Array:
+	var out := turns.duplicate()
+	var hinge := deg_to_rad(24.0) * up
+	out[0] = Quaternion(Vector3.RIGHT, -hinge) * (turns[0] as Quaternion)
+	for b in ["thigh_l", "thigh_r"]:
+		var i := BONE_NAMES.find(b)
+		out[i] = Quaternion(Vector3.RIGHT, hinge) * (turns[i] as Quaternion)
+	for b in ["neck", "head"]:
+		var i := BONE_NAMES.find(b)
+		out[i] = (turns[i] as Quaternion).slerp(Quaternion.IDENTITY, 0.6 * up)
+	return out
+
+
+## The free's follow-through within what a body does (Euler YXZ degrees, [min, max] about x, y, z). The clip is the
+## video's landmarks (tools/mocap/free_clip.py), which lose the legs and the head after the strike: a knee bent 35 degrees
+## sideways, the trailing boot spun half round and back between frames, the neck and the head each tipped back 20 and
+## the chest twisted 28 on the spine's 28 - the owner saw "the shin very odd, the body seems to break". A knee is a
+## hinge (its bend only); a foot turns a little from its shin; the head goes back with the neck about 30 in all.
+const FREE_LIMITS := {
+	"shin_l": [Vector3(0, -10, -8), Vector3(140, 10, 8)], "shin_r": [Vector3(0, -10, -8), Vector3(140, 10, 8)],
+	"foot_l": [Vector3(-25, -20, -15), Vector3(45, 20, 15)], "foot_r": [Vector3(-25, -20, -15), Vector3(45, 20, 15)],
+	"spine": [Vector3(-12, -22, -15), Vector3(40, 22, 15)], "chest": [Vector3(-12, -22, -15), Vector3(40, 22, 15)],
+	"neck": [Vector3(-6, -40, -20), Vector3(40, 40, 20)], "head": [Vector3(-6, -40, -20), Vector3(40, 40, 20)],
+}
+
+
+static func _limited(q: Quaternion, lim: Array) -> Quaternion:
+	var e := q.get_euler(EULER_ORDER_YXZ) * (180.0 / PI)
+	e = e.clamp(lim[0], lim[1])
+	return Basis.from_euler(e * (PI / 180.0), EULER_ORDER_YXZ).get_rotation_quaternion()
 
 
 ## The gaits, slowest first: [clip, the speed (m/s) at which it alone is shown]. Between two, both, blended.

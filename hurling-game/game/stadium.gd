@@ -186,9 +186,30 @@ func _flags() -> void:
 			# Spread along the end, a row or two up from the front.
 			var p: Vector3 = at[int((k + 0.5) / n * at.size())]
 			list.append([p, Crowd.facing_at(p), cols[0], cols[1]])
-	var flags := WsgFlags.new()
-	add_child(flags)
-	flags.build(list)
+	_flag_node = WsgFlags.new()
+	add_child(_flag_node)
+	_flag_node.build(list)
+
+
+var _flag_node: WsgFlags
+var _sun: DirectionalLight3D
+var _sky: Sky
+
+
+## The graphics level lowered during a match (Match: "lower the graphics by itself"): what a level builds, built again
+## for the new one now - the sun's shadows, the sky's quality, the crowd (the 3D fans for Medium and High, fewer of
+## them for Medium, cut-outs alone on Low), the flags (half on Medium, none on Low).
+func apply_graphics(focus: Vector3) -> void:
+	WsgFoundation.tier = clampi(int(Game.settings.graphics), WsgFoundation.LOW, WsgFoundation.HIGH)
+	if _sun:
+		_sun.shadow_enabled = Game.shadows_enabled()
+	if _sky:
+		_sky.process_mode = Sky.PROCESS_MODE_QUALITY if int(Game.settings.graphics) >= Game.GFX_HIGH else Sky.PROCESS_MODE_INCREMENTAL
+	build_crowd(focus, int(Game.settings.graphics))
+	if _flag_node:
+		_flag_node.queue_free()
+		_flag_node = null
+	_flags()
 
 
 ## Each spot's fan's shirt, decided once by the spot (the 3D fan there and the cut-out wear the same: a fan keeps it
@@ -348,7 +369,8 @@ func _dugouts(g: Geo) -> void:
 			g.box(Vector3(x, 1.1, back + 0.95), Vector3(0.12, 2.2, 1.9), shell)
 		g.box(Vector3(cx, 2.3, back + 1.0), Vector3(w + 0.3, 0.08, 2.2), roof)
 		for i in int(w / 1.2):
-			scenery.add("painted_bench_low", Vector3(minf(x0, x1) + 0.65 + i * 1.2, 0, Bench.SEAT_Z - 0.05), 0.0)
+			# (Its back to the dugout's wall: the model's back is at its +z.)
+			scenery.add("painted_bench_low", Vector3(minf(x0, x1) + 0.65 + i * 1.2, 0, Bench.SEAT_Z + 0.05), PI)
 
 
 ## Trees as Irish grounds have them round the field: oak and the darker broadleaves (ash, sycamore), cut-outs of
@@ -850,6 +872,8 @@ func _environment() -> void:
 	we.environment = env
 	add_child(we)
 	add_child(sun)
+	_sun = sun
+	_sky = sky
 	Crowd.set_light({"day": 1.0, "dusk": 0.72, "night": 0.75}[time])
 	WsgCrowd3D.set_sun(to_sun)
 

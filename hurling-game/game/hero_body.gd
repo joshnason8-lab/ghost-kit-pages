@@ -228,11 +228,17 @@ func _dress() -> void:
 
 
 func _material() -> ShaderMaterial:
+	return kit_material(look, _rest)
+
+
+## The kit's material for a look (its colours and design), the design placed from a body's rest (chest and spine).
+## The officials on the foundation wear it too, on the hurlers' model (FoundationLink).
+static func kit_material(look: Dictionary, _rest: Dictionary) -> ShaderMaterial:
 	var hd := int(Game.settings.graphics) > Game.GFX_LOW
 	var ultra := Ultra.active()
 	var lit := Ultra.lit()
-	var key := "%s|%s|%s|%s|%s|%d|%s|%s|%s" % [look.get("jersey"), look.get("trim"), look.get("shorts"), look.get("socks"),
-		look.get("skin"), int(look.get("design", 0)), hd, ultra, lit]
+	var key := "%s|%s|%s|%s|%s|%d|%s|%s|%s|%s" % [look.get("jersey"), look.get("trim"), look.get("shorts"), look.get("socks"),
+		look.get("skin"), int(look.get("design", 0)), hd, ultra, lit, look.get("plain", false)]
 	if _mats.has(key):
 		return _mats[key]
 	if _shader == null:
@@ -263,6 +269,7 @@ func _material() -> ShaderMaterial:
 	mat.set_shader_parameter("socks", _v(look.get("socks", jersey)))
 	mat.set_shader_parameter("skin", _v(look.get("skin", Color("e8bc9a"))))
 	mat.set_shader_parameter("design", int(look.get("design", 0)))
+	mat.set_shader_parameter("plain", 1.0 if look.get("plain", false) else 0.0)
 	var ref: Dictionary = data().ref
 	for k in ["jersey", "trim", "shorts", "skin"]:
 		var c: Array = ref[k]
@@ -335,6 +342,7 @@ uniform vec3 ref_trim;
 uniform vec3 ref_shorts;
 uniform vec3 ref_skin;
 uniform int design = 0;
+uniform float plain = 0.0;
 uniform float chest_y = 1.3;
 uniform float spine_y = 1.1;
 uniform vec3 light_dir = vec3(0.35, 0.85, 0.4);
@@ -386,6 +394,8 @@ void fragment() {
 	}
 	vec3 c = t;
 	c = mix(c, shirt, m.r);
+	// An official's plain shirt: the hurlers' number and crest (printed in the texture, not the kit mask) under it.
+	if (plain > 0.5 && leg < 0.5 && rp.y > 1.02 && rp.y < 1.5) { c = mix(shirt, c, m.a); }
 	c = mix(c, trim, m.g);
 	c = mix(c, shorts, m.b);
 	c = mix(c, paint(t, skin, ref_skin), m.a);

@@ -49,18 +49,28 @@ func _ready() -> void:
 	var prefix := "hero"
 	if toon is PersonBody:
 		prefix = (toon as PersonBody).who
-		if ResourceLoader.exists(DIR + prefix + "_hd_rig.json"):
+		if ResourceLoader.exists(DIR + prefix + "_body_hd_rig.json"):
+			# The hurlers' own model in the officials' kit, with the official's head (tools/player/official_body.gd):
+			# the owner found the officials' own models' upper bodies wrong ("still look awful").
+			prefix += "_body_hd"
+		elif ResourceLoader.exists(DIR + prefix + "_hd_rig.json"):
 			prefix += "_hd"     # the HD pack's remake of the official, cut for the rig, with its own normal map
 	elif ResourceLoader.exists(DIR + "hero_hd_rig.json"):
 		prefix = "hero_hd"      # the HD model's own cuts, its sculpt baked into a normal map (foundation tools/blender)
 	var lod := 1 if int(Game.settings.graphics) == Game.GFX_LOW else 0
 	body = WsgBody.new(WsgBody.load_character(DIR, prefix), null, lod)
 	add_child(body)
+	body.set_manual(true)
 	body.visible = false        # till its first pose (a frame of the rig's T-pose with the hurley otherwise)
 	body.scale = toon.scale
 	body.mesh_instance.material_override = toon.mesh_instance.material_override
 	if prefix == "hero_hd":
 		body.mesh_instance.material_override = _hd_material(toon.mesh_instance.material_override)
+	elif prefix.ends_with("_body_hd"):
+		# The body in the official's colours (the hurlers' kit material), the head with its own texture.
+		body.mesh_instance.material_override = null
+		body.mesh_instance.set_surface_override_material(0, _hd_material(HeroBody.kit_material(_official_kit(), toon._rest)))
+		body.mesh_instance.set_surface_override_material(1, _official_material((toon as PersonBody).who + "_hd"))
 	elif prefix.ends_with("_hd"):
 		body.mesh_instance.material_override = _official_material(prefix)
 	body.mesh_instance.cast_shadow = toon.mesh_instance.cast_shadow
@@ -74,6 +84,11 @@ func _ready() -> void:
 	legacy.arms = reader
 	if toon is HeroBody:
 		reader.held = {"Right": true}      # the hurley: its turn is the game's, exactly
+		# HeroBody turns each foot down (foot_pitch: its own model was made with the toes up); the rig's model stands
+		# flat already (bake_character), so in the game's own moves - a free's set and strike - the feet were turned
+		# down twice, pointing at the grass (the owner: "the shin looks very odd" at the end of a free's swing).
+		reader.undo["foot_l"] = Quaternion(Vector3.RIGHT, deg_to_rad(HeroBody.foot_pitch))
+		reader.undo["foot_r"] = Quaternion(Vector3.RIGHT, deg_to_rad(HeroBody.foot_pitch))
 	if toon is PersonBody:
 		# PersonBody's own fixes for the Meshy officials (arm twists, feet turned down), not wanted on the rig.
 		var pb := toon as PersonBody
@@ -95,8 +110,7 @@ func _ready() -> void:
 		stick.mesh = s.mesh
 		stick.material_override = s.material_override
 		stick.cast_shadow = s.cast_shadow
-		stick.top_level = true
-		add_child(stick)
+		body.add_child(stick)     # (moves with the body between the frames it is posed)
 		body.posed.connect(_place_stick)
 		# Where the handle runs through the fist, as drawn (the fingers close on it there).
 		var rest_hand := toon.skeleton.get_bone_global_rest(toon.bone("hand_r")).origin
@@ -108,6 +122,19 @@ func _ready() -> void:
 
 
 static var _hd_mats := {}
+
+
+## An official's kit on the hurlers' model: the referee and the linesmen in black, the umpires in white, the trim the
+## shirt's own colour (the hurlers' number and the stripes on the shorts are trim: an official has neither); black
+## shorts and socks; the skin of their own heads.
+func _official_kit() -> Dictionary:
+	var jersey: Color = toon.look.get("jersey", Color("1a1a1a"))
+	return {"jersey": jersey, "trim": jersey, "shorts": Color("1c1c1c"), "socks": Color("1c1c1c"), "skin": OFFICIAL_SKIN,
+		"design": 0, "plain": true}
+
+
+## The officials' heads' skin (their textures' own, measured at the neck), for the body's arms and legs to match.
+const OFFICIAL_SKIN := Color("e0ad92")
 
 
 ## The game's kit material for the HD model's cuts: its textures (the HD pack's, else the same scaled for the game),
@@ -204,10 +231,14 @@ func update(now: float) -> void:
 	if player.role == "":
 		_two_hands()
 		_grips()
+	else:
+		_flag_grip()
+	# The skeleton's modifiers now, once (WsgBody.set_manual): a far player posed every second or third frame pays
+	# for them only then, and shows what they made of him in between.
+	body.advance(dt)
 
 
-## The hands closed on the hurley (and the left as _two_hands left it), every frame: a far player is posed every
-## second or third frame, and between them the motion capture's open hands came back.
+## The hands closed on the hurley (and the left as _two_hands left it), each time he is posed.
 var _left_grip := [0.016, 1.0, []]
 var _on_handle := false
 var mode_since := 0.0          # when the mode last changed (the game's own move began or ended)
@@ -216,9 +247,51 @@ var _hold_w := 0.0
 var _dt := 1.0 / 60.0
 
 
-func _process(_delta: float) -> void:
-	if body != null and player.role == "":
-		_grips()
+## An official's flag (or card) in this body's right hand: the pole across the palm, the fingers closed round it, the
+## pole out of the top of the fist (the thumb's side) and its cloth out along the arm. The game's own flag (on its
+## unseen body's hand) is hidden; this one is placed when the skeleton has its final pose.
+const POLE_R := 0.012
+var _flag: MeshInstance3D
+
+
+func _flag_grip() -> void:
+	var f: MeshInstance3D = player._flag
+	var on := f != null and f.visible
+	if on and _flag == null:
+		_flag = MeshInstance3D.new()
+		_flag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		body.add_child(_flag)
+		body.posed.connect(_place_flag)
+	if f != null:
+		player._flag_att.visible = false
+	if _flag == null:
+		return
+	_flag.visible = on
+	if on:
+		_flag.mesh = f.mesh
+		_flag.material_override = f.material_override
+		_flag.scale = f.scale
+		body.grip("Right", POLE_R, 1.0, [WsgGrip.clear_axis_point(body.joints, "Right", POLE_R), FLAG_POLE])
+	else:
+		body.grip("Right", 0.016, 0.0)
+
+
+## The flag's pole (its own -Y, from its butt) across the palm as a hammer's handle lies, from the heel of the hand out
+## past the thumb and on along the arm's line (the right hand's rest: +Z the thumb's side, -X the fingers'), a little of
+## it out of the fist's other side; its cloth (+X) hanging from it on the palm's side (rest -Y). Straight across the
+## palm, the pole stood out sideways from a raised arm instead of on up from it.
+const FLAG_POLE := Vector3(-0.82, 0.0, 0.57)
+static var FLAG_IN_HAND := Basis(Vector3(0, -1, 0), -FLAG_POLE, Vector3(0, -1, 0).cross(-FLAG_POLE))
+const FLAG_BUTT := 0.04
+
+
+func _place_flag() -> void:
+	if _flag == null or not _flag.visible:
+		return
+	var hand := body.bone_world("RightHand")
+	var c := WsgGrip.clear_axis_point(body.joints, "Right", POLE_R) - (body.joints["RightHand"] as Vector3) - FLAG_POLE * FLAG_BUTT
+	var s := body.global_transform.basis.get_scale()
+	_flag.global_transform = Transform3D(hand.basis.orthonormalized() * FLAG_IN_HAND * Basis.from_scale(_flag.scale * s), hand * c)
 
 
 func _grips() -> void:
