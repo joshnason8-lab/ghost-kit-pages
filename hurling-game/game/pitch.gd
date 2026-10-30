@@ -187,6 +187,10 @@ uniform float light = 1.0;
 uniform vec3 sun = vec3(0.4, 0.8, 0.45);
 uniform float half_l = 70.0;
 uniform float half_w = 42.5;
+// The stands' baked shadow (Stadium._baked_light: the light as a share of open ground's), seen from above.
+uniform sampler2D shade : filter_linear, repeat_disable;
+uniform vec4 shade_rect = vec4(-90.0, -57.5, 90.0, 57.5);
+uniform bool shade_on = false;
 varying vec3 wp;
 float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 // A scan's mean brightness: its smallest mip level (1 x 1).
@@ -218,6 +222,9 @@ void fragment() {
 		c = mix(c, worn, smoothstep(9.0, 2.0, goal) * 0.3);
 	}
 	c = mix(c, c * 0.8, smoothstep(half_l + 2.0, half_l + 9.0, abs(wp.x)));
+	if (shade_on) {
+		c *= texture(shade, (wp.xz - shade_rect.xy) / (shade_rect.zw - shade_rect.xy)).rgb;
+	}
 	ALBEDO = compat_to_scene(c * light);
 }
 """

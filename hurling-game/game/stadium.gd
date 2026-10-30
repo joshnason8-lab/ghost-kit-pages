@@ -28,6 +28,8 @@ var home_colours: Array = []
 var away_colours: Array = []    # with them, the crowd is both counties' (a championship day)
 var to_sun := Vector3(0.3, 0.8, 0.5).normalized()   # where the light comes from (PlayerShadows reads it)
 var net: GoalNet               # the goals' nets (a sliotar into one ripples it)
+var structure: MeshInstance3D  # the stands, walls and roofs, built
+var baked := false             # drawn under its baked light (Low and Medium: assets/env/light)
 
 const H := Pitch.HALF_L
 const W := Pitch.HALF_W
@@ -58,10 +60,11 @@ func _ready() -> void:
 			_stadium(g, spots)
 		_:
 			_county(g, spots)
-	var structure := g.commit(Geo.ultra_material() if Ultra.active() else Geo.material(true))
+	structure = g.commit(Geo.ultra_material() if Ultra.active() else Geo.material(true))
 	if Ultra.lit():
 		structure.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # the stands' shadow on the field
 	add_child(structure)
+	_baked_light()
 	add_child(fields.commit(field_material(time)))
 	scenery.commit()
 	add_child(scenery)
@@ -80,6 +83,32 @@ func _ready() -> void:
 	build_crowd(CROWD_FOCUS, int(Game.settings.graphics))
 	add_child(crowd)
 	_environment()
+
+
+## Low and Medium (and every tier on GL Compatibility but High's): the light baked in Cycles (the shared
+## foundation's WsgLightBake: tools/env/bake_light.sh) - the sun and sky on the stands, the roofs' shadow on the
+## seats, the corners darker, the stands' shadow on the grass - for one texture read, where the stands were lit per
+## vertex without shadows. High draws the scene's own light and shadows.
+const LIGHT_DIR := "res://assets/env/light/"
+
+
+func _baked_light() -> void:
+	var grass_m := Pitch.grass_material(time)
+	grass_m.set_shader_parameter("shade_on", false)
+	baked = false
+	if Ultra.lit() or OS.has_environment("WSG_NO_BAKE"):
+		return
+	var lm := WsgLightBake.load_for(structure.mesh as ArrayMesh, LIGHT_DIR + "%s_%s" % [kind, time])
+	if lm.is_empty():
+		return
+	baked = true
+	structure.mesh = lm.mesh
+	structure.material_override = WsgLightBake.material(lm, Ultra.renderer_ready())
+	if lm.ground != null:
+		var r: Array = lm.ground_rect
+		grass_m.set_shader_parameter("shade", lm.ground)
+		grass_m.set_shader_parameter("shade_rect", Vector4(r[0], r[1], r[2], r[3]))
+		grass_m.set_shader_parameter("shade_on", true)
 
 
 ## The crowd: on Medium and High the 3D fans take the spots nearest focus (as many as quality's budget: 1 Medium,
