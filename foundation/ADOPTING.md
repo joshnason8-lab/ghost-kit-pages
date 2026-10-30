@@ -97,9 +97,16 @@ and the grip radius (`body.grip("Right", r)`).
 **A hand that holds something** (a hurley, a stick, a ball) must be where your body has it, not just turned like it:
 the mocap's chest leans and twists differently from yours, and turns copied onto it moved Hurling's hurley hand by
 up to 40 cm and 130 degrees. Put that arm in body space each frame:
-`legacy.body_pose = reader.body_space(["RightShoulder", "RightArm", "RightForeArm", "RightHand"])`. And place anything
+`legacy.body_pose = reader.body_space(["RightShoulder", "RightArm", "RightForeArm", "RightHand"])`, with
+`legacy.arms = reader` so that arm is made anatomical under the mocap's chest. And place anything
 drawn in the hand when the skeleton has its final pose (`body.posed.connect(...)`): during the frame Godot reports
 bones without their modifiers (the layer, the grip).
+
+Your arms are rebuilt from where you put the hands (`WsgLegacyPose.sound_arm`): 17-bone poses often bend an elbow
+backwards or turn the upper arm so the elbow points where no elbow can (Hurling's hurley arm does, most of the time),
+which a toon mesh hides but the rig's hinge cannot follow. The hand stays where yours is; the elbow bends forward and
+points at most 95 degrees from the way an arm in that place bends. The pilot's `tests/elbow_audit.gd` plays a whole
+match and fails on any elbow bent backwards, pointing the wrong way, or straightened against your pose: copy it.
 
 Your own fixes for your old mesh (Hurling's officials had arm twists and a foot pitch) must be taken back out:
 `reader.undo` (see the pilot). Footstep sounds: `link.loco.step.connect(func(foot): ...)`.
@@ -116,8 +123,12 @@ if int(Game.settings.graphics) > Game.GFX_LOW and WsgCrowd3D.available():
 	crowd3d.set_teams(home_colour, away_colour)
 	# your billboards: every spot not in used
 ```
-- `seated`: true, false, or one bool per spot (on a seat: they sit and get up; on a terrace: they stand). A spot is
-  the fan's feet; a seated fan's hips go 0.34 m behind it, over the seat (a step 0.42 m above the feet is right).
+- `seated`: true, false, one bool per spot, or one number per spot: the seat's height over the feet (m; 0 for a
+  terrace, where they stand; true means 0.44). A spot is the fan's feet; each seated fan is lifted so the seat of
+  their trousers is on the seat, never in it. Give the stand seats to sit on (Hurling: a bench 0.40 m high and
+  0.35 m deep along the back of each step).
+- `room` (after `focus`): how far behind the feet the step behind (or a back wall) rises above the seat, one number
+  or one per spot (INF: it does not). A fan who would sit back into it comes forward.
 - `focus`: where the camera mostly looks (the 3D fans go nearest it).
 - In your `Crowd.set_excite(k)`: also `WsgCrowd3D.set_excite(k)`; in `Crowd.set_light(k)`: `WsgCrowd3D.set_light(k)`.
 - Each frame: `WsgCrowd3D.set_tension(building_pressure)` (the keen ones get up before the score) and

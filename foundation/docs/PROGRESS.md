@@ -61,3 +61,23 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   failures with the link on. Next: videos -> MP4s (<20 MB), perf_probe numbers, push, FOUNDATION PILOT READY.
 - Push access to the private repo: add_repo "push" refused twice by the auto-mode classifier; not needed (videos via
   SendUserFile; data baked in CI).
+- [x] Owner's review of the pilot (relayed by the lead): "running looks good"; "the arm bending the wrong way a few
+  times"; "the crowd is still 'in' the seats"; does free-taking still look right.
+  - Elbows: the hinge limit was applied (no rig elbow ever past 3 deg backwards); the fault was Hurling's own poses.
+    Its 17-bone hurley arm is bent backwards or turned so the elbow points the wrong way most of the time (the toon
+    mesh hid it), the rig's hinge straightened what it could not follow, and the arm snapped straight and back
+    (99,000 body-frames in 3 match minutes straightened by over 30 deg, up to 66). WsgLegacyPose now rebuilds each
+    arm through the game's shoulder and hand (`sound_arm`): the elbow bent forward in its hinge, swivelled about the
+    shoulder-wrist line until it points within TURN_MAX (95 deg) of the way an arm in that place bends; the hand
+    exactly where the game has it (the hurley grip unchanged). WsgPoseLayer.arms re-applies it under the body's own
+    chest for body_pose arms. The pilot's tests/elbow_audit.tscn plays a whole match (runs, cuts, stops, swings,
+    catches, solos, frees, puck-outs, signals): PASS on two seeds (worst 96 deg turned, nothing backwards, nothing
+    straightened); `raw` (rebuilding off) FAILS. elbow_turn() is the shared measure.
+  - Seats: the fans had nothing to sit on - their seat 0.31-0.42 m off the step, the step behind 0.38-0.6 m high
+    and 0.44 m behind their feet - so the seat of their trousers was 0.2-0.3 m into it. bake_crowd now records each
+    fan's seat (height, how far back) from the vertices weighted to the hips and thighs (crowd.json "seat",
+    "seat_vertices"; data without it is measured off the VAT); WsgCrowd3D.place lifts each seated fan onto the seat
+    height the game gives (seated: a number a spot), brings forward one who would sit back into a taller step
+    (`room`), and draws sizes toward ones that fit. crowd_test.gd checks every seated frame of every fan on three seats:
+    nothing below the seat or in the step behind (the old placement must fail: 0.21-0.33 m in). The pilot's stands
+    have benches (0.40 m, 0.35 m deep) along the back of each step.

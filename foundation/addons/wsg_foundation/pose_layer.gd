@@ -16,6 +16,9 @@ var hips := Vector3.INF
 ## a hand that holds something must be where the game's body has it, not where its turns put it on a chest that
 ## leans and twists differently. Applied after `pose`, parents first (give them in that order).
 var body_pose := {}
+## Given (the WsgLegacyPose reading the game's body): an arm laid in body space is made anatomical under this body's
+## own chest (WsgLegacyPose.sound_arm), which turns differently from the game's.
+var arms: WsgLegacyPose
 
 var _target := 0.0
 var _rate := 0.0
@@ -62,13 +65,21 @@ func _process_modification_with_delta(delta: float) -> void:
 			continue
 		var q: Quaternion = pose[b]
 		sk.set_bone_pose_rotation(i, sk.get_bone_pose_rotation(i).slerp(q, w))
+	var targets := body_pose
 	for b in body_pose:
 		var i := sk.find_bone(b)
 		if i < 0:
 			continue
 		var par := sk.get_bone_parent(i)
 		var pq := sk.get_bone_global_pose(par).basis.get_rotation_quaternion() if par >= 0 else Quaternion.IDENTITY
-		var want: Quaternion = (pq.inverse() * (body_pose[b] as Quaternion)).normalized()
+		var side := "Left" if b.begins_with("Left") else "Right"
+		if arms != null and b == side + "Arm" and targets.has(side + "ForeArm"):
+			var chest := sk.get_bone_global_pose(sk.find_bone("Spine2")).basis.get_rotation_quaternion()
+			var r := arms.sound_arm(chest, side, targets[b], targets[side + "ForeArm"])
+			targets = targets.duplicate()
+			targets[b] = r[0]
+			targets[side + "ForeArm"] = r[1]
+		var want: Quaternion = (pq.inverse() * (targets[b] as Quaternion)).normalized()
 		sk.set_bone_pose_rotation(i, sk.get_bone_pose_rotation(i).slerp(want, w))
 	if hips != Vector3.INF:
 		var h := sk.find_bone("Hips")

@@ -1,6 +1,9 @@
 extends SceneTree
 ## The 3D crowd keeps to its budget, takes the spots nearest the action, and its authored motions keep the feet on
-## the ground and the hands together when clapping.
+## the ground and the hands together when clapping. Seated fans sit on their seats: every seated frame of every fan,
+## skinned as the crowd draws it, on a seat level with the step behind, one in front of a taller step, and a tall step
+## sat on - the seat of the trousers and the thighs never below the seat, nothing inside the step behind (and the
+## placement before this check, run the same way, must fail it).
 ##   godot --headless --path . -s tests/crowd_test.gd
 
 func _initialize() -> void:
@@ -59,7 +62,51 @@ func _initialize() -> void:
 			fails.append("%s: the feet are %.2f m off the ground" % [c, low])
 		if c == "sit_clap" and apart > 0.12:
 			fails.append("sit_clap: the hands do not meet (%.2f m apart)" % apart)
+	fails.append_array(_seats(true))
+	if _seats(false).is_empty():
+		fails.append("seats: the old placement (no lift, no room) passes the seat check: it checks nothing")
 	for f in fails:
 		printerr("FAIL: ", f)
 	print("CROWD TEST: ", "PASS" if fails.is_empty() else "FAIL (%d)" % fails.size())
 	quit(0 if fails.is_empty() else 1)
+
+
+## Seats: [seat over the feet, the step behind's height, how far behind the feet it rises] (m).
+const SEATS := [[0.44, 0.42, 0.44], [0.44, 0.6, 0.44], [0.6, 0.6, 0.47]]
+
+
+func _seats(fixed: bool) -> Array:
+	var fails := []
+	var md := WsgCrowd3D.meta()
+	var rows := WsgCrowd3D.seated_rows(md)
+	for fan in md.fans:
+		var img := (load(WsgCrowd3D.DIR + fan + "_pos.res") as Texture2D).get_image()
+		var nv := int(md.fans[fan].vertices)
+		var mask := WsgCrowd3D.seat_mask(fan)
+		if mask.is_empty():
+			fails.append("%s: crowd.json has no seat_vertices (bake it again with tools/bake_crowd.gd)" % fan)
+			continue
+		var worst_sunk := 0.0
+		var worst_in := 0.0
+		for spec in SEATS:
+			for h in [0.93, 1.07]:
+				var pl: Array = WsgCrowd3D.place(Vector3.ZERO, Vector3.BACK, h, fan, spec[0], spec[2]) if fixed else \
+					[Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * h), Vector3(0, 0, -WsgCrowd3D.FEET_FORWARD * h)), 0.0]
+				var xf: Transform3D = pl[0]
+				for r in rows:
+					for v in nv:
+						var c := img.get_pixel(v, r)
+						var m := Vector3(c.r, c.g, c.b)
+						var p := xf * (m + Vector3(0, pl[1], 0))
+						# The seat of the trousers and the thighs on the seat (not a foot tucked back under it).
+						if mask[v] == 1 and m.z < WsgCrowd3D.FEET_FORWARD - 0.1:
+							worst_sunk = maxf(worst_sunk, spec[0] - p.y)
+						# Nothing inside the step behind (behind its face, below its top).
+						if p.z < -spec[2] and p.y < spec[1]:
+							worst_in = maxf(worst_in, minf(spec[1] - p.y, -spec[2] - p.z))
+		print("%-5s seated%s: at worst %.3f m into the seat, %.3f m into the step behind" % [fan, "" if fixed else " (the old placement)", worst_sunk, worst_in])
+		if worst_sunk > 0.02:
+			fails.append("%s sinks %.2f m into the seat" % [fan, worst_sunk])
+		if worst_in > 0.02:
+			fails.append("%s sits %.2f m into the step behind" % [fan, worst_in])
+	return fails
