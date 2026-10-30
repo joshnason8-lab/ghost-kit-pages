@@ -93,3 +93,11 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     95 of the way an arm bends, wrists within 107 (the hurley hand; 95 the others), fingers 0.0 mm (right) and 3.4 mm
     (left) into the handle; PASS in all three. Found on the way: the game's arm poses are out of a forearm's range in
     its swings (its own wrists to 127 deg, elbows inverted to 179) - the rig makes them sound.
+- [x] Owner decision (via the lead): per-game profiles. `WsgFoundation` (foundation.gd): profile "premium"
+  (Hurling, Floorball, Netball: Vulkan, Medium default, High for flagships) or "budget" (Kabaddi, Kho Kho, Sepak
+  Takraw, Pok Ta Pok: GL Compatibility, Low default, Medium at most); starting_tier() from the phone (device_class:
+  Hurling's tested weak/flagship lists), allowed() caps the player's choice; guard_renderer()/boot_ok()/use_gl() and
+  block_vulkan() (the Vulkan blocklist hook, a crash at start sends the phone to GL Compatibility); crowd_budget()
+  (budget Medium: 150 3D fans; premium High trimmed to 700 + 1,300 = 2,000, about 510,000 triangles from 750,000);
+  rank_detail() + WsgBody.set_detail (budget: full detail on the 6 bodies nearest the camera). tests/profile_test.gd.
+  Perf probe for both profiles x both renderers: docs/BUDGET.md.

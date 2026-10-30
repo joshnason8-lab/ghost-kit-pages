@@ -21,7 +21,7 @@ func _initialize() -> void:
 		var crowd := WsgCrowd3D.new()
 		root.add_child(crowd)
 		var used := crowd.build(spots, facings, 1.0, 3, true, q, Vector3.ZERO)
-		var budget: Array = WsgCrowd3D.BUDGET[q]
+		var budget: Array = WsgFoundation.crowd_budget(q)
 		var tris := 0
 		var fans := 0
 		for m in crowd.meshes:

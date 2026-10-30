@@ -11,13 +11,45 @@ legacy pose and drive `WsgBody` directly; ask the foundation session.
 
 ## 0. What you get, and what stays
 
-| | Low | Medium | High |
-|---|---|---|---|
-| players and officials | the rig, the low mesh | the rig | the rig |
-| locomotion | mocap, feet planted | the same | the same |
-| crowd | your billboards (unchanged) | 3D fans near the action (≈1,200), billboards beyond | 3D fans (≈3,000), billboards beyond |
+Your game is made for one class of phone, and the foundation spends what that class can pay (`WsgFoundation`, step
+0.5 below):
+
+| | premium (Hurling, Floorball, Netball) | budget (Kabaddi, Kho Kho, Sepak Takraw, Pok Ta Pok) |
+|---|---|---|
+| renderer | Mobile (Vulkan), GL Compatibility as the fallback | GL Compatibility |
+| tiers | Medium by default, High for flagships, Low for weak phones | Low by default, Medium allowed (and a flagship's start) |
+| players and officials | the rig and mocap, every body in full detail (Low: the light mesh) | the rig and mocap; full detail (helpers, fingers, full mesh) on the 6 bodies nearest the camera, the light mesh and plain joints on the rest |
+| crowd, Low | your billboards (unchanged) | your billboards (unchanged) |
+| crowd, Medium | 3D fans near the action (400 full + 800 light), billboards beyond | 150 3D fans near the action, billboards beyond |
+| crowd, High | 3D fans (700 full + 1,300 light), billboards beyond | (no High) |
+| a close mode (a practice, a shoot-out) | 3,000 3D fans behind that goal (2,000 full) | 600 (400 full) |
 
 A build without the licensed data (a fork, a computer without access) is exactly your game as it is today.
+
+## 0.5 Your profile, your phones' starting tier, your renderer
+
+In your boot (an autoload's `_ready`, before anything is built):
+```gdscript
+WsgFoundation.profile = "budget"                    # or "premium"
+if settings.graphics < 0:                           # the first run: the player has not chosen
+	settings.graphics = WsgFoundation.starting_tier()   # the profile's default, one up on a flagship, one down on a weak phone
+settings.graphics = WsgFoundation.allowed(settings.graphics)   # a budget game never runs High
+```
+The player's own choice in Settings always wins (within what the profile allows). `WsgFoundation.device_class()` says
+which phones are weak (under 4.5 GB, or a Galaxy A0x/A1x-class GPU - Mali-G5x/G6x, Adreno 5xx and 61x, PowerVR:
+a Galaxy A16 is here) and which are flagships (6 GB and Adreno 640+, Mali-G710+, Immortalis, Xclipse); it is what
+Hurling learnt from its players' phones.
+
+A premium (Vulkan) game also, in project.godot: `rendering/rendering_device/fallback_to_opengl3=true` (a phone that
+cannot start Vulkan gets OpenGL) and `application/config/project_settings_override="user://renderer.cfg"`; and in the
+boot `WsgFoundation.guard_renderer()` - a phone on the blocklists, or whose last Vulkan start crashed before the home
+screen, starts on GL Compatibility from then on - with `WsgFoundation.boot_ok()` once the home screen is up. Block
+phones of your own: `WsgFoundation.block_vulkan("sm-s92")` (a model name: Kabaddi's Galaxy S24 crash) or a GPU name.
+(Hurling has had all this since 0.11: `Ultra.boot`; the foundation's is the same, for the other games.)
+
+A budget game draws on GL Compatibility from project.godot (`renderer/rendering_method="gl_compatibility"`, and
+`.mobile` the same) and every half second gives the foundation its bodies: `WsgFoundation.rank_detail(bodies,
+camera_position)` (the pilot's `match.gd` `_rank_detail`; a premium game may call it too, it keeps all in full).
 
 ## 1. Bring the addon in
 
@@ -142,7 +174,8 @@ if int(Game.settings.graphics) > Game.GFX_LOW and WsgCrowd3D.available():
 - `room` (after `focus`): how far behind the feet the step behind (or a back wall) rises above the seat, one number
   or one per spot (INF: it does not). A fan who would sit back into it comes forward.
 - `focus`: where the camera mostly looks (the 3D fans go nearest it). Build again when that changes: a close mode
-  at one goal (a practice, a shoot-out) builds with `quality` 3 (Close: 2,000 full figures) behind that goal.
+  at one goal (a practice, a shoot-out) builds with `quality` 3 (Close) behind that goal. How many fans each tier
+  draws is the profile's (`WsgFoundation.crowd_budget`).
 - In your `Crowd.set_excite(k)`: also `WsgCrowd3D.set_excite(k)`; in `Crowd.set_light(k)`: `WsgCrowd3D.set_light(k)`.
 - Each frame: `WsgCrowd3D.set_tension(building_pressure)` (the keen ones get up before the score) and
   `crowd3d.watch_ball(ball_position)`.
