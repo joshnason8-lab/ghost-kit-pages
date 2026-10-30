@@ -22,6 +22,7 @@ var stick: MeshInstance3D
 var _last := -1.0
 var _mode := ""
 var _upper := {}
+var _clear := {}
 var _line_r := []           # the hurley's handle in the right hand, at rest (the rig's joints' space): [point, direction]
 var _handle_toon := Vector3.ZERO   # the middle of the handle's grip tape (the game's body's rest space)
 ## The hurley's handle: its grip tape's radius (HeroBody._hurley).
@@ -48,6 +49,8 @@ func _ready() -> void:
 	var prefix := "hero"
 	if toon is PersonBody:
 		prefix = (toon as PersonBody).who
+		if ResourceLoader.exists(DIR + prefix + "_hd_rig.json"):
+			prefix += "_hd"     # the HD pack's remake of the official, cut for the rig, with its own normal map
 	elif ResourceLoader.exists(DIR + "hero_hd_rig.json"):
 		prefix = "hero_hd"      # the HD model's own cuts, its sculpt baked into a normal map (foundation tools/blender)
 	var lod := 1 if int(Game.settings.graphics) == Game.GFX_LOW else 0
@@ -58,6 +61,8 @@ func _ready() -> void:
 	body.mesh_instance.material_override = toon.mesh_instance.material_override
 	if prefix == "hero_hd":
 		body.mesh_instance.material_override = _hd_material(toon.mesh_instance.material_override)
+	elif prefix.ends_with("_hd"):
+		body.mesh_instance.material_override = _official_material(prefix)
 	body.mesh_instance.cast_shadow = toon.mesh_instance.cast_shadow
 	legacy = WsgPoseLayer.new()
 	legacy.name = "Legacy"
@@ -99,6 +104,7 @@ func _ready() -> void:
 		_handle_toon = rest_hand + (toon as HeroBody)._grip() + dir * 0.03
 		var cr: Quaternion = reader._corr["RightHand"].inverse()
 		_line_r = [(body.joints["RightHand"] as Vector3) + cr * (_handle_toon - rest_hand), cr * dir]
+		_clear = {"Left": ["RightHand", (_line_r[0] as Vector3) - (body.joints["RightHand"] as Vector3), _line_r[1], 0.12, HANDLE_R]}
 
 
 static var _hd_mats := {}
@@ -116,6 +122,25 @@ static func _hd_material(m: Material) -> Material:
 		hd.set_shader_parameter("nmap", load(DIR + "hero_hd_normal.png"))
 		hd.set_shader_parameter("nmap_k", 1.0)
 		_hd_mats[key] = hd
+	return _hd_mats[key]
+
+
+## An official's HD remake: lit by the scene on High (its normal and roughness maps), else cel-shaded as the game's
+## officials are, with its relief.
+static func _official_material(prefix: String) -> Material:
+	var lit := Ultra.lit()
+	var key := prefix + str(lit)
+	if not _hd_mats.has(key):
+		var m := ShaderMaterial.new()
+		m.shader = PersonBody._ultra_shader() if lit else PersonBody._shader()
+		m.set_shader_parameter("albedo", load(DIR + prefix + "_albedo.jpg"))
+		if lit:
+			m.set_shader_parameter("normal_map", load(DIR + prefix + "_normal.png"))
+			m.set_shader_parameter("rough", load(DIR + prefix + "_rough.jpg"))
+		else:
+			m.set_shader_parameter("nmap", load(DIR + prefix + "_normal.png"))
+			m.set_shader_parameter("nmap_k", 1.0)
+		_hd_mats[key] = m
 	return _hd_mats[key]
 
 
@@ -206,6 +231,8 @@ func _grips() -> void:
 func _two_hands() -> void:
 	legacy.hold = {}
 	_left_grip = [0.016, 1.0, []]
+	# (The free fist kept off the handle: a runner's swinging fist went through it.)
+	legacy.clear = _clear if stick.visible else {}
 	if _line_r.is_empty() or not stick.visible:
 		return
 	var tk := toon.skeleton

@@ -156,13 +156,26 @@ render_mode unshaded, cull_back;
 uniform sampler2D albedo : filter_linear_mipmap;
 uniform vec3 light_dir = vec3(0.35, 0.85, 0.4);
 uniform float shade = 0.72;
+// The model's relief (the HD model's own normal map on its cuts, the shared foundation): 0 none.
+uniform sampler2D nmap : hint_normal, filter_linear_mipmap;
+uniform float nmap_k = 0.0;
 varying vec3 wn;
-void vertex() { wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz); }
+varying vec3 wt;
+varying vec3 wb;
+void vertex() {
+	wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	wt = normalize((MODEL_MATRIX * vec4(TANGENT, 0.0)).xyz);
+	wb = normalize((MODEL_MATRIX * vec4(BINORMAL, 0.0)).xyz);
+}
 void fragment() {
 	vec3 c = texture(albedo, UV).rgb;
-	float d = dot(normalize(wn), normalize(light_dir));
+	vec2 nxy = texture(nmap, UV).rg * 2.0 - 1.0;
+	vec3 nt = vec3(nxy, sqrt(max(1.0 - dot(nxy, nxy), 0.0)));
+	vec3 n = normalize(mix(normalize(wn), normalize(wt * nt.x + wb * nt.y + wn * nt.z), nmap_k));
+	vec3 vn = normalize(mix(NORMAL, normalize(TANGENT * nt.x + BINORMAL * nt.y + NORMAL * nt.z), nmap_k));
+	float d = dot(n, normalize(light_dir));
 	float k = mix(shade, 1.0, smoothstep(-0.35, 0.3, d));
-	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0) * 0.18;
+	float rim = pow(1.0 - clamp(dot(vn, VIEW), 0.0, 1.0), 3.0) * 0.18;
 	ALBEDO = compat_to_scene(c * k + rim * 0.5);
 }
 """
