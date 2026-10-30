@@ -83,4 +83,18 @@ func read() -> Dictionary:
 		var par: String = b[1]
 		out[nm] = ((g[par] as Quaternion).inverse() * g[nm]).normalized() if par != "" and g.has(par) else g[nm]
 	out["@hips"] = (sk.get_bone_pose_position(_ix["hips"]) - _hips_rest) * _hips_k
+	_last_global = g
+	return out
+
+
+var _last_global := {}
+
+
+## The rig's bones as they lie in the body (skeleton space) in the last read(): for WsgPoseLayer.body_pose, when a
+## part must be where the game's body has it (a hand holding a stick) rather than turned like it.
+func body_space(bones: Array) -> Dictionary:
+	var out := {}
+	for b in bones:
+		if _last_global.has(b):
+			out[b] = _last_global[b]
 	return out

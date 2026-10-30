@@ -111,6 +111,16 @@ func _process(delta: float) -> void:
 			cam.look_at_from_position(Vector3(-28.0 + t * 0.4, 6.0, -Pitch.HALF_W + 6.0), Vector3(-34.0 + t * 0.4, 5.0, -Pitch.HALF_W - 14.0))
 			if t > 14.0:
 				get_tree().quit()
+		"hand":
+			# Close on the hurley hand: standing, then running.
+			hurler.want_vel = Vector3.ZERO if t < 1.5 else Vector3(0, 0, 5.0)
+			hurler.integrate(delta, now)
+			hurler.animate(now)
+			label.text = "%s     the hurley in the hand" % tag
+			var hand: Vector3 = hurler.link.body.bone_world("RightHand").origin if hurler.link else hurler.body.bone_world("hand_r")
+			cam.look_at_from_position(hand + Vector3(1.6, 0.4, 0.6), hand)
+			if t > 3.0:
+				get_tree().quit()
 		"official":
 			# The umpire at the posts: a point is scored, he signals it.
 			if t > 1.5 and not done.has("sig"):

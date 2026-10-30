@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://nydw842bcsvn"
-path="res://.godot/imported/fan5.jpg-e0574fa24b53418561f97f0ec5bb3449.ctex"
+path="res://.godot/imported/fan5.jpg-bbca9512fa4446ff0b3714c198d3ed32.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tools/wsg/crowd_src/fan5.jpg"
-dest_files=["res://.godot/imported/fan5.jpg-e0574fa24b53418561f97f0ec5bb3449.ctex"]
+source_file="res://tools/crowd_src/fan5.jpg"
+dest_files=["res://.godot/imported/fan5.jpg-bbca9512fa4446ff0b3714c198d3ed32.ctex"]
 
 [params]
 

@@ -73,6 +73,7 @@ func _ready() -> void:
 		stick.cast_shadow = s.cast_shadow
 		stick.top_level = true
 		add_child(stick)
+		body.posed.connect(_place_stick)
 
 
 ## After player.gd has posed the game's body this frame: drive this one.
@@ -106,6 +107,10 @@ func update(now: float) -> void:
 					arm[k] = pose[k]
 		pose = arm
 	legacy.set_pose(pose)
+	# The hurley's arm where the game's body has it, in the body: so the hand that holds the hurley is where the game
+	# put it, whatever the motion capture does with the chest (turns copied onto a differently leaning chest moved
+	# the hand by up to 40 cm and turned it by up to 130 degrees: the hurley stood up out of the fist).
+	legacy.body_pose = reader.body_space(["RightShoulder", "RightArm", "RightForeArm", "RightHand"]) if player.role == "" else {}
 	if mode != _mode:
 		legacy.fade_to(0.0 if mode == "move" and player.role != "" else 1.0, 0.16)
 		_mode = mode
@@ -118,11 +123,11 @@ func update(now: float) -> void:
 	if player.role == "":
 		body.grip("Right", 0.016)
 		body.grip("Left", 0.016)
-	if stick:
-		_place_stick()
 
 
-## The hurley in this body's right hand, as the game's body holds it in its own.
+
+## The hurley in this body's right hand, as the game's body holds it in its own. Placed when the skeleton has its
+## final pose (body.posed): during the frame a bone reads as it was before the arm's own layer and the grip.
 func _place_stick() -> void:
 	var hand := body.bone_world("RightHand")
 	var corr: Quaternion = reader._corr.get("RightHand", Quaternion.IDENTITY)

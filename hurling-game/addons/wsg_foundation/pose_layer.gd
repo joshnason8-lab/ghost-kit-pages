@@ -12,6 +12,10 @@ var pose := {}
 var weight := 0.0
 ## Hips position offset (from the rest), when the pose moves the hips (a crouch, a dive), weighted too.
 var hips := Vector3.INF
+## Bones to put where they are in the body (skeleton space, Quaternion), whatever the clips do to their parents:
+## a hand that holds something must be where the game's body has it, not where its turns put it on a chest that
+## leans and twists differently. Applied after `pose`, parents first (give them in that order).
+var body_pose := {}
 
 var _target := 0.0
 var _rate := 0.0
@@ -58,6 +62,14 @@ func _process_modification_with_delta(delta: float) -> void:
 			continue
 		var q: Quaternion = pose[b]
 		sk.set_bone_pose_rotation(i, sk.get_bone_pose_rotation(i).slerp(q, w))
+	for b in body_pose:
+		var i := sk.find_bone(b)
+		if i < 0:
+			continue
+		var par := sk.get_bone_parent(i)
+		var pq := sk.get_bone_global_pose(par).basis.get_rotation_quaternion() if par >= 0 else Quaternion.IDENTITY
+		var want: Quaternion = (pq.inverse() * (body_pose[b] as Quaternion)).normalized()
+		sk.set_bone_pose_rotation(i, sk.get_bone_pose_rotation(i).slerp(want, w))
 	if hips != Vector3.INF:
 		var h := sk.find_bone("Hips")
 		sk.set_bone_pose_position(h, sk.get_bone_pose_position(h).lerp(sk.get_bone_rest(h).origin + hips, w))
