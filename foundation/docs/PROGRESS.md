@@ -136,4 +136,10 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   (its baker is editor-only, on saved scenes; these stadiums are built at run time). tests/light_bake_test.gd.
   Found: the 3D crowd and the cut-outs stay as bright under a roof as in the sun - for item 5 (light probes at the
   seats from the same bake).
-  Next: 3 LODs, 4 the umpire's sleeves and fan3, 5 crowd brightness (with the seats' baked light).
+  3 Clean LODs: tools/blender/decimate_lod.py + lod_from_obj.gd (make_lod.sh). The light meshes were meshoptimizer's
+  nearest level: 8.8 mm off the detailed surface on average, 100 mm at worst (fingers and the helmet's rim
+  collapsed). Blender's edge collapse (symmetric, hands and head denser) at the same 1,758 triangles: 2.2 mm, 16 mm,
+  skinned from the nearest point of the detailed surface. Hurling: the HD hurler's, and the officials' (1,600
+  triangles where they had none: the full 4,200 at every distance). Rounder helmet and shoulders on Low. test_runner
+  652 checks, 0 failures.
+  Next: 4 the umpire's sleeves and fan3, 5 crowd brightness (with the seats' baked light), the feet glitch.
