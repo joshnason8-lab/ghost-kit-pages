@@ -162,6 +162,10 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   casts from each fan's head: the sky through the half facing the pitch, the sun's disc; 5 s for all four venues),
   on both crowds - under the roofs darker. Found: under GL Compatibility a MultiMesh's custom data is half floats
   (a light packed with a shirt code turned the shirts purple): small numbers only (g: the light, signed seated).
-  Close up, the lower shirts of many 3D fans are pale (old and new alike): the crowd bake's shirt mask stops 5 cm
-  above the hip joint and these fans' shirts go lower - next, with a re-bake of the crowd.
-  Next: the shirt mask, the feet glitch; then A (Firebase Test Lab).
+  Close up, the lower shirts of many 3D fans were pale (old and new alike): the crowd bake's shirt mask stopped 5 cm
+  above the hip joint and these fans' shirts go lower. bake_crowd now takes the shirt's colour from the chest and
+  counts what matches it down to 12 cm under the hip joint (not the trousers): solid to the waist. Crowd re-baked
+  (authored, committed; the licensed one in data/ only). Caught on the way: with the licensed clips present,
+  bake_crowd baked them into whatever folder it was given - the committed crowd/ included (it was restored before
+  anything was staged); it now refuses an ActorCore bake outside addons/wsg_foundation/data/ (AUTHORED=1 for crowd/).
+  Next: the feet glitch; then A (Firebase Test Lab).

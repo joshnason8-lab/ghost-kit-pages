@@ -4,6 +4,7 @@ extends SceneTree
 ## crowd clips when this build has them) skinned through the rig and its drivers into vertex-animation textures:
 ## one row of vertex positions (and one of normals) per frame. The crowd's shader plays them, all on the GPU.
 ##   godot --headless --path <foundation> -s tools/bake_crowd.gd -- <out dir> <tris> <char dir> <albedo dir> <fan> [fan..]
+## (The committed crowd, addons/wsg_foundation/crowd: AUTHORED=1 in front, or a build with the licensed clips refuses.)
 ## For each fan writes <out>/<fan>_crowd.res (ArrayMesh: UV.x picks the vertex's column, UV2 = how much of the
 ## torso and the head turns to watch, COLOR = its colour and in alpha how much is shirt), <fan>_vat.exr-like
 ## textures (<fan>_pos.res RGBAH, <fan>_nrm.res RGBA8) and one crowd.json (the clips' rows and lengths).
@@ -32,6 +33,12 @@ func _initialize() -> void:
 	var meta := {"fps": FPS, "clips": {}, "fans": {}, "pivots": PIVOTS,
 		"source": "ActorCore (licensed: build only)" if src != null else "authored (WsgCrowdClips)"}
 	print("crowd motions: ", meta.source)
+	# (The licence: animation from the licensed library never leaves the build's data folder - an ActorCore crowd
+	# baked anywhere else, e.g. into the addon's committed crowd/, is refused. AUTHORED=1 bakes the studio's own.)
+	if src != null and not out_dir.replace("\\", "/").contains("wsg_foundation/data/"):
+		printerr("bake_crowd: refused: the ActorCore crowd goes only into addons/wsg_foundation/data/ (got %s); AUTHORED=1 for the committed crowd" % out_dir)
+		quit(1)
+		return
 	var rows := 0
 	for c in WsgCrowdClips.CLIPS:
 		var spec: Array = clips[c]
@@ -105,6 +112,18 @@ func _crowd_mesh(ch: Dictionary, albedo: Image, tris: int) -> Dictionary:
 	var wts := PackedFloat32Array()
 	var torso := ["Spine", "Spine1", "Spine2", "LeftShoulder", "RightShoulder", "LeftShoulderHelper",
 		"RightShoulderHelper", "LeftArmRoll", "RightArmRoll", "LeftArm", "RightArm", "Hips"]
+	# The shirt's own colour, from the chest's front: the shirt goes on below the belt line where the fan's shirt does
+	# (a hem that came out pale with the cut alone at 5 cm above the hip joint).
+	var hips_y: float = (ch.joints["Hips"] as Vector3).y
+	var chest_ref := Vector3.ZERO
+	var chest_n := 0
+	for g in n:
+		var p: Vector3 = pos[g]
+		if p.y > (ch.joints["Spine1"] as Vector3).y and p.y < (ch.joints["Spine2"] as Vector3).y and absf(p.x) < 0.1 \
+				and (acc_n[g] as Vector3).normalized().z > 0.5:
+			chest_ref += acc_c[g][0] / maxf(1, acc_c[g][1])
+			chest_n += 1
+	chest_ref /= maxf(1, chest_n)
 	for g in n:
 		nrm.append((acc_n[g] as Vector3).normalized())
 		var w: Dictionary = acc_w[g]
@@ -121,9 +140,14 @@ func _crowd_mesh(ch: Dictionary, albedo: Image, tris: int) -> Dictionary:
 			if j < ks.size() and WsgRig.BONES[ks[j]][0] in torso:
 				shirt += wj
 		var cc: Vector3 = acc_c[g][0] / maxf(1, acc_c[g][1])
-		# Shirt: the torso and upper arms, above the belt.
-		if pos[g].y < (ch.joints["Hips"] as Vector3).y + 0.05:
+		# Shirt: the torso and upper arms, above the belt; and below it, down to a hand under the hip joint, what is
+		# the shirt's colour (not the trousers').
+		if pos[g].y < hips_y + 0.05:
 			shirt = 0.0
+			if chest_n > 0 and pos[g].y > hips_y - 0.12 and cc.distance_to(chest_ref) < 0.16:
+				shirt = 1.0
+		elif chest_n > 0 and shirt < 1.0 and cc.distance_to(chest_ref) < 0.16 and pos[g].y < (ch.joints["Spine2"] as Vector3).y:
+			shirt = 1.0
 		col.append(Color(cc.x, cc.y, cc.z, clampf(shirt, 0.0, 1.0)))
 	var index := PackedInt32Array()
 	for t in range(0, idx.size(), 3):
