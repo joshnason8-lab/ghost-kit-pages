@@ -85,6 +85,7 @@ func _ready() -> void:
 	_spots = spots
 	build_crowd(CROWD_FOCUS, int(Game.settings.graphics))
 	add_child(crowd)
+	_flags()
 	_environment()
 
 
@@ -160,6 +161,36 @@ func build_crowd(focus: Vector3, quality: int) -> void:
 		away_colours if kind != "parish" else [], 0.75 if kind != "parish" and not away_colours.is_empty() else 0.45, shirts, lights)
 
 
+## Flags behind each goal (the shared foundation's WsgFlags): a few fans at each end holding their county's flag, in
+## its colours (the home end +x, the visitors' end -x), flying harder as the crowd's excitement rises. Eight an end
+## (fewer on a budget phone, none on its Low).
+func _flags() -> void:
+	if OS.has_environment("WSG_OFF") or home_colours.size() < 2:
+		return
+	WsgFoundation.tier = clampi(int(Game.settings.graphics), WsgFoundation.LOW, WsgFoundation.HIGH)
+	var n := WsgFlags.count_for(8)
+	if n <= 0:
+		return
+	var away := away_colours if away_colours.size() >= 2 else home_colours
+	var list := []
+	for end in [1.0, -1.0]:
+		var at := []
+		for p: Vector3 in _spots:
+			if p.x * end > H + 6.0:
+				at.append(p)
+		if at.is_empty():
+			continue
+		at.sort_custom(func(a: Vector3, b: Vector3): return a.z < b.z if absf(a.z - b.z) > 0.01 else a.x < b.x)
+		var cols: Array = home_colours if end > 0.0 else away
+		for k in n:
+			# Spread along the end, a row or two up from the front.
+			var p: Vector3 = at[int((k + 0.5) / n * at.size())]
+			list.append([p, Crowd.facing_at(p), cols[0], cols[1]])
+	var flags := WsgFlags.new()
+	add_child(flags)
+	flags.build(list)
+
+
 ## Each spot's fan's shirt, decided once by the spot (the 3D fan there and the cut-out wear the same: a fan keeps it
 ## when the crowd is built again round another focus): a share in the counties' colours - on a championship day in
 ## sections of the stand leaning one way, as at Croke Park - the rest anything.
@@ -171,7 +202,14 @@ func _shirts() -> Array:
 	for i in _spots.size():
 		rng.seed = hash([hash(kind), i])
 		var col := Color(rng.randf(), rng.randf(), rng.randf())
-		if not home_colours.is_empty() and rng.randf() < share:
+		var p0: Vector3 = _spots[i]
+		if not home_colours.is_empty() and absf(p0.x) > H + 6.0:
+			# Behind the goals, an end each, as on a championship day: the home county's end (+x) and the
+			# visitors' (or the home county's again), nearly all in its colours.
+			var pal_end: Array = home_colours if p0.x > 0.0 or away.is_empty() else away
+			if rng.randf() < (0.9 if p0.x > 0.0 or not away.is_empty() else 0.7):
+				col = pal_end[rng.randi_range(0, pal_end.size() - 1)]
+		elif not home_colours.is_empty() and rng.randf() < share:
 			var pal: Array = home_colours
 			if not away.is_empty():
 				var p: Vector3 = _spots[i]
