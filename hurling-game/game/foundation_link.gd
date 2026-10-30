@@ -97,11 +97,17 @@ func update(now: float) -> void:
 				up[k] = pose[k]
 		pose = up
 	elif mode == "move":
-		pose = {}
-	if mode != "move":
-		legacy.set_pose(pose)
+		# Running: the legs, the torso and the free arm from the motion capture; the arm with the hurley as the game
+		# carries it (the mocap's runner swings an empty fist, which held the hurley out like a lance).
+		var arm := {}
+		if player.role == "":
+			for k in ["RightShoulder", "RightArm", "RightForeArm", "RightHand"]:
+				if pose.has(k):
+					arm[k] = pose[k]
+		pose = arm
+	legacy.set_pose(pose)
 	if mode != _mode:
-		legacy.fade_to(0.0 if mode == "move" else 1.0, 0.16)
+		legacy.fade_to(0.0 if mode == "move" and player.role != "" else 1.0, 0.16)
 		_mode = mode
 	var v := player.vel
 	loco.drive(dt, Vector3(v.x, 0, v.z), player.yaw, Vector3(player.want_vel.x, 0, player.want_vel.z))
