@@ -28,10 +28,10 @@ const HIGH := 2
 const PROFILES := {
 	"premium": {"renderer": "mobile", "default": MEDIUM,
 		"crowd": {MEDIUM: [400, 1200], HIGH: [700, 2000], 3: [2000, 3000]}, "full_bodies": {LOW: 64, MEDIUM: 64, HIGH: 64},
-		"replay": {LOW: [4.0, 15.0], MEDIUM: [7.0, 30.0], HIGH: [7.0, 30.0]}},
+		"replay": {LOW: [4.0, 15.0], MEDIUM: [7.0, 30.0], HIGH: [7.0, 30.0]}, "voices": {LOW: 10, MEDIUM: 16, HIGH: 24}},
 	"budget": {"renderer": "gl_compatibility", "default": LOW,
 		"crowd": {MEDIUM: [150, 150], HIGH: [400, 1200], 3: [400, 600]}, "full_bodies": {LOW: 6, MEDIUM: 6, HIGH: 64},
-		"replay": {LOW: [4.0, 15.0], MEDIUM: [6.0, 15.0], HIGH: [7.0, 30.0]}},
+		"replay": {LOW: [4.0, 15.0], MEDIUM: [6.0, 15.0], HIGH: [7.0, 30.0]}, "voices": {LOW: 8, MEDIUM: 12, HIGH: 20}},
 }
 
 static var profile := "premium"
@@ -66,6 +66,11 @@ static func crowd_budget(quality: int) -> Array:
 static func replay_spec() -> Array:
 	var r: Dictionary = spec().get("replay", {})
 	return r.get(tier, [7.0, 30.0] if profile == "premium" else [4.0, 15.0])
+
+
+## How many positional sounds may play at once at the current tier (WsgAudio): a budget phone's Low 8.
+static func voices() -> int:
+	return int((spec().get("voices", {}) as Dictionary).get(tier, 16))
 
 
 static func full_bodies() -> int:

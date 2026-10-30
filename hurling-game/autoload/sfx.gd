@@ -21,6 +21,10 @@ var _swell := 0.0          # 0..1: the crowd rising as a score comes (crowd_swel
 var _music: AudioStreamPlayer
 var _music_target := -80.0
 var _amb: AudioStreamPlayer         # the ground's own sound under the crowd: birdsong
+## The shared foundation's mixer in a match (FoundationLink): the crowd a bed of layers that follows the play (the
+## same excitement and tension the 3D fans show), the knocks where they happen, whistles and replays clear over the
+## crowd. Without it, the bed and the flat sounds as before.
+var wsg: WsgAudio
 var _todo := []
 var _planned := false
 var _built := false
@@ -102,6 +106,8 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
 	p.play()
+	if wsg and sound.begins_with("whistle"):
+		wsg.duck(5.0, 0.5)       # (the crowd dips under the referee's whistle, as a broadcast mix does)
 
 
 ## A player's effort: voice("grunt") or "hup"; pitch gives each player his own voice.
@@ -126,12 +132,65 @@ func crowd(intensity: float) -> void:
 	if intensity < 0.0 or not enabled():
 		_crowd.stop()
 		_swell = 0.0
+		if wsg:
+			wsg.queue_free()
+			wsg = null
+		return
+	if _mixer():
+		_crowd.stop()
+		wsg.base = clampf(intensity, 0.0, 1.0)
 		return
 	_crowd_base = lerpf(-26.0, -6.0, clampf(intensity, 0.0, 1.0))
 	_crowd_target = _crowd_base + _swell * 9.0
 	if not _crowd.playing:
 		_crowd.volume_db = -40.0
 		_crowd.play()
+
+
+## The foundation's mixer, made for a match the first time it is asked (the tier's voices then): the crowd's three
+## layers from the owner's recordings - the ground's murmur (crowd_loop), applause that swells with a score and
+## dies with it, and the crowd again, out of step and a little higher, building with an attack.
+func _mixer() -> WsgAudio:
+	if wsg == null and FoundationLink.enabled():
+		WsgFoundation.tier = clampi(int(Game.settings.graphics), WsgFoundation.LOW, WsgFoundation.HIGH)
+		wsg = WsgAudio.new()
+		add_child(wsg)
+		wsg.crowd_layers({
+			"murmur": {"stream": _looped("crowd_loop"), "db": [-26.0, -6.0], "by": "base"},
+			"applause": {"stream": _looped("applause"), "db": [-50.0, -8.0], "by": "excite"},
+			"tension": {"stream": _looped("crowd_loop"), "db": [-34.0, -9.0], "by": "tension", "pitch": 1.05, "from": 13.0,
+				"shape": "linear"}})
+		wsg.kind_limits = {"step": 4, "bounce": 2, "shoulder": 2, "clash": 2}
+		wsg.haptics_on = bool(Game.settings.get("vibration", true))
+	return wsg
+
+
+func _looped(sound: String) -> AudioStream:
+	var s: AudioStream = (streams.get(sound) as AudioStream).duplicate()
+	if s is AudioStreamOggVorbis:
+		(s as AudioStreamOggVorbis).loop = true
+	elif s is AudioStreamWAV:
+		(s as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
+	return s
+
+
+## A sound where it happened (the foundation's mixer: heard from the camera, the busiest moments keeping the ones
+## that matter - priority); flat_db where there is no mixer (the game's own distance fall-off).
+func play_at(sound: String, pos: Vector3, volume_db := 0.0, pitch := 1.0, priority := 1, flat_db := INF) -> void:
+	_ensure()
+	if wsg and enabled() and streams.has(sound):
+		var n := int(VARIANTS.get(sound, 1))
+		var pick := randi() % n
+		var key := sound if pick == 0 or not streams.has("%s_%d" % [sound, pick + 1]) else "%s_%d" % [sound, pick + 1]
+		wsg.play_at(streams[key], pos, volume_db, pitch, sound, priority)
+		return
+	play(sound, flat_db if flat_db != INF else volume_db, pitch)
+
+
+## The crowd held down under something that must be heard (a replay, the referee).
+func duck(amount_db: float, secs: float) -> void:
+	if wsg:
+		wsg.duck(amount_db, secs)
 
 
 ## The crowd rising with an attack: 0 as it was, 1 a shot in the air (up to 9 dB louder, never above -2 dB).
@@ -155,6 +214,8 @@ func ambience(on: bool, volume_db := -14.0) -> void:
 func pause_all(on: bool) -> void:
 	_crowd.stream_paused = on
 	_amb.stream_paused = on
+	if wsg:
+		wsg.pause(on)
 	for p in _pool:
 		p.stream_paused = on
 
@@ -174,6 +235,9 @@ func music(on: bool) -> void:
 func stop_all() -> void:
 	_crowd.stop()
 	_amb.stop()
+	if wsg:
+		wsg.queue_free()
+		wsg = null
 	for p in _pool:
 		p.stop()
 

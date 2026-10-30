@@ -372,7 +372,7 @@ func step(dt: float) -> Array:
 		if state == OUT:
 			_nets()
 		if bounced and vel.length() > 3.0:
-			Sfx.play("bounce", -14.0 + minf(8.0, vel.length() * 0.3), randf_range(0.95, 1.08))
+			Sfx.play_at("bounce", global_position, -10.0 + minf(8.0, vel.length() * 0.3), randf_range(0.95, 1.08), 1, -14.0 + minf(8.0, vel.length() * 0.3))
 	_mesh.rotate_x(spin * dt)
 	_shadow.global_position = Vector3(global_position.x, 0.015, global_position.z)
 	_shadow.visible = state == FREE or state == DEAD or state == OUT

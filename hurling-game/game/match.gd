@@ -644,7 +644,10 @@ func _run_pending() -> void:
 ## home screen.
 func _ref_whistle(kind: String) -> void:
 	var at: Vector3 = officials.referee.global_position if officials != null and officials.referee != null else cam.camera.global_position
-	Sfx.play(kind, -24.0 if attract else _near_db(at, -3.0), randf_range(0.98, 1.02))
+	if attract:
+		Sfx.play(kind, -24.0, randf_range(0.98, 1.02))
+	else:
+		Sfx.play_at(kind, at, -1.0, randf_range(0.98, 1.02), 5, _near_db(at, -3.0))
 
 
 ## The sliotar meeting the hurley without a full swing (lifted onto it, soloed, saved, hopped on the bas): the
@@ -652,7 +655,7 @@ func _ref_whistle(kind: String) -> void:
 func _hurley_tap(at: Vector3, db: float, pitch := 1.18) -> void:
 	if attract:
 		return
-	Sfx.play("strike", _near_db(at, db), pitch * randf_range(0.95, 1.05))
+	Sfx.play_at("strike", at, db + 2.0, pitch * randf_range(0.95, 1.05), 2, _near_db(at, db))
 
 
 var _hop_n := 0
@@ -1836,7 +1839,7 @@ func _check_ball(prev: Vector3, cur: Vector3) -> void:
 				ball.global_position = Vector3(gx - s * 0.1, c.y, c.z)
 				ball.vel = Vector3(-ball.vel.x * 0.45, ball.vel.y * 0.6 + (2.0 if hit_bar else 0.0), ball.vel.z * 0.6 + rng.randf_range(-2, 2))
 				ball.last_kind = "deflect"
-				Sfx.play("post", -2.0)
+				Sfx.play_at("post", c, 0.0, 1.0, 4, -2.0)
 				Sfx.react("ooh", -3.0)
 				hud.call_line(tr("CALL_POST") if hit_post else tr("CALL_BAR"))
 				_chase_t = 0.0
@@ -2095,7 +2098,7 @@ func _tackle(d: Player, c: Player) -> void:
 		if d.global_position.distance_to(c.global_position) > 2.8:
 			return
 		if kind == "tackle":
-			Sfx.play("shoulder", _near_db(c.global_position, -6.0), rng.randf_range(0.9, 1.1))
+			Sfx.play_at("shoulder", c.global_position, -4.0, rng.randf_range(0.9, 1.1), 2, _near_db(c.global_position, -6.0))
 		var r := rng.randf()
 		if r < foul_p:
 			var foul := "FOUL_PUSH"

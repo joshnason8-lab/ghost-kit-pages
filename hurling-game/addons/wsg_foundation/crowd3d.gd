@@ -73,6 +73,15 @@ static func set_tension(k: float) -> void:
 	_tension = clampf(k, 0.0, 1.0)
 
 
+## What the game last asked of the crowd (WsgAudio's crowd follows it too, with or without 3D fans drawn).
+static func target_excitement() -> float:
+	return _excite_target
+
+
+static func tension() -> float:
+	return _tension
+
+
 ## Places the fans: spots are their feet (world), facings the way each faces (flat; toward the pitch). seated: true
 ## (all on seats SEAT high), false (a terrace: all standing), one bool a spot, or one number a spot (the seat's
 ## height over the feet, m; 0 standing): each seated fan is lifted so they sit on it, not in it. room: how far

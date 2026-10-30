@@ -82,6 +82,7 @@ func start(t_cross: float, s: float, c: Vector3) -> void:
 	_side = 1.0 if c.z >= 0.0 else -1.0
 	if m.wsg_replay:
 		m.wsg_replay.play(_t, _t1)    # (the foundation's bodies as they were drawn: they do not follow the game's here)
+	Sfx.duck(6.0, (_t1 - _t) / SPEED)    # (the crowd under the replay, as a broadcast holds it)
 	m.hud.replay(true, stop)
 	m.controls.set_meta("was_visible", m.controls.visible)
 	m.controls.visible = false
