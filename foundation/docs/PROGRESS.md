@@ -168,4 +168,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   (authored, committed; the licensed one in data/ only). Caught on the way: with the licensed clips present,
   bake_crowd baked them into whatever folder it was given - the committed crowd/ included (it was restored before
   anything was staged); it now refuses an ActorCore bake outside addons/wsg_foundation/data/ (AUTHORED=1 for crowd/).
-  Next: the feet glitch; then A (Firebase Test Lab).
+  The one-frame feet glitch (57 cm, a runner, default seed at t 60): no longer there - the default seed's worst is
+  28.5 cm (a sprint's flight, under 30) and a 6-minute seed 2 match passes too (the planter's fixes since).
+- [x] A. Firebase Test Lab: .github/workflows/wsg-testlab.yml (reusable): builds a game's "Android TestLab" preset
+  (the "testlab" feature: a match that plays itself, 60 s at Low, Medium and High, each logged as a WSG_PERF line by
+  WsgPerfLog, addon perf_log.gd), picks a budget, a mid-range and a flagship phone from Test Lab's catalogue that day
+  (preference lists, then names), runs it there (robo; the build ignores taps and Back), reads each phone's logcat
+  back into a table in the run's summary and a JSON artifact. Skips green without FIREBASE_TESTLAB_KEY. Spark: about
+  5 physical tests a day, a run is 3: manual (workflow_dispatch). docs/TESTLAB.md: the owner's steps (project,
+  two APIs, a service account with Test Lab Admin + Storage Object Viewer, the JSON key as the secret). Hurling:
+  testlab/, the preset, hurling-testlab.yml. Tried here: the scene on this machine (software GL) prints all three
+  tiers; the summary parser on its lines. Not run on Test Lab yet: needs the owner's key.
+  Next: B (the TV presentation layer).

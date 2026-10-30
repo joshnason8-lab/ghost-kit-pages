@@ -230,6 +230,17 @@ with no shadows on the cheaper tiers. Bake their light once per arena and time o
 
 Cost: about 2 MB of video memory per arena (the 2048 map, compressed) and a cheaper shader than per-vertex lighting.
 
+## 5.6 Your game on real phones (Firebase Test Lab)
+
+1. Copy Hurling's `testlab/testlab_run.gd/.tscn` into your game and change the match it starts (your AI against
+   itself, your biggest venue); it plays 60 s at each tier with a `WsgPerfLog` running.
+2. In your main scene's `_ready`, first: `if OS.has_feature("testlab"): get_tree().change_scene_to_file.call_deferred("res://testlab/testlab_run.tscn"); return`.
+3. An export preset "Android TestLab": your Android preset with custom feature `testlab` (and add `testlab/*` to
+   your normal presets' exclude filter).
+4. `.github/workflows/<game>-testlab.yml`: `uses: ./.github/workflows/wsg-testlab.yml` with `game-dir: <your dir>`,
+   `secrets: inherit` (copy Hurling's). Run it from the Actions tab; docs/TESTLAB.md has the owner's one-time steps
+   and the free plan's limits.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →
