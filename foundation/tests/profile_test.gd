@@ -60,6 +60,31 @@ func _initialize() -> void:
 	if full != WsgFoundation.full_bodies() or not (bodies[0] as WsgBody).full or (bodies[9] as WsgBody).full:
 		fails.append("rank_detail: %d in full" % full)
 	WsgFoundation.profile = "premium"
+	# Lowering the graphics by itself (WsgAutoTier): a steady 60 never; a steady 30 within a few seconds; a phone at
+	# 55 on average with a tenth of a second's hitch three times a second within a few seconds too; never in the
+	# moments after a reset (loading).
+	var cases := {"steady 60": [1.0 / 60.0, 0, false], "steady 30": [1.0 / 30.0, 0, true], "hitching": [1.0 / 60.0, 20, true]}
+	for k in cases:
+		var at := WsgAutoTier.new()
+		var t := 0.0
+		var stepped := -1.0
+		var i := 0
+		while t < 12.0 and stepped < 0.0:
+			var dt: float = cases[k][0]
+			if int(cases[k][1]) > 0 and i % int(cases[k][1]) == 0:
+				dt = 0.1
+			t += dt
+			i += 1
+			if at.feed(dt):
+				stepped = t
+		print("auto tier, %s: %s" % [k, ("steps down at %.1f s" % stepped) if stepped >= 0.0 else "stays"])
+		if (stepped >= 0.0) != bool(cases[k][2]) or stepped > 6.0:
+			fails.append("auto tier, %s: %s" % [k, stepped])
+	var settle := WsgAutoTier.new()
+	for i in int(WsgAutoTier.SETTLE / 0.2) - 1:
+		if settle.feed(0.2):
+			fails.append("auto tier: stepped while settling")
+			break
 	for f in fails:
 		printerr("FAIL: ", f)
 	print("PROFILE TEST: ", "PASS" if fails.is_empty() else "FAIL (%d)" % fails.size())

@@ -50,7 +50,15 @@ phones of your own: `WsgFoundation.block_vulkan("sm-s92")` (a model name: Kabadd
 
 A budget game draws on GL Compatibility from project.godot (`renderer/rendering_method="gl_compatibility"`, and
 `.mobile` the same) and every half second gives the foundation its bodies: `WsgFoundation.rank_detail(bodies,
-camera_position)` (the pilot's `match.gd` `_rank_detail`; a premium game may call it too, it keeps all in full).
+camera_position)` (the pilot's `match.gd` `_rank_detail`; a premium game too: its nearest 8, 14 and 22 in full
+detail on Low, Medium and High - every body in full cost the CPU the same on Low as on High).
+
+**"Lower the graphics by itself"**: `WsgAutoTier` watches your frames in play and says when to step down - within a
+few seconds of sustained stutter, slow on average or hitching (3 frames in 1.5 s over 2.5 times the middle one and
+45 ms, two such windows running). Apply the step at once, everything your tiers build (the pilot's
+`Match.lower_graphics` and `Stadium.apply_graphics`: the setting, the picture, the sun's shadows, the sky, the crowd
+built again, the flags, the men's own shadows, the bodies' detail), then `reset()`. Hurling's first try only watched
+the first ten seconds, only the average, and only lowered the picture's resolution: the owner's High stuttered on.
 
 ## 1. Bring the addon in
 
@@ -134,6 +142,14 @@ func animate(now: float) -> void:
 	if link:
 		link.update(now)                 # the foundation draws it
 ```
+**The skeleton's modifiers run when you say** (`body.set_manual(true)` once, `body.advance(dt)` at the end of
+each update): a far player your game poses every second or third frame then pays for his pose layers, planter,
+grips and helpers only then, and shows what they made of him in between. Every frame, they cost a phone's CPU more
+than all the rest of Hurling's match (38 bodies: 8 ms a frame on a desktop, 2.0 without the foundation; 5.4 with this,
+3.0 on Low). Pose your far players on frames of their own, not all on the same one (the pilot's `Player._lod_skip`
+starts at each man's own count), and anything drawn in a hand (a stick, a flag) a child of the body, so it moves
+with him between those frames.
+
 `FoundationLink.update` reads, per frame: your player's `vel`, `want_vel` (the velocity it is steering to: a sharp
 change of it makes a cut, and it picks the walk, jog or run start and stop), `yaw` (where it faces: keep facing away
 from the way it moves for backpedals and side-steps), and `action` (a move of your own → your pose on the whole body;
@@ -214,6 +230,10 @@ fans' heads) - under a roof darker; give it to your billboards too. Measured on 
 holding a two-colour flag, flying harder with the crowd's excitement (WsgCrowd3D's: nothing more to call), two draw
 calls for all of them; `WsgFlags.count_for(want)` keeps a budget phone to half and none on its Low. Hurling puts
 eight at each end behind the goals, in that end's county colours, and leans those ends' shirts to it (Stadium._shirts).
+
+Your fans' feet: `bake_crowd.gd` measures each fan's soles on its mesh and turns a foot made pitched up (toes to
+the sky, as Meshy's officials were) down about the ankle till only a shoe's toe spring is left, before the bake;
+it prints each foot's pitch. (Five of the six shared fans were 10 to 36 degrees up.)
 
 ## 5.5 Baked light on your stadium (GL Compatibility; Low and Medium)
 

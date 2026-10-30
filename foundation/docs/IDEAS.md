@@ -21,3 +21,13 @@ Each milestone report to the lead carries the top three.
 - **Normal maps on the 3D crowd's fans.** The fans' Meshy meshes are already drawn whole (there is no more detailed
   source to bake from), they are about 50 pixels tall in the stands, and the crowd shader runs for thousands of
   them: a normal map is a texture read per fan for nothing a player could see. (Players and officials have them.)
+
+## From the owner's notes on the licensed pilot
+- The free's clip is MediaPipe on one camera: its legs and head are guessed after contact. A second take of the owner's
+  free from the front (or a mocap free) would replace the limits with the real thing.
+- The officials' heads on the player's body: the HD referee's face is Meshy's (a soft mouth). A head made for it
+  (Meshy, from the owner's photo of a referee) would match the body's detail; ask first (credits).
+- WsgAutoTier could also step up again after a long smooth stretch (not done: a phone that stutters once a minute
+  would see its graphics go up and down).
+- The shoot-out audit's remaining items: the goalkeeper's dive bends a knee off its hinge (45 frames), the taker's
+  feet up to 6 cm off the grass in 18 frames of his strike, 7 frames of an open hand on the handle.

@@ -139,6 +139,7 @@ func seek(t: float) -> void:
 		var m := _modifier(body)
 		m.set_frames(pa, pb, w)
 		body.global_transform = _xf(pa).interpolate_with(_xf(pb), w)
+		body.advance(0.0)     # (a body whose modifiers run when told: WsgBody.set_manual)
 
 
 ## Back to live play: the bodies where they were, following the game again.
@@ -152,6 +153,7 @@ func stop() -> void:
 			continue
 		var body: WsgBody = _bodies[id]
 		_modifier(body).active = false
+		body.advance(0.0)
 		if _saved.has(id):
 			body.transform = _saved[id][0]
 			body.visible = _saved[id][1]

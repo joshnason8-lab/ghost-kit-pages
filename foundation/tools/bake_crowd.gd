@@ -49,6 +49,7 @@ func _initialize() -> void:
 		var ch := WsgBody.load_character(char_dir, fan)
 		var albedo := Image.load_from_file(tex_dir.path_join(fan + ".jpg"))
 		var m := _crowd_mesh(ch, albedo, tris)
+		_flat_mesh_feet(ch, m, fan)
 		var vat := await _bake_vat(ch, m, rows, meta)
 		ResourceSaver.save(m.mesh, out_dir.path_join(fan + "_crowd.res"), ResourceSaver.FLAG_COMPRESS)
 		ResourceSaver.save(m.far, out_dir.path_join(fan + "_crowd_far.res"), ResourceSaver.FLAG_COMPRESS)
@@ -69,6 +70,59 @@ func _initialize() -> void:
 	f.store_string(JSON.stringify(meta, "\t"))
 	f.close()
 	quit()
+
+
+## The fan's own feet made flat, on the mesh (as bake_character does for a character baked since: tools/
+## bake_character.gd _flatten_feet): a model made with its feet pitched up at the ankle has its toes to the sky in
+## every frame, seated or standing. Each sole measured (its lowest point toward the toe against its lowest at the
+## heel) and the foot turned down about the ankle till only a shoe's own toe spring is left.
+const TOE_SPRING := 4.0
+
+
+func _flat_mesh_feet(ch: Dictionary, m: Dictionary, fan: String) -> void:
+	for side in ["Left", "Right"]:
+		var ank: Vector3 = ch.joints[side + "Foot"]
+		var ids := {WsgRig.index(side + "Foot"): true, WsgRig.index(side + "ToeBase"): true}
+		var share := func(v: int) -> float:
+			var w := 0.0
+			for j in 4:
+				if ids.has(m.bones[v * 4 + j]):
+					w += m.weights[v * 4 + j]
+			return w
+		var pts := []
+		for v in m.count:
+			if share.call(v) >= 0.5:
+				pts.append(m.pos[v])
+		if pts.size() < 6:
+			continue
+		var zmin := INF
+		var zmax := -INF
+		for p: Vector3 in pts:
+			zmin = minf(zmin, p.z)
+			zmax = maxf(zmax, p.z)
+		var span := zmax - zmin
+		var heel := INF
+		var front := INF
+		for p: Vector3 in pts:
+			if p.z < zmin + span * 0.25:
+				heel = minf(heel, p.y)
+			elif p.z > zmin + span * 0.6 and p.z < zmin + span * 0.85:
+				front = minf(front, p.y)
+		if heel == INF or front == INF:
+			continue
+		var pitch := rad_to_deg(atan2(front - heel, span * 0.47))
+		var fix := pitch - TOE_SPRING
+		print("  %s %s sole: toes %.1f degrees up%s" % [fan, side, pitch, (", turned down %.1f" % fix) if fix >= 4.0 else ""])
+		if fix < 4.0:
+			continue
+		var q := Quaternion(Vector3.RIGHT, deg_to_rad(fix))
+		for v in m.count:
+			var w := minf(share.call(v), 1.0)
+			if w <= 0.0:
+				continue
+			var p: Vector3 = m.pos[v] - ank
+			m.pos[v] = ank + p.lerp(q * p, w)
+			m.nrm[v] = (m.nrm[v] as Vector3).slerp(q * (m.nrm[v] as Vector3), w).normalized()
 
 
 ## The fan's mesh for the crowd: welded (UV seams gone, so it can be cut right down), coloured from its texture,

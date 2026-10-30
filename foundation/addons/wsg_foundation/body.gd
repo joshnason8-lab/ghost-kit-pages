@@ -84,6 +84,25 @@ func set_detail(p_full: bool) -> void:
 		mesh_instance.mesh = meshes[maxi(_lod, 0 if full else 1)]
 
 
+## The skeleton's modifiers (the pose layers, the planter, the helpers) run when the game says so (advance), not
+## every frame: a body the game poses only every second or third frame (far from the camera) pays for them only
+## then, and between those frames shows what they last made of it. (Every frame, 38 bodies' modifiers cost a phone's
+## CPU more than the rest of a match.)
+var manual := false
+
+
+func set_manual(on: bool) -> void:
+	manual = on
+	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL if on \
+		else Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_IDLE
+
+
+## After the game has posed the body this frame (manual): its modifiers run, and posed is emitted.
+func advance(delta: float) -> void:
+	if manual:
+		skeleton.advance(delta)
+
+
 func add_modifier(m: SkeletonModifier3D) -> void:
 	skeleton.add_child(m)
 	skeleton.move_child(m, helpers.get_index())

@@ -214,3 +214,36 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   behind the goals in their counties' colours (90%) with eight flags each (WsgFlags: pole and two-colour cloth,
   rippling by shader, harder with the excitement; two draw calls; half on a budget phone, none on its Low).
   Next: the dry run of ADOPTING.md against a budget game; then the roll-out (after the owner's phone test).
+- [x] The owner's notes on the licensed pilot (run 41115702159):
+  - **The free's strike** ("the shin looks very odd, the body seems to break" at the end of the swing). Two causes.
+    (1) In the game's own moves the rig took HeroBody's turned-down feet (foot_pitch 32, for its old model) on top
+    of a model already standing flat: the feet pointed at the grass, about 50 degrees. Undone in the link
+    (reader.undo), as the officials' were. (2) The free's clip (the owner's video, through MediaPipe) loses the legs
+    and the head after contact: a knee bent 35 degrees sideways, the trailing boot spun half round and back between
+    frames, the neck and the head each tipped back 20. Limited after contact (Player.FREE_LIMITS: a knee is a
+    hinge, a foot turns a little from its shin, the head back about 30 in all), the feet throughout. And a knee is a
+    hinge on the rig in every game move (FoundationLink: only the shin's bend about its own axis, never past straight).
+    The pilot's elbow audit now checks knees (backwards, off the hinge), ankles (pointed, tipped up), the back
+    (leaning back, to a side, turned) and the head (back) on the rig and on the game's body: practice PASS.
+  - **The planter bent standing knees backwards** (the officials, 29 degrees): its two-bone IK bent the knee "the way
+    it was", and a standing clip's locked knee is a hair past straight. Now always forward of the thigh.
+  - **The crowd's feet** (toes up, as the officials' were): five of the six fans' models were made with the feet
+    pitched up 10 to 36 degrees. bake_crowd now measures each sole and turns the foot down before the bake (the
+    committed authored crowd and the licensed one rebaked).
+  - **"Lower the graphics by itself" did not.** Hurling watched only the first ten seconds of play, only the
+    average (over half the frames under 36 a second), and lowered only the picture's resolution. WsgAutoTier:
+    1.5 s windows, bad when slow on average or with 3 hitches (over 2.5 times the middle frame and 45 ms), two in a
+    row - steps within about 5 s; the pilot applies the step at once (Stadium.apply_graphics: shadows, sky, crowd,
+    flags; the men's shadows; the bodies' detail). Hurling's beta (claude/hurling-game 0.17.0) has the same code.
+  - **The stutter**: the foundation's per-body work, every frame, for every body: 8 ms a frame here for 38 bodies
+    (2 ms without the foundation; Low cost the same as High - every body in full on every tier). Now: a body's
+    modifiers run only when the game poses it (WsgBody.set_manual / advance: far men every second or third frame),
+    those frames staggered, the nearest 8/14/22 in full detail by tier (premium), the pose rate's distances by tier.
+    Measured (tests/hitch_probe.gd, the national stadium, AI v AI, headless): High 10.5 -> 5.4 ms middle, 19.8 ->
+    13.4 worst 1%; Low 9.7 -> 3.0 ms, 16.8 -> 7.5.
+  - **The officials on the player's model** (the owner: "can we use the player model for them?"): the referee and
+    the linesmen in black, the umpires in white with their caps, each with their own head (tools/player/
+    official_body.gd: the HD hurler from the collar down, the official's head and neck moved onto his rig, the
+    collar painted as skin); no number. The flag held: the pole across the palm as a hammer's handle, the fingers
+    closed round it (WsgGrip on that line), the pole on along the arm, the cloth hanging from it; a child of the
+    body. The separate officials' models are no longer drawn (their heads are the source).

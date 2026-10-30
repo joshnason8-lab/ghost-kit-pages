@@ -27,10 +27,10 @@ const HIGH := 2
 ## Vulkan crashes were on a flagship), a premium game's Medium crowd and every body in full.
 const PROFILES := {
 	"premium": {"renderer": "mobile", "default": MEDIUM,
-		"crowd": {MEDIUM: [400, 1200], HIGH: [700, 2000], 3: [2000, 3000]}, "full_bodies": {LOW: 64, MEDIUM: 64, HIGH: 64},
+		"crowd": {MEDIUM: [400, 1200], HIGH: [700, 2000], 3: [2000, 3000]}, "full_bodies": {LOW: 8, MEDIUM: 14, HIGH: 22},
 		"replay": {LOW: [4.0, 15.0], MEDIUM: [7.0, 30.0], HIGH: [7.0, 30.0]}, "voices": {LOW: 10, MEDIUM: 16, HIGH: 24}},
 	"budget": {"renderer": "gl_compatibility", "default": LOW,
-		"crowd": {MEDIUM: [150, 150], HIGH: [400, 1200], 3: [400, 600]}, "full_bodies": {LOW: 6, MEDIUM: 6, HIGH: 64},
+		"crowd": {MEDIUM: [150, 150], HIGH: [400, 1200], 3: [400, 600]}, "full_bodies": {LOW: 6, MEDIUM: 6, HIGH: 22},
 		"replay": {LOW: [4.0, 15.0], MEDIUM: [6.0, 15.0], HIGH: [7.0, 30.0]}, "voices": {LOW: 8, MEDIUM: 12, HIGH: 20}},
 }
 

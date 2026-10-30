@@ -82,6 +82,47 @@ func _initialize() -> void:
 	rp.stop()
 	rp.record(now + 0.1)
 	print("a body freed while kept: played, sought, stopped, recorded on (no errors above)")
+	# A body whose modifiers run when told (WsgBody.set_manual: a far player posed every few frames): drawn only when
+	# advanced, and the replay advances it itself - each moment sought shows that moment's pose, and live again after.
+	var lazy := WsgBody.new(ch)
+	root.add_child(lazy)
+	lazy.set_manual(true)
+	var lz := WsgPoseLayer.new()
+	lazy.skeleton.add_child(lz)
+	lazy.skeleton.move_child(lz, 0)
+	lz.weight = 1.0
+	var drawn := [0, Quaternion.IDENTITY]
+	lazy.posed.connect(func():
+		drawn[0] += 1
+		drawn[1] = lazy.skeleton.get_bone_global_pose(lazy.skeleton.find_bone("RightForeArm")).basis.get_rotation_quaternion())
+	var ring := WsgReplay.new()
+	root.add_child(ring)
+	var lazy_t := 0.0
+	for f in 30:
+		lazy_t = f / 30.0
+		lz.set_pose({"RightArm": Quaternion(Vector3.FORWARD, lazy_t * 2.0)})
+		ring.record(lazy_t)
+		if f % 3 == 0:
+			lazy.advance(1.0 / 10.0)
+		await process_frame
+	var advanced: int = drawn[0]
+	var turns := []
+	ring.play(0.2, 0.9)
+	for t in [0.3, 0.6, 0.9]:
+		var before: int = drawn[0]
+		ring.seek(t)
+		await process_frame     # (the skeleton updates at the end of the frame)
+		turns.append(drawn[1])
+		if drawn[0] == before:
+			fails.append("a manual body is not drawn when the replay seeks")
+			break
+	ring.stop()
+	if turns.size() < 3:
+		turns = [Quaternion.IDENTITY, Quaternion.IDENTITY, Quaternion.IDENTITY]
+	print("a manual body: drawn %d times in 30 frames (advanced every third); the replay drew it at each moment sought, %.0f and %.0f degrees apart" % [
+		advanced, rad_to_deg((turns[0] as Quaternion).angle_to(turns[1])), rad_to_deg((turns[1] as Quaternion).angle_to(turns[2]))])
+	if advanced > 11 or (turns[0] as Quaternion).angle_to(turns[1]) < 0.05:
+		fails.append("manual body: drawn %d times; replay moments the same" % advanced)
 	# The ring's size: a budget phone's Low (4 s at 15) for 38 bodies.
 	var per_body: int = (rp._frames[-1][1] as Dictionary).values()[0].size() * 4
 	WsgFoundation.profile = "budget"
