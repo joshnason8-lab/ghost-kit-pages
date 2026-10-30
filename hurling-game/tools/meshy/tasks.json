@@ -190,6 +190,16 @@
    "time": "2026-10-26 07:11",
    "balance": 159,
    "note": ""
+  },
+  {
+   "time": "2026-10-30 10:04",
+   "balance": 159,
+   "note": ""
+  },
+  {
+   "time": "2026-10-30 10:06",
+   "balance": 124,
+   "note": ""
   }
  ],
  "referee_pbr": {
@@ -222,5 +232,19 @@
  },
  "after the referee and umpire PBR refines": {},
  "after rigging the PBR referee and umpire": {},
- "after the Ultra update": {}
+ "after the Ultra update": {},
+ "fan3b": {
+  "prompt": {
+   "mode": "preview",
+   "prompt": "A sports fan in a stadium crowd, older Irish man in his sixties, short grey hair, grey beard, glasses, dark navy blazer worn open over a white shirt, grey wool scarf, beige chino trousers, brown leather shoes, standing in a T-pose with both arms held straight out to the sides, the jacket sleeves fully separate from the body with a clear gap under each arm, realistic, full body",
+   "art_style": "realistic",
+   "should_remesh": true,
+   "topology": "triangle",
+   "target_polycount": 6000,
+   "pose_mode": "t-pose"
+  },
+  "preview": "01a18c44-6727-74d1-b3d2-7a0e2fbff087",
+  "refine": "01a18c45-6fba-767b-b5c2-733053cd9c99",
+  "rig": "01a18c46-1e95-71cc-993c-29ec180a1c67"
+ }
 }
