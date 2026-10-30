@@ -45,4 +45,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   tests/officials_test.gd PASS (faces play within 27 deg moving; raised arms 9-11 deg off vertical, elbows 3 deg,
   collarbones lifted 18; point 2 deg off target). Hurling's referee/umpire bake with toonbody_to_scene + bake_character.
   Locomotor fixes found here: a new body takes its facing at once; asked to move during a turn-on-the-spot, it sets off.
-- [ ] Pilot in Hurling, MP4s, ADOPTING.md, CI private-asset step
+- [x] ActorCore (Actorcore.moves.zip on the same release): tools/bake_actorcore.gd -> data/actorcore.res (+json),
+  merged by WsgClips. Sprint = top gait (1.2x its root speed). Crowd re-baked from mocap (tools/crowd_mocap.gd) into
+  data/crowd (build only). Gotcha: the takes start on a T-pose frame; "stand-to-sit-chair" sits for 10 s and gets up
+  at the end (that is our sit_to_stand). Missing from the owner: catches, tackle/get-up, official gestures (authored).
+- [x] ADOPTING.md, tools/vendor.sh, tools/fetch_assets.sh (both zips, both libraries, the crowd), legacy_pose.gd.
+- [ ] Pilot (claude/hurling-foundation-pilot, worktree /home/user/hurling-pilot): game/foundation_link.gd,
+  player.gd (link), stadium.gd (3D crowd, seats), crowd.gd/match.gd (excite, tension, ball), workflow (fetch step;
+  publish beta/HD ONLY from claude/hurling-game; pilot -> pre-release "hurling-foundation-pilot"),
+  tests/foundation_pilot.tscn (videos: run/crowd/official, WSG_OFF=1 for "before"). Hurling test_runner: 651 checks, 0
+  failures with the link on. Next: videos -> MP4s (<20 MB), perf_probe numbers, push, FOUNDATION PILOT READY.
+- Push access to the private repo: add_repo "push" refused twice by the auto-mode classifier; not needed (videos via
+  SendUserFile; data baked in CI).

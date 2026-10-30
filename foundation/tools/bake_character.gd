@@ -593,6 +593,14 @@ func _weights(body: Dictionary, joints: Dictionary) -> Array:
 				out.erase(side + b)
 			if mass <= 0.0:
 				continue
+			# Loose cloth well clear of the thigh (a long coat's skirt) hangs from the hips rather than going with the
+			# leg (the umpires' coats lifted with their knees).
+			if limb[3].ends_with("UpLeg") and s < 1.0:
+				var off := _seg_dist(p, a, m)
+				var loose := smoothstep(SKIRT_R, SKIRT_R + 0.05, off) * 0.8
+				if loose > 0.0:
+					out["Hips"] = float(out.get("Hips", 0.0)) + mass * loose
+					mass *= 1.0 - loose
 			var spread := _hats(limb[2], s)
 			for b in spread:
 				var nm: String = side + b
@@ -630,6 +638,15 @@ func _weights(body: Dictionary, joints: Dictionary) -> Array:
 	out[Mesh.ARRAY_WEIGHTS] = wts
 	out[Mesh.ARRAY_INDEX] = body.index
 	return out
+
+
+const SKIRT_R := 0.115       # m from the thigh's line: beyond this a leg's skin is loose cloth (a coat, a skirt)
+
+
+static func _seg_dist(p: Vector3, a: Vector3, b: Vector3) -> float:
+	var d := b - a
+	var t := clampf((p - a).dot(d) / d.length_squared(), 0.0, 1.0)
+	return p.distance_to(a + d * t)
 
 
 ## Where p lies along a straight two-segment limb a-m-e: 0 at a, 1 at m, 2 at e (beyond, past the ends).
