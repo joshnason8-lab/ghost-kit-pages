@@ -2781,6 +2781,7 @@ func _rank_detail(dt: float) -> void:
 	if _detail_t > 0.0 or not FoundationLink.enabled():
 		return
 	_detail_t = 0.5
+	WsgFoundation.tier = int(Game.settings.graphics)
 	var bodies := []
 	for p in all_players() + officials.people:
 		var pl := p as Player

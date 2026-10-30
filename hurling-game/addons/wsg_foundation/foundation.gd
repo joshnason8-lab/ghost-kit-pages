@@ -2,13 +2,16 @@ class_name WsgFoundation
 extends RefCounted
 ## The phones a game is made for, set once by the game (ADOPTING.md, "Profiles"), and what the rest of the foundation
 ## spends because of it:
-##   premium - nicer phones, the Mobile (Vulkan) renderer: Medium by default, High for flagships (Hurling, Floorball,
-##             Netball);
-##   budget  - cheaper phones, GL Compatibility: Low by default (Medium on a flagship), Medium at most; a small band of 3D fans, full detail
-##             only on the bodies nearest the camera (Kabaddi, Kho Kho, Sepak Takraw, Pok Ta Pok).
+##   premium - nicer phones, the Mobile (Vulkan) renderer: Medium for an ordinary phone (Hurling, Floorball, Netball);
+##   budget  - cheaper phones, GL Compatibility: Low for an ordinary phone; at Low and Medium a small band of 3D fans,
+##             full detail only on the bodies nearest the camera (Kabaddi, Kho Kho, Sepak Takraw, Pok Ta Pok).
+## Either way the phone decides (the owner: "if someone has a new phone and gets Kabaddi it should go to high
+## quality"): a weak phone starts on Low, a flagship on High, the rest on the profile's default; and every tier is
+## there to choose in Settings.
 ## In the game's boot, before anything is built:
 ##   WsgFoundation.profile = "budget"
 ##   if saved_graphics < 0: saved_graphics = WsgFoundation.starting_tier()   # the player's own choice always wins
+##   WsgFoundation.tier = saved_graphics   # (and whenever the player changes it)
 ##   WsgFoundation.guard_renderer()     # a Vulkan game: phones that cannot hold Vulkan go to GL Compatibility
 ##   ...                                # and, once the home screen is up:
 ##   WsgFoundation.boot_ok()
@@ -17,18 +20,21 @@ const LOW := 0
 const MEDIUM := 1
 const HIGH := 2
 
-## Per profile: the renderer it is made for, the tier a phone starts on and the highest it may choose, the 3D crowd
-## per tier ([near: full figures, in all], see WsgCrowd3D; 3: Close, a practice or a shoot-out), and how many bodies
-## are drawn in full detail (twist and joint helpers, fingers, the full mesh) - the rest nearest the camera first get
-## the light mesh and plain joints.
+## Per profile: the renderer it is made for, the tier an ordinary phone starts on, the 3D crowd per tier ([near: full
+## figures, in all], see WsgCrowd3D; 3: Close, a practice or a shoot-out), and per tier how many bodies are drawn in
+## full detail (twist and joint helpers, fingers, the full mesh) - the rest, farthest from the camera, get the light
+## mesh and plain joints. A budget game's High is for the flagship that runs it: still GL Compatibility (Kabaddi's
+## Vulkan crashes were on a flagship), a premium game's Medium crowd and every body in full.
 const PROFILES := {
-	"premium": {"renderer": "mobile", "default": MEDIUM, "max": HIGH,
-		"crowd": {MEDIUM: [400, 1200], HIGH: [700, 2000], 3: [2000, 3000]}, "full_bodies": 64},
-	"budget": {"renderer": "gl_compatibility", "default": LOW, "max": MEDIUM,
-		"crowd": {MEDIUM: [150, 150], HIGH: [150, 150], 3: [400, 600]}, "full_bodies": 6},
+	"premium": {"renderer": "mobile", "default": MEDIUM,
+		"crowd": {MEDIUM: [400, 1200], HIGH: [700, 2000], 3: [2000, 3000]}, "full_bodies": {LOW: 64, MEDIUM: 64, HIGH: 64}},
+	"budget": {"renderer": "gl_compatibility", "default": LOW,
+		"crowd": {MEDIUM: [150, 150], HIGH: [400, 1200], 3: [400, 600]}, "full_bodies": {LOW: 6, MEDIUM: 6, HIGH: 64}},
 }
 
 static var profile := "premium"
+## The tier the game is drawing at now (the game sets it, at start and when the player changes it).
+static var tier := MEDIUM
 
 ## Graphics that struggle with Vulkan (adapter names, lower case; the games' own experience), and phones that crash
 ## on it (model names: Kabaddi's Galaxy S24 family). A game adds its own: WsgFoundation.block_vulkan("sm-s92").
@@ -53,19 +59,27 @@ static func crowd_budget(quality: int) -> Array:
 
 
 static func full_bodies() -> int:
-	return int(spec().full_bodies)
+	return int((spec().full_bodies as Dictionary).get(tier, 64))
 
 
-## The tier a phone starts on before the player has chosen one: the profile's default, one up on a flagship, one
-## down on a weak phone, within what the profile allows. (A computer: the default.)
+## The tier a phone starts on before the player has chosen one: a weak phone Low, a flagship High, the rest the
+## profile's default. (A computer: the default.)
 static func starting_tier() -> int:
-	var s := spec()
-	return clampi(int(s.default) + device_class(), LOW, int(s.max))
+	return tier_for_class(device_class())
 
 
-## The player's choice within what the profile allows (a budget game's Settings never offer High).
-static func allowed(tier: int) -> int:
-	return clampi(tier, LOW, int(spec().max))
+## The tier a phone of that class (device_class) starts on.
+static func tier_for_class(c: int) -> int:
+	if c < 0:
+		return LOW
+	if c > 0:
+		return HIGH
+	return int(spec().default)
+
+
+## The player's choice: any tier (the phone only picks the first one).
+static func allowed(t: int) -> int:
+	return clampi(t, LOW, HIGH)
 
 
 ## -1 a weak phone (under 4.5 GB, or a Galaxy A0x/A1x-class GPU: Mali-G5x/G6x, Adreno 5xx and 61x, PowerVR, Mali-T -
