@@ -127,4 +127,13 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   Found in a whole match (seed 3): a runner's free fist, swinging in the motion capture, went 7.4 mm through the
   hurley's handle for 3 frames. WsgPoseLayer.clear moves a free fist straight off a handle it would meet (same frame,
   its turn kept); worst now 0.5 mm. Match audits (seeds 1 and 3), practice and shoot-out PASS.
-  Next: 2 stadium light bakes, 3 LODs, 4 the umpire's sleeves and fan3, 5 crowd brightness.
+  2 Baked light: WsgLightBake (light_bake.gd) gives a game's built stadium second UVs (each quad its own patch,
+  packed in rows, made the same at run time so only the maps ship; a signature refuses a map baked for other
+  geometry) and exports it with the game's sun and sky; tools/blender/bake_light.py bakes it in Cycles (sun, sky,
+  shadows, two bounces) and the stands' shadow on the ground. Hurling: all four venues (parish dusk, county day,
+  national stadium day, county night), 2048 + 1024 maps, on Low and Medium (and GL): the stands drawn unshaded,
+  vertex colour times the map; the grass multiplied by the ground map. Before/after stills sent. LightmapGI ruled out
+  (its baker is editor-only, on saved scenes; these stadiums are built at run time). tests/light_bake_test.gd.
+  Found: the 3D crowd and the cut-outs stay as bright under a roof as in the sun - for item 5 (light probes at the
+  seats from the same bake).
+  Next: 3 LODs, 4 the umpire's sleeves and fan3, 5 crowd brightness (with the seats' baked light).

@@ -185,6 +185,26 @@ if int(Game.settings.graphics) > Game.GFX_LOW and WsgCrowd3D.available():
   `crowd3d.watch_ball(ball_position)`.
 - Rhythmic clapping playing: `crowd3d.clap(claps_per_second, unison_0_to_1, seconds)` (Kabaddi has these numbers).
 
+## 5.5 Baked light on your stadium (GL Compatibility; Low and Medium)
+
+If you build your arena in code (Hurling's `Geo`: each quad its own four vertices), its stands are lit per vertex
+with no shadows on the cheaper tiers. Bake their light once per arena and time of day:
+
+1. A small scene (Hurling's `tools/env/bake_light.gd`) builds each arena as the game does at Medium and calls
+   `WsgLightBake.export(structure_mesh, {"sun_dir", "sun_colour", "sun_energy", "sky_colour", "sky_energy",
+   "ground": [x0, z0, x1, z1, y], "size": 2048, "scale": 2.0}, out_dir/<arena>_<time>)` with the sun and ambient
+   light it actually sets.
+2. `blender -b --python tools/wsg/blender/bake_light.py -- --base out_dir/<arena>_<time> --samples 64` for each
+   (Hurling: `tools/env/bake_light.sh` does both and copies the maps to assets/env/light). About 2 minutes each.
+3. Import the PNGs VRAM-compressed (mode 2), no mipmaps.
+4. At run time, after building the arena, when the tier has no real-time shadows:
+   `var lm := WsgLightBake.load_for(structure.mesh, "res://assets/env/light/%s_%s" % [arena, time])` - empty if
+   there is none or the geometry changed since (bake again) - then `structure.mesh = lm.mesh` and
+   `structure.material_override = WsgLightBake.material(lm)`. `lm.ground` is the shadow on the ground (the light as
+   a share of open ground's, seen from above over `lm.ground_rect`): multiply your grass by it.
+
+Cost: about 2 MB of video memory per arena (the 2048 map, compressed) and a cheaper shader than per-vertex lighting.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copies the foundation addon into a game (one command to adopt or to update):
 #   foundation/tools/vendor.sh <game dir, e.g. hurling-game>
-# Puts addons/wsg_foundation/ (code, shaders, the authored crowd) and tools/wsg/ (the bake and fetch scripts) in the
+# Puts addons/wsg_foundation/ (code, shaders, the authored crowd) and tools/wsg/ (the bake and fetch scripts, and the Blender ones) in the
 # game, adds the licensed data folder to the game's .gitignore, and records which foundation commit it came from.
 # The licensed data itself comes at build time (tools/wsg/fetch_assets.sh, in CI with ASSETS_REPO_TOKEN).
 set -e
@@ -20,6 +20,9 @@ mv "$GAME/addons/wsg_foundation.new" "$GAME/addons/wsg_foundation"
 for f in fetch_assets.sh bake_clips.sh bake_clips.gd bake_actorcore.gd bake_crowd.gd crowd_mocap.gd bake_character.sh bake_character.gd toonbody_to_scene.gd; do
 	cp "$HERE/$f" "$GAME/tools/wsg/"
 done
+rm -rf "$GAME/tools/wsg/blender"
+mkdir -p "$GAME/tools/wsg/blender"
+cp "$HERE"/blender/*.py "$HERE"/blender/*.sh "$HERE"/blender/*.gd "$HERE"/blender/README.md "$GAME/tools/wsg/blender/"
 rm -rf "$GAME/tools/wsg/crowd_src"
 cp -r "$HERE/crowd_src" "$GAME/tools/wsg/crowd_src"
 grep -q "addons/wsg_foundation/data" "$GAME/.gitignore" 2>/dev/null || {
