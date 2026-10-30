@@ -8,3 +8,6 @@ android/
 *.jks
 # The HD pack's large sources, fetched by tools/ultra/fetch.py (their .import files are kept)
 ultra/ground/*.jpg
+
+# Licensed animation data, baked at build time (tools/wsg/fetch_assets.sh): never committed.
+addons/wsg_foundation/data/

@@ -115,6 +115,21 @@ func _ready() -> void:
 	add_child(body)
 	body.scale = Vector3.ONE * DRAW_SCALE
 	body.rotation.y = yaw
+	_link_foundation()
+
+
+## Drawn with the shared foundation (the owner's model on the shared rig, motion-capture locomotion) when this build
+## has the licensed library (FoundationLink); the game's own body stays, posed and measured, unseen.
+var link: FoundationLink
+
+
+func _link_foundation() -> void:
+	if link:
+		link.queue_free()
+		link = null
+	if FoundationLink.enabled():
+		link = FoundationLink.new(self, body)
+		add_child(link)
 
 
 ## A hurler is drawn with the owner's model; an official with a Meshy model (the referee's for the referee and the
@@ -152,6 +167,7 @@ func take_over(pd: Dictionary, look: Dictionary) -> void:
 	body.scale = Vector3.ONE * DRAW_SCALE
 	body.set_lod(lod)
 	body.rotation.y = yaw
+	_link_foundation()
 
 
 ## How tired he is, as a share of what he can give: 1 fresh.
@@ -301,6 +317,8 @@ func animate(now: float) -> void:
 		p = _crossfade(p, now)
 	body.apply(p)
 	_plant_feet(now)
+	if link:
+		link.update(now)
 
 
 ## The feet kept still on the grass while he runs (the owner: "too many steps and the players are floating"): a foot

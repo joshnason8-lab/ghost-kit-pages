@@ -578,6 +578,9 @@ func _crowd_anticipation(dt: float) -> void:
 			want = 1.0
 	_hype = move_toward(_hype, want, dt * (1.6 if want > _hype else 0.7))
 	Sfx.crowd_swell(_hype * 0.85 + (0.15 if want >= 1.0 else 0.0))
+	WsgCrowd3D.set_tension(_hype)
+	if stadium.crowd3d:
+		stadium.crowd3d.watch_ball(ball.global_position)
 	if now >= _cheer_until:
 		Crowd.set_excite(_hype * 0.4)
 

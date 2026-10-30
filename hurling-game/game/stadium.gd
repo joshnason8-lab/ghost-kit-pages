@@ -13,6 +13,9 @@ extends Node3D
 var kind := "county"
 var time := "day"
 var crowd: Crowd
+## On Medium and High the nearer fans are whole 3D people (the foundation's WsgCrowd3D), the rest stay cut-outs.
+var crowd3d: WsgCrowd3D
+var _seats := {}            # spot index -> true: a seat in a stand (the 3D fans sit on it and get up)
 var scenery: Scenery
 var home_colours: Array = []
 var away_colours: Array = []    # with them, the crowd is both counties' (a championship day)
@@ -67,7 +70,28 @@ func _ready() -> void:
 	add_child(net)
 	crowd = Crowd.new()
 	var palette := home_colours.duplicate()
-	crowd.build(spots, Game.crowd_density() * (0.55 if kind == "parish" else 1.0), palette, hash(kind),
+	var density := Game.crowd_density() * (0.55 if kind == "parish" else 1.0)
+	var flat := spots
+	if int(Game.settings.graphics) > Game.GFX_LOW and WsgCrowd3D.available() and not OS.has_environment("WSG_OFF"):
+		# The 3D fans take the spots nearest the far stand (the one the television camera looks at); the cut-outs
+		# fill the rest.
+		crowd3d = WsgCrowd3D.new()
+		add_child(crowd3d)
+		var facings := spots.map(func(p): return Crowd.facing_at(p))
+		var seated := []
+		for i in spots.size():
+			seated.append(_seats.has(i))
+		var used := crowd3d.build(spots, facings, density, hash(kind), seated, int(Game.settings.graphics),
+			Vector3(0, 4.0, -Pitch.HALF_W - 12.0))
+		crowd3d.set_teams(home_colours[0], away_colours[0] if not away_colours.is_empty() else home_colours[1])
+		var taken := {}
+		for i in used:
+			taken[i] = true
+		flat = []
+		for i in spots.size():
+			if not taken.has(i):
+				flat.append(spots[i])
+	crowd.build(flat, density, palette, hash(kind),
 		away_colours if kind != "parish" else [], 0.75 if kind != "parish" and not away_colours.is_empty() else 0.45)
 	add_child(crowd)
 	_environment()
@@ -135,6 +159,7 @@ func _stand(g: Geo, x0: float, x1: float, z0: float, dir: float, rows: int, rise
 		var n := int((x1 - x0) / gap)
 		for i in n:
 			spots.append(Vector3(x0 + gap * 0.5 + i * gap + (0.15 if r % 2 == 1 else 0.0), y, z + dir * depth * 0.45))
+			_seats[spots.size() - 1] = true
 	var back_z := z0 + dir * rows * depth
 	var top := base + rows * rise
 	g.box(Vector3((x0 + x1) * 0.5, (top + 3.0) * 0.5, back_z + dir * 0.3), Vector3(x1 - x0, top + 3.0, 0.6), col.darkened(0.3))

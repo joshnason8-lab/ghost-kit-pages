@@ -123,6 +123,15 @@ jobs:
       - name: Fetch the HD pack's large sources (Poly Haven, checked against their SHA-256)
         run: python3 ${PROJECT_DIR}/tools/ultra/fetch.py
 
+      # The shared foundation's licensed animation (MoCap Online, ActorCore), from the PRIVATE repository
+      # joshnason8-lab/world-stage-games-assets with a read-only token, baked here into addons/wsg_foundation/data/
+      # (ignored by git) and shipped only inside the APK: never uploaded or cached. Without the secret (a fork) the
+      # step says so and the game builds as before, on its own animation.
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
       - name: Import project
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
@@ -283,7 +292,7 @@ jobs:
       # not start "Hurling Heroes " so Obtainium (which filters the beta by title) never takes it for a beta, and it is
       # never marked latest.
       - name: Publish the HD pack (if it changed)
-        if: github.event_name == 'push' && env.PACK_NEW == '1'
+        if: github.event_name == 'push' && env.PACK_NEW == '1' && github.ref == 'refs/heads/claude/hurling-game'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -304,8 +313,9 @@ jobs:
       # "ash-and-leather-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests, so its date moves on (Obtainium reads the release date as the version). Pull request runs build the
       # same APK and leave the release alone.
+      # (Only from the Hurling branch itself: a branch made from it - the foundation pilot - must not replace the beta.)
       - name: Publish the beta release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/hurling-game'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -328,4 +338,25 @@ jobs:
           gh release delete "$TAG" --cleanup-tag --yes || true
           gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
             --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
+          gh release view "$TAG"
+
+      # The shared foundation's pilot (claude/hurling-foundation-pilot): its own pre-release, never the beta's, never
+      # "latest", its title not starting "Hurling Heroes " (Obtainium follows the beta by that).
+      - name: Publish the foundation pilot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/hurling-foundation-pilot'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=hurling-foundation-pilot
+          APK=${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk
+          APK32=${PROJECT_DIR}/build/hurling-heroes-${VERSION}-32bit.apk
+          cat > notes.md <<EOF
+          **Foundation pilot** of Hurling Heroes (${VERSION}), built from \`${GITHUB_SHA::7}\`: the players and officials on
+          the World Stage Games shared rig with motion-capture locomotion, and the 3D crowd on Medium and High.
+          Installs over the beta and keeps your saves (it is the same game); reinstall the beta to go back.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$APK" "$APK32" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Foundation pilot: Hurling Heroes ${VERSION}" --notes-file notes.md
           gh release view "$TAG"

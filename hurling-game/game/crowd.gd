@@ -236,7 +236,9 @@ static var _now := 0.0
 ## How excited the crowd should be (0-1); it gets there smoothly (_process).
 static func set_excite(k: float) -> void:
 	_want = clampf(k, 0.0, 1.0)
+	WsgCrowd3D.set_excite(k)
 
 
 static func set_light(k: float) -> void:
 	material().set_shader_parameter("light", k)
+	WsgCrowd3D.set_light(k)
