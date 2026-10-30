@@ -49,6 +49,14 @@ func _initialize() -> void:
 		ResourceSaver.save(ImageTexture.create_from_image(vat[1]), out_dir.path_join(fan + "_nrm.res"), ResourceSaver.FLAG_COMPRESS)
 		meta.fans[fan] = {"vertices": m.count, "triangles": m.tris, "far_triangles": m.far_tris, "width": vat[0].get_width(), "rows": rows,
 			"hips": snappedf((ch.joints["Hips"] as Vector3).y, 0.001)}
+		var mask := _seat_mask(m)
+		var seat := WsgCrowd3D.measure_seat(vat[0], m.count, WsgCrowd3D.seated_rows(meta), mask)
+		meta.fans[fan]["seat"] = [snappedf(seat.x, 0.001), snappedf(seat.y, 0.001)]
+		var ids := []
+		for v in mask.size():
+			if mask[v] == 1:
+				ids.append(v)
+		meta.fans[fan]["seat_vertices"] = ids
 		print("%s: %d triangles (far %d), %d vertices, VAT %dx%d" % [fan, m.tris, m.far_tris, m.count, vat[0].get_width(), rows])
 	var f := FileAccess.open(out_dir.path_join("crowd.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify(meta, "\t"))
@@ -178,6 +186,20 @@ func _crowd_mesh(ch: Dictionary, albedo: Image, tris: int) -> Dictionary:
 
 ## Every frame of every clip, skinned through the rig and its drivers: [positions image, normals image]. Also
 ## finishes the mesh (UV.x: the vertex's column; UV2: how much of the torso, and of the head, turns to watch).
+## The vertices that are the seat of the trousers and the thighs: weighted mostly to the hips and thighs.
+func _seat_mask(m: Dictionary) -> PackedByteArray:
+	var mask := PackedByteArray()
+	mask.resize(m.count)
+	for v in m.count:
+		var w := 0.0
+		for j in 4:
+			var nm: String = WsgRig.BONES[m.bones[v * 4 + j]][0]
+			if nm == "Hips" or nm.contains("UpLeg") or nm.contains("Hip"):
+				w += m.weights[v * 4 + j]
+		mask[v] = 1 if w >= 0.6 else 0
+	return mask
+
+
 func _bake_vat(ch: Dictionary, m: Dictionary, rows: int, meta: Dictionary) -> Array:
 	var body := WsgBody.new({"joints": ch.joints})
 	root.add_child(body)

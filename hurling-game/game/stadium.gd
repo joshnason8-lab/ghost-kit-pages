@@ -15,7 +15,11 @@ var time := "day"
 var crowd: Crowd
 ## On Medium and High the nearer fans are whole 3D people (the foundation's WsgCrowd3D), the rest stay cut-outs.
 var crowd3d: WsgCrowd3D
-var _seats := {}            # spot index -> true: a seat in a stand (the 3D fans sit on it and get up)
+var _seats := {}            # spot index -> how far behind the feet the step behind rises above the seat (m; INF: it
+                            # does not): a seat in a stand (the 3D fans sit on it and get up)
+## A stand's seats: their height over the step the feet are on, and how deep (from the step behind) (m).
+const SEAT_H := 0.40
+const SEAT_D := 0.35
 var scenery: Scenery
 var home_colours: Array = []
 var away_colours: Array = []    # with them, the crowd is both counties' (a championship day)
@@ -79,10 +83,12 @@ func _ready() -> void:
 		add_child(crowd3d)
 		var facings := spots.map(func(p): return Crowd.facing_at(p))
 		var seated := []
+		var room := []
 		for i in spots.size():
-			seated.append(_seats.has(i))
+			seated.append(SEAT_H if _seats.has(i) else 0.0)
+			room.append(_seats.get(i, INF))
 		var used := crowd3d.build(spots, facings, density, hash(kind), seated, int(Game.settings.graphics),
-			Vector3(0, 4.0, -Pitch.HALF_W - 12.0))
+			Vector3(0, 4.0, -Pitch.HALF_W - 12.0), room)
 		crowd3d.set_teams(home_colours[0], away_colours[0] if not away_colours.is_empty() else home_colours[1])
 		var taken := {}
 		for i in used:
@@ -154,12 +160,21 @@ func _stand(g: Geo, x0: float, x1: float, z0: float, dir: float, rows: int, rise
 		var z := z0 + dir * (r * depth)
 		var y := base + r * rise
 		g.box(Vector3((x0 + x1) * 0.5, y * 0.5, z + dir * depth * 0.5), Vector3(x1 - x0, y, depth), seat.darkened(0.05 * float(r % 2)), 0.0)
+		# The seats: a bench along the back of the step, against the step behind (the 3D fans sit on it; the owner:
+		# "the crowd is still 'in' the seats" - they sat on nothing, half into the step behind).
+		# (Not with WSG_OFF, the game as it was: the pilot's before.)
+		if not OS.has_environment("WSG_OFF"):
+			g.box(Vector3((x0 + x1) * 0.5, y + SEAT_H * 0.5, z + dir * (depth - SEAT_D * 0.5)), Vector3(x1 - x0, SEAT_H, SEAT_D),
+				col.lightened(0.16).darkened(0.06 * float(r % 2)), 0.0)
+		# How far behind the feet the step behind (or the back wall) rises above the seat: a fan sitting back into it
+		# comes forward.
+		var behind := depth * 0.55 if rise > SEAT_H or r == rows - 1 else INF
 		# (A seat every 0.62 m; with the HD pack 0.52 m, as close as real seats: a fuller stand.)
 		var gap := 0.52 if Ultra.active() else 0.62
 		var n := int((x1 - x0) / gap)
 		for i in n:
 			spots.append(Vector3(x0 + gap * 0.5 + i * gap + (0.15 if r % 2 == 1 else 0.0), y, z + dir * depth * 0.45))
-			_seats[spots.size() - 1] = true
+			_seats[spots.size() - 1] = behind
 	var back_z := z0 + dir * rows * depth
 	var top := base + rows * rise
 	g.box(Vector3((x0 + x1) * 0.5, (top + 3.0) * 0.5, back_z + dir * 0.3), Vector3(x1 - x0, top + 3.0, 0.6), col.darkened(0.3))

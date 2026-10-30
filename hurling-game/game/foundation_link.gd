@@ -50,6 +50,7 @@ func _ready() -> void:
 	body.skeleton.move_child(legacy, 0)
 	loco = WsgLocomotor.attach(body)
 	reader = WsgLegacyPose.new(toon.skeleton, body.joints)
+	legacy.arms = reader
 	if toon is PersonBody:
 		# PersonBody's own fixes for the Meshy officials (arm twists, feet turned down), not wanted on the rig.
 		var pb := toon as PersonBody

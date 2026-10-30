@@ -72,6 +72,8 @@ func _process(delta: float) -> void:
 	t += delta
 	var now := t
 	var tag := "AFTER: the shared foundation" if FoundationLink.enabled() else "BEFORE: the game today"
+	if OS.has_environment("FILM_TAG"):
+		tag = OS.get_environment("FILM_TAG")
 	match part:
 		"run":
 			var spec: Array = PATH[-1]
@@ -111,6 +113,13 @@ func _process(delta: float) -> void:
 			cam.look_at_from_position(Vector3(-28.0 + t * 0.4, 6.0, -Pitch.HALF_W + 6.0), Vector3(-34.0 + t * 0.4, 5.0, -Pitch.HALF_W - 14.0))
 			if t > 14.0:
 				get_tree().quit()
+		"seats":
+			# Close on the far stand's seats: the fans sitting, up for a score, and down again.
+			Crowd.set_excite(1.0 if t > 3.0 and t < 7.0 else 0.0)
+			label.text = "%s     the crowd in their seats" % tag
+			cam.look_at_from_position(Vector3(-4.0 + t * 0.25, 3.6, -Pitch.HALF_W - 1.5), Vector3(-9.0 + t * 0.25, 2.4, -Pitch.HALF_W - 11.0))
+			if t > 11.0:
+				get_tree().quit()
 		"hand":
 			# Close on the hurley hand: standing, then running.
 			hurler.want_vel = Vector3.ZERO if t < 1.5 else Vector3(0, 0, 5.0)
@@ -120,6 +129,16 @@ func _process(delta: float) -> void:
 			var hand: Vector3 = hurler.link.body.bone_world("RightHand").origin if hurler.link else hurler.body.bone_world("hand_r")
 			cam.look_at_from_position(hand + Vector3(1.6, 0.4, 0.6), hand)
 			if t > 3.0:
+				get_tree().quit()
+		"arm":
+			# The hurley arm from the side: jogging, then sprinting.
+			hurler.want_vel = Vector3(0, 0, 3.5 if t < 3.0 else 7.5)
+			hurler.integrate(delta, now)
+			hurler.animate(now)
+			label.text = "%s     the hurley arm, %.1f m/s" % [tag, hurler.vel.length()]
+			var focus := hurler.position + Vector3(0, 1.1, 0)
+			cam.look_at_from_position(focus + Vector3(-3.2, 0.1, 0.4), focus)
+			if t > 5.0:
 				get_tree().quit()
 		"official":
 			# The umpire at the posts: a point is scored, he signals it.

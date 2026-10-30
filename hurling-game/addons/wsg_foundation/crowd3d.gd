@@ -28,6 +28,9 @@ static var _excite_target := 0.0
 static var _light := 1.0
 static var _tension := 0.0
 static var _meta := {}
+static var _seats := {}
+## A seat's height over the feet (m) when a spot is just "seated": a stand's seat.
+const SEAT := 0.44
 
 var excite := 0.0
 var meshes: Array[MultiMeshInstance3D] = []
@@ -70,10 +73,13 @@ static func set_tension(k: float) -> void:
 
 
 ## Places the fans: spots are their feet (world), facings the way each faces (flat; toward the pitch). seated: true
-## (all on seats), false (a terrace: all standing), or one bool a spot. quality: 1 Medium, 2 High (Low: do not
-## build; keep the billboards). Returns the indices of the spots it drew, nearest the focus first; the game's
-## billboards take the others.
-func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Variant = true, quality := 1, focus := Vector3.ZERO) -> PackedInt32Array:
+## (all on seats SEAT high), false (a terrace: all standing), one bool a spot, or one number a spot (the seat's
+## height over the feet, m; 0 standing): each seated fan is lifted so they sit on it, not in it. room: how far
+## behind the feet the step behind rises above the seat (m; one number, or one a spot): a fan who would sit back into
+## it comes forward. quality: 1 Medium, 2 High (Low: do not build; keep the billboards). Returns the indices of the
+## spots it drew, nearest the focus first; the game's billboards take the others.
+func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Variant = true, quality := 1, focus := Vector3.ZERO,
+		room: Variant = INF) -> PackedInt32Array:
 	for m in meshes:
 		m.queue_free()
 	meshes.clear()
@@ -121,12 +127,14 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 			var i: int = list[k]
 			var fwd: Vector3 = facings[i] if i < facings.size() else Vector3.FORWARD
 			fwd = Vector3(fwd.x, 0, fwd.z).normalized()
-			var b := Basis.looking_at(-fwd, Vector3.UP)   # +Z toward fwd
 			var h := rng.randf_range(0.93, 1.07)
-			var at: Vector3 = spots[i] - fwd * FEET_FORWARD * h
-			mm.set_instance_transform(k, Transform3D(b.scaled(Vector3.ONE * h), at))
-			var sits: bool = seated if seated is bool else bool(seated[i])
-			mm.set_instance_custom_data(k, Color(rng.randf(), 1.0 if sits else 0.0, 0, 0))
+			var seat_h := _per_spot(seated, i)
+			if seat_h > 0.0:
+				# Sizes drawn toward ones that fit the seat: short legs dangle less, long ones sit lower.
+				h = lerpf(h, clampf(seat_h / seat_of(f).x, 0.93, 1.07), 0.6)
+			var pl := place(spots[i], fwd, h, f, seat_h, _per_spot(room, i))
+			mm.set_instance_transform(k, pl[0])
+			mm.set_instance_custom_data(k, Color(rng.randf(), 1.0 if seat_h > 0.0 else 0.0, pl[1], 0))
 			var tone := rng.randf_range(0.85, 1.1)
 			mm.set_instance_color(k, Color(tone, tone * rng.randf_range(0.95, 1.03), tone * rng.randf_range(0.93, 1.05), 1.0))
 		var mi := MultiMeshInstance3D.new()
@@ -138,6 +146,85 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 		meshes.append(mi)
 		materials.append(mat)
 	return used
+
+
+## A fan at a spot (their feet, world) facing fwd, h their size: [their transform, how far (their own units) the
+## seated body is lifted]. seat_h: the seat's height over the feet (0: standing); room: how far behind the feet the
+## step behind rises above the seat. Lifted so the seat of their trousers is on the seat (never sunk into it), and
+## brought forward if they would sit back into the step.
+static func place(spot: Vector3, fwd: Vector3, h: float, fan: String, seat_h: float, room := INF) -> Array:
+	var b := Basis.looking_at(-fwd, Vector3.UP)   # +Z toward fwd
+	var lift := 0.0
+	var push := 0.0
+	if seat_h > 0.0:
+		var s := seat_of(fan)
+		lift = maxf(seat_h / h - s.x, -0.02)
+		push = maxf(0.0, (FEET_FORWARD - s.y) - (room / h - 0.02))
+	return [Transform3D(b.scaled(Vector3.ONE * h), spot - fwd * (FEET_FORWARD - push) * h), lift]
+
+
+static func _per_spot(v: Variant, i: int) -> float:
+	var x: Variant = v[i] if v is Array or v is PackedFloat32Array else v
+	if x is bool:
+		return SEAT if x else 0.0
+	return float(x)
+
+
+## Where a fan sits, in their own space: x the seat's height over the soles (the lowest point of the seat of their
+## trousers and their thighs, over the seated motions), y how far back that comes (z: behind the origin, negative).
+## From crowd.json (tools/bake_crowd.gd writes it), else read off their motion texture.
+static func seat_of(fan: String) -> Vector2:
+	if not _seats.has(fan):
+		var md := meta()
+		var fm: Dictionary = md.fans.get(fan, {})
+		if fm.has("seat"):
+			_seats[fan] = Vector2(fm.seat[0], fm.seat[1])
+		else:
+			var img := (load(DIR + fan + "_pos.res") as Texture2D).get_image()
+			_seats[fan] = measure_seat(img, int(fm.vertices), seated_rows(md))
+	return _seats[fan]
+
+
+## The motion texture's rows a fan is seated in: sitting, clapping seated, and the first of getting up.
+## The seat of a fan's trousers and thighs: one byte a vertex (from crowd.json; empty for data baked before it).
+static func seat_mask(fan: String) -> PackedByteArray:
+	var fm: Dictionary = meta().fans[fan]
+	var mask := PackedByteArray()
+	if fm.has("seat_vertices"):
+		mask.resize(int(fm.vertices))
+		for v in fm.seat_vertices:
+			mask[int(v)] = 1
+	return mask
+
+
+static func seated_rows(md: Dictionary) -> Array:
+	var rows := []
+	for c in ["sit_idle", "sit_clap"]:
+		for f in int(md.clips[c].frames):
+			rows.append(int(md.clips[c].row) + f)
+	rows.append(int(md.clips.sit_to_stand.row))
+	return rows
+
+
+## seat_of from a motion texture (positions, a column a vertex). seat: one byte a vertex, 1 where it is the seat of the
+## trousers or a thigh (the bake knows from the weights); without it, anything within the hips' width, behind the
+## shins and higher than a seat can be low (a foot tucked back under the seat is not what they sit on).
+static func measure_seat(pos: Image, vertices: int, rows: Array, seat_mask := PackedByteArray()) -> Vector2:
+	var seat := INF
+	var pts := []
+	for r in rows:
+		for v in vertices:
+			var c := pos.get_pixel(v, r)
+			var p := Vector3(c.r, c.g, c.b)
+			var on := seat_mask[v] == 1 if not seat_mask.is_empty() else absf(p.x) < 0.2 and p.y > 0.22
+			if on and p.z < FEET_FORWARD - 0.1 and p.y < 0.8:
+				seat = minf(seat, p.y)
+				pts.append(p)
+	var back := 0.0
+	for p in pts:
+		if p.y < seat + 0.18:
+			back = minf(back, p.z)
+	return Vector2(seat, back)
 
 
 func _material(fan: String) -> ShaderMaterial:

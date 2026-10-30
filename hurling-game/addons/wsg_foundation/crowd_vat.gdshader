@@ -111,6 +111,8 @@ void vertex() {
 		keen = 0.0;
 	}
 	vec3 p = mix(p0, p1, keen);
+	// INSTANCE_CUSTOM.b: how far a seated fan is lifted onto their seat (their own units); none once up.
+	p.y += INSTANCE_CUSTOM.b * (1.0 - up);
 	vec3 n = normalize(mix(n0, n1, keen));
 	// Watching the ball: the angle to it in the fan's own frame, a little each their own way; the shoulders take
 	// up to 30 degrees of it, the head the rest (up to 75 in all).
