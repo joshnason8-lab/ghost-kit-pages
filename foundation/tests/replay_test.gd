@@ -68,6 +68,20 @@ func _initialize() -> void:
 	await process_frame
 	if not body.transform.is_equal_approx(live):
 		fails.append("after the replay the body is not back where it was")
+	# A body freed while the ring still holds it (a substitute, a match rebuilt): the replay goes on without it.
+	var gone := WsgBody.new(ch)
+	root.add_child(gone)
+	for f in 6:
+		now += 1.0 / 30.0
+		rp.record(now)
+		await process_frame
+	gone.free()
+	rp.play(now - 0.15, now)
+	rp.seek(now - 0.1)
+	await process_frame
+	rp.stop()
+	rp.record(now + 0.1)
+	print("a body freed while kept: played, sought, stopped, recorded on (no errors above)")
 	# The ring's size: a budget phone's Low (4 s at 15) for 38 bodies.
 	var per_body: int = (rp._frames[-1][1] as Dictionary).values()[0].size() * 4
 	WsgFoundation.profile = "budget"
