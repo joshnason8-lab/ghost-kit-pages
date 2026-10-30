@@ -18,9 +18,11 @@ extends Node3D
 ## The crowd's data: baked from the ActorCore crowd motions at build time (licensed, data/crowd/) if this build has
 ## it, else the authored motions that ship with the addon (crowd/).
 static var DIR := "res://addons/wsg_foundation/data/crowd/" if FileAccess.file_exists("res://addons/wsg_foundation/data/crowd/crowd.json") else "res://addons/wsg_foundation/crowd/"
-## Fans the 3D crowd draws at most, by quality (1 Medium, 2 High): [near (the full figure), in all (the rest the far
-## figure, about a third of the triangles)]. The rest of the spots stay with the game's billboards.
-const BUDGET := {1: [400, 1200], 2: [1000, 3000]}
+## Fans the 3D crowd draws at most, by quality (1 Medium, 2 High, 3 Close: a mode with the camera close and few
+## players on the pitch - a practice, a shoot-out - that spends what the players do not on full figures): [near
+## (the full figure), in all (the rest the far figure, about a third of the triangles)]. The rest of the spots stay
+## with the game's billboards.
+const BUDGET := {1: [400, 1200], 2: [1000, 3000], 3: [2000, 3000]}
 ## A fan's feet are this far in front of their origin (m): the spot given is the feet (WsgCrowdClips.FEET_FORWARD).
 const FEET_FORWARD := WsgCrowdClips.FEET_FORWARD
 
@@ -76,7 +78,7 @@ static func set_tension(k: float) -> void:
 ## (all on seats SEAT high), false (a terrace: all standing), one bool a spot, or one number a spot (the seat's
 ## height over the feet, m; 0 standing): each seated fan is lifted so they sit on it, not in it. room: how far
 ## behind the feet the step behind rises above the seat (m; one number, or one a spot): a fan who would sit back into
-## it comes forward. quality: 1 Medium, 2 High (Low: do not build; keep the billboards). Returns the indices of the
+## it comes forward. quality: 1 Medium, 2 High, 3 Close (see BUDGET; Low: do not build; keep the billboards). Returns the indices of the
 ## spots it drew, nearest the focus first; the game's billboards take the others.
 func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Variant = true, quality := 1, focus := Vector3.ZERO,
 		room: Variant = INF) -> PackedInt32Array:

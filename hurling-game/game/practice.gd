@@ -113,6 +113,7 @@ func _ready() -> void:
 	view = Camera3D.new()
 	add_child(view)
 	_best_look()
+	_close_crowd()
 	practice = {"n": 0, "points": 0, "marks": [], "spots": [], "kinds": [], "state": "ready", "t": 0.0,
 		"best": int(Game.settings.get("practice_best", -1))}
 	for s in SPOTS:

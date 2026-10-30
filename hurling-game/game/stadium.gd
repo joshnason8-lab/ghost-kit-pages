@@ -17,6 +17,9 @@ var crowd: Crowd
 var crowd3d: WsgCrowd3D
 var _seats := {}            # spot index -> how far behind the feet the step behind rises above the seat (m; INF: it
                             # does not): a seat in a stand (the 3D fans sit on it and get up)
+var _spots: Array[Vector3] = []
+## Where the 3D fans go first in a match: the middle of the far stand (the one the television camera looks at).
+const CROWD_FOCUS := Vector3(0, 4.0, -Pitch.HALF_W - 12.0)
 ## A stand's seats: their height over the step the feet are on, and how deep (from the step behind) (m).
 const SEAT_H := 0.40
 const SEAT_D := 0.35
@@ -73,34 +76,43 @@ func _ready() -> void:
 	net.build(H + Pitch.POST_W * 0.5, time)
 	add_child(net)
 	crowd = Crowd.new()
+	_spots = spots
+	build_crowd(CROWD_FOCUS, int(Game.settings.graphics))
+	add_child(crowd)
+	_environment()
+
+
+## The crowd: on Medium and High the 3D fans take the spots nearest focus (as many as quality's budget: 1 Medium,
+## 2 High, 3 Close - a practice or a shoot-out, the camera near one goal and few players to draw), the cut-outs the
+## rest; on Low all cut-outs. Built again when the camera's place changes (the shoot-out, the practice: behind the
+## goal they shoot at).
+func build_crowd(focus: Vector3, quality: int) -> void:
 	var palette := home_colours.duplicate()
 	var density := Game.crowd_density() * (0.55 if kind == "parish" else 1.0)
-	var flat := spots
-	if int(Game.settings.graphics) > Game.GFX_LOW and WsgCrowd3D.available() and not OS.has_environment("WSG_OFF"):
-		# The 3D fans take the spots nearest the far stand (the one the television camera looks at); the cut-outs
-		# fill the rest.
+	var flat := _spots
+	if crowd3d:
+		crowd3d.queue_free()
+		crowd3d = null
+	if quality > Game.GFX_LOW and WsgCrowd3D.available() and not OS.has_environment("WSG_OFF"):
 		crowd3d = WsgCrowd3D.new()
 		add_child(crowd3d)
-		var facings := spots.map(func(p): return Crowd.facing_at(p))
+		var facings := _spots.map(func(p): return Crowd.facing_at(p))
 		var seated := []
 		var room := []
-		for i in spots.size():
+		for i in _spots.size():
 			seated.append(SEAT_H if _seats.has(i) else 0.0)
 			room.append(_seats.get(i, INF))
-		var used := crowd3d.build(spots, facings, density, hash(kind), seated, int(Game.settings.graphics),
-			Vector3(0, 4.0, -Pitch.HALF_W - 12.0), room)
+		var used := crowd3d.build(_spots, facings, density, hash(kind), seated, quality, focus, room)
 		crowd3d.set_teams(home_colours[0], away_colours[0] if not away_colours.is_empty() else home_colours[1])
 		var taken := {}
 		for i in used:
 			taken[i] = true
 		flat = []
-		for i in spots.size():
+		for i in _spots.size():
 			if not taken.has(i):
-				flat.append(spots[i])
+				flat.append(_spots[i])
 	crowd.build(flat, density, palette, hash(kind),
 		away_colours if kind != "parish" else [], 0.75 if kind != "parish" and not away_colours.is_empty() else 0.45)
-	add_child(crowd)
-	_environment()
 
 
 ## The goals: two white uprights 6.5 m apart, at least 7 m high, the crossbar 2.5 m up, and the net behind (a fine
@@ -515,8 +527,13 @@ func _stadium(g: Geo, spots: Array[Vector3]) -> void:
 		var x := H + 9.0 + r * 0.85
 		var y := 1.4 + r * 0.55
 		g.box(Vector3(x + 0.42, y * 0.5, 0), Vector3(0.85, y, 100.0), Color("66727e").darkened(0.04 * float(r % 2)))
+		# Seats, as the stands' (the fans sit on them; the step behind is a backrest).
+		if not OS.has_environment("WSG_OFF"):
+			g.box(Vector3(x + 0.85 - SEAT_D * 0.5, y + SEAT_H * 0.5, 0), Vector3(SEAT_D, SEAT_H, 100.0),
+				Color("66727e").lightened(0.16).darkened(0.06 * float(r % 2)))
 		for i in 160:
 			spots.append(Vector3(x + 0.42, y, -48.0 + i * 0.6))
+			_seats[spots.size() - 1] = 0.43
 	g.box(Vector3(H + 36.0, 22.0, 0), Vector3(1.0, 6.0, 104.0), Color("c9ced3"))
 	_terrace(g, -50.0, 50.0, -H - 9.0, -1.0, 26, Color("8c8f88"), spots)
 	# The near side's lower tier, under the camera.

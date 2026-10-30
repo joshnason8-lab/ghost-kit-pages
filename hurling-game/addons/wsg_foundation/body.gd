@@ -93,8 +93,8 @@ func reset_pose() -> void:
 
 
 ## Closes a hand (side "Left" or "Right") round a handle of radius r (m); strength 0 leaves it as the clip has it.
-func grip(side: String, r := 0.016, strength := 1.0) -> void:
-	var g := WsgGrip.solve(joints, side, r)
+func grip(side: String, r := 0.016, strength := 1.0, line := []) -> void:
+	var g := WsgGrip.solve(joints, side, r, line)
 	for b in g:
 		var i := bone(b)
 		var q: Quaternion = g[b]

@@ -25,13 +25,19 @@ static func axis_point(joints: Dictionary, side: String, r: float) -> Vector3:
 	return Vector3(p.x, w.y - PALM_HALF - r, (joints[side + "HandIndex1"].z + joints[side + "HandPinky1"].z) * 0.5)
 
 
-## {bone: Quaternion} closing the hand on a handle of radius r.
-static func solve(joints: Dictionary, side: String, r: float) -> Dictionary:
-	var key := "%s|%s|%.4f" % [joints.hash(), side, r]
+## {bone: Quaternion} closing the hand on a handle of radius r: across the palm (axis_point), or along line - [a point
+## on the handle's axis, its direction], in the rest (the joints' space) - when the handle is drawn where the game
+## puts it (a hurley through the fist at its own angle): each finger curls till it touches that handle.
+static func solve(joints: Dictionary, side: String, r: float, line := []) -> Dictionary:
+	if not line.is_empty():
+		# (Rounded: a line that moves a little each frame - a second hand on a handle - is solved once a few mm.)
+		line = [(line[0] as Vector3).snapped(Vector3.ONE * 0.005), (line[1] as Vector3).normalized().snapped(Vector3.ONE * 0.05)]
+	var key := "%s|%s|%.4f|%s" % [joints.hash(), side, r, line]
 	if _cache.has(key):
 		return _cache[key]
 	var s := 1.0 if side == "Left" else -1.0
-	var c := axis_point(joints, side, r)
+	var c := axis_point(joints, side, r) if line.is_empty() else line[0] as Vector3
+	var d := Vector3.BACK if line.is_empty() else (line[1] as Vector3).normalized()
 	var out := {}
 	for f in ["Index", "Middle", "Ring", "Pinky"]:
 		var names := [side + "Hand" + f + "1", side + "Hand" + f + "2", side + "Hand" + f + "3"]
@@ -47,7 +53,7 @@ static func solve(joints: Dictionary, side: String, r: float) -> Dictionary:
 				var hit := false
 				for m in range(k + 1, 4):
 					var p: Vector3 = pts[k] + q * (pts[m] - pts[k])
-					if _dist_to_axis(p, c) < r + FINGER_HALF:
+					if _dist_to_axis(p, c, d) < r + FINGER_HALF:
 						hit = true
 						break
 				if hit:
@@ -58,14 +64,58 @@ static func solve(joints: Dictionary, side: String, r: float) -> Dictionary:
 				pts[m] = pts[k] + qk * (pts[m] - pts[k])
 			out[names[k]] = qk
 		# (Every curl is about the same axis, so each joint's turn relative to its parent is its own curl.)
-	# The thumb comes round the handle from the other side: turned in toward the fingers and curled.
-	out[side + "HandThumb1"] = Quaternion(Vector3(s, 0, 0), deg_to_rad(35)) * Quaternion(Vector3(0, s, 0), deg_to_rad(-15))
-	out[side + "HandThumb2"] = Quaternion(Vector3(0, 0, -s), deg_to_rad(30))
-	out[side + "HandThumb3"] = Quaternion(Vector3(0, 0, -s), deg_to_rad(25))
+	# The thumb comes round the handle from the other side: turned in toward the fingers and curled - as far as the
+	# handle lets it (a handle at its own angle can be where the thumb would tuck in: it opens, or lies along the
+	# handle, till it is clear).
+	var best_t := []
+	var best_clear := -INF
+	for spread in [-15.0, 5.0, 25.0, 45.0]:
+		for turn in [35.0, 25.0, 15.0, 5.0, -5.0, -15.0, -25.0, -35.0, -45.0]:
+			for curl in [1.0, 0.6, 0.3, 0.0]:
+				var q := _thumb(s, turn, curl, spread)
+				var clear := _thumb_clear(joints, side, q, c, d) - r - FINGER_HALF
+				if clear > best_clear:
+					best_clear = clear
+					best_t = q
+				if clear >= 0.0:
+					break
+			if best_clear >= 0.0:
+				break
+		if best_clear >= 0.0:
+			break
+	out[side + "HandThumb1"] = best_t[0]
+	out[side + "HandThumb2"] = best_t[1]
+	out[side + "HandThumb3"] = best_t[2]
 	_cache[key] = out
 	return out
 
 
-## Distance from p to the handle's axis (along z) through c.
-static func _dist_to_axis(p: Vector3, c: Vector3) -> float:
-	return Vector2(p.x - c.x, p.y - c.y).length()
+## The thumb's three turns: turned in (degrees) toward the fingers, curled (0-1 of its full curl), spread (degrees:
+## -15 tucked toward the fingers; more lays it along the handle).
+static func _thumb(s: float, turn: float, curl: float, spread := -15.0) -> Array:
+	return [Quaternion(Vector3(s, 0, 0), deg_to_rad(turn)) * Quaternion(Vector3(0, s, 0), deg_to_rad(spread)),
+		Quaternion(Vector3(0, 0, -s), deg_to_rad(30.0 * curl)), Quaternion(Vector3(0, 0, -s), deg_to_rad(25.0 * curl))]
+
+
+## The least distance from the thumb (its joints, the middles between, its tip) to the handle's axis.
+static func _thumb_clear(joints: Dictionary, side: String, q: Array, c: Vector3, d: Vector3) -> float:
+	var p1: Vector3 = joints[side + "HandThumb1"]
+	var p2: Vector3 = joints[side + "HandThumb2"]
+	var p3: Vector3 = joints[side + "HandThumb3"]
+	var tip := p3 + (p3 - p2) * 0.85
+	var g1: Quaternion = q[0]
+	var g2: Quaternion = g1 * (q[1] as Quaternion)
+	var g3: Quaternion = g2 * (q[2] as Quaternion)
+	var a2 := p1 + g1 * (p2 - p1)
+	var a3 := a2 + g2 * (p3 - p2)
+	var at := a3 + g3 * (tip - p3)
+	var least := INF
+	for p in [a2, a3, at, (p1 + a2) * 0.5, (a2 + a3) * 0.5, (a3 + at) * 0.5]:
+		least = minf(least, _dist_to_axis(p, c, d))
+	return least
+
+
+## Distance from p to the handle's axis (along d) through c.
+static func _dist_to_axis(p: Vector3, c: Vector3, d: Vector3) -> float:
+	var v := p - c
+	return (v - d * v.dot(d)).length()

@@ -9,11 +9,17 @@ extends Node
 ##   straightened: an arm the game poses (its moves; the hurley arm) much straighter on the rig than in the game - the
 ##     hinge throwing away a bend it could not follow (the arm snapping straight and back).
 ## The same is measured on the game's own body (17 bones), to tell the foundation's faults from the game's poses.
+## And the hands, close up (the free-taking practice and the shoot-out are filmed close): a wrist turned past WRIST_MAX
+## about the forearm (candy-wrap), a finger through the hurley's handle.
 ##   godot --headless --path . --fixed-fps 30 res://tests/elbow_audit.tscn -- [match minutes] [seed] [raw]
+##   ... -- practice     (the ten frees of the practice: set, lift, toss, strike, follow-through; the umpires)
+##   ... -- shootout     (the extra-time shoot-out to a winner: the takers, the goalkeepers, the umpires)
 
 const TWIST_MAX := 115.0    # degrees: a humerus turns about 70 in and 90 out from neutral; past this it is wrong
 const BENT := 25.0          # an elbow bent less than this has no direction to be wrong in
 const STRAIGHTENED := 30.0  # degrees less bend on the rig than in the game's pose
+const FINGER_IN := 5.0      # mm of a finger's skin into the handle (flesh gives a little round a grip)
+const WRIST_MAX := 110.0    # degrees the hand may turn about the forearm (the forearm's own range is about 85 each way)
 
 var worst := []             # [deg, kind, who, action, mode, time]
 var counts := {}
@@ -21,6 +27,7 @@ var frames := 0
 var _seen := {}
 var m: Node
 var _raw := false
+var _handle := {}           # link -> [the handle's middle, its direction, its radius, half its length] (the hurley's own space)
 
 
 func _ready() -> void:
@@ -34,6 +41,10 @@ func _ready() -> void:
 		return
 	Game.main = self
 	Game.settings.sound = false
+	if "practice" in args or "shootout" in args:
+		await _close("practice" in args)
+		_report()
+		return
 	var ids := DB.counties_ranked()
 	m = load("res://game/match.gd").new()
 	m.config = {"home": ids[0], "away": ids[3], "venue": "county", "user_team": -1, "seed": seed, "length": length, "mode": "sim_test"}
@@ -46,6 +57,43 @@ func _ready() -> void:
 		await get_tree().process_frame
 		frames += 1
 	_report()
+
+
+## The practice's ten frees, or a shoot-out to a winner, aimed as a player would (the target low in the middle, or
+## over the bar): every frame of every swing.
+func _close(practice: bool) -> void:
+	Game.settings.graphics = Game.GFX_HIGH
+	if practice:
+		m = load("res://game/practice.gd").new()
+		m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": 0, "seed": 7, "mode": "practice"}
+	else:
+		m = load("res://game/match.gd").new()
+		m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": 0, "seed": 5, "length": 8.0,
+			"mode": "champ", "knockout": true}
+	m.set_meta("test", true)
+	add_child(m)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not practice:
+		m._begin_shootout()
+	var aim_t := -1.0
+	while frames < 30 * 200:
+		if frames % 10 == 0:
+			_hook()
+		if m.placed_aim != null and not m.placed_aim.stopped and m.user_buttons() == ["SHOOT"]:
+			aim_t = frames if aim_t < 0.0 else aim_t
+			if frames - aim_t > 20:
+				m.placed_aim.angle = PI * 0.5 if frames % 2 == 0 else PI * 1.5
+				m.placed_aim._place()
+				m._on_action("SHOOT")
+				m.placed_aim.bar_x = 0.0
+				m._on_action("SHOOT")
+				aim_t = -1.0
+		if practice and String(m.practice.state) == "over" or not practice and m.phase == m.P.OVER:
+			break
+		await get_tree().process_frame
+		frames += 1
+	print("%s: %s" % ["practice" if practice else "shoot-out", m.practice.marks if practice else str(m.shootout.goals)])
 
 
 func _hook() -> void:
@@ -64,6 +112,8 @@ func _who(pl: Player) -> String:
 
 
 func _check(pl: Player, link: FoundationLink) -> void:
+	if not pl.visible_on_screen or not link.body.is_visible_in_tree():
+		return    # (not drawn)
 	var sk := link.body.skeleton
 	var t: float = m.now
 	var mode: String = link._mode
@@ -91,11 +141,88 @@ func _check(pl: Player, link: FoundationLink) -> void:
 		var tw := tk.get_bone_global_pose(tk.find_bone("hand_" + c)).origin
 		_note(_twist(tchest, ts, te, tw), "game %s elbow turned" % side, pl, mode, t, TWIST_MAX)
 		# Posed by the game (not the motion capture): bent as much as the game bends it.
-		var legacy_arm: bool = link.legacy.weight > 0.5 and (mode != "move" or (side == "Right" and pl.role == ""))
+		# (Not a hand held on the hurley's handle: that arm goes where the handle is, not as the game bends it.)
+		var on_handle: bool = link.legacy.hold.has(side) and float(link.legacy.hold[side][2]) > 0.5
+		var legacy_arm: bool = link.legacy.weight > 0.5 and (mode != "move" or (side == "Right" and pl.role == "")) and not on_handle
 		if legacy_arm:
 			var game_bend := rad_to_deg((te - ts).angle_to(tw - te))
 			var rig_bend := rad_to_deg((e - s).angle_to(w - e))
 			_note(game_bend - rig_bend, "rig %s elbow straightened" % side, pl, mode, t, STRAIGHTENED)
+		# The wrist: the hand turned about the forearm.
+		var fq := sk.get_bone_global_pose(fi).basis.get_rotation_quaternion()
+		var hq := sk.get_bone_global_pose(sk.find_bone(side + "Hand")).basis.get_rotation_quaternion()
+		var wt: Quaternion = WsgRig.swing_twist(fq.inverse() * hq, rest_dir)[1]
+		_note(absf(rad_to_deg(WsgRig.twist_angle(wt, rest_dir))), "rig %s wrist turned" % side, pl, mode, t, WRIST_MAX)
+		# The game's own wrist (its hand's turn about its forearm, which hangs down at rest).
+		var tf := tk.get_bone_global_pose(tk.find_bone("forearm_" + c)).basis.get_rotation_quaternion()
+		var th := tk.get_bone_global_pose(tk.find_bone("hand_" + c)).basis.get_rotation_quaternion()
+		var gt: Quaternion = WsgRig.swing_twist(tf.inverse() * th, Vector3.DOWN)[1]
+		_note(absf(rad_to_deg(WsgRig.twist_angle(gt, Vector3.DOWN))), "game %s wrist turned" % side, pl, mode, t, WRIST_MAX)
+		# The fingers: none through the hurley's handle (either hand that is on it).
+		if link.stick != null and link.stick.is_visible_in_tree():
+			var into := _through(link, side) * 1000.0
+			_note(into, "rig %s finger in the handle (mm)" % side, pl, mode, t, FINGER_IN)
+			if OS.has_environment("DBG_LEFT") and side == "Left" and into > FINGER_IN:
+				var h: Array = link.legacy.hold.get("Left", [])
+				var miss := -1.0
+				if not h.is_empty():
+					var tgt: Transform3D = sk.get_bone_global_pose(sk.find_bone("RightHand")) * (h[1] as Transform3D)
+					miss = sk.get_bone_global_pose(sk.find_bone("LeftHand")).origin.distance_to(tgt.origin)
+				print("DBGL %s %s %.1f mm hold %s miss %.3f layer %.2f every %d" % [_who(pl), pl.action, into, str(h[2]) if not h.is_empty() else "-", miss, link.legacy.weight, pl._pose_every])
+
+
+## How far (m) the deepest finger of a hand goes into the hurley's handle, skin into wood (0: none; off it: 0).
+func _through(link: FoundationLink, side: String) -> float:
+	if not _handle.has(link):
+		_handle[link] = _measure_handle(link)
+	var hd: Array = _handle[link]
+	if hd.is_empty():
+		return 0.0
+	var xf := link.stick.global_transform
+	var mid: Vector3 = xf * (hd[0] as Vector3)
+	var dir: Vector3 = (xf.basis * (hd[1] as Vector3)).normalized()
+	var r: float = hd[2] * xf.basis.get_scale().x
+	var half: float = hd[3] * xf.basis.get_scale().x
+	var sk := link.body.skeleton
+	var deepest := 0.0
+
+	for f in ["Thumb", "Index", "Middle", "Ring", "Pinky"]:
+		var pts := []
+		for j in [1, 2, 3]:
+			pts.append(link.body.global_transform * sk.get_bone_global_pose(sk.find_bone("%sHand%s%d" % [side, f, j])).origin)
+		# The segments' middles too, and the tip. (The thumb's first joint is where it meets the wrist, inside the ball
+		# of the thumb: a handle across the palm is always that near it. Its knuckle on are the thumb.)
+		var tip: Vector3 = (pts[2] as Vector3) + ((pts[2] as Vector3) - (pts[1] as Vector3)) * 0.85
+		pts.append(((pts[1] as Vector3) + (pts[2] as Vector3)) * 0.5)
+		pts.append(tip)
+		if f == "Thumb":
+			pts.remove_at(0)
+		else:
+			pts.append(((pts[0] as Vector3) + (pts[1] as Vector3)) * 0.5)
+		for pi in pts.size():
+			var p: Vector3 = pts[pi]
+			var d: Vector3 = p - mid
+			var along := d.dot(dir)
+			if absf(along) > half:
+				continue
+			var off := (d - dir * along).length()
+			# The finger's skin into the handle (a finger is WsgGrip.FINGER_HALF from its middle to its skin).
+			var into := r + WsgGrip.FINGER_HALF - off
+			if off < 0.08:
+				deepest = maxf(deepest, into)
+	return deepest
+
+
+## The handle, in the hurley's own space (the game's body's, at rest: HeroBody._hurley): the grip-taped part round the
+## fist - [its middle, its direction, its radius, half its length].
+static func _measure_handle(link: FoundationLink) -> Array:
+	var hb := link.toon as HeroBody
+	if hb == null:
+		return []
+	var rest_hand := link.toon.skeleton.get_bone_global_rest(link.toon.bone("hand_r")).origin
+	var dir := HeroBody.HURLEY_DIR.normalized()
+	var hh: Vector3 = rest_hand + hb._grip()
+	return [hh + dir * 0.03, dir, 0.021, 0.11]
 
 
 ## How far (degrees) an elbow's bend is from the way it bends with the upper arm not turned about its length: the
@@ -128,12 +255,41 @@ func _trim() -> void:
 	worst = best.values()
 
 
+func _limit_of(kind: String) -> float:
+	if kind.contains("backwards"):
+		return 3.0
+	if kind.contains("straightened"):
+		return STRAIGHTENED
+	if kind.contains("wrist"):
+		return WRIST_MAX
+	if kind.contains("finger"):
+		return FINGER_IN
+	return TWIST_MAX
+
+
 func _report() -> void:
 	_trim()
 	worst.sort_custom(func(a, b): return a[0] > b[0])
 	print("elbow audit: %d frames (%.1f match min)" % [frames, frames / 1800.0])
 	for r in worst.slice(0, 40):
 		print("  %6.1f deg  %-24s %-10s %-14s mode %-5s t %.1f" % r)
+	# The worst of each check, whoever and whenever.
+	var per := {}
+	for r in worst:
+		if not per.has(r[1]) or r[0] > per[r[1]][0]:
+			per[r[1]] = r
+	var kinds := per.keys()
+	kinds.sort()
+	print("  worst of each:")
+	for k in kinds:
+		var r: Array = per[k]
+		print("    %-34s %7.1f  (%s, %s, t %.1f)" % [k, r[0], r[2], r[3], r[5]])
+	# Past a limit: by action (the worst of each).
+	var past := worst.filter(func(r): return String(r[1]).begins_with("rig") and r[0] > _limit_of(r[1]))
+	if not past.is_empty():
+		print("  past a limit, by action:")
+		for r in past:
+			print("    %-34s %7.1f  (%s, %s, mode %s, t %.1f)" % [r[1], r[0], r[2], r[3], r[4], r[5]])
 	var fail := false
 	for k in counts:
 		print("  %s: %d frames past the limit" % [k, counts[k]])

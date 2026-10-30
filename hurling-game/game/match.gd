@@ -2766,7 +2766,15 @@ func _begin_shootout() -> void:
 		_pen_view = Camera3D.new()
 		add_child(_pen_view)
 	hud.shootout(shootout)
+	_close_crowd()
 	_shootout_next()
+
+
+## The shoot-out and the practice are shot close at one goal: the 3D crowd (the shared foundation's, on High) moves
+## behind that goal at its Close budget (more full figures: there are few players to draw).
+func _close_crowd() -> void:
+	if stadium and int(Game.settings.graphics) == Game.GFX_HIGH:
+		stadium.build_crowd(Vector3(_shootout_goal_dir() * (Pitch.HALF_L + 14.0), 3.0, 0.0), 3)
 
 
 var _pen_view: Camera3D     # the shoot-out's camera, low behind the taker

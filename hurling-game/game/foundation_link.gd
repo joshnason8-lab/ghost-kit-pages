@@ -22,6 +22,10 @@ var stick: MeshInstance3D
 var _last := -1.0
 var _mode := ""
 var _upper := {}
+var _line_r := []           # the hurley's handle in the right hand, at rest (the rig's joints' space): [point, direction]
+var _handle_toon := Vector3.ZERO   # the middle of the handle's grip tape (the game's body's rest space)
+## The hurley's handle: its grip tape's radius (HeroBody._hurley).
+const HANDLE_R := 0.021
 
 
 static func enabled() -> bool:
@@ -41,6 +45,7 @@ func _ready() -> void:
 	var lod := 1 if int(Game.settings.graphics) == Game.GFX_LOW else 0
 	body = WsgBody.new(WsgBody.load_character(DIR, prefix), null, lod)
 	add_child(body)
+	body.visible = false        # till its first pose (a frame of the rig's T-pose with the hurley otherwise)
 	body.scale = toon.scale
 	body.mesh_instance.material_override = toon.mesh_instance.material_override
 	body.mesh_instance.cast_shadow = toon.mesh_instance.cast_shadow
@@ -51,6 +56,8 @@ func _ready() -> void:
 	loco = WsgLocomotor.attach(body)
 	reader = WsgLegacyPose.new(toon.skeleton, body.joints)
 	legacy.arms = reader
+	if toon is HeroBody:
+		reader.held = {"Right": true}      # the hurley: its turn is the game's, exactly
 	if toon is PersonBody:
 		# PersonBody's own fixes for the Meshy officials (arm twists, feet turned down), not wanted on the rig.
 		var pb := toon as PersonBody
@@ -75,6 +82,12 @@ func _ready() -> void:
 		stick.top_level = true
 		add_child(stick)
 		body.posed.connect(_place_stick)
+		# Where the handle runs through the fist, as drawn (the fingers close on it there).
+		var rest_hand := toon.skeleton.get_bone_global_rest(toon.bone("hand_r")).origin
+		var dir := HeroBody.HURLEY_DIR.normalized()
+		_handle_toon = rest_hand + (toon as HeroBody)._grip() + dir * 0.03
+		var cr: Quaternion = reader._corr["RightHand"].inverse()
+		_line_r = [(body.joints["RightHand"] as Vector3) + cr * (_handle_toon - rest_hand), cr * dir]
 
 
 ## After player.gd has posed the game's body this frame: drive this one.
@@ -83,6 +96,7 @@ func update(now: float) -> void:
 	_last = now
 	if dt <= 0.0:
 		return
+	_dt = dt
 	var mode := "move"
 	var act := player.action
 	if player.down(now) or (act != "" and not act.begins_with("sig_") and not act in CARRY):
@@ -113,8 +127,12 @@ func update(now: float) -> void:
 	# the hand by up to 40 cm and turned it by up to 130 degrees: the hurley stood up out of the fist).
 	legacy.body_pose = reader.body_space(["RightShoulder", "RightArm", "RightForeArm", "RightHand"]) if player.role == "" else {}
 	if mode != _mode:
-		legacy.fade_to(0.0 if mode == "move" and player.role != "" else 1.0, 0.16)
+		var want := 0.0 if mode == "move" and player.role != "" else 1.0
+		if _mode == "":
+			legacy.weight = want     # (a new body starts as the game's: no blend in from nothing)
+		legacy.fade_to(want, 0.16)
 		_mode = mode
+	body.visible = true
 	var v := player.vel
 	loco.drive(dt, Vector3(v.x, 0, v.z), player.yaw, Vector3(player.want_vel.x, 0, player.want_vel.z))
 	if mode == "full":
@@ -122,9 +140,75 @@ func update(now: float) -> void:
 		loco.yaw = player.yaw
 		body.rotation.y = player.yaw
 	if player.role == "":
-		body.grip("Right", 0.016)
-		body.grip("Left", 0.016)
+		_two_hands()
+		_grips()
 
+
+## The hands closed on the hurley (and the left as _two_hands left it), every frame: a far player is posed every
+## second or third frame, and between them the motion capture's open hands came back.
+var _left_grip := [0.016, 1.0, []]
+var _on_handle := false
+var _hold_w := 0.0
+var _dt := 1.0 / 60.0
+
+
+func _process(_delta: float) -> void:
+	if body != null and player.role == "":
+		_grips()
+
+
+func _grips() -> void:
+	body.grip("Right", HANDLE_R, 1.0, _line_r) if not _line_r.is_empty() else body.grip("Right", 0.016)
+	body.grip("Left", _left_grip[0], _left_grip[1], _left_grip[2])
+
+
+## The top hand on the hurley when the game's body has it there (a swing, a strike, a hook): held to the right hand
+## as the game holds it, the fingers closed on the handle; else a loose fist.
+func _two_hands() -> void:
+	legacy.hold = {}
+	_left_grip = [0.016, 1.0, []]
+	if _line_r.is_empty() or not stick.visible:
+		return
+	var tk := toon.skeleton
+	var tr := tk.get_bone_global_pose(toon.bone("hand_r"))
+	var tl := tk.get_bone_global_pose(toon.bone("hand_l"))
+	var rest_hand := tk.get_bone_global_rest(toon.bone("hand_r")).origin
+	var hp := tr * (_handle_toon - rest_hand)
+	var hd := (tr.basis * HeroBody.HURLEY_DIR).normalized()
+	# On it: the wrist about a hand's breadth from the handle's axis (a fist round it), along the tape.
+	var off := tl.origin - hp
+	# Taken hold of when it comes within a hand of the handle, let go only when clearly off it, and fully on between
+	# (a hand eased half way between the game's place and the handle went through the handle: in a strike the game's
+	# hand is near it for a few frames only).
+	var off_axis := (off - hd * off.dot(hd)).length()
+	var off_along := absf(off.dot(hd))
+	if off_axis < 0.15 and off_along < 0.22:
+		_on_handle = true
+	elif off_axis > 0.22 or off_along > 0.32:
+		_on_handle = false
+	# (Taken at once - from within a hand of it, at a swing's speed, unseen; let go over a moment, away from it.)
+	_hold_w = 1.0 if _on_handle else move_toward(_hold_w, 0.0, _dt / 0.12)
+	var w := smoothstep(0.0, 1.0, _hold_w)
+	if w <= 0.0:
+		return
+	var trp := Transform3D(Basis(tr.basis.get_rotation_quaternion() * (reader._corr["RightHand"] as Quaternion)), tr.origin)
+	var tlp := Transform3D(Basis(tl.basis.get_rotation_quaternion() * (reader._corr["LeftHand"] as Quaternion)), tl.origin)
+	# The left hand where the game has it, in the right hand's frame; then turned the least way that lays its palm's
+	# grip along the handle and slid onto the handle there (the rig's hand is not the game's: placed as the game's,
+	# the handle went through the thumb).
+	var held := trp.affine_inverse() * tlp
+	var jr: Vector3 = body.joints["RightHand"]
+	var pt: Vector3 = (_line_r[0] as Vector3) - jr
+	var dr: Vector3 = _line_r[1]
+	var v := WsgGrip.axis_point(body.joints, "Left", HANDLE_R) - (body.joints["LeftHand"] as Vector3)
+	var r0 := held.basis.get_rotation_quaternion()
+	var across := r0 * Vector3.BACK
+	var to := dr if across.dot(dr) >= 0.0 else -dr
+	var rq := Quaternion(across, to) * r0
+	var g := held.origin + rq * v
+	var on := pt + dr * (g - pt).dot(dr)
+	legacy.hold = {"Left": ["RightHand", Transform3D(Basis(rq), on - rq * v), w, dr, v]}
+	_left_grip = [HANDLE_R, w * w * w, []]    # (open as it comes onto the handle and goes)
 
 
 ## The hurley in this body's right hand, as the game's body holds it in its own. Placed when the skeleton has its

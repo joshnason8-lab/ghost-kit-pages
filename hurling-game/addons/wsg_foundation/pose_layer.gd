@@ -19,6 +19,13 @@ var body_pose := {}
 ## Given (the WsgLegacyPose reading the game's body): an arm laid in body space is made anatomical under this body's
 ## own chest (WsgLegacyPose.sound_arm), which turns differently from the game's.
 var arms: WsgLegacyPose
+## Hands kept on something another bone holds (a two-handed grip: the top hand on a hurley's handle): {side: [the bone
+## it is held to, Transform3D - the hand (rig-convention frame) in that bone's frame, weight 0-1, and optionally the
+## handle's direction in that frame and a point on its axis in the hand's frame: a hand that cannot reach slides
+## along it to the nearest place it can, and may roll round it (still holding it) to spare the wrist]}. Applied
+## after body_pose: the arm reaches there (two bones, the elbow kept on its side), the hand turned as given, then made
+## anatomical (arms).
+var hold := {}
 
 var _target := 0.0
 var _rate := 0.0
@@ -75,12 +82,117 @@ func _process_modification_with_delta(delta: float) -> void:
 		var side := "Left" if b.begins_with("Left") else "Right"
 		if arms != null and b == side + "Arm" and targets.has(side + "ForeArm"):
 			var chest := sk.get_bone_global_pose(sk.find_bone("Spine2")).basis.get_rotation_quaternion()
-			var r := arms.sound_arm(chest, side, targets[b], targets[side + "ForeArm"])
+			var r := arms.sound_arm(chest, side, targets[b], targets[side + "ForeArm"], targets.get(side + "Hand", targets[side + "ForeArm"]))
 			targets = targets.duplicate()
 			targets[b] = r[0]
 			targets[side + "ForeArm"] = r[1]
+			if targets.has(side + "Hand"):
+				targets[side + "Hand"] = r[2]
 		var want: Quaternion = (pq.inverse() * (targets[b] as Quaternion)).normalized()
 		sk.set_bone_pose_rotation(i, sk.get_bone_pose_rotation(i).slerp(want, w))
+	for side in hold:
+		var h: Array = hold[side]
+		var hw: float = float(h[2]) * w
+		var ai := sk.find_bone(h[0])
+		if hw > 0.0 and ai >= 0:
+			var ag := sk.get_bone_global_pose(ai)
+			var target := ag * (h[1] as Transform3D)
+			var grip := []
+			if h.size() > 4:
+				target.origin += _slide(sk, side, target.origin, ag.basis * (h[3] as Vector3))
+				grip = [h[4], ag.basis * (h[3] as Vector3)]
+			_reach(sk, side, target, hw, grip)
 	if hips != Vector3.INF:
 		var h := sk.find_bone("Hips")
 		sk.set_bone_pose_position(h, sk.get_bone_pose_position(h).lerp(sk.get_bone_rest(h).origin + hips, w))
+
+
+## How far along dir (skeleton space) a hand's target must move for the side's arm to reach it comfortably (zero if
+## it can): no farther than the arm's length, no nearer the shoulder than half of it (folded tighter, the hand cannot
+## be put there).
+func _slide(sk: Skeleton3D, side: String, t: Vector3, dir: Vector3) -> Vector3:
+	var ia := sk.find_bone(side + "Arm")
+	var s := sk.get_bone_global_pose(ia).origin
+	var arm := sk.get_bone_rest(sk.find_bone(side + "ForeArm")).origin.length() + sk.get_bone_rest(sk.find_bone(side + "Hand")).origin.length()
+	var v := t - s
+	var want := clampf(v.length(), arm * 0.5, arm * 0.97)
+	if is_equal_approx(want, v.length()) or dir.length_squared() < 1e-8:
+		return Vector3.ZERO
+	var d := dir.normalized()
+	# |v + d x| = want: the root nearer zero; none (the line never comes that near): the nearest point of the line.
+	var b := v.dot(d)
+	var disc := b * b - (v.length_squared() - want * want)
+	if disc < 0.0:
+		return -d * b
+	var r := sqrt(disc)
+	var x1 := -b - r
+	var x2 := -b + r
+	return d * (x1 if absf(x1) < absf(x2) else x2)
+
+
+## The side's arm reaching target (skeleton space: the hand's place and turn), by w. grip: given (a point on the
+## handle in the hand's frame, and the handle's direction, skeleton space), the hand may roll round the handle -
+## still holding it (every 15 degrees round) - to where the arm can reach it without wringing the wrist.
+func _reach(sk: Skeleton3D, side: String, target: Transform3D, w: float, grip := []) -> void:
+	var ia := sk.find_bone(side + "Arm")
+	var ifo := sk.find_bone(side + "ForeArm")
+	var ih := sk.find_bone(side + "Hand")
+	var best := _reach_solve(sk, side, target, not grip.is_empty())
+	if not grip.is_empty() and best[3] > 0.0:
+		var p: Vector3 = target * (grip[0] as Vector3)
+		var d: Vector3 = (grip[1] as Vector3).normalized()
+		for i in range(1, 24):
+			var phi := deg_to_rad(15.0 * ((i + 1) / 2) * (1 if i % 2 == 1 else -1))
+			var roll := Transform3D(Basis(Quaternion(d, phi)), Vector3.ZERO)
+			var t := Transform3D(Basis.IDENTITY, p) * roll * Transform3D(Basis.IDENTITY, -p) * target
+			var c := _reach_solve(sk, side, t, true)
+			if c[3] + absf(phi) * 0.02 < best[3]:
+				best = c
+	var par := sk.get_bone_global_pose(sk.get_bone_parent(ia)).basis.get_rotation_quaternion()
+	var qa: Quaternion = best[0]
+	var qf: Quaternion = best[1]
+	var qh: Quaternion = best[2]
+	sk.set_bone_pose_rotation(ia, sk.get_bone_pose_rotation(ia).slerp((par.inverse() * qa).normalized(), w))
+	sk.set_bone_pose_rotation(ifo, sk.get_bone_pose_rotation(ifo).slerp((qa.inverse() * qf).normalized(), w))
+	sk.set_bone_pose_rotation(ih, sk.get_bone_pose_rotation(ih).slerp((qf.inverse() * qh).normalized(), w))
+
+
+## [upper arm, forearm, hand (skeleton space), how far out of range] for the side's arm reaching target. on_handle:
+## the hand keeps the target's turn exactly (it is on something), the wrist counted in the range.
+func _reach_solve(sk: Skeleton3D, side: String, target: Transform3D, on_handle: bool) -> Array:
+	var ia := sk.find_bone(side + "Arm")
+	var ifo := sk.find_bone(side + "ForeArm")
+	var ih := sk.find_bone(side + "Hand")
+	var ga := sk.get_bone_global_pose(ia)
+	var gf := sk.get_bone_global_pose(ifo)
+	var s := ga.origin
+	var e := gf.origin
+	var l1 := sk.get_bone_rest(ifo).origin.length()
+	var l2 := sk.get_bone_rest(ih).origin.length()
+	var qh := target.basis.get_rotation_quaternion()
+	var to := target.origin - s
+	if to.length_squared() < 1e-8:
+		return [ga.basis.get_rotation_quaternion(), gf.basis.get_rotation_quaternion(), qh, 0.0]
+	var tdir := to.normalized()
+	var d := clampf(to.length(), absf(l1 - l2) + 0.001, l1 + l2 - 0.001)
+	# The elbow on the side it is on now.
+	var pole := (e - s) - tdir * (e - s).dot(tdir)
+	if pole.length_squared() < 1e-8:
+		pole = Vector3.DOWN - tdir * Vector3.DOWN.dot(tdir)
+	var x := (l1 * l1 - l2 * l2 + d * d) / (2.0 * d)
+	var e2 := s + tdir * x + pole.normalized() * sqrt(maxf(l1 * l1 - x * x, 0.0))
+	var t2 := s + tdir * d
+	var qa0 := ga.basis.get_rotation_quaternion()
+	var qa := Quaternion((e - s).normalized(), (e2 - s).normalized()) * qa0
+	var qf := qa * qa0.inverse() * gf.basis.get_rotation_quaternion()
+	var f_axis := sk.get_bone_rest(ih).origin.normalized()
+	qf = Quaternion((qf * f_axis).normalized(), (t2 - e2).normalized()) * qf
+	var out := 0.0
+	if arms != null:
+		var chest := sk.get_bone_global_pose(sk.find_bone("Spine2")).basis.get_rotation_quaternion()
+		if on_handle:
+			var r := arms._sound(chest, side, qa, qf, qh, true)
+			return [r[0], r[1], qh, r[2]]
+		var r2 := arms.sound_arm(chest, side, qa, qf, qh)
+		return [r2[0], r2[1], r2[2], 0.0]
+	return [qa, qf, qh, out]

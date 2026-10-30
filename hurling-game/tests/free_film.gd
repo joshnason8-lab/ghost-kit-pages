@@ -2,8 +2,8 @@ extends Node
 ## Free-taking filmed for the foundation pilot's before and after (WSG_OFF=1: the game as it is today): through the
 ## game's own cameras, aimed as a player would (the target low in the middle, then the bar in the green).
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 --write-movie out.avi res://tests/free_film.tscn -- <part>
-## part: "free" (two frees in practice: from 21 m in front, then 30 m out to the left) or "shootout" (extra time's
-## shoot-out: the first two penalties, yours then theirs).
+## part: "free" (two frees in practice: from 21 m in front, then 30 m out to the left; the second's strike in slow
+## motion) or "shootout" (extra time's shoot-out: the first two penalties, yours then theirs, the second's slowed).
 
 var part := "free"
 var m: Node
@@ -11,6 +11,7 @@ var label: Label
 var taken := 0
 var t := 0.0
 var _last := -1
+var _slow := false
 
 
 func _ready() -> void:
@@ -44,10 +45,18 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	t += delta
+	# The second strike in slow motion (a third of the speed), from the lift to the follow-through.
+	var second := int(m.practice.get("n", 0)) >= 1 if part == "free" else int(m.shootout.get("taken", [0, 0])[0]) + int(m.shootout.get("taken", [0, 0])[1]) >= 1
+	var slow: bool = second and m.taker != null and m.taker.action in ["free_strike", "strike"]
+	# (The movie writer ignores Engine.time_scale: film at a higher --fixed-fps and keep every frame of these, every
+	# third of the rest: the frames are printed.)
+	if slow != _slow:
+		_slow = slow
+		print("SLOW %s %d" % ["from" if slow else "to", Engine.get_frames_drawn()])
 	var tag := "AFTER: the shared foundation" if FoundationLink.enabled() else "BEFORE: the game today"
 	if OS.has_environment("FILM_TAG"):
 		tag = OS.get_environment("FILM_TAG")
-	label.text = "%s     %s" % [tag, "a free in practice" if part == "free" else "the extra-time shoot-out"]
+	label.text = "%s     %s%s" % [tag, "a free in practice" if part == "free" else "the extra-time shoot-out", "   (slow motion)" if slow else ""]
 	if m.placed_aim != null and not m.placed_aim.stopped and m.user_buttons() == ["SHOOT"] and t > 0.5:
 		# A beat to see the stance, then aimed: low in the middle (a goal) or over the bar.
 		if m.placed_aim.get_meta("film_t", -1.0) < 0.0:
