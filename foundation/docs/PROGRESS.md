@@ -107,3 +107,7 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   moves (off in "full": the game plants its own); after a teleport the held feet pointed the legs sideways (a lock
   past 1.5 reach is planted afresh) and a foot drawn on and on climbed to the hips (let go past 20 cm). The elbow
   audit checks the feet too. Loco test still 6.4 cm/s.
+- [x] Owner: "the phone should decide if it can handle better or worse graphics ... a new phone and Kabaddi should go
+  to high quality". starting_tier(): weak Low, flagship High, else the profile's default (premium Medium, budget
+  Low); every tier can be chosen (budget High: GL still, 400 + 800 3D fans, every body in full; 674,000 triangles).
+  WsgFoundation.tier (set by the game) picks the full-detail bodies per tier.

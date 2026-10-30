@@ -1,6 +1,6 @@
 extends SceneTree
-## The game profiles (WsgFoundation): which phones start on which tier, what each profile allows, what the 3D crowd
-## and the full-detail bodies may cost.
+## The game profiles (WsgFoundation): which phones start on which tier (the phone decides), what the 3D crowd and
+## the full-detail bodies may cost at each.
 ##   godot --headless --path . -s tests/profile_test.gd
 
 func _initialize() -> void:
@@ -16,25 +16,35 @@ func _initialize() -> void:
 		print("%-28s %4.1f GB: class %+d" % [p[0], p[1], c])
 		if c != int(p[2]):
 			fails.append("%s %.0f GB: class %d, want %d" % [p[0], p[1], c, p[2]])
+	# The phone decides where it starts: weak Low, a flagship High (a budget game too: the owner's "a new phone and
+	# Kabaddi: high quality"), the rest the game's default; every tier can be chosen.
+	var starts := {"premium": {"Mali-G57 MC2": 0, "Adreno (TM) 620": 1, "Adreno (TM) 750": 2},
+		"budget": {"Mali-G57 MC2": 0, "Adreno (TM) 620": 0, "Adreno (TM) 750": 2}}
 	for prof in ["premium", "budget"]:
 		WsgFoundation.profile = prof
 		var s := WsgFoundation.spec()
-		var tiers := []
-		for k in [-1, 0, 1]:
-			tiers.append(clampi(int(s.default) + k, 0, int(s.max)))
-		print("%-7s: renderer %s; starts weak %d, middling %d, flagship %d; at most %d; crowd Medium %s, High %s, Close %s; %d bodies in full" % [
-			prof, s.renderer, tiers[0], tiers[1], tiers[2], s.max, WsgFoundation.crowd_budget(1), WsgFoundation.crowd_budget(2),
-			WsgFoundation.crowd_budget(3), WsgFoundation.full_bodies()])
-		if WsgFoundation.allowed(WsgFoundation.HIGH) != int(s.max):
-			fails.append("%s: High chosen gives %d" % [prof, WsgFoundation.allowed(WsgFoundation.HIGH)])
+		var got := {}
+		for gpu in starts[prof]:
+			var c := WsgFoundation.device_class(gpu, 4.0 if gpu.begins_with("Mali") else 8.0)
+			got[gpu] = WsgFoundation.tier_for_class(c)
+			if got[gpu] != int(starts[prof][gpu]):
+				fails.append("%s: %s starts on %d, want %d" % [prof, gpu, got[gpu], starts[prof][gpu]])
+		var bodies := []
+		for t in [0, 1, 2]:
+			WsgFoundation.tier = t
+			bodies.append(WsgFoundation.full_bodies())
+		print("%-7s: renderer %s; starts %s; crowd Medium %s, High %s, Close %s; bodies in full by tier %s" % [
+			prof, s.renderer, got, WsgFoundation.crowd_budget(1), WsgFoundation.crowd_budget(2), WsgFoundation.crowd_budget(3), bodies])
+		if WsgFoundation.allowed(WsgFoundation.HIGH) != WsgFoundation.HIGH:
+			fails.append("%s: High cannot be chosen" % prof)
 		if prof == "budget":
-			if int(s.default) != WsgFoundation.LOW or int(s.max) != WsgFoundation.MEDIUM or s.renderer != "gl_compatibility":
-				fails.append("budget: Low by default, Medium at most, GL Compatibility")
-			if (WsgFoundation.crowd_budget(1) as Array)[0] > 150:
-				fails.append("budget: more than 150 full 3D fans on Medium")
-		else:
-			if int(s.default) != WsgFoundation.MEDIUM or int(s.max) != WsgFoundation.HIGH:
-				fails.append("premium: Medium by default, High at most")
+			if int(s.default) != WsgFoundation.LOW or s.renderer != "gl_compatibility":
+				fails.append("budget: Low for an ordinary phone, GL Compatibility")
+			if (WsgFoundation.crowd_budget(1) as Array)[0] > 150 or int(bodies[1]) > 6:
+				fails.append("budget Medium: more than 150 full 3D fans or 6 full bodies")
+		elif int(s.default) != WsgFoundation.MEDIUM:
+			fails.append("premium: Medium for an ordinary phone")
+	WsgFoundation.tier = WsgFoundation.MEDIUM
 	# Full detail for the nearest bodies only.
 	WsgFoundation.profile = "budget"
 	var bodies := []

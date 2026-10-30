@@ -17,11 +17,11 @@ Your game is made for one class of phone, and the foundation spends what that cl
 | | premium (Hurling, Floorball, Netball) | budget (Kabaddi, Kho Kho, Sepak Takraw, Pok Ta Pok) |
 |---|---|---|
 | renderer | Mobile (Vulkan), GL Compatibility as the fallback | GL Compatibility |
-| tiers | Medium by default, High for flagships, Low for weak phones | Low by default, Medium allowed (and a flagship's start) |
-| players and officials | the rig and mocap, every body in full detail (Low: the light mesh) | the rig and mocap; full detail (helpers, fingers, full mesh) on the 6 bodies nearest the camera, the light mesh and plain joints on the rest |
+| first start (the phone decides) | weak phone Low, ordinary phone Medium, flagship High | weak phone Low, ordinary phone Low, flagship High |
+| players and officials | the rig and mocap, every body in full detail (Low: the light mesh) | the rig and mocap; on Low and Medium full detail (helpers, fingers, full mesh) on the 6 bodies nearest the camera, the light mesh and plain joints on the rest; on High every body in full |
 | crowd, Low | your billboards (unchanged) | your billboards (unchanged) |
 | crowd, Medium | 3D fans near the action (400 full + 800 light), billboards beyond | 150 3D fans near the action, billboards beyond |
-| crowd, High | 3D fans (700 full + 1,300 light), billboards beyond | (no High) |
+| crowd, High | 3D fans (700 full + 1,300 light), billboards beyond | 3D fans (400 full + 800 light), billboards beyond |
 | a close mode (a practice, a shoot-out) | 3,000 3D fans behind that goal (2,000 full) | 600 (400 full) |
 
 A build without the licensed data (a fork, a computer without access) is exactly your game as it is today.
@@ -32,10 +32,11 @@ In your boot (an autoload's `_ready`, before anything is built):
 ```gdscript
 WsgFoundation.profile = "budget"                    # or "premium"
 if settings.graphics < 0:                           # the first run: the player has not chosen
-	settings.graphics = WsgFoundation.starting_tier()   # the profile's default, one up on a flagship, one down on a weak phone
-settings.graphics = WsgFoundation.allowed(settings.graphics)   # a budget game never runs High
+	settings.graphics = WsgFoundation.starting_tier()   # the phone decides: weak Low, flagship High, else your default
+WsgFoundation.tier = settings.graphics              # and again whenever the player changes it
 ```
-The player's own choice in Settings always wins (within what the profile allows). `WsgFoundation.device_class()` says
+The player's own choice in Settings always wins, and every tier is offered: a flagship running a budget game gets
+High (still on GL Compatibility). `WsgFoundation.device_class()` says
 which phones are weak (under 4.5 GB, or a Galaxy A0x/A1x-class GPU - Mali-G5x/G6x, Adreno 5xx and 61x, PowerVR:
 a Galaxy A16 is here) and which are flagships (6 GB and Adreno 640+, Mali-G710+, Immortalis, Xclipse); it is what
 Hurling learnt from its players' phones.

@@ -54,8 +54,10 @@ a phone's and are left out.
 | premium High | 150, 878,000 (was 1,125,000 before High's crowd was trimmed to 2,000) | 146, 1,013,000 |
 | budget Low | 90, 162,000 | 89, 162,000 |
 | budget Medium | 96, 241,000 | 95, 241,000 |
+| budget High (a flagship's) | 150, 674,000 | (budget games draw with GL) |
 
-Budget Medium is Low plus 79,000 triangles and 6 draw calls (150 3D fans, the 6 nearest bodies in full detail, the
+The phone picks the first tier (the owner: a new phone running Kabaddi should get High): a weak phone Low, a
+flagship High, an ordinary phone the profile's default (premium Medium, budget Low). Budget Medium is Low plus 79,000 triangles and 6 draw calls (150 3D fans, the 6 nearest bodies in full detail, the
 rest on the light mesh); premium Medium adds 280,000. The target, 30 fps on Medium on a Galaxy A16 class phone
 (Mali-G57 MC2 / Adreno 610) under GL Compatibility, has to be confirmed on the phone: Hurling's Low (162,000
 triangles, 90 draw calls) is what such phones run today, and budget Medium is 1.5 times its triangles at the same
