@@ -174,13 +174,13 @@ func _check(pl: Player, link: FoundationLink) -> void:
 		_note(FOLD_MIN - (180.0 - rad_to_deg((e - s).angle_to(w - e))), "rig %s elbow folded flat" % side, pl, mode, t, 0.0)
 		var hips := sk.get_bone_global_pose(sk.find_bone("Hips")).origin
 		var neck := sk.get_bone_global_pose(sk.find_bone("Neck")).origin
-		var into := 0.0
+		var in_chest := 0.0
 		for k in [0.35, 0.65]:
-			var q := e.lerp(w, k)
+			var mid := e.lerp(w, k)
 			var ab := neck - hips
-			var tt := clampf((q - hips).dot(ab) / ab.length_squared(), 0.0, 1.0)
-			into = maxf(into, (TORSO_R - q.distance_to(hips + ab * tt)) * 1000.0)
-		_note(into, "rig %s forearm in the chest (mm)" % side, pl, mode, t, FOREARM_IN)
+			var tt := clampf((mid - hips).dot(ab) / ab.length_squared(), 0.0, 1.0)
+			in_chest = maxf(in_chest, (TORSO_R - mid.distance_to(hips + ab * tt)) * 1000.0)
+		_note(in_chest, "rig %s forearm in the chest (mm)" % side, pl, mode, t, FOREARM_IN)
 		# The game's own arm.
 		var tk := link.toon.skeleton
 		var c := "l" if side == "Left" else "r"

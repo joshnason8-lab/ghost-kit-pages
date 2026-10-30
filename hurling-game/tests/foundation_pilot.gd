@@ -117,7 +117,7 @@ func _process(delta: float) -> void:
 			# The front rows' feet, close (the owner saw toes pointing at the sky): seated, then up for a score.
 			Crowd.set_excite(1.0 if t > 2.0 else 0.0)
 			label.text = "%s     the crowd's feet" % tag
-			cam.look_at_from_position(Vector3(-6.0, 2.2, -Pitch.HALF_W - 3.0), Vector3(-8.5, 1.4, -Pitch.HALF_W - 9.0))
+			cam.look_at_from_position(Vector3(-4.0, 3.2, -Pitch.HALF_W - 1.2), Vector3(-7.0, 2.2, -Pitch.HALF_W - 8.0))
 			if t > 4.0:
 				get_tree().quit()
 		"seats":
