@@ -132,7 +132,9 @@ void vertex() {
 	vec3 team = r3 < 0.5 ? team_a.rgb : team_b.rgb;
 	float wear = r4 < 0.8 ? COLOR.a * 0.85 : 0.0;
 	vec3 base = COLOR.rgb * (0.85 + 0.3 * r2);
-	colour = mix(base, team * (0.55 + 0.45 * dot(COLOR.rgb, vec3(0.33))) * 1.6, wear);
+	// The shirt takes the team's colour as dyed cloth would: the colour, shaded by the texture's light and dark folds.
+	float folds = clamp(dot(COLOR.rgb, vec3(0.3, 0.59, 0.11)) * 1.25, 0.55, 1.1);
+	colour = mix(base, team * folds, wear);
 }
 
 void fragment() {

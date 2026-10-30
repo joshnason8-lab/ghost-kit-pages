@@ -79,7 +79,12 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 	rng.seed = seed
 	# The spots nearest the action first, as many as the budget allows.
 	var order := range(spots.size())
-	order.sort_custom(func(a, b): return (spots[a] as Vector3).distance_squared_to(focus) < (spots[b] as Vector3).distance_squared_to(focus))
+	# Nearest the focus along the stands first (whole sections, out from the middle of the view), so where the 3D
+	# fans end and the cut-outs begin is a line across the stand, as between two sections, not a ring.
+	var key := func(i: int) -> float:
+		var d: Vector3 = (spots[i] as Vector3) - focus
+		return absf(d.x) + absf(d.z) * 0.15
+	order.sort_custom(func(a, b): return key.call(a) < key.call(b))
 	var budget: Array = BUDGET.get(quality, BUDGET[1])
 	var cap := int(budget[1] * clampf(density, 0.0, 1.0))
 	var near_cap := int(budget[0] * clampf(density, 0.0, 1.0))
