@@ -209,6 +209,11 @@ static func _gripped(mesh: ArrayMesh) -> ArrayMesh:
 	return out
 
 
+func relook() -> void:
+	if mesh_instance != null:
+		mesh_instance.material_override = _material()
+
+
 func _dress() -> void:
 	mesh_instance.mesh = _mesh_pair()[1 if _lod > 0 else 0]
 	mesh_instance.material_override = _material()

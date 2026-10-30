@@ -103,8 +103,7 @@ var _hold_still := 0.0
 var _hype := 0.0             # the crowd's sense of a score coming, 0..1 (_crowd_anticipation)
 var _cheer_until := 0.0      # the crowd's cheer for a score runs till then
 var _fps_hist: Array = []    # recent frame times (ms) for the dev overlay and the auto graphics level
-var _early_frames := 0
-var _early_slow := 0
+var _auto_gfx := AutoGfx.new(Game.frame_cap())
 
 
 func _ready() -> void:
@@ -586,17 +585,41 @@ func _frame_stats(delta: float) -> void:
 	_fps_hist.append(delta * 1000.0)
 	if _fps_hist.size() > 240:
 		_fps_hist.pop_front()
-	# The auto graphics level: if the first seconds of play run under about 36 frames a second, drop a level.
-	if phase in [P.LIVE, P.THROW_IN] and bool(Game.settings.get("auto_gfx", true)) and not attract and _early_frames < 600:
-		_early_frames += 1
-		if delta > 1.0 / 36.0:
-			_early_slow += 1
-		if _early_frames == 600 and _early_slow > 300 and int(Game.settings.graphics) > Game.GFX_LOW:
-			Game.settings.graphics = int(Game.settings.graphics) - 1
-			Game.save_settings()
-			Game.apply_graphics(get_viewport())
-			ToonBody.material(int(Game.settings.graphics) > Game.GFX_LOW)
-			hud.toast(tr("GFX_LOWERED"))
+	# The auto graphics level (AutoGfx): all match long, two windows of stutter in a row (slow, or hitching) take
+	# a level off at once; again later if it still stutters. (Not in the menu's attract match nor a replay.)
+	# (Only in the game itself: the tests and the media tools play matches at a fixed 30 frames a second, or drawn in
+	# software, and call watch_frames themselves.)
+	if Game.main != null and Game.main.scene_file_path == "res://main.tscn":
+		watch_frames(delta)
+
+
+## A frame's time (s) to the auto graphics level.
+func watch_frames(delta: float) -> void:
+	if bool(Game.settings.get("auto_gfx", true)) and not attract and not (replay and replay.playing):
+		if _auto_gfx.feed(delta) and int(Game.settings.graphics) > Game.GFX_LOW:
+			lower_graphics()
+
+
+## A graphics level down, now, mid-match, all of it: the setting (kept), the picture's size and smoothing, the sky,
+## the sun and its shadows, the lit materials, the crowd, the men's shadows on the grass; a word on the screen.
+func lower_graphics() -> void:
+	print("auto graphics: %d -> %d (%.0f frames a second, %d hitches)" % [int(Game.settings.graphics),
+		int(Game.settings.graphics) - 1, float(_auto_gfx.last[0]), int(_auto_gfx.last[1])])
+	Game.settings.graphics = int(Game.settings.graphics) - 1
+	Game.save_settings()
+	Game.apply_graphics(get_viewport())
+	stadium.apply_graphics()
+	for p in all_players() + officials.people:
+		(p as Player).body.relook()
+	# The men's shadows on the grass: their own on Medium (High on Vulkan had the sun's), none on Low.
+	if shadows != null and int(Game.settings.graphics) == Game.GFX_LOW:
+		shadows.queue_free()
+		shadows = null
+	elif shadows == null and int(Game.settings.graphics) > Game.GFX_LOW and not Ultra.lit():
+		shadows = PlayerShadows.new(self)
+		add_child(shadows)
+	_auto_gfx.reset()
+	hud.toast(tr("GFX_LOWERED"))
 
 
 func frame_percentiles() -> Array:

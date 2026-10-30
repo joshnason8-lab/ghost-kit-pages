@@ -18,7 +18,7 @@ three levels. 0.10's Ultra is High now.)
 | | Low | Medium | High |
 |---|---|---|---|
 | **For** | Phones under 4.5 GB or with a small GPU (Mali-G52/G57, Adreno 5xx/61x, PowerVR) | The rest | Recent high-end phones (`Ultra.capable`: 64-bit, 6 GB, Adreno 640+, Mali-G710+, Immortalis, Xclipse) |
-| **Picked** | By the game on the first run (`Game.detect_graphics`), changed in Settings any time; the game drops a level by itself if a match runs under about 36 fps (Settings can turn that off) | | |
+| **Picked** | By the game for the phone (`Game.detect_graphics`) until the player chooses one in Settings; the game drops a level by itself, at any point in a match, after about 3 s of slow or hitching frames (`game/auto_gfx.gd`; Settings can turn that off) | | |
 | **Players** | 1,757 triangles, no outlines; officials about 4,200, 512 texture | 5,866, 2K texture; officials the whole Meshy model, about 8,400, 1024 | as Medium; with the HD pack 23,468 and 4K, the officials' 2048 textures with their normal and roughness maps |
 | **Light** | the time of day's light in the colours, unlit | as Low, the grass's normal map catching the sun, a shadow under each man | **real lighting (on Vulkan)**: the sun's shadows from everything on lit grass, lit players (cloth and skin shading) and officials, the sky's light and reflections, filmic tonemapping and glow, floodlights that light the field at night |
 | **Crowd** | 5,400 at the stadium | 17,300 | 24,600; with the HD pack 26,800, sharper |

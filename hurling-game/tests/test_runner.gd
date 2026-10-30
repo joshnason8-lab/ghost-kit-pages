@@ -52,6 +52,7 @@ func _ready() -> void:
 	await _practice_frees()
 	await _shootout_frees()
 	await _goals_round()
+	await _auto_graphics()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	_backpedal()
@@ -1671,3 +1672,75 @@ func _match_and_motion() -> void:
 	check(int(m.teams[0].subs) + int(m.teams[1].subs) > 0, "Subs: the managers bring on fresh legs in the second half")
 	m.queue_free()
 	await frames(2)
+
+
+## The auto graphics level (the owner's Galaxy A16 stuttered on High and nothing dropped): smooth frames never lower
+## it; a match that hitches steps High -> Medium -> Low, each within about five seconds, the whole level applied at
+## once; then no lower. The phone decides the level until the player chooses one.
+func _auto_graphics() -> void:
+	var a := AutoGfx.new()
+	var t := 0.0
+	var fired := false
+	while t < 20.0:
+		fired = fired or a.feed(1.0 / 60.0)
+		t += 1.0 / 60.0
+	check(not fired, "Auto graphics: 20 s of smooth frames, no change")
+	a = AutoGfx.new(30)
+	t = 0.0
+	while t < 20.0:
+		fired = fired or a.feed(1.0 / 30.0)
+		t += 1.0 / 30.0
+	check(not fired, "Auto graphics: Battery saver's 30 a second is not a stutter")
+	var keep_g = Game.settings.graphics
+	var keep_auto = Game.settings.auto_gfx
+	Game.settings.graphics = Game.GFX_HIGH
+	Game.settings.auto_gfx = true
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "WEX", "venue": "county", "user_team": 0, "seed": 3, "length": 4.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(60)
+	var crowd0: int = m.stadium.crowd.multimesh.instance_count
+	var sun_shadow0: bool = m.stadium._sun.shadow_enabled
+	# About 45 frames a second, with a stall of a tenth of a second every twentieth frame (some two a second).
+	var steps := []
+	var n := 0
+	t = 0.0
+	while t < 16.0:
+		n += 1
+		var d := 0.11 if n % 20 == 0 else 0.02
+		var before := int(Game.settings.graphics)
+		m.watch_frames(d)
+		t += d
+		if int(Game.settings.graphics) != before:
+			steps.append([int(Game.settings.graphics), snappedf(t, 0.1)])
+	check(steps.size() == 2 and steps[0][0] == Game.GFX_MEDIUM and steps[1][0] == Game.GFX_LOW and float(steps[0][1]) <= 5.5
+		and float(steps[1][1]) - float(steps[0][1]) <= 5.5, "Auto graphics: a hitching match steps High -> Medium -> Low within ~5 s each, then stays (%s)" % [steps])
+	await frames(2)
+	check(m.stadium.crowd.multimesh.instance_count < crowd0 and not m.stadium._sun.shadow_enabled and m.shadows == null
+		and is_instance_valid(m.stadium._we), "Auto graphics: the whole level applied at once (crowd %d -> %d, the sun's shadows %s -> off, the men's shadows gone, the sky made again)" % [crowd0, m.stadium.crowd.multimesh.instance_count, sun_shadow0])
+	m.queue_free()
+	await frames(2)
+	# The phone decides until the player chooses: an install over an older beta (no gfx_detect) is decided again once,
+	# a level the player chose stays; a Mali-G57/G68-class phone starts on Low.
+	var keep_c = Game.settings.gfx_chosen
+	var keep_d = Game.settings.gfx_detect
+	Game.settings.graphics = Game.GFX_LOW
+	Game.settings.gfx_chosen = false
+	Game.settings.gfx_detect = 0
+	var redo := Game.decide_graphics()
+	var again := Game.decide_graphics()
+	check(redo and not again and int(Game.settings.graphics) == Game.detect_graphics() and int(Game.settings.gfx_detect) == Game.GFX_DETECT,
+		"Auto graphics: an older install's level decided again for the phone, once")
+	Game.settings.graphics = Game.GFX_HIGH
+	Game.settings.gfx_chosen = true
+	Game.settings.gfx_detect = 0
+	check(not Game.decide_graphics() and int(Game.settings.graphics) == Game.GFX_HIGH, "Auto graphics: a level the player chose stays")
+	var weak := true
+	for c in [["Mali-G68 MC4", "", 6.0], ["Mali-G57 MC2", "", 8.0], ["Adreno (TM) 740", "MT6789V/CD", 8.0], ["Vulkan GPU", "s5e8535", 6.0], ["Vulkan GPU", "MT6835", 8.0]]:
+		weak = weak and Game.graphics_for(c[0], c[1], c[2]) == Game.GFX_LOW
+	check(weak, "Auto graphics: Mali-G57/G68-class phones (Helio G99, Exynos 1330, Dimensity 6300) start on Low")
+	Game.settings.graphics = keep_g
+	Game.settings.auto_gfx = keep_auto
+	Game.settings.gfx_chosen = keep_c
+	Game.settings.gfx_detect = keep_d

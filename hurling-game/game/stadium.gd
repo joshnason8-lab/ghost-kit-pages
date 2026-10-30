@@ -18,6 +18,11 @@ var home_colours: Array = []
 var away_colours: Array = []    # with them, the crowd is both counties' (a championship day)
 var to_sun := Vector3(0.3, 0.8, 0.5).normalized()   # where the light comes from (PlayerShadows reads it)
 var net: GoalNet               # the goals' nets (a sliotar into one ripples it)
+var structure: MeshInstance3D  # the stands, walls and boards (one draw)
+var _grass: MeshInstance3D
+var _spots: Array[Vector3] = []  # every seat and standing place (the crowd fills some, by the graphics level)
+var _we: WorldEnvironment
+var _sun: DirectionalLight3D
 
 const H := Pitch.HALF_L
 const W := Pitch.HALF_W
@@ -32,7 +37,9 @@ func _init(venue_id := "county", p_home_colours := [], p_away_colours := []) -> 
 
 
 func _ready() -> void:
-	add_child(Pitch.build(time))
+	var pitch := Pitch.build(time)
+	add_child(pitch)
+	_grass = pitch.get_child(0)
 	var g := Geo.new()
 	var nets := Geo.new()
 	var fields := Geo.new()
@@ -48,7 +55,7 @@ func _ready() -> void:
 			_stadium(g, spots)
 		_:
 			_county(g, spots)
-	var structure := g.commit(Geo.ultra_material() if Ultra.active() else Geo.material(true))
+	structure = g.commit(Geo.ultra_material() if Ultra.active() else Geo.material(true))
 	if Ultra.lit():
 		structure.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # the stands' shadow on the field
 	add_child(structure)
@@ -65,12 +72,31 @@ func _ready() -> void:
 	net = GoalNet.new()
 	net.build(H + Pitch.POST_W * 0.5, time)
 	add_child(net)
+	_spots = spots
+	_crowd()
+	_environment()
+
+
+## The crowd, as many as the graphics level seats.
+func _crowd() -> void:
 	crowd = Crowd.new()
 	var palette := home_colours.duplicate()
-	crowd.build(spots, Game.crowd_density() * (0.55 if kind == "parish" else 1.0), palette, hash(kind),
+	crowd.build(_spots, Game.crowd_density() * (0.55 if kind == "parish" else 1.0), palette, hash(kind),
 		away_colours if kind != "parish" else [], 0.75 if kind != "parish" and not away_colours.is_empty() else 0.45)
 	add_child(crowd)
+
+
+## The graphics level lowered mid-match (Match.lower_graphics): the sky and the light (shadows, glow, the sky's
+## reflections), the stands' and the grass's materials, and the crowd, as the new level builds them.
+func apply_graphics() -> void:
+	_we.queue_free()
+	_sun.queue_free()
 	_environment()
+	structure.material_override = Geo.ultra_material() if Ultra.active() else Geo.material(true)
+	structure.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Ultra.lit() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_grass.material_override = Pitch.grass_material(time)
+	crowd.queue_free()
+	_crowd()
 
 
 ## The goals: two white uprights 6.5 m apart, at least 7 m high, the crossbar 2.5 m up, and the net behind (a fine
@@ -688,6 +714,8 @@ func _environment() -> void:
 	we.environment = env
 	add_child(we)
 	add_child(sun)
+	_we = we
+	_sun = sun
 	Crowd.set_light({"day": 1.0, "dusk": 0.72, "night": 0.75}[time])
 
 

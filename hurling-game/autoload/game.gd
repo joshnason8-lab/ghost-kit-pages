@@ -64,6 +64,8 @@ var settings := {
 	"camera": CAM_TV,
 	"graphics": -1,         # -1 until the first run picks one for the phone (detect_graphics)
 	"auto_gfx": true,       # lower the graphics by itself if a match runs slowly
+	"gfx_chosen": false,    # the player has set the graphics in Settings (until then the phone decides: detect_graphics)
+	"gfx_detect": 0,        # which detect_graphics (GFX_DETECT) last decided it
 	"fps": FPS_SMOOTH,
 	"sound": true,
 	"music": true,
@@ -108,8 +110,7 @@ var records := {}  # the record book: titles won, biggest wins, top scorers
 
 func _ready() -> void:
 	load_settings()
-	if int(settings.graphics) < 0:
-		settings.graphics = detect_graphics()
+	if decide_graphics():
 		save_settings()
 	elif int(settings.graphics) > GFX_HIGH:
 		settings.graphics = GFX_HIGH       # the 0.10 betas' Ultra is High now
@@ -153,14 +154,42 @@ func go_back() -> void:
 ## The graphics level for this phone on its first run: Low on a phone with a small GPU or under 4.5 GB of memory (a
 ## Galaxy A0x/A1x's Mali-G52 or G57, Adreno 5xx and 61x, PowerVR), High on a recent high-end phone (Ultra.capable:
 ## Adreno 640 and later, Mali-G710 and later, Immortalis, Xclipse, with 6 GB), Medium on the rest.
+const GFX_DETECT := 2   # 2: re-decided once over the 0.17.0 beta and older; the SoC names below
+
+
+## Phones' chips whose GPUs are a Mali-G57 or G68 in two to four cores (Helio G99, Exynos 1330 and 1280, Dimensity
+## 6100+ and 6300, 700 and 810), by the names Android gives the processor: Low, whatever the GPU's name says.
+const WEAK_SOCS := ["mt6789", "helio g99", "s5e8535", "exynos 1330", "s5e8825", "exynos 1280", "mt6835", "dimensity 6300",
+	"dimensity 6100", "mt6833", "dimensity 700", "dimensity 810"]
+
+
+## The phone decides the graphics level, until the player chooses: on the first run, and once more when the way it
+## decides has changed (an install over an older beta kept that beta's level: the owner's Galaxy A16 stayed on High).
+## True when it decided.
+func decide_graphics() -> bool:
+	if int(settings.graphics) >= 0 and (bool(settings.gfx_chosen) or int(settings.gfx_detect) >= GFX_DETECT):
+		return false
+	settings.graphics = detect_graphics()
+	settings.gfx_detect = GFX_DETECT
+	return true
+
+
 func detect_graphics() -> int:
 	if not OS.has_feature("mobile"):
 		return GFX_HIGH
-	var gpu := RenderingServer.get_video_adapter_name().to_lower()
-	var mem: Dictionary = OS.get_memory_info()
-	var ram_gb := float(mem.get("physical", 0)) / 1073741824.0
+	return graphics_for(RenderingServer.get_video_adapter_name(), OS.get_processor_name(),
+		float(OS.get_memory_info().get("physical", 0)) / 1073741824.0)
+
+
+## The level for a phone with this GPU, processor and memory (GB, 0 unknown): Low on a small GPU or under 4.5 GB.
+static func graphics_for(gpu_name: String, soc_name: String, ram_gb: float) -> int:
+	var gpu := gpu_name.to_lower()
+	var soc := soc_name.to_lower()
 	if ram_gb > 0.0 and ram_gb < 4.5:
 		return GFX_LOW
+	for weak in WEAK_SOCS:
+		if soc.contains(weak):
+			return GFX_LOW
 	for weak in ["mali-g5", "mali-g6", "mali-t", "mali-4", "powervr", "adreno (tm) 5", "adreno (tm) 61", "adreno (tm) 50",
 			"adreno (tm) 4", "img bxm", "ge8"]:
 		if gpu.contains(weak):

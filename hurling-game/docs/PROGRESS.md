@@ -250,6 +250,27 @@ posts; SHOOT stops it, and that is where the ball goes.
 - Tests: a point, a wide, a 65 and a penalty aimed and struck through the match, back to the match camera after each;
   the target lingers between the posts and hurries through the goal. How to Play's controls say how.
 
+## Done (0.17.1-beta, auto graphics, 30 October 2026)
+
+The owner's Galaxy A16 (Mali-G57/G68 class) stuttered on High and "Lower it by itself" did nothing: it watched only
+the first ten seconds of play, only the average frame rate, and lowered only the resolution; and the phone kept a
+saved High from an older install.
+
+- `game/auto_gfx.gd` (AutoGfx): windows of 1.5 s all match long; a window is bad when it averages under 36 frames a
+  second (or 0.8 of a lower frame cap: Battery saver's 30 is not a stutter) or has 3 hitches (a frame over 2.5 times
+  the window's median and over 45 ms). Two bad windows in a row: `Match.lower_graphics()`, a level down within
+  about 5 s, applied whole: the viewport, `Stadium.apply_graphics()` (sky and sun made again: shadows, glow,
+  reflections; the stands' and the grass's materials; the crowd re-seated at the new density), every body's
+  materials (`relook()`), the men's shadows on the grass. Two seconds' settling after each step. Only in the game
+  itself (main.tscn): the tests and media tools play at a fixed 30 and call `watch_frames` themselves.
+- The phone decides until the player chooses (`gfx_chosen`, set by the Settings chips); `GFX_DETECT` 2 decides once
+  more over 0.17.0 and older. `Game.graphics_for` adds the SoCs whose GPUs are a two-to-four-core Mali-G57/G68 (Helio
+  G99, Exynos 1330/1280, Dimensity 6100+/6300/700/810) to the weak GPUs: Low.
+- Tests: smooth 60 and a steady 30 never lower it; a match hitching about twice a second steps High -> Medium -> Low
+  within about 5 s each, crowd, sun's shadows and men's shadows changed with it; an older install decided again
+  once, a chosen level kept; Mali-G57/G68-class phones on Low. (Same approach as the foundation pilot's WsgAutoTier,
+  written for this branch; the pilot is not merged.)
+
 ## Done (0.17.0-beta, free-taking round five, 29 October 2026)
 
 The owner's list: one ground for practice; no walk and set-down between frees; the shoot-out taken as a free;
