@@ -94,6 +94,13 @@ carrying or soloing → your arms, the mocap legs; nothing → the mocap). Game-
 "carrying" (`CARRY`), the stick (Hurling draws its hurley in the new hand: copy `_place_stick` for your stick or ball),
 and the grip radius (`body.grip("Right", r)`).
 
+**A hand that holds something** (a hurley, a stick, a ball) must be where your body has it, not just turned like it:
+the mocap's chest leans and twists differently from yours, and turns copied onto it moved Hurling's hurley hand by
+up to 40 cm and 130 degrees. Put that arm in body space each frame:
+`legacy.body_pose = reader.body_space(["RightShoulder", "RightArm", "RightForeArm", "RightHand"])`. And place anything
+drawn in the hand when the skeleton has its final pose (`body.posed.connect(...)`): during the frame Godot reports
+bones without their modifiers (the layer, the grip).
+
 Your own fixes for your old mesh (Hurling's officials had arm twists and a foot pitch) must be taken back out:
 `reader.undo` (see the pilot). Footstep sounds: `link.loco.step.connect(func(foot): ...)`.
 
