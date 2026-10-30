@@ -10,7 +10,8 @@ extends Node
 ##     hinge throwing away a bend it could not follow (the arm snapping straight and back).
 ## The same is measured on the game's own body (17 bones), to tell the foundation's faults from the game's poses.
 ## And the hands, close up (the free-taking practice and the shoot-out are filmed close): a wrist turned past WRIST_MAX
-## about the forearm (candy-wrap), a finger through the hurley's handle.
+## about the forearm (candy-wrap), a finger through the hurley's handle. And the feet: in the game's own moves where
+## the game has them (not floating), under the motion capture never both far off the ground.
 ##   godot --headless --path . --fixed-fps 30 res://tests/elbow_audit.tscn -- [match minutes] [seed] [raw]
 ##   ... -- practice     (the ten frees of the practice: set, lift, toss, strike, follow-through; the umpires)
 ##   ... -- shootout     (the extra-time shoot-out to a winner: the takers, the goalkeepers, the umpires)
@@ -18,6 +19,8 @@ extends Node
 const TWIST_MAX := 115.0    # degrees: a humerus turns about 70 in and 90 out from neutral; past this it is wrong
 const BENT := 25.0          # an elbow bent less than this has no direction to be wrong in
 const STRAIGHTENED := 30.0  # degrees less bend on the rig than in the game's pose
+const FEET_OFF := 5.0       # cm the lower ankle is above (or below) its standing height when the game has a foot down
+const FEET_AIR := 30.0      # cm the lower ankle may be up under the motion capture (a sprint's flight)
 const FINGER_IN := 5.0      # mm of a finger's skin into the handle (flesh gives a little round a grip)
 const WRIST_MAX := 110.0    # degrees the hand may turn about the forearm (the forearm's own range is about 85 each way)
 
@@ -117,6 +120,27 @@ func _check(pl: Player, link: FoundationLink) -> void:
 	var sk := link.body.skeleton
 	var t: float = m.now
 	var mode: String = link._mode
+	# The feet: when the game's body has a foot on the grass, so has this one (not floating, not sunk).
+	var tk0 := link.toon.skeleton
+	var game_low := INF
+	for c0 in ["l", "r"]:
+		game_low = minf(game_low, (tk0.global_transform * tk0.get_bone_global_pose(tk0.find_bone("foot_" + c0))).origin.y)
+	var rig_low := INF
+	for sd in ["Left", "Right"]:
+		rig_low = minf(rig_low, (sk.global_transform * sk.get_bone_global_pose(sk.find_bone(sd + "Foot"))).origin.y)
+	var game_rest := (tk0.global_transform * tk0.get_bone_global_rest(tk0.find_bone("foot_l"))).origin.y - tk0.global_transform.origin.y
+	var rig_rest := (sk.global_transform * sk.get_bone_global_rest(sk.find_bone("LeftFoot"))).origin.y - sk.global_transform.origin.y
+	var blending: bool = m.now - link.mode_since < 0.2
+	if mode == "full" and not blending:
+		# A move of the game's: its legs, its feet where it planted them. (Not in the moment it blends in or out of the
+		# motion capture's.)
+		if game_low - tk0.global_transform.origin.y < game_rest + 0.04 and pl.global_position.y < 0.05:
+			_note(absf((rig_low - sk.global_transform.origin.y) - rig_rest) * 100.0, "rig feet off the ground (cm)", pl, mode, t, FEET_OFF)
+	elif mode != "full" and pl.vel.length() < 4.5 and float(link.loco.get("_w_sprint")) < 0.05 \
+			and int(link.loco.get("state")) != WsgLocomotor.State.JUMP:
+		# The motion capture's legs, standing or jogging: a foot near the ground (a sprint's flight and a jump have
+		# both well up), never both feet far up (a leg dragged sideways).
+		_note(((rig_low - sk.global_transform.origin.y) - rig_rest) * 100.0, "rig feet in the air (cm)", pl, mode, t, FEET_AIR)
 	for side in ["Left", "Right"]:
 		# Bent backwards about the hinge (the forearm's own turn, after every modifier).
 		var axis := Vector3.DOWN if side == "Left" else Vector3.UP
@@ -162,13 +186,6 @@ func _check(pl: Player, link: FoundationLink) -> void:
 		if link.stick != null and link.stick.is_visible_in_tree():
 			var into := _through(link, side) * 1000.0
 			_note(into, "rig %s finger in the handle (mm)" % side, pl, mode, t, FINGER_IN)
-			if OS.has_environment("DBG_LEFT") and side == "Left" and into > FINGER_IN:
-				var h: Array = link.legacy.hold.get("Left", [])
-				var miss := -1.0
-				if not h.is_empty():
-					var tgt: Transform3D = sk.get_bone_global_pose(sk.find_bone("RightHand")) * (h[1] as Transform3D)
-					miss = sk.get_bone_global_pose(sk.find_bone("LeftHand")).origin.distance_to(tgt.origin)
-				print("DBGL %s %s %.1f mm hold %s miss %.3f layer %.2f every %d" % [_who(pl), pl.action, into, str(h[2]) if not h.is_empty() else "-", miss, link.legacy.weight, pl._pose_every])
 
 
 ## How far (m) the deepest finger of a hand goes into the hurley's handle, skin into wood (0: none; off it: 0).
@@ -264,6 +281,10 @@ func _limit_of(kind: String) -> float:
 		return WRIST_MAX
 	if kind.contains("finger"):
 		return FINGER_IN
+	if kind.contains("feet in the air"):
+		return FEET_AIR
+	if kind.contains("feet"):
+		return FEET_OFF
 	return TWIST_MAX
 
 
@@ -290,7 +311,9 @@ func _report() -> void:
 		print("  past a limit, by action:")
 		for r in past:
 			print("    %-34s %7.1f  (%s, %s, mode %s, t %.1f)" % [r[1], r[0], r[2], r[3], r[4], r[5]])
-	var fail := false
+	var fail := worst.is_empty()
+	if fail:
+		print("  nothing was audited (no body drawn on the foundation: a script that does not compile?)")
 	for k in counts:
 		print("  %s: %d frames past the limit" % [k, counts[k]])
 		if String(k).begins_with("rig"):

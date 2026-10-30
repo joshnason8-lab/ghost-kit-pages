@@ -60,6 +60,7 @@ func _ready() -> void:
 	body.skeleton.add_child(legacy)
 	body.skeleton.move_child(legacy, 0)
 	loco = WsgLocomotor.attach(body)
+	legacy.lift_after = loco.planter.hips_offset     # the game's hips height is this body's already
 	reader = WsgLegacyPose.new(toon.skeleton, body.joints)
 	legacy.arms = reader
 	if toon is HeroBody:
@@ -138,9 +139,17 @@ func update(now: float) -> void:
 			legacy.weight = want     # (a new body starts as the game's: no blend in from nothing)
 		legacy.fade_to(want, 0.16)
 		_mode = mode
+		mode_since = now
 	body.visible = true
+	# Put somewhere new (the next free's spot, a substitute, a restart): the feet are not held where they were.
+	if _at != Vector3.INF and player.global_position.distance_to(_at) > 1.5:
+		loco.planter.reset()
+	_at = player.global_position
 	var v := player.vel
 	loco.drive(dt, Vector3(v.x, 0, v.z), player.yaw, Vector3(player.want_vel.x, 0, player.want_vel.z))
+	# A move of the game's own has its feet where the game planted them (Player._plant_feet): the foundation's planter
+	# holds them only under the motion capture.
+	loco.planter.enabled = mode != "full"
 	if mode == "full":
 		# A move of the game's own: its facing exactly.
 		loco.yaw = player.yaw
@@ -154,6 +163,8 @@ func update(now: float) -> void:
 ## second or third frame, and between them the motion capture's open hands came back.
 var _left_grip := [0.016, 1.0, []]
 var _on_handle := false
+var mode_since := 0.0          # when the mode last changed (the game's own move began or ended)
+var _at := Vector3.INF
 var _hold_w := 0.0
 var _dt := 1.0 / 60.0
 
