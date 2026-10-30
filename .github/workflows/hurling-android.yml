@@ -283,7 +283,7 @@ jobs:
       # not start "Hurling Heroes " so Obtainium (which filters the beta by title) never takes it for a beta, and it is
       # never marked latest.
       - name: Publish the HD pack (if it changed)
-        if: github.event_name == 'push' && env.PACK_NEW == '1'
+        if: github.event_name == 'push' && env.PACK_NEW == '1' && github.ref == 'refs/heads/claude/hurling-game'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -304,8 +304,9 @@ jobs:
       # "ash-and-leather-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests, so its date moves on (Obtainium reads the release date as the version). Pull request runs build the
       # same APK and leave the release alone.
+      # (Only from the Hurling branch itself: a branch made from it must not replace the beta or the HD pack.)
       - name: Publish the beta release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/hurling-game'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
