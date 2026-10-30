@@ -453,5 +453,6 @@
   "VULKAN_BACK_crash": "The game did not start properly last time: from now on it uses the older graphics renderer on this phone.",
   "PRIV_DATE": "Last updated 27 October 2026.",
   "PRACTICE_CH_TITLE": "POST CHALLENGE!",
-  "PRACTICE_CH_HIT_SUB": "Off the post! +{n}"
+  "PRACTICE_CH_HIT_SUB": "Off the post! +{n}",
+  "TALLY_TODAY": "%s today"
 }

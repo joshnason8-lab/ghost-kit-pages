@@ -58,6 +58,10 @@ var _subs_due: Array = []    # substitutions asked for, made at the next break: 
 var _leaving: Array = []     # the men substituted, walking off
 var coach: Coach = null      # the coach's tips, in your first match (Settings > Coach's tips)
 var replay: Replay           # the last seconds kept, and a score or a wide shown again from behind the goal
+var wsg_replay: WsgReplay    # the shared foundation's bodies as drawn, kept for the replay (FoundationLink)
+var director: WsgDirector    # the television director: a score's cut-aways, the flight over the ground before it starts
+var lower_third: WsgLowerThird
+var _intro_extra := 0.0      # seconds the opening flight adds to the intro
 var bench: Bench             # each side's substitutes, sitting in its dugout
 var shadows: PlayerShadows   # every man's shadow on the grass (Medium and High)
 ## What a stoppage costs on the watch in a real match, in seconds: the ball is in play only about 38% of a real
@@ -132,6 +136,11 @@ func _ready() -> void:
 	officials = Officials.new(self)
 	add_child(officials)
 	replay = Replay.new(self)
+	if FoundationLink.enabled():
+		wsg_replay = WsgReplay.new()
+		add_child(wsg_replay)
+		director = WsgDirector.new()
+		add_child(director)
 	bench = Bench.new(self)
 	add_child(bench)
 	# (On High with Vulkan the sun's own shadows fall on the lit grass instead.)
@@ -145,6 +154,9 @@ func _ready() -> void:
 	hud = MatchHud.new()
 	add_child(hud)
 	hud.setup(self)
+	if director:
+		lower_third = WsgLowerThird.new(_broadcast_theme())
+		hud.root.add_child(lower_third)
 	controls = TouchControls.new()
 	hud.root.add_child(controls)
 	controls.action.connect(_on_action)
@@ -186,6 +198,7 @@ func _ready() -> void:
 	if not attract:
 		hud.set_score()
 		hud.intro(_intro_line(), tr("COACH_INTRO") if coach != null else "")
+		_opening_flight()
 
 
 func _intro_line() -> String:
@@ -516,7 +529,7 @@ func _process(delta: float) -> void:
 	match phase:
 		P.INTRO:
 			_brains(dt)
-			if phase_t > (6.5 if coach != null and half == 1 else 3.0):
+			if phase_t > (6.5 if coach != null and half == 1 else 3.0) + _intro_extra:
 				_begin_throw_in()
 		P.THROW_IN, P.LIVE:
 			_live(dt)
@@ -1941,12 +1954,61 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 	_stoppage += 20.0
 	_stop_cost("score")
 	hud.set_score()
-	_award(Rules.after_score(team, dir(team)), 3.2)
+	# As television shows a score (the shared foundation's director): the scorer close, their name on the screen,
+	# after a goal the stand going up; then the replay. (The restart waits for it; a tap skips it.)
+	var package := user_team >= 0 and director != null and WsgDirector.packages() and by is Player and is_instance_valid(by) \
+		and (by as Player).team == team
+	var package_s := (1.9 + (1.7 if kind == "goal" and stadium.crowd3d != null else 0.0)) if package else 0.0
+	_award(Rules.after_score(team, dir(team)), 3.2 + package_s)
 	if user_team >= 0:
 		# Every score shown again from behind the goal (as a wide is), once the ball is in the net or past the posts.
 		var t := now
 		var c := ball.global_position
-		_after(Replay.AFTER + 0.1, func(): replay.start(t, signf(s), c))
+		if package:
+			_after(0.5, func(): _score_package(by, team, kind, t, signf(s), c, package_s))
+		else:
+			_after(Replay.AFTER + 0.1, func(): replay.start(t, signf(s), c))
+
+
+## A score as television shows it: the scorer close (from the camera's side of the play), their name and the day's
+## tally low on the left, after a goal the stand behind it going up; then the replay from behind the goal.
+func _score_package(scorer: Player, team: int, kind: String, t: float, s: float, c: Vector3, secs: float) -> void:
+	if not is_instance_valid(scorer) or scorer.link == null:
+		replay.start(t, s, c)
+		return
+	controls.set_meta("was_visible", controls.visible)
+	controls.visible = false
+	var st: Dictionary = pstats.get(String(scorer.data.id), {})
+	var tally := "%d-%02d" % [int(st.get("goals", 0)), int(st.get("points", 0))]
+	lower_third.show_card(DB.player_name(scorer.data), tr("TALLY_TODAY") % tally,
+		DB.team(String(teams[team].id)).c1, 1.8)
+	var shots: Array = [{"shot": "close", "target": scorer.link.body, "secs": 1.9}]
+	if kind == "goal" and stadium.crowd3d != null:
+		# The stand behind the goal they scored in, from the end line, looking up into it.
+		var end := s * (Pitch.HALF_L + 14.0)
+		shots.append({"shot": "crowd", "at": Vector3(end, 7.0, -6.0), "from": Vector3(s * (Pitch.HALF_L - 2.0), 2.0, 8.0), "secs": 1.7})
+	await director.run(shots, cam.camera)
+	controls.visible = bool(controls.get_meta("was_visible", controls.visible))
+	replay.start(t, s, c)
+
+
+## The flight over the ground before the throw-in (Medium and High; the first half of a new match), under the
+## match's title card.
+func _opening_flight() -> void:
+	if director == null or not WsgDirector.packages() or user_team < 0 or half != 1 or config.has("resume") or has_meta("test"):
+		return
+	_intro_extra = 4.5
+	director.run([{"shot": "orbit", "center": Vector3.ZERO, "radius": 150.0, "radius_end": 92.0, "height": 72.0,
+		"height_end": 26.0, "from_deg": -80.0, "to_deg": 12.0, "secs": 4.5}], cam.camera)
+
+
+## The broadcast graphics in the game's colours and type.
+static func _broadcast_theme() -> WsgBroadcastTheme:
+	var th := WsgBroadcastTheme.new()
+	th.accent = Game.C_GOLD
+	th.text = Game.C_INK
+	th.panel = Color(0.05, 0.09, 0.07, 0.9)
+	return th
 
 
 ## The referee's whistle: the ball dead. A restart is about to be awarded.

@@ -27,9 +27,11 @@ const HIGH := 2
 ## Vulkan crashes were on a flagship), a premium game's Medium crowd and every body in full.
 const PROFILES := {
 	"premium": {"renderer": "mobile", "default": MEDIUM,
-		"crowd": {MEDIUM: [400, 1200], HIGH: [700, 2000], 3: [2000, 3000]}, "full_bodies": {LOW: 64, MEDIUM: 64, HIGH: 64}},
+		"crowd": {MEDIUM: [400, 1200], HIGH: [700, 2000], 3: [2000, 3000]}, "full_bodies": {LOW: 64, MEDIUM: 64, HIGH: 64},
+		"replay": {LOW: [4.0, 15.0], MEDIUM: [7.0, 30.0], HIGH: [7.0, 30.0]}},
 	"budget": {"renderer": "gl_compatibility", "default": LOW,
-		"crowd": {MEDIUM: [150, 150], HIGH: [400, 1200], 3: [400, 600]}, "full_bodies": {LOW: 6, MEDIUM: 6, HIGH: 64}},
+		"crowd": {MEDIUM: [150, 150], HIGH: [400, 1200], 3: [400, 600]}, "full_bodies": {LOW: 6, MEDIUM: 6, HIGH: 64},
+		"replay": {LOW: [4.0, 15.0], MEDIUM: [6.0, 15.0], HIGH: [7.0, 30.0]}},
 }
 
 static var profile := "premium"
@@ -56,6 +58,14 @@ static func spec() -> Dictionary:
 static func crowd_budget(quality: int) -> Array:
 	var c: Dictionary = spec().crowd
 	return c.get(quality, c[MEDIUM])
+
+
+## The replay's ring at the current tier: [seconds kept, frames a second] (WsgReplay). Long enough for a score's
+## cut-aways (WsgDirector, about 3.5 s) before its replay (2.3 s before the score to 0.9 after); a budget phone's Low
+## has no cut-aways and keeps 4 s at 15 a second (the playback blends between frames).
+static func replay_spec() -> Array:
+	var r: Dictionary = spec().get("replay", {})
+	return r.get(tier, [7.0, 30.0] if profile == "premium" else [4.0, 15.0])
 
 
 static func full_bodies() -> int:

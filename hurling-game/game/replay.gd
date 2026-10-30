@@ -7,7 +7,7 @@ extends RefCounted
 ## (Round three: "if a shot goes wide maybe a quick replay at a better angle showing the ball going wide"; round
 ## five: "I'm not seeing replays after scores, we should have them".)
 
-const KEEP := 4.0         # seconds of play kept
+const KEEP := 7.5         # seconds of play kept (a score's cut-aways come first: game/match.gd _score_package)
 const BEFORE := 2.3       # seconds shown before the ball crossed the end line
 const AFTER := 0.9        # and after: into the net and down
 const SPEED := 0.75       # slower than life
@@ -41,6 +41,8 @@ func record() -> void:
 		if p.visible:
 			people.append([p, p.position, p.body.rotation.y, p.body.pose])
 	_buf.append([now, m.ball.global_position, people])
+	if m.wsg_replay:
+		m.wsg_replay.record(now)
 	while _buf.size() > 2 and float(_buf[0][0]) < now - KEEP:
 		_buf.pop_front()
 
@@ -59,7 +61,7 @@ func start(t_cross: float, s: float, c: Vector3) -> void:
 		var p: Player = e[0]
 		_saved.append([p, p.position, p.body.rotation.y, p.body.pose])
 	_ball_saved = m.ball.global_position
-	# The seat: behind the goal, a little to the side the ball went, up on the terrace, looking back up the field to
+	# The seat: behind the goal, a little to the side the ball went, high on the terrace, looking back up the field to
 	# where the strike came from.
 	var from: Vector3 = _frame_at(_t)[1]
 	_cam = Camera3D.new()
@@ -67,7 +69,8 @@ func start(t_cross: float, s: float, c: Vector3) -> void:
 	_cam.near = 0.3
 	_cam.far = 900.0
 	var side := clampf(c.z * 0.35, -9.0, 9.0)
-	_cam.global_position = Vector3(s * (Pitch.HALF_L + 15.0), 6.0, side)
+	# (Above the heads of the fans on the terrace behind it, standing and cheering: 9.5 m up.)
+	_cam.global_position = Vector3(s * (Pitch.HALF_L + 15.0), 9.5, side)
 	var look := c.lerp(Vector3(from.x, 0.0, from.z), 0.45)
 	_cam.look_at(Vector3(look.x, 1.6, look.z * 0.8))
 	# Wide enough for the strike and the posts both.
@@ -77,6 +80,8 @@ func start(t_cross: float, s: float, c: Vector3) -> void:
 	_cut = false
 	_t0 = _t
 	_side = 1.0 if c.z >= 0.0 else -1.0
+	if m.wsg_replay:
+		m.wsg_replay.play(_t, _t1)    # (the foundation's bodies as they were drawn: they do not follow the game's here)
 	m.hud.replay(true, stop)
 	m.controls.set_meta("was_visible", m.controls.visible)
 	m.controls.visible = false
@@ -99,6 +104,8 @@ func step(delta: float) -> void:
 		_broadcast(f[1])
 	for e in f[2]:
 		_put(e)
+	if m.wsg_replay:
+		m.wsg_replay.seek(_t)
 	m.hud.redraw_marks()
 
 
@@ -130,6 +137,8 @@ func stop() -> void:
 	playing = false
 	for e in _saved:
 		_put(e)
+	if m.wsg_replay:
+		m.wsg_replay.stop()
 	m.ball.show_at(_ball_saved)
 	_saved = []
 	if _cam != null:

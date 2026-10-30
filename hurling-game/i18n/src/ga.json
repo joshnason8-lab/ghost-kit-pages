@@ -459,5 +459,6 @@
   "VULKAN_BACK_crash": "Níor thosaigh an cluiche i gceart an uair dheireanach: as seo amach úsáideann sé an seanléiritheoir grafaice ar an bhfón seo.",
   "PRIV_DATE": "Nuashonraithe 27 Deireadh Fómhair 2026.",
   "PRACTICE_CH_TITLE": "DÚSHLÁN CUAILLE!",
-  "PRACTICE_CH_HIT_SUB": "Den chuaille! +{n}"
+  "PRACTICE_CH_HIT_SUB": "Den chuaille! +{n}",
+  "TALLY_TODAY": "%s inniu"
 }
