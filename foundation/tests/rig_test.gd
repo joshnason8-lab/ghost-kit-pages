@@ -46,6 +46,7 @@ func _initialize() -> void:
 		["arm_twist", ["upper_arm", "elbow"]],
 		["crouch", ["knee", "hip", "thigh"]],
 		["lunge", ["knee", "hip"]],
+		["feet_turned", ["shin"]],
 	]
 	for helpers_on in [true, false]:
 		body.helpers.active = helpers_on
@@ -69,6 +70,7 @@ func _initialize() -> void:
 	_soles()
 	await _hinges(poses)
 	await _grip(poses)
+	await _torso()
 	for l in lines:
 		print(l)
 	if failures.is_empty():
@@ -161,6 +163,8 @@ const REGIONS := {
 	"hip": [["^UpLeg", "UpLeg", "Leg"], 0.85, 1.2, "bend"],
 	"thigh": [["UpLeg", "Leg", "Foot"], 0.3, 0.65, "twist"],
 	"knee": [["UpLeg", "Leg", "Foot"], 0.85, 1.15, "bend"],
+	# Above the ankle (the owner's free: "the shin pinches to half its width just above the boot").
+	"shin": [["UpLeg", "Leg", "Foot"], 1.45, 1.85, "twist"],
 }
 
 
@@ -287,6 +291,40 @@ func _hinges(poses: Dictionary) -> void:
 
 ## The soles stand flat at rest: the lowest point toward the toe against the lowest at the heel, on the mesh itself
 ## (a model made with its feet pitched up shows here even though every joint angle is fine).
+## The chest kept clear (WsgPoseLayer.torso_r): an arm laid across the chest by a pose made for a slimmer body - the
+## forearm through it - is swung out about the shoulder till the forearm is outside.
+func _torso() -> void:
+	var layer := WsgPoseLayer.new()
+	body.skeleton.add_child(layer)
+	layer.weight = 1.0
+	var inside := []
+	for r in [0.0, 0.1]:
+		layer.torso_r = r
+		layer.set_pose({"RightArm": Quaternion(Vector3.UP, deg_to_rad(90.0)) * Quaternion(Vector3.BACK, deg_to_rad(70.0)),
+			"RightForeArm": Quaternion(Vector3.UP, deg_to_rad(120.0))})
+		var deepest := [0.0]
+		var f := func():
+			var sk := body.skeleton
+			var a := sk.get_bone_global_pose(sk.find_bone("Hips")).origin
+			var b := sk.get_bone_global_pose(sk.find_bone("Neck")).origin
+			var e := sk.get_bone_global_pose(sk.find_bone("RightForeArm")).origin
+			var h := sk.get_bone_global_pose(sk.find_bone("RightHand")).origin
+			for k in [0.3, 0.6, 0.9]:
+				var q := e.lerp(h, k)
+				var t := clampf((q - a).dot(b - a) / (b - a).length_squared(), 0.0, 1.0)
+				deepest[0] = maxf(deepest[0], 0.1 - q.distance_to(a + (b - a) * t))
+		body.posed.connect(f, CONNECT_ONE_SHOT)
+		body.reset_pose()
+		await process_frame
+		await process_frame
+		inside.append(deepest[0] * 1000.0)
+	lines.append("chest: a forearm laid through it %.0f mm deep, kept clear %.0f mm" % [inside[0], inside[1]])
+	if inside[0] < 20.0 or inside[1] > 5.0:
+		failures.append("chest clearance: %.0f mm in without, %.0f with" % [inside[0], inside[1]])
+	layer.queue_free()
+	await process_frame
+
+
 func _soles() -> void:
 	for side in ["Left", "Right"]:
 		var ids := {WsgRig.index(side + "Foot"): true, WsgRig.index(side + "ToeBase"): true}

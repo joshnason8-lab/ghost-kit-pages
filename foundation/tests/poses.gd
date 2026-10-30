@@ -44,6 +44,10 @@ static func all() -> Dictionary:
 	p.lunge = {"hips_y": 0.25, "LeftUpLeg": q(Vector3.RIGHT, -80), "LeftLeg": q(Vector3.RIGHT, 80),
 		"RightUpLeg": q(Vector3.RIGHT, 35), "RightLeg": q(Vector3.RIGHT, 30), "RightFoot": q(Vector3.RIGHT, 20),
 		"LeftArm": q(Vector3.FORWARD, 80), "RightArm": q(Vector3.BACK, 80)}
+	# The feet turned as far as a game's own moves may turn them (the pilot's caps: the shin 25 degrees about its
+	# length on the thigh, the foot 20 on the shin): the skin above the ankle must keep its girth.
+	p.feet_turned = {"LeftLeg": q(Vector3.UP, 25), "RightLeg": q(Vector3.UP, -25), "LeftFoot": q(Vector3.UP, 20),
+		"RightFoot": q(Vector3.UP, -20)}
 	# Bad input on purpose: an elbow and a knee bent the wrong way and a foot cocked up. The drivers must refuse them.
 	p.broken = {"LeftForeArm": q(Vector3.UP, 60), "LeftLeg": q(Vector3.RIGHT, -50), "LeftFoot": q(Vector3.RIGHT, -80),
 		"LeftArm": q(Vector3.FORWARD, 80), "RightArm": q(Vector3.BACK, 80)}

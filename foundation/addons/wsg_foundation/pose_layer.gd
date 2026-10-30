@@ -35,6 +35,12 @@ var hold := {}
 ## off it, its turn kept. Applied last; not to a side in `hold`.
 var clear := {}
 const FIST_R := 0.045
+## The chest kept clear of the forearms (m: the torso's radius about the line from the hips to the neck; 0: not
+## kept). A pose made for a slimmer body (a game's own, a clip from video) laid on this one swept a forearm through
+## the chest: the arm is swung out about the shoulder till the forearm is outside it. After body_pose, and again
+## after the holds.
+var torso_r := 0.0
+const FOREARM_R := 0.04
 
 var _target := 0.0
 var _rate := 0.0
@@ -101,6 +107,9 @@ func _process_modification_with_delta(delta: float) -> void:
 				targets[side + "Hand"] = r[2]
 		var want: Quaternion = (pq.inverse() * (targets[b] as Quaternion)).normalized()
 		sk.set_bone_pose_rotation(i, sk.get_bone_pose_rotation(i).slerp(want, w))
+	if torso_r > 0.0:
+		for side in ["Left", "Right"]:
+			_clear_torso(sk, side, w, 0.0)
 	for side in hold:
 		var h: Array = hold[side]
 		var hw: float = float(h[2]) * w
@@ -116,9 +125,49 @@ func _process_modification_with_delta(delta: float) -> void:
 	for side in clear:
 		if not hold.has(side) or float((hold[side] as Array)[2]) * w <= 0.0:
 			_keep_clear(sk, side, clear[side])
+	if torso_r > 0.0:
+		# (A held hand too, when the arm is well into the chest: better a hand a little off the handle than an arm
+		# through the chest; a graze is left, the hand kept closed on the handle.)
+		for side in ["Left", "Right"]:
+			var held := hold.has(side) and float((hold[side] as Array)[2]) * w > 0.0
+			_clear_torso(sk, side, w, 0.03 if held else 0.0)
 	if hips != Vector3.INF:
 		var h := sk.find_bone("Hips")
 		sk.set_bone_pose_position(h, sk.get_bone_pose_position(h).lerp(sk.get_bone_rest(h).origin + hips - Vector3(0, lift_after, 0), w))
+
+
+## The side's forearm out of the chest (torso_r round the hips-to-neck line): the arm turned about the shoulder, the
+## least turn that takes the forearm's deepest point out (a few passes: the turn moves the rest of it too).
+func _clear_torso(sk: Skeleton3D, side: String, w: float, slack: float) -> void:
+	var ia := sk.find_bone(side + "Arm")
+	var ifo := sk.find_bone(side + "ForeArm")
+	var ih := sk.find_bone(side + "Hand")
+	var a := sk.get_bone_global_pose(sk.find_bone("Hips")).origin
+	var b := sk.get_bone_global_pose(sk.find_bone("Neck")).origin
+	var ab := b - a
+	for pass_i in 3:
+		var s := sk.get_bone_global_pose(ia).origin
+		var e := sk.get_bone_global_pose(ifo).origin
+		var h := sk.get_bone_global_pose(ih).origin
+		var deepest := 0.0
+		var at := Vector3.ZERO
+		var out := Vector3.ZERO
+		for k in [0.2, 0.4, 0.6, 0.8, 1.0]:
+			var q := e.lerp(h, k)
+			var t := clampf((q - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+			var off := q - (a + ab * t)
+			var need := torso_r + FOREARM_R - off.length()
+			if need > deepest:
+				deepest = need
+				at = q
+				out = off.normalized() if off.length() > 1e-4 else Vector3.FORWARD
+		if deepest <= 0.002 + (slack if pass_i == 0 else 0.0):
+			return
+		var to := at + out * (deepest + 0.005)
+		var turn := Quaternion((at - s).normalized(), (to - s).normalized())
+		var par := sk.get_bone_global_pose(sk.get_bone_parent(ia)).basis.get_rotation_quaternion()
+		var g := turn * sk.get_bone_global_pose(ia).basis.get_rotation_quaternion()
+		sk.set_bone_pose_rotation(ia, sk.get_bone_pose_rotation(ia).slerp((par.inverse() * g).normalized(), w))
 
 
 func _keep_clear(sk: Skeleton3D, side: String, c: Array) -> void:

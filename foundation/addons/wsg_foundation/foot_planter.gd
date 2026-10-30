@@ -189,6 +189,17 @@ func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
 	var ankle := hip + dir * d
 	var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[0])).basis
 	var th_b := Basis(Quaternion((knee - hip).normalized(), (new_knee - hip).normalized())) * th.basis
+	# The thigh rolled about its length so the knee's hinge (the thigh's own x) is square to the leg's plane (hip,
+	# knee, ankle): the shortest turn alone left it askew, and the shin then bent off the hinge (a knee sideways).
+	var tdir := (new_knee - hip).normalized()
+	var normal := tdir.cross(ankle - new_knee)
+	if normal.length() > 1e-4:
+		normal = normal.normalized()
+		var hx := th_b * Vector3.RIGHT
+		if hx.dot(normal) < 0.0:
+			normal = -normal
+		var hx_flat := (hx - tdir * hx.dot(tdir)).normalized()
+		th_b = Basis(Quaternion(hx_flat, normal)) * th_b
 	sk.set_bone_pose_rotation(leg[0], (parent.inverse() * th_b).get_rotation_quaternion())
 	var sh_now := th_b * (th.basis.inverse() * sh.basis)
 	var sh_dir := sh_now * (sh.basis.inverse() * (ft.origin - knee)).normalized()

@@ -247,3 +247,11 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     collar painted as skin); no number. The flag held: the pole across the palm as a hammer's handle, the fingers
     closed round it (WsgGrip on that line), the pole on along the arm, the cloth hanging from it; a child of the
     body. The separate officials' models are no longer drawn (their heads are the source).
+  - Then (the lead's three): **the arm through the chest** at the end of a free's swing (92 mm into the HD chest:
+    the clip's follow-through sweeps it across, as a slimmer body takes): WsgPoseLayer.torso_r - a forearm inside the
+    chest swings the arm out about the shoulder (a held hand too, when well in); rig_test checks it (71 mm -> 0).
+    **The shoot-out**: a goalkeeper's dive bent his knees 50 degrees off the hinge (the game's own move: its shins
+    held to a hinge now, Hurling); the planter's IK left a knee off its hinge (the thigh now rolled so the hinge is
+    square to the leg's plane); an open hand on the handle (a body made full detail after it was posed: ranked
+    first now, Hurling). The shin above the ankle: rig_test's feet_turned (the caps: shin 25, foot 20) keeps 99%.
+    Hurling's bench checked (test_runner). Practice and shoot-out audits PASS.
