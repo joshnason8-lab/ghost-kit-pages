@@ -111,3 +111,12 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   to high quality". starting_tier(): weak Low, flagship High, else the profile's default (premium Medium, budget
   Low); every tier can be chosen (budget High: GL still, 400 + 800 3D fans, every body in full; 674,000 triangles).
   WsgFoundation.tier (set by the game) picks the full-detail bodies per tier.
+- [~] Blender (the owner's list, in order): 1 normal maps - tools/blender (export_obj.gd, bake_normals.py/.sh;
+  Ubuntu's Blender 4.0.2: denoising off or bakes are zeros). The pilot's hurler is now the HD model's own cuts
+  (hero_hd: 5,866 / 1,758 triangles, tangents from the bake) with its sculpt as a normal map (1024) and its
+  textures scaled for the game (albedo 2048, mask 1024); Hurling's kit shader bends its cel light and rim by it (and
+  the cloth weave on High). Found baking it: bake_character left a finger joint at the origin when a band of the
+  finger had no vertices (the old hurler too: LeftHandIndex3 1.6 m from the hand), now placed along the finger, and a
+  bake with a joint over 0.7 m from its parent is refused; WsgGrip checks the middle of each bone too, and
+  clear_axis_point keeps a handle out of a hand whose knuckles sit low. Audits: practice and shoot-out PASS with it.
+  Next: 2 stadium light bakes, 3 LODs, 4 the umpire's sleeves and fan3, 5 crowd brightness.
