@@ -15,3 +15,9 @@ named.
 | 8 | **Photo mode** after a match: pause, free camera, hide the HUD, share - players post these. | medium | medium | all |
 
 Each milestone report to the lead carries the top three.
+
+## Considered and left out
+
+- **Normal maps on the 3D crowd's fans.** The fans' Meshy meshes are already drawn whole (there is no more detailed
+  source to bake from), they are about 50 pixels tall in the stands, and the crowd shader runs for thousands of
+  them: a normal map is a texture read per fan for nothing a player could see. (Players and officials have them.)
