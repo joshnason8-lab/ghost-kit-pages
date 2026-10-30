@@ -10,7 +10,10 @@ func _initialize() -> void:
 	var phones := [["Mali-G57 MC2", 4.0, -1], ["Adreno (TM) 610", 4.0, -1], ["Adreno (TM) 506", 3.0, -1],
 		["Mali-G52 MC2", 6.0, -1], ["PowerVR Rogue GE8320", 2.0, -1], ["Adreno (TM) 750", 12.0, 1],
 		["Mali-G715-Immortalis MC11", 12.0, 1], ["Adreno (TM) 619", 6.0, -1], ["Adreno (TM) 620", 6.0, 0], ["Mali-G77 MC9", 8.0, 0],
-		["Xclipse 940", 8.0, 1], ["Adreno (TM) 740", 4.0, -1]]
+		["Xclipse 940", 8.0, 1], ["Adreno (TM) 740", 4.0, -1],
+		# The owner's own phone, a Galaxy A16 (the main test phone): its 4G (Helio G99) and 5G (Exynos 1330, Dimensity
+		# 6300) models, 4 to 8 GB - all weak.
+		["Mali-G57 MC2", 8.0, -1], ["Mali-G68 MC4", 6.0, -1], ["Mali-G68 MC4", 8.0, -1]]
 	for p in phones:
 		var c := WsgFoundation.device_class(p[0], p[1])
 		print("%-28s %4.1f GB: class %+d" % [p[0], p[1], c])
