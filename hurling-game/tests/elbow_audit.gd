@@ -328,7 +328,7 @@ static func _twist(chest: Quaternion, s: Vector3, e: Vector3, w: Vector3) -> flo
 
 
 func _note(deg: float, kind: String, pl: Player, mode: String, t: float, limit: float) -> void:
-	if OS.has_environment("AUDIT_TRACE") and pl.action == OS.get_environment("AUDIT_TRACE") and pl.role == "" and (kind.contains("knee") or kind.contains("spine") or kind.contains("head")):
+	if OS.has_environment("AUDIT_TRACE") and pl.action == OS.get_environment("AUDIT_TRACE") and pl.role == "" and (kind.contains("knee") or kind.contains("spine") or kind.contains("head") or kind.contains("forearm in")):
 		print("TRACE %.2f %-26s %6.1f" % [pl.action_t, kind, deg])
 	if deg > limit:
 		counts[kind] = int(counts.get(kind, 0)) + 1
