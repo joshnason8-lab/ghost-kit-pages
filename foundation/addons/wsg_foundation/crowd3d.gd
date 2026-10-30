@@ -25,6 +25,7 @@ const BUDGET := {1: [400, 1200], 2: [1000, 3000]}
 const FEET_FORWARD := WsgCrowdClips.FEET_FORWARD
 
 static var _excite_target := 0.0
+static var _light := 1.0
 static var _tension := 0.0
 static var _meta := {}
 
@@ -150,10 +151,9 @@ func set_teams(a: Color, b: Color) -> void:
 		m.set_shader_parameter("team_b", b)
 
 
-## The ground's light on them (1 by day; lower at dusk or under lights).
-func set_light(k: float) -> void:
-	for m in materials:
-		m.set_shader_parameter("light", k)
+## The ground's light on them (1 by day; lower at dusk or under lights), for every crowd.
+static func set_light(k: float) -> void:
+	_light = k
 
 
 ## What they watch (world); eased so heads do not snap.
@@ -193,3 +193,4 @@ func _process(delta: float) -> void:
 		m.set_shader_parameter("clap_time", _clap_time)
 		m.set_shader_parameter("clap_rate", _clap_rate)
 		m.set_shader_parameter("clap_sync", _clap_sync)
+		m.set_shader_parameter("light", _light)
