@@ -14,3 +14,4 @@ godot --headless --path . -s tests/profile_test.gd
 godot --headless --path . -s tests/light_bake_test.gd
 godot --headless --path . --fixed-fps 30 -s tests/replay_test.gd
 godot --headless --path . --fixed-fps 30 -s tests/broadcast_test.gd
+godot --headless --path . --fixed-fps 30 -s tests/audio_test.gd

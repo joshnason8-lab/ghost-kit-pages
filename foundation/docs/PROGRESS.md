@@ -195,4 +195,16 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   and the day's tally (TALLY_TODAY, English and Irish), after a goal the stand behind it, then the replay (the
   restart waits; a tap skips); the replay's camera up to 9.5 m (cheering fans on the terrace had filled it); the
   opening flight under the title card on Medium and High. Hurling keeps its own score bug. Demo filmed.
-  Next: C (the audio foundation).
+- [x] C. Sound (addons/wsg_foundation/audio): WsgAudio mixes a game's own recordings - the crowd a bed of layers
+  driven by the excitement and tension the 3D fans already follow (one call moves the stand and its sound), each
+  "smooth" or "linear"; sounds where they happened (AudioStreamPlayer3D pool, the tier's voices: budget Low 8 to
+  premium High 24, each kind's own limit, the lowest priority / farthest / oldest giving way, a losing newcomer not
+  played); ducking (the crowd bus, the deepest wins, eased back; on the game's clock); haptics behind the game's
+  setting, never two within 60 ms; crowd one-offs never the same take twice running. Buses WsgCrowd/WsgSfx/WsgVoice.
+  tests/audio_test.gd. Hurling (Sfx): the bed is the owner's crowd_loop (the ground's size), applause swelling with a
+  score and dying with it, and the crowd again out of step and higher building with an attack (_hype); strikes,
+  shoulders, the post, the bounces and the referee's whistle where they happen (the old flat fall-off kept without
+  the foundation); the crowd dips under each whistle (5 dB) and under the replay (6 dB). Measured in the demo
+  (scripted attack and goal): tension layer -34 to -11.5 dB over the attack, applause to -8 dB at the goal and back
+  in 3 s, the crowd bus -6 dB through the replay; overall loudness -45 calm, -35 building, -12 at the goal.
+  Next: the lead's call.

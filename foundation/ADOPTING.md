@@ -258,6 +258,23 @@ Cost: about 2 MB of video memory per arena (the 2048 map, compressed) and a chea
   timing, `reduce_motion` to fade instead of slide). Text goes through tr(): give keys or words in the player's
   language (Hurling: TALLY_TODAY "%s today" / "%s inniu").
 
+## 5.8 Sound (addons/wsg_foundation/audio)
+
+`WsgAudio` mixes your own recordings as a broadcast does. Make one when a match starts (Hurling: `Sfx._mixer()`):
+- **The crowd's bed**: `crowd_layers({"murmur": {"stream": loop, "db": [-26, -6], "by": "base"}, "applause":
+  {..., "by": "excite"}, "tension": {..., "by": "tension"}})` and `base` = the ground's size. Excitement and tension
+  are the ones you already give the 3D fans (`WsgCrowd3D.set_excite` / `set_tension`): the stand and its sound move
+  together. Layers can be one recording twice, out of step ("from") and a little higher ("pitch"). Give a looping
+  copy (`stream.duplicate()`, `loop = true`) if the same file is also a one-off.
+- **Where it happened**: `play_at(stream, position, db, pitch, kind, priority)` - heard from the camera; at most
+  the tier's voices (`WsgFoundation.voices()`: a budget phone's Low 8, a premium High 24) and each kind's own limit
+  (`kind_limits`); when all are busy the lowest priority, then the farthest, then the oldest gives way, and a
+  newcomer that would lose to all of them is not played. Keep a flat fall-back for builds without the foundation.
+- **Ducking**: `duck(db, secs)` - the crowd under the whistle, a replay, a commentary line; the deepest wins and
+  eases back. **Haptics**: `haptic([[ms, strength], gap, ...])` behind your vibration setting (`haptics_on`),
+  never two within 60 ms.
+- **One-offs** from the crowd: `react([take_1, take_2, take_3])` never repeats the take just played.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →
