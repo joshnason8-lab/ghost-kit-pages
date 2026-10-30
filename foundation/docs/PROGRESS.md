@@ -37,7 +37,7 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   MultiMeshes, budgets in docs/BUDGET.md), `crowd_vat.gdshader` (all behaviour on the GPU), `crowd_clips.gd`
   (authored placeholder motions: sit idle/clap, sit-to-stand, stand idle/clap, cheer), `tools/bake_crowd.gd`
   (weld + vertex colours + simplify + VAT), `tools/toonbody_to_scene.gd` (17-bone game meshes -> rig).
-  Data: addons/wsg_foundation/crowd/ (Hurling's Meshy fans 1,2,4,5,6; fan3's jacket balloons: left out).
+  Data: addons/wsg_foundation/crowd/ (Hurling's Meshy fans 1 to 6; fan3 generated again in a T-pose, below).
   tests/crowd_test.gd PASS; tests/media/crowd_video.tscn. Not measured on a phone yet (no GPU here).
 - [x] M4 officials: `official.gd` (WsgOfficial: follow(delta, velocity, play, want) faces the play and side-steps/
   backpedals/jogs; signal_gesture whistle/point/score/foul/both_arms_up/arm_out - placeholder poses, ActorCore
@@ -179,4 +179,9 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   two APIs, a service account with Test Lab Admin + Storage Object Viewer, the JSON key as the secret). Hurling:
   testlab/, the preset, hurling-testlab.yml. Tried here: the scene on this machine (software GL) prints all three
   tiers; the summary parser on its lines. Not run on Test Lab yet: needs the owner's key.
+- [x] fan3 again (the lead's go-ahead): generated anew through Meshy in a T-pose (sleeves apart from the body),
+  the same look (navy blazer, grey scarf, white shirt, beige trousers, grey beard, glasses): 35 credits (159 to
+  124; tools/meshy/tasks.json "fan3b" in Hurling). Baked onto the rig: 15 and 13 cm under the arms, rising 9 cm
+  (the old one 37, 31 and 25); after cloth_drape and cloth_weights 8, 7 and 0 - the rig test's cloth checks pass.
+  Back in the crowd (six fans; authored crowd re-baked, the licensed one in data/ only).
   Next: B (the TV presentation layer).
