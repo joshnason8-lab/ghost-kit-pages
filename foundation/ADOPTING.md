@@ -185,6 +185,17 @@ if int(Game.settings.graphics) > Game.GFX_LOW and WsgCrowd3D.available():
 	crowd3d.set_teams(home_colour, away_colour)
 	# your billboards: every spot not in used
 ```
+**Make the two crowds one crowd** (Hurling's Stadium.build_crowd): decide each spot's shirt once (a Color a spot, by
+the spot: your county colours and anything else, as your billboards do) and give the same array to both -
+`crowd3d.build(..., room, shirts, lights)` and your billboards (`WsgCrowd3D.shirt_code(colour)` is the code to put
+in their shader, decoded `fract(code * vec3(7.13, 3.77, 5.31))`, 30% greyed, times 0.9). A fan then keeps their
+shirt when the crowd is built again round another focus, and the line where the 3D fans meet the cut-outs goes.
+`WsgCrowd3D.set_sun(to_sun)`: the fans are lit as the games light their people (a cel light, not the scene's: no
+sky colour cast, the same on every renderer) and written to the screen as the cut-outs write theirs (colour^2.2).
+`lights`: each seat's baked light (`WsgLightBake.probes(mesh, base, spots.size())`, after a bake with "probes": the
+fans' heads) - under a roof darker; give it to your billboards too. Measured on Hurling's main stand: mean colour
+3D 0.39 0.33 0.33 against cut-outs 0.37 0.33 0.33, luma 0.34 both, saturation 0.31 both (before: 3D blue-grey,
+0.37 0.38 0.44, saturation 0.26 against 0.34).
 - `seated`: true, false, one bool per spot, or one number per spot: the seat's height over the feet (m; 0 for a
   terrace, where they stand; true means 0.44). A spot is the fan's feet; each seated fan is lifted so the seat of
   their trousers is on the seat, never in it. Give the stand seats to sit on (Hurling: a bench 0.40 m high and

@@ -153,4 +153,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   fan3: the Meshy blazer's sleeves are fused into its body (generated arms-down): 37 cm of webbing, rising 25 cm;
   weights fix the rise (0 cm) but not the cape. Stays out of the crowd; the fix is generating it again in an A-pose
   (Meshy, about 35 credits: asked the lead).
-  Next: 5 crowd brightness (with the seats' baked light), the feet glitch.
+  5 The crowds matched: the 3D fans read blue-grey and pastel beside the cut-outs' county colours (measured on the
+  main stand: 0.37 0.38 0.44, saturation 0.26, against 0.41 0.35 0.35, 0.34). Now each spot's shirt is decided once
+  (Stadium._shirts: both county colours, sections leaning one way, the rest anything) and both crowds wear it (the
+  cut-outs' code, WsgCrowd3D.shirt_code); the 3D fans are lit as the game lights its people (unshaded, a cel light
+  from the sun, crowd_vat.gdshader) and written as the cut-outs are: 0.39 0.33 0.33 against 0.37 0.33 0.33, luma
+  and saturation equal; the line between them is gone. Each seat's baked light: WsgLightBake probes (Blender ray
+  casts from each fan's head: the sky through the half facing the pitch, the sun's disc; 5 s for all four venues),
+  on both crowds - under the roofs darker. Found: under GL Compatibility a MultiMesh's custom data is half floats
+  (a light packed with a shirt code turned the shirts purple): small numbers only (g: the light, signed seated).
+  Close up, the lower shirts of many 3D fans are pale (old and new alike): the crowd bake's shirt mask stops 5 cm
+  above the hip joint and these fans' shirts go lower - next, with a re-bake of the crowd.
+  Next: the shirt mask, the feet glitch; then A (Firebase Test Lab).

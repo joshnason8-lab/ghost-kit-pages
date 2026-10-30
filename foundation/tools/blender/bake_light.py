@@ -2,16 +2,19 @@
 # shadows and a bounce, onto the second UVs WsgLightBake made (export: <base>.obj + <base>.json). Writes
 # <base>_light.png (the built geometry: the light divided by the JSON's "scale") and, if the JSON gives a ground,
 # <base>_ground.png (seen from above, x0 z0 at the top left: the light there as a share of the light on open ground -
-# the shadows and the occlusion, for a ground shader that lights itself). Stored linear (Non-Color).
-#   blender -b --python bake_light.py -- --base out/stadium_day [--samples 64] [--ground-size 1024]
+# the shadows and the occlusion, for a ground shader that lights itself). Stored linear (Non-Color). With
+# <base>_probe_points.json beside it (fans' heads), <base>_probes.json: the light at each as a share of an open seat's (WsgLightBake.probes).
+#   blender -b --python bake_light.py -- --base out/stadium_day [--samples 64] [--ground-size 1024] [--probes-only]
 import argparse
 import json
 import math
+import os
 import sys
 
 import bpy
 import numpy as np
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 
 def args():
@@ -20,6 +23,7 @@ def args():
     p.add_argument("--samples", type=int, default=64)
     p.add_argument("--ground-size", type=int, default=1024)
     p.add_argument("--bounce", type=float, default=0.45, help="the surfaces' albedo for the bounce")
+    p.add_argument("--probes-only", action="store_true", help="only the probes (the maps are baked already)")
     return p.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
 
 
@@ -66,6 +70,50 @@ def save(img, path, scale):
     out.filepath_raw = path
     out.file_format = "PNG"
     out.save()
+
+
+def probes(a, info, built, to_sun, sun_energy, sky, sun_col):
+    """The light at each probe (a fan's head: [x, y, z, facing x, facing z], Godot's), as a share of what an open seat
+    gets: the sky through the half facing the pitch (what lights a fan's front; the stand behind them is not counted),
+    and the sun seen or not (five rays across its disc). Writes <base>_probes.json {"values": [...]}."""
+    dg = bpy.context.evaluated_depsgraph_get()
+    tree = BVHTree.FromObject(built, dg)
+    lum = lambda col: 0.2126 * col[0] + 0.7152 * col[1] + 0.0722 * col[2]
+    sky_w = lum(sky) * float(info.get("sky_energy", 1.0))
+    sun_w = lum(sun_col) * sun_energy * 0.6
+    # Directions over a hemisphere (a Fibonacci spiral, cosine-weighted about its pole).
+    n = 48
+    hemi = []
+    for i in range(n):
+        z = math.sqrt(1.0 - (i + 0.5) / n)
+        r = math.sqrt(1.0 - z * z)
+        t = i * 2.399963
+        hemi.append((r * math.cos(t), r * math.sin(t), z))
+    jit = [Vector((0, 0, 0)), Vector((0.012, 0, 0)), Vector((-0.012, 0, 0)), Vector((0, 0.012, 0)), Vector((0, -0.012, 0))]
+    out = []
+    for p in info["probes"]:
+        o = bl((p[0], p[1], p[2]))
+        pole = (bl((p[3], 0.0, p[4])).normalized() + Vector((0, 0, 1))).normalized()
+        u = pole.cross(Vector((0, 0, 1)))
+        u = u.normalized() if u.length > 1e-6 else Vector((1, 0, 0))
+        v = pole.cross(u)
+        seen = 0
+        for d in hemi:
+            ray = (u * d[0] + v * d[1] + pole * d[2]).normalized()
+            if ray.z < -0.05:
+                continue
+            if tree.ray_cast(o + ray * 0.05, ray, 400.0)[0] is None:
+                seen += 1
+        sky_vis = seen / n
+        sun_vis = 0.0
+        for j in jit:
+            ray = (to_sun + j).normalized()
+            if tree.ray_cast(o + ray * 0.05, ray, 600.0)[0] is None:
+                sun_vis += 1.0 / len(jit)
+        out.append(round((sky_w * sky_vis + sun_w * sun_vis) / (sky_w + sun_w), 3))
+    json.dump({"values": out}, open(a.base + "_probes.json", "w"))
+    print("bake_light: %s_probes.json (%d probes, %.2f on average, %d under 0.6)" % (
+        a.base, len(out), sum(out) / max(len(out), 1), sum(1 for x in out if x < 0.6)))
 
 
 def main():
@@ -127,6 +175,11 @@ def main():
         scene.collection.objects.link(ground)
         ground.data.materials.append(diffuse("ground", 0.25))
 
+    if os.path.exists(a.base + "_probe_points.json"):
+        info["probes"] = json.load(open(a.base + "_probe_points.json"))
+        probes(a, info, built, to_sun, sun_energy, sc, c)
+    if a.probes_only:
+        return
     size = int(info.get("size", 2048))
     img = bpy.data.images.new("light", size, size, alpha=False, float_buffer=True)
     img.colorspace_settings.name = "Non-Color"
