@@ -102,11 +102,23 @@ up to 40 cm and 130 degrees. Put that arm in body space each frame:
 drawn in the hand when the skeleton has its final pose (`body.posed.connect(...)`): during the frame Godot reports
 bones without their modifiers (the layer, the grip).
 
+**A stick or ball held close up** (a practice, a shoot-out): close the hand on the handle as you draw it, not on
+the rig's own palm line: `body.grip("Right", handle_radius, 1.0, [point, direction])` (the handle's axis in the hand's
+rest, the joints' space; the pilot's `_line_r`), and the fingers curl till they touch it, the thumb opening or lying
+along it if it must. Mark that hand held (`reader.held = {"Right": true}`): its turn stays yours exactly. A second hand
+on the handle (Hurling's top hand in a swing): `legacy.hold = {"Left": ["RightHand", the hand in the right hand's
+frame, weight, the handle's direction there, the grip point in the left hand]}` - the arm reaches it (two-bone IK),
+slides along the handle to where it can reach, rolls round it to spare the wrist. Take hold at once and let go
+slowly (`_two_hands` in the pilot): a hand eased half way onto a handle goes through it.
+
 Your arms are rebuilt from where you put the hands (`WsgLegacyPose.sound_arm`): 17-bone poses often bend an elbow
 backwards or turn the upper arm so the elbow points where no elbow can (Hurling's hurley arm does, most of the time),
 which a toon mesh hides but the rig's hinge cannot follow. The hand stays where yours is; the elbow bends forward and
-points at most 95 degrees from the way an arm in that place bends. The pilot's `tests/elbow_audit.gd` plays a whole
-match and fails on any elbow bent backwards, pointing the wrong way, or straightened against your pose: copy it.
+points at most 95 degrees from the way an arm in that place bends, and the hand turns at most 95 degrees about the
+forearm (a held hand: the arm swivels to keep it so; a free one gives a little). The pilot's `tests/elbow_audit.gd` plays a whole
+match (and `-- practice`, `-- shootout`: every swing close up) and fails on any elbow bent backwards, pointing the
+wrong way, or straightened against your pose, a wrist wrung past 110 degrees, or a finger more than 5 mm into the
+handle: copy it.
 
 Your own fixes for your old mesh (Hurling's officials had arm twists and a foot pitch) must be taken back out:
 `reader.undo` (see the pilot). Footstep sounds: `link.loco.step.connect(func(foot): ...)`.
@@ -129,7 +141,8 @@ if int(Game.settings.graphics) > Game.GFX_LOW and WsgCrowd3D.available():
   0.35 m deep along the back of each step).
 - `room` (after `focus`): how far behind the feet the step behind (or a back wall) rises above the seat, one number
   or one per spot (INF: it does not). A fan who would sit back into it comes forward.
-- `focus`: where the camera mostly looks (the 3D fans go nearest it).
+- `focus`: where the camera mostly looks (the 3D fans go nearest it). Build again when that changes: a close mode
+  at one goal (a practice, a shoot-out) builds with `quality` 3 (Close: 2,000 full figures) behind that goal.
 - In your `Crowd.set_excite(k)`: also `WsgCrowd3D.set_excite(k)`; in `Crowd.set_light(k)`: `WsgCrowd3D.set_light(k)`.
 - Each frame: `WsgCrowd3D.set_tension(building_pressure)` (the keen ones get up before the score) and
   `crowd3d.watch_ball(ball_position)`.

@@ -17,6 +17,9 @@ extends RefCounted
 ## Degrees an elbow may point away from the way an arm in that place bends with the upper arm not turned (a humerus
 ## turns about 70 in and 90 out).
 const TURN_MAX := 95.0
+## Degrees a hand may turn about its forearm from the T-pose's palm down (which is the forearm half turned, as an arm
+## hanging with the palm to the thigh): the forearm turns about 90 each way.
+const WRIST_MAX := 95.0
 
 const MAP := {"hips": "Hips", "spine": "Spine", "chest": "Spine2", "neck": "Neck", "head": "Head",
 	"upperarm_l": "LeftArm", "forearm_l": "LeftForeArm", "hand_l": "LeftHand", "upperarm_r": "RightArm",
@@ -34,6 +37,10 @@ var joints: Dictionary
 var undo := {}
 ## Off: the arms as the game turns them (only for tests that show what the rebuilding fixes).
 var sound_arms := true
+## The hands that hold something drawn in them ("Left", "Right" -> true): their turn is the game's, exactly, whatever
+## the arm must do for it. The others give a little (turned back about the forearm to WRIST_MAX) where the game's turn
+## is more than a forearm can.
+var held := {}
 var _ix := {}
 var _corr := {}          # rig bone -> its rest turned onto the 17's rest (arms: T to hanging)
 var _arm := {}           # side -> [upper arm rest axis, forearm rest axis, upper arm length, forearm length]
@@ -110,67 +117,99 @@ var _last_global := {}
 
 ## The arm through the same shoulder and wrist, made anatomical (see TURN_MAX).
 func _sound_arm(g: Dictionary, side: String) -> void:
-	var r := sound_arm(g["Spine2"], side, g[side + "Arm"], g[side + "ForeArm"])
+	var r := sound_arm(g["Spine2"], side, g[side + "Arm"], g[side + "ForeArm"], g.get(side + "Hand", g[side + "ForeArm"]))
 	g[side + "Arm"] = r[0]
 	g[side + "ForeArm"] = r[1]
+	if g.has(side + "Hand"):
+		g[side + "Hand"] = r[2]
 
 
-## An arm's upper arm and forearm (skeleton space) made anatomical under a chest (skeleton space): the hand where
-## they put it, the elbow bent forward in its hinge and pointing inside TURN_MAX. WsgPoseLayer calls it again with the
-## body's own chest when it lays an arm in body space (body_pose) over a chest of the motion capture's.
-func sound_arm(chest: Quaternion, side: String, arm: Quaternion, fore: Quaternion) -> Array:
+## An arm's upper arm, forearm and hand (skeleton space) made anatomical under a chest (skeleton space): [upper arm,
+## forearm, hand]. The elbow bent forward in its hinge, and the arm swivelled about the line from the shoulder to the
+## wrist (which keeps the hand where it is) the least way that has the elbow pointing within TURN_MAX of the way an
+## arm in that place bends and - a held hand - the hand turned within WRIST_MAX of the forearm (beyond it the forearm
+## wrings like a sweet wrapper); a hand not held is then turned back to WRIST_MAX if it must be. WsgPoseLayer calls it
+## again with the body's own chest when it lays an arm in body space (body_pose) over a chest of the motion capture's.
+func sound_arm(chest: Quaternion, side: String, arm: Quaternion, fore: Quaternion, hand: Quaternion) -> Array:
+	var r := _sound(chest, side, arm, fore, hand, held.has(side))
+	if held.has(side):
+		return [r[0], r[1], hand]
+	var f0: Vector3 = _arm[side][1]
+	var st := WsgRig.swing_twist((r[1] as Quaternion).inverse() * hand, f0)
+	var a := WsgRig.twist_angle(st[1], f0)
+	var lim := deg_to_rad(WRIST_MAX)
+	if absf(a) > lim:
+		hand = (r[1] as Quaternion) * (st[0] as Quaternion) * Quaternion(f0, clampf(a, -lim, lim))
+	return [r[0], r[1], hand]
+
+
+func _sound(chest: Quaternion, side: String, arm: Quaternion, fore: Quaternion, hand: Quaternion, wrist: bool) -> Array:
+	var best := _arm_at(chest, side, arm, fore, hand, 0.0, wrist)
+	if best[2] <= 0.0:
+		return best
+	# Swivelled: every 15 degrees round, then the best of them narrowed down.
+	var step := deg_to_rad(15.0)
+	var at := 0.0
+	for i in range(1, 24):
+		var s := -PI + step * i if i < 12 else step * (i - 11)
+		var c := _arm_at(chest, side, arm, fore, hand, s, wrist)
+		if c[2] < best[2]:
+			best = c
+			at = s
+	var span := step * 0.5
+	for _j in 4:
+		for s in [at - span, at + span]:
+			var c := _arm_at(chest, side, arm, fore, hand, s, wrist)
+			if c[2] < best[2]:
+				best = c
+				at = s
+		span *= 0.5
+	return best
+
+
+## The arm swivelled by s (radians, about the shoulder-wrist line) and its elbow made a forward hinge: [upper arm,
+## forearm, how far out of range it is (the elbow; and the wrist, wrist_too) (radians, plus a little for every degree swivelled: the game's own elbow is
+## best)].
+func _arm_at(chest: Quaternion, side: String, arm: Quaternion, fore: Quaternion, hand: Quaternion, s: float, wrist_too: bool) -> Array:
 	var spec: Array = _arm[side]
 	var a0: Vector3 = spec[0]
+	var f0: Vector3 = spec[1]
 	var ci := chest.inverse()
 	var u := ci * (arm * a0)
-	var f := ci * (fore * (spec[1] as Vector3))
+	var f := ci * (fore * f0)
+	var w := u * float(spec[2]) + f * float(spec[3])
+	if s != 0.0:
+		var r := Quaternion(w.normalized(), s)
+		arm = chest * r * ci * arm
+		fore = chest * r * ci * fore
+		u = r * u
+		f = r * f
 	var bend := u.angle_to(f)
 	var k := smoothstep(deg_to_rad(4.0), deg_to_rad(14.0), bend)
-	if k <= 0.0:
-		return [arm, fore]
-	var l1: float = spec[2]
-	var l2: float = spec[3]
-	var e := u * l1
-	var w := e + f * l2
-	if absf(elbow_turn(u, f)) > deg_to_rad(TURN_MAX):
-		e = _swivel(e, w, l2)
-	var u2 := e.normalized()
-	var f2 := (w - e).normalized()
-	var b := f2 - u2 * f2.dot(u2)
-	if b.length_squared() < 1e-8:
-		return [arm, fore]
-	b = b.normalized()
-	# The upper arm turned so its hinge bends toward the wrist; the forearm bent about the hinge.
-	var c0 := (Vector3.BACK - a0 * Vector3.BACK.dot(a0)).normalized()
-	var rest := Basis(a0, c0, a0.cross(c0))
-	var want := Basis(u2, b, u2.cross(b))
-	var q_arm := (chest * Quaternion(want * rest.inverse())).normalized()
-	var q_fore := q_arm * Quaternion(Vector3.DOWN if side == "Left" else Vector3.UP, u2.angle_to(f2))
-	return [arm.slerp(q_arm, k), fore.slerp(q_fore, k)]
-
-
-## The elbow e swivelled about the line from the shoulder (the origin) to the wrist w, the least way that brings its
-## turn inside TURN_MAX (unchanged if no swivel does: the arm almost straight up).
-func _swivel(e: Vector3, w: Vector3, l2: float) -> Vector3:
-	var ax := w.normalized()
-	var lim := deg_to_rad(TURN_MAX)
-	var ok := func(s: float) -> bool:
-		var e2 := Quaternion(ax, s) * e
-		return absf(elbow_turn(e2.normalized(), (w - e2) / l2)) <= lim
-	var step := deg_to_rad(15.0)
-	for i in range(1, 13):
-		for sg in [1.0, -1.0]:
-			var s: float = sg * step * i
-			if ok.call(s):
-				var lo: float = sg * step * (i - 1)
-				for _j in 5:
-					var mid := (lo + s) * 0.5
-					if ok.call(mid):
-						s = mid
-					else:
-						lo = mid
-				return Quaternion(ax, s) * e
-	return e
+	if k > 0.0:
+		var b := f - u * f.dot(u)
+		if b.length_squared() > 1e-8:
+			b = b.normalized()
+			# The upper arm turned so its hinge bends toward the wrist; the forearm bent about the hinge.
+			var c0 := (Vector3.BACK - a0 * Vector3.BACK.dot(a0)).normalized()
+			var rest := Basis(a0, c0, a0.cross(c0))
+			var want := Basis(u, b, u.cross(b))
+			var q_arm := (chest * (want * rest.inverse()).get_rotation_quaternion()).normalized()
+			var q_fore := q_arm * Quaternion(Vector3.DOWN if side == "Left" else Vector3.UP, bend)
+			arm = arm.slerp(q_arm, k)
+			fore = fore.slerp(q_fore, k)
+	# The forearm a true hinge, as WsgRigDriver makes it (or that would hand the rest of its turn on to the hand).
+	var axis := Vector3.DOWN if side == "Left" else Vector3.UP
+	var d := (arm.inverse() * fore) * f0
+	var flat := d - axis * d.dot(axis)
+	var ang := f0.signed_angle_to(flat.normalized(), axis) if flat.length_squared() > 1e-8 else 0.0
+	fore = arm * Quaternion(axis, clampf(ang, deg_to_rad(-2.0), deg_to_rad(WsgRig.ELBOW_MAX)))
+	var turn := absf(elbow_turn(u, f)) * k
+	var out := maxf(0.0, turn - deg_to_rad(TURN_MAX))
+	if wrist_too:
+		var tw: Quaternion = WsgRig.swing_twist(fore.inverse() * hand, f0)[1]
+		out += maxf(0.0, absf(WsgRig.twist_angle(tw, f0)) - deg_to_rad(WRIST_MAX))
+	return [arm, fore, out + (absf(s) * 0.02 if out > 0.0 or s != 0.0 else 0.0)]
 
 
 ## Which way an elbow points (radians, signed about the upper arm): 0 when the forearm bends the way an arm in that

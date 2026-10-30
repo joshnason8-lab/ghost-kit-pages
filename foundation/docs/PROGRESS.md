@@ -81,3 +81,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     (`room`), and draws sizes toward ones that fit. crowd_test.gd checks every seated frame of every fan on three seats:
     nothing below the seat or in the step behind (the old placement must fail: 0.21-0.33 m in). The pilot's stands
     have benches (0.40 m, 0.35 m deep) along the back of each step.
+- [x] Owner: "add the change to the mini game as well" (practice frees and the shoot-out, close camera):
+  - The crowd: Stadium.build_crowd(focus, quality) built again behind the goal they shoot at, quality 3 (Close:
+    2,000 full figures of 3,000; the players not drawn pay for it); the national stadium's seated end has seats too.
+  - The hands, close up: WsgGrip closes on the handle as drawn (`line`), the thumb opening or lying along it till it
+    is clear; WsgLegacyPose.held keeps a held hand's turn exact (the arm swivels so the wrist stays within 95 deg);
+    a free hand is turned back about its forearm; WsgPoseLayer.hold puts the top hand on the hurley's handle (two-bone
+    IK, sliding along the handle into reach, rolling round it to spare the wrist). A forearm made a true hinge
+    before the wrist is measured (else the rig driver handed the rest on to the hand).
+  - The pilot's elbow audit (-- practice, -- shootout, a match): elbows never backwards past 2 deg, pointing within
+    95 of the way an arm bends, wrists within 107 (the hurley hand; 95 the others), fingers 0.0 mm (right) and 3.4 mm
+    (left) into the handle; PASS in all three. Found on the way: the game's arm poses are out of a forearm's range in
+    its swings (its own wrists to 127 deg, elbows inverted to 179) - the rig makes them sound.

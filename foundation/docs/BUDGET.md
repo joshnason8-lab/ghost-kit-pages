@@ -13,6 +13,7 @@ Measured from the baked data (`addons/wsg_foundation/crowd/crowd.json`, five fan
 |---|---|---|---|---|
 | Medium | 400 + 800 = 1,200 | about 300,000 | 10 | 5 uniforms x 10 materials |
 | High | 1,000 + 2,000 = 3,000 | about 750,000 | 10 | the same |
+| Close (3: a practice, a shoot-out) | 2,000 + 1,000 = 3,000 | about 990,000 | 10 | the same; paid for by the 25-odd players not on the pitch (6,000 triangles each) |
 
 The rest of a ground's spots stay billboards (the game's own, one draw call). Memory: about 0.9 MB for all five fans
 (positions RGBA16F 107 rows x ~230 columns, normals RGBA8, meshes). No shadows from the crowd.
