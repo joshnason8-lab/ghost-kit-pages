@@ -1970,9 +1970,14 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 		var t := now
 		var c := ball.global_position
 		if package:
-			_after(0.5, func(): _score_package(by, team, kind, t, signf(s), c, package_s))
+			_after(0.5, func():
+				# (A freed scorer - substituted meanwhile - cannot be passed on: the replay alone then.)
+				if is_instance_valid(by):
+					_score_package(by, team, kind, t, signf(s), c, package_s)
+				else:
+					replay.start(t, signf(s), c))
 		else:
-			_after(Replay.AFTER + 0.1, func(): replay.start(t, signf(s), c, by if by is Player and is_instance_valid(by) else null))
+			_after(Replay.AFTER + 0.1, func(): replay.start(t, signf(s), c, by if is_instance_valid(by) and by is Player else null))
 
 
 ## A score as television shows it: the scorer close (from the camera's side of the play), their name and the day's

@@ -40,6 +40,10 @@ func record(now: float) -> void:
 		if not _bodies.has(id):
 			_bodies[id] = body
 			body.posed.connect(_take.bind(id))
+	for id in _bodies.keys():
+		if not is_instance_valid(_bodies[id]):
+			_bodies.erase(id)
+			_latest.erase(id)
 	if now - _last_t < 1.0 / rate - 0.001:
 		return
 	_last_t = now
@@ -61,9 +65,9 @@ func span() -> Array:
 func _take(id: int) -> void:
 	if playing:
 		return
-	var body: WsgBody = _bodies.get(id)
-	if not is_instance_valid(body):
+	if not is_instance_valid(_bodies.get(id)):
 		return
+	var body: WsgBody = _bodies.get(id)
 	var sk := body.skeleton
 	var n := sk.get_bone_count()
 	var out := PackedInt32Array()
@@ -104,9 +108,9 @@ func play(t0: float, t1: float, frames: Array = []) -> void:
 	playing = true
 	_saved.clear()
 	for id in _bodies:
-		var body: WsgBody = _bodies[id]
-		if not is_instance_valid(body):
+		if not is_instance_valid(_bodies[id]):
 			continue
+		var body: WsgBody = _bodies[id]
 		_saved[id] = [body.transform, body.visible]
 		var m := _modifier(body)
 		m.active = true
@@ -124,9 +128,9 @@ func seek(t: float) -> void:
 	var b: Array = _src[mini(i + 1, _src.size() - 1)]
 	var w := 0.0 if b == a else clampf((t - float(a[0])) / maxf(float(b[0]) - float(a[0]), 1e-4), 0.0, 1.0)
 	for id in _bodies:
-		var body: WsgBody = _bodies[id]
-		if not is_instance_valid(body):
+		if not is_instance_valid(_bodies[id]):
 			continue
+		var body: WsgBody = _bodies[id]
 		var pa: Variant = (a[1] as Dictionary).get(id)
 		var pb: Variant = (b[1] as Dictionary).get(id, pa)
 		body.visible = pa != null
@@ -144,9 +148,9 @@ func stop() -> void:
 	playing = false
 	_src = []
 	for id in _bodies:
-		var body: WsgBody = _bodies[id]
-		if not is_instance_valid(body):
+		if not is_instance_valid(_bodies[id]):
 			continue
+		var body: WsgBody = _bodies[id]
 		_modifier(body).active = false
 		if _saved.has(id):
 			body.transform = _saved[id][0]

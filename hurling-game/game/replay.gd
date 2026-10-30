@@ -206,9 +206,9 @@ func watch_back() -> void:
 	var clip := _clip
 	_clip = {}
 	m.hud.watch_back(false, Callable())
-	var who: Player = clip.who
-	if (clip.buf as Array).size() < 4 or not is_instance_valid(who):
+	if (clip.buf as Array).size() < 4 or not is_instance_valid(clip.who):
 		return
+	var who: Player = clip.who
 	_live_buf = _buf
 	_buf = clip.buf
 	playing = true
