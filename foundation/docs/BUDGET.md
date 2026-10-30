@@ -25,3 +25,15 @@ measurement on the phone: the cloud machines here have no GPU (the renderer runs
 mean nothing. The pilot APK (claude/hurling-foundation-pilot) shows the frame rate on the phone in Settings > Graphics
 > Show FPS; Hurling also drops a level by itself if a match runs under about 36 fps. If Medium does not hold 60 on the
 A16, lower `WsgCrowd3D.BUDGET[1]` (e.g. 250 + 500: about 180,000 triangles).
+
+## Measured in Hurling Heroes (the pilot, `tests/perf_probe.tscn`, the national stadium, the busiest frame)
+
+| | before (the game today) | after (the foundation) |
+|---|---|---|
+| Low | 95 draw calls, 161,000 triangles | 97 draw calls, 164,000 triangles |
+| Medium | 96 draw calls, 232,000 triangles | 108 draw calls, 443,000 triangles |
+| High | 141 draw calls, 373,000 triangles | 159 draw calls, 1,125,000 triangles |
+
+Medium adds about 210,000 triangles (the 3D crowd) and 12 draw calls; High adds 750,000. On a Galaxy A16 class phone
+Medium should be checked first (the pilot APK, Settings > Graphics); if it does not hold 60 fps, lower
+`WsgCrowd3D.BUDGET[1]`. High's 3,000 fans are for high-end phones; 2,000 may be wiser.
