@@ -454,5 +454,6 @@
   "PRIV_DATE": "Last updated 27 October 2026.",
   "PRACTICE_CH_TITLE": "POST CHALLENGE!",
   "PRACTICE_CH_HIT_SUB": "Off the post! +{n}",
-  "TALLY_TODAY": "%s today"
+  "TALLY_TODAY": "%s today",
+  "WATCH_BACK": "Watch it back"
 }

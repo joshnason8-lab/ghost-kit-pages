@@ -32,6 +32,7 @@ const FPS_MAX := 2
 ## pattern, buzzes and the gaps between them in milliseconds. Never in a match only the AI plays.
 const HAPTICS := {
 	"strike": [22, 0.55],                        # your strike: ash meets leather
+	"sweet": [[14, 1.0], 35, [40, 0.75]],        # struck right on the bas, perfectly timed: a crisp double knock
 	"catch": [16, 0.4],                          # you catch it
 	"tackled": [45, 0.8],                        # you are shouldered or hooked
 	"score": [[30, 0.7], 80, [60, 1.0]],         # your side scores

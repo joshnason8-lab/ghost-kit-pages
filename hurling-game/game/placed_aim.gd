@@ -33,6 +33,7 @@ var period := 2.6              # seconds for one round, wide all the way
 var stopped := false           # the target stopped (the first SHOOT): the bar runs
 var fired := false             # the bar stopped too (the second): the shot is on its way
 var bar_x := -1.0              # the bar's marker, -1 (the left end) to 1
+var sweet := false             # stopped in the middle of the green: struck clean (the phone gives a sweet-spot pulse)
 var bar_period := 1.4          # seconds for the marker to go from one end to the other and back
 var camera: Camera3D
 ## A woodwork challenge (free-taking practice): "left" or "right" post (as the camera sees them), "" none.
@@ -194,6 +195,7 @@ func stop() -> Vector3:
 		_show_bar()
 		return _aim_at
 	fired = true
+	sweet = absf(bar_x) < GREEN * 0.4
 	var p := strike_point(_aim_at, bar_x)
 	_bar.queue_redraw()
 	get_tree().create_timer(0.25).timeout.connect(func(): shot.emit(p))

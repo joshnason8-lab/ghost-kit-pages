@@ -11,6 +11,8 @@ const KEEP := 7.5         # seconds of play kept (a score's cut-aways come first
 const BEFORE := 2.3       # seconds shown before the ball crossed the end line
 const AFTER := 0.9        # and after: into the net and down
 const SPEED := 0.75       # slower than life
+const WB_SPEED := 0.4     # "watch it back": slow motion
+const WB_OFFER := 4.0     # seconds the button stays after a score's replay
 
 var m: Node
 var playing := false
@@ -24,6 +26,14 @@ var _cam: Camera3D
 var _cut := false          # High: cut to the second angle yet
 var _t0 := 0.0
 var _side := 1.0
+## "Watch it back" (the owner's one tap after a score): the score kept apart when its replay begins - this buffer's
+## frames and the foundation's bodies' (WsgReplay.clip) - and offered for WB_OFFER seconds after; tapped, it plays
+## twice in slow motion, from the scorer's side behind him and low on the touchline following the ball. Not on Low
+## (a budget phone keeps no second copy).
+var _clip := {}
+var _wb := 0               # 0 the replay; 1 watch it back from the scorer's side; 2 its second angle
+var _speed := SPEED
+var _live_buf: Array = []
 
 
 func _init(p_match: Node) -> void:
@@ -48,13 +58,23 @@ func record() -> void:
 
 
 ## Show the score or wide that crossed the end line at s (+1 or -1 on x) at the match's time t_cross, at c.
-func start(t_cross: float, s: float, c: Vector3) -> void:
+func start(t_cross: float, s: float, c: Vector3, who: Player = null) -> void:
 	if _buf.size() < 10:
 		return
 	playing = true
+	_wb = 0
+	_speed = SPEED
 	_t = maxf(float(_buf[0][0]), t_cross - BEFORE)
 	_t1 = minf(float(_buf[-1][0]), t_cross + AFTER)
 	_i = 0
+	_clip = {}
+	if who != null and int(Game.settings.graphics) > Game.GFX_LOW:
+		var frames := []
+		for f in _buf:
+			if float(f[0]) >= _t - 0.1 and float(f[0]) <= _t1 + 0.1:
+				frames.append(f)
+		_clip = {"buf": frames, "wsg": m.wsg_replay.clip(_t, _t1) if m.wsg_replay else [], "t0": _t, "t1": _t1,
+			"s": s, "c": c, "who": who}
 	# Everyone as they are now, to go back to.
 	_saved = []
 	for e in _buf[-1][2]:
@@ -95,13 +115,21 @@ func _frame_at(t: float) -> Array:
 
 
 func step(delta: float) -> void:
-	_t += minf(delta, 0.05) * SPEED
+	_t += minf(delta, 0.05) * _speed
 	if _t >= _t1:
+		if _wb == 1:
+			# The second angle: low on the touchline, following the ball into the posts.
+			_wb = 2
+			_t = _t0
+			_i = 0
+			_cut = true
+			_cam.fov = 28.0
+			return
 		stop()
 		return
 	var f := _frame_at(_t)
 	m.ball.show_at(f[1])
-	if Ultra.lit():
+	if Ultra.lit() or _wb == 2:
 		_broadcast(f[1])
 	for e in f[2]:
 		_put(e)
@@ -117,7 +145,13 @@ func _broadcast(ball: Vector3) -> void:
 		_cut = true
 		_cam.fov = 26.0
 	if _cut:
-		var at := Vector3(clampf(ball.x * 0.85, -Pitch.HALF_L + 6.0, Pitch.HALF_L - 6.0), 2.4, _side * (Pitch.HALF_W + 7.0))
+		# (Between the touchline and the boards: further out is the stand, with its 3D fans.)
+		var at := Vector3(clampf(ball.x * 0.85, -Pitch.HALF_L + 6.0, Pitch.HALF_L - 6.0), 3.2, _side * (Pitch.HALF_W + 2.5))
+		# (Off anyone standing there - the linesman walks that line - along it, the nearer way.)
+		for b in m.get_tree().get_nodes_in_group("wsg_bodies"):
+			var bp: Vector3 = (b as Node3D).global_position
+			if (b as Node3D).is_visible_in_tree() and Vector2(bp.x - at.x, bp.z - at.z).length() < 3.0:
+				at.x = bp.x + (3.5 if at.x >= bp.x else -3.5)
 		_cam.global_position = _cam.global_position.lerp(at, 0.2) if _cam.global_position.distance_to(at) < 30.0 else at
 		_cam.look_at(ball.lerp(Vector3(ball.x, 1.2, ball.z), 0.5))
 
@@ -136,6 +170,12 @@ func stop() -> void:
 	if not playing:
 		return
 	playing = false
+	var was := _wb
+	if _wb > 0:
+		_buf = _live_buf
+		_live_buf = []
+		_wb = 0
+		_speed = SPEED
 	for e in _saved:
 		_put(e)
 	if m.wsg_replay:
@@ -149,3 +189,61 @@ func stop() -> void:
 	m.hud.replay(false, Callable())
 	m.hud.redraw_marks()
 	m.controls.visible = bool(m.controls.get_meta("was_visible", m.controls.visible))
+	if was == 0 and not _clip.is_empty():
+		m.hud.watch_back(true, watch_back)
+		var clip := _clip
+		m.get_tree().create_timer(WB_OFFER).timeout.connect(func():
+			if _clip == clip:
+				_clip = {}
+				m.hud.watch_back(false, Callable()))
+
+
+## The score shown again in slow motion (the button after its replay): from behind the scorer, then from the
+## touchline. The match stands still meanwhile, as for any replay.
+func watch_back() -> void:
+	if _clip.is_empty() or playing:
+		return
+	var clip := _clip
+	_clip = {}
+	m.hud.watch_back(false, Callable())
+	var who: Player = clip.who
+	if (clip.buf as Array).size() < 4 or not is_instance_valid(who):
+		return
+	_live_buf = _buf
+	_buf = clip.buf
+	playing = true
+	_wb = 1
+	_speed = WB_SPEED
+	_t = clip.t0
+	_t1 = clip.t1
+	_t0 = _t
+	_i = 0
+	_cut = false
+	_saved = []
+	for e in _live_buf[-1][2]:
+		var p: Player = e[0]
+		_saved.append([p, p.position, p.body.rotation.y, p.body.pose])
+	_ball_saved = m.ball.global_position
+	# The scorer's side: behind him, a little up and off his shoulder, looking past him at the goal.
+	var at: Vector3 = who.position
+	for e in _frame_at(lerpf(_t, _t1, 0.25))[2]:
+		if e[0] == who:
+			at = e[1]
+	_i = 0
+	var c: Vector3 = clip.c
+	var away := Vector3(at.x - c.x, 0, at.z - c.z).normalized()
+	_side = 1.0 if c.z >= 0.0 else -1.0
+	_cam = Camera3D.new()
+	m.add_child(_cam)
+	_cam.near = 0.3
+	_cam.far = 900.0
+	_cam.fov = 46.0
+	_cam.global_position = at + away * 4.5 + away.cross(Vector3.UP) * 1.2 + Vector3(0, 2.3, 0)
+	_cam.look_at(at.lerp(Vector3(c.x, 1.2, c.z), 0.35) + Vector3(0, 1.0, 0))
+	_cam.make_current()
+	if m.wsg_replay:
+		m.wsg_replay.play(_t, _t1, clip.wsg)
+	Sfx.duck(6.0, 2.0 * (_t1 - _t) / WB_SPEED)
+	m.hud.replay(true, stop)
+	m.controls.set_meta("was_visible", m.controls.visible)
+	m.controls.visible = false

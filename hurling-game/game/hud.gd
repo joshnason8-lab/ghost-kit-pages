@@ -39,6 +39,7 @@ var _coach_t := 0.0
 var _drop := Vector3.INF     # where a high ball near your player comes down to catching height (INF none)
 var _drop_t := 0.0
 var _replay: Control = null   # "Replay", over the whole screen while one plays: a tap anywhere skips it
+var _watch_back: Button = null   # "Watch it back" for a few seconds after a score's replay
 var _sub_board: Control = null   # the fourth official's board: a substitution, its county, who comes on and off
 var _sub_queue: Array = []       # [team id, on, off] still to show, one after another
 var _sub_t := 0.0
@@ -373,6 +374,25 @@ func replay(on: bool, skip: Callable) -> void:
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.fit(hint, 1)
 	box.add_child(hint)
+
+
+## "Watch it back" (on, what a tap does), low in the middle above the controls, for a few seconds after a score's
+## replay; or gone.
+func watch_back(on: bool, tap: Callable) -> void:
+	if _watch_back != null:
+		_watch_back.queue_free()
+		_watch_back = null
+	if not on:
+		return
+	_watch_back = UI.button(tr("WATCH_BACK"), true, tap)
+	_watch_back.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_watch_back.offset_left = -170
+	_watch_back.offset_right = 170
+	_watch_back.offset_top = -190
+	_watch_back.offset_bottom = -126
+	root.add_child(_watch_back)
+	_watch_back.modulate.a = 0.0
+	create_tween().tween_property(_watch_back, "modulate:a", 1.0, 0.25)
 
 
 ## Redraws the marks (the replay steps the picture while the match, and so tick, stands still).

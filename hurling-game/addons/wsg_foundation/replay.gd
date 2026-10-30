@@ -21,6 +21,7 @@ var _latest := {}             # body id -> its last final pose (taken when it wa
 var _bodies := {}             # body id -> WsgBody
 var _last_t := -INF
 var _saved := {}              # body id -> [its transform, shown] before the replay
+var _src: Array = []          # the frames being played: the ring's, or a clip's
 
 
 func _ready() -> void:
@@ -85,9 +86,20 @@ func _take(id: int) -> void:
 	_latest[id] = out
 
 
-## Replay t0..t1: the bodies stop following the game and show what was kept.
-func play(t0: float, t1: float) -> void:
-	if _frames.is_empty():
+## The frames of t0..t1, kept apart from the ring (which goes on and forgets them): a moment to show again later
+## ("watch it back"), for as long as the game holds the clip.
+func clip(t0: float, t1: float) -> Array:
+	var out := []
+	for f in _frames:
+		if float(f[0]) >= t0 - 0.1 and float(f[0]) <= t1 + 0.1:
+			out.append(f)
+	return out
+
+
+## Replay t0..t1 (of the ring, or of a clip): the bodies stop following the game and show what was kept.
+func play(t0: float, t1: float, frames: Array = []) -> void:
+	_src = frames if not frames.is_empty() else _frames
+	if _src.is_empty():
 		return
 	playing = true
 	_saved.clear()
@@ -103,13 +115,13 @@ func play(t0: float, t1: float) -> void:
 
 ## Show the moment t (between two kept frames, blended).
 func seek(t: float) -> void:
-	if not playing or _frames.is_empty():
+	if not playing or _src.is_empty():
 		return
 	var i := 0
-	while i < _frames.size() - 1 and float(_frames[i + 1][0]) <= t:
+	while i < _src.size() - 1 and float(_src[i + 1][0]) <= t:
 		i += 1
-	var a: Array = _frames[i]
-	var b: Array = _frames[mini(i + 1, _frames.size() - 1)]
+	var a: Array = _src[i]
+	var b: Array = _src[mini(i + 1, _src.size() - 1)]
 	var w := 0.0 if b == a else clampf((t - float(a[0])) / maxf(float(b[0]) - float(a[0]), 1e-4), 0.0, 1.0)
 	for id in _bodies:
 		var body: WsgBody = _bodies[id]
@@ -130,6 +142,7 @@ func stop() -> void:
 	if not playing:
 		return
 	playing = false
+	_src = []
 	for id in _bodies:
 		var body: WsgBody = _bodies[id]
 		if not is_instance_valid(body):

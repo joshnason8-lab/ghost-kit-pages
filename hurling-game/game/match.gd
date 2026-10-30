@@ -1335,7 +1335,7 @@ func _shoot(pl: Player, for_goal: bool, placed := "") -> void:
 ## the sliotar following the hurley up and the toss (_lift_ball); else from the hand.
 func _shoot_at(pl: Player, target: Vector3, placed: String) -> void:
 	var shot := {"goal": PlacedAim.zone(target) == "goal", "placed": placed, "aimed": true,
-		"exact": placed_aim != null and placed_aim.snapped}
+		"exact": placed_aim != null and placed_aim.snapped, "sweet": placed_aim != null and placed_aim.sweet}
 	if pl.action == "free_set":
 		shot.lifted = true
 		_lift_strike(pl, func(): _strike_contact(pl, target, shot))
@@ -1363,7 +1363,8 @@ func _aimed_restart(pl: Player) -> void:
 
 func _aimed_now(pl: Player, placed: String, choice: String) -> void:
 	if choice == "AIMED_LIFTED":
-		_strike_contact(pl, _aim_point, {"goal": PlacedAim.zone(_aim_point) == "goal", "placed": placed, "aimed": true, "lifted": true})
+		_strike_contact(pl, _aim_point, {"goal": PlacedAim.zone(_aim_point) == "goal", "placed": placed, "aimed": true, "lifted": true,
+			"sweet": placed_aim != null and placed_aim.sweet})
 	else:
 		_shoot_at(pl, _aim_point, placed)
 
@@ -1563,7 +1564,8 @@ func _strike_contact(pl: Player, target: Vector3, shot: Dictionary) -> void:
 	_path = []
 	Sfx.play("strike", -2.0, rng.randf_range(0.94, 1.06))
 	if pl == active:
-		Game.haptic("strike")
+		# (A placed ball struck with the bar in the middle of the green: the sweet spot, felt in the hand.)
+		Game.haptic("sweet" if bool(shot.get("sweet", false)) else "strike")
 	_keeper_reacts(pl.team)
 	if not advantage.is_empty() and int(advantage.team) == pl.team:
 		advantage.shot = true
@@ -1970,14 +1972,14 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 		if package:
 			_after(0.5, func(): _score_package(by, team, kind, t, signf(s), c, package_s))
 		else:
-			_after(Replay.AFTER + 0.1, func(): replay.start(t, signf(s), c))
+			_after(Replay.AFTER + 0.1, func(): replay.start(t, signf(s), c, by if by is Player and is_instance_valid(by) else null))
 
 
 ## A score as television shows it: the scorer close (from the camera's side of the play), their name and the day's
 ## tally low on the left, after a goal the stand behind it going up; then the replay from behind the goal.
 func _score_package(scorer: Player, team: int, kind: String, t: float, s: float, c: Vector3, secs: float) -> void:
 	if not is_instance_valid(scorer) or scorer.link == null:
-		replay.start(t, s, c)
+		replay.start(t, s, c, scorer if is_instance_valid(scorer) else null)
 		return
 	controls.set_meta("was_visible", controls.visible)
 	controls.visible = false
@@ -1992,7 +1994,7 @@ func _score_package(scorer: Player, team: int, kind: String, t: float, s: float,
 		shots.append({"shot": "crowd", "at": Vector3(end, 7.0, -6.0), "from": Vector3(s * (Pitch.HALF_L - 2.0), 2.0, 8.0), "secs": 1.7})
 	await director.run(shots, cam.camera)
 	controls.visible = bool(controls.get_meta("was_visible", controls.visible))
-	replay.start(t, s, c)
+	replay.start(t, s, c, scorer)
 
 
 ## The flight over the ground before the throw-in (Medium and High; the first half of a new match), under the
@@ -3344,7 +3346,9 @@ func _pull(a: Player) -> void:
 		_chase_t = 0.0
 		_path = []
 		Sfx.play("strike", -3.0)
-		Game.haptic("strike"))
+		# (Met well inside the reach, between the knee and the chest: timed right - the sweet spot.)
+		var reach := Vector2(b.x - a.global_position.x, b.z - a.global_position.z).length()
+		Game.haptic("sweet" if reach < REACH * 0.5 and b.y > 0.4 and b.y < 1.4 else "strike"))
 
 
 # ---------------------------------------------------------------- pause, back
