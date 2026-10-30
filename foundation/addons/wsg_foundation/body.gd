@@ -53,6 +53,7 @@ func _init(p_character := {}, material: Material = null, lod := 0) -> void:
 	helpers.mode = WsgRigDriver.Mode.HELPERS
 	skeleton.add_child(helpers)
 	skeleton.skeleton_updated.connect(func(): posed.emit())
+	add_to_group("wsg_bodies")     # (WsgReplay keeps what every body draws)
 	if character.has("meshes"):
 		mesh_instance = MeshInstance3D.new()
 		mesh_instance.name = "Mesh"

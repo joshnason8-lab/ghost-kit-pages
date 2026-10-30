@@ -184,4 +184,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   124; tools/meshy/tasks.json "fan3b" in Hurling). Baked onto the rig: 15 and 13 cm under the arms, rising 9 cm
   (the old one 37, 31 and 25); after cloth_drape and cloth_weights 8, 7 and 0 - the rig test's cloth checks pass.
   Back in the crowd (six fans; authored crowd re-baked, the licensed one in data/ only).
-  Next: B (the TV presentation layer).
+- [x] B. Television (addons/wsg_foundation/broadcast + replay.gd): WsgReplay keeps every body as drawn (each bone's
+  final turn, 16-bit, and its place; 0.6 KB a body a frame; 4 to 7 s by tier) and plays it back through a last
+  modifier (tests/replay_test.gd: bones within 0.06 degrees and 0 mm of what was drawn). Found: Hurling's replay
+  moved its old bodies while the foundation's froze in their last pose (the match stands still in a replay, so the
+  link was never called) - now they replay exactly. WsgDirector: a score's cut-aways (the scorer close, from the
+  camera's side of the play, round anyone in the line; the stand going up), the flight round the ground before the
+  throw-in; none on a budget phone's Low. WsgLowerThird, WsgScorebug, WsgBroadcastTheme (colours, type, timing,
+  reduced motion); text through tr(). tests/broadcast_test.gd. Hurling: a score is the scorer close with their name
+  and the day's tally (TALLY_TODAY, English and Irish), after a goal the stand behind it, then the replay (the
+  restart waits; a tap skips); the replay's camera up to 9.5 m (cheering fans on the terrace had filled it); the
+  opening flight under the title card on Medium and High. Hurling keeps its own score bug. Demo filmed.
+  Next: C (the audio foundation).

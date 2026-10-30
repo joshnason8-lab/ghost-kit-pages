@@ -241,6 +241,23 @@ Cost: about 2 MB of video memory per arena (the 2048 map, compressed) and a chea
    `secrets: inherit` (copy Hurling's). Run it from the Actions tab; docs/TESTLAB.md has the owner's one-time steps
    and the free plan's limits.
 
+## 5.7 Television: replays, cut-aways, names on the screen (addons/wsg_foundation/broadcast, replay.gd)
+
+- **The replay** (`WsgReplay`): add one to your match, call `record(now)` every live frame, and in your replay
+  `play(t0, t1)`, `seek(t)` each frame, `stop()`. It keeps every foundation body exactly as drawn (bodies join by
+  themselves) - without it your bodies freeze in their last pose while your replay moves your old ones (the pilot
+  had that). Kept: 4 to 7 s by tier (`WsgFoundation.replay_spec()`), 0.6 KB a body a frame.
+- **Cut-aways** (`WsgDirector`): `await director.run([{"shot": "close", "target": body, "secs": 1.9}, {"shot":
+  "crowd", "at": stand, "from": touchline, "secs": 1.7}], live_camera)` - a close-up from your camera's side of the
+  play, round anyone in the way; the stand going up; `"orbit"` for a flight round the ground before kick-off.
+  `WsgDirector.packages()` is false on a budget phone's Low (no cut-aways: its replay ring is short). Keep your
+  replay's own buffer as long as the package plus your replay's lead-in (Hurling: 7.5 s), and hold your restart for it.
+- **Names on the screen** (`WsgLowerThird`, in your HUD's root so it takes your font): `show_card(name, line,
+  colour, secs)`; **a score bug** (`WsgScorebug`) if you have none: `setup([short, c1, c2], [...])`,
+  `set_score("1-07", "0-09")`, `set_clock("23:41", period)`. Your look: a `WsgBroadcastTheme` (colours, type,
+  timing, `reduce_motion` to fade instead of slide). Text goes through tr(): give keys or words in the player's
+  language (Hurling: TALLY_TODAY "%s today" / "%s inniu").
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →
