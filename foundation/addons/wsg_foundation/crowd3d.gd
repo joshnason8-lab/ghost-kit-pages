@@ -52,6 +52,13 @@ static func meta() -> Dictionary:
 	return _meta
 
 
+## How near a spot is to the focus for choosing the 3D fans: along the stands first (whole sections out from the
+## middle of the view), so the 3D fans end in a line across the stand, as between two sections, not a ring.
+static func nearness(p: Vector3, focus: Vector3) -> float:
+	var d := p - focus
+	return absf(d.x) + absf(d.z) * 0.15
+
+
 ## The excitement the crowd rises to (0..1); it eases up quickly and down slowly.
 static func set_excite(k: float) -> void:
 	_excite_target = clampf(k, 0.0, 1.0)
@@ -81,10 +88,7 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 	var order := range(spots.size())
 	# Nearest the focus along the stands first (whole sections, out from the middle of the view), so where the 3D
 	# fans end and the cut-outs begin is a line across the stand, as between two sections, not a ring.
-	var key := func(i: int) -> float:
-		var d: Vector3 = (spots[i] as Vector3) - focus
-		return absf(d.x) + absf(d.z) * 0.15
-	order.sort_custom(func(a, b): return key.call(a) < key.call(b))
+	order.sort_custom(func(a, b): return nearness(spots[a], focus) < nearness(spots[b], focus))
 	var budget: Array = BUDGET.get(quality, BUDGET[1])
 	var cap := int(budget[1] * clampf(density, 0.0, 1.0))
 	var near_cap := int(budget[0] * clampf(density, 0.0, 1.0))

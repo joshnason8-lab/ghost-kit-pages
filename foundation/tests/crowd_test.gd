@@ -26,10 +26,10 @@ func _initialize() -> void:
 			tris += m.multimesh.instance_count * m.multimesh.mesh.get_faces().size() / 3
 		var far_d := 0.0
 		for i in used:
-			far_d = maxf(far_d, (spots[i] as Vector3).length())
+			far_d = maxf(far_d, WsgCrowd3D.nearness(spots[i], Vector3.ZERO))
 		var nearer := 0
 		for i in spots.size():
-			if (spots[i] as Vector3).length() < far_d * 0.98 and not used.has(i):
+			if WsgCrowd3D.nearness(spots[i], Vector3.ZERO) < far_d * 0.98 and not used.has(i):
 				nearer += 1
 		print("quality %d: %d fans in %d draw calls, %d triangles; %d spots nearer the action left out" % [q, fans, crowd.meshes.size(), tris, nearer])
 		if fans > budget[1] or used.size() != fans:
