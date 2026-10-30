@@ -210,6 +210,11 @@ fans' heads) - under a roof darker; give it to your billboards too. Measured on 
   `crowd3d.watch_ball(ball_position)`.
 - Rhythmic clapping playing: `crowd3d.clap(claps_per_second, unison_0_to_1, seconds)` (Kabaddi has these numbers).
 
+**Flags in the stands** (`WsgFlags`): `flags.build([[spot, facing, first colour, second colour], ...])` - fans
+holding a two-colour flag, flying harder with the crowd's excitement (WsgCrowd3D's: nothing more to call), two draw
+calls for all of them; `WsgFlags.count_for(want)` keeps a budget phone to half and none on its Low. Hurling puts
+eight at each end behind the goals, in that end's county colours, and leans those ends' shirts to it (Stadium._shirts).
+
 ## 5.5 Baked light on your stadium (GL Compatibility; Low and Medium)
 
 If you build your arena in code (Hurling's `Geo`: each quad its own four vertices), its stands are lit per vertex

@@ -207,4 +207,10 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   the foundation); the crowd dips under each whistle (5 dB) and under the replay (6 dB). Measured in the demo
   (scripted attack and goal): tension layer -34 to -11.5 dB over the attack, applause to -8 dB at the goal and back
   in 3 s, the crowd bus -6 dB through the replay; overall loudness -45 calm, -35 building, -12 at the goal.
-  Next: the lead's call.
+- [x] The lead's three quick wins (IDEAS), in Hurling: "Watch it back" after a score (a button 4 s after its replay:
+  slow motion 0.4 from behind the scorer, then low on the touchline; a clip kept apart, WsgReplay.clip; not on Low;
+  the touchline camera moved out of the stand and off the linesman); a sweet-spot pulse (a placed ball struck with
+  the bar in the middle of the green, a pull met well inside the reach; behind the vibration setting); the ends
+  behind the goals in their counties' colours (90%) with eight flags each (WsgFlags: pole and two-colour cloth,
+  rippling by shader, harder with the excitement; two draw calls; half on a budget phone, none on its Low).
+  Next: the dry run of ADOPTING.md against a budget game; then the roll-out (after the owner's phone test).
