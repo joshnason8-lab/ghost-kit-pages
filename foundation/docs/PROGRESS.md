@@ -119,4 +119,12 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   finger had no vertices (the old hurler too: LeftHandIndex3 1.6 m from the hand), now placed along the finger, and a
   bake with a joint over 0.7 m from its parent is refused; WsgGrip checks the middle of each bone too, and
   clear_axis_point keeps a handle out of a hand whose knuckles sit low. Audits: practice and shoot-out PASS with it.
+  The officials too: the HD pack's referee and umpire cut for the rig (referee_hd, umpire_hd: about 4,200
+  triangles each) with 1024 normal maps and 512 roughness; on High lit by the scene (normal and roughness maps), on
+  Medium/Low cel-shaded as the game's officials with their relief (PersonBody's shader: nmap). The old umpire cut's
+  spiked finger is gone with it. (White specks on the umpire's trousers and the referee's sock are in the HD pack's
+  own textures: before and after alike.)
+  Found in a whole match (seed 3): a runner's free fist, swinging in the motion capture, went 7.4 mm through the
+  hurley's handle for 3 frames. WsgPoseLayer.clear moves a free fist straight off a handle it would meet (same frame,
+  its turn kept); worst now 0.5 mm. Match audits (seeds 1 and 3), practice and shoot-out PASS.
   Next: 2 stadium light bakes, 3 LODs, 4 the umpire's sleeves and fan3, 5 crowd brightness.

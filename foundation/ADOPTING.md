@@ -143,6 +143,9 @@ on the handle (Hurling's top hand in a swing): `legacy.hold = {"Left": ["RightHa
 frame, weight, the handle's direction there, the grip point in the left hand]}` - the arm reaches it (two-bone IK),
 slides along the handle to where it can reach, rolls round it to spare the wrist. Take hold at once and let go
 slowly (`_two_hands` in the pilot): a hand eased half way onto a handle goes through it.
+The free hand kept off the handle (a runner's swinging fist, from the motion capture, went through it): `legacy.clear
+= {"Left": ["RightHand", a point on the handle's axis and its direction in the right hand's frame, half its length,
+its radius]}` - a fist that would meet it is moved straight off it, its turn kept (not while that hand is held).
 
 Your arms are rebuilt from where you put the hands (`WsgLegacyPose.sound_arm`): 17-bone poses often bend an elbow
 backwards or turn the upper arm so the elbow points where no elbow can (Hurling's hurley arm does, most of the time),

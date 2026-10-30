@@ -662,6 +662,7 @@ func _weights(body: Dictionary, joints: Dictionary) -> Array:
 
 
 const SKIRT_R := 0.115       # m from the thigh's line: beyond this a leg's skin is loose cloth (a coat, a skirt)
+const SLEEVE_R := 0.07       # m from the upper arm's line: beyond this an arm's skin is a loose sleeve
 
 
 static func _seg_dist(p: Vector3, a: Vector3, b: Vector3) -> float:

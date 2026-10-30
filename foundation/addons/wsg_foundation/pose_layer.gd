@@ -29,6 +29,12 @@ var arms: WsgLegacyPose
 ## after body_pose: the arm reaches there (two bones, the elbow kept on its side), the hand turned as given, then made
 ## anatomical (arms).
 var hold := {}
+## Free hands kept off something another bone holds (a hurley's handle in the other hand: a runner's swinging fist
+## went through it): {side: [the bone, a point on the handle's axis and its direction in that bone's frame, the
+## handle's half length, its radius]}. A fist (wrist to knuckles, FIST_R round) that would meet it is moved straight
+## off it, its turn kept. Applied last; not to a side in `hold`.
+var clear := {}
+const FIST_R := 0.045
 
 var _target := 0.0
 var _rate := 0.0
@@ -107,9 +113,41 @@ func _process_modification_with_delta(delta: float) -> void:
 				target.origin += _slide(sk, side, target.origin, ag.basis * (h[3] as Vector3))
 				grip = [h[4], ag.basis * (h[3] as Vector3)]
 			_reach(sk, side, target, hw, grip)
+	for side in clear:
+		if not hold.has(side) or float((hold[side] as Array)[2]) * w <= 0.0:
+			_keep_clear(sk, side, clear[side])
 	if hips != Vector3.INF:
 		var h := sk.find_bone("Hips")
 		sk.set_bone_pose_position(h, sk.get_bone_pose_position(h).lerp(sk.get_bone_rest(h).origin + hips - Vector3(0, lift_after, 0), w))
+
+
+func _keep_clear(sk: Skeleton3D, side: String, c: Array) -> void:
+	var ai := sk.find_bone(c[0])
+	var ih := sk.find_bone(side + "Hand")
+	var ik := sk.find_bone(side + "HandMiddle1")
+	if ai < 0 or ih < 0 or ik < 0:
+		return
+	var ag := sk.get_bone_global_pose(ai)
+	var p: Vector3 = ag * (c[1] as Vector3)
+	var d: Vector3 = (ag.basis * (c[2] as Vector3)).normalized()
+	var half: float = c[3]
+	var hand := sk.get_bone_global_pose(ih)
+	var a := hand.origin
+	var b := sk.get_bone_global_pose(ik).origin
+	# The nearest points of the fist (wrist to knuckles) and the handle's axis (along its tape).
+	var best := [INF, Vector3.ZERO]
+	for i in 5:
+		var q := a.lerp(b, i / 4.0)
+		var along := clampf((q - p).dot(d), -half, half)
+		var off := q - (p + d * along)
+		if off.length() < float(best[0]):
+			best = [off.length(), off]
+	var need: float = FIST_R + float(c[4]) - float(best[0])
+	if need <= 0.0:
+		return
+	var out: Vector3 = best[1]
+	out = out.normalized() if out.length() > 1e-5 else hand.basis.z.normalized()
+	_reach(sk, side, Transform3D(hand.basis, a + out * need), 1.0)
 
 
 ## How far along dir (skeleton space) a hand's target must move for the side's arm to reach it comfortably (zero if
