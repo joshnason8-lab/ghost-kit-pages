@@ -117,11 +117,20 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			if _lock[i] == Vector3.INF:
 				# Planted means on the ground: the foot comes down until its lowest point (heel or ball) touches.
 				_lock[i] = Vector3(ank.x, maxf(ank.y - maxf(h, 0.0), floor_ankle - 0.5 * _toe_rest * sc), ank.z)
+			if hip.distance_to(_lock[i]) > reach * 1.5:
+				# Far beyond the leg (the body put somewhere else: a restart, the next free): planted afresh under the foot
+				# (drawn after it, the leg pointed at the old place, level with the hips).
+				_lock[i] = Vector3(ank.x, maxf(ank.y - maxf(h, 0.0), floor_ankle - 0.5 * _toe_rest * sc), ank.z)
 			if hip.distance_to(_lock[i]) > reach:
 				# The body has gone on further than the leg reaches: the foot is drawn after it just far enough (the
 				# least slide there can be), and stays down until the clip lifts it.
 				_lock[i] = hip + (_lock[i] - hip).normalized() * reach
 				_lock[i].y = maxf(_lock[i].y, floor_ankle)
+				# (Drawn on and on - a clip that keeps a foot down while the body is carried on - each draw lifts it a
+				# little, and it climbed to the hips: past a step's height it is let go to the clip instead.)
+				if (_lock[i] as Vector3).y > floor_ankle + 0.2 * sc:
+					_lock[i] = Vector3.INF
+					down = false
 		if down:
 			_w[i] = 1.0
 			_hold[i] = _lock[i]

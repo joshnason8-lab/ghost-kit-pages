@@ -101,3 +101,9 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   (budget Medium: 150 3D fans; premium High trimmed to 700 + 1,300 = 2,000, about 510,000 triangles from 750,000);
   rank_detail() + WsgBody.set_detail (budget: full detail on the 6 bodies nearest the camera). tests/profile_test.gd.
   Perf probe for both profiles x both renderers: docs/BUDGET.md.
+- [x] Found filming the practice close: the bodies floated in the game's own moves - the foot planter's hips_offset
+  (the clips' hips fitted to this body) went on top of the game's own hips (WsgPoseLayer.lift_after takes it off),
+  a pose without hips kept the last pose's (set_pose clears them), and the planter held the feet in the game's own
+  moves (off in "full": the game plants its own); after a teleport the held feet pointed the legs sideways (a lock
+  past 1.5 reach is planted afresh) and a foot drawn on and on climbed to the hips (let go past 20 cm). The elbow
+  audit checks the feet too. Loco test still 6.4 cm/s.

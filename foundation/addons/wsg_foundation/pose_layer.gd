@@ -12,6 +12,9 @@ var pose := {}
 var weight := 0.0
 ## Hips position offset (from the rest), when the pose moves the hips (a crouch, a dive), weighted too.
 var hips := Vector3.INF
+## A lift a later modifier adds to the hips (the foot planter's hips_offset, which fits the clips' hips to this body's
+## legs): taken off the pose's hips, so the body stands where the pose has it (it floated by that much).
+var lift_after := 0.0
 ## Bones to put where they are in the body (skeleton space, Quaternion), whatever the clips do to their parents:
 ## a hand that holds something must be where the game's body has it, not where its turns put it on a chest that
 ## leans and twists differently. Applied after `pose`, parents first (give them in that order).
@@ -33,8 +36,10 @@ var _ix := {}
 var _for := -1
 
 
-## The pose: {bone: local Quaternion}, and "@hips" (the hips' offset from the rest) if it moves them.
+## The pose: {bone: local Quaternion}, and "@hips" (the hips' offset from the rest) if it moves them (a pose without
+## it leaves the hips to the clips: the last one's are not kept).
 func set_pose(p: Dictionary) -> void:
+	hips = Vector3.INF
 	if p.has("@hips"):
 		hips = p["@hips"]
 		p = p.duplicate()
@@ -104,7 +109,7 @@ func _process_modification_with_delta(delta: float) -> void:
 			_reach(sk, side, target, hw, grip)
 	if hips != Vector3.INF:
 		var h := sk.find_bone("Hips")
-		sk.set_bone_pose_position(h, sk.get_bone_pose_position(h).lerp(sk.get_bone_rest(h).origin + hips, w))
+		sk.set_bone_pose_position(h, sk.get_bone_pose_position(h).lerp(sk.get_bone_rest(h).origin + hips - Vector3(0, lift_after, 0), w))
 
 
 ## How far along dir (skeleton space) a hand's target must move for the side's arm to reach it comfortably (zero if
