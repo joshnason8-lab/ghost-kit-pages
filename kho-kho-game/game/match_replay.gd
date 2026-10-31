@@ -1,9 +1,10 @@
 class_name MatchReplay
 extends Node
 ## Kho kho's moments shown again (Medium and High, with the shared foundation: WsgReplay keeps every foundation body
-## exactly as it was drawn). The play is cut into windows - each ends at an out, a dive that just missed, or a run the
-## crowd rose to - and at most one replay is shown for each: the window's best moment, slowed, from low beside the
-## field, the match held still meanwhile (its clock too) and the HUD away. Best first:
+## exactly as it was drawn). The play is cut into windows - each ends at an out or a long survival - and at most one
+## replay is shown for each: the window's best moment (of the seconds kept), slowed, from low beside the field, the
+## match held still meanwhile (its clock too) and the HUD away; and not within GAP seconds of play of the last one
+## (a plain touch out: TOUCH_GAP). Best first:
 ##   a sky dive that puts him out, and a pole dive that does (OUT_DIVE, OUT_POLE);
 ##   a pole turn (round the post and out the far side: only as part of a window that an out or a near thing ends);
 ##   a dive that just missed (Match._near_miss);
@@ -19,6 +20,8 @@ const RATE := 0.55             # slowed
 const AFTER := 1.2             # s after a window's end before its replay (the dive lands, the umpire signals)
 const LAST_S := 30.0           # none in a turn's last seconds (the clock)
 const LONE_S := 45.0           # the classic game's long survival: the last of a batch, alone this long
+const GAP := 30.0              # s of play at least between two replays ...
+const TOUCH_GAP := 90.0        # ... and before one of a plain touch out
 
 var m                          # the Match
 var rec: WsgReplay
@@ -30,6 +33,7 @@ var cur := {}                  # the replay playing: {t, t1, cam, who, kind, hud
 var _due := -1.0               # the clock at which this window's replay is due (-1: none)
 var _ui: CanvasLayer
 var _lone_batch := -1          # the batch whose lone survival has been marked
+var last_shown := -INF         # the clock when the last replay began
 
 
 func _init(p_match) -> void:
@@ -95,6 +99,8 @@ func start() -> bool:
 	window += 1
 	if mo.is_empty() or m.phase != "play" or m.clock < LAST_S or m.paused:
 		return false
+	if clock - last_shown < (TOUCH_GAP if mo.kind == "touch_out" else GAP):
+		return false
 	var sp := rec.span()
 	var t0 := maxf(float(mo.t0), float(sp[0]))
 	var t1 := minf(float(mo.t1), float(sp[1]))
@@ -116,6 +122,7 @@ func start() -> bool:
 		a.process_mode = Node.PROCESS_MODE_DISABLED
 	step(0.0)
 	rc.make_current()
+	last_shown = clock
 	shown.append([window, String(mo.kind)])
 	m.game_event.emit("replay")
 	return true

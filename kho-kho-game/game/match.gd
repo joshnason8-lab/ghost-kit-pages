@@ -734,10 +734,9 @@ func _near_miss(loud: bool) -> void:
 		return
 	Sfx.react("ooh", -3.0 if loud else -8.0)
 	_tension = 1.0
-	# A dive that just missed: a moment to see again, and the end of its window.
+	# A dive that just missed: a moment to see again (the window's out may show it).
 	if loud and replay and active:
 		replay.moment("near_miss", active)
-		replay.close()
 
 
 func _play(dt: float) -> void:

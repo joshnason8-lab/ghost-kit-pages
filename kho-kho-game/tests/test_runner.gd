@@ -1080,7 +1080,8 @@ func _foundation_play(m: Node, people: Array) -> void:
 	check(int(modes.get("move", 0)) > 1000 and int(modes.get("full", 0)) > 1000,
 		"foundation: the capture moves them and the game's own poses are laid on (%s)" % [modes])
 	var wins: Array = m.replay.shown.map(func(x): return x[0])
-	check(wins.all(func(w): return wins.count(w) == 1), "replays: one a window at most (%s)" % [m.replay.shown])
+	check(wins.all(func(w): return wins.count(w) == 1) and m.replay.shown.size() <= int(m.replay.clock / m.replay.GAP) + 1,
+		"replays: one a window at most, %d s of play apart at least (%s in %.0f s)" % [int(m.replay.GAP), m.replay.shown, m.replay.clock])
 
 
 ## The replay's choice, its skip, and the clock's last seconds.
@@ -1103,6 +1104,12 @@ func _foundation_replays(m: Node) -> void:
 		check(got[-1] == case[1], "replays: the window's best - %s -> %s (%s)" % [case[0], case[1], got[-1]])
 	rp.moments = []
 	var n0: int = rp.shown.size()
+	rp.last_shown = rp.clock - 10.0
+	rp.moment("dive_out", m.active)
+	rp.close()
+	await frames(60)
+	check(not rp.playing() and rp.shown.size() == n0, "replays: none within %d s of play of the last" % int(rp.GAP))
+	rp.last_shown = -INF
 	rp.moment("dive_out", m.active)
 	rp.close()
 	guard = 0
@@ -1128,6 +1135,7 @@ func _foundation_replays(m: Node) -> void:
 		and m.everyone().all(func(a): return a.process_mode == Node.PROCESS_MODE_INHERIT),
 		"replays: a tap skips it, back to the match")
 	# Never in a turn's last seconds (the clock).
+	rp.last_shown = -INF
 	m.clock = 20.0
 	rp.moment("dive_out", m.active)
 	rp.close()
