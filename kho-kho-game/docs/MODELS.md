@@ -92,3 +92,24 @@ would skate; the defensive slides (102_22-28) are basketball's low shuffle, whic
 The model's texture paints a light blue shirt and navy shorts and trim. The shader (`ModelBody.SHADER`) finds them by
 hue and saturation and paints the side's colours over them, keeping the cloth's shading; the skin takes the player's
 own tone the same way; white and hair stay as painted. One material per kit and skin tone, shared.
+
+## The shared foundation (Medium and High, the 0.10.4 pilot)
+
+On Medium and High, in a match, every player and official is drawn by the World Stage Games shared foundation
+(`addons/wsg_foundation`, `game/foundation_link.gd`): the same athlete - `player_lod0`'s mesh baked onto the shared
+rig by `tools/models/bake_foundation.sh` from the committed `player.glb` (the owner's source is not in the
+repository), `assets/foundation/player_hi.res` (3,598 triangles), `player_lo.res` (1,798, the far bodies on Medium),
+`player_rig.json` - in his own kit (ModelBody's shader and material, the same 2048 px texture). No animation is in
+those files. Low is untouched: the game's own bodies, exactly as before (`tests/test_runner.gd`, `_foundation`).
+
+| He is | Drawn by |
+|---|---|
+| running, walking, standing (players, umpires): the act `""` | the motion capture (WsgLocomotor: MoCap Online Mobility walks, jogs, runs, starts, stops, turns, cuts; the ActorCore sprint), its cadence set by his speed over the ground, the feet planted |
+| giving a kho or reaching for a touch on the run (over 1.2 m/s) | the capture's legs, the game's reaching right arm |
+| diving, lying, getting up; the pole turn; a kho standing; kneeling in his square, rising; the dodge; the officials' whistle and signals | the game's own pose (its clips and its DivePose, HeadTurn and Grip), laid over the rig joint for joint; arms and legs through the game's own joints, each elbow and knee on the rig's hinge |
+| round the pole | as the game has him, his near hand closed round the pole (the game's Grip only points his arms at it), drawn up to 20 cm nearer it when his arm needs it |
+
+The licensed clips are fetched and baked in CI (`tools/wsg/fetch_assets.sh`) and ship only inside the APK; a build
+without them draws the game's own bodies everywhere. The replays (`game/match_replay.gd`, WsgReplay) are Medium and
+High only too. `tools/player/foundation_view.tscn` takes the same moments as stills on this build and on the beta;
+`tests/foundation_cpu.tscn` measures the CPU.

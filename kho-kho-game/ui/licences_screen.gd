@@ -13,6 +13,11 @@ The players and officials are the maker's own athlete model, moved by animations
   Mixamo's terms and fitted to the model for the game.
 Their dodge and their standing at ease: the CMU Graphics Lab Motion Capture Database (clips 127_11 and 77_02).
   Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+On Medium and High graphics the players and officials are drawn with the World Stage Games shared foundation (the
+  same maker): the maker's athlete on its rig, walking, jogging, running, sprinting, starting, stopping, turning and
+  standing with motion capture from the MoCap Online Mobility pack (MoCap Online, mocaponline.com) and Reallusion
+  ActorCore (actorcore.reallusion.com), licensed for the game; that animation is part of the game only, not to be
+  extracted. The replays use the foundation's WsgReplay.
 
 [b]The grounds[/b]
 Poly Haven (polyhaven.com), CC0: the skies; the ground, plaster, roof-tile, thatch and rubber-tile surfaces; the

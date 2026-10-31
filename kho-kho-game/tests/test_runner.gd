@@ -12,6 +12,9 @@ var checks := 0
 func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
+	# The shared foundation (FoundationLink: Medium and High, when this build has the licensed clips; CI may not) is
+	# tested in its own section; elsewhere the matches run without it, as a build without the clips does, in CI's time.
+	FoundationLink.off = true
 	var keep: Dictionary = Game.settings.duplicate(true)
 	_rules()
 	_sim()
@@ -22,6 +25,9 @@ func _ready() -> void:
 	await _bodies()
 	await _owner_round()
 	await _grounds()
+	FoundationLink.off = false
+	await _foundation(WsgClips.available())
+	FoundationLink.off = true
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -463,7 +469,7 @@ func _legal_pages() -> void:
 	var want := {
 		"res://ui/licences_screen.gd": ["Godot Engine", "MIT", "mocap.cs.cmu.edu", "NSF EIA-0196217", "Kenney", "CC0",
 			"OpenGameArt", "CC-BY 4.0", "Pixabay Content License", "charlesheffley009", "framptones", "freesound_community",
-			"Poly Haven", "Meshy", "Mixamo", "SIL Open Font License"],
+			"Poly Haven", "Meshy", "Mixamo", "MoCap Online", "ActorCore", "SIL Open Font License"],
 		"res://ui/help_screen.gd": [tr("HELP_PLAY"), tr("CTRL_KHO_TEXT"), tr("RULES_OUTS"), tr("GFX_LOW"), Game.CONTACT_EMAIL],
 		"res://ui/privacy_screen.gd": [tr("PRIVACY_SUMMARY"), "Last updated", "internet", "vibration", Game.CONTACT_EMAIL],
 	}
@@ -900,3 +906,298 @@ class MotionAudit extends Node:
 		# As in the real matches watched (docs/AI.md): a defender out of danger stands and watches.
 		if safe_t > 5.0:
 			t.check(safe_still / safe_t > 0.6, "%s: defenders out of danger stand still (%.0f%% of %.0f s)" % [name, 100.0 * safe_still / safe_t, safe_t])
+
+
+# ---------------------------------------------------------------- the shared foundation (FoundationLink)
+
+func _foundation_match(venue := "school", seed := 12, fmt := KhoRules.CLASSIC) -> Node:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "MAH", "away": "ODI", "venue": venue, "format": fmt, "turn_len": 300.0, "user_team": -1,
+		"seed": seed, "mode": "quick", "chase_first": 0, "test": true}
+	add_child(m)
+	return m
+
+
+## What match m draws: its visible geometry (every body, the ground, the crowd) by kind, and the triangles of its meshes.
+func _drawn(m: Node) -> Dictionary:
+	var out := {}
+	for n in m.find_children("*", "GeometryInstance3D", true, false):
+		if not (n as GeometryInstance3D).is_visible_in_tree():
+			continue
+		var k := n.get_class()
+		out[k] = int(out.get(k, 0)) + 1
+		if n is MeshInstance3D and (n as MeshInstance3D).mesh:
+			var mesh: Mesh = (n as MeshInstance3D).mesh
+			for i in mesh.get_surface_count():
+				out["triangles"] = int(out.get("triangles", 0)) + mesh.surface_get_array_index_len(i) / 3
+	return out
+
+
+## Low is the budget phone's level and stays exactly as it was: with the licensed clips or without, a Low match draws
+## the game's own bodies (no links, no replays), the same things in the same number. On Medium and High (with the
+## clips) every player and official is drawn by the foundation on the owner's athlete: a body each at his place, the
+## game's hidden; the game's poses on it exactly (every joint on the game's: the dive, the pole turn, the kho, the
+## kneeling, the signals, mirrored acts too), the capture running and walking them with their feet moving at a real
+## pace (the motion audit, on the drawn bodies); the dive down on the ground and up; the hands on the pole; one replay
+## a window at most, the best moment, a tap to skip; lowered to Low mid-match, the game's own bodies again. Without
+## the clips nobody has a link anywhere.
+func _foundation(available: bool) -> void:
+	var was := int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_LOW
+	var lows := []
+	for off in [true, false]:
+		FoundationLink.off = off
+		var lm := _foundation_match("maidan", 4)
+		await frames(40)
+		lows.append([_drawn(lm), lm.everyone().filter(func(a): return a.link != null).size(), lm.replay == null])
+		lm.queue_free()
+		await frames(2)
+	FoundationLink.off = false
+	check(lows[1][1] == 0 and lows[1][2] and lows[0][0] == lows[1][0],
+		"foundation: Low draws the game's own bodies, the same %d things and %d triangles as without it (no links, no replays)"
+		% [(lows[1][0] as Dictionary).values().reduce(func(x, y): return x + y, 0) - int(lows[1][0].get("triangles", 0)), int(lows[1][0].get("triangles", 0))])
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var m := _foundation_match()
+	await frames(4)
+	var people: Array = m.everyone()
+	if not available:
+		check(people.all(func(a): return a.link == null) and m.replay == null,
+			"foundation off (no licensed clips): nobody has a link, the game draws as before")
+		m.queue_free()
+		await frames(2)
+		Game.settings.graphics = was
+		return
+	await _foundation_play(m, people)
+	await _foundation_replays(m)
+	# Lowered to Low mid-match (WsgAutoTier): the game's own bodies again, no replays.
+	m.lower_graphics()
+	await frames(3)
+	check(people.all(func(a): return a.link == null and a.body.mesh.visible) and m.replay == null
+		and m.find_children("Foundation", "", true, false).is_empty() and WsgFoundation.tier == Game.GFX_LOW,
+		"foundation: lowered to Low mid-match, the game's own bodies again, no replays")
+	m.queue_free()
+	await frames(2)
+	await _foundation_dive_and_pole()
+	Game.settings.graphics = was
+
+
+## A Medium match watched for a minute of play.
+func _foundation_play(m: Node, people: Array) -> void:
+	var missing := people.filter(func(a): return a.link == null or a.link.body == null).map(func(a): return a.data.get("id", "official"))
+	check(missing.is_empty() and people.size() >= 23, "foundation: every player and official linked on Medium (%d; missing %s)" % [people.size(), missing])
+	for a in people:
+		a.link.measure = true
+	var steps := {}
+	for a in people:
+		steps[a] = 0
+		a.link.loco.step.connect(func(_f): steps[a] += 1)
+	var shown := []
+	var drift := 0.0
+	var gap_n := 0
+	var gap_off := 0
+	var gap := 0.0
+	var hips_gap := 0.0
+	var mirrored := 0
+	var hist := {}          # athlete -> [[time, left ankle, right ankle, hips], ...] posed under the capture, moving
+	var windows := 0
+	var glides := 0
+	var idle_moving := 0
+	var fast_t := 0.0
+	var fast_steps := 0
+	var fast_dist := 0.0
+	var modes := {}
+	var t := 0.0
+	for i in 1800:
+		await frames(1)
+		t += 1.0 / 30.0
+		if m.replay and m.replay.playing():
+			continue
+		for a in people:
+			var link: FoundationLink = a.link
+			if not a.is_visible_in_tree():
+				continue
+			if not link.body.is_visible_in_tree() or a.body.mesh.visible:
+				if not shown.has(a):
+					shown.append(a)
+			if not link.last.has("Hips") or int(link.last.frame) < Engine.get_process_frames() - 1:
+				continue
+			modes[link.mode] = int(modes.get(link.mode, 0)) + 1
+			var hp: Vector3 = link.last.Hips
+			drift = maxf(drift, Vector2(hp.x - a.global_position.x, hp.z - a.global_position.z).length())
+			var fresh: bool = int(link.last.frame) == Engine.get_process_frames() - 1 and link._skip == 0
+			# (Not round the pole: there his hand holds it and he is drawn as near it as his arm needs.)
+			if link.mode == "full" and float(link.last.w) >= 1.0 and fresh and link.game_last.has("Hips") and a.act != "pole_turn" \
+					and link._pole_shift.length() < 0.005:
+				hips_gap = maxf(hips_gap, link.joint_gap("Hips"))
+				mirrored += int(a.body.scale.x < 0.0)
+				for b in ["Spine2", "Head", "LeftHand", "RightHand", "LeftFoot", "RightFoot"]:
+					var g := link.joint_gap(b)
+					gap_n += 1
+					gap_off += int(g > 0.05)
+					gap = maxf(gap, g)
+			# The motion audit on the drawn bodies: moving under the capture, his feet move (not carried along still: a
+			# foot down on the ground in every half second of running or walking) and the capture is not standing.
+			var spd := Vector2(a.vel.x, a.vel.z).length()
+			if link.mode == "move" and float(link.last.w) <= 0.0 and spd > 1.5 and link.pose_every == 1 and fresh:
+				if link.loco.state == WsgLocomotor.State.IDLE or link.loco._w_move < 0.3 and link.loco.state == WsgLocomotor.State.MOVE:
+					idle_moving += 1
+				var h: Array = hist.get(a, [])
+				h.append([t, link.last.LeftFoot, link.last.RightFoot, hp])
+				if h.size() > 16:
+					h.pop_front()
+				hist[a] = h
+				if h.size() == 16 and i % 8 == 0:
+					windows += 1
+					var planted := false
+					for k in range(1, h.size()):
+						var dt: float = float(h[k][0]) - float(h[k - 1][0])
+						var vl: float = Vector2(h[k][1].x - h[k - 1][1].x, h[k][1].z - h[k - 1][1].z).length() / dt
+						var vr: float = Vector2(h[k][2].x - h[k - 1][2].x, h[k][2].z - h[k - 1][2].z).length() / dt
+						planted = planted or minf(vl, vr) < 0.35 * spd
+					if not planted:
+						glides += 1
+				if spd > 5.0:
+					fast_t += 1.0 / 30.0
+					fast_dist += spd / 30.0
+			else:
+				hist.erase(a)
+		for a in people:
+			if a.link.mode == "move" and Vector2(a.vel.x, a.vel.z).length() > 5.0 and a.link.pose_every == 1:
+				fast_steps += int(steps[a])
+			steps[a] = 0
+	check(shown.is_empty(), "foundation: its body drawn, the game's hidden (%d not)" % shown.size())
+	check(drift < 0.45, "foundation: every body drawn at its own player's place (hips at most %.2f m off it)" % drift)
+	check(hips_gap < 0.04 and gap_n > 3000 and gap_off <= gap_n / 100 and mirrored > 0,
+		"foundation: under the game's pose every joint lies on the game body's, mirrored acts too (hips at most %.1f cm off; chest, head, hands and feet over 5 cm in %d of %d, at most %.0f cm; %d mirrored)"
+		% [hips_gap * 100.0, gap_off, gap_n, gap * 100.0, mirrored])
+	check(windows > 100 and glides <= windows / 100 and idle_moving == 0,
+		"foundation: the motion audit on the drawn bodies - feet moving, a foot down in every half second (%d of %d half-seconds without), never standing still while moving (%d frames)"
+		% [glides, windows, idle_moving])
+	var cadence := fast_steps / maxf(fast_t, 0.01)
+	var stride := fast_dist / maxf(fast_steps, 1)
+	check(fast_t > 3.0 and cadence < 4.8 and stride > 1.3 and stride < 2.6,
+		"foundation: running at a real pace, not fast forward (over 5 m/s: %.1f steps a second, %.2f m a step, over %.0f s)" % [cadence, stride, fast_t])
+	check(int(modes.get("move", 0)) > 1000 and int(modes.get("full", 0)) > 1000,
+		"foundation: the capture moves them and the game's own poses are laid on (%s)" % [modes])
+	var wins: Array = m.replay.shown.map(func(x): return x[0])
+	check(wins.all(func(w): return wins.count(w) == 1), "replays: one a window at most (%s)" % [m.replay.shown])
+
+
+## The replay's choice, its skip, and the clock's last seconds.
+func _foundation_replays(m: Node) -> void:
+	var rp: MatchReplay = m.replay
+	var guard := 0
+	while (rp.playing() or m.phase != "play" or m.clock < 60.0) and guard < 3000:
+		await frames(1)
+		guard += 1
+	rp._due = -1.0
+	var got := []
+	for case in [[["pole_turn", "dive_out", "touch_out"], "dive_out"], [["touch_out", "near_miss"], "near_miss"],
+			[["touch_out", "pole_turn"], "pole_turn"], [["survival", "touch_out"], "survival"]]:
+		rp.moments = []
+		for k in case[0]:
+			rp.moment(k, m.active)
+			rp.clock += 0.2
+		rp.clock -= 0.2 * (case[0] as Array).size()
+		got.append(rp.best().get("kind", ""))
+		check(got[-1] == case[1], "replays: the window's best - %s -> %s (%s)" % [case[0], case[1], got[-1]])
+	rp.moments = []
+	var n0: int = rp.shown.size()
+	rp.moment("dive_out", m.active)
+	rp.close()
+	guard = 0
+	while not rp.playing() and guard < 120:
+		await frames(1)
+		guard += 1
+	check(rp.playing() and rp.shown.size() == n0 + 1 and get_viewport().get_camera_3d() != m.cam and not m.hud.visible
+		and rp._ui.visible and FoundationLink.frozen, "replays: due after the window ends, from its own camera, the HUD away")
+	var t0: float = rp.cur.t
+	await frames(30)
+	check(rp.playing() and absf(float(rp.cur.t) - t0 - rp.RATE) < 0.05, "replays: slowed (%.2f s in 1 s)" % [float(rp.cur.get("t", 0.0)) - t0])
+	var tap := InputEventMouseButton.new()
+	tap.button_index = MOUSE_BUTTON_LEFT
+	tap.pressed = true
+	tap.position = Vector2(640, 360)
+	Input.parse_input_event(tap)
+	await frames(3)
+	tap = tap.duplicate()
+	tap.pressed = false
+	Input.parse_input_event(tap)
+	await frames(2)
+	check(not rp.playing() and get_viewport().get_camera_3d() == m.cam and m.hud.visible and not FoundationLink.frozen
+		and m.everyone().all(func(a): return a.process_mode == Node.PROCESS_MODE_INHERIT),
+		"replays: a tap skips it, back to the match")
+	# Never in a turn's last seconds (the clock).
+	m.clock = 20.0
+	rp.moment("dive_out", m.active)
+	rp.close()
+	await frames(60)
+	check(not rp.playing() and rp.shown.size() == n0 + 1, "replays: none in a turn's last 30 seconds (the clock stays)")
+
+
+## A dive and a pole turn on their own, drawn by the foundation: down on the ground and up again; the hands on the
+## pole all round it.
+func _foundation_dive_and_pole() -> void:
+	FoundationLink.in_match = true
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var a := Athlete.new({"id": "t", "speed": 80}, 0)
+	add_child(a)
+	await frames(2)
+	check(a.link != null, "foundation: an athlete made on Medium is linked")
+	if a.link == null:
+		FoundationLink.in_match = false
+		a.queue_free()
+		return
+	a.link.measure = true
+	a.yaw = PI * 0.5
+	a.vel = Vector3(5.6, 0, 0)
+	a.do("dive", 0.5)
+	var lie_hips := 0.0
+	var lie_low := INF
+	var under := 0.0
+	var acts := {}
+	for i in 80:
+		a.integrate(1.0 / 30.0)
+		await frames(1)
+		var l: Dictionary = a.link.last
+		if not l.has("act") or float(l.w) < 1.0:
+			continue
+		acts[l.act] = true
+		if l.act in ["dive", "lie", "getup"]:
+			under = maxf(under, -float(l.low))
+		if l.act == "lie":
+			lie_hips = maxf(lie_hips, (l.Hips as Vector3).y)
+			lie_low = minf(lie_low, float(l.low))
+	check(acts.has("lie") and acts.has("getup") and lie_hips > 0.05 and lie_hips < 0.3 and lie_low > -0.02 and lie_low < 0.07 and under < 0.03,
+		"foundation: the dive drawn goes down to the ground and up (lying: hips %.2f m up, lowest part %.3f m; under the ground at most %.3f m)" % [lie_hips, lie_low, under])
+	# The pole turn: his near hand closed round the pole all the way round, at a height on it (the game's own hands
+	# only point at it); drawn no more than 20 cm nearer it than the game has him.
+	a.position = Vector3(11.45, 0, 0)
+	a.vel = Vector3(5.0, 0, 0)
+	a.do("")
+	await frames(10)
+	a.pole_swing(Vector3(12, 0, 0), 0.55, 0.55, PI, PI * 2.4, 6.5, 4.8)
+	var off := 0.0
+	var high := 0.0
+	var shift := 0.0
+	var frames_on := 0
+	for i in 20:
+		a.integrate(1.0 / 30.0)
+		await frames(1)
+		var l: Dictionary = a.link.last
+		if l.get("act", "") != "pole_turn" or float(l.w) < 1.0 or l.get("pole", Vector3.INF) == Vector3.INF:
+			continue
+		frames_on += 1
+		var near := INF
+		for h in ["LeftGrip", "RightGrip"]:
+			var p: Vector3 = l[h]
+			if Vector2(p.x - 12.0, p.z).length() < near:
+				near = Vector2(p.x - 12.0, p.z).length()
+				high = maxf(high, p.y)
+		off = maxf(off, near)
+		shift = maxf(shift, a.link._pole_shift.length())
+	check(frames_on > 12 and off < 0.0475 and high < 1.225 and shift <= 0.2,
+		"foundation: in a pole turn his hand is on the pole all the way round (its grip within %.1f cm of the pole's axis - the pole 4.75 cm round - at most %.2f m up; drawn at most %.2f m nearer it; %d frames)" % [off * 100.0, high, shift, frames_on])
+	a.queue_free()
+	await frames(2)
+	FoundationLink.in_match = false

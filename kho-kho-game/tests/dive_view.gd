@@ -3,6 +3,8 @@ extends Node3D
 ## whether it is right (tests/dive_view.tscn):
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/dive_view.tscn -- OUT [every]
 ## OUT/dive_NNN.png every few frames, and per frame: hips height, lowest point, pitch, speed, act.
+## KK_FOUNDATION=1: drawn by the shared foundation (as Medium and High draw him, with the licensed clips), and its
+## body's hips height and lowest point too.
 
 var a: Athlete
 var cam: Camera3D
@@ -45,6 +47,7 @@ func _ready() -> void:
 		l.position = Vector3(i - 10, 0.001, 0)
 		add_child(l)
 	ModelBody.warm()
+	FoundationLink.in_match = OS.get_environment("KK_FOUNDATION") != ""
 	a = Athlete.new({"id": "t", "speed": 80}, 0)
 	add_child(a)
 	a.yaw = PI * 0.5   # facing +x
@@ -68,8 +71,13 @@ func _process(_d: float) -> void:
 	cam.look_at(Vector3(a.position.x, 0.6, 0))
 	var sk := a.body.skeleton
 	var hips := sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_Hips")).origin
-	print("f %3d %-8s t %.2f x %.2f v %.2f hips %.2f low %.2f drawn %s clip %s" % [f, a.act, a.act_t, a.position.x,
-		a.vel.length(), hips.y, a.body.lowest_point() + a.body.position.y, a.body.dive_drawn, a.body.clip])
+	var fdn := ""
+	if a.link and a.link.last.has("Hips"):
+		fdn = "  foundation (%s): hips %.2f low %.2f" % [a.link.mode, (a.link.last.Hips as Vector3).y, float(a.link.last.low)]
+	elif a.link:
+		a.link.measure = true
+	print("f %3d %-8s t %.2f x %.2f v %.2f hips %.2f low %.2f drawn %s clip %s%s" % [f, a.act, a.act_t, a.position.x,
+		a.vel.length(), hips.y, a.body.lowest_point() + a.body.position.y, a.body.dive_drawn, a.body.clip, fdn])
 	if f >= 30 and f % every == 0:
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("%s/dive_%03d.png" % [out, f])

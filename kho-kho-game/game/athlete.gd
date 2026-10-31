@@ -11,6 +11,7 @@ const DECEL := 13.0         # ... and sheds it (kho kho turns are sharp: players
 var data := {}              # DB.squad's player, or {} for an official
 var side := 0               # 0 or 1 (-1 an official)
 var body: ModelBody
+var link: FoundationLink = null   # the shared foundation drawing him (Medium and High, in a match), else null
 var want := Vector3.ZERO    # the velocity he is trying for (m/s, flat)
 var vel := Vector3.ZERO
 var top := 7.0              # his flat-out speed now (m/s)
@@ -40,6 +41,11 @@ func _init(p_data := {}, p_side := 0, look := {}) -> void:
 func _ready() -> void:
 	add_child(body)
 	body.rotation.y = yaw
+	# Drawn with the shared foundation on Medium and High (FoundationLink): his body on the shared rig; this one stays,
+	# posed and measured, unseen.
+	if FoundationLink.enabled():
+		link = FoundationLink.new(self)
+		add_child(link)
 
 
 func speed_rating() -> float:

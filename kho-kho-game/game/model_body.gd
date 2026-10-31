@@ -22,6 +22,7 @@ static var _speed := {}      # clip -> its speed over the ground at a playback r
 
 var look := {}
 var low := false
+var mesh: MeshInstance3D     # the mesh drawn (the full one, or the light one on Low)
 var anim: AnimationPlayer
 var skeleton: Skeleton3D
 var clip := ""
@@ -78,6 +79,7 @@ func _ready() -> void:
 			continue
 		(mi as MeshInstance3D).material_override = material(look, low)
 		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mesh = mi
 	for ap in m.find_children("*", "AnimationPlayer", true, false):
 		ap.queue_free()   # the GLB's own clips: ours replace them
 	anim = AnimationPlayer.new()
