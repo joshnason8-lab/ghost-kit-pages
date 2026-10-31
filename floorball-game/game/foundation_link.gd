@@ -332,6 +332,20 @@ func _slide(sk: Skeleton3D, side: String, wrist: Vector3, dir: Vector3) -> float
 	return -b - r if absf(-b - r) < absf(-b + r) else -b + r
 
 
+## xf turned about pivot (the least way, at most max_deg) so that what is at from points at to from the pivot.
+static func _turn_about(xf: Transform3D, pivot: Vector3, from: Vector3, to: Vector3, max_deg: float) -> Transform3D:
+	var a := from - pivot
+	var b := to - pivot
+	if a.length() < 0.01 or b.length() < 0.01:
+		return xf
+	var ang := a.angle_to(b)
+	var ax := a.cross(b)
+	if ang < 0.002 or ax.length() < 1e-6:
+		return xf
+	var r := Basis(ax.normalized(), minf(ang, deg_to_rad(max_deg)))
+	return Transform3D(r * xf.basis, pivot + r * (xf.origin - pivot))
+
+
 ## A hand's turn (the rig's convention) turned the least way that lays its grip (across the palm, rest +Z) along dir.
 static func _along(q0: Quaternion, dir: Vector3) -> Quaternion:
 	var across := q0 * Vector3.BACK
@@ -351,25 +365,23 @@ func _place_stick() -> void:
 		stick.global_transform = hand * _replay_stick(replay_at)
 		return
 	var xf := body.skeleton.global_transform * legacy.stick
-	var d := (xf.basis * Vector3.DOWN).normalized()
-	var fist: Vector3 = hand * ((_grip_pt[top] as Vector3) - (body.joints[top + "Hand"] as Vector3))
-	var v := fist - xf.origin
-	var off := v - d * v.dot(d)
 	var s := gb.global_transform.basis.get_scale().y
-	xf.origin += off.limit_length(0.06 * s)
-	# And turned about the top fist (at most 10 degrees) to run through the lower one, should that arm not have
-	# reached the shaft (a pass's follow-through across the chest).
+	var heel := xf * Vector3(0, -Body.STICK_LEN, 0)
+	var floor_y := heel.y
+	# Turned about the blade's heel (at most 15 degrees: the blade stays on the floor) to run through the top fist,
+	# should that arm not have quite reached the shaft.
+	var fist: Vector3 = hand * ((_grip_pt[top] as Vector3) - (body.joints[top + "Hand"] as Vector3))
+	xf = _turn_about(xf, heel, xf.origin, fist, 15.0)
+	# And about the top fist (at most 10 degrees, never lowering the blade into the floor) toward the lower fist, should
+	# that arm not have reached it (a pass's follow-through across the chest).
 	var lo: Vector3 = body.bone_world(low + "Hand") * ((_grip_pt[low] as Vector3) - (body.joints[low + "Hand"] as Vector3))
+	var d := (xf.basis * Vector3.DOWN).normalized()
 	var pivot := xf.origin + d * d.dot(fist - xf.origin)
-	var a := (xf * Vector3(0, -Body.STICK_LEN * 0.5, 0)) - pivot
-	var b := lo - pivot
-	b -= d * minf(0.0, b.dot(d))     # (only toward a fist below the top one)
-	if b.length() > 0.08 * s and a.angle_to(b) > 0.005:
-		var ang := minf(a.angle_to(b), deg_to_rad(10.0))
-		var ax := a.cross(b).normalized()
-		if ax.is_normalized():
-			var r := Basis(ax, ang)
-			xf = Transform3D(r * xf.basis, pivot + r * (xf.origin - pivot))
+	if d.dot(lo - pivot) > 0.08 * s:
+		var turned := _turn_about(xf, pivot, xf * Vector3(0, -Body.STICK_LEN * 0.5, 0), lo, 10.0)
+		var h2 := turned * Vector3(0, -Body.STICK_LEN, 0)
+		if h2.y >= floor_y - 0.005 * s:
+			xf = turned
 	stick.global_transform = xf
 	if measure:
 		_measure(xf)
