@@ -16,6 +16,11 @@ func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
 	var keep: Dictionary = Game.settings.duplicate(true)
+	# The shared foundation (FoundationLink, when this machine has the licensed clips; CI has not) is tested in its own
+	# sections; elsewhere the matches (the menu's behind every screen, the AI matches) run without it, as CI's do, in
+	# the time CI allows (with it, a match's people cost the CPU about four times as much).
+	var foundation := FoundationLink.enabled()
+	FoundationLink.off = true
 	_rink()
 	_restarts()
 	_offences()
@@ -40,9 +45,12 @@ func _ready() -> void:
 	_mocap()
 	_sounds()
 	_detail_levels()
+	FoundationLink.off = not foundation
 	await _foundation()
 	await _goal_replay()
+	FoundationLink.off = true
 	await _matches()
+	FoundationLink.off = false
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])

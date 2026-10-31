@@ -47,8 +47,13 @@ static func _static_init() -> void:
 	WsgFoundation.profile = OS.get_environment("WSG_PROFILE") if OS.has_environment("WSG_PROFILE") else "premium"
 
 
+## Set by the tests that are not about drawing (tests/test_runner.gd): their matches run as a build without the
+## licensed clips would (CI's), in the time CI allows.
+static var off := false
+
+
 static func enabled() -> bool:
-	return WsgClips.available() and ResourceLoader.exists(DIR + "man_rig.json") and not OS.has_environment("WSG_OFF")
+	return not off and WsgClips.available() and ResourceLoader.exists(DIR + "man_rig.json") and not OS.has_environment("WSG_OFF")
 
 
 ## The clock the replay keeps its frames by (physics frames, in seconds).
