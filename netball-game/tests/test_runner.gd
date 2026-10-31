@@ -15,6 +15,10 @@ func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
 	var keep: Dictionary = Game.settings.duplicate(true)
+	# The shared foundation (FoundationLink, on Medium and High when this machine has the licensed clips; CI has not)
+	# is tested in its own sections; elsewhere the matches run without it, as CI's do, in the time CI allows.
+	var foundation_ok := WsgClips.available()
+	FoundationLink.off = true
 	await _screens()
 	await _about_pages()
 	_rules()
@@ -45,6 +49,11 @@ func _ready() -> void:
 	await _sounds_in_play()
 	await _low_unchanged()
 	await _venue_study()
+	FoundationLink.off = false
+	await _foundation(foundation_ok)
+	await _replays()
+	await _low_unchanged()       # (again, the foundation available: Low draws exactly what it did)
+	FoundationLink.off = true
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -86,7 +95,7 @@ func _screens() -> void:
 ## Settings > About: Licences, Help and the privacy policy each open in the game (offline), from Settings' own
 ## buttons, with their words in them and a way back.
 func _about_pages() -> void:
-	var want := {"LICENCES": ["res://ui/licences_screen.gd", ["Godot Engine", "mocap.cs.cmu.edu", "Pixabay", "Kenney", "Poly Haven", "SIL Open Font License"]],
+	var want := {"LICENCES": ["res://ui/licences_screen.gd", ["Godot Engine", "mocap.cs.cmu.edu", "MoCap Online", "ActorCore", "Pixabay", "Kenney", "Poly Haven", "SIL Open Font License"]],
 		"HELP_SUPPORT": ["res://ui/help_screen.gd", [tr("CTRL_MOVE"), tr("RULES_FOOTWORK"), tr("GFX_LOW"), "Report a bug", "@"]],
 		"PRIVACY_POLICY": ["res://ui/privacy_screen.gd", ["no personal data", "internet permission", "Last updated", "Contact", "@"]]}
 	for key in want:
@@ -1516,3 +1525,156 @@ func _venue_study() -> void:
 		check(hud._clock_l.text == "%d:%02d" % [int(m.time_left) / 60, int(m.time_left) % 60], "and the clock counting down (%s)" % hud._clock_l.text)
 		m.queue_free()
 		await frames(2)
+
+
+# ---------------------------------------------------------------- the shared foundation (FoundationLink)
+
+## With the licensed clip library (a build that has it; not CI's), on Medium and High every player, both umpires and
+## the reserves are drawn by the shared foundation on the owner's model: a link each, its body shown and the game's
+## hidden, posed (every frame near the camera, every 2nd or 3rd far from it); the ball in a player's hands is in the
+## drawn hands (both palms on it) and drawn where they hold it. On Low nobody has one (the game's own bodies), nor
+## anywhere without the clips.
+func _foundation(available: bool) -> void:
+	var was: int = int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_LOW
+	var low := _study_match(41)
+	await frames(3)
+	var any := false
+	for who in low.players[0] + low.players[1] + low.umpires:
+		any = any or who.link != null
+	check(not any and low.wsg_replay == null, "foundation: Low draws the game's own bodies (no links, no replay)")
+	low.queue_free()
+	await frames(2)
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var m := _study_match(42)
+	await frames(3)
+	var people: Array = m.players[0] + m.players[1] + m.umpires
+	if not available:
+		check(people.all(func(p): return p.link == null) and m.wsg_replay == null, "foundation off (no licensed clips): nobody has a link, the game draws as before")
+		m.queue_free()
+		await frames(2)
+		Game.settings.graphics = was
+		return
+	var posed := {}
+	for who in people:
+		if who.link:
+			who.link.measure = true
+			posed[who] = 0
+			who.link.body.posed.connect(func(): posed[who] += 1)
+	var res: Node = m.get_node_or_null("Reserves")
+	var res_links := 0
+	if res:
+		for c in res.get_children():
+			if c is FoundationLink and c.body.visible:
+				res_links += 1
+	await _wait_live(m)
+	var missing := []
+	var shown := []
+	for who in people:
+		if who.link == null or who.link.body == null:
+			missing.append(who.name)
+		elif not who.link.body.is_visible_in_tree() or who.body.mesh_instance.visible:
+			shown.append(who.name)
+	check(missing.is_empty(), "foundation: a link for every player and both umpires (%s)" % [missing])
+	check(shown.is_empty(), "foundation: its body drawn, the game's hidden (%s)" % [shown])
+	check(res_links == m.bench[0].size() + m.bench[1].size() and res_links > 0, "foundation: the reserves on the player's model (%d)" % res_links)
+	# The ball in the drawn hands, over some seconds of play.
+	var held := 0
+	var off_hands := 0
+	var off_ball := 0
+	var gap := 0.0
+	for i in 600:
+		await frames(1)
+		var h: Player = m.ball.holder
+		if m.ball.state != "held" or h == null or h.link == null or not h.link.holding:
+			continue
+		held += 1
+		var lh: Dictionary = h.link.last_hands
+		if float(lh.get("Left", 1.0)) > 0.015 or float(lh.get("Right", 1.0)) > 0.015:
+			off_hands += 1
+			if off_hands <= 6:
+				print("  palm off the ball: %s %s t=%.2f L %.1f cm R %.1f cm, mode %s, full %s" % [h.pos, h.act, h.act_t,
+					float(lh.get("Left", 1.0)) * 100.0, float(lh.get("Right", 1.0)) * 100.0, h.link.mode, h.link.body.full])
+		if m.ball.position.distance_to(h.link.ball_at) > 0.002:
+			off_ball += 1
+		gap = maxf(gap, m.ball.position.distance_to(h.game_hand_point()))
+	check(held > 100 and off_hands <= held / 50, "foundation: both palms on the ball (%d of %d frames off it by over 1.5 cm)" % [off_hands, held])
+	check(off_ball == 0, "foundation: the ball drawn where the drawn hands hold it (%d of %d frames not)" % [off_ball, held])
+	print("foundation: %d frames held; the drawn ball at most %.1f cm from the game's own hands" % [held, gap * 100.0])
+	var still := []
+	for who in people:
+		if who.visible and posed.has(who) and int(posed[who]) < 150:
+			still.append("%s %d" % [who.name, posed[who]])
+	check(still.is_empty(), "foundation: everyone posed through play (%s)" % [still])
+	m.queue_free()
+	await frames(2)
+	Game.settings.graphics = was
+
+
+## The replays (with the foundation; Medium): a goal's after the TV camera's close shot of the post, never with it
+## (its own camera while the close shot is over), slowed, a tap skipping it to the centre pass; an intercept's at the
+## next stoppage, then the award; none on Low.
+func _replays() -> void:
+	if not WsgClips.available():
+		return
+	var was: int = int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_MEDIUM
+	Game.settings.camera = Game.CAM_TV
+	var m := _study_match(43, {"demo": false, "user_team": -1, "headless_hud": true})
+	await _wait_live(m)
+	await frames(200)
+	check(m.wsg_replay != null, "replay: the foundation's bodies kept in a match")
+	var gs: Player = m.player_at(0, "GS")
+	m.pass_info = {}
+	m._release_holder()
+	m._goal(gs, 1)
+	var close_seen := false
+	var stacked := false
+	var guard := 0
+	while m.phase != "replay" and guard < 200:
+		await frames(1)
+		guard += 1
+		close_seen = close_seen or (m.cam.close_dir != 0 and get_viewport().get_camera_3d() == m.cam)
+	var rc := get_viewport().get_camera_3d()
+	check(close_seen and m.phase == "replay" and m.wsg_replay.playing and rc != m.cam,
+		"replay: after the goal's close shot of the post, the replay from its own camera (close shot %s, phase %s)" % [close_seen, m.phase])
+	var t0: float = m._replay.t
+	for i in 30:
+		await frames(1)
+		stacked = stacked or get_viewport().get_camera_3d() == m.cam
+	check(not stacked and m.phase == "replay" and absf(float(m._replay.t) - t0 - 1.0 * m.REPLAY_RATE) < 0.05,
+		"replay: slowed, never stacked with the close shot (%.2f s in 1 s)" % [float(m._replay.t) - t0])
+	var tap := InputEventMouseButton.new()
+	tap.button_index = MOUSE_BUTTON_LEFT
+	tap.pressed = true
+	tap.position = Vector2(400, 300)
+	Input.parse_input_event(tap)
+	await frames(3)
+	check(m.phase == "setup" and not m.wsg_replay.playing and get_viewport().get_camera_3d() == m.cam and m.cam.close_dir == 0,
+		"replay: a tap skips it, to the centre pass (phase %s)" % m.phase)
+	tap = tap.duplicate()
+	tap.pressed = false
+	Input.parse_input_event(tap)
+	# An intercept, shown again at the next stoppage, then the award.
+	await _wait_live(m)
+	await frames(90)
+	var gd: Player = m.player_at(1, "GD")
+	m._mark_highlight(gd)
+	await frames(60)
+	m._infringe("offside", m.player_at(0, "WA"), m.player_at(0, "WA").p)
+	guard = 0
+	while m.phase != "replay" and guard < 120:
+		await frames(1)
+		guard += 1
+	check(m.phase == "replay" and String(m._replay.kind) == "gain" and get_viewport().get_camera_3d() != m.cam,
+		"replay: an intercept at the next stoppage (phase %s)" % m.phase)
+	guard = 0
+	while m.phase == "replay" and guard < 400:
+		await frames(1)
+		guard += 1
+	await frames(2)     # (the award is applied the frame after the replay hands the stoppage back)
+	check(m.phase in ["setup", "live"] and not m.wsg_replay.playing and get_viewport().get_camera_3d() == m.cam,
+		"replay: the stoppage's award after the intercept's replay (phase %s, %d frames)" % [m.phase, guard])
+	m.queue_free()
+	await frames(2)
+	Game.settings.graphics = was

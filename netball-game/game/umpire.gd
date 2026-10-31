@@ -18,6 +18,7 @@ const END_Y := 3.5            # where on her goal line: this far from its middle
 var half := -1                # -1: the half at x < 0; +1: x > 0
 var side := 1                 # the side line she walks: z = side * (HALF_W + LINE)
 var body: ToonBody
+var link: FoundationLink      # the shared foundation drawing her (on the player's model, in the umpires' kit), else null
 var p := Vector2.ZERO
 var vel := Vector2.ZERO
 var target := Vector2.ZERO
@@ -39,6 +40,9 @@ func _ready() -> void:
 	body = ToonBody.new({"umpire": true, "skin": Color("c48f62") if half < 0 else Color("8a5636"), "dress": Color("6fd6c6"),
 		"trim": Color("1c1b26"), "hair": Color("15100c"), "hair_style": 1 if half < 0 else 3, "height": 1.7, "pos": ""})
 	add_child(body)
+	if FoundationLink.enabled():
+		link = FoundationLink.new(self, body, "umpire")
+		add_child(link)
 	p = Vector2(7.0 * half, side * (Court.HALF_W + LINE))
 	position = Vector3(p.x, 0, p.y)
 	_pose = Poses.ready(0.3)
@@ -127,3 +131,5 @@ func advance(dt: float, ball: Vector2) -> void:
 		want_pose = Poses.ready(0.3)
 	_pose = Poses.blend(_pose, want_pose, 1.0 - exp(-12.0 * dt))
 	body.apply(_pose)
+	if link:
+		link.update(dt, vel, want, facing, "signal" if sig != "" else "")

@@ -69,8 +69,16 @@ var _break_skip := false
 var _break_next := 0                # the period after this break (the HUD's interval screen)
 var _break_shown := false
 var _ended := false
-var _auto_gfx_t := 0.0
-var _auto_gfx_frames := 0
+var _auto_gfx := WsgAutoTier.new(Game.frame_cap())   # the shared foundation's: when to lower the graphics
+var _detail_t := 0.0
+var clock := 0.0                    # seconds of the match drawn (not paused, not in a replay): the replay's clock
+var wsg_replay: WsgReplay           # the foundation's bodies as drawn, kept for the replays (FoundationLink)
+var _ball_ring: Array = []          # [clock, the ball's position] for the replays
+var _replay := {}                   # the replay playing: {t, t1, cam, ball_at, hud, then}
+var _goal_clock := 0.0
+var _miss_clock := -INF             # the last shot off the ring (a rebound scored: its replay starts at that shot)
+var _highlight := {}                # an intercept or deflection that won the ball, kept for the next stoppage:
+                                    # {t0, t1, frames, balls, by, at}
 var _step_k := {}                   # player -> how far through her stride (the footstep sounds)
 var _last_vel := {}                 # player -> her velocity last frame (a hard cut squeaks)
 var _step_gap := 0.0
@@ -144,6 +152,11 @@ func _ready() -> void:
 		ball.bounced.connect(_on_bounce)
 	if Game.settings.dev and not demo:
 		add_child(DevOverlay.new(self))
+	# The replays (FoundationLink): the shared foundation's bodies kept as drawn. Medium and High (Low draws the game's
+	# own bodies), not in the home screen's match.
+	if FoundationLink.enabled() and not bool(config.get("attract", false)):
+		wsg_replay = WsgReplay.new()
+		add_child(wsg_replay)
 
 
 ## The reserves (bench) standing in a row in front of their team's bench, in tracksuits (the code-built figure, one
@@ -172,6 +185,11 @@ func _reserves() -> void:
 			b.position = Vector3(at.x, 0.0, at.y)
 			b.rotation.y = PI
 			b.apply(Poses.at_ease())
+			# On the player's model in a tracksuit of the team's colours (the foundation, Medium and High): posed once.
+			if FoundationLink.enabled():
+				var l := FoundationLink.new(b, b, "reserve")
+				root.add_child(l)
+				l.update(1.0 / 60.0, Vector2.ZERO, Vector2.ZERO, PI, "")
 
 
 func _blank_stats(t: int, entry: Dictionary) -> Dictionary:
@@ -215,8 +233,15 @@ func team_id(t: int) -> String:
 func _process(delta: float) -> void:
 	if paused:
 		return
+	# (Ranked before they are posed: a body made full detail after its pose this frame shows its hands open on the
+	# ball till its next pose.)
+	_rank_detail(delta)
+	if phase == "replay":
+		_replay_step(delta)
+		return
 	var dt := minf(delta, 0.05)
 	phase_t += dt
+	clock += dt
 	_auto_graphics(delta)
 	match phase:
 		"setup":
@@ -224,7 +249,10 @@ func _process(delta: float) -> void:
 		"live":
 			_run_live(dt)
 		"stop":
-			if phase_t > 1.0:
+			# An intercept or deflection that won the ball, shown again once the umpire has called this stoppage.
+			if phase_t > 1.0 and not _highlight.is_empty() and wsg_replay and not _stop_award.has("injured") and _start_replay("gain"):
+				pass
+			elif phase_t > 1.0:
 				if _stop_award.has("injured") and not _stop_award.get("treated", false):
 					_injury_stop()
 				else:
@@ -233,7 +261,8 @@ func _process(delta: float) -> void:
 			if (demo and phase_t > 3.0) or _break_skip or phase_t > Rules.INJURY_STOP:
 				_end_injury()
 		"goal":
-			if phase_t > 2.4:
+			# The replay follows the TV camera's close shot of the post (it is over by now: CameraRig CLOSE_TAIL).
+			if phase_t > 2.4 and not (wsg_replay and _start_replay("goal")):
 				_setup_centre()
 		"break":
 			_run_break(dt)
@@ -271,6 +300,12 @@ func _process(delta: float) -> void:
 	cam.end_dir = team_dir(maxi(user_team, 0))
 	# At a break the camera looks over to the huddles by the benches.
 	cam.track(Vector2(0.0, Court.HALF_W) if phase == "break" else ball.court_pos(), 0 if phase == "break" else att, dt)
+	if wsg_replay:
+		wsg_replay.record(clock)
+		_ball_ring.append([clock, ball.position])
+		while _ball_ring.size() > 2 and float(_ball_ring[0][0]) < clock - wsg_replay.seconds:
+			_ball_ring.pop_front()
+		_keep_highlight()
 
 
 func _clock_runs() -> bool:
@@ -523,6 +558,8 @@ func _run_flight() -> void:
 		if res == "tip":
 			stats[String(cut.data.id)].deflections += 1
 			last_touch = cut.team
+			_tipped_by = cut.team
+			_tipped_at = clock
 			var v := (Vector3(ball.f_to - ball.f_from)).normalized() * 3.0
 			v = v.rotated(Vector3.UP, rng.randf_range(-1.2, 1.2))
 			v.y = 1.5
@@ -625,6 +662,8 @@ func _gain(pl: Player, how: String) -> void:
 	stats[String(pl.data.id)].gains += 1
 	if how == "intercept":
 		stats[String(pl.data.id)].intercepts += 1
+	if how == "intercept" or (how == "loose" and _tipped_by == pl.team and clock - _tipped_at < 2.5):
+		_mark_highlight(pl)
 	_give(pl)
 	pl.set_act("catch")
 	pl.act_up = 0.6
@@ -746,6 +785,7 @@ func _run_shot(dt: float) -> void:
 		ball.loose(ring, v)
 		last_touch = pl.team
 		shot_info = {"rebound": true}
+		_miss_clock = clock - 0.95 - float(pl.p.distance_to(Vector2(ring.x, ring.z))) * 0.03 - 0.75
 		Sfx.play_at("rim", ring, -6.0)
 		if not demo:
 			Sfx.react("groan", -12.0)
@@ -774,6 +814,8 @@ func _goal(pl: Player, value: int) -> void:
 	ball.loose(Court.ring_centre(pl.dir), Vector3(0, -1.5, 0))
 	shot_info = {}
 	_goal_team = pl.team
+	_goal_clock = clock
+	_highlight = {}          # (the goal's own replay shows the play)
 	_enter("goal")
 	holder = null
 	possession = -1
@@ -1233,6 +1275,9 @@ func set_paused(p: bool) -> void:
 
 
 func on_back() -> void:
+	if phase == "replay" and not paused:
+		_end_replay()
+		return
 	if paused and hud and hud.close_layer():
 		return
 	set_paused(not paused)
@@ -1244,21 +1289,249 @@ func quit_to_menu() -> void:
 	Game.goto_menu()
 
 
-## Auto graphics: in the first 20 s of play, a match running under about 36 frames a second drops a level (once).
+## The auto graphics level (WsgAutoTier, the shared foundation's): all match long, two windows of stutter in a row
+## (slow, or hitching) take a level off at once; again later if it still stutters. In the game itself only (the
+## tests and tools play at fixed rates or draw in software), never in an AI v AI match.
 func _auto_graphics(delta: float) -> void:
-	if demo or not bool(Game.settings.auto_gfx) or _auto_gfx_t < 0.0:
+	if demo or not bool(Game.settings.get("auto_gfx", true)) or Game.main == null or Game.main.scene_file_path != "res://main.tscn":
 		return
-	_auto_gfx_t += delta
-	_auto_gfx_frames += 1
-	if _auto_gfx_t > 20.0:
-		var fps := _auto_gfx_frames / _auto_gfx_t
-		if fps < 36.0 and int(Game.settings.graphics) > Game.GFX_LOW and (Game.frame_cap() == 0 or Game.frame_cap() >= 50):
-			Game.settings.graphics = int(Game.settings.graphics) - 1
-			Game.save_settings()
-			Game.apply_graphics(get_viewport())
-			ToonBody.material(int(Game.settings.graphics) > Game.GFX_LOW)
-			game_event.emit("graphics_down", {"level": Game.settings.graphics, "fps": fps})
-		_auto_gfx_t = -1.0
+	if _auto_gfx.feed(delta) and int(Game.settings.graphics) > Game.GFX_LOW:
+		lower_graphics()
+
+
+## A graphics level down, now, mid-match: the setting (kept), the picture's size and smoothing, the outlines, the
+## people's shadows, the foundation's tier (its bodies in full detail ranked again; its replay); on Low the game's own
+## bodies again (Low draws exactly what it did) and no reserves. (The court, the venue and the crowd are built for a
+## level when the match starts: the next match builds them at the new one.)
+func lower_graphics() -> void:
+	var fps := float(_auto_gfx.last[0])
+	Game.settings.graphics = int(Game.settings.graphics) - 1
+	Game.save_settings()
+	Game.apply_graphics(get_viewport())
+	WsgFoundation.tier = int(Game.settings.graphics)
+	ToonBody.material(int(Game.settings.graphics) > Game.GFX_LOW)
+	var low := int(Game.settings.graphics) == Game.GFX_LOW
+	var sh := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if low and phase == "replay":
+		_end_replay()
+	for who in players[0] + players[1] + umpires:
+		if who.link == null:
+			continue
+		if low:
+			who.link.release()
+			who.link = null
+		else:
+			who.link.body.mesh_instance.cast_shadow = sh
+		who.body.mesh_instance.cast_shadow = sh
+	if low:
+		_reserves()
+		if wsg_replay:
+			wsg_replay.queue_free()
+			wsg_replay = null
+		_highlight = {}
+	_detail_t = 0.0
+	_auto_gfx.reset()
+	game_event.emit("graphics_down", {"level": Game.settings.graphics, "fps": fps})
+
+
+## The foundation's bodies in full detail nearest the camera only, as the game's profile allows (WsgFoundation:
+## Netball is "premium": the nearest 14 on Medium, 22 on High), and the far ones posed every second or third frame
+## (each on her own frames: Player._pose_link), twice a second.
+func _rank_detail(dt: float) -> void:
+	_detail_t -= dt
+	if _detail_t > 0.0 or wsg_replay == null and not FoundationLink.enabled():
+		return
+	_detail_t = 0.5
+	WsgFoundation.tier = int(Game.settings.graphics)
+	var bodies := []
+	var cam3 := get_viewport().get_camera_3d()
+	var camp := cam3.global_position if cam3 else Vector3.ZERO
+	var near: Array = POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)]
+	for who in players[0] + players[1] + umpires:
+		if who.link and who.link.body and who.is_visible_in_tree():
+			bodies.append(who.link.body)
+			if who is Player:
+				var d: float = who.global_position.distance_to(camp)
+				who.pose_every = 1 if d < float(near[0]) else (2 if d < float(near[1]) else 3)
+	if not bodies.is_empty():
+		WsgFoundation.rank_detail(bodies, camp)
+
+
+## Metres from the camera within which a player is posed every frame, and every second (beyond: every third), by
+## graphics level (the TV camera is 15-35 m from the play).
+const POSE_NEAR := [[12.0, 20.0], [16.0, 26.0], [22.0, 36.0]]
+
+
+# ---------------------------------------------------------------- replays (the shared foundation's WsgReplay)
+
+const REPLAY_BEFORE := 4.0      # s of play before the goal shown again
+const REPLAY_AFTER := 0.8
+const REPLAY_RATE := 0.6        # slowed
+const GAIN_BEFORE := 2.6        # an intercept's or deflection's: the pass and the take
+const GAIN_AFTER := 1.0
+const GAIN_STALE := 25.0        # s of play after which a kept intercept is no longer shown
+
+var _tipped_by := -1            # the team that last deflected a pass, and when (a deflection that wins the ball)
+var _tipped_at := -INF
+
+
+## An intercept, or a deflection her team then took: kept to be shown at the next stoppage.
+func _mark_highlight(pl: Player) -> void:
+	if wsg_replay == null:
+		return
+	_highlight = {"t0": clock - GAIN_BEFORE, "t1": clock + GAIN_AFTER, "frames": [], "balls": [], "by": pl,
+		"at": Vector3(pl.p.x, 0.0, pl.p.y)}
+
+
+## Once its last moment has been drawn, the intercept's frames are copied out of the ring (which goes on and forgets
+## them); a kept one goes stale.
+func _keep_highlight() -> void:
+	if _highlight.is_empty():
+		return
+	if (_highlight.frames as Array).is_empty() and clock >= float(_highlight.t1):
+		_clip_highlight()
+	elif clock > float(_highlight.t1) + GAIN_STALE:
+		_highlight = {}
+
+
+func _clip_highlight() -> void:
+	_highlight.frames = wsg_replay.clip(float(_highlight.t0), float(_highlight.t1))
+	var balls := []
+	for b in _ball_ring:
+		if float(b[0]) >= float(_highlight.t0) - 0.1 and float(b[0]) <= float(_highlight.t1) + 0.1:
+			balls.append(b)
+	_highlight.balls = balls
+
+
+## A replay: a goal's after the TV camera's close shot of the post (from beside the post, the feed and the shot
+## again, from the shot before when a rebound was scored), or a kept intercept's at a stoppage (from the side line);
+## slowed, the foundation's bodies as they were drawn (WsgReplay) and the ball where it was. A tap skips it. False
+## when there is nothing kept to show.
+func _start_replay(kind: String) -> bool:
+	if wsg_replay == null:
+		return false
+	var span := wsg_replay.span()
+	var t0: float
+	var t1: float
+	var frames: Array = []
+	var balls: Array = _ball_ring
+	var rc := Camera3D.new()
+	if kind == "goal":
+		t0 = _goal_clock - REPLAY_BEFORE
+		if _miss_clock > _goal_clock - 6.5:
+			t0 = minf(t0, _miss_clock - 0.6)
+		t1 = _goal_clock + REPLAY_AFTER
+		if span.is_empty() or float(span[0]) > t0 + 1.5 or balls.is_empty():
+			rc.free()
+			return false
+		t0 = maxf(t0, float(span[0]))
+		var end := signf(ball.position.x) if absf(ball.position.x) > 1.0 else 1.0
+		var ring := Court.ring_centre(int(end))
+		# Low beside the post, out past the goal line, looking back up the circle.
+		var side := 1.0 if _ring_at(balls, t0).z >= 0.0 else -1.0
+		rc.fov = 40.0
+		rc.position = Vector3(end * (Court.HALF_L + 1.6), 2.4, side * 3.6)
+		_replay_look = ring
+	else:
+		var h := _highlight
+		_highlight = {}
+		if (h.frames as Array).is_empty():
+			_highlight = h
+			_clip_highlight()
+			h = _highlight
+			_highlight = {}
+		frames = h.frames
+		balls = h.balls
+		if frames.is_empty() or balls.is_empty():
+			rc.free()
+			return false
+		t0 = maxf(float(h.t0), float(frames[0][0]))
+		t1 = minf(float(h.t1), float(frames[-1][0]))
+		var at: Vector3 = h.at
+		# From the side line nearer the play, level with it, a little up.
+		var side := 1.0 if at.z >= 0.0 else -1.0
+		rc.fov = 34.0
+		rc.position = Vector3(clampf(at.x, -Court.HALF_L + 3.0, Court.HALF_L - 3.0) - signf(at.x + 0.01) * 3.0, 2.6, side * (Court.HALF_W + 4.5))
+		_replay_look = at + Vector3.UP * 1.0
+	if t1 <= t0 + 0.5:
+		rc.free()
+		return false
+	add_child(rc)
+	rc.look_at(_replay_look)
+	rc.make_current()
+	_replay = {"t": t0, "t1": t1, "cam": rc, "ball_at": ball.position, "hud": hud.visible if hud else false,
+		"kind": kind, "balls": balls, "phase": phase, "phase_t": phase_t}
+	if hud:
+		hud.visible = false
+	wsg_replay.play(t0, t1, frames)
+	_enter("replay")
+	_replay_step(0.0)
+	game_event.emit("replay", {"kind": kind})
+	return true
+
+
+var _replay_look := Vector3.ZERO
+
+
+static func _ring_at(ring: Array, t: float) -> Vector3:
+	if ring.is_empty():
+		return Vector3.ZERO
+	var i := 0
+	while i < ring.size() - 1 and float(ring[i + 1][0]) <= t:
+		i += 1
+	var a: Array = ring[i]
+	var b: Array = ring[mini(i + 1, ring.size() - 1)]
+	var w := 0.0 if a == b else clampf((t - float(a[0])) / maxf(float(b[0]) - float(a[0]), 1e-4), 0.0, 1.0)
+	return (a[1] as Vector3).lerp(b[1], w)
+
+
+func _replay_step(delta: float) -> void:
+	var t: float = float(_replay.t) + minf(delta, 0.05) * REPLAY_RATE
+	_replay.t = t
+	if t >= float(_replay.t1):
+		_end_replay()
+		return
+	wsg_replay.seek(t)
+	var b := _ring_at(_replay.balls, t)
+	ball.position = b
+	# The camera stays put and follows the ball, smoothly (a goal's: between the ball and the ring).
+	var want := b
+	if String(_replay.kind) == "goal":
+		want = b.lerp(_replay_look, 0.3)
+	_replay["look"] = (_replay.get("look", want) as Vector3).lerp(want, minf(1.0, delta * 4.0)) if delta > 0.0 else want
+	(_replay.cam as Camera3D).look_at(_replay.look)
+
+
+## Back to the match: the bodies, the ball and the camera as they were; then what the match was about to do (the next
+## centre pass after a goal; the award after a stoppage).
+func _end_replay() -> void:
+	if _replay.is_empty():
+		return
+	var r := _replay
+	_replay = {}
+	if wsg_replay:
+		wsg_replay.stop()
+	ball.position = r.ball_at
+	(r.cam as Camera3D).queue_free()
+	cam.close_dir = 0
+	cam.make_current()
+	if hud:
+		hud.visible = bool(r.hud)
+	phase = String(r.phase)
+	phase_t = float(r.phase_t)
+	if String(r.kind) == "goal":
+		_setup_centre()
+	# (A stoppage: its award is applied on the next frame, phase_t being past the call.)
+
+
+## A tap (or a key) skips the replay.
+func _input(event: InputEvent) -> void:
+	if phase != "replay" or paused:
+		return
+	if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) \
+			or (event is InputEventKey and event.pressed and not event.echo and event.keycode != KEY_ESCAPE):
+		get_viewport().set_input_as_handled()
+		_end_replay()
 
 
 ## A team change (R3): at an interval, the player in pos comes off for the next one on the bench who plays it (her

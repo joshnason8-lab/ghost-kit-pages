@@ -133,6 +133,7 @@ func _ready() -> void:
 	if int(settings.graphics) < 0:
 		settings.graphics = detect_graphics()
 		save_settings()
+	WsgFoundation.tier = int(settings.graphics)
 	apply_frame_rate()
 	TranslationServer.set_locale(language())
 	_build_theme()
@@ -174,8 +175,8 @@ func go_back() -> void:
 
 
 ## The graphics level for this phone on its first run: Low on a phone with a small GPU or under about 4.5 GB of
-## memory (a Galaxy A0x/A1x's Mali-G52 or G57, Adreno 5xx and 6xx below 640, PowerVR), Medium on the rest; High is a
-## choice.
+## memory (a Galaxy A0x/A1x's Mali-G52 or G57, Adreno 5xx and 6xx below 640, PowerVR), High on a flagship, Medium on
+## the rest (WsgFoundation.starting_tier); a computer High. Every level is a choice in Settings.
 ## In a browser, the page's address can set things for a test or a demo: ?gfx=low|medium|high, ?lang=xx, ?fresh
 ## (forget the saved settings: a first run).
 func _web_options() -> void:
@@ -202,16 +203,11 @@ func _web_options() -> void:
 func detect_graphics() -> int:
 	if not OS.has_feature("mobile"):
 		return GFX_HIGH
-	var gpu := RenderingServer.get_video_adapter_name().to_lower()
-	var mem: Dictionary = OS.get_memory_info()
-	var ram_gb := float(mem.get("physical", 0)) / 1073741824.0
-	if ram_gb > 0.0 and ram_gb < 4.5:
-		return GFX_LOW
-	for weak in ["mali-g5", "mali-g6", "mali-t", "mali-4", "powervr", "adreno (tm) 5", "adreno (tm) 61", "adreno (tm) 50",
-			"adreno (tm) 4", "img bxm", "ge8"]:
-		if gpu.contains(weak):
-			return GFX_LOW
-	return GFX_MEDIUM
+	# The shared foundation's choice (WsgFoundation, the "premium" profile): a weak phone (under 4.5 GB, or a Galaxy
+	# A0x/A1x-class GPU: the A16) Low, a flagship (6 GB and an Adreno 640+, Mali-G710+, Immortalis or Xclipse) High,
+	# the rest Medium - the same weak phones as before.
+	WsgFoundation.profile = "premium"
+	return WsgFoundation.starting_tier()
 
 
 func language() -> String:
