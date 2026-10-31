@@ -118,6 +118,10 @@ func _ready() -> void:
 	if int(settings.graphics) < 0:
 		settings.graphics = detect_graphics()
 		save_settings()
+	# The shared foundation (addons/wsg_foundation: Medium and High draw the players with it): kho kho is a budget game,
+	# GL Compatibility always; the first run's level stays the game's own choice (detect_graphics: a Galaxy A16 Low).
+	WsgFoundation.profile = "budget"
+	WsgFoundation.tier = int(settings.graphics)
 	apply_frame_rate()
 	TranslationServer.set_locale(language())
 	_build_theme()

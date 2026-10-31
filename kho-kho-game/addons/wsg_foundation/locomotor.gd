@@ -239,6 +239,34 @@ func _p(path: String, v) -> void:
 	tree.set("parameters/" + path, v)
 
 
+## A body the game has posed itself for a while (its own pose over the whole body: a dive, a kho, kneeling) handed
+## back to the capture, going at velocity (world, m/s) and facing facing (world yaw), at once: moving, straight into
+## the gait at its speed (no start from standing); still, standing. Without it the smoothing still had the velocity
+## from before the game's pose, and the first drive saw a sharp change of direction or a start from standing - a cut
+## or a start whose clip crawled while the body ran on (Kho Kho: a seated chaser rising to run glided).
+func resume(velocity: Vector3, facing: float) -> void:
+	if not enabled:
+		return
+	var flat := Vector2(velocity.x, velocity.z)
+	yaw = facing
+	_facing = facing
+	_driven = true
+	speed = flat.length()
+	_prev_speed = speed
+	_accel = 0.0
+	local_vel = Vector2(flat.dot(Vector2(cos(yaw), -sin(yaw))), flat.dot(Vector2(sin(yaw), cos(yaw))))
+	_last_dir = atan2(flat.x, flat.y) if speed > 0.2 else yaw
+	_curve = 0.0
+	if speed > START_SPEED:
+		state = State.MOVE
+		_w_move = 1.0
+	else:
+		state = State.IDLE
+		_w_move = 0.0
+	_w_shot = 0.0
+	_idle_for = 0.0
+
+
 ## Turns the head (and a little of the chest) to watch a point in the world; null: looks where it is going.
 func look_at_point(p) -> void:
 	if not enabled:
@@ -632,8 +660,11 @@ func _cut(off: float) -> void:
 	var a := absf(rad_to_deg(off))
 	var clip := "%s_%s_%d" % [g, "L" if off > 0.0 else "R", 180 if a > 135.0 else 90]
 	if WsgClips.has(clip):
-		_cut_from = _last_dir
-		_cut_to = _last_dir + off
+		# From the way it was going (its smoothed velocity), not the way it goes now: driven without a wanted velocity
+		# the cut is seen once the velocity has already swung round, and measured from there it never came round -
+		# its clip crawled while the body ran on (Kho Kho's chasers glided through their turns at 8 m/s).
+		_cut_from = yaw + atan2(local_vel.x, local_vel.y)
+		_cut_to = _cut_from + off
 		_fire(clip, State.CUT)
 
 

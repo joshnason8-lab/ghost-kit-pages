@@ -93,10 +93,15 @@ var _end_reason := ""
 var _last_kho_t := 0.0
 var _kho_armed := {}           # a kho pressed a moment early: {i, until}
 var _min_turns := 0            # minimum-chase turns played, plus one
+var replay: MatchReplay = null # the moments shown again (the shared foundation's WsgReplay: Medium and High), else null
+var _detail_t := 0.0
 
 
 func _exit_tree() -> void:
 	Crowd.watch_target = Vector3.INF
+	FoundationLink.in_match = false
+	FoundationLink.frozen = false
+	FoundationLink.paused = false
 
 
 func _ready() -> void:
@@ -118,7 +123,15 @@ func _ready() -> void:
 	_foul_rate = [0.05, 0.035, 0.02, 0.012][clampi(diff, 0, 3)]
 	arena = Arena.new(String(config.get("venue", "maidan")), fmt, [DB.kit(teams[0])[0], DB.kit(teams[1])[0]])
 	add_child(arena)
+	# The shared foundation draws the bodies made from here on (Medium and High: FoundationLink), not behind the menus.
+	FoundationLink.in_match = not attract
+	FoundationLink.frozen = false
+	FoundationLink.paused = false
+	WsgFoundation.tier = int(Game.settings.graphics)
 	_build_people()
+	if everyone().any(func(a): return a.link != null):
+		replay = MatchReplay.new(self)
+		add_child(replay)
 	_build_markers()
 	cam = Camera3D.new()
 	cam.fov = 50.0
@@ -544,6 +557,10 @@ func _log(kind: String, extra_data := {}) -> void:
 func _process(delta: float) -> void:
 	if paused:
 		return
+	_rank_detail(delta)
+	if replay and replay.playing():
+		replay.step(delta)
+		return
 	var dt := minf(delta, 0.05)
 	t_match += dt
 	phase_t += dt
@@ -582,28 +599,90 @@ func _process(delta: float) -> void:
 		Crowd.watch_target = active.position if near == null else active.position.lerp(near.position, 0.4)
 	_camera(dt)
 	_auto_graphics(delta)
+	if replay:
+		replay.live(dt)
 
 
-## Auto graphics: if the first stretch of play runs under about 36 frames a second, a level lower (once a match).
-var _perf_t := 0.0
-var _perf_frames := 0
-var _perf_done := false
+## Auto graphics (Settings, on by default): a level lower when play stutters on this phone - the shared foundation's
+## WsgAutoTier watches every frame of play (slow on average, or hitching), all match long, and a level comes off at
+## once after two bad windows in a row; again later if it still stutters. As before: only in play, not in a match the
+## AI plays on its own, nor with the battery saver's frame rate (its 30 a second is not slow).
+var _auto_tier := WsgAutoTier.new(Game.frame_cap())
 
 
 func _auto_graphics(delta: float) -> void:
-	if _perf_done or attract or demo or phase != "play" or not bool(Game.settings.auto_gfx):
+	if attract or demo or phase != "play" or not bool(Game.settings.auto_gfx) or Game.frame_cap() == Game.saver_cap(Game.screen_hz()):
 		return
-	_perf_t += delta
-	_perf_frames += 1
-	if _perf_t < 8.0:
+	if _auto_tier.feed(delta) and int(Game.settings.graphics) > Game.GFX_LOW:
+		lower_graphics()
+
+
+## A level lower, now (WsgAutoTier, or a test): the picture as the level has it; on Low the foundation's bodies give
+## way to the game's own (Low draws exactly what it always did) and no replays are kept.
+func lower_graphics() -> void:
+	var g := int(Game.settings.graphics) - 1
+	Game.settings.graphics = g
+	Game.save_settings()
+	Game.apply_graphics(get_viewport())
+	WsgFoundation.tier = g
+	if g == Game.GFX_LOW:
+		if replay:
+			replay.end()
+			replay.queue_free()
+			replay = null
+		for a in everyone():
+			if a.link:
+				a.link.release()
+	_detail_t = 0.0
+	_auto_tier.reset()
+	game_event.emit("graphics")
+
+
+# ---------------------------------------------------------------- the foundation's bodies (FoundationLink)
+
+## Metres from the camera within which a body is posed every frame, and every second (beyond: every third), by
+## graphics level: a budget phone's Medium poses the far side's bodies less often.
+const POSE_NEAR := [[9.0, 15.0], [9.0, 15.0], [14.0, 24.0]]
+
+
+## Twice a second: the foundation's bodies in full detail nearest the camera only (WsgFoundation: kho kho is "budget",
+## its nearest 6 on Medium, all on High), and the far ones posed every second or third frame - never the active
+## chaser, a defender in play, or anyone diving, turning at the pole or giving a kho, who are posed every frame. The
+## seated (kneeling chasers, the waiting batches, the table) hardly move: every second or third.
+func _rank_detail(dt: float) -> void:
+	_detail_t -= dt
+	if _detail_t > 0.0 or replay == null:
 		return
-	_perf_done = true
-	var fps := float(_perf_frames) / _perf_t
-	if fps < 36.0 and int(Game.settings.graphics) > Game.GFX_LOW and Game.frame_cap() != Game.saver_cap(Game.screen_hz()):
-		Game.settings.graphics = int(Game.settings.graphics) - 1
-		Game.save_settings()
-		Game.apply_graphics(get_viewport())
-		game_event.emit("graphics")
+	_detail_t = 0.5
+	WsgFoundation.tier = int(Game.settings.graphics)
+	var c3 := get_viewport().get_camera_3d()
+	var camp := c3.global_position if c3 else Vector3.ZERO
+	var near: Array = POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)]
+	var list := []
+	for a in everyone():
+		var link: FoundationLink = a.link
+		if link == null or link.body == null:
+			continue
+		list.append(link.body)
+		var d: float = a.global_position.distance_to(camp)
+		var busy: bool = a == active or d_state.get(a, "") == "in" or a.act in ["dive", "pole_dive", "lie", "getup", "pole_turn", "kho", "reach", "rise", "dodge"]
+		link.pose_every = 1 if busy or d < float(near[0]) else (2 if d < float(near[1]) else 3)
+		if a.act == "sit" and not busy:
+			link.pose_every = maxi(link.pose_every, 2)
+	if not list.is_empty():
+		WsgFoundation.rank_detail(list, camp)
+
+
+## The players' blob shadows under their bodies as drawn (a replay shows them where they were).
+func shadows_at_drawn() -> void:
+	var mm := _shadows.multimesh
+	var i := 0
+	for a in everyone():
+		if i >= mm.instance_count:
+			break
+		var p: Vector3 = a.link.body.global_position if a.link and a.link.body else a.position
+		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, Vector3(p.x, 0.015, p.z)))
+		i += 1
 
 
 ## The interval between turns is over (the HUD's Next turn).
@@ -655,6 +734,10 @@ func _near_miss(loud: bool) -> void:
 		return
 	Sfx.react("ooh", -3.0 if loud else -8.0)
 	_tension = 1.0
+	# A dive that just missed: a moment to see again, and the end of its window.
+	if loud and replay and active:
+		replay.moment("near_miss", active)
+		replay.close()
 
 
 func _play(dt: float) -> void:
@@ -1189,6 +1272,8 @@ func _pole_turn() -> void:
 	# He takes hold from where he is and is drawn in to the tight circle as he swings.
 	active.pole_swing(pole, rel.length(), SWING_R, a0, a1, v_in, v_out)
 	stats[active.data.id].pole_turns = int(stats[active.data.id].get("pole_turns", 0)) + 1
+	if replay:
+		replay.moment("pole_turn", active)
 	game_event.emit("pole_turn")
 
 
@@ -1371,6 +1456,10 @@ func _out(d: Athlete, kind: String, by: Athlete = null) -> void:
 	if d == user_def:
 		user_def = null
 		_switch_defender()
+	if replay:
+		if by and kind in [KhoRules.OUT_DIVE, KhoRules.OUT_POLE, KhoRules.OUT_TOUCH]:
+			replay.moment({KhoRules.OUT_DIVE: "dive_out", KhoRules.OUT_POLE: "pole_out", KhoRules.OUT_TOUCH: "touch_out"}[kind], by)
+		replay.close()
 	game_event.emit("out")
 	if min_chase:
 		min_times[chasing] = turn_len - clock
@@ -1475,6 +1564,12 @@ func _dream(dt: float) -> void:
 		if defending() == user and not demo:
 			Game.haptic("dream")
 		Sfx.react("cheer", -8.0)
+		if replay:
+			for a in batch:
+				if d_state.get(a, "") == "in":
+					replay.moment("survival", a)
+					break
+			replay.close()
 		game_event.emit("dream")
 
 
@@ -1855,6 +1950,7 @@ func cycle_camera() -> void:
 
 func set_paused(on: bool) -> void:
 	paused = on
+	FoundationLink.paused = on
 	Sfx.pause(on)
 	if hud:
 		hud.show_pause(on)
@@ -1862,6 +1958,9 @@ func set_paused(on: bool) -> void:
 
 func on_back() -> void:
 	if phase == "over":
+		return
+	if replay and replay.playing() and not paused:
+		replay.end()
 		return
 	set_paused(not paused)
 

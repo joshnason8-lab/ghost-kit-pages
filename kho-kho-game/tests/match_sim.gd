@@ -82,6 +82,10 @@ func _process(_d: float) -> void:
 func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
+	# KK_GFX=0, 1 or 2: the graphics level (on Medium and High, with the licensed clips, the shared foundation draws the
+	# players: it must not change a thing in the play).
+	if OS.get_environment("KK_GFX") != "":
+		Game.settings.graphics = int(OS.get_environment("KK_GFX"))
 	var args := OS.get_cmdline_user_args()
 	var n := int(args[0]) if args.size() > 0 else 2
 	var fmt := KhoRules.FAST if args.size() > 1 and args[1] == "fast" else KhoRules.CLASSIC
@@ -97,7 +101,10 @@ func _ready() -> void:
 			"mode": "quick", "test": true, "chase_first": i % 2, "follow_on": false}
 		add_child(m)
 		cur = m
+		var drawn: int = m.everyone().filter(func(q): return q.link != null).size()
 		var res: Dictionary = await m.finished
+		if drawn > 0:
+			print("  (the shared foundation drew %d of %d; %d replays shown)" % [drawn, m.everyone().size(), m.replay.shown.size() if m.replay else 0])
 		cur = null
 		var fouls := {}
 		var c := {"outs": 0, "khos": 0, "dives": 0, "pole": 0, "fouls": 0, "dream": 0, "limits": 0, "late": 0, "turns": 0}
