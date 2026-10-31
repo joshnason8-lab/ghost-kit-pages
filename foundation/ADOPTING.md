@@ -328,6 +328,25 @@ date: builds fall back to the old animation when it expires); Repository access 
 with it); nothing else. Generate, copy it. Then in **ghost-kit-pages** → Settings → Secrets and variables → Actions →
 New repository secret: name `ASSETS_REPO_TOKEN`, paste, Add secret. One secret serves every game's workflow.
 
+## 6.5 How the foundation's updates reach your game
+
+Every game carries its own copy of the foundation (`addons/wsg_foundation/`, and its scripts in `tools/wsg/`), so
+a game builds without the foundation's branch and a change there never breaks a game unasked. To take an update:
+```sh
+sh <game>/tools/wsg/sync_foundation.sh     # fetches claude/shared-foundation, replaces only the foundation's files
+```
+then run the game's suites and commit on the game's branch. It replaces `addons/wsg_foundation/` (keeping the
+licensed `data/` folder) and the foundation's own scripts in `tools/wsg/` - never your link, players, tests,
+assets or workflow - and writes the foundation commit to `addons/wsg_foundation/VERSION`.
+
+Your workflow warns (never fails) when your copy is behind - a step after checkout:
+```yaml
+      - name: Shared foundation up to date? (a warning only)
+        run: sh <game>/tools/wsg/check_foundation.sh
+```
+The foundation's own session pushes each update to every adopted game's pilot or game branch, under that game's
+rules (a pilot branch until the owner has passed the game's pilot), and says so to the lead, who checks each release.
+
 ## 7. Check before you push
 
 ```

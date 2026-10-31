@@ -17,7 +17,7 @@ if [ -d "$GAME/addons/wsg_foundation/data" ]; then
 fi
 rm -rf "$GAME/addons/wsg_foundation"
 mv "$GAME/addons/wsg_foundation.new" "$GAME/addons/wsg_foundation"
-for f in fetch_assets.sh bake_clips.sh bake_clips.gd bake_actorcore.gd bake_crowd.gd crowd_mocap.gd bake_character.sh bake_character.gd toonbody_to_scene.gd cloth_drape.gd cloth_weights.gd; do
+for f in sync_foundation.sh check_foundation.sh fetch_assets.sh bake_clips.sh bake_clips.gd bake_actorcore.gd bake_crowd.gd crowd_mocap.gd bake_character.sh bake_character.gd toonbody_to_scene.gd cloth_drape.gd cloth_weights.gd; do
 	cp "$HERE/$f" "$GAME/tools/wsg/"
 done
 rm -rf "$GAME/tools/wsg/blender"
@@ -28,5 +28,9 @@ cp -r "$HERE/crowd_src" "$GAME/tools/wsg/crowd_src"
 grep -q "addons/wsg_foundation/data" "$GAME/.gitignore" 2>/dev/null || {
 	printf '\n# Licensed animation data, baked at build time (tools/wsg/fetch_assets.sh): never committed.\naddons/wsg_foundation/data/\n' >> "$GAME/.gitignore"
 }
-(cd "$F" && git rev-parse --short HEAD 2>/dev/null) > "$GAME/addons/wsg_foundation/VERSION" || true
+if [ -n "$FOUNDATION_COMMIT" ]; then
+	echo "$FOUNDATION_COMMIT" > "$GAME/addons/wsg_foundation/VERSION"
+else
+	(cd "$F" && git rev-parse --short HEAD 2>/dev/null) > "$GAME/addons/wsg_foundation/VERSION" || true
+fi
 echo "vendored the foundation into $GAME ($(cat "$GAME/addons/wsg_foundation/VERSION"))"
