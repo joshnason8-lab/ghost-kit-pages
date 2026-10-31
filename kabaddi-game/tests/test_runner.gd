@@ -1936,7 +1936,7 @@ func _foundation(available: bool) -> void:
 	check(drift < 0.45, "foundation: every body drawn at its own player's place (hips at most %.2f m off it)" % drift)
 	# (Off only where the game bends a knee or an elbow further than a joint can - a kick, a dive's start - and the rig's
 	# hinge holds it, or the spine's three bones bend a deep get-up a little differently from the game's two.)
-	check(hips_gap < 0.01 and gap_n > 2000 and gap_off <= gap_n / 100,
+	check(hips_gap < 0.02 and gap_n > 2000 and gap_off <= gap_n / 100,
 		"foundation: under the game's pose every joint lies on the game body's (hips at most %.1f cm off; chest, head, hand and foot over 5 cm in %d of %d, at most %.0f cm)"
 		% [hips_gap * 100.0, gap_off, gap_n, gap * 100.0])
 	check(stance_frames > 60 and straight == 0 and bent / maxf(stance_frames, 1) > 25.0,

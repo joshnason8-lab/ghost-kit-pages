@@ -41,6 +41,14 @@ func _ready() -> void:
 	if only == "tv":
 		get_tree().quit()
 		return
+	if only == "speed":
+		r = await _wait(_fast, 30000)
+		if r:
+			await _shoot(r, "speed_side", Vector3(0.0, 1.0, 3.6), 0.9, 32.0, true)
+			await _shoot(r, "speed_front", Vector3(3.8, 1.0, 0.3), 0.9, 32.0, true)
+			print("speed: %.1f m/s, state %s" % [r.move_vel.length(), r.state])
+		get_tree().quit()
+		return
 	if only == "replay":
 		await _replay_still()
 		get_tree().quit()
@@ -133,10 +141,10 @@ func _wait(cond: Callable, limit: int, officials := false) -> Node3D:
 	return null
 
 
-## Running at speed the way he faces, on his own.
+## The raider running at speed the way he faces, on his own (picked by his speed: the same moment in both builds).
 func _fast(q: Node3D) -> bool:
 	var v: Vector3 = q.move_vel
-	return q.on_mat and v.length() > 4.2 and v.length() < 9.0 and v.normalized().dot(q.body_facing()) > 0.9 and _clear(q, 1.4)
+	return q == m.raider and m.phase == "raid" and q.state == "raid" and v.length() > 4.0 and v.length() < 9.0 and v.normalized().dot(q.body_facing()) > 0.9 and _clear(q, 1.4)
 
 
 ## No one else within r of him.

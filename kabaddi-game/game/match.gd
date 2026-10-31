@@ -4209,7 +4209,7 @@ func _bodies() -> Array:
 
 ## Metres from the camera within which a body is posed every frame, and every second (beyond: every third), by
 ## graphics level: a budget phone's Medium poses the far side's and the officials' bodies less often.
-const POSE_NEAR := [[12.0, 20.0], [14.0, 22.0], [30.0, 45.0]]
+const POSE_NEAR := [[10.0, 16.0], [10.0, 16.0], [14.0, 24.0]]
 
 
 ## Twice a second: the foundation's bodies in full detail nearest the camera only (WsgFoundation: Kabaddi is
@@ -4233,6 +4233,9 @@ func _rank_detail(dt: float) -> void:
 		var d: float = a.global_position.distance_to(camp)
 		var busy: bool = a == raider or a.state in ["held", "holding", "dive", "telegraph", "touch", "kick", "backkick", "dubki", "jump"]
 		link.pose_every = 1 if busy or d < float(near[0]) else (2 if d < float(near[1]) else 3)
+		# The officials and scorers off to the side: every third frame unless signalling (they hardly move).
+		if a.team == 2 and a.state != "signal":
+			link.pose_every = maxi(link.pose_every, 2 if a.move_vel.length() > 0.5 else 3)
 	if not list.is_empty():
 		WsgFoundation.rank_detail(list, camp)
 
@@ -4316,7 +4319,7 @@ func _start_replay() -> bool:
 		return false
 	var who: Athlete = mo.who
 	var rc := Camera3D.new()
-	rc.fov = 40.0
+	rc.fov = 36.0
 	rc.near = 0.05
 	add_child(rc)
 	wsg_replay.play(t0, t1, frames)
@@ -4354,7 +4357,7 @@ func _replay_step(delta: float) -> void:
 	var f := _replay_focus()
 	f.y = clampf(f.y, 0.5, 1.1)
 	# From the broadcast side, low and nearer than the TV camera, a little ahead of him, moving with him smoothly.
-	var want_pos := Vector3(clampf(f.x + 7.0, 6.5, 11.0), 2.3, f.z + 2.6 * signf(f.z + 0.01))
+	var want_pos := Vector3(f.x + 5.0, 1.9, f.z + 2.0 * signf(f.z + 0.01))
 	var rc: Camera3D = _replay.cam
 	var k := 1.0 if delta <= 0.0 else minf(1.0, delta * 3.0)
 	_replay["pos"] = (_replay.get("pos", want_pos) as Vector3).lerp(want_pos, k)

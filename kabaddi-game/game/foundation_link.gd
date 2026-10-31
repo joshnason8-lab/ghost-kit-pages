@@ -49,6 +49,9 @@ static var off := false
 static var in_match := false
 ## The replay is playing: the bodies show what WsgReplay kept, not the game.
 static var frozen := false
+## Microseconds every body's foundation work has taken (its update here, and its skeleton's modifiers: the game's pose
+## laid on, the drivers, the helpers), all told (tests/foundation_cpu).
+static var cost_usec := 0
 
 
 ## Kabaddi is a budget game (WsgFoundation: Low by default, the phone decides; GL Compatibility always).
@@ -108,6 +111,7 @@ func _ready() -> void:
 			m.active = false
 	gb.mesh_instance.visible = false
 	gb.mirror = material
+	body.posed.connect(_posed_cost)
 	_move_number()
 
 
@@ -186,7 +190,8 @@ func want_mode() -> String:
 			return "upper"
 		return "move" if who.state in MOVE else "full"
 	if CLIPS.has(who.state):
-		return "clip"
+		# (Standing: the library's clip; still on the move - a slump while he jogs off - the game's own.)
+		return "clip" if who.move_vel.length() < 0.6 or mode == "clip" and who.move_vel.length() < 1.0 else "full"
 	return "move" if who.state in MOVE else "full"
 
 
@@ -195,6 +200,12 @@ func want_mode() -> String:
 func update(delta: float) -> void:
 	if frozen or delta <= 0.0 or not is_instance_valid(gb) or not hm.is_visible_in_tree():
 		return
+	var t0 := Time.get_ticks_usec()
+	_update(delta)
+	cost_usec += Time.get_ticks_usec() - t0
+
+
+func _update(delta: float) -> void:
 	_dt += delta
 	_skip += 1
 	var want := want_mode()
@@ -338,7 +349,16 @@ func knee_bend(side: String) -> float:
 ## The game's pose over the capture (WsgPoseLayer), noting the frame it last ran (tests).
 class Layer extends WsgPoseLayer:
 	var ran := -1
+	var t0 := 0
 
 	func _process_modification_with_delta(delta: float) -> void:
 		ran = Engine.get_process_frames()
+		t0 = Time.get_ticks_usec()
 		super(delta)
+
+
+## The skeleton's modifiers done (the layer runs first among them): their time counted.
+func _posed_cost() -> void:
+	if legacy.t0 > 0:
+		cost_usec += Time.get_ticks_usec() - legacy.t0
+		legacy.t0 = 0
