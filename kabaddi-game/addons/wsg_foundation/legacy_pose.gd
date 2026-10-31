@@ -46,11 +46,17 @@ var _corr := {}          # rig bone -> its rest turned onto the 17's rest (arms:
 var _arm := {}           # side -> [upper arm rest axis, forearm rest axis, upper arm length, forearm length]
 var _hips_k := 1.0
 var _hips_rest := Vector3.ZERO
+## The game's skeleton turned onto the rig's facing (+Z): a game whose body is built facing another way (Kabaddi's,
+## facing -Z: Quaternion(Vector3.UP, PI)) has its rests and turns read as if turned by this.
+var face := Quaternion.IDENTITY
+var _face_inv := Quaternion.IDENTITY
 
 
-func _init(toon_skeleton: Skeleton3D, rig_joints: Dictionary) -> void:
+func _init(toon_skeleton: Skeleton3D, rig_joints: Dictionary, p_face := Quaternion.IDENTITY) -> void:
 	sk = toon_skeleton
 	joints = rig_joints
+	face = p_face
+	_face_inv = face.inverse()
 	for k in MAP:
 		_ix[k] = sk.find_bone(k)
 	for k in CHILD:
@@ -58,7 +64,7 @@ func _init(toon_skeleton: Skeleton3D, rig_joints: Dictionary) -> void:
 		var b := sk.find_bone(k)
 		if b < 0 or c < 0:
 			continue
-		var toon_dir := (sk.get_bone_global_rest(c).origin - sk.get_bone_global_rest(b).origin).normalized()
+		var toon_dir := face * (sk.get_bone_global_rest(c).origin - sk.get_bone_global_rest(b).origin).normalized()
 		var rig_dir := WsgRig.bone_axis(joints, MAP[k])
 		_corr[MAP[k]] = Quaternion(rig_dir, toon_dir)
 	# The hand follows the forearm's correction (it has no child in the 17).
@@ -84,6 +90,8 @@ func read() -> Dictionary:
 		var local := sk.get_bone_pose_rotation(i)
 		if undo.has(k):
 			local = local * (undo[k] as Quaternion).inverse()
+		if face != Quaternion.IDENTITY:
+			local = face * local * _face_inv
 		var par := sk.get_bone_parent(i)
 		var pq: Quaternion = tg.get(sk.get_bone_name(par), Quaternion.IDENTITY) if par >= 0 else Quaternion.IDENTITY
 		tg[k] = (pq * local).normalized()
@@ -107,7 +115,7 @@ func read() -> Dictionary:
 			continue
 		var par: String = b[1]
 		out[nm] = ((g[par] as Quaternion).inverse() * g[nm]).normalized() if par != "" and g.has(par) else g[nm]
-	out["@hips"] = (sk.get_bone_pose_position(_ix["hips"]) - _hips_rest) * _hips_k
+	out["@hips"] = face * (sk.get_bone_pose_position(_ix["hips"]) - _hips_rest) * _hips_k
 	_last_global = g
 	return out
 

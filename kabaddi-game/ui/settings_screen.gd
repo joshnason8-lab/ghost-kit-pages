@@ -64,6 +64,7 @@ func _ready() -> void:
 	right.add_child(disp[0])
 	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")], int(Game.settings.graphics), func(i):
 		Game.settings.graphics = i
+		WsgFoundation.tier = i
 		Game.save_settings())))
 	disp[1].add_child(_toggle("auto_gfx", "GFX_AUTO"))
 	# Frame rate: the battery saver, Smooth (60, or as near as the screen shows evenly) and the screen's own rate.

@@ -129,6 +129,7 @@ var _phase := 0.0
 var _t := 0.0
 var _custom: Node3D = null
 var rig: RiggedBody = null
+var link: FoundationLink = null   # the shared foundation drawing this body (Medium and High, in a match), else null
 var _blob: MeshInstance3D = null   # a soft round shadow, when the sun casts none (_make_blob)
 var _anim: AnimationPlayer = null
 var _clips := {}
@@ -190,6 +191,11 @@ func _use_rigged_body() -> void:
 	rig.setup(skin, jersey, shorts, hair, height, trim, file)
 	if number > 0:
 		rig.add_number(number, trim, jersey.darkened(0.4))
+	# Drawn with the shared foundation on Medium and High (FoundationLink): his own body on the shared rig; this one
+	# stays, posed and measured, unseen.
+	if rig.skeleton and FoundationLink.enabled() and FoundationLink.baked(file) != "":
+		link = FoundationLink.new(self)
+		add_child(link)
 
 
 ## Standing pelvis height of the placeholder, for scaling the rigged body's hips.
@@ -526,6 +532,8 @@ func _process(delta: float) -> void:
 	_settle(delta)
 	if rig:
 		rig.drive(self)
+		if link:
+			link.update(delta)
 	else:
 		_ground()
 

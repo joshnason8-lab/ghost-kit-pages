@@ -69,7 +69,8 @@ var settings := {
 	"lang_v": 2,            # settings version: 2 stopped pinning the phone's language on first run
 	"camera": CAM_TV,       # the broadcast camera; third person behind the raider is the other choice
 	"cam_v": 2,             # settings version: 2 made the broadcast camera the default
-	"graphics": GFX_MEDIUM,
+	"graphics": -1,         # -1 until the first run sets it for the phone (WsgFoundation.starting_tier); then the player's
+	"gfx_v": 2,             # settings version: 2 put the weak phones (a Galaxy A16) on Low once, as the foundation starts them
 	"sound": true,
 	"music": true,          # the menus' music (needs sound on too)
 	"vol_fx": 100,          # the volume sliders, 0..100 (Sfx.apply_volumes): the players' and officials' sounds,
@@ -110,6 +111,14 @@ var season = null  # Season (RefCounted), loaded lazily
 
 func _ready() -> void:
 	load_settings()
+	# The shared foundation (addons/wsg_foundation): Kabaddi is a budget game - GL Compatibility always, a weak phone
+	# (the Galaxy A16) and an ordinary one start on Low, a flagship on High; the player's own choice in Settings wins.
+	WsgFoundation.profile = "budget"
+	if int(settings.graphics) < 0:
+		# (A computer - the tests, the tools - keeps Medium, the level it always started on.)
+		settings.graphics = WsgFoundation.starting_tier() if OS.has_feature("mobile") else GFX_MEDIUM
+		save_settings()
+	WsgFoundation.tier = int(settings.graphics)
 	apply_frame_rate()
 	TranslationServer.set_locale(language())
 	_build_theme()
@@ -201,6 +210,12 @@ func load_settings() -> void:
 		# Players found the tags over every head too busy: off for everyone once, back on from Settings.
 		settings.tags = 2
 		settings.tags_v = 2
+	if data is Dictionary and int(data.get("gfx_v", 1)) < 2:
+		# Medium was everyone's first level before 0.13.1: a weak phone (the A16) goes to Low once, where the foundation
+		# starts it (its own auto graphics took it there in its first match anyway); every other phone keeps its level.
+		if int(settings.graphics) > GFX_LOW and WsgFoundation.device_class() < 0:
+			settings.graphics = GFX_LOW
+		settings.gfx_v = 2
 	if settings.raid_rule > 2:
 		settings.raid_rule = 2   # the spoken cant (3) is gone
 	if settings.camera == CAM_FIRST:

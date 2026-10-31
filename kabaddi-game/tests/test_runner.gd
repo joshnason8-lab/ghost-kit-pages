@@ -12,6 +12,9 @@ func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
 	Game.settings.dev = false   # as a player has it, whatever this machine's saved settings say
+	# The shared foundation (FoundationLink, on Medium and High when this machine has the licensed clips; CI may not) is
+	# tested in its own section; elsewhere the matches run without it, as a build without the clips does, in CI's time.
+	FoundationLink.off = true
 	await _run()
 
 
@@ -1307,6 +1310,10 @@ func _run() -> void:
 
 	await _buttons()
 
+	FoundationLink.off = false
+	await _foundation(WsgClips.available())
+	FoundationLink.off = true
+
 	print("")
 	if failures.is_empty():
 		print("ALL CHECKS PASSED")
@@ -1399,7 +1406,7 @@ func _languages() -> void:
 	# Each opens a page in the game (no connection needed), with a Back button, scrolling, and words on it.
 	var pages := {"PRIVACY_POLICY": ["privacy_screen.gd", ["collect", "Permissions", "vibration", "Last updated", "thekabaddipulse.com/contact"]],
 		"HELP_SUPPORT": ["help_screen.gd", ["Raiding", "Defending", "The rules in brief", "Controls", "Graphics", "contact page"]],
-		"LICENCES": ["licences_screen.gd", ["Godot Engine", "Poly Haven", "Kenney", "Pixabay", "Meshy", "Mixamo", "SIL Open Font License"]]}
+		"LICENCES": ["licences_screen.gd", ["Godot Engine", "Poly Haven", "Kenney", "Pixabay", "Meshy", "Mixamo", "MoCap Online", "ActorCore", "SIL Open Font License"]]}
 	for key in pages:
 		var set_page := Game.show_screen("res://ui/settings_screen.gd")
 		await frames(2)
@@ -1802,3 +1809,200 @@ func _drag(i: int, at: Vector2) -> InputEventScreenDrag:
 	e.index = i
 	e.position = at
 	return e
+
+
+# ---------------------------------------------------------------- the shared foundation (FoundationLink)
+
+func _foundation_match(arena := "dome", seed := 7) -> Node:
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": arena, "mode": "quick", "autoplay": true, "autoplay_no_report": true,
+		"length": 0, "difficulty": 2, "seed": seed})
+	return Game.current
+
+
+## Everyone in match m with a body (players, officials, scorers).
+func _people(m: Node) -> Array:
+	return m.athletes + m.officials._homes.keys()
+
+
+## What match m draws: its visible geometry (every body, the arena, the crowd), by kind.
+func _drawn(m: Node) -> Dictionary:
+	var out := {}
+	for n in m.find_children("*", "GeometryInstance3D", true, false):
+		if (n as GeometryInstance3D).is_visible_in_tree():
+			var k := n.get_class()
+			out[k] = int(out.get(k, 0)) + 1
+	return out
+
+
+## Low is the budget phone's level and stays exactly as it was: with the licensed clips or without, a Low match draws
+## the game's own bodies (no links, no replay), the same things in the same number, every body with its own floor
+## shadow. On Medium and High (with the clips) every player, official and scorer is drawn by the foundation on his own
+## Meshy body: a body each at his place, the game's hidden; the game's poses on it (the raider's dancing stance with
+## its knees bent, every joint on the game's), the capture walking; the raid's best moment replayed after it, one a
+## raid at most; no name tags; lowered to Low mid-match, the game's own bodies again. Without the clips nobody has a
+## link anywhere.
+func _foundation(available: bool) -> void:
+	var was := int(Game.settings.graphics)
+	var was_tags := int(Game.settings.tags)
+	Game.settings.tags = 2
+	Game.settings.graphics = Game.GFX_LOW
+	var lows := []
+	for off in [true, false]:
+		FoundationLink.off = off
+		var lm := _foundation_match("village")
+		await frames(4)
+		var links := _people(lm).filter(func(a): return a.model.link != null).size()
+		var n: Array = _floor_shadowed(lm)
+		lows.append([_drawn(lm), links, lm.wsg_replay == null, n])
+		lm.queue_free()
+		await frames(2)
+	FoundationLink.off = false
+	check(lows[1][1] == 0 and lows[1][2] and lows[0][0] == lows[1][0] and lows[1][3][0] == lows[1][3][1] and lows[1][3][1] >= 21,
+		"foundation: Low draws the game's own bodies, the same %d things as without the foundation, every body's own floor shadow (%d of %d)"
+		% [(lows[1][0] as Dictionary).values().reduce(func(x, y): return x + y, 0), lows[1][3][0], lows[1][3][1]])
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var m := _foundation_match("dome")
+	await frames(4)
+	var people := _people(m)
+	if not available:
+		check(people.all(func(a): return a.model.link == null) and m.wsg_replay == null,
+			"foundation off (no licensed clips): nobody has a link, the game draws as before")
+		m.queue_free()
+		await frames(2)
+		Game.settings.graphics = was
+		Game.settings.tags = was_tags
+		return
+	var missing := people.filter(func(a): return a.model.link == null or a.model.link.body == null).map(func(a): return a.name)
+	check(missing.is_empty() and people.size() >= 21, "foundation: every player, official and scorer linked on Medium (%d; missing %s)" % [people.size(), missing])
+	var files := {}
+	for a in m.athletes:
+		files[String(a.model.link.prefix)] = true
+	check(files.size() >= 4, "foundation: the players wear their own bodies, several of them (%s)" % [files.keys()])
+	var posed := {}
+	for a in people:
+		posed[a] = 0
+		a.model.link.measure = true
+		a.model.link.body.posed.connect(func(): posed[a] += 1)
+	var drift := 0.0
+	var gap := 0.0
+	var hips_gap := 0.0
+	var gap_n := 0
+	var gap_off := 0
+	var stance_frames := 0
+	var straight := 0
+	var bent := 0.0
+	var walked := 0
+	var tags := 0
+	var shown := []
+	var raids_seen := {}
+	for i in 1500:
+		await frames(1)
+		if m.phase == "replay":
+			continue
+		tags += (m.hud.tags.tags_now() as Array).size()
+		for a in people:
+			var link: FoundationLink = a.model.link
+			if link == null or not a.is_visible_in_tree():
+				continue
+			if not link.body.is_visible_in_tree() or a.model.rig.mesh_instance.visible:
+				if not shown.has(a.name):
+					shown.append(a.name)
+			if not link.last.has("Hips"):
+				continue
+			var hp: Vector3 = link.last.Hips
+			drift = maxf(drift, Vector2(hp.x - a.global_position.x, hp.z - a.global_position.z).length())
+			if link.last.mode == "full" and float(link.last.w) >= 1.0 and link._skip == 0:
+				hips_gap = maxf(hips_gap, link.joint_gap("hips", "Hips"))
+				for jb in [["chest", "Spine2"], ["hand_l", "LeftHand"], ["foot_r", "RightFoot"], ["head", "Head"]]:
+					var gj: float = link.joint_gap(jb[0], jb[1])
+					gap_n += 1
+					gap_off += int(gj > 0.05)
+					gap = maxf(gap, gj)
+			if link.mode == "move" and a.move_vel.length() > 0.8:
+				walked += 1
+		var r: Athlete = m.raider
+		if m.phase == "raid" and r and r.state == "raid" and r.st_t > 0.6 and r.model.link.mode == "full" and r.model.link.legacy.weight >= 1.0:
+			stance_frames += 1
+			# (His dance lifts and plants a foot at a time, the leg he stands on near straight for a moment: straight-legged is
+			# both at once, the old stance.)
+			var kl: float = r.model.link.knee_bend("Left")
+			var kr: float = r.model.link.knee_bend("Right")
+			bent += (kl + kr) * 0.5
+			if maxf(kl, kr) < 15.0:
+				straight += 1
+		raids_seen[m.raid_log.size()] = true
+	var never := people.filter(func(a): return a.is_visible_in_tree() and int(posed[a]) < 400).map(func(a): return "%s %d" % [a.name, posed[a]])
+	check(shown.is_empty(), "foundation: its body drawn, the game's hidden (%s)" % [shown])
+	check(drift < 0.45, "foundation: every body drawn at its own player's place (hips at most %.2f m off it)" % drift)
+	# (Off only where the game bends a knee or an elbow further than a joint can - a kick, a dive's start - and the rig's
+	# hinge holds it, or the spine's three bones bend a deep get-up a little differently from the game's two.)
+	check(hips_gap < 0.01 and gap_n > 2000 and gap_off <= gap_n / 100,
+		"foundation: under the game's pose every joint lies on the game body's (hips at most %.1f cm off; chest, head, hand and foot over 5 cm in %d of %d, at most %.0f cm)"
+		% [hips_gap * 100.0, gap_off, gap_n, gap * 100.0])
+	check(stance_frames > 60 and straight == 0 and bent / maxf(stance_frames, 1) > 25.0,
+		"foundation: the raider's dancing stance keeps its knees bent (%.0f degrees on average over %d frames; %d with both legs near straight)" % [bent / maxf(stance_frames, 1), stance_frames, straight])
+	check(walked > 100, "foundation: the capture walks the players walking and the officials (%d body-frames)" % walked)
+	check(never.is_empty(), "foundation: everyone posed through play, far ones every 2nd or 3rd frame (%s)" % [never])
+	check(tags == 0, "no name or number tags over the players (%d drawn)" % tags)
+	check(m.replays.size() <= raids_seen.size() and m.replays.map(func(x): return x[0]).all(func(n): return m.replays.map(func(y): return y[0]).count(n) == 1),
+		"replays: one a raid at most (%d over %d raids: %s)" % [m.replays.size(), raids_seen.size(), m.replays])
+	# The raid's moments: a bonus and then a lion jump out of a hold in one raid - its one replay is the escape, after
+	# the raid, from a camera of its own, slowed; a tap skips it to the next raid.
+	var guard := 0
+	while not (m.phase == "raid" and m.phase_t > 3.2) and guard < 3000:
+		await frames(1)
+		guard += 1
+	var n0: int = m.replays.size()
+	m._moment_from("bonus", {})
+	m._moment_from("escape", {"how": "lion", "free": true})
+	m._moment_from("escape", {"how": "dodge", "free": true})
+	await frames(40)
+	m._end_raid("return")
+	guard = 0
+	while m.phase != "replay" and guard < 400:
+		await frames(1)
+		guard += 1
+	var tv: bool = get_viewport().get_camera_3d() == m.cam.cam
+	check(m.phase == "replay" and not tv and m.wsg_replay.playing and m.replays.size() == n0 + 1 and String(m.replays[-1][1]) == "escape"
+		and m._replay_ui.visible and not m.hud.visible,
+		"replays: after the raid its best moment (an escape over the bonus line), from its own camera, the HUD away (%s %s)" % [m.phase, m.replays.slice(n0)])
+	var t0: float = m._replay.get("t", 0.0)
+	await frames(30)
+	check(m.phase == "replay" and absf(float(m._replay.get("t", 0.0)) - t0 - m.REPLAY_RATE) < 0.05, "replays: slowed (%.2f s in 1 s)" % [float(m._replay.get("t", 0.0)) - t0])
+	var tap := InputEventMouseButton.new()
+	tap.button_index = MOUSE_BUTTON_LEFT
+	tap.pressed = true
+	tap.position = Vector2(640, 360)
+	Input.parse_input_event(tap)
+	await frames(3)
+	tap = tap.duplicate()
+	tap.pressed = false
+	Input.parse_input_event(tap)
+	check(m.phase != "replay" and not m.wsg_replay.playing and get_viewport().get_camera_3d() == m.cam.cam and m.replays.size() == n0 + 1
+		and not FoundationLink.frozen and m.athletes.all(func(a): return a.process_mode == Node.PROCESS_MODE_INHERIT),
+		"replays: a tap skips it, back to the match (phase %s)" % m.phase)
+	# The raid's end decides: a super tackle over an escape, a two-point raid; nothing worth it, no replay.
+	m._moment = {}
+	for e in [["raid_end", {"kind": "tackle", "raid_pts": 0, "def_pts": 2, "super_tackle": true}, "super_tackle"],
+			["raid_end", {"kind": "return", "raid_pts": 2, "def_pts": 0}, "multi_point"],
+			["raid_end", {"kind": "return", "raid_pts": 1, "def_pts": 0}, ""]]:
+		m._moment = {}
+		m._moment_from("escape", {"how": "dubki", "free": true})
+		m.raid_log.append({})
+		m._moment_from(e[0], e[1])
+		var got := String(m._moment.get("kind", "")) if int(m._moment.get("raid", -1)) == m.raid_log.size() - 1 else ""
+		m.raid_log.pop_back()
+		check(got == (e[2] if e[2] != "" else "escape"), "replays: %s -> %s (%s)" % [e[1], e[2] if e[2] != "" else "the escape kept", got])
+	m._moment = {}
+	# Lowered to Low mid-match (WsgAutoTier): the game's own bodies again, their floor shadows, no replay.
+	m.lower_graphics()
+	await frames(3)
+	var back := people.all(func(a): return a.model.link == null and a.model.rig.mesh_instance.visible)
+	var n: Array = _floor_shadowed(m)
+	check(back and m.wsg_replay == null and m.find_children("Foundation", "", true, false).is_empty() and n[0] == n[1],
+		"foundation: lowered to Low mid-match, the game's own bodies again with their own floor shadows (%d of %d)" % n)
+	m.queue_free()
+	await frames(2)
+	Game.settings.graphics = was
+	Game.settings.tags = was_tags
+	Game.save_settings()
