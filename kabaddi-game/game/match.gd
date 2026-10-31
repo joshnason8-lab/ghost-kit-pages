@@ -104,9 +104,12 @@ const BUSY := ["fallen", "holding", "recover", "rise", "dive", "jump", "dubki", 
 var config := {}
 var arena: Arena
 var cam: CameraRig
-var _fps_frames := 0
-var _fps_time := 0.0
 var _fps_done := false
+var _auto_gfx := WsgAutoTier.new(Game.frame_cap())   # the shared foundation's: when to lower the graphics
+var _detail_t := 0.0
+var wsg_replay: WsgReplay      # the foundation's bodies as drawn, kept for the replays (FoundationLink: Medium, High)
+var rclock := 0.0              # seconds of live play drawn (not paused, not in a replay): the replays' clock
+var replays: Array = []        # [raid number, kind] of each replay shown (tests)
 var _switch_ms := 0
 var hud: MatchHud
 var controls: TouchControls
@@ -191,6 +194,9 @@ func _ready() -> void:
 	attract = bool(config.get("attract", false))
 	lab = bool(config.get("lab", false))
 	walkout = bool(config.get("walkout", false)) and not attract
+	# The shared foundation draws the bodies made from here on (Medium and High: FoundationLink), not behind the menus.
+	FoundationLink.in_match = not attract
+	FoundationLink.frozen = false
 	crowd_lift = 0.25 if walkout else (0.15 if String(config.get("derby", "")) != "" else 0.0)
 	defence = DefenceCoach.new(self)
 	if bool(config.get("debug_draw", false)):
@@ -255,6 +261,9 @@ func _ready() -> void:
 	add_child(officials)
 	officials.setup(self)
 	_floor_shadows()
+	if FoundationLink.enabled():
+		wsg_replay = WsgReplay.new()
+		add_child(wsg_replay)
 
 	cam = CameraRig.new()
 	add_child(cam)
@@ -436,10 +445,20 @@ func _set_phase(p: String) -> void:
 		a.lock_facing = false
 
 
+func _exit_tree() -> void:
+	FoundationLink.in_match = false
+	FoundationLink.frozen = false
+
+
 func _process(delta: float) -> void:
 	if paused:
 		return
+	_rank_detail(delta)
+	if phase == "replay":
+		_replay_step(delta)
+		return
 	var dt := minf(delta, 0.05)
+	rclock += dt
 	_check_frame_rate(delta)
 	phase_t += dt
 	# The crowd watches the raider while there is one to watch.
@@ -487,6 +506,9 @@ func _process(delta: float) -> void:
 	_update_chain_links()
 	cam.follow(self, dt)
 	hud.refresh()
+	if wsg_replay:
+		wsg_replay.record(rclock)
+		_keep_moment()
 
 
 func _begin_setup() -> void:
@@ -1203,6 +1225,9 @@ func _on_action(id: String) -> void:
 
 ## The phone's back button: pause, resume from the pause menu, or close Move buttons back to it.
 func on_back() -> void:
+	if phase == "replay" and not paused:
+		_end_replay()
+		return
 	if hud.layout_panel:
 		hud.layout_panel.finish()   # Move buttons is open: back to the pause menu
 	elif phase != "fulltime":
@@ -1219,24 +1244,18 @@ func _haptic(kind: String) -> void:
 			haptics.pop_front()
 
 
-## Lower the graphics by itself if the first raids run slowly on this phone.
+## Lower the graphics by itself when the match stutters on this phone (WsgAutoTier, the shared foundation's): all match
+## long, two windows in a row of slow frames or hitches take a level off at once; again later if it still stutters.
+## Not in a match the AI plays on its own, nor headless or recording (tests, tools), nor with Auto graphics off. Slow
+## is against what the phone is asked for: the battery saver's 30 frames a second is not slow (WsgAutoTier's cap).
 func _check_frame_rate(delta: float) -> void:
-	if _fps_done or phase != "raid":
+	if _fps_done:
 		return
 	if not bool(Game.settings.get("auto_gfx", true)) or bool(config.get("autoplay", false)) and not bool(config.get("watch", false)) \
 			or DisplayServer.get_name() == "headless" or OS.get_cmdline_args().has("--write-movie"):
 		_fps_done = true
 		return
-	_fps_frames += 1
-	_fps_time += delta
-	if _fps_time < 6.0:
-		return
-	_fps_done = true
-	var fps := _fps_frames / _fps_time
-	# Slow against what the phone is asked for: the battery saver's 30 frames a second is not slow.
-	var cap := Game.frame_cap()
-	var slow := minf(36.0, 0.8 * cap) if cap > 0 else 36.0
-	if fps < slow and int(Game.settings.graphics) > Game.GFX_LOW:
+	if _auto_gfx.feed(delta) and int(Game.settings.graphics) > Game.GFX_LOW:
 		lower_graphics()
 
 
@@ -1246,7 +1265,28 @@ func lower_graphics() -> void:
 	Game.settings.graphics = g
 	Game.save_settings()
 	Game.apply_graphics(get_viewport())
+	WsgFoundation.tier = g
 	arena.graphics_changed()
+	# The shared foundation's bodies: on Low the game's own again (Low draws exactly what it did) and no replays; else
+	# their shadows as the level has them.
+	var low := g == Game.GFX_LOW
+	if low and phase == "replay":
+		_end_replay()
+	for a in _bodies():
+		var link: FoundationLink = a.model.link
+		if link == null:
+			continue
+		if low:
+			link.release()
+		else:
+			link.body.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() \
+				else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if low and wsg_replay:
+		wsg_replay.queue_free()
+		wsg_replay = null
+		_moment = {}
+	_detail_t = 0.0
+	_auto_gfx.reset()
 	for a in athletes + [officials.referee] + officials.umpires:
 		if a and a.model and a.model.rig:
 			a.model.rig.detail_changed()
@@ -3141,7 +3181,9 @@ func _end_raid(kind: String) -> void:
 		else:
 			h.set_state("ready")
 	raid.holders = []
-	_event("raid_end", {"kind": kind, "raid_pts": raid_pts, "def_pts": def_pts, "raider_out": raider_out})
+	_event("raid_end", {"kind": kind, "raid_pts": raid_pts, "def_pts": def_pts, "raider_out": raider_out, "all_out": all_out,
+		"super_tackle": kind == "tackle" and def_pts >= 2, "dod": bool(raid.get("dod", false)), "golden": golden,
+		"decider": golden and (raid_pts > 0 or def_pts > 0) or tiebreak and tb_raids[0] >= 5 and tb_raids[1] >= 5})
 	_react(kind, raid_pts, def_pts, raider_out, touched, holders_were)
 	if raid_pts > 0 and not raider_out and raider == controlled:
 		tutorial_event.emit("raid_point")
@@ -3256,6 +3298,7 @@ func _event(kind: String, info := {}) -> void:
 		event_log.pop_front()
 	if cam:
 		cam.on_event(kind)
+	_moment_from(kind, info)
 	game_event.emit(kind, info)
 
 
@@ -3791,7 +3834,9 @@ func _tick_post(dt: float) -> void:
 		_walk_to_positions(dt, false)
 	_audit("walk")
 	if phase_t > 2.6 + float(raid.get("post_extra", 0.0)):
-		_next_raid()
+		# The raid's moment shown again (one at most a raid), then the next.
+		if not _start_replay():
+			_next_raid()
 
 
 ## A holder who has let go after a takedown gets up from where he is, at his own pace: lying on the floor (an ankle
@@ -4150,3 +4195,224 @@ func focus_athlete() -> Athlete:
 	if controlled and controlled.on_mat:
 		return controlled
 	return raider
+
+
+# ---------------------------------------------------------------- the foundation's bodies (FoundationLink)
+
+## Everyone with a body: the players, the officials and the scorers.
+func _bodies() -> Array:
+	var out := athletes.duplicate()
+	if officials:
+		out.append_array(officials._homes.keys())
+	return out.filter(func(a): return a and is_instance_valid(a) and a.model)
+
+
+## Metres from the camera within which a body is posed every frame, and every second (beyond: every third), by
+## graphics level: a budget phone's Medium poses the far side's and the officials' bodies less often.
+const POSE_NEAR := [[10.0, 16.0], [10.0, 16.0], [14.0, 24.0]]
+
+
+## Twice a second: the foundation's bodies in full detail nearest the camera only (WsgFoundation: Kabaddi is
+## "budget", its nearest 6 on Medium, all on High), and the far ones posed every second or third frame - never the
+## raider or anyone in the struggle, who are posed every frame.
+func _rank_detail(dt: float) -> void:
+	_detail_t -= dt
+	if _detail_t > 0.0 or wsg_replay == null:
+		return
+	_detail_t = 0.5
+	WsgFoundation.tier = int(Game.settings.graphics)
+	var cam3 := get_viewport().get_camera_3d()
+	var camp := cam3.global_position if cam3 else Vector3.ZERO
+	var near: Array = POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)]
+	var list := []
+	for a in _bodies():
+		var link: FoundationLink = a.model.link
+		if link == null or link.body == null:
+			continue
+		list.append(link.body)
+		var d: float = a.global_position.distance_to(camp)
+		var busy: bool = a == raider or a.state in ["held", "holding", "dive", "telegraph", "touch", "kick", "backkick", "dubki", "jump"]
+		link.pose_every = 1 if busy or d < float(near[0]) else (2 if d < float(near[1]) else 3)
+		# The officials and scorers off to the side: every third frame unless signalling (they hardly move).
+		if a.team == 2 and a.state != "signal":
+			link.pose_every = maxi(link.pose_every, 2 if a.move_vel.length() > 0.5 else 3)
+	if not list.is_empty():
+		WsgFoundation.rank_detail(list, camp)
+
+
+# ---------------------------------------------------------------- replays (the shared foundation's WsgReplay)
+
+## What a raid can have shown again, most first: one replay a raid at most, the best of its moments. A golden raid or
+## the tie-break's last raid that settles it; an all out; a do-or-die raid; a super tackle (three or fewer
+## defenders); a raid of two points or more; an ankle hold that takes him down; a lion jump or dubki out of a hold;
+## the bonus line.
+const MOMENTS := {"decider": 9, "all_out": 8, "dod": 7, "super_tackle": 6, "super_raid": 5, "multi_point": 4,
+	"ankle_takedown": 3, "escape": 2, "bonus": 1}
+const MOMENT_BEFORE := 2.4      # s of play before a moment in the raid (an escape, the bonus) ...
+const MOMENT_AFTER := 1.0       # ... and after it
+const END_BEFORE := 3.6         # s before the raid's end (the touches and the return, the tackle and takedown)
+const REPLAY_RATE := 0.55       # slowed
+
+var _moment := {}               # the raid's best moment so far: {kind, prio, t0, t1, frames, who, raid}
+var _replay := {}               # the replay playing: {t, t1, cam, who, hud}
+var _replay_ui: CanvasLayer
+
+
+## A moment worth seeing again (_event): kept if it is the raid's best so far.
+func _moment_from(kind: String, info: Dictionary) -> void:
+	if wsg_replay == null or raider == null:
+		return
+	var at := ""
+	var t0 := rclock - MOMENT_BEFORE
+	var t1 := rclock + MOMENT_AFTER
+	match kind:
+		"bonus":
+			at = "bonus"
+		"escape":
+			if bool(info.get("free", false)) and String(info.get("how", "")) in ["lion", "dubki"]:
+				at = "escape"
+		"takedown":
+			if raider.fall_kind == "trip":
+				at = "ankle_takedown"
+				t0 = rclock - END_BEFORE
+				t1 = rclock + 1.6
+		"raid_end":
+			t0 = rclock - END_BEFORE
+			t1 = rclock + (1.6 if String(info.get("kind", "")) == "tackle" else MOMENT_AFTER)
+			for k in ["decider", "all_out", "dod", "super_tackle"]:
+				if bool(info.get(k, false)) and (k != "dod" or int(info.raid_pts) > 0 or int(info.def_pts) > 0):
+					at = k
+					break
+			if at == "":
+				var rp := int(info.get("raid_pts", 0))
+				at = "super_raid" if rp >= 3 else ("multi_point" if rp >= 2 else "")
+	# (This raid's number: raid_end comes once it is in the log.)
+	var n := raid_log.size() - 1 if kind == "raid_end" else raid_log.size()
+	if at == "" or (not _moment.is_empty() and int(_moment.raid) == n and int(_moment.prio) >= int(MOMENTS[at])):
+		return
+	_moment = {"kind": at, "prio": MOMENTS[at], "t0": t0, "t1": t1, "frames": [], "who": raider, "raid": n}
+
+
+## Once its last moment has been drawn, the moment's frames are copied out of the ring (which goes on and forgets
+## them).
+func _keep_moment() -> void:
+	if not _moment.is_empty() and (_moment.frames as Array).is_empty() and rclock >= float(_moment.t1):
+		_moment.frames = wsg_replay.clip(float(_moment.t0), float(_moment.t1))
+
+
+## The raid's moment, slowed, from low beside the court, following the raider; the HUD away and "Replay" in the
+## corner. A tap skips it. False when the raid had none (or it was not kept): the next raid at once.
+func _start_replay() -> bool:
+	if wsg_replay == null or _moment.is_empty() or int(_moment.raid) != raid_log.size() - 1:
+		_moment = {}
+		return false
+	var mo := _moment
+	_moment = {}
+	if (mo.frames as Array).is_empty():
+		mo.frames = wsg_replay.clip(float(mo.t0), float(mo.t1))
+	var frames: Array = mo.frames
+	if frames.size() < 4 or not is_instance_valid(mo.who):
+		return false
+	var t0 := maxf(float(mo.t0), float(frames[0][0]))
+	var t1 := minf(float(mo.t1), float(frames[-1][0]))
+	if t1 <= t0 + 0.8:
+		return false
+	var who: Athlete = mo.who
+	var rc := Camera3D.new()
+	rc.fov = 36.0
+	rc.near = 0.05
+	add_child(rc)
+	wsg_replay.play(t0, t1, frames)
+	_replay = {"t": t0, "t1": t1, "cam": rc, "who": who, "hud": hud.visible, "kind": mo.kind, "phase_t": phase_t}
+	hud.visible = false
+	_show_replay_ui(true)
+	FoundationLink.frozen = true
+	for a in _bodies():
+		a.process_mode = Node.PROCESS_MODE_DISABLED
+	if officials:
+		officials.process_mode = Node.PROCESS_MODE_DISABLED
+	phase = "replay"
+	_replay_step(0.0)
+	rc.make_current()
+	replays.append([raid_log.size(), String(mo.kind)])
+	game_event.emit("replay", {"kind": mo.kind})
+	return true
+
+
+## The replay's subject as drawn now (where his foundation body stood then, at his middle), or where he is.
+func _replay_focus() -> Vector3:
+	var who: Athlete = _replay.who
+	if is_instance_valid(who) and who.model and who.model.link and who.model.link.body:
+		return who.model.link.body.global_position + Vector3.UP * 0.9
+	return who.global_position + Vector3.UP * 0.9 if is_instance_valid(who) else Vector3.UP
+
+
+func _replay_step(delta: float) -> void:
+	var t: float = float(_replay.t) + minf(delta, 0.05) * REPLAY_RATE
+	_replay.t = t
+	if t >= float(_replay.t1):
+		_end_replay()
+		return
+	wsg_replay.seek(t)
+	var f := _replay_focus()
+	f.y = clampf(f.y, 0.5, 1.1)
+	# From the broadcast side, low and nearer than the TV camera, a little ahead of him, moving with him smoothly.
+	var want_pos := Vector3(f.x + 5.0, 1.9, f.z + 2.0 * signf(f.z + 0.01))
+	var rc: Camera3D = _replay.cam
+	var k := 1.0 if delta <= 0.0 else minf(1.0, delta * 3.0)
+	_replay["pos"] = (_replay.get("pos", want_pos) as Vector3).lerp(want_pos, k)
+	_replay["look"] = (_replay.get("look", f) as Vector3).lerp(f, k)
+	rc.global_position = _replay.pos
+	rc.look_at(_replay.look)
+
+
+## Back to the match: the bodies following the game again, the TV camera, the HUD; then the next raid.
+func _end_replay() -> void:
+	if _replay.is_empty():
+		return
+	var r := _replay
+	_replay = {}
+	if wsg_replay:
+		wsg_replay.stop()
+	FoundationLink.frozen = false
+	for a in _bodies():
+		a.process_mode = Node.PROCESS_MODE_INHERIT
+	if officials:
+		officials.process_mode = Node.PROCESS_MODE_INHERIT
+	(r.cam as Camera3D).queue_free()
+	cam.cam.make_current()
+	hud.visible = bool(r.hud)
+	_show_replay_ui(false)
+	phase = "post"
+	phase_t = float(r.phase_t)
+	_next_raid()
+
+
+## "Replay" in the top corner while one plays (in the player's language and the game's type).
+func _show_replay_ui(on: bool) -> void:
+	if _replay_ui == null:
+		_replay_ui = CanvasLayer.new()
+		_replay_ui.layer = 5
+		add_child(_replay_ui)
+		var frame := MarginContainer.new()
+		frame.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var m := UI.safe_margins(frame, 28.0)
+		frame.add_theme_constant_override("margin_left", int(m.x))
+		frame.add_theme_constant_override("margin_top", int(m.y))
+		_replay_ui.add_child(frame)
+		var pill := UI.pill(tr("REPLAY"), Game.C_SAFFRON, true)
+		pill.name = "ReplayPill"
+		(pill.get_child(0) as Label).add_theme_font_size_override("font_size", Game.ts(22))
+		frame.add_child(pill)
+	_replay_ui.visible = on
+
+
+## A tap (or a key) skips the replay.
+func _input(event: InputEvent) -> void:
+	if phase != "replay" or paused:
+		return
+	if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) \
+			or (event is InputEventKey and event.pressed and not event.echo and event.keycode != KEY_ESCAPE):
+		get_viewport().set_input_as_handled()
+		_end_replay()
