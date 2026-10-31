@@ -23,6 +23,8 @@ env:
 
 jobs:
   media-kit:
+    # Only the game's own branch builds the kit (3.5 h): a pilot branch cut from it skips it.
+    if: github.ref == 'refs/heads/claude/kho-kho-game'
     runs-on: ubuntu-latest
     timeout-minutes: 300
     permissions:
