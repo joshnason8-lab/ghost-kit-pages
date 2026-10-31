@@ -6,7 +6,8 @@ extends Node
 ##   moments: a chaser running (picked by his speed), a defender dodging, a kho (the palm slap), a pole turn, a dive
 ##            on the ground, a pole dive, the seated chasers, an umpire walking, an umpire's signal, the crowd;
 ##   grounds: every ground from the broadcast camera and from behind the pole (Low: what the beta draws, to the pixel);
-##   replay:  the first replay, late in it (with the foundation), in the language given.
+##   replay:  the first replay, late in it (with the foundation), in the language given;
+##   signal:  an umpire's signal only.
 ## Runs on a build without the foundation too (the beta's bodies), so the same moments can be put side by side: the
 ## match is the same (the foundation draws, it never plays), so the same moment comes at the same point of play.
 
@@ -41,6 +42,12 @@ func _ready() -> void:
 	await _frames(20)
 	if what == "replay":
 		await _replay_still()
+		get_tree().quit()
+		return
+	if what == "signal":
+		var r: Athlete = await _wait(func(q): return q.side < 0 and q.act in ["out", "foul"] and q.act_t > 0.5, 30000)
+		if r:
+			await _shoot(r, "official_signal", Vector3(3.0, 1.3, 1.6), 1.1, 30.0)
 		get_tree().quit()
 		return
 	await _moments()
@@ -149,6 +156,15 @@ func _ground(v: String) -> void:
 		_start(v, 4)
 		await _frames(150)
 		_hold(true)
+		# (Every clip put at the same point: a man standing at ease starts his idle at a point taken from his object's
+		# id, which differs from run to run - two runs of the same build differed there and only there.)
+		for q in m.everyone():
+			q.body.anim.seek(0.25, true)
+		# (And the crowd's bobbing, which runs on the wall clock.)
+		for c in m.find_children("*", "Crowd", true, false):
+			c.process_mode = Node.PROCESS_MODE_DISABLED
+			if c.material_override:
+				(c.material_override as ShaderMaterial).set_shader_parameter("time_s", 10.0)
 		m.cam.make_current()
 		await _still("ground_%s_%s_g%d" % [v, "tv" if c == Game.CAM_TV else "pole", gfx])
 		m.queue_free()

@@ -1,6 +1,7 @@
 extends Node
 ## CPU per frame of a match (the game's own work: its logic, its bodies' clips and modifiers, the foundation's when
-## it draws them; Godot's process time, nothing drawn) at Low, Medium and High, with the shared foundation and without:
+## it draws them; headless, so a frame's wall time is its CPU time, nothing drawn) at Low, Medium and High, with the
+## shared foundation and without:
 ##   godot --headless --path . --fixed-fps 30 res://tests/foundation_cpu.tscn -- [frames=450] [venue=maidan]
 ## The same seeded AI match from the first chase on (the classic game: 9 a side and 5 officials), each frame's process
 ## time: the median, the mean and the 90th percentile, ms; each level twice (after a warm-up match), the steadier kept.
@@ -41,20 +42,23 @@ func _ready() -> void:
 		var ms := []
 		FoundationLink.cost_usec = 0
 		var counted := 0
+		var t0 := Time.get_ticks_usec()
 		for i in n:
 			await get_tree().process_frame
+			var t1 := Time.get_ticks_usec()
 			if m.replay and m.replay.playing():
 				m.replay.end()
-				continue
-			ms.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
-			counted += 1
+			else:
+				ms.append((t1 - t0) / 1000.0)
+				counted += 1
+			t0 = t1
 		var fnd := FoundationLink.cost_usec / 1000.0 / maxf(counted, 1)
 		var links := 0
 		for a in m.everyone():
 			links += int(a.link != null)
 		ms.sort()
 		var mean: float = ms.reduce(func(x, y): return x + y, 0.0) / ms.size()
-		var row := "%-6s foundation %-3s  links %2d  the foundation's own %5.2f ms  process median %5.2f ms  mean %5.2f ms  90th %5.2f ms" % [["Low", "Medium", "High"][g],
+		var row := "%-6s foundation %-3s  links %2d  the foundation's own %5.2f ms  frame median %5.2f ms  mean %5.2f ms  90th %5.2f ms" % [["Low", "Medium", "High"][g],
 			"on" if on else "off", links, fnd, ms[ms.size() / 2], mean, ms[int(ms.size() * 0.9)]]
 		print(("(warm-up) " if c[2] else "") + row)
 		var key := "%d%s" % [g, on]
