@@ -14,6 +14,11 @@ on:
       - ".github/workflows/takraw-android.yml"
   workflow_dispatch:
 
+# One run per branch at a time, the newest: an older run must not publish over a newer one.
+concurrency:
+  group: takraw-android-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GODOT_VERSION: "4.7.2"
   PROJECT_DIR: takraw-game
@@ -170,8 +175,10 @@ jobs:
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
       # "sepak-takraw-unleashed-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests. Pull request runs build the same APK and leave the release alone.
+      # Only this game's branch publishes the beta (other branches, a pilot say, build and test it and leave the
+      # release alone). After a merge into main, put main here.
       - name: Publish the beta release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/kind-clarke-3g5fqs'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
