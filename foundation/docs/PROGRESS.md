@@ -297,3 +297,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   to every pilot's workflow. Open: arena/crowd not rebuilt on a mid-match step down; no replay label; mode changes
   snap. Comparison frames: scratchpad fb_cmp/ (beta vs pilot via tools/player/grip_view and breakaway_view).
 - **Next**: Netball (the lead: go). Hurling: HOLD the tooling sync (be73cbf, 30a3970) - a push to claude/hurling-game republishes its beta; bundle it with the next real Hurling change. The hurler finger re-bake waits on the owner (the lead asks).
+- **Netball pilot (done, waits on the owner)**: claude/netball-foundation-pilot at 0109e47, 0.8.2-pilot code 14,
+  pre-release netball-foundation-pilot (CI run 41209540502 green: test_runner 1453/0); draft PR #14 (subscribed).
+  Netball's beta publish had NO branch guard (fixed on the pilot: guard + concurrency in the first pushed commit - check
+  every game's workflow before the first push). Medium/High only; Low keeps the game's bodies (draws identical).
+  Umpires and reserves on the hero; the ball placed in the `posed` callback; goal replay after the post close-up,
+  intercept replay at the stoppage. No 3D crowd (Netball's toon crowd faces the play; the authored fans are Hurling's)
+  and no WsgLightBake (cel-lit venues). The licences screen credits MoCap Online and ActorCore (Floorball and Hurling
+  don't yet: asked the lead/owner). To port (from the Netball helper): ADOPTING - a held ball is placed in the body's
+  `posed` callback (else a frame behind); WsgPoseLayer - lay the hips once before the holds, a weight per hold
+  (Floorball's StickLayer lays them twice in a fade: holds drift up to 4 cm); WsgGrip - a sphere grip; rig_test - the
+  right elbow at 140 deg keeps 85% girth on the Netball bake (at the limit).
+- **Next**: Kabaddi (budget profile: Low default on the A16; Indic fonts).
