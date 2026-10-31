@@ -10,10 +10,15 @@ name: Pok Ta Pok Rivals · Media kit
 
 on:
   push:
+    branches: [claude/pok-ta-pok-game]   # this game's branch only: the kit takes hours of CPU rendering
     paths:
       - "pok-ta-pok-game/tools/media/**"
       - ".github/workflows/pok-ta-pok-media-kit.yml"
   workflow_dispatch:
+
+concurrency:
+  group: pok-ta-pok-media-kit-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   GODOT_VERSION: "4.7.2"
@@ -130,6 +135,7 @@ jobs:
           tools/media/make_media_kit.sh "$RUNNER_TEMP/kit" icons trailer pack
 
       - name: Publish the media release
+        if: github.ref == 'refs/heads/claude/pok-ta-pok-game'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

@@ -13,6 +13,11 @@ on:
   # doubled every failure email (the owner's request, round two).
   workflow_dispatch:
 
+# One run at a time per branch; a newer push supersedes an older run's release.
+concurrency:
+  group: pok-ta-pok-android-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GODOT_VERSION: "4.7.2"
   PROJECT_DIR: pok-ta-pok-game
@@ -196,7 +201,9 @@ jobs:
       # "pok-ta-pok-rivals-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests.
       - name: Publish the beta release
-        if: github.event_name == 'push'
+        # Only this game's own branch publishes the beta: a push to another branch (a pilot cut from this one) builds
+        # and tests but never replaces it.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/pok-ta-pok-game'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
