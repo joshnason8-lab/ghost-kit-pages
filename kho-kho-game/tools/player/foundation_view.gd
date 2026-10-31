@@ -161,10 +161,10 @@ func _ground(v: String) -> void:
 		for q in m.everyone():
 			q.body.anim.seek(0.25, true)
 		# (And the crowd's bobbing, which runs on the wall clock.)
-		for c in m.find_children("*", "Crowd", true, false):
-			c.process_mode = Node.PROCESS_MODE_DISABLED
-			if c.material_override:
-				(c.material_override as ShaderMaterial).set_shader_parameter("time_s", 10.0)
+		for cr in m.find_children("*", "Crowd", true, false):
+			cr.process_mode = Node.PROCESS_MODE_DISABLED
+			if cr.material_override:
+				(cr.material_override as ShaderMaterial).set_shader_parameter("time_s", 10.0)
 		m.cam.make_current()
 		await _still("ground_%s_%s_g%d" % [v, "tv" if c == Game.CAM_TV else "pole", gfx])
 		m.queue_free()
