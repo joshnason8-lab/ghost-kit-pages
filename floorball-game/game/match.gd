@@ -54,8 +54,12 @@ var _rng := RandomNumberGenerator.new()
 var _last_carrier = null
 var _assist_candidate = null
 var _shot_live := {}             # the shot in the air: {by, team, keeper, decided, outcome}
-var _fps_probe := []
-var _auto_gfx_done := false
+var _auto_gfx := WsgAutoTier.new(Game.frame_cap())   # the shared foundation's: when to lower the graphics
+var _detail_t := 0.0
+var wsg_replay: WsgReplay        # the shared foundation's bodies as drawn, kept for the goal's replay (FoundationLink)
+var _ball_ring: Array = []       # [clock, ball position] for the replay
+var _replay := {}                # the goal's replay playing: {t, t1, cam, ball_at, hud}
+var _goal_clock := 0.0
 var _intro_left := 0.0
 var _sim_left := -1.0
 var passive := {"team": -1, "t": 0.0, "warned": false, "w": 0.0}   # 507.20: passive play
@@ -128,6 +132,12 @@ func _ready() -> void:
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
+	# The goal's replay (FoundationLink): the shared foundation's bodies kept as drawn, a little over the replay's
+	# reach before the goal plus the celebration that comes first. Not on Low, nor in the menu's match.
+	if FoundationLink.enabled() and not demo and not bool(config.get("practice", false)) and int(Game.settings.graphics) > Game.GFX_LOW:
+		wsg_replay = WsgReplay.new()
+		add_child(wsg_replay)
+		wsg_replay.seconds = maxf(wsg_replay.seconds, REPLAY_BEFORE + GOAL_S + 1.5)
 	if bool(config.get("menu", false)):
 		# Behind the home screen's whiteboard: the picture shifted so the play shows in the hall to its right.
 		cam.mode = Game.CAM_HIGH
@@ -256,8 +266,13 @@ func _physics_process(delta: float) -> void:
 	if paused:
 		return
 	var dt := delta * speed_k
+	# (Ranked before they are posed: a body made full detail after its pose this frame showed its hand open on the
+	# stick till its next pose.)
+	_rank_detail(delta)
+	if phase == "replay":
+		_replay_step(delta)
+		return
 	phase_t += dt
-	_probe_fps(delta)
 	match phase:
 		"intro":
 			_intro_left -= delta
@@ -298,6 +313,12 @@ func _physics_process(delta: float) -> void:
 		hud.refresh()
 	if OS.has_feature("web") and Engine.get_physics_frames() % 6 == 0 and not demo:
 		_web_probe()
+	if wsg_replay:
+		var now := FoundationLink.clock()
+		wsg_replay.record(now)
+		_ball_ring.append([now, ball.position])
+		while _ball_ring.size() > 2 and float(_ball_ring[0][0]) < now - wsg_replay.seconds:
+			_ball_ring.pop_front()
 
 
 func _step_all(dt: float) -> void:
@@ -959,6 +980,7 @@ func _goal(t: int, own: bool) -> void:
 			_penalise(adv.offender, String(adv.sanction), String(adv.offence))
 	rules.goal(t, {"scorer": String(scorer.data.id) if scorer else "", "assist": String(assist.data.id) if assist else "", "own": own})
 	_goal_scorer = scorer
+	_goal_clock = FoundationLink.clock()
 	if scorer:
 		stats[scorer.data.id].g += 1
 		stats[scorer.data.id].sog += 1
@@ -1018,7 +1040,107 @@ func _after_goal() -> void:
 	Crowd.set_excite(0.0)
 	if rules.phase == "done":
 		return
+	if wsg_replay and _start_replay():
+		return
 	_begin_restart({"kind": "faceoff", "spot": Vector2.ZERO})
+
+
+# ---------------------------------------------------------------- the goal's replay
+
+const REPLAY_BEFORE := 4.2      # s of play before the goal shown again
+const REPLAY_AFTER := 0.8
+const REPLAY_RATE := 0.6        # slowed
+
+
+## After the celebration: the last seconds before the goal again, slowed, from a camera on the goal line beside the
+## goal, the shared foundation's bodies as they were drawn (WsgReplay) and the ball where it was. A tap skips it.
+## False when there is nothing kept to show.
+func _start_replay() -> bool:
+	var t0 := _goal_clock - REPLAY_BEFORE
+	var span := wsg_replay.span()
+	if span.is_empty() or float(span[0]) > t0 + 1.5 or _ball_ring.is_empty():
+		return false
+	t0 = maxf(t0, float(span[0]))
+	var end := signf(ball.position.x) if absf(ball.position.x) > 1.0 else 1.0
+	var rc := Camera3D.new()
+	rc.fov = 38.0
+	add_child(rc)
+	# On the goal line's extension, toward the boards, up a little: the shot comes toward the camera's side of the goal.
+	var side := 1.0 if _ring_at(t0).z >= 0.0 else -1.0
+	rc.global_position = Vector3(end * (Rules.GOAL_LINE + 0.6), 2.3, side * 5.2)
+	rc.look_at(Vector3(end * (Rules.GOAL_LINE - 6.0), 0.4, 0.0))
+	rc.make_current()
+	_replay = {"t": t0, "t1": _goal_clock + REPLAY_AFTER, "cam": rc, "ball_at": ball.position, "look": _ring_at(t0),
+		"hud": hud.visible if hud else false, "marker": user_player.marker.visible if user_player and user_player.marker else false,
+		"halo": ball._halo.visible if ball._halo else false}
+	if hud:
+		hud.visible = false
+	if user_player and user_player.marker:
+		user_player.marker.visible = false
+	wsg_replay.play(t0, float(_replay.t1))
+	FoundationLink.replay_at = t0
+	_set_phase("replay")
+	_replay_step(0.0)
+	return true
+
+
+func _ring_at(t: float) -> Vector3:
+	var i := 0
+	while i < _ball_ring.size() - 1 and float(_ball_ring[i + 1][0]) <= t:
+		i += 1
+	var a: Array = _ball_ring[i]
+	var b: Array = _ball_ring[mini(i + 1, _ball_ring.size() - 1)]
+	var w := 0.0 if a == b else clampf((t - float(a[0])) / maxf(float(b[0]) - float(a[0]), 1e-4), 0.0, 1.0)
+	return (a[1] as Vector3).lerp(b[1], w)
+
+
+func _replay_step(delta: float) -> void:
+	var t: float = float(_replay.t) + delta * REPLAY_RATE
+	_replay.t = t
+	if t >= float(_replay.t1):
+		_end_replay()
+		return
+	FoundationLink.replay_at = t
+	wsg_replay.seek(t)
+	var b := _ring_at(t)
+	ball.position = b
+	if ball._shadow:
+		ball._shadow.global_position = Vector3(b.x, 0.004, b.z)
+	for n: Node3D in [ball._halo, ball._streak]:
+		if n:
+			n.visible = false
+	# The camera stays put and follows the ball, smoothly.
+	_replay.look = (_replay.look as Vector3).lerp(b, minf(1.0, delta * 4.0)) if delta > 0.0 else b
+	var rc: Camera3D = _replay.cam
+	rc.look_at((_replay.look as Vector3) * Vector3(1.0, 0.0, 1.0) + Vector3(0, 0.5, 0))
+
+
+func _end_replay() -> void:
+	if _replay.is_empty():
+		return
+	FoundationLink.replay_at = INF
+	wsg_replay.stop()
+	ball.position = _replay.ball_at
+	if ball._halo:
+		ball._halo.visible = bool(_replay.halo)
+	(_replay.cam as Camera3D).queue_free()
+	cam.make_current()
+	if hud:
+		hud.visible = bool(_replay.hud)
+	if user_player and user_player.marker:
+		user_player.marker.visible = bool(_replay.marker)
+	_replay = {}
+	_begin_restart({"kind": "faceoff", "spot": Vector2.ZERO})
+
+
+## A tap (or a key) skips the replay.
+func _input(event: InputEvent) -> void:
+	if phase != "replay" or paused:
+		return
+	if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) \
+			or (event is InputEventKey and event.pressed and not event.echo):
+		get_viewport().set_input_as_handled()
+		_end_replay()
 
 
 # ---------------------------------------------------------------- stoppages and restarts
@@ -1956,6 +2078,9 @@ func set_paused(p: bool) -> void:
 
 
 func on_back() -> void:
+	if phase == "replay":
+		_end_replay()
+		return
 	if hud and hud.has_method("on_back") and hud.on_back():
 		return
 	set_paused(not paused)
@@ -2118,24 +2243,69 @@ func _web_probe() -> void:
 
 # ---------------------------------------------------------------- performance
 
-## Auto graphics: if the first seconds of play run under about 36 frames a second, a level down (once a match).
-func _probe_fps(delta: float) -> void:
-	if _auto_gfx_done or demo or not bool(Game.settings.auto_gfx) or phase != "live":
+## The auto graphics level (WsgAutoTier, the shared foundation's): all match long, two windows of stutter in a row
+## (slow, or hitching: a phone at 50 a second that stalls twice a second stutters as badly as one at 25) take a level
+## off at once; again later if it still stutters. The frames are the drawn ones (_process), not the fixed physics
+## steps. Only in the game itself: the tests and tools play at fixed rates or draw in software.
+func _process(delta: float) -> void:
+	if Game.main != null and Game.main.scene_file_path == "res://main.tscn":
+		watch_frames(delta)
+
+
+## A frame's time (s) to the auto graphics level.
+func watch_frames(delta: float) -> void:
+	if demo or paused or not bool(Game.settings.get("auto_gfx", true)) or phase == "replay":
 		return
-	_fps_probe.append(delta)
-	if _fps_probe.size() < 180:
+	if _auto_gfx.feed(delta) and int(Game.settings.graphics) > Game.GFX_LOW:
+		lower_graphics()
+
+
+## A graphics level down, now, mid-match: the setting (kept), the picture's size and smoothing, the sun's shadows and
+## the people's shadows, the foundation's tier (its bodies in full detail ranked again; its replay ring), a word on
+## the screen. (The rink, the hall and the crowd are built for a level when the match starts: the next match builds
+## them at the new one.)
+func lower_graphics() -> void:
+	print("auto graphics: %d -> %d (%.0f frames a second, %d hitches)" % [int(Game.settings.graphics),
+		int(Game.settings.graphics) - 1, float(_auto_gfx.last[0]), int(_auto_gfx.last[1])])
+	Game.settings.graphics = int(Game.settings.graphics) - 1
+	Game.save_settings()
+	Game.apply_graphics(get_viewport())
+	WsgFoundation.tier = int(Game.settings.graphics)
+	var sh := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for p: Player in everyone() + sitters[0] + sitters[1]:
+		if p.link and p.link.body:
+			p.link.body.mesh_instance.cast_shadow = sh
+			if p.link.stick:
+				p.link.stick.cast_shadow = sh
+		elif p.body and p.body.rig:
+			p.body.rig.mesh.cast_shadow = sh
+			if p.body.rig.stick:
+				p.body.rig.stick.cast_shadow = sh
+	# Low keeps no replay.
+	if wsg_replay and int(Game.settings.graphics) == Game.GFX_LOW and phase != "replay":
+		wsg_replay.queue_free()
+		wsg_replay = null
+	_detail_t = 0.0
+	_auto_gfx.reset()
+	if hud:
+		hud.hint(tr("GFX_LOWERED"))
+
+
+## The foundation's bodies in full detail nearest the camera only, as the game's profile allows (WsgFoundation:
+## Floorball is "premium": the nearest 8, 14 and 22 on Low, Medium and High - every body on the rink but on Low),
+## twice a second.
+func _rank_detail(dt: float) -> void:
+	_detail_t -= dt
+	if _detail_t > 0.0 or not FoundationLink.enabled():
 		return
-	_auto_gfx_done = true
-	var total := 0.0
-	for d in _fps_probe:
-		total += d
-	var fps := _fps_probe.size() / total
-	if fps < 36.0 and int(Game.settings.graphics) > Game.GFX_LOW and Game.frame_cap() != Game.saver_cap(Game.screen_hz()):
-		Game.settings.graphics = int(Game.settings.graphics) - 1
-		Game.save_settings()
-		Game.apply_graphics(get_viewport())
-		if hud:
-			hud.hint(tr("GFX_LOWERED"))
+	_detail_t = 0.5
+	WsgFoundation.tier = int(Game.settings.graphics)
+	var bodies := []
+	for p: Player in everyone() + sitters[0] + sitters[1]:
+		if p.link and p.link.body and p.is_visible_in_tree():
+			bodies.append(p.link.body)
+	var cam3 := get_viewport().get_camera_3d()
+	WsgFoundation.rank_detail(bodies, cam3.global_position if cam3 else Vector3.ZERO)
 
 
 var _crowd_look := Vector2.ZERO

@@ -40,6 +40,8 @@ func _ready() -> void:
 	_mocap()
 	_sounds()
 	_detail_levels()
+	await _foundation()
+	await _goal_replay()
 	await _matches()
 	Game.settings = keep
 	Game.delete_cup()
@@ -1018,6 +1020,117 @@ func _detail_levels() -> void:
 			want_px, floor_px, "standard" if low else "HD", tex.get_width() if tex else -1, floor_tex.get_width() if floor_tex else -1,
 			Crowd.sheet().resource_path.get_file()])
 		m.queue_free()
+	Game.settings.graphics = gfx
+
+
+# ---------------------------------------------------------------- the shared foundation (FoundationLink)
+
+## With the licensed clip library (a build that has it; not CI's), every person on the rink is drawn by the shared
+## foundation: a link each, its body shown and RiggedBody hidden, a stick in a skater's hands (none for a goalkeeper
+## or a referee), posed every frame, both fists on the shaft. Without it, nobody has one: the game as it was.
+func _foundation() -> void:
+	var gfx: int = Game.settings.graphics
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 3, "period": 4.0}
+	add_child(m)
+	var people: Array = m.everyone() + m.sitters[0] + m.sitters[1]
+	if not FoundationLink.enabled():
+		check(people.all(func(p): return p.link == null), "foundation off (no licensed clips): nobody has a link, RiggedBody draws")
+		m.queue_free()
+		await frames(2)
+		Game.settings.graphics = gfx
+		return
+	var posed := {}
+	for p: Player in people:
+		if p.link:
+			p.link.measure = true
+			posed[p] = 0
+			p.link.body.posed.connect(func(): posed[p] += 1)
+	for i in 90:
+		await get_tree().physics_frame
+	var missing := []
+	var unseen := []
+	var sticks := []
+	var still := []
+	for p: Player in people:
+		if p.link == null or p.link.body == null:
+			missing.append(p.name)
+			continue
+		var shown: bool = p.link.body.is_visible_in_tree()
+		if p.visible and (not shown or (p.body.rig and p.body.rig.visible) or (p.body.mesh_instance and p.body.mesh_instance.visible)):
+			unseen.append("%s %s" % [p.role, p.slot])
+		var want_stick: bool = p.role not in ["G", "R"]
+		if (p.link.stick != null) != want_stick or (want_stick and p.visible and not p.link.stick.visible):
+			sticks.append("%s %s" % [p.role, p.slot])
+		if p.visible and int(posed[p]) < 60:
+			still.append("%s %s: %d" % [p.role, p.slot, posed[p]])
+	check(missing.is_empty(), "foundation: a link for every person on the rink, the bench and the penalty bench (%s)" % [missing])
+	check(unseen.is_empty(), "foundation: its body drawn for everyone on the rink, RiggedBody hidden (%s)" % [unseen])
+	check(sticks.is_empty(), "foundation: a stick in every skater's hands, none for the goalkeepers and referees (%s)" % [sticks])
+	check(still.is_empty(), "foundation: every body on the rink posed every frame (%s)" % [still])
+	# The fists on the shaft, over a few seconds of play: the top one always (the stick goes through it), the lower one
+	# nearly always (it slides along the shaft to where it reaches).
+	var n := 0
+	var top_off := 0
+	var low_off := 0
+	for i in 240:
+		await get_tree().physics_frame
+		for p: Player in people:
+			if p.link and p.link.stick and p.visible and p.link.stick.visible and p.link.last_fists.has(p.link.low):
+				n += 1
+				if float(p.link.last_fists[p.link.top]) > 0.012:
+					top_off += 1
+				if float(p.link.last_fists[p.link.low]) > 0.03:
+					low_off += 1
+	check(n > 1000 and top_off <= n / 50, "foundation: the stick through the top fist (%d of %d frames off it)" % [top_off, n])
+	check(low_off <= n / 8, "foundation: the lower fist on the shaft (%d of %d frames off it by over 3 cm)" % [low_off, n])
+	print("foundation: %d posed frames of skaters; top fist off %d, lower fist off %d" % [n, top_off, low_off])
+	m.queue_free()
+	await frames(2)
+	Game.settings.graphics = gfx
+
+
+## A goal's replay (with the foundation, not on Low): after the celebration the last seconds again from the goal line,
+## the foundation's bodies as they were drawn (WsgReplay), slowed; a tap skips it to the face-off.
+func _goal_replay() -> void:
+	if not FoundationLink.enabled():
+		return
+	var gfx: int = Game.settings.graphics
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SUI", "away": "CZE", "venue": "hall", "user_team": -1, "watch": true, "mode": "watch", "seed": 4, "period": 4.0}
+	add_child(m)
+	var guard := 0
+	while (m.phase != "live" or guard < 300) and guard < 900:
+		await get_tree().physics_frame
+		guard += 1
+	check(m.wsg_replay != null and m.phase == "live", "replay: the foundation's bodies kept for a replay in a match (not the menu's)")
+	m._goal(0, false)
+	guard = 0
+	while m.phase != "replay" and guard < 400:
+		await get_tree().physics_frame
+		guard += 1
+	var rc: Camera3D = get_viewport().get_camera_3d()
+	check(m.phase == "replay" and m.wsg_replay.playing and FoundationLink.replay_at != INF and rc != m.cam,
+		"replay: after the goal's celebration, the replay plays from its own camera (phase %s)" % m.phase)
+	var t0: float = FoundationLink.replay_at
+	for i in 30:
+		await get_tree().physics_frame
+	check(m.phase == "replay" and absf(FoundationLink.replay_at - t0 - 0.5 * m.REPLAY_RATE) < 0.05, "replay: slowed (%.2f s in 0.5 s)" % [FoundationLink.replay_at - t0])
+	var tap := InputEventMouseButton.new()
+	tap.button_index = MOUSE_BUTTON_LEFT
+	tap.pressed = true
+	tap.position = Vector2(400, 300)
+	Input.parse_input_event(tap)
+	await frames(3)
+	check(m.phase == "setup" and not m.wsg_replay.playing and FoundationLink.replay_at == INF and get_viewport().get_camera_3d() == m.cam,
+		"replay: a tap skips it, to the face-off (phase %s)" % m.phase)
+	tap = tap.duplicate()
+	tap.pressed = false
+	Input.parse_input_event(tap)
+	m.queue_free()
+	await frames(2)
 	Game.settings.graphics = gfx
 
 
