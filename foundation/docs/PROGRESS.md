@@ -296,4 +296,4 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   published over a newer): add `concurrency: {group: <game>-android-${{ github.ref }}, cancel-in-progress: true}`
   to every pilot's workflow. Open: arena/crowd not rebuilt on a mid-match step down; no replay label; mode changes
   snap. Comparison frames: scratchpad fb_cmp/ (beta vs pilot via tools/player/grip_view and breakaway_view).
-- **Next**: Netball. Then push the tooling sync (be73cbf, 30a3970) to claude/hurling-game unless the lead holds it.
+- **Next**: Netball (the lead: go). Hurling: HOLD the tooling sync (be73cbf, 30a3970) - a push to claude/hurling-game republishes its beta; bundle it with the next real Hurling change. The hurler finger re-bake waits on the owner (the lead asks).
