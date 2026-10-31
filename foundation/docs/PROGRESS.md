@@ -255,3 +255,5 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     square to the leg's plane); an open hand on the handle (a body made full detail after it was posed: ranked
     first now, Hurling). The shin above the ankle: rig_test's feet_turned (the caps: shin 25, foot 20) keeps 99%.
     Hurling's bench checked (test_runner). Practice and shoot-out audits PASS.
+- [x] The owner on 0.17.1-pilot (c60ddf4): "looks better". Open polish: the sprint looks "a touch awkward" (works;
+  may change later; logged in IDEAS, not touched). The roll-out to the other games waits for the owner's go.

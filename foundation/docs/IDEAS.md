@@ -31,3 +31,6 @@ Each milestone report to the lead carries the top three.
   would see its graphics go up and down).
 - The shoot-out audit's remaining items: the goalkeeper's dive bends a knee off its hinge (45 frames), the taker's
   feet up to 6 cm off the grass in 18 frames of his strike, 7 frames of an open hand on the handle.
+- The sprint (open polish, the owner on 0.17.1-pilot: "a touch awkward", works as it should; they may change it later -
+  nothing changed yet): candidates when asked - the Mobility sprint clip's arm carry with the hurley (the game's own
+  carry pose blended over it), the stride length at top speed (TOP_STEP), the lean into it.
