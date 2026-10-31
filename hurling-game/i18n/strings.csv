@@ -100,7 +100,7 @@ GFX_LOW,Low,Íseal
 GFX_MEDIUM,Medium,Meánach
 GFX_HIGH,High,Ard
 GFX_AUTO,Lower it by itself if a match runs slowly,Ísligh í féin má bhíonn cluiche mall
-GFX_NOTE,"Low suits phones with 2-4 GB of memory: simpler players, fewer people in the stands, no outlines, a smaller picture. High adds real shadows, floodlights that light the field and filmic colour. The game picks one for your phone the first time it runs.","Oireann Íseal d'fhóin le 2-4 GB cuimhne: imreoirí níos simplí, níos lú daoine sna seastáin, gan imlínte, pictiúr níos lú. Cuireann Ard scáthanna fíora, tuilsoilse a lasann an pháirc agus dath scannánach leis. Roghnaíonn an cluiche ceann d'fhón an chéad uair."
+GFX_NOTE,"Low suits phones with 2-4 GB of memory: simpler players, fewer people in the stands, no outlines, a smaller picture. High adds real shadows, floodlights that light the field and filmic colour. The game picks one for your phone until you choose one here.","Oireann Íseal d'fhóin le 2-4 GB cuimhne: imreoirí níos simplí, níos lú daoine sna seastáin, gan imlínte, pictiúr níos lú. Cuireann Ard scáthanna fíora, tuilsoilse a lasann an pháirc agus dath scannánach leis. Roghnaíonn an cluiche ceann d'fhón go dtí go roghnaíonn tú féin ceann anseo."
 GFX_LOWERED,The match was running slowly: graphics lowered a step (Settings).,Bhí an cluiche ag rith go mall: ísliodh an ghrafaic céim (Socruithe).
 FRAME_RATE,Frame rate,Ráta fráma
 FPS_SAVER,Battery saver,Spáráil cadhnra

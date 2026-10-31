@@ -9,6 +9,31 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.18.0
+
+- **The players move as people do.** Every hurler and official is drawn on the World Stage Games' shared
+  animation (motion-captured starts, cuts, stops, backpedals and sprints, feet planted, fingers closed on the hurley).
+- **The officials** wear the players' build in their own kit, with their own faces; the linesmen and umpires hold
+  their flags in a closed hand.
+- **Frees**: the taker stands tall while you aim, settles into his stance and strikes; his legs, feet and arms stay
+  as a body can hold them through the follow-through.
+- **The crowd** in 3D on Medium and High, in their counties' colours behind the goals with flags; their feet flat.
+  The substitutes sit on the bench with their feet on the floor.
+- **Television**: the scorer close after a score with his name, "Watch it back" in slow motion, the flight round the
+  ground before the throw-in; the crowd's sound swells with an attack.
+- **Smoother**: the match's animation costs the phone's processor about half what it did (a third on Low).
+
+## New in 0.17.1
+
+- **"Lower it by itself" now works all match long.** If the match stutters (slow frames, or a run of hitches) for
+  about three seconds, the graphics drop a level at once: the shadows, the sky's lighting, the crowd's size and the
+  players' look, not just the picture's sharpness; and again later if it still stutters. Before, it only watched the
+  first ten seconds and only lowered the resolution, so a phone like a Galaxy A16 stayed stuttering on High.
+- **The game picks the graphics level for your phone until you choose one** in Settings. If you never chose one,
+  it decides again once on this update (an older beta's High was kept on the A16). Phones with a Mali-G57 or G68
+  GPU (Helio G99, Exynos 1330, Dimensity 6300, such as the Galaxy A16) start on Low.
+- Battery saver's 30 frames a second is not counted as a stutter.
+
 ## New in 0.17.0
 
 - **Frees without the walk-up**: the taker is in his stance over the ball as each free starts, and goes back into it

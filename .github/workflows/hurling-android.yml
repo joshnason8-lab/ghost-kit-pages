@@ -87,6 +87,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The shared foundation (addons/wsg_foundation) against claude/shared-foundation: a warning when this copy is
+      # behind, never a failure (tools/wsg/sync_foundation.sh brings it up to date).
+      - name: Shared foundation up to date? (a warning only)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

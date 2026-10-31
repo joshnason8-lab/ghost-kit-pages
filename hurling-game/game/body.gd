@@ -80,6 +80,12 @@ func _offsets() -> Array:
 
 
 ## The mesh and its material.
+## The materials again for the graphics level now (it was lowered mid-match: Match.lower_graphics).
+func relook() -> void:
+	if mesh_instance != null:
+		mesh_instance.material_override = material(int(Game.settings.graphics) > Game.GFX_LOW)
+
+
 func _dress() -> void:
 	mesh_instance.mesh = _mesh()
 	mesh_instance.material_override = material(int(Game.settings.graphics) > Game.GFX_LOW)

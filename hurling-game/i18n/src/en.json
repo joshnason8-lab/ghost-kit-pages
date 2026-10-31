@@ -100,7 +100,7 @@
   "GFX_MEDIUM": "Medium",
   "GFX_HIGH": "High",
   "GFX_AUTO": "Lower it by itself if a match runs slowly",
-  "GFX_NOTE": "Low suits phones with 2-4 GB of memory: simpler players, fewer people in the stands, no outlines, a smaller picture. High adds real shadows, floodlights that light the field and filmic colour. The game picks one for your phone the first time it runs.",
+  "GFX_NOTE": "Low suits phones with 2-4 GB of memory: simpler players, fewer people in the stands, no outlines, a smaller picture. High adds real shadows, floodlights that light the field and filmic colour. The game picks one for your phone until you choose one here.",
   "GFX_LOWERED": "The match was running slowly: graphics lowered a step (Settings).",
   "FRAME_RATE": "Frame rate",
   "FPS_SAVER": "Battery saver",

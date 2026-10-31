@@ -33,6 +33,8 @@ var baked := false             # drawn under its baked light (Low and Medium: as
 var _built_mesh: ArrayMesh     # the stands as built (the bake's signature is of these)
 var _shirt_of := []            # each spot's fan's shirt (the 3D fan's and the cut-out's the same)
 var _light_of := PackedFloat32Array()   # each spot's baked light (the bake's probes; empty: none)
+var _grass: MeshInstance3D
+var _we: WorldEnvironment
 
 const H := Pitch.HALF_L
 const W := Pitch.HALF_W
@@ -47,7 +49,9 @@ func _init(venue_id := "county", p_home_colours := [], p_away_colours := []) -> 
 
 
 func _ready() -> void:
-	add_child(Pitch.build(time))
+	var pitch := Pitch.build(time)
+	add_child(pitch)
+	_grass = pitch.get_child(0)
 	var g := Geo.new()
 	var nets := Geo.new()
 	var fields := Geo.new()
@@ -81,12 +85,40 @@ func _ready() -> void:
 	net = GoalNet.new()
 	net.build(H + Pitch.POST_W * 0.5, time)
 	add_child(net)
-	crowd = Crowd.new()
 	_spots = spots
+	_crowd()
+	_environment()
+
+
+## The crowd, as many as the graphics level seats.
+func _crowd() -> void:
+	crowd = Crowd.new()
 	build_crowd(CROWD_FOCUS, int(Game.settings.graphics))
 	add_child(crowd)
 	_flags()
+
+
+## The graphics level lowered mid-match (Match.lower_graphics): the sky and the light (shadows, glow, the sky's
+## reflections), the stands' and the grass's materials and their baked light, the crowd (3D fans and cut-outs) and
+## the flags, as the new level builds them.
+func apply_graphics() -> void:
+	WsgFoundation.tier = clampi(int(Game.settings.graphics), WsgFoundation.LOW, WsgFoundation.HIGH)
+	_we.queue_free()
+	_sun.queue_free()
 	_environment()
+	structure.mesh = _built_mesh
+	structure.material_override = Geo.ultra_material() if Ultra.active() else Geo.material(true)
+	structure.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Ultra.lit() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_grass.material_override = Pitch.grass_material(time)
+	_baked_light()
+	if crowd3d:
+		crowd3d.queue_free()
+		crowd3d = null
+	if _flag_node:
+		_flag_node.queue_free()
+		_flag_node = null
+	crowd.queue_free()
+	_crowd()
 
 
 ## Low and Medium (and every tier on GL Compatibility but High's): the light baked in Cycles (the shared
@@ -194,22 +226,6 @@ func _flags() -> void:
 var _flag_node: WsgFlags
 var _sun: DirectionalLight3D
 var _sky: Sky
-
-
-## The graphics level lowered during a match (Match: "lower the graphics by itself"): what a level builds, built again
-## for the new one now - the sun's shadows, the sky's quality, the crowd (the 3D fans for Medium and High, fewer of
-## them for Medium, cut-outs alone on Low), the flags (half on Medium, none on Low).
-func apply_graphics(focus: Vector3) -> void:
-	WsgFoundation.tier = clampi(int(Game.settings.graphics), WsgFoundation.LOW, WsgFoundation.HIGH)
-	if _sun:
-		_sun.shadow_enabled = Game.shadows_enabled()
-	if _sky:
-		_sky.process_mode = Sky.PROCESS_MODE_QUALITY if int(Game.settings.graphics) >= Game.GFX_HIGH else Sky.PROCESS_MODE_INCREMENTAL
-	build_crowd(focus, int(Game.settings.graphics))
-	if _flag_node:
-		_flag_node.queue_free()
-		_flag_node = null
-	_flags()
 
 
 ## Each spot's fan's shirt, decided once by the spot (the 3D fan there and the cut-out wear the same: a fan keeps it
@@ -872,6 +888,7 @@ func _environment() -> void:
 	we.environment = env
 	add_child(we)
 	add_child(sun)
+	_we = we
 	_sun = sun
 	_sky = sky
 	Crowd.set_light({"day": 1.0, "dusk": 0.72, "night": 0.75}[time])

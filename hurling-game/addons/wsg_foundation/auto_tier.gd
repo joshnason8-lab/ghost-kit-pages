@@ -17,6 +17,8 @@ const HITCH_K := 2.5
 const HITCH_MS := 45.0
 const SETTLE := 2.0
 
+## Slower than this on average is bad: 36 a second, or a little under the game's frame cap when that is lower (a
+## battery saver's 30 is not a stutter).
 var min_fps := 36.0
 var _frames := PackedFloat32Array()
 var _t := 0.0
@@ -24,6 +26,12 @@ var _bad := 0
 var _settle := SETTLE
 ## The last window's numbers, for a log: [average fps, hitches, bad windows in a row].
 var last := [0.0, 0, 0]
+
+
+## For a frame cap of cap a second (0: none, the screen's rate).
+func _init(cap := 0) -> void:
+	if cap > 0:
+		min_fps = minf(min_fps, cap * 0.8)
 
 
 func reset() -> void:

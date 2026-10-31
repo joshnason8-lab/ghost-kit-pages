@@ -101,6 +101,12 @@ func _dress() -> void:
 	if not _meshes.has(dir + stem):
 		_meshes[dir + stem] = load(dir + stem + ".res")
 	mesh_instance.mesh = _meshes[dir + stem]
+	relook()
+
+
+func relook() -> void:
+	if mesh_instance == null:
+		return
 	# The texture: 512 on Low, 1024 (<who>_full.jpg) on Medium and High, 2048 with its maps with the HD pack; lit on
 	# High (on Vulkan). (The crowd's fans: <model>.jpg, or <model>_hd.jpg for the sharper sheet.)
 	var ultra := dir == ULTRA_DIR

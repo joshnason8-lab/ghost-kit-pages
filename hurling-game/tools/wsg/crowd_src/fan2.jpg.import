@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cgbipapat2bri"
-path="res://.godot/imported/fan2.jpg-2ff19f5e25a1a6f93e3c7361ae09e3f9.ctex"
+uid="uid://c8c2x6a8o7j0r"
+path="res://.godot/imported/fan2.jpg-0e745407e48347190f6dbd60b22c404d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tools/crowd_src/fan2.jpg"
-dest_files=["res://.godot/imported/fan2.jpg-2ff19f5e25a1a6f93e3c7361ae09e3f9.ctex"]
+source_file="res://tools/wsg/crowd_src/fan2.jpg"
+dest_files=["res://.godot/imported/fan2.jpg-0e745407e48347190f6dbd60b22c404d.ctex"]
 
 [params]
 
