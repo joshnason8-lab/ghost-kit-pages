@@ -433,6 +433,7 @@ func _finger_pieces(body: Dictionary, joints: Dictionary, side: String, weld: Pa
 		pieces.reverse()
 		push_warning("%s thumb is behind the fingers: the palm may face up (check the render)" % side)
 	var order := ["Index", "Middle", "Ring", "Pinky"]
+	pieces = _to_knuckles(body, nbr, geo, pieces, th)
 	var fw := {}
 	var lens := []
 	for i in 5:
@@ -450,9 +451,11 @@ func _finger_pieces(body: Dictionary, joints: Dictionary, side: String, weld: Pa
 				at = back + along * maxf(pc.len, 0.03) * 0.3
 				push_warning("%s: no vertices at %.0f%% of the finger: placed along it" % [names[k], marks[k] * 100.0])
 			joints[names[k]] = at
-		# The knuckle sits a little back inside the palm from where the finger leaves it.
-		var dir: Vector3 = ((joints[names[1]] as Vector3) - (joints[names[0]] as Vector3)).normalized()
-		joints[names[0]] = (joints[names[0]] as Vector3) - dir * 0.012
+		# The thumb's knuckle sits a little back inside the palm from where it leaves it (the fingers' pieces already
+		# reach back to theirs: _to_knuckles).
+		if i == 0:
+			var dir: Vector3 = ((joints[names[1]] as Vector3) - (joints[names[0]] as Vector3)).normalized()
+			joints[names[0]] = (joints[names[0]] as Vector3) - dir * 0.012
 		lens.append(snappedf(pc.len, 0.001))
 		var nodes := [[side + "Hand", -0.12], [names[0], 0.12], [names[1], 0.5], [names[2], 0.82]]
 		for v in pc.comp:
@@ -468,6 +471,75 @@ func _finger_pieces(body: Dictionary, joints: Dictionary, side: String, weld: Pa
 			out[i] = d
 	finger_w[side] = out
 	return {"ok": true}
+
+
+## The four fingers' pieces reached back to their knuckles. A hand whose fingers are joined part of the way (a Meshy
+## hand, a curled one) splits into its pieces only near the tips, and fingers whose first joint sat there bent from
+## their middle - the skin between still on the hand - and spiked when they closed. Each finger's knuckle is
+## KNUCKLE_AT of the way (over the surface) from the wrist to its tip, or a little behind where its piece splits off
+## if that is nearer; the joined skin out from there goes to the finger it lies in line with across the hand.
+## Returns the pieces with comp, dist (over the surface from the knuckle) and len made so.
+const KNUCKLE_AT := 0.52
+
+
+static func _to_knuckles(body: Dictionary, nbr: Dictionary, geo: Dictionary, pieces: Array, thumb: Dictionary) -> Array:
+	var gk := []
+	var g0s := []
+	var tips := []
+	var lo := INF
+	for pc: Dictionary in pieces:
+		var g0 := INF
+		var tip := 0.0
+		for v in pc.comp:
+			g0 = minf(g0, geo[v])
+			tip = maxf(tip, geo[v])
+		var k := minf(g0 - 0.012, tip * KNUCKLE_AT)
+		gk.append(k)
+		g0s.append(g0)
+		tips.append(tip)
+		lo = minf(lo, k)
+	# Across the hand (z, the palm down), each finger where its piece leaves the hand.
+	var zs := []
+	for i in pieces.size():
+		var sum := 0.0
+		var n := 0
+		for v in pieces[i].comp:
+			if float(geo[v]) < g0s[i] + 0.006:
+				sum += (body.pos[v] as Vector3).z
+				n += 1
+		zs.append(sum / maxf(n, 1))
+	var label := {}
+	for i in pieces.size():
+		for v in pieces[i].comp:
+			label[v] = i
+	var skip := {}
+	for v in thumb.comp:
+		skip[v] = true
+	for v in geo:
+		if label.has(v) or skip.has(v) or float(geo[v]) < lo:
+			continue
+		var best := 0
+		for i in pieces.size():
+			if absf((body.pos[v] as Vector3).z - zs[i]) < absf((body.pos[v] as Vector3).z - zs[best]):
+				best = i
+		label[v] = best
+	var out := []
+	for i in pieces.size():
+		out.append({"comp": [], "dist": {}, "v": pieces[i].v})
+	for v in label:
+		var i: int = label[v]
+		if float(geo[v]) >= gk[i]:
+			out[i].comp.append(v)
+	# (The knuckle no nearer the wrist than the finger's first vertices: a joint where the finger has none was placed
+	# by guesswork.)
+	for i in out.size():
+		var k := INF
+		for v in out[i].comp:
+			k = minf(k, geo[v])
+		for v in out[i].comp:
+			out[i].dist[v] = float(geo[v]) - k
+		out[i].len = maxf(tips[i] - k, 0.01)
+	return out
 
 
 ## Connected pieces of the hand beyond u = c.
