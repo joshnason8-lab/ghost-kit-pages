@@ -1071,12 +1071,12 @@ func _foundation() -> void:
 		var want_stick: bool = p.role not in ["G", "R"]
 		if (p.link.stick != null) != want_stick or (want_stick and p.visible and not p.link.stick.visible):
 			sticks.append("%s %s" % [p.role, p.slot])
-		if p.visible and int(posed[p]) < 60:
+		if p.visible and int(posed[p]) < 25:
 			still.append("%s %s: %d" % [p.role, p.slot, posed[p]])
 	check(missing.is_empty(), "foundation: a link for every person on the rink, the bench and the penalty bench (%s)" % [missing])
 	check(unseen.is_empty(), "foundation: its body drawn for everyone on the rink, RiggedBody hidden (%s)" % [unseen])
 	check(sticks.is_empty(), "foundation: a stick in every skater's hands, none for the goalkeepers and referees (%s)" % [sticks])
-	check(still.is_empty(), "foundation: every body on the rink posed every frame (%s)" % [still])
+	check(still.is_empty(), "foundation: every body on the rink posed (every frame near the camera, every 2nd or 3rd far from it) (%s)" % [still])
 	# The fists on the shaft, over a few seconds of play: the top one always (the stick goes through it), the lower one
 	# nearly always (it slides along the shaft to where it reaches).
 	var n := 0

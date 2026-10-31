@@ -2301,11 +2301,22 @@ func _rank_detail(dt: float) -> void:
 	_detail_t = 0.5
 	WsgFoundation.tier = int(Game.settings.graphics)
 	var bodies := []
+	var cam3 := get_viewport().get_camera_3d()
+	var camp := cam3.global_position if cam3 else Vector3.ZERO
+	# Far from the camera, posed every second or third frame (each on his own frames: Player._pose_link): Hurling's
+	# idea at a rink's distances (the broadcast camera is 15-35 m from the play); the lower the graphics, the nearer.
+	var near: Array = POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)]
 	for p: Player in everyone() + sitters[0] + sitters[1]:
 		if p.link and p.link.body and p.is_visible_in_tree():
 			bodies.append(p.link.body)
-	var cam3 := get_viewport().get_camera_3d()
-	WsgFoundation.rank_detail(bodies, cam3.global_position if cam3 else Vector3.ZERO)
+			var d := p.global_position.distance_to(camp)
+			p.pose_every = 1 if d < float(near[0]) else (2 if d < float(near[1]) else 3)
+	WsgFoundation.rank_detail(bodies, camp)
+
+
+## Metres from the camera within which a person is posed every frame, and every second (beyond: every third), by
+## graphics level.
+const POSE_NEAR := [[12.0, 20.0], [15.0, 25.0], [22.5, 37.5]]
 
 
 var _crowd_look := Vector2.ZERO

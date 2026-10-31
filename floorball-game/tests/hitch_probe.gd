@@ -39,9 +39,12 @@ func _ready() -> void:
 		if f > mid * 2.5:
 			hitches += 1
 	var links := 0
+	var rates := [0, 0, 0]
 	for p in m.everyone():
 		if p.link:
 			links += 1
-	print("hitch probe: level %d, foundation %s (%d links), %d frames: mean %.2f ms, middle %.2f, worst 5%% %.2f, worst 1%% %.2f, worst %.2f; %d over 2.5x the middle" % [
-		level, "on" if FoundationLink.enabled() else "off", links, s.size(), mean, mid, s[int(s.size() * 0.95)], s[int(s.size() * 0.99)], s[-1], hitches])
+			if p.visible:
+				rates[clampi(p.pose_every, 1, 3) - 1] += 1
+	print("hitch probe: level %d, foundation %s (%d links), %d frames: mean %.2f ms, middle %.2f, worst 5%% %.2f, worst 1%% %.2f, worst %.2f; %d over 2.5x the middle; posed every 1/2/3 frames at the end: %s" % [
+		level, "on" if FoundationLink.enabled() else "off", links, s.size(), mean, mid, s[int(s.size() * 0.95)], s[int(s.size() * 0.99)], s[-1], hitches, rates])
 	get_tree().quit()

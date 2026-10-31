@@ -89,6 +89,10 @@ func _ready() -> void:
 	body.skeleton.move_child(legacy, 0)
 	loco = WsgLocomotor.attach(body)
 	legacy.lift_after = loco.planter.hips_offset     # the game's hips height is this body's already
+	# (The head's and chest's look-at: nothing here gives them a target, and the game's trunk is laid over them.)
+	for m in [loco.look, loco.look_chest]:
+		if m:
+			m.active = false
 	legacy.torso_r = 0.1        # the forearms kept out of this (broader) body's chest
 	reader = WsgLegacyPose.new(gb.skeleton, body.joints)
 	legacy.arms = reader
@@ -108,6 +112,8 @@ func _ready() -> void:
 		top = "Right" if player.shoots_left() else "Left"
 		low = "Left" if top == "Right" else "Right"
 		reader.held = {top: true}
+		# (Both arms are laid by the holds on the stick, made anatomical there: the reader need not rebuild the game's.)
+		reader.sound_arms = false
 		_make_stick()
 	elif kind == "keeper":
 		_make_helmet()
@@ -195,7 +201,13 @@ func _make_helmet() -> void:
 	att.add_child(mi)
 
 
-## After player.gd has posed the game's body and placed him this frame (game seconds): drive this one.
+## Between the frames it is posed: carried along with the player (its pose, the stick in its hand, as last made).
+func follow() -> void:
+	if body.visible:
+		global_transform = Transform3D(Basis.IDENTITY, player.global_position)
+
+
+## After player.gd has posed the game's body and placed him this frame (game seconds since the last): drive this one.
 func update(dt: float) -> void:
 	if dt <= 0.0 or not is_visible_in_tree():
 		return
@@ -210,17 +222,23 @@ func update(dt: float) -> void:
 		want = "upper" if act.begins_with("signal_") else "move"
 	elif act in FULL:
 		want = "full"
-	var pose := reader.read()
+	# (Running with the stick only the trunk and the hands are wanted, straight off the game's skeleton; the whole
+	# reading - every rig bone - for the game's own moves.)
+	var pose := reader.read() if want != "move" and (want != "stick" or not stick) else {}
+	if pose.is_empty() and want == "stick":
+		_g = _quick_globals()
+	else:
+		_g = reader._last_global
 	if stick and want == "full" and pose.has("@hips"):
 		pose["@hips"] = (pose["@hips"] as Vector3) + _shifts.get("full", Vector3.ZERO)
 	var bp := {}
 	if stick and want == "full":
-		bp = reader.body_space(TRUNK + ARMS)
+		bp = _pick(_g, TRUNK)
 	match want:
 		"stick":
 			# Running with the stick: the legs (and the hips) the motion capture's, the trunk and both arms where the
 			# game's body has them (in the body: the hands on the stick wherever the capture's hips turn).
-			bp = reader.body_space(TRUNK + ARMS)
+			bp = _pick(_g, TRUNK) if stick else reader.body_space(TRUNK + ARMS)
 			pose = {}
 		"upper":
 			# A referee's signal over his run: his arms as the game has them.
@@ -245,6 +263,7 @@ func update(dt: float) -> void:
 	_at = player.global_position
 	var yaw := PI * 0.5 - player.facing        # Player: rotation.y = PI/2 - facing; the rig faces +Z
 	loco.drive(dt, Vector3(player.vel.x, 0, player.vel.y), yaw, Vector3(player.want_vel.x, 0, player.want_vel.y))
+
 	# A move of the game's own has its feet where the game put them: the planter holds them only under the capture.
 	loco.planter.enabled = mode != "full"
 	if mode == "full":
@@ -267,13 +286,29 @@ func update(dt: float) -> void:
 		stick.visible = gb.has_stick()
 		if stick.visible:
 			_stick_space()
-			body.grip(top, GRIP_R, 1.0, [_grip_pt[top], Vector3.BACK])
-			body.grip(low, GRIP_R, 1.0, [_grip_pt[low], Vector3.BACK])
+			if body.full:
+				_close_fists()
 			if mode == "stick":
 				legacy.shift = _shifts.get("stick", Vector3.ZERO)
 	legacy.hold = {}
 	# The skeleton's modifiers now, once (WsgBody.set_manual).
 	body.advance(dt)
+
+
+
+## Both hands closed round the shaft (the fingers' turns solved once, WsgGrip, then laid on each time).
+var _fist_turns := []         # [bone index, Quaternion]
+
+
+func _close_fists() -> void:
+	if _fist_turns.is_empty():
+		for side in [top, low]:
+			var g := WsgGrip.solve(body.joints, side, GRIP_R, [_grip_pt[side], Vector3.BACK])
+			for b in g:
+				_fist_turns.append([body.bone(b), g[b]])
+	var sk := body.skeleton
+	for e in _fist_turns:
+		sk.set_bone_pose_rotation(int(e[0]), e[1])
 
 
 ## The stick in this body's skeleton space this frame: where the game's body has it (so the blade is where the ball
@@ -286,6 +321,33 @@ func _stick_space() -> void:
 
 
 var _rig_turn := Quaternion.IDENTITY
+var _g := {}                  # the rig's bones' turns in the body as the game's body has them this frame (wanted ones)
+var _gi := {}                 # the game's bone -> its index
+
+
+## The trunk's and both hands' turns in the body (the rig's convention) straight off the game's skeleton - what
+## WsgLegacyPose.read gives for them (its corrections: none on the trunk, the forearm's on a hand), for a fraction
+## of its cost.
+func _quick_globals() -> Dictionary:
+	var sk := gb.skeleton
+	if _gi.is_empty():
+		for k in ["spine", "chest", "neck", "head", "hand_l", "hand_r"]:
+			_gi[k] = sk.find_bone(k)
+	var q := func(k: String) -> Quaternion: return sk.get_bone_global_pose(int(_gi[k])).basis.get_rotation_quaternion()
+	var out := {"Spine": q.call("spine"), "Spine2": q.call("chest"), "Neck": q.call("neck"), "Head": q.call("head")}
+	out["Spine1"] = (out["Spine"] as Quaternion).slerp(out["Spine2"], 0.5)
+	out["LeftHand"] = ((q.call("hand_l") as Quaternion) * (reader._corr.get("LeftHand", Quaternion.IDENTITY) as Quaternion)).normalized()
+	out["RightHand"] = ((q.call("hand_r") as Quaternion) * (reader._corr.get("RightHand", Quaternion.IDENTITY) as Quaternion)).normalized()
+	return out
+
+
+static func _pick(d: Dictionary, keys: Array) -> Dictionary:
+	var out := {}
+	for k in keys:
+		if d.has(k):
+			out[k] = d[k]
+	return out
+var _slid := []               # [the top fist's slide along the shaft, the lower's] as last worked out
 
 
 ## Both fists on the shaft (StickLayer calls it as it runs, with the hips where they now are): each fist turned the
@@ -293,7 +355,7 @@ var _rig_turn := Quaternion.IDENTITY
 ## held to the hips, the lower one as far below it as the game's and held to the top hand; each slides along the
 ## shaft to where its arm can reach. lift: what the foot planter adds to the hips after.
 func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
-	var g := reader._last_global
+	var g := _g
 	if not g.has(top + "Hand") or not g.has(low + "Hand"):
 		return {}
 	var sx: Transform3D = legacy.stick
@@ -309,8 +371,12 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	# Each fist slid along the shaft to where its arm reaches (the shoulders where the trunk now has them; the lift
 	# not yet added): the top one never off the grip's end, the lower one at least a hand below it.
 	var top_at := sx.origin - lift + down * TOP_AT
-	var x_t := maxf(_slide(sk, top, top_at - qt * v_top, down), 0.03 - TOP_AT)
-	var x_l := maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down), 0.1 - spacing)
+	# (Worked out for the bodies in full detail, near the camera; the others keep their last.)
+	if body.full or _slid.is_empty():
+		var x_t := maxf(_slide(sk, top, top_at - qt * v_top, down), 0.03 - TOP_AT)
+		_slid = [x_t, maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down), 0.1 - spacing)]
+	var x_t: float = _slid[0]
+	var x_l: float = _slid[1]
 	var hand_t := Transform3D(Basis(qt), sx.origin + down * (TOP_AT + x_t) - qt * v_top)
 	var hand_l := Transform3D(Basis(ql), sx.origin + down * (TOP_AT + x_t + spacing + x_l) - ql * v_low)
 	var in_hips := hips_g.affine_inverse() * Transform3D(hand_t.basis, hand_t.origin - lift)
@@ -395,6 +461,8 @@ func _place_stick() -> void:
 		_history.append([now, hand.affine_inverse() * xf])
 		while _history.size() > 2 and float(_history[0][0]) < now - 12.0:
 			_history.pop_front()
+	if not body.full:
+		return       # (the hips and the lean as last worked out: only the bodies near the camera refine them)
 	var t_s := "r" if top == "Right" else "l"
 	var inv := body.global_transform.affine_inverse()
 	# (Nearer the stick than the game's by what this body's arm is shorter, the fists reaching the shaft: each shoulder

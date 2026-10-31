@@ -19,6 +19,9 @@ var slot := 0                 # the place in the line: 0 C, 1 LW, 2 RW, 3 LD, 4 
                               # player of an empty net; 9 a penalised player on his way to the penalty bench
 var body: Body
 var link: FoundationLink      # the shared foundation drawing him (when the build has its licensed clips), else null
+var pose_every := 1           # the foundation's body posed every frame, or every 2nd or 3rd (far from the camera)
+var _lod_skip := 0            # frames since it was posed (each man starts at his own count: not all on one frame)
+var _link_dt := 0.0
 var match_node: Node = null
 
 var pos := Vector2.ZERO       # on the floor
@@ -70,6 +73,7 @@ func _ready() -> void:
 	if FoundationLink.enabled():
 		link = FoundationLink.new(self, body)
 		add_child(link)
+		_lod_skip = (int(data.get("num", slot)) + maxi(team, 0) * 7 + slot) % 3
 
 
 ## Marks this player as the one you run: a ring on the floor in your team's colour and a bigger number.
@@ -207,7 +211,20 @@ func step(dt: float) -> void:
 	_animate(dt)
 	_place()
 	if link:
-		link.update(dt)
+		_pose_link(dt)
+
+
+## The foundation's body: posed on this man's frames only (pose_every, set by the match by his distance from the
+## camera), carried along with him between them (its modifiers run when it is posed: WsgBody.set_manual).
+func _pose_link(dt: float) -> void:
+	_link_dt += dt
+	_lod_skip += 1
+	if _lod_skip >= pose_every or respawned:
+		_lod_skip = 0
+		link.update(minf(_link_dt, 0.1))
+		_link_dt = 0.0
+	else:
+		link.follow()
 
 
 func _place() -> void:
