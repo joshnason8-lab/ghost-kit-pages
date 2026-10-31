@@ -257,3 +257,31 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     Hurling's bench checked (test_runner). Practice and shoot-out audits PASS.
 - [x] The owner on 0.17.1-pilot (c60ddf4): "looks better". Open polish: the sprint looks "a touch awkward" (works;
   may change later; logged in IDEAS, not touched). The roll-out to the other games waits for the owner's go.
+
+## Roll-out (the owner's go, 2026-10-31) - the state, for whoever picks it up
+- **Sync path (step 0, done)**: every game vendors its own copy. `tools/sync_foundation.sh` (in each game's
+  `tools/wsg/`) fetches claude/shared-foundation and replaces only the foundation's files (keeps `data/`), stamping
+  `addons/wsg_foundation/VERSION`; `tools/check_foundation.sh` is a CI step that warns (never fails) when behind
+  (Hurling's workflow has it, after checkout). ADOPTING 6.5. When the foundation changes: run the sync in each adopted
+  game's pilot or game branch, its suites, push, tell the lead.
+- **Hurling**: claude/hurling-foundation-pilot merged with claude/hurling-game (its 0.17.1 auto graphics deduplicated:
+  WsgAutoTier kept, with the beta's frame-cap allowance and its fuller step) as 0.18.0-beta, code 27; the beta releases
+  from claude/hurling-game. The Hurling session (session_014hG8tsaKWnsFdAR9yvDKpG) was asked not to push meanwhile:
+  tell it when the merge is in and green.
+- **Order after Hurling**: Floorball (session_01Q7qyfqeBNtBfV9E7m7BncT, claude/floorball-game, 0.9.1-beta code 14,
+  premium/mobile renderer), Netball (session_017CzG23FxV2MAZaGUFTP3f3, claude/netball-game), Kabaddi
+  (session_01S3UdqNS9Fi1bujUaZ33MrC, claude/kabaddi-game-concept-asnz07), Sepak Takraw (session_01LRwBAmvSWewkk6NNucZTDd:
+  no branch found by name - ask it), Kho Kho (session_01VV6bXvTsWtNsbEvdksa2xw, claude/kho-kho-game; its committed
+  Mixamo .res await the owner: add no new derived animation), Pok Ta Pok (session_01HdsmiiHaiy9fT5QbiA2oUY,
+  claude/pok-ta-pok-game). Each: message its session first; pilot branch claude/<game>-foundation-pilot from the game's
+  branch; pre-release tag <game>-foundation-pilot, title not starting with the game's name, version code above its
+  beta; never its beta tag; merge only after the owner passes it. Each gets its fans (existing/authored, no new Meshy
+  without asking), officials from its player model in the sport's kit, venue light (indoor halls: Floorball,
+  Netball, Kabaddi, Kho Kho), fonts (Indic: Kabaddi, Kho Kho), replays at the sport's moments, WsgAutoTier; full
+  suites + audits; close-ups and the pilot's CI to the lead. The A16 is the test phone: budget games start on Low there.
+- **Floorball's shape** (begun: worktree /home/user/floorball-pilot, branch claude/floorball-foundation-pilot):
+  like Hurling - the game poses its own 17-bone `Body` (hips, spine, chest, neck, head, upperarm_l...: the same names
+  as Hurling's ToonBody) and `RiggedBody` follows it on the owner's Meshy man/woman (assets/characters/*.scn,
+  Mixamo-named). Plan: vendor; bake_character.sh the man and woman onto the rig; a FoundationLink from Hurling's
+  (the stick in the hand, its actions); WsgCrowd3D in the hall; referees on the man model in their kit; the hall's
+  light; WsgReplay at goals; WsgAutoTier; the workflow's licensed-assets step, check_foundation, a pilot publish step.
