@@ -55,10 +55,6 @@ static func enabled() -> bool:
 		and ResourceLoader.exists(DIR + "hero_rig.json") and not OS.has_environment("WSG_OFF")
 
 
-## The clock the replay keeps its frames by (the match's own: frames drawn, in seconds of play).
-static var clock_s := 0.0
-
-
 func _init(p_who: Node3D, p_body: ToonBody, p_kind := "player") -> void:
 	who = p_who
 	gb = p_body

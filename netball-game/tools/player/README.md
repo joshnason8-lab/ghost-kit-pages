@@ -69,3 +69,14 @@ netball's arms go up over the ball); the leap (13_10 is tiptoe reaching with 10 
 and catches (33_01/34_01 are short, easy American-football tosses, the hands never above 1.3 m; no chest, bounce or
 lob pass in the library); the shot (124_03-06 are basketball shots from a set point at the forehead, with a hop; a
 netball shooter holds the ball above her head and does not leave the floor).
+
+## On the shared rig (the World Stage Games foundation)
+
+On Medium and High, with the foundation's licensed clips in the build, the players, umpires and reserves are drawn
+by `game/foundation_link.gd` on the same model baked onto the shared rig: `assets/foundation/hero_hi.res`,
+`hero_lo.res` and `hero_rig.json`, made from the owner's `player.glb` (the one `build.sh` fetches) with
+`tools/wsg/bake_character.sh src/player.glb assets/foundation hero 6000 2000` (fingers from their knuckles, feet
+flat; the owner's model only, no animation). Its vertex colour holds each point's rest position, which the link's
+copy of HeroBody's shader reads for the bib, so the kit mask and team colours work unchanged; the umpires and
+reserves are the same model in their kit (shirt, dark trousers). Close-ups against a build without it:
+`xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/player/foundation_view.tscn -- OUT [graphics] [venue]`.

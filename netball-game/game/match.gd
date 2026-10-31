@@ -1429,7 +1429,7 @@ func _start_replay(kind: String) -> bool:
 		var ring := Court.ring_centre(int(end))
 		# Low beside the post, out past the goal line, looking back up the circle.
 		var side := 1.0 if _ring_at(balls, t0).z >= 0.0 else -1.0
-		rc.fov = 40.0
+		rc.fov = 44.0
 		rc.position = Vector3(end * (Court.HALF_L + 1.6), 2.4, side * 3.6)
 		_replay_look = ring
 	else:
@@ -1495,9 +1495,11 @@ func _replay_step(delta: float) -> void:
 	var b := _ring_at(_replay.balls, t)
 	ball.position = b
 	# The camera stays put and follows the ball, smoothly (a goal's: between the ball and the ring).
-	var want := b
+	# (Never looking up past 2 m: the shooter and the players under the post stay in the picture as the ball drops in.)
+	var want := Vector3(b.x, clampf(b.y, 0.9, 2.0), b.z)
 	if String(_replay.kind) == "goal":
-		want = b.lerp(_replay_look, 0.3)
+		var circle: Vector3 = _replay_look * Vector3(0.82, 0.0, 0.0) + Vector3(0.0, 1.3, 0.0)
+		want = want.lerp(circle, 0.35)
 	_replay["look"] = (_replay.get("look", want) as Vector3).lerp(want, minf(1.0, delta * 4.0)) if delta > 0.0 else want
 	(_replay.cam as Camera3D).look_at(_replay.look)
 

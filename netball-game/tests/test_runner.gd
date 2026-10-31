@@ -1606,6 +1606,16 @@ func _foundation(available: bool) -> void:
 		if who.visible and posed.has(who) and int(posed[who]) < 150:
 			still.append("%s %d" % [who.name, posed[who]])
 	check(still.is_empty(), "foundation: everyone posed through play (%s)" % [still])
+	# The graphics lowered to Low mid-match (WsgAutoTier): the game's own bodies again, no reserves, no replay.
+	Game.settings.auto_gfx = true
+	m.lower_graphics()
+	await frames(3)
+	var back := true
+	for who in people:
+		back = back and who.link == null and who.body.mesh_instance.visible
+	check(back and m.get_node_or_null("Reserves") == null and m.wsg_replay == null and m.find_children("Foundation", "", true, false).is_empty(),
+		"foundation: lowered to Low mid-match, the game's own bodies again (no links, reserves or replay)")
+	Game.settings.graphics = Game.GFX_MEDIUM
 	m.queue_free()
 	await frames(2)
 	Game.settings.graphics = was
