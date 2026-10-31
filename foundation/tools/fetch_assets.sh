@@ -55,6 +55,10 @@ if get "$ACZIP"; then
 	# The moves come as one zip of zips (one per motion).
 	find "$WORK/ac" -name "*.zip" ! -path "*__MACOSX*" | while read -r z; do unzip -q -o "$z" -d "${z%.zip}"; done
 	AC="$WORK/ac"
+	# The takes' names only (docs/CATALOGUE.md: the game sessions choose from them; no animation leaves the build).
+	echo "fetch_assets: ActorCore takes in the zip (names only): $(find "$WORK/ac" -iname "*.fbx" ! -path "*__MACOSX*" | wc -l)"
+	find "$WORK/ac" -iname "*.fbx" ! -path "*__MACOSX*" -exec basename {} .fbx \; | sort -u | tr '\n' ' '
+	echo
 fi
 mkdir -p "$DATA"
 "$HERE/bake_clips.sh" "$SRC" "$DATA" "$AC"
