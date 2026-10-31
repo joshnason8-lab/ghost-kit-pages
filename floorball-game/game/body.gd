@@ -48,6 +48,7 @@ var _stick_xf := Transform3D()
 var _has_stick := true
 var _hands := {}        # side -> how far down the shaft from the grip's end that hand holds it (m)
 var rig: RiggedBody = null   # the owner's model, when it is there: this skeleton is then posed but not drawn
+var drawn_elsewhere := false # drawn by the shared foundation (FoundationLink): the rig no longer follows (nor shows)
 
 static var _mat: ShaderMaterial
 static var _cache := {}
@@ -271,7 +272,7 @@ func shoulder(side: String) -> Vector3:
 
 ## The drawn body (the owner's model) takes this frame's pose: call once a frame after apply() and place_stick().
 func sync() -> void:
-	if rig and skeleton:
+	if rig and skeleton and not drawn_elsewhere:
 		rig.follow(self)
 
 

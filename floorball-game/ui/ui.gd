@@ -52,12 +52,14 @@ static func frame(owner: Control, base := 40.0) -> MarginContainer:
 ## the edge. Never below 70%; at 100% where it fits, which is everywhere in English.
 static func keep_on_screen(frame: Control) -> void:
 	var st := {"room": Vector2.ZERO, "k": 1.0, "queued": false, "settling": true}
+	var ref: WeakRef = weakref(frame)
 	var fit := func():
 		st.queued = false
-		if not is_instance_valid(frame) or not frame.is_inside_tree() or bool(st.settling):
+		var fr: Control = ref.get_ref()
+		if fr == null or not fr.is_inside_tree() or bool(st.settling):
 			return
-		var room := frame.get_parent_area_size()
-		var need := frame.get_combined_minimum_size()
+		var room := fr.get_parent_area_size()
+		var need := fr.get_combined_minimum_size()
 		if room.x <= 0.0 or room.y <= 0.0 or need.x <= 0.0 or need.y <= 0.0:
 			return
 		if room != st.room:
@@ -66,12 +68,12 @@ static func keep_on_screen(frame: Control) -> void:
 		# Only ever smaller while the screen keeps its size: words wrap less on a page drawn smaller (so wider), which
 		# would let it grow again, and wrap more again, back and forth.
 		var k := clampf(minf(minf(room.x / need.x, room.y / need.y), float(st.k)), 0.7, 1.0)
-		if absf(frame.scale.x - k) < 0.004:
+		if absf(fr.scale.x - k) < 0.004:
 			return
 		st.k = k
-		frame.scale = Vector2(k, k)
-		frame.offset_right = room.x / k - room.x
-		frame.offset_bottom = room.y / k - room.y
+		fr.scale = Vector2(k, k)
+		fr.offset_right = room.x / k - room.x
+		fr.offset_bottom = room.y / k - room.y
 	var queue := func():
 		if not st.queued:
 			st.queued = true
@@ -166,27 +168,30 @@ static func shrink(l: Label, size: int, min_k := 0.75, lines := 1) -> Label:
 		size = Game.ts(size)
 		l.add_theme_font_size_override("font_size", size)
 	var state := {"size": size, "key": ""}   # size 0: the label's own, read when it is first fitted
+	# (The label held weakly: a fit still queued when the label is freed - a closed pause menu - finds it gone.)
+	var ref: WeakRef = weakref(l)
 	var fit := func():
-		if not is_instance_valid(l):
+		var lb: Label = ref.get_ref()
+		if lb == null:
 			return
-		var w := l.size.x
-		if w <= 0.0 or l.text == "" or not l.is_inside_tree():
+		var w := lb.size.x
+		if w <= 0.0 or lb.text == "" or not lb.is_inside_tree():
 			return
-		var key := "%s|%d" % [l.text, int(w)]
+		var key := "%s|%d" % [lb.text, int(w)]
 		if key == state.key:
 			return
 		state.key = key
 		if int(state.size) <= 0:
-			state.size = l.get_theme_font_size("font_size")
+			state.size = lb.get_theme_font_size("font_size")
 		var top: int = state.size
-		var font := l.get_theme_font("font")
-		var text := l.text.to_upper() if l.uppercase else l.text
+		var font := lb.get_theme_font("font")
+		var text := lb.text.to_upper() if lb.uppercase else lb.text
 		var fs := top
 		while fs > roundi(top * min_k) and lines_at(font, text, w, fs) > lines:
 			fs -= 1
-		if l.get_theme_font_size("font_size") != fs:
-			l.add_theme_font_size_override("font_size", fs)
-		if l.autowrap_mode != TextServer.AUTOWRAP_OFF and l.max_lines_visible > 0:
+		if lb.get_theme_font_size("font_size") != fs:
+			lb.add_theme_font_size_override("font_size", fs)
+		if lb.autowrap_mode != TextServer.AUTOWRAP_OFF and lb.max_lines_visible > 0:
 			# Godot sizes a wrapped label that ends in "…" by the font's own line height, but a line of Kannada,
 			# Telugu or Gurmukhi stands taller than that, and the label then hid its last line: room for the lines
 			# as they are set.
@@ -194,13 +199,13 @@ static func shrink(l: Label, size: int, min_k := 0.75, lines := 1) -> Label:
 			tp.add_string(text, font, fs)
 			tp.width = w
 			tp.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
-			var n := mini(tp.get_line_count(), l.max_lines_visible)
+			var n := mini(tp.get_line_count(), lb.max_lines_visible)
 			var h := 0.0
 			for i in n:
 				h += tp.get_line_size(i).y
-			h = ceilf(h + maxi(n - 1, 0) * l.get_theme_constant("line_spacing"))
-			if absf(l.custom_minimum_size.y - h) > 0.5:
-				l.custom_minimum_size.y = h
+			h = ceilf(h + maxi(n - 1, 0) * lb.get_theme_constant("line_spacing"))
+			if absf(lb.custom_minimum_size.y - h) > 0.5:
+				lb.custom_minimum_size.y = h
 	l.set_meta("fit", fit)
 	l.resized.connect(fit)
 	# Its text can change after it is laid out (a price, a team's needs): it fits again when it redraws, once.

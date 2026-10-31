@@ -18,6 +18,10 @@ var role := "F"               # G, C, F, D, or R for a referee
 var slot := 0                 # the place in the line: 0 C, 1 LW, 2 RW, 3 LD, 4 RD; 5 the goalkeeper; 6 the sixth
                               # player of an empty net; 9 a penalised player on his way to the penalty bench
 var body: Body
+var link: FoundationLink      # the shared foundation drawing him (when the build has its licensed clips), else null
+var pose_every := 1           # the foundation's body posed every frame, or every 2nd or 3rd (far from the camera)
+var _lod_skip := 0            # frames since it was posed (each man starts at his own count: not all on one frame)
+var _link_dt := 0.0
 var match_node: Node = null
 
 var pos := Vector2.ZERO       # on the floor
@@ -64,6 +68,12 @@ func _ready() -> void:
 	if role == "G" or role == "R":
 		body.no_stick()
 	_place()
+	# Drawn with the shared foundation (the owner's model on the shared rig, motion-capture locomotion) when this build
+	# has the licensed library (FoundationLink); the game's own body stays, posed and measured, unseen.
+	if FoundationLink.enabled():
+		link = FoundationLink.new(self, body)
+		add_child(link)
+		_lod_skip = (int(data.get("num", slot)) + maxi(team, 0) * 7 + slot) % 3
 
 
 ## Marks this player as the one you run: a ring on the floor in your team's colour and a bigger number.
@@ -123,6 +133,8 @@ func become(p_data: Dictionary) -> void:
 	data = p_data
 	if body:
 		body.relook(_look())
+	if link:
+		link.recolour()
 
 
 func stat(k: String) -> float:
@@ -198,6 +210,21 @@ func step(dt: float) -> void:
 			act = ""
 	_animate(dt)
 	_place()
+	if link:
+		_pose_link(dt)
+
+
+## The foundation's body: posed on this man's frames only (pose_every, set by the match by his distance from the
+## camera), carried along with him between them (its modifiers run when it is posed: WsgBody.set_manual).
+func _pose_link(dt: float) -> void:
+	_link_dt += dt
+	_lod_skip += 1
+	if _lod_skip >= pose_every or respawned:
+		_lod_skip = 0
+		link.update(minf(_link_dt, 0.1))
+		_link_dt = 0.0
+	else:
+		link.follow()
 
 
 func _place() -> void:
