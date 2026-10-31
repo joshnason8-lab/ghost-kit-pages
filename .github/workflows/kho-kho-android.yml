@@ -12,6 +12,10 @@ on:
   # meant two "run failed" emails for one failure.
   workflow_dispatch:
 
+concurrency:
+  group: kho-kho-android-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GODOT_VERSION: "4.7.2"
   PROJECT_DIR: kho-kho-game
@@ -169,7 +173,8 @@ jobs:
       # "khamba-dash-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests. A manual run (workflow_dispatch) builds the same APK and leaves the release alone.
       - name: Publish the beta release
-        if: github.event_name == 'push'
+        # Only this branch's builds: a branch cut from it (a pilot) must not replace the beta.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/kho-kho-game'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
