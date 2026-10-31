@@ -2,7 +2,8 @@ extends Node
 ## Close-ups of the players and umpires in an AI match, for comparing the shared foundation's bodies (FoundationLink)
 ## with the game's own: holding the ball (both hands), a shot, a pass, running and sprinting, an umpire walking her
 ## line and signalling, the reserves on the bench, the crowd from the broadcast camera:
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tools/player/foundation_view.tscn -- OUT_DIR [graphics] [venue] [seed]
+##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/player/foundation_view.tscn -- OUT_DIR [graphics] [venue] [seed] [gaits]
+## (At a fixed frame rate the match plays the same in both builds: the same moments come up in each.)
 ## Each still is taken with the match held at the moment. Runs on a build without the foundation too (the beta's
 ## bodies), so the same moments can be put side by side. Prints how far the drawn hands are from the ball.
 
@@ -31,6 +32,12 @@ func _ready() -> void:
 		if q.get("link") != null:
 			q.link.measure = true
 	await _frames(120)
+	if a.size() > 4 and a[4] == "gaits":
+		# Only the run and the sprint.
+		await _gait_stills("run", 3.5, 5.0)
+		await _gait_stills("sprint", 6.3, 99.0)
+		get_tree().quit()
+		return
 	await _broadcast("crowd_tv")
 	var p: Node3D = await _wait(func(q): return q.act == "hold" and q.act_t > 0.5 and q.vel.length() < 0.3, 6000)
 	if p:
@@ -46,14 +53,12 @@ func _ready() -> void:
 	if p:
 		await _shoot(p, "pass_front", Vector3(2.4, 1.4, 0.6), 1.1, 30.0)
 		await _shoot(p, "pass_side", Vector3(0.3, 1.4, 2.6), 1.1, 30.0)
-	p = await _wait(func(q): return q.act == "run" and q.vel.length() > 3.0 and q.vel.length() < 5.0, 6000)
-	if p:
-		await _shoot(p, "run_side", Vector3(0.0, 1.1, 3.4), 0.95, 32.0, true)
-		await _shoot(p, "run_front", Vector3(3.4, 1.1, 0.4), 0.95, 32.0, true)
-	p = await _wait(func(q): return q.act == "run" and q.vel.length() > 6.0, 9000)
-	if p:
-		await _shoot(p, "sprint_side", Vector3(0.0, 1.1, 3.6), 0.95, 32.0, true)
-		await _shoot(p, "sprint_front", Vector3(3.6, 1.1, 0.4), 0.95, 32.0, true)
+	# Running and sprinting: picked by her own speed (a band, the same in both builds), on her own (no one within 1.5 m:
+	# nobody in the way), going the way she faces; three stills across one stride pair, side and front.
+	await _gait_stills("run", 3.5, 5.0)
+	# (The sprint: past the foundation's sprint threshold, where its Sprint_F_Loop takes over from the run: 6.4 m/s for
+	# a 0.85 m leg; the beta's Fast_Run is all there from 5.6.)
+	await _gait_stills("sprint", 6.3, 99.0)
 	var u: Node3D = m.umpires[0]
 	await _shoot(u, "umpire", Vector3(3.0, 1.3, 1.0), 1.0, 30.0)
 	u = await _wait(func(q): return q.sig != "" and q.sig_t > 0.4, 12000, true)
@@ -112,6 +117,61 @@ func _goal_replay() -> void:
 	RenderingServer.render_loop_enabled = true
 
 
+## A player running in the speed band, the way she faces, with no one within 1.5 m.
+func _gait(q: Node3D, lo: float, hi: float, steady := true) -> bool:
+	var v: Vector2 = q.vel
+	if q.act != "run" or v.length() < lo or v.length() > hi:
+		return false
+	# (And keeping it up: a way still to go, at a speed in the band, so the stride's three stills stay in it.)
+	var want := minf(q.want_speed, q.speed_cap())
+	if q.p.distance_to(q.target) < 5.0 or want < lo or (steady and want > hi + 0.3):
+		return false
+	if absf(angle_difference(atan2(v.x, v.y), q.facing)) > deg_to_rad(25.0):
+		return false
+	for o in m.players[0] + m.players[1] + m.umpires:
+		if o != q and o.global_position.distance_to(q.global_position) < 1.5:
+			return false
+	return true
+
+
+## A runner in the band, her stride's stills; again with the next one (up to six) until all three stay in it.
+func _gait_stills(name: String, lo: float, hi: float) -> void:
+	for attempt in 8:
+		# (Every other try also takes a runner steering for more than the band: the AI seldom holds a run's speed.)
+		var q: Node3D = await _wait(func(c): return _gait(c, lo, hi, attempt % 2 == 0), 8000)
+		if q == null:
+			continue
+		if await _stride(q, name, lo, hi):
+			return
+		print("%s: she left the band during the stride; the next one" % name)
+		m.paused = false
+		for i in 30:
+			await get_tree().process_frame
+
+
+## Three stills across one stride pair (by her own stride phase, which both builds keep), side and front, the camera
+## going with her.
+func _stride(q: Node3D, name: String, lo: float, hi: float) -> bool:
+	var p0: float = q.stride_phase
+	var all_in := true
+	for k in 3:
+		if k > 0:
+			m.paused = false
+			RenderingServer.render_loop_enabled = false
+			var n := 0
+			while fposmod(q.stride_phase - p0, 1.0) < k / 3.0 and n < 600:
+				await get_tree().process_frame
+				n += 1
+			m.paused = true
+			RenderingServer.render_loop_enabled = true
+		var band := "in" if q.vel.length() >= lo and q.vel.length() <= hi else "OUT OF"
+		all_in = all_in and band == "in"
+		print("%s_%d: stride phase %.2f, %s the band" % [name, k + 1, fposmod(q.stride_phase - p0, 1.0), band])
+		await _shoot(q, "%s_side_%d" % [name, k + 1], Vector3(0.0, 1.1, 3.6), 0.95, 32.0, true)
+		await _shoot(q, "%s_front_%d" % [name, k + 1], Vector3(3.8, 1.1, 0.3), 0.95, 32.0, true)
+	return all_in
+
+
 func _people() -> Array:
 	return m.players[0] + m.players[1] + m.umpires
 
@@ -161,16 +221,42 @@ func _shoot(q: Node3D, name: String, off: Vector3, y_at: float, fov := 32.0, mov
 		look = m.ball.global_position
 		at = Vector3(look.x, 0, look.z)
 		off.y += look.y - 1.3
-	cam.global_position = at + f * off.x + Vector3.UP * off.y + l * off.z
+	# Turned round her (the least way) when someone stands between the camera and her.
+	var turned := 0
+	for deg in [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180]:
+		var o := (f * off.x + l * off.z).rotated(Vector3.UP, deg_to_rad(deg))
+		cam.global_position = at + o + Vector3.UP * off.y
+		if not _blocked(q, cam.global_position, look):
+			turned = deg
+			break
 	cam.look_at(look)
 	await _still(name)
-	var msg := "%s: %s act=%s speed=%.1f" % [name, q.get("pos") if q.get("pos") != null else "umpire", q.get("act") if q.get("act") != null else q.get("sig"), q.vel.length()]
+	var msg := "%s: %s act=%s speed=%.1f%s" % [name, q.get("pos") if q.get("pos") != null else "umpire", q.get("act") if q.get("act") != null else q.get("sig"), q.vel.length(),
+		" (camera turned %d degrees round her for a clear view)" % turned if turned != 0 else ""]
+	# Who is near her: each one's place in the game and where her drawn body's hips are.
+	for o in m.players[0] + m.players[1]:
+		if o != q and o.global_position.distance_to(q.global_position) < 1.2:
+			var hips = o.link.body.bone_world("Hips").origin if o.get("link") != null else o.global_position
+			msg += "\n    near: %s%d %.2f m from her in the game, drawn hips %.2f m from her place" % [o.pos, o.team, o.global_position.distance_to(q.global_position), Vector2(hips.x - o.global_position.x, hips.z - o.global_position.z).length()]
 	var link = q.get("link")
 	if link != null:
 		msg += " mode=%s" % link.mode
 		if link.holding:
 			msg += " hands off the ball: L %.1f cm, R %.1f cm" % [float(link.last_hands.get("Left", -1.0)) * 100.0, float(link.last_hands.get("Right", -1.0)) * 100.0]
 	print(msg)
+
+
+## Someone (a player or an umpire other than q) within 0.4 m of the line from the camera to her.
+func _blocked(q: Node3D, from: Vector3, to: Vector3) -> bool:
+	for o in m.players[0] + m.players[1] + m.umpires:
+		if o == q:
+			continue
+		var c: Vector3 = o.global_position + Vector3.UP * 1.0
+		var d := to - from
+		var t := clampf((c - from).dot(d) / d.length_squared(), 0.0, 1.0)
+		if t > 0.05 and t < 0.97 and (from + d * t).distance_to(c) < 0.4 + 0.3:
+			return true
+	return false
 
 
 func _still(name: String) -> void:

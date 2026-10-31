@@ -1583,8 +1583,30 @@ func _foundation(available: bool) -> void:
 	var off_hands := 0
 	var off_ball := 0
 	var gap := 0.0
+	var stacked := 0
+	var drift := 0.0
 	for i in 600:
 		await frames(1)
+		# Each drawn body where its player is: its hips near her place in the game, and no two drawn together while
+		# their players are apart (a body drawn at another player's place).
+		# (Not in a replay: the bodies are where they were then.)
+		var drawn: Array = [] if m.phase == "replay" else (m.players[0] + m.players[1]).filter(func(q): return q.link and q.link.body.is_visible_in_tree())
+		var hips := {}
+		for q: Player in drawn:
+			var hp: Vector3 = q.link.body.bone_world("Hips").origin
+			hips[q] = Vector2(hp.x, hp.z)
+			var dq := (hips[q] as Vector2).distance_to(Vector2(q.position.x, q.position.z))
+			if dq > 0.35 and drift <= 0.35:
+				print("  drawn off her place: %s%d %.2f m, phase %s, act %s, mode %s" % [q.pos, q.team, dq, m.phase, q.act, q.link.mode])
+			drift = maxf(drift, dq)
+		for a_i in drawn.size():
+			for b_i in range(a_i + 1, drawn.size()):
+				var qa: Player = drawn[a_i]
+				var qb: Player = drawn[b_i]
+				if (hips[qa] as Vector2).distance_to(hips[qb]) < 0.3 and qa.position.distance_to(qb.position) > 0.6:
+					stacked += 1
+					if stacked <= 3:
+						print("  drawn together: %s%d and %s%d, %.2f m apart in the game, phase %s" % [qa.pos, qa.team, qb.pos, qb.team, qa.position.distance_to(qb.position), m.phase])
 		var h: Player = m.ball.holder
 		if m.ball.state != "held" or h == null or h.link == null or not h.link.holding:
 			continue
@@ -1600,6 +1622,7 @@ func _foundation(available: bool) -> void:
 		gap = maxf(gap, m.ball.position.distance_to(h.game_hand_point()))
 	check(held > 100 and off_hands <= held / 50, "foundation: both palms on the ball (%d of %d frames off it by over 1.5 cm)" % [off_hands, held])
 	check(off_ball == 0, "foundation: the ball drawn where the drawn hands hold it (%d of %d frames not)" % [off_ball, held])
+	check(stacked == 0 and drift < 0.35, "foundation: every body drawn at its own player's place (hips at most %.2f m off it; %d drawn pairs together while apart)" % [drift, stacked])
 	print("foundation: %d frames held; the drawn ball at most %.1f cm from the game's own hands" % [held, gap * 100.0])
 	var still := []
 	for who in people:
