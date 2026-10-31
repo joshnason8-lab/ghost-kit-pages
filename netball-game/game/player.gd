@@ -20,6 +20,11 @@ var pos := "C"               # her position (bib) now
 var data := {}               # her squad entry (DB.squad)
 var dir := 1                 # the end her team attacks this quarter
 var body: ToonBody
+var link: FoundationLink      # the shared foundation drawing her (Medium and High, with the licensed clips), else null
+var pose_every := 1           # the foundation's body posed every frame, or every 2nd or 3rd (far from the camera)
+var _lod_skip := 0            # frames since it was posed (each player starts at her own count: not all on one frame)
+var _link_dt := 0.0
+var want_vel := Vector2.ZERO  # the velocity she is steering to this frame (the foundation's starts, cuts and stops)
 
 var p := Vector2.ZERO        # where she is on the court (x along, y across), metres
 var vel := Vector2.ZERO
@@ -81,6 +86,16 @@ func _ready() -> void:
 	add_child(body)
 	_pose = Poses.ready(0.6)
 	body.apply(_pose)
+	# Drawn with the shared foundation (the owner's model on the shared rig, motion-capture locomotion) on Medium and
+	# High when this build has the licensed library (FoundationLink); the game's own body stays, posed and measured,
+	# unseen. (Again after a substitution: a new body, a new link.)
+	if link and is_instance_valid(link):
+		link.queue_free()
+	link = null
+	if FoundationLink.enabled():
+		link = FoundationLink.new(self, body)
+		add_child(link)
+		_lod_skip = (Rules.POSITIONS.find(pos) + team * 4) % 3
 
 
 func speed_cap() -> float:
@@ -116,6 +131,7 @@ func advance(dt: float) -> void:
 		var room := _room_along(desired.normalized())
 		if room < 3.0:
 			desired = desired.limit_length(sqrt(2.0 * DECEL * 0.85 * maxf(0.0, room - 0.12)))
+	want_vel = desired
 	var rate := ACCEL if desired.length() > vel.length() else DECEL
 	if stopped and land_clip != "":
 		# Landing with the ball: she stops as the landing does (motion capture), at its pace, never faster than she
@@ -145,6 +161,28 @@ func advance(dt: float) -> void:
 	facing = rotate_toward(facing, want_face, TURN * dt)
 	rotation.y = facing
 	_animate(dt)
+	if link:
+		_pose_link(dt)
+
+
+## The foundation's body: posed on her frames only (pose_every, set by the match by her distance from the camera;
+## every frame while she has the ball or it is coming to her), carried along between them (its modifiers run when
+## it is posed: WsgBody.set_manual).
+func _pose_link(dt: float) -> void:
+	_link_dt += dt
+	_lod_skip += 1
+	var ball := game_hand_point() if has_ball() else Vector3.INF
+	if _lod_skip >= pose_every or ball != Vector3.INF:
+		_lod_skip = 0
+		link.update(minf(_link_dt, 0.1), vel, want_vel, facing, act, ball)
+		_link_dt = 0.0
+	else:
+		link.follow()
+
+
+## She has the ball in her hands.
+func has_ball() -> bool:
+	return match_ref != null and match_ref.ball != null and match_ref.ball.holder == self and match_ref.ball.state == "held"
 
 
 ## How far she can run in direction d before a line her position may not cross (up to 3 m).
@@ -326,8 +364,15 @@ func set_act(a: String, kind := "") -> void:
 	act_t = 0.0
 
 
-## Where her hands hold the ball, in the world.
+## Where her hands hold the ball, in the world: the drawn hands' (the foundation's) when it draws her holding it.
 func hand_point() -> Vector3:
+	if link and link.holding and link.ball_at != Vector3.INF:
+		return link.ball_at
+	return game_hand_point()
+
+
+## Where the game's own body has her hands round the ball (the midpoint of its hands, a little under them).
+func game_hand_point() -> Vector3:
 	if body == null or body.skeleton == null:
 		return position + Vector3(0, 1.3, 0)
 	return (body.bone_world("hand_l") + body.bone_world("hand_r")) * 0.5 + Vector3(0, -0.04, 0)
