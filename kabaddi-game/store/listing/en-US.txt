@@ -1,0 +1,32 @@
+# Google Play store listing, English (United States). Paste each part into Play Console > Grow > Store presence >
+# Main store listing. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Kabaddi Raid
+
+== Short description ==
+Raid, touch and race home in 3D kabaddi. Own a franchise. Win the Nations Cup.
+
+== Full description ==
+Kabaddi Raid is a 3D kabaddi game for your phone. Cross the baulk line on one breath, touch a defender and race back over the midline before they bring you down. Or defend: read the raid, take him by the ankle, the thigh or the waist, and chain up with a team-mate.
+
+THREE WAYS TO PLAY
+• Quick Match: pick two teams and a ground, and play.
+• League Season: own a franchise. Keep your best players, win the player auction, pick your seven and take them through the league, the playoffs and the final, season after season, with the news, weekly awards, records and a hall of fame.
+• Nations Cup: pick a country and its squad of twelve, name a captain, and go from the groups to the final.
+
+REAL KABADDI
+• Hand touches, toe touches and kicks, the dubki under linked arms and the lion jump over a dive.
+• Ankle, thigh and waist holds, dashes and chain tackles, with team-mates coming in to help.
+• The rules as they are played: bonus points, revivals, all outs, do-or-die raids, super tackles, the golden raid, time outs and cards, with the referees signalling every call.
+• Raid on one breath of the cant, or against the 30-second clock: your choice.
+• Twelve franchises, twelve countries and five grounds, from a village mat to a stadium under lights.
+
+PLAY YOUR WAY
+• Eight languages: English, हिन्दी, मराठी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা and ਪੰਜਾਬੀ.
+• Touch controls with a stick wherever your thumb lands, a left-handed layout, buttons you can move and resize, and four levels, from Rookie to Legend.
+• Low, Medium or High graphics, to suit your phone.
+• Plays offline. No ads, no purchases, no account, and no data collected.
+
+== Release notes (first release) ==
+The first release of Kabaddi Raid: Quick Match, League Season and the Nations Cup, in eight languages. Plays offline, with no ads, purchases or data collected.

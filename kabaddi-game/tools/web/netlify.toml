@@ -1,0 +1,18 @@
+# The web version's Netlify site (https://kabaddi-raid-beta.netlify.app): the Web export, with this file beside it.
+# The export is already built, so Netlify only publishes it.
+[build]
+  publish = "."
+
+# The privacy policy and help pages live on thekabaddipulse.com. Builds from before the move open these two addresses
+# from Settings > About, so they forward there.
+[[redirects]]
+  from = "/privacy.html"
+  to = "https://thekabaddipulse.com/kabaddi-raid/privacy/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/support.html"
+  to = "https://thekabaddipulse.com/kabaddi-raid/support/"
+  status = 301
+  force = true

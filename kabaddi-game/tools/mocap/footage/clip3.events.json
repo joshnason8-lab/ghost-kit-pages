@@ -1,0 +1,54 @@
+{
+ "raider": [
+  "3",
+  "33"
+ ],
+ "from": 0.0,
+ "to": 12.6,
+ "outcome": "tackled",
+ "note": "Pakistan raider (green) v India's chain. A toe kick, then hand reaches every 2-3 s that the chain answers with a reach of its own; steps in deep and is blocked at the waist, then swarmed.",
+ "events": [
+  {
+   "t": 2.75,
+   "kind": "toe"
+  },
+  {
+   "t": 5.0,
+   "kind": "counter"
+  },
+  {
+   "t": 5.15,
+   "kind": "hand"
+  },
+  {
+   "t": 8.0,
+   "kind": "hand"
+  },
+  {
+   "t": 8.25,
+   "kind": "counter"
+  },
+  {
+   "t": 9.25,
+   "kind": "hand"
+  },
+  {
+   "t": 11.0,
+   "kind": "step_in"
+  },
+  {
+   "t": 11.1,
+   "kind": "block",
+   "who": "#6",
+   "hold": "waist"
+  },
+  {
+   "t": 11.75,
+   "kind": "assist"
+  },
+  {
+   "t": 12.0,
+   "kind": "swarm"
+  }
+ ]
+}

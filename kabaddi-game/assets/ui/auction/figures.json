@@ -1,0 +1,114 @@
+{
+ "figures": [
+  {
+   "file": "fig_00.png",
+   "kind": "defend",
+   "source": "video 2, frame 217"
+  },
+  {
+   "file": "fig_01.png",
+   "kind": "defend",
+   "source": "video 2, frame 237"
+  },
+  {
+   "file": "fig_02.png",
+   "kind": "defend",
+   "source": "video 2, frame 246"
+  },
+  {
+   "file": "fig_03.png",
+   "kind": "defend",
+   "source": "video 2, frame 256"
+  },
+  {
+   "file": "fig_04.png",
+   "kind": "defend",
+   "source": "video 2, frame 5"
+  },
+  {
+   "file": "fig_05.png",
+   "kind": "defend",
+   "source": "video 1, frame 1904"
+  },
+  {
+   "file": "fig_06.png",
+   "kind": "defend",
+   "source": "video 1, frame 826"
+  },
+  {
+   "file": "fig_07.png",
+   "kind": "defend",
+   "source": "video 1, frame 866"
+  },
+  {
+   "file": "fig_08.png",
+   "kind": "defend",
+   "source": "video 1, frame 3040"
+  },
+  {
+   "file": "fig_09.png",
+   "kind": "raid",
+   "source": "video 2, frame 337"
+  },
+  {
+   "file": "fig_10.png",
+   "kind": "raid",
+   "source": "video 2, frame 361"
+  },
+  {
+   "file": "fig_11.png",
+   "kind": "raid",
+   "source": "video 2, frame 382"
+  },
+  {
+   "file": "fig_12.png",
+   "kind": "raid",
+   "source": "video 2, frame 751"
+  },
+  {
+   "file": "fig_13.png",
+   "kind": "raid",
+   "source": "video 2, frame 792"
+  },
+  {
+   "file": "fig_14.png",
+   "kind": "raid",
+   "source": "video 2, frame 906"
+  },
+  {
+   "file": "fig_15.png",
+   "kind": "raid",
+   "source": "video 2, frame 149"
+  },
+  {
+   "file": "fig_16.png",
+   "kind": "raid",
+   "source": "video 2, frame 423"
+  },
+  {
+   "file": "fig_17.png",
+   "kind": "raid",
+   "source": "video 1, frame 1072"
+  },
+  {
+   "file": "fig_18.png",
+   "kind": "raid",
+   "source": "video 1, frame 1605"
+  },
+  {
+   "file": "fig_19.png",
+   "kind": "raid",
+   "source": "video 1, frame 3144"
+  },
+  {
+   "file": "fig_20.png",
+   "kind": "raid",
+   "source": "video 1, frame 3163"
+  },
+  {
+   "file": "fig_21.png",
+   "kind": "raid",
+   "source": "video 1, frame 343"
+  }
+ ]
+}
