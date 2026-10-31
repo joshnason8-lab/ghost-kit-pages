@@ -243,12 +243,13 @@ jobs:
         run: |
           TAG=pok-ta-pok-foundation-pilot
           APK=${PROJECT_DIR}/build/pok-ta-pok-rivals-${VERSION}.apk
+          APK32=${PROJECT_DIR}/build/pok-ta-pok-rivals-${VERSION}-32bit.apk
           cat > notes.md <<EOF
           **Foundation pilot** of Pok Ta Pok Rivals (${VERSION}), built from \`${GITHUB_SHA::7}\`: the players and judges on
           the World Stage Games shared rig with motion-capture running. Installs over the beta and keeps your saves (the
-          same game); to go back to the beta, uninstall and reinstall it (its version code is lower).
+          same game; an older 32-bit phone: the -32bit APK); to go back to the beta, uninstall and reinstall it (its version code is lower).
           EOF
           gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+          gh release create "$TAG" "$APK" "$APK32" --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "Foundation pilot: Pok Ta Pok Rivals ${VERSION}" --notes-file notes.md
           gh release view "$TAG"
