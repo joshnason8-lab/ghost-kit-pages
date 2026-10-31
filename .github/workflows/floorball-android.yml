@@ -24,6 +24,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The shared foundation (addons/wsg_foundation) against claude/shared-foundation: a warning when this copy is
+      # behind, never a failure (tools/wsg/sync_foundation.sh brings it up to date).
+      - name: Shared foundation up to date? (a warning only)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -56,6 +61,13 @@ jobs:
 
       - name: Build translations
         run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      # The licensed motion capture (the private assets repo; ASSETS_REPO_TOKEN), baked for this build only: never
+      # committed, never uploaded but inside the APK. Without the token the game draws as before (FoundationLink off).
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
 
       - name: Import project
         working-directory: ${{ env.PROJECT_DIR }}
@@ -164,7 +176,7 @@ jobs:
       # "floorball-unleashed-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests. A manual run (workflow_dispatch) builds the same APK and leaves the release alone.
       - name: Publish the beta release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/floorball-game'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -184,4 +196,23 @@ jobs:
           gh release delete "$TAG" --cleanup-tag --yes || true
           gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
             --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+          gh release view "$TAG"
+
+      # The shared foundation's pilot (claude/floorball-foundation-pilot): a pre-release of its own, never the beta's.
+      - name: Publish the foundation pilot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/floorball-foundation-pilot'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=floorball-foundation-pilot
+          APK=${PROJECT_DIR}/build/floorball-unleashed-${VERSION}.apk
+          cat > notes.md <<EOF
+          **Foundation pilot** of Floorball Unleashed (${VERSION}), built from \`${GITHUB_SHA::7}\`: the players, keepers and
+          referees on the World Stage Games shared rig with motion-capture running, the stick in both fists, and a goal
+          replay. Installs over the beta and keeps your saves (the same game); reinstall the beta to go back.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Foundation pilot: Floorball Unleashed ${VERSION}" --notes-file notes.md
           gh release view "$TAG"
