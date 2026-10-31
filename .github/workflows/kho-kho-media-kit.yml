@@ -72,6 +72,8 @@ jobs:
           unzip -l build/media/media-kit-kho-kho-rush.zip | tail -1
 
       - name: Publish the kit
+        # Only this branch's kit: a branch cut from it (a pilot) must not replace the published one.
+        if: github.ref == 'refs/heads/claude/kho-kho-game'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
