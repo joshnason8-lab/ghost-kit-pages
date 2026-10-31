@@ -45,6 +45,14 @@ func _initialize() -> void:
 	var meshes := sk.find_children("*", "MeshInstance3D", true, false)
 	for b in sk.get_bone_count():
 		canon[b] = _canonical(sk.get_bone_name(b))
+	# A Meshy auto-rig of the older kind names its spine from the top down (Hips > Spine02 > Spine01 > Spine > neck):
+	# the aliases read Spine02 as the chest, which put the rig's Spine above its Spine2. By the hierarchy instead.
+	var s2 := sk.find_bone("Spine02")
+	if s2 >= 0 and sk.get_bone_parent(s2) == sk.find_bone("Hips"):
+		for pair in [["Spine02", "Spine"], ["Spine01", "Spine1"], ["Spine", "Spine2"]]:
+			var i := sk.find_bone(pair[0])
+			if i >= 0:
+				canon[i] = pair[1]
 	for n in CORE:
 		if not canon.values().has(n):
 			push_error("the model has no bone for %s (bones: %s)" % [n, range(sk.get_bone_count()).map(func(i): return sk.get_bone_name(i))])
