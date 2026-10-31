@@ -25,6 +25,7 @@ func _ready() -> void:
 	await _bodies()
 	await _owner_round()
 	await _grounds()
+	_first_level()
 	FoundationLink.off = false
 	await _foundation(WsgClips.available())
 	FoundationLink.off = true
@@ -1209,3 +1210,18 @@ func _foundation_dive_and_pole() -> void:
 	a.queue_free()
 	await frames(2)
 	FoundationLink.in_match = false
+
+
+## The first run's graphics level (Game.detect_graphics): the owner's Galaxy A16 - Mali-G57 MC2 (Helio G99, Dimensity
+## 6300) or Mali-G68 MP2 (Exynos 1330), 4 to 8 GB - starts on Low, as do older Mali, PowerVR and low Adreno and any phone
+## under 4.5 GB; an ordinary phone Medium.
+func _first_level() -> void:
+	var low := []
+	for gpu in ["Mali-G57 MC2", "Mali-G57", "Mali-G68 MP2", "Mali-G68", "Mali-G52 MC2", "Mali-T830", "PowerVR Rogue GE8320",
+			"Adreno (TM) 610", "Adreno (TM) 506"]:
+		for ram in [4.0, 6.0, 8.0]:
+			low.append(Game.detect_graphics(gpu, ram) == Game.GFX_LOW)
+	check(low.all(func(x): return x), "first run: a Galaxy A16 (Mali-G57 MC2, Mali-G68 MP2; 4-8 GB) and older GPUs start on Low")
+	check(Game.detect_graphics("Adreno (TM) 740", 3.5) == Game.GFX_LOW and Game.detect_graphics("Adreno (TM) 740", 8.0) == Game.GFX_MEDIUM
+		and Game.detect_graphics("Mali-G715", 8.0) == Game.GFX_MEDIUM,
+		"first run: under 4.5 GB Low; an ordinary or better phone Medium")

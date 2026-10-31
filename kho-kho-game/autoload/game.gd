@@ -166,12 +166,16 @@ func go_back() -> void:
 
 ## The graphics level for this phone on its first run: Low on a phone with a small GPU or little memory (a Galaxy
 ## A16's Mali-G57 MC2 or Mali-G68 MP2, Adreno 5xx and 6xx below 640, PowerVR), Medium on the rest; High is a choice.
-func detect_graphics() -> int:
-	if not OS.has_feature("mobile"):
-		return GFX_HIGH
-	var gpu := RenderingServer.get_video_adapter_name().to_lower()
-	var mem: Dictionary = OS.get_memory_info()
-	var ram_gb := float(mem.get("physical", 0)) / 1073741824.0
+## (gpu and ram_gb given: what it picks for that phone - the tests ask it about a Galaxy A16's GPUs.)
+func detect_graphics(gpu := "", ram_gb := -1.0) -> int:
+	if gpu.is_empty():
+		if not OS.has_feature("mobile"):
+			return GFX_HIGH
+		gpu = RenderingServer.get_video_adapter_name()
+	gpu = gpu.to_lower()
+	if ram_gb < 0.0:
+		var mem: Dictionary = OS.get_memory_info()
+		ram_gb = float(mem.get("physical", 0)) / 1073741824.0
 	if ram_gb > 0.0 and ram_gb < 4.5:
 		return GFX_LOW
 	for weak in ["mali-g5", "mali-g6", "mali-t", "mali-4", "powervr", "adreno (tm) 5", "adreno (tm) 61", "adreno (tm) 50",
