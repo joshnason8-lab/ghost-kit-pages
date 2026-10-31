@@ -36,12 +36,12 @@ func _ready() -> void:
 	if p:
 		await _shoot(p, "run_side", Vector3(0.0, 1.0, 3.2), 0.9)
 		await _shoot(p, "run_front", Vector3(3.2, 1.1, 0.4), 0.9)
-		await _shoot(p, "run_hands", Vector3(0.9, 0.35, 0.7), -1.0, 30.0)
-	p = await _wait(func(q: Player): return q.act == "shoot" and q.act_t > q.act_len * 0.62, 6000)
+		await _shoot(p, "run_hands", Vector3(0.9, 0.25, 0.6), -1.0, 30.0)
+	p = await _wait(func(q: Player): return q.act == "shoot" and q.act_t > q.act_len * 0.86, 6000)
 	if p:
 		await _shoot(p, "shot_follow", Vector3(1.2, 1.2, 3.0), 0.9)
 		await _shoot(p, "shot_follow_front", Vector3(3.2, 1.2, -0.6), 0.9)
-	p = await _wait(func(q: Player): return q.role == "G" and q.act.begins_with("save") and q.act_t > q.act_len * 0.3, 8000)
+	p = await _wait(func(q: Player): return q.role == "G" and (q.act.begins_with("save") or q.act == "catch") and q.act_t > q.act_len * 0.3, 20000)
 	if p:
 		await _shoot(p, "keeper_save", Vector3(3.4, 1.0, 0.6), 0.6)
 		await _shoot(p, "keeper_save_side", Vector3(0.4, 1.0, 3.2), 0.6)
@@ -78,8 +78,9 @@ func _shoot(p: Player, name: String, off: Vector3, y_at: float, fov := 32.0) -> 
 	if y_at < 0.0 and p.link and p.link.stick:
 		# (The hands: the top fist on the shaft.)
 		var sx := p.link.stick.global_transform
-		look = sx.origin + (sx.basis * Vector3.DOWN).normalized() * 0.12
-		at = look - Vector3.UP * 1.0
+		look = sx.origin + (sx.basis * Vector3.DOWN).normalized() * 0.15
+		at = Vector3(look.x, 0.0, look.z)
+		off.y += look.y
 	cam.global_position = at + f * off.x + Vector3.UP * off.y + l * off.z
 	cam.look_at(look)
 	for i in 3:

@@ -32,6 +32,7 @@ var mode := ""
 var top := "Right"            # the hand at the top of the stick (a left-shooter's right)
 var low := "Left"
 var _arm_len := {}            # side -> shoulder to wrist (m, the rig's rest)
+var _reach_len := {}          # side -> the same as the layer measures it (the forearm's and hand's rest offsets)
 var _grip_pt := {}            # side -> the shaft's axis through that fist (rest, the joints' space)
 var _history: Array = []      # [clock, the stick in the top hand as drawn] for the replay
 var _dt := 1.0 / 60.0
@@ -90,6 +91,8 @@ func _ready() -> void:
 		_grip_pt[side] = WsgGrip.clear_axis_point(body.joints, side, GRIP_R)
 		_arm_len[side] = (body.joints[side + "ForeArm"] as Vector3).distance_to(body.joints[side + "Arm"]) + \
 			(body.joints[side + "Hand"] as Vector3).distance_to(body.joints[side + "ForeArm"])
+		var sk := body.skeleton
+		_reach_len[side] = sk.get_bone_rest(sk.find_bone(side + "ForeArm")).origin.length() + sk.get_bone_rest(sk.find_bone(side + "Hand")).origin.length()
 	# The game's body stays (posed, measured), unseen; what it carried is drawn here.
 	gb.drawn_elsewhere = true
 	if gb.rig:
@@ -206,6 +209,8 @@ func update(dt: float) -> void:
 	if stick and want == "full" and pose.has("@hips"):
 		pose["@hips"] = (pose["@hips"] as Vector3) + _shifts.get("full", Vector3.ZERO)
 	var bp := {}
+	if stick and want == "full":
+		bp = reader.body_space(TRUNK + ARMS)
 	match want:
 		"stick":
 			# Running with the stick: the legs (and the hips) the motion capture's, the trunk and both arms where the
@@ -243,8 +248,13 @@ func update(dt: float) -> void:
 	# (The game's trunk and arms turned into this body's frame: the capture turns the body after the game's facing a
 	# moment late, and the trunk, the hands and the stick face where the game's do.)
 	var turn := (body.skeleton.global_transform.affine_inverse() * gb.skeleton.global_transform).basis.orthonormalized().get_rotation_quaternion()
+	# And leant further forward over the stick by the lean (the rig's shoulders stand further back than the game's).
+	var lean := Quaternion(Vector3.RIGHT, float(_leans.get(mode, 0.0))) if stick else Quaternion.IDENTITY
 	for k in bp:
-		bp[k] = (turn * (bp[k] as Quaternion)).normalized()
+		var q: Quaternion = turn * (bp[k] as Quaternion)
+		if k != "Head":
+			q = (lean.slerp(Quaternion.IDENTITY, 0.5) if k == "Neck" else lean) * q
+		bp[k] = q.normalized()
 	legacy.body_pose = bp
 	legacy.stick_on = false
 	legacy.shift = Vector3.ZERO
@@ -277,7 +287,7 @@ var _rig_turn := Quaternion.IDENTITY
 ## least way from the game's hand that lays its grip along the shaft, the top one TOP_AT down from the grip's end and
 ## held to the hips, the lower one as far below it as the game's and held to the top hand; each slides along the
 ## shaft to where its arm can reach. lift: what the foot planter adds to the hips after.
-func holds(hips_g: Transform3D, lift: Vector3) -> Dictionary:
+func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	var g := reader._last_global
 	if not g.has(top + "Hand") or not g.has(low + "Hand"):
 		return {}
@@ -289,15 +299,37 @@ func holds(hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	var v_top: Vector3 = (_grip_pt[top] as Vector3) - (body.joints[top + "Hand"] as Vector3)
 	var v_low: Vector3 = (_grip_pt[low] as Vector3) - (body.joints[low + "Hand"] as Vector3)
 	var qt := _along(_rig_turn * (g[top + "Hand"] as Quaternion), down)
-	var hand_t := Transform3D(Basis(qt), sx.origin + down * TOP_AT - qt * v_top)
-	var spacing := maxf(0.12, float(hands.get(l_s, 0.23)) - float(hands.get(t_s, 0.03)))
 	var ql := _along(_rig_turn * (g[low + "Hand"] as Quaternion), down)
-	var hand_l := Transform3D(Basis(ql), sx.origin + down * (TOP_AT + spacing) - ql * v_low)
+	var spacing := maxf(0.12, float(hands.get(l_s, 0.23)) - float(hands.get(t_s, 0.03)))
+	# Each fist slid along the shaft to where its arm reaches (the shoulders where the trunk now has them; the lift
+	# not yet added): the top one never off the grip's end, the lower one at least a hand below it.
+	var top_at := sx.origin - lift + down * TOP_AT
+	var x_t := maxf(_slide(sk, top, top_at - qt * v_top, down), 0.03 - TOP_AT)
+	var x_l := maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down), 0.1 - spacing)
+	var hand_t := Transform3D(Basis(qt), sx.origin + down * (TOP_AT + x_t) - qt * v_top)
+	var hand_l := Transform3D(Basis(ql), sx.origin + down * (TOP_AT + x_t + spacing + x_l) - ql * v_low)
 	var in_hips := hips_g.affine_inverse() * Transform3D(hand_t.basis, hand_t.origin - lift)
-	return {
-		top: ["Hips", in_hips, 1.0, (hips_g.basis.inverse() * down).normalized(), v_top],
-		low: [top + "Hand", hand_t.affine_inverse() * hand_l, 1.0, (hand_t.basis.inverse() * down).normalized(), v_low],
-	}
+	# (No handle given to the layer: its own slide and roll round the handle, searched each frame, cost a phone more
+	# than all the rest of the hold.)
+	return {top: ["Hips", in_hips, 1.0], low: [top + "Hand", hand_t.affine_inverse() * hand_l, 1.0]}
+
+
+## How far along dir a wrist meant for wrist must move for the side's arm to reach it comfortably (WsgPoseLayer's own
+## rule: within 0.97 of the arm, no nearer the shoulder than half of it): the nearer way; the nearest point of the
+## line when it never comes within reach.
+func _slide(sk: Skeleton3D, side: String, wrist: Vector3, dir: Vector3) -> float:
+	var s := sk.get_bone_global_pose(sk.find_bone(side + "Arm")).origin
+	var arm: float = _reach_len[side]
+	var v := wrist - s
+	var want := clampf(v.length(), arm * 0.5, arm * 0.97)
+	if is_equal_approx(want, v.length()):
+		return 0.0
+	var b := v.dot(dir)
+	var disc := b * b - (v.length_squared() - want * want)
+	if disc < 0.0:
+		return -b
+	var r := sqrt(disc)
+	return -b - r if absf(-b - r) < absf(-b + r) else -b + r
 
 
 ## A hand's turn (the rig's convention) turned the least way that lays its grip (across the palm, rest +Z) along dir.
@@ -358,15 +390,21 @@ func _place_stick() -> void:
 		var grip := inv * (xf * Vector3(0, -(TOP_AT + spacing * k), 0))
 		var sh := inv * body.bone_world(side + "Arm").origin
 		var from := game_sh if k == 0 else sh
-		var want_sh := grip + (from - grip).normalized() * minf(float(_arm_len[side]) - 0.03, from.distance_to(grip))
+		var arm: float = _arm_len[side]
+		var want_sh := grip + (from - grip).normalized() * clampf(from.distance_to(grip), arm * 0.62, arm - 0.03)
 		err += (want_sh - sh) * (0.65 if k == 0 else 0.35)
+	# Forward: mostly a further lean of the trunk (the hips carried forward took the legs into the stick), the rest the
+	# hips; down and sideways the hips.
+	var lean := clampf(float(_leans.get(mode, 0.0)) + err.z / 0.45 * 0.3, 0.0, 0.35)
+	_leans[mode] = lean
 	var shift: Vector3 = _shifts.get(mode, Vector3.ZERO) + err * 0.35
-	_shifts[mode] = Vector3(clampf(shift.x, -0.08, 0.08), clampf(shift.y, -0.32, 0.04), clampf(shift.z, -0.06, 0.2))
+	_shifts[mode] = Vector3(clampf(shift.x, -0.08, 0.08), clampf(shift.y, -0.32, 0.04), clampf(shift.z, -0.04, 0.05))
 
 
 ## The hips moved (this body's skeleton space) so its top shoulder is where the game's is: lower and further forward
 ## (the rig's chest stands taller and its shoulders further back than the game's floorball stance).
 var _shifts := {}             # mode -> Vector3
+var _leans := {}              # mode -> radians the trunk is leant further forward
 
 
 func _replay_stick(t: float) -> Transform3D:
@@ -395,7 +433,7 @@ func _measure(xf: Transform3D) -> void:
 		last_fists[side + "_along"] = v.dot(dir)
 	var want := gb.skeleton.global_transform * (gb.stick_transform() * Vector3(0, -Body.STICK_LEN, 0))
 	last_fists["heel"] = (xf * Vector3(0, -Body.STICK_LEN, 0)).y - want.y
-	last_fists["crouch"] = _shifts.get(mode, Vector3.ZERO)
+	last_fists["crouch"] = [_shifts.get(mode, Vector3.ZERO), rad_to_deg(float(_leans.get(mode, 0.0)))]
 	var t_s := "r" if top == "Right" else "l"
 	var inv := body.global_transform.affine_inverse()
 	var game_sh := inv * (gb.skeleton.global_transform * gb.shoulder(t_s))
@@ -427,5 +465,13 @@ class StickLayer extends WsgPoseLayer:
 				sk.set_bone_pose_position(hi, sk.get_bone_pose_position(hi).lerp(sk.get_bone_rest(hi).origin + hips - Vector3(0, lift_after, 0), w))
 			elif shift != Vector3.ZERO:
 				sk.set_bone_pose_position(hi, sk.get_bone_pose_position(hi) + shift * w)
-			hold = link.holds(sk.get_bone_global_pose(hi), Vector3(0, lift_after, 0)) if stick_on else {}
+			hold = {}
+			if stick_on:
+				# (The trunk too - where the shoulders will be - as the layer will lay it.)
+				for b in ["Spine", "Spine1", "Spine2", "LeftShoulder", "RightShoulder"]:
+					if body_pose.has(b):
+						var i := sk.find_bone(b)
+						var pq := sk.get_bone_global_pose(sk.get_bone_parent(i)).basis.get_rotation_quaternion()
+						sk.set_bone_pose_rotation(i, sk.get_bone_pose_rotation(i).slerp((pq.inverse() * (body_pose[b] as Quaternion)).normalized(), w))
+				hold = link.holds(sk, sk.get_bone_global_pose(hi), Vector3(0, lift_after, 0))
 		super(delta)
