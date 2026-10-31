@@ -309,3 +309,16 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   (Floorball's StickLayer lays them twice in a fade: holds drift up to 4 cm); WsgGrip - a sphere grip; rig_test - the
   right elbow at 140 deg keeps 85% girth on the Netball bake (at the limit).
 - **Next**: Kabaddi (budget profile: Low default on the A16; Indic fonts).
+- **Kabaddi pilot (done, waits on the owner)**: claude/kabaddi-foundation-pilot at b1ccbb4, 0.13.1-pilot code 37,
+  pre-release kabaddi-foundation-pilot (CI run 41220305241 green); draft PR #15 (subscribed). Ten Meshy bodies (.krb ->
+  tools/rig/krb_to_scene.gd -> bake), game's kit shader kept; every kabaddi move is the game's pose over the rig; mocap
+  only walking/standing/officials/roar/slump; Low pixel-identical; one replay per raid, prioritised, label in 8
+  languages. Ported to the foundation (bdd4071): WsgLegacyPose p_face, UV2 through bake_character/lod_from_obj.
+  Still to port as ADOPTING notes: set planter.enabled every update (a body posed by the game from frame one never
+  runs the locomotor); A-pose legs rebuilt from joint positions (FoundationLink._legs); measure bones in `posed`;
+  bake_character should warn when a body gets no LODs.
+- **Syncs held**: Floorball and Netball pilots are behind bdd4071 (tooling + a default-compatible legacy_pose) and
+  Hurling behind be73cbf/30a3970/bdd4071 - send with each game's next real change (a push republishes the APK).
+- **Sepak Takraw (in progress)**: claude/sepak-takraw-foundation-pilot from e74d4ec (the session's own publish
+  guards), worktree /home/user/takraw-pilot, 956e2c4 vendor, bd5b7a9 CI + 0.12.4-pilot code 21; helper integrating.
+  Then Kho Kho (no new derived animation data), Pok Ta Pok.
