@@ -285,3 +285,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   Mixamo-named). Plan: vendor; bake_character.sh the man and woman onto the rig; a FoundationLink from Hurling's
   (the stick in the hand, its actions); WsgCrowd3D in the hall; referees on the man model in their kit; the hall's
   light; WsgReplay at goals; WsgAutoTier; the workflow's licensed-assets step, check_foundation, a pilot publish step.
+- **Floorball pilot (done, waits on the owner)**: claude/floorball-foundation-pilot at 962f73c, 0.9.1-pilot code 16,
+  pre-release floorball-foundation-pilot (CI run 41196987431 green: 150 clips, test_runner 716/0, signed 6F:23:A9:36);
+  draft PR #13 into claude/floorball-game (subscribed). FoundationLink full/stick/referee modes, the stick in both
+  fists, goal replay, WsgAutoTier, rank_detail, far players posed every 2nd/3rd frame (Low 4.6 / Medium 6.3 /
+  High 7.3 ms). Keeper saves stay on the game's procedural poses (no keeper clips in the library: the gap).
+  Found on the way: the claw fist was bake_character putting the first finger joint where Meshy's joined fingers
+  split (near the tip) - fixed in the foundation (30a3970: fingers from their knuckles); Hurling's bakes predate it
+  (a re-bake may help the hurler: untested, ask the owner). The workflow had no concurrency group (an older run
+  published over a newer): add `concurrency: {group: <game>-android-${{ github.ref }}, cancel-in-progress: true}`
+  to every pilot's workflow. Open: arena/crowd not rebuilt on a mid-match step down; no replay label; mode changes
+  snap. Comparison frames: scratchpad fb_cmp/ (beta vs pilot via tools/player/grip_view and breakaway_view).
+- **Next**: Netball. Then push the tooling sync (be73cbf, 30a3970) to claude/hurling-game unless the lead holds it.
