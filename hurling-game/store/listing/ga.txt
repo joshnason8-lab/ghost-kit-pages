@@ -1,0 +1,44 @@
+# Google Play store listing, Irish (Gaeilge): a DRAFT. Google Play did not offer Irish as a listing language in
+# October 2026 (store/PLAY_STORE.md); this is ready for when it does, and for the game's website. A native speaker
+# should read it first (as the game's own Irish). Limits: app name 30 characters, short description 80, full
+# description 4000 (tools/store/check_listing.py counts them).
+
+== App name ==
+Hurling Heroes
+
+== Short description ==
+Iománaíocht: cúig dhuine dhéag an taobh, na fíorrialacha, gach contae.
+
+== Full description ==
+Is é Hurling Heroes an iománaíocht ar d'fhón: cling na fuinseoige, cúig dhuine dhéag an taobh, cúil agus cúilíní, ar pháirc pharóiste um thráthnóna nó os comhair staid lán. Ardaigh an sliotar, déan solo tríd, agus buail thar an trasnán é.
+
+Available in English / Ar fáil i mBéarla.
+
+AN CLUICHE FÍOR
+• Rialacha imeartha 2026: dhá leath de 35 nóiméad (30 ag leibhéal club), cúl fiú trí chúilín.
+• Ceithre chéim leis an sliotar i do lámh, ansin solo ar an gcamán; dhá ghabháil ar a mhéad.
+• Poc amach, saorphoic, 65anna, poic ón taobhlíne agus poic phionóis, gach ceann san áit a chuireann na rialacha é.
+• An greamú: an ghualainn, an chrúcáil, an bac agus an flic, agus na calaoisí. Cártaí buí, dearga agus dubha.
+• Buntáiste, am breise, agus i gcluiche cnaguirlis am breise agus comórtas poc pionóis.
+• Éiríonn na himreoirí tuirseach: déan do chúig ionadú, nó fág faoin mbainisteoir é.
+
+NA hOIFIGIGH
+Séideann an réiteoir an fheadóg, taispeánann sé an cárta; ardaíonn na maoir líne a mbratacha; croitheann na maoir chúil an bhratach bhán do chúilín agus an ghlas do chúl.
+
+BEALAÍ LE hIMIRT
+• Caitheamh isteach: roghnaigh dhá chontae agus páirc, agus imir.
+• Craobh an tSamhraidh: grúpaí, ansin cluichí cnaguirlis go dtí an cluiche ceannais. Is féidir cluiche a ionsamhlú, nó cluiche a fhágáil agus filleadh air.
+• Féach ar chluiche: dhá chontae agus an ríomhaire ag imirt.
+• Saorbhuillí: deich saorbhuille agus 65anna ag na cuaillí ó gach cearn den pháirc. Téann sprioc timpeall an chúil; brúigh SCAOIL chun í a stopadh san áit ar mian leat an sliotar a chur, agus sáraigh do scór is fearr.
+
+IMIR MAR IS MIAN LEAT
+• Nua don iománaíocht? Tugann an traenálaí comhairle duit i do chéad chluiche.
+• Gaeilge nó Béarla.
+• Maide stiúrtha ar chlé, cnaipí ar dheis: méadaigh iad, bog iad, nó malartaigh na taobhanna más ciotóg thú.
+• Grafaic Íseal, Meánach nó Ard, de réir d'fhóin.
+• Imríonn sé as líne. Gan fógraí, gan cheannacháin, gan chuntas, agus ní bhailítear aon sonraí.
+
+Is cluiche neamhspleách é Hurling Heroes. Níl baint aige le haon chomhlacht spóirt, bord contae ná club, ná níl a dtacaíocht aige. Tá na contaetha ann faoina n-ainmneacha áite, i ndathanna de dhearadh an chluiche féin; is samhailteach gach imreoir.
+
+== Release notes (an chéad eisiúint ar Google Play) ==
+An chéad eisiúint ar Google Play: an iománaíocht ar d'fhón, fíorrialacha 2026, gach contae, Craobh an tSamhraidh, i nGaeilge agus i mBéarla. Imríonn sé as líne; gan fógraí, gan cheannacháin.

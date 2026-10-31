@@ -1,0 +1,240 @@
+name: World Stage Games · Firebase Test Lab (reusable)
+
+# A game's frame rate and memory on real phones - a budget, a mid-range and a flagship Android phone in Google's
+# Firebase Test Lab - at each graphics tier. The game builds its "Android TestLab" export preset (the "testlab"
+# feature: the build opens on a match that plays itself, 60 s at Low, Medium and High, and logs each as a WSG_PERF
+# line through the foundation's WsgPerfLog); Test Lab runs it on the three phones; this reads the lines back from
+# each phone's log into a table (the run's summary) and a JSON artifact.
+#
+# A game calls it (Hurling: .github/workflows/hurling-testlab.yml):
+#   jobs:
+#     testlab:
+#       uses: ./.github/workflows/wsg-testlab.yml
+#       with: { game-dir: hurling-game }
+#       secrets: inherit
+#
+# Without the FIREBASE_TESTLAB_KEY secret (a Google Cloud service account's JSON key: foundation/docs/TESTLAB.md has
+# the owner's steps) it says so and stops, green. Test Lab's free (Spark) plan allows 5 tests a day on physical
+# phones: one run here is 3 of them, so it runs when asked (workflow_dispatch), not on every push.
+
+on:
+  workflow_call:
+    inputs:
+      game-dir:
+        description: "The game's Godot project (e.g. hurling-game)"
+        type: string
+        required: true
+      preset:
+        description: "Its Test Lab export preset"
+        type: string
+        default: "Android TestLab"
+      devices:
+        description: "Phones to use instead of the automatic three: model,version;model,version (Test Lab ids)"
+        type: string
+        default: ""
+      timeout:
+        description: "How long Test Lab gives each phone (the run is 3 x 68 s plus loading)"
+        type: string
+        default: "330s"
+      godot-version:
+        type: string
+        default: "4.7.2"
+    secrets:
+      FIREBASE_TESTLAB_KEY:
+        required: false
+      ASSETS_REPO_TOKEN:
+        required: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.key.outputs.enabled }}
+    steps:
+      - id: key
+        env:
+          KEY: ${{ secrets.FIREBASE_TESTLAB_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::FIREBASE_TESTLAB_KEY is not set: Test Lab skipped (foundation/docs/TESTLAB.md: the owner's steps)"
+            echo "Test Lab skipped: the FIREBASE_TESTLAB_KEY secret is not set (foundation/docs/TESTLAB.md)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  testlab:
+    needs: check
+    if: needs.check.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GODOT_VERSION: ${{ inputs.godot-version }}
+      PROJECT_DIR: ${{ inputs.game-dir }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ inputs.godot-version }}-templates
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+
+      # The licensed animation, as the game's own build has it (inside the APK only; never uploaded or cached).
+      - name: Licensed animation (if the private assets token is set)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: |
+          if [ -f "${PROJECT_DIR}/tools/wsg/fetch_assets.sh" ]; then sh "${PROJECT_DIR}/tools/wsg/fetch_assets.sh"; fi
+
+      - name: Import
+        working-directory: ${{ inputs.game-dir }}
+        run: |
+          [ -f tools/build_i18n.py ] && python3 tools/build_i18n.py || true
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Export the Test Lab APK (debug-signed, as Test Lab installs it fresh)
+        working-directory: ${{ inputs.game-dir }}
+        run: |
+          KEYSTORE=$HOME/debug.keystore
+          keytool -genkeypair -keystore "$KEYSTORE" -storepass android -keypass android -alias androiddebugkey \
+            -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000 >/dev/null
+          SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
+          godot --headless --editor --quit --path . || true
+          mkdir -p ~/.config/godot
+          [ -f "$SETTINGS" ] || printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
+          sed -i '/export\/android\//d' "$SETTINGS"
+          {
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK_ROOT\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$KEYSTORE\""
+            echo "export/android/debug_keystore_user = \"androiddebugkey\""
+            echo "export/android/debug_keystore_pass = \"android\""
+          } >> "$SETTINGS"
+          mkdir -p build
+          godot --headless --path . --export-debug "${{ inputs.preset }}" build/testlab.apk
+          ls -la build/testlab.apk
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_TESTLAB_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      # Three phones from what Test Lab has today (its catalogue changes): the first of each list it has, physical,
+      # on Android 10 or later; else by name. Or the game's own (inputs.devices).
+      - name: Choose the phones
+        id: phones
+        env:
+          WANT: ${{ inputs.devices }}
+        run: |
+          if [ -n "$WANT" ]; then
+            echo "$WANT" | tr ';' '\n' | sed 's/^/--device model=/; s/,/,version=/' | tr '\n' ' ' > devices.txt
+          else
+            gcloud firebase test android models list --format=json > models.json
+            python3 - <<'PY'
+          import json
+          models = [m for m in json.load(open("models.json")) if m.get("form") == "PHYSICAL"]
+          def newest(m):
+              v = [int(x) for x in m.get("supportedVersionIds", []) if str(x).isdigit() and int(x) >= 29]
+              return max(v) if v else None
+          by_id = {m["id"]: m for m in models if newest(m)}
+          prefs = {
+              # A Galaxy A0x/A1x-class phone (Mali-G52/G57, Helio, 2-4 GB): the games' weak end.
+              "budget": ["a03s", "a02q", "a12", "a13", "a10", "a11q", "a14", "gta7litewifi"],
+              # A mid-range phone (Snapdragon 7-series, Tensor in a-models): the profiles' default tier.
+              "mid": ["bluejay", "lynx", "a52q", "a53x", "a54x", "barbet", "sunfish"],
+              # A flagship (Snapdragon 8 Gen 1 or later, Tensor G2+): High from the start.
+              "flagship": ["e3q", "dm3q", "dm1q", "b0q", "husky", "shiba", "cheetah", "panther", "oriole"],
+          }
+          names = {"budget": ["Galaxy A0", "Galaxy A1", "Moto G", "Redmi"], "mid": ["Pixel 6a", "Pixel 7a", "Galaxy A5"],
+                   "flagship": ["Galaxy S2", "Pixel 8", "Pixel 9", "Pixel 7"]}
+          chosen = []
+          for tier, ids in prefs.items():
+              pick = next((by_id[i] for i in ids if i in by_id), None)
+              if pick is None:
+                  pick = next((m for m in by_id.values() if any(n in m.get("name", "") for n in names[tier])), None)
+              if pick is None:
+                  print("::warning::no %s phone found in Test Lab's catalogue" % tier)
+                  continue
+              chosen.append((tier, pick["id"], newest(pick), pick.get("name", "")))
+              print("%-8s %s (%s), Android API %d" % (tier, pick["id"], pick.get("name", ""), newest(pick)))
+          open("devices.txt", "w").write(" ".join("--device model=%s,version=%d,locale=en,orientation=landscape" % (c[1], c[2]) for c in chosen))
+          json.dump(chosen, open("chosen.json", "w"))
+          PY
+          fi
+          cat devices.txt
+
+      - name: Run on the phones
+        working-directory: ${{ inputs.game-dir }}
+        run: |
+          DIR="wsg-testlab/${{ github.run_id }}-${{ github.run_attempt }}"
+          echo "RESULTS_DIR=$DIR" >> "$GITHUB_ENV"
+          # (Robo: Test Lab starts the app and pokes at it; the testlab build ignores the pokes and plays its match.)
+          gcloud firebase test android run --type robo --app build/testlab.apk $(cat ../devices.txt) \
+            --timeout ${{ inputs.timeout }} --results-dir "$DIR" --no-record-video --format=json 2>&1 | tee run.log || true
+          BUCKET=$(grep -o 'test-lab-[a-z0-9-]*' run.log | head -1)
+          echo "BUCKET=$BUCKET" >> "$GITHUB_ENV"
+          [ -n "$BUCKET" ] || { echo "::error::no results bucket in Test Lab's output"; exit 1; }
+
+      - name: Read the phones' numbers
+        run: |
+          mkdir -p logs
+          gsutil -m cp -r "gs://${BUCKET}/${RESULTS_DIR}/*" logs/ || true
+          python3 - <<'PY'
+          import json, os, re
+          rows = []
+          for root, _, files in os.walk("logs"):
+              for f in files:
+                  if f != "logcat":
+                      continue
+                  phone = os.path.relpath(root, "logs").split(os.sep)[0]
+                  for line in open(os.path.join(root, f), errors="replace"):
+                      m = re.search(r"WSG_PERF (\{.*\})", line)
+                      if m:
+                          d = json.loads(m.group(1))
+                          d["phone"] = phone
+                          rows.append(d)
+          json.dump(rows, open("testlab_results.json", "w"), indent=1)
+          out = ["## Test Lab: frame rate and memory per phone and tier", "",
+                 "| Phone | Tier | FPS avg | FPS worst 5% | FPS worst 1% | Frame ms p50 / p95 | Engine MB | Video MB | Phone MB free | Draw calls | Triangles | Starts on |",
+                 "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+          start = {"-1": "Low", "0": "default", "1": "High"}
+          for r in rows:
+              out.append("| %s (%s) | %s | %.1f | %.1f | %.1f | %.1f / %.1f | %.0f | %.0f | %.0f | %d | %d | %s |" % (
+                  r.get("device", "?"), r.get("gpu", "?"), r["label"], r["fps_avg"], r["fps_low5"], r["fps_low1"],
+                  r["frame_ms_p50"], r["frame_ms_p95"], r["mem_engine_mb"], r["mem_video_mb"], r["mem_free_mb"],
+                  r["draw_calls"], r["triangles"], start.get(str(r.get("device_class")), "?")))
+          if not rows:
+              out.append("No WSG_PERF lines came back: see the run's log and Test Lab's console.")
+          open(os.environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(out) + "\n")
+          print("\n".join(out))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: testlab-results
+          path: testlab_results.json

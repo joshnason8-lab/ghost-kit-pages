@@ -1,0 +1,458 @@
+keys,en,ga
+GAME_TITLE,Hurling Heroes,Hurling Heroes
+TAGLINE,"Hurling, as it is played.","An iománaíocht, mar a imrítear í."
+LOADING,Lining the pitch…,Ag marcáil na páirce…
+MENU_QUICK,Throw-in,Caitheamh isteach
+MENU_QUICK_DESC,Pick two counties and a ground. Play now.,Roghnaigh dhá chontae agus páirc. Imir anois.
+MENU_CHAMP,The Summer Championship,Craobh an tSamhraidh
+MENU_CHAMP_DESC,"Groups, then knock-out games to the final.","Grúpaí, ansin cluichí cnaguirlis go dtí an cluiche ceannais."
+MENU_WATCH,Watch a match,Féach ar chluiche
+MENU_WATCH_DESC,"Sit back: two counties, played by the computer.","Suigh siar: dhá chontae, agus an ríomhaire ag imirt."
+MENU_PRACTICE,Free-taking,Saorbhuillí
+MENU_PRACTICE_DESC,Ten frees and 65s at the posts. Time your strike; beat your best.,Deich saorbhuille agus 65anna ag na cuaillí. Buail in am; sáraigh do scór is fearr.
+PRACTICE_EYEBROW,Practice,Cleachtadh
+PRACTICE_START,Start,Tosaigh
+PRACTICE_TAKER,On the frees: #{num} {name},Ar na saorbhuillí: #{num} {name}
+PRACTICE_FREES_STAT,Free-taking,Saorbhuillí
+PRACTICE_HOW_TITLE,How it works,Conas a oibríonn sé
+PRACTICE_HOW,"Ten frees and 65s from all round the pitch: near, wide and far out. Behind your free-taker, a target goes round the goal: tap SHOOT to stop it where you want the sliotar to go. Then a bar runs from side to side: SHOOT again with the marker in the green. Out to the red, the ball goes off that way. A point is worth one, a goal three. Every third free is a post challenge: hit the post it names for double points.","Deich saorbhuille agus 65anna ó gach cearn den pháirc: gar, ar an taobh agus i bhfad amach. Taobh thiar de do bhuailteoir, téann sprioc timpeall an chúil: brúigh SCAOIL chun í a stopadh san áit ar mian leat an sliotar a chur. Ansin ritheann barra ó thaobh go taobh: brúigh SCAOIL arís agus an marcóir sa ghlas. Amach sa dearg, imeoidh an liathróid chun an taoibh sin. Is fiú pointe amháin cúilín agus trí phointe cúl. Dúshlán cuaille is ea gach tríú saorbhuille: buail an cuaille a ainmnítear le haghaidh pointí dúbailte."
+PRACTICE_BEST_WAS,Your best: {n},Do scór is fearr: {n}
+PRACTICE_NO_BEST,No score yet: set one.,Gan scór fós: socraigh ceann.
+PRACTICE_HD_HINT,"For the sharpest hurler, get the HD pack in Settings.","Don iománaí is géire, faigh an pacáiste HD sna Socruithe."
+PRACTICE_FREE_N,Free {n} of {of},Saorbhuille {n} as {of}
+PRACTICE_SCORE_N,Score {n},Scór {n}
+PRACTICE_BEST_N,Best {n},Is fearr {n}
+PRACTICE_SHORT,Short,Gearr
+PRACTICE_CHALLENGE,Post challenge: double points!,Dúshlán cuaille: pointí dúbailte!
+PRACTICE_CH_LEFT,Hit the left post for DOUBLE POINTS!,Buail an cuaille clé le haghaidh POINTÍ DÚBAILTE!
+PRACTICE_CH_RIGHT,Hit the right post for DOUBLE POINTS!,Buail an cuaille deas le haghaidh POINTÍ DÚBAILTE!
+PRACTICE_CH_HIT,DOUBLE POINTS!,POINTÍ DÚBAILTE!
+PRACTICE_DONE,Ten frees taken,Deich saorbhuille tógtha
+PRACTICE_RATE_3,All-Star form. The county's frees are yours.,Foirm Réalta. Is leatsa saorbhuillí an chontae.
+PRACTICE_RATE_2,County standard: steady over the bar.,Caighdeán contae: seasmhach thar an trasnán.
+PRACTICE_RATE_1,Club standard. A few more evenings at it.,Caighdeán club. Cúpla tráthnóna eile air.
+PRACTICE_RATE_0,Back to the ball alley for a while.,Ar ais chuig an bpinniúr ar feadh tamaill.
+PRACTICE_NEW_BEST,A new best!,Do scór is fearr riamh!
+PRACTICE_AGAIN,Go again,Arís
+PRACTICE_RESTART,Start the ten again,Tosaigh na deich arís
+PRACTICE_QUIT,Leave practice,Fág an cleachtadh
+MENU_HOWTO,How to Play,Conas imirt
+MENU_HOWTO_DESC,"The rules, the controls and the officials' signals.","Na rialacha, na rialuithe agus comharthaí na n-oifigeach."
+MENU_SETTINGS,Settings,Socruithe
+MENU_SETTINGS_DESC,"Language, graphics, controls, sound.","Teanga, grafaic, rialuithe, fuaim."
+CONTINUE,Continue,Ar aghaidh
+PLAY,Play,Imir
+THROW_IN,Throw in,Caith isteach
+HOME,Home,Baile
+AWAY,Away,As baile
+YOUR_TEAM,Your county,Do chontae
+OPPONENT,Opponents,An freasúra
+VS,v,v
+RATING,Rating,Rátáil
+ON,On,Ar siúl
+OFF,Off,Múchta
+DONE,Done,Déanta
+RESET,Reset,Athshocraigh
+SETUP_EYEBROW,The team sheets,Na foirne
+MATCH_OPTIONS,The match,An cluiche
+VENUE,Ground,Páirc
+VENUE_PARISH,"The parish field, at dusk","Páirc an pharóiste, um thráthnóna"
+VENUE_COUNTY,The county ground,Páirc an chontae
+VENUE_NIGHT,"The county ground, under lights","Páirc an chontae, faoi sholas"
+VENUE_STADIUM,The national stadium,An staid náisiúnta
+MATCH_LENGTH,Match length,Fad an chluiche
+MINUTES_N,{n} min,{n} nóim.
+LENGTH_NOTE,"How long a match takes you. At 35 minutes the clock runs at about the real pace while the ball is in play: a full 70-minute match, and a real match's score.","An fad a mhaireann cluiche duit. Ag 35 nóiméad ritheann an clog ar an luas ceart, nach mór, fad atá an sliotar beo: cluiche iomlán 70 nóiméad, agus scór cluiche cheart."
+GRADE,Grade,Grád
+GRADE_SENIOR,Senior county (2 × 35),Sinsir contae (2 × 35)
+GRADE_CLUB,Club (2 × 30),Club (2 × 30)
+GRADE_NOTE,"Senior county hurling has halves of 35 minutes, and the black card for denying a goal chance. Club games have halves of 30 and no black card.","Tá dhá leath 35 nóiméad san iománaíocht shinsir chontae, agus an cárta dubh as seans cúil a cheilt. Tá dhá leath 30 nóiméad i gcluichí club, gan cárta dubh."
+DRAWN_GAME,A draw,Comhscór
+DRAW_STANDS,Stands,Seasann sé
+DRAW_EXTRA,"Extra time, then penalties","Am breise, ansin pocanna éirice"
+FRIENDLY,Challenge match,Cluiche dúshláin
+KNOCKOUT_GAME,Knock-out game,Cluiche cnaguirlis
+DIFFICULTY,The other side,An taobh eile
+DIFF_JUNIOR,Junior,Sóisir
+DIFF_INTER,Intermediate,Idirmheánach
+DIFF_SENIOR,Senior,Sinsir
+DIFF_ALLSTAR,All-Star,Réalta
+DIFF_JUNIOR_DESC,"They give you time on the ball, and miss more often.","Tugann siad am duit ar an sliotar, agus téann siad amú níos minice."
+DIFF_INTER_DESC,A fair game.,Cluiche cothrom.
+DIFF_SENIOR_DESC,"Quicker to the ball, harder in the tackle, sharper in front of the posts.","Níos tapúla chun an tsliotair, níos crua sa tacláil, níos géire os comhair na gcuaillí."
+DIFF_ALLSTAR_DESC,The best there is: every chance taken.,An chuid is fearr: gach seans tapaithe.
+MENU_SETTINGS_TITLE,Settings,Socruithe
+SET_GAME,The game,An cluiche
+SET_DISPLAY,The screen,An scáileán
+SET_SOUND_CONTROLS,Sound and controls,Fuaim agus rialuithe
+SET_ABOUT,About,Faoin gcluiche
+LANGUAGE,Language,Teanga
+LANG_PHONE,Phone's language,Teanga an fhóin
+ASSIST,Help with the ball,Cabhair leis an sliotar
+ASSIST_OFF,Off,Múchta
+ASSIST_SOLO,Solo,Solo
+ASSIST_FULL,Full,Iomlán
+ASSIST_OFF_NOTE,"Everything is yours: four steps with the sliotar in your hand, then you must solo, pass or strike, or it is a free against you.","Is leatsa gach rud: ceithre choiscéim leis an sliotar i do lámh, ansin caithfidh tú solo a dhéanamh, é a phasáil nó é a bhualadh, nó is saorphoc i do choinne é."
+ASSIST_SOLO_NOTE,"Run onto the sliotar and your player picks it up by himself (lifts it onto his hurley, or catches it as it drops), and solos before his fourth step. You still strike, pass and pull. He runs to meet a pass to him till you move him.","Rith isteach ar an sliotar agus tógfaidh d'imreoir é leis féin (ardóidh sé ar a chamán é, nó beireann sé air agus é ag titim), agus déanann sé solo roimh an gceathrú coiscéim. Buaileann tú, pasálann tú agus tarraingíonn tú fós. Ritheann sé chun pas a fháil go dtí go mbogann tú é."
+ASSIST_FULL_NOTE,"As Solo, and with your thumb off the joystick your player runs for the loose ball himself.","Mar Solo, agus nuair nach bhfuil d'ordóg ar an luamhán ritheann d'imreoir i ndiaidh na liathróide scaoilte é féin."
+GRAPHICS,Graphics,Grafaic
+GFX_LOW,Low,Íseal
+GFX_MEDIUM,Medium,Meánach
+GFX_HIGH,High,Ard
+GFX_AUTO,Lower it by itself if a match runs slowly,Ísligh í féin má bhíonn cluiche mall
+GFX_NOTE,"Low suits phones with 2-4 GB of memory: simpler players, fewer people in the stands, no outlines, a smaller picture. High adds real shadows, floodlights that light the field and filmic colour. The game picks one for your phone until you choose one here.","Oireann Íseal d'fhóin le 2-4 GB cuimhne: imreoirí níos simplí, níos lú daoine sna seastáin, gan imlínte, pictiúr níos lú. Cuireann Ard scáthanna fíora, tuilsoilse a lasann an pháirc agus dath scannánach leis. Roghnaíonn an cluiche ceann d'fhón go dtí go roghnaíonn tú féin ceann anseo."
+GFX_LOWERED,The match was running slowly: graphics lowered a step (Settings).,Bhí an cluiche ag rith go mall: ísliodh an ghrafaic céim (Socruithe).
+FRAME_RATE,Frame rate,Ráta fráma
+FPS_SAVER,Battery saver,Spáráil cadhnra
+FPS_N,{n} a second,{n} sa soicind
+FPS_MAX_N,Max ({n}),Uasta ({n})
+FPS_NOTE_SAVER,About {n} frames a second and a slightly smaller picture: cooler and longer on the battery.,"Thart ar {n} fráma sa soicind agus pictiúr beagán níos lú: níos fuaire, agus maireann an cadhnra níos faide."
+FPS_NOTE_SMOOTH,"{n} frames a second on your {hz} Hz screen: smooth, and kind to the battery.","{n} fráma sa soicind ar do scáileán {hz} Hz: réidh, agus cineálta leis an gcadhnra."
+FPS_NOTE_MAX,"As many as your {hz} Hz screen shows. Smoothest, uses the most battery.","An méid a thaispeánann do scáileán {hz} Hz. An ceann is réidhe, ídíonn sé an cadhnra is mó."
+CAMERA,Camera,Ceamara
+CAM_TV,Television,Teilifís
+CAM_HIGH,High,Ard
+CAM_END,Behind the goal,Taobh thiar den chúl
+SOUND,Sound,Fuaim
+MUSIC,Music,Ceol
+VIBRATION,Vibration,Crith
+LEFT_HANDED,Left-handed,Ciotach
+BUTTON_SIZE,Button size,Méid na gcnaipí
+SIZE_NORMAL,Normal,Gnáth
+SIZE_LARGE,Large,Mór
+SIZE_XL,Extra large,An-mhór
+MOVE_BUTTONS,Move buttons,Bog na cnaipí
+MOVE_BUTTONS_NOTE,Drag each button to where your thumb wants it. The game keeps them there. Reset puts them back.,Tarraing gach cnaipe chuig an áit is fearr le d'ordóg. Coinníonn an cluiche ansin iad. Cuireann Athshocraigh ar ais iad.
+VERSION_N,Version {v},Leagan {v}
+ABOUT_DISCLAIMER,"Hurling Heroes is not connected with, or endorsed by, any sporting body, county board or club. The counties appear by their place names in colours of the game's own design; every player is invented. No data leaves your phone.","Níl baint ag Hurling Heroes le haon chomhlacht spóirt, bord contae ná club, ná níl a dtacaíocht aige. Tá na contaetha ann de réir a logainmneacha i ndathanna a dhear an cluiche féin; tá gach imreoir cumtha. Ní fhágann aon sonraí d'fhón."
+PRIVACY_POLICY,Privacy policy,Polasaí príobháideachta
+HELP_SUPPORT,Help,Cabhair
+LICENCES,Licences,Ceadúnais
+LICENCES_INTRO,"Hurling Heroes is made with the Godot Engine, the fonts below and the work of the people credited here. Their licences ask that these notices be shown.","Rinneadh Hurling Heroes le hInneall Godot, leis na clónna thíos agus le saothar na ndaoine a luaitear anseo. Iarrann a gceadúnais go dtaispeánfaí na fógraí seo (as Béarla, mar a scríobhadh iad)."
+HALF_1,1st half,1ú leath
+HALF_2,2nd half,2ú leath
+HALF_ET1,Extra time,Am breise
+HALF_ET2,"Extra time, 2nd","Am breise, 2ú"
+SHOOTOUT,Penalties,Pocanna éirice
+HALF_TIME,Half time,Leath ama
+FULL_TIME,Full time,Deireadh an chluiche
+FULL_TIME_LEVEL,Level at full time,Comhscór ag an deireadh
+EXTRA_HALF_TIME,Extra time: half time,Am breise: leath ama
+EXTRA_TIME_NOTE,"A winner is needed: two halves of ten minutes' extra time, then penalties if it is still level.","Tá buaiteoir ag teastáil: dhá leath deich nóiméad d'am breise, ansin pocanna éirice má bhíonn sé cothrom fós."
+PAUSED,Paused,Ar sos
+RESUME,Resume,Lean ar aghaidh
+QUIT_MATCH,Leave the match,Fág an cluiche
+CALL_POINT,POINT,CÚILÍN
+CALL_GOAL,GOAL!,CÚL!
+CALL_WIDE,Wide,Amú
+REPLAY,Replay,Athsheinm
+REPLAY_SKIP,Tap to skip,Tapáil chun é a scipeáil
+CALL_65,A 65,Poc 65
+CALL_SIDELINE,Sideline ball,Poc sleasa
+CALL_FREE,FREE,SAORPHOC
+CALL_PENALTY,PENALTY,POC ÉIRICE
+CALL_ADVANTAGE,Advantage: play on,Buntáiste: ar aghaidh leis
+CALL_POST,Off the post!,Den chuaille!
+CALL_BAR,Off the crossbar!,Den trasnán!
+CALL_SAVE,Saved!,Sábháilte!
+CALL_SAVED,Saved,Sábháilte
+CALL_MISSED,Missed,Amú
+CALL_NO_GOAL,NO GOAL,NÍL CÚL ANN
+NO_GOAL_HAND,A goal cannot be scored with the hand: puck-out.,Ní féidir cúl a scóráil leis an lámh: poc amach.
+CALL_SHOULDER,Shouldered off the ball,"Gualainn, agus an sliotar caillte"
+CALL_FLICK,Flicked off his hurley,Bainte dá chamán
+CALL_HOOK,Hooked!,Hiúcáil!
+CALL_BLOCK,Blocked!,Blocáil!
+CALL_DISSENT,Dissent: the free moves on 30 metres,Easaontas: bogann an saorphoc 30 méadar ar aghaidh
+FREE_TO,free to {team},saorphoc do {team}
+CARD_YELLOW,YELLOW CARD,CÁRTA BUÍ
+CARD_RED,RED CARD,CÁRTA DEARG
+CARD_BLACK,BLACK CARD,CÁRTA DUBH
+SIN_BIN_LINE,{name}: ten minutes in the sin bin,{name}: deich nóiméad sa bhosca smachta
+SECOND_YELLOW,"{name}: a second yellow, sent off","{name}: an dara cárta buí, curtha den pháirc"
+RESTART_PUCK_OUT,Puck-out,Poc amach
+RESTART_FREE,Free,Saorphoc
+RESTART_65,65,65
+RESTART_SIDELINE,Sideline cut,Poc sleasa
+RESTART_PENALTY,Penalty,Poc éirice
+FOUL_STEPS,Too many steps,An iomarca coiscéimeanna
+FOUL_HOLD,Holding the sliotar too long,An sliotar coinnithe rófhada
+FOUL_CATCH_3,Caught a third time,Rug air an tríú huair
+FOUL_THROW,Throwing the sliotar,An sliotar caite
+FOUL_PICK_UP,Picked off the ground,Tógtha den talamh
+FOUL_RECATCH,Caught without playing it,Rug air gan é a imirt
+FOUL_PUCK_OUT,Puck-out taken wrongly,Poc amach mícheart
+FOUL_FREE_TWICE,Free played twice,Saorphoc imeartha faoi dhó
+FOUL_FREE_HAND,Free taken into the hand,Saorphoc tógtha sa lámh
+FOUL_PULL_DOWN,Pulled down,Tarraingthe anuas
+FOUL_TRIP,Tripped,Bacadh cos
+FOUL_HOLD_MAN,Holding,Greim
+FOUL_PUSH,A push,Brú
+FOUL_CHARGE,Charged from behind,Ruathar ón gcúl
+FOUL_HURLEY,A careless hurley,Camán míchúramach
+FOUL_HOOK_HURLEY,Struck his hurley,Bhuail sé a chamán
+FOUL_KEEPER,Charged the goalkeeper,Ruathar ar an gcúl báire
+FOUL_STRIKE,Striking an opponent,Imreoir buailte
+FOUL_DISSENT,Dissent,Easaontas
+BTN_STRIKE,STRIKE,BUAIL
+BTN_GOAL,GOAL,CÚL
+BTN_PASS,PASS,PAS
+BTN_SOLO,SOLO,SOLO
+BTN_HAND,HAND,LÁMH
+BTN_CATCH,CATCH,BEIR
+BTN_LIFT,LIFT,ARDAIGH
+BTN_PULL,PULL,TARRAING
+BTN_TACKLE,TACKLE,TACLÁIL
+BTN_BLOCK,BLOCK,BAC
+BTN_SWITCH,SWITCH,ATHRAIGH
+BTN_SHORT,SHORT,GEARR
+BTN_LONG,LONG,FADA
+BTN_SHOOT,SHOOT,SCAOIL
+AIM_BAR_HINT,SHOOT again in the green,SCAOIL arís sa ghlas
+RESULT_WON,Victory,Bua
+RESULT_LOST,Beaten,Buailte
+RESULT_DRAW,A draw,Comhscór
+AFTER_ET,After extra time,Tar éis am breise
+AFTER_PENS,After extra time; {a}-{b} on penalties,Tar éis am breise; {a}-{b} ar phocanna éirice
+SCORERS,Scorers,Scórálaithe
+NO_SCORERS,none,faic
+FREES_SHORT, frees, saorphoc
+PLAYER_OF_MATCH,Player of the match:,Imreoir an chluiche:
+MATCH_STATS,The match in numbers,An cluiche i bhfigiúirí
+STAT_SCORES_PLAY,Scores from play,Scóir ón imirt
+STAT_SCORES_PLACED,Scores from placed balls,Scóir ó phocanna socraithe
+STAT_SHOTS,Shots,Iarrachtaí
+STAT_WIDES,Wides,Amú
+STAT_FREES,Frees won,Saorphocanna
+STAT_65S,65s,Pocanna 65
+STAT_SIDELINES,Sideline cuts,Pocanna sleasa
+STAT_PUCKOUTS,Puck-outs,Pocanna amach
+STAT_YELLOW,Yellow cards,Cártaí buí
+STAT_BLACK,Black cards,Cártaí dubha
+STAT_RED,Red cards,Cártaí dearga
+CHAMP_NAME_1,The Summer Championship,Craobh an tSamhraidh
+CHAMP_NAME_2,The Tier Two Cup,Corn an Dara Sraith
+CHAMP_TITLE_1,Summer Champions,Curaidh an tSamhraidh
+CHAMP_TITLE_2,Tier Two Cup winners,Buaiteoirí Chorn an Dara Sraith
+CHAMP_PICK,Choose your county,Roghnaigh do chontae
+CHAMP_PICK_NOTE,"The ten strongest counties play the Summer Championship; the next ten the Tier Two Cup. Two groups of five, then knock-out hurling.","Imríonn na deich gcontae is láidre Craobh an tSamhraidh; an chéad deich eile Corn an Dara Sraith. Dhá ghrúpa de chúigear, ansin iománaíocht chnaguirlis."
+TIER_1,Summer Championship,Craobh an tSamhraidh
+TIER_2,Tier Two Cup,Corn an Dara Sraith
+CHAMP_NEXT,Next game,An chéad chluiche eile
+CHAMP_TABLES,Groups,Grúpaí
+CHAMP_RESULTS,Results,Torthaí
+NEW_CHAMP,New championship,Craobh nua
+CHAMPIONS,{team}: champions,{team}: na curaidh
+CHAMP_WON,Your county are the champions. The cup goes home with them.,Is iad do chontae na curaidh. Tá an corn ag dul abhaile leo.
+CHAMP_OVER,The championship is over for another year.,Tá an chraobh thart go ceann bliana eile.
+CHAMP_OUT,Your county are out. The championship goes on without them.,Tá do chontae amuigh. Leanann an chraobh ar aghaidh gan iad.
+GROUP_S,Southern group,Grúpa an Deiscirt
+GROUP_E,Eastern group,Grúpa an Oirthir
+GROUP_A,Group A,Grúpa A
+GROUP_B,Group B,Grúpa B
+CHAMP_TABLE_NOTE_1,"Two points a win, one a draw, then score difference. The top two meet in the group final; its winner goes to a semi-final, its loser to a quarter-final against the other group's third.","Dhá phointe ar bhua, ceann amháin ar chomhscór, ansin difríocht scóir. Imríonn an bheirt is airde cluiche ceannais an ghrúpa; téann an buaiteoir go cluiche leathcheannais, an cailliúnaí go cluiche ceathrú ceannais in aghaidh an tríú foireann sa ghrúpa eile."
+CHAMP_TABLE_NOTE_2,"Two points a win, one a draw, then score difference. The top two of each group go to the semi-finals.","Dhá phointe ar bhua, ceann amháin ar chomhscór, ansin difríocht scóir. Téann an bheirt is airde i ngach grúpa go dtí na cluichí leathcheannais."
+STAGE_GROUP,Group game,Cluiche grúpa
+STAGE_GROUP_FINAL,Group final,Cluiche ceannais an ghrúpa
+STAGE_QUARTER,Quarter-final,Cluiche ceathrú ceannais
+STAGE_SEMI,Semi-final,Cluiche leathcheannais
+STAGE_FINAL,Final,Cluiche ceannais
+KNOCKOUT_NOTE,"A knock-out game: a draw goes to extra time, then penalties.","Cluiche cnaguirlis: má bhíonn comhscór, am breise, ansin pocanna éirice."
+COL_TEAM,County,Contae
+COL_P,P,I
+COL_W,W,B
+COL_D,D,C
+COL_L,L,Ca
+COL_DIFF,+/-,+/-
+COL_PTS,Pts,Pt
+HOWTO_RULES,The rules,Na rialacha
+HOWTO_CONTROLS,The controls,Na rialuithe
+HOWTO_OFFICIALS,The officials,Na hoifigigh
+RULES_AIM,The game,An cluiche
+RULES_AIM_TEXT,"Two sides of fifteen, each with a hurley (the camán), strike the sliotar, a small leather ball, at the other side's goal: H-shaped posts 6.5 metres apart with a crossbar 2.5 metres up and a net under it.","Buaileann dhá thaobh de chúigear déag, camán ag gach imreoir, an sliotar, liathróid bheag leathair, chuig cúl an taoibh eile: cuaillí i gcruth H 6.5 méadar óna chéile, trasnán 2.5 méadar suas agus líon faoi."
+RULES_SCORE,Goals and points,Cúil agus cúilíní
+RULES_SCORE_TEXT,"Under the crossbar is a goal, worth three points; over it, between the posts, a point. The score is written goals-points: 2-18 is 24, and beats 0-23.","Faoin trasnán is cúl é, fiú trí chúilín; os a chionn, idir na cuaillí, cúilín. Scríobhtar an scór mar chúil-chúilíní: is ionann 2-18 agus 24, agus buann sé ar 0-23."
+RULES_TEAM,The fifteen,An cúigear déag
+RULES_TEAM_TEXT,"A goalkeeper; three full-backs; three half-backs; two midfielders; three half-forwards; three full-forwards. Each defender marks the forward facing him. Five substitutes, and three more in extra time.","Cúl báire; triúr lánchúlaithe; triúr leathchúlaithe; beirt i lár na páirce; triúr leath-thosaithe; triúr lántosaithe. Marcálann gach cosantóir an tosaí os a chomhair. Cúigear ionadaithe, agus triúr eile in am breise."
+RULES_TIME,The time,An t-am
+RULES_TIME_TEXT,"Two halves of 35 minutes in senior county hurling, 30 in club games, with time added on for stoppages. The referee keeps the time, and starts each half by throwing the sliotar in between the four midfielders.","Dhá leath 35 nóiméad san iománaíocht shinsir chontae, 30 i gcluichí club, agus am curtha leis do stadanna. Coinníonn an réiteoir an t-am, agus tosaíonn sé gach leath tríd an sliotar a chaitheamh isteach idir an ceathrar i lár na páirce."
+RULES_CARRY,"Four steps, two catches","Ceithre choiscéim, dhá ghabháil"
+RULES_CARRY_TEXT,You may take four steps with the sliotar in your hand. Then you must put it on your hurley (a solo) and may take it back into your hand once more. After the second catch you must play it away. On the hurley you may carry it as far as you like.,Féadfaidh tú ceithre choiscéim a thógáil leis an sliotar i do lámh. Ansin caithfidh tú é a chur ar do chamán (solo) agus féadfaidh tú é a thógáil ar ais i do lámh uair amháin eile. Tar éis an dara gabháil caithfidh tú é a imirt uait. Ar an gcamán féadfaidh tú é a iompar chomh fada agus is mian leat.
+RULES_HANDPASS,The hand-pass,An pas láimhe
+RULES_HANDPASS_TEXT,"You may pass it with your hand, struck away with a definite striking action, never thrown. A point may be scored with a hand-pass, a goal may not.","Féadfaidh tú é a phasáil le do lámh, buailte uait le gníomh buailte soiléir, gan é a chaitheamh riamh. Féadtar cúilín a scóráil le pas láimhe, ach ní cúl."
+RULES_GROUND,Off the ground,Den talamh
+RULES_GROUND_TEXT,"You may not pick the sliotar off the ground with your hand: lift it with the hurley (a roll lift or a jab lift), or strike it on the ground first time.","Ní féidir an sliotar a phiocadh den talamh le do lámh: ardaigh leis an gcamán é, nó buail ar an talamh é den chéad iarraidh."
+RULES_TACKLE,The tackle,An tacláil
+RULES_TACKLE_TEXT,"A fair challenge: a side-to-side shoulder, hooking or blocking the striker's hurley, flicking the sliotar off a player's hurley or out of his hand.","Dúshlán cothrom: gualainn ó thaobh go taobh, camán an bhuailteora a hiúcáil nó a bhlocáil, an sliotar a bhaint de chamán imreora nó as a lámh."
+RULES_FOULS,Fouls,Calaoisí
+RULES_FOULS_TEXT,"Pulling a man down, tripping, holding, pushing, charging from behind, a careless hurley, striking a player's hurley when he is not playing the ball: a free to the other side, where it happened.","Imreoir a tharraingt anuas, bacadh cos, greim, brú, ruathar ón gcúl, camán míchúramach, camán imreora a bhualadh nuair nach bhfuil sé ag imirt an tsliotair: saorphoc don taobh eile, san áit ar tharla sé."
+RULES_CARDS,Cards,Cártaí
+RULES_CARDS_TEXT,"A yellow card is a caution; a second is a red, and he is sent off and not replaced. In senior county hurling, pulling down, tripping or a careless hurley that denies a goal chance inside the 20 m line or the arc is a black card (ten minutes in the sin bin) and a penalty.","Is rabhadh an cárta buí; is dearg an dara ceann, curtar den pháirc é agus ní féidir é a ionadú. San iománaíocht shinsir chontae, má cheiltear seans cúil laistigh den líne 20 m nó den stua le tarraingt anuas, bacadh cos nó camán míchúramach, is cárta dubh é (deich nóiméad sa bhosca smachta) agus poc éirice."
+RULES_PUCKOUT,Puck-out,Poc amach
+RULES_PUCKOUT_TEXT,"After a score or a wide, the goalkeeper strikes the sliotar out from the small rectangle. Everyone else stands outside the 20 m line until it is struck, and it must travel 13 metres before one of his own side plays it.","Tar éis scóir nó iarrachta amú, buaileann an cúl báire an sliotar amach ón gcearnóg bheag. Seasann gach duine eile taobh amuigh den líne 20 m go mbuailtear é, agus caithfidh sé 13 mhéadar a thaisteal sula n-imríonn duine dá thaobh féin é."
+RULES_FREE,Frees,Saorphocanna
+RULES_FREE_TEXT,"Taken where the foul was: lifted with the hurley and struck, opponents 13 metres away. A foul by a defender inside his 20 m line gives a free from the 20 m line; in the large rectangle a technical foul gives a free from its centre.","Tógtha san áit a raibh an chalaois: ardaithe leis an gcamán agus buailte, an freasúra 13 mhéadar uaidh. Calaois ag cosantóir laistigh dá líne 20 m: saorphoc ón líne 20 m; sa chearnóg mhór, calaois theicniúil: saorphoc óna lár."
+RULES_65,The 65,An 65
+RULES_65_TEXT,"When a defender puts the ball over his own end line wide of the posts, the attackers strike a free from the 65 m line opposite where it crossed.","Nuair a chuireann cosantóir an sliotar thar a chúlline féin, lasmuigh de na cuaillí, buaileann na tosaithe saorphoc ón líne 65 m os comhair na háite ar thrasnaigh sé."
+RULES_SIDELINE,The sideline cut,An poc sleasa
+RULES_SIDELINE_TEXT,"Over the sideline, the other side strike it back in from where it crossed, off the ground, with opponents 13 metres back.","Thar an taobhlíne, buaileann an taobh eile isteach é ón áit ar thrasnaigh sé, den talamh, an freasúra 13 mhéadar siar."
+RULES_PENALTY,The penalty,An poc éirice
+RULES_PENALTY_TEXT,"For an aggressive foul by a defender in his large rectangle, or a foul that denies a goal chance. Struck from the 20 m line, one defender on the goal line, everyone else outside the 20 m line and the arc.","As calaois ionsaitheach ag cosantóir ina chearnóg mhór, nó as calaois a cheileann seans cúil. Buailte ón líne 20 m, cosantóir amháin ar an gcúlline, gach duine eile taobh amuigh den líne 20 m agus den stua."
+RULES_DRAW,A draw,Comhscór
+RULES_DRAW_TEXT,"In a knock-out game a draw goes to two halves of ten minutes' extra time. Still level: five penalties each, only goals count, then sudden death.","I gcluiche cnaguirlis, téann comhscór go dhá leath deich nóiméad d'am breise. Más cothrom fós: cúig phoc éirice an taobh, níl ach cúil ag comhaireamh, ansin bás tobann."
+RULES_HELMET,Helmets,Clogaid
+RULES_HELMET_TEXT,Every hurler wears a helmet with a face guard: the rule at every grade since 2010.,Caitheann gach iománaí clogad le gardaí aghaidhe: an riail ag gach grád ó 2010.
+CTRL_MOVE,Run,Rith
+CTRL_MOVE_TEXT,Your thumb anywhere on the left of the screen is a joystick. Your player has the gold ring.,Is luamhán stiúrtha d'ordóg áit ar bith ar thaobh na láimhe clé den scáileán. Tá an fáinne óir ar d'imreoir.
+CTRL_SWITCH,Switch,Athraigh
+CTRL_SWITCH_TEXT,The small SWITCH button changes your player to the teammate best placed for the ball. When the ball is struck to a teammate you become him.,"Athraíonn an cnaipe beag ATHRAIGH d'imreoir go dtí an comhimreoir is fearr suite don sliotar. Nuair a bhuailtear an sliotar chuig comhimreoir, is tusa é."
+CTRL_STRIKE,Strike,Buail
+CTRL_STRIKE_TEXT,"STRIKE with the joystick toward the posts (or let go of it) is a shot for a point. Pushed elsewhere, it is a long ball to the teammate that way.","BUAIL leis an luamhán i dtreo na gcuaillí (nó gan é) is iarracht ar chúilín é. Brúite áit éigin eile, is liathróid fhada chuig an gcomhimreoir sa treo sin é."
+CTRL_GOAL,Go for goal,Ar thóir cúil
+CTRL_GOAL_TEXT,"Inside about 30 metres GOAL drives it low at the net, away from the goalkeeper.","Laistigh de thart ar 30 méadar, buaileann CÚL íseal é sa líon, ón gcúl báire."
+CTRL_PASS,Pass,Pasáil
+CTRL_PASS_TEXT,"PASS hand-passes to the teammate the joystick points at (a short strike if he is further, or the sliotar is on your hurley).","Déanann PAS pas láimhe chuig an gcomhimreoir a thaispeánann an luamhán (buille gearr má tá sé níos faide uait, nó an sliotar ar do chamán)."
+CTRL_SOLO,Solo,Solo
+CTRL_SOLO_TEXT,"SOLO puts the sliotar from your hand onto your hurley before your four steps are up (the dots over your player count them). HAND takes it back, your second catch.","Cuireann SOLO an sliotar ó do lámh ar do chamán sula mbíonn do cheithre choiscéim caite (comhaireann na poncanna os cionn d'imreora iad). Tógann LÁMH ar ais é, do dhara gabháil."
+CTRL_CATCH,Catch and lift,Beir agus ardaigh
+CTRL_CATCH_TEXT,"When the sliotar comes near, your player lifts it off the ground onto his hurley or catches it in the air by himself (Settings > Help with the ball: Off, and CATCH and LIFT are yours).","Nuair a thagann an sliotar in aice leis, ardaíonn d'imreoir den talamh ar a chamán é nó beireann sé air san aer leis féin (Socruithe > Cabhair leis an sliotar: Múchta, agus is leatsa BEIR agus ARDAIGH)."
+CTRL_PULL,Pull,Tarraing
+CTRL_PULL_TEXT,"PULL strikes a loose ball first time, on the ground or in the air, without taking it.","Buaileann TARRAING liathróid scaoilte den chéad iarraidh, ar an talamh nó san aer, gan breith air."
+CTRL_TACKLE,Tackle and block,Tacláil agus bac
+CTRL_TACKLE_TEXT,"Near the man on the ball: TACKLE (a shoulder, a hook or a flick, as the moment needs); BLOCK when he goes to strike. From behind, or too late, it is a free.","In aice leis an imreoir leis an sliotar: TACLÁIL (gualainn, hiúcáil nó bain de, de réir mar is gá); BAC nuair a théann sé chun buailte. Ón gcúl, nó rómhall, is saorphoc é."
+CTRL_RESTART,Restarts,Atosuithe
+CTRL_RESTART_TEXT,"Your puck-out: LONG (aim with the joystick) or SHORT to a back. Your free or 65 at the posts: STRIKE, and the camera drops behind your man with a target going round the goal: press SHOOT as it passes where you want the sliotar to go (between the posts above the bar for a point, in the net for a goal). Then a bar runs from side to side under it: press SHOOT again with the marker in the green, or the sliotar goes off to that side. A penalty is the same, after GOAL. PASS gives a free to a teammate.","Do phoc amach: FADA (aimsigh leis an luamhán) nó GEARR chuig cúlaí. Do shaorphoc nó 65 ar na cuaillí: BUAIL, agus tagann an ceamara anuas taobh thiar d'fhear le sprioc ag dul timpeall an chúil: brúigh SCAOIL agus é ag dul thar an áit ar mhaith leat an sliotar a chur (idir na cuaillí os cionn an trasnáin le haghaidh cúilín, sa líon le haghaidh cúil). Ansin ritheann barra ó thaobh go taobh faoi: brúigh SCAOIL arís agus an marcóir sa ghlas, nó imeoidh an sliotar chun an taoibh sin. Mar an gcéanna le poc éirice, tar éis CÚL. Tugann PAS an saorphoc do chomhimreoir."
+CTRL_ASSIST,Help,Cabhair
+CTRL_ASSIST_TEXT,"Settings > Help with the ball: Off, Solo (he picks up the ball and solos by himself) or Full (he runs for loose balls too).","Socruithe > Cabhair leis an sliotar: Múchta, Solo (tógann sé an liathróid agus déanann sé solo leis féin) nó Iomlán (ritheann sé i ndiaidh liathróidí scaoilte freisin)."
+SIG_POINT,A point,Cúilín
+SIG_POINT_TEXT,The umpire waves the white flag.,Croitheann an maor cúil an bhratach bhán.
+SIG_GOAL,A goal,Cúl
+SIG_GOAL_TEXT,The umpire waves the green flag.,Croitheann an maor cúil an bhratach ghlas.
+SIG_WIDE,Wide,Amú
+SIG_WIDE_TEXT,The umpire crosses his arms over his head.,Croiseann an maor cúil a lámha os cionn a chinn.
+SIG_65,A 65,Poc 65
+SIG_65_TEXT,"The umpire raises an arm straight up, then points in at the 65 m line.","Ardaíonn an maor cúil lámh díreach suas, ansin díríonn sé isteach ar an líne 65 m."
+SIG_FREE,A free,Saorphoc
+SIG_FREE_TEXT,"The referee's whistle, then his arm held out toward the goal the free attacks.","Feadóg an réiteora, ansin a lámh sínte i dtreo an chúil a bhfuil an saorphoc ag ionsaí air."
+SIG_ADVANTAGE,Advantage,Buntáiste
+SIG_ADVANTAGE_TEXT,"One arm held straight up for up to five seconds: play on. If nothing comes of it, he brings it back for the free.","Lámh amháin díreach suas ar feadh suas le cúig soicind: ar aghaidh leis an imirt. Mura dtagann aon rud as, tugann sé ar ais é don saorphoc."
+SIG_CARDS,Cards,Cártaí
+SIG_CARDS_TEXT,"He holds the card up to the player; for the black card, then ten fingers for the ten minutes in the sin bin.","Taispeánann sé an cárta don imreoir; don chárta dubh, ansin deich méar do na deich nóiméad sa bhosca smachta."
+SIG_SIDELINE,Sideline,Taobhlíne
+SIG_SIDELINE_TEXT,The linesman holds his flag out the way the cut goes.,Coinníonn an maor líne a bhratach sínte sa treo a dtéann an poc.
+WON_BY,{team} by {margin},{team} le {margin}
+MARGIN_one,{n} point,{n} chúilín
+MARGIN_other,{n} points,{n} cúilín
+COACH,Coach,An traenálaí
+COACH_INTRO,"Drag on the left to run. The buttons on the right come up as you need them. Over the bar is a point; in the net, a goal (3).","Tarraing ar chlé chun rith. Tagann na cnaipí ar dheis nuair a bhíonn gá leo. Thar an trasnán, cúilín; san eangach, cúl (3)."
+COACH_MOVE,Drag your thumb on the left to run. You are the man with the gold ring.,Tarraing d'ordóg ar chlé chun rith. Is tusa an fear leis an bhfáinne óir.
+COACH_LOOSE,The sliotar is near: CATCH it in the air or LIFT it off the ground. PULL strikes it first time.,Tá an sliotar gar duit: BEIR air san aer nó ARDAIGH den talamh é. Buaileann TARRAING é den chéad iarraidh.
+COACH_IN_HAND,In your hand you may take four steps (the dots count them). SOLO puts it on your hurley.,"I do lámh, tá ceithre choiscéim agat (comhaireann na poncanna iad). Cuireann SOLO ar do chamán é."
+COACH_ON_STICK,"On the hurley, run as far as you like. STRIKE for the posts or PASS to a teammate.","Ar an gcamán, rith chomh fada agus is mian leat. BUAIL ar na cuaillí nó PAS chuig comhimreoir."
+COACH_SHOOT,In range: push the joystick toward the posts and STRIKE. Over the bar is a point.,"Faoi raon: brúigh an luamhán i dtreo na gcuaillí agus BUAIL. Thar an trasnán, cúilín."
+COACH_GOAL,"Close in: GOAL drives it at the net, worth three points. STRIKE over the bar for one.","Gar don chúl: tiomáineann CÚL san eangach é, trí chúilín. BUAIL thar an trasnán ar cheann."
+COACH_TACKLE,"He has the ball: TACKLE from the side or the front. From behind, it is a free to them.","Tá an sliotar aige: TACLÁIL ón taobh nó ón tosach. Ón gcúl, is saorphoc dóibh é."
+COACH_SWITCH,The ball is far from you: SWITCH takes the teammate best placed for it.,Tá an sliotar i bhfad uait: tógann ATHRAIGH an comhimreoir is fearr suite dó.
+COACH_FOLLOW,"Lost the sliotar? A white dot marks it, and off the screen an arrow at the edge points to it.","Cá bhfuil an sliotar? Marcálann ponc bán é, agus lasmuigh den scáileán taispeánann saighead ar an imeall é."
+COACH_PUCK_OUT,Your puck-out: LONG down the field (aim with the joystick) or SHORT to a back.,Do phoc amach: FADA síos an pháirc (aimsigh leis an luamhán) nó GEARR chuig cúlaí.
+COACH_FREE,"Your free: STRIKE for the posts or PASS to a teammate. Wait, and it is taken for you.","Do shaorphoc: BUAIL ar na cuaillí nó PAS chuig comhimreoir. Fan, agus tógfar duit é."
+COACH_PENALTY,"A penalty: aim with the joystick, then GOAL. Only the goalkeeper stands in your way.","Poc éirice: aimsigh leis an luamhán, ansin CÚL. Níl ach an cúl báire romhat."
+COACH_STEPS,Too many steps: a free to them. SOLO it onto your hurley before the fourth step.,An iomarca coiscéimeanna: saorphoc dóibh. Cuir SOLO ar do chamán roimh an gceathrú coiscéim.
+SET_COACH,Coach's tips,Leideanna an traenálaí
+SET_COACH_NOTE,"Short tips through a match, each the first time it is needed. On for your first match.","Leideanna gearra le linn cluiche, gach ceann an chéad uair a bhíonn gá leis. Ar siúl do do chéad chluiche."
+SUBS,Substitutions,Ionadaithe
+SUBS_LEFT_one,{n} left,{n} fágtha
+SUBS_LEFT_other,{n} left,{n} fágtha
+SUBS_NONE,None left,Níl aon cheann fágtha
+SUBS_ON_PITCH,On the pitch,Ar an bpáirc
+SUBS_BENCH,The bench,An binse
+SUBS_PICK,"Tap a tired man, then the one to bring on. The change is made at the next break in play.","Tapáil fear tuirseach, ansin an té a thiocfaidh isteach. Déantar an t-athrú ag an gcéad bhriseadh eile san imirt."
+SUBS_PICKED,Who comes on for {name}?,Cé a thiocfaidh isteach in áit {name}?
+SUBS_DUE,{on} on for {off} at the next break,{on} isteach in áit {off} ag an gcéad bhriseadh eile
+SUBS_OFF_FIELD,off the field,den pháirc
+SUBS_AUTO,Your changes,Do chuid athruithe
+SUBS_AUTO_ON,The manager makes them,Déanann an bainisteoir iad
+SUBS_AUTO_OFF,You make them,Déanann tusa iad
+LINE_GK,Goalkeeper,Cúl báire
+LINE_FB,Full-back line,Líne na lánchúl
+LINE_HB,Half-back line,Líne na leathchúl
+LINE_MF,Midfield,Lár na páirce
+LINE_HF,Half-forward line,Líne na leath-thosaithe
+LINE_FF,Full-forward line,Líne na lántosaithe
+TACTICS,Tactics,Beartaíocht
+TAC_SWEEPER,A sweeper,Scuabaire
+TAC_SWEEPER_NOTE,"A half-forward (12) drops back in front of the full-back line and marks no one: an extra man in defence, one fewer up front.","Titeann leath-thosaí (12) siar os comhair líne na lánchúl agus ní mharcálann sé aon duine: fear breise sa chosaint, duine níos lú chun tosaigh."
+TAC_TWO_FF,Two inside,Beirt istigh
+TAC_TWO_FF_NOTE,"The corner-forward (13) comes out to the half-forward line, and his marker with him: two left inside with room to run.","Tagann an cúinne-thosaí (13) amach go líne na leath-thosaithe, agus a mharcálaí leis: fágtar beirt istigh le spás le rith."
+TAC_PUCKOUT,Puck-outs,Poic amach
+TAC_PO_SHORT,Short,Gearr
+TAC_PO_MIXED,Mixed,Measctha
+TAC_PO_LONG,Long,Fada
+TAC_PUCKOUT_NOTE,Short to a free back keeps the ball but invites the press; long into the middle is won about half the time.,Coinníonn poc gearr chuig cúlaí saor an sliotar ach meallann sé an brú; buaitear poc fada isteach sa lár thart ar leath an ama.
+TAC_THEIRS,{team} are playing: {list},Mar seo atá {team} ag imirt: {list}
+CALL_SWEEPER,{team} drop a sweeper back to hold the lead,Scuabaire siar ag {team} chun an tosach a choinneáil
+START_AGAIN,Start again,Tosaigh arís
+START_AGAIN_SURE,Lose this season? Tap again,An séasúr seo a chailleadh? Tapáil arís
+CHAMP_BYE,{team} had a bye: the round's other games have been played (Results).,Bhí sos ag {team} an babhta seo: imríodh na cluichí eile (Torthaí).
+PRIV_SUMMARY,In short,Go hachomair
+PRIV_SUMMARY_TEXT,"Hurling Heroes collects no personal data. There is no account, no sign-in, no server, no analytics, no advertising and no in-app purchases. The game uses the internet for one thing only, and only if you ask it to: downloading the optional HD pack for High graphics. It sends nothing about you.","Ní bhailíonn Hurling Heroes aon sonraí pearsanta. Níl cuntas, síniú isteach, freastalaí, anailísíocht, fógraíocht ná ceannacháin san aip ann. Ní úsáideann an cluiche an t-idirlíon ach le haghaidh rud amháin, agus sin amháin má iarrann tú air: an pacáiste HD roghnach do ghrafaic Ard a íoslódáil. Ní sheolann sé aon rud fút."
+PRIV_KEPT,What the game keeps on your phone,An méid a choinníonn an cluiche ar d'fhón
+PRIV_KEPT_TEXT,"Your settings (language, graphics, sound, controls, where you moved the buttons, difficulty) and your progress (the championship you are playing, a match you left part-way, your record book). They are small files in the game's own private storage on your phone. Nobody else can read them, they are never sent anywhere, and uninstalling the game deletes them.","Do shocruithe (teanga, grafaic, fuaim, rialuithe, an áit ar bhog tú na cnaipí, deacracht) agus do dhul chun cinn (an craobhchomórtas atá ar siúl agat, cluiche a d'fhág tú leathbhealach, do leabhar taifead). Comhaid bheaga iad i stóras príobháideach an chluiche ar d'fhón. Ní féidir le duine ar bith eile iad a léamh, ní sheoltar áit ar bith iad, agus scriostar iad nuair a bhaintear an cluiche."
+PRIV_HD,The HD pack,An pacáiste HD
+PRIV_HD_TEXT,"High graphics can use an extra download, the HD pack. Only if you choose to download it, the game fetches it from GitHub (github.com), where the game's files are published. As with any download, GitHub's servers see your phone's internet address; GitHub's own privacy statement covers that. The game sends no information about you, your phone or your play.","Is féidir le grafaic Ard íoslódáil bhreise a úsáid, an pacáiste HD. Má roghnaíonn tú é a íoslódáil, agus sin amháin, faigheann an cluiche é ó GitHub (github.com), áit a bhfoilsítear comhaid an chluiche. Mar a tharlaíonn le híoslódáil ar bith, feiceann freastalaithe GitHub seoladh idirlín d'fhóin; clúdaíonn ráiteas príobháideachta GitHub féin é sin. Ní sheolann an cluiche aon eolas fút, faoi d'fhón ná faoin imirt."
+PRIV_PERMS,Permissions,Ceadanna
+PRIV_PERMS_TEXT,"Two: vibration, to buzz the phone when something happens to your player (you can turn it off in Settings), and internet, used only for the HD pack when you ask for it. The game does not use your location, camera, microphone, contacts or files.","Dhá cheann: creathadh, chun an fón a chroitheadh nuair a tharlaíonn rud éigin d'imreoir (is féidir é a mhúchadh sna Socruithe), agus idirlíon, don phacáiste HD amháin nuair a iarrann tú é. Ní úsáideann an cluiche do shuíomh, ceamara, micreafón, teagmhálacha ná comhaid."
+PRIV_CHILDREN,Children,Leanaí
+PRIV_CHILDREN_TEXT,"The game collects no information from anyone, children included.","Ní bhailíonn an cluiche eolas ó dhuine ar bith, leanaí san áireamh."
+PRIV_CHANGES,Changes,Athruithe
+PRIV_CHANGES_TEXT,"If this ever changes, this page will say so in an update of the game before anything else changes.","Má athraíonn sé seo riamh, déarfaidh an leathanach seo é i nuashonrú den chluiche sula n-athraíonn aon rud eile."
+PRIV_CONTACT,Contact,Teagmháil
+PRIV_CONTACT_TEXT,Hurling Heroes is made by Josh Nason. Questions: joshnason8@gmail.com.,Is é Josh Nason a rinne Hurling Heroes. Ceisteanna: joshnason8@gmail.com.
+HELP_PLAYING,Playing,Ag imirt
+HELP_PLAYING_TEXT,"Your player has the gold ring: your left thumb anywhere on the left of the screen runs him, and the buttons on the right are what he can do now. Run onto a ball on the ground and he lifts it and solos by himself. With the sliotar, STRIKE shoots for a point or strikes long to a teammate; GOAL drives it low for the net from close in; PASS hand-passes it. Without it, CATCH a high ball, PULL to strike it first time, TACKLE the man on the ball. SWITCH changes to the teammate best placed. How to Play has the rest.","Tá an fáinne óir ar d'imreoir: ritheann d'ordóg chlé áit ar bith ar thaobh clé an scáileáin é, agus is iad na cnaipí ar dheis an méid is féidir leis a dhéanamh anois. Rith isteach ar liathróid ar an talamh agus tógfaidh sé í agus déanfaidh sé solo leis féin. Leis an sliotar, buaileann BUAIL cúilín nó buille fada chuig comhimreoir; tiomáineann CÚL íseal don líon í ó ghar; tugann PAS pas láimhe. Gan é, BEIR ar liathróid ard, TARRAING chun í a bhualadh den chéad iarraidh, TACLÁIL an fear leis an liathróid. Athraíonn ATHRAIGH chuig an gcomhimreoir is fearr suite. Tá an chuid eile in Conas imirt."
+HELP_RULES,The rules,Na rialacha
+HELP_RULES_TEXT,"The playing rules of hurling in force in 2026: two halves of 35 minutes (30 at club level), a goal worth three points, four steps and two catches, the 13-metre and 20-metre rules at restarts, yellow, red and black cards, extra time and penalties in knock-out games. How to Play has the whole of it.","Rialacha imeartha na hiománaíochta i bhfeidhm in 2026: dhá leath de 35 nóiméad (30 ag leibhéal club), cúl ar fiú trí chúilín é, ceithre chéim agus dhá ghabháil, rialacha 13 mhéadar agus 20 méadar ag atosuithe, cártaí buí, dearga agus dubha, am breise agus pocanna éirice i gcluichí cnaguirlis. Tá sé ar fad in Conas imirt."
+HELP_SLOW,The game runs slowly or the phone gets warm,Ritheann an cluiche go mall nó éiríonn an fón te
+HELP_SLOW_TEXT,"Settings > Graphics > Low, and Frame rate > Battery saver. Phones with less memory start on Low by themselves.","Socruithe > Grafaic > Íseal, agus Ráta fráma > Spáráil cadhnra. Tosaíonn fóin le níos lú cuimhne ar Íseal leo féin."
+HELP_GRAPHICS,"Graphics: Low, Medium and High","Grafaic: Íseal, Meánach agus Ard"
+HELP_GRAPHICS_TEXT,"Settings > The screen. Low is for phones with less memory: simpler players, a smaller crowd, a smaller picture. Medium is sharper and smoother. High adds real lighting and shadows, floodlights that light the field and moves that blend into each other; on recent high-end phones the HD pack button adds full-detail players and 4K grass (a download of about 114 MB, only if you ask for it). The game picks a level the first time it runs and drops one by itself if a match runs slowly. The change is at once; no restart.","Socruithe > An scáileán. Is d'fhóin le níos lú cuimhne Íseal: imreoirí níos simplí, slua níos lú, pictiúr níos lú. Tá Meánach níos géire agus níos míne. Cuireann Ard solas agus scáthanna fíora leis, tuilsoilse a lasann an pháirc agus gluaiseachtaí a shníonn isteach ina chéile; ar fhóin nua ardleibhéil cuireann an cnaipe Pacáiste HD imreoirí lánmhionsonraithe agus féar 4K leis (íoslódáil de thart ar 114 MB, ach amháin má iarrann tú í). Roghnaíonn an cluiche leibhéal an chéad uair agus íslíonn sé leibhéal leis féin má ritheann cluiche go mall. Tarlaíonn an t-athrú láithreach; níl gá le hatosú."
+HELP_BUTTONS,The buttons are hard to reach,Tá na cnaipí deacair a shroicheadh
+HELP_BUTTONS_TEXT,"Settings > Button size, Move buttons to drag them where you want them, and Left-handed to swap the sides.","Socruithe > Méid na gcnaipí, Bog na cnaipí chun iad a tharraingt san áit is mian leat, agus Ciotach chun na taobhanna a mhalartú."
+HELP_INSTALL,The beta will not install,Ní shuiteálfaidh an béite
+HELP_INSTALL_TEXT,"On an older or Android Go phone, use the file ending in -32bit.apk from the beta page.","Ar fhón níos sine nó ar fhón Android Go, úsáid an comhad a chríochnaíonn le -32bit.apk ó leathanach an bhéite."
+HELP_IRISH,The Irish looks wrong,Tá an Ghaeilge mícheart
+HELP_IRISH_TEXT,Please tell us which screen and what it says; we want it right.,"Inis dúinn cén scáileán agus cad a deir sé, le do thoil; ba mhaith linn é a bheith ceart."
+HELP_CONTACT,Get in touch,Déan teagmháil linn
+HELP_CONTACT_TEXT,"To report a bug or ask anything, email joshnason8@gmail.com with your phone's model, the game's version (on the home screen, bottom right) and what happened. We read everything.","Chun fabht a thuairisciú nó aon rud a fhiafraí, seol ríomhphost chuig joshnason8@gmail.com le samhail d'fhóin, leagan an chluiche (ar an scáileán baile, thíos ar dheis) agus cad a tharla. Léimid gach rud."
+SIMULATE,Simulate,Ionsamhail
+SIMULATE_REST,Simulate the rest of the championship,Ionsamhail an chuid eile den chraobhchomórtas
+SIMULATED,"Your game, simulated","Do chluiche, ionsamhlaithe"
+RESUME_MATCH,Carry on,Lean ar aghaidh
+RESUME_LINE,"Carry on: {home} {a} v {b} {away}, {min}'","Lean ar aghaidh: {home} {a} v {b} {away}, {min}'"
+RESUMED_AT,carrying on at {min}',ag leanúint ar aghaidh ag {min}'
+SIM_TO_END,Simulate to the end,Ionsamhail go dtí an deireadh
+SUB_BOARD,Substitution,Ionadú
+HD_TITLE,HD pack,Pacáiste HD
+HD_INTRO,"Sharper graphics on High for recent high-end phones: the hurlers in full detail with cloth and skin shading, the officials, 4K grass, a fuller crowd and the stands' concrete. A download of its own, in use as soon as it is in.","Grafaic níos géire ar Ard d'fhóin nua ardleibhéil: na hiománaithe go mion le scáthú éadaigh agus craicinn, na hoifigigh, féar 4K, slua níos iomláine agus coincréit na seastán. Íoslódáil ar leith, in úsáid chomh luath agus atá sé istigh."
+HD_SIZE,HD pack: %d MB. Use Wi-Fi.,Pacáiste HD: %d MB. Úsáid Wi-Fi.
+HD_CHECKING,Finding the HD pack...,Ag aimsiú an phacáiste HD...
+HD_GET,Download the HD pack,Íoslódáil an pacáiste HD
+HD_GETTING,Downloading: %d of %d MB,Á íoslódáil: %d as %d MB
+HD_CHECKING_FILE,Checking the download...,Ag seiceáil na híoslódála...
+HD_RETRY,Try again,Bain triail eile as
+HD_IN,The HD pack is in: High graphics use it.,Tá an pacáiste HD istigh: úsáideann grafaic Ard é.
+HD_REMOVED,The HD pack is removed: High goes without it from the next start.,Baineadh an pacáiste HD: beidh Ard gan é ón gcéad tosú eile.
+HD_REMOVE,Remove the HD pack,Bain an pacáiste HD
+HD_FAIL_net,The download stopped (no connection?). Try again: it carries on where it stopped.,Stop an íoslódáil (gan cheangal?). Bain triail eile as: leanann sé ar aghaidh ón áit ar stop sé.
+HD_FAIL_corrupt,The download was damaged and has been deleted. Try again.,Bhí an íoslódáil lochtach agus scriosadh í. Bain triail eile as.
+HD_FAIL_space,There is not enough space on the phone for the HD pack.,Níl dóthain spáis ar an bhfón don phacáiste HD.
+HD_FAIL_manifest,The HD pack for this version is not available yet.,Níl an pacáiste HD don leagan seo ar fáil fós.
+HD_LINE_IN,"HD pack: in, used on High.","Pacáiste HD: istigh, in úsáid ar Ard."
+HD_LINE_OUT,"HD pack: not downloaded. Optional, for sharper players, grass and crowd on High.","Pacáiste HD: gan íoslódáil. Roghnach, d'imreoirí, féar agus slua níos géire ar Ard."
+HD_OPEN,HD pack,Pacáiste HD
+VULKAN_BACK_crash,The game did not start properly last time: from now on it uses the older graphics renderer on this phone.,Níor thosaigh an cluiche i gceart an uair dheireanach: as seo amach úsáideann sé an seanléiritheoir grafaice ar an bhfón seo.
+PRIV_DATE,Last updated 27 October 2026.,Nuashonraithe 27 Deireadh Fómhair 2026.
+PRACTICE_CH_TITLE,POST CHALLENGE!,DÚSHLÁN CUAILLE!
+PRACTICE_CH_HIT_SUB,Off the post! +{n},Den chuaille! +{n}
+TALLY_TODAY,%s today,%s inniu
+WATCH_BACK,Watch it back,Féach arís air

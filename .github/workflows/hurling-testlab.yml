@@ -1,0 +1,22 @@
+name: Hurling Heroes · Test Lab
+
+# Hurling on three real phones (a budget, a mid-range and a flagship Android phone) in Firebase Test Lab: frame rate
+# and memory at Low, Medium and High (the shared foundation's wsg-testlab.yml; foundation/docs/TESTLAB.md). Run it
+# from the Actions tab ("Run workflow"): the free plan allows about one run a day. Without the FIREBASE_TESTLAB_KEY
+# secret it says so and stops.
+
+on:
+  workflow_dispatch:
+    inputs:
+      devices:
+        description: "Phones instead of the automatic three (model,version;model,version), or empty"
+        required: false
+        default: ""
+
+jobs:
+  testlab:
+    uses: ./.github/workflows/wsg-testlab.yml
+    with:
+      game-dir: hurling-game
+      devices: ${{ inputs.devices }}
+    secrets: inherit

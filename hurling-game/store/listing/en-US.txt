@@ -1,0 +1,67 @@
+# Google Play store listing, English (United States). Paste each part into Play Console > Grow > Store presence >
+# Main store listing > Manage translations. Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Hurling Heroes
+
+== Short description ==
+Hurling, Ireland's ancient field sport: fifteen a side, the real rules.
+
+== Full description ==
+Hurling Heroes is hurling for your phone, Ireland's ancient field sport: the clash of the ash, fifteen a side, goals and points, on a parish field at dusk or in front of a full stadium. Lift the sliotar, solo through, and strike it over the bar.
+
+Ar fáil as Gaeilge / Available in Irish.
+
+THE REAL GAME
+• The playing rules as they stand in 2026: two halves of 35 minutes (or 30 at club level), a goal worth three points, the score written goals-points.
+• Four steps with the sliotar in your hand, then solo it on your hurley; catch it twice at most before you play it away.
+• Puck-outs from the small rectangle, frees, 65s, sideline cuts and penalties, each from where the rules put it, with everyone 13 metres back.
+• The tackle: the shoulder, the hook, the block and the flick, and the fouls a referee gives frees for. Yellow, red and, in senior county hurling, the black card and the sin bin for denying a goal chance.
+• Advantage, added time, and in a knock-out game extra time and a penalty shoot-out.
+• Players tire as the match goes on: make your five substitutions, or let the manager. Set up your side: a sweeper, two inside, short or long puck-outs.
+
+THE OFFICIALS
+The referee whistles, points the free and holds up the card; the linesmen flag the sideline cuts; the umpires in their white coats wave the white flag for a point and the green for a goal, cross their arms for a wide and raise an arm for a 65.
+
+WAYS TO PLAY
+• Throw-in: pick two counties and a ground, and play.
+• The Summer Championship: two groups of five, then group finals, quarter-finals, semi-finals and the final. The other ten counties play the Tier Two Cup. Simulate any match you would rather not play, finish one early with a simulated result, or leave one and pick it up later where you left it.
+• Watch a match: two counties played by the computer, from the television gantry.
+• Free-taking: ten frees and 65s at the posts from all round the pitch. A target circles the goal; tap SHOOT to stop it where you want the sliotar to go, and beat your best score.
+
+THE GROUNDS
+A parish field at dusk with its ball-stop nets and floodlights, a county ground by day and under lights, and the national stadium.
+
+PLAY YOUR WAY
+• New to hurling? The coach talks you through your first match, a tip at a time.
+• English or Irish, with the game's own Irish terms: camán, sliotar, cúl, cúilín, poc amach.
+• A joystick on the left, the buttons for what your player can do on the right: make them bigger, move them where your thumb wants them, or swap the sides if you are left-handed.
+• Choose how long a match takes: 8 minutes, or the full 70 with the ball in play as long as in a real match (about 35 minutes to play), how hard the other side plays, and how much help you get with the ball.
+• Low, Medium and High graphics, picked for your phone and changed any time: High adds real lighting and shadows, and an optional HD download for the sharpest players and grass on recent high-end phones.
+• Plays offline (only the optional HD download uses the internet). No ads, no purchases, no account, and no data collected.
+
+Hurling Heroes is an independent game. It is not connected with or endorsed by any sporting body, county board or club. The counties appear by their place names, in colours of the game's own design; every player is invented.
+
+== Release notes (first Play release) ==
+Hurling Heroes comes to Google Play: hurling to the 2026 rules, every county, the Summer Championship and the Tier Two Cup, in English and Irish. Plays offline, with no ads and no purchases.
+
+== Release notes (0.9.0) ==
+Player shadows, a national stadium that looks like the real one, county-coloured crowds, and sides that press and swarm like a championship team. A sharper crack when the sliotar is struck.
+
+== Release notes (0.8.1) ==
+A real referee's whistle: recorded blasts from where the referee stands, short for a free, long for the throw-in and half time, the final whistle at full time.
+
+== Release notes (0.8.0) ==
+Sharper grass, kits and officials on Medium and High graphics, a crowd of 24 different fans, and longer, more varied crowd sound. Low graphics unchanged.
+
+== Release notes (0.7.0) ==
+Real sounds: a stadium crowd recorded live, birdsong round the smaller grounds, boots on the grass, hurleys clashing and shoulders going in. Sound now pauses with the game.
+
+== Release notes (0.6.0) ==
+Players now walk and jog with real motion capture, their feet planted on the grass, blending into the sprint.
+
+== Release notes (0.5.0) ==
+Every score shown again from behind the goal. New fans in the stands, a new referee and umpires, substitutes in the dugouts, a new sliotar and floodlights. The CATCH and PULL buttons come up as soon as you are under a dropping ball.
+
+== Release notes (0.4.0) ==
+New graphics at every ground: real skies (a sunset at the parish field, Irish cloud at the county ground, a bright final day at the national stadium), a photo-scanned pitch mown in bands, real trees and hedgerows, a village and a lough beyond the parish field, terraced streets round the bigger grounds. Still smooth on budget phones.

@@ -1,0 +1,101 @@
+extends Control
+## What the game is made with, and under what licences: the credits, the fonts' licence, the Godot Engine's licence
+## and those of the engine's own parts (Engine.get_copyright_info), which their licences ask to be shown. The legal
+## texts are in English, as they are written.
+
+const CREDITS := """[b]Hurling Heroes[/b]
+Made by Josh Nason. The game's code, the menu music (written for the game, tools/audio/make_music.py), the cover art and the icon, the hurlers' model and the houses, cottages, stands and sliotar (made in code) are the maker's own. The game is not connected with, or endorsed by, any sporting body, county board or club. Counties appear by their place names, in colours of the game's own design; every player is invented.
+
+[b]Movement[/b]
+- The hurlers' moves (strikes, catches, the sprint and others): Adobe Mixamo (mixamo.com), used under Adobe's Mixamo terms, which allow the animations in games.
+- The walk and the jog: the CMU Graphics Lab Motion Capture Database, clips 35_01 and 35_17. "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Free to use.
+
+[b]Pictures and models[/b]
+- The skies (belfast_sunset_puresky, kloofendal_overcast_puresky, kloofendal_48d_partly_cloudy_puresky, kloppenheim_07_puresky): Poly Haven (polyhaven.com), CC0.
+- The pitch and fields (grass_ground, leafy_grass, sparse_grass, withered_grass): Poly Haven, CC0.
+- The small broadleaf and fern cut-outs, the painted bench, the tall street lamps and the mossy rocks: Poly Haven, CC0.
+- The oak and dark broadleaf trees, the hedgerow grasses (grass_clumps, grass_wispy), the park bench, the floodlights, the referee, the umpires and the people in the crowd: the maker's own models, made with Meshy (meshy.ai).
+- The lough's water ripples (water_normal): made for the maker's games from random waves, the maker's own.
+
+[b]The HD pack (an optional download for High graphics)[/b]
+- The pitch's grass at 4K (grass_ground), the shirts' cloth (cotton_jersey) and the stands' concrete (concrete_wall_008): Poly Haven (polyhaven.com), CC0.
+- The hurlers at full detail and their 4K texture: the maker's own model.
+- The referee's and umpires' detailed textures: the maker's own models, made with Meshy (meshy.ai).
+- The crowd's sharper sheet: rendered from the maker's own Meshy models.
+- The moves at 60 frames a second: Adobe Mixamo, as above.
+
+[b]Sounds[/b]
+- The stadium crowd's murmur, cheers and roars: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org/content/free-crowd-cheering-sounds), CC-BY 4.0 (creativecommons.org/licenses/by/4.0). Trimmed, levelled and looped for the game.
+- Birdsong: "Park ambiences" by Thimras (opengameart.org/content/park-ambiences), CC0.
+- Footsteps, hurleys meeting, the bounce, the catch and the shoulder charge: "Impact Sounds" by Kenney (kenney.nl), CC0.
+- The strike and the sliotar off the posts: recordings supplied by the game's owner.
+- The menu click: "Interface Sounds" by Kenney (kenney.nl), CC0.
+- The referee's whistles: Pixabay (pixabay.com) 568615 "Referee whistle" by charlesheffley009, 291816 "Referee whistle / coach whistle / sports whistle" by framptones and 6121 "Metal whistle" by freesound_community, under the Pixabay Content License.
+- The crowd's ooh, groan and applause and the players' effort: from Kabaddi Raid, by the same maker, the maker's own.
+- The tap and the save: made in code for the game.
+Every sound's file and source: docs/SOUNDS.md in the game's source."""
+
+const FONTS := """[b]Fonts[/b]
+Noto Sans: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic).
+Oswald: Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont).
+All under the SIL Open Font License, Version 1.1:"""
+
+
+func setup(_args: Dictionary) -> void:
+	pass
+
+
+func _ready() -> void:
+	UI.screen(self)
+	var v := UI.page(self, tr("LICENCES"), func(): Game.show_screen("res://ui/settings_screen.gd"), tr("SET_ABOUT"))
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 18)
+	v.add_child(UI.scroll(col))
+	col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
+	col.add_child(_text(CREDITS))
+	col.add_child(_text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
+	col.add_child(_text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
+	# The engine's own parts, each with its copyright and licence, then the licences' texts.
+	var parts := PackedStringArray()
+	for c in Engine.get_copyright_info():
+		var lines := PackedStringArray()
+		for part in c.parts:
+			for who in part.copyright:
+				lines.append(_plain(String(who)))
+			lines.append("(" + String(part.license) + ")")
+		parts.append("[b]%s[/b]\n%s" % [_plain(String(c.name)), "\n".join(lines)])
+	col.add_child(_text("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts)))
+	var info: Dictionary = Engine.get_license_info()
+	for name in info:
+		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
+
+
+## Licence texts are long, but are laid out on the main thread: laid out on its own thread (RichTextLabel.threaded),
+## a text freed while still being laid out (leaving the screen at once) crashed the engine in a CI run.
+## Each on a card, like the privacy and help pages: words straight over the field were hard to read on a small phone.
+func _text(bb: String, _big := false) -> PanelContainer:
+	var card := UI.card()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
+	var rt := RichTextLabel.new()
+	card.add_child(rt)
+	rt.bbcode_enabled = true
+	rt.fit_content = true
+	rt.scroll_active = false
+	rt.threaded = false
+	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# A drag that starts on the words must reach the scroll box: the text takes no input.
+	rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rt.add_theme_font_override("normal_font", Game.font_body)
+	rt.add_theme_font_override("bold_font", Game.font_bold)
+	rt.add_theme_font_size_override("normal_font_size", Game.ts(16))
+	rt.add_theme_font_size_override("bold_font_size", Game.ts(18))
+	rt.add_theme_color_override("default_color", Color(Game.C_INK, 0.85))
+	rt.text = bb
+	return card
+
+
+## Text shown as it is: square brackets in a licence are not formatting.
+static func _plain(s: String) -> String:
+	return s.replace("[", "[lb]")
