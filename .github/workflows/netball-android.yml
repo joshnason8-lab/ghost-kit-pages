@@ -13,6 +13,11 @@ on:
   # same commit only doubled every failure email.
   workflow_dispatch:
 
+# One run per branch: a newer push cancels an older run, so an older build can never publish over a newer one.
+concurrency:
+  group: netball-android-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GODOT_VERSION: "4.7.2"
   PROJECT_DIR: netball-game
@@ -25,6 +30,9 @@ jobs:
       contents: write   # to publish the beta release (below)
     steps:
       - uses: actions/checkout@v4
+
+      - name: Shared foundation up to date? (a warning only)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
 
       - uses: actions/setup-java@v4
         with:
@@ -58,6 +66,11 @@ jobs:
 
       - name: Build translations
         run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
 
       - name: Import project
         working-directory: ${{ env.PROJECT_DIR }}
@@ -171,7 +184,7 @@ jobs:
       # "netball-unleashed-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests. A manual run (workflow_dispatch) builds the same APK and leaves the release alone.
       - name: Publish the beta release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/netball-game'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -190,4 +203,23 @@ jobs:
           gh release delete "$TAG" --cleanup-tag --yes || true
           gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
             --title "Netball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+          gh release view "$TAG"
+
+      # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
+      - name: Publish the foundation pilot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/netball-foundation-pilot'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=netball-foundation-pilot
+          APK=${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk
+          cat > notes.md <<EOF
+          **Foundation pilot** of Netball Unleashed (${VERSION}), built from \`${GITHUB_SHA::7}\`: the players and umpires
+          on the World Stage Games shared rig with motion-capture running. Installs over the beta and keeps your saves
+          (the same game); reinstall the beta to go back.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Foundation pilot: Netball Unleashed ${VERSION}" --notes-file notes.md
           gh release view "$TAG"
