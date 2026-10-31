@@ -25,6 +25,14 @@ mkdir -p "$GAME/tools/wsg/blender"
 cp "$HERE"/blender/*.py "$HERE"/blender/*.sh "$HERE"/blender/*.gd "$HERE"/blender/README.md "$GAME/tools/wsg/blender/"
 rm -rf "$GAME/tools/wsg/crowd_src"
 cp -r "$HERE/crowd_src" "$GAME/tools/wsg/crowd_src"
+# (Their .import files name the foundation's path and its hash; the game has them under tools/wsg/, as Godot would rewrite them.)
+for f in "$GAME"/tools/wsg/crowd_src/*.import; do
+	[ -f "$f" ] || continue
+	src=$(basename "$f" .import)
+	old=$(printf 'res://tools/crowd_src/%s' "$src" | md5sum | cut -c1-32)
+	new=$(printf 'res://tools/wsg/crowd_src/%s' "$src" | md5sum | cut -c1-32)
+	sed -i -e "s#res://tools/crowd_src/#res://tools/wsg/crowd_src/#" -e "s#$old#$new#g" "$f"
+done
 grep -q "addons/wsg_foundation/data" "$GAME/.gitignore" 2>/dev/null || {
 	printf '\n# Licensed animation data, baked at build time (tools/wsg/fetch_assets.sh): never committed.\naddons/wsg_foundation/data/\n' >> "$GAME/.gitignore"
 }
