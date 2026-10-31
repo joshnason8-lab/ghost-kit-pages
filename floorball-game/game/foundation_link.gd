@@ -347,7 +347,7 @@ static func _pick(d: Dictionary, keys: Array) -> Dictionary:
 		if d.has(k):
 			out[k] = d[k]
 	return out
-var _slid := []               # [the top fist's slide along the shaft, the lower's] as last worked out
+var _slid := []               # [the top fist's slide along the shaft, the lower's, the lower's roll round it] as last worked out
 
 
 ## Both fists on the shaft (StickLayer calls it as it runs, with the hips where they now are): each fist turned the
@@ -374,9 +374,13 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	# (Worked out for the bodies in full detail, near the camera; the others keep their last.)
 	if body.full or _slid.is_empty():
 		var x_t := maxf(_slide(sk, top, top_at - qt * v_top, down), 0.03 - TOP_AT)
-		_slid = [x_t, maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down), 0.1 - spacing)]
+		var x_l := maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down), 0.1 - spacing)
+		# Still out of the lower arm's reach (it can slide no nearer the top hand): that fist rolled round the shaft,
+		# the wrist toward the shoulder, as far as it must (at most 60 degrees).
+		_slid = [x_t, x_l, _roll(sk, low, top_at + down * (x_t + spacing + x_l), ql * v_low, down)]
 	var x_t: float = _slid[0]
 	var x_l: float = _slid[1]
+	ql = (Quaternion(down, float(_slid[2])) * ql).normalized()
 	var hand_t := Transform3D(Basis(qt), sx.origin + down * (TOP_AT + x_t) - qt * v_top)
 	var hand_l := Transform3D(Basis(ql), sx.origin + down * (TOP_AT + x_t + spacing + x_l) - ql * v_low)
 	var in_hips := hips_g.affine_inverse() * Transform3D(hand_t.basis, hand_t.origin - lift)
@@ -415,6 +419,25 @@ static func _turn_about(xf: Transform3D, pivot: Vector3, from: Vector3, to: Vect
 		return xf
 	var r := Basis(ax.normalized(), minf(ang, deg_to_rad(max_deg)))
 	return Transform3D(r * xf.basis, pivot + r * (xf.origin - pivot))
+
+
+## The least roll (radians, about dir, every 10 degrees up to 60) of a fist whose grip is at grip (the wrist at grip -
+## off) that brings the side's wrist within its arm's comfortable reach (_slide's rule); failing that, the roll that
+## comes nearest.
+func _roll(sk: Skeleton3D, side: String, grip: Vector3, off: Vector3, dir: Vector3) -> float:
+	var s := sk.get_bone_global_pose(sk.find_bone(side + "Arm")).origin
+	var far: float = _reach_len[side] * 0.97
+	var best := 0.0
+	var best_over := INF
+	for i in 13:
+		var a := deg_to_rad(10.0 * ((i + 1) / 2) * (1 if i % 2 == 1 else -1))
+		var over := maxf(0.0, (grip - Quaternion(dir, a) * off).distance_to(s) - far)
+		if over < best_over - 0.001:
+			best_over = over
+			best = a
+		if over <= 0.0:
+			break
+	return best
 
 
 ## A hand's turn (the rig's convention) turned the least way that lays its grip (across the palm, rest +Z) along dir.

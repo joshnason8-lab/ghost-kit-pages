@@ -52,64 +52,64 @@
 			-0.0594
 		],
 		"LeftHandIndex1": [
-			0.7731,
-			1.3975,
-			-0.0437
+			0.7546,
+			1.4067,
+			-0.0296
 		],
 		"LeftHandIndex2": [
-			0.8073,
-			1.3843,
-			-0.0303
+			0.7828,
+			1.3975,
+			-0.0282
 		],
 		"LeftHandIndex3": [
-			0.8177,
-			1.3728,
-			-0.0226
+			0.8058,
+			1.3814,
+			-0.0185
 		],
 		"LeftHandMiddle1": [
-			0.7954,
-			1.3771,
-			-0.0402
+			0.7603,
+			1.4018,
+			-0.0616
 		],
 		"LeftHandMiddle2": [
-			0.8132,
-			1.3741,
-			-0.0574
+			0.7967,
+			1.3852,
+			-0.0696
 		],
 		"LeftHandMiddle3": [
-			0.8203,
-			1.3848,
-			-0.0573
+			0.8133,
+			1.3806,
+			-0.0565
 		],
 		"LeftHandPinky1": [
-			0.7618,
-			1.3721,
-			-0.1026
+			0.7328,
+			1.4005,
+			-0.1118
 		],
 		"LeftHandPinky2": [
-			0.7831,
-			1.3792,
-			-0.1037
+			0.7559,
+			1.3906,
+			-0.0988
 		],
 		"LeftHandPinky3": [
-			0.7848,
-			1.3833,
-			-0.1128
+			0.7751,
+			1.3735,
+			-0.1067
 		],
 		"LeftHandRing1": [
-			0.8044,
-			1.3672,
-			-0.0963
+			0.749,
+			1.3904,
+			-0.0748
 		],
 		"LeftHandRing2": [
-			0.8097,
-			1.3899,
-			-0.0828
+			0.7815,
+			1.3779,
+			-0.0904
 		],
 		"LeftHandRing3": [
-			0.8072,
-			1.374,
-			-0.0864
+			0.8001,
+			1.3801,
+			-0.0829
 		],
 		"LeftHandThumb1": [
 			0.7179,
@@ -217,64 +217,64 @@
 			-0.0593
 		],
 		"RightHandIndex1": [
-			-0.7942,
-			1.3919,
-			-0.0157
+			-0.7555,
+			1.4179,
+			-0.0279
 		],
 		"RightHandIndex2": [
-			-0.8147,
-			1.375,
-			-0.0235
+			-0.7897,
+			1.3886,
+			-0.0217
 		],
 		"RightHandIndex3": [
-			-0.8271,
-			1.3668,
-			-0.0172
+			-0.8134,
+			1.3709,
+			-0.0225
 		],
 		"RightHandMiddle1": [
-			-0.804,
-			1.4034,
-			-0.0671
+			-0.7705,
+			1.4022,
+			-0.0562
 		],
 		"RightHandMiddle2": [
-			-0.8232,
-			1.3791,
-			-0.057
+			-0.7985,
+			1.3903,
+			-0.0564
 		],
 		"RightHandMiddle3": [
-			-0.833,
-			1.3698,
-			-0.0506
+			-0.8235,
+			1.3738,
+			-0.0519
 		],
 		"RightHandPinky1": [
-			-0.7694,
-			1.3736,
-			-0.1037
+			-0.7467,
+			1.3967,
+			-0.114
 		],
 		"RightHandPinky2": [
-			-0.7859,
-			1.3757,
-			-0.1187
+			-0.7739,
+			1.3984,
+			-0.1087
 		],
 		"RightHandPinky3": [
-			-0.7947,
-			1.3758,
-			-0.1082
+			-0.7858,
+			1.3826,
+			-0.1045
 		],
 		"RightHandRing1": [
-			-0.7963,
-			1.3686,
-			-0.0981
+			-0.7621,
+			1.3937,
+			-0.0871
 		],
 		"RightHandRing2": [
-			-0.8181,
-			1.3635,
-			-0.0764
+			-0.7891,
+			1.3859,
+			-0.0961
 		],
 		"RightHandRing3": [
-			-0.8271,
-			1.3732,
-			-0.0833
+			-0.815,
+			1.3724,
+			-0.0884
 		],
 		"RightHandThumb1": [
 			-0.723,
@@ -437,10 +437,10 @@
 		],
 		"Left_finger_lengths": [
 			0.042,
-			0.053,
-			0.037,
-			0.019,
-			0.027
+			0.08,
+			0.08,
+			0.079,
+			0.064
 		],
 		"Left_foot_low_after": 0.003,
 		"Left_foot_pitch_deg": -2.5,
@@ -532,10 +532,10 @@
 		],
 		"Right_finger_lengths": [
 			0.046,
-			0.039,
-			0.063,
-			0.038,
-			0.027
+			0.085,
+			0.085,
+			0.081,
+			0.063
 		],
 		"Right_foot_low_after": 0.0,
 		"Right_foot_pitch_deg": -2.9,
@@ -553,18 +553,19 @@
 			"LeftForeArm": 53,
 			"LeftForeArmRoll": 75,
 			"LeftForeArmRoll2": 84,
-			"LeftHand": 376,
-			"LeftHandIndex1": 2,
-			"LeftHandIndex2": 10,
-			"LeftHandIndex3": 15,
-			"LeftHandMiddle1": 2,
-			"LeftHandMiddle2": 8,
-			"LeftHandMiddle3": 7,
-			"LeftHandPinky1": 3,
-			"LeftHandPinky2": 7,
-			"LeftHandPinky3": 6,
-			"LeftHandRing2": 1,
-			"LeftHandRing3": 8,
+			"LeftHand": 214,
+			"LeftHandIndex1": 20,
+			"LeftHandIndex2": 33,
+			"LeftHandIndex3": 21,
+			"LeftHandMiddle1": 23,
+			"LeftHandMiddle2": 20,
+			"LeftHandMiddle3": 12,
+			"LeftHandPinky1": 15,
+			"LeftHandPinky2": 27,
+			"LeftHandPinky3": 27,
+			"LeftHandRing1": 9,
+			"LeftHandRing2": 3,
+			"LeftHandRing3": 21,
 			"LeftHandThumb1": 1,
 			"LeftHandThumb2": 8,
 			"LeftHandThumb3": 15,
@@ -585,19 +586,19 @@
 			"RightForeArm": 57,
 			"RightForeArmRoll": 80,
 			"RightForeArmRoll2": 81,
-			"RightHand": 371,
-			"RightHandIndex1": 2,
-			"RightHandIndex2": 13,
-			"RightHandIndex3": 7,
-			"RightHandMiddle1": 3,
-			"RightHandMiddle2": 7,
-			"RightHandMiddle3": 19,
-			"RightHandPinky1": 2,
-			"RightHandPinky2": 7,
-			"RightHandPinky3": 15,
-			"RightHandRing1": 2,
-			"RightHandRing2": 10,
-			"RightHandRing3": 8,
+			"RightHand": 210,
+			"RightHandIndex1": 10,
+			"RightHandIndex2": 32,
+			"RightHandIndex3": 18,
+			"RightHandMiddle1": 33,
+			"RightHandMiddle2": 31,
+			"RightHandMiddle3": 21,
+			"RightHandPinky1": 13,
+			"RightHandPinky2": 15,
+			"RightHandPinky3": 25,
+			"RightHandRing1": 24,
+			"RightHandRing2": 14,
+			"RightHandRing3": 20,
 			"RightHandThumb1": 5,
 			"RightHandThumb2": 15,
 			"RightHandThumb3": 21,

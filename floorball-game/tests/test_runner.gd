@@ -1092,7 +1092,8 @@ func _foundation() -> void:
 				if float(p.link.last_fists[p.link.low]) > 0.03:
 					low_off += 1
 	check(n > 1000 and top_off <= n / 50, "foundation: the stick through the top fist (%d of %d frames off it)" % [top_off, n])
-	check(low_off <= n / 8, "foundation: the lower fist on the shaft (%d of %d frames off it by over 3 cm)" % [low_off, n])
+	# (2.5% here with the man's fingers reaching back to their knuckles and the lower fist rolled to its reach.)
+	check(low_off <= n / 30, "foundation: the lower fist on the shaft (%d of %d frames off it by over 3 cm)" % [low_off, n])
 	print("foundation: %d posed frames of skaters; top fist off %d, lower fist off %d" % [n, top_off, low_off])
 	m.queue_free()
 	await frames(2)
