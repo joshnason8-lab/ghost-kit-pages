@@ -124,7 +124,8 @@ var _auto_gfx := WsgAutoTier.new(Game.frame_cap())   # the shared foundation's: 
 var _detail_t := 0.0
 var _replay_kind := ""         # the moment the coming replay shows (REPLAY_PRIORITY)
 var _wsg_clip: Array = []      # the foundation's bodies over the replay's frames, kept when the replay froze
-var _keep_places: Array = []   # the players' places when a replay began (put back after it, Medium and High)
+var _keep_places: Array = []
+var _replay_focus := Vector3.INF   # the players' places when a replay began (put back after it, Medium and High)
 
 var officials: Array[RealBody] = []
 var _ref: RealBody
@@ -1987,6 +1988,7 @@ func _start_replay() -> void:
 				var pl: Player = pp
 				_keep_places.append([pl, pl.position, pl.body.rotation.y, pl.body.position.y])
 		replays.append([log.size(), _replay_kind])
+		_replay_focus = Vector3.INF
 	_ball_keep = [ball.global_position, ball.vel, ball.loose, ball.flying]
 	_rec.clear()
 	_rec_frozen = false
@@ -2022,7 +2024,14 @@ func _replay_step(delta: float) -> void:
 	if wsg_replay and wsg_replay.playing:
 		var j := mini(i + 1, _replay_frames.size() - 1)
 		wsg_replay.seek(lerpf(float(f.t), float(_replay_frames[j].t), _replay_i - float(i)))
-	cam.replay_follow(ball.global_position, delta)
+	if wsg_replay:
+		# (Medium and High: the camera kept on the players, not carried up after a ball blocked or dug high.)
+		var fb := ball.global_position
+		fb.y = minf(fb.y, 2.6)
+		_replay_focus = fb if not _replay_focus.is_finite() else _replay_focus.lerp(fb, minf(1.0, 4.0 * delta))
+		cam.replay_follow(_replay_focus, delta)
+	else:
+		cam.replay_follow(ball.global_position, delta)
 	hud.tick(delta)
 
 
@@ -2533,6 +2542,11 @@ func _all_bodies() -> Array:
 	return out
 
 
+## Metres from the camera within which a player is posed every frame by graphics level (beyond: every second frame,
+## unless he is playing a move).
+const POSE_NEAR := [12.0, 12.0, 16.0]
+
+
 ## Twice a second: the foundation's bodies in full detail nearest the camera only (WsgFoundation's budget profile:
 ## its nearest 6 on Medium, all on High); the officials posed every second frame and the substitutes every third
 ## unless they move or signal. The players are posed every frame (their kicks meet the ball on the frame).
@@ -2550,13 +2564,18 @@ func _rank_detail(dt: float) -> void:
 		if link == null or link.body == null:
 			continue
 		list.append(link.body)
+		var d: float = (b as RealBody).global_position.distance_to(camp)
 		match link.kind:
 			"official":
-				link.pose_every = 1 if link.mode != "full" and link.vel.length() > 0.3 or link.mode == "upper" else 2
+				if b == _ref:
+					link.pose_every = 3   # (in his chair: his head and his arm to the side)
+				else:
+					link.pose_every = 1 if link.mode != "full" and link.vel.length() > 0.3 or link.mode == "upper" else 2
 			"sub":
 				link.pose_every = 3
 			_:
-				link.pose_every = 1
+				# (A player in a move, or about to start one, is posed every frame whatever this says: Player._drive_link.)
+				link.pose_every = 1 if d < float(POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)]) else 2
 	if not list.is_empty():
 		WsgFoundation.rank_detail(list, camp)
 

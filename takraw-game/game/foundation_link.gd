@@ -35,6 +35,8 @@ static var frozen := false
 ## Microseconds every body's foundation work has taken (its update here and its skeleton's modifiers), all told
 ## (tests/foundation_cpu).
 static var cost_usec := 0
+## Of that, the skeleton's modifiers (the game's pose laid on, the drivers, the helpers).
+static var cost_mods_usec := 0
 
 
 ## Sepak takraw is a budget game (WsgFoundation: Low by default on an ordinary phone, GL Compatibility always).
@@ -334,7 +336,9 @@ func _on_posed() -> void:
 	if measure:
 		_measure()
 	if legacy.t0 > 0:
-		cost_usec += Time.get_ticks_usec() - legacy.t0
+		var c := Time.get_ticks_usec() - legacy.t0
+		cost_usec += c
+		cost_mods_usec += c
 		legacy.t0 = 0
 
 

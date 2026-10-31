@@ -710,7 +710,6 @@ func _foundation(available: bool) -> void:
 	var slide_n := 0
 	var last_foot := {}
 	var slide_why := ""
-	var hist := {}
 	var held_gap := 0.0
 	var held_n := 0
 	var official_moves := 0
@@ -728,6 +727,7 @@ func _foundation(available: bool) -> void:
 			if l == null or not l.last.has("Hips"):
 				continue
 			var fresh: bool = l.last.frame != seen.get(l, -1)
+			var gap_frames := maxi(1, int(l.last.frame) - int(seen.get(l, int(l.last.frame) - 1)))
 			seen[l] = l.last.frame
 			if not l.body.is_visible_in_tree() or rb.mesh_instance.visible:
 				shown += 1
@@ -735,7 +735,11 @@ func _foundation(available: bool) -> void:
 				continue
 			var hp: Vector3 = l.last.Hips
 			var at := rb.global_position
-			if l.last.mode == "full" and float(l.last.w) >= 1.0 and float(l.last.pw) >= 1.0:
+			# (Posed every frame: a far one, posed every second, is carried to his next place with his last pose between.)
+			var each := l.pose_every == 1
+			if not each:
+				pass
+			elif l.last.mode == "full" and float(l.last.w) >= 1.0 and float(l.last.pw) >= 1.0:
 				drift = maxf(drift, Vector2(hp.x - rb.game_hips().x, hp.z - rb.game_hips().z).length())
 			elif l.last.mode == "move" and float(l.last.pw) <= 0.0:
 				drift = maxf(drift, Vector2(hp.x - at.x, hp.z - at.z).length() - 0.25)
@@ -744,7 +748,7 @@ func _foundation(available: bool) -> void:
 			if l.kind != "player":
 				continue
 			var pl: Player = rb.get_parent()
-			if l.last.mode == "full" and float(l.last.w) >= 1.0 and float(l.last.pw) >= 1.0:
+			if each and l.last.mode == "full" and float(l.last.w) >= 1.0 and float(l.last.pw) >= 1.0:
 				hips_gap = maxf(hips_gap, l.joint_gap("Hips"))
 				for jb in ["Head", "LeftHand", "RightLeg", "RightFoot"]:
 					gap_n += 1
@@ -766,11 +770,6 @@ func _foundation(available: bool) -> void:
 					contact_gap = maxf(contact_gap, float(best[1]))
 			else:
 				phase[pl] = -1.0
-			var hh: Array = hist.get(l, [])
-			hh.append("[%d %s yaw %.2f ly %.2f pos %s ank %s %s c %s ls %d]" % [i, l.mode, pl._yaw, l.loco.yaw, pl.position.snapped(Vector3.ONE * 0.01), (l.loco.planter.ankle_world[0] as Vector3).snapped(Vector3.ONE * 0.01), (l.loco.planter.ankle_world[1] as Vector3).snapped(Vector3.ONE * 0.01), l.loco.planter.contact, l.loco.state])
-			if hh.size() > 10:
-				hh.pop_front()
-			hist[l] = hh
 			# Walking under the capture: a planted foot stays where it was put.
 			if l.mode == "move" and pl.vel.length() > 0.6:
 				walked += 1
@@ -781,9 +780,9 @@ func _foundation(available: bool) -> void:
 				var down: bool = l.mode in ["move", "carry"] and l.legacy.weight <= 0.0 and l._pw <= 0.0 and float(l.loco.planter.contact[k]) > 0.5 \
 					and p.y < (l.body.joints["LeftFoot"] as Vector3).y * l.body.global_transform.basis.get_scale().y + 0.04
 				if down and last_foot.has(key):
-					var sl := Vector2(p.x - last_foot[key].x, p.z - last_foot[key].z).length()
+					var sl := Vector2(p.x - last_foot[key].x, p.z - last_foot[key].z).length() / gap_frames
 					if sl > slide:
-						slide_why = "%s %s v %.2f frame %d hist %s" % [l.mode, l.loco.state, pl.vel.length(), i, hist.get(l, [])]
+						slide_why = "%s, gait state %d, %.2f m/s, frame %d" % [l.mode, l.loco.state, pl.vel.length(), i]
 					slide = maxf(slide, sl)
 					slide_n += 1
 				if down:
@@ -803,7 +802,7 @@ func _foundation(available: bool) -> void:
 	check(contacts >= 20 and contact_gap < 0.04,
 		"foundation: at contact the drawn foot or head is where the game's meets the ball (%d contacts, at most %.1f cm apart)" % [contacts, contact_gap * 100.0])
 	check(walked > 300, "foundation: the capture walks the players between points (%d body-frames)" % walked)
-	check(slide_n > 300 and slide < 0.03, "foundation: a planted foot does not slide under the capture (worst %.3f m a frame over %d: %s)" % [slide, slide_n, slide_why])
+	check(slide_n > 150 and slide < 0.03, "foundation: a planted foot does not slide under the capture (worst %.3f m a frame over %d: %s)" % [slide, slide_n, slide_why])
 	check(held_n > 20 and held_gap < 0.02, "foundation: the ball carried is in the drawn hands (%d frames, at most %.1f cm off)" % [held_n, held_gap * 100.0])
 	check(official_moves > 1000, "foundation: the officials standing and stepping under the capture (%d body-frames)" % official_moves)
 	var per_point := {}

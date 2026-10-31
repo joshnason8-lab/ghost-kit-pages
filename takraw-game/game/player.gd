@@ -254,6 +254,8 @@ func _drive_link(dt: float, speed: float) -> void:
 	l.vel = vel
 	l.yaw = _yaw
 	l.look = look_at_pos
+	if move != "" or _queued != "" or carrying:
+		l.pose_every = 1   # (his touch, his catch: drawn on its frame)
 	l.update(dt)
 
 
