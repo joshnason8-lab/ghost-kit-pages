@@ -1,0 +1,127 @@
+name: Sepak Takraw Unleashed · Media kit
+
+# The media kit for the owner's website (takraw-game/tools/media/make_media_kit.sh): screenshots, the icon, the feature
+# graphic, the trailer and its 15-second vertical cut, all made from the game itself and zipped. Published as the
+# one asset of the release "sepak-takraw-unleashed-media", titled "Media kit: Sepak Takraw Unleashed": a prerelease,
+# never marked latest, and titled so Obtainium (which follows "Sepak Takraw Unleashed …" releases) passes it by.
+# The videos are made here, not kept in the repository. Run it by hand (Actions > this workflow > Run workflow) to
+# remake the kit from the current build; it also runs when the kit's own tools change.
+
+on:
+  push:
+    paths:
+      - "takraw-game/tools/media/**"
+      - ".github/workflows/takraw-media-kit.yml"
+  workflow_dispatch:
+
+# One run per branch at a time, the newest: an older kit must not be published over a newer one.
+concurrency:
+  group: takraw-media-kit-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: takraw-game
+
+jobs:
+  media-kit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240   # software OpenGL: the filming takes an hour or more
+    permissions:
+      contents: write   # to publish the kit's release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH, and what the filming needs (a virtual display, software OpenGL, ffmpeg)
+        run: |
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          sudo apt-get update -q
+          sudo apt-get install -y -q xvfb libgl1-mesa-dri libglx-mesa0 mesa-utils ffmpeg zip python3-pil
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Make the media kit
+        working-directory: ${{ env.PROJECT_DIR }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # (to read the beta APK's size for the kit's facts)
+        run: |
+          tools/media/make_media_kit.sh "$RUNNER_TEMP/media"
+          ls -la "$RUNNER_TEMP/media" "$RUNNER_TEMP/media/media-kit-sepak-takraw-unleashed"/*
+          echo "KIT=$RUNNER_TEMP/media/media-kit-sepak-takraw-unleashed.zip" >> "$GITHUB_ENV"
+
+      - name: Check the trailer
+        run: |
+          K="$RUNNER_TEMP/media/media-kit-sepak-takraw-unleashed"
+          check() {   # file, width x height, shortest and longest seconds
+            local f="$K/trailer/$1"
+            ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate:format=duration,size -of compact "$f"
+            test "$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,r_frame_rate -of csv=p=0 "$f")" = "h264,${2/x/,},30/1"
+            test "$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 "$f")" = "aac"
+            python3 -c "import sys; d=float(sys.argv[1]); sys.exit(0 if $3 <= d <= $4 else 1)" \
+              "$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")"
+            test "$(stat -c %s "$f")" -lt 62914560   # under 60 MB
+          }
+          check sepak-takraw-unleashed-trailer-1080p.mp4 1920x1080 30 45
+          check sepak-takraw-unleashed-vertical-15s.mp4 1080x1920 10 15.1
+          ls "$K/screenshots" "$K/menus" "$K/icons" "$K/text"
+          python3 -c "
+          import glob, sys
+          from PIL import Image
+          bad = [f for f in glob.glob(sys.argv[1] + '/screenshots/*.png') + glob.glob(sys.argv[1] + '/menus/*.png') if Image.open(f).size != (1920, 1080)]
+          sys.exit('not 1920 x 1080: %s' % bad if bad else 0)" "$K"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: media-kit-sepak-takraw-unleashed
+          path: ${{ env.KIT }}
+          retention-days: 30
+
+      # Only this game's branch publishes the kit (after a merge into main, put main here).
+      - name: Publish the kit's release
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/claude/kind-clarke-3g5fqs'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=sepak-takraw-unleashed-media
+          cat > notes.md <<EOF
+          The media kit for Sepak Takraw Unleashed, made from the game itself (built from \`${GITHUB_SHA::7}\`):
+          screenshots/ (1920 × 1080 PNG), menus/ (every menu screen in English, 1920 × 1080 PNG, named by screen),
+          icons/ (the icon at 1024 and 512 px, the 1024 × 500 feature graphic), trailer/ (the trailer, 1920 × 1080,
+          H.264 + AAC, and a 15-second vertical cut, 1080 × 1920) and text/ (copy for a website: about, features,
+          facts, the sport, a press blurb). CREDITS.txt lists the sounds and pieces in it and their licences.
+
+          This is not a build of the game: the game's beta is the "Sepak Takraw Unleashed … (latest beta)" release.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$KIT" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Media kit: Sepak Takraw Unleashed" --notes-file notes.md
+          gh release view "$TAG"
