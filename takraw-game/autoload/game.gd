@@ -121,6 +121,10 @@ func _ready() -> void:
 	if int(settings.graphics) < 0 or bool(settings.gfx_auto):
 		settings.graphics = auto_graphics()
 		save_settings()
+	# The shared foundation (addons/wsg_foundation): sepak takraw is a budget game - GL Compatibility always; the
+	# phone's level stays detect_graphics' (a Galaxy A16 on Low), and the foundation draws at whatever level is set.
+	WsgFoundation.profile = "budget"
+	WsgFoundation.tier = int(settings.graphics)
 	apply_frame_rate()
 	TranslationServer.set_locale(language())
 	_build_theme()

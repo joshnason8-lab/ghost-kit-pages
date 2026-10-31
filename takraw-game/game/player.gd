@@ -55,6 +55,7 @@ func _init(p_data := {}, p_side := 0, p_role := 0, look := {}) -> void:
 
 func _ready() -> void:
 	add_child(body)
+	body.link_foundation("player")
 	_shadow = MeshInstance3D.new()
 	var q := QuadMesh.new()
 	q.size = Vector2(0.9, 0.9)
@@ -238,6 +239,31 @@ func tick(dt: float, now: float) -> void:
 	body.position.y = lift
 	_shadow.scale = Vector3.ONE * clampf(1.0 - lift * 0.4, 0.5, 1.0)
 	body.apply(p)
+	if body.link:
+		_drive_link(dt, speed)
+
+
+## The shared foundation's body (FoundationLink): the game's whole pose, except walking between points with no move
+## of his own playing or about to - the motion capture's walk (the ball in his hands as the game holds it).
+func _drive_link(dt: float, speed: float) -> void:
+	var l := body.link
+	var walking := l.mode in ["move", "carry"]
+	var free := stroll and move == "" and _queued == "" and absf(body.position.y) < 0.01
+	walking = free and (speed > (0.45 if walking else 0.6))
+	l.want = ("carry" if carrying else "move") if walking else "full"
+	l.vel = vel
+	l.yaw = _yaw
+	l.look = look_at_pos
+	l.update(dt)
+
+
+## Where the ball in his hands is drawn: in the foundation's hands when it draws him, else carry_point().
+func drawn_carry_point() -> Vector3:
+	if body.link:
+		var p := body.link.ball_point(_two >= 0.5)
+		if p.is_finite():
+			return p
+	return carry_point()
 
 
 ## A man standing is never still: his breath, his weight from one foot to the other now and then, his head on the

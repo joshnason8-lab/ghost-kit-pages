@@ -14,7 +14,13 @@ lifeguards' tower and longtail boats, the food carts and scooters made for
 the game with Meshy (meshy.ai); skies (at 4K on Medium and High), surfaces (at 2K there; the mall's granite floor too)
 and the other venue pieces from Poly Haven (polyhaven.com), CC0. The review's buzzer made in code for the
 game; the crowd's drums written for it (tools/audio/make_music.py). The crowd's "ooh"
-and groan, the claps and the players' calls from Kabaddi Raid, by the same maker."""
+and groan, the claps and the players' calls from Kabaddi Raid, by the same maker.
+On Medium and High the players, the officials and the substitutes are drawn with the World Stage Games shared
+foundation (the same maker): the man and the woman on its rig, every kick, header, block, toss and celebration still
+the game's own, and the walks between points, the officials' standing and stepping with motion capture from the
+MoCap Online Mobility pack (MoCap Online, mocaponline.com) and Reallusion ActorCore (actorcore.reallusion.com),
+licensed for the game; that animation is part of the game only, not to be extracted. The replays use the
+foundation's WsgReplay."""
 
 const SOUNDS := """[b]Sounds[/b] (each with its source in docs/SOUNDS.md)
 The crowd's murmur and cheer: "Free Crowd Cheering Sounds" by Gregor Quendel (opengameart.org/content/free-crowd-cheering-sounds), CC BY 4.0.

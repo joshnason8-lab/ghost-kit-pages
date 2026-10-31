@@ -226,7 +226,18 @@ func _pose(o: One, dt: float, ball: Vector3, live: bool) -> void:
 		for bone in o.sig:
 			p[bone] = Moves._mix(p.get(bone, Vector3.ZERO), o.sig[bone], o.sig_w)
 	o.body.apply(p)
-	if o.flag:
+	var l := o.body.link
+	if l:
+		# The shared foundation's body: the motion capture standing and stepping (his head on the ball), the game's arms
+		# over it for a signal, the game's whole pose sitting or bent to watch his lines.
+		l.want = "full" if not o.standing or o.bend > 0.02 else ("upper" if o.sig_w > 0.0 else "move")
+		l.vel = o.vel
+		l.yaw = o.body.rotation.y
+		l.look = ball
+		if o.flag and l.flag == null:
+			l.flag = o.flag
+		l.update(dt)
+	elif o.flag:
 		_hold_flag(o)
 
 

@@ -14,6 +14,9 @@ func _ready() -> void:
 	Game.main = self
 	Game.reset_settings_for_tests()
 	var keep: Dictionary = Game.settings.duplicate(true)
+	# The shared foundation (FoundationLink, on Medium and High when this machine has the licensed clips; CI may not)
+	# is tested in its own section; elsewhere the matches run without it, as a build without the clips does.
+	FoundationLink.off = true
 	await _screens()
 	_rules_helpers()
 	_season()
@@ -31,6 +34,9 @@ func _ready() -> void:
 	await _play_as_and_officials()
 	await _matches()
 	await _sim_to_end()
+	FoundationLink.off = false
+	await _foundation(WsgClips.available())
+	FoundationLink.off = true
 	Game.settings = keep
 	Game.delete_season()
 	Game.delete_cup()
@@ -372,6 +378,7 @@ func _graphics_auto() -> void:
 ## and the address to write to; the help has the rules and the graphics levels, and the button to email us.
 func _legal_pages() -> void:
 	var must := {"licences": ["Godot Engine", "MIT", "mocap.cs.cmu.edu", "Mixamo", "Meshy", "Poly Haven", "Kenney",
+			"MoCap Online", "ActorCore",
 			"opengameart.org", "Pixabay", "charlesheffley009", "framptones", "freesound_community", "Mixkit", "Gregor Quendel",
 			"JC Sounds", "SIL Open Font License", "FreeType"],
 		"privacy": ["joshnason8@gmail.com", "2026"], "help": ["joshnason8@gmail.com"]}
@@ -607,3 +614,221 @@ func _sim_to_end() -> void:
 			check(int((res.set_scores[1] as Array)[0]) >= 9 and int((res.set_scores[1] as Array)[1]) >= 6, "simulated to the end: from the score as it stood")
 		m.queue_free()
 		await frames(2)
+
+
+# ---------------------------------------------------------------- the shared foundation (FoundationLink)
+
+func _foundation_match(venue := "national", seed := 77, event := "regu", user := -1) -> Node:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "THA", "away": "MAS", "venue": venue, "event": event, "sets": 1, "points": 15, "user_team": user,
+		"demo": true, "seed": seed, "mode": "quick"}
+	add_child(m)
+	return m
+
+
+## What match m draws: its visible geometry (every body, the venue, the crowd), by kind.
+func _drawn(m: Node) -> Dictionary:
+	var out := {}
+	for n in m.find_children("*", "GeometryInstance3D", true, false):
+		if (n as GeometryInstance3D).is_visible_in_tree():
+			var k := n.get_class()
+			out[k] = int(out.get(k, 0)) + 1
+	return out
+
+
+## Low is the budget phone's level (the Galaxy A16) and stays exactly as it was: with the licensed clips or without, a
+## Low match draws the game's own bodies (no links, no foundation replays), the same things in the same number. On
+## Medium and High (with the clips) every player, official and substitute is drawn by the foundation on the man's or
+## woman's body: each at his place, the game's hidden; under the game's moves every joint on the game's and the
+## kicking foot (or the head) where the game's meets the ball; the capture walking the players between points, its
+## feet planted, and the officials; the ball carried in the drawn hands; the point's best moment replayed, one a point
+## at most, by priority, a tap skips it; lowered to Low mid-match, the game's own bodies again. Without the clips
+## nobody has a link anywhere.
+func _foundation(available: bool) -> void:
+	var was := int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_LOW
+	var lows := []
+	for off in [true, false]:
+		FoundationLink.off = off
+		var lm := _foundation_match("beach")
+		await frames(4)
+		var links := (lm._all_bodies() as Array).filter(func(b): return (b as RealBody).link != null).size()
+		lows.append([_drawn(lm), links, lm.wsg_replay == null, lm.find_children("Foundation", "", true, false).size()])
+		lm.queue_free()
+		await frames(2)
+	FoundationLink.off = false
+	check(lows[1][1] == 0 and lows[1][2] and lows[1][3] == 0 and lows[0][0] == lows[1][0],
+		"foundation: Low draws the game's own bodies, the same %d things as without the foundation (%s)"
+		% [(lows[1][0] as Dictionary).values().reduce(func(x, y): return x + y, 0), lows[1][0]])
+	# The replays a point earns (its log row: touches, why, team, seq), one at most, the best first.
+	for c in [[[1, "ace", 0, "serve"], "horse", "horse_ace"], [[1, "ace", 0, "serve"], "power", "ace"],
+			[[4, "kill_head_spike", 0, "serve|receive set attack"], "", "head_spike"],
+			[[9, "block", 1, "serve|receive set attack|block!"], "", "block"],
+			[[3, "kill_roll", 1, "serve|receive set attack"], "roll", "roll"],
+			[[7, "kill_tapak", 0, "serve|receive set attack|receive set attack"], "", "dig"],
+			[[7, "kill_roll", 0, "serve|receive set attack|receive set attack"], "", "roll"],
+			[[4, "kill_tapak", 1, "serve|receive set attack"], "", "tapak"],
+			[[8, "out", 0, "serve|receive set attack|receive set attack|receive"], "", "dig"],
+			[[9, "out", 1, "serve|receive set over|receive set attack|receive set over"], "", "rally"],
+			[[3, "out", 1, "serve|receive set attack"], "", ""]]:
+		var got: String = (load("res://game/match.gd") as Script).replay_kind(c[0], c[1])
+		check(got == c[2], "replays: %s (%s) -> %s (%s)" % [c[0], c[1], c[2] if c[2] != "" else "none", got])
+	Game.settings.graphics = Game.GFX_HIGH
+	var hm := _foundation_match("national", 5, "quadrant")
+	await frames(4)
+	var hb: Array = hm._all_bodies()
+	check(not available or hb.all(func(b): return (b as RealBody).link != null) and hb.size() == 16,
+		"foundation: High, a quadrant: all %d linked" % hb.size())
+	hm.queue_free()
+	await frames(2)
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var m := _foundation_match("national", 77)
+	await frames(4)
+	var bodies: Array = m._all_bodies()
+	if not available:
+		check(bodies.all(func(b): return (b as RealBody).link == null) and m.wsg_replay == null,
+			"foundation off (no licensed clips): nobody has a link, the game draws as before")
+		m.queue_free()
+		await frames(2)
+		Game.settings.graphics = was
+		return
+	var missing := bodies.filter(func(b): return (b as RealBody).link == null).size()
+	check(missing == 0 and bodies.size() == 14, "foundation: every player, official and substitute linked on Medium (%d, %d missing)" % [bodies.size(), missing])
+	for b in bodies:
+		(b as RealBody).link.measure = true
+	var seen := {}
+	var shown := 0
+	var drift := 0.0
+	var hips_gap := 0.0
+	var gap_n := 0
+	var gap_off := 0
+	var contacts := 0
+	var contact_gap := 0.0
+	var phase := {}
+	var walked := 0
+	var slide := 0.0
+	var slide_n := 0
+	var last_foot := {}
+	var slide_why := ""
+	var hist := {}
+	var held_gap := 0.0
+	var held_n := 0
+	var official_moves := 0
+	var points_seen := 0
+	var replay_end := -100
+	for i in 2400:
+		await frames(1)
+		if m.state == m.S.REPLAY:
+			replay_end = i
+			continue
+		points_seen = m.log.size()
+		for b in bodies:
+			var rb: RealBody = b
+			var l: FoundationLink = rb.link
+			if l == null or not l.last.has("Hips"):
+				continue
+			var fresh: bool = l.last.frame != seen.get(l, -1)
+			seen[l] = l.last.frame
+			if not l.body.is_visible_in_tree() or rb.mesh_instance.visible:
+				shown += 1
+			if not fresh or m.state == m.S.REPLAY or i < replay_end + 3:
+				continue
+			var hp: Vector3 = l.last.Hips
+			var at := rb.global_position
+			if l.last.mode == "full" and float(l.last.w) >= 1.0 and float(l.last.pw) >= 1.0:
+				drift = maxf(drift, Vector2(hp.x - rb.game_hips().x, hp.z - rb.game_hips().z).length())
+			elif l.last.mode == "move" and float(l.last.pw) <= 0.0:
+				drift = maxf(drift, Vector2(hp.x - at.x, hp.z - at.z).length() - 0.25)
+			if l.kind == "official" and l.mode == "move":
+				official_moves += 1
+			if l.kind != "player":
+				continue
+			var pl: Player = rb.get_parent()
+			if l.last.mode == "full" and float(l.last.w) >= 1.0 and float(l.last.pw) >= 1.0:
+				hips_gap = maxf(hips_gap, l.joint_gap("Hips"))
+				for jb in ["Head", "LeftHand", "RightLeg", "RightFoot"]:
+					gap_n += 1
+					gap_off += int(l.joint_gap(jb) > 0.05)
+			# At each move's contact: the part that meets the ball on the game's body, and the same on the drawn one.
+			if pl.move != "" and Moves.CONTACT.has(pl.move) and l.mode == "full" and float(l.last.w) >= 1.0:
+				var c: Array = Moves.CONTACT[pl.move]
+				var tt: float = (m.now - pl.move_start) / Moves.length(pl.move)
+				var was_t: float = phase.get(pl, -1.0)
+				phase[pl] = tt
+				if was_t >= 0.0 and was_t < float(c[4]) and tt >= float(c[4]):
+					var best := []
+					for part in ["instep_l", "instep_r", "head"]:
+						var cp: Array = l.contact_points(part)
+						var dball: float = (cp[0] as Vector3).distance_to(m.ball.global_position)
+						if best.is_empty() or dball < float(best[0]):
+							best = [dball, (cp[0] as Vector3).distance_to(cp[1])]
+					contacts += 1
+					contact_gap = maxf(contact_gap, float(best[1]))
+			else:
+				phase[pl] = -1.0
+			var hh: Array = hist.get(l, [])
+			hh.append("[%d %s yaw %.2f ly %.2f pos %s ank %s %s c %s ls %d]" % [i, l.mode, pl._yaw, l.loco.yaw, pl.position.snapped(Vector3.ONE * 0.01), (l.loco.planter.ankle_world[0] as Vector3).snapped(Vector3.ONE * 0.01), (l.loco.planter.ankle_world[1] as Vector3).snapped(Vector3.ONE * 0.01), l.loco.planter.contact, l.loco.state])
+			if hh.size() > 10:
+				hh.pop_front()
+			hist[l] = hh
+			# Walking under the capture: a planted foot stays where it was put.
+			if l.mode == "move" and pl.vel.length() > 0.6:
+				walked += 1
+			for k in 2:
+				var key := [l, k]
+				var p: Vector3 = l.loco.planter.ankle_world[k]
+				# (On the floor: the ankle within 4 cm of its standing height.)
+				var down: bool = l.mode in ["move", "carry"] and l.legacy.weight <= 0.0 and l._pw <= 0.0 and float(l.loco.planter.contact[k]) > 0.5 \
+					and p.y < (l.body.joints["LeftFoot"] as Vector3).y * l.body.global_transform.basis.get_scale().y + 0.04
+				if down and last_foot.has(key):
+					var sl := Vector2(p.x - last_foot[key].x, p.z - last_foot[key].z).length()
+					if sl > slide:
+						slide_why = "%s %s v %.2f frame %d hist %s" % [l.mode, l.loco.state, pl.vel.length(), i, hist.get(l, [])]
+					slide = maxf(slide, sl)
+					slide_n += 1
+				if down:
+					last_foot[key] = p
+				else:
+					last_foot.erase(key)
+			# The ball carried: drawn in the drawn hands.
+			if m._carrier == pl and l.mode in ["move", "carry"]:
+				var bp: Vector3 = m.ball._mesh.global_position
+				held_gap = maxf(held_gap, bp.distance_to(l.ball_point(pl._two >= 0.5)))
+				held_n += 1
+	check(shown == 0, "foundation: its bodies drawn, the game's hidden (%d frames otherwise)" % shown)
+	check(drift < 0.05, "foundation: every body drawn at its own place (hips at most %.2f m off the game's)" % drift)
+	check(hips_gap < 0.02 and gap_n > 5000 and gap_off <= gap_n / 50,
+		"foundation: under the game's moves every joint lies on the game body's (hips at most %.1f cm off; head, hand, knee and ankle over 5 cm in %d of %d)"
+		% [hips_gap * 100.0, gap_off, gap_n])
+	check(contacts >= 20 and contact_gap < 0.04,
+		"foundation: at contact the drawn foot or head is where the game's meets the ball (%d contacts, at most %.1f cm apart)" % [contacts, contact_gap * 100.0])
+	check(walked > 300, "foundation: the capture walks the players between points (%d body-frames)" % walked)
+	check(slide_n > 300 and slide < 0.03, "foundation: a planted foot does not slide under the capture (worst %.3f m a frame over %d: %s)" % [slide, slide_n, slide_why])
+	check(held_n > 20 and held_gap < 0.02, "foundation: the ball carried is in the drawn hands (%d frames, at most %.1f cm off)" % [held_n, held_gap * 100.0])
+	check(official_moves > 1000, "foundation: the officials standing and stepping under the capture (%d body-frames)" % official_moves)
+	var per_point := {}
+	for r in m.replays:
+		per_point[r[0]] = int(per_point.get(r[0], 0)) + 1
+	check(per_point.values().all(func(v): return v == 1) and m.replays.size() <= points_seen,
+		"replays: one a point at most (%d over %d points: %s)" % [m.replays.size(), points_seen, m.replays])
+	# A replay: the foundation's bodies as drawn (WsgReplay), the match still; a tap skips it.
+	var guard := 0
+	while m.state != m.S.REPLAY and guard < 6000:
+		await frames(1)
+		guard += 1
+	var playing: bool = m.state == m.S.REPLAY and m.wsg_replay.playing and FoundationLink.frozen
+	check(playing and m.replays.size() > 0, "replays: the point's moment (%s), the foundation's bodies as they were drawn" % [m.replays.back() if m.replays.size() > 0 else "none"])
+	if playing:
+		await frames(20)
+		m.hud._replay_tag.pressed.emit()   # (a tap anywhere: the replay's tag covers the screen)
+		await frames(3)
+		check(m.state != m.S.REPLAY and not m.wsg_replay.playing and not FoundationLink.frozen, "replays: a tap skips it, back to the match (state %d)" % m.state)
+	# Lowered to Low mid-match (WsgAutoTier): the game's own bodies again, no foundation replays.
+	m.lower_graphics()
+	await frames(3)
+	var back: bool = bodies.all(func(b): return (b as RealBody).link == null and (b as RealBody).mesh_instance.visible)
+	check(back and m.wsg_replay == null and m.find_children("Foundation", "", true, false).is_empty() and int(Game.settings.graphics) == Game.GFX_LOW,
+		"foundation: lowered to Low mid-match, the game's own bodies again")
+	m.queue_free()
+	await frames(2)
+	Game.settings.graphics = was

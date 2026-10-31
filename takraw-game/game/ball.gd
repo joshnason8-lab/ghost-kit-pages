@@ -108,6 +108,7 @@ static func shadow_material() -> StandardMaterial3D:
 ## so where it will be is exactly where it goes.
 func launch(p0: Vector3, v: Vector3, t0: float, trail := false) -> void:
 	loose = false
+	draw_at(Vector3.INF)
 	p_launch = p0
 	v_launch = v
 	t_launch = t0
@@ -122,6 +123,13 @@ func launch(p0: Vector3, v: Vector3, t0: float, trail := false) -> void:
 	spin_axis = axis.normalized()
 	spin_rate = clampf(v.length() * 0.8, 5.0, 16.0) * (1.0 if randf() < 0.75 else -1.0)
 	_trail_on = 0.5 if trail else 0.0
+
+
+## Where the ball is drawn while it is held, when the hands holding it are not where the game holds it (the shared
+## foundation's drawn hands: FoundationLink); INF: at its place.
+func draw_at(p: Vector3) -> void:
+	if _mesh:
+		_mesh.position = (p - global_position) if p.is_finite() else Vector3.ZERO
 
 
 func hold(p: Vector3) -> void:

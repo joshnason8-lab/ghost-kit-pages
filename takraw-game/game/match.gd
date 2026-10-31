@@ -116,6 +116,16 @@ var _rec: Array = []
 var _replay_i := 0.0
 var _replay_frames: Array = []
 
+# The shared foundation (FoundationLink: Medium and High, the licensed clips in the build).
+var wsg_replay: WsgReplay      # the foundation's bodies as drawn, kept for the replays
+var rclock := 0.0              # seconds of play drawn (not paused, not in a replay): the replays' clock
+var replays: Array = []        # [point number, kind] of each replay shown (tests)
+var _auto_gfx := WsgAutoTier.new(Game.frame_cap())   # the shared foundation's: when to lower the graphics
+var _detail_t := 0.0
+var _replay_kind := ""         # the moment the coming replay shows (REPLAY_PRIORITY)
+var _wsg_clip: Array = []      # the foundation's bodies over the replay's frames, kept when the replay froze
+var _keep_places: Array = []   # the players' places when a replay began (put back after it, Medium and High)
+
 var officials: Array[RealBody] = []
 var _ref: RealBody
 var _judges: Array[RealBody] = []
@@ -126,6 +136,10 @@ var _subs := [[], []]               # each team's substitutes (RealBody)
 
 func _ready() -> void:
 	rng.seed = int(config.get("seed", Time.get_ticks_usec()))
+	# The shared foundation draws the bodies made from here on (Medium and High: FoundationLink), not behind the menus.
+	FoundationLink.in_match = not bool(config.get("attract", false))
+	FoundationLink.frozen = false
+	WsgFoundation.tier = int(Game.settings.graphics)
 	women = bool(config.get("women", false))
 	event = String(config.get("event", "regu"))
 	n_players = {"regu": 3, "quadrant": 4, "doubles": 2, "team": 3}.get(event, 3)
@@ -155,6 +169,9 @@ func _ready() -> void:
 	_make_teams()
 	_make_officials()
 	_make_bench()
+	if FoundationLink.enabled():
+		wsg_replay = WsgReplay.new()
+		add_child(wsg_replay)
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
@@ -277,6 +294,7 @@ func _make_officials() -> void:
 	var look := {"suit": Color("1b2030"), "tie": Color("7a1c26"), "skin": Color("c98a5a")}
 	_ref = RealBody.new(look)
 	add_child(_ref)
+	_ref.link_foundation("official")
 	_ref.position = Vector3(0, 0.8, post_z + 0.82)
 	_ref.rotation.y = PI
 	officials.append(_ref)
@@ -287,6 +305,7 @@ func _make_officials() -> void:
 	for i in spots.size():
 		var b := RealBody.new(look.merged({"skin": [Color("e0b48c"), Color("b07448"), Color("8d5a36")][i % 3]}, true))
 		add_child(b)
+		b.link_foundation("official")
 		b.position = spots[i]
 		var to: Vector3 = -spots[i] if i == 0 else Vector3(signf(spots[i].x) * Court.HALF * 0.5, 0, 0) - spots[i]
 		b.rotation.y = atan2(to.x, to.z)
@@ -315,6 +334,7 @@ func _make_bench() -> void:
 			var b := RealBody.new({"skin": pd.get("skin", Color("c98a5a")), "jersey": t.c1,
 				"shorts": c2.darkened(0.3) if c2.get_luminance() > 0.7 else c2, "height": float(pd.get("height", 1.76)), "women": women})
 			add_child(b)
+			b.link_foundation("sub")
 			b.rotation.y = PI   # facing the court
 			_subs[k].append(b)
 			_bench.add(b, Moves.static_pose("sit"))
@@ -342,9 +362,16 @@ func _bench_cheer(team: int) -> void:
 
 # ---------------------------------------------------------------- the clock
 
+func _exit_tree() -> void:
+	FoundationLink.in_match = false
+	FoundationLink.frozen = false
+
+
 func _process(delta: float) -> void:
 	if paused:
 		return
+	if wsg_replay:
+		_rank_detail(delta)
 	if state == S.REPLAY:
 		_replay_step(delta)
 		return
@@ -353,6 +380,7 @@ func _process(delta: float) -> void:
 		ts = 0.35
 	var dt := delta * ts
 	now += dt
+	rclock += delta
 	state_t += dt
 	_step(dt)
 	if state in [S.SETUP, S.DEAD, S.BREAK]:
@@ -366,6 +394,17 @@ func _process(delta: float) -> void:
 	ball.update_to(now, dt)
 	if _carrier:
 		ball.hold(_carrier.carry_point())
+	if wsg_replay:
+		# The ball drawn in the drawn hands (the game's hands hold it where the match reckons it): placed when the drawn
+		# body has its final pose (FoundationLink._on_posed), and here from its last one meanwhile.
+		ball.draw_at(_carrier.drawn_carry_point() if _carrier else Vector3.INF)
+		for side in 2:
+			for pp in players_on(side):
+				var l: FoundationLink = (pp as Player).body.link
+				if l:
+					l.carry_ball = ball if pp == _carrier else null
+					l.carry_two = (pp as Player)._two >= 0.5
+		wsg_replay.record(rclock)
 	_officials.tick(dt, ball.global_position, state == S.RALLY or state == S.TOSS)
 	_bench.tick(dt, ball.global_position, state == S.RALLY or state == S.TOSS)
 	Crowd.set_look(ball.global_position)
@@ -1696,7 +1735,13 @@ func _point(team: int) -> void:
 		Game.haptic("point")
 	_celebrate(team, why)
 	hud.set_score()
-	if _attack_kind in ["roll", "sunback"] or (rally_len > 7):
+	_replay_kind = ""
+	if wsg_replay:
+		# Medium and High: the point's best moment, if it had one (one replay a point at most).
+		_replay_kind = replay_kind(log[-1], _attack_kind)
+	elif _attack_kind in ["roll", "sunback"] or (rally_len > 7):
+		_replay_kind = "game"
+	if _replay_kind != "":
 		_start_replay_after = now + 1.2
 		_freeze_at = now + 0.7
 	_attack_kind = ""
@@ -1898,7 +1943,7 @@ func _end_review() -> void:
 func _record() -> void:
 	if state != S.RALLY and state != S.DEAD and state != S.TOSS:
 		return
-	var f := {"ball": ball.global_position, "p": []}
+	var f := {"ball": ball.global_position, "p": [], "t": rclock}
 	for side in 2:
 		for pp in players_on(side):
 			var pl: Player = pp
@@ -1911,6 +1956,9 @@ func _record() -> void:
 	if _freeze_at > 0.0 and now >= _freeze_at:
 		_rec_frozen = true
 		_freeze_at = -1.0
+		if wsg_replay:
+			# The foundation's bodies over the frames the replay will show, copied out of its ring (which forgets them).
+			_wsg_clip = wsg_replay.clip(float(_rec[maxi(0, _rec.size() - 200)].t), rclock)
 
 
 func _start_replay() -> void:
@@ -1919,6 +1967,26 @@ func _start_replay() -> void:
 		_after_point()
 		return
 	_replay_frames = _rec.slice(maxi(0, _rec.size() - 200), _rec.size())
+	if wsg_replay:
+		# The foundation's bodies, as they were drawn: the replay starts where its clip does.
+		var clip := _wsg_clip
+		_wsg_clip = []
+		if clip.size() < 4:
+			_rec.clear()
+			_rec_frozen = false
+			_after_point()
+			return
+		var t0 := float(clip[0][0])
+		while _replay_frames.size() > 30 and float(_replay_frames[0].t) < t0:
+			_replay_frames.pop_front()
+		wsg_replay.play(t0, float(clip[-1][0]), clip)
+		FoundationLink.frozen = true
+		_keep_places = []
+		for side in 2:
+			for pp in players_on(side):
+				var pl: Player = pp
+				_keep_places.append([pl, pl.position, pl.body.rotation.y, pl.body.position.y])
+		replays.append([log.size(), _replay_kind])
 	_ball_keep = [ball.global_position, ball.vel, ball.loose, ball.flying]
 	_rec.clear()
 	_rec_frozen = false
@@ -1951,6 +2019,9 @@ func _replay_step(delta: float) -> void:
 				pl.body.position.y = r[2]
 				pl.body.apply(r[3])
 			k += 1
+	if wsg_replay and wsg_replay.playing:
+		var j := mini(i + 1, _replay_frames.size() - 1)
+		wsg_replay.seek(lerpf(float(f.t), float(_replay_frames[j].t), _replay_i - float(i)))
 	cam.replay_follow(ball.global_position, delta)
 	hud.tick(delta)
 
@@ -1960,6 +2031,16 @@ func end_replay() -> void:
 		return
 	hud.replay(false)
 	cam.replay_end()
+	if wsg_replay and wsg_replay.playing:
+		wsg_replay.stop()
+	FoundationLink.frozen = false
+	# (Medium and High: the players back where they were, the replay's last frame not left in their places.)
+	for k in _keep_places:
+		var pl: Player = k[0]
+		pl.position = k[1]
+		pl.body.rotation.y = k[2]
+		pl.body.position.y = k[3]
+	_keep_places = []
 	if not _ball_keep.is_empty():
 		ball.global_position = _ball_keep[0]
 		ball.vel = _ball_keep[1]
@@ -2392,31 +2473,141 @@ func match_point_for() -> int:
 
 # ---------------------------------------------------------------- frame rate
 
-var _fps_t := 0.0
-var _fps_frames := 0
-var _fps_checked := false
-
-
-## Auto graphics (Settings): if the first seconds of play run slowly on this phone, the graphics go down a level for
-## good (and the player is told). Not for the match behind the home screen, a test, or a recording.
+## Lower the graphics by itself when the match stutters on this phone (WsgAutoTier, the shared foundation's): while
+## the ball is in play, all match long, two 1.5 s windows in a row of slow frames or hitches take a level off at once
+## (and Auto keeps to it from then on); again later if it still stutters. Not for the match behind the home screen,
+## an AI match, a test or a recording; slow is against the frame rate the phone is asked for (the battery saver's 30
+## a second is not slow).
 func _check_frame_rate(real_delta: float) -> void:
-	if _fps_checked or user_team < 0 or not bool(Game.settings.get("auto_gfx", true)) or int(Game.settings.graphics) <= Game.GFX_LOW:
+	if user_team < 0 or not bool(Game.settings.get("auto_gfx", true)) or int(Game.settings.graphics) <= Game.GFX_LOW:
 		return
 	if DisplayServer.get_name() == "headless" or OS.has_feature("movie") or Engine.get_frames_per_second() <= 0:
 		return
 	if state != S.RALLY and state != S.TOSS:
 		return
-	_fps_t += real_delta
-	_fps_frames += 1
-	if _fps_t < 6.0:
+	if _auto_gfx.feed(real_delta):
+		lower_graphics()
+
+
+## A level off the graphics now, everything the levels change: the picture, the shared foundation's bodies (on Low
+## the game's own again, exactly as Low draws them, and no foundation replays) and their shadows.
+func lower_graphics() -> void:
+	var g := maxi(Game.GFX_LOW, int(Game.settings.graphics) - 1)
+	Game.settings.graphics = g
+	Game.settings.gfx_cap = g   # and Auto keeps to it from now on
+	Game.save_settings()
+	Game.apply_graphics(get_viewport())
+	WsgFoundation.tier = g
+	hud.call_line(tr("GFX_LOWERED"))
+	var low := g == Game.GFX_LOW
+	if low and state == S.REPLAY and wsg_replay and wsg_replay.playing:
+		end_replay()
+	for b in _all_bodies():
+		var link: FoundationLink = (b as RealBody).link
+		if link == null:
+			continue
+		if low:
+			link.release()
+		else:
+			link.body.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() \
+				else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if low and wsg_replay:
+		ball.draw_at(Vector3.INF)
+		wsg_replay.queue_free()
+		wsg_replay = null
+		_wsg_clip = []
+	_auto_gfx.reset()
+
+
+# ---------------------------------------------------------------- the shared foundation's bodies (FoundationLink)
+
+## Every body: the players, the officials and the substitutes.
+func _all_bodies() -> Array:
+	var out: Array = []
+	for t in teams:
+		for p in t.players:
+			out.append((p as Player).body)
+	out.append_array(officials)
+	out.append_array(_subs[0])
+	out.append_array(_subs[1])
+	return out
+
+
+## Twice a second: the foundation's bodies in full detail nearest the camera only (WsgFoundation's budget profile:
+## its nearest 6 on Medium, all on High); the officials posed every second frame and the substitutes every third
+## unless they move or signal. The players are posed every frame (their kicks meet the ball on the frame).
+func _rank_detail(dt: float) -> void:
+	_detail_t -= dt
+	if _detail_t > 0.0:
 		return
-	_fps_checked = true
-	var fps := float(_fps_frames) / _fps_t
-	var cap := Game.frame_cap()
-	var want := minf(36.0, 0.8 * float(cap)) if cap > 0 else 36.0
-	if fps < want:
-		Game.settings.graphics = int(Game.settings.graphics) - 1
-		Game.settings.gfx_cap = int(Game.settings.graphics)   # and Auto keeps to it from now on
-		Game.save_settings()
-		Game.apply_graphics(get_viewport())
-		hud.call_line(tr("GFX_LOWERED"))
+	_detail_t = 0.5
+	WsgFoundation.tier = int(Game.settings.graphics)
+	var cam3 := get_viewport().get_camera_3d()
+	var camp := cam3.global_position if cam3 else Vector3.ZERO
+	var list := []
+	for b in _all_bodies():
+		var link: FoundationLink = (b as RealBody).link
+		if link == null or link.body == null:
+			continue
+		list.append(link.body)
+		match link.kind:
+			"official":
+				link.pose_every = 1 if link.mode != "full" and link.vel.length() > 0.3 or link.mode == "upper" else 2
+			"sub":
+				link.pose_every = 3
+			_:
+				link.pose_every = 1
+	if not list.is_empty():
+		WsgFoundation.rank_detail(list, camp)
+
+
+# ---------------------------------------------------------------- replays (Medium and High: the shared foundation's)
+
+## The moments a point can be shown again for, most wanted first (one replay a point at most: the best it had). The
+## horse-kick ace; a roll spike or sunback that wins it (the game's own replays); a head spike that does; a stuff
+## block; a dig of a spike by the side that goes on to win the rally; an ace; a tapak (the feint) dropping in; a
+## rally of more than seven touches.
+const REPLAY_PRIORITY := ["horse_ace", "roll", "sunback", "head_spike", "block", "dig", "ace", "tapak", "rally"]
+
+
+## The replay a point earns, from its log row [touches, why, team, seq] (and the attack that came last: the serve's
+## kind for an ace), or "".
+static func replay_kind(row: Array, attack := "") -> String:
+	var touches := int(row[0])
+	var why := String(row[1])
+	var seq := String(row[3]) if row.size() > 3 else ""
+	var found := []
+	if why == "ace":
+		found.append("horse_ace" if attack == "horse" else "ace")
+	if why in ["kill_roll", "kill_sunback", "kill_head_spike", "kill_tapak"]:
+		found.append(why.substr(5))
+	if why == "block":
+		found.append("block")
+	if _dug_and_won(seq, why):
+		found.append("dig")
+	if touches > 7:
+		found.append("rally")
+	var best := ""
+	for k in found:
+		if best == "" or REPLAY_PRIORITY.find(k) < REPLAY_PRIORITY.find(best):
+			best = k
+	return best
+
+
+## A spike dug by the side that won the rally: the rally's touches by side (the log's seq, "|" each time the ball
+## crosses), a side's touch answering a spike (the touch after an "attack" over the net) by the winners.
+static func _dug_and_won(seq: String, why: String) -> bool:
+	var parts := seq.split("|")
+	if parts.size() < 3:
+		return false
+	# The side that touched last won it with a kill or a block; after an error (out, the net, a fault) the other.
+	var last := parts.size() - 1
+	var wp := last % 2 if why.begins_with("kill") or why == "block" else (last + 1) % 2
+	for i in range(1, parts.size()):
+		if i % 2 != wp:
+			continue
+		var before := String(parts[i - 1]).strip_edges().split(" ")
+		var mine := String(parts[i]).strip_edges()
+		if String(before[-1]).begins_with("attack") and mine != "" and not mine.begins_with("block"):
+			return true
+	return false
