@@ -147,7 +147,9 @@ jobs:
       # "kabaddi-raid-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests. Pull request runs build the same APK and leave the release alone.
       - name: Publish the beta release
-        if: github.event_name == 'push'
+        # Only the game's own branch publishes the beta: a push from any other branch (a pilot cut from it) would
+        # otherwise replace the testers' build.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/kabaddi-game-concept-asnz07'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
