@@ -36,6 +36,12 @@ const SOURCES := [
 	["\"Dog barking mono\"", "Brandon Morris (submitted by HaelDB)", "CC0 1.0", "opengameart.org/content/dog-barking-mono"],
 	["The crowd's ooh and groan, a clap, the players' efforts", "Synthesised by the maker for Kabaddi Raid",
 		"The maker's own", "-"],
+	["Motion capture on Medium and High: the players' running and walking, the judges standing (the Mobility pack)",
+		"MoCap Online", "Licensed for the game; part of the game only, not to be extracted", "mocaponline.com"],
+	["Motion capture from Reallusion ActorCore (in the shared foundation's library)", "Reallusion ActorCore",
+		"Licensed for the game; part of the game only, not to be extracted", "actorcore.reallusion.com"],
+	["The World Stage Games shared foundation (the rig the bodies are drawn on, its locomotion and replays)",
+		"The game's maker, for the maker's games", "The maker's own", "-"],
 ]
 ## Asked about and not used in this game: listed so nobody looks for them.
 const NOT_USED := "Not used in this game: Mixamo animations, Pixabay sounds (the whistles), freesound.org sounds. There are no ads or analytics libraries."

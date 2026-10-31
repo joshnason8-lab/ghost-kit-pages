@@ -22,6 +22,7 @@ var _pulse := 0.0
 var _keys := {}
 var _paras := {}             # id -> TextParagraph (its label, fitted to the circle)
 var edit := false            # Move buttons: drags move the buttons instead of pressing them
+var tap_skips := false       # a replay is showing: a tap anywhere passes it (SKIP)
 static var key_hints := true # the keyboard's keys beside the buttons on a computer (off for the store's pictures)
 static var touch_seen := false   # a thumb has touched the screen: no keyboard here to hint at
 var last_fired := ""             # the last button pressed (the playtest hook reads it)
@@ -153,6 +154,11 @@ func _input(event: InputEvent) -> void:
 					_fire(String(b[0]))
 					get_viewport().set_input_as_handled()
 					return
+			if tap_skips:
+				# A replay: a tap anywhere passes it.
+				_fire("SKIP")
+				get_viewport().set_input_as_handled()
+				return
 			if on_left and _joy_touch < 0 and e.position.y > 110.0:
 				_joy_touch = e.index
 				_joy_base = e.position

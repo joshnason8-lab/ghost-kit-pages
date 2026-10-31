@@ -57,6 +57,9 @@ func setup(p_team: int, p_num: int, p_look: Dictionary) -> void:
 	team = p_team
 	num = p_num
 	look = p_look
+	if FoundationLink.enabled():
+		p_look = p_look.duplicate()
+		p_look["foundation"] = true
 	body = Body.new(p_look)
 	add_child(body)
 
@@ -160,6 +163,7 @@ func forward() -> Vector3:
 ## limit (he stays on his side of the analco: half_x is the analco, his side given by dir).
 func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 	_t += dt
+	_link_dt = dt
 	if action != A.NONE:
 		action_t += dt
 	immune = maxf(0.0, immune - dt)
@@ -212,6 +216,7 @@ func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 		desired.z = minf(desired.z, room.call(z_hi - here.z))
 	else:
 		desired.z = maxf(desired.z, -room.call(here.z - z_lo))
+	desired_vel = desired
 	var dv := desired - vel
 	# Braking on either axis (a wall ahead), he brakes as hard as he can.
 	var braking := absf(desired.x) < absf(vel.x) - 0.01 or absf(desired.z) < absf(vel.z) - 0.01
@@ -310,3 +315,32 @@ func _pose(speed: float) -> void:
 	if offering > 0.01 and action == A.NONE:
 		p = Moves.blend(p, Moves.offering(_t + num), offering)
 	body.apply(p)
+	if body.link:
+		_drive_link(speed)
+
+
+## The shared foundation's body (FoundationLink, Medium and High): the game's whole pose for everything pok ta pok -
+## the stance, the strike, the dive, the serve, a celebration, the arms raised to the copal - and the motion capture's
+## run and walk while he goes somewhere with nothing else to do.
+const LINK_MOVE := 1.1        # m/s at which he is drawn running or walking (and back to the stance under LINK_STAND)
+const LINK_STAND := 0.6
+var _link_dt := 0.0
+var desired_vel := Vector3.ZERO   # the velocity he steers to this frame (the drawn body's gait reads it)
+var holding := false              # the ball is in his hand (the server's, before the serve: Match sets it)
+
+
+func _drive_link(speed: float) -> void:
+	var l := body.link
+	var moving := l.mode == "move"
+	# (The server holding the ball stays on the game's own pose: turned exactly as the game turns him, never round on
+	# the spot by the capture's turns.)
+	var free := action == A.NONE and offering <= 0.01 and not holding
+	var go := free and speed > (LINK_STAND if moving else LINK_MOVE)
+	l.want = "move" if go else "full"
+	l.vel = vel
+	l.want_vel = desired_vel
+	l.yaw = yaw
+	l.look = face_to
+	if busy() or not free:
+		l.pose_every = 1   # (his strike, his dive: drawn on its frame)
+	l.update(_link_dt)

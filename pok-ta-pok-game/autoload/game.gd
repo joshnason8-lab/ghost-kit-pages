@@ -116,6 +116,10 @@ func _ready() -> void:
 	if int(settings.graphics) < 0:
 		settings.graphics = detect_graphics()
 		save_settings()
+	# The shared foundation (addons/wsg_foundation): Pok Ta Pok is a budget game - GL Compatibility always; the first
+	# run's level stays detect_graphics' (a Galaxy A16 on Low), and the foundation draws at whatever level is set.
+	WsgFoundation.profile = "budget"
+	WsgFoundation.tier = int(settings.graphics)
 	apply_frame_rate()
 	TranslationServer.set_locale(language())
 	_build_theme()
@@ -155,9 +159,14 @@ func go_back() -> void:
 func detect_graphics() -> int:
 	if not OS.has_feature("mobile"):
 		return GFX_HIGH
-	var gpu := RenderingServer.get_video_adapter_name().to_lower()
 	var mem: Dictionary = OS.get_memory_info()
-	var ram_gb := float(mem.get("physical", 0)) / 1073741824.0
+	return graphics_for(RenderingServer.get_video_adapter_name(), float(mem.get("physical", 0)) / 1073741824.0)
+
+
+## The first-run level for a phone's GPU (its adapter name) and memory (GB; 0 unknown). The owner's Galaxy A16 (a
+## Mali-G57 MC2 on the Helio G99 and Dimensity 6300, a Mali-G68 MP2 on the Exynos 1330; 4 to 8 GB) is Low by its GPU.
+static func graphics_for(gpu: String, ram_gb: float) -> int:
+	gpu = gpu.to_lower()
 	if ram_gb > 0.0 and ram_gb < 4.5:
 		return GFX_LOW
 	for weak in ["mali-g5", "mali-g6", "mali-t", "mali-4", "powervr", "adreno (tm) 5", "adreno (tm) 61", "adreno (tm) 50",

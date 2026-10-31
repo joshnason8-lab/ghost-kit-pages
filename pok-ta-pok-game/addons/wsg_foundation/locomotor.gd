@@ -85,6 +85,9 @@ static var _speeds := {}        # clip -> its root's speed, a frame at a time (m
 var _want_speed := 0.0
 var _idle_for := 0.0
 var _down := [true, true]
+## Its own dice (an idle fidget now and then): the global ones are the game's (a test's thumb, a sound's pitch), and
+## drawing on them changed what a seeded match did.
+var _rng := RandomNumberGenerator.new()
 
 
 ## Builds a locomotor for the body (its tree, foot planter, look-at) and adds it under the body.
@@ -325,9 +328,9 @@ func drive(delta: float, velocity: Vector3, facing: float, want_velocity := Vect
 				_start(flat, _want_speed)
 			elif absf(face_err) > deg_to_rad(TURN_ANGLE):
 				_turn(face_err)
-			elif _idle_for > 6.0 and randf() < delta * 0.15:
+			elif _idle_for > 6.0 and _rng.randf() < delta * 0.15:
 				_idle_for = 0.0
-				_fire("Stand_Relaxed_Fgt_v%d" % (randi() % 4 + 1), State.SHOT)
+				_fire("Stand_Relaxed_Fgt_v%d" % (_rng.randi() % 4 + 1), State.SHOT)
 		State.MOVE:
 			# Stopping: as soon as it is asked to (if the game says), with the stop for the speed it is going at.
 			if want < STOP_SPEED or want_velocity != Vector3.INF and intent.length() < STOP_SPEED and speed > 1.0:

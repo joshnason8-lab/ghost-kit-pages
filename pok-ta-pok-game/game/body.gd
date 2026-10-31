@@ -38,6 +38,9 @@ const BONES := [
 var skeleton: Skeleton3D
 var mesh_instance: MeshInstance3D
 var rigged: RiggedBody           # the realistic body that follows this skeleton, or null
+## The shared foundation's body drawn for this one (Medium and High, in a match: FoundationLink), or null. This
+## skeleton is still posed by the game and measured by the match; only the foundation's is drawn, its gear with it.
+var link: FoundationLink = null
 static var use_rigged := true    # off: the code-built bodies everywhere (tests compare)
 var look := {}          # kind ("ulama", "classic", "judge"), skin, hair, team (Color), trim (Color), band (bool), height (m), build (0-1)
 var pose := {}
@@ -79,17 +82,41 @@ func _ready() -> void:
 	if use_rigged and bool(look.get("rigged", true)) and RiggedBody.available(kind):
 		var f := RiggedBody.pick(kind, float(look.get("build", 0.5)), int(look.get("seed", get_instance_id())))
 		if f != "":
-			rigged = RiggedBody.new()
-			add_child(rigged)
-			rigged.setup(self, f, look)
 			look = look.duplicate()
 			look["gear_only"] = true
+			look["model"] = f
+			# Asked for by a player or a judge (look.foundation) on Medium or High in a match: the same model on the
+			# shared foundation's rig, drawn by it (FoundationLink, made once this body's gear exists).
+			if not (bool(look.get("foundation", false)) and FoundationLink.has_model(f) and FoundationLink.enabled()):
+				rigged = RiggedBody.new()
+				add_child(rigged)
+				rigged.setup(self, f, look)
 	mesh_instance = MeshInstance3D.new()
 	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	skeleton.add_child(mesh_instance)
 	mesh_instance.skeleton = NodePath("..")
 	mesh_instance.mesh = _mesh()
 	mesh_instance.material_override = material()
+	if rigged == null and look.has("model") and bool(look.get("foundation", false)):
+		link = FoundationLink.new(self, String(look.model))
+		add_child(link)
+
+
+## The graphics lowered to Low mid-match: the foundation's body goes and this one is drawn again, exactly as Low draws
+## it (the realistic body following this skeleton, the gear on it).
+func unlink() -> void:
+	if link == null:
+		return
+	link.release()
+	link = null
+	mesh_instance.visible = true
+	mesh_instance.material_override = material()
+	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if rigged == null and look.has("model"):
+		rigged = RiggedBody.new()
+		add_child(rigged)
+		rigged.setup(self, String(look.model), look)
+		rigged.follow(self)
 
 
 ## The one material every body shares: the vertex colours, lit per pixel (per vertex on Low), a soft skin-like

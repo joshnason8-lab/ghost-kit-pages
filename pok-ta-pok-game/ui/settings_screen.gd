@@ -66,6 +66,7 @@ func _ready() -> void:
 	right.add_child(disp[0])
 	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")], int(Game.settings.graphics), func(i):
 		Game.settings.graphics = i
+		WsgFoundation.tier = i
 		Game.save_settings())))
 	disp[1].add_child(UI.field(tr("GFX_AUTO"), UI.chips_row([tr("ON"), tr("OFF")], 0 if bool(Game.settings.auto_gfx) else 1, func(i):
 		Game.settings.auto_gfx = i == 0

@@ -47,14 +47,16 @@ var last_call := {}
 var _acc := 0.0
 var _serve_launched := false
 var _idle_serve := 0.0
-var _fps_t := 0.0
-var _fps_frames := 0
-var _gfx_checked := false
 var _hitstop := 0.0
 
 
 func _ready() -> void:
 	attract = bool(config.get("attract", false)) or String(config.get("mode", "")) == "attract"
+	# The shared foundation draws the players and judges made from here on (Medium and High: FoundationLink), not in
+	# the match behind the menus.
+	FoundationLink.in_match = not attract
+	FoundationLink.frozen = false
+	WsgFoundation.tier = int(Game.settings.graphics)
 	user_team = int(config.get("user_team", -1))
 	rng.seed = int(config.get("seed", randi()))
 	var vid := String(config.get("venue", "village"))
@@ -110,6 +112,12 @@ func _ready() -> void:
 			(ps[i] as Player).global_position = court.clamp_feet(spot + Vector3(-Rules.dir(k) * 2.0, 0, (3.5 if not court.classic() else 3.0) * (1.0 if i % 2 == 0 else -1.0)))
 		teams.append({"id": tid, "players": ps, "ai": ai})
 	officials.set_lod(lod)
+	if FoundationLink.enabled():
+		# The foundation's bodies as drawn, kept for the replays (as long as the game keeps its own, every frame).
+		wsg_replay = WsgReplay.new()
+		add_child(wsg_replay)
+		wsg_replay.seconds = REPLAY_KEEP + 0.5
+		wsg_replay.rate = 30.0
 	if user_team >= 0:
 		user_player = teams[user_team].players[0]
 		user_player.user = true
@@ -193,8 +201,11 @@ func on_back() -> void:
 func _process(delta: float) -> void:
 	if paused:
 		return
+	var real_delta := delta
 	delta = minf(delta, 0.05)
-	_check_frame_rate(delta)
+	_check_frame_rate(delta, real_delta)
+	if wsg_replay:
+		_rank_detail(delta)
 	if _hitstop > 0.0:
 		# The heavy ball meeting a hip: a moment's weight.
 		_hitstop -= delta
@@ -212,7 +223,9 @@ func _process(delta: float) -> void:
 		ball_path = []
 	for t in teams:
 		(t.ai as TeamAI).update(delta)
+	officials.watch = ball.pos
 	for p in all_players():
+		(p as Player).holding = ball.held and p == server
 		(p as Player).update(delta, court, Rules.dir(p.team), phase == P.INTRO or phase == P.OVER)
 	_footsteps()
 	_phase_logic(delta)
@@ -223,6 +236,8 @@ func _process(delta: float) -> void:
 		_ball_step(STEP)
 	if ball.held and server != null:
 		ball.pos = server.body.hand_world() if server.body and server.action == Player.A.SERVE else server.global_position + Basis(Vector3.UP, server.yaw) * Moves.HAND_BALL
+	if wsg_replay:
+		_ball_in_drawn_hand()
 	ball.show_at(ball.pos, delta)
 	cam.follow(self, delta)
 	if hud:
@@ -245,7 +260,7 @@ func _phase_logic(_delta: float) -> void:
 		P.SERVE:
 			_serve_logic()
 		P.CALL:
-			if String(last_call.get("reason", "")) == "ring" and not _replayed and not attract and phase_t >= REPLAY_AFTER:
+			if _replay_kind != "" and not _replayed and not attract and phase_t >= REPLAY_AFTER:
 				_start_replay()
 				return
 			if phase_t >= CALL_T:
@@ -343,6 +358,7 @@ func _launch_serve() -> void:
 		var sp := sqrt(Ball.GRAVITY * dist / sin(2.0 * ang))
 		v = Vector3(d * cos(ang) * sp, sin(ang) * sp, (zt - hand.z) / maxf(1.0, dist / 6.0))
 	ball.launch(hand, v, serve_team, server)
+	_rally_events.clear()
 	serve_bounced = kind != "bote"
 	ball_flight += 1
 	server.stats.serves += 1
@@ -429,6 +445,8 @@ func _footsteps() -> void:
 
 
 func _exit_tree() -> void:
+	FoundationLink.in_match = false
+	FoundationLink.frozen = false
 	if not attract:
 		Sfx.pause(false)
 		Sfx.ambience("")
@@ -439,9 +457,19 @@ func _exit_tree() -> void:
 ## The ball through the ring is the rarest thing in the game: it is shown again, slowed, from below the ring. The
 ## last seconds of play are kept (where each player and the ball were, and each body's pose) and played back on the
 ## bodies and the ball alone: the players' own positions are not touched.
+## On Medium and High (the shared foundation draws the bodies) a raya can earn a replay of its best moment too, at
+## most one a raya, the ring first (REPLAY_PRIORITY): the bodies are the foundation's as they were drawn (WsgReplay,
+## on the game's own clock). A tap passes any replay.
 const REPLAY_KEEP := 5.0       # seconds of play kept
 const REPLAY_AFTER := 1.4      # seconds of the call before the replay
 const REPLAY_SPEED := 0.4
+## The moments a raya can be shown again for, most wanted first: the ball through the ring; a low ball kept alive by
+## a dive; a raya won on a long rally; the winning raya (the eighth, or the classic court's last point); a raya that
+## wipes a count out in urria; on the stone court, the ball off the talud or a wall into the raya.
+const REPLAY_PRIORITY := ["ring", "dive", "rally", "win", "urria", "wall"]
+const LONG_RALLY := 8          # strikes in a rally that make it a long one
+const MOMENT_BEFORE := 1.8     # seconds shown before a moment, and after it
+const MOMENT_AFTER := 1.6
 
 var _rec: Array = []           # [time, ball position, [[body position, yaw, pose], ...]]
 var _rec_t := 0.0
@@ -449,10 +477,17 @@ var _replayed := false
 var _rp_t := 0.0
 var _rp_cam: Camera3D
 var _rp_keep: Array = []
+var _rp_span := []             # [first, last] time of play the replay shows
+var _rp_focus := Vector3.ZERO  # where the moment happened (not the ring's camera)
+var _replay_kind := ""         # what the coming replay shows, or "" (REPLAY_PRIORITY)
+var _moment := []              # [time, place] of the moment it shows
+var _rally_events: Array = []  # this rally's [kind ("strike", "dive", "wall"), time, place]
+var replays: Array = []        # [raya number, kind] of each replay shown (tests)
+var wsg_replay: WsgReplay      # the foundation's bodies as drawn, kept for the replays (Medium and High)
 
 
 func _record(delta: float) -> void:
-	if attract or not court.classic() or not (phase in [P.LIVE, P.CALL]):
+	if attract or not (court.classic() or wsg_replay) or not (phase in [P.LIVE, P.CALL]):
 		return
 	_rec_t += delta
 	var bodies := []
@@ -462,39 +497,111 @@ func _record(delta: float) -> void:
 	_rec.append([_rec_t, ball.pos, bodies])
 	while _rec.size() > 2 and _rec_t - float(_rec[0][0]) > REPLAY_KEEP:
 		_rec.pop_front()
+	if wsg_replay:
+		wsg_replay.record(_rec_t)
 
 
 func replaying() -> bool:
 	return phase == P.REPLAY
 
 
+## The replay a raya earns (reason, the count's what), or "": the ring at every level; the rest on Medium and High.
+func replay_kind(reason: String, what: String, team := -1) -> String:
+	if reason == "ring":
+		return "ring"
+	if wsg_replay == null:
+		return ""
+	var found := {}
+	var last_strike := -1.0
+	for e in _rally_events:
+		if _rec_t - float(e[1]) > REPLAY_KEEP - MOMENT_BEFORE:
+			continue
+		match String(e[0]):
+			"dive":
+				# (Saved: the side that dived for it won the raya.)
+				if int(e[3]) == team:
+					found["dive"] = e
+				last_strike = float(e[1])
+			"strike":
+				last_strike = float(e[1])
+			"wall":
+				if float(e[1]) > last_strike:
+					found["wall"] = e
+	if rally >= LONG_RALLY:
+		found["rally"] = _last_strike_event()
+	if what == "win":
+		found["win"] = _last_strike_event()
+	if what == "urria":
+		found["urria"] = _last_strike_event()
+	if not court.classic():
+		found.erase("wall")
+	for k in REPLAY_PRIORITY:
+		if found.has(k) and not (found[k] as Array).is_empty():
+			_moment = [float(found[k][1]), found[k][2]]
+			return k
+	return ""
+
+
+func _last_strike_event() -> Array:
+	for i in range(_rally_events.size() - 1, -1, -1):
+		var e: Array = _rally_events[i]
+		if String(e[0]) in ["strike", "dive"]:
+			return e
+	return [] if _rec.is_empty() else ["raya", maxf(float(_rec[0][0]), _rec_t - 1.0), ball.pos]
+
+
 func _start_replay() -> void:
 	_replayed = true
 	if _rec.size() < 10:
 		return
+	var t0 := float(_rec[0][0])
+	var t1 := float(_rec[-1][0])
+	if _replay_kind != "ring" and not _moment.is_empty():
+		t0 = maxf(t0, float(_moment[0]) - MOMENT_BEFORE)
+		t1 = minf(t1, float(_moment[0]) + MOMENT_AFTER)
+	if wsg_replay:
+		# The foundation's bodies as they were drawn: the replay starts where its ring does.
+		var sp := wsg_replay.span()
+		if sp.is_empty() or float(sp[1]) - maxf(t0, float(sp[0])) < 0.5:
+			return
+		t0 = maxf(t0, float(sp[0]))
+		wsg_replay.play(t0, t1)
+		FoundationLink.frozen = true
+	replays.append([log_rayas.size(), _replay_kind])
+	_rp_span = [t0, t1]
+	_rp_call_t = phase_t
 	phase = P.REPLAY
 	phase_t = 0.0
 	_rp_t = 0.0
 	_rp_keep = []
 	for p in all_players():
 		_rp_keep.append((p as Player).body.transform if (p as Player).body else Transform3D())
-	# Below the ring, on the far side of the alley, looking up at it.
-	var ring: Vector3 = court.rings()[0] if float(ball.pos.z) < 0.0 else court.rings()[1]
-	var from: Vector3 = _rec[0][1]
 	_rp_cam = Camera3D.new()
 	_rp_cam.fov = 48.0
 	add_child(_rp_cam)
-	_rp_cam.global_position = Vector3(signf(from.x) * 4.5 if absf(from.x) > 0.5 else -4.5, 1.7, -ring.z * 0.35)
-	_rp_cam.look_at(ring, Vector3.UP)
+	if _replay_kind == "ring":
+		# Below the ring, on the far side of the alley, looking up at it.
+		var ring: Vector3 = court.rings()[0] if float(ball.pos.z) < 0.0 else court.rings()[1]
+		var from: Vector3 = _rec[0][1]
+		_rp_cam.global_position = Vector3(signf(from.x) * 4.5 if absf(from.x) > 0.5 else -4.5, 1.7, -ring.z * 0.35)
+		_rp_cam.look_at(ring, Vector3.UP)
+	else:
+		# Low at the side the broadcast camera watches from, square on to the moment.
+		_rp_focus = _moment[1] if _moment.size() > 1 and _moment[1] is Vector3 else ball.pos
+		_rp_focus.y = 0.9
+		var side := signf(cam.camera.global_position.z) if cam and cam.camera else 1.0
+		var across := minf(6.5, court.half_w_at(_rp_focus.x) * 0.85) if court.classic() else 7.0
+		_rp_cam.global_position = Vector3(_rp_focus.x, 1.5 if court.classic() else 1.6, _rp_focus.z * 0.3 + (side if side != 0.0 else 1.0) * across)
+		_rp_cam.look_at(_rp_focus, Vector3.UP)
 	_rp_cam.current = true
 	if hud:
 		hud.replay_tag(true)
+		hud.touch.tap_skips = true
 
 
 func _replay_step(delta: float) -> void:
 	_rp_t += delta * REPLAY_SPEED
-	var t0 := float(_rec[0][0])
-	var t := t0 + _rp_t
+	var t := float(_rp_span[0]) + _rp_t
 	var i := 0
 	while i < _rec.size() - 2 and float(_rec[i + 1][0]) < t:
 		i += 1
@@ -514,18 +621,26 @@ func _replay_step(delta: float) -> void:
 		var yaw := lerp_angle(float(ra[1]), float(rb[1]), w)
 		pl.body.global_transform = Transform3D(Basis(Vector3.UP, yaw).scaled(pl.body.scale), pos)
 		pl.body.apply(rb[2] if w > 0.5 else ra[2])
+	if wsg_replay and wsg_replay.playing:
+		wsg_replay.seek(t)
 	if _rp_cam:
-		var to := _rp_cam.global_transform.looking_at(bp.lerp(court.rings()[0] if bp.z < 0.0 else court.rings()[1], 0.3), Vector3.UP)
+		var look_at := bp.lerp(court.rings()[0] if bp.z < 0.0 else court.rings()[1], 0.3) if _replay_kind == "ring" \
+			else _rp_focus.lerp(Vector3(bp.x, minf(bp.y, 2.6), bp.z), 0.6)
+		var to := _rp_cam.global_transform.looking_at(look_at, Vector3.UP)
 		_rp_cam.global_transform = _rp_cam.global_transform.interpolate_with(to, minf(1.0, delta * 4.0))
-	if t >= float(_rec[-1][0]) or _skip_replay:
+	if t >= float(_rp_span[1]) or t >= float(_rec[-1][0]) or _skip_replay:
 		_end_replay()
 
 
 var _skip_replay := false
+var _rp_call_t := 0.0          # how far into the call the replay came
 
 
 func _end_replay() -> void:
 	_skip_replay = false
+	if wsg_replay and wsg_replay.playing:
+		wsg_replay.stop()
+	FoundationLink.frozen = false
 	var ps := all_players()
 	for k in mini(ps.size(), _rp_keep.size()):
 		var pl: Player = ps[k]
@@ -536,10 +651,13 @@ func _end_replay() -> void:
 		_rp_cam = null
 	if hud:
 		hud.replay_tag(false)
+		hud.touch.tap_skips = false
 	cam.camera.current = true
 	ball.show_at(ball.pos, 0.0)
 	phase = P.CALL
-	phase_t = CALL_T
+	# The ring's replay ends the match (as it always has); after any other the call goes on where it stopped, so the
+	# players walk back to their places as they would have: the match plays exactly as without the replay.
+	phase_t = CALL_T if _replay_kind == "ring" else _rp_call_t
 
 
 # ---------------------------------------------------------------- you
@@ -778,6 +896,8 @@ func _ball_step(dt: float) -> void:
 			"bounce":
 				serve_bounced = true
 				var sp := float(e.speed)
+				if wsg_replay and String(e.surface) in ["talud", "wall", "end_wall"]:
+					_rally_events.append(["wall", _rec_t, ball.pos])
 				if sp > 1.0:
 					var vol := clampf(-20.0 + sp * 1.6, -20.0, -2.0)
 					if String(e.surface) == "earth":
@@ -880,6 +1000,8 @@ func _strike(p: Player, window: float, off: float) -> void:
 		v = _ring_launch(p, from, quality)
 		ring_shots += 1
 	ball.launch(from + Vector3(hn.x, 0.0, hn.y) * 0.05, v, p.team, p)
+	if wsg_replay:
+		_rally_events.append(["dive" if p.action == Player.A.DIVE else "strike", _rec_t, p.global_position, p.team])
 	ball_flight += 1
 	p.hit_done = true
 	p.immune = 0.35
@@ -936,6 +1058,10 @@ func _award(team: int, reason: String, fault: bool, who) -> void:
 		(who as Player).stats.rayas += 1
 	log_rayas.append([team, reason, count.holder, count.rayas, snappedf(clock, 0.1), String(res.get("what", ""))])
 	last_call = {"team": team, "reason": reason, "fault": fault, "what": res.get("what", "")}
+	# One replay a raya at most: the best moment it had.
+	_replayed = false
+	_moment = []
+	_replay_kind = replay_kind(reason, String(res.get("what", "")), team)
 	phase = P.CALL
 	phase_t = 0.0
 	officials.signal_raya(team, fault)
@@ -965,20 +1091,123 @@ func _award(team: int, reason: String, fault: bool, who) -> void:
 
 # ---------------------------------------------------------------- the phone
 
-## Auto graphics: if the first seconds of play run under about 36 frames a second, a level lower from the next match
-## (and a lighter render scale now).
-func _check_frame_rate(delta: float) -> void:
-	if _gfx_checked or attract or not bool(Game.settings.get("auto_gfx", true)) or phase == P.INTRO:
+## Auto graphics (Settings), the game's own: if the first seconds of play run under about 36 frames a second, a level
+## lower (and the player is told). Then, all match long, the shared foundation's WsgAutoTier: two 1.5 s windows in a
+## row slower than 36 a second or hitching take another level off (not on the battery saver's 30, which is not slow;
+## not headless). Either way the step applies at once, the foundation's bodies with it (lower_graphics).
+func _check_frame_rate(delta: float, real_delta: float) -> void:
+	if attract or not bool(Game.settings.get("auto_gfx", true)) or phase == P.INTRO:
 		return
-	_fps_t += delta
-	_fps_frames += 1
-	if _fps_t >= 6.0:
-		_gfx_checked = true
-		var fps := _fps_frames / _fps_t
-		# (Battery saver holds it near 30 on purpose: nothing to lower then.)
-		if fps < 36.0 and int(Game.settings.graphics) > Game.GFX_LOW and int(Game.settings.fps) != Game.FPS_SAVER:
-			Game.settings.graphics = int(Game.settings.graphics) - 1
-			Game.save_settings()
-			Game.apply_graphics(get_viewport())
-			if hud:
-				hud.note(tr("GFX_LOWERED"))
+	if not _gfx_checked:
+		_fps_t += delta
+		_fps_frames += 1
+		if _fps_t >= 6.0:
+			_gfx_checked = true
+			var fps := _fps_frames / _fps_t
+			# (Battery saver holds it near 30 on purpose: nothing to lower then.)
+			if fps < 36.0 and int(Game.settings.graphics) > Game.GFX_LOW and int(Game.settings.fps) != Game.FPS_SAVER:
+				lower_graphics()
+		return
+	if phase == P.REPLAY or int(Game.settings.graphics) <= Game.GFX_LOW or int(Game.settings.fps) == Game.FPS_SAVER:
+		return
+	if DisplayServer.get_name() == "headless" or OS.has_feature("movie"):
+		return
+	if _auto_gfx.feed(real_delta):
+		lower_graphics()
+
+
+var _fps_t := 0.0
+var _fps_frames := 0
+var _gfx_checked := false
+var _auto_gfx := WsgAutoTier.new(Game.frame_cap())
+
+
+## A level off the graphics now, and everything the levels change: the picture, and the shared foundation's bodies (on
+## Low the game's own again, exactly as Low draws them, and no foundation replays) and their shadows.
+func lower_graphics() -> void:
+	var g := maxi(Game.GFX_LOW, int(Game.settings.graphics) - 1)
+	Game.settings.graphics = g
+	Game.save_settings()
+	Game.apply_graphics(get_viewport())
+	WsgFoundation.tier = g
+	if hud:
+		hud.note(tr("GFX_LOWERED"))
+	var low := g == Game.GFX_LOW
+	if low and phase == P.REPLAY:
+		_end_replay()
+	for b in _all_bodies():
+		var body: Body = b
+		if body.link == null:
+			continue
+		if low:
+			body.unlink()
+		else:
+			var sh := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			body.link.body.mesh_instance.cast_shadow = sh
+			if body.link.gear:
+				body.link.gear.cast_shadow = sh
+	if low and wsg_replay:
+		ball.draw_at(Vector3.INF)
+		wsg_replay.queue_free()
+		wsg_replay = null
+		_replay_kind = "ring" if _replay_kind == "ring" else ""
+	_auto_gfx.reset()
+
+
+# ---------------------------------------------------------------- the shared foundation's bodies (FoundationLink)
+
+## Every body the foundation may draw: the players and the judges.
+func _all_bodies() -> Array:
+	var out: Array = []
+	for p in all_players():
+		if (p as Player).body:
+			out.append((p as Player).body)
+	for j in officials.judges:
+		out.append(j)
+	return out
+
+
+## Metres from the camera within which a player is posed every frame by graphics level (beyond: every second frame,
+## unless he is in a move or holds the ball).
+const POSE_NEAR := [12.0, 12.0, 16.0]
+var _detail_t := 0.0
+
+
+## Twice a second: the foundation's bodies in full detail nearest the camera only (WsgFoundation's budget profile: its
+## nearest 6 on Medium, all on High); far players posed every second frame, the judges every second unless calling.
+func _rank_detail(dt: float) -> void:
+	_detail_t -= dt
+	if _detail_t > 0.0:
+		return
+	_detail_t = 0.5
+	WsgFoundation.tier = int(Game.settings.graphics)
+	var cam3 := get_viewport().get_camera_3d()
+	var camp := cam3.global_position if cam3 else Vector3.ZERO
+	var list := []
+	for b in _all_bodies():
+		var link: FoundationLink = (b as Body).link
+		if link == null or link.body == null:
+			continue
+		list.append(link.body)
+		if link.kind == "judge":
+			link.pose_every = 1 if link.mode == "upper" else 2
+		else:
+			var pl := (b as Body).get_parent() as Player
+			var near := (b as Body).global_position.distance_to(camp) < float(POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)])
+			link.pose_every = 1 if near or pl == null or pl.busy() or pl == server or pl.user else 2
+	if not list.is_empty():
+		WsgFoundation.rank_detail(list, camp)
+
+
+## The ball the server holds, drawn in his drawn right hand (the game's hand, which the serve throws from, is where
+## the game has it: a few centimetres off the drawn one).
+func _ball_in_drawn_hand() -> void:
+	var holder: FoundationLink = null
+	if ball.held and server != null and server.body and server.body.link and server.body.link.body.visible:
+		holder = server.body.link
+	for p in all_players():
+		var l: FoundationLink = (p as Player).body.link if (p as Player).body else null
+		if l:
+			l.hand_ball = ball if l == holder else null
+	if holder == null:
+		ball.draw_at(Vector3.INF)

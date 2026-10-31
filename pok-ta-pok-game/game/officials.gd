@@ -12,11 +12,16 @@ var _call_t := -1.0
 var _call_side := [1.0, 1.0]
 var _fault := false
 var _t := 0.0
+## Where the ball is (Match sets it each frame): the judges drawn by the shared foundation watch it.
+var watch := Vector3.INF
 
 
 func build(court: Court) -> void:
 	for s in [-1.0, 1.0]:
-		var j := Body.new({"kind": "judge", "skin": Color("9a6c4a") if s < 0 else Color("85593b"), "hair": Color("15110e"), "height": 1.7 if s < 0 else 1.66, "build": 0.6, "hat": 0 if s < 0 else 1})
+		var look := {"kind": "judge", "skin": Color("9a6c4a") if s < 0 else Color("85593b"), "hair": Color("15110e"), "height": 1.7 if s < 0 else 1.66, "build": 0.6, "hat": 0 if s < 0 else 1}
+		if FoundationLink.enabled():
+			look["foundation"] = true
+		var j := Body.new(look)
 		var at := Vector3(0.0, 0.0, s * 3.4)
 		if court.classic():
 			at = Vector3(0.6 * s, Court.WALL_H, s * (Court.TALUD_Z + 0.9))
@@ -54,6 +59,15 @@ func _process(delta: float) -> void:
 		else:
 			p = Moves.judge_idle(_t + i * 2.0)
 		judges[i].apply(p)
+		var l := judges[i].link
+		if l:
+			# The shared foundation (Medium and High): standing at ease from the motion capture, watching the ball;
+			# a call is the game's arms over it.
+			l.want = "upper" if _call_t >= 0.0 and _call_t < 2.4 else "move"
+			l.vel = Vector3.ZERO
+			l.yaw = _yaws[i]
+			l.look = watch
+			l.update(delta)
 	if _call_t >= 0.0:
 		_call_t += delta
 		if _call_t > 2.4:

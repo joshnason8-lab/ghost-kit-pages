@@ -22,6 +22,9 @@ func _ready() -> void:
 	get_tree().root.size = Vector2i(1280, 720)
 	await frames(1)
 	var keep: Dictionary = Game.settings.duplicate(true)
+	# The matches here are not about drawing: they run as a build without the licensed clips does (CI's), in its time.
+	# _foundation() turns the shared foundation on for its own.
+	FoundationLink.off = true
 	_rules_count()
 	_rules_urria()
 	_rules_rayas()
@@ -43,6 +46,7 @@ func _ready() -> void:
 	_levels()
 	await _yucatan()
 	await _ring_replay()
+	await _foundation()
 	await _match_and_motion("village", "ulama")
 	await _match_and_motion("stone", "classic")
 	Game.settings = keep
@@ -53,6 +57,8 @@ func _ready() -> void:
 
 func check(ok: bool, what: String) -> void:
 	checks += 1
+	if ok and OS.has_environment("TEST_VERBOSE"):
+		print("ok: ", what)
 	if not ok:
 		failures += 1
 		print("FAIL: ", what)
@@ -344,7 +350,7 @@ func _move_buttons() -> void:
 ## each has its own text, with no key left untranslated and no name left unfilled, and Back returns to Settings.
 func _legal_pages() -> void:
 	var pages := {"LICENCES": ["licences_screen", 6000, ["CC0", "CC BY 4.0", "Gregor Quendel", "JC Sounds", "Poly Haven",
-		"Kenney", "Carnegie Mellon", "Meshy", "Godot Engine", "Open Font License"]],
+		"Kenney", "Carnegie Mellon", "Meshy", "Godot Engine", "Open Font License", "MoCap Online", "ActorCore"]],
 		"HELP_SUPPORT": ["help_screen", 900, ["joshnason8@gmail.com"]],
 		"PRIVACY_POLICY": ["privacy_screen", 900, ["joshnason8@gmail.com", "2026"]]}
 	for pair in Game.LANGUAGES:
@@ -898,3 +904,330 @@ func _match_and_motion(venue: String, rules: String) -> void:
 	check(Game.haptic_calls == buzzes, "Haptics: a match only the computer plays never buzzes the phone")
 	m.queue_free()
 	await frames(2)
+
+
+# ---------------------------------------------------------------- the shared foundation (FoundationLink)
+
+## The phone decides its first level: the owner's Galaxy A16 (Mali-G57 MC2 on the Helio G99 and Dimensity 6300,
+## Mali-G68 MP2 on the Exynos 1330, 4 to 8 GB) and the other small GPUs start on Low; Low draws exactly what the beta
+## draws, with or without the foundation in the build; on Medium and High (with the licensed clips) every player and
+## judge is drawn by the foundation, where the game has him, his hip at the ball when it meets it, his gear on him,
+## his planted feet still, the server not turning on the spot; replays are the ring's first, one a raya at most, and a
+## tap passes them; and lowered to Low mid-match the game's own bodies come back.
+func _foundation() -> void:
+	var keep_g := int(Game.settings.graphics)
+	for gpu in ["Mali-G57 MC2", "Mali-G68 MP2", "ARM Mali-G57", "Mali-G52 MC2", "PowerVR Rogue GE8320", "Adreno (TM) 610", "Adreno (TM) 506"]:
+		for ram in [4.0, 6.0, 8.0]:
+			check(Game.graphics_for(gpu, ram) == Game.GFX_LOW, "Phones: %s with %.0f GB starts on Low" % [gpu, ram])
+	check(Game.graphics_for("Adreno (TM) 740", 8.0) == Game.GFX_MEDIUM and Game.graphics_for("Adreno (TM) 740", 3.5) == Game.GFX_LOW,
+		"Phones: a big GPU starts on Medium, on Low under 4.5 GB")
+	var have := WsgClips.available()
+	# (Headless frames run at the test's fixed 30 a second: the game's own auto graphics would take a level off six
+	# seconds into each match.)
+	var keep_auto: bool = bool(Game.settings.get("auto_gfx", true))
+	Game.settings.auto_gfx = false
+	# Low: the same things drawn with the foundation in the build as without it (the beta's Low).
+	Game.settings.graphics = Game.GFX_LOW
+	FoundationLink.off = false
+	await _drawn_list("village", "ulama")     # (the crowd's sheet made for Low first: a few frames)
+	var with_f: Array = await _drawn_list("village", "ulama")
+	var links := _link_count()
+	FoundationLink.off = true
+	var without: Array = await _drawn_list("village", "ulama")
+	check(links == 0, "Foundation: Low links no body (%d)" % links)
+	if with_f != without:
+		for x in with_f:
+			if not x in without:
+				print("  only with the foundation: ", x)
+		for x in without:
+			if not x in with_f:
+				print("  only without it: ", x)
+	check(with_f.size() > 20 and with_f == without, "Foundation: Low draws the same %d things with the foundation in the build as without it" % with_f.size())
+	FoundationLink.off = false
+	for g in [Game.GFX_MEDIUM, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		await _foundation_match(g, have)
+	await _foundation_lowered(have)
+	await _replay_rules(have)
+	FoundationLink.off = true
+	Game.settings.graphics = keep_g
+	Game.settings.auto_gfx = keep_auto
+
+
+var _fm: Node
+
+
+func _new_match(venue: String, rules: String, seed_: int, mode := "test", user := -1) -> Node:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "ESC" if rules == "ulama" else "PIS", "away": "LLA" if rules == "ulama" else "VAL", "venue": venue, "rules": rules,
+		"user_team": user, "seed": seed_, "length": 3.0, "mode": mode, "difficulty": 2}
+	add_child(m)
+	_fm = m
+	return m
+
+
+func _link_count() -> int:
+	var n := 0
+	if is_instance_valid(_fm):
+		for b in _fm._all_bodies():
+			if (b as Body).link:
+				n += 1
+	return n
+
+
+## Everything a seeded match draws after two seconds: each visible thing's kind, mesh, material and place.
+func _drawn_list(venue: String, rules: String) -> Array:
+	var m := _new_match(venue, rules, 4)
+	await frames(60)
+	var out := []
+	for n in m.find_children("*", "GeometryInstance3D", true, false):
+		var gi := n as GeometryInstance3D
+		if not gi.is_visible_in_tree():
+			continue
+		var mesh_desc := ""
+		if gi is MeshInstance3D and (gi as MeshInstance3D).mesh:
+			var me := (gi as MeshInstance3D).mesh
+			mesh_desc = "%s %d %s" % [me.resource_path.get_file(), me.get_surface_count(), str(me.get_aabb().size.snapped(Vector3.ONE * 0.001))]
+			if me.resource_path.contains("assets/people/player_"):
+				mesh_desc = "a player's body"     # (which of the three a player wears is picked by chance in any build)
+		var mat := gi.material_override
+		var o := gi.global_position.snapped(Vector3.ONE * 0.001)
+		out.append("%s|%s|%s|%s|%d" % [gi.get_class(), mesh_desc, mat.get_class() if mat else "-", str(o), gi.cast_shadow])
+	out.sort()
+	m.queue_free()
+	await frames(2)
+	return out
+
+
+## A Medium or High match with the foundation: everyone linked, and what each drawn body does measured.
+func _foundation_match(g: int, have: bool) -> void:
+	var m := _new_match("village", "ulama", 9)
+	await frames(2)
+	var bodies: Array = m._all_bodies()
+	var linked := _link_count()
+	if not have:
+		check(linked == 0, "Foundation (graphics %d): without the licensed clips nobody is linked, the game draws its own" % g)
+		m.queue_free()
+		await frames(2)
+		return
+	check(linked == bodies.size(), "Foundation (graphics %d): every player and judge is drawn by the foundation (%d of %d)" % [g, linked, bodies.size()])
+	for b in bodies:
+		var l: FoundationLink = (b as Body).link
+		if l:
+			l.measure = true
+	var worst_place := 0.0
+	var worst_hip := 0.0
+	var hits := 0
+	var worst_gear := 0.0
+	var gear_off_game := 0.0
+	var worst_slide := 0.0
+	var slide_why := ""
+	var slide_all := []
+	var slides := 0
+	var feet := {}
+	var turned := 0.0
+	var last_yaw := NAN
+	var game_turned := 0.0
+	var last_game_yaw := 0.0
+	var modes := {}
+	var n := 0
+	while n < 30 * (60 if g == Game.GFX_MEDIUM else 30) and m.phase != m.P.OVER:
+		await frames(1)
+		if m.phase == m.P.REPLAY:
+			feet.clear()
+			continue
+		n += 1
+		for p in m.all_players():
+			var pl: Player = p
+			var l: FoundationLink = pl.body.link
+			if l == null or int(l.last.get("frame", -9)) < Engine.get_process_frames() - 1:
+				continue
+			modes[l.mode] = int(modes.get(l.mode, 0)) + 1
+			var hips: Vector3 = l.last.Hips
+			worst_place = maxf(worst_place, Vector2(hips.x - pl.global_position.x, hips.z - pl.global_position.z).length())
+			if pl.action in [Player.A.STRIKE, Player.A.DIVE] and pl.hit_done and not pl.has_meta("fv_hit"):
+				pl.set_meta("fv_hit", true)
+				hits += 1
+				worst_hip = maxf(worst_hip, l.hip_gap(pl.action_side))
+			elif pl.action == Player.A.NONE and pl.has_meta("fv_hit"):
+				pl.remove_meta("fv_hit")
+			var gp: Vector3 = l.last.get("gear:hips", Vector3.INF)
+			if gp.is_finite():
+				worst_gear = maxf(worst_gear, gp.distance_to(hips))
+				if l.mode == "move" and float(l.last.pw) <= 0.0:
+					gear_off_game = maxf(gear_off_game, gp.distance_to(pl.body.bone_world("hips")))
+			# A planted foot under the motion capture: still from one pose to the next.
+			for fi in 2:
+				var k: String = "%s%d" % [pl.name, fi]
+				var at: Vector3 = l.loco.planter.ankle_world[fi]
+				var planted: bool = l.mode == "move" and float(l.last.w) <= 0.0 and float(l.last.pw) <= 0.0 \
+					and float(l.loco.planter.contact[fi]) > 0.5 \
+					and at.y < pl.global_position.y + (l.body.joints["LeftFoot"] as Vector3).y * pl.body.scale.x + 0.04
+				if planted and feet.has(k):
+					# (Per frame: a far player is posed every second frame.)
+					var gap := maxf(1.0, float(int(l.last.frame) - int(feet[k][1])))
+					var sl := Vector2(at.x - feet[k][0].x, at.z - feet[k][0].z).length() / gap
+					if sl > worst_slide:
+						slide_why = "%s state %d speed %.2f gap %d frame %d" % [pl.name, l.loco.state, pl.vel.length(), gap, n]
+					worst_slide = maxf(worst_slide, sl)
+					slide_all.append(sl * 30.0 * 100.0)
+					slides += 1
+				if planted:
+					feet[k] = [at, int(l.last.frame)]
+				else:
+					feet.erase(k)
+		if m.phase == m.P.SERVE and m.ball.held and m.server and m.server.body.link:
+			var y: float = m.server.body.link.body.global_transform.basis.get_euler().y
+			if not is_nan(last_yaw):
+				turned += absf(angle_difference(last_yaw, y))
+				game_turned += absf(angle_difference(last_game_yaw, m.server.yaw))
+			last_yaw = y
+			last_game_yaw = m.server.yaw
+		else:
+			last_yaw = NAN
+	check(worst_place < 0.4, "Foundation (graphics %d): the drawn bodies are where their players are (worst %.2f m off)" % [g, worst_place])
+	check(hits >= 3 and worst_hip < 0.05, "Foundation (graphics %d): at contact the drawn hip is where the game's hip meets the ball (%d strikes and dives, worst %.3f m)" % [g, hits, worst_hip])
+	check(worst_gear > 0.0 and worst_gear < 0.2, "Foundation (graphics %d): the faja and chimali stay on the drawn hips (worst %.3f m from them)" % [g, worst_gear])
+	check(int(modes.get("move", 0)) > 0 and gear_off_game > 0.02, "Foundation (graphics %d): under the motion capture the gear follows the drawn body, not the game's (%.3f m apart)" % [g, gear_off_game])
+	# (The foundation's own measure, tests/loco_test there: a planted foot's slide on average under 8 cm/s; and never
+	# 5 cm in a frame - a foot drawn after a body that outran its leg, the game's players speeding up and stopping
+	# harder than the capture's runners (Sepak Takraw's walkers kept under 3). The 90th percentile is reported.)
+	slide_all.sort()
+	var mean_s: float = slide_all.reduce(func(x, y): return x + y, 0.0) / maxf(1.0, slide_all.size())
+	var p90: float = slide_all[int(slide_all.size() * 0.9)] if not slide_all.is_empty() else 0.0
+	check(slides > 50 and mean_s < 8.0 and worst_slide < 0.05,
+		"Foundation (graphics %d): planted feet under the motion capture do not slide (%d poses: %.1f cm/s on average, %.1f at the 90th percentile; worst %.3f m a frame: %s)" % [g, slides, mean_s, p90, worst_slide, slide_why])
+	check(turned < 4.0, "Foundation (graphics %d): the server holding the ball does not spin on the spot (drawn: turned %.1f rad; the game's %.1f)" % [g, turned, game_turned])
+	var seen := {}
+	var once := true
+	for r in m.replays:
+		if seen.has(r[0]):
+			once = false
+		seen[r[0]] = true
+		check(String(r[1]) in m.REPLAY_PRIORITY, "Foundation: a replay shows a moment of the list (%s)" % r[1])
+	check(once, "Foundation (graphics %d): one replay a raya at most (%s)" % [g, m.replays])
+	var played: Array = [m.log_rayas.duplicate(true), _places(m)]
+	var shown: int = m.replays.size()
+	m.queue_free()
+	await frames(2)
+	if g == Game.GFX_MEDIUM:
+		# The same match without the foundation, for as many frames of play: the same rayas at the same moments, the
+		# players in the same places (the drawn bodies and their replays change nothing the game does).
+		FoundationLink.off = true
+		var m2 := _new_match("village", "ulama", 9)
+		await frames(2)
+		var n2 := 0
+		while n2 < n and m2.phase != m2.P.OVER:
+			await frames(1)
+			if m2.phase != m2.P.REPLAY:
+				n2 += 1
+		check(m2.log_rayas == played[0] and _places(m2) == played[1],
+			"Foundation: the match plays exactly as without the foundation, %d replays and all (%d rayas: %s against %s)" % [shown, m2.log_rayas.size(), played[0].slice(-2), m2.log_rayas.slice(-2)])
+		m2.queue_free()
+		await frames(2)
+		FoundationLink.off = false
+
+
+## Every player's place, to the millimetre.
+func _places(m: Node) -> Array:
+	var out := []
+	for p in m.all_players():
+		out.append((p as Player).global_position.snapped(Vector3.ONE * 0.001))
+	return out
+
+
+## Lowered to Low mid-match (WsgAutoTier's step): the game's own bodies are drawn again as Low draws them.
+func _foundation_lowered(have: bool) -> void:
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var m := _new_match("stone", "classic", 5)
+	for b in m._all_bodies():
+		if (b as Body).link:
+			(b as Body).link.measure = true
+	var pad := 0.0
+	var wrap := 0.0
+	var parts := 0
+	for i in 90:
+		await frames(1)
+		for p in m.all_players():
+			var l: FoundationLink = (p as Player).body.link
+			if l and l.last.has("gear:shin_r"):
+				parts += 1
+				pad = maxf(pad, (l.last["gear:shin_r"] as Vector3).distance_to(l.last["RightLeg@"].origin))
+				wrap = maxf(wrap, (l.last["gear:forearm_r"] as Vector3).distance_to(l.last.RightHand))
+	check(not have or (parts > 100 and pad < 0.08 and wrap < 0.06),
+		"Foundation: the classic court's knee pad and wrist wrap stay on the drawn knee and wrist (%d poses, %.3f and %.3f m)" % [parts, pad, wrap])
+	var before := _link_count()
+	var was_linked: Array = m._all_bodies().filter(func(b): return (b as Body).link != null)
+	m.lower_graphics()
+	await frames(5)
+	var ok := true
+	for b in m._all_bodies():
+		var bd: Body = b
+		if not bd in was_linked:
+			# (Never drawn by the foundation - a build without the licensed clips: as the beta lowers it, unchanged.)
+			ok = ok and bd.rigged != null and bd.mesh_instance.visible
+			continue
+		if bd.link != null or not bd.mesh_instance.visible or bd.rigged == null or not bd.rigged.file.begins_with(String(bd.look.get("model", "?"))):
+			ok = false
+		elif bd.rigged.material.get_shader_parameter("albedo_tex").resource_path.ends_with("_2k.jpg"):
+			ok = false
+	check(int(Game.settings.graphics) == Game.GFX_LOW and m.wsg_replay == null and _link_count() == 0 and ok,
+		"Foundation: lowered to Low mid-match, the game's own bodies are back as Low draws them (%d were linked)" % before)
+	check(not have or before == m._all_bodies().size(), "Foundation: the stone court's bodies were all linked on Medium (%d)" % before)
+	m.queue_free()
+	await frames(2)
+
+
+## Replays: which moment a raya earns, most wanted first (the ring before all; the rest only where the foundation
+## draws); and a tap anywhere passes one.
+func _replay_rules(have: bool) -> void:
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var m := _new_match("stone", "classic", 5)
+	await frames(30)
+	m._rec_t = 10.0
+	m._rally_events = [["strike", 8.0, Vector3.ZERO, 1], ["dive", 8.5, Vector3.ZERO, 0], ["wall", 9.0, Vector3.ZERO, -1]]
+	m.rally = 9
+	check(m.replay_kind("ring", "win", 0) == "ring", "Replays: the ring comes first")
+	var want := ["dive", "rally", "win", "wall"] if have else ["", "", "", ""]
+	check(m.replay_kind("dead", "win", 0) == want[0], "Replays: a dive that saved the raya before a long rally (%s)" % m.replay_kind("dead", "win", 0))
+	check(m.replay_kind("dead", "win", 1) == want[1], "Replays: a long rally next, when the dive was the losers' (%s)" % m.replay_kind("dead", "win", 1))
+	m.rally = 2
+	check(m.replay_kind("dead", "win", 1) == want[2], "Replays: the winning raya next (%s)" % m.replay_kind("dead", "win", 1))
+	check(m.replay_kind("dead", "add", 1) == want[3], "Replays: the ball off the talud or a wall into a raya (%s)" % m.replay_kind("dead", "add", 1))
+	m._rally_events = [["strike", 9.5, Vector3.ZERO, 1]]
+	check(m.replay_kind("dead", "add", 1) == "", "Replays: an ordinary raya earns none")
+	m.queue_free()
+	await frames(2)
+	# A tap passes the ring's replay (Low: the beta's replay, the same rule).
+	Game.settings.graphics = Game.GFX_LOW
+	Game.start_match({"home": "PIS", "away": "VAL", "venue": "stone", "rules": "classic", "user_team": 0, "seed": 5,
+		"mode": "quick", "length": 3.0, "difficulty": 1})
+	var q: Node = Game.current
+	var n := 0
+	while n < 30 * 40 and not (q.phase == q.P.LIVE and q.phase_t > 4.0):
+		await frames(1)
+		n += 1
+		if q.phase == q.P.SERVE and "SERVE" in q.hud.touch.ids and n % 30 == 0:
+			q.hud.touch._fire("SERVE")
+	q._award(0, "ring", false, null)
+	n = 0
+	while n < 30 * 10 and q.phase != q.P.REPLAY:
+		await frames(1)
+		n += 1
+	var was: bool = q.phase == q.P.REPLAY
+	await frames(10)
+	var tap := InputEventMouseButton.new()
+	tap.button_index = MOUSE_BUTTON_LEFT
+	tap.position = Vector2(900, 300)
+	tap.global_position = tap.position
+	tap.pressed = true
+	Input.parse_input_event(tap)
+	await frames(2)
+	var up := tap.duplicate() as InputEventMouseButton
+	up.pressed = false
+	Input.parse_input_event(up)
+	await frames(3)
+	var gone: bool = not is_instance_valid(q) or q.phase != q.P.REPLAY
+	check(was and gone, "Replays: a tap anywhere passes the replay (replaying %s, passed %s)" % [was, gone])
+	Game.goto_menu()
+	await frames(3)

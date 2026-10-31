@@ -17,7 +17,9 @@ func _ready() -> void:
 		var frames := 0
 		while m.phase != m.P.OVER and frames < int(mins * 60 * 30) + 30 * 60:
 			await get_tree().process_frame
-			frames += 1
+			# (Frames of play: a replay, shown on Medium and High, holds the match.)
+			if m.phase != m.P.REPLAY:
+				frames += 1
 		var r: Dictionary = m.result()
 		var why := {}
 		for e in r.log:

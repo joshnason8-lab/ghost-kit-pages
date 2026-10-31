@@ -225,6 +225,8 @@ func dead() -> bool:
 ## Puts it in play from p with velocity v, by team t (player pl).
 func launch(p: Vector3, v: Vector3, t: int, pl = null) -> void:
 	held = false
+	if _drawn.is_finite():
+		draw_at(Vector3.INF)
 	pos = p
 	vel = v
 	grounded = false
@@ -264,9 +266,24 @@ class _Probe:
 	var grounded := false
 
 
+## Where the ball is drawn while it is held, when the hand holding it is not where the game holds it (the shared
+## foundation's drawn hand: FoundationLink, Medium and High); INF: at its place. Looks only: pos is the game's.
+func draw_at(p: Vector3) -> void:
+	_drawn = p
+	if _mesh:
+		_mesh.position = Vector3.ZERO
+		if p.is_finite():
+			_mesh.global_position = p
+
+
+var _drawn := Vector3.INF
+
+
 ## Draws it where it is (the match calls this once a frame, after the steps).
 func show_at(p: Vector3, dt: float) -> void:
 	global_position = p
+	if _drawn.is_finite():
+		_mesh.global_position = _drawn
 	var h := Vector2(vel.x, vel.z)
 	if h.length() > 0.05:
 		var axis := Vector3(h.y, 0, -h.x).normalized()

@@ -125,22 +125,38 @@ func setup(body: Body, p_file: String, look: Dictionary) -> void:
 	_k = to_body.basis.get_scale().x
 	_prepare(body)
 	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	material = make_material(file, look)
+	mesh.material_override = material
+
+
+static var _baked_shader: Shader
+
+
+## The body's material: its Meshy texture, the skin re-tinted to the player's own tone (look.skin), a rim of light on
+## Medium and High. baked: for the same model baked onto the shared foundation's rig (FoundationLink), whose vertex
+## colour holds the rest position (green: the height over the soles, in metres / 2) where prepare.gd's holds the
+## standing height (red: 0 soles .. 1 crown).
+static func make_material(file: String, look: Dictionary, baked := false) -> ShaderMaterial:
+	var gfx := int(Game.settings.graphics)
 	if _shader == null:
 		_shader = Shader.new()
 		_shader.code = SHADER
-	material = ShaderMaterial.new()
-	material.shader = _shader
+	if baked and _baked_shader == null:
+		_baked_shader = Shader.new()
+		_baked_shader.code = SHADER.replace("h = COLOR.r;", "h = COLOR.g * 2.0 / 1.8;")
+	var mat := ShaderMaterial.new()
+	mat.shader = _baked_shader if baked else _shader
 	# Low: the 1024 texture as before. Medium and High: Meshy's own 2048, VRAM-compressed with mipmaps.
 	var tex := file + ("_2k" if gfx >= Game.GFX_MEDIUM and ResourceLoader.exists(DIR + file + "_2k.jpg") else "")
 	if not _textures.has(tex):
 		_textures[tex] = load(DIR + tex + ".jpg")
-	material.set_shader_parameter("albedo_tex", _textures[tex])
-	material.set_shader_parameter("rim", 0.4 if gfx >= Game.GFX_MEDIUM else 0.0)
+	mat.set_shader_parameter("albedo_tex", _textures[tex])
+	mat.set_shader_parameter("rim", 0.4 if gfx >= Game.GFX_MEDIUM else 0.0)
 	# The texture's skin as a middle tone; a darker or lighter player's in proportion, in linear light.
 	var ref := Color("a8754f").srgb_to_linear()
 	var sk: Color = (look.get("skin", Color("a8754f")) as Color).srgb_to_linear()
-	material.set_shader_parameter("skin_ratio", Vector3(sk.r / ref.r, sk.g / ref.g, sk.b / ref.b) if String(look.get("kind", "")) != "judge" else Vector3.ONE)
-	mesh.material_override = material
+	mat.set_shader_parameter("skin_ratio", Vector3(sk.r / ref.r, sk.g / ref.g, sk.b / ref.b) if String(look.get("kind", "")) != "judge" else Vector3.ONE)
+	return mat
 
 
 ## The model's skeleton relative to this node, before it is in the tree.
