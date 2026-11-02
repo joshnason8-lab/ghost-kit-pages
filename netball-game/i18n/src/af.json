@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Rondte {n} van {of}",
   "STAGE_SEASON": "Die seisoen",
   "STAGE_GRAND_FINAL": "Groot eindstryd",
-  "REC_TITLES": "Klubseisoen-titels"
+  "REC_TITLES": "Klubseisoen-titels",
+  "MENU_WATCH": "Kyk na KI",
+  "MENU_WATCH_DESC": "Twee KI-spanne speel 'n volle wedstryd. Sit terug en kyk.",
+  "WATCH_HOME": "Tuis",
+  "WATCH_AWAY": "Besoekers",
+  "WATCH_GO": "Kyk",
+  "WATCH_NOTE": "Die KI speel albei spanne. Die wedstryd tel nie in jou rekords nie.",
+  "SPEED": "Spoed"
 }

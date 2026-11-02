@@ -29,3 +29,6 @@
 - Club season **Tymor Clwb**; table **tabl**; round **rownd** (rowndiau terfynol = finals, as for the cup); grand final **y brif ffeinal**; premiers **Pencampwyr!** (same word as CUP_WON).
 - Stick **ffon**, tap **tapiwch** (as in QUIT_SURE), dashed ring **cylch toredig**. 0.9 m with a decimal point.
 - Check first: `CALL_ESCALATE` and `CALL_ADVANCE` (no settled Welsh umpire wording), `LEAGUE_WON` (could be "Pencampwyr y gynghrair!" if it fits the title), `STAGE_GRAND_FINAL`, mutations in `COACH_DEFEND` ("a'i marcio hi") and in strings where {pass}/{lob}/{defend} follow a verb, and `COACH_TIPS_NOTE` (cynghorion vs awgrymiadau).
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI** (DA, deallusrwydd artiffisial, is the formal form; AI is what people say). Watch **Gwylio**; home/away **Cartref / Oddi cartref**, as Welsh sports results; speed **Cyflymder**.

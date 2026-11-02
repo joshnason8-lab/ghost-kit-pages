@@ -17,6 +17,9 @@ signal game_event(kind: String, info: Dictionary)
 
 var config := {}
 var demo := false                   # an AI v AI match (the home screen's, a test's): no player, no buzz
+var watch := false                  # Watch AI (an AI v AI match from the menus, watched): the broadcast with its sound,
+                                    # the scoreboard, the intervals and the result, nobody's buttons, and the speed
+var speed := 1                      # Watch AI's speed: play steps a frame (1 or 2), each the step a match always takes
 var user_team := -1
 var players: Array = [[], []]       # on court, by team: GS, GA, WA, C, WD, GD, GK
 var bench: Array = [[], []]         # squad entries not on court
@@ -88,6 +91,7 @@ var _squeak_gap := 0.0
 func _ready() -> void:
 	demo = bool(config.get("demo", false)) or int(config.get("user_team", 0)) < 0
 	user_team = -1 if demo else int(config.get("user_team", 0))
+	watch = demo and bool(config.get("watch", false))
 	rng.seed = int(config.get("seed", Time.get_ticks_usec()))
 	quarter_min = float(config.get("quarter", Game.quarter_minutes()))
 	need_winner = bool(config.get("need_winner", false))
@@ -130,7 +134,7 @@ func _ready() -> void:
 	ball = Ball.new()
 	add_child(ball)
 	cam = CameraRig.new()
-	cam.mode = int(Game.settings.camera)
+	cam.mode = Game.CAM_TV if watch else int(Game.settings.camera)   # Watch AI: the broadcast's camera
 	add_child(cam)
 	ai = TeamAI.new(self)
 	_set_ends()
@@ -142,9 +146,11 @@ func _ready() -> void:
 		controls.action.connect(_on_action)
 		hud.add_controls(controls)
 		_pick_me()
+	elif watch:
+		hud.add_watch_bar()
 	Game.apply_graphics(get_viewport())
 	_setup_centre(true)
-	if not demo:
+	if heard():
 		# The venue's sound: its crowd and surroundings, and the sounds on court heard from where they happen.
 		Sfx.venue(arena.kind())
 		Sfx.crowd(arena.atmosphere() * 0.5)
@@ -239,10 +245,28 @@ func _process(delta: float) -> void:
 	if phase == "replay":
 		_replay_step(delta)
 		return
+	_auto_graphics(delta)
+	# Watch AI at 2x: the match takes two of its steps a frame, each exactly the step it takes at 1x (the same dt, cut
+	# at 0.05 s as always), so the AI, the players and their bodies, the ball, the umpires, the clock and the sounds
+	# they make all run twice as fast together and play as they would at 1x. A replay keeps its own slowed pace (a tap
+	# skips it); the bodies are kept for it once a frame, as they are drawn.
+	for i in maxi(speed, 1):
+		_step(delta)
+		if phase == "replay" or paused or _ended:
+			break
+	if wsg_replay and phase != "replay":
+		wsg_replay.record(clock)
+		_ball_ring.append([clock, ball.position])
+		while _ball_ring.size() > 2 and float(_ball_ring[0][0]) < clock - wsg_replay.seconds:
+			_ball_ring.pop_front()
+		_keep_highlight()
+
+
+## One step of play: the phase, the clock, the AI, everyone's movement and the ball, the camera.
+func _step(delta: float) -> void:
 	var dt := minf(delta, 0.05)
 	phase_t += dt
 	clock += dt
-	_auto_graphics(delta)
 	match phase:
 		"setup":
 			_run_setup(dt)
@@ -290,7 +314,7 @@ func _process(delta: float) -> void:
 			u.follow(ball.court_pos())
 		u.advance(dt, ball.court_pos())
 	ball.step(dt)
-	if not demo and phase in ["setup", "live", "goal"]:
+	if heard() and phase in ["setup", "live", "goal"]:
 		_movement_sounds(dt)
 	if Game.test_quarter_s > 0.0 and OS.has_feature("web") and Engine.get_process_frames() % 15 == 0 and Game.current == self:
 		# A browser playtest reads the match's state from the page (tools/playtest/play.js).
@@ -300,12 +324,6 @@ func _process(delta: float) -> void:
 	cam.end_dir = team_dir(maxi(user_team, 0))
 	# At a break the camera looks over to the huddles by the benches.
 	cam.track(Vector2(0.0, Court.HALF_W) if phase == "break" else ball.court_pos(), 0 if phase == "break" else att, dt)
-	if wsg_replay:
-		wsg_replay.record(clock)
-		_ball_ring.append([clock, ball.position])
-		while _ball_ring.size() > 2 and float(_ball_ring[0][0]) < clock - wsg_replay.seconds:
-			_ball_ring.pop_front()
-		_keep_highlight()
 
 
 func _clock_runs() -> bool:
@@ -458,7 +476,7 @@ func _give(pl: Player, caught := true) -> void:
 	pl.stopped = true
 	pl.set_act("hold")
 	pl.look_on = false
-	if caught and not demo:
+	if caught and heard():
 		Sfx.play_at("catch", ball.pos, -6.0, randf_range(0.94, 1.06))
 	if caught and pl.team == user_team and not demo:
 		Game.haptic("catch")
@@ -593,7 +611,7 @@ func _arrive() -> void:
 		last_touch = to.team
 		ball.loose(ball.pos, v)
 		stats[String(to.data.id)].turnovers += 1
-		if not demo:
+		if heard():
 			Sfx.react("groan", -16.0)
 		game_event.emit("fumble", {"by": to.pos})
 		pass_info = {}
@@ -669,7 +687,7 @@ func _gain(pl: Player, how: String) -> void:
 	pl.act_up = 0.6
 	if pl.team == user_team and not demo:
 		Game.haptic("intercept")
-	if not demo:
+	if heard():
 		Sfx.react("ooh", -10.0)
 	game_event.emit("gain", {"by": pl.pos, "team": pl.team, "how": how})
 
@@ -787,7 +805,7 @@ func _run_shot(dt: float) -> void:
 		shot_info = {"rebound": true}
 		_miss_clock = clock - 0.95 - float(pl.p.distance_to(Vector2(ring.x, ring.z))) * 0.03 - 0.75
 		Sfx.play_at("rim", ring, -6.0)
-		if not demo:
+		if heard():
 			Sfx.react("groan", -12.0)
 		game_event.emit("miss", {"by": pl.pos, "team": pl.team})
 
@@ -823,7 +841,7 @@ func _goal(pl: Player, value: int) -> void:
 		if u.controls(Court.goal_post(pl.dir)):
 			u.call_signal("goal", pl.dir)
 	Sfx.play_at("swish", Court.ring_centre(pl.dir), -4.0)
-	if not demo:
+	if heard():
 		Sfx.react("cheer", -6.0 if pl.team == 0 else -9.0)
 		# The umpire's whistle for the goal, a beat after the net.
 		get_tree().create_timer(0.45, false).timeout.connect(_goal_whistle)
@@ -1022,7 +1040,7 @@ func _end_period() -> void:
 				pl.set_act("cheer" if score[t] > score[1 - t] else "ready")
 		return
 	_enter("break")
-	if not demo:
+	if heard():
 		Sfx.react("applause", -10.0)
 	_break_skip = false
 	_break_next = nxt
@@ -1039,6 +1057,8 @@ func _end_period() -> void:
 ## there, after HUDDLE_MIN at least and HUDDLE_S at most.
 const HUDDLE_S := 6.5
 const HUDDLE_MIN := 2.5
+## Seconds Watch AI's interval screen stays up before play goes on by itself (at the match's speed).
+const WATCH_BREAK_S := 7.0
 
 
 func _run_break(_dt: float) -> void:
@@ -1048,6 +1068,8 @@ func _run_break(_dt: float) -> void:
 		_break_shown = true
 		hud.show_break(q, _break_next)
 	var demo_wait := HUDDLE_S if bool(config.get("attract", false)) else 0.6
+	if watch:
+		demo_wait = HUDDLE_S + WATCH_BREAK_S   # Watch AI: the huddles, then the interval screen a while (Continue skips)
 	if demo and phase_t > demo_wait or _break_skip:
 		_next_period()
 
@@ -1136,7 +1158,7 @@ func _end() -> void:
 	_ended = true
 	var result := result_dict()
 	finished.emit(result)
-	if not demo and is_inside_tree() and Game.current == self:
+	if (not demo or watch) and is_inside_tree() and Game.current == self:
 		Game.on_match_finished(result)
 
 
@@ -1266,6 +1288,19 @@ func button_set() -> Array:
 
 # ---------------------------------------------------------------- pause, back, graphics
 
+## Whether the match is heard: yours, and Watch AI's (not the home screen's or a test's AI v AI match).
+func heard() -> bool:
+	return not demo or watch
+
+
+## Watch AI's speed: 1 or 2 play steps a frame (the HUD's chip, the pause menu).
+func set_speed(n: int) -> void:
+	if not watch:
+		return
+	speed = clampi(n, 1, 2)
+	game_event.emit("speed", {"speed": speed})
+
+
 func set_paused(p: bool) -> void:
 	paused = p
 	Sfx.pause(p)
@@ -1285,15 +1320,16 @@ func on_back() -> void:
 
 func quit_to_menu() -> void:
 	paused = false
+	speed = 1
 	Sfx.pause(false)
 	Game.goto_menu()
 
 
 ## The auto graphics level (WsgAutoTier, the shared foundation's): all match long, two windows of stutter in a row
 ## (slow, or hitching) take a level off at once; again later if it still stutters. In the game itself only (the
-## tests and tools play at fixed rates or draw in software), never in an AI v AI match.
+## tests and tools play at fixed rates or draw in software), never in an AI v AI match but Watch AI's.
 func _auto_graphics(delta: float) -> void:
-	if demo or not bool(Game.settings.get("auto_gfx", true)) or Game.main == null or Game.main.scene_file_path != "res://main.tscn":
+	if demo and not watch or not bool(Game.settings.get("auto_gfx", true)) or Game.main == null or Game.main.scene_file_path != "res://main.tscn":
 		return
 	if _auto_gfx.feed(delta) and int(Game.settings.graphics) > Game.GFX_LOW:
 		lower_graphics()

@@ -32,3 +32,6 @@
 - Club season **Sisini ni Kalabu** (loan); table **ivakatagedegede** (as in STAGE_DONE); round **raundi**; grand final **fainala levu**; premiers **Dauqaqa ni liki!** (liki as in RULES_DZ).
 - Tap **tabaka** (as in QUIT_SURE), stick **joystick**, dashed ring **mama ni laini motumotu**, banner **ivakatakilakila e cake**. 0.9 m with a decimal point.
 - Check first: `MENU_LEAGUE` "Sisini" (yabaki is an alternative), `COACH` "Vakatavulica", `UMP_STANDARD` "Vakamatau", `UMP_REAL` "Wiliwili dina", `CALL_ESCALATE`/`CALL_ADVANCE`, and `LEAGUE_TABLE` (a long word for a tab or header; "Teveli" would be shorter).
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Watch **Raica**; home/away **Itaukei / Vulagi** (hosts / guests); speed **Totolo**; records **ivolatukutuku** as in MENU_RECORDS.

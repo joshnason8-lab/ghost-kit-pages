@@ -1,7 +1,7 @@
 extends Control
 ## The home screen, laid out as a netball court seen from above. Its three thirds are the ways in: the centre third,
-## with the centre circle where every passage of play starts, is Quick Match; one goal third the Nations Cup; the
-## other How to Play. Over the court hangs the bib rail: the seven bibs, GS to GK, the way into the game itself:
+## with the centre circle where every passage of play starts, is Quick Match; one goal third the Nations Cup and the
+## Club Season, one above the other; the other How to Play and, below it, Watch AI. Over the court hangs the bib rail: the seven bibs, GS to GK, the way into the game itself:
 ## tap one to play that position all match, or Team to play whoever has the ball. A real match plays behind it all
 ## (Medium and High graphics; the still court on Low). The globe changes the language; seven taps on the version
 ## turn the developer overlay on.
@@ -110,7 +110,16 @@ func _build_ui() -> void:
 	comps.add_child(CourtThird.make(tr("MENU_LEAGUE"), league_desc, "goal_left_bottom", func(): _go("res://ui/league_screen.gd")))
 	court.add_child(comps)
 	court.add_child(CourtThird.make(tr("MENU_QUICK"), tr("MENU_QUICK_DESC"), "centre", func(): _go("res://ui/quick_setup.gd")))
-	court.add_child(CourtThird.make(tr("MENU_HOWTO"), tr("MENU_HOWTO_DESC"), "goal_right", func(): _go("res://ui/howto_screen.gd")))
+	# The right goal third: How to Play above, Watch AI (an AI v AI match to watch) below, the same white line between.
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", -2)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(CourtThird.make(tr("MENU_HOWTO"), tr("MENU_HOWTO_DESC"), "goal_right_top", func(): _go("res://ui/howto_screen.gd")))
+	var watch := CourtThird.make(tr("MENU_WATCH"), tr("MENU_WATCH_DESC"), "goal_right_bottom", func(): _go("res://ui/watch_setup.gd"))
+	watch.name = "WatchAI"
+	right.add_child(watch)
+	court.add_child(right)
 	# The version: seven taps turn the developer overlay on or off.
 	var ver := UI.label(tr("VERSION_N").format({"v": String(ProjectSettings.get_setting("application/config/version"))}), "MutedLabel", 14)
 	ver.mouse_filter = Control.MOUSE_FILTER_STOP

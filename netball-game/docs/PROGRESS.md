@@ -102,6 +102,29 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   copies and the 32-person crowd), the whistle and the Medium/High sounds in `_sounds`. Low's screenshots before and
   after: the play shots pixel-identical, the others differ only in the umpires' stride (driven by the wall clock),
   the players' close-ups identical.
+- Watch AI (the owner's request, after 0.8.3-beta): a full AI v AI match to watch, from the home screen. The right
+  goal third is now halved like the left one (How to Play above, **Watch AI** below, the same white line between;
+  `CourtThird` kinds `goal_right_top`/`_bottom`). Its team sheet is Quick Match's (`ui/watch_setup.gd` extends
+  `ui/quick_setup.gd` with `watch`): Home and Away by flag from the same team grid, the venue and the quarters (kept in
+  their own settings, `watch_*`, so Quick Match's are untouched), a note that it counts for nothing, and Watch.
+  `Game.watch_config`: `mode "watch"`, `user_team -1`, `demo` and `watch`, the team card. In the match (`Match.watch`):
+  the TV camera whatever the setting, with the AI v AI close shot of the post for every shot and the replays (Medium
+  and High with the clip library); the scoreboard and clock, the name tags; its sound (venue, crowd, catches, steps,
+  whistles: `Match.heard()`; the home screen's match stays silent); no touch controls, no coach, no buzz; the interval
+  screen after the huddles, going on by itself after 7 s (Continue skips); the result screen with the box score, Back
+  home. `Game.on_match_finished` records nothing for it (no records, cup or season). The HUD has the pause button and,
+  beside it, a speed chip (fast-forward mark and "1×"/"2×", lit at 2×); the pause menu has Speed 1×/2× in place of
+  Move buttons. **2× is the match's own step scale**: two of its steps a frame, each exactly the step it takes at 1×
+  (the same dt, cut at 0.05 s), so the AI, the players and their bodies' clips, the ball, the umpires, the clock and
+  the sounds on court all run together and play as at 1× (Engine.time_scale is never touched: at 30 fps it would have
+  run steps of 0.067 s, cut to 1.5×). A replay keeps its own slowed pace (a tap skips it); the bodies are kept for it
+  once a frame; the auto graphics read the real frame time once a frame. Leaving the match goes home at 1×; a new one
+  starts at 1×. 7 new strings in all 19 languages (346 each); the Chinese font re-cut by tools/subset_fonts.py for
+  看 and 客 (the other fonts left as they were: their characters were all there). Tests: `_watch_ai` (menu entry, team sheet, AI v AI with
+  no controls, scoreboard, chip; 2× doubles game time a frame and back; pause holds, Back resumes; Leave goes home;
+  a 5 s-quarter match at 2× shows its interval screen and reaches the result, records untouched; the keys translated
+  in every language), watch_setup in `_screens`, the input test's pages and the fit audit (`watch_setup`, `watch_card`,
+  `watch_play`, `watch_play_2x`, `watch_pause`, `watch_break`, `watch_result`); screenshots part `watch`.
 - 0.8.2-beta — soak test (Play Store readiness: crashes, freezes, stalls, dead ends).
   `tests/soak.gd` (soak.tscn), args `graphics inputs matches quarter_s [seed=N stall=S parts=...]`: Back (Esc and
   the phone's button) on every screen and in a match (paused, team card, moving buttons, rolling changes, interval,

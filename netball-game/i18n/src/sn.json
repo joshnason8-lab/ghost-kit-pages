@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Rawundi {n} pa{of}",
   "STAGE_SEASON": "Mwaka",
   "STAGE_GRAND_FINAL": "Fainari huru",
-  "REC_TITLES": "Mikombe yeMwaka weKirabhu"
+  "REC_TITLES": "Mikombe yeMwaka weKirabhu",
+  "MENU_WATCH": "Tarisa AI",
+  "MENU_WATCH_DESC": "Timu mbiri dzeAI dzinotamba mutambo wese. Gara pasi utarise.",
+  "WATCH_HOME": "Vepamba",
+  "WATCH_AWAY": "Vashanyi",
+  "WATCH_GO": "Tarisa",
+  "WATCH_NOTE": "AI inotambira timu dzose dziri mbiri. Mutambo uyu haunyorwe munhoroondo yako.",
+  "SPEED": "Kumhanya"
 }

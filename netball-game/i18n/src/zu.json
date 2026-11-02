@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Umzuliswano {n} ku-{of}",
   "STAGE_SEASON": "Isizini",
   "STAGE_GRAND_FINAL": "Owamanqamu omkhulu",
-  "REC_TITLES": "Izicoco Zesizini Yamaklabhu"
+  "REC_TITLES": "Izicoco Zesizini Yamaklabhu",
+  "MENU_WATCH": "Buka i-AI",
+  "MENU_WATCH_DESC": "Amaqembu amabili e-AI adlala umdlalo ophelele. Hlala phansi ubuke.",
+  "WATCH_HOME": "Ekhaya",
+  "WATCH_AWAY": "Abavakashi",
+  "WATCH_GO": "Buka",
+  "WATCH_NOTE": "I-AI idlala womabili amaqembu. Lo mdlalo awubalwa kumarekhodi akho.",
+  "SPEED": "Ijubane"
 }

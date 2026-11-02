@@ -33,3 +33,6 @@ South African orthography (wa, ya, tshwaya, jwang). Lesotho orthography differs 
 - Club season **Sehla sa Ditlelabo**; table **tafole**; round **potoloho / dipotoloho**; grand final **final e kgolo** (follows STAGE_FINAL "Final"); finals stay **makgaolakgang**; premiers **Ditshampione!** (same as CUP_WON); titles **ditlotla**.
 - Tap **tobetsa**; stick kept as **joystick** (as in CTRL_* texts); mark a player **lebela**. 0.9 m with a decimal point, as elsewhere in this file.
 - Check first: `ROUND_N` "Potoloho" (I am unsure of the usual word for a league round), `MENU_LEAGUE` "Sehla", `CALL_ESCALATE` "E nyollotswe", `UMP_FEWER` "Melodi e fokolang", `UMP_STANDARD` "Ka tlwaelo", `LEAGUE_TABLE` "Tafole", `COACH_FOOTWORK` "e phaphamatsa", `REC_TITLES`.
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Watch **Shebella**; home/away **Ba hae / Baeti** (visitors); speed **Lebelo**. Check first: `WATCH_NOTE` ("direkotong tsa hao").

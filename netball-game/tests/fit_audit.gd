@@ -5,7 +5,7 @@ extends Node
 ## Also the match buttons' labels against their circles. Headless, so it is quick:
 ##   godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- OUT.jsonl [langs] [WxH,...] [parts]
 ## langs: en,af,zu,... (all by default). WxH: the phone's screen in pixels (layouts depend only on its shape: 16:9,
-## 19.5:9 (a Galaxy A16), 20:9 with a camera cut-out, and a 4:3 tablet by default). parts: menus,cup,league,match.
+## 19.5:9 (a Galaxy A16), 20:9 with a camera cut-out, and a 4:3 tablet by default). parts: menus,cup,league,match,watch.
 ## Each problem is a line of JSON; a summary is printed at the end. Exits 1 if anything was found.
 
 const LANGS := ["en", "af", "zu", "xh", "st", "tn", "ny", "lg", "sn", "sw", "ms", "zh", "si", "ta", "cy", "mi", "to", "sm", "fj"]
@@ -14,7 +14,7 @@ const SKIP_CHARS := [0x20, 0x09, 0x0A, 0xA0, 0xAD, 0x200B, 0x200C, 0x200D, 0x206
 var out_path := "user://fit_audit.jsonl"
 var langs: Array = LANGS
 var sizes: Array = [Vector2i(1280, 720), Vector2i(2340, 1080), Vector2i(2400, 1080), Vector2i(1600, 1200)]
-var parts: Array = ["menus", "cup", "league", "match"]
+var parts: Array = ["menus", "cup", "league", "match", "watch"]
 var lang := "en"
 var res := ""
 var where := ""
@@ -461,6 +461,9 @@ func _menus() -> void:
 	Game.show_screen("res://ui/quick_setup.gd")
 	await frames(10)
 	await audit("quick_setup")
+	Game.show_screen("res://ui/watch_setup.gd")
+	await frames(10)
+	await audit("watch_setup")
 	# The records as a keen player's would be (an empty book shows only a line, and hid a layout bug).
 	var kept_records: Dictionary = Game.records.duplicate(true)
 	Game.records = {"played": 128, "won": 71, "drawn": 6, "lost": 51, "goals": 4123, "best_margin": 38,
@@ -582,5 +585,39 @@ func _match() -> void:
 		m.hud.show_card(half)
 		await frames(15)
 		await audit("match_card_half" if half else "match_card")
+	Game.goto_menu()
+	await frames(4)
+
+
+## Watch AI: the match with its speed chip (1x and 2x), its pause menu with the speed, its interval screen, its team
+## card, and its result screen.
+func _watch() -> void:
+	Game.start_match(Game.watch_config("TTO", "NAM", "arena", 15).merged({"seed": 3}, true))
+	await frames(20)
+	await audit("watch_card")
+	var m: Node = Game.current
+	if m.hud.card:
+		m.hud.card.close()
+	await frames(150)
+	await audit("watch_play")
+	m.set_speed(2)
+	await frames(4)
+	await audit("watch_play_2x")
+	m.set_paused(true)
+	await frames(6)
+	await audit("watch_pause")
+	m.set_paused(false)
+	m.phase = "break"
+	m.phase_t = 0.0
+	m._break_shown = true
+	m.hud.show_break(1, 2)
+	await frames(6)
+	await audit("watch_break")
+	var r := fake_result()
+	r.config = Game.watch_config("TTO", "ZIM", "arena", 5)
+	r.user_team = -1
+	Game.show_screen("res://ui/result_screen.gd", {"result": r})
+	await frames(12)
+	await audit("watch_result")
 	Game.goto_menu()
 	await frames(4)

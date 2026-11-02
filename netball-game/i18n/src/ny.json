@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Rawundi {n} mwa {of}",
   "STAGE_SEASON": "Nyengo",
   "STAGE_GRAND_FINAL": "Fainolo yaikulu",
-  "REC_TITLES": "Zikho za Nyengo ya Makalabu"
+  "REC_TITLES": "Zikho za Nyengo ya Makalabu",
+  "MENU_WATCH": "Onerani AI",
+  "MENU_WATCH_DESC": "Matimu awiri a AI akusewera masewera athunthu. Khalani pansi muonere.",
+  "WATCH_HOME": "Akunyumba",
+  "WATCH_AWAY": "Alendo",
+  "WATCH_GO": "Onerani",
+  "WATCH_NOTE": "AI ikusewera matimu onse awiri. Masewerawa sawerengedwa mu mbiri yanu.",
+  "SPEED": "Liwiro"
 }

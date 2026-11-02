@@ -29,3 +29,6 @@
 - Club season **Paka ya Ditlelabo** (paka = period/season); table **tafole**; round **potologo / dipotologo**; grand final **final e kgolo**; finals stay **difinale**; premiers **Bafenyi!** (same as CUP_WON); titles **ditlotla**. Elite match: **motshameko wa baitseanape**.
 - Tap **tobetsa**; stick kept as **joystick**; mark a player **disa**. 0.9 m with a decimal point, as elsewhere in this file.
 - Check first: `MENU_LEAGUE` / `STAGE_SEASON` "Paka" (alternative "Sešene"), `ROUND_N` "Potologo", `UMP_FEWER` "Diphala di le dinnye", `CALL_ESCALATE` "E godisitswe", `COACH_DEFEND` "o mo disa", `COACH_TIPS_NOTE` (long), and again that no Sesotho forms leaked in.
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Watch **Lebelela**; home/away **Ba gae / Baeng** (guests); speed **Lebelo**. Check first: `MENU_WATCH_DESC` "Nna o lebelele".

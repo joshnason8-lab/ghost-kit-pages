@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Taamilosaga {n} o le {of}",
   "STAGE_SEASON": "Le vaitau",
   "STAGE_GRAND_FINAL": "Faʻaiʻuga sili",
-  "REC_TITLES": "Siamupini Vaitau Kalapu"
+  "REC_TITLES": "Siamupini Vaitau Kalapu",
+  "MENU_WATCH": "Matamata le AI",
+  "MENU_WATCH_DESC": "E lua ʻau AI e taʻalo se taʻaloga atoa. Nofo ma matamata.",
+  "WATCH_HOME": "Talimālō",
+  "WATCH_AWAY": "Asiasi",
+  "WATCH_GO": "Matamata",
+  "WATCH_NOTE": "E taʻalo e le AI ʻau uma e lua. E le faitaulia lenei taʻaloga i au faʻamaumauga.",
+  "SPEED": "Saoasaoa"
 }

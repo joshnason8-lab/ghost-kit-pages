@@ -35,3 +35,6 @@ Orthography: ʻokina written as U+02BB (ʻ) and macrons used (fā, Mātū, faiga
 - Club season **Vaitau Kalapu**; table **laulau**; round **taamilosaga**; grand final **faʻaiʻuga sili**; premiers **Siamupini o le liki!** (liki as in RULES_DZ).
 - Tap **paʻi** (as in QUIT_SURE), stick **joystick** (as in CTRL_PASS_TEXT), dashed ring **mama vaevaeina**, banner **faʻailoga i luga**. 0.9 m with a decimal point.
 - Check first: `LEAGUE_ABOUT` ("feagai le tasi ma le isi i le tasi le taimi" for "play each other once"), `UMPIRING`, `UMP_REAL`, `CALL_ESCALATE`/`CALL_ADVANCE`, `LEAGUE_TABLE` "Laulau", and `ROUND_N_OF` (taamilosaga is long; check it fits the match header).
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Watch **Matamata**; home/away **Talimālō / Asiasi** (host / visiting); speed **Saoasaoa**.

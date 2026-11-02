@@ -31,3 +31,6 @@
 - CALL_ESCALATE "Imepandishwa" in the umpiring sense.
 - LEAGUE_ABOUT uses "Uingereza" for England, as TEAM_ENG does (see the earlier note).
 - REC_TITLES "Mataji ya Msimu wa Klabu".
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI** (common in Swahili tech writing; "akili bandia" is the long form). Watch **Tazama**; home/away **Nyumbani / Ugenini**, as Swahili football results say; speed **Kasi**.

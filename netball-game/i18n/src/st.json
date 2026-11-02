@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Potoloho {n} ho {of}",
   "STAGE_SEASON": "Sehla",
   "STAGE_GRAND_FINAL": "Final e kgolo",
-  "REC_TITLES": "Ditlotla tsa Sehla sa Ditlelabo"
+  "REC_TITLES": "Ditlotla tsa Sehla sa Ditlelabo",
+  "MENU_WATCH": "Shebella AI",
+  "MENU_WATCH_DESC": "Dihlopha tse pedi tsa AI di bapala papadi e felletseng. Dula o shebelle.",
+  "WATCH_HOME": "Ba hae",
+  "WATCH_AWAY": "Baeti",
+  "WATCH_GO": "Shebella",
+  "WATCH_NOTE": "AI e bapalla dihlopha ka bobedi. Papadi ena ha e balwe direkotong tsa hao.",
+  "SPEED": "Lebelo"
 }

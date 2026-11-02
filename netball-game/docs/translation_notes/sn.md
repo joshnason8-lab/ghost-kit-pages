@@ -35,3 +35,6 @@
 - LEAGUE_WON "Makunda ligi!" and LEAGUE_CHAMPIONS "{team}: shasha".
 - CALL_ESCALATE "Yakwidziridzwa" (about 1.35x English) and CALL_ADVANCE.
 - COACH_PASS / COACH_DEFEND length in the coach box.
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI** ("timu dzeAI"). Watch **Tarisa**; home/away **Vepamba / Vashanyi** (visitors); speed **Kumhanya**. Check first: `SPEED` "Kumhanya" (literally running fast).

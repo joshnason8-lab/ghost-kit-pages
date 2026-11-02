@@ -32,3 +32,6 @@
 - CALL_ESCALATE "ඉහළ නැංවිණි" and CALL_ADVANCE "පාස් එක ඉදිරියට".
 - ROUND_N_OF "වටය {n} / {of}" (a slash rather than a sentence).
 - COACH_INTERCEPT "සගිය" (feminine team-mate) and COACH_DEFEND "ඇයව රකින්න" for "mark her".
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Title "AI තරගය බලන්න" (watch the AI match); home/away **සත්කාරක / අමුත්තන්** (hosts / guests); speed **වේගය**. Check first: the home/away pair as labels over a team.

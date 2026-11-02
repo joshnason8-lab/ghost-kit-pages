@@ -49,6 +49,7 @@ func _ready() -> void:
 	await _sounds_in_play()
 	await _low_unchanged()
 	await _venue_study()
+	await _watch_ai()
 	FoundationLink.off = false
 	await _foundation(foundation_ok)
 	await _replays()
@@ -76,7 +77,7 @@ func frames(n: int) -> void:
 func _screens() -> void:
 	var screens := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/settings_screen.gd", "res://ui/howto_screen.gd",
 		"res://ui/records_screen.gd", "res://ui/cup_screen.gd", "res://ui/league_screen.gd", "res://ui/licences_screen.gd",
-		"res://ui/help_screen.gd", "res://ui/privacy_screen.gd"]
+		"res://ui/help_screen.gd", "res://ui/privacy_screen.gd", "res://ui/watch_setup.gd"]
 	for pair in Game.LANGUAGES:
 		Game.settings.language = pair[0]
 		TranslationServer.set_locale(pair[0])
@@ -1711,3 +1712,163 @@ func _replays() -> void:
 	m.queue_free()
 	await frames(2)
 	Game.settings.graphics = was
+
+
+# ---------------------------------------------------------------- Watch AI
+
+## Watch AI (the owner's request): the home screen's entry opens its team sheet; Watch starts an AI v AI match with
+## nobody's buttons, the scoreboard and clock, the broadcast camera; 2x takes two of the match's steps a frame (game
+## time twice as fast, each step as at 1x) and back; pause holds it and Back resumes it; leaving goes home at 1x; a
+## match with short quarters reaches the result screen and counts in no records; its words are in every language.
+func _watch_ai() -> void:
+	var keep_records: Dictionary = Game.records.duplicate(true)
+	var had_file := FileAccess.file_exists(Game.RECORDS_PATH)
+	var file_before := FileAccess.get_file_as_string(Game.RECORDS_PATH) if had_file else ""
+	Game.goto_menu()
+	await frames(4)
+	var menu: Node = Game.current
+	var entry: CourtThird = menu.find_child("WatchAI", true, false)
+	check(entry != null and entry.is_visible_in_tree(), "watch: the home screen has a Watch AI entry")
+	var kinds := []
+	for ct in menu.find_children("*", "CourtThird", true, false):
+		kinds.append((ct as CourtThird).kind)
+	check("goal_left_top" in kinds and "goal_left_bottom" in kinds and "centre" in kinds and "goal_right_top" in kinds,
+		"watch: the home screen keeps its thirds, the competitions halved (%s)" % [kinds])
+	if entry == null:
+		return
+	var words := ""
+	for l in entry.find_children("*", "Label", true, false):
+		words += (l as Label).text + " "
+	check(words.contains(tr("MENU_WATCH")), "watch: the entry says %s (%s)" % [tr("MENU_WATCH"), words])
+	entry.pressed.emit()
+	await frames(4)
+	var setup: Node = Game.current
+	check(String(setup.get_script().resource_path).ends_with("watch_setup.gd") and setup.watch, "watch: the entry opens Watch AI's team sheet")
+	var go := _button_with(setup, tr("WATCH_GO"))
+	check(go != null, "watch: the team sheet has Watch")
+	if go == null:
+		return
+	go.pressed.emit()
+	await frames(3)
+	var m = Game.current
+	check(m is Match, "watch: Watch starts a match")
+	if not (m is Match):
+		return
+	check(m.user_team == -1 and m.demo and m.watch and String(m.config.mode) == "watch", "watch: AI v AI (user_team %d)" % m.user_team)
+	check(m.controls == null and m.find_children("*", "TouchControls", true, false).is_empty() and m.me == null, "watch: no touch controls, nobody to play")
+	check(m.hud != null and m.hud.coach == null, "watch: the HUD, no coach's tips")
+	check(m.cam.mode == Game.CAM_TV, "watch: the broadcast camera")
+	check(m.heard(), "watch: the match is heard (the home screen's is not)")
+	if m.hud.card:
+		m.hud.card.close()
+	await frames(20)
+	check(m.hud._board.is_visible_in_tree() and m.hud._clock_l.is_visible_in_tree() and m.hud._clock_l.text.contains(":"),
+		"watch: the scoreboard and clock show (%s)" % m.hud._clock_l.text)
+	var chip: Button = m.hud.speed_button()
+	check(chip != null and chip.is_visible_in_tree() and m.hud.pause_button().is_visible_in_tree(), "watch: the speed chip and the pause button show")
+	var view := Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size)
+	check(chip != null and view.encloses(chip.get_global_rect()) and not chip.get_global_rect().intersects(m.hud.pause_button().get_global_rect())
+		and not chip.get_global_rect().intersects(m.hud._board.get_global_rect()), "watch: the chip on screen, clear of the pause button and scoreboard")
+	if chip == null:
+		return
+	await _wait_live(m)
+	# 1x, 2x and back: game time a frame.
+	var c0: float = m.clock
+	await frames(30)
+	var d1: float = m.clock - c0
+	chip.pressed.emit()
+	await frames(1)
+	check(m.speed == 2 and m.hud._speed_l.text == "2×" and chip.button_pressed, "watch: the chip turns 2x on")
+	c0 = m.clock
+	var t0: float = m.time_left
+	await frames(30)
+	var d2: float = m.clock - c0
+	check(absf(d2 - 2.0 * d1) < 0.05 and d1 > 0.5, "watch: 2x doubles game time a frame (%.2f s, then %.2f s in 30 frames)" % [d1, d2])
+	check(Engine.time_scale == 1.0, "watch: 2x leaves the engine's time scale alone")
+	check(t0 - m.time_left > 1.5 or m.phase != "live", "watch: the match clock runs at 2x too (%.2f s)" % [t0 - m.time_left])
+	chip.pressed.emit()
+	await frames(1)
+	c0 = m.clock
+	await frames(30)
+	check(m.speed == 1 and absf(m.clock - c0 - d1) < 0.05 and m.hud._speed_l.text == "1×", "watch: and back to 1x (%.2f s)" % [m.clock - c0])
+	# Pause, the pause menu's speed, and resume (the pause button; Back).
+	m.hud.pause_button().pressed.emit()
+	await frames(2)
+	check(m.paused and m.hud._pause != null and not chip.is_visible_in_tree(), "watch: the pause button pauses it")
+	c0 = m.clock
+	await frames(10)
+	check(m.clock == c0, "watch: nothing moves while paused")
+	var sp: Node = m.hud._pause.find_child("Speed", true, false)
+	check(sp != null and _button_with(m.hud._pause, tr("MOVE_BUTTONS")) == null, "watch: the pause menu has the speed, not Move buttons")
+	if sp:
+		_button_with(sp, "2×").pressed.emit()
+		await frames(1)
+		check(m.speed == 2 and m.hud._speed_l.text == "2×", "watch: 2x from the pause menu")
+	Game.go_back()
+	await frames(2)
+	check(not m.paused and chip.is_visible_in_tree(), "watch: Back resumes it")
+	c0 = m.clock
+	await frames(10)
+	check(m.clock > c0 + 0.5, "watch: it plays on after resuming, at 2x (%.2f s in 10 frames)" % [m.clock - c0])
+	# Leaving: the pause menu's Leave match (tapped twice) goes home; the next match starts at 1x.
+	m.set_paused(true)
+	await frames(2)
+	var quit := _button_with(m.hud._pause, tr("QUIT_MATCH"))
+	quit.pressed.emit()
+	quit.pressed.emit()
+	await frames(3)
+	check(String(Game.current.get_script().resource_path).ends_with("main_menu.gd") and Engine.time_scale == 1.0,
+		"watch: Leave match goes home, the engine at 1x")
+	# A whole match, short quarters at 2x: the interval screen comes up and goes by itself; the result screen at the
+	# end with the box score; Back to the home screen; no records.
+	Game.test_quarter_s = 5.0
+	setup = Game.show_screen("res://ui/watch_setup.gd")
+	await frames(3)
+	_button_with(setup, tr("WATCH_GO")).pressed.emit()
+	Game.test_quarter_s = 0.0
+	await frames(2)
+	m = Game.current
+	check(m is Match and m.speed == 1 and m.watch, "watch: a new match starts at 1x")
+	m.set_speed(2)
+	var break_shown := false
+	var guard := 0
+	while guard < 6000 and is_instance_valid(m) and Game.current == m:
+		await frames(1)
+		guard += 1
+		break_shown = break_shown or (m.phase == "break" and m.hud._break != null)
+	var r: Node = Game.current
+	check(break_shown, "watch: the interval screen shows between quarters")
+	var on_result: bool = r != null and String(r.get_script().resource_path).ends_with("result_screen.gd")
+	check(on_result, "watch: the match reaches the result screen (%d frames)" % guard)
+	if on_result:
+		var res: Dictionary = r.result
+		check(int(res.user_team) == -1 and res.q_scores.size() >= 4, "watch: a whole match's result (%s)" % [res.score])
+		var heads := []
+		for l in r.find_children("*", "Label", true, false):
+			heads.append((l as Label).text)
+		check(tr("BOX_FEEDS") in heads and tr("BOX_INT") in heads, "watch: the result screen has the box score")
+		Game.go_back()
+		await frames(3)
+		check(String(Game.current.get_script().resource_path).ends_with("main_menu.gd"), "watch: Back from the result goes home")
+	check(Game.records == keep_records and FileAccess.file_exists(Game.RECORDS_PATH) == had_file
+		and (not had_file or FileAccess.get_file_as_string(Game.RECORDS_PATH) == file_before), "watch: the match is in no records")
+	# The words, in every language (translated: none left in English).
+	var keys := ["MENU_WATCH", "MENU_WATCH_DESC", "WATCH_HOME", "WATCH_AWAY", "WATCH_GO", "WATCH_NOTE", "SPEED"]
+	TranslationServer.set_locale("en")
+	var en := {}
+	for k in keys:
+		en[k] = tr(k)
+	for pair in Game.LANGUAGES:
+		TranslationServer.set_locale(pair[0])
+		for k in keys:
+			var s := tr(k)
+			check(s != k and s != "" and (pair[0] == "en" or s != String(en[k])), "watch: %s in %s (%s)" % [k, pair[0], s])
+	TranslationServer.set_locale("en")
+
+
+## The first button under n whose text is t.
+func _button_with(n: Node, t: String) -> Button:
+	for b in n.find_children("*", "Button", true, false):
+		if (b as Button).text == t:
+			return b
+	return null

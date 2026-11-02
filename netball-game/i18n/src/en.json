@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Round {n} of {of}",
   "STAGE_SEASON": "The season",
   "STAGE_GRAND_FINAL": "Grand final",
-  "REC_TITLES": "Club Season titles"
+  "REC_TITLES": "Club Season titles",
+  "MENU_WATCH": "Watch AI",
+  "MENU_WATCH_DESC": "Two AI teams play a full match. Sit back and watch.",
+  "WATCH_HOME": "Home",
+  "WATCH_AWAY": "Away",
+  "WATCH_GO": "Watch",
+  "WATCH_NOTE": "The AI plays both teams. The match doesn't count in your records.",
+  "SPEED": "Speed"
 }

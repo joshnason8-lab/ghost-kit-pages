@@ -35,3 +35,6 @@
 - STAGE_SEASON "常规赛" (regular season) for "The season".
 - LEAGUE_WON "联赛冠军！" ("league champions"): Australian "Premiers" has no direct equivalent.
 - UMPIRING "判罚尺度" as a settings label.
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). "观看 AI 对战" (watch the AI play each other); home/away **主队 / 客队**; Watch **观看**; speed **速度**.

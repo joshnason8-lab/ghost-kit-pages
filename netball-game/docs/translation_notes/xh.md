@@ -31,3 +31,6 @@
 - Club season **Isizini Yeeklabhu**; table **itheyibhile**; round **umjikelo**; grand final **owamagqibela omkhulu**; premiers **Iintshatsheli!** (same as CUP_WON, kept short for the large title); titles **iitayitile**.
 - Tap **cofa** (as in TEAM_CHANGES_NOTE); post **ipali**; banner **ibhena**; mark a player **linda**. 0,9 m with decimal comma. LEAGUE_ABOUT reuses the CUP_ABOUT wording, so the amanqaku (goals/points) ambiguity carries over.
 - Check first: `CALL_ESCALATE` "Inyuswe", `UMPIRING` "Ukugweba", `UMP_REAL` "Njengokwenyani", `LEAGUE_TABLE` "Itheyibhile", `ROUND_N` "Umjikelo", `REC_TITLES` "Iitayitile", `COACH_DEFEND` "umlinde", and noun-class agreement in the COACH_* tips.
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **i-AI**. Watch **Bukela**; home/away **Ekhaya / Abatyeleli** (visitors); speed **Isantya**. Check first: `MENU_WATCH` "Bukela i-AI".

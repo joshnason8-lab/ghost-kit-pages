@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Raundi {n} mai na {of}",
   "STAGE_SEASON": "Na sisini",
   "STAGE_GRAND_FINAL": "Fainala levu",
-  "REC_TITLES": "Qaqa ni Sisini ni Kalabu"
+  "REC_TITLES": "Qaqa ni Sisini ni Kalabu",
+  "MENU_WATCH": "Raica na AI",
+  "MENU_WATCH_DESC": "Rua na timi ni AI erau qito e dua na veiqati taucoko. Dabe ka raica.",
+  "WATCH_HOME": "Itaukei",
+  "WATCH_AWAY": "Vulagi",
+  "WATCH_GO": "Raica",
+  "WATCH_NOTE": "E qitotaka na AI na rua na timi. Na veiqati oqo e sega ni wili ena nomu ivolatukutuku.",
+  "SPEED": "Totolo"
 }

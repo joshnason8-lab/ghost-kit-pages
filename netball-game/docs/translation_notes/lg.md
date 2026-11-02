@@ -35,3 +35,6 @@
 - CALL_ESCALATE "Kyongezeddwa" and CALL_ADVANCE "Pasi etwaliddwa mu maaso": the umpiring sense may not be clear.
 - UMP_REAL "Nga ddala" and UMP_STANDARD "Ekya bulijjo" as option chips.
 - COACH_PASS and COACH_DEFEND are the longest tips (about 1.1x English); check they fit the coach box.
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Watch **Laba**; home/away **Ab'awaka / Abagenyi** (guests); speed **Sipiidi** (loanword); records **ebyafaayo** as in MENU_RECORDS. Check first: `SPEED` "Sipiidi" vs a Luganda word.

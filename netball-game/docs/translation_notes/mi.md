@@ -26,3 +26,6 @@
 - Club season **Tau Karapu** (tau = season/year); table **tūtohi**; round **rauna**; grand final **whiringa toa nui**; premiers **Toa o te Rīki!** (rīki as in RULES_DZ).
 - Tap **pāwhiria** (as in TEAM_CHANGES_NOTE), stick **rākau**, dashed ring **mowhiti motumotu**, banner **te pae i runga**. 0.9 m with a decimal point.
 - Check first: `UMPIRING` "Te wawao", `UMP_REAL` "Auau tūturu", `CALL_ESCALATE`/`CALL_ADVANCE`, `MENU_LEAGUE` "Tau Karapu" (kaupeka is an alternative for season), `STAGE_GRAND_FINAL`, and `COACH_WHISTLE` (pae for the banner).
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Watch **Mātakitaki**; home/away **Kāinga / Manuhiri**; speed **Tere**. Check first: `MENU_WATCH_DESC` "Noho mai, mātakitaki ai".

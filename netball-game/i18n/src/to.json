@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Takai {n} ʻo e {of}",
   "STAGE_SEASON": "Ko e sīsini",
   "STAGE_GRAND_FINAL": "Fainolo lahi",
-  "REC_TITLES": "Ikuna Sīsini Kalapu"
+  "REC_TITLES": "Ikuna Sīsini Kalapu",
+  "MENU_WATCH": "Mamata ki he AI",
+  "MENU_WATCH_DESC": "Ko e timi AI ʻe ua ʻoku nau vaʻinga ha vaʻinga kakato. Nofo pē ʻo mamata.",
+  "WATCH_HOME": "ʻApi",
+  "WATCH_AWAY": "ʻAʻahi",
+  "WATCH_GO": "Mamata",
+  "WATCH_NOTE": "ʻOku vaʻinga ʻa e AI ʻi he timi ʻe ua. ʻOku ʻikai lau ʻa e vaʻinga ni ʻi hoʻo ngaahi lēkooti.",
+  "SPEED": "Vave"
 }

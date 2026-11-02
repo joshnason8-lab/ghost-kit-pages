@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Umjikelo {n} kwi-{of}",
   "STAGE_SEASON": "Isizini",
   "STAGE_GRAND_FINAL": "Owamagqibela omkhulu",
-  "REC_TITLES": "Iitayitile zeSizini Yeeklabhu"
+  "REC_TITLES": "Iitayitile zeSizini Yeeklabhu",
+  "MENU_WATCH": "Bukela i-AI",
+  "MENU_WATCH_DESC": "Amaqela amabini e-AI adlala umdlalo opheleleyo. Hlala ubukele.",
+  "WATCH_HOME": "Ekhaya",
+  "WATCH_AWAY": "Abatyeleli",
+  "WATCH_GO": "Bukela",
+  "WATCH_NOTE": "I-AI idlala omabini amaqela. Lo mdlalo awubalwa kwiirekhodi zakho.",
+  "SPEED": "Isantya"
 }

@@ -27,3 +27,6 @@
 - Club season **Klubseisoen**; table **Puntelys**; round **rondte** (Rondte {n}); grand final **groot eindstryd**; premiers **Ligakampioene!** (kept distinct from CUP_WON "Kampioene!"); finals stay **eindrondes**.
 - Mark (a player) **merk**; dashed ring **stippelring**; lime ring **lemmetjiegroen ring** as in CTRL_MOVE_TEXT. 0,9 m with decimal comma.
 - Check first: `UMP_REAL` "Ware tempo" (literally "true pace"; "Werklike koers" is the alternative), `CALL_ESCALATE` "Opgeskaal", `UMPIRING` "Skeidsregters", `COACH_DEFEND` "merk haar", `COACH_FOOTWORK` "{lob} lig die bal oor", `LEAGUE_WON` "Ligakampioene!" as a large title.
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI is **KI** (kunsmatige intelligensie), as Afrikaans media write it: "Kyk na KI", "KI-spanne". Home/away sides **Tuis / Besoekers**; Watch **Kyk**; speed **Spoed**. Check first: `MENU_WATCH` "Kyk na KI" as a menu title.

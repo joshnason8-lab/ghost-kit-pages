@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Rownd {n} o {of}",
   "STAGE_SEASON": "Y tymor",
   "STAGE_GRAND_FINAL": "Y brif ffeinal",
-  "REC_TITLES": "Teitlau Tymor Clwb"
+  "REC_TITLES": "Teitlau Tymor Clwb",
+  "MENU_WATCH": "Gwylio'r AI",
+  "MENU_WATCH_DESC": "Dau dîm AI yn chwarae gêm lawn. Eisteddwch yn ôl a gwyliwch.",
+  "WATCH_HOME": "Cartref",
+  "WATCH_AWAY": "Oddi cartref",
+  "WATCH_GO": "Gwylio",
+  "WATCH_NOTE": "Yr AI sy'n chwarae'r ddau dîm. Dydy'r gêm ddim yn cyfrif yn eich recordiau.",
+  "SPEED": "Cyflymder"
 }

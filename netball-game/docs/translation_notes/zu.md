@@ -30,3 +30,6 @@
 - Club season **Isizini Yamaklabhu**; table **ithebula**; round **umzuliswano**; grand final **owamanqamu omkhulu**; premiers **Ompetha!** (same word as CUP_WON, kept short for the large title); titles **izicoco**.
 - Tap **thepha** (as in TEAM_CHANGES_NOTE); post **ipali**; banner **isibhengezo**; mark a player **qapha**. 0,9 m with decimal comma.
 - Check first: `CALL_ESCALATE` and `CALL_ADVANCE` (banner length), `UMPIRING` "Ukwahlulela", `UMP_REAL` "Njengangempela", `LEAGUE_TABLE` "Ithebula", `ROUND_N` "Umzuliswano {n}" (long for a chip), `COACH_FOOTWORK` "{lob} intantisa ibhola", `REC_TITLES` "Izicoco".
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **i-AI** (the loanword with the prefix). Watch **Buka**; home/away sides **Ekhaya / Abavakashi** (visitors); speed **Ijubane**; records **amarekhodi** as in MENU_RECORDS. Check first: `WATCH_AWAY` "Abavakashi".

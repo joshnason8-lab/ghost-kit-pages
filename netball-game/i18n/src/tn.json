@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Potologo {n} ya {of}",
   "STAGE_SEASON": "Paka",
   "STAGE_GRAND_FINAL": "Final e kgolo",
-  "REC_TITLES": "Ditlotla tsa Paka ya Ditlelabo"
+  "REC_TITLES": "Ditlotla tsa Paka ya Ditlelabo",
+  "MENU_WATCH": "Lebelela AI",
+  "MENU_WATCH_DESC": "Ditlhopha tse pedi tsa AI di tshameka motshameko otlhe. Nna o lebelele.",
+  "WATCH_HOME": "Ba gae",
+  "WATCH_AWAY": "Baeng",
+  "WATCH_GO": "Lebelela",
+  "WATCH_NOTE": "AI e tshamekela ditlhopha tsoopedi. Motshameko o ga o balwe mo direkotong tsa gago.",
+  "SPEED": "Lebelo"
 }

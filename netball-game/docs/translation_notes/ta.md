@@ -27,3 +27,6 @@
 - Club season **கழகப் பருவம்** (கழகம் as in DIFF_NORMAL); table **புள்ளிப் பட்டியல்**; round **சுற்று**; grand final **மாபெரும் இறுதி**; premiers **லீக் சம்பியன்கள்!** (லீக் as in RULES_DZ).
 - "Tap" is தொடுங்கள் as in QUIT_SURE; the stick is ஸ்டிக் and the dashed ring புள்ளிக்கோட்டு வளையம். 0.9 மீ with a decimal point.
 - Check first: `UMPIRING` (an alternative is நடுவர் முறை), `CALL_ADVANCE`, `MENU_LEAGUE` (பருவம் vs சீசன் in Sri Lankan sports writing), `LEAGUE_WON`, `STAGE_GRAND_FINAL`, and the length of the COACH_* tips in the 600 px box (Tamil script is wide; `COACH_PASS` and `COACH_DEFEND` are the longest).
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Title "AI போட்டியைப் பார்"; home/away **சொந்த அணி / வருகை அணி**; Watch **பார்**; speed **வேகம்**. Check first: the title's length on the halved home-screen tile.

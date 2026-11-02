@@ -28,3 +28,6 @@
 - Club season **Nyengo ya Makalabu**; table **tebulo**; round **rawundi / marawundi** (loanword, like fainolo, kalabu); grand final **fainolo yaikulu**; finals stay **mafainolo**; premiers **Akatswiri!** (same as CUP_WON); titles **zikho** (trophies). Elite match: **masewera apamwamba**.
 - Tap **dinani**; stick kept as **joystick**; mark a player **kulondera**. Polite plural address kept. 0.9 m with a decimal point, as elsewhere in this file.
 - Check first: `ROUND_N` "Rawundi" (alternatives: "Gawo", or keep "Round"), `CALL_ESCALATE` "Yasanduka", `UMP_STANDARD` "Wamba", `UMP_REAL` "Ngati zenizeni", `LEAGUE_TABLE` "Tebulo", `COACH_FOOTWORK` "imayandamitsa", `REC_TITLES` "Zikho".
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Watch **Onerani**; home/away **Akunyumba / Alendo** (visitors); speed **Liwiro**; records **mbiri** as in MENU_RECORDS. Check first: `WATCH_HOME` "Akunyumba".

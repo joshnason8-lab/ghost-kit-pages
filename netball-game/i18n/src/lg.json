@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Omutendera {n} ku {of}",
   "STAGE_SEASON": "Sizoni",
   "STAGE_GRAND_FINAL": "Fayinolo ennene",
-  "REC_TITLES": "Sizoni za Kiraabu z'owangudde"
+  "REC_TITLES": "Sizoni za Kiraabu z'owangudde",
+  "MENU_WATCH": "Laba AI",
+  "MENU_WATCH_DESC": "Ttiimu bbiri eza AI zizannya omupiira gwonna. Tuula olabe.",
+  "WATCH_HOME": "Ab'awaka",
+  "WATCH_AWAY": "Abagenyi",
+  "WATCH_GO": "Laba",
+  "WATCH_NOTE": "AI ezannyira ttiimu zombi. Omupiira guno tegubalibwa mu byafaayo byo.",
+  "SPEED": "Sipiidi"
 }

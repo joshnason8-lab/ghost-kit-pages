@@ -26,3 +26,6 @@
 - Club season **Sīsini Kalapu** (loan); table **tēpile**; round **takai**; grand final **fainolo lahi**; premiers **Ikuna ʻo e liki!** (liki as in RULES_DZ; champions stays "ikuna lahi" as in CUP_WON).
 - Tap **tā** (as in QUIT_SURE), stick **sitiki**, dashed ring **takai laine motumotu**, whistle **ifi**. 0.9 m with a decimal point.
 - Check first: `ROUND_N`/`ROUND_N_OF` "Takai" (the same word is used for the ring in the CTRL/COACH texts; a different word for a round may be better), `MENU_LEAGUE` "Sīsini", `LEAGUE_WON`, `CALL_ESCALATE`/`CALL_ADVANCE`, `COACH_INTERCEPT` ("ʻi he ʻatā" for "in the air"), and `COACH_WHISTLE` ("tohi ʻi ʻolunga" for the banner).
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Watch **Mamata**; home/away **ʻApi / ʻAʻahi** (visiting); speed **Vave**. Check first: `WATCH_AWAY` "ʻAʻahi" over a team.

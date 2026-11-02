@@ -4,7 +4,7 @@ extends Button
 ## line, the goal circle at an end third, the centre circle in the middle one, which pulses: the centre pass, Play),
 ## a title and a line of description, sized to fit in every language.
 
-var kind := "centre"     # centre, goal_left, goal_right; goal_left_top and _bottom (the left third, halved)
+var kind := "centre"     # centre, goal_left, goal_right; goal_left_top and _bottom, goal_right_top and _bottom (halved)
 var _t := 0.0
 
 
@@ -28,7 +28,7 @@ static func make(title: String, desc: String, p_kind: String, cb: Callable) -> C
 	v.alignment = BoxContainer.ALIGNMENT_END if p_kind == "centre" else BoxContainer.ALIGNMENT_BEGIN
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(v)
-	var half := p_kind.begins_with("goal_left_")
+	var half := p_kind.begins_with("goal_left_") or p_kind.begins_with("goal_right_")
 	if half:
 		v.offset_top = 10
 		v.offset_bottom = -10
@@ -75,7 +75,7 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, s), court, true)
 	var line := Color(1, 1, 1, 0.85)
 	var lw := 3.0
-	# Where the left third's two halves meet, a white line like the court's own: each half draws it whole along its
+	# Where a goal third's two halves meet, a white line like the court's own: each half draws it whole along its
 	# edge, and the halves overlap (MainMenu), so no dark seam shows between them.
 	draw_line(Vector2(0, lw * 0.5), Vector2(s.x, lw * 0.5), line, lw)
 	draw_line(Vector2(0, s.y - lw * 0.5), Vector2(s.x, s.y - lw * 0.5), line, lw)
@@ -106,6 +106,11 @@ func _draw() -> void:
 		"goal_right":
 			draw_line(Vector2(s.x - lw * 0.5, 0), Vector2(s.x - lw * 0.5, s.y), line, lw)
 			_goal_circle(Vector2(s.x, s.y * 0.5), s, line, lw, 1.0)
+		"goal_right_top", "goal_right_bottom":
+			draw_line(Vector2(s.x - lw * 0.5, 0), Vector2(s.x - lw * 0.5, s.y), line, lw)
+			var cy := s.y if kind == "goal_right_top" else 0.0
+			var faint := Color(line, line.a * 0.32)
+			draw_arc(Vector2(s.x, cy), s.y * 0.84, PI * 0.5, PI * 1.5, 48, faint, lw, true)
 
 
 func _goal_circle(c: Vector2, s: Vector2, col: Color, lw: float, side: float) -> void:

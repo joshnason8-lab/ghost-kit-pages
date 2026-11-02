@@ -108,6 +108,10 @@ var settings := {
 	"dev": false,
 	"last_home": "ENG",
 	"last_away": "JAM",
+	"watch_home": "AUS",    # Watch AI: the last two teams watched, the venue and the quarters (a QUARTERS index)
+	"watch_away": "NZL",
+	"watch_venue": "arena",
+	"watch_quarter": 0,
 }
 
 signal loaded   # the loading screen is going: the home screen behind it is ready
@@ -238,7 +242,7 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "control", "quarter", "tags", "whistles"]:
+	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "control", "quarter", "tags", "whistles", "watch_quarter"]:
 		settings[k] = int(settings[k])
 	if not (settings.btn_places is Dictionary):
 		settings.btn_places = {}
@@ -371,9 +375,10 @@ func goto_menu() -> void:
 	show_screen("res://ui/main_menu.gd")
 
 
-## config keys: home, away (team ids), venue (DB.VENUES id), quarter (minutes), difficulty, mode ("quick"|"cup"|"league"),
-## user_team (0, 1 or -1 for none), control, bib, stage (a line naming the match: "Semi-final"), need_winner (a
-## knockout: extra time if drawn), double_zone, rolling, timeouts (bools).
+## config keys: home, away (team ids), venue (DB.VENUES id), quarter (minutes), difficulty, mode ("quick"|"cup"|"league"|
+## "watch"), user_team (0, 1 or -1 for none), control, bib, stage (a line naming the match: "Semi-final"), need_winner
+## (a knockout: extra time if drawn), double_zone, rolling, timeouts (bools); demo and watch (bools: Watch AI, an AI v
+## AI match watched from the menus: watch_config()).
 func start_match(config: Dictionary) -> void:
 	if test_quarter_s > 0.0:
 		config.quarter_s = test_quarter_s
@@ -385,6 +390,10 @@ func start_match(config: Dictionary) -> void:
 
 
 func on_match_finished(result: Dictionary) -> void:
+	# Watch AI is nobody's match: it counts in no records, cup or season; the result screen only.
+	if String(result.config.get("mode", "quick")) == "watch" or bool(result.config.get("watch", false)):
+		show_screen("res://ui/result_screen.gd", {"result": result})
+		return
 	Records.add_match(result)
 	if String(result.config.get("mode", "quick")) == "cup":
 		get_cup().record_user_result(result)
@@ -393,6 +402,12 @@ func on_match_finished(result: Dictionary) -> void:
 		get_league().record_user_result(result)
 		save_league()
 	show_screen("res://ui/result_screen.gd", {"result": result})
+
+
+## Watch AI's match: two AI teams, the broadcast camera, the scoreboard and the team card, nobody's buttons.
+func watch_config(home: String, away: String, venue: String, quarter: int) -> Dictionary:
+	return {"home": home, "away": away, "venue": venue, "quarter": quarter, "difficulty": 2, "mode": "watch",
+		"user_team": -1, "demo": true, "watch": true, "card": true, "need_winner": false}
 
 
 ## The match config's quarter length (minutes), from the settings.

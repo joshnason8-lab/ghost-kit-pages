@@ -33,3 +33,6 @@
 - STAGE_GRAND_FINAL "Final besar": Malaysian leagues often just say "Grand Final".
 - CALL_ADVANCE "Hantaran dimarakan".
 - ROUND_N_OF "Pusingan {n} daripada {of}" is about 1.5x English; check where it is shown.
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI** (Malaysian usage; "kecerdasan buatan" in full). Watch **Tonton**; home/away **Tuan rumah / Pelawat**; speed **Kelajuan**.

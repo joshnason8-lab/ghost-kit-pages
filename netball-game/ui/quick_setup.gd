@@ -1,7 +1,10 @@
 extends Control
 ## Quick Match: the team sheet. Your nation and theirs (by flag), the venue, the quarters' length, how good the
 ## other side is, and the league rules if you want them; then the umpires toss for the first centre pass.
+## With watch (ui/watch_setup.gd), Watch AI's: the two teams (home and away), the venue and the quarters, then Watch: an
+## AI v AI match on the broadcast camera that counts for nothing.
 
+var watch := false
 var _home := "ENG"
 var _away := "JAM"
 var _venue := "arena"
@@ -12,8 +15,14 @@ var _scroll: ScrollContainer
 
 
 func setup(args: Dictionary) -> void:
-	_home = String(args.get("home", Game.settings.get("last_home", "ENG")))
-	_away = String(args.get("away", Game.settings.get("last_away", "JAM")))
+	watch = bool(args.get("watch", watch))
+	var pre := "watch_" if watch else "last_"
+	_home = String(args.get("home", Game.settings.get(pre + "home", "ENG")))
+	_away = String(args.get("away", Game.settings.get(pre + "away", "JAM")))
+	if watch:
+		_venue = String(Game.settings.get("watch_venue", "arena"))
+		if not DB.VENUES.any(func(ven): return String(ven[0]) == _venue):
+			_venue = "arena"
 	if DB.team(_home).is_empty():
 		_home = "ENG"
 	if DB.team(_away).is_empty() or _away == _home:
@@ -22,7 +31,7 @@ func setup(args: Dictionary) -> void:
 
 func _ready() -> void:
 	UI.screen(self)
-	var v := UI.page(self, tr("MENU_QUICK"), func(): Game.goto_menu(), tr("TEAM_SHEET"))
+	var v := UI.page(self, tr("MENU_WATCH") if watch else tr("MENU_QUICK"), func(): Game.goto_menu(), tr("TEAM_SHEET"))
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 20)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -60,6 +69,16 @@ func _ready() -> void:
 	var qn := []
 	for qm in Game.QUARTERS:
 		qn.append(tr("MINUTES_N").format({"n": qm}))
+	if watch:
+		# Watch AI: the length too; nobody's level or rules to choose. It counts for nothing.
+		right.add_child(UI.field(tr("QUARTERS"), UI.chips(qn, int(Game.settings.watch_quarter), func(i):
+			Game.settings.watch_quarter = i
+			Game.save_settings())))
+		right.add_child(UI.wrap(tr("WATCH_NOTE"), "MutedLabel", 16))
+		var go := UI.button(tr("WATCH_GO"), true, _watch)
+		go.custom_minimum_size = Vector2(0, 70)
+		v.add_child(go)
+		return
 	right.add_child(UI.field(tr("QUARTERS"), UI.chips(qn, int(Game.settings.quarter), func(i):
 		Game.settings.quarter = i
 		Game.save_settings())))
@@ -116,7 +135,8 @@ func _fill_side(b: Button, t: int) -> void:
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(col)
-	col.add_child(UI.label((tr("YOUR_TEAM") if t == 0 else tr("OPPONENT")).to_upper(), "EyebrowLabel", 14, Game.C_ACCENT if t == _pick_side else Game.C_MUTED))
+	var side := (tr("WATCH_HOME") if t == 0 else tr("WATCH_AWAY")) if watch else (tr("YOUR_TEAM") if t == 0 else tr("OPPONENT"))
+	col.add_child(UI.label(side.to_upper(), "EyebrowLabel", 14, Game.C_ACCENT if t == _pick_side else Game.C_MUTED))
 	var nm := UI.fit(UI.label(DB.team_name(id), "SubLabel", 24), 1)
 	nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.add_child(nm)
@@ -147,6 +167,16 @@ func _refresh() -> void:
 	for t in 2:
 		(_sides[t] as Button).button_pressed = t == _pick_side
 		_fill_side(_sides[t], t)
+
+
+## Watch AI: the match, AI v AI, on the broadcast camera.
+func _watch() -> void:
+	Game.settings.watch_home = _home
+	Game.settings.watch_away = _away
+	Game.settings.watch_venue = _venue
+	Game.save_settings()
+	var qi := clampi(int(Game.settings.watch_quarter), 0, Game.QUARTERS.size() - 1)
+	Game.start_match(Game.watch_config(_home, _away, _venue, int(Game.QUARTERS[qi])))
 
 
 func _play() -> void:

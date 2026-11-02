@@ -6,7 +6,8 @@ extends CanvasLayer
 ## round the landing foot of the player with the ball when you defend her, the three seconds running out round the
 ## ball, the Double Zone when it is live. And the overlays: a break between quarters (the quarter scores, team changes,
 ## Continue) and the pause menu. A match started from the menus (config "card") opens on the broadcast's team card
-## (TeamCard), and shows it again at half-time.
+## (TeamCard), and shows it again at half-time. Watch AI (an AI v AI match watched from the menus) has no buttons to
+## play with: the pause button and, beside it, the speed chip (1x / 2x), which the pause menu also has.
 ##
 ## A CanvasLayer does not take the window's theme: the theme is set on its root Control (lesson 3 of Kabaddi Raid's
 ## betas), or its text falls back to a font with no glyphs for half the game's languages.
@@ -29,6 +30,8 @@ var _call_t := 0.0
 var _break: Control = null
 var _pause: Control = null
 var _pause_btn: Button
+var _speed_btn: Button = null     # Watch AI: 1x / 2x
+var _speed_l: Label
 var _controls: TouchControls = null
 var _layout_panel: Control = null
 var _changes_layer: Control = null   # rolling changes, from the pause menu
@@ -58,7 +61,7 @@ func _ready() -> void:
 		coach = Coach.new(m)
 		root.add_child(coach)
 	m.game_event.connect(_on_event)
-	if m.demo:
+	if m.demo and not m.watch:
 		_board.visible = not bool(m.config.get("attract", false))
 	elif bool(m.config.get("card", false)):
 		show_card()
@@ -78,7 +81,40 @@ func add_controls(c: TouchControls) -> void:
 	_controls = c
 	root.add_child(c)
 	root.move_child(c, 1)
-	# The pause button, top right, clear of the scoreboard and a camera cut-out.
+	_add_pause()
+
+
+## Watch AI: no buttons to play with, the pause button and the speed chip beside it.
+func add_watch_bar() -> void:
+	_add_pause()
+	_speed_btn = Button.new()
+	_speed_btn.theme_type_variation = "ChipButton"
+	_speed_btn.focus_mode = Control.FOCUS_NONE
+	_speed_btn.tooltip_text = tr("SPEED")
+	_speed_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	var h := HBoxContainer.new()
+	h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	h.alignment = BoxContainer.ALIGNMENT_CENTER
+	h.add_theme_constant_override("separation", 4)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_speed_btn.add_child(h)
+	var ic := Icon.make("fast", 24, Game.C_ACCENT)
+	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(ic)
+	_speed_l = UI.label("1×", "SubLabel", 24)
+	_speed_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_speed_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(_speed_l)
+	_speed_btn.pressed.connect(func():
+		Sfx.click()
+		m.set_speed(2 if m.speed == 1 else 1))
+	root.add_child(_speed_btn)
+	_place_pause()
+	_show_speed()
+
+
+## The pause button, top right, clear of the scoreboard and a camera cut-out.
+func _add_pause() -> void:
 	_pause_btn = UI.round_button("pause", func(): m.set_paused(true), 60)
 	# Anchored to the top right corner (not placed by size: the HUD has no size yet when the match is built).
 	_pause_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -87,12 +123,36 @@ func add_controls(c: TouchControls) -> void:
 	root.add_child(_pause_btn)
 
 
+const SPEED_W := 96.0
+
+
 func _place_pause() -> void:
 	var sm := UI.safe_margins(root, 22.0)
 	_pause_btn.offset_left = -sm.z - 60
 	_pause_btn.offset_right = -sm.z
 	_pause_btn.offset_top = sm.y
 	_pause_btn.offset_bottom = sm.y + 60
+	if _speed_btn:
+		_speed_btn.offset_right = -sm.z - 60 - 12
+		_speed_btn.offset_left = _speed_btn.offset_right - SPEED_W
+		_speed_btn.offset_top = sm.y + 4
+		_speed_btn.offset_bottom = sm.y + 56
+
+
+## The chip as the match's speed is: its words, lit at 2x.
+func _show_speed() -> void:
+	if _speed_btn == null:
+		return
+	_speed_l.text = "%d×" % int(m.speed)
+	_speed_btn.toggle_mode = true
+	_speed_btn.set_pressed_no_signal(int(m.speed) > 1)
+	_speed_l.add_theme_color_override("font_color", Game.C_ON_ACCENT if int(m.speed) > 1 else Game.C_INK)
+	(_speed_btn.get_child(0).get_child(0) as Icon).set_color(Game.C_ON_ACCENT if int(m.speed) > 1 else Game.C_ACCENT)
+
+
+## For the tests: the speed chip (Watch AI).
+func speed_button() -> Button:
+	return _speed_btn
 
 
 ## For the tests: where the pause button is.
@@ -294,6 +354,8 @@ func _on_event(kind: String, info: Dictionary) -> void:
 				banner(tr("CALL_INTERCEPT") if String(info.how) == "intercept" else tr("CALL_GAIN"), "", 1.2)
 		"period_end":
 			pass
+		"speed":
+			_show_speed()
 
 
 # ---------------------------------------------------------------- over the court
@@ -391,7 +453,7 @@ static func declutter(rects: Array) -> Array:
 ## The break after period q (next: the period that follows): the scores by quarter, the interval's real length
 ## counting down, team changes (substitutions are allowed at any interval, R3), and Continue.
 func show_break(q: int, next: int, timeout_team := -1) -> void:
-	if m.demo:
+	if m.demo and not m.watch:
 		return
 	hide_break()
 	_break = Control.new()
@@ -557,6 +619,8 @@ func show_pause(on: bool) -> void:
 		_pause = null
 	if _pause_btn:
 		_pause_btn.visible = not on
+	if _speed_btn:
+		_speed_btn.visible = not on
 	if not on:
 		return
 	_pause = Control.new()
@@ -591,7 +655,13 @@ func show_pause(on: bool) -> void:
 			show_pause(false)
 			_pause_btn.visible = false
 			_rolling_changes()))
-	v.add_child(UI.button(tr("MOVE_BUTTONS"), false, _move_buttons))
+	if m.watch:
+		# Watch AI: the speed (the chip's own choice), nothing to move.
+		var sp := UI.field(tr("SPEED"), UI.chips_row(["1×", "2×"], int(m.speed) - 1, func(i): m.set_speed(i + 1)))
+		sp.name = "Speed"
+		v.add_child(sp)
+	if _controls:
+		v.add_child(UI.button(tr("MOVE_BUTTONS"), false, _move_buttons))
 	var quit := UI.button(tr("QUIT_MATCH"), false)
 	quit.pressed.connect(func():
 		if quit.has_meta("sure"):

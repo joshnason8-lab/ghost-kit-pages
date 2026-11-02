@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Raundi {n} kati ya {of}",
   "STAGE_SEASON": "Msimu",
   "STAGE_GRAND_FINAL": "Fainali kuu",
-  "REC_TITLES": "Mataji ya Msimu wa Klabu"
+  "REC_TITLES": "Mataji ya Msimu wa Klabu",
+  "MENU_WATCH": "Tazama AI",
+  "MENU_WATCH_DESC": "Timu mbili za AI zinacheza mechi nzima. Kaa utazame.",
+  "WATCH_HOME": "Nyumbani",
+  "WATCH_AWAY": "Ugenini",
+  "WATCH_GO": "Tazama",
+  "WATCH_NOTE": "AI inacheza timu zote mbili. Mechi hii haihesabiwi kwenye rekodi zako.",
+  "SPEED": "Kasi"
 }

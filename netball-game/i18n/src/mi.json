@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Rauna {n} o {of}",
   "STAGE_SEASON": "Te tau",
   "STAGE_GRAND_FINAL": "Whiringa toa nui",
-  "REC_TITLES": "Ngā taitara Tau Karapu"
+  "REC_TITLES": "Ngā taitara Tau Karapu",
+  "MENU_WATCH": "Mātakitaki AI",
+  "MENU_WATCH_DESC": "E rua ngā kapa AI e tākaro ana i tētahi tukinga katoa. Noho mai, mātakitaki ai.",
+  "WATCH_HOME": "Kāinga",
+  "WATCH_AWAY": "Manuhiri",
+  "WATCH_GO": "Mātakitaki",
+  "WATCH_NOTE": "Mā te AI e tākaro ngā kapa e rua. Kāore tēnei tukinga e kaute ki ō rekoata.",
+  "SPEED": "Tere"
 }

@@ -80,7 +80,7 @@ func _ready() -> void:
 ## The competition, and its stage if it has one: "Nations Cup · Semi-final", "Quick Match".
 static func competition(cfg: Dictionary) -> String:
 	var mode := String(cfg.get("mode", "quick"))
-	var name := TranslationServer.translate({"cup": "MENU_CUP", "league": "MENU_LEAGUE"}.get(mode, "MENU_QUICK"))
+	var name := TranslationServer.translate({"cup": "MENU_CUP", "league": "MENU_LEAGUE", "watch": "MENU_WATCH"}.get(mode, "MENU_QUICK"))
 	var stage := String(cfg.get("stage", ""))
 	return name if stage == "" else "%s · %s" % [name, stage]
 

@@ -1,7 +1,7 @@
 extends Node
 ## A tour of the screens, saved as PNGs (for checking by eye, and for the store's pictures):
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- OUT_DIR [lang] [parts]
-## parts: menus,match (both by default), store, media. A fourth argument sets the graphics: low, medium or high.
+## parts: menus,match (both by default), store, media, watch. A fourth argument sets the graphics: low, medium or high.
 ## media: the media kit's pictures; kitmenus: every menu screen for the kit, a picture per scroll page
 ## (tools/media/make_media_kit.sh runs both on High).
 
@@ -39,7 +39,38 @@ func _ready() -> void:
 		await _media()
 	if "kitmenus" in parts:
 		await _kit_menus()
+	if "watch" in parts:
+		await _watch()
 	get_tree().quit()
+
+
+## Watch AI at a 16:9 and a 20:9 shape: the home screen with its entry, the team sheet, the match at 1x and 2x (the
+## speed chip by the pause button), its pause menu.
+func _watch() -> void:
+	for s in [Vector2i(1280, 720), Vector2i(2400, 1080)]:
+		get_tree().root.size = s
+		var tag := "%dx%d" % [s.x, s.y]
+		Game.show_screen("res://ui/main_menu.gd")
+		await frames(60)
+		await shot("w1_home_" + tag)
+		Game.show_screen("res://ui/watch_setup.gd")
+		await frames(10)
+		await shot("w2_setup_" + tag)
+		Game.start_match(Game.watch_config("AUS", "NZL", "arena", 15).merged({"seed": 9}, true))
+		await frames(20)
+		var m: Node = Game.current
+		if m.hud.card:
+			m.hud.card.close()
+		await frames(220)
+		await shot("w3_play_1x_" + tag)
+		m.set_speed(2)
+		await frames(90)
+		await shot("w4_play_2x_" + tag)
+		m.set_paused(true)
+		await frames(6)
+		await shot("w5_pause_" + tag)
+		Game.goto_menu()
+		await frames(4)
 
 
 func frames(n: int) -> void:

@@ -337,5 +337,12 @@
   "ROUND_N_OF": "Pusingan {n} daripada {of}",
   "STAGE_SEASON": "Musim",
   "STAGE_GRAND_FINAL": "Final besar",
-  "REC_TITLES": "Kejuaraan Musim Kelab"
+  "REC_TITLES": "Kejuaraan Musim Kelab",
+  "MENU_WATCH": "Tonton AI",
+  "MENU_WATCH_DESC": "Dua pasukan AI bermain perlawanan penuh. Duduk dan tonton.",
+  "WATCH_HOME": "Tuan rumah",
+  "WATCH_AWAY": "Pelawat",
+  "WATCH_GO": "Tonton",
+  "WATCH_NOTE": "AI bermain untuk kedua-dua pasukan. Perlawanan ini tidak dikira dalam rekod anda.",
+  "SPEED": "Kelajuan"
 }
