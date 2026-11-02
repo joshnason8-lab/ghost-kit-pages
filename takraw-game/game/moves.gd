@@ -110,12 +110,14 @@ static func _build() -> void:
 			[0.8, {"yaw": 100.0, "spine": Vector3(30, 0, 0), "thigh_r": Vector3(60, 0, -8), "shin_r": Vector3(40, 0, 0)}],
 			[1.0, {}],
 		],
-		# The throw to the server: the ball held in both hands in front of him, the arms swung back low as the knees
-		# bend, then up and through, let go at chest height with the arms out toward him, the follow-through, and set.
+		# The throw to the server: the ball held in both hands in front of him, lowered in front of his knees as they
+		# bend, then up and through, let go at chest height with the arms out toward him, and set. The hands stay
+		# together and out in front all the way (the arms' angles are the chest's, and it leans forward 20 degrees:
+		# swung back to his sides, the ball between them went into his body).
 		"toss": [
 			[0.0, {"upperarm_l": Vector3(-34, 0, -10), "upperarm_r": Vector3(-34, 0, 10), "forearm_l": Vector3(-72, 0, 0), "forearm_r": Vector3(-72, 0, 0)}],
 			[0.3, {"hips_y": -0.1, "spine": Vector3(20, 0, 0), "thigh_l": Vector3(-34, 0, 7), "thigh_r": Vector3(-34, 0, -7), "shin_l": Vector3(55, 0, 0), "shin_r": Vector3(55, 0, 0),
-				"upperarm_l": Vector3(14, 0, -6), "upperarm_r": Vector3(14, 0, 6), "forearm_l": Vector3(-22, 0, 0), "forearm_r": Vector3(-22, 0, 0)}],
+				"upperarm_l": Vector3(-48, 0, -10), "upperarm_r": Vector3(-48, 0, 10), "forearm_l": Vector3(-12, 0, 0), "forearm_r": Vector3(-12, 0, 0)}],
 			[0.55, {"hips_y": -0.04, "spine": Vector3(6, 0, 0), "upperarm_l": Vector3(-70, 0, -6), "upperarm_r": Vector3(-70, 0, 6), "forearm_l": Vector3(-18, 0, 0), "forearm_r": Vector3(-18, 0, 0)}],
 			[0.75, {"spine": Vector3(2, 0, 0), "upperarm_l": Vector3(-86, 0, 4), "upperarm_r": Vector3(-86, 0, -4), "forearm_l": Vector3(-14, 0, 0), "forearm_r": Vector3(-14, 0, 0)}],
 			[1.0, {}],

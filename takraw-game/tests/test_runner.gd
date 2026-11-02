@@ -31,6 +31,7 @@ func _ready() -> void:
 	_detail_by_level()
 	await _legal_pages()
 	await _back_everywhere()
+	_serve_toss_clear()
 	await _play_as_and_officials()
 	await _matches()
 	await _sim_to_end()
@@ -473,6 +474,76 @@ func _back_everywhere() -> void:
 		"Back in a match: pauses, closes the pause menu's Settings, resumes")
 	Game.goto_menu()
 	await frames(2)
+
+
+## The serve's toss keeps the ball out of the bodies (the owner saw it go into the thrower's as he wound up): every
+## frame the thrower holds it, the ball, where the match has it and where it is drawn (on the shared rig's hands on
+## Medium and High), is outside his torso, head, thighs and shins; and from his hands to the server's kick, outside the
+## server's torso and head. Low (the Galaxy A16's) and High, men and women, regu and doubles, a few serves each.
+const _BODY_CAPS := [["torso", "hips", "neck", 0.13], ["head", "head", "", 0.10], ["thigh_l", "thigh_l", "shin_l", 0.08],
+	["thigh_r", "thigh_r", "shin_r", 0.08], ["shin_l", "shin_l", "foot_l", 0.055], ["shin_r", "shin_r", "foot_r", 0.055]]
+
+
+## The ball's least clearance from a player's body (metres; below 0 it is inside), over the capsules named.
+static func ball_clearance(pl: Node, p: Vector3, caps: Array) -> Array:
+	var least := [INF, ""]
+	for c in _BODY_CAPS:
+		if not caps.has(c[0]):
+			continue
+		var a: Vector3 = pl.body.bone_world(c[1])
+		var b: Vector3 = a + Vector3.UP * 0.18 if c[2] == "" else pl.body.bone_world(c[2])
+		var ab := b - a
+		var t := clampf((p - a).dot(ab) / maxf(ab.length_squared(), 1e-8), 0.0, 1.0)
+		var d := p.distance_to(a + ab * t) - float(c[3]) - Ball.RADIUS
+		if d < float(least[0]):
+			least = [d, c[0]]
+	return least
+
+
+func _serve_toss_clear() -> void:
+	var keep: int = Game.settings.graphics
+	var all_caps: Array = _BODY_CAPS.map(func(c): return c[0])
+	for level in [Game.GFX_LOW, Game.GFX_HIGH]:
+		Game.settings.graphics = level
+		for women in [false, true]:
+			for ev in ["regu", "doubles"]:
+				var m: Node = (load("res://game/match.gd") as Script).new()
+				m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": ev, "sets": 1, "points": 15,
+					"user_team": -1, "demo": true, "seed": 4, "mode": "quick", "women": women}
+				add_child(m)
+				var thrower_least := [INF, ""]
+				var server_least := [INF, ""]
+				var serves := 0
+				var frames_held := 0
+				for i in 30 * 150:
+					m._process(1.0 / 30.0)
+					m.set("_start_replay_after", -1.0)
+					if int(m.state) != int(m.S.TOSS):
+						if serves >= 3:
+							break
+						continue
+					if float(m.state_t) < 0.04:
+						serves += 1
+					var th: Node = m._thrower()
+					if th.carrying:
+						frames_held += 1
+						var mesh: Node3D = m.ball.get("_mesh")
+						for p in [m.ball.global_position, mesh.global_position if mesh else m.ball.global_position]:
+							var c := ball_clearance(th, p, all_caps)
+							if float(c[0]) < float(thrower_least[0]):
+								thrower_least = c
+					elif m.ball.flying and th != m._server():
+						var c2 := ball_clearance(m._server(), m.ball.global_position, ["torso", "head"])
+						if float(c2[0]) < float(server_least[0]):
+							server_least = c2
+				var what := "%s %s %s" % [["Low", "Medium", "High"][level], "women" if women else "men", ev]
+				check(serves >= 3 and frames_held > 20, "serve toss (%s): %d serves played, the ball held %d frames" % [what, serves, frames_held])
+				check(float(thrower_least[0]) > 0.0, "serve toss (%s): the ball stays outside the thrower's body (least %.3f m, %s)" % [what, float(thrower_least[0]), thrower_least[1]])
+				if ev == "regu":
+					check(float(server_least[0]) > 0.0, "serve toss (%s): the thrown ball stays outside the server's torso and head (least %.3f m)" % [what, float(server_least[0])])
+				m.queue_free()
+				remove_child(m)
+	Game.settings.graphics = keep
 
 
 ## Play as one player: only his touches are yours (the team's: all of them); the white ring is under him. The officials

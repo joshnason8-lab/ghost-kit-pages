@@ -632,6 +632,24 @@ The pilot above, merged into the game's branch (PR #16) and published as the bet
 screen's credit for MoCap Online and Reallusion ActorCore (the owner approved it) is checked by test_runner, and the
 media kit's CREDITS.txt carries it. test_runner 1649 checks, 0 failures (without the licensed data, here).
 
+## The serve's toss: the ball outside the thrower (0.13.1)
+
+The owner, playing the pilot on the Galaxy A16 (Low): "When the guy is tossing the ball to start a serve, when he winds
+up the ball goes into his body; it looks bad." The ball is held between the thrower's palms; in the toss's wind-up
+(`Moves` "toss", the key at 0.3) both arms swung to 14 degrees behind the chest's line, and the chest leans 20 degrees
+forward there, so the hands went back to his sides and the point between them passed through his belly and hips:
+measured, 4-9 cm inside the torso and up to 12 cm inside a thigh, 0.2 s into the toss, men and women, regu and
+doubles. Now the arms swing down in front (48 degrees ahead of the chest's line, the forearms nearly straight, the
+hands together), so the ball is lowered in front of his knees and swung up and out to the server: through the whole
+toss it stays at least 14 cm clear of his torso and 17 cm of his thighs, 0.38-0.55 m in front of his hips. The
+release, the throw and their timing are as they were. On Medium and High the shared rig is posed from the same pose,
+and the ball drawn between its hands, so the same holds there.
+- test_runner (`_serve_toss_clear`): every frame the thrower holds the ball, where the match has it and where it is
+  drawn, outside his torso, head, thigh and shin capsules; after the release, outside the server's torso and head;
+  Low and High, men and women, regu and doubles. Against 0.13.0's pose it fails (5-8.5 cm inside); now it passes.
+- Stills: `docs/stills/serve_toss_before_after_men.jpg` and `_women.jpg` (Low, from the side, 0 to 0.6 s into the
+  toss), made by `tests/toss_stills.tscn`.
+
 ## Gaps that need the owner
 
 For the Play Store, what only the owner can do is in `store/PLAY_STORE.md`: the developer account, the upload key and
