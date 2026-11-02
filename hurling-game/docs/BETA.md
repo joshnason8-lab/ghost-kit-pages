@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.19.1
+
+- **The stands' light baked again**: the goal posts, the net frames, the rails and the poles behind the parish
+  goals were left black by the baked light on Medium (too thin for its map); now each is lit as the walls beside
+  it. (The shared foundation's fix, with every ground's light baked afresh.)
+
 ## New in 0.19.0
 
 - **Watch AI** (the main menu): pick two counties and the ground and watch the computer play the whole match, on the
