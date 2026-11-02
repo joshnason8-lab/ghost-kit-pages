@@ -388,3 +388,6 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
 - **Haptics**: `bonus` (35 ms, 60 ms gap, 35 ms) when your raider wins the bonus point and `return` (50 ms, 90 ms,
   50 ms) when he gets home with points (Game.HAPTICS; not in a match the AI plays on its own). test_runner: both.
 
+- **Web**: the web export leaves out the licensed motion-capture data (`addons/wsg_foundation/data/*` in the Web
+  preset's exclude filter; the data goes no further than the APK/AAB), so the web version draws the game's own bodies
+  at every level, with no replays.
