@@ -886,13 +886,21 @@ func _your_controls() -> void:
 		for stick in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
 			var s1: Vector2 = d.cam.unproject_position(p0 + d.stick_world(stick) * 0.5)
 			worst = maxf(worst, rad_to_deg(absf((s1 - s0).angle_to(stick))))
-		# And he runs up the screen with the stick pushed up.
-		var before_s: Vector2 = d.cam.unproject_position(d.user_def.position)
+		# And he runs up the screen with the stick pushed up (from open ground, clear of the lines and the lane).
+		d.controls.joystick = Vector2.ZERO
+		d.user_def.position = Vector3(-signf(d.active.position.x + 0.01) * d.f.pole_gap * 0.3, 0.0, d.f.width * 0.25)
+		d.user_def.vel = Vector3.ZERO
+		await frames(8)
+		var before_w: Vector3 = d.user_def.position
+		var up_w: Vector3 = d.stick_world(Vector2(0, -1))
 		d.controls.joystick = Vector2(0, -1)
 		await frames(12)
-		var moved: Vector2 = d.cam.unproject_position(d.user_def.position) - before_s
+		var moved: Vector3 = d.user_def.position - before_w
 		d.controls.joystick = Vector2.ZERO
-		ran_up = ran_up and moved.length() > 2.0 and rad_to_deg(absf(moved.angle_to(Vector2(0, -1)))) < 25.0
+		var ok_up: bool = moved.length() > 0.5 and rad_to_deg(moved.angle_to(up_w)) < 25.0
+		if not ok_up:
+			print("  stick up, view %d: moved %s, the stick's up %s" % [mode, str(moved), str(up_w)])
+		ran_up = ran_up and ok_up
 	check(worst < 10.0 and ran_up,
 		"the stick follows the camera: up is up the screen in every view (worst %.1f degrees off), and he runs that way" % worst)
 	var turn: Vector3 = d.stick_world(Vector2(0, -1))

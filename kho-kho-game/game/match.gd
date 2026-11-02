@@ -872,9 +872,12 @@ func _legal(want: Vector3) -> Vector3:
 ## The stick as a direction on the ground, as the camera sees it (the owner: with a camera not alongside the field
 ## the stick went the wrong way): up on the stick is up the screen, right is right, whatever the camera. Read at the
 ## player you run, where he is on the screen (a low camera, behind the pole, sees the ground in perspective: its
-## heading alone was 18 degrees out off to one side). The mapping is followed over about 0.2 s (STICK_EASE), so a
+## heading alone was 18 degrees out off to one side). After a camera change the mapping blends over 0.2 s (STICK_BLEND), so a
 ## camera change in the middle of a run does not turn him round in a frame. Length as the stick's (0-1).
-const STICK_EASE := 0.07   # s: the time constant (95% of a change in 0.2 s)
+const STICK_BLEND := 0.2  # s: from one camera's stick to the next's
+var _stick_mode := -1
+var _stick_from := []
+var _stick_blend := STICK_BLEND
 var _stick_sx := Vector2.INF   # the ground direction (x, z) that is right on the screen at your player
 var _stick_sy := Vector2.INF   # ... and down the screen
 
@@ -949,18 +952,28 @@ func _ease_stick(dt: float) -> void:
 	if _stick_sx == Vector2.INF:
 		_stick_sx = want[0]
 		_stick_sy = want[1]
+		_stick_mode = _cam_mode
 		return
-	if dt <= 0.0:
-		return
-	var t := 1.0 - exp(-dt / STICK_EASE)
-	var sx: Vector2 = _stick_sx.lerp(want[0], t)
-	var sy: Vector2 = _stick_sy.lerp(want[1], t)
-	# A cut that turns the view right round passes through nothing on the way: there, take the new one.
-	if absf(sx.x * sy.y - sy.x * sx.y) < 0.05:
-		sx = want[0]
-		sy = want[1]
-	_stick_sx = sx
-	_stick_sy = sy
+	# A cut to another camera: from the old mapping to the new over STICK_BLEND; otherwise it follows the camera
+	# exactly (a camera that pans with the play would leave an eased mapping behind it).
+	if _cam_mode != _stick_mode:
+		_stick_mode = _cam_mode
+		_stick_from = [_stick_sx, _stick_sy]
+		_stick_blend = 0.0
+	if _stick_blend < STICK_BLEND and dt > 0.0:
+		_stick_blend = minf(_stick_blend + dt, STICK_BLEND)
+		var t := smoothstep(0.0, STICK_BLEND, _stick_blend)
+		var sx: Vector2 = (_stick_from[0] as Vector2).lerp(want[0], t)
+		var sy: Vector2 = (_stick_from[1] as Vector2).lerp(want[1], t)
+		# A cut that turns the view right round passes through nothing on the way: there, take the new one.
+		if absf(sx.x * sy.y - sy.x * sx.y) > 0.05:
+			_stick_sx = sx
+			_stick_sy = sy
+			return
+		_stick_blend = STICK_BLEND
+	if _stick_blend >= STICK_BLEND:
+		_stick_sx = want[0]
+		_stick_sy = want[1]
 
 
 func _user_chaser(_dt: float) -> void:
