@@ -325,6 +325,12 @@ the rig test all work as written. What this guide does not cover yet:
 What the six pilots after Hurling found, short. Every new switch named here is off by default: a game that does not
 set it behaves as before.
 
+**The licence: a Web build never carries the licensed data.** A Web export (a Netlify page, any public download) is
+not an APK: its .pck is downloadable by anyone. Every game's **Web** preset in export_presets.cfg must list
+`addons/wsg_foundation/data/*` in its `exclude_filter` (the game then runs on its own animation there, as a build
+without the clips does). A session can now fetch the clips locally (tools/wsg/fetch_assets.sh through `gh api`), so a
+Web export made by hand from that checkout would otherwise ship them. Kabaddi's preset is the model.
+
 **Held things and measuring**
 - **A held item (a ball, a flag, a stick) is placed in the body's `posed` callback** (`body.posed.connect(...)`), not
   after `advance()`: `posed` fires at the skeleton's deferred update, once its modifiers (the layers, the grips) have
