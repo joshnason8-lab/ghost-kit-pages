@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.4-beta
+
+- **Watch AI** (home screen, under How to Play): pick two teams, a venue and the quarters, and watch a full AI v AI
+  match on the TV camera with replays; pause any time, and a 1×/2× speed button. It doesn't count in your records.
+
 ## New in 0.8.3-beta
 
 - **The shared foundation** (the pilot, merged): on Medium and High the players, umpires and reserves move on the
