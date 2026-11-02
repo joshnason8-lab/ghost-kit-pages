@@ -322,3 +322,20 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
 - **Sepak Takraw (in progress)**: claude/sepak-takraw-foundation-pilot from e74d4ec (the session's own publish
   guards), worktree /home/user/takraw-pilot, 956e2c4 vendor, bd5b7a9 CI + 0.12.4-pilot code 21; helper integrating.
   Then Kho Kho (no new derived animation data), Pok Ta Pok.
+- **Sepak Takraw pilot (done, waits on the owner)**: claude/sepak-takraw-foundation-pilot at 347be33, 0.12.4-pilot
+  code 21, APK 139 MB, CI green (test_runner 1659/0); PR #16. Game's moves for every rally action; mocap walking,
+  fetching, judges; Low identical; user_bot unchanged; A16 Low via the game's detect_graphics ("mali-g5"/"mali-g6").
+- **Kho Kho pilot (done, waits on the owner)**: claude/kho-kho-foundation-pilot at 7b9eede, 0.10.4-pilot code 21, APK
+  100.5 MB, CI green (722/0); PR #17. The six on-hold Mixamo .res untouched, no new derived data; match_sim identical;
+  A16 test added; the media kit skipped on the pilot branch (job-level `if`).
+- **Pok Ta Pok pilot (done, waits on the owner)**: claude/pok-ta-pok-foundation-pilot at 261ddc0, 0.5.4-pilot code 11,
+  APKs 135/137 MB, CI green (697/0); PR #18. Replay cap set with the game's session (ring always + max 3, 90 s apart);
+  step-down tested; owner phone test listed (A16 on Medium, stone night, 5 min, 30+ fps else High only).
+- **ROLL-OUT COMPLETE**: Hurling shipped; six pilots (PRs #13-#18) wait on the owner. Every pilot: Low unchanged, A16
+  starts Low, beta tag untouched, licensed data never committed.
+- **To port next (from the pilots)**: locomotor own RNG (Pok Ta Pok), locomotor cut-from-heading + resume() (Kho Kho,
+  in its vendored copy), bake_character Meshy spine by hierarchy (Pok Ta Pok) and stance shift/scale into rig.json
+  (Kho Kho), a world-point hand-hold WsgPoseLayer (Kho Kho), WsgFootPlanter: `enabled=false` still bends legs -
+  document `active=false` + lift_after 0 or fix (Takraw), a sphere grip (Netball), ADOPTING notes (posed callback for
+  held items, planter.enabled/tick/reset under a game pose, A-pose legs via joints, leg_scale by height, resume after
+  replay where paused, 17-bone proxy for dictionary poses), bake_character.sh hangs on a script error.
