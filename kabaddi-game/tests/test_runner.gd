@@ -1187,6 +1187,18 @@ func _run() -> void:
 		check(mm.haptics.back() == "dash", "a dash on your raider buzzes the phone")
 		check(mm.raid.dashed_by == dd and rd.dive_dir.x > 0.5, "dash pushes toward the near side line")
 		check(mm.defend_hint() == "dash" or mm._line_gap() < 1.2, "dash is the hint near the line")
+		# Your raider wins the bonus point, then gets home with points: a double pulse each.
+		mm._set_phase("raid")
+		rd.st_t = 99.0
+		rd.set_state("raid")
+		mm.raid.holders = []
+		mm.raid.bonus = false
+		rd.position = mm.pos_in(opp, 0.0, Arena.BONUS + 0.4)
+		mm._check_lines()
+		var bonus_buzz: bool = mm.raid.bonus and mm.haptics.back() == "bonus"
+		mm._end_raid("return")
+		check(bonus_buzz and mm.haptics.back() == "return" and (Game.HAPTICS.bonus[0] is Array) and (Game.HAPTICS["return"][0] is Array),
+			"a bonus point and a return with points each buzz your phone twice (%s)" % str(mm.haptics.slice(-2)))
 	mm.queue_free()
 	await frames(3)
 	Sfx.stop_all()
@@ -2012,12 +2024,15 @@ func _foundation(available: bool) -> void:
 	m._moment_from("escape", {"how": "lion", "free": true})
 	m._moment_from("escape", {"how": "dodge", "free": true})
 	await frames(40)
+	m.set_watch_speed(2.0)   # as if watching at 2x: the replay plays at 1x, and 2x comes back after it
 	m._end_raid("return")
 	guard = 0
 	while m.phase != "replay" and guard < 400:
 		await frames(1)
 		guard += 1
 	var tv: bool = get_viewport().get_camera_3d() == m.cam.cam
+	check(m.phase == "replay" and is_equal_approx(Engine.time_scale, 1.0) and is_equal_approx(m.watch_speed, 2.0),
+		"replays: watching at 2x, a replay plays at 1x (time scale %.1f)" % Engine.time_scale)
 	check(m.phase == "replay" and not tv and m.wsg_replay.playing and m.replays.size() == n0 + 1 and String(m.replays[-1][1]) == "escape"
 		and m._replay_ui.visible and not m.hud.visible,
 		"replays: after the raid its best moment (an escape over the bonus line), from its own camera, the HUD away (%s %s)" % [m.phase, m.replays.slice(n0)])
@@ -2036,6 +2051,8 @@ func _foundation(available: bool) -> void:
 	check(m.phase != "replay" and not m.wsg_replay.playing and get_viewport().get_camera_3d() == m.cam.cam and m.replays.size() == n0 + 1
 		and not FoundationLink.frozen and m.athletes.all(func(a): return a.process_mode == Node.PROCESS_MODE_INHERIT),
 		"replays: a tap skips it, back to the match (phase %s)" % m.phase)
+	check(is_equal_approx(Engine.time_scale, 2.0), "replays: 2x again after the replay (time scale %.1f)" % Engine.time_scale)
+	m.set_watch_speed(1.0)
 	# The raid's end decides: a super tackle over an escape, a two-point raid; nothing worth it, no replay.
 	m._moment = {}
 	for e in [["raid_end", {"kind": "tackle", "raid_pts": 0, "def_pts": 2, "super_tackle": true}, "super_tackle"],

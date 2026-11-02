@@ -32,7 +32,9 @@ static func load_character(dir: String, prefix: String) -> Dictionary:
 	for k in meta.joints:
 		var a: Array = meta.joints[k]
 		j[k] = Vector3(a[0], a[1], a[2])
+	# stance: {shift, scale} from bakes since the pilots ({} from older ones): rig = (stance point - shift) * scale.
 	var c := {"joints": j, "height": float(meta.get("height", 1.8)), "report": meta.get("report", {}),
+		"stance": meta.get("stance", {}),
 		"meshes": [load(dir.path_join(prefix + "_hi.res")), load(dir.path_join(prefix + "_lo.res"))]}
 	_cache[key] = c
 	return c
@@ -141,8 +143,160 @@ func grip(side: String, r := 0.016, strength := 1.0, line := []) -> void:
 		skeleton.set_bone_pose_rotation(i, skeleton.get_bone_pose_rotation(i).slerp(q, strength) if strength < 1.0 else q)
 
 
+## Closes the hand round a ball of radius r (WsgGrip.solve_sphere): centred at ball_point(side, r) (the ball in the
+## palm), or at centre (the rest, the joints' space).
+func grip_sphere(side: String, r: float, strength := 1.0, centre := Vector3.INF) -> void:
+	if not full:
+		return
+	var g := WsgGrip.solve_sphere(joints, side, r, centre)
+	for b in g:
+		var i := bone(b)
+		var q: Quaternion = g[b]
+		skeleton.set_bone_pose_rotation(i, skeleton.get_bone_pose_rotation(i).slerp(q, strength) if strength < 1.0 else q)
+
+
+## Where the centre of a ball of radius r held in that hand is (world): put the ball there (WsgGrip.sphere_point).
+func ball_point(side: String, r: float) -> Vector3:
+	return bone_world(side + "Hand") * (WsgGrip.sphere_point(joints, side, r) - (joints[side + "Hand"] as Vector3))
+
+
 ## Where a handle of radius r held in that hand has its axis (world transform: origin on the axis, basis.z along it).
 func grip_point(side: String, r := 0.016) -> Transform3D:
 	var hand := bone_world(side + "Hand")
 	var p := WsgGrip.axis_point(joints, side, r) - (joints[side + "Hand"] as Vector3)
 	return Transform3D(hand.basis, hand * p)
+
+
+## The torso as a capsule, in the world, as it is drawn now: [a: Vector3 (by the hips), b: Vector3 (by the neck),
+## radius: float]. Its axis is the hips-to-neck line (the one WsgPoseLayer.torso_r keeps the forearms out of), moved
+## to the middle of the chest's depth; its radius is the chest's half-depth front to back (a stick through the body
+## passes front to back: Hurling's free-take, the hurley through the torso at the end of the swing). Both are measured
+## once from the character's mesh (measure_torso); a body without one takes TORSO_K of its hips-to-neck length (0.13
+## m on a 1.80 m body). Scaled with the body. Read it where the bones are final: in `posed`, or in a modifier after
+## the layers (a game's post-layer, or its make_holds). skeleton_space: in the skeleton's space instead (inside a
+## modifier, beside get_bone_global_pose). For a stick: WsgPoseLayer.clear_segment(..., body.torso_capsule()).
+##   var cap := body.torso_capsule()      # [a, b, r]
+func torso_capsule(skeleton_space := false) -> Array:
+	var m := _torso_measure()
+	var gx := Transform3D.IDENTITY if skeleton_space else skeleton.global_transform
+	var chest := gx.basis * skeleton.get_bone_global_pose(bone("Spine2")).basis
+	var off := chest * Vector3(0, 0, float(m[1]))
+	var a := gx * skeleton.get_bone_global_pose(bone("Hips")).origin + off
+	var b := gx * skeleton.get_bone_global_pose(bone("Neck")).origin + off
+	var s := gx.basis.get_scale()
+	return [a, b, float(m[0]) * (absf(s.x) + absf(s.z)) * 0.5]
+
+
+## A body without a mesh (or one too sparse to measure): the torso's radius as a part of its hips-to-neck length.
+const TORSO_K := 0.3
+static var _torso_cache := {}
+
+
+## [radius, offset of the axis along the chest's forward (+Z; the rest frame)] from the mesh: the points of its front
+## and back between the Spine1 and Spine2 joints, near the middle (within 5 cm of the hips-to-neck line side to side;
+## the arms are well out). [] if the mesh has fewer than 6 there.
+static func measure_torso(p_joints: Dictionary, mesh: Mesh) -> Array:
+	if mesh == null or mesh.get_surface_count() == 0 or not p_joints.has("Spine1"):
+		return []
+	var a: Vector3 = p_joints.Hips
+	var b: Vector3 = p_joints.Neck
+	var y0: float = (p_joints.Spine1 as Vector3).y
+	var y1: float = (p_joints.Spine2 as Vector3).y
+	var front := -INF
+	var back := INF
+	var n := 0
+	for s in mesh.get_surface_count():
+		var v: PackedVector3Array = mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]
+		for p in v:
+			if p.y < y0 or p.y > y1:
+				continue
+			var ax := a.lerp(b, (p.y - a.y) / maxf(b.y - a.y, 1e-4))
+			if absf(p.x - ax.x) < 0.05:
+				front = maxf(front, p.z - ax.z)
+				back = minf(back, p.z - ax.z)
+				n += 1
+	if n < 6 or front <= back:
+		return []
+	return [(front - back) * 0.5, (front + back) * 0.5]
+
+
+func _torso_measure() -> Array:
+	var meshes: Array = character.get("meshes", [])
+	var key: int = (meshes[0] as Object).get_instance_id() if not meshes.is_empty() and meshes[0] != null else 0
+	if key != 0 and _torso_cache.has(key):
+		return _torso_cache[key]
+	var m := measure_torso(joints, meshes[0]) if key != 0 else []
+	if m.is_empty():
+		m = [TORSO_K * ((joints.Neck as Vector3) - (joints.Hips as Vector3)).length(), 0.0]
+	if key != 0:
+		_torso_cache[key] = m
+	return m
+
+
+## A limb as a capsule, in the world, as it is drawn now: [a: Vector3 (upper_bone's joint), b: Vector3 (lower_bone's
+## joint), radius: float]. The bone from the one joint to the next (LeftArm to LeftForeArm: the upper arm; LeftForeArm
+## to LeftHand: the forearm); its radius is the limb's girth measured once from the character's mesh (measure_limb),
+## else LIMB_K of its length. Scaled with the body. Read it where the bones are final, as torso_capsule. A stick past
+## the arm that holds it (Hurling's free: the hurley through the lead upper arm just after contact):
+##   var q := WsgPoseLayer.clear_segment(butt, tip, top_fist, body.limb_capsule("LeftArm", "LeftForeArm"), margin)
+## [] if either bone is not on the rig.
+func limb_capsule(upper_bone: String, lower_bone: String, skeleton_space := false) -> Array:
+	var iu := bone(upper_bone)
+	var il := bone(lower_bone)
+	if iu < 0 or il < 0 or not joints.has(upper_bone) or not joints.has(lower_bone):
+		return []
+	var gx := Transform3D.IDENTITY if skeleton_space else skeleton.global_transform
+	var a := gx * skeleton.get_bone_global_pose(iu).origin
+	var b := gx * skeleton.get_bone_global_pose(il).origin
+	var s := gx.basis.get_scale()
+	return [a, b, _limb_measure(upper_bone, lower_bone) * (absf(s.x) + absf(s.y) + absf(s.z)) / 3.0]
+
+
+## A body without a mesh: a limb's radius as a part of its length (an upper arm 0.26 m long: 47 mm).
+const LIMB_K := 0.18
+static var _limb_cache := {}
+
+
+## The limb's radius from the mesh at rest (the rig's rest is the T: the arms out, clear of the body): the points
+## between a fifth and four fifths of the way from upper to lower (the joints' bulges left out) and within half the
+## bone's length of its line (the next limb and the torso well out), their distance from the line - the 75th
+## percentile of it: most of the girth, the sleeve that hangs below the arm and the triceps included (the hurler's
+## upper arm: 60 mm at the median, 74 at this, 90 at the back of the sleeve). 0 if the mesh has fewer than 12 there.
+static func measure_limb(p_joints: Dictionary, mesh: Mesh, upper_bone: String, lower_bone: String) -> float:
+	if mesh == null or mesh.get_surface_count() == 0 or not p_joints.has(upper_bone) or not p_joints.has(lower_bone):
+		return 0.0
+	var a: Vector3 = p_joints[upper_bone]
+	var b: Vector3 = p_joints[lower_bone]
+	var ab := b - a
+	var len2 := ab.length_squared()
+	if len2 < 1e-6:
+		return 0.0
+	var reach := sqrt(len2) * 0.5
+	var d := PackedFloat32Array()
+	for s in mesh.get_surface_count():
+		var v: PackedVector3Array = mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]
+		for p in v:
+			var t := (p - a).dot(ab) / len2
+			if t < 0.2 or t > 0.8:
+				continue
+			var r := p.distance_to(a + ab * t)
+			if r < reach:
+				d.append(r)
+	if d.size() < 12:
+		return 0.0
+	d.sort()
+	return d[mini(d.size() - 1, int(d.size() * 0.75))]
+
+
+func _limb_measure(upper_bone: String, lower_bone: String) -> float:
+	var meshes: Array = character.get("meshes", [])
+	var mid: int = (meshes[0] as Object).get_instance_id() if not meshes.is_empty() and meshes[0] != null else 0
+	var key := "%d|%s|%s" % [mid, upper_bone, lower_bone]
+	if _limb_cache.has(key):
+		return _limb_cache[key]
+	var r := measure_limb(joints, meshes[0], upper_bone, lower_bone) if mid != 0 else 0.0
+	if r <= 0.0:
+		r = LIMB_K * ((joints[lower_bone] as Vector3) - (joints[upper_bone] as Vector3)).length()
+	if mid != 0:
+		_limb_cache[key] = r
+	return r

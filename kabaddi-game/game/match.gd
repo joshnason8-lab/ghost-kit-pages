@@ -110,6 +110,7 @@ var _detail_t := 0.0
 var wsg_replay: WsgReplay      # the foundation's bodies as drawn, kept for the replays (FoundationLink: Medium, High)
 var rclock := 0.0              # seconds of live play drawn (not paused, not in a replay): the replays' clock
 var replays: Array = []        # [raid number, kind] of each replay shown (tests)
+var watch_speed := 1.0         # Watch AI's chosen speed (set_watch_speed); a replay plays at 1× whatever it is
 var _switch_ms := 0
 var hud: MatchHud
 var controls: TouchControls
@@ -448,6 +449,7 @@ func _set_phase(p: String) -> void:
 func _exit_tree() -> void:
 	FoundationLink.in_match = false
 	FoundationLink.frozen = false
+	Engine.time_scale = 1.0   # Watch AI's 2x ends with the match
 
 
 func _process(delta: float) -> void:
@@ -1192,7 +1194,7 @@ func _on_action(id: String) -> void:
 		"speed":
 			# Watching: the match at its own pace or twice as fast.
 			if bool(config.get("watch", false)):
-				set_watch_speed(1.0 if Engine.time_scale > 1.5 else 2.0)
+				set_watch_speed(1.0 if watch_speed > 1.5 else 2.0)
 			return
 		"switch":
 			# Pick your defender before the raid starts, too.
@@ -1309,14 +1311,13 @@ func _floor_shadows() -> void:
 
 
 ## Watching the computer play, the whole match runs at this pace (1 or 2); back to 1 when the match ends.
+## Watching at 1× or 2×. A replay always plays at 1× (it is slowed already) and the chosen speed comes back after
+## it; a tap during one changes the speed it comes back to.
 func set_watch_speed(k: float) -> void:
-	Engine.time_scale = k
+	watch_speed = k
+	Engine.time_scale = 1.0 if phase == "replay" else k
 	controls.speed_label = "%d×" % int(k)
 	controls.queue_redraw()
-
-
-func _exit_tree() -> void:
-	Engine.time_scale = 1.0
 
 
 func set_paused(p: bool) -> void:
@@ -2961,6 +2962,7 @@ func _check_lines() -> void:
 		hud.event(tr("EV_BONUS_AIR") if airborne else tr("EV_BONUS"), Game.C_GOLD, false, MatchHud.EV_TOUCH)
 		if raider == controlled:
 			tutorial_event.emit("bonus")
+			_haptic("bonus")
 		Sfx.play("slap", 0.0, 0.8)
 		arena.excite(0.6)
 
@@ -3052,6 +3054,8 @@ func _end_raid(kind: String) -> void:
 			else:
 				raid_pts = touched.size() + bonus
 				msg = tr("EV_SUPER_RAID") if raid_pts >= 3 else tr("EV_RAID_OK")
+				if raider == controlled:
+					_haptic("return")   # home with points
 				col = Game.C_GOLD if raid_pts >= 3 else Game.C_SAFFRON
 		"tackle":
 			raider_out = true
@@ -4348,6 +4352,7 @@ func _start_replay() -> bool:
 	if officials:
 		officials.process_mode = Node.PROCESS_MODE_DISABLED
 	phase = "replay"
+	Engine.time_scale = 1.0   # a replay at 1×, even when watching at 2×
 	_replay_step(0.0)
 	rc.make_current()
 	replays.append([raid_log.size(), String(mo.kind)])
@@ -4401,6 +4406,7 @@ func _end_replay() -> void:
 	_show_replay_ui(false)
 	phase = "post"
 	phase_t = float(r.phase_t)
+	Engine.time_scale = watch_speed
 	_next_raid()
 
 

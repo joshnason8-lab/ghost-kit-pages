@@ -50,6 +50,8 @@ const HAPTICS := {
 	"tackle_won": [[40, 0.8], 90, [60, 1.0]],    # your side brings the raider down
 	"dash": [50, 0.85],                          # your dash lands, or one lands on you
 	"free": [[20, 0.6], 70, [20, 0.6]],          # you break free
+	"bonus": [[35, 0.8], 60, [35, 0.8]],         # your raider wins the bonus point: a quick double pulse
+	"return": [[50, 0.9], 90, [50, 0.9]],        # he gets home with points: a fuller double pulse
 }
 
 # Brand palette, shared with the HUD and menus.

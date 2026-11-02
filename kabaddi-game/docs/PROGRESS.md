@@ -372,3 +372,19 @@ right after "Back from Help"). It now shows the credits at once and adds the res
 into labels of about 1500 characters (`licences_screen.gd` `_queue`, `built()`): it opens in about 0.1 s instead of
 1.5 s (1 s threaded), and no frame while it fills takes more than about 60 ms (desktop, headless). test_runner: the
 page is complete in 77 frames.
+
+## 0.14.0: the foundation pilot merged; replays at 1×; bonus and return pulses
+
+The owner OKed the pilot: PR #15 (claude/kabaddi-foundation-pilot, 0.13.1-pilot) merged into the game's branch, with
+0.13.2 and 0.13.3 (conflicts only in the version and the last string in each language: MENU_WATCH and REPLAY both
+kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "The shared foundation"); Low unchanged.
+
+- **Foundation synced** to 2df532c (tools/wsg/sync_foundation.sh; was c4b565a): its newer behaviours are opt-in.
+  FoundationLink sets `loco.cut_from_heading = true`, as the foundation advises for a game that drives the locomotor
+  from the body's velocity (a cut's clip measured from the way he was going, not crawling while he runs on).
+- **Replays at 1×**: watching at 2× (Watch AI), a replay plays at 1× (Engine.time_scale) and the chosen speed comes
+  back after it or on a skip; a speed tap during one changes the speed it comes back to (`Match.watch_speed`).
+  test_runner: 1× during a replay started at 2×, and 2× after.
+- **Haptics**: `bonus` (35 ms, 60 ms gap, 35 ms) when your raider wins the bonus point and `return` (50 ms, 90 ms,
+  50 ms) when he gets home with points (Game.HAPTICS; not in a match the AI plays on its own). test_runner: both.
+

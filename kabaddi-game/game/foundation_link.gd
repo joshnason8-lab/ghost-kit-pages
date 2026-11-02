@@ -105,6 +105,9 @@ func _ready() -> void:
 	body.skeleton.move_child(legacy, 0)
 	reader = WsgLegacyPose.new(gs, body.joints, TURN)
 	loco = WsgLocomotor.attach(body)
+	# The game moves him and the locomotor follows his velocity (no want_velocity): a cut's clip then measures the turn
+	# from the way he was going, else it crawls while he runs on (the foundation's advice for the game, 2026-11-02).
+	loco.cut_from_heading = true
 	legacy.lift_after = loco.planter.hips_offset
 	for m in [loco.look, loco.look_chest]:
 		if m:

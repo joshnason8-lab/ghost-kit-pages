@@ -1,4 +1,16 @@
-**New in 0.13.3: Watch AI from the home screen.** The home screen has a Watch AI link: pick the two teams and the
+**New in 0.14.0: real movement on Medium and High, replays, and a buzz for your points.**
+- **Medium and High**: the players, referees and scorers are drawn on a new shared body rig with motion capture of
+  real people for walking back to their half or the sitting block, standing between raids and the referees walking
+  their lines. Every kabaddi move (the stance, cant, touches, dubki, lion jump, dives, holds and chains) is still the
+  game's own. Low is exactly as it was.
+- **Replays** (Medium and High): after a raid with a moment worth seeing (a super tackle, a super raid, an all-out,
+  a do-or-die, an escape...) it is shown again, slowed, from beside the court. Tap to skip. Watching at 2×, a replay
+  plays at normal speed and 2× comes back after it.
+- **Vibration**: your raider winning the bonus point buzzes the phone twice, quickly; getting home with points, twice
+  more strongly.
+- **Auto graphics** picks the level for your phone a little more carefully: an A16-class phone starts on Low.
+
+**In 0.13.3: Watch AI from the home screen.** The home screen has a Watch AI link: pick the two teams and the
 ground, and the computer plays the match on the broadcast camera while you watch the score and the clock. A 2× button
 speeds it up (tap again for 1×); pause and camera work as always. Settings > About > Licences opens at once and fills
 in as you read (it froze for a second or more, and could crash the game now and then).

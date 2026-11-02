@@ -199,7 +199,7 @@ by itself (Settings, Auto graphics).
 `test_runner` checks that every ground loads with its baked lighting, and with the bake's lamps and sky taken out;
 and that every body has its own floor shadow on Low, from the start and once a match lowers itself from Medium.
 
-## The shared foundation (0.13.1-pilot)
+## The shared foundation (0.13.1-pilot, in the beta from 0.14.0)
 
 On Medium and High, in a match, with the licensed motion-capture library in the build (CI's licensed-assets step),
 every player, official and scorer is drawn by the World Stage Games foundation (`addons/wsg_foundation`,

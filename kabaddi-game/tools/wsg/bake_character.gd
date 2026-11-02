@@ -10,7 +10,9 @@ extends SceneTree
 ##      elbow, hip and knee keep their shape and the forearm does not candy-wrap);
 ##   5. cuts it down for phones (meshoptimizer, through Godot's LOD generator) and writes
 ##      <out>/<prefix>_hi.res, <prefix>_lo.res (ArrayMesh: rest = the canonical rest, bones = WsgRig.BONES order) and
-##      <out>/<prefix>_rig.json (the joints, the hand's grip radius, what the bake measured).
+##      <out>/<prefix>_rig.json (the joints, the hand's grip radius, what the bake measured, and the stance: the
+##      source skeleton's point at the rig's origin and its scale, rig joint = (stance point - shift) * scale, for a
+##      game that maps its own skeleton onto the rig).
 ## Run in a scratch Godot project where the model has been imported (tools/bake_character.sh does all of this):
 ##   godot --headless --path <scratch> -s bake_character.gd -- <res://model.glb> <out dir> <prefix> [tris_hi] [tris_lo]
 ## The output holds the character's own mesh only; no animation data.
@@ -45,6 +47,16 @@ func _initialize() -> void:
 	var meshes := sk.find_children("*", "MeshInstance3D", true, false)
 	for b in sk.get_bone_count():
 		canon[b] = _canonical(sk.get_bone_name(b))
+	# A Meshy auto-rig of the older kind names its spine from the top down (Hips > Spine02 > Spine01 > Spine > neck):
+	# the aliases read Spine02 as the chest, which put the rig's Spine above its Spine2. By the hierarchy instead.
+	# (From the Pok Ta Pok pilot. The newer Meshy rig, Hips > Spine > Spine01 > Spine02, is not touched.)
+	var s2 := sk.find_bone("Spine02")
+	if s2 >= 0 and sk.get_bone_parent(s2) == sk.find_bone("Hips"):
+		for pair in [["Spine02", "Spine"], ["Spine01", "Spine1"], ["Spine", "Spine2"]]:
+			var i := sk.find_bone(pair[0])
+			if i >= 0:
+				canon[i] = pair[1]
+		report.spine = "Meshy, top down: mapped by the hierarchy"
 	for n in CORE:
 		if not canon.values().has(n):
 			push_error("the model has no bone for %s (bones: %s)" % [n, range(sk.get_bone_count()).map(func(i): return sk.get_bone_name(i))])
@@ -66,7 +78,10 @@ func _initialize() -> void:
 				printerr("bake_character: %s is %.2f m from its parent %s: not saved" % [b[0], gap, b[1]])
 				quit(1)
 				return
-	var meta := {"joints": {}, "height": HEIGHT, "report": report}
+	# The stance's shift and scale: a game that poses its own skeleton (the model's) onto the rig maps its points with
+	# them, rig = (skeleton point in the stance - shift) * scale, instead of working them out again (Kho Kho did).
+	var meta := {"joints": {}, "height": HEIGHT, "report": report,
+		"stance": {"shift": _v(body.shift), "scale": body.k}}
 	for k in joints:
 		meta.joints[k] = _v(joints[k])
 	for lod in 2:
@@ -786,6 +801,11 @@ func _cut(arrays: Array, tris: int) -> ArrayMesh:
 	im.generate_lods(25.0, 60.0, [])
 	var a := im.get_surface_arrays(0)
 	var best: PackedInt32Array = a[Mesh.ARRAY_INDEX]
+	if im.get_surface_lod_count(0) == 0:
+		# meshoptimizer found nothing to take away (Kabaddi's player_10: a Meshy web model, its 5,207 triangles kept in
+		# both the near and the far mesh). The body works, at the near mesh's cost everywhere.
+		push_warning("bake_character: no LOD levels for this mesh: kept whole (%d triangles) where %d were asked" % [best.size() / 3, tris])
+		report["no_lod_%d" % tris] = true
 	for l in im.get_surface_lod_count(0):
 		var ix := im.get_surface_lod_indices(0, l)
 		if absi(ix.size() / 3 - tris) < absi(best.size() / 3 - tris):
