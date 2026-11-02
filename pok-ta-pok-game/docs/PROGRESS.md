@@ -193,6 +193,11 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   - Tools: `tests/foundation_view.tscn` (the same seeded moments in either build), `tests/foundation_cpu.tscn` (CPU a
     frame by level, foundation on and off).
 
+- **0.6.0-beta: the foundation pilot merged** into the game's branch (the owner's playtest on a Galaxy A16): the pilot's
+  commits fast-forwarded, version 0.6.0-beta, code 12 (above the pilot's 11), the beta and its 32-bit APK published
+  from claude/pok-ta-pok-game as before. The Foundation session no longer pushes here; shared-code changes go through
+  it, and syncing uses tools/wsg/sync_foundation.sh (setting loco.rng in the same change, or seeded matches change).
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
