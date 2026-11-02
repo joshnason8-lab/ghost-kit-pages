@@ -64,6 +64,7 @@ func _initialize() -> void:
 		fails.append("too many steps at a run: %.2f m a step" % run.get("per_step", 0.0))
 	if planted.all.mean >= free.all.mean and free.all.mean > 0.5:
 		fails.append("planting does not reduce the slide (%.1f planted, %.1f without)" % [planted.all.mean, free.all.mean])
+	fails.append_array(await _options(ch))
 	for f in fails:
 		printerr("FAIL: ", f)
 	print("LOCO TEST: ", "PASS" if fails.is_empty() else "FAIL (%d)" % fails.size())
@@ -155,6 +156,65 @@ func _run(ch: Dictionary, plant: bool) -> Dictionary:
 
 
 var _t := 0.0
+
+
+## The opt-in options: its own dice (the global ones untouched), a cut measured from the heading (driven without a
+## want_velocity, the cut clip comes round instead of crawling), and resume() (a body handed back from a game's pose).
+func _options(ch: Dictionary) -> Array:
+	var fails := []
+	var holder := Node3D.new()
+	root.add_child(holder)
+	var body := WsgBody.new(ch)
+	holder.add_child(body)
+	var loco := WsgLocomotor.attach(body)
+	await process_frame
+	# Its own dice: a minute standing (fidgets fire), the global stream as if it had never run.
+	loco.rng = RandomNumberGenerator.new()
+	loco.rng.seed = 7
+	seed(1234)
+	var fidgets := 0
+	for i in 1800:
+		var was := loco.state
+		loco.drive(DT, Vector3.ZERO, 0.0)
+		if loco.state == WsgLocomotor.State.SHOT and was != loco.state:
+			fidgets += 1
+	var got := randf()
+	seed(1234)
+	var clean := got == randf()
+	print("own dice: %d fidgets in a minute standing; the global dice untouched: %s" % [fidgets, clean])
+	if not clean or fidgets == 0:
+		fails.append("rng: %d fidgets, global dice untouched %s" % [fidgets, clean])
+	# A cut driven without a want_velocity (the velocity swung at once): measured either way.
+	for heading in [false, true]:
+		loco.cut_from_heading = heading
+		loco.resume(Vector3.ZERO, 0.0)
+		var clip_t := 0.0
+		var wall := 0.0
+		var cut := false
+		for i in 240:
+			var v := Vector3(0, 0, 6.0) if i < 90 else Vector3(6.0, 0, 0)
+			loco.drive(DT, v, 0.0 if i < 90 else PI * 0.5)
+			if loco.state == WsgLocomotor.State.CUT:
+				cut = true
+				clip_t = loco._shot_t
+				wall += DT
+			elif cut:
+				break
+		var rate := clip_t / maxf(wall, DT)
+		print("cut without want_velocity, from %s: its clip ran %.2f s in %.2f s (x%.2f)" % ["the heading" if heading else "the velocity", clip_t, wall, rate])
+		if heading and (not cut or rate < 0.8):
+			fails.append("cut_from_heading: the cut clip crawled (x%.2f, cut seen %s)" % [rate, cut])
+	# resume(): moving, straight into the gait at its speed; still, standing.
+	loco.resume(Vector3(0, 0, 5.0), 0.3)
+	var moving := loco.state == WsgLocomotor.State.MOVE and is_equal_approx(loco.speed, 5.0) and is_equal_approx(loco.yaw, 0.3)
+	loco.resume(Vector3.ZERO, 1.0)
+	var still := loco.state == WsgLocomotor.State.IDLE and loco.speed == 0.0
+	print("resume: moving into the gait %s, still standing %s" % [moving, still])
+	if not (moving and still):
+		fails.append("resume: moving %s, still %s" % [moving, still])
+	holder.queue_free()
+	await process_frame
+	return fails
 
 
 func _seg_at(t: float) -> String:
