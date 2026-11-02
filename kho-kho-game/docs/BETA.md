@@ -9,6 +9,20 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.11.1
+
+- **A diving tag** (the owner: "it's not a dive for nothing"). The chaser dives at the runner: one arm fully
+  stretched out for his leg (the arm on his side), the other bent down under the shoulder to take the landing, his
+  body stretched out after the reach. When the dive touches him, the hand ends at his leg and stays there as the
+  chaser lands. On every graphics level (Low draws it as before, Medium and High lay it over the shared rig).
+- **A natural get-up.** Both hands push his chest up off the ground, his knees come in under him, one foot comes
+  forward, and he rises off it through a crouch. No snap, no pop: his hips only ever rise on the way up.
+- **Watch AI** (the owner's request for every game): the home screen's "Watch AI" picks the two teams and plays a
+  full AI match on the broadcast camera, with the score, clock and replays, pause and leave, and a 1× / 2× button
+  beside pause. In all 14 languages.
+- Behind the scenes: the game's Mixamo-derived animation clips are no longer in the public repository. Each build
+  fetches them from the owner's private assets.
+
 ## What's new in 0.11.0
 
 - **The World Stage Games foundation** (the pilot the owner played, now the beta): on Medium and High the players

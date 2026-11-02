@@ -34,6 +34,7 @@ var _pause: Control
 var _follow: Control
 var _pause_btn: Button
 var _cam_btn: Button
+var _speed_btn: Button        # Watch AI: 1x / 2x (Match.toggle_speed)
 var _layout_panel: Control   # Move buttons, opened from the pause menu
 
 
@@ -96,7 +97,8 @@ func _ready() -> void:
 	psb.set_border_width_all(1)
 	pill.add_theme_stylebox_override("panel", psb)
 	pill.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	pill.offset_left = -122 - sm.z
+	var watching: bool = m.user < 0 and not m.attract
+	pill.offset_left = (-188 if watching else -122) - sm.z
 	pill.offset_right = -sm.z
 	pill.offset_top = 14
 	pill.offset_bottom = 70
@@ -105,6 +107,21 @@ func _ready() -> void:
 	pill.add_child(row)
 	_cam_btn = _pill_button("camera_solid", func(): m.cycle_camera())
 	_pause_btn = _pill_button("pause", func(): m.set_paused(true))
+	if watching:
+		# Watching the AI play: the match at 1x or 2x, its speed on the button.
+		_speed_btn = Button.new()
+		_speed_btn.custom_minimum_size = Vector2(56, 56)
+		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+			_speed_btn.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+		_speed_btn.add_theme_font_override("font", Game.font_display)
+		_speed_btn.add_theme_font_size_override("font_size", 26)
+		_speed_btn.add_theme_color_override("font_color", Game.C_INK)
+		_speed_btn.text = "1×"
+		_speed_btn.pressed.connect(Sfx.click)
+		_speed_btn.pressed.connect(func():
+			m.toggle_speed()
+			_speed_btn.text = "%d×" % m.speed)
+		row.add_child(_speed_btn)
 	row.add_child(_cam_btn)
 	row.add_child(_pause_btn)
 	root.add_child(pill)

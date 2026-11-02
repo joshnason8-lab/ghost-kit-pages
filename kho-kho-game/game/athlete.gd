@@ -29,6 +29,8 @@ var _prev_act := ""
 var _knelt := false
 var _stride := 0.0          # through his stride: a footstep at each half
 var _dive_v0 := 0.0         # m/s he leaves the ground at in a dive
+var dive_target: Node3D = null      # the runner his dive goes for (Match._dive_at), whose leg his hand reaches for
+var _reach_lock := Vector3.INF      # where his hand touched the runner: it stays there as he lands (lock_reach)
 var swing := {}             # round the pole, a hand on it: {c: the pole, r, a0, a1, v: speed out} (pole_swing)
 
 
@@ -62,6 +64,7 @@ func do(p_act: String, len := 0.0, p_mirror := false) -> void:
 	act_len = len
 	mirror = p_mirror
 	if act in ["dive", "pole_dive"]:
+		_reach_lock = Vector3.INF
 		_dive_v0 = Vector2(vel.x, vel.z).length()
 		if act == "dive":
 			_dive_v0 = maxf(_dive_v0, 5.6)   # a pole dive lunges out from the pole at its own pace
@@ -218,15 +221,25 @@ const DIVE_LAND := 2.0      # m/s he has left as he lands; he slides the rest aw
 const HIP_RUN := 0.92       # m: his hips running (the run clip's) ...
 const HIP_LIE := 0.13       # ... lying on his front ...
 const HIP_FOURS := 0.5      # ... and on his hands and knees
-const LIE_S := 0.3
-const GETUP_S := 0.95
-const FOURS_AT := 0.4       # the share of the get-up he takes to be on his hands and knees
+const HIP_KNEEL := 0.62     # ... and kneeling up on one knee, the other foot forward under him
+const LIE_S := 0.25
+const GETUP_S := 1.25
+const PUSH_TO := 0.3        # the get-up (the owner: "push up with the hands, a knee under, rise"): pushed up by ...
+const KNEEL_TO := 0.55      # ... a knee under him and the other foot forward by ..., then up off it to standing
+const REACH := 2.6          # m: a runner nearer than this has his leg reached for; further, the arm reaches ahead
+
+
+## His hand touched the runner at p (Match._touches): it stays there as he lands, as a tag's does.
+func lock_reach(p: Vector3) -> void:
+	_reach_lock = p
 
 
 func _dive_body() -> void:
 	body.rotation.x = 0.0
 	body.position.y = 0.0
 	var f := clampf(act_t / act_len, 0.0, 1.0) if act_len > 0.0 else 1.0
+	_aim_reach()
+	body.dive_kneel = 0.0
 	match act:
 		"dive", "pole_dive":
 			body.dive = smoothstep(0.0, 0.3, f)
@@ -240,22 +253,55 @@ func _dive_body() -> void:
 			body.dive_push = 0.0
 			body.dive_h = HIP_LIE
 		"getup":
-			if f < FOURS_AT:
-				# Hands under his shoulders, knees under his hips: up onto all fours.
-				var g := smoothstep(0.0, 1.0, f / FOURS_AT)
+			body.dive_reach = Vector3.INF
+			if f < PUSH_TO:
+				# Both hands under his shoulders, he pushes his chest up off the ground, knees coming in under his hips.
+				var g := smoothstep(0.0, 1.0, f / PUSH_TO)
 				body.dive = 1.0
-				body.dive_pitch = lerpf(DIVE_PITCH, 1.35, g)
+				body.dive_pitch = lerpf(DIVE_PITCH, 1.3, g)
 				body.dive_push = g
 				body.dive_h = lerpf(HIP_LIE, HIP_FOURS, g)
-			else:
-				# From all fours up to his feet: the hand-made pose gives way to his standing one as his hips rise.
-				var g := smoothstep(0.0, 1.0, (f - FOURS_AT) / (1.0 - FOURS_AT))
-				body.dive = 1.0 - g
-				body.dive_pitch = lerpf(1.35, 0.25, g)
+			elif f < KNEEL_TO:
+				# A knee under him, the other foot brought forward flat beside his hands, his chest coming up off them.
+				var g := smoothstep(0.0, 1.0, (f - PUSH_TO) / (KNEEL_TO - PUSH_TO))
+				body.dive = 1.0
+				body.dive_pitch = lerpf(1.3, 0.75, g)
 				body.dive_push = 1.0
-				body.dive_h = lerpf(HIP_FOURS, HIP_RUN, g)
+				body.dive_kneel = g
+				body.dive_h = lerpf(HIP_FOURS, HIP_KNEEL, g)
+			else:
+				# Up off the front foot: the hand-made pose gives way to his standing one as his hips rise.
+				var g := smoothstep(0.0, 1.0, (f - KNEEL_TO) / (1.0 - KNEEL_TO))
+				body.dive = 1.0 - g
+				body.dive_pitch = lerpf(0.75, 0.1, g)
+				body.dive_push = 1.0 - g
+				body.dive_kneel = 1.0 - g * 0.5
+				body.dive_h = lerpf(HIP_KNEEL, HIP_RUN, g)
 		_:
 			body.dive = 0.0
+			body.dive_reach = Vector3.INF
+
+
+## Where his reaching hand goes: the runner's lower leg while he is in reach (the arm on that side of him reaches),
+## where it touched him once it has, else nowhere (straight ahead).
+func _aim_reach() -> void:
+	if not act in ["dive", "pole_dive", "lie"]:
+		return
+	if _reach_lock != Vector3.INF:
+		body.dive_reach = _reach_lock
+		return
+	body.dive_reach = Vector3.INF
+	if act == "lie" or dive_target == null or not is_instance_valid(dive_target):
+		return
+	var p := dive_target.global_position + Vector3(0, 0.18, 0)
+	var to := p - global_position
+	to.y = 0.0
+	if to.length() > REACH:
+		return
+	body.dive_reach = p
+	# The arm on the runner's side of his line reaches (his left is +x in his own frame).
+	var local := body.global_transform.affine_inverse() * p
+	body.dive_arm = 1.0 if local.x > 0.0 else -1.0
 
 
 ## Which of the model's clips he plays, and how fast: his run or walk at the rate that keeps his feet with the

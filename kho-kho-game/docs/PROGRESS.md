@@ -199,6 +199,21 @@ three AI changes were tried against it and none kept (docs/AI.md, "Watched again
 tents, flags, banners, a stage, temporary lights and a crowd in everyday clothes. All of it is now on the village,
 school and stadium grounds, built in code with no draw call more (docs/GROUNDS.md).
 
+## Round eleven: 0.11.0-0.11.1-beta, the foundation, a diving tag, Watch AI (2 November 2026, the owner via the lead)
+
+- 0.11.0: the World Stage Games foundation pilot (Foundation session, PR #17) merged into the beta. To sync it later:
+  `tools/wsg/sync_foundation.sh`, and set `loco.cut_from_heading = true` in the same change, or the glide returns.
+- 0.11.1: the dive as a diving tag, one arm reaching for the runner's leg, the other bracing (`ModelBody.DivePose`,
+  `Athlete._aim_reach`, `Match._touches` locking the hand where it touched); the get-up through hands, a knee and a
+  crouch, the hips only rising (`DivePose` limits them as Kabaddi Raid's `_limit_height` does). `tests/dive_view.tscn`
+  with `KK_TARGET=1` films it at a runner; test_runner checks the hand reaches the leg and the hips never dip.
+- Watch AI: the home screen's entry (MENU_WATCH, "Watch AI" in 14 languages), the broadcast camera, replays,
+  pause and leave, and 1x / 2x (`Match.toggle_speed`, `Engine.time_scale`, back to 1x paused and on leaving).
+- The 17 clips in `assets/models/anims/` (Mixamo-derived) left the public repository: kept in the private
+  `world-stage-games-assets` (`kho-kho/mixamo-anims/`), fetched by `tools/fetch_anims.sh` in all three workflows;
+  without them the game builds and runs and their tests are left out. Rewriting the history to remove them from
+  every commit is prepared (a dry run removes them from both Kho Kho branches) and waits on the owner's own word.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from

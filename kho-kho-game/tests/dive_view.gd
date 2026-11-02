@@ -3,6 +3,8 @@ extends Node3D
 ## whether it is right (tests/dive_view.tscn):
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/dive_view.tscn -- OUT [every]
 ## OUT/dive_NNN.png every few frames, and per frame: hips height, lowest point, pitch, speed, act.
+## KK_TARGET=1: a runner stands where the dive lands, a little to one side; the dive goes for him and touches his leg
+## (where the reaching hand ends up is printed). KK_VIEW=34: from three-quarters front instead of side-on.
 ## KK_FOUNDATION=1: drawn by the shared foundation (as Medium and High draw him, with the licensed clips), and its
 ## body's hips height and lowest point too.
 
@@ -11,6 +13,7 @@ var cam: Camera3D
 var out := ""
 var every := 3
 var f := 0
+var runner: Athlete
 
 
 func _ready() -> void:
@@ -52,6 +55,11 @@ func _ready() -> void:
 	add_child(a)
 	a.yaw = PI * 0.5   # facing +x
 	a.position = Vector3(-8, 0, 0)
+	if OS.get_environment("KK_TARGET") != "":
+		runner = Athlete.new({"id": "r", "speed": 70}, 1)
+		add_child(runner)
+		runner.yaw = -PI * 0.5
+		runner.position = Vector3(1.3, 0, -0.5)
 	cam = Camera3D.new()
 	cam.fov = 40
 	add_child(cam)
@@ -63,12 +71,21 @@ func _process(_d: float) -> void:
 	if f < 36:
 		a.want = Vector3(6.8, 0, 0)
 	if f == 36:
+		a.dive_target = runner
 		a.do("dive", 0.5)
+	if runner:
+		runner.integrate(dt)
+		if f == 46:
+			a.lock_reach(runner.global_position + Vector3(0, 0.18, 0))   # the touch, as Match._touches makes it
 	if f > 36 and a.act == "":
 		a.want = Vector3(3.0, 0, 0)
 	a.integrate(dt)
-	cam.position = Vector3(a.position.x, 0.9, 5.2)
-	cam.look_at(Vector3(a.position.x, 0.6, 0))
+	if OS.get_environment("KK_VIEW") == "34":
+		cam.position = Vector3(a.position.x + 3.2, 1.7, 3.4)
+		cam.look_at(Vector3(a.position.x + 0.6, 0.4, 0))
+	else:
+		cam.position = Vector3(a.position.x, 0.9, 5.2)
+		cam.look_at(Vector3(a.position.x, 0.6, 0))
 	var sk := a.body.skeleton
 	var hips := sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_Hips")).origin
 	var fdn := ""
@@ -78,6 +95,8 @@ func _process(_d: float) -> void:
 		a.link.measure = true
 	print("f %3d %-8s t %.2f x %.2f v %.2f hips %.2f low %.2f drawn %s clip %s%s" % [f, a.act, a.act_t, a.position.x,
 		a.vel.length(), hips.y, a.body.lowest_point() + a.body.position.y, a.body.dive_drawn, a.body.clip, fdn])
+	if runner and a.body.dive_hand != Vector3.INF:
+		print("    hand to his leg %.2f m" % a.body.dive_hand.distance_to(runner.global_position + Vector3(0, 0.18, 0)))
 	if f >= 30 and f % every == 0:
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("%s/dive_%03d.png" % [out, f])

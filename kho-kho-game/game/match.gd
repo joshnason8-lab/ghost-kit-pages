@@ -16,6 +16,7 @@ var turn_len := 180.0
 var user := -1                 # the side you play, -1 none
 var demo := false              # the AI plays both sides (no haptics, no buttons)
 var attract := false           # behind the home screen: on a loop, quiet
+var speed := 1                 # Watch AI: the match at 1x or 2x (Engine.time_scale; toggle_speed)
 var women := false
 var knockout := false
 var teams := ["", ""]
@@ -98,6 +99,7 @@ var _detail_t := 0.0
 
 
 func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 	Crowd.watch_target = Vector3.INF
 	FoundationLink.in_match = false
 	FoundationLink.frozen = false
@@ -140,6 +142,8 @@ func _ready() -> void:
 	add_child(cam)
 	cam.current = true
 	_cam_mode = int(Game.settings.camera)
+	if bool(config.get("watch", false)):
+		_cam_mode = Game.CAM_TV   # Watch AI opens on the broadcast camera (the camera button still changes it)
 	Game.apply_graphics(get_viewport())
 	if not attract:
 		hud = (load("res://game/hud.gd") as Script).new(self)
@@ -1292,6 +1296,7 @@ func _dive_at(d: Athlete) -> void:
 		dir = dir.normalized() if dir.length() > 0.01 else Vector3(float(chase.dir), 0, 0)
 	active.vel = dir * maxf(active.vel.length(), 5.6)
 	active.yaw = atan2(dir.x, dir.z)
+	active.dive_target = d
 	active.do("dive", 0.5)
 	_dive_cool = 3.0
 	if d:
@@ -1326,6 +1331,7 @@ func _pole_dive_at(d: Athlete) -> void:
 	dir = dir.normalized()
 	active.vel = dir * 3.0
 	active.yaw = atan2(dir.x, dir.z)
+	active.dive_target = d
 	active.do("pole_dive", 0.45, dir.z * signf(pole.x) < 0.0)
 	_dive_cool = 3.0
 	_see_dive(d, dir)
@@ -1369,6 +1375,8 @@ func _touches() -> void:
 				_reach_ready = t_match + 0.9
 			if _swerves(d, kind):
 				continue
+			if active.act in ["dive", "pole_dive"]:
+				active.lock_reach(d.global_position + Vector3(0, 0.18, 0))   # the hand stays on his leg
 			_out(d, kind, active)
 			return
 
@@ -1947,8 +1955,16 @@ func cycle_camera() -> void:
 
 # ---------------------------------------------------------------- pause and back
 
+## Watch AI (the owner's request for every game): the match at twice the speed, or back to its own. The whole game
+## runs faster (Engine.time_scale), the clock, the players and the replays together; paused, the menus run at 1x.
+func toggle_speed() -> void:
+	speed = 2 if speed == 1 else 1
+	Engine.time_scale = 1.0 if paused else float(speed)
+
+
 func set_paused(on: bool) -> void:
 	paused = on
+	Engine.time_scale = 1.0 if on else float(speed)
 	FoundationLink.paused = on
 	Sfx.pause(on)
 	if hud:

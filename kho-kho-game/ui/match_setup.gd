@@ -215,7 +215,8 @@ func turn_seconds() -> float:
 func config(chase_first: int) -> Dictionary:
 	return {"home": _sides[0], "away": _sides[1], "venue": _venue, "format": _fmt, "turn_len": turn_seconds(),
 		"difficulty": int(Game.settings.difficulty), "mode": "quick", "user_team": -1 if watch else 0, "women": _women,
-		"chase_first": chase_first, "follow_on": bool(Game.settings.follow_on), "powerplay": bool(Game.settings.powerplay)}
+		"chase_first": chase_first, "follow_on": bool(Game.settings.follow_on), "powerplay": bool(Game.settings.powerplay),
+		"watch": watch}
 
 
 func _on_go() -> void:

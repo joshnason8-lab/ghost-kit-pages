@@ -59,6 +59,16 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri ffmpeg zip libraqm0 > /dev/null
           pip install --quiet Pillow
 
+      - name: The game's animation clips (the private assets, for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/fetch_anims.sh
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
       - name: Build translations and import
         working-directory: ${{ env.PROJECT_DIR }}
         run: |

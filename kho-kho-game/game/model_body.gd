@@ -39,6 +39,10 @@ var dive := 0.0
 var dive_pitch := 0.0
 var dive_push := 0.0
 var dive_h := 0.0
+var dive_reach := Vector3.INF   # the point (world) his reaching hand goes for: the runner's leg; INF straight ahead
+var dive_arm := -1.0            # which arm reaches: -1 his right, 1 his left (+x is his left)
+var dive_kneel := 0.0           # getting up: how far his leading leg has come forward under him (0-1)
+var dive_hand := Vector3.INF    # where DivePose last drew the reaching hand (world)
 var dive_drawn := Vector2.INF   # as DivePose last drew him: (hips height, lowest point's height) in body space (m)
 
 
@@ -59,10 +63,21 @@ static func _load() -> void:
 		return
 	_scene = load("res://assets/models/player.glb")
 	_lib = AnimationLibrary.new()
+	# The clips are Mixamo-derived, so not in the public repository: CI puts them in place for each build
+	# (tools/fetch_anims.sh). A build without them still runs: a clip that is not there is not played.
 	for c in CLIPS:
-		var a: Animation = load("res://assets/models/anims/%s.res" % c)
+		var path := "res://assets/models/anims/%s.res" % c
+		if not ResourceLoader.exists(path):
+			continue
+		var a: Animation = load(path)
 		_lib.add_animation(c, a)
 		_speed[c] = float(a.get_meta("speed", 0.0)) if a.has_meta("speed") else 0.0
+
+
+## Whether the game's own clips are in this build (tools/fetch_anims.sh; not in a public checkout).
+static func has_clips() -> bool:
+	_load()
+	return _lib.has_animation("run")
 
 
 func _ready() -> void:
@@ -100,6 +115,8 @@ func _ready() -> void:
 ## Plays a clip: blended in over blend seconds, at rate (negative: backwards), from at seconds (-1: its start). The
 ## same clip again only changes its rate.
 func play(c: String, rate := 1.0, blend := 0.18, at := -1.0) -> void:
+	if not anim.has_animation(c):
+		return
 	if c != clip:
 		clip = c
 		anim.play(c, blend, -1.0 if rate < 0.0 else 1.0, rate < 0.0)
@@ -213,51 +230,102 @@ class Grip extends SkeletonModifier3D:
 
 
 ## The dive, made by hand (the only recorded dive is a dive into water, which left him leaning on one leg in the air),
-## as Kabaddi Raid's dive is: over whatever the clip is doing, by body.dive. His body tips over about his hips (not his
-## feet), arms reaching out ahead and down to the ground, legs trailing, head up to see what he reaches for; pushing up
-## (body.dive_push), his arms and thighs go down under him onto hands and knees. His hips are put at body.dive_h, then
-## lifted by as much as anything (head, chest, hands, knees, feet) would go under the ground, in this frame's pose.
+## as Kabaddi Raid's dive is: over whatever the clip is doing, by body.dive. It is a diving tag (the owner: "they are
+## trying to tag the person, typically with one arm extended"): his body tips over about his hips (not his feet) and
+## stretches out, one arm fully extended for the runner's leg (body.dive_reach, body.dive_arm), the other bent down
+## under his shoulder to take the landing; legs trailing, head up to see what he reaches for. Getting up, both hands
+## push him up (body.dive_push), one knee comes down under his hips and the other leg forward under him
+## (body.dive_kneel) before he rises off it. His hips are put at body.dive_h, then lifted by as much as anything (head,
+## chest, hands, knees, feet) would go under the ground, in this frame's pose.
 class DivePose extends SkeletonModifier3D:
+	const G_DOWN := Vector3(0.0, -1.0, 0.0)   # straight down to the ground, in his own frame
+	const G_FWD := Vector3(0.0, 0.0, 1.0)     # the way he faces, along the ground
 	var body
 	var _chain := []    # [bone, child] pairs, parents first
 	var _hips := -1
 	var _floor := {}    # bone -> how far above the ground it must stay (m: the body round the bone)
+	var _shoulder := {} # "Left"/"Right" -> the upper arm's bone (where the reach starts)
+	var _hand := {}     # "Left"/"Right" -> the hand's bone
+	var _last_y := INF  # the hips' height drawn last frame (body space), INF out of the dive
+	const RISE_MAX := 4.0   # m/s
+	const FALL_MAX := 5.0   # m/s
 
 	func _process_modification_with_delta(_delta: float) -> void:
 		var sk := get_skeleton()
 		if sk == null or body == null or body.dive <= 0.001:
 			if body != null:
 				body.dive_drawn = Vector2.INF
+			_last_y = INF
 			return
 		if _chain.is_empty():
 			_setup(sk)
 		var w: float = clampf(body.dive, 0.0, 1.0)
 		var p: float = body.dive_pitch
 		var k: float = clampf(body.dive_push, 0.0, 1.0)
+		var kn: float = clampf(body.dive_kneel, 0.0, 1.0)
+		var arm: float = body.dive_arm
 		# His long axis (hips to head) and his front, tipped over by p about his left-right axis.
 		var up := Vector3(0.0, cos(p), sin(p))
 		var front := Vector3(0.0, -sin(p), cos(p))
 		var to_body: Transform3D = body.global_transform.affine_inverse() * sk.global_transform
 		var to_sk := to_body.affine_inverse().basis
+		# His chest turned a little toward the reaching arm's side, the whole body stretched out after it.
+		var reach_x := Vector3(arm, 0.0, 0.0)
 		var want := {
-			"Hips": up, "Spine": up, "Spine1": up, "Spine2": (up - front * 0.15).normalized(),
+			"Hips": up, "Spine": up, "Spine1": (up + reach_x * 0.04).normalized(),
+			"Spine2": (up - front * 0.15 + reach_x * 0.08).normalized(),
 			"Neck": (up - front * 0.35).normalized(), "Head": (up - front * 0.9).normalized(),
 		}
+		# The reaching arm: straight out for the runner's leg (from his shoulder, so the hand gets there), else straight
+		# ahead, a little down; the shoulder blade reaching with it.
+		# (From the ground, not from his tipped body: off the ground the arm goes forward for the runner, not up over
+		# his head.)
+		var reach_dir := (G_FWD * 0.95 + G_DOWN * 0.32 + reach_x * 0.06).normalized()
+		var side_name: String = "Left" if arm > 0.0 else "Right"
+		var aim_reach: bool = body.dive_reach != Vector3.INF and _shoulder.has(side_name)
+		# Where his hips will be once set down (below): the reach is aimed from where the shoulder will be then, not from
+		# where the clip has it (aimed from his running height, the arm went into the ground and propped him up on it).
+		var hb0 := to_body * sk.get_bone_global_pose(_hips).origin
+		var drop := Vector3(lerpf(hb0.x, 0.0, w), lerpf(hb0.y, float(body.dive_h), w), lerpf(hb0.z, 0.0, w)) - hb0
 		for s in [["Left", 1.0], ["Right", -1.0]]:
 			var x := Vector3(s[1], 0.0, 0.0)
-			# Reaching: out past his head, a little apart, angled down to the ground ahead. On all fours: straight down.
-			var reach := (up * 0.95 + front * 0.28 + x * 0.12).normalized()
-			var prop := (front + x * 0.08).normalized()
-			want[s[0] + "Arm"] = reach.slerp(prop, k)
-			want[s[0] + "ForeArm"] = reach.slerp(prop, k)
-			# Legs trailing, the knees a little bent so the feet come off the ground behind; on all fours the thighs go
-			# down under him and the shins lie back along the ground.
+			var prop := (G_DOWN + G_FWD * 0.1 + x * 0.08).normalized()   # hands flat on the ground under his shoulders
+			if s[1] == arm:
+				want[s[0] + "Shoulder"] = (x * 0.7 + up * 0.7).normalized()
+				want[s[0] + "Arm"] = reach_dir.slerp(prop, k)   # aimed at the leg in the loop below, once his chest is set
+				want[s[0] + "ForeArm"] = reach_dir.slerp(prop, k)
+			else:
+				# Bracing: the upper arm forward and down to the ground beside his chest, the forearm along the ground ahead
+				# of it, to take the landing on (straight down, it held him up off the ground on his hand).
+				want[s[0] + "Arm"] = (G_FWD * 0.6 + G_DOWN * 0.4 + x * 0.5).normalized().slerp(prop, k)
+				want[s[0] + "ForeArm"] = (G_FWD * 0.97 + G_DOWN * 0.04 - x * 0.12).normalized().slerp(prop, k)
+			# Legs trailing, the knees a little bent so the feet come off the ground behind. Getting up (measured from the
+			# ground, not from his tipped body, which comes upright as he rises): the knees come down under his hips,
+			# shins back along the ground, toes tucked; then the leading leg (the reaching arm's other side) comes
+			# forward, its foot flat on the ground under him, ready to rise off.
+			var lead: bool = s[1] != arm
+			var q: float = kn if lead else 0.0
 			var thigh := (-up + front * 0.06 + x * 0.07).normalized()
-			want[s[0] + "UpLeg"] = thigh.slerp((front * 0.9 - up * 0.25 + x * 0.1).normalized(), k)
-			want[s[0] + "Leg"] = (-up * 0.88 - front * 0.45).normalized().slerp(-up, k)
-			want[s[0] + "Foot"] = (-up * 0.55 + front * 0.8).normalized()
+			var knee_down := (G_DOWN * 0.97 + G_FWD * 0.15 + x * 0.1).normalized()
+			var shin_back := (-G_FWD * 0.97 + G_DOWN * 0.12).normalized()
+			want[s[0] + "UpLeg"] = thigh.slerp(knee_down, k).slerp((G_FWD * 0.85 + G_DOWN * 0.45 + x * 0.12).normalized(), q)
+			want[s[0] + "Leg"] = (-up * 0.88 - front * 0.45).normalized().slerp(shin_back, k).slerp((G_DOWN * 0.97 - G_FWD * 0.12).normalized(), q)
+			var flat := Vector3(0.0, -0.35, 0.94).normalized()
+			var tucked := (G_DOWN * 0.8 - G_FWD * 0.6).normalized()
+			want[s[0] + "Foot"] = (-up * 0.55 + front * 0.8).normalized().slerp(tucked, k).slerp(flat, q)
 		for pair in _chain:
+			if not want.has(pair[2]):
+				continue   # left as the clip has it (the bracing arm's shoulder)
 			var b: int = pair[0]
+			if aim_reach and pair[2] == side_name + "Arm":
+				# His spine and shoulder are where they will be drawn now: straight from the shoulder at the leg, kept out
+				# ahead of him (never back past his head toward his own body).
+				var sh: Vector3 = to_body * sk.get_bone_global_pose(b).origin + drop
+				var to_t: Vector3 = (body.global_transform.affine_inverse() * (body.dive_reach as Vector3)) - sh
+				if to_t.length() > 0.05 and to_t.normalized().dot(up) > 0.25:
+					var d2 := to_t.normalized().slerp(want[side_name + "Arm"] as Vector3, k)
+					want[side_name + "Arm"] = d2
+					want[side_name + "ForeArm"] = d2
 			var t: Vector3 = to_sk * (want[pair[2]] as Vector3)
 			var gb := sk.get_bone_global_pose(b)
 			var d := sk.get_bone_global_pose(pair[1]).origin - gb.origin
@@ -276,6 +344,13 @@ class DivePose extends SkeletonModifier3D:
 			var y := (to_body * sk.get_bone_global_pose(b).origin).y - hb.y + goal.y
 			under = maxf(under, float(_floor[b]) - y)
 		goal.y += under
+		# As Kabaddi Raid's bodies (RiggedBody._limit_height): the hips rise no faster than RISE_MAX and come down no
+		# faster than FALL_MAX, whatever moves them; getting up, they only rise (a dip on the way up read as a bob).
+		var dt: float = maxf(get_process_delta_time(), 1.0 / 120.0)
+		if _last_y != INF:
+			var fall: float = (0.3 if body.dive_push > 0.0 else FALL_MAX) * dt
+			goal.y = clampf(goal.y, _last_y - fall, _last_y + RISE_MAX * dt)
+		_last_y = goal.y
 		var lowest := INF
 		for b in _floor:
 			lowest = minf(lowest, (to_body * sk.get_bone_global_pose(b).origin).y - hb.y + goal.y)
@@ -285,19 +360,29 @@ class DivePose extends SkeletonModifier3D:
 		if hp >= 0:
 			move = sk.get_bone_global_pose(hp).basis.orthonormalized().inverse() * move
 		sk.set_bone_pose_position(_hips, sk.get_bone_pose_position(_hips) + move)
+		var hb_name: String = "Left" if body.dive_arm > 0.0 else "Right"
+		if _hand.has(hb_name):
+			body.dive_hand = sk.global_transform * sk.get_bone_global_pose(_hand[hb_name]).origin
 
 	func _setup(sk: Skeleton3D) -> void:
 		_hips = sk.find_bone("mixamorig_Hips")
 		var pairs := [["Hips", "Spine"], ["Spine", "Spine1"], ["Spine1", "Spine2"], ["Spine2", "Neck"], ["Neck", "Head"],
 			["Head", "HeadTop_End"]]
 		for s in ["Left", "Right"]:
-			pairs += [[s + "Arm", s + "ForeArm"], [s + "ForeArm", s + "Hand"], [s + "UpLeg", s + "Leg"],
+			pairs += [[s + "Shoulder", s + "Arm"], [s + "Arm", s + "ForeArm"], [s + "ForeArm", s + "Hand"], [s + "UpLeg", s + "Leg"],
 				[s + "Leg", s + "Foot"], [s + "Foot", s + "ToeBase"]]
 		for pr in pairs:
 			var b := sk.find_bone("mixamorig_" + pr[0])
 			var c := sk.find_bone("mixamorig_" + pr[1])
 			if b >= 0 and c >= 0:
 				_chain.append([b, c, pr[0]])
+		for s in ["Left", "Right"]:
+			var a := sk.find_bone("mixamorig_%sArm" % s)
+			if a >= 0:
+				_shoulder[s] = a
+			var h := sk.find_bone("mixamorig_%sHand" % s)
+			if h >= 0:
+				_hand[s] = h
 		for n in [["Head", 0.11], ["HeadTop_End", 0.08], ["Spine2", 0.13], ["Spine1", 0.12], ["Hips", 0.1],
 				["LeftHand", 0.03], ["RightHand", 0.03], ["LeftForeArm", 0.04], ["RightForeArm", 0.04], ["LeftLeg", 0.06],
 				["RightLeg", 0.06], ["LeftFoot", 0.05], ["RightFoot", 0.05], ["LeftToeBase", 0.03], ["RightToeBase", 0.03]]:

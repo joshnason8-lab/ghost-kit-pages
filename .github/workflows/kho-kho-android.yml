@@ -65,6 +65,11 @@ jobs:
       - name: Build translations
         run: python3 ${PROJECT_DIR}/tools/build_i18n.py
 
+      - name: The game's animation clips (the private assets, for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/fetch_anims.sh
+
       - name: Licensed animation (the private assets, baked for this build)
         env:
           ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}

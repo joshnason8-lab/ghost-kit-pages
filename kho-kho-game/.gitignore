@@ -10,3 +10,7 @@ override.cfg
 
 # Licensed animation data, baked at build time (tools/wsg/fetch_assets.sh): never committed.
 addons/wsg_foundation/data/
+
+# The game's animation clips (Mixamo-derived): kept in the private assets repository and put in place at build time
+# (tools/fetch_anims.sh), never committed (the owner's decision, 2 November 2026).
+assets/models/anims/*.res

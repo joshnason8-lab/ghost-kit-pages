@@ -257,6 +257,42 @@ func _owner_round() -> void:
 		"a dive: over flat (%.2f rad), down, up again (now '%s')" % [flat, a.act])
 	check(lie_hips > 0.05 and lie_hips < 0.25 and lie_low > -0.005 and lie_low < 0.06 and under < 0.005,
 		"a dive lands: lying, hips %.2f m up, his lowest part %.3f m (none under the ground: %.3f m)" % [lie_hips, lie_low, under])
+	# The owner after 0.11: a diving tag. The dive goes for a runner a little to one side: one arm reaches for his leg
+	# (the arm on his side), the hand there at the touch and as he lands; the get-up comes up through hands and knees
+	# and a knee, the hips never dropping on the way up.
+	var r := Athlete.new({"id": "r", "speed": 70}, 1)
+	add_child(r)
+	a.position = Vector3(0, 0, 0)
+	a.yaw = PI * 0.5
+	a.act = ""
+	a.integrate(1.0 / 30.0)
+	r.position = Vector3(2.4, 0, -0.45)
+	await frames(2)
+	a.vel = Vector3(5.6, 0, 0)
+	a.dive_target = r
+	a.do("dive", 0.5)
+	var best := INF
+	var arm := 0.0
+	var kneeled := false
+	var dip := 0.0
+	var last_hips := -1.0
+	for i in 70:
+		a.integrate(1.0 / 30.0)
+		await frames(1)
+		if i == 9:
+			a.lock_reach(r.global_position + Vector3(0, 0.18, 0))   # the touch, as Match._touches makes it
+		if a.act in ["dive", "lie"] and a.body.dive_hand != Vector3.INF and i >= 9:
+			best = minf(best, a.body.dive_hand.distance_to(r.global_position + Vector3(0, 0.18, 0)))
+			arm = a.body.dive_arm
+		kneeled = kneeled or a.body.dive_kneel > 0.9
+		var dr2: Vector2 = a.body.dive_drawn
+		if a.act == "getup" and dr2 != Vector2.INF:
+			if last_hips >= 0.0:
+				dip = maxf(dip, last_hips - dr2.x)
+			last_hips = dr2.x
+	check(best < 0.2 and arm > 0.0, "a diving tag: his hand to the runner's leg (%.2f m), with the arm on his side" % best)
+	check(kneeled and dip < 0.02 and a.act == "", "and up through a knee, never dropping on the way (%.3f m)" % dip)
+	r.queue_free()
 	# The pole turn: round the pole on its circle, out the far side at speed.
 	a.position = Vector3(11.45, 0, 0)
 	a.vel = Vector3(5.0, 0, 0)
@@ -298,6 +334,42 @@ func _owner_round() -> void:
 	m.queue_free()
 	await frames(2)
 	check(Crowd.watch_target == Vector3.INF, "and stops when the match ends")
+	# Watch AI (the owner's request for every game): from the home screen, the teams picked, a full AI match on the
+	# broadcast camera with the score and clock, pause, leave, and 1x / 2x.
+	var named := true
+	for lang in Game.LANGUAGES:
+		TranslationServer.set_locale(lang[0])
+		named = named and tr("MENU_WATCH").contains("AI")
+	TranslationServer.set_locale("en")
+	check(named and tr("MENU_WATCH") == "Watch AI", "\"Watch AI\" on the home screen, in all %d languages" % Game.LANGUAGES.size())
+	var keep_cam := int(Game.settings.camera)
+	Game.settings.camera = Game.CAM_POLE
+	var ws := Game.show_screen("res://ui/match_setup.gd", {"watch": true})
+	await frames(2)
+	var wc: Dictionary = ws.config(0)
+	check(wc.user_team == -1 and bool(wc.get("watch", false)), "Watch AI: the teams picked, both played by the AI")
+	var w: Node = (load("res://game/match.gd") as Script).new()
+	wc.turn_len = 60.0
+	wc.test = true
+	w.config = wc
+	add_child(w)
+	await frames(30)
+	check(w._cam_mode == Game.CAM_TV and w.hud and w.hud._speed_btn and w.hud._pause_btn and w.hud._clock_l != null and w.hud._clock_l.is_visible_in_tree(),
+		"on the broadcast camera, with the score and clock, pause and a speed button")
+	w.hud._speed_btn.pressed.emit()
+	var fast: bool = Engine.time_scale == 2.0 and w.hud._speed_btn.text == "2×"
+	w.set_paused(true)
+	var held: bool = Engine.time_scale == 1.0
+	w.set_paused(false)
+	fast = fast and Engine.time_scale == 2.0
+	w.hud._speed_btn.pressed.emit()
+	var back: bool = Engine.time_scale == 1.0 and w.hud._speed_btn.text == "1×"
+	w.hud._speed_btn.pressed.emit()
+	w.queue_free()
+	await frames(2)
+	check(fast and held and back and Engine.time_scale == 1.0,
+		"1x / 2x: twice the speed, the menus at 1x while paused, and back to 1x on leaving")
+	Game.settings.camera = keep_cam
 	# Difficulty where you pick a match or a championship.
 	Game.delete_cup()
 	for path in ["res://ui/match_setup.gd", "res://ui/cup_screen.gd"]:
@@ -311,7 +383,11 @@ func _owner_round() -> void:
 
 func _bodies() -> void:
 	ModelBody.warm()
-	for c in ModelBody.CLIPS:
+	# The clips come from the private assets at build time (tools/fetch_anims.sh): a checkout without them (a fork, a
+	# computer without access) tests everything else, as CI without the secret would.
+	if not ModelBody.has_clips():
+		print("  (the game's animation clips are not in this checkout: their checks are left out)")
+	for c in ModelBody.CLIPS if ModelBody.has_clips() else []:
 		check(ResourceLoader.exists("res://assets/models/anims/%s.res" % c), "the %s clip is there" % c)
 	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
 		var b := ModelBody.new({"jersey": Color("e63946"), "shorts": Color("1d3557"), "skin": Color("8d5a3b")}, g == Game.GFX_LOW)
@@ -343,8 +419,9 @@ func _bodies() -> void:
 		var spd: float = m.active.vel.length()
 		if m.active.act == "" and spd > 4.0 and m.active.body.clip == "run":
 			ran = ran or absf(m.active.body.anim.speed_scale - ModelBody.rate_for("run", spd)) < 0.01
-	check(kneel >= m.squares.size() - 2, "seated chasers kneel (%d of %d)" % [kneel, m.squares.size()])
-	check(ran, "the active chaser runs his run, at the rate his speed asks")
+	if ModelBody.has_clips():   # (the clips that show it come from the private assets: tools/fetch_anims.sh)
+		check(kneel >= m.squares.size() - 2, "seated chasers kneel (%d of %d)" % [kneel, m.squares.size()])
+		check(ran, "the active chaser runs his run, at the rate his speed asks")
 	m.queue_free()
 	await frames(2)
 	await _mocap()
@@ -396,7 +473,7 @@ func _sounds() -> void:
 const SLIDE_M := 0.03
 
 func _mocap() -> void:
-	for c in ["dodge", "idle"]:
+	for c in ["dodge", "idle"] if ModelBody.has_clips() else []:
 		var a: Animation = load("res://assets/models/anims/%s.res" % c)
 		check(a != null and a.length > 0.3 and a.has_meta("root") and a.has_meta("fps"), "the %s clip loads, with its root" % c)
 		if a == null or not a.has_meta("root"):
