@@ -12,9 +12,13 @@ extends Node3D
 ## game bone's rotation times K. Feet, hands' twist, the head and the shoulders keep the model's own rest.
 
 const DIR := "res://assets/people/"
-## The bodies: file, who wears it ("player" or "judge"), how heavily built (0-1, Body's look.build).
+## The bodies: file, who wears it ("player", "judge" or "elder"), how heavily built (0-1, Body's look.build).
 const BODIES := [["player_lean", "player", 0.2], ["player_tall", "player", 0.5], ["player_stocky", "player", 0.9],
-	["judge_cap", "judge", 0.5]]
+	["judge_cap", "judge", 0.5], ["ritual_elder", "elder", 0.4]]
+## A body drawn on another's model with its own texture. The copal elder (game/ritual.gd) is the judge's rigged model
+## retextured by Meshy, keeping its UVs: a Maya elder in plain white cotton, grey-haired (0.6.0; the one new generation
+## for him came back bare-chested in a fringed skirt, the costume docs/CULTURE.md rules out, and was not used).
+const SCENE_OF := {"ritual_elder": "judge_cap"}
 ## model bone -> [the game's bone it follows, how its rest is turned: "down" a hanging limb, "up" the trunk, "" kept]
 const MAP := {
 	"Hips": ["hips", ""],
@@ -84,10 +88,11 @@ static func available(kind: String) -> bool:
 
 ## The bodies in the build for a kind of person: "ulama" and "classic" players wear the players', judges the judge's.
 static func files_for(kind: String) -> Array:
-	var who := "judge" if kind == "judge" else ("player" if kind in ["ulama", "classic"] else "")
+	var who := kind if kind in ["judge", "elder"] else ("player" if kind in ["ulama", "classic"] else "")
 	var out := []
 	for b in BODIES:
-		if String(b[1]) == who and ResourceLoader.exists(DIR + String(b[0]) + ".scn"):
+		if String(b[1]) == who and ResourceLoader.exists(DIR + String(SCENE_OF.get(b[0], b[0])) + ".scn") \
+				and ResourceLoader.exists(DIR + String(b[0]) + ".jpg"):
 			out.append(b)
 	return out
 
@@ -108,9 +113,10 @@ static func pick(kind: String, build: float, seed_: int) -> String:
 func setup(body: Body, p_file: String, look: Dictionary) -> void:
 	file = p_file
 	var gfx := int(Game.settings.graphics)
-	var f := file + ("_low" if gfx <= Game.GFX_LOW else ("_mid" if gfx == Game.GFX_MEDIUM else ""))
+	var model := String(SCENE_OF.get(file, file))
+	var f := model + ("_low" if gfx <= Game.GFX_LOW else ("_mid" if gfx == Game.GFX_MEDIUM else ""))
 	if not ResourceLoader.exists(DIR + f + ".scn"):
-		f = file
+		f = model
 	if not _scenes.has(f):
 		_scenes[f] = load(DIR + f + ".scn")
 	character = (_scenes[f] as PackedScene).instantiate()

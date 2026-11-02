@@ -41,12 +41,16 @@ func _ready() -> void:
 	_cup()
 	_sim()
 	await _crowd_faces()
+	await _stance()
 	await _mocap()
 	_sounds()
 	_levels()
 	await _yucatan()
 	await _ring_replay()
 	await _foundation()
+	await _watch_ai()
+	await _tv_camera("village", "ulama")
+	await _tv_camera("stone", "classic")
 	await _match_and_motion("village", "ulama")
 	await _match_and_motion("stone", "classic")
 	Game.settings = keep
@@ -539,6 +543,27 @@ func _sim() -> void:
 
 ## Every spectator, at every venue and graphics level, faces the court: dot(facing, toward the centre) > 0.7 (five of
 ## the six earlier games shipped this wrong). And the shader draws them from behind when the camera is behind them.
+## The ready stance is an athlete's (owner, A16 playtest: "like an A-pose"): the knees bent, the soles on the floor
+## with the heels just up, the hands loose by the thighs rather than held out from the sides, at every crouch the
+## players use. The pose is the game's on every level (Low draws it on the game's bodies, Medium and High on the rig).
+func _stance() -> void:
+	var b := Body.new({"kind": "ulama", "height": 1.8, "rigged": false})
+	add_child(b)
+	await get_tree().process_frame
+	for low in [0.2, 0.5, 0.8]:
+		b.apply(Moves.stance(0.7, low))
+		var hips := b.bone_world("hips")
+		var ankle_y := b.bone_world("foot_l").y
+		var knee := b.bone_world("shin_l")
+		var hand := b.bone_world("hand_l")
+		var sh := b.bone_world("upperarm_l")
+		check(absf(ankle_y - 0.04 - 0.13 * sin(deg_to_rad(7.0 + 4.0 * low))) < 0.03,
+			"stance %.1f: the soles stay on the floor, heels up (ankle %.3f m)" % [low, ankle_y])
+		check(knee.z > hips.z + 0.1 and hips.y < 0.92, "stance %.1f: the knees bent and forward, the hips down (%.2f m)" % [low, hips.y])
+		check(absf(hand.x - sh.x) < 0.12 and hand.y < sh.y, "stance %.1f: the hands hang near the body, not out from the sides" % low)
+	b.queue_free()
+
+
 func _crowd_faces() -> void:
 	var keep := int(Game.settings.graphics)
 	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
@@ -556,6 +581,16 @@ func _crowd_faces() -> void:
 				var t: Transform3D = v.crowd.xforms[i]
 				var f := Vector3(t.basis.z.x, 0, t.basis.z.z).normalized()
 				worst = minf(worst, f.dot(to))
+			# Wherever the play is along the court, the people in the side stands look into the court, never away.
+			var away := 0
+			for fx in [-v.court.half_l(), 0.0, v.court.half_l()]:
+				for i in n:
+					var p: Vector3 = v.crowd.spots[i]
+					if absf(p.z) > 3.5 and absf(p.x) < v.court.half_l():
+						var f := Crowd.facing_at(p, Vector3(fx, 0, 0))
+						if f.z * signf(p.z) > -0.05:
+							away += 1
+			check(away == 0, "Crowd: at %s (graphics %d) the side stands watch the play wherever it is (%d look away)" % [id, g, away])
 			check(n > 40, "Crowd: %s at graphics %d has people (%d)" % [id, g, n])
 			check(worst > 0.7, "Crowd: everyone at %s (graphics %d) faces the court (worst %.2f)" % [id, g, worst])
 			if n > 0:
@@ -845,6 +880,130 @@ func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> flo
 
 
 # ---------------------------------------------------------------- a match
+
+## Watch AI (the main menu's, owner's A16 notes): two towns played by the computer, on the broadcast camera whatever
+## camera the player's own matches use, the score on the board, replays, pause and quit, and 1x / 2x: at 2x the
+## match's clock runs twice as fast for the same frames, the ball's flight stepped just as at 1x.
+func _watch_ai() -> void:
+	var keep := int(Game.settings.camera)
+	Game.settings.camera = Game.CAM_END
+	var menu_has := false
+	var mm: Node = (load("res://ui/main_menu.gd") as Script).new()
+	add_child(mm)
+	await frames(2)
+	for b in mm.find_children("*", "Button", true, false):
+		for l in (b as Node).find_children("*", "Label", true, false):
+			if (l as Label).text == tr("MENU_WATCH"):
+				menu_has = true
+	mm.queue_free()
+	check(menu_has, "Watch AI: on the main menu")
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "PIS", "away": "VAL", "venue": "stone", "rules": "classic", "user_team": -1, "seed": 6,
+		"length": 0.0, "mode": "watch", "difficulty": 2, "ritual": false}
+	add_child(m)
+	await frames(2)
+	check(m.watching() and m.cam.mode == Game.CAM_TV, "Watch AI: the broadcast camera, not the player's own (end) camera")
+	check(m.hud != null and m.hud.speed_button != null and not m.hud.touch.visible, "Watch AI: a speed button, no controls")
+	check(m.hud != null and m.hud.score_line() != "", "Watch AI: the score on the board")
+	var guard := 0
+	while m.phase != m.P.LIVE and guard < 30 * 20:
+		await get_tree().process_frame
+		guard += 1
+	var c0: float = m.clock
+	await frames(60)
+	var one: float = m.clock - c0
+	m.hud.speed_button.pressed.emit()
+	check(int(m.speed) == 2 and m.hud.speed_button.text == tr("SPEED_2"), "Watch AI: the button turns it to 2x")
+	guard = 0
+	while m.phase != m.P.LIVE and guard < 30 * 30:
+		await get_tree().process_frame
+		guard += 1
+	c0 = m.clock
+	await frames(60)
+	var two: float = m.clock - c0
+	check(two > one * 1.6, "Watch AI: 2x plays twice as fast (%.2f s of play in 60 frames, %.2f at 1x)" % [two, one])
+	m.set_paused(true)
+	c0 = m.clock
+	await frames(20)
+	check(is_equal_approx(float(m.clock), c0) and m.hud._pause != null, "Watch AI: pause stops it and shows the menu (resume, quit)")
+	m.set_paused(false)
+	# A raya through the ring, at 2x: it is replayed, as in a match (the ring's at every level; the other big moments'
+	# on Medium and High, which these tests do not draw).
+	guard = 0
+	while m.phase != m.P.LIVE and guard < 30 * 30:
+		await get_tree().process_frame
+		guard += 1
+	await frames(30)
+	m._award(0, "ring", false, null)
+	guard = 0
+	while (m.replays as Array).is_empty() and guard < 30 * 20:
+		await get_tree().process_frame
+		guard += 1
+	check(not (m.replays as Array).is_empty(), "Watch AI: replays of the rayas, as in a match")
+	m.hud.speed_button.pressed.emit()
+	check(int(m.speed) == 1 and m.hud.speed_button.text == tr("SPEED_1"), "Watch AI: and back to 1x")
+	m.queue_free()
+	await frames(2)
+	Game.settings.camera = keep
+
+
+## The court-side camera keeps the play in the picture (owner, A16 playtest: "you can't see the whole game"): through
+## an AI match, on a 20:9 phone, 16:9 and a 4:3 tablet, the ball and the players near it are on the screen, and on the
+## stone court the near edge of the alley shows over the near wall.
+func _tv_camera(venue: String, rules: String) -> void:
+	var keep := int(Game.settings.camera)
+	Game.settings.camera = Game.CAM_TV
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "ESC" if rules == "ulama" else "PIS", "away": "LLA" if rules == "ulama" else "VAL", "venue": venue, "rules": rules,
+		"user_team": -1, "seed": 4, "length": 3.0, "mode": "test", "difficulty": 2, "ritual": false}
+	add_child(m)
+	await frames(2)
+	var cam: CameraRig = m.cam
+	var seen := {}
+	var total := {}
+	var ball_out := {}
+	var hidden_edge := 0
+	for f in 30 * 40:
+		await get_tree().process_frame
+		if m.phase == m.P.OVER:
+			break
+		if f % 20 != 0 or m.phase == m.P.REPLAY:
+			continue
+		for a in [2.17, 1.78, 1.33]:
+			cam.aspect_override = a
+			cam.snap(m)
+			var c := cam.camera
+			var inv := c.global_transform.affine_inverse()
+			var tv := tan(deg_to_rad(c.fov) * 0.5)
+			var th: float = tv * a
+			var inside := func(p: Vector3, slack: float) -> bool:
+				var q := inv * p
+				return q.z < -0.1 and absf(q.x / -q.z) <= th * slack and absf(q.y / -q.z) <= tv * slack
+			if not inside.call(m.ball.pos, 1.0):
+				ball_out[a] = int(ball_out.get(a, 0)) + 1
+			for p in m.all_players():
+				var pp: Vector3 = (p as Player).global_position + Vector3(0, 0.9, 0)
+				if absf(pp.x - float(m.ball.pos.x)) < CameraRig.NEAR:
+					total[a] = int(total.get(a, 0)) + 1
+					if inside.call(pp, 1.0):
+						seen[a] = int(seen.get(a, 0)) + 1
+			if m.court.classic():
+				var cp := c.global_position
+				var edge := Vector3(cp.x, 0.0, Court.ALLEY_HALF_W)
+				var y_at_wall := cp.y + (edge.y - cp.y) * (cp.z - Court.TALUD_Z) / (cp.z - edge.z)
+				if y_at_wall < Court.WALL_H:
+					hidden_edge += 1
+	cam.aspect_override = 0.0
+	for a in [2.17, 1.78, 1.33]:
+		var share := float(seen.get(a, 0)) / maxf(1.0, float(total.get(a, 0)))
+		check(int(ball_out.get(a, 0)) == 0, "%s camera, %.2f:1 screen: the ball always in the picture (out %d times)" % [venue, a, int(ball_out.get(a, 0))])
+		check(share >= 0.97, "%s camera, %.2f:1 screen: the players near the ball in the picture (%.0f%%)" % [venue, a, share * 100.0])
+	if rules == "classic":
+		check(hidden_edge == 0, "stone camera: the alley's near edge shows over the near wall")
+	m.queue_free()
+	await frames(2)
+	Game.settings.camera = keep
+
 
 func _match_and_motion(venue: String, rules: String) -> void:
 	var m: Node = load("res://game/match.gd").new()

@@ -303,5 +303,13 @@
   },
   "refine_id": "01a16c7e-3b80-745f-8c4c-7112045e198e",
   "textured": "court_stela.glb"
+ },
+ "ritual_elder": {
+  "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic full-body a dignified Maya elder from Yucatan in his late sixties, short grey hair, a lined calm face, a plain white long-sleeve cotton shirt worn loose over plain white cotton trousers, simple brown leather sandals. No hat, no headdress, no feathers, no jewellery, no costume. Arms held straight out sideways, not crossed. Whole body visible from head to sandals, feet flat, neutral calm face, mouth closed.",
+  "preview_id": "01a19aed-7468-761f-b8b9-8ba4ecf347ed",
+  "credits": {
+   "model": 20
+  },
+  "retexture_judge_id": "01a19aef-8109-7220-98c4-b750ad47fc7f"
  }
 }

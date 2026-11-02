@@ -9,8 +9,11 @@ MENU_QUICK,Jugar un partido,Play a match,Jogar uma partida,Jouer un match,Ein Sp
 MENU_QUICK_DESC,Elige cancha y dos pueblos. A jugar.,Pick a court and two towns. Play now.,Escolha um campo e duas cidades. Jogue já.,Choisissez un terrain et deux villes. Jouez.,Wähle einen Platz und zwei Orte. Sofort los.,Scegli un campo e due paesi. Si gioca subito.
 MENU_CUP,Torneo de pueblos,Town tournament,Torneio de cidades,Tournoi des villes,Dorfturnier,Torneo dei paesi
 MENU_CUP_DESC,"Ocho pueblos, eliminación directa, hasta la final.","Eight towns, knock-out, to the final.","Oito cidades, mata-mata, até a final.","Huit villes, élimination directe, jusqu'à la finale.","Acht Orte, K.-o.-System, bis ins Finale.","Otto paesi, eliminazione diretta, fino alla finale."
-MENU_WATCH,Ver un partido,Watch a match,Assistir a uma partida,Regarder un match,Spiel ansehen,Guarda una partita
-MENU_WATCH_DESC,"Dos pueblos, jugados por la computadora.","Two towns, played by the computer.","Duas cidades, jogadas pelo computador.","Deux villes, jouées par l'ordinateur.","Zwei Orte, gespielt vom Computer.","Due paesi, giocati dal computer."
+MENU_WATCH,Ver a la IA,Watch AI,Assistir à IA,Regarder l'IA,KI zuschauen,Guarda l'IA
+MENU_WATCH_DESC,"Dos pueblos jugados por la computadora, a 1× o 2×.","Two towns played by the computer, at 1× or 2×.","Duas cidades jogadas pelo computador, a 1× ou 2×.","Deux villes jouées par l'ordinateur, à 1× ou 2×.","Zwei Orte, vom Computer gespielt, mit 1× oder 2×.","Due paesi giocati dal computer, a 1× o 2×."
+WATCH_SPEED,Velocidad {x},Speed {x},Velocidade {x},Vitesse {x},Tempo {x},Velocità {x}
+SPEED_1,1×,1×,1×,1×,1×,1×
+SPEED_2,2×,2×,2×,2×,2×,2×
 MENU_HOWTO,Cómo se juega,How to play,Como jogar,Comment jouer,So wird gespielt,Come si gioca
 MENU_HOWTO_DESC,"Las reglas, la cuenta y la historia.","The rules, the count and the story.","As regras, a contagem e a história.","Les règles, le décompte et l'histoire.","Die Regeln, die Zählung und die Geschichte.","Le regole, il conteggio e la storia."
 MENU_SETTINGS,Ajustes,Settings,Configurações,Réglages,Einstellungen,Impostazioni

@@ -315,6 +315,12 @@ func _stone_court() -> void:
 		# The structure: its inner face is the wall above the talud; its top, where people watch; its back and ends.
 		stone.box(Vector3(0, wh * 0.5, sz * (tz + deep) * 0.5), Vector3(al * 2.0, wh, deep - tz), Color(-1, 0, 0))
 		stone.box(Vector3(0, wh + 0.25, sz * (tz + 0.6)), Vector3(al * 2.0, 0.5, 1.2))
+		# Stepped terraces behind the coping, a step a row of people: each row stands higher than the one in front, so
+		# the coping and the row before never hide their legs from the court.
+		for r in TERRACE_ROWS:
+			var z0: float = tz + 1.2 + r * TERRACE_D
+			var top: float = TERRACE_Y0 + r * TERRACE_RISE
+			stone.box(Vector3(0, (wh + top) * 0.5, sz * (z0 + deep) * 0.5), Vector3(al * 2.0, top - wh, deep - z0))
 		# The talud's two end faces (triangles as thin quads).
 		for ex in [-al, al]:
 			var e1 := Vector3(ex, 0.0, sz * aw)
@@ -486,6 +492,13 @@ func _process(_delta: float) -> void:
 # ---------------------------------------------------------------- the people
 
 ## Where people watch from, and the crowd built there: one MultiMesh, everyone facing the middle of the court.
+## The stone courts' terraces on top of each structure: a step a row, the first level with the top of the coping.
+const TERRACE_ROWS := 4
+const TERRACE_D := 0.8                       # each step's depth (m)
+const TERRACE_RISE := 0.35                   # how much higher each row stands
+const TERRACE_Y0 := Court.WALL_H + 0.5       # the first row: the top of the coping
+
+
 func spectator_spots() -> Array:
 	var out := []
 	match id:
@@ -518,8 +531,10 @@ func spectator_spots() -> Array:
 			for s in [-1.0, 1.0]:
 				var x := -17.0
 				while x < 17.0:
-					for row in 4:
-						out.append(Vector3(x + _rng.randf_range(-0.15, 0.15), Court.WALL_H, s * (Court.TALUD_Z + 1.6 + row * 0.8)))
+					for row in TERRACE_ROWS:
+						# On the middle of the row's step (_stone_court's terraces), on its top.
+						var z: float = Court.TALUD_Z + 1.2 + (row + 0.5) * TERRACE_D
+						out.append(Vector3(x + _rng.randf_range(-0.15, 0.15), TERRACE_Y0 + row * TERRACE_RISE, s * z))
 					x += 0.62
 				for k in 60:
 					out.append(Vector3(s * _rng.randf_range(Court.END_HALF_L + 1.6, Court.END_HALF_L + 5.0), 0.0, _rng.randf_range(-8.0, 8.0)))

@@ -197,6 +197,23 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   commits fast-forwarded, version 0.6.0-beta, code 12 (above the pilot's 11), the beta and its 32-bit APK published
   from claude/pok-ta-pok-game as before. The Foundation session no longer pushes here; shared-code changes go through
   it, and syncing uses tools/wsg/sync_foundation.sh (setting loco.rng in the same change, or seeded matches change).
+- **0.6.1-beta: the owner's A16 notes.**
+  - The crowd watches the play: every spectator turns toward the ball along the court (the side stands never face
+    away), each with his own pace, a weight-shift and a breath; on a raya they jump, some higher than others, and
+    settle over a second or so.
+  - The stone court's spectators stand on stepped terraces behind the wall's top, so none sinks into the stonework.
+  - The court-side camera frames the play: the ball, everyone near it and your own player, the court's whole width,
+    the angle of view worked out for the screen (20:9, 16:9, 4:3). On the earth court it stands back over the near
+    crowd; on the stone court it hangs just out from the near wall's top, in front of the terraces, so the wall
+    never hides the alley.
+  - The players' ready stance is an athlete's on every level: hips sat back, knees bent over the toes, heels just
+    up, the arms loose and in front, no longer held out like a mannequin's.
+  - The copal elder is a realistic older Maya man in plain white cotton (the judge's rig, retextured by Meshy for 10
+    credits; a new figure for him came back in a "costume Maya" fringed skirt and was not used: docs/CULTURE.md). He
+    walks upright and swings the censer in slower arcs, the copal smoke rising from it.
+  - **Watch AI** (the main menu): two towns played by the computer, on the broadcast camera, with the score, the
+    replays, pause and quit, and a 1x / 2x button (at 2x the match steps twice a frame, each step as at 1x).
+  - The MoCap Online and ActorCore credits stay in Licences.
 
 ## Next
 

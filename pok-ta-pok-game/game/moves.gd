@@ -1,26 +1,43 @@
 class_name Moves
 extends RefCounted
 ## The poses: each a function of time or of how far through a move, returning bone angles for Body.apply (degrees;
-## Body has the conventions). The ready stance of the hip game (knees bent, the body low and forward, the arms out
-## for balance), the run, the hip strike, the dive for a low ball, the two serves, and the judges' calls.
+## Body has the conventions). The ready stance of the hip game (knees bent, the body low and forward, the weight on
+## the balls of the feet, the arms loose and ready), the run, the hip strike, the dive for a low ball, the two serves,
+## and the judges' calls.
 
 
 static func _v(x: float, y := 0.0, z := 0.0) -> Vector3:
 	return Vector3(x, y, z)
 
 
-## The ready stance, breathing a little: low (0-1) is how far down he sits.
+## The ready stance, breathing a little: low (0-1) is how far down he sits. An athlete's, not a mannequin's: the hips
+## sat back and low, the trunk over the knees, knees bent and over the toes, the heels just off the ground (his weight
+## on the balls of his feet), the arms loose at his sides and a little in front, elbows bent, ready to go either way
+## and to turn the hip into the ball. The hips' height comes from the legs' angles, so the soles stay on the floor.
 static func stance(t: float, low := 0.6) -> Dictionary:
 	var b := sin(t * 2.2) * 2.0
-	var k := 18.0 + 32.0 * low
+	var pelvis := 12.0 + 12.0 * low                  # the pelvis tipped forward (the hips sat back)
+	var thigh := -(18.0 + 36.0 * low)                # the thigh's angle from the vertical, forward
+	var knee := 30.0 + 50.0 * low - b * 0.4          # the knee's bend
+	var shin := thigh + knee                         # the shin's angle, the knee over the toes
+	var heel := 7.0 + 4.0 * low                      # the heels off the ground
+	var hips_y := _leg_drop(pelvis, thigh, shin, heel)
 	return {
-		"hips_y": -0.04 - 0.12 * low,
-		"hips": _v(10.0 * low), "spine": _v(10.0 + 8.0 * low + b * 0.3), "chest": _v(4.0), "head": _v(-14.0 * low),
-		"thigh_l": _v(-k, 0, 9), "shin_l": _v(k * 1.5), "foot_l": _v(-k * 0.5),
-		"thigh_r": _v(-k, 0, -9), "shin_r": _v(k * 1.5), "foot_r": _v(-k * 0.5),
-		"upperarm_l": _v(-20 + b, 0, 26), "forearm_l": _v(-35),
-		"upperarm_r": _v(-20 - b, 0, -26), "forearm_r": _v(-35),
+		"hips_y": hips_y,
+		"hips": _v(pelvis), "spine": _v(6.0 + 6.0 * low + b * 0.3), "chest": _v(2.0), "head": _v(-pelvis - 4.0 - 10.0 * low),
+		"thigh_l": _v(thigh - pelvis, 0, 6), "shin_l": _v(knee), "foot_l": _v(heel - shin),
+		"thigh_r": _v(thigh - pelvis, 0, -6), "shin_r": _v(knee), "foot_r": _v(heel - shin),
+		"upperarm_l": _v(-14.0 - 10.0 * low + b, 0, 8), "forearm_l": _v(-48.0 - 14.0 * low, -20),
+		"upperarm_r": _v(-14.0 - 10.0 * low - b, 0, -8), "forearm_r": _v(-48.0 - 14.0 * low, 20),
 	}
+
+
+## How far the hips come down (m, negative) for legs at these angles (degrees from the vertical, Body's lengths: the
+## hip joint 0.05 m under the hips, the thigh 0.44, the shin 0.42, the ball of the foot 0.13 m in front of the ankle).
+static func _leg_drop(pelvis: float, thigh: float, shin: float, heel: float) -> float:
+	var r := deg_to_rad(1.0)
+	var up := 0.05 * cos(pelvis * r) + 0.44 * cos(thigh * r) + 0.42 * cos(shin * r) + 0.13 * sin(heel * r)
+	return up - 0.91
 
 
 ## The run at speed (m/s); phase in cycles (one cycle is two steps). Low running crouches into the stance.

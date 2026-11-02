@@ -137,8 +137,8 @@
    "faces": 6000,
    "topology": "triangle",
    "pose": "",
-   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic an older Maya woman from Yucat\u00e1n in a white cotton huipil dress with a band of bright embroidered flowers at the neckline and hem, a dark shawl folded over one shoulder, grey hair in a bun, sandals. Neutral face, mouth closed. No logos, no text.",
-   "texture_prompt": "Photorealistic skin, face and hair; an older Maya woman from Yucat\u00e1n in a white cotton huipil dress with a band of bright embroidered flowers at the neckline and hem, a dark shawl folded over one shoulder, grey hair in a bun, sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic an older Maya woman from Yucatán in a white cotton huipil dress with a band of bright embroidered flowers at the neckline and hem, a dark shawl folded over one shoulder, grey hair in a bun, sandals. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; an older Maya woman from Yucatán in a white cotton huipil dress with a band of bright embroidered flowers at the neckline and hem, a dark shawl folded over one shoulder, grey hair in a bun, sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
   },
   {
    "name": "fan_texana",
@@ -197,8 +197,8 @@
    "faces": 6000,
    "topology": "triangle",
    "pose": "",
-   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Maya man from Yucat\u00e1n in his sixties dressed all in white cotton, a white long-sleeve shirt and white trousers, a palm straw hat, a red cotton sash at the waist and sandals. Neutral face, mouth closed. No logos, no text.",
-   "texture_prompt": "Photorealistic skin, face and hair; a Maya man from Yucat\u00e1n in his sixties dressed all in white cotton, a white long-sleeve shirt and white trousers, a palm straw hat, a red cotton sash at the waist and sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
+   "prompt": "Full-body photo of one person standing naturally, front view, arms relaxed down at the sides, feet flat, plain light-grey background. Photorealistic a Maya man from Yucatán in his sixties dressed all in white cotton, a white long-sleeve shirt and white trousers, a palm straw hat, a red cotton sash at the waist and sandals. Neutral face, mouth closed. No logos, no text.",
+   "texture_prompt": "Photorealistic skin, face and hair; a Maya man from Yucatán in his sixties dressed all in white cotton, a white long-sleeve shirt and white trousers, a palm straw hat, a red cotton sash at the waist and sandals; matte everyday fabrics, no logos, no text, even studio lighting, no baked shadows."
   },
   {
    "name": "fan_apron",
@@ -225,6 +225,16 @@
    "topology": "triangle",
    "prompt": "A Maya limestone stela, a tall carved upright slab with a standing ruler figure in low relief on the front and columns of square glyph blocks on its sides, weathered and slightly broken at the top edge, standing on the ground, realistic museum quality photogrammetry, isolated object",
    "texture_prompt": "Weathered pale grey limestone with lichen and dark weathering in the carved relief, realistic, matte, even lighting, no baked shadows."
+  },
+  {
+   "name": "ritual_elder",
+   "kind": "referee",
+   "height_m": 1.64,
+   "faces": 9000,
+   "topology": "triangle",
+   "pose": "t-pose",
+   "prompt": "Standing in a T-pose, arms straight out to the sides at shoulder height, palms down, open hands with five separate fingers. Photorealistic full-body a dignified Maya elder from Yucatan in his late sixties, short grey hair, a lined calm face, a plain white long-sleeve cotton shirt worn loose over plain white cotton trousers, simple brown leather sandals. No hat, no headdress, no feathers, no jewellery, no costume. Arms held straight out sideways, not crossed. Whole body visible from head to sandals, feet flat, neutral calm face, mouth closed.",
+   "texture_prompt": "Photorealistic skin, face and hair; a dignified Maya elder in his late sixties with short grey hair and a lined calm face, a plain white long-sleeve cotton shirt and plain white cotton trousers, simple brown leather sandals; matte natural cotton, no patterns, no logos, no text, even studio lighting, no baked shadows."
   }
  ]
 }

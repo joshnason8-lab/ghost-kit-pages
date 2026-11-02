@@ -1,6 +1,6 @@
 extends Node
 ## Pictures of a match for looking at (not a test): a venue at a graphics level, a few moments in.
-##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/shot.tscn -- OUT_PREFIX VENUE GFX [user] [secs,...] [cam]
+##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/shot.tscn -- OUT_PREFIX VENUE GFX [user] [secs,...] [cam] [WxH]
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -15,7 +15,8 @@ func _ready() -> void:
 	Game.settings.coach = false
 	if args.size() > 5:
 		Game.settings.camera = int(args[5])
-	get_tree().root.size = Vector2i(1600, 900)
+	var wh := (String(args[6]) if args.size() > 6 else "1600x900").split("x")
+	get_tree().root.size = Vector2i(int(wh[0]), int(wh[1]))
 	await Crowd.bake(self)
 	if venue.begins_with("res://"):
 		# A screen, not a match: OUT_PREFIX res://ui/x.gd GFX lang secs
@@ -40,6 +41,6 @@ func _ready() -> void:
 			frame += 1
 		await RenderingServer.frame_post_draw
 		var img := get_viewport().get_texture().get_image()
-		img.save_jpg("%s_%s_g%d_%s.jpg" % [out, venue, g, ts], 0.85)
+		img.save_jpg("%s_%s_g%d_%s%s.jpg" % [out, venue, g, ts, ("_" + String(args[6])) if args.size() > 6 else ""], 0.85)
 	print("shots done in %d ms" % (Time.get_ticks_msec() - t0))
 	get_tree().quit()

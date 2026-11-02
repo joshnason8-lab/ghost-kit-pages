@@ -5,9 +5,12 @@ extends MultiMeshInstance3D
 ## (assets/people/fan_*: a ranchero in a palm hat, a grandmother in a rebozo, a boy, a man in a guayabera...), each from
 ## the front and from behind, every one twice (the second turned a little and in another light). Without them, the
 ## code-built bodies stand in; headless (the tests) there is nothing to render with, so a plain painted sheet does.
-## Each person faces the court (their instance's +Z, toward its centre, flat); the shader turns the cut-out to the
-## camera so it is never seen edge-on, and draws the person from the front when the camera is in front of them and
-## from behind when it is behind them. They fidget, and jump when the crowd goes up (excite).
+## Each person faces the play: a point on the court's long middle line that follows the ball along the court (focus;
+## the match moves it smoothly, so heads turn rather than snap), each with a little offset of their own. The shader
+## turns the cut-out to the camera so it is never seen edge-on, and draws the person from the front when the camera is
+## in front of them and from behind when it is behind them. At rest they shift their weight and breathe; when the
+## crowd goes up (cheer) most jump, each at their own pace and height, the rest bob on their toes, and it dies down
+## over a couple of seconds rather than stopping.
 
 const FIGS := 16
 const FIG_W := 64
@@ -208,20 +211,27 @@ uniform float figs = 16.0;
 uniform float excite = 0.0;
 uniform float time_s = 0.0;
 uniform float light_k = 1.0;
+uniform vec3 focus = vec3(0.0);
 varying vec4 data;
 varying float back;
 void vertex() {
 	data = INSTANCE_CUSTOM;
 	float ph = data.z * 6.2831;
-	float jump = max(0.0, sin(time_s * 9.0 + ph)) * excite * 0.22 * step(0.35, data.w);
-	float sway = sin(time_s * 1.3 + ph) * 0.015;
+	// Cheering: most jump, each at their own pace and height; the others bob on their toes.
+	float pace = 6.5 + data.y * 3.0;
+	float hop = max(0.0, sin(time_s * pace + ph));
+	float jump = excite * (data.w > 0.3 ? hop * (0.12 + 0.14 * data.z) : hop * 0.04);
+	// At rest: the weight shifted from foot to foot, and breathing.
+	float sway = sin(time_s * (0.6 + 0.5 * data.y) + ph) * 0.02 + sin(time_s * 2.1 + ph * 3.0) * 0.004 * excite;
+	float breathe = sin(time_s * (1.1 + 0.4 * data.w) + ph) * 0.006;
 	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-	// The person faces their instance's +Z (the court); seen from behind, draw them from behind (Crowd.seen_from_behind).
-	vec3 facing = normalize(vec3(MODEL_MATRIX[2].x, 0.0, MODEL_MATRIX[2].z));
+	// The person faces the play (Crowd.facing_at); seen from behind, draw them from behind (Crowd.seen_from_behind).
+	vec3 look = vec3(focus.x + (data.y - 0.5) * 3.0 - world.x, 0.0, focus.z - world.z);
+	vec3 facing = length(look) > 0.01 ? normalize(look) : vec3(0.0, 0.0, 1.0);
 	vec3 to_cam = CAMERA_POSITION_WORLD - world;
 	back = dot(facing, vec3(to_cam.x, 0.0, to_cam.z)) < 0.0 ? 1.0 : 0.0;
-	world += right * (VERTEX.x + sway * VERTEX.y) + vec3(0.0, VERTEX.y + jump, 0.0);
+	world += right * (VERTEX.x + sway * VERTEX.y) + vec3(0.0, VERTEX.y * (1.0 + breathe) + jump, 0.0);
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
 }
 void fragment() {
@@ -270,9 +280,10 @@ func build(p_spots: Array, density: float, _palette: Array, seed_ := 1) -> void:
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
-## The way a spectator at p faces: toward the centre of the court, flat on the ground.
-static func facing_at(p: Vector3) -> Vector3:
-	var d := Vector3(-p.x, 0.0, -p.z)
+## The way a spectator at p faces: toward the play (focus, on the court's long middle line), flat on the ground. As
+## the shader does it, less each person's own small offset along the court.
+static func facing_at(p: Vector3, at: Vector3 = Vector3.ZERO) -> Vector3:
+	var d := Vector3(at.x - p.x, 0.0, at.z - p.z)
 	return d.normalized() if d.length() > 0.01 else Vector3.FORWARD
 
 
@@ -281,13 +292,39 @@ static func seen_from_behind(p: Vector3, facing: Vector3, cam: Vector3) -> bool:
 	return facing.dot(Vector3(to_cam.x, 0.0, to_cam.z)) < 0.0
 
 
-func _process(_delta: float) -> void:
+static var _excite := 0.0
+static var _hold := 0.0      # seconds the cheer stays up before it dies down
+static var focus := Vector3.ZERO
+
+
+func _process(delta: float) -> void:
 	if material_override:
-		(material_override as ShaderMaterial).set_shader_parameter("time_s", Time.get_ticks_msec() / 1000.0)
+		var m := material_override as ShaderMaterial
+		m.set_shader_parameter("time_s", Time.get_ticks_msec() / 1000.0)
+		if _hold > 0.0:
+			_hold -= delta
+		elif _excite > 0.0:
+			_excite = maxf(0.0, _excite - delta * 0.5)
+		m.set_shader_parameter("excite", _excite)
+		m.set_shader_parameter("focus", focus)
+
+
+## The crowd goes up (k: 0-1, how much): at once, held a moment, then dying down over a couple of seconds.
+static func cheer(k: float, hold := 1.0) -> void:
+	_excite = maxf(_excite, clampf(k, 0.0, 1.0))
+	_hold = maxf(_hold, hold)
 
 
 static func set_excite(k: float) -> void:
-	material().set_shader_parameter("excite", clampf(k, 0.0, 1.0))
+	_excite = clampf(k, 0.0, 1.0)
+	_hold = 0.0
+	material().set_shader_parameter("excite", _excite)
+
+
+## Where the play is, for the crowd to watch: on the court's long middle line, along it with the ball (smoothed by the
+## caller), never out over the stands.
+static func watch(x: float, half_len: float) -> void:
+	focus = Vector3(clampf(x, -half_len, half_len), 0.0, 0.0)
 
 
 static func set_light(k: float) -> void:

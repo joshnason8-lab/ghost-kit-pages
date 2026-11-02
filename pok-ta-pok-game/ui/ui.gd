@@ -115,7 +115,8 @@ static func page(owner: Control, title: String, back: Callable = Callable(), eye
 
 
 ## A round button with an icon, for Back and other header actions.
-static func round_button(icon_kind: String, cb: Callable, px := 58.0) -> Button:
+## A round button with an icon, or (icon_kind "") a few characters of text (the watch speed, "2×").
+static func round_button(icon_kind: String, cb: Callable, px := 58.0, text := "") -> Button:
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(px, px)
 	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -132,6 +133,13 @@ static func round_button(icon_kind: String, cb: Callable, px := 58.0) -> Button:
 	b.add_theme_stylebox_override("hover", sb if Game.touch_ui else sbh)
 	b.add_theme_stylebox_override("pressed", sbh)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	if icon_kind == "":
+		b.text = text
+		b.add_theme_font_size_override("font_size", int(px * 0.36))
+		b.add_theme_color_override("font_color", Game.C_INK)
+		b.pressed.connect(Sfx.click)
+		b.pressed.connect(cb)
+		return b
 	var ic := Icon.make(icon_kind, px * 0.46)
 	ic.custom_minimum_size = Vector2.ZERO
 	ic.set_anchors_preset(Control.PRESET_FULL_RECT)

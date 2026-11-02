@@ -35,6 +35,10 @@ each match on its two Yucatán stone courts:
   reaches him, and all of them together at the end. A conch is blown at the start and the crowd falls quiet.
 - It is short (about a second and a half a player), shown plainly, with no words put in anyone's mouth, no invented
   prayer, deity or chant, and no theatre of sacrifice. A tap passes it (SKIP).
+- The elder (0.6.1) is a realistic older Maya man: grey-haired, in plain white cotton shirt and trousers, as elders
+  at today's ceremonies dress. No feathers, headdress, jade or costume. He walks upright and swings the censer in
+  slow, even arcs, his head a little bowed. (A new Meshy figure for him came back bare-chested in a fringed skirt,
+  a "costume Maya" this game rules out; it was not used. He wears the judge's rigged body, retextured.)
 - It is **not** shown on the Sinaloa courts: no such ceremony is documented for ulama, and the game does not borrow
   one region's practice for another's game.
 

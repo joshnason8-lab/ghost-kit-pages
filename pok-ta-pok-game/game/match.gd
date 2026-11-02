@@ -37,6 +37,10 @@ var clock := 0.0              # real seconds played (not counting calls, pauses)
 var limit_s := 0.0
 var sudden := false           # time is up and level: the next raya wins
 var paused := false
+## Watching the computer play (mode "watch"): 1 or 2 steps of the match a frame (the HUD's 1x / 2x).
+var speed := 1
+var _finished := false
+var _crowd_x := 0.0           # where the crowd is watching, along the court (smoothed)
 var rng := RandomNumberGenerator.new()
 var attract := false
 var tstats := [{}, {}]
@@ -128,6 +132,10 @@ func _ready() -> void:
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
+	if watching():
+		# Watching: the broadcast view, whatever camera the player's own matches use (the button still changes it).
+		cam.mode = Game.CAM_TV
+		cam.snap(self)
 	if not attract and String(config.get("mode", "")) != "test":
 		hud = (load("res://game/hud.gd") as Script).new()
 		hud.m = self
@@ -192,6 +200,18 @@ func set_paused(p: bool) -> void:
 	Sfx.pause(p)
 
 
+## Watching the computer play both sides (the menu's "Watch AI").
+func watching() -> bool:
+	return String(config.get("mode", "")) == "watch" and user_team < 0
+
+
+## The speed the match is watched at (1 or 2); only when watching.
+func set_speed(s: int) -> void:
+	speed = clampi(s, 1, 2) if watching() else 1
+	if hud:
+		hud.show_speed()
+
+
 func on_back() -> void:
 	set_paused(not paused)
 
@@ -204,6 +224,17 @@ func _process(delta: float) -> void:
 	var real_delta := delta
 	delta = minf(delta, 0.05)
 	_check_frame_rate(delta, real_delta)
+	# At 2x the match steps twice a frame, each step as at 1x (the ball's flight, the players' running unchanged).
+	for i in speed:
+		if _finished or paused or not is_inside_tree():
+			break
+		_tick(delta)
+
+
+func _tick(delta: float) -> void:
+	# The crowd follows the play along the court, turning their heads over about a second.
+	_crowd_x = lerpf(_crowd_x, float(ball.pos.x), minf(1.0, delta * 1.8))
+	Crowd.watch(_crowd_x, court.half_l())
 	if wsg_replay:
 		_rank_detail(delta)
 	if _hitstop > 0.0:
@@ -386,12 +417,15 @@ func _to_over() -> void:
 
 
 func _finish() -> void:
+	if _finished:
+		return
 	if attract:
 		_restart_attract()
 		return
 	if String(config.get("mode", "")) == "test":
 		set_process(false)
 		return
+	_finished = true
 	Game.on_match_finished(result())
 
 
@@ -1078,8 +1112,7 @@ func _award(team: int, reason: String, fault: bool, who) -> void:
 	if not attract:
 		Sfx.play("call", -4.0)
 		Sfx.react("cheer" if big else "applause", -4.0 if big else -10.0)
-		Crowd.set_excite(1.0 if big else 0.5)
-		get_tree().create_timer(1.6).timeout.connect(func(): Crowd.set_excite(0.0))
+		Crowd.cheer(1.0 if big else 0.55, 1.4 if big else 0.8)
 	if user_team >= 0 and not attract:
 		if reason == "ring" and team == user_team:
 			Game.haptic("ring")

@@ -27,7 +27,9 @@ var _phase := 0.0
 ## Starts it for a match (m): the elder at the analco's near edge.
 func setup(p_match: Node) -> void:
 	m = p_match
-	elder = Body.new({"kind": "judge", "rigged": false, "shirt": Color("f2efe6"), "trousers": Color("ece6d6"), "hat": 0,
+	# A Maya elder in plain white cotton, realistic on every level (RiggedBody's "ritual_elder": the judge's rigged
+	# model, retextured), his skin the warm brown the code body had; the code-built figure only if the build lacks him.
+	elder = Body.new({"kind": "elder", "shirt": Color("f2efe6"), "trousers": Color("ece6d6"), "hat": 0,
 		"skin": Color("7c5236"), "hair": Color("d9d4cc"), "height": 1.62, "build": 0.4})
 	add_child(elder)
 	var hw: float = m.court.half_w_at(0.0)
@@ -117,7 +119,7 @@ func step(dt: float) -> void:
 			elder.global_position += to.normalized() * stepv
 			elder.rotation.y = atan2(to.x, to.z)
 			_phase += stepv / 1.1
-			elder.apply(Moves.blend(Moves.stance(_t, 0.2), Moves.run(_phase, WALK, 0.2), 0.7))
+			elder.apply(Moves.blend(Moves.judge_idle(_t), Moves.run(_phase, WALK, 0.0), 0.7))
 		else:
 			var f := pl.global_position - elder.global_position
 			elder.rotation.y = atan2(f.x, f.z)
@@ -141,9 +143,9 @@ func step(dt: float) -> void:
 		pl.offering = move_toward(pl.offering, 1.0 if near or _end_t >= 0.0 else 0.0, dt * 2.5)
 
 
-## The elder swinging the censer before a player.
+## The elder swinging the censer before a player: slow, even arcs, his head a little bowed.
 func _censing(t: float) -> Dictionary:
-	var sw := sin(t * 3.2) * 18.0
+	var sw := sin(t * 2.6) * 18.0
 	return {"spine": Moves._v(8.0), "head": Moves._v(6.0),
 		"upperarm_r": Moves._v(-55.0 + sw, 0, -8.0), "forearm_r": Moves._v(-25.0),
 		"upperarm_l": Moves._v(-10.0, 0, 10.0), "forearm_l": Moves._v(-30.0)}

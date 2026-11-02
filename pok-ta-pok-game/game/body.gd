@@ -210,7 +210,7 @@ func _mesh() -> ArrayMesh:
 		_cache[key] = gm
 		return gm
 	# A judge or a spectator is dressed: a shirt, trousers or a skirt, sandals, maybe a hat.
-	var judge := kind == "judge" or kind == "spectator"
+	var judge := kind in ["judge", "spectator", "elder"]
 	var shirt: Color = look.get("shirt", Color("eeeae0"))
 	var trousers: Color = look.get("trousers", Color("2c2a2e"))
 	var torso_col := shirt if judge else skin
@@ -283,7 +283,7 @@ func _mesh() -> ArrayMesh:
 			_ulama_gear(m, r, team, trim)
 		"classic":
 			_classic_gear(m, r, team, trim)
-		"judge", "spectator":
+		"judge", "spectator", "elder":
 			# Trousers to the waist and a belt, or a long skirt.
 			m.ellipsoid(r.hips + Vector3(0, 0.0, -0.01), Vector3(0.175 * w, 0.13, 0.125), trousers, B.call("hips"))
 			if bool(look.get("skirt", false)):

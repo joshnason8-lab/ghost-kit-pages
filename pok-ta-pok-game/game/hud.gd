@@ -24,6 +24,7 @@ var _toast: Label
 var _toast_t := 0.0
 var _marks: Control
 var _pause: Control
+var speed_button: Button      # watching only: 1x / 2x
 var _dev: Label
 var _frames := PackedFloat32Array()
 var _quality := -1.0
@@ -92,10 +93,14 @@ func _ready() -> void:
 	box.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	box.offset_right = -sm.z
 	box.offset_top = 16
-	box.offset_left = -200
+	box.offset_left = -280
 	box.alignment = BoxContainer.ALIGNMENT_END
 	box.add_theme_constant_override("separation", 12)
 	root.add_child(box)
+	if m.watching():
+		# Watching the computer play: 1x or 2x.
+		speed_button = UI.round_button("", func(): m.set_speed(2 if int(m.speed) == 1 else 1), 58, tr("SPEED_1"))
+		box.add_child(speed_button)
 	box.add_child(UI.round_button("camera", func(): _next_camera(), 58))
 	box.add_child(UI.round_button("pause", func(): m.set_paused(not m.paused), 58))
 	touch = TouchControls.new()
@@ -410,6 +415,15 @@ func _draw_marks() -> void:
 						pts2.append(cam.unproject_position(Vector3(q.x + cos(a) * 0.35, m.court.floor_y(q.x, q.z) + 0.03, q.z + sin(a) * 0.35)))
 					_marks.draw_polyline(pts2, Color(Game.C_INK, 0.55), 2.0, true)
 				break
+
+
+## The watch speed changed (Match.set_speed): the button shows it, and a word says so.
+func show_speed() -> void:
+	if speed_button == null:
+		return
+	var x := tr("SPEED_2") if int(m.speed) == 2 else tr("SPEED_1")
+	speed_button.text = x
+	toast(tr("WATCH_SPEED").format({"x": x}), 1.4)
 
 
 func _next_camera() -> void:

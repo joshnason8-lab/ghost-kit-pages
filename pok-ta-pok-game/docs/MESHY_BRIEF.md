@@ -4,7 +4,8 @@
 
 The owner allowed credits. `tools/meshy/meshy_batch.py` (from the kabaddi game) made these from
 `tools/meshy/assets.json`; `tools/meshy/prepare.gd` (from the floorball game) cut them for phones into
-`assets/people/`. 560 credits in 0.2.0 (1,763 before, 1,203 after) and 440 in 0.4.0 (763 left); previews first, checked, then textured and rigged.
+`assets/people/`. 560 credits in 0.2.0 (1,763 before, 1,203 after) and 440 in 0.4.0 (763 left); previews first, checked, then textured and rigged. 0.6.1: 30 credits of the 35
+allowed for the copal elder (a 20-credit preview, rejected; a 10-credit retexture of the judge, used).
 
 | Model | What | Use |
 |---|---|---|
@@ -14,6 +15,8 @@ The owner allowed credits. `tools/meshy/meshy_batch.py` (from the kabaddi game) 
 | fan_huipil, fan_texana, fan_cane, fan_girl, fan_mother, fan_jersey, fan_yucatec, fan_apron (0.4.0) | more townspeople | the 32-figure sheet on Medium and High |
 | court_ring (0.4.0) | the carved stone ring, fitted to the court's ring by tools/meshy/fit_ring.gd | the stone court on Medium and High |
 | court_stela (0.4.0) | a stela; it came back like a classical column | not used |
+| ritual_elder preview (0.6.1) | a Maya elder in white cotton; it came back bare-chested in a fringed skirt | not used (docs/CULTURE.md) |
+| ritual_elder (0.6.1) | judge_cap retextured, its UVs kept: an elder in plain white cotton, grey hair | the copal elder (game/ritual.gd) on the judge's rig |
 
 The raw downloads stay out of the repo (`assets/meshy/.gitignore`); the manifest keeps the task ids, so the script
 fetches them again without spending credits.
