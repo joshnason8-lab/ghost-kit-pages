@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.11.0
+
+- **The World Stage Games foundation** (the pilot the owner played, now the beta): on Medium and High the players
+  and umpires run, walk and stand with motion capture on the shared rig, the dive, pole turn, kho and the rest laid
+  over it as before; replays at an out or a long survival; the Galaxy A16 starts on Low, which is unchanged.
+
 ## What's new in 0.10.4
 
 - **Every ground built all the way round.** From behind the pole you could see that the near side (where the
