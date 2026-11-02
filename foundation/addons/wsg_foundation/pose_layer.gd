@@ -41,6 +41,32 @@ const FIST_R := 0.045
 ## after the holds.
 var torso_r := 0.0
 const FOREARM_R := 0.04
+## The hips laid once, first (their turn in `pose` and the `hips` offset, at the layer's weight), before the bones
+## and the holds, and not again after: holds made against the hips (make_holds) stay where they were made. Off (the
+## default), the hips are laid last, as before - a hold worked out against the hips before they are laid is carried
+## off by them, and a subclass that laid them itself first had them laid twice in a fade (Floorball's StickLayer:
+## its holds drifted up to 4 cm; Netball's BallLayer laid them once and took them out of the pose).
+var hips_first := false
+## Each hold's weight (hold, hold_point) is its own, not times the layer's: a catch's hands come onto the ball at the
+## ball's weight while the layer fades the game's pose in (Netball: the palms 5-18 cm off the ball for the first
+## frames of a catch). With it the layer runs while any hold is given, even at weight 0. Off (the default): times
+## the layer's, as before.
+var hold_weight_own := false
+## Called as the layer runs, once the hips (with hips_first), the pose and body_pose are laid, to make `hold` against
+## the body as it will be drawn: func(sk: Skeleton3D, hips: Transform3D (the hips' global pose), lift: Vector3 (the
+## lift a later modifier adds, lift_after)) -> Dictionary (the hold). Unset (the default): `hold` as the game set it.
+##   layer.hips_first = true; layer.hold_weight_own = true; layer.make_holds = link.holds
+var make_holds := Callable()
+## Hands held on a point in the world (a pole, a rail, a post: something that does not move with the body):
+## {side: [the point (world: on the bar's axis, where that hand grips it), weight 0-1, the bar's direction (world;
+## default up), its radius (default 0.0475)]}. The hand's grip line (WsgGrip.axis_point) is put on the bar, the palm
+## to it from the shoulder's side, the bar along the hand's width; the arm reaches it (rolling round the bar to spare
+## the wrist). Aimed lower by lift_after (the foot planter lifts the hips after this layer). Applied last. Empty (the
+## default): none. (From Kho Kho's pole turn.)
+var hold_point := {}
+## After each run: side -> how far each hold_point is from its shoulder against the arm's length (over 1: out of
+## reach, the arm straight toward it), for a game to let go of a hand that cannot reach.
+var hold_point_reach := {}
 
 var _target := 0.0
 var _rate := 0.0
@@ -72,7 +98,7 @@ func _process_modification_with_delta(delta: float) -> void:
 		weight = move_toward(weight, _target, _rate * delta)
 		if weight == _target:
 			_rate = 0.0
-	if weight <= 0.0:
+	if weight <= 0.0 and not (hold_weight_own and (not hold.is_empty() or not hold_point.is_empty() or make_holds.is_valid())):
 		return
 	var sk := get_skeleton()
 	if sk == null:
@@ -83,9 +109,15 @@ func _process_modification_with_delta(delta: float) -> void:
 		for b in pose:
 			_ix[b] = sk.find_bone(b)
 	var w := smoothstep(0.0, 1.0, weight)
+	if hips_first:
+		var hb := sk.find_bone("Hips")
+		if pose.has("Hips"):
+			sk.set_bone_pose_rotation(hb, sk.get_bone_pose_rotation(hb).slerp(pose["Hips"], w))
+		if hips != Vector3.INF:
+			sk.set_bone_pose_position(hb, sk.get_bone_pose_position(hb).lerp(sk.get_bone_rest(hb).origin + hips - Vector3(0, lift_after, 0), w))
 	for b in pose:
 		var i: int = _ix.get(b, -1)
-		if i < 0:
+		if i < 0 or hips_first and b == "Hips":
 			continue
 		var q: Quaternion = pose[b]
 		sk.set_bone_pose_rotation(i, sk.get_bone_pose_rotation(i).slerp(q, w))
@@ -110,9 +142,11 @@ func _process_modification_with_delta(delta: float) -> void:
 	if torso_r > 0.0:
 		for side in ["Left", "Right"]:
 			_clear_torso(sk, side, w, 0.0)
+	if make_holds.is_valid():
+		hold = make_holds.call(sk, sk.get_bone_global_pose(sk.find_bone("Hips")), Vector3(0, lift_after, 0))
 	for side in hold:
 		var h: Array = hold[side]
-		var hw: float = float(h[2]) * w
+		var hw: float = _hold_w(h[2], w)
 		var ai := sk.find_bone(h[0])
 		if hw > 0.0 and ai >= 0:
 			var ag := sk.get_bone_global_pose(ai)
@@ -123,17 +157,65 @@ func _process_modification_with_delta(delta: float) -> void:
 				grip = [h[4], ag.basis * (h[3] as Vector3)]
 			_reach(sk, side, target, hw, grip)
 	for side in clear:
-		if not hold.has(side) or float((hold[side] as Array)[2]) * w <= 0.0:
+		if not hold.has(side) or _hold_w((hold[side] as Array)[2], w) <= 0.0:
 			_keep_clear(sk, side, clear[side])
 	if torso_r > 0.0:
 		# (A held hand too, when the arm is well into the chest: better a hand a little off the handle than an arm
 		# through the chest; a graze is left, the hand kept closed on the handle.)
 		for side in ["Left", "Right"]:
-			var held := hold.has(side) and float((hold[side] as Array)[2]) * w > 0.0
+			var held := hold.has(side) and _hold_w((hold[side] as Array)[2], w) > 0.0
 			_clear_torso(sk, side, w, 0.03 if held else 0.0)
-	if hips != Vector3.INF:
+	if hips != Vector3.INF and not hips_first:
 		var h := sk.find_bone("Hips")
 		sk.set_bone_pose_position(h, sk.get_bone_pose_position(h).lerp(sk.get_bone_rest(h).origin + hips - Vector3(0, lift_after, 0), w))
+	if not hold_point.is_empty():
+		_hold_points(sk, w)
+
+
+## A hold's weight this run: its own (hold_weight_own), or times the layer's.
+func _hold_w(own, w: float) -> float:
+	return minf(float(own), 1.0) if hold_weight_own else float(own) * w
+
+
+var _rest_j := {}
+var _rest_for := -1
+
+
+## Each hold_point's hand on its bar (see hold_point).
+func _hold_points(sk: Skeleton3D, w: float) -> void:
+	if _rest_for != sk.get_instance_id():
+		# (The hand's rest joints, for its grip line: the rig's skeleton is built from the character's joints.)
+		_rest_for = sk.get_instance_id()
+		_rest_j = {}
+		for side in ["Left", "Right"]:
+			for n in ["Hand", "HandMiddle1", "HandIndex1", "HandPinky1"]:
+				var i := sk.find_bone(side + n)
+				if i >= 0:
+					_rest_j[side + n] = sk.get_bone_global_rest(i).origin
+	var inv := sk.global_transform.affine_inverse()
+	for side in hold_point:
+		var e: Array = hold_point[side]
+		if not _rest_j.has(side + "HandPinky1"):
+			continue
+		var hw := _hold_w(e[1], w)
+		var r: float = float(e[3]) if e.size() > 3 else 0.0475
+		# (The foot planter lifts the hips after this, by lift_after: the hand is put that much lower.)
+		var a: Vector3 = inv * (e[0] as Vector3) - Vector3(0.0, lift_after, 0.0)
+		var up: Vector3 = (inv.basis * (e[2] as Vector3 if e.size() > 2 else Vector3.UP)).normalized()
+		var ia := sk.find_bone(side + "Arm")
+		var sh := sk.get_bone_global_pose(ia).origin
+		var arm := sk.get_bone_rest(sk.find_bone(side + "ForeArm")).origin.length() + sk.get_bone_rest(sk.find_bone(side + "Hand")).origin.length()
+		var d := (a - sh) - up * (a - sh).dot(up)
+		if d.length() < 0.01:
+			continue
+		d = d.normalized()
+		var x := d if side == "Left" else -d
+		var b := Basis(x, up.cross(x), up).orthonormalized()
+		var g: Vector3 = WsgGrip.axis_point(_rest_j, side, r) - (_rest_j[side + "Hand"] as Vector3)
+		var t := Transform3D(b, a - b * g)
+		hold_point_reach[side] = (t.origin - sh).length() / maxf(arm, 0.01)
+		if hw > 0.0:
+			_reach(sk, side, t, hw, [g, up])
 
 
 ## The side's forearm out of the chest (torso_r round the hips-to-neck line): the arm turned about the shoulder, the

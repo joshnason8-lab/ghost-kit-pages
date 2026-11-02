@@ -74,6 +74,8 @@ func _initialize() -> void:
 	await _grip_sphere(poses)
 	await _torso()
 	await _planter_off()
+	await _hold_point()
+	await _hips_first()
 	for l in lines:
 		print(l)
 	if failures.is_empty():
@@ -363,6 +365,81 @@ func _planter_off() -> void:
 	lines.append("planter under a whole-body pose: enabled=false moves the feet %.1f cm, keep_pose %.2f mm (hips lifted %.1f cm, want 4.0)" % [bent * 100.0, kept * 1000.0, lift * 100.0])
 	if kept > 0.0005 or absf(lift - 0.04) > 0.0005:
 		failures.append("keep_pose: the legs moved %.2f mm, the hips lifted %.1f cm" % [kept * 1000.0, lift * 100.0])
+	b.queue_free()
+	await process_frame
+
+
+## A hand held on a point in the world (WsgPoseLayer.hold_point: a pole), on a body moved, turned and scaled, the
+## foot planter lifting its hips after the layer (lift_after): the hand's grip line comes onto the pole's axis there.
+func _hold_point() -> void:
+	var b := WsgBody.new(body.character)
+	root.add_child(b)
+	b.position = Vector3(3.0, 0.0, -2.0)
+	b.rotation.y = 0.7
+	b.scale = Vector3.ONE * 0.95
+	var layer := WsgPoseLayer.new()
+	b.skeleton.add_child(layer)
+	b.skeleton.move_child(layer, 0)
+	layer.weight = 1.0
+	layer.lift_after = 0.05
+	var planter := WsgFootPlanter.new()
+	b.add_modifier(planter)
+	planter.hips_offset = 0.05
+	planter.keep_pose = true
+	layer.arms = WsgLegacyPose.arm_maker(b.joints)
+	await process_frame
+	# The pole half a metre out to the left of the shoulder, a little forward, at chest height.
+	var pole: Vector3 = b.global_transform * ((b.joints["LeftArm"] as Vector3) + Vector3(0.45, -0.15, 0.15))
+	var r := 0.0475
+	layer.hold_point = {"Left": [pole, 1.0, Vector3.UP, r]}
+	var off := [INF]
+	var f := func():
+		var g := b.grip_point("Left", r)
+		var v := g.origin - pole
+		off[0] = (v - Vector3.UP * v.dot(Vector3.UP)).length()
+	b.posed.connect(f)
+	b.reset_pose()
+	await process_frame
+	await process_frame
+	b.posed.disconnect(f)
+	lines.append("hold_point: the grip line %.1f mm off the pole's axis (moved, turned, scaled 0.95, hips lifted after); reach %.2f of the arm" % [off[0] * 1000.0, layer.hold_point_reach.get("Left", -1.0)])
+	if off[0] > 0.005:
+		failures.append("hold_point: the hand is %.1f mm off the pole" % [off[0] * 1000.0])
+	b.queue_free()
+	await process_frame
+
+
+## Holds made against the hips (WsgPoseLayer.make_holds) in a fade (the layer at half weight, the hips going down
+## and forward): with hips_first and hold_weight_own the hand is where the hold puts it; laid after the holds (the
+## old order), the hips carry it off.
+func _hips_first() -> void:
+	var b := WsgBody.new(body.character)
+	root.add_child(b)
+	var layer := WsgPoseLayer.new()
+	b.skeleton.add_child(layer)
+	b.skeleton.move_child(layer, 0)
+	layer.weight = 0.5
+	layer.set_pose({"@hips": Vector3(0, -0.2, 0.1)})
+	layer.arms = WsgLegacyPose.arm_maker(b.joints)
+	await process_frame
+	var want := Transform3D(Basis.IDENTITY, (b.joints["LeftArm"] as Vector3) + Vector3(0.2, -0.3, 0.3))
+	layer.make_holds = func(_sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
+		return {"Left": ["Hips", hips_g.affine_inverse() * Transform3D(want.basis, want.origin - lift), 1.0]}
+	var miss := {}
+	for how in [["old", false, false], ["after", false, true], ["first", true, true]]:
+		layer.hips_first = how[1]
+		layer.hold_weight_own = how[2]
+		var f := func():
+			var sk := b.skeleton
+			miss[how[0]] = sk.get_bone_global_pose(sk.find_bone("LeftHand")).origin.distance_to(want.origin)
+		b.posed.connect(f)
+		b.reset_pose()
+		await process_frame
+		await process_frame
+		b.posed.disconnect(f)
+	lines.append("holds in a fade: the hand %.1f mm from its hold with the hips laid first and its own weight; %.0f mm with the hips laid after it; %.0f mm laid after at the layer's weight (the defaults)" % [miss.first * 1000.0, miss.after * 1000.0, miss.old * 1000.0])
+	if miss.first > 0.002:
+		failures.append("hips_first: the hand is %.1f mm off its hold" % [miss.first * 1000.0])
 	b.queue_free()
 	await process_frame
 
