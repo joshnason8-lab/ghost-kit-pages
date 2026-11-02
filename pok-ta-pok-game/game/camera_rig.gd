@@ -17,7 +17,12 @@ const NEAR := 13.0      # m along the court from the ball: the players it keeps 
 const MARGIN := 2.5     # m of court kept beyond the outermost of them
 
 var camera: Camera3D
-var mode := Game.CAM_TV
+var mode := Game.CAM_TV:
+	set(v):
+		if v != mode:
+			_changed_t = 0.0
+		mode = v
+var _changed_t := 9.0     # s since the view last changed (another mode, a cut): the stick's way eases over it
 var _focus := Vector3.ZERO
 var _fvel := Vector3.ZERO
 var _fov := 40.0
@@ -59,7 +64,11 @@ func _want_pos(f: Vector3, m: Node) -> Vector3:
 			if int(m.user_team) >= 0:
 				d = Rules.dir(int(m.user_team))
 			var back := hl + 5.0 if not court.classic() else Court.END_HALF_L - 1.0
-			var x := clampf(f.x - d * 16.0, -back, back)
+			# Behind the ball, and behind your own player too (10 m), so he is on the screen with it, not under the lens.
+			var along := f.x * d - 16.0
+			if m.user_player != null:
+				along = minf(along, float(m.user_player.global_position.x) * d - 10.0)
+			var x := clampf(along * d, -back, back)
 			return Vector3(x, 4.2 if not court.classic() else 6.5, f.z * 0.3)
 	return _tv_pos(f, m)
 
@@ -148,8 +157,14 @@ func _want_fov(m: Node) -> float:
 	return base
 
 
+## Seconds since the view last changed (Match eases the stick's way over the first 0.2 s of a new one).
+func since_change() -> float:
+	return _changed_t
+
+
 func follow(m: Node, delta: float) -> void:
 	var dt := minf(delta, 0.05)
+	_changed_t += dt
 	_tv_w = lerpf(_tv_w, _tv_half_width(m), 1.0 - exp(-1.5 * dt))
 	var f := _want_focus(m)
 	var a := (f - _focus) * (3.0 * 3.0) - _fvel * (2.0 * 3.0)
@@ -175,6 +190,7 @@ func focus_point() -> Vector3:
 
 
 func snap(m: Node) -> void:
+	_changed_t = 0.0
 	_focus = _want_focus(m)
 	_tv_w = _tv_half_width(m)
 	_pos = _want_pos(_focus, m)

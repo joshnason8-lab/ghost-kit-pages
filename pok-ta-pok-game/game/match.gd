@@ -729,8 +729,13 @@ func _user_input() -> void:
 		_set_user(ai.taker)
 	var j: Vector2 = hud.joystick()
 	if j.length() > 0.15 and phase != P.SERVE and not in_ritual():
+		var w := screen_to_world(j)
+		# Just after the camera changes (another view, a cut), the way he runs turns over about 0.2 s, not at once.
+		var since: float = cam.since_change()
+		if user_player.steer_by_dir and since < 0.25:
+			w = user_player.want_dir.slerp(w, clampf(get_process_delta_time() / 0.07, 0.0, 1.0)).limit_length(1.0)
 		user_player.steer_by_dir = true
-		user_player.want_dir = screen_to_world(j)
+		user_player.want_dir = w
 	else:
 		user_player.steer_by_dir = false
 	var ids: Array = []
@@ -743,13 +748,37 @@ func _user_input() -> void:
 	hud.set_buttons(ids)
 
 
-## The joystick's direction on the screen as a direction on the court, from the camera.
-func screen_to_world(j: Vector2) -> Vector3:
-	var b := cam.camera.global_transform.basis
+## The joystick's direction on the screen as a direction on the court, from the camera, at the place it moves (your
+## player): up on the stick is up the screen there, right is right, whatever the camera (court-side, high, end) and
+## wherever he is in the picture. Worked through the screen itself: the point a little way along the stick from him on
+## the screen, back down onto the ground he stands on. (The camera's flat forward alone is up the screen only at its
+## middle: on a wide view, or from behind an end, it was tens of degrees off, or reversed.)
+func screen_to_world(j: Vector2, at := Vector3.INF) -> Vector3:
+	if j.length() < 0.001:
+		return Vector3.ZERO
+	var c := cam.camera
+	var b := c.global_transform.basis
 	var right := Vector3(b.x.x, 0, b.x.z).normalized()
 	var fwd := Vector3(-b.z.x, 0, -b.z.z).normalized()
-	var w := right * j.x - fwd * j.y
-	return w.limit_length(1.0)
+	var flat := (right * j.x - fwd * j.y).limit_length(1.0)
+	if at == Vector3.INF:
+		at = user_player.global_position if user_player else cam.focus_point()
+	if not c.is_inside_tree() or c.is_position_behind(at):
+		return flat
+	var s0 := c.unproject_position(at)
+	# Off the screen (under the end camera, say), the screen has no up there: the camera's own forward.
+	if not c.get_viewport().get_visible_rect().grow(200.0).has_point(s0):
+		return flat
+	var s1 := s0 + j.normalized() * 40.0
+	var dir := c.project_ray_normal(s1)
+	if dir.y > -0.01:
+		return flat
+	var o := c.project_ray_origin(s1)
+	var hit := o + dir * ((at.y - o.y) / dir.y)
+	var w := Vector3(hit.x - at.x, 0.0, hit.z - at.z)
+	if w.length() < 0.0001:
+		return flat
+	return w.normalized() * minf(1.0, j.length())
 
 
 func _on_action(id: String) -> void:

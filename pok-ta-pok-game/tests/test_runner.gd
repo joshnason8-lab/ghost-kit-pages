@@ -49,6 +49,8 @@ func _ready() -> void:
 	await _ring_replay()
 	await _foundation()
 	await _watch_ai()
+	await _stick_camera("village", "ulama")
+	await _stick_camera("stone", "classic")
 	await _tv_camera("village", "ulama")
 	await _tv_camera("stone", "classic")
 	await _match_and_motion("village", "ulama")
@@ -880,6 +882,97 @@ func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> flo
 
 
 # ---------------------------------------------------------------- a match
+
+## The stick is the screen's, whatever the camera (owner: "switching to a camera angle that is not alongside the
+## court, the joystick movement is all wrong"): on the court-side, high and end cameras, pushing the stick up, right,
+## down or left sends your player up, right, down or left on the screen (within 10 degrees), the way he is told to go
+## and the way he then runs.
+func _stick_camera(venue: String, rules: String) -> void:
+	var keep_cam := int(Game.settings.camera)
+	var keep_ctl := int(Game.settings.get("control", 0))
+	Game.settings.control = 1     # one player: the stick stays on the same man
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "ESC" if rules == "ulama" else "PIS", "away": "LLA" if rules == "ulama" else "VAL", "venue": venue, "rules": rules,
+		"user_team": 0, "seed": 3, "length": 0.0, "mode": "quick", "difficulty": 0, "ritual": false}
+	add_child(m)
+	await frames(2)
+	var guard := 0
+	while m.phase != m.P.LIVE and guard < 30 * 30:
+		if m.phase == m.P.SERVE and m.serve_team == 0:
+			m._on_action("SERVE")
+		await get_tree().process_frame
+		guard += 1
+	var names := {Game.CAM_TV: "court-side", Game.CAM_HIGH: "high", Game.CAM_END: "end"}
+	var dirs := [[Vector2(0, -1), "up"], [Vector2(1, 0), "right"], [Vector2(0, 1), "down"], [Vector2(-1, 0), "left"]]
+	for mode in [Game.CAM_TV, Game.CAM_HIGH, Game.CAM_END]:
+		Game.settings.camera = mode
+		m.cam.mode = mode
+		m.cam.snap(m)
+		await frames(10)
+		var worst_aim := 0.0
+		var worst_run := 0.0
+		var runs := 0
+		for d in dirs:
+			var want: Vector2 = d[0]
+			# In play (a raya sends it back to the serve, where the stick does not move him).
+			guard = 0
+			while m.phase != m.P.LIVE and guard < 30 * 30:
+				if m.phase == m.P.SERVE and m.serve_team == 0:
+					m._on_action("SERVE")
+				await get_tree().process_frame
+				guard += 1
+			var pl: Player = m.user_player
+			# On his own half, mid-court across and 5 m or more from the analco so no wall or line slows him (he eases to
+			# stop at them, which bends his run), where this camera shows him.
+			var c0: Camera3D = m.cam.camera
+			var spot := Vector3(-Rules.dir(0) * 6.0, 0, 0)
+			for k in 12:
+				var x := -Rules.dir(0) * (5.0 + k * 2.0)
+				var q := Vector3(x, 0, 0)
+				if absf(x) < m.court.half_l() - 3.0 and not c0.is_position_behind(q) \
+						and c0.get_viewport().get_visible_rect().grow(-80.0).has_point(c0.unproject_position(q)):
+					spot = q
+					break
+			pl.global_position = spot
+			pl.vel = Vector3.ZERO
+			m.hud.touch.joystick = want
+			await frames(12)
+			var c: Camera3D = m.cam.camera
+			var at := pl.global_position
+			var s0 := c.unproject_position(at)
+			var aim := c.unproject_position(at + pl.want_dir) - s0
+			worst_aim = maxf(worst_aim, absf(rad_to_deg(aim.angle_to(want))))
+			if Vector2(pl.vel.x, pl.vel.z).length() > 0.8:
+				var run := c.unproject_position(at + pl.vel * 0.2) - s0
+				worst_run = maxf(worst_run, absf(rad_to_deg(run.angle_to(want))))
+				runs += 1
+			m.hud.touch.joystick = Vector2.ZERO
+			await frames(4)
+		check(worst_aim <= 10.0, "%s, %s camera: the stick's up, right, down and left are the screen's (worst %.1f degrees off)" % [venue, names[mode], worst_aim])
+		check(runs >= 3 and worst_run <= 10.0, "%s, %s camera: and he runs that way on the screen (%d runs, worst %.1f degrees off)" % [venue, names[mode], runs, worst_run])
+	# A cut to another camera mid-run: the way he runs turns over about 0.2 s, not at once.
+	m.cam.mode = Game.CAM_END
+	m.cam.snap(m)
+	m.hud.touch.joystick = Vector2(0, -1)
+	await frames(15)
+	var before: Vector3 = m.user_player.want_dir
+	m.cam.mode = Game.CAM_TV
+	m.cam.snap(m)
+	var steps := []
+	var last := before
+	for i in 9:
+		await frames(1)
+		steps.append(rad_to_deg(last.angle_to(m.user_player.want_dir)))
+		last = m.user_player.want_dir
+	var total := rad_to_deg(before.angle_to(last))
+	check(total > 45.0 and float(steps.max()) < total * 0.75 and float(steps.back()) < 2.0,
+		"%s: a cut to another camera mid-run turns his way over a few frames (%.0f degrees: %s)" % [venue, total, str(steps.map(func(x): return snappedf(x, 1.0)))])
+	m.hud.touch.joystick = Vector2.ZERO
+	m.queue_free()
+	await frames(2)
+	Game.settings.camera = keep_cam
+	Game.settings.control = keep_ctl
+
 
 ## Watch AI (the main menu's, owner's A16 notes): two towns played by the computer, on the broadcast camera whatever
 ## camera the player's own matches use, the score on the board, replays, pause and quit, and 1x / 2x: at 2x the

@@ -214,6 +214,15 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   - **Watch AI** (the main menu): two towns played by the computer, on the broadcast camera, with the score, the
     replays, pause and quit, and a 1x / 2x button (at 2x the match steps twice a frame, each step as at 1x).
   - The MoCap Online and ActorCore credits stay in Licences.
+- **0.6.2-beta: the stick is the screen's on every camera** (the owner, in two games: "switching to a camera angle
+  that is not alongside the court, the joystick movement is all wrong"). The stick was turned by the camera's flat
+  forward, which is up the screen only at its middle: on the wide court-side view your player could run 40 degrees
+  off, and from the end camera sideways or backwards. Now the stick goes through the screen at your player (the point
+  a little way along it from him, back down onto the ground), so up is up the screen, right is right, on the
+  court-side, high and end cameras, and so does your aim as you strike. Off the screen he falls back to the camera's
+  forward; after a cut to another view his way turns over about 0.2 s. The end camera also stays 10 m behind your
+  player as well as 16 m behind the ball, so he is on the screen with it rather than under the lens. Tested: each
+  camera, both courts, up, right, down, left within 10 degrees, his aim and his run, and the cut.
 
 ## Next
 
