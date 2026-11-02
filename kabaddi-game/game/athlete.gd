@@ -395,7 +395,7 @@ func _pose(delta: float) -> void:
 			want_crouch = 0.85
 		"raid":
 			# Hips about 0.9 of their standing height, as the footage's raider works the cover.
-			want_crouch = 0.45
+			want_crouch = 0.55
 			want_lean = -0.2
 			want_bounce = 1.0
 		"touch":

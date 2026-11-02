@@ -21,59 +21,59 @@
  "people": [
   {
    "file": "crowd_01_man_tshirt_rigged.glb",
-   "top_luminance": 0.582,
-   "top_luminance_back": 0.521,
-   "top_pixels": 1931,
-   "top_pixels_back": 2319
+   "top_luminance": 0.56,
+   "top_luminance_back": 0.5,
+   "top_pixels": 2039,
+   "top_pixels_back": 2298
   },
   {
    "file": "crowd_02_man_fan_jersey_rigged.glb",
-   "top_luminance": 0.099,
-   "top_luminance_back": 0.076,
-   "top_pixels": 1896,
-   "top_pixels_back": 2614
+   "top_luminance": 0.092,
+   "top_luminance_back": 0.069,
+   "top_pixels": 1939,
+   "top_pixels_back": 2563
   },
   {
    "file": "crowd_03_sikh_man_rigged.glb",
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
-   "top_pixels": 1981,
-   "top_pixels_back": 2786
+   "top_pixels": 2052,
+   "top_pixels_back": 2713
   },
   {
    "file": "crowd_04_old_man_rigged.glb",
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
-   "top_pixels": 1594,
-   "top_pixels_back": 1436
+   "top_pixels": 1683,
+   "top_pixels_back": 1478
   },
   {
    "file": "crowd_05_woman_salwar_rigged.glb",
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
-   "top_pixels": 1031,
-   "top_pixels_back": 1370
+   "top_pixels": 1053,
+   "top_pixels_back": 1355
   },
   {
    "file": "crowd_06_woman_saree_rigged.glb",
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
-   "top_pixels": 371,
-   "top_pixels_back": 598
+   "top_pixels": 391,
+   "top_pixels_back": 589
   },
   {
    "file": "crowd_09_boy_rigged.glb",
-   "top_luminance": 0.374,
-   "top_luminance_back": 0.344,
-   "top_pixels": 524,
-   "top_pixels_back": 810
+   "top_luminance": 0.367,
+   "top_luminance_back": 0.327,
+   "top_pixels": 529,
+   "top_pixels_back": 842
   },
   {
    "file": "crowd_10_girl_rigged.glb",
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
-   "top_pixels": 516,
-   "top_pixels_back": 615
+   "top_pixels": 507,
+   "top_pixels_back": 488
   }
  ]
 }

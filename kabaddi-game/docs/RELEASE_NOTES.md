@@ -1,4 +1,9 @@
-**New in 0.13.1: real players in the auction.** The player on the block is no longer a model from the game but an
+**New in 0.13.2: a steady raider and seated fans.** The raider waiting at the line no longer twitches: he is set in a
+proper ready stance, knees bent, leaning in, hands out in front, only his weight shifting slowly and his breathing.
+Fans on chairs and stools sit on them (they stood through their stools, or slid off them), and seated fans in the
+stands are drawn from a little above, the way the camera sees them, so their laps show.
+
+**In 0.13.1: real players in the auction.** The player on the block is no longer a model from the game but an
 outline of a real kabaddi player, traced from match and training footage, and every player has his own: raiders
 reaching, lunging or kicking, defenders crouched ready, in their last team's colours.
 

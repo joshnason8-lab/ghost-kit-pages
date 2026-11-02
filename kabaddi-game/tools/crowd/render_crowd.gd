@@ -14,6 +14,7 @@ extends Node3D
 
 const CELL := Vector2i(144, 245)         # pixels a person
 const SS := 2                            # rendered at twice the size, then shrunk
+const SEAT_TILT := 16.0                 # degrees the seated frames are seen from above
 const CELL_H := 2.312                    # metres a cell covers top to bottom (9.4 mm a pixel)
 const FRAMES := ["sit", "clap_open", "clap", "stand", "stand_clap_open", "stand_clap", "stand_arms_up", "stand_pump",
 	"sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r"]
@@ -154,8 +155,11 @@ func _render_person(path: String, col: int, sheets: Array[Image], masks: Array[I
 		await get_tree().process_frame
 		root.position.y += ankle_rest - _ankle_y(sk, root)
 		for side in SIDES.size():
-			# Turned round for the back: the camera and the light stay where they are.
-			root.rotation.y = PI * side
+			# Turned round for the back: the camera and the light stay where they are. Someone sitting is drawn as the
+			# broadcast camera sees a stand, from a little above (SEAT_TILT): the thighs show, where from straight in
+			# front a seated person's legs hung straight down from the body, standing on air over the step.
+			var tilt := deg_to_rad(SEAT_TILT) if FRAMES[r].begins_with("sit") or FRAMES[r].begins_with("clap") else 0.0
+			root.basis = Basis(Vector3.RIGHT, tilt) * Basis(Vector3.UP, PI * side)
 			var sheet := sheets[side]
 			var mask := masks[side]
 			var shots := []

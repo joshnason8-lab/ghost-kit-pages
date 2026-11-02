@@ -77,6 +77,7 @@ uniform float people = 8.0;   // people on the first sheet
 uniform float people2 = 8.0;  // on the second
 uniform float frames = 8.0;
 uniform bool standing = false;
+uniform float seat_push = 0.6;   // m nearer the eye a seated card is drawn (Arena.TIER_PUSH, CHAIR_PUSH)
 uniform float excitement = 0.0;
 uniform float top_lum[16];   // each person's shirt brightness, linear; 0 keeps their own clothes
 uniform float top_lum_back[16];   // the same from behind
@@ -105,12 +106,12 @@ void vertex() {
 		vec4(0.0, 1.0, 0.0, 0.0), vec4(normalize(cross(INV_VIEW_MATRIX[0].xyz, vec3(0.0, 1.0, 0.0))), 0.0), MODEL_MATRIX[3]);
 	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0),
 		vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
-	if (!standing) {
+	if (seat_push > 0.0) {
 		// Someone sitting on a tier has their legs down the front of it, but their card stands where they sit, half
-		// a tier back: the tier hid them from the seat down. Drawn 0.6 m nearer the eye along its own line of sight
+		// a tier back: the tier hid them from the seat down. Drawn seat_push nearer the eye along its own line of sight
 		// (and as much smaller, round the feet), they are where they were on screen, legs and all, in front of it.
 		float d = length(MODELVIEW_MATRIX[3].xyz);
-		float k = max(d - 0.6, 0.5) / d;
+		float k = max(d - seat_push, 0.5) / d;
 		MODELVIEW_MATRIX[3].xyz *= k;
 		MODELVIEW_MATRIX[0].xyz *= k;
 		MODELVIEW_MATRIX[1].xyz *= k;
@@ -759,8 +760,9 @@ func _crowd(positions: Array, palette: Array, skin: Color, facing: Vector3 = Vec
 	if chosen.is_empty():
 		return
 	if not crowd_sheet().is_empty():
-		# People on tiers sit; people on the ground stand.
-		_crowd_cards(chosen.filter(func(p): return p.y > 0.2), palette, false, rng, facing)
+		# People on tiers sit; people on chairs and stools sit; people on the ground stand.
+		_crowd_cards(chosen.filter(func(p): return p.y > 0.2 and not _chair_spots.has(p)), palette, false, rng, facing)
+		_crowd_cards(chosen.filter(func(p): return _chair_spots.has(p)), palette, false, rng, facing, CHAIR_PUSH)
 		_crowd_cards(chosen.filter(func(p): return p.y <= 0.2), palette, true, rng, facing)
 		return
 	var mm := MultiMesh.new()
@@ -825,7 +827,15 @@ static func crowd_sheet(hi := -1) -> Dictionary:
 ## -z points there, so the card shows their back to a camera behind them. Fans in shirts are picked more
 ## often than the rest, and most wear a colour from the palette (the teams' colours among them); children are
 ## fewer.
-func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumberGenerator, facing: Vector3) -> void:
+## How far toward the eye a seated card is drawn (CROWD_CARD_SHADER's seat_push): on a tier, past the step that would
+## hide the legs hanging down its front; on a chair or stool, only past the seat's front edge, so the hips are on the seat
+## and the legs in front of it (drawn as far forward as on a tier, they stood in front of their stools; not at all, the
+## stool's seat and legs cut through them).
+const TIER_PUSH := 0.6
+const CHAIR_PUSH := 0.28
+
+
+func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumberGenerator, facing: Vector3, push := TIER_PUSH) -> void:
 	if spots.is_empty():
 		return
 	var sheet := crowd_sheet()
@@ -900,6 +910,7 @@ func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumbe
 	sm.set_shader_parameter("frames", float((info.frames as Array).size()))
 	sm.set_shader_parameter("look_frame", float((info.frames as Array).find("sit_look_l")) if (info.frames as Array).has("sit_look_l") else 99.0)
 	sm.set_shader_parameter("standing", standing)
+	sm.set_shader_parameter("seat_push", 0.0 if standing else push)
 	sm.set_shader_parameter("top_lum", lums)
 	sm.set_shader_parameter("top_lum_back", lums_back)
 	sm.set_shader_parameter("falloff", {"dome": 0.5, "stadium": 0.4}.get(arena_id, 0.0))
@@ -1010,6 +1021,7 @@ const SCORERS_CHAIRS := [[Vector3(-8.2, 0, -0.45), PI / 2], [Vector3(-8.2, 0, 0.
 const CANOPY := {"rain_tree": [Vector3(0, 9.5, 0), Vector3(7.5, 3.2, 7.5)], "island_tree_a": [Vector3(0, 6.0, 0), Vector3(4.0, 2.6, 4.0)],
 	"island_tree_b": [Vector3(0, 5.2, 0), Vector3(4.0, 2.0, 4.0)]}
 
+var _chair_spots := {}  # where someone sits on a chair or stool (_seats), not on a tier: _crowd draws them less far forward
 var _blob_spots := []   # the seats' and tables' contact shadows, drawn in one go (_scenery_done)
 
 
@@ -1048,7 +1060,11 @@ func _seats(kind: String, list: Array, colors := []) -> Array:
 		var yaw: float = c[1]
 		xf.append(Scenery.at(p, yaw))
 		_blob_spots.append([p, 0.34, 0.34, yaw])
-		spots.append(p + Vector3(sin(yaw), 0, cos(yaw)) * 0.2 + Vector3(0, float(SEAT_H[kind]) + 0.02, 0))
+		# On the seat's middle: drawn a little toward the eye (CHAIR_PUSH), from wherever it is seen, they sit on it.
+		# (0.2 m forward of the seat, as before, slid them off it sideways when the camera saw the seat side-on.)
+		var spot := p + Vector3(0, float(SEAT_H[kind]) + 0.02, 0)
+		spots.append(spot)
+		_chair_spots[spot] = true
 	Scenery.scatter(self, "seating/" + kind, xf, int(Game.settings.graphics) == Game.GFX_LOW, colors)
 	return spots
 

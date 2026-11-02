@@ -1205,6 +1205,34 @@ func _run() -> void:
 	Game.settings.fps = fps_was
 	Game.apply_frame_rate()
 
+	# The user's raider standing at the start of a raid, no input: set in his stance (knees bent, leaning in) and still,
+	# no twitch (0.13.0's stance clip, traced from match video, jumped his shoulders and elbows 0.1-0.2 rad a frame).
+	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+		"difficulty": 1, "first_raider": 0, "passive": true})
+	var sm: Node = Game.current
+	var sg := 0
+	while sm.phase != "raid" and sg < 1200:
+		await get_tree().process_frame
+		sg += 1
+	await frames(20)   # his last stride to the mark settles first (a stride ending is not a twitch)
+	var smd = sm.raider.model
+	var joints := [smd.hip_l, smd.hip_r, smd.kn_l, smd.kn_r, smd.spine, smd.sh_l, smd.sh_r, smd.el_l, smd.el_r]
+	var hist := []
+	var knees := 0.0
+	for f in 60:
+		await get_tree().process_frame
+		hist.append(joints.map(func(j): return (j as Node3D).rotation.x))
+		knees += -(smd.kn_l.rotation.x + smd.kn_r.rotation.x) * 0.5 / 60.0
+	var jerk := 0.0
+	for f in range(2, hist.size()):
+		for j in joints.size():
+			var jj := absf(float(hist[f][j]) - 2.0 * float(hist[f - 1][j]) + float(hist[f - 2][j]))
+			jerk = maxf(jerk, jj)
+	check(jerk < 0.02 and knees > 0.4 and smd.spine.rotation.x < -0.2,
+		"the raider waits in a steady stance: knees bent %.0f deg, leaning in, no twitch (worst jolt %.3f rad)" % [rad_to_deg(knees), jerk])
+	Game.go_back()
+	await frames(3)
+
 	# 9. A full AI-vs-AI match, quick length, knockout rules.
 	var m: Node = null
 	Game.start_match({"home": "MUM", "away": "DEL", "arena": "village", "mode": "quick", "autoplay": true, "length": 0, "difficulty": 1, "knockout": true})

@@ -95,7 +95,11 @@ func _tour() -> void:
 		Game.set_language("")
 		return
 	if args_only.begins_with("fans"):
-		# The crowd on each ground (or one: "fans:dome"), from the broadcast camera and close up from the court.
+		# The crowd on each ground (or one: "fans:dome"; "fanslow:dome" on Low graphics), from the broadcast camera and
+		# close up from the court.
+		if args_only.begins_with("fanslow"):
+			Game.settings.graphics = Game.GFX_LOW
+			args_only = args_only.replace("fanslow", "fans")
 		var only := args_only.substr(5) if args_only.length() > 5 else ""
 		for g in ["dome", "stadium", "village", "monsoon", "beach"]:
 			if only != "" and g != only:
@@ -123,7 +127,7 @@ func _tour() -> void:
 	if args_only == "raider_stance":
 		# The raider at the midline before and as his raid starts, seen from the side close up, the AI raiding.
 		Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "length": 0,
-			"difficulty": 1, "first_raider": 0, "autoplay": true, "seed": 5})
+			"difficulty": 1, "first_raider": 0, "control": "all", "passive": true, "seed": 5})
 		var rm2: Node = Game.current
 		rm2.hud.visible = false
 		var rg := 0
@@ -131,18 +135,18 @@ func _tour() -> void:
 			await get_tree().process_frame
 			rg += 1
 		var c2 := Camera3D.new()
-		c2.fov = 22.0
+		c2.fov = 30.0
 		rm2.add_child(c2)
 		c2.make_current()
 		var k := 0
-		while rm2.phase != "raid" or rm2.phase_t < 2.2:
+		while rm2.phase != "raid" or rm2.phase_t < 3.7:
 			await get_tree().process_frame
 			k += 1
 			if rm2.raider:
 				var at: Vector3 = rm2.raider.position
-				c2.global_position = at + Vector3(3.2, 1.3, 0.6)
+				c2.global_position = at + Vector3(4.6, 1.1, 1.4)
 				c2.look_at(at + Vector3(0, 0.9, 0))
-			if k % 6 == 0 and (rm2.phase == "raid" or rm2.phase_t > 1.2):
+			if k % 3 == 0 and rm2.phase == "raid" and rm2.phase_t > 0.7:
 				await shot("stance_%03d_%s_%.1f" % [k, rm2.phase, rm2.phase_t])
 			if k > 900:
 				break

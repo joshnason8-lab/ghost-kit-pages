@@ -338,3 +338,22 @@ a white outline over a faint fill (`assets/ui/auction/`, 290 KB). Only the outli
 `UI.player_figure` gives each player his own from his id (raiders one of 13 reaching, lunging or kicking; defenders one of
 9 crouched ready; all-rounders either), facing either way and 0.9-1.1 as broad; the auction tints it in his last team's
 brighter colour. 72 players of six squads come out in 53 different looks (test_runner).
+
+## 0.13.2: the standing raider and the seated crowd (the owner's A16 playtest)
+
+**"Standing position awful, twitching."** Measured on the user's raider standing at the line for 5 s (no input): his
+shoulder swung through 1.3 rad, elbow, spine and knees 0.6-0.9 rad, with jumps of up to 0.21 rad from one frame to
+the next. Two causes: the stance clip `raid_crouch_hunt.json` (traced from match video) carried the video's tracking
+noise (0.09-0.11 rad a frame at the shoulders and elbows), and 0.13.0's foot-to-foot steps and toe pokes. Both gone:
+the stance is hand-made (crouch 0.55, hips flexed, leaning in, hands out in front), with a slow weight shift (0.3 Hz,
+2 cm) and breathing. After: knees bent 44 degrees, worst jolt 0.004 rad (test_runner checks under 0.02). Before and
+after: [img/stance_0.13.2.png](img/stance_0.13.2.png). On every graphics level (it is the pose underneath all of them).
+
+**"Some look like they are in the seats."** On chairs and stools (Gaon Maidan, Monsoon Ground, Puri Beach) a seated
+fan's card stood 0.2 m forward of the seat along the seat's own facing, and was drawn 0.6 m toward the eye (the tiers'
+fix from 0.13.0): seen side-on from the broadcast camera they stood beside or through their stools. Now the card is on
+the seat's middle and drawn only 0.28 m toward the eye (`Arena.CHAIR_PUSH`): hips on the seat, legs in front of it. The
+seated sprites are rendered from 16 degrees above (`tools/crowd/render_crowd.gd`, SEAT_TILT), as the broadcast camera
+sees a stand, so the lap shows instead of the legs hanging straight down from the body.
+
+Version code 38: above the foundation pilot's 37, so either installs over the other.
