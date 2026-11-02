@@ -476,6 +476,58 @@ func holds(sk: Skeleton3D, hips: Transform3D, lift: Vector3) -> Dictionary:
 The drawn stick, placed from the top hand in `posed` as before, follows. (There is no switch on the layer for this: the
 stick's tip read back from the world is where last frame's turn put it, so it would flicker clear and back.)
 
+## 5.13 Low tier: WsgToonDriver (the capture on your own cheap body)
+
+On Low a budget game keeps its own 17-bone toon (its own mesh: the same draw calls, nothing new to skin) - and
+until now its own procedural cycle, which glides and swings the arms out. `WsgToonDriver` poses that toon from the
+foundation's motion capture instead: a hidden, mesh-less rig body (never in the scene) driven by a `WsgLocomotor`,
+each of your bones turned to lie along the rig's matching segment with the rig bone's twist. No second mesh, no IK,
+no modifiers; about 0.1 ms a body on a desktop (14 bodies: 1.5 ms, 0.65 ms posed every 3rd frame). Without the
+licensed clips `WsgToonDriver.available()` is false and `update()` does nothing: your own cycle stays (CI, forks).
+```gdscript
+# player.gd (Low only; Medium/High keep the FoundationLink)
+var toon: WsgToonDriver
+func _ready() -> void:
+	...
+	if int(Game.settings.graphics) == Game.GFX_LOW and WsgToonDriver.available():
+		toon = WsgToonDriver.new(body.skeleton, {}, {"offset": index % 3})   # bone_map {"hips": "pelvis", ...}
+func _animate(dt: float) -> void:
+	body.apply(your_pose)                       # your pose first, every frame, as now
+	if toon:
+		if act in ["shoot", "leap", "catch"]:
+			toon.set_override(1.0, [], 0.15)    # the whole body yours (the capture pauses, costs nothing)
+		elif act in ["hold", "pass", "mark"]:
+			toon.set_override(1.0, WsgToonDriver.ARMS, 0.15)   # your arms over its legs
+		else:
+			toon.set_override(0.0, [], 0.2)     # all the capture's (resumed at her speed: WsgLocomotor.resume)
+		toon.every = pose_every                 # 1 near the camera, 2-3 far (the last pose is laid in between)
+		toon.update(dt, Vector3(vel.x, 0, vel.y), facing, Vector3(want_vel.x, 0, want_vel.y))
+```
+- **API**: `WsgToonDriver.new(skeleton, bone_map := {}, options := {})`; `update(dt, velocity, facing, want_velocity
+  := Vector3.INF) -> bool` (facing: a world yaw or a Vector3; true when it posed afresh); `set_override(weight, bones
+  := [], fade := 0.0)`, `override(bone)`; `pose() -> {your bone: local Quaternion, "@hips": offset from the rest}`;
+  `apply(weight := 1.0, bones := [])`; `phase()`; `loco` (`play()`, `jump()`, the `step` signal for footsteps).
+  Groups: `ARMS`, `LEGS`, `TORSO`, `HEAD`. Options: `every`, `offset` (which of `every` frames: by default the
+  bodies take turns), `face` (your body built facing -Z: `PI`), `scale` (0: the skeleton's world scale), `auto_apply`
+  (false: take `pose()` and blend it with your own pose dictionaries), `facing_from_node`, `auto_resume`, `rng`,
+  `cut_from_heading`. `WsgToonDriver.off = true` turns it off everywhere.
+- **Your rest is read from your skeleton**, not assumed: identity rests with the arms hanging (ToonBody), an A-pose
+  with the legs apart (Kabaddi's rigged bodies: the hips are lifted by what the splayed legs lose in height), any
+  rest rotations. A bone you do not map (or do not have) is left alone; bones between mapped ones are carried.
+- **Feet**: the hips move by the clip's, scaled by your leg against the rig's, so the feet come to the ground; the
+  root motion stays yours (you move the body); the cadence is the locomotor's own (`leg_scale` = your leg in the
+  world over the rig's). With no planter a stance foot still slides a little (Netball, HeroBody: 22 cm/s at 2 m/s,
+  37 at 4.5, against the beta's own clips' 110 and 248); the sprint is worse (the ActorCore sprint's feet cover a
+  third less ground than its root: about 2 m/s at a full sprint - the planter hides it on Medium/High). A body posed
+  every 2nd/3rd frame is carried along whole in between, as the FoundationLink's are.
+- **Kabaddi**: the drawn body on Low is `RiggedBody`'s Skeleton3D (the 17 names already: no bone_map), built facing
+  -Z: `WsgToonDriver.new(rig.skeleton, {}, {"face": PI})`, updated after `rig.drive(h)` (its grounding, plants and
+  turn limits are then the driver's, except under an override). Its fingers hang under the hands and are left alone.
+  `HumanModel`'s placeholder joints are plain Node3Ds, not a skeleton: drive the rigged body, not them (or make a
+  17-bone proxy skeleton of them and copy `pose()` back).
+- Draw calls and triangles are unchanged (Netball's perf_probe, Low, same with and without); a test:
+  `tests/toon_driver_test.gd`.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →

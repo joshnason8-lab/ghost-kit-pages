@@ -351,3 +351,13 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   change); Kho Kho `loco.cut_from_heading = true` (else the 8 m/s glide returns); advisable for Kabaddi and Sepak
   Takraw too. Optional clean-ups: Netball grip_sphere/ball_point and hips_first/hold_weight_own/make_holds (also
   Floorball, fixes its 4 cm hold drift); Sepak Takraw and Kho Kho planter.keep_pose; Kho Kho hold_point + arm_maker.
+- **WsgToonDriver (opt-in, 2026-11-02)**: the capture on a game's own 17-bone toon for the Low tier (ADOPTING 5.13):
+  a hidden mesh-less rig + WsgLocomotor, retargeted by segment direction and twist onto the game's bones (its rest
+  read from its skeleton; bone_map, face), overrides per bone for the game's moves (or `pose()` as a dictionary),
+  staggering, no-op without the clips. ~0.1 ms a body desktop headless (14: 1.5 ms; every 3rd frame 0.65 ms). Tried
+  in Netball's worktree (not committed there): Low draws identical, beta-vs-driver strips, the reference wiring as a
+  patch for the Netball session. WsgLocomotor._stride now caches its rings (results identical, loco_test output
+  byte-for-byte; a third of the locomotor's own time). Found: the ActorCore sprint's feet cover ~2.6 m a cycle
+  against its root's (meta stride) 3.6 m - the planter hides it (the sprint is loco_test's worst planted segment);
+  a toon without one slides ~2 m/s at a full sprint. Fixing it (a foot-measured stride) would speed the sprint's
+  legs by a third: left for the owner's eye. Games opt in on their next sync; nothing changes for one that does not.
