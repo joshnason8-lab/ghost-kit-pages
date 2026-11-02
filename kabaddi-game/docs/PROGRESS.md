@@ -391,3 +391,8 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
 - **Web**: the web export leaves out the licensed motion-capture data (`addons/wsg_foundation/data/*` in the Web
   preset's exclude filter; the data goes no further than the APK/AAB), so the web version draws the game's own bodies
   at every level, with no replays.
+- **The raider walks the cover low**: his raid crouch is 0.6 (was 0.55), past HumanModel's 0.55 for the crouched walks.
+  At 0.55, once a touch (crouch 0.3) or a kick had stood his gait up (below 0.4), he never went back to the crouched
+  walks, and on the upright walk both knees passed near straight at every step (the foundation's stance check caught
+  it in CI: 1 frame in 298). Hips about 1 cm lower. test_runner: walking at 0.8 m/s just after a touch, the crouched
+  walk and never both knees near straight.

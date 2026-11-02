@@ -1265,6 +1265,27 @@ func _run() -> void:
 			jerk = maxf(jerk, jj)
 	check(jerk < 0.02 and knees > 0.4 and smd.spine.rotation.x < -0.2,
 		"the raider waits in a steady stance: knees bent %.0f deg, leaning in, no twitch (worst jolt %.3f rad)" % [rad_to_deg(knees), jerk])
+	# Working the cover, stepping across at a walk: he walks low, knees bent at every step (on the upright walk both
+	# passed near straight at each step).
+	var sr: Athlete = sm.raider
+	sr.set_state("touch", 0.5)   # just back from a touch (its crouch 0.3 stood the gait up)
+	await frames(16)
+	sr.set_state("raid")
+	var straight_steps := 0
+	var least := 99.0
+	var walked_f := 0
+	for f in 90:
+		sr.position.x += 0.8 / 30.0 * (1.0 if f < 45 else -1.0)
+		await get_tree().process_frame
+		if sr.state != "raid" or f < 20:
+			continue
+		walked_f += 1
+		var kb := -minf(smd.kn_l.rotation.x, smd.kn_r.rotation.x)   # the more bent of the two (both near straight: not low)
+		least = minf(least, rad_to_deg(kb))
+		if kb < deg_to_rad(15.0):
+			straight_steps += 1
+	check(walked_f > 50 and straight_steps == 0 and smd._low_gait,
+		"the raider walks the cover low, after a touch too: crouched walk, never both knees near straight (the more bent at least %.0f deg over %d frames)" % [least, walked_f])
 	Game.go_back()
 	await frames(3)
 

@@ -394,8 +394,10 @@ func _pose(delta: float) -> void:
 		"ready":
 			want_crouch = 0.85
 		"raid":
-			# Hips about 0.9 of their standing height, as the footage's raider works the cover.
-			want_crouch = 0.55
+			# Hips about 0.9 of their standing height, as the footage's raider works the cover; past HumanModel's 0.55, so
+			# working the cover slowly he walks on the crouched walks (on the upright ones his knees passed straight at
+			# every step).
+			want_crouch = 0.6
 			want_lean = -0.2
 			want_bounce = 1.0
 		"touch":
