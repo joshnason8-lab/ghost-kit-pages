@@ -503,7 +503,11 @@ capsules are only right then): a modifier of your own just after the layer. Meas
 The layer keeps the forearms out of the chest round the hips-to-neck joint line (`torso_r`), which sits toward the
 back: a forearm across the front of a deep chest still sank in (Hurling's follow-through, 2-4 cm). Set
 `layer.torso_from_body = true` (the layer under a WsgBody's skeleton) to keep them out of `body.torso_capsule()`
-instead - the chest as drawn; `torso_r` is then not used.
+instead - the chest as drawn; `torso_r` is then not used. An arm whose hand is held keeps `torso_r` (swung out of the
+deeper chest, the hand came off what it holds), and an arm it swings out is made sound again (the elbow pointing
+where an elbow can). Measure what it does to a stick in that hand: Hurling's striking arm, swung out, put the hurley
+into the chest on the next frame, and the turn that took it out left the top hand short of the handle, so Hurling
+leaves it off.
 
 ## 5.13 Low tier: WsgToonDriver (the capture on your own cheap body)
 
