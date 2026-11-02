@@ -389,12 +389,12 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	_low_w = move_toward(_low_w, 0.0 if one else 1.0, _dt * 6.0)
 	var spacing := maxf(0.12, float(hands.get(l_s, 0.34)) - float(hands.get(t_s, 0.03)))
 	# Each fist slid along the shaft to where its arm reaches (the shoulders where the trunk now has them; the lift
-	# not yet added): the top one never off the grip's end, the lower one at least a hand below it.
+	# not yet added): the top one never off the grip's end, the lower one sliding up toward it as far as its arm needs (6 cm at the nearest): on the stick rather than off it.
 	var top_at := sx.origin - lift + down * TOP_AT
 	# (Worked out for the bodies in full detail, near the camera; the others keep their last.)
 	if body.full or _slid.is_empty():
 		var x_t := maxf(_slide(sk, top, top_at - qt * v_top, down), 0.03 - TOP_AT)
-		var x_l := maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down), 0.1 - spacing)
+		var x_l := maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down), 0.06 - spacing)
 		# Still out of the lower arm's reach (it can slide no nearer the top hand): that fist rolled round the shaft,
 		# the wrist toward the shoulder, as far as it must (at most 60 degrees).
 		_slid = [x_t, x_l, _roll(sk, low, top_at + down * (x_t + spacing + x_l), ql * v_low, down)]
