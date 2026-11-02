@@ -1988,7 +1988,10 @@ func _foundation(available: bool) -> void:
 			if link.mode == "move" and a.move_vel.length() > 0.8:
 				walked += 1
 		var r: Athlete = m.raider
-		if m.phase == "raid" and r and r.state == "raid" and r.st_t > 0.6 and r.model.link.mode == "full" and r.model.link.legacy.weight >= 1.0:
+		# (Working the cover, not running: a stride at a jog passes through a near-straight leg, both knees at about 13
+		# degrees for a frame, as a runner's do.)
+		if m.phase == "raid" and r and r.state == "raid" and r.st_t > 0.6 and r.model.link.mode == "full" and r.model.link.legacy.weight >= 1.0 \
+				and r.move_vel.length() < 1.5:
 			stance_frames += 1
 			# (His dance lifts and plants a foot at a time, the leg he stands on near straight for a moment: straight-legged is
 			# both at once, the old stance.)
@@ -2025,6 +2028,7 @@ func _foundation(available: bool) -> void:
 	m._moment_from("escape", {"how": "dodge", "free": true})
 	await frames(40)
 	m.set_watch_speed(2.0)   # as if watching at 2x: the replay plays at 1x, and 2x comes back after it
+	m.raid.touched.clear()   # (a touch the AI raider made meanwhile would make it a raid of points, which outranks the escape)
 	m._end_raid("return")
 	guard = 0
 	while m.phase != "replay" and guard < 400:
