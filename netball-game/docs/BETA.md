@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.5-beta
+
+- **Players and umpires run properly on every graphics level, Low included**: each foot is planted on the floor and
+  stays there until it lifts (no more gliding), the stride matches the speed from a walk to a full sprint, and the
+  arms are bent and swing against the legs; nobody runs with an arm held out. She runs facing where she is going,
+  with her head turned to the ball, and pulls up in a few steps. Arms go up only to defend, catch, pass or shoot.
+
 ## New in 0.8.4-beta
 
 - **Watch AI** (home screen, under How to Play): pick two teams, a venue and the quarters, and watch a full AI v AI
