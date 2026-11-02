@@ -297,6 +297,74 @@ func bas_world() -> Vector3:
 	return t * ((hh - rest_hand) + HURLEY_DIR.normalized() * 0.78)
 
 
+## The hurley as a segment in world space: [the butt of the handle above the fist, the bas].
+func stick_world() -> Array:
+	var i := bone("hand_r")
+	if i < 0 or skeleton == null:
+		return [global_position, global_position]
+	var t := skeleton.global_transform * skeleton.get_bone_global_pose(i)
+	var g: Vector3 = _rest.hand_r + _grip() - _rest.hand_r
+	var d := HURLEY_DIR.normalized()
+	return [t * (g - d * 0.12), t * (g + d * 0.78)]
+
+
+const TORSO_R := 0.14   # the trunk as a capsule from the hips to the neck, this thick (m, at scale 1)
+
+
+## How far the hurley is clear of the trunk (m; below 0 it goes through the body), and where on the stick it is
+## nearest (0 the butt, 1 the bas).
+func stick_clearance() -> Array:
+	var st := stick_world()
+	var a := bone_world("hips")
+	var b := bone_world("neck")
+	var best := [INF, 0.0]
+	for k in 41:
+		var u := k / 40.0
+		var p: Vector3 = (st[0] as Vector3).lerp(st[1], u)
+		var ab := b - a
+		var h := clampf((p - a).dot(ab) / maxf(ab.length_squared(), 1e-6), 0.0, 1.0)
+		var dist := p.distance_to(a + ab * h) - TORSO_R * scale.y
+		if dist < best[0]:
+			best = [dist, u]
+	return best
+
+
+## The hurley kept out of the trunk: while it passes within margin of it (a swing's follow-through across the body;
+## the owner: "hurley goes through body"), the right arm is swung out about the shoulder, straight away from the
+## trunk at the stick's nearest point, until it clears (a few steps: the arm's turn moves that point). Returns the
+## clearance left (m).
+func clear_stick(margin := 0.06) -> float:
+	var arm := bone("upperarm_r")
+	if arm < 0 or skeleton == null:
+		return INF
+	var c: Array = stick_clearance()
+	for k in 4:
+		var gap: float = c[0]
+		if gap >= margin:
+			break
+		var st := stick_world()
+		var p: Vector3 = (st[0] as Vector3).lerp(st[1], float(c[1]))
+		var a := bone_world("hips")
+		var ab := bone_world("neck") - a
+		var on := a + ab * clampf((p - a).dot(ab) / maxf(ab.length_squared(), 1e-6), 0.0, 1.0)
+		var out := (p - on).normalized() if p.distance_to(on) > 1e-4 else global_transform.basis.x.normalized()
+		var sh := bone_world("upperarm_r")
+		var lever := p - sh
+		var axis := lever.cross(out)
+		if axis.length() < 1e-5 or lever.length() < 0.05:
+			break
+		var ang := clampf((margin - gap + 0.01) / lever.length(), 0.0, 0.6)
+		# The turn in the skeleton's space, on the arm's own (so the forearm, the hand and the hurley go with it).
+		var inv := skeleton.global_transform.basis.inverse()
+		var ax := (inv * axis).normalized()
+		var g := skeleton.get_bone_global_pose(arm)
+		var par := skeleton.get_bone_global_pose(skeleton.get_bone_parent(arm))
+		var turned := Basis(Quaternion(ax, ang)) * g.basis
+		skeleton.set_bone_pose_rotation(arm, (par.basis.inverse() * turned).get_rotation_quaternion())
+		c = stick_clearance()
+	return float(c[0])
+
+
 ## Builds a skinned mesh out of rounded parts, each part rigidly on one bone, coloured by vertex.
 class MeshBuilder:
 	var verts := PackedVector3Array()

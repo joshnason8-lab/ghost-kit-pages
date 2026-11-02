@@ -250,6 +250,34 @@ posts; SHOOT stops it, and that is where the ball goes.
 - Tests: a point, a wide, a 65 and a penalty aimed and struck through the match, back to the match camera after each;
   the target lingers between the posts and hurries through the goal. How to Play's controls say how.
 
+## Done (0.19.0-beta, the owner's 0.18.0 playtest, 2 November 2026)
+
+Relayed by the lead (the owner asleep: decisions made and noted here).
+- **Officials' kit**: GAA referees and linesmen wear a jersey, black shorts and black socks (inter-county linesmen are
+  referees in the same kit), so shorts were kept, not trousers. On the hurlers' body the shorts ended high on the thigh
+  and the socks showed the model's own grey (the kit mask misses them on that body): HeroBody's kit shader takes
+  `long_kit` (FoundationLink._official_kit, not the umpires) - shorts to 14 cm above the knee, black socks from the
+  boot to 3 cm under it, by the rest heights. Umpires keep their white coats.
+- **Black posts**: the baked light (WsgLightBake) gives the thin posts tiny patches of its map, which came out black.
+  The goals' frames are built a second time 4 mm larger (`_goal_frames(g, grow)`) and drawn white over the baked
+  stands (`Stadium._posts`); the stands' geometry is unchanged, so the bake's signature still holds.
+- **Hurley through the body** in the free's follow-through (126 mm into the trunk at 1.87-1.97 s): `ToonBody.
+  clear_stick` swings the right arm out about the shoulder until the stick (butt to bas) is 6 cm clear of a hips-neck
+  capsule (r 0.14); Player.animate applies it in every swing (STICK_CLEAR) before the foundation reads the pose, so the
+  rig's hand and hurley follow. Test: free_strike sampled at 60/s, never under 30 mm.
+- **The lost ball**: measured over ten practice frees (on screen, size, behind the taker): never off the picture in
+  flight, but 1-3 px across far off - lost against the crowd; practice drew no dot on it. The dot now comes up when the
+  ball is under 4 px across (`MatchHud.ball_px`).
+- **Licences**: "Motion capture: MoCap Online · ActorCore (Reallusion)".
+- **Foundation** synced 53d8b47 -> ad236fd (no opt-ins needed for Hurling).
+- **Watch AI**: the existing "Watch a match" renamed (English and Irish) and completed: a 1×/2× round button
+  (`Match.set_speed`: Engine.time_scale; a frame at 2x run as two 0.05 s steps so the play is as at 1x; the auto
+  graphics fed the real frame time; reset on leaving), and the replays, the scorer's close-up and the opening flight in
+  it too (they were only for a match you play). The foundation's WsgSpectator (ad236fd) was not adopted: Hurling's
+  own broadcast camera, director and replays already do what it offers.
+- Tests: Watch AI (counties, camera, no controls, 2x twice as fast, recorded, pause, 1x again, pace reset, a played
+  match keeps 1x), the stick clear, posts white over the bake, the far ball's dot.
+
 ## Done (0.17.1-beta, auto graphics, 30 October 2026)
 
 The owner's Galaxy A16 (Mali-G57/G68 class) stuttered on High and "Lower it by itself" did nothing: it watched only

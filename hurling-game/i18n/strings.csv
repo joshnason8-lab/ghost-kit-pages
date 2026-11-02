@@ -6,8 +6,9 @@ MENU_QUICK,Throw-in,Caitheamh isteach
 MENU_QUICK_DESC,Pick two counties and a ground. Play now.,Roghnaigh dhá chontae agus páirc. Imir anois.
 MENU_CHAMP,The Summer Championship,Craobh an tSamhraidh
 MENU_CHAMP_DESC,"Groups, then knock-out games to the final.","Grúpaí, ansin cluichí cnaguirlis go dtí an cluiche ceannais."
-MENU_WATCH,Watch a match,Féach ar chluiche
-MENU_WATCH_DESC,"Sit back: two counties, played by the computer.","Suigh siar: dhá chontae, agus an ríomhaire ag imirt."
+MENU_WATCH,Watch AI,Féach ar an ríomhaire
+MENU_WATCH_DESC,"Sit back: two counties of your choosing, played by the computer, at normal or double speed.","Suigh siar: dhá chontae de do rogha, agus an ríomhaire ag imirt, ar ghnáthluas nó ar luas dúbailte."
+WATCH_SPEED,Speed: {n}×,Luas: {n}×
 MENU_PRACTICE,Free-taking,Saorbhuillí
 MENU_PRACTICE_DESC,Ten frees and 65s at the posts. Time your strike; beat your best.,Deich saorbhuille agus 65anna ag na cuaillí. Buail in am; sáraigh do scór is fearr.
 PRACTICE_EYEBROW,Practice,Cleachtadh

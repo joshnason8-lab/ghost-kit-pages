@@ -243,7 +243,7 @@ static func kit_material(look: Dictionary, _rest: Dictionary) -> ShaderMaterial:
 	var ultra := Ultra.active()
 	var lit := Ultra.lit()
 	var key := "%s|%s|%s|%s|%s|%d|%s|%s|%s|%s" % [look.get("jersey"), look.get("trim"), look.get("shorts"), look.get("socks"),
-		look.get("skin"), int(look.get("design", 0)), hd, ultra, lit, look.get("plain", false)]
+		look.get("skin"), int(look.get("design", 0)), hd, ultra, lit, look.get("plain", false)] + "|%s" % look.get("long_kit", false)
 	if _mats.has(key):
 		return _mats[key]
 	if _shader == null:
@@ -283,6 +283,14 @@ static func kit_material(look: Dictionary, _rest: Dictionary) -> ShaderMaterial:
 	# shoulder to the left hip, the shoulders.
 	mat.set_shader_parameter("chest_y", float(_rest.chest.y))
 	mat.set_shader_parameter("spine_y", float(_rest.spine.y))
+	if look.get("long_kit", false):
+		# Knee and ankle from the skeleton at rest: the shorts to a hand's width above the knee, the socks to just
+		# under it, from the top of the boot.
+		var knee := float(_rest.shin_l.y)
+		var ankle := float(_rest.foot_l.y)
+		mat.set_shader_parameter("shorts_to", knee + 0.14)
+		mat.set_shader_parameter("sock_top", knee - 0.03)
+		mat.set_shader_parameter("boot_top", ankle + 0.05)
 	_mats[key] = mat
 	return mat
 
@@ -348,6 +356,12 @@ uniform vec3 ref_shorts;
 uniform vec3 ref_skin;
 uniform int design = 0;
 uniform float plain = 0.0;
+// A referee's or linesman's black shorts down to shorts_to and socks from the boot to sock_top (rest heights, m; 0
+// off): the hurlers' shorts end high on the thigh and the model's socks are its own grey under an official's kit,
+// so on the officials they read as underwear and bare legs (the owner: "put pants on the refs").
+uniform float shorts_to = 0.0;
+uniform float sock_top = 0.0;
+uniform float boot_top = 0.0;
 uniform float chest_y = 1.3;
 uniform float spine_y = 1.1;
 uniform vec3 light_dir = vec3(0.35, 0.85, 0.4);
@@ -404,6 +418,8 @@ void fragment() {
 	c = mix(c, trim, m.g);
 	c = mix(c, shorts, m.b);
 	c = mix(c, paint(t, skin, ref_skin), m.a);
+	if (shorts_to > 0.0 && abs(rp.x) < 0.21 && rp.y > shorts_to && rp.y < spine_y - 0.1) { c = shorts; }
+	if (sock_top > 0.0 && abs(rp.x) < 0.21 && rp.y > boot_top && rp.y < sock_top) { c = socks; }
 	// The relief: the baked normal (its z rebuilt: a compressed normal map keeps x and y) on the surface's own.
 	vec2 nxy = texture(nmap, UV).rg * 2.0 - 1.0;
 	vec3 nt = vec3(nxy, sqrt(max(1.0 - dot(nxy, nxy), 0.0)));

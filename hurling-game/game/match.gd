@@ -521,7 +521,15 @@ func _process(delta: float) -> void:
 	if replay.playing:
 		replay.step(delta)
 		return
-	var dt := minf(delta, 0.05)
+	# A frame's time in steps of at most 0.05 s (more than that is a stall, not play); at Watch AI's 2x a frame is
+	# two such steps, so the play is as it is at 1x, only twice as fast.
+	var total := minf(delta, 0.05 * maxf(Engine.time_scale, 1.0))
+	var n := maxi(1, ceili(total / 0.05 - 0.001))
+	for i in n:
+		_step(total / n, delta / n)
+
+
+func _step(dt: float, delta: float) -> void:
 	now += dt
 	phase_t += dt
 	_run_pending()
@@ -569,7 +577,7 @@ func _process(delta: float) -> void:
 	if not attract:
 		_crowd_anticipation(dt)
 	cam.follow(self, delta)
-	if user_team >= 0:
+	if user_team >= 0 or is_watch():
 		replay.record()
 	if not attract:
 		hud.tick(delta)
@@ -615,7 +623,8 @@ func _frame_stats(delta: float) -> void:
 ## A frame's time (s) to the auto graphics level.
 func watch_frames(delta: float) -> void:
 	if bool(Game.settings.get("auto_gfx", true)) and not attract and not (replay and replay.playing):
-		if _auto_gfx.feed(delta) and int(Game.settings.graphics) > Game.GFX_LOW:
+		# (The frame's real time: at Watch AI's 2x every delta is doubled, and that is not a stutter.)
+		if _auto_gfx.feed(delta / maxf(Engine.time_scale, 0.01)) and int(Game.settings.graphics) > Game.GFX_LOW:
 			lower_graphics()
 
 
@@ -1915,7 +1924,7 @@ func _over_end_line(c: Vector3, s: float) -> void:
 		hud.call_line(tr("CALL_WIDE"))
 		Sfx.react("groan", -8.0)
 		_award(Rules.over_end_line(c, ball.last_team, att, s), 2.2)
-		if user_team >= 0 and shot.has("by"):
+		if (user_team >= 0 or is_watch()) and shot.has("by"):
 			# Shown again once the ball has hit the net behind.
 			var t := now
 			_after(Replay.AFTER + 0.1, func(): replay.start(t, s, c))
@@ -1989,11 +1998,11 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 	hud.set_score()
 	# As television shows a score (the shared foundation's director): the scorer close, their name on the screen,
 	# after a goal the stand going up; then the replay. (The restart waits for it; a tap skips it.)
-	var package := user_team >= 0 and director != null and WsgDirector.packages() and by is Player and is_instance_valid(by) \
+	var package := (user_team >= 0 or is_watch()) and director != null and WsgDirector.packages() and by is Player and is_instance_valid(by) \
 		and (by as Player).team == team
 	var package_s := (1.9 + (1.7 if kind == "goal" and stadium.crowd3d != null else 0.0)) if package else 0.0
 	_award(Rules.after_score(team, dir(team)), 3.2 + package_s)
-	if user_team >= 0:
+	if user_team >= 0 or is_watch():
 		# Every score shown again from behind the goal (as a wide is), once the ball is in the net or past the posts.
 		var t := now
 		var c := ball.global_position
@@ -2033,7 +2042,7 @@ func _score_package(scorer: Player, team: int, kind: String, t: float, s: float,
 ## The flight over the ground before the throw-in (Medium and High; the first half of a new match), under the
 ## match's title card.
 func _opening_flight() -> void:
-	if director == null or not WsgDirector.packages() or user_team < 0 or half != 1 or config.has("resume") or has_meta("test"):
+	if director == null or not WsgDirector.packages() or (user_team < 0 and not is_watch()) or half != 1 or config.has("resume") or has_meta("test"):
 		return
 	_intro_extra = 4.5
 	director.run([{"shot": "orbit", "center": Vector3.ZERO, "radius": 150.0, "radius_end": 92.0, "height": 72.0,
@@ -3398,10 +3407,25 @@ func on_back() -> void:
 	set_paused(not paused)
 
 
-## Leaving the match however it ends: the ground's birdsong with it, nothing left paused.
+## Leaving the match however it ends: the ground's birdsong with it, nothing left paused, the clock at its own pace.
 func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 	Sfx.pause_all(false)
 	Sfx.ambience(false)
+
+
+## Watch AI (the main menu's "Watch AI"): a match of two counties played by the computer, to watch.
+func is_watch() -> bool:
+	return String(config.get("mode", "")) == "watch" and user_team < 0 and not attract
+
+
+## Watch AI's speed: the whole match at 1x or 2x (the play, the clock, the camera and the replays alike).
+var speed := 1.0
+
+
+func set_speed(x: float) -> void:
+	speed = x if is_watch() else 1.0
+	Engine.time_scale = speed
 
 
 ## A free-taking practice (game/practice.gd), not a match: the HUD and the pause menu change with it.

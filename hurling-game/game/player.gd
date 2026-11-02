@@ -320,6 +320,8 @@ func animate(now: float) -> void:
 		p = _crossfade(p, now)
 	body.apply(p)
 	_plant_feet(now)
+	if action in STICK_CLEAR and not is_official():
+		body.clear_stick()
 	if link:
 		link.update(now)
 
@@ -714,6 +716,8 @@ const RUN_ARM_L := RUN_BODY + [5, 6, 7]                    # and the free (left)
 ## the right shoulder, level through the ball), the overhead pull the bigger swing, along the ground the golf drive.
 const SWING_CLIP := {"strike": "Baseball_Hit", "strike_stick": "Baseball_Hit", "puck_out": "Baseball_Hit",
 	"pull": "Baseball_Strike", "ground": "Golf_Drive", "cut": "Golf_Drive"}
+## The moves whose follow-through can carry the hurley across the trunk: ToonBody.clear_stick keeps it out.
+const STICK_CLEAR := ["free_strike", "strike", "strike_stick", "puck_out", "pull", "ground", "cut"]
 const SWING_BEFORE := 0.6   # seconds of the clip played before the bas meets the ball
 const SWING_AFTER := 0.5    # and after
 

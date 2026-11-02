@@ -129,11 +129,12 @@ static var _hd_mats := {}
 
 ## An official's kit on the hurlers' model: the referee and the linesmen in black, the umpires in white, the trim the
 ## shirt's own colour (the hurlers' number and the stripes on the shorts are trim: an official has neither); black
-## shorts and socks; the skin of their own heads.
+## shorts and socks, as GAA referees and linesmen wear them - the shorts to above the knee and the socks black to under
+## it (long_kit: the owner saw bare legs and "underwear"); the skin of their own heads.
 func _official_kit() -> Dictionary:
 	var jersey: Color = toon.look.get("jersey", Color("1a1a1a"))
 	return {"jersey": jersey, "trim": jersey, "shorts": Color("1c1c1c"), "socks": Color("1c1c1c"), "skin": OFFICIAL_SKIN,
-		"design": 0, "plain": true}
+		"design": 0, "plain": true, "long_kit": (toon as PersonBody).who != "umpire"}
 
 
 ## The officials' heads' skin (their textures' own, measured at the neck), for the body's arms and legs to match.

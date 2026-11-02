@@ -23,6 +23,7 @@ var _toast: Label
 var _toast_t := 0.0
 var _marks: Control
 var _pause: Control
+var speed_button: Button   # Watch AI's 1x / 2x
 var _card: Control
 var _shoot: Control
 var _bug: Control              # the scorebug, top left (hidden in free-taking practice)
@@ -106,6 +107,10 @@ func setup(p_match: Node) -> void:
 	box.alignment = BoxContainer.ALIGNMENT_END
 	box.add_theme_constant_override("separation", 12)
 	root.add_child(box)
+	if m.is_watch():
+		# Watch AI: the speed, 1x or 2x, a tap to change.
+		speed_button = UI.round_button("text:1×", func(): _toggle_speed(), 60)
+		box.add_child(speed_button)
 	_cam_button = UI.round_button("camera", func(): _next_camera(), 60)
 	box.add_child(_cam_button)
 	box.add_child(UI.round_button("pause", func(): m.set_paused(not m.paused), 60))
@@ -549,13 +554,14 @@ func _draw_marks() -> void:
 		cam = m.cam.camera
 	var vp := root.get_viewport_rect().size
 	var b: Vector3 = m.ball.global_position
-	# The ball's marker (in free-taking practice no dot on it, up close it reads by itself, but still the arrow when it
-	# is off the screen: the owner lost a ball struck up out of the picture).
+	# The ball's marker (in free-taking practice no dot on it while it reads by itself up close, but the dot as soon as it
+	# is a few pixels across - far off towards the posts it was lost against the crowd, "the ball disappears" - and the
+	# arrow when it is off the screen: the owner lost a ball struck up out of the picture).
 	if m.ball.state != Sliotar.HELD or m.carrier == null:
 		if not cam.is_position_behind(b):
 			var sp := cam.unproject_position(b)
 			if Rect2(Vector2.ZERO, vp).grow(-4).has_point(sp):
-				if not m.is_practice():
+				if not m.is_practice() or ball_px(cam, b, vp) < 4.0:
 					_marks.draw_circle(sp, 5.5, Color(0.05, 0.05, 0.05, 0.75))
 					_marks.draw_circle(sp, 3.8, Color(1, 1, 0.92))
 			else:
@@ -586,6 +592,13 @@ func _draw_marks() -> void:
 					_marks.draw_circle(top + Vector2(-15 + i * 10, -30), 3.6, col)
 
 
+## How wide the sliotar is drawn on the screen (pixels across), seen through cam in a picture vp big.
+func ball_px(cam: Camera3D, b: Vector3, vp: Vector2) -> float:
+	var d := maxf(cam.global_position.distance_to(b), 0.01)
+	var r: float = Sliotar.RADIUS * float(m.ball.look_scale)
+	return r / (d * tan(deg_to_rad(cam.fov) * 0.5)) * vp.y
+
+
 func _edge_arrow(sp: Vector2, vp: Vector2) -> void:
 	var c := vp * 0.5
 	var d := (sp - c)
@@ -596,6 +609,12 @@ func _edge_arrow(sp: Vector2, vp: Vector2) -> void:
 	var at := c + d * k
 	var n := Vector2(-d.y, d.x)
 	_marks.draw_colored_polygon(PackedVector2Array([at + d * 14.0, at - d * 6.0 + n * 9.0, at - d * 6.0 - n * 9.0]), Color(1, 1, 0.92, 0.9))
+
+
+func _toggle_speed() -> void:
+	m.set_speed(1.0 if m.speed > 1.0 else 2.0)
+	speed_button.text = "%d×" % int(m.speed)
+	toast(tr("WATCH_SPEED").format({"n": int(m.speed)}))
 
 
 # ---------------------------------------------------------------- overlays

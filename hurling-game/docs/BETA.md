@@ -9,6 +9,20 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.19.0
+
+- **Watch AI** (the main menu): pick two counties and the ground and watch the computer play the whole match, on the
+  television camera, with the score, the clock, the scorer's close-up and the replays after scores and wides. A
+  1×/2× button (top right) plays it at double speed; pause and quit as in any match.
+- **Referees and linesmen in proper kit**: black shorts to just above the knee and black socks to just below it, as
+  GAA referees wear them (they looked bare-legged, the shorts like underwear). Umpires keep their white coats.
+- **The goal posts are white again** (the baked light had turned them black on Medium).
+- **The free's follow-through**: the hurley no longer passes through his body; the arm swings out round it.
+- **The ball no longer disappears** on a long free: as it flies far off towards the posts, its small dot comes up
+  over it (it was lost against the crowd, a few pixels across).
+- **Licences**: motion capture by MoCap Online and ActorCore (Reallusion) credited.
+- The shared foundation brought up to date.
+
 ## New in 0.18.0
 
 - **The players move as people do.** Every hurler and official is drawn on the World Stage Games' shared

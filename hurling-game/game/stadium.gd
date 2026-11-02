@@ -28,6 +28,8 @@ var home_colours: Array = []
 var away_colours: Array = []    # with them, the crowd is both counties' (a championship day)
 var to_sun := Vector3(0.3, 0.8, 0.5).normalized()   # where the light comes from (PlayerShadows reads it)
 var net: GoalNet               # the goals' nets (a sliotar into one ripples it)
+var _post_geo: Geo             # the goals' frames again, for _posts
+var _posts: MeshInstance3D       # the goals white over the baked light (_baked_light)
 var structure: MeshInstance3D  # the stands, walls and roofs, built
 var baked := false             # drawn under its baked light (Low and Medium: assets/env/light)
 var _built_mesh: ArrayMesh     # the stands as built (the bake's signature is of these)
@@ -129,6 +131,9 @@ const LIGHT_DIR := "res://assets/env/light/"
 
 
 func _baked_light() -> void:
+	if _posts != null:
+		_posts.queue_free()
+		_posts = null
 	_built_mesh = structure.mesh as ArrayMesh
 	var grass_m := Pitch.grass_material(time)
 	grass_m.set_shader_parameter("shade_on", false)
@@ -139,6 +144,8 @@ func _baked_light() -> void:
 	if lm.is_empty():
 		return
 	baked = true
+	_posts = _post_geo.commit(Geo.material(true))
+	add_child(_posts)
 	structure.mesh = lm.mesh
 	structure.material_override = WsgLightBake.material(lm, Ultra.renderer_ready())
 	if lm.ground != null:
@@ -260,30 +267,41 @@ func _shirts() -> Array:
 ## The goals: two white uprights 6.5 m apart, at least 7 m high, the crossbar 2.5 m up, and the net behind (a fine
 ## mesh in hurling) from the bar back to the ground about 2 m behind the line.
 func _goals(g: Geo, nets: Geo) -> void:
+	_goal_frames(g, 0.0)
+	# The same again a hair larger, drawn over them where the light is baked (_baked_light): the posts are too thin
+	# for the light map's patches, which left them black (the owner, 0.18.0). Built here so they always match.
+	_post_geo = Geo.new()
+	_goal_frames(_post_geo, 0.004)
+
+
+## The goals' white frames and the flags: grow (m) thickens every piece (0 for the stadium's own mesh).
+func _goal_frames(g: Geo, grow: float) -> void:
 	var white := Color(0.96, 0.96, 0.94)
 	var r := Pitch.POST_W * 0.5
+	var gr := r + grow
 	for s: float in [-1.0, 1.0]:
 		var x := (H + r) * s
 		for zs: float in [-1.0, 1.0]:
 			var z := (Pitch.POST_GAP * 0.5 + r) * zs
-			g.cylinder(Vector3(x, 0, z), Vector3(x, Pitch.POST_H, z), r, r, white, 8)
-		g.cylinder(Vector3(x, Pitch.BAR_H + r, -Pitch.POST_GAP * 0.5), Vector3(x, Pitch.BAR_H + r, Pitch.POST_GAP * 0.5), r, r, white, 8, false)
+			g.cylinder(Vector3(x, 0, z), Vector3(x, Pitch.POST_H, z), gr, gr, white, 8)
+		g.cylinder(Vector3(x, Pitch.BAR_H + r, -Pitch.POST_GAP * 0.5), Vector3(x, Pitch.BAR_H + r, Pitch.POST_GAP * 0.5), gr, gr, white, 8, false)
 		# The net's frame: a white bar on the ground across the back and one down each side from the bar's ends (the
 		# net itself is GoalNet, added in _ready).
 		var back := x + Pitch.NET_DEPTH * s
 		var hz := Pitch.POST_GAP * 0.5
 		var fr := 0.025
-		g.cylinder(Vector3(back, fr, -hz), Vector3(back, fr, hz), fr, fr, white, 6, false)
+		var fg := fr + grow
+		g.cylinder(Vector3(back, fr, -hz), Vector3(back, fr, hz), fg, fg, white, 6, false)
 		for zs: float in [-1.0, 1.0]:
-			g.cylinder(Vector3(x, Pitch.BAR_H, hz * zs), Vector3(back, fr, hz * zs), fr, fr, white, 6, false)
-			g.cylinder(Vector3(x, fr, hz * zs), Vector3(back, fr, hz * zs), fr, fr, white, 6, false)
+			g.cylinder(Vector3(x, Pitch.BAR_H, hz * zs), Vector3(back, fr, hz * zs), fg, fg, white, 6, false)
+			g.cylinder(Vector3(x, fr, hz * zs), Vector3(back, fr, hz * zs), fg, fg, white, 6, false)
 		# A corner flag at each corner, and the flags at the lines (Rule 1.2), as small posts.
 		for zs: float in [-1.0, 1.0]:
 			for d: float in [0.0, 13.0, 20.0, 45.0, 65.0]:
 				var fx := (H - d) * s
 				var fz := (W + 1.5) * zs
-				g.cylinder(Vector3(fx, 0, fz), Vector3(fx, 1.5, fz), 0.02, 0.02, white, 4, false)
-				g.box(Vector3(fx, 1.35, fz + 0.15 * zs), Vector3(0.02, 0.28, 0.3), Color("e8b020") if d == 0.0 else Color("d9d9d9"), 0.0, false)
+				g.cylinder(Vector3(fx, 0, fz), Vector3(fx, 1.5, fz), 0.02 + grow, 0.02 + grow, white, 4, false)
+				g.box(Vector3(fx, 1.35, fz + 0.15 * zs), Vector3(0.02, 0.28, 0.3) + Vector3.ONE * grow * 2.0, Color("e8b020") if d == 0.0 else Color("d9d9d9"), 0.0, false)
 
 
 func _rail(g: Geo, inset: float, h := 1.0) -> void:

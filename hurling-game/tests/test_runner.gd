@@ -53,6 +53,10 @@ func _ready() -> void:
 	await _shootout_frees()
 	await _goals_round()
 	await _auto_graphics()
+	await _watch_ai()
+	await _stick_clear()
+	await _posts_white()
+	await _far_ball_dot()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	await _bench_seats()
@@ -1771,3 +1775,115 @@ func _auto_graphics() -> void:
 	Game.settings.auto_gfx = keep_auto
 	Game.settings.gfx_chosen = keep_c
 	Game.settings.gfx_detect = keep_d
+
+
+## Watch AI (the main menu's, the owner's request for every game): two counties played by the computer, the broadcast
+## camera, the score and the clock, no controls; 1x / 2x a tap (the clock runs twice as fast); pause stops it; the
+## pace back to normal on leaving; the auto graphics not fooled by 2x.
+func _watch_ai() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "GAL", "away": "LIM", "venue": "county", "user_team": -1, "seed": 9, "length": 4.0, "mode": "watch"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(30)
+	check(m.is_watch() and m.hud.speed_button != null and not m.controls.visible and m.hud._bug.visible
+		and m.get_viewport().get_camera_3d() == m.cam.camera, "Watch AI: the counties picked, the broadcast camera and the score bug, no controls, a speed button")
+	var f := 0
+	while m.phase != m.P.LIVE and f < 30 * 30:
+		await frames(1)
+		f += 1
+	var n0: float = m.now
+	await frames(60)
+	var one: float = m.now - n0
+	m.hud._toggle_speed()
+	check(is_equal_approx(Engine.time_scale, 2.0) and m.hud.speed_button.text == "2×", "Watch AI: a tap and it plays at 2x")
+	n0 = m.now
+	await frames(60)
+	var two: float = m.now - n0
+	check(absf(two / maxf(one, 0.001) - 2.0) < 0.1, "Watch AI: the match runs twice as fast at 2x (%.2f s of play in 60 frames, %.2f at 1x)" % [two, one])
+	check(m.replay._buf.size() > 30, "Watch AI: the play recorded for the replays (%d frames kept)" % m.replay._buf.size())
+	m.set_paused(true)
+	var c0: float = m.clock
+	await frames(30)
+	check(m.clock == c0 and m.hud._pause != null, "Watch AI: pause stops it")
+	m.set_paused(false)
+	var fed := WsgAutoTier.new(0)
+	var low := false
+	for k in 600:
+		low = fed.feed((1.0 / 60.0 * 2.0) / 2.0) or low   # what watch_frames feeds at 2x: the real frame time
+	check(not low, "Watch AI: 60 frames a second at 2x is not taken for a stutter")
+	m.hud._toggle_speed()
+	check(is_equal_approx(Engine.time_scale, 1.0) and m.hud.speed_button.text == "1×", "Watch AI: and back to 1x")
+	m.hud._toggle_speed()
+	m.queue_free()
+	await frames(2)
+	check(is_equal_approx(Engine.time_scale, 1.0), "Watch AI: leaving puts the game's pace back to normal")
+	# A match you play has no speed button and stays at 1x.
+	var q: Node = load("res://game/match.gd").new()
+	q.config = {"home": "GAL", "away": "LIM", "venue": "county", "user_team": 0, "seed": 9, "length": 4.0, "mode": "quick"}
+	q.set_meta("test", true)
+	add_child(q)
+	await frames(5)
+	q.set_speed(2.0)
+	check(q.hud.speed_button == null and is_equal_approx(Engine.time_scale, 1.0), "Watch AI: a match you play has no speed button and keeps its pace")
+	q.queue_free()
+	await frames(2)
+
+
+## The free's follow-through (the owner: "hurley goes through body"): the stick kept clear of the trunk all through
+## free_strike, as the taker is drawn (Player.animate: ToonBody.clear_stick).
+func _stick_clear() -> void:
+	var pl := Player.new({"num": 9, "line": 4, "speed": 70, "accel": 70}, 0, {"jersey": Color.RED, "trim": Color.WHITE, "kind": "player"})
+	add_child(pl)
+	await frames(1)
+	pl.visible_on_screen = true
+	pl.play("free_strike")
+	var worst := INF
+	var worst_raw := INF
+	var t := 0.0
+	while t <= Player.ACTIONS.free_strike[0]:
+		pl.action_t = t
+		pl.body.apply(pl._pose(t))
+		worst_raw = minf(worst_raw, float(pl.body.stick_clearance()[0]))
+		pl._lod_skip = 99
+		pl.animate(t)
+		worst = minf(worst, float(pl.body.stick_clearance()[0]))
+		t += 1.0 / 60.0
+	check(worst >= 0.03 and worst_raw < 0.0, "Free's follow-through: the hurley clear of the trunk (%.0f mm at the closest; %.0f mm into it as the clip has it)" % [worst * 1000.0, -worst_raw * 1000.0])
+	pl.queue_free()
+	await frames(1)
+
+
+## The goal posts white where the stands' light is baked (Medium; they came out black in 0.18.0).
+func _posts_white() -> void:
+	var keep = Game.settings.graphics
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "GAL", "away": "LIM", "venue": "county", "user_team": 0, "seed": 9, "length": 4.0, "mode": "quick"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(5)
+	var st: Stadium = m.stadium
+	var ok: bool = not st.baked or (st._posts != null and st._posts.is_inside_tree() and st._posts.mesh != null)
+	check(ok, "Goal posts: drawn white over the baked light (baked %s)" % st.baked)
+	m.queue_free()
+	Game.settings.graphics = keep
+	await frames(2)
+
+
+## Free-taking practice: the sliotar's dot comes up as it flies far off (a few pixels across, lost against the crowd:
+## "the ball disappears"), and stays off close up, where it reads by itself.
+func _far_ball_dot() -> void:
+	var m: Node = load("res://game/practice.gd").new()
+	m.config = {"home": "KIL", "away": "TIP", "venue": "county", "user_team": 0, "seed": 7, "mode": "practice"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(5)
+	var cam: Camera3D = m.get_viewport().get_camera_3d()
+	var vp := Vector2(1280, 720)
+	var fwd := -cam.global_transform.basis.z
+	var near: float = m.hud.ball_px(cam, cam.global_position + fwd * 4.0, vp)
+	var far: float = m.hud.ball_px(cam, cam.global_position + fwd * 45.0, vp)
+	check(near > 4.0 and far < 4.0, "Practice: the ball's dot shown far off (%.1f px across at 45 m), not close up (%.1f px at 4 m)" % [far, near])
+	m.queue_free()
+	await frames(2)

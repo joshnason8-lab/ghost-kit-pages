@@ -115,6 +115,7 @@ static func page(owner: Control, title: String, back: Callable = Callable(), eye
 
 
 ## A round button with an icon, for Back and other header actions.
+## A round button with an icon (Icon.make's kinds), or a short text given as "text:<words>".
 static func round_button(icon_kind: String, cb: Callable, px := 58.0) -> Button:
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(px, px)
@@ -132,6 +133,15 @@ static func round_button(icon_kind: String, cb: Callable, px := 58.0) -> Button:
 	b.add_theme_stylebox_override("hover", sb if Game.touch_ui else sbh)
 	b.add_theme_stylebox_override("pressed", sbh)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	if icon_kind.begins_with("text:"):
+		# A word or two instead of a drawn icon ("2×": Watch AI's speed).
+		b.text = icon_kind.substr(5)
+		b.add_theme_font_size_override("font_size", int(px * 0.36))
+		b.add_theme_color_override("font_color", Game.C_INK)
+		b.add_theme_color_override("font_pressed_color", Game.C_SAFFRON)
+		b.pressed.connect(Sfx.click)
+		b.pressed.connect(cb)
+		return b
 	var ic := Icon.make(icon_kind, px * 0.46)
 	ic.custom_minimum_size = Vector2.ZERO
 	ic.set_anchors_preset(Control.PRESET_FULL_RECT)

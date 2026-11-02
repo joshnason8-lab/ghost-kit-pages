@@ -7,6 +7,7 @@ const CREDITS := """[b]Hurling Heroes[/b]
 Made by Josh Nason. The game's code, the menu music (written for the game, tools/audio/make_music.py), the cover art and the icon, the hurlers' model and the houses, cottages, stands and sliotar (made in code) are the maker's own. The game is not connected with, or endorsed by, any sporting body, county board or club. Counties appear by their place names, in colours of the game's own design; every player is invented.
 
 [b]Movement[/b]
+- Motion capture: MoCap Online · ActorCore (Reallusion). The running, walking, turning and stopping (MoCap Online's Mobility pack, mocaponline.com) and the sprint and the crowd's movements (ActorCore, actorcore.reallusion.com), under their licences, which allow them inside a game; the files themselves are not shared with the game's source.
 - The hurlers' moves (strikes, catches, the sprint and others): Adobe Mixamo (mixamo.com), used under Adobe's Mixamo terms, which allow the animations in games.
 - The walk and the jog: the CMU Graphics Lab Motion Capture Database, clips 35_01 and 35_17. "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Free to use.
 
