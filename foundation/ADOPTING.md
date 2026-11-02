@@ -483,9 +483,12 @@ arm (5-6 cm, two frames), which the torso's capsule cannot see:
   from your baked mesh (most of the girth, the sleeve included: 76 mm on the hurler's upper arm), else 0.18 of its
   length; `[]` for a bone not on the rig.
 
-Clear the stick against each in turn, a few passes (one clearance can push it into the other), all about the same top
-fist, and margin = 0.03 + the stick's radius. The arm that holds the stick moves after your holds solve, so measure
-the result in `posed`.
+For the arm that holds the stick, move the arm, not the stick: turning the stick about the top fist clear of both
+the torso and the lead upper arm (which close round it from either side) took the hurley 40-70 degrees off its
+swing, pointing at the grass. Hurling's prototype turns the stick clear of the torso only, then swivels the lead
+elbow about the shoulder-to-wrist line (the hand stays on the handle) till the upper arm and forearm are clear of the
+stick by the stick's radius + 1 cm. Both run after your holds solve (the held arm moves with its hold, so the limb
+capsules are only right then): a modifier of your own just after the layer. Measure the result in `posed`.
 
 The layer keeps the forearms out of the chest round the hips-to-neck joint line (`torso_r`), which sits toward the
 back: a forearm across the front of a deep chest still sank in (Hurling's follow-through, 2-4 cm). Set
