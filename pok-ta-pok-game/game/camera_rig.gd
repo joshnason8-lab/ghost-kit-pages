@@ -169,6 +169,11 @@ func follow(m: Node, delta: float) -> void:
 	camera.fov = _fov
 
 
+## Where the camera is looking (the play, eased).
+func focus_point() -> Vector3:
+	return _focus
+
+
 func snap(m: Node) -> void:
 	_focus = _want_focus(m)
 	_tv_w = _tv_half_width(m)

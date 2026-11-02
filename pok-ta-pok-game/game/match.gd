@@ -1230,6 +1230,12 @@ func _rank_detail(dt: float) -> void:
 	WsgFoundation.tier = int(Game.settings.graphics)
 	var cam3 := get_viewport().get_camera_3d()
 	var camp := cam3.global_position if cam3 else Vector3.ZERO
+	# Measured from the play, not the lens: the court-side camera stands back as far as frames the play (further on
+	# a wide shot), and its players are posed as often as when it stood 10 m from it (0.6.0), so a runner's planted
+	# feet do not slide for being drawn every third frame.
+	var back := 0.0
+	if cam and cam.camera == cam3 and cam.mode == Game.CAM_TV:
+		back = maxf(0.0, camp.distance_to(cam.focus_point()) - 10.0)
 	var list := []
 	for b in _all_bodies():
 		var link: FoundationLink = (b as Body).link
@@ -1240,7 +1246,7 @@ func _rank_detail(dt: float) -> void:
 			link.pose_every = 1 if link.mode == "upper" else 3
 		else:
 			var pl := (b as Body).get_parent() as Player
-			var d: float = (b as Body).global_position.distance_to(camp)
+			var d: float = maxf(0.0, (b as Body).global_position.distance_to(camp) - back)
 			var near := d < float(POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)])
 			link.pose_every = 1 if near or pl == null or pl.busy() or pl == server or pl.user else (2 if d < POSE_MID else 3)
 	if not list.is_empty():
