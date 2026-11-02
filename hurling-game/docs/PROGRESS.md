@@ -278,6 +278,21 @@ Relayed by the lead (the owner asleep: decisions made and noted here).
 - Tests: Watch AI (counties, camera, no controls, 2x twice as fast, recorded, pause, 1x again, pace reset, a played
   match keeps 1x), the stick clear, posts white over the bake, the far ball's dot.
 
+## Done (0.19.1 and 0.19.2, 2 November 2026)
+
+- **0.19.1** (code 29): the foundation's WsgLightBake fix (thin faces get their own texels) and every ground's light
+  re-baked by the Foundation session (4432d62). Then `TeamAI.goal_target` took the match's seeded rng (it was the
+  one global randf() in play: a full-length match did not repeat from its seed, so score_check's 35-minute sideline
+  cuts swung 0.7-1.7 on one commit and the check failed at random; now 2.67 every time, 4.67 over six).
+- **0.19.2** (code 30): the Foundation session measured the licensed rig: the toon-side clear_stick kept the hurley
+  out of the torso (39.6 mm clear), but just after contact it went through the LEFT UPPER ARM (59 mm, two frames a
+  swing) - what the owner saw from behind. Its patch (foundation e739a95+: WsgBody.limb_capsule,
+  WsgPoseLayer.clear_segment) in FoundationLink: a StickClear modifier after the layer turns the stick about the top
+  fist out of the torso capsule and swivels the left elbow about its shoulder-wrist line off the stick (hand kept on
+  the handle, never past the elbow's or wrist's limits). Over 16 swings: arm -29 -> +59 mm, torso +39.6 -> +62.
+  Left for later: the stick against the left forearm by the grip (where the hold puts the hand) and the striking
+  forearm 2-5 cm into the drawn chest (FOREARMS_FROM_BODY clears it but leaves the top hand short of the handle).
+
 ## Done (0.17.1-beta, auto graphics, 30 October 2026)
 
 The owner's Galaxy A16 (Mali-G57/G68 class) stuttered on High and "Lower it by itself" did nothing: it watched only

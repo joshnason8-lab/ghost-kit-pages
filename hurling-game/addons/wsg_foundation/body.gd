@@ -231,3 +231,72 @@ func _torso_measure() -> Array:
 	if key != 0:
 		_torso_cache[key] = m
 	return m
+
+
+## A limb as a capsule, in the world, as it is drawn now: [a: Vector3 (upper_bone's joint), b: Vector3 (lower_bone's
+## joint), radius: float]. The bone from the one joint to the next (LeftArm to LeftForeArm: the upper arm; LeftForeArm
+## to LeftHand: the forearm); its radius is the limb's girth measured once from the character's mesh (measure_limb),
+## else LIMB_K of its length. Scaled with the body. Read it where the bones are final, as torso_capsule. A stick past
+## the arm that holds it (Hurling's free: the hurley through the lead upper arm just after contact):
+##   var q := WsgPoseLayer.clear_segment(butt, tip, top_fist, body.limb_capsule("LeftArm", "LeftForeArm"), margin)
+## [] if either bone is not on the rig.
+func limb_capsule(upper_bone: String, lower_bone: String, skeleton_space := false) -> Array:
+	var iu := bone(upper_bone)
+	var il := bone(lower_bone)
+	if iu < 0 or il < 0 or not joints.has(upper_bone) or not joints.has(lower_bone):
+		return []
+	var gx := Transform3D.IDENTITY if skeleton_space else skeleton.global_transform
+	var a := gx * skeleton.get_bone_global_pose(iu).origin
+	var b := gx * skeleton.get_bone_global_pose(il).origin
+	var s := gx.basis.get_scale()
+	return [a, b, _limb_measure(upper_bone, lower_bone) * (absf(s.x) + absf(s.y) + absf(s.z)) / 3.0]
+
+
+## A body without a mesh: a limb's radius as a part of its length (an upper arm 0.26 m long: 47 mm).
+const LIMB_K := 0.18
+static var _limb_cache := {}
+
+
+## The limb's radius from the mesh at rest (the rig's rest is the T: the arms out, clear of the body): the points
+## between a fifth and four fifths of the way from upper to lower (the joints' bulges left out) and within half the
+## bone's length of its line (the next limb and the torso well out), their distance from the line - the 75th
+## percentile of it: most of the girth, the sleeve that hangs below the arm and the triceps included (the hurler's
+## upper arm: 60 mm at the median, 74 at this, 90 at the back of the sleeve). 0 if the mesh has fewer than 12 there.
+static func measure_limb(p_joints: Dictionary, mesh: Mesh, upper_bone: String, lower_bone: String) -> float:
+	if mesh == null or mesh.get_surface_count() == 0 or not p_joints.has(upper_bone) or not p_joints.has(lower_bone):
+		return 0.0
+	var a: Vector3 = p_joints[upper_bone]
+	var b: Vector3 = p_joints[lower_bone]
+	var ab := b - a
+	var len2 := ab.length_squared()
+	if len2 < 1e-6:
+		return 0.0
+	var reach := sqrt(len2) * 0.5
+	var d := PackedFloat32Array()
+	for s in mesh.get_surface_count():
+		var v: PackedVector3Array = mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]
+		for p in v:
+			var t := (p - a).dot(ab) / len2
+			if t < 0.2 or t > 0.8:
+				continue
+			var r := p.distance_to(a + ab * t)
+			if r < reach:
+				d.append(r)
+	if d.size() < 12:
+		return 0.0
+	d.sort()
+	return d[mini(d.size() - 1, int(d.size() * 0.75))]
+
+
+func _limb_measure(upper_bone: String, lower_bone: String) -> float:
+	var meshes: Array = character.get("meshes", [])
+	var mid: int = (meshes[0] as Object).get_instance_id() if not meshes.is_empty() and meshes[0] != null else 0
+	var key := "%d|%s|%s" % [mid, upper_bone, lower_bone]
+	if _limb_cache.has(key):
+		return _limb_cache[key]
+	var r := measure_limb(joints, meshes[0], upper_bone, lower_bone) if mid != 0 else 0.0
+	if r <= 0.0:
+		r = LIMB_K * ((joints[lower_bone] as Vector3) - (joints[upper_bone] as Vector3)).length()
+	if mid != 0:
+		_limb_cache[key] = r
+	return r

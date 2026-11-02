@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.19.2
+
+- **The hurley no longer goes through the free-taker's arm**: just after he strikes, the stick passed through his left
+  upper arm for a moment (from behind it looked like it went through his body). His left elbow now swings out round
+  it, his hand staying on the handle; the stick is also kept clear of his chest.
+
 ## New in 0.19.1
 
 - **The stands' light baked again**: the goal posts, the net frames, the rails and the poles behind the parish

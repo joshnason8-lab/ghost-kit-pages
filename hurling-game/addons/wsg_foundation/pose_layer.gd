@@ -41,6 +41,13 @@ const FIST_R := 0.045
 ## after the holds.
 var torso_r := 0.0
 const FOREARM_R := 0.04
+## The forearms kept out of the chest as this body draws it (its WsgBody.torso_capsule: the chest's own half-depth
+## round the middle of its depth, measured from the mesh) instead of torso_r round the hips-to-neck joint line, which
+## sits toward the back: a torso_r small enough for the back let a forearm across the front of a deep chest sink in
+## (Hurling's free, the striking forearm across the chest through the follow-through, 2-4 cm into it). An arm whose
+## hand is held (hold) keeps torso_r. Needs the layer under a WsgBody's skeleton; on its own (torso_r 0) it turns the
+## clearing on. Off (the default): torso_r, as before.
+var torso_from_body := false
 ## The hips laid once, first (their turn in `pose` and the `hips` offset, at the layer's weight), before the bones
 ## and the holds, and not again after: holds made against the hips (make_holds) stay where they were made. Off (the
 ## default), the hips are laid last, as before - a hold worked out against the hips before they are laid is carried
@@ -139,7 +146,7 @@ func _process_modification_with_delta(delta: float) -> void:
 				targets[side + "Hand"] = r[2]
 		var want: Quaternion = (pq.inverse() * (targets[b] as Quaternion)).normalized()
 		sk.set_bone_pose_rotation(i, sk.get_bone_pose_rotation(i).slerp(want, w))
-	if torso_r > 0.0:
+	if torso_r > 0.0 or torso_from_body:
 		for side in ["Left", "Right"]:
 			_clear_torso(sk, side, w, 0.0)
 	if make_holds.is_valid():
@@ -159,7 +166,7 @@ func _process_modification_with_delta(delta: float) -> void:
 	for side in clear:
 		if not hold.has(side) or _hold_w((hold[side] as Array)[2], w) <= 0.0:
 			_keep_clear(sk, side, clear[side])
-	if torso_r > 0.0:
+	if torso_r > 0.0 or torso_from_body:
 		# (A held hand too, when the arm is well into the chest: better a hand a little off the handle than an arm
 		# through the chest; a graze is left, the hand kept closed on the handle.)
 		for side in ["Left", "Right"]:
@@ -298,7 +305,8 @@ static func _seg_seg(p1: Vector3, q1: Vector3, p2: Vector3, q2: Vector3) -> Arra
 	return [x, y, x.distance_to(y)]
 
 
-## The side's forearm out of the chest (torso_r round the hips-to-neck line): the arm turned about the shoulder, the
+## The side's forearm out of the chest (torso_r round the hips-to-neck line, or the body's torso_capsule with
+## torso_from_body): the arm turned about the shoulder, the
 ## least turn that takes the forearm's deepest point out (a few passes: the turn moves the rest of it too).
 func _clear_torso(sk: Skeleton3D, side: String, w: float, slack: float) -> void:
 	var ia := sk.find_bone(side + "Arm")
@@ -306,6 +314,18 @@ func _clear_torso(sk: Skeleton3D, side: String, w: float, slack: float) -> void:
 	var ih := sk.find_bone(side + "Hand")
 	var a := sk.get_bone_global_pose(sk.find_bone("Hips")).origin
 	var b := sk.get_bone_global_pose(sk.find_bone("Neck")).origin
+	var rad := torso_r
+	# (Not for a hand held on something: swung out of the deeper chest, it came off what it holds - Hurling's top hand,
+	# its fingers 15 mm into the hurley's handle. It keeps torso_r.)
+	var held := hold.has(side) and _hold_w((hold[side] as Array)[2], w) > 0.0
+	var from_body := torso_from_body and not held
+	if from_body:
+		var body := sk.get_parent() as WsgBody
+		if body != null:
+			var cap := body.torso_capsule(true)
+			a = cap[0]
+			b = cap[1]
+			rad = cap[2]
 	var ab := b - a
 	for pass_i in 3:
 		var s := sk.get_bone_global_pose(ia).origin
@@ -318,7 +338,7 @@ func _clear_torso(sk: Skeleton3D, side: String, w: float, slack: float) -> void:
 			var q := e.lerp(h, k)
 			var t := clampf((q - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
 			var off := q - (a + ab * t)
-			var need := torso_r + FOREARM_R - off.length()
+			var need := rad + FOREARM_R - off.length()
 			if need > deepest:
 				deepest = need
 				at = q
@@ -330,6 +350,17 @@ func _clear_torso(sk: Skeleton3D, side: String, w: float, slack: float) -> void:
 		var par := sk.get_bone_global_pose(sk.get_bone_parent(ia)).basis.get_rotation_quaternion()
 		var g := turn * sk.get_bone_global_pose(ia).basis.get_rotation_quaternion()
 		sk.set_bone_pose_rotation(ia, sk.get_bone_pose_rotation(ia).slerp((par.inverse() * g).normalized(), w))
+		if from_body and arms != null:
+			# (The arm swung out of the deeper chest the least way turned the upper arm about its length past where an
+			# elbow points - Hurling's striking arm, 119 degrees: made sound again, the wrist where the swing put it.)
+			var chest := sk.get_bone_global_pose(sk.find_bone("Spine2")).basis.get_rotation_quaternion()
+			var r := arms.sound_arm(chest, side, sk.get_bone_global_pose(ia).basis.get_rotation_quaternion(),
+				sk.get_bone_global_pose(ifo).basis.get_rotation_quaternion(), sk.get_bone_global_pose(ih).basis.get_rotation_quaternion())
+			var qa: Quaternion = r[0]
+			var qf: Quaternion = r[1]
+			sk.set_bone_pose_rotation(ia, sk.get_bone_pose_rotation(ia).slerp((par.inverse() * qa).normalized(), w))
+			sk.set_bone_pose_rotation(ifo, sk.get_bone_pose_rotation(ifo).slerp((qa.inverse() * qf).normalized(), w))
+			sk.set_bone_pose_rotation(ih, sk.get_bone_pose_rotation(ih).slerp((qf.inverse() * (r[2] as Quaternion)).normalized(), w))
 
 
 func _keep_clear(sk: Skeleton3D, side: String, c: Array) -> void:

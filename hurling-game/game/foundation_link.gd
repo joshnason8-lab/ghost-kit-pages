@@ -27,6 +27,30 @@ var _line_r := []           # the hurley's handle in the right hand, at rest (th
 var _handle_toon := Vector3.ZERO   # the middle of the handle's grip tape (the game's body's rest space)
 ## The hurley's handle: its grip tape's radius (HeroBody._hurley).
 const HANDLE_R := 0.021
+## How far the hurley's axis is kept outside this body's torso (WsgBody.torso_capsule's surface; m, the rig's
+## scale): the handle's own surface 3 cm off.
+const STICK_CLEAR := 0.03 + HANDLE_R
+## The lead (left) arm, when the hurley goes through it, swivelled about its shoulder-to-wrist line (the hand kept
+## where it holds the handle) till the upper arm and the forearm (from the elbow to STICK_FOREARM of the way to the
+## wrist: the hand on the handle is meant to be at it) are this far off the hurley's axis beyond their own girth
+## (WsgBody.limb_capsule): a free's swing just after contact put the hurley through the upper arm (5-6 cm; the
+## torso's capsule cannot see it). Turning the hurley instead (the least turn about the top fist, as for the torso)
+## turned it 40-70 degrees, pointing at the grass, between the arm and the chest.
+const ARM_CLEAR := HANDLE_R + 0.01
+## The forearms kept out of the chest as it is drawn (WsgPoseLayer.torso_from_body) - off: on, the striking forearm
+## is clear of the chest through the follow-through (14 frames of a free 2-5 cm in, then 1), but the arm swung out of
+## the deeper chest put the hurley 7 cm into it at the frame after (t 1.97), the turn that takes it out (43 degrees)
+## left the top hand short of the handle (the elbow audit: a finger 15 mm into it, a frame a free).
+const FOREARMS_FROM_BODY := false
+const STICK_FOREARM := 0.5
+const SWIVEL_MAX := 100.0    # degrees the elbow may be swivelled
+var _stick_len := 0.86
+var _stick_clear: SkeletonModifier3D
+## The turn (degrees) the hurley was given this frame to keep it out of the body (0: it was clear).
+var stick_turn := 0.0
+## The lead arm's swivel (degrees) this frame to keep it off the hurley (0: it was clear).
+var arm_swivel := 0.0
+var _last_swivel := 0.0
 
 
 ## Hurling is made for the nicer phones (WsgFoundation: Medium by default, High for flagships, Vulkan); WSG_PROFILE
@@ -83,6 +107,10 @@ func _ready() -> void:
 	# The forearms kept out of this body's chest (the game's model is slimmer: a free's follow-through swept the
 	# striking arm through it, the owner's screenshot).
 	legacy.torso_r = 0.1
+	# ... or as this body's chest is drawn (its torso_capsule: deeper than the hips-to-neck line round which torso_r
+	# keeps them, which lets the striking forearm sink 2-5 cm into the chest through a free's follow-through):
+	# FOREARMS_FROM_BODY.
+	legacy.torso_from_body = FOREARMS_FROM_BODY
 	reader = WsgLegacyPose.new(toon.skeleton, body.joints)
 	legacy.arms = reader
 	if toon is HeroBody:
@@ -122,6 +150,14 @@ func _ready() -> void:
 		var cr: Quaternion = reader._corr["RightHand"].inverse()
 		_line_r = [(body.joints["RightHand"] as Vector3) + cr * (_handle_toon - rest_hand), cr * dir]
 		_clear = {"Left": ["RightHand", (_line_r[0] as Vector3) - (body.joints["RightHand"] as Vector3), _line_r[1], 0.12, HANDLE_R]}
+		_stick_len = 0.86 if int((toon as HeroBody).look.get("hurley", 1)) == 1 else 0.9
+		# The hurley kept out of this body's torso and lead arm once the layer has laid the arms and solved the holds
+		# (_clear_stick), in a modifier of its own just after the layer.
+		_stick_clear = StickClear.new()
+		_stick_clear.name = "StickClear"
+		(_stick_clear as StickClear).link = self
+		body.skeleton.add_child(_stick_clear)
+		body.skeleton.move_child(_stick_clear, legacy.get_index() + 1)
 
 
 static var _hd_mats := {}
@@ -354,6 +390,160 @@ func _two_hands() -> void:
 	legacy.hold = {"Left": ["RightHand", Transform3D(Basis(rq), on - rq * v), w, dr, v]}
 	# (Closing as it comes onto the handle; open at once when it lets go, before it moves off.)
 	_left_grip = [HANDLE_R, w * w * w if _on_handle else 0.0, [c, Vector3.BACK]]
+
+
+## Runs _clear_stick as the skeleton's modifiers run, just after the layer.
+class StickClear extends SkeletonModifier3D:
+	var link: FoundationLink
+
+	func _process_modification_with_delta(_delta: float) -> void:
+		if link != null:
+			link._clear_stick(get_skeleton())
+
+
+## The hurley kept out of this body as it is drawn, once the layer has laid the arms and solved the holds: turned
+## about the top fist the least way that takes it clear of the torso (WsgPoseLayer.clear_segment against
+## WsgBody.torso_capsule; the hurley as the right hand has it this frame, never as last frame's turn left it), the
+## right arm reaching to where that puts the hand and the left hand held on the handle again (the layer's own reach);
+## then the lead arm swivelled out of its way (_swivel_clear). (The game's own body keeps its hurley out of its own
+## trunk - ToonBody.clear_stick - but this body is deeper in the chest, and its arms are drawn.)
+func _clear_stick(sk: Skeleton3D) -> void:
+	stick_turn = 0.0
+	arm_swivel = 0.0
+	if _line_r.is_empty() or not stick.visible or legacy.weight <= 0.0:
+		return
+	var ih := sk.find_bone("RightHand")
+	var total := Quaternion.IDENTITY
+	for pass_i in 3:
+		var hand := sk.get_bone_global_pose(ih)
+		var st := _stick_sk(hand)
+		var butt: Vector3 = st[0]
+		var tip: Vector3 = st[1]
+		var fist: Vector3 = st[2]
+		var tc := body.torso_capsule(true)
+		# The top fist itself in the chest (the forearm kept out of it, the hand beyond it not): the hand moved straight
+		# out of it first - nothing turns the stick clear about a pivot inside.
+		var fc: Array = WsgPoseLayer._seg_seg(fist, fist, tc[0], tc[1])
+		var fist_in := float(tc[2]) + HANDLE_R + 0.01 - float(fc[2])
+		if fist_in > 0.0:
+			var out: Vector3 = (fist - (fc[1] as Vector3)).normalized() if float(fc[2]) > 1e-4 else hand.basis.z.normalized()
+			legacy._reach(sk, "Right", Transform3D(hand.basis, hand.origin + out * fist_in), 1.0)
+			_rehold_left(sk)
+			continue
+		# (A fist nearer the chest than the margin: as clear as the fist allows - clear_segment turns nothing about a
+		# pivot inside its margin.)
+		var q := WsgPoseLayer.clear_segment(butt, tip, fist, tc, minf(STICK_CLEAR, float(fc[2]) - float(tc[2]) - 0.005))
+		if q.is_equal_approx(Quaternion.IDENTITY):
+			break
+		total = (q * total).normalized()
+		legacy._reach(sk, "Right", Transform3D(Basis(q), fist - q * fist) * hand, 1.0)
+		# (The arm reaching there kept out of the chest as the layer keeps it; the next pass sees where that left the
+		# stick.)
+		legacy._clear_torso(sk, "Right", 1.0, 0.0)
+		_rehold_left(sk)
+	stick_turn = rad_to_deg(total.get_angle())
+	var fin := _stick_sk(sk.get_bone_global_pose(ih))
+	arm_swivel = _swivel_clear(sk, "Left", fin[0], fin[1])
+
+
+## The hurley in the skeleton's space from the right hand's pose: [butt, the bas's foot, the top fist on its axis].
+func _stick_sk(hand: Transform3D) -> Array:
+	var rq := hand.basis.get_rotation_quaternion()
+	var to_stick: Quaternion = rq * (reader._corr["RightHand"] as Quaternion).inverse()
+	var g := (toon as HeroBody)._grip()
+	var dir := HeroBody.HURLEY_DIR
+	return [hand.origin + to_stick * (g - dir * 0.08), hand.origin + to_stick * (g + dir * _stick_len),
+		hand.origin + rq * ((_line_r[0] as Vector3) - (body.joints["RightHand"] as Vector3))]
+
+
+## The side's arm swivelled about its shoulder-to-wrist line - the elbow round, the wrist and the hand's turn where
+## they are - the least way (within SWIVEL_MAX, never into the chest) that leaves the upper arm and the forearm
+## ARM_CLEAR off the stick's axis beyond their girth; the most clear if none does. Returns the swivel (degrees).
+func _swivel_clear(sk: Skeleton3D, side: String, sa: Vector3, sb: Vector3) -> float:
+	var ia := sk.find_bone(side + "Arm")
+	var ifo := sk.find_bone(side + "ForeArm")
+	var ih := sk.find_bone(side + "Hand")
+	var ga := sk.get_bone_global_pose(ia)
+	var gf := sk.get_bone_global_pose(ifo)
+	var gh := sk.get_bone_global_pose(ih)
+	var s := ga.origin
+	var e := gf.origin
+	var w := gh.origin
+	var axis := w - s
+	if axis.length_squared() < 1e-6:
+		return 0.0
+	axis = axis.normalized()
+	var ru: float = body.limb_capsule(side + "Arm", side + "ForeArm", true)[2]
+	var rf: float = body.limb_capsule(side + "ForeArm", side + "Hand", true)[2]
+	var tc := body.torso_capsule(true)
+	# How clear the arm is with the elbow at e2 (m: the nearer of the two parts), and whether the elbow is in the chest.
+	var clear_at := func(e2: Vector3) -> float:
+		var du := float(WsgPoseLayer._seg_seg(sa, sb, s, e2)[2]) - ru
+		var df := float(WsgPoseLayer._seg_seg(sa, sb, e2, e2.lerp(w, STICK_FOREARM))[2]) - rf
+		return minf(du, df)
+	var c0: float = clear_at.call(e)
+	if c0 >= 0.0:
+		return 0.0    # (not through it: an arm round a handle it holds is near it)
+	# The hand keeps its turn (it holds the handle), so the forearm turns under it: no swivel that wrings the wrist past
+	# what the layer allows it (WsgLegacyPose.WRIST_MAX), or more than it is wrung already.
+	var f0: Vector3 = reader._arm[side][1]
+	var qh := gh.basis.get_rotation_quaternion()
+	var qf0 := gf.basis.get_rotation_quaternion()
+	var wring := func(r: Quaternion) -> float:
+		return absf(WsgRig.twist_angle(WsgRig.swing_twist(((r * qf0).inverse() * qh).normalized(), f0)[1], f0))
+	var wrist_max := maxf(deg_to_rad(WsgLegacyPose.WRIST_MAX), wring.call(Quaternion.IDENTITY))
+	# Nor one that points the elbow where an elbow cannot (its bend turned past the layer's TURN_MAX in the chest).
+	var ci := sk.get_bone_global_pose(sk.find_bone("Spine2")).basis.get_rotation_quaternion().inverse()
+	var turned := func(e2: Vector3) -> float:
+		var u := (ci * (e2 - s)).normalized()
+		var f := (ci * (w - e2)).normalized()
+		return absf(WsgLegacyPose.elbow_turn(u, f)) if u.angle_to(f) > deg_to_rad(25.0) else 0.0
+	var turn_max := maxf(deg_to_rad(WsgLegacyPose.TURN_MAX), turned.call(e))
+	var best := [0.0, c0]
+	# (The way it went last time first, of two as near: the elbow does not flick from one side to the other.)
+	var first := -1 if _last_swivel < 0.0 else 1
+	for i in range(1, int(SWIVEL_MAX / 5.0) * 2 + 1):
+		var phi := deg_to_rad(5.0 * ((i + 1) / 2) * (first if i % 2 == 1 else -first))
+		var e2 := s + Quaternion(axis, phi) * (e - s)
+		if float(WsgPoseLayer._seg_seg(e2, e2, tc[0], tc[1])[2]) < float(tc[2]) + ru * 0.5:
+			continue    # (the elbow into the chest)
+		if float(wring.call(Quaternion(axis, phi))) > wrist_max or float(turned.call(e2)) > turn_max:
+			continue
+		var c: float = clear_at.call(e2)
+		if c >= ARM_CLEAR:
+			best = [phi, c]
+			break
+		if c > float(best[1]):
+			best = [phi, c]
+	var phi_b: float = best[0]
+	if phi_b == 0.0:
+		return 0.0
+	_last_swivel = phi_b
+	var r := Quaternion(axis, phi_b)
+	var par := sk.get_bone_global_pose(sk.get_bone_parent(ia)).basis.get_rotation_quaternion()
+	var qa := (r * ga.basis.get_rotation_quaternion()).normalized()
+	var qf := (r * gf.basis.get_rotation_quaternion()).normalized()
+	sk.set_bone_pose_rotation(ia, (par.inverse() * qa).normalized())
+	sk.set_bone_pose_rotation(ih, (qf.inverse() * gh.basis.get_rotation_quaternion()).normalized())
+	return rad_to_deg(phi_b)
+
+
+## The left hand onto the handle again where the right hand now has it (the layer's hold, solved as the layer does).
+func _rehold_left(sk: Skeleton3D) -> void:
+	if not legacy.hold.has("Left"):
+		return
+	var h: Array = legacy.hold["Left"]
+	var hw := float(h[2]) * smoothstep(0.0, 1.0, legacy.weight)
+	var ai := sk.find_bone(h[0])
+	if hw <= 0.0 or ai < 0:
+		return
+	var ag := sk.get_bone_global_pose(ai)
+	var target := ag * (h[1] as Transform3D)
+	var grip := []
+	if h.size() > 4:
+		target.origin += legacy._slide(sk, "Left", target.origin, ag.basis * (h[3] as Vector3))
+		grip = [h[4], ag.basis * (h[3] as Vector3)]
+	legacy._reach(sk, "Left", target, hw, grip)
 
 
 ## The hurley in this body's right hand, as the game's body holds it in its own. Placed when the skeleton has its
