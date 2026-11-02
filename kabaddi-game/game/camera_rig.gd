@@ -72,33 +72,90 @@ func flat_forward() -> Vector3:
 	return f.normalized() if f.length() > 0.01 else Vector3(0, 0, -1)
 
 
-## The ground direction "up the stick" means: the camera's, followed exactly as it turns, but eased over about 0.2 s when
-## it jumps (the camera button mid-move), so the player does not turn on the spot.
-var _in_fwd := Vector3.ZERO
-const INPUT_EASE := 0.07   # s, the time constant of that ease (about 95% in 0.2 s)
+## The stick's axes: the ground ways that are up and right on the screen where the player it moves stands. Perspective
+## bends them away from the camera's own yaw toward the screen's edges (up to 24 degrees here), so they are found by
+## casting the camera's rays to the ground just above, below, left and right of him. Followed exactly as the camera
+## turns, but eased over about 0.2 s when they jump (a camera cut), so the player does not turn on the spot.
+var input_at := Vector3.INF          # where the player the stick moves stands (set each frame by follow)
+var _in_up := Vector3.ZERO
+var _in_right := Vector3.ZERO
+const INPUT_EASE := 0.07             # s, the time constant of that ease (about 95% in 0.2 s)
+const AXIS_PX := 24.0                # how far either side of him the rays go, in pixels
+
+
+## Where the camera's ray through screen point s meets the ground (y 0), or INF.
+func _ground_at(s: Vector2) -> Vector3:
+	var o := cam.project_ray_origin(s)
+	var n := cam.project_ray_normal(s)
+	if n.y > -0.001:
+		return Vector3.INF
+	return o + n * (-o.y / n.y)
+
+
+## [up, right]: the ground directions that are up and right on the screen at ground point at.
+func stick_axes(at: Vector3) -> Array:
+	var f := flat_forward()
+	var flat := [f, Vector3(-f.z, 0, f.x)]
+	if at == Vector3.INF or cam == null or not cam.is_inside_tree():
+		return flat
+	var g := Vector3(at.x, 0.0, at.z)
+	if cam.is_position_behind(g):
+		return flat
+	var s := cam.unproject_position(g)
+	var hi := _ground_at(s + Vector2(0, -AXIS_PX))
+	var lo := _ground_at(s + Vector2(0, AXIS_PX))
+	var rt := _ground_at(s + Vector2(AXIS_PX, 0))
+	var lf := _ground_at(s + Vector2(-AXIS_PX, 0))
+	if Vector3.INF in [hi, lo, rt, lf]:
+		return flat
+	var up := Vector3(hi.x - lo.x, 0, hi.z - lo.z)
+	var right := Vector3(rt.x - lf.x, 0, rt.z - lf.z)
+	if up.length() < 0.0001 or right.length() < 0.0001:
+		return flat
+	return [up.normalized(), right.normalized()]
 
 
 func _ease_input(dt: float) -> void:
-	var f := flat_forward()
-	if _in_fwd == Vector3.ZERO or _in_fwd.angle_to(f) < 0.35:
-		_in_fwd = f
+	var ax := stick_axes(input_at)
+	var up: Vector3 = ax[0]
+	var right: Vector3 = ax[1]
+	if _in_up == Vector3.ZERO or (_in_up.angle_to(up) < 0.35 and _in_right.angle_to(right) < 0.35):
+		_in_up = up
+		_in_right = right
 	else:
-		_in_fwd = _in_fwd.slerp(f, 1.0 - exp(-dt / INPUT_EASE)).normalized()
+		var k := 1.0 - exp(-dt / INPUT_EASE)
+		_in_up = _in_up.slerp(up, k).normalized()
+		_in_right = _in_right.slerp(right, k).normalized()
 
 
-## Joystick vector (x right, y down) to a ground direction relative to the camera: up the stick is up the screen, in
-## every camera.
-func input_to_world(v: Vector2) -> Vector3:
+## Joystick vector (x right, y down) to a ground direction: up the stick is up the screen where the player stands, in
+## every camera. at: the axes there, now (no ease); else the eased axes at input_at.
+func input_to_world(v: Vector2, at := Vector3.INF) -> Vector3:
 	if v.length() < 0.05:
 		return Vector3.ZERO
-	var fwd := _in_fwd if _in_fwd != Vector3.ZERO else flat_forward()
-	var right := Vector3(-fwd.z, 0, fwd.x)
-	return (right * v.x + fwd * -v.y).limit_length(1.0)
+	var ax := stick_axes(at) if at != Vector3.INF or _in_up == Vector3.ZERO else [_in_up, _in_right]
+	var w: Vector3 = ax[1] * v.x - ax[0] * v.y
+	return w.normalized() * minf(v.length(), 1.0) if w.length() > 0.0001 else Vector3.ZERO
+
+
+## The stick vector that moves the player along ground direction w (input_to_world's inverse; the demo tour's thumb).
+func world_to_input(w: Vector3) -> Vector2:
+	var ax := [_in_up, _in_right] if _in_up != Vector3.ZERO else stick_axes(input_at)
+	var u: Vector3 = ax[0]
+	var r: Vector3 = ax[1]
+	var det := r.x * u.z - u.x * r.z
+	if absf(det) < 0.0001:
+		return Vector2.ZERO
+	var a := (w.x * u.z - u.x * w.z) / det
+	var b := (r.x * w.z - w.x * r.z) / det
+	return Vector2(a, -b)
 
 
 func follow(m, dt: float) -> void:
 	if frozen:
 		return
+	var who = m.get("controlled")
+	input_at = (who as Node3D).global_position if who is Node3D and is_instance_valid(who) else Vector3.INF
 	_ease_input(dt)
 	cam.global_position -= _shake_now   # last frame's shake off before the smoothing
 	_shake_now = Vector3.ZERO

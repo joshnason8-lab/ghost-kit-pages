@@ -18,6 +18,15 @@ func _ready() -> void:
 	await _run()
 
 
+## Where camera c's ray through screen point s meets the ground (y 0), or INF.
+func _ground_hit(c: Camera3D, s: Vector2) -> Vector3:
+	var o := c.project_ray_origin(s)
+	var n := c.project_ray_normal(s)
+	if n.y > -0.001:
+		return Vector3.INF
+	return o + n * (-o.y / n.y)
+
+
 func check(ok: bool, what: String) -> void:
 	print(("PASS  " if ok else "FAIL  ") + what)
 	if not ok:
@@ -1324,6 +1333,23 @@ func _run() -> void:
 			shot.queue_free()
 			sworst = maxf(sworst, rad_to_deg(absf(smv.angle_to(d))) if smv.length() > 5.0 else 180.0)
 		stick_worst["TV" if cmode == Game.CAM_TV else "third"] = snappedf(sworst, 1.0)
+		# And wherever he stands on the screen, out to its edges, where the camera's perspective bends the ground's
+		# directions away from its own yaw (by up to 24 degrees here): a ray 20 px above, right, below or left of a ground
+		# point on the screen meets the ground in the way the stick goes from there.
+		var scam: Camera3D = km2.cam.cam
+		var vsz := get_viewport().get_visible_rect().size
+		var edge := 0.0
+		for fx in [0.1, 0.3, 0.5, 0.7, 0.9]:
+			for fy in [0.3, 0.5, 0.7, 0.9]:
+				var ss := Vector2(fx * vsz.x, fy * vsz.y)
+				var gp := _ground_hit(scam, ss)
+				if gp == Vector3.INF or gp.distance_to(scam.global_position) > 60.0:
+					continue
+				for d in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
+					var gq := _ground_hit(scam, ss + d * 20.0)
+					var want := Vector3(gq.x - gp.x, 0, gq.z - gp.z).normalized()
+					edge = maxf(edge, rad_to_deg(want.angle_to(km2.cam.input_to_world(d, gp))))
+		stick_worst["TV edges" if cmode == Game.CAM_TV else "third edges"] = snappedf(edge, 1.0)
 		if cmode == Game.CAM_THIRD:
 			# Mid-move, the camera button: the stick's "up" a moment later is still mostly the old camera's, then the new's.
 			km2.controls._stick_vec = Vector2(0, -1)
@@ -1340,7 +1366,7 @@ func _run() -> void:
 		km2.queue_free()
 		await frames(3)
 	check(stick_worst.values().all(func(w): return float(w) <= 10.0) and eased,
-		"the stick is the screen's in every camera: up, right, down, left within 10 degrees %s; a camera change mid-move eases round" % str(stick_worst))
+		"the stick is the screen's in every camera, wherever he is on it: up, right, down, left within 10 degrees %s; a camera change mid-move eases round" % str(stick_worst))
 
 	# 9. A full AI-vs-AI match, quick length, knockout rules.
 	var m: Node = null

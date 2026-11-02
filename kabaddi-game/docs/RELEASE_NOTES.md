@@ -1,6 +1,7 @@
-**New in 0.14.1: the stick checked in both cameras.** Up, right, down and left on the stick move your player up, right,
-down and left on the screen in the broadcast camera and behind the raider alike, and switching camera mid-move eases
-the stick round instead of turning him on the spot. (It already worked; this adds a check for it in every build.)
+**New in 0.14.1: the stick goes where you push it, all over the screen.** Up on the stick moves your player up the
+screen, right moves him right, and so on, wherever he is on the screen and in both cameras. Toward the edges of the
+screen the camera's perspective had turned the stick by up to 24 degrees (pushing straight up sent him off at an angle);
+now it is exact. Switching camera mid-move eases the stick round instead of turning him on the spot.
 
 **In 0.14.0: real movement on Medium and High, replays, and a buzz for your points.**
 - **Medium and High**: the players, referees and scorers are drawn on a new shared body rig with motion capture of

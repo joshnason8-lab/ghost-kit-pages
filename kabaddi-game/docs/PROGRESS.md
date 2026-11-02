@@ -396,11 +396,13 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   walks, and on the upright walk both knees passed near straight at every step (the foundation's stance check caught
   it in CI: 1 frame in 298). Hips about 1 cm lower. test_runner: walking at 0.8 m/s just after a touch, the crouched
   walk and never both knees near straight.
-- **The stick in every camera** (the owner's note to every game, via the lead): checked, and Kabaddi Raid had it right
-  already. `CameraRig.input_to_world` turns the stick by the live camera's yaw, flat on the ground, in both cameras
-  (broadcast, and third person behind the raider). Measured against the camera as it was when the push began: up,
-  right, down and left move the raider within 6 degrees (broadcast) and 1 degree (third person) of the same on screen.
-  The camera button mid-move: the camera glides between its views, and the stick's frame with it (no snap); the
-  stick's frame is also eased over about 0.2 s (`_ease_input`) if the camera ever cuts in one frame. The game has no
-  aimed passes or shots; the AI does not use the stick. test_runner: both cameras, four directions, within 10 degrees,
-  and the camera change mid-move.
+- **The stick in every camera** (the owner's note to every game, via the lead): measured at mid-court, the stick was
+  right in both cameras (within 6 degrees broadcast, 1 degree third person), but toward the screen's edges the
+  camera's perspective bends the ground's directions away from its yaw, and the stick, turned by the yaw alone, was up
+  to 22 degrees off (broadcast) and 24 (third person). Now (`CameraRig.stick_axes`, Floorball's method via the lead)
+  the stick's axes are where the player stands on the screen: the camera's rays 24 px above, below, left and right of
+  him meet the ground in the ways up and right go there. Exact across the screen (0 degrees in the sweep). Eased over
+  about 0.2 s if they jump (a camera cut); the camera button glides the camera, and the axes with it. The demo tour's
+  thumb uses the inverse (`world_to_input`). No aimed passes or shots; the AI does not use the stick. test_runner:
+  both cameras, four directions moving the raider (within 10 degrees on screen), a sweep of the screen out to its
+  edges, and the camera change mid-move.

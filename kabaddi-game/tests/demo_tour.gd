@@ -176,9 +176,7 @@ func _stick(c: TouchControls, w: Vector3) -> void:
 			c._stick_vec = Vector2.ZERO
 			c.queue_redraw()
 		return
-	var fwd: Vector3 = m.cam.flat_forward()
-	var right := Vector3(-fwd.z, 0, fwd.x)
-	var v := Vector2(w.dot(right), -w.dot(fwd))
+	var v: Vector2 = m.cam.world_to_input(w.normalized()) * minf(w.length(), 1.0)
 	var s := c.get_viewport_rect().size
 	c._stick_id = 99
 	c._stick_origin = Vector2(170.0 if not Game.settings.left_handed else s.x - 170.0, s.y - 160.0)
