@@ -1920,9 +1920,9 @@ func _edge_cost(q: Vector3) -> float:
 	return c
 
 
-## Round the seated chasers and the other runners rather than through them.
+## Round the seated chasers rather than through them.
 func _avoid(a: Athlete, w: Vector3) -> Vector3:
-	# Round the seated chasers and the active chaser, not through them (the owner: "like ghosts"): looking 2 m ahead
+	# Round the seated chasers, not through them (the owner: "like ghosts"): looking 2 m ahead
 	# along his way, a body he would pass within reach of turns him aside, the more the nearer it is; already inside
 	# one, he is steered straight out. _separate keeps them apart whatever gets past this.
 	var out := w
@@ -1932,8 +1932,8 @@ func _avoid(a: Athlete, w: Vector3) -> Vector3:
 	for s in squares:
 		if s != active and s != a and (s as Athlete).act in ["sit", ""]:
 			bodies.append([s.position, BODY_SEATED + 0.1])
-	if active and active != a and _solid(active):
-		bodies.append([active.position, BODY_STANDING + 0.1])
+	# Not round the active chaser: running into him is his touch (and steering round him made defenders slip a fifth
+	# of the classic game's outs, match_sim 1.52 to 1.24 a minute); _separate keeps the two from passing through.
 	for b in bodies:
 		var d: Vector3 = (b[0] as Vector3) - a.position
 		d.y = 0.0
@@ -2023,7 +2023,7 @@ func _brake_at_line(a: Athlete, dt: float) -> void:
 
 ## Bodies are solid (the owner: runners went through the kneeling chasers, and a touch through the man touched, "like
 ## ghosts"). After everyone has moved: a defender is kept out of each seated chaser (who does not move) and of the
-## other defenders, and the active chaser and a defender apart, each giving way by half; only where they stand (their
+## other defenders (each giving way by half), and the active chaser out of a defender (he gives way); only where they stand (their
 ## speed is their own, so nobody jerks), and never a man diving, lying, getting up or swinging round the pole. A
 ## touch still lands: the hand reaches 0.76 m ahead (_touches), the bodies keep 0.5 m.
 const BODY_SEATED := 0.62   # m between a seated chaser's middle and a defender's
@@ -2048,9 +2048,12 @@ func _separate() -> void:
 	for i in movers.size():
 		for k in range(i + 1, movers.size()):
 			_push_apart(movers[i], movers[k], BODY_STANDING, 0.5)
+	# The chaser and a defender: the chaser gives way, all of it. Pushing the defender too (half each, 0.11.2) shoved
+	# him on, away from the hand, every frame they met: a free burst that cut the classic game's outs from 1.52 to
+	# 1.18 a minute (match_sim, 10 matches).
 	if active and _solid(active):
 		for d in movers:
-			_push_apart(d, active, BODY_STANDING, 0.5)
+			_push_apart(active, d, BODY_STANDING, 1.0)
 
 
 ## Moves a (and b by the rest of it) apart along the ground until they are gap apart; share: a's part of it.
