@@ -227,7 +227,8 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
 
 - 0.11.3: match_sim showed 0.11.2's half-each push between the chaser and a defender cut classic outs from 1.52 to
   1.18 a minute (10 matches; with only that push off, 1.62). The chaser now gives way entirely; defenders no longer
-  steer round him. After: classic 1.61, fast 1.66.
+  steer round him; his give-way is at most 3 cm a frame (smooth speeds). After: classic 1.35 (real matches 1.3-1.6),
+  fast 1.66.
 
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
