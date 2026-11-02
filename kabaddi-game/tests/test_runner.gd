@@ -1988,17 +1988,16 @@ func _foundation(available: bool) -> void:
 			if link.mode == "move" and a.move_vel.length() > 0.8:
 				walked += 1
 		var r: Athlete = m.raider
-		# (Working the cover, not running: a stride at a jog passes through a near-straight leg, both knees at about 13
-		# degrees for a frame, as a runner's do.)
-		if m.phase == "raid" and r and r.state == "raid" and r.st_t > 0.6 and r.model.link.mode == "full" and r.model.link.legacy.weight >= 1.0 \
-				and r.move_vel.length() < 1.5:
+		if m.phase == "raid" and r and r.state == "raid" and r.st_t > 0.6 and r.model.link.mode == "full" and r.model.link.legacy.weight >= 1.0:
 			stance_frames += 1
 			# (His dance lifts and plants a foot at a time, the leg he stands on near straight for a moment: straight-legged is
 			# both at once, the old stance.)
 			var kl: float = r.model.link.knee_bend("Left")
 			var kr: float = r.model.link.knee_bend("Right")
 			bent += (kl + kr) * 0.5
-			if maxf(kl, kr) < 15.0:
+			# (Not running: a stride at a jog passes through a near-straight leg, both knees at about 13 degrees for a
+			# frame, as a runner's do.)
+			if maxf(kl, kr) < 15.0 and r.move_vel.length() < 1.5:
 				straight += 1
 		raids_seen[m.raid_log.size()] = true
 	var never := people.filter(func(a): return a.is_visible_in_tree() and int(posed[a]) < 400).map(func(a): return "%s %d" % [a.name, posed[a]])
