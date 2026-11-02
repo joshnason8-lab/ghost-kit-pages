@@ -949,6 +949,7 @@ func _foundation() -> void:
 		await _foundation_match(g, have)
 	await _foundation_lowered(have)
 	await _replay_rules(have)
+	await _step_down(have)
 	FoundationLink.off = true
 	Game.settings.graphics = keep_g
 	Game.settings.auto_gfx = keep_auto
@@ -1100,12 +1101,19 @@ func _foundation_match(g: int, have: bool) -> void:
 	check(turned < 4.0, "Foundation (graphics %d): the server holding the ball does not spin on the spot (drawn: turned %.1f rad; the game's %.1f)" % [g, turned, game_turned])
 	var seen := {}
 	var once := true
+	var others := 0
+	var gap_ok := true
+	var last_c := -INF
 	for r in m.replays:
 		if seen.has(r[0]):
 			once = false
 		seen[r[0]] = true
 		check(String(r[1]) in m.REPLAY_PRIORITY, "Foundation: a replay shows a moment of the list (%s)" % r[1])
-	check(once, "Foundation (graphics %d): one replay a raya at most (%s)" % [g, m.replays])
+		if String(r[1]) != "ring":
+			others += 1
+			gap_ok = gap_ok and float(r[2]) - last_c >= m.REPLAY_GAP
+			last_c = float(r[2])
+	check(once and others <= m.OTHER_REPLAYS and gap_ok, "Foundation (graphics %d): one replay a raya at most, three besides the ring's, 90 s apart (%s)" % [g, m.replays])
 	var played: Array = [m.log_rayas.duplicate(true), _places(m)]
 	var shown: int = m.replays.size()
 	m.queue_free()
@@ -1185,17 +1193,39 @@ func _replay_rules(have: bool) -> void:
 	var m := _new_match("stone", "classic", 5)
 	await frames(30)
 	m._rec_t = 10.0
-	m._rally_events = [["strike", 8.0, Vector3.ZERO, 1], ["dive", 8.5, Vector3.ZERO, 0], ["wall", 9.0, Vector3.ZERO, -1]]
-	m.rally = 13
-	check(m.replay_kind("ring", "win", 0) == "ring", "Replays: the ring comes first")
-	var want := ["dive", "rally", "win", "wall"] if have else ["", "", "", ""]
-	check(m.replay_kind("dead", "win", 0) == want[0], "Replays: a dive that saved the raya before a long rally (%s)" % m.replay_kind("dead", "win", 0))
-	check(m.replay_kind("dead", "win", 1) == want[1], "Replays: a long rally next, when the dive was the losers' (%s)" % m.replay_kind("dead", "win", 1))
-	m.rally = 2
-	check(m.replay_kind("dead", "win", 1) == want[2], "Replays: the winning raya next (%s)" % m.replay_kind("dead", "win", 1))
-	check(m.replay_kind("dead", "add", 1) == want[3], "Replays: the ball off the talud or a wall into a raya (%s)" % m.replay_kind("dead", "add", 1))
+	m.clock = 200.0
+	m.limit_s = 0.0      # (no time limit: the last-raya rule is checked below)
+	var dive_won := [["strike", 8.0, Vector3.ZERO, 1], ["dive", 8.5, Vector3.ZERO, 0]]
+	var other := func(k: String) -> String: return k if have else ""
+	m._rally_events = dive_won
+	m.rally = 9
+	check(m.replay_kind("ring", "add", 0) == "ring", "Replays: the ring is always replayed")
+	check(m.replay_kind("dead", "win", 0) == other.call("win"), "Replays: the raya that wins the match first (%s)" % m.replay_kind("dead", "win", 0))
+	check(m.replay_kind("dead", "urria", 0) == other.call("urria"), "Replays: then a raya that wipes a count in urria (%s)" % m.replay_kind("dead", "urria", 0))
+	check(m.replay_kind("dead", "add", 0) == other.call("dive"), "Replays: then a raya won off a dive save (%s)" % m.replay_kind("dead", "add", 0))
+	check(m.replay_kind("dead", "add", 1) == other.call("rally"), "Replays: or after a rally of 8 strikes (%s)" % m.replay_kind("dead", "add", 1))
+	m.rally = 3
 	m._rally_events = [["dive", 8.5, Vector3.ZERO, 1], ["strike", 9.5, Vector3.ZERO, 0]]
-	check(m.replay_kind("dead", "add", 1) == "", "Replays: an ordinary raya earns none (a dive answered by a strike is no save)")
+	check(m.replay_kind("dead", "add", 1) == "" and m.replay_kind("out", "add", 0, true) == "" and m.replay_kind("end", "cancel", 0) == "",
+		"Replays: never a plain dead ball, out or fault")
+	m.rally = 9
+	check(m.replay_kind("touch", "add", 1, true) == "", "Replays: a fault after a long rally earns none")
+	# Spacing and the cap (the ring exempt from both).
+	m._others_shown = 1
+	m._last_replay_clock = 150.0
+	m._rally_events = dive_won
+	check(m.replay_kind("dead", "add", 0) == "" and m.replay_kind("dead", "win", 0) == "" and m.replay_kind("ring", "add", 0) == "ring",
+		"Replays: at least 90 s of play between them, the ring exempt")
+	m._last_replay_clock = 100.0
+	check(m.replay_kind("dead", "add", 0) == other.call("dive"), "Replays: after 90 s of play another may come")
+	m._others_shown = 3
+	check(m.replay_kind("dead", "win", 0) == "" and m.replay_kind("ring", "add", 0) == "ring", "Replays: at most three a match besides the ring's")
+	# The last raya before the result (time up): only the one that wins the match.
+	m._others_shown = 0
+	m._last_replay_clock = -INF
+	m.limit_s = 180.0
+	check(m.replay_kind("dead", "add", 0) == "" and m.replay_kind("dead", "win", 0) == other.call("win"),
+		"Replays: none in the last raya before the result, unless it wins the match")
 	m.queue_free()
 	await frames(2)
 	# A tap passes the ring's replay (Low: the beta's replay, the same rule).
@@ -1231,3 +1261,64 @@ func _replay_rules(have: bool) -> void:
 	check(was and gone, "Replays: a tap anywhere passes the replay (replaying %s, passed %s)" % [was, gone])
 	Game.goto_menu()
 	await frames(3)
+
+
+## The automatic step-down when a match runs slow (slow frames fed by hand): from Medium the game's own first-seconds
+## check takes it to Low and the game's own bodies come back; from High that check takes it to Medium (still drawn by
+## the foundation, no shadows) and WsgAutoTier then to Low, the game's bodies back; Low stays exactly as it is.
+func _step_down(have: bool) -> void:
+	Game.settings.auto_gfx = true
+	var keep_fps: int = int(Game.settings.fps)
+	Game.settings.fps = Game.FPS_SMOOTH
+	for start in [Game.GFX_MEDIUM, Game.GFX_HIGH, Game.GFX_LOW]:
+		Game.settings.graphics = start
+		var m := _new_match("village", "ulama", 9)
+		m.auto_headless = true
+		var n := 0
+		while m.phase == m.P.INTRO and n < 300:
+			await frames(1)
+			n += 1
+		var before: Array = await _drawn_now(m) if start == Game.GFX_LOW else []
+		var linked := _link_count()
+		var steps := []
+		var shown_off := true
+		for i in 20 * 30:      # 30 s of frames at 20 a second
+			var g0 := int(Game.settings.graphics)
+			m._check_frame_rate(0.05, 0.05)
+			if int(Game.settings.graphics) != g0:
+				steps.append([snappedf(i * 0.05, 0.05), int(Game.settings.graphics)])
+				if int(Game.settings.graphics) == Game.GFX_MEDIUM:
+					for b in m._all_bodies():
+						var l: FoundationLink = (b as Body).link
+						if l and l.body.mesh_instance.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+							shown_off = false
+		await frames(3)
+		var back := true
+		for b in m._all_bodies():
+			var bd: Body = b
+			back = back and bd.link == null and bd.rigged != null and bd.mesh_instance.visible
+		match start:
+			Game.GFX_MEDIUM:
+				check(steps.size() == 1 and steps[0][1] == Game.GFX_LOW and back and m.wsg_replay == null,
+					"Auto graphics: a slow match on Medium steps down to Low at once (%s), the game's own bodies back (%d were linked)" % [steps, linked])
+			Game.GFX_HIGH:
+				check(steps.size() == 2 and steps[0][1] == Game.GFX_MEDIUM and steps[1][1] == Game.GFX_LOW and back and shown_off,
+					"Auto graphics: a slow match on High steps to Medium (the game's check, no shadows on the drawn bodies) and on to Low (WsgAutoTier), the game's own bodies back (%s, %d were linked)" % [steps, linked])
+			Game.GFX_LOW:
+				var after: Array = await _drawn_now(m)
+				check(steps.is_empty() and int(Game.settings.graphics) == Game.GFX_LOW and linked == 0 and after.size() == before.size(),
+					"Auto graphics: Low stays as it is (%d things drawn before and after)" % after.size())
+		check(not have or start == Game.GFX_LOW or linked == m._all_bodies().size(), "Auto graphics: everyone was linked on graphics %d first" % start)
+		m.queue_free()
+		await frames(2)
+	Game.settings.fps = keep_fps
+	Game.settings.auto_gfx = false
+
+
+func _drawn_now(m: Node) -> Array:
+	await frames(1)
+	var out := []
+	for n in m.find_children("*", "GeometryInstance3D", true, false):
+		if (n as GeometryInstance3D).is_visible_in_tree():
+			out.append(n.get_class())
+	return out

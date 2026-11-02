@@ -457,18 +457,20 @@ func _exit_tree() -> void:
 ## The ball through the ring is the rarest thing in the game: it is shown again, slowed, from below the ring. The
 ## last seconds of play are kept (where each player and the ball were, and each body's pose) and played back on the
 ## bodies and the ball alone: the players' own positions are not touched.
-## On Medium and High (the shared foundation draws the bodies) a raya can earn a replay of its best moment too, at
-## most one a raya, the ring first (REPLAY_PRIORITY): the bodies are the foundation's as they were drawn (WsgReplay,
-## on the game's own clock). A tap passes any replay.
+## On Medium and High (the shared foundation draws the bodies) a few big moments are shown again too, the bodies the
+## foundation's as they were drawn (WsgReplay, on the game's own clock); a tap passes any replay, the corner tag only.
 const REPLAY_KEEP := 5.0       # seconds of play kept
 const REPLAY_AFTER := 1.4      # seconds of the call before the replay
 const REPLAY_SPEED := 0.4
-## The moments a raya can be shown again for, most wanted first: the ball through the ring; a low ball kept alive by
-## a dive; a raya won on a long rally; the winning raya (the eighth, or the classic court's last point); a raya that
-## wipes a count out in urria; on the stone court, the ball off the talud or a wall into the raya. (A dive counts
-## when it was the rally's last strike and won the raya; a long rally is 12 strikes: the AI dives often.)
-const REPLAY_PRIORITY := ["ring", "dive", "rally", "win", "urria", "wall"]
-const LONG_RALLY := 12         # strikes in a rally that make it a long one
+## The ring is always replayed. Beyond it, at most OTHER_REPLAYS a match, only for big moments, most wanted first: the
+## raya that wins the match; a raya that wipes a count out in urria; a raya won off a dive save (the dive the rally's
+## last strike, by the side that won it) or after a rally of LONG_RALLY strikes. Never a plain dead ball, out or fault;
+## at least REPLAY_GAP seconds of play between them; never in the last raya before the result (time up), unless it is
+## the one that wins the match.
+const REPLAY_PRIORITY := ["ring", "win", "urria", "dive", "rally"]
+const OTHER_REPLAYS := 3
+const LONG_RALLY := 8
+const REPLAY_GAP := 90.0
 const MOMENT_BEFORE := 1.8     # seconds shown before a moment, and after it
 const MOMENT_AFTER := 1.6
 
@@ -482,8 +484,10 @@ var _rp_span := []             # [first, last] time of play the replay shows
 var _rp_focus := Vector3.ZERO  # where the moment happened (not the ring's camera)
 var _replay_kind := ""         # what the coming replay shows, or "" (REPLAY_PRIORITY)
 var _moment := []              # [time, place] of the moment it shows
-var _rally_events: Array = []  # this rally's [kind ("strike", "dive", "wall"), time, place]
-var replays: Array = []        # [raya number, kind] of each replay shown (tests)
+var _rally_events: Array = []  # this rally's [kind ("strike", "dive"), time, place, team]
+var replays: Array = []        # [raya number, kind, clock] of each replay shown (tests)
+var _others_shown := 0         # replays this match other than the ring's
+var _last_replay_clock := -INF
 var wsg_replay: WsgReplay      # the foundation's bodies as drawn, kept for the replays (Medium and High)
 
 
@@ -507,37 +511,36 @@ func replaying() -> bool:
 
 
 ## The replay a raya earns (reason, the count's what), or "": the ring at every level; the rest on Medium and High.
-func replay_kind(reason: String, what: String, team := -1) -> String:
+func replay_kind(reason: String, what: String, team := -1, fault := false) -> String:
 	if reason == "ring":
 		return "ring"
 	if wsg_replay == null:
 		return ""
+	var won := what == "win" or count.winner >= 0
+	if _others_shown >= OTHER_REPLAYS or (_others_shown > 0 and clock - _last_replay_clock < REPLAY_GAP):
+		return ""
+	# The last raya (time up, the next call ends it): only the one that wins the match.
+	if not won and limit_s > 0.0 and clock >= limit_s:
+		return ""
 	var found := {}
-	var last_strike := -1.0
 	for e in _rally_events:
 		if _rec_t - float(e[1]) > REPLAY_KEEP - MOMENT_BEFORE:
 			continue
 		match String(e[0]):
 			"dive":
-				# (Saved: the dive was the rally's last strike and its side won the raya.)
 				found.erase("dive")
 				if int(e[3]) == team:
 					found["dive"] = e
-				last_strike = float(e[1])
 			"strike":
 				found.erase("dive")
-				last_strike = float(e[1])
-			"wall":
-				if float(e[1]) > last_strike:
-					found["wall"] = e
-	if rally >= LONG_RALLY:
+	if fault:
+		found.erase("dive")
+	elif rally >= LONG_RALLY:
 		found["rally"] = _last_strike_event()
-	if what == "win":
+	if won:
 		found["win"] = _last_strike_event()
 	if what == "urria":
 		found["urria"] = _last_strike_event()
-	if not court.classic():
-		found.erase("wall")
 	for k in REPLAY_PRIORITY:
 		if found.has(k) and not (found[k] as Array).is_empty():
 			_moment = [float(found[k][1]), found[k][2]]
@@ -570,7 +573,10 @@ func _start_replay() -> void:
 		t0 = maxf(t0, float(sp[0]))
 		wsg_replay.play(t0, t1)
 		FoundationLink.frozen = true
-	replays.append([log_rayas.size(), _replay_kind])
+	replays.append([log_rayas.size(), _replay_kind, clock])
+	if _replay_kind != "ring":
+		_others_shown += 1
+		_last_replay_clock = clock
 	_rp_span = [t0, t1]
 	_rp_call_t = phase_t
 	phase = P.REPLAY
@@ -899,8 +905,6 @@ func _ball_step(dt: float) -> void:
 			"bounce":
 				serve_bounced = true
 				var sp := float(e.speed)
-				if wsg_replay and String(e.surface) in ["talud", "wall", "end_wall"]:
-					_rally_events.append(["wall", _rec_t, ball.pos])
 				if sp > 1.0:
 					var vol := clampf(-20.0 + sp * 1.6, -20.0, -2.0)
 					if String(e.surface) == "earth":
@@ -1064,7 +1068,7 @@ func _award(team: int, reason: String, fault: bool, who) -> void:
 	# One replay a raya at most: the best moment it had.
 	_replayed = false
 	_moment = []
-	_replay_kind = replay_kind(reason, String(res.get("what", "")), team)
+	_replay_kind = replay_kind(reason, String(res.get("what", "")), team, fault)
 	phase = P.CALL
 	phase_t = 0.0
 	officials.signal_raya(team, fault)
@@ -1113,7 +1117,7 @@ func _check_frame_rate(delta: float, real_delta: float) -> void:
 		return
 	if phase == P.REPLAY or int(Game.settings.graphics) <= Game.GFX_LOW or int(Game.settings.fps) == Game.FPS_SAVER:
 		return
-	if DisplayServer.get_name() == "headless" or OS.has_feature("movie"):
+	if (DisplayServer.get_name() == "headless" and not auto_headless) or OS.has_feature("movie"):
 		return
 	if _auto_gfx == null:
 		_auto_gfx = WsgAutoTier.new(Game.frame_cap())
@@ -1124,6 +1128,7 @@ func _check_frame_rate(delta: float, real_delta: float) -> void:
 var _fps_t := 0.0
 var _fps_frames := 0
 var _gfx_checked := false
+var auto_headless := false     # (tests: WsgAutoTier heard headless too, fed slow frames by hand)
 ## (Made when first needed: Low makes no object the beta did not - a body's model is picked by its instance id.)
 var _auto_gfx: WsgAutoTier = null
 

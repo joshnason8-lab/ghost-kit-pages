@@ -173,15 +173,17 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
     idle and its fidgets, the head on the ball). No celebration, dance or gesture clip is used: the game's own
     celebration and dejection stay (docs/CULTURE.md). The server holding the ball stays on the game's pose (no
     spin); the ball is drawn in his drawn hand.
-  - **Replays** (Medium and High; the ring's at every level as before): one a raya at most, by priority - the ring,
-    a dive that kept a low ball alive (the rally's last strike, won by the diving side), a long rally (12 strikes), the winning raya, a raya
-    that wipes a count in urria, on stone the ball off the talud or a wall into the raya. The drawn bodies as drawn
-    (WsgReplay on the game's replay clock), the small corner tag, a tap anywhere passes it. The call resumes where it
-    stopped, so a match plays exactly as without its replays (tested).
+  - **Replays** (the owner's rules): the ring always, at every level, as before. On Medium and High at most three
+    others a match, only for big moments, in this order: the raya that wins the match; a raya that wipes a count in
+    urria; a raya won off a dive save or after a rally of 8 strikes. Never a plain dead ball, out or fault; at least
+    90 s of play between them (the ring exempt); none in the last raya before the result unless it wins the match;
+    watch mode the same. The drawn bodies as drawn (WsgReplay on the game's replay clock), the corner tag only, a tap
+    anywhere passes it. The call resumes where it stopped, so a match plays exactly as without its replays (tested).
   - **The copal elder** stays the game's code body in white: he is a respected figure in a ceremony, and no Meshy
     elder exists (no new generation); putting him on a player's or the judge's body would not be right.
   - **Auto graphics**: the game's own first-seconds check kept exactly, then WsgAutoTier all match long on a phone;
-    a step applies at once (on Low the game's own bodies come back). The A16's Mali-G57 MC2 and Mali-G68 MP2 start on
+    a step applies at once (on Low the game's own bodies come back). Tested with slow frames fed by hand: Medium ->
+    Low at 6 s; High -> Medium at 6 s (the game's check) -> Low at 11 s (WsgAutoTier); Low untouched. The A16's Mali-G57 MC2 and Mali-G68 MP2 start on
     Low (Game.graphics_for, tested).
   - **Not used**: the foundation's 3D crowd (the game keeps its own cut-out crowd, out of the export), its baked venue
     light (the courts are built in code; dusk reads through the bodies' rim light, as in the beta), WsgDirector.
