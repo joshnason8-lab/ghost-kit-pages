@@ -8,3 +8,6 @@ android/
 *.jks
 # make_kit.py writes this while it records the trailer (the 1920x1080 window), then removes it
 override.cfg
+
+# Licensed animation data, baked at build time (tools/wsg/fetch_assets.sh): never committed.
+addons/wsg_foundation/data/

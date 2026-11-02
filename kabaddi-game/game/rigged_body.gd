@@ -83,6 +83,7 @@ static var _index = null
 var skeleton: Skeleton3D
 var mesh_instance: MeshInstance3D
 var material: ShaderMaterial
+var mirror: ShaderMaterial    # the shared foundation's body drawn for this one (FoundationLink): sweat and detail too
 var _sweat := 0.0
 var body := {}        # the loaded body this one wears
 var _bone := {}       # name -> index
@@ -481,6 +482,7 @@ static func _frame(up: Vector3, side: Vector3) -> Basis:
 
 func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float, trim := Color.WHITE, file := "") -> void:
 	body = _load(file)
+	set_meta("file", file)
 	if body.is_empty():
 		return
 	skeleton = Skeleton3D.new()
@@ -551,6 +553,8 @@ static func albedo_for(d: Dictionary) -> Texture2D:
 func detail_changed() -> void:
 	if material and body.get("albedo"):
 		material.set_shader_parameter("albedo_tex", albedo_for(body))
+		if mirror:
+			mirror.set_shader_parameter("albedo_tex", albedo_for(body))
 
 
 func add_number(n: int, col: Color, outline: Color) -> void:
@@ -579,6 +583,8 @@ func set_sweat(v: float) -> void:
 	if material and not is_equal_approx(_sweat, v):
 		_sweat = v
 		material.set_shader_parameter("sweat", v)
+		if mirror:
+			mirror.set_shader_parameter("sweat", v)
 
 
 func set_head_visible(v: bool) -> void:

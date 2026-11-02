@@ -7,6 +7,7 @@ const CREDITS := """[b]Kabaddi Raid[/b]
 Made by Josh Nason.
 Players, referees and the crowd modelled with Meshy; movement from Mixamo (Adobe), the CMU Graphics Lab Motion Capture Database and match footage.
 Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+On Medium and High the players and officials are drawn with the World Stage Games shared foundation (the same maker): each player's own Meshy model on its rig, walking, jogging, turning, standing and celebrating with motion capture from the MoCap Online Mobility pack (MoCap Online, mocaponline.com) and Reallusion ActorCore (actorcore.reallusion.com), licensed for the game; that animation is part of the game only, not to be extracted. The replays use the foundation's WsgReplay.
 Rain trees, coconut palms, dry grass, the scorers' table, the apartment blocks, the village temple and the Jagannath temple's tower modelled with Meshy for the game. The sea's ripples were made for the game.
 From Poly Haven (polyhaven.com), all CC0:
 Skies: Kloppenheim 07, Qwantani Dusk 2 and Qwantani Sunset (Pure Sky) by Greg Zaal and Jarod Guest; Overcast Soil (Pure Sky) by Jarod Guest and Sergej Majboroda.

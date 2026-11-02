@@ -198,3 +198,18 @@ by itself (Settings, Auto graphics).
 
 `test_runner` checks that every ground loads with its baked lighting, and with the bake's lamps and sky taken out;
 and that every body has its own floor shadow on Low, from the start and once a match lowers itself from Medium.
+
+## The shared foundation (0.13.1-pilot)
+
+On Medium and High, in a match, with the licensed motion-capture library in the build (CI's licensed-assets step),
+every player, official and scorer is drawn by the World Stage Games foundation (`addons/wsg_foundation`,
+`game/foundation_link.gd`): his own Meshy body baked onto the shared rig (`assets/foundation/`, made by
+`tools/rig/bake_foundation.sh` from the packed bodies), in RiggedBody's own kit shader. The game's body is still posed
+and measured every frame, unseen; every kabaddi move is drawn from it exactly (the raider's dancing stance, cant,
+touches, dubki, lion jump, dives, holds, chains, struggle), and the motion capture walks the players walking and
+standing between raids and the officials along their lines. The raid's best moment is replayed after it (WsgReplay).
+Kabaddi is the foundation's "budget" profile: a phone starts on Low unless it is a flagship (High); Low draws exactly
+what it did (tests/test_runner), with no foundation bodies and no replays. Auto graphics is the foundation's
+WsgAutoTier. `tests/foundation_cpu.tscn` measures the CPU per frame by level, with and without it;
+`tools/player/foundation_view.tscn` takes the comparison stills. The crowd stays the game's own cut-outs (the
+foundation's 3D fans are Hurling's Irish crowd) and the halls keep their own light.
