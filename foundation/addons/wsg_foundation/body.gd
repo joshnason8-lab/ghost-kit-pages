@@ -165,3 +165,69 @@ func grip_point(side: String, r := 0.016) -> Transform3D:
 	var hand := bone_world(side + "Hand")
 	var p := WsgGrip.axis_point(joints, side, r) - (joints[side + "Hand"] as Vector3)
 	return Transform3D(hand.basis, hand * p)
+
+
+## The torso as a capsule, in the world, as it is drawn now: [a: Vector3 (by the hips), b: Vector3 (by the neck),
+## radius: float]. Its axis is the hips-to-neck line (the one WsgPoseLayer.torso_r keeps the forearms out of), moved
+## to the middle of the chest's depth; its radius is the chest's half-depth front to back (a stick through the body
+## passes front to back: Hurling's free-take, the hurley through the torso at the end of the swing). Both are measured
+## once from the character's mesh (measure_torso); a body without one takes TORSO_K of its hips-to-neck length (0.13
+## m on a 1.80 m body). Scaled with the body. Read it where the bones are final: in `posed`, or in a modifier after
+## the layers (a game's post-layer, or its make_holds). skeleton_space: in the skeleton's space instead (inside a
+## modifier, beside get_bone_global_pose). For a stick: WsgPoseLayer.clear_segment(..., body.torso_capsule()).
+##   var cap := body.torso_capsule()      # [a, b, r]
+func torso_capsule(skeleton_space := false) -> Array:
+	var m := _torso_measure()
+	var gx := Transform3D.IDENTITY if skeleton_space else skeleton.global_transform
+	var chest := gx.basis * skeleton.get_bone_global_pose(bone("Spine2")).basis
+	var off := chest * Vector3(0, 0, float(m[1]))
+	var a := gx * skeleton.get_bone_global_pose(bone("Hips")).origin + off
+	var b := gx * skeleton.get_bone_global_pose(bone("Neck")).origin + off
+	var s := gx.basis.get_scale()
+	return [a, b, float(m[0]) * (absf(s.x) + absf(s.z)) * 0.5]
+
+
+## A body without a mesh (or one too sparse to measure): the torso's radius as a part of its hips-to-neck length.
+const TORSO_K := 0.3
+static var _torso_cache := {}
+
+
+## [radius, offset of the axis along the chest's forward (+Z; the rest frame)] from the mesh: the points of its front
+## and back between the Spine1 and Spine2 joints, near the middle (within 5 cm of the hips-to-neck line side to side;
+## the arms are well out). [] if the mesh has fewer than 6 there.
+static func measure_torso(p_joints: Dictionary, mesh: Mesh) -> Array:
+	if mesh == null or mesh.get_surface_count() == 0 or not p_joints.has("Spine1"):
+		return []
+	var a: Vector3 = p_joints.Hips
+	var b: Vector3 = p_joints.Neck
+	var y0: float = (p_joints.Spine1 as Vector3).y
+	var y1: float = (p_joints.Spine2 as Vector3).y
+	var front := -INF
+	var back := INF
+	var n := 0
+	for s in mesh.get_surface_count():
+		var v: PackedVector3Array = mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]
+		for p in v:
+			if p.y < y0 or p.y > y1:
+				continue
+			var ax := a.lerp(b, (p.y - a.y) / maxf(b.y - a.y, 1e-4))
+			if absf(p.x - ax.x) < 0.05:
+				front = maxf(front, p.z - ax.z)
+				back = minf(back, p.z - ax.z)
+				n += 1
+	if n < 6 or front <= back:
+		return []
+	return [(front - back) * 0.5, (front + back) * 0.5]
+
+
+func _torso_measure() -> Array:
+	var meshes: Array = character.get("meshes", [])
+	var key: int = (meshes[0] as Object).get_instance_id() if not meshes.is_empty() and meshes[0] != null else 0
+	if key != 0 and _torso_cache.has(key):
+		return _torso_cache[key]
+	var m := measure_torso(joints, meshes[0]) if key != 0 else []
+	if m.is_empty():
+		m = [TORSO_K * ((joints.Neck as Vector3) - (joints.Hips as Vector3)).length(), 0.0]
+	if key != 0:
+		_torso_cache[key] = m
+	return m

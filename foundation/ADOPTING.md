@@ -397,6 +397,31 @@ set it behaves as before.
   `{shift, scale}` into `<name>_rig.json` (`character.stance`: rig = (skeleton point - shift) * scale) for a game that
   maps its own skeleton onto the rig (Kho Kho worked them out again).
 
+## 5.12 A stick through the body (WsgBody.torso_capsule, WsgPoseLayer.clear_segment)
+
+Hurling's free-take ends with the hurley through the torso: the hands are held on the stick, but nothing keeps the
+stick out of the chest. Two calls do:
+- `body.torso_capsule(skeleton_space := false) -> [a, b, radius]`: the torso as drawn now (hips to neck, moved to the
+  middle of the chest; the radius is the chest's half-depth, measured once from your baked mesh - 138 mm on the hurler
+  - else 0.3 of the hips-to-neck length), moved and scaled with the body.
+- `WsgPoseLayer.clear_segment(seg_a, seg_b, pivot, capsule, margin := 0.03) -> Quaternion`: the least turn about
+  `pivot` that takes the segment clear of the capsule by `margin` (put the stick's radius in it); `IDENTITY` when it
+  is clear already (or the pivot itself is inside). About 15 us a call.
+
+Use it where your holds are made (your `make_holds`, or your own modifier after the layer), in skeleton space: turn
+the stick, and so both hands on it, about the top fist; the holds then re-solve the arms to where the stick went.
+```gdscript
+func holds(sk: Skeleton3D, hips: Transform3D, lift: Vector3) -> Dictionary:
+	var stick := _stick_xf(sk, hips)                     # yours: the stick in skeleton space (top fist at its origin)
+	var cap := body.torso_capsule(true)
+	var q := WsgPoseLayer.clear_segment(stick * BUTT, stick * TIP, stick.origin, cap, 0.03 + STICK_R)
+	if q != Quaternion.IDENTITY:
+		stick = Transform3D(Basis(q), stick.origin - q * stick.origin) * stick
+	return _hands_on(stick, hips, lift)                  # yours: each hand's hold from the stick, as before
+```
+The drawn stick, placed from the top hand in `posed` as before, follows. (There is no switch on the layer for this: the
+stick's tip read back from the world is where last frame's turn put it, so it would flicker clear and back.)
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →

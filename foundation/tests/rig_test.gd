@@ -76,6 +76,7 @@ func _initialize() -> void:
 	await _planter_off()
 	await _hold_point()
 	await _hips_first()
+	await _stick()
 	for l in lines:
 		print(l)
 	if failures.is_empty():
@@ -442,6 +443,109 @@ func _hips_first() -> void:
 		failures.append("hips_first: the hand is %.1f mm off its hold" % [miss.first * 1000.0])
 	b.queue_free()
 	await process_frame
+
+
+## A stick through the body (Hurling's free-take: the hurley through the torso at the end of the swing): the torso's
+## capsule (WsgBody.torso_capsule: measured from the mesh, moved and scaled with the body), and the least turn about
+## the top fist that takes the shaft clear of it (WsgPoseLayer.clear_segment): clear by the margin, IDENTITY when it
+## is clear already, and no bigger than the least found by trying every direction (a degree apart).
+func _stick() -> void:
+	var b := WsgBody.new(body.character)
+	root.add_child(b)
+	b.position = Vector3(3, 0, 2)
+	b.rotation.y = deg_to_rad(30.0)
+	b.scale = Vector3.ONE * 1.1
+	await process_frame
+	var cap := b.torso_capsule()
+	var m := WsgBody.measure_torso(b.joints, (b.character.meshes as Array)[0])
+	var xf := b.global_transform
+	var want_a: Vector3 = xf * ((b.joints.Hips as Vector3) + Vector3(0, 0, m[1]))
+	var r: float = cap[2]
+	lines.append("torso capsule: radius %.0f mm (the chest's half-depth, measured: %.0f mm at scale 1), its axis %.0f mm along the chest's forward" % [r * 1000.0, float(m[0]) * 1000.0, float(m[1]) * 1000.0])
+	var cap_sk := b.torso_capsule(true)
+	if (b.skeleton.global_transform * (cap_sk[1] as Vector3)).distance_to(cap[1]) > 0.001:
+		failures.append("torso_capsule(true) is not the skeleton-space capsule: %s against %s" % [cap_sk, cap])
+	if m.is_empty() or (cap[0] as Vector3).distance_to(want_a) > 0.002 or absf(r - float(m[0]) * 1.1) > 0.001 or r < 0.08 or r > 0.2:
+		failures.append("torso_capsule: %s (measured %s)" % [cap, m])
+	var ca: Vector3 = cap[0]
+	var cb: Vector3 = cap[1]
+	var mid := ca.lerp(cb, 0.55)
+	var fwd := xf.basis.z.normalized()
+	var right := -xf.basis.x.normalized()
+	var margin := 0.03
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var worst := -INF
+	var through := 0
+	var t0 := Time.get_ticks_usec()
+	var calls := 0
+	var cases := []
+	for i in 8:
+		# The top fist in front of the body and to its right; the shaft from there back and across through the chest.
+		var pivot := mid + fwd * rng.randf_range(0.3, 0.45) + right * rng.randf_range(0.1, 0.3) + Vector3.UP * rng.randf_range(-0.15, 0.15)
+		var aim := mid + (fwd * rng.randf_range(-0.08, 0.04) + right * rng.randf_range(-0.08, 0.08) + Vector3.UP * rng.randf_range(-0.1, 0.1))
+		var dir := (aim - pivot).normalized()
+		cases.append([pivot - dir * 0.08, pivot + dir * 0.9, pivot])
+	for c in cases:
+		var d0 := WsgPoseLayer._seg_seg(c[0], c[1], ca, cb)[2] as float - r
+		var q := WsgPoseLayer.clear_segment(c[0], c[1], c[2], cap, margin)
+		calls += 1
+		var a2: Vector3 = c[2] + q * (c[0] - c[2])
+		var b2: Vector3 = c[2] + q * (c[1] - c[2])
+		var d1: float = float(WsgPoseLayer._seg_seg(a2, b2, ca, cb)[2]) - r
+		var ours := rad_to_deg(q.get_angle())
+		var best := _least_turn(c[0], c[1], c[2], cap, margin)
+		worst = maxf(worst, ours - best)
+		if d0 < 0.0:
+			through += 1
+		lines.append("stick: %.0f mm into the chest, turned %.1f degrees about the top fist (least by search %.1f): %.0f mm clear" % [-d0 * 1000.0, ours, best, d1 * 1000.0])
+		if d1 < margin - 0.0005:
+			failures.append("clear_segment left the stick %.1f mm off the chest (margin %.0f)" % [d1 * 1000.0, margin * 1000.0])
+		if ours > best + 1.5:
+			failures.append("clear_segment turned %.1f degrees, the least is %.1f" % [ours, best])
+	var us := float(Time.get_ticks_usec() - t0)
+	var clear_q := WsgPoseLayer.clear_segment(mid + fwd * 0.4 + right * 0.2, mid + fwd * 0.5 + right * 1.0, mid + fwd * 0.4 + right * 0.2, cap, margin)
+	t0 = Time.get_ticks_usec()
+	for i in 100:
+		WsgPoseLayer.clear_segment(cases[i % cases.size()][0], cases[i % cases.size()][1], cases[i % cases.size()][2], cap, margin)
+	var per := (Time.get_ticks_usec() - t0) / 100.0
+	lines.append("stick: %d of %d through the chest, at most %.2f degrees over the least; held out in front: %s; %.0f us a call" % [through, cases.size(), worst, "IDENTITY" if clear_q == Quaternion.IDENTITY else str(clear_q), per])
+	if through < cases.size() - 1:
+		failures.append("clear_segment test: only %d of the sticks went through the chest" % through)
+	if clear_q != Quaternion.IDENTITY:
+		failures.append("clear_segment turned a stick already clear: %s" % clear_q)
+	b.queue_free()
+	await process_frame
+
+
+## The least turn (degrees) of the shaft's direction about the pivot that leaves it clear by margin: every direction,
+## about a degree apart (a Fibonacci sphere), then a tenth of a degree round the best.
+func _least_turn(sa: Vector3, sb: Vector3, pivot: Vector3, cap: Array, margin: float) -> float:
+	var la := (sa - pivot).dot((sb - sa).normalized())
+	var lb := (sb - pivot).dot((sb - sa).normalized())
+	var d0 := (sb - sa).normalized()
+	var ok := func(d: Vector3) -> bool:
+		return float(WsgPoseLayer._seg_seg(pivot + d * la, pivot + d * lb, cap[0], cap[1])[2]) >= float(cap[2]) + margin
+	var best := PI
+	var best_d := d0
+	var n := 40000
+	for i in n:
+		var y := 1.0 - 2.0 * (i + 0.5) / n
+		var ph := i * PI * (3.0 - sqrt(5.0))
+		var d := Vector3(cos(ph) * sqrt(1.0 - y * y), y, sin(ph) * sqrt(1.0 - y * y))
+		var ang := d0.angle_to(d)
+		if ang < best and ok.call(d):
+			best = ang
+			best_d = d
+	# (Finer, round the best: between it and the start, and either side.)
+	var axis := d0.cross(best_d).normalized()
+	for k in 41:
+		for j in 41:
+			var d := best_d.rotated(axis, deg_to_rad((k - 20) * 0.1)).rotated(d0, deg_to_rad((j - 20) * 0.1))
+			var ang := d0.angle_to(d)
+			if ang < best and ok.call(d):
+				best = ang
+	return rad_to_deg(best)
 
 
 func _soles() -> void:
