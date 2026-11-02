@@ -371,3 +371,7 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   Hurling's StickClear (the hurley out of the lead arm; needs the sync to e739a95). Open: the ActorCore sprint clip's
   feet travel 2.6 m a cycle against 3.6 m stride (slides on Low without a planter); Hurling's score_check (35) is
   noisy over long matches (0.7-1.7 sideline cuts on one commit) - Hurling is chasing unseeded randomness.
+- **Web exports never carry the licensed data** (ADOPTING 5.10, 79b346e): each game's Web preset lists
+  `addons/wsg_foundation/data/*` in exclude_filter. Done: Kabaddi (the lead checked the live Netlify .pck), Pok Ta
+  Pok, Netball (9597dfe), Kho Kho (f005432), Floorball, Hurling (c28aa4f). Sepak Takraw: not yet on f4e4067 (asked
+  2026-11-02 23:55). No CI job exports Web; no game reports a Web export made with data/ present.
