@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.14.1: **Settings > About > Licences can no longer crash the game**: its long texts were laid out on a
+worker thread, and the engine can crash when such a page is drawn or closed mid-layout (it did once in a test). It
+now opens at once and fills in a piece at a time.
+
 New in 0.14.0: **Watch AI** (on the home screen): pick the two teams (countries or clubs, men or women), the event,
 the length and the venue, and watch the computer play a full match on both sides, from the broadcast camera with the
 replays and the score. 1×/2× (top right) doubles the speed; pause or Back to stop, the pause menu's Quit match to

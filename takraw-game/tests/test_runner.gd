@@ -71,10 +71,19 @@ func _screens() -> void:
 		for path in screens:
 			var s := Game.show_screen(path)
 			await frames(3)
+			await _until_built(s)
 			check(is_instance_valid(s) and s.get_child_count() > 0, "%s: %s builds" % [pair[0], path])
 	Game.settings.language = "en"
 	TranslationServer.set_locale("en")
 	Game._size_theme()
+
+
+## A page that adds its long texts a piece a frame (the licences): until it has them all (at most 300 frames).
+func _until_built(s: Node) -> void:
+	for i in 300:
+		if not is_instance_valid(s) or not s.has_method("built") or s.built():
+			return
+		await frames(1)
 
 
 ## A set's score is one the laws allow: to set_points, by two from (points - 1)-all, up to the cap.
@@ -392,6 +401,7 @@ func _legal_pages() -> void:
 			s.setup({"kind": kind, "back": func(): pass})
 			add_child(s)
 			await frames(2)
+			await _until_built(s)
 			var text := ""
 			var buttons := 0
 			for n in s.find_children("*", "", true, false):

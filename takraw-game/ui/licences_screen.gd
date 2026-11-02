@@ -39,6 +39,8 @@ All under the SIL Open Font License, Version 1.1:"""
 
 
 var _back := Callable()   # back to Settings (it is opened over them)
+var _col: VBoxContainer
+var _todo: Array = []     # the texts still to add, a piece a frame
 
 
 func setup(args: Dictionary) -> void:
@@ -48,14 +50,12 @@ func setup(args: Dictionary) -> void:
 func _ready() -> void:
 	UI.screen(self)
 	var v := UI.page(self, tr("LICENCES"), _back if _back.is_valid() else func(): Game.show_screen("res://ui/settings_screen.gd"), tr("SET_ABOUT"))
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 18)
-	v.add_child(UI.scroll(col))
-	col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
-	col.add_child(_text(CREDITS))
-	col.add_child(_text(SOUNDS))
-	col.add_child(_text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
-	col.add_child(_text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
+	_col = VBoxContainer.new()
+	_col.add_theme_constant_override("separation", 18)
+	v.add_child(UI.scroll(_col))
+	_col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
+	var texts := [CREDITS, SOUNDS, FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges()),
+		"[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())]
 	# The engine's own parts, each with its copyright and licence, then the licences' texts.
 	var parts := PackedStringArray()
 	for c in Engine.get_copyright_info():
@@ -65,19 +65,52 @@ func _ready() -> void:
 				lines.append(_plain(String(who)))
 			lines.append("(" + String(part.license) + ")")
 		parts.append("[b]%s[/b]\n%s" % [_plain(String(c.name)), "\n".join(lines)])
-	col.add_child(_text("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts)))
+	texts.append("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts))
 	var info: Dictionary = Engine.get_license_info()
 	for name in info:
-		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
+		texts.append("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())])
+	# The texts run to some 80,000 characters. Laid out on a worker thread (RichTextLabel.threaded), Godot 4.7 can
+	# crash when the page is drawn or freed mid-layout (CI did); all at once, the page would open late. So they are cut
+	# at their paragraphs into pieces of about 1,500 characters, the first now and one more a frame (built() says when
+	# all are in): the page opens at once, and it is complete by the time a finger has scrolled to the end.
+	for t in texts:
+		_todo.append_array(_pieces(t))
+	_add_next()
 
 
-## Licence texts are long: a big one is laid out off the main thread.
-func _text(bb: String, big := false) -> RichTextLabel:
+func _process(_d: float) -> void:
+	_add_next()
+
+
+func _add_next() -> void:
+	if not _todo.is_empty():
+		_col.add_child(_text(String(_todo.pop_front())))
+
+
+## Whether every piece of the licences is on the page.
+func built() -> bool:
+	return _todo.is_empty()
+
+
+## A text cut at its paragraphs into pieces of about 1,500 characters (a longer paragraph is a piece of its own).
+static func _pieces(t: String) -> Array:
+	var out := []
+	var cur := ""
+	for para in t.split("\n\n"):
+		if cur != "" and cur.length() + para.length() > 1500:
+			out.append(cur)
+			cur = ""
+		cur = para if cur == "" else cur + "\n\n" + para
+	if cur != "":
+		out.append(cur)
+	return out
+
+
+func _text(bb: String) -> RichTextLabel:
 	var rt := RichTextLabel.new()
 	rt.bbcode_enabled = true
 	rt.fit_content = true
 	rt.scroll_active = false
-	rt.threaded = big
 	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# A drag that starts on the words must reach the scroll box: the text takes no input.

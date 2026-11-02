@@ -670,6 +670,18 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The licences page without a worker thread (0.14.1)
+
+0.13.0's CI build crashed (signal 11) as test_runner began, before any check; the same commit passed in the pull
+request's run. The Foundation session symbolized the backtrace: Godot 4.7.2's text shaping (TextServerAdvanced) under
+a RichTextLabel being drawn, on the main thread, while a worker thread laid the same label out: the licences page set
+`threaded` on its long texts (about 80,000 characters of licences), and test_runner's first test opens every screen
+in every language, Licences among them, three frames each, changing the theme's sizes in between. Netball crashed in
+the same engine code, and Kabaddi fixed the same thing. A phone could hit it too, opening the page and going back at
+once. Now nothing is threaded: the texts are cut at their paragraphs into pieces of about 1,500 characters, the first
+added as the page opens and one a frame after (`built()` says when all are in), so the page opens at once and no one
+layout is large. test_runner waits for the page to be built before reading it or leaving it.
+
 ## Gaps that need the owner
 
 For the Play Store, what only the owner can do is in `store/PLAY_STORE.md`: the developer account, the upload key and
