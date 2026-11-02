@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.20.2
+
+- **The joystick is right wherever your player is on the screen**: in 0.20.1 it followed the camera's facing, which
+  is only exact in the middle of the screen; off to the side, the camera's perspective threw it 15 to 60 degrees out.
+  Now up is up the screen at your player, wherever he is.
+
 ## New in 0.20.1
 
 - **The joystick follows the camera you are watching**: up on the stick runs your player up the screen and right

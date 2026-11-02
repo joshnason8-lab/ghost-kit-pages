@@ -775,3 +775,14 @@ licence there before it goes into the game.
   user bot uses it instead of assuming the side camera. Test _stick_camera checks the broadcast, high, behind-the-goal
   and straight-down cameras: each push (up, right, down, left) runs him that way on screen within 10 degrees,
   measured at the middle of the view, and a cut mid-run blends.
+
+## Done (0.20.2, 2 November 2026)
+
+- **Stick exact off the middle of the screen** (code 33; the lead's tip from Floorball): the camera's facing alone
+  was up to 65 degrees out for a man near the edge of a perspective view. Match.stick_axes casts rays to the grass
+  12 px either side of and above and below the man's point on the screen, and the stick is read in those grass
+  directions (stick_for is its exact inverse). A cut still blends over 0.2 s, now as a rotation that is let go.
+  _stick_camera checks the stick's ask at the middle and three off-centre points of each view, and his run where he
+  is; with the facing-only reading it fails at 55-65 degrees.
+- **Web export excludes the licensed clips** (the Foundation's ADOPTING 5.10): addons/wsg_foundation/data/* is in
+  the Web preset's exclude_filter, since a Web .pck is a public download. No Web build was ever made (no CI builds it).

@@ -2073,11 +2073,13 @@ func _stick_camera() -> void:
 		for k in dirs:
 			var st: Vector2 = dirs[k]
 			# The stick's ask, on screen where he stands: exactly that way.
-			var ask: Vector3 = m._cam_dir(st)
-			var mid := _screen_middle(view)
-			var s0 := view.unproject_position(mid)
-			var s1 := view.unproject_position(mid + ask * 3.0)
-			var ask_off := absf(rad_to_deg((s1 - s0).angle_to(st)))
+			# Where he stands, and off at the side of the screen (a perspective view leans lines there).
+			var ask_off := 0.0
+			for spot in [_screen_middle(view), _screen_at(view, 0.15, 0.5), _screen_at(view, 0.85, 0.3), _screen_at(view, 0.6, 0.85)]:
+				var ask: Vector3 = m._cam_dir(st, spot)
+				var s0 := view.unproject_position(spot)
+				var s1 := view.unproject_position(spot + ask * 1.0)
+				ask_off = maxf(ask_off, absf(rad_to_deg((s1 - s0).angle_to(st))))
 			worst = maxf(worst, ask_off)
 			if ask_off >= 10.0:
 				print("STICK %s %s: the stick asks %.1f degrees off" % [v[0], k, ask_off])
@@ -2088,7 +2090,7 @@ func _stick_camera() -> void:
 				if pl == null:
 					await frames(5)
 					continue
-				pl.global_position = _screen_middle(view) if attempt == 0 else _open_spot(m, view)   # (where he stands does not matter: his run is read at the middle of the view)
+				pl.global_position = _screen_middle(view) if attempt == 0 else _open_spot(m, view)
 				pl.vel = Vector3.ZERO
 				var p0: Vector3 = pl.global_position
 				m.controls.joystick = st
@@ -2103,11 +2105,11 @@ func _stick_camera() -> void:
 				if m.active != pl or crowded or Vector2(p1.x - p0.x, p1.z - p0.z).length() < 1.0:
 					await frames(4)
 					continue
-				# The way he is running now, on the screen as it is now (the camera follows the play and turns with it: up
-				# the screen is wherever it now is), measured at the middle of the view.
-				var mid2 := _screen_middle(view)
-				var a := view.unproject_position(mid2)
-				var b := view.unproject_position(mid2 + Vector3(pl.vel.x, 0, pl.vel.z).normalized() * 3.0)
+				# The way he is running now, on the screen as it is now (the camera follows the play and turns with it),
+				# where he is on it.
+				var here := Vector3(pl.global_position.x, 0, pl.global_position.z)
+				var a := view.unproject_position(here)
+				var b := view.unproject_position(here + Vector3(pl.vel.x, 0, pl.vel.z).normalized() * 1.0)
 				var off := absf(rad_to_deg((b - a).angle_to(st)))
 				worst = maxf(worst, off)
 				if off >= 10.0:
@@ -2130,7 +2132,7 @@ func _stick_camera() -> void:
 			var mid: Vector3 = m._cam_dir(Vector2(0, -1))
 			await frames(10)
 			var after: Vector3 = m._cam_dir(Vector2(0, -1))
-			var want: Vector3 = Vector3(sin(m.view_yaw()), 0, cos(m.view_yaw()))
+			var want: Vector3 = -(m.stick_axes()[1] as Vector3)   # (the new view's up, at him, unblended)
 			var jump := rad_to_deg(before.angle_to(want))
 			check(jump < 20.0 or (rad_to_deg(before.angle_to(mid)) < jump * 0.8 and rad_to_deg(after.angle_to(want)) < 10.0),
 				"Stick from the camera: a cut mid-run turns him to the new view over a moment (%.0f degree cut, %.0f after 2 frames, %.0f off after 12)" % [jump, rad_to_deg(before.angle_to(mid)), rad_to_deg(after.angle_to(want))])
@@ -2140,10 +2142,14 @@ func _stick_camera() -> void:
 	Game.settings.camera = keep_cam
 
 
-## The point on the ground under the middle of the screen (where "up the screen" is measured: off the middle, a
-## perspective view leans every line toward its vanishing point).
+## The point on the ground under the middle of the screen.
 func _screen_middle(view: Camera3D) -> Vector3:
-	var c := view.get_viewport().get_visible_rect().size * 0.5
+	return _screen_at(view, 0.5, 0.5)
+
+
+## The point on the ground under a point of the screen (fractions of its width and height).
+func _screen_at(view: Camera3D, fx: float, fy: float) -> Vector3:
+	var c := view.get_viewport().get_visible_rect().size * Vector2(fx, fy)
 	var o := view.project_ray_origin(c)
 	var d := view.project_ray_normal(c)
 	if absf(d.y) < 0.01:
