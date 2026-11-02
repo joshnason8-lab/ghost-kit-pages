@@ -1,8 +1,9 @@
 class_name Poses
 extends RefCounted
 ## Every pose a netball player or umpire takes, as bone angles in degrees for ToonBody.apply. Built from a few
-## parameters (how far through a pass, how fast a run) rather than stored clips, so a stride always matches the speed
-## the player is going (run), and nothing jumps from one pose to the next: Player blends between them.
+## parameters (how far through a pass, a shot, a leap) rather than stored clips, and nothing jumps from one pose to
+## the next: Player blends between them. Running and walking are Gait's (the feet stepping with the floor), with
+## these laid over it.
 
 ## The ready stance: knees soft, weight forward, hands up at chest height to take a pass.
 static func ready(alert := 1.0) -> Dictionary:
@@ -14,25 +15,6 @@ static func ready(alert := 1.0) -> Dictionary:
 		"upperarm_r": Vector3(-20.0 * k, 0, -12), "forearm_r": Vector3(-70.0 * k, 0, 0),
 		"thigh_l": Vector3(-14.0 * k, 0, 4), "shin_l": Vector3(24.0 * k, 0, 0), "foot_l": Vector3(-8.0 * k, 0, 0),
 		"thigh_r": Vector3(-14.0 * k, 0, -4), "shin_r": Vector3(24.0 * k, 0, 0), "foot_r": Vector3(-8.0 * k, 0, 0),
-	}
-
-
-## A run (or walk, slow): phase in cycles (0-1 a stride pair), speed m/s. The stride's length grows with speed, so
-## the feet do not slide (Player advances phase by speed / stride_length).
-static func run(phase: float, speed: float) -> Dictionary:
-	var k := clampf(speed / 7.0, 0.0, 1.0)   # 0 standing .. 1 a sprint
-	var s := sin(phase * TAU)
-	var c := cos(phase * TAU)
-	var swing := lerpf(14.0, 46.0, k)
-	var arm := lerpf(10.0, 42.0, k)
-	return {
-		"hips_y": -0.02 - 0.03 * k + 0.035 * k * absf(c),
-		"spine": Vector3(6.0 + 10.0 * k, s * 4.0 * k, 0), "chest": Vector3(2.0, -s * 8.0 * k, 0), "head": Vector3(-6.0 - 6.0 * k, 0, 0),
-		"thigh_l": Vector3(-swing * s - 8.0 * k, 0, 2), "shin_l": Vector3(maxf(6.0, 70.0 * k * maxf(0.0, -c) + 18.0 * k), 0, 0),
-		"thigh_r": Vector3(swing * s - 8.0 * k, 0, -2), "shin_r": Vector3(maxf(6.0, 70.0 * k * maxf(0.0, c) + 18.0 * k), 0, 0),
-		"foot_l": Vector3(-6.0, 0, 0), "foot_r": Vector3(-6.0, 0, 0),
-		"upperarm_l": Vector3(arm * s - 6.0, 0, 8), "forearm_l": Vector3(-70.0 - 20.0 * k, 0, 0),
-		"upperarm_r": Vector3(-arm * s - 6.0, 0, -8), "forearm_r": Vector3(-70.0 - 20.0 * k, 0, 0),
 	}
 
 

@@ -189,6 +189,42 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   before and after: shooting 74% and 74%, goals a team an hour 78 and 78.5, centre passes to goals 58% and 52%. Tests
   `_cp_drive`, `_goal_reset`, `_front_mark`, `_rebound_spots`, `_umpire_goal_line`, `_huddle`, `_reserves`.
 
+- The run, on every graphics level (the owner on a Galaxy A16, Low: "players gliding around, not running, arms just
+  stretched out when running"). Causes: the stride's phase did go on by distance, but nothing held a foot where it
+  came down: the Mixamo clips' stride did not match the speed's, and with `look_on` (the AI faces every player at the
+  ball, ai.gd `_play`) she ran sideways or backwards on a forward stride: a glide; above 4 m/s the slide gave way to
+  that run. Arms: marking's arm out at 50 degrees and posting's out in front were laid over the run at any speed
+  (player.gd `Poses.with_arms`), defending's and catching's arms-up poses (and their legs) were all of her while she
+  ran, the side-step's capture held the arms out wide, and Fast_Run's forward arm reached out nearly straight; the
+  umpires' run went by the wall clock (`Time.get_ticks_msec()`) as they side-stepped their line facing the ball.
+  Now `game/gait.gd` (Gait) is the one place a body's locomotion is made, for players and umpires on the game's own
+  bodies: each foot comes down where her hips will be over it and stays there (rolling heel, flat, ball of the foot),
+  the legs reach it with two-bone IK, forwards, sideways (wider, shorter steps, feet never crossing) or backwards;
+  the stride pair 1.1 m walking, 2.15 jogging, 3.5 sprinting (the figure's), its phase by distance; pulling up, the
+  foot in the air comes down and the other is brought alongside (four steps from 6.8 m/s); standing she steps when
+  a foot strays or she turns; the landing foot only pivots. Arms swing against the legs, elbows bent, by her sides;
+  sprinting, the heel comes up behind before the knee drives through. The game's moves are laid over it (Gait.lay):
+  a catch, a pass, the ball, the shot and the leap keep their arms; defending's arms up while she closes in at a
+  walk, marking's, posting's and the ready hands only standing or edging; on the run her arms are the run's. Running at a jog or faster her body turns the way she runs,
+  her chest and head to the ball (`body_yaw`: drawn only; `facing`, which the AI reads, is as it was). The Mixamo
+  clips and the slide capture are no longer laid over the run (the landing capture is kept). FoundationLink (Medium
+  and High with the licensed clips) asks the player which of her the game's pose is (`Player.anim_layer`): a move
+  on the run keeps only its arms over the capture's legs, and marking's and posting's arms go with the run.
+  Low: the game's own bodies' run fixed rather than the foundation's locomotion run on Low (the shared session is
+  building that, "route 2"); draw calls, triangles and textures unchanged (no new mesh or material); `_low_unchanged`
+  checks no animation and is unchanged. perf_probe Low (TV camera): arena 98 draw calls / 56.5k primitives, hall
+  99 / 75.1k, outdoor 98 / 59.5k, the same to the draw call with the code before this change (higher than the 89-90
+  noted for 0.7: that came with the beta's later changes, not this). About 20 microseconds more a player a frame on
+  a desktop.
+  Tests `_gait_steps` (Low and Medium): a planted foot's slip 0.0 cm (the drawn foot, limit 3 cm) running at 3.5,
+  6.8 and 7.2 m/s, marking sideways at 4, defending at 3, the ball behind at 5 and backing off at 2.5, umpires at 3.5
+  and 5; 0.3 cm at most over 20 s of two AI matches (arena, hall); elbows bent 77-114 degrees; hands 0-5 cm out
+  from the shoulder, upper arms 9-19 degrees from her sides, and in the matches nobody running past 3 m/s with an
+  upper arm more than about 21 degrees out. tests/gait_view.tscn renders it frame by frame (strip: setting off,
+  jog, sprint, pulling up, an umpire; match: the TV camera; close: beside the nearest runner).
+  The shared foundation's Low driver (WsgToonDriver) is to be wired after body.apply in Player._animate and
+  Umpire.advance; Player.anim_layer says which of her is the game's.
+
 ## Next
 
 1. Native speakers' review of every translation (docs/translation_notes/), the lower-resource languages first; the

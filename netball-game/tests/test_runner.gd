@@ -19,6 +19,12 @@ func _ready() -> void:
 	# is tested in its own sections; elsewhere the matches run without it, as CI's do, in the time CI allows.
 	var foundation_ok := WsgClips.available()
 	FoundationLink.off = true
+	if "gait" in OS.get_cmdline_user_args():
+		# (Only the run: tests/test_runner.tscn -- gait)
+		await _gait_steps()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	await _screens()
 	await _about_pages()
 	_rules()
@@ -30,6 +36,7 @@ func _ready() -> void:
 	await _rules_in_play()
 	await _motion()
 	await _mocap()
+	await _gait_steps()
 	await _controls()
 	await _league_options()
 	await _sanctions_and_injury()
@@ -460,12 +467,13 @@ func _motion() -> void:
 				last[pl] = pl.p
 				var spd: float = pl.vel.length()
 				if spd > 5.0 and pl.act == "run":
-					var pair := lerpf(1.3, 2.9, clampf(spd / 7.0, 0.0, 1.0))
-					if spd / pair > 3.0:
+					# (Steps a second: a stride pair is two.)
+					var pair: float = Gait.pair_length(spd) * pl.body.scale.x
+					if 2.0 * spd / pair > 4.5 or not pl.gait.striding:
 						stride_bad += 1
 	check(twice == 0, "each player's position written once a frame (%d frames otherwise)" % twice)
 	check(worst_jump <= 0.0001, "no player moves faster than she can run in a frame (worst over by %.3f m)" % worst_jump)
-	check(stride_bad == 0, "strides keep pace with speed")
+	check(stride_bad == 0, "strides keep pace with speed (no more than 4.5 steps a second, sprinting)")
 	# The players are the owner's model (HeroBody), the umpires the code-built figure; a running player's legs come
 	# from the Mixamo clips; her bib carries her position's letters.
 	var pl0: Player = m.players[0][0]
@@ -478,11 +486,11 @@ func _motion() -> void:
 		await get_tree().process_frame
 		for t in 2:
 			for pl in m.players[t]:
-				if pl.act == "run" and pl.vel.length() > 4.5 and pl.clip_body > 0.8 and pl.body.pose.get("thigh_l") is Quaternion:
+				if pl.act == "run" and pl.vel.length() > 4.5 and pl.gait.striding and pl.body.pose.get("thigh_l") is Quaternion:
 					ran = true
 		if ran:
 			break
-	check(ran, "a player running at speed takes her legs from the run clips")
+	check(ran, "a player running at speed strides (her legs reaching her feet on the floor: Gait)")
 	var lf := HeroBody.stride_pose("Fast_Run", 0.25)
 	var lt: Vector3 = (lf[0][ToonBody.BONES.map(func(b): return b[0]).find("thigh_l")] as Quaternion) * Vector3.DOWN
 	check(lt.z > 0.25, "the sprint clip: the left thigh forward at the stride's phase 1/4 (%.2f)" % lt.z)
@@ -506,29 +514,7 @@ func _mocap() -> void:
 			"motion capture %s loads: %d frames on the game's %d bones" % [nm, fr.size(), ToonBody.BONES.size()])
 		check(String(c.plant).length() == fr.size() and is_equal_approx(float(c.fps), 30.0), "%s: 30 fps, its planted feet marked" % nm)
 	var sq: Array = DB.squad("NZL")
-	# The side-step: a marker going sideways (her right, then her left) at 3 m/s, eyes on the ball ahead.
-	for side: float in [-1.0, 1.0]:
-		var pl := Player.new(0, sq[5], "GD")
-		add_child(pl)
-		await frames(1)
-		pl.fenced = false
-		pl.place(Vector2.ZERO, 0.0)
-		var drive := func(_f: int) -> void:
-			pl.set_act("mark")
-			pl.look_on = true
-			pl.look_at_p = pl.p + Vector2(0, 8)
-			pl.target = pl.p + Vector2(side * 5.0, 0)
-			pl.want_speed = 3.0
-		var planted := func() -> String:
-			if pl.slide < 0.97:
-				return ""
-			var nm := "slide_left" if pl.slide_side > 0.0 else "slide_right"
-			var plant: String = HeroBody.mocap(nm).plant
-			return plant[int(pl.slide_phase * (plant.length() - 1) + 0.5) % (plant.length() - 1)]
-		var worst := _plant_slide(pl, drive, planted, 90)
-		check(pl.slide > 0.97, "a marker going sideways side-steps (%.2f of the slide)" % pl.slide)
-		check(worst < PLANT_SLIDE, "the side-step to her %s: planted feet move %.1f cm at most" % ["left" if side > 0 else "right", worst * 100.0])
-		pl.queue_free()
+	# (The side-step is the gait's now, not the slide's motion capture: tested in _gait_steps.)
 	# The landing: caught at a jog and at a sprint, on either foot; the landing foot stays where it came down.
 	for case: Array in [[3.5, "l"], [6.5, "r"], [5.0, "l"]]:
 		var pl := Player.new(0, sq[2], "WA")
@@ -588,6 +574,184 @@ func _plant_slide(pl: Player, drive: Callable, planted: Callable, n: int) -> flo
 			else:
 				start.erase(s)
 	return worst
+
+
+## The run, as drawn, on the game's own bodies (Low; Medium and High too without the licensed clips): a planted foot
+## stays where it came down (its ball or heel on the floor moves less than GAIT_SLIP over a stance) at a jog and a
+## sprint, for a player and an umpire, marking and defending on the move too; running, the elbows are bent and the
+## hands kept by her sides (the owner's "players gliding around, not running, arms just stretched out when
+## running"); pulling up from a sprint takes steps and ends with her feet under her; and in a match nobody's planted
+## foot skates and nobody runs with her arms out.
+const GAIT_SLIP := 0.03
+
+
+func _gait_steps() -> void:
+	var was: int = int(Game.settings.graphics)
+	for g in [Game.GFX_LOW, Game.GFX_MEDIUM]:
+		Game.settings.graphics = g
+		var lv := "Low" if g == Game.GFX_LOW else "Medium"
+		var sq: Array = DB.squad("NZL")
+		for case: Array in [["run", 3.5, 0.0], ["run", 6.8, 0.0], ["run", 7.2, 0.0], ["mark", 4.0, 1.0], ["defend", 3.0, 0.0], ["run", 5.0, -1.0], ["run", 2.5, -1.0]]:
+			var pl := Player.new(0, sq[2], "WA")
+			add_child(pl)
+			await frames(1)
+			pl.fenced = false
+			pl.place(Vector2.ZERO, 0.0)
+			var act: String = case[0]
+			var spd: float = case[1]
+			var go := Vector2(1, 0) if float(case[2]) > 0.0 else Vector2(0, 1)
+			var look: float = case[2]
+			var st := {"slip": 0.0, "bend_lo": 999.0, "bend_hi": 0.0, "out": 0.0, "abd": 0.0, "steps": 0}
+			for f in 120:
+				pl.set_act(act)
+				pl.target = pl.p + go * 8.0
+				pl.want_speed = spd
+				pl.look_on = look != 0.0
+				pl.look_at_p = pl.p + Vector2(0, 10) if look > 0.0 else pl.p - go * 10.0
+				pl.advance(1.0 / 30.0)
+				_gait_measure(pl.gait, pl.body, st, f >= 30, f >= 40)
+			var what := "%s, a player %s at %.1f m/s%s" % [lv, "running" if act == "run" else act + "ing", pl.vel.length(),
+				" (sideways, eyes on the ball)" if look > 0.0 else (" (the ball behind her)" if look < 0.0 else "")]
+			check(st.slip < GAIT_SLIP, "%s: a planted foot moves %.1f cm at most" % [what, st.slip * 100.0])
+			check(st.bend_lo > 45.0 and st.bend_hi < 125.0, "%s: elbows bent %.0f-%.0f deg" % [what, st.bend_lo, st.bend_hi])
+			check(st.out < 0.12 and st.abd < 30.0, "%s: hands by her sides (%.0f cm out from the shoulder, the upper arm %.0f deg from her side)" % [what, st.out * 100.0, st.abd])
+			print("gait: %s: slip %.1f cm, elbows %.0f-%.0f deg, hands %.0f cm out, upper arm %.0f deg out" % [what, st.slip * 100.0, st.bend_lo, st.bend_hi, st.out * 100.0, st.abd])
+			if act == "run" and is_equal_approx(spd, 6.8):
+				# Pulling up: a step or two, then her feet under her, still.
+				var stop := {"slip": 0.0, "bend_lo": 999.0, "bend_hi": 0.0, "out": 0.0, "abd": 0.0, "steps": 0}
+				# (The feet down as she pulls up are not steps: only those that come down after.)
+				_gait_measure(pl.gait, pl.body, stop, true, false)
+				stop.steps = 0
+				for f in 50:
+					pl.set_act("run")
+					pl.target = pl.p
+					pl.want_speed = 0.0
+					pl.advance(1.0 / 30.0)
+					_gait_measure(pl.gait, pl.body, stop, true, false)
+				var under := 0.0
+				for ft in pl.gait.feet:
+					under = maxf(under, (ft as Gait.Foot).at.distance_to(pl.p))
+				check(stop.steps >= 1 and stop.steps <= 5, "%s: pulling up from a sprint takes %d steps" % [lv, stop.steps])
+				check(stop.slip < GAIT_SLIP, "%s: pulling up, a planted foot moves %.1f cm at most" % [lv, stop.slip * 100.0])
+				check(under < 0.25 and pl.vel.length() < 0.01, "%s: stopped, her feet under her (%.2f m)" % [lv, under])
+				print("gait: %s: pulling up from 6.8 m/s: %d steps, slip %.1f cm, feet %.2f m from her" % [lv, stop.steps, stop.slip * 100.0, under])
+			pl.queue_free()
+		# An umpire jogging her line and catching up with play, her eyes on the ball across the court.
+		for spd: float in [Umpire.JOG, Umpire.SPEED]:
+			var u := Umpire.new(-1)
+			add_child(u)
+			await frames(1)
+			u.p = Vector2.ZERO
+			u.position = Vector3.ZERO
+			var st := {"slip": 0.0, "bend_lo": 999.0, "bend_hi": 0.0, "out": 0.0, "abd": 0.0, "steps": 0}
+			for f in 120:
+				u.pace = spd
+				u.target = u.p + Vector2(4.0, 0)
+				u.advance(1.0 / 30.0, u.p + Vector2(0, -10))
+				_gait_measure(u.gait, u.body, st, f >= 30, f >= 40)
+			var what := "%s, an umpire at %.1f m/s" % [lv, spd]
+			check(st.slip < GAIT_SLIP, "%s: a planted foot moves %.1f cm at most" % [what, st.slip * 100.0])
+			check(st.bend_lo > 45.0 and st.bend_hi < 125.0, "%s: elbows bent %.0f-%.0f deg" % [what, st.bend_lo, st.bend_hi])
+			check(st.out < 0.12 and st.abd < 30.0, "%s: hands by her sides (%.0f cm, %.0f deg)" % [what, st.out * 100.0, st.abd])
+			check(not u.gait.feet[0].down or not u.gait.feet[1].down or u.gait.striding, "%s: she strides (not gliding)" % what)
+			print("gait: %s: slip %.1f cm, elbows %.0f-%.0f deg, hands %.0f cm out, upper arm %.0f deg out" % [what, st.slip * 100.0, st.bend_lo, st.bend_hi, st.out * 100.0, st.abd])
+			u.queue_free()
+		await frames(1)
+	# In a match (Low): every planted foot of every player and umpire, and every runner's arms.
+	Game.settings.graphics = Game.GFX_LOW
+	for mc: Array in [["arena", 6], ["hall", 9]]:
+		await _gait_in_match(mc[0], mc[1])
+	Game.settings.graphics = was
+
+
+func _gait_in_match(venue: String, seed: int) -> void:
+	var m: Match = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "AUS", "away": "NZL", "venue": venue, "user_team": -1, "demo": true, "seed": seed, "quarter": 15, "mode": "quick"}
+	add_child(m)
+	await frames(5)
+	var all := {}
+	var people: Array = m.players[0] + m.players[1] + m.umpires
+	for q in people:
+		all[q] = {"slip": 0.0, "bend_lo": 999.0, "bend_hi": 0.0, "out": 0.0, "abd": 0.0, "steps": 0}
+	var worst_arm := 0.0
+	var worst_who := ""
+	var worst_slip := 0.0
+	var slip_who := ""
+	var runs := 0
+	for f in 600:
+		await get_tree().process_frame
+		if m.phase in ["setup", "goal", "break"] and m.phase_t < 0.1:
+			for q in people:
+				all[q].erase("at_l")
+				all[q].erase("at_r")
+		for q in people:
+			var running: bool = q.vel.length() > 3.0 and (not (q is Player) or q.act in ["run", "mark", "post", "ready", "defend", "defend_shot", "out_of_play", "huddle"])
+			var st: Dictionary = all[q]
+			var abd0: float = st.abd
+			var slip0: float = st.slip
+			# (Her feet measured while they are the gait's: not in a leap or the landing's motion capture.)
+			var own: bool = not (q is Player) or (q.legs_w > 0.99 and q.land_w <= 0.0)
+			_gait_measure(q.gait, q.body, st, own, running)
+			if st.slip > slip0 and st.slip > worst_slip:
+				worst_slip = st.slip
+				slip_who = "%s (%s, %.1f m/s, f %d)" % [q.pos if q is Player else "umpire", q.act if q is Player else "", q.vel.length(), f]
+			if running:
+				runs += 1
+			if st.abd > abd0 and st.abd > worst_arm:
+				worst_arm = st.abd
+				worst_who = "%s (%s, %.1f m/s)" % [q.pos if q is Player else "umpire", q.act if q is Player else "", q.vel.length()]
+	var slip := 0.0
+	var out := 0.0
+	for q in people:
+		slip = maxf(slip, all[q].slip)
+		out = maxf(out, all[q].out)
+	check(runs > 200, "a match (Low, %s): players and umpires run (%d frames)" % [venue, runs])
+	check(slip < GAIT_SLIP, "a match (Low, %s): no planted foot moves more than %.1f cm (%s)" % [venue, slip * 100.0, slip_who])
+	check(worst_arm < 30.0 and out < 0.12, "a match (Low, %s): nobody runs with her arms out (worst: %.0f deg, %.0f cm, %s)" % [venue, worst_arm, out * 100.0, worst_who])
+	print("gait: a match (Low, %s): slip %.1f cm at most; arms %.0f deg out at most (%s), hands %.0f cm" % [venue, slip * 100.0, worst_arm, worst_who, out * 100.0])
+	m.queue_free()
+	await frames(2)
+
+
+## One frame of a body's gait into st: the furthest a planted foot's contact (the ball or the heel on the floor) has
+## moved since it came down (slip, when feet), how many feet came down (steps); and when arms, the elbows' bend, how
+## far a hand is out from its shoulder (across her), and how far the upper arm is lifted out from her side (abd).
+func _gait_measure(g: Gait, b: ToonBody, st: Dictionary, feet: bool, arms: bool) -> void:
+	if int(st.get("epoch", -1)) != g.epoch:
+		st.epoch = g.epoch
+		st.erase("at_l")
+		st.erase("at_r")
+	for i in 2:
+		var s := "l" if i == 0 else "r"
+		var ft: Gait.Foot = g.feet[i]
+		var c := g.contact(s)
+		var bl := g.contact(s, true)
+		if ft.down and feet:
+			if not st.has("at_" + s):
+				st["at_" + s] = Vector2(c.x, c.z)
+				st["ball_" + s] = Vector2(bl.x, bl.z)
+				st.steps += 1
+			# (Rolling heel to toe keeps the spot under the ankle; pivoting keeps the ball of the foot: either stays.)
+			st.slip = maxf(st.slip, minf(Vector2(c.x, c.z).distance_to(st["at_" + s]), Vector2(bl.x, bl.z).distance_to(st["ball_" + s])))
+		else:
+			st.erase("at_" + s)
+	if not arms:
+		return
+	# (Against her chest: the arms' swing, not the turn of her shoulders to the ball.)
+	var bz := (b.skeleton.global_transform * b.skeleton.get_bone_global_pose(b.bone("chest"))).basis
+	var left := (bz.x).normalized()
+	var up := (bz.y).normalized()
+	for s in ["l", "r"]:
+		var sh := b.bone_world("upperarm_" + s)
+		var el := b.bone_world("forearm_" + s)
+		var wr := b.bone_world("hand_" + s)
+		var bend := rad_to_deg((el - sh).angle_to(wr - el))
+		st.bend_lo = minf(st.bend_lo, bend)
+		st.bend_hi = maxf(st.bend_hi, bend)
+		var sx := 1.0 if s == "l" else -1.0
+		st.out = maxf(st.out, (wr - sh).dot(left) * sx)
+		var ua := el - sh
+		st.abd = maxf(st.abd, rad_to_deg(atan2(ua.dot(left) * sx, -ua.dot(up))))
 
 
 ## Your controls: a scripted thumb plays a match as the team. With the ball it picks a team-mate and passes (or

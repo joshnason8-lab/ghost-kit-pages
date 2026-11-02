@@ -233,6 +233,10 @@ func update(dt: float, vel: Vector2, want_vel: Vector2, yaw: float, act: String,
 		want = "full"
 	elif kind == "umpire":
 		want = "upper" if act == "signal" else "move"
+	elif who.has_method("anim_layer"):
+		# A player: Player.anim_layer (on the run a move keeps only its arms, and marking's and posting's arms go with
+		# the run: the owner's "arms just stretched out when running").
+		want = who.anim_layer()
 	elif act in FULL or holding_ball(ball):
 		want = "full"
 	elif act in UPPER or (act in ["ready", "run"] and vel.length() < 0.6):
