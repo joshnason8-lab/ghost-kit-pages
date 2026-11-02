@@ -62,6 +62,9 @@ func start(t_cross: float, s: float, c: Vector3, who: Player = null) -> void:
 	if _buf.size() < 10:
 		return
 	playing = true
+	# The co-commentator over it (the match says what it shows: _replay_kind).
+	if m.has_method("_say"):
+		m._say("replay_" + String(m.get("_replay_kind")), "B")
 	_wb = 0
 	_speed = SPEED
 	_t = maxf(float(_buf[0][0]), t_cross - BEFORE)

@@ -751,3 +751,16 @@ licence there before it goes into the game.
   the clips could play on the old ones. Neither the 36.7 MB GLB (tools/player/build.sh fetches it) nor the Mixamo
   files (their terms allow them in a game, not handed out as they are) are in this public repository; the game
   ships only what is baked from them.
+
+## Done (0.20.0, 2 November 2026)
+
+- **Commentary** (code 31): game/commentary.gd, an event-driven two-voice commentary (A "Mick" calls, B "Ger"
+  analyses), with priorities, cut-ins, stale calls dropped, B following A by chance per moment, surname and county
+  clips chained before lines written to follow them, the ball-winner named in quiet moments, lulls after 12 s of
+  silence, replays talked over on its own clock, the crowd ducked under it, paused with the match, and Settings →
+  Commentary. Style learned (studied only, nothing copied or committed) from a full broadcast the owner shared:
+  about 165 words a minute, near-continuous talk, clipped calls, tactical analysis in the gaps.
+  tools/commentary/: script.py → assets/commentary/lines.json + SCRIPT.md (267 lines, about 8,620 characters: one
+  month of ElevenLabs' free credits), README.md (the ElevenLabs guide), generate.py (makes missing lines through the
+  API; the key from the environment only), preview.gd (a Watch AI film with the commentary). Tests: _commentary.
+  The recordings are not made yet, so it is silent until they are.

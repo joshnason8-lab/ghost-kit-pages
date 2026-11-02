@@ -9,6 +9,15 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.20.0
+
+- **Match commentary, ready for voices**: two commentators, Mick calling the play and Ger (a former hurler)
+  reading it, follow the match: the throw-in, every score with the scorer's name, saves, wides, frees, cards,
+  big catches and tackles, the man on the ball, the score after a score, the closing minutes, the replays and the
+  final whistle. One talks at a time, a goal cuts across small talk, and a call that comes too late is dropped. **It is
+  silent in this beta**: the voices are recorded with ElevenLabs from the script in tools/commentary/ (the guide is
+  tools/commentary/README.md) and go in with a later beta. Settings → Sound and controls → Commentary turns it off.
+
 ## New in 0.19.2
 
 - **The hurley no longer goes through the free-taker's arm**: just after he strikes, the stick passed through his left

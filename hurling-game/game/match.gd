@@ -107,6 +107,7 @@ var _hold_still := 0.0
 var _hype := 0.0             # the crowd's sense of a score coming, 0..1 (_crowd_anticipation)
 var _cheer_until := 0.0      # the crowd's cheer for a score runs till then
 var _fps_hist: Array = []    # recent frame times (ms) for the dev overlay and the auto graphics level
+var commentary: Commentary   # the two voices (game/commentary.gd), in a match (not the menu's, not practice)
 var _auto_gfx := WsgAutoTier.new(Game.frame_cap())   # (the shared foundation's)
 
 
@@ -153,6 +154,9 @@ func _ready() -> void:
 	hud = MatchHud.new()
 	add_child(hud)
 	hud.setup(self)
+	if not attract and not is_practice() and (not has_meta("test") or has_meta("commentary")):
+		commentary = Commentary.new(self)
+		add_child(commentary)
 	if director:
 		lower_third = WsgLowerThird.new(_broadcast_theme())
 		hud.root.add_child(lower_third)
@@ -599,7 +603,10 @@ func _crowd_anticipation(dt: float) -> void:
 				want = minf(1.0, want + 0.35)
 		elif ball.state == Sliotar.FREE and not (ball.get_meta("shot", {}) as Dictionary).is_empty():
 			want = 1.0
+	var was_hype := _hype
 	_hype = move_toward(_hype, want, dt * (1.6 if want > _hype else 0.7))
+	if was_hype < 0.75 and _hype >= 0.75:
+		_say("attack", "A", name_of(carrier))    # (an attack building: the crowd rising with it)
 	Sfx.crowd_swell(_hype * 0.85 + (0.15 if want >= 1.0 else 0.0))
 	WsgCrowd3D.set_tension(_hype)
 	if stadium.crowd3d:
@@ -1290,11 +1297,15 @@ func _gain(p: Player, kind: String) -> void:
 		Sfx.play("catch", -8.0)
 		if p == active:
 			Game.haptic("catch")
+		if ball.global_position.y > 2.2:
+			_say("catch", "A", name_of(p))
 	else:
 		p.ball_hand = false
 		p.ball_stick = true
 		Rules.to_hurley(c)
 		_hurley_tap(p.global_position, -10.0)
+	if commentary != null and phase == P.LIVE:
+		commentary.carrier(name_of(p))
 	p.take_steps()
 	ai[p.team].think_t[p] = now + 0.15
 	if user_team >= 0 and p.team == user_team:
@@ -1830,6 +1841,7 @@ func _save(k: Player, shooter_dir: float) -> void:
 		return
 	Sfx.play("save", -4.0)
 	_hurley_tap(k.global_position, -6.0, 0.92)
+	_say("save", "A", name_of(k))
 	Sfx.react("ooh", -4.0)
 	if rng.randf() < 0.35:
 		# Held.
@@ -1881,6 +1893,7 @@ func _check_ball(prev: Vector3, cur: Vector3) -> void:
 				Sfx.play_at("post", c, 0.0, 1.0, 4, -2.0)
 				Sfx.react("ooh", -3.0)
 				hud.call_line(tr("CALL_POST") if hit_post else tr("CALL_BAR"))
+				_say("post")
 				_chase_t = 0.0
 				return
 			if phase == P.SHOOTOUT:
@@ -1922,6 +1935,8 @@ func _over_end_line(c: Vector3, s: float) -> void:
 			pstats[(by as Player).data.id].wides += 1
 		officials.umpire_signal(s, "sig_wide", c.z)
 		hud.call_line(tr("CALL_WIDE"))
+		_say("wide")
+		_replay_kind = "wide"
 		Sfx.react("groan", -8.0)
 		_award(Rules.over_end_line(c, ball.last_team, att, s), 2.2)
 		if (user_team >= 0 or is_watch()) and shot.has("by"):
@@ -1969,6 +1984,7 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 		Sfx.react("cheer", -5.0)
 	Crowd.set_excite(1.0 if kind == "goal" else 0.6)
 	_cheer_until = now + 2.5
+	_talk_score(team, kind, shot)
 	_after(2.5, func(): Crowd.set_excite(0.0))
 	var pid := ""
 	if by is Player and is_instance_valid(by) and (by as Player).team == team:
@@ -2178,6 +2194,7 @@ func _dispossess(d: Player, c: Player, kind: String) -> void:
 	_path = []
 	Sfx.play("clash", -4.0, rng.randf_range(0.9, 1.1))
 	hud.call_line(tr({"tackle": "CALL_SHOULDER", "flick": "CALL_FLICK", "hook": "CALL_HOOK", "block": "CALL_BLOCK"}[kind]))
+	_say({"tackle": "tackle", "flick": "hook", "hook": "hook", "block": "block"}[kind])
 	if c == active:
 		Game.haptic("tackled")
 	if rng.randf() < 0.18:
@@ -2281,6 +2298,7 @@ func _show_card(pl: Player, card: String) -> void:
 			tstats[pl.team].red += 1
 			hud.banner(tr("CARD_RED"), Color("d4202a"))
 	events.append({"t": match_minute(), "team": pl.team, "kind": card, "by": String(pl.data.id), "how": ""})
+	_say("red" if card == "red" else "yellow")
 	if pl.team == user_team and controls.visible:
 		Game.haptic("card")
 	if pl == carrier:
@@ -2339,6 +2357,7 @@ func _award(r: Dictionary, delay := 2.0) -> void:
 	phase_t = DEAD_T - delay
 	_stoppage += 8.0
 	_stop_cost(String(r.kind))
+	_say({"free": "free", "penalty": "penalty", "65": "sixty_five", "sideline": "sideline"}.get(String(r.kind), ""))
 	match String(r.kind):
 		"puck_out":
 			tstats[int(r.team)].puckouts += 1
@@ -2497,6 +2516,7 @@ func _take_restart(pl: Player, choice: String) -> void:
 	restart = {}
 	match kind:
 		"puck_out":
+			_say("puck_out", "A", name_of(pl))     # (as he takes it: the replay and the talk on the score are done)
 			var po: Dictionary = t.puck_out_choice(pl)
 			if choice == "SHORT" or (choice == "" and String(po.kind) == "short"):
 				var to: Player = po.get("to") if po.has("to") else _short_option(pl)
@@ -2626,6 +2646,7 @@ func _place_for_throw_in(snap: bool) -> void:
 func _begin_throw_in() -> void:
 	phase = P.THROW_IN
 	phase_t = 0.0
+	_say("throw_in" if half == 1 else ("second_half" if half == 2 else "extra_time"))
 	restart = {}
 	carrier = null
 	ball.place(Vector3(0, 1.6, 0))
@@ -2682,6 +2703,7 @@ func _end_half() -> void:
 	if half == 2 and not (knockout and level):
 		_finish()
 		return
+	_say("half_time" if half == 1 else "extra_time")
 	if half == 4:
 		if level:
 			_begin_shootout()
@@ -2863,6 +2885,7 @@ func _run_subs() -> void:
 ## penalty shots in extra time as well"): each taker already in his stance over the ball, the low camera behind him;
 ## yours aimed by timing (the target, then the bar), the other side's lifted and struck at a spot their taker picks.
 func _begin_shootout() -> void:
+	_say("shootout")
 	phase = P.SHOOTOUT
 	phase_t = 0.0
 	half = 4
@@ -3044,6 +3067,7 @@ func _finish(shootout_winner := -1) -> void:
 	var a := Rules.total(score[0][0], score[0][1])
 	var b := Rules.total(score[1][0], score[1][1])
 	var winner := 0 if a > b else (1 if b > a else shootout_winner)
+	_say("full_time" if a != b or shootout_winner >= 0 else "full_time_draw", "A", county_of(winner) if winner >= 0 else "")
 	if winner >= 0:
 		for q in teams[winner].players:
 			(q as Player).play("celebrate")
@@ -3412,6 +3436,55 @@ func _exit_tree() -> void:
 	Engine.time_scale = 1.0
 	Sfx.pause_all(false)
 	Sfx.ambience(false)
+
+
+## The commentators on a score: the call (a goal; a point from a free, from distance, or from play), then a moment
+## later where it leaves the game (level; one in it; a big lead; a side come back; the end near and close).
+var _worst := [0, 0]   # the most each side has been behind by
+var _replay_kind := "point"   # what the next replay shows (Commentary: the co-commentator's word over it)
+
+
+func _talk_score(team: int, kind: String, shot: Dictionary) -> void:
+	_replay_kind = kind
+	if commentary == null:
+		return
+	var from: Vector3 = shot.get("from", Vector3.ZERO)
+	var far := Pitch.from_goal_line(from, dir(team)) > 45.0 if shot.has("from") else false
+	_say("goal" if kind == "goal" else ("point_free" if String(shot.get("placed", "")) != "" else ("point_long" if far else "point")), "A", name_of(shot.get("by")))
+	var a := Rules.total(score[team][0], score[team][1])
+	var b := Rules.total(score[1 - team][0], score[1 - team][1])
+	var was_down: int = _worst[team]
+	_worst[1 - team] = maxi(_worst[1 - team], a - b)
+	# Where it leaves the match, queued behind the call and ahead of the replay's word (the commentary's own clock: the
+	# match's stands still through the replay).
+	commentary.later(1.5, func():
+		var margin := absi(a - b)
+		var ahead := county_of(team if a > b else 1 - team)
+		if half >= 2 and clock > half_len_now() - 300.0 and margin <= 3:
+			_say("late")
+		elif was_down >= 5 and a - b >= -1:
+			_say("comeback", "A", county_of(team))
+		elif margin == 0:
+			_say("level")
+		elif margin == 1:
+			_say("lead_one", "A", ahead)
+		elif margin >= 7:
+			_say("lead_big", "A", ahead))
+
+
+## A word from the commentators on what just happened (Commentary.KINDS), if they are on.
+func _say(kind: String, who := "A", lead := "") -> void:
+	if commentary != null:
+		commentary.event(kind, who, lead)
+
+
+## The commentator's recorded name for a man (his surname: Commentary's "name_<n>") or a side ("county_<ID>").
+static func name_of(pl) -> String:
+	return "name_%d" % int((pl as Player).data.last) if pl is Player and is_instance_valid(pl) else ""
+
+
+func county_of(k: int) -> String:
+	return "county_" + String(teams[k].id)
 
 
 ## Watch AI (the main menu's "Watch AI"): a match of two counties played by the computer, to watch.

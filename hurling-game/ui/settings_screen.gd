@@ -115,8 +115,8 @@ func _ready() -> void:
 	var row := HFlowContainer.new()
 	row.add_theme_constant_override("h_separation", 36)
 	row.add_theme_constant_override("v_separation", 14)
-	for key in ["sound", "music", "vibration", "left_handed"]:
-		row.add_child(_toggle(key, {"sound": "SOUND", "music": "MUSIC", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
+	for key in ["sound", "music", "commentary", "vibration", "left_handed"]:
+		row.add_child(_toggle(key, {"sound": "SOUND", "music": "MUSIC", "commentary": "COMMENTARY", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
 	snd[1].add_child(row)
 	snd[1].add_child(UI.field(tr("BUTTON_SIZE"), UI.chips([tr("SIZE_NORMAL"), tr("SIZE_LARGE"), tr("SIZE_XL")], int(Game.settings.btn_size), func(i):
 		Game.settings.btn_size = i

@@ -57,6 +57,7 @@ func _ready() -> void:
 	await _stick_clear()
 	await _posts_white()
 	await _far_ball_dot()
+	await _commentary()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	await _bench_seats()
@@ -1885,5 +1886,155 @@ func _far_ball_dot() -> void:
 	var near: float = m.hud.ball_px(cam, cam.global_position + fwd * 4.0, vp)
 	var far: float = m.hud.ball_px(cam, cam.global_position + fwd * 45.0, vp)
 	check(near > 4.0 and far < 4.0, "Practice: the ball's dot shown far off (%.1f px across at 45 m), not close up (%.1f px at 4 m)" % [far, near])
+	m.queue_free()
+	await frames(2)
+
+
+## The commentary: one voice at a time, the bigger moment first, late calls dropped, the co-commentator after the
+## call, a name before its line, the replay talked over, no call twice too soon, quiet when paused - timed without
+## the recordings (silent_ok), so it holds whether or not they have been made yet.
+func _commentary() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "GAL", "away": "LIM", "venue": "county", "user_team": -1, "seed": 4, "length": 4.0, "mode": "watch"}
+	m.set_meta("test", true)
+	m.set_meta("commentary", true)
+	var keep_c = Game.settings.get("commentary", true)
+	Game.settings.commentary = true
+	add_child(m)
+	await frames(2)
+	var c: Commentary = m.commentary
+	check(c != null, "Commentary: a watched match has the commentators")
+	if c == null:
+		m.queue_free()
+		return
+	c.enabled = true
+	c.silent_ok = true
+	c.use_recordings = false
+	c._rng.seed = 7
+	Commentary.load_lines()
+	var kinds := {}
+	for l in Commentary._by_id.values():
+		kinds[String(l.on)] = true
+	var missing: Array = Commentary.KINDS.keys().filter(func(k): return not kinds.has(k))
+	check(missing.is_empty(), "Commentary: every moment has lines in the script (missing: %s)" % [missing])
+	var ids_ok := true
+	for t in m.teams:
+		ids_ok = ids_ok and Commentary._by_id.has("county_" + String(t.id))
+	for t in m.teams:
+		for p in t.players:
+			ids_ok = ids_ok and Commentary._by_id.has(m.name_of(p))
+	check(ids_ok, "Commentary: every player's surname and both counties have a recorded name")
+	# The throw-in was called.
+	var f := 0
+	while c.said.is_empty() and f < 30 * 20:
+		await frames(1)
+		f += 1
+	check(not c.said.is_empty() and String(Commentary._by_id[c.said[0][1]].on) in ["throw_in", "lull", "attack"], "Commentary: the throw-in called (%s)" % [c.said])
+	# From here the calls are made by the test alone (the match no longer tells it what happens).
+	m.commentary = null
+	m.set_paused(true)
+	c.stop()
+	c.said.clear()
+	c._last.clear()
+	c._queue.clear()
+	c._until = c._t
+	c.event("lull", "A")
+	await frames(20)
+	check(c.said.is_empty(), "Commentary: nothing said while the match is paused")
+	m.set_paused(false)
+	await frames(15)
+	check(c.said.size() == 1 and c.speaking != "", "Commentary: and it talks again when play resumes")
+	# A goal cuts across the small talk; a name first, its line straight after.
+	var scorer: Player = m.teams[0].players[10]
+	c.event("goal", "A", m.name_of(scorer))
+	await frames(2)
+	check(c.speaking == m.name_of(scorer), "Commentary: a goal cuts across the small talk, the scorer's name first (%s)" % c.speaking)
+	var heard: Array = []
+	f = 0
+	while f < 30 * 12:
+		await frames(1)
+		f += 1
+		if c.speaking != "" and (heard.is_empty() or heard[-1] != c.speaking):
+			heard.append(c.speaking)
+	check(heard.size() >= 2 and String(Commentary._by_id[heard[1]].on) == "goal" and String(Commentary._by_id[heard[1]].get("after", "")) == "name",
+		"Commentary: then the line made to follow a name (%s)" % [heard])
+	# One voice at a time: no line starts before the last has ended (only a bigger moment cuts across one).
+	var overlap := false
+	for i in range(1, c.said.size()):
+		var secs := float(c.said[i - 1][2])
+		if float(c.said[i][0]) + 0.01 < float(c.said[i - 1][0]) + secs and not String(c.said[i][1]).begins_with("name_"):   # (the goal's name cut in)
+			overlap = true
+	check(not overlap, "Commentary: one voice at a time (%s)" % [c.said])
+	# A call too soon after the same call is not made; a call left waiting too long is dropped.
+	c.stop()
+	c.said.clear()
+	c._last.clear()
+	c.event("tackle")
+	await frames(60)
+	c.event("tackle")
+	await frames(60)
+	check(c.said.filter(func(s): return String(Commentary._by_id[s[1]].on) == "tackle" and String(Commentary._by_id[s[1]].who) == "A").size() == 1, "Commentary: the same call not made twice in a few seconds (%s)" % [c.said])
+	c.stop()
+	c.said.clear()
+	c._last.clear()
+	c.event("half_time")
+	await frames(2)
+	c.event("wide")      # (behind a long line: stale by the time it would be said)
+	f = 0
+	while c.speaking != "" and f < 30 * 30:
+		await frames(1)
+		f += 1
+	await frames(60)
+	check(c.said.filter(func(s): return String(Commentary._by_id[s[1]].on) == "wide").is_empty(), "Commentary: a wide left waiting behind a long line is dropped, not said late (%s)" % [c.said])
+	# The co-commentator follows the call.
+	c.stop()
+	c.said.clear()
+	c._last.clear()
+	c._rng.seed = 1
+	var b_after := false
+	for i in 4:
+		c.event("full_time")    # (90%: he nearly always has a word after it)
+		f = 0
+		while f < 30 * 25 and not b_after:
+			await frames(1)
+			f += 1
+			b_after = c.said.any(func(s): return String(Commentary._by_id[s[1]].who) == "B")
+		if b_after:
+			break
+		c._last.clear()
+	check(b_after, "Commentary: the co-commentator comes in after the call (%s)" % [c.said])
+	# The replay talked over.
+	c.stop()
+	c.said.clear()
+	c._last.clear()
+	c.event("replay_point", "B")
+	await frames(3)
+	check(c.speaking != "" and String(Commentary._by_id[c.speaking].on) == "replay_point", "Commentary: a word over the replay")
+	# The man who wins the ball named, when nothing else is being said; never over a line, never the same man twice.
+	c.stop()
+	c.said.clear()
+	c._last.clear()
+	c._last_name = ""
+	var n1: String = m.name_of(m.teams[0].players[5])
+	var n2: String = m.name_of(m.teams[1].players[7])
+	c.carrier(n1)
+	await frames(15)
+	var named: bool = c.said.size() == 1 and c.said[0][1] == n1
+	await frames(150)
+	c.carrier(n1)
+	await frames(15)
+	named = named and c.said.size() == 1
+	c.event("half_time")
+	await frames(15)
+	c.carrier(n2)
+	await frames(15)
+	check(named and not c.said.any(func(s): return s[1] == n2), "Commentary: the man on the ball named, not twice running, not over a line (%s)" % [c.said])
+	# Turned off in Settings: silence.
+	Game.settings.commentary = false
+	var off := Commentary.new(m)
+	m.add_child(off)
+	await frames(1)
+	check(not off.enabled, "Commentary: off in Settings, no commentary")
+	Game.settings.commentary = keep_c
 	m.queue_free()
 	await frames(2)

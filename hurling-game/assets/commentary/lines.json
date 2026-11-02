@@ -1,0 +1,2140 @@
+{
+ "lines": [
+  {
+   "id": "throw_in_a1",
+   "who": "A",
+   "on": "throw_in",
+   "text": "And we're under way.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "throw_in_a2",
+   "who": "A",
+   "on": "throw_in",
+   "text": "The referee throws it in, and off we go.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "throw_in_a3",
+   "who": "A",
+   "on": "throw_in",
+   "text": "Seventy minutes of hurling, and it starts now.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "throw_in_a4",
+   "who": "A",
+   "on": "throw_in",
+   "text": "Up goes the sliotar, and battle is joined.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "throw_in_b1",
+   "who": "B",
+   "on": "throw_in",
+   "text": "First few minutes, Mick, it's all about settling. Get a touch, get a score.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "throw_in_b2",
+   "who": "B",
+   "on": "throw_in",
+   "text": "Whoever wins the breaking ball early will grow into this.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "throw_in_b3",
+   "who": "B",
+   "on": "throw_in",
+   "text": "Plenty of nerves out there. A good first puck-out will calm them.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "second_half_a1",
+   "who": "A",
+   "on": "second_half",
+   "text": "And the second half is under way.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "second_half_a2",
+   "who": "A",
+   "on": "second_half",
+   "text": "Thirty-five minutes left. Here we go again.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "second_half_a3",
+   "who": "A",
+   "on": "second_half",
+   "text": "Back out they come, and the throw-in starts the second half.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "second_half_b1",
+   "who": "B",
+   "on": "second_half",
+   "text": "Whatever was said in that dressing room, Mick, we'll see it in the next ten minutes.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "second_half_b2",
+   "who": "B",
+   "on": "second_half",
+   "text": "The first score of this half will be huge.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "half_time_a1",
+   "who": "A",
+   "on": "half_time",
+   "text": "And there's the whistle for half time.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "half_time_a2",
+   "who": "A",
+   "on": "half_time",
+   "text": "Half time, and plenty for both managers to think about.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "half_time_a3",
+   "who": "A",
+   "on": "half_time",
+   "text": "The referee calls a halt. That's the first half done.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "half_time_b1",
+   "who": "B",
+   "on": "half_time",
+   "text": "Good half of hurling, Mick. Not much between them.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "half_time_b2",
+   "who": "B",
+   "on": "half_time",
+   "text": "They'll want more ball into the full-forward line in the second half.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "half_time_b3",
+   "who": "B",
+   "on": "half_time",
+   "text": "The puck-outs will decide this one. Whoever wins their own will kick on.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "full_time_a1",
+   "who": "A",
+   "on": "full_time",
+   "text": "And there's the final whistle!",
+   "tone": "big",
+   "after": ""
+  },
+  {
+   "id": "full_time_a2",
+   "who": "A",
+   "on": "full_time",
+   "text": "It's all over! What a game of hurling.",
+   "tone": "big",
+   "after": ""
+  },
+  {
+   "id": "full_time_a3",
+   "who": "A",
+   "on": "full_time",
+   "text": "The referee blows it up. They'll be celebrating long into the night.",
+   "tone": "big",
+   "after": ""
+  },
+  {
+   "id": "full_time_a_c4",
+   "who": "A",
+   "on": "full_time",
+   "text": "have won it! The final whistle goes, and they've done it!",
+   "tone": "big",
+   "after": "county"
+  },
+  {
+   "id": "full_time_a_c5",
+   "who": "A",
+   "on": "full_time",
+   "text": "are the winners! What a performance from them today.",
+   "tone": "big",
+   "after": "county"
+  },
+  {
+   "id": "full_time_a_c6",
+   "who": "A",
+   "on": "full_time",
+   "text": "hold on! It's all over, and the day is theirs.",
+   "tone": "big",
+   "after": "county"
+  },
+  {
+   "id": "full_time_b1",
+   "who": "B",
+   "on": "full_time",
+   "text": "Deserved, Mick. They worked harder for every ball.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "full_time_b2",
+   "who": "B",
+   "on": "full_time",
+   "text": "That's a team that never stopped running. Great credit to them.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "full_time_b3",
+   "who": "B",
+   "on": "full_time",
+   "text": "Some hurling. The supporters got their money's worth today.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "full_time_draw_a1",
+   "who": "A",
+   "on": "full_time_draw",
+   "text": "And it ends level! Neither side could be separated.",
+   "tone": "big",
+   "after": ""
+  },
+  {
+   "id": "full_time_draw_a2",
+   "who": "A",
+   "on": "full_time_draw",
+   "text": "The final whistle, and honours even.",
+   "tone": "big",
+   "after": ""
+  },
+  {
+   "id": "full_time_draw_b1",
+   "who": "B",
+   "on": "full_time_draw",
+   "text": "A draw is about right, Mick. Nothing between them all day.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "full_time_draw_b2",
+   "who": "B",
+   "on": "full_time_draw",
+   "text": "Neither side will be happy with that, and neither deserved to lose.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "extra_time_a1",
+   "who": "A",
+   "on": "extra_time",
+   "text": "Level at the end of normal time. We're going to extra time.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "extra_time_a2",
+   "who": "A",
+   "on": "extra_time",
+   "text": "Extra time, and tired legs all over the field.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "extra_time_b1",
+   "who": "B",
+   "on": "extra_time",
+   "text": "It's about who has the most left in the legs now, Mick.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "shootout_a1",
+   "who": "A",
+   "on": "shootout",
+   "text": "Still level. It comes down to penalties.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "shootout_a2",
+   "who": "A",
+   "on": "shootout",
+   "text": "A shoot-out to settle it. Nerves of steel needed now.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "shootout_b1",
+   "who": "B",
+   "on": "shootout",
+   "text": "Pick your spot and hit it hard. That's all you can do, Mick.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "goal_a1",
+   "who": "A",
+   "on": "goal",
+   "text": "Goal! It's in the back of the net!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "goal_a2",
+   "who": "A",
+   "on": "goal",
+   "text": "Oh, it's a goal! What a finish!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "goal_a3",
+   "who": "A",
+   "on": "goal",
+   "text": "Goal! The net is bulging!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "goal_a4",
+   "who": "A",
+   "on": "goal",
+   "text": "He buries it! Goal!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "goal_a5",
+   "who": "A",
+   "on": "goal",
+   "text": "Into the corner! A goal!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "goal_a6",
+   "who": "A",
+   "on": "goal",
+   "text": "Green flag! What a goal!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "goal_a_n7",
+   "who": "A",
+   "on": "goal",
+   "text": "goes for goal... and finds the net!",
+   "tone": "shout",
+   "after": "name"
+  },
+  {
+   "id": "goal_a_n8",
+   "who": "A",
+   "on": "goal",
+   "text": "the shot... and it's a goal!",
+   "tone": "shout",
+   "after": "name"
+  },
+  {
+   "id": "goal_a_n9",
+   "who": "A",
+   "on": "goal",
+   "text": "bangs it home! A goal!",
+   "tone": "shout",
+   "after": "name"
+  },
+  {
+   "id": "goal_b1",
+   "who": "B",
+   "on": "goal",
+   "text": "Clinical, Mick. Head down, picked his spot, no keeper stops that.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "goal_b2",
+   "who": "B",
+   "on": "goal",
+   "text": "That's what happens when you give a forward a yard of space.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "goal_b3",
+   "who": "B",
+   "on": "goal",
+   "text": "The run off the shoulder did it. Nobody tracked him in.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "goal_b4",
+   "who": "B",
+   "on": "goal",
+   "text": "The keeper had no chance. Too close, too much power.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "point_a1",
+   "who": "A",
+   "on": "point",
+   "text": "Over the bar.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_a2",
+   "who": "A",
+   "on": "point",
+   "text": "And that's a point.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_a3",
+   "who": "A",
+   "on": "point",
+   "text": "Split the posts.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_a4",
+   "who": "A",
+   "on": "point",
+   "text": "White flag. Lovely point.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_a5",
+   "who": "A",
+   "on": "point",
+   "text": "Up and over. Point.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_a6",
+   "who": "A",
+   "on": "point",
+   "text": "Clipped over the bar.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_a_n7",
+   "who": "A",
+   "on": "point",
+   "text": "over the bar.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "point_a_n8",
+   "who": "A",
+   "on": "point",
+   "text": "and he splits the posts.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "point_a_n9",
+   "who": "A",
+   "on": "point",
+   "text": "points. Lovely.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "point_a_n10",
+   "who": "A",
+   "on": "point",
+   "text": "takes his point.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "point_a_n11",
+   "who": "A",
+   "on": "point",
+   "text": "nice and easy, over the bar.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "point_b1",
+   "who": "B",
+   "on": "point",
+   "text": "Lovely score, Mick. Took his time, never rushed it.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "point_b2",
+   "who": "B",
+   "on": "point",
+   "text": "That's the work rate that gets you scores.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "point_b3",
+   "who": "B",
+   "on": "point",
+   "text": "Good movement. Got the half yard and punished them.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "point_b4",
+   "who": "B",
+   "on": "point",
+   "text": "Easy for him in the end. Great ball in.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "point_long_a1",
+   "who": "A",
+   "on": "point_long",
+   "text": "From all of seventy metres! What a point!",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "point_long_a2",
+   "who": "A",
+   "on": "point_long",
+   "text": "From way out the field! Over the bar!",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "point_long_a3",
+   "who": "A",
+   "on": "point_long",
+   "text": "A massive strike! That's a huge point!",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "point_long_a_n4",
+   "who": "A",
+   "on": "point_long",
+   "text": "from distance... and it's over! What a score!",
+   "tone": "lift",
+   "after": "name"
+  },
+  {
+   "id": "point_long_a_n5",
+   "who": "A",
+   "on": "point_long",
+   "text": "lets fly from way out... over the bar!",
+   "tone": "lift",
+   "after": "name"
+  },
+  {
+   "id": "point_long_b1",
+   "who": "B",
+   "on": "point_long",
+   "text": "Some striking, Mick. You don't see many from that range.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "point_long_b2",
+   "who": "B",
+   "on": "point_long",
+   "text": "He just backed himself. When you hit it that sweet, it carries.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "point_long_b3",
+   "who": "B",
+   "on": "point_long",
+   "text": "That's a point that lifts a whole team.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "point_free_a1",
+   "who": "A",
+   "on": "point_free",
+   "text": "The free is over.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_free_a2",
+   "who": "A",
+   "on": "point_free",
+   "text": "Pointed. No mistake from the free.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_free_a3",
+   "who": "A",
+   "on": "point_free",
+   "text": "Dead centre. The free is converted.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_free_a4",
+   "who": "A",
+   "on": "point_free",
+   "text": "Over it goes. The free taker is on song.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "point_free_a_n5",
+   "who": "A",
+   "on": "point_free",
+   "text": "makes no mistake with the free.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "point_free_a_n6",
+   "who": "A",
+   "on": "point_free",
+   "text": "over the bar from the placed ball.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "point_free_b1",
+   "who": "B",
+   "on": "point_free",
+   "text": "Routine, but you still have to strike it, Mick.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "point_free_b2",
+   "who": "B",
+   "on": "point_free",
+   "text": "Great technique. Up, toss, strike, every time the same.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "wide_a1",
+   "who": "A",
+   "on": "wide",
+   "text": "And it's wide.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "wide_a2",
+   "who": "A",
+   "on": "wide",
+   "text": "Pulled wide. A chance gone.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "wide_a3",
+   "who": "A",
+   "on": "wide",
+   "text": "Drifting... and wide.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "wide_a4",
+   "who": "A",
+   "on": "wide",
+   "text": "The umpire waves it wide.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "wide_a5",
+   "who": "A",
+   "on": "wide",
+   "text": "Wide. He'll be disappointed with that one.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "wide_b1",
+   "who": "B",
+   "on": "wide",
+   "text": "Snatched at it, Mick. He'd want that back.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "wide_b2",
+   "who": "B",
+   "on": "wide",
+   "text": "Bad option. There was a man free inside.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "wide_b3",
+   "who": "B",
+   "on": "wide",
+   "text": "Hit it under pressure. You'll miss those.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "save_a1",
+   "who": "A",
+   "on": "save",
+   "text": "Saved! What a stop!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "save_a2",
+   "who": "A",
+   "on": "save",
+   "text": "And the goalkeeper keeps it out!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "save_a3",
+   "who": "A",
+   "on": "save",
+   "text": "Brilliant save!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "save_a4",
+   "who": "A",
+   "on": "save",
+   "text": "Denied by the keeper!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "save_a_n5",
+   "who": "A",
+   "on": "save",
+   "text": "with a magnificent save!",
+   "tone": "shout",
+   "after": "name"
+  },
+  {
+   "id": "save_a_n6",
+   "who": "A",
+   "on": "save",
+   "text": "gets down to it! Saved!",
+   "tone": "shout",
+   "after": "name"
+  },
+  {
+   "id": "save_b1",
+   "who": "B",
+   "on": "save",
+   "text": "Stood up big, Mick. Made himself as wide as the goal.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "save_b2",
+   "who": "B",
+   "on": "save",
+   "text": "That's a match-winning save, that.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "save_b3",
+   "who": "B",
+   "on": "save",
+   "text": "Great reactions. He didn't commit until the last moment.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "post_a1",
+   "who": "A",
+   "on": "post",
+   "text": "Off the post!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "post_a2",
+   "who": "A",
+   "on": "post",
+   "text": "Rattles the woodwork!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "post_a3",
+   "who": "A",
+   "on": "post",
+   "text": "Off the upright! So close!",
+   "tone": "shout",
+   "after": ""
+  },
+  {
+   "id": "post_b1",
+   "who": "B",
+   "on": "post",
+   "text": "Inches, Mick. That's the game of hurling.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "post_b2",
+   "who": "B",
+   "on": "post",
+   "text": "He'll see that one hitting the post in his sleep tonight.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "free_a1",
+   "who": "A",
+   "on": "free",
+   "text": "The referee gives a free.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "free_a2",
+   "who": "A",
+   "on": "free",
+   "text": "Whistle. Free given.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "free_a3",
+   "who": "A",
+   "on": "free",
+   "text": "And it's a free.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "free_a4",
+   "who": "A",
+   "on": "free",
+   "text": "The referee spotted that one. Free.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "free_b1",
+   "who": "B",
+   "on": "free",
+   "text": "Soft enough free, Mick, but you can't pull across a man like that.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "free_b2",
+   "who": "B",
+   "on": "free",
+   "text": "Careless. You give away frees like that and they punish you.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "penalty_a1",
+   "who": "A",
+   "on": "penalty",
+   "text": "And the referee points to the spot! A penalty!",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "penalty_a2",
+   "who": "A",
+   "on": "penalty",
+   "text": "It's a penalty! Huge moment!",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "penalty_b1",
+   "who": "B",
+   "on": "penalty",
+   "text": "Pulled him down in the square, Mick. The referee had no choice.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "penalty_b2",
+   "who": "B",
+   "on": "penalty",
+   "text": "One against the keeper from twenty metres. Advantage to the striker.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "sixty_five_a1",
+   "who": "A",
+   "on": "sixty_five",
+   "text": "Out off the defender. A sixty-five.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "sixty_five_a2",
+   "who": "A",
+   "on": "sixty_five",
+   "text": "A sixty-five to come.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "sixty_five_a3",
+   "who": "A",
+   "on": "sixty_five",
+   "text": "Deflected out. It'll be a sixty-five.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "sixty_five_b1",
+   "who": "B",
+   "on": "sixty_five",
+   "text": "Good defending, Mick. A sixty-five is a lot better than a goal.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "puck_out_a1",
+   "who": "A",
+   "on": "puck_out",
+   "text": "The puck-out.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "puck_out_a2",
+   "who": "A",
+   "on": "puck_out",
+   "text": "Here's the puck-out.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "puck_out_a3",
+   "who": "A",
+   "on": "puck_out",
+   "text": "And we restart with the puck-out.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "puck_out_a_n4",
+   "who": "A",
+   "on": "puck_out",
+   "text": "with the puck-out.",
+   "tone": "flat",
+   "after": "name"
+  },
+  {
+   "id": "puck_out_a_n5",
+   "who": "A",
+   "on": "puck_out",
+   "text": "to restart.",
+   "tone": "flat",
+   "after": "name"
+  },
+  {
+   "id": "puck_out_b1",
+   "who": "B",
+   "on": "puck_out",
+   "text": "Short or long, Mick? Go short and you risk the turnover. Go long and it is a fifty-fifty under the dropping ball.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "puck_out_b2",
+   "who": "B",
+   "on": "puck_out",
+   "text": "Win your own puck-outs and you'll win this game.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "sideline_a1",
+   "who": "A",
+   "on": "sideline",
+   "text": "Over the sideline.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "sideline_a2",
+   "who": "A",
+   "on": "sideline",
+   "text": "Sideline cut coming up.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "sideline_a3",
+   "who": "A",
+   "on": "sideline",
+   "text": "Out of play. Sideline ball.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "sideline_b1",
+   "who": "B",
+   "on": "sideline",
+   "text": "One of the hardest skills in the game, the sideline cut.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "yellow_a1",
+   "who": "A",
+   "on": "yellow",
+   "text": "And out comes the yellow card.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "yellow_a2",
+   "who": "A",
+   "on": "yellow",
+   "text": "The referee goes to the pocket. Yellow.",
+   "tone": "flat",
+   "after": ""
+  },
+  {
+   "id": "yellow_b1",
+   "who": "B",
+   "on": "yellow",
+   "text": "He can have no complaints, Mick.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "yellow_b2",
+   "who": "B",
+   "on": "yellow",
+   "text": "He'll have to be careful now for the rest of the game.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "red_a1",
+   "who": "A",
+   "on": "red",
+   "text": "And it's a red card! He's off!",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "red_a2",
+   "who": "A",
+   "on": "red",
+   "text": "Straight red! They're down to fourteen!",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "red_b1",
+   "who": "B",
+   "on": "red",
+   "text": "That changes everything, Mick. A man down for the rest of it.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "red_b2",
+   "who": "B",
+   "on": "red",
+   "text": "Reckless. He's let his team down there.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "tackle_a1",
+   "who": "A",
+   "on": "tackle",
+   "text": "Big shoulder.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "tackle_a2",
+   "who": "A",
+   "on": "tackle",
+   "text": "Strong in the tackle.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "tackle_a3",
+   "who": "A",
+   "on": "tackle",
+   "text": "Bounced off that challenge.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "tackle_b1",
+   "who": "B",
+   "on": "tackle",
+   "text": "Hard but fair, Mick. That's championship hurling.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "tackle_b2",
+   "who": "B",
+   "on": "tackle",
+   "text": "Shoulder to shoulder. Lovely and clean.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "hook_a1",
+   "who": "A",
+   "on": "hook",
+   "text": "Hooked!",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "hook_a2",
+   "who": "A",
+   "on": "hook",
+   "text": "A great hook!",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "hook_a3",
+   "who": "A",
+   "on": "hook",
+   "text": "Gets the hurley in. Hooked.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "hook_b1",
+   "who": "B",
+   "on": "hook",
+   "text": "That's the bit of hurling nobody sees, Mick. Huge.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "hook_b2",
+   "who": "B",
+   "on": "hook",
+   "text": "Never gave up the chase. Brilliant hook.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "block_a1",
+   "who": "A",
+   "on": "block",
+   "text": "Blocked!",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "block_a2",
+   "who": "A",
+   "on": "block",
+   "text": "And it's blocked down!",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "block_a3",
+   "who": "A",
+   "on": "block",
+   "text": "Charged down!",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "block_b1",
+   "who": "B",
+   "on": "block",
+   "text": "Brave, Mick. Put the body on the line.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "block_b2",
+   "who": "B",
+   "on": "block",
+   "text": "Unbelievable courage to get in front of that.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "catch_a1",
+   "who": "A",
+   "on": "catch",
+   "text": "Great catch.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "catch_a2",
+   "who": "A",
+   "on": "catch",
+   "text": "Plucks it out of the sky.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "catch_a_n3",
+   "who": "A",
+   "on": "catch",
+   "text": "with a lovely catch.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "catch_a_n4",
+   "who": "A",
+   "on": "catch",
+   "text": "rises highest. Superb catch.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "catch_a_n5",
+   "who": "A",
+   "on": "catch",
+   "text": "plucks it from the clouds.",
+   "tone": "call",
+   "after": "name"
+  },
+  {
+   "id": "catch_b1",
+   "who": "B",
+   "on": "catch",
+   "text": "Some hands on him, Mick. Up among the hurleys.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "catch_b2",
+   "who": "B",
+   "on": "catch",
+   "text": "Great timing on the jump. Caught it at the highest point.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "attack_a1",
+   "who": "A",
+   "on": "attack",
+   "text": "Here they come now.",
+   "tone": "rise",
+   "after": ""
+  },
+  {
+   "id": "attack_a2",
+   "who": "A",
+   "on": "attack",
+   "text": "This is dangerous.",
+   "tone": "rise",
+   "after": ""
+  },
+  {
+   "id": "attack_a3",
+   "who": "A",
+   "on": "attack",
+   "text": "Bearing down on goal.",
+   "tone": "rise",
+   "after": ""
+  },
+  {
+   "id": "attack_a4",
+   "who": "A",
+   "on": "attack",
+   "text": "In on the edge of the square.",
+   "tone": "rise",
+   "after": ""
+  },
+  {
+   "id": "attack_a_n5",
+   "who": "A",
+   "on": "attack",
+   "text": "is through... ",
+   "tone": "rise",
+   "after": "name"
+  },
+  {
+   "id": "attack_a_n6",
+   "who": "A",
+   "on": "attack",
+   "text": "bearing down on goal...",
+   "tone": "rise",
+   "after": "name"
+  },
+  {
+   "id": "attack_a_n7",
+   "who": "A",
+   "on": "attack",
+   "text": "on the burst...",
+   "tone": "rise",
+   "after": "name"
+  },
+  {
+   "id": "level_a1",
+   "who": "A",
+   "on": "level",
+   "text": "And we're level again.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "level_a2",
+   "who": "A",
+   "on": "level",
+   "text": "All square once more.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "level_a3",
+   "who": "A",
+   "on": "level",
+   "text": "That's them level.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "lead_one_a1",
+   "who": "A",
+   "on": "lead_one",
+   "text": "Just the one between them now.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "lead_one_a2",
+   "who": "A",
+   "on": "lead_one",
+   "text": "A one-point game.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "lead_one_a_c3",
+   "who": "A",
+   "on": "lead_one",
+   "text": "lead by one.",
+   "tone": "call",
+   "after": "county"
+  },
+  {
+   "id": "lead_one_a_c4",
+   "who": "A",
+   "on": "lead_one",
+   "text": "edge in front by a point.",
+   "tone": "call",
+   "after": "county"
+  },
+  {
+   "id": "lead_big_a_c1",
+   "who": "A",
+   "on": "lead_big",
+   "text": "pulling clear now.",
+   "tone": "call",
+   "after": "county"
+  },
+  {
+   "id": "lead_big_a_c2",
+   "who": "A",
+   "on": "lead_big",
+   "text": "in total control.",
+   "tone": "call",
+   "after": "county"
+  },
+  {
+   "id": "lead_big_a3",
+   "who": "A",
+   "on": "lead_big",
+   "text": "The gap is growing.",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "comeback_a_c1",
+   "who": "A",
+   "on": "comeback",
+   "text": "are right back in this!",
+   "tone": "lift",
+   "after": "county"
+  },
+  {
+   "id": "comeback_a_c2",
+   "who": "A",
+   "on": "comeback",
+   "text": "won't lie down!",
+   "tone": "lift",
+   "after": "county"
+  },
+  {
+   "id": "comeback_a3",
+   "who": "A",
+   "on": "comeback",
+   "text": "What a comeback this is!",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "late_a1",
+   "who": "A",
+   "on": "late",
+   "text": "Nerves now. Every score is gold.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "late_a2",
+   "who": "A",
+   "on": "late",
+   "text": "Into the closing minutes, and it's still anybody's.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "late_a3",
+   "who": "A",
+   "on": "late",
+   "text": "Hearts in mouths all around the ground.",
+   "tone": "lift",
+   "after": ""
+  },
+  {
+   "id": "late_b1",
+   "who": "B",
+   "on": "late",
+   "text": "Whoever holds their nerve now, Mick, wins it.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_goal_b1",
+   "who": "B",
+   "on": "replay_goal",
+   "text": "Watch the run here, Mick. He's gone before the ball is even struck.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_goal_b2",
+   "who": "B",
+   "on": "replay_goal",
+   "text": "Look at the space he's in. Nobody picked him up.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_goal_b3",
+   "who": "B",
+   "on": "replay_goal",
+   "text": "See the hand pass across the square. Unselfish, and it opened them up.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_goal_b4",
+   "who": "B",
+   "on": "replay_goal",
+   "text": "Look at the finish. Low, hard, into the corner. Unstoppable.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_point_b1",
+   "who": "B",
+   "on": "replay_point",
+   "text": "Look at the turn there. Bought himself the yard and that's all he needed.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_point_b2",
+   "who": "B",
+   "on": "replay_point",
+   "text": "Watch the head. Up, sees the posts, and strikes in one movement.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_point_b3",
+   "who": "B",
+   "on": "replay_point",
+   "text": "Off the left side too. That's a hurler with two sides.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_point_b4",
+   "who": "B",
+   "on": "replay_point",
+   "text": "Watch the touch first. Controls it, and then the strike is easy.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_wide_b1",
+   "who": "B",
+   "on": "replay_wide",
+   "text": "Look here, Mick. Off balance, and the ball goes where the body goes.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_wide_b2",
+   "who": "B",
+   "on": "replay_wide",
+   "text": "He had time there. He didn't need to snatch at it.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "replay_wide_b3",
+   "who": "B",
+   "on": "replay_wide",
+   "text": "The angle was against him. A pass was on.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_a1",
+   "who": "A",
+   "on": "lull",
+   "text": "A big crowd here today, and they're getting their money's worth.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_a2",
+   "who": "A",
+   "on": "lull",
+   "text": "The breeze is playing a part here this afternoon.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_a3",
+   "who": "A",
+   "on": "lull",
+   "text": "Plenty of hurling still to be played.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_a4",
+   "who": "A",
+   "on": "lull",
+   "text": "Both sides trying to find a way through here.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_a5",
+   "who": "A",
+   "on": "lull",
+   "text": "Patient enough build-up. Looking for the opening.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_a6",
+   "who": "A",
+   "on": "lull",
+   "text": "Ger, what are you making of it so far?",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_b1",
+   "who": "B",
+   "on": "lull",
+   "text": "They're very good at turning the ball over, Mick. Pressure all over the field.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_b2",
+   "who": "B",
+   "on": "lull",
+   "text": "The half-back lines are winning a lot of ball today.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_b3",
+   "who": "B",
+   "on": "lull",
+   "text": "You need runners off the shoulder. Somebody has to break the line.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_b4",
+   "who": "B",
+   "on": "lull",
+   "text": "Short puck-outs are working for them. Why go long?",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_b5",
+   "who": "B",
+   "on": "lull",
+   "text": "The work rate is savage. Every ball contested.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_b6",
+   "who": "B",
+   "on": "lull",
+   "text": "It's fierce physical out there. The bench will be needed later.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_b7",
+   "who": "B",
+   "on": "lull",
+   "text": "If you win the breaking ball, you win the game. Simple as that.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "lull_b8",
+   "who": "B",
+   "on": "lull",
+   "text": "A great day for hurling, Mick. You'd travel a long way for this.",
+   "tone": "warm",
+   "after": ""
+  },
+  {
+   "id": "name_0",
+   "who": "A",
+   "on": "name",
+   "text": "Ryan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_1",
+   "who": "A",
+   "on": "name",
+   "text": "O'Brien...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_2",
+   "who": "A",
+   "on": "name",
+   "text": "Walsh...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_3",
+   "who": "A",
+   "on": "name",
+   "text": "Murphy...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_4",
+   "who": "A",
+   "on": "name",
+   "text": "Kelly...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_5",
+   "who": "A",
+   "on": "name",
+   "text": "O'Sullivan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_6",
+   "who": "A",
+   "on": "name",
+   "text": "Byrne...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_7",
+   "who": "A",
+   "on": "name",
+   "text": "Dwyer...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_8",
+   "who": "A",
+   "on": "name",
+   "text": "Hayes...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_9",
+   "who": "A",
+   "on": "name",
+   "text": "Quinlan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_10",
+   "who": "A",
+   "on": "name",
+   "text": "Moloney...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_11",
+   "who": "A",
+   "on": "name",
+   "text": "Fitzgerald...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_12",
+   "who": "A",
+   "on": "name",
+   "text": "Brennan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_13",
+   "who": "A",
+   "on": "name",
+   "text": "Doyle...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_14",
+   "who": "A",
+   "on": "name",
+   "text": "Kennedy...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_15",
+   "who": "A",
+   "on": "name",
+   "text": "Gleeson...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_16",
+   "who": "A",
+   "on": "name",
+   "text": "Lynch...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_17",
+   "who": "A",
+   "on": "name",
+   "text": "Nolan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_18",
+   "who": "A",
+   "on": "name",
+   "text": "Shanahan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_19",
+   "who": "A",
+   "on": "name",
+   "text": "Kearney...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_20",
+   "who": "A",
+   "on": "name",
+   "text": "Maguire...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_21",
+   "who": "A",
+   "on": "name",
+   "text": "Duggan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_22",
+   "who": "A",
+   "on": "name",
+   "text": "Costello...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_23",
+   "who": "A",
+   "on": "name",
+   "text": "Fahy...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_24",
+   "who": "A",
+   "on": "name",
+   "text": "Hogan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_25",
+   "who": "A",
+   "on": "name",
+   "text": "Carroll...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_26",
+   "who": "A",
+   "on": "name",
+   "text": "Daly...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_27",
+   "who": "A",
+   "on": "name",
+   "text": "Egan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_28",
+   "who": "A",
+   "on": "name",
+   "text": "Flanagan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_29",
+   "who": "A",
+   "on": "name",
+   "text": "Grace...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_30",
+   "who": "A",
+   "on": "name",
+   "text": "Hennessy...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_31",
+   "who": "A",
+   "on": "name",
+   "text": "Lenihan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_32",
+   "who": "A",
+   "on": "name",
+   "text": "McGrath...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_33",
+   "who": "A",
+   "on": "name",
+   "text": "Meagher...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_34",
+   "who": "A",
+   "on": "name",
+   "text": "Nagle...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_35",
+   "who": "A",
+   "on": "name",
+   "text": "Phelan...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_36",
+   "who": "A",
+   "on": "name",
+   "text": "Ruane...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_37",
+   "who": "A",
+   "on": "name",
+   "text": "Treacy...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_38",
+   "who": "A",
+   "on": "name",
+   "text": "Cleary...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "name_39",
+   "who": "A",
+   "on": "name",
+   "text": "Delaney...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_TIP",
+   "who": "A",
+   "on": "county",
+   "text": "Tipperary...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_LIM",
+   "who": "A",
+   "on": "county",
+   "text": "Limerick...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_COR",
+   "who": "A",
+   "on": "county",
+   "text": "Cork...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_KIL",
+   "who": "A",
+   "on": "county",
+   "text": "Kilkenny...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_CLA",
+   "who": "A",
+   "on": "county",
+   "text": "Clare...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_GAL",
+   "who": "A",
+   "on": "county",
+   "text": "Galway...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_DUB",
+   "who": "A",
+   "on": "county",
+   "text": "Dublin...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_WAT",
+   "who": "A",
+   "on": "county",
+   "text": "Waterford...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_WEX",
+   "who": "A",
+   "on": "county",
+   "text": "Wexford...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_OFF",
+   "who": "A",
+   "on": "county",
+   "text": "Offaly...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_ANT",
+   "who": "A",
+   "on": "county",
+   "text": "Antrim...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_LAO",
+   "who": "A",
+   "on": "county",
+   "text": "Laois...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_CAR",
+   "who": "A",
+   "on": "county",
+   "text": "Carlow...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_WME",
+   "who": "A",
+   "on": "county",
+   "text": "Westmeath...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_KER",
+   "who": "A",
+   "on": "county",
+   "text": "Kerry...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_DOW",
+   "who": "A",
+   "on": "county",
+   "text": "Down...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_MEA",
+   "who": "A",
+   "on": "county",
+   "text": "Meath...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_KIE",
+   "who": "A",
+   "on": "county",
+   "text": "Kildare...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_DER",
+   "who": "A",
+   "on": "county",
+   "text": "Derry...",
+   "tone": "call",
+   "after": ""
+  },
+  {
+   "id": "county_LON",
+   "who": "A",
+   "on": "county",
+   "text": "London...",
+   "tone": "call",
+   "after": ""
+  }
+ ]
+}

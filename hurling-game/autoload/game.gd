@@ -70,6 +70,7 @@ var settings := {
 	"fps": FPS_SMOOTH,
 	"sound": true,
 	"music": true,
+	"commentary": true,     # the two commentators' voices in a match (Commentary)
 	"vibration": true,
 	"left_handed": false,
 	"btn_size": 0,          # the match buttons: 0 Normal, 1 Large, 2 Extra large
