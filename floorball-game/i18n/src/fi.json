@@ -397,5 +397,6 @@
   "HOME": "Alkuun",
   "BTN_DEKE": "Harhauta",
   "SO_HINT": "Ohjaa sauvalla · HARHAUTA harhauttaa · pidä LAUKAUS pohjassa ja päästä irti (sauva valitsee kulman)",
-  "REPLAY": "Uusinta"
+  "REPLAY": "Uusinta",
+  "TIMEOUT_SKIP": "Napauta jatkaaksesi"
 }

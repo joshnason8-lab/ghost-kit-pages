@@ -397,5 +397,6 @@
   "HOME": "Accueil",
   "BTN_DEKE": "Feinte",
   "SO_HINT": "Dirige au joystick · FEINTE pour tromper · garde TIR appuyé et relâche (le joystick choisit le coin)",
-  "REPLAY": "Ralenti"
+  "REPLAY": "Ralenti",
+  "TIMEOUT_SKIP": "Touchez pour reprendre"
 }

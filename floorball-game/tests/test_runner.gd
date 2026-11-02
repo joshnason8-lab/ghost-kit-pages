@@ -16,6 +16,8 @@ func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
 	var keep: Dictionary = Game.settings.duplicate(true)
+	# (The broadcast camera, whatever this machine last saved: the tests that steer a player say their ways on the rink.)
+	Game.settings.camera = Game.CAM_TV
 	# The shared foundation (FoundationLink, when this machine has the licensed clips; CI has not) is tested in its own
 	# sections; elsewhere the matches (the menu's behind every screen, the AI matches) run without it, as CI's do, in
 	# the time CI allows (with it, a match's people cost the CPU about four times as much).
@@ -38,6 +40,7 @@ func _ready() -> void:
 	await _aimed_penalty()
 	await _practice()
 	await _watch()
+	await _timeout_and_joystick()
 	_signage()
 	await _match_parts()
 	await _coach()
@@ -698,6 +701,61 @@ func _watch() -> void:
 	check(Engine.time_scale == 1.0 and Engine.physics_ticks_per_second == ticks, "left at 2x: the game back at its own pace")
 
 
+## A time-out is taken (both teams to their benches, the clock stopped, legs back), and the joystick follows the
+## camera: behind the goal, up the screen is up the rink.
+func _timeout_and_joystick() -> void:
+	var keep_cam: int = Game.settings.camera
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": 0, "seed": 4, "period": 4.0, "mode": "quick"}
+	add_child(m)
+	var guard := 0
+	while m.phase != "live" and guard < 900:
+		await get_tree().physics_frame
+		guard += 1
+	# The joystick follows the camera, every camera: pushed up, right, down or left, the player goes that way on the
+	# screen (within 10 degrees), measured where he stands.
+	var bad := []
+	for mode in [Game.CAM_TV, Game.CAM_HIGH, Game.CAM_END]:
+		m.cam.mode = mode
+		for i in 120:
+			await get_tree().physics_frame
+		var at: Vector2 = m.user_player.pos if m.user_player else Vector2.ZERO
+		for d: Vector2 in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
+			m.touch.joystick = d
+			var w: Vector2 = m.joy()
+			var p0: Vector2 = m.cam.unproject_position(Vector3(at.x, 0.0, at.y))
+			var p1: Vector2 = m.cam.unproject_position(Vector3(at.x + w.x * 1.5, 0.0, at.y + w.y * 1.5))
+			var off := rad_to_deg(absf((p1 - p0).angle_to(d)))
+			if off > 10.0:
+				bad.append("cam %d stick %s: %.0f deg" % [mode, d, off])
+	m.touch.joystick = Vector2.ZERO
+	check(bad.is_empty(), "the joystick follows the camera: every camera, the stick's way on the screen (%s)" % [bad])
+	m.cam.mode = Game.CAM_TV
+	# The time-out: called, taken at the next whistle, everyone to the benches, the legs back, then the restart.
+	for p: Player in m.players[0] + m.players[1]:
+		p.stamina = 0.5
+	check(m.call_timeout(0), "time-out: called")
+	guard = 0
+	while m.phase != "live" and guard < 900:
+		await get_tree().physics_frame
+		guard += 1
+	m._stop("faceoff", {"spot": Vector2.ZERO})
+	await get_tree().physics_frame
+	check(m._to_left > 0.0 and m.players[0].all(func(p): return p.stamina > 0.95), "time-out: taken at the whistle, everyone's legs back")
+	var clock: float = m.rules.clock
+	guard = 0
+	var near_bench := false
+	while m._to_left > 0.0 and guard < 60 * 15:
+		await get_tree().physics_frame
+		guard += 1
+		if m._to_left < 8.0:
+			near_bench = near_bench or (m.skaters(0)[0] as Player).pos.y < -Rules.WIDTH * 0.5 + 3.0
+	check(guard < 60 * 15 and near_bench and is_equal_approx(m.rules.clock, clock), "time-out: the teams at their benches, the clock stopped, then play goes on")
+	m.queue_free()
+	await frames(2)
+	Game.settings.camera = keep_cam
+
+
 ## The hall's words in the phone's language (game/signage.gd); the game's name as it is.
 func _signage() -> void:
 	var keep := TranslationServer.get_locale()
@@ -869,11 +927,15 @@ func _coach() -> void:
 	m.ball.set_spot(me.pos)
 	m.ball.carrier = me
 	m._set_user(me)
-	var x0: float = me.pos.x
+	# (Whichever camera is on: the joystick's way on the rink is the screen's, match.gd joy().)
+	var p0: Vector2 = me.pos
+	var way := Vector2.ZERO
 	for i in 60:
 		m.touch.joystick = Vector2(ad, 0.0)
+		way = m.joy()
 		await get_tree().physics_frame
-	check((me.pos.x - x0) * ad > 1.5 and m.ball.carrier == me, "with the ball you run where the joystick points (%.2f m)" % ((me.pos.x - x0) * ad))
+	var ran: float = (me.pos - p0).dot(way.normalized())
+	check(ran > 1.5 and m.ball.carrier == me, "with the ball you run where the joystick points (%.2f m)" % ran)
 	# 2026: you are stopped at the goalkeeper area's edge, but never kept in it: from inside you can always leave.
 	var auto: bool = Game.settings.auto_switch
 	Game.settings.auto_switch = false

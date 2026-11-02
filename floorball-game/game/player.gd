@@ -186,7 +186,13 @@ func step(dt: float) -> void:
 	if diff.length() > lim:
 		diff = diff.normalized() * lim
 	vel += diff
-	pos += vel * dt
+	var go := 1.0
+	if role == "G" and _kneel > 0.5 and vel.length() > 0.2:
+		# Down on his knees a goalkeeper moves in pushes (the knee shuffle), not a glide: the same ground covered, in
+		# pushes off the trailing leg a little over twice a second, nearly still between them.
+		_push = fposmod(_push + dt * 2.4, 1.0)
+		go = lerpf(1.0, 0.35 + 2.0 * pow(maxf(0.0, sin(_push * TAU)), 1.5), clampf((_kneel - 0.5) * 2.0, 0.0, 1.0))
+	pos += vel * dt * go
 	# The boards: he stops at them (a body cannot pass through).
 	if not off_boards and not Rules.in_rink(pos, 0.3):
 		var c: Array = Rules.board_contact(pos)
@@ -508,6 +514,7 @@ func ball_spot() -> Vector3:
 	return Vector3(b.x, Ball.R, b.y)
 
 
+var _push := 0.0               # a kneeling goalkeeper's knee shuffle: where in its push he is (0..1)
 var _kneel := 0.0              # a goalkeeper down on his knees (1) or standing in his crouch (0), eased between
 var _shuffle := 0.0           # his side-steps' (or knee-shuffles') phase, advanced by the ground covered sideways
 var _kp := {}                 # his last pose: every pose eases into the next (nothing snaps)
@@ -533,6 +540,8 @@ func _keeper_pose(p: Dictionary, t: float, dt: float) -> void:
 	# Sideways: the side-step or knee-shuffle cycle, by ground covered across his facing.
 	var lat := vel.dot(dir().orthogonal())
 	_shuffle = fposmod(_shuffle + absf(lat) * dt / lerpf(0.55, 0.32, k), 1.0)
+	if k > 0.5:
+		_shuffle = _push   # (on his knees, the legs' kick with the push that moves him: Player.step)
 	var step := sin(_shuffle * TAU) * clampf(absf(lat) / 1.5, 0.0, 1.0)
 	var lead_l := lat > 0.0                         # moving to his left: the left leg leads
 	# Standing: the ready crouch, feet wide, hands out in front at the hips.
@@ -631,6 +640,44 @@ func _keeper_pose(p: Dictionary, t: float, dt: float) -> void:
 			elif v is float:
 				p[key] = lerpf(float(_kp[key]), float(v), a)
 		_kp[key] = p[key]
+	# On his feet, his feet stay on the floor (a goalkeeper has no skates): each foot stays where it is set down till
+	# the body has moved on from it, then steps.
+	_keeper_feet(p, dt, (1.0 - clampf(k * 2.0, 0.0, 1.0)) if act in ["", "kneel"] else 0.0)
+
+
+var _kf := {}                 # the keeper's planted feet: side -> [world position, stepping from, step 0..1 (or -1)]
+const KF_STEP := 0.17           # m: a foot this far from where the pose wants it steps
+const KF_STEP_S := 0.16         # s a step takes
+
+
+func _keeper_feet(p: Dictionary, dt: float, w: float) -> void:
+	if body == null or not body.is_inside_tree():
+		return
+	var xf: Transform3D = body.global_transform
+	var inv := xf.affine_inverse()
+	for side in ["l", "r"]:
+		var ideal: Vector3 = xf * (Body.leg(p, side)[2] as Vector3)
+		var f: Array = _kf.get(side, [])
+		if f.is_empty() or (f[0] as Vector3).distance_to(ideal) > 1.2 or w <= 0.0:
+			_kf[side] = [ideal, ideal, -1.0]
+			continue
+		var other: Array = _kf.get("r" if side == "l" else "l", [])
+		var at: Vector3 = f[0]
+		if float(f[2]) >= 0.0:
+			# Stepping: up and over to where the pose has it now.
+			var s := minf(1.0, float(f[2]) + dt / KF_STEP_S)
+			f[2] = s if s < 1.0 else -1.0
+			at = (f[1] as Vector3).lerp(ideal, smoothstep(0.0, 1.0, s)) + Vector3.UP * sin(s * PI) * 0.05
+			f[0] = at if s < 1.0 else ideal
+		elif Vector2(at.x - ideal.x, at.z - ideal.z).length() > KF_STEP and (other.is_empty() or float(other[2]) < 0.0):
+			f[1] = at
+			f[2] = 0.0
+		else:
+			at.y = ideal.y
+			f[0] = at
+		var target: Vector3 = inv * (f[0] as Vector3)
+		var model: Vector3 = Body.leg(p, side)[2]
+		Body.leg_ik(p, side, model.lerp(target, w))
 
 
 ## Where the ball is on the floor (the match's), or the middle of the rink.

@@ -227,6 +227,41 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.3-beta: a real hit, planted feet, the old running, a real time-out (2 November 2026)
+
+The owner's notes on 0.9.2 (a recording of Penalty shots):
+- **"A better sound when the ball is hit, this sounds like a Nintendo sound"**: the hit was a 1.9 kHz tone ringing on
+  (a beep). Now a click and a few milliseconds of noise through the hollow ball's and the blade's modes (five,
+  inharmonic, each gone within a few hundredths of a second) and, on a hard hit, the shaft's low thump: a dry crack,
+  no pitch (sfx.gd _tick: the shot, the pass, the touch, stick on stick).
+- **"The goalie is not on skates, he shouldn't glide"**: on his feet each foot stays where it is set down and steps
+  when the body has moved on (leg IK; no planted foot slides); on his knees he moves in pushes, the knee shuffle, a
+  little over twice a second (player.gd _keeper_feet, Player.step).
+- **"Hand holding the stick: thumbs up, the knuckles under the stick facing down"**: each fist's thumb toward the
+  stick's top end and the hand rolled round the shaft so its back faces down (the fingers wrapped from below); the
+  lower fist still rolls further round when its arm needs it to reach (foundation_link.gd _held, _roll).
+- **"The running looked better before the shared foundation"**: the skaters' running is the game's own again (its
+  motion capture and its planted feet, as 0.9.1 had it) on the foundation's body and hands; the shared locomotion no
+  longer drives the skaters (FoundationLink mode "full").
+- **Penalty shots, "a weird stutter running in, then coming back to shoot again his body contorts"**: the run-in is
+  the game's own stride (above); after the shot he pulls up beside the goal (he ran on into the goalkeeper), and the
+  next shot starts at the centre spot (he walked back across the rink, the body turning against the legs).
+- **"Lights in the gym aren't attached to anything, just remove them"**: the arena's lamp panels and the school gym's
+  pendants are gone (and their reflections in the floor; the dark shapes on the arena floor were their shadows); the
+  rink is lit as before. The sports hall's battens, on their rails, stay.
+- **"The camera from behind the goal: the joystick goes all wrong"** (and the lead's rule for every game): the
+  joystick now follows the screen in every camera: up on the stick is up the screen where your player stands (the
+  camera's rays either side of him down to the floor, so its perspective too), eased over 0.2 s when the camera
+  changes; for moving, aiming a shot and picking a pass (match.gd joy()). Test: each camera, each of the four ways,
+  within 10 degrees on the screen.
+- **"Time-out does nothing"**: it is now taken: at the next whistle both teams go to their benches, a card counts the
+  30 seconds down (shown three and a half times faster; a tap plays on), the clock stopped, and everyone's legs come
+  back (stamina) for it.
+- **"The AI doesn't seem interested in shooting"**: a player with a sight of goal within 16 m (was 14) now looks to
+  shoot about two and a half times as readily, more the longer he has the ball there, and passes only to a team-mate
+  better placed to shoot (team_ai.gd).
+- Tests: the time-out (taken, benches, clock stopped, legs back), the joystick behind the goal.
+
 ### 0.9.2-beta: the shared foundation, a proper grip, a real goalkeeper, Watch at 2x (2 November 2026)
 
 The foundation pilot (claude/floorball-foundation-pilot, 0.9.1-pilot) merged in whole: every player on the shared

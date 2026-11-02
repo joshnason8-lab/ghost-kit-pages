@@ -105,7 +105,7 @@ func _ready() -> void:
 	var walls := Color(String(v.walls))
 	match String(v.stands):
 		"bowl":
-			_lamps = {"h": 12.5, "step": Vector2(6.5, 6.5), "n": Vector2i(6, 4), "size": Vector2(1.6, 0.9), "kind": "panel"}
+			_lamps = {"h": 12.5, "step": Vector2(6.5, 6.5), "n": Vector2i(6, 4), "size": Vector2(1.6, 0.9), "kind": "panel", "shown": false}
 			_half = Vector2(34, 27)
 			_hall_arena(walls, 34.0, 27.0, 16.0)
 			var seat := Color("24508f")
@@ -125,7 +125,7 @@ func _ready() -> void:
 			_trusses(27.0, 19.0, 10.0, 5)
 		_:
 			# Industrial pendant lamps on their cords from the ceiling (8 m), their bowls' rims at 6.7 m.
-			_lamps = {"h": 6.75, "step": Vector2(8.0, 5.5), "n": Vector2i(5, 3), "size": Vector2(0.5, 0.5), "kind": "pendant"}
+			_lamps = {"h": 6.75, "step": Vector2(8.0, 5.5), "n": Vector2i(5, 3), "size": Vector2(0.5, 0.5), "kind": "pendant", "shown": false}
 			_half = Vector2(24, 16)
 			_hall_school(walls, 24.0, 16.0, 8.0)
 			spots = _stands(-1, 3, Color("c8ad7f"), false)
@@ -315,7 +315,7 @@ func _floor() -> void:
 	m.set_shader_parameter("lamp_h", float(_lamps.h))
 	m.set_shader_parameter("lamp_step", _lamps.step)
 	m.set_shader_parameter("lamp_n", Vector2(_lamps.n))
-	m.set_shader_parameter("lamp_size", _lamps.size)
+	m.set_shader_parameter("lamp_size", _lamps.size if bool(_lamps.get("shown", true)) else Vector2(-2, -2))   # (none seen: none reflected)
 	m.set_shader_parameter("lamp_round", 1.0 if String(_lamps.kind) == "pendant" else 0.0)
 	m.set_shader_parameter("sheen", {"arena": 0.55, "school": 0.5}.get(venue, 0.42))
 	mi.material_override = m
@@ -1158,6 +1158,10 @@ func _trusses(half_x: float, half_z: float, y: float, n: int) -> void:
 
 
 func _ceiling_lights() -> void:
+	# (The arena's lamp panels and the school's pendants hung from nothing that could be seen: they light the rink
+	# unseen. The sports hall's battens hang from their rails.)
+	if not bool(_lamps.get("shown", true)):
+		return
 	var h: float = _lamps.h
 	var st: Vector2 = _lamps.step
 	var n: Vector2i = _lamps.n

@@ -397,5 +397,6 @@
   "HOME": "Home",
   "BTN_DEKE": "Finta",
   "SO_HINT": "Guida con il joystick · FINTA inganna · tieni premuto TIRO e rilascia (il joystick sceglie l'angolo)",
-  "REPLAY": "Replay"
+  "REPLAY": "Replay",
+  "TIMEOUT_SKIP": "Tocca per riprendere"
 }

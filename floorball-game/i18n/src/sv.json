@@ -397,5 +397,6 @@
   "HOME": "Hem",
   "BTN_DEKE": "Fint",
   "SO_HINT": "Styr med spaken · FINT lurar · håll SKJUT och släpp för att skjuta (spaken väljer hörn)",
-  "REPLAY": "Repris"
+  "REPLAY": "Repris",
+  "TIMEOUT_SKIP": "Tryck för att spela vidare"
 }

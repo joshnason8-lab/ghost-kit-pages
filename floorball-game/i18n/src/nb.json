@@ -397,5 +397,6 @@
   "HOME": "Hjem",
   "BTN_DEKE": "Finte",
   "SO_HINT": "Styr med spaken · FINTE lurer · hold SKUDD og slipp (spaken velger hjørne)",
-  "REPLAY": "Reprise"
+  "REPLAY": "Reprise",
+  "TIMEOUT_SKIP": "Trykk for å spille videre"
 }

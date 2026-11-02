@@ -259,12 +259,16 @@ func _carry(p: Player, dt: float) -> void:
 	if angle_ok and dist < 10.0 and m.carry_time < 0.6 and held > 0.6 and absf(p.pos.y) < 4.5 and _rng.randf() < 0.16 * level:
 		m.shoot(p, _aim(p, g), false)
 		return
-	if angle_ok and dist < 14.0:
+	# A sight of goal within 16 m: a player looks to shoot (the playtest: the CPU passed the ball round in front of the
+	# goal and hardly shot), the more the closer and the longer he has had it there.
+	var in_range: bool = angle_ok and dist < 16.0
+	if in_range:
 		var open: float = m.shot_lane_open(p, g)
-		var want := clampf((14.0 - dist) / 10.0, 0.0, 1.0) * (0.25 + open * 0.75) * (0.55 + p.stat("shot") / 200.0)
-		if dist < 7.0:
-			want += 0.15
-		if _rng.randf() < want * 0.12 * level:
+		var want := clampf((16.0 - dist) / 10.0, 0.0, 1.0) * (0.3 + open * 0.7) * (0.6 + p.stat("shot") / 200.0)
+		if dist < 8.0:
+			want += 0.2
+		want += clampf(m.carry_time - 1.0, 0.0, 2.0) * 0.15
+		if _rng.randf() < want * 0.3 * level:
 			m.shoot(p, _aim(p, g), _rng.randf() < 0.35 and dist > 8.0)
 			return
 	# Pass: someone open and further on, or under pressure.
@@ -281,6 +285,11 @@ func _carry(p: Player, dt: float) -> void:
 	# forth in its own end for half a minute: the playtest); pressed, he moves it on.
 	var own_end: bool = p.pos.x * a < 0.0
 	var urge := (0.05 if own_end and pd > 3.0 else 0.15) + (0.45 if pd < 1.8 else 0.0) + clampf(held - 2.5, 0.0, 4.0) * 0.12
+	# With a sight of goal he passes only to someone better placed to shoot (nearer the goal, more in front of it).
+	if in_range and best and pd > 1.8:
+		var bq: Player = best
+		if bq.pos.distance_to(g) > dist - 1.0 or absf(bq.pos.y) > absf(p.pos.y) + 1.0:
+			urge *= 0.2
 	if best and best_s > 0.35 and _rng.randf() < urge * clampf(best_s, 0.0, 1.5):
 		m.pass_to(p, best)
 

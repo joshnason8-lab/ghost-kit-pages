@@ -401,5 +401,6 @@
   "HOME": "Sākums",
   "BTN_DEKE": "Fints",
   "SO_HINT": "Vadi ar kursorsviru · FINTS māna · turi METIENU un atlaid (svira izvēlas stūri)",
-  "REPLAY": "Atkārtojums"
+  "REPLAY": "Atkārtojums",
+  "TIMEOUT_SKIP": "Pieskaries, lai turpinātu"
 }

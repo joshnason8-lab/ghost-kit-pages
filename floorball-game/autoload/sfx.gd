@@ -383,19 +383,46 @@ func _whistle_double() -> AudioStreamWAV:
 ## The floorball's crack: a hollow plastic sphere with 26 holes struck by a stiff blade. Very short and bright, with a
 ## hint of the hollow body. bright scales the pitch; ring how long it sounds; hard how much of it is the crack.
 func _tick(bright: float, ring: float, hard: float, wood := 0.0) -> AudioStreamWAV:
-	var dur := ring * 4.0
+	# A floorball off a composite blade is a short, dry crack, not a note: a click and a few milliseconds of noise ring
+	# the hollow ball's and the blade's modes (several, inharmonic, each dying within a few hundredths of a second),
+	# and a harder hit adds the low thump of the shaft flexing. No mode rings on long enough to be heard as a pitch.
+	var dur := ring * 3.0 + 0.03
 	var n := int(dur * RATE)
 	var out := PackedFloat32Array()
 	out.resize(n)
-	var prev := 0.0
+	# [frequency, decay (s), level] - the modes, the brighter the hit the higher
+	var modes := [[780.0, 0.012, 0.55], [1430.0, 0.009, 0.5], [2310.0, 0.007, 0.42], [3520.0, 0.005, 0.3], [5100.0, 0.003, 0.22]]
+	var st := []   # per mode: [y1, y2, a1, a2, gain]
+	for m: Array in modes:
+		var f := float(m[0]) * bright * randf_range(0.94, 1.06)
+		var r := exp(-1.0 / (float(m[1]) * (0.6 + ring * 8.0) * RATE))
+		st.append([0.0, 0.0, 2.0 * r * cos(TAU * f / RATE), -r * r, float(m[2]) * (1.0 - r)])
+	var flex := 0.0
+	var lp := 0.0
 	for i in n:
 		var t := float(i) / RATE
+		# The excitation: an impulse and two milliseconds of noise.
+		var x := (1.0 if i == 0 else 0.0) * 3.0 + randf_range(-1.0, 1.0) * exp(-t * 900.0)
+		var y := 0.0
+		for e: Array in st:
+			var v: float = float(e[4]) * x * 40.0 + float(e[2]) * float(e[0]) + float(e[3]) * float(e[1])
+			e[1] = e[0]
+			e[0] = v
+			y += v
+		# The hit's own crack (high-passed noise), the harder the more.
 		var w := randf_range(-1.0, 1.0)
-		var crack := (w - prev) * exp(-t * 260.0) * hard
-		prev = w
-		var body := sin(TAU * 1900.0 * bright * t) * 0.45 * exp(-t / ring * 3.0) + sin(TAU * 3700.0 * bright * t) * 0.2 * exp(-t / ring * 5.0)
-		var knock := sin(TAU * 520.0 * t) * wood * exp(-t * 60.0)
-		out[i] = clampf((crack + body + knock) * 0.85, -1.0, 1.0)
+		var crack := (w - lp) * exp(-t * 420.0) * hard
+		lp = w
+		# The shaft's thump: a low, quickly damped knock, on a hard hit (and stick on stick, wood).
+		flex = sin(TAU * lerpf(210.0, 160.0, minf(1.0, t * 30.0)) * t) * exp(-t * 55.0) * (hard * 0.35 + wood * 0.8)
+		out[i] = y * 0.5 + crack * 0.6 + flex
+	# Levelled to its peak (each hit its own level by how it is played: Sfx.play's volume).
+	var peak := 0.001
+	for v in out:
+		peak = maxf(peak, absf(v))
+	var k := (0.55 + 0.4 * hard) / peak
+	for i in n:
+		out[i] *= k
 	return _to_stream(out)
 
 

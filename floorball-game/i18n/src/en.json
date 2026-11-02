@@ -397,5 +397,6 @@
   "HOME": "Home",
   "BTN_DEKE": "Deke",
   "SO_HINT": "Steer with the joystick · DEKE fakes · hold SHOOT and let go to shoot (push the joystick for a corner)",
-  "REPLAY": "Replay"
+  "REPLAY": "Replay",
+  "TIMEOUT_SKIP": "Tap to play on"
 }

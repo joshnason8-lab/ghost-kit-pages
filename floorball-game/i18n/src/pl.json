@@ -405,5 +405,6 @@
   "HOME": "Start",
   "BTN_DEKE": "Zwód",
   "SO_HINT": "Steruj joystickiem · ZWÓD myli · przytrzymaj STRZAŁ i puść (joystick wybiera róg)",
-  "REPLAY": "Powtórka"
+  "REPLAY": "Powtórka",
+  "TIMEOUT_SKIP": "Dotknij, aby grać dalej"
 }

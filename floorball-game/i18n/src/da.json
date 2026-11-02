@@ -397,5 +397,6 @@
   "HOME": "Hjem",
   "BTN_DEKE": "Finte",
   "SO_HINT": "Styr med pinden · FINTE snyder · hold SKUD og slip (pinden vælger hjørne)",
-  "REPLAY": "Gentagelse"
+  "REPLAY": "Gentagelse",
+  "TIMEOUT_SKIP": "Tryk for at spille videre"
 }

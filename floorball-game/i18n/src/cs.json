@@ -401,5 +401,6 @@
   "HOME": "Domů",
   "BTN_DEKE": "Klička",
   "SO_HINT": "Řiď joystickem · KLIČKA klame · drž STŘELA a pusť (joystick volí roh)",
-  "REPLAY": "Záznam"
+  "REPLAY": "Záznam",
+  "TIMEOUT_SKIP": "Klepnutím hraj dál"
 }
