@@ -1,9 +1,11 @@
 extends Node
-## The thrower from the side through the serve's toss (0, 0.14, 0.27, 0.42 and 0.6 s in), a strip of moments, to see
-## where the ball is as he winds up (docs/stills/serve_toss_before_after_*.jpg, 0.13.1). level 0-2; w for the women:
-##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 1600x900 res://tests/toss_stills.tscn -- OUT.png [level] [w]
+## The thrower from the side through the serve's toss, a strip of moments, to see where the ball is: in his crouch
+## going down before the throw (0.4 s before it: 0.14.3), then 0 (down in it), 0.3, 0.42, 0.52 (the release) and 0.7 s in
+## (docs/stills/serve_toss_*.jpg). From his right, the hand that throws (side "l": from his left). level 0-2; w for
+## the women:
+##   xvfb-run -a godot --path . --rendering-driver opengl3 --resolution 1600x900 res://tests/toss_stills.tscn -- OUT.png [level] [w] [side]
 
-const TIMES := [0.0, 0.14, 0.27, 0.42, 0.6]
+const TIMES := [-0.4, 0.0, 0.3, 0.42, 0.52, 0.7]
 
 func _ready() -> void:
 	var a := OS.get_cmdline_user_args()
@@ -12,6 +14,7 @@ func _ready() -> void:
 	Game.reset_settings_for_tests()
 	Game.settings.graphics = int(a[1]) if a.size() > 1 else 0
 	var women: bool = a.size() > 2 and a[2] == "w"
+	var from_left: bool = a.size() > 3 and a[3] == "l"
 	var m: Node = (load("res://game/match.gd") as Script).new()
 	m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 1, "points": 15,
 		"user_team": -1, "demo": true, "seed": 4, "mode": "quick", "women": women}
@@ -23,14 +26,16 @@ func _ready() -> void:
 	cam.current = true
 	var shots: Array = []
 	for t in TIMES:
-		while not (int(m.state) == int(m.S.TOSS) and float(m.state_t) >= t):
+		# (Before the throw: as set-up's time is up less t, him set.)
+		while not ((int(m.state) == int(m.S.TOSS) and float(m.state_t) >= t) or (t < 0.0 and int(m.state) == int(m.S.SETUP)
+				and m._thrower_set() and m.get("_carrier") == m._thrower() and float(m.state_t) >= m.SETUP_TIME + t)):
 			m._process(1.0 / 30.0)
 			m.set("_start_replay_after", -1.0)
 		var th: Node = m._thrower()
 		var hips: Vector3 = th.body.bone_world("hips")
 		var fwd: Vector3 = th.body.global_transform.basis.z.normalized()
 		var right := Vector3.UP.cross(fwd).normalized()
-		cam.global_position = hips - right * 3.0 + fwd * 0.35 + Vector3(0, 0.15, 0)
+		cam.global_position = hips + right * (-3.0 if from_left else 3.0) + fwd * 0.35 + Vector3(0, 0.15, 0)
 		cam.look_at(hips + fwd * 0.3 + Vector3(0, -0.05, 0))
 		m.process_mode = Node.PROCESS_MODE_DISABLED
 		for f in 3:

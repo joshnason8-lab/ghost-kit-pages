@@ -20,6 +20,30 @@ const READY := {
 	"thigh_r": Vector3(-22, 0, -7), "shin_r": Vector3(38, 0, 0), "foot_r": Vector3(-14, 0, 7),
 }
 
+## The serve's throw (0.14.3), traced from the World Cup broadcast (tools/footage: 308.5-311 s, MediaPipe, every frame
+## found; tests/pose_probe measures these keys the same way): one hand, the right, all through.
+## The thrower set to throw, waiting for the server: down in a crouch (the trunk leaning 63 degrees, the footage's 65;
+## the knees bent 85 and 75, the footage's 75-85), the ball held low in front of him in his right hand, the arm
+## nearly straight (25 degrees at the elbow), 0.25 m over his ankles and half a metre out. (Player's toss_crouch.)
+const LOW_HOLD := {"hips_y": -0.3, "spine": Vector3(82, 0, 0), "chest": Vector3(27, 0, 0), "neck": Vector3(-25, 0, 0), "head": Vector3(-15, 0, 0),
+	"thigh_l": Vector3(-60, 0, 8), "shin_l": Vector3(75, 0, 0), "foot_l": Vector3(-18, 0, -6),
+	"thigh_r": Vector3(-70, 0, -8), "shin_r": Vector3(85, 0, 0), "foot_r": Vector3(-18, 0, 6),
+	"upperarm_r": Vector3(-120, 0, -16), "forearm_r": Vector3(-25, 0, 0), "upperarm_l": Vector3(-80, 0, 14), "forearm_l": Vector3(-35, 0, 0)}
+
+## Standing with the ball: in his right hand, held out in front of him (the footage: the arm 40 degrees forward of the
+## trunk, the elbow bent 50). (Player's carry.)
+const HOLD := {"upperarm_r": Vector3(-46, 0, -12), "forearm_r": Vector3(-52, 0, 0), "hand_r": Vector3(0, 0, 10)}
+## The throw from the release on: let go with the arm forward and up 81 degrees from the trunk (the footage's 76-88),
+## the hand at 80% of his shoulder's height as he comes up (the trunk 25 degrees, the knees 28 and 42); the arm
+## followed through out level and straight (91 degrees, the footage's 93) as he stands; then down.
+const TOSS_RELEASE := {"hips_y": -0.04, "spine": Vector3(36, 0, 0), "chest": Vector3(10, 0, 0), "neck": Vector3(-10, 0, 0),
+	"thigh_l": Vector3(-34, 0, 8), "shin_l": Vector3(42, 0, 0), "thigh_r": Vector3(-24, 0, -8), "shin_r": Vector3(28, 0, 0), "foot_r": Vector3(-4, 0, 6),
+	"upperarm_r": Vector3(-102, 0, -8), "forearm_r": Vector3(-25, 0, 0), "upperarm_l": Vector3(-25, 0, 20), "forearm_l": Vector3(-35, 0, 0)}
+const TOSS_THROUGH := {"hips_y": -0.02, "spine": Vector3(14, 0, 0), "chest": Vector3(4, 0, 0),
+	"thigh_l": Vector3(-26, 0, 7), "shin_l": Vector3(30, 0, 0), "thigh_r": Vector3(-20, 0, -7), "shin_r": Vector3(24, 0, 0),
+	"upperarm_r": Vector3(-100, 0, -6), "forearm_r": Vector3(-15, 0, 0), "upperarm_l": Vector3(-15, 0, 22), "forearm_l": Vector3(-35, 0, 0)}
+const TOSS_DOWN := {"spine": Vector3(12, 0, 0), "upperarm_r": Vector3(-75, 0, -10), "forearm_r": Vector3(-60, 0, 0)}
+
 ## Where a move meets the ball: [height above the floor (m), how far in front of the player toward the net (m), how
 ## far to his kicking side (m)], the move's length (s) and when in it the ball is met (0-1). The moves from motion
 ## capture (CLIPS) have theirs measured on the man's model by tools/models/fbx_to_move.gd, which prints these rows.
@@ -33,13 +57,14 @@ const CONTACT := {
 	"serve": [1.19, 0.92, -0.13, 1.1, 0.5],
 	"horse": [1.62, 0.42, 0.1, 1.1, 0.55],
 	"toss": [1.05, 0.35, 0.0, 0.95, 0.55],
+	"toss_low": [1.05, 0.35, 0.0, 0.95, 0.55],
 	"pick": [0.1, 0.38, 0.1, 0.85, 0.5],
 	"roll": [2.07, 0.73, 0.14, 1.65, 0.36],
 	"sunback": [1.95, 0.79, -0.17, 1.05, 0.43],
 	"tapak": [1.91, 0.97, -0.15, 1.05, 0.42],
 	"head_spike": [2.34, 0.34, -0.05, 0.95, 0.45],
 	"feint": [1.80, 0.46, 0.1, 0.75, 0.45],
-	"block": [2.1, 0.68, -0.28, 0.9, 0.45],
+	"block": [2.1, 0.66, -0.2, 0.9, 0.45],
 }
 
 ## The moves taken from motion capture (tools/models/fbx_to_move.gd): a pose for each frame.
@@ -110,16 +135,36 @@ static func _build() -> void:
 			[0.8, {"yaw": 100.0, "spine": Vector3(30, 0, 0), "thigh_r": Vector3(60, 0, -8), "shin_r": Vector3(40, 0, 0)}],
 			[1.0, {}],
 		],
-		# The throw to the server: the ball held in both hands in front of him, lowered in front of his knees as they
-		# bend, then up and through, let go at chest height with the arms out toward him, and set. The hands stay
-		# together and out in front all the way (the arms' angles are the chest's, and it leans forward 20 degrees:
-		# swung back to his sides, the ball between them went into his body).
+		# The throw (0.14.3, one hand, LOW_HOLD above): from the thrower's crouch (regu: the feeder to the tekong), held
+		# there a moment, then the swing: the legs driving him up (the knees 85 to 33 degrees in 0.1 s, as in the
+		# footage), the arm swung forward and up, let go at contact (0.52 s, as before), followed through, down.
+		"toss_low": [
+			[0.0, LOW_HOLD],
+			[0.3, LOW_HOLD],
+			[0.41, {"hips_y": -0.12, "spine": Vector3(60, 0, 0), "chest": Vector3(20, 0, 0), "neck": Vector3(-20, 0, 0), "head": Vector3(-12, 0, 0),
+				"thigh_l": Vector3(-40, 0, 8), "shin_l": Vector3(50, 0, 0), "foot_l": Vector3(-12, 0, -6),
+				"thigh_r": Vector3(-30, 0, -8), "shin_r": Vector3(32, 0, 0), "foot_r": Vector3(-8, 0, 6),
+				"upperarm_r": Vector3(-100, 0, -10), "forearm_r": Vector3(-40, 0, 0), "upperarm_l": Vector3(-50, 0, 16), "forearm_l": Vector3(-35, 0, 0)}],
+			[0.55, TOSS_RELEASE],
+			[0.75, TOSS_THROUGH],
+			[0.86, TOSS_DOWN],
+			[1.0, {}],
+		],
+		# The same throw standing (serving himself; a team-mate lobbing the ball to the thrower between points): from the
+		# ball held out in front, a dip at the knees and the waist with the arm swung down beside his right knee, then
+		# the same swing up and release.
 		"toss": [
-			[0.0, {"upperarm_l": Vector3(-34, 0, -10), "upperarm_r": Vector3(-34, 0, 10), "forearm_l": Vector3(-72, 0, 0), "forearm_r": Vector3(-72, 0, 0)}],
-			[0.3, {"hips_y": -0.1, "spine": Vector3(20, 0, 0), "thigh_l": Vector3(-34, 0, 7), "thigh_r": Vector3(-34, 0, -7), "shin_l": Vector3(55, 0, 0), "shin_r": Vector3(55, 0, 0),
-				"upperarm_l": Vector3(-48, 0, -10), "upperarm_r": Vector3(-48, 0, 10), "forearm_l": Vector3(-12, 0, 0), "forearm_r": Vector3(-12, 0, 0)}],
-			[0.55, {"hips_y": -0.04, "spine": Vector3(6, 0, 0), "upperarm_l": Vector3(-70, 0, -6), "upperarm_r": Vector3(-70, 0, 6), "forearm_l": Vector3(-18, 0, 0), "forearm_r": Vector3(-18, 0, 0)}],
-			[0.75, {"spine": Vector3(2, 0, 0), "upperarm_l": Vector3(-86, 0, 4), "upperarm_r": Vector3(-86, 0, -4), "forearm_l": Vector3(-14, 0, 0), "forearm_r": Vector3(-14, 0, 0)}],
+			[0.0, HOLD],
+			[0.3, {"hips_y": -0.12, "spine": Vector3(40, 0, 0), "chest": Vector3(10, 0, 0), "neck": Vector3(-14, 0, 0),
+				"thigh_l": Vector3(-38, 0, 8), "shin_l": Vector3(56, 0, 0), "foot_l": Vector3(-12, 0, -6),
+				"thigh_r": Vector3(-44, 0, -8), "shin_r": Vector3(62, 0, 0), "foot_r": Vector3(-12, 0, 6),
+				"upperarm_r": Vector3(-72, 0, -10), "forearm_r": Vector3(-18, 0, 0), "upperarm_l": Vector3(-35, 0, 16), "forearm_l": Vector3(-35, 0, 0)}],
+			[0.41, {"hips_y": -0.08, "spine": Vector3(40, 0, 0), "chest": Vector3(12, 0, 0), "neck": Vector3(-12, 0, 0),
+				"thigh_l": Vector3(-34, 0, 8), "shin_l": Vector3(44, 0, 0), "thigh_r": Vector3(-28, 0, -8), "shin_r": Vector3(36, 0, 0),
+				"upperarm_r": Vector3(-92, 0, -10), "forearm_r": Vector3(-35, 0, 0), "upperarm_l": Vector3(-30, 0, 18), "forearm_l": Vector3(-35, 0, 0)}],
+			[0.55, TOSS_RELEASE],
+			[0.75, TOSS_THROUGH],
+			[0.86, TOSS_DOWN],
 			[1.0, {}],
 		],
 		# Picking the ball up off the floor: a step in, the knees and the back bent, his right hand down to it.

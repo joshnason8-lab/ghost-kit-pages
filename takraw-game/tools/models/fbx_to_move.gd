@@ -29,7 +29,7 @@ const SPECS := {
 	# A real two-footed jump (the CMU library's 118_04: the dip, the spring, the landing taken on the knees), as high as
 	# the move's own; in the air the takraw part laid over it from the keys in Moves: the block's raised leg, side on,
 	# the arms out (never up); the header's nod and the arms' swing.
-	"block": {"file": "118_04.bvh", "mirror": false, "t": [1.6, 2.56, 3.1], "length": 0.9, "contact": 0.45,
+	"block": {"file": "118_04.bvh", "mirror": false, "t": [1.6, 2.56, 3.1], "length": 0.9, "contact": 0.45, "ease": 2.0,
 		"at": "foot", "ball": 0.0, "lift": 0.0, "turn": 0.0, "face": "start", "lift_to": 0.6, "blend_in": 0.22, "blend_out": 0.45, "root": "feet",
 		"layer": {"yaw": 1.0, "hips": 1.0, "spine": 1.0, "chest": 1.0, "head": 1.0, "upperarm_l": 1.0, "upperarm_r": 1.0,
 			"forearm_l": 1.0, "forearm_r": 1.0, "thigh_r": 1.0, "shin_r": 1.0, "foot_r": 1.0, "thigh_l": 0.5, "shin_l": 0.5,
@@ -53,6 +53,8 @@ const LOOPS := {
 }
 const BLEND_IN := 0.14
 const BLEND_OUT := 0.22
+const AIR_STEP := 0.15   # the most the laid-over part may grow in a frame (1/30 s) as he springs
+const AIR_STEP_DOWN := 0.2   # and shrink as he comes down
 const STEP := 0.03       # a foot sliding while it is down is lifted this much more at a time (m): a step
 const STEP_MAX := 0.15
 
@@ -298,7 +300,13 @@ func _convert(path: String, spec: Dictionary, move := "") -> Array:
 	var under := []   # where his feet are (between them, on the floor), and whether both are down
 	for i in count:
 		var f := float(i) / float(count - 1)
-		var ts := lerpf(float(t[0]), float(t[1]), f / cf) if f <= cf else lerpf(float(t[1]), float(t[2]), (f - cf) / (1.0 - cf))
+		# (ease: the run-up eased out, the source's time slowing toward contact, so a spring played much faster than the
+		# subject's is spread over more frames and the jump rises into its height rather than stopping at it. The
+		# contact pose and its moment are the same.)
+		var u := f / cf
+		if spec.has("ease") and f <= cf:
+			u = 1.0 - pow(1.0 - u, float(spec.ease))
+		var ts := lerpf(float(t[0]), float(t[1]), u) if f <= cf else lerpf(float(t[1]), float(t[2]), (f - cf) / (1.0 - cf))
 		var g := _globals(anim, ts)
 		var p := _pose_at(g, turn)
 		# The hips' travel from where the move starts, and how far off the floor the lowest of him is.
@@ -359,9 +367,29 @@ func _convert(path: String, spec: Dictionary, move := "") -> Array:
 		peak = maxf(peak, float(p.y))
 	var layer: Dictionary = spec.get("layer", {})
 	var steady: Dictionary = spec.get("steady", {})
+	# How much of the move's own part is laid over, by how high he is; (0.14.3) changing by at most AIR_STEP a frame:
+	# on the way up brought in sooner (as he springs), so the frames at contact keep all of it; on the way down taken out
+	# sooner, so it is gone as his feet touch (a foot on the floor again is his own, and doesn't slide). The spring is
+	# quick (played 2.4 times as fast as the subject's): the block's raised leg and its turn came in within one frame,
+	# the foot 0.8 m in 1/60 s, and went out as fast at the landing (the jitter test).
+	var airs := []
+	var top := 0
+	for i in frames.size():
+		airs.append(smoothstep(0.15, 0.6, float(frames[i].y) / maxf(peak, 0.001)))
+		if float(frames[i].y) >= float(frames[top].y):
+			top = i
+	var ramp := airs.duplicate()
+	for i in airs.size():
+		for j in range(i + 1, airs.size()):
+			if i <= top:
+				ramp[i] = maxf(float(ramp[i]), float(airs[j]) - AIR_STEP * float(j - i))
+			else:
+				ramp[i] = minf(float(ramp[i]), float(airs[j]) + AIR_STEP_DOWN * float(j - i))
+	for i in ramp.size():
+		ramp[i] = smoothstep(0.0, 1.0, float(ramp[i]))   # (eased at both ends: a weight that starts or stops changing at once is a jolt too)
 	for i in frames.size():
 		var p: Dictionary = frames[i]
-		var air := smoothstep(0.15, 0.6, float(p.y) / maxf(peak, 0.001))
+		var air := float(ramp[i])
 		if spec.has("lift_to") and peak > 0.0:
 			# (The first 2 cm off the floor are the subject's feet rolling, not a jump: on the floor.)
 			p.y = maxf(0.0, float(p.y) - 0.02) * float(spec.lift_to) / (peak - 0.02)

@@ -34,6 +34,7 @@ func _ready() -> void:
 	_serve_toss_clear()
 	_officials_back_away()
 	_no_glide_between_points()
+	_jitter()
 	await _watch_ai()
 	await _play_as_and_officials()
 	await _matches()
@@ -490,9 +491,12 @@ func _back_everywhere() -> void:
 
 
 ## The serve's toss keeps the ball out of the bodies (the owner saw it go into the thrower's as he wound up): every
-## frame the thrower holds it, the ball, where the match has it and where it is drawn (on the shared rig's hands on
-## Medium and High), is outside his torso, head, thighs and shins; and from his hands to the server's kick, outside the
-## server's torso and head. Low (the Galaxy A16's) and High, men and women, regu and doubles, a few serves each.
+## frame the thrower holds it, from his crouch to his release, the ball, where the match has it and where it is drawn
+## (on the shared rig's hands on Medium and High), is outside his torso, head, thighs and shins; and from his hand to
+## the server's kick, outside the server's torso and head. And the throw is the real one (0.14.3, the owner: "notice
+## it's ONE hand"): the ball in his right hand all the while (the left nowhere near it); in regu the thrower down in his
+## crouch as he begins, the ball low; let go at about chest height. Low (the Galaxy A16's) and High, men and women,
+## regu and doubles, a few serves each.
 const _BODY_CAPS := [["torso", "hips", "neck", 0.13], ["head", "head", "", 0.10], ["thigh_l", "thigh_l", "shin_l", 0.08],
 	["thigh_r", "thigh_r", "shin_r", 0.08], ["shin_l", "shin_l", "foot_l", 0.055], ["shin_r", "shin_r", "foot_r", 0.055]]
 
@@ -528,16 +532,32 @@ func _serve_toss_clear() -> void:
 				var server_least := [INF, ""]
 				var serves := 0
 				var frames_held := 0
+				var off_palm := 0.0        # the ball from his right palm, held (m)
+				var left_near := INF       # his left hand's nearest to the ball, held (m)
+				var crouched := 0          # serves begun from the crouch, the ball low
+				var low_most := 0.0
+				var released := []         # the ball's height as he lets go
+				var was_held := false
+				var last := [false, INF]   # the frame before: him down in his crouch, the ball's height
+				var was_toss := false
 				for i in 30 * 150:
 					m._process(1.0 / 30.0)
 					m.set("_start_replay_after", -1.0)
-					if int(m.state) != int(m.S.TOSS):
-						if serves >= 3:
+					var th: Node = m._thrower()
+					var crouching: bool = int(m.state) == int(m.S.SETUP) and th.toss_crouch and th.carrying
+					var toss: bool = int(m.state) == int(m.S.TOSS)
+					if toss and not was_toss:
+						serves += 1
+						if bool(last[0]) and float(last[1]) < 0.55:
+							crouched += 1
+						low_most = maxf(low_most, float(last[1]))
+					was_toss = toss
+					last = [th.crouched(), m.ball.global_position.y]
+					if not toss and not crouching:
+						was_held = false
+						if serves >= 4 and int(m.state) != int(m.S.SETUP):
 							break
 						continue
-					if float(m.state_t) < 0.04:
-						serves += 1
-					var th: Node = m._thrower()
 					if th.carrying:
 						frames_held += 1
 						var mesh: Node3D = m.ball.get("_mesh")
@@ -545,17 +565,83 @@ func _serve_toss_clear() -> void:
 							var c := ball_clearance(th, p, all_caps)
 							if float(c[0]) < float(thrower_least[0]):
 								thrower_least = c
-					elif m.ball.flying and th != m._server():
-						var c2 := ball_clearance(m._server(), m.ball.global_position, ["torso", "head"])
-						if float(c2[0]) < float(server_least[0]):
-							server_least = c2
+						off_palm = maxf(off_palm, m.ball.global_position.distance_to(th.carry_point()) if not th.body.link else 0.0)
+						left_near = minf(left_near, m.ball.global_position.distance_to(th.body.bone_world("hand_l")))
+						was_held = true
+					else:
+						if was_held and int(m.state) == int(m.S.TOSS):
+							released.append(m.ball.global_position.y)
+						was_held = false
+						if m.ball.flying and th != m._server():
+							var c2 := ball_clearance(m._server(), m.ball.global_position, ["torso", "head"])
+							if float(c2[0]) < float(server_least[0]):
+								server_least = c2
 				var what := "%s %s %s" % [["Low", "Medium", "High"][level], "women" if women else "men", ev]
 				check(serves >= 3 and frames_held > 20, "serve toss (%s): %d serves played, the ball held %d frames" % [what, serves, frames_held])
 				check(float(thrower_least[0]) > 0.0, "serve toss (%s): the ball stays outside the thrower's body (least %.3f m, %s)" % [what, float(thrower_least[0]), thrower_least[1]])
+				check(off_palm < 0.01 and left_near > 0.2, "serve toss (%s): one hand: the ball in his right (at most %.3f m off it), his left %.2f m from it at the nearest" % [what, off_palm, left_near])
+				var rel_lo: float = released.min() if not released.is_empty() else 0.0
+				var rel_hi: float = released.max() if not released.is_empty() else 0.0
+				var tall := 0.94 if women else 1.0
+				check(released.size() >= 3 and rel_lo > 0.85 * tall and rel_hi < 1.3 * tall,
+					"serve toss (%s): let go at about chest height (%.2f-%.2f m, %d throws)" % [what, rel_lo, rel_hi, released.size()])
 				if ev == "regu":
+					check(crouched == serves, "serve toss (%s): the thrower throws from his crouch, the ball low (%d of %d serves; the ball at most %.2f m up)" % [what, crouched, serves, low_most])
 					check(float(server_least[0]) > 0.0, "serve toss (%s): the thrown ball stays outside the server's torso and head (least %.3f m)" % [what, float(server_least[0])])
 				m.queue_free()
 				remove_child(m)
+	Game.settings.graphics = keep
+
+
+## The worst joint jolt in a frame (the jitter test, 0.14.3): a joint's second difference from one frame to the next,
+## the sudden change in its speed that shows as a pop. Every move alone, on both models, 60 times a second, under
+## JOLT_MOVE (the block's raised leg and its turn came in within one frame: 0.70 m; now 0.15). And two matches, Low and
+## High, every player's hands, feet and head at 30 fps, under JOLT_MATCH: a cheer cut a spiker's roll short (his head
+## 1.66 m), a move that ended as he ran put him straight into his stride (a foot 0.93), a kick still finishing after the
+## point flickered between its legs and a walk's (1.1). The worst left is a hand taking the ball (0.70).
+const JOLT_MOVE := 0.25    # m/frame^2 at 60 fps (900 m/s^2)
+const JOLT_MATCH := 0.85   # m/frame^2 at 30 fps (765 m/s^2)
+const PoseProbe := preload("res://tests/pose_probe.gd")
+
+
+func _jitter() -> void:
+	for women in [false, true]:
+		var rows: Array = PoseProbe.jolts(women)
+		rows.sort_custom(func(a, b): return float(a[1][0]) > float(b[1][0]))
+		var over := rows.filter(func(r): return float(r[1][0]) >= JOLT_MOVE)
+		check(rows.size() >= 20 and over.is_empty(), "jitter: every move alone on the %s's model, its worst jolt under %.2f m/frame^2 at 60 fps (worst: %s %.3f, %s at %.2f; %d moves)"
+			% ["woman" if women else "man", JOLT_MOVE, rows[0][0], float(rows[0][1][0]), rows[0][1][1], float(rows[0][1][2]), rows.size()])
+	var keep: int = Game.settings.graphics
+	for setup in [[Game.GFX_LOW, "regu", false], [Game.GFX_HIGH, "doubles", true]]:
+		Game.settings.graphics = setup[0]
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": setup[1], "sets": 1, "points": 15,
+			"user_team": -1, "demo": true, "seed": 7, "mode": "quick", "women": setup[2]}
+		add_child(m)
+		var hist := {}
+		var worst := [0.0, ""]
+		var n := 0
+		for i in 30 * 120:
+			m._process(1.0 / 30.0)
+			m.set("_start_replay_after", -1.0)
+			for side in 2:
+				for pl in m.players_on(side):
+					for b in ["hand_l", "hand_r", "foot_l", "foot_r", "head"]:
+						var key := [pl, b]
+						var h: Array = hist.get(key, [])
+						h.append(pl.body.bone_world(b))
+						if h.size() > 3:
+							h.pop_front()
+						hist[key] = h
+						if h.size() == 3:
+							n += 1
+							var d: float = ((h[2] as Vector3) - 2.0 * (h[1] as Vector3) + (h[0] as Vector3)).length()
+							if d > float(worst[0]):
+								worst = [d, "%s, move '%s', %s" % [b, pl.move, m.S.keys()[int(m.state)]]]
+		check(n > 50000 and float(worst[0]) < JOLT_MATCH, "jitter: in a match (%s, %s, %s), every hand, foot and head under %.2f m/frame^2 at 30 fps (worst %.3f: %s; %d joint-frames)"
+			% [["Low", "Medium", "High"][setup[0]], setup[1], "women" if setup[2] else "men", JOLT_MATCH, float(worst[0]), worst[1], n])
+		m.queue_free()
+		remove_child(m)
 	Game.settings.graphics = keep
 
 
@@ -1067,7 +1153,7 @@ func _foundation(available: bool) -> void:
 			# The ball carried: drawn in the drawn hands.
 			if m._carrier == pl and l.mode in ["move", "carry"]:
 				var bp: Vector3 = m.ball._mesh.global_position
-				held_gap = maxf(held_gap, bp.distance_to(l.ball_point(pl._two >= 0.5)))
+				held_gap = maxf(held_gap, bp.distance_to(l.ball_point(false)))
 				held_n += 1
 	check(shown == 0, "foundation: its bodies drawn, the game's hidden (%d frames otherwise)" % shown)
 	check(drift < 0.05, "foundation: every body drawn at its own place (hips at most %.2f m off the game's)" % drift)

@@ -16,7 +16,9 @@ var watch := true          # turn to face the ball (else the net)
 var stroll := false        # between points: walking somewhere, he turns to where he is going and walks there
 var face_to := Vector3.INF # a point he turns to face, in a move too (the thrower to the server); INF: none
 var look_to := Vector3.INF # what he watches, if not the ball (Match: the thrower watches the server)
-var carrying := false      # the ball in his hands (Match keeps it there): in one hand as he walks, both standing
+var carrying := false      # the ball in his hands (Match keeps it there): his right, held out in front standing, by his
+                           # hip as he walks (one hand, as the real ones hold it: 0.14.3)
+var toss_crouch := false   # the thrower set to throw: down into his crouch, the ball held low (Match, before the toss)
 var ready_bounce := 0.0    # 0 at ease .. 1 on his toes waiting for the serve (knees working, a little bounce)
 
 var move := ""             # the move playing, if any
@@ -28,9 +30,13 @@ var _queued_mirror := false
 var _ph := 0.0             # running stride's phase
 var _half := 0             # half strides run (a footstep each)
 var _w := 0.0              # how much the move holds the pose (eases in and out)
+var _out_pose := {}        # the pose a move left him in (played out, or cut short by another), eased out of
+var _out := 0.0            # 1 .. 0 over MOVE_OUT
+var _last_p := {}          # last frame's pose (the move's over the stance or stride), before the small movements
 var _yaw := 0.0
 var _carry_w := 0.0        # eased: how much his arms hold the ball
-var _two := 1.0            # eased: both hands (standing) .. one (walking)
+var _hold := 1.0           # eased: the ball held out in front (standing) .. by his hip (walking)
+var _crouch := 0.0         # eased: how far down into the thrower's crouch (Moves.LOW_HOLD)
 var _life := 0.0           # his own clock for the small movements of a man standing (each his own pace)
 var _life_rate := 1.0
 var _shift := 0.0          # his weight: -1 on his left foot .. 1 on his right
@@ -160,10 +166,29 @@ func queue_move(name: String, at: float, mirror := false) -> void:
 
 
 func play_now(name: String, now: float, mirror := false) -> void:
+	if move != "" and _w > 0.0 and not _last_p.is_empty():
+		# Cut short by another: eased out of where it had him, not jumped from (where a capture had taken his hips
+		# carried into where he is, as at its end).
+		_out_pose = _last_p.duplicate()
+		if Moves.is_clip(move):
+			var off := Vector3(-float(_out_pose.get("hips_side", 0.0)), 0, float(_out_pose.get("hips_fwd", 0.0)))
+			position += off.rotated(Vector3.UP, body.rotation.y)
+			_out_pose.erase("hips_fwd")
+			_out_pose.erase("hips_side")
+		_out = 1.0
+		_w = 0.0
 	move = name
 	move_start = now
 	move_mirror = mirror
 	_queued = ""
+
+
+## A move once the point is over (a cheer, a slump): from at, or once the move he is in has played out (a spiker in the
+## air is not pulled out of his kick to cheer it).
+func play_after(name: String, at: float, mirror := false) -> void:
+	if move != "":
+		at = maxf(at, move_start + Moves.length(move))
+	queue_move(name, at, mirror)
 
 
 func busy(now: float) -> bool:
@@ -218,6 +243,11 @@ func tick(dt: float, now: float) -> void:
 			Sfx.step(global_position, speed)
 	var sidestep := clampf(local.x / maxf(speed, 0.01), -1.0, 1.0) if speed > 0.4 else 0.0
 	var base := Moves.run(_ph, clampf(speed / 5.0, 0.0, 1.0), sidestep * 0.8)
+	# A move just played out (or cut short) eased out of over MOVE_OUT, into the stance or the stride: before, he was
+	# put straight into his stride from the move's last pose (a jolt of up to 0.9 m/frame^2 at a foot, the jitter test).
+	if _out > 0.0:
+		base = Moves.blend(base, _out_pose, smoothstep(0.0, 1.0, _out))
+		_out = maxf(0.0, _out - dt / MOVE_OUT)
 	var p := base
 	var lift := 0.0
 	var yaw_add := 0.0
@@ -225,6 +255,13 @@ func tick(dt: float, now: float) -> void:
 		var t := (now - move_start) / Moves.length(move)
 		if t >= 1.0:
 			_carry(move, move_mirror)
+			if _w > 0.0 and not _last_p.is_empty():
+				_out_pose = _last_p.duplicate()
+				_out_pose.erase("hips_fwd")   # (carried into where he is)
+				_out_pose.erase("hips_side")
+				_out = 1.0
+				base = Moves.blend(base, _out_pose, 1.0)   # (from this frame on)
+				p = base
 			move = ""
 		else:
 			_w = minf(1.0, _w + dt * 14.0)
@@ -244,6 +281,12 @@ func tick(dt: float, now: float) -> void:
 				p["hips_y"] = lerpf(float(p.get("hips_y", 0.0)), float(base.get("hips_y", 0.0)), k)
 	if move == "":
 		_w = 0.0
+	# (Off the floor and turned as the pose has him: the move's, or one eased out of.)
+	lift = maxf(lift, float(base.get("y", 0.0)))
+	yaw_add = deg_to_rad(float(p.get("yaw", 0.0)))
+	_last_p = p.duplicate()
+	_last_p["y"] = lift
+	_last_p["yaw"] = rad_to_deg(yaw_add)
 	_life_pose(p, dt, now, speed)
 	body.rotation.y = _yaw + yaw_add
 	body.position.y = lift
@@ -272,7 +315,7 @@ func _drive_link(dt: float, speed: float) -> void:
 ## Where the ball in his hands is drawn: in the foundation's hands when it draws him, else carry_point().
 func drawn_carry_point() -> Vector3:
 	if body.link:
-		var p := body.link.ball_point(_two >= 0.5)
+		var p := body.link.ball_point(false)
 		if p.is_finite():
 			return p
 	return carry_point()
@@ -280,8 +323,8 @@ func drawn_carry_point() -> Vector3:
 
 ## A man standing is never still: his breath, his weight from one foot to the other now and then, his head on the
 ## ball, his arms; waiting for a serve, on his toes, the knees working (ready_bounce). Carrying the ball: in his right
-## hand as he walks, in both in front of him standing. Laid over the stance or the stride, eased out as he runs or
-## plays a move.
+## hand, by his hip as he walks, held out in front of him standing; the thrower set to throw, down in his crouch with
+## it held low (toss_crouch). Laid over the stance or the stride, eased out as he runs or plays a move.
 func _life_pose(p: Dictionary, dt: float, now: float, speed: float) -> void:
 	_life += dt * _life_rate
 	var still := (1.0 - clampf(speed / 0.8, 0.0, 1.0)) * (1.0 - _w)
@@ -319,6 +362,17 @@ func _life_pose(p: Dictionary, dt: float, now: float, speed: float) -> void:
 			_add(p, "foot_" + leg, Vector3(-6.0 - 6.0 * bounce, 0, 0) * r)
 		_add(p, "upperarm_l", Vector3(-10.0, 0, 6.0) * r)
 		_add(p, "upperarm_r", Vector3(-10.0, 0, -6.0) * r)
+	# The thrower set to throw: down into his crouch over CROUCH_TIME, the ball held low in front of him, as the real
+	# ones wait for the server (the World Cup broadcast, traced: tools/footage). His throw (toss_low) starts from the
+	# same pose and holds it a moment: the crouch eases out within that, so he doesn't move as the throw takes over.
+	_crouch = move_toward(_crouch, 1.0 if toss_crouch and move == "" else 0.0, dt / (CROUCH_TIME if move == "" else 0.25))
+	var crouch := smoothstep(0.0, 1.0, _crouch)
+	if move != "" and crouch > 0.0:
+		_carry_w = 0.0   # (and the throw's arms are his from its start)
+	if crouch > 0.0:
+		for bone in Moves.LOW_HOLD:
+			if not bone.begins_with("upperarm") and not bone.begins_with("forearm"):
+				p[bone] = Moves._mix(p.get(bone, Moves._rest_of(bone, Moves.LOW_HOLD[bone])), Moves.LOW_HOLD[bone], crouch)
 	# His head on what he watches (the ball, the server), the neck taking a little of the turn.
 	var d: Vector3 = body.global_transform.affine_inverse() * look_at_pos
 	var want := Vector2(clampf(rad_to_deg(atan2(d.x, d.z)), -70.0, 70.0),
@@ -327,33 +381,41 @@ func _life_pose(p: Dictionary, dt: float, now: float, speed: float) -> void:
 	var hw := 1.0 - _w
 	_add(p, "neck", Vector3(_head.y * 0.35, _head.x * 0.3, 0) * hw)
 	_add(p, "head", Vector3(_head.y * 0.55, _head.x * 0.5, 0) * hw)
-	# The ball in his hands.
+	# The ball in his hand: held out in front standing, by his hip walking, low in the crouch (and both arms the
+	# crouch's there).
 	_carry_w = move_toward(_carry_w, 1.0 if carrying and move == "" else 0.0, dt * 6.0)
-	_two = move_toward(_two, 1.0 if speed < 0.6 else 0.0, dt * 4.0)
+	_hold = move_toward(_hold, 1.0 if speed < 0.6 else 0.0, dt * 4.0)
 	if _carry_w > 0.0:
-		for bone in CARRY_TWO:
-			var to = Moves._mix(p.get(bone, Vector3.ZERO), CARRY_TWO[bone], _two)
-			if CARRY_ONE.has(bone):
-				to = Moves._mix(CARRY_ONE[bone], CARRY_TWO[bone], _two)
+		for bone in CARRY_ARMS:
+			var to = Moves._mix(CARRY_ONE.get(bone, p.get(bone, Vector3.ZERO)), Moves.HOLD.get(bone, p.get(bone, Vector3.ZERO)), _hold)
+			if crouch > 0.0:
+				to = Moves._mix(to, Moves.LOW_HOLD.get(bone, to), crouch)
 			p[bone] = Moves._mix(p.get(bone, Vector3.ZERO), to, _carry_w)
+	elif crouch > 0.0:
+		for bone in CROUCH_ARMS:
+			p[bone] = Moves._mix(p.get(bone, Vector3.ZERO), Moves.LOW_HOLD[bone], crouch)
 
 
 const LEGS := ["thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
 const STROLL_MOVES := ["pick", "toss", "celebrate", "fist", "clap", "point", "slump"]   # (played between points)
+const MOVE_OUT := 0.15   # s to ease out of a move that has played out or been cut short
 
 
-## The arms carrying the ball: both hands holding it in front of him, or the right hand by his hip as he walks.
-const CARRY_TWO := {"upperarm_l": Vector3(-34, 0, -10), "forearm_l": Vector3(-72, 0, 0), "hand_l": Vector3(0, 0, -20),
-	"upperarm_r": Vector3(-34, 0, 10), "forearm_r": Vector3(-72, 0, 0), "hand_r": Vector3(0, 0, 20)}
+## The right arm carrying the ball by his hip as he walks (standing, it is held out in front: Moves.HOLD).
 const CARRY_ONE := {"upperarm_r": Vector3(-16, 0, -14), "forearm_r": Vector3(-58, 0, 0), "hand_r": Vector3(0, 0, 10)}
+const CARRY_ARMS := ["upperarm_r", "forearm_r", "hand_r", "upperarm_l", "forearm_l"]
+const CROUCH_ARMS := ["upperarm_r", "forearm_r", "upperarm_l", "forearm_l"]
+const CROUCH_TIME := 0.8   # s down into the thrower's crouch (about the footage's)
 
 
-## Where the ball sits when he carries it: between his hands, or in his right hand.
+## Where the ball sits when he carries it: in his right hand.
 func carry_point() -> Vector3:
-	var r := _palm("r")
-	if _two < 0.5:
-		return r
-	return (r + _palm("l")) * 0.5
+	return _palm("r")
+
+
+## Down in the thrower's crouch, ready to throw.
+func crouched() -> bool:
+	return _crouch >= 1.0
 
 
 func _palm(lr: String) -> Vector3:

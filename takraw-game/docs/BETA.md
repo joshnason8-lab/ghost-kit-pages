@@ -15,6 +15,15 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.14.3: **the serve's throw is one-handed**, as the owner pointed out, and traced from the World Cup
+broadcast. The thrower holds the ball in his right hand. When the serve is due he goes down into a crouch with the
+ball held low in front of him, then drives up and swings it underarm to the server, letting go at chest height and
+following through with the arm out level. In doubles, serving yourself, it is the same throw from standing. The serve's
+timing is the same as before, so a serve comes to you exactly as it did. Also smoother:
+- the block no longer snaps its leg up in one frame;
+- a player who wins the point mid-kick finishes the kick before he cheers (he used to snap upright in the air);
+- a player coming out of a kick into a run eases into his stride.
+
 New in 0.14.2, four things the owner saw:
 - **Spikes you can see.** A spike now flies at about two-thirds of a real one's speed: a roll spike at about 76 km/h
   rather than 110, so the ball crosses the court in about a third of a second instead of a fifth. The defenders still

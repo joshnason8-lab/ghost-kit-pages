@@ -411,7 +411,7 @@ func _process(delta: float) -> void:
 				var l: FoundationLink = (pp as Player).body.link
 				if l:
 					l.carry_ball = ball if pp == _carrier else null
-					l.carry_two = (pp as Player)._two >= 0.5
+					l.carry_two = false   # (in his right hand: 0.14.3)
 		wsg_replay.record(rclock)
 	_officials.tick(dt, ball.global_position, state == S.RALLY or state == S.TOSS)
 	_bench.tick(dt, ball.global_position, state == S.RALLY or state == S.TOSS)
@@ -437,7 +437,7 @@ func _step(_dt: float) -> void:
 			# the thrower is given it.
 			if state_t > 14.0 and _carrier != _thrower():
 				_give(_thrower())
-			if state_t > SETUP_TIME and _carrier == _thrower() and _thrower_set() and (_all_in_place() or state_t > 9.0):
+			if state_t > SETUP_TIME and _toss_ready(0.0) and (_thrower() == _server() or _thrower().crouched()):
 				_begin_toss()
 		S.TOSS, S.RALLY:
 			_rally_events()
@@ -687,11 +687,16 @@ func _between_points() -> void:
 			c.face_to = Vector3.INF
 			c.look_to = Vector3.INF
 			_back_to_place(c)
-	# The thrower with the ball at his place: turned to the server, his eyes on him; the server's on the ball.
+	# The thrower with the ball at his place: turned to the server, his eyes on him; the server's on the ball. Set to
+	# throw, he goes down into his crouch (Player.CROUCH_TIME) so as to be down as the serve is due, and throws from it.
 	if state == S.SETUP and _carrier == thrower and thrower != srv and _at_place(thrower):
 		thrower.face_to = srv.position
 		thrower.look_to = srv.position + Vector3(0, 1.5, 0)
 		srv.look_to = thrower.carry_point()
+	var crouch := thrower != srv and state == S.SETUP and _toss_ready(Player.CROUCH_TIME)
+	for side in 2:
+		for pp in players_on(side):
+			(pp as Player).toss_crouch = crouch and pp == thrower
 	# Waiting for the serve: the receivers on their toes, the servers' inside players ready too.
 	for side in 2:
 		for pp in players_on(side):
@@ -718,6 +723,12 @@ func _turned_to(pl: Player, p: Vector3) -> bool:
 	return absf(angle_difference(pl.body.rotation.y, atan2(to.x, to.z))) < deg_to_rad(25.0)
 
 
+## The serve may be thrown (lead s before set-up's time is up): the ball in the thrower's hand, him set, and everyone
+## in his place (or set-up has run long).
+func _toss_ready(lead: float) -> bool:
+	return state_t > SETUP_TIME - lead and _carrier == _thrower() and _thrower_set() and (_all_in_place() or state_t > 9.0)
+
+
 ## The thrower ready to throw: at his place and turned to the server (or, serving himself, at his place).
 func _thrower_set() -> bool:
 	var thrower := _thrower()
@@ -739,15 +750,18 @@ func _begin_toss() -> void:
 	var horse := _wants_horse(srv)
 	var mv := "horse" if horse else "serve"
 	var mirror := srv.left_footed()
-	# The throw: underarm from the thrower's hands to the server's kicking spot, a gentle lob.
-	var t_release := now + Moves.contact_time("toss")
-	thrower.play_now("toss", now)
+	# The throw: one-handed, underarm, to the server's kicking spot, a gentle lob; from the crouch he is down in (regu:
+	# the feeder to the tekong), or standing (serving himself).
+	var tmv := "toss" if thrower == srv else "toss_low"
+	var t_release := now + Moves.contact_time(tmv)
+	thrower.play_now(tmv, now)
 	var kick_h: float = Moves.CONTACT[mv][0] - (0.1 if women else 0.0)
 	var kp := srv.target + srv.net_dir() * float(Moves.CONTACT[mv][1]) + Vector3(0, kick_h, 0)
 	var right := Vector3(-srv.net_dir().z, 0, srv.net_dir().x)
 	kp += right * float(Moves.CONTACT[mv][2]) * (-1.0 if mirror else 1.0)
-	# From his hands (where they will be as he lets go is nearly where they are now: the flight is timed from there).
-	var hand := thrower.carry_point()
+	# From where his hand will let go (the throw's CONTACT row, toward the server): the flight is timed from there.
+	var to_srv := Vector3(kp.x - thrower.position.x, 0, kp.z - thrower.position.z).normalized()
+	var hand := thrower.position + to_srv * float(Moves.CONTACT[tmv][1]) + Vector3(0, float(Moves.CONTACT[tmv][0]), 0)
 	var flight := float(Ball.solve_apex(hand, kp, kp.y + (0.9 if thrower != srv else 0.6))[1])
 	var t_kick := t_release + flight
 	_schedule(t_release, func():
@@ -1783,17 +1797,17 @@ func _celebrate(team: int, why: String) -> void:
 	if not big:
 		if rng.randf() < 0.45:
 			var one: Player = mine[rng.randi_range(0, mine.size() - 1)]
-			one.play_now(["fist", "clap", "fist"][rng.randi_range(0, 2)], now + rng.randf_range(0.15, 0.5), rng.randf() < 0.5)
+			one.play_after(["fist", "clap", "fist"][rng.randi_range(0, 2)], now + rng.randf_range(0.15, 0.5), rng.randf() < 0.5)
 		return
 	for pp in mine:
 		var pl: Player = pp
 		if rng.randf() < 0.85:
-			pl.play_now(ways[rng.randi_range(0, ways.size() - 1)], now + rng.randf_range(0.05, 0.45), rng.randf() < 0.5)
+			pl.play_after(ways[rng.randi_range(0, ways.size() - 1)], now + rng.randf_range(0.05, 0.45), rng.randf() < 0.5)
 	_bench_cheer(team)
 	if rng.randf() < 0.4:
 		var other := players_on(1 - side)
 		var sad: Player = other[rng.randi_range(0, other.size() - 1)]
-		sad.play_now("slump", now + 0.3)
+		sad.play_after("slump", now + 0.3)
 
 
 func _judge_signal(p: Vector3, called_in: bool) -> void:

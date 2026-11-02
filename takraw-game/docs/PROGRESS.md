@@ -670,6 +670,64 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The serve's throw from the footage, and a jitter test (0.14.3)
+
+**The throw, one hand.** The owner: "notice it's ONE hand". The thrower in the World Cup broadcast (308.5-311.5 s,
+30 fps) was traced with MediaPipe's pose landmarker (heavy model; every one of 105 frames found) and measured as the
+game's poses are (`tools/footage/`, `tests/pose_probe.tscn`). The video and its frames are not in the repository,
+only the angles (`tools/footage/serve_toss_world_cup.csv`). What he does, and the game's keys beside it:
+
+| | Footage | Game |
+|---|---|---|
+| Holding it, standing | right hand only, arm 40 degrees forward of the trunk, elbow 50 | `HOLD`: 40, 52 |
+| Down for the throw (held while the server readies) | trunk 65 degrees, knees 75-85, elbow 22-32, the wrist 0.1-0.3 m over the ankles, 0.45 m out | `LOW_HOLD`: 63, 85 and 75, 25, 0.25 m, 0.5 m |
+| The swing | 0.22 s from the low point to the release, the knees 75 to 30 in 0.1 s | 0.24 s, 85 to 33 |
+| Let go | trunk 26-30, arm 76-88 from the trunk, the wrist 80% of the shoulder's height | 25, 81, 79% |
+| Follow-through | arm out level and straight (93, elbow 19), trunk 13 | 91, 15, 9 |
+
+In regu the feeder, once he is set and the serve is due, goes down into the crouch over 0.8 s (`Player.toss_crouch`,
+from 0.8 s before set-up's time is up) and throws from it (`toss_low`): the toss waits for him to be down, so it begins
+at the same moment as before whenever everyone is in place in time. Serving himself (doubles, quadrant), and a team-mate
+lobbing the ball to the thrower between points, use the same one-handed throw from standing (`toss`). The ball is in
+the right hand everywhere it is carried (`carry_point()` is the right palm; the foundation draws it there too). The
+release stays at 0.52 s and the kick's time is reckoned from the throw's release point (its CONTACT row) rather than
+from the hands' momentary place: toss start to kick, ten serves each, regu 1.39-1.44 s before and 1.411 s now, doubles
+1.23-1.34 s and 1.261 s. Stills: `docs/stills/serve_toss_one_hand_{men,women}.jpg` (from his right; 0.4 s before
+set-up's time is up, the throw's start, 0.3, 0.42, 0.52 (the release) and 0.7 s in).
+
+test_runner (`_serve_toss_clear`, Low and High, men and women, regu and doubles, 40 checks): the ball outside the
+thrower's body from his crouch to the release (13 cm at the least, by the right thigh); in his right
+hand, his left 0.56 m from it at the nearest; let go at 0.96-1.14 m; in regu every serve thrown from the crouch with
+the ball at most 0.46 m up; the thrown ball clear of the server.
+
+**The jitter test** (`_jitter`): the worst jolt of any joint in a frame (its second difference from frame to frame).
+Each move alone on both models at 60 fps, under 0.25 m/frame^2; and a Low regu match and a High doubles one (women),
+every player's hands, feet and head at 30 fps, under 0.85. It found five pops, all fixed:
+- The block's raised leg and its turn came in within one frame (the toe 0.8 m in 1/60 s: 0.70 m/frame^2). The CMU
+  jump under it is played 2.4 times as fast as the subject's, and the block's own part was laid over by his height.
+  `tools/models/fbx_to_move.gd` now brings that part in over about seven frames as he springs and takes it out over
+  five before he lands (eased at both ends, so it is gone as his feet touch and they don't slide), and eases the
+  run-up toward contact (the block's `ease`); the block and the jumping header re-baked. The block's contact moment and
+  height are the same; its contact point moved 2 cm back and 8 cm in (`[2.1, 0.66, -0.2]`, from
+  `[2.1, 0.68, -0.28]`); its planted feet slide at most 2.7 cm a frame (under the 3 cm test). Worst now: 0.19; the
+  jumping header's 0.23 now 0.18.
+- A cheer cut a spiker's kick short as the point ended: in the air in his roll, he was standing the next frame (his
+  head 1.66 m/frame^2). A cheer or a slump now starts once his move has played out (`Player.play_after`).
+- A move that ended as he ran put him straight into his stride (a foot 0.93), and one cut short by another jumped to
+  it. Either is now eased out of over 0.15 s (`MOVE_OUT`), his lift and his turn with it.
+- A block cut short in the air by a header turned his body 60 degrees in a frame: the turn now follows the blended pose.
+- 0.14.2's walking legs (no gliding between points) took over a kick still finishing after the point, and switched
+  on and off as he left the floor and landed: the roll's foot flickered (1.1). Fixed before 0.14.2 went out: only the
+  moves played between points, eased out as he leaves the floor.
+Worst left: a move alone, the kuda's foot through the ball (0.19 at 60 fps); in a match, a hand taking the ball (0.70).
+
+**The other moves.** Sila, kuda, the horse kick, the chest receive and the dig could not be traced from the two
+broadcasts: the players are 60-100 px tall, the 26 replays are the same wide camera at normal speed, and a kick is over
+in 0.2-0.3 s. The trunk's lean and the knees could be read, not the kicking leg's angles. Close-ups or slow motion have
+been asked for (they would go in the private assets repository); those moves are still the hand-made keys. The roll
+spike and the sunback were checked by the jitter test (0.08 and 0.11 alone; the roll's in-match flicker was the walking
+legs above).
+
 ## Four things the owner saw (0.14.2)
 
 - **Spikes too fast to see.** A roll spike left the foot at up to 30 m/s (108 km/h, a real one's speed) and crossed
