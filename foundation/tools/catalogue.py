@@ -13,15 +13,34 @@ HERE = pathlib.Path(__file__).resolve().parent
 DATA = HERE.parent / "addons" / "wsg_foundation" / "data"
 OUT = HERE.parent / "docs" / "CATALOGUE.md"
 
-# Which games use a clip (by name, or a prefix ending in *). The locomotion set drives every game's runner.
+# Which games use a clip (by name, or a prefix ending in *). "all" is all seven: Hurling and the six pilots (Floorball,
+# Netball, Kabaddi, Sepak Takraw, Kho Kho, Pok Ta Pok): the locomotion set and the sprint drive every game's runner
+# through WsgLocomotor. Beyond those, Kabaddi plays two ActorCore clips; Sepak Takraw, Floorball, Netball, Kho Kho
+# and Pok Ta Pok play none of their own (their moves are the games' own poses).
+ALL = "all 7 (WsgLocomotor)"
 USED = {
-    "Walk_*": "all (WsgLocomotor)", "Jog_*": "all (WsgLocomotor)", "Run_*": "all (WsgLocomotor)",
-    "Stand_Relaxed_To_*": "all (WsgLocomotor: starts)", "Stand_Relaxed_Idle*": "all (WsgLocomotor: standing)",
-    "Stand_Relaxed_L_*": "all (WsgLocomotor: turns)", "Stand_Relaxed_R_*": "all (WsgLocomotor: turns)",
-    "Stand_Rlx_Turn_*": "all (WsgLocomotor: turns)", "Sprint_F_Loop": "all (WsgLocomotor: sprint)",
-    "Crowd_*": "all (WsgCrowd3D)", "Ready_Stance": "Hurling", "Dive_Forward": "Hurling",
-    "Celebrate_*": "Hurling (scorer)", "Disappointed_HandsOnHead": "Hurling",
+    "Walk_*": ALL, "Jog_*": ALL, "Run_*": ALL,
+    "Stand_Relaxed_To_*": "all 7 (WsgLocomotor: starts)", "Stand_Relaxed_Idle*": "all 7 (WsgLocomotor: standing)",
+    "Stand_Relaxed_Fgt_*": "all 7 (WsgLocomotor: idle fidgets)",
+    "Stand_Relaxed_L_*": "all 7 (WsgLocomotor: turns)", "Stand_Relaxed_R_*": "all 7 (WsgLocomotor: turns)",
+    "Stand_Rlx_Turn_*": "all 7 (WsgLocomotor: turns)", "Sprint_F_Loop": "all 7 (WsgLocomotor: sprint)",
+    "Crowd_*": "Hurling (WsgCrowd3D)", "Ready_Stance": "Hurling", "Dive_Forward": "Hurling",
+    "Celebrate_FistPump": "Hurling (scorer), Kabaddi", "Celebrate_*": "Hurling (scorer)",
+    "Disappointed_HandsOnHead": "Hurling, Kabaddi",
 }
+
+# The moves each sport's pilot found missing from the library (it kept its own hand-made poses for them).
+GAPS = [
+    ("Hurling, Floorball", "keeper saves (butterfly, side)"),
+    ("Netball", "set shot; chest, shoulder, bounce and lob passes; two-handed catches; jumping intercept; one-foot "
+     "landing; pivot; defending over the ball; umpire signals"),
+    ("Kabaddi", "low side-shuffle; cant stance; toe and hand touch; back kick; dubki; lion jump; tackle dives; ankle, "
+     "thigh and waist holds; chain moves; raider drive; takedown falls and get-ups; sitting in the block; high-fives; "
+     "referee signals"),
+    ("Sepak Takraw", "kicks, headers, blocks, tosses, jumps"),
+    ("Kho Kho", "dive, pole swing, kho slap, kneel and rise, dodge, umpire signals"),
+    ("Pok Ta Pok", "hip strike, ground dive, underhand toss, judges' signals"),
+]
 
 WORDS = {
     "F": "forward", "B": "backward", "L": "left", "R": "right", "FL": "forward-left", "FR": "forward-right",
@@ -77,7 +96,17 @@ def main():
     for r in rows:
         lines.append("| %s | `%s` | %.2f | %s | %s | %s |" % r)
     lines.append("")
-    lines.append("%d clips." % len(rows))
+    lines.append("%d clips. \"all 7\": Hurling, Floorball, Netball, Kabaddi, Sepak Takraw, Kho Kho, Pok Ta Pok." % len(rows))
+    lines.append("")
+    lines.append("## Gaps by sport")
+    lines.append("")
+    lines.append("Moves each sport needs that the library does not have (from the pilots: each game keeps its own")
+    lines.append("hand-made poses for these, through WsgLegacyPose). What to look for in the next capture or ActorCore buy.")
+    lines.append("")
+    lines.append("| Sport | Missing |")
+    lines.append("|---|---|")
+    for sport, moves in GAPS:
+        lines.append("| %s | %s |" % (sport, moves[0].upper() + moves[1:] + "."))
     OUT.write_text("\n".join(lines) + "\n")
     print("catalogue: %d clips -> %s" % (len(rows), OUT))
 
