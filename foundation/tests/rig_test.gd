@@ -77,6 +77,7 @@ func _initialize() -> void:
 	await _hold_point()
 	await _hips_first()
 	await _stick()
+	await _limb()
 	for l in lines:
 		print(l)
 	if failures.is_empty():
@@ -304,29 +305,42 @@ func _torso() -> void:
 	body.skeleton.add_child(layer)
 	layer.weight = 1.0
 	var inside := []
-	for r in [0.0, 0.1]:
-		layer.torso_r = r
+	var in_cap := []
+	var cap0 := body.torso_capsule(true)
+	for r in [0.0, 0.1, -1.0]:
+		# (-1: torso_from_body, the chest as the mesh is: WsgBody.torso_capsule)
+		layer.torso_r = maxf(r, 0.0)
+		layer.torso_from_body = r < 0.0
 		layer.set_pose({"RightArm": Quaternion(Vector3.UP, deg_to_rad(90.0)) * Quaternion(Vector3.BACK, deg_to_rad(70.0)),
 			"RightForeArm": Quaternion(Vector3.UP, deg_to_rad(120.0))})
-		var deepest := [0.0]
+		var deepest := [0.0, -INF]
 		var f := func():
 			var sk := body.skeleton
 			var a := sk.get_bone_global_pose(sk.find_bone("Hips")).origin
 			var b := sk.get_bone_global_pose(sk.find_bone("Neck")).origin
 			var e := sk.get_bone_global_pose(sk.find_bone("RightForeArm")).origin
 			var h := sk.get_bone_global_pose(sk.find_bone("RightHand")).origin
+			var cap := body.torso_capsule(true)
 			for k in [0.3, 0.6, 0.9]:
 				var q := e.lerp(h, k)
 				var t := clampf((q - a).dot(b - a) / (b - a).length_squared(), 0.0, 1.0)
 				deepest[0] = maxf(deepest[0], 0.1 - q.distance_to(a + (b - a) * t))
+				# The forearm's own surface against the chest as drawn.
+				var c: Array = WsgPoseLayer._seg_seg(q, q, cap[0], cap[1])
+				deepest[1] = maxf(deepest[1], float(cap[2]) + WsgPoseLayer.FOREARM_R - float(c[2]))
 		body.posed.connect(f, CONNECT_ONE_SHOT)
 		body.reset_pose()
 		await process_frame
 		await process_frame
 		inside.append(deepest[0] * 1000.0)
+		in_cap.append(deepest[1] * 1000.0)
 	lines.append("chest: a forearm laid through it %.0f mm deep, kept clear %.0f mm" % [inside[0], inside[1]])
 	if inside[0] < 20.0 or inside[1] > 5.0:
 		failures.append("chest clearance: %.0f mm in without, %.0f with" % [inside[0], inside[1]])
+	lines.append("chest as drawn (torso_capsule, r %.0f mm): the forearm's surface %.0f mm into it without, %.0f with torso_r 0.1, %.0f with torso_from_body" % [float(cap0[2]) * 1000.0, in_cap[0], in_cap[1], in_cap[2]])
+	if in_cap[0] < 20.0 or in_cap[2] > 5.0:
+		failures.append("torso_from_body: the forearm %.0f mm into the drawn chest without, %.0f with" % [in_cap[0], in_cap[2]])
+	layer.torso_from_body = false
 	layer.queue_free()
 	await process_frame
 
@@ -514,6 +528,59 @@ func _stick() -> void:
 		failures.append("clear_segment test: only %d of the sticks went through the chest" % through)
 	if clear_q != Quaternion.IDENTITY:
 		failures.append("clear_segment turned a stick already clear: %s" % clear_q)
+	b.queue_free()
+	await process_frame
+
+
+## A limb as a capsule (WsgBody.limb_capsule: from one joint to the next, its girth measured from the mesh, moved and
+## scaled with the body), and a stick through the upper arm turned clear of it about the top fist (clear_segment).
+func _limb() -> void:
+	var b := WsgBody.new(body.character)
+	root.add_child(b)
+	b.position = Vector3(-2, 0, 1)
+	b.rotation.y = deg_to_rad(-40.0)
+	b.scale = Vector3.ONE * 1.1
+	await process_frame
+	var mesh: Mesh = (b.character.meshes as Array)[0]
+	for pair in [["LeftArm", "LeftForeArm", 0.04, 0.09], ["LeftForeArm", "LeftHand", 0.025, 0.065], ["RightArm", "RightForeArm", 0.04, 0.09]]:
+		var cap := b.limb_capsule(pair[0], pair[1])
+		var m := WsgBody.measure_limb(b.joints, mesh, pair[0], pair[1])
+		var xf := b.skeleton.global_transform
+		var wa: Vector3 = xf * b.skeleton.get_bone_global_pose(b.bone(pair[0])).origin
+		var wb: Vector3 = xf * b.skeleton.get_bone_global_pose(b.bone(pair[1])).origin
+		lines.append("limb capsule %s-%s: radius %.0f mm (measured %.0f mm at scale 1)" % [pair[0], pair[1], float(cap[2]) * 1000.0, m * 1000.0])
+		if cap.size() != 3 or (cap[0] as Vector3).distance_to(wa) > 0.001 or (cap[1] as Vector3).distance_to(wb) > 0.001:
+			failures.append("limb_capsule %s-%s is not on the joints: %s" % [pair[0], pair[1], cap])
+		elif m < float(pair[2]) or m > float(pair[3]) or absf(float(cap[2]) - m * 1.1) > 0.001:
+			failures.append("limb_capsule %s-%s: radius %.3f (measured %.3f)" % [pair[0], pair[1], cap[2], m])
+		var sk_cap := b.limb_capsule(pair[0], pair[1], true)
+		if (xf * (sk_cap[1] as Vector3)).distance_to(cap[1]) > 0.001:
+			failures.append("limb_capsule(true) is not the skeleton-space capsule")
+	if not b.limb_capsule("LeftArm", "NoSuchBone").is_empty():
+		failures.append("limb_capsule with a bone not on the rig is not []")
+	# A stick from a fist in front of the upper arm back through its middle, turned clear about the fist.
+	var arm := b.limb_capsule("LeftArm", "LeftForeArm")
+	var mid: Vector3 = (arm[0] as Vector3).lerp(arm[1], 0.5)
+	var fwd := b.global_transform.basis.z.normalized()
+	var pivot := mid + fwd * 0.35 + Vector3.UP * 0.05
+	var dir := (mid - pivot).normalized()
+	var sa := pivot - dir * 0.08
+	var sb := pivot + dir * 0.9
+	var d0: float = float(WsgPoseLayer._seg_seg(sa, sb, arm[0], arm[1])[2]) - float(arm[2])
+	var q := WsgPoseLayer.clear_segment(sa, sb, pivot, arm, 0.03)
+	var d1: float = float(WsgPoseLayer._seg_seg(pivot + q * (sa - pivot), pivot + q * (sb - pivot), arm[0], arm[1])[2]) - float(arm[2])
+	lines.append("stick through the upper arm: %.0f mm in, turned %.1f degrees about the fist: %.0f mm clear" % [-d0 * 1000.0, rad_to_deg(q.get_angle()), d1 * 1000.0])
+	if d0 >= 0.0 or d1 < 0.03 - 0.0005:
+		failures.append("clear_segment against the upper arm: %.1f mm before, %.1f after" % [d0 * 1000.0, d1 * 1000.0])
+	# Without a mesh: LIMB_K of the length.
+	var bare := WsgBody.new({"joints": b.joints})
+	root.add_child(bare)
+	await process_frame
+	var bc := bare.limb_capsule("LeftArm", "LeftForeArm")
+	var want := WsgBody.LIMB_K * ((b.joints.LeftForeArm as Vector3) - (b.joints.LeftArm as Vector3)).length()
+	if bc.size() != 3 or absf(float(bc[2]) - want) > 0.0005:
+		failures.append("limb_capsule without a mesh: %s (want radius %.3f)" % [bc, want])
+	bare.queue_free()
 	b.queue_free()
 	await process_frame
 

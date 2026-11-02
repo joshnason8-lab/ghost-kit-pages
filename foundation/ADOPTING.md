@@ -476,6 +476,22 @@ func holds(sk: Skeleton3D, hips: Transform3D, lift: Vector3) -> Dictionary:
 The drawn stick, placed from the top hand in `posed` as before, follows. (There is no switch on the layer for this: the
 stick's tip read back from the world is where last frame's turn put it, so it would flicker clear and back.)
 
+The torso is not all a stick can go through. Hurling's free, just after contact, put the hurley through the lead upper
+arm (5-6 cm, two frames), which the torso's capsule cannot see:
+- `body.limb_capsule(upper_bone, lower_bone, skeleton_space := false) -> [a, b, radius]`: a limb from one joint to the
+  next (`"LeftArm", "LeftForeArm"`: the upper arm; `"LeftForeArm", "LeftHand"`: the forearm), its radius measured once
+  from your baked mesh (most of the girth, the sleeve included: 76 mm on the hurler's upper arm), else 0.18 of its
+  length; `[]` for a bone not on the rig.
+
+Clear the stick against each in turn, a few passes (one clearance can push it into the other), all about the same top
+fist, and margin = 0.03 + the stick's radius. The arm that holds the stick moves after your holds solve, so measure
+the result in `posed`.
+
+The layer keeps the forearms out of the chest round the hips-to-neck joint line (`torso_r`), which sits toward the
+back: a forearm across the front of a deep chest still sank in (Hurling's follow-through, 2-4 cm). Set
+`layer.torso_from_body = true` (the layer under a WsgBody's skeleton) to keep them out of `body.torso_capsule()`
+instead - the chest as drawn; `torso_r` is then not used.
+
 ## 5.13 Low tier: WsgToonDriver (the capture on your own cheap body)
 
 On Low a budget game keeps its own 17-bone toon (its own mesh: the same draw calls, nothing new to skin) - and
