@@ -397,6 +397,16 @@ set it behaves as before.
   `{shift, scale}` into `<name>_rig.json` (`character.stance`: rig = (skeleton point - shift) * scale) for a game that
   maps its own skeleton onto the rig (Kho Kho worked them out again).
 
+**Screens**
+- **Never `RichTextLabel.threaded = true`** (a Licences, Help or Privacy page included). On Godot 4.7.2 a label laid
+  out on a worker thread while the main thread draws, sizes (`fit_content`), scrolls or frees it crashes the engine
+  now and then, with no script error: signal 11 in `RichTextLabel::_shape_line` and `TextServerAdvanced`'s shaped
+  text, on a worker thread (Netball's input_test, 0.8.5) or on the main thread as it draws (Sepak Takraw's
+  test_runner screen tour, 0.13.0); Kho Kho's fit_audit and Kabaddi's Licences page hit it too. It is not the
+  foundation's and not the licensed data's: CI simply runs with the data, and the race is rare. Lay a long text out on
+  the main thread in pieces, one label of a few paragraphs a frame (Kabaddi's `licences_screen.gd`, 54a964d), and
+  have a test wait for the page to be built before it reads the words.
+
 ## 5.11 Watch mode: WsgSpectator (addons/wsg_foundation/broadcast/spectator.gd)
 
 Your AI against itself, shown as television shows it. Your match flow stays yours (the menu entry, the team pick,
