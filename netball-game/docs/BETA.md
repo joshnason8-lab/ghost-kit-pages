@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.3-beta
+
+- **The shared foundation** (the pilot, merged): on Medium and High the players, umpires and reserves move on the
+  shared rig with motion-captured running; a slowed replay after each goal and of a winning intercept (tap to skip);
+  graphics levels chosen and adjusted for the phone. Low looks as before.
+
 ## New in 0.8.2-beta
 
 - **Steadier**: Back from the pause menu's Move buttons or team changes now returns to the pause menu (it used to
