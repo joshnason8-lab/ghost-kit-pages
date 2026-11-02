@@ -225,6 +225,10 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   slow walk's feet keep to the ground. Crowd: stand spots at the step's front edge (`SEAT_BACK`), the school's
   barricade children standing on the grass; a new crowd loop without the chant; school birds 4 dB quieter.
 
+- 0.11.3: match_sim showed 0.11.2's half-each push between the chaser and a defender cut classic outs from 1.52 to
+  1.18 a minute (10 matches; with only that push off, 1.62). The chaser now gives way entirely; defenders no longer
+  steer round him. After: classic 1.61, fast 1.66.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from

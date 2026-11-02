@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.11.3
+
+- **Outs back where they were.** 0.11.2's solid bodies pushed a defender on, away from the chaser's hand, every time
+  they met, and the classic game's outs fell a fifth. Now the chaser gives way to the defender, so they still never
+  pass through each other.
+
 ## What's new in 0.11.2
 
 - **The stick follows the camera, in every view.** Up on the stick runs him up the screen, right runs him right,
