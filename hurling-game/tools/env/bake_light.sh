@@ -8,6 +8,7 @@ PROJ=$(cd "$HERE/../.." && pwd)
 OUT=$(mktemp -d)
 godot --headless --path "$PROJ" res://tools/env/bake_light.tscn -- "$OUT"
 for j in "$OUT"/*.json; do
+	case "$j" in *_probe_points.json|*_probes.json) continue ;; esac
 	b=${j%.json}
 	blender -b --python "$PROJ/tools/wsg/blender/bake_light.py" -- --base "$b" --samples "${1:-64}"
 	n=$(basename "$b")

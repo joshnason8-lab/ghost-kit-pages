@@ -69,6 +69,7 @@ var rng: RandomNumberGenerator = null
 var cut_from_heading := false
 
 var _blend := {}                # gait blend-space points: name -> Vector2
+var _rings := []                # per gait (walk, jog, run): its points as [direction (rad), speed, stride] (_stride)
 var _shot := ""                 # the one-off clip playing
 var _shot_t := 0.0
 var _shot_len := 1.0
@@ -476,20 +477,28 @@ func _stride(v: Vector2) -> float:
 	if s < 0.05:
 		return 1.0
 	var a := atan2(v.x, v.y)
+	if _rings.is_empty():
+		# Each gait's points, once (this ran over every point's name and meta three times a frame: a third of the
+		# locomotor's own time).
+		for g in ["Walk", "Jog", "Run"]:
+			var pts := []
+			for nm in _blend:
+				if nm.begins_with(g + "_"):
+					var p: Vector2 = _blend[nm]
+					var m := WsgClips.meta(nm)
+					pts.append([atan2(p.x, p.y), float(m.speed), float(m.stride)])
+			_rings.append(pts)
 	var rings := []
-	for g in ["Walk", "Jog", "Run"]:
-		var best := ""
+	for pts: Array in _rings:
+		var best: Array = []
 		var bd := INF
-		for nm in _blend:
-			if nm.begins_with(g + "_"):
-				var p: Vector2 = _blend[nm]
-				var d := absf(wrapf(atan2(p.x, p.y) - a, -PI, PI))
-				if d < bd:
-					bd = d
-					best = nm
-		if best != "":
-			var m := WsgClips.meta(best)
-			rings.append([float(m.speed) * leg_scale, float(m.stride) * leg_scale])
+		for p: Array in pts:
+			var d := absf(wrapf(float(p[0]) - a, -PI, PI))
+			if d < bd:
+				bd = d
+				best = p
+		if not best.is_empty():
+			rings.append([float(best[1]) * leg_scale, float(best[2]) * leg_scale])
 	if rings.is_empty():
 		return 1.0
 	if s <= rings[0][0]:
