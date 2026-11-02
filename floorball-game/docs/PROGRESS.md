@@ -227,6 +227,37 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.2-beta: the shared foundation, a proper grip, a real goalkeeper, Watch at 2x (2 November 2026)
+
+The foundation pilot (claude/floorball-foundation-pilot, 0.9.1-pilot) merged in whole: every player on the shared
+rig with the licensed motion capture, the goal's replay, the graphics stepping down by itself, the 3D crowd (see the
+pilot's commits). Then the owner's notes on it (playtest on a Galaxy A16):
+- **"The stick is held wrong"**: as coaching guides teach it (the top hand at the end of the shaft, in front of the
+  body; the lower hand down the shaft on the stick's side; the blade on the floor out to that side; knees bent): the
+  lower hand 27 cm below the top (was 23), sliding up only as far as the arm must; the blade 40 cm out to the stick
+  side and 74 cm ahead (was 24 and 82: the stick hung between the feet); dribbling side to side across the front.
+  Sprinting away from the ball (over 4.6 m/s, more than 6 m from it) a player carries the stick in his top hand alone,
+  the other arm swinging with the run, as players do; both hands again near the ball or for any move (player.gd
+  _stick, foundation_link.gd holds).
+- **"Running looks way worse, leaning and shaped weird"** (measured with the Foundation session): the link's reach
+  controller (FoundationLink._leans and _shifts) was a pure integrator, pinned at its limits: about 13 degrees more
+  trunk lean everywhere, the hips 11 to 31 cm low (knees bent to 114 degrees at a sprint), swaying, and snapping to
+  another value at every shot or pass. Now it leaks back at running speed, its limits fall with speed (at a sprint
+  10 degrees and 10 cm, standing still as before), it eases between moves instead of snapping, and the game's own lean
+  is 40 degrees standing over the ball, 28 at a sprint, 14 one-handed: upright and long-striding on a sprint, bent
+  over the ball when on it.
+- **A Meshy goalkeeper** (approved): one text-to-3D generation, one texture pass and Meshy's auto-rig: padded
+  jersey and trousers, knee pads, gloves, white helmet with a wire cage, no stick; baked onto the shared rig
+  (tools/wsg/bake_character.sh) as assets/foundation/keeper_*, with its own texture (keeper.jpg, keeper_2k.jpg). The
+  kit takes each team's keeper colours as the players' do; the save poses are the game's own. Credits: 65 (40 for
+  the generation, 10 the texture, 15 the rig; the brief guessed about 35), 59 left.
+- **Licences**: "Motion capture: MoCap Online · ActorCore (Reallusion)".
+- **Watch AI** (every game): Watch a match already had the team pick, the broadcast camera, the score and clock,
+  pause and exit, and now the goal's replay; added a 1x/2x button (the engine's time scale and physics rate doubled
+  together, so the match plays the same steps; back to normal when paused, in a replay and on leaving) and a REPLAY
+  tag on the replay (15 languages).
+- Tests: Watch at 2x (the button, the rate, paused, resumed, left), the replay's tag.
+
 ### 0.9.1-beta: a serious look, hands on the stick, a new penalty shot (29 October 2026)
 
 The owner's list:

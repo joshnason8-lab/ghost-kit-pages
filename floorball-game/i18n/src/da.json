@@ -396,5 +396,6 @@
   "POINTS_N_OTHER": "{n} point",
   "HOME": "Hjem",
   "BTN_DEKE": "Finte",
-  "SO_HINT": "Styr med pinden · FINTE snyder · hold SKUD og slip (pinden vælger hjørne)"
+  "SO_HINT": "Styr med pinden · FINTE snyder · hold SKUD og slip (pinden vælger hjørne)",
+  "REPLAY": "Gentagelse"
 }

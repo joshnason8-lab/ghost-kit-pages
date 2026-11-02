@@ -396,5 +396,6 @@
   "POINTS_N_OTHER": "{n} punti",
   "HOME": "Home",
   "BTN_DEKE": "Finta",
-  "SO_HINT": "Guida con il joystick · FINTA inganna · tieni premuto TIRO e rilascia (il joystick sceglie l'angolo)"
+  "SO_HINT": "Guida con il joystick · FINTA inganna · tieni premuto TIRO e rilascia (il joystick sceglie l'angolo)",
+  "REPLAY": "Replay"
 }

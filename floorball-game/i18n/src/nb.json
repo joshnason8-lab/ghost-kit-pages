@@ -396,5 +396,6 @@
   "POINTS_N_OTHER": "{n} poeng",
   "HOME": "Hjem",
   "BTN_DEKE": "Finte",
-  "SO_HINT": "Styr med spaken · FINTE lurer · hold SKUDD og slipp (spaken velger hjørne)"
+  "SO_HINT": "Styr med spaken · FINTE lurer · hold SKUDD og slipp (spaken velger hjørne)",
+  "REPLAY": "Reprise"
 }

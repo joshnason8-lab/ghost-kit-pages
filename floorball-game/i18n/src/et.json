@@ -396,5 +396,6 @@
   "POINTS_N_OTHER": "{n} punkti",
   "HOME": "Avaleht",
   "BTN_DEKE": "Pettemanööver",
-  "SO_HINT": "Juhi juhtkangiga · PETTEMANÖÖVER petab · hoia LÖÖKI ja lase lahti (kang valib nurga)"
+  "SO_HINT": "Juhi juhtkangiga · PETTEMANÖÖVER petab · hoia LÖÖKI ja lase lahti (kang valib nurga)",
+  "REPLAY": "Kordus"
 }

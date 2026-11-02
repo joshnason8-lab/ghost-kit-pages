@@ -87,6 +87,17 @@ func setup(p_match: Node) -> void:
 	root.add_child(tr_box)
 	if not bool(m.config.get("practice", false)):   # penalty shots keep their own close camera
 		tr_box.add_child(UI.round_button("camera", func(): m.cam.toggle(), 60))
+	if m.watch:
+		# Watching: the match at its own pace or twice as fast.
+		var fast := UI.button("1×", false)
+		fast.name = "Speed"
+		fast.custom_minimum_size = Vector2(76, 60)
+		fast.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		fast.pressed.connect(func():
+			m.set_fast(not m.fast)
+			fast.text = "2×" if m.fast else "1×")
+		tr_box.add_child(fast)
+		tr_box.offset_left = -300
 	tr_box.add_child(UI.round_button("pause", func(): m.set_paused(not m.paused), 60))
 	if bool(Game.settings.dev):
 		_dev = UI.label("", "HudLabel", 15)

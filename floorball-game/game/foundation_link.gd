@@ -29,6 +29,7 @@ var reader: WsgLegacyPose
 var stick: MeshInstance3D
 var material: ShaderMaterial
 var mode := ""
+var keeper_model := false     # drawn as the Meshy goalkeeper (his own kit, helmet and cage)
 var top := "Right"            # the hand at the top of the stick (a left-shooter's right)
 var low := "Left"
 var _arm_len := {}            # side -> shoulder to wrist (m, the rig's rest)
@@ -72,6 +73,11 @@ func _ready() -> void:
 	var look := gb.look
 	var kind := String(look.get("kind", "player"))
 	var prefix := "woman" if bool(look.get("women", false)) and kind != "referee" else "man"
+	# A goalkeeper is the Meshy goalkeeper in his full kit (padded jersey and trousers, knee pads, gloves, the helmet
+	# and cage his own), for the men's and the women's game alike.
+	keeper_model = kind == "keeper" and ResourceLoader.exists(DIR + "keeper_rig.json")
+	if keeper_model:
+		prefix = "keeper"
 	if not ResourceLoader.exists(DIR + prefix + "_rig.json"):
 		prefix = "man"
 	var lod := 1 if int(Game.settings.graphics) == Game.GFX_LOW else 0
@@ -115,7 +121,7 @@ func _ready() -> void:
 		# (Both arms are laid by the holds on the stick, made anatomical there: the reader need not rebuild the game's.)
 		reader.sound_arms = false
 		_make_stick()
-	elif kind == "keeper":
+	elif kind == "keeper" and not keeper_model:
 		_make_helmet()
 
 
@@ -142,6 +148,8 @@ func recolour() -> void:
 	if gb.rig and gb.rig.material:
 		for k in ["albedo_tex", "jersey_col", "shorts_col", "socks_col", "trim_col", "skin_ratio", "keeper", "recolour"]:
 			material.set_shader_parameter(k, gb.rig.material.get_shader_parameter(k))
+		if keeper_model:
+			material.set_shader_parameter("albedo_tex", load(_keeper_tex()))
 		return
 	# (No RiggedBody: the colours straight from the look.)
 	var look := gb.look
@@ -149,9 +157,14 @@ func recolour() -> void:
 		var c: Color = look.get(k[1], k[2])
 		material.set_shader_parameter(k[0], Vector3(c.r, c.g, c.b))
 	material.set_shader_parameter("keeper", 1.0 if String(look.get("kind", "")) == "keeper" else 0.0)
-	var tex := RiggedBody.DIR + ("woman" if bool(look.get("women", false)) else "man") + ".jpg"
+	var tex := _keeper_tex() if keeper_model else RiggedBody.DIR + ("woman" if bool(look.get("women", false)) else "man") + ".jpg"
 	if ResourceLoader.exists(tex):
 		material.set_shader_parameter("albedo_tex", load(tex))
+
+
+## The goalkeeper's own texture: 1024 px on Low, 2048 above (as the players' are).
+static func _keeper_tex() -> String:
+	return DIR + ("keeper.jpg" if int(Game.settings.graphics) == Game.GFX_LOW else "keeper_2k.jpg")
 
 
 ## The stick: RiggedBody's mesh and materials, drawn in this body's top hand (a child of the body, so it moves with
@@ -230,7 +243,7 @@ func update(dt: float) -> void:
 	else:
 		_g = reader._last_global
 	if stick and want == "full" and pose.has("@hips"):
-		pose["@hips"] = (pose["@hips"] as Vector3) + _shifts.get("full", Vector3.ZERO)
+		pose["@hips"] = (pose["@hips"] as Vector3) + _shift_now
 	var bp := {}
 	if stick and want == "full":
 		bp = _pick(_g, TRUNK)
@@ -273,7 +286,11 @@ func update(dt: float) -> void:
 	# moment late, and the trunk, the hands and the stick face where the game's do.)
 	var turn := (body.skeleton.global_transform.affine_inverse() * gb.skeleton.global_transform).basis.orthonormalized().get_rotation_quaternion()
 	# And leant further forward over the stick by the lean (the rig's shoulders stand further back than the game's).
-	var lean := Quaternion(Vector3.RIGHT, float(_leans.get(mode, 0.0))) if stick else Quaternion.IDENTITY
+	# (Eased toward the mode's own values: a shot, a pass or a tackle does not snap the trunk.)
+	var ek := minf(1.0, dt * 8.0)
+	_lean_now = lerpf(_lean_now, float(_leans.get(mode, 0.0)), ek)
+	_shift_now = _shift_now.lerp(_shifts.get(mode, Vector3.ZERO), ek)
+	var lean := Quaternion(Vector3.RIGHT, _lean_now) if stick else Quaternion.IDENTITY
 	for k in bp:
 		var q: Quaternion = turn * (bp[k] as Quaternion)
 		if k != "Head":
@@ -289,7 +306,7 @@ func update(dt: float) -> void:
 			if body.full:
 				_close_fists()
 			if mode == "stick":
-				legacy.shift = _shifts.get("stick", Vector3.ZERO)
+				legacy.shift = _shift_now
 	legacy.hold = {}
 	# The skeleton's modifiers now, once (WsgBody.set_manual).
 	body.advance(dt)
@@ -347,6 +364,7 @@ static func _pick(d: Dictionary, keys: Array) -> Dictionary:
 		if d.has(k):
 			out[k] = d[k]
 	return out
+var _low_w := 1.0             # how far the lower hand is on the stick (0: the top hand carries it alone)
 var _slid := []               # [the top fist's slide along the shaft, the lower's, the lower's roll round it] as last worked out
 
 
@@ -367,7 +385,9 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	var v_low: Vector3 = (_grip_pt[low] as Vector3) - (body.joints[low + "Hand"] as Vector3)
 	var qt := _along(_rig_turn * (g[top + "Hand"] as Quaternion), down)
 	var ql := _along(_rig_turn * (g[low + "Hand"] as Quaternion), down)
-	var spacing := maxf(0.12, float(hands.get(l_s, 0.23)) - float(hands.get(t_s, 0.03)))
+	var one := not hands.has(l_s)    # the stick in the top hand alone: the other arm the run's own
+	_low_w = move_toward(_low_w, 0.0 if one else 1.0, _dt * 6.0)
+	var spacing := maxf(0.12, float(hands.get(l_s, 0.34)) - float(hands.get(t_s, 0.03)))
 	# Each fist slid along the shaft to where its arm reaches (the shoulders where the trunk now has them; the lift
 	# not yet added): the top one never off the grip's end, the lower one at least a hand below it.
 	var top_at := sx.origin - lift + down * TOP_AT
@@ -386,7 +406,9 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	var in_hips := hips_g.affine_inverse() * Transform3D(hand_t.basis, hand_t.origin - lift)
 	# (No handle given to the layer: its own slide and roll round the handle, searched each frame, cost a phone more
 	# than all the rest of the hold.)
-	return {top: ["Hips", in_hips, 1.0], low: [top + "Hand", hand_t.affine_inverse() * hand_l, 1.0]}
+	if _low_w <= 0.0:
+		return {top: ["Hips", in_hips, 1.0]}
+	return {top: ["Hips", in_hips, 1.0], low: [top + "Hand", hand_t.affine_inverse() * hand_l, _low_w]}
 
 
 ## How far along dir a wrist meant for wrist must move for the side's arm to reach it comfortably (WsgPoseLayer's own
@@ -471,7 +493,7 @@ func _place_stick() -> void:
 	var lo: Vector3 = body.bone_world(low + "Hand") * ((_grip_pt[low] as Vector3) - (body.joints[low + "Hand"] as Vector3))
 	var d := (xf.basis * Vector3.DOWN).normalized()
 	var pivot := xf.origin + d * d.dot(fist - xf.origin)
-	if d.dot(lo - pivot) > 0.08 * s:
+	if _low_w > 0.5 and d.dot(lo - pivot) > 0.08 * s:
 		var turned := _turn_about(xf, pivot, xf * Vector3(0, -Body.STICK_LEN * 0.5, 0), lo, 10.0)
 		var h2 := turned * Vector3(0, -Body.STICK_LEN, 0)
 		if h2.y >= floor_y - 0.005 * s:
@@ -493,7 +515,7 @@ func _place_stick() -> void:
 	var game_sh := inv * (gb.skeleton.global_transform * gb.shoulder(t_s))
 	var err := Vector3.ZERO
 	var spacing := maxf(0.12, float(gb.stick_hands().get("l" if t_s == "r" else "r", 0.23)) - float(gb.stick_hands().get(t_s, 0.03)))
-	for k in 2:
+	for k in (2 if _low_w > 0.5 else 1):
 		var side := top if k == 0 else low
 		var grip := inv * (xf * Vector3(0, -(TOP_AT + spacing * k), 0))
 		var sh := inv * body.bone_world(side + "Arm").origin
@@ -503,15 +525,21 @@ func _place_stick() -> void:
 		err += (want_sh - sh) * (0.65 if k == 0 else 0.35)
 	# Forward: mostly a further lean of the trunk (the hips carried forward took the legs into the stick), the rest the
 	# hips; down and sideways the hips.
-	var lean := clampf(float(_leans.get(mode, 0.0)) + err.z / 0.45 * 0.3, 0.0, 0.35)
+	# Both leak back toward nothing (they settle where the arms need them, not wound up to their limits), and less of
+	# either the faster he runs: a sprinting player runs upright on his own legs, his arms reaching the stick.
+	var run_k := clampf((player.vel.length() - 2.0) / 3.0, 0.0, 1.0)
+	var leak := 1.0 - minf(1.0, _dt * 0.8 * run_k)
+	var lean := clampf(float(_leans.get(mode, 0.0)) * leak + err.z / 0.45 * 0.3, 0.0, lerpf(0.35, 0.18, run_k))
 	_leans[mode] = lean
-	var shift: Vector3 = _shifts.get(mode, Vector3.ZERO) + err * 0.35
-	_shifts[mode] = Vector3(clampf(shift.x, -0.08, 0.08), clampf(shift.y, -0.32, 0.04), clampf(shift.z, -0.04, 0.05))
+	var shift: Vector3 = _shifts.get(mode, Vector3.ZERO) * leak + err * 0.35
+	_shifts[mode] = Vector3(clampf(shift.x, -0.04, 0.04), clampf(shift.y, lerpf(-0.3, -0.1, run_k), 0.04), clampf(shift.z, -0.04, 0.05))
 
 
 ## The hips moved (this body's skeleton space) so its top shoulder is where the game's is: lower and further forward
 ## (the rig's chest stands taller and its shoulders further back than the game's floorball stance).
 var _shifts := {}             # mode -> Vector3
+var _shift_now := Vector3.ZERO  # as applied (eased toward the mode's)
+var _lean_now := 0.0
 var _leans := {}              # mode -> radians the trunk is leant further forward
 
 
@@ -533,7 +561,9 @@ var last_fists := {}
 
 func _measure(xf: Transform3D) -> void:
 	var dir := (xf.basis * Vector3.DOWN).normalized()
-	for side in [top, low]:
+	# (The lower hand measured only while it holds the stick: one-handed, on a sprint, it is off it by design.)
+	last_fists.erase(low)
+	for side in ([top, low] if _low_w >= 1.0 else [top]):
 		var hand := body.bone_world(side + "Hand")
 		var p: Vector3 = hand * ((_grip_pt[side] as Vector3) - (body.joints[side + "Hand"] as Vector3))
 		var v := p - xf.origin

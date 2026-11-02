@@ -396,5 +396,6 @@
   "POINTS_N_OTHER": "{n} pistettä",
   "HOME": "Alkuun",
   "BTN_DEKE": "Harhauta",
-  "SO_HINT": "Ohjaa sauvalla · HARHAUTA harhauttaa · pidä LAUKAUS pohjassa ja päästä irti (sauva valitsee kulman)"
+  "SO_HINT": "Ohjaa sauvalla · HARHAUTA harhauttaa · pidä LAUKAUS pohjassa ja päästä irti (sauva valitsee kulman)",
+  "REPLAY": "Uusinta"
 }

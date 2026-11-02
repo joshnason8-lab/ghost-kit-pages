@@ -677,8 +677,25 @@ func _watch() -> void:
 		guard += 1
 	m._on_action("SHOOT")   # nothing to press: nobody is yours
 	check(m.user_player == null, "watch a match: nobody is yours")
+	var spd: Button = m.hud.root.find_child("Speed", true, false)
+	check(spd != null and spd.text == "1×", "watch a match: a speed button, 1x")
+	var ticks := Engine.physics_ticks_per_second
+	spd.pressed.emit()
+	check(m.fast and spd.text == "2×" and Engine.time_scale == 2.0 and Engine.physics_ticks_per_second == ticks * 2,
+		"watch a match at 2x: twice as fast, in the same steps of match time")
+	m.set_paused(true)
+	check(Engine.time_scale == 1.0, "paused at 2x: the pause menu at its own pace")
+	m.set_paused(false)
+	check(Engine.time_scale == 2.0, "resumed: 2x again")
+	var tag: CanvasLayer = m._replay_tag()
+	var tl: Label = null
+	for n in tag.find_children("*", "Label", true, false):
+		tl = n
+	check(tl != null and tl.text == tr("REPLAY"), "the goal's replay: tagged REPLAY")
+	tag.queue_free()
 	m.queue_free()
 	await frames(2)
+	check(Engine.time_scale == 1.0 and Engine.physics_ticks_per_second == ticks, "left at 2x: the game back at its own pace")
 
 
 ## The hall's words in the phone's language (game/signage.gd); the game's name as it is.

@@ -24,6 +24,8 @@ Wall", Charlotte Baglioni), birch slats ("White Maple Veneer", Jenelle van Heerd
 [b]Motion capture[/b]
 - How the players and referees walk and run: motion capture data from mocap.cs.cmu.edu. The database was created
 with funding from NSF EIA-0196217. (Clips 35_01, 35_17 and 16_55.)
+- Motion capture: MoCap Online · ActorCore (Reallusion). The players' running, skating-in, passing and shooting on
+the shared rig, and the 3D crowd; licensed for use in the game, baked into it when it is built.
 
 [b]Sounds[/b]
 - The referees' whistles: from Pixabay, under the Pixabay Content License: "Referee whistle" by charlesheffley009,

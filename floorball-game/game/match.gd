@@ -50,6 +50,8 @@ var gk_throw_air := false        # a goalkeeper's throw not yet touched anything
 var shooters_used := [[], []]
 var calls: Array = []            # the referees' decisions, for the box score
 var speed_k := 1.0
+var fast := false               # Watch a match at 2x (set_fast)
+var _ticks := 60                # the engine's physics rate before 2x
 var _rng := RandomNumberGenerator.new()
 var _last_carrier = null
 var _assist_candidate = null
@@ -1079,9 +1081,33 @@ func _start_replay() -> bool:
 		user_player.marker.visible = false
 	wsg_replay.play(t0, float(_replay.t1))
 	FoundationLink.replay_at = t0
+	_replay.tag = _replay_tag()
 	_set_phase("replay")
+	_apply_speed()
 	_replay_step(0.0)
 	return true
+
+
+## The replay's tag, top left as a broadcast has it: REPLAY on a dark plate with an orange rule.
+func _replay_tag() -> CanvasLayer:
+	var layer := CanvasLayer.new()
+	layer.layer = 5
+	var plate := PanelContainer.new()
+	plate.theme_type_variation = "DarkPanel"
+	plate.position = Vector2(32.0 + UI.sim_cutout, 26.0)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var rule := ColorRect.new()
+	rule.color = Game.C_MAGNET
+	rule.custom_minimum_size = Vector2(4, 0)
+	row.add_child(rule)
+	var l := UI.label(tr("REPLAY"), "HeaderLabel", 28)
+	l.uppercase = true
+	row.add_child(l)
+	plate.add_child(row)
+	layer.add_child(plate)
+	add_child(layer)
+	return layer
 
 
 func _ring_at(t: float) -> Vector3:
@@ -1124,6 +1150,8 @@ func _end_replay() -> void:
 	if ball._halo:
 		ball._halo.visible = bool(_replay.halo)
 	(_replay.cam as Camera3D).queue_free()
+	if is_instance_valid(_replay.get("tag")):
+		(_replay.tag as Node).queue_free()
 	cam.make_current()
 	if hud:
 		hud.visible = bool(_replay.hud)
@@ -1131,6 +1159,7 @@ func _end_replay() -> void:
 		user_player.marker.visible = bool(_replay.marker)
 	_replay = {}
 	_begin_restart({"kind": "faceoff", "spot": Vector2.ZERO})
+	_apply_speed()
 
 
 ## A tap (or a key) skips the replay.
@@ -2072,9 +2101,34 @@ func _user_side() -> int:
 
 func set_paused(p: bool) -> void:
 	paused = p
+	_apply_speed()
 	Sfx.set_paused(p)
 	if hud:
 		hud.show_pause(p)
+
+
+## Watch a match at twice its pace: the whole game (its play, its timers, its animation) runs at 2x, still in steps of
+## a 60th of a second of match time (twice as many a second), so it plays exactly as it would at 1x.
+func set_fast(on: bool) -> void:
+	if on and not fast:
+		_ticks = Engine.physics_ticks_per_second
+	fast = on
+	_apply_speed()
+
+
+func _apply_speed() -> void:
+	var k := 2 if fast and not paused and phase != "replay" else 1
+	if not fast and Engine.time_scale == 1.0:
+		return
+	Engine.time_scale = float(k)
+	Engine.physics_ticks_per_second = _ticks * k
+
+
+func _exit_tree() -> void:
+	if fast:
+		fast = false
+		Engine.time_scale = 1.0
+		Engine.physics_ticks_per_second = _ticks
 
 
 func on_back() -> void:

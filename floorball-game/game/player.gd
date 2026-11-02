@@ -150,6 +150,7 @@ func dir() -> Vector2:
 	return Vector2(cos(facing), sin(facing))
 
 
+var _one_hand := false        # the stick carried in the top hand alone (sprinting away from the ball)
 var _shot_from := 0.0         # the wind-up a shot started from (its follow-through goes with it)
 
 
@@ -245,7 +246,7 @@ func _animate(dt: float) -> void:
 	var sp := vel.length()
 	var run := clampf(sp / 3.0, 0.0, 1.0)
 	# Forward lean with speed, a low stance near the ball (a floorball player plays bent at the knees).
-	var lean_want := 40.0 + run * 4.0   # a floorball player plays bent forward over his stick
+	var lean_want := 14.0 + run * 3.0 if _one_hand else 40.0 - run * 12.0   # a floorball player plays bent forward over his stick (the run's own lean on top)
 	if act == "tackle":
 		lean_want += 22.0   # and lunges into a tackle
 	var crouch_want := 0.0
@@ -403,7 +404,7 @@ func _mocap_legs(p: Dictionary, g: Dictionary, w: float, legs_yaw: float) -> voi
 ## waist (507.2: a high stick is an offence).
 func _stick(dt: float, t: float) -> void:
 	var side := 1.0 if shoots_left() else -1.0
-	var want := Vector3(0.24 * side, 0.0, 0.82)
+	var want := Vector3(0.40 * side, 0.0, 0.74)
 	var top_hand := "r" if shoots_left() else "l"
 	var lift := 0.0     # the hands drawn back and up across his chest with the wind-up (0 to 1)
 	var follow := 0.0   # and through, high in front, after the shot
@@ -447,11 +448,23 @@ func _stick(dt: float, t: float) -> void:
 	if act == "" and windup <= 0.0 and match_node and match_node.has_method("has_ball") and match_node.has_ball(self):
 		# Dribbling: the blade works the ball side to side in front of him.
 		_wob += dt * (7.0 + vel.length() * 0.6)
-		want = Vector3((0.14 + 0.16 * sin(_wob)) * side, 0.0, 0.76 + vel.length() * 0.03)
+		want = Vector3((0.26 + 0.2 * sin(_wob)) * side, 0.0, 0.72 + vel.length() * 0.03)
+	# Sprinting away from the ball, as players do: the stick in the top hand alone, carried low ahead, the other arm
+	# free to swing (back in both hands within a few metres of the ball, or for any move of the stick).
+	var bd := 99.0
+	if match_node and match_node.get("ball") != null:
+		var bp: Vector3 = match_node.ball.pos
+		bd = pos.distance_to(Vector2(bp.x, bp.z))
+	var fast := vel.length() > (3.8 if _one_hand else 4.6) and bd > (4.5 if _one_hand else 6.0)
+	_one_hand = fast and act == "" and windup <= 0.0 and not (match_node and match_node.has_method("has_ball") and match_node.has_ball(self))
+	if _one_hand:
+		want = Vector3(0.3 * side, 0.0, 0.95)
 	var rate := 26.0 if act in ["shoot", "pass", "tackle"] else 12.0
 	_blade = _blade.lerp(want, minf(1.0, rate * dt))
 	# Heel on the floor (or where the swing has it), the grip end near the top hand's hip.
-	var grip := Vector3(-0.06 * side, 0.96 - _crouch * 0.14, 0.27)
+	var grip := Vector3(-0.06 * side, 0.96 - _crouch * 0.12, 0.32)
+	if _one_hand:
+		grip = Vector3(-0.16 * side, 0.9, 0.16)   # the top hand by the hip
 	grip = grip.lerp(Vector3(-0.18 * side, 1.12, 0.16), lift).lerp(Vector3(-0.28 * side, 1.18, 0.42), follow)
 	var heel := _blade + Vector3(-0.06 * side, 0.0, -0.06)
 	var shaft := heel - grip
@@ -473,7 +486,7 @@ func _stick(dt: float, t: float) -> void:
 	# ball.
 	var toe := Vector3(heel.x - grip.x, 0, heel.z - grip.z)
 	toe = toe.normalized() if toe.length() > 0.01 else Vector3(0.3 * side, 0, 1.0).normalized()
-	body.place_stick(grip, heel, toe, top_hand, 0.24)
+	body.place_stick(grip, heel, toe, top_hand, 0.28, not _one_hand)
 
 
 ## Where the blade is now, on the floor (for the ball to sit on and for tackles).

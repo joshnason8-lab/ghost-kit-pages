@@ -400,5 +400,6 @@
   "POINTS_N_OTHER": "{n} bodov",
   "HOME": "Domov",
   "BTN_DEKE": "Klička",
-  "SO_HINT": "Riaď joystickom · KLIČKA klame · drž STRELA a pusti (joystick volí roh)"
+  "SO_HINT": "Riaď joystickom · KLIČKA klame · drž STRELA a pusti (joystick volí roh)",
+  "REPLAY": "Záznam"
 }

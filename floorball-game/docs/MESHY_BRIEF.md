@@ -11,6 +11,7 @@ are not in the repository (28 to 33 MB each); what ships is what `tools/meshy/pr
 | Man (men's players, goalkeepers, referees) | A Meshy character, rigged by Meshy with Mixamo's 23 bone names, with Running and Walking clips; 21,500 triangles, a 4096 px texture | `man.scn` 10,800 triangles (High), `man_mid.scn` 5,400 (Medium), `man_low.scn` 2,700 (Low); `man.jpg` 1024 px (Low), `man_2k.jpg` 2048 px (Medium, High) |
 | Woman (women's players and goalkeepers) | The same kind, 136,500 triangles | `woman.scn` 8,500, `woman_mid.scn` 4,300, `woman_low.scn` 2,100; `woman.jpg`, `woman_2k.jpg` |
 | Stick | A Meshy prop with a 4096 px texture (black shaft, light-blue blade), 74,000 triangles | `stick.res` 1,400 triangles, `stick.jpg` 512 px |
+| Goalkeeper (0.9.2) | Generated for the game (text to 3D, texture, Meshy auto-rig; 65 credits): full keeper kit, helmet and cage, no stick | `assets/foundation/keeper_hi.res`, `keeper_lo.res`, `keeper_rig.json` (baked onto the shared rig), `keeper.jpg` 1024 px, `keeper_2k.jpg` 2048 px; drawn when the foundation is (FoundationLink) |
 | Stick, plain | The same stick untextured (white) | `stick_plain.res` (kept, unused) |
 
 Both people wear a dark-blue kit with light-blue trim. The game recolours it to each team's colours in the shader

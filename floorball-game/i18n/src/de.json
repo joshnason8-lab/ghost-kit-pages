@@ -396,5 +396,6 @@
   "POINTS_N_OTHER": "{n} Punkte",
   "HOME": "Start",
   "BTN_DEKE": "Finte",
-  "SO_HINT": "Steuere mit dem Joystick · FINTE täuscht · SCHUSS halten und loslassen (Joystick wählt die Ecke)"
+  "SO_HINT": "Steuere mit dem Joystick · FINTE täuscht · SCHUSS halten und loslassen (Joystick wählt die Ecke)",
+  "REPLAY": "Wiederholung"
 }
