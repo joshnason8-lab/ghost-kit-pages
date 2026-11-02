@@ -11,6 +11,7 @@ extends SceneTree
 ## see the fault it is there for.
 
 const R := 0.016   # a hurley's handle: 3.2 cm across
+const BALL_R := 0.112   # a netball (WsgGrip.solve_sphere)
 const KEEP := 0.85  # a joint's skin must keep this much of its distance from the bones when bent or twisted hard
 
 var body: WsgBody
@@ -70,6 +71,7 @@ func _initialize() -> void:
 	_soles()
 	await _hinges(poses)
 	await _grip(poses)
+	await _grip_sphere(poses)
 	await _torso()
 	for l in lines:
 		print(l)
@@ -369,6 +371,52 @@ func _toe_up(g: Dictionary, side: String) -> float:
 	var foot: Basis = g[side + "Foot"].basis
 	var local := (shin.inverse() * foot).get_euler(EULER_ORDER_YXZ)
 	return -rad_to_deg(local.x)
+
+
+## The hands close round a ball (grip_sphere): every fingertip comes onto it, no finger goes into it. Closed as a
+## ball-sized handle (grip) for comparison, which is what a game had before.
+func _grip_sphere(poses: Dictionary) -> void:
+	for as_sphere in [false, true]:
+		var posed := await _skin(poses.arms_down, func():
+			for side in ["Left", "Right"]:
+				if as_sphere:
+					body.grip_sphere(side, BALL_R)
+				else:
+					body.grip(side, BALL_R))
+		for side in ["Left", "Right"]:
+			var hand: Transform3D = posed.g[side + "Hand"]
+			# (The ball where each grip puts it: a handle's axis point, or the ball's own centre.)
+			var at := WsgGrip.sphere_point(body.joints, side, BALL_R) if as_sphere else WsgGrip.axis_point(body.joints, side, BALL_R)
+			var c := hand * (at - (body.joints[side + "Hand"] as Vector3))
+			var finger_ids := {}
+			for f in ["Index", "Middle", "Ring", "Pinky"]:
+				for k in 3:
+					finger_ids[WsgRig.index(side + "Hand" + f + str(k + 1))] = f
+			var deep := {}
+			var tips := {}
+			for v in src.size():
+				var b := bones[v * 4]
+				if weights[v * 4] < 0.5 or not finger_ids.has(b):
+					continue
+				var r: float = (posed.pos[v] as Vector3).distance_to(c)
+				var f: String = finger_ids[b]
+				deep[f] = minf(float(deep.get(f, INF)), r)
+				if WsgRig.BONES[b][0].ends_with("3"):
+					tips[f] = minf(float(tips.get(f, INF)), r)
+			var far := 0.0
+			var deepest := INF
+			var each := []
+			for f in ["Index", "Middle", "Ring", "Pinky"]:
+				if tips.has(f):
+					far = maxf(far, tips[f])
+				deepest = minf(deepest, deep.get(f, INF))
+				each.append("%s %+.1f" % [f.left(1), (float(deep.get(f, INF)) - BALL_R) * 1000.0])
+			lines.append("ball %-5s as a %-6s fingertips within %.1f cm of it; deepest %.1f mm inside (each finger's nearest, mm: %s)" % [side, "sphere" if as_sphere else "handle", (far - BALL_R) * 100.0, maxf(0.0, BALL_R - deepest) * 1000.0, ", ".join(each)])
+			if as_sphere:
+				if far > BALL_R + 0.025:
+					failures.append("%s hand does not close on the ball: a fingertip is %.1f cm off it" % [side, (far - BALL_R) * 100.0])
+				if deepest < BALL_R - 0.006:
+					failures.append("%s hand: a finger goes %.1f mm into the ball" % [side, (BALL_R - deepest) * 1000.0])
 
 
 ## The hands close round a 3.2 cm handle: every fingertip comes round to it, no finger goes through it. An open

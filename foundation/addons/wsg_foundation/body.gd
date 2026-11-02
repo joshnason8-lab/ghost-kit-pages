@@ -143,6 +143,23 @@ func grip(side: String, r := 0.016, strength := 1.0, line := []) -> void:
 		skeleton.set_bone_pose_rotation(i, skeleton.get_bone_pose_rotation(i).slerp(q, strength) if strength < 1.0 else q)
 
 
+## Closes the hand round a ball of radius r (WsgGrip.solve_sphere): centred at ball_point(side, r) (the ball in the
+## palm), or at centre (the rest, the joints' space).
+func grip_sphere(side: String, r: float, strength := 1.0, centre := Vector3.INF) -> void:
+	if not full:
+		return
+	var g := WsgGrip.solve_sphere(joints, side, r, centre)
+	for b in g:
+		var i := bone(b)
+		var q: Quaternion = g[b]
+		skeleton.set_bone_pose_rotation(i, skeleton.get_bone_pose_rotation(i).slerp(q, strength) if strength < 1.0 else q)
+
+
+## Where the centre of a ball of radius r held in that hand is (world): put the ball there (WsgGrip.sphere_point).
+func ball_point(side: String, r: float) -> Vector3:
+	return bone_world(side + "Hand") * (WsgGrip.sphere_point(joints, side, r) - (joints[side + "Hand"] as Vector3))
+
+
 ## Where a handle of radius r held in that hand has its axis (world transform: origin on the axis, basis.z along it).
 func grip_point(side: String, r := 0.016) -> Transform3D:
 	var hand := bone_world(side + "Hand")

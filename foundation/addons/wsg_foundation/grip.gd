@@ -9,6 +9,7 @@ extends RefCounted
 ##
 ##   body.grip("Right", 0.016)          # close the right hand on a 3.2 cm handle
 ##   body.grip_point("Right")           # where the handle's axis runs through that hand (world), to put the stick
+##   body.grip_sphere("Right", 0.112)   # or round a ball (solve_sphere), the ball at body.ball_point("Right", 0.112)
 
 const FINGER_HALF := 0.009      # a finger's half-thickness (m)
 const PALM_HALF := 0.016        # half the palm's thickness
@@ -50,9 +51,52 @@ static func solve(joints: Dictionary, side: String, r: float, line := []) -> Dic
 	var key := "%s|%s|%.4f|%s" % [joints.hash(), side, r, line]
 	if _cache.has(key):
 		return _cache[key]
-	var s := 1.0 if side == "Left" else -1.0
 	var c := axis_point(joints, side, r) if line.is_empty() else line[0] as Vector3
 	var d := Vector3.BACK if line.is_empty() else (line[1] as Vector3).normalized()
+	var out := _close(joints, side, r, func(p: Vector3) -> float: return _dist_to_axis(p, c, d))
+	_cache[key] = out
+	return out
+
+
+## A ball's centre (in the rest) for a hand holding a ball of radius r: under the palm where a handle's axis would
+## be (axis_point), lowered just as far as it must for every finger's knuckle to be outside it. A big ball's centre
+## at axis_point had the knuckles, which sit lower than the wrist, up to 2 cm inside it (no curl can lift a knuckle).
+static func sphere_point(joints: Dictionary, side: String, r: float) -> Vector3:
+	var c := axis_point(joints, side, r)
+	var need := 0.0
+	var rr := r + FINGER_HALF
+	for f in ["Index", "Middle", "Ring", "Pinky"]:
+		# The centre moved down by t: |v + t up| = rr, the root that clears it.
+		var v: Vector3 = (joints[side + "Hand" + f + "1"] as Vector3) - c
+		var disc := v.y * v.y - v.length_squared() + rr * rr
+		if v.length() < rr and disc > 0.0:
+			need = maxf(need, -v.y + sqrt(disc))
+	return c - Vector3(0, need, 0)
+
+
+## {bone: Quaternion} closing the hand on a sphere of radius r (a ball) centred at centre (in the rest, the joints'
+## space; by default sphere_point: the ball in the palm, clear of the knuckles). Each finger curls till it touches
+## the ball itself, not a cylinder across the palm: a ball-sized handle (solve) let the index and little fingers lie
+## inside or off the ball where it curves away at the palm's sides (Netball). Cached too.
+##   body.grip_sphere("Right", 0.112)       # and the ball at body.ball_point("Right", 0.112)
+static func solve_sphere(joints: Dictionary, side: String, r: float, centre := Vector3.INF) -> Dictionary:
+	if centre != Vector3.INF:
+		centre = centre.snapped(Vector3.ONE * 0.005)
+	var key := "sphere|%s|%s|%.4f|%s" % [joints.hash(), side, r, centre]
+	if _cache.has(key):
+		return _cache[key]
+	var c := sphere_point(joints, side, r) if centre == Vector3.INF else centre
+	var out := _close(joints, side, r, func(p: Vector3) -> float: return p.distance_to(c), true)
+	_cache[key] = out
+	return out
+
+
+## The fingers curled and the thumb brought round till they touch the surface dist measures (a point's distance from
+## the handle's axis, or from the ball's centre), radius r.
+## nearest: a finger that never touches it (too short, or too far off at the hand's side) stops where it comes
+## nearest, not curled right in (a fist under a ball: the little finger of a hand on a netball).
+static func _close(joints: Dictionary, side: String, r: float, dist: Callable, nearest := false) -> Dictionary:
+	var s := 1.0 if side == "Left" else -1.0
 	var out := {}
 	for f in ["Index", "Middle", "Ring", "Pinky"]:
 		var names := [side + "Hand" + f + "1", side + "Hand" + f + "2", side + "Hand" + f + "3"]
@@ -62,6 +106,9 @@ static func solve(joints: Dictionary, side: String, r: float, line := []) -> Dic
 		var axis := Vector3(0, 0, -s)
 		for k in 3:
 			var best := deg_to_rad(100.0)
+			var near_a := 0.0
+			var near_d := INF
+			var touched := false
 			for step in range(-30, 101, 2):
 				var a := deg_to_rad(step)
 				var q := Quaternion(axis, a)
@@ -70,12 +117,20 @@ static func solve(joints: Dictionary, side: String, r: float, line := []) -> Dic
 					var p: Vector3 = pts[k] + q * (pts[m] - pts[k])
 					# (And the middle of the bone before it: the joints can clear a handle the bone runs through.)
 					var mid: Vector3 = pts[k] + q * ((pts[m] + pts[m - 1]) * 0.5 - pts[k])
-					if _dist_to_axis(p, c, d) < r + FINGER_HALF or _dist_to_axis(mid, c, d) < r + FINGER_HALF:
+					var dp: float = dist.call(p)
+					var dm: float = dist.call(mid)
+					if nearest and step >= 0 and minf(dp, dm) < near_d:
+						near_d = minf(dp, dm)
+						near_a = a
+					if dp < r + FINGER_HALF or dm < r + FINGER_HALF:
 						hit = true
 						break
 				if hit:
 					best = a
+					touched = true
 					break
+			if nearest and not touched:
+				best = near_a
 			var qk := Quaternion(axis, best)
 			for m in range(k + 1, 4):
 				pts[m] = pts[k] + qk * (pts[m] - pts[k])
@@ -90,7 +145,7 @@ static func solve(joints: Dictionary, side: String, r: float, line := []) -> Dic
 		for turn in [35.0, 25.0, 15.0, 5.0, -5.0, -15.0, -25.0, -35.0, -45.0]:
 			for curl in [1.0, 0.6, 0.3, 0.0]:
 				var q := _thumb(s, turn, curl, spread)
-				var clear := _thumb_clear(joints, side, q, c, d) - r - FINGER_HALF
+				var clear := _thumb_clear_by(joints, side, q, dist) - r - FINGER_HALF
 				if clear > best_clear:
 					best_clear = clear
 					best_t = q
@@ -103,7 +158,6 @@ static func solve(joints: Dictionary, side: String, r: float, line := []) -> Dic
 	out[side + "HandThumb1"] = best_t[0]
 	out[side + "HandThumb2"] = best_t[1]
 	out[side + "HandThumb3"] = best_t[2]
-	_cache[key] = out
 	return out
 
 
@@ -116,6 +170,11 @@ static func _thumb(s: float, turn: float, curl: float, spread := -15.0) -> Array
 
 ## The least distance from the thumb (its joints, the middles between, its tip) to the handle's axis.
 static func _thumb_clear(joints: Dictionary, side: String, q: Array, c: Vector3, d: Vector3) -> float:
+	return _thumb_clear_by(joints, side, q, func(p: Vector3) -> float: return _dist_to_axis(p, c, d))
+
+
+## The least of dist (a point's distance from the surface's axis or centre) over the thumb.
+static func _thumb_clear_by(joints: Dictionary, side: String, q: Array, dist: Callable) -> float:
 	var p1: Vector3 = joints[side + "HandThumb1"]
 	var p2: Vector3 = joints[side + "HandThumb2"]
 	var p3: Vector3 = joints[side + "HandThumb3"]
@@ -128,7 +187,7 @@ static func _thumb_clear(joints: Dictionary, side: String, q: Array, c: Vector3,
 	var at := a3 + g3 * (tip - p3)
 	var least := INF
 	for p in [a2, a3, at, (p1 + a2) * 0.5, (a2 + a3) * 0.5, (a3 + at) * 0.5]:
-		least = minf(least, _dist_to_axis(p, c, d))
+		least = minf(least, dist.call(p))
 	return least
 
 
