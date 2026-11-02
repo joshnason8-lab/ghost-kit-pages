@@ -19,7 +19,8 @@ func _ready() -> void:
 	var user := int(result.get("user_team", 0))
 	var teams := [String(result.home), String(result.away)]
 	var won := int(result.get("winner", 0)) == user
-	var v := UI.page(self, tr("RESULT_WON") if won else tr("RESULT_LOST"), Callable(), String(cfg.get("stage", "")))
+	var title := tr("MATCH_OVER") if user < 0 else (tr("RESULT_WON") if won else tr("RESULT_LOST"))   # (watched: nobody's)
+	var v := UI.page(self, title, Callable(), String(cfg.get("stage", "")))
 	var right: HBoxContainer = get_meta("header_right")
 	var next := _next_button(cfg)
 	right.add_child(next)
@@ -60,7 +61,7 @@ func _ready() -> void:
 		var wins := [0, 0]
 		for r in tie.results:
 			wins[0 if int(r[0]) > int(r[1]) else 1] += 1
-		var tl := UI.wrap(tr("TIE_SCORE").format({"a": wins[0], "b": wins[1]}) + ("\u00a0\u00a0·  " + tr("TIE_WON" if wins[user] > wins[1 - user] else ("TIE_DRAWN" if wins[0] == wins[1] else "TIE_LOST")) if tie_done else ""), "SubLabel", 22)
+		var tl := UI.wrap(tr("TIE_SCORE").format({"a": wins[0], "b": wins[1]}) + ("\u00a0\u00a0·  " + tr("TIE_WON" if wins[user] > wins[1 - user] else ("TIE_DRAWN" if wins[0] == wins[1] else "TIE_LOST")) if tie_done and user >= 0 else ""), "SubLabel", 22)
 		tl.add_theme_color_override("font_color", Game.C_GOLD)
 		sv.add_child(tl)
 	var potm: Dictionary = result.get("potm", {})

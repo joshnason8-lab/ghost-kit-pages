@@ -460,6 +460,9 @@ func _menus() -> void:
 	Game.show_screen("res://ui/quick_setup.gd")
 	await frames(10)
 	await audit("quick_setup")
+	Game.show_screen("res://ui/quick_setup.gd", {"watch": true})
+	await frames(10)
+	await audit("watch_setup")
 	Game.show_screen("res://ui/records_screen.gd")
 	await frames(8)
 	await audit("records")
@@ -470,6 +473,12 @@ func _menus() -> void:
 	Game.show_screen("res://ui/result_screen.gd", {"result": r, "tie": {"results": [[2, 1]], "used": [[], []]}})
 	await frames(12)
 	await audit("result")
+	var rw: Dictionary = r.duplicate()
+	rw.user_team = -1
+	rw.config = {"mode": "watch", "home": "PHI", "away": "LAO"}
+	Game.show_screen("res://ui/result_screen.gd", {"result": rw})
+	await frames(12)
+	await audit("result_watch")
 
 
 func _season() -> void:
@@ -530,5 +539,12 @@ func _match() -> void:
 	m.hud.set_break()
 	await frames(4)
 	await audit("match_break")
+	Game.start_match({"home": "LAO", "away": "MYA", "venue": "mall", "event": "regu", "sets": 1, "points": 15,
+		"difficulty": 2, "mode": "watch", "user_team": -1, "seed": 3})
+	await frames(30)
+	var mw: Node = Game.current
+	mw.hud.set_watch_speed(2.0)
+	await frames(120)
+	await audit("watch_play")
 	Game.goto_menu()
 	await frames(4)

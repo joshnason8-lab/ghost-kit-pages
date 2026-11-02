@@ -107,10 +107,11 @@ func _build_ui() -> void:
 	var links := HFlowContainer.new()
 	links.add_theme_constant_override("h_separation", 12)
 	links.add_theme_constant_override("v_separation", 10)
-	for item in [["MENU_HOWTO", "book", "res://ui/howto_screen.gd"], ["MENU_SETTINGS", "gear", "res://ui/settings_screen.gd"],
-			["MENU_RECORDS", "trophy", "res://ui/records_screen.gd"]]:
+	for item in [["MENU_WATCH", "camera", "res://ui/quick_setup.gd"], ["MENU_HOWTO", "book", "res://ui/howto_screen.gd"],
+			["MENU_SETTINGS", "gear", "res://ui/settings_screen.gd"], ["MENU_RECORDS", "trophy", "res://ui/records_screen.gd"]]:
 		var path: String = item[2]
-		var b := _link(tr(item[0]), item[1], func(): _go(path), 68, 26)
+		var args := {"watch": true} if item[0] == "MENU_WATCH" else {}
+		var b := _link(tr(item[0]), item[1], func(): Game.show_screen(path, args), 68, 26)
 		links.add_child(b)
 		_cards.append(b)
 	col.add_child(links)

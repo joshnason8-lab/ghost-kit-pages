@@ -1,5 +1,7 @@
 extends Control
-## Quick Match: two teams (clubs or countries, men or women), the event, the venue, how long, and how hard.
+## Quick Match: two teams (clubs or countries, men or women), the event, the venue, how long, and how hard. Opened
+## from the home screen's Watch AI (setup {"watch": true}) it sets up a match the computer plays on both sides, to
+## watch: the same choices, but no difficulty and no side of yours.
 
 var _kind := "country"     # "country" or a league id ("MY", "TH", "ID")
 var _women := false
@@ -8,16 +10,17 @@ var _away := "MAS"
 var _venue := "national"
 var _body: VBoxContainer
 var _vs: HBoxContainer
+var watch := false
 
 
-func setup(_args: Dictionary) -> void:
-	pass
+func setup(args: Dictionary) -> void:
+	watch = bool(args.get("watch", false))
 
 
 func _ready() -> void:
 	UI.screen(self)
-	var v := UI.page(self, tr("MENU_QUICK"), func(): Game.goto_menu())
-	var play := UI.button(tr("PLAY"), true, _play)
+	var v := UI.page(self, tr("MENU_WATCH") if watch else tr("MENU_QUICK"), func(): Game.goto_menu())
+	var play := UI.button(tr("WATCH") if watch else tr("PLAY"), true, _play)
 	play.custom_minimum_size = Vector2(240, 66)
 	(get_meta("header_right") as HBoxContainer).add_child(play)
 	_body = VBoxContainer.new()
@@ -65,12 +68,14 @@ func _build() -> void:
 		_home = ids[0]
 	if not (_away in ids) or _away == _home:
 		_away = ids[1] if ids[0] == _home else ids[0]
-	teams[1].add_child(UI.field(tr("YOUR_TEAM"), UI.team_picker(ids, _home, func(id):
+	if watch:
+		teams[1].add_child(UI.wrap(tr("WATCH_NOTE"), "MutedLabel", 17))
+	teams[1].add_child(UI.field(tr("TEAM_A") if watch else tr("YOUR_TEAM"), UI.team_picker(ids, _home, func(id):
 		_home = id
 		if _away == _home:
 			_away = ids[0] if ids[0] != _home else ids[1]
 		_build())))
-	teams[1].add_child(UI.field(tr("OPPONENT"), UI.team_picker(ids, _away, func(id):
+	teams[1].add_child(UI.field(tr("TEAM_B") if watch else tr("OPPONENT"), UI.team_picker(ids, _away, func(id):
 		_away = id
 		if _away == _home:
 			_home = ids[0] if ids[0] != _away else ids[1]
@@ -108,7 +113,8 @@ func _build() -> void:
 	ev[1].add_child(UI.field(tr("SET_POINTS"), UI.chips([tr("POINTS_15"), tr("POINTS_21")], int(Game.settings.points), func(i):
 		Game.settings.points = i
 		Game.save_settings())))
-	ev[1].add_child(UI.difficulty_field(self))
+	if not watch:
+		ev[1].add_child(UI.difficulty_field(self))
 
 	# The venue.
 	var ven: Array = UI.section(tr("VENUE"), "flag")
@@ -130,5 +136,6 @@ func _play() -> void:
 	Game.start_match({
 		"home": _home, "away": _away, "venue": _venue, "event": events[clampi(int(Game.settings.event), 0, 3)],
 		"sets": 3 if int(Game.settings.sets) == 1 else 1, "points": 21 if int(Game.settings.points) == 1 else 15,
-		"difficulty": int(Game.settings.difficulty), "mode": "quick", "user_team": 0, "women": _women,
+		"difficulty": 2 if watch else int(Game.settings.difficulty), "mode": "watch" if watch else "quick",
+		"user_team": -1 if watch else 0, "women": _women,
 	})

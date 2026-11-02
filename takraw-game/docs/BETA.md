@@ -15,6 +15,11 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.14.0: **Watch AI** (on the home screen): pick the two teams (countries or clubs, men or women), the event,
+the length and the venue, and watch the computer play a full match on both sides, from the broadcast camera with the
+replays and the score. 1×/2× (top right) doubles the speed; pause or Back to stop, the pause menu's Quit match to
+leave. Watched matches don't count in your records.
+
 New in 0.13.1: **the serve's toss keeps the ball out of the thrower**: as he winds up he lowers the ball in front of
 his knees, both hands on it, and swings it up and out to the server; before, his arms swung back to his sides and the
 ball between his hands went into his body (on every graphics level).

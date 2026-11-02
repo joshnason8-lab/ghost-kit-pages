@@ -650,6 +650,26 @@ and the ball drawn between its hands, so the same holds there.
 - Stills: `docs/stills/serve_toss_before_after_men.jpg` and `_women.jpg` (Low, from the side, 0 to 0.6 s into the
   toss), made by `tests/toss_stills.tscn`.
 
+## Watch AI (0.14.0)
+
+The owner's request for every game: a home-screen entry to watch a whole AI-v-AI match.
+- **Watch AI** joins How to Play, Settings and Records on the home screen. It opens Quick Match's screen set up to
+  watch (`quick_setup.gd`, `{"watch": true}`): its title, a line saying what it is, Team A and Team B (countries, or a
+  league's clubs; men or women), the event, the length, the set's points and the venue; no difficulty (the computer
+  plays both sides at Star) and no side of yours. Watch starts the match (`mode` "watch", `user_team` -1).
+- The match: from the broadcast camera (the pause menu's Camera still changes it), the scoreboard, the referee's calls,
+  the replays of the best moments (the game's on Low, the foundation's on Medium and High), no touch controls. A 1×/2×
+  button beside the camera and pause buttons doubles the match's clock (a replay keeps its own pace); pause, or the
+  phone's Back, pauses; the pause menu's Quit match goes home. At the end the result says "Match over" (no victory or
+  defeat), Rematch plays it again; it does not count in the records.
+- Seven new strings (`MENU_WATCH`, `WATCH`, `WATCH_NOTE`, `TEAM_A`, `TEAM_B`, `MATCH_OVER`, `WATCH_SPEED`) in all 13
+  languages. The foundation's WsgSpectator (a rail camera, a director, its own replays and speed) is there to adopt
+  later; this one is built from the game's own camera, replays and HUD, so Low is unchanged.
+- test_runner (`_watch_ai`): the home screen's entry opens it; its setup in all 13 languages (its words, Team A and B,
+  no difficulty, nothing raw); the match nobody plays, broadcast camera, score up, no controls; 2× and back; Back
+  pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
+  setup, the match at 2× and the result; the media kit's `menus/` has its screen.
+
 ## Gaps that need the owner
 
 For the Play Store, what only the owner can do is in `store/PLAY_STORE.md`: the developer account, the upload key and

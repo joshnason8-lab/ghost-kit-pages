@@ -24,6 +24,7 @@ var _review_t := 0.0
 var _replay_tag: Control
 var _pause: Control
 var _settings: Control   # Settings, opened from the pause menu over the match
+var _speed: Button = null   # Watch AI: the match at 1x or 2x
 var _break: Control
 var _intro: Control
 var _intro_t := 0.0
@@ -80,6 +81,12 @@ func setup(p_match: Node) -> void:
 	_challenge.visible = false
 	_challenge.custom_minimum_size = Vector2(0, 62)
 	tr_box.add_child(_challenge)
+	if String(m.config.get("mode", "")) == "watch":
+		_speed = UI.button("1×", false, func(): set_watch_speed(2.0 if m.time_scale < 1.5 else 1.0))
+		_speed.custom_minimum_size = Vector2(84, 62)
+		_speed.add_theme_font_size_override("font_size", Game.ts(26))
+		_speed.tooltip_text = tr("WATCH_SPEED")
+		tr_box.add_child(_speed)
 	tr_box.add_child(UI.round_button("camera", func(): m.cam.toggle(), 62))
 	tr_box.add_child(UI.round_button("pause", func(): m.set_paused(not m.paused), 62))
 	_replay_tag = _make_replay_tag()
@@ -498,6 +505,13 @@ func _make_replay_tag() -> Control:
 	b.add_child(tag)
 	b.visible = false
 	return b
+
+
+## Watch AI's speed: the match at 1x or 2x (a replay keeps its own slow pace).
+func set_watch_speed(k: float) -> void:
+	m.time_scale = k
+	if _speed:
+		_speed.text = "2×" if k > 1.5 else "1×"
 
 
 func replay(on: bool) -> void:

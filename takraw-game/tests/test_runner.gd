@@ -32,6 +32,7 @@ func _ready() -> void:
 	await _legal_pages()
 	await _back_everywhere()
 	_serve_toss_clear()
+	await _watch_ai()
 	await _play_as_and_officials()
 	await _matches()
 	await _sim_to_end()
@@ -544,6 +545,108 @@ func _serve_toss_clear() -> void:
 				m.queue_free()
 				remove_child(m)
 	Game.settings.graphics = keep
+
+
+## Watch AI (on the home screen): its setup in every language (the two teams, no side of yours, no difficulty); the
+## match it starts the computer's on both sides, from the broadcast camera, the score up and no controls; 2x and back
+## to 1x; Back pauses and resumes; replays; played to the end, its result "Match over", the records untouched; and
+## Quit (the pause menu's) back to the home screen.
+func _watch_ai() -> void:
+	var keep_lang := String(Game.settings.language)
+	Game.goto_menu()
+	await frames(2)
+	var entry: Button = null
+	for l in Game.current.find_children("*", "Label", true, false):
+		if (l as Label).text == tr("MENU_WATCH"):
+			var x: Node = l
+			while x and not (x is Button):
+				x = x.get_parent()
+			entry = x
+	check(entry != null, "the home screen has Watch AI")
+	if entry:
+		entry.pressed.emit()
+		await frames(2)
+		check(Game.current.get_script().resource_path.ends_with("quick_setup.gd") and bool(Game.current.get("watch")),
+			"Watch AI opens its setup")
+	for pair in Game.LANGUAGES:
+		Game.settings.language = pair[0]
+		TranslationServer.set_locale(pair[0])
+		Game._size_theme()
+		var s: Node = Game.show_screen("res://ui/quick_setup.gd", {"watch": true})
+		await frames(2)
+		var words := []
+		for n in s.find_children("*", "", true, false):
+			if n is Label:
+				words.append((n as Label).text)
+			elif n is Button:
+				words.append((n as Button).text)
+		var all := "\n".join(words).to_lower()   # (a field's title is drawn in capitals)
+		var has := func(k: String) -> bool: return all.contains(tr(k).to_lower())
+		check(has.call("MENU_WATCH") and has.call("WATCH") and has.call("TEAM_A") and has.call("TEAM_B") and has.call("WATCH_NOTE"),
+			"%s: Watch AI's setup has its title, Watch, the two teams and its note" % pair[0])
+		check(not has.call("DIFFICULTY") and not has.call("YOUR_TEAM"), "%s: Watch AI's setup has no difficulty and no side of yours" % pair[0])
+		check(not all.contains("menu_watch") and not all.contains("watch_note") and not all.contains("team_a"), "%s: Watch AI's words translated" % pair[0])
+	Game.settings.language = keep_lang
+	TranslationServer.set_locale(Game.language())
+	Game._size_theme()
+	var played := int(Game.records.get("played", 0))
+	var qs: Node = Game.show_screen("res://ui/quick_setup.gd", {"watch": true})
+	await frames(2)
+	qs.set("_venue", "mall")
+	qs._play()
+	await frames(3)
+	var m: Node = Game.current
+	check(m.has_method("set_paused") and int(m.user_team) == -1 and String(m.config.mode) == "watch", "Watch AI starts a match nobody plays")
+	check(not m.controls.visible and m.hud.visible, "Watch AI: the score up, no controls")
+	check(int(m.cam.mode) == Game.CAM_TV, "Watch AI: the broadcast camera")
+	var sp: Button = m.hud.get("_speed")
+	check(sp != null and sp.text == "1×", "Watch AI: a speed button at 1x")
+	if sp:
+		sp.pressed.emit()
+		check(is_equal_approx(float(m.time_scale), 2.0) and sp.text == "2×", "Watch AI: 2x doubles the match's clock")
+		sp.pressed.emit()
+		check(is_equal_approx(float(m.time_scale), 1.0) and sp.text == "1×", "Watch AI: and back to 1x")
+	Game.go_back()
+	await frames(1)
+	var paused_now := bool(m.paused)
+	Game.go_back()
+	await frames(1)
+	check(paused_now and not bool(m.paused), "Watch AI: Back pauses the match and resumes it")
+	m.hud.set_watch_speed(2.0)
+	var replays := 0
+	var was_replay := false
+	for i in 30 * 60 * 25:
+		if int(m.state) == int(m.S.OVER):
+			break
+		m._process(1.0 / 30.0)
+		var r := int(m.state) == int(m.S.REPLAY)
+		if r and not was_replay:
+			replays += 1
+		was_replay = r
+	check(int(m.state) == int(m.S.OVER), "Watch AI: the match played to the end (%s)" % [m.set_scores])
+	check(replays >= 1, "Watch AI: replays shown (%d)" % replays)
+	for i in 600:
+		if Game.current != m:
+			break
+		await frames(1)
+	var res: Node = Game.current
+	var title := ""
+	for l in res.find_children("*", "Label", true, false):
+		if (l as Label).text == tr("MATCH_OVER"):
+			title = (l as Label).text
+	check(res != m and title != "", "Watch AI: its result says the match is over (no victory or defeat)")
+	check(int(Game.records.get("played", 0)) == played, "Watch AI: the records untouched")
+	# Quit from the pause menu: back to the home screen.
+	var qs2: Node = Game.show_screen("res://ui/quick_setup.gd", {"watch": true})
+	await frames(2)
+	qs2._play()
+	await frames(3)
+	var m2: Node = Game.current
+	m2.set_paused(true)
+	await frames(1)
+	m2.quit_match()
+	await frames(3)
+	check(Game.current.get_script().resource_path.ends_with("main_menu.gd"), "Watch AI: Quit match goes back to the home screen")
 
 
 ## Play as one player: only his touches are yours (the team's: all of them); the white ring is under him. The officials

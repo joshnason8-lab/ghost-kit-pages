@@ -13,6 +13,13 @@ MENU_CUP_DESC,"The world's best nations, Asia's and Southeast Asia's.",ชาต
 MENU_HOWTO,How to Play,วิธีเล่น,Cara Bermain,Cara Bermain,Cách chơi,ວິທີຫຼິ້ນ,ကစားနည်း,របៀបលេង,Paano Maglaro,遊び方,플레이 방법,玩法说明,कैसे खेलें
 MENU_SETTINGS,Settings,ตั้งค่า,Tetapan,Pengaturan,Cài đặt,ຕັ້ງຄ່າ,ဆက်တင်,ការកំណត់,Settings,設定,설정,设置,सेटिंग्स
 MENU_RECORDS,Records,สถิติ,Rekod,Rekor,Thành tích,ສະຖິຕິ,မှတ်တမ်း,កំណត់ត្រា,Mga Rekord,記録,기록,记录,रिकॉर्ड
+MENU_WATCH,Watch AI,ดู AI แข่ง,Tonton AI,Tonton AI,Xem AI đấu,ເບິ່ງ AI ແຂ່ງ,AI ပွဲကြည့်,មើល AI ប្រកួត,Panoorin ang AI,AI対戦を観る,AI 경기 관전,观看AI对战,AI मैच देखें
+WATCH,Watch,ดู,Tonton,Tonton,Xem,ເບິ່ງ,ကြည့်မည်,មើល,Panoorin,観る,관전,观看,देखें
+WATCH_NOTE,Pick two teams and watch the computer play a full match.,เลือกสองทีม แล้วดูคอมพิวเตอร์แข่งกันจนจบเกม,Pilih dua pasukan dan tonton komputer bermain satu perlawanan penuh.,Pilih dua tim dan tonton komputer memainkan satu pertandingan penuh.,Chọn hai đội và xem máy thi đấu trọn một trận.,ເລືອກສອງທີມ ແລ້ວເບິ່ງຄອມພິວເຕີແຂ່ງກັນຈົນຈົບ.,အသင်းနှစ်သင်းရွေးပြီး ကွန်ပျူတာ ပွဲအပြည့်ကစားတာကို ကြည့်ပါ။,ជ្រើសរើសក្រុមពីរ ហើយមើលកុំព្យូទ័រប្រកួតពេញមួយប្រកួត។,Pumili ng dalawang koponan at panoorin ang computer na maglaro ng buong laban.,2チームを選んで、コンピューター同士の試合を最後まで観戦しよう。,두 팀을 골라 컴퓨터끼리 치르는 한 경기를 끝까지 관전하세요.,选择两支队伍，观看电脑完整打完一场比赛。,दो टीमें चुनें और कंप्यूटर को पूरा मैच खेलते देखें।
+TEAM_A,Team A,ทีม A,Pasukan A,Tim A,Đội A,ທີມ A,အသင်း A,ក្រុម A,Koponan A,チームA,A팀,A队,टीम A
+TEAM_B,Team B,ทีม B,Pasukan B,Tim B,Đội B,ທີມ B,အသင်း B,ក្រុម B,Koponan B,チームB,B팀,B队,टीम B
+MATCH_OVER,Match over,จบการแข่งขัน,Perlawanan tamat,Pertandingan selesai,Kết thúc trận đấu,ຈົບການແຂ່ງຂັນ,ပွဲပြီးဆုံး,ការប្រកួតបានបញ្ចប់,Tapos ang laban,試合終了,경기 종료,比赛结束,मैच समाप्त
+WATCH_SPEED,Match speed,ความเร็วการแข่งขัน,Kelajuan perlawanan,Kecepatan pertandingan,Tốc độ trận đấu,ຄວາມໄວການແຂ່ງຂັນ,ပွဲအမြန်နှုန်း,ល្បឿនការប្រកួត,Bilis ng laban,試合の速さ,경기 속도,比赛速度,मैच की गति
 PLAY,Play,เล่น,Main,Main,Chơi,ຫຼິ້ນ,ကစားမည်,លេង,Laro,プレー,플레이,开始,खेलें
 CONTINUE,Continue,เล่นต่อ,Teruskan,Lanjutkan,Tiếp tục,ຫຼິ້ນຕໍ່,ဆက်ရန်,បន្ត,Ituloy,続ける,계속,继续,जारी रखें
 YES,Yes,ใช่,Ya,Ya,Có,ແມ່ນ,ဟုတ်,បាទ/ចាស,Oo,はい,예,是,हाँ

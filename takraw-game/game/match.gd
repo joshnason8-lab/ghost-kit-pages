@@ -176,6 +176,8 @@ func _ready() -> void:
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
+	if String(config.get("mode", "")) == "watch":
+		cam.mode = Game.CAM_TV   # Watch AI: the broadcast camera (the pause menu's Camera still changes it)
 	Game.apply_graphics(get_viewport())
 	hud = MatchHud.new()
 	add_child(hud)
