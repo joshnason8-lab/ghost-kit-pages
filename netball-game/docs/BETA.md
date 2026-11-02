@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.6-beta
+
+- **The stick follows the screen in every camera**: from the side, courtside or behind the goal, pushing up moves
+  your player up the screen (and your pass aim too), wherever she is in the picture; before, from the side, pulling
+  down sent her off at an angle. When the camera cuts or changes, the stick's way turns over a moment instead of at
+  once.
+
 ## New in 0.8.5-beta
 
 - **Players and umpires run properly on every graphics level, Low included**: each foot is planted on the floor and

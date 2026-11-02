@@ -17,6 +17,10 @@ var end_dir := 1                 # CAM_END: the end it sits behind (the goal you
 var close_dir := 0               # on the close shot of the post at this end (0: the wide shot)
 var _close_hold := 0.0           # seconds the close shot stays on once there is no more reason for it
 var _wide := Basis()             # the wide shot's turn (the stick steers by it)
+var _wide_eye := Vector3.ZERO    # and where it stands
+var _steer := Transform3D()      # the view the stick steers by: the wide shot's, eased over ~0.2 s when it cuts or moves
+var _steer_fov := 40.0
+var _steer_set := false
 
 
 func _ready() -> void:
@@ -60,6 +64,8 @@ func track(ball: Vector2, attack_dir: int, dt: float, snap := false) -> void:
 		if _close_hold <= 0.0:
 			close_dir = 0
 	_wide = Transform3D.IDENTITY.looking_at(look - eye, Vector3.UP).basis
+	_wide_eye = eye
+	var wide_fov := fov
 	if close_dir != 0:
 		# Courtside in front of the post, a little above head height, tight on the ring and the circle under it.
 		var d := float(close_dir)
@@ -68,6 +74,16 @@ func track(ball: Vector2, attack_dir: int, dt: float, snap := false) -> void:
 		fov = 27.0
 	global_position = eye
 	look_at(look, Vector3.UP)
+	# The stick's view: the wide shot (through a close-up too), eased so a cut or a new camera never turns her at once.
+	var want_steer := Transform3D(_wide, _wide_eye)
+	if snap or not _steer_set:
+		_steer = want_steer
+		_steer_fov = wide_fov
+		_steer_set = true
+	else:
+		var k := 1.0 - exp(-15.0 * dt)
+		_steer = _steer.interpolate_with(want_steer, k)
+		_steer_fov = lerpf(_steer_fov, wide_fov, k)
 
 ## The end whose post the close shot wants now (0 for none), from the match (the camera's parent) as it stands.
 func _close_want() -> int:
@@ -83,11 +99,41 @@ func _close_want() -> int:
 	return 0
 
 
-## The court direction a stick pushed in screen direction v points (x right, y down on the screen).
-func court_dir(v: Vector2) -> Vector2:
-	var b := _wide if close_dir != 0 else global_transform.basis
-	var right := b.x
-	var fwd := -b.z
+## The court direction a stick pushed in screen direction v points (x right, y down on the screen), for a player at
+## at (her feet): the way that moves her that way on the screen. Every camera, from the side or behind a goal: the
+## stick's push is taken from her place on the screen and laid back onto the floor through the camera's lens, so up
+## is up the screen even where perspective bends the court's lines (toward the camera from the side, she would
+## otherwise drift across the screen). Without at, or if that fails, by the camera's turn alone.
+func court_dir(v: Vector2, at := Vector3.INF) -> Vector2:
+	if v.length() < 0.001:
+		return Vector2.ZERO
+	var t := _steer if _steer_set else global_transform
+	if at != Vector3.INF:
+		var d := _through_lens(v, at, t)
+		if d != Vector2.ZERO:
+			return d.normalized() * v.length()
+	var right := t.basis.x
+	var fwd := -t.basis.z
 	var r2 := Vector2(right.x, right.z).normalized()
 	var f2 := Vector2(fwd.x, fwd.z).normalized()
 	return (r2 * v.x - f2 * v.y)
+
+
+## The floor direction from at that the screen direction v points, seen through view t (Vector2.ZERO if the floor
+## is not under that point of the screen: the horizon).
+func _through_lens(v: Vector2, at: Vector3, t: Transform3D) -> Vector2:
+	var size := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(16, 9)
+	var aspect := size.x / maxf(size.y, 1.0)
+	var tn := tan(deg_to_rad(_steer_fov if _steer_set else fov) * 0.5)
+	var pc := t.affine_inverse() * at
+	if pc.z > -0.1:
+		return Vector2.ZERO
+	# Her place on the screen (-1..1 each way, y up), then a little way along the stick (screen y is down).
+	var s := Vector2(pc.x / -pc.z / (tn * aspect), pc.y / -pc.z / tn)
+	var to := s + Vector2(v.x, -v.y).normalized() * 0.04
+	var ray := t.basis * Vector3(to.x * tn * aspect, to.y * tn, -1.0)
+	if ray.y > -0.0001:
+		return Vector2.ZERO
+	var k := (at.y - t.origin.y) / ray.y
+	var hit := t.origin + ray * k
+	return Vector2(hit.x - at.x, hit.z - at.z)

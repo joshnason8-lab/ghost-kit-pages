@@ -19,6 +19,12 @@ func _ready() -> void:
 	# is tested in its own sections; elsewhere the matches run without it, as CI's do, in the time CI allows.
 	var foundation_ok := WsgClips.available()
 	FoundationLink.off = true
+	if "stick" in OS.get_cmdline_user_args():
+		# (Only the stick in every camera: tests/test_runner.tscn -- stick)
+		await _stick_camera()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -38,6 +44,7 @@ func _ready() -> void:
 	await _mocap()
 	await _gait_steps()
 	await _controls()
+	await _stick_camera()
 	await _league_options()
 	await _sanctions_and_injury()
 	await _break_screen()
@@ -761,6 +768,71 @@ func _gait_measure(g: Gait, b: ToonBody, st: Dictionary, feet: bool, arms: bool)
 ## Your controls: a scripted thumb plays a match as the team. With the ball it picks a team-mate and passes (or
 ## shoots when it may); in defence it switches to the defender nearest the ball and runs at the ball. Nothing is
 ## played for you: a thumb that does nothing gets called for held ball.
+## The stick is the screen's in every camera (the owner: "switching to a camera angle not alongside the court, the
+## joystick movement is all wrong"): pushed up, right, down or left, your player goes that way on the screen (within
+## 10 degrees), from the broadcast camera, the courtside one and from behind either goal.
+func _stick_camera() -> void:
+	var keep_cam: int = int(Game.settings.camera)
+	var keep_ctl: int = int(Game.settings.control)
+	var keep_bib: String = String(Game.settings.bib)
+	Game.settings.control = Game.CONTROL_BIB
+	Game.settings.bib = "WD"
+	# The screen as it stood when she set off (the camera follows the ball meanwhile): a still copy of the camera.
+	var still := Camera3D.new()
+	add_child(still)
+	for cm in [[Game.CAM_TV, 0], [Game.CAM_LOW, 0], [Game.CAM_END, 0], [Game.CAM_END, 1]]:
+		Game.settings.camera = cm[0]
+		var m: Match = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "ENG", "away": "WAL", "venue": "hall", "user_team": cm[1], "seed": 7, "quarter": 15, "mode": "quick", "difficulty": 1}
+		add_child(m)
+		var waited := 0
+		while m.phase != "live" and waited < 400:
+			waited += 1
+			await get_tree().process_frame
+		var worst := 0.0
+		for d in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
+			var me: Player = m.me
+			# In her own half of the centre third, room to move every way (she does not have the ball).
+			me.place(Vector2(-me.dir * 2.4, 0.0), 0.0)
+			for f in 20:
+				m.controls.joystick = Vector2.ZERO
+				await get_tree().process_frame
+			var cam3 := get_viewport().get_camera_3d()
+			still.global_transform = cam3.global_transform
+			still.fov = cam3.fov
+			var a: Vector2 = still.unproject_position(me.global_position)
+			for f in 18:
+				m.controls.joystick = d
+				await get_tree().process_frame
+			var moved: Vector2 = still.unproject_position(me.global_position) - a
+			if OS.get_cmdline_user_args().has("stick"):
+				print("cam %d team %d stick %s: moved %s" % [cm[0], cm[1], d, moved])
+			var off := rad_to_deg(absf(angle_difference(moved.angle(), d.angle()))) if moved.length() > 2.0 else 180.0
+			worst = maxf(worst, off)
+		if cm[0] == Game.CAM_TV:
+			# The camera changing mid-run (to behind the goal): the stick's way turns over about 0.2 s, not at once.
+			var at := Vector3(m.me.p.x, 0.0, m.me.p.y)
+			var before: Vector2 = m.cam.court_dir(Vector2(1, 0), at)
+			m.cam.set_mode(Game.CAM_END)
+			await get_tree().process_frame
+			var first: Vector2 = m.cam.court_dir(Vector2(1, 0), at)
+			for f in 12:
+				await get_tree().process_frame
+			var after: Vector2 = m.cam.court_dir(Vector2(1, 0), at)
+			var turn := absf(angle_difference(before.angle(), after.angle()))
+			check(turn > 0.5 and absf(angle_difference(before.angle(), first.angle())) < turn * 0.6,
+				"a new camera turns the stick's way over a moment, not at once (%.0f of %.0f deg in the first frame)" %
+				[rad_to_deg(absf(angle_difference(before.angle(), first.angle()))), rad_to_deg(turn)])
+			m.cam.set_mode(Game.CAM_TV)
+		m.controls.joystick = Vector2.ZERO
+		check(worst <= 10.0, "camera %d (team %d): the stick moves your player that way on the screen (worst %.1f deg)" % [cm[0], cm[1], worst])
+		m.queue_free()
+		await get_tree().process_frame
+	still.queue_free()
+	Game.settings.camera = keep_cam
+	Game.settings.control = keep_ctl
+	Game.settings.bib = keep_bib
+
 func _controls() -> void:
 	for mode in ["play", "idle"]:
 		Game.settings.control = Game.CONTROL_TEAM

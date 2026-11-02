@@ -1219,7 +1219,7 @@ func _drive_me(dt: float) -> void:
 	var j: Vector2 = controls.joystick
 	if j.length() > 0.1:
 		me_idle = 0.0
-	var d := cam.court_dir(j)
+	var d := cam.court_dir(j, Vector3(me.p.x, 0.0, me.p.y))
 	if me == holder:
 		ai.user_aim = d
 		return
