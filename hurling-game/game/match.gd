@@ -1354,7 +1354,7 @@ func _wind_dir(pl: Player, target: Vector3) -> void:
 func _shoot(pl: Player, for_goal: bool, placed := "") -> void:
 	var d := dir(pl.team)
 	var kp: Player = keeper_of(1 - pl.team)
-	var target := TeamAI.goal_target(d, kp.global_position.z if kp else 0.0) if for_goal else TeamAI.point_target(d, pl.global_position)
+	var target := TeamAI.goal_target(d, kp.global_position.z if kp else 0.0, rng) if for_goal else TeamAI.point_target(d, pl.global_position)
 	var kind := "strike" if pl.ball_hand or placed != "" else "strike_stick"
 	if placed == "sideline":
 		kind = "cut"

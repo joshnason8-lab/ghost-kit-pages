@@ -318,8 +318,9 @@ static func point_target(dir_: float, from: Vector3) -> Vector3:
 
 
 ## Where to aim a goal: low into a corner, away from the goalkeeper.
-static func goal_target(dir_: float, keeper_z: float) -> Vector3:
-	var side := -signf(keeper_z) if absf(keeper_z) > 0.2 else (1.0 if randf() < 0.5 else -1.0)
+## (The coin for a goalkeeper in the middle is the match's own, seeded: a match plays the same again from its seed.)
+static func goal_target(dir_: float, keeper_z: float, rng: RandomNumberGenerator) -> Vector3:
+	var side := -signf(keeper_z) if absf(keeper_z) > 0.2 else (1.0 if rng.randf() < 0.5 else -1.0)
 	return Vector3(Pitch.HALF_L * dir_, 0.7, side * 2.3)
 
 
