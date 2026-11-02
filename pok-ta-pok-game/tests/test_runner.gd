@@ -1186,7 +1186,7 @@ func _replay_rules(have: bool) -> void:
 	await frames(30)
 	m._rec_t = 10.0
 	m._rally_events = [["strike", 8.0, Vector3.ZERO, 1], ["dive", 8.5, Vector3.ZERO, 0], ["wall", 9.0, Vector3.ZERO, -1]]
-	m.rally = 9
+	m.rally = 13
 	check(m.replay_kind("ring", "win", 0) == "ring", "Replays: the ring comes first")
 	var want := ["dive", "rally", "win", "wall"] if have else ["", "", "", ""]
 	check(m.replay_kind("dead", "win", 0) == want[0], "Replays: a dive that saved the raya before a long rally (%s)" % m.replay_kind("dead", "win", 0))
@@ -1194,8 +1194,8 @@ func _replay_rules(have: bool) -> void:
 	m.rally = 2
 	check(m.replay_kind("dead", "win", 1) == want[2], "Replays: the winning raya next (%s)" % m.replay_kind("dead", "win", 1))
 	check(m.replay_kind("dead", "add", 1) == want[3], "Replays: the ball off the talud or a wall into a raya (%s)" % m.replay_kind("dead", "add", 1))
-	m._rally_events = [["strike", 9.5, Vector3.ZERO, 1]]
-	check(m.replay_kind("dead", "add", 1) == "", "Replays: an ordinary raya earns none")
+	m._rally_events = [["dive", 8.5, Vector3.ZERO, 1], ["strike", 9.5, Vector3.ZERO, 0]]
+	check(m.replay_kind("dead", "add", 1) == "", "Replays: an ordinary raya earns none (a dive answered by a strike is no save)")
 	m.queue_free()
 	await frames(2)
 	# A tap passes the ring's replay (Low: the beta's replay, the same rule).

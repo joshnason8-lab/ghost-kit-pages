@@ -156,6 +156,41 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   replay starts. The store drafts are regenerated from this build (tools/store/make_store_graphics.sh), and the media
   kit's tools are in tools/media (make_media_kit.sh).
 
+- **0.5.4-pilot, the World Stage Games shared foundation** (branch `claude/pok-ta-pok-foundation-pilot`, the seventh
+  and last game; addons/wsg_foundation vendored at 1886c2e): on Medium and High the players and judges are drawn on
+  the shared rig (`game/foundation_link.gd`), Low exactly as the beta.
+  - **The bodies**: the same Meshy players (lean, tall, stocky) and judge, baked onto the rig
+    (`assets/foundation/`, tools/wsg/bake_character.sh: 9.4k triangles and a 4.7k light mesh, as High and Medium
+    drew them), in RiggedBody's own textured material with the player's skin tone; each player keeps the body Body
+    picks for him. The game's gear (faja, chimali, yoke, knee pad, wrist wrap, straw hat) is skinned to the drawn
+    bones.
+  - **Every pok ta pok move is the game's own** (WsgLegacyPose reads Body's 17 bones): the stance, the hip strike
+    (0.25 s to contact), the dive, the serve's toss, the celebrations, the offering's raised arms, the judges'
+    calls. The hips where the game's are, the legs rebuilt by IK to the game's feet (the rig's legs are 7% shorter
+    than the code skeleton's). Measured: the drawn hip within 3.6 cm of the game's at contact.
+  - **Motion capture only for running and walking** (MoCap Online's Mobility clips through WsgLocomotor: walk, jog,
+    run, their starts, stops, turns and cuts; ActorCore's sprint loop) and for **the judges at ease** (the standing
+    idle and its fidgets, the head on the ball). No celebration, dance or gesture clip is used: the game's own
+    celebration and dejection stay (docs/CULTURE.md). The server holding the ball stays on the game's pose (no
+    spin); the ball is drawn in his drawn hand.
+  - **Replays** (Medium and High; the ring's at every level as before): one a raya at most, by priority - the ring,
+    a dive that kept a low ball alive (the rally's last strike, won by the diving side), a long rally (12 strikes), the winning raya, a raya
+    that wipes a count in urria, on stone the ball off the talud or a wall into the raya. The drawn bodies as drawn
+    (WsgReplay on the game's replay clock), the small corner tag, a tap anywhere passes it. The call resumes where it
+    stopped, so a match plays exactly as without its replays (tested).
+  - **The copal elder** stays the game's code body in white: he is a respected figure in a ceremony, and no Meshy
+    elder exists (no new generation); putting him on a player's or the judge's body would not be right.
+  - **Auto graphics**: the game's own first-seconds check kept exactly, then WsgAutoTier all match long on a phone;
+    a step applies at once (on Low the game's own bodies come back). The A16's Mali-G57 MC2 and Mali-G68 MP2 start on
+    Low (Game.graphics_for, tested).
+  - **Not used**: the foundation's 3D crowd (the game keeps its own cut-out crowd, out of the export), its baked venue
+    light (the courts are built in code; dusk reads through the bodies' rim light, as in the beta), WsgDirector.
+  - Proof of Low: `tests/foundation_view.tscn -- OUT 0 pixels` (with `--fixed-fps 30`) renders each court with the
+    wall-clock animations held and each body in the model its player's name picks: identical pixels to the beta's on
+    all four courts; perf_probe's draw calls identical at Low (village 61, festival 57, stone 70, night 72).
+  - Tools: `tests/foundation_view.tscn` (the same seeded moments in either build), `tests/foundation_cpu.tscn` (CPU a
+    frame by level, foundation on and off).
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are

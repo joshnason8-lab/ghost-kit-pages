@@ -266,8 +266,14 @@ func _ai_matches(n: int, mins: float) -> void:
 		var f := 0
 		var limit := int(mins * 60.0 * 30.0) + 30 * 240
 		var pauses := 0
+		var shown := 0
 		while is_instance_valid(m) and Game.current == m and f < limit:
 			await frames(1)
+			# (Frames of play: a replay, shown on Medium and High, holds the match.)
+			if is_instance_valid(m) and Game.current == m:
+				shown = m.replays.size()
+				if m.phase == m.P.REPLAY:
+					continue
 			f += 1
 			if f % 900 == 450:
 				await _background_and_back()
@@ -283,7 +289,7 @@ func _ai_matches(n: int, mins: float) -> void:
 		var ended := _screen_ok() and String(Game.current.get_script().resource_path).ends_with("result_screen.gd")
 		check(ended, "AI match %d (%s, %s) reaches its result screen (%d frames, %d pauses, now %s)" % [i, venue, rules, f,
 			pauses, _where()])
-		print("AI match %d: %s %s, %d frames, %d pauses, ended: %s" % [i, venue, rules, f, pauses, ended])
+		print("AI match %d: %s %s, %d frames, %d pauses, %d replays, ended: %s" % [i, venue, rules, f, pauses, shown, ended])
 		Game.goto_menu()
 		await frames(3)
 

@@ -465,9 +465,10 @@ const REPLAY_AFTER := 1.4      # seconds of the call before the replay
 const REPLAY_SPEED := 0.4
 ## The moments a raya can be shown again for, most wanted first: the ball through the ring; a low ball kept alive by
 ## a dive; a raya won on a long rally; the winning raya (the eighth, or the classic court's last point); a raya that
-## wipes a count out in urria; on the stone court, the ball off the talud or a wall into the raya.
+## wipes a count out in urria; on the stone court, the ball off the talud or a wall into the raya. (A dive counts
+## when it was the rally's last strike and won the raya; a long rally is 12 strikes: the AI dives often.)
 const REPLAY_PRIORITY := ["ring", "dive", "rally", "win", "urria", "wall"]
-const LONG_RALLY := 8          # strikes in a rally that make it a long one
+const LONG_RALLY := 12         # strikes in a rally that make it a long one
 const MOMENT_BEFORE := 1.8     # seconds shown before a moment, and after it
 const MOMENT_AFTER := 1.6
 
@@ -518,11 +519,13 @@ func replay_kind(reason: String, what: String, team := -1) -> String:
 			continue
 		match String(e[0]):
 			"dive":
-				# (Saved: the side that dived for it won the raya.)
+				# (Saved: the dive was the rally's last strike and its side won the raya.)
+				found.erase("dive")
 				if int(e[3]) == team:
 					found["dive"] = e
 				last_strike = float(e[1])
 			"strike":
+				found.erase("dive")
 				last_strike = float(e[1])
 			"wall":
 				if float(e[1]) > last_strike:
@@ -1112,6 +1115,8 @@ func _check_frame_rate(delta: float, real_delta: float) -> void:
 		return
 	if DisplayServer.get_name() == "headless" or OS.has_feature("movie"):
 		return
+	if _auto_gfx == null:
+		_auto_gfx = WsgAutoTier.new(Game.frame_cap())
 	if _auto_gfx.feed(real_delta):
 		lower_graphics()
 
@@ -1119,7 +1124,8 @@ func _check_frame_rate(delta: float, real_delta: float) -> void:
 var _fps_t := 0.0
 var _fps_frames := 0
 var _gfx_checked := false
-var _auto_gfx := WsgAutoTier.new(Game.frame_cap())
+## (Made when first needed: Low makes no object the beta did not - a body's model is picked by its instance id.)
+var _auto_gfx: WsgAutoTier = null
 
 
 ## A level off the graphics now, and everything the levels change: the picture, and the shared foundation's bodies (on
@@ -1151,7 +1157,8 @@ func lower_graphics() -> void:
 		wsg_replay.queue_free()
 		wsg_replay = null
 		_replay_kind = "ring" if _replay_kind == "ring" else ""
-	_auto_gfx.reset()
+	if _auto_gfx:
+		_auto_gfx.reset()
 
 
 # ---------------------------------------------------------------- the shared foundation's bodies (FoundationLink)
@@ -1167,14 +1174,16 @@ func _all_bodies() -> Array:
 	return out
 
 
-## Metres from the camera within which a player is posed every frame by graphics level (beyond: every second frame,
-## unless he is in a move or holds the ball).
-const POSE_NEAR := [12.0, 12.0, 16.0]
+## Metres from the camera within which a player is posed every frame by graphics level; to POSE_MID every second
+## frame, beyond it every third (unless he is in a move, holds the ball or is yours: every frame).
+const POSE_NEAR := [10.0, 10.0, 14.0]
+const POSE_MID := 22.0
 var _detail_t := 0.0
 
 
 ## Twice a second: the foundation's bodies in full detail nearest the camera only (WsgFoundation's budget profile: its
-## nearest 6 on Medium, all on High); far players posed every second frame, the judges every second unless calling.
+## nearest 6 on Medium, all on High); far players posed every second or third frame, the judges every third unless
+## calling.
 func _rank_detail(dt: float) -> void:
 	_detail_t -= dt
 	if _detail_t > 0.0:
@@ -1190,11 +1199,12 @@ func _rank_detail(dt: float) -> void:
 			continue
 		list.append(link.body)
 		if link.kind == "judge":
-			link.pose_every = 1 if link.mode == "upper" else 2
+			link.pose_every = 1 if link.mode == "upper" else 3
 		else:
 			var pl := (b as Body).get_parent() as Player
-			var near := (b as Body).global_position.distance_to(camp) < float(POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)])
-			link.pose_every = 1 if near or pl == null or pl.busy() or pl == server or pl.user else 2
+			var d: float = (b as Body).global_position.distance_to(camp)
+			var near := d < float(POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)])
+			link.pose_every = 1 if near or pl == null or pl.busy() or pl == server or pl.user else (2 if d < POSE_MID else 3)
 	if not list.is_empty():
 		WsgFoundation.rank_detail(list, camp)
 
@@ -1203,7 +1213,10 @@ func _rank_detail(dt: float) -> void:
 ## the game has it: a few centimetres off the drawn one).
 func _ball_in_drawn_hand() -> void:
 	var holder: FoundationLink = null
-	if ball.held and server != null and server.body and server.body.link and server.body.link.body.visible:
+	# (Not while the arms are raised to the copal's smoke: the ball is not lifted to the sky with them; it stays where
+	# the game draws it, as in the beta.)
+	if ball.held and server != null and server.body and server.body.link and server.body.link.body.visible \
+			and server.offering <= 0.01:
 		holder = server.body.link
 	for p in all_players():
 		var l: FoundationLink = (p as Player).body.link if (p as Player).body else null
