@@ -49,17 +49,24 @@ func setup(_args: Dictionary) -> void:
 	pass
 
 
+## The long texts still to add: one piece a frame once the page is up, so it opens at once instead of freezing while
+## every licence is laid out (on the main thread: see text_block).
+const CHUNK := 1500
+var _todo: Array[String] = []
+var _col: VBoxContainer
+
+
 func _ready() -> void:
 	UI.screen(self)
 	var v := UI.page(self, tr("LICENCES"), func(): Game.show_screen("res://ui/settings_screen.gd"), tr("SET_ABOUT"))
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 18)
-	v.add_child(UI.scroll(col))
-	col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
-	col.add_child(_text(CREDITS))
-	col.add_child(_text(SOUNDS))
-	col.add_child(_text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
-	col.add_child(_text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
+	_col = VBoxContainer.new()
+	_col.add_theme_constant_override("separation", 18)
+	v.add_child(UI.scroll(_col))
+	_col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
+	_col.add_child(_text(CREDITS))
+	_col.add_child(_text(SOUNDS))
+	_queue(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges()))
+	_queue("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges()))
 	# The engine's own parts, each with its copyright and licence, then the licences' texts.
 	var parts := PackedStringArray()
 	for c in Engine.get_copyright_info():
@@ -69,25 +76,50 @@ func _ready() -> void:
 				lines.append(_plain(String(who)))
 			lines.append("(" + String(part.license) + ")")
 		parts.append("[b]%s[/b]\n%s" % [_plain(String(c.name)), "\n".join(lines)])
-	col.add_child(_text("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts)))
+	_queue("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts))
 	var info: Dictionary = Engine.get_license_info()
 	for name in info:
-		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
+		_queue("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())])
 
 
-func _text(bb: String, big := false) -> RichTextLabel:
-	return text_block(bb, big)
+## A long text goes on as several labels of a few paragraphs each, so no one frame lays out a whole licence.
+func _queue(text: String) -> void:
+	var chunk := ""
+	for para in text.split("\n\n"):
+		if chunk != "" and chunk.length() + para.length() > CHUNK:
+			_todo.append(chunk)
+			chunk = ""
+		chunk = para if chunk == "" else chunk + "\n\n" + para
+	if chunk != "":
+		_todo.append(chunk)
+
+
+func _process(_delta: float) -> void:
+	if _todo.is_empty():
+		set_process(false)
+		return
+	_col.add_child(_text(_todo.pop_front()))
+
+
+## Every text is on the page.
+func built() -> bool:
+	return _todo.is_empty()
+
+
+func _text(bb: String) -> RichTextLabel:
+	return text_block(bb)
 
 
 ## A block of formatted text for the About pages (Licences, Help, Privacy), its height its own, inside a page's
-## scroll box. Licence texts are long: a big one is laid out off the main thread.
-static func text_block(bb: String, big := false) -> RichTextLabel:
+## scroll box. Never threaded: a threaded label laid out on a worker thread while the main thread draws, sizes
+## (fit_content), scrolls or frees it crashes Godot 4.7.2 now and then (signal 11 in RichTextLabel::_shape_line and
+## TextServerAdvanced: input_test in CI on 0.8.5; Sepak Takraw's and Kabaddi Raid's Licences pages too). Long texts
+## are cut into pieces instead (the Licences page adds one a frame).
+static func text_block(bb: String) -> RichTextLabel:
 	var rt := RichTextLabel.new()
 	rt.bbcode_enabled = true
 	rt.fit_content = true
 	rt.scroll_active = false
-	# (Not in headless runs: freeing a threaded label mid-layout, as the screen tests do, can crash the engine.)
-	rt.threaded = big and DisplayServer.get_name() != "headless"
 	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# A drag that starts on the words must reach the scroll box: the text takes no input.

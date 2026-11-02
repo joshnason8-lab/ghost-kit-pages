@@ -119,6 +119,10 @@ func _about_pages() -> void:
 		btn.pressed.emit()
 		await frames(4)
 		var s: Node = Game.current
+		var waited := 0
+		while is_instance_valid(s) and s.has_method("built") and not s.built() and waited < 300:
+			waited += 1
+			await frames(1)
 		check(is_instance_valid(s) and s.get_script() != null and String(s.get_script().resource_path) == want[key][0], "%s opens %s in the game" % [key, want[key][0]])
 		var words := ""
 		for rt in s.find_children("*", "RichTextLabel", true, false):
