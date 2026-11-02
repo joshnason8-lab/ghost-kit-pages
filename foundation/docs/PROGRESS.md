@@ -346,3 +346,8 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   `hold_weight_own`, `make_holds`, `hold_point` (+ `WsgLegacyPose.arm_maker`); WsgGrip `solve_sphere`/`sphere_point`,
   WsgBody `grip_sphere`/`ball_point`; ADOPTING 5.10 "Lessons from the pilots"; CATALOGUE "all 7" and gaps by sport.
   Games pick them up on their next sync by opting in (ADOPTING 5.10); nothing changes for a game that does not.
+- **SYNC WARNING (after the ports, 2026-11-02)**: the new behaviours are opt-in. When syncing a pilot, set in its
+  FoundationLink in the same change: Pok Ta Pok `loco.rng = RandomNumberGenerator.new()` (else its seeded matches
+  change); Kho Kho `loco.cut_from_heading = true` (else the 8 m/s glide returns); advisable for Kabaddi and Sepak
+  Takraw too. Optional clean-ups: Netball grip_sphere/ball_point and hips_first/hold_weight_own/make_holds (also
+  Floorball, fixes its 4 cm hold drift); Sepak Takraw and Kho Kho planter.keep_pose; Kho Kho hold_point + arm_maker.
