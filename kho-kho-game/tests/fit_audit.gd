@@ -414,7 +414,7 @@ func _buttons() -> void:
 	var keep := int(Game.settings.btn_size)
 	for k in 3:
 		Game.settings.btn_size = k
-		for set_ in [["KHO", "DIVE", "POWERPLAY"], ["DODGE", "SWITCH"]]:
+		for set_ in [["KHO", "DIVE", "TAG", "POWERPLAY"], ["DODGE", "SWITCH"]]:
 			tc.set_buttons(set_)
 			tc._paras.clear()
 			tc.queue_redraw()

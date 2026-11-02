@@ -214,6 +214,17 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   without them the game builds and runs and their tests are left out. Rewriting the history to remove them from
   every commit is prepared (a dry run removes them from both Kho Kho branches) and waits on the owner's own word.
 
+- 0.11.2 (the owner's playtest list and the lead's camera bug): the stick is read through the camera at your
+  player (`Match._stick_map`, eased over 0.2 s; `stick_world` / `world_to_stick`, used by the chaser, defender,
+  DODGE, the pole turn and match_sim's bot); test_runner checks up, right, down and left within 10 degrees in every
+  view. TAG (`Match._tag`): a standing reach for the nearest defender, BTN_TAG / CTRL_TAG in 14 languages, the
+  third button (slot 2, so saved places of KHO and DIVE stay). Your defender is never auto-played (`_user_auto`
+  only with `autopilot`, which match_sim sets). Bodies are solid (`Match._separate`, `_push_apart` capped at
+  6 cm a frame) and runners steer round seated chasers and the chaser (`_avoid`, a 2 m look-ahead). A reach on the
+  move walks or runs from 0.5 m/s (it slid on the standing clip), and `ModelBody.rate_for` goes down to 0.3 so a
+  slow walk's feet keep to the ground. Crowd: stand spots at the step's front edge (`SEAT_BACK`), the school's
+  barricade children standing on the grass; a new crowd loop without the chant; school birds 4 dB quieter.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from

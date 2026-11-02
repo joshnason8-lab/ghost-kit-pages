@@ -134,7 +134,7 @@ static func rate_for(c: String, spd: float) -> float:
 	if s <= 0.1:
 		return 1.0
 	var r := spd / s
-	return clampf(sqrt(r) if r > 1.0 else r, 0.5, 1.6)
+	return clampf(sqrt(r) if r > 1.0 else r, 0.3, 1.6)
 
 
 func clip_length(c: String) -> float:

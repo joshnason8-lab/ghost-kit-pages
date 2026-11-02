@@ -11,7 +11,7 @@ extends Control
 signal action(id: String)
 
 const JOY_R := 92.0
-const KEYS := [KEY_SPACE, KEY_J, KEY_K]
+const KEYS := [KEY_SPACE, KEY_J, KEY_K, KEY_L]
 const STICK_SIDE := 0.45     # the share of the screen's width the joystick takes
 const TOP_CLEAR := 120.0     # px from the top kept for the scoreboard
 

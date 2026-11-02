@@ -53,6 +53,7 @@ var _cheer_t := 99.0          # seconds since an out, for the crowd
 var _tension := 0.0            # 0-1: how close the crowd is to its feet (_crowd_roar)
 var _roar_t := 0.0
 var _was_diving := false
+var _tag_at: Athlete = null   # TAG: the defender your chaser's arm goes out for
 var _reach_ready := 0.0       # a chaser's reach for a touch: one at a time, not one every frame he is close
 var cam_locked := false       # the camera left where it is (pictures for the store and the docs)
 var khos_since := 0
@@ -596,6 +597,8 @@ func _process(delta: float) -> void:
 	_officials(dt)
 	for a in everyone():
 		a.integrate(dt)
+	if phase == "play":
+		_separate()
 	_update_markers()
 	# The crowd follows the chase: where the active chaser and the defender nearest him are.
 	if active and phase == "play":
@@ -866,9 +869,103 @@ func _legal(want: Vector3) -> Vector3:
 	return w
 
 
+## The stick as a direction on the ground, as the camera sees it (the owner: with a camera not alongside the field
+## the stick went the wrong way): up on the stick is up the screen, right is right, whatever the camera. Read at the
+## player you run, where he is on the screen (a low camera, behind the pole, sees the ground in perspective: its
+## heading alone was 18 degrees out off to one side). The mapping is followed over about 0.2 s (STICK_EASE), so a
+## camera change in the middle of a run does not turn him round in a frame. Length as the stick's (0-1).
+const STICK_EASE := 0.07   # s: the time constant (95% of a change in 0.2 s)
+var _stick_sx := Vector2.INF   # the ground direction (x, z) that is right on the screen at your player
+var _stick_sy := Vector2.INF   # ... and down the screen
+
+
+func stick_world(j: Vector2) -> Vector3:
+	if j.length() < 0.0001:
+		return Vector3.ZERO
+	var m := _stick_map() if _stick_sx == Vector2.INF else [_stick_sx, _stick_sy]
+	var w: Vector2 = m[0] * j.x + m[1] * j.y
+	if w.length() < 0.0001:
+		return Vector3.ZERO
+	w = w.normalized() * minf(j.length(), 1.0)
+	return Vector3(w.x, 0.0, w.y)
+
+
+## The other way: the stick that runs him along w (a direction on the ground), as the camera sees it.
+func world_to_stick(w: Vector3) -> Vector2:
+	var m := _stick_map() if _stick_sx == Vector2.INF else [_stick_sx, _stick_sy]
+	var sx: Vector2 = m[0]
+	var sy: Vector2 = m[1]
+	var det := sx.x * sy.y - sy.x * sx.y
+	if absf(det) < 0.000001:
+		return Vector2.ZERO
+	var j := Vector2(w.x * sy.y - sy.x * w.z, sx.x * w.z - w.x * sx.y) / det
+	return j.normalized() * Vector2(w.x, w.z).length() if j.length() > 0.0001 else Vector2.ZERO
+
+
+## The camera's forward on the ground, as a heading (radians: 0 is +z).
+func camera_yaw() -> float:
+	if cam == null:
+		return PI   # the broadcast camera's: looking across the field toward -z
+	var f := -cam.global_transform.basis.z
+	if Vector2(f.x, f.z).length() < 0.01:
+		f = cam.global_transform.basis.y   # looking straight down: up the screen is the camera's up
+	return atan2(f.x, f.z)
+
+
+## Where the stick is read: the player you run (your chaser, or your defender), else the middle of the field.
+func _stick_point() -> Vector3:
+	if user >= 0 and active and _user_chasing():
+		return active.position
+	if user_def:
+		return user_def.position
+	return Vector3.ZERO
+
+
+## [right, down]: the ground directions (x, z) that move a point at your player right and down the screen, scaled
+## together (the larger 1). From the camera's projection there; from its heading if the projection fails.
+func _stick_map() -> Array:
+	var yaw := camera_yaw()
+	var fwd := Vector2(sin(yaw), cos(yaw))
+	var fallback := [Vector2(-fwd.y, fwd.x), -fwd]
+	if cam == null or not cam.is_inside_tree():
+		return fallback
+	var p := _stick_point()
+	if cam.is_position_behind(p):
+		return fallback
+	var s0 := cam.unproject_position(p)
+	var a := cam.unproject_position(p + Vector3(0.5, 0, 0)) - s0   # the screen's move for 0.5 m along x
+	var b := cam.unproject_position(p + Vector3(0, 0, 0.5)) - s0   # ... and along z
+	var det := a.x * b.y - b.x * a.y
+	if absf(det) < 0.01:
+		return fallback
+	var sx := Vector2(b.y, -a.y) / det
+	var sy := Vector2(-b.x, a.x) / det
+	var k := maxf(sx.length(), sy.length())
+	return [sx / k, sy / k]
+
+
+func _ease_stick(dt: float) -> void:
+	var want := _stick_map()
+	if _stick_sx == Vector2.INF:
+		_stick_sx = want[0]
+		_stick_sy = want[1]
+		return
+	if dt <= 0.0:
+		return
+	var t := 1.0 - exp(-dt / STICK_EASE)
+	var sx: Vector2 = _stick_sx.lerp(want[0], t)
+	var sy: Vector2 = _stick_sy.lerp(want[1], t)
+	# A cut that turns the view right round passes through nothing on the way: there, take the new one.
+	if absf(sx.x * sy.y - sy.x * sx.y) < 0.05:
+		sx = want[0]
+		sy = want[1]
+	_stick_sx = sx
+	_stick_sy = sy
+
+
 func _user_chaser(_dt: float) -> void:
 	var j := controls.joystick if controls else Vector2.ZERO
-	var w := Vector3(j.x, 0, j.y) * active.top
+	var w := stick_world(j) * active.top
 	if bool(Game.settings.lane_assist):
 		w = _legal(w)
 	if not _kho_armed.is_empty():
@@ -889,7 +986,7 @@ func _user_chaser(_dt: float) -> void:
 	if not active.busy():
 		active.want = w
 	active.top = _top_speed(active, true)
-	var ids := ["KHO", "DIVE"]
+	var ids := ["KHO", "DIVE", "TAG"]
 	if powerplay_offer > 0.0 and not powerplay_used:
 		ids.append("POWERPLAY")
 	controls.set_buttons(ids)
@@ -962,6 +1059,9 @@ func _on_action(id: String) -> void:
 		"DIVE":
 			if _user_chasing() and not active.busy():
 				_dive_at(_nearest_defender(active.position, 3.0))
+		"TAG":
+			if _user_chasing() and not active.busy():
+				_tag()
 		"POWERPLAY":
 			if _user_chasing() and powerplay_offer > 0.0:
 				_call_powerplay()
@@ -992,7 +1092,7 @@ func _dodge() -> void:
 	var side := Vector3(-line.z, 0, line.x)
 	var j := controls.joystick if controls else Vector2.ZERO
 	if j.length() > 0.2:
-		if side.dot(Vector3(j.x, 0, j.y)) < 0.0:
+		if side.dot(stick_world(j)) < 0.0:
 			side = -side
 	elif side.dot(-a.position) < 0.0:
 		side = -side   # toward the middle of the field
@@ -1008,6 +1108,28 @@ func _dodge() -> void:
 	Sfx.voice("hup", -6.0)
 	Sfx.play("whoosh", -12.0)
 	game_event.emit("dodge")
+
+
+const TAG_TIME := 0.32
+const TAG_REACH := 1.05    # from his middle to the hand, the arm out at full stretch
+const TAG_RANGE := 2.2     # TAG reaches for the nearest defender within this (else his arm goes out ahead)
+
+
+## TAG: not every touch is a dive. His arm goes out for the nearest defender in reach (one arm, body.grip) as he
+## runs on, for about a third of a second; the hand reaches further than a running touch, not as far as a dive, and
+## he never leaves his feet. Whether it counts is _touches' (the swerve, the rules).
+func _tag() -> void:
+	if t_match < _reach_ready - 0.5:
+		return
+	var d := _nearest_defender(active.position, TAG_RANGE)
+	_tag_at = d
+	active.do("reach", TAG_TIME)
+	active.body.grip_arms = 1
+	var fwd := Vector3(sin(active.yaw), 0, cos(active.yaw))
+	active.body.grip = (d.position if d else active.position + fwd * TAG_REACH) + Vector3(0, 1.0, 0)
+	_reach_ready = t_match + 0.6
+	Sfx.play("whoosh", -16.0)
+	game_event.emit("tag")
 
 
 func dodging() -> bool:
@@ -1256,8 +1378,9 @@ func _pole_turn() -> void:
 		return
 	# The side he comes out on.
 	var out_half := KhoRules.half_of(active.position.z)
-	if _user_chasing() and controls and absf(controls.joystick.y) > 0.3:
-		out_half = 1 if controls.joystick.y > 0.0 else -1
+	var sw := stick_world(controls.joystick) if controls else Vector3.ZERO
+	if _user_chasing() and absf(sw.z) > 0.3:
+		out_half = 1 if sw.z > 0.0 else -1
 	elif not _user_chasing() and String(_chase_plan.get("kind", "")) == "pole":
 		out_half = int(_chase_plan.get("half", out_half))
 	# He lets go just past the pole on that side, heading back down the field (toward the middle).
@@ -1362,6 +1485,15 @@ func _touches() -> void:
 		kind = KhoRules.OUT_POLE
 	elif active.busy():
 		return
+	elif active.act == "reach" and _tag_at != null and is_instance_valid(_tag_at):
+		# TAG: the hand goes out toward him (and follows him), at full stretch from 0.06 s.
+		if active.act_t < 0.06:
+			return
+		var to := _tag_at.position - active.position
+		to.y = 0.0
+		hand = active.position + to.normalized() * minf(to.length(), TAG_REACH) if to.length() > 0.01 else hand
+		hand_r = 0.42
+		active.body.grip = _tag_at.position + Vector3(0, 1.0, 0)
 	for d in batch:
 		if d_state.get(d, "") != "in":
 			continue
@@ -1370,6 +1502,7 @@ func _touches() -> void:
 			# The attempt is seen: his arm goes out for the touch, whether it lands or slips off.
 			if active.act == "" and t_match > _reach_ready:
 				active.do("reach", 0.3)
+				_tag_at = null
 				active.body.grip_arms = 1
 				active.body.grip = d.position + Vector3(0, 1.0, 0)
 				_reach_ready = t_match + 0.9
@@ -1776,15 +1909,33 @@ func _edge_cost(q: Vector3) -> float:
 
 ## Round the seated chasers and the other runners rather than through them.
 func _avoid(a: Athlete, w: Vector3) -> Vector3:
+	# Round the seated chasers and the active chaser, not through them (the owner: "like ghosts"): looking 2 m ahead
+	# along his way, a body he would pass within reach of turns him aside, the more the nearer it is; already inside
+	# one, he is steered straight out. _separate keeps them apart whatever gets past this.
 	var out := w
+	var speed := w.length()
+	var fwd := w / speed if speed > 0.1 else Vector3.ZERO
+	var bodies := []
 	for s in squares:
-		var d: Vector3 = a.position - s.position
-		d.y = 0
+		if s != active and s != a and (s as Athlete).act in ["sit", ""]:
+			bodies.append([s.position, BODY_SEATED + 0.1])
+	if active and active != a and _solid(active):
+		bodies.append([active.position, BODY_STANDING + 0.1])
+	for b in bodies:
+		var d: Vector3 = (b[0] as Vector3) - a.position
+		d.y = 0.0
 		var dl := d.length()
-		if dl < 0.7 and dl > 0.001:
-			out += d / dl * (0.7 - dl) * 8.0
-	if active and active != a:
-		pass
+		var r: float = b[1]
+		if dl < r:
+			out -= (d / dl if dl > 0.001 else fwd) * (r - dl) * 8.0
+		elif speed > 0.1 and dl < 2.0:
+			var along := d.dot(fwd)
+			if along > 0.0:
+				var lat := d - fwd * along
+				var ll := lat.length()
+				if ll < r:
+					var away := -lat / ll if ll > 0.01 else Vector3(-fwd.z, 0.0, fwd.x)
+					out += away * speed * (1.0 - ll / r) * clampf(1.0 - along / 2.0, 0.0, 1.0) * 1.6
 	return out.limit_length(maxf(w.length(), 0.1)) if w.length() > 0.1 else out.limit_length(1.0)
 
 
@@ -1826,7 +1977,7 @@ func _user_defender(dt: float) -> void:
 	if d_state.get(a, "") == "enter" or (_user_auto() and not dodging()):
 		_defender_think(a, dt)
 		return
-	a.want = Vector3(j.x, 0, j.y) * a.top
+	a.want = stick_world(j) * a.top
 	a.want = _avoid(a, a.want) if a.want.length() > 0.1 else a.want
 	if dodging():
 		a.top *= 1.25
@@ -1857,9 +2008,60 @@ func _brake_at_line(a: Athlete, dt: float) -> void:
 				a.want[k] = 0.0
 
 
-## Your defender runs himself while your thumb is off the stick (USER_IDLE seconds).
+## Bodies are solid (the owner: runners went through the kneeling chasers, and a touch through the man touched, "like
+## ghosts"). After everyone has moved: a defender is kept out of each seated chaser (who does not move) and of the
+## other defenders, and the active chaser and a defender apart, each giving way by half; only where they stand (their
+## speed is their own, so nobody jerks), and never a man diving, lying, getting up or swinging round the pole. A
+## touch still lands: the hand reaches 0.76 m ahead (_touches), the bodies keep 0.5 m.
+const BODY_SEATED := 0.62   # m between a seated chaser's middle and a defender's
+const BODY_STANDING := 0.5  # m between two standing men's middles
+const PUSH_MAX := 0.06      # m a frame they are moved apart at most
+
+
+func _solid(a: Athlete) -> bool:
+	return not (a.act in ["dive", "pole_dive", "lie", "getup", "pole_turn"])
+
+
+func _separate() -> void:
+	var movers: Array = []
+	for d in batch:
+		if d_state.get(d, "") == "in" and _solid(d):
+			movers.append(d)
+	for d in movers:
+		for sq in squares:
+			if sq == active or not (sq as Athlete).act in ["sit", ""] or (sq as Athlete).vel.length() > 0.5:
+				continue
+			_push_apart(d, sq, BODY_SEATED, 1.0)
+	for i in movers.size():
+		for k in range(i + 1, movers.size()):
+			_push_apart(movers[i], movers[k], BODY_STANDING, 0.5)
+	if active and _solid(active):
+		for d in movers:
+			_push_apart(d, active, BODY_STANDING, 0.5)
+
+
+## Moves a (and b by the rest of it) apart along the ground until they are gap apart; share: a's part of it.
+func _push_apart(a: Athlete, b: Athlete, gap: float, share: float) -> void:
+	var off := a.position - b.position
+	off.y = 0.0
+	var dist := off.length()
+	if dist >= gap:
+		return
+	var dir := off / dist if dist > 0.001 else Vector3(1, 0, 0)
+	var over := minf(gap - dist, PUSH_MAX)   # a little a frame: never a jump (the steering keeps them clear)
+	a.position += dir * over * share
+	if share < 1.0:
+		b.position -= dir * over * (1.0 - share)
+
+
+## Your defender is yours alone (the owner: "the player is moving himself and dodging by himself when I'm supposed to
+## be playing"): with your thumb off the stick he stands, and nothing dodges for him. Only a test's stand-in thumb
+## (autopilot: tests/match_sim's "user") lets him run himself after USER_IDLE seconds, as he did before 0.11.2.
+var autopilot := false
+
+
 func _user_auto() -> bool:
-	return user_def != null and _user_idle > USER_IDLE
+	return autopilot and user_def != null and _user_idle > USER_IDLE
 
 
 # ---------------------------------------------------------------- officials, markers, camera
@@ -1914,6 +2116,7 @@ func _update_markers() -> void:
 
 
 func _camera(dt: float) -> void:
+	_ease_stick(dt)
 	if cam_locked:
 		return
 	var fx := 0.0

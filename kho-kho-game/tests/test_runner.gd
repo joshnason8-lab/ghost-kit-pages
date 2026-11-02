@@ -759,7 +759,7 @@ func _matches() -> void:
 
 
 ## Your controls, as the buttons send them: KHO from behind a seated chaser hands you the chase (you are then him);
-## DIVE dives; defending, the buttons are DODGE and SWITCH and SWITCH changes your defender.
+## TAG reaches out; DIVE dives; defending, the buttons are DODGE and SWITCH and SWITCH changes your defender.
 func _your_controls() -> void:
 	Game.settings.lane_assist = true
 	var m: Node = (load("res://game/match.gd") as Script).new()
@@ -816,6 +816,22 @@ func _your_controls() -> void:
 		check(m.chase.foul == "", "and it is not a late kho")
 		m.controls.joystick = Vector2.ZERO
 	await frames(20)
+	# TAG (the owner: not every tag is a dive): his arm goes out for the nearest defender and he stays on his feet.
+	check(m.controls.ids.has("TAG"), "chasing, there is a TAG button (%s)" % str(m.controls.ids))
+	m.active.position = Vector3(float(f.square_x[4]), 0, float(m.chase.half) * 3.0)
+	m.active.vel = Vector3.ZERO
+	await frames(2)
+	m._reach_ready = 0.0
+	var near: Athlete = m._nearest_defender(m.active.position, m.TAG_RANGE)
+	m._on_action("TAG")
+	await frames(1)
+	check(m.active.act == "reach" and m._tag_at == near, "TAG reaches for the nearest defender (%s)" % m.active.act)
+	var low := 1.0
+	for k in 12:
+		await frames(1)
+		low = minf(low, m.active.body.position.y + m.active.position.y)
+	check(m.active.act != "dive" and m.active.act != "lie" and low > -0.05, "and he never leaves his feet (%s)" % m.active.act)
+	await frames(10)
 	m.active.position = Vector3(float(f.square_x[4]), 0, float(m.chase.half) * 3.0)
 	m.active.vel = Vector3.ZERO
 	await frames(2)
@@ -845,16 +861,45 @@ func _your_controls() -> void:
 	d.controls.joystick = Vector2.ZERO
 	await frames(3)
 	check(not d._user_auto(), "just let go, he is still yours")
-	await frames(20)
-	check(d._user_auto(), "thumb off the stick for half a second: your defender runs himself")
-	var seen := false
-	for k in 40:
+	# The owner (0.11.2): he is yours to play. Thumb off the stick, he stands: nothing runs or dodges him for you.
+	var stray := 0.0
+	for k in 60:
 		await frames(1)
-		seen = seen or d.user_def == null or d.user_def.want.length() > 0.5 or d.user_def.vel.length() > 0.5
-	check(seen, "and he moves (as the AI would)")
+		if d.user_def:
+			stray = maxf(stray, d.user_def.want.length())
+	check(not d._user_auto() and stray < 0.5, "thumb off the stick, your defender stays yours and stands (%.1f m/s asked)" % stray)
 	d.controls.joystick = Vector2(0, 1)
 	await frames(2)
 	check(not d._user_auto(), "the stick takes him back at once")
+	# The stick follows the camera (the owner: with a camera not alongside the field it went the wrong way): in every
+	# view, up on the stick is up the screen, right is right, down is down and left is left (within 10 degrees), and
+	# he runs that way.
+	var keep_mode: int = d._cam_mode
+	var worst := 0.0
+	var ran_up := true
+	for mode in [Game.CAM_TV, Game.CAM_CLOSE, Game.CAM_POLE]:
+		d._cam_mode = mode
+		d._camera(0.0)
+		await frames(20)   # the stick's heading eases after the camera's (0.2 s)
+		var p0: Vector3 = d.user_def.position
+		var s0: Vector2 = d.cam.unproject_position(p0)
+		for stick in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
+			var s1: Vector2 = d.cam.unproject_position(p0 + d.stick_world(stick) * 0.5)
+			worst = maxf(worst, rad_to_deg(absf((s1 - s0).angle_to(stick))))
+		# And he runs up the screen with the stick pushed up.
+		var before_s: Vector2 = d.cam.unproject_position(d.user_def.position)
+		d.controls.joystick = Vector2(0, -1)
+		await frames(12)
+		var moved: Vector2 = d.cam.unproject_position(d.user_def.position) - before_s
+		d.controls.joystick = Vector2.ZERO
+		ran_up = ran_up and moved.length() > 2.0 and rad_to_deg(absf(moved.angle_to(Vector2(0, -1)))) < 25.0
+	check(worst < 10.0 and ran_up,
+		"the stick follows the camera: up is up the screen in every view (worst %.1f degrees off), and he runs that way" % worst)
+	var turn: Vector3 = d.stick_world(Vector2(0, -1))
+	d._cam_mode = keep_mode
+	d._camera(0.0)
+	var right_after: Vector3 = d.stick_world(Vector2(0, -1))
+	check(turn.angle_to(right_after) < 0.2, "a camera change does not turn him round in a frame (it eases over 0.2 s)")
 	# Run him at the side line, thumb held: with the assist on he pulls up inside it.
 	var ud: Athlete = d.user_def
 	var far_x: float = -signf(d.active.position.x + 0.01) * d.f.pole_gap * 0.4

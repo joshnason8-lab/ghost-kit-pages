@@ -132,7 +132,7 @@ func _near_side(low: bool) -> void:
 			g.box(Vector3(0, hgt - 0.22, W + d), Vector3(L * 2 + d * 2, 0.45, 0.85), seat if r % 2 == 0 else riser)
 			var x := -L - d + 0.4
 			while x < L + d:
-				spots.append(Vector3(x, hgt, W + d))
+				spots.append(Vector3(x, hgt, W + d + SEAT_BACK))
 				x += 0.62
 		var back := W + rows * 0.85 + 0.5
 		g.wall(Vector3(L + rows, 0, back), Vector3(-L - rows, 0, back), 0.0, rows * 0.45 + 4.0, Color("151a28") if indoor else Color("23262e"))
@@ -145,18 +145,12 @@ func _near_side(low: bool) -> void:
 		# The crowd along the middle of the near side (its ends have theirs already: _ground_crowd), at a barricade.
 		var L: float = f.length * 0.5 + f.lobby + 1.0
 		var W: float = f.width * 0.5 + f.lobby + 1.0
-		var kids := kind == "school"
 		for r in (3 if low else 5):
 			var d := 1.0 + r * 0.9
-			var ground := r == 1
-			var step := 0.75 if ground else 0.6
-			var y := -0.42 if ground else 0.0
+			var step := 0.75 if r == 1 else 0.6
 			var x := -9.0
 			while x <= 9.0:
-				var v := Vector3(x + rng.randf_range(-0.2, 0.2), y, W + d)
-				if kids and v.y <= 0.0:
-					v.y -= 0.25
-				spots.append(v)
+				spots.append(Vector3(x + rng.randf_range(-0.2, 0.2), 0.0, W + d))
 				x += step
 		var keep := _lit
 		_lit = g
@@ -440,9 +434,10 @@ func _ground_crowd(low: bool, kids := false) -> Array:
 		# Chairs only on the far side, which the camera faces (a low chair is 618 triangles); at the ends and on the
 		# near side the front row stands at the barricade.
 		var at_rail := seat
-		var ground := r == 1        # the next: on the earth
+		var ground := r == 1        # the next: standing close behind them (no longer sitting on the earth: the sheet's
+		                            # sitting figures sit on chairs, and on the ground their legs went into it)
 		var step := (0.6 if kids else 0.75) if seat else (0.75 if ground else 0.6)
-		var y := 0.45 if seat else (-0.42 if ground else 0.0)
+		var y := 0.45 if seat else 0.0
 		var x := -L - d
 		while x < L + d:
 			# The far side, behind the table, and the two ends; the near side only far to the left and right.
@@ -466,13 +461,11 @@ func _ground_crowd(low: bool, kids := false) -> Array:
 			while bx < L + d:
 				_benches.append(Props.at(Vector3(bx + 0.3, 0, -W - d - 1.8)))
 				bx += 1.2
-	if kids:
-		for i in spots.size():
-			var v: Vector3 = spots[i]
-			if v.y <= 0.0:
-				spots[i] = v - Vector3(0, 0.25, 0)
 	return spots
 
+
+const SEAT_BACK := -0.4   # m: a spectator in the stands sits at the front edge of his step (+ is back from it), his legs
+                          # down its face: a flat figure further back had its legs cut off by the step and sat "in" it
 
 ## Tiers of seats on the far side and both ends (the near side is where the cameras are).
 func _stands(rows: int, indoor: bool) -> Array:
@@ -493,12 +486,12 @@ func _stands(rows: int, indoor: bool) -> Array:
 			g.box(Vector3(s * (L + d), hgt - 0.22, 0), Vector3(0.85, 0.45, W * 2 + d * 2), seat if r % 2 == 0 else riser)
 		var x := -L - d + 0.4
 		while x < L + d:
-			spots.append(Vector3(x, hgt, -W - d))
+			spots.append(Vector3(x, hgt, -W - d - SEAT_BACK))
 			x += 0.62
 		var z := -W - d + 0.4
 		while z < W + d - 3.0:
 			for s: float in [-1.0, 1.0]:
-				spots.append(Vector3(s * (L + d), hgt, z))
+				spots.append(Vector3(s * (L + d + SEAT_BACK), hgt, z))
 			z += 0.62
 	var back := -W - rows * 0.85 - 0.5
 	_lit.wall(Vector3(-L - rows, 0, back), Vector3(L + rows, 0, back), 0.0, rows * 0.45 + 4.0, Color("151a28") if indoor else Color("23262e"))

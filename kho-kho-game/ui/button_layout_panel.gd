@@ -28,9 +28,9 @@ func _ready() -> void:
 	v.add_child(UI.wrap(tr("MOVE_BUTTONS_NOTE"), "MutedLabel", 17))
 	var chasing: bool = controls.ids.is_empty() or controls.ids[0] == "KHO"
 	v.add_child(UI.chips([tr("BTNS_CHASING"), tr("BTNS_DEFENDING")], 0 if chasing else 1, func(i):
-		controls.set_buttons(["KHO", "DIVE", "POWERPLAY"] if i == 0 else ["DODGE", "SWITCH"])))
+		controls.set_buttons(["KHO", "DIVE", "TAG", "POWERPLAY"] if i == 0 else ["DODGE", "SWITCH"])))
 	if controls.ids.is_empty():
-		controls.set_buttons(["KHO", "DIVE", "POWERPLAY"])
+		controls.set_buttons(["KHO", "DIVE", "TAG", "POWERPLAY"])
 	v.add_child(UI.field(tr("BUTTON_SIZE"), UI.chips([tr("SIZE_NORMAL"), tr("SIZE_LARGE"), tr("SIZE_XL")],
 		int(Game.settings.btn_size), func(i):
 			Game.settings.btn_size = i

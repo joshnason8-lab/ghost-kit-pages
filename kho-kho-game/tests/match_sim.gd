@@ -2,7 +2,7 @@ extends Node
 ## AI v AI matches measured against real ones (docs/AI.md): outs a minute, time a defender lasts, khos a minute, dives,
 ## pole dives, fouls, dream runs, the score. Headless:
 ##   godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- [matches] [classic|fast] [turn seconds] [user]
-## user: the home side is yours, with your thumb off the stick (your defender runs himself: match.gd _user_auto).
+## user: the home side is yours, with your thumb off the stick (your defender runs himself: match.gd autopilot).
 ## bot: the home side is yours, your defender steered as the phone playtest's tester steers him (tools/playtest/play.js:
 ## away from the active chaser, toward his back, off the lines).
 
@@ -76,7 +76,8 @@ func _process(_d: float) -> void:
 		v.y += -signf(me.z) * 4.0
 	if absf(me.x) > m.f.length / 2.0 - 1.5:
 		v.x += -signf(me.x) * 4.0
-	m.controls.joystick = v.normalized()
+	# v is a direction on the ground: the stick that runs him that way, whatever the camera.
+	m.controls.joystick = m.world_to_stick(Vector3(v.x, 0.0, v.y)).normalized()
 
 
 func _ready() -> void:
@@ -99,6 +100,7 @@ func _ready() -> void:
 		var m: Node = (load("res://game/match.gd") as Script).new()
 		m.config = {"home": p[0], "away": p[1], "venue": "maidan", "format": fmt, "turn_len": tl, "user_team": you, "seed": 100 + i,
 			"mode": "quick", "test": true, "chase_first": i % 2, "follow_on": false}
+		m.autopilot = you >= 0 and not bot   # "user": a thumb off the stick, the defender running himself
 		add_child(m)
 		cur = m
 		var drawn: int = m.everyone().filter(func(q): return q.link != null).size()

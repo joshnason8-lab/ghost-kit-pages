@@ -33,7 +33,8 @@ func _ready() -> void:
 			if OS.get_environment("KK_LOOK") != "" and Game.current and Game.current.get("cam"):
 				var t := OS.get_environment("KK_LOOK").split_floats(",")
 				Game.current.cam_locked = true
-				Game.current.cam.position = Vector3(0.0, 1.7, 0.0)
+				var from := OS.get_environment("KK_FROM").split_floats(",") if OS.get_environment("KK_FROM") != "" else PackedFloat64Array([0.0, 1.7, 0.0])
+				Game.current.cam.position = Vector3(from[0], from[1], from[2])
 				Game.current.cam.look_at(Vector3(t[0], t[1], t[2]))
 		done = n
 		await RenderingServer.frame_post_draw

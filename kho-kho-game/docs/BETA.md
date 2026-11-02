@@ -9,6 +9,23 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.11.2
+
+- **The stick follows the camera, in every view.** Up on the stick runs him up the screen, right runs him right,
+  whichever camera you pick: behind the pole and close-up too (it went the wrong way off the side view). Changing
+  the camera mid-run eases the stick round over a fifth of a second instead of turning him in a frame.
+- **TAG**: a third button when you chase. Not every tag is a dive: his arm goes out for the nearest defender in
+  reach and he stays on his feet. DIVE is still there for the full-length dive (one arm reaching).
+- **You play your defender.** Thumb off the stick, he stands where he is: nothing runs or dodges him for you.
+- **No more ghosts.** A runner can no longer run through the seated chasers or through the chaser; he steers round
+  them and bodies push apart instead of passing through each other.
+- **No floating, no baby steps.** Reaching for a touch at walking pace, his legs walk; slow walking no longer
+  shuffles his feet faster than he moves.
+- **The crowd**: the seated fans sit on the front of their step, legs down it, not sunk into the seat. At the school
+  ground the children at the barricade stand on the grass (they looked like they were sitting on chairs no one
+  could see). A new crowd loop: the old one had a repeated chant that sounded like an English word.
+- **Quieter birds** at the school ground.
+
 ## What's new in 0.11.1
 
 - **A diving tag** (the owner: "it's not a dive for nothing"). The chaser dives at the runner: one arm fully

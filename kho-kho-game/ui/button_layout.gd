@@ -32,7 +32,7 @@ func _ready() -> void:
 	add_child(shade)
 	controls = TouchControls.new()
 	add_child(controls)
-	controls.set_buttons(["KHO", "DIVE", "POWERPLAY"])
+	controls.set_buttons(["KHO", "DIVE", "TAG", "POWERPLAY"])
 	add_child(ButtonLayoutPanel.new(controls, _back))
 	set_meta("back", _back)
 

@@ -325,7 +325,7 @@ func _animate(dt: float, spd: float) -> void:
 		"rise":
 			c = "run"
 			blend = 0.3
-		"reach", "kho" when spd > 1.2:
+		"reach", "kho" when spd > 0.5:
 			# Reaching on the run (for a defender, or the seated chaser's back as he slows into the kho): his legs keep
 			# running, his arm goes out (body.grip, one arm).
 			c = "run" if spd > 2.6 else "walk"

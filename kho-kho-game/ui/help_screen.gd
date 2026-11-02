@@ -3,7 +3,7 @@ extends Control
 ## full How to Play), the graphics levels, and how to get in touch or report a bug. It scrolls when dragged from
 ## anywhere on it, on its words too (the labels pass the touch through).
 
-const CONTROLS := ["CTRL_CHASE", "CTRL_KHO", "CTRL_DIVE", "CTRL_POLE", "CTRL_DEFEND", "CTRL_ASSIST", "CTRL_KEYS"]
+const CONTROLS := ["CTRL_CHASE", "CTRL_KHO", "CTRL_TAG", "CTRL_DIVE", "CTRL_POLE", "CTRL_DEFEND", "CTRL_ASSIST", "CTRL_KEYS"]
 const RULES := ["RULES_KHO", "RULES_DIRECTION", "RULES_OUTS", "RULES_FOULS", "RULES_TURNS"]
 
 

@@ -286,7 +286,7 @@ func _exact() -> Transform3D:
 ## What draws him now: the game's whole pose, its reaching arm over the capture, or the capture.
 func want_mode() -> String:
 	var act := who.act
-	if act in ["kho", "reach"] and Vector2(who.vel.x, who.vel.z).length() > 1.2:
+	if act in ["kho", "reach"] and Vector2(who.vel.x, who.vel.z).length() > 0.5:
 		return "upper"
 	return "full" if act in FULL else "move"
 
