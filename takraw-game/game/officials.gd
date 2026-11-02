@@ -147,8 +147,11 @@ func _pose(o: One, dt: float, ball: Vector3, live: bool) -> void:
 		o.body.position = o.home + o.off
 		speed = o.vel.length()
 		if speed > 0.05:
-			o.stride += dt * (4.0 + speed * 2.2)
 			var local := o.vel.rotated(Vector3.UP, -o.body.rotation.y)
+			# Backing away (still facing the court): the stride played backwards, so his feet step back. Played forward
+			# he ran on the spot while he went backwards (the owner saw it).
+			var back := local.z < -0.5 * speed
+			o.stride += dt * (4.0 + speed * 2.2) * (-1.0 if back else 1.0)
 			var side := clampf(local.x / speed, -1.0, 1.0)
 			p = Moves.blend(p, Moves.run(o.stride, clampf(speed / 5.0, 0.0, 1.0), side * 0.8), smoothstep(0.05, 0.7, speed))
 	# The head on the ball: yaw and pitch from his eyes, turned at most 75° (past that the shoulders would turn).

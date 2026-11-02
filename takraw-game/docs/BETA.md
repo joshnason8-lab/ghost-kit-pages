@@ -15,6 +15,18 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.14.2, four things the owner saw:
+- **Spikes you can see.** A spike now flies at about two-thirds of a real one's speed: a roll spike at about 76 km/h
+  rather than 110, so the ball crosses the court in about a third of a second instead of a fifth. The defenders still
+  reach the same spikes as before, so kills, digs and rally lengths are unchanged.
+- **No gliding back.** A player walking back to his place after fetching the ball (or lobbing it to the thrower)
+  walks with his legs; before, a move still playing held his legs still and he slid along.
+- **The officials step backwards.** An official backing away from the ball, still facing the court, steps back.
+  Before, his legs ran forward while he went backwards.
+- **A new kick sound.** The ball's hit is now a light, hollow knock, closer to a rattan ball. It comes from Kenney's
+  CC0 impact pack, with the old soccer-ball kick underneath for the foot's weight. The spike gets the same knock on top
+  of its hit. Before, the kick was mostly a low thud.
+
 New in 0.14.1: **Settings > About > Licences can no longer crash the game**: its long texts were laid out on a
 worker thread, and the engine can crash when such a page is drawn or closed mid-layout (it did once in a test). It
 now opens at once and fills in a piece at a time.

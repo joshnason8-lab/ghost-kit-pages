@@ -43,12 +43,15 @@ SOUNDS = {
     # ball's "pok"), three takes; a rubber ball hit by and caught in the hands, duller, for a thigh, chest or head touch;
     # a hard hit on a ball with a kick's thump under it for a spike; a ball smacked for a block; a ball's first bounce
     # on an indoor floor. (Start: 5 ms before the hit; a second layer's offset lines its main attack up with the first's.)
-    "kick": ("hit", 22050, [(MX + "2099.wav", 0, 0, HP), (MX + "2091.wav", -6, 0.0342, HP)], 0.1504, 0.25, 0.0, 0.10, 0),
-    "kick_2": ("hit", 22050, [(MX + "2112.wav", 0, 0, HP), (MX + "2082.wav", -6, 0.0644, HP)], 0.2167, 0.25, 0.0, 0.10, 0),
-    "kick_3": ("hit", 22050, [(MX + "2108.wav", 0, 0, HP), (MX + "2091.wav", -6, 0.0065, HP)], 0.1227, 0.25, 0.0, 0.10, 0),
+    # The kicks (0.14.2): a hollow plastic knock now the main sound (Kenney's light impacts: their energy at 0.8-3 kHz,
+    # where a light hollow ball's "pok" is), the soccer ball's kick 6 dB under it (by their loudest 50 ms) for the
+    # foot's weight. The soccer kick alone was a thud: 80-90% of its energy below 250 Hz (the owner wanted better).
+    "kick": ("hit", 22050, [(MX + "2099.wav", -11.0, 0, HP), (KI + "impactGeneric_light_003.ogg", 0, 0.1727)], 0.1677, 0.25, 0.0, 0.10, 0),
+    "kick_2": ("hit", 22050, [(MX + "2112.wav", -16.0, 0, HP), (KI + "impactGeneric_light_004.ogg", 0, 0.2285)], 0.2235, 0.25, 0.0, 0.10, 0),
+    "kick_3": ("hit", 22050, [(MX + "2108.wav", -10.3, 0, HP), (KI + "impactGeneric_light_002.ogg", 0, 0.1474)], 0.1424, 0.25, 0.0, 0.10, 0),
     "knee": ("soft", 22050, [(MX + "2096.wav", 0, 0, LP)], 0.1116, 0.2, 0.0, 0.07, 0),
     "knee_2": ("soft", 22050, [(MX + "2090.wav", 0, 0, LP)], 0.1038, 0.2, 0.0, 0.07, 0),
-    "spike": ("hit", 22050, [(MX + "2082.wav", 0, 0, HP), (MX + "2108.wav", -6, 0.0334, HP)], 0.1523, 0.35, 0.0, 0.12, 0),
+    "spike": ("hit", 22050, [(MX + "2082.wav", 0, 0, HP), (MX + "2108.wav", -6, 0.0334, HP), (KI + "impactGeneric_light_001.ogg", 9.3, 0.1593)], 0.1523, 0.35, 0.0, 0.12, 0),
     "block": ("hit", 22050, [(MX + "2091.wav", 0, 0, HP)], 0.1162, 0.3, 0.0, 0.10, 0),
     "bounce": ("soft", 22050, [(MX + "2089.wav", 0, 0, HP)], 0.0084, 0.35, 0.0, 0.10, 0),
     "bounce_2": ("soft", 22050, [(MX + "2076.wav", 0, 0, HP)], 0.0, 0.35, 0.0, 0.10, 0),

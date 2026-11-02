@@ -80,6 +80,11 @@ var _pending_call := {}      # a line call that can be challenged: {winner, land
 var _intro_done := false
 var _review := {}
 var _slowmo_until := -1.0
+## Spikes fly at this share of a real one's speed: a roll spike at about 76 km/h, not 110. At a real spike's speed the
+## ball crossed the court in four or five frames and a phone showed almost none of it (the owner couldn't see it).
+## The defenders' time against a spike is reckoned at the real pace (_find_touch), so they reach the same spikes as
+## before: the kills, the digs and the rallies are as they were, and the ball can be seen.
+const SPIKE_PACE := 0.68
 
 # Your inputs.
 var input_window := {}       # the touch you can time now: {t, kind, choices}
@@ -1180,7 +1185,7 @@ func _attack(pl: Player, from: Vector3, q: float, p: Dictionary) -> void:
 		var sol := Ball.solve_apex(from, target, from.y + 0.35)
 		v = sol[0]
 	else:
-		var speed: float = {"roll": 30.0, "sunback": 27.0, "tapak": 22.0, "head_spike": 20.0}.get(mv, 24.0) * lerpf(0.68, 1.04, q)
+		var speed: float = {"roll": 30.0, "sunback": 27.0, "tapak": 22.0, "head_spike": 20.0}.get(mv, 24.0) * lerpf(0.68, 1.04, q) * SPIKE_PACE
 		# A poor one, now and then, is driven flat into the tape.
 		v = _drive(from, target, speed, 0.04 if q > 0.3 or rng.randf() < 0.6 else -0.25)
 	Sfx.play_at("spike" if mv != "feint" else "kick", from, 0.0 if mv != "feint" else -3.0)
@@ -1432,8 +1437,11 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 					var dist := Vector2(stand.x - pl.position.x, stand.z - pl.position.z).length()
 					var speed := 5.2 * (0.82 + float(pl.data.get("agility", 70)) * 0.0028)
 					var need := react + dist / speed
-					var have := t - now - Moves.contact_time(mv) * (0.6 if not hard else 0.15)
-					if hard and dist < 1.1 and t - now > 0.06:
+					# Against a spike, the time a real one would give him (it flies at SPIKE_PACE of its speed).
+					var spike := _attack_kind in ["roll", "sunback", "tapak", "head_spike"] and touch_no == 1
+					var left := (t - now) * (SPIKE_PACE if spike else 1.0)
+					var have := left - Moves.contact_time(mv) * (0.6 if not hard else 0.15)
+					if hard and dist < 1.1 and left > 0.06:
 						need = minf(need, 0.04 + dist * 0.12)   # it comes at him: a reflex touch, foot, chest or thigh
 					if need > have:
 						continue

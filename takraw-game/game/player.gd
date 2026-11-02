@@ -232,6 +232,16 @@ func tick(dt: float, now: float) -> void:
 			p = Moves.blend(base, mp, _w)
 			lift = float(mp.get("y", 0.0))
 			yaw_add = deg_to_rad(float(mp.get("yaw", 0.0)))
+			# Walking between points with a move of his own still playing (picking the ball up, lobbing it to the
+			# thrower, cheering, a slump): his legs walk and the move keeps his arms and back. Standing, the move's
+			# legs slid him along (the owner saw it). Not a kick he is still finishing as the point ends, and less
+			# the further he is off the floor (a jump for joy).
+			if stroll and speed > 0.4 and move in STROLL_MOVES:
+				var k := clampf((speed - 0.4) / 0.6, 0.0, 1.0) * clampf(1.0 - lift / 0.08, 0.0, 1.0)
+				for bone in LEGS:
+					if base.has(bone):
+						p[bone] = Moves._mix(p.get(bone, Vector3.ZERO), base[bone], k)
+				p["hips_y"] = lerpf(float(p.get("hips_y", 0.0)), float(base.get("hips_y", 0.0)), k)
 	if move == "":
 		_w = 0.0
 	_life_pose(p, dt, now, speed)
@@ -326,6 +336,10 @@ func _life_pose(p: Dictionary, dt: float, now: float, speed: float) -> void:
 			if CARRY_ONE.has(bone):
 				to = Moves._mix(CARRY_ONE[bone], CARRY_TWO[bone], _two)
 			p[bone] = Moves._mix(p.get(bone, Vector3.ZERO), to, _carry_w)
+
+
+const LEGS := ["thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
+const STROLL_MOVES := ["pick", "toss", "celebrate", "fist", "clap", "point", "slump"]   # (played between points)
 
 
 ## The arms carrying the ball: both hands holding it in front of him, or the right hand by his hip as he walks.

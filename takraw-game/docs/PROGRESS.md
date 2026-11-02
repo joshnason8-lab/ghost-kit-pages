@@ -670,6 +670,30 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Four things the owner saw (0.14.2)
+
+- **Spikes too fast to see.** A roll spike left the foot at up to 30 m/s (108 km/h, a real one's speed) and crossed
+  the court in four or five frames, so a phone showed almost none of it. Every spike (roll, sunback, tapak, head) now
+  flies at `SPIKE_PACE` (0.68) of that speed: about 76 km/h, crossing in about a third of a second. The defenders'
+  reckoning against a spike (`_find_touch`) is scaled by the same 0.68, so they reach the spikes they reached before.
+  Nine national-level regu matches (`tests/match_sim.tscn`), before and after: kills 0.535 and 0.534 a rally, digs
+  0.29 and 0.30, blocks 0.045 and 0.055, errors 0.36 and 0.35, 4.50 and 4.45 touches a rally (576 and 620 rallies).
+- **Gliding back to his place.** A player walking back after fetching the ball (or lobbing it to the thrower, or after
+  a cheer) still had his move playing, and the move's standing legs slid him along. While he walks with one of those
+  moves playing (`STROLL_MOVES`), his legs now walk and the move keeps his arms and back (`Player.tick`); a kick he is
+  still finishing as the point ends keeps its own legs. test_runner
+  (`_no_glide_between_points`): Low, regu and doubles, 150 s each; of 30 or more 0.5 s walks between points, none with
+  the feet still (before: 46 of 468).
+- **An official backing away ran forward.** The stride was always played forward, so an official backing out of the
+  ball's way (still facing the court) ran on the spot as he went backwards. Backing away, the stride now plays
+  backwards, as the players' backpedal does (`Officials._pose`). test_runner (`_officials_back_away`, Low and High): his
+  lower foot's speed over the floor is about his own (it was about twice).
+- **The kick's sound.** The kicks were a soccer-ball kick with a rubber-ball hit 6 dB under it, 80-90% of their energy
+  below 250 Hz: a thud. They are now a light, hollow plastic knock from Kenney's CC0 "Impact Sounds" (most of its energy
+  at 0.8-3 kHz, a light hollow ball's "pok") with the soccer kick under it for the foot's weight, three takes. The
+  spike adds the same knock to its hit. Spectral centroids: kick 308 to 526 Hz, kick_2 to 477 Hz, kick_3 to 617 Hz,
+  spike 874 Hz. `docs/SOUNDS.md` and the licences page credit Kenney.
+
 ## The licences page without a worker thread (0.14.1)
 
 0.13.0's CI build crashed (signal 11) as test_runner began, before any check; the same commit passed in the pull

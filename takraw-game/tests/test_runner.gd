@@ -32,6 +32,8 @@ func _ready() -> void:
 	await _legal_pages()
 	await _back_everywhere()
 	_serve_toss_clear()
+	_officials_back_away()
+	_no_glide_between_points()
 	await _watch_ai()
 	await _play_as_and_officials()
 	await _matches()
@@ -554,6 +556,95 @@ func _serve_toss_clear() -> void:
 					check(float(server_least[0]) > 0.0, "serve toss (%s): the thrown ball stays outside the server's torso and head (least %.3f m)" % [what, float(server_least[0])])
 				m.queue_free()
 				remove_child(m)
+	Game.settings.graphics = keep
+
+
+## An official backing away (out of the ball's way, still facing the court) steps backwards, rather than running
+## forward on the spot as he slides back (the owner saw that): his lower foot's speed over the floor against his own is
+## about 1 (a forward stride sends it back at about twice his speed). Low (the A16's) and High.
+func _officials_back_away() -> void:
+	var keep: int = Game.settings.graphics
+	for level in [Game.GFX_LOW, Game.GFX_HIGH]:
+		Game.settings.graphics = level
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 1, "points": 15,
+			"user_team": -1, "demo": true, "seed": 3, "mode": "quick"}
+		add_child(m)
+		var offs: Officials = m.get("_officials")
+		var o: Officials.One = null
+		for one in offs.list:
+			if one.standing:
+				o = one
+				break
+		o.back_t = 1e9
+		o.off_to = -o.body.global_transform.basis.z.normalized() * 1.2
+		var ball := Vector3(0, 0.1, 30)
+		var foot_speed := 0.0
+		var body_speed := 0.0
+		var n := 0
+		var was := {}
+		for i in 45:
+			offs.tick(1.0 / 30.0, ball, true)
+			var pos: Vector3 = o.body.global_position
+			var fl: Vector3 = o.body.bone_world("foot_l")
+			var fr: Vector3 = o.body.bone_world("foot_r")
+			var low := "l" if fl.y < fr.y else "r"
+			var f: Vector3 = fl if low == "l" else fr
+			if not was.is_empty() and pos.distance_to(was.pos) > 0.001 and was.low == low:
+				var step := pos.distance_to(was.pos)
+				if step > 0.4 / 30.0:   # backing at 0.4 m/s or more
+					body_speed += step
+					foot_speed += Vector2(f.x - was.f.x, f.z - was.f.z).length()
+					n += 1
+			was = {"pos": pos, "f": f, "low": low}
+		var ratio := foot_speed / maxf(body_speed, 0.001)
+		check(n >= 4 and ratio < 1.4, "%s: an official backing away steps back (his lower foot over the floor at %.2f of his speed over %d frames; a forward stride skates it at about 2)" % [["Low", "Medium", "High"][level], ratio, n])
+		m.queue_free()
+		remove_child(m)
+	Game.settings.graphics = keep
+
+
+## Between points nobody glides (the owner saw a player slide back to his place after fetching the ball): over each
+## half second a player walks (over 0.8 m/s, on the ground), the gap between his feet changes as he steps, whatever
+## move of his is playing (picking the ball up, lobbing it to the thrower, cheering). A regu and a doubles match, Low.
+func _no_glide_between_points() -> void:
+	var keep: int = Game.settings.graphics
+	Game.settings.graphics = Game.GFX_LOW
+	var walks := 0
+	var glides := []
+	for ev in ["regu", "doubles"]:
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": ev, "sets": 1, "points": 15,
+			"user_team": -1, "demo": true, "seed": 7, "mode": "quick"}
+		add_child(m)
+		var runs := {}
+		for i in 30 * 150:
+			m._process(1.0 / 30.0)
+			m.set("_start_replay_after", -1.0)
+			if not int(m.state) in [int(m.S.SETUP), int(m.S.DEAD), int(m.S.BREAK)]:
+				runs.clear()
+				continue
+			for side in 2:
+				for pp in m.players_on(side):
+					var pl: Player = pp
+					if pl.vel.length() <= 0.8 or absf(pl.body.position.y) > 0.02:
+						runs.erase(pl)
+						continue
+					var fl: Vector3 = pl.body.bone_world("foot_l")
+					var fr: Vector3 = pl.body.bone_world("foot_r")
+					var run: Array = runs.get(pl, [])
+					run.append([Vector2(fl.x - fr.x, fl.z - fr.z).length(), pl.move])
+					runs[pl] = run
+					if run.size() >= 15:
+						var gaps: Array = run.map(func(e): return float(e[0]))
+						if float(gaps.max()) - float(gaps.min()) < 0.08:
+							glides.append(String(run[7][1]))
+						else:
+							walks += 1
+						runs[pl] = []
+		m.queue_free()
+		remove_child(m)
+	check(walks >= 30 and glides.is_empty(), "between points, %d half-second walks, all stepping (glides: %s)" % [walks + glides.size(), glides])
 	Game.settings.graphics = keep
 
 
