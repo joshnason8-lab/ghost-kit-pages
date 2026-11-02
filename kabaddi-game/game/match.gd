@@ -1167,6 +1167,11 @@ func _on_action(id: String) -> void:
 			if phase == "intro":
 				_begin_setup()
 			return
+		"speed":
+			# Watching: the match at its own pace or twice as fast.
+			if bool(config.get("watch", false)):
+				set_watch_speed(1.0 if Engine.time_scale > 1.5 else 2.0)
+			return
 		"switch":
 			# Pick your defender before the raid starts, too.
 			if not paused and phase == "setup" and controlled != null and controlled != raider:
@@ -1261,6 +1266,17 @@ func _floor_shadows() -> void:
 	for a in athletes:
 		a.model.set_floor_shadow(mat)
 	officials.set_floor_shadow(mat)
+
+
+## Watching the computer play, the whole match runs at this pace (1 or 2); back to 1 when the match ends.
+func set_watch_speed(k: float) -> void:
+	Engine.time_scale = k
+	controls.speed_label = "%d×" % int(k)
+	controls.queue_redraw()
+
+
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 
 
 func set_paused(p: bool) -> void:

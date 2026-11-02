@@ -1,4 +1,8 @@
-**New in 0.13.2: a steady raider and seated fans.** The raider waiting at the line no longer twitches: he is set in a
+**New in 0.13.3: Watch AI from the home screen.** The home screen has a Watch AI link: pick the two teams and the
+ground, and the computer plays the match on the broadcast camera while you watch the score and the clock. A 2× button
+speeds it up (tap again for 1×); pause and camera work as always.
+
+**In 0.13.2: a steady raider and seated fans.** The raider waiting at the line no longer twitches: he is set in a
 proper ready stance, knees bent, leaning in, hands out in front, only his weight shifting slowly and his breathing.
 Fans on chairs and stools sit on them (they stood through their stools, or slid off them), and seated fans in the
 stands are drawn from a little above, the way the camera sees them, so their laps show.

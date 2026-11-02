@@ -357,3 +357,11 @@ seated sprites are rendered from 16 degrees above (`tools/crowd/render_crowd.gd`
 sees a stand, so the lap shows instead of the legs hanging straight down from the body.
 
 Version code 38: above the foundation pilot's 37, so either installs over the other.
+
+## 0.13.3: Watch AI
+
+A Watch AI link on the home screen (`MENU_WATCH`, 8 languages) opens Quick Match in watch mode (`quick_setup.gd`
+`watch_mode`): the teams and ground picked as usual, one Watch button, and the match played by the computer
+(`autoplay`, `watch`) on the broadcast camera with the score and clock, pause and camera, and a 1×/2× button
+(`Match.set_watch_speed`, Engine.time_scale; back to 1× when the match is left). test_runner: three checks.
+fit_audit (menus, 8 languages, 1280x720): 0 problems.

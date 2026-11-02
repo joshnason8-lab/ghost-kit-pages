@@ -124,6 +124,10 @@ func _build_ui() -> void:
 		_cards.append(cont)
 	var links := HBoxContainer.new()
 	links.add_theme_constant_override("separation", 12)
+	# Watch AI: the computer plays both sides, the teams and ground picked first (Quick Match in watch mode).
+	var watch := _link(tr("MENU_WATCH"), "play", func(): _go_with("res://ui/quick_setup.gd", {"watch": true}))
+	links.add_child(watch)
+	_cards.append(watch)
 	for item in [["MENU_HOWTO", "book", "res://ui/howto_screen.gd"], ["MENU_SETTINGS", "gear", "res://ui/settings_screen.gd"]]:
 		var path: String = item[2]
 		var b := _link(tr(item[0]), item[1], func(): _go(path))
@@ -290,11 +294,15 @@ func on_back() -> void:
 
 
 func _go(path: String) -> void:
+	_go_with(path, {})
+
+
+func _go_with(path: String, args: Dictionary) -> void:
 	if _match and is_instance_valid(_match):
 		_match.queue_free()
 		_match = null
 	Sfx.stop_all()
-	Game.show_screen(path)
+	Game.show_screen(path, args)
 
 
 func _animate_in() -> void:

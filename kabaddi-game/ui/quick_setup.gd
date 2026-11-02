@@ -8,15 +8,16 @@ var away := "DEL"
 var arena := "dome"
 var _teams_row: HBoxContainer
 var _ground_cards := {}
+var watch_mode := false   # opened from Watch AI: the teams' match is played by the computer
 
 
-func setup(_args: Dictionary) -> void:
-	pass
+func setup(args: Dictionary) -> void:
+	watch_mode = bool(args.get("watch", false))
 
 
 func _ready() -> void:
 	UI.screen(self)
-	var v := UI.page(self, tr("MENU_QUICK"), func(): Game.goto_menu())
+	var v := UI.page(self, tr("MENU_WATCH") if watch_mode else tr("MENU_QUICK"), func(): Game.goto_menu())
 	var right: HBoxContainer = get_meta("header_right")
 	var src := UI.chips_row([tr("LEAGUE_NAME"), tr("TEAMS_COUNTRIES")], source, func(i):
 		source = i
@@ -62,11 +63,12 @@ func _ready() -> void:
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(sp)
 	# Watch: the two sides played by the computer, to sit back and see a match.
-	var watch := UI.button(tr("WATCH_AI"), false, _play.bind(true))
-	watch.custom_minimum_size = Vector2(150, 76)
-	watch.size_flags_vertical = Control.SIZE_SHRINK_END
-	foot.add_child(watch)
-	var play := UI.button(tr("PLAY"), true, _play)
+	if not watch_mode:
+		var watch := UI.button(tr("WATCH_AI"), false, _play.bind(true))
+		watch.custom_minimum_size = Vector2(150, 76)
+		watch.size_flags_vertical = Control.SIZE_SHRINK_END
+		foot.add_child(watch)
+	var play := UI.button(tr("WATCH_AI") if watch_mode else tr("PLAY"), true, _play.bind(watch_mode))
 	play.custom_minimum_size = Vector2(300, 76)
 	play.size_flags_vertical = Control.SIZE_SHRINK_END
 	foot.add_child(play)

@@ -1205,6 +1205,26 @@ func _run() -> void:
 	Game.settings.fps = fps_was
 	Game.apply_frame_rate()
 
+	# Watch AI, from the main menu: pick the teams, then the computer plays both sides; 1x / 2x while watching, and
+	# back to 1x when the match is left.
+	var wq: Node = Game.show_screen("res://ui/quick_setup.gd", {"watch": true})
+	await frames(2)
+	var wbtns: Array = wq.find_children("*", "Button", true, false).map(func(b): return (b as Button).text)
+	check(wbtns.count(tr("WATCH_AI")) == 1 and not wbtns.has(tr("PLAY")), "Watch AI: the teams' screen ends in one Watch button")
+	wq._play(true)
+	await frames(5)
+	var wm: Node = Game.current
+	check(bool(wm.config.get("autoplay", false)) and wm.control_mode == "none" and wm.controls.watch_only,
+		"Watch AI: the computer plays both sides, only pause, camera and speed shown")
+	wm._on_action("speed")
+	var sped := Engine.time_scale
+	wm._on_action("speed")
+	var back := Engine.time_scale
+	wm._on_action("speed")
+	Game.goto_menu()
+	await frames(3)
+	check(sped == 2.0 and back == 1.0 and Engine.time_scale == 1.0, "Watch AI: 2x and back, and 1x again on leaving")
+
 	# The user's raider standing at the start of a raid, no input: set in his stance (knees bent, leaning in) and still,
 	# no twitch (0.13.0's stance clip, traced from match video, jumped his shoulders and elbows 0.1-0.2 rad a frame).
 	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
