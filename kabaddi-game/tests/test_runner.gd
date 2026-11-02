@@ -1274,17 +1274,19 @@ func _run() -> void:
 	var straight_steps := 0
 	var least := 99.0
 	var walked_f := 0
+	var upright_f := 0
 	for f in 90:
 		sr.position.x += 0.8 / 30.0 * (1.0 if f < 45 else -1.0)
 		await get_tree().process_frame
-		if sr.state != "raid" or f < 20:
-			continue
+		if sr.state != "raid" or f < 10:
+			continue   # (the passive raid runs out of breath partway: only his raid counts)
 		walked_f += 1
+		upright_f += int(not smd._low_gait)
 		var kb := -minf(smd.kn_l.rotation.x, smd.kn_r.rotation.x)   # the more bent of the two (both near straight: not low)
 		least = minf(least, rad_to_deg(kb))
 		if kb < deg_to_rad(15.0):
 			straight_steps += 1
-	check(walked_f > 50 and straight_steps == 0 and smd._low_gait,
+	check(walked_f >= 25 and straight_steps == 0 and upright_f == 0,
 		"the raider walks the cover low, after a touch too: crouched walk, never both knees near straight (the more bent at least %.0f deg over %d frames)" % [least, walked_f])
 	Game.go_back()
 	await frames(3)
