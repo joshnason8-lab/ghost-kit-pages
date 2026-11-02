@@ -73,6 +73,7 @@ func _initialize() -> void:
 	await _grip(poses)
 	await _grip_sphere(poses)
 	await _torso()
+	await _planter_off()
 	for l in lines:
 		print(l)
 	if failures.is_empty():
@@ -324,6 +325,45 @@ func _torso() -> void:
 	if inside[0] < 20.0 or inside[1] > 5.0:
 		failures.append("chest clearance: %.0f mm in without, %.0f with" % [inside[0], inside[1]])
 	layer.queue_free()
+	await process_frame
+
+
+## The foot planter under a game's pose of the whole body (the hips lowered half a metre, the legs as posed: their
+## feet under its floor): keep_pose leaves the legs exactly as the pose has them (only the hips' lift added), where
+## enabled = false still bends them to keep the ankles over its floor.
+func _planter_off() -> void:
+	var b := WsgBody.new(body.character)
+	root.add_child(b)
+	var layer := WsgPoseLayer.new()
+	b.skeleton.add_child(layer)
+	b.skeleton.move_child(layer, 0)
+	layer.weight = 1.0
+	layer.lift_after = 0.04
+	layer.set_pose({"@hips": Vector3(0, -0.5, 0)})
+	var planter := WsgFootPlanter.new()
+	b.add_modifier(planter)
+	planter.hips_offset = 0.04
+	var got := {}
+	for how in ["off", "disabled", "keep_pose"]:
+		planter.active = how != "off"
+		planter.enabled = how != "disabled"
+		planter.keep_pose = how == "keep_pose"
+		planter.tick(1.0 / 30.0)
+		var f := func():
+			var sk := b.skeleton
+			var hp := sk.get_bone_global_pose(sk.find_bone("Hips")).origin
+			got[how] = [hp, sk.get_bone_global_pose(sk.find_bone("LeftFoot")).origin - hp, sk.get_bone_global_pose(sk.find_bone("RightFoot")).origin - hp]
+		b.posed.connect(f, CONNECT_ONE_SHOT)
+		b.reset_pose()
+		await process_frame
+		await process_frame
+	var bent := maxf((got.disabled[1] - got.off[1]).length(), (got.disabled[2] - got.off[2]).length())
+	var kept := maxf((got.keep_pose[1] - got.off[1]).length(), (got.keep_pose[2] - got.off[2]).length())
+	var lift: float = got.keep_pose[0].y - got.off[0].y
+	lines.append("planter under a whole-body pose: enabled=false moves the feet %.1f cm, keep_pose %.2f mm (hips lifted %.1f cm, want 4.0)" % [bent * 100.0, kept * 1000.0, lift * 100.0])
+	if kept > 0.0005 or absf(lift - 0.04) > 0.0005:
+		failures.append("keep_pose: the legs moved %.2f mm, the hips lifted %.1f cm" % [kept * 1000.0, lift * 100.0])
+	b.queue_free()
 	await process_frame
 
 
