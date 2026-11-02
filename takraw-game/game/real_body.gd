@@ -74,6 +74,7 @@ var mesh_instance: MeshInstance3D
 var look := {}          # jersey, shorts, skin (Colors), height (m), women (bool)
 var pose := {}          # bone name -> Vector3 degrees or Quaternion; plus "hips_y", "hips_fwd", "hips_side" (m)
 var women := false
+var link: FoundationLink = null   # the shared foundation drawing this body (Medium and High, in a match), else null
 var _rig: Rig
 
 static var _rigs := {}
@@ -102,6 +103,13 @@ func _ready() -> void:
 		apply(Moves.READY)
 	else:
 		apply(pose)
+
+
+## Drawn with the shared foundation on Medium and High, in a match (FoundationLink): this body stays, posed and
+## measured, unseen. kind: "player", "official" or "sub".
+func link_foundation(kind: String) -> void:
+	if link == null and skeleton and FoundationLink.enabled():
+		add_child(FoundationLink.new(self, kind))
 
 
 ## The model, its bones and their rests, read once for all the players who share it.
@@ -243,6 +251,11 @@ func bone(name: String) -> int:
 		if BONES[i][0] == name:
 			return i
 	return -1
+
+
+## Where the hips are now (world).
+func game_hips() -> Vector3:
+	return skeleton.global_transform * skeleton.get_bone_pose_position(_rig.hips) if skeleton else global_position
 
 
 ## Where a pose bone is now, in world space (a foot, the head).

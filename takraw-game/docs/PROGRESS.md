@@ -580,6 +580,50 @@ The build: 0.12.4-beta, version code 20; the bundle 116.3 MB, target API 36, `VI
 aligned (the bundle workflow's checks); the APK 127.7 MB, signed with the beta key. Tests: test_runner 1633 checks,
 0 failures (CI 1615, its matches ending differently); input_test 10 checks, 0 failures.
 
+## The shared foundation, a pilot (0.12.4-pilot)
+
+On Medium and High, in a match, with the licensed motion-capture library in the build (CI's licensed-assets step),
+every player, official and substitute is drawn by the World Stage Games foundation (`addons/wsg_foundation`,
+`game/foundation_link.gd`): the owner's man or woman baked onto the shared rig (`assets/foundation/`, from
+`assets/models/*.glb` by `tools/wsg/bake_character.sh`), in RealBody's own kit and suit materials.
+- **The game stays in charge of takraw.** RealBody is still posed and measured every frame, unseen; its 17-bone pose
+  is laid exactly on the drawn body (WsgLegacyPose reading a 17-bone copy of it), for every action: the toss from both
+  hands, the serve and the horse kick, the sila, the thigh, the chest, the header, the roll spike, the sunback, the
+  tapak, the head spike, the block, the dig, picking the ball up, the celebrations. Measured over a match: the hips
+  0.0 cm off the game's; at each contact the instep or the head within 1.7 cm of where the game's meets the ball.
+  Timing is untouched: user_bot perfect 15-1 and idle 3-15 with the foundation on, the same rallies as before.
+- **Motion capture only where the game walked by hand:** players walking between points (back to their places,
+  fetching the ball, carrying it - the ball drawn in the drawn hands), turning and stopping on the capture's own
+  clips, the feet planted (a planted foot moves at most 1.5 cm a frame); the assistant referee and the line judges
+  standing, shifting and stepping out of the ball's way, their heads on the ball, the flag in the drawn fist, their
+  signals the game's arms. The referee in his chair and the substitutes on the bench keep the game's poses;
+  in a rally every player is the game's own.
+- **Replays (Medium and High):** the game's own replay (0.4 speed, the low camera, a tap skips it) shows the
+  foundation's bodies as they were drawn (WsgReplay, kept with the replay's frames). One a point at most, the best the
+  point had: a horse-kick ace, a roll spike, a sunback, a head spike, a stuff block, a dig by the side that goes on to
+  win the rally, an ace, a tapak dropping in, a rally of more than seven touches. The players are put back where they
+  were after it.
+- **Low is exactly as it was** (the Galaxy A16 starts there: `detect_graphics`): no links, no foundation replays, the
+  game's replay rule; per venue the same draw calls, primitives, objects and video memory as 0.12.4 (perf_probe in a
+  fresh process: 72-79 draw calls, 36.2-61.5 MB), the same picture. Dropped to Low mid-match, the game's bodies come
+  back.
+- **Lower the graphics by itself** is the foundation's WsgAutoTier: all match long while the ball is in play, two
+  1.5 s windows in a row slow or hitching take a level off at once.
+- Medium and High: the same draw calls as 0.12.4, about 42,000 fewer primitives (the baked bodies), 1.7-2.1 MB more
+  video memory.
+- Kept as they are: the crowd (the game's cut-outs, one draw call, watching the ball and waving both teams' flags;
+  the foundation's 3D fans are Hurling's Irish crowd), and the venues' own lighting.
+- CPU (`tests/foundation_cpu.tscn`, a desktop, headless, other work running): the foundation's own 1.7-2.2 ms a frame
+  on Medium (its skeletons' modifiers 1.0-1.5 of it) and 2.2-2.5 on High, for 14 bodies; a frame 1.2 -> 3.8 ms on
+  Medium, 1.5 -> 4.1 on High; Low 1.1 either way. Players are posed every frame within 12 m of the camera (16 on
+  High) and whenever they play a move, every second frame beyond; the standing officials every second frame unless
+  they step or signal; the referee and the substitutes every third.
+- Size: the export grows by 11.9 MB (the licensed library 10.5, the foundation's code and the two baked bodies); the
+  foundation's 3D crowd, which takraw does not use, is left out of the Android export. About 140 MB for the APK.
+- Tools: `tests/foundation_view.tscn` (comparison stills, either build), `tests/foundation_cpu.tscn` (CPU a frame by
+  level, with and without the foundation). test_runner checks all of the above with the licensed data (1658 checks)
+  and without it (1647); user_bot perfect 15-1, idle 3-15 either way; input_test 10 checks; fit_audit 0 problems.
+
 ## Gaps that need the owner
 
 For the Play Store, what only the owner can do is in `store/PLAY_STORE.md`: the developer account, the upload key and

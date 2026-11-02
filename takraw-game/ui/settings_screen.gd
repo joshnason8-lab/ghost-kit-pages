@@ -81,6 +81,7 @@ func _ready() -> void:
 	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_AUTO"), tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")], gfx_shown, func(i):
 		Game.settings.gfx_auto = i == 0
 		Game.settings.graphics = Game.auto_graphics() if i == 0 else i - 1
+		WsgFoundation.tier = int(Game.settings.graphics)
 		Game.save_settings()
 		if _in_match:
 			Game.apply_graphics(get_viewport())
