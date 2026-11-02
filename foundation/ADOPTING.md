@@ -397,6 +397,60 @@ set it behaves as before.
   `{shift, scale}` into `<name>_rig.json` (`character.stance`: rig = (skeleton point - shift) * scale) for a game that
   maps its own skeleton onto the rig (Kho Kho worked them out again).
 
+## 5.11 Watch mode: WsgSpectator (addons/wsg_foundation/broadcast/spectator.gd)
+
+Your AI against itself, shown as television shows it. Your match flow stays yours (the menu entry, the team pick,
+the rules, the AI); `WsgSpectator` gives the picture and the controls. Nothing changes until you make one.
+
+**The API**
+- `start(game_camera: Camera3D = null)` / `stop()`: takes the picture (its own camera current); `stop()` puts
+  `Engine.time_scale`, `physics_ticks_per_second` and `max_physics_steps_per_frame` back exactly, frees its camera
+  and makes yours current again. Make one per Watch match (or `start()` it again).
+- The follow camera: `set_focus(ball_pos: Vector3, players: Array)` each frame (Vector3s, or Node3Ds), or
+  `focus_source = func(): return [ball_pos, players]`. It frames the ball and the `nearest` (4) players from a
+  rail along one touchline (`rail`, `rail_follow`, `rail_limit`; `rail = false`: fixed at halfway), eased
+  (critically damped, `smooth_time` 0.7 s) with a `dead_zone` (2.5 m), and never crosses the line. Set
+  `pitch_center`, `long_axis` (your pitch's length, world), `side` (1 / -1: which touchline), `height`, `distance`,
+  `fov_min` / `fov_max`.
+- `moment(kind: String, data := {}) -> bool` at a score or a big moment: a `WsgDirector` package (a close-up of
+  `data.target`, the crowd at `crowd_at`; or your own `data.shots`) where `WsgDirector.packages()` allows it, then
+  a replay of the last `replay_secs` (4 s, at `replay_rate` 0.5) if you set `replay` (your `WsgReplay`), then the
+  follow camera. False (nothing run) while one runs, within `cooldown` (20 real s from the last one's end), past
+  `max_moments` (8; 0: no cap) or paused. Signals `moment_started(kind, data)`, `moment_finished(kind)`, and
+  `replay_frame(t)` each replay frame (draw your ball as it was at t). Moments run at 1x, then your speed again.
+- Speed: `set_speed(2.0)`, `cycle_speed()` through `speeds` ([1, 2]; give more if you like); `speed_changed`.
+- `pause()` / `resume()` / `toggle_pause()`: the camera holds still and a running moment ends cleanly; `paused(on)`
+  is your cue to pause your AI and clock (or set `pause_tree = true`: the spectator keeps running over a paused tree).
+- `exit_requested`: Back (Android), Escape (`exit_action`, ui_cancel) or the overlay's Exit. Call `stop()` there.
+- `hud_visible(visible)`: connect it to your HUD (hidden during moments; `toggle_hud()`).
+- `make_overlay(theme := null)`: an optional minimal HUD for a game without one: a `WsgScorebug`
+  (`spec.scorebug.setup(...)`, `set_score`, `set_clock`), Pause, speed and Exit buttons (texts through tr(): "Pause",
+  "Play", "Exit"), and a lower third over a moment's replay (`data.title`, `data.sub`, `data.colour`).
+
+**Wiring**
+```gdscript
+func start_watch() -> void:                      # your menu's Watch: your teams picked, both on AI
+	spec = WsgSpectator.new(); add_child(spec)
+	spec.long_axis = Vector3.RIGHT; spec.pitch_center = pitch.global_position; spec.replay = replay
+	spec.crowd_at = main_stand.global_position
+	spec.focus_source = func(): return [ball.global_position, players.map(func(p): return p.global_position)]
+	spec.hud_visible.connect(func(v): hud.visible = v)
+	spec.paused.connect(func(on): match_paused = on)
+	spec.exit_requested.connect(func(): spec.stop(); spec.queue_free(); back_to_menu())
+	spec.start(camera)
+	scored.connect(func(by): spec.moment("score", {"target": by}))
+```
+
+**Notes**
+- Budget games: Low still works. `WsgDirector.packages()` is false there, so a moment is the replay alone (or
+  nothing without a `WsgReplay`) and the follow camera does the rest; nothing in it costs more at Low.
+- 2x on a Low phone is fine: the AI runs the same steps (the physics ticks double with the time scale, so a
+  step is as long in game time as at 1x), only twice as many a real second; the camera's easing
+  is in real seconds, so it looks the same at either speed.
+- The director takes its close-up's side from the spectator's camera, so cut-aways keep to the same side of the line.
+- Your own camera stays in the scene, untouched; your replay's own camera work (if any) can run instead of the
+  spectator's moment: just don't call `moment()`.
+
 ## 5.12 A stick through the body (WsgBody.torso_capsule, WsgPoseLayer.clear_segment)
 
 Hurling's free-take ends with the hurley through the torso: the hands are held on the stick, but nothing keeps the
