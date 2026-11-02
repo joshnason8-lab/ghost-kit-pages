@@ -361,3 +361,13 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   against its root's (meta stride) 3.6 m - the planter hides it (the sprint is loco_test's worst planted segment);
   a toon without one slides ~2 m/s at a full sprint. Fixing it (a foot-measured stride) would speed the sprint's
   legs by a third: left for the owner's eye. Games opt in on their next sync; nothing changes for one that does not.
+- **Overnight 2026-11-02 (owner's playtest round)** - the pilots are merged by the game sessions (they own their
+  branches again; push only when a session asks). Done in the foundation: fetch_assets via `gh api` (945719b; a cloud
+  session needs world-stage-games-assets added); WsgSpectator (Watch AI, ADOPTING 5.11); torso_capsule/clear_segment
+  and limb_capsule/torso_from_body (5.12); WsgLightBake thin faces get texels (0d249ce: Hurling's black posts -
+  Hurling re-baked in 4432d62); WsgToonDriver (Low tier on a game's own body, 5.13); never a threaded RichTextLabel
+  (5.10: the CI signal 11s in Netball/Sepak/Kabaddi were Godot 4.7.2's threaded-label race, not the foundation).
+  Game-side, sent as patches: Floorball's lean/shift controller (it made its own), Netball's Licences un-threaded,
+  Hurling's StickClear (the hurley out of the lead arm; needs the sync to e739a95). Open: the ActorCore sprint clip's
+  feet travel 2.6 m a cycle against 3.6 m stride (slides on Low without a planter); Hurling's score_check (35) is
+  noisy over long matches (0.7-1.7 sideline cuts on one commit) - Hurling is chasing unseeded randomness.
