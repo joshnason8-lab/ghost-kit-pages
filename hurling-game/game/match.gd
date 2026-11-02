@@ -527,6 +527,7 @@ func _process(delta: float) -> void:
 		return
 	# A frame's time in steps of at most 0.05 s (more than that is a stall, not play); at Watch AI's 2x a frame is
 	# two such steps, so the play is as it is at 1x, only twice as fast.
+	_stick_view(delta / maxf(Engine.time_scale, 0.01))
 	var total := minf(delta, 0.05 * maxf(Engine.time_scale, 1.0))
 	var n := maxi(1, ceili(total / 0.05 - 0.001))
 	for i in n:
@@ -3153,12 +3154,69 @@ func _switch_to_receiver(k: int) -> void:
 		_set_active(chasers[k][0])
 
 
-## The joystick, as a direction on the pitch from the camera's view.
+## The joystick, as a direction on the pitch from the view on screen: up on the stick is up the screen, whichever
+## camera is showing (the broadcast one, the high one, behind the goal, the low one behind a free's taker, or any
+## other), right is right. The view's facing is followed as the camera pans; when the camera changes (a cut to
+## another, a different facing at once) it turns to the new one over STICK_BLEND, so the man does not turn on the spot.
 func _cam_dir(j: Vector2) -> Vector3:
-	var b := cam.camera.global_transform.basis
-	var right := Vector3(b.x.x, 0, b.x.z).normalized()
-	var fwd := Vector3(-b.z.x, 0, -b.z.z).normalized()
-	return (right * j.x - fwd * j.y).normalized() if j.length() > 0.05 else Vector3.ZERO
+	if j.length() <= 0.05:
+		return Vector3.ZERO
+	if is_nan(_stick_yaw):
+		_stick_yaw = view_yaw()
+	var fwd := Vector3(sin(_stick_yaw), 0, cos(_stick_yaw))   # up the screen, on the ground
+	var right := Vector3(-fwd.z, 0, fwd.x)
+	return (right * j.x - fwd * j.y).normalized()
+
+
+## The other way: the stick that runs him along d on the pitch, from the view on screen (the bots and the tests).
+func stick_for(d: Vector3) -> Vector2:
+	var flat := Vector3(d.x, 0, d.z)
+	if flat.length() < 0.001:
+		return Vector2.ZERO
+	var yaw := view_yaw() if is_nan(_stick_yaw) else _stick_yaw
+	var fwd := Vector3(sin(yaw), 0, cos(yaw))
+	var right := Vector3(-fwd.z, 0, fwd.x)
+	flat = flat.normalized()
+	return Vector2(flat.dot(right), -flat.dot(fwd)).normalized()
+
+
+const STICK_BLEND := 0.2      # s: the stick turning to a new camera's facing
+var _stick_yaw := NAN         # the facing the stick is read in (radians: up the screen is (sin, 0, cos))
+var _stick_from := 0.0
+var _stick_to := 0.0
+var _stick_t := 1.0
+
+
+## The view on screen's facing on the ground: up the screen, flat. The camera's forward and its up, each laid flat on
+## the ground, both point up the screen; their sum holds when it looks nearly straight down (forward flat is nothing)
+## or nearly level (up flat is nothing).
+func view_yaw() -> float:
+	var view: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	if view == null:
+		view = cam.camera
+	var b := view.global_transform.basis
+	var f := Vector3(-b.z.x, 0, -b.z.z) + Vector3(b.y.x, 0, b.y.z)
+	if f.length() < 0.001:
+		return _stick_to
+	return atan2(f.x, f.z)
+
+
+## Each frame (real time): follow the view's facing; a jump in it (a cut) is turned to over STICK_BLEND.
+func _stick_view(real_dt: float) -> void:
+	var y := view_yaw()
+	if is_nan(_stick_yaw):
+		_stick_yaw = y
+		_stick_to = y
+		return
+	if absf(angle_difference(_stick_to, y)) > deg_to_rad(20.0):
+		_stick_from = _stick_yaw
+		_stick_t = 0.0
+	_stick_to = y
+	if _stick_t < 1.0:
+		_stick_t = minf(1.0, _stick_t + real_dt / STICK_BLEND)
+		_stick_yaw = lerp_angle(_stick_from, y, smoothstep(0.0, 1.0, _stick_t))
+	else:
+		_stick_yaw = y
 
 
 var _idle_t := 0.0

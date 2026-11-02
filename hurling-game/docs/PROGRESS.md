@@ -764,3 +764,14 @@ licence there before it goes into the game.
   month of ElevenLabs' free credits), README.md (the ElevenLabs guide), generate.py (makes missing lines through the
   API; the key from the environment only), preview.gd (a Watch AI film with the commentary). Tests: _commentary.
   The recordings are not made yet, so it is silent until they are.
+
+## Done (0.20.1, 2 November 2026)
+
+- **Stick from the camera on screen** (code 32; the lead's all-games fix after the owner found it in two games):
+  match.gd _cam_dir reads the stick from the viewport's current camera, not always the match rig. Its facing on the
+  ground is the camera's forward plus its up, each laid flat, so a camera looking straight down still has a facing. It
+  follows the camera as it pans, and a cut (a jump of over 20 degrees) is blended over STICK_BLEND = 0.2 s. Movement,
+  the set-piece taker's facing, pass and long puck-out direction all go through it. stick_for() is the inverse; the
+  user bot uses it instead of assuming the side camera. Test _stick_camera checks the broadcast, high, behind-the-goal
+  and straight-down cameras: each push (up, right, down, left) runs him that way on screen within 10 degrees,
+  measured at the middle of the view, and a cut mid-run blends.

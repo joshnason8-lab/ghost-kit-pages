@@ -9,6 +9,13 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.20.1
+
+- **The joystick follows the camera you are watching**: up on the stick runs your player up the screen and right
+  runs him right, whichever camera is on (the broadcast camera, the high one, behind the goal, the low one behind a
+  free's taker). Passes and shots aimed with the stick follow it too. When the camera changes mid-run, he turns
+  to the new view over a fifth of a second instead of all at once.
+
 ## New in 0.20.0
 
 - **Match commentary, ready for voices**: two commentators, Mick calling the play and Ger (a former hurler)

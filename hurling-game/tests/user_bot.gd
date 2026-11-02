@@ -46,7 +46,7 @@ func _ready() -> void:
 		if a_pl == m.carrier:
 			target = Vector3(Pitch.HALF_L * m.dir(0), 0, 0)
 		var to := target - a_pl.global_position
-		var j := Vector2(to.x, to.z).normalized() if Vector2(to.x, to.z).length() > 1.0 else Vector2.ZERO
+		var j: Vector2 = m.stick_for(to) if Vector2(to.x, to.z).length() > 1.0 else Vector2.ZERO   # (from the camera's view)
 		m.controls.joystick = j
 		if frames % 6 != 0 or ids.is_empty():
 			continue

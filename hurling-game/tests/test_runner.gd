@@ -58,6 +58,7 @@ func _ready() -> void:
 	await _posts_white()
 	await _far_ball_dot()
 	await _commentary()
+	await _stick_camera()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	await _bench_seats()
@@ -2038,3 +2039,137 @@ func _commentary() -> void:
 	Game.settings.commentary = keep_c
 	m.queue_free()
 	await frames(2)
+
+
+## The stick is read from the view on screen, whatever the camera: up is up the screen, right is right (the owner:
+## "switching to a camera angle that is not alongside the pitch, the joystick movement is all wrong"). For each camera
+## (the broadcast, high, behind the goal, and one looking straight down at an angle), each push of the stick runs your
+## man that way on screen to within 10 degrees; a cut to another camera mid-run turns him to it over about 0.2 s.
+func _stick_camera() -> void:
+	var keep_cam = Game.settings.camera
+	var dirs := {"up": Vector2(0, -1), "right": Vector2(1, 0), "down": Vector2(0, 1), "left": Vector2(-1, 0)}
+	var views := [["broadcast", Game.CAM_TV], ["high", Game.CAM_HIGH], ["behind the goal", Game.CAM_END], ["straight down", -1]]
+	for v in views:
+		Game.settings.camera = maxi(int(v[1]), 0)
+		var m: Node = load("res://game/match.gd").new()
+		m.config = {"home": "GAL", "away": "LIM", "venue": "county", "user_team": 0, "seed": 3, "length": 4.0, "mode": "quick", "difficulty": 0}
+		m.set_meta("test", true)
+		add_child(m)
+		await frames(2)
+		if int(v[1]) < 0:
+			var top := Camera3D.new()
+			m.add_child(top)
+			top.global_position = Vector3(0, 70, 0)
+			top.global_basis = Basis(Vector3.UP, deg_to_rad(37.0)) * Basis(Vector3.RIGHT, deg_to_rad(-90.0))
+			top.make_current()
+		var f := 0
+		while m.phase != m.P.LIVE and f < 30 * 30:
+			await frames(1)
+			f += 1
+		await frames(10)
+		var worst := 0.0
+		var moved := true
+		var view: Camera3D = m.get_viewport().get_camera_3d()
+		for k in dirs:
+			var st: Vector2 = dirs[k]
+			# The stick's ask, on screen where he stands: exactly that way.
+			var ask: Vector3 = m._cam_dir(st)
+			var mid := _screen_middle(view)
+			var s0 := view.unproject_position(mid)
+			var s1 := view.unproject_position(mid + ask * 3.0)
+			var ask_off := absf(rad_to_deg((s1 - s0).angle_to(st)))
+			worst = maxf(worst, ask_off)
+			if ask_off >= 10.0:
+				print("STICK %s %s: the stick asks %.1f degrees off" % [v[0], k, ask_off])
+			# And his run: from a standstill, in open grass (no one to bump), the one man, two-thirds of a second.
+			var done := false
+			for attempt in 8:
+				var pl: Player = m.active
+				if pl == null:
+					await frames(5)
+					continue
+				pl.global_position = _screen_middle(view) if attempt == 0 else _open_spot(m, view)   # (where he stands does not matter: his run is read at the middle of the view)
+				pl.vel = Vector3.ZERO
+				var p0: Vector3 = pl.global_position
+				m.controls.joystick = st
+				var crowded := false     # (someone within 1 m: the two are pushed apart, not his stick's doing)
+				for fr in 20:
+					await frames(1)
+					for t in m.teams:
+						for q in t.players:
+							crowded = crowded or (q != pl and (q as Player).global_position.distance_to(pl.global_position) < 1.0)
+				var p1: Vector3 = pl.global_position
+				m.controls.joystick = Vector2.ZERO
+				if m.active != pl or crowded or Vector2(p1.x - p0.x, p1.z - p0.z).length() < 1.0:
+					await frames(4)
+					continue
+				# The way he is running now, on the screen as it is now (the camera follows the play and turns with it: up
+				# the screen is wherever it now is), measured at the middle of the view.
+				var mid2 := _screen_middle(view)
+				var a := view.unproject_position(mid2)
+				var b := view.unproject_position(mid2 + Vector3(pl.vel.x, 0, pl.vel.z).normalized() * 3.0)
+				var off := absf(rad_to_deg((b - a).angle_to(st)))
+				worst = maxf(worst, off)
+				if off >= 10.0:
+					print("STICK %s %s: he ran %.1f degrees off (%s)" % [v[0], k, off, pl.vel])
+				done = true
+				break
+			moved = moved and done
+			if not done:
+				print("STICK %s %s: no clean run in 8 tries" % [v[0], k])
+		m.controls.joystick = Vector2.ZERO
+		check(moved and worst < 10.0, "Stick from the camera (%s): each push runs him that way on screen (worst %.1f degrees off)" % [v[0], worst])
+		if int(v[1]) == Game.CAM_TV:
+			# A cut to the camera behind the goal while running up the screen: he turns to the new view's up, not at once.
+			m.controls.joystick = Vector2(0, -1)
+			await frames(15)
+			var before: Vector3 = m._cam_dir(Vector2(0, -1))
+			m.cam.mode = Game.CAM_END
+			m.cam.snap(m)
+			await frames(2)
+			var mid: Vector3 = m._cam_dir(Vector2(0, -1))
+			await frames(10)
+			var after: Vector3 = m._cam_dir(Vector2(0, -1))
+			var want: Vector3 = Vector3(sin(m.view_yaw()), 0, cos(m.view_yaw()))
+			var jump := rad_to_deg(before.angle_to(want))
+			check(jump < 20.0 or (rad_to_deg(before.angle_to(mid)) < jump * 0.8 and rad_to_deg(after.angle_to(want)) < 10.0),
+				"Stick from the camera: a cut mid-run turns him to the new view over a moment (%.0f degree cut, %.0f after 2 frames, %.0f off after 12)" % [jump, rad_to_deg(before.angle_to(mid)), rad_to_deg(after.angle_to(want))])
+			m.controls.joystick = Vector2.ZERO
+		m.queue_free()
+		await frames(2)
+	Game.settings.camera = keep_cam
+
+
+## The point on the ground under the middle of the screen (where "up the screen" is measured: off the middle, a
+## perspective view leans every line toward its vanishing point).
+func _screen_middle(view: Camera3D) -> Vector3:
+	var c := view.get_viewport().get_visible_rect().size * 0.5
+	var o := view.project_ray_origin(c)
+	var d := view.project_ray_normal(c)
+	if absf(d.y) < 0.01:
+		return Vector3(o.x, 0, o.z)
+	var p := o + d * (-o.y / d.y)
+	return Vector3(clampf(p.x, -60.0, 60.0), 0, clampf(p.z, -35.0, 35.0))
+
+
+## A spot on the pitch in view, as far as can be from every player (the stick test's open grass).
+func _open_spot(m: Node, view: Camera3D) -> Vector3:
+	var best := _screen_middle(view)
+	var best_d := -1.0
+	var vr := view.get_viewport().get_visible_rect().size
+	for x in range(-50, 51, 10):
+		for z in range(-30, 31, 10):
+			var p := Vector3(x, 0, z)
+			if view.is_position_behind(p):
+				continue
+			var sp := view.unproject_position(p)
+			if sp.x < vr.x * 0.15 or sp.x > vr.x * 0.85 or sp.y < vr.y * 0.15 or sp.y > vr.y * 0.85:
+				continue
+			var d := 1e9
+			for t in m.teams:
+				for q in t.players:
+					d = minf(d, (q as Player).global_position.distance_to(p))
+			if d > best_d:
+				best_d = d
+				best = p
+	return best
