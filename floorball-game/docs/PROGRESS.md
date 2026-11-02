@@ -236,7 +236,7 @@ pilot's commits). Then the owner's notes on it (playtest on a Galaxy A16):
   body; the lower hand down the shaft on the stick's side; the blade on the floor out to that side; knees bent): the
   lower hand 27 cm below the top (was 23), sliding up only as far as the arm must; the blade 40 cm out to the stick
   side and 74 cm ahead (was 24 and 82: the stick hung between the feet); dribbling side to side across the front.
-  Sprinting away from the ball (over 4.6 m/s, more than 6 m from it) a player carries the stick in his top hand alone,
+  Running away from the ball (over 3 m/s, more than 4 m from it) a player carries the stick in his top hand alone,
   the other arm swinging with the run, as players do; both hands again near the ball or for any move (player.gd
   _stick, foundation_link.gd holds).
 - **"Running looks way worse, leaning and shaped weird"** (measured with the Foundation session): the link's reach

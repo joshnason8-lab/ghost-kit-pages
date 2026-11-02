@@ -449,13 +449,13 @@ func _stick(dt: float, t: float) -> void:
 		# Dribbling: the blade works the ball side to side in front of him.
 		_wob += dt * (7.0 + vel.length() * 0.6)
 		want = Vector3((0.26 + 0.2 * sin(_wob)) * side, 0.0, 0.72 + vel.length() * 0.03)
-	# Sprinting away from the ball, as players do: the stick in the top hand alone, carried low ahead, the other arm
+	# Running away from the ball, as players do (the real thing shows it): the stick in the top hand alone, carried low ahead, the other arm
 	# free to swing (back in both hands within a few metres of the ball, or for any move of the stick).
 	var bd := 99.0
 	if match_node and match_node.get("ball") != null:
 		var bp: Vector3 = match_node.ball.pos
 		bd = pos.distance_to(Vector2(bp.x, bp.z))
-	var fast := vel.length() > (3.8 if _one_hand else 4.6) and bd > (4.5 if _one_hand else 6.0)
+	var fast := vel.length() > (2.4 if _one_hand else 3.0) and bd > (3.2 if _one_hand else 4.2)
 	_one_hand = fast and act == "" and windup <= 0.0 and not (match_node and match_node.has_method("has_ball") and match_node.has_ball(self))
 	if _one_hand:
 		want = Vector3(0.3 * side, 0.0, 0.95)
