@@ -32,7 +32,9 @@ static func load_character(dir: String, prefix: String) -> Dictionary:
 	for k in meta.joints:
 		var a: Array = meta.joints[k]
 		j[k] = Vector3(a[0], a[1], a[2])
+	# stance: {shift, scale} from bakes since the pilots ({} from older ones): rig = (stance point - shift) * scale.
 	var c := {"joints": j, "height": float(meta.get("height", 1.8)), "report": meta.get("report", {}),
+		"stance": meta.get("stance", {}),
 		"meshes": [load(dir.path_join(prefix + "_hi.res")), load(dir.path_join(prefix + "_lo.res"))]}
 	_cache[key] = c
 	return c
