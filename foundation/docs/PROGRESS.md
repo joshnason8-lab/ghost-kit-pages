@@ -339,3 +339,10 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   document `active=false` + lift_after 0 or fix (Takraw), a sphere grip (Netball), ADOPTING notes (posed callback for
   held items, planter.enabled/tick/reset under a game pose, A-pose legs via joints, leg_scale by height, resume after
   replay where paused, 17-bone proxy for dictionary poses), bake_character.sh hangs on a script error.
+- **Ported from the pilots** (all opt-in, defaults unchanged; foundation tests identical before and after plus new
+  checks): WsgLocomotor `rng`, `cut_from_heading`, `resume()`; bake_character older Meshy spine by hierarchy, stance
+  `{shift, scale}` in rig.json (`character.stance`), a no-LOD warning; bake_character.sh stops on a script error or
+  BAKE_TIMEOUT; WsgFootPlanter `keep_pose` (`enabled` unchanged: every game relies on it); WsgPoseLayer `hips_first`,
+  `hold_weight_own`, `make_holds`, `hold_point` (+ `WsgLegacyPose.arm_maker`); WsgGrip `solve_sphere`/`sphere_point`,
+  WsgBody `grip_sphere`/`ball_point`; ADOPTING 5.10 "Lessons from the pilots"; CATALOGUE "all 7" and gaps by sport.
+  Games pick them up on their next sync by opting in (ADOPTING 5.10); nothing changes for a game that does not.
