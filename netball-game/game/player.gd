@@ -3,8 +3,8 @@ extends Node3D
 ## One player on the court: her squad entry (data), her position, the body that draws her, and her movement. Her
 ## position is written in one place only, advance(), once a frame by the match: the AI and the controls set where she
 ## wants to go (target) and how fast (want_speed), never her position. She accelerates and turns at a person's rate,
-## so nothing snaps from one frame to the next; her stride is matched to her speed (Poses.run). tests/test_runner
-## checks both ("_motion").
+## so nothing snaps from one frame to the next; her feet step with the floor (Gait: the stride goes on by the distance
+## she covers). tests/test_runner checks both ("_motion", "_gait_steps").
 
 const ACCEL := 9.0           # m/s² speeding up
 const DECEL := 12.0          # m/s² stopping (a landing on the catch takes about one step)
@@ -12,7 +12,6 @@ const TURN := 9.0            # rad/s
 const TOP := 7.2             # m/s, a sprint at speed 99
 const LAND_DECEL := 40.0     # m/s² at most, landing with the ball: the landing's own pace (it takes about a step)
 const LAND_MIN := 1.5        # m/s: caught slower than this, she simply stops (no landing)
-const SLIDE_TOP := 4.0       # m/s: side-stepping faster than this, she runs
 
 var match_ref = null         # the Match
 var team := 0
@@ -45,7 +44,14 @@ var reaction := 0.0          # seconds before she reacts to a new read (the AI's
 var lead_t := 0.0            # the AI: time left on her current lead or hold
 var lead_to := Vector2.ZERO
 var moves := 0               # tests: how many times this frame her position was written (must be 1)
-var stride_phase := 0.0
+var gait: Gait               # her feet, legs and arms on the move (the one place her locomotion is made)
+var body_yaw := 0.0          # where her body faces as drawn (Player._body_yaw); facing stays the game's
+var arms_w := 0.0            # how much of her arms her move has (0: the run's swing), eased
+var legs_w := 1.0            # how much of her legs the gait has (0: the move's own, the leap), eased
+## Through her stride pair (0-1), by the distance she has covered (Gait).
+var stride_phase: float:
+	get:
+		return gait.phase if gait else 0.0
 var out_until := 0.0         # standing out of play beside the thrower of a penalty pass
 var suspended := 0.0         # seconds of playing time left on a suspension (R18): off the court, by the bench
 var warned := false          # the umpire has warned her (R18)
@@ -55,11 +61,6 @@ var pens := 0                # penalties since her last sanction
 var was_offside := false     # offside last frame (an offside is called when she steps in, not while she walks out)
 var fenced := true           # she keeps to her areas (the AI always; you with Keep me onside): she pulls up at a line
                              # rather than running over it
-var clip_body := 0.0         # how much of her legs and body the stride clips take now (0-1), eased
-var clip_arms := 0.0         # and of her arms
-var slide := 0.0             # how much of the run is the defensive side-step (motion capture), eased
-var slide_phase := 0.0       # through its cycle (0-1)
-var slide_side := 1.0        # +1 stepping to her left, -1 to her right (eased between)
 var land_clip := ""          # the landing (motion capture) she is in: land_l or land_r (her landing foot), or ""
 var land_d := 0.0            # how far along the clip's path she is (m of the clip)
 var land_w := 0.0            # how much of her legs and body it has
@@ -86,6 +87,8 @@ func _ready() -> void:
 	add_child(body)
 	_pose = Poses.ready(0.6)
 	body.apply(_pose)
+	gait = Gait.new(body)
+	body_yaw = facing
 	# Drawn with the shared foundation (the owner's model on the shared rig, motion-capture locomotion) on Medium and
 	# High when this build has the licensed library (FoundationLink); the game's own body stays, posed and measured,
 	# unseen. (Again after a substitution: a new body, a new link.)
@@ -111,6 +114,11 @@ func place(at: Vector2, face_dir := 0.0) -> void:
 	facing = face_dir
 	position = Vector3(p.x, 0, p.y)
 	rotation.y = facing
+	body_yaw = facing
+	if body:
+		body.rotation.y = 0.0
+	if gait:
+		gait.reset(at, face_dir)
 
 
 ## The one place her position changes, once a frame.
@@ -160,6 +168,7 @@ func advance(dt: float) -> void:
 		want_face = atan2(vel.x, vel.y)
 	facing = rotate_toward(facing, want_face, TURN * dt)
 	rotation.y = facing
+	_body_yaw(dt)
 	_animate(dt)
 	if link:
 		_pose_link(dt)
@@ -195,64 +204,18 @@ func _room_along(d: Vector2) -> float:
 	return 3.0
 
 
-## Picks her body's pose from what she is doing and blends to it (nothing jumps).
+## Her body's pose this frame: her locomotion (Gait: the feet stepping with the floor, the arms swinging bent), with
+## what she is doing laid over it (Poses: the catch, the pass, holding the ball, defending, the leap); nothing jumps.
 func _animate(dt: float) -> void:
 	act_t += dt
 	var spd := vel.length()
-	# Strides: a stride pair is longer the faster she runs, so her feet keep pace with the floor.
-	var pair := lerpf(1.3, 2.9, clampf(spd / 7.0, 0.0, 1.0))
-	stride_phase = fposmod(stride_phase + spd / pair * dt, 1.0)
-	var want: Dictionary
-	match act:
-		"hold":
-			want = Poses.hold()
-		"pass":
-			want = Poses.pass_(act_kind, clampf(act_t / 0.45, 0.0, 1.0))
-		"catch":
-			want = Poses.catch_(clampf(act_t / 0.2, 0.0, 1.0), act_up)
-		"shoot":
-			want = Poses.shoot(clampf(act_t / 0.9, 0.0, 1.0))
-		"defend":
-			want = Poses.defend_ball(1.0)
-		"defend_shot":
-			want = Poses.defend_ball(1.0, true)
-		"leap":
-			want = Poses.leap(clampf(act_t / 0.7, 0.0, 1.0))
-		"out_of_play":
-			want = Poses.blend(Poses.ready(0.2), Poses.out_of_play(), 1.0)
-		"cheer":
-			want = Poses.cheer(act_t)
-		"post":
-			want = Poses.with_arms(Poses.run(stride_phase, spd), Poses.post(act_kind)) if spd > 0.3 else Poses.post(act_kind)
-		"huddle":
-			want = Poses.huddle()
-		"mark":
-			want = Poses.with_arms(Poses.run(stride_phase, spd), Poses.mark(1.0 if int(act_t * 0.7) % 2 == 0 else -1.0)) if spd > 0.6 else Poses.mark()
-		_:
-			want = Poses.run(stride_phase, spd) if spd > 0.3 else Poses.ready(0.9)
-	if act == "run" or act == "ready":
-		if spd > 0.3 and spd < 1.2:
-			want = Poses.blend(Poses.ready(0.9), want, (spd - 0.3) / 0.9)
 	var k := 1.0 - exp(-14.0 * dt)
-	_pose = Poses.blend(_pose, want, k)
-	# On her feet and moving, the legs and body (and, when they are free, the arms) come from the owner's Mixamo
-	# clips in step with her stride; what her arms are doing (a catch, a pass, marking) stays the code's pose.
-	var moving := spd > 0.3 and act in ["run", "ready", "mark", "post"]
-	var arms_free := act == "run" or act == "ready"
-	var kc := 1.0 - exp(-8.0 * dt)
-	clip_body = lerpf(clip_body, smoothstep(0.3, 1.1, spd) if moving else 0.0, kc)
-	clip_arms = lerpf(clip_arms, clip_body if arms_free else 0.0, kc)
-	# Side-on to where she is going (marking, or keeping her eyes on the ball), she side-steps as a defender does
-	# rather than running crabwise: the motion-capture slide, its cycle locked to how far she goes sideways.
-	var lat := vel.dot(Vector2(cos(facing), -sin(facing)))   # toward her left (+) or right (-), m/s
-	var want_slide := 0.0
-	if moving:
-		want_slide = smoothstep(0.6, 0.85, absf(lat) / maxf(spd, 0.01)) * (1.0 - smoothstep(SLIDE_TOP - 0.8, SLIDE_TOP, spd))
-	slide = lerpf(slide, want_slide, kc)
-	if absf(lat) > 0.2:
-		slide_side = move_toward(slide_side, signf(lat), dt * 6.0)
-	if slide > 0.01:
-		slide_phase = fposmod(slide_phase + absf(lat) / (HeroBody.mocap_travel("slide_left") * _scale()) * dt, 1.0)
+	_pose = Poses.blend(_pose, _act_pose(), k)
+	# How much of her arms (and, standing, her lean and crouch) are the move's: the move's own, a catch, a pass, the
+	# ball held, the shot, the leap; on the run her arms swing with her legs, whatever she means to do when she stops.
+	var aw := _arms_want(spd)
+	arms_w = lerpf(arms_w, aw, 1.0 - exp(-(16.0 if aw < arms_w else 12.0) * dt))
+	legs_w = lerpf(legs_w, 0.0 if act == "leap" else 1.0, 1.0 - exp(-(20.0 if act == "leap" else 10.0) * dt))
 	# The landing with the ball: her legs and body from the motion capture while she holds it where she came down.
 	if land_clip != "":
 		land_t += dt
@@ -261,11 +224,96 @@ func _animate(dt: float) -> void:
 		if not keep and land_w < 0.02:
 			land_clip = ""
 			land_w = 0.0
+	if body == null:
+		return
+	gait.width = 0.07 if act in ["mark", "post", "defend", "defend_shot"] else 0.0
+	gait.pinned = landing if stopped else Vector2.INF
+	gait.update(dt, p, vel, body_yaw)
+	var body_w := maxf(1.0 - gait.move, 1.0 if act in ["shoot", "leap"] else 0.0)
+	var out := Gait.lay(gait.loco_pose(), _pose, arms_w, maxf(body_w, arms_w * 0.6), angle_difference(body_yaw, facing))
+	if act in ["shoot", "leap"]:
+		out.hips_y = float(_pose.get("hips_y", 0.0))
+	var feet_w := legs_w * (1.0 - land_w)
+	out = gait.solve(out, feet_w)
+	if land_w > 0.01:
+		out = _with_landing(out)
+	body.apply(out)
+	if feet_w < 0.5:
+		gait.follow_body()
+
+
+## The pose of what she is doing (degrees), standing: Poses' moves; ready to take a pass when she is only running.
+func _act_pose() -> Dictionary:
+	match act:
+		"hold":
+			return Poses.hold()
+		"pass":
+			return Poses.pass_(act_kind, clampf(act_t / 0.45, 0.0, 1.0))
+		"catch":
+			return Poses.catch_(clampf(act_t / 0.2, 0.0, 1.0), act_up)
+		"shoot":
+			return Poses.shoot(clampf(act_t / 0.9, 0.0, 1.0))
+		"defend":
+			return Poses.defend_ball(1.0)
+		"defend_shot":
+			return Poses.defend_ball(1.0, true)
+		"leap":
+			return Poses.leap(clampf(act_t / 0.7, 0.0, 1.0))
+		"out_of_play":
+			return Poses.blend(Poses.ready(0.2), Poses.out_of_play(), 1.0)
+		"cheer":
+			return Poses.cheer(act_t)
+		"post":
+			return Poses.post(act_kind)
+		"huddle":
+			return Poses.huddle()
+		"mark":
+			return Poses.mark(1.0 if int(act_t * 0.7) % 2 == 0 else -1.0)
+	return Poses.ready(0.9)
+
+
+## How much of her arms the move has at speed spd: a catch, a pass, the ball, the shot and the leap all of them; arms
+## up over the ball (defending) while she closes in at a walk; the celebration's fists at a jog; the ready hands,
+## marking's arm out and posting's call for the ball only standing or edging (and on her way somewhere, walking, her
+## arms hang and swing). Running, her arms are the run's.
+func _arms_want(spd: float) -> float:
+	match act:
+		"catch", "pass", "hold", "shoot", "leap":
+			return 1.0
+		"defend", "defend_shot":
+			return 1.0 - smoothstep(1.2, 2.2, spd)
+		"cheer":
+			return 1.0 - smoothstep(2.0, 3.0, spd)
+		"run", "huddle", "out_of_play":
+			return 1.0 - smoothstep(0.3, 1.0, spd)
+	return 1.0 - smoothstep(0.8, 1.8, spd)
+
+
+## Which of her body the shared foundation takes from the game's (FoundationLink): "full" (the game's whole pose: a
+## move made standing, the ball in her hands, the leap), "upper" (the game's arms over the motion capture's legs) or
+## "move" (the capture's all). On the run a move keeps only what its arms do, and marking's and posting's arms go
+## with the run (they are for standing).
+func anim_layer() -> String:
+	if has_ball() or act in ["leap", "shoot", "hold", "pass"]:
+		return "full"
+	var spd := vel.length()
+	if act in ["catch", "cheer", "defend", "defend_shot", "huddle", "out_of_play"] and spd < 0.6:
+		return "full"
+	return "upper" if arms_w > 0.5 else "move"
+
+
+## Where her body faces (drawn): where she faces (the ball, mostly) standing and edging, side-stepping or backing off;
+## running at a jog or faster, the way she runs, her head and chest turned to the ball (Gait.lay), unless her arms
+## are busy with the ball (a catch on the run).
+func _body_yaw(dt: float) -> void:
+	var spd := vel.length()
+	var want := facing
+	if spd > 0.4:
+		var w := smoothstep(2.6, 4.0, spd) * (1.0 - arms_w)
+		want = lerp_angle(facing, atan2(vel.x, vel.y), w)
+	body_yaw = rotate_toward(body_yaw, want, TURN * dt)
 	if body:
-		var out: Dictionary = _with_clips(_pose, spd) if clip_body > 0.01 and body is HeroBody else _pose
-		if land_w > 0.01:
-			out = _with_landing(out)
-		body.apply(out)
+		body.rotation.y = angle_difference(facing, body_yaw)
 
 
 ## The landing laid over pose p (her legs and body; her arms, on the ball, stay p's), at the point of the clip
@@ -285,50 +333,8 @@ func _with_landing(p: Dictionary) -> Dictionary:
 	return out
 
 
-const _BODY_BONES := ["hips", "spine", "chest", "neck", "head", "thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
-const _ARM_BONES := ["upperarm_l", "forearm_l", "hand_l", "upperarm_r", "forearm_r", "hand_r"]
 ## The bones the motion capture moves under her own pose: not her neck and head, which keep watching the play.
 const _MOCAP_BONES := ["hips", "spine", "chest", "thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
-
-
-## The stride clips at her speed, phase-locked to her stride: the model's own walk, then her run, then the sprint
-## (Fast_Run, shared with Hurling), each blended into the next; laid over the code pose p by clip_body and clip_arms.
-func _with_clips(p: Dictionary, spd: float) -> Dictionary:
-	var walk := HeroBody.stride_pose("Walking", stride_phase)
-	var jog := HeroBody.stride_pose("Running", stride_phase)
-	var sprint := HeroBody.stride_pose("Fast_Run", stride_phase)
-	var a := smoothstep(1.8, 3.2, spd)       # walk -> run
-	var b := smoothstep(4.0, 5.6, spd)       # run -> sprint
-	# The side-step (slide_left or slide_right, the way she is going), and how much of it: through the middle of a
-	# change of direction it gives way to the run.
-	var ws := slide * absf(slide_side)
-	var sl: Array = []
-	if ws > 0.01:
-		var sname := "slide_left" if slide_side > 0.0 else "slide_right"
-		sl = HeroBody.mocap_pose(sname, slide_phase * HeroBody.mocap_length(sname), true)
-	var out := p.duplicate()
-	for i in ToonBody.BONES.size():
-		var n: String = ToonBody.BONES[i][0]
-		var body_bone: bool = n in _BODY_BONES
-		var w := clip_body if body_bone else clip_arms
-		var q: Quaternion = (walk[0][i] as Quaternion).slerp(jog[0][i], a).slerp(sprint[0][i], b)
-		if not sl.is_empty():
-			# The whole of her goes with the slide, arms out wide and balanced as a defender's are (the run's
-			# swinging arms and its head, set for an upright torso, do not sit on the slide's crouch).
-			q = q.slerp(sl[0][i], ws)
-			if not body_bone:
-				w = maxf(w, clip_body * ws)
-		if w <= 0.0:
-			continue
-		out[n] = HeroBody.turn(p.get(n, Vector3.ZERO)).slerp(q, w)
-	var lift := lerpf(lerpf(float(walk[1]), float(jog[1]), a), float(sprint[1]), b)
-	var shift := Vector3(0.0, lift, 0.0)
-	if not sl.is_empty():
-		shift = shift.lerp(sl[1], ws)
-	out.hips_y = lerpf(float(p.get("hips_y", 0.0)), shift.y, clip_body)
-	out.hips_x = shift.x * clip_body
-	out.hips_fwd = shift.z * clip_body
-	return out
 
 
 ## Her body's size against the model's (the clips' metres are the model's).

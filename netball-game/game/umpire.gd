@@ -28,6 +28,9 @@ var facing := 0.0
 var sig := ""                 # the signal she is making, or ""
 var sig_t := 0.0
 var sig_side := 1.0
+var gait: Gait                # her feet, legs and arms on the move (as the players')
+var body_yaw := 0.0           # where her body faces as drawn: the ball, or the way she runs when she jogs
+var _arms_w := 1.0
 var _pose := {}
 
 
@@ -46,6 +49,7 @@ func _ready() -> void:
 	p = Vector2(7.0 * half, side * (Court.HALF_W + LINE))
 	position = Vector3(p.x, 0, p.y)
 	_pose = Poses.ready(0.3)
+	gait = Gait.new(body)
 
 
 ## Whether a point is in her half (her calls).
@@ -119,17 +123,26 @@ func advance(dt: float, ball: Vector2) -> void:
 	if d.length() > 0.1:
 		facing = rotate_toward(facing, atan2(d.x, d.y), 6.0 * dt)
 	rotation.y = facing
+	# Her body: facing the play standing or edging along her line; jogging or running, the way she goes, her head and
+	# chest turned to the ball. Her feet step with the floor (Gait), her arms swing bent as she runs.
+	var v := vel.length()
+	var face := facing
+	if v > 0.4 and sig == "":
+		face = lerp_angle(facing, atan2(vel.x, vel.y), smoothstep(1.8, 3.0, v))
+	body_yaw = rotate_toward(body_yaw, face, 8.0 * dt)
+	body.rotation.y = angle_difference(facing, body_yaw)
 	var want_pose: Dictionary
 	if sig != "":
 		sig_t += dt
 		want_pose = Poses.umpire_signal(sig, sig_t, sig_side)
 		if sig_t > 1.6:
 			sig = ""
-	elif vel.length() > 0.4:
-		want_pose = Poses.run(fposmod(Time.get_ticks_msec() / 1000.0 * vel.length() / 1.6, 1.0), vel.length())
 	else:
 		want_pose = Poses.ready(0.3)
 	_pose = Poses.blend(_pose, want_pose, 1.0 - exp(-12.0 * dt))
-	body.apply(_pose)
+	_arms_w = lerpf(_arms_w, 1.0 if sig != "" else 1.0 - smoothstep(0.8, 1.8, v), 1.0 - exp(-12.0 * dt))
+	gait.update(dt, p, vel, body_yaw)
+	var out := Gait.lay(gait.loco_pose(), _pose, _arms_w, maxf(1.0 - gait.move, _arms_w * 0.6), angle_difference(body_yaw, facing))
+	body.apply(gait.solve(out))
 	if link:
 		link.update(dt, vel, want, facing, "signal" if sig != "" else "")

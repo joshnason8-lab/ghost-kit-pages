@@ -3,7 +3,7 @@ extends Node3D
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/player_view.tscn -- OUT_DIR [graphics 0-2]
 ## lineup.png: a player of each of four teams from the front, the back and the side, standing ready, holding the
 ## ball, catching high (close1.png, close2.png: nearer); run_<speed>.png: one stride pair of the run at walking,
-## jogging and sprinting speeds in eight stills, the clips as the match lays them over her pose.
+## jogging and sprinting speeds in eight stills, as the match runs her (Gait).
 ## With "moves" after the graphics level: the motion-capture moves as the match plays them (move_*.png: the side-step
 ## marking and leading, the landing from a jog and a sprint); with "clips:a,b" the stored clips themselves (clip_*.png).
 
@@ -74,26 +74,33 @@ func _ready() -> void:
 		await _shot(out, "close%d" % (ti + 1))
 	for pl in ps:
 		pl.queue_free()
-	# The run: walking (1.4 m/s), jogging (3.5) and sprinting (6.8), one stride pair in eight stills, side on.
-	ps = []
-	var sq2: Array = DB.squad("ENG")
-	for i in 8:
-		var pl := Player.new(0, sq2[i % 7], ToonBody.LETTERS[i % 7])
-		add_child(pl)
-		pl.position = Vector3(-6.3 + i * 1.8, 0, 0)
-		pl.rotation.y = PI * 0.5
-		ps.append(pl)
-	await get_tree().process_frame
+	# The run: walking (1.4 m/s), jogging (3.5) and sprinting (6.8), one stride pair in eight stills, side on: each
+	# player run frame by frame as the match does (Player.advance: Gait), a little further into her stride than the last.
 	cam.position = Vector3(0, 1.2, 15.0)
 	cam.look_at(Vector3(0, 0.8, 0))
+	var sq2: Array = DB.squad("ENG")
 	for spd: float in [1.4, 3.5, 6.8]:
+		ps = []
+		var every := maxi(1, roundi(Gait.pair_length(spd) / spd * 30.0 / 8.0))
+		for i in 8:
+			var pl := Player.new(0, sq2[i % 7], ToonBody.LETTERS[i % 7])
+			add_child(pl)
+			ps.append(pl)
+		await get_tree().process_frame
 		for i in 8:
 			var pl: Player = ps[i]
-			pl.stride_phase = i / 8.0
-			pl.clip_body = 1.0
-			pl.clip_arms = 1.0
-			pl.body.apply(pl._with_clips(Poses.run(pl.stride_phase, spd), spd))
+			pl.fenced = false
+			pl.place(Vector2(0, -40.0 + i * 10.0), PI * 0.5)
+			pl.vel = Vector2(spd, 0)
+			for f in 60 + i * every:
+				pl.set_act("run")
+				pl.target = pl.p + Vector2(10, 0)
+				pl.want_speed = spd
+				pl.advance(1.0 / 30.0)
+			pl.position = Vector3(-6.3 + i * 1.8, 0, 0)
 		await _shot(out, "run_%.1f" % spd)
+		for pl in ps:
+			pl.queue_free()
 	get_tree().quit()
 
 

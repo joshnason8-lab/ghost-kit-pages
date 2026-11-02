@@ -3,7 +3,8 @@ extends ToonBody
 ## A netball player drawn with the owner's model (assets/player, baked by tools/player): a textured player in a
 ## netball dress, on the same seventeen bones as ToonBody, so every pose in Poses plays on her unchanged, and the
 ## Mixamo clips (hero.json "clips": the model's own Walking and Running, and Fast_Run, the sprint shared with Hurling)
-## are poses on those bones too. One model for all fourteen: the shader paints her team's colours over the dress's
+## are poses on those bones too (kept, but the match's run is Gait's: on these bones the clips' feet skated and their
+## arms reached out). One model for all fourteen: the shader paints her team's colours over the dress's
 ## navy and the light blue of its panels (the mask says where the dress, the trim, the hair and the skin are), keeps
 ## the white of the socks and shoes, gives her own skin tone and hair, and paints the bib with her position's letters
 ## on the front and back of the chest from where each point sits at rest (UV2), so the bib costs no extra draw call
@@ -62,8 +63,8 @@ static func clip_pose(name: String, t: float, loop := false) -> Array:
 	return [turns, lerpf(a[BONES.size()], b[BONES.size()], w)]
 
 
-## A looped stride clip at a stride phase (0-1 a stride pair; the left thigh furthest forward at 1/4, as in
-## Poses.run), so the clip's feet keep the pace the player's speed sets.
+## A looped stride clip at a stride phase (0-1 a stride pair; the left thigh furthest forward at 1/4). (The match's
+## run is Gait's now: these clips are no longer laid over it.)
 static func stride_pose(name: String, phase: float) -> Array:
 	var c: Dictionary = data().clips[name]
 	return clip_pose(name, float(c.left_forward) + (phase - 0.25) * cycle(name), true)
