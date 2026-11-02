@@ -2053,18 +2053,18 @@ func _separate() -> void:
 	# 1.18 a minute (match_sim, 10 matches).
 	if active and _solid(active):
 		for d in movers:
-			_push_apart(active, d, BODY_STANDING, 1.0)
+			_push_apart(active, d, BODY_STANDING, 1.0, PUSH_MAX * 0.5)
 
 
 ## Moves a (and b by the rest of it) apart along the ground until they are gap apart; share: a's part of it.
-func _push_apart(a: Athlete, b: Athlete, gap: float, share: float) -> void:
+func _push_apart(a: Athlete, b: Athlete, gap: float, share: float, most := PUSH_MAX) -> void:
 	var off := a.position - b.position
 	off.y = 0.0
 	var dist := off.length()
 	if dist >= gap:
 		return
 	var dir := off / dist if dist > 0.001 else Vector3(1, 0, 0)
-	var over := minf(gap - dist, PUSH_MAX)   # a little a frame: never a jump (the steering keeps them clear)
+	var over := minf(gap - dist, most)   # a little a frame: never a jump (the steering keeps them clear)
 	a.position += dir * over * share
 	if share < 1.0:
 		b.position -= dir * over * (1.0 - share)
