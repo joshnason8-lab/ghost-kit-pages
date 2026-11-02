@@ -310,7 +310,8 @@ the rig test all work as written. What this guide does not cover yet:
   without the prefix: each bone's turn, rest-corrected, as tools/models/retarget.gd does) - to be written before Kho
   Kho adopts.
 - **Holding something that is not in a hand** (Kho Kho's pole turn: both hands on a post in the ground):
-  `WsgPoseLayer.hold` anchors a hand to a bone, not to a point in the world.
+  `WsgPoseLayer.hold` anchors a hand to a bone, not to a point in the world. (Since the pilots:
+  `WsgPoseLayer.hold_point`, section 5.10.)
 - **The game's own fans**: the 3D crowd's fans are Hurling's (an Irish crowd). Kho Kho needs its own (its cut-outs
   are drawn from its player model) and its bleachers' seat height.
 - **Indoor light**: tools/blender/bake_light.py bakes a sun and a sky; Kho Kho's halls are lit by strip lights.
@@ -318,6 +319,83 @@ the rig test all work as written. What this guide does not cover yet:
 - **Its automatic graphics** (Kho Kho's `auto_gfx` lowers the tier when a match runs slowly): set
   `WsgFoundation.tier` there too.
 - **No replay of its own** yet: WsgReplay and WsgDirector are there for an out, but the game has to call them.
+
+## 5.10 Lessons from the pilots (Floorball, Netball, Kabaddi, Sepak Takraw, Kho Kho, Pok Ta Pok)
+
+What the six pilots after Hurling found, short. Every new switch named here is off by default: a game that does not
+set it behaves as before.
+
+**Held things and measuring**
+- **A held item (a ball, a flag, a stick) is placed in the body's `posed` callback** (`body.posed.connect(...)`), not
+  after `advance()`: `posed` fires at the skeleton's deferred update, once its modifiers (the layers, the grips) have
+  run. Placed earlier it is a frame behind the hand (Netball's ball, `_on_posed`).
+- **Measure bones in `posed` too** (a test's hand-to-ball gap, a foot's height): read anywhere else, they are the
+  pose without its modifiers.
+- **A ball in the hand**: `body.grip_sphere(side, r)` closes the fingers on the ball itself and
+  `body.ball_point(side, r)` is where its centre goes (`WsgGrip.solve_sphere` / `sphere_point`). A ball closed as a
+  ball-sized handle (`grip`) left fingers up to 10 mm inside it.
+- **Holds against the hips**: `layer.hips_first = true` (the hips laid once, before the holds), `layer.hold_weight_own
+  = true` (each hold at its own weight, not the layer's fade) and `layer.make_holds = link.holds` (your
+  `holds(sk, hips, lift)`, called once the hips and body are laid). Floorball's StickLayer laid the hips itself and the
+  layer laid them again: in a fade its holds drifted up to 4 cm. Netball's BallLayer did it right by hand.
+- **A hand on a point in the world** (a pole, a rail): `layer.hold_point = {side: [point, weight, axis, radius]}`,
+  with `layer.arms = WsgLegacyPose.arm_maker(body.joints)` if you have no 17-bone reader. It is aimed lower by
+  `lift_after` itself; `layer.hold_point_reach` says when a hand cannot reach (Kho Kho's pole turn).
+
+**Your pose over the whole body**
+- **A body you pose from its first frame never runs the locomotor**, so nothing switches its planter for you. Set it
+  every update: under your whole-body pose, `loco.planter.keep_pose = true` (the legs exactly as you pose them, the
+  hips' lift kept, so `lift_after` stays `hips_offset`); `false` again under the capture. `planter.enabled = false`
+  alone still lifts ankles to its floor by IK and eases a released foot only on the locomotor's steps: it bent Sepak
+  Takraw's legs by up to 10 cm and held Kho Kho's feet where the last stride left them (kneeling ankles lifted).
+  Before keep_pose the pilots used `planter.active = false` with `lift_after = 0` (Sepak Takraw, Pok Ta Pok) or
+  `reset()` + `tick(dt)` each update and a low `ground_y` (Kho Kho): both still work.
+- **Handing the body back to the capture**: `loco.resume(velocity, facing)` and `loco.planter.reset()` (the
+  locomotor's smoothing still had the speed from before your pose: bogus cuts and starts).
+- **Meshy A-pose legs and elbows**: a game rigged with the legs splayed (or the arms in an A) gives turns that,
+  corrected from their own rest, put the rig's knee or elbow off its hinge, and the drivers straighten it. Rebuild
+  the limbs from the joint positions instead: each thigh (upper arm) turned so its hinge is square to the plane of
+  your thigh and shin, the shin bending in it (Kabaddi `FoundationLink._legs`, Kho Kho `_limbs`, Sepak Takraw `_legs`).
+- **A pose kept in a dictionary** (no 17-bone skeleton to read): build a 17-bone proxy skeleton, rests the identity
+  with each joint where your model's is, pose it with your turns, and give it to WsgLegacyPose (Sepak Takraw
+  `FoundationLink._make_proxy`).
+
+**The locomotor**
+- **It ignores the body node's scale**: after `WsgLocomotor.attach`, `loco.leg_scale *= scale` with the scale you gave the body (strides and
+  hips for a body you scaled to a player's height; Pok Ta Pok).
+- **Seeded matches**: `loco.rng = RandomNumberGenerator.new()`. The idle fidgets drew on the global `randf()`, which
+  changed what Pok Ta Pok's seeded matches did.
+- **No `want_velocity`?** Pass it if you have it. If you drive with velocity alone (Kho Kho, Sepak Takraw, Kabaddi),
+  set `loco.cut_from_heading = true`: otherwise a cut is measured from where the velocity already swung to, never
+  comes round, and its clip crawls while the body runs on (Kho Kho's chasers glided at 8 m/s).
+
+**Replays**
+- **WsgReplay records only foundation bodies**: run it on your own replay's clock and frames (Pok Ta Pok: on the
+  game's replay clock), and keep drawing your own things (the ball, the game's bodies on Low) from your replay.
+- **After a replay, resume your phase where it paused**, not at the phase's end: the match then plays exactly as it
+  would have without the replay (Pok Ta Pok, tested).
+
+**Budget games and comparing frames**
+- **Gate the foundation to Medium and High** in a budget game and prove Low unchanged: the same draw calls and
+  pixel-identical frames against the beta. Pin anything driven by the wall clock (a flag's wave, a shader's
+  `TIME`, a crowd's sway) for pixel comparisons, or two runs never match.
+
+**CI**
+- **Guard every publish step to the game's own branch** (`if: github.ref == 'refs/heads/<game branch>'`, a pilot's
+  own step to its pilot branch) and give the workflow a concurrency group (`concurrency: {group:
+  <game>-android-${{ github.ref }}, cancel-in-progress: true}`): Netball's beta publish had no guard, and an older run
+  published over a newer one in Floorball's. Give each pilot its own pre-release tag (`<game>-foundation-pilot`),
+  never the beta's.
+
+**Tests**
+- **"Planted" needs both** the planter's contact flag (`loco.planter.contact[i] > 0.5`) **and** a low ankle
+  (`planter.ankle_world[i].y` within a few cm of a standing one's): the flag alone counts a foot lifting through
+  the release easing, the height alone a swinging foot skimming the ground (Pok Ta Pok's and Sepak Takraw's runners).
+- **Bakes**: `tools/wsg/bake_character.sh` now stops on a script error (and after `BAKE_TIMEOUT` s) instead of
+  hanging; it warns when a body gets no LOD levels (Kabaddi's player_10 kept its 5,207 triangles far away too), maps
+  the older Meshy spine (Hips > Spine02 > Spine01 > Spine) by its hierarchy, and writes the bake's stance
+  `{shift, scale}` into `<name>_rig.json` (`character.stance`: rig = (skeleton point - shift) * scale) for a game that
+  maps its own skeleton onto the rig (Kho Kho worked them out again).
 
 ## 6. What the owner does once (all games share it)
 
