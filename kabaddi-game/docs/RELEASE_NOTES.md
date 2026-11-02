@@ -1,4 +1,8 @@
-**New in 0.14.0: real movement on Medium and High, replays, and a buzz for your points.**
+**New in 0.14.1: the stick checked in both cameras.** Up, right, down and left on the stick move your player up, right,
+down and left on the screen in the broadcast camera and behind the raider alike, and switching camera mid-move eases
+the stick round instead of turning him on the spot. (It already worked; this adds a check for it in every build.)
+
+**In 0.14.0: real movement on Medium and High, replays, and a buzz for your points.**
 - **Medium and High**: the players, referees and scorers are drawn on a new shared body rig with motion capture of
   real people for walking back to their half or the sitting block, standing between raids and the referees walking
   their lines. Every kabaddi move (the stance, cant, touches, dubki, lion jump, dives, holds and chains) is still the

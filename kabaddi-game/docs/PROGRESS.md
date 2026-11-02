@@ -396,3 +396,11 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   walks, and on the upright walk both knees passed near straight at every step (the foundation's stance check caught
   it in CI: 1 frame in 298). Hips about 1 cm lower. test_runner: walking at 0.8 m/s just after a touch, the crouched
   walk and never both knees near straight.
+- **The stick in every camera** (the owner's note to every game, via the lead): checked, and Kabaddi Raid had it right
+  already. `CameraRig.input_to_world` turns the stick by the live camera's yaw, flat on the ground, in both cameras
+  (broadcast, and third person behind the raider). Measured against the camera as it was when the push began: up,
+  right, down and left move the raider within 6 degrees (broadcast) and 1 degree (third person) of the same on screen.
+  The camera button mid-move: the camera glides between its views, and the stick's frame with it (no snap); the
+  stick's frame is also eased over about 0.2 s (`_ease_input`) if the camera ever cuts in one frame. The game has no
+  aimed passes or shots; the AI does not use the stick. test_runner: both cameras, four directions, within 10 degrees,
+  and the camera change mid-move.

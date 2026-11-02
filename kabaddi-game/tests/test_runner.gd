@@ -1291,6 +1291,57 @@ func _run() -> void:
 	Game.go_back()
 	await frames(3)
 
+	# The stick is the screen's in every camera: up, right, down and left on it move the raider up, right, down and left
+	# on the screen (measured against the camera as it was when the push began, since the one behind him follows him),
+	# within 10 degrees; and the camera button mid-move eases the stick's frame round over about 0.2 s.
+	var stick_worst := {}
+	var eased := false
+	for cmode in [Game.CAM_TV, Game.CAM_THIRD]:
+		Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+			"difficulty": 1, "first_raider": 0, "passive": true})
+		var km2: Node = Game.current
+		var kg := 0
+		while km2.phase != "raid" and kg < 1200:
+			await get_tree().process_frame
+			kg += 1
+		km2.cam.mode = cmode
+		await frames(20)
+		var sworst := 0.0
+		for d in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
+			var kr2: Athlete = km2.controlled
+			kr2.position = km2.pos_in(1 - km2.raiding, 0.0, 2.5)
+			kr2.vel = Vector3.ZERO
+			await frames(10)
+			var shot := Camera3D.new()
+			shot.fov = km2.cam.cam.fov
+			add_child(shot)
+			shot.global_transform = km2.cam.cam.global_transform
+			var sp0 := shot.unproject_position(kr2.global_position)
+			km2.controls._stick_vec = d
+			await frames(10)
+			var smv := shot.unproject_position(kr2.global_position) - sp0
+			km2.controls._stick_vec = Vector2.ZERO
+			shot.queue_free()
+			sworst = maxf(sworst, rad_to_deg(absf(smv.angle_to(d))) if smv.length() > 5.0 else 180.0)
+		stick_worst["TV" if cmode == Game.CAM_TV else "third"] = snappedf(sworst, 1.0)
+		if cmode == Game.CAM_THIRD:
+			# Mid-move, the camera button: the stick's "up" a moment later is still mostly the old camera's, then the new's.
+			km2.controls._stick_vec = Vector2(0, -1)
+			await frames(3)
+			var sbefore: Vector3 = km2.cam.input_to_world(Vector2(0, -1))
+			km2.cam.mode = Game.CAM_TV
+			await frames(1)
+			var sjust: Vector3 = km2.cam.input_to_world(Vector2(0, -1))
+			await frames(12)
+			var slater: Vector3 = km2.cam.input_to_world(Vector2(0, -1))
+			var starget: Vector3 = km2.cam.flat_forward()
+			km2.controls._stick_vec = Vector2.ZERO
+			eased = sbefore.angle_to(starget) < 0.35 or (sjust.angle_to(sbefore) < sbefore.angle_to(starget) * 0.6 and slater.angle_to(starget) < 0.15)
+		km2.queue_free()
+		await frames(3)
+	check(stick_worst.values().all(func(w): return float(w) <= 10.0) and eased,
+		"the stick is the screen's in every camera: up, right, down, left within 10 degrees %s; a camera change mid-move eases round" % str(stick_worst))
+
 	# 9. A full AI-vs-AI match, quick length, knockout rules.
 	var m: Node = null
 	Game.start_match({"home": "MUM", "away": "DEL", "arena": "village", "mode": "quick", "autoplay": true, "length": 0, "difficulty": 1, "knockout": true})

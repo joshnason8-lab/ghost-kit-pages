@@ -72,11 +72,26 @@ func flat_forward() -> Vector3:
 	return f.normalized() if f.length() > 0.01 else Vector3(0, 0, -1)
 
 
-## Joystick vector (x right, y down) to a ground direction relative to the camera.
+## The ground direction "up the stick" means: the camera's, followed exactly as it turns, but eased over about 0.2 s when
+## it jumps (the camera button mid-move), so the player does not turn on the spot.
+var _in_fwd := Vector3.ZERO
+const INPUT_EASE := 0.07   # s, the time constant of that ease (about 95% in 0.2 s)
+
+
+func _ease_input(dt: float) -> void:
+	var f := flat_forward()
+	if _in_fwd == Vector3.ZERO or _in_fwd.angle_to(f) < 0.35:
+		_in_fwd = f
+	else:
+		_in_fwd = _in_fwd.slerp(f, 1.0 - exp(-dt / INPUT_EASE)).normalized()
+
+
+## Joystick vector (x right, y down) to a ground direction relative to the camera: up the stick is up the screen, in
+## every camera.
 func input_to_world(v: Vector2) -> Vector3:
 	if v.length() < 0.05:
 		return Vector3.ZERO
-	var fwd := flat_forward()
+	var fwd := _in_fwd if _in_fwd != Vector3.ZERO else flat_forward()
 	var right := Vector3(-fwd.z, 0, fwd.x)
 	return (right * v.x + fwd * -v.y).limit_length(1.0)
 
@@ -84,6 +99,7 @@ func input_to_world(v: Vector2) -> Vector3:
 func follow(m, dt: float) -> void:
 	if frozen:
 		return
+	_ease_input(dt)
 	cam.global_position -= _shake_now   # last frame's shake off before the smoothing
 	_shake_now = Vector3.ZERO
 	_t += dt
