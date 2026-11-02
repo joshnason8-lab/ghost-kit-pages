@@ -365,3 +365,10 @@ A Watch AI link on the home screen (`MENU_WATCH`, 8 languages) opens Quick Match
 (`autoplay`, `watch`) on the broadcast camera with the score and clock, pause and camera, and a 1×/2× button
 (`Match.set_watch_speed`, Engine.time_scale; back to 1× when the match is left). test_runner: three checks.
 fit_audit (menus, 8 languages, 1280x720): 0 problems.
+
+The Licences page no longer lays its texts out on worker threads (`RichTextLabel.threaded`): one of those laid out
+while the page sized it (`fit_content`) crashed the engine now and then as the page opened (signal 11 in CI, twice,
+right after "Back from Help"). It now shows the credits at once and adds the rest a label a frame, long licences cut
+into labels of about 1500 characters (`licences_screen.gd` `_queue`, `built()`): it opens in about 0.1 s instead of
+1.5 s (1 s threaded), and no frame while it fills takes more than about 60 ms (desktop, headless). test_runner: the
+page is complete in 77 frames.

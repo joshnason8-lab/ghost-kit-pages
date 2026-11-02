@@ -49,4 +49,4 @@ func _ready() -> void:
 	links.add_child(UI.button(tr("HOW_TITLE"), true, func(): Game.show_screen("res://ui/howto_screen.gd", {"back": "res://ui/help_screen.gd"})))
 	links.add_child(UI.button(tr("VIEW_ONLINE"), false, func(): OS.shell_open(Game.SUPPORT_URL)))
 	col.add_child(links)
-	col.add_child(UI.rich_text(TEXT, false, 18))
+	col.add_child(UI.rich_text(TEXT, 18))

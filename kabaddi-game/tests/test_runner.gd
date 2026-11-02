@@ -1455,6 +1455,8 @@ func _languages() -> void:
 		btn.pressed.emit()
 		await frames(3)
 		var shown: Node = Game.current
+		while shown.has_method("built") and not shown.built():
+			await frames(1)
 		var words := ""
 		for rt in shown.find_children("*", "RichTextLabel", true, false):
 			words += String(rt.text)
@@ -1487,6 +1489,11 @@ func _languages() -> void:
 		"auction figures: %d outlines, %d players, %d looks, raiders reaching and defenders crouched" % [kind_of.size(), squad_n, looks.size()])
 	var lic := Game.show_screen("res://ui/licences_screen.gd")
 	await frames(3)
+	var lic_frames := 0
+	while not lic.built() and lic_frames < 300:
+		lic_frames += 1
+		await frames(1)
+	check(lic.built(), "the licences page fills in a text a frame, done in %d frames" % (lic_frames + 3))
 	var all := ""
 	for rt in lic.find_children("*", "RichTextLabel", true, false):
 		all += String(rt.text)

@@ -37,17 +37,24 @@ func setup(_args: Dictionary) -> void:
 	pass
 
 
+## The texts still to add: one a frame once the page is up, so it opens at once instead of freezing while
+## every licence is laid out.
+const CHUNK := 1500
+var _todo: Array[String] = []
+var _col: VBoxContainer
+
+
 func _ready() -> void:
 	UI.screen(self)
 	var v := UI.page(self, tr("LICENCES"), func(): Game.show_screen("res://ui/settings_screen.gd"), tr("SET_ABOUT"))
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 18)
-	v.add_child(UI.scroll(col))
-	col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
-	col.add_child(_text(CREDITS))
-	col.add_child(_text(SOUNDS))
-	col.add_child(_text(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges())))
-	col.add_child(_text("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges())))
+	_col = VBoxContainer.new()
+	_col.add_theme_constant_override("separation", 18)
+	v.add_child(UI.scroll(_col))
+	_col.add_child(UI.wrap(tr("LICENCES_INTRO"), "MutedLabel", 18))
+	_col.add_child(_text(CREDITS))
+	_col.add_child(_text(SOUNDS))
+	_queue(FONTS + "\n\n" + _plain(FileAccess.get_file_as_string("res://fonts/OFL.txt").strip_edges()))
+	_queue("[b]Godot Engine[/b]\n" + _plain(Engine.get_license_text().strip_edges()))
 	# The engine's own parts, each with its copyright and licence, then the licences' texts.
 	var parts := PackedStringArray()
 	for c in Engine.get_copyright_info():
@@ -57,14 +64,38 @@ func _ready() -> void:
 				lines.append(_plain(String(who)))
 			lines.append("(" + String(part.license) + ")")
 		parts.append("[b]%s[/b]\n%s" % [_plain(String(c.name)), "\n".join(lines)])
-	col.add_child(_text("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts)))
+	_queue("[b]Parts of the Godot Engine[/b]\n\n" + "\n\n".join(parts))
 	var info: Dictionary = Engine.get_license_info()
 	for name in info:
-		col.add_child(_text("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())], true))
+		_queue("[b]%s[/b]\n%s" % [_plain(String(name)), _plain(String(info[name]).strip_edges())])
 
 
-func _text(bb: String, big := false) -> RichTextLabel:
-	return UI.rich_text(bb, big)
+## A long text goes on as several labels of a few paragraphs each, so no one frame lays out a whole licence.
+func _queue(text: String) -> void:
+	var chunk := ""
+	for para in text.split("\n\n"):
+		if chunk != "" and chunk.length() + para.length() > CHUNK:
+			_todo.append(chunk)
+			chunk = ""
+		chunk = para if chunk == "" else chunk + "\n\n" + para
+	if chunk != "":
+		_todo.append(chunk)
+
+
+func _process(_delta: float) -> void:
+	if _todo.is_empty():
+		set_process(false)
+		return
+	_col.add_child(_text(_todo.pop_front()))
+
+
+## Every text is on the page.
+func built() -> bool:
+	return _todo.is_empty()
+
+
+func _text(bb: String) -> RichTextLabel:
+	return UI.rich_text(bb)
 
 
 ## Text shown as it is: square brackets in a licence are not formatting.

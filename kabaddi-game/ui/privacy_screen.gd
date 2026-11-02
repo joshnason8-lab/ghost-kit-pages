@@ -47,4 +47,4 @@ func _ready() -> void:
 	var link := UI.button(tr("VIEW_ONLINE"), false, func(): OS.shell_open(Game.PRIVACY_URL))
 	link.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	col.add_child(link)
-	col.add_child(UI.rich_text(TEXT, false, 18))
+	col.add_child(UI.rich_text(TEXT, 18))

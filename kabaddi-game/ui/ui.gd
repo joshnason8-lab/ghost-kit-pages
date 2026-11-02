@@ -759,12 +759,13 @@ static func fixture_line(owner: Control, f: Dictionary, highlight: String) -> HB
 
 ## A page of formatted text in the body font (the Licences, Help and Privacy screens), size its text's (the headings 3
 ## more); a long one (big) is laid out off the main thread.
-static func rich_text(bb: String, big := false, size := 15) -> RichTextLabel:
+static func rich_text(bb: String, size := 15) -> RichTextLabel:
 	var rt := RichTextLabel.new()
 	rt.bbcode_enabled = true
 	rt.fit_content = true
 	rt.scroll_active = false
-	rt.threaded = big
+	# Not threaded: a threaded label laid out on a worker while the screen sized it (fit_content) crashed the engine
+	# now and then as the Licences page opened.
 	rt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# A drag that starts on the words must reach the scroll box: the text takes no input.
