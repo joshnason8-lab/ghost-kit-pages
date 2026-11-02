@@ -62,6 +62,11 @@ jobs:
       - name: Build translations
         run: python3 ${PROJECT_DIR}/tools/build_i18n.py
 
+      - name: Licensed animation (the private assets, baked for this build, as for the beta)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
       - name: Import project
         working-directory: ${{ env.PROJECT_DIR }}
         run: |

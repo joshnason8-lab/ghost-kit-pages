@@ -380,7 +380,7 @@ func _legal_pages() -> void:
 	var must := {"licences": ["Godot Engine", "MIT", "mocap.cs.cmu.edu", "Mixamo", "Meshy", "Poly Haven", "Kenney",
 			"MoCap Online", "ActorCore",
 			"opengameart.org", "Pixabay", "charlesheffley009", "framptones", "freesound_community", "Mixkit", "Gregor Quendel",
-			"JC Sounds", "SIL Open Font License", "FreeType"],
+			"JC Sounds", "SIL Open Font License", "FreeType", "MoCap Online", "ActorCore"],
 		"privacy": ["joshnason8@gmail.com", "2026"], "help": ["joshnason8@gmail.com"]}
 	var keep := String(Game.settings.language)
 	for lang in ["en", "th", "ja", "my"]:

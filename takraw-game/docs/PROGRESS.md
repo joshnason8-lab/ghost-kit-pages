@@ -624,6 +624,14 @@ every player, official and substitute is drawn by the World Stage Games foundati
   level, with and without the foundation). test_runner checks all of the above with the licensed data (1658 checks)
   and without it (1647); user_bot perfect 15-1, idle 3-15 either way; input_test 10 checks; fit_audit 0 problems.
 
+## The foundation, merged (0.13.0)
+
+The pilot above, merged into the game's branch (PR #16) and published as the beta, version code 22 (above the pilot's
+21, so it installs over either). The Play bundle and the media kit now bake the licensed animation as the beta does
+(the same step), so the Play build is the beta's game and the trailer shows the foundation on High; the licences
+screen's credit for MoCap Online and Reallusion ActorCore (the owner approved it) is checked by test_runner, and the
+media kit's CREDITS.txt carries it. test_runner 1649 checks, 0 failures (without the licensed data, here).
+
 ## Gaps that need the owner
 
 For the Play Store, what only the owner can do is in `store/PLAY_STORE.md`: the developer account, the upload key and

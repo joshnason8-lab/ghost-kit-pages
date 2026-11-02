@@ -115,7 +115,10 @@ The game's own sounds, as heard in the matches:
 THE PICTURES
 Players, ball, officials and most venue models: made for the game (Meshy, meshy.ai, for the owner). Skies, surfaces
 and other venue pieces: Poly Haven (polyhaven.com), CC0. Motion capture: Mixamo; and the CMU Graphics Lab Motion
-Capture Database (mocap.cs.cmu.edu), created with funding from NSF EIA-0196217. Fonts: Noto Sans and Teko, SIL Open
+Capture Database (mocap.cs.cmu.edu), created with funding from NSF EIA-0196217. On High (as filmed here) the players
+and officials are drawn with the World Stage Games shared foundation, their walks between points and the officials'
+standing and stepping from the MoCap Online Mobility pack (mocaponline.com) and Reallusion ActorCore
+(actorcore.reallusion.com), licensed for the game. Fonts: Noto Sans and Teko, SIL Open
 Font License 1.1. Godot Engine (godotengine.org), MIT licence.
 
 Sepak Takraw Unleashed is an independent game, not affiliated with or endorsed by any sepak takraw federation,

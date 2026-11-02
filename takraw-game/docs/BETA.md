@@ -15,6 +15,12 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.13.0: **the shared foundation** (the pilot, merged). On Medium and High the players, the officials and the
+substitutes are drawn on the World Stage Games rig: walking between points and the officials standing and stepping
+with motion capture, every kick, header, block and toss still the game's own; a replay of each point's best moment.
+Low (where the Galaxy A16 starts) is exactly as it was. It installs over the foundation pilot (0.12.4-pilot) as well
+as over the beta.
+
 New in 0.12.4: **the phone's Back closes what is open first**: the language picker on the home screen (Back used to
 close the whole game there), a team list in Quick Match, and League Season's "Abandon?" question, instead of leaving the
 screen under them.
