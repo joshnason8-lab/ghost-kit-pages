@@ -163,6 +163,12 @@ static func play_modes(game: WsgWorldGame, parent: Node) -> Array:
 			m.officials = offs
 		want.on = false
 		m.cams = game.cameras(mode, holder)
+		# Done with: stopped and hidden, its cameras kept for the joystick rule (every mode left playing and drawing
+		# under the later rules took Kabaddi's run past 50 minutes on software GL).
+		holder.process_mode = Node.PROCESS_MODE_DISABLED
+		for c in holder.get_children():
+			if c is Node3D or c is CanvasItem:
+				c.visible = false
 		out.append(m)
 	return out
 

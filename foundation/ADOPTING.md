@@ -1355,6 +1355,10 @@ start code, as your menu does when a player taps. Better still, build everything
 the rule frees that parent after each mode. Each tiers line now says how many triangles were left outside that parent.
 A number that grows from mode to mode is the last mode still drawing.
 
+Each mode the pose, officials, loading and joystick rules play is stopped and hidden once played (its cameras kept),
+so it no longer runs and draws under the later rules (Kabaddi's run passed 50 minutes on software GL). A `cameras()`
+that stopped the match itself to work round it can go.
+
 The foundation's own world is `tests/world_demo/world.gd`. It passes every rule, and `tests/world_check_test.sh` shows
 that each fault fails its own rule and only that rule.
 
