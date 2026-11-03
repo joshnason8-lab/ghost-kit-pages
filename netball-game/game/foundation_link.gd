@@ -27,6 +27,7 @@ var body: WsgBody
 var loco: WsgLocomotor
 var legacy: BallLayer
 var reader: WsgLegacyPose
+var feet: FeetLayer            # the drawn feet on the game's (players and umpires)
 var material: ShaderMaterial
 var mode := ""
 var kind := "player"          # player, umpire, reserve
@@ -83,12 +84,18 @@ func _ready() -> void:
 	if kind != "reserve":
 		loco = WsgLocomotor.attach(body)
 		legacy.lift_after = loco.planter.hips_offset
+		feet = FeetLayer.new()
+		feet.name = "GameFeet"
+		feet.link = self
+		body.add_modifier(feet)
+		_feet_offset()
 		# (The head's and chest's look-at: the game's own head is laid over them in its moves; none in the run.)
 		for m in [loco.look, loco.look_chest]:
 			if m:
 				m.active = false
 	for side in ["Left", "Right"]:
-		_ball_v[side] = WsgGrip.axis_point(body.joints, side, Ball.R / _s()) - (body.joints[side + "Hand"] as Vector3)
+		# (The ball in the palm, clear of the knuckles: WsgGrip.sphere_point, as WsgBody.ball_point has it.)
+		_ball_v[side] = WsgGrip.sphere_point(body.joints, side, Ball.R / _s()) - (body.joints[side + "Hand"] as Vector3)
 	# The game's body stays (posed, measured), unseen.
 	if gb.mesh_instance:
 		gb.mesh_instance.visible = false
@@ -133,10 +140,9 @@ func _make_material() -> void:
 		return
 	if _shader == null:
 		_shader = Shader.new()
-		_shader.code = HeroBody.SHADER.replace("rp = vec3(UV2.x, UV2.y, (COLOR.b - 0.5) * 1.6);",
-			"rp = vec3((COLOR.r - 0.5) * 1.6, COLOR.g * 2.0, (COLOR.b - 0.5) * 1.6);").replace(
-			"\tfloat d = dot(normalize(wn), normalize(light_dir));", UMPIRE_KIT + "\tfloat d = dot(normalize(wn), normalize(light_dir));").replace(
-			"uniform int letter = -1;", "uniform int letter = -1;\nuniform float umpire = 0.0;\nuniform vec3 shirt : source_color;\nuniform vec3 trousers : source_color;\nuniform vec4 limbs = vec4(0.9, 0.16, 0.2, 1.3);")
+		# (HeroBody's, the umpires' kit in it: HeroBody.UMPIRE_KIT.)
+		_shader.code = HeroBody.shader_code().replace("rp = vec3(UV2.x, UV2.y, (COLOR.b - 0.5) * 1.6);",
+			"rp = vec3((COLOR.r - 0.5) * 1.6, COLOR.g * 2.0, (COLOR.b - 0.5) * 1.6);")
 	var m := ShaderMaterial.new()
 	m.shader = _shader
 	var src: ShaderMaterial = hb._material() if hb else null
@@ -185,21 +191,6 @@ func _make_material() -> void:
 	body.mesh_instance.material_override = m
 
 
-## The umpires' kit on the player's model (and a reserve's tracksuit): the dress is the shirt, the skirt and the bare
-## legs below it the trousers (to just above the socks), a short sleeve of the shirt over each upper arm; skin, hair,
-## socks and shoes kept.
-const UMPIRE_KIT := """	if (umpire > 0.5) {
-		bool skin_px = m.a > 0.5;
-		bool legs = rp.y < limbs.x && rp.y > limbs.y && abs(rp.x) < 0.3 && (skin_px || m.r > 0.3 || m.g > 0.3);
-		bool sleeve = skin_px && abs(rp.x) > limbs.z - 0.04 && abs(rp.x) < limbs.z + 0.13 && rp.y > limbs.w - 0.12;
-		// (The dress's white badges and the bib's place on the chest too: all of the torso that is not skin or hair.)
-		bool top = !skin_px && m.b < 0.5 && rp.y >= limbs.x - 0.02 && (m.r > 0.3 || m.g > 0.3 || (abs(rp.x) < limbs.z && rp.y < limbs.w + 0.1));
-		if (top || sleeve) { c = shirt * clamp((lum(t) + 0.15) / (lum(ref_dress) + 0.15), 0.75, 1.15); }
-		if (legs) { c = trousers * clamp((lum(t) + 0.15) / (lum(ref_dress) + 0.15), 0.8, 1.2); }
-	}
-"""
-
-
 ## A team change or a new kit: the colours as the game's body has them now.
 func recolour() -> void:
 	if body:
@@ -209,33 +200,43 @@ func recolour() -> void:
 
 # ---------------------------------------------------------------- each frame
 
-## Between the frames it is posed: carried along (its pose, the ball in its hands, as last made).
-func follow() -> void:
-	if body.visible:
-		global_transform = Transform3D(Basis.IDENTITY, who.global_position)
-		if holding and _ball_rel != Vector3.INF:
-			ball_at = body.global_transform * _ball_rel
+## Between the frames it is posed (a body far from the camera: Player.pose_every): carried along, and its
+## skeleton's modifiers run again (not the capture's animation, the costly part): the planter holds a planted foot
+## where it is as the body goes on, and under the game's whole pose its legs are the game's this frame, which step
+## with the floor. (Carried along as last posed, its feet slid with it for a frame or two and snapped back.)
+func follow(frame_dt := 0.0) -> void:
+	if not body.visible:
+		return
+	global_transform = Transform3D(Basis.IDENTITY, who.global_position)
+	if mode == "full":
+		legacy.set_pose(reader.read())
+		body.rotation.y = _yaw
+	if frame_dt > 0.0:
+		body.advance(frame_dt)
+	if holding and _ball_rel != Vector3.INF:
+		ball_at = body.global_transform * _ball_rel
 
 
 var _ball_rel := Vector3.INF  # the ball as last held, in the body's frame (for the frames between poses)
 
 
 ## After the game has posed its body and placed her this frame (game seconds since the last): drive this one.
-## vel, want_vel: her velocity and the one she is steering to (court x, z); yaw: where she faces (0 faces +z);
-## act: what her body does (Player.act; "signal" for an umpire's call); ball: the ball's centre (world) when she
-## holds it, else INF.
-func update(dt: float, vel: Vector2, want_vel: Vector2, yaw: float, act: String, ball: Vector3 = Vector3.INF) -> void:
+## vel, want_vel: her velocity and the one she is steering to (court x, z); yaw: where her body faces as the game draws
+## it (0 faces +z; the game's legs are made for it); act: what her body does (Player.act; "signal" for an umpire's
+## call); ball: the ball's centre (world) when she holds it, else INF; frame_dt: this frame's own seconds (the
+## skeleton's modifiers, the layer's fades), when dt sums the frames since it was last posed.
+func update(dt: float, vel: Vector2, want_vel: Vector2, yaw: float, act: String, ball: Vector3 = Vector3.INF, frame_dt := -1.0) -> void:
 	if dt <= 0.0 or not is_visible_in_tree():
 		return
+	if frame_dt <= 0.0:
+		frame_dt = dt
 	global_transform = Transform3D(Basis.IDENTITY, who.global_position)
 	var want := "move"
 	if kind == "reserve":
 		want = "full"
-	elif kind == "umpire":
-		want = "upper" if act == "signal" else "move"
 	elif who.has_method("anim_layer"):
-		# A player: Player.anim_layer (on the run a move keeps only its arms, and marking's and posting's arms go with
-		# the run: the owner's "arms just stretched out when running").
+		# A player or an umpire (Player.anim_layer, Umpire.anim_layer): the game's whole pose whenever she moves on
+		# her own legs (the game's gait: feet planted at any pace, in any direction), the capture standing still.
 		want = who.anim_layer()
 	elif act in FULL or holding_ball(ball):
 		want = "full"
@@ -257,17 +258,30 @@ func update(dt: float, vel: Vector2, want_vel: Vector2, yaw: float, act: String,
 		var w := 0.0 if want == "move" else 1.0
 		if mode == "":
 			legacy.weight = w      # (a new body starts as the game's: no blend in from nothing)
-		legacy.fade_to(w, 0.18)
+		# The legs handed over quickly (two poses of the feet blended slide between them); the arms alone more slowly.
+		legacy.fade_to(w, 0.12 if (mode == "full") != (want == "full") else 0.18)
+		if mode == "full" and loco:
+			# Back to the capture from the game's whole pose: the locomotor goes on from her speed and facing now (its
+			# smoothing still had the speed from before: bogus cuts and starts), the planter from no held feet.
+			loco.resume(Vector3(vel.x, 0, vel.y), yaw)
+			loco.planter.reset()
 		mode = want
 	body.visible = true
 	# Put somewhere new (a restart, a substitution): the feet are not held where they were.
 	if _at != Vector3.INF and who.global_position.distance_to(_at) > 1.5 and loco:
 		loco.planter.reset()
 	_at = who.global_position
+	_yaw = yaw
 	if loco:
-		loco.drive(dt, Vector3(vel.x, 0, vel.y), yaw, Vector3(want_vel.x, 0, want_vel.y))
-		# A move of the game's own has its feet where the game put them: the planter holds them only under the capture.
-		loco.planter.enabled = mode != "full"
+		# (Under the game's whole pose, once it is all the game's, the capture's animation is not run: nothing of it
+		# would show. resume() takes the locomotor on from her speed and facing when the capture has her again.)
+		if mode != "full" or legacy.weight < 0.999:
+			loco.drive(dt, Vector3(vel.x, 0, vel.y), yaw, Vector3(want_vel.x, 0, want_vel.y))
+		# A move of the game's own has its legs exactly as the game made them (its gait's planted feet, a landing, a
+		# leap): the planter keeps the pose (only the hips' lift, so lift_after stays hips_offset); under the capture
+		# it plants the clips' feet again (ADOPTING 5.10).
+		loco.planter.enabled = true
+		loco.planter.keep_pose = mode == "full"
 		if mode == "full":
 			loco.yaw = yaw
 			body.rotation.y = yaw
@@ -285,19 +299,23 @@ func update(dt: float, vel: Vector2, want_vel: Vector2, yaw: float, act: String,
 		ball_at = Vector3.INF
 		_ball_rel = Vector3.INF
 	# The skeleton's modifiers now, once (WsgBody.set_manual).
-	body.advance(dt)
+	body.advance(frame_dt)
+
+
+var _yaw := 0.0              # the yaw it was last given
 
 
 func holding_ball(ball: Vector3) -> bool:
 	return kind == "player" and ball != Vector3.INF
 
 
-## The fingers closed round the ball (a handle as wide as the ball across each palm: WsgGrip, solved once).
+## The fingers closed round the ball itself (WsgGrip.solve_sphere, as WsgBody.grip_sphere: each finger curled till
+## it touches the ball, not a ball-sized handle across the palm, which left fingers inside it; solved once).
 func _close_hands(w: float) -> void:
 	var sk := body.skeleton
 	for side in ["Left", "Right"]:
 		if not _grip.has(side):
-			var g := WsgGrip.solve(body.joints, side, Ball.R / _s())
+			var g := WsgGrip.solve_sphere(body.joints, side, Ball.R / _s())
 			var list := []
 			for b in g:
 				list.append([body.bone(b), g[b]])
@@ -327,7 +345,8 @@ func _on_posed() -> void:
 
 
 ## Set (the tests, the close-up tools): each posed frame keeps how far each palm's ball centre is from the ball the
-## game wanted (m), in last_hands {side: m, "gap": the two palms' centres apart}.
+## game wanted (m), in last_hands {side: m, "gap": the two palms' centres apart, "forearm": the nearest a forearm comes
+## to the drawn ball's centre}.
 var measure := false
 var last_hands := {}
 
@@ -339,6 +358,14 @@ func _measure() -> void:
 		pts[side] = body.bone_world(side + "Hand") * (_ball_v[side] as Vector3)
 		last_hands[side] = (pts[side] as Vector3).distance_to(want)
 	last_hands["gap"] = (pts.Left as Vector3).distance_to(pts.Right)
+	# And how near either forearm comes to the ball's centre (from the elbow to the wrist): the ball held in the hands,
+	# not against the forearms.
+	var near := INF
+	for side in ["Left", "Right"]:
+		var e := body.bone_world(side + "ForeArm").origin
+		var w := body.bone_world(side + "Hand").origin
+		near = minf(near, ball_at.distance_to(Geometry3D.get_closest_point_to_segment(ball_at, e, w)))
+	last_hands["forearm"] = near
 
 
 ## Both hands on the ball: each palm on its side of it, facing its centre, the fingers on along the forearm's line;
@@ -402,3 +429,128 @@ class BallLayer extends WsgPoseLayer:
 		super(delta)
 		pose = keep_pose
 		hips = keep_hips
+
+
+# ---------------------------------------------------------------- the feet
+
+## The rig's ankle against the game's, each standing at rest (m, in the game foot's frame, scaled): the two figures'
+## ankles are not at the same height over their soles, nor as far back from their toes.
+var _ankle_d := Vector3.ZERO
+
+
+func _feet_offset() -> void:
+	var gs := gb.skeleton
+	var i := gs.find_bone("foot_l")
+	if i < 0:
+		return
+	var game_ank := gs.get_bone_global_rest(i).origin * gb.scale.x
+	var rig_ank := (body.joints["LeftFoot"] as Vector3) * _s()
+	_ankle_d = Vector3(0.0, rig_ank.y - game_ank.y, rig_ank.z - game_ank.z) / maxf(gb.scale.x, 0.01)
+
+
+## Where the game has her leg this frame (world): [the ankle, as the rig's would be on that foot; the knee; the
+## foot's turn (its basis, unscaled: the rig's foot turned as the game's from their rests)].
+func game_leg(i: int) -> Array:
+	var gs := gb.skeleton
+	var s := "l" if i == 0 else "r"
+	var ft := gs.global_transform * gs.get_bone_global_pose(gs.find_bone("foot_" + s))
+	var kn := gs.global_transform * gs.get_bone_global_pose(gs.find_bone("shin_" + s)).origin
+	return [ft * _ankle_d, kn, ft.basis.orthonormalized()]
+
+
+## The drawn feet on the game's (Gait's, which plant each foot exactly where it comes down, 0 cm of slip:
+## tests/test_runner _gait_steps): each of the rig's ankles put where the game has that ankle, the leg reaching it
+## (two-bone IK, the knee toward the game's knee), the foot turned as the game's. Without it the rig's legs, of other
+## proportions, laid from the game's turns (WsgLegacyPose) put the feet 3 cm off and sliding with every step, and the
+## capture's idle swayed its own feet about under her as the game's stood still. Runs after the planter.
+class FeetLayer extends SkeletonModifier3D:
+	const LEGS := [["LeftUpLeg", "LeftLeg", "LeftFoot"], ["RightUpLeg", "RightLeg", "RightFoot"]]
+	var link: FoundationLink
+	var weight := 1.0
+	var _ix := []
+
+	func _process_modification_with_delta(_delta: float) -> void:
+		var sk := get_skeleton()
+		if sk == null or link == null or weight <= 0.0 or link.gb == null or link.gb.skeleton == null:
+			return
+		if _ix.is_empty():
+			for leg in LEGS:
+				_ix.append(leg.map(func(n): return sk.find_bone(n)))
+		var inv := sk.global_transform.affine_inverse()
+		var sb := sk.global_transform.basis.orthonormalized().inverse()
+		var legs := [link.game_leg(0), link.game_leg(1)]
+		# The hips lowered as far as a leg must for its foot to reach the game's (the rig's legs reach a little less far
+		# than the game's from where the game's hips put its hips: a trailing leg pushing off).
+		var drop := 0.0
+		for i in 2:
+			var hip := sk.get_bone_global_pose(_ix[i][0]).origin
+			var a := hip.distance_to(sk.get_bone_global_pose(_ix[i][1]).origin)
+			var b := sk.get_bone_global_pose(_ix[i][1]).origin.distance_to(sk.get_bone_global_pose(_ix[i][2]).origin)
+			var t: Vector3 = inv * (legs[i][0] as Vector3)
+			var r := (a + b) * 0.995
+			var flat := Vector2(t.x - hip.x, t.z - hip.z).length()
+			if hip.distance_to(t) > r and flat < r:
+				drop = maxf(drop, (hip.y - t.y) - sqrt(r * r - flat * flat))
+		# (Not while she holds the ball: her hands are on it where the game has it, and the hips would take them off.)
+		if drop > 0.0 and link.legacy.ball_w <= 0.0:
+			var hi := sk.find_bone("Hips")
+			var hg := sk.get_bone_global_pose(hi)
+			var par := sk.get_bone_parent(hi)
+			var pg := sk.get_bone_global_pose(par) if par >= 0 else Transform3D.IDENTITY
+			hg.origin.y -= minf(drop, 0.12) * weight
+			sk.set_bone_pose_position(hi, (pg.affine_inverse() * hg).origin)
+		for i in 2:
+			var g: Array = legs[i]
+			# The foot turned as the game's is in the world (both feet face the way their bodies do at rest).
+			var turn: Basis = sb * (g[2] as Basis) * sk.get_bone_global_rest(_ix[i][2]).basis
+			_leg(sk, _ix[i], inv * (g[0] as Vector3), inv * (g[1] as Vector3), turn)
+
+	## One leg (thigh, shin) turned so its ankle is at target (skeleton space), its knee bending toward knee_at, its
+	## foot turned to foot (skeleton space).
+	func _leg(sk: Skeleton3D, leg: Array, target: Vector3, knee_at: Vector3, foot: Basis) -> void:
+		var th := sk.get_bone_global_pose(leg[0])
+		var sh := sk.get_bone_global_pose(leg[1])
+		var ft := sk.get_bone_global_pose(leg[2])
+		var hip := th.origin
+		var knee := sh.origin
+		var a := hip.distance_to(knee)
+		var b := knee.distance_to(ft.origin)
+		var to := target - hip
+		if to.length() < 0.001:
+			return
+		var d := clampf(to.length(), absf(a - b) + 0.001, (a + b) * 0.999)
+		var dir := to.normalized()
+		target = hip + dir * d
+		if weight < 1.0:
+			target = ft.origin.lerp(target, weight)
+			to = target - hip
+			d = clampf(to.length(), absf(a - b) + 0.001, (a + b) * 0.999)
+			dir = to.normalized()
+		var x := (a * a - b * b + d * d) / (2.0 * d)
+		var h := sqrt(maxf(0.0, a * a - x * x))
+		var pole := (knee_at - hip) - dir * (knee_at - hip).dot(dir)
+		var fwd := th.basis * Vector3(0, 0, 1)
+		fwd -= dir * fwd.dot(dir)
+		if pole.length() < 0.01:
+			pole = fwd
+		var new_knee := hip + dir * x + pole.normalized() * h
+		var ankle := hip + dir * d
+		var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[0])).basis
+		var th_b := Basis(Quaternion((knee - hip).normalized(), (new_knee - hip).normalized())) * th.basis
+		# (The thigh rolled about its length so the knee's hinge is square to the leg's plane: WsgFootPlanter's way.)
+		var tdir := (new_knee - hip).normalized()
+		var normal := tdir.cross(ankle - new_knee)
+		if normal.length() > 1e-4:
+			normal = normal.normalized()
+			var hx := th_b * Vector3.RIGHT
+			if hx.dot(normal) < 0.0:
+				normal = -normal
+			var hx_flat := (hx - tdir * hx.dot(tdir)).normalized()
+			th_b = Basis(Quaternion(hx_flat, normal)) * th_b
+		sk.set_bone_pose_rotation(leg[0], (parent.inverse() * th_b).get_rotation_quaternion())
+		var sh_now := th_b * (th.basis.inverse() * sh.basis)
+		var sh_dir := sh_now * (sh.basis.inverse() * (ft.origin - knee)).normalized()
+		var sh_b := Basis(Quaternion(sh_dir.normalized(), (ankle - new_knee).normalized())) * sh_now
+		sk.set_bone_pose_rotation(leg[1], (th_b.inverse() * sh_b).get_rotation_quaternion())
+		var fb := foot if weight >= 1.0 else Basis(ft.basis.get_rotation_quaternion().slerp(foot.get_rotation_quaternion(), weight))
+		sk.set_bone_pose_rotation(leg[2], (sh_b.inverse() * fb).get_rotation_quaternion())

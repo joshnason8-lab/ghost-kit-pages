@@ -6,8 +6,9 @@ extends Node3D
 ## her goal line when the ball is in her circle or deep in her goal third, to see the shot and the contact from the
 ## end (as the umpires of a real international do, docs/MATCH_STUDY.md). She jogs, never sprints (unless play has
 ## run away from her); she stands still to blow, call and signal each decision as World Netball's signals show it
-## (Poses.signal), then points the award's direction. At a break she walks to the middle. A light teal shirt, dark
-## trousers.
+## (Poses.signal), then points the award's direction. At a break she walks to the middle. Drawn on every level with
+## the players' model (HeroBody: the owner's player, in the umpires' kit, a light teal shirt and dark trousers), her
+## feet stepping with the floor (Gait), standing at ease between calls (Poses.idle).
 
 const SPEED := 5.0            # catching up with play
 const JOG := 3.5              # her usual pace
@@ -32,6 +33,8 @@ var gait: Gait                # her feet, legs and arms on the move (as the play
 var body_yaw := 0.0           # where her body faces as drawn: the ball, or the way she runs when she jogs
 var _arms_w := 1.0
 var _pose := {}
+var _idle_t := 0.0
+var _var := Vector4(0.5, 0.5, 0.5, 0.5)   # her own way of standing (Poses.idle)
 
 
 func _init(p_half: int) -> void:
@@ -40,15 +43,18 @@ func _init(p_half: int) -> void:
 
 
 func _ready() -> void:
-	body = ToonBody.new({"umpire": true, "skin": Color("c48f62") if half < 0 else Color("8a5636"), "dress": Color("6fd6c6"),
-		"trim": Color("1c1b26"), "hair": Color("15100c"), "hair_style": 1 if half < 0 else 3, "height": 1.7, "pos": ""})
+	# (A human, not the old code-built figure: the owner's "the referees look too much like block figures".)
+	body = HeroBody.new({"umpire": true, "skin": Color("c48f62") if half < 0 else Color("8a5636"), "dress": Color("6fd6c6"),
+		"trim": Color("6fd6c6"), "bib": Color("6fd6c6"), "trousers": Color("1c1b26"), "shoe": Color("f3f1ee"),
+		"hair": Color("15100c") if half < 0 else Color("2a1d14"), "hair_style": 1 if half < 0 else 3, "height": 1.7 if half < 0 else 1.66, "pos": ""})
 	add_child(body)
 	if FoundationLink.enabled():
 		link = FoundationLink.new(self, body, "umpire")
 		add_child(link)
 	p = Vector2(7.0 * half, side * (Court.HALF_W + LINE))
 	position = Vector3(p.x, 0, p.y)
-	_pose = Poses.ready(0.3)
+	_var = Vector4(0.3, 0.7, 0.4, 0.6) if half < 0 else Vector4(0.8, 0.2, 0.7, 0.3)
+	_pose = Poses.idle(0.0, 0.0, _var)
 	gait = Gait.new(body)
 
 
@@ -138,11 +144,28 @@ func advance(dt: float, ball: Vector2) -> void:
 		if sig_t > 1.6:
 			sig = ""
 	else:
-		want_pose = Poses.ready(0.3)
+		_idle_t += dt
+		want_pose = Poses.idle(_idle_t, 0.0, _var)
 	_pose = Poses.blend(_pose, want_pose, 1.0 - exp(-12.0 * dt))
-	_arms_w = lerpf(_arms_w, 1.0 if sig != "" else 1.0 - smoothstep(0.8, 1.8, v), 1.0 - exp(-12.0 * dt))
+	# (A signal's arm comes up as she pulls up, not while she is still running.)
+	_arms_w = lerpf(_arms_w, 1.0 - smoothstep(1.4, 2.6, v) if sig != "" else 1.0 - smoothstep(0.8, 1.8, v), 1.0 - exp(-12.0 * dt))
 	gait.update(dt, p, vel, body_yaw)
-	var out := Gait.lay(gait.loco_pose(), _pose, _arms_w, maxf(1.0 - gait.move, _arms_w * 0.6), angle_difference(body_yaw, facing))
+	var body_w := maxf(1.0 - gait.move, _arms_w * 0.6)
+	var out := Gait.lay(gait.loco_pose(), _pose, _arms_w, body_w, angle_difference(body_yaw, facing))
+	out.hips_x = float(_pose.get("hips_x", 0.0)) * (1.0 - gait.move)
 	body.apply(gait.solve(out))
+	_still_t = _still_t + dt if v < 0.08 and want.length() < 0.08 and gait.feet[0].down and gait.feet[1].down and not gait.striding else 0.0
 	if link:
-		link.update(dt, vel, want, facing, "signal" if sig != "" else "")
+		link.update(dt, vel, want, body_yaw, "signal" if sig != "" else "")
+
+
+## Which of her the shared foundation takes from the game's (FoundationLink, as Player.anim_layer): on the move her
+## whole body is the game's (her gait's planted feet; the capture's walk and jog slid), standing still the capture's
+## idle, with her arms over it while she signals.
+var _still_t := 0.0
+
+
+func anim_layer() -> String:
+	if _still_t < 0.3:
+		return "full"
+	return "upper" if sig != "" else "move"

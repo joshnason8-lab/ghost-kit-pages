@@ -31,6 +31,12 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "body" in OS.get_cmdline_user_args():
+		# (Only the bodies on every path: tests/test_runner.tscn -- body)
+		await _body_checks()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -49,6 +55,7 @@ func _ready() -> void:
 	await _motion()
 	await _mocap()
 	await _gait_steps()
+	await _body_checks()
 	await _controls()
 	await _stick_camera()
 	await _league_options()
@@ -492,11 +499,13 @@ func _motion() -> void:
 	check(twice == 0, "each player's position written once a frame (%d frames otherwise)" % twice)
 	check(worst_jump <= 0.0001, "no player moves faster than she can run in a frame (worst over by %.3f m)" % worst_jump)
 	check(stride_bad == 0, "strides keep pace with speed (no more than 4.5 steps a second, sprinting)")
-	# The players are the owner's model (HeroBody), the umpires the code-built figure; a running player's legs come
-	# from the Mixamo clips; her bib carries her position's letters.
+	# The players are the owner's model (HeroBody), and the umpires too, in the umpires' kit (the owner: "the referees
+	# look too much like block figures, not humans"); her bib carries her position's letters.
 	var pl0: Player = m.players[0][0]
 	check(pl0.body is HeroBody and pl0.body.skeleton.get_bone_count() == ToonBody.BONES.size(), "a player is drawn with the owner's model, on the game's bones")
-	check(not (m.umpires[0].body is HeroBody), "an umpire keeps the code-built figure")
+	var um: ShaderMaterial = m.umpires[0].body.mesh_instance.material_override
+	check(m.umpires[0].body is HeroBody and float(um.get_shader_parameter("umpire")) > 0.5 and int(um.get_shader_parameter("letter")) == -1,
+		"an umpire is the players' model in the umpires' kit (no bib)")
 	var mat: ShaderMaterial = pl0.body.mesh_instance.material_override
 	check(mat.get_shader_parameter("letter") == ToonBody.LETTERS.find(pl0.pos) and mat.get_shader_parameter("letters") != null, "her bib carries her position's letters (%s)" % pl0.pos)
 	var ran := false
@@ -1932,6 +1941,301 @@ func _foundation(available: bool) -> void:
 	m.queue_free()
 	await frames(2)
 	Game.settings.graphics = was
+
+
+## The bodies on every path (the owner's notes of 0.8.6: feet that float, a shooter facing away, the ball in the
+## forearms, a rigid stance, block umpires).
+func _body_checks() -> void:
+	await _foundation_steps()
+	await _shots_and_hands()
+
+
+## Every shot in AI matches, on Low and (with the licensed clips) Medium: the shooter's drawn body faces the post from
+## her set to the release (within SHOT_FACE; the owner: "a player shooting, the woman facing the wrong direction and
+## not at the hoop"); and every frame the ball is held, the ball in her hands, not her forearms: Low, each palm's skin
+## within HAND_GAP of the ball's surface and neither forearm (elbow to wrist) inside the ball; the foundation's body,
+## each palm on the ball (its ball centre within HAND_GAP of the drawn ball's) and its forearms clear of it.
+const SHOT_FACE := 20.0
+const HAND_GAP := 0.02
+
+
+func _shots_and_hands() -> void:
+	var was: int = int(Game.settings.graphics)
+	var was_off := FoundationLink.off
+	var levels := [Game.GFX_LOW]
+	if WsgClips.available() and ResourceLoader.exists(FoundationLink.DIR + "hero_rig.json"):
+		levels.append(Game.GFX_MEDIUM)
+	for g in levels:
+		Game.settings.graphics = g
+		FoundationLink.off = g == Game.GFX_LOW
+		var lv := "Low" if g == Game.GFX_LOW else "Medium (the foundation)"
+		var shots := 0
+		var face_worst := 0.0
+		var face_frames := 0
+		var held := 0
+		var palm_worst := 0.0
+		var arm_near := INF
+		var off_n := 0
+		var off_by := {}
+		var palm_who := ""
+		var who := ""
+		for seed in [11, 12]:
+			var m := _study_match(seed, {"venue": "hall" if seed == 12 else "arena"})
+			await frames(3)
+			var shooter: Player = null
+			for f in 2700:
+				await get_tree().process_frame
+				if m.phase == "replay":
+					continue
+				var h: Player = m.holder
+				if h and h.act == "shoot" and h.has_ball():
+					if shooter != h:
+						shots += 1
+						shooter = h
+					if h.act_t >= 0.25:
+						# Her body as drawn: the foundation's when it draws her, else the game's.
+						var bz: Vector3 = h.link.body.global_transform.basis.z if h.link and h.link.body.visible else h.body.global_transform.basis.z
+						var post := Court.goal_post(h.dir)
+						var err := absf(rad_to_deg(angle_difference(atan2(bz.x, bz.z), atan2(post.x - h.p.x, post.y - h.p.y))))
+						face_frames += 1
+						if err > face_worst:
+							face_worst = err
+							who = "%s, %.2f s into the shot" % [h.pos, h.act_t]
+				else:
+					shooter = null
+				if h == null or not h.has_ball() or m.ball.state != "held":
+					continue
+				var c: Vector3 = m.ball.position
+				if g == Game.GFX_LOW:
+					held += 1
+					for s in ["l", "r"]:
+						var ht := h.body.skeleton.global_transform * h.body.skeleton.get_bone_global_pose(h.body.bone("hand_" + s))
+						var palm := ht * Player.PALM
+						var skin := absf(palm.distance_to(c) - Ball.R - Player.PALM_T * h.body.scale.x)
+						if skin > HAND_GAP:
+							off_n += 1
+						if skin > palm_worst:
+							palm_who = "%s %s t %.2f land %.2f" % [h.pos, h.act, h.act_t, h.land_w]
+						palm_worst = maxf(palm_worst, skin)
+						var e := h.body.bone_world("forearm_" + s)
+						var w := h.body.bone_world("hand_" + s)
+						arm_near = minf(arm_near, c.distance_to(Geometry3D.get_closest_point_to_segment(c, e, w)))
+				elif h.link:
+					h.link.measure = true
+					if h.link.holding and not h.link.last_hands.is_empty():
+						held += 1
+						var pw := maxf(float(h.link.last_hands.get("Left", 0.0)), float(h.link.last_hands.get("Right", 0.0)))
+						if pw > HAND_GAP:
+							off_n += 1
+							var key := "%s@%.1f" % [h.act, snappedf(h.act_t, 0.1)]
+							off_by[key] = int(off_by.get(key, 0)) + 1
+						if pw > palm_worst:
+							palm_who = "%s %s t %.2f land %.2f mode %s w %.2f" % [h.pos, h.act, h.act_t, h.land_w, h.link.mode, h.link.legacy.weight]
+						palm_worst = maxf(palm_worst, pw)
+						arm_near = minf(arm_near, float(h.link.last_hands.get("forearm", INF)))
+				if shots >= 6 and f > 900:
+					break
+			m.queue_free()
+			await frames(2)
+		check(shots >= 3 and face_frames > 0 and face_worst < SHOT_FACE, "%s: every shooter faces the post as she shoots (%d shots, %.0f deg off at most: %s)" % [lv, shots, face_worst, who])
+		check(held > 200 and palm_worst < HAND_GAP and arm_near > Ball.R * 0.98, "%s: the ball in her hands (%d frames held: a palm %.1f cm off the ball at most, a forearm %.1f cm from its centre at nearest, the ball's radius %.1f cm)" % [lv, held, palm_worst * 100.0, arm_near * 100.0, Ball.R * 100.0])
+		if not off_by.is_empty():
+			print("body: palms off by move: ", off_by)
+		print("body: %s: %d shots, the shooter %.1f deg off the post at most; %d frames held, a palm %.1f cm off the ball at most (%s; %d frames over %.0f cm), a forearm %.1f cm from its centre at nearest" % [lv, shots, face_worst, held, palm_worst * 100.0, palm_who, off_n, HAND_GAP * 100.0, arm_near * 100.0])
+	Game.settings.graphics = was
+	FoundationLink.off = was_off
+
+
+## The run as the shared foundation draws it (Medium and High with the licensed clips; skipped without them, as on
+## CI's machines without the library): a drawn foot on the floor stays where it came down (its ankle or its toe moves
+## less than LINK_SLIP over the time it is down), running at a jog, a run and a sprint, side-stepping, defending on the
+## move, passing on the run and pulling up; and in AI matches, every player's drawn feet, whatever her move, near the
+## camera or far from it (posed every 2nd or 3rd frame). The owner's "players floating around and not moving legs".
+const LINK_SLIP := 0.05
+
+
+func _foundation_steps() -> void:
+	if not WsgClips.available() or not ResourceLoader.exists(FoundationLink.DIR + "hero_rig.json"):
+		print("foundation steps: skipped (no licensed clips here)")
+		return
+	var was_off := FoundationLink.off
+	FoundationLink.off = false
+	var was: int = int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_MEDIUM
+	var sq: Array = DB.squad("NZL")
+	for case: Array in [["run", 2.0, 0.0], ["run", 3.5, 0.0], ["run", 5.0, 0.0], ["run", 6.8, 0.0], ["run", 7.2, 0.0],
+			["mark", 4.0, 1.0], ["defend", 3.0, 0.0], ["pass", 4.0, 0.0], ["catch", 5.0, 0.0], ["run", 3.0, -1.0]]:
+		var pl := Player.new(0, sq[2], "WA")
+		add_child(pl)
+		await frames(1)
+		if pl.link == null:
+			check(false, "foundation steps: a link (Medium, the clips here)")
+			pl.queue_free()
+			break
+		pl.fenced = false
+		pl.place(Vector2.ZERO, 0.0)
+		var act: String = case[0]
+		var spd: float = case[1]
+		var look: float = case[2]
+		var go := Vector2(1, 0) if look > 0.0 else Vector2(0, 1)
+		var st := _rig_state()
+		for f in 150:
+			pl.set_act(act, "chest" if act == "pass" else "")
+			if act in ["pass", "catch"] and f % 20 == 0:
+				pl.act_t = 0.0
+			pl.target = pl.p + go * 8.0
+			pl.want_speed = spd
+			pl.look_on = look != 0.0
+			pl.look_at_p = pl.p + Vector2(0, 10) if look > 0.0 else pl.p - go * 10.0
+			pl.advance(1.0 / 30.0)
+			await get_tree().process_frame      # (the drawn body's modifiers run at the frame's end)
+			_rig_measure(pl.link, st, f >= 30)
+		var what := "foundation, a player %s at %.1f m/s%s" % ["running" if act == "run" else act + "ing", pl.vel.length(),
+			" (sideways)" if look > 0.0 else (" (the ball behind her)" if look < 0.0 else "")]
+		check(st.slip < LINK_SLIP and st.steps >= 4, "%s: a drawn foot on the floor moves %.1f cm at most (%d steps, mode %s)" % [what, st.slip * 100.0, st.steps, pl.link.mode])
+		print("foundation steps: %s: slip %.1f cm, %d steps, mode %s, keep_pose %s (%s)" % [what, st.slip * 100.0, st.steps, pl.link.mode, pl.link.loco.planter.get("keep_pose"), st.get("slip_at", "")])
+		if act == "run" and is_equal_approx(spd, 6.8):
+			var stop := _rig_state()
+			for f in 60:
+				pl.target = pl.p
+				pl.want_speed = 0.0
+				pl.advance(1.0 / 30.0)
+				await get_tree().process_frame
+				_rig_measure(pl.link, stop, true)
+			check(stop.slip < LINK_SLIP, "foundation, pulling up from a sprint: a drawn foot moves %.1f cm at most" % [stop.slip * 100.0])
+			print("foundation steps: pulling up from 6.8 m/s: slip %.1f cm, %d steps (%s)" % [stop.slip * 100.0, stop.steps, stop.get("slip_at", "")])
+		pl.queue_free()
+		await frames(1)
+	for mc: Array in [["arena", 6], ["hall", 9]]:
+		await _foundation_match(mc[0], mc[1])
+	Game.settings.graphics = was
+	FoundationLink.off = was_off
+
+
+func _rig_state() -> Dictionary:
+	return {"slip": 0.0, "steps": 0}
+
+
+## One frame of a drawn body's feet into st, as drawn: where its skeleton last put them (kept as it is posed: the
+## bones read anywhere else are without its modifiers), carried along with the body between its poses. Each foot's
+## heel, ball and the spot under its ankle (on the floor, standing) are followed: a foot is on the floor while the
+## lower of its heel and ball is within 3 cm of the floor and the foot is down (the game's gait, which the drawn feet
+## are put on: a swinging foot skims the floor too, walking); slip is the furthest it has moved since it came down (the
+## heel's, the ball's or the ankle's spot, whichever moved least: rolling heel to toe keeps one of them still), as
+## _gait_measure has it for the game's own bodies.
+func _rig_measure(l: FoundationLink, st: Dictionary, on: bool) -> void:
+	var b := l.body
+	if not b.has_meta("hooked"):
+		_rig_hook(l)
+	if not b.has_meta("feet"):
+		return      # (not posed since: its bones read now would be without its modifiers)
+	var sk := b.skeleton
+	var pts: Array = b.get_meta("feet")
+	var at := Vector2(l.global_position.x, l.global_position.z)
+	if st.has("pos") and at.distance_to(st.pos) > 1.0:
+		on = false      # (put somewhere new: a restart)
+	st.pos = at
+	for i in 2:
+		var heel: Vector3 = sk.global_transform * (pts[i * 3] as Vector3)
+		var ball: Vector3 = sk.global_transform * (pts[i * 3 + 1] as Vector3)
+		var mid: Vector3 = sk.global_transform * (pts[i * 3 + 2] as Vector3)
+		var h := minf(heel.y, ball.y)
+		var k := str(i)
+		var down := float(l.loco.planter.contact[i]) > 0.5
+		if l.get("feet") and l.who.get("gait"):
+			down = (l.who.gait.feet[i] as Gait.Foot).down
+		if on and h < 0.03 and down:
+			if not st.has("a" + k):
+				st["a" + k] = Vector2(heel.x, heel.z)
+				st["t" + k] = Vector2(ball.x, ball.z)
+				st["m" + k] = Vector2(mid.x, mid.z)
+				st.steps += 1
+			var d := minf(minf(Vector2(heel.x, heel.z).distance_to(st["a" + k]), Vector2(ball.x, ball.z).distance_to(st["t" + k])),
+				Vector2(mid.x, mid.z).distance_to(st["m" + k]))
+			st["d" + k] = d
+			st["n" + k] = int(st.get("n" + k, 0)) + 1
+			if d > st.slip:
+				st.slip_at = "foot %d, %d frames down, h %.3f, %s" % [i, st["n" + k], h, l.mode]
+			st.slip = maxf(st.slip, d)
+		else:
+			st.erase("a" + k)
+			st.erase("d" + k)
+			st.erase("n" + k)
+
+
+## Keeps a drawn body's heels and balls of the feet as each pose leaves them (skeleton space): each a point fixed in
+## its foot, found standing at rest (under the ankle 5 cm back, under the toes, and under the ankle, on the floor).
+func _rig_hook(l: FoundationLink) -> void:
+	var b := l.body
+	var sk := b.skeleton
+	var feet := []
+	for side in ["Left", "Right"]:
+		var fi := sk.find_bone(side + "Foot")
+		var rest := sk.get_bone_global_rest(fi)
+		var ank := rest.origin
+		var toe := sk.get_bone_global_rest(sk.find_bone(side + "ToeBase")).origin
+		feet.append([fi, rest.affine_inverse() * Vector3(ank.x, 0.0, ank.z - 0.05), rest.affine_inverse() * Vector3(toe.x, 0.0, toe.z),
+			rest.affine_inverse() * Vector3(ank.x, 0.0, ank.z)])
+	var keep := func():
+		var out := []
+		for f in feet:
+			var t := sk.get_bone_global_pose(f[0])
+			out.append(t * (f[1] as Vector3))
+			out.append(t * (f[2] as Vector3))
+			out.append(t * (f[3] as Vector3))
+		b.set_meta("feet", out)
+	b.set_meta("hooked", true)
+	b.posed.connect(keep)
+
+
+## An AI match on Medium with the foundation drawing everyone: every player's drawn feet, every frame (as drawn, posed
+## or carried along between poses), and who skates and what she was doing.
+func _foundation_match(venue: String, seed: int) -> void:
+	var m := _study_match(seed, {"venue": venue})
+	await frames(5)
+	var people: Array = m.players[0] + m.players[1] + m.umpires
+	var all := {}
+	var own := {}
+	for q in people:
+		all[q] = _rig_state()
+		own[q] = {"slip": 0.0, "bend_lo": 999.0, "bend_hi": 0.0, "out": 0.0, "abd": 0.0, "steps": 0}
+	var worst := 0.0
+	var game_worst := 0.0
+	var who := ""
+	var over := {}
+	var frames_n := 0
+	for f in 600:
+		await get_tree().process_frame
+		if m.phase == "replay" or (m.phase in ["setup", "goal", "break"] and m.phase_t < 0.1):
+			for q in people:
+				all[q] = _rig_state()
+				own[q] = {"slip": 0.0, "bend_lo": 999.0, "bend_hi": 0.0, "out": 0.0, "abd": 0.0, "steps": 0}
+			continue
+		for q in people:
+			if q.link == null or not q.link.body.is_visible_in_tree():
+				continue
+			var st: Dictionary = all[q]
+			var s0: float = st.slip
+			var own_legs: bool = not (q is Player) or (q.legs_w > 0.99 and q.land_w <= 0.0)
+			# (Her feet measured while they are the gait's, as on Low: not in a leap or the landing's motion capture.)
+			_rig_measure(q.link, st, own_legs)
+			# (The game's own feet, which the drawn ones are put on: the same measure as _gait_in_match's.)
+			_gait_measure(q.gait, q.body, own[q], own_legs, false)
+			game_worst = maxf(game_worst, float(own[q].slip))
+			frames_n += 1
+			for k in ["d0", "d1"]:
+				if float(st.get(k, 0.0)) > LINK_SLIP:
+					var key := "%s/%s/%s" % [q.act if q is Player else "umpire", q.link.mode, "fast" if q.vel.length() > 5.5 else ("run" if q.vel.length() > 1.5 else "slow")]
+					over[key] = int(over.get(key, 0)) + 1
+			if st.slip > s0 and st.slip > worst:
+				worst = st.slip
+				who = "%s (%s, %s, %.1f m/s, posed every %d, keep_pose %s, f %d; %s; the game's own foot %.1f cm)" % [q.pos + str(q.team) if q is Player else "umpire",
+					q.act if q is Player else "", q.link.mode, q.vel.length(), q.pose_every if q is Player else 1, q.link.loco.planter.get("keep_pose"), f,
+					st.get("slip_at", ""), float(own[q].slip) * 100.0]
+	check(worst < LINK_SLIP, "foundation, a match (Medium, %s): no drawn foot on the floor moves more than %.1f cm (%s)" % [venue, worst * 100.0, who])
+	print("foundation steps: a match (Medium, %s): slip %.1f cm at most (%s); the game's own feet %.1f cm at most; frames over %.0f cm by act/mode/pace: %s" % [venue, worst * 100.0, who, game_worst * 100.0, LINK_SLIP * 100.0, over])
+	m.queue_free()
+	await frames(2)
 
 
 ## The replays (with the foundation; Medium): a goal's after the TV camera's close shot of the post, never with it
