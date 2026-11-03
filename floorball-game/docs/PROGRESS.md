@@ -227,6 +227,15 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.15-beta: the lower hand on the stick at Steady pace (3 November 2026)
+
+- At Steady pace (80%, the phone's default) a sprinting shooter up close had his lower fist off the shaft in 6% of
+  frames (the owner's note holding-stick-up-close, failing in CI's fresh settings; a stale local settings file had
+  Real pace). With the lower arm at full stretch the stick's turn about the top fist toward it was refused whenever it
+  would take the blade into the floor. Now it turns up to 20 degrees and slides up along its own line (the shaft's
+  line, both fists on it, unchanged) to keep the blade on the floor. 494 of 517 frames on the shaft (95% needed).
+- Local checks now run from the game's default settings, as CI's do. 0.9.15-beta, code 30.
+
 ### 0.9.14-beta: the goal frame solid along the floor; replays cleared (3 November 2026)
 
 - Ball._collide_goals keeps the ball clear of the goal frame's tubes along the floor (2.4 cm, as Arena's solid frame):

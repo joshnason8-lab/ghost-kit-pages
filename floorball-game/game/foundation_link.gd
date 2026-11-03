@@ -572,6 +572,12 @@ static func _along(q0: Quaternion, dir: Vector3) -> Quaternion:
 	return (Quaternion(across, to) * q0).normalized()
 
 
+## How far the stick may turn about the top fist toward the lower one (degrees), and slide up along its line to keep
+## its blade off the floor as it does.
+const LOW_TURN_MAX := 20.0
+const LOW_SLIDE_MAX := 0.06
+
+
 ## The stick where the game's body has it, once the skeleton has its final pose; moved across (never more than a few
 ## cm) to run through the top fist should the arm not have quite reached it. Its place in the top hand is kept for the
 ## replay, which draws it so. And the hips: this body lowered (or raised) toward the game's top shoulder's height,
@@ -597,14 +603,23 @@ func _place_stick() -> void:
 	# should that arm not have quite reached the shaft.
 	var fist: Vector3 = hand * ((_grip_pt[top] as Vector3) - (body.joints[top + "Hand"] as Vector3))
 	xf = _turn_about(xf, heel, xf.origin, fist, 15.0)
-	# And about the top fist (at most 10 degrees, never lowering the blade into the floor) toward the lower fist, should
+	# And about the top fist (at most LOW_TURN_MAX, never lowering the blade into the floor) toward the lower fist, should
 	# that arm not have reached it (a pass's follow-through across the chest).
 	var lo: Vector3 = body.bone_world(low + "Hand") * ((_grip_pt[low] as Vector3) - (body.joints[low + "Hand"] as Vector3))
 	var d := (xf.basis * Vector3.DOWN).normalized()
 	var pivot := xf.origin + d * d.dot(fist - xf.origin)
-	if _low_w > 0.5 and d.dot(lo - pivot) > 0.08 * s:
-		var turned := _turn_about(xf, pivot, xf * Vector3(0, -Body.STICK_LEN * 0.5, 0), lo, 10.0)
+	# (Should that take the blade into the floor, the stick slides up along its own line - the shaft's line, and so both
+	# fists on it, unchanged - until the blade is back on it: at full stretch on a sprint, Steady pace, the turn refused
+	# outright left the lower fist off the shaft for a frame now and then.)
+	if _low_w > 0.5 and d.dot(lo - pivot) > 0.04 * s:
+		var turned := _turn_about(xf, pivot, xf * Vector3(0, -Body.STICK_LEN * 0.5, 0), lo, LOW_TURN_MAX)
 		var h2 := turned * Vector3(0, -Body.STICK_LEN, 0)
+		var up := turned.basis.y.normalized()
+		if h2.y < floor_y and up.y > 0.3:
+			var by := (floor_y - h2.y) / up.y
+			if by <= LOW_SLIDE_MAX * s:
+				turned.origin += up * by
+				h2 = turned * Vector3(0, -Body.STICK_LEN, 0)
 		if h2.y >= floor_y - 0.005 * s:
 			xf = turned
 	stick.global_transform = xf
