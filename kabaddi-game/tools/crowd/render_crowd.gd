@@ -14,7 +14,8 @@ extends Node3D
 
 const CELL := Vector2i(144, 245)         # pixels a person
 const SS := 2                            # rendered at twice the size, then shrunk
-const SEAT_TILT := 16.0                 # degrees the seated frames are seen from above
+const SEAT_TILT := 30.0                 # degrees the seated frames are seen from above (16: from the front a lap all but
+                                         # vanished and the fans read as people standing sunk in their seats; the owner, 2026-11)
 const CELL_H := 2.312                    # metres a cell covers top to bottom (9.4 mm a pixel)
 const FRAMES := ["sit", "clap_open", "clap", "stand", "stand_clap_open", "stand_clap", "stand_arms_up", "stand_pump",
 	"sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r"]
@@ -31,7 +32,9 @@ const LOWER_BONES := ["Hips"]
 const RECOLOUR := ["tshirt", "jersey", "boy"]
 ## Where each limb points in each frame, for the person's left side (x out from the body, y up, z forward);
 ## the right side mirrors it. Bones not listed keep their rest pose.
-const SIT_LEGS := {"UpLeg": Vector3(0.1, -0.05, 1.0), "Leg": Vector3(0.03, -1.0, 0.12), "Foot": Vector3(0.0, -0.25, 1.0)}
+## Seated: thighs forward and a little apart, shins down and forward to the feet on the step below, so knees and laps
+## read as sitting.
+const SIT_LEGS := {"UpLeg": Vector3(0.2, -0.08, 1.0), "Leg": Vector3(0.06, -1.0, 0.35), "Foot": Vector3(0.0, -0.25, 1.0)}
 const ARMS := {
 	"sit": {"Arm": Vector3(0.12, -1.0, 0.3), "ForeArm": Vector3(-0.05, -0.45, 1.0)},
 	"clap_open": {"Arm": Vector3(0.18, -0.85, 0.5), "ForeArm": Vector3(-0.35, 0.35, 0.85)},
