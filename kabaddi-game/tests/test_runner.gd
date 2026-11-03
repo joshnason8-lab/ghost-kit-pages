@@ -1304,6 +1304,27 @@ func _run() -> void:
 	Game.go_back()
 	await frames(3)
 
+	# Runners run straight-legged, not bow-legged: in every locomotion clip, on the game's leg (hips 0.1 m out, thigh
+	# 0.44, shin 0.39), no knee stands out sideways from the line hip to ankle by more than 2 cm (a shuffle, 4.5).
+	var bow_worst := {}
+	for bf in DirAccess.get_files_at(MocapClip.DIR):
+		if not (bf.begins_with("move_") and bf.ends_with(".json")):
+			continue
+		var bc := MocapClip.load_file(MocapClip.DIR.path_join(bf))
+		var bmax := 0.0
+		for i in 24:
+			var bp: Dictionary = bc.sample_pose(bc.length * i / 24.0, true)
+			var pel: Quaternion = bp.get("pelvis", Quaternion.IDENTITY)
+			for side in [["l", -1.0], ["r", 1.0]]:
+				var hip := pel * Vector3(0.1 * side[1], -0.04, 0)
+				var qh: Quaternion = pel * (bp.get("hip_" + side[0], Quaternion.IDENTITY) as Quaternion)
+				var knee := hip + qh * Vector3(0, -0.44, 0)
+				var ank := knee + (qh * (bp.get("kn_" + side[0], Quaternion.IDENTITY) as Quaternion)) * Vector3(0, -0.39, 0)
+				bmax = maxf(bmax, (knee - (hip + ank) * 0.5).dot(pel * Vector3(side[1], 0, 0)))
+		bow_worst[bf.get_basename()] = snappedf(bmax, 0.001)
+	check(bow_worst.size() >= 8 and bow_worst.keys().all(func(k): return float(bow_worst[k]) <= (0.045 if "shuffle" in k else 0.02)),
+		"runners run straight-legged: no knee bowed out from hip to ankle by more than 2 cm in any running clip %s" % str(bow_worst))
+
 	# Up from a dive: a get-up at a human pace (at least GETUP_MIN, his clip at most 1.4 times its own), no knee
 	# snapping, and up into his ready crouch, not stood up straight and dropped into it.
 	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
