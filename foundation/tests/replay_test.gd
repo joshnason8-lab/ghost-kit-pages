@@ -123,6 +123,31 @@ func _initialize() -> void:
 		advanced, rad_to_deg((turns[0] as Quaternion).angle_to(turns[1])), rad_to_deg((turns[1] as Quaternion).angle_to(turns[2]))])
 	if advanced > 11 or (turns[0] as Quaternion).angle_to(turns[1]) < 0.05:
 		fails.append("manual body: drawn %d times; replay moments the same" % advanced)
+	# A body not yet posed (its first update, still at rest: posed only once the camera sees it) is not kept - the
+	# replay drew it a frame in a T-pose (Hurling); once a pose is on it, it is.
+	var fresh := WsgBody.new(ch)
+	root.add_child(fresh)
+	var fl := WsgPoseLayer.new()
+	fresh.skeleton.add_child(fl)
+	var ring2 := WsgReplay.new()
+	root.add_child(ring2)
+	for f in 6:
+		if f == 3:
+			fl.weight = 1.0
+			fl.set_pose({"LeftArm": Quaternion(Vector3.FORWARD, 0.6)})
+		ring2.record(f / 15.0)
+		await process_frame
+		await process_frame
+	var fid := fresh.get_instance_id()
+	var kept_at := []
+	for fr in ring2._frames:
+		if (fr[1] as Dictionary).has(fid):
+			kept_at.append(snappedf(float(fr[0]), 0.01))
+	print("a body not yet posed: kept from %s (posed from 0.2)" % [kept_at])
+	if kept_at.is_empty() or float(kept_at[0]) < 0.19:
+		fails.append("a body still at rest was kept (from %s)" % [kept_at])
+	ring2.queue_free()
+	fresh.queue_free()
 	# The ring's size: a budget phone's Low (4 s at 15) for 38 bodies.
 	var per_body: int = (rp._frames[-1][1] as Dictionary).values()[0].size() * 4
 	WsgFoundation.profile = "budget"
