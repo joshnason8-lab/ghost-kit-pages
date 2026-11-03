@@ -122,6 +122,13 @@ func state() -> Dictionary:
 	if not over:   # (the set being played: at the end, its points are the last set's, already counted)
 		total[0] += int(m.points[0])
 		total[1] += int(m.points[1])
+	# A point on a line call stands only once nobody can challenge it any more: while the call is open (the few
+	# seconds after it) or under video review, it is the side's on the scoreboard but not yet won. An overturned call
+	# takes it back and gives it to the other side (Match._end_review, the game's rule), so the scoreboard does go
+	# down by one then; counted as won only when it stands, the score here only goes up.
+	for call: Dictionary in [m._pending_call, m._review]:
+		if not call.is_empty() and not over:
+			total[int(call.winner)] -= 1
 	var st := int(m.state)
 	return {"score": total, "clock": float(m.now), "clock_running": not bool(m.paused) and st != int(m.S.REPLAY) and st != int(m.S.OVER),
 		"phase": "over" if st == int(m.S.OVER) else "set %d" % (m.set_scores.size() + 1), "possession": m._serving_side(),
@@ -189,7 +196,8 @@ func bounds() -> AABB:
 	return AABB(Vector3(r.position.x - 1.0, -0.5, r.position.y - 1.0), Vector3(r.size.x + 2.0, 40.0, r.size.y + 2.0))
 
 
-## Rally-point scoring: a point at a time (the score here: the points won over every set, never going down).
+## Rally-point scoring: a point at a time (the score here: the points won over every set, counted once their call can
+## no longer be challenged: never going down).
 func score_steps() -> Array:
 	return [1]
 

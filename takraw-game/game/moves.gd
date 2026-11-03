@@ -105,7 +105,7 @@ static func _build() -> void:
 		"chest": [
 			[0.0, {}],
 			[0.45, {"spine": Vector3(-18, 0, 0), "chest": Vector3(-14, 0, 0), "head": Vector3(18, 0, 0),
-				"upperarm_l": Vector3(35, 0, 48), "upperarm_r": Vector3(35, 0, -48), "forearm_l": Vector3(-20, 0, 0), "forearm_r": Vector3(-20, 0, 0),
+				"upperarm_l": Vector3(42, 0, 46), "upperarm_r": Vector3(42, 0, -46), "forearm_l": Vector3(-48, 0, 0), "forearm_r": Vector3(-48, 0, 0),
 				"thigh_l": Vector3(-12, 0, 8), "thigh_r": Vector3(-12, 0, -8), "shin_l": Vector3(30, 0, 0), "shin_r": Vector3(30, 0, 0)}],
 			[1.0, {}],
 		],

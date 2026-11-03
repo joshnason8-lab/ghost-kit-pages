@@ -2080,6 +2080,12 @@ func _start_replay() -> void:
 			_replay_frames.pop_front()
 		wsg_replay.play(t0, float(clip[-1][0]), clip)
 		FoundationLink.frozen = true
+		# (Their foot planters stand aside while it plays: the replay has the last word on every bone, the feet are the
+		# recording's, not held by a planter. Each link turns its planter back on at its next pose after the replay.)
+		for b in _all_bodies():
+			var link: FoundationLink = (b as RealBody).link
+			if link and link.loco:
+				link.loco.planter.enabled = false
 		_keep_places = []
 		for side in 2:
 			for pp in players_on(side):
