@@ -123,7 +123,8 @@ func venue(id: String) -> Dictionary:
 
 
 func venues_for(rules: String) -> Array:
-	return VENUE_ORDER.filter(func(v): return String(VENUES[v].rules) == rules)
+	var court := "classic" if rules == "maya" else rules   # the revival plays on the stone courts
+	return VENUE_ORDER.filter(func(v): return String(VENUES[v].rules) == court)
 
 
 ## Teams that fit a court's rules first (the Sinaloa towns for ulama, the Maya towns for the stone court), then the rest.

@@ -291,5 +291,15 @@
   "PRIV_CONTACT_TEXT": "Questions sur la confidentialité : joshnason8@gmail.com. Pok Ta Pok Rivals est fait par Josh Nason.",
   "WHY_TWICE": "Le camp de {name} a frappé deux fois de suite",
   "POINTS_TO": "{n} points pour {team}",
-  "HALF_TIME": "Mi-temps"
+  "HALF_TIME": "Mi-temps",
+  "RULES_NAME_MAYA": "Pelota maya (renouveau)",
+  "RULES_NOTE_MAYA": "Le pok-ta-pok renaissant, tel qu'on le joue aujourd'hui au Guatemala : quatre par camp, la hanche seule, une frappe par camp avant que la balle ne traverse, 4 points au-delà de la ligne de fond, et l'anneau gagne le match. Deux mi-temps au chronomètre.",
+  "THE_GAME": "Le jeu",
+  "HALVES_N": "2 × {n} min",
+  "LENGTH_NOTE_MAYA": "Au Guatemala, on joue deux mi-temps de 13 minutes. À la fin, le camp qui mène aux points gagne ; à égalité, le point suivant gagne.",
+  "CUP_KIND_MAYA": "Sur les terrains de pierre, comme au Guatemala aujourd'hui.",
+  "RULES_MAYA": "Pelota maya (renouveau)",
+  "RULES_MAYA_TEXT": "Le jeu qui renaît aujourd'hui au Guatemala, au Belize, au Yucatán et au Quintana Roo, joué ici selon les règles du Guatemala sur les terrains de pierre. Quatre par camp, la hanche seule. Chaque camp frappe une fois, puis la balle doit passer chez l'autre. La balle au-delà de la ligne de fond adverse vaut 4 points. L'anneau gagne le match. Deux mi-temps de 13 minutes : le camp qui mène aux points à la fin gagne.",
+  "RULES_MAYA_RECON": "Pelota maya : reconstitué",
+  "RULES_MAYA_RECON_TEXT": "Les sources ne disent pas tout, alors ces points suivent l'ulama et sont reconstitués : une balle qui meurt dans votre moitié ou sort sur le côté donne 1 point à l'autre camp ; une touche avec autre chose que la hanche, ou une deuxième frappe de suite de votre camp, leur donne 1 point ; le service est lancé pour rebondir ; à égalité à la fin, le point suivant gagne."
 }

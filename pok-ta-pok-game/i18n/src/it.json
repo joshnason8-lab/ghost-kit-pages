@@ -291,5 +291,15 @@
   "PRIV_CONTACT_TEXT": "Domande sulla privacy: joshnason8@gmail.com. Pok Ta Pok Rivals è fatto da Josh Nason.",
   "WHY_TWICE": "La squadra di {name} ha colpito due volte di fila",
   "POINTS_TO": "{n} punti a {team}",
-  "HALF_TIME": "Intervallo"
+  "HALF_TIME": "Intervallo",
+  "RULES_NAME_MAYA": "Pelota maya (rinascita)",
+  "RULES_NOTE_MAYA": "Il pok-ta-pok rinato, come si gioca oggi in Guatemala: quattro per parte, solo l'anca, un colpo per parte prima che la palla passi, 4 punti oltre la linea di fondo, e l'anello vince la partita. Due tempi a cronometro.",
+  "THE_GAME": "Il gioco",
+  "HALVES_N": "2 × {n} min",
+  "LENGTH_NOTE_MAYA": "In Guatemala si giocano due tempi da 13 minuti. Alla fine vince la parte in vantaggio ai punti; in parità, vince il punto successivo.",
+  "CUP_KIND_MAYA": "Sui campi di pietra, come si gioca oggi in Guatemala.",
+  "RULES_MAYA": "Pelota maya (rinascita)",
+  "RULES_MAYA_TEXT": "Il gioco rinato oggi in Guatemala, Belize, Yucatán e Quintana Roo, giocato qui con le regole del Guatemala sui campi di pietra. Quattro per parte, solo l'anca. Ogni parte colpisce una volta, poi la palla deve passare dall'altra parte. La palla oltre la linea di fondo avversaria vale 4 punti. L'anello vince la partita. Due tempi da 13 minuti: alla fine vince la parte in vantaggio ai punti.",
+  "RULES_MAYA_RECON": "Pelota maya: ricostruito",
+  "RULES_MAYA_RECON_TEXT": "Le fonti non dicono tutto, quindi queste parti seguono l'ulama e sono ricostruite: una palla che muore nella tua metà o esce di lato dà 1 punto all'altra parte; un tocco con altro che l'anca, o un secondo colpo di fila della tua parte, dà loro 1 punto; il servizio è lanciato per rimbalzare; in parità alla fine, vince il punto successivo."
 }

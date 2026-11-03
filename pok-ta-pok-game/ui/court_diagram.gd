@@ -24,8 +24,8 @@ func set_court(p_rules: String, h: Color, a: Color) -> void:
 
 func _draw() -> void:
 	var s := size
-	var hl := Court.END_HALF_L if rules == Rules.CLASSIC else Court.ULAMA_HALF_L
-	var hw := Court.END_HALF_W if rules == Rules.CLASSIC else Court.ULAMA_HALF_W * 3.0
+	var hl := Court.END_HALF_L if rules != Rules.ULAMA else Court.ULAMA_HALF_L   # (the stone court: classic and the revival)
+	var hw := Court.END_HALF_W if rules != Rules.ULAMA else Court.ULAMA_HALF_W * 3.0
 	var k := minf((s.x - 24.0) / (hl * 2.0), (s.y - 44.0) / (hw * 2.0))
 	var c := Vector2(s.x * 0.5, s.y * 0.5 - 8.0)
 	var P := func(x: float, z: float) -> Vector2: return c + Vector2(x, z) * k

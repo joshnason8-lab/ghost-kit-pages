@@ -291,5 +291,15 @@
   "PRIV_CONTACT_TEXT": "Fragen zum Datenschutz: joshnason8@gmail.com. Pok Ta Pok Rivals ist von Josh Nason.",
   "WHY_TWICE": "{name}s Seite hat zweimal hintereinander geschlagen",
   "POINTS_TO": "{n} Punkte für {team}",
-  "HALF_TIME": "Halbzeit"
+  "HALF_TIME": "Halbzeit",
+  "RULES_NAME_MAYA": "Pelota maya (Wiederbelebung)",
+  "RULES_NOTE_MAYA": "Das wiederbelebte Pok-ta-pok, wie man es heute in Guatemala spielt: vier pro Seite, nur die Hüfte, ein Schlag pro Seite, bevor der Ball hinüber muss, 4 Punkte über die Grundlinie, und der Ring gewinnt sofort. Zwei Halbzeiten nach der Uhr.",
+  "THE_GAME": "Das Spiel",
+  "HALVES_N": "2 × {n} Min.",
+  "LENGTH_NOTE_MAYA": "In Guatemala spielt man zwei Halbzeiten zu 13 Minuten. Am Ende gewinnt die Seite mit mehr Punkten; bei Gleichstand gewinnt der nächste Punkt.",
+  "CUP_KIND_MAYA": "Auf den Steinplätzen, wie heute in Guatemala.",
+  "RULES_MAYA": "Pelota maya (Wiederbelebung)",
+  "RULES_MAYA_TEXT": "Das Spiel, das heute in Guatemala, Belize, Yucatán und Quintana Roo wiederbelebt wird, hier nach den Regeln Guatemalas auf den Steinplätzen. Vier pro Seite, nur die Hüfte. Jede Seite schlägt einmal, dann muss der Ball auf die andere Seite. Der Ball über die gegnerische Grundlinie zählt 4 Punkte. Der Ring gewinnt das Spiel sofort. Zwei Halbzeiten zu 13 Minuten: Am Ende gewinnt die Seite mit mehr Punkten.",
+  "RULES_MAYA_RECON": "Pelota maya: rekonstruiert",
+  "RULES_MAYA_RECON_TEXT": "Die Quellen sagen nicht alles, darum folgen diese Teile dem Ulama und sind rekonstruiert: Stirbt der Ball in deiner Hälfte oder geht er seitlich aus, bekommt die andere Seite 1 Punkt; eine Berührung mit etwas anderem als der Hüfte oder ein zweiter Schlag deiner Seite in Folge gibt ihr 1 Punkt; der Aufschlag wird so geworfen, dass er aufspringt; bei Gleichstand am Ende gewinnt der nächste Punkt."
 }

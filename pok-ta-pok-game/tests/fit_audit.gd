@@ -453,9 +453,11 @@ func _menus() -> void:
 		_scroll_to_end()
 		await frames(4)
 		await audit("howto_%d_end" % tab)
-	for venue in ["village", "stone"]:
+	for venue in ["village", "stone", "stone_maya"]:
 		for watch in [false, true]:
-			Game.settings.venue = venue
+			# (stone_maya: the stone court with the revival chosen)
+			Game.settings.stone_rules = "maya" if venue == "stone_maya" else "classic"
+			Game.settings.venue = venue.trim_suffix("_maya")
 			Game.show_screen("res://ui/quick_setup.gd", {"watch": watch})
 			await frames(10)
 			await audit("setup_%s_%s" % [venue, watch])
@@ -511,7 +513,7 @@ func _scroll_to_end() -> void:
 
 func _cup() -> void:
 	Game.delete_cup()
-	for rules in ["ulama", "classic"]:
+	for rules in ["ulama", "classic", "maya"]:
 		Game.settings.mode = rules
 		Game.show_screen("res://ui/cup_screen.gd")
 		await frames(10)

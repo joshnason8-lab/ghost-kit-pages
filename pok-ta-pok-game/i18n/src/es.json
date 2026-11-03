@@ -291,5 +291,15 @@
   "PRIV_CONTACT_TEXT": "Preguntas sobre privacidad: joshnason8@gmail.com. Pok Ta Pok Rivals está hecho por Josh Nason.",
   "WHY_TWICE": "El lado de {name} golpeó dos veces seguidas",
   "POINTS_TO": "{n} puntos para {team}",
-  "HALF_TIME": "Medio tiempo"
+  "HALF_TIME": "Medio tiempo",
+  "RULES_NAME_MAYA": "Pelota maya (renacimiento)",
+  "RULES_NOTE_MAYA": "El pok-ta-pok renacido, como se juega hoy en Guatemala: cuatro por lado, solo la cadera, un golpe por lado antes de que la pelota cruce, 4 puntos por la línea de fondo, y el aro gana el partido. Dos tiempos a reloj.",
+  "THE_GAME": "El juego",
+  "HALVES_N": "2 × {n} min",
+  "LENGTH_NOTE_MAYA": "En Guatemala se juegan dos tiempos de 13 minutos. Al final gana el lado con más puntos; si van empatados, gana el siguiente punto.",
+  "CUP_KIND_MAYA": "En las canchas de piedra, como se juega hoy en Guatemala.",
+  "RULES_MAYA": "Pelota maya (renacimiento)",
+  "RULES_MAYA_TEXT": "El juego que ha renacido en Guatemala, Belice, Yucatán y Quintana Roo, aquí con las reglas de Guatemala en las canchas de piedra. Cuatro por lado, solo la cadera. Cada lado golpea una vez y la pelota debe cruzar al otro lado. La pelota por la línea de fondo contraria vale 4 puntos. El aro gana el partido. Dos tiempos de 13 minutos: gana el lado con más puntos al final.",
+  "RULES_MAYA_RECON": "Pelota maya: reconstruido",
+  "RULES_MAYA_RECON_TEXT": "Las fuentes no lo dicen todo, así que estas partes siguen al ulama y son una reconstrucción: si la pelota muere en tu mitad o sale por el lado, 1 punto para el otro lado; si toca algo que no sea la cadera, o tu lado golpea dos veces seguidas, 1 punto para ellos; el saque se lanza para que bote; empatados al final, gana el siguiente punto."
 }

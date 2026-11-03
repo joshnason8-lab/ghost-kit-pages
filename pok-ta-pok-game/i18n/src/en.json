@@ -291,5 +291,15 @@
   "PRIV_CONTACT_TEXT": "Questions about privacy: joshnason8@gmail.com. Pok Ta Pok Rivals is made by Josh Nason.",
   "WHY_TWICE": "{name}'s side struck twice in a row",
   "POINTS_TO": "{n} points to {team}",
-  "HALF_TIME": "Half time"
+  "HALF_TIME": "Half time",
+  "RULES_NAME_MAYA": "Pelota maya (revival)",
+  "RULES_NOTE_MAYA": "The pok-ta-pok revival as Guatemala plays it today: four a side, the hip only, one strike a side before the ball crosses, 4 points over the end line, and the ring wins outright. Two halves on the clock.",
+  "THE_GAME": "The game",
+  "HALVES_N": "2 × {n} min",
+  "LENGTH_NOTE_MAYA": "Guatemala plays two halves of 13 minutes. At time the side ahead on points wins; if the points are level, the next point wins.",
+  "CUP_KIND_MAYA": "On the stone courts, as Guatemala plays it today.",
+  "RULES_MAYA": "Pelota maya (revival)",
+  "RULES_MAYA_TEXT": "The game revived today in Guatemala, Belize, Yucatán and Quintana Roo, played here by Guatemala's rules on the stone courts. Four a side, the hip only. Each side strikes once, then the ball must cross to the other side. The ball over the other side's end line scores 4 points. The ring wins the match outright. Two halves of 13 minutes: the side ahead on points at the end wins.",
+  "RULES_MAYA_RECON": "Pelota maya: reconstructed",
+  "RULES_MAYA_RECON_TEXT": "The sources do not say everything, so these parts follow ulama and are reconstructed: a ball that dies in your half or goes out at the side gives 1 point to the other side; a touch with anything but the hip, or a second strike in a row by your side, gives them 1 point; the serve is thrown down to bounce; level at time, the next point wins."
 }

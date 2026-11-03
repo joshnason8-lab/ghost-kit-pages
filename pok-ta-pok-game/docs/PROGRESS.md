@@ -446,10 +446,18 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   measure is home (always serving first) winning 52.7%, 45-60%. Fixed; the study is not re-run (sim work is
   stopped).
 
+- **0.6.29-beta: the pelota maya revival is playable (step 3 of 3).** On either stone court, match setup has "The
+  game": the classic court (reconstructed) or the pelota maya revival. The revival is four a side, with the length in
+  halves: 2 × 3, 2 × 5 (the default, as ulama's 10 minutes) or Guatemala's 2 × 13. It is in the town tournament
+  (the Maya towns, on the stone courts) and in Watch AI. How to Play has two new cards: the revival's rules, and
+  "Pelota maya: reconstructed", which lists the parts filled in from ulama. The court diagram draws the stone court for
+  it. Ten new texts in six languages, fitted on every screen shape (fit_audit now opens setup with the revival chosen
+  and the cup's three kinds). CI plays one AI revival match with RuleChecks.
+
 ## Next
 
-1. **The pok-ta-pok / pelota maya revival**, step 3: the menus (a third rule set in match setup, halves for the
-   length), How to Play with the "Reconstructed" labels, the court diagram, the cup and Watch AI.
+1. The revival's court: the sources say only "a hard surface" with a ring, so the stone courts stand in for it. A
+   court of its own if a better source or the owner gives its shape.
 2. Yucatec Maya touches: the judges' count on the stone court (*jun, ka', óox…*). It is listed for a native speaker
    in docs/CULTURE.md.
 3. Field recordings the open sites do not have (docs/SOUNDS.md, "Not found").

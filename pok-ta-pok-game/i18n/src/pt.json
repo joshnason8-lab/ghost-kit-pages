@@ -291,5 +291,15 @@
   "PRIV_CONTACT_TEXT": "Dúvidas sobre privacidade: joshnason8@gmail.com. Pok Ta Pok Rivals é feito por Josh Nason.",
   "WHY_TWICE": "O lado de {name} bateu duas vezes seguidas",
   "POINTS_TO": "{n} pontos para {team}",
-  "HALF_TIME": "Intervalo"
+  "HALF_TIME": "Intervalo",
+  "RULES_NAME_MAYA": "Pelota maya (renascimento)",
+  "RULES_NOTE_MAYA": "O pok-ta-pok renascido, como se joga hoje na Guatemala: quatro de cada lado, só o quadril, um golpe por lado antes de a bola cruzar, 4 pontos além da linha de fundo, e o aro vence a partida. Dois tempos no relógio.",
+  "THE_GAME": "O jogo",
+  "HALVES_N": "2 × {n} min",
+  "LENGTH_NOTE_MAYA": "Na Guatemala jogam-se dois tempos de 13 minutos. No fim vence o lado com mais pontos; empatados, vence o ponto seguinte.",
+  "CUP_KIND_MAYA": "Nas quadras de pedra, como se joga hoje na Guatemala.",
+  "RULES_MAYA": "Pelota maya (renascimento)",
+  "RULES_MAYA_TEXT": "O jogo que renasce hoje na Guatemala, em Belize, no Yucatán e em Quintana Roo, jogado aqui com as regras da Guatemala nas quadras de pedra. Quatro de cada lado, só o quadril. Cada lado golpeia uma vez e a bola deve cruzar para o outro lado. A bola além da linha de fundo adversária vale 4 pontos. O aro vence a partida. Dois tempos de 13 minutos: no fim vence o lado com mais pontos.",
+  "RULES_MAYA_RECON": "Pelota maya: reconstruído",
+  "RULES_MAYA_RECON_TEXT": "As fontes não dizem tudo, por isso estas partes seguem o ulama e são reconstruídas: uma bola que morre na sua metade ou sai pela lateral dá 1 ponto ao outro lado; um toque com algo que não seja o quadril, ou um segundo golpe seguido do seu lado, dá-lhes 1 ponto; o saque é lançado para quicar; empatados no fim, vence o ponto seguinte."
 }

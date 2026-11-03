@@ -52,7 +52,7 @@ func _pick(right: HBoxContainer) -> void:
 	var kinds := HBoxContainer.new()
 	kinds.add_theme_constant_override("separation", 12)
 	_body.add_child(kinds)
-	for r in [Rules.ULAMA, Rules.CLASSIC]:
+	for r in [Rules.ULAMA, Rules.CLASSIC, Rules.MAYA]:
 		kinds.add_child(UI.option_card(tr("RULES_NAME_" + r.to_upper()), tr("CUP_KIND_" + r.to_upper()), null, r == _rules, func():
 			_rules = r
 			_team = ""
@@ -123,4 +123,4 @@ func _play(cup: Cup, f: Dictionary) -> void:
 	var n := int(Game.settings.get("side_" + cup.rules, Rules.default_side(cup.rules)))
 	Game.start_match({"home": f.home, "away": f.away, "venue": f.venue, "rules": cup.rules, "side": n, "mode": "cup",
 		"user_team": user, "difficulty": mini(2, int(Game.settings.difficulty) + (1 if cup.round >= 2 else 0)),
-		"urria": String(Game.settings.get("urria", "3_7")), "length": Game.LENGTHS[int(Game.settings.length)], "stage": tr(String(f.stage))})
+		"urria": String(Game.settings.get("urria", "3_7")), "length": Game.match_length(cup.rules), "stage": tr(String(f.stage))})

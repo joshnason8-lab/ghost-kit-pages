@@ -108,6 +108,7 @@ jobs:
           set -o pipefail
           timeout 900 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 2 4 ulama 2>&1 | tee sim.log
           timeout 900 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 1 4 classic 2>&1 | tee -a sim.log
+          timeout 900 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 1 4 maya 2>&1 | tee -a sim.log
           if grep -q "SCRIPT ERROR" sim.log; then grep -A4 "SCRIPT ERROR" sim.log; exit 1; fi
 
       - name: Controls (a thumb on the buttons plays and wins rayas; hands off, nothing is played for you)

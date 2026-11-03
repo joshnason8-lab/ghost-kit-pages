@@ -64,6 +64,8 @@ const C_PRINT := Color("221a12")
 ## How long a match you play may run, in real minutes: it ends when a side reaches the count's target, or, at this
 ## limit, the side ahead wins (docs/RULES.md: real games can run for hours; a phone game cannot).
 const LENGTHS := [6, 10, 15, 0]   # 0: no limit, to the count only
+## The pelota maya revival plays two halves, always to the clock (docs/RULES.md M6): 2 x 3, 2 x 5, or Guatemala's 2 x 13.
+const LENGTHS_MAYA := [6, 10, 26]
 
 var settings := {
 	"language": "",         # "" follows the phone's language
@@ -84,6 +86,9 @@ var settings := {
 	"mode": "ulama",        # "ulama": hip ulama on an earth court; "classic": the reconstructed stone court with rings
 	"side_ulama": 5,        # players a side in ulama (4 or 5)
 	"side_classic": 3,      # on the classic court (2 to 4)
+	"side_maya": 4,         # the pelota maya revival (4: M5)
+	"stone_rules": "classic",   # the game on the stone courts: "classic" (reconstructed) or "maya" (the revival)
+	"length_maya": 1,       # LENGTHS_MAYA
 	"urria": "3_7",         # where the count is in urria (Rules.URRIA_SETS)
 	"tags": 0,              # names over players' heads: 0 on, 2 off
 	"seen_howto": false,
@@ -204,7 +209,8 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "control", "length", "side_ulama", "side_classic", "tags"]:
+	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "assist", "control", "length", "side_ulama", "side_classic",
+			"side_maya", "length_maya", "tags"]:
 		settings[k] = int(settings[k])
 	if not (settings.btn_pos is Dictionary):
 		settings.btn_pos = {}
@@ -216,9 +222,27 @@ func load_settings() -> void:
 		settings.urria = "3_7"
 	settings.difficulty = clampi(int(settings.difficulty), 0, 2)
 	settings.assist = clampi(int(settings.assist), 0, 1)
-	if not (String(settings.mode) in ["ulama", "classic"]):
+	if not (String(settings.mode) in ["ulama", "classic", "maya"]):
 		settings.mode = "ulama"
+	if not (String(settings.stone_rules) in ["classic", "maya"]):
+		settings.stone_rules = "classic"
+	if not (int(settings.side_maya) in Rules.SIDE_MAYA):
+		settings.side_maya = 4
 	settings.length = clampi(int(settings.length), 0, LENGTHS.size() - 1)
+	settings.length_maya = clampi(int(settings.length_maya), 0, LENGTHS_MAYA.size() - 1)
+
+
+## The match length (real minutes, 0 none) the settings give a rule set.
+func match_length(rules: String) -> float:
+	if rules == Rules.MAYA:
+		return float(LENGTHS_MAYA[int(settings.length_maya)])
+	return float(LENGTHS[int(settings.length)])
+
+
+## The game played at a court: the earth courts' ulama; on the stone courts, the one chosen (classic or the revival).
+func rules_at(venue_id: String) -> String:
+	var r := String(DB.venue(venue_id).rules)
+	return String(settings.get("stone_rules", "classic")) if r == Rules.CLASSIC else r
 
 
 func save_settings() -> void:

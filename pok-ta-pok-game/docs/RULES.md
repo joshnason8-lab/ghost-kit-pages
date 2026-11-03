@@ -191,8 +191,10 @@ All the numbers are together at the top of `game/rules.gd` (`MAYA_END_POINTS`, `
 `SIDE_MAYA`, `MAYA_HALF_MIN`), so a better source can correct them in one place. `tests/test_runner.gd`
 (`_rules_maya`) checks each rule.
 
-**Status (0.6.28):** the rules and the match are in (`tests/test_runner.gd` `_maya_match`, and the sim's
-`targeted:maya`). The menus and How to Play come next, so the mode cannot be chosen from the menus yet.
+It is chosen in match setup on either stone court ("The game": the classic court or the revival), and in the town
+tournament. How to Play has a card for it and a second card, **"Pelota maya: reconstructed"**, listing what the game
+fills in from ulama. The length is two halves: 2 × 3, 2 × 5 (the default) or Guatemala's 2 × 13 minutes. Tests:
+`tests/test_runner.gd` `_rules_maya` and `_maya_match`, the sim's `targeted:maya`, and one AI match in CI.
 
 Other tournaments differ. The 2021 Copa del Sureste plays 4 a side, 2 × 15 minutes and 5 points over the end line.
 Belize plays 5 a side. Some tournaments score the ring 5 or 10 points instead of the match, and take points off for
