@@ -30,7 +30,9 @@ func _initialize() -> void:
 		clips = src.clips
 	else:
 		clips = WsgCrowdClips.CLIPS
-	var meta := {"fps": FPS, "clips": {}, "fans": {}, "pivots": PIVOTS,
+	# version: what this bake does that a crowd baked before lacks (WsgCrowd3D.BAKE_VERSION; the audit refuses older):
+	# 3 = every frame grounded at its soles, the parts (looks), hair never shirt, hand vertices.
+	var meta := {"fps": FPS, "clips": {}, "fans": {}, "pivots": PIVOTS, "version": WsgCrowd3D.BAKE_VERSION,
 		"source": "ActorCore (licensed: build only)" if src != null else "authored (WsgCrowdClips)"}
 	print("crowd motions: ", meta.source)
 	# (The licence: animation from the licensed library never leaves the build's data folder - an ActorCore crowd
@@ -66,6 +68,17 @@ func _initialize() -> void:
 			if mask[v] == 1:
 				ids.append(v)
 		meta.fans[fan]["seat_vertices"] = ids
+		# The hands (WsgCrowdVenue.audit lets them rest on a seat: a fan getting up pushes on it).
+		var hands := []
+		for v in m.count:
+			var w := 0.0
+			for j in 4:
+				var nm: String = WsgRig.BONES[m.bones[v * 4 + j]][0]
+				if nm.begins_with("LeftHand") or nm.begins_with("RightHand"):
+					w += m.weights[v * 4 + j]
+			if w >= 0.5:
+				hands.append(v)
+		meta.fans[fan]["hand_vertices"] = hands
 		print("%s: %d triangles (far %d), %d vertices, VAT %dx%d" % [fan, m.tris, m.far_tris, m.count, vat[0].get_width(), rows])
 	var f := FileAccess.open(out_dir.path_join("crowd.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify(meta, "\t"))
@@ -460,6 +473,15 @@ func _bake_vat(ch: Dictionary, m: Dictionary, rows: int, meta: Dictionary) -> Ar
 			for pi in PIVOTS.size():
 				var pp := sk.get_bone_global_pose(sk.find_bone(PIVOTS[pi])).origin
 				pos_img.set_pixel(nv + pi, row, Color(pp.x, pp.y, pp.z, 1.0))
+			# Every frame on the ground: its lowest point (the soles, seated or standing) at 0. The motions' own feet
+			# came 1 to 6 cm under it seated and up to 5 cm over it standing (ActorCore's crowd takes, through each
+			# fan's legs): sunk into the floor or floating, and stepping as the motions changed.
+			var low := INF
+			for v in nv:
+				low = minf(low, pos_img.get_pixel(v, row).g)
+			for v in nv + PIVOTS.size():
+				var px := pos_img.get_pixel(v, row)
+				pos_img.set_pixel(v, row, Color(px.r, px.g - low, px.b, 1.0))
 			row += 1
 			await process_frame
 	body.queue_free()
