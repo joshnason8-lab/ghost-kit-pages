@@ -533,23 +533,18 @@ func _check_offside() -> void:
 			return
 
 
-## A pass from the holder to a team-mate. kind: chest, shoulder, bounce, lob. The flight time follows the pass's kind
-## and length; the receiver runs to meet it; a defender who can reach its path in time may go for it (TeamAI).
+## A pass from the holder to a team-mate. kind: chest, shoulder, bounce, lob. The flight follows the pass's kind and
+## length under gravity (Ball.plan); the receiver runs to meet it; a defender who can reach its path in time may go
+## for it (TeamAI).
 func throw_pass(to: Player, kind: String) -> void:
 	if holder == null or phase != "live":
 		return
 	var from := holder
 	var catch_at := ai.catch_point(to, kind)
-	var dist := from.p.distance_to(catch_at)
-	var spd: float = {"chest": 11.5, "shoulder": 14.5, "bounce": 9.0, "lob": 8.5}.get(kind, 11.0)
-	var dur := clampf(dist / spd, 0.25, 2.0)
-	var apex: float = {"chest": 0.25, "shoulder": 0.6, "bounce": 0.0, "lob": 1.6 + dist * 0.06}.get(kind, 0.3)
 	var hand := from.hand_point()
-	var arrive := Vector3(catch_at.x, clampf(to.reach() * 0.62, 1.1, 1.5), catch_at.y)
-	if kind == "lob":
-		arrive.y = to.reach() * 0.86
+	var arrive := Vector3(catch_at.x, TeamAI.catch_height(to, kind), catch_at.y)
 	from.set_act("pass", kind)
-	ball.throw(hand, arrive, dur, apex, 0.55 if kind == "bounce" else -1.0)
+	var dur := float(ball.throw(kind, hand, arrive).dur)
 	stats[String(from.data.id)].passes += 1
 	pass_info = {"from": from, "to": to, "kind": kind, "thrown_x": from.p.x, "thrown_at": from.p, "centre": String(restart.get("kind", "")) == Rules.CENTRE and not restart.get("cp_done", false),
 		"t": 0.0, "dur": dur, "cut": null, "cut_k": 1.0, "short": Rules.short_pass(from.p, catch_at), "feed": to.pos in ["GS", "GA"] and Court.in_circle(catch_at, to.dir)}
@@ -618,8 +613,14 @@ func _arrive() -> void:
 		return
 	var info := pass_info
 	pass_info = {}
+	var leap_t := to.act_t if to.act == "leap" else -1.0
 	_give(to)
-	to.set_act("catch")
+	if leap_t >= 0.0:
+		# A lob taken at the top of her leap: she comes down with it (TeamAI._holder then has her hold it).
+		to.set_act("leap")
+		to.act_t = leap_t
+	else:
+		to.set_act("catch")
 	to.act_up = clampf((ball.pos.y - 1.3) / 1.0, -1.0, 1.0)
 	# The rules at the catch.
 	if bool(info.get("centre", false)):
@@ -786,9 +787,10 @@ func _run_shot(dt: float) -> void:
 			var ring := Court.ring_centre(pl.dir)
 			var to := ring + Vector3(0, 0.05, 0)
 			if not shot_info.goal:
-				var off := Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)).normalized() * rng.randf_range(0.17, 0.28)
+				# On the ring's rim (the ball's middle just outside its inside edge).
+				var off := Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)).normalized() * rng.randf_range(0.21, 0.29)
 				to += Vector3(off.x, 0.0, off.y)
-			ball.throw(pl.hand_point() + Vector3(0, 0.15, 0), to, 0.95 + float(shot_info.dist) * 0.03, 1.1 + float(shot_info.dist) * 0.08)
+			ball.throw("shot", pl.hand_point() + Vector3(0, 0.15, 0), to)
 			Sfx.play("pass", -12.0, 0.9)
 		return
 	if ball.state == "flight" and ball.f_t >= ball.f_dur:
@@ -800,10 +802,10 @@ func _run_shot(dt: float) -> void:
 		var away := Vector3(pl.p.x - ring.x, 0, pl.p.y - ring.z).normalized()
 		var v := away.rotated(Vector3.UP, rng.randf_range(-1.0, 1.0)) * rng.randf_range(1.5, 3.2)
 		v.y = rng.randf_range(0.5, 2.0)
-		ball.loose(ring, v)
+		ball.loose(ball.pos, v)
 		last_touch = pl.team
 		shot_info = {"rebound": true}
-		_miss_clock = clock - 0.95 - float(pl.p.distance_to(Vector2(ring.x, ring.z))) * 0.03 - 0.75
+		_miss_clock = clock - ball.f_dur - 0.75
 		Sfx.play_at("rim", ring, -6.0)
 		if heard():
 			Sfx.react("groan", -12.0)
@@ -829,7 +831,12 @@ func _goal(pl: Player, value: int) -> void:
 	var feeder: Player = ai.last_passer
 	if feeder and feeder.team == pl.team and feeder != pl:
 		stats[String(feeder.data.id)].assists += 1
-	ball.loose(Court.ring_centre(pl.dir), Vector3(0, -1.5, 0))
+	if ball.state == "flight":
+		# On through the net, as fast as it dropped in (the net holds it back: Ball.step).
+		var v := ball.flight_vel(1.0)
+		ball.loose(ball.pos, Vector3(v.x * 0.3, minf(v.y, -1.5), v.z * 0.3))
+	else:
+		ball.loose(Court.ring_centre(pl.dir), Vector3(0, -1.5, 0))
 	shot_info = {}
 	_goal_team = pl.team
 	_goal_clock = clock
@@ -854,6 +861,9 @@ func _goal(pl: Player, value: int) -> void:
 	if other != user_team and int(timeouts[other]) > 0 and score[pl.team] - score[other] >= 4 and rng.randf() < 0.35:
 		call_timeout.call_deferred(other)
 	game_event.emit("goal", {"team": pl.team, "by": pl.pos, "value": value})
+	# Played on to a two-goal lead (level after extra time): this goal may have won it.
+	if q >= 7 and Rules.match_over(q, false, score, need_winner):
+		_end_period()
 
 
 func _elapsed() -> float:
@@ -871,10 +881,7 @@ func _infringe(kind: String, by: Player, at: Vector2) -> void:
 	var other := 1 - by.team
 	if Rules.INFRINGEMENTS.get(kind, "") == Rules.PENALTY and holder and holder.team == other and holder.pos in ["GS", "GA"] \
 			and Court.in_circle(holder.landing, holder.dir) and not from_free and rng.randf() < 0.6:
-		# Advantage: the shooter is set to shoot; the umpire calls "Advantage", the infringement and plays on.
-		stats[String(by.data.id)].penalties += 1
-		game_event.emit("advantage", {"kind": kind, "by": by.pos, "team": by.team})
-		log.append({"t": _elapsed(), "q": q, "advantage": kind, "team": by.team})
+		_advantage(kind, by)
 		return
 	var taker_pos := "GS"
 	var a := Rules.award(kind, by.team, at, taker_pos, team_dir(other))
@@ -895,6 +902,16 @@ func _infringe(kind: String, by: Player, at: Vector2) -> void:
 		Game.haptic("penalty")
 	_award(a, by, kind)
 	_sanction(by, kind)
+
+
+## Advantage (R7): the shooter is set to shoot; the umpire calls "Advantage", the infringement, and plays on. The
+## offender steps clear of the player she infringed (TeamAI.give_way).
+func _advantage(kind: String, by: Player) -> void:
+	stats[String(by.data.id)].penalties += 1
+	if holder:
+		ai.give_way(by, holder)
+	game_event.emit("advantage", {"kind": kind, "by": by.pos, "team": by.team})
+	log.append({"t": _elapsed(), "q": q, "advantage": kind, "team": by.team})
 
 
 ## Game management (R18, 2024): proactive advice, then a warning for a player who keeps infringing, then a suspension
@@ -1007,7 +1024,12 @@ func _apply_award(a: Dictionary) -> void:
 	var by: Player = a.get("by")
 	if String(a.kind) == Rules.PENALTY and by and is_instance_valid(by) and by.suspended <= 0.0:
 		var taker: Player = restart.taker
-		var dirv := Vector2(0, 1 if taker.p.y < 0 else -1)
+		# Beside her: square to her line to the goal she attacks (never in it), on the court's middle side.
+		var u: Vector2 = Court.goal_post(taker.dir) - Vector2(restart.spot)
+		u = u.normalized() if u.length() > 0.1 else Vector2(taker.dir, 0)
+		var dirv := Vector2(-u.y, u.x)
+		if dirv.y * (1.0 if taker.p.y < 0 else -1.0) < 0.0:
+			dirv = -dirv
 		var spot: Vector2 = restart.spot + dirv * Rules.OUT_OF_PLAY_GAP
 		spot = Rules.onside_point(by.pos, spot, by.dir, 0.05)
 		by.target = spot

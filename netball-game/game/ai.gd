@@ -21,6 +21,7 @@ var _drive := {}            # player -> true while she drives on the centre pass
 var _reset := false         # after a goal: the walk back to the next centre pass has begun
 var _cp_taker: Player = null
 var _user_target: Player = null
+var _give_way := {}         # player -> [whom she infringed, seconds left]: stepping clear after advantage (give_way)
 
 const JOG := 2.8            # m/s: back to the spots after a goal (nobody sprints; the taking C hurries, Match)
 const HUDDLE_R := 1.05      # m: the ring of seven at a break
@@ -158,6 +159,8 @@ func think(dt: float) -> void:
 			if pl.away():
 				_out_of_play(pl)
 				continue
+			if _give_way.has(pl) and _stepping_clear(pl, dt):
+				continue
 			if centre_setup or walk_back:
 				if _cp_spots.has(pl) and (walk_back or pl != m.restart.get("taker")):
 					pl.target = _cp_spots[pl]
@@ -184,6 +187,43 @@ func think(dt: float) -> void:
 			_play(pl, dt)
 	if m.phase == "live":
 		_slips(dt)
+
+
+## Advantage played on her contact or obstruction (R7): the offender steps clear of the player she infringed, two
+## metres or so to the side and a little back, never between her and the goal she attacks, and keeps out of it until
+## that player has let the ball go (or for two and a half seconds).
+func give_way(by: Player, to: Player) -> void:
+	if by != me:
+		_give_way[by] = [to, 2.5]
+
+
+func _stepping_clear(pl: Player, dt: float) -> bool:
+	var e: Array = _give_way[pl]
+	var to: Player = e[0]
+	e[1] = float(e[1]) - dt
+	if float(e[1]) <= 0.0 or m.phase != "live" or not is_instance_valid(to) or m.holder != to:
+		_give_way.erase(pl)
+		return false
+	pl.target = give_way_spot(pl, to)
+	pl.want_speed = minf(pl.speed_cap(), 4.5)
+	pl.look_on = true
+	pl.look_at_p = to.p
+	pl.set_act("run" if pl.p.distance_to(pl.target) > 0.3 else "ready")
+	return true
+
+
+## Where she stands clear of `to`: 2.2 m to the side of the line from `to` to the goal `to` attacks (the side she is
+## already on, unless a line is in the way) and 0.6 m back from it, in her own areas.
+func give_way_spot(pl: Player, to: Player) -> Vector2:
+	var u := Court.goal_post(to.dir) - to.p
+	u = u.normalized() if u.length() > 0.1 else Vector2(to.dir, 0)
+	var side := Vector2(-u.y, u.x)
+	if side.dot(pl.p - to.p) < 0.0:
+		side = -side
+	var spot := Rules.onside_point(pl.pos, to.p + side * 2.2 - u * 0.6, pl.dir, 0.2)
+	if spot.distance_to(to.p) < 1.9:
+		spot = Rules.onside_point(pl.pos, to.p - side * 2.2 - u * 0.6, pl.dir, 0.2)
+	return spot
 
 
 func _out_of_play(pl: Player) -> void:
@@ -279,7 +319,11 @@ func _play(pl: Player, dt: float) -> void:
 	pl.look_at_p = b
 	if m.ball.state == "flight" and m.pass_info.has("to"):
 		if m.pass_info.to == pl:
-			pl.set_act("catch" if m.ball.flight_left() < 0.35 else "run")
+			# A lob she goes up for, at the top of her leap as it arrives (Poses.leap tops out 0.35 s in).
+			var lob: bool = String(m.pass_info.get("kind", "")) == "lob"
+			pl.set_act(("leap" if lob else "catch") if m.ball.flight_left() < 0.35 else "run")
+			# Her hands go to where it will come: overhead for a lob, low for a bounce pass.
+			pl.act_up = clampf((m.ball.f_to.y - 1.3) / 1.0, -1.0, 1.0)
 			return   # running to the catch point the pass set
 		if m.pass_info.get("cut") == pl:
 			_cut(pl)
@@ -560,6 +604,8 @@ func holder_look(pl: Player) -> Vector2:
 
 ## The holder: shoot from close (GS) or in range (GA), or pass when the best option opens, inside her three seconds.
 func _holder(pl: Player, _dt: float) -> void:
+	if pl.act == "leap" and pl.act_t >= 0.7:
+		pl.set_act("hold")   # down from the leap she caught a lob in
 	if pl == me or m.phase != "live" or m.shot_info.has("by"):
 		if pl == me:
 			_user_target = _pick_user_target(pl)
@@ -662,25 +708,43 @@ func catch_point(to: Player, kind: String) -> Vector2:
 	return Rules.onside_point(to.pos, at, to.dir, 0.15)
 
 
-## The chance a pass is picked off: the best opponent's margin to reach its path (seconds to spare).
+## How high a pass of `kind` to `to` is caught: a lob at the top of her leap, where it drops in over her marker
+## (only someone taller, leaping, could take it there), a bounce pass low, the rest about chest high.
+static func catch_height(to: Player, kind: String) -> float:
+	match kind:
+		"lob":
+			return to.reach(true) * 0.92
+		"bounce":
+			return 0.95
+	return clampf(to.reach() * 0.62, 1.1, 1.5)
+
+
+## The chance a pass is picked off: the best opponent's margin to reach its path (seconds to spare). The path is the
+## ball's own (Ball.plan), from about where it leaves the hands, looked at up to its last moment (where a lob drops
+## onto the receiver and her marker may reach it), as the defenders look at it (on_pass).
 func _risk(from: Player, to: Player, at: Vector2, kind: String) -> float:
 	var worst := 0.0
-	var dist := from.p.distance_to(at)
-	var spd: float = {"chest": 11.5, "shoulder": 14.5, "bounce": 9.0, "lob": 8.5}.get(kind, 11.0)
-	var dur := clampf(dist / spd, 0.25, 2.0)
+	var fl := Ball.plan(kind, Vector3(from.p.x, 1.35, from.p.y), Vector3(at.x, catch_height(to, kind), at.y))
+	var dur := float(fl.dur)
 	for d in m.players[1 - from.team]:
 		if d.away() or d == marker_of(from) and d.p.distance_to(from.p) < 1.3 and kind == "lob":
 			continue
-		for k: float in [0.3, 0.5, 0.7, 0.9]:
-			var pt := from.p.lerp(at, k)
-			var h: float = 1.4 + (4.0 * {"lob": 1.6, "shoulder": 0.6, "bounce": -0.9, "chest": 0.25}.get(kind, 0.25) * k * (1.0 - k))
-			if h > d.reach(true):
+		for k: float in [0.3, 0.5, 0.7, 0.9, 0.95]:
+			var b := Ball.plan_at(fl, k)
+			var pt := Vector2(b.x, b.z)
+			if b.y > d.reach(true):
 				continue
-			var need: float = maxf(0.0, d.p.distance_to(pt) - 0.7) / d.speed_cap() + 0.22
+			var need: float = maxf(0.0, d.p.distance_to(pt) - 0.7) / d.speed_cap() + 0.22 + lob_contest(kind, k)
 			var margin: float = k * dur - need
 			if margin > 0.0:
 				worst = maxf(worst, clampf(0.25 + margin * 1.4, 0.0, 1.0))
 	return worst
+
+
+## A lob coming down onto the receiver (its last part): she goes up for it at the top of her leap, so a defender has
+## to read it over her and get round her to it, a third of a second more than for a ball in the open.
+static func lob_contest(kind: String, k: float) -> float:
+	return 0.3 if kind == "lob" and k >= 0.85 else 0.0
 
 
 ## A pass has gone: the opponents' best chance at it (if any) goes for it (Match resolves it where she meets it).
@@ -701,6 +765,7 @@ func on_pass(info: Dictionary) -> void:
 			if Rules.offside(d.pos, Vector2(pt.x, pt.z), d.dir):
 				continue
 			var need: float = maxf(0.0, d.p.distance_to(Vector2(pt.x, pt.z)) - 0.75) / d.speed_cap() + lerpf(0.45, 0.28, float(d.data.defend) / 99.0) / sharp(d.team)
+			need += lob_contest(String(info.kind), k)
 			var margin: float = k * dur - need
 			if margin > best_margin:
 				best_margin = margin
@@ -768,7 +833,7 @@ func _slips(dt: float) -> void:
 		return
 	var h: Player = m.holder
 	var dm := marker_of(h)
-	if dm and dm != me and not dm.away() and dm.p.distance_to(h.landing) < 1.35:
+	if dm and dm != me and not dm.away() and not _give_way.has(dm) and dm.p.distance_to(h.landing) < 1.35:
 		var disc := clampf(float(dm.data.defend) / 99.0, 0.4, 1.0)
 		var lam := 0.075 * (1.45 - disc) * whistle_rate()
 		if rng().randf() < lam * dt:

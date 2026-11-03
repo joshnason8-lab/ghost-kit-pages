@@ -261,6 +261,34 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   `_howto_positions`: each court's lit areas are Rules.AREAS, both bibs onside and apart, no two alike, the page has
   the seven; in a window (`xvfb-run ... test_runner.tscn -- howto`) the pictures are rendered and each third and
   circle sampled lit or dim, and all 21 pairs differ.
+- The ball, the nets and advantage (November 2026, the owner's playtest notes). **The ball flies under gravity**
+  (Ball.plan): every pass and shot is a parabola at 9.81 m/s² from the hands to the catch, its speed across the
+  floor constant, its time following from the distance and the kind of throw (the old flight was a straight line
+  in a fixed time plus a hump, so a lob "fell" at up to 44 m/s² and a chest pass at 7). Chest 9.8 m/s over 3 m to
+  13.7 over 12 (0.31-0.92 s); shoulder 13.9-17.2 m/s (11-21 m); lob up 1.9-2.5 m over the hands, 1.1-1.3 s in the
+  air, half a chest pass's speed across or less, caught by the receiver at the top of her leap; bounce pass down to
+  the floor 62% of the way, up off it at 80% of its speed; shot released at 48 degrees from the circle's edge, 53
+  from 3 m, steeper under the post, dropping into the ring from at least 45 cm above it. A goal drops through the
+  net, which holds it back; a miss comes off the rim where it hit (no jump to the ring's middle). The AI judges a
+  pass's risk on the same flight, to its last moment (where a lob comes down onto the receiver), and a defender
+  needs 0.3 s more to take a lob there (she has to get round the receiver going up for it). Twelve AI matches (75 s
+  quarters), before and after: 161 and 172 goals, shooting 78.9% and 79.6%, intercepts 6.9 and 6.2 a hundred
+  passes, turnovers 10.3 and 9.2, lobs picked off 19% and 13%; mean flight times chest 0.49/0.50 s, shoulder
+  0.87/0.89, bounce 0.48/0.53, lob 0.79/1.08. **The nets are rope**: a goal swings the net it drops through the way
+  the ball was going (about 8 cm at its foot), ripples it down its cords, pushes it out round the ball and drags it
+  down as it passes; a ball off the rim or brushing it stirs it; it settles in two or three seconds (a damped swing
+  of 1.3 a second, Arena._nets). The glow shader moves the net's faces from three uniforms a post, so it costs no
+  draw call on any level: the nets are drawn in six rows now (+320 triangles a venue: Low 98/99/98 draw calls as
+  before; arena 53.7k primitives, hall 72.3k, outdoor 56.7k on 0.8.9), the same in all three venues and every level, and in
+  the replays (it follows the ball wherever it is drawn). The corded texture already reads as a rope net up close,
+  so no rope mesh. **Advantage**: a defender whose contact or obstruction is played as advantage steps clear of the
+  shooter, about 2.2 m to the side and 0.6 m back, never between her and the post (past 1.5 m in 0.7 s), until the
+  ball has gone (TeamAI.give_way); the penalised player of a penalty pass stands square to the thrower's line to the
+  goal, not in it. Found on the way: a knockout still level after extra time played on for ever (time_left INF,
+  and nothing asked Rules.match_over), which the new flights' different random draws exposed in `_matches`' knockout;
+  the goal that makes a two-goal lead now ends it. Tests `_ball_flight`, `_ball_in_play`, `_net_sway`,
+  `_advantage_clear`, `_two_goal_lead` (`test_runner.tscn -- ball` runs only these); tests/ball_shots.tscn renders a goal at the post frame by frame and
+  a lob and a chest pass from the side with their paths, the old ones beside them.
 
 ## Next
 
