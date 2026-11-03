@@ -1,15 +1,14 @@
 # Kho Kho Rush's WsgSim (ADOPTING 5.17; from the foundation's tools/wsg/sim_ci.yml): the smoke batch on every push
 # (50 seeds of random and extreme matches, every targeted case x 3, every adopted case; the input fuzzer playing your
-# side), and the nightly batch, 16 shards of 150 matches merged into one report. Scheduled runs only fire from the
-# default branch: until this game is merged there, a push whose message carries [sim-nightly] runs the nightly batch
-# instead of the smoke. Artifacts only (in $RUNNER_TEMP) - never inside the project.
+# side), and the big batch, 16 shards of 150 matches merged into one report - run by hand (workflow_dispatch, the
+# WSG dispatcher) or by [sim-nightly] in a push's message, in the rounds the owner calls (the owner, 2026-11-03:
+# simulations in rounds, not every night - "it will eat up all the usage"). Artifacts only (in $RUNNER_TEMP) - never
+# inside the project.
 name: Kho Kho Rush · simulation
 on:
   push:
     branches: [claude/kho-kho-game]
     paths: ['kho-kho-game/**', '.github/workflows/kho-kho-sim.yml']
-  schedule:
-    - cron: '17 2 * * *'
   workflow_dispatch:
 concurrency:
   group: kho-kho-sim-${{ github.ref }}
