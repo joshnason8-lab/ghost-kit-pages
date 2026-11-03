@@ -15,6 +15,12 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.5: **a match no longer stops when the ball rolls behind a bench.** In 0.15.4 a ball that came to rest
+behind a team bench left the player fetching it walking up and down in front of the bench, and the next serve never
+came. Now he walks round the bench and picks it up. If the ball somehow can't be reached, the thrower is given it and
+walks back to his place, as before 0.15.4. On Medium and High the players and officials are now there on the very
+first frame of a match (they appeared a frame late), and the loading bar keeps moving while they are put on court.
+
 New in 0.15.4: **everything round the court is solid.** Nobody walks through the referee's chair, the scorers' table,
 a bench, the net posts or anything else any more: players and the line judges go round them, and the ball bounces
 off them (a ball in play that hits one is out, as the rules have it). Starting a match now shows its loading screen

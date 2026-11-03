@@ -133,7 +133,15 @@ func _ready() -> void:
 	sole_tilt["woman" if gb.women else "man"] = WsgFootFlat.sole_tilt(body)
 	gb.mesh_instance.visible = false
 	gb.link = self
+	if kind == "official":
+		add_to_group("wsg_official")   # (the world check's officials: WsgWorldGame.find_officials, this node's body)
 	body.posed.connect(_on_posed)
+
+
+## The scale this body is drawn at under the motion capture (walking between points: _place's free transform): the
+## game skeleton's against the rig's, by the legs. (game/world.gd's walker: the player as he walks in a match.)
+func free_scale() -> float:
+	return gb.skeleton.global_transform.basis.get_scale().x / _k
 
 
 ## The game's own body drawn again and this one gone (the graphics lowered to Low mid-match).

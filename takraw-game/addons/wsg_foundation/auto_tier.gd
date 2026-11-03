@@ -24,6 +24,9 @@ var _frames := PackedFloat32Array()
 var _t := 0.0
 var _bad := 0
 var _settle := SETTLE
+## Off while WsgSim or the world check plays (frames at a fixed step, as fast as the computer goes, are not the
+## phone's: a fixed 30 a second read under 36 and stepped every match down - Pok Ta Pok's own auto tier did).
+static var off := false
 ## The last window's numbers, for a log: [average fps, hitches, bad windows in a row].
 var last := [0.0, 0, 0]
 
@@ -43,6 +46,8 @@ func reset() -> void:
 
 ## One frame's time (s). True when the tier should step down now.
 func feed(delta: float) -> bool:
+	if off:
+		return false
 	if _settle > 0.0:
 		_settle -= delta
 		return false

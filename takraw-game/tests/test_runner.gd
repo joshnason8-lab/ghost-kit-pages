@@ -35,7 +35,7 @@ func _ready() -> void:
 	_officials_back_away()
 	_no_glide_between_points()
 	_no_glide_in_play()
-	_solid_props()
+	await _solid_props()
 	_jitter()
 	_stick_follows_screen()
 	await _watch_ai()
@@ -53,8 +53,13 @@ func _ready() -> void:
 	get_tree().quit(1 if failures > 0 else 0)
 
 
+var _verbose := OS.get_environment("TEST_VERBOSE") == "1"
+
+
 func check(ok: bool, what: String) -> void:
 	checks += 1
+	if _verbose:
+		print("CHECK ", "ok   " if ok else "FAIL ", what)   # (TEST_VERBOSE=1: every check, to compare two runs)
 	if not ok:
 		failures += 1
 		print("FAIL: ", what)
@@ -886,8 +891,57 @@ func _solid_props() -> void:
 		var r: Dictionary = s.bounce(Vector3(0.8, 0.5, post_z + 1.4), Vector3(0, 0, 12.0), Ball.RADIUS, 0.25)
 		check(not (r.hits as Array).is_empty() and float((r.vel as Vector3).z) < 0.0 and float((r.pos as Vector3).z) < post_z + 2.25,
 			"%s: a ball sent at the scorers' table comes back off it (%s)" % [v[0], r.pos])
+		if String(v[0]) == "national":
+			await _fetch_behind_bench(m, post_z)
 		m.queue_free()
 		remove_child(m)
+
+
+## 0.15.4's stuck match (BOT_SEED 6): a ball come to rest behind a team bench. The fetcher must go round the bench and
+## pick it up (he walked up and down in front of it for good), and the thrower given it after 14 s goes to his place
+## with it (he kept heading for where it had lain).
+func _fetch_behind_bench(m: Node, post_z: float) -> void:
+	m.process_mode = Node.PROCESS_MODE_DISABLED   # (stepped here)
+	var dt := 1.0 / 30.0
+	var spot := Vector3(-3.67, Ball.RADIUS, post_z + 2.4 + 0.67)   # behind the left bench, 0.6 m in from its end
+	for k in 2:
+		m._process(dt)
+	m.state = m.S.SETUP
+	m.state_t = 0.0
+	m.set("_carrier", null)
+	for side in 2:
+		for pp in m.players_on(side):
+			(pp as Player).carrying = false
+	m.ball.flying = false
+	m.ball.loose = true
+	m.ball.vel = Vector3.ZERO
+	m.ball.global_position = spot
+	m._fetch_ball()
+	var f: Player = m.get("_fetcher")
+	var got := -1.0
+	var inside := 0.0
+	for i in int(13.5 / dt):
+		m._process(dt)
+		if f:
+			inside = maxf(inside, float(m.arena.solid.penetration(f.position, Player.BODY_R, Player.BODY_H)[0]))
+		if m.get("_carrier") != null and got < 0.0:
+			got = float(m.state_t)
+			break
+	check(f != null and got >= 0.0 and got < 14.0, "a ball behind the team bench: the fetcher goes round and picks it up (%.1f s)" % got)
+	check(inside <= 0.02, "the fetcher round the bench, not through it (%.3f m in)" % inside)
+	# The 14 s fallback: the thrower given the ball goes to his place with it.
+	var th: Player = m._thrower()
+	m.state = m.S.SETUP
+	m.state_t = 14.5
+	m.set("_carrier", null)
+	m.set("_fetcher", th)
+	th.target = spot
+	th.face_to = spot
+	m._step(dt)
+	var place: Vector3 = m._serve_spot(th, th.side, th.side == m._serving_side())
+	check(m.get("_carrier") == th and th.target.distance_to(place) < 0.01 and not th.face_to.is_finite() and m.get("_fetcher") == null,
+		"the thrower given the ball after 14 s goes to his place with it")
+	await frames(1)
 
 
 ## Watch AI (on the home screen): its setup in every language (the two teams, no side of yours, no difficulty); the

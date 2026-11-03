@@ -144,12 +144,16 @@ func _pose(o: One, dt: float, ball: Vector3, live: bool) -> void:
 	# Stepping out of the ball's way and back: quick to start, eased in to where he is going.
 	var speed := 0.0
 	if o.standing:
-		var want := (o.off_to - o.off) * 7.0
-		o.vel = o.vel.move_toward(want.limit_length(3.0), dt * 24.0)
-		# (round the props and never into one: the ball stand, a tripod - the shared WsgSolidProps)
+		var want := ((o.off_to - o.off) * 7.0).limit_length(3.0)
+		# (Round the props and never into one: the ball stand, a tripod - the shared WsgSolidProps. The way he wants
+		# to go steered first, then his pace taken up toward it, then the step pushed out of anything he touches: as
+		# the players, Player.tick.)
 		if solid != null:
-			var mv := solid.move(o.home + o.off, o.vel, dt, 0.25, 1.8, o.home + o.off_to, o.memo)
-			o.off = Vector3((mv[0] as Vector3).x, 0.0, (mv[0] as Vector3).z) - Vector3(o.home.x, 0.0, o.home.z)
+			want = solid.steer(o.home + o.off, want, 0.25, 1.8, o.home + o.off_to, o.memo)
+		o.vel = o.vel.move_toward(want, dt * 24.0)
+		if solid != null:
+			var at := solid.push_out(o.home + o.off + o.vel * dt, 0.25, 1.8)
+			o.off = Vector3(at.x, 0.0, at.z) - Vector3(o.home.x, 0.0, o.home.z)
 		else:
 			o.off += o.vel * dt
 		o.body.position = o.home + o.off

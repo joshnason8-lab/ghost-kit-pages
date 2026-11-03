@@ -103,3 +103,54 @@ func replay_end() -> void:
 	fov = 42.0
 	global_position = _pos
 	look_at(_look)
+
+
+# ---------------------------------------------------------------- the stick on the floor
+
+## The stick's way on the floor at p for camera c (0.14.4; Match._cam_dir, and the world check's joystick rule through
+## game/world.gd): the way that, where p is drawn, goes the stick's way on the screen (up the stick is up the screen
+## there), in every camera, its length the stick's push. The floor's way for a step right and a step down on the screen
+## at p (axes; from screen_axes when not given) is mixed as the stick is pushed. By the camera's turn alone (before) it
+## was out by the perspective: 24-33 degrees at the picture's middle (the diagonals, foreshortened) and 50-56 at its
+## edges, in all three cameras (the owner found it wrong in other games). j: x right, y down (Input.get_vector's).
+static func stick_world(j: Vector2, c: Camera3D, p: Vector3, axes := []) -> Vector3:
+	if axes.is_empty():
+		axes = screen_axes(c, p)
+	var w := Vector3.ZERO
+	if axes.size() == 2:
+		w = (axes[0] as Vector3) * j.x + (axes[1] as Vector3) * j.y
+	else:
+		# (p off the picture: the camera's turn.)
+		var bz := c.global_transform.basis.z
+		var right := c.global_transform.basis.x
+		var up := -bz if absf(bz.y) < 0.9 else c.global_transform.basis.y
+		w = Vector3(right.x, 0, right.z).normalized() * j.x - Vector3(up.x, 0, up.z).normalized() * j.y
+	w.y = 0.0
+	return w.normalized() * minf(j.length(), 1.0) if w.length() > 1e-6 else Vector3.ZERO
+
+
+## The floor's way for a step right and for a step down on the screen where p (on the floor) is drawn by c: the
+## camera's rays a little either side of it, met with the floor, per pixel. [] if p is off the picture or the floor is
+## edge on.
+static func screen_axes(c: Camera3D, p: Vector3) -> Array:
+	var f := Vector3(p.x, 0.0, p.z)
+	if c.is_position_behind(f):
+		return []
+	var sp := c.unproject_position(f)
+	var d := maxf(4.0, c.get_viewport().get_visible_rect().size.y * 0.03)
+	var r1 := floor_at(c, sp + Vector2(d, 0))
+	var r0 := floor_at(c, sp - Vector2(d, 0))
+	var d1 := floor_at(c, sp + Vector2(0, d))
+	var d0 := floor_at(c, sp - Vector2(0, d))
+	if not (r1.is_finite() and r0.is_finite() and d1.is_finite() and d0.is_finite()):
+		return []
+	return [(r1 - r0) / (2.0 * d), (d1 - d0) / (2.0 * d)]
+
+
+## Where c's ray through a point of the screen meets the floor; INF if it doesn't (at or above the horizon).
+static func floor_at(c: Camera3D, s: Vector2) -> Vector3:
+	var o := c.project_ray_origin(s)
+	var n := c.project_ray_normal(s)
+	if n.y > -0.01 or o.y <= 0.0:
+		return Vector3.INF
+	return o + n * (-o.y / n.y)

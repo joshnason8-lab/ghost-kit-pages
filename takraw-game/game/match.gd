@@ -197,7 +197,7 @@ func build_venue(ld: WsgLoading = null) -> void:
 
 
 ## The two teams, the officials and the benches.
-func build_people() -> void:
+func build_people(ld: WsgLoading = null) -> void:
 	# Your team on the left of the broadcast picture (side 1, x > 0: the camera looks across from the far side).
 	if user_team == 0:
 		side_team = [1, 0]
@@ -205,9 +205,22 @@ func build_people() -> void:
 	for side in 2:
 		for pp in players_on(side):
 			(pp as Player).solid = arena.solid
+	# (Behind the loading overlay, a frame between the teams, the officials and the bench: on High each body is the
+	# shared foundation's too, and all of them at once held the main thread half a second.)
+	if ld:
+		await ld.checkpoint(0.5)
 	_make_officials()
 	_officials.solid = arena.solid
+	if ld:
+		await ld.checkpoint(0.75)
 	_make_bench()
+	# Each body the shared foundation draws (Medium and High) posed once now, as the game has it, behind the loading
+	# overlay. It was hidden till the match's first frame of play, so the overlay came down on a court with nobody on it
+	# for a frame, and the warm-up (WsgLoading.warm) never drew it, leaving its look to be made in play.
+	for b in _all_bodies():
+		var link: FoundationLink = (b as RealBody).link
+		if link:
+			link.update(1.0 / 30.0)
 	if FoundationLink.enabled():
 		wsg_replay = WsgReplay.new()
 		add_child(wsg_replay)
@@ -479,7 +492,14 @@ func _step(_dt: float) -> void:
 			# to reach his place (a long rally ends far from it), up to 9 s; if the ball is still on its way after 14,
 			# the thrower is given it.
 			if state_t > 14.0 and _carrier != _thrower():
-				_give(_thrower())
+				var th := _thrower()
+				_give(th)
+				# (He goes to his place with it: had he been fetching it, he was still heading for where it lay.)
+				_fetcher = null
+				_pick_t = -1.0
+				th.face_to = Vector3.INF
+				th.look_to = Vector3.INF
+				_back_to_place(th)
 			if state_t > SETUP_TIME and _toss_ready(0.0) and (_thrower() == _server() or _thrower().crouched()):
 				_begin_toss()
 		S.TOSS, S.RALLY:
@@ -2347,51 +2367,18 @@ func _whiff(label: String) -> void:
 	other.queue_move(String(pick.move), float(pick.t) - Moves.contact_time(String(pick.move)), bool(pick.mirror))
 
 
-## The stick's way on the floor at p (0.14.4): the way that, where p is on the screen, goes the stick's way on the
-## screen (up the stick is up the screen there), in every camera, its length the stick's push. The floor's way for a
-## step right and a step down on the screen at p (axes; from _screen_axes when not given) is mixed as the stick is
-## pushed. By the camera's turn alone (before) it was out by the perspective: 24-33 degrees at the picture's middle (the
-## diagonals, foreshortened) and 50-56 at its edges, in all three cameras (the owner found it wrong in other games).
+## The stick's way on the floor at p, in the match's camera (CameraRig.stick_world: the way that, where p is drawn, goes
+## the stick's way on the screen). axes: the floor's ways for a step right and a step down on the screen at p.
 func _cam_dir(j: Vector2, p: Vector3, axes := []) -> Vector3:
-	if axes.is_empty():
-		axes = _screen_axes(p)
-	var w := Vector3.ZERO
-	if axes.size() == 2:
-		w = (axes[0] as Vector3) * j.x + (axes[1] as Vector3) * j.y
-	else:
-		# (p off the picture: the camera's turn.)
-		var right := cam.global_transform.basis.x
-		var up := -cam.global_transform.basis.z if absf(cam.global_transform.basis.z.y) < 0.9 else cam.global_transform.basis.y
-		w = Vector3(right.x, 0, right.z).normalized() * j.x - Vector3(up.x, 0, up.z).normalized() * j.y
-	w.y = 0.0
-	return w.normalized() * minf(j.length(), 1.0) if w.length() > 1e-6 else Vector3.ZERO
+	return CameraRig.stick_world(j, cam, p, axes)
 
 
-## The floor's way for a step right and for a step down on the screen where p (on the floor) is drawn: the camera's
-## rays a little either side of it, met with the floor, per pixel. [] if p is off the picture or the floor is edge on.
 func _screen_axes(p: Vector3) -> Array:
-	var c: Camera3D = cam
-	var f := Vector3(p.x, 0.0, p.z)
-	if c.is_position_behind(f):
-		return []
-	var sp := c.unproject_position(f)
-	var d := maxf(4.0, c.get_viewport().get_visible_rect().size.y * 0.03)
-	var r1 := _floor_at(sp + Vector2(d, 0))
-	var r0 := _floor_at(sp - Vector2(d, 0))
-	var d1 := _floor_at(sp + Vector2(0, d))
-	var d0 := _floor_at(sp - Vector2(0, d))
-	if not (r1.is_finite() and r0.is_finite() and d1.is_finite() and d0.is_finite()):
-		return []
-	return [(r1 - r0) / (2.0 * d), (d1 - d0) / (2.0 * d)]
+	return CameraRig.screen_axes(cam, p)
 
 
-## Where the camera's ray through a point of the screen meets the floor; INF if it doesn't (at or above the horizon).
 func _floor_at(s: Vector2) -> Vector3:
-	var o := cam.project_ray_origin(s)
-	var n := cam.project_ray_normal(s)
-	if n.y > -0.01 or o.y <= 0.0:
-		return Vector3.INF
-	return o + n * (-o.y / n.y)
+	return CameraRig.floor_at(cam, s)
 
 
 ## The stick's axes at your player, eased: a cut to another camera (or a fast swing of this one) turns them over about

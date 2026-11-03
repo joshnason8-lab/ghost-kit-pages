@@ -235,14 +235,19 @@ func tick(dt: float, now: float) -> void:
 		var ts := now - move_start
 		if c > 0.0 and ts > c and ts < c + FOLLOW_THROUGH:
 			want = Vector3.ZERO
-	vel = vel.move_toward(want, 16.0 * dt)
 	# Round the props and never into one (the owner: "There will NEVER be a time when a player or referee should walk
-	# through a table or bench"): the shared WsgSolidProps steers his step and pushes him out of anything he touches.
+	# through a table or bench"): the way he wants to go is steered round what is in it (the shared WsgSolidProps,
+	# keeping to one side of a long bench), then his pace taken up toward that, then his step pushed out of anything
+	# he touches. (Steering the velocity he had instead - which the pace kept pulling back toward the bench between
+	# him and a ball lying behind it - left him walking up and down in front of it for good: 0.15.4.)
+	if solid != null and not airborne:
+		want = solid.steer(position, want, BODY_R, BODY_H, _goal, _memo)
+	vel = vel.move_toward(want, 16.0 * dt)
 	if solid != null:
-		var mv := solid.move(position, vel, dt, BODY_R, BODY_H, _goal, _memo)
-		position = mv[0]
-		if not airborne:
-			vel = Vector3((mv[1] as Vector3).x, 0.0, (mv[1] as Vector3).z)
+		var was := position
+		position = solid.push_out(position + vel * dt, BODY_R, BODY_H)
+		if not airborne and dt > 0.0:
+			vel = Vector3(position.x - was.x, 0.0, position.z - was.z) / dt
 	else:
 		position += vel * dt
 	position.y = 0.0

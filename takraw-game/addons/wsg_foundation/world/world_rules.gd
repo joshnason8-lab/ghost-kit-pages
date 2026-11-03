@@ -62,6 +62,9 @@ static func drive(tree: SceneTree, body: WsgBody, loco: WsgLocomotor, segments: 
 			body.position = pos
 			loco.drive(DT, Vector3(vel.x, 0, vel.y), facing, Vector3(want.x, 0, want.y))
 			await tree.process_frame
+			# (A body the game advances itself - set_manual - is posed only when advanced: Hurling's hung the walk.)
+			if body.manual:
+				body.call_deferred("advance", DT)
 			await body.skeleton.skeleton_updated
 			on_frame.call(t, si)
 			# (Out of skeleton_updated before the next drive: poses set inside it are undone.)
@@ -303,6 +306,104 @@ static func joystick(game: WsgWorldGame, modes: Array) -> Dictionary:
 	if not any:
 		return _not_wired(r, "cameras")
 	return _close(r)
+
+
+## tiers: every mode at each tier the player can choose (Low, Medium, High) keeps to that tier (item 3): it never
+## puts the tier up (Hurling's practice forced High: 2,400 fans, a 9.7 s start), its 3D crowd is within the tier's
+## budget (WsgFoundation.crowd_budget of crowd_quality), at most full_bodies() bodies are drawn in full, and - with a
+## renderer (xvfb, opengl3) - a frame draws no more triangles or draw calls than WsgFoundation.frame_budget. A mode the
+## owner lets run higher names their note in tier_exceptions(). Headless, the drawn counts are not measured (the
+## scene's own triangle count, not culled, is reported instead).
+static func tiers(game: WsgWorldGame, parent: Node) -> Dictionary:
+	var r := result("tiers")
+	if game.modes().is_empty():
+		return _not_wired(r, "modes")
+	var tree := parent.get_tree()
+	var excused := game.tier_exceptions()
+	var drawn := DisplayServer.get_name() != "headless" and parent is Viewport
+	var was := WsgFoundation.tier
+	for mode: String in game.modes():
+		if excused.has(mode):
+			r.lines.append("%s: excused by the owner: %s" % [mode, excused[mode]])
+			continue
+		for t in [WsgFoundation.LOW, WsgFoundation.MEDIUM, WsgFoundation.HIGH]:
+			WsgFoundation.over_tier.clear()
+			game.set_tier(t)
+			var holder := Node.new()
+			holder.name = "Tier%d_%s" % [t, mode.validate_node_name()]
+			parent.add_child(holder)
+			await tree.process_frame
+			var t0 := Time.get_ticks_msec()
+			game.start_mode(mode, holder)
+			var waited := 0
+			while waited < 30 * 120:
+				await tree.process_frame
+				waited += 1
+				if waited > 2 and not WsgLoading.busy():
+					break
+			var start_ms := Time.get_ticks_msec() - t0
+			for f in 30:
+				await tree.process_frame
+			var now_tier := WsgFoundation.tier
+			var fans := 0
+			for c in holder.find_children("*", "WsgCrowd3D", true, false):
+				fans += (c as WsgCrowd3D).used.size()
+			var bodies := holder.find_children("*", "WsgBody", true, false)
+			var full := bodies.filter(func(b: WsgBody) -> bool: return b.full).size()
+			var fans_max: int = WsgFoundation.crowd_budget(WsgFoundation.crowd_most())[1]
+			var full_max := WsgFoundation.full_bodies()
+			var tag := "%s at %s" % [mode, ["Low", "Medium", "High"][t]]
+			var line := "%s: tier %d after the start, %d 3D fans (at most %d), %d of %d bodies in full (at most %d), started in %.1f s (this machine)" % [
+				tag, now_tier, fans, fans_max, full, bodies.size(), full_max, start_ms / 1000.0]
+			if drawn:
+				var vp := parent as Viewport
+				var tris := vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_PRIMITIVES_IN_FRAME)
+				var dcs := vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_DRAW_CALLS_IN_FRAME)
+				var fb := WsgFoundation.frame_budget(t)
+				line += ", drawn %d triangles in %d draw calls (at most %d, %d)" % [tris, dcs, fb.triangles, fb.draw_calls]
+				if tris > int(fb.triangles):
+					r.fails.append("%s: a frame draws %d triangles, over the tier's %d" % [tag, tris, fb.triangles])
+				if dcs > int(fb.draw_calls):
+					r.fails.append("%s: a frame makes %d draw calls, over the tier's %d" % [tag, dcs, fb.draw_calls])
+			else:
+				line += ", the scene holds %d triangles (not culled; drawn counts need a renderer)" % _scene_triangles(holder)
+			r.lines.append(line)
+			if now_tier > t:
+				r.fails.append("%s: the mode put the graphics tier up to %d (the player chose %d)" % [tag, now_tier, t])
+			if fans > fans_max:
+				r.fails.append("%s: %d 3D fans, over the tier's %d" % [tag, fans, fans_max])
+			if full > full_max:
+				r.fails.append("%s: %d bodies drawn in full detail, over the tier's %d (WsgFoundation.rank_detail)" % [tag, full, full_max])
+			for o: Dictionary in WsgFoundation.over_tier:
+				r.lines.append("%s: asked for a %s of quality %d, built at %d (the tier's most)" % [tag, o.what, o.wanted, o.got])
+			holder.queue_free()
+			await tree.process_frame
+			while WsgLoading.busy():
+				await tree.process_frame
+	game.set_tier(was)
+	return _close(r)
+
+
+static func _scene_triangles(root: Node) -> int:
+	var n := 0
+	for g in root.find_children("*", "GeometryInstance3D", true, false):
+		if not (g as GeometryInstance3D).is_visible_in_tree():
+			continue
+		if g is MeshInstance3D and (g as MeshInstance3D).mesh:
+			n += _mesh_tris((g as MeshInstance3D).mesh)
+		elif g is MultiMeshInstance3D and (g as MultiMeshInstance3D).multimesh and (g as MultiMeshInstance3D).multimesh.mesh:
+			var mm := (g as MultiMeshInstance3D).multimesh
+			n += _mesh_tris(mm.mesh) * (mm.visible_instance_count if mm.visible_instance_count >= 0 else mm.instance_count)
+	return n
+
+
+static func _mesh_tris(m: Mesh) -> int:
+	var n := 0
+	for s in m.get_surface_count():
+		var a := m.surface_get_arrays(s)
+		var idx: Variant = a[Mesh.ARRAY_INDEX]
+		n += ((idx as PackedInt32Array).size() if idx != null and (idx as PackedInt32Array).size() > 0 else (a[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()) / 3
+	return n
 
 
 ## sounds: every key moment's sound kind stays crisp at a distance (WsgAudio.bright_kinds: brought within

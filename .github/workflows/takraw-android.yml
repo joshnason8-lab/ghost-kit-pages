@@ -26,7 +26,7 @@ env:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120   # (the world check plays every mode at every tier and audits every venue: about an hour)
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
@@ -105,15 +105,32 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
 
-      # The owner: nobody ever walks through a table or a bench, and the ball bounces off them. The shared prop audit
-      # plays a Watch-AI match at every venue (game/prop_runs.gd) and fails on any body more than 2 cm into a prop or
-      # any ball step through one; its report and close-ups go outside the project.
-      - name: Props are solid (prop_audit, every venue)
+      # The world rules (the shared foundation's docs/WORLD_RULES.md, ADOPTING §5.18) on the game's own code, as
+      # game/world.gd wires them. Each mode is started by its own Play button and then checked:
+      #   - its loading overlay is up in the tap's frame;
+      #   - its players and officials are drawn as people;
+      #   - the stick goes the camera's way on every camera;
+      #   - at Low, Medium and High it keeps within the tier's budgets.
+      # Also checked: a player's planted feet; the key sounds crisp at a distance; no licensed data on the Web; and at
+      # every venue the props solid (the owner: nobody walks through a table or a bench, and the ball bounces off them:
+      # the shared prop audit, game/prop_runs.gd) and the crowd seated (crowd_audit).
+      # The report (WORLD_CHECK.md, world_check.json, the audits' sheets) goes outside the project and is uploaded. A
+      # failing rule fails the build from 2026-11-03 12:00 UTC; the props fail it now, as before.
+      - name: World rules (world_check; props, crowd, feet, pose, officials, sounds, loading, joystick, web, tiers)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 1800 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 1 90 2>&1 | tee prop_audit.log
-          if grep -q "SCRIPT ERROR" prop_audit.log; then grep -A4 "SCRIPT ERROR" prop_audit.log; exit 1; fi
+          timeout 4200 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | tee "$RUNNER_TEMP/world_check.log"
+          if grep -q "SCRIPT ERROR" "$RUNNER_TEMP/world_check.log"; then grep -A4 "SCRIPT ERROR" "$RUNNER_TEMP/world_check.log"; exit 1; fi
+          python3 -c "import json,sys; r={x['rule']: x['status'] for x in json.load(open(sys.argv[1]))['rules']}; sys.exit(0 if r.get('props') == 'pass' else 'the props rule: %s' % r.get('props'))" "$RUNNER_TEMP/world/world_check.json"
+
+      - name: Upload the world check
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-check
+          path: ${{ runner.temp }}/world
+          if-no-files-found: warn
 
       # The beta's signing key: the owner's, from the BETA_KEYSTORE_B64 secret (a PKCS12 keystore, base64; password
       # "android", alias "androiddebugkey"), so every build installs over the last and keeps the player's saves. Without

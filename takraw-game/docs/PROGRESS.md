@@ -670,6 +670,62 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The world rules, and the ball behind the bench (0.15.5)
+
+Foundation synced to 15abaa3. It brings the world rules check's tiers rule and its screen-true joystick reference,
+the prop audit's seated bodies, the release gate (§5.19), WsgAssetPack, and WsgAutoTier standing down in the sim and
+the world check.
+
+### The ball behind the bench
+0.15.4 could stop a match for good. BOT_SEED 6 found it (the perfect bot: no result in 15 minutes).
+- A ball came to rest behind a team bench, 0.6 m in from its end.
+- The fetcher walked up and down in front of the bench and never got round it. Player.tick was steering the
+  velocity he already had (`solid.move`), and his acceleration kept pulling that back toward the bench between him
+  and the ball. This is the pitfall ADOPTING's solid-props notes describe.
+- After 14 s the thrower was given the ball, but nothing sent him to his place, so the serve never came.
+
+The fixes:
+- Players and standing officials now steer the way they want to go round the props first (`solid.steer`, which
+  keeps to one side of a long bench), then take up their pace toward it, then step and are pushed out of contact
+  (`solid.push_out`).
+- The 14 s fallback sends the thrower to his place with the ball.
+- test_runner places a ball behind the National Arena's bench. It is picked up round the bench in 4.4 s, 0 cm into
+  it, and the fallback sends the thrower home. This test fails on 0.15.4.
+- The perfect bot plays seeds 1-6 to the same results as before props (points conceded 4, 3, 10, 3, 3, 7).
+
+### The world rules (ADOPTING §5.18)
+`game/world.gd` wires every rule of the shared world check (`tools/wsg/world_check.gd`) to the game's own code:
+- **modes:** quick match, Watch AI, season and international, each started from its own screen's Play button, as
+  the player's tap does.
+- **officials:** the referee and the assistant referee, and two line judges. FoundationLink puts each official's
+  drawn body in the group `wsg_official`.
+- **feet:** a player as he walks between points, the foundation's man at the scale the link draws him
+  (`FoundationLink.free_scale`).
+- **sounds:** the kick, bounce, net and whistle.
+- **joystick:** the match's own stick mapping, now `CameraRig.stick_world` (static, for any camera). Match._cam_dir
+  calls it, and the world check calls it on the broadcast, side-on and end cameras.
+- **props and crowd:** the existing registries.
+- **tiers:** the graphics level set as the Settings screen sets it.
+
+The joystick rule first failed the game's mapping on the diagonals (33-40 degrees). The mapping follows the screen
+where the player is drawn, which was the lead's 0.14.4 change. The check's references were the camera's flat floor
+diagonals, which the picture foreshortens. Measured: the game's mapping is within 0.3 degrees of the screen-true way
+on all 3 cameras x 9 spots x 8 sticks. The foundation added the screen-true way as a reference (15abaa3).
+
+CI runs the world check in place of the prop audit step, with the props at the same 90 s a venue. It uploads
+WORLD_CHECK.md and the audits' sheets. A failing rule fails the build from 2026-11-03 12:00 UTC; the props fail it now,
+as before.
+
+The pose rule found a real fault. On Medium and High, every body the foundation draws (players, substitutes,
+officials) was hidden until the match's first frame of play. So the loading overlay came down on a court with nobody
+on it for one frame, and the warm-up never drew those bodies, leaving their skinned look to be made in play. Each is
+now posed once as it is built, behind the overlay (Match.build_people), so all 14 are drawn on the frame the overlay
+comes down.
+
+### Loading
+Starting a match on High, the Players step held the main thread 0.5 s (on this machine's software renderer). It now
+yields between the teams, the officials and the bench (`ld.checkpoint`).
+
 ## Solid props, and loading v2 (0.15.4)
 
 Foundation synced to 07864d7 (every required commit: loading v2, solid props, the warm-up fix, key hits, the

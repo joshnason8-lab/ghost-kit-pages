@@ -416,7 +416,7 @@ func play_match(config: Dictionary, buttons: Array = []) -> void:
 		ld.parts().dim.color.a = 1.0   # (the screen behind is the match being built now: not seen till it starts)
 		built.m = m)
 	ld.step("Venue", func(): await built.m.build_venue(ld), 3.0)
-	ld.step("Players", func(): built.m.build_people(), 2.0)
+	ld.step("Players", func(): await built.m.build_people(ld), 2.0)
 	ld.step("View", func(): built.m.build_view())
 	# Its looks drawn a few at a frame behind the overlay (the foundation's warm-up: each new shader made in a frame
 	# of its own, not every one in the match's first frame - 6-12 s on a first launch, before).
