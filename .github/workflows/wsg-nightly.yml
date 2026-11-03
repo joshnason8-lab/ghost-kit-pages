@@ -1,20 +1,17 @@
-# World Stage Games: the nightly WsgSim batch for every game. GitHub runs scheduled workflows only from the default
-# branch, so a game's own sim workflow (<game>-sim.yml, from the foundation's tools/wsg/sim_ci.yml) never fires its
-# cron from its game branch. This one runs on main and, at a quiet hour, asks each game's sim workflow to run on its
-# own branch (workflow_dispatch with ref: <branch>). The game's workflow then runs its nightly job there, as its cron
-# would have.
+# World Stage Games: a WsgSim batch for every game, run by hand (Actions → "WSG nightly simulation" → Run workflow).
+# The owner wants simulations in rounds, not continuously, so there is no schedule: start a round when one is wanted.
+# GitHub runs scheduled workflows only from the default branch, so this workflow on main asks each game's sim workflow
+# (<game>-sim.yml, from the foundation's tools/wsg/sim_ci.yml) to run on its own branch (workflow_dispatch with
+# ref: <branch>).
 #
 # A game is dispatched when its branch carries .github/workflows/*-sim.yml with `workflow_dispatch:` among its
 # triggers, and that workflow has run at least once (a push), so GitHub knows it. A game without one yet is listed as
-# skipped, not failed. Add a game: add its branch to GAME_BRANCHES. When a game is merged into main, remove its branch
-# here (its own cron then fires from main).
+# skipped, not failed. Add a game: add its branch to GAME_BRANCHES.
 #
-# Queueing: each game's nightly batch is 16 shards plus a merge job, and a public repository runs 20 jobs at once, so
+# Queueing: each game's batch is 16 shards plus a merge job, and a public repository runs 20 jobs at once, so
 # the games' batches queue behind one another.
 name: WSG nightly simulation
 on:
-  schedule:
-    - cron: '43 3 * * *'
   workflow_dispatch:
     inputs:
       only:
@@ -51,7 +48,7 @@ jobs:
           branches="${ONLY:-$GAME_BRANCHES}"
           failed=0
           {
-            echo "## WSG nightly: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            echo "## WSG simulation round: $(date -u '+%Y-%m-%d %H:%M UTC')"
             echo
             echo "| Branch | Sim workflow | Result |"
             echo "|---|---|---|"
