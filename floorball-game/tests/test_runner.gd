@@ -23,6 +23,7 @@ func _ready() -> void:
 	# the time CI allows (with it, a match's people cost the CPU about four times as much).
 	var foundation := FoundationLink.enabled()
 	FoundationLink.off = true
+	_version()
 	_rink()
 	_restarts()
 	_offences()
@@ -78,6 +79,19 @@ func frames(n: int) -> void:
 # ---------------------------------------------------------------- the rules, one by one
 
 ## 101-103: the rink, its areas and the goals.
+## The version the release is named by (project.godot) is the version every build carries (export_presets.cfg): 0.9.7
+## shipped named 0.9.6 when only the presets were raised.
+func _version() -> void:
+	var v := String(ProjectSettings.get_setting("application/config/version", ""))
+	var f := FileAccess.open("res://export_presets.cfg", FileAccess.READ)
+	var names := []
+	if f:
+		for line in f.get_as_text().split("\n"):
+			if line.begins_with("version/name="):
+				names.append(line.get_slice("=", 1).strip_edges().trim_prefix("\"").trim_suffix("\""))
+	check(not names.is_empty() and names.all(func(n): return n == v), "the release's version (%s) is every build's (%s)" % [v, names])
+
+
 func _rink() -> void:
 	check(Rules.LENGTH == 40.0 and Rules.WIDTH == 20.0, "101: the rink is 40 x 20 m")
 	check(is_equal_approx(Rules.HALF_L - Rules.GOAL_LINE, 3.5), "102: the goal line is 3.5 m from the end board")
