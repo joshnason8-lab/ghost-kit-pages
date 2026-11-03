@@ -352,8 +352,11 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
     from its arms-only pose ("upper"), and the feet slid to the capture's. Only a body coming back from the game's whole
     pose is reset now (seed 13 replayed: gone).
   - RuleChecks read a sudden-death win (time up, level: the next raya wins) as a count that was not its history.
-  Shared foundation synced to eaa6713 (the sim's no-progress check). The players' own foot slips in the sim (2.5-5.7
-  cm on hard stops and pivots at speed, in the planter's "move") are reported to the foundation with replays.
+  The players' own foot slips in the sim (2.5-5.7 cm on hard stops and pivots at speed, in the planter's "move") went
+  to the foundation with replays; its planter fix (c4fdcd6: a let-go foot held across while it decides) clears all
+  three replayed. Shared foundation synced to efeadfe (that fix, no doubled landings, the sim's no-progress check, pose
+  excuses, deferrals; the fetch hook, enforced from 2026-11-04 12:00 UTC, asked of the lead: our players never leave
+  the court, so none can fetch a ball from behind a prop).
 
 ## Next
 
