@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.11
+
+- **Cleaner footwork at speed**: a foot left behind when a player stops hard now steps instead of jumping, and a foot
+  that lands is planted on the frame it touches down (the shared animation foundation's planter).
+
 ## New in 0.24.10
 
 - **A man sent off really goes**: at the stadium a board just past the touchline could hold him a metre short of the

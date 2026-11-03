@@ -857,6 +857,12 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.11, 3 November 2026)
+
+- **Foundation 70e571a8** (planter 7def933a, required 2026-11-06 12:00: landings planted on the frame they read down,
+  a step's move eased, a foot left far behind steps instead of re-planting, a let-go foot steps over; WsgSim cuts a
+  body not posed for 3 frames). Suite 711/0; owner notes 21/21 (gliding 1.5 cm worst, 0.21 mean).
+
 ## Done (0.24.10, 3 November 2026)
 
 - **Walk-off** (WsgSim seed 8 on 1b6793c6, "away 15 hardly moved for 6 s"): a board past the touchline held the man
