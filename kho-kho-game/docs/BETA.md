@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.10
+
+- **Feet stay put on Low**, the setting phones like the A16 play on: the players' feet no longer slide as they walk,
+  jog, run and stop (up to 14 cm a step before; now 2 cm at most), with the same running stride as before. Only the
+  players in the play or near the camera do the extra work, so Low runs as fast as it did.
+- Everything in 0.12.9 below, which was built but not put out (a check before publishing stopped it).
+
 ## What's new in 0.12.9
 
 - **The fast game is a little harder to score in** (the owner's call): a running touch slips off a defender a

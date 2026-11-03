@@ -302,6 +302,14 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   measured, its feet slipping 3-14 cm - deferred to 11-08). Safe release publish (ADOPTING 5.19). No nightly schedule
   (the owner: simulations in rounds). The release gate's "newer" only on a publishing build.
 
+- 0.12.10 (0.12.9 built but not published: the world check's pose rule caught a T/A-pose in watch AI): foundation synced to
+  0387e39 (7def933a planter; WsgWorldGame.pose_excuse 8c35417b). world.gd pose_excuse: only while the pole turn plays and a
+  hand is within 0.25 m of the pole (the lead's ruling), every pose asked about printed (WORLD_POSE). Low: the foundation's
+  planter on ModelBody's own skeleton (bone_map, contact_fn by the model's rest ankle and toe heights), only on bodies in
+  the play or within 15 m of the camera - feet_low worst slips 3-14 -> 0-2.1 cm, run skid 9.4 -> 0.2, sqrt cadence kept; its
+  own cost 0.3-0.5 ms a frame for 18 bodies (tests/low_planter_bench.gd). Published in place (no -next tag: the 403s).
+  The deferral: any foot slip to 11-06 12:00, then a planted slide up to 2.5 cm to 11-13.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from

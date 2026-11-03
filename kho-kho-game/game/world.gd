@@ -94,9 +94,9 @@ func walker(parent: Node) -> Array:
 
 
 ## The world check's pose rule asks this before it fails a T- or A-pose (WsgWorldGame.pose_excuse). Narrow, as the lead
-## ruled (2026-11-03): a pole turn only while a hand is on the pole (the other arm thrown out: the Drive video's
-## slingshot), and a touch or kho reached for on the run (FoundationLink "upper": the foundation's ruling). Every pose
-## asked about is printed (WORLD_POSE: who, act, mode, grip, hand to pole) so the log says what it was.
+## ruled (2026-11-03; ADOPTING): only while the pole turn plays AND a hand is on the pole (the other arm thrown out: the
+## Drive video's slingshot) - never by who he is, his part or his gait. Every pose asked about is printed (WORLD_POSE:
+## who, act, mode, grip, hand to pole) so the log says what it was.
 const POLE_HOLD := 0.25   # m from a hand to the pole's axis: holding it
 var _pose_said := {}
 
@@ -117,8 +117,6 @@ func pose_excuse(body: Node) -> String:
 	var why := ""
 	if a.act == "pole_turn" and hand < POLE_HOLD:
 		why = "pole turn: a hand on the pole (%.2f m), the other arm out" % hand
-	elif String(link.get("mode")) == "upper":
-		why = "a touch or kho reached for on the run: the reaching arm over the run"
 	var n := int(_pose_said.get(body.get_instance_id(), 0))
 	if n < 3:
 		_pose_said[body.get_instance_id()] = n + 1
