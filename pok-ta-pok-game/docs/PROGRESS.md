@@ -412,7 +412,7 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   the smoke on every push in three shards, the 16-shard batch only by hand); simulation work stops here until the owner
   calls the next round. The sim's foot-slip deferral goes when the foundation's 2026-11-06 batch lands.
 
-- **0.6.25-beta: store graphics with the realistic bodies.** The eight store screenshots remade on High from this build
+- **0.6.25-beta: store graphics with the realistic bodies; the foundation's 11-06 feet batch (1b6793c6).** The eight store screenshots remade on High from this build
   (the shared rig's players, the crowds), and a new feature graphic: a real match on the stone court held at a hip
   strike, the player seen low from across the court with the ball at his hip, the ring and the crowd behind him
   (store_shots.gd "feature"; make_feature.py now crops the picture to its panel - the old one was squeezed 1.6 times,
