@@ -3,7 +3,8 @@
 release goes up. Exits 1 if any check fails; writes RELEASE_GATE.md and release_gate.json to --out.
 
     python3 tools/wsg/release_gate.py --apk build/game-1.2.3.apk --version 1.2.3-beta --out "$RUNNER_TEMP/gate" \
-        [--web build/web/index.pck | build/web.zip | build/web/] [--previous last-release.apk] [--allow gate_allow.txt]
+        [--web build/web/index.pck | build/web.zip | build/web/] [--previous last-release.apk] [--published on-the-tag.apk]
+        [--allow gate_allow.txt]
 
 The checks:
   signature  every signer's certificate SHA-256 is the owner's key (CERT); apksigner verifies the signatures when the
@@ -18,6 +19,8 @@ The checks:
              own test-time scripts are listed as a warning: exclude them unless your game uses them).
   textures   no texture over 2 MB that is not GPU-compressed (a PNG/WebP/raw import is decoded whole into memory).
   files      no non-game files (.blend, .psd, .fbx, .zip, .py, .sh, .log, .orig ...) and no file of over 64 KB twice.
+  newer      the APK's versionName and versionCode are both above the release now published on its tag (--published,
+             else --previous): the same version republished is never offered as an update (Obtainium).
   size       no cap: the size against --previous, and the 20 files that grew most.
 --allow: lines "<glob>\\t<the owner's note>" excusing paths from clean/textures/files (reported with the note).
 """
@@ -117,6 +120,81 @@ def apksigner():
     return shutil.which("apksigner")
 
 
+def manifest_version(axml):
+    """(versionName, versionCode) from an APK's binary AndroidManifest.xml (AXML): the <manifest> element's
+    android:versionName (0x0101021c) and android:versionCode (0x0101021b); None for one it lacks."""
+    if len(axml) < 8 or struct.unpack("<H", axml[0:2])[0] != 0x0003:
+        return None, None
+    strings, res_ids = [], []
+    p = struct.unpack("<H", axml[2:4])[0]
+    while p + 8 <= len(axml):
+        ctype, hsize, csize = struct.unpack("<HHI", axml[p:p + 8])
+        if csize < 8:
+            break
+        if ctype == 0x0001:  # string pool
+            count, _styles, flags, sstart = struct.unpack("<IIII", axml[p + 8:p + 24])
+            utf8 = bool(flags & 0x100)
+            offs = struct.unpack("<%dI" % count, axml[p + hsize:p + hsize + 4 * count])
+            base = p + sstart
+            for o in offs:
+                q = base + o
+                if utf8:
+                    n = axml[q]
+                    q += 2 if n & 0x80 else 1
+                    n = axml[q]
+                    if n & 0x80:
+                        n = ((n & 0x7F) << 8) | axml[q + 1]
+                        q += 1
+                    q += 1
+                    strings.append(axml[q:q + n].decode("utf-8", "replace"))
+                else:
+                    n = struct.unpack("<H", axml[q:q + 2])[0]
+                    q += 2
+                    if n & 0x8000:
+                        n = ((n & 0x7FFF) << 16) | struct.unpack("<H", axml[q:q + 2])[0]
+                        q += 2
+                    strings.append(axml[q:q + 2 * n].decode("utf-16-le", "replace"))
+        elif ctype == 0x0180:  # resource ids of the attribute names
+            res_ids = list(struct.unpack("<%dI" % ((csize - hsize) // 4), axml[p + hsize:p + csize]))
+        elif ctype == 0x0102:  # start element
+            name = struct.unpack("<I", axml[p + 20:p + 24])[0]
+            if name < len(strings) and strings[name] == "manifest":
+                astart, asize, acount = struct.unpack("<HHH", axml[p + 24:p + 30])
+                vname = vcode = None
+                for k in range(acount):
+                    a = p + 16 + astart + k * asize
+                    _ns, aname, raw, _sz, _r, dtype, data = struct.unpack("<IIIHBBI", axml[a:a + 20])
+                    rid = res_ids[aname] if aname < len(res_ids) else 0
+                    if rid == 0x0101021C or (rid == 0 and aname < len(strings) and strings[aname] == "versionName"):
+                        if raw != 0xFFFFFFFF and raw < len(strings):
+                            vname = strings[raw]
+                        elif dtype == 0x03 and data < len(strings):
+                            vname = strings[data]
+                    elif rid == 0x0101021B or (rid == 0 and aname < len(strings) and strings[aname] == "versionCode"):
+                        if 0x10 <= dtype <= 0x1F:
+                            vcode = data
+                        elif raw != 0xFFFFFFFF and raw < len(strings) and strings[raw].isdigit():
+                            vcode = int(strings[raw])
+                return vname, vcode
+        p += csize
+    return None, None
+
+
+def version_key(v):
+    """A version string as something to compare: its numbers first, then a release above any pre-release of it
+    (0.9.8 > 0.9.8-beta), then the pre-release's parts in order (numbers as numbers: beta.10 > beta.9)."""
+    m = re.match(r"^\D*?(\d+(?:\.\d+)*)(?:[-+](.*))?$", (v or "").strip())
+    if not m:
+        return None
+    core = tuple(int(x) for x in m.group(1).split("."))
+    core = core + (0,) * (4 - len(core))
+    pre = m.group(2)
+    if not pre:
+        return (core, 1, ())
+    parts = tuple((0, int(x), "") if x.isdigit() else (1, 0, x) for x in re.split(r"[.\-]", pre) if x)
+    return (core, 0, parts)
+
+
 def project_version(binary):
     """application/config/version from a Godot project.binary (ECFG)."""
     if binary[:4] != b"ECFG":
@@ -176,7 +254,8 @@ def main():
     ap.add_argument("--version", help="the release's version (as project.godot's application/config/version)")
     ap.add_argument("--tag", help="the release tag, if it carries the version (e.g. kabaddi-raid-0.14.6-beta)")
     ap.add_argument("--web", help="the Web build: its .pck, a .zip of it, or its folder")
-    ap.add_argument("--previous", help="the previous release's APK (the size diff)")
+    ap.add_argument("--previous", help="the previous release's APK (the size diff; and the published one, if no --published)")
+    ap.add_argument("--published", help="the APK now published on the release's tag (this one must be a higher version)")
     ap.add_argument("--pack", help="the downloadable High pack (.pck): public, so it must hold no licensed data")
     ap.add_argument("--allow", help="owner-excused paths: '<glob>\\t<the owner's note>' a line")
     ap.add_argument("--cert", default=CERT)
@@ -231,6 +310,33 @@ def main():
     elif version not in os.path.basename(a.apk):
         fails.append("the APK's file name does not carry the version %s" % version)
     check("version", fails, lines)
+
+    # newer: above the release published on the tag (Obtainium offers an update only for a higher version; the same
+    # 0.9.8 republished with new code never reached an owner who had 0.9.8 - Floorball, 2026-11-03)
+    fails, lines = [], []
+    mine = manifest_version(z.read("AndroidManifest.xml")) if "AndroidManifest.xml" in names else (None, None)
+    lines.append("this APK: versionName %s, versionCode %s" % mine)
+    if mine[0] is None or mine[1] is None:
+        fails.append("this APK's AndroidManifest.xml has no versionName/versionCode the gate can read")
+    pub = a.published or a.previous
+    if pub and os.path.exists(pub):
+        with zipfile.ZipFile(pub) as pz:
+            theirs = manifest_version(pz.read("AndroidManifest.xml")) if "AndroidManifest.xml" in pz.namelist() else (None, None)
+        lines.append("published (%s): versionName %s, versionCode %s" % ((os.path.basename(pub),) + theirs))
+        if theirs[0] is None or theirs[1] is None:
+            fails.append("the published APK's versionName/versionCode cannot be read: nothing to compare against")
+        elif mine[0] is not None and mine[1] is not None:
+            if mine[1] <= theirs[1]:
+                fails.append("versionCode %d is not above the published release's %d" % (mine[1], theirs[1]))
+            km, kt = version_key(mine[0]), version_key(theirs[0])
+            if km is None or kt is None:
+                fails.append("cannot compare versionName %s with the published %s" % (mine[0], theirs[0]))
+            elif km <= kt:
+                fails.append("versionName %s is not above the published release's %s" % (mine[0], theirs[0]))
+    else:
+        lines.append("no published APK given (--published or --previous): nothing to compare against")
+        res["warnings"].append("newer: no published APK to compare the version against (the first release on its tag?)")
+    check("newer", fails, lines)
 
     # licensed data: in the APK, not on the Web
     fails, lines = [], []

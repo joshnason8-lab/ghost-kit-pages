@@ -99,10 +99,12 @@ static func feet(game: WsgWorldGame, parent: Node) -> Dictionary:
 		var name: String = MATCH_PATH[si][3]
 		var s := WsgNoteChecks.foot_slip(frames.get(si, []))
 		var moving := (MATCH_PATH[si][1] as Vector2).length() > 0.0 or si == 5
-		r.lines.append("%-15s %2d steps, worst slip %.1f cm, mean %.1f cm%s" % [name, s.steps, s.max_cm, s.mean_cm,
-			"" if moving else ", toe up %.1f cm" % s.toe_up_cm])
+		r.lines.append("%-15s %2d steps, worst slip %.1f cm, mean %.1f cm, skid %.1f cm%s" % [name, s.steps, s.max_cm, s.mean_cm,
+			s.skid_cm, "" if moving else ", toe up %.1f cm" % s.toe_up_cm])
 		if float(s.max_cm) > FEET_MAX_CM:
 			r.fails.append("%s: a planted foot slid %.1f cm in one step (%.1f at most)" % [name, s.max_cm, FEET_MAX_CM])
+		if float(s.skid_cm) > FEET_MAX_CM:
+			r.fails.append("%s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most)" % [name, s.skid_cm, FEET_MAX_CM])
 		if not moving and float(s.toe_up_cm) > TOE_UP_MAX_CM:
 			r.fails.append("%s: a standing foot's toe is %.1f cm off the ground (%.1f at most)" % [name, s.toe_up_cm, TOE_UP_MAX_CM])
 		if poses.has(si):
