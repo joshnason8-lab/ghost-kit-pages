@@ -58,7 +58,7 @@ func _ready() -> void:
 			if v == "arena":
 				for c: Array in [[Vector3(5, 2.6, -7.5), Vector3(-3, 6.0, -21.0), "bowl_far"],
 						[Vector3(-11, 2.8, 5.5), Vector3(-27, 6.0, -6.0), "bowl_end"],
-						[Vector3(3, 1.8, -8.5), Vector3(-1, 2.2, -15.0), "courtside_stand"]]:
+						[Vector3(3, 2.2, -5.4), Vector3(-1, 2.0, -15.0), "courtside_stand"]]:
 					var close := Camera3D.new()
 					close.fov = 50.0
 					m.add_child(close)

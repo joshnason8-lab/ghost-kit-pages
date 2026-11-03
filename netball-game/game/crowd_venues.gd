@@ -30,6 +30,11 @@ const METAL_EMPTY := [
 	[-0.53, -0.17, 1.64, 1.72, "seat"], [-0.64, -0.51, 1.70, 2.09, "seat back"],
 	[-1.04, -0.65, 1.92, 1.97, "seat"], [-1.12, -1.04, 1.95, 2.40, "seat back"],
 ]
+## Each row's folding seats as Arena._metal_seats draws them over the model's: [the seat's back edge, its front edge,
+## its top, the back's front face, the back's top] (z, y in the model, from METAL_ROWS and METAL_EMPTY; the first
+## row's back as the others', straight behind its seat).
+const METAL_SEATS := [[1.33, 1.73, 0.72, 1.336, 1.16], [0.72, 1.12, 1.09, 0.726, 1.51], [0.37, 0.64, 1.28, 0.376, 1.66],
+	[-0.51, -0.17, 1.72, -0.504, 2.09], [-1.04, -0.65, 1.97, -1.034, 2.40]]
 ## Low: the owner's lighter three-row aluminium stand (bleacher_hall, its _low), 8 m wide: three planks (top, front
 ## and back edge, in the model) - the first is the second's footboard, the second the seat, the third (behind, its
 ## people's feet would be where the second's sit) left empty.

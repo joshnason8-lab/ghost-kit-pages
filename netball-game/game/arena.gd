@@ -737,6 +737,33 @@ static func _face(g: Geo, a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vec
 func _courtside(name: String, w: float, half_d: float, x0: float, z0: float, y: float) -> void:
 	for xf: Transform3D in CrowdVenues.courtside(w, half_d, x0, z0, y):
 		_props.add(name, xf, Color(0.62, 0.68, 0.95))
+		if name == "bleacher_metal":
+			_metal_seats(xf)
+
+
+## The metal stand's folding seats as plastic seats (its model's chairs, decimated, read as black shards in the dark
+## where no one sits): over each of its 14 chairs a row, a lit pan, its front edge and the back's face, a few mm proud
+## of the model's (CrowdVenues.METAL_SEATS, measured off the model). In the venue's lit draw call.
+func _metal_seats(xf: Transform3D) -> void:
+	var col := Color("3a4c9e")
+	var up := xf.basis.y.normalized()
+	var fwd := xf.basis.z.normalized()
+	for row: Array in CrowdVenues.METAL_SEATS:
+		var sz0: float = row[0]
+		var sz1: float = row[1]
+		var top: float = row[2]
+		var bz: float = row[3]
+		var btop: float = row[4]
+		for i in 14:
+			var x := -3.25 + i * 0.5
+			var p := func(dx: float, yy: float, zz: float) -> Vector3: return xf * Vector3(x + dx, yy, zz)
+			_face(_lit, p.call(-0.22, top + 0.006, sz0), p.call(0.22, top + 0.006, sz0), p.call(0.22, top + 0.006, sz1 + 0.01),
+				p.call(-0.22, top + 0.006, sz1 + 0.01), up, col.lightened(0.08))
+			_face(_lit, p.call(-0.22, top - 0.05, sz1 + 0.01), p.call(0.22, top - 0.05, sz1 + 0.01), p.call(0.22, top + 0.006, sz1 + 0.01),
+				p.call(-0.22, top + 0.006, sz1 + 0.01), fwd, col.darkened(0.3))
+			# (A little wider and higher than the model's back: its shards stay behind it.)
+			_face(_lit, p.call(-0.235, top, bz), p.call(0.235, top, bz), p.call(0.235, btop + 0.05, bz),
+				p.call(-0.235, btop + 0.05, bz), fwd, col)
 
 
 ## The boards round the run-off: a dark frame and a glowing band of plain colour that a slow light sweeps along (no
