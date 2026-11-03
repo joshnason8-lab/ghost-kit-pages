@@ -673,6 +673,98 @@ func _animate(dt: float) -> void:
 - Draw calls and triangles are unchanged (Netball's perf_probe, Low, same with and without); a test:
   `tests/toon_driver_test.gd`.
 
+## 5.14 The loading overlay: WsgLoading (every game, every start button)
+
+The owner: "when you click start game there is a loading delay ... long enough on the slow phone that users might
+think the game has frozen." `WsgLoading` (addons/wsg_foundation/loading.gd) answers the tap in the same frame: the
+menu dims, "Loading…" and a bar come up with a spinner, and the start buttons go dead, so a second tap can't start a
+second load. The heavy work waits two frames, so the overlay is on screen before it starts.
+
+- **Files** load on the loader's thread (`ResourceLoader.load_threaded_request`), and the bar follows
+  `load_threaded_get_status`.
+- **Building** that must run on the main thread runs in your steps, with a drawn frame after each. That covers
+  instantiate(), the venue, the crowd and the light.
+- **Nothing is made on the thread but resources.** No node is instantiated there (the RichTextLabel thread bug).
+
+```gdscript
+const LOAD_LOOK := {"bar": Color("#f5c400"), "spinner": Color("#f5c400"), "logo": preload("res://ui/logo.png"),
+	"tips": ["Hold to charge a shot, release to strike.", "Swipe up to lob."]}
+var _built := {}                       # a step's results (a lambda can't set your function's locals)
+
+func _on_play_pressed() -> void:
+	var ld := WsgLoading.cover(self, [play_button, watch_button, practice_button], LOAD_LOOK)
+	ld.log_label = "match"
+	ld.request(["res://game/match.tscn", "res://venues/%s.glb" % venue])
+	ld.step("Match", func(): _built.match = ld.res("res://game/match.tscn").instantiate())
+	ld.step("Venue", func(): _built.match.set_venue(ld.res("res://venues/%s.glb" % venue)), 2.0)
+	ld.step("Crowd", func(): await _built.match.build_crowd(ld), 3.0)   # weight 3: the bar's biggest share
+	ld.step("Light", func(): _built.match.apply_light())
+	if not await ld.run():             # false: a file failed; the overlay has gone, the buttons are back
+		return
+	Game.swap_to(_built.match)         # your own swap: the overlay sits on the viewport and stays up through it
+	ld.done()                          # fades out
+```
+
+**Cut a long step.** Anything over about 250 ms on the A16 (Low) reads as frozen. Between chunks of a long build,
+`await ld.checkpoint(i / float(n))`: it moves the bar within the step's share, and once 50 ms of work have run
+(`slice_ms`) it lets a frame draw. Code deep in a build can reach the overlay without being handed it:
+
+```gdscript
+func build_crowd(ld: WsgLoading = WsgLoading.current()) -> void:
+	for i in sections.size():
+		_build_section(i)
+		if ld: await ld.checkpoint(float(i + 1) / sections.size())
+```
+
+A coroutine called this way must itself be awaited by its caller (`await _built.match.build_crowd(ld)`). Without an
+overlay, `ld` is null and the build runs straight through as before.
+
+**A big scene's instantiate() is one call, and its `_ready()`s run when you add it.** If either alone is over budget,
+split the scene. Request the parts (`venue.tscn`, `teams.tscn`, `stands.tscn`) and instantiate each in its own step.
+Keep `_ready()` light, and move the heavy setup into a method a step calls.
+
+**The look.** Every key is optional:
+
+| Key | Type | Default |
+|---|---|---|
+| `dim`, `text`, `bar`, `bar_back`, `spinner` | Color | |
+| `title` | String | "Loading…" |
+| `logo` | Texture2D | |
+| `tips` | Array of String | one at a time |
+| `tip_seconds` | float | 4 |
+| `font` | Font | |
+| `font_size` | int | the short side / 24 |
+| `show_spinner` | bool | true |
+| `show_percent` | bool | false |
+
+It lays itself out from the screen's short side, so it fits portrait and landscape and follows a rotation.
+`ld.parts()` hands you its controls to restyle further. Nothing licensed is in it. The spinner turns in its shader
+(TIME), so it keeps moving with no script work. No frame is drawn while the main thread is busy, though, and that is
+why the steps are cut.
+
+**Measure it on the phone.** Every run prints one line, which Test Lab's logcat keeps alongside WSG_PERF:
+
+```
+WSG_LOADING {"label":"match","total_ms":2310.4,"load_ms":820.1,"longest_frame_ms":181.0,"longest_slice_ms":163.2,
+             "longest_slice":"Crowd","steps":{"(loading files)":4.1,"Match":96.0,"Venue":140.2,"Crowd":702.5,...},
+             "frames":41,"failed":[]}
+```
+
+- `longest_slice_ms` and `longest_slice` give the longest stretch of main-thread work between two frames, and the
+  step it was in.
+- `longest_frame_ms` gives the longest gap between frames: what the player saw.
+- A slice over 250 ms also logs a warning naming the step. Cut that step.
+
+The foundation's test (`tests/loading_test.gd`) checks the following, with timings from a desktop rather than a phone:
+
+- a real tap puts the overlay up and turns the buttons off in the tap's own frame;
+- the load starts two frames later;
+- a second tap starts nothing;
+- the bar only goes forward and reaches the end;
+- a sliced step holds the main thread about 60 ms, and an unsliced 300 ms one is reported by name;
+- a missing file brings the menu back;
+- the overlay fits 720×1280, 1280×720 and 480×854.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →

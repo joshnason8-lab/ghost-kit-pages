@@ -421,3 +421,14 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   Hurling's 0.20 playtest (toes up, free follow-through, glide) measured on its head with the licensed data in a
   local worktree (/home/user/hurling-wt, never pushed): toes up only in its own moves (falls/lifts to 68 deg), the
   follow-through identical with WSG_OFF (its choreography), side-steps to 5.9 m/s exist - all reported to Hurling.
+- Later 2026-11-03: Hurling's FootFlat upstreamed as WsgFootFlat (b073334; Pok Ta Pok's stocky player and judges
+  take it, Takraw's 0.28 deg none); card variety and colour-gated recolour (5914b7c, Kho Kho's long-haired cards);
+  vendor.sh keeps a game's .import files (b628ab2); bake version checked by the audit, flat rows' toe room, cards'
+  optional clap and look poses (5f9c31d, Kabaddi's four). Adopted: Pok Ta Pok 0.6.6, Kho Kho 0.12.0, Sepak Takraw
+  0.15.1, Kabaddi 80d7bdf; Hurling synced to 5914b7c and adopting the venues; Floorball and Netball not yet heard.
+- Loading overlay (the owner, via the lead: "a loading delay ... users might think the game has frozen"):
+  `loading.gd` (WsgLoading.cover/request/step/run/checkpoint/done): up in the tap's own frame, buttons off, work
+  held two frames, threaded file load driving the bar, main-thread steps sliced by checkpoint (slice_ms 50), the
+  longest slice and frame in a `WSG_LOADING {json}` line (warning over 250 ms), themeable, portrait and landscape,
+  spinner in its shader. `tests/loading_test.gd` (a real tap in a 1280x720 SubViewport: the headless window is 64
+  px), ADOPTING §5.14.
