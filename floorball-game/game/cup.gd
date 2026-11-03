@@ -80,7 +80,7 @@ func sim_round(include_user := false) -> void:
 	for f in current_round():
 		if bool(f.played) or (bool(f.user) and not include_user):
 			continue
-		var r := Sim.play(f.home, f.away, women, knockout(), rng)
+		var r := ResultSim.play(f.home, f.away, women, knockout(), rng)
 		f.goals = r.goals
 		f.ot = r.ot
 		f.so = r.so

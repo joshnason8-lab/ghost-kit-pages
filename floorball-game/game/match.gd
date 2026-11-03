@@ -65,6 +65,7 @@ var _replay := {}                # the goal's replay playing: {t, t1, cam, ball_
 var _goal_clock := 0.0
 var _intro_left := 0.0
 var _sim_left := -1.0
+var clock_live := false          # the game clock ran this frame (WsgSim's state: game/sim.gd)
 var passive := {"team": -1, "t": 0.0, "warned": false, "w": 0.0}   # 507.20: passive play
 var pulled := [false, false]     # the goalkeeper off for a sixth outfield player (an empty net)
 var sixth: Array = [null, null]  # each team's extra outfield player, off the rink until its keeper is pulled
@@ -293,6 +294,7 @@ func _physics_process(delta: float) -> void:
 		_replay_step(delta)
 		return
 	phase_t += dt
+	clock_live = false
 	match phase:
 		"intro":
 			_intro_left -= delta
@@ -360,6 +362,7 @@ func _stop_players() -> void:
 func _tick_clock(dt: float, live: bool) -> void:
 	var n: int = rules.penalties[0].size() + rules.penalties[1].size()
 	var s := [rules.strength(0), rules.strength(1)]
+	clock_live = rules.clock_runs(live)
 	var end := rules.tick(dt, live)
 	# A penalty over: the player back from the penalty bench, his team whole again.
 	if rules.penalties[0].size() + rules.penalties[1].size() != n or s != [rules.strength(0), rules.strength(1)]:
