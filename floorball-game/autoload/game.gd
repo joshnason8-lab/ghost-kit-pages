@@ -445,6 +445,10 @@ func play_match(config: Dictionary, buttons: Array = []) -> void:
 	ld.warm(func(): return built.get("match"))
 	if not await ld.run():
 		return
+	# Every body posed once, still behind the overlay: none is first seen unposed (or hidden) when it lifts.
+	var mm: Node = built.get("match")
+	if mm and is_instance_valid(mm) and mm.has_method("pose_all"):
+		mm.pose_all()
 	await ld.done()
 	var m: Node = built.get("match")
 	if m and is_instance_valid(m):
@@ -508,6 +512,7 @@ func on_match_finished(result: Dictionary) -> void:
 # ---------------------------------------------------------------- graphics
 
 func apply_graphics(viewport: Viewport) -> void:
+	WsgFoundation.tier = int(settings.graphics)   # (the shared foundation draws to the same tier: its budgets, crowd, detail)
 	match int(settings.graphics):
 		GFX_LOW:
 			viewport.msaa_3d = Viewport.MSAA_DISABLED

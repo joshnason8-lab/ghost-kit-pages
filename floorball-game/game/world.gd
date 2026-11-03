@@ -36,10 +36,29 @@ func _config(mode: String) -> Dictionary:
 
 ## The tap: the game's own start (Game.play_match covers the screen with WsgLoading in this frame), under PARENT.
 func start_mode(mode: String, parent: Node) -> void:
+	# (A new tap replaces what the last one started, as on the phone: the match before it goes.)
+	if Game.current and is_instance_valid(Game.current):
+		Game.current.queue_free()
 	Game.main = parent
 	Game.current = null
 	Game.settings.sound = false
 	Game.play_match(_config(mode))
+
+
+## The player's graphics level, as Settings sets it (Game.settings.graphics, the shared foundation's tier with it).
+func set_tier(t: int) -> void:
+	Game.settings.graphics = t
+	Game.settings.auto_gfx = false
+	WsgFoundation.tier = t
+
+
+## The referees as the check reads officials: each one's shared-foundation body (FoundationLink), dressed as a referee.
+func find_officials(root: Node) -> Array:
+	var out := []
+	for n in root.get_tree().get_nodes_in_group("wsg_official"):
+		if root.is_ancestor_of(n) and n.get("link") != null and n.link.body != null:
+			out.append(n.link.body)
+	return out
 
 
 ## Two referees on the rink in a match and a match watched; none in Penalty shots (the shooter and the goalkeeper only).

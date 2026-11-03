@@ -2431,7 +2431,33 @@ func _web_probe() -> void:
 ## (slow, or hitching: a phone at 50 a second that stalls twice a second stutters as badly as one at 25) take a level
 ## off at once; again later if it still stutters. The frames are the drawn ones (_process), not the fixed physics
 ## steps. Only in the game itself: the tests and tools play at fixed rates or draw in software.
+## Every person posed where they stand, the clock not moved (Game.play_match: behind the loading overlay, before it lifts).
+func pose_all() -> void:
+	for p: Player in everyone() + sitters[0] + sitters[1]:
+		p.step(0.0)
+		p.writes = 0
+
+
+var _rank_t := 0.0
+
+
+## The shared foundation's full detail for the bodies nearest the camera, the light mesh for the rest (its tier's
+## number: WsgFoundation.rank_detail), every half second.
+func _rank_bodies(delta: float) -> void:
+	_rank_t -= delta
+	if _rank_t > 0.0 or cam == null:
+		return
+	_rank_t = 0.5
+	var bodies := []
+	for p: Player in everyone() + sitters[0] + sitters[1]:
+		if p.link and p.link.body and p.visible:
+			bodies.append(p.link.body)
+	if not bodies.is_empty():
+		WsgFoundation.rank_detail(bodies, cam.global_position)
+
+
 func _process(delta: float) -> void:
+	_rank_bodies(delta)
 	if Game.main != null and Game.main.scene_file_path == "res://main.tscn":
 		watch_frames(delta)
 
