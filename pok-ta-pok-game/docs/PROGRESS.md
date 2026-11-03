@@ -259,6 +259,9 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
 - **0.6.5-beta: the seated fans' faces.** The foundation's cards (ca57ce7) are now drawn from each fan's whole
   textured model, faces and all, and take a spot's shirt colour exactly: all six fans sit again (0.6.4's cut-down
   sheet of the three that read from the front is gone), in white, red, turquoise and the teams' colours.
+- **0.6.6-beta: feet flat on Medium and High.** The shared foundation synced to b073334 and its WsgFootFlat taken:
+  the stocky player's rig model stands 3.4 degrees toe-up and the judge's 6.3 (sole_tilt), and every move showed the
+  toes off the ground; now turned down, a planted heel kept on the ground. The lean and tall players stand flat.
 
 ## Next
 

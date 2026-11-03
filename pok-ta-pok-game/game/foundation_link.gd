@@ -119,6 +119,10 @@ func _ready() -> void:
 	# Its hips' lift and its root motion stay in the skeleton's own space.
 	loco.leg_scale *= gb.scale.x
 	legacy.lift_after = loco.planter.hips_offset
+	# The rig's feet flat (the foundation's WsgFootFlat, b073334): the stocky player's model rests 3.4 degrees toe-up
+	# and the judge's 6.3, which showed in every move; the lean and the tall stand flat and get none. The last of the
+	# skeleton's modifiers.
+	WsgFootFlat.attach(body)
 	_make_gear()
 	gb.mesh_instance.visible = false
 	body.posed.connect(_on_posed)
