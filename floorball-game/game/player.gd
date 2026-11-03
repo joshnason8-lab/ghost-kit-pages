@@ -192,7 +192,11 @@ func step(dt: float) -> void:
 		# pushes off the trailing leg a little over twice a second, nearly still between them.
 		_push = fposmod(_push + dt * 2.4, 1.0)
 		go = lerpf(1.0, 0.35 + 2.0 * pow(maxf(0.0, sin(_push * TAU)), 1.5), clampf((_kneel - 0.5) * 2.0, 0.0, 1.0))
-	pos += vel * dt * go
+	# (Never faster over the ground than a sprint: a fast keeper's push peaked at 2.35 times his speed, 14 m/s.)
+	var over := vel * go
+	if over.length() > MAX_SPEED:
+		over = over.normalized() * MAX_SPEED
+	pos += over * dt
 	# The boards: he stops at them (a body cannot pass through). One sent off the rink (off_boards: to the penalty bench)
 	# goes through a door in them, and only an open one; behind the boards, they stop him from that side.
 	var doors: Array = _doors()
