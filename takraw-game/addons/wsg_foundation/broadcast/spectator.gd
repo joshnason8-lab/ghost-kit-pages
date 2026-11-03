@@ -98,6 +98,11 @@ var theme_b: WsgBroadcastTheme
 var running := false
 var is_paused := false
 var in_moment := false
+## A Skip button over a moment's cut-aways and replay (and a tap anywhere skips too: the owner's games all have one);
+## made with the overlay or by skip_button(), shown only during a moment.
+var tap_to_skip := true
+var _skip_layer: CanvasLayer
+var _skip_btn: Button
 var speed := 1.0
 var moments_run := 0
 var hud_shown := true
@@ -273,6 +278,33 @@ func skip_moment() -> void:
 	_end_moment()
 
 
+## The Skip button (bottom right, a thumb's size, the theme's look): shown only while a moment runs, pressed: the
+## moment ends and the follow camera is back. Made by make_overlay too; call it for a game with its own HUD.
+func skip_button(p_theme: WsgBroadcastTheme = null) -> Button:
+	if is_instance_valid(_skip_btn):
+		return _skip_btn
+	if theme_b == null:
+		theme_b = p_theme if p_theme else WsgBroadcastTheme.default()
+	_skip_layer = CanvasLayer.new()
+	_skip_layer.name = "SpectatorSkip"
+	_skip_layer.layer = 21
+	add_child(_skip_layer)
+	var box := MarginContainer.new()
+	box.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
+	box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_skip_layer.add_child(box)
+	_skip_btn = _button(box, skip_moment)
+	_skip_btn.text = tr("Skip") + " \u25B6"
+	_skip_layer.visible = in_moment
+	return _skip_btn
+
+
+func _show_skip(on: bool) -> void:
+	if is_instance_valid(_skip_layer):
+		_skip_layer.visible = on
+
+
 ## The minimal overlay (for a game without its own HUD): the score bug, the clock, pause, speed and exit. Feed it
 ## with scorebug.setup / set_score / set_clock. Made once; shown with the HUD (hud_visible).
 func make_overlay(p_theme: WsgBroadcastTheme = null) -> CanvasLayer:
@@ -298,6 +330,7 @@ func make_overlay(p_theme: WsgBroadcastTheme = null) -> CanvasLayer:
 	ex.text = tr("Exit")
 	_update_buttons()
 	overlay.visible = hud_shown
+	skip_button(theme_b)
 	return overlay
 
 
@@ -334,6 +367,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not running or event.is_echo():
 		return
 	var back: bool = event is InputEventKey and event.pressed and ((event as InputEventKey).keycode == KEY_BACK or (event as InputEventKey).keycode == KEY_ESCAPE)
+	if in_moment and tap_to_skip and event.is_pressed() and (event is InputEventScreenTouch or event is InputEventMouseButton):
+		get_viewport().set_input_as_handled()
+		skip_moment()
+		return
 	if back or (exit_action != "" and InputMap.has_action(exit_action) and event.is_action_pressed(exit_action)):
 		get_viewport().set_input_as_handled()
 		exit_requested.emit()
@@ -462,6 +499,7 @@ func _run_moment(kind: String, data: Dictionary) -> void:
 	_moment_seq += 1
 	var seq := _moment_seq
 	in_moment = true
+	_show_skip(true)
 	_moment_kind = kind
 	_apply_speed(1.0)
 	moment_started.emit(kind, data)
@@ -516,6 +554,7 @@ func _end_moment() -> void:
 		return
 	_moment_seq += 1
 	in_moment = false
+	_show_skip(false)
 	if is_instance_valid(director) and director.running:
 		director.skip()
 	if replay != null and is_instance_valid(replay) and replay.playing:

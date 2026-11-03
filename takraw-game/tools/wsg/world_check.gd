@@ -88,6 +88,11 @@ func _initialize() -> void:
 					r = await WsgWorldRules.tiers(game, sv)
 				"web":
 					r = WsgWorldRules.web(presets, pck)
+		if r.is_empty() or not r.has("status"):
+			# (A rule stopped by a script error returns nothing: failed, named, and the check goes on and finishes.)
+			r = WsgWorldRules.result(rule)
+			r.status = "fail"
+			r.fails.append("the rule stopped on a script error (see the log above)")
 		results.append(r)
 		print("%-10s %-9s %s" % [rule, (r.status as String).to_upper(), "; ".join(r.fails) if not (r.fails as Array).is_empty() else ""])
 		for l in r.lines:

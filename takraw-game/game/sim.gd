@@ -171,8 +171,10 @@ func ball() -> Dictionary:
 	var b: Ball = m.ball
 	if b.global_position.y < -1.0:
 		return {}   # (put away out of sight before the first serve: Match keeps it at y -5)
-	# (In play: flying or loose - not in a replay, which moves it along the rally's path again from its start.)
-	return {"pos": b.global_position, "radius": Ball.RADIUS, "live": (b.flying or b.loose) and int(m.state) != int(m.S.REPLAY)}
+	# (In play: flying, or loose and still moving - not in a replay, which moves it along the rally's path again from
+	# its start, and not at rest, put down where it lies: fetch().)
+	var moving := b.flying or (b.loose and b.vel.length() > 0.05)
+	return {"pos": b.global_position, "radius": Ball.RADIUS, "live": moving and int(m.state) != int(m.S.REPLAY)}
 
 
 func solid() -> WsgSolidProps:
@@ -252,6 +254,35 @@ func balance_keys(config: Dictionary) -> Dictionary:
 	return {"fair": absf(rh - ra) < 3.0, "stronger": "home" if rh > ra + 3.0 else ("away" if ra > rh + 3.0 else "even"),
 		"event": String(config.event), "venue": String(config.venue), "difficulty": int(config.get("difficulty", 1)),
 		"points": int(config.get("points", 15))}
+
+
+## The fetch-behind-prop case (WsgSim): the ball gone out and come to rest at SPOT, between points, nobody holding it;
+## the game's own fetch then sends its player for it (Match._fetch_ball: the nearest, the serving side's rather) - the
+## case of 0.15.4's freeze, a ball behind the team bench.
+func fetch(spot: Vector3) -> Dictionary:
+	if not _alive():
+		return {}
+	m.set("_carrier", null)
+	m.set("_passer", null)
+	m.set("_catcher", null)
+	for side in 2:
+		for pp in m.players_on(side):
+			(pp as Player).carrying = false
+	var b: Ball = m.ball
+	b.flying = false
+	b.loose = true
+	b.vel = Vector3.ZERO
+	b.global_position = Vector3(spot.x, Ball.RADIUS, spot.z)
+	m.state = m.S.SETUP
+	m.state_t = 0.0
+	m._fetch_ball()
+	var f: Player = m.get("_fetcher")
+	if f == null:
+		return {}
+	for side in 2:
+		if m.players_on(side).has(f):
+			return {"who": "side %d player %d" % [side, f.slot], "seconds": WsgSim.FETCH_S, "arrive": WsgSim.FETCH_ARRIVE_M}
+	return {}
 
 
 func stop() -> void:
