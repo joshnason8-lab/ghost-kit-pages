@@ -499,7 +499,7 @@ func _foundation_plant(p: Dictionary, dt: float) -> void:
 			return ank.y < _floor_y() + float(cal.ground[i]) * global_transform.basis.get_scale().y + PLANT_HEIGHT * (2.0 if was else 1.0)
 		skeleton.add_child(_wp)
 		skeleton.skeleton_updated.connect(func() -> void:
-			if _wp != null and _wp.active:
+			if _wp != null and _wp.active and skeleton.is_inside_tree():   # (drawn as it leaves the tree: no place)
 				_drawn_feet = _feet_now())
 	dt = maxf(dt, 1.0 / 240.0)
 	var at := global_position
