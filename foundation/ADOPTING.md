@@ -1344,6 +1344,37 @@ exits 0 with a warning. That gives you the morning to write `world.gd` without t
 
 Use `--only feet,pose,...` for a quick local run. `--web-pck` is only needed if you export for the Web.
 
+**Under 15 minutes on CI** (the lead, 2026-11-03; profiled from the logs: Hurling 30, Floorball 40, Kabaddi 52):
+- The modes are played undrawn (pose, officials, loading and joystick read bones, nodes and the cover, not pixels):
+  Kabaddi's modes 918 s -> 17 s on the same machine, every rule's result the same. `--draw-modes` draws them.
+- Tiers read the worst of 5 frames per start (was the last of 30) and skip shader warm-up (`WsgLoading.skip_warm`):
+  they count, they do not play.
+- The props rule's sample is at most [1 match, 30 s] a venue (your own props step can run longer; the nightly sims
+  give the depth).
+- **Already run the crowd or props audit in its own step?** Don't run it twice: `--reuse crowd=DIR,props=DIR` reads
+  that step's `crowd_audit.json` / `prop_audit.json` (its out dir) and takes its verdict.
+- **Still over 15?** Split it over parallel jobs with `--only`, then merge their reports into one verdict:
+
+```yaml
+  world-check:
+    strategy: { matrix: { part: ["props,crowd", "feet,pose,officials,sounds,loading,joystick,web,tiers"] } }
+    steps:   # (checkout, Godot, the licensed data, import - as your build job)
+      - run: xvfb-run -a godot --path <game> --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --only "${{ matrix.part }}"
+      - uses: actions/upload-artifact@v4
+        with: { name: "world-${{ strategy.job-index }}", path: "${{ runner.temp }}/world" }
+  world-check-report:
+    needs: world-check
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { pattern: "world-*", path: parts }
+      - run: godot --headless --path <game> -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --merge parts/world-0,parts/world-1
+```
+
+  A rule no part ran fails the merged report. A merged report prints each rule's seconds, so you can see which part
+  is the long pole.
+- **A reading near its bound warns** (the lead): within 3 cm of the 25 cm jump, 0.3 cm of the 2 cm slip and skid.
+  `WORLD_CHECK.md` marks the rule "(near a bound)"; CI shows a warning. It passes - but it is the next to fail.
+
 The check writes `WORLD_CHECK.md`: one line a rule with what broke it, and what it measured. What each rule measures:
 
 | Rule | What it measures |

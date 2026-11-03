@@ -13,7 +13,9 @@ const LOW := 0.10
 const PATH := [[1.5, Vector2.ZERO, 0.0, "standing"], [3.0, Vector2(0, 1.3), NAN, "walk"], [3.0, Vector2(0, 3.5), NAN, "jog"],
 	[3.0, Vector2(0, 6.0), NAN, "run"], [3.0, Vector2(0, 8.0), NAN, "sprint"], [2.0, Vector2(8.0, 0), NAN, "cut 90 at 8"],
 	[2.0, Vector2.ZERO, NAN, "stop from 8"], [1.5, Vector2(0, -6.0), NAN, "run back"], [1.5, Vector2(0, 6.0), NAN, "cut 180 at 6"],
-	[2.0, Vector2.ZERO, NAN, "stop from 6"]]
+	[2.0, Vector2.ZERO, NAN, "stop from 6"], [1.0, Vector2(0, 2.0), NAN, "jog 2"],
+	[1.5, Vector2(0, 8.0), NAN, "turn 9/s speeding", 9.0], [1.5, Vector2(0, 5.0), NAN, "turn -9/s at 5", -9.0],
+	[2.0, Vector2.ZERO, NAN, "stop from turn"]]
 
 
 func _arg(args: PackedStringArray, key: String, def: String) -> String:
@@ -122,7 +124,15 @@ func _initialize() -> void:
 		row["j_p99"] = float(vj[int(nj * 0.99)]) if nj else 0.0
 		row["j_max"] = float(vj[-1]) if nj else 0.0
 		out[nm] = row
-		print("CAL %-14s n %4d  move max %5.1f | change max %5.1f | jump p99 %5.1f max %5.1f cm" % [nm, n, row["max"], row.d_max, row.j_p99, row.j_max])
+		# (The feet rule's own measure on the segment: its worst step's slip and a flat foot's skid.)
+		var sf := []
+		for i in frames.size():
+			if PATH[segs[i]][3] == nm:
+				sf.append(frames[i])
+		var fs := WsgNoteChecks.foot_slip(sf) if sf.size() > 4 else {"max_cm": 0.0, "skid_cm": 0.0}
+		row["slip_max"] = float(fs.max_cm)
+		row["skid"] = float(fs.skid_cm)
+		print("CAL %-14s n %4d  move max %5.1f | change max %5.1f | jump p99 %5.1f max %5.1f cm | slip %4.1f skid %4.1f" % [nm, n, row["max"], row.d_max, row.j_p99, row.j_max, fs.max_cm, fs.skid_cm])
 	worst.sort_custom(func(x, y): return x[0] > y[0])
 	for w in worst.slice(0, 4):
 		print("CAL worst move %.1f cm  %s  frame %d  side %d  heel %.1f toe %.1f cm up" % w)

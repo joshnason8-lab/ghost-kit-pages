@@ -172,6 +172,9 @@ static func prewarm(paths: Array) -> void:
 func warm(what: Variant, label := "Warming up", weight := 2.0) -> void:
 	_has_warm = true
 	step(label, func():
+		if skip_warm:
+			_set_3d(true)
+			return
 		var node: Node = (what as Callable).call() if what is Callable else what
 		# A deferred swap (change_scene_to_node) puts it in the tree a frame later.
 		for i in 3:
@@ -186,6 +189,11 @@ func warm(what: Variant, label := "Warming up", weight := 2.0) -> void:
 		_warm = await WsgLoading.warm_scene(node, func(f: float):
 			_t_resume = Time.get_ticks_usec()
 			_step_fraction(f), max_batch_looks, func(): _set_3d(true)), weight)
+
+
+## Off a phone only: a check that counts what a start builds and draws, not how smoothly it plays, skips warm-ups
+## (the world check's tiers rule: Kabaddi's twelve starts spent 10-24 s each warming up, drawn in software on CI).
+static var skip_warm := false
 
 
 ## The most looks a warm-up batch draws in one frame.

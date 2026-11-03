@@ -79,6 +79,23 @@ printf 'GDPC....res://game/main.tscn....' > "$OUT/ok.pck"
 run web_bad --only web --presets "$OUT/bad_presets.cfg" && { echo "world_check_test: a Web preset shipping the licensed data passed"; FAIL=1; }
 run web_pck --only web --presets "$OUT/ok_presets.cfg" --web-pck "$OUT/bad.pck" && { echo "world_check_test: a Web pack holding mobility.res passed"; FAIL=1; }
 run web_ok --only web --presets "$OUT/ok_presets.cfg" --web-pck "$OUT/ok.pck" || { echo "world_check_test: a clean Web preset and pack failed"; cat "$OUT/web_ok.log"; FAIL=1; }
+printf '[preset.0]\nname="Android"\nplatform="Android"\n' > "$OUT/no_web_presets.cfg"
+run web_none --only web --presets "$OUT/no_web_presets.cfg" --web-pck "$OUT/gone.pck" || { echo "world_check_test: a game with no Web build failed the web rule"; cat "$OUT/web_none.log"; FAIL=1; }
+run web_missing --only web --presets "$OUT/ok_presets.cfg" --web-pck "$OUT/gone.pck" && { echo "world_check_test: a Web preset whose pack is missing passed"; FAIL=1; }
+# --reuse: the job's own audit step's result, not the audit run again - its failure fails the rule, a missing result too.
+mkdir -p "$OUT/reuse_ok" "$OUT/reuse_bad"
+printf '{"pass": true, "venues": {}}' > "$OUT/reuse_ok/prop_audit.json"
+printf '{"Hall": {"fans": 10, "fails": ["3 fans inside a seat"]}}' > "$OUT/reuse_bad/crowd_audit.json"
+run reuse_ok --only props --reuse "props=$OUT/reuse_ok" || { echo "world_check_test: a reused passing props audit failed"; grep -E "^props" "$OUT/reuse_ok.log"; FAIL=1; }
+grep -q "reused from" "$OUT/reuse_ok.log" || { echo "world_check_test: --reuse ran the audit again"; FAIL=1; }
+run reuse_bad --only crowd --reuse "crowd=$OUT/reuse_bad" && { echo "world_check_test: a reused failing crowd audit passed"; FAIL=1; }
+run reuse_none --only crowd --reuse "crowd=$OUT/nothing_there" && { echo "world_check_test: --reuse with no result passed"; FAIL=1; }
+# --merge: parallel --only jobs as one report; a rule no job ran fails it.
+run part_a --only feet,pose,officials,sounds,loading,joystick,web
+run part_b --only tiers,props,crowd
+run merged --merge "$OUT/part_a,$OUT/part_b" || { echo "world_check_test: the merged report of two clean jobs failed"; cat "$OUT/merged.log"; FAIL=1; }
+run merged_short --merge "$OUT/part_a" && { echo "world_check_test: a merge missing rules passed"; FAIL=1; }
+grep -q "no parallel job ran this rule" "$OUT/merged_short.log" && echo "world_check_test: --reuse and --merge: a reused result counts, a missing rule fails"
 # A rule the game does not wire fails ("not wired"), it is not skipped.
 GAME=res://addons/wsg_foundation/world/world_game.gd
 run unwired --only feet,sounds,joystick && { echo "world_check_test: an unwired game passed"; FAIL=1; }

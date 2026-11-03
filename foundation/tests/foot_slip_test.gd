@@ -7,7 +7,10 @@ extends SceneTree
 ## - the hurler walking with the planter off (the clips' own feet, which do slide) reads 5 cm or more at every
 ##   speed, driven every frame as the world check drives a game's walker;
 ## - a foot flat on the floor that slides in a frame (a landing snapped back) reads as a skid, a swing skimming the
-##   grass with its heel up does not.
+##   grass with its heel up does not;
+## - a body posed every 3rd frame (FoundationLink.pose_every 3, far bodies) is read per frame: a flat foot creeping
+##   0.9 cm a frame is no skid (it read 2.7 cm "in one frame", Kabaddi's officials), one sliding 3 cm a frame is; a
+##   stride's swing read every 3rd frame jumps as it does read every frame.
 ##   godot --headless --fixed-fps 30 --path . -s tests/foot_slip_test.gd
 
 const L := 0.15            # ankle to toe along the ground
@@ -83,6 +86,32 @@ static func landing(snap: bool) -> Array:
 	return frames
 
 
+## A flat foot moving PER_FRAME metres a frame along x for 30 frames, read every EVERY frames: [frames, gaps].
+static func creep(per_frame: float, every: int) -> Array:
+	var frames := []
+	var gaps := PackedInt32Array()
+	var right_a := Vector3(0, ANKLE_Y, 0.4)
+	var right_t := right_a + Vector3(L, -ANKLE_Y, 0)
+	for k in range(0, 30, every):
+		var x := k * per_frame
+		frames.append([Vector3(x, ANKLE_Y, 0), Vector3(x + L, 0, 0), right_a, right_t])
+		gaps.append(every)
+	return [frames, gaps]
+
+
+## A low swing (a foot within 10 cm of the ground, its move easing up and down: a stride's), read every EVERY frames.
+static func low_swing(every: int) -> Array:
+	var frames := []
+	var gaps := PackedInt32Array()
+	var right_a := Vector3(0, ANKLE_Y, 0.4)
+	var right_t := right_a + Vector3(L, -ANKLE_Y, 0)
+	for k in range(0, 36, every):
+		var x := 0.6 * (1.0 - cos(PI * k / 35.0))   # 1.2 m over 35 frames, 0 to 5 cm a frame and back
+		frames.append([Vector3(x, ANKLE_Y + 0.03, 0), Vector3(x + L, 0.03, 0), right_a, right_t])
+		gaps.append(every)
+	return [frames, gaps]
+
+
 func check(what: String, ok: bool, got: String) -> void:
 	print("  %-58s %s  %s" % [what, "ok  " if ok else "FAIL", got])
 	if not ok:
@@ -106,6 +135,33 @@ func _initialize() -> void:
 	var skim := WsgNoteChecks.foot_slip(landing(false))
 	check("a swing skimming the grass, heel up, is no skid", skim.skid_cm < 0.5, "skid %.2f cm" % skim.skid_cm)
 	check("a pure roll is no skid", roll.skid_cm < 0.5, "skid %.2f cm" % roll.skid_cm)
+	# The skid counts a foot the planter has (held), not the clip's own low swing before it lands (Pok Ta Pok).
+	var lf := landing(true)
+	var all_held := []
+	var none_held := []
+	for f in lf.size():
+		all_held.append([true, true])
+		none_held.append([false, false])
+	var sh := WsgNoteChecks.foot_slip(lf, 0.0, 0.0, 0.0, PackedInt32Array(), all_held)
+	var sn := WsgNoteChecks.foot_slip(lf, 0.0, 0.0, 0.0, PackedInt32Array(), none_held)
+	check("the snap, the planter holding the foot: a skid", sh.skid_cm > 2.0, "skid %.1f cm" % sh.skid_cm)
+	check("the same move, the clip's own swing (not held): no skid", sn.skid_cm < 0.5, "skid %.1f cm" % sn.skid_cm)
+	print("A body posed every 3rd frame:")
+	var c := creep(0.009, 3)
+	var raw := WsgNoteChecks.foot_slip(c[0])
+	var per := WsgNoteChecks.foot_slip(c[0], 0.0, 0.0, 0.0, c[1])
+	check("0.9 cm a frame read every 3rd: no skid", per.skid_cm < 2.0 and absf(per.skid_cm - 0.9) < 0.05,
+		"skid %.2f cm (as if every frame: %.2f)" % [per.skid_cm, raw.skid_cm])
+	var fast := creep(0.03, 3)
+	var fs := WsgNoteChecks.foot_slip(fast[0], 0.0, 0.0, 0.0, fast[1])
+	check("3 cm a frame read every 3rd: a skid", fs.skid_cm > 2.0, "skid %.2f cm" % fs.skid_cm)
+	var one := low_swing(1)
+	var three := low_swing(3)
+	var j1 := float(WsgNoteChecks.foot_slip(one[0], 0.0, 0.0, 0.0, one[1]).jump_cm)
+	var j3 := float(WsgNoteChecks.foot_slip(three[0], 0.0, 0.0, 0.0, three[1]).jump_cm)
+	var j3raw := float(WsgNoteChecks.foot_slip(three[0]).jump_cm)
+	check("a low swing read every 3rd jumps as read every frame", j1 > 0.0 and absf(j3 - j1) < 0.25 * j1 + 0.05,
+		"every frame %.2f, every 3rd %.2f cm (as if every frame: %.2f)" % [j1, j3, j3raw])
 	if not FileAccess.file_exists("res://addons/wsg_foundation/data/mobility.res"):
 		print("Planter off: SKIPPED (no licensed clip library)")
 	else:

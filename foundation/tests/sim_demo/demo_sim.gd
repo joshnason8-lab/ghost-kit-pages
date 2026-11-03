@@ -51,6 +51,9 @@ func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 	if kind.begins_with("bug:"):
 		c.bug = kind.substr(4)
 		c.half = 20.0
+		if c.bug in ["snap", "snap_reset"]:
+			c.bodies = true
+			c.half = 6.0
 		if c.bug == "score_twice":
 			c.start = "near goal"
 			c.skill = [2.5, 2.5]

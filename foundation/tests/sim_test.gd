@@ -166,6 +166,21 @@ func _initialize() -> void:
 		if not p0 or p1 or not p2:
 			fails.append("a replay's pose was measured as the planter's feet (live %s, replaying %s, live again %s)" % [p0, p1, p2])
 		rb.free()
+	# A body put somewhere new with the planter reset (a restart, an official snapped to his spot) is a cut: its feet
+	# moved 30 cm with it, not a skid or a jump (Hurling's umpires read 20-35 cm). Without the reset the planter holds the
+	# planted foot and eases it across (said, not checked here: the planter's own tests).
+	if WsgClips.available():
+		var fs := WsgSim.new()
+		var moved := {}
+		var resets := {}
+		for bug in ["snap", "snap_reset"]:
+			var r: Dictionary = await fs.run(game, "bug:" + bug, 3, self)
+			moved[bug] = (r.failures as Array).map(func(f: Dictionary) -> String: return String(f.message)).filter(
+				func(m: String) -> bool: return m.contains("in one frame"))
+			resets[bug] = r.get("planter_resets", {})
+		print("snap: %s; with the planter reset: %s, resets %s" % [moved.snap, moved.snap_reset, resets.snap_reset])
+		if not (moved.snap_reset as Array).is_empty() or (resets.snap_reset as Dictionary).is_empty():
+			fails.append("a body snapped 30 cm with the planter reset read as feet moving in a frame (%s, resets %s)" % [moved.snap_reset, resets.snap_reset])
 	# The RNG lint.
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SCRATCH))
 	var fx := FileAccess.open(SCRATCH + "/fixture.gd", FileAccess.WRITE)

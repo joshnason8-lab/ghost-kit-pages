@@ -302,6 +302,16 @@ func _bugs() -> void:
 				holder = -1
 				ball_pos = Vector3(0, 0.3, HALF_W - 1.0)
 				ball_vel = Vector3(0, 0, 30.0)
+		"snap", "snap_reset":
+			# Every player put 30 cm aside in a frame (a restart, an official snapped to his spot): the feet slide there
+			# unless the game says so (snap_reset: the planter reset - a cut, not a skid).
+			if t > 3.0 and t < 3.0 + 1.0 / 30.0:
+				for p: Dictionary in players:
+					p.pos += Vector3(0, 0, 0.3)
+					if p.body:
+						(p.body as WsgBody).position = p.pos
+						if _bug == "snap_reset":
+							(p.loco as WsgLocomotor).planter.reset()
 		"freeze":
 			if t > 2.0:
 				while true:
