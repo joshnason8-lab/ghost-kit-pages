@@ -3,7 +3,7 @@ extends SceneTree
 
 func _initialize() -> void:
 	var bad := 0
-	for dir in ["res://addons/wsg_foundation", "res://addons/wsg_foundation/broadcast", "res://addons/wsg_foundation/audio", "res://addons/wsg_foundation/sim", "res://addons/wsg_foundation/world", "res://tests/world_demo", "res://tests", "res://tests/sim_demo", "res://tests/owner_notes", "res://tools"]:
+	for dir in ["res://addons/wsg_foundation", "res://addons/wsg_foundation/broadcast", "res://addons/wsg_foundation/audio", "res://addons/wsg_foundation/sim", "res://addons/wsg_foundation/world", "res://addons/wsg_foundation/ui", "res://tests/world_demo", "res://tests", "res://tests/sim_demo", "res://tests/owner_notes", "res://tools"]:
 		for f in DirAccess.get_files_at(dir):
 			if f.ends_with(".gd"):
 				var s: Script = load(dir.path_join(f))

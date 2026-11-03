@@ -505,3 +505,8 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   with load_resource_pack(replace), behind WsgLoading's bar; res://wsg_pack.json written by CI; the gate's --pack
   fails a pack holding licensed data. Found: get_response_headers_as_dictionary() comes back empty on 4.7.2 (parsed
   by hand). Credits for the pack's assets: item 8.
+- **8 (common UI)**: addons/wsg_foundation/ui/ - WsgCredits (chunked, never threaded; the pack's, the foundation's
+  and Godot's notices), WsgWatchSetup (Watch AI entry and picker) plus WsgSpectator's Skip button and tap-to-skip,
+  WsgHaptics (named patterns, "bonus" the double pulse, the setting), WsgSettings and its screen (tier, bus volumes,
+  joystick side and size, vibration; user://wsg_settings.cfg), WsgTutorial (prompts once, Skip tips); all themed by
+  WsgBroadcastTheme. tests/ui_test.gd. ADOPTING §5.21. Found: a lambda left in a static var corrupts the heap at exit.

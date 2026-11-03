@@ -1431,6 +1431,29 @@ The pack's assets' licences go in the shared credits screen (item 8).
 fetches only the rest; the pack mounts and its file reads; the next start finds it without downloading; a wrong
 checksum is refused and the download deleted.
 
+## 5.21 The common UI (every game; themed with your WsgBroadcastTheme)
+
+The same screens and feel in every game, each wearing your game's `WsgBroadcastTheme` (colours, type):
+
+| What | How |
+|---|---|
+| **Licences and credits** | `WsgCredits.new(theme, your_sections)`, where your sections are `[{"title", "body"}]`; paragraphs are split on a blank line. It adds the High pack's credits (`res://wsg_pack.json` `"credits"`), the foundation's (the motion capture) and the Godot Engine's notices. It is built a few paragraphs a frame and never on a thread: Kabaddi's threaded one froze and sometimes crashed. On this machine: 453 paragraphs over 106 frames, the longest 11 ms. |
+| **Watch AI** | `WsgWatchSetup.entry_button(theme)` on the home screen opens `WsgWatchSetup.new(theme, teams, venues)`, which emits `watch(home, away, venue)`. Show the match with `WsgSpectator` (§5.11): its overlay now has a **Skip** button over every cut-away and replay, and a tap anywhere skips (`tap_to_skip`). A game with its own HUD calls `spec.skip_button(theme)`. |
+| **Haptics** | `WsgHaptics.play("tagged" / "teammate_tagged" / "tag" / "score" / "bonus" / "hit" / "whistle" / "win" / "tap")`: one pattern for each moment, the same in every game. `"bonus"` is the quick double pulse. Add your own with `WsgHaptics.patterns["dive"] = [[30, 0.7]]`. |
+| **Settings** | `WsgSettings.load_all()` at boot: the tier, haptics and volumes, from `user://wsg_settings.cfg`. `WsgSettings.screen(theme, {"buses": ["Effects", "Crowd", "Music"]})` covers Graphics (Low, Medium, High), a slider per bus, the joystick (side, size), Vibration and Back. `applied(key, value)` tells you what changed (a new tier: rebuild); read `WsgSettings.get_value("joystick_side")` for your stick. |
+| **Tutorial prompts** | `var tips := WsgTutorial.new(theme)`, then `tips.add(id, text, show_when, done_when)`. A tip shows when its moment comes and goes when the player has done it or taps "Got it". It never shows again; "Skip tips" turns them all off. `WsgTutorial.reset()` is "Show tips again". |
+
+`tests/ui_test.gd` covers it all:
+- the credits are built over many frames with every section in;
+- the bonus is a double pulse, and haptics off is silent;
+- the settings are applied, saved and read back, and wear the theme;
+- Skip shows over a moment and ends it, and a tap skips;
+- a tip shows at its moment, goes when done and never comes back;
+- Watch starts the match that was picked.
+
+**Note:** a test that sets `WsgHaptics.sink` to a lambda must set it back to `Callable()`. A lambda left in a static
+var outlives its script and corrupted Godot's heap on quit.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →
