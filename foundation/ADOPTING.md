@@ -925,6 +925,12 @@ var way := solid.path(pos, bench_seat, RADIUS)                  # out-of-play wa
   in reach for 1.6 m (or less, if the goal is nearer).
 - `memo` is one Dictionary per body that you keep between frames. It holds the side the body chose round what's in its
   way, so it goes on round a 5 m bench instead of dithering at its middle.
+- **With your own acceleration, steer the velocity you want, not the one you have** (Kabaddi). Calling `steer()` (or
+  `move()`) after `vel = vel.move_toward(desired, ...)` left a walker crawling along a bench at 0.45 m/s: the
+  acceleration kept pulling `vel` back toward the blocked way, and steering kept its small speed. Steer `desired`,
+  then accelerate toward it, then step and `push_out()`; the walker goes round at full speed.
+- **A body seated on a prop** (a substitute on the bench) is audited with `audit.body(who, pos, r, h, true)`: counted,
+  not checked. When it gets up, move it toward `free_spot()` until it is out.
 - `push_out()` is the final resolve: whatever else moved the body (a tackle, a celebration), it ends outside every
   prop.
 - A prop whose top is under 12 cm above the feet does not stop anyone (a mat, a cable cover). A crossbar over the head

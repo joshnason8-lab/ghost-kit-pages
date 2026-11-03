@@ -16,6 +16,8 @@ const KEEP := 24
 
 var solid: WsgSolidProps
 var body_checks := 0
+## Frames a body was seated on a prop (body(..., seated = true)): counted, not checked.
+var seated_frames := 0
 var ball_steps := 0
 var body_cases := 0
 var ball_tunnels := 0
@@ -30,7 +32,12 @@ func _init(p_solid: WsgSolidProps = null) -> void:
 	solid = p_solid
 
 
-func body(who: String, pos: Vector3, radius: float, height := 1.8) -> void:
+## SEATED: the body sits on the prop (a substitute on the bench, a scorer at the table: its seated pose is over the
+## seat, not in it) - counted, not checked. A body getting up from it must be out within a few frames (free_spot).
+func body(who: String, pos: Vector3, radius: float, height := 1.8, seated := false) -> void:
+	if seated:
+		seated_frames += 1
+		return
 	body_checks += 1
 	var pen := solid.penetration(pos, radius, height)
 	if float(pen[0]) > PEN_TOL:
@@ -69,7 +76,7 @@ func tick(delta: float) -> void:
 
 
 func report() -> Dictionary:
-	return {"pass": body_cases == 0 and ball_tunnels == 0, "body_checks": body_checks, "ball_steps": ball_steps,
+	return {"pass": body_cases == 0 and ball_tunnels == 0, "body_checks": body_checks, "seated_frames": seated_frames, "ball_steps": ball_steps,
 		"body_cases": body_cases, "ball_tunnels": ball_tunnels, "worst": worst.map(func(c: Dictionary) -> Dictionary:
 			var o := c.duplicate()
 			for k in ["pos", "from", "to"]:
