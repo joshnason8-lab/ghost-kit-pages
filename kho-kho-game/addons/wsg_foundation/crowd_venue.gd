@@ -223,7 +223,8 @@ func _box(out: Dictionary, si: int, centre: Vector3, basis: Basis, size: Vector3
 const HIPS_TOL := [-0.02, 0.03]       # the seat of the trousers over the seat surface
 const FEET_TOL := [-0.02, 0.04]       # the soles over the floor (seated: in every seated frame; standing: likewise)
 const INSIDE_TOL := 0.025             # how deep into a seat, a seat back, a step or a barrier anything may go (a hand
-                                      # resting on a bench beside the thigh goes about 2 cm into the low-poly seat)
+                                      # on a seat is not counted: a fan pushes on it getting up - crowd.json's
+                                      # hand_vertices)
 const FACING_MAX := 35.0              # a fan's body off the play's nearest part (drawn in a third)
 
 ## Measures a crowd built by WsgCrowd3D.build_venue against its venue: the fans drawn in 3D (per_section of each
@@ -277,6 +278,9 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 			frames[fan] = _frames(fan, rows.sit + rows.stand + rows.rise)
 		var fr: Dictionary = frames[fan]
 		var mask := WsgCrowd3D.seat_mask(fan)
+		var hands := {}
+		for hv in md.fans[fan].get("hand_vertices", []):
+			hands[int(hv)] = true
 		var i: int = crowd.spot_of[mi][k]
 		var si: int = pl.section[i]
 		var sec: Dictionary = out.sections[venue.sections[si].name]
@@ -308,7 +312,7 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 				var pts: PackedVector3Array = fr[r]
 				# How far up they are (0 seated, 1 standing), and so their lift, reach and step forward.
 				var u: float = 0.0 if pose == "sit" else (1.0 if pose == "stand" else float(rise_up[ri]))
-				var l := lift * (1.0 - u)
+				var l := lift * (1.0 - smoothstep(0.5, 1.0, u))
 				var rch := 0.0 if dangle else clampf(l, 0.0, WsgCrowd3D.REACH)
 				var up := Vector3(0, l, fwd_up * smoothstep(0.0, 0.5, u))
 				var lowest := INF
@@ -322,6 +326,8 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 					if pose == "sit" and mask.size() > v and mask[v] == 1:
 						hips = minf(hips, wy)
 					for ob in near:
+						if ob[2] == "seat" and hands.has(v):
+							continue    # (a hand on a seat: pushing up from it, resting on it)
 						var lp: Vector3 = (ob[0] as Transform3D) * p
 						var h: Vector3 = ob[1]
 						var dd := minf(minf(h.x - absf(lp.x), h.y - absf(lp.y)), h.z - absf(lp.z))
