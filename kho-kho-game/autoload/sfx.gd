@@ -37,13 +37,27 @@ var _next_step := 0
 var surface := "mud"          # the ground under the players' feet: "mud" (earth) or "mat"
 var in_match := false         # a match being played (not the menu's backdrop): the field's own sounds are on
 var indoor := false           # the hall: its long whistle is the one recorded in a gym, with its echo
-var _whistles: Array[AudioStreamPlayer3D] = []
-var _next_whistle := 0
 var paused := false           # the match paused: what was playing is held, and nothing new starts on the field
 var _todo := []
 var _planned := false
 var _built := false
 var _total := 1
+
+
+## The key sounds - the whistles, the kho's slap on the back - played as the shared foundation's WsgAudio plays a
+## game's key hits: crisp at any distance (no distance filter, heard from no farther than its bright_distance), on this
+## game's own bus (the sound setting, the hall's reverb). Footsteps and the rest still dull with distance.
+var key: WsgAudio
+const KEY_KINDS := ["whistle", "tag"]
+
+
+static func make_key_audio(parent: Node) -> WsgAudio:
+	var au := WsgAudio.new()
+	parent.add_child(au)
+	for c in au.get_children():
+		if c is AudioStreamPlayer3D:
+			(c as AudioStreamPlayer3D).bus = BUS
+	return au
 
 
 func _ready() -> void:
@@ -71,14 +85,7 @@ func _ready() -> void:
 		s3.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 		add_child(s3)
 		_steps.append(s3)
-	for i in 3:
-		var w3 := AudioStreamPlayer3D.new()
-		w3.bus = BUS
-		w3.unit_size = 20.0   # a whistle carries across the ground
-		w3.max_distance = 150.0
-		w3.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
-		add_child(w3)
-		_whistles.append(w3)
+	key = make_key_audio(self)
 	_crowd = AudioStreamPlayer.new()
 	_crowd.volume_db = -60.0
 	_crowd.bus = BUS
@@ -179,19 +186,25 @@ func play_at(sound: String, pos: Vector3, volume_db := 0.0, pitch := 1.0) -> voi
 
 ## An official's whistle from where he stands: "short" (a pip: an out, a foul, the second of the timekeeper's start),
 ## "long" (a turn's start and end; in the hall the gym's take), "double" or "final" (short, short, long: the match is
-## over). Its own players, so footsteps never cut it short; not in the menu's backdrop match.
+## over). Crisp at any distance (Sfx.key, the foundation's WsgAudio), never cut short by footsteps; not in the menu's backdrop match.
 func whistle(kind: String, pos: Vector3, volume_db := 0.0) -> void:
 	_ensure()
 	var sound := _take("whistle_gym" if kind == "long" and indoor else "whistle_" + kind)
 	if not in_match or paused or not enabled() or not streams.has(sound):
 		return
-	var p := _whistles[_next_whistle]
-	_next_whistle = (_next_whistle + 1) % _whistles.size()
-	p.stream = streams[sound]
-	p.global_position = pos
-	p.volume_db = volume_db
-	p.pitch_scale = randf_range(0.98, 1.02)   # wsg-rng-ok: the sound's pitch only
-	p.play()
+	# Crisp from anywhere on the ground (a key sound: WsgAudio). +6 dB: its players' unit size is half the old
+	# whistles' (20 m), so as loud as it was at the same distance.
+	key.play_at(streams[sound], pos, volume_db + 6.0, randf_range(0.98, 1.02), "whistle", 3)   # wsg-rng-ok: the sound's pitch only
+
+
+## A key sound from a place on the field (the kho's slap on the back): crisp at a distance, as a whistle is (WsgAudio,
+## kind "tag"). -4.4 dB: as loud as a footstep's player (unit size 6 m) made it at the same distance.
+func key_at(sound: String, pos: Vector3, volume_db := 0.0, pitch := 1.0) -> void:
+	_ensure()
+	sound = _take(sound)
+	if not in_match or paused or not enabled() or not streams.has(sound):
+		return
+	key.play_at(streams[sound], pos, volume_db - 4.4, pitch, "tag", 2)
 
 
 ## A footstep at pos, on the ground's surface, louder the faster he runs.
@@ -221,8 +234,9 @@ func pause(on: bool) -> void:
 	paused = on
 	for p in _pool + [_crowd, _drums, _amb]:
 		(p as AudioStreamPlayer).stream_paused = on
-	for p in _steps + _whistles:
+	for p in _steps:
 		p.stream_paused = on
+	key.pause(on)
 
 
 ## A player's effort: voice("grunt") or "hup"; pitch gives each player his own voice.
@@ -286,8 +300,11 @@ func stop_all() -> void:
 	AudioServer.set_bus_effect_enabled(AudioServer.get_bus_index(BUS), 0, false)
 	for p in _pool:
 		p.stop()
-	for p in _steps + _whistles:
+	for p in _steps:
 		p.stop()
+	for p in key.get_children():
+		if p is AudioStreamPlayer3D:
+			(p as AudioStreamPlayer3D).stop()
 
 
 # ---------------------------------------------------------------- synthesis

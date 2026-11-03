@@ -100,12 +100,14 @@ func _ready() -> void:
 	var you := 0 if args.size() > 3 and args[3] in ["user", "bot"] else -1
 	bot = args.size() > 3 and args[3] == "bot"
 	var pairs := [["MAH", "ODI"], ["KAR", "KER"], ["IND", "NEP"], ["TEL", "DEL"]]
+	# KK_SEED0: the first match's seed (100 unless set: a batch split over jobs, each its own seeds, the same pairs).
+	var seed0 := int(OS.get_environment("KK_SEED0")) if OS.get_environment("KK_SEED0") != "" else 100
 	var tot := {"outs": 0, "khos": 0, "dives": 0, "pole": 0, "fouls": 0, "dream": 0, "limits": 0, "late": 0, "turns": 0, "secs": 0.0}
 	for i in n:
-		var p: Array = pairs[i % pairs.size()]
+		var p: Array = pairs[(seed0 - 100 + i) % pairs.size()]
 		var m: Node = (load("res://game/match.gd") as Script).new()
-		m.config = {"home": p[0], "away": p[1], "venue": "maidan", "format": fmt, "turn_len": tl, "user_team": you, "seed": 100 + i,
-			"mode": "quick", "test": true, "chase_first": i % 2, "follow_on": false}
+		m.config = {"home": p[0], "away": p[1], "venue": "maidan", "format": fmt, "turn_len": tl, "user_team": you, "seed": seed0 + i,
+			"mode": "quick", "test": true, "chase_first": (seed0 + i) % 2, "follow_on": false}
 		m.autopilot = you >= 0 and not bot   # "user": a thumb off the stick, the defender running himself
 		add_child(m)
 		cur = m
@@ -184,6 +186,8 @@ func _ready() -> void:
 		var secs: float = tl * float(res.turns.size())
 		print("%s v %s: %s  outs %d (%.2f a min)  khos %d (%.1f a min)  dives %d  pole dives %d  fouls %d  dream %d" % [p[0], p[1],
 			str(res.score), c.outs, c.outs / (secs / 60.0), c.khos, c.khos / (secs / 60.0), c.dives, c.pole, c.fouls, c.dream])
+		print("MATCH_ROW ", JSON.stringify({"seed": int(m.config.seed), "fmt": "fast" if fmt == KhoRules.FAST else "classic",
+			"outs": c.outs, "khos": c.khos, "fouls": c.fouls, "dives": c.dives, "pole": c.pole, "dream": c.dream, "secs": secs}))
 		for k in c:
 			tot[k] += c[k]
 		tot.secs += secs

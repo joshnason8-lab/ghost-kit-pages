@@ -95,6 +95,14 @@ func stop() -> void:
 	pass
 
 
+## Is the match paused now (the pause menu up)? 1 yes, 0 no, -1 the game does not say. The input fuzzer resumes a
+## match the game paused when sent to the background, as a person taps Resume on coming back, and presses its own
+## pause and resume only from a state it knows (Pok Ta Pok: its pause key toggles, and a background pause in between
+## left the match paused for good - "endless").
+func paused() -> int:
+	return -1
+
+
 ## The human's side (WsgSimInput plays it): -1 for an AI-only match.
 func human_team() -> int:
 	return -1

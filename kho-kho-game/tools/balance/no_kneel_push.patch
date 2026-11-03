@@ -1,0 +1,15 @@
+# Without the full push out of a kneeling chaser (0.12.5: Match._separate).
+# Applied by .github/workflows/kho-kho-balance.yml (git apply) to a copy of the game for one balance run: never to the game itself.
+diff --git a/kho-kho-game/game/match.gd b/kho-kho-game/game/match.gd
+index 4285f89..c794dee 100644
+--- a/kho-kho-game/game/match.gd
++++ b/kho-kho-game/game/match.gd
+@@ -2138,7 +2138,7 @@ func _separate(dt := 1.0 / 30.0) -> void:
+ 			# A kneeling chaser does not move: a runner who ran into him this frame is put back out all the way (at
+ 			# most his own frame's run - he slides round him, no jump), or at full speed he went half through (the
+ 			# owner: "like they are ghosts").
+-			_push_apart(d, sq, BODY_SEATED, 1.0, PUSH_MAX + d.vel.length() * dt)
++			_push_apart(d, sq, BODY_SEATED, 1.0)
+ 	for i in movers.size():
+ 		for k in range(i + 1, movers.size()):
+ 			_push_apart(movers[i], movers[k], BODY_STANDING, 0.5)

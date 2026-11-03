@@ -1,0 +1,132 @@
+extends WsgWorldGame
+## Kho Kho Rush's side of wsg_world_check (the foundation's world rules, docs/WORLD_RULES.md, ADOPTING 5.18): every
+## mode started as its button starts it, on the game's own code. The players and officials are WsgBodies on Medium
+## and High (FoundationLink, with the licensed clips: CI has them); on Low the game draws its own models, which the
+## pose, officials and feet rules cannot read - the check plays the modes at the player's tier, Medium unless set.
+##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out DIR
+
+const MatchScript := preload("res://game/match.gd")
+const OFFICIALS := 5   # two umpires, the referee, the timekeeper and the scorer (Match.build_rest)
+
+
+func _init() -> void:
+	if int(Game.settings.graphics) < 0:
+		Game.settings.graphics = Game.GFX_MEDIUM   # (a first run's tier: detect_graphics picks Medium for a mid phone)
+	Game.settings.sound = true
+	Game.settings.coach = false
+
+
+func game_name() -> String:
+	return "Kho Kho Rush"
+
+
+func prop_registry() -> String:
+	return "res://game/prop_runs.gd"
+
+
+func crowd_registry() -> String:
+	return "res://game/crowd_venues.gd"
+
+
+## Quick match (your side, after the toss: START) and Watch AI (two AI sides), each from its setup screen.
+func modes() -> Array:
+	return ["quick match", "watch AI"]
+
+
+## The tap: the setup screen's own start, as its button calls it (Game.play_match puts WsgLoading.cover up at once).
+func start_mode(mode: String, parent: Node) -> void:
+	Game.main = parent
+	Game.current = null
+	var watch := mode == "watch AI"
+	var screen: Node = Game.show_screen("res://ui/match_setup.gd", {"watch": watch})
+	if watch:
+		screen.call("_on_go")
+	else:
+		Game.play_match(screen.call("config", 0))
+
+
+func officials(_mode: String) -> int:
+	return OFFICIALS
+
+
+func _match(root: Node) -> Node:
+	for n in root.find_children("*", "Node3D", true, false):
+		if n.get_script() == MatchScript:
+			return n
+	return null
+
+
+## The officials: their bodies on the shared rig (FoundationLink), or the Athletes themselves where there is none.
+func find_officials(root: Node) -> Array:
+	var m := _match(root)
+	if m == null:
+		return []
+	var out := []
+	for o: Athlete in (m.officials as Dictionary).values():
+		if is_instance_valid(o):
+			out.append(o.link.body if o.link != null else o)
+	return out
+
+
+## A chaser as he plays in a match: on the shared rig with his locomotor (FoundationLink, Medium).
+func walker(parent: Node) -> Array:
+	var was := int(Game.settings.graphics)
+	var was_in := FoundationLink.in_match
+	Game.settings.graphics = maxi(was, Game.GFX_MEDIUM)
+	FoundationLink.in_match = true
+	var a := Athlete.new({"id": "w", "num": 4, "speed": 75}, 0)
+	parent.add_child(a)
+	Game.settings.graphics = was
+	FoundationLink.in_match = was_in
+	if a.link == null:
+		return []   # (no licensed clips here: the rule says "not wired")
+	return [a.link.body, a.link.loco]
+
+
+## The whistles and the kho's slap on the back (Sfx.key: WsgAudio's kinds "whistle" and "tag").
+func key_sounds() -> Array:
+	return Sfx.KEY_KINDS
+
+
+func audio(parent: Node) -> WsgAudio:
+	return Sfx.make_key_audio(parent)
+
+
+func set_tier(t: int) -> void:
+	Game.settings.graphics = t
+	WsgFoundation.tier = t
+
+
+## The game's own mapping (Match.stick_map_at, as _stick_map uses it): the stick's [right, down] at the body.
+func stick_map() -> Callable:
+	return func(st: Vector2, cam: Camera3D, at: Vector3) -> Vector3:
+		var ax: Array = MatchScript.stick_map_at(cam, at)
+		var w: Vector2 = (ax[0] as Vector2) * st.x + (ax[1] as Vector2) * st.y
+		return Vector3(w.x, 0.0, w.y)
+
+
+## The match's three views (Settings: Camera; the camera button by pause), each placed as in play.
+func cameras(_mode: String, root: Node) -> Array:
+	var m := _match(root)
+	if m == null or m.cam == null:
+		return []
+	var keep: int = m._cam_mode
+	var out := []
+	for mode in [Game.CAM_TV, Game.CAM_CLOSE, Game.CAM_POLE]:
+		m._cam_mode = mode
+		for i in 12:
+			m._camera(1.0 / 30.0)
+		var c := Camera3D.new()
+		c.name = ["broadcast", "close", "behind the pole"][mode]
+		c.fov = m.cam.fov
+		(m.cam.get_parent() as Node).add_child(c)
+		c.global_transform = m.cam.global_transform
+		out.append(c)
+	m._cam_mode = keep
+	m._camera(1.0 / 30.0)
+	return out
+
+
+## props: the prop audit as CI ran it before the world check (2 matches of 120 s a ground).
+func prop_args() -> Array:
+	return [2, 120]

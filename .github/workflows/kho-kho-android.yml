@@ -23,7 +23,7 @@ env:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
@@ -114,21 +114,21 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn 2>&1 | grep -E "graphics|venue"
 
-      # The owner's rule for every ground's crowd (the foundation's ADOPTING 5.1): every fan on their seat, not in it,
-      # soles on the floor, facing the play. Fails the build if any venue (game/crowd_venues.gd) fails.
-      - name: Crowd audit (every ground, seated and standing, 3D and Low cards)
+      # The world rules (ADOPTING 5.18, docs/WORLD_RULES.md: game/world.gd): props solid (the prop audit, every ground,
+      # every body every frame), the crowd in its seats (the crowd audit), planted feet, no T- or A-pose, officials on
+      # the rig in their own kit, key sounds crisp, the loading overlay in the tap's frame, the stick the camera's way on
+      # every camera, the graphics tiers kept, nothing licensed in a Web build.
+      - name: World check (every rule, every mode)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd "$RUNNER_TEMP/crowd_audit" 2>&1 | grep -E "PASS|FAIL|CROWD AUDIT"
-
-      # The owner's rule: nobody ever walks through a table, a bench, a pole or a barricade (ADOPTING 5.15). A Watch-AI
-      # match at every ground, every body measured every frame against its solid things (game/prop_runs.gd).
-      - name: Prop audit (every ground, every player and official, against every solid thing)
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          set -o pipefail
-          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 2 120 2>&1 | grep -E "inside a prop|PROP AUDIT"
+          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | grep -vE "^\s+at: |ALSA lib"
+      - name: World check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kho-kho-world-check
+          path: ${{ runner.temp }}/world
 
       # Every note the owner ever gave, as a test of its own (tests/owner_notes: their words, and what must hold so they
       # never see it again). Strict: nothing may be skipped here.
