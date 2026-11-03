@@ -540,3 +540,19 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   rad) and the note runs on fixed seeds, the failing ones among them.
 - World check fixes: each mode's match is let go (not freed) when the next starts, and the match does not lower its
   own graphics during the check (on software GL it did, freeing the shared bodies the officials rule reads).
+
+## 0.14.8 (in progress): Low under its triangle budget
+
+- **Low's bodies a quarter of the triangles.** wsg_world_check's tiers rule measured Low at 625,000-665,000 triangles a
+  frame against the budget phones' 200,000: 21 bodies of about 15,000 triangles, each drawn twice (its flattened floor
+  shadow is a second pass of the same mesh). tools/rig/bake_low.gd cuts each body to about 3,800 with Godot's own mesh
+  simplifier (as its importer makes LODs), the same vertices and skin, saved as assets/characters/bodies/*_low.res
+  (about 22 KB each); the officials' (the referee bodies) to about 1,900, on the side lines and small on screen.
+  RiggedBody draws them on Low (low_mesh), and swaps on a mid-match lowering (detail_changed, now for every official
+  too). Bodies about 67,000 triangles, 134,000 with their shadows; the tiers rule measured Low at 163,000-197,000 in
+  three modes and 203,000 at the beach with the officials still at 3,800 (before their cut to 1,900). Side by side from the broadcast
+  and the close camera the two cannot be told apart. The tiers rule is deferred to 2026-11-04 12:00 UTC by the lead
+  while this and the village's draw calls (127 at Medium against 120) are done. The village's 125 measured here: the
+  players 57, the officials 20, about 41 with the sun's pass, the four houses 18 (3 parts each, drawn twice in the lit
+  pass). The houses are in the lightmapped shell scene (assets/grounds/village/village.tscn): merging them into four
+  draws needs the shell and its lightmap baked again - next.

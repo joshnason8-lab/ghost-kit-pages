@@ -1320,7 +1320,7 @@ func lower_graphics() -> void:
 		_moment = {}
 	_detail_t = 0.0
 	_auto_gfx.reset()
-	for a in athletes + [officials.referee] + officials.umpires:
+	for a in athletes + officials.find_children("*", "Athlete", false, false):
 		if a and a.model and a.model.rig:
 			a.model.rig.detail_changed()
 	_floor_shadows()   # on Low the sun's shadows go: each body's own take their place

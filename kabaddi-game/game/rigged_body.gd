@@ -468,6 +468,29 @@ static func _read_json(path: String) -> Dictionary:
 	return d
 
 
+## The body's lighter mesh for Low: the same vertices and skin, a quarter of the triangles
+## (assets/characters/bodies/<name>_low.res, tools/rig/bake_low.gd). Low drew 21 bodies of 15,000 triangles and a
+## flattened copy of each for its floor shadow - 625,000-665,000 a frame against the budget phones' 200,000; at about
+## 3,800 a body that is some 160,000. The full mesh when there is none.
+static func low_mesh(d: Dictionary, file: String) -> Mesh:
+	if d.has("mesh_low"):
+		return d.mesh_low
+	var path := "res://assets/characters/bodies/%s_low.res" % file.get_basename()
+	var low: Mesh = d.mesh
+	if file != "" and ResourceLoader.exists(path):
+		var r: Resource = load(path)
+		var idx: PackedInt32Array = r.get_meta("indices", PackedInt32Array())
+		if not idx.is_empty():
+			var full: ArrayMesh = d.mesh
+			var arrays := full.surface_get_arrays(0)
+			arrays[Mesh.ARRAY_INDEX] = idx
+			var m := ArrayMesh.new()
+			m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			low = m
+	d.mesh_low = low
+	return low
+
+
 static func _v(a: Array) -> Vector3:
 	return Vector3(float(a[0]), float(a[1]), float(a[2]))
 
@@ -511,7 +534,7 @@ func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float
 		skin_res.add_named_bind(String(b.name), Transform3D(Basis(), head).affine_inverse())
 	skeleton.reset_bone_poses()
 	mesh_instance = MeshInstance3D.new()
-	mesh_instance.mesh = body.mesh
+	mesh_instance.mesh = low_mesh(body, file) if int(Game.settings.graphics) == Game.GFX_LOW else body.mesh
 	mesh_instance.skin = skin_res
 	skeleton.add_child(mesh_instance)
 	mesh_instance.skeleton = NodePath("..")
@@ -551,6 +574,10 @@ static func albedo_for(d: Dictionary) -> Texture2D:
 
 ## The graphics level changed: wear the albedo for it (albedo_for).
 func detail_changed() -> void:
+	# The lighter mesh on Low, the full one above (the graphics lowered mid-match: Match.lower_graphics).
+	if mesh_instance and not body.is_empty():
+		var low := int(Game.settings.graphics) == Game.GFX_LOW
+		mesh_instance.mesh = low_mesh(body, String(get_meta("file", ""))) if low else body.mesh
 	if material and body.get("albedo"):
 		material.set_shader_parameter("albedo_tex", albedo_for(body))
 		if mirror:
