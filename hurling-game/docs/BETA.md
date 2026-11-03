@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.2
+
+- **Gates in the club ground's rail**: the rail round the parish field now has a gate near each corner of every
+  long side and end, so a player can walk off the field to fetch a ball that has gone behind the clubhouse or the
+  grass bank.
+- Under the hood: the game is now checked by thousands of simulated matches, including a player fetching the ball
+  from behind the ground's biggest stands and walls without walking through them.
+
 ## New in 0.24.1
 
 - **Less gliding**: a player picking the ball up or catching it on the move now steps with his feet instead of

@@ -857,6 +857,20 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.2, 3 November 2026)
+
+- **WsgSimGame.fetch wired** (the fetch-behind-prop case, enforced from 2026-11-04 12:00): Match.send_fetch puts the
+  ball dead at the spot and sends the nearest outfield man; `game/fetch_route.gd` (FetchRoute) walks him round the
+  props on a 0.5 m grid (A* over WsgSolidProps.penetration, then only the turns), since WsgSolidProps.path looks for
+  corners only within 8 m of the way and a 91 m rail or a 160 m stand was walked into. The time allowed: the route's
+  length at his top speed, half as long again, plus 3 s (never under WsgSim.FETCH_S). 16 seeds: every fetcher there.
+- **The parish rail has gates** (Stadium.RAIL_GATE, 2 m, a fifth of the way from each end of each long run): it ringed
+  the field, so no one could walk off it. The stadium's bowl stays closed: foundation 1303a18 offers fetch spots only
+  where a body can reach from the field (the lead: no tunnels).
+- **Officials' signals excused in WsgSim** (`pose_excuse`): a wide's arms pass a T and an A on the way overhead.
+- **World check**: start_mode hides and stops the last mode's match instead of freeing it (its bodies were read by
+  the officials rule after it was freed). Foundation 888e222, then 1303a18.
+
 ## Done (0.24.1, 3 November 2026)
 
 - **The owner's notes as tests** (foundation 877bcd9: WsgOwnerNote, WsgNoteChecks, tools/wsg/owner_notes.gd and its
