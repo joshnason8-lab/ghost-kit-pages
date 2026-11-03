@@ -6,11 +6,11 @@ extends Node3D
 ## an evening sky on floodlight poles, as so much of the game is across Africa, the Caribbean and the Pacific.
 ##
 ## Built from merged, vertex-coloured parts (Geo) drawn by the venue's shaders (VenueLook): its structure in one draw
-## call, what glows (lines, light strips, boards, nets) in a second and its lights in a third, however many parts. The
-## stands' seated people are painted by the shader, so a full house costs nothing more; each venue's builder declares
+## call, what glows (lines, light strips, boards, nets) in a second and its lights in a third, however many parts (the
+## arena's bowl too: its rows stepped, a seat along each, stairs between the blocks). Each venue's builder declares
 ## where its spectators sit or stand (CrowdVenues, the shared foundation's WsgCrowdVenue: crowd_venue) and Crowd puts
 ## them there: whole 3D people who sit, cheer and watch the ball on Medium and High, the same people as cards on Low
-## (one draw call). Low graphics leaves out the small things and the bloom. Indoors on Medium and High the courtside boards are LED boards
+## and wherever the 3D ones stop (one draw call). Low graphics leaves out the small things and the bloom. Indoors on Medium and High the courtside boards are LED boards
 ## running messages and the teams' colours, the game's wordmark is painted in the run-off and each post has a goal light that flashes for a goal
 ## (VenueLook.led: one draw call more); Low keeps its plain glowing boards.
 
@@ -587,33 +587,33 @@ func _arena() -> void:
 	var x0 := Court.HALF_L + Court.RUNOFF + 3.3
 	var z0 := Court.HALF_W + Court.RUNOFF + 1.55
 	var front := 1.0          # the lower tier's front wall
-	var lower := 8            # rows in the lower tier
-	var depth := 0.85
-	var rise := 0.425
-	var o1 := lower * depth
-	var y1 := front + lower * rise
-	var first := 0 if _low else (3 if _gfx == Game.GFX_MEDIUM else 5)
+	# The two tiers (CrowdVenues.bowl_tiers): rows stepped, seats along them, real people in them (Crowd).
+	var tiers := CrowdVenues.bowl_tiers(front)
+	var lower: Array = tiers[0]
+	var upper: Array = tiers[1]
+	var o1: float = lower[0] + lower[2] * CrowdVenues.TREAD
+	var y1: float = lower[1] + lower[2] * lower[3]
+	# The courtside stands stand on the lower tier's front rows on the far side and ends: no seats under them.
+	var cs := "bleacher_hall" if _low else "bleacher_metal"
+	var first := CrowdVenues.bowl_first(CrowdVenues.HALL_BLEACHER_HALF_D if _low else CrowdVenues.METAL_HALF_D) if _props.has(cs) else 0
 	var wall := Color("10183e")
 	_lit.kind = Vector2.ZERO
 	_ring(_lit, x0, z0, 0.0, 0.0, 0.0, front, wall)
-	_solid_bowl(x0, z0, front, lower, depth, rise)
-	# On Medium and High the front rows behind the courtside stands (far side and ends) are left unpainted: the stands
-	# and their people are there.
-	_ring(_lit, x0, z0, 0.0, front, o1, y1, Color("1c2560"), Vector2(VenueLook.STAND, first), [0, 1, 3])
-	_ring(_lit, x0, z0, 0.0, front, o1, y1, Color("1c2560"), Vector2(VenueLook.STAND, 0), [2])
+	_bowl_tier(x0, z0, lower, first)
+	_solid_bowl(x0, z0, lower, first)
 	_ring(_glow, x0, z0, -0.02, front - 0.07, -0.02, front, Color("ff7a2a"), Vector2(VenueLook.LED, 0.6))
 	# The walkway behind the lower tier, and the fascia under the upper tier with its strip of light.
-	var fo := o1 + 0.7
-	var fy := y1 + 1.3
+	var fo: float = upper[0]
+	var fy: float = upper[1]
 	_ring(_lit, x0, z0, o1, y1, fo, y1, Color("141b44"))
 	_ring(_lit, x0, z0, fo, y1, fo, fy, Color("0c1233"))
 	_ring(_glow, x0, z0, fo - 0.015, y1 + 0.3, fo - 0.015, fy - 0.2, Color("0e2a66"), Vector2(VenueLook.LED, -0.35))
 	_ring(_glow, x0, z0, fo - 0.02, fy - 0.16, fo - 0.02, fy - 0.04, Color("29d8ea"), Vector2(VenueLook.LED, 0.9))
 	_ring(_glow, x0, z0, fo - 0.02, y1 + 0.18, fo - 0.02, y1 + 0.24, Color("ff7a2a"), Vector2(VenueLook.LED, 0.2))
 	# The upper tier, steeper, fading into the dark, and the back wall up to the roof.
-	var uo := fo + 11.0
-	var uy := fy + 8.8
-	_ring(_lit, x0, z0, fo, fy, uo, uy, Color("1c2560"), Vector2(VenueLook.STAND, 0))
+	var uo: float = fo + upper[2] * CrowdVenues.TREAD
+	var uy: float = fy + upper[2] * upper[3]
+	_bowl_tier(x0, z0, upper, 0)
 	_ring(_lit, x0, z0, uo, uy, uo, 22.0, Color("070c22"))
 	# Lamps on the fascia, shining down on the court.
 	_ring_lights(x0, z0, fo - 0.1, fy - 0.5, 6.0 if not _low else 8.0, 0.5, Color("eaf2ff"), 0.8)
@@ -628,14 +628,108 @@ func _arena() -> void:
 	var bz := Court.HALF_W + Court.RUNOFF + 0.45
 	floor_rect = Rect2(-bx, -bz, bx * 2.0, bz * 2.0)
 	# Courtside stands in front of the lower tier on the far side and both ends, people in their seats (CrowdVenues.arena):
-	# on Low the owner's light three-row bleacher, on Medium and High the dark metal one.
-	if _low:
-		if _props.has("bleacher_hall"):
-			_courtside("bleacher_hall", CrowdVenues.HALL_BLEACHER_W, CrowdVenues.HALL_BLEACHER_HALF_D, x0, z0, front)
-			_declare(CrowdVenues.arena(x0, z0, front, true))
-	elif _props.has("bleacher_metal"):
-		_courtside("bleacher_metal", CrowdVenues.METAL_W, CrowdVenues.METAL_HALF_D, x0, z0, front)
-		_declare(CrowdVenues.arena(x0, z0, front, false))
+	# on Low the owner's light three-row bleacher, on Medium and High the dark metal one. And the bowl's people, all
+	# round both tiers (CrowdVenues.bowl), darkening going up as the stands do into the night.
+	var v := CrowdVenues._venue()
+	if _props.has(cs):
+		if _low:
+			_courtside(cs, CrowdVenues.HALL_BLEACHER_W, CrowdVenues.HALL_BLEACHER_HALF_D, x0, z0, front)
+		else:
+			_courtside(cs, CrowdVenues.METAL_W, CrowdVenues.METAL_HALF_D, x0, z0, front)
+		v = CrowdVenues.arena(x0, z0, front, _low)
+	CrowdVenues.bowl(v, x0, z0, front, first, _gfx)
+	v.fade = Vector3(4.0, 15.0, 0.45)
+	_declare(v)
+
+
+## A tier of the bowl (CrowdVenues.bowl_tiers: [the first row's front out from the front corners, its floor, rows,
+## rise]): each row's tread and the riser behind it, mitred at the corners, and along the back of each tread a plastic
+## seat (CrowdVenues.BOWL_SEAT: the pan, its front edge and its back - one strip on Low, a back a seat on Medium and
+## High) broken by the stairs, where a half step on each row climbs to the next. No seats on the rows under the
+## courtside stands (the far side's and the ends' first rows: first). All in the venue's lit draw call.
+func _bowl_tier(x0: float, z0: float, tier: Array, first: int) -> void:
+	var o0: float = tier[0]
+	var y0: float = tier[1]
+	var rows: int = tier[2]
+	var rise: float = tier[3]
+	var t := CrowdVenues.TREAD
+	var s: Dictionary = CrowdVenues.BOWL_SEAT
+	var tread_col := Color("1a2252")
+	var riser_col := Color("0e1438")
+	var seat_col := Color("26357f")
+	var stair_col := Color("323d70")
+	var w := CrowdVenues.AISLE_W * 0.5
+	var f0: float = s.setback
+	var f1: float = s.setback + s.depth
+	var h: float = s.height
+	for r in rows:
+		var o := o0 + r * t
+		var y := y0 + r * rise
+		_ring(_lit, x0, z0, o, y, o + t, y, tread_col)
+		_ring(_lit, x0, z0, o + t, y, o + t, y + rise, riser_col)
+		for side in 4:
+			if r < first and side != 2:
+				continue
+			var sd := CrowdVenues.bowl_side(side, x0, z0)
+			var mid: Vector3 = sd[0] + sd[2] * o + Vector3.UP * y
+			var along: Vector3 = sd[1]
+			var out: Vector3 = sd[2]
+			var lim: float = float(sd[3]) + o - CrowdVenues.MITRE
+			var at := func(u: float, off: float, up: float) -> Vector3: return mid + along * u + out * off + Vector3.UP * up
+			# The stairs, and the blocks of seats between them.
+			var cuts := _bowl_cuts(lim)
+			for u: float in _bowl_aisles(lim):
+				_face(_lit, at.call(u - w, t * 0.5, rise * 0.5), at.call(u + w, t * 0.5, rise * 0.5), at.call(u + w, t, rise * 0.5),
+					at.call(u - w, t, rise * 0.5), Vector3.UP, stair_col)
+				_face(_lit, at.call(u - w, t * 0.5, 0.0), at.call(u + w, t * 0.5, 0.0), at.call(u + w, t * 0.5, rise * 0.5),
+					at.call(u - w, t * 0.5, rise * 0.5), -out, stair_col.darkened(0.3))
+			for i in range(0, cuts.size(), 2):
+				var u0: float = cuts[i]
+				var u1: float = cuts[i + 1]
+				if u1 - u0 < 0.45:
+					continue
+				_face(_lit, at.call(u0, f0, h), at.call(u1, f0, h), at.call(u1, f1, h), at.call(u0, f1, h), Vector3.UP, seat_col)
+				_face(_lit, at.call(u0, f0, h - 0.09), at.call(u1, f0, h - 0.09), at.call(u1, f0, h), at.call(u0, f0, h), -out,
+					seat_col.darkened(0.4))
+				if _low:
+					_face(_lit, at.call(u0, f1, h), at.call(u1, f1, h), at.call(u1, f1, h + s.back), at.call(u0, f1, h + s.back),
+						-out, seat_col.lightened(0.06))
+					continue
+				# (A seat every half metre from the side's middle, as the people are placed: CrowdVenues.bowl.)
+				var c := floorf(u0 / 0.5) * 0.5 + 0.25
+				while c - 0.25 < u0 - 0.001:
+					c += 0.5
+				while c + 0.25 <= u1 + 0.001:
+					_face(_lit, at.call(c - 0.22, f1, h), at.call(c + 0.22, f1, h), at.call(c + 0.22, f1, h + s.back),
+						at.call(c - 0.22, f1, h + s.back), -out, seat_col.lightened(0.06))
+					c += 0.5
+
+
+## Where the stairs are along a row of the bowl that reaches lim each way from its side's middle (their middles).
+static func _bowl_aisles(lim: float) -> Array:
+	var out := []
+	var k := ceili(-lim / CrowdVenues.AISLE_EVERY - 0.5)
+	while (k + 0.5) * CrowdVenues.AISLE_EVERY < lim:
+		out.append((k + 0.5) * CrowdVenues.AISLE_EVERY)
+		k += 1
+	return out
+
+
+## The blocks of seats along such a row, between the stairs: [from, to, from, to, ...] (m from the side's middle).
+static func _bowl_cuts(lim: float) -> Array:
+	var cuts := [-lim]
+	for u: float in _bowl_aisles(lim):
+		cuts.append_array([u - CrowdVenues.AISLE_W * 0.5, u + CrowdVenues.AISLE_W * 0.5])
+	cuts.append(lim)
+	return cuts
+
+
+## A four-sided face (a b c d in order round it) facing n.
+static func _face(g: Geo, a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, col: Color) -> void:
+	if (d - a).cross(b - a).dot(n) < 0.0:
+		g.quad(a, d, c, b, col)
+	else:
+		g.quad(a, b, c, d, col)
 
 
 ## Places sections of a stand model (w wide, half_d deep from its middle to its front, facing +Z) along the far side
@@ -643,6 +737,33 @@ func _arena() -> void:
 func _courtside(name: String, w: float, half_d: float, x0: float, z0: float, y: float) -> void:
 	for xf: Transform3D in CrowdVenues.courtside(w, half_d, x0, z0, y):
 		_props.add(name, xf, Color(0.62, 0.68, 0.95))
+		if name == "bleacher_metal":
+			_metal_seats(xf)
+
+
+## The metal stand's folding seats as plastic seats (its model's chairs, decimated, read as black shards in the dark
+## where no one sits): over each of its 14 chairs a row, a lit pan, its front edge and the back's face, a few mm proud
+## of the model's (CrowdVenues.METAL_SEATS, measured off the model). In the venue's lit draw call.
+func _metal_seats(xf: Transform3D) -> void:
+	var col := Color("3a4c9e")
+	var up := xf.basis.y.normalized()
+	var fwd := xf.basis.z.normalized()
+	for row: Array in CrowdVenues.METAL_SEATS:
+		var sz0: float = row[0]
+		var sz1: float = row[1]
+		var top: float = row[2]
+		var bz: float = row[3]
+		var btop: float = row[4]
+		for i in 14:
+			var x := -3.25 + i * 0.5
+			var p := func(dx: float, yy: float, zz: float) -> Vector3: return xf * Vector3(x + dx, yy, zz)
+			_face(_lit, p.call(-0.22, top + 0.006, sz0), p.call(0.22, top + 0.006, sz0), p.call(0.22, top + 0.006, sz1 + 0.01),
+				p.call(-0.22, top + 0.006, sz1 + 0.01), up, col.lightened(0.08))
+			_face(_lit, p.call(-0.22, top - 0.05, sz1 + 0.01), p.call(0.22, top - 0.05, sz1 + 0.01), p.call(0.22, top + 0.006, sz1 + 0.01),
+				p.call(-0.22, top + 0.006, sz1 + 0.01), fwd, col.darkened(0.3))
+			# (A little wider and higher than the model's back: its shards stay behind it.)
+			_face(_lit, p.call(-0.235, top, bz), p.call(0.235, top, bz), p.call(0.235, btop + 0.05, bz),
+				p.call(-0.235, btop + 0.05, bz), fwd, col)
 
 
 ## The boards round the run-off: a dark frame and a glowing band of plain colour that a slow light sweeps along (no
@@ -1484,18 +1605,50 @@ func _solid_box(name: String, c: Vector3, size: Vector3, material: String, yaw :
 	solid.add({"name": name, "kind": "box", "xf": Transform3D(Basis(Vector3.UP, yaw), c), "size": size, "material": material})
 
 
-## The arena bowl's lower tier as the ball meets it: the front wall round the court and each row behind it, a box up to
-## that row's front edge (never above the painted slope), back to the walkway.
-func _solid_bowl(x0: float, z0: float, front: float, rows: int, depth: float, rise: float) -> void:
-	var back := rows * depth
+## The arena bowl's lower tier as the ball meets it, as Arena._bowl_tier draws it (tier: CrowdVenues.bowl_tiers'
+## first): the front wall round the court and each row behind it, a box up to that row's tread (its riser the box's
+## front), back to the walkway; on each row the seats of each block between the stairs (the pan, and its back above
+## it) and each stair's half step. No seats on the rows under the courtside stands (first; the stands are solid in
+## _solid_models).
+func _solid_bowl(x0: float, z0: float, tier: Array, first: int) -> void:
+	var o0: float = tier[0]
+	var front: float = tier[1]
+	var rows: int = tier[2]
+	var rise: float = tier[3]
+	var t := CrowdVenues.TREAD
+	var s: Dictionary = CrowdVenues.BOWL_SEAT
+	var back := o0 + rows * t
 	for r in rows:
-		var o0 := r * depth
+		var o := o0 + r * t
 		var y := front + r * rise
 		var name := "bowl front wall" if r == 0 else "bowl seating"
 		for sz: float in [-1.0, 1.0]:
-			_solid_box(name, Vector3(0, y * 0.5, sz * (z0 + (o0 + back) * 0.5)), Vector3((x0 + back) * 2.0, y, back - o0), "concrete")
+			_solid_box(name, Vector3(0, y * 0.5, sz * (z0 + (o + back) * 0.5)), Vector3((x0 + back) * 2.0, y, back - o), "concrete")
 		for sx: float in [-1.0, 1.0]:
-			_solid_box(name, Vector3(sx * (x0 + (o0 + back) * 0.5), y * 0.5, 0), Vector3(back - o0, y, (z0 + back) * 2.0), "concrete")
+			_solid_box(name, Vector3(sx * (x0 + (o + back) * 0.5), y * 0.5, 0), Vector3(back - o, y, (z0 + back) * 2.0), "concrete")
+		for side in 4:
+			if r < first and side != 2:
+				continue
+			var sd := CrowdVenues.bowl_side(side, x0, z0)
+			var along: Vector3 = sd[1]
+			var out: Vector3 = sd[2]
+			var yaw := atan2(-along.z, along.x)
+			var mid: Vector3 = sd[0] + out * o + Vector3.UP * y
+			var lim: float = float(sd[3]) + o - CrowdVenues.MITRE
+			for u: float in _bowl_aisles(lim):
+				_solid_box("bowl stairs", mid + along * u + out * (t * 0.75) + Vector3.UP * (rise * 0.25),
+					Vector3(CrowdVenues.AISLE_W, rise * 0.5, t * 0.5), "concrete", yaw)
+			var cuts := _bowl_cuts(lim)
+			for i in range(0, cuts.size(), 2):
+				var u0: float = cuts[i]
+				var u1: float = cuts[i + 1]
+				if u1 - u0 < 0.45:
+					continue
+				var c := mid + along * (u0 + u1) * 0.5
+				_solid_box("bowl seats", c + out * (float(s.setback) + float(s.depth) * 0.5) + Vector3.UP * (float(s.height) * 0.5),
+					Vector3(u1 - u0, s.height, s.depth), "plastic", yaw)
+				_solid_box("bowl seats", c + out * (float(s.setback) + float(s.depth) + 0.02) + Vector3.UP * (float(s.height) + float(s.back) * 0.5),
+					Vector3(u1 - u0, s.back, 0.04), "plastic", yaw)
 	solid.skip("bowl's walkway, upper tier and roof", "behind and above the lower tier, 4.4 m up and more: out of any ball's reach")
 	solid.skip("floodlight rigs", "15 m up")
 

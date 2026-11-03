@@ -2324,8 +2324,10 @@ func _crowd_facing() -> void:
 						off += 1
 			var lv := "Low" if g == Game.GFX_LOW else "High"
 			check(n > 0 and bad == 0, "%s, %s: every spectator faces the court (%d of %d do not)" % [lv, venue, bad, n])
-			check(as_cards == (n if g == Game.GFX_LOW else 0), "%s, %s: %s (%d cards of %d)" % [lv, venue,
-				"cards" if g == Game.GFX_LOW else "3D people", as_cards, n])
+			# (High: 3D people, and in the arena the bowl's far tiers as cards - a full house, cut-outs there only.)
+			var want := as_cards == n if g == Game.GFX_LOW else (as_cards > 0 and as_cards < n if venue == "arena" else as_cards == 0)
+			check(want, "%s, %s: %s (%d cards of %d)" % [lv, venue, "cards" if g == Game.GFX_LOW else
+				("3D people, the bowl's far tiers as cards" if venue == "arena" else "3D people"), as_cards, n])
 			check(off == 0, "%s, %s: every spectator stands on the ground or sits on a seat (%d off)" % [lv, venue, off])
 			if g == Game.GFX_LOW and venue == "outdoor" and not crowds.is_empty():
 				# A camera just behind the near side's crowd: the cards within 6 m of it left out, no others.

@@ -38,6 +38,10 @@ func _ready() -> void:
 				Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0,
 				Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0,
 				Engine.get_frames_per_second()])
+			var cr: Crowd = Game.current.arena.crowd if Game.current.arena else null
+			if cr:
+				print("%s graphics %d crowd: %d people, %d in 3D, %d as cards" % [v, g, cr.placed.spots.size(),
+					cr.used.size() if cr.people else 0, cr.cards.placed_cards.size() if cr.cards else 0])
 			if peak > 0:
 				var m = Game.current
 				var phases := [["play", peak, -1], ["goal close", 90, -2]]
