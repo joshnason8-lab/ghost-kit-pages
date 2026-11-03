@@ -87,6 +87,7 @@ var _move_prev: MocapClip = null
 var _move_prev_t := 0.0
 var _move_fade := 1.0
 var _move_held := 0.0       # seconds since the running clip last changed
+var _own_arms := 0.0        # how much of a running clip's arms are his own instead (a side-shuffle's: _apply_moves)
 var _low_gait := false      # moving crouched (the shuffles and crouched walks): with hysteresis so it does not flicker
 var _way := Vector2.ZERO    # the way he travels, against his facing, smoothed (the running clip is picked by it)
 var _pace := -1.0           # his speed, smoothed: how far a running clip is in the pose goes by it
@@ -101,6 +102,7 @@ const HELD_HINGE := 0.6      # share of that hinge a raider held round the middl
 const HAUL_DIG := 0.5        # how much more of his body an ankle holder on the floor hauls with (_apply_struggle)
 const MOVE_FADE := 0.28      # s to cross-fade from one running clip to the next
 const MOVE_RATE := Vector2(0.5, 1.8)   # slowest and fastest a running clip is played, against how fast it was captured
+const SHUFFLE_ARMS_OWN := 0.8   # how much of a side-shuffle's arms are his own (hand-made ready arms), not the clip's
 var _joints: Array[Node3D] = []
 var _last_q: Array[Quaternion] = []
 var _last_h := 0.0
@@ -1097,12 +1099,17 @@ func _apply_moves(delta: float) -> void:
 			else:
 				var qo: Quaternion = old[k]
 				pose[k] = qo.slerp(pose[k], _move_fade)
-	_apply_pose(pose, move_weight, true, false, move_weight * upper)
+	# The side-shuffles' arms (the captured defender's held out straight for balance, 35-54 degrees from his sides:
+	# WsgSim's A-pose, 2026-11-03) give way to his own ready arms, hands out in front and elbows bent; eased over a
+	# clip's cross-fade, so the arms do not jump as he changes from a shuffle to a strafe.
+	var side_shuffle := _move.low and absf(_move.dir.x) > 0.7
+	_own_arms = move_toward(_own_arms, SHUFFLE_ARMS_OWN if side_shuffle else 0.0, delta / MOVE_FADE)
+	_apply_pose(pose, move_weight, true, false, move_weight * upper, move_weight * upper * (1.0 - _own_arms))
 
 
 ## Lay a captured pose over the hand-made one, by weight w. With keep_arms (a running clip), arms busy
 ## reaching or grabbing keep theirs.
-func _apply_pose(pose: Dictionary, w: float, keep_arms := true, right_only := false, upper := -1.0) -> void:
+func _apply_pose(pose: Dictionary, w: float, keep_arms := true, right_only := false, upper := -1.0, arms := -1.0) -> void:
 	var hip_h := 0.06 + 0.88 * height / 1.78 + 0.04
 	if pose.has("h"):
 		pelvis.position.y = lerpf(pelvis.position.y, hip_h * float(pose.h), w)
@@ -1110,8 +1117,9 @@ func _apply_pose(pose: Dictionary, w: float, keep_arms := true, right_only := fa
 		air = lerpf(air, float(pose.a) * height / 1.78, w)
 	# upper: a separate weight for the trunk, head and arms (the legs, pelvis and hip height take w).
 	var u := w if upper < 0.0 else upper
-	var arm_l := u * (1.0 - hold_arms) if keep_arms else (0.0 if right_only else u)
-	var arm_r := u * (1.0 - maxf(hold_arms, reach)) if keep_arms else u
+	var ua := u if arms < 0.0 else arms   # the arms' own weight (a side-shuffle's: _apply_moves)
+	var arm_l := ua * (1.0 - hold_arms) if keep_arms else (0.0 if right_only else ua)
+	var arm_r := ua * (1.0 - maxf(hold_arms, reach)) if keep_arms else ua
 	for pair in [["pelvis", pelvis, w], ["spine", spine, u], ["chest", chest, u], ["neck", neck, u * 0.6],
 			["head", head, u * 0.6], ["sh_l", sh_l, arm_l], ["el_l", el_l, arm_l], ["sh_r", sh_r, arm_r],
 			["el_r", el_r, arm_r], ["hip_l", hip_l, w], ["kn_l", kn_l, w], ["hip_r", hip_r, w], ["kn_r", kn_r, w]]:
