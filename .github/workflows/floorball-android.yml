@@ -235,20 +235,21 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          # Never an empty tag (0.9.11: the create met an HTTP 403 just after the old release was deleted, and no beta was
-          # left until a re-run): the new release is made first under a temporary tag, tried up to five times, while the
-          # old one stays up; only then is the old one deleted and the new one moved onto the tag.
-          NEXT="${TAG}-next"
-          try() { for i in 1 2 3 4 5; do "$@" && return 0; [ "$i" = 5 ] && return 1; echo "failed (try $i): $*"; sleep $((i * 20)); done; }
-          gh release delete "$NEXT" --cleanup-tag --yes 2>/dev/null || true
-          try gh release create "$NEXT" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
-            --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+          # Published in place (ADOPTING 5.19, as Hurling's): no tag is made or removed - the token may be refused a new
+          # tag (0.9.11's create: HTTP 403). The new APK goes up beside the old one on the beta's own release, its title
+          # and notes are changed, and only then is the old APK taken down: the release always holds an APK.
+          try() { for i in 1 2 3; do "$@" && return 0; [ "$i" = 3 ] && return 1; echo "failed (try $i): $*"; sleep $((i * 20)); done; }
           if gh release view "$TAG" >/dev/null 2>&1; then
-            try gh release delete "$TAG" --cleanup-tag --yes
+            try gh release upload "$TAG" "$APK" --clobber
+            try gh release edit "$TAG" --prerelease --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+            for a in $(gh release view "$TAG" --json assets -q '.assets[].name'); do
+              case "$a" in "$(basename "$APK")") ;; *.apk) try gh release delete-asset "$TAG" "$a" --yes ;; esac
+            done
+          else
+            try gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
           fi
-          try gh release edit "$NEXT" --tag "$TAG"
-          gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$NEXT" 2>/dev/null || true   # (the temporary tag left behind)
-          gh release view "$TAG"
+          gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$(basename "$APK")"
 
       # The shared foundation's pilot (claude/floorball-foundation-pilot): a pre-release of its own, never the beta's.
       - name: Publish the foundation pilot
