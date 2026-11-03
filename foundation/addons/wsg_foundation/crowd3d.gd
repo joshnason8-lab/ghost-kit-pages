@@ -178,7 +178,8 @@ func _begin(spots: Array, facings: Array, density: float, seed: int, seated: Var
 	# Nearest the focus along the stands first (whole sections, out from the middle of the view), so where the 3D
 	# fans end and the cut-outs begin is a line across the stand, as between two sections, not a ring.
 	order.sort_custom(func(a, b): return nearness(spots[a], focus) < nearness(spots[b], focus))
-	var budget: Array = WsgFoundation.crowd_budget(quality)
+	# (No more than the player's tier allows, whatever the mode asks: WsgFoundation.crowd_quality.)
+	var budget: Array = WsgFoundation.crowd_budget(WsgFoundation.crowd_quality(quality))
 	var cap := int(budget[1] * clampf(density, 0.0, 1.0))
 	var near_cap := int(budget[0] * clampf(density, 0.0, 1.0))
 	var take := []

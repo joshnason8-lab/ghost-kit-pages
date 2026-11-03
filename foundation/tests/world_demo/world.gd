@@ -4,7 +4,8 @@ extends WsgWorldGame
 ## test hurler as the walker, the foundation's prop and crowd registries. BAD (world_check --bad) breaks one rule the
 ## way a game could, and the check must fail it (tests/world_check_test.sh):
 ##   loading (no overlay at the tap), pose (a player left in its rest pose), officials (an official in a player's
-##   kit), feet (the planter off), sounds (the post's ping dulled by distance), joystick (the stick fixed to the world)
+##   kit), feet (the planter off), sounds (the post's ping dulled by distance), joystick (the stick fixed to the world),
+##   tiers (the mode puts the graphics tier up to High and asks for the Close crowd, as Hurling's practice did)
 
 var bad := ""
 
@@ -103,6 +104,16 @@ class DemoMatch:
 		official = WsgOfficial.new(ch, ref_kit)
 		official.name = "Referee"
 		add_child(official)
+		# A stand of fans behind the far touchline: the crowd the game asks for (High), built at what the tier allows.
+		var q := 2
+		if _bad == "tiers":
+			WsgFoundation.tier = WsgFoundation.HIGH
+			q = 3
+		if WsgCrowd3D.available():
+			var crowd := WsgCrowd3D.new()
+			crowd.name = "Crowd"
+			add_child(crowd)
+			crowd.build_venue((load("res://tests/crowd_venue_test.gd") as GDScript).call("arena"), q, Vector3.ZERO, 1.0, 3)
 		for c in [["Alongside", Vector3(0, 6, 22), Vector3.ZERO], ["End-on", Vector3(-30, 5, 0), Vector3.ZERO],
 				["Overhead", Vector3(0, 35, 0.01), Vector3.ZERO], ["Behind the player", Vector3(3, 2.2, -8), Vector3(3, 1, 4)]]:
 			var cam := Camera3D.new()

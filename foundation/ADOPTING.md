@@ -1256,6 +1256,9 @@ func key_sounds() -> Array: return ["post", "whistle", "net", "score"]
 func audio(parent: Node) -> WsgAudio: return Sound.make_audio(parent)  # yours, as you set it up
 func stick_map() -> Callable: return Callable(Player, "stick_to_world")   # (stick, camera, body pos) -> world dir
 func cameras(mode: String, root: Node) -> Array: return root.find_children("*", "Camera3D", true, false)
+func set_tier(t: int) -> void:                                          # as the Settings screen does
+	Game.settings.graphics = t
+	WsgFoundation.tier = t
 ```
 
 Some hooks have defaults:
@@ -1291,6 +1294,24 @@ The check writes `WORLD_CHECK.md`: one line a rule with what broke it, and what 
 | joystick | `WsgNoteChecks.joystick` on each mode's cameras. |
 | web | The Web presets' `exclude_filter`, plus the pack's file table. |
 | props, crowd | Your `prop_audit` and `crowd_audit`, run by the check. |
+| tiers | Every mode at Low, Medium and High. Each must keep the player's tier (never put it up), stay within the tier's 3D crowd and full-detail bodies, and, with a renderer, within `WsgFoundation.frame_budget` (triangles, draw calls). |
+
+**Graphics tiers are enforced (item 3).** WsgFoundation owns the budgets:
+- `BUDGETS` holds the triangles and draw calls a frame may draw, per profile and tier. `frame_budget()` returns them.
+- `CROWD_AT_TIER` holds the 3D crowd quality each tier may build.
+- `full_bodies()` is the number of bodies drawn in full.
+
+`WsgCrowd3D` now asks `WsgFoundation.crowd_quality(quality)` and never builds more than the player's tier allows:
+- a premium game's Low builds no 3D crowd (billboards only);
+- a budget game's Low builds its small band;
+- Close (3) is built only at High;
+- a request above the tier is built at the tier's most, and recorded in `WsgFoundation.over_tier` with a warning.
+
+So **a mode must not raise the tier itself.** Hurling's practice forced High and the 2,400-fan crowd: a 9.7 s start
+on any phone. Build what the player's tier allows. If the owner lets a mode run higher, name their note in
+`tier_exceptions()`. Tests that build a High or Close crowd set `WsgFoundation.tier = WsgFoundation.HIGH` first (the
+foundation's crowd tests and notes now do). The frame budgets are set from Hurling's national stadium with about 15%
+room (docs/BUDGET.md); send me your numbers if a venue of yours needs more.
 
 The foundation's own world is `tests/world_demo/world.gd`. It passes every rule, and `tests/world_check_test.sh` shows
 that each fault fails its own rule and only that rule.

@@ -27,6 +27,8 @@ static func outdoor() -> WsgCrowdVenue:
 
 
 func _initialize() -> void:
+	# (High and Close crowds: the top tier, where the cap - WsgFoundation.crowd_quality - lets them be built.)
+	WsgFoundation.tier = WsgFoundation.HIGH
 	if not WsgCrowd3D.available():
 		print("CROWD VENUE TEST: SKIPPED (no crowd data)")
 		quit(0)

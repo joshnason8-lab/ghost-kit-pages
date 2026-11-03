@@ -10,6 +10,8 @@ const Venues := preload("res://tests/crowd_venue_test.gd")
 ## The foundation's two test grounds (every kind of seat and standing room), each crowd built in 3D and audited.
 func _audits() -> Array:
 	var out := []
+	# (High's crowd, as the owner saw it: the player's tier lets it be built - WsgFoundation.crowd_quality.)
+	WsgFoundation.tier = WsgFoundation.HIGH
 	for v in [["arena", Venues.arena()], ["outdoor", Venues.outdoor()]]:
 		var crowd := WsgCrowd3D.new()
 		tree.root.add_child(crowd)

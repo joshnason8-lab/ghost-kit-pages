@@ -488,3 +488,10 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     7-10 cm up sweeps 2-3 cm while it flattens about the held ankle, then the heel lifts. Not loosened; a heel pivot
     tried for it made the match path worse (walk 2.05) and was dropped.
   - Tried and dropped: easing the toe back on release (kept it low and sliding: walk 3.75).
+- **3 (graphics tiers enforced).** WsgFoundation.BUDGETS (frame triangles and draw calls per profile and tier),
+  CROWD_AT_TIER and crowd_quality(): WsgCrowd3D never builds more than the player's tier allows (premium Low none,
+  budget Low its band, Close only at High; requests over it recorded in over_tier). The world check's `tiers` rule
+  plays every mode at Low, Medium and High: the tier never put up, the crowd and full-detail bodies within the tier,
+  and with a renderer the frame budget (the demo under xvfb/opengl3: Low 11,730 triangles / 3 calls, Medium and High
+  273,454 / 9). An owner-excused mode names its note in tier_exceptions(). The demo's --bad tiers (forces High and the
+  Close crowd, as Hurling's practice did) fails at Low and Medium. Crowd tests and notes set High first.

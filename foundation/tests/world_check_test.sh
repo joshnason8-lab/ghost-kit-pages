@@ -7,7 +7,7 @@ OUT="${TMPDIR:-/tmp}/wsg_world_check_test"
 export WSG_WORLD_ENFORCE=1
 rm -rf "$OUT"
 mkdir -p "$OUT"
-RULES=feet,pose,officials,sounds,loading,joystick,web
+RULES=feet,pose,officials,sounds,loading,joystick,web,tiers
 GAME=res://tests/world_demo/world.gd
 run() {
 	name=$1
@@ -18,7 +18,7 @@ FAIL=0
 if ! run clean --only $RULES; then
 	echo "world_check_test: the demo world fails a rule it keeps:"; grep -E "FAIL|NOT WIRED" "$OUT/clean.log"; FAIL=1
 fi
-for bad in loading pose officials feet sounds joystick; do
+for bad in loading pose officials feet sounds joystick tiers; do
 	run "$bad" --only $RULES --bad "$bad"
 	code=$?
 	broke=$(grep -E "^[a-z]+ +(FAIL|NOT WIRED)" "$OUT/$bad.log" | awk '{print $1}' | tr '\n' ' ')

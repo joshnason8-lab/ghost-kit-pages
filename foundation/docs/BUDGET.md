@@ -1,5 +1,16 @@
 # Budgets
 
+**Since 2026-11-03 (item 3) the tiers are enforced.** `WsgFoundation.BUDGETS` sets what a frame may draw, and
+`CROWD_AT_TIER` sets the 3D crowd each tier may build. `WsgCrowd3D` builds no more than the player's tier allows
+(`crowd_quality`), and wsg_world_check's `tiers` rule plays every mode at each tier against them.
+
+| Profile | Low | Medium | High |
+|---|---|---|---|
+| premium | 200,000 triangles / 110 draw calls; no 3D crowd | 520,000 / 125; crowd Medium (700) | 1,150,000 / 180; crowd High (1,200), Close (2,400) |
+| budget | 200,000 / 110; crowd Medium (150) | 300,000 / 120; crowd Medium (150) | 800,000 / 180; crowd High (700), Close (500) |
+
+These are Hurling's national stadium (below) with about 15% room, to be confirmed on the phones.
+
 **Since 2026-11-03 the 3D crowd is all full figures** (WsgFoundation profiles: premium Medium 700, High 1,200, Close
 2,400; budget Medium 150, High 700, Close 500) - as many as the light figures' triangles bought before. The light
 (far) figure, a third of the triangles, made spikes of the arms and sheared torsos, seen a few metres off by any camera

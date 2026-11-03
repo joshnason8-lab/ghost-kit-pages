@@ -1,7 +1,7 @@
 extends SceneTree
 ## wsg_world_check: the world rules (docs/WORLD_RULES.md) on the game's own code, one entry point for every game's CI.
 ##   godot --headless --fixed-fps 30 --path . -s res://tools/wsg/world_check.gd -- --out DIR [--game res://game/world.gd]
-##       [--only props,crowd,feet,pose,officials,sounds,loading,joystick,web] [--web-pck build/web/index.pck]
+##       [--only props,crowd,feet,pose,officials,sounds,loading,joystick,web,tiers] [--web-pck build/web/index.pck]
 ##       [--presets res://export_presets.cfg]
 ## The game's hooks are res://game/world.gd (extends WsgWorldGame); a rule it does not wire FAILS ("not wired"), unless
 ## its exceptions() name the owner's note excusing it. props and crowd run the game's prop_audit and crowd_audit
@@ -14,7 +14,7 @@ extends SceneTree
 
 const ENFORCED_FROM := "2026-11-03T12:00Z"
 
-const RULES := ["props", "crowd", "feet", "pose", "officials", "sounds", "loading", "joystick", "web"]
+const RULES := ["props", "crowd", "feet", "pose", "officials", "sounds", "loading", "joystick", "web", "tiers"]
 
 
 func _initialize() -> void:
@@ -83,6 +83,8 @@ func _initialize() -> void:
 					r = WsgWorldRules.joystick(game, modes)
 				"sounds":
 					r = WsgWorldRules.sounds(game, sv)
+				"tiers":
+					r = await WsgWorldRules.tiers(game, sv)
 				"web":
 					r = WsgWorldRules.web(presets, pck)
 		results.append(r)

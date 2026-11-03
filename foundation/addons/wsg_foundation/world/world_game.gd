@@ -96,6 +96,17 @@ func audio(parent: Node) -> WsgAudio:
 	return au
 
 
+## tiers: puts the game at graphics tier T as the player's Settings choice does (default: WsgFoundation.tier = T; a game
+## that keeps its own setting sets that too, and must hand it to WsgFoundation.tier).
+func set_tier(t: int) -> void:
+	WsgFoundation.tier = t
+
+
+## tiers: modes the owner lets run above the player's tier: {mode: "the owner's note (date, words)"}.
+func tier_exceptions() -> Dictionary:
+	return {}
+
+
 ## joystick: the game's own stick-to-world mapping, Callable(stick: Vector2 (x right, y down), camera: Camera3D,
 ## at: Vector3 (the body)) -> Vector3 (world direction); Callable() not wired.
 func stick_map() -> Callable:

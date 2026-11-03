@@ -17,6 +17,8 @@ func _initialize() -> void:
 	for i in 6000:
 		spots.append(Vector3(randf_range(-80, 80), randf_range(0, 12), randf_range(40, 60)))
 		facings.append(Vector3(0, 0, -1))
+	# (Each quality at the top tier, where the player's tier lets every quality be built.)
+	WsgFoundation.tier = WsgFoundation.HIGH
 	for q in [1, 2, 3]:
 		var crowd := WsgCrowd3D.new()
 		root.add_child(crowd)

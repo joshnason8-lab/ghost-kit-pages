@@ -47,6 +47,26 @@ func _initialize() -> void:
 				fails.append("budget Medium: more than 150 full 3D fans or 6 full bodies")
 		elif int(s.default) != WsgFoundation.MEDIUM:
 			fails.append("premium: Medium for an ordinary phone")
+	# The crowd never more than the player's tier allows (item 3: Hurling's practice built High's Close crowd on any
+	# tier, a 9.7 s start): Close only at High; a premium Low no 3D crowd, a budget Low its small band.
+	var caps := {"premium": {0: [0, 0, 0], 1: [1, 1, 1], 2: [1, 2, 3]}, "budget": {0: [1, 1, 1], 1: [1, 1, 1], 2: [1, 2, 3]}}
+	for prof in caps:
+		WsgFoundation.profile = prof
+		for t in [0, 1, 2]:
+			WsgFoundation.tier = t
+			WsgFoundation.over_tier.clear()
+			var got := [WsgFoundation.crowd_quality(1), WsgFoundation.crowd_quality(2), WsgFoundation.crowd_quality(3)]
+			if got != caps[prof][t]:
+				fails.append("%s tier %d: crowd qualities 1/2/3 built as %s, want %s" % [prof, t, got, caps[prof][t]])
+			var asked_over := 3 - (got as Array).count(3) - (1 if got[0] == 1 else 0) - (1 if got[1] == 2 else 0)
+			if WsgFoundation.over_tier.size() != asked_over:
+				fails.append("%s tier %d: %d requests over the tier recorded, want %d" % [prof, t, WsgFoundation.over_tier.size(), asked_over])
+		print("%-7s: crowd built per tier (asked Medium/High/Close): %s" % [prof, caps[prof]])
+		var fb := [WsgFoundation.frame_budget(0), WsgFoundation.frame_budget(1), WsgFoundation.frame_budget(2)]
+		if not (int(fb[0].triangles) <= int(fb[1].triangles) and int(fb[1].triangles) <= int(fb[2].triangles)):
+			fails.append("%s: frame budgets do not grow with the tier: %s" % [prof, fb])
+	WsgFoundation.over_tier.clear()
+	WsgFoundation.profile = "premium"
 	WsgFoundation.tier = WsgFoundation.MEDIUM
 	# Full detail for the nearest bodies only.
 	WsgFoundation.profile = "budget"
