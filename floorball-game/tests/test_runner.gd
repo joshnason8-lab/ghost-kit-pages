@@ -1291,19 +1291,17 @@ func _foundation() -> void:
 	check(unseen.is_empty(), "foundation: its body drawn for everyone on the rink, RiggedBody hidden (%s)" % [unseen])
 	check(sticks.is_empty(), "foundation: a stick in every skater's hands, none for the goalkeepers and referees (%s)" % [sticks])
 	check(still.is_empty(), "foundation: every body on the rink posed (every frame near the camera, every 2nd or 3rd far from it) (%s)" % [still])
-	# The feet on the floor, never in it: every ankle and toe at least at its height standing (FoundationLink._ground).
+	# The feet on the floor, never in it: every ankle and toe at least at its height standing, the legs bent by IK where
+	# the game's pose on this rig's longer legs would put them through it (FloorLegs: the owner, penalty shots).
 	var sunk := 0.0
-	for i in 60:
+	var lacked := 0.0
+	for i in 90:
 		await get_tree().process_frame
 		for p: Player in people:
-			if p.link == null or p.link.body == null or not p.visible:
-				continue
-			var sk: Skeleton3D = p.link.body.skeleton
-			for b: int in p.link._feet_rest:
-				if b >= 0:
-					var y: float = (sk.global_transform * sk.get_bone_global_pose(b)).origin.y
-					sunk = maxf(sunk, float(p.link._feet_rest[b]) - y - 0.01)
-	check(sunk <= 0.0, "foundation: nobody's feet under the floor (worst %.3f m)" % sunk)
+			if p.link and p.link.floor_legs and p.visible:
+				sunk = maxf(sunk, p.link.floor_legs.worst)
+				lacked = maxf(lacked, p.link.floor_legs.lacked)
+	check(sunk < 0.01 and lacked > 0.0, "foundation: nobody's feet under the floor (worst %.3f m after the legs bent, %.3f m before)" % [sunk, lacked])
 	# The fists on the shaft, over a few seconds of play: the top one always (the stick goes through it), the lower one
 	# nearly always (it slides along the shaft to where it reaches).
 	var n := 0

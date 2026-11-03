@@ -69,6 +69,8 @@ func _init(p_player: Player, p_body: Body) -> void:
 	top_level = true
 
 
+var floor_legs: FloorLegs     # the legs bent so the feet stay on the floor under the game's pose
+
 func _ready() -> void:
 	var look := gb.look
 	var kind := String(look.get("kind", "player"))
@@ -123,6 +125,10 @@ func _ready() -> void:
 		_make_stick()
 	elif kind == "keeper" and not keeper_model:
 		_make_helmet()
+	# The feet on the floor under the game's own pose: legs bent by IK where its pose would put them through it.
+	floor_legs = FloorLegs.new()
+	floor_legs.name = "FloorLegs"
+	body.skeleton.add_child(floor_legs)
 	# A Meshy model may rest with its soles toe-up: the feet turned down by it, a planted heel on the floor (the body's
 	# last modifier; none if it stands flat).
 	WsgFootFlat.attach(body)
@@ -317,41 +323,7 @@ func update(dt: float) -> void:
 	legacy.hold = {}
 	# The skeleton's modifiers now, once (WsgBody.set_manual).
 	body.advance(dt)
-	_ground(dt)
 
-
-
-## The feet on the floor, never in it: the game's whole-body pose ("full") turns this rig's legs as the game's own
-## turn, and this rig's legs are not the game's lengths, so a bent knee or a crouch put its toes up to 16 cm under the
-## floor (a penalty shot's close camera showed it). Each ankle and toe kept at least at its height standing: the body
-## raised by whatever it lacks, at once, and let back down gently.
-const FEET := ["LeftFoot", "LeftToeBase", "RightFoot", "RightToeBase"]
-var _feet_rest := {}          # bone index -> its height standing (over the body's origin)
-var _lift := 0.0
-
-
-func _ground(dt: float) -> void:
-	var sk: Skeleton3D = body.skeleton
-	if _feet_rest.is_empty():
-		for n: String in FEET:
-			var b := sk.find_bone(n)
-			if b >= 0:
-				_feet_rest[b] = (sk.global_transform * sk.get_bone_global_rest(b)).origin.y - body.global_position.y
-		if _feet_rest.is_empty():
-			_feet_rest[-1] = 0.0
-	var want := 0.0
-	for b: int in _feet_rest:
-		if b < 0:
-			continue
-		var y := (sk.global_transform * sk.get_bone_global_pose(b)).origin.y - body.global_position.y
-		want = maxf(want, float(_feet_rest[b]) - y)
-	var was := _lift
-	_lift = want if want > _lift else move_toward(_lift, want, dt * 0.6)
-	body.position.y = _lift
-	# (The hands took the stick before this frame's lift: raised, it goes up with them for this frame; the next frame
-	# grips it with the lift in place. Let down, at most 1 cm a frame, it stays: the blade never into the floor.)
-	if _lift > was and stick and stick.visible:
-		stick.global_position.y += _lift - was
 
 
 ## Both hands closed round the shaft (the fingers' turns solved once, WsgGrip, then laid on each time).
