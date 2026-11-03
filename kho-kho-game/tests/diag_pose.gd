@@ -62,7 +62,7 @@ func _initialize() -> void:
 						return   # (as WsgSim: only the quarter posed in full is read - the rest skip the rig's modifiers)
 					var p := WsgNoteChecks.t_or_a_pose(body)
 					var key := "%s|%s|%s|%s" % [p, a2.act, a2.link.mode, body.sim_full]
-					if p != "":
+					if p != "" and a2.act != "pole_turn":
 						counts[key] = int(counts.get(key, 0)) + 1
 						if int(counts[key]) <= 2:
 							_say("f%d %s: %s, act '%s', link mode '%s', pose_every %d, sim full %s, vel %.1f" % [Engine.get_process_frames(), who, p, a2.act, a2.link.mode, a2.link.pose_every, body.sim_full, a2.vel.length()])
