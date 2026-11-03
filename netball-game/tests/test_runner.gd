@@ -43,6 +43,7 @@ func _ready() -> void:
 		await _ball_in_play()
 		await _net_sway()
 		await _advantage_clear()
+		await _two_goal_lead()
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
@@ -65,6 +66,7 @@ func _ready() -> void:
 	await _ball_in_play()
 	await _net_sway()
 	await _advantage_clear()
+	await _two_goal_lead()
 	await _motion()
 	await _mocap()
 	await _gait_steps()
@@ -549,6 +551,27 @@ func _advantage_clear() -> void:
 			free_again = true
 			break
 	check(free_again, "advantage: once the ball has gone she is back in play")
+	m.queue_free()
+	await frames(2)
+
+
+## Level after extra time, play goes on to a two-goal lead: the goal that makes it ends the match (it went on for
+## ever before: Rules.match_over was not asked).
+func _two_goal_lead() -> void:
+	var m := _study_match(39, {"need_winner": true})
+	await _wait_live(m)
+	var gs: Player = m.player_at(0, "GS")
+	m.q = 7
+	m.time_left = INF
+	m.score = [20, 20]
+	m.pass_info = {}
+	m._release_holder()
+	m._goal(gs, 1)
+	var on: bool = m.phase == "goal"
+	m.pass_info = {}
+	m._release_holder()
+	m._goal(gs, 1)
+	check(on and m.phase == "over", "on to a two-goal lead: one goal up plays on, two up ends it (%s, %s)" % [m.score, m.phase])
 	m.queue_free()
 	await frames(2)
 

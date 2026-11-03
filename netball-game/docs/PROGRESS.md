@@ -279,13 +279,15 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   down as it passes; a ball off the rim or brushing it stirs it; it settles in two or three seconds (a damped swing
   of 1.3 a second, Arena._nets). The glow shader moves the net's faces from three uniforms a post, so it costs no
   draw call on any level: the nets are drawn in six rows now (+320 triangles a venue: Low 98/99/98 draw calls as
-  before; arena 56.8k primitives, hall 75.4k, outdoor 59.8k), the same in all three venues and every level, and in
+  before; arena 53.7k primitives, hall 72.3k, outdoor 56.7k on 0.8.9), the same in all three venues and every level, and in
   the replays (it follows the ball wherever it is drawn). The corded texture already reads as a rope net up close,
   so no rope mesh. **Advantage**: a defender whose contact or obstruction is played as advantage steps clear of the
   shooter, about 2.2 m to the side and 0.6 m back, never between her and the post (past 1.5 m in 0.7 s), until the
   ball has gone (TeamAI.give_way); the penalised player of a penalty pass stands square to the thrower's line to the
-  goal, not in it. Tests `_ball_flight`, `_ball_in_play`, `_net_sway`, `_advantage_clear`
-  (`test_runner.tscn -- ball` runs only these); tests/ball_shots.tscn renders a goal at the post frame by frame and
+  goal, not in it. Found on the way: a knockout still level after extra time played on for ever (time_left INF,
+  and nothing asked Rules.match_over), which the new flights' different random draws exposed in `_matches`' knockout;
+  the goal that makes a two-goal lead now ends it. Tests `_ball_flight`, `_ball_in_play`, `_net_sway`,
+  `_advantage_clear`, `_two_goal_lead` (`test_runner.tscn -- ball` runs only these); tests/ball_shots.tscn renders a goal at the post frame by frame and
   a lob and a chest pass from the side with their paths, the old ones beside them.
 
 ## Next

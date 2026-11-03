@@ -861,6 +861,9 @@ func _goal(pl: Player, value: int) -> void:
 	if other != user_team and int(timeouts[other]) > 0 and score[pl.team] - score[other] >= 4 and rng.randf() < 0.35:
 		call_timeout.call_deferred(other)
 	game_event.emit("goal", {"team": pl.team, "by": pl.pos, "value": value})
+	# Played on to a two-goal lead (level after extra time): this goal may have won it.
+	if q >= 7 and Rules.match_over(q, false, score, need_winner):
+		_end_period()
 
 
 func _elapsed() -> float:
