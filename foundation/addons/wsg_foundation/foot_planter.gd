@@ -229,6 +229,12 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			if _lock[i] == Vector3.INF:
 				# Planted means on the ground: the foot comes down until its lowest point (heel or ball) touches.
 				_lock[i] = Vector3(ank.x, maxf(ank.y - maxf(h, 0.0), floor_ankle - 0.5 * _toe_rest * sc), ank.z)
+				if _w[i] > 0.0 and _hold[i] != Vector3.INF and ankle_world[i] != Vector3.ZERO:
+					# Down again while still easing back from where it was last held (a stop from a sprint: the clip lifts
+					# the foot for a frame and puts it down a stride on): planted where it is drawn, not where the clip
+					# has it - it jumped there, 80-95 cm in a frame. If that is beyond the leg, it steps (as any foot).
+					_lock[i].x = (ankle_world[i] as Vector3).x
+					_lock[i].z = (ankle_world[i] as Vector3).z
 			if hip.distance_to(_lock[i]) > reach * 1.5:
 				# Far beyond the leg (the body put somewhere else: a restart, the next free): planted afresh under the foot
 				# (drawn after it, the leg pointed at the old place, level with the hips).
