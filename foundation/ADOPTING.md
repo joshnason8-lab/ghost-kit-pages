@@ -1342,6 +1342,42 @@ On the test hurler's match path, the worst step is now:
 |---|---|---|---|---|---|
 | Worst step (cm) | 1.5 | 0.3 | 0.9 | 0.2 | 1.0 |
 
+## 5.19 The release gate (every game, before every release)
+
+`tools/wsg/release_gate.py` checks the built APK (and the Web build) before a release goes up, and fails the job if
+any of these fail:
+
+| Check | What it requires |
+|---|---|
+| signature | Every signer's certificate SHA-256 is the owner's key `6F:23:A9:…:7B:A3`. apksigner verifies when the runner's Android build-tools have it; otherwise the certificates are read from the APK's v1/v2/v3 signatures. |
+| version | `project.binary`'s `application/config/version` is the release's version, and the APK's file name carries it. |
+| licensed | `mobility.res` and `actorcore.res` are in the APK, and nothing licensed is in the Web build or pack. |
+| clean | No tests, docs, tools, audit output or contact sheets in the export. |
+| textures | No texture over 2 MB that isn't GPU-compressed (ETC2/ASTC). |
+| files | No non-game files (`.blend`, `.psd`, `.fbx`, `.zip`, `.py`, `.sh`, `.md`, `.log`…), and no file of 64 KB or more twice. |
+| size | Never fails. The size against the previous release, and the 20 files that grew most. |
+
+```yaml
+      - name: Release gate
+        run: |
+          gh release download <your-beta-tag> -p '*.apk' -O "$RUNNER_TEMP/previous.apk" || true
+          python3 <game>/tools/wsg/release_gate.py --apk build/<game>-$VERSION.apk --version "$VERSION" \
+            --web build/web/index.pck --previous "$RUNNER_TEMP/previous.apk" --out "$RUNNER_TEMP/gate"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: release-gate, path: "${{ runner.temp }}/gate" }
+```
+
+It runs on GitHub's Ubuntu runner (`python3`, `cryptography` and the Android SDK's apksigner are already there).
+`--allow gate_allow.txt` excuses paths; each line is `<glob>`, a tab, then the owner's note. The report lists them.
+
+Warnings name the foundation's test-time scripts in your export: `prop_audit`, `note_checks`, `owner_note`, `sim/`
+and `world/`. Exclude them in your Android preset's `exclude_filter` unless your game uses them. Keep `note_checks`
+if you map the stick with `WsgNoteChecks.stick_world`.
+
+Checked on Kho Kho Rush 0.12.4-beta (the release APK): every check passes. The key is the owner's in v1, v2 and v3;
+the largest texture that isn't GPU-compressed is 1.6 MB; there are no duplicates.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →

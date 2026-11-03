@@ -495,3 +495,8 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   and with a renderer the frame budget (the demo under xvfb/opengl3: Low 11,730 triangles / 3 calls, Medium and High
   273,454 / 9). An owner-excused mode names its note in tier_exceptions(). The demo's --bad tiers (forces High and the
   Close crowd, as Hurling's practice did) fails at Low and Medium. Crowd tests and notes set High first.
+- **1, part 1: the release gate** (tools/release_gate.py; tests/release_gate_test.py; ADOPTING §5.19). Signature
+  (apksigner, else the v1/v2/v3 certificates read), version (project.binary vs the release, the file name), licensed
+  (mobility/actorcore in the APK, none in the Web build), clean, textures (no non-GPU-compressed one over 2 MB), files
+  (non-game types, duplicates over 64 KB), size diff (top 20 grown; no cap); --allow with the owner's note. Kho Kho
+  0.12.4-beta's release APK passes every check. Part 2 next: WsgAssetPack (the downloadable High pack).

@@ -16,6 +16,7 @@ godot --headless --path . --fixed-fps 30 -s res://tools/owner_notes.gd
 sh tools/owner_notes_guard.sh "$PWD/tests/owner_notes"
 godot --headless --path . -s res://tools/prop_audit.gd -- res://tests/prop_runs.gd "${TMPDIR:-/tmp}/wsg_prop_audit" 1 30
 sh tests/world_check_test.sh
+python3 tests/release_gate_test.py
 godot --headless --path . --fixed-fps 30 -s tests/loco_test.gd
 godot --headless --path . -s tests/crowd_test.gd
 godot --headless --path . -s tests/crowd_venue_test.gd
