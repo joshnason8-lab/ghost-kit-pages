@@ -249,6 +249,11 @@ func bounds() -> AABB:
 	var L := float(m.f.length) * 0.5 + float(m.f.lobby) + (2.2 if stands else 1.4)
 	var far := float(m.f.width) * 0.5 + float(m.f.lobby) + (2.4 if stands else 2.9)
 	var near := float(m.f.width) * 0.5 + float(m.f.lobby) + (2.4 if stands else 1.4)
+	if m.arena.kind == "arena":
+		# The hall has no barricades: its stands' front rows (Arena: L + 3.0 across the ends, W + 3.2 along the sides).
+		L = float(m.f.length) * 0.5 + float(m.f.lobby) + 3.0
+		far = float(m.f.width) * 0.5 + float(m.f.lobby) + 3.2
+		near = far
 	return AABB(Vector3(-L, -1.0, -far), Vector3(2.0 * L, 30.0, far + near))
 
 
