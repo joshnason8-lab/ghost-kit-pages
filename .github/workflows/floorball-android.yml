@@ -105,6 +105,10 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           timeout 600 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
 
+      - name: Crowd audit (every venue's fans on their seats, facing the play)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: timeout 900 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd crowd_audit
+
       - name: Configure Android export
         env:
           BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}

@@ -32,6 +32,9 @@ if [ "${1:-}" != "quick" ]; then
 	grep -q "SCRIPT ERROR" "$LOG/fit.log" && { grep -A4 "SCRIPT ERROR" "$LOG/fit.log" | head -20; bad "script error in fit_audit"; }
 	step "touch input";        timeout 600 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn > "$LOG/input.log" 2>&1 || bad "input_test"
 	tail -2 "$LOG/input.log"
+	# The shared crowd's audit (ADOPTING 5.1): every fan in every venue on their seat or floor, facing the play.
+	step "crowd audit";        timeout 900 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd "$LOG/crowd" > "$LOG/crowd.log" 2>&1 || bad "crowd_audit (see $LOG/crowd.log, sheets in $LOG/crowd)"
+	grep -E "PASS|FAIL" "$LOG/crowd.log" | head -8
 fi
 
 if [ $fail -ne 0 ]; then echo "== NOT READY TO PUSH"; exit 1; fi

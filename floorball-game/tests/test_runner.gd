@@ -966,39 +966,16 @@ func _crowd_faces() -> void:
 		m.config = {"home": "SWE", "away": "FIN", "venue": venue, "user_team": -1, "demo": true, "seed": 2, "period": 4.0}
 		add_child(m)
 		await frames(2)
+		# The shared crowd (WsgCrowdCards on the venue's declared seats): every card seated on its seat or standing on
+		# its floor, in front of the seat, facing the play (its own audit), and the substitutes on the benches.
+		var cards: Array = m.arena.find_children("*", "WsgCrowdCards", true, false)
+		var fails := []
 		var n := 0
-		var bad := 0
-		var worst := 1.0
-		for c in m.find_children("*", "Crowd", true, false):
-			var cr := c as Crowd
-			for i in cr.facings.size():
-				var pos: Vector3 = cr.global_transform * cr.spots_built[i]
-				var fa: float = cr.facings[i] * TAU
-				var fwd := Vector2(sin(fa), cos(fa))
-				var to_centre := Vector2(-pos.x, -pos.z).normalized()
-				var d := fwd.dot(to_centre)
-				worst = minf(worst, d)
-				n += 1
-				if d <= 0.7:
-					bad += 1
-		check(n > 50 and bad == 0, "%s: every spectator faces the rink (%d of %d turned away, worst %.2f)" % [venue, bad, n, worst])
-		if venue == "arena":
-			# And is drawn so: a spectator facing +x, seen from in front, behind and both sides (the cut-out's view and
-			# its mirroring, Crowd.view(); the pictures checked by eye with tools/crowd/facing_view.tscn).
-			var v: Array = [Crowd.view(0.25, Vector2(1, 0)), Crowd.view(0.25, Vector2(-1, 0)), Crowd.view(0.25, Vector2(0, 1)), Crowd.view(0.25, Vector2(0, -1))]
-			check(v[0][0] == 0 and v[1][0] == 4 and v[2] == [2, false] and v[3] == [2, true],
-				"crowd: a spectator is drawn facing the way he faces from every side (%s)" % [v])
-			# And watches the play: the crowd's focus follows the ball.
-			var guard := 0
-			while m.phase != "live" and guard < 600:
-				await get_tree().physics_frame
-				guard += 1
-			for i in 240:
-				await get_tree().physics_frame
-			var mat := Crowd.material()
-			var focus: Vector2 = mat.get_shader_parameter("focus")
-			check(float(mat.get_shader_parameter("follow")) > 0.5 and focus.distance_to(m.ball.floor_pos()) < 6.0,
-				"crowd: they watch the play (looking at %s, the ball at %s)" % [focus, m.ball.floor_pos()])
+		for c: WsgCrowdCards in cards:
+			n += c.placed_cards.size()
+			fails.append_array(c.audit(m.arena.crowd_venue, m.arena.crowd_placed).fails)
+		check(cards.size() >= 2 and n > 50 and fails.is_empty(),
+			"%s: the crowd on its seats, facing the play (%d crowds, %d spectators and substitutes; %s)" % [venue, cards.size(), n, fails])
 		m.queue_free()
 		await frames(2)
 
@@ -1102,10 +1079,9 @@ func _detail_levels() -> void:
 		var want_px := 1024 if low else 2048
 		var floor_px := 512 if low else 2048   # Low's floor scan is imported at 512 px
 		check(tex != null and tex.get_width() == want_px and floor_tex != null and floor_tex.get_width() == floor_px
-			and Crowd.sheet().resource_path.ends_with("crowd_atlas.png" if low else "crowd_atlas_hd.png"),
-			"graphics %d: the player textures at %d px, the floor at %d, the %s crowd sheet (player %s, floor %s, crowd %s)" % [g,
-			want_px, floor_px, "standard" if low else "HD", tex.get_width() if tex else -1, floor_tex.get_width() if floor_tex else -1,
-			Crowd.sheet().resource_path.get_file()])
+,
+			"graphics %d: the player textures at %d px, the floor at %d (player %s, floor %s)" % [g,
+			want_px, floor_px, tex.get_width() if tex else -1, floor_tex.get_width() if floor_tex else -1])
 		m.queue_free()
 	Game.settings.graphics = gfx
 

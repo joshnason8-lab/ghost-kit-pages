@@ -46,7 +46,7 @@ const SURFACES := {
 	"wood": ["surfaces/wood_floor/wood_floor_albedo_1k.jpg", "surfaces/wood_floor/wood_floor_normal_1k.jpg", 1.4, 0.39],
 }
 const ROW_RISE := 0.42        # the stands: each row this much higher ...
-const ROW_DEPTH := 0.8        # ... and this much further back
+const ROW_DEPTH := 0.9        # ... and this much further back
 const SEAT := 0.5             # a seat's width
 const METAL_ROWS := 5         # the arena's lower tier: rows of steel bleacher
 ## The hall's bleacher section (assets/shared/stands/bleacher_hall): its depth, how far a section behind is raised,
@@ -58,8 +58,8 @@ const BLEACHER_ROWS := [[0.33, 0.8], [0.76, 0.38], [1.2, -0.5]]
 var venue := "hall"
 var home_colors: Array = []
 var away_colors: Array = []
-var crowd: Crowd
-var bench_crowd: Crowd
+var crowd: WsgCrowdCards        # every spectator and substitute, placed by the shared crowd (crowd_venue)
+var crowd_placed := {}
 var _lit: Geo                 # opaque structure, lit
 var _glow: Geo                # lamps, screens, LED boards, windows: unshaded
 var _ads: Geo                 # the boards' advertising panels, on the signage's sheet
@@ -85,6 +85,25 @@ func _init(p_venue := "hall", p_home := [], p_away := []) -> void:
 	away_colors = p_away
 
 
+## A venue's spectator areas, as its stands and benches declare them (for the shared crowd's audit: game/crowd_venues.gd),
+## built away from any scene.
+static func declare(p_venue: String) -> WsgCrowdVenue:
+	var a = (load("res://game/arena.gd") as Script).new(p_venue, [Color.RED], [Color.BLUE])
+	a._lit = Geo.new()
+	a._glow = Geo.new()
+	a._cut = Geo.new()
+	a._see = Geo.new()
+	a._ads = Geo.new()
+	a._low = int(Game.settings.graphics) == Game.GFX_LOW
+	a._structure(DB.VENUES.get(p_venue, DB.VENUES.hall))
+	a._benches()
+	var out: WsgCrowdVenue = a.crowd_venue
+	for c in a.get_children():
+		c.free()
+	a.free()
+	return out
+
+
 static func s(name: String) -> Vector2:
 	var a: Array = STRIPS[name]
 	return Vector2(a[0] / SHEET_H, a[1] / SHEET_H)
@@ -101,36 +120,7 @@ func _ready() -> void:
 	signage = Signage.new()
 	add_child(signage)
 	_ads = Geo.new()
-	var spots: Array = []
-	var walls := Color(String(v.walls))
-	match String(v.stands):
-		"bowl":
-			_lamps = {"h": 12.5, "step": Vector2(6.5, 6.5), "n": Vector2i(6, 4), "size": Vector2(1.6, 0.9), "kind": "panel", "shown": false}
-			_half = Vector2(34, 27)
-			_hall_arena(walls, 34.0, 27.0, 16.0)
-			var seat := Color("24508f")
-			spots = _stands(-1, 14 if not _low else 11, seat, true)
-			spots.append_array(_stands(1, 14 if not _low else 11, seat, true))
-			spots.append_array(_end_stands(-1, 10 if not _low else 7, seat))
-			spots.append_array(_end_stands(1, 10 if not _low else 7, seat))
-			_scoreboard_cube()
-			_trusses(34.0, 27.0, 14.5, 7)
-		"side":
-			# Rows of fluorescent battens on a lighting rail under the roof trusses.
-			_lamps = {"h": 8.3, "step": Vector2(7.0, 6.5), "n": Vector2i(6, 3), "size": Vector2(0.9, 0.62), "kind": "tube"}
-			_half = Vector2(27, 19)
-			_hall_sports(walls, 27.0, 19.0, 10.0)
-			spots = _bleachers()
-			_wall_bars(1, 27.0, 19.0)
-			_trusses(27.0, 19.0, 10.0, 5)
-		_:
-			# Industrial pendant lamps on their cords from the ceiling (8 m), their bowls' rims at 6.7 m.
-			_lamps = {"h": 6.75, "step": Vector2(8.0, 5.5), "n": Vector2i(5, 3), "size": Vector2(0.5, 0.5), "kind": "pendant", "shown": false}
-			_half = Vector2(24, 16)
-			_hall_school(walls, 24.0, 16.0, 8.0)
-			spots = _stands(-1, 3, Color("c8ad7f"), false)
-			_wall_bars(-1, 24.0, 16.0)
-			_wall_bars(1, 24.0, 16.0)
+	_structure(v)
 	_env(venue, float(v.light))
 	_floor()
 	if venue == "arena":
@@ -154,11 +144,7 @@ func _ready() -> void:
 	add_child(_ads.commit(ads_mat))
 	var see := _see.commit(Geo.sheet_material("blend", atlas))
 	add_child(see)
-	crowd = Crowd.new()
-	var palette: Array = home_colors.duplicate()
-	palette.append_array(away_colors)
-	crowd.build(spots, Game.crowd_density() * (1.0 if venue != "school" else 0.6), palette, hash(venue))
-	add_child(crowd)
+	_build_crowd()
 	# The stands sit in the hall's half light, the rink under the lamps.
 	Crowd.set_light({"arena": 0.78, "hall": 0.95}.get(venue, 0.95) * clampf(float(v.light), 0.8, 1.1))
 
@@ -788,15 +774,17 @@ func _bench(cx: float, z: float, length: float, facing: int, seats_col: Color, b
 
 func _benches() -> void:
 	# The teams' benches behind their substitution zones on the far side, the substitutes on them.
-	var spots: Array = []
 	for side: int in [-1, 1]:
 		var x0: float = Rules.SUB_ZONE_FROM_CENTRE * side
 		var x1: float = (Rules.SUB_ZONE_FROM_CENTRE + Rules.SUB_ZONE_LEN) * side
 		var cx := (x0 + x1) * 0.5
 		var team: Color = (home_colors[0] if side < 0 else away_colors[0]) if not home_colors.is_empty() and not away_colors.is_empty() else Color("3b4552")
 		_bench(cx, -Rules.HALF_W - 2.4, Rules.SUB_ZONE_LEN, -1, team.darkened(0.25), 1.0)
-		for i in 10:
-			spots.append(Vector3(cx - Rules.SUB_ZONE_LEN * 0.45 + i * Rules.SUB_ZONE_LEN * 0.9 / 9.0, 0.0, -Rules.HALF_W - 2.15))
+		# Its seat (0.44 m, 0.42 deep, its back 0.4) to the shared crowd: one row, the feet on the floor in front.
+		var zf := -Rules.HALF_W - 2.4 + 0.21 + 0.45
+		crowd_venue.add({"name": "%s bench" % ("home" if side < 0 else "away"), "a": Vector3(cx - Rules.SUB_ZONE_LEN * 0.5 + 0.2, 0, zf),
+			"b": Vector3(cx + Rules.SUB_ZONE_LEN * 0.5 - 0.2, 0, zf), "rows": 1, "tread": 0.87, "rise": 0.0, "seat": "bench",
+			"height": 0.44, "depth": 0.42, "back": 0.4, "pitch": 0.6})
 	# The penalty benches (2 m each, at least 1 m from the centre line) and the secretariat between them, near side:
 	# low, so they keep to the bottom of the picture as before.
 	for side: int in [-1, 1]:
@@ -818,10 +806,49 @@ func _benches() -> void:
 		_lit.box(Vector3(k * 0.42, 0.21, tz + 0.55), Vector3(0.05, 0.42, 0.05), Color("8d939b"))
 		_lit.box(Vector3(k * 0.42, 0.79, tz + 0.05), Vector3(0.3, 0.02, 0.2), Color("4a4f57", 0.4))
 		_lit.box(Vector3(k * 0.42, 0.88, tz + 0.15), Vector3(0.3, 0.18, 0.015), Color("3a3f47", 0.4))
-	bench_crowd = Crowd.new()
-	var pal: Array = [home_colors[0] if not home_colors.is_empty() else Color.WHITE, away_colors[0] if not away_colors.is_empty() else Color.WHITE]
-	bench_crowd.build(spots, 0.7, pal, 9, 1.0)
-	add_child(bench_crowd)
+
+## The crowd: every seat the stands and benches declared (crowd_venue), filled as the graphics level allows, as the
+## shared foundation's cards (WsgCrowdCards: each fan sized to their seat and on it, standing on the floor when they get
+## up, facing the play; one draw call for the whole hall). The fans wear the two teams' colours more than anything
+## else; the substitutes on the benches their team's.
+func _build_crowd() -> void:
+	var seed_ := hash(venue)
+	crowd_placed = crowd_venue.place(seed_)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_
+	var density := Game.crowd_density() * (1.0 if venue != "school" else 0.6)
+	var home: Color = home_colors[0] if not home_colors.is_empty() else Color.WHITE
+	var away: Color = away_colors[0] if not away_colors.is_empty() else Color.WHITE
+	# The stands: about half in the two teams' colours (exactly theirs: the cards' team colours), the rest their own.
+	var fans := PackedInt32Array()
+	var benches := {"home": [], "away": []}
+	for i in (crowd_placed.spots as Array).size():
+		var name := String(crowd_venue.sections[int(crowd_placed.section[i])].name)
+		if name.ends_with("bench"):
+			if rng.randf() < 0.55:
+				(benches["home" if name.begins_with("home") else "away"] as Array).append(i)
+		elif rng.randf() < density:
+			fans.append(i)
+	crowd = WsgCrowdCards.new()
+	crowd.name = "Crowd"
+	add_child(crowd)
+	crowd.build(crowd_placed, fans, seed_)
+	crowd.set_teams(home, away)
+	# The substitutes on the benches, each team in its own colour.
+	for side: String in ["home", "away"]:
+		var idx := PackedInt32Array(benches[side])
+		if idx.is_empty():
+			continue
+		var col: Color = home if side == "home" else away
+		var shirts := []
+		shirts.resize((crowd_placed.spots as Array).size())
+		for k in idx:
+			shirts[k] = col
+		var sub := WsgCrowdCards.new()
+		sub.name = "Bench_" + side
+		add_child(sub)
+		sub.build(crowd_placed, idx, seed_ + (1 if side == "home" else 2), shirts)
+		sub.set_teams(col, col)
 
 
 # ---------------------------------------------------------------- the hall
@@ -1026,11 +1053,22 @@ func _bleachers() -> Array:
 		for k in 4:
 			var x := -12.0 + k * 8.0
 			at.append(Transform3D(Basis.IDENTITY, Vector3(x, lift, z)))
-			for row: Array in BLEACHER_ROWS:
-				var sx := x - 3.75
-				while sx < x + 3.8:
-					spots.append(Vector3(sx, lift + float(row[0]) - 0.42, z + float(row[1])))
-					sx += SEAT
+			# The model's three planks: its first and last are seats (the last's feet on the middle one, a footboard);
+			# a fan on the middle plank would have the front row in their knees. Each its own one-row section.
+			var r0: Array = BLEACHER_ROWS[0]
+			var r1: Array = BLEACHER_ROWS[1]
+			var r2: Array = BLEACHER_ROWS[2]
+			var pairs := [[r0, 0.0, 0.6], [r2, float(r1[0]), 0.9]]   # [seat plank, the feet's floor over the tier, tread]
+			for pi in pairs.size():
+				var row: Array = pairs[pi][0]
+				var foot: float = pairs[pi][1]
+				var tread: float = pairs[pi][2]
+				var seat_back := z + float(row[1]) - 0.175   # the plank 0.35 deep; the rink is +z
+				var zf := seat_back + tread
+				crowd_venue.add({"name": "bleacher %d.%d row %d" % [tier + 1, k + 1, pi * 2 + 1],
+					"a": Vector3(x - 3.75, lift + foot, zf), "b": Vector3(x + 3.75, lift + foot, zf), "rows": 1,
+					"tread": tread, "rise": 0.0, "seat": "bleacher", "height": float(row[0]) - foot, "depth": 0.3,
+					"back": 0.0, "pitch": 0.55})
 		if tier > 0:
 			# The deck the back sections stand on: its front and sides dark steel.
 			var zf := z + BLEACHER_D * 0.5
@@ -1043,97 +1081,168 @@ func _bleachers() -> Array:
 	return spots
 
 
+## The seats the stands are built with: the seat's height over its row's floor, its depth, its back over the seat
+## (the shared crowd's kinds, WsgCrowdVenue.KINDS: the fans are fitted to these).
+const PLASTIC := {"seat": "plastic", "height": 0.43, "depth": 0.33, "back": 0.25}
+const WOOD_BENCH := {"seat": "bench", "height": 0.42, "depth": 0.35, "back": 0.0}
+const FOOTWELL := 0.15          # the first row's front from the stand's front wall and glass
+const SEAT_GAP := 0.05          # a seat's back this far in front of the riser behind it (a seated fan's back clear of it)
+
+## The venue's spectator areas as the shared crowd places its fans (WsgCrowdVenue): every stand declares its rows here
+## as it is built.
+var crowd_venue := WsgCrowdVenue.new(Vector3.ZERO, Vector2(Rules.LENGTH, Rules.WIDTH), 0.0)
+
+
 ## Rows of seats along a long side (side -1: the far side, behind the benches; 1: the near side), rising; aisles
-## between sections. Each row: the step's front, its tread, the seats' backs at its back (people in front of them).
-## Returns where people sit.
+## between sections. Each row: its floor (where the feet go), a seat on it at the row's back, the seat's back (the
+## next row's riser behind it).
 func _stands(side: int, rows: int, seat: Color, fascia: bool) -> Array:
-	var spots: Array = []
 	# The near side's stand stands back behind the camera's gantry, out of the broadcast picture (the penalty benches
 	# and the secretariat at its foot); the far side's begins behind the teams' benches.
 	var z0 := (Rules.HALF_W + (3.6 if side < 0 else 6.2)) * side
 	var y_front := 1.0 if fascia else 0.0
 	var half := 15.0
-	var aisles := [-7.5, 0.0, 7.5] if fascia else [0.0]
-	var concrete := Color("8a8d92") if fascia else Color("c8ad7f")
+	var zf := z0 - side * ROW_DEPTH * 0.5
 	var rink := Vector3(0, 0, 0)
 	if fascia:
-		# The stand's front: a wall with an LED ribbon round it, a glass rail on top.
-		var zf := z0 - side * ROW_DEPTH * 0.5
-		var l := Vector3(-half, 0, zf)
-		var r := Vector3(half, 0, zf)
+		# The stand's front: a wall with an LED ribbon round it, a glass rail on top, FOOTWELL in front of the first
+		# row (its floor level with the wall's top), so a fan getting up keeps their knees off the glass.
+		var zw := zf - side * FOOTWELL
+		var l := Vector3(-half, 0, zw)
+		var r := Vector3(half, 0, zw)
 		_glow.face(l, r, 0.25, y_front - 0.05, rink, Color.WHITE, s("led"), 0.0, 30.0 / 8.0)
 		_lit.face(l, r, 0.0, 0.25, rink, Color("1b1e23"))
 		_see.face(l, r, y_front - 0.05, y_front + 0.85, rink, Color(0.8, 0.88, 0.95, 0.12))
-	for r in rows:
-		var zc := z0 + side * r * ROW_DEPTH
-		var zf := zc - side * ROW_DEPTH * 0.5
-		var zb := zc + side * ROW_DEPTH * 0.5
-		var y := y_front + 0.45 + r * ROW_RISE
-		var y_prev := y - ROW_RISE if r > 0 else 0.0
-		# Riser and tread, the whole length: the arena's lower tier a steel bleacher (aluminium treads, dark risers),
-		# concrete above it.
-		if fascia and r < METAL_ROWS:
-			_lit.face(Vector3(-half, 0, zf), Vector3(half, 0, zf), y_prev, y, rink, Color("2b2f35", 0.5))
-			_lit.flat(-half, zf, half, zb, y, Color(0.8, 0.82, 0.85, 0.45), s("tread"), 30.0 / 8.0, 1.0)
-		else:
-			_lit.face(Vector3(-half, 0, zf), Vector3(half, 0, zf), y_prev, y, rink, concrete.darkened(0.25), s("step"), 0.0, 4.0, 0.5)
-			_lit.flat(-half, zf, half, zb, y, concrete, s("step"), 4.0, 0.5)
-		# Seats in sections between the aisles.
-		var edges := [-half]
-		for a in aisles:
-			edges.append(a - 0.5)
-			edges.append(a + 0.5)
-		edges.append(half)
-		for k in range(0, edges.size(), 2):
-			var xa: float = edges[k]
-			var xb: float = edges[k + 1]
-			var zs := zb - side * 0.12
-			_lit.face(Vector3(xa, 0, zs), Vector3(xb, 0, zs), y, y + 0.45, rink, Color(seat, 0.55), s("seats"),
-				(xa + 40.0) / 4.0 if side < 0 else (40.0 - xb) / 4.0, (xb - xa) / 4.0)
-			var x := xa + SEAT * 0.5
-			while x < xb - SEAT * 0.25:
-				spots.append(Vector3(x, y, zc + side * 0.12))
-				x += SEAT
-		# The row's end, seen at the corners.
-		for e: int in [-1, 1]:
-			_lit.face(Vector3(half * e, 0, zf), Vector3(half * e, 0, zb), 0.0, y, Vector3(half * e * 2.0, 0, zc), concrete.darkened(0.35))
-	return spots
+		_lit.flat(-half, zw, half, zf, y_front, Color(0.8, 0.82, 0.85, 0.45), s("tread"), 30.0 / 8.0, 1.0)
+	_tiers(Vector3(-half, y_front, zf), Vector3(half, y_front, zf), Vector3(0, 0, side), rows, PLASTIC if fascia else WOOD_BENCH,
+		seat, Color("8a8d92") if fascia else Color("c8ad7f"), METAL_ROWS if fascia else 0, [-7.5, 0.0, 7.5] if fascia else [0.0],
+		"%s stand" % ("far" if side < 0 else "near"), fascia)
+	return []
 
 
 func _end_stands(end: int, rows: int, seat: Color) -> Array:
-	var spots: Array = []
 	var x0 := (Rules.HALF_L + 3.0) * end
 	var half := 11.0
-	var concrete := Color("8a8d92")
 	var rink := Vector3.ZERO
 	var xf0 := x0 - end * ROW_DEPTH * 0.5
-	_glow.face(Vector3(xf0, 0, -half), Vector3(xf0, 0, half), 0.25, 0.95, rink, Color.WHITE, s("led"), 0.3, 22.0 / 8.0)
-	_lit.face(Vector3(xf0, 0, -half), Vector3(xf0, 0, half), 0.0, 0.25, rink, Color("1b1e23"))
-	_see.face(Vector3(xf0, 0, -half), Vector3(xf0, 0, half), 0.95, 1.85, rink, Color(0.8, 0.88, 0.95, 0.12))
+	var xw := xf0 - end * FOOTWELL
+	_glow.face(Vector3(xw, 0, -half), Vector3(xw, 0, half), 0.25, 0.95, rink, Color.WHITE, s("led"), 0.3, 22.0 / 8.0)
+	_lit.face(Vector3(xw, 0, -half), Vector3(xw, 0, half), 0.0, 0.25, rink, Color("1b1e23"))
+	_see.face(Vector3(xw, 0, -half), Vector3(xw, 0, half), 0.95, 1.85, rink, Color(0.8, 0.88, 0.95, 0.12))
+	_lit.flat(xw, -half, xf0, half, 1.0, Color(0.8, 0.82, 0.85, 0.45), s("tread"), 1.0, 22.0 / 8.0)
+	_tiers(Vector3(xf0, 1.0, -half), Vector3(xf0, 1.0, half), Vector3(end, 0, 0), rows, PLASTIC, seat, Color("8a8d92"),
+		METAL_ROWS, [0.0], "%s end" % ("left" if end < 0 else "right"), true)
+	return []
+
+
+## A stand's rows: from the line a-b (the first row's front edge, at its floor) back along away, each row ROW_DEPTH
+## deep and ROW_RISE higher: the riser, the row's floor (tread), and along its back the seats between the aisles (a
+## seat on the floor, its front with the seats' picture, its back); the rows' ends. The first steel_rows are steel
+## bleacher, the rest concrete. Each block between aisles is declared to the shared crowd (crowd_venue) as it is.
+func _tiers(a: Vector3, b: Vector3, away: Vector3, rows: int, kind: Dictionary, seat: Color, concrete: Color,
+		steel_rows: int, aisles: Array, name: String, barrier: bool) -> void:
+	var along := (b - a)
+	along.y = 0.0
+	var length := along.length()
+	along = along.normalized()
+	var mid := (a + b) * 0.5
+	var rink := Vector3(mid.x, 0, mid.z) - away * 20.0
+	var h: float = kind.height
+	var sd: float = kind.depth
+	var bk: float = kind.back
+	var at := func(t: float, d: float) -> Vector3:   # along the row t m from a's end, d m back from the first row's front
+		return Vector3(a.x, 0, a.z) + along * t + away * d
+	# The blocks of seats between the aisles (t from a).
+	var blocks := []
+	var t0 := 0.0
+	for x: float in aisles:
+		# (An aisle at x along a stand down the rink's length, at z along an end stand.)
+		var t := (x - a.x) * signf(along.x) if absf(along.x) > 0.5 else (x - a.z) * signf(along.z)
+		blocks.append([t0, t - 0.5])
+		t0 = t + 0.5
+	blocks.append([t0, length])
 	for r in rows:
-		var xc := x0 + end * r * ROW_DEPTH
-		var xf := xc - end * ROW_DEPTH * 0.5
-		var xb := xc + end * ROW_DEPTH * 0.5
-		var y := 1.0 + 0.45 + r * ROW_RISE
-		var y_prev := y - ROW_RISE if r > 0 else 0.0
-		if r < METAL_ROWS:
-			_lit.face(Vector3(xf, 0, -half), Vector3(xf, 0, half), y_prev, y, rink, Color("2b2f35", 0.5))
-			_lit.flat(xf, -half, xb, half, y, Color(0.8, 0.82, 0.85, 0.45), s("tread"), 1.0, 22.0 / 8.0)
+		var f := a.y + r * ROW_RISE
+		var f_prev := a.y + (r - 1) * ROW_RISE if r > 0 else 0.0
+		var front := r * ROW_DEPTH
+		var back := (r + 1) * ROW_DEPTH
+		var fa: Vector3 = at.call(0.0, front)
+		var fb: Vector3 = at.call(length, front)
+		var ba: Vector3 = at.call(length, back)
+		var steel := r < steel_rows
+		# The riser up to this row's floor, and the floor.
+		if steel:
+			_lit.face(fa, fb, f_prev, f, rink, Color("2b2f35", 0.5))
+			_lit.flat(fa.x, fa.z, ba.x, ba.z, f, Color(0.8, 0.82, 0.85, 0.45), s("tread"), length / 8.0, 1.0)
 		else:
-			_lit.face(Vector3(xf, 0, -half), Vector3(xf, 0, half), y_prev, y, rink, concrete.darkened(0.25), s("step"), 0.0, 3.0, 0.5)
-			_lit.flat(xf, -half, xb, half, y, concrete, s("step"), 3.0, 0.5)
-		var xs := xb - end * 0.12
-		for sec: Array in [[-half, -0.5], [0.5, half]]:
-			var za: float = sec[0]
-			var zb: float = sec[1]
-			_lit.face(Vector3(xs, 0, za), Vector3(xs, 0, zb), y, y + 0.45, rink, Color(seat, 0.55), s("seats"), 0.0, (zb - za) / 4.0)
-			var z := za + SEAT * 0.5
-			while z < zb - SEAT * 0.25:
-				spots.append(Vector3(xc + end * 0.12, y, z))
-				z += SEAT
-		for e: int in [-1, 1]:
-			_lit.face(Vector3(xf, 0, half * e), Vector3(xb, 0, half * e), 0.0, y, Vector3(xc, 0, half * e * 2.0), concrete.darkened(0.35))
-	return spots
+			_lit.face(fa, fb, f_prev, f, rink, concrete.darkened(0.25), s("step"), 0.0, length / 8.0, 0.5)
+			_lit.flat(fa.x, fa.z, ba.x, ba.z, f, concrete, s("step"), length / 8.0, 0.5)
+		# The seats along the row's back: the seat's front (its picture), its top, its back.
+		for bl: Array in blocks:
+			var ta: float = bl[0]
+			var tb: float = bl[1]
+			if tb - ta < 0.6:
+				continue
+			var sa: Vector3 = at.call(ta, back - SEAT_GAP - sd)
+			var sb: Vector3 = at.call(tb, back - SEAT_GAP - sd)
+			var ka: Vector3 = at.call(ta, back - SEAT_GAP)
+			var kb: Vector3 = at.call(tb, back - SEAT_GAP)
+			_lit.face(sa, sb, f, f + h, rink, Color(seat, 0.55), s("seats"), ta / 4.0, (tb - ta) / 4.0)
+			_lit.flat(sa.x, sa.z, kb.x, kb.z, f + h, Color(seat.darkened(0.1), 0.55))
+			if bk > 0.0:
+				_lit.face(ka, kb, f + h, f + h + bk, rink, Color(seat.darkened(0.2), 0.55))
+		# The row's ends, seen at the corners.
+		for e: int in [0, 1]:
+			var p: Vector3 = at.call(0.0 if e == 0 else length, front)
+			var q: Vector3 = at.call(0.0 if e == 0 else length, back)
+			_lit.face(p, q, 0.0, f + h, p + along * (-1.0 if e == 0 else 1.0), concrete.darkened(0.35))
+	# The shared crowd's rows: one section a block between the aisles.
+	for bi in blocks.size():
+		var ta: float = blocks[bi][0]
+		var tb: float = blocks[bi][1]
+		if tb - ta < 0.6:
+			continue
+		var sec := {"name": "%s %d" % [name, bi + 1], "a": at.call(ta, 0.0) + Vector3.UP * a.y, "b": at.call(tb, 0.0) + Vector3.UP * a.y,
+			"rows": rows, "tread": ROW_DEPTH, "rise": ROW_RISE, "seat": kind.seat, "height": h, "depth": sd, "back": bk,
+			"pitch": 0.55, "setback": ROW_DEPTH - SEAT_GAP - sd}
+		if barrier:
+			sec["barrier"] = {"height": 0.85, "gap": FOOTWELL + 0.03}   # (the glass rail on the front wall, 0.06 thick)
+		crowd_venue.add(sec)
+
+
+
+
+## The hall itself: its walls, roof and stands (each stand declaring its rows to crowd_venue as it is built).
+func _structure(v: Dictionary) -> void:
+	var walls := Color(String(v.walls))
+	match String(v.stands):
+		"bowl":
+			_lamps = {"h": 12.5, "step": Vector2(6.5, 6.5), "n": Vector2i(6, 4), "size": Vector2(1.6, 0.9), "kind": "panel", "shown": false}
+			_half = Vector2(34, 27)
+			_hall_arena(walls, 34.0, 27.0, 16.0)
+			var seat := Color("24508f")
+			_stands(-1, 14 if not _low else 11, seat, true)
+			_stands(1, 14 if not _low else 11, seat, true)
+			_end_stands(-1, 10 if not _low else 7, seat)
+			_end_stands(1, 10 if not _low else 7, seat)
+			_scoreboard_cube()
+			_trusses(34.0, 27.0, 14.5, 7)
+		"side":
+			# Rows of fluorescent battens on a lighting rail under the roof trusses.
+			_lamps = {"h": 8.3, "step": Vector2(7.0, 6.5), "n": Vector2i(6, 3), "size": Vector2(0.9, 0.62), "kind": "tube"}
+			_half = Vector2(27, 19)
+			_hall_sports(walls, 27.0, 19.0, 10.0)
+			_bleachers()
+			_wall_bars(1, 27.0, 19.0)
+			_trusses(27.0, 19.0, 10.0, 5)
+		_:
+			# Industrial pendant lamps on their cords from the ceiling (8 m), their bowls' rims at 6.7 m.
+			_lamps = {"h": 6.75, "step": Vector2(8.0, 5.5), "n": Vector2i(5, 3), "size": Vector2(0.5, 0.5), "kind": "pendant", "shown": false}
+			_half = Vector2(24, 16)
+			_hall_school(walls, 24.0, 16.0, 8.0)
+			_stands(-1, 3, Color("c8ad7f"), false)
+			_wall_bars(-1, 24.0, 16.0)
+			_wall_bars(1, 24.0, 16.0)
 
 
 func _wall_bars(side: int, half_x: float, half_z: float) -> void:

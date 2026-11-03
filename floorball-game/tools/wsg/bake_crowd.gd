@@ -50,13 +50,14 @@ func _initialize() -> void:
 		var albedo := Image.load_from_file(tex_dir.path_join(fan + ".jpg"))
 		var m := _crowd_mesh(ch, albedo, tris)
 		_flat_mesh_feet(ch, m, fan)
+		var looks := _regions(ch, m)
 		var vat := await _bake_vat(ch, m, rows, meta)
 		ResourceSaver.save(m.mesh, out_dir.path_join(fan + "_crowd.res"), ResourceSaver.FLAG_COMPRESS)
 		ResourceSaver.save(m.far, out_dir.path_join(fan + "_crowd_far.res"), ResourceSaver.FLAG_COMPRESS)
 		ResourceSaver.save(ImageTexture.create_from_image(vat[0]), out_dir.path_join(fan + "_pos.res"), ResourceSaver.FLAG_COMPRESS)
 		ResourceSaver.save(ImageTexture.create_from_image(vat[1]), out_dir.path_join(fan + "_nrm.res"), ResourceSaver.FLAG_COMPRESS)
 		meta.fans[fan] = {"vertices": m.count, "triangles": m.tris, "far_triangles": m.far_tris, "width": vat[0].get_width(), "rows": rows,
-			"hips": snappedf((ch.joints["Hips"] as Vector3).y, 0.001)}
+			"hips": snappedf((ch.joints["Hips"] as Vector3).y, 0.001), "looks": looks}
 		var mask := _seat_mask(m)
 		var seat := WsgCrowd3D.measure_seat(vat[0], m.count, WsgCrowd3D.seated_rows(meta), mask)
 		meta.fans[fan]["seat"] = [snappedf(seat.x, 0.001), snappedf(seat.y, 0.001)]
@@ -65,6 +66,17 @@ func _initialize() -> void:
 			if mask[v] == 1:
 				ids.append(v)
 		meta.fans[fan]["seat_vertices"] = ids
+		# The hands (WsgCrowdVenue.audit lets them rest on a seat: a fan getting up pushes on it).
+		var hands := []
+		for v in m.count:
+			var w := 0.0
+			for j in 4:
+				var nm: String = WsgRig.BONES[m.bones[v * 4 + j]][0]
+				if nm.begins_with("LeftHand") or nm.begins_with("RightHand"):
+					w += m.weights[v * 4 + j]
+			if w >= 0.5:
+				hands.append(v)
+		meta.fans[fan]["hand_vertices"] = hands
 		print("%s: %d triangles (far %d), %d vertices, VAT %dx%d" % [fan, m.tris, m.far_tris, m.count, vat[0].get_width(), rows])
 	var f := FileAccess.open(out_dir.path_join("crowd.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify(meta, "\t"))
@@ -262,8 +274,137 @@ func _crowd_mesh(ch: Dictionary, albedo: Image, tris: int) -> Dictionary:
 		"tris": out_idx.size() / 3, "far_index": far_idx, "far_tris": far_idx.size() / 3, "mesh": null, "far": null}
 
 
-## Every frame of every clip, skinned through the rig and its drivers: [positions image, normals image]. Also
-## finishes the mesh (UV.x: the vertex's column; UV2: how much of the torso, and of the head, turns to watch).
+## The parts of a fan the crowd can recolour, one a vertex (UV.y = part * 0.25): 0 as made (the shirt, shoes, the
+## rest), 1 skin, 2 hair (and a beard: the same person), 3 the legs' clothes (trousers, a skirt, shorts). The crowd's
+## shader gives each fan a skin tone, a hair colour and trousers of their own from a game's palettes
+## (WsgCrowd3D.set_looks), shading each as the fan's own was shaded. Returns each part's mean colour (the reference
+## the shader shades from) and how many vertices it has.
+const REGIONS := ["as_made", "skin", "hair", "legs"]
+const SKIN_NEAR := 0.13      # how far (RGB) from the hands' colour is still skin
+const HAIR_NEAR := 0.2       # how far from the head's hair is still hair (long hair down the back)
+const FACE_HUE := 0.3        # the face's test: its hue (colour over brightness) this near the hands'
+const FACE_TOP := 0.165      # the crown: above this over the head joint (m) is hair
+
+
+## Skin's hue, however shaded: the colour over its brightness near the hands', and not much darker than them (black
+## hair has no hue to speak of; a face lit from above is darker than the hands, and as red) nor brighter than
+## brightest times them.
+static func _skin_hue(c: Vector3, ref: Vector3, brightest := INF) -> bool:
+	var w := Vector3(0.3, 0.59, 0.11)
+	var lc := c.dot(w)
+	var lr := ref.dot(w)
+	if lr <= 0.0 or lc < 0.4 * lr or lc > brightest * lr:
+		return false
+	return (c / lc).distance_to(ref / lr) < FACE_HUE
+
+
+func _regions(ch: Dictionary, m: Dictionary) -> Dictionary:
+	var share := func(v: int, names: Array) -> float:
+		var w := 0.0
+		for j in 4:
+			var nm: String = WsgRig.BONES[m.bones[v * 4 + j]][0]
+			for k in names:
+				if nm.begins_with(k):
+					w += m.weights[v * 4 + j]
+					break
+		return w
+	var rgb := func(v: int) -> Vector3:
+		var c: Color = m.col[v]
+		return Vector3(c.r, c.g, c.b)
+	var head: Vector3 = ch.joints["Head"]
+	var neck: Vector3 = ch.joints["Neck"]
+	var hips_y: float = (ch.joints["Hips"] as Vector3).y
+	var shoulder_y: float = (ch.joints["LeftArm"] as Vector3).y
+	# Skin: the hands' colour (every fan's hands are bare; a face may have a beard or glasses).
+	var skin_ref := Vector3.ZERO
+	var sn := 0
+	for v in m.count:
+		if share.call(v, ["LeftHand", "RightHand"]) >= 0.6:
+			skin_ref += rgb.call(v)
+			sn += 1
+	skin_ref /= maxf(1, sn)
+	var region := PackedByteArray()
+	region.resize(m.count)
+	var is_skin := func(v: int) -> bool:
+		return (rgb.call(v) as Vector3).distance_to(skin_ref) < SKIN_NEAR and (m.col[v] as Color).a < 0.5
+	# Hair: on the head (above the neck), not the face; then anything that colour on the head, the neck or the upper
+	# back above the shoulders' line less a hand (long hair).
+	var hair_ref := Vector3.ZERO
+	var hn := 0
+	for v in m.count:
+		var p: Vector3 = m.pos[v]
+		if share.call(v, ["Head", "Neck"]) < 0.5 or p.y <= neck.y + 0.02:
+			continue
+		# The face: the front of the head below the crown, near the hands' colour (a low-poly face is three or four
+		# vertices, shaded and textured far apart: a looser test than the arms').
+		var face := (m.nrm[v] as Vector3).z > 0.3 and p.y < head.y + FACE_TOP and _skin_hue(rgb.call(v), skin_ref)
+		if face or is_skin.call(v):
+			region[v] = 1
+		else:
+			region[v] = 2
+			hair_ref += rgb.call(v)
+			hn += 1
+	hair_ref /= maxf(1, hn)
+	# Long hair: grown out from the head's along the mesh's edges, through that colour (a shirt's back the same grey
+	# as a short crop is not reached: no hair joins it).
+	var nb := {}
+	for t in range(0, m.index.size(), 3):
+		for k in 3:
+			var a: int = m.index[t + k]
+			var b: int = m.index[t + (k + 1) % 3]
+			if not nb.has(a):
+				nb[a] = []
+			if not nb.has(b):
+				nb[b] = []
+			nb[a].append(b)
+			nb[b].append(a)
+	var front := []
+	for v in m.count:
+		if region[v] == 2:
+			front.append(v)
+	while hn > 0 and not front.is_empty():
+		var u: int = front.pop_back()
+		for v in nb.get(u, []):
+			var p: Vector3 = m.pos[v]
+			if region[v] == 0 and p.y > shoulder_y - 0.25 and p.z < head.z + 0.02 and not is_skin.call(v) \
+					and (rgb.call(v) as Vector3).distance_to(hair_ref) < HAIR_NEAR:
+				region[v] = 2
+				front.append(v)
+	# Hair is never the shirt: hair down the back is weighted to the spine, and took the shirt's (the team's)
+	# colour (fan2's and fan5's, before the parts).
+	for v in m.count:
+		if region[v] == 2:
+			var c: Color = m.col[v]
+			m.col[v] = Color(c.r, c.g, c.b, 0.0)
+	for v in m.count:
+		if region[v] != 0:
+			continue
+		var p: Vector3 = m.pos[v]
+		# (Bare arms, a neck, bare legs by their hue too: a dark arm is darker than its hand. Not the torso - the
+		# shirt - and nothing much brighter than the hands: beige trousers have skin's hue.)
+		var skin: bool = is_skin.call(v) or ((m.col[v] as Color).a < 0.5 and _skin_hue(rgb.call(v), skin_ref, 1.4)
+				and share.call(v, ["Spine", "Hips", "LeftShoulder", "RightShoulder"]) < 0.5)
+		if skin and share.call(v, ["LeftFoot", "RightFoot", "LeftToe", "RightToe"]) < 0.5:
+			region[v] = 1
+		elif p.y < hips_y + 0.05 and (m.col[v] as Color).a < 0.5 \
+				and share.call(v, ["LeftFoot", "RightFoot", "LeftToe", "RightToe"]) < 0.5 \
+				and share.call(v, ["Hips", "LeftUpLeg", "RightUpLeg", "LeftLeg", "RightLeg", "LeftKnee", "RightKnee", "LeftHip", "RightHip"]) >= 0.5:
+			region[v] = 3
+	m.region = region
+	var out := {}
+	for r in [1, 2, 3]:
+		var c := Vector3.ZERO
+		var n := 0
+		for v in m.count:
+			if region[v] == r:
+				c += rgb.call(v)
+				n += 1
+		c /= maxf(1, n)
+		out[REGIONS[r]] = [snappedf(c.x, 0.001), snappedf(c.y, 0.001), snappedf(c.z, 0.001), n]
+	print("  parts: skin %d, hair %d, legs %d of %d vertices" % [out.skin[3], out.hair[3], out.legs[3], m.count])
+	return out
+
+
 ## The vertices that are the seat of the trousers and the thighs: weighted mostly to the hips and thighs.
 func _seat_mask(m: Dictionary) -> PackedByteArray:
 	var mask := PackedByteArray()
@@ -278,6 +419,8 @@ func _seat_mask(m: Dictionary) -> PackedByteArray:
 	return mask
 
 
+## Every frame of every clip, skinned through the rig and its drivers: [positions image, normals image]. Also
+## finishes the mesh (UV.x: the vertex's column; UV.y: its part, REGIONS; UV2: how much of the torso, and of the head, turns to watch).
 func _bake_vat(ch: Dictionary, m: Dictionary, rows: int, meta: Dictionary) -> Array:
 	var body := WsgBody.new({"joints": ch.joints})
 	root.add_child(body)
@@ -328,6 +471,15 @@ func _bake_vat(ch: Dictionary, m: Dictionary, rows: int, meta: Dictionary) -> Ar
 			for pi in PIVOTS.size():
 				var pp := sk.get_bone_global_pose(sk.find_bone(PIVOTS[pi])).origin
 				pos_img.set_pixel(nv + pi, row, Color(pp.x, pp.y, pp.z, 1.0))
+			# Every frame on the ground: its lowest point (the soles, seated or standing) at 0. The motions' own feet
+			# came 1 to 6 cm under it seated and up to 5 cm over it standing (ActorCore's crowd takes, through each
+			# fan's legs): sunk into the floor or floating, and stepping as the motions changed.
+			var low := INF
+			for v in nv:
+				low = minf(low, pos_img.get_pixel(v, row).g)
+			for v in nv + PIVOTS.size():
+				var px := pos_img.get_pixel(v, row)
+				pos_img.set_pixel(v, row, Color(px.r, px.g - low, px.b, 1.0))
 			row += 1
 			await process_frame
 	body.queue_free()
@@ -343,7 +495,7 @@ func _bake_vat(ch: Dictionary, m: Dictionary, rows: int, meta: Dictionary) -> Ar
 	var head_ids := {WsgRig.index("Neck"): 0.5, WsgRig.index("Head"): 1.0}
 	var first := PackedVector3Array()
 	for v in nv:
-		uv.append(Vector2((v + 0.5) / float(width), 0.0))
+		uv.append(Vector2((v + 0.5) / float(width), float(m.region[v]) * 0.25))
 		var tw := 0.0
 		var hw := 0.0
 		for j in 4:

@@ -227,6 +227,27 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.5-beta: the crowd seated properly, the shared foundation's crowd (3 November 2026)
+
+The owner's rule for every game (through the lead): every fan sits on their seat (not in it, not floating), stands on
+the floor, faces the play. The foundation synced to cd6c29f (its shared crowd placement, WsgCrowdVenue, and Low cards,
+WsgCrowdCards); every venue's crowd now comes from it, at every graphics level:
+- **The stands rebuilt as stands**: each row a floor, a seat on it at the back (plastic 0.43 m high, 0.33 deep, a
+  0.25 m back, 5 cm clear of the riser behind; the school's wooden benches 0.42 m), rows 0.9 m deep and 0.42 m
+  higher; the arena's first rows behind a 15 cm footwell inside the LED wall and its glass (their shins hung over
+  it). The seats were a picture on the riser before, the fans in front of it.
+- **Every stand declares its rows** to the shared crowd (arena.gd _tiers, crowd_venue): the arena's four stands
+  block by block between the aisles, the sports hall's bleacher model as two seated rows a section (its front plank,
+  and its back plank with the feet on the middle one: a fan on the middle plank had the front row in their knees),
+  the school's benches, and both team benches (the substitutes, in their team's colour).
+- **The crowd is the shared cards** (one draw call the hall, plus one each for the two benches): each fan sized to
+  their seat and on it, on their feet on the floor when the hall goes up (not on the seat), turned toward the play;
+  about half in the two teams' colours (exactly theirs), the rest their own. The old cut-out crowd (crowd.gd) is no
+  longer drawn; its excitement and light now drive the shared crowd's.
+- **The audit**: tools/wsg/crowd_audit.gd over game/crowd_venues.gd passes for all three venues (2000 fans in the
+  arena, 240 in the sports hall, 188 in the school gym, and the Low cards); it runs in tools/ci_local.sh and in CI.
+  Contact sheets: docs/stills/0.9.5/ (the venues in the game on High and Low, before and after, and the audit's).
+
 ### 0.9.4-beta: straight wrists on the stick (3 November 2026)
 
 - **"Grip is still bad: see how the wrists are straight and not looking almost broken"** (the owner's photo of a

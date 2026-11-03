@@ -123,6 +123,9 @@ func _ready() -> void:
 		_make_stick()
 	elif kind == "keeper" and not keeper_model:
 		_make_helmet()
+	# A Meshy model may rest with its soles toe-up: the feet turned down by it, a planted heel on the floor (the body's
+	# last modifier; none if it stands flat).
+	WsgFootFlat.attach(body)
 
 
 ## The game's kit shader (RiggedBody's: the team's colours by the texture's blues and each vertex's standing height),
@@ -281,6 +284,8 @@ func update(dt: float) -> void:
 
 	# A move of the game's own has its feet where the game put them: the planter holds them only under the capture.
 	loco.planter.enabled = mode != "full"
+	# (Under the game's whole-body pose the legs are exactly as it poses them: no ankle lifted to the planter's floor.)
+	loco.planter.keep_pose = mode == "full"
 	if mode == "full":
 		loco.yaw = yaw
 		body.rotation.y = yaw

@@ -190,6 +190,7 @@ func _process(_delta: float) -> void:
 
 static func set_excite(k: float) -> void:
 	material().set_shader_parameter("excite", clampf(k, 0.0, 1.0))
+	WsgCrowd3D.set_excite(clampf(k, 0.0, 1.0))   # the shared crowd's fans (the venues' crowd: arena.gd _build_crowd)
 
 
 ## Where the play is (the floor, x and z) and how closely the crowd follows it (0 to 1).
@@ -201,3 +202,4 @@ static func set_focus(at: Vector2, k := 1.0) -> void:
 
 static func set_light(k: float) -> void:
 	material().set_shader_parameter("light", k)
+	WsgCrowd3D.set_light(k)
