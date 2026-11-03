@@ -432,22 +432,24 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   riser, a plastic seat (pan, edge, back; one back a seat on Medium/High, one strip on Low) along the back of it,
   stairs every 8 m and down each corner's mitre (Arena._bowl_tier, all in the venue's lit draw call), declared as
   WsgCrowdVenue sections (CrowdVenues.bowl: a side of a tier or a band of its rows, seats 0.43 m high, 0.33 deep,
-  backs 0.32; each row to its own mitre; no places on the stairs). Crowd fills them: on Medium the lower tier
-  behind the courtside stands in 3D, on High also the far upper tier's front rows ("solid"), the rest as the
-  foundation's cards, one draw call; Low all cards. The bowl has its own density (0.7/0.8/0.9: a full house), people
-  darken going up as the stands fade into the night, the near-camera hide looks only round the camera. Nothing is
-  painted any more (STAND is unused; the hall's back rows are empty tip-up seats, as at a league match). Foundation
-  synced to 2cd59a7 and the licensed crowd baked again (version 3); the cards' sheets now import VRAM-compressed
-  with mipmaps (our .import files: vendor.sh keeps a game's). People (TV seed 4): arena Low 4,803 cards; Medium
-  5,270 (601 3D); High 5,956 (1,175 3D). perf_probe peaks, draw calls/primitives and video memory, before -> after:
-  arena Low 99/53.9k 41.8 MB -> 99/68.9k 33.6 MB, Medium 128/367k 69.0 -> 132/610k 75.0, High 167/637k 89.5 ->
-  171/1,111k 95.5; hall Low 100/72.4k 41.6 -> 100/72.4k 32.6 MB, Medium and High unchanged; park Low 99/56.9k 48.7
-  -> 99/56.9k 39.7 MB, Medium unchanged, High 194/864k as at 0.9.0. crowd_audit passes every venue at Medium and High (the arena in three sheets: courtside,
-  lower tier, upper tier). `_crowd_facing`: on High the arena now has cards (the bowl's far rows) beside its 3D
-  people. Still as before: the courtside metal stands' rows 2-5 empty (knees in the chair backs); the shared cards
-  have no look or clap poses, so only the 3D people turn to the ball and clap in time (Crowd calls the cards'
-  watch_ball and clap, ready for art that has them). High's far upper rows in 3D cost about 200k triangles of its
-  1.11M ("solid" 2 -> 0 in CrowdVenues.bowl makes them cards).
+  backs 0.32; each row to its own mitre; no places on the stairs). Low fills every seat with the foundation's cards
+  (one draw call, 4,803 people). Medium and High fill only what they draw as 3D people (the owner's notes
+  crowd-real-people and crowd-squares: no cards there, nine in ten real): the lower tier behind the courtside
+  stands on the far side and the ends ("solid" 1), and on High the far upper tier's front rows ("solid" 2); the
+  rest of the bowl is empty seats there. Medium's bowl at 0.6 (474 3D people with the courtside stands: the tier's
+  frame budget, 492k of 520k triangles; at 0.8 it drew 549k), High's at 0.9 (1,175; 807k of 1.15M, 99 draw calls
+  of 180, world_check tiers). The courtside metal stands' empty rows 2-5 (knees in the chair backs) and empty
+  first-row seats were black shards of the model's decimated chairs: a lit plastic pan, edge and back is drawn
+  over each chair (Arena._metal_seats, CrowdVenues.METAL_SEATS). The bowl's solids (WsgSolidProps,
+  Arena._solid_bowl) are the rows as drawn: each up to its tread, the seats of each block, each stair's half step.
+  People darken going up as the stands fade into the night; the near-camera hide looks only round the camera.
+  Nothing is painted any more (STAND is unused; the hall's back rows are empty tip-up seats, as at a league match).
+  Foundation synced to 2cd59a7 and the licensed crowd baked again (version 3), then main's 1303a18 by the merge; the
+  cards' sheets import VRAM-compressed with mipmaps (our .import files: vendor.sh keeps a game's), Low's video
+  memory 41.8 -> 33.6 MB in the arena. crowd_audit passes every venue at Medium and High (the arena in three
+  sheets: courtside, lower tier, upper tier), prop_audit passes. The shared cards have no look or clap poses, so on
+  Low the people do not turn to the ball or clap in time (Crowd calls the cards' watch_ball and clap, ready for art
+  that has them).
 
 ## Next
 
