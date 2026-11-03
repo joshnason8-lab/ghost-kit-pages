@@ -334,6 +334,11 @@ in 3D and as Low cards) and crowd_audit.json. It exits 1 on any failure: fix the
 a tread) until it passes, and send the owner the sheets. The foundation's own test grounds (every kind) pass it:
 `tests/crowd_venues.gd`. Put it in CI with the clips fetched (your licensed crowd is the one shipped).
 
+Write the sheets **outside the project**, for example `"${{ runner.temp }}/crowd_audit"`, never a path under your game.
+Also add `crowd_audit/*` to every export preset's exclude_filter as a backstop. Floorball wrote them into its tree:
+the export imported and packed them (26 MB, 34 MB and 5 MB of textures), and its APK went from 89 MB to 155 MB. The
+same goes for every audit tool's output.
+
 ## 5.5 Baked light on your stadium (GL Compatibility; Low and Medium)
 
 If you build your arena in code (Hurling's `Geo`: each quad its own four vertices), its stands are lit per vertex
@@ -394,6 +399,15 @@ Cost: about 2 MB of video memory per arena (the 2048 map, compressed) and a chea
   the tier's voices (`WsgFoundation.voices()`: a budget phone's Low 8, a premium High 24) and each kind's own limit
   (`kind_limits`); when all are busy the lowest priority, then the farthest, then the oldest gives way, and a
   newcomer that would lose to all of them is not played. Keep a flat fall-back for builds without the foundation.
+- **Key hits stay crisp at a distance.** Godot's 3D players take up to 24 dB off above 5 kHz with distance, so a high
+  ping becomes a thud. The owner twice missed Hurling's post clang, 30–65 m from the camera.
+  - These kinds play with no distance filter, and from no farther than `bright_distance` (30 m): `hit`, `strike`,
+    `post`, `bar`, `crossbar`, `net`, `ring`, `whistle`, `tag`, `bat`, `stick`, `ball`, `bounce`, `catch`, `kick`,
+    `clang`, `buzzer`.
+  - Add your own kinds to `bright_kinds`, or pass `bright = true` (the argument after priority).
+  - Steps, ambience and anything else still dull and fade.
+  - The test plays a 500 Hz + 4 kHz ping 50 m away. A step's 4 kHz comes out 17 dB under its 500 Hz; a post's is
+    level with it.
 - **Ducking**: `duck(db, secs)` - the crowd under the whistle, a replay, a commentary line; the deepest wins and
   eases back. **Haptics**: `haptic([[ms, strength], gap, ...])` behind your vibration setting (`haptics_on`),
   never two within 60 ms.
@@ -724,6 +738,10 @@ func build_crowd(ld: WsgLoading = WsgLoading.current()) -> void:
 
 A coroutine called this way must itself be awaited by its caller (`await _built.match.build_crowd(ld)`). Without an
 overlay, `ld` is null and the build runs straight through as before.
+
+**The 3D crowd builds in slices too:** `await crowd.build_venue_async(venue, quality, focus, density, seed, shirts,
+lights)` (or `build_async`). It makes the very crowd `build_venue` makes, the same draws in the same order, with a
+checkpoint every 64 fans. Hurling's practice, 2,400 full figures, was 784 ms in one slice.
 
 **A big scene's instantiate() is one call, and its `_ready()`s run when you add it.** If either alone is over budget,
 split the scene. Request the parts (`venue.tscn`, `teams.tscn`, `stands.tscn`) and instantiate each in its own step.

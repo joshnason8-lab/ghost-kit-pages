@@ -59,6 +59,7 @@ var _back: Variant = INF    # per spot: how far behind it the seat's back or the
 var _dangle: Array = []     # per spot: the legs hang (a stool, a wall top)
 var _half: Array = []       # per spot: the seat's half depth (m)
 var _front: Array = []      # per spot: from the middle of the seat to the front edge of the floor under the feet (m)
+var _seat_dir := PackedVector3Array()   # per spot: the seat's front (flat, unit)
 
 ## Palettes for set_looks, each dark to light (sRGB): skin tones from deep brown to fair; hair black, browns, auburn,
 ## blonde, grey (the grey ones older); the legs' clothes denim, black, charcoal, navy, khaki, stone.
@@ -120,6 +121,46 @@ static func tension() -> float:
 ## or anything); lights: a number a spot (the seat's baked light, WsgLightBake's probes: 1 open, less under a roof).
 func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Variant = true, quality := 1, focus := Vector3.ZERO,
 		room: Variant = INF, shirts: Array = [], lights: Array = []) -> PackedInt32Array:
+	for g in _begin(spots, facings, density, seed, seated, quality, focus, room, shirts, lights):
+		_place_group(g, 0, (g.list as Array).size())
+		_add_group(g)
+	_ctx = {}
+	return used
+
+
+## build() behind a loading overlay (WsgLoading): the same crowd (the same draws, in the same order), with a
+## checkpoint every CHUNK fans, so the main thread is never held long (Hurling's practice: 2,400 full figures, 784 ms
+## in one piece). LD: the overlay (WsgLoading.current() if none given; none up: no pauses).
+func build_async(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Variant = true, quality := 1,
+		focus := Vector3.ZERO, room: Variant = INF, shirts: Array = [], lights: Array = [], ld: WsgLoading = null) -> PackedInt32Array:
+	if ld == null:
+		ld = WsgLoading.current()
+	var groups := _begin(spots, facings, density, seed, seated, quality, focus, room, shirts, lights)
+	var total := maxi(used.size(), 1)
+	var done := 0
+	for g in groups:
+		var n := (g.list as Array).size()
+		var k := 0
+		while k < n:
+			var e := mini(k + CHUNK, n)
+			_place_group(g, k, e)
+			done += e - k
+			k = e
+			if ld:
+				await ld.checkpoint(float(done) / total)
+		_add_group(g)
+	_ctx = {}
+	return used
+
+
+## Fans placed between two checkpoints of build_async.
+const CHUNK := 64
+var _ctx := {}
+
+
+## The draws (who is drawn, which fan model): the groups, one a fan model (near or far), each to place.
+func _begin(spots: Array, facings: Array, density: float, seed: int, seated: Variant, quality: int, focus: Vector3,
+		room: Variant, shirts: Array, lights: Array) -> Array:
 	for m in meshes:
 		m.queue_free()
 	meshes.clear()
@@ -129,7 +170,7 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 	used = PackedInt32Array()
 	var md := meta()
 	if md.is_empty():
-		return used
+		return []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	# The spots nearest the action first, as many as the budget allows.
@@ -181,6 +222,8 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 		if not by_fan.has(f):
 			by_fan[f] = []
 		by_fan[f].append(i)
+	_ctx = {"spots": spots, "facings": facings, "seated": seated, "room": room, "shirts": shirts, "lights": lights, "rng": rng}
+	var groups := []
 	for key in by_fan:
 		var list: Array = by_fan[key]
 		var f: String = key.get_slice("|", 0)
@@ -191,45 +234,65 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 		mm.use_colors = true       # (COLOR in the shader is the vertex's times the instance's)
 		mm.mesh = load(DIR + f + ("_crowd_far.res" if far else "_crowd.res"))
 		mm.instance_count = list.size()
-		var xfs := []
-		for k in list.size():
-			var i: int = list[k]
-			var fwd: Vector3 = facings[i] if i < facings.size() else Vector3.FORWARD
-			fwd = Vector3(fwd.x, 0, fwd.z).normalized()
-			var h := rng.randf_range(0.93, 1.07)
-			var seat_h := _per_spot(seated, i)
-			var on_seat: bool = i < _anchor.size() and _anchor[i] and seat_h > 0.0
-			if on_seat:
-				# A venue's seat: sized to it (the soles on the floor, the seat of the trousers on the seat), within
-				# what people are.
-				h = clampf(seat_h / seat_of(f).x * rng.randf_range(0.98, 1.02), FIT_MIN, FIT_MAX)
-			elif seat_h > 0.0:
-				# Sizes drawn toward ones that fit the seat: short legs dangle less, long ones sit lower.
-				h = lerpf(h, clampf(seat_h / seat_of(f).x, 0.93, 1.07), 0.6)
-			var pl := place(spots[i], fwd, h, f, seat_h, _per_spot(room, i), on_seat, _per_spot(_back, i) if on_seat else INF,
-				float(_half[i]) if on_seat else 0.0, float(_front[i]) if on_seat else INF)
-			mm.set_instance_transform(k, pl[0])
-			xfs.append(pl)
-			# (g: the seat's light, its sign whether seated; a: the shirt's code. Small numbers: the Compatibility
-			# renderer keeps custom data in half floats.)
-			var code := shirt_palette_code(shirts[i]) if i < shirts.size() and shirts[i] is Color else 0.0
-			var li := clampf(float(lights[i]) if i < lights.size() else 1.0, 0.05, 2.0)
-			# (r: the fan's own random number, plus 2 where their legs hang.)
-			var hang: bool = i < _dangle.size() and _dangle[i]
-			mm.set_instance_custom_data(k, Color(rng.randf() + (2.0 if hang else 0.0), li if seat_h > 0.0 else -li, pl[1], code))
-			var tone := rng.randf_range(0.85, 1.1)
-			mm.set_instance_color(k, Color(tone, tone * rng.randf_range(0.95, 1.03), tone * rng.randf_range(0.93, 1.05), 1.0))
-		var mi := MultiMeshInstance3D.new()
-		mi.multimesh = mm
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		var mat := _material(f)
-		mi.material_override = mat
-		add_child(mi)
-		meshes.append(mi)
-		materials.append(mat)
-		spot_of.append(PackedInt32Array(list))
-		placed_xf.append(xfs)
-	return used
+		groups.append({"f": f, "list": list, "mm": mm, "xfs": []})
+	return groups
+
+
+## Places fans K0..K1 of a group (in order: the draws are the same however it is cut).
+func _place_group(g: Dictionary, k0: int, k1: int) -> void:
+	var spots: Array = _ctx.spots
+	var facings: Array = _ctx.facings
+	var seated: Variant = _ctx.seated
+	var room: Variant = _ctx.room
+	var shirts: Array = _ctx.shirts
+	var lights: Array = _ctx.lights
+	var rng: RandomNumberGenerator = _ctx.rng
+	var f: String = g.f
+	var list: Array = g.list
+	var mm: MultiMesh = g.mm
+	var xfs: Array = g.xfs
+	for k in range(k0, k1):
+		var i: int = list[k]
+		var fwd: Vector3 = facings[i] if i < facings.size() else Vector3.FORWARD
+		fwd = Vector3(fwd.x, 0, fwd.z).normalized()
+		var h := rng.randf_range(0.93, 1.07)
+		var seat_h := _per_spot(seated, i)
+		var on_seat: bool = i < _anchor.size() and _anchor[i] and seat_h > 0.0
+		if on_seat:
+			# A venue's seat: sized to it (the soles on the floor, the seat of the trousers on the seat), within
+			# what people are.
+			h = clampf(seat_h / seat_of(f).x * rng.randf_range(0.98, 1.02), FIT_MIN, FIT_MAX)
+		elif seat_h > 0.0:
+			# Sizes drawn toward ones that fit the seat: short legs dangle less, long ones sit lower.
+			h = lerpf(h, clampf(seat_h / seat_of(f).x, 0.93, 1.07), 0.6)
+		var pl := place(spots[i], fwd, h, f, seat_h, _per_spot(room, i), on_seat, _per_spot(_back, i) if on_seat else INF,
+			float(_half[i]) if on_seat else 0.0, float(_front[i]) if on_seat else INF,
+			_seat_dir[i] if on_seat and i < _seat_dir.size() else Vector3.ZERO)
+		mm.set_instance_transform(k, pl[0])
+		xfs.append(pl)
+		# (g: the seat's light, its sign whether seated; a: the shirt's code. Small numbers: the Compatibility
+		# renderer keeps custom data in half floats.)
+		var code := shirt_palette_code(shirts[i]) if i < shirts.size() and shirts[i] is Color else 0.0
+		var li := clampf(float(lights[i]) if i < lights.size() else 1.0, 0.05, 2.0)
+		# (r: the fan's own random number, plus 2 where their legs hang.)
+		var hang: bool = i < _dangle.size() and _dangle[i]
+		mm.set_instance_custom_data(k, Color(rng.randf() + (2.0 if hang else 0.0), li if seat_h > 0.0 else -li, pl[1], code))
+		var tone := rng.randf_range(0.85, 1.1)
+		mm.set_instance_color(k, Color(tone, tone * rng.randf_range(0.95, 1.03), tone * rng.randf_range(0.93, 1.05), 1.0))
+
+
+## A placed group into the scene.
+func _add_group(g: Dictionary) -> void:
+	var mi := MultiMeshInstance3D.new()
+	mi.multimesh = g.mm
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mat := _material(g.f)
+	mi.material_override = mat
+	add_child(mi)
+	meshes.append(mi)
+	materials.append(mat)
+	spot_of.append(PackedInt32Array(g.list))
+	placed_xf.append(g.xfs)
 
 
 ## What the crowd's data must have been baked with (crowd.json "version"; tools/bake_crowd.gd): 3 = every frame
@@ -252,13 +315,38 @@ const REACH := 0.08
 ## spots drawn in 3D (indices into placed.spots: the billboards, or WsgCrowdCards, take the rest).
 func build_venue(venue: WsgCrowdVenue, quality := 1, focus := Vector3.ZERO, density := 1.0, seed := 0, shirts: Array = [],
 		lights: Array = []) -> PackedInt32Array:
+	_venue_begin(venue, seed)
+	var got := build(placed.spots, placed.facings, density, seed, Array(placed.seat), quality, focus, INF, shirts, lights)
+	_venue_end()
+	return got
+
+
+## build_venue() behind a loading overlay: the same crowd, with checkpoints (build_async). `await` it.
+func build_venue_async(venue: WsgCrowdVenue, quality := 1, focus := Vector3.ZERO, density := 1.0, seed := 0,
+		shirts: Array = [], lights: Array = [], ld: WsgLoading = null) -> PackedInt32Array:
+	_venue_begin(venue, seed)
+	if ld == null:
+		ld = WsgLoading.current()
+	if ld:
+		await ld.checkpoint()
+	var got := await build_async(placed.spots, placed.facings, density, seed, Array(placed.seat), quality, focus, INF,
+		shirts, lights, ld)
+	_venue_end()
+	return got
+
+
+func _venue_begin(venue: WsgCrowdVenue, seed: int) -> void:
 	placed = venue.place(seed)
 	_anchor = placed.anchor_seat
 	_back = Array(placed.back)
 	_dangle = placed.dangle
 	_half = Array(placed.half_depth)
 	_front = Array(placed.front)
-	var got := build(placed.spots, placed.facings, density, seed, Array(placed.seat), quality, focus, INF, shirts, lights)
+	_seat_dir = placed.get("seat_dir", PackedVector3Array())
+
+
+func _venue_end() -> void:
+	_seat_dir = PackedVector3Array()
 	_anchor = []
 	_back = INF
 	_dangle = []
@@ -274,7 +362,6 @@ func build_venue(venue: WsgCrowdVenue, quality := 1, focus := Vector3.ZERO, dens
 			fwd = maxf(fwd, float(pl[2]) if pl.size() > 2 else 0.0)
 		stand_fwd[fan] = fwd
 		materials[mi].set_shader_parameter("stand_fwd", fwd)
-	return got
 
 
 ## For each fan model of a venue's crowd: how far forward (their own units) they step as they get up.
@@ -325,7 +412,7 @@ static var _toes := {}
 ## step behind rises above the seat. Lifted so the seat of their trousers is on the seat (never sunk into it), and
 ## brought forward if they would sit back into the step.
 static func place(spot: Vector3, fwd: Vector3, h: float, fan: String, seat_h: float, room := INF, on_seat := false,
-		back := INF, half_depth := 0.0, front := INF) -> Array:
+		back := INF, half_depth := 0.0, front := INF, seat_dir := Vector3.ZERO) -> Array:
 	var b := Basis.looking_at(-fwd, Vector3.UP)   # +Z toward fwd
 	if on_seat:
 		# spot: the floor under the middle of the seat (half_depth deep, its middle front m from the front edge of the
@@ -334,6 +421,19 @@ static func place(spot: Vector3, fwd: Vector3, h: float, fan: String, seat_h: fl
 		# the seat, and the toes on the floor.
 		var st := seat_of(fan)
 		var x := maxf(-back + 0.02 - (rear_of(fan) - st.y) * h, -half_depth + 0.06)
+		# Far enough forward that what goes down past the seat (the backs of the knees, the calves) is in front of its
+		# edge, measured square to the seat (SEAT_DIR: its front): a fan turned toward the play at the end of a long
+		# strip seat has their knees out along it (Kabaddi's fan5 at the end of the dome's step, turned, the tops of
+		# its calves 2.5 cm into the step).
+		var legs := legs_down_of(fan)
+		if not legs.is_empty():
+			var n := seat_dir if seat_dir != Vector3.ZERO else fwd
+			var c := clampf(fwd.dot(n), 0.35, 1.0)
+			var sx := Vector3.UP.cross(fwd).dot(n)     # the fan's own x (their left) along the seat's front
+			var least := INF
+			for q in legs:
+				least = minf(least, q.x * sx + q.y * c)
+			x = maxf(x, (half_depth + 0.01 - h * least) / c + st.y * h)
 		x = minf(x, minf(half_depth - 0.08, front - 0.02 - (toe_of(fan, true) - st.y) * h))
 		var at := spot + fwd * (x - st.y * h)
 		# Getting up: the standing legs (their furthest back, stand_rear) clear of the seat's front edge.
@@ -388,6 +488,32 @@ static func rear_of(fan: String) -> float:
 
 
 static var _rears := {}
+
+
+## Where a seated fan's legs go down past the seat (their own units, x and z): the outline (convex hull) of
+## everything (the hands aside) lower than the seat of their trousers and ahead of it, over the seated motions; empty
+## if nothing is.
+static func legs_down_of(fan: String) -> PackedVector2Array:
+	if not _legs.has(fan):
+		var md := meta()
+		var img := (load(DIR + fan + "_pos.res") as Texture2D).get_image()
+		var st := seat_of(fan)
+		var hands := {}
+		for hv in md.fans[fan].get("hand_vertices", []):
+			hands[int(hv)] = true
+		var pts := PackedVector2Array()
+		for r in seated_rows(md):
+			for v in int(md.fans[fan].vertices):
+				if hands.has(v):
+					continue
+				var c := img.get_pixel(v, r)
+				if c.g < st.x - 0.015 and c.b > st.y + 0.05:
+					pts.append(Vector2(c.r, c.b))
+		_legs[fan] = Geometry2D.convex_hull(pts) if pts.size() > 2 else pts
+	return _legs[fan]
+
+
+static var _legs := {}
 
 
 ## The motion texture's rows a fan is seated in: sitting, clapping seated, and the first of getting up.

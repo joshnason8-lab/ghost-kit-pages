@@ -60,10 +60,19 @@ func _process_modification_with_delta(_delta: float) -> void:
 
 
 ## How far the model's boots' soles rise from heel to toe as it stands at rest (degrees, TOE_SPRING taken off), from
-## its mesh: the lowest point of the left boot's underside in its back and in its front.
+## its mesh (a WsgBody's full one, whichever is showing): the lowest point of the left boot's underside in its back
+## and in its front.
 static func sole_tilt(b: Node) -> float:
+	# A WsgBody's own model, always its full mesh: set_detail swaps the light one in for far bodies (simplified, its
+	# boots measure otherwise: Kabaddi's player_03 3.6 degrees on the light mesh, 1.8 on the full).
+	var candidates: Array = []
+	if b is WsgBody:
+		var ms: Array = (b as WsgBody).character.get("meshes", [])
+		if not ms.is_empty():
+			candidates.append(ms[0])
 	for mi in b.find_children("*", "MeshInstance3D", true, false):
-		var mesh: Mesh = (mi as MeshInstance3D).mesh
+		candidates.append((mi as MeshInstance3D).mesh)
+	for mesh: Mesh in candidates:
 		if mesh == null or mesh.get_surface_count() == 0:
 			continue
 		if _tilt.has(mesh):

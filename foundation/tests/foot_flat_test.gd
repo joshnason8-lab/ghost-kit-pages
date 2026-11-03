@@ -13,6 +13,12 @@ func _initialize() -> void:
 	print("test hurler's sole tilt at rest: %.1f deg" % tilt)
 	if WsgFootFlat.attach(body) != null and tilt < WsgFootFlat.MIN_TILT:
 		fails.append("a model standing flat (%.1f deg) was given a FootFlat" % tilt)
+	# The light mesh in (a far body, set_detail): the tilt is still the full model's.
+	body.set_detail(false)
+	var on_light := WsgFootFlat.sole_tilt(body)
+	body.set_detail(true)
+	if absf(on_light - tilt) > 0.01:
+		fails.append("sole_tilt on the light mesh %.2f deg, on the full %.2f" % [on_light, tilt])
 	var before := await _sole(body)
 	# Forced: 10 degrees down on this (flat) model, as a toe-up model's would be.
 	var ff := WsgFootFlat.new()

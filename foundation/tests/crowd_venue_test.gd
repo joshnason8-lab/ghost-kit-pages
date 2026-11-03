@@ -73,6 +73,7 @@ func _initialize() -> void:
 	if old.fails.size() < 2:
 		fails.append("the audit passes the old placement (every seat 0.44, facings anyhow): it checks nothing")
 	crowd.free()
+	fails.append_array(await _async_build())
 	for f in fails:
 		printerr("FAIL: ", f)
 	print("CROWD VENUE TEST: ", "PASS" if fails.is_empty() else "FAIL (%d)" % fails.size())
@@ -169,3 +170,36 @@ func _card_faces() -> Array:
 			fails.append("cards: %s %s from behind is the front mirrored (difference %.2f)" % [cell.fan, cell.pose, d])
 	print("cards: from behind, every cell its own picture (least difference from the front mirrored %.2f)" % least_diff)
 	return fails
+
+
+## build_venue_async behind a loading overlay: the very crowd build_venue makes (every fan where it was), in slices
+## (a close-up's 2,400 full figures: Hurling's practice held the main thread 784 ms in one piece).
+func _async_build() -> Array:
+	var out := []
+	await process_frame       # (the tree is up from the first frame)
+	var v := arena()
+	var a := WsgCrowd3D.new()
+	root.add_child(a)
+	var t0 := Time.get_ticks_usec()
+	a.build_venue(v, 3, Vector3.ZERO, 1.0, 9)
+	var sync_ms := (Time.get_ticks_usec() - t0) / 1000.0
+	var b := WsgCrowd3D.new()
+	root.add_child(b)
+	var ld := WsgLoading.cover(b)
+	ld.slice_ms = 5.0         # (this arena's 624 fans build in about 45 ms here: cut finely to show the cutting)
+	ld.step("Crowd", func(): await b.build_venue_async(v, 3, Vector3.ZERO, 1.0, 9))
+	await ld.run()
+	var r := ld.report
+	ld.done()
+	print("close-up crowd (%d fans): build_venue %.0f ms in one piece; build_venue_async longest slice %.0f ms of %.0f" % [a.used.size(), sync_ms, r.longest_slice_ms, float(r.steps.get("Crowd", 0.0))])
+	var same := a.used == b.used and a.placed_xf.size() == b.placed_xf.size()
+	for m in mini(a.placed_xf.size(), b.placed_xf.size()):
+		for k in mini(a.placed_xf[m].size(), b.placed_xf[m].size()):
+			same = same and (a.placed_xf[m][k][0] as Transform3D).is_equal_approx(b.placed_xf[m][k][0])
+	if not same:
+		out.append("build_venue_async placed a different crowd from build_venue")
+	if float(r.longest_slice_ms) > sync_ms * 0.5:
+		out.append("build_venue_async held the main thread %.0f ms of %.0f" % [r.longest_slice_ms, sync_ms])
+	a.free()
+	b.free()
+	return out
