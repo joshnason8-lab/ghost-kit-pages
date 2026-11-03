@@ -15,6 +15,13 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.14.4: **the joystick goes the way you push it, on the screen, in every camera.** Push up and your player
+runs up the screen; push right and he runs right, whether the camera is the broadcast one, side on or behind your end,
+and wherever he is in the picture. Before, the stick only followed the camera's heading, which put it 24-33 degrees out
+on the diagonals even in the middle of the screen and up to 56 near the edges. Aiming a kick or a serve follows the
+screen the same way. When the camera changes, the stick's directions turn over about 0.2 s, so your player doesn't
+swerve under your thumb.
+
 New in 0.14.3: **the serve's throw is one-handed**, as the owner pointed out, and traced from the World Cup
 broadcast. The thrower holds the ball in his right hand. When the serve is due he goes down into a crouch with the
 ball held low in front of him, then drives up and swings it underarm to the server, letting go at chest height and

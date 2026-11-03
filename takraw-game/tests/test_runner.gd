@@ -35,6 +35,7 @@ func _ready() -> void:
 	_officials_back_away()
 	_no_glide_between_points()
 	_jitter()
+	_stick_follows_screen()
 	await _watch_ai()
 	await _play_as_and_officials()
 	await _matches()
@@ -643,6 +644,95 @@ func _jitter() -> void:
 		m.queue_free()
 		remove_child(m)
 	Game.settings.graphics = keep
+
+
+## The stick is the screen's (0.14.4; the owner found it wrong in other games off the side camera): in each camera
+## (broadcast, side on, behind your end), your team on either side, your player put where the picture's middle, its
+## edges and its corners show the floor, the stick pushed 8 ways through the steering itself: he runs the stick's way
+## on the screen, within 10 degrees (before, by the camera's turn alone: 24-33 degrees out at the picture's middle, on
+## the diagonals, and 50-56 at its edges); the aim across the other court too. And a cut to another camera is taken in over about 0.2 s: the frame after it he
+## still runs nearly as before, and 0.3 s on the new picture's way.
+func _stick_follows_screen() -> void:
+	var dirs := [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1), Vector2(-1, -1)]
+	var names := {Game.CAM_TV: "broadcast", Game.CAM_SIDE: "side on", Game.CAM_END: "end"}
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 1, "points": 15,
+		"user_team": 0, "demo": true, "seed": 3, "mode": "quick"}
+	add_child(m)
+	for i in 10:
+		m._process(1.0 / 30.0)
+	var pl: Player = m.players_on(m._user_side())[0]
+	var vp: Vector2 = m.cam.get_viewport().get_visible_rect().size
+	for cam_side in [1, 0]:   # (your team starts on side 1; the sides change ends between sets)
+		m.cam.set("_user_side", cam_side)
+		for mode in [Game.CAM_TV, Game.CAM_SIDE, Game.CAM_END]:
+			m.cam.mode = mode
+			m.cam.snap()
+			var worst := [0.0, ""]
+			var n := 0
+			var spots := 0
+			for fx in [0.5, 0.15, 0.85]:
+				for fy in [0.5, 0.2, 0.85]:
+					var spot: Vector3 = m._floor_at(Vector2(vp.x * fx, vp.y * fy))
+					if not spot.is_finite():
+						continue   # (no floor there: the stands)
+					spots += 1
+					for j in dirs:
+						var a := _steer(m, pl, spot, j.normalized(), 9, true)
+						n += 1
+						if a > float(worst[0]):
+							worst = [a, "stick %s at the screen's %.2f, %.2f" % [j, fx, fy]]
+			check(spots >= 6 and float(worst[0]) < 10.0, "stick (%s camera from side %d): he runs the stick's way on the screen, within 10 degrees (worst %.1f: %s; %d pushes at %d places)"
+				% [names[mode], cam_side, float(worst[0]), worst[1], n, spots])
+			# Aiming a kick or a serve: the stick moves the aim across the other court the screen's way too.
+			var aim_worst := 0.0
+			for opp in [0, 1]:
+				var base := Vector3(Court.sgn(opp) * 5.0, 0, 0)
+				for j in dirs:
+					var a: Vector2 = m.cam.unproject_position(base)
+					var b: Vector2 = m.cam.unproject_position(base + m._cam_dir(j.normalized(), base) * 0.05)
+					aim_worst = maxf(aim_worst, rad_to_deg(absf((b - a).angle_to(j))))
+			check(aim_worst < 10.0, "stick (%s camera from side %d): aiming, the stick moves the aim across either court the screen's way (worst %.1f degrees)"
+				% [names[mode], cam_side, aim_worst])
+		# A cut: the broadcast camera, your player running up the screen, then straight to the end camera.
+		m.cam.mode = Game.CAM_TV
+		m.cam.snap()
+		var mid: Vector3 = m._floor_at(vp * 0.5)
+		_steer(m, pl, mid, Vector2(0, -1), 9, true)
+		var before: Vector3 = pl.target - pl.position
+		m.cam.mode = Game.CAM_END
+		m.cam.snap()
+		_steer(m, pl, pl.position, Vector2(0, -1), 1, false)
+		var just: Vector3 = pl.target - pl.position
+		_steer(m, pl, pl.position, Vector2(0, -1), 9, false)
+		var after := _steer(m, pl, pl.position, Vector2(0, -1), 6, false)
+		var turned := rad_to_deg(absf(Vector2(before.x, before.z).angle_to(Vector2(just.x, just.z))))
+		check(turned < 45.0 and after < 10.0, "stick (from side %d): a cut to another camera is eased in (the frame after it %.0f degrees off his way before; 0.3 s on, %.1f off the new picture's up)"
+			% [cam_side, turned, after])
+	m.queue_free()
+	remove_child(m)
+
+
+## Your player at spot (fresh: the stick's axes there at once) or where he is, the stick pushed j for frames (1/30 s):
+## through Match._user_steer as in a rally, the camera still. The angle (degrees) between his run on the screen and j.
+func _steer(m: Node, pl: Player, spot: Vector3, j: Vector2, frames: int, fresh: bool) -> float:
+	pl.position = Vector3(spot.x, 0.0, spot.z)
+	pl.target = pl.position
+	pl.vel = Vector3.ZERO
+	m.plan = {"player": pl, "user": true, "kind": "receive", "t": m.now + 60.0, "stand": pl.position, "pos": pl.position,
+		"touch": 0, "move": "sila", "auto": false, "press_t": m.now, "from_set": true, "mirror": false}
+	m.state = m.S.RALLY
+	if fresh:
+		m.set("_stick_axes", [])
+	var from: Vector2 = m.cam.unproject_position(pl.position)
+	for f in frames:
+		m.set("_joy", j)
+		m._user_steer(1.0 / 30.0)
+		pl.tick(1.0 / 30.0, m.now)
+	var to: Vector2 = m.cam.unproject_position(pl.position)
+	if (to - from).length() < 0.5:
+		return 180.0
+	return rad_to_deg(absf((to - from).angle_to(j)))
 
 
 ## An official backing away (out of the ball's way, still facing the court) steps backwards, rather than running

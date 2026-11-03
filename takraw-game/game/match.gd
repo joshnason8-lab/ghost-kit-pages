@@ -90,6 +90,8 @@ const SPIKE_PACE := 0.68
 var input_window := {}       # the touch you can time now: {t, kind, choices}
 var _press := {}             # what you pressed and when: {id, t}
 var _joy := Vector2.ZERO
+var _stick_axes: Array = []   # eased: the floor's way per pixel right and down on the screen, at your player
+const STICK_EASE := 0.07      # s (a cut is taken in over about 0.2 s)
 
 # Stats: player id -> {kills, aces, blocks, digs, errors, serves}
 var stats := {}
@@ -1245,7 +1247,7 @@ func _aim_target(opp: int, base: Vector3, reach: float) -> Vector3:
 	var j := _joy
 	if j.length() < 0.2:
 		return base + Vector3(0, 0, rng.randf_range(-1.2, 1.2))
-	var t := base + _cam_dir(j) * reach
+	var t := base + _cam_dir(j, base) * reach
 	var s := Court.sgn(opp)
 	t.x = s * clampf(t.x * s, 0.6, Court.HALF - 0.2)
 	t.z = clampf(t.z, -Court.HALF_W + 0.2, Court.HALF_W - 0.2)
@@ -2295,13 +2297,73 @@ func _whiff(label: String) -> void:
 	other.queue_move(String(pick.move), float(pick.t) - Moves.contact_time(String(pick.move)), bool(pick.mirror))
 
 
-## The joystick: as seen from the camera, up the screen is away from it.
-func _cam_dir(j: Vector2) -> Vector3:
-	var right := cam.global_transform.basis.x
-	right.y = 0
-	var up := -cam.global_transform.basis.z
-	up.y = 0
-	return right.normalized() * j.x + up.normalized() * (-j.y)
+## The stick's way on the floor at p (0.14.4): the way that, where p is on the screen, goes the stick's way on the
+## screen (up the stick is up the screen there), in every camera, its length the stick's push. The floor's way for a
+## step right and a step down on the screen at p (axes; from _screen_axes when not given) is mixed as the stick is
+## pushed. By the camera's turn alone (before) it was out by the perspective: 24-33 degrees at the picture's middle (the
+## diagonals, foreshortened) and 50-56 at its edges, in all three cameras (the owner found it wrong in other games).
+func _cam_dir(j: Vector2, p: Vector3, axes := []) -> Vector3:
+	if axes.is_empty():
+		axes = _screen_axes(p)
+	var w := Vector3.ZERO
+	if axes.size() == 2:
+		w = (axes[0] as Vector3) * j.x + (axes[1] as Vector3) * j.y
+	else:
+		# (p off the picture: the camera's turn.)
+		var right := cam.global_transform.basis.x
+		var up := -cam.global_transform.basis.z if absf(cam.global_transform.basis.z.y) < 0.9 else cam.global_transform.basis.y
+		w = Vector3(right.x, 0, right.z).normalized() * j.x - Vector3(up.x, 0, up.z).normalized() * j.y
+	w.y = 0.0
+	return w.normalized() * minf(j.length(), 1.0) if w.length() > 1e-6 else Vector3.ZERO
+
+
+## The floor's way for a step right and for a step down on the screen where p (on the floor) is drawn: the camera's
+## rays a little either side of it, met with the floor, per pixel. [] if p is off the picture or the floor is edge on.
+func _screen_axes(p: Vector3) -> Array:
+	var c: Camera3D = cam
+	var f := Vector3(p.x, 0.0, p.z)
+	if c.is_position_behind(f):
+		return []
+	var sp := c.unproject_position(f)
+	var d := maxf(4.0, c.get_viewport().get_visible_rect().size.y * 0.03)
+	var r1 := _floor_at(sp + Vector2(d, 0))
+	var r0 := _floor_at(sp - Vector2(d, 0))
+	var d1 := _floor_at(sp + Vector2(0, d))
+	var d0 := _floor_at(sp - Vector2(0, d))
+	if not (r1.is_finite() and r0.is_finite() and d1.is_finite() and d0.is_finite()):
+		return []
+	return [(r1 - r0) / (2.0 * d), (d1 - d0) / (2.0 * d)]
+
+
+## Where the camera's ray through a point of the screen meets the floor; INF if it doesn't (at or above the horizon).
+func _floor_at(s: Vector2) -> Vector3:
+	var o := cam.project_ray_origin(s)
+	var n := cam.project_ray_normal(s)
+	if n.y > -0.01 or o.y <= 0.0:
+		return Vector3.INF
+	return o + n * (-o.y / n.y)
+
+
+## The stick's axes at your player, eased: a cut to another camera (or a fast swing of this one) turns them over about
+## 0.2 s, so he doesn't swerve as the picture changes under your thumb; steady, they are the picture's own.
+func _stick_axes_at(p: Vector3, dt: float) -> Array:
+	var want := _screen_axes(p)
+	if want.is_empty():
+		return _stick_axes
+	if _stick_axes.size() != 2:
+		_stick_axes = want
+	else:
+		var k := 1.0 - exp(-dt / STICK_EASE)
+		_stick_axes = [(_stick_axes[0] as Vector3).lerp(want[0], k), (_stick_axes[1] as Vector3).lerp(want[1], k)]
+	return _stick_axes
+
+
+## The stick that runs your player along d (the floor) as the screen shows it: d's way on the screen where he is.
+func stick_for(at: Vector3, d: Vector3) -> Vector2:
+	var f := Vector3(at.x, 0.0, at.z)
+	var a := cam.unproject_position(f)
+	var b := cam.unproject_position(f + Vector3(d.x, 0.0, d.z).normalized() * 0.3)
+	return (b - a).normalized()
 
 
 ## Running your player: the joystick runs him; let go near the spot and he steps onto it. Wherever he is, the touch is
@@ -2309,10 +2371,14 @@ func _cam_dir(j: Vector2) -> Vector3:
 ## the net.
 func _user_steer(_dt: float) -> void:
 	_offer_block()
+	# (The stick's axes kept up with the picture every frame, at the player you would run.)
+	var who: Player = plan.player if _user_plan_live() else (block.player if _block_offered else _mine())
+	if who:
+		_stick_axes_at(who.position, _dt)
 	if not _user_plan_live():
 		if _block_offered and _joy.length() > 0.15:
 			var bp: Player = block.player
-			var d := _cam_dir(_joy)
+			var d := _cam_dir(_joy, bp.position, _stick_axes)
 			bp.target = Vector3(bp.target.x, 0, clampf(bp.position.z + d.z * 1.4, -Court.HALF_W + 0.4, Court.HALF_W - 0.4))
 			bp.hurry = 1.0
 			block.z = bp.target.z
@@ -2323,7 +2389,7 @@ func _user_steer(_dt: float) -> void:
 	if pl.busy(now):
 		return
 	if _joy.length() > 0.15:
-		pl.target = pl.position + _cam_dir(_joy) * 1.5
+		pl.target = pl.position + _cam_dir(_joy, pl.position, _stick_axes) * 1.5
 		pl.hurry = clampf(_joy.length(), 0.35, 1.0)
 	elif _off_spot(plan) <= _magnet():
 		pl.target = plan.stand

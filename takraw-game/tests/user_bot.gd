@@ -50,10 +50,8 @@ func _process(_d: float) -> void:
 			var st: Vector3 = p.stand
 			var d := Vector3(st.x - pl.position.x, 0, st.z - pl.position.z)
 			if d.length() > 0.2:
-				var basis: Basis = m.cam.global_transform.basis
-				var right := Vector3(basis.x.x, 0, basis.x.z).normalized()
-				var up := Vector3(-basis.z.x, 0, -basis.z.z).normalized()
-				m.controls.joystick = Vector2(d.dot(right), -d.dot(up)).normalized() * minf(1.0, d.length() / 0.4)
+				# (The way to the mark as the screen shows it where he is: the stick is the screen's.)
+				m.controls.joystick = m.stick_for(pl.position, d) * minf(1.0, d.length() / 0.4)
 		var due: float = float(p.t) + (0.12 if mode == "late" else 0.0)
 		if mode != "idle" and not bool(pressed[key]) and not p.has("press_t") and float(m.now) >= due - 0.008:
 			pressed[key] = true

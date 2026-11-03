@@ -670,6 +670,29 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The joystick is the screen's, in every camera (0.14.4)
+
+The owner found the joystick wrong in two other games when the camera wasn't alongside the court, and asked for it to be
+checked and fixed in every game. Here the stick followed the camera's heading (its right and its forward, laid flat),
+which is out by the perspective: measured at the picture's middle, its edges and its corners, 24-33 degrees out at
+the middle (the diagonals, foreshortened) and 50-56 degrees at the edges, in all three cameras. Now (`Match._cam_dir`,
+the lead's method from Floorball) the camera's rays a little right, left, above and below where your player is drawn
+are met with the floor, and the stick mixes those two floor directions, per pixel, as it is pushed: his run on the
+screen is the stick's way wherever he is in the picture. The same goes for sliding your blocker along the net and for
+aiming a kick or a serve across the other court (at the aim's place). The axes are eased (0.07 s, so about 0.2 s for a
+cut to another camera) so he doesn't swerve as the picture changes; steady, they are the picture's own. The user bot
+steers by the screen too (`Match.stick_for`); its results are the same (perfect 15-6, idle 3-15).
+
+test_runner (`_stick_follows_screen`): each camera (broadcast, side on, end), from either end (the sides change between
+sets); your player put where the picture's middle, edges and corners show the floor (6-9 places; the side and end
+cameras show the stands at the top); the stick pushed 8 ways through `_user_steer` for 0.3 s: his run on the screen
+within 10 degrees of the stick (worst 0.5); the aim across either court (worst 0.3); after a cut from the broadcast
+camera to the end camera, the frame after it 21 degrees off his way before, and 0.3 s on 0.3 degrees off the new
+picture's up.
+
+The Web preset (no build makes one) now leaves out `addons/wsg_foundation/data/*` as well, so a Web download could
+never carry the licensed motion capture (Foundation ADOPTING 5.10).
+
 ## The serve's throw from the footage, and a jitter test (0.14.3)
 
 **The throw, one hand.** The owner: "notice it's ONE hand". The thrower in the World Cup broadcast (308.5-311.5 s,
