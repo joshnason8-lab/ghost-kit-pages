@@ -211,8 +211,9 @@ const MITRE := 0.7
 const WALKWAY := 0.7          # the walkway behind the lower tier, m deep
 const FASCIA := 1.3           # the fascia under the upper tier's front row, m high
 ## Who came, in the bowl's filled sections, at each level (Low, Medium, High): the aisles and a seat here and there
-## empty (the courtside stands keep Game.crowd_density).
-const BOWL_DENSITY := [0.7, 0.8, 0.9]
+## empty (the courtside stands keep Game.crowd_density). Medium's is the tier's frame budget's: at 0.8 (601 3D people
+## with the courtside stands) a frame drew 549k triangles, over Medium's 520k (world_check tiers).
+const BOWL_DENSITY := [0.7, 0.6, 0.9]
 
 
 ## The bowl's two tiers (front: the lower tier's front wall, its top the first row's floor), each [the first row's front
