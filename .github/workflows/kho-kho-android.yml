@@ -204,6 +204,23 @@ jobs:
             exit 1
           fi
 
+      # The release gate (ADOPTING 5.19): the owner's key, the version, the licensed clips in, nothing that is not the
+      # game's, textures GPU-compressed; and the size against the last beta.
+      - name: Release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download khamba-dash-beta -p '*.apk' -O "$RUNNER_TEMP/previous.apk" || true
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/kho-kho-rush-${VERSION}.apk --version "$VERSION" \
+            --previous "$RUNNER_TEMP/previous.apk" --out "$RUNNER_TEMP/gate"
+      - name: Release gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kho-kho-release-gate
+          path: ${{ runner.temp }}/gate
+
       - uses: actions/upload-artifact@v4
         with:
           name: kho-kho-rush-${{ env.VERSION }}-apk
