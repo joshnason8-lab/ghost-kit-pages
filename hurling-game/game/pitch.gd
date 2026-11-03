@@ -78,7 +78,7 @@ static func clamp_in(p: Vector3, inset := 0.0) -> Vector3:
 	return Vector3(clampf(p.x, -HALF_L + inset, HALF_L - inset), 0.0, clampf(p.z, -HALF_W + inset, HALF_W - inset))
 
 
-## The grass and its markings: the striped grass in one draw call, every painted line in one more.
+## The grass and its markings: the striped grass and every painted line in one draw call.
 static func build(time_of_day: String) -> Node3D:
 	var root := Node3D.new()
 	var grass := MeshInstance3D.new()
@@ -90,33 +90,9 @@ static func build(time_of_day: String) -> Node3D:
 	grass.material_override = grass_material(time_of_day)
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(grass)
-	var g := Geo.new()
-	var white := Color(0.95, 0.95, 0.92)
-	var y := 0.012
-	var w := drawn_line_w()
-	# Side lines and end lines.
-	g.floor_rect(-HALF_L - w, -HALF_W - w, HALF_L + w, -HALF_W, y, white)
-	g.floor_rect(-HALF_L - w, HALF_W, HALF_L + w, HALF_W + w, y, white)
-	g.floor_rect(-HALF_L - w, -HALF_W, -HALF_L, HALF_W, y, white)
-	g.floor_rect(HALF_L, -HALF_W, HALF_L + w, HALF_W, y, white)
-	# The halfway line (Rule 1.2).
-	g.floor_rect(-w * 0.5, -HALF_W, w * 0.5, HALF_W, y, white)
-	for s: float in [-1.0, 1.0]:
-		var ex := HALF_L * s
-		for d in LINES:
-			var x: float = ex - float(d) * s
-			g.floor_rect(minf(x, x - w * s), -HALF_W, maxf(x, x - w * s), HALF_W, y, white)
-		# The small and large rectangles.
-		_rect(g, ex, s, SMALL_W, SMALL_D, y, white)
-		_rect(g, ex, s, LARGE_W, LARGE_D, y, white)
-		# The semicircle on the 20 m line, outward from the goal.
-		var c := Vector3(ex - 20.0 * s, y, 0)
-		var a0 := PI * 0.5 if s > 0 else -PI * 0.5
-		g.ring(c, ARC_R - w, ARC_R, a0, a0 + PI, white, 32)
-		# The penalty mark.
-		g.floor_rect(c.x - 0.25, -0.05, c.x + 0.25, 0.05, y + 0.001, white)
-	var lines := g.commit(Geo.material(false))
-	root.add_child(lines)
+	# The markings are painted in the grass's own shader (marks_glsl): each line at least about a pixel wide, faded
+	# rather than broken into dashes far off, and nothing laid over the grass to flicker against it in the depth
+	# buffer (the owner: "the far lines on the field disappear sometimes or look odd" - strips 10 cm wide, 1.2 cm up).
 	return root
 
 
@@ -124,6 +100,50 @@ static func build(time_of_day: String) -> Node3D:
 ## far lines break up into dashes. Where the lines are, for the rules, does not change.
 static func drawn_line_w() -> float:
 	return LINE_W * (1.8 if int(Game.settings.graphics) == Game.GFX_LOW else 1.0)
+
+
+## The painted markings as GLSL: float marks(vec2 p), how much of the pixel at p (x, z on the grass) is paint, each
+## line's coverage worked out from the pixel's own footprint (fwidth): a line narrower than a pixel is drawn a pixel
+## wide and as much fainter, so it stays a line however far off. Where they are is as the rules have them.
+static func marks_glsl() -> String:
+	var w := drawn_line_w()
+	var boxes := []   # [x0, x1, z0, z1]
+	var hl := HALF_L
+	var hw := HALF_W
+	# Side lines and end lines (outside the field: the lines are part of it, Rule 1.2, drawn on its edge).
+	boxes.append([-hl - w, hl + w, -hw - w, -hw])
+	boxes.append([-hl - w, hl + w, hw, hw + w])
+	boxes.append([-hl - w, -hl, -hw, hw])
+	boxes.append([hl, hl + w, -hw, hw])
+	# The halfway line.
+	boxes.append([-w * 0.5, w * 0.5, -hw, hw])
+	var arcs := []
+	for s: float in [-1.0, 1.0]:
+		var ex := hl * s
+		for d in LINES:
+			var x: float = ex - float(d) * s
+			boxes.append([minf(x, x - w * s), maxf(x, x - w * s), -hw, hw])
+		for r in [[SMALL_W, SMALL_D], [LARGE_W, LARGE_D]]:
+			var rh: float = float(r[0]) * 0.5
+			var x1: float = ex - float(r[1]) * s
+			boxes.append([minf(x1, x1 - w * s), maxf(x1, x1 - w * s), -rh, rh])
+			boxes.append([minf(ex, x1), maxf(ex, x1), -rh - w, -rh])
+			boxes.append([minf(ex, x1), maxf(ex, x1), rh, rh + w])
+		var cx := ex - 20.0 * s
+		arcs.append([cx, s])
+		# The penalty mark.
+		boxes.append([cx - 0.25, cx + 0.25, -0.05, 0.05])
+	var code := "float strip(float u, float a, float b) {\n"
+	code += "\tfloat h = (b - a) * 0.5; float fw = max(fwidth(u), 1e-5); float he = max(h, fw * 0.5);\n"
+	code += "\treturn clamp((he - abs(u - (a + b) * 0.5)) / fw + 0.5, 0.0, 1.0) * (h / he);\n}\n"
+	code += "float marks(vec2 p) {\n\tfloat m = 0.0;\n"
+	for bx in boxes:
+		code += "\tm = max(m, strip(p.x, %.4f, %.4f) * strip(p.y, %.4f, %.4f));\n" % [bx[0], bx[1], bx[2], bx[3]]
+	for ar in arcs:
+		# The semicircle on the 20 m line, on the field's side of it.
+		code += "\tm = max(m, strip(length(p - vec2(%.4f, 0.0)), %.4f, %.4f) * step(0.0, %.1f * (%.4f - p.x)));\n" % [ar[0], ARC_R - w, ARC_R, ar[1], ar[0]]
+	code += "\treturn m;\n}\n"
+	return code
 
 
 static func _rect(g: Geo, ex: float, s: float, wide: float, deep: float, y: float, col: Color) -> void:
@@ -193,6 +213,7 @@ uniform vec4 shade_rect = vec4(-90.0, -57.5, 90.0, 57.5);
 uniform bool shade_on = false;
 varying vec3 wp;
 float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+//MARKS
 // A scan's mean brightness: its smallest mip level (1 x 1).
 float mean_lum(sampler2D s) { return max(lum(textureLod(s, vec2(0.5), 10.0).rgb), 0.002); }
 void vertex() { wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
@@ -222,12 +243,14 @@ void fragment() {
 		c = mix(c, worn, smoothstep(9.0, 2.0, goal) * 0.3);
 	}
 	c = mix(c, c * 0.8, smoothstep(half_l + 2.0, half_l + 9.0, abs(wp.x)));
+	c = mix(c, vec3(0.86, 0.86, 0.83), marks(wp.xz));
 	if (shade_on) {
 		c *= texture(shade, (wp.xz - shade_rect.xy) / (shade_rect.zw - shade_rect.xy)).rgb;
 	}
 	ALBEDO = compat_to_scene(c * light);
 }
 """
+	code = code.replace("//MARKS", marks_glsl())
 	if ultra:
 		code = _ultra_grass(code)
 	sh.code = code

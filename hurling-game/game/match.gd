@@ -108,6 +108,9 @@ var _hype := 0.0             # the crowd's sense of a score coming, 0..1 (_crowd
 var _cheer_until := 0.0      # the crowd's cheer for a score runs till then
 var _fps_hist: Array = []    # recent frame times (ms) for the dev overlay and the auto graphics level
 var commentary: Commentary   # the two voices (game/commentary.gd), in a match (not the menu's, not practice)
+## The commentary is off for now (the owner, 0.20: "remove the commentary, we'll try it in a later iteration"): the
+## engine, the script and the tools stay (tools/commentary/), and the tests still run it.
+const COMMENTARY := false
 var _auto_gfx := WsgAutoTier.new(Game.frame_cap())   # (the shared foundation's)
 
 
@@ -154,7 +157,7 @@ func _ready() -> void:
 	hud = MatchHud.new()
 	add_child(hud)
 	hud.setup(self)
-	if not attract and not is_practice() and (not has_meta("test") or has_meta("commentary")):
+	if (COMMENTARY and not attract and not is_practice() and not has_meta("test")) or has_meta("commentary"):
 		commentary = Commentary.new(self)
 		add_child(commentary)
 	if director:
@@ -170,9 +173,10 @@ func _ready() -> void:
 		Sfx.crowd(0.12)
 	else:
 		Sfx.crowd(stadium.atmosphere() * 0.55)
-		# Birdsong round the smaller grounds by day (the stadium's crowd drowns it; none at night).
+		# Birdsong round the smaller grounds by day (the stadium's crowd drowns it; none at night). Kept low: under a
+		# quiet free-taking crowd it was overpowering (the owner, 0.20).
 		Sfx.ambience(String(config.get("venue", "")) in ["parish", "county"] and stadium.time != "night",
-			-12.0 if String(config.get("venue", "")) == "parish" else -18.0)
+			-18.0 if String(config.get("venue", "")) == "parish" else -24.0)
 	for k in 2:
 		var t := TeamAI.new(self, k)
 		var diff := int(config.get("difficulty", Game.settings.get("difficulty", 1)))
@@ -561,6 +565,9 @@ func _step(dt: float, delta: float) -> void:
 				_run_clock(dt)
 			_set_step(dt)
 		P.HALF_TIME:
+			# The players walk to their places for the second half (with no brains over the break, each ran on the way
+			# he was going at the whistle for its five seconds: the owner watched them run off into the trees).
+			_brains(dt)
 			if phase_t > (5.0 if not attract else 2.0):
 				_second_half()
 		P.SHOOTOUT:
@@ -1891,7 +1898,11 @@ func _check_ball(prev: Vector3, cur: Vector3) -> void:
 				ball.global_position = Vector3(gx - s * 0.1, c.y, c.z)
 				ball.vel = Vector3(-ball.vel.x * 0.45, ball.vel.y * 0.6 + (2.0 if hit_bar else 0.0), ball.vel.z * 0.6 + rng.randf_range(-2, 2))
 				ball.last_kind = "deflect"
-				Sfx.play_at("post", c, 0.0, 1.0, 4, -2.0)
+				# The clang carries the length of a ground: heard from the camera, most of the falloff with distance made
+				# up (a free's camera behind the taker is 40-65 m off, where it was lost under the crowd: the owner).
+				var view: Camera3D = get_viewport().get_camera_3d()
+				var far := c.distance_to(view.global_position) if view else 10.0
+				Sfx.play_at("post", c, clampf(20.0 * log(maxf(far, 10.0) / 10.0) / log(10.0) * 0.8, 0.0, 14.0), 1.0, 4, -2.0)
 				Sfx.react("ooh", -3.0)
 				hud.call_line(tr("CALL_POST") if hit_post else tr("CALL_BAR"))
 				_say("post")

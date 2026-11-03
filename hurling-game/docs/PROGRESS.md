@@ -786,3 +786,24 @@ licence there before it goes into the game.
   is; with the facing-only reading it fails at 55-65 degrees.
 - **Web export excludes the licensed clips** (the Foundation's ADOPTING 5.10): addons/wsg_foundation/data/* is in
   the Web preset's exclude_filter, since a Web .pck is a public download. No Web build was ever made (no CI builds it).
+
+## Done (0.21.0, 3 November 2026)
+
+The owner's 0.20 playtest (code 34):
+- Woodwork clang in free-taking: the foundation's positional sound fell off with the camera's 40-65 m (inverse
+  distance, unit 10 m); match._check_ball makes up 80% of the falloff (to +14 dB).
+- Commentary off: Match.COMMENTARY = false; the Settings toggle and its string gone; the engine, script, tools and
+  tests stay (tests force it on with the "commentary" meta).
+- Birdsong 6 dB down (parish -18, county -24).
+- Sideways glide: Player.integrate turns a man to his run when he moves more than ~50 degrees off where he is told
+  to look faster than SIDESTEP (1.8 m/s; a keeper 3.1); backpedalling as before. Test in _backpedal.
+- Celebration: both arms up and held, a slow sway (the 3 Hz forearm pump looked broken in the scorer's close-up).
+- Lines: Pitch.marks_glsl paints every marking in the grass shader, coverage from fwidth, at least a pixel wide and
+  fainter instead of broken; no line geometry (it was 10 cm strips 1.2 cm up: sub-pixel far off, and depth-fought).
+- Half-time: _brains runs over the break (no brains, each ran on his whistle-time run for five seconds: off the
+  field). Test _half_time_and_clock.
+- Clock: the score bug runs off a stoppage's jump on the watch over 1.5 s (MatchHud._behind); the watch's own
+  ticking passes straight through. The jumps themselves (20-116 s at Watch AI's 35-minute length) are the clock
+  scaling's and unchanged.
+- Not done here: feet pointing up again, the free-taker's follow-through, and the glide on the licensed rig - all
+  three are the licensed rig's (FoundationLink), which this session cannot render without the private assets.

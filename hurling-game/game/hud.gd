@@ -298,8 +298,29 @@ func added_time(mins: int) -> void:
 	_added.visible = true
 
 
+## The clock as shown: it runs up to the match's rather than jumping (a stoppage moves the match's on by up to a
+## minute or two at once, so a match fits its length: the owner saw "a large time jump" watching the computer play).
+## Its own ticking (however fast a short match's clock runs) passes straight through; a jump is run off.
+var _shown_clock := -1.0
+var _last_clock := -1.0
+var _behind := 0.0           # the part of jumps not yet run off
+var _run_rate := 20.0        # how fast it is run off (match seconds a second)
+const CLOCK_CATCH_UP := 1.5   # s: a jump on the watch is run off in about this long
+
+
 func tick(delta: float) -> void:
-	var secs := int(m.clock)
+	var real := float(m.clock)
+	var step := real - _last_clock
+	if _last_clock < 0.0 or step < 0.0 or step > 600.0:
+		_behind = 0.0            # (a new half, or a jump too big to run: as it is)
+	elif step > maxf(3.0, 4.0 * delta * float(m.clock_k) + 1.0):
+		_behind += step          # a jump, not the watch's own running
+		_run_rate = maxf(_behind / CLOCK_CATCH_UP, 20.0)
+	_last_clock = real
+	if _behind > 0.0:
+		_behind = maxf(0.0, _behind - _run_rate * delta)
+	_shown_clock = real - _behind
+	var secs := int(_shown_clock)
 	var limit := int(m.half_len_now())
 	var shown := mini(secs, limit + int(m.added))
 	var base := 0

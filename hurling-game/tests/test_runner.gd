@@ -59,6 +59,7 @@ func _ready() -> void:
 	await _far_ball_dot()
 	await _commentary()
 	await _stick_camera()
+	await _half_time_and_clock()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	await _bench_seats()
@@ -1603,6 +1604,23 @@ func _backpedal() -> void:
 		else:
 			check(faces < -0.9 and p._ph > ph0, "Away at %.0f m/s: turned round, running forward" % sp)
 		p.queue_free()
+	# Sideways, looking at the ball: a sidestep while slow; faster, he turns and runs (no gliding across with the
+	# legs running forward: the owner, 0.20).
+	for sp in [1.2, 4.5]:
+		var p := Player.new({"num": 5, "line": 3, "speed": 70}, 0, {"jersey": Color.RED, "kind": "player"})
+		add_child(p)
+		p.yaw = 0.0
+		p.face_to = Vector3(0, 0, 50)
+		p.want_vel = Vector3(sp, 0, 0)
+		p.vel = p.want_vel
+		for i in 60:
+			p.integrate(1.0 / 60.0, i / 60.0)
+		var with_run := p.forward().dot(Vector3(1, 0, 0))
+		if sp < Player.SIDESTEP:
+			check(p.forward().dot(Vector3(0, 0, 1)) > 0.9, "Sidestep at %.1f m/s: still square to the ball" % sp)
+		else:
+			check(with_run > 0.9, "Across at %.1f m/s: turned to run the way he goes (facing %.2f along it)" % [sp, with_run])
+		p.queue_free()
 
 
 func _count_prefix(sc: Scenery, prefix: String) -> int:
@@ -2191,3 +2209,45 @@ func _open_spot(m: Node, view: Camera3D) -> Vector3:
 				best_d = d
 				best = p
 	return best
+
+
+## The break: the players walk to their places, none runs on off the field (with no brains over half-time each ran on
+## the way he was going at the whistle, into the trees: the owner, 0.20). The score bug's clock runs up to the
+## referee's watch after a stoppage rather than jumping a minute or two at once ("a large time jump").
+func _half_time_and_clock() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "GAL", "away": "LIM", "venue": "county", "user_team": -1, "seed": 4, "length": 2.0, "mode": "watch"}
+	m.set_meta("test", true)
+	add_child(m)
+	var f := 0
+	while m.phase != m.P.LIVE and f < 30 * 20:
+		await frames(1)
+		f += 1
+	await frames(30)
+	# The clock: a stoppage's minute and a half put on the watch at once (the score bug ticked by hand, the match held).
+	m.set_paused(true)
+	m.hud.tick(1.0 / 30.0)
+	m.clock += 90.0
+	m.hud.tick(1.0 / 30.0)
+	var after_one: float = m.clock - m.hud._shown_clock
+	for i in 50:
+		m.hud.tick(1.0 / 30.0)
+	var after_two: float = m.clock - m.hud._shown_clock
+	check(after_one > 80.0 and after_two < 0.5,
+		"Clock: a stoppage's 90 s is run up to on the score bug, not jumped (%.0f s behind after a frame, %.1f after 1.7 s)" % [after_one, after_two])
+	m.set_paused(false)
+	var worst := 0.0
+	var seen := false
+	f = 0
+	while m.half < 2 and f < 30 * 400:
+		await frames(1)
+		f += 1
+		if m.phase == m.P.HALF_TIME:
+			seen = true
+			for pl in m.all_players():
+				var p: Player = pl
+				if p.visible:
+					worst = maxf(worst, maxf(absf(p.global_position.x) - Pitch.HALF_L, absf(p.global_position.z) - Pitch.HALF_W))
+	check(seen and worst < 3.0, "Half-time: every player stays on the field over the break (furthest %.1f m beyond a line)" % worst)
+	m.queue_free()
+	await frames(2)

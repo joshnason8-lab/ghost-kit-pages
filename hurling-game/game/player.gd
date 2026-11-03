@@ -8,6 +8,7 @@ extends Node3D
 const ACCEL := 6.5          # m/s^2 to speed up
 const DECEL := 9.0          # m/s^2 to slow down
 const TURN := 7.0           # rad/s he can turn his body at a jog (slower at a sprint)
+const SIDESTEP := 1.8       # m/s: the fastest a man moves sideways facing the ball; faster, he turns and runs
 const BACKPEDAL := 3.2      # m/s: the fastest a man moves backward facing the way he came; faster, he turns
 ## The man under your thumb answers it quicker than the computer's men move: a game's player has to feel the stick
 ## (round three: "the players barely react to the joystick"; 6.5 m/s^2 took well over a second to top speed).
@@ -262,7 +263,11 @@ func integrate(dt: float, now: float) -> void:
 		look = face_to - position
 		look.y = 0.0
 	var away := sp > 0.5 and look.length() > 0.2 and look.normalized().dot(vel / sp) < -0.3
-	if sp > 1.2 and (face_to == Vector3.ZERO or (away and sp > BACKPEDAL)):
+	# Moving across the way he is told to look, faster than a sidestep: he turns and runs, and looks again when he
+	# gets there. (Square to the ball while running sideways at up to 5 m/s - to his place for a free, a keeper across
+	# his goal - his legs ran forward while he slid across: the owner, "gliding when running or strafing sideways".)
+	var across := sp > (SIDESTEP * 1.7 if is_keeper() else SIDESTEP) and look.length() > 0.2 and look.normalized().dot(vel / sp) < 0.64
+	if sp > 1.2 and (face_to == Vector3.ZERO or (away and sp > BACKPEDAL) or (across and not away)):
 		want_yaw = atan2(vel.x, vel.z)
 	elif look.length() > 0.2:
 		want_yaw = atan2(look.x, look.z)
@@ -813,11 +818,17 @@ func _action_pose(p: Dictionary, name: String, t: float, now: float) -> void:
 			p.upperarm_l = Vector3(-170.0 * k, 0, 0)
 			p.upperarm_r = Vector3(-160.0 * k, 0, 0)
 		"celebrate":
-			var pump := sin(t * 18.0)
-			p.upperarm_l = Vector3(-150.0 - 20.0 * pump, 0, 25)
-			p.forearm_l = Vector3(30.0 + 30.0 * pump, 0, 0)
-			p.upperarm_r = Vector3(-120.0, 0, -35)
-			p.head = Vector3(-20.0, 0, 0)
+			# Both arms up and held: the hurley high in his right hand, the left fist up beside it, chest out and
+			# head up, a slow sway. (The owner, 0.20: the close-up's fast fist pump - the forearm flapping three times
+			# a second - "makes the arm look broken".)
+			var up := _k(t, 0.0, 0.18) * (1.0 - _k(t, 0.85, 1.0))
+			var sway := sin(t * TAU * 1.2) * up
+			p.upperarm_r = Vector3(-160.0 * up, 0, -18.0 * up)
+			p.forearm_r = Vector3(8.0 * up, 0, 0)
+			p.upperarm_l = Vector3(-150.0 * up, 0, (22.0 + 4.0 * sway) * up)
+			p.forearm_l = Vector3(18.0 * up, 0, 0)
+			p.spine = Vector3(-8.0 * up, 3.0 * sway, 0)
+			p.head = Vector3(-18.0 * up, 0, 0)
 		"dejected":
 			p.spine = Vector3(25.0, 0, 0)
 			p.head = Vector3(30.0, 0, 0)

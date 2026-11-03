@@ -9,6 +9,21 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.21.0
+
+- **The ball off the woodwork is heard again in free-taking**: the clang carries from the goal to the camera
+  behind the taker (it was lost under the crowd at 40 to 65 metres).
+- **The commentary is off** for now (to come back in a later version).
+- **The birdsong is quieter** at the county and club grounds.
+- **No more gliding sideways**: a player moving across the way he faces faster than a sidestep (getting to his
+  place for a free, a keeper across his goal) turns and runs, instead of sliding sideways with his legs running.
+- **A new celebration**: the scorer raises both arms high and holds them (the old fist pump flapped his forearm and
+  looked broken in the close-up).
+- **The field's lines no longer break up or vanish in the distance**: they are painted in the grass itself now, each
+  at least a pixel wide.
+- **Half-time**: the players walk to their places for the second half (some ran on off the field into the trees).
+- **The clock no longer jumps**: after a stoppage it runs quickly up to the time instead of leaping on a minute or two.
+
 ## New in 0.20.2
 
 - **The joystick is right wherever your player is on the screen**: in 0.20.1 it followed the camera's facing, which
