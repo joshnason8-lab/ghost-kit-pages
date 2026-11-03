@@ -1304,6 +1304,51 @@ func _run() -> void:
 	Game.go_back()
 	await frames(3)
 
+	# Up from a dive: a get-up at a human pace (at least GETUP_MIN, his clip at most 1.4 times its own), no knee
+	# snapping, and up into his ready crouch, not stood up straight and dropped into it.
+	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+		"difficulty": 1, "first_raider": 0, "passive": true})
+	var gu_gm: Node = Game.current
+	var gu_gg := 0
+	while gu_gm.phase != "raid" and gu_gg < 1200:
+		await get_tree().process_frame
+		gu_gg += 1
+	var gu_gd: Athlete = gu_gm.defenders()[2]
+	gu_gd.tackle_kind = "dash"
+	gu_gd.set_state("dive", 0.4)
+	await frames(10)
+	gu_gm._land(gu_gd, 0.9)
+	var gu_glen: float = gu_gd.st_len
+	var gu_gq := []
+	var gu_least_knee := 180.0
+	for f in 75:
+		await get_tree().process_frame
+		var gu_gmd = gu_gd.model
+		gu_gq.append([gu_gmd.kn_l.quaternion, gu_gmd.kn_r.quaternion])
+		if (gu_gd.state == "recover" and gu_gd.st_t > gu_gd.st_len * 0.75) or gu_gd.state == "ready":
+			gu_least_knee = minf(gu_least_knee, rad_to_deg(minf(gu_gmd.kn_l.quaternion.get_angle(), gu_gmd.kn_r.quaternion.get_angle())))
+	var gu_gjolt := 0.0
+	for f in range(2, gu_gq.size()):
+		for k in 2:
+			var gu_d1: Quaternion = gu_gq[f - 1][k] * (gu_gq[f - 2][k] as Quaternion).inverse()
+			var gu_d2: Quaternion = gu_gq[f][k] * (gu_gq[f - 1][k] as Quaternion).inverse()
+			var gu_gv := (gu_d2 * gu_d1.inverse()).normalized().get_angle()
+			gu_gjolt = maxf(gu_gjolt, minf(gu_gv, TAU - gu_gv))
+	# And up from a hold that slipped (rise): into the crouch too.
+	var gu_rd: Athlete = gu_gm.defenders()[3]
+	gu_rd.set_state("holding")
+	await frames(15)
+	gu_rd.set_state("rise", gu_gm.RISE_SLIPPED)
+	var gu_rise_least := 180.0
+	for f in 45:
+		await get_tree().process_frame
+		if (gu_rd.state == "rise" and gu_rd.st_t > gu_rd.st_len * 0.6) or gu_rd.state == "ready":
+			gu_rise_least = minf(gu_rise_least, rad_to_deg(minf(gu_rd.model.kn_l.quaternion.get_angle(), gu_rd.model.kn_r.quaternion.get_angle())))
+	check(gu_glen >= gu_gm.GETUP_MIN - 0.001 and gu_gjolt < 0.5 and gu_least_knee > 25.0 and gu_rise_least > 25.0,
+		"up from a dive at a human pace (%.2f s), no knee snapping (worst %.2f rad a frame), up into his crouch, from a dive and from a slipped hold (knees at least %.0f and %.0f deg)" % [gu_glen, gu_gjolt, gu_least_knee, gu_rise_least])
+	gu_gm.queue_free()
+	await frames(3)
+
 	# Defending, a tag on you buzzes the phone firmly (a double knock), a tag on a team-mate lightly.
 	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
 		"difficulty": 1, "first_raider": 1, "passive": true})
