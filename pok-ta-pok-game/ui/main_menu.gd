@@ -19,6 +19,7 @@ var _ver_last := 0
 
 func _ready() -> void:
 	UI.screen(self, int(Game.settings.graphics) == Game.GFX_LOW)
+	Game.prewarm_match()   # the next match's files, on the loader's thread while the menu is up
 	_pick = randi() % ATTRACT.size()
 	if int(Game.settings.graphics) != Game.GFX_LOW:
 		var svc := SubViewportContainer.new()

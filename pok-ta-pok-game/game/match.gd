@@ -206,6 +206,13 @@ func build_rest(ld: WsgLoading) -> void:
 		if not attract:
 			Sfx.crowd(0.12)
 	built = true
+	# Under the loading overlay the clock starts once it has gone (Game.start_match: kick_off), not behind it.
+	if not bool(config.get("deferred", false)):
+		set_process(true)
+
+
+## The match begins: its clock, the AI, the copal (after the loading overlay's warm-up and settle: WsgLoading.done).
+func kick_off() -> void:
 	set_process(true)
 
 
@@ -1018,9 +1025,13 @@ func _ball_step(dt: float) -> void:
 		for e in events:
 			if e.kind == "bounce" and float(e.speed) > 2.0:
 				Sfx.play("thud_stone" if court.classic() else "thud", -14.0, 1.0)
+			elif e.kind == "knock":
+				_knock(e)
 		return
 	for e in events:
 		match String(e.kind):
+			"knock":
+				_knock(e)
 			"bounce":
 				serve_bounced = true
 				var sp := float(e.speed)
@@ -1053,6 +1064,21 @@ func _ball_step(dt: float) -> void:
 var _told_low := false
 const DIVE_ERR := 0.55          # the least error a dive's return has (a hip strike's runs 0 to 1 with its timing)
 var ring_shots := 0
+
+
+## The ball knocking into a prop round the court (a bench, a stand, the coping, a post): its knock, by what it is.
+func _knock(e: Dictionary) -> void:
+	var sp := float(e.speed)
+	if sp < 1.0:
+		return
+	var vol := clampf(-20.0 + sp * 1.6, -20.0, -4.0)
+	match String(e.surface):
+		"fabric", "earth":
+			Sfx.play_var("thud_earth", vol - 4.0, rng.randf_range(0.85, 1.0))
+		"wood", "metal":
+			Sfx.play("thud", vol, rng.randf_range(1.05, 1.2))
+		_:
+			Sfx.play("thud_stone", vol, rng.randf_range(0.92, 1.05))
 
 
 func _contacts() -> void:

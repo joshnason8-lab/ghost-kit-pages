@@ -15,6 +15,7 @@ const STRIKE_MIN_Y := 0.34    # standing, the hip cannot get under a ball lower 
 const STRIKE_MAX_UP := 0.12   # nor one higher than this over HIP_H: in the strike his hip sinks to 0.54-0.61 m, so a
                               # ball any higher meets his belly or chest (the owner, 0.6.8: "hitting too high on body")
 const BODY_R := 0.16          # his body, for the ball touching it (R6)
+const WALK_R := 0.25          # and the room he takes among the props round the court (WsgSolidProps)
 
 enum A { NONE, STRIKE, DIVE, SERVE, CELEBRATE, DEJECTED }
 
@@ -229,6 +230,9 @@ func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 	vel.y = 0.0
 	var p := global_position + vel * dt
 	var keep := court.clamp_feet(p)
+	if court.solid != null:
+		# Never inside a prop round the court (WsgSolidProps), whatever moved him.
+		keep = court.solid.push_out(keep, WALK_R)
 	if not can_cross:
 		# His own side of the analco.
 		if (keep.x - 0.0) * dirn > -0.4:

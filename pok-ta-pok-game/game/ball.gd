@@ -138,7 +138,8 @@ void fragment() {
 	return _shadow_mat
 
 
-## One step of dt seconds. Returns what happened in it: [{"kind": "bounce"|"roll"|"ring"|"out"|"end", ...}].
+## One step of dt seconds. Returns what happened in it: [{"kind": "bounce"|"knock"|"roll"|"ring"|"out"|"end", ...}]
+## (knock: off a prop round the court, Court.solid).
 func step(dt: float) -> Array:
 	if held:
 		return []
@@ -152,6 +153,7 @@ func step(dt: float) -> Array:
 ## adding what happened to events. Returns the new position.
 static func simulate(b: Object, dt: float, c: Court, floor_k: String, events: Array) -> Vector3:
 	var p: Vector3 = b.pos
+	var start := p
 	var v: Vector3 = b.vel
 	var was_grounded: bool = b.grounded
 	if b.grounded:
@@ -208,6 +210,24 @@ static func simulate(b: Object, dt: float, c: Court, floor_k: String, events: Ar
 				v.y = 0.0
 			if absf(vn) > 0.4:
 				events.append({"kind": "bounce", "surface": kind, "pos": p, "speed": -vn})
+	# The props round the court (benches, stands, houses, the coping and terraces, posts, trees): the ball's whole step
+	# swept against them, after the court's own surfaces (which they never share a face with: Venue._solid_*), so it
+	# bounces off them at any speed, in play or running on after the call, never through. A ball in play that knocks
+	# into one is out (R10): every prop is off the court.
+	if c.solid != null and p != start:
+		var h: Dictionary = c.solid.sweep(start, p, RADIUS)
+		if h.hit:
+			var n: Vector3 = h.normal
+			var into := v.dot(n)
+			p = (h.pos as Vector3) + n * (float(h.depth) + 0.002)
+			if into < 0.0:
+				var m: Dictionary = WsgSolidProps.MATERIALS[h.material]
+				var vn := n * into
+				v = (v - vn) * (1.0 - float(m.friction)) - vn * float(m.restitution)
+				if b.grounded and n.y < 0.5:
+					v.y = 0.0
+				events.append({"kind": "knock", "surface": String(h.material), "prop": String(h.name), "pos": p, "speed": -into})
+				events.append({"kind": "out", "pos": p})
 	if b.grounded and not was_grounded:
 		events.append({"kind": "roll", "pos": p})
 	if c.out_side(p, RADIUS, b.grounded or p.y < RADIUS + 0.02):

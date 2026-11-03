@@ -31,6 +31,9 @@ const RING_DEPTH := 0.16      # half the ring's thickness along the alley
 const RING_OFF := 0.42        # the ring's centre stands this far out from the wall's face
 
 var rules := Rules.ULAMA
+## The venue's props round the court (Venue.solid, the shared WsgSolidProps): the ball bounces off them (Ball.simulate)
+## and bodies keep out of them. The court's own surfaces - the talud, the walls, the rings - stay in contact() below.
+var solid: WsgSolidProps = null
 
 
 func _init(p_rules := Rules.ULAMA) -> void:

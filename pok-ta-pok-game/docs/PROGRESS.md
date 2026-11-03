@@ -284,6 +284,21 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   - *"Get rid of the festival court flags."* The papel picado over the near side is gone.
   - Also: the stone courts' judges stand on the wall's coping (they were sunk 0.5 m into it), and the village's
     standing crowd at the ends is pulled back off the ground the players run on.
+- **0.6.9-beta: solid props, and a smoother way into a match.** The shared foundation synced to a24408b.
+  - *WsgSolidProps* (the owner: "There will NEVER be a time when a player or referee should walk through a table or
+    bench ... A ball should also bounce off these items"). Every venue declares its props where it builds them: the
+    village's benches, houses, trees, agaves and boulders; the festival's stand rows, posts and awnings; the stone
+    courts' structures, coping, terraces, end walls, stelae and pyramid, and the night court's torch posts (74-102 a
+    venue). The court's own talud, walls and rings stay Court.contact's; the props beside them stand back 3 cm so the
+    two never bounce the ball at once. The ball's every step is swept against them (Ball.simulate): at any speed it
+    bounces off, with a knock, in play or running on after the call; in play a knock is out (R10). The players, the
+    judges and the copal elder are pushed out of any prop. prop_audit (game/prop_runs.gd) runs in CI: a Watch-AI match
+    at each venue and then 120 balls struck at the props with the game's own ball; with the sweep turned off it finds
+    680-1,532 balls through props a venue, with it none. The contact sheet: docs/playtest/props/props_g0.jpg.
+  - *Loading, v2.* Every look is drawn once under the overlay, a few a frame (ld.warm), and the overlay stays until
+    the frames come in smooth (ld.done) before the match's clock starts; the menu loads the next match's files on the
+    loader's thread. Desktop software GL at Low: the longest frozen frame of a cold first match 291 ms (was 1.3-6 s
+    in one frame); warm, 83-200 ms.
 
 ## Next
 

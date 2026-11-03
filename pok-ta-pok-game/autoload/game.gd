@@ -356,14 +356,31 @@ func start_match(config: Dictionary) -> void:
 	ld.step("Venue", func(): await made.m.build_venue(ld), 5.0)
 	ld.step("Players", func(): await made.m.build_sides(ld), 3.0)
 	ld.step("Ready", func(): await made.m.build_rest(ld), 1.0)
-	# Its first frame drawn under the overlay (the camera's first look at everything: the GPU's first use of each
-	# material), not after it has gone.
-	ld.step("Draw", func():
-		await get_tree().process_frame
-		await get_tree().process_frame, 1.0)
+	# Every look drawn once under the overlay, a few a frame (each new shader compiled in a frame of its own, the bar
+	# moving between), not all in the first frame of play; the 3D is not drawn before this (WsgLoading.warm).
+	ld.warm(func(): return made.m, tr("LOADING"), 2.0)
 	if not await ld.run():
 		return
-	ld.done()
+	# The overlay stays until the frames come in smooth, then the match's clock starts.
+	await ld.done()
+	if is_instance_valid(made.m):
+		made.m.kick_off()
+
+
+## The next match's files, loading on the loader's thread while the menu is up (WsgLoading.prewarm): the match's
+## scripts, the players' and judges' models, the crowd's people and the carved ring. Files only: no shader is compiled
+## on the menu.
+func prewarm_match() -> void:
+	var paths := ["res://game/match.gd", "res://game/hud.gd", "res://game/venue.gd", "res://game/player.gd", "res://game/crowd.gd"]
+	var dirs := ["res://assets/people/"]
+	if int(settings.graphics) >= GFX_MEDIUM:
+		dirs.append("res://assets/foundation/")
+	for d in dirs:
+		for f in DirAccess.get_files_at(d):
+			var file := f.trim_suffix(".remap")
+			if file.ends_with(".res"):
+				paths.append(d + file)
+	WsgLoading.prewarm(paths)
 
 
 ## The loading overlay in the game's own colours, icon, font and words.

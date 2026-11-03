@@ -112,6 +112,7 @@ Main sources:
 |---|---|
 | **Documented** | Knocking the ball out of bounds is a fault [WP-U]. |
 | **In the game** | The ball touching the ground beyond a side line: the raya goes against the side that last struck it (`Rules.out_side`). In the air beyond the line it is still in play until it comes down. |
+| **The props (0.6.9)** | A ball in play that knocks into anything round the court (a bench, the stands, a house, a tree, the coping, a terrace, a post) is out against the side that last struck it, as if it had come down there: everything round the court is off it. The ball bounces off them rather than passing through (`Venue.solid`, `Ball.simulate`). |
 
 ### R11. The serve (the male)
 

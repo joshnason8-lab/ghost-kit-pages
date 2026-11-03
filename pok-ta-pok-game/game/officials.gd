@@ -26,6 +26,8 @@ func build(court: Court) -> void:
 		if court.classic():
 			# On the coping along the wall's top (Venue._stone_court: 0.5 m over the wall), not sunk in it.
 			at = Vector3(0.6 * s, Court.WALL_H + 0.5, s * (Court.TALUD_Z + 0.9))
+		if court.solid != null:
+			at = court.solid.push_out(at, Player.WALK_R)   # never standing in a prop (a torch post on the coping)
 		add_child(j)
 		j.position = at
 		var yaw := atan2(-at.x * 0.0, -at.z)   # facing across the court

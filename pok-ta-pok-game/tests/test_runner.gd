@@ -43,6 +43,10 @@ func _ready() -> void:
 	await _crowd_faces()
 	await _stance()
 	await _judges_stand()
+	await _props_solid("village", "ulama")
+	await _props_solid("festival", "ulama")
+	await _props_solid("stone", "classic")
+	await _props_solid("night", "classic")
 	await _mocap()
 	_sounds()
 	_levels()
@@ -670,6 +674,76 @@ func _crowd_faces() -> void:
 
 ## The judges stand on something, not in it: on the earth by the court; on the stone courts on the coping along the
 ## wall's top (its top 0.5 m over the wall), not sunk half a metre into it.
+## The props round the court are solid (the owner: "a ball should also bounce off these items"; WsgSolidProps): every
+## venue declares them; no player, judge or elder starts inside one; the ball struck hard at a bench, a stand or the
+## coping comes back off it, never through, with a knock; and a ball in play that knocks into one is out.
+func _props_solid(venue: String, rules: String) -> void:
+	var keep_light := Mocap.light   # (a match sets it for its graphics level: put back for the tests after)
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "ESC" if rules == "ulama" else "PIS", "away": "LLA" if rules == "ulama" else "VAL", "venue": venue, "rules": rules,
+		"user_team": -1, "seed": 3, "length": 0.0, "mode": "test", "difficulty": 1, "ritual": rules == "classic"}
+	add_child(m)
+	await frames(2)
+	var solid: WsgSolidProps = m.venue.solid
+	check(m.court.solid == solid and solid.props.size() >= 10, "%s: the props round the court are solid (%d)" % [venue, solid.props.size()])
+	var inside := []
+	var bodies: Array = m.all_players().duplicate()
+	bodies.append_array(m.officials.judges)
+	if m.ritual:
+		bodies.append(m.ritual.elder)
+	for b in bodies:
+		var pen := solid.penetration((b as Node3D).global_position, Player.WALK_R)
+		if float(pen[0]) > 0.02:
+			inside.append(String(solid.props[int(pen[1])].name))
+	check(inside.is_empty(), "%s: nobody stands in a prop %s" % [venue, str(inside)])
+	# Struck at the props: a bench (village), the stands (festival), the coping (the stone courts).
+	var shots := {"village": [Vector3(7.6, 0.25, 1.0), Vector3(0.0, 1.0, 14.0), 5.2 + 0.175],
+		"festival": [Vector3(4.0, 0.6, -1.0), Vector3(0.0, 1.5, -16.0), -(Venue.STAND_Z0 + Venue.STAND_ROWS * Venue.STAND_TREAD)],
+		"stone": [Vector3(3.0, 5.35, -2.0), Vector3(0.0, 1.0, -18.0), -Court.TALUD_Z],
+		"night": [Vector3(3.0, 5.35, 2.0), Vector3(0.0, 1.0, 18.0), Court.TALUD_Z]}
+	var sh: Array = shots[venue]
+	var ball: Ball = m.ball
+	m.phase = m.P.CALL   # (out of play: the ball runs on as it will)
+	ball.launch(sh[0], sh[1], 0, null)
+	var face: float = sh[2]
+	var past := 0.0
+	var knocked := false
+	var back := false
+	for i in 60:
+		for e in ball.step(1.0 / 30.0):
+			if e.kind == "knock":
+				knocked = true
+		past = maxf(past, (ball.pos.z - face) * signf(face))
+		if ball.vel.z * signf(face) < -0.5 and knocked:
+			back = true
+	check(knocked and back and past <= 0.0,
+		"%s: the ball struck at the %s comes back off it, never through (%.2f m past its face)" % [venue, "bench" if venue == "village" else ("stands" if venue == "festival" else "coping"), past])
+	m.queue_free()
+	await frames(2)
+	if venue == "village":
+		# In play: into a bench is out.
+		var m2: Node = load("res://game/match.gd").new()
+		m2.config = {"home": "ESC", "away": "LLA", "venue": "village", "rules": "ulama", "user_team": -1, "seed": 3, "length": 0.0, "mode": "test", "difficulty": 1, "ritual": false}
+		add_child(m2)
+		await frames(2)
+		var g := 0
+		while m2.phase != m2.P.LIVE and g < 30 * 20:
+			await get_tree().process_frame
+			g += 1
+		m2.ball.launch(Vector3(7.6, 0.3, 1.0), Vector3(0.0, 0.8, 16.0), 0, null)
+		for k in m2.all_players():
+			(k as Player).global_position.x = -20.0   # nobody near it
+		var rayas0: int = m2.log_rayas.size()
+		g = 0
+		while m2.log_rayas.size() == rayas0 and g < 60:
+			await get_tree().process_frame
+			g += 1
+		check(m2.log_rayas.size() > rayas0 and String(m2.log_rayas[-1][1]) == "out", "village: a ball in play into a bench is out (%s)" % (str(m2.log_rayas[-1]) if m2.log_rayas.size() > rayas0 else "nothing called"))
+		m2.queue_free()
+		await frames(2)
+	Mocap.light = keep_light
+
+
 func _judges_stand() -> void:
 	for rules in ["ulama", "classic"]:
 		var c := Court.new(rules)

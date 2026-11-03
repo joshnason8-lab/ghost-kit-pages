@@ -117,6 +117,8 @@ func step(dt: float) -> void:
 		if to.length() > 0.08:
 			var stepv := minf(to.length(), WALK * dt)
 			elder.global_position += to.normalized() * stepv
+			if m.court.solid != null:
+				elder.global_position = m.court.solid.push_out(elder.global_position, Player.WALK_R)
 			elder.rotation.y = atan2(to.x, to.z)
 			_phase += stepv / 1.1
 			elder.apply(Moves.blend(Moves.judge_idle(_t), Moves.run(_phase, WALK, 0.0), 0.7))

@@ -20,6 +20,12 @@ var scenery: Scenery
 var sun: DirectionalLight3D
 var env: Environment
 var torches: Array[Vector3] = []
+## Every prop round the court as a simple solid (the shared WsgSolidProps): the ball bounces off them (Court.solid,
+## Ball.simulate), the players, judges and the elder keep out of them, and prop_audit checks a match for anything
+## through one (game/prop_runs.gd). Declared where each is built. The court's own surfaces (the talud, the walls, the
+## rings) are Court.contact's, so the props beside them stand back 3 cm from their faces: never two bounces at once.
+var solid := WsgSolidProps.new()
+const INSET := 0.03
 var _flames: MultiMeshInstance3D
 var _lights: Array[OmniLight3D] = []
 var _rng := RandomNumberGenerator.new()
@@ -31,6 +37,7 @@ func build(p_id: String, p_court: Court, home_colour := Color.WHITE, away_colour
 	id = p_id
 	info = DB.venue(id)
 	court = p_court
+	court.solid = solid
 	_rng.seed = hash(id)
 	# Under the loading overlay (WsgLoading, after Start), a frame is drawn between the parts so the bar moves; without
 	# it (the tests, the match behind the menus) it is built straight through.
@@ -58,6 +65,7 @@ func build(p_id: String, p_court: Court, home_colour := Color.WHITE, away_colour
 			_forest()
 			if id == "night":
 				_torches()
+	_solid_scenery()
 	if ld:
 		await ld.checkpoint()
 	scenery.commit()
@@ -186,6 +194,7 @@ func _village() -> void:
 		var face: float = -signf(c.z)
 		var col: Color = paints[_rng.randi_range(0, paints.size() - 1)]
 		houses.box(c + Vector3(0, sz.y * 0.5, 0), sz, col)
+		solid.add({"name": "house", "kind": "box", "position": c, "size": Vector3(sz.x + 0.1, sz.y + 0.4, sz.z + 0.1), "material": "plaster"})
 		# The flat roof's parapet, a band of the same paint a shade darker.
 		roofs.box(c + Vector3(0, sz.y + 0.2, 0), Vector3(sz.x + 0.1, 0.4, sz.z + 0.1), Color(0.7, 0.68, 0.64))
 		# A door and a window on the court side.
@@ -202,6 +211,7 @@ func _village() -> void:
 	dm.vertex_color_is_srgb = true
 	dm.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_mesh(dark.commit(), dm, "doors")
+	solid.skip("doors and windows", "painted on the houses' fronts (the houses are solid)")
 	# Benches for the people along the court, a little way back from the side lines.
 	var benches := Geo.new(1.0)
 	for bn in village_benches():
@@ -210,6 +220,8 @@ func _village() -> void:
 		benches.box(Vector3(x + 1.5, BENCH_TOP - 0.04, s * BENCH_Z), Vector3(3.0, 0.08, BENCH_DEPTH), Color("6b5440"))
 		benches.box(Vector3(x + 0.3, 0.2, s * BENCH_Z), Vector3(0.12, 0.4, 0.3), Color("4e3d2e"))
 		benches.box(Vector3(x + 2.7, 0.2, s * BENCH_Z), Vector3(0.12, 0.4, 0.3), Color("4e3d2e"))
+		# Solid down to the ground, legs and all: nobody walks through, no ball rolls under.
+		solid.add({"name": "bench", "kind": "box", "position": Vector3(x + 1.5, 0, s * BENCH_Z), "size": Vector3(3.0, BENCH_TOP, BENCH_DEPTH), "material": "wood"})
 	var bm := StandardMaterial3D.new()
 	bm.vertex_color_use_as_albedo = true
 	bm.vertex_color_is_srgb = true
@@ -245,9 +257,11 @@ func _festival() -> void:
 			var y := STAND_RISE * (r + 1)
 			stands.box(Vector3(0, y - 0.05, z), Vector3(52.0, 0.1, STAND_TREAD), Color(0.78, 0.76, 0.72))
 			stands.box(Vector3(0, y * 0.5, z + s * 0.38), Vector3(52.0, y, 0.06), Color(0.62, 0.6, 0.58))
+			solid.add({"name": "stand row %d" % (r + 1), "kind": "box", "position": Vector3(0, 0, z), "size": Vector3(52.0, y, STAND_TREAD), "material": "plaster"})
 		for k in 14:
 			var x := -26.0 + k * 4.0
 			steel.box(Vector3(x, 1.6, s * 11.6), Vector3(0.12, 3.2, 0.12), Color(0.4, 0.42, 0.45))
+			solid.add({"name": "stand post", "kind": "cylinder", "position": Vector3(x, 0, s * 11.6), "radius": 0.06, "height": 3.2, "material": "metal"})
 	_mesh(stands.commit(), Geo.surface("plastered_wall", Color(0.82, 0.8, 0.78), 0.9), "stands")
 	var sm := StandardMaterial3D.new()
 	sm.vertex_color_use_as_albedo = true
@@ -264,8 +278,10 @@ func _festival() -> void:
 			var cx: float = s * (35.0 + k * 5.0)
 			var cz := (k - 1) * 5.5
 			cloth.box(Vector3(cx, 3.0, cz), Vector3(4.6, 0.06, 4.6), cols[(k + (2 if s > 0 else 0)) % cols.size()])
+			solid.add({"name": "awning", "kind": "box", "position": Vector3(cx, 2.97, cz), "size": Vector3(4.6, 0.06, 4.6), "material": "fabric", "walk": false})
 			for q in [[-2.2, -2.2], [2.2, -2.2], [-2.2, 2.2], [2.2, 2.2]]:
 				cloth.box(Vector3(cx + q[0], 1.5, cz + q[1]), Vector3(0.08, 3.0, 0.08), Color(0.55, 0.55, 0.56))
+				solid.add({"name": "awning pole", "kind": "cylinder", "position": Vector3(cx + q[0], 0, cz + q[1]), "radius": 0.04, "height": 3.0, "material": "metal"})
 	var cm := StandardMaterial3D.new()
 	cm.vertex_color_use_as_albedo = true
 	cm.vertex_color_is_srgb = true
@@ -320,12 +336,19 @@ func _stone_court() -> void:
 		# The structure: its inner face is the wall above the talud; its top, where people watch; its back and ends.
 		stone.box(Vector3(0, wh * 0.5, sz * (tz + deep) * 0.5), Vector3(al * 2.0, wh, deep - tz), Color(-1, 0, 0))
 		stone.box(Vector3(0, wh + 0.25, sz * (tz + 0.6)), Vector3(al * 2.0, 0.5, 1.2))
+		# Solid: the structure behind its wall (its face and ends are Court.contact's: stood back from them), the
+		# coping along its top (where the judges stand) and the terraces.
+		solid.add({"name": "structure", "kind": "box", "position": Vector3(0, 0, sz * (tz + INSET + deep) * 0.5),
+			"size": Vector3((al - INSET) * 2.0, wh, deep - tz - INSET), "material": "stone"})
+		solid.add({"name": "coping", "kind": "box", "position": Vector3(0, wh, sz * (tz + 0.6)), "size": Vector3(al * 2.0, 0.5, 1.2), "material": "stone"})
 		# Stepped terraces behind the coping, a step a row of people: each row stands higher than the one in front, so
 		# the coping and the row before never hide their legs from the court.
 		for r in TERRACE_ROWS:
 			var z0: float = tz + 1.2 + r * TERRACE_D
 			var top: float = TERRACE_Y0 + r * TERRACE_RISE
 			stone.box(Vector3(0, (wh + top) * 0.5, sz * (z0 + deep) * 0.5), Vector3(al * 2.0, top - wh, deep - z0))
+			solid.add({"name": "terrace %d" % (r + 1), "kind": "box", "position": Vector3(0, wh, sz * (z0 + deep) * 0.5),
+				"size": Vector3(al * 2.0, top - wh, deep - z0), "material": "stone"})
 		# The talud's two end faces (triangles as thin quads).
 		for ex in [-al, al]:
 			var e1 := Vector3(ex, 0.0, sz * aw)
@@ -337,8 +360,12 @@ func _stone_court() -> void:
 				stone.quad(e2, e1, e3, e3)
 		# The end courts' walls.
 		stone.box(Vector3(s * (el + 0.5), Court.END_WALL_H * 0.5, 0), Vector3(1.0, Court.END_WALL_H, ew * 2.0 + 2.0))
+		solid.add({"name": "end wall", "kind": "box", "position": Vector3(s * (el + 0.5 + INSET * 0.5), 0, 0),
+			"size": Vector3(1.0 - INSET, Court.END_WALL_H, ew * 2.0 + 2.0), "material": "stone"})
 		for zs in [-1.0, 1.0]:
 			stone.box(Vector3(s * (al + el) * 0.5, Court.END_WALL_H * 0.5, zs * (ew + 0.5)), Vector3(el - al, Court.END_WALL_H, 1.0))
+			solid.add({"name": "end court side wall", "kind": "box", "position": Vector3(s * (al + el) * 0.5, 0, zs * (ew + 0.5 + INSET * 0.5)),
+				"size": Vector3(el - al, Court.END_WALL_H, 1.0 - INSET), "material": "stone"})
 	# The rings, out from each wall at the centre line, their holes along the alley: each cut from one stone, so a
 	# plain stone (not the walls' coursed blocks).
 	var rings := Geo.new(0.9)
@@ -367,10 +394,18 @@ func _stone_court() -> void:
 		rings.washer(c, Court.RING_IN, Court.RING_IN + 0.06, Court.RING_DEPTH + 0.025, 28)
 		rings.washer(c, Court.RING_OUT - 0.05, Court.RING_OUT, Court.RING_DEPTH + 0.02, 28)
 	_mesh(rings.commit(), Geo.surface("broken_wall", Color(0.95, 0.92, 0.86), 0.9), "rings")
+	# The rings, for the audit to see; their bounce stays Court.contact's ("ball": false: never two at once).
+	for c in court.rings():
+		solid.add_ring({"name": "ring", "centre": c, "radius": (Court.RING_IN + Court.RING_OUT) * 0.5,
+			"tube": (Court.RING_OUT - Court.RING_IN) * 0.5, "axis": Vector3.RIGHT, "material": "stone", "ball": false})
+	solid.skip("ring tenons", "inside the wall, behind the ring (Court.contact)")
+	solid.skip("talud", "the court's own sloped bench (Court.contact)")
 	# A stela at each end, beyond the end court (plain: their carving would need a model, docs/MESHY_BRIEF.md).
 	for s in [-1.0, 1.0]:
 		stone.box(Vector3(s * (el + 5.0), 1.6, -3.0), Vector3(1.3, 3.2, 0.5))
 		stone.box(Vector3(s * (el + 5.0), 0.25, -3.0), Vector3(2.0, 0.5, 1.2))
+		solid.add({"name": "stela", "kind": "box", "position": Vector3(s * (el + 5.0), 0, -3.0), "size": Vector3(1.3, 3.2, 0.5), "material": "stone"})
+		solid.add({"name": "stela base", "kind": "box", "position": Vector3(s * (el + 5.0), 0, -3.0), "size": Vector3(2.0, 0.5, 1.2), "material": "stone"})
 	_mesh(stone.commit(), Geo.surface("sandstone_blocks", Color(0.98, 0.95, 0.88), 0.92), "stone")
 	_mesh(floor_g.commit(), Geo.surface("plastered_wall", Color(0.93, 0.9, 0.84), 0.95), "floor")
 	# The centre line marked on the floor.
@@ -396,10 +431,12 @@ func _pyramid(at: Vector3, base: float) -> void:
 	for i in tiers:
 		var w := base * (1.0 - float(i) / (tiers + 1.5))
 		p.box(at + Vector3(0, h * (i + 0.5), 0), Vector3(w, h, w))
+		solid.add({"name": "pyramid", "kind": "box", "position": at + Vector3(0, h * i, 0), "size": Vector3(w, h, w), "material": "stone"})
 	var top := base * (1.0 - float(tiers) / (tiers + 1.5))
 	p.box(at + Vector3(0, h * tiers + 2.6, 0), Vector3(top * 0.7, 5.2, top * 0.6))
 	# The stairway up the front, toward the court.
 	p.box(at + Vector3(0, h * tiers * 0.5, base * 0.5 - 1.5), Vector3(7.0, h * tiers, 3.0))
+	solid.add({"name": "pyramid stair", "kind": "box", "position": at + Vector3(0, 0, base * 0.5 - 1.5), "size": Vector3(7.0, h * tiers, 3.0), "material": "stone"})
 	_mesh(p.commit(), Geo.surface("broken_wall", Color(0.95, 0.92, 0.86), 0.95), "pyramid")
 
 
@@ -427,6 +464,10 @@ func _torches() -> void:
 	for t in torches:
 		posts.box(t - Vector3(0, 0.75, 0), Vector3(0.1, 1.2, 0.1), Color("3a2a1e"))
 		posts.box(t - Vector3(0, 0.1, 0), Vector3(0.22, 0.22, 0.22), Color("2a1e16"))
+		# The post stands on the coping (or on the end wall's top), its cup on top.
+		var foot := Court.WALL_H + 0.5 if absf(t.x) < Court.ALLEY_HALF_L else Court.END_WALL_H
+		solid.add({"name": "torch post", "kind": "cylinder", "position": Vector3(t.x, foot, t.z), "radius": 0.05, "height": t.y - 0.21 - foot, "material": "wood"})
+		solid.add({"name": "torch cup", "kind": "box", "position": t - Vector3(0, 0.21, 0), "size": Vector3(0.22, 0.22, 0.22), "material": "metal"})
 	var pm := StandardMaterial3D.new()
 	pm.vertex_color_use_as_albedo = true
 	pm.vertex_color_is_srgb = true
@@ -595,6 +636,26 @@ func _mesh(mesh: Mesh, mat: Material, name_: String) -> MeshInstance3D:
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() and name_ in ["stone", "houses", "stands", "pyramid"] else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 	return mi
+
+
+## The plants and stones placed round the court as solids: tree trunks, agaves and boulders (cylinders scaled with
+## each); the grass cut-outs are not solid.
+const SOLID_PLANTS := {
+	"rain_tree_card": [0.35, 3.0, "wood"], "coconut_palm_card": [0.16, 6.0, "wood"], "island_tree_a_card": [0.22, 3.0, "wood"],
+	"island_tree_b_card": [0.22, 3.0, "wood"], "agave": [0.5, 0.75, "earth"], "boulder_low": [0.8, 0.9, "stone"],
+}
+
+
+func _solid_scenery() -> void:
+	for kind in scenery.names():
+		if not SOLID_PLANTS.has(kind):
+			solid.skip(String(kind), "grass: people and the ball go through it")
+			continue
+		var d: Array = SOLID_PLANTS[kind]
+		for xf: Transform3D in scenery.placed(kind):
+			var k := xf.basis.get_scale().x
+			solid.add({"name": String(kind).trim_suffix("_card"), "kind": "cylinder", "position": xf.origin, "radius": float(d[0]) * k,
+				"height": float(d[1]) * k, "material": String(d[2])})
 
 
 ## A point round the court: between r0 and r1 metres from the court's long middle line, never on the court or where

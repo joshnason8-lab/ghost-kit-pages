@@ -119,6 +119,24 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
 
+      # The props round each court are solid (the owner: nobody walks through a bench, the ball bounces off it): at every
+      # venue a Watch-AI match, then balls struck at the props with the game's own ball; fails on anybody 2 cm into a
+      # prop or a ball through one. Its sheets of the worst cases go outside the project (an export would pack them).
+      - name: Props audit (WsgSolidProps)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 1200 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 1 120 2>&1 | tee prop.log
+          if grep -q "SCRIPT ERROR" prop.log; then grep -A4 "SCRIPT ERROR" prop.log; exit 1; fi
+
+      - name: Upload the props audit's sheets
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prop-audit
+          path: ${{ runner.temp }}/prop_audit
+          if-no-files-found: ignore
+
       # The beta key: the owner's keystore (secret BETA_KEYSTORE_B64, PKCS12, alias androiddebugkey, passwords
       # "android"), the same for every build, so each beta installs over the last. Without it, a warning.
       - name: Configure Android export
