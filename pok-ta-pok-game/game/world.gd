@@ -20,6 +20,9 @@ const MODES := {
 ## rule then plays every mode at Low, Medium and High through set_tier). No mode changes it.
 func _init() -> void:
 	set_tier(Game.GFX_MEDIUM)
+	# The game's own step-down off too (ADOPTING 5.18; Match also stands down while WsgAutoTier.off is set): a slow
+	# check must not drop the tier it is checking.
+	Game.settings.auto_gfx = false
 
 
 ## Rules put off until a time, with the lead's word (the shape of WsgSimGame.deferred; read once the world check reads

@@ -373,6 +373,10 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   (they read PASS whatever the audit said); both pass here on the audits' own exit codes. The stands' front-row fans
   stand back 0.6 m from a barrier.
 
+- **0.6.18-beta: shared foundation 56c5bef.** The crowd: no fan placed where its reach meets another section's
+  furniture (bce6f30; crowd audit PASS). world.gd turns the game's own graphics step-down off too (ADOPTING 5.18).
+  0.6.17's CI world check: PASS, 10 rules, feet DEFERRED until 2026-11-06 12:00 UTC with the lead's word.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
