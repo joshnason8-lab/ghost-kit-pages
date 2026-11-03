@@ -271,19 +271,19 @@ func integrate(dt: float, now: float) -> void:
 		top *= 0.55 if action in ["strike", "puck_out", "cut"] else 0.8
 	if w.length() > top:
 		w = w.normalized() * top
+	if solid:
+		# Round the ground's props, never through them (a bench, a flag, a dugout's wall, a board, the posts: the owner's
+		# rule): the way he wants to go turned round what is ahead of him, so he turns at a man's rate, not in a frame.
+		w = solid.steer(position, w, BODY_R, 1.8, Vector3.INF, _solid_memo)
 	var dv := w - vel
 	var rate := (ACCEL if w.length() >= vel.length() else DECEL) * agility
 	if dv.length() > rate * dt:
 		dv = dv.normalized() * rate * dt
 	vel += dv
+	position += vel * dt
 	if solid:
-		# Round the ground's props, never through them (a bench, a flag, a dugout's wall, a board, the posts: the owner's
-		# rule), and pushed out of any he was moved into; his velocity what he really moved at (into a wall: none).
-		var m := solid.move(position, vel, dt, BODY_R, 1.8, Vector3.INF, _solid_memo)
-		position = m[0]
-		vel = Vector3((m[1] as Vector3).x, 0.0, (m[1] as Vector3).z)
-	else:
-		position += vel * dt
+		# And never left inside one, whatever moved him (WsgSolidProps.push_out, the last word).
+		position = solid.push_out(position, BODY_R, 1.8)
 	# Facing: where he runs, or where he is told to look. A man told to look one way while moving the other
 	# backpedals if he is slow about it; faster than a backpedal, he turns and runs (a man facing the ball while
 	# running away from it looked to run forward while sliding backward: the owner's report).
