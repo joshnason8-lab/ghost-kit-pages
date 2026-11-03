@@ -227,6 +227,13 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.13-beta: the beta published in place (3 November 2026)
+
+- The beta release is now updated in place (ADOPTING 5.19, as Hurling's): the new APK uploaded beside the old one, then
+  the old one deleted; no tag is created or removed (0.9.11's tag create met HTTP 403).
+- WsgSim: the fetch-behind-prop case exempt (the lead's word: a ball out of the rink is replaced, never fetched); main's
+  wsg-nightly.yml carried verbatim. No change in play. 0.9.13-beta, code 28.
+
 ### 0.9.12-beta: thumbs up on the stick; all 30 of the owner's notes pass (3 November 2026)
 
 - **"Their thumbs should be up and the knuckles under the stick facing downward"** (2026-11-02): the lower hand's thumb
