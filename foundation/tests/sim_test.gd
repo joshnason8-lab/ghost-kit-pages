@@ -61,6 +61,29 @@ func _initialize() -> void:
 	print("fetch not wired: before 2026-11-04 12:00 %s, from it %s" % ["noted" if u1 else "WRONG", "failed" if u2 else "WRONG"])
 	if not u1 or not u2:
 		fails.append("fetch not wired: before %s, from %s" % [ru1, ru2.failures])
+	# Court-bound (fetch_reach): only spots on the court are offered, behind the props on it - and fetched.
+	var court := Demo.new()
+	court.court_only = true
+	var probe: Dictionary = await sim.run(court, WsgSim.FETCH_KIND, 1, self)
+	var cm := Demo.Match.new()
+	root.add_child(cm)
+	cm.setup(court.config("random", RandomNumberGenerator.new()), 1)
+	var cspots := WsgSim.fetch_spots(cm.solid, court.bounds(), 0.3, 1.8, 3, func(q: Vector3) -> bool: return court.fetch_reach(q))
+	var allspots := WsgSim.fetch_spots(cm.solid, court.bounds())
+	cm.free()
+	var on_court: bool = not cspots.is_empty() and cspots.all(func(sp: Array) -> bool: return court.fetch_reach(sp[0]))
+	print("fetch court-bound: %d spots, all on the court %s (%s); match: %s; unbound: %s" % [cspots.size(), on_court, cspots.map(func(sp: Array) -> String: return sp[1]), probe.get("fetch", "-"), allspots.map(func(sp: Array) -> String: return sp[1])])
+	if not on_court or not probe.ok or not String(probe.get("fetch", "")).contains("reached"):
+		fails.append("court-bound fetch: spots %s, match %s %s" % [cspots, probe.get("fetch", "-"), probe.failures])
+	# Exempt (the game says why it cannot fetch): noted, not failed, even after the enforcement time.
+	var ex := Demo.new()
+	ex.exempt = "a test: the players never leave the court"
+	OS.set_environment("WSG_NOW", "2026-11-05T00:00Z")
+	var rex: Dictionary = await sim.run(ex, WsgSim.FETCH_KIND, 1, self)
+	OS.set_environment("WSG_NOW", "")
+	print("fetch exempt: %s, ok %s" % [rex.get("fetch", "-"), rex.ok])
+	if not rex.ok or not String(rex.get("fetch", "")).begins_with("exempt"):
+		fails.append("an exempt fetch: %s %s" % [rex.get("fetch", "-"), rex.failures])
 	var rd: Dictionary = await sim.run(game, "bug:fetch_dither", 3, self)
 	var dchecks := (rd.failures as Array).map(func(f: Dictionary) -> String: return f.check)
 	print("bug fetch_dither -> %s, warnings %s" % [dchecks, rd.get("warnings", [])])

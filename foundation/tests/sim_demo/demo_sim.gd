@@ -107,13 +107,22 @@ func deferred() -> Dictionary:
 
 ## The fetch-behind-prop case: the ball dead at SPOT, the nearest player sent for it.
 var no_fetch := false
+var exempt := ""
+var court_only := false
 
 
 func fetch(spot: Vector3) -> Dictionary:
+	if exempt != "":
+		return {"exempt": exempt}
 	if no_fetch:
 		return {}
 	var i: int = m.fetch(spot)
 	return {"who": "%s %d" % [["home", "away"][m.players[i].team], i % 3 + 1], "seconds": 20.0}
+
+
+## (court_only: the players kept to the court and its run-off, as a court-bound game.)
+func fetch_reach(p: Vector3) -> bool:
+	return not court_only or (absf(p.x) <= Match.HALF_L + 1.0 and absf(p.z) <= Match.HALF_W + 0.3)
 
 
 func solid() -> WsgSolidProps:

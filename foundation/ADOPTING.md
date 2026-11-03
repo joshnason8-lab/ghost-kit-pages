@@ -1124,7 +1124,13 @@ For the human and the menus:
   4. The body must get there in time, and never go into a prop on the way.
 
   Not wired (`{}`, the default), the match ends at once. Until **2026-11-04 12:00 UTC** the report notes it under
-  Warnings; from then on it fails (`fetch: not wired`; the lead's decision). REQUIRED carries it from that time. A targeted kind of your own can run the same case by setting `fetch_behind_prop: true` in its config.
+  Warnings; from then on it fails (`fetch: not wired`; the lead's decision). REQUIRED carries it from that time.
+
+  Only spots a body can reach are offered: a flood fill from the field's middle over the floor, clear of the props, in
+  the bounds and where `fetch_reach(p)` says yes. So a stadium whose stands ring the bowl is not asked to fetch from
+  behind them (Hurling), and a court-bound game says its court in `fetch_reach` and is tested round the props on it
+  (Pok Ta Pok). A game that cannot fetch at all returns `{"exempt": "<why, with the lead's word>"}`: noted, never
+  failed. A targeted kind of your own can run the same case by setting `fetch_behind_prop: true` in its config.
 - **Steering back and forth** (a warning, not a failure): WsgSolidProps counts a body changing sides round one prop
   4 times within 90 `steer` calls. It warns once per body and prop (`flip_warnings`, and a `push_warning`), and the
   report lists it under Warnings. The usual cause is a goal straight behind a long prop with the body's `memo` lost
