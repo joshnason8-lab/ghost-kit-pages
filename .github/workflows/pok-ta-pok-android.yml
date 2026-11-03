@@ -239,20 +239,22 @@ jobs:
       # "pok-ta-pok-rivals-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests.
       # The shared release gate (ADOPTING §5.19) on both APKs before anything is published: the owner's key, the
-      # version, the licensed clips inside, nothing of tests, docs or tools exported, textures, stray files; and the
-      # size against the last release.
+      # version, the licensed clips inside, nothing of tests, docs or tools exported, textures, stray files; and against
+      # the last release on the tag (each APK against its own): the size, and versionName and versionCode both newer
+      # (required from 2026-11-04 18:00 UTC: bump both for every release).
       - name: Release gate
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release download pok-ta-pok-rivals-beta -p 'pok-ta-pok-rivals-*-beta.apk' -D "$RUNNER_TEMP/previous" || true
+          gh release download pok-ta-pok-rivals-beta -p 'pok-ta-pok-rivals-*.apk' -D "$RUNNER_TEMP/previous" || true
           PREV=$(ls "$RUNNER_TEMP"/previous/*.apk 2>/dev/null | grep -v 32bit | head -1)
+          PREV32=$(ls "$RUNNER_TEMP"/previous/*-32bit.apk 2>/dev/null | head -1)
           B=${PROJECT_DIR}/build
           python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk $B/pok-ta-pok-rivals-${VERSION}.apk --version "$VERSION" \
             ${PREV:+--previous "$PREV"} --out "$RUNNER_TEMP/gate/64bit"
           python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk $B/pok-ta-pok-rivals-${VERSION}-32bit.apk --version "$VERSION" \
-            --out "$RUNNER_TEMP/gate/32bit"
+            ${PREV32:+--previous "$PREV32"} --out "$RUNNER_TEMP/gate/32bit"
 
       - name: Upload the release gate's report
         if: always()

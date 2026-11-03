@@ -104,8 +104,16 @@ static func feet(body: WsgBody) -> Array:
 ## the first frame it is down. (Until 2026-11-04 it took the smaller of each one's drift since the step began: a roll's
 ## two halves added up to 3 cm - Sepak Takraw found it - and a real 8 cm slide at a walk read 2.7. tests/foot_slip_test
 ## pins it: a pure roll under 0.5 cm, a planted foot pushed 3 cm 3 cm or more, the planter off 5 cm or more.)
-## Returns {steps, max_cm, p90_cm, mean_cm, toe_up_cm (the most a toe rose off the ground with its heel down)}.
+## skid_cm: the most a foot FLAT on the ground (its heel and its toe both within FLAT of standing, this frame and the
+## last) moved in one frame, the smaller of the two ends' moves - whatever the swing gate or the game's flags say. A foot
+## coming in flat and fast, or snapped back by the clip as it lands, is gliding on the floor (a hard stop from a run
+## snapped the foot back 7-8 cm in a frame, read as swinging - the lead, 2026-11-03). A swinging foot is never flat (its
+## toe skims the grass, its heel well up): a walk's swing toe moves 8-12 cm a frame within 3 cm of the ground, not a skid.
+## Returns {steps, max_cm, p90_cm, mean_cm, toe_up_cm (the most a toe rose off the ground with its heel down), skid_cm}.
 const TOUCH := 0.03
+## Flat on the floor (skid_cm): heel and toe both within this (m). (At 3 cm a walk's foot still coming down - heel 3.0,
+## toe 2.2 cm up, the frame before it landed - read as an 11 cm skid; the glides it is for sit at 0-1.5 cm.)
+const FLAT := 0.02
 
 ## A frame may carry the game's own planted flags as items 4 and 5 (left, right: the planter's contact, what the motion
 ## means to be on the ground); without them a foot touches when its ankle or toe is within TOUCH of its rest height
@@ -117,6 +125,7 @@ const FRAME_DT := 1.0 / 30.0
 static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, ground_y := 0.0) -> Dictionary:
 	var slips := []
 	var toe_up := 0.0
+	var skid := 0.0
 	for side in 2:
 		# Where this foot's ankle and toe are when it stands on the ground: the lowest each goes over the run (a rig's
 		# rest heights are not where its bones stand: the test hurler's ankle bone stands 13 cm below its rest
@@ -130,6 +139,7 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 		var touching_for := 0
 		var worst := 0.0
 		var prev_t := Vector3.INF
+		var was_flat := false
 		for f: Array in frames:
 			var a: Vector3 = f[side * 2]
 			var t: Vector3 = f[side * 2 + 1]
@@ -145,6 +155,7 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 				worst = 0.0
 				prev_t = t
 				prev_a = a
+				was_flat = false
 				continue
 			var down: bool
 			if f.size() > 5:
@@ -156,6 +167,10 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 			var step_t := Vector2(t.x - prev_t.x, t.z - prev_t.z).length() if prev_t != Vector3.INF else 0.0
 			prev_t = t
 			prev_a = a
+			var flat := maxf(ha, ht) < FLAT
+			if flat and was_flat:
+				skid = maxf(skid, minf(step_a, step_t))
+			was_flat = flat
 			if down:
 				touching_for += 1
 				if touching_for >= 2:
@@ -173,7 +188,7 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 		mean += float(s)
 	return {"steps": slips.size(), "max_cm": float(slips[-1]) if not slips.is_empty() else 0.0,
 		"p90_cm": float(slips[int(slips.size() * 0.9)]) if not slips.is_empty() else 0.0,
-		"mean_cm": mean / maxf(1.0, slips.size()), "toe_up_cm": toe_up * 100.0}
+		"mean_cm": mean / maxf(1.0, slips.size()), "toe_up_cm": toe_up * 100.0, "skid_cm": skid * 100.0}
 
 
 ## A body's arms now: {"Left": [how far the upper arm is out from hanging down (degrees), the elbow's bend (degrees,

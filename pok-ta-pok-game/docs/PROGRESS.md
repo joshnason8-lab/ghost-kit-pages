@@ -393,6 +393,13 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   before), jog 0.7, turned 0.4, run 0.3, stop 0.0 - the feet rule passes outright, so world.gd's deferral is gone. The
   sim's foot-slip deferral stays until a smoke batch on this measure says otherwise.
 
+- **0.6.22-beta: shared foundation 13f00e20.** The skid measure (a foot flat on the floor moving in one frame) and
+  the planter's fixes: our walker's turned jog skidded 13.8 cm and its run 9.2 on 0.6.21; now walk 0.3 cm slip / 0.2
+  skid, jog 0.7 / 0.1, turned 0.4 / 0.1, run 0.3 / 0.0, stop 0.0. The release gate checks the versions go up against
+  the APK on the tag (required from 2026-11-04 18:00 UTC); CI now hands the 32-bit APK its own published one too. The
+  balance closed: serving first is worth nothing measurable (first server 52.7%, 45-60%, 150 ulama matches with it
+  swapped), no home/away lean, no flag.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
