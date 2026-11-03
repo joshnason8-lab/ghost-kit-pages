@@ -210,18 +210,34 @@ func _who(a: Athlete) -> String:
 	return "%s %s %d" % [["home", "away"][a.side], part, int(a.data.get("num", 0))]
 
 
+## The fetch-behind-prop case (WsgSim.FETCH_KIND): kho kho has no ball; what its bodies walk to off the play is
+## their place - a defender of a batch still to come walks to his place in the lobby (Match._waiting, round the
+## props). His place is put at SPOT and he walks there as he would to his own.
+func fetch(spot: Vector3) -> Dictionary:
+	if not is_instance_valid(m):
+		return {}
+	for a in m.def_order[m.defending()]:
+		if m.d_state.get(a, "") == "wait":
+			m._wait_spot[a] = Vector3(spot.x, 0.0, spot.z)
+			return {"who": _who(a), "seconds": 30.0, "arrive": 1.0}
+	return {}
+
+
 func solid() -> WsgSolidProps:
 	return m.arena.solid if is_instance_valid(m) and m.arena else null
 
 
 func bounds() -> AABB:
-	# The ground and its surrounds (the benches, the scorers' table, the stands): as the rules check's own limit.
-	var L := 60.0
-	var W := 40.0
-	if is_instance_valid(m) and m.f:
-		L = float(m.f.length) + 30.0
-		W = float(m.f.width) + 30.0
-	return AABB(Vector3(-L, -1.0, -W), Vector3(2.0 * L, 30.0, 2.0 * W))
+	# Inside the barricades (Arena: across the ends L + 1.4 to 2.2 m, behind the benches W + 2.4 to 2.9 m, the near
+	# side's at W + 1.4): where anyone in a match ever is. Beyond them are the stands and the crowd, where no player
+	# or official goes (the fetch case's spots are taken inside this).
+	if not (is_instance_valid(m) and m.f and m.arena):
+		return AABB(Vector3(-30, -1, -20), Vector3(60, 30, 40))
+	var stands: bool = m.arena.kind == "stadium"
+	var L := float(m.f.length) * 0.5 + float(m.f.lobby) + (2.2 if stands else 1.4)
+	var far := float(m.f.width) * 0.5 + float(m.f.lobby) + (2.4 if stands else 2.9)
+	var near := float(m.f.width) * 0.5 + float(m.f.lobby) + (2.4 if stands else 1.4)
+	return AABB(Vector3(-L, -1.0, -far), Vector3(2.0 * L, 30.0, far + near))
 
 
 ## An out: 1 (classic) or 2 (fast); a dream run's points come one at a time.

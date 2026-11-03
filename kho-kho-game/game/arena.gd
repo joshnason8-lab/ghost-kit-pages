@@ -20,6 +20,11 @@ var _tiles: Geo       # clay-tiled roofs
 var _thatch: Geo      # thatched roofs
 var _concrete: Geo    # the stands' concrete
 var kind := ""
+## The hall's far ad boards (indoor only): where they stand (z) and their openings (Match._route walks through one).
+const BOARD_GAP_X := 2.8
+const BOARD_GAP_W := 1.4
+var board_z := INF
+var board_gaps: Array = []
 var _chairs: Array = []    # monobloc chairs under the front row of a village crowd
 var _benches: Array = []   # painted benches (pupils at the school, the teams at a ground)
 var dressing: Array = []   # what was put up for the tournament (_tournament, _stage), for the tests
@@ -489,13 +494,28 @@ func _stands(rows: int, indoor: bool) -> Array:
 			"size": Vector3(deep, 0.45 + rows * 0.45, 2.0 * W), "material": "concrete"})
 	var back := -W - rows * 0.85 - 0.5
 	_lit.wall(Vector3(-L - rows, 0, back), Vector3(L + rows, 0, back), 0.0, rows * 0.45 + 4.0, Color("151a28") if indoor else Color("23262e"))
-	# Boards round the lobby: plain coloured panels (no names).
+	# Boards round the lobby: plain coloured panels (no names). Two openings, between the officials' table and each
+	# team's bench, as a hall leaves for the teams: the benches and the table stand behind the boards, and a defender
+	# who is out walks through one to his place (Match._route); until 0.12.7 they ran unbroken, 36 m, and he could not.
 	if indoor:
 		var bz: float = f.width * 0.5 + f.lobby + 0.6
-		solid.add({"name": "ad boards", "kind": "panel", "position": Vector3(0, 0, -bz), "size": Vector3(2.0 * L, 0.9, 0.08), "material": "plastic"})
+		board_z = -bz
+		var gx := BOARD_GAP_X
+		var hw := BOARD_GAP_W * 0.5
+		board_gaps = [Vector3(-gx, 0, -bz), Vector3(gx, 0, -bz)]
+		for seg: Array in [[-L, -gx - hw], [-gx + hw, gx - hw], [gx + hw, L]]:
+			var a0: float = seg[0]
+			var a1: float = seg[1]
+			solid.add({"name": "ad boards", "kind": "panel", "position": Vector3((a0 + a1) * 0.5, 0, -bz), "size": Vector3(a1 - a0, 0.9, 0.08), "material": "plastic"})
 		for i in 12:
 			var x0 := -L + i * (L * 2.0 / 12.0)
-			_glow.box(Vector3(x0 + L / 12.0, 0.45, -bz), Vector3(L * 2.0 / 12.0 - 0.1, 0.9, 0.08), [Color("ff8a1f"), Color("2f86c9"), Color("f2e6c8")][i % 3])
+			var x1 := x0 + L * 2.0 / 12.0 - 0.1
+			# (Each panel cut where an opening is.)
+			for seg: Array in [[x0, minf(x1, -gx - hw)], [maxf(x0, -gx + hw), minf(x1, gx - hw)], [maxf(x0, gx + hw), x1]]:
+				var b0: float = seg[0]
+				var b1: float = seg[1]
+				if b1 - b0 > 0.05:
+					_glow.box(Vector3((b0 + b1) * 0.5, 0.45, -bz), Vector3(b1 - b0, 0.9, 0.08), [Color("ff8a1f"), Color("2f86c9"), Color("f2e6c8")][i % 3])
 	return spots
 
 

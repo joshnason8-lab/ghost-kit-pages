@@ -433,6 +433,21 @@ func _start_turn() -> void:
 var _wait_spot := {}
 
 
+## Where to walk next on the way from P to TO: TO itself, or - in the hall, with the far ad boards between them - the
+## nearer of the boards' openings first (Arena.board_gaps: the steering goes round a prop, not along 36 m of boards).
+func _route(p: Vector3, to: Vector3) -> Vector3:
+	if arena == null or arena.board_gaps.is_empty():
+		return to
+	var bz: float = arena.board_z
+	if signf(p.z - bz) == signf(to.z - bz) or absf(p.z - bz) < 0.2:
+		return to
+	var best: Vector3 = arena.board_gaps[0]
+	for g: Vector3 in arena.board_gaps:
+		if absf(g.x - p.x) + absf(g.x - to.x) < absf(best.x - p.x) + absf(best.x - to.x):
+			best = g
+	return Vector3(best.x, 0.0, bz)
+
+
 func _place_waiting(now := true) -> void:
 	var d := defending()
 	var k := 0
@@ -452,8 +467,16 @@ func _waiting() -> void:
 	for a in _wait_spot.keys():
 		if d_state.get(a, "") != "wait":
 			continue
-		var to: Vector3 = _wait_spot[a] - a.position
+		var spot: Vector3 = _wait_spot[a]
+		var to: Vector3 = spot - a.position
 		to.y = 0
+		# (Walked to round the table, the benches and the tents, as a defender who is out walks to his bench - and
+		# through the hall's boards' opening from behind them.)
+		var way := _route(a.position, spot)
+		a.goal = way if to.length() >= 0.15 else Vector3.INF
+		if way != spot:
+			to = way - a.position
+			to.y = 0
 		if to.length() < 0.15:
 			a.want = Vector3.ZERO
 			if a.act != "sit" and a.vel.length() < 0.3:
@@ -825,8 +848,10 @@ func _play(dt: float) -> void:
 	for a in d_state.keys():
 		if d_state[a] == "out":
 			var home := _bench_pos(defending(), roster[defending()].find(a))
-			a.goal = home   # walked round the table, the tents' poles and the benches
-			var to: Vector3 = home - a.position
+			# Walked round the table, the tents' poles and the benches - and through the hall's boards' opening.
+			var way := _route(a.position, home)
+			a.goal = way
+			var to: Vector3 = way - a.position
 			to.y = 0
 			if to.length() < 0.25:
 				a.want = Vector3.ZERO
