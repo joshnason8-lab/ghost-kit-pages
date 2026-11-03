@@ -9,6 +9,9 @@ extends RefCounted
 const FEET_MAX_CM := 2.0
 ## A standing foot's toe off the ground with its heel down (cm): boots resting toe-up (Hurling 0.20).
 const TOE_UP_MAX_CM := 1.0
+## A low foot's jump in one frame (WsgNoteChecks.foot_slip's jump_cm), at most: 1.6 times the most any game's walker
+## reads walking to sprinting and cutting at 8 m/s (15.4 cm, tools/feet_calibrate, 2026-11-03; the lead chose 25).
+const JUMP_MAX_CM := 25.0
 ## The stick's way against the camera's (degrees; WsgNoteChecks.joystick).
 const STICK_TOL := 25.0
 ## The loading overlay must be up within this many frames of the tap (the tap's own frame: 0).
@@ -23,7 +26,20 @@ const MATCH_PATH := [[1.5, Vector2.ZERO, 0.0, "standing"], [2.5, Vector2(0, 1.3)
 
 
 static func result(rule: String) -> Dictionary:
-	return {"rule": rule, "status": "pass", "lines": [], "fails": []}
+	return {"rule": rule, "status": "pass", "lines": [], "fails": [], "warnings": []}
+
+
+## A passing reading close to its bound: warned (the lead, 2026-11-03: Kabaddi's stop jump read 24.1 against 25 - too
+## close to pass quietly). Within NEAR_CM of a bound in centimetres; for a bound of a few centimetres (2 cm), within
+## NEAR_FRACTION of it (3 cm there would warn on everything).
+const NEAR_CM := 3.0
+const NEAR_FRACTION := 0.15
+
+
+static func _near(r: Dictionary, what: String, value: float, bound: float) -> void:
+	var margin := minf(NEAR_CM, bound * NEAR_FRACTION) if bound < NEAR_CM * 4.0 else NEAR_CM
+	if value <= bound and value >= bound - margin:
+		r.warnings.append("%s: %.1f cm, within %.1f cm of the %.1f cm bound" % [what, value, bound - value, bound])
 
 
 static func _close(r: Dictionary) -> Dictionary:
@@ -46,11 +62,19 @@ static func drive(tree: SceneTree, body: WsgBody, loco: WsgLocomotor, segments: 
 	var pos := body.position
 	var t := 0.0
 	var facing := 0.0
+	var turn_a := 0.0
 	for si in segments.size():
 		var seg: Array = segments[si]
 		var end := t + float(seg[0])
+		# (A fifth element: a turning run - the wanted way swings round at that many rad/s from the way he faces, at the
+		# segment's speed: Pok Ta Pok's AI turns 9 rad/s while it speeds up.)
+		var turning := seg.size() > 4 and float(seg[4]) != 0.0
+		turn_a = facing
 		while t < end:
 			var want: Vector2 = seg[1]
+			if turning:
+				turn_a += float(seg[4]) * DT
+				want = Vector2(sin(turn_a), cos(turn_a)) * (seg[1] as Vector2).length()
 			var lim := (ACCEL if want.length() > vel.length() else DECEL) * DT
 			vel = vel.move_toward(want, lim)
 			if is_nan(float(seg[2])):
@@ -60,11 +84,14 @@ static func drive(tree: SceneTree, body: WsgBody, loco: WsgLocomotor, segments: 
 				facing = deg_to_rad(float(seg[2]))
 			pos += Vector3(vel.x, 0, vel.y) * DT
 			body.position = pos
+			# Every frame, as a game drives its players (until 2026-11-04 it took two frames a step: the pose advances only
+			# inside drive, so the hurler's numbers are the same, but a modifier keeping its own frame-by-frame state ran
+			# twice a step there and once in a game).
 			loco.drive(DT, Vector3(vel.x, 0, vel.y), facing, Vector3(want.x, 0, want.y))
-			await tree.process_frame
 			# (A body the game advances itself - set_manual - is posed only when advanced: Hurling's hung the walk.)
 			if body.manual:
 				body.call_deferred("advance", DT)
+			# The frame's own pass - the pose as drawn (the locomotor's drive poses it once already, inside the call).
 			await body.skeleton.skeleton_updated
 			on_frame.call(t, si)
 			# (Out of skeleton_updated before the next drive: poses set inside it are undone.)
@@ -96,15 +123,76 @@ static func feet(game: WsgWorldGame, parent: Node) -> Dictionary:
 		var name: String = MATCH_PATH[si][3]
 		var s := WsgNoteChecks.foot_slip(frames.get(si, []))
 		var moving := (MATCH_PATH[si][1] as Vector2).length() > 0.0 or si == 5
-		r.lines.append("%-15s %2d steps, worst slip %.1f cm, mean %.1f cm%s" % [name, s.steps, s.max_cm, s.mean_cm,
-			"" if moving else ", toe up %.1f cm" % s.toe_up_cm])
+		r.lines.append("%-15s %2d steps, worst slip %.1f cm, mean %.1f cm, skid %.1f cm, jump %.1f cm%s" % [name, s.steps, s.max_cm,
+			s.mean_cm, s.skid_cm, s.jump_cm, "" if moving else ", toe up %.1f cm" % s.toe_up_cm])
+		_near(r, "%s: a planted foot's slip" % name, float(s.max_cm), FEET_MAX_CM)
+		_near(r, "%s: a flat foot's skid" % name, float(s.skid_cm), FEET_MAX_CM)
+		_near(r, "%s: a low foot's jump" % name, float(s.jump_cm), JUMP_MAX_CM)
 		if float(s.max_cm) > FEET_MAX_CM:
 			r.fails.append("%s: a planted foot slid %.1f cm in one step (%.1f at most)" % [name, s.max_cm, FEET_MAX_CM])
+		if float(s.skid_cm) > FEET_MAX_CM:
+			r.fails.append("%s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most)" % [name, s.skid_cm, FEET_MAX_CM])
+		if float(s.jump_cm) > JUMP_MAX_CM:
+			r.fails.append("%s: a foot low over the ground jumped %.1f cm in one frame (%.0f at most)" % [name, s.jump_cm, JUMP_MAX_CM])
 		if not moving and float(s.toe_up_cm) > TOE_UP_MAX_CM:
 			r.fails.append("%s: a standing foot's toe is %.1f cm off the ground (%.1f at most)" % [name, s.toe_up_cm, TOE_UP_MAX_CM])
 		if poses.has(si):
 			r.fails.append("%s: the player stands in a %s" % [name, poses[si]])
 	body.queue_free()
+	return _close(r)
+
+
+## feet_low: the feet rule on what the game draws at Low (WsgWorldGame.walker_low): its own body driven along the match
+## path by the game's own drive, its feet read as drawn; "foundation" passes (the feet rule measured that body).
+static func feet_low(game: WsgWorldGame, parent: Node) -> Dictionary:
+	var r := result("feet_low")
+	var w: Variant = game.walker_low(parent)
+	if w == null:
+		return _not_wired(r, "walker_low")
+	if w is String and w == "foundation":
+		r.lines.append("Low draws the foundation's bodies: the feet rule measured them")
+		return _close(r)
+	if not (w is Array and (w as Array).size() >= 3 and w[1] is Callable and w[2] is Callable):
+		r.fails.append("walker_low() returned %s: want \"foundation\" or [body, drive, feet]" % [w])
+		return _close(r)
+	var body: Node = w[0]
+	var drive_fn: Callable = w[1]
+	var feet_fn: Callable = w[2]
+	var tree := parent.get_tree()
+	await tree.process_frame
+	var frames := {}
+	var vel := Vector2.ZERO
+	var facing := 0.0
+	for si in MATCH_PATH.size():
+		var seg: Array = MATCH_PATH[si]
+		var n := int(float(seg[0]) / DT)
+		frames[si] = []
+		for k in n:
+			var want: Vector2 = seg[1]
+			vel = vel.move_toward(want, (ACCEL if want.length() > vel.length() else DECEL) * DT)
+			if is_nan(float(seg[2])):
+				if vel.length() > 0.3:
+					facing = atan2(vel.x, vel.y)
+			else:
+				facing = deg_to_rad(float(seg[2]))
+			drive_fn.call(DT, Vector3(vel.x, 0, vel.y), facing)
+			await tree.process_frame
+			(frames[si] as Array).append(feet_fn.call())
+	for si in MATCH_PATH.size():
+		var name: String = MATCH_PATH[si][3]
+		var s := WsgNoteChecks.foot_slip(frames.get(si, []))
+		r.lines.append("Low: %-15s %2d steps, worst slip %.1f cm, skid %.1f cm, jump %.1f cm" % [name, s.steps, s.max_cm, s.skid_cm, s.jump_cm])
+		_near(r, "Low: %s: a planted foot's slip" % name, float(s.max_cm), FEET_MAX_CM)
+		_near(r, "Low: %s: a flat foot's skid" % name, float(s.skid_cm), FEET_MAX_CM)
+		_near(r, "Low: %s: a low foot's jump" % name, float(s.jump_cm), JUMP_MAX_CM)
+		if float(s.max_cm) > FEET_MAX_CM:
+			r.fails.append("Low: %s: a planted foot slid %.1f cm in one step (%.1f at most)" % [name, s.max_cm, FEET_MAX_CM])
+		if float(s.skid_cm) > FEET_MAX_CM:
+			r.fails.append("Low: %s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most)" % [name, s.skid_cm, FEET_MAX_CM])
+		if float(s.jump_cm) > JUMP_MAX_CM:
+			r.fails.append("Low: %s: a foot low over the ground jumped %.1f cm in one frame (%.0f at most)" % [name, s.jump_cm, JUMP_MAX_CM])
+	if is_instance_valid(body):
+		body.queue_free()
 	return _close(r)
 
 
@@ -322,6 +410,11 @@ static func joystick(game: WsgWorldGame, modes: Array) -> Dictionary:
 ## renderer (xvfb, opengl3) - a frame draws no more triangles or draw calls than WsgFoundation.frame_budget. A mode the
 ## owner lets run higher names their note in tier_exceptions(). Headless, the drawn counts are not measured (the
 ## scene's own triangle count, not culled, is reported instead).
+## Frames a tier's start is drawn before its counts are read (30 until 2026-11-03: Kabaddi's 12 starts, each 30
+## frames drawn in software on CI, took 15 of the world check's 52 minutes; the counts are the same after a few).
+static var TIER_FRAMES := 5
+
+
 static func tiers(game: WsgWorldGame, parent: Node) -> Dictionary:
 	var r := result("tiers")
 	if game.modes().is_empty():
@@ -330,6 +423,8 @@ static func tiers(game: WsgWorldGame, parent: Node) -> Dictionary:
 	var excused := game.tier_exceptions()
 	var drawn := DisplayServer.get_name() != "headless" and parent is Viewport
 	var was := WsgFoundation.tier
+	var warm_was := WsgLoading.skip_warm
+	WsgLoading.skip_warm = true
 	for mode: String in game.modes():
 		if excused.has(mode):
 			r.lines.append("%s: excused by the owner: %s" % [mode, excused[mode]])
@@ -350,23 +445,34 @@ static func tiers(game: WsgWorldGame, parent: Node) -> Dictionary:
 				if waited > 2 and not WsgLoading.busy():
 					break
 			var start_ms := Time.get_ticks_msec() - t0
-			for f in 30:
+			# (The most any of those frames drew: the camera moves, a frame's counts by a few.)
+			var vpd := parent as Viewport if drawn else null
+			var tris_max := 0
+			var dcs_max := 0
+			for f in TIER_FRAMES:
 				await tree.process_frame
+				if vpd:
+					tris_max = maxi(tris_max, vpd.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_PRIMITIVES_IN_FRAME))
+					dcs_max = maxi(dcs_max, vpd.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_DRAW_CALLS_IN_FRAME))
 			var now_tier := WsgFoundation.tier
 			var fans := 0
 			for c in holder.find_children("*", "WsgCrowd3D", true, false):
 				fans += (c as WsgCrowd3D).used.size()
 			var bodies := holder.find_children("*", "WsgBody", true, false)
 			var full := bodies.filter(func(b: WsgBody) -> bool: return b.full).size()
-			var fans_max: int = WsgFoundation.crowd_budget(WsgFoundation.crowd_most())[1]
+			# (The most any quality the tier allows can build: on the budget profile Close, 3, builds fewer fans than 2 -
+			# Kabaddi's High asked 2 and built its 700, within the tier, and was failed against Close's 500.)
+			var fans_max := 0
+			for q in range(1, WsgFoundation.crowd_most() + 1):
+				fans_max = maxi(fans_max, int(WsgFoundation.crowd_budget(q)[1]))
 			var full_max := WsgFoundation.full_bodies()
 			var tag := "%s at %s" % [mode, ["Low", "Medium", "High"][t]]
 			var line := "%s: tier %d after the start, %d 3D fans (at most %d), %d of %d bodies in full (at most %d), started in %.1f s (this machine)" % [
 				tag, now_tier, fans, fans_max, full, bodies.size(), full_max, start_ms / 1000.0]
 			if drawn:
 				var vp := parent as Viewport
-				var tris := vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_PRIMITIVES_IN_FRAME)
-				var dcs := vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_DRAW_CALLS_IN_FRAME)
+				var tris := maxi(tris_max, vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_PRIMITIVES_IN_FRAME))
+				var dcs := maxi(dcs_max, vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_DRAW_CALLS_IN_FRAME))
 				var fb := WsgFoundation.frame_budget(t)
 				line += ", drawn %d triangles in %d draw calls (at most %d, %d)" % [tris, dcs, fb.triangles, fb.draw_calls]
 				if tris > int(fb.triangles):
@@ -394,6 +500,7 @@ static func tiers(game: WsgWorldGame, parent: Node) -> Dictionary:
 			while WsgLoading.busy():
 				await tree.process_frame
 	game.set_tier(was)
+	WsgLoading.skip_warm = warm_was
 	return _close(r)
 
 
@@ -457,7 +564,11 @@ static func web(presets_path: String, pck: String) -> Dictionary:
 					r.fails.append("the Web preset '%s' does not exclude addons/wsg_foundation/data/* (licensed data would ship on a public page)" % name)
 	if webs == 0:
 		r.lines.append("no Web preset in %s" % presets_path)
-	if pck != "":
+	if pck != "" and webs == 0 and not FileAccess.file_exists(pck):
+		# No Web build at all (Kabaddi's removed at the owner's word): nothing to ship the data in - N/A, a pass, even
+		# with CI still passing --web-pck.
+		r.lines.append("N/A: no Web preset and no Web pack (%s)" % pck)
+	elif pck != "":
 		if not FileAccess.file_exists(pck):
 			r.fails.append("the Web pack %s is not there" % pck)
 		else:

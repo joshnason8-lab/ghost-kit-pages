@@ -122,7 +122,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | tee world_check.log | grep -v "^$" | tail -60
+          timeout 3000 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --reuse "props=$RUNNER_TEMP/prop_audit" 2>&1 | tee world_check.log | grep -v "^$" | tail -60
 
       - name: World check report
         if: always()

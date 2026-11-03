@@ -121,7 +121,8 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	var progress := {}        # name -> [target, nearest yet, seconds since, metres moved since, last position]
 	var fetch := {}           # the fetch-behind-prop case: {who, spot, prop, by, arrive, pen, done}
 	var flips_seen := 0
-	var feet := {}            # name -> [runs (each frames the planter drove), ankle rest, toe rest]
+	var feet := {}            # name -> [runs (each frames the planter drove), ankle rest, toe rest, each run's gaps, last posed,
+	                          #   planter resets at the last sample, planted samples, of them after a reset]
 	var shown := {}           # body id -> [feet, T/A-pose] as last drawn ([] once used)
 	# Sampled pose (the lead's speed default): a quarter of the bodies posed in full (planter IK, layers, helpers),
 	# a different quarter each seed; the rest keep their animation, bones and foot contacts (WsgBody.set_sim_full).
@@ -199,6 +200,8 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 						clock_still = -INF
 			clock_prev = c
 		# Bodies: numbers, bounds, stuck, props, feet, poses.
+		if audit:
+			audit.frame = frame
 		var bl := game.bodies()
 		for bi in bl.size():
 			var b: Dictionary = bl[bi]
@@ -246,10 +249,21 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				progress.erase(nm)
 			var wb: Variant = b.get("body")
 			# (A quarter of the bodies, chosen by the seed, followed every frame: feet are measured frame to frame.)
-			if bool(opts.get("feet", true)) and wb is WsgBody and is_instance_valid(wb) and bi % 4 == seed % 4:
+			if bool(opts.get("feet", true)) and not wb is WsgBody and b.get("feet") is Callable and bi % 4 == seed % 4:
+				# A body the game draws itself (its own body at Low - what the owner sees on an A16): its feet as drawn,
+				# from the game's "feet" (Callable() -> [left ankle, left toe, right ankle, right toe], world), every frame.
+				var fv: Variant = (b.feet as Callable).call()
+				if fv is Array and (fv as Array).size() >= 4:
+					if not feet.has(nm):
+						feet[nm] = [[[]], 0.0, 0.0, [PackedInt32Array()], -1, -1, 0, 0, [[]]]
+					((feet[nm][0] as Array).back() as Array).append(fv)
+					var gr0: PackedInt32Array = (feet[nm][3] as Array).back()
+					gr0.append(1)
+					feet[nm][3][-1] = gr0
+			elif bool(opts.get("feet", true)) and wb is WsgBody and is_instance_valid(wb) and bi % 4 == seed % 4:
 				var body := wb as WsgBody
 				if not feet.has(nm):
-					feet[nm] = [[[]], (body.joints["LeftFoot"] as Vector3).y * body.scale.y, (body.joints["LeftToeBase"] as Vector3).y * body.scale.y]
+					feet[nm] = [[[]], (body.joints["LeftFoot"] as Vector3).y * body.scale.y, (body.joints["LeftToeBase"] as Vector3).y * body.scale.y, [PackedInt32Array()], -1, -1, 0, 0, [[]]]
 				# The pose as it is drawn, read as the skeleton finishes it: read here, after the frame, the bones are
 				# back to the clip's (no planted feet, no hips' lift, no layers - 14 cm out on the test hurler, and
 				# every slip the clip's own).
@@ -257,18 +271,41 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				if not shown.has(id):
 					shown[id] = []
 					body.skeleton.skeleton_updated.connect(func():
-						shown[id] = [WsgNoteChecks.feet(body), WsgNoteChecks.t_or_a_pose(body), _planted(body)])
+						shown[id] = [WsgNoteChecks.feet(body), "" if _replaying(body) else WsgNoteChecks.t_or_a_pose(body), _planted(body), Engine.get_process_frames(), _resets(body), _held(body)])
 				var seen: Array = shown[id]
 				if not seen.is_empty():
 					shown[id] = []
 					# Feet are measured only while the planter drives them: a body the game poses itself (a kneel, a
 					# dive, a sit - its own whole pose, the planter put aside) ends the run, and a new one starts after
 					# (Kho Kho's chasers diving were counted as planted feet sliding).
+					# (With the frames since this body was last posed: a far body posed every 2nd or 3rd frame moves
+					# two or three frames' worth between - Kabaddi's officials.)
 					var runs: Array = feet[nm][0]
+					var gruns: Array = feet[nm][3]
+					var at := int(seen[3])
+					var gap := 1 if int(feet[nm][4]) < 0 else maxi(1, at - int(feet[nm][4]))
+					feet[nm][4] = at
+					# (A planter reset since the last sample: the game put the body somewhere new - a cut, so a new run,
+					# not a slide there. Counted: a game resetting most frames would measure nothing.)
+					var reset := int(feet[nm][5]) >= 0 and int(seen[4]) != int(feet[nm][5])
+					feet[nm][5] = int(seen[4])
 					if bool(seen[2]):
+						feet[nm][6] = int(feet[nm][6]) + 1
+						if reset:
+							feet[nm][7] = int(feet[nm][7]) + 1
+							if not (runs.back() as Array).is_empty():
+								runs.append([])
+								gruns.append(PackedInt32Array())
+								(feet[nm][8] as Array).append([])
 						(runs.back() as Array).append(seen[0])
+						((feet[nm][8] as Array).back() as Array).append(seen[5])
+						var gr: PackedInt32Array = gruns.back()
+						gr.append(gap)
+						gruns[-1] = gr
 					elif not (runs.back() as Array).is_empty():
 						runs.append([])
+						gruns.append(PackedInt32Array())
+						(feet[nm][8] as Array).append([])
 					if seen[1] != "":
 						# (A pose the game declares by design, with its reason - Kho Kho's pole turn, one hand on the
 						# pole and the other arm out - is counted, not failed.)
@@ -332,7 +369,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 			elif not bounds.has_point(bp):
 				_fail(out, "out of bounds", "the ball is outside the game's bounds at %s" % bp.snappedf(0.01), t, frame, st, events)
 			elif audit and bool(bd.get("live", true)):
-				audit.ball(bp, float(bd.get("radius", 0.11)))
+				audit.ball(bp, float(bd.get("radius", 0.11)), "ball", bd.get("path", []))
 			elif audit:
 				audit.ball_reset()
 		if audit:
@@ -356,17 +393,35 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 		for c: Dictionary in rep.worst:
 			_fail(out, "prop" if c.kind == "body" else "ball through",
 				"%s %.0f cm into the %s" % [c.who, float(c.depth) * 100.0, c.prop] if c.kind == "body" else "the ball went through the %s" % c.prop,
-				float(c.time), int(float(c.time) * FPS), {}, [])
+				float(c.time), int(c.get("frame", -1)) if int(c.get("frame", -1)) >= 0 else roundi(float(c.time) * FPS), {}, [])
 	for nm in feet:
 		var f: Array = feet[nm]
+		if int(f[7]) > 0:
+			# (Each body's planter resets while planted, of its planted samples: a reset is read as a cut. Many - over
+			# one sample in 4 - and its feet are hardly measured: said, for the game to look at. Pok Ta Pok's mode
+			# changes are 6%: measured.)
+			var pr: Dictionary = out.get("planter_resets", {})
+			pr[nm] = [int(f[7]), int(f[6])]
+			out["planter_resets"] = pr
+			if int(f[7]) * 4 > int(f[6]):
+				print("sim: %s seed %d: %s's planter reset on %d of %d planted frames (each read as a cut: its feet hardly measured)" % [kind, seed, nm, f[7], f[6]])
 		var s := {"max_cm": 0.0}
-		for run: Array in f[0]:
+		var skid := 0.0
+		var jump := 0.0
+		for ri in (f[0] as Array).size():
+			var run: Array = f[0][ri]
 			if run.size() > 20:
-				var r := WsgNoteChecks.foot_slip(run, f[1], f[2])
+				var r := WsgNoteChecks.foot_slip(run, f[1], f[2], 0.0, f[3][ri], f[8][ri])
 				if float(r.max_cm) > float(s.max_cm):
 					s = r
+				skid = maxf(skid, float(r.skid_cm))
+				jump = maxf(jump, float(r.jump_cm))
 		if float(s.max_cm) > FOOT_SLIP_CM:
 			_fail(out, "foot slip", "%s: a planted foot slid %.1f cm in a step (%.1f at most)" % [nm, s.max_cm, FOOT_SLIP_CM], t, frame, {}, [])
+		if skid > FOOT_SLIP_CM:
+			_fail(out, "foot slip", "%s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most)" % [nm, skid, FOOT_SLIP_CM], t, frame, {}, [])
+		if jump > WsgWorldRules.JUMP_MAX_CM:
+			_fail(out, "foot slip", "%s: a foot low over the ground jumped %.1f cm in one frame (%.0f at most)" % [nm, jump, WsgWorldRules.JUMP_MAX_CM], t, frame, {}, [])
 	out["result"] = game.result()
 	out["balance"] = game.balance_keys(cfg)
 	if input:
@@ -491,7 +546,36 @@ static func _by_prop(solid: WsgSolidProps, p: Vector3) -> String:
 
 ## The planter drives this body's feet now: on, not under a pose the game makes of the whole body (keep_pose), and
 ## its ground where the body stands (a game that sends ground_y far below while it poses the body itself is not).
+## [left, right]: whether the planter has each foot (WsgFootPlanter.holding) - the skid counts only those.
+static func _held(body: WsgBody) -> Array:
+	for c in body.get_children():
+		if c is WsgLocomotor and (c as WsgLocomotor).planter:
+			var p: WsgFootPlanter = (c as WsgLocomotor).planter
+			return [p.holding(0), p.holding(1)]
+	return [true, true]
+
+
+static func _resets(body: WsgBody) -> int:
+	for c in body.get_children():
+		if c is WsgLocomotor and (c as WsgLocomotor).planter:
+			return (c as WsgLocomotor).planter.resets
+	return 0
+
+
+## A replay playing back on the body (WsgReplay's pose, active): every frame it shows was read live when drawn - not
+## read again for its feet or its pose (Kho Kho: a replayed pole turn, one arm out by design, read as an A-pose).
+static func _replaying(body: WsgBody) -> bool:
+	for m in body.skeleton.get_children():
+		if m is WsgReplayPose and (m as WsgReplayPose).active:
+			return true
+	return false
+
+
 static func _planted(body: WsgBody) -> bool:
+	# (A replay playing back - WsgReplay's pose on the skeleton, active - draws the kept pose, at 0.4x: the planter
+	# drives nothing then, and a swinging foot under SWING read as a 13 cm slide - Sepak Takraw's officials.)
+	if _replaying(body):
+		return false
 	for c in body.get_children():
 		if c is WsgLocomotor:
 			var p: WsgFootPlanter = (c as WsgLocomotor).planter

@@ -97,11 +97,31 @@ static func feet(body: WsgBody) -> Array:
 
 ## Planted feet over a run of frames (feet() each frame; the two rest heights are no longer used - each foot's height
 ## on the ground is the lowest it goes over the run): a foot touching the ground (its ankle or toe within TOUCH of that)
-## must stay where it touched down. Each
-## step's slip: how far the planted part (the slower of heel and ball) moved over the ground while touching, from the
-## frame after it landed. Returns {steps, max_cm, p90_cm, mean_cm, toe_up_cm (the most a toe rose off the ground with
-## its heel down)}.
+## must stay where it touched down. Each step's slip: frame by frame while touching, how far the foot slid over the
+## ground - the smaller of the heel's and the ball's move that frame - added up over the step. A heel-to-toe roll moves
+## one of them at a time (the toe coming down about the heel, then the heel rising over the ball) and reads near 0; a
+## slide moves both and reads in full. The frame a foot comes down in is its arrival, not counted: it is counted from
+## the first frame it is down. (Until 2026-11-04 it took the smaller of each one's drift since the step began: a roll's
+## two halves added up to 3 cm - Sepak Takraw found it - and a real 8 cm slide at a walk read 2.7. tests/foot_slip_test
+## pins it: a pure roll under 0.5 cm, a planted foot pushed 3 cm 3 cm or more, the planter off 5 cm or more.)
+## skid_cm: the most a foot FLAT on the ground (its heel and its toe both within FLAT of standing, this frame and the
+## last) moved in one frame, the smaller of the two ends' moves - whatever the swing gate or the game's flags say. A foot
+## coming in flat and fast, or snapped back by the clip as it lands, is gliding on the floor (a hard stop from a run
+## snapped the foot back 7-8 cm in a frame, read as swinging - the lead, 2026-11-03). A swinging foot is never flat (its
+## toe skims the grass, its heel well up): a walk's swing toe moves 8-12 cm a frame within 3 cm of the ground, not a skid.
+## jump_cm: the most a LOW foot (heel or toe within LOW of standing, over four frames) jumped in a frame - the smaller of
+## the change in its move into the frame and out of it, the smaller of the heel's and the toe's (a jump goes still -
+## far - still; a landing changes sharply on one side only, a take-off on the other, a swing smoothly). Every game's
+## walker, walking to sprinting and cutting at 8 m/s, reads 15.4 cm at most (tools/feet_calibrate, 2026-11-03); a stop
+## from a sprint that re-planted the foot a stride on read 40-88.
+## Returns {steps, max_cm, p90_cm, mean_cm, toe_up_cm (the most a toe rose off the ground with its heel down), skid_cm,
+## jump_cm}.
 const TOUCH := 0.03
+## Flat on the floor (skid_cm): heel and toe both within this (m). (At 3 cm a walk's foot still coming down - heel 3.0,
+## toe 2.2 cm up, the frame before it landed - read as an 11 cm skid; the glides it is for sit at 0-1.5 cm.)
+const FLAT := 0.02
+## A low foot (jump_cm): heel or toe within this of standing (m).
+const LOW := 0.10
 
 ## A frame may carry the game's own planted flags as items 4 and 5 (left, right: the planter's contact, what the motion
 ## means to be on the ground); without them a foot touches when its ankle or toe is within TOUCH of its rest height
@@ -110,9 +130,18 @@ const TOUCH := 0.03
 const SWING := 1.2
 const FRAME_DT := 1.0 / 30.0
 
-static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, ground_y := 0.0) -> Dictionary:
+## gaps: for a body not posed every frame (FoundationLink.pose_every 2-3 on far bodies), how many frames each sample
+## is after the one before (empty: every frame). A move over N frames is N frames' moves: the skid and the jump are per
+## frame (the jump per frame per frame), the cut's bound and a swing's speed scale with it, the slip (a distance over the
+## step) does not (Kabaddi: an official posed every 3rd frame, a landing foot read 2.7 cm "in one frame" from three
+## frames' 0.9).
+## held: for each sample, [left, right] - whether the planter had that foot then (WsgFootPlanter.holding); given, a
+## skid counts only a foot it had in both samples (a clip's own low swing is the jump's to judge, not the skid's).
+static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, ground_y := 0.0, gaps := PackedInt32Array(), held := []) -> Dictionary:
 	var slips := []
 	var toe_up := 0.0
+	var skid := 0.0
+	var jump := 0.0
 	for side in 2:
 		# Where this foot's ankle and toe are when it stands on the ground: the lowest each goes over the run (a rig's
 		# rest heights are not where its bones stand: the test hurler's ankle bone stands 13 cm below its rest
@@ -122,12 +151,14 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 		for f: Array in frames:
 			ankle_rest = minf(ankle_rest, (f[side * 2] as Vector3).y - ground_y)
 			toe_rest = minf(toe_rest, (f[side * 2 + 1] as Vector3).y - ground_y)
-		var start_a := Vector3.INF
-		var start_t := Vector3.INF
+		var prev_a := Vector3.INF
 		var touching_for := 0
 		var worst := 0.0
 		var prev_t := Vector3.INF
-		for f: Array in frames:
+		var was_flat := false
+		for fi in frames.size():
+			var f: Array = frames[fi]
+			var g := float(maxi(1, gaps[fi])) if fi < gaps.size() else 1.0
 			var a: Vector3 = f[side * 2]
 			var t: Vector3 = f[side * 2 + 1]
 			var ha := a.y - ground_y - ankle_rest
@@ -135,29 +166,34 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 			if ha < TOUCH * 0.5:
 				toe_up = maxf(toe_up, ht)
 			# A body put somewhere new (a kick-off, a restart: more than 0.4 m in a frame) is a cut, not a slide.
-			if prev_t != Vector3.INF and Vector2(t.x - prev_t.x, t.z - prev_t.z).length() > 0.4:
+			if prev_t != Vector3.INF and Vector2(t.x - prev_t.x, t.z - prev_t.z).length() > 0.4 * g:
 				if touching_for > 2:
 					slips.append(worst * 100.0)
 				touching_for = 0
 				worst = 0.0
 				prev_t = t
+				prev_a = a
+				was_flat = false
 				continue
 			var down: bool
 			if f.size() > 5:
 				down = bool(f[4 + side])
 			else:
-				var sp := Vector2(t.x - prev_t.x, t.z - prev_t.z).length() / FRAME_DT if prev_t != Vector3.INF else 0.0
+				var sp := Vector2(t.x - prev_t.x, t.z - prev_t.z).length() / (FRAME_DT * g) if prev_t != Vector3.INF else 0.0
 				down = minf(ha, ht) < TOUCH and sp < SWING
+			var step_a := Vector2(a.x - prev_a.x, a.z - prev_a.z).length() if prev_a != Vector3.INF else 0.0
+			var step_t := Vector2(t.x - prev_t.x, t.z - prev_t.z).length() if prev_t != Vector3.INF else 0.0
 			prev_t = t
+			prev_a = a
+			var flat := maxf(ha, ht) < FLAT
+			var had: bool = held.is_empty() or (fi < held.size() and fi > 0 and bool(held[fi][side]) and bool(held[fi - 1][side]))
+			if flat and was_flat and had:
+				skid = maxf(skid, minf(step_a, step_t) / g)
+			was_flat = flat
 			if down:
 				touching_for += 1
-				if touching_for == 2:
-					start_a = a
-					start_t = t
-				elif touching_for > 2:
-					var da := Vector2(a.x - start_a.x, a.z - start_a.z).length()
-					var dt := Vector2(t.x - start_t.x, t.z - start_t.z).length()
-					worst = maxf(worst, minf(da, dt))
+				if touching_for >= 2:
+					worst += minf(step_a, step_t)
 			else:
 				if touching_for > 2:
 					slips.append(worst * 100.0)
@@ -165,13 +201,47 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 				worst = 0.0
 		if touching_for > 2:
 			slips.append(worst * 100.0)
+		# The jump: over each four frames with the foot low throughout. (A body put somewhere new moves metres: over 1.5 m
+		# in a frame is a cut, not a jump - not the slip's 0.4 m, which the stop teleports it is for passed, 40-95 cm.)
+		for k in range(2, frames.size() - 1):
+			var lowk := true
+			for j in range(k - 2, k + 2):
+				var fj: Array = frames[j]
+				if minf((fj[side * 2] as Vector3).y - ground_y - ankle_rest, (fj[side * 2 + 1] as Vector3).y - ground_y - toe_rest) >= LOW:
+					lowk = false
+					break
+			if not lowk:
+				continue
+			var jmp := INF
+			for e in 2:
+				var p1: Vector3 = frames[k - 2][side * 2 + e]
+				var p2: Vector3 = frames[k - 1][side * 2 + e]
+				var p3: Vector3 = frames[k][side * 2 + e]
+				var p4: Vector3 = frames[k + 1][side * 2 + e]
+				var g2 := float(maxi(1, gaps[k - 1])) if k - 1 < gaps.size() else 1.0
+				var g3 := float(maxi(1, gaps[k])) if k < gaps.size() else 1.0
+				var g4 := float(maxi(1, gaps[k + 1])) if k + 1 < gaps.size() else 1.0
+				if Vector2(p3.x - p2.x, p3.z - p2.z).length() > 1.5 * g3:
+					jmp = 0.0
+					break
+				# (The change in the per-frame move per frame: with every frame posed, the second difference. A body
+				# posed every 3rd frame changes its move over 3 frames: per frame, a smooth stride reads as it does
+				# posed every frame - the bound's calibration - where a raw difference read 9 times as much.)
+				var v12 := Vector2(p2.x - p1.x, p2.z - p1.z) / g2
+				var v23 := Vector2(p3.x - p2.x, p3.z - p2.z) / g3
+				var v34 := Vector2(p4.x - p3.x, p4.z - p3.z) / g4
+				var into := (v23 - v12).length() / ((g2 + g3) * 0.5)
+				var out := (v34 - v23).length() / ((g3 + g4) * 0.5)
+				jmp = minf(jmp, minf(into, out))
+			jump = maxf(jump, jmp)
 	slips.sort()
 	var mean := 0.0
 	for s in slips:
 		mean += float(s)
 	return {"steps": slips.size(), "max_cm": float(slips[-1]) if not slips.is_empty() else 0.0,
 		"p90_cm": float(slips[int(slips.size() * 0.9)]) if not slips.is_empty() else 0.0,
-		"mean_cm": mean / maxf(1.0, slips.size()), "toe_up_cm": toe_up * 100.0}
+		"mean_cm": mean / maxf(1.0, slips.size()), "toe_up_cm": toe_up * 100.0, "skid_cm": skid * 100.0,
+		"jump_cm": jump * 100.0}
 
 
 ## A body's arms now: {"Left": [how far the upper arm is out from hanging down (degrees), the elbow's bend (degrees,

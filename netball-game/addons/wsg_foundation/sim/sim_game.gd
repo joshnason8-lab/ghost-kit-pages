@@ -46,13 +46,18 @@ func events() -> Array:
 ## Every body on the field now: [{"name", "pos": Vector3 (feet), "radius", "height", "body": WsgBody (or null),
 ## "active": bool (in play and meant to be moving), "target": Vector3 (where its AI sends it; INF: none)}], and
 ## optionally "pose_excuse": why this body's arms are out straight by design now (a pole turn: one hand on the pole,
-## the other out) - its T/A-pose readings are counted in the result, not failed. Keep the order the same all match: the
-## sampled quarter is chosen by place in this list.
+## the other out) - its T/A-pose readings are counted in the result, not failed; and "feet": a Callable() -> [left
+## ankle, left toe, right ankle, right toe] (world, as drawn) for a body the game draws itself ("body" null - its own
+## body at Low, what the owner sees on an A16): its feet read every frame, by the same bounds. Keep the order the same
+## all match: the sampled quarter is chosen by place in this list.
 func bodies() -> Array:
 	return []
 
 
-## The ball now: {"pos": Vector3, "radius": float, "live": bool} (empty: no ball, or none in play).
+## The ball now: {"pos": Vector3, "radius": float, "live": bool, "path": Array (optional)} (empty: no ball, or none
+## in play). path: the places the ball went through since the last frame, in order, if its physics takes several
+## steps a frame - the audit sweeps each (a bounce off a wall inside a frame: the straight line between frames cuts the
+## corner past a prop by the wall).
 func ball() -> Dictionary:
 	return {}
 
