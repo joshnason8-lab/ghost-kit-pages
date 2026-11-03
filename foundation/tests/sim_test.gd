@@ -127,6 +127,27 @@ func _initialize() -> void:
 			fails.append("the same seed played two different matches")
 		if k == "bug:wallclock" and same:
 			fails.append("a decision on the wall clock was not caught diverging")
+	# A replay playing back (WsgReplay's pose, active) is not the planter's feet: not measured (Sepak Takraw's officials
+	# read 13 cm "slides" in slow motion).
+	if WsgClips.available():
+		var rb := WsgBody.new(WsgBody.load_character("res://tests/character", "hero"))
+		root.add_child(rb)
+		WsgLocomotor.attach(rb)
+		await process_frame
+		var rp := WsgReplayPose.new()
+		rp.active = false             # (as WsgReplay makes it: on only while playing back)
+		rb.skeleton.add_child(rp)
+		for k in 3:
+			await process_frame
+		var p0 := WsgSim._planted(rb)
+		rp.active = true
+		var p1 := WsgSim._planted(rb)
+		rp.active = false
+		var p2 := WsgSim._planted(rb)
+		print("planted: live %s, replaying %s, live again %s" % [p0, p1, p2])
+		if not p0 or p1 or not p2:
+			fails.append("a replay's pose was measured as the planter's feet (live %s, replaying %s, live again %s)" % [p0, p1, p2])
+		rb.free()
 	# The RNG lint.
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SCRATCH))
 	var fx := FileAccess.open(SCRATCH + "/fixture.gd", FileAccess.WRITE)
