@@ -31,9 +31,19 @@ func modes() -> Array:
 ## The tap: Throw-in (a quick match you play), Watch AI, Free-taking practice - each through Game.start_match_loading,
 ## which puts the loading overlay up in this frame.
 func start_mode(mode: String, parent: Node) -> void:
-	# (One match at a time, as in the game: the last mode's is let go - a tap on a menu button replaces the menu.)
-	if Game.current != null and is_instance_valid(Game.current):
-		Game.current.queue_free()
+	# (One match at a time, as in the game - a tap on a menu button replaces the menu: the last mode's put out of sight
+	# and stopped, neither drawn nor run - its triangles counted in the next mode's tier were 524k at Low. Not freed:
+	# its bodies and officials stay valid for the rules read after play, till the check frees each mode's root.)
+	var last: Node = Game.current
+	if last != null and is_instance_valid(last):
+		last.process_mode = Node.PROCESS_MODE_DISABLED
+		if last is Node3D:
+			(last as Node3D).visible = false
+		for cl in last.find_children("*", "CanvasLayer", true, false):
+			(cl as CanvasLayer).visible = false
+		for ap in last.find_children("*", "", true, false):
+			if ap is AudioStreamPlayer or ap is AudioStreamPlayer3D:
+				ap.stop()
 	Game.current = null
 	Game.main = parent
 	Game.settings.sound = false

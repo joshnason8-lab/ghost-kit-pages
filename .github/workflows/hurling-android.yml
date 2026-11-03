@@ -91,6 +91,11 @@ jobs:
       # behind, a failure when it lacks a commit in foundation/REQUIRED (tools/wsg/sync_foundation.sh brings it up to date).
       - name: "Shared foundation up to date? (behind, a warning; a required commit missing, a failure)"
         run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
+        # (29f48296, required from 2026-11-03 12:00: its planter, as far as c4fdcd6, slides a planted foot 4.4 cm in the
+        # owner's gliding note run after the other notes - 4 cm at most; this copy, ab581bd, passes it. Reported to the
+        # foundation; drop this when its fix is synced.)
+        env:
+          FOUNDATION_REQUIRED_SKIP: "29f48296:planter slides 4.4 cm in the owner's gliding note on c4fdcd6 (4 cm at most); foundation fix pending"
 
       - uses: actions/setup-java@v4
         with:
