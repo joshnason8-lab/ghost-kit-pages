@@ -56,13 +56,19 @@ func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 
 
 func start(cfg: Dictionary, seed: int, tree: SceneTree) -> Node:
-	# The length mix: a shortened match is a fifth as long, every rule the same.
-	if bool(cfg.get("short", false)):
-		cfg.half = maxf(float(cfg.half) * 0.2, 2.0) if float(cfg.half) > 2.0 else float(cfg.half)
+	# The length mix: a shortened match is a fifth as long, every rule the same. (On a copy: never change the config
+	# you are given - it is the one saved for the replay, which would shorten it again.)
+	var c := cfg.duplicate(true)
+	c.half = _half(cfg)
 	m = Match.new()
 	tree.root.add_child(m)
-	m.setup(cfg, seed)
+	m.setup(c, seed)
 	return m
+
+
+static func _half(cfg: Dictionary) -> float:
+	var h := float(cfg.half)
+	return maxf(h * 0.2, 2.0) if bool(cfg.get("short", false)) and h > 2.0 else h
 
 
 func state() -> Dictionary:
@@ -102,7 +108,7 @@ func score_steps() -> Array:
 
 
 func max_seconds(cfg: Dictionary) -> float:
-	return float(cfg.half) * 2.0 + 3.0 + 10.0
+	return _half(cfg) * 2.0 + 3.0 + 10.0
 
 
 func rules() -> Array:

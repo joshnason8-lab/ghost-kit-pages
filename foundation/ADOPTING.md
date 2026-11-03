@@ -1199,6 +1199,16 @@ Measure and report your per-process speed (`speed` in the report) and the nightl
 only advances with animation playback can't run faster than 1×; if that caps you, report it, and move that logic onto
 the game clock.
 
+**Adapter pitfalls (from Kho Kho and Hurling adopting it).**
+- **Never change the config `start()` is given.** Shorten a copy. Kho Kho's first adapter shortened `cfg.turn_len` in
+  place, so the saved config held the short length and its replay shortened it again; the replay diverged. WsgSim now
+  hands `start()` a copy anyway. Read `config.short` in `max_seconds()` too.
+- **`res://game/sim.gd` may already be taken** by your own numbers-only championship sim (Kho Kho, Hurling). Move it
+  (Kho Kho: `game/score_sim.gd`; Hurling: `game/result_sim.gd`). A kept `class_name` means nothing else changes.
+- **Long matches print a heartbeat.** A match prints `sim: <kind> seed N still playing` every 30 s of wall-clock, so
+  `sim_shard.sh`'s HANG (120 s of silence = frozen) only catches real freezes. Before this, a 2,170 s Kho Kho match,
+  127 s of wall-clock, was called frozen.
+
 **Read poses inside `skeleton_updated` (since 1ef240f).** After a frame, the bones are back to the clip's pose: no
 planted feet, no hips' lift, no pose layers. On the test hurler that is 14 cm out. Before this fix, WsgSim read the
 feet and the T/A-pose there, so every slip it reported was the clip's own. It now reads them as the skeleton finishes
