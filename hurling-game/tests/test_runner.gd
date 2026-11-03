@@ -2059,7 +2059,7 @@ func _stick_camera() -> void:
 		if int(v[1]) < 0:
 			var top := Camera3D.new()
 			m.add_child(top)
-			top.global_position = Vector3(0, 70, 0)
+			top.global_position = Vector3(0, 35, 0)
 			top.global_basis = Basis(Vector3.UP, deg_to_rad(37.0)) * Basis(Vector3.RIGHT, deg_to_rad(-90.0))
 			top.make_current()
 		var f := 0
@@ -2069,18 +2069,27 @@ func _stick_camera() -> void:
 		await frames(10)
 		var worst := 0.0
 		var moved := true
+		var spots := 99      # the fewest screen points checked for any push (the rest showed no pitch)
 		var view: Camera3D = m.get_viewport().get_camera_3d()
 		for k in dirs:
 			var st: Vector2 = dirs[k]
 			# The stick's ask, on screen where he stands: exactly that way.
-			# Where he stands, and off at the side of the screen (a perspective view leans lines there).
+			# Where he stands, and out to the edges of the screen (a perspective view leans lines there).
 			var ask_off := 0.0
-			for spot in [_screen_middle(view), _screen_at(view, 0.15, 0.5), _screen_at(view, 0.85, 0.3), _screen_at(view, 0.6, 0.85)]:
+			var tested := 0
+			# (the middle, each edge, each corner: a hurling pitch is big, and your man is often near the edge of the view)
+			for spot in [_screen_middle(view), _screen_at(view, 0.08, 0.5), _screen_at(view, 0.92, 0.5), _screen_at(view, 0.5, 0.1),
+					_screen_at(view, 0.5, 0.92), _screen_at(view, 0.08, 0.1), _screen_at(view, 0.92, 0.1), _screen_at(view, 0.08, 0.92),
+					_screen_at(view, 0.92, 0.92)]:
+				if spot == Vector3.INF:
+					continue
+				tested += 1
 				var ask: Vector3 = m._cam_dir(st, spot)
 				var s0 := view.unproject_position(spot)
 				var s1 := view.unproject_position(spot + ask * 1.0)
 				ask_off = maxf(ask_off, absf(rad_to_deg((s1 - s0).angle_to(st))))
 			worst = maxf(worst, ask_off)
+			spots = mini(spots, tested)
 			if ask_off >= 10.0:
 				print("STICK %s %s: the stick asks %.1f degrees off" % [v[0], k, ask_off])
 			# And his run: from a standstill, in open grass (no one to bump), the one man, two-thirds of a second.
@@ -2120,7 +2129,7 @@ func _stick_camera() -> void:
 			if not done:
 				print("STICK %s %s: no clean run in 8 tries" % [v[0], k])
 		m.controls.joystick = Vector2.ZERO
-		check(moved and worst < 10.0, "Stick from the camera (%s): each push runs him that way on screen (worst %.1f degrees off)" % [v[0], worst])
+		check(moved and worst < 10.0 and spots >= 5, "Stick from the camera (%s): each push runs him that way on screen, middle to edges (worst %.1f degrees off, %d screen points)" % [v[0], worst, spots])
 		if int(v[1]) == Game.CAM_TV:
 			# A cut to the camera behind the goal while running up the screen: he turns to the new view's up, not at once.
 			m.controls.joystick = Vector2(0, -1)
@@ -2144,7 +2153,8 @@ func _stick_camera() -> void:
 
 ## The point on the ground under the middle of the screen.
 func _screen_middle(view: Camera3D) -> Vector3:
-	return _screen_at(view, 0.5, 0.5)
+	var p := _screen_at(view, 0.5, 0.5)
+	return p if p != Vector3.INF else Vector3.ZERO
 
 
 ## The point on the ground under a point of the screen (fractions of its width and height).
@@ -2152,10 +2162,12 @@ func _screen_at(view: Camera3D, fx: float, fy: float) -> Vector3:
 	var c := view.get_viewport().get_visible_rect().size * Vector2(fx, fy)
 	var o := view.project_ray_origin(c)
 	var d := view.project_ray_normal(c)
-	if absf(d.y) < 0.01:
-		return Vector3(o.x, 0, o.z)
+	if d.y > -0.01:
+		return Vector3.INF     # (above the horizon: no grass there)
 	var p := o + d * (-o.y / d.y)
-	return Vector3(clampf(p.x, -60.0, 60.0), 0, clampf(p.z, -35.0, 35.0))
+	if absf(p.x) > Pitch.HALF_L + 5.0 or absf(p.z) > Pitch.HALF_W + 5.0:
+		return Vector3.INF     # (the stand, not the pitch: no man of yours there)
+	return Vector3(p.x, 0, p.z)
 
 
 ## A spot on the pitch in view, as far as can be from every player (the stick test's open grass).
