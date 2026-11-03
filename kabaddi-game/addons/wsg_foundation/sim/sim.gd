@@ -332,7 +332,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 			elif not bounds.has_point(bp):
 				_fail(out, "out of bounds", "the ball is outside the game's bounds at %s" % bp.snappedf(0.01), t, frame, st, events)
 			elif audit and bool(bd.get("live", true)):
-				audit.ball(bp, float(bd.get("radius", 0.11)))
+				audit.ball(bp, float(bd.get("radius", 0.11)), "ball", bd.get("path", []))
 			elif audit:
 				audit.ball_reset()
 		if audit:
@@ -360,13 +360,17 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	for nm in feet:
 		var f: Array = feet[nm]
 		var s := {"max_cm": 0.0}
+		var skid := 0.0
 		for run: Array in f[0]:
 			if run.size() > 20:
 				var r := WsgNoteChecks.foot_slip(run, f[1], f[2])
 				if float(r.max_cm) > float(s.max_cm):
 					s = r
+				skid = maxf(skid, float(r.skid_cm))
 		if float(s.max_cm) > FOOT_SLIP_CM:
 			_fail(out, "foot slip", "%s: a planted foot slid %.1f cm in a step (%.1f at most)" % [nm, s.max_cm, FOOT_SLIP_CM], t, frame, {}, [])
+		if skid > FOOT_SLIP_CM:
+			_fail(out, "foot slip", "%s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most)" % [nm, skid, FOOT_SLIP_CM], t, frame, {}, [])
 	out["result"] = game.result()
 	out["balance"] = game.balance_keys(cfg)
 	if input:

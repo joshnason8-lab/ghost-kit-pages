@@ -507,7 +507,7 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
 
 ## 0.14.7: the world check, the owner's notes as tests, the match simulator (foundation bce6f30)
 
-- **Foundation 89bb8fe** (was bce6f30) (2cd59a7, 0422175, ad83891, a24408b required; 1ef240f and 29f4829 from 12:00 UTC).
+- **Foundation 13f00e2** (was bce6f30, 89bb8fe) (2cd59a7, 0422175, ad83891, a24408b required; 1ef240f and 29f4829 from 12:00 UTC).
 - **wsg_world_check** (ADOPTING 5.18): game/world.gd (WsgWorldGame) wires every rule to the game's own code - the four
   starts (match, Watch AI, a cup final with its walk-out, a season fixture at the village) each through
   Game.start_match as the Play tap does it, played at Medium (the shared rig draws the players there), five officials
