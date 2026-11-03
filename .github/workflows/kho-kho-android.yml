@@ -131,12 +131,13 @@ jobs:
           path: ${{ runner.temp }}/world
 
       # Every note the owner ever gave, as a test of its own (tests/owner_notes: their words, and what must hold so they
-      # never see it again). Strict: nothing may be skipped here.
+      # never see it again). Strict: nothing may be skipped here. Fresh: a fresh install's default settings (an empty
+      # user:// - no saved settings from an earlier step), as a new player meets them.
       - name: The owner's notes (every one, in their own words)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          WSG_NOTES_STRICT=1 timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | grep -E "^\[|PASS|FAIL|SKIPPED|OWNER NOTES|notes:"
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | grep -E "^\[|PASS|FAIL|SKIPPED|OWNER NOTES|notes:"
 
       # The beta's signing key: the owner's (repository secret BETA_KEYSTORE_B64, a PKCS12 keystore, alias
       # androiddebugkey, passwords "android"), the same on every build, so each beta installs over the last. Without
