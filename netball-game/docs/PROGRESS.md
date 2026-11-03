@@ -353,3 +353,17 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   play them. No 8K sky: OpenGL ES 3.0 only promises 2048, and 4096 is safe on the phones that run Medium.
 - **Whistles: the owner's recordings on every level** (sound costs no frame time; about 0.1 MB). Picked by a
   generator of the sounds' own so the match's random draws (the umpires', the players') stay as they were.
+- **The crowd as real people** (the owner: "the crowd isn't real people"): on Medium and High every spectator of the
+  three venues (the arena's courtside sections, the hall's stand, the park's standing crowd) is a whole 3D person, the
+  shared foundation's WsgCrowd3D (synced to 6930061: two thirds of the fans the two women, each fan's own skin, hair
+  and trousers or skirt). Seated on the measured seats of the arena's Meshy sections (five rows; the model's rows are
+  closer than knees need, so a row's shins tuck into the chair backs in front, hidden from the cameras) and on the
+  hall's tip-up seats; outdoors standing on the ground, the ends' crowd now behind the low fence instead of in it.
+  They face the court (their seat's way, turned toward the middle by at most 30 degrees), watch the ball (a replay's
+  too), the keen ones rise as play reaches a goal circle, all up for a goal, applause at a quarter's end. One shirt a
+  seat, about half in the teams' colours, shared with the cut-outs (now only the fallback, and any the budget would
+  leave out: none). As the cut-outs were, people within 6 m of the camera are left out (the hall's Courtside camera).
+  Low is untouched (no crowd node on Low, as before). Broadcast camera, before -> after (draw calls, triangles):
+  arena Medium 126/336k -> 137/530k, High 165/556k -> 176/871k; hall Medium 127/330k -> 132/365k, High 166/549k ->
+  171/601k; park Medium 125/349k -> 130/439k, High 189/710k -> 194/841k; Low 98-99 draws, unchanged. The arena's
+  painted tiers stay painted (people there would need stepped seats). Test `_crowd_facing` covers the 3D people.
