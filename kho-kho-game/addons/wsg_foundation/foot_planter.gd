@@ -9,6 +9,13 @@ extends SkeletonModifier3D
 ## Runs after WsgRigDriver(NORMALIZE) and before the helpers (WsgBody.add_modifier puts it there).
 
 const LEGS := [["LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase"], ["RightUpLeg", "RightLeg", "RightFoot", "RightToeBase"]]
+## On a skeleton of the game's own (its own body at Low - what the owner sees): the rig's bone names to its own, e.g.
+## {"Hips": "hips", "LeftUpLeg": "thigh_l", "LeftLeg": "shin_l", "LeftFoot": "foot_l", "LeftToeBase": "toe_l", ...}.
+## The planter reads contact from the pose as drawn (heights and speed), so any body whose clips or code pose its legs
+## can have its feet planted: add it under the skeleton, after what poses it; each game step call tick(dt) and set
+## ground_y and body_speed (WsgLocomotor does this for the foundation's own bodies). ADOPTING 5.21.
+@export var bone_map := {}
+var _hips := -1
 
 ## Each foot is down (found on the pose this frame; read it, do not set it).
 var contact := [0.0, 0.0]
@@ -91,7 +98,12 @@ func _cache(sk: Skeleton3D) -> void:
 	_for = sk.get_instance_id()
 	_ix.clear()
 	for leg in LEGS:
-		_ix.append(leg.map(func(n): return sk.find_bone(n)))
+		_ix.append(leg.map(func(n): return sk.find_bone(String(bone_map.get(n, n)))))
+	_hips = sk.find_bone(String(bone_map.get("Hips", "Hips")))
+	for leg in _ix:
+		for b in leg:
+			if int(b) < 0:
+				push_error("WsgFootPlanter: a leg bone is missing on %s (bone_map: %s)" % [sk.name, bone_map])
 	_ankle_rest = sk.get_bone_global_rest(_ix[0][2]).origin.y
 	_toe_rest = sk.get_bone_global_rest(_ix[0][3]).origin.y
 
@@ -147,8 +159,8 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 		return
 	_cache(sk)
 	if hips_offset != 0.0:
-		var h := sk.find_bone("Hips")
-		sk.set_bone_pose_position(h, sk.get_bone_pose_position(h) + Vector3(0, hips_offset, 0))
+		if _hips >= 0:
+			sk.set_bone_pose_position(_hips, sk.get_bone_pose_position(_hips) + Vector3(0, hips_offset, 0))
 	var xf := sk.global_transform
 	if keep_pose:
 		reset()

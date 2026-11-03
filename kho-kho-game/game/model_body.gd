@@ -113,6 +113,41 @@ func _ready() -> void:
 	play("stand")
 
 
+## One frame of running or walking, as play draws it (Athlete._animate's moving branch: the run over 2.6 m/s, the walk
+## over 0.35, standing at ease below), moved by vel and turned to facing (radians): the world check's Low walker
+## (world.gd walker_low, ADOPTING 5.21) - Low draws this body, with the clips' baked foot locks and no planter.
+func drive(dt: float, vel: Vector3, facing: float) -> void:
+	var spd := Vector2(vel.x, vel.z).length()
+	if spd > 2.6:
+		play("run", rate_for("run", spd))
+	elif spd > 0.35:
+		play("walk", rate_for("walk", spd))
+	else:
+		play("idle", 1.0, 0.4)
+	position += Vector3(vel.x, 0.0, vel.z) * dt
+	rotation.y = facing
+
+
+## Its feet as drawn (world): [left ankle, left toe, right ankle, right toe], kept from its last skeleton_updated
+## (after the clips and its own modifiers - read outside it, Godot gives the pose without them).
+var feet_drawn: Array = []
+var _feet_watch := false
+
+
+func feet() -> Array:
+	if not _feet_watch:
+		_feet_watch = true
+		var ix := []
+		for n in ["LeftFoot", "LeftToeBase", "RightFoot", "RightToeBase"]:
+			ix.append(skeleton.find_bone("mixamorig_" + n))
+		skeleton.skeleton_updated.connect(func():
+			var out := []
+			for i: int in ix:
+				out.append(skeleton.global_transform * skeleton.get_bone_global_pose(i).origin)
+			feet_drawn = out)
+	return feet_drawn
+
+
 ## Plays a clip: blended in over blend seconds, at rate (negative: backwards), from at seconds (-1: its start). The
 ## same clip again only changes its rate.
 func play(c: String, rate := 1.0, blend := 0.18, at := -1.0) -> void:

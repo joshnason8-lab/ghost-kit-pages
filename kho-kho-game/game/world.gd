@@ -93,6 +93,18 @@ func walker(parent: Node) -> Array:
 	return [a.link.body, a.link.loco]
 
 
+## Low (ADOPTING 5.21): the game draws its own body there (ModelBody, the light mesh; FoundationLink is off below
+## Medium), its feet held by the clips' baked foot locks, not a planter. Driven a frame at a time as play does
+## (ModelBody.drive), its feet read as drawn.
+func walker_low(parent: Node) -> Variant:
+	var b := ModelBody.new({}, true)
+	parent.add_child(b)
+	b.feet()   # (watching its skeleton from now)
+	var drive := func(dt: float, vel: Vector3, facing: float): b.drive(dt, vel, facing)
+	var feet := func() -> Array: return b.feet()
+	return [b, drive, feet]
+
+
 ## The whistles and the kho's slap on the back (Sfx.key: WsgAudio's kinds "whistle" and "tag").
 func key_sounds() -> Array:
 	return Sfx.KEY_KINDS

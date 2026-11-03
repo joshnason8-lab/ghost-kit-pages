@@ -46,8 +46,10 @@ func events() -> Array:
 ## Every body on the field now: [{"name", "pos": Vector3 (feet), "radius", "height", "body": WsgBody (or null),
 ## "active": bool (in play and meant to be moving), "target": Vector3 (where its AI sends it; INF: none)}], and
 ## optionally "pose_excuse": why this body's arms are out straight by design now (a pole turn: one hand on the pole,
-## the other out) - its T/A-pose readings are counted in the result, not failed. Keep the order the same all match: the
-## sampled quarter is chosen by place in this list.
+## the other out) - its T/A-pose readings are counted in the result, not failed; and "feet": a Callable() -> [left
+## ankle, left toe, right ankle, right toe] (world, as drawn) for a body the game draws itself ("body" null - its own
+## body at Low, what the owner sees on an A16): its feet read every frame, by the same bounds. Keep the order the same
+## all match: the sampled quarter is chosen by place in this list.
 func bodies() -> Array:
 	return []
 
