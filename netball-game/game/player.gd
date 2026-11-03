@@ -270,6 +270,14 @@ func _animate(dt: float) -> void:
 	gait.update(dt, p, vel, body_yaw)
 	var body_w := maxf(1.0 - gait.move, 1.0 if act in ["shoot", "leap"] else 0.0)
 	var out := Gait.lay(gait.loco_pose(), _pose, arms_w, maxf(body_w, arms_w * 0.6), angle_difference(body_yaw, facing))
+	# Her elbows bent the more while her arms go between the run's (or hanging) and her move's (arms rising over the
+	# ball, out to take a pass, an arm into the lane): the two lerped at their angles straightened the elbow on the way,
+	# arms held straight out to the sides as she closed in or moved off (the owner's "arms just stretched out").
+	var mid := 4.0 * arms_w * (1.0 - arms_w)
+	if mid > 0.01:
+		for s in ["forearm_l", "forearm_r"]:
+			out[s] = HeroBody.turn(out.get(s, Vector3.ZERO)) * HeroBody.turn(Vector3(-36.0 * mid, 0, 0)) if out.get(s) is Quaternion \
+				else (out.get(s, Vector3.ZERO) as Vector3) + Vector3(-36.0 * mid, 0, 0)
 	if act in ["shoot", "leap"]:
 		out.hips_y = float(_pose.get("hips_y", 0.0))
 	# (Her weight shifting from foot to foot standing: not on the run.)

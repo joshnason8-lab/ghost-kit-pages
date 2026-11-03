@@ -116,7 +116,9 @@ static func catch_(reach: float, up: float) -> Dictionary:
 	for side in ["l", "r"]:
 		var sx := 1.0 if side == "l" else -1.0
 		p["upperarm_" + side] = Vector3(a, 0, 12.0 * sx)
-		p["forearm_" + side] = Vector3(lerpf(-70.0, -10.0, reach), 0, 0)
+		# (Soft elbows into the hands on a ball at chest height or below; nearly straight only reaching up high. Straight
+		# arms reaching out at chest height on the run read as arms held out stiff.)
+		p["forearm_" + side] = Vector3(lerpf(-70.0, lerpf(-32.0, -10.0, clampf(up, 0.0, 1.0)), reach), 0, 0)
 	return p
 
 
@@ -143,23 +145,26 @@ static func shoot(t: float) -> Dictionary:
 	return p
 
 
-## Defending the player with the ball from 0.9 m: arms up and out over the ball, on her toes; lean (0-1) further into
-## the defence. Or a shot defence: one arm straight up.
+## Defending the player with the ball from 0.9 m: both arms raised up and toward the ball, the hands above her head
+## and a little apart, the elbows soft, on her toes; lean (0-1) further into the defence. Or a shot defence: one arm
+## up high over the ball, the other up beside it. (Not out to the sides: the old arms, out at 110 degrees from
+## hanging with nearly straight elbows, read as a T-pose, and blended with the run's swing as she closed in or moved
+## off they passed through arms held straight out sideways - the owner's "arms just stretched out when running".)
 static func defend_ball(lean := 1.0, shot := false) -> Dictionary:
 	var p := ready(1.0)
 	p.hips_y = 0.02
 	p.spine = Vector3(-6.0 + 14.0 * lean, 0, 0)
 	if shot:
-		p.upperarm_l = Vector3(-170, 0, 6)
-		p.forearm_l = Vector3(-5, 0, 0)
-		p.upperarm_r = Vector3(-150, 0, -20)
-		p.forearm_r = Vector3(-10, 0, 0)
+		p.upperarm_l = Vector3(-168, 0, 6)
+		p.forearm_l = Vector3(-36, 0, 0)
+		p.upperarm_r = Vector3(-145, 0, -14)
+		p.forearm_r = Vector3(-36, 0, 0)
 		p.spine = Vector3(14.0 * lean, 0, 0)
 		return p
-	p.upperarm_l = Vector3(-130, 0, 40)
-	p.forearm_l = Vector3(-20, 0, 0)
-	p.upperarm_r = Vector3(-130, 0, -40)
-	p.forearm_r = Vector3(-20, 0, 0)
+	p.upperarm_l = Vector3(-150, 0, 16)
+	p.forearm_l = Vector3(-34, 0, 0)
+	p.upperarm_r = Vector3(-150, 0, -16)
+	p.forearm_r = Vector3(-34, 0, 0)
 	return p
 
 
