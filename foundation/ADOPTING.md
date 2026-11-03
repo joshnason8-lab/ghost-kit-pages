@@ -1028,6 +1028,12 @@ func check() -> void:                     # may await; tree is the SceneTree
   slip fail over 2 cm (from the foundation commit that adds it). It catches the glide the slip cannot: a foot brought
   in flat and fast, or snapped back as it lands (a hard stop from a run: 23 cm a frame, then 7 back, on the floor). A
   walk's swing toe skimming the grass with its heel up is not flat and never counts.
+  And `jump_cm`: the most a **low** foot (heel or toe within 10 cm of standing, over four frames) jumped in one frame -
+  the smaller of the change in its move into the frame and out of it (a jump goes still - far - still; a landing or a
+  take-off changes sharply on one side only, a swing smoothly). The feet rule and WsgSim fail it over
+  `WsgWorldRules.JUMP_MAX_CM`, 25 cm. Calibrated on every game's walker (`tools/feet_calibrate.gd`: walk, jog, run, a
+  sprint at 8 m/s, cuts at 8 and 6, stops from 8 and 6): honest motion reads 15.4 cm at most; a stop from a sprint
+  that re-planted the foot a stride on read 40-88. Run `feet_calibrate` on your walker to see your own numbers.
 - `t_or_a_pose(body)` and `arms(body)`: an A-pose or T-pose, how far out the arms are, how bent the elbows.
 - `block_figure(node)`: no skinned body, or primitive shapes standing in for one.
 - `pose(body)` and `jitter(body, poses)`: twitching while standing.

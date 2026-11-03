@@ -612,3 +612,20 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     All pass; slips unchanged or lower.
 - **29212ba4 (the lead, 14:00): the release gate's `newer`**: versionName and versionCode above the APK on the tag
   (read from both manifests; Kabaddi's published: 0.14.7-beta, 47). REQUIRED from 2026-11-04 18:00 UTC.
+- **The low-foot jump (the lead, 14:23-14:48): measured, 25 cm, and the stop teleports fixed** (71269a55..68a16daa).
+  - Calibration (`tools/feet_calibrate.gd`, every game's walker: walk 1.3, jog 3.5, run 6, sprint 8, cuts at 8 and 6,
+    stops from 8 and 6). A low foot's honest move reaches 37 cm a frame (a cut), so plain displacement cannot tell
+    a glitch; the jump - the smaller of the change into the frame and out of it - reads 15.4 cm at most honestly. The
+    lead chose 25 (1.6x). Flat-foot landings move up to 16.8 cm into the frame they land in (sprinting), so a "flat
+    foot moved 2 cm" rule would fail every sprint; the jump covers the glitches (the lead agreed).
+  - Planter: a foot down again while still easing or catching up is planted where drawn (it was re-planted a stride
+    on: 50-95 cm in a frame); a released foot closes an even share of the gap to the clip's foot each frame the
+    release has left, catching up no faster than max(25 cm, the clip's move + 10) a frame.
+  - Worst jump, before (13f00e20) -> after (68a16daa), cm: hurler stop from 8 82.5 -> 13.2; Kho Kho 88.1 -> 12.6;
+    Netball 73.6 -> 0.0; Floorball 71.4 -> 13.1 (walk start 54.8 -> 3.3, cut 180 29.6 -> 8.6); Pok Ta Pok walk start
+    32.9 -> 3.7; Kabaddi cut 180 26.8 -> 6.4; Takraw 28.1 -> 20.9 (its stop clip's own foot); Hurling 20.4 -> 18.2.
+  - feet_jump_test: a 56 cm shuffle fails, a sprint swing reads 8, the hurler through the calibration path at most
+    14 (the 13f00e20 planter fails it, 82.5).
+  - Next: AI seeds. Floorball ref0 targeted:completion 6 - a 44 cm jump in the planter's own step (its path a
+    smoothstep to an aim that moves with the body: 30ff2759, an even share a frame, WIP) and a 4.1 cm slip at the
+    let-go (unexplained yet; FootFlat's shift fading with the release did not change it).
