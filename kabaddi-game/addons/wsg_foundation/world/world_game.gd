@@ -13,6 +13,14 @@ func game_name() -> String:
 	return "game"
 
 
+## Rules put off for this game until a time, each with the lead's or the owner's word: {"feet": ["2026-11-06T12:00Z",
+## "the lead, 2026-11-03: foundation planter on our walker, Foundation owns"]}. Until then a failure of that rule is
+## reported as deferred (with the reason), not failed; from then on it fails again. For a foundation fault the game
+## cannot fix itself (WsgSimGame.deferred is the same for WsgSim's checks).
+func deferred() -> Dictionary:
+	return {}
+
+
 ## Rules the owner has excused for this game: {rule id: "the owner's note that allows it (date, words)"}. Reported as
 ## excused, with the note; never silently skipped.
 func exceptions() -> Dictionary:
@@ -66,7 +74,9 @@ func find_officials(root: Node) -> Array:
 	return out
 
 
-## The players (and every other body) now under ROOT (default: every WsgBody not inside an official).
+## The players (and every other body) now under ROOT (default: every WsgBody not inside an official). Return only the
+## bodies drawn now: one hidden on purpose (a substitute off the field) has no drawn person and reads as a block figure
+## (Floorball).
 func find_bodies(root: Node) -> Array:
 	var offs := find_officials(root)
 	return root.find_children("*", "WsgBody", true, false).filter(func(b: Node) -> bool:

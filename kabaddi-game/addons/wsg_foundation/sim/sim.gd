@@ -35,6 +35,9 @@ const FETCH_PROPS := 3
 const FETCH_AT_S := 1.0
 const FETCH_S := 20.0
 const FETCH_ARRIVE_M := 1.0
+## From then on (the lead, 2026-11-03), a game whose fetch() is not wired fails the case ("fetch: not wired"); before,
+## it is noted only. WSG_NOW (YYYY-MM-DDTHH:MMZ) stands in for the time.
+const FETCH_ENFORCED_FROM := "2026-11-04T12:00Z"
 const FOOT_SLIP_CM := 2.0
 const EVENTS_KEPT := 300
 const MAX_FAILS := 3
@@ -43,6 +46,7 @@ const SEVERITY := {"script error": 5, "nan": 5, "out of bounds": 4, "score": 5, 
 	"no progress": 3, "fetch": 4, "prop": 3, "ball through": 3, "foot slip": 2, "pose": 3, "rule": 4, "start": 5, "determinism": 5, "timestep": 5}
 
 static var _log: WsgSimLog = null
+var _deferred := {}       # check -> "reason until time" (WsgSimGame.deferred, before its time)
 static var _warm := false
 
 ## Options: stop_frame (replay: stop there and print the state), verbose, realtime (1x: the determinism check),
@@ -89,6 +93,13 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	var events := []
 	# (A copy: a start() that shortens its config in place changed the saved one, and its replay shortened it again -
 	# Kho Kho's replays diverged.)
+	_deferred = {}
+	var now := OS.get_environment("WSG_NOW") if OS.get_environment("WSG_NOW") != "" else Time.get_datetime_string_from_system(true).left(16) + "Z"
+	var dd := game.deferred()
+	for c in dd:
+		var d: Array = dd[c]
+		if d.size() >= 2 and String(d[1]).strip_edges() != "" and now < String(d[0]):
+			_deferred[String(c)] = "%s until %s" % [d[1], d[0]]
 	var root: Node = await game.start(cfg.duplicate(true), seed, tree)
 	if root == null:
 		_fail(out, "start", "the match did not start", 0.0, 0, {}, events)
@@ -259,14 +270,29 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 					elif not (runs.back() as Array).is_empty():
 						runs.append([])
 					if seen[1] != "":
-						_fail(out, "pose", "%s stands in a %s" % [nm, seen[1]], t, frame, st, events)
+						# (A pose the game declares by design, with its reason - Kho Kho's pole turn, one hand on the
+						# pole and the other arm out - is counted, not failed.)
+						var why := String(b.get("pose_excuse", ""))
+						if why != "":
+							var ex: Dictionary = out.get("pose_excused", {})
+							ex[why] = int(ex.get(why, 0)) + 1
+							out["pose_excused"] = ex
+						else:
+							_fail(out, "pose", "%s stands in a %s" % [nm, seen[1]], t, frame, st, events)
 		if (kind == FETCH_KIND or bool(cfg.get("fetch_behind_prop", false))) and t >= FETCH_AT_S:
 			if fetch.is_empty():
-				var spots := fetch_spots(solid, bounds) if solid else []
+				var spots := fetch_spots(solid, bounds, 0.3, 1.8, FETCH_PROPS, func(q: Vector3) -> bool: return game.fetch_reach(q)) if solid else []
 				var g: Dictionary = {} if spots.is_empty() else game.fetch(spots[seed % spots.size()][0])
-				if spots.is_empty() or g.is_empty():
-					out["fetch"] = "no props to fetch behind" if spots.is_empty() else "not wired (WsgSimGame.fetch)"
+				if g.has("exempt"):
+					# (The game says why it cannot: noted, never failed - the lead's word, in the reason.)
+					out["fetch"] = "exempt: %s" % g.exempt
 					print("sim: %s seed %d: %s" % [kind, seed, out.fetch])
+					break
+				if spots.is_empty() or g.is_empty():
+					out["fetch"] = "no prop with a reachable spot behind it" if spots.is_empty() else "not wired (WsgSimGame.fetch)"
+					print("sim: %s seed %d: %s" % [kind, seed, out.fetch])
+					if not spots.is_empty() and now >= FETCH_ENFORCED_FROM:
+						_fail(out, "fetch", "not wired: WsgSimGame.fetch(spot) returns {} (required from %s, ADOPTING 5.17)" % FETCH_ENFORCED_FROM, t, frame, st, events)
 					break
 				var sp: Array = spots[seed % spots.size()]
 				fetch = {"who": String(g.get("who", "")), "spot": sp[0], "prop": sp[1], "by": t + float(g.get("seconds", FETCH_S)),
@@ -351,7 +377,9 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 ## The fetch-behind-prop case's spots: behind each of the venue's MOST largest props a body is kept out of (by its
 ## footprint), on the side away from the field's middle (BOUNDS' centre) - or round it, if that side is out or blocked
 ## - clear of every prop: [[spot, the prop's name], ...], largest first.
-static func fetch_spots(solid: WsgSolidProps, bounds: AABB, radius := 0.3, height := 1.8, most := FETCH_PROPS) -> Array:
+static func fetch_spots(solid: WsgSolidProps, bounds: AABB, radius := 0.3, height := 1.8, most := FETCH_PROPS,
+		reach := Callable()) -> Array:
+	var field := _reachable(solid, bounds, radius, height, reach)
 	var cands := []
 	for i in solid.props.size():
 		var pr: Dictionary = solid.props[i]
@@ -378,10 +406,63 @@ static func fetch_spots(solid: WsgSolidProps, bounds: AABB, radius := 0.3, heigh
 				p2 += d * 0.05
 				k += 1
 			var spot := Vector3(p2.x, ab.position.y, p2.y)
-			if bounds.has_point(spot + Vector3.UP * 0.1) and float(solid.penetration(spot, radius, height)[0]) <= 0.0:
+			if bounds.has_point(spot + Vector3.UP * 0.1) and float(solid.penetration(spot, radius, height)[0]) <= 0.0 \
+					and field.has(Vector2i(floori(spot.x / REACH_CELL), floori(spot.z / REACH_CELL))) \
+					and (not reach.is_valid() or bool(reach.call(spot))):
 				out.append([spot, String(solid.props[i].name)])
 				break
 	return out
+
+
+## The cells (REACH_CELL m) a body can walk to from the middle of the field over the floor - clear of the props, in the
+## bounds and where the game lets its bodies go (REACH, WsgSimGame.fetch_reach) - flood-filled. A spot behind a stand
+## that rings the bowl, or off a court the players are kept on, is not offered (Hurling's stadium, Pok Ta Pok).
+const REACH_CELL := 0.5
+const REACH_MAX_CELLS := 160000
+
+
+static func _reachable(solid: WsgSolidProps, bounds: AABB, radius: float, height: float, reach: Callable) -> Dictionary:
+	var floor_y := 0.0
+	for pr: Dictionary in solid.props:
+		if pr.kind == "floor":
+			floor_y = float(pr.y)
+			break
+	var ok := func(c: Vector2i) -> bool:
+		var q := Vector3((c.x + 0.5) * REACH_CELL, floor_y, (c.y + 0.5) * REACH_CELL)
+		if not bounds.has_point(q + Vector3.UP * 0.1):
+			return false
+		if reach.is_valid() and not bool(reach.call(q)):
+			return false
+		return float(solid.penetration(q, radius, height)[0]) <= 0.0
+	var c0 := bounds.get_center()
+	var start := Vector2i(floori(c0.x / REACH_CELL), floori(c0.z / REACH_CELL))
+	# (The middle itself in a prop - a centre circle's marker: the nearest free cell.)
+	var found := false
+	for r in 40:
+		for dx in range(-r, r + 1):
+			for dz in [-r, r] if absi(dx) != r else range(-r, r + 1):
+				var c := start + Vector2i(dx, dz)
+				if ok.call(c):
+					start = c
+					found = true
+					break
+			if found:
+				break
+		if found:
+			break
+	var seen := {}
+	if not found:
+		return seen
+	var todo := [start]
+	seen[start] = true
+	while not todo.is_empty() and seen.size() < REACH_MAX_CELLS:
+		var c: Vector2i = todo.pop_back()
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = c + d
+			if not seen.has(n) and ok.call(n):
+				seen[n] = true
+				todo.append(n)
+	return seen
 
 
 ## A target a body could stand on: in the bounds, clear of the props.
@@ -432,6 +513,14 @@ func _finish(out: Dictionary, game: WsgSimGame, t_wall: int, t: float, frame: in
 
 func _fail(out: Dictionary, check: String, msg: String, t: float, frame: int, st: Dictionary, events: Array) -> void:
 	var sig := check + ": " + _signature(msg)
+	if _deferred.has(check):
+		# (Put off for this game, with its reason, until a time: reported, not failed.)
+		var w := "deferred %s: %s (%s)" % [check, msg, _deferred[check]]
+		var ws: Array = out.get("warnings", [])
+		if not ws.has(w) and ws.size() < 20:
+			ws.append(w)
+		out["warnings"] = ws
+		return
 	for f: Dictionary in out.failures:
 		if f.signature == sig:
 			return

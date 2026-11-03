@@ -44,13 +44,24 @@ func events() -> Array:
 
 
 ## Every body on the field now: [{"name", "pos": Vector3 (feet), "radius", "height", "body": WsgBody (or null),
-## "active": bool (in play and meant to be moving), "target": Vector3 (where its AI sends it; INF: none)}].
+## "active": bool (in play and meant to be moving), "target": Vector3 (where its AI sends it; INF: none)}], and
+## optionally "pose_excuse": why this body's arms are out straight by design now (a pole turn: one hand on the pole,
+## the other out) - its T/A-pose readings are counted in the result, not failed. Keep the order the same all match: the
+## sampled quarter is chosen by place in this list.
 func bodies() -> Array:
 	return []
 
 
 ## The ball now: {"pos": Vector3, "radius": float, "live": bool} (empty: no ball, or none in play).
 func ball() -> Dictionary:
+	return {}
+
+
+## Checks put off for this game until a time, each with the lead's or owner's note: {"foot slip": ["2026-11-06T12:00Z",
+## "the lead, 2026-11-03: planter slips 3.5-4.1 cm under our AI; foundation fix pending"]}. Until then a failure of
+## that check is reported as deferred (under Warnings, with its reason), not failed; from then on it fails again. Only
+## for a foundation fault the game cannot fix itself, and only with the lead's or owner's word.
+func deferred() -> Dictionary:
 	return {}
 
 
@@ -63,6 +74,14 @@ func ball() -> Dictionary:
 ## and forth in front of a bench).
 func fetch(_spot: Vector3) -> Dictionary:
 	return {}
+
+
+## Where this game's bodies may go to fetch (the fetch case offers only spots reachable from the field's middle, over
+## the floor, clear of the props, where this says yes): a court-bound game says its court, so it is tested round the
+## props on it. A game that cannot fetch at all returns {"exempt": "<why, with the lead's word>"} from fetch(): noted,
+## never failed.
+func fetch_reach(_p: Vector3) -> bool:
+	return true
 
 
 ## The venue's solid props (WsgSolidProps), or null.
