@@ -18,6 +18,30 @@ static func texture(id: String, w := 60, h := 40) -> ImageTexture:
 	return tex
 
 
+## Flags drawn on a worker thread, for the loading overlay (Match.build_steps): JOBS is [[id, w, h], ...]. The pixel
+## work is image() alone (no nodes, no cache); collect() waits for it a frame at a time and caches the textures, so
+## texture() then finds them.
+static func draw_async(jobs: Array) -> Dictionary:
+	var images := []
+	images.resize(jobs.size())
+	var task := WorkerThreadPool.add_task(func():
+		for i in jobs.size():
+			images[i] = image(String(jobs[i][0]), int(jobs[i][1]), int(jobs[i][2])))
+	return {"task": task, "jobs": jobs, "images": images}
+
+
+static func collect(job: Dictionary) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	while not WorkerThreadPool.is_task_completed(int(job.task)):
+		await tree.process_frame
+	WorkerThreadPool.wait_for_task_completion(int(job.task))
+	for i in (job.jobs as Array).size():
+		var j: Array = job.jobs[i]
+		var key := "%s_%d_%d" % [j[0], j[1], j[2]]
+		if not _cache.has(key) and job.images[i] is Image:
+			_cache[key] = ImageTexture.create_from_image(job.images[i])
+
+
 ## RGBA8 image of a team's flag at w x h pixels.
 static func image(id: String, w: int, h: int) -> Image:
 	w = maxi(w, 1)

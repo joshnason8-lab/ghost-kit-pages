@@ -53,6 +53,12 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "loading" in OS.get_cmdline_user_args():
+		# (Only the loading overlay on the Start buttons: tests/test_runner.tscn -- loading)
+		await _loading_overlay()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -99,6 +105,7 @@ func _ready() -> void:
 	await _low_unchanged()
 	await _venue_study()
 	await _watch_ai()
+	await _loading_overlay()
 	FoundationLink.off = false
 	await _foundation(foundation_ok)
 	await _replays()
@@ -1094,24 +1101,35 @@ func _stick_camera() -> void:
 			waited += 1
 			await get_tree().process_frame
 		var worst := 0.0
-		for d in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
-			var me: Player = m.me
-			# In her own half of the centre third, room to move every way (she does not have the ball).
-			me.place(Vector2(-me.dir * 2.4, 0.0), 0.0)
-			for f in 20:
-				m.controls.joystick = Vector2.ZERO
-				await get_tree().process_frame
-			var cam3 := get_viewport().get_camera_3d()
-			still.global_transform = cam3.global_transform
-			still.fov = cam3.fov
-			var a: Vector2 = still.unproject_position(me.global_position)
-			for f in 18:
-				m.controls.joystick = d
-				await get_tree().process_frame
-			var moved: Vector2 = still.unproject_position(me.global_position) - a
-			if OS.get_cmdline_user_args().has("stick"):
-				print("cam %d team %d stick %s: moved %s" % [cm[0], cm[1], d, moved])
-			var off := rad_to_deg(absf(angle_difference(moved.angle(), d.angle()))) if moved.length() > 2.0 else 180.0
+		for d in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(1, -1).normalized(),
+				Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(), Vector2(-1, -1).normalized()]:
+			var off := 180.0
+			# (A sample cut by a whistle or a restart, which puts everyone back on her spot, is taken again.)
+			for attempt in 4:
+				while m.phase != "live":
+					await get_tree().process_frame
+				var me: Player = m.me
+				# In her own half of the centre third, room to move every way (she does not have the ball).
+				me.place(Vector2(-me.dir * 2.4, 0.0), 0.0)
+				for f in 20:
+					m.controls.joystick = Vector2.ZERO
+					await get_tree().process_frame
+				var cam3 := get_viewport().get_camera_3d()
+				still.global_transform = cam3.global_transform
+				still.fov = cam3.fov
+				var a: Vector2 = still.unproject_position(me.global_position)
+				var cut := false
+				for f in 18:
+					m.controls.joystick = d
+					await get_tree().process_frame
+					cut = cut or m.phase != "live" or m.me != me
+				var moved: Vector2 = still.unproject_position(me.global_position) - a
+				if OS.get_cmdline_user_args().has("stick"):
+					print("cam %d team %d stick %s: moved %s%s" % [cm[0], cm[1], d, moved, " (cut)" if cut else ""])
+				if cut:
+					continue
+				off = rad_to_deg(absf(angle_difference(moved.angle(), d.angle()))) if moved.length() > 2.0 else 180.0
+				break
 			worst = maxf(worst, off)
 		if cm[0] == Game.CAM_TV:
 			# The camera changing mid-run (to behind the goal): the stick's way turns over about 0.2 s, not at once.
@@ -2702,7 +2720,7 @@ func _watch_ai() -> void:
 	if go == null:
 		return
 	go.pressed.emit()
-	await frames(3)
+	await _loaded()
 	var m = Game.current
 	check(m is Match, "watch: Watch starts a match")
 	if not (m is Match):
@@ -2779,7 +2797,7 @@ func _watch_ai() -> void:
 	await frames(3)
 	_button_with(setup, tr("WATCH_GO")).pressed.emit()
 	Game.test_quarter_s = 0.0
-	await frames(2)
+	await _loaded()
 	m = Game.current
 	check(m is Match and m.speed == 1 and m.watch, "watch: a new match starts at 1x")
 	m.set_speed(2)
@@ -2896,6 +2914,178 @@ func _howto_positions() -> void:
 
 
 ## The first button under n whose text is t.
+## The loading overlay on every Start button (Game.start_match_loading: the shared foundation's WsgLoading). The owner:
+## "when you click start game there is a loading delay ... users might think the game has frozen". Quick Match's Play,
+## Watch AI's Watch, the Nations Cup's and the Club Season's Play and the result screen's Rematch: the tap puts the
+## overlay up in its own frame and turns the screen's buttons off; a second tap and Back start nothing; the work
+## starts two frames later; the bar only moves forward and reaches the end; the match takes the screen's place and
+## plays. The match built in steps is the one start_match builds at once.
+func _loading_overlay() -> void:
+	for f in DirAccess.get_files_at("res://ui"):
+		if f.ends_with(".gd"):
+			check(not FileAccess.get_file_as_string("res://ui/" + f).contains("Game.start_match("),
+				"loading: ui/%s starts its matches under the overlay (Game.start_match_loading)" % f)
+	Game.delete_cup()
+	Game.new_cup("ENG")
+	Game.delete_league()
+	Game.new_league(String(DB.club_ids()[0]))
+	var fake: Dictionary = (load("res://tests/fit_audit.gd") as Script).fake_result()
+	var paths := [["quick", "res://ui/quick_setup.gd", {}, "PLAY"], ["watch", "res://ui/watch_setup.gd", {}, "WATCH_GO"],
+		["cup", "res://ui/cup_screen.gd", {}, "PLAY"], ["league", "res://ui/league_screen.gd", {}, "PLAY"],
+		["rematch", "res://ui/result_screen.gd", {"result": fake}, "REMATCH"]]
+	var want_steps := ["Match", "Venue", "Court", "Crowd", "Home team", "Away team", "Bench", "Umpires", "Scoreboard", "Centre pass", "Warming up"]
+	for pth in paths:
+		var e: String = pth[0]
+		var s := Game.show_screen(pth[1], pth[2])
+		await frames(3)
+		var b := _button_with(s, tr(pth[3]))
+		check(b != null and b.is_visible_in_tree() and not b.disabled, "loading: %s: the screen has its %s button" % [e, pth[3]])
+		if b == null:
+			continue
+		var live := []
+		for x in s.find_children("*", "BaseButton", true, false):
+			if not (x as BaseButton).disabled:
+				live.append(x)
+		var f0 := Engine.get_process_frames()
+		b.pressed.emit()
+		var ld := WsgLoading.current()
+		check(ld != null and ld.is_inside_tree() and Engine.get_process_frames() == f0 and (ld.parts().root as Control).is_visible_in_tree(),
+			"loading: %s: the tap puts the overlay up in its own frame" % e)
+		check(live.all(func(x): return (x as BaseButton).disabled), "loading: %s: the screen's %d buttons go off" % [e, live.size()])
+		if ld == null:
+			continue
+		var name_l: Label = ld.parts().root.find_child("GameName", true, false)
+		check(name_l != null and name_l.text == tr("GAME_TITLE") and (ld.parts().title as Label).text == tr("LOADING")
+			and (ld.parts().bar as ColorRect).color == Game.C_ACCENT and (ld.parts().tip as Label).text != "",
+			"loading: %s: the game's name, its loading line, the lime bar and a tip" % e)
+		var started := [-1]
+		ld.load_started.connect(func(): started[0] = Engine.get_process_frames())
+		var fr := []
+		ld.progressed.connect(func(f, _l): fr.append(f))
+		var rep_ := {}
+		ld.finished.connect(func(): rep_.merge(ld.report))
+		check(not await Game.start_match_loading({"home": "AUS", "away": "NZL"}), "loading: %s: a second start is refused" % e)
+		b.pressed.emit()
+		check(WsgLoading.current() == ld, "loading: %s: a second tap starts nothing" % e)
+		Game.go_back()
+		check(Game.current == s and WsgLoading.current() == ld, "loading: %s: Back does nothing while it loads" % e)
+		var shown := []
+		var guard := 0
+		var held_ok := true
+		var held_frames := 0
+		while WsgLoading.busy() and guard < 60000:
+			shown.append(ld.shown())
+			var hm = Game.current
+			if hm is Match and hm.held:
+				held_frames += 1
+				held_ok = held_ok and hm.phase == "setup" and (hm.hud == null or not hm.hud.visible)
+			await frames(1)
+			guard += 1
+		check(held_ok and held_frames > 0, "loading: %s: behind the overlay the match waits (%d frames: no whistle, no HUD)" % [e, held_frames])
+		if is_instance_valid(ld) and rep_.is_empty():
+			rep_.merge(ld.report)    # (done() has written it: the settle over, the fade under way)
+		var mono := true
+		for i in range(1, fr.size()):
+			mono = mono and float(fr[i]) >= float(fr[i - 1])
+		for i in range(1, shown.size()):
+			mono = mono and float(shown[i]) >= float(shown[i - 1])
+		check(started[0] - f0 >= 2, "loading: %s: the work starts once the overlay has been drawn (frame %d after the tap)" % [e, started[0] - f0])
+		check(mono and not fr.is_empty() and is_equal_approx(float(fr[-1]), 1.0) and shown.size() > 5,
+			"loading: %s: the bar only moves forward and reaches the end (%d steps, %d frames, last %.2f)" % [e, fr.size(), shown.size(), fr[-1] if not fr.is_empty() else -1.0])
+		await frames(2)
+		check(not rep_.is_empty() and (rep_.failed as Array).is_empty() and want_steps.all(func(k): return (rep_.steps as Dictionary).has(k))
+			and int((rep_.get("warm", {}) as Dictionary).get("looks", 0)) > 0 and rep_.has("settled"),
+			"loading: %s: every step ran, the warm-up and the settle (%s, %s)" % [e, (rep_.get("steps", {}) as Dictionary).keys(), rep_.get("warm")])
+		var m = Game.current
+		var matches := get_children().filter(func(n): return n is Match).size()
+		check(m is Match and matches == 1 and not is_instance_valid(s) and m.process_mode == Node.PROCESS_MODE_INHERIT and not m.held
+			and m.cam.current and (m.hud == null or (m.hud.visible and m.hud.process_mode == Node.PROCESS_MODE_INHERIT)) and not get_viewport().disable_3d,
+			"loading: %s: the match takes the screen's place and kicks off, one match (%d)" % [e, matches])
+		if not (m is Match):
+			continue
+		check(String(m.config.mode) == {"quick": "quick", "watch": "watch", "cup": "cup", "league": "league", "rematch": "quick"}[e],
+			"loading: %s: the %s match" % [e, m.config.mode])
+		await frames(12)
+		var layers_ok := true
+		for g in m.find_children("*", "GeometryInstance3D", true, false):
+			layers_ok = layers_ok and (g as GeometryInstance3D).layers != 0
+		check(m.find_children("*", "Camera3D", true, false).size() == 1 and layers_ok,
+			"loading: %s: nothing of the warm-up left in the match (its camera, hidden layers)" % e)
+		check(ld == null or not is_instance_valid(ld), "loading: %s: the overlay has gone" % e)
+		if m.hud and m.hud.card:
+			m.hud.card.close()
+		await _wait_live(m)
+		var c0: float = m.clock
+		await frames(20)
+		check(m.phase != "setup" and m.clock > c0, "loading: %s: the match plays (%s, %.2f s)" % [e, m.phase, m.clock - c0])
+	# The same match, built in steps or all at once.
+	var cfg := {"home": "JAM", "away": "RSA", "venue": "outdoor", "quarter": 15, "mode": "quick", "user_team": 0, "seed": 21, "difficulty": 1}
+	Game.show_screen("res://ui/quick_setup.gd")
+	await frames(2)
+	# (As built: when the warm-up starts, before it has run a frame; and at once.)
+	var sig := []
+	Game.start_match_loading(cfg.duplicate())
+	WsgLoading.current().progressed.connect(func(_f, l):
+		if l == "Warming up" and sig.is_empty():
+			for c in get_children():
+				if c is Match:
+					sig.append(_match_sig(c)))
+	await _loaded()
+	var a: Array = sig[0] if sig.size() == 1 else []
+	Game.start_match(cfg.duplicate())
+	var bsig := _match_sig(Game.current)
+	check(a == bsig and a.size() > 20, "loading: the match built in steps is the one built at once (%d parts)" % a.size())
+	if a != bsig:
+		for i in mini(a.size(), bsig.size()):
+			if a[i] != bsig[i]:
+				print("  first difference: %s / %s" % [a[i], bsig[i]])
+				break
+	Game.goto_menu()
+	await frames(3)
+	Game.delete_cup()
+	Game.delete_league()
+
+
+## What a match is made of, as built: the toss, the players and where they stand, the bench, the venue's nodes and
+## their meshes, the crowd, the officials, the HUD's parts, the match's random state.
+func _match_sig(m: Match) -> Array:
+	var rs := m.restart.duplicate()
+	for k in rs:
+		if rs[k] is Player:
+			rs[k] = (rs[k] as Player).data.id
+	var out := [m.cp_first, m.first_dir, m.rng.state, m.phase, rs, m.me.data.id if m.me else ""]
+	for t in 2:
+		for pl in m.players[t]:
+			out.append([pl.data.id, pl.pos, pl.position.snapped(Vector3.ONE * 0.001), pl.dir, pl.body.get_class()])
+		out.append(m.bench[t].map(func(x): return x.id))
+	for c in m.arena.get_children():
+		var v := [c.get_class(), String(c.name).get_slice("@", 1) if String(c.name).begins_with("@") else String(c.name)]  # (made-up names: their kind)
+		if c is MeshInstance3D and (c as MeshInstance3D).mesh:
+			var mesh: Mesh = (c as MeshInstance3D).mesh
+			for i in mesh.get_surface_count():
+				v.append(mesh.surface_get_arrays(i)[Mesh.ARRAY_VERTEX].size())
+		out.append(v)
+	if m.arena.crowd:
+		var cr: Crowd = m.arena.crowd
+		out.append([(cr.placed.get("spots", []) as Array).size(), cr.used.size(), cr.shirts.size(), cr.people != null, cr.cards != null])
+	for u in m.umpires:
+		out.append(u.position.snapped(Vector3.ONE * 0.001))
+	out.append(m.ball.position.snapped(Vector3.ONE * 0.001))
+	for c in m.get_children():
+		out.append([c.get_class(), String(c.name).get_slice("@", 1) if String(c.name).begins_with("@") else String(c.name)])
+	out.append(m.hud.root.find_children("*", "Control", true, false).size() if m.hud else -1)
+	return out
+
+
+## A Start button's match: till the loading overlay (Game.start_match_loading) has built it and gone.
+func _loaded(limit := 60000) -> void:
+	var guard := 0
+	while WsgLoading.busy() and guard < limit:
+		await frames(1)
+		guard += 1
+	await frames(1)
+
+
 func _button_with(n: Node, t: String) -> Button:
 	for b in n.find_children("*", "Button", true, false):
 		if (b as Button).text == t:

@@ -461,6 +461,16 @@ func _menus() -> void:
 	Game.show_screen("res://ui/quick_setup.gd")
 	await frames(10)
 	await audit("quick_setup")
+	# The loading overlay a Start button puts up (Game.start_match_loading): its name, line and each of its tips.
+	var ld := WsgLoading.cover(Game.current, [], Game.loading_look())
+	Game.style_loading(ld)
+	var tips: Array = ld.look.tips
+	for i in tips.size():
+		(ld.parts().tip as Label).text = String(tips[i])
+		await frames(2)
+		await audit("loading_tip_%d" % i)
+	ld.done()
+	await frames(3)
 	Game.show_screen("res://ui/watch_setup.gd")
 	await frames(10)
 	await audit("watch_setup")

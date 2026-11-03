@@ -55,7 +55,21 @@ func _init(p_venue := "arena", p_home_colors := []) -> void:
 	home_colors = p_home_colors
 
 
+## Built by the match's loading steps (Match.build_steps: build_venue, build_draw, build_crowd, each in a frame of its
+## own under the loading overlay), not all at once when it enters the tree. The same parts in the same order.
+var staged := false
+
+
 func _ready() -> void:
+	if staged:
+		return
+	build_venue()
+	build_draw()
+	build_crowd()
+
+
+## The venue's structure, court and posts: its geometry, light and sky (nothing drawn yet).
+func build_venue() -> void:
 	_lit = Geo.new()
 	_glow = Geo.new()
 	_fx = Geo.new()
@@ -79,6 +93,10 @@ func _ready() -> void:
 	if not home_colors.is_empty():
 		_look["team_a"] = home_colors[0]
 		_look["team_b"] = home_colors[min(1, home_colors.size() - 1)]
+
+
+## The venue's meshes and materials: its structure, glow, props, glass, boards and lights, each one draw call.
+func build_draw() -> void:
 	var lit := VenueLook.lit()
 	var glow := VenueLook.glow()
 	var props := _props.material()
@@ -114,6 +132,11 @@ func _ready() -> void:
 	var fxi := _fx.commit(fx)
 	fxi.sorting_offset = 50.0
 	add_child(fxi)
+
+
+## The crowd in the venue's places (CrowdVenues, declared by the venue's builder): Low's cards, and on Medium and
+## High the 3D people, built in a loading step of its own.
+func build_crowd() -> void:
 	if crowd_venue and not crowd_off:
 		crowd = Crowd.new()
 		Crowd.set_tint(_look.get("stand_tint", Color.WHITE))

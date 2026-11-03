@@ -130,7 +130,9 @@ func _through_lens(v: Vector2, at: Vector3, t: Transform3D) -> Vector2:
 		return Vector2.ZERO
 	# Her place on the screen (-1..1 each way, y up), then a little way along the stick (screen y is down).
 	var s := Vector2(pc.x / -pc.z / (tn * aspect), pc.y / -pc.z / tn)
-	var to := s + Vector2(v.x, -v.y).normalized() * 0.04
+	# (A step on the screen, not in lens units: the lens spans the width aspect times wider than the height, so a
+	# diagonal stays diagonal.)
+	var to := s + Vector2(v.x / aspect, -v.y).normalized() * 0.04
 	var ray := t.basis * Vector3(to.x * tn * aspect, to.y * tn, -1.0)
 	if ray.y > -0.0001:
 		return Vector2.ZERO
