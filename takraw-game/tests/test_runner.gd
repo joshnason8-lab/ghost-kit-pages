@@ -37,6 +37,7 @@ func _ready() -> void:
 	_jitter()
 	_stick_follows_screen()
 	await _watch_ai()
+	await _loading_overlay()
 	await _play_as_and_officials()
 	await _matches()
 	await _sim_to_end()
@@ -59,6 +60,14 @@ func check(ok: bool, what: String) -> void:
 
 func frames(n: int) -> void:
 	for i in n:
+		await get_tree().process_frame
+
+
+## Until a Start button's match has loaded (the loading overlay gone: Game.play_match).
+func loaded() -> void:
+	for i in 900:
+		if not WsgLoading.busy():
+			return
 		await get_tree().process_frame
 
 
@@ -861,7 +870,7 @@ func _watch_ai() -> void:
 	await frames(2)
 	qs.set("_venue", "mall")
 	qs._play()
-	await frames(3)
+	await loaded()
 	var m: Node = Game.current
 	check(m.has_method("set_paused") and int(m.user_team) == -1 and String(m.config.mode) == "watch", "Watch AI starts a match nobody plays")
 	check(not m.controls.visible and m.hud.visible, "Watch AI: the score up, no controls")
@@ -907,13 +916,79 @@ func _watch_ai() -> void:
 	var qs2: Node = Game.show_screen("res://ui/quick_setup.gd", {"watch": true})
 	await frames(2)
 	qs2._play()
-	await frames(3)
+	await loaded()
 	var m2: Node = Game.current
 	m2.set_paused(true)
 	await frames(1)
 	m2.quit_match()
 	await frames(3)
 	check(Game.current.get_script().resource_path.ends_with("main_menu.gd"), "Watch AI: Quit match goes back to the home screen")
+
+
+## The owner: "when you click start game there is a loading delay ... users might think the game has frozen." A real
+## tap on Quick match's Play: in the tap's own frame the loading overlay (the shared WsgLoading) is up and the button
+## off; it stays up, frame after frame, until the match has started; the bar only goes forward, moves in many frames and reaches the end; a second start and Back do nothing meanwhile; the match is built
+## in steps (no step's slice of main-thread work over the foundation's 250 ms) and drawn a part at a time (the reveal);
+## then it starts, every part of it shown, its clock running. Every Start button goes the same way (play_match).
+func _loading_overlay() -> void:
+	var qs: Node = Game.show_screen("res://ui/quick_setup.gd")
+	await frames(3)
+	var btn: Button = qs.get("_play_btn")
+	check(btn != null and btn.is_visible_in_tree(), "Quick match has its Play button")
+	if btn == null:
+		return
+	var at := btn.get_global_rect().get_center()
+	for pressed in [true, false]:
+		var ev := InputEventMouseButton.new()
+		ev.button_index = MOUSE_BUTTON_LEFT
+		ev.pressed = pressed
+		ev.position = at
+		ev.global_position = at
+		get_viewport().push_input(ev, true)   # (in the viewport's own coordinates: the window is stretched)
+	var ld := WsgLoading.current()
+	check(ld != null and ld.is_inside_tree() and (ld.parts().root as Control).visible and btn.disabled,
+		"a tap on Play: the loading overlay up and the button off in the tap's own frame")
+	if ld == null:
+		return
+	check((ld.parts().title as Label).text == tr("LOADING"), "the overlay says Loading in the game's language")
+	var first: Node = Game.current
+	Game.play_match({"home": "THA", "away": "MAS", "venue": "beach"})
+	Game.go_back()
+	await frames(1)
+	var bar := -1.0
+	var back := false
+	var moved := 0
+	var up := 0
+	var matches := {}
+	var reached := [0.0]   # (the bar's target: what it shows eases toward it)
+	ld.progressed.connect(func(f: float, _l: String): reached[0] = maxf(reached[0], f))
+	while WsgLoading.busy() and up < 900:
+		var b := ld.shown()
+		back = back or b < bar - 1e-6
+		moved += 1 if b > bar + 1e-6 else 0
+		bar = b
+		up += 1
+		matches[Game.current] = true
+		await frames(1)
+	var m: Node = Game.current
+	check(first == qs and matches.size() <= 2 and m != qs and m.has_method("set_paused") and String(m.config.venue) == "national",
+		"one match loads: a second start and Back while it loads do nothing (%d screens seen)" % matches.size())
+	check(not back and moved >= 8 and float(reached[0]) >= 1.0, "the bar only goes forward, moves in %d of %d frames and reaches the end (%.2f, shown %.2f)" % [moved, up, float(reached[0]), bar])
+	var r: Dictionary = Game.last_load
+	check(r.get("failed", ["?"]).is_empty() and float(r.get("longest_slice_ms", 1e9)) < WsgLoading.STALL_MS,
+		"built in steps: the longest slice of main-thread work %.0f ms (%s), under %.0f %s" % [float(r.get("longest_slice_ms", -1)),
+		r.get("longest_slice", ""), WsgLoading.STALL_MS, r.get("steps", {})])
+	var shown := 0
+	for g in m.find_children("*", "GeometryInstance3D", true, false):
+		shown += 1 if (g as GeometryInstance3D).visible else 0
+	var hidden := (m.get("_concealed") as Array).size()
+	check(int(m.reveal_batches) >= 3 and hidden == 0 and shown > 20,
+		"drawn a part at a time: over %d frames, %d parts shown, none left hidden" % [int(m.reveal_batches), shown])
+	var t0 := float(m.state_t)
+	await frames(5)
+	check(m.process_mode == Node.PROCESS_MODE_INHERIT and int(m.state) == int(m.S.INTRO) and float(m.state_t) > t0,
+		"then it starts: its clock running, the introduction under way")
+	check(not is_instance_valid(qs) or not qs.is_inside_tree(), "the setup screen has gone")
 
 
 ## Play as one player: only his touches are yours (the team's: all of them); the white ring is under him. The officials

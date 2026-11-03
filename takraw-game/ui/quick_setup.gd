@@ -11,6 +11,7 @@ var _venue := "national"
 var _body: VBoxContainer
 var _vs: HBoxContainer
 var watch := false
+var _play_btn: Button
 
 
 func setup(args: Dictionary) -> void:
@@ -21,6 +22,7 @@ func _ready() -> void:
 	UI.screen(self)
 	var v := UI.page(self, tr("MENU_WATCH") if watch else tr("MENU_QUICK"), func(): Game.goto_menu())
 	var play := UI.button(tr("WATCH") if watch else tr("PLAY"), true, _play)
+	_play_btn = play
 	play.custom_minimum_size = Vector2(240, 66)
 	(get_meta("header_right") as HBoxContainer).add_child(play)
 	_body = VBoxContainer.new()
@@ -133,9 +135,9 @@ func _build() -> void:
 
 func _play() -> void:
 	var events := ["regu", "team", "quadrant", "doubles"]
-	Game.start_match({
+	Game.play_match({
 		"home": _home, "away": _away, "venue": _venue, "event": events[clampi(int(Game.settings.event), 0, 3)],
 		"sets": 3 if int(Game.settings.sets) == 1 else 1, "points": 21 if int(Game.settings.points) == 1 else 15,
 		"difficulty": 2 if watch else int(Game.settings.difficulty), "mode": "watch" if watch else "quick",
 		"user_team": -1 if watch else 0, "women": _women,
-	})
+	}, [_play_btn])

@@ -21,9 +21,16 @@ enum S {INTRO, SETUP, TOSS, RALLY, DEAD, BREAK, REVIEW, REPLAY, OVER}
 const SETUP_TIME := 2.2       # s for the players to take their places and the referee to call the score
 const DEAD_TIME := 2.6        # s between the ball landing and the next serve
 const BREAK_TIME := 5.0       # the interval between sets (two minutes, played quickly)
+const REVEAL_QUICK_MS := 60.0   # a frame of the reveal (Match.reveal) this quick: twice as many new shaders in the next
+const REVEAL_SLOW_MS := 150.0   # this slow: back to one new shader a frame
+const REVEAL_CUSTOM_COST := 4   # a shader of the game's own counts as this many new ones
 
 var config := {}
 var paused := false
+## Built by Game.play_match in steps behind the loading overlay (WsgLoading), not all in _ready.
+var staged := false
+var reveal_batches := 0      # the frames the reveal showed its parts in (tests)
+var _concealed: Array[GeometryInstance3D] = []
 
 var arena: Arena
 var ball: Ball
@@ -143,6 +150,17 @@ var _subs := [[], []]               # each team's substitutes (RealBody)
 
 
 func _ready() -> void:
+	_setup()
+	if staged:
+		return   # Game.play_match builds the rest in steps, behind the loading overlay
+	build_venue()
+	build_people()
+	build_view()
+	begin()
+
+
+## The match's settings from its config (light: the tap's own frame can take it).
+func _setup() -> void:
 	rng.seed = int(config.get("seed", Time.get_ticks_usec()))
 	# The shared foundation draws the bodies made from here on (Medium and High: FoundationLink), not behind the menus.
 	FoundationLink.in_match = not bool(config.get("attract", false))
@@ -158,10 +176,18 @@ func _ready() -> void:
 	sets_to_win = 2 if int(config.get("sets", 3)) >= 3 else 1
 	set_points = int(config.get("points", 15))
 	set_cap = 17 if set_points == 15 else 25
+
+
+## The venue, its crowd and the ball. LD (the loading overlay, when built behind it): the venue's build yields a frame
+## between its parts.
+func build_venue(ld: WsgLoading = null) -> void:
 	var venue := String(config.get("venue", "national"))
 	var home_t := DB.team(String(config.home))
 	arena = Arena.new(venue, women, [home_t.get("c1", Game.C_SAFFRON), home_t.get("c2", Color.WHITE)])
+	arena.deferred = ld != null
 	add_child(arena)
+	if ld:
+		await arena.build(ld)
 	if arena.crowd:
 		arena.crowd.show_teams(String(config.home), String(config.away))   # the two teams' flags in the crowd
 	ball = Ball.new()
@@ -171,6 +197,10 @@ func _ready() -> void:
 	ball.bounced.connect(func(at: Vector3, speed: float): Sfx.bounce(at, lerpf(-16.0, -2.0, clampf((speed - 1.2) / 6.0, 0.0, 1.0))))
 	add_child(ball)
 	ball.hold(Vector3(0, -5, 0))
+
+
+## The two teams, the officials and the benches.
+func build_people() -> void:
 	# Your team on the left of the broadcast picture (side 1, x > 0: the camera looks across from the far side).
 	if user_team == 0:
 		side_team = [1, 0]
@@ -180,6 +210,10 @@ func _ready() -> void:
 	if FoundationLink.enabled():
 		wsg_replay = WsgReplay.new()
 		add_child(wsg_replay)
+
+
+## The camera, the scoreboard and the controls.
+func build_view() -> void:
 	cam = CameraRig.new()
 	add_child(cam)
 	cam.setup(self)
@@ -197,10 +231,122 @@ func _ready() -> void:
 		# Behind the home screen: no scoreboard or buttons, the crowd quiet, no replays.
 		hud.visible = false
 		controls.visible = false
+
+
+## Behind the loading overlay, before the camera is made: everything built hidden (reveal shows it again).
+func conceal() -> void:
+	_concealed.clear()
+	for n in find_children("*", "GeometryInstance3D", true, false):
+		var g := n as GeometryInstance3D
+		if g.visible:
+			g.visible = false
+			_concealed.append(g)
+
+
+## Behind the loading overlay: what conceal hid, shown again over frames, so the first draw of each shader (made, in
+## this renderer, on the main thread the first time something is drawn with it) is spread over frames the overlay's
+## bar moves in, not one long freeze. Each frame takes the parts drawn with shaders already made, and up to BUDGET new
+## ones (a game's own shader, the crowd's or the flags', counts as REVEAL_CUSTOM_COST: the slow ones to make): one to
+## begin with, twice as many after a quick frame (they were made already: a later launch), back to one after a slow
+## one.
+func reveal(ld: WsgLoading) -> void:
+	var shown := _concealed
+	var keep := ld.slice_ms
+	ld.slice_ms = 0.0   # (every checkpoint a frame: each batch drawn on its own)
+	await ld.checkpoint(0.0)   # the sky and the light first, on their own
+	var seen := {}
+	var budget := 1
+	var i := 0
+	while i < shown.size():
+		var t := Time.get_ticks_usec()
+		var fresh := 0
+		while i < shown.size():
+			var g := shown[i]
+			var new_keys := []
+			if is_instance_valid(g):
+				for k in _shader_keys(g):
+					if not seen.has(k) and not new_keys.has(k):
+						new_keys.append(k)
+			var cost := 0
+			for k in new_keys:
+				cost += REVEAL_CUSTOM_COST if k is Shader or (k is Array and k[0] is Shader) else 1
+			if fresh > 0 and fresh + cost > budget:
+				break   # (the next frame's)
+			for k in new_keys:
+				seen[k] = true
+			fresh += cost
+			if is_instance_valid(g):
+				g.visible = true
+			i += 1
+		reveal_batches += 1
+		await ld.checkpoint(float(i) / shown.size())
+		var ms := (Time.get_ticks_usec() - t) / 1000.0
+		budget = mini(budget * 2, 64) if ms < REVEAL_QUICK_MS else (1 if ms > REVEAL_SLOW_MS else budget)
+	ld.slice_ms = keep
+	_concealed = []
+
+
+## What a part is drawn with, as far as which shaders it needs: a shader material's shader, a standard material's
+## settings that change its shader (not its colours or which texture), skinned or not; a Label3D or the like its kind.
+static func _shader_keys(g: GeometryInstance3D) -> Array:
+	var mats := []
+	var skinned := false
+	if g.material_override:
+		mats.append(g.material_override)
+	elif g is MeshInstance3D:
+		var mi := g as MeshInstance3D
+		skinned = mi.skin != null or mi.get_parent() is Skeleton3D
+		if mi.mesh:
+			for k in mi.mesh.get_surface_count():
+				mats.append(mi.get_active_material(k))
+	elif g is MultiMeshInstance3D:
+		var mm := (g as MultiMeshInstance3D).multimesh
+		if mm and mm.mesh:
+			for k in mm.mesh.get_surface_count():
+				mats.append(mm.mesh.surface_get_material(k))
+	else:
+		return [g.get_class()]
+	if g.material_overlay:
+		mats.append(g.material_overlay)
+	var out := []
+	for m in mats:
+		var key: Variant = _shader_key(m)
+		out.append([key, skinned] if skinned else key)
+	return out
+
+
+const SHADER_PROPS := ["transparency", "blend_mode", "cull_mode", "depth_draw_mode", "no_depth_test", "shading_mode",
+	"diffuse_mode", "specular_mode", "disable_ambient_light", "disable_fog", "vertex_color_use_as_albedo",
+	"albedo_texture", "metallic_texture", "roughness_texture", "orm_texture", "emission_enabled", "emission_texture",
+	"normal_enabled", "rim_enabled", "clearcoat_enabled", "anisotropy_enabled", "ao_enabled", "heightmap_enabled",
+	"subsurf_scatter_enabled", "backlight_enabled", "refraction_enabled", "detail_enabled", "uv1_triplanar",
+	"uv2_triplanar", "billboard_mode", "texture_filter", "texture_repeat", "use_point_size", "fixed_size",
+	"proximity_fade_enabled", "distance_fade_mode", "alpha_antialiasing_mode", "disable_receive_shadows",
+	"shadow_to_opacity", "grow", "albedo_texture_msdf"]
+
+
+static func _shader_key(m: Material) -> Variant:
+	if m == null:
+		return "default"
+	if m is ShaderMaterial:
+		return (m as ShaderMaterial).shader
+	if m is BaseMaterial3D:
+		var k := m.get_class()
+		for p in SHADER_PROPS:
+			var v: Variant = m.get(p)
+			k += "|" + (str(v != null) if v == null or v is Object else str(v))
+		return k
+	return m
+
+
+## The match under way: its sounds, the introduction, the clock running.
+func begin() -> void:
 	first_server = int(config.get("first_server", rng.randi_range(0, 1)))
 	server = first_server
 	state = S.INTRO
 	state_t = 0.0
+	if staged:
+		process_mode = Node.PROCESS_MODE_INHERIT   # (held still while it was built)
 	if not bool(config.get("attract", false)):
 		Sfx.crowd(arena.atmosphere() * 0.6)
 		Sfx.drums(arena.atmosphere() * 0.3 if arena.indoor() else -1.0)

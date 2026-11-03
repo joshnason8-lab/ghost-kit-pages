@@ -186,7 +186,7 @@ func _next(s: Season, rv: VBoxContainer) -> void:
 			"women": s.women, "stage": s.match_stage()}
 		if bool(f.get("tie", false)):
 			cfg.tie = {"results": [], "used": [[], []], "regus": 2, "play_all": true, "set_scores": []}
-		Game.start_match(cfg)))
+		Game.play_match(cfg, row.get_children())))
 	row.add_child(UI.button(tr("SIM_MATCH"), false, func():
 		s.sim_round()
 		Game.save_season()

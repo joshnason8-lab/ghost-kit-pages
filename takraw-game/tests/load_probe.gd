@@ -2,11 +2,14 @@ extends Node
 ## How long each way into a match keeps the player waiting after the tap, on a graphics level (default Low), the game
 ## booted as main.tscn boots it (the loading screen, then the home screen with its match behind it):
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/load_probe.tscn [-- level [WxH [scenarios]]]
-## For each: the tap's own frame (the build: everything the tap does before the frame can end), the tap to the first
-## frame drawn after it, the tap to settled (three frames in a row under SETTLED_MS), and the longest frame in between
-## (the main thread's longest stall), all in ms of this machine.
+## For each: the tap's own frame (everything the tap does before the frame can end), whether the loading overlay
+## (WsgLoading, Game.play_match) was up in that frame, the tap to the first frame drawn after it, the tap to the match
+## started (the overlay gone), the tap to settled (three frames in a row under SETTLED_MS), the longest frame in
+## between (the main thread's longest stall), and the frames the overlay's bar moved in of those it was up for; all in
+## ms of this machine. Then each load's WSG_LOADING line.
 ## scenarios: comma-separated indices into _scenarios() (default all, one after another in one session); a fresh
-## process for each gives each its cold, first-of-the-session time.
+## process for each gives each its cold, first-of-the-session time. With LOAD_SHOTS=<dir> in the environment, the screen
+## is saved there on the first frame after each tap and at a third and two thirds of the way.
 
 const SETTLED_MS := 70.0
 const SETTLE_MAX := 8.0
@@ -38,9 +41,12 @@ func _ready() -> void:
 	for i in pick:
 		var sc: Array = all[i]
 		rows.append(await _tap(sc[0], sc[1], sc[2] if sc.size() > 2 else Callable()))
-	print("\n%-46s %8s %8s %8s %8s" % ["", "build", "1st frm", "settled", "longest"])
+	print("\n%-40s %6s %7s %7s %7s %7s %7s %9s" % ["", "tap", "overlay", "1st frm", "started", "settled", "longest", "bar moved"])
 	for r in rows:
-		print("%-46s %8d %8d %8d %8d" % r)
+		print("%-40s %6d %7s %7d %7d %7d %7d %9s" % r.slice(0, 8))
+	for r in rows:
+		if not (r[8] as Dictionary).is_empty():
+			print("%s: WSG_LOADING %s" % [r[0], JSON.stringify(r[8])])
 	get_tree().quit()
 
 
@@ -49,7 +55,7 @@ func _ready() -> void:
 func _scenarios() -> Array:
 	var out := [
 		["quick match (national)", func(): Game.current.call("_play"), func(): Game.show_screen("res://ui/quick_setup.gd")],
-		["rematch (national)", func(): Game.start_match({"home": "THA", "away": "MAS", "venue": "national", "event": "regu",
+		["rematch (national)", func(): Game.play_match({"home": "THA", "away": "MAS", "venue": "national", "event": "regu",
 			"sets": 1, "points": 15, "difficulty": 1, "mode": "quick", "user_team": 0, "seed": 7})],
 		["Watch AI (national)", func(): Game.current.call("_play"), func(): Game.show_screen("res://ui/quick_setup.gd", {"watch": true})],
 		["season: start (new season, its hub)", func():
@@ -82,16 +88,37 @@ func _tap(what: String, act: Callable, prep := Callable()) -> Array:
 		prep.call()
 	await _frames(20)
 	_draws.clear()
+	Game.last_load = {}
 	var t0 := Time.get_ticks_usec()
 	act.call()
 	var built := Time.get_ticks_usec()
+	var ld := WsgLoading.current()
+	var overlay := "yes" if ld != null and ld.is_inside_tree() and ld.parts().root.visible else "no"
 	var smooth := 0
 	var last := t0
 	var longest := 0
 	var first := -1
+	var started := -1
 	var settled := -1
+	var bar := -1.0
+	var up := 0
+	var moved := 0
 	while settled < 0 and Time.get_ticks_usec() - t0 < SETTLE_MAX * 1e6:
 		await get_tree().process_frame
+		if WsgLoading.busy():
+			up += 1
+			var b := WsgLoading.current().shown()
+			var shots := OS.get_environment("LOAD_SHOTS")
+			if shots != "" and (up == 1 or (bar < 0.33 and b >= 0.33) or (bar < 0.67 and b >= 0.67)):
+				DirAccess.make_dir_recursive_absolute(shots)
+				get_viewport().get_texture().get_image().save_jpg("%s/%s_%02d_%03d.jpg" % [shots, what.get_slice(" (", 0).replace(" ", "_").replace(":", ""), up, roundi(b * 100)])
+			if b < bar - 1e-6:
+				overlay = "BAR BACK"
+			if b > bar + 1e-6:
+				moved += 1
+			bar = b
+		elif started < 0:
+			started = Time.get_ticks_usec()
 		if _draws.is_empty():
 			continue
 		var now: int = _draws[_draws.size() - 1]
@@ -100,12 +127,13 @@ func _tap(what: String, act: Callable, prep := Callable()) -> Array:
 		var ms := float(now - last) / 1000.0
 		longest = maxi(longest, int(ms))
 		last = now
-		smooth = smooth + 1 if ms <= SETTLED_MS else 0
+		smooth = smooth + 1 if ms <= SETTLED_MS and started > 0 else 0
 		if smooth >= 3:
 			settled = now
 		_draws.clear()
 	await _frames(30)
-	return [what, (built - t0) / 1000, (first - t0) / 1000, (settled - t0) / 1000 if settled > 0 else -1, longest]
+	return [what, (built - t0) / 1000, overlay, (first - t0) / 1000, (started - t0) / 1000 if started > 0 else -1,
+		(settled - t0) / 1000 if settled > 0 else -1, longest, "%d/%d" % [moved, up], Game.last_load.duplicate()]
 
 
 func _frames(n: int) -> void:

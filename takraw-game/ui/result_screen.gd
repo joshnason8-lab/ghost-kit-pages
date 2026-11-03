@@ -111,7 +111,7 @@ func _next_button(cfg: Dictionary) -> Button:
 			c.tie = tie
 			c.erase("lineup_0")
 			c.erase("lineup_1")
-			Game.start_match(c))
+			Game.play_match(c))
 	match String(cfg.get("mode", "quick")):
 		"season":
 			return UI.button(tr("CONTINUE"), true, func(): Game.show_screen("res://ui/season_hub.gd"))
@@ -124,7 +124,7 @@ func _next_button(cfg: Dictionary) -> Button:
 		c.erase("lineup_0")
 		c.erase("lineup_1")
 		c.seed = randi()
-		Game.start_match(c))
+		Game.play_match(c))
 	if has_meta("header_right"):
 		(get_meta("header_right") as HBoxContainer).add_child(UI.round_button("close", func(): Game.goto_menu(), 58))
 	return row

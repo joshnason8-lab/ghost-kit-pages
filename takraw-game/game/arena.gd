@@ -32,6 +32,10 @@ var _sc: Scenery
 var _rng := RandomNumberGenerator.new()
 
 
+## Made by build() when the match is built behind the loading overlay, not in _ready.
+var deferred := false
+
+
 func _init(p_venue := "national", p_women := false, p_home_colors := []) -> void:
 	venue = p_venue
 	women = p_women
@@ -40,6 +44,13 @@ func _init(p_venue := "national", p_women := false, p_home_colors := []) -> void
 
 
 func _ready() -> void:
+	if not deferred:
+		build()
+
+
+## The venue made: its light, court, stands and surroundings, then its crowd. LD (the loading overlay, when built
+## behind it): a frame drawn between the parts, so none holds the main thread long.
+func build(ld: WsgLoading = null) -> void:
 	_lit = Geo.new()
 	_glow = Geo.new()
 	_sc = Scenery.new(self)
@@ -86,10 +97,16 @@ func _ready() -> void:
 			_beach()
 			_officials_furniture(true)
 			bounds = Rect2(-16.0, -12.0, 32.0, 25.0)   # (open sand: the people round it)
+	if ld:
+		await ld.checkpoint(0.4)
 	_net()
 	add_child(_lit.commit(Geo.material(true)))
 	add_child(_glow.commit(Geo.material(false)))
+	if ld:
+		await ld.checkpoint(0.6)
 	_sc.commit()
+	if ld:
+		await ld.checkpoint(0.8)
 	# The spectators: the venue's seats and standing room as the shared crowd's sections (crowd_venue), placed and drawn
 	# by the foundation (Crowd).
 	var decl := crowd_venue(venue)

@@ -670,6 +670,40 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## A Start tap shows it is loading (0.15.2)
+
+The owner, for every game: "when you click start game there is a loading delay ... long enough on the slow phone
+that users might think the game has frozen." Measured first (`tests/load_probe.gd`: the game booted as main.tscn
+boots it, then each Start path tapped, each in a fresh process; Low, 1600x720, this machine's software GL): every
+path was one frozen frame, the tap's build and the match's first draw together, the screen left on the setup screen
+with the button pressed. 0.95-1.86 s with the shader caches warm (a later launch); 6.0-12.2 s on the first launch
+after an install or update (no shader cache: National 6.8, the mall 8.1, the gym 8.2, the beach 9.2, the park 12.2).
+Of it: 0.31 s loading match.gd (the session's first match: on Low no match runs behind the home screen to load it
+earlier), 0.08-0.23 s building the match, and the rest its first draw - every material's shader made then, on the
+main thread.
+
+Now (foundation edebcd5, `WsgLoading`, ADOPTING 5.14):
+- **`Game.play_match`**, used by every Start button (Quick match and Watch AI's Play, a season's and an
+  international's Play, Next regu, Rematch): the shared overlay up in the tap's own frame (the screen dimmed,
+  "Loading" in the player's language with the game's icon, a saffron bar and spinner, the button off; a second tap,
+  or Back, does nothing). `match.gd` loads on the loader's thread; then the match is built in steps behind it, a
+  frame drawn after each: Match (made and swapped in, held still), Venue (the arena's build yields between its
+  parts), Players, View (the camera, the scoreboard, the controls), Drawing; then it starts. `Game.start_match`
+  (all at once) is kept for the tests and tools.
+- **Drawing a part at a time** (`Match.conceal`/`reveal`): everything built is hidden before the camera is made,
+  then shown again over frames, each frame taking the parts whose shaders are made already and up to a budget of
+  new ones (a shader of the game's own, the crowd's cards or the flags, counting four): one to begin with, twice
+  as many after a quick frame (a later launch: a handful of frames), back to one after a slow one (a first launch:
+  one new shader a frame). The overlay's spinner shader is made during the boot loading screen.
+- **Measured the same way**: the overlay up in the tap's frame on every path, the first frame drawn 23-35 ms after
+  the tap. Later launches: the longest frame 83-205 ms (it was the whole 0.95-1.86 s), the match started 0.7-2.2 s
+  after the tap. First launch after an install or update: the longest frame 0.54-0.99 s (it was 6.0-12.2 s), the
+  bar moving 18-23 times on the way. The longest slice of main-thread work 46-110 ms, in the Venue step (the
+  foundation's limit 250 ms for the A16 at Low). Every load prints its `WSG_LOADING {...}` line (logcat).
+- test_runner: a real tap on Play puts the overlay up and the button off in that frame; a second start and Back do
+  nothing; the bar only goes forward, moves in most frames and reaches the end; no slice over 250 ms; drawn in
+  three or more batches, none left hidden; the match then starts.
+
 ## The crowd's backs, and flat boots (0.15.1)
 
 The foundation, synced to b073334:

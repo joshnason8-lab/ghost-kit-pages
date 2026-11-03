@@ -101,6 +101,8 @@ signal loaded   # the loading screen is going: the home screen behind it is read
 var main: Node = null
 var current: Node = null
 var loading := false
+const MATCH_SCRIPT := "res://game/match.gd"
+var last_load := {}   # the latest play_match's WsgLoading report (tests)
 var theme: Theme
 var font_body: Font
 var font_bold: Font
@@ -146,8 +148,8 @@ func _notification(what: int) -> void:
 ## Back: close what is open over the screen (a list being picked from, a question), pause or resume a match, leave a
 ## screen the way its Back button does, and quit from the main menu.
 func go_back() -> void:
-	if current == null or not is_instance_valid(current):
-		return
+	if current == null or not is_instance_valid(current) or WsgLoading.busy():
+		return   # (nothing while a match loads: it starts, then Back pauses it)
 	if _close_popup():
 		return
 	if current.has_method("on_back"):
@@ -382,7 +384,58 @@ func goto_menu() -> void:
 ## config keys: home, away (team ids), venue (DB.VENUES id), event ("regu"|"quadrant"|"doubles"|"team"), sets (1 or 3),
 ## points (15 or 21), difficulty, mode ("quick"|"season"|"cup"), user_team (0, 1 or -1 for none), stage (a line naming
 ## the match: "Semi-final"), women (bool). A team event is three regu matches, one after another (tie).
+## Built all at once, in this frame (the tests, the tools); the Start buttons use play_match.
 func start_match(config: Dictionary) -> void:
+	var m: Node = (load(MATCH_SCRIPT) as Script).new()
+	m.config = _match_config(config)
+	Sfx.music(false)
+	_swap(m)
+
+
+## A match from a Start button, behind the shared loading overlay (WsgLoading; the owner: "when you click start game
+## there is a loading delay ... users might think the game has frozen"). The tap's own frame dims the screen and shows
+## "Loading" with a bar, and BUTTONS go off; the match's script loads on the loader's thread; then the match is built
+## in steps behind the overlay, a frame drawn after each, and drawn a part at a time (Match.reveal) so the first draw
+## of its materials does not freeze the screen; then it starts. A second tap while it loads starts nothing.
+func play_match(config: Dictionary, buttons: Array = []) -> void:
+	if WsgLoading.busy():
+		return
+	var ld := WsgLoading.cover(main, buttons, load_look())
+	ld.parts().root.theme = theme
+	ld.log_label = "match"
+	ld.request([MATCH_SCRIPT])
+	var built := {}
+	ld.step("Match", func():
+		var m: Node = (ld.res(MATCH_SCRIPT) as Script).new()
+		m.config = _match_config(config)
+		m.staged = true
+		m.process_mode = Node.PROCESS_MODE_DISABLED   # (still until it starts: no clock, no taps)
+		Sfx.music(false)
+		_swap(m)
+		ld.parts().dim.color.a = 1.0   # (the screen behind is the match being built now: not seen till it starts)
+		built.m = m)
+	ld.step("Venue", func(): await built.m.build_venue(ld), 3.0)
+	ld.step("Players", func(): built.m.build_people(), 2.0)
+	ld.step("View", func():
+		built.m.conceal()   # (before the camera: its first frame draws nothing new but the sky)
+		built.m.build_view())
+	ld.step("Drawing", func(): await built.m.reveal(ld), 4.0)
+	if not await ld.run():
+		return   # (the script did not load: the overlay has gone, the buttons are back)
+	if is_instance_valid(built.get("m")) and built.m == current:
+		built.m.begin()
+	last_load = ld.report
+	ld.done()
+
+
+## The loading overlay's look: the game's colours, its icon and its own word for it.
+func load_look() -> Dictionary:
+	return {"dim": Color(C_BG, 0.88), "text": C_INK, "bar": C_SAFFRON, "spinner": C_SAFFRON, "bar_back": Color(C_INK, 0.16),
+		"title": tr("LOADING"), "logo": load("res://assets/icon/icon_192.png"), "font_size": ts(26)}
+
+
+## A team event's regu: its lineups (no player twice in a tie) and its stage line.
+func _match_config(config: Dictionary) -> Dictionary:
 	if String(config.get("event", "")) == "team" and not config.has("tie"):
 		config.tie = {"results": [], "used": [[], []]}
 	if config.has("tie"):
@@ -395,11 +448,7 @@ func start_match(config: Dictionary) -> void:
 			config.stage_base = String(config.get("stage", ""))
 		var base := String(config.stage_base)
 		config.stage = (base + "\u00a0· " if base != "" else "") + tr("REGU_N").format({"n": n + 1})
-	var s: Script = load("res://game/match.gd")
-	var m: Node = s.new()
-	m.config = config
-	Sfx.music(false)
-	_swap(m)
+	return config
 
 
 func on_match_finished(result: Dictionary) -> void:

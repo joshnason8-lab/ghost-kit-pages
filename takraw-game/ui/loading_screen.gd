@@ -74,6 +74,16 @@ func run() -> void:
 	Arena._net_texture()
 	Geo.grain()
 	RealBody.warm()
+	# The match's loading overlay (WsgLoading) drawn once behind this screen, so its spinner's shader is made now and
+	# not in the frame a Start tap first shows it.
+	var spin := ColorRect.new()
+	var spin_mat := ShaderMaterial.new()
+	spin_mat.shader = WsgLoading._spinner_shader()
+	spin.material = spin_mat
+	spin.size = Vector2(48, 48)
+	spin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(spin)
+	_root.move_child(spin, 0)
 	done += _share("art")
 	await _progress(done, true)
 	t0 = _took("art", t0)
@@ -93,6 +103,7 @@ func run() -> void:
 		smooth = smooth + 1 if ms <= SMOOTH_MS else 0
 		_bar.value = done + _share("warm") * clampf(maxf(warm / WARM_MAX, float(smooth) / SMOOTH_FRAMES), 0.0, 1.0)
 	_took("warm", t0)
+	spin.queue_free()
 	_bar.value = 1.0
 	print("Loaded (ms): %s" % times)
 	Game.loading = false

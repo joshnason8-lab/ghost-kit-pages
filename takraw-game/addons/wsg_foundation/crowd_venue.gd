@@ -171,6 +171,18 @@ func place(seed := 0) -> Dictionary:
 					back = s.depth * 0.5
 				elif s.rise > 0.0 and risers_left > 0:
 					back = riser_at - seat_front - s.depth * 0.5
+				# How far the toes may reach in front of the middle of the seat: to the step's edge (rows that rise: the
+				# feet stay on the tread), else on a flat floor to the seat (its back) of the row in front, or the barrier
+				# in front of the first row; nothing in front: no limit. (Kabaddi's chairs on flat ground had the toes
+				# held on a tread that has no edge, pushing fans forward on their seats.)
+				var toe_room: float = seat_front + s.depth * 0.5
+				if s.rise <= 0.0:
+					if r > 0:
+						toe_room = s.tread - s.depth * 0.5 - (0.04 if s.back > 0.0 else 0.0)
+					elif s.has("barrier"):
+						toe_room = seat_front + s.depth * 0.5 + float(s.barrier.get("gap", 0.35)) - 0.05
+					else:
+						toe_room = INF
 				for i in n:
 					var x: float = (i + 0.5) * length / n
 					var mid: Vector3 = row0 + along * x + away * (seat_front + s.depth * 0.5)
@@ -181,7 +193,7 @@ func place(seed := 0) -> Dictionary:
 						_spot(out, si, feet, facing_at(s, feet), 0.0, false, INF, row0.y)
 					else:
 						_spot(out, si, Vector3(mid.x, row0.y, mid.z), facing_at(s, mid), seat_top - row0.y, true, back, row0.y,
-							s.depth * 0.5, seat_front + s.depth * 0.5)
+							s.depth * 0.5, toe_room)
 			else:
 				# One line of fans a tread, or more on a deep one (a floor): STAND_GAP from the front, 0.6 m apart,
 				# none nearer the back than a body's depth.
@@ -236,6 +248,8 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 	var pl: Dictionary = crowd.placed
 	var md := WsgCrowd3D.meta()
 	var out := {"fans": 0, "fails": [], "sections": {}, "worst": {}}
+	if int(md.get("version", 0)) < WsgCrowd3D.BAKE_VERSION:
+		out.fails.append("the crowd's data (%s) was baked before version %d (its frames not grounded: seated soles up to 7 cm under the floor): bake it again - FORCE=1 tools/wsg/fetch_assets.sh" % [WsgCrowd3D.DIR, WsgCrowd3D.BAKE_VERSION])
 	for s in venue.sections:
 		out.sections[s.name] = {"fans": 0, "hips": [INF, -INF], "feet": [INF, -INF], "inside": 0.0, "facing": 0.0, "backwards": 0}
 	# The frames tried: the first and middle of sitting and of clapping seated; standing, clapping standing and cheering.

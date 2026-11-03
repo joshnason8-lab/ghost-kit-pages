@@ -15,6 +15,12 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.2: **a Start tap shows it is loading.** Tap Play (Quick match, Watch AI, a season's or an international's
+next match, Next regu, Rematch) and the screen dims at once, with "Loading", a bar and a spinner; the button goes
+off, so a second tap starts nothing. The bar moves until the match starts: the match is built a part at a time
+behind it, so the phone never sits frozen on the menu. The first match after installing or updating takes longest
+(the phone makes the game's graphics then, once); after that it is much quicker.
+
 New in 0.15.1: **the fans on the near side are back**, seen from behind: from the broadcast camera, over their heads,
 you now see their backs (0.15.0 hid them, as the shared cards had only their fronts, and from behind they turned to
 slivers). The fans' faces are from their full models, and on Medium and High, where the shared motion capture draws

@@ -30,7 +30,9 @@ func _initialize() -> void:
 		clips = src.clips
 	else:
 		clips = WsgCrowdClips.CLIPS
-	var meta := {"fps": FPS, "clips": {}, "fans": {}, "pivots": PIVOTS,
+	# version: what this bake does that a crowd baked before lacks (WsgCrowd3D.BAKE_VERSION; the audit refuses older):
+	# 3 = every frame grounded at its soles, the parts (looks), hair never shirt, hand vertices.
+	var meta := {"fps": FPS, "clips": {}, "fans": {}, "pivots": PIVOTS, "version": WsgCrowd3D.BAKE_VERSION,
 		"source": "ActorCore (licensed: build only)" if src != null else "authored (WsgCrowdClips)"}
 	print("crowd motions: ", meta.source)
 	# (The licence: animation from the licensed library never leaves the build's data folder - an ActorCore crowd

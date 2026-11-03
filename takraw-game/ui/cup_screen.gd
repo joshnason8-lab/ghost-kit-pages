@@ -114,9 +114,9 @@ func _hub(c: Cup) -> void:
 		row.add_theme_constant_override("separation", 12)
 		var stage := {"group": tr("GROUP_STAGE"), "semi": tr("SEMI_FINAL"), "final": tr("FINAL")}.get(c.stage, "") as String
 		row.add_child(UI.button(tr("PLAY"), true, func():
-			Game.start_match({"home": f.home, "away": f.away, "venue": c.venue(), "event": c.event, "sets": 3, "points": 15,
+			Game.play_match({"home": f.home, "away": f.away, "venue": c.venue(), "event": c.event, "sets": 3, "points": 15,
 				"difficulty": int(Game.settings.difficulty), "mode": "cup", "user_team": 0 if f.home == c.user else 1,
-				"women": c.women, "stage": stage})))
+				"women": c.women, "stage": stage}, row.get_children())))
 		row.add_child(UI.button(tr("SIM_MATCH"), false, func():
 			c.sim_next()
 			Game.save_cup()
