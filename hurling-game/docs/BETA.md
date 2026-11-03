@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.7
+
+- **No T-pose flash in replays**: a player who comes into view during a score's replay no longer appears for a frame
+  with his arms straight out (the shared animation foundation's replay fix).
+
 ## New in 0.24.6
 
 - **Smoother replays**: when a score is shown again, the players' feet go with them as the replay moves them, and

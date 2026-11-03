@@ -857,6 +857,13 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.7, 3 November 2026)
+
+- **Foundation f1e53923**: WsgReplay keeps no rest pose (a62b5396; WsgSim seed 4 found home 13 T-posed for his first
+  kept frame in a score's replay), WsgSim dates prop and ball failures by its own frame (48447942: `replay --failure`
+  finds them). The sim adapter measures bodies through a replay again (the T-pose was real). Suite 705/0; owner
+  notes 21/21.
+
 ## Done (0.24.6, 3 November 2026)
 
 - **Foundation 80420f64** (planter 68a16daa: a low foot's jump measured, over 25 cm a frame fails; a stopping foot

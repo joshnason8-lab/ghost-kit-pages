@@ -69,6 +69,10 @@ func _take(id: int) -> void:
 		return
 	var body: WsgBody = _bodies.get(id)
 	var sk := body.skeleton
+	# Not a skeleton still in its rest pose - a body's first update before anything has posed it (a body posed only
+	# once the camera sees it: kept so, the replay drew it a frame or two in a T-pose - Hurling's home 13).
+	if _at_rest(sk):
+		return
 	var n := sk.get_bone_count()
 	var out := PackedInt32Array()
 	out.resize(12 + 3 + n * 2)
@@ -191,3 +195,12 @@ static func _pack(a: float, b: float) -> int:
 static func _xf(p: PackedInt32Array) -> Transform3D:
 	var v := func(k: int) -> Vector3: return Vector3(p[k], p[k + 1], p[k + 2]) / 10000.0
 	return Transform3D(Basis(v.call(0), v.call(3), v.call(6)), v.call(9))
+
+
+## Every limb's root exactly as the rig rests (never so under a clip or a pose layer).
+static func _at_rest(sk: Skeleton3D) -> bool:
+	for b in ["LeftArm", "RightArm", "LeftUpLeg", "RightUpLeg"]:
+		var i := sk.find_bone(b)
+		if i >= 0 and not sk.get_bone_pose_rotation(i).is_equal_approx(sk.get_bone_rest(i).basis.get_rotation_quaternion()):
+			return false
+	return true
