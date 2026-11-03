@@ -5,8 +5,10 @@ Everything Google Play needs, rendered from the game itself.
 - **`icon-512.png`** — the 512 × 512 hi-res icon. The same picture as the launcher icon
   (`assets/icon/icon_512.png`): the stone ring of the classic court with the rubber ball in its hole. Made by
   `tools/store/make_icons.py` from `tools/store/icon_render.tscn`.
-- **`feature-1024x500.png`** — the feature graphic: the stone court and its ring, the game's name on a limestone
-  wash. Made by `tools/store/make_feature.py`.
+- **`feature-1024x500.png`** — the feature graphic: a player (the realistic bodies, on the shared rig) mid hip-strike
+  on the stone court, the ball at his hip and the ring and the crowd behind him, the game's name on a limestone wash.
+  The picture is a real match held at that instant (`tools/store/store_shots.gd`, set "feature"); the graphic is
+  made by `tools/store/make_feature.py`, which crops it to its panel rather than squeezing it.
 - **`screenshots/`** — eight 1920 × 1080 landscape screenshots, rendered on High graphics by
   `tools/store/store_shots.tscn`: a match on each court (two from the game's end camera), the home screen, match
   setup, How to Play and the tournament, in the listing's languages.
@@ -18,7 +20,7 @@ it is then. One command does it all (it needs a display, so it runs under xvfb-r
 tools/store/make_store_graphics.sh
 ```
 
-It renders the eight screenshots on High (`tools/store/store_shots.gd`, set "store"), re-renders the feature
-graphic's picture of the stone court and makes the graphic (`tools/store/make_feature.py`), copies the 512 icon as a
+It renders the eight screenshots on High (`tools/store/store_shots.gd`, set "store"), renders the feature
+graphic's picture (set "feature") and makes the graphic (`tools/store/make_feature.py`), copies the 512 icon as a
 32-bit PNG, and saves the screenshots and feature graphic as 24-bit PNGs, as Play asks. The launcher icon itself is
 made by `tools/store/make_icons.py` from `tools/store/icon_render_source.webp`.

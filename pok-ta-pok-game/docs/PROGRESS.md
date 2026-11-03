@@ -412,16 +412,22 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   the smoke on every push in three shards, the 16-shard batch only by hand); simulation work stops here until the owner
   calls the next round. The sim's foot-slip deferral goes when the foundation's 2026-11-06 batch lands.
 
+- **0.6.25-beta: store graphics with the realistic bodies.** The eight store screenshots remade on High from this build
+  (the shared rig's players, the crowds), and a new feature graphic: a real match on the stone court held at a hip
+  strike, the player seen low from across the court with the ball at his hip, the ring and the crowd behind him
+  (store_shots.gd "feature"; make_feature.py now crops the picture to its panel - the old one was squeezed 1.6 times,
+  the ring an oval). The store and trailer tools await Game.start_match (a coroutine since loading v2: they had held
+  the last match, freed, and crashed at the second shot).
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
    documented: one strike per side, end line +4 or +5, foul points, a ring that wins outright, halves of 13 minutes.
-2. New store screenshots and feature graphic with the realistic bodies.
-3. Yucatec Maya touches: the judges' count on the stone court (*jun, ka', óox…*). It is listed for a native speaker
+2. Yucatec Maya touches: the judges' count on the stone court (*jun, ka', óox…*). It is listed for a native speaker
    in docs/CULTURE.md.
-4. Field recordings the open sites do not have (docs/SOUNDS.md, "Not found").
-5. Meshy court pieces (docs/MESHY_BRIEF.md: the carved ring, the talud, the pyramid).
-6. A Classic-period court variant with floor markers and no rings.
+3. Field recordings the open sites do not have (docs/SOUNDS.md, "Not found").
+4. Meshy court pieces (docs/MESHY_BRIEF.md: the carved ring, the talud, the pyramid).
+5. A Classic-period court variant with floor markers and no rings.
 
 ## Decisions and why
 

@@ -2,7 +2,7 @@
 # Remakes the Play store graphics from the game as it is now (they are drafts until the game is submitted: run this
 # just before, so they show the current build):
 #   store/graphics/screenshots/   eight 1920 x 1080 screenshots on High graphics (tools/store/store_shots.gd, "store")
-#   store/graphics/feature-1024x500.png   the feature graphic, from a fresh render of the stone court and its ring
+#   store/graphics/feature-1024x500.png   the feature graphic: a player mid hip-strike on the stone court, its ring behind
 #   store/graphics/icon-512.png   the hi-res icon (32-bit PNG), from the launcher icon
 #   tools/store/make_store_graphics.sh      (from pok-ta-pok-game/; needs godot, xvfb-run, python3 + Pillow)
 set -euo pipefail
@@ -18,7 +18,8 @@ echo "== screenshots"
 
 echo "== feature graphic"
 TMP=$(mktemp -d)
-"${XVFB[@]}" "$GODOT" --path . --rendering-driver opengl3 res://tools/store/icon_render.tscn -- "$TMP" feature >/dev/null 2>&1
+# A real match on the stone court, held at a hip strike and seen from across the court (store_shots.gd "feature").
+"${XVFB[@]}" "$GODOT" --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/store/store_shots.tscn -- "$TMP" feature | grep '^shot'
 python3 - "$TMP/feature_render.png" <<'PY'
 import sys
 from PIL import Image

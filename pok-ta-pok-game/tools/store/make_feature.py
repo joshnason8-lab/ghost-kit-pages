@@ -24,6 +24,15 @@ def main():
     art = ImageEnhance.Contrast(art).enhance(1.08)
     # The court picture fills the right two thirds.
     rw = int(W * 0.62)
+    # Cropped to the panel's shape (anchored right: the render keeps the player and the ring clear of the fade on the
+    # left), never squeezed - the old render was squashed 1.6 times across, the ring an oval.
+    want = rw / H
+    if aw / ah > want:
+        cw = int(ah * want)
+        art = art.crop((aw - cw, 0, aw, ah))
+    else:
+        ch = int(aw / want)
+        art = art.crop((0, (ah - ch) // 2, aw, (ah - ch) // 2 + ch))
     court = art.resize((rw, H), Image.LANCZOS)
     pic = Image.new("RGB", (W, H), PAPER)
     x0 = W - rw

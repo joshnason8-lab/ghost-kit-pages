@@ -1,6 +1,8 @@
 extends Node
 ## Screenshots rendered from the game at 1920 x 1080 on High graphics, with no debug overlays or key hints:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tools/store/store_shots.tscn -- OUT_DIR [SET] [only]
+## SET "feature": the feature graphic's picture (OUT_DIR/feature_render.png), a player of the realistic bodies mid hip-strike
+## on the stone court, seen low from across the court with the far wall, its ring and the crowd behind him.
 ## SET "menus": every menu screen in English (for the media kit). SET "store" (the default): the eight store screenshots, matches on each court and four menus, in the listing's
 ## languages. SET "media": twelve for the media kit, in English: the courts, a dive, the copal offering, a ball sent
 ## through the ring with its replay and the celebration after, and the menus. tools/store/make_store_graphics.sh and
@@ -79,6 +81,10 @@ func _ready() -> void:
 		await _menus(only)
 		get_tree().quit()
 		return
+	if which == "feature":
+		await _feature_shot()
+		get_tree().quit()
+		return
 	for s in (MEDIA if which == "media" else STORE):
 		if not _picked(String(s[0]), only):
 			continue
@@ -127,7 +133,8 @@ func _match_shot(s: Array) -> void:
 	var cfg: Dictionary = s[3]
 	var rules := String(DB.venue(cfg.venue).rules)
 	Game.settings.camera = int(cfg.get("cam", Game.CAM_TV))   # the game's own cameras: the broadcast view or the end view
-	Game.start_match({"home": cfg.home, "away": cfg.away, "venue": cfg.venue, "rules": rules,
+	# (A coroutine since loading v2: the match is Game.current once it has been built and kicked off.)
+	await Game.start_match({"home": cfg.home, "away": cfg.away, "venue": cfg.venue, "rules": rules,
 		"side": 5 if rules == "ulama" else 3, "user_team": -1, "seed": 7, "mode": "watch", "length": 10, "difficulty": 2,
 		"stage": tr("FRIENDLY"), "ritual": bool(cfg.get("ritual", false))})
 	var m: Node = Game.current
@@ -244,7 +251,8 @@ func _menus(only: String) -> void:
 		var what := String(s[1])
 		if what == "pause":
 			Game.settings.camera = Game.CAM_TV
-			Game.start_match({"home": "ESC", "away": "LLA", "venue": "village", "rules": "ulama", "user_team": 0, "seed": 7,
+			# (A coroutine since loading v2: the match is Game.current once it has been built and kicked off.)
+			await Game.start_match({"home": "ESC", "away": "LLA", "venue": "village", "rules": "ulama", "user_team": 0, "seed": 7,
 				"mode": "quick", "length": 10, "difficulty": 1, "stage": tr("FRIENDLY"), "ritual": false})
 			var m: Node = Game.current
 			await _wait(12.0, false)
@@ -252,7 +260,8 @@ func _menus(only: String) -> void:
 			await _wait(1.0)
 		elif what == "result":
 			# A real match, a short one, played by the computer to its end (nothing drawn meanwhile).
-			Game.start_match({"home": "PIS", "away": "VAL", "venue": "stone", "rules": "classic", "user_team": -1, "seed": 9,
+			# (A coroutine since loading v2: the match is Game.current once it has been built and kicked off.)
+			await Game.start_match({"home": "PIS", "away": "VAL", "venue": "stone", "rules": "classic", "user_team": -1, "seed": 9,
 				"mode": "watch", "length": 1, "difficulty": 1, "stage": tr("FRIENDLY"), "ritual": false})
 			var m: Node = Game.current
 			var guard := 0
@@ -285,3 +294,72 @@ func _cup_under_way() -> void:
 	var r := ResultSim.play(String(f.home), String(f.away), c.rules, 3)
 	c.record_user_result({"home": f.home, "away": f.away, "winner": 0 if f.home == "PIS" else 1, "count": r.count})
 	Game.save_cup()
+
+
+## The feature graphic's picture: a real match on the stone court (High: the realistic bodies on the shared rig), rolled on
+## until a player near the middle of the court is mid hip-strike, then held there and seen from low on the near side,
+## across him to the far wall with its ring and the crowd on top.
+func _feature_shot() -> void:
+	Game.settings.language = "en"
+	TranslationServer.set_locale("en")
+	Game.settings.camera = Game.CAM_TV
+	await Game.start_match({"home": "PIS", "away": "VAL", "venue": "stone", "rules": "classic", "side": 3, "user_team": -1,
+		"seed": 7, "mode": "watch", "length": 10, "difficulty": 2, "stage": tr("FRIENDLY"), "ritual": false})
+	var m: Node = Game.current
+	await _wait(6.0, false)
+	var pick: Player = null
+	var guard := 0
+	RenderingServer.render_loop_enabled = false
+	while pick == null and guard < 30 * 240:
+		guard += 1
+		await get_tree().process_frame
+		for pl: Player in m.all_players():
+			if pl.action == Player.A.STRIKE and pl.action_u() > 0.38 and pl.action_u() < 0.55 \
+					and absf(pl.global_position.x) < 7.0 and m.ball.pos.distance_to(pl.hip_point()) < 1.2:
+				pick = pl
+				break
+	RenderingServer.render_loop_enabled = true
+	# Held at that instant: the match stops (its players, their drawn bodies, the ball), the crowd goes on.
+	m.process_mode = Node.PROCESS_MODE_DISABLED
+	if m.hud:
+		m.hud.visible = false
+		if m.hud.touch:
+			m.hud.touch.visible = false
+	var hip: Vector3 = pick.hip_point() if pick else Vector3(0, 0.9, 0)
+	var fwd: Vector3 = pick.forward() if pick else Vector3(1, 0, 0)
+	# He strikes side-on, facing a side wall (the court runs along x; its walls and rings at z = +-5.58). The camera stands
+	# between him and the wall he faces, a little to one side and below his hip, looking back at him: his face and his
+	# hip to the ball, and behind him the other wall with its ring and the crowd on top.
+	var ring: Vector3 = m.court.rings()[0]
+	for r: Vector3 in m.court.rings():
+		if (r - hip).dot(fwd) < 0.0:
+			ring = r
+	var side := Vector3(fwd.z, 0, -fwd.x)
+	var cam := Camera3D.new()
+	cam.fov = 56.0
+	add_child(cam)
+	var at := hip + fwd * 3.6 + side * 1.4 + Vector3(0, -0.25, 0)
+	at.z = clampf(at.z, -5.0, 5.0)
+	cam.global_position = at
+	cam.look_at(hip.lerp(ring, 0.28))
+	cam.make_current()
+	# Turned until he stands a little right of the middle: the feature graphic fades its left quarter into the title
+	# panel and keeps the right (make_feature.py crops anchored right), so he and the ring stay clear of the fade.
+	var w := float(get_viewport().get_visible_rect().size.x)
+	for i in 200:
+		var sx := cam.unproject_position(hip).x
+		if absf(sx - 0.55 * w) < 12.0:
+			break
+		cam.rotate_y(0.004 if sx < 0.55 * w else -0.004)
+	# Tilted up until the ring is well inside the top of the picture (it hangs 4 m up the wall).
+	var h := float(get_viewport().get_visible_rect().size.y)
+	for i in 120:
+		if cam.unproject_position(ring + Vector3(0, 0.9, 0)).y > 0.06 * h:
+			break
+		cam.rotate_object_local(Vector3.RIGHT, 0.004)
+	for k in 6:
+		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("%s/feature_render.png" % out)
+	print("shot feature_render (%s)" % (pick.name if pick else "no strike found"))
+

@@ -30,14 +30,14 @@ func _ready() -> void:
 			_mark("start")
 			await _frames(30 * 12)
 		"ritual":
-			var m := _start("stone", "PIS", "VAL", true, Game.CAM_END)
+			var m: Node = await _start("stone", "PIS", "VAL", true, Game.CAM_END)
 			_mark("start")
 			while is_instance_valid(m) and m.in_ritual():
 				await _frames(1)
 			_mark("end")
 		"village", "night", "festival", "stone":
 			var homes := {"village": ["ESC", "LLA"], "night": ["FLO", "COP"], "festival": ["SAV", "QUE"], "stone": ["PIS", "VAL"]}
-			var m := _start(clip, homes[clip][0], homes[clip][1], false, Game.CAM_END if clip in ["village", "stone"] else Game.CAM_TV)
+			var m: Node = await _start(clip, homes[clip][0], homes[clip][1], false, Game.CAM_END if clip in ["village", "stone"] else Game.CAM_TV)
 			await _until(func(): return m.phase == m.P.LIVE, 30 * 30)
 			_mark("live")
 			# A strike or a dive, then a little after.
@@ -45,13 +45,13 @@ func _ready() -> void:
 			_mark("action")
 			await _frames(30 * 4)
 		"dive":
-			var m := _start("village", "MOR", "CHL", false, Game.CAM_END)
+			var m: Node = await _start("village", "MOR", "CHL", false, Game.CAM_END)
 			await _until(func(): return m.phase == m.P.LIVE, 30 * 30)
 			await _until(func(): return _acting(m, [Player.A.DIVE]), 30 * 60)
 			_mark("dive")
 			await _frames(30 * 3)
 		"ring":
-			var m := _start("stone", "PIS", "VAL", false, Game.CAM_TV)
+			var m: Node = await _start("stone", "PIS", "VAL", false, Game.CAM_TV)
 			await _until(func(): return m.phase == m.P.LIVE, 30 * 30)
 			await _frames(30 * 2)
 			_mark("strike")
@@ -93,7 +93,8 @@ func _until(cond: Callable, limit: int) -> void:
 func _start(venue: String, home: String, away: String, ritual: bool, cam: int) -> Node:
 	var rules := String(DB.venue(venue).rules)
 	Game.settings.camera = cam   # the game's own cameras: the broadcast view or the end view
-	Game.start_match({"home": home, "away": away, "venue": venue, "rules": rules, "side": 5 if rules == "ulama" else 3,
+	# (A coroutine since loading v2: the match is Game.current once it has been built and kicked off.)
+	await Game.start_match({"home": home, "away": away, "venue": venue, "rules": rules, "side": 5 if rules == "ulama" else 3,
 		"user_team": -1, "seed": 7, "mode": "watch", "length": 10, "difficulty": 2, "stage": tr("FRIENDLY"), "ritual": ritual})
 	return Game.current
 
