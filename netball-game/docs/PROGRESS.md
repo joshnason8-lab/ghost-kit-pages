@@ -224,6 +224,31 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   jog, sprint, pulling up, an umpire; match: the TV camera; close: beside the nearest runner).
   The shared foundation's Low driver (WsgToonDriver) is to be wired after body.apply in Player._animate and
   Umpire.advance; Player.anim_layer says which of her is the game's.
+- **Bodies, the owner's notes after 0.8.6** (every level; foundation synced c52af06 -> 6930061 in its own commit):
+  - Floating feet (Medium/High, the foundation's body): the capture's run slid its planted feet 4-7 cm a step
+    alone and up to 1-1.4 m in matches (its starts, cuts, side-steps, edging at the idle, far bodies carried along
+    between poses), and under the game's whole pose the planter was only disabled. Now on the move her whole body
+    is the game's (Player.anim_layer "full": Gait's planted feet, any pace and direction, the sprint too), the
+    capture only standing still (its idle); planter keep_pose under the game's pose, resume() + reset() back to the
+    capture, no AnimationTree run under it; FoundationLink.FeetLayer puts each drawn ankle on the game's (IK, the
+    knee toward the game's, the foot turned as the game's); a far body's modifiers run between its poses (follow),
+    and the summed dt is capped at 0.25 s (was 0.1). Drawn foot slip (tests/test_runner _foundation_steps, with
+    the clips): 0.2 cm from 2 to 7.2 m/s, side-stepping, defending, passing and catching on the run, pulling up;
+    1.6-1.7 cm at most in two AI matches (the game's own 0.3-0.4). Replays play back what was drawn (no change).
+  - Shooters facing away: the shot kept her look at her last passing option. Now she faces the post from her set
+    (and squares up while she holds in range, the AI's shooters), a passer the receiver; 0 degrees off over 12
+    shots on Low and Medium (was up to 164).
+  - The ball in the forearms: Low put it at the midpoint of the wrists (palms up to 23 cm off it). Now the arms
+    are IK'd after the pose so each palm is on its side of the ball, a little behind, facing it (Player
+    _hands_on_ball), the ball placed there the same frame; the foundation's grip on the ball itself
+    (WsgGrip.solve_sphere/sphere_point). Palms within 0.0 cm (Low) and 1.7 cm (Medium) of the ball; forearms
+    13-15 cm from its centre (radius 11.2).
+  - Rigid stance: Poses.idle (breathing, weight shift, head turns, each player her own), hands up in front only
+    while the ball may come to her; marking with loose arms and a brief arm out; posting's arm in pulses.
+  - Block umpires: the players' model (HeroBody) in the umpires' kit (HeroBody.UMPIRE_KIT, shared with the
+    foundation's shader) on every level, at ease standing. Low perf_probe (TV, seed 4): 98/99/98 draw calls as
+    before, triangles 56.5k/75.1k/59.5k -> 53.4k/72.0k/56.4k; Medium and High unchanged.
+  - Review renders: tests/body_view.tscn (hands, shot, idle, umpire).
 
 - How to Play's positions (the owner: "the court graphics don't show the positions, it's just the same image over
   and over"). Cause: each card's AreaMap was a 184 x 92 court whose only difference from the next was a lime tint
@@ -245,7 +270,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 3. A home-and-away Club Season (14 rounds) as an option, and a finals series with a second chance for the top two.
 4. The after-goal tactical change (2024) on request; the without-ball obstruction signal drawn.
 5. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
-6. The umpires as a model too if the owner wants (docs/MESHY_BRIEF.md); the upload key and the closed test (store/PLAY_STORE.md).
+6. The upload key and the closed test (store/PLAY_STORE.md). (The umpires are the players' model now, 0.8.6.)
 7. Open the rules PDF when the network allows and settle the items in RULES.md "Still unconfirmed".
 
 ## Decisions

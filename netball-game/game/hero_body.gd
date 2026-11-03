@@ -8,7 +8,8 @@ extends ToonBody
 ## navy and the light blue of its panels (the mask says where the dress, the trim, the hair and the skin are), keeps
 ## the white of the socks and shoes, gives her own skin tone and hair, and paints the bib with her position's letters
 ## on the front and back of the chest from where each point sits at rest (UV2), so the bib costs no extra draw call
-## and never comes off the body. Umpires keep ToonBody.
+## and never comes off the body. The umpires are this model too (look "umpire": true): the umpires' kit painted over
+## it, a light teal shirt with short sleeves over the dress, dark trousers to the socks, no bib.
 
 const DIR := "res://assets/player/"
 ## The bib, in the rest stance (m): its top and bottom against the chest joint, and its half width.
@@ -216,8 +217,8 @@ func _dress() -> void:
 
 
 func _material() -> ShaderMaterial:
-	var key := "%s|%s|%s|%s|%s|%s" % [look.get("dress"), look.get("trim"), look.get("bib"), look.get("skin"),
-		look.get("hair"), look.get("pos", "")]
+	var key := "%s|%s|%s|%s|%s|%s|%s" % [look.get("dress"), look.get("trim"), look.get("bib"), look.get("skin"),
+		look.get("hair"), look.get("pos", ""), look.get("umpire", false)]
 	# Medium and High: the model's texture at 2048 and its kit mask at 1024 (Game.HD_TEX); Low the 1024 and 512.
 	var hd := Game.hd()
 	if hd:
@@ -226,7 +227,7 @@ func _material() -> ShaderMaterial:
 		return _mats[key]
 	if _shader == null:
 		_shader = Shader.new()
-		_shader.code = SHADER
+		_shader.code = shader_code()
 		_albedo = load(DIR + "hero_albedo.jpg")
 		_kit = load(DIR + "hero_mask.png")
 		_letters = load("res://assets/ui/bib_letters.png")
@@ -253,9 +254,58 @@ func _material() -> ShaderMaterial:
 	var torso: Dictionary = data().torso
 	var cy := float(torso.chest_y)
 	mat.set_shader_parameter("bib_box", Vector4(BIB_HALF, cy + BIB_BOTTOM, cy + BIB_TOP, float(torso.mid_z)))
+	if bool(look.get("umpire", false)):
+		# The umpires' kit (UMPIRE_KIT): the shirt where the dress is, trousers from the hips to just above the socks,
+		# sleeves to mid upper arm; no bib (its box put out of reach).
+		var j := rest_joints()
+		mat.set_shader_parameter("umpire", 1.0)
+		mat.set_shader_parameter("shirt", look.get("dress", Color("6fd6c6")))
+		mat.set_shader_parameter("trousers", look.get("trousers", Color("1c1b26")))
+		mat.set_shader_parameter("limbs", Vector4((j.hips as Vector3).y + 0.06, (j.foot_l as Vector3).y + 0.07,
+			absf((j.upperarm_l as Vector3).x), (j.upperarm_l as Vector3).y))
+		mat.set_shader_parameter("bib_box", Vector4(0.0, 9.0, 9.0, 0.0))
+		mat.set_shader_parameter("letter", -1)
+		# (The fingertips, the hands hanging beside the thighs: bare legs below them only.)
+		mat.set_shader_parameter("skin_top", (j.hand_l as Vector3).y - 0.185)
+		mat.set_shader_parameter("leg_x", absf((j.thigh_l as Vector3).x) + 0.055)
 	_mats[key] = mat
 	_also_outlined.append(mat)
 	return mat
+
+
+## Each bone's place at rest (the model's own space, m): where the kit's regions are measured from.
+static func rest_joints() -> Dictionary:
+	var off: Dictionary = data().offsets
+	var out := {}
+	for b in BONES:
+		var a: Array = off[b[0]]
+		var at := Vector3(a[0], a[1], a[2])
+		if int(b[1]) >= 0:
+			at += out[BONES[int(b[1])][0]]
+		out[b[0]] = at
+	return out
+
+
+## The umpires' kit on the player's model (and, on the foundation's body, a reserve's tracksuit): the dress is the
+## shirt, the skirt and the bare legs below it the trousers (to just above the socks), a short sleeve of the shirt over
+## each upper arm; skin, hair, socks and shoes kept. limbs: the trousers' top (the hips) and their hem, the shoulder's
+## x and its height (the sleeve), in the rest position (rp).
+const UMPIRE_KIT := """	if (umpire > 0.5) {
+		bool skin_px = m.a > 0.5;
+		// (Bare skin below the hands, or inside them: the model's arms hang at rest, its hands beside its thighs.)
+		bool legs = rp.y < limbs.x && rp.y > limbs.y && abs(rp.x) < 0.3 && (skin_px ? (rp.y < skin_top || abs(rp.x) < leg_x) : (m.r > 0.3 || m.g > 0.3));
+		bool sleeve = skin_px && abs(rp.x) > limbs.z - 0.04 && abs(rp.x) < limbs.z + 0.13 && rp.y > limbs.w - 0.12;
+		// (The dress's white badges and the bib's place on the chest too: all of the torso that is not skin or hair.)
+		bool top = !skin_px && m.b < 0.5 && rp.y >= limbs.x - 0.02 && (m.r > 0.3 || m.g > 0.3 || (abs(rp.x) < limbs.z && rp.y < limbs.w + 0.1));
+		if (top || sleeve) { c = shirt * clamp((lum(t) + 0.15) / (lum(ref_dress) + 0.15), 0.75, 1.15); }
+		if (legs) { c = trousers * clamp((lum(t) + 0.15) / (lum(ref_dress) + 0.15), 0.8, 1.2); }
+	}
+"""
+
+
+## The kit's shader's code, the umpires' kit in it.
+static func shader_code() -> String:
+	return SHADER.replace("\tUMPIRE_KIT\n", UMPIRE_KIT)
 
 
 ## The kit's shader: the texture lit as the cel-shaded umpires are (a soft step from the sun, a rim), with the team's
@@ -278,6 +328,12 @@ uniform vec3 ref_trim : source_color;
 uniform vec3 ref_hair : source_color;
 uniform vec3 ref_skin : source_color;
 uniform int letter = -1;
+uniform float umpire = 0.0;
+uniform vec3 shirt : source_color;
+uniform vec3 trousers : source_color;
+uniform vec4 limbs = vec4(0.9, 0.16, 0.2, 1.3);
+uniform float skin_top = 9.0;
+uniform float leg_x = 0.3;
 uniform vec4 bib_box = vec4(0.11, 1.17, 1.38, -0.044);   // half width, bottom, top, the torso's middle (z)
 uniform vec3 light_dir = vec3(0.35, 0.85, 0.4);
 uniform float shade = 0.72;
@@ -318,6 +374,7 @@ void fragment() {
 		}
 		c = b;
 	}
+	UMPIRE_KIT
 	float d = dot(normalize(wn), normalize(light_dir));
 	float k = mix(shade, 1.0, smoothstep(-0.35, 0.3, d));
 	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0) * 0.18;
