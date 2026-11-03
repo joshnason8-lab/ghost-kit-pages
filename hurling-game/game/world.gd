@@ -101,6 +101,12 @@ func walker(parent: Node) -> Array:
 	return [p.link.body, p.link.loco]
 
 
+## At Low the players are the same WsgBody the walker is (FoundationLink on every tier: the licensed clips ship in the
+## APK; Low differs only by LOD and how often far men are posed).
+func walker_low(_parent: Node) -> Variant:
+	return "foundation"
+
+
 ## The knocks the owner listens for: the ball off the post and the crossbar, the strike, the whistle.
 func key_sounds() -> Array:
 	return ["post", "strike", "whistle"]
