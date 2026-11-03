@@ -1,4 +1,10 @@
-**New in 0.14.8: smoother on Low (the A16's setting).**
+**New in 0.14.9: tidier arms, and a lighter village.**
+- Defenders and raiders shuffling sideways keep their hands out in front, elbows bent, as kabaddi players do; they
+  were holding both arms out straight to the sides.
+- The village draws fewer things each frame on Medium and High (the houses' sun shadows were drawn twice). It looks
+  exactly the same.
+
+**In 0.14.8: smoother on Low (the A16's setting).**
 - On Low graphics each player and official is drawn with about a quarter of the detail (still the same people, the
   same kit and the same floor shadow - side by side you cannot tell them apart from the match cameras). A frame on
   Low now draws about 140,000-180,000 triangles instead of 625,000-665,000, over three times less work for the phone.

@@ -556,6 +556,7 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   players 57, the officials 20, about 41 with the sun's pass, the four houses 18 (3 parts each, drawn twice in the lit
   pass). The houses are in the lightmapped shell scene (assets/grounds/village/village.tscn): merging them into four
   draws needs the shell and its lightmap baked again - next.
+(0.14.9-beta, code 49, carries the next two.)
 - **The village under 120 draw calls, no rebake needed.** The houses' shadows are already in the lightmap, and they stand
   well off the court, so drawing them again into the sun's shadow map only cost draw calls. Arena turns their shadow
   casting off in the village. Season at Medium went from 126 to 114 draw calls (High 129 to 117). The tiers rule passes
