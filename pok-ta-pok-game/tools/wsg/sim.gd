@@ -199,7 +199,7 @@ func _append_done(_key: String, r: Dictionary) -> void:
 		DirAccess.make_dir_recursive_absolute(d)
 		var ff := FileAccess.open(d.path_join("%d.json" % int(r.seed)), FileAccess.WRITE)
 		var rec := {"seed": r.seed, "kind": r.kind, "config": r.config, "failure": fl,
-			"replay": "godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- replay --game %s --failure %s" % [args.get("game", "res://game/sim.gd"), d.path_join("%d.json" % int(r.seed))]}
+			"replay": "godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- replay --game %s --failure %s%s" % [args.get("game", "res://game/sim.gd"), d.path_join("%d.json" % int(r.seed)), " --input" if args.has("input") else ""]}
 		ff.store_string(JSON.stringify(WsgSim._plain(rec), "  "))
 		ff.close()
 
