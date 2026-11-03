@@ -227,6 +227,13 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.11-beta: the shooter no longer contorts; the foundation's planter (3 November 2026)
+
+- **Penalty shots: his body contorts coming back** (the owner's 2026-11-02 note): the idle skaters, hidden but left
+  on the rink, pushed the shooter sideways at his spot (moving sideways, facing the goal: his legs turned 63 degrees
+  from his chest). The bodies' separation leaves out the hidden: 0 degrees. 29 of the owner's 30 notes pass.
+- Foundation synced to 80420f6 (the planter's stop and walk start). 0.9.11-beta, code 26.
+
 ### 0.9.10-beta: the release gate (3 November 2026)
 
 - The shared release gate (tools/wsg/release_gate.py) runs on the signed APK before it is published: version and
