@@ -46,24 +46,36 @@ func body(who: String, pos: Vector3, radius: float, height := 1.8, seated := fal
 			"pos": pos, "radius": radius, "height": height, "time": time})
 
 
-func ball(pos: Vector3, radius: float, who := "ball") -> void:
+## The ball (WHO) at POS this frame. PATH: the places it went through since the last frame, in order, if its physics
+## takes several steps a frame (a bounce off a wall inside a frame: the straight line from the last frame's place cut
+## the corner past a prop by the wall - Sepak Takraw's camera tripod, 2.3 cm "into" it). Each step is swept.
+func ball(pos: Vector3, radius: float, who := "ball", path := []) -> void:
 	if _last.has(who):
 		ball_steps += 1
-		var p0: Vector3 = _last[who]
-		var h := solid.sweep(p0, pos, radius)
-		if h.hit:
-			# How deep the straight way goes: from where it meets the prop to where it leaves it, its middle.
-			var back := solid.sweep(pos, p0, radius)
-			var t_out := 1.0 - float(back.t) if back.hit else 1.0
-			var t_in := float(h.t)
-			if t_out > t_in:
-				var mid := p0.lerp(pos, (t_in + t_out) * 0.5)
-				var inside := solid.sweep(mid, mid, radius)
-				if inside.hit and float(inside.get("depth", 0.0)) > PEN_TOL:
-					ball_tunnels += 1
-					_keep({"kind": "ball", "who": who, "prop": String(h.name), "depth": float(inside.depth), "pos": mid,
-						"from": p0, "to": pos, "radius": radius, "time": time})
+		var from: Vector3 = _last[who]
+		for q in path:
+			if q is Vector3 and (q as Vector3).is_finite() and not (q as Vector3).is_equal_approx(from):
+				_ball_step(who, from, q, radius)
+				from = q
+		if not pos.is_equal_approx(from) or path.is_empty():
+			_ball_step(who, from, pos, radius)
 	_last[who] = pos
+
+
+func _ball_step(who: String, p0: Vector3, pos: Vector3, radius: float) -> void:
+	var h := solid.sweep(p0, pos, radius)
+	if h.hit:
+		# How deep the straight way goes: from where it meets the prop to where it leaves it, its middle.
+		var back := solid.sweep(pos, p0, radius)
+		var t_out := 1.0 - float(back.t) if back.hit else 1.0
+		var t_in := float(h.t)
+		if t_out > t_in:
+			var mid := p0.lerp(pos, (t_in + t_out) * 0.5)
+			var inside := solid.sweep(mid, mid, radius)
+			if inside.hit and float(inside.get("depth", 0.0)) > PEN_TOL:
+				ball_tunnels += 1
+				_keep({"kind": "ball", "who": who, "prop": String(h.name), "depth": float(inside.depth), "pos": mid,
+					"from": p0, "to": pos, "radius": radius, "time": time})
 
 
 func ball_reset(who := "ball") -> void:

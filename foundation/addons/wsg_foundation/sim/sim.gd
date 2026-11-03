@@ -332,7 +332,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 			elif not bounds.has_point(bp):
 				_fail(out, "out of bounds", "the ball is outside the game's bounds at %s" % bp.snappedf(0.01), t, frame, st, events)
 			elif audit and bool(bd.get("live", true)):
-				audit.ball(bp, float(bd.get("radius", 0.11)))
+				audit.ball(bp, float(bd.get("radius", 0.11)), "ball", bd.get("path", []))
 			elif audit:
 				audit.ball_reset()
 		if audit:

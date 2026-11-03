@@ -18,6 +18,7 @@ func _initialize() -> void:
 	_bodies(solid)
 	_paths(solid)
 	_ball(solid)
+	_ball_path()
 	await _physics(solid)
 	_register()
 	_cost(solid)
@@ -25,6 +26,36 @@ func _initialize() -> void:
 		printerr("FAIL: ", f)
 	print("SOLID PROPS TEST: ", "PASS" if fails.is_empty() else "FAIL (%d)" % fails.size())
 	quit(0 if fails.is_empty() else 1)
+
+
+## A ball that bounces off a wall inside a frame (sub-stepped physics), past a camera tripod by the wall - Sepak
+## Takraw's mall atrium (0.15.9), its own numbers: the straight line between the frames passes 2.3 cm "into" the
+## tripod; the path it took never touches it. With the path given (WsgSimGame.ball's "path"), no tunnel; without it,
+## one; and a path whose own step goes through the tripod is still caught.
+func _ball_path() -> void:
+	var s := WsgSolidProps.new()
+	s.add({"name": "tripod", "kind": "cylinder", "position": Vector3(-10.6, 0, 6.75), "radius": 0.36, "height": 1.6})
+	s.add({"name": "end wall", "kind": "box", "position": Vector3(-11.6, 0, 6.5), "size": Vector3(1.0, 3.0, 6.0)})
+	var r := 0.068
+	var a := Vector3(-10.72, 0.69, 6.30)
+	var b := Vector3(-10.99, 0.67, 6.57)
+	var path := [Vector3(-10.83, 0.685, 6.37), Vector3(-10.93, 0.68, 6.44), Vector3(-11.03, 0.675, 6.50), b]
+	var straight := WsgPropAudit.new(s)
+	straight.ball(a, r)
+	straight.ball(b, r)
+	var swept := WsgPropAudit.new(s)
+	swept.ball(a, r)
+	swept.ball(b, r, "ball", path)
+	var through := WsgPropAudit.new(s)
+	through.ball(a, r)
+	through.ball(b, r, "ball", [Vector3(-10.62, 0.68, 6.45), b])
+	print("ball path: the straight line %d tunnel(s), the path swept %d, a path through the tripod %d" % [straight.ball_tunnels, swept.ball_tunnels, through.ball_tunnels])
+	if straight.ball_tunnels != 1:
+		fails.append("the straight line past the tripod should read as a tunnel (it cuts 2.3 cm in): %d" % straight.ball_tunnels)
+	if swept.ball_tunnels != 0:
+		fails.append("the bouncing path past the tripod read as a tunnel: %s" % [swept.report().worst])
+	if through.ball_tunnels < 1:
+		fails.append("a path whose step goes through the tripod was not caught")
 
 
 ## A court's side: a bench, a turned officials' table, a pole, a goal (posts and a crossbar overhead), a glass pane,

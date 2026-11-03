@@ -964,7 +964,9 @@ that went under a prop's base up through the prop. That was the only way the tes
 coroutine `run(venue, seed, seconds, audit, tree)`. The coroutine plays a Watch-AI match at that venue at sim speed,
 and on every frame calls:
 - `audit.body(who, pos, radius, height)`;
-- `audit.ball(pos, radius)`;
+- `audit.ball(pos, radius)`; if your ball takes several physics steps a frame, `audit.ball(pos, radius, "ball", path)`
+  with the places it went through since the last frame, in order (a bounce off a wall inside a frame: the straight
+  line between frames cuts the corner past a prop by the wall);
 - `audit.ball_reset()` when you put the ball somewhere new;
 - `audit.tick(dt)`.
 
@@ -1085,7 +1087,7 @@ test_runner); it is not a second copy of your game.
 | `state()` | `{score, clock, clock_running, phase, possession, finished}` |
 | `events()` | what happened since the last call |
 | `bodies()` | `[{name, pos, radius, height, body (WsgBody), active, target}]`, the same order all match (the sampled quarter is picked by place in the list); optionally `pose_excuse`: why the arms are out straight by design now (counted, not failed) |
-| `ball()` | the ball's position, radius and whether it's in play |
+| `ball()` | the ball's position, radius and whether it's in play; optional `"path"`: the places a sub-stepped ball went through this frame, in order, each swept by the audit |
 | `solid()` | your WsgSolidProps |
 | `fetch(spot)` | the ball dead at `spot` (behind a big prop) and one body sent for it: `{who, seconds, arrive}` |
 | `bounds()` | where anything may ever be |

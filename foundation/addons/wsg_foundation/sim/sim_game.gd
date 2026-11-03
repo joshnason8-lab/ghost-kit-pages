@@ -52,7 +52,10 @@ func bodies() -> Array:
 	return []
 
 
-## The ball now: {"pos": Vector3, "radius": float, "live": bool} (empty: no ball, or none in play).
+## The ball now: {"pos": Vector3, "radius": float, "live": bool, "path": Array (optional)} (empty: no ball, or none
+## in play). path: the places the ball went through since the last frame, in order, if its physics takes several
+## steps a frame - the audit sweeps each (a bounce off a wall inside a frame: the straight line between frames cuts the
+## corner past a prop by the wall).
 func ball() -> Dictionary:
 	return {}
 
