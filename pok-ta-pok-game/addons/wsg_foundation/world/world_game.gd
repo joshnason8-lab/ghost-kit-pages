@@ -66,7 +66,9 @@ func find_officials(root: Node) -> Array:
 	return out
 
 
-## The players (and every other body) now under ROOT (default: every WsgBody not inside an official).
+## The players (and every other body) now under ROOT (default: every WsgBody not inside an official). Return only the
+## bodies drawn now: one hidden on purpose (a substitute off the field) has no drawn person and reads as a block figure
+## (Floorball).
 func find_bodies(root: Node) -> Array:
 	var offs := find_officials(root)
 	return root.find_children("*", "WsgBody", true, false).filter(func(b: Node) -> bool:
