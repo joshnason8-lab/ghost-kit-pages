@@ -597,3 +597,18 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
 - **73abc139:** the ball audit takes an optional per-frame `path` (WsgSimGame.ball's "path";
   WsgPropAudit.ball(pos, r, who, path)), each step swept. Takraw's mall tripod: the chord between frames cut 2.3 cm
   into it, the bounce path never touched it. Pinned in solid_props_test on their numbers.
+- **The hard-stop snap (the lead's go, 13:47): 4b1dc42c + 86a3644e, REQUIRED from 2026-11-05 12:00 UTC.**
+  - Measured: `foot_slip`'s `skid_cm`, the most a foot flat on the floor (heel and toe within 2 cm, this frame and
+    the last) moves in a frame, whatever the swing gate says; the feet rule and WsgSim fail it over 2 cm. The lead's
+    literal "within 3 cm" flagged every walk's swing toe (8-12 cm a frame, heel up); at 3 cm a foot still coming down
+    read 11 cm. Pinned in foot_slip_test (a snap reads 23 cm, a skimming swing and a roll 0) and feet_scale_test (the
+    old planter fails it at every scale: stop 8.7-23.9, walk 3.3-4.5).
+  - Fixed in the planter: a foot flat on the floor (2 cm) is planted however fast; a self-step is planted where it
+    was drawn down, turned and pitched as drawn until its toe is down; a let-go foot held across eases across over
+    `release` when the hold ends (it jumped up to 72 cm in a frame at Hurling's walk start, unmeasured), lifting over
+    the floor when the clip's foot is some way off.
+  - Every game's walker, old planter -> fixed (skid, cm): Hurling walk 7.4 -> 0.2 (stop 9.8 -> 0.1); Floorball stop
+    2.1 -> ok; Kho Kho walk 3.6 -> 0.0; Netball walk 3.8 -> ok; Pok Ta Pok jog turned 13.8 -> ok; Takraw walk 3.7 -> ok.
+    All pass; slips unchanged or lower.
+- **29212ba4 (the lead, 14:00): the release gate's `newer`**: versionName and versionCode above the APK on the tag
+  (read from both manifests; Kabaddi's published: 0.14.7-beta, 47). REQUIRED from 2026-11-04 18:00 UTC.
