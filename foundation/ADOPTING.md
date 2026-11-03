@@ -1356,6 +1356,11 @@ on any phone. Build what the player's tier allows. If the owner lets a mode run 
 foundation's crowd tests and notes now do). The frame budgets are set from Hurling's national stadium with about 15%
 room (docs/BUDGET.md); send me your numbers if a venue of yours needs more.
 
+**Turn off your own graphics step-down in world.gd.** world_check holds WsgAutoTier off, but a game's own guard (a
+frame-rate check that lowers the tier) fires on a slow CI machine mid-check: Kabaddi's dropped to Low after the modes
+had played, released its foundation bodies, and the walker read a toe 9.4 cm up. Switch it off where world.gd sets up
+(Kabaddi: `Game.settings.auto_gfx = false`).
+
 **Deferring a rule (only for a foundation fault, with the lead's or owner's word).** `deferred()` in your world.gd:
 `{"feet": ["2026-11-06T12:00Z", "the lead, 2026-11-03: <why>"]}`. Until that time a failure of that rule is reported
 DEFERRED with the reason, not failed; from it, it fails again. `WsgSimGame.deferred()` is the same for WsgSim's
