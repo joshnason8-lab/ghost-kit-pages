@@ -233,7 +233,8 @@ func _check_ball(m, dt: float, phase: String) -> void:
 		_flag("ball_below_floor", "error", "the ball %.2f m below the floor (%s)" % [-b.y, m.ball.state])
 	if absf(b.x) > HALF_L + RUNOFF + 3.0 or absf(b.z) > HALF_W + RUNOFF + 3.0 or b.y > 15.0:
 		_flag("ball_lost", "error", "the ball off in the distance at %s (%s)" % [b, m.ball.state])
-	if (m.ball.position - b).length() > 0.05:
+	# (Drawn after the next step: a replay just ended, a centre pass just set up, the ball is put right then.)
+	if (m.ball.position - b).length() > 0.05 and not ("replay" in _events_step or "centre_setup" in _events_step or _prev_phase != phase):
 		_flag("ball_two_places", "error", "the ball drawn %.2f m from where the match has it" % (m.ball.position - b).length())
 	var held: bool = m.ball.state == "held"
 	if held != (m.holder != null):
@@ -254,11 +255,17 @@ func _check_ball(m, dt: float, phase: String) -> void:
 			stats["restart_jumps"] = int(stats.get("restart_jumps", 0)) + 1
 			if jump > 3.0:
 				_flag("ball_jump_restart", "warn", "the ball jumped %.1f m at a restart (%s -> %s, %s)" % [jump, _prev_phase, phase, m.ball.state])
-		elif "catch" in _events_step or "gain" in _events_step or "fumble" in _events_step:
+		elif "catch" in _events_step or "gain" in _events_step or "fumble" in _events_step or (held and m.holder != _prev_holder):
 			# Into the catcher's hands from where the flight ended (she may be up to 1.3 m from it: Match._arrive).
 			stats["catch_snaps"] = int(stats.get("catch_snaps", 0)) + 1
 			if jump > 0.6:
 				_flag("ball_snap_catch", "warn", "the ball jumped %.2f m into %s's hands at the catch" % [jump, m.holder.pos if m.holder else "-"])
+		elif held and m.holder == _prev_holder and m.ball.holder == m.holder:
+			# In the same player's hands all along: her hands' pose jumped (a catch overhead to a hold at the chest), and
+			# the ball with them. Seen, not a rules matter.
+			var hh = m.holder
+			_flag("ball_pop_in_hands", "warn", "the ball jumped %.2f m in %s%d's hands in a step (%s): %s -> %s" % [jump, hh.pos, hh.team, hh.act,
+				_prev_ball.snappedf(0.01), b.snappedf(0.01)])
 		else:
 			var h = m.holder
 			_flag("ball_teleport", "error", "the ball jumped %.2f m in a step (%s, %s, events %s): %s -> %s%s" % [jump, phase, m.ball.state, _events_step,

@@ -1,0 +1,135 @@
+name: Netball Unleashed · simulated matches
+
+# The shared foundation's WsgSim on the game's own code (netball-game/docs/SIM.md; foundation ADOPTING.md §5.17):
+# the nightly batch, 2,400 seeded matches over 16 parallel shards, merged into one report (SIM_REPORT.md and
+# sim_report.json, failures with their replay commands). A manual run can be the smoke batch instead. Everything goes
+# to the runner's temp folder and the run's artifacts: never into the project, never a release. The game's adapter is
+# res://game/wsg_sim.gd (res://game/sim.gd is the game's results simulator for the cup and season).
+
+on:
+  schedule:
+    - cron: "41 3 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "nightly (16 shards, 2,400 matches) or smoke (one job: about 70 matches)"
+        default: nightly
+        type: choice
+        options: [nightly, smoke]
+
+concurrency:
+  group: netball-sim-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: netball-game
+  ADAPTER: res://game/wsg_sim.gd
+  SHARDS: "16"
+  COUNT: "2400"
+  # sim_shard.sh takes a Godot silent this long for frozen. The adapter prints a line a period, and a 15-minute
+  # quarter is a few minutes of a runner's time.
+  HANG: "1500"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'smoke'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+      - run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+      - name: Licensed animation (baked for this run only)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+      - name: Import
+        run: |
+          godot --headless --path ${PROJECT_DIR} --import || true
+          godot --headless --path ${PROJECT_DIR} --import || true
+      - name: Unseeded rolls (listed; the cosmetic ones in match.gd and ball.gd are known)
+        run: sh ${PROJECT_DIR}/tools/wsg/rng_lint.sh || true
+      - name: Determinism (each seed twice, frame for frame)
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/xdg
+        run: godot --headless --fixed-fps 30 --path ${PROJECT_DIR} -s res://tools/wsg/sim.gd -- determinism --game ${ADAPTER} --seeds 2
+      - name: Smoke batch
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/xdg
+        run: sh ${PROJECT_DIR}/tools/wsg/sim_shard.sh ${PROJECT_DIR} "${RUNNER_TEMP}/sim" --smoke --input --game ${ADAPTER}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: netball-sim-smoke, path: "${{ runner.temp }}/sim"}
+
+  nightly:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'nightly')
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+      - run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+      - name: Licensed animation (baked for this run only)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+      - name: Import
+        run: |
+          godot --headless --path ${PROJECT_DIR} --import || true
+          godot --headless --path ${PROJECT_DIR} --import || true
+      - name: Shard ${{ matrix.shard }} of ${{ env.SHARDS }}
+        continue-on-error: true
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/xdg
+        run: sh ${PROJECT_DIR}/tools/wsg/sim_shard.sh ${PROJECT_DIR} "${RUNNER_TEMP}/sim/${{ matrix.shard }}" --from 1 --count ${COUNT} --shard ${{ matrix.shard }}/${SHARDS} --input --game ${ADAPTER}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: "netball-sim-shard-${{ matrix.shard }}", path: "${{ runner.temp }}/sim/${{ matrix.shard }}"}
+
+  report:
+    needs: nightly
+    if: always() && needs.nightly.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+      - uses: actions/download-artifact@v4
+        with: {path: "${{ runner.temp }}/shards", pattern: "netball-sim-shard-*"}
+      - run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+      - name: Import
+        run: |
+          godot --headless --path ${PROJECT_DIR} --import || true
+          godot --headless --path ${PROJECT_DIR} --import || true
+      - name: Merge the shards' reports
+        run: godot --headless --path ${PROJECT_DIR} -s res://tools/wsg/sim.gd -- merge --game ${ADAPTER} --out "${RUNNER_TEMP}/sim-nightly" "${RUNNER_TEMP}"/shards/*
+        continue-on-error: true
+      - name: The report in the run's summary
+        if: always()
+        run: cat "${RUNNER_TEMP}/sim-nightly/SIM_REPORT.md" >> "$GITHUB_STEP_SUMMARY" || true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: netball-sim-nightly, path: "${{ runner.temp }}/sim-nightly"}

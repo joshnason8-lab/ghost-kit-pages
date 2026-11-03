@@ -101,7 +101,46 @@ crowd.gd now; nothing here changes their call sites):
 
 ## Headless speed
 
-<<SPEED>>
+Measured November 2026 on the build machine: 4 cores shared with other work (load average about 25), so the wall
+clock understates what a free core does; each run also reads its own CPU time (`/proc/self/stat`), and "x a CPU
+second" is the speed one free core gives. AI v AI, 20 s quarters, three venues each, `tests/sim/run_batch.tscn`:
+
+| Level | Foundation | Steps a frame | x real time (wall, loaded) | x a CPU second |
+|---|---|---|---|---|
+| Low | off or on (Low never uses it) | 1 | 5.8 | 11.5-11.9 |
+| Low | off | 4 / 16 | 5.5 / 6.3 | 11.7 / 11.7 |
+| Low | off, checks off | 4 | 6.9 | 12.1 |
+| Medium | off | 1 / 4 | 5.7 / 5.3 | 11.4 / 11.7 |
+| High | off | 1 / 4 | 6.1 / 6.5 | 11.3 / 12.0 |
+| Medium | on | 1 / 4 | 2.0 / 2.8 | 3.8 / 5.5 |
+| High | on | 1 / 4 | 2.4 / 3.1 | 3.8 / 5.3 |
+| Medium, the HUD built | on | 4 | 2.4 | 5.6 |
+
+- **Nothing in the match waits for the wall clock.** With `--fixed-fps 30` every frame is 1/30 s of play however long
+  it takes, and frames run back to back (`--fixed-fps` skips the engine's frame delay; the harness also sets
+  `Engine.max_fps = 0`: the game's Smooth cap is 0 on a 60 Hz or headless screen, but Battery saver or a 144 Hz screen
+  would set one, and a run without `--fixed-fps` would step by the wall clock). The game uses no physics bodies, no
+  AnimationPlayer or AnimationTree, and tweens only in the menus. Things on engine time rather than the match's:
+  the goal whistle's 0.45 s `SceneTreeTimer` (heard matches only: sound), haptics' timers (phones only), the AI's
+  time-out after a goal (`call_deferred`: the frame's end), and the foundation's skeleton update (its pose layers
+  ease by the frame's delta and its hands set `ball_at` once a frame).
+- **The cost is the step itself**: about 2.8 ms of CPU a step with the foundation off (the AI and fourteen players'
+  moves, bodies, hands: `profile=1` splits it), so more steps a frame buys nothing there (11.5x at 1, 11.7x at 16).
+  The checks cost 4%.
+- **With the foundation** (Medium and High with the licensed data) a step costs about 6 ms and each frame's skeleton
+  update as much again at one step a frame: 3.8x; at 4 steps a frame 5.5x, but then the foundation is posed once a
+  frame for four steps, which changes where the ball leaves the hands and so the play (the same seed gives different
+  scores at 1 and 4 steps). WsgSim steps once a frame, so its foundation matches run at about 3.8x a CPU second.
+- **Best honest speeds**: about 12x a free core with the foundation off (Low: a production level), 3.8x with it; on
+  the 4 cores, 4 processes, about 45x and 15x in all.
+- **What more needs**: (1) the coarser step only if WsgSim's `fps-probe` finds one whose outcomes match 30 fps
+  exactly (the AI's per-step chances, `randf() < rate * dt`, and the 0.05 s step cap make that unlikely: see
+  "WsgSim" below for what it found); (2) the foundation's frame cost: its skeleton modifiers run at the frame, so a
+  build where the match's step drives them (or where the hands' ball point comes from the game's clock, not the
+  skeleton update) would let it step several times a frame without changing the play; (3) the step's own cost
+  (players' bodies and hands posed every step even headless, because the ball's position comes from the hands): a
+  cheaper hand point when nothing is drawn would change the play, so it is not an option under "production code
+  only"; (4) more processes: sharding is linear.
 
 ## The netball checks
 
