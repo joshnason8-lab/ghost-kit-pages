@@ -306,7 +306,14 @@ shows the fan's back (`crowd/cards_back.png`), turned toward the camera from beh
 own card art instead: `cards.use_art(atlas, mask, layout, back, back_mask)` before `build` (layout as
 `crowd/cards.json`; back and back_mask optional, the same cells from behind; the shared cards are baked by
 `tools/bake_cards.gd` from each fan's whole textured model in the authored crowd poses). `cards.brightness` matches
-your old crowd's; each spot's shirt Color is drawn exactly. This replaces your own
+your old crowd's; each spot's shirt Color is drawn exactly; `cards.fan_weights` as WsgCrowd3D's (each seat takes a
+fan at random among those whose legs fit it). Your own art may add poses after sit, stand and cheer in its layout's
+`"poses"`: `sit_clap`, `stand_clap` (on the beat while `cards.clap(rate, unison, seconds)` plays), `sit_look_l`,
+`sit_look_r`, `stand_look_l`, `stand_look_r` (toward the side the ball is on: `cards.watch_ball(p)` every frame).
+
+**After a sync that re-bakes the crowd, bake your licensed crowd again** (`FORCE=1 tools/wsg/fetch_assets.sh`; CI
+fetches fresh). A crowd baked before the foundation's current crowd.json version (`WsgCrowd3D.BAKE_VERSION`) has
+ungrounded frames (seated soles up to 7 cm under the floor), and `crowd_audit` says so and fails. This replaces your own
 billboard crowd: drop it, or keep its art through `use_art`.
 
 **3. Register it for the audit**: `res://game/crowd_venues.gd`:

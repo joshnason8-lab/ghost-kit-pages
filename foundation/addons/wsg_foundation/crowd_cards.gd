@@ -13,7 +13,8 @@ extends Node3D
 ## Seen from behind (a camera behind a stand), a card shows the fan's back (crowd/cards_back.png; your own: use_art's
 ## back and back_mask), turned toward the camera from behind.
 ## Your own card art instead of the shared fans: use_art(atlas, mask, layout[, back, back_mask]) before build() (layout as cards.json:
-## {"cols", "rows", "size": [w, h] m a cell, "poses": 3 (sit, stand, cheer), "fans": {name: {"seat": the seat's height
+## {"cols", "rows", "size": [w, h] m a cell, "poses": ["sit", "stand", "cheer"] and any of "sit_clap", "stand_clap",
+## "sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r" after them (clap() and watch_ball() then use them), "fans": {name: {"seat": the seat's height
 ## in the cell, m}}}; mask: R shirt, G skin, B hair, A legs' clothes, or a blank one).
 
 const DIR := "res://addons/wsg_foundation/crowd/"
@@ -119,6 +120,10 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 	material.set_shader_parameter("rows", int(_layout.rows))
 	var poses: Variant = _layout.get("poses", 3)
 	material.set_shader_parameter("poses", (poses as Array).size() if poses is Array else int(poses))
+	# A game's art may add, after sit, stand and cheer: sit_clap, stand_clap, sit_look_l, sit_look_r, stand_look_l,
+	# stand_look_r (Kabaddi's clapping in time, heads after the raider).
+	for extra in ["sit_clap", "stand_clap", "sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r"]:
+		material.set_shader_parameter("p_" + extra, (poses as Array).find(extra) if poses is Array else -1)
 	material.set_shader_parameter("size", Vector2(_layout.size[0], _layout.size[1]))
 	material.set_shader_parameter("turn", TURN)
 	material.set_shader_parameter("brightness", brightness)
@@ -196,6 +201,41 @@ func _process(delta: float) -> void:
 	_excite = lerpf(_excite, target, 1.0 - exp(-delta * (5.0 if target > _excite else 0.7)))
 	material.set_shader_parameter("excite", _excite)
 	material.set_shader_parameter("light", WsgCrowd3D._light)
+	_clap_time += delta
+	if _clap_left > 0.0:
+		_clap_left -= delta
+	material.set_shader_parameter("clap_on", 1.0 if _clap_left > 0.0 else 0.0)
+	material.set_shader_parameter("clap_time", _clap_time)
+	if _watching:
+		_ball = _ball.lerp(_target_ball, 1.0 - exp(-delta * 3.0))
+		material.set_shader_parameter("ball", _ball)
+
+
+var _clap_left := 0.0
+var _clap_time := 0.0
+var _ball := Vector3.ZERO
+var _target_ball := Vector3.ZERO
+var _watching := false
+
+
+## As WsgCrowd3D.clap: the rhythmic clapping is playing (claps a second, unison 0..1, for how long). Cards with clap
+## poses (a game's art) clap on its beat.
+func clap(rate: float, sync: float, seconds: float) -> void:
+	_clap_left = seconds
+	_clap_time = 0.0
+	if material:
+		material.set_shader_parameter("clap_rate", rate)
+		material.set_shader_parameter("clap_sync", sync)
+
+
+## As WsgCrowd3D.watch_ball (every frame): cards with look poses (a game's art) look to the side the ball is on.
+func watch_ball(p: Vector3) -> void:
+	if not _watching:
+		_ball = p
+	_watching = true
+	_target_ball = p
+	if material:
+		material.set_shader_parameter("watching", 1.0)
 
 
 ## One card: a quad from the foot (0) to the top (1), its middle at the origin (the shader turns and sizes it).
