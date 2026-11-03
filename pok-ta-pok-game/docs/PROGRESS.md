@@ -247,6 +247,15 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   - The Web preset leaves out all the foundation's licensed data.
   - Tests: the serve bounces and is never rolled, the AI meets the ball with the hip and rallies go on, the stance is
     alive and planted, and at Low every player has the capture, runs on it, and the match plays exactly as without.
+- **0.6.4-beta: the crowd sits and stands properly** (the owner, for every game: "make sure the crowd is sitting
+  properly, watching the game properly, facing the right direction, standing properly. This should all be shared
+  foundation"). Every venue is declared to the shared foundation's crowd placement (WsgCrowdVenue, foundation
+  cd6c29f) and passes its audit (game/crowd_venues.gd, tools/wsg/crowd_audit.gd): the village's people sit on the
+  benches and stand behind them (no longer in them); the festival's stand is sat on as a bleacher, feet on the row
+  below; the stone courts' terraces are stood on; the crowds hidden at ground level behind the stone courts' end walls
+  are gone. The seated are the shared cards (the only seated figures), in local skin, hair and clothes, and only the
+  fans the shared sheet draws from the front (some of its fans are baked from behind: reported); the standing stay
+  this game's townspeople, turned to the play within 50 degrees of their place. Contact sheets: docs/playtest/crowd/.
 
 ## Next
 

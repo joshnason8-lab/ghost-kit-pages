@@ -303,10 +303,64 @@ func build_venue(venue: WsgCrowdVenue, density: float, palette: Array, seed_ := 
 	if not seated.is_empty() and WsgCrowdCards.available():
 		cards = WsgCrowdCards.new()
 		add_child(cards)
-		cards.build(placed, PackedInt32Array(seated), seed_, shirts)
+		var art := front_art()
+		if not art.is_empty():
+			cards.use_art(art[0], art[1], art[2])
+		# (Shirts: the team colours and the cards' own; a game's colours go through a coarse palette for now.)
+		cards.build(placed, PackedInt32Array(seated), seed_)
 		if palette.size() >= 2:
 			cards.set_teams(palette[0], palette[1])
 		cards.set_looks(LOOK_SKIN, LOOK_HAIR, LOOK_LEGS)
+
+
+## The shared cards' art with only the fans drawn from the front (FRONT_FANS): in the foundation's cd6c29f sheet some
+## are baked from behind, and on a bench facing the court they showed the backs of their heads (reported to the
+## foundation). Cut from its atlas and mask once, its layout to match. Empty without the art.
+const FRONT_FANS := ["fan", "fan3", "fan5"]
+static var _front := []
+
+
+static func front_art() -> Array:
+	if not _front.is_empty() or not WsgCrowdCards.available():
+		return _front
+	var dir := WsgCrowdCards.DIR
+	var layout: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "cards.json"))
+	var atlas := (load(dir + "cards.png") as Texture2D).get_image()
+	var mask := (load(dir + "cards_mask.png") as Texture2D).get_image()
+	for im in [atlas, mask]:
+		if im.is_compressed():
+			im.decompress()
+	var cols := int(layout.cols)
+	var rows := int(layout.rows)
+	var poses: int = (layout.poses as Array).size() if layout.poses is Array else int(layout.poses)
+	var cw := atlas.get_width() / cols
+	var ch := atlas.get_height() / rows
+	var mw := mask.get_width() / cols
+	var mh := mask.get_height() / rows
+	var names: Array = layout.fans.keys()
+	var keep := []
+	for f in FRONT_FANS:
+		if f in names:
+			keep.append(f)
+	if keep.is_empty():
+		return _front
+	var out_a := Image.create(cw * poses, ch * keep.size(), false, atlas.get_format())
+	var out_m := Image.create(mw * poses, mh * keep.size(), false, mask.get_format())
+	var fans := {}
+	for r in keep.size():
+		var src := names.find(keep[r])
+		for p in poses:
+			var cell := src * poses + p
+			out_a.blit_rect(atlas, Rect2i((cell % cols) * cw, (cell / cols) * ch, cw, ch), Vector2i(p * cw, r * ch))
+			out_m.blit_rect(mask, Rect2i((cell % cols) * mw, (cell / cols) * mh, mw, mh), Vector2i(p * mw, r * mh))
+		fans[keep[r]] = layout.fans[keep[r]]
+	var lay := layout.duplicate(true)
+	lay.cols = poses
+	lay.rows = keep.size()
+	lay.fans = fans
+	lay.erase("cells")
+	_front = [ImageTexture.create_from_image(out_a), ImageTexture.create_from_image(out_m), lay]
+	return _front
 
 
 ## Fills the spots with people (density 0-1 of them), each facing the play from where they stand.
