@@ -227,6 +227,22 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.9-beta: straight wrists; the shared world rules and the match simulator in CI (3 November 2026)
+
+- **0.9.8-beta** (code 23): a kneeling goalkeeper's push is never faster over the floor than a sprint (it reached 14 m/s,
+  2.35 times his speed: the motion audit's intermittent failure). The world check (the shared world rules,
+  game/world.gd) runs in CI and fails the build from 12:00 UTC: every body drawn before the loading screen lifts,
+  hidden substitutes drawn light, the tiers set from Settings. All 10 rules pass.
+- **Straight wrists** (the owner's 3 November note, a golfer's grip): each fist is lined up on its forearm as drawn,
+  not on the shoulder's line, and no wrist bends past 55 degrees (WristLimit). The bend at 95%: 67 degrees to 14.
+- **The lower hand on the stick at Low**: light bodies now refine their hips and lean toward the stick too (98.9% on).
+- **A shot through a goal post**: the posts' collision is swept (a shot covers half a metre a step). Found by
+  **WsgSim**, the shared match simulator (game/sim.gd): the game's own matches headless at 5x real time, seeded and
+  replayable; a quick smoke on every push (floorball-sim.yml), the full batch on demand and nightly.
+- The owner's notes kept as tests: 28 of 30 pass; the guard (no note ever deleted) runs in CI.
+- Foundation synced to 5aa5773. 0.9.9-beta, code 24 (every publish takes a new version from now on, so Obtainium
+  offers it).
+
 ### 0.9.7-beta: a loading screen on every start; doors in the boards, solid goals; the owner's round 5 (3 November 2026)
 
 The owner's round 5:
