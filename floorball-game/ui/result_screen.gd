@@ -78,7 +78,7 @@ func _ready() -> void:
 		row.add_child(UI.button(tr("REMATCH"), false, func():
 			var c: Dictionary = cfg.duplicate()
 			c.erase("seed")
-			Game.start_match(c)))
+			Game.play_match(c)))
 	row.add_child(UI.button(tr("CONTINUE"), true, back))
 
 

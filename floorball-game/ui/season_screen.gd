@@ -151,7 +151,7 @@ func _hub(season) -> void:
 		var stage_name := eyebrow
 		nv.add_child(UI.button(tr("PLAY_MATCH"), true, func():
 			var user_side := 0 if f.home == season.user else 1
-			Game.start_match({"home": f.home, "away": f.away, "venue": "arena" if season.stage == "final" else "hall", "user_team": user_side,
+			Game.play_match({"home": f.home, "away": f.away, "venue": "arena" if season.stage == "final" else "hall", "user_team": user_side,
 				"mode": "season", "women": season.women, "knockout": true, "rules": int(Game.settings.rules),
 				"difficulty": int(Game.settings.difficulty), "stage": stage_name})))
 		nv.add_child(UI.button(tr("SIM_MATCH"), false, func():

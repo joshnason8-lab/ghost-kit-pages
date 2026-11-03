@@ -22,6 +22,7 @@ const ADVANTAGE_S := 2.6        # how long advantage is played before the free-h
 var config := {}
 var rules: Rules.State
 var arena: Arena
+var prebuilt_arena: Arena       # the venue built ahead (Game.play_match's step), taken over in _ready
 var ball: Ball
 var cam: Camera3D
 var hud = null
@@ -91,8 +92,14 @@ func _ready() -> void:
 	for t in 2:
 		squads[t] = DB.squad(ids[t], women)
 	Game.apply_graphics(get_viewport())
-	arena = Arena.new(String(config.get("venue", "hall")), [kits[0][0]], [kits[1][0]])
-	add_child(arena)
+	if prebuilt_arena and is_instance_valid(prebuilt_arena):
+		# (Built a step before, under the loading overlay: Game.play_match.)
+		arena = prebuilt_arena
+		arena.reparent(self)
+		arena.visible = true
+	else:
+		arena = Arena.new(String(config.get("venue", "hall")), [kits[0][0]], [kits[1][0]])
+		add_child(arena)
 	ball = Ball.new()
 	add_child(ball)
 	ball.out_of_play.connect(_on_out)

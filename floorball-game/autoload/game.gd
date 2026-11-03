@@ -410,6 +410,81 @@ func start_match(config: Dictionary) -> void:
 	_swap(m)
 
 
+## A match started from a button (the shared foundation's overlay, WsgLoading): in the tap's own frame the screen dims
+## under "Getting the hall ready…", a bar and a spinner, and the buttons go dead (a second tap starts nothing); the
+## heavy files load on the loader's thread (the bar follows them), then the match is built and swapped in under the
+## overlay, which fades. buttons: the screen's start buttons. (start_match: the same at once, for tools and tests.)
+func play_match(config: Dictionary, buttons: Array = []) -> void:
+	var host: Node = current if current and is_instance_valid(current) else main
+	if buttons.is_empty():
+		buttons = host.find_children("*", "BaseButton", true, false)   # every button on the screen
+	var ld := WsgLoading.cover(host, buttons, _load_look())
+	ld.log_label = "match " + String(config.get("mode", "quick"))
+	ld.request(_match_files(config))
+	# The venue (its hall, stands and crowd) built first, out of sight under the overlay; then the match (its players,
+	# ball and camera: Match._ready) takes it over and is put in.
+	var built := {}
+	ld.step("Venue", func():
+		var kits: Array = DB.kits(String(config.home), String(config.away))
+		apply_graphics(main.get_viewport())
+		var a := Arena.new(String(config.get("venue", "hall")), [kits[0][0]], [kits[1][0]])
+		a.visible = false
+		main.add_child(a)
+		built.arena = a, 2.0)
+	ld.step("Match", func():
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = config
+		m.prebuilt_arena = built.get("arena")
+		Sfx.music(false)
+		_swap(m), 2.0)
+	if not await ld.run():
+		return
+	ld.done()
+
+
+func _load_look() -> Dictionary:
+	return {"dim": Color(C_BG, 0.88), "text": C_INK, "bar": C_MAGNET, "bar_back": Color(C_FRAME, 0.9),
+		"spinner": C_MAGNET, "title": tr("LOADING"), "font": font_head}
+
+
+## What a match draws, loaded on the loader's thread before it is built (so the build finds them in the cache): the
+## players', goalkeeper's and referees' models and textures, the shared foundation's bodies and motion, the venue's
+## sheet, the crowd's cards.
+func _match_files(config: Dictionary) -> Array:
+	var hd := int(settings.graphics) != GFX_LOW
+	var out := ["res://game/match.gd", "res://game/arena.gd", "res://game/hud.gd"]
+	for dir: String in ["res://assets/characters/", "res://assets/foundation/", "res://assets/shared/", "res://assets/crowd/",
+			"res://assets/mocap/"]:
+		_files_in(dir, hd, out)
+	for f in ["res://addons/wsg_foundation/data/mobility.res", "res://addons/wsg_foundation/data/actorcore.res",
+			"res://addons/wsg_foundation/crowd/cards.png", "res://addons/wsg_foundation/crowd/cards_mask.png"]:
+		out.append(f)
+	var keep := []
+	for f in out:
+		if ResourceLoader.exists(f) and not keep.has(f):
+			keep.append(f)
+	return keep
+
+
+## The models, textures and clips under dir (and its folders), as the build will load them: on Low not the 2K
+## textures nor the full-detail models, above it not the Low ones.
+static func _files_in(dir: String, hd: bool, out: Array) -> void:
+	var d := DirAccess.open(dir)
+	if d == null:
+		return
+	for f in d.get_files():
+		f = f.trim_suffix(".import").trim_suffix(".remap")
+		if not f.get_extension() in ["scn", "res", "tres", "jpg", "png"]:
+			continue
+		if not hd and f.contains("_2k"):
+			continue
+		if hd and (f.contains("_low.") or f.ends_with("_low.scn")):
+			continue
+		out.append(dir + f)
+	for sub in d.get_directories():
+		_files_in(dir + sub + "/", hd, out)
+
+
 func on_match_finished(result: Dictionary) -> void:
 	record_result(result)
 	if String(result.config.get("mode", "quick")) == "cup":

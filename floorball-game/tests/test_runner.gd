@@ -41,6 +41,7 @@ func _ready() -> void:
 	await _practice()
 	await _watch()
 	await _timeout_and_joystick()
+	await _loading_overlay()
 	_signage()
 	await _match_parts()
 	await _coach()
@@ -754,6 +755,37 @@ func _timeout_and_joystick() -> void:
 	m.queue_free()
 	await frames(2)
 	Game.settings.camera = keep_cam
+
+
+## A match started from its button (Game.play_match, the shared WsgLoading): the overlay up and the buttons dead in
+## the tap's own frame, the bar moving, the venue and the match each built in a step of their own, the match in.
+func _loading_overlay() -> void:
+	var keep: Node = Game.current
+	Game.show_screen("res://ui/quick_setup.gd", {"watch": true})
+	await frames(3)
+	var go: Button = null
+	for b in Game.current.find_children("*", "Button", true, false):
+		if (b as Button).text == tr("WATCH_GO"):
+			go = b
+	go.pressed.emit()
+	var ld := WsgLoading.current()
+	check(ld != null and go.disabled, "start: the loading overlay up and the buttons off in the tap's own frame")
+	var widths := []
+	var guard := 0
+	while WsgLoading.current() != null and guard < 60 * 20:
+		await get_tree().process_frame
+		guard += 1
+		var p: Dictionary = WsgLoading.current().parts() if WsgLoading.current() else {}
+		if p.has("bar"):
+			widths.append((p.bar as Control).size.x)
+	var grew: bool = widths.size() > 2 and widths[-1] > widths[0]
+	check(grew and Game.current != null and Game.current.get_script().resource_path == "res://game/match.gd"
+		and Game.current.arena != null and Game.current.arena.get_parent() == Game.current,
+		"start: the bar moves, the venue built ahead is the match's, the match in (%d frames)" % widths.size())
+	if Game.current:
+		Game.current.queue_free()
+		Game.current = null
+	await frames(2)
 
 
 ## The hall's words in the phone's language (game/signage.gd); the game's name as it is.

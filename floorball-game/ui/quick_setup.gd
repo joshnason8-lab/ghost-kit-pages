@@ -206,10 +206,10 @@ func _fill_grid() -> void:
 
 func _start() -> void:
 	if _shootout:
-		Game.start_match({"home": _teams[0], "away": _teams[1], "venue": _venue, "user_team": 0, "mode": "practice",
+		Game.play_match({"home": _teams[0], "away": _teams[1], "venue": _venue, "user_team": 0, "mode": "practice",
 			"practice": true, "women": _women, "period": 20.0, "difficulty": int(Game.settings.difficulty)})
 		return
-	Game.start_match({"home": _teams[0], "away": _teams[1], "venue": _venue, "user_team": -1 if _watch else 0,
+	Game.play_match({"home": _teams[0], "away": _teams[1], "venue": _venue, "user_team": -1 if _watch else 0,
 		"watch": _watch, "mode": "watch" if _watch else "quick", "women": _women,
 		"knockout": _knockout, "rules": int(Game.settings.rules), "difficulty": int(Game.settings.difficulty),
 		"stage": tr("FRIENDLY")})

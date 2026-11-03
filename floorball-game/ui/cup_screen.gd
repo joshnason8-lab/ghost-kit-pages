@@ -136,7 +136,7 @@ func _hub(cup) -> void:
 		nv.add_child(UI.wrap(tr("KNOCKOUT_NOTE") if cup.knockout() else tr("GROUP_NOTE"), "MutedLabel", 16))
 		nv.add_child(UI.button(tr("PLAY_MATCH"), true, func():
 			var user_side := 0 if f.home == cup.user else 1
-			Game.start_match({"home": f.home, "away": f.away, "venue": "arena", "user_team": user_side, "mode": "cup", "women": cup.women,
+			Game.play_match({"home": f.home, "away": f.away, "venue": "arena", "user_team": user_side, "mode": "cup", "women": cup.women,
 				"knockout": cup.knockout(), "rules": 0, "difficulty": int(Game.settings.difficulty), "stage": tr("STAGE_" + String(cup.stage).to_upper())})))
 		nv.add_child(UI.button(tr("SIM_MATCH"), false, func():
 			cup.sim_next()

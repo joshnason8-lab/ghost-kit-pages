@@ -227,6 +227,19 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.7-beta: a loading screen on every start (3 November 2026)
+
+The owner's rule for every game (through the lead): a tap on Start or Play shows a loading screen at once, with a bar
+that moves, never a frozen menu. The foundation synced to edebcd5 (its shared loading screen, WsgLoading):
+- **Every way into a match** (Quick match, Watch a match, Penalty shots, a cup or season game, Rematch) goes through
+  Game.play_match: the loading screen (the menus' colours and font) is up in the frame of the tap and the buttons
+  are off, the match's files load on threads, then the venue is built ("Venue") and the match set up ("Match"), each
+  in its own slice so the bar moves between them; the match takes over the venue built ahead.
+- **Measured** (desktop, Low, cold): longest slice "Match", 121 ms ("Venue" 95 ms); the 0.6 s first frame after is
+  the GPU compiling the hall's shaders, which no slice can split. The WSG_LOADING line is in the log of every load.
+- A test taps Watch and checks the overlay and the disabled button in that frame, the bar growing, and the match in
+  with the venue built ahead. 0.9.7-beta, code 22.
+
 ### 0.9.6-beta: the APK back to its size (3 November 2026)
 
 - 0.9.5's APK was 155 MB (0.9.4: 89): CI's new crowd-audit step wrote its contact sheets (three tall PNGs) inside
