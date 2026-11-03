@@ -191,7 +191,9 @@ func bodies() -> Array:
 			tgt = Vector3(float(m.f.square_x[int(walking[a])]), 0, 0)   # to his square
 		var wb: WsgBody = a.link.body if a.link != null else null
 		out.append({"name": _who(a), "pos": a.position, "radius": Athlete.BODY_R, "height": 1.8, "body": wb,
-			"active": m.phase == "play" and not bool(m.paused), "target": tgt,
+			# (Not while a replay plays: the match stands still under it - Match._process steps only the replay - and a
+			# body walking to his square read as stuck for the replay's length, random 29.)
+			"active": m.phase == "play" and not bool(m.paused) and not (m.replay != null and m.replay.playing()), "target": tgt,
 			# Round the pole his arms are out by design: one hand on the pole, the other arm thrown out (the Drive
 			# video's slingshot, 0.10); and a touch or a kho reached for on the run (FoundationLink's "upper": the game's
 			# reaching arm over the capture - a designed move, the foundation, 2026-11-03).
@@ -230,6 +232,12 @@ const POLE_OUT_S := 0.6
 
 
 func _excuse(a: Athlete) -> String:
+	# A replay plays back what was drawn (WsgReplay's recorded pose, the match standing still under it): a pole turn
+	# replayed showed its arms out 80-100 frames on, a T-pose to WsgSim (extreme 28, fouls 103: the skeleton's
+	# modifiers at delta 0 under WsgReplayPose). Every frame of it was read live when it was drawn. (WsgSim's feet
+	# skip a replay the same way: WsgSim._planted.)
+	if m.replay != null and m.replay.playing():
+		return "a replay: the moment played back as it was drawn (read live then)"
 	if _pole_turning(a):
 		return "pole turn: one hand on the pole, the other arm out"
 	if a.link != null and a.link.mode == "upper":
