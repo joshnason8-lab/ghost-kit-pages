@@ -385,8 +385,11 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	var l_s := "l" if t_s == "r" else "r"
 	var v_top: Vector3 = (_grip_pt[top] as Vector3) - (body.joints[top + "Hand"] as Vector3)
 	var v_low: Vector3 = (_grip_pt[low] as Vector3) - (body.joints[low + "Hand"] as Vector3)
-	var qt := _held(_rig_turn * (g[top + "Hand"] as Quaternion), down)
-	var ql := _held(_rig_turn * (g[low + "Hand"] as Quaternion), down)
+	# Each hand turned the least way that lays its grip along the shaft, then rolled round the shaft so its fingers carry
+	# on from its arm: a straight wrist, the shaft across the fingers, as a golfer's or a floorball player's grip.
+	var top_pt := sx.origin - lift + down * TOP_AT
+	var qt := _straight(sk, top, _along(_rig_turn * (g[top + "Hand"] as Quaternion), down), top_pt, down)
+	var ql := _straight(sk, low, _along(_rig_turn * (g[low + "Hand"] as Quaternion), down), top_pt + down * 0.3, down)
 	var one := not hands.has(l_s)    # the stick in the top hand alone: the other arm the run's own
 	_low_w = move_toward(_low_w, 0.0 if one else 1.0, _dt * 6.0)
 	var spacing := maxf(0.12, float(hands.get(l_s, 0.34)) - float(hands.get(t_s, 0.03)))
@@ -398,7 +401,7 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 		var x_t := maxf(_slide(sk, top, top_at - qt * v_top, down), 0.03 - TOP_AT)
 		var x_l := maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down), 0.06 - spacing)
 		# Still out of the lower arm's reach (it can slide no nearer the top hand): that fist rolled round the shaft,
-		# the wrist toward the shoulder, as far as it must (at most 120 degrees: the knuckles-down grip gives way to the reach).
+		# the wrist toward the shoulder, as far as it must (at most 60 degrees).
 		_slid = [x_t, x_l, _roll(sk, low, top_at + down * (x_t + spacing + x_l), ql * v_low, down)]
 	var x_t: float = _slid[0]
 	var x_l: float = _slid[1]
@@ -454,7 +457,7 @@ func _roll(sk: Skeleton3D, side: String, grip: Vector3, off: Vector3, dir: Vecto
 	var best := 0.0
 	var best_over := INF
 	for i in 13:
-		var a := deg_to_rad(20.0 * ((i + 1) / 2) * (1 if i % 2 == 1 else -1))
+		var a := deg_to_rad(10.0 * ((i + 1) / 2) * (1 if i % 2 == 1 else -1))
 		var over := maxf(0.0, (grip - Quaternion(dir, a) * off).distance_to(s) - far)
 		if over < best_over - 0.001:
 			best_over = over
@@ -464,22 +467,31 @@ func _roll(sk: Skeleton3D, side: String, grip: Vector3, off: Vector3, dir: Vecto
 	return best
 
 
-## A hand on the stick as the owner asks it held: the grip along the shaft with the thumb toward the stick's top end,
-## and the hand rolled round the shaft so its back (rest +Y) faces as far down as the shaft lets it - the knuckles under
-## the stick, the fingers wrapped round it from below, the thumbs up.
-static func _held(q0: Quaternion, down: Vector3) -> Quaternion:
+## A hand on the shaft (its grip already along it, q) rolled round the shaft so the fingers point on from the arm (the
+## shoulder toward the hand's place on the shaft): the wrist straight, not bent back or twisted.
+func _straight(sk: Skeleton3D, side: String, q: Quaternion, at: Vector3, down: Vector3) -> Quaternion:
 	var d := down.normalized()
-	var across := q0 * Vector3.BACK
-	var q1 := (Quaternion(across.normalized(), -d) * q0).normalized()
-	var back := q1 * Vector3.UP
-	var b := (back - d * back.dot(d))
-	var w := (Vector3.DOWN - d * Vector3.DOWN.dot(d))
-	if b.length() < 0.01 or w.length() < 0.01:
-		return q1
-	b = b.normalized()
-	w = w.normalized()
-	var ang := atan2(d.dot(b.cross(w)), b.dot(w))
-	return (Quaternion(d, ang) * q1).normalized()
+	var fingers: Vector3 = q * ((body.joints[side + "HandMiddle1"] as Vector3) - (body.joints[side + "Hand"] as Vector3)).normalized()
+	var arm := at - sk.get_bone_global_pose(sk.find_bone(side + "Arm")).origin
+	var f := fingers - d * fingers.dot(d)
+	var a := arm - d * arm.dot(d)
+	if f.length() < 0.01 or a.length() < 0.01:
+		return q
+	f = f.normalized()
+	a = a.normalized()
+	q = (Quaternion(d, atan2(d.dot(f.cross(a)), f.dot(a))) * q).normalized()
+	# And the shaft across the fingers on the diagonal (as the golfer's photo the owner sent): the hand tilted in its
+	# own plane toward the arm, at most 35 degrees, so the wrist runs straight on into the hand rather than bending.
+	fingers = q * ((body.joints[side + "HandMiddle1"] as Vector3) - (body.joints[side + "Hand"] as Vector3)).normalized()
+	var n := (q * Vector3.BACK).cross(fingers)
+	if n.length() < 0.01:
+		return q
+	n = n.normalized()
+	var arm_n := arm.normalized() - n * arm.normalized().dot(n)
+	if arm_n.length() < 0.01:
+		return q
+	var tilt := clampf(atan2(n.dot(fingers.cross(arm_n.normalized())), fingers.dot(arm_n.normalized())), -deg_to_rad(35.0), deg_to_rad(35.0))
+	return (Quaternion(n, tilt) * q).normalized()
 
 
 ## A hand's turn (the rig's convention) turned the least way that lays its grip (across the palm, rest +Z) along dir.

@@ -227,6 +227,14 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.4-beta: straight wrists on the stick (3 November 2026)
+
+- **"Grip is still bad: see how the wrists are straight and not looking almost broken"** (the owner's photo of a
+  golfer's grip): each hand's grip along the shaft is now rolled round it so the fingers carry on from the arm, and
+  the shaft crosses the fingers on the diagonal (the hand tilted in its own plane toward the arm, at most 35 degrees),
+  so the forearm runs straight into the fist instead of bending at the wrist (foundation_link.gd _straight; the
+  knuckles-down roll of 0.9.3 is gone: it twisted the wrists). The fists still hold the shaft (the foundation check).
+
 ### 0.9.3-beta: a real hit, planted feet, the old running, a real time-out (2 November 2026)
 
 The owner's notes on 0.9.2 (a recording of Penalty shots):
