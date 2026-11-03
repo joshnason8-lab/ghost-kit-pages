@@ -1,0 +1,6 @@
+{
+ "about": "Owner's notes written ahead of the fix, not yet in the strict run (WsgOwnerNote has no expected-fail). Move each up into tests/owner_notes/ and its INDEX.json the day it passes.",
+ "notes": [
+  {"id": "2026-11-03-props-solid", "file": "2026-11-03_props_solid.gd", "game": "netball", "date": "2026-11-03", "version": "0.9.0-beta (every game)", "words": "These games live in a world of reality. There will NEVER be a time when a player or referee should walk through a table or bench etc. A ball should also bounce off these items."}
+ ]
+}
