@@ -23,6 +23,9 @@ static func outdoor() -> WsgCrowdVenue:
 	v.add({"name": "stools", "a": Vector3(-12, 0, -11), "b": Vector3(12, 0, -11), "rows": 1, "tread": 0.8, "seat": "stool"})
 	v.add({"name": "behind the fence", "a": Vector3(-17, 0, 7), "b": Vector3(-17, 0, -7), "rows": 1, "tread": 2.5, "seat": "floor",
 		"barrier": {"height": 2.0, "gap": 0.6}})
+	# (A balcony behind glass 5 cm from its edge: the stand pose's hands went 3 cm into it - Sepak Takraw's mall.)
+	v.add({"name": "balcony behind glass", "a": Vector3(-12, 3, -14), "b": Vector3(12, 3, -14), "rows": 2, "tread": 1.2, "seat": "floor",
+		"barrier": {"height": 1.1, "gap": 0.05}})
 	return v
 
 

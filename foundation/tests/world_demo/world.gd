@@ -15,7 +15,8 @@ func game_name() -> String:
 
 
 func prop_registry() -> String:
-	return "res://tests/prop_runs.gd"
+	# ("audit": a registry the prop audit cannot run - it fails, and the rule must say so.)
+	return "res://tests/no_such_prop_runs.gd" if bad == "audit" else "res://tests/prop_runs.gd"
 
 
 func prop_args() -> Array:
