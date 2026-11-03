@@ -39,7 +39,7 @@ var deke_side := 1.0          # a deke's side (+ his left... as the match gives 
 var signal_arm := Vector2.ZERO  # a referee's signal: the floor direction an arm points
 var stamina := 1.0
 var on_rink := true
-var off_boards := false       # may go over the boards (to the penalty bench): no board stops him
+var off_boards := false       # may leave the rink (to the penalty bench): through an open door in the boards
 var in_box := false           # on the penalty bench
 var marker: MeshInstance3D    # your player's ring on the floor
 var writes := 0               # step() calls this frame: the motion audit checks there is exactly one
@@ -193,14 +193,25 @@ func step(dt: float) -> void:
 		_push = fposmod(_push + dt * 2.4, 1.0)
 		go = lerpf(1.0, 0.35 + 2.0 * pow(maxf(0.0, sin(_push * TAU)), 1.5), clampf((_kneel - 0.5) * 2.0, 0.0, 1.0))
 	pos += vel * dt * go
-	# The boards: he stops at them (a body cannot pass through).
-	if not off_boards and not Rules.in_rink(pos, 0.3):
+	# The boards: he stops at them (a body cannot pass through). One sent off the rink (off_boards: to the penalty bench)
+	# goes through a door in them, and only an open one; behind the boards, they stop him from that side.
+	var doors: Array = _doors()
+	if off_boards and Rules.through_door(pos, 0.2, doors):
+		pass
+	elif off_boards and absf(pos.y) > Rules.HALF_W:
+		var side := signf(pos.y)
+		if absf(pos.y) < Rules.HALF_W + 0.3:
+			pos.y = side * (Rules.HALF_W + 0.3)
+			if vel.y * side < 0.0:
+				vel.y = 0.0
+	elif not Rules.in_rink(pos, 0.3):
 		var c: Array = Rules.board_contact(pos)
 		pos = c[0] + c[1] * 0.3
 		var n: Vector2 = c[1]
 		var vn := vel.dot(n)
 		if vn < 0.0:
 			vel -= n * vn
+	_keep_off_goals()
 	# Turning: toward want_face, or the way he moves when he is moving.
 	var target := facing
 	if not is_nan(want_face):
@@ -765,3 +776,40 @@ func _referee_pose(p: Dictionary, t: float, _dt: float) -> void:
 			p.upperarm_l = Vector3(-90, 0, 10)
 			p.forearm_l = Vector3(-90, 0, 0)
 	p[other] = p.get(other, Vector3(0, 0, 8 * -s))
+
+
+## The doors in the boards as the match's arena has them (each one's opening), or none.
+func _doors() -> Array:
+	if match_node == null:
+		return []
+	var a = match_node.get("arena")
+	return a.door_open if a != null and is_instance_valid(a) else []
+
+
+const BODY_R := 0.28           # a body's half width at the goal frames
+const GOAL_TUBE := 0.024
+
+## The goal frames and nets are solid (103): the sides and back of each goal, its posts' outsides, stop a body; the
+## mouth between the posts is open (a goalkeeper backs into it).
+func _keep_off_goals() -> void:
+	var hw := Rules.GOAL_W * 0.5
+	var r := BODY_R + GOAL_TUBE
+	for end: int in [-1, 1]:
+		var gx := Rules.GOAL_LINE * end
+		var bx := gx + Rules.GOAL_D * end
+		if absf(pos.x - (gx + bx) * 0.5) > Rules.GOAL_D * 0.5 + r or absf(pos.y) > hw + r:
+			continue
+		var segs := [[Vector2(gx, -hw), Vector2(bx, -hw), Vector2(0, -1)], [Vector2(bx, -hw), Vector2(bx, hw), Vector2(end, 0)],
+			[Vector2(bx, hw), Vector2(gx, hw), Vector2(0, 1)]]
+		for sg: Array in segs:
+			var c := Geometry2D.get_closest_point_to_segment(pos, sg[0], sg[1])
+			var d := pos - c
+			var l := d.length()
+			if l >= r:
+				continue
+			var n: Vector2 = d / l if l > 0.0001 else (sg[2] as Vector2)
+			pos = c + n * r
+			var vn := vel.dot(n)
+			if vn < 0.0:
+				vel -= n * vn
+

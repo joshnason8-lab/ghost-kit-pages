@@ -44,6 +44,7 @@ func _ready() -> void:
 	await _loading_overlay()
 	_signage()
 	await _match_parts()
+	await _solid_props()
 	await _coach()
 	await _crowd_faces()
 	_mocap()
@@ -800,6 +801,59 @@ func _signage() -> void:
 
 ## The match's own pieces, each on a live AI match: a won tackle keeps the ball, a penalty's player walks to the
 ## penalty bench and comes back when it is over, the empty net, passive play.
+## The props are solid (the owner's rule): the goal frames and nets stop a body from behind and the side; a shut door
+## in the boards turns the ball as a board does, an open one lets it out (504).
+func _solid_props() -> void:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 8, "period": 4.0}
+	add_child(m)
+	while m.phase != "live":
+		await get_tree().physics_frame
+	var p: Player = m.skaters(0)[0]
+	var worst := 0.0
+	for start: Vector2 in [Vector2(Rules.GOAL_LINE + Rules.GOAL_D + 1.0, 0.0), Vector2(Rules.GOAL_LINE + 0.3, 1.8), Vector2(Rules.GOAL_LINE + 0.3, -1.8)]:
+		p.respawn(start)
+		var to := Vector2(Rules.GOAL_LINE + 0.3, 0.0) - start
+		for i in 60:
+			p.vel = to.normalized() * 5.0
+			p.want_vel = p.vel
+			p._keep_off_goals()
+			p.pos += p.vel * (1.0 / 60.0)
+			p._keep_off_goals()
+			# Inside the goal's footprint (its sides and back, less a body's half width) is where he must not get.
+			var inx := p.pos.x > Rules.GOAL_LINE + 0.05 and p.pos.x < Rules.GOAL_LINE + Rules.GOAL_D + Player.BODY_R
+			var inz := absf(p.pos.y) < Rules.GOAL_W * 0.5 + Player.BODY_R
+			if inx and inz:
+				worst = maxf(worst, 1.0)
+	check(worst == 0.0, "103: a body coming at the goal from behind or the side is stopped by its frame and net")
+	# The ball at a shut door: it comes back. At an open one: it goes out, out of play.
+	var b: Ball = m.ball
+	var dx := float(Rules.DOORS[0][0])
+	var dz := Rules.HALF_W * float(Rules.DOORS[0][1])
+	b.release()
+	b.live = true
+	b.pos = Vector3(dx, Ball.R, dz * 0.9)
+	b.vel = Vector3(0, 0, signf(dz) * 8.0)
+	for i in 30:
+		b.step(1.0 / 60.0)
+	check(absf(b.pos.z) < Rules.HALF_W and b.vel.z * signf(dz) < 0.0 and b.live, "a shut door in the boards turns the ball like a board")
+	m.arena.door_open[0] = 1.0
+	m.arena._door_hold[0] = 5.0
+	var outs := [0]
+	var on_out := func(_e: Vector2) -> void: outs[0] += 1
+	b.out_of_play.connect(on_out)
+	m.set_physics_process(false)
+	b.live = true
+	b.pos = Vector3(dx, Ball.R, dz * 0.9)
+	b.vel = Vector3(0, 0, signf(dz) * 8.0)
+	for i in 30:
+		b.step(1.0 / 60.0)
+	check(outs[0] == 1 and not b.live, "an open door lets the ball out of the rink: out of play (504)")
+	b.out_of_play.disconnect(on_out)
+	m.queue_free()
+	await frames(2)
+
+
 func _match_parts() -> void:
 	var m: Node = (load("res://game/match.gd") as Script).new()
 	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 5, "period": 4.0}
@@ -839,9 +893,26 @@ func _match_parts() -> void:
 	m._penalise(off, "pen2", "trip")
 	var sitter: Player = m.sitters[0][0]
 	check(m.rules.strength(0) == 4 and sitter.visible and String(sitter.data.id) == id, "105: the penalised player is seen going to the penalty bench")
+	# He goes through the penalty bench's door, and only when it is open: never through a board.
+	var dx: float = m._box_door(0)
+	var di := -1
+	for k in Rules.DOORS.size():
+		if is_equal_approx(float(Rules.DOORS[k][0]), dx) and int(Rules.DOORS[k][1]) == 1:
+			di = k
+	var through_board := 0
+	var was_open := false
 	for i in 420:
 		await get_tree().physics_frame
-	check(sitter.pos.distance_to(m._box_seat(0, 0)) < 1.2, "105: he sits in his team's penalty bench (%s)" % sitter.pos)
+		if absf(sitter.pos.y - Rules.HALF_W) < 0.2:
+			if absf(sitter.pos.x - dx) > 0.25 or float(m.arena.door_open[di]) < 0.6:
+				through_board += 1
+			else:
+				was_open = true
+	check(through_board == 0 and was_open, "105: to the penalty bench through its door, open (%d frames in a board)" % through_board)
+	check(sitter.pos.distance_to(m._box_seat(0, 0)) < 0.3, "105: he sits in his team's penalty bench (%s)" % sitter.pos)
+	for i in 90:
+		await get_tree().physics_frame
+	check(float(m.arena.door_open[di]) == 0.0, "the penalty bench's door shut behind him")
 	m._tick_clock(Rules.PEN_MINOR_S + 1.0, true)
 	var short := 0
 	for i in range(1, 6):
@@ -870,11 +941,13 @@ func _match_parts() -> void:
 	m._empty_net()
 	check(m.pulled[0], "with the ball in their half, the goalkeeper goes off")
 	var gk: Player = m.keeper(0)
-	var zone: Vector2 = m.sub_zone(0)
-	gk.respawn(Vector2((zone.x + zone.y) * 0.5, -Rules.HALF_W + 0.4))
+	gk.respawn(m.bench_door(0, gk.pos.x) + Vector2(0, 0.1))
 	await get_tree().physics_frame
 	m._empty_net()
-	check(not gk.on_rink and m.skaters(0).size() == 6, "302: over the board in the substitution zone, a sixth outfield player on (%d)" % m.skaters(0).size())
+	check(not gk.on_rink and m.skaters(0).size() == 6, "302: off through the bench's door in the substitution zone, a sixth outfield player on (%d)" % m.skaters(0).size())
+	var zone: Vector2 = m.sub_zone(0)
+	var bd: Vector2 = m.bench_door(0, 0.0)
+	check(bd.x >= minf(zone.x, zone.y) and bd.x <= maxf(zone.x, zone.y), "the bench's doors are in its substitution zone (%s)" % bd)
 	m._set_phase("goal")
 	check(gk.on_rink and gk.visible and m.skaters(0).size() == 5 and not m.pulled[0], "after a goal the goalkeeper is back in his net")
 	m.queue_free()

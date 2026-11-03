@@ -102,6 +102,7 @@ func _ready() -> void:
 		add_child(arena)
 	ball = Ball.new()
 	add_child(ball)
+	ball.doors = arena.door_open
 	ball.out_of_play.connect(_on_out)
 	ball.crossed_goal_line.connect(_on_goal_line)
 	ball.hit.connect(_on_ball_hit)
@@ -200,6 +201,13 @@ func attack_dir(t: int) -> float:
 func sub_zone(t: int) -> Vector2:
 	var s := -1.0 if t == 0 else 1.0
 	return Vector2(Rules.SUB_ZONE_FROM_CENTRE * s, (Rules.SUB_ZONE_FROM_CENTRE + Rules.SUB_ZONE_LEN) * s)
+
+
+## Where a player going off (or coming on) stands at his team's bench: on the rink at the bench's door nearest x.
+func bench_door(t: int, x: float) -> Vector2:
+	var zone := sub_zone(t)
+	var d := Rules.nearest_door(x, -1, minf(zone.x, zone.y), maxf(zone.x, zone.y))
+	return Vector2(d.x, -Rules.HALF_W + 0.35)
 
 
 func skaters(t: int) -> Array:
@@ -674,8 +682,9 @@ func _update_boxes() -> void:
 			var was := p.in_box
 			p.in_box = k >= n
 			if was and not p.in_box:
-				# Back on from the penalty bench, on the near side by the centre line (105).
-				p.respawn(Vector2(2.2 * (-1.0 if t == 0 else 1.0), Rules.HALF_W - 0.6))
+				# Back on from the penalty bench through its door, on the near side by the centre line (105).
+				p.respawn(Vector2(_box_door(t), Rules.HALF_W - 0.6))
+				arena.open_door_near(p.pos)
 			p.visible = not p.in_box
 			if p.in_box and ball.carrier == p:
 				ball.release()
@@ -1219,9 +1228,9 @@ func _empty_net() -> void:
 			continue
 		if not gk.on_rink:
 			continue
-		# Off to the bench: the sixth player comes on when he is over the board.
-		var zone: Vector2 = sub_zone(t)
-		var at := Vector2((zone.x + zone.y) * 0.5, -Rules.HALF_W + 0.35)
+		# Off to the bench, through its door: the sixth player comes on there as he goes.
+		var at := bench_door(t, gk.pos.x)
+		arena.open_door_near(gk.pos)
 		var d := at - gk.pos
 		if d.length() > 0.7:
 			gk.want_vel = d.normalized() * minf(gk.MAX_SPEED * 0.85, d.length() * 3.0)
@@ -1265,9 +1274,15 @@ func _send_to_box() -> void:
 			s.visible = true
 
 
+## A place in team t's penalty bench (behind its door, Rules.DOORS): the first in from the door toward the centre
+## line, the second in front of the door (it opens the other way), both between the bench's plexiglass ends.
 func _box_seat(t: int, k: int) -> Vector2:
 	var side := -1.0 if t == 0 else 1.0
-	return Vector2(side * (2.6 + k * 0.8), Rules.HALF_W + 0.75)
+	return Vector2(side * (1.55 if k == 0 else 2.2), Rules.HALF_W + 0.55)
+
+
+func _box_door(t: int) -> float:
+	return Rules.nearest_door(2.2 * (-1.0 if t == 0 else 1.0), 1).x
 
 
 func _walk_to_box() -> void:
@@ -1277,8 +1292,15 @@ func _walk_to_box() -> void:
 			s.writes = 0
 			if s.visible:
 				var seat := _box_seat(t, k)
-				# Along the rink to the door, then through it.
-				var want := seat if absf(s.pos.x - seat.x) < 0.6 else Vector2(seat.x, Rules.HALF_W - 0.6)
+				# Along the rink to the penalty bench's door, through it once it is open, then to his place.
+				var dx := _box_door(t)
+				var want: Vector2
+				if s.pos.y < Rules.HALF_W:
+					want = Vector2(dx, Rules.HALF_W - 0.5) if absf(s.pos.x - dx) > 0.1 else Vector2(dx, Rules.HALF_W + 0.55)
+				else:
+					want = seat if s.pos.y > Rules.HALF_W + 0.4 else Vector2(dx, Rules.HALF_W + 0.55)
+				if s.pos.distance_to(seat) > 0.3:
+					arena.open_door_near(s.pos)
 				var d := want - s.pos
 				s.want_vel = d.normalized() * minf(3.2, d.length() * 2.0) if d.length() > 0.1 else Vector2.ZERO
 				s.want_face = NAN if d.length() > 0.1 else -PI * 0.5

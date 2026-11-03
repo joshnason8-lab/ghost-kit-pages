@@ -71,6 +71,12 @@ var _lamps := {}              # the ceiling's lamps, for the floor's reflection 
 var _half := Vector2(27, 19)  # the hall's half length and width (its walls)
 var _models := 0              # model instances placed (for tests and arena_look)
 var _doors: Array = []        # [the wall's foot under a door, into the hall]
+var door_open: Array = []      # each door in the boards' opening, 0 shut .. 1 open (Rules.DOORS' order; the match's
+                               # bodies and ball read it: one Array, changed in place)
+var _door_hold: Array = []     # how much longer each is held open (open_door_near)
+var _door_pivots: Array = []   # each door's hinge
+const DOOR_SWING := 1.75       # how far a door opens (100 degrees), out of the rink
+const DOOR_SPEED := 2.6        # opening a second
 
 static var _floor_tex: ImageTexture
 static var _net_tex: ImageTexture
@@ -127,6 +133,7 @@ func _ready() -> void:
 		_floor_decals()
 		_make_light_show()
 	_boards()
+	_make_doors()
 	_goals()
 	_benches()
 	_ceiling_lights()
@@ -408,6 +415,7 @@ func goal_lights(end: int) -> void:
 
 
 func _process(delta: float) -> void:
+	_doors_step(delta)
 	if _show == null or _show_t <= 0.0:
 		return
 	_show_t -= delta
@@ -658,6 +666,11 @@ func _boards() -> void:
 		var bo: Vector2 = outer[(i + 1) % n]
 		var len_ := a.distance_to(b)
 		var mid := (a + b) * 0.5
+		# A panel with a door in it (Rules.DOORS): drawn in pieces round the doorway, white, the cut ends capped.
+		var gaps := _door_gaps(a, b)
+		if not gaps.is_empty():
+			_board_pieces(a, b, ao, bo, gaps, h, white)
+			continue
 		# A panel 2 m long on a straight side: some carry advertising; the rest white, as do the curved corners.
 		var strip := s("board")
 		var u0 := 0.0 if len_ > 1.5 else 0.1
@@ -684,6 +697,8 @@ func _boards() -> void:
 	for side: int in [-1, 1]:
 		for i in 17:
 			var x := -16.0 + i * 2.0
+			if not _door_gaps(Vector2(x - 0.3, Rules.HALF_W * side), Vector2(x + 0.3, Rules.HALF_W * side)).is_empty():
+				continue   # (not in a doorway)
 			_lit.box(Vector3(x, 0.12, (Rules.HALF_W + 0.2) * side), Vector3(0.05, 0.24, 0.3), Color("c9ccd1"))
 
 
@@ -697,6 +712,102 @@ func _ad_panel(p: Vector2) -> bool:
 	if p.y < 0.0 and absf(p.x) > Rules.SUB_ZONE_FROM_CENTRE - 0.5 and absf(p.x) < Rules.SUB_ZONE_FROM_CENTRE + Rules.SUB_ZONE_LEN + 0.5:
 		return false
 	return true
+
+
+## The doorways (Rules.DOORS) in a straight stretch of the boards a-b on a long side, as [x0, x1] spans.
+func _door_gaps(a: Vector2, b: Vector2) -> Array:
+	var out := []
+	if absf(a.y - b.y) > 0.01 or absf(absf(a.y) - Rules.HALF_W) > 0.01:
+		return out
+	var lo := minf(a.x, b.x)
+	var hi := maxf(a.x, b.x)
+	for d: Array in Rules.DOORS:
+		if signf(a.y) != float(d[1]):
+			continue
+		var x0 := float(d[0]) - Rules.DOOR_W * 0.5
+		var x1 := float(d[0]) + Rules.DOOR_W * 0.5
+		if x1 > lo and x0 < hi:
+			out.append([x0, x1])
+	return out
+
+
+## A board panel (inner a-b, outer ao-bo) drawn round its doorways: plain white pieces, their cut ends capped.
+func _board_pieces(a: Vector2, b: Vector2, ao: Vector2, bo: Vector2, gaps: Array, h: float, white: Color) -> void:
+	var dir := signf(b.x - a.x)
+	var cuts := [a.x]
+	for g: Array in gaps:
+		cuts.append(float(g[0] if dir > 0.0 else g[1]))
+		cuts.append(float(g[1] if dir > 0.0 else g[0]))
+	cuts.append(b.x)
+	for k in range(0, cuts.size(), 2):
+		var x0 := float(cuts[k])
+		var x1 := float(cuts[k + 1])
+		if (x1 - x0) * dir <= 0.01:
+			continue
+		var pa := Vector3(x0, 0, a.y)
+		var pb := Vector3(x1, 0, a.y)
+		var qa := Vector3(x0, 0, ao.y)
+		var qb := Vector3(x1, 0, ao.y)
+		var u := absf(x1 - x0) / 8.0
+		_lit.face(pa, pb, 0.0, h, Vector3(pa.x, 0, 0), Color(1, 1, 1, 0.32), s("board"), 0.1, u)
+		_lit._tri_quad(pa + Vector3(0, h, 0), pb + Vector3(0, h, 0), qb + Vector3(0, h, 0), qa + Vector3(0, h, 0), Vector3.UP, white)
+		_lit.face(qa, qb, 0.0, h, Vector3(pa.x, 0, a.y * 3.0), Color(0.9, 0.9, 0.91, 0.4), s("board"), 0.1, u)
+		for e: Vector3 in [pa, pb]:
+			if absf(e.x - a.x) < 0.01 or absf(e.x - b.x) < 0.01:
+				continue   # (the panel's own end: the next panel goes on from it)
+			var q := Vector3(e.x, 0, ao.y)
+			_lit.face(e, q, 0.0, h, e + Vector3(signf(e.x - (x0 + x1) * 0.5), 0, 0), white)
+
+
+## The doors in the boards (Rules.DOORS): each a board panel on its hinge at the boards' line, swinging out of the rink
+## (a penalty bench's hinged on its far end from the centre line, a team bench's on its near end).
+func _make_doors() -> void:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.97, 0.97, 0.98)
+	mat.roughness = 0.32
+	if _low:
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
+	var box := BoxMesh.new()
+	box.size = Vector3(Rules.DOOR_W - 0.02, Rules.BOARD_H, 0.05)
+	box.material = mat
+	for d: Array in Rules.DOORS:
+		var x := float(d[0])
+		var side := int(d[1])
+		var hinge_x := x + signf(x) * Rules.DOOR_W * 0.5 * (1.0 if side > 0 else -1.0)
+		var pivot := Node3D.new()
+		pivot.name = "Door"
+		pivot.position = Vector3(hinge_x, 0, (Rules.HALF_W + 0.025) * side)
+		pivot.set_meta("dir", signf(x - hinge_x))
+		pivot.set_meta("side", side)
+		var mi := MeshInstance3D.new()
+		mi.mesh = box
+		mi.position = Vector3(signf(x - hinge_x) * Rules.DOOR_W * 0.5, Rules.BOARD_H * 0.5, 0)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		pivot.add_child(mi)
+		add_child(pivot)
+		_door_pivots.append(pivot)
+		door_open.append(0.0)
+		_door_hold.append(0.0)
+
+
+## Opens the doors within reach of p (a floor point) for a moment: a body coming to one, going through it. Each shuts
+## again behind it once nobody has asked for a while.
+func open_door_near(p: Vector2, reach := 1.8) -> void:
+	for i in mini(Rules.DOORS.size(), _door_hold.size()):
+		var d: Array = Rules.DOORS[i]
+		if p.distance_to(Vector2(float(d[0]), Rules.HALF_W * float(d[1]))) < reach:
+			_door_hold[i] = 0.6
+
+
+func _doors_step(delta: float) -> void:
+	for i in _door_pivots.size():
+		_door_hold[i] = maxf(0.0, float(_door_hold[i]) - delta)
+		var want := 1.0 if float(_door_hold[i]) > 0.0 else 0.0
+		door_open[i] = move_toward(float(door_open[i]), want, delta * DOOR_SPEED)
+		var pv: Node3D = _door_pivots[i]
+		var o := float(door_open[i])
+		var eased := o * o * (3.0 - 2.0 * o)
+		pv.rotation.y = -float(pv.get_meta("side")) * float(pv.get_meta("dir")) * eased * DOOR_SWING
 
 
 # ---------------------------------------------------------------- the goals (103)

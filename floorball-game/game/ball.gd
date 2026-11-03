@@ -29,6 +29,7 @@ var last_how := "stick"     # stick, kick, body, head, hand, gk_throw, deflect_d
 var in_goal := 0            # the end whose net holds it (after a goal), or 0
 var tries := {}             # players who have had their one try at it since it was last struck (match._pickups)
 var live := true            # in play: out-of-play and goal-line checks run
+var doors: Array = []       # the arena's doors' openings (Arena.door_open): a shut door is a board
 var _carry_target := Vector3.ZERO
 var _mesh: MeshInstance3D
 var _shadow: MeshInstance3D
@@ -334,6 +335,12 @@ func _place() -> void:
 func _collide_boards() -> void:
 	var p := floor_pos()
 	if Rules.in_rink(p, R):
+		return
+	# Through an open door in the boards (Rules.DOORS): out of play at floor level, as over the boards (504).
+	if Rules.through_door(p, R, doors, 1.2):
+		if live:
+			live = false
+			out_of_play.emit(p)
 		return
 	if pos.y > Rules.BOARD_H + R and live:
 		# Over the boards: out of play (504). The hit-in goes to where it left the rink.

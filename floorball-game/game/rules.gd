@@ -30,6 +30,11 @@ const DOT_FROM_BOARD := 1.5     # 102: face-off dots 1.5 m from the long sides, 
                                 # lines' extensions
 const SUB_ZONE_FROM_CENTRE := 5.0   # 104: each substitution zone begins 5 m from the centre line ...
 const SUB_ZONE_LEN := 10.0          # ... and is 10 m long (2022; 2026 may run it to the goal line's extension)
+## The doors in the boards: [x, side] (side 1, the near side: the penalty benches' (105); -1, the far side: two to each
+## team's bench (104)), each DOOR_W wide, hinged on the boards and swinging out of the rink. A door shut is a board: the
+## ball comes off it. Bodies leave or come on the rink only through an open one.
+const DOORS := [[-12.5, -1], [-7.5, -1], [7.5, -1], [12.5, -1], [-2.2, 1], [2.2, 1]]
+const DOOR_W := 0.9
 const HIT_IN_FROM_BOARD := 1.5  # 504: a hit-in 1.5 m from the board
 const DISTANCE := 3.0           # 504, 506, 501: opponents at least 3 m from the ball, sticks included
 const FREE_HIT_FROM_GK_AREA := 3.5  # 506: never nearer the goalkeeper area (the small one) than 3.5 m
@@ -161,6 +166,32 @@ static func board_contact(p: Vector2) -> Array:
 	if HALF_L - a.x < HALF_W - a.y:
 		return [Vector2(HALF_L * s.x, p.y), Vector2(-s.x, 0)]
 	return [Vector2(p.x, HALF_W * s.y), Vector2(0, -s.y)]
+
+
+## Whether a body of radius r (or the ball) at p is in an open doorway (doors: each door's opening, 0 shut .. 1 open,
+## in DOORS' order), within depth of the boards' line either side.
+static func through_door(p: Vector2, r: float, doors: Array, depth := 0.6) -> bool:
+	for i in mini(doors.size(), DOORS.size()):
+		if float(doors[i]) < 0.6:
+			continue
+		var d: Array = DOORS[i]
+		if absf(p.x - float(d[0])) <= DOOR_W * 0.5 - r and absf(p.y - HALF_W * float(d[1])) < depth:
+			return true
+	return false
+
+
+## The door on side (1 near, -1 far) nearest x, as its middle on the boards' line; only doors whose x lies in [lo, hi]
+## when given.
+static func nearest_door(x: float, side: int, lo := -INF, hi := INF) -> Vector2:
+	var best := Vector2(x, HALF_W * side)
+	var bd := INF
+	for d: Array in DOORS:
+		if int(d[1]) != side or float(d[0]) < lo or float(d[0]) > hi:
+			continue
+		if absf(float(d[0]) - x) < bd:
+			bd = absf(float(d[0]) - x)
+			best = Vector2(float(d[0]), HALF_W * side)
+	return best
 
 
 static func faceoff_dots() -> Array:

@@ -360,11 +360,12 @@ func _line_change(dt: float, players: Array, ours: bool, b: Vector2) -> void:
 				p.set_meta("going_off", true)
 
 
-## Off over the board in the team's substitution zone; the next line's player comes on in the same place (302: the
+## Off through a door of the team's bench, in its substitution zone; the next line's player comes on there (302: the
 ## change in the team's own zone).
 func _go_off(p: Player) -> void:
-	var zone: Vector2 = m.sub_zone(t)
-	var at := Vector2(clampf(p.pos.x, minf(zone.x, zone.y), maxf(zone.x, zone.y)), -Rules.HALF_W + 0.35)
+	var at: Vector2 = m.bench_door(t, p.pos.x)
+	if p.pos.distance_to(at) < 2.0:
+		m.arena.open_door_near(p.pos)
 	if p.pos.distance_to(at) < 0.6 or p == m.ball.carrier:
 		if p == m.ball.carrier:
 			p.set_meta("going_off", false)   # never with the ball: he finishes the play
