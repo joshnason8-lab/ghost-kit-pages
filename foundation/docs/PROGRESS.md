@@ -373,8 +373,8 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   noisy over long matches (0.7-1.7 sideline cuts on one commit) - Hurling is chasing unseeded randomness.
 - **Web exports never carry the licensed data** (ADOPTING 5.10, 79b346e): each game's Web preset lists
   `addons/wsg_foundation/data/*` in exclude_filter. Done: Kabaddi (the lead checked the live Netlify .pck), Pok Ta
-  Pok, Netball (9597dfe), Kho Kho (f005432), Floorball, Hurling (c28aa4f). Sepak Takraw: not yet on f4e4067 (asked
-  2026-11-02 23:55). No CI job exports Web; no game reports a Web export made with data/ present.
+  Pok, Netball (9597dfe), Kho Kho (f005432), Floorball, Hurling (c28aa4f), Sepak Takraw (5b7f028): all seven. No CI
+  job exports Web; no game reports a Web export made with data/ present.
 - **Crowd looks** (Netball's owner: "the crowd isn't real people"; the lead's go for the no-credit option, Meshy fans
   wait on the owner): bake_crowd marks each fan vertex skin, hair (and beard) or legs' clothes (UV.y; by bones, place,
   hue - the face is 3-4 vertices, so skin is the hands' hue, not their RGB; long hair grown from the head's along the
