@@ -4,18 +4,16 @@ name: Kabaddi Raid · match simulation
 # (game/sim.gd: Match, its AI, the grapple, the cant, the officials, every rule) from seeds, headless and faster than
 # real time, every frame checked - script errors, positions, the score and the clock, bodies stuck or inside props,
 # feet and poses, and kabaddi's own rules (revival order, raid timing, the lobby, do-or-die). A smoke batch on every
-# push (every seed's kind in turn and each targeted case, over four parallel jobs, one report); a nightly batch of
-# 1,200 matches over 16 on any other event (2,400 once a match simulates faster: about 2.5 times real time now, the
-# players' and officials' own pose code most of each frame) (the foundation's wsg-nightly.yml dispatches it on this branch each night). Reports are artifacts (SIM_REPORT.md: the failures grouped and ranked, each with its replay
-# command); it does not hold up the APK.
+# push (every seed's kind in turn and each targeted case, over four parallel jobs, one report); a batch of 1,200
+# matches over 16 jobs only when dispatched by hand (the owner, 2026-11-03: simulations run in rounds, when the owner
+# calls one - not nightly, it would eat up all the usage; the foundation's dispatcher is manual too). Reports are
+# artifacts (SIM_REPORT.md: the failures grouped and ranked, each with its replay command); it does not hold up the APK.
 
 on:
   push:
     paths:
       - "kabaddi-game/**"
       - ".github/workflows/kabaddi-sim.yml"
-  schedule:
-    - cron: "17 2 * * *"
   workflow_dispatch:
 
 concurrency:
