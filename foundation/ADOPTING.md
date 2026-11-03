@@ -483,6 +483,11 @@ jumped 3.3 cm a step on Hurling's walker).
   locomotor's smoothing still had the speed from before your pose: bogus cuts and starts). Only after a pose of the
   whole body: from an arms-only layer (your "upper" mode, the legs the capture's all along) do not reset the planter -
   every reset snapped the held feet to the clip's, 3-5 cm (Pok Ta Pok's judges, WsgSim).
+  From 2026-11-04 (foundation after 582bc163) `reset()` also forgets what the planter last drew (its contacts, where
+  each ankle was drawn), and a planter not run for more than 3 frames (`active = false` under your pose, its body not
+  drawn) starts afresh by itself when it runs again: back on, it plants the feet where they are drawn now. Before, it
+  planted them where it had last drawn them - 1.5 m behind after a set piece - let them go, and they slid 7 cm with
+  your pose fading out (Sepak Takraw's players). WsgSim reads that restart as a cut, as it reads `reset()`.
 - **Meshy A-pose legs and elbows**: a game rigged with the legs splayed (or the arms in an A) gives turns that,
   corrected from their own rest, put the rig's knee or elbow off its hinge, and the drivers straighten it. Rebuild
   the limbs from the joint positions instead: each thigh (upper arm) turned so its hinge is square to the plane of
@@ -1435,6 +1440,10 @@ read 2.1-2.2 cm on three games' rigs on 888e222, a foundation fault). In WsgSim 
 up to a bound, while skids and jumps still fail: `{"planted slip": ["2026-11-13T12:00Z", "the lead, 2026-11-03: <why>",
 2.5]}` - a planted slide up to 2.5 cm is DEFERRED, one over it fails as "foot slip" (the lead, for Floorball and Kho
 Kho: replace a whole "foot slip" deferral with this one from 2026-11-06 12:00).
+WsgSim's feet failures name the foot and the frames of the worst reading ("... (2.0 at most; left foot, frames
+7677-7679)"), and the failure's frame is that one, not the match's last: `replay` stops there (the signature is the
+same as before). The replay command it writes carries `--input` when the batch ran with it (before 2026-11-04 it
+did not, and replayed an AI-only match - another match from that frame on: add `--input` to an older one).
 
 **`start_mode` must replace whatever the last call started, as a real tap does.** The tiers rule starts every mode
 three times, one after another. Hurling's `start_mode` left the previous match drawing while the next one started, so

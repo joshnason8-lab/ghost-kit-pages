@@ -260,8 +260,9 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				var fv: Variant = (b.feet as Callable).call()
 				if fv is Array and (fv as Array).size() >= 4:
 					if not feet.has(nm):
-						feet[nm] = [[[]], 0.0, 0.0, [PackedInt32Array()], -1, -1, 0, 0, [[]]]
+						feet[nm] = [[[]], 0.0, 0.0, [PackedInt32Array()], -1, -1, 0, 0, [[]], [PackedInt32Array()]]
 					((feet[nm][0] as Array).back() as Array).append(fv)
+					_frame_at(feet[nm], frame)
 					var gr0: PackedInt32Array = (feet[nm][3] as Array).back()
 					gr0.append(1)
 					feet[nm][3][-1] = gr0
@@ -271,10 +272,11 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 					(feet[nm][0] as Array).append([])
 					(feet[nm][3] as Array).append(PackedInt32Array())
 					(feet[nm][8] as Array).append([])
+					(feet[nm][9] as Array).append(PackedInt32Array())
 			elif bool(opts.get("feet", true)) and wb is WsgBody and is_instance_valid(wb) and bi % 4 == seed % 4:
 				var body := wb as WsgBody
 				if not feet.has(nm):
-					feet[nm] = [[[]], (body.joints["LeftFoot"] as Vector3).y * body.scale.y, (body.joints["LeftToeBase"] as Vector3).y * body.scale.y, [PackedInt32Array()], -1, -1, 0, 0, [[]]]
+					feet[nm] = [[[]], (body.joints["LeftFoot"] as Vector3).y * body.scale.y, (body.joints["LeftToeBase"] as Vector3).y * body.scale.y, [PackedInt32Array()], -1, -1, 0, 0, [[]], [PackedInt32Array()]]
 				# The pose as it is drawn, read as the skeleton finishes it: read here, after the frame, the bones are
 				# back to the clip's (no planted feet, no hips' lift, no layers - 14 cm out on the test hurler, and
 				# every slip the clip's own).
@@ -311,7 +313,9 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 								runs.append([])
 								gruns.append(PackedInt32Array())
 								(feet[nm][8] as Array).append([])
+								(feet[nm][9] as Array).append(PackedInt32Array())
 						(runs.back() as Array).append(seen[0])
+						_frame_at(feet[nm], frame)
 						((feet[nm][8] as Array).back() as Array).append(seen[5])
 						var gr: PackedInt32Array = gruns.back()
 						gr.append(gap)
@@ -320,6 +324,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 						runs.append([])
 						gruns.append(PackedInt32Array())
 						(feet[nm][8] as Array).append([])
+						(feet[nm][9] as Array).append(PackedInt32Array())
 					if seen[1] != "":
 						# (A pose the game declares by design, with its reason - Kho Kho's pole turn, one hand on the
 						# pole and the other arm out - is counted, not failed.)
@@ -419,26 +424,37 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 			out["planter_resets"] = pr
 			if int(f[7]) * 4 > int(f[6]):
 				print("sim: %s seed %d: %s's planter reset on %d of %d planted frames (each read as a cut: its feet hardly measured)" % [kind, seed, nm, f[7], f[6]])
+		# (Each worst reading with the frame it ended on - the failure's frame, so its replay stops there, not at the
+		# match's end - and which foot: Kabaddi's 26 cm jump had only the match's last frame to go on.)
 		var s := {"max_cm": 0.0}
 		var skid := 0.0
 		var jump := 0.0
+		var s_at := [-1, ""]
+		var skid_at := [-1, ""]
+		var jump_at := [-1, ""]
 		for ri in (f[0] as Array).size():
 			var run: Array = f[0][ri]
 			if run.size() > 20:
 				var r := WsgNoteChecks.foot_slip(run, f[1], f[2], 0.0, f[3][ri], f[8][ri])
+				var fr: PackedInt32Array = f[9][ri]
 				if float(r.max_cm) > float(s.max_cm):
 					s = r
-				skid = maxf(skid, float(r.skid_cm))
-				jump = maxf(jump, float(r.jump_cm))
+					s_at = _foot_where(fr, r.max_at)
+				if float(r.skid_cm) > skid:
+					skid = float(r.skid_cm)
+					skid_at = _foot_where(fr, r.skid_at)
+				if float(r.jump_cm) > jump:
+					jump = float(r.jump_cm)
+					jump_at = _foot_where(fr, r.jump_at)
 		if float(s.max_cm) > FOOT_SLIP_CM:
 			# (Just the planted slide, up to a bound, can be put off on its own - "planted slip": [until, why, cm] - while
 			# skids and jumps fail: the lead, 2026-11-03, for slides of 2.1-2.5 cm left under Floorball's and Kho Kho's AI.)
-			var slid := "%s: a planted foot slid %.1f cm in a step (%.1f at most)" % [nm, s.max_cm, FOOT_SLIP_CM]
-			_fail(out, "planted slip" if _deferred.has("planted slip") and float(s.max_cm) <= float(_deferred_cm["planted slip"]) else "foot slip", slid, t, frame, {}, [])
+			var slid := "%s: a planted foot slid %.1f cm in a step (%.1f at most%s)" % [nm, s.max_cm, FOOT_SLIP_CM, s_at[1]]
+			_fail(out, "planted slip" if _deferred.has("planted slip") and float(s.max_cm) <= float(_deferred_cm["planted slip"]) else "foot slip", slid, _at_t(s_at, t), _at_f(s_at, frame), {}, [])
 		if skid > FOOT_SLIP_CM:
-			_fail(out, "foot slip", "%s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most)" % [nm, skid, FOOT_SLIP_CM], t, frame, {}, [])
+			_fail(out, "foot slip", "%s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most%s)" % [nm, skid, FOOT_SLIP_CM, skid_at[1]], _at_t(skid_at, t), _at_f(skid_at, frame), {}, [])
 		if jump > WsgWorldRules.JUMP_MAX_CM:
-			_fail(out, "foot slip", "%s: a foot low over the ground jumped %.1f cm in one frame (%.0f at most)" % [nm, jump, WsgWorldRules.JUMP_MAX_CM], t, frame, {}, [])
+			_fail(out, "foot slip", "%s: a foot low over the ground jumped %.1f cm in one frame (%.0f at most%s)" % [nm, jump, WsgWorldRules.JUMP_MAX_CM, jump_at[1]], _at_t(jump_at, t), _at_f(jump_at, frame), {}, [])
 	out["result"] = game.result()
 	out["balance"] = game.balance_keys(cfg)
 	if input:
@@ -610,6 +626,30 @@ func _finish(out: Dictionary, game: WsgSimGame, t_wall: int, t: float, frame: in
 	out.frames = frame
 	out.ok = (out.failures as Array).is_empty()
 	return out
+
+
+static func _at_f(at: Array, frame: int) -> int:
+	return int(at[0]) if int(at[0]) >= 0 else frame
+
+
+static func _at_t(at: Array, t: float) -> float:
+	return float(at[0]) / FPS if int(at[0]) >= 0 else t
+
+
+## (Each sample's frame, alongside its run: where the worst reading was, for the report and its replay.)
+static func _frame_at(f: Array, frame: int) -> void:
+	var fr: PackedInt32Array = (f[9] as Array).back()
+	fr.append(frame)
+	f[9][-1] = fr
+
+
+## The frame a foot reading AT ([foot, first, last] in RUN's samples) ended on, and what to say of it; [-1, ""]: none.
+static func _foot_where(frames: PackedInt32Array, at: Array) -> Array:
+	if at.size() < 3 or int(at[0]) < 0 or int(at[2]) < 0 or int(at[2]) >= frames.size():
+		return [-1, ""]
+	var a := frames[clampi(int(at[1]), 0, frames.size() - 1)]
+	var b := frames[int(at[2])]
+	return [b, "; %s foot, frames %d-%d" % ["left" if int(at[0]) == 0 else "right", a, b] if b != a else "; %s foot, frame %d" % ["left" if int(at[0]) == 0 else "right", b]]
 
 
 func _fail(out: Dictionary, check: String, msg: String, t: float, frame: int, st: Dictionary, events: Array) -> void:

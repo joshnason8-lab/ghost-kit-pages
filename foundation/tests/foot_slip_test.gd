@@ -129,7 +129,13 @@ func _initialize() -> void:
 		# (The positions are single-precision: 3 cm in steps comes back within a micrometre of 3.)
 		check("a planted foot pushed 3 cm (%s) reads 3 cm or more" % phase, s.steps == 2 and s.max_cm >= 3.0 - 1e-4,
 			"%d steps, %.2f cm" % [s.steps, s.max_cm])
+	# Where: the foot and frames of the worst slide (WsgSim reports them - the failure's frame, for its replay).
+	var fl := WsgNoteChecks.foot_slip(step(0.03, "flat"))
+	var at: Array = fl.max_at
+	check("the slide's place: the left foot, over the flat frames (13-22)", int(at[0]) == 0 and int(at[1]) <= 13 and int(at[2]) >= 22 \
+		and int(at[2]) < step(0.03, "flat").size(), "%s" % [at])
 	var snap := WsgNoteChecks.foot_slip(landing(true))
+	check("the skid's place: the left foot", int(snap.skid_at[0]) == 0 and int(snap.skid_at[2]) == int(snap.skid_at[1]) + 1, "%s" % [snap.skid_at])
 	check("a foot snapped back flat on the floor reads a skid over 2 cm", snap.skid_cm > 2.0,
 		"skid %.1f cm" % snap.skid_cm)
 	var skim := WsgNoteChecks.foot_slip(landing(false))

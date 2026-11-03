@@ -692,3 +692,19 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     (Takraw's Low replay); "planted slip" deferral with a bound; ADOPTING 5.19 publishes in place (the token is
     refused new tags since about 17:00) with the gate skipping its own commit's build (Sepak Takraw's race).
   - World check on CI: Kabaddi 829 s, Takraw 574, Floorball 332 (--reuse), Kho Kho 649 locally - all under 15 min.
+- **Planted slides, first round (task before 2026-11-13 12:00; 055f39f8)**: reproduced on Sepak Takraw 0.15.16 (its
+  deferrals lifted, `--input`):
+  - extreme#14 player 7.0 + official 2.4 -> clean; random#21 7.0 + 3.6 -> clean. Of its other listed seeds,
+    extreme#34, #24, #20, random#5, #7, #25, scoring#103, human#103 clean; completion#103 6.1 + official 5.6 -> 4.2;
+    extreme#4's official 5.8 (the same on 582bc163: not from this change; 4.9 on the game's older build).
+  - Causes: a planter switched off under the game's whole pose (`active = false`) came back on with its old contacts
+    and last-drawn ankles - the feet planted 1.5 m behind and let go, sliding with the pose fading out; the planter's
+    own step skimmed a toe-down foot over the floor in its last frames (3-4 cm a frame).
+  - Fixes: `reset()` forgets what it drew; a planter not run for over 3 frames starts afresh; a step keeps its toe
+    3.5 cm up until it lands (STEP_CLEAR). tests/planter_restart_test.gd (fails on 582bc163).
+  - WsgSim: feet failures name the foot and frames of the worst reading, and the failure's frame is that one (it was
+    the match's last - Kabaddi's 26 cm jump, Hurling's 39.6 cm skid had nothing to go on); the written replay command
+    carries `--input`.
+  - Dropped: a rest-height override for Takraw's own Low body (their bench: walk 19.3 cm, glide 41%).
+  - Left: Takraw extreme#4 official 5.8, completion#103 4.2; Kabaddi Medium, Floorball extreme#3/#6, Kho Kho toe
+    creep, Hurling 2.6-8.4 slides and 29-40 cm flat skids (its failure files in hand), Pok Ta Pok LLA_1 25.1 jump.

@@ -142,6 +142,11 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 	var toe_up := 0.0
 	var skid := 0.0
 	var jump := 0.0
+	# Where each was worst: [foot (0 left), first frame, last frame] (indexes into FRAMES; -1: none).
+	var slip_at := [-1, -1, -1]
+	var slip_most := 0.0
+	var skid_at := [-1, -1, -1]
+	var jump_at := [-1, -1, -1]
 	for side in 2:
 		# Where this foot's ankle and toe are when it stands on the ground: the lowest each goes over the run (a rig's
 		# rest heights are not where its bones stand: the test hurler's ankle bone stands 13 cm below its rest
@@ -169,6 +174,9 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 			if prev_t != Vector3.INF and Vector2(t.x - prev_t.x, t.z - prev_t.z).length() > 0.4 * g:
 				if touching_for > 2:
 					slips.append(worst * 100.0)
+					if worst * 100.0 > slip_most:
+						slip_most = worst * 100.0
+						slip_at = [side, fi - touching_for, fi - 1]
 				touching_for = 0
 				worst = 0.0
 				prev_t = t
@@ -187,8 +195,9 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 			prev_a = a
 			var flat := maxf(ha, ht) < FLAT
 			var had: bool = held.is_empty() or (fi < held.size() and fi > 0 and bool(held[fi][side]) and bool(held[fi - 1][side]))
-			if flat and was_flat and had:
-				skid = maxf(skid, minf(step_a, step_t) / g)
+			if flat and was_flat and had and minf(step_a, step_t) / g > skid:
+				skid = minf(step_a, step_t) / g
+				skid_at = [side, fi - 1, fi]
 			was_flat = flat
 			if down:
 				touching_for += 1
@@ -197,10 +206,16 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 			else:
 				if touching_for > 2:
 					slips.append(worst * 100.0)
+					if worst * 100.0 > slip_most:
+						slip_most = worst * 100.0
+						slip_at = [side, fi - touching_for, fi - 1]
 				touching_for = 0
 				worst = 0.0
 		if touching_for > 2:
 			slips.append(worst * 100.0)
+			if worst * 100.0 > slip_most:
+				slip_most = worst * 100.0
+				slip_at = [side, frames.size() - touching_for, frames.size() - 1]
 		# The jump: over each four frames with the foot low throughout. (A body put somewhere new moves metres: over 1.5 m
 		# in a frame is a cut, not a jump - not the slip's 0.4 m, which the stop teleports it is for passed, 40-95 cm.)
 		for k in range(2, frames.size() - 1):
@@ -233,7 +248,9 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 				var into := (v23 - v12).length() / ((g2 + g3) * 0.5)
 				var out := (v34 - v23).length() / ((g3 + g4) * 0.5)
 				jmp = minf(jmp, minf(into, out))
-			jump = maxf(jump, jmp)
+			if jmp > jump:
+				jump = jmp
+				jump_at = [side, k - 2, k + 1]
 	slips.sort()
 	var mean := 0.0
 	for s in slips:
@@ -241,7 +258,7 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 	return {"steps": slips.size(), "max_cm": float(slips[-1]) if not slips.is_empty() else 0.0,
 		"p90_cm": float(slips[int(slips.size() * 0.9)]) if not slips.is_empty() else 0.0,
 		"mean_cm": mean / maxf(1.0, slips.size()), "toe_up_cm": toe_up * 100.0, "skid_cm": skid * 100.0,
-		"jump_cm": jump * 100.0}
+		"jump_cm": jump * 100.0, "max_at": slip_at, "skid_at": skid_at, "jump_at": jump_at}
 
 
 ## A body's arms now: {"Left": [how far the upper arm is out from hanging down (degrees), the elbow's bend (degrees,
