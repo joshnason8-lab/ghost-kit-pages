@@ -256,17 +256,21 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          # (ADOPTING 5.19, publishing safely: the new release whole under a tag of its own first - if that fails the
-          # old one is untouched - then the swap, seconds apart. Floorball's delete-then-create left its tag empty an
-          # hour on a 403.)
-          NEXT="$TAG-next-$GITHUB_RUN_ID"
-          gh release create "$NEXT" "$APK" --prerelease --target "$GITHUB_SHA" \
-            --title "Kho Kho Rush ${VERSION} (latest beta)" --notes-file notes.md
-          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
-          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take)
-          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
+          # Published in place (the lead, 2026-11-03: a new tag for a release - safe publishing's $TAG-next - drew HTTP 403s
+          # from 17:00; Pok Ta Pok's way, c5d73d86): the new APK added to the release on its tag and checked there, then the
+          # old APKs taken off and the notes and title set. No tag is made or moved; the old APK stays until the new one is up.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" --title "Kho Kho Rush ${VERSION} (latest beta)" --notes-file notes.md
+          else
+            gh release upload "$TAG" "$APK" --clobber
+            NEW="$(basename "$APK")"
+            gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$NEW"
+            for old in $(gh release view "$TAG" --json assets -q '.assets[].name' | grep '\.apk$' | grep -vx "$NEW"); do
+              gh release delete-asset "$TAG" "$old" --yes
+            done
+            gh release edit "$TAG" --title "Kho Kho Rush ${VERSION} (latest beta)" --notes-file notes.md --prerelease
+          fi
+          gh release view "$TAG" >/dev/null
 
       # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
       - name: Publish the foundation pilot
