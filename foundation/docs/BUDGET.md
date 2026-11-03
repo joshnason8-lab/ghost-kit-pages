@@ -1,5 +1,10 @@
 # Budgets
 
+**Since 2026-11-03 the 3D crowd is all full figures** (WsgFoundation profiles: premium Medium 700, High 1,200, Close
+2,400; budget Medium 150, High 700, Close 500) - as many as the light figures' triangles bought before. The light
+(far) figure, a third of the triangles, made spikes of the arms and sheared torsos, seen a few metres off by any camera
+near a stand (Hurling's far stand). The tables below are from before; the triangle totals are about the same.
+
 ## 3D crowd (`WsgCrowd3D`, Medium and High; Low keeps the game's billboards)
 
 Measured from the baked data (`addons/wsg_foundation/crowd/crowd.json`, five fan models):

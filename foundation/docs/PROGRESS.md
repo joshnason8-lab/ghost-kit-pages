@@ -405,3 +405,9 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   it, turned to the camera at most 35 deg off the fan's facing; get up and cheer with set_excite; team colours,
   per-spot shirts, set_looks. Audited (hips, in front of the seat, facing) in crowd_venue_test and crowd_audit
   (whose sheet now has a Low row a section). ADOPTING 5.1.
+- **Hurling's live bug, seated 3D fans "sheared, T-pose arms, far LOD at 5 m"** (the lead's priority, 2026-11-03):
+  not a regression and not the bake - it is the light (far) figure (a third of the triangles: ImporterMesh LOD on
+  the welded fan) given to every 3D fan past the first 700 by nearness to the focus; a camera near the stand sees
+  them metres off. Reproduced in Hurling's own crowd_view with its own bake (worktree /home/user/hurling-wt);
+  forcing full figures fixes it. Profiles now all full figures at the same triangles (premium 700 / 1,200 / 2,400;
+  budget 150 / 700 / 500); near < all brings the light one back.

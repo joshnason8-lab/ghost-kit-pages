@@ -20,9 +20,9 @@ Your game is made for one class of phone, and the foundation spends what that cl
 | first start (the phone decides) | weak phone Low, ordinary phone Medium, flagship High | weak phone Low, ordinary phone Low, flagship High |
 | players and officials | the rig and mocap, every body in full detail (Low: the light mesh) | the rig and mocap; on Low and Medium full detail (helpers, fingers, full mesh) on the 6 bodies nearest the camera, the light mesh and plain joints on the rest; on High every body in full |
 | crowd, Low | your billboards (unchanged) | your billboards (unchanged) |
-| crowd, Medium | 3D fans near the action (400 full + 800 light), billboards beyond | 150 3D fans near the action, billboards beyond |
-| crowd, High | 3D fans (700 full + 1,300 light), billboards beyond | 3D fans (400 full + 800 light), billboards beyond |
-| a close mode (a practice, a shoot-out) | 3,000 3D fans behind that goal (2,000 full) | 600 (400 full) |
+| crowd, Medium | 700 3D fans near the action, cards beyond | 150 3D fans near the action, cards beyond |
+| crowd, High | 1,200 3D fans, cards beyond | 700 3D fans, cards beyond |
+| a close mode (a practice, a shoot-out) | 2,400 3D fans behind that goal | 500 |
 
 A build without the licensed data (a fork, a computer without access) is exactly your game as it is today.
 
