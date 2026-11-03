@@ -24,6 +24,7 @@ godot --headless --path . -s tests/ui_test.gd
 godot --headless --path . -s tests/asset_lint_test.gd
 godot --headless --fixed-fps 30 --path . -s res://tools/asset_lint.gd -- --out "${TMPDIR:-/tmp}/wsg_asset_lint" --game res://tests/world_demo/world.gd
 godot --headless --path . --fixed-fps 30 -s tests/loco_test.gd
+godot --headless --fixed-fps 30 --path . -s tests/feet_scale_test.gd
 godot --headless --path . -s tests/crowd_test.gd
 godot --headless --path . -s tests/crowd_venue_test.gd
 godot --headless --path . --fixed-fps 30 -s tests/officials_test.gd
