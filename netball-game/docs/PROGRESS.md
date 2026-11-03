@@ -312,7 +312,14 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   arena at Low: 0 bodies in a prop, 0 ball steps through one. Test `_solid_props` (`test_runner.tscn -- solid`).
   `_gait_in_match` measures arms only when they are the run's (arms_w < 0.5): a leap's arms coming down at a mark
   read as "out" once a prop changed the match's course. Cost: 26 bodies and the ball about 0.3 ms a frame here; no
-  draw call (colliders are not drawn).
+  draw call (colliders are not drawn). `_matches` counts the umpires' calls over its three short AI matches (a 5-minute
+  match's two or three calls can come to none, as one did once props changed its course).
+- **World check** (ADOPTING §5.18; foundation synced to 637662a: planted feet, the world rules, graphics tiers):
+  `game/world.gd` (WsgWorldGame) starts each mode with its screen's own Play handler (quick, cup, league, Watch AI),
+  two umpires (their foundation bodies), our player's model as the walker, Sfx's key sounds (Sfx.BRIGHT: the rim,
+  the net, the whistles and the ball's bounces now carry no distance filter and are heard from 30 m at most), the
+  stick through CameraRig.court_dir on the TV, Low and End cameras, the props and crowd registries, set_tier as the
+  Settings screen sets it. CI runs it after the props audit (artifact `world-check`); the job's timeout is 120 min.
 
 ## Next
 

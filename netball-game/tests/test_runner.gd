@@ -645,6 +645,7 @@ func _matches() -> void:
 	var cases := [["AUS", "NZL", "arena"], ["RSA", "MWI", "outdoor"], ["SGP", "SRI", "hall"]]
 	var all_shots := 0
 	var all_goals := 0
+	var all_calls := {}
 	for c in cases:
 		var res := await _play({"home": c[0], "away": c[1], "venue": c[2], "user_team": -1, "demo": true, "seed": 11,
 			"quarter_s": 75.0, "quarter": 15, "mode": "quick"})
@@ -663,7 +664,11 @@ func _matches() -> void:
 		all_shots += shots
 		all_goals += goals
 		var calls: Dictionary = res.calls
-		check(calls.size() > 0, "%s v %s: the umpires call infringements (%s)" % [c[0], c[1], calls])
+		for k in calls:
+			all_calls[k] = int(all_calls.get(k, 0)) + int(calls[k])
+		print("  %s v %s: calls %s" % [c[0], c[1], calls])
+	# (Over the three: a short match's handful of calls can come to none, as a real one's can.)
+	check(all_calls.size() > 1, "the umpires call infringements in AI matches (%s)" % [all_calls])
 	var pct := float(all_goals) / maxf(1.0, float(all_shots))
 	check(pct > 0.65 and pct < 0.95, "shooting at a real rate over three matches (%d%% of %d)" % [int(pct * 100), all_shots])
 	check(all_goals >= 18, "goals at about a real rate (%d in three 5-minute matches)" % all_goals)
