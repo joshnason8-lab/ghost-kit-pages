@@ -1436,54 +1436,67 @@ func _navigation() -> void:
 	await frames(3)
 
 
-## Every spectator faces the court (the owner's report: the near stand's crowd looked the wrong way): each crowd
-## instance's forward points at the court's middle, in every venue, and the near stand shows its backs to the
-## broadcast camera behind it.
+## Every spectator faces the court (the owner's report: the near stand's crowd looked the wrong way), sits on a seat
+## or stands on the floor (the owner's: people standing awkwardly inside their seats), in every venue: on High the
+## shared foundation's 3D people, on Low its cards, both where the venue declares them (CrowdVenues; the foundation's
+## crowd audit measures each body against its seat: tools/wsg/crowd_audit.gd). Each person, as drawn, faces the play
+## (within 35 degrees of its nearest part, as the audit has it, and within 60 of the court's middle); seated ones on a
+## seat 0.25-0.5 m over their feet, standing ones on the ground outdoors. Cards the broadcast camera sees from behind
+## (a card is a fan's front) are left out: only the near side's, where it stands behind them.
 func _crowd_facing() -> void:
 	var was: int = int(Game.settings.graphics)
-	Game.settings.graphics = Game.GFX_HIGH
-	for venue in ["arena", "hall", "outdoor"]:
-		var m: Match = (load("res://game/match.gd") as Script).new()
-		m.config = {"home": "ENG", "away": "WAL", "venue": venue, "user_team": -1, "demo": true, "seed": 3, "quarter": 15, "mode": "quick"}
-		add_child(m)
-		await frames(3)
-		var crowds := m.find_children("*", "Crowd", true, false)
-		var n := 0
-		var bad := 0
-		for c: Crowd in crowds:
-			# (Headless, the MultiMesh keeps no instance data: each seat's turn comes from Crowd.facing, as build sets it.)
-			for spot: Vector3 in c.spots:
-				var xf := c.global_transform * Transform3D(Crowd.facing(spot), spot)
-				var fwd := Vector2(xf.basis.z.x, xf.basis.z.z).normalized()
-				var to := Vector2(-xf.origin.x, -xf.origin.z).normalized()
-				n += 1
-				if fwd.dot(to) <= 0.7:
-					bad += 1
-		# The 3D people (Medium and High, the shared foundation's WsgCrowd3D) too: each as WsgCrowd3D places them, facing
-		# the court's middle (seated ones turned no more than their seat allows: within 45 degrees of it), standing on
-		# the ground or sitting on a seat, not floating.
-		var p_n := 0
-		var p_bad := 0
-		var p_off := 0
-		for c: Crowd in crowds:
-			if c.people == null:
-				continue
-			for k in c.people_spots.size():
-				var feet: Vector3 = c.global_transform * (c.people_spots[k] as Vector3)
-				var seat_h: float = c.people_seats[k]
-				var xf: Transform3D = WsgCrowd3D.place(feet, c.people_facings[k], 1.0, "fan", seat_h)[0]
-				var fwd := Vector2(xf.basis.z.x, xf.basis.z.z).normalized()
-				var to := Vector2(-xf.origin.x, -xf.origin.z).normalized()
-				p_n += 1
-				if fwd.dot(to) <= 0.7:
-					p_bad += 1
-				if venue == "outdoor" and absf(feet.y) > 0.01 or venue != "outdoor" and (seat_h < 0.25 or seat_h > 0.5):
-					p_off += 1
-		check(n + p_n > 0 and bad == 0, "%s: every spectator cut-out faces the court (%d of %d do not)" % [venue, bad, n])
-		check(p_n > 0 and p_bad == 0, "%s: every 3D spectator faces the court (%d of %d do not)" % [venue, p_bad, p_n])
-		check(p_off == 0, "%s: every 3D spectator stands on the ground or sits on a seat (%d off)" % [venue, p_off])
-		m.queue_free()
-		await frames(2)
+	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
+		Game.settings.graphics = g
+		for venue in ["arena", "hall", "outdoor"]:
+			var m: Match = (load("res://game/match.gd") as Script).new()
+			m.config = {"home": "ENG", "away": "WAL", "venue": venue, "user_team": -1, "demo": true, "seed": 3, "quarter": 15, "mode": "quick"}
+			add_child(m)
+			await frames(3)
+			var crowds := m.find_children("*", "Crowd", true, false)
+			var n := 0
+			var bad := 0
+			var as_cards := 0
+			var off := 0
+			for c: Crowd in crowds:
+				for e: Array in c.everyone():
+					var xf: Transform3D = e[0]
+					var f: Vector3 = e[1]
+					var mid := Vector2(-xf.origin.x, -xf.origin.z).normalized()
+					var near := c.venue.nearest_play(xf.origin, minf(c.venue.play_size.x, c.venue.play_size.y) / 3.0) - xf.origin
+					var play := Vector2(near.x, near.z).normalized()
+					n += 1
+					as_cards += 1 if e[2] else 0
+					# The way the place faces, and the body as placed.
+					for d: Vector2 in [Vector2(f.x, f.z).normalized(), Vector2(xf.basis.z.x, xf.basis.z.z).normalized()]:
+						if d.dot(play) < cos(deg_to_rad(35.5)) or d.dot(mid) < 0.5:
+							bad += 1
+							break
+				for i in c.placed.spots.size():
+					var seat: float = c.placed.seat[i]
+					if venue == "outdoor" and (seat != 0.0 or absf(float(c.placed.floor[i])) > 0.01) or venue != "outdoor" and (seat < 0.25 or seat > 0.5):
+						off += 1
+			var lv := "Low" if g == Game.GFX_LOW else "High"
+			check(n > 0 and bad == 0, "%s, %s: every spectator faces the court (%d of %d do not)" % [lv, venue, bad, n])
+			check(as_cards == (n if g == Game.GFX_LOW else 0), "%s, %s: %s (%d cards of %d)" % [lv, venue,
+				"cards" if g == Game.GFX_LOW else "3D people", as_cards, n])
+			check(off == 0, "%s, %s: every spectator stands on the ground or sits on a seat (%d off)" % [lv, venue, off])
+			if g == Game.GFX_LOW and venue == "outdoor" and not crowds.is_empty():
+				# The broadcast camera behind the near side's crowd: those cards are left out (the middle's at least), no
+				# others.
+				var c: Crowd = crowds[0]
+				c._hide_for(Vector3(0, 9.4, Court.HALF_W + 14.0))
+				var hid := 0
+				var wrong := 0
+				for k in c.cards.placed_cards.size():
+					var i: int = c.cards.placed_cards[k][0]
+					var near := String(c.venue.sections[c.placed.section[i]].name).begins_with("near side")
+					var hidden := c._hidden.has(Vector2i(c._groups.size() - 1, k))
+					hid += 1 if hidden else 0
+					if hidden and not near or near and absf(c.cards.placed_cards[k][1].origin.x) < 11.0 and not hidden:
+						wrong += 1
+				check(hid > 0 and wrong == 0, "Low, outdoor: the near side's cards left out from behind, no others (%d left out, %d wrong)" % [hid, wrong])
+			m.queue_free()
+			await frames(2)
 	Game.settings.graphics = was
 
 
@@ -1598,18 +1611,22 @@ func _sounds_in_play() -> void:
 
 
 ## The textures Low draws with in each venue, as they were before Medium and High got sharper ones (recorded from
-## 0.6.0-beta): Low loads exactly these, at these sizes; Medium and High load the sharper copies (Game.HD_TEX) and
-## the crowd's 32-figure sheet instead.
+## 0.6.0-beta): Low loads exactly these, at these sizes; Medium and High load the sharper copies (Game.HD_TEX). Since the
+## crowd placement (after 0.8.8) Low has a crowd in every venue, the shared foundation's cards (CrowdVenues): their
+## two sheets, cards.png and cards_mask.png, are the only textures added.
 const LOW_TEXTURES := {
-	"arena": ["<ImageTexture> 128x64", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
+	"arena": ["<ImageTexture> 128x64", "res://addons/wsg_foundation/crowd/cards.png 576x576",
+		"res://addons/wsg_foundation/crowd/cards_mask.png 576x576", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
 		"res://assets/ui/bib_letters.png 896x128", "res://assets/venue/arena_atlas.jpg 1024x2048",
 		"res://assets/venue/surfaces/white_maple_veneer_albedo_1k.jpg 1024x1024"],
-	"hall": ["<ImageTexture> 128x64", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
+	"hall": ["<ImageTexture> 128x64", "res://addons/wsg_foundation/crowd/cards.png 576x576",
+		"res://addons/wsg_foundation/crowd/cards_mask.png 576x576", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
 		"res://assets/ui/bib_letters.png 896x128", "res://assets/venue/hall_atlas.jpg 1024x1024",
 		"res://assets/venue/surfaces/ceiling_interior_albedo_1k.jpg 1024x1024",
 		"res://assets/venue/surfaces/concrete_block_wall_normal_1k.jpg 1024x1024",
 		"res://assets/venue/surfaces/white_maple_veneer_albedo_1k.jpg 1024x1024"],
-	"outdoor": ["<ImageTexture> 128x64", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
+	"outdoor": ["<ImageTexture> 128x64", "res://addons/wsg_foundation/crowd/cards.png 576x576",
+		"res://addons/wsg_foundation/crowd/cards_mask.png 576x576", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
 		"res://assets/ui/bib_letters.png 896x128", "res://assets/venue/outdoor_atlas.jpg 2048x2048",
 		"res://assets/venue/outdoor_cards.png 2048x1024", "res://assets/venue/skies/netball_court_sky_2k.jpg 2048x1024",
 		"res://assets/venue/surfaces/asphalt_02_albedo_1k.jpg 1024x1024",
@@ -1633,6 +1650,8 @@ func _low_unchanged() -> void:
 				var want := PackedStringArray(LOW_TEXTURES[venue])
 				check(got == want, "Low, %s: the same textures as before (got %s)" % [venue, ", ".join(got)])
 				check(Sfx._crowd.stream == Sfx.streams.get("amb_" + venue), "Low, %s: the same bed as before" % venue)
+				var cr: Crowd = m.arena.crowd
+				check(cr != null and cr.people == null and cr.cards != null, "Low, %s: the crowd as cards, no 3D people" % venue)
 			else:
 				var hd := 0
 				for t in got:
@@ -1641,7 +1660,8 @@ func _low_unchanged() -> void:
 							hd += 1
 						check(not t.begins_with(String(k) + " "), "High, %s: not the Low copy of %s" % [venue, k])
 				check(hd >= 3, "High, %s: the sharper textures (%d)" % [venue, hd])
-				check(", ".join(got).contains("crowd_hd.png 2048x512"), "High, %s: the crowd's 32 people" % venue)
+				var cr: Crowd = m.arena.crowd
+				check(cr != null and cr.people != null and not cr.people.meshes.is_empty(), "High, %s: the crowd's 3D people" % venue)
 			m.queue_free()
 			await frames(2)
 	Game.settings.graphics = was

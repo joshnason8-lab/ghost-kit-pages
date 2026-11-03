@@ -7,17 +7,18 @@ extends Node3D
 ##
 ## Built from merged, vertex-coloured parts (Geo) drawn by the venue's shaders (VenueLook): its structure in one draw
 ## call, what glows (lines, light strips, boards, nets) in a second and its lights in a third, however many parts. The
-## stands' seated people are painted by the shader, so a full house costs nothing more; on Medium and High the front
-## rows are whole 3D people of their own who sit, cheer and watch the ball (Crowd: the shared foundation's
-## WsgCrowd3D, about a dozen draw calls; each venue's builder says how its people sit or stand, _seats3d). Low
-## graphics leaves out the small things and the bloom. Indoors on Medium and High the courtside boards are LED boards
+## stands' seated people are painted by the shader, so a full house costs nothing more; each venue's builder declares
+## where its spectators sit or stand (CrowdVenues, the shared foundation's WsgCrowdVenue: crowd_venue) and Crowd puts
+## them there: whole 3D people who sit, cheer and watch the ball on Medium and High, the same people as cards on Low
+## (one draw call). Low graphics leaves out the small things and the bloom. Indoors on Medium and High the courtside boards are LED boards
 ## running messages and the teams' colours, the game's wordmark is painted in the run-off and each post has a goal light that flashes for a goal
 ## (VenueLook.led: one draw call more); Low keeps its plain glowing boards.
 
 var venue := "arena"
 var home_colors: Array = []
 var crowd: Crowd
-var _seats3d: Array = []          # Medium and High: how each crowd spot's person sits or stands (Crowd.build's seats)
+var crowd_venue: CrowdVenues.Venue  # where the spectators sit or stand (each venue's builder declares it)
+var crowd_off := false            # build the venue without its crowd (the crowd audit's scenes): every seat taken
 var _lit: Geo
 var _glow: Geo
 var _fx: Geo
@@ -47,14 +48,13 @@ func _ready() -> void:
 	_low = _gfx == Game.GFX_LOW
 	var kind := String(DB.venue(venue)[2])
 	_props = VenueProps.new(kind, _low)
-	var spots: Array = []
 	match kind:
 		"arena":
-			spots = _arena()
+			_arena()
 		"hall":
-			spots = _hall()
+			_hall()
 		"outdoor":
-			spots = _outdoor()
+			_outdoor()
 	_posts()
 	if not home_colors.is_empty():
 		_look["team_a"] = home_colors[0]
@@ -90,11 +90,18 @@ func _ready() -> void:
 	var fxi := _fx.commit(fx)
 	fxi.sorting_offset = 50.0
 	add_child(fxi)
-	if not spots.is_empty():
+	if crowd_venue and not crowd_off:
 		crowd = Crowd.new()
 		Crowd.set_tint(_look.get("stand_tint", Color.WHITE))
-		crowd.build(spots, Game.crowd_density(), home_colors.duplicate(), hash(venue), _seats3d, [_team_colors()[1]])
+		crowd.build(crowd_venue, home_colors.duplicate(), hash(venue), [_team_colors()[1]], _team_colors())
 		add_child(crowd)
+
+
+## The venue's spectators (CrowdVenues): who came today (the level's crowd density), every seat for the audit.
+func _declare(v: CrowdVenues.Venue) -> void:
+	crowd_venue = v
+	v.density = 1.0 if crowd_off else Game.crowd_density()
+	v.all = crowd_off
 
 
 ## The two teams' colours (home, away) for the boards: the match's, else the home colours.
@@ -383,37 +390,11 @@ func _ring_lights(x0: float, z0: float, o: float, y: float, step: float, size: f
 			_fx.sprite(p, size, col, streak)
 
 
-## People of their own (Crowd) in the front rows of a slope of seats, rows deep, between aisles every aisle metres;
-## the slope starts at distance o0 and height y0 and each row is depth deep and rise high. sides: which sides of the
-## ring (as _ring_lights); the near side's middle is left clear in its first two rows (the officials' bench).
-func _front_rows(x0: float, z0: float, o0: float, y0: float, rows: int, depth: float, rise: float, aisle: float, sides := [0, 1, 2, 3]) -> Array:
-	var spots := []
-	for r in rows:
-		var o := o0 + (r + 0.12) * depth
-		var y := y0 + (r + 0.12) * rise
-		for i: int in sides:
-			var c0 := _corner(i, x0, z0)
-			var c1 := _corner((i + 1) % 4, x0, z0)
-			var a := Vector3(c0.x + signf(c0.x) * o, y, c0.y + signf(c0.y) * o)
-			var b := Vector3(c1.x + signf(c1.x) * o, y, c1.y + signf(c1.y) * o)
-			var along := (b - a).normalized()
-			var n := int(a.distance_to(b) / 0.55)
-			for j in n:
-				var p := a.lerp(b, (j + 0.5) / n)
-				var u := Vector2(p.x, p.z).dot(Vector2(along.x, along.z))
-				if absf(fposmod(u, aisle) - aisle * 0.5) < 0.7:
-					continue   # the stairs
-				if i == 2 and r < 2 and absf(p.x) < 9.0:
-					continue   # the officials' bench
-				spots.append(p)
-	return spots
-
-
 # ---------------------------------------------------------------- the arena
 
 ## The arena: a deep blue night inside, the court bright under rigs of floodlights, a bowl of two tiers all round
 ## with a lit fascia between them, glowing boards round the run-off.
-func _arena() -> Array:
+func _arena() -> void:
 	var night := Color("040a24")
 	_env(night, Color("7088d0"), 0.55, Color("f4f6ff"), 1.0, Vector3(-62, 25, 0))
 	_look = {"night": night, "fade_y0": 2.0, "fade_y1": 11.0, "fade_amt": 0.9, "stand_tint": Color(0.4, 0.45, 0.72) if _low else Color(0.5, 0.55, 0.85), "sheen": 0.32 if _low else 0.4,
@@ -440,7 +421,8 @@ func _arena() -> Array:
 	var wall := Color("10183e")
 	_lit.kind = Vector2.ZERO
 	_ring(_lit, x0, z0, 0.0, 0.0, 0.0, front, wall)
-	# People of their own in the front rows on Medium and High, but not on the near side, under the cameras.
+	# On Medium and High the front rows behind the courtside stands (far side and ends) are left unpainted: the stands
+	# and their people are there.
 	_ring(_lit, x0, z0, 0.0, front, o1, y1, Color("1c2560"), Vector2(VenueLook.STAND, first), [0, 1, 3])
 	_ring(_lit, x0, z0, 0.0, front, o1, y1, Color("1c2560"), Vector2(VenueLook.STAND, 0), [2])
 	_ring(_glow, x0, z0, -0.02, front - 0.07, -0.02, front, Color("ff7a2a"), Vector2(VenueLook.LED, 0.6))
@@ -465,58 +447,22 @@ func _arena() -> Array:
 	_rigs(x0, z0)
 	_twinkles(x0, z0, fo, fy, uo, uy)
 	_bench(Color("161e4a"), Color("232c66"), Color("29d8ea"))
+	# Courtside stands in front of the lower tier on the far side and both ends, people in their seats (CrowdVenues.arena):
+	# on Low the owner's light three-row bleacher, on Medium and High the dark metal one.
 	if _low:
-		# Courtside stands without people: the owner's three-row bleacher, light enough for Low.
 		if _props.has("bleacher_hall"):
-			_courtside("bleacher_hall", 8.0, 1.2, x0, z0, front)
-		return []
-	var spots := _front_rows(x0, z0, 0.0, front, first, depth, rise, 9.0, [0, 1, 3])
-	if _props.has("bleacher_metal"):
-		spots = _bleachers(x0, z0, front)
-	return spots
-
-
-## Courtside seating: sections of a dark metal stand (the owner's bleacher) in front of the lower tier on the far side
-## and both ends, people of their own in its seats. Medium and High.
-func _bleachers(x0: float, z0: float, y: float) -> Array:
-	const W := 7.48
-	# Its five rows of seats, measured off the model (its front +Z): the seat's top and middle, and where the feet of
-	# someone sitting in it rest (y, z): on the slope in front for the first row, else in the row in front's footwell
-	# or against its seat backs (the model's rows are closer than people's knees need).
-	const SEAT_Y := [0.76, 1.06, 1.24, 1.66, 1.97]
-	const SEAT_Z := [1.57, 0.97, 0.47, -0.32, -0.78]
-	const FEET := [Vector2(0.33, 2.0), Vector2(0.76, 1.4), Vector2(0.95, 0.9), Vector2(1.28, 0.13), Vector2(1.66, -0.37)]
-	var spots := []
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 5
-	for xf: Transform3D in _courtside("bleacher_metal", W, 2.07, x0, z0, y):
-		for r in 5:
-			for k in 14:
-				var x := -3.25 + k * 0.5 + rng.randf_range(-0.04, 0.04)
-				var p: Vector3 = xf * Vector3(x, SEAT_Y[r], SEAT_Z[r])
-				spots.append(p)
-				var f: Vector2 = FEET[r]
-				var feet: Vector3 = xf * Vector3(x, f.x, f.y)
-				_seats3d.append([feet, SEAT_Y[r] - f.x, INF, Crowd.seat_facing(feet, xf.basis.z)])
-	return spots
+			_courtside("bleacher_hall", CrowdVenues.HALL_BLEACHER_W, CrowdVenues.HALL_BLEACHER_HALF_D, x0, z0, front)
+			_declare(CrowdVenues.arena(x0, z0, front, true))
+	elif _props.has("bleacher_metal"):
+		_courtside("bleacher_metal", CrowdVenues.METAL_W, CrowdVenues.METAL_HALF_D, x0, z0, front)
+		_declare(CrowdVenues.arena(x0, z0, front, false))
 
 
 ## Places sections of a stand model (w wide, half_d deep from its middle to its front, facing +Z) along the far side
 ## and both ends, their fronts at the lower tier's foot; returns each section's transform.
-func _courtside(name: String, w: float, half_d: float, x0: float, z0: float, y: float) -> Array:
-	var out := []
-	for side in [0, 1, 3]:
-		var span := x0 * 2.0 if side == 0 else z0 * 2.0
-		var n := int(floor(span / w))
-		var yaw := 0.0 if side == 0 else (-PI * 0.5 if side == 1 else PI * 0.5)
-		var b := Basis(Vector3.UP, yaw)
-		var back := half_d + 0.05
-		for i in n:
-			var u := (i - (n - 1) * 0.5) * w
-			var c := Vector3(u, y, -z0 - back) if side == 0 else Vector3((x0 + back) * (1.0 if side == 1 else -1.0), y, u)
-			_props.add(name, Transform3D(b, c), Color(0.62, 0.68, 0.95))
-			out.append(Transform3D(b, c))
-	return out
+func _courtside(name: String, w: float, half_d: float, x0: float, z0: float, y: float) -> void:
+	for xf: Transform3D in CrowdVenues.courtside(w, half_d, x0, z0, y):
+		_props.add(name, xf, Color(0.62, 0.68, 0.95))
 
 
 ## The boards round the run-off: a dark frame and a glowing band of plain colour that a slow light sweeps along (no
@@ -647,7 +593,7 @@ const STEEL := Color("3b4047")
 ## behind the goal lines, pale timber slats above and a strip of high windows; steel roof trusses hung with rows of
 ## lights; cross-court basketball boards on the far wall and the main court's boards winched up to the roof; benches,
 ## doors, a clock, exit signs, a scorers' table, a cage of balls; a retractable stand down the near side.
-func _hall() -> Array:
+func _hall() -> void:
 	var room := Color("8c95a2")
 	_env(room, Color("d8dee6"), 0.64, Color("fff6ea"), 0.88, Vector3(-60, 32, 0))
 	_look = {"night": Color("6a7380"), "fade_amt": 0.0, "sheen": 0.16 if _low else 0.2, "gloss": 180.0,
@@ -711,7 +657,8 @@ func _hall() -> Array:
 	var ax := hl * 0.72
 	var grey := Color("2b2f36")
 	_lit.wall(Vector3(ax, 0, z0), Vector3(-ax, 0, z0), 0.0, front, grey, true)
-	var spots := _hall_stand(z0, rows, depth, rise, front, ax)
+	_declare(CrowdVenues.hall(z0, depth, rise, front, ax))
+	_hall_stand(z0, rows, depth, rise, front, ax)
 	for sx: float in [-1.0, 1.0]:
 		var e := Vector3(ax * sx, 0, z0)
 		_lit.quad(e, e + Vector3(0, front, 0), e + Vector3(0, front + rows * rise, rows * depth), e + Vector3(0, 0, rows * depth), grey)
@@ -720,7 +667,6 @@ func _hall() -> Array:
 		_lit.cylinder(e + Vector3(0, front, 0), e + Vector3(0, front + 1.0, 0), 0.025, 0.025, Color("9aa0a8"), 6)
 		_lit.kind = Vector2.ZERO
 	_hall_bench(Court.HALF_W + Court.RUNOFF + 0.75)
-	return spots
 
 
 ## A row of portable LED boards along the far side line, as wheeled out for a league match. Medium and High.
@@ -739,14 +685,14 @@ func _hall_boards() -> void:
 
 
 ## The hall's stand: rows stepped up from z0 (each depth deep, rise high, the first at front), a tip-up seat every
-## half metre along each (folded up where no one sits) with a stair every 8 m. On Medium and High people (Crowd) sit
-## in the front three rows, a league crowd: the spots come back.
-func _hall_stand(z0: float, rows: int, depth: float, rise: float, front: float, ax: float) -> Array:
+## half metre along each (folded up where no one sits) with a stair every 8 m. People sit in the front three rows, a
+## league crowd (CrowdVenues.hall): their seats are down.
+func _hall_stand(z0: float, rows: int, depth: float, rise: float, front: float, ax: float) -> void:
 	var tread := Color("3a3f47")
 	var seat := Color("2f62b8") if not _low else Color("3a72cc")
-	var spots := []
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 21
+	var taken := {}
+	for p: Vector3 in crowd_venue.place(hash(venue)).spots:
+		taken[Vector2i(roundi(p.x * 4.0), roundi((p.y - front) / rise))] = true
 	for r in rows:
 		var y := front + r * rise
 		var za := z0 + r * depth
@@ -759,22 +705,17 @@ func _hall_stand(z0: float, rows: int, depth: float, rise: float, front: float, 
 			var x := -ax + (i + 0.5) * 0.5
 			if absf(fposmod(x, 8.0) - 4.0) < 0.6:
 				continue   # the stairs
-			# The back, and the seat: down if someone is in it (on Medium and High), else folded up against the back.
-			_lit.box(Vector3(x, y + 0.62, za + 0.6), Vector3(0.44, 0.4, 0.05), seat)
+			# The back (against the riser behind, the seat at the back of the tread: room in front for the feet), and the seat:
+			# down if someone is in it, else folded up against the back.
+			_lit.box(Vector3(x, y + 0.62, za + 0.775), Vector3(0.44, 0.4, 0.05), seat)
 			# People sit in the front rows, as at a league match (further up they would be in the low camera's way).
-			var sat := not _low and r < 3 and rng.randf() < 0.75 - r * 0.15
-			if sat:
-				_lit.box(Vector3(x, y + 0.42, za + 0.38), Vector3(0.44, 0.05, 0.4), seat)
-				var sx := x + rng.randf_range(-0.03, 0.03)
-				spots.append(Vector3(sx, y + 0.38, za + 0.4))
-				# (A whole person: feet at the edge of the tread, sitting back against the seat's back.)
-				_seats3d.append([Vector3(sx, y, za - 0.05), 0.445, INF, Crowd.seat_facing(Vector3(sx, y, za), Vector3(0, 0, -1))])
+			if taken.has(Vector2i(roundi(x * 4.0), r)):
+				_lit.box(Vector3(x, y + 0.42, za + 0.58), Vector3(0.44, 0.05, 0.36), seat)
 			else:
-				_lit.box(Vector3(x, y + 0.6, za + 0.53), Vector3(0.42, 0.36, 0.05), seat.darkened(0.15))
+				_lit.box(Vector3(x, y + 0.6, za + 0.71), Vector3(0.42, 0.36, 0.05), seat.darkened(0.15))
 			if not _low:
-				_lit.box(Vector3(x, y + 0.2, za + 0.6), Vector3(0.06, 0.4, 0.06), Color("50555e"))
+				_lit.box(Vector3(x, y + 0.2, za + 0.775), Vector3(0.06, 0.4, 0.06), Color("50555e"))
 		_lit.kind = Vector2.ZERO
-	return spots
 
 
 ## A hall wall from a to b (facing the side to the right of a -> b), h high: painted block to 2.4 m with a blue band,
@@ -1138,7 +1079,7 @@ const TARMAC_TEX := "res://assets/venue/surfaces/asphalt_02_albedo_1k.jpg"
 ## asphalt under a photographed sky (a real netball court's), the floodlights coming on; a chain-link fence, a path
 ## with park benches and street lamps, a neighbouring court with a street hoop, jacarandas, oaks and smaller trees,
 ## a row of terraced houses beyond; the people stand round the open side and the ends.
-func _outdoor() -> Array:
+func _outdoor() -> void:
 	var sky := Sky.new()
 	var mat := VenueLook.sky()
 	mat.set_shader_parameter("bg", Game.tex(COURT_SKY))
@@ -1225,42 +1166,9 @@ func _outdoor() -> Array:
 			_props.put("terrace_row", Vector3(sx * 66.0, 0, -22.0 + i * 30.0), -sx * PI * 0.5)
 	_floodlights(hl, hw)
 	_hall_bench(Court.HALF_W + Court.RUNOFF + 0.75, "park_bench", 4.0, 1.6)
-	# The people: standing along the near side and both ends.
-	var spots := []
-	var lines := [[Vector3(-hl + 0.5, 0, hw + 0.8), Vector3(-8.0, 0, hw + 0.8)], [Vector3(8.0, 0, hw + 0.8), Vector3(hl - 0.5, 0, hw + 0.8)],
-		[Vector3(-hl - 0.8, 0, hw - 1.0), Vector3(-hl - 0.8, 0, -hw + 1.0)], [Vector3(hl + 0.8, 0, -hw + 1.0), Vector3(hl + 0.8, 0, hw - 1.0)]]
-	if _low:
-		# Painted on three upright faces a row deep each (one draw call with the rest).
-		for l: Array in lines:
-			var a: Vector3 = l[0]
-			var b: Vector3 = l[1]
-			var back := Vector3(0, 0, 1) if a.z == b.z else Vector3(signf(a.x), 0, 0)
-			for k in 2:
-				var o := back * (0.6 * k)
-				var len_ := a.distance_to(b)
-				_lit.kind = Vector2(VenueLook.STANDING, 0)
-				_lit.quad(a + o + Vector3(0, 2.2, 0), b + o + Vector3(0, 2.2, 0), b + o, a + o, Color(0, 0, 0, 0),
-					[Vector2(k * 0.3, 2.2), Vector2(len_ + k * 0.3, 2.2), Vector2(len_ + k * 0.3, 0), Vector2(k * 0.3, 0)])
-				_lit.kind = Vector2.ZERO
-		return []
-	# (On Medium and High the people at the ends stand behind the low fence, not in it.)
-	lines[2] = [Vector3(-fx - 0.5, 0, hw - 1.0), Vector3(-fx - 0.5, 0, -hw + 1.0)]
-	lines[3] = [Vector3(fx + 0.5, 0, -hw + 1.0), Vector3(fx + 0.5, 0, hw - 1.0)]
-	for r in 3:
-		for l: Array in lines:
-			var a: Vector3 = l[0]
-			var b: Vector3 = l[1]
-			var back := Vector3(0, 0, 1) if a.z == b.z else Vector3(signf(a.x), 0, 0)
-			var n := int(a.distance_to(b) / 0.55)
-			for i in n:
-				var p: Vector3 = a.lerp(b, (i + 0.5) / n) + back * (r * 0.7) + Vector3(rng.randf_range(-0.2, 0.2), r * 0.2, 0)
-				if absf(absf(p.x) - fx - 2.0) < 0.7 and absf(p.z + 4.0) < 1.2:
-					continue   # the park bench behind each end
-				spots.append(p)
-				# (A whole person stands on the ground, facing the court.)
-				var feet := Vector3(p.x, 0.0, p.z)
-				_seats3d.append([feet, 0.0, INF, Crowd.facing(feet).z])
-	return spots
+	# The people, standing (CrowdVenues.outdoor): along the open near side, behind the tall fence down the far side
+	# and behind the low fences at the ends.
+	_declare(CrowdVenues.outdoor(hl, hw, fx, fz))
 
 
 ## A chain-link fence on galvanised posts: tall down the far side, low across the ends (the camera behind the goal

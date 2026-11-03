@@ -6,8 +6,7 @@ extends Control
 const CREDITS := """[b]Netball Unleashed[/b]
 Made by Josh Nason.
 The players are Josh Nason's own 3D model, made with Meshy (meshy.ai) and rigged and animated with Mixamo (Adobe,
-mixamo.com): its Walking and Running clips and the Fast_Run sprint, used under Mixamo's terms. Umpires, venues, crowd, ball and flags made in code for the game (the
-crowd's 32 people on Medium and High drawn for it by tools/art/make_crowd.py); the
+mixamo.com): its Walking and Running clips and the Fast_Run sprint, used under Mixamo's terms. Umpires, venues, ball and flags made in code for the game; the
 menu music and the shoe squeaks written for it (tools/audio). The crowd's ooh and groan from Kabaddi
 Raid, by the same maker.
 Venue models by Josh Nason, made with Meshy (meshy.ai): the arena's courtside stands, gym and park benches, oak trees, grass, terraced houses
@@ -19,8 +18,9 @@ On Medium and High the players, umpires and reserves are drawn with the World St
 same maker): the owner's player model on its rig, walking, running, sprinting, turning, starting and stopping with
 motion capture from the MoCap Online Mobility pack (MoCap Online, mocaponline.com) and Reallusion ActorCore
 (actorcore.reallusion.com), licensed for the game; that animation is part of the game only, not to be extracted.
-The people in the stands on Medium and High are the foundation's fans: the maker's own models, made with Meshy, their
-cheering and clapping from ActorCore's crowd motions (licensed as above) or the foundation's own.
+The people in the stands are the foundation's fans: the maker's own models, made with Meshy, their cheering and
+clapping from ActorCore's crowd motions (licensed as above) or the foundation's own; on Low they are flat cards
+drawn from the foundation's own.
 The replays use the foundation's WsgReplay."""
 
 const SOUNDS := """[b]Sounds[/b] (the full list: docs/SOUNDS.md)

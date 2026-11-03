@@ -68,7 +68,6 @@ func run() -> void:
 		await _progress(done + _share("sounds") * Sfx.progress())
 	done += _share("sounds")
 	t0 = _took("sounds", t0)
-	Crowd.sheet()
 	Ball.texture()
 	ToonBody.material(int(Game.settings.graphics) > Game.GFX_LOW)
 	done += _share("art")
