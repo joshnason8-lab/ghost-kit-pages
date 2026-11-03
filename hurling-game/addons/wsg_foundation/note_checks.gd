@@ -109,11 +109,19 @@ static func feet(body: WsgBody) -> Array:
 ## coming in flat and fast, or snapped back by the clip as it lands, is gliding on the floor (a hard stop from a run
 ## snapped the foot back 7-8 cm in a frame, read as swinging - the lead, 2026-11-03). A swinging foot is never flat (its
 ## toe skims the grass, its heel well up): a walk's swing toe moves 8-12 cm a frame within 3 cm of the ground, not a skid.
-## Returns {steps, max_cm, p90_cm, mean_cm, toe_up_cm (the most a toe rose off the ground with its heel down), skid_cm}.
+## jump_cm: the most a LOW foot (heel or toe within LOW of standing, over four frames) jumped in a frame - the smaller of
+## the change in its move into the frame and out of it, the smaller of the heel's and the toe's (a jump goes still -
+## far - still; a landing changes sharply on one side only, a take-off on the other, a swing smoothly). Every game's
+## walker, walking to sprinting and cutting at 8 m/s, reads 15.4 cm at most (tools/feet_calibrate, 2026-11-03); a stop
+## from a sprint that re-planted the foot a stride on read 40-88.
+## Returns {steps, max_cm, p90_cm, mean_cm, toe_up_cm (the most a toe rose off the ground with its heel down), skid_cm,
+## jump_cm}.
 const TOUCH := 0.03
 ## Flat on the floor (skid_cm): heel and toe both within this (m). (At 3 cm a walk's foot still coming down - heel 3.0,
 ## toe 2.2 cm up, the frame before it landed - read as an 11 cm skid; the glides it is for sit at 0-1.5 cm.)
 const FLAT := 0.02
+## A low foot (jump_cm): heel or toe within this of standing (m).
+const LOW := 0.10
 
 ## A frame may carry the game's own planted flags as items 4 and 5 (left, right: the planter's contact, what the motion
 ## means to be on the ground); without them a foot touches when its ankle or toe is within TOUCH of its rest height
@@ -126,6 +134,7 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 	var slips := []
 	var toe_up := 0.0
 	var skid := 0.0
+	var jump := 0.0
 	for side in 2:
 		# Where this foot's ankle and toe are when it stands on the ground: the lowest each goes over the run (a rig's
 		# rest heights are not where its bones stand: the test hurler's ankle bone stands 13 cm below its rest
@@ -182,13 +191,38 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 				worst = 0.0
 		if touching_for > 2:
 			slips.append(worst * 100.0)
+		# The jump: over each four frames with the foot low throughout. (A body put somewhere new moves metres: over 1.5 m
+		# in a frame is a cut, not a jump - not the slip's 0.4 m, which the stop teleports it is for passed, 40-95 cm.)
+		for k in range(2, frames.size() - 1):
+			var lowk := true
+			for j in range(k - 2, k + 2):
+				var fj: Array = frames[j]
+				if minf((fj[side * 2] as Vector3).y - ground_y - ankle_rest, (fj[side * 2 + 1] as Vector3).y - ground_y - toe_rest) >= LOW:
+					lowk = false
+					break
+			if not lowk:
+				continue
+			var jmp := INF
+			for e in 2:
+				var p1: Vector3 = frames[k - 2][side * 2 + e]
+				var p2: Vector3 = frames[k - 1][side * 2 + e]
+				var p3: Vector3 = frames[k][side * 2 + e]
+				var p4: Vector3 = frames[k + 1][side * 2 + e]
+				if Vector2(p3.x - p2.x, p3.z - p2.z).length() > 1.5:
+					jmp = 0.0
+					break
+				var into := Vector2(p3.x - 2.0 * p2.x + p1.x, p3.z - 2.0 * p2.z + p1.z).length()
+				var out := Vector2(p4.x - 2.0 * p3.x + p2.x, p4.z - 2.0 * p3.z + p2.z).length()
+				jmp = minf(jmp, minf(into, out))
+			jump = maxf(jump, jmp)
 	slips.sort()
 	var mean := 0.0
 	for s in slips:
 		mean += float(s)
 	return {"steps": slips.size(), "max_cm": float(slips[-1]) if not slips.is_empty() else 0.0,
 		"p90_cm": float(slips[int(slips.size() * 0.9)]) if not slips.is_empty() else 0.0,
-		"mean_cm": mean / maxf(1.0, slips.size()), "toe_up_cm": toe_up * 100.0, "skid_cm": skid * 100.0}
+		"mean_cm": mean / maxf(1.0, slips.size()), "toe_up_cm": toe_up * 100.0, "skid_cm": skid * 100.0,
+		"jump_cm": jump * 100.0}
 
 
 ## A body's arms now: {"Left": [how far the upper arm is out from hanging down (degrees), the elbow's bend (degrees,
