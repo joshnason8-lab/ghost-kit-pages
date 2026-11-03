@@ -50,6 +50,12 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "hands" in OS.get_cmdline_user_args():
+		# (Only the shooters' turn and the ball in her hands: tests/test_runner.tscn -- hands)
+		await _shots_and_hands()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "solid" in OS.get_cmdline_user_args():
 		# (Only the props: tests/test_runner.tscn -- solid)
 		await _solid_props()

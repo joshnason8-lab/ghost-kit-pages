@@ -280,22 +280,21 @@ func step(dt: float) -> void:
 	match state:
 		"held":
 			if holder:
-				var was := pos
 				pos = holder.hand_point()
 				if solid:
-					# Her hands can't take it into a prop (the post's pad): it stops against it, and she gives way.
-					var into := solid.sweep(was, pos, R)
-					if into.hit and was.distance_to(pos) < 1.0:
-						var stop: Vector3 = (into.pos as Vector3) + (into.normal as Vector3) * (float(into.get("depth", 0.0)) + 0.002)
-						holder.held_off += _back(stop.distance_to(pos))
-						pos = stop
+					# Her hands can't take it into a prop (the post's pad): she gives way (Player.advance, held_off: back by
+					# as far as it went in, and a little), and a touch rests it against the prop, still in her palms.
+					var q := pos
 					for k in 4:   # (out of each it is in: the post inside its pad)
-						var h := solid.sweep(pos, pos, R)
+						var h := solid.sweep(q, q, R)
 						if not h.hit:
 							break
-						var push := (h.normal as Vector3) * (float(h.get("depth", 0.0)) + 0.002)
-						pos += push
-						holder.held_off += _back(push.length())
+						q += (h.normal as Vector3) * (float(h.get("depth", 0.0)) + 0.002)
+					var depth := q.distance_to(pos)
+					if depth > 0.0:
+						holder.held_off += _back(depth + 0.03)
+						if depth <= 0.015:
+							pos = q
 		"flight":
 			var was := pos
 			f_t += dt
