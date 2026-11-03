@@ -225,15 +225,20 @@ same scores across processes). What it found, ranked by how often x how much it 
 | 6 | (Found and fixed in the checks, not the game: a player "teleport" after a skipped replay; the ball "in two places" for the frame after a tap ends a replay; a same-team box score when a team played itself, which the game never allows.) | | | | |
 
 **WsgSim's first matches** (the smoke batch, 4 shards; the machine's other work left each about a tenth of a core):
-<<WSGSIM_RAN>>
+The smoke batch (`--smoke --input`, 71 matches planned, 4 shards) was stopped after 12 matches (3,287 s of play in 7,411
+s of wall clock: the machine's other work left each shard about a tenth of a core): 4 random, 4 extreme, 4 human; 3
+passed, 9 failed. One "freeze" (random#4) was not one: a full-length 15-minute-quarter match printing nothing for 30
+minutes of a starved core, before the adapter printed a line every two minutes of play. Results in
+`$TMPDIR/.../smoke/merged/SIM_REPORT.md` on the build machine (outside the project). The netball rules found nothing
+in the AI's own play; what failed:
 
 | # | Finding (WsgSim's own check, or the netball rules') | Seen | Kind | Where |
 |---|---|---|---|---|
-| 1 | **Your player can run off the floor into the stands** with Keep me onside off: the bib-controlled C ran 5 m past the run-off behind a goal line (x 22-23 m; the court ends at 15.25, the run-off at 18.3) | human#6, human#15 | a body out of the venue (WsgSim "out of bounds"; netball `player_lost`) | game/match.gd `_drive_me` / game/player.gd `advance`: nothing holds an unfenced player inside the run-off |
+| 1 | **Your player can run off the floor into the stands** with Keep me onside off: the bib-controlled C ran past the run-off within seconds: behind a goal line (x 22-23 m; the run-off ends at 18.3) and over a side line (z 15.6 m; it ends at 10.7) | human#6, human#15 | a body out of the venue (WsgSim "out of bounds"; netball `player_lost`) | game/match.gd `_drive_me` / game/player.gd `advance`: nothing holds an unfenced player inside the run-off |
 | 2 | **A centre pass nobody reached is taken outside the centre third with no call, and by its own thrower**: the human's C lobbed the centre pass, the GA was not there (`_arrive`: the ball runs on, no event), and the C picked it up at x 6.3 (a goal third): a centre pass fault and a replayed ball, neither called. docs/RULES.md says replayed ball "cannot happen in play": it can, this way | human#3 | rules (R8, R11) | game/match.gd `_arrive`, `_run_loose` |
 | 3 | **Advantage signalled three times for one challenge, then the same contact called**: the human's GK holding INTERCEPT on the shooter infringes every frame (`TeamAI` 927-933: contact from 1.2 m), the umpire plays advantage, again, again, then calls it; the user's player never gives way (`give_way` skips her) | human#3 | rules, presentation | game/ai.gd |
 | 4 | **A wing defence stands still 6 s and more with her target 8-12 m away** (WsgSim "stuck"): likely fenced at the defending circle's edge with her target across it (a straight path through an area she may not enter; nothing routes her round) | extreme#5, #11, human#6; random#2, #4 in the first try | movement | game/player.gd `advance` (fenced), game/ai.gd targets |
-| 5 | **Feet sliding while planted** (the foundation's check, the followed quarter of the bodies): 8-20 cm in most foundation matches, and 1-1.6 m once in the first stretch of play of several; the check has no planter contacts from the game (it guesses "planted" from a low, slow foot), so the large ones may be a slow shuffle read as planted: replay one with the planter's contacts before fixing anything | every Medium/High match so far | seen | the foundation link (game/foundation_link.gd) or the check |
+| 5 | **Feet sliding while planted** (the foundation's check at 7239d54, the followed quarter of the bodies): 8-20 cm in most foundation matches, and 1-1.6 m once in the first stretch of play of several. The check guessed "planted" from a low, slow foot; the foundation's d4e3107 measures feet only while its planter drives them (poses the game sets do not count): rerun on d4e3107 before fixing anything | every Medium/High match so far | seen | the foundation link (game/foundation_link.gd) or the check |
 | 6 | The user's C in a T-pose on the first frame of a match (the frame before her first pose; the loading screen may hide it) | human#15 | seen, unconfirmed | game/foundation_link.gd (visible before posed) |
 
 **Determinism**: `sim.gd -- determinism --seeds 2` (short matches): PASS, both seeds the same frame for frame (1,479

@@ -119,8 +119,9 @@ corrected in round two.
 - **Over a third (R12; 12.3 or 12.4, the two sources differ)**: the ball may not cross a whole third without being caught or touched by a player in it: a free
   pass where it crossed the second line. `Rules.over_third`; the AI never tries it; your pass can. Test: `_rules`.
 - **Replayed ball**: she may not catch her own throw before another player (or the goal post) has touched it.
-  `Rules.replayed_ball`. *Simplified:* the game's passes always go to a team-mate, so it cannot happen in play; the
-  rule is in the module and tested.
+  `Rules.replayed_ball`. *Simplified:* the game's passes always go to a team-mate; the rule is in the module and
+  tested. *Not yet called in play:* a pass its receiver does not reach runs on loose, and the thrower can pick it up
+  (WsgSim found it, docs/SIM.md).
 - Not in the game because the game's players never do them: striking with a fist, kicking, rolling the ball to a
   team-mate, falling with it, throwing from the ground, using the post for support.
 
