@@ -670,6 +670,19 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The planter back on after a while off (0.15.18)
+
+- **Foundation 582bc16 -> 5c2304e** (the Foundation's fix for our Medium/High WsgSim seeds extreme#14, 7.0 cm, and
+  random#21, 7.0 and 3.6 cm): while the game draws a player's whole pose ("full": a kick, a set, a block) our
+  FoundationLink switches the planter off; switched back on as he moved off, it treated the feet as down where it
+  last drew them (up to 1.5 m behind) and let them slide. A planter idle for more
+  than 3 frames now starts afresh, and reset() clears that state. A step's toe stays 3.5 cm up until it lands
+  (it skimmed the floor 3-4 cm a frame). WsgSim names the frame of the worst foot reading; its replay carries --input.
+- **Low is unchanged**: its officials are posed every second frame, a gap of 2, under the restart's 3; the Low
+  feet probe (regu, seeds 7 and 11, 150 s each) gives the same summary on 5c2304e as on 582bc16 (players: 9 jumps
+  over 25 cm, 11 flat skids over 2 cm; officials: 1 and 3).
+- Suite 0 failures, the same checks as 0.15.17; owner notes 28/28 on a fresh install's defaults.
+
 ## The mixed format in the rules; owner notes on a fresh install (0.15.17)
 
 - **How to Play, Rules, "The regu"** (RULES_PLAYERS_TEXT, all 13 languages): one more sentence - the mixed quadrant is

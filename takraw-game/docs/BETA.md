@@ -15,6 +15,11 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.18: **on Medium and High, no sliding feet as a player moves off after a kick.** When a player set off
+again after a kick, a set or a block, a foot could slide a few centimetres along the floor (up to 7 cm) from where
+it had been planted before the move; now his feet start where they are drawn. A stepping foot's toe also no longer
+skims the floor just before it lands. Low is unchanged. Nothing else changes in play.
+
 New in 0.15.17: **How to Play's rules on the mixed quadrant.** The Rules page's "The regu" now says the mixed
 quadrant is two men and two women a side, and that the mixed format varies by tournament (the game plays the SEA
 Games and King's Cup way). Nothing else changes in play.
