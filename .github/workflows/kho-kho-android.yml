@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Shared foundation up to date? (a warning only)
+      - name: Shared foundation has every required commit (fails without one; only behind is a warning)
         run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
 
       - uses: actions/setup-java@v4
