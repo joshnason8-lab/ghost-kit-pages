@@ -1450,6 +1450,29 @@ Warnings name the foundation's test-time scripts in your export: `prop_audit`, `
 and `world/`. Exclude them in your Android preset's `exclude_filter` unless your game uses them. Keep `note_checks`
 if you map the stick with `WsgNoteChecks.stick_world`.
 
+**Publishing safely: never delete the old release before the new one exists.** Floorball's publish deleted its
+release, then hit a 403 on create, and its tag sat empty for an hour. Make the new release under a temporary tag
+first; only once it holds every asset, delete the old one and move the new one onto the tag:
+
+```yaml
+      - name: Publish the beta release
+        run: |
+          TAG=<your-beta-tag>
+          NEXT="$TAG-next-$GITHUB_RUN_ID"
+          # The new release, whole, under a tag of its own: if this fails, the old release is untouched.
+          gh release create "$NEXT" "$APK" "$APK32" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "<Game> $VERSION (latest beta)" --notes-file notes.md
+          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
+          # Then swap: the old one goes, the new one takes the tag (seconds apart).
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
+          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take)
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
+```
+
+If the swap ever fails, the new build is still published under `$TAG-next-<run>`. Obtainium and the owner's links
+use `$TAG`, so re-run the job; it never leaves `$TAG` pointing at nothing for longer than the swap.
+
 Checked on Kho Kho Rush 0.12.4-beta (the release APK): every check passes. The key is the owner's in v1, v2 and v3;
 the largest texture that isn't GPU-compressed is 1.6 MB; there are no duplicates.
 
