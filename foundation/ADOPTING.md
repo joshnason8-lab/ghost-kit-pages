@@ -1050,11 +1050,13 @@ func check() -> void:                     # may await; tree is the SceneTree
     needs: [build, owner-notes]   # a failing note blocks the release (the lead, 2026-11-03: Floorball 0.9.14 published on a red notes job)
 ```
 The publish job must `need` the owner-notes job: a note the owner made a permanent test that fails is a release
-blocker, not a report. The runner fails on:
+blocker, not a report. (One job doing it all is the same gate if the strict notes step comes before the export and
+publish steps - Kho Kho's test-and-build.) The runner fails on:
 - any failed note;
 - a file not in the index;
 - a listed note whose file is gone;
-- with `WSG_NOTES_FRESH=1`, saved files in `user://` (settings): notes hold on a fresh install's defaults, so the
+- with `WSG_NOTES_FRESH=1`, files in `user://` from before the run (settings saved earlier; what your autoloads write
+  on this first launch - a detected graphics level - is a fresh install's defaults and counts as one): notes hold on a fresh install's defaults, so the
   run gets an empty user dir (`XDG_DATA_HOME=$(mktemp -d)`, as above; an earlier step in the job saving settings
   cannot leak in). Run them locally the same way. Without it the runner only warns. (Floorball's stick-up-close
   passed locally on a stale "Real" pace and failed in CI at the default "Steady".)
