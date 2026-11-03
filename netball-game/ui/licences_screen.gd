@@ -19,6 +19,8 @@ On Medium and High the players, umpires and reserves are drawn with the World St
 same maker): the owner's player model on its rig, walking, running, sprinting, turning, starting and stopping with
 motion capture from the MoCap Online Mobility pack (MoCap Online, mocaponline.com) and Reallusion ActorCore
 (actorcore.reallusion.com), licensed for the game; that animation is part of the game only, not to be extracted.
+The people in the stands on Medium and High are the foundation's fans: the maker's own models, made with Meshy, their
+cheering and clapping from ActorCore's crowd motions (licensed as above) or the foundation's own.
 The replays use the foundation's WsgReplay."""
 
 const SOUNDS := """[b]Sounds[/b] (the full list: docs/SOUNDS.md)

@@ -3,6 +3,10 @@ extends MultiMeshInstance3D
 ## The spectators: flat cut-outs from one small sheet of painted figures, every one an instance of the same quad, so a
 ## stand of thousands is one draw call. A shader turns each to face the camera, picks its figure and shirt from the
 ## sheet, and makes it fidget, and jump and wave when the crowd goes up (excite).
+## On Medium and High, where the venue says how each person sits or stands (build's seats), they are whole 3D people
+## instead (the shared foundation's WsgCrowd3D: about a dozen draw calls), as many as the level's budget allows; any
+## left over stay cut-outs, in the same shirts. They sit on the seats, get up and cheer a goal, clap at the breaks
+## and turn their heads to the ball (the match's, a replay's too).
 
 const FIGS := 8          # figures across the sheet
 const FIG_W := 48
@@ -107,7 +111,21 @@ static var _sheet: ImageTexture
 static var _mat: ShaderMaterial
 static var _mat_hd: ShaderMaterial
 
-var spots: Array[Vector3] = []   # where people stand or sit (their feet)
+var spots: Array[Vector3] = []   # where the cut-out people stand or sit (their feet)
+var people: WsgCrowd3D           # Medium and High: the 3D people (null: all cut-outs)
+var people_spots: Array = []     # each 3D person's feet (world, as the arena gave them)
+var people_facings: Array = []   # and the way each faces (flat)
+var people_seats: Array = []     # and their seat's height over their feet (0: standing)
+var _match: Node                 # whose ball they watch and whose play they cheer
+var _cheer := 0.0                # seconds of a cheer left (a goal, the end of a quarter)
+var _tension := 0.0              # the attack near a goal: the keen ones up before the shot
+static var _tint := Color.WHITE
+## As the cut-outs' near_hide: the 3D people this close to the camera (m, flat) are left out (the Courtside camera
+## behind the hall's stand, the close shot of the post beside the park's crowd).
+const NEAR_HIDE := 6.0
+var _near: Array = []            # per 3D crowd mesh: [the flat box round its people, their transforms as placed]
+var _hidden := {}                # [mesh, instance] -> true: left out for now
+var _cam_at := Vector3.INF
 
 
 ## The sheet: eight people, head and shoulders and a shirt, a few skin and hair tones, drawn once; the top row seen
@@ -186,13 +204,35 @@ static func _material_hd() -> ShaderMaterial:
 
 
 ## Fills the spots with people, density 0-1 of them; shirts from palette (a home crowd in its team's colours).
-func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
+## seats (Medium and High): for each spot, how a whole person is there - [their feet (world), the seat's height over
+## them (0: standing), how far behind the feet the step behind rises (INF: nothing), the way they face (flat)]; with
+## it they are 3D people (WsgCrowd3D) where the level's budget allows, about half in the two teams' colours (away:
+## the visitors'), the cut-outs drawing the rest in the same shirts.
+func build(p_spots: Array, density: float, palette: Array, seed_ := 1, seats: Array = [], away: Array = []) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_
 	var keep: Array[Vector3] = []
-	for s in p_spots:
+	var kept := []
+	for i in p_spots.size():
 		if rng.randf() < density:
-			keep.append(s)
+			keep.append(p_spots[i])
+			kept.append(i)
+	var shirts := []
+	if Game.hd() and seats.size() == p_spots.size() and WsgCrowd3D.available() and not OS.has_environment("WSG_OFF"):
+		shirts = _shirts(kept, palette, away, seed_)
+		var used := _build_people(kept, seats, shirts, seed_)
+		# The cut-outs: everyone the 3D crowd's budget left out, in the shirts they would have worn.
+		var taken := {}
+		for n in used:
+			taken[n] = true
+		var rest: Array[Vector3] = []
+		var rest_shirts := []
+		for n in keep.size():
+			if not taken.has(n):
+				rest.append(keep[n])
+				rest_shirts.append(shirts[n])
+		keep = rest
+		shirts = rest_shirts
 	spots = keep
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -211,6 +251,8 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
 	for i in keep.size():
 		mm.set_instance_transform(i, Transform3D(facing(keep[i]), keep[i]))
 		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 else Color(rng.randf(), rng.randf(), rng.randf())
+		if i < shirts.size():
+			col = shirts[i]
 		# x: figure, y: a seed for a random shirt (or the palette colour coded below), z: phase, w: the team colour.
 		var w := 0.0
 		if hd:
@@ -219,6 +261,118 @@ func build(p_spots: Array, density: float, palette: Array, seed_ := 1) -> void:
 	multimesh = mm
 	material_override = material()
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## The 3D people (Medium and High) in the kept spots, as many as the level's budget allows (the rest: the indices into
+## kept it did not take are the cut-outs'). Returns which of kept it drew.
+func _build_people(kept: Array, seats: Array, shirts: Array, seed_: int) -> PackedInt32Array:
+	var feet := []
+	var facings := []
+	var seated := []
+	var room := []
+	for i in kept:
+		var s: Array = seats[i]
+		feet.append(s[0])
+		seated.append(float(s[1]))
+		room.append(float(s[2]))
+		facings.append(s[3])
+	people = WsgCrowd3D.new()
+	people.name = "People"
+	add_child(people)
+	# A netball crowd: about two thirds of them the two women of the shared fans.
+	people.fan_weights = {"fan2": 4.0, "fan5": 4.0}
+	# (density 1: the spots are already the ones with someone in them, as the cut-outs had them.)
+	var used := people.build(feet, facings, 1.0, seed_, seated, clampi(int(Game.settings.graphics), 1, 2), Vector3.ZERO,
+		room, shirts)
+	# Each their own skin, hair and trousers, skirt or shorts (no draw calls, no CPU: in the crowd's shader).
+	people.set_looks(WsgCrowd3D.LOOKS.skin, WsgCrowd3D.LOOKS.hair, WsgCrowd3D.LOOKS.legs)
+	people_spots = []
+	people_facings = []
+	people_seats = []
+	for n in used:
+		people_spots.append(feet[n])
+		people_facings.append(facings[n])
+		people_seats.append(seated[n])
+	# Lit as the venue lights its stands (the arena's dim blue night, a hall's white light, the park's evening sun):
+	# by the key light, as bright as the cut-outs' tint.
+	WsgCrowd3D.set_light(clampf(_tint.get_luminance(), 0.3, 1.0))
+	set_excite(0.0)
+	WsgCrowd3D.set_tension(0.0)
+	_near = []
+	_hidden = {}
+	for mi in people.meshes:
+		var mm := mi.multimesh
+		var xfs := []
+		var box := Rect2()
+		for k in mm.instance_count:
+			var xf := mm.get_instance_transform(k)
+			xfs.append(xf)
+			box = Rect2(xf.origin.x, xf.origin.z, 0, 0) if k == 0 else box.expand(Vector2(xf.origin.x, xf.origin.z))
+		_near.append([box, xfs])
+	return used
+
+
+## Leaves out the 3D people within NEAR_HIDE of the camera (as the cut-outs' shader does), putting back those it no
+## longer is: only when the camera has moved, and only in the crowd's meshes it is near.
+func _near_hide() -> void:
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	if cam == null:
+		return
+	var c := cam.global_position
+	if c.distance_squared_to(_cam_at) < 0.04:
+		return
+	_cam_at = c
+	var c2 := Vector2(c.x, c.z)
+	for i in _near.size():
+		var box: Rect2 = _near[i][0]
+		if box.grow(NEAR_HIDE).has_point(c2) or _hidden.has(i):
+			var mm := people.meshes[i].multimesh
+			var xfs: Array = _near[i][1]
+			var any := false
+			for k in xfs.size():
+				var xf: Transform3D = xfs[k]
+				var near := Vector2(xf.origin.x, xf.origin.z).distance_squared_to(c2) < NEAR_HIDE * NEAR_HIDE
+				var key := Vector2i(i, k)
+				if near != _hidden.has(key):
+					# (Hidden: shrunk to nothing where they stand; the shader's sums stay finite.)
+					mm.set_instance_transform(k, Transform3D(xf.basis.scaled(Vector3.ONE * 0.001), xf.origin) if near else xf)
+					if near:
+						_hidden[key] = true
+					else:
+						_hidden.erase(key)
+				any = any or near
+			if any:
+				_hidden[i] = true
+			else:
+				_hidden.erase(i)
+
+
+## Each kept spot's person's shirt, decided once (the 3D person and the cut-out wear the same): about half in the
+## teams' colours (the home side's palette most, the visitors' away), the rest anything (the shader mutes them).
+static func _shirts(kept: Array, palette: Array, away: Array, seed_: int) -> Array:
+	var out := []
+	var rng := RandomNumberGenerator.new()
+	for i in kept:
+		rng.seed = hash([seed_, i])
+		var col := Color(rng.randf(), rng.randf(), rng.randf())
+		var k := rng.randf()
+		if k < 0.32 and not palette.is_empty():
+			col = palette[rng.randi_range(0, palette.size() - 1)]
+		elif k < 0.5 and not away.is_empty():
+			col = away[rng.randi_range(0, away.size() - 1)]
+		out.append(col)
+	return out
+
+
+## The way someone sitting in a row of seats facing normal (flat) faces: toward the court's middle, but turned no more
+## than max_turn from straight ahead (their seat), so they fit it.
+static func seat_facing(p: Vector3, normal: Vector3, max_turn := deg_to_rad(30.0)) -> Vector3:
+	var n := Vector3(normal.x, 0.0, normal.z).normalized()
+	var to := Vector3(-p.x, 0.0, -p.z)
+	if to.length() < 0.01:
+		return n
+	var a := clampf(n.signed_angle_to(to.normalized(), Vector3.UP), -max_turn, max_turn)
+	return n.rotated(Vector3.UP, a)
 
 
 ## A spectator at p faces the middle of the court (the origin): her +Z, flat on the ground, points there. The shader
@@ -244,19 +398,71 @@ static func _code(col: Color) -> float:
 	return best
 
 
-func _process(_delta: float) -> void:
+func _ready() -> void:
+	if people == null:
+		return
+	# The match this crowd is at (the arena's parent): its ball and its play.
+	var a := get_parent()
+	_match = a.get_parent() if a else null
+	if _match and _match.has_signal("game_event"):
+		_match.game_event.connect(_on_event)
+	for n in (a.get_children() if a else []):
+		if n is DirectionalLight3D:
+			# Lit from the venue's key light (the sun outdoors), as the players are.
+			WsgCrowd3D.set_sun((n as DirectionalLight3D).global_transform.basis.z)
+			break
+
+
+func _process(delta: float) -> void:
 	if material_override:
 		(material_override as ShaderMaterial).set_shader_parameter("time_s", Time.get_ticks_msec() / 1000.0)
+	if people == null:
+		return
+	_near_hide()
+	if _match == null:
+		return
+	var ball = _match.get("ball")
+	if ball is Node3D:
+		var b: Vector3 = (ball as Node3D).global_position
+		people.watch_ball(b)
+		# Play near a goal (in its circle) has the keen ones on the edge of their seats; anywhere else they settle.
+		var want := 0.45 if absf(b.x) > Court.HALF_L - 4.9 and absf(b.z) < 5.0 else 0.0
+		_tension = move_toward(_tension, want, delta * (0.8 if want > _tension else 0.4))
+		WsgCrowd3D.set_tension(_tension)
+	if _cheer > 0.0:
+		_cheer -= delta
+		if _cheer <= 0.0:
+			set_excite(0.0)
+
+
+## The play as the crowd sees it: up for a goal, an ooh at a gain, applause at the end of a quarter and the match.
+func _on_event(kind: String, _info: Dictionary) -> void:
+	match kind:
+		"goal":
+			set_excite(1.0)
+			_cheer = 3.0
+		"gain":
+			set_excite(0.45)
+			_cheer = 1.2
+		"period_end":
+			set_excite(0.55)
+			_cheer = 4.0
+			people.clap(2.2, 0.55, 5.0)
+		"centre_setup":
+			_tension = 0.0
 
 
 static func set_excite(k: float) -> void:
 	material().set_shader_parameter("excite", clampf(k, 0.0, 1.0))
+	WsgCrowd3D.set_excite(k)
 
 
 static func set_light(k: float) -> void:
 	material().set_shader_parameter("light", k)
+	WsgCrowd3D.set_light(k)
 
 
 ## The colour of the light the crowd sits in (a dark arena's blue, a hall's warm white).
 static func set_tint(c: Color) -> void:
+	_tint = c
 	material().set_shader_parameter("tint", Vector3(c.r, c.g, c.b))

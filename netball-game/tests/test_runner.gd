@@ -1459,7 +1459,29 @@ func _crowd_facing() -> void:
 				n += 1
 				if fwd.dot(to) <= 0.7:
 					bad += 1
-		check(n > 0 and bad == 0, "%s: every spectator faces the court (%d of %d do not)" % [venue, bad, n])
+		# The 3D people (Medium and High, the shared foundation's WsgCrowd3D) too: each as WsgCrowd3D places them, facing
+		# the court's middle (seated ones turned no more than their seat allows: within 45 degrees of it), standing on
+		# the ground or sitting on a seat, not floating.
+		var p_n := 0
+		var p_bad := 0
+		var p_off := 0
+		for c: Crowd in crowds:
+			if c.people == null:
+				continue
+			for k in c.people_spots.size():
+				var feet: Vector3 = c.global_transform * (c.people_spots[k] as Vector3)
+				var seat_h: float = c.people_seats[k]
+				var xf: Transform3D = WsgCrowd3D.place(feet, c.people_facings[k], 1.0, "fan", seat_h)[0]
+				var fwd := Vector2(xf.basis.z.x, xf.basis.z.z).normalized()
+				var to := Vector2(-xf.origin.x, -xf.origin.z).normalized()
+				p_n += 1
+				if fwd.dot(to) <= 0.7:
+					p_bad += 1
+				if venue == "outdoor" and absf(feet.y) > 0.01 or venue != "outdoor" and (seat_h < 0.25 or seat_h > 0.5):
+					p_off += 1
+		check(n + p_n > 0 and bad == 0, "%s: every spectator cut-out faces the court (%d of %d do not)" % [venue, bad, n])
+		check(p_n > 0 and p_bad == 0, "%s: every 3D spectator faces the court (%d of %d do not)" % [venue, p_bad, p_n])
+		check(p_off == 0, "%s: every 3D spectator stands on the ground or sits on a seat (%d off)" % [venue, p_off])
 		m.queue_free()
 		await frames(2)
 	Game.settings.graphics = was

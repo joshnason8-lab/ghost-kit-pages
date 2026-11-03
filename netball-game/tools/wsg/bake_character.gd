@@ -10,7 +10,9 @@ extends SceneTree
 ##      elbow, hip and knee keep their shape and the forearm does not candy-wrap);
 ##   5. cuts it down for phones (meshoptimizer, through Godot's LOD generator) and writes
 ##      <out>/<prefix>_hi.res, <prefix>_lo.res (ArrayMesh: rest = the canonical rest, bones = WsgRig.BONES order) and
-##      <out>/<prefix>_rig.json (the joints, the hand's grip radius, what the bake measured).
+##      <out>/<prefix>_rig.json (the joints, the hand's grip radius, what the bake measured, and the stance: the
+##      source skeleton's point at the rig's origin and its scale, rig joint = (stance point - shift) * scale, for a
+##      game that maps its own skeleton onto the rig).
 ## Run in a scratch Godot project where the model has been imported (tools/bake_character.sh does all of this):
 ##   godot --headless --path <scratch> -s bake_character.gd -- <res://model.glb> <out dir> <prefix> [tris_hi] [tris_lo]
 ## The output holds the character's own mesh only; no animation data.
@@ -45,6 +47,16 @@ func _initialize() -> void:
 	var meshes := sk.find_children("*", "MeshInstance3D", true, false)
 	for b in sk.get_bone_count():
 		canon[b] = _canonical(sk.get_bone_name(b))
+	# A Meshy auto-rig of the older kind names its spine from the top down (Hips > Spine02 > Spine01 > Spine > neck):
+	# the aliases read Spine02 as the chest, which put the rig's Spine above its Spine2. By the hierarchy instead.
+	# (From the Pok Ta Pok pilot. The newer Meshy rig, Hips > Spine > Spine01 > Spine02, is not touched.)
+	var s2 := sk.find_bone("Spine02")
+	if s2 >= 0 and sk.get_bone_parent(s2) == sk.find_bone("Hips"):
+		for pair in [["Spine02", "Spine"], ["Spine01", "Spine1"], ["Spine", "Spine2"]]:
+			var i := sk.find_bone(pair[0])
+			if i >= 0:
+				canon[i] = pair[1]
+		report.spine = "Meshy, top down: mapped by the hierarchy"
 	for n in CORE:
 		if not canon.values().has(n):
 			push_error("the model has no bone for %s (bones: %s)" % [n, range(sk.get_bone_count()).map(func(i): return sk.get_bone_name(i))])
@@ -66,7 +78,10 @@ func _initialize() -> void:
 				printerr("bake_character: %s is %.2f m from its parent %s: not saved" % [b[0], gap, b[1]])
 				quit(1)
 				return
-	var meta := {"joints": {}, "height": HEIGHT, "report": report}
+	# The stance's shift and scale: a game that poses its own skeleton (the model's) onto the rig maps its points with
+	# them, rig = (skeleton point in the stance - shift) * scale, instead of working them out again (Kho Kho did).
+	var meta := {"joints": {}, "height": HEIGHT, "report": report,
+		"stance": {"shift": _v(body.shift), "scale": body.k}}
 	for k in joints:
 		meta.joints[k] = _v(joints[k])
 	for lod in 2:
@@ -128,6 +143,8 @@ func _skin_to_stance(meshes: Array) -> Dictionary:
 	var pos := PackedVector3Array()
 	var nrm := PackedVector3Array()
 	var uv := PackedVector2Array()
+	var uv2 := PackedVector2Array()
+	var has_uv2 := false
 	var ws := []
 	var index := PackedInt32Array()
 	for mi: MeshInstance3D in meshes:
@@ -170,6 +187,15 @@ func _skin_to_stance(meshes: Array) -> Dictionary:
 				nrm.append(nn.normalized())
 				ws.append(acc)
 			uv.append_array(arr[Mesh.ARRAY_TEX_UV])
+			# A second UV set (a game's own per-vertex data, e.g. Kabaddi's kit regions) is carried through unchanged.
+			var u2 = arr[Mesh.ARRAY_TEX_UV2]
+			if u2 is PackedVector2Array and (u2 as PackedVector2Array).size() == vs.size():
+				uv2.append_array(u2)
+				has_uv2 = true
+			else:
+				var z := PackedVector2Array()
+				z.resize(vs.size())
+				uv2.append_array(z)
 			for i: int in arr[Mesh.ARRAY_INDEX]:
 				index.append(base + i)
 	var lo := Vector3.INF
@@ -184,7 +210,7 @@ func _skin_to_stance(meshes: Array) -> Dictionary:
 		pos[i] = (pos[i] - shift) * k
 	report.source_height = snappedf(hi.y - lo.y, 0.001)
 	report.vertices = pos.size()
-	return {"pos": pos, "nrm": nrm, "uv": uv, "w": ws, "index": index, "shift": shift, "k": k}
+	return {"pos": pos, "nrm": nrm, "uv": uv, "uv2": uv2 if has_uv2 else null, "w": ws, "index": index, "shift": shift, "k": k}
 
 
 ## The feet made to stand flat: some models (Meshy's officials) are made with the feet pitched up at the ankle, toes
@@ -726,6 +752,8 @@ func _weights(body: Dictionary, joints: Dictionary) -> Array:
 	out[Mesh.ARRAY_VERTEX] = body.pos
 	out[Mesh.ARRAY_NORMAL] = body.nrm
 	out[Mesh.ARRAY_TEX_UV] = body.uv
+	if body.get("uv2") != null:
+		out[Mesh.ARRAY_TEX_UV2] = body.uv2
 	out[Mesh.ARRAY_COLOR] = col
 	out[Mesh.ARRAY_BONES] = bones
 	out[Mesh.ARRAY_WEIGHTS] = wts
@@ -773,6 +801,11 @@ func _cut(arrays: Array, tris: int) -> ArrayMesh:
 	im.generate_lods(25.0, 60.0, [])
 	var a := im.get_surface_arrays(0)
 	var best: PackedInt32Array = a[Mesh.ARRAY_INDEX]
+	if im.get_surface_lod_count(0) == 0:
+		# meshoptimizer found nothing to take away (Kabaddi's player_10: a Meshy web model, its 5,207 triangles kept in
+		# both the near and the far mesh). The body works, at the near mesh's cost everywhere.
+		push_warning("bake_character: no LOD levels for this mesh: kept whole (%d triangles) where %d were asked" % [best.size() / 3, tris])
+		report["no_lod_%d" % tris] = true
 	for l in im.get_surface_lod_count(0):
 		var ix := im.get_surface_lod_indices(0, l)
 		if absi(ix.size() / 3 - tris) < absi(best.size() / 3 - tris):
@@ -792,6 +825,8 @@ func _cut(arrays: Array, tris: int) -> ArrayMesh:
 	var vs := PackedVector3Array()
 	var ns := PackedVector3Array()
 	var uv := PackedVector2Array()
+	var uv2 := PackedVector2Array()
+	var has_uv2: bool = a[Mesh.ARRAY_TEX_UV2] != null
 	var col := PackedColorArray()
 	var bs := PackedInt32Array()
 	var ws := PackedFloat32Array()
@@ -799,6 +834,8 @@ func _cut(arrays: Array, tris: int) -> ArrayMesh:
 		vs.append(a[Mesh.ARRAY_VERTEX][v])
 		ns.append(a[Mesh.ARRAY_NORMAL][v])
 		uv.append(a[Mesh.ARRAY_TEX_UV][v])
+		if has_uv2:
+			uv2.append(a[Mesh.ARRAY_TEX_UV2][v])
 		col.append(a[Mesh.ARRAY_COLOR][v])
 		for j in 4:
 			bs.append(a[Mesh.ARRAY_BONES][v * 4 + j])
@@ -806,6 +843,8 @@ func _cut(arrays: Array, tris: int) -> ArrayMesh:
 	out[Mesh.ARRAY_VERTEX] = vs
 	out[Mesh.ARRAY_NORMAL] = ns
 	out[Mesh.ARRAY_TEX_UV] = uv
+	if has_uv2:
+		out[Mesh.ARRAY_TEX_UV2] = uv2
 	out[Mesh.ARRAY_COLOR] = col
 	out[Mesh.ARRAY_BONES] = bs
 	out[Mesh.ARRAY_WEIGHTS] = ws
