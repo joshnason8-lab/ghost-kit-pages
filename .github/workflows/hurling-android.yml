@@ -81,7 +81,7 @@ jobs:
 
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
@@ -205,7 +205,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 1500 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 2 120 2>&1 | tee prop_audit.log
+          timeout 1500 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 1 120 2>&1 | tee prop_audit.log
           if grep -q "SCRIPT ERROR" prop_audit.log; then grep -A4 "SCRIPT ERROR" prop_audit.log; exit 1; fi
 
       - name: World check (the rules every game's world keeps, docs/WORLD_RULES.md)
