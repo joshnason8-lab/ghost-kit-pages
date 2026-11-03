@@ -1560,11 +1560,12 @@ func _touches() -> void:
 ## The last-moment swerve: as the hand comes, a defender may twist away from it. The chance is his turn rating
 ## against the chaser's reach (and a dive is harder to escape). Calibrated so that equal sides put out about
 ## 1.3-2 defenders a minute, as real matches do (docs/AI.md). Once a defender has swerved a hand, it has missed him.
-const SWERVE_TOUCH := 0.78
+const SWERVE_TOUCH := 0.9   # a running touch at arm's length: he twists clear this often (0.78 until 0.12.2, when
+const SWERVE_MAX := 0.93    # a slip was unseen and the hand reached less far; match_sim 20 matches: classic 1.46)
 const TOUCH_AHEAD := 0.45   # m: the middle of a running touch's reach, ahead of him ...
 const TOUCH_R := 0.42       # ... and how far round it the hand finds a man (0.4 and 0.36 until 0.12.2)
 const CONTACT := 0.62       # m between middles: body to body ...
-const CONTACT_SLIP := 0.4   # ... where a twist takes him clear of the hand this much as often
+const CONTACT_SLIP := 0.55  # ... where a twist takes him clear of the hand this much as often
 const SWERVE_DIVE := 0.5
 
 
@@ -1584,7 +1585,7 @@ func _swerves(d: Athlete, kind: String) -> bool:
 	var turn := float(d.data.get("turn", 70)) + float(_diff[d.side])
 	var reach := float(active.data.get("reach", 70)) + float(_diff[active.side])
 	var base := SWERVE_TOUCH if kind == KhoRules.OUT_TOUCH else SWERVE_DIVE
-	var p := clampf(base + (turn - reach) / 150.0, 0.15, 0.85)
+	var p := clampf(base + (turn - reach) / 150.0, 0.15, SWERVE_MAX)
 	# Body to body (the owner, 0.12: "so close it's obvious there would be a tag, but they just run right by"): at
 	# arm's length a twist may take him clear of the hand; this close, rarely.
 	if (d.position - active.position).length() < CONTACT:
