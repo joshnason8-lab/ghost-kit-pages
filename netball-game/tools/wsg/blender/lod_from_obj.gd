@@ -16,6 +16,8 @@ func _initialize() -> void:
 	var hb: PackedInt32Array = ha[Mesh.ARRAY_BONES]
 	var hw: PackedFloat32Array = ha[Mesh.ARRAY_WEIGHTS]
 	var hc: PackedColorArray = ha[Mesh.ARRAY_COLOR] if ha[Mesh.ARRAY_COLOR] != null else PackedColorArray()
+	# A second UV set (a game's per-vertex data: Kabaddi's kit regions) taken from the nearest corner, not blended.
+	var hu2: PackedVector2Array = ha[Mesh.ARRAY_TEX_UV2] if ha[Mesh.ARRAY_TEX_UV2] != null else PackedVector2Array()
 	var per := hb.size() / hv.size()
 	# The OBJ (Y up, V from the bottom; faces counter-clockwise), one vertex per position/UV/normal used together.
 	var pos := []
@@ -68,6 +70,7 @@ func _initialize() -> void:
 	var bs := PackedInt32Array()
 	var ws := PackedFloat32Array()
 	var cs := PackedColorArray()
+	var u2 := PackedVector2Array()
 	var far := 0.0
 	for v in vs:
 		var c := Vector3i((v / CELL).floor())
@@ -105,6 +108,9 @@ func _initialize() -> void:
 		for j in per:
 			bs.append(order[j] if j < order.size() else 0)
 			ws.append(mix[order[j]] / total if j < order.size() and total > 0.0 else 0.0)
+		if not hu2.is_empty():
+			var kk := 0 if bw.x >= bw.y and bw.x >= bw.z else (1 if bw.y >= bw.z else 2)
+			u2.append(hu2[hi_idx[best + kk]])
 		if not hc.is_empty():
 			cs.append(hc[hi_idx[best]] * bw.x + hc[hi_idx[best + 1]] * bw.y + hc[hi_idx[best + 2]] * bw.z)
 	var arr := []
@@ -114,6 +120,8 @@ func _initialize() -> void:
 	arr[Mesh.ARRAY_TEX_UV] = ts
 	if not cs.is_empty():
 		arr[Mesh.ARRAY_COLOR] = cs
+	if not u2.is_empty():
+		arr[Mesh.ARRAY_TEX_UV2] = u2
 	arr[Mesh.ARRAY_BONES] = bs
 	arr[Mesh.ARRAY_WEIGHTS] = ws
 	arr[Mesh.ARRAY_INDEX] = idx

@@ -43,6 +43,22 @@ var _clap_left := 0.0
 var _clap_time := 0.0
 var _clap_rate := 2.4
 var _clap_sync := 0.6
+## How often each fan model is picked (its name, as crowd.json has it: "fan" to "fan6"; any not given: 1), set before
+## build(). The shared fans: fan2 and fan5 are women, fan, fan3 (older), fan4 and fan6 men. A crowd of mostly women
+## (Netball): {"fan2": 4.0, "fan5": 4.0}. None given: each the same, and the crowd exactly as before.
+var fan_weights := {}
+var _looks := {}
+
+## Palettes for set_looks, each dark to light (sRGB): skin tones from deep brown to fair; hair black, browns, auburn,
+## blonde, grey (the grey ones older); the legs' clothes denim, black, charcoal, navy, khaki, stone.
+const LOOKS := {
+	"skin": [Color(0.36, 0.23, 0.17), Color(0.49, 0.32, 0.22), Color(0.62, 0.43, 0.31), Color(0.74, 0.55, 0.42),
+		Color(0.84, 0.66, 0.54), Color(0.9, 0.74, 0.64), Color(0.94, 0.8, 0.71)],
+	"hair": [Color(0.08, 0.07, 0.06), Color(0.17, 0.12, 0.09), Color(0.3, 0.2, 0.13), Color(0.45, 0.24, 0.13),
+		Color(0.55, 0.42, 0.27), Color(0.78, 0.65, 0.42), Color(0.68, 0.67, 0.66)],
+	"legs": [Color(0.09, 0.09, 0.1), Color(0.2, 0.21, 0.23), Color(0.16, 0.2, 0.33), Color(0.22, 0.32, 0.5),
+		Color(0.36, 0.45, 0.6), Color(0.6, 0.55, 0.43), Color(0.75, 0.72, 0.64)],
+}
 
 
 ## Is the crowd's data in this build?
@@ -119,10 +135,18 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 			take.append(i)
 	used = PackedInt32Array(take)
 	var fans: Array = md.fans.keys()
+	var cum := PackedFloat32Array()
+	var tot := 0.0
+	for f in fans:
+		tot += maxf(float(fan_weights.get(f, 1.0)), 0.0)
+		cum.append(tot)
 	var by_fan := {}
 	for n in take.size():
 		var i: int = take[n]
-		var f: String = fans[rng.randi() % fans.size()] + ("" if n < near_cap else "|far")
+		var pick := rng.randi() % fans.size()
+		if not fan_weights.is_empty() and tot > 0.0:
+			pick = mini(cum.bsearch(rng.randf() * tot, false), fans.size() - 1)
+		var f: String = fans[pick] + ("" if n < near_cap else "|far")
 		if not by_fan.has(f):
 			by_fan[f] = []
 		by_fan[f].append(i)
@@ -252,10 +276,39 @@ func _material(fan: String) -> ShaderMaterial:
 	mat.set_shader_parameter("vat_nrm", load(DIR + fan + "_nrm.res"))
 	mat.set_shader_parameter("vertices", int(md.fans[fan].vertices))
 	mat.set_shader_parameter("fps", float(md.fps))
+	# (This fan's own skin, hair and trousers: what set_looks shades from. Older data has none: no part is marked.)
+	var lk: Dictionary = md.fans[fan].get("looks", {})
+	for part in lk:
+		var c: Array = lk[part]
+		mat.set_shader_parameter("ref_" + part, Vector3(c[0], c[1], c[2]))
+	_apply_looks(mat)
 	for c in md.clips:
 		var ci: Dictionary = md.clips[c]
 		mat.set_shader_parameter("clip_" + c, Vector4(ci.row, ci.frames, ci.length, 1.0 if ci.loop else 0.0))
 	return mat
+
+
+## Each fan's skin, hair and the legs' clothes (trousers, a skirt, shorts) their own, picked from these (Colors,
+## sRGB, each list dark to light, up to 8; WsgCrowd3D.LOOKS has broad ones): the six shared fans become many people.
+## An empty list keeps that part as the fan was made (and none called: the crowd exactly as before). Before or after
+## build(). Shading is kept (the new colour lighter and darker where the fan's own was); a darker skin goes mostly
+## with the darker half of the hair.
+func set_looks(skin: Array = [], hair: Array = [], legs: Array = []) -> void:
+	_looks = {"skin": skin, "hair": hair, "legs": legs}
+	for m in materials:
+		_apply_looks(m)
+
+
+func _apply_looks(mat: ShaderMaterial) -> void:
+	for part in ["skin", "hair", "legs"]:
+		var list: Array = _looks.get(part, [])
+		var arr := PackedVector3Array()
+		for c in list.slice(0, 8):
+			arr.append(Vector3((c as Color).r, (c as Color).g, (c as Color).b))
+		while arr.size() < 8:
+			arr.append(Vector3.ZERO)
+		mat.set_shader_parameter(part + "s" if part != "legs" else "legs", arr)
+		mat.set_shader_parameter("n_" + part + ("s" if part != "legs" else ""), mini(list.size(), 8))
 
 
 func set_teams(a: Color, b: Color) -> void:

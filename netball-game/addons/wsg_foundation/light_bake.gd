@@ -14,6 +14,11 @@ extends RefCounted
 const PAD := 2
 ## A face's patch is never smaller than this, in texels.
 const MIN_TEXELS := 2
+## The way unwrap lays the patches out, part of the signature: a map baked for another layout is refused (bake again).
+##   1  each face at its true size (a face thinner than a texel - a goal post's side, a rail - covered no texel's
+##      centre, so the bake never wrote its patch and it drew black)
+##   2  each face stretched to fill its whole patch, every side at least MIN_TEXELS texels: thin faces get texels
+const UNWRAP_VERSION := 2
 
 
 ## mesh with a second UV set: each quad (four vertices, two triangles) or lone triangle its own patch, laid flat in
@@ -41,8 +46,14 @@ static func unwrap(mesh: ArrayMesh, size := 2048, surface := 0) -> Array:
 		var at: Vector2 = placed[i]
 		var ids: Array = c[0]
 		var flat: Array = c[1]
+		# Stretched to fill its patch (whole texels, at least MIN_TEXELS a side): the bake writes the texels whose
+		# centres a face covers, so a face thinner than a texel (a post's side) left at its true size got none and drew
+		# the map's black. The light across a face that thin does not change, so the stretch shows nothing.
+		var ext: Vector2 = c[2]
+		var d := Vector2(_dims(ext, texel))
+		var k_uv := Vector2(d.x / ext.x if ext.x > 1e-9 else 0.0, d.y / ext.y if ext.y > 1e-9 else 0.0)
 		for k in ids.size():
-			uv2[ids[k]] = (at + (flat[k] as Vector2) / texel) / float(size)
+			uv2[ids[k]] = (at + (flat[k] as Vector2) * k_uv) / float(size)
 	arrays[Mesh.ARRAY_TEX_UV2] = uv2
 	var out := ArrayMesh.new()
 	out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
@@ -90,13 +101,17 @@ static func _charts(verts: PackedVector3Array, idx: PackedInt32Array) -> Array:
 	return out
 
 
+## A chart's patch in texels: its size at this texel size, whole texels, at least MIN_TEXELS a side.
+static func _dims(s: Vector2, texel: float) -> Vector2i:
+	return Vector2i(maxi(MIN_TEXELS, ceili(s.x / texel - 1e-4)), maxi(MIN_TEXELS, ceili(s.y / texel - 1e-4)))
+
+
 ## Each chart's corner in the map (texels), in rows tallest first; empty if they do not fit.
 static func _pack(charts: Array, texel: float, size: int) -> Array:
 	var order := range(charts.size())
 	var dims := []
 	for c in charts:
-		var s: Vector2 = c[2]
-		dims.append(Vector2i(maxi(MIN_TEXELS, ceili(s.x / texel)), maxi(MIN_TEXELS, ceili(s.y / texel))))
+		dims.append(_dims(c[2], texel))
 	order.sort_custom(func(a, b): return dims[a].y > dims[b].y or dims[a].y == dims[b].y and a < b)
 	var at := []
 	at.resize(charts.size())
@@ -117,11 +132,11 @@ static func _pack(charts: Array, texel: float, size: int) -> Array:
 	return at
 
 
-## A number that changes when the geometry does (its vertices, to the millimetre): a light map is used only on the
-## geometry it was baked for.
+## A number that changes when the geometry does (its vertices, to the millimetre) or unwrap's layout does
+## (UNWRAP_VERSION): a light map is used only on the geometry, and the second UVs, it was baked for.
 static func signature(mesh: ArrayMesh, surface := 0) -> int:
 	var verts: PackedVector3Array = mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
-	var h := verts.size()
+	var h := hash([verts.size(), UNWRAP_VERSION]) if UNWRAP_VERSION > 1 else verts.size()
 	for i in range(0, verts.size(), maxi(1, verts.size() / 4096)):
 		var p: Vector3 = verts[i]
 		h = hash([h, roundi(p.x * 1000.0), roundi(p.y * 1000.0), roundi(p.z * 1000.0)])
