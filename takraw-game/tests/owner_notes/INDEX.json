@@ -216,6 +216,14 @@
    "date": "2026-11-03",
    "version": "0.15.3",
    "words": "There will NEVER be a time when a player or referee should walk through a table or bench etc. A ball should also bounce off these items."
+  },
+  {
+   "id": "2026-11-03-mixed-quadrant",
+   "file": "2026-11-03_mixed_quadrant.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-03",
+   "version": "0.15.15",
+   "words": "Mixed quadrant: a mixed line-up plays a full match (the lead's request for the owner)."
   }
  ]
 }

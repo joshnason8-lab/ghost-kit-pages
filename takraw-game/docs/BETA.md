@@ -15,6 +15,11 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.16: **the mixed quadrant.** Quick Match (and Watch AI) has a fifth event: four a side, two men and two
+women in each team - a man serving, a woman setting, a man and a woman striking - at the men's net, as at the SEA
+Games and the Thai King's Cup. Pick it under Event; the Women's switch makes no difference to it. Worth trying with
+your team and with Watch AI.
+
 New in 0.15.15: **on Low, the line judges' feet stay put.** A line judge stepping out of the ball's way and back
 could leave a foot sliding along the floor (up to 40 cm in a frame, now and then); on Low the judges now plant their
 feet with the shared planter the Medium and High bodies use. Nothing else changes in play.

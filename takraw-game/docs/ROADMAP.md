@@ -20,4 +20,3 @@
 - **Create a player** and a career from a provincial club to the national team.
 - **The 3-serve rule of 2013-2024** as an option, for the old-school.
 - **Commentary** in Thai and Malay, and crowd chants ("Malaysia boleh!").
-- **Mixed quadrant**, new at the 2026 Asian Games.

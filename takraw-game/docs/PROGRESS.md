@@ -670,6 +670,25 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The mixed quadrant (0.15.16)
+
+The open event of the SEA Games (its 2025 technical handbook: Group C, "Mixed Quadrant Event") and the Thai King's
+Cup (from 2022), now a fifth event in Quick Match and Watch AI (the lead's pick from the roadmap's ideas, for the
+owner). Four a side on the quadrant's rules: the men's best tekong and striker and the women's best feeder and striker
+(DB.mixed, its places DB.MIXED_WOMEN), each on their own body; the substitutes a man and a woman in turn; the net at
+the men's 1.52 m. The handbook does not say how many of each are on court, or the net's height: two and two at the
+men's net is the game's reading (one table and one line to change if the rule is otherwise).
+
+- The match: a player's kick and spike heights follow his own body (a woman's are lower), not the match's event.
+- Strings in all 13 languages (EVENT_MIXED, EVENT_NOTE_MIXED), the Korean and Chinese fonts cut again for their new
+  characters (tools/subset_fonts.py: 혼 and 混 were missing; fit_audit on the menus, every language, 0 problems);
+  WsgSim plays the event too (game/sim.gd EVENTS).
+- tests/owner_notes/2026-11-03_mixed_quadrant.gd: a mixed quadrant on Low and on High has two men and two women a
+  side, a woman feeding, the men's net, and is played to its end (Low 17-15, High 7-15).
+- Low's budget: the same draw calls as the men's quadrant (74 at the National Arena, 79 at the beach), fewer
+  primitives (115,172 against 124,088), 1.7 MB more video memory (both bodies' textures).
+- Not yet in the league season or the international events: their events stay as they are.
+
 ## Low's officials on the shared planter; publishing in place (0.15.15)
 
 - **Foundation d70ac7d -> 70e571a** (REQUIRED 7def933a from 2026-11-06 12:00 UTC): the planter under game AI - a foot

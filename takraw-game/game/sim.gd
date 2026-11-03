@@ -8,8 +8,8 @@ extends WsgSimGame
 ## (TouchControls.joystick), the buttons (TouchControls._fire, as their keys do) and the phone's Back (Game.go_back:
 ## the pause menu).
 
-const EVENTS := ["regu", "doubles", "quadrant", "team"]
-const PER_SIDE := {"regu": 3, "doubles": 2, "quadrant": 4, "team": 3}
+const EVENTS := ["regu", "doubles", "quadrant", "team", "mixed"]
+const PER_SIDE := {"regu": 3, "doubles": 2, "quadrant": 4, "team": 3, "mixed": 4}
 const BUTTONS := ["takraw_button_1", "takraw_button_2", "takraw_button_3"]
 
 var m: Node = null

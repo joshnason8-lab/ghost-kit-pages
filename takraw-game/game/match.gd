@@ -161,9 +161,10 @@ func _setup() -> void:
 	FoundationLink.in_match = not bool(config.get("attract", false))
 	FoundationLink.frozen = false
 	WsgFoundation.tier = int(Game.settings.graphics)
-	women = bool(config.get("women", false))
 	event = String(config.get("event", "regu"))
-	n_players = {"regu": 3, "quadrant": 4, "doubles": 2, "team": 3}.get(event, 3)
+	# (the mixed quadrant: two men and two women a side, at the men's net - DB.mixed)
+	women = bool(config.get("women", false)) and event != "mixed"
+	n_players = {"regu": 3, "quadrant": 4, "doubles": 2, "team": 3, "mixed": 4}.get(event, 3)
 	user_team = int(config.get("user_team", 0))
 	difficulty = clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 3)
 	if user_team >= 0 and not bool(config.get("attract", false)):
@@ -270,7 +271,8 @@ func begin() -> void:
 
 func _intro_text() -> String:
 	var stage := String(config.get("stage", ""))
-	var ev := tr({"regu": "EVENT_REGU", "quadrant": "EVENT_QUADRANT", "doubles": "EVENT_DOUBLES", "team": "EVENT_TEAM"}[event])
+	var ev := tr({"regu": "EVENT_REGU", "quadrant": "EVENT_QUADRANT", "doubles": "EVENT_DOUBLES", "team": "EVENT_TEAM",
+		"mixed": "EVENT_MIXED"}[event])
 	if women:
 		ev = tr("WOMENS_EVENT").format({"e": ev})
 	return ("%s\u00a0· %s" % [stage, ev]) if stage != "" else ev
@@ -281,7 +283,7 @@ func _make_teams() -> void:
 	for k in 2:
 		var id := String(config.home if k == 0 else config.away)
 		var t := DB.team(id)
-		var lineup: Array = config.get("lineup_%d" % k, DB.regu(id, women, n_players))
+		var lineup: Array = config.get("lineup_%d" % k, DB.mixed(id) if event == "mixed" else DB.regu(id, women, n_players))
 		var c1: Color = t.get("c1", Color.WHITE)
 		var c2: Color = t.get("c2", Color.BLACK)
 		# The away side in its second colours when the two kits are alike.
@@ -297,7 +299,7 @@ func _make_teams() -> void:
 		for i in lineup.size():
 			var pd: Dictionary = lineup[i]
 			var look := {"skin": pd.get("skin", Color("c98a5a")), "jersey": c1, "shorts": c2.darkened(0.3) if c2.get_luminance() > 0.7 else c2,
-				"height": float(pd.get("height", 1.76)), "women": women}
+				"height": float(pd.get("height", 1.76)), "women": DB.is_woman(pd)}
 			var p := Player.new(pd, 0, roles[i] if i < roles.size() else DB.POS_STRIKER, look)
 			p.slot = i
 			p.life_rng.seed = hash([int(config.get("seed", 0)), k, i])   # (the match's own rng untouched: its rallies as before)
@@ -392,13 +394,20 @@ func _make_bench() -> void:
 		for p in t.players:
 			on[String((p as Player).data.id)] = true
 		var c2: Color = t.c2
-		for pd in DB.squad(String(t.id), women):
+		var pool: Array = DB.squad(String(t.id), women)
+		if event == "mixed":   # (a man and a woman, in turn)
+			pool = []
+			var men := DB.squad(String(t.id), false)
+			var wom := DB.squad(String(t.id), true)
+			for j in maxi(men.size(), wom.size()):
+				pool.append_array(([men[j]] if j < men.size() else []) + ([wom[j]] if j < wom.size() else []))
+		for pd in pool:
 			if (_subs[k] as Array).size() >= n:
 				break
 			if on.has(String(pd.id)):
 				continue
 			var b := RealBody.new({"skin": pd.get("skin", Color("c98a5a")), "jersey": t.c1,
-				"shorts": c2.darkened(0.3) if c2.get_luminance() > 0.7 else c2, "height": float(pd.get("height", 1.76)), "women": women})
+				"shorts": c2.darkened(0.3) if c2.get_luminance() > 0.7 else c2, "height": float(pd.get("height", 1.76)), "women": DB.is_woman(pd)})
 			add_child(b)
 			b.link_foundation("sub")
 			b.rotation.y = PI   # facing the court
@@ -821,7 +830,7 @@ func _begin_toss() -> void:
 	var t_release := now + Moves.contact_time(tmv)
 	thrower.play_now(tmv, now)
 	thrower.toss_crouch = false   # (thrown: not down into his crouch again once the throw is done, mid-rally)
-	var kick_h: float = Moves.CONTACT[mv][0] - (0.1 if women else 0.0)
+	var kick_h: float = Moves.CONTACT[mv][0] - (0.1 if srv.body.women else 0.0)
 	var kp := srv.target + srv.net_dir() * float(Moves.CONTACT[mv][1]) + Vector3(0, kick_h, 0)
 	var right := Vector3(-srv.net_dir().z, 0, srv.net_dir().x)
 	kp += right * float(Moves.CONTACT[mv][2]) * (-1.0 if mirror else 1.0)
@@ -1200,7 +1209,7 @@ func _make_set(pl: Player, from: Vector3, q: float, p: Dictionary) -> void:
 		# The feeder attacks over the net himself (a surprise second-touch attack).
 		_attack(pl, from, q, {"move": "tapak", "player": pl})
 		return
-	var h: float = Moves.CONTACT[spike_move][0] - (0.12 if women else 0.0)
+	var h: float = Moves.CONTACT[spike_move][0] - (0.12 if striker.body.women else 0.0)
 	var depth := lerpf(0.42, 0.75, rng.randf())
 	var cp := Court.spot(side, depth, _lane(striker) * lerpf(0.9, 1.6, rng.randf()))
 	var err := lerpf(1.1, 0.06, q)
@@ -1474,7 +1483,7 @@ func _find_touch(side: int, touch_no: int, until := -1.0) -> Dictionary:
 	if touch_no == 3 and not _set_for.is_empty():
 		var striker: Player = _set_for.player
 		var mv := String(_set_for.move)
-		var h: float = Moves.CONTACT[mv][0] - (0.12 if women else 0.0)
+		var h: float = Moves.CONTACT[mv][0] - (0.12 if striker.body.women else 0.0)
 		var tc := ball.when_height(h)
 		if tc > now + 0.3 and tc < t_end:
 			var cp := ball.at(tc)

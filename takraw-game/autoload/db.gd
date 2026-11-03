@@ -281,12 +281,33 @@ func squad(id: String, women := false) -> Array:
 ## (the quadrant), n = 2 the tekong and the striker (doubles). skip: players who have already played (the second
 ## and third regus of a team event).
 func regu(id: String, women := false, n := 3, skip := []) -> Array:
-	var s := squad(id, women)
 	var wanted := [POS_TEKONG, POS_FEEDER, POS_STRIKER]
 	if n == 4:
 		wanted = [POS_TEKONG, POS_FEEDER, POS_STRIKER, POS_STRIKER]
 	elif n == 2:
 		wanted = [POS_TEKONG, POS_STRIKER]
+	return _pick(squad(id, women), wanted, skip)
+
+
+## The mixed quadrant's four (the SEA Games' and the King's Cup's open event): two men and two women - the men's best
+## tekong and striker, the women's best feeder and striker - in the quadrant's order (tekong, feeder, striker,
+## striker). MIXED_WOMEN: which of those places are women's.
+const MIXED_WOMEN := [false, true, false, true]
+
+
+func mixed(id: String) -> Array:
+	var men := _pick(squad(id, false), [POS_TEKONG, POS_STRIKER], [])
+	var women := _pick(squad(id, true), [POS_FEEDER, POS_STRIKER], [])
+	return [men[0], women[0], men[1], women[1]] if men.size() == 2 and women.size() == 2 else men + women
+
+
+## A player from a women's squad (squad(): their ids carry it).
+func is_woman(pd: Dictionary) -> bool:
+	return String(pd.get("id", "")).contains("|w_")
+
+
+## The best player of S for each position WANTED, each once, none of SKIP.
+func _pick(s: Array, wanted: Array, skip: Array) -> Array:
 	var out := []
 	var taken := {}
 	for pos in wanted:

@@ -103,9 +103,9 @@ func _build() -> void:
 	# The event and the match.
 	var ev: Array = UI.section(tr("EVENT"), "whistle")
 	right.add_child(ev[0])
-	var events := ["regu", "team", "quadrant", "doubles"]
-	var ev_note := UI.wrap(tr("EVENT_NOTE_" + events[int(Game.settings.event)].to_upper()), "MutedLabel", 17)
-	ev[1].add_child(UI.chips([tr("EVENT_REGU"), tr("EVENT_TEAM"), tr("EVENT_QUADRANT"), tr("EVENT_DOUBLES")], clampi(int(Game.settings.event), 0, 3), func(i):
+	var events := EVENTS
+	var ev_note := UI.wrap(tr("EVENT_NOTE_" + events[clampi(int(Game.settings.event), 0, events.size() - 1)].to_upper()), "MutedLabel", 17)
+	ev[1].add_child(UI.chips([tr("EVENT_REGU"), tr("EVENT_TEAM"), tr("EVENT_QUADRANT"), tr("EVENT_DOUBLES"), tr("EVENT_MIXED")], clampi(int(Game.settings.event), 0, events.size() - 1), func(i):
 		Game.settings.event = i
 		Game.save_settings()
 		ev_note.text = tr("EVENT_NOTE_" + events[i].to_upper())))
@@ -134,10 +134,14 @@ func _build() -> void:
 	ven[1].add_child(vnote)
 
 
+## The events, in the order of Settings.event: the mixed quadrant (two men and two women a side) last.
+const EVENTS := ["regu", "team", "quadrant", "doubles", "mixed"]
+
+
 func _play() -> void:
-	var events := ["regu", "team", "quadrant", "doubles"]
+	var events := EVENTS
 	Game.play_match({
-		"home": _home, "away": _away, "venue": _venue, "event": events[clampi(int(Game.settings.event), 0, 3)],
+		"home": _home, "away": _away, "venue": _venue, "event": events[clampi(int(Game.settings.event), 0, events.size() - 1)],
 		"sets": 3 if int(Game.settings.sets) == 1 else 1, "points": 21 if int(Game.settings.points) == 1 else 15,
 		"difficulty": 2 if watch else int(Game.settings.difficulty), "mode": "watch" if watch else "quick",
 		"user_team": -1 if watch else 0, "women": _women,
