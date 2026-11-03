@@ -37,6 +37,13 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "setup" in OS.get_cmdline_user_args():
+		# (Only the restarts' setup and the rules in play: tests/test_runner.tscn -- setup)
+		_setup_route()
+		await _rules_in_play()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "ball" in OS.get_cmdline_user_args():
 		# (Only the ball, the nets and advantage: tests/test_runner.tscn -- ball)
 		_ball_flight()
@@ -71,6 +78,7 @@ func _ready() -> void:
 	await _screens()
 	await _about_pages()
 	_rules()
+	_setup_route()
 	_footwork()
 	_ball_flight()
 	_ball_uncaught()
@@ -3592,3 +3600,36 @@ func _button_with(n: Node, t: String) -> Button:
 		if (b as Button).text == t:
 			return b
 	return null
+
+
+## A restart taker whose straight way to the spot crosses a goal circle she may not enter goes round it (she stood at
+## its edge for good before: a throw-in over the goal line beyond the circle stalled the match).
+func _setup_route() -> void:
+	var stuck := []
+	var tried := 0
+	for dir: int in [1, -1]:
+		for pos: String in ["WA", "C", "WD", "GD", "GK", "GA", "GS"]:
+			for end: int in [1, -1]:
+				var circle := Court.A_ATT_CIRCLE if end == dir else Court.A_DEF_CIRCLE
+				if circle in Rules.AREAS[pos]:
+					continue
+				for side: float in [1.0, -1.0]:
+					var spot := Vector2(end * (Court.HALF_L + 0.1), side * 5.24)
+					var from := Vector2(end * (Court.HALF_L - 3.55), -side * 3.39)
+					if Rules.offside(pos, Rules.onside_point(pos, spot, dir, 0.02), dir):
+						continue
+					var p := Rules.onside_point(pos, from, dir, 0.05)
+					var goal := Rules.onside_point(pos, spot, dir, 0.02)
+					tried += 1
+					var steps := 0
+					while p.distance_to(goal) > 0.3 and steps < 600:
+						var to := Match.round_circles(pos, dir, p, goal)
+						var nxt := p + (to - p).limit_length(0.12)
+						if Rules.offside(pos, nxt, dir):
+							break   # (she pulls up at a line she may not cross, as Player.advance does: stuck there)
+						p = nxt
+						steps += 1
+					if p.distance_to(goal) > 0.3:
+						stuck.append("%s dir %d end %d at %s" % [pos, dir, end, p])
+	check(tried > 8 and stuck.is_empty(), "a restart taker goes round a circle she may not enter to the spot (%d ways, stuck: %s)" % [tried, stuck])
+

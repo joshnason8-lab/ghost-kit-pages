@@ -483,7 +483,7 @@ func _run_setup(_dt: float) -> void:
 		_choose_taker()
 		taker = restart.taker
 	var spot: Vector2 = restart.get("spot", restart.at)
-	taker.target = spot
+	taker.target = round_circles(taker.pos, taker.dir, taker.p, spot)
 	taker.want_speed = 4.5
 	var there := taker.p.distance_to(spot) < 0.35
 	# (A ball tossed on to her is hers once it has come down, not out of the air above her.)
@@ -515,6 +515,28 @@ func _run_setup(_dt: float) -> void:
 	elif phase_t > 9.0 and taker.p.distance_to(spot) < 1.5:
 		# Near enough (another player stood on the spot): the pass is taken from where she is.
 		restart.spot = taker.p
+
+
+## The next point on the way from p to spot for a player in position pos (attacking toward dir): round a goal circle she
+## may not enter, along its edge, rather than straight at it (she would stop at the line and never get there: a
+## throw-in over the goal line beyond the circle, a stall). The spot itself once the straight way is clear.
+static func round_circles(pos: String, dir: int, p: Vector2, spot: Vector2) -> Vector2:
+	var a: Array = Rules.AREAS[pos]
+	for end: int in [dir, -dir]:
+		var circle := Court.A_ATT_CIRCLE if end == dir else Court.A_DEF_CIRCLE
+		if circle in a:
+			continue
+		var c := Court.goal_post(end)
+		var seg := spot - p
+		var t := clampf((c - p).dot(seg) / maxf(seg.length_squared(), 1e-6), 0.0, 1.0)
+		if (p + seg * t).distance_to(c) >= Court.CIRCLE_R + 0.3:
+			continue
+		# Along the edge (a little outside it), a step of the arc at a time, the short way round toward the spot.
+		var a0 := (p - c).angle()
+		var turn := wrapf((spot - c).angle() - a0, -PI, PI)
+		var r := maxf(Court.CIRCLE_R + 0.5, (p - c).length())
+		return c + Vector2.from_angle(a0 + clampf(turn, -0.35, 0.35)) * r
+	return spot
 
 
 func _choose_taker() -> void:
