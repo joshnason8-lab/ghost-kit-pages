@@ -400,6 +400,12 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   balance closed: serving first is worth nothing measurable (first server 52.7%, 45-60%, 150 ulama matches with it
   swapped), no home/away lean, no flag.
 
+- **0.6.23-beta: shared foundation 80420f64 (the stop-teleport fix).** A released foot closes an even share of the gap
+  to the clip's foot each frame (68a16daa; required from 2026-11-05 12:00 UTC); the low-foot jump measured and bounded
+  at 25 cm. Our walker: slips 0.0-0.7 cm, skids 0.0-0.1, jumps 3.7 (walk) to 11.2 (run): feet PASS. Our own tests'
+  bone reads audited (the lead): the drawn feet read inside skeleton_updated, heel and toe; the stance test's
+  20-second "feet stay where they stand" read the ankles only and now reads the balls of the feet too.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are

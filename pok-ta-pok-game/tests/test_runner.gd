@@ -591,6 +591,7 @@ func _stance() -> void:
 	# Never still (owner, 0.6.3: "too rigid"), and still planted: over 20 s of waiting the hips shift and dip and the arms
 	# stir, while the ankles stay within a few centimetres of where they stood.
 	var ankles := []
+	var toes := []
 	var hips_lo := INF
 	var hips_hi := -INF
 	var side_lo := INF
@@ -612,14 +613,22 @@ func _stance() -> void:
 		for sd in ["l", "r"]:
 			var a := b.bone_world("foot_" + sd)
 			ankles.append(Vector2(a.x, a.z))
+			# And the ball of the foot (as the mocap feet test reads it): an ankle held still while the foot turns on it
+			# slides the toe (the foundation, 2026-11-03: no ankle-only reads).
+			var fg := b.skeleton.global_transform * b.skeleton.get_bone_global_pose(b.bone("foot_" + sd))
+			var toe := fg * Vector3(0, -0.025, 0.14)
+			toes.append(Vector2(toe.x, toe.z))
 			ank_y_lo = minf(ank_y_lo, a.y)
 			ank_y_hi = maxf(ank_y_hi, a.y)
 	var drift := 0.0
+	var toe_drift := 0.0
 	for i in range(2, ankles.size()):
 		drift = maxf(drift, (ankles[i] as Vector2).distance_to(ankles[i % 2]))
+		toe_drift = maxf(toe_drift, (toes[i] as Vector2).distance_to(toes[i % 2]))
 	check(hips_hi - hips_lo > 0.02 and side_hi - side_lo > 0.03 and hand_hi - hand_lo > 0.03,
 		"stance: alive while he waits (the hips dip %.0f cm and shift %.0f cm, the hands stir %.0f cm)" % [(hips_hi - hips_lo) * 100.0, (side_hi - side_lo) * 100.0, (hand_hi - hand_lo) * 100.0])
-	check(drift < 0.05 and ank_y_lo > 0.02 and ank_y_hi < 0.11, "stance: and his feet stay where they stand (%.1f cm at most, ankles %.2f-%.2f m up)" % [drift * 100.0, ank_y_lo, ank_y_hi])
+	check(drift < 0.05 and toe_drift < 0.05 and ank_y_lo > 0.02 and ank_y_hi < 0.11,
+		"stance: and his feet stay where they stand (ankles %.1f cm, toes %.1f cm at most; ankles %.2f-%.2f m up)" % [drift * 100.0, toe_drift * 100.0, ank_y_lo, ank_y_hi])
 	b.queue_free()
 
 
