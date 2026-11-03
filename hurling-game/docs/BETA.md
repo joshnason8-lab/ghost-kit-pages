@@ -9,6 +9,13 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.21.1
+
+- **Feet flat on the grass again**: the players' and officials' boots stood with their toes up (the model's own
+  boots are made that way); every foot is now turned down to lie flat.
+- **A proper finish to the free**: after the strike the hurley comes through and up over the left shoulder and he
+  turns to the posts, back heel up, then puts it down (it stopped upright by his right ear, his hips square).
+
 ## New in 0.21.0
 
 - **The ball off the woodwork is heard again in free-taking**: the clang carries from the goal to the camera

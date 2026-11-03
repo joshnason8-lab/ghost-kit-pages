@@ -603,8 +603,21 @@ func _free_pose(p: Dictionary, name: String, at: float) -> void:
 	# (The follow-through only: from just before contact. The set-up, the lift and the toss are as the video has them.)
 	var c := free_moment("contact")
 	var lw := smoothstep(c - 0.15, c + 0.05, at) if name == "free_strike" else 0.0
+	# The finish: from contact, the open-play strike's follow-through (the hurley through and up over his left
+	# shoulder, hips and chest turned to the posts, the back heel up), timed from its own contact. The video's own
+	# finish stopped with the hurley upright by his right ear, the elbow up and the hips square (the owner, 0.20:
+	# "does that look like a normal body to you").
+	var fw := smoothstep(c - 0.02, c + 0.22, at) if name == "free_strike" else 0.0
+	var fin: Array = []
+	var fin_yaw := Quaternion()
+	if fw > 0.0:
+		var bc: Dictionary = HeroBody.data().clips[FREE_FINISH]
+		fin = HeroBody.clip_pose(FREE_FINISH, float(bc.contact) + minf(at - c, FREE_FINISH_S) * FREE_FINISH_RATE)
+		fin_yaw = Quaternion(Vector3.UP, deg_to_rad(float(bc.yaw)))
 	for i in BONE_NAMES.size():
 		var q: Quaternion = cp[0][i] if i > 0 else yaw * cp[0][0]
+		if fw > 0.0:
+			q = q.slerp(fin[0][i] if i > 0 else fin_yaw * fin[0][0], fw)
 		# (The shins and feet throughout: the video's shins turn 40 degrees about their length and its ankles point
 		# down, tip up and turn past an ankle's range from the set on - the owner saw the skin wrung thin above the
 		# ankle, a "pinched shin".)
@@ -612,14 +625,22 @@ func _free_pose(p: Dictionary, name: String, at: float) -> void:
 		if wi > 0.0 and FREE_LIMITS.has(BONE_NAMES[i]):
 			q = q.slerp(_limited(q, FREE_LIMITS[BONE_NAMES[i]]), wi)
 		p[BONE_NAMES[i]] = HeroBody.turn(p.get(BONE_NAMES[i], Vector3.ZERO)).slerp(q, w)
-	var lift := float(cp[1])
+	var lift := lerpf(float(cp[1]), float(fin[1]) if fw > 0.0 else 0.0, fw)
 	if name == "free_set":
 		lift += sin(at * 1.7) * 0.006      # standing over it, breathing
 	p.hips_y = lerpf(float(p.get("hips_y", 0.0)), lift, w)
-	var tr: Vector2 = cp[2]
+	var tr: Vector2 = cp[2] * (1.0 - fw)
 	var off := yaw * Vector3(tr.x, 0.0, tr.y)
 	p.hips_side = lerpf(float(p.get("hips_side", 0.0)), off.x, w)
 	p.hips_fwd = lerpf(float(p.get("hips_fwd", 0.0)), off.z, w)
+
+
+## The free's follow-through: the open-play strike's clip, from its contact, played at this rate for FREE_FINISH_S after
+## the free's contact and then held: the hurley at its highest over his left shoulder (1.8 m, 0.38 s on). Played
+## further, the clip goes on into the batter's recovery - the stick dropped, a crouch.
+const FREE_FINISH := "Baseball_Hit"
+const FREE_FINISH_S := 0.38
+const FREE_FINISH_RATE := 0.85
 
 
 ## The free's stance made upright by `up` (0 as the clip has it, 1 standing tall): the hips' 30-degree hinge forward

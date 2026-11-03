@@ -805,5 +805,13 @@ The owner's 0.20 playtest (code 34):
 - Clock: the score bug runs off a stoppage's jump on the watch over 1.5 s (MatchHud._behind); the watch's own
   ticking passes straight through. The jumps themselves (20-116 s at Watch AI's 35-minute length) are the clock
   scaling's and unchanged.
-- Not done here: feet pointing up again, the free-taker's follow-through, and the glide on the licensed rig - all
-  three are the licensed rig's (FoundationLink), which this session cannot render without the private assets.
+- 0.21.1 (code 35, with the licensed data fetched here: the owner added world-stage-games-assets to the session):
+  - Feet: the licensed hurler's boots rest toe-up (their underside rises 7.6 cm over 24 cm from the heel), so every
+    clip, standing worst, showed the toes off the grass; FoundationLink.FootFlat, the last skeleton modifier (after
+    the foot planter, whose toe clamp would undo it), turns each foot down by the tilt measured from the mesh
+    (sole_tilt, ~10.5 degrees) and sets a planted one down by what that lifted the heel. Match audit: ankle frames
+    past the limit 86 -> 7.
+  - Free's finish: from contact, Baseball_Hit's follow-through (the open-play strike's clip) to its highest point
+    (0.38 s, the bas 1.8 m up over the left shoulder), held to the put-down; it had stopped with the hurley upright
+    by the right ear and the hips square. Filmed on the licensed rig (tests/free_film).
+  - The sideways glide is the facing rule above, on either body.
