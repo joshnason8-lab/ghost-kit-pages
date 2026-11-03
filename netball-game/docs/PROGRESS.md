@@ -289,6 +289,24 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   the goal that makes a two-goal lead now ends it. Tests `_ball_flight`, `_ball_in_play`, `_net_sway`,
   `_advantage_clear`, `_two_goal_lead` (`test_runner.tscn -- ball` runs only these); tests/ball_shots.tscn renders a goal at the post frame by frame and
   a lob and a chest pass from the side with their paths, the old ones beside them.
+- **A loading screen on every Start button** (the owner: "when you click start game there is a loading delay ...
+  users might think the game has frozen"; it was one main-thread stall, 238-1252 ms desktop Low, 600-1040 Medium):
+  the foundation synced to 2cd59a7 for its WsgLoading (ADOPTING 5.14). `Game.start_match_loading(config)` serves
+  Quick Match's Play, Watch AI's Watch, the Nations Cup's and Club Season's Play and the result screen's Rematch (no
+  screen calls start_match itself). The tap's own frame dims the screen to the night indigo with the icon, the game's
+  name, "Marking out the court…" (LOADING, all 19 languages), a lime bar and spinner and a rule of the game as a tip
+  (existing strings); every button on the screen goes off, Back waits. The match's files (venue surfaces, props, sky,
+  hero, crowd, the clips, hud.gd) load on the loader's thread; the teams' flags are drawn on a worker thread
+  (Flags.draw_async: their pixel work was 140 ms of the HUD); `Match.build_steps()` builds what _ready built, in the
+  same order, a frame after each step (Venue, Court, Crowd, Home team, Away team a player a slice, Bench a reserve a
+  slice, Umpires, Scoreboard, Centre pass; Arena.build_venue/build_draw/build_crowd); then WsgLoading's warm-up swaps
+  it in and draws its looks a few a frame (the shader compiles spread), done() waits for smooth frames, and
+  `Match.kick_off()` starts the team card and the centre pass's count (`held` till then). Desktop llvmpipe, cold
+  shader cache, longest main-thread slice: Low 12-33 ms (the hall's Venue), the longest frame 65-134 ms (was a
+  1.3-2.1 s frozen frame); Medium 54-88 ms and High 52-136 ms, the Crowd step (WsgCrowd3D.build, 770 fans in the
+  arena) the longest: the coordinator moves it onto build_venue_async. tests/loading_probe.tscn prints each start's
+  WSG_LOADING line in a window; test_runner `_loading_overlay` (-- loading), input_test `_start_tap`, fit audit
+  `loading_tip_*`.
 
 ## Next
 

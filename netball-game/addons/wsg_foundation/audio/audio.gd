@@ -21,6 +21,13 @@ var base := 0.6
 var haptics_on := true
 ## Per-kind limits at once (e.g. {"step": 4, "voice": 3}); the total is the tier's (WsgFoundation.voices()).
 var kind_limits := {}
+## The game's key hits, kept crisp at any distance (play_at's kind, or its `bright`): no distance filter (Godot's
+## takes up to 24 dB off above 5 kHz: Hurling's post clang 30-65 m away came out a thud), and heard from no farther
+## than bright_distance m (the broadcast's field mics are near the play). Everything else (steps, ambience) still
+## dulls and fades with distance.
+var bright_kinds := ["hit", "strike", "post", "bar", "crossbar", "net", "ring", "whistle", "tag", "bat", "stick",
+	"ball", "bounce", "catch", "kick", "clang", "buzzer"]
+var bright_distance := 30.0
 var _layers := {}            # name -> [player, [min_db, max_db], by]
 var _excite := 0.0
 var _tension := 0.0
@@ -113,10 +120,11 @@ func react(takes: Array, volume_db := -6.0, pitch_spread := 0.04) -> void:
 	p.play()
 
 
-## A sound where it happened (heard from the camera). kind: its own limit (kind_limits); priority: who gives way
+## A sound where it happened (heard from the camera). kind: its own limit (kind_limits), and crisp at a distance if
+## it is one of bright_kinds (or bright is true); priority: who gives way
 ## when every voice is busy - the lowest, then the farthest, then the oldest; a sound that would lose to all of them
 ## is not played. Returns whether it plays.
-func play_at(stream: AudioStream, pos: Vector3, volume_db := 0.0, pitch := 1.0, kind := "sfx", priority := 1) -> bool:
+func play_at(stream: AudioStream, pos: Vector3, volume_db := 0.0, pitch := 1.0, kind := "sfx", priority := 1, bright := false) -> bool:
 	if stream == null:
 		return false
 	var cam := get_viewport().get_camera_3d()
@@ -145,7 +153,13 @@ func play_at(stream: AudioStream, pos: Vector3, volume_db := 0.0, pitch := 1.0, 
 		p = worst
 	p.stop()
 	p.stream = stream
-	p.global_position = pos
+	if bright or bright_kinds.has(kind):
+		p.attenuation_filter_db = 0.0
+		var d := pos.distance_to(ear)
+		p.global_position = ear + (pos - ear) * (bright_distance / d) if d > bright_distance else pos
+	else:
+		p.attenuation_filter_db = -24.0
+		p.global_position = pos
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
 	p.play()

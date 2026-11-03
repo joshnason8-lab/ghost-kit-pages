@@ -568,6 +568,10 @@ func _lifecycle() -> void:
 	await frames(4)
 	cs._play(cup, cup.next_user_match())
 	await frames(30)
+	var lg := 0
+	while WsgLoading.busy() and lg < 60000:   # (the loading overlay: the match built in steps)
+		await frames(1)
+		lg += 1
 	var m := Game.current as Match
 	check(m != null and String(m.config.mode) == "cup", "a cup match starts from the cup screen")
 	if m == null:

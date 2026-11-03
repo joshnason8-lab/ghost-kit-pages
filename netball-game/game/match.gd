@@ -88,7 +88,25 @@ var _step_gap := 0.0
 var _squeak_gap := 0.0
 
 
+## Built by the loading overlay's steps (Game.start_match_loading: build_steps, each followed by a drawn frame) rather
+## than all at once in _ready. The same parts, in the same order, either way.
+var staged := false
+## Under the loading overlay's warm-up and settle: the match runs (the bodies posed, the camera on the court) but the
+## centre pass's whistle, the HUD (its team card) and the graphics' auto level wait for kick_off().
+var held := false
+
+
 func _ready() -> void:
+	_setup()
+	if staged:
+		held = true
+		return
+	for s in build_steps():
+		(s[1] as Callable).call()
+
+
+## The match's rules and the umpires' toss, from its config (no nodes made).
+func _setup() -> void:
 	demo = bool(config.get("demo", false)) or int(config.get("user_team", 0)) < 0
 	user_team = -1 if demo else int(config.get("user_team", 0))
 	watch = demo and bool(config.get("watch", false))
@@ -107,26 +125,84 @@ func _ready() -> void:
 	# The umpires' toss: the winner takes the first centre pass (R4); ends at random.
 	cp_first = rng.randi_range(0, 1)
 	first_dir = 1 if rng.randf() < 0.5 else -1
+
+
+## The match's building, in order, as [label, work, weight] steps: the venue, its draw calls, the crowd, each team's
+## seven (a player at a time), the bench, the officials and ball and camera, the HUD, and the last touches. _ready runs
+## them straight through; the loading overlay (LD, Game.start_match_loading) runs each in a frame of its own, the
+## teams and the bench cut between players (WsgLoading.checkpoint), so no slice holds the main thread long on a slow
+## phone. Under the overlay the teams' flags (the scoreboard's and the team card's) are drawn on a worker thread
+## meanwhile (nothing of that in the match: the card finds them made).
+func build_steps(ld: WsgLoading = null) -> Array:
+	var steps := [
+		["Venue", _build_venue, 2.0],
+		["Court", func(): arena.build_draw(), 1.0],
+		["Crowd", func(): arena.build_crowd(), 2.0],
+		["Home team", func(): await _build_team(0, ld), 3.0],
+		["Away team", func(): await _build_team(1, ld), 3.0],
+		["Bench", func(): await _build_bench(ld), 1.0],
+		["Umpires", _build_officials, 1.0],
+		["Scoreboard", _build_hud, 1.0],
+		["Centre pass", _build_last, 1.0],
+	]
+	if ld:
+		var jobs := []
+		for id in [String(config.get("home", "AUS")), String(config.get("away", "NZL"))]:
+			if String(DB.team(id).get("kind", "")) == "country":
+				jobs.append_array([[id, 300, 200], [id, 72, 48]])     # TeamCard's flag (150 x 100), the scoreboard's
+		if not jobs.is_empty():
+			var job := Flags.draw_async(jobs)
+			steps.insert(steps.size() - 2, ["Flags", func(): await Flags.collect(job), 0.5])
+	return steps
+
+
+## The loading overlay has gone (Game.start_match_loading, after its warm-up and settle): the HUD and its team card
+## come up and the centre pass's count starts, as on the first frame of a match built at once.
+func kick_off() -> void:
+	if not held:
+		return
+	held = false
+	phase_t = 0.0
+	if hud:
+		hud.process_mode = Node.PROCESS_MODE_INHERIT
+		hud.visible = true
+
+
+func _build_venue() -> void:
+	var home := String(config.get("home", "AUS"))
+	arena = Arena.new(String(config.get("venue", "arena")), [DB.team(home).get("c1", Color.WHITE), DB.team(home).get("c2", Color.WHITE)])
+	arena.staged = true
+	add_child(arena)
+	arena.build_venue()
+
+
+## Team T's seven on court (a step's worth each player under the overlay), her stats, and the squad left on the bench.
+func _build_team(t: int, ld: WsgLoading = null) -> void:
 	var home := String(config.get("home", "AUS"))
 	var away := String(config.get("away", "NZL"))
-	arena = Arena.new(String(config.get("venue", "arena")), [DB.team(home).get("c1", Color.WHITE), DB.team(home).get("c2", Color.WHITE)])
-	add_child(arena)
-	for t in 2:
-		var squad: Array = DB.squad(home if t == 0 else away)
-		var lineup: Array = config.get("lineup_%d" % t, [])
-		for i in 7:
-			var entry: Dictionary = squad[i]
-			if lineup.size() == 7:
-				entry = lineup[i]
-			var pl := Player.new(t, entry, Rules.POSITIONS[i])
-			pl.match_ref = self
-			add_child(pl)
-			players[t].append(pl)
-			stats[String(entry.id)] = _blank_stats(t, entry)
-		for entry in squad:
-			if not _on_court(String(entry.id)):
-				bench[t].append(entry)
-	_reserves()
+	var squad: Array = DB.squad(home if t == 0 else away)
+	var lineup: Array = config.get("lineup_%d" % t, [])
+	for i in 7:
+		var entry: Dictionary = squad[i]
+		if lineup.size() == 7:
+			entry = lineup[i]
+		var pl := Player.new(t, entry, Rules.POSITIONS[i])
+		pl.match_ref = self
+		add_child(pl)
+		players[t].append(pl)
+		stats[String(entry.id)] = _blank_stats(t, entry)
+		if ld:
+			await ld.checkpoint((i + 1) / 7.0)
+	for entry in squad:
+		if not _on_court(String(entry.id)):
+			bench[t].append(entry)
+
+
+func _build_bench(ld: WsgLoading = null) -> void:
+	await _reserves(ld)
+
+
+func _build_officials() -> void:
 	for h in [-1, 1]:
 		var u := Umpire.new(h)
 		add_child(u)
@@ -138,9 +214,16 @@ func _ready() -> void:
 	add_child(cam)
 	ai = TeamAI.new(self)
 	_set_ends()
+
+
+func _build_hud() -> void:
 	if not bool(config.get("attract", false)) and not bool(config.get("headless_hud", false)) or not demo:
 		hud = (load("res://game/hud.gd") as Script).new(self)
 		add_child(hud)
+		# Under the loading overlay: the HUD (and its team card's time) waits for kick_off().
+		if held:
+			hud.visible = false
+			hud.process_mode = Node.PROCESS_MODE_DISABLED
 	if not demo:
 		controls = TouchControls.new()
 		controls.action.connect(_on_action)
@@ -148,6 +231,9 @@ func _ready() -> void:
 		_pick_me()
 	elif watch:
 		hud.add_watch_bar()
+
+
+func _build_last() -> void:
 	Game.apply_graphics(get_viewport())
 	_setup_centre(true)
 	if heard():
@@ -167,7 +253,7 @@ func _ready() -> void:
 
 ## The reserves (bench) standing in a row in front of their team's bench, in tracksuits (the code-built figure, one
 ## shared mesh a team, no shadow): Medium and High only, so Low draws what it did. Rebuilt after a team change.
-func _reserves() -> void:
+func _reserves(ld: WsgLoading = null) -> void:
 	var old := get_node_or_null("Reserves")
 	if old:
 		old.name = "ReservesOld"
@@ -177,6 +263,8 @@ func _reserves() -> void:
 	var root := Node3D.new()
 	root.name = "Reserves"
 	add_child(root)
+	var all: int = bench[0].size() + bench[1].size()
+	var made := 0
 	for t in 2:
 		var tm := DB.team(team_id(t))
 		var n: int = bench[t].size()
@@ -196,6 +284,9 @@ func _reserves() -> void:
 				var l := FoundationLink.new(b, b, "reserve")
 				root.add_child(l)
 				l.update(1.0 / 60.0, Vector2.ZERO, Vector2.ZERO, PI, "")
+			made += 1
+			if ld:
+				await ld.checkpoint(float(made) / all)    # the loading overlay: a frame between reserves
 
 
 func _blank_stats(t: int, entry: Dictionary) -> Dictionary:
@@ -245,7 +336,8 @@ func _process(delta: float) -> void:
 	if phase == "replay":
 		_replay_step(delta)
 		return
-	_auto_graphics(delta)
+	if not held:
+		_auto_graphics(delta)    # (not the warm-up's and settle's frames)
 	# Watch AI at 2x: the match takes two of its steps a frame, each exactly the step it takes at 1x (the same dt, cut
 	# at 0.05 s as always), so the AI, the players and their bodies, the ball, the umpires, the clock and the sounds
 	# they make all run twice as fast together and play as they would at 1x. A replay keeps its own slowed pace (a tap
@@ -399,6 +491,8 @@ func _run_setup(_dt: float) -> void:
 		_give(taker, false)
 		from_free = String(restart.kind) == Rules.FREE or (String(restart.kind) == Rules.PENALTY and not bool(restart.shot))
 		taker.stopped = true
+	if held:
+		return    # under the loading overlay: the whistle waits for kick_off()
 	if ball.state == "held" and holder == taker:
 		if String(restart.kind) == Rules.CENTRE:
 			# The centre pass: everyone in her third, then the whistle.
