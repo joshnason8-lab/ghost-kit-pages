@@ -9,6 +9,25 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.2
+
+- **A loading screen on every Start.** Quick match, the toss, a championship match and Watch AI: "Loading…" and a
+  bar come up the moment you tap, and the match is built behind it a piece at a time, so the phone never looks
+  frozen (the foundation's shared loading overlay).
+- **The arm no longer sticks out.** After a touch or TAG the chaser kept his arm out, standing or running: a reach
+  never ended. It ends now.
+- **Tags that look like tags.** A chaser right next to a runner gets him far more often, his hand reaches a little
+  further, and when the runner does escape he is seen twisting away (instead of the hand passing through him).
+  Outs a minute stay as in real matches (classic 1.46, fast 1.57).
+- **The pole dive**: his reaching arm a little bent and only for a runner close by, not thrown out at full stretch.
+- **TAG never over KHO**: a button place saved for another button (TAG took POWER PLAY's slot) is no longer used if
+  it would overlap.
+- **The foul whistle**: two blasts when the umpire calls it, then a reminder every 2.5 s while it stands (it was a
+  whistle every third of a second).
+- **No replays of tags.** Pole turns and near things are still shown again on Medium and High.
+- **The birds at the school** barely there now.
+- Out defenders kneel in front of the teams' benches, not inside them.
+
 ## What's new in 0.12.1
 
 - **A mixed crowd.** A stand of one seat height was the same person over and over; now every fan who fits the seat

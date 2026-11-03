@@ -242,6 +242,14 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   seat (`cards.fan_weights` doubles the three men), looks recolour only skin and hair; `WsgFootFlat.attach` after
   the locomotor in FoundationLink (the sole tilt printed once in the log).
 
+- 0.12.2 (the owner's list): Athlete._finish_act ends a reach (it never did: the arm stayed out); Game.play_match
+  under WsgLoading (foundation edebcd5) for every Start, the match built in steps (match.staged: build_ground,
+  build_players, build_rest); touches: TOUCH_AHEAD 0.45 / TOUCH_R 0.42, a slip within CONTACT 0.62 m at
+  CONTACT_SLIP 0.55, SWERVE_TOUCH 0.9 (cap 0.93), a slip played as the dodge clip (match_sim 20: classic 1.46,
+  fast 1.57); pole dive: POLE_REACH 1.6, the reaching elbow bent (ModelBody.dive_bend); TouchControls ignores a
+  saved place that overlaps; foul whistle FOUL_REMIND 2.5 s; no out replays; school birds -26 dB; _bench_pos in
+  front of the benches.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from
