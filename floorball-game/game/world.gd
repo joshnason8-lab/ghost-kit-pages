@@ -87,6 +87,12 @@ func walker(parent: Node) -> Array:
 	return [p.link.body, p.link.loco]
 
 
+## feet_low (ADOPTING 5.21): at Low the players are the shared foundation's WsgBody too (its light mesh, the planter
+## and WsgFootFlat as at every tier): the feet rule's walker covers them.
+func walker_low(_parent: Node):
+	return "foundation"
+
+
 func key_sounds() -> Array:
 	return ["shot", "post", "net", "whistle"]
 
