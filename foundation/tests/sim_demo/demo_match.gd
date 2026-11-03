@@ -233,7 +233,7 @@ func _ball(dt: float) -> void:
 		return
 	var before := ball_pos
 	ball_vel.y -= 9.8 * dt
-	if _bug == "ball_through":
+	if _bug in ["ball_through", "ball_through_early"]:
 		ball_pos += ball_vel * dt
 		if ball_pos.y < BALL_R:
 			ball_pos.y = BALL_R
@@ -294,9 +294,11 @@ func _bugs() -> void:
 		"clock_back":
 			if t > 6.0 and t < 6.0 + 1.0 / 30.0:
 				clock += 1.0
-		"ball_through":
-			# A hard shot at the bench, the ball moved without the props' sweep.
-			if t > 2.0 and t < 2.0 + 1.0 / 30.0:
+		"ball_through", "ball_through_early":
+			# A hard shot at the bench, the ball moved without the props' sweep. (Early: at 0.4 s, where a frame's
+			# number read from the summed frame times comes out one short - the replay test.)
+			var at := 0.4 if _bug == "ball_through_early" else 2.0
+			if t > at and t < at + 1.0 / 30.0:
 				holder = -1
 				ball_pos = Vector3(0, 0.3, HALF_W - 1.0)
 				ball_vel = Vector3(0, 0, 30.0)

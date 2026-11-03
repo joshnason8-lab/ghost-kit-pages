@@ -113,6 +113,20 @@ func _initialize() -> void:
 	print("replay: the clock failure at frame %d %s" % [f1.frame, "happened again at the same frame" if again else "did NOT happen again"])
 	if not again:
 		fails.append("a failure did not replay from its seed")
+	# A prop failure replays at its frame: dated by the sim's own frame, not its summed time (one frame early for most
+	# frames: the replay stopped before it - Hurling's "ball through the low wall", batch yes, replay no).
+	var rb1: Dictionary = await sim.run(game, "bug:ball_through_early", 3, self)
+	var fb: Array = (rb1.failures as Array).filter(func(f: Dictionary) -> bool: return String(f.signature).begins_with("ball through"))
+	if fb.is_empty():
+		fails.append("the early shot through the bench was not caught: %s" % [rb1.failures])
+	else:
+		var rpb := WsgSim.new()
+		rpb.opts = {"stop_frame": int(fb[0].frame), "feet": false}
+		var rb2: Dictionary = await rpb.run(game, "bug:ball_through_early", 3, self)
+		var back := (rb2.failures as Array).any(func(f: Dictionary) -> bool: return f.signature == fb[0].signature)
+		print("replay: the ball through the bench at frame %d %s" % [fb[0].frame, "found again" if back else "NOT found again"])
+		if not back:
+			fails.append("a ball through a prop at frame %d did not replay" % fb[0].frame)
 	# Determinism: the same seed twice, frame for frame; a decision on the wall clock diverges.
 	for k in ["random", "bug:wallclock"]:
 		var a := WsgSim.new()

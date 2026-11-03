@@ -199,6 +199,8 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 						clock_still = -INF
 			clock_prev = c
 		# Bodies: numbers, bounds, stuck, props, feet, poses.
+		if audit:
+			audit.frame = frame
 		var bl := game.bodies()
 		for bi in bl.size():
 			var b: Dictionary = bl[bi]
@@ -356,7 +358,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 		for c: Dictionary in rep.worst:
 			_fail(out, "prop" if c.kind == "body" else "ball through",
 				"%s %.0f cm into the %s" % [c.who, float(c.depth) * 100.0, c.prop] if c.kind == "body" else "the ball went through the %s" % c.prop,
-				float(c.time), int(float(c.time) * FPS), {}, [])
+				float(c.time), int(c.get("frame", -1)) if int(c.get("frame", -1)) >= 0 else roundi(float(c.time) * FPS), {}, [])
 	for nm in feet:
 		var f: Array = feet[nm]
 		var s := {"max_cm": 0.0}
