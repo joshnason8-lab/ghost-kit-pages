@@ -825,3 +825,14 @@ The owner's 0.20 playtest (code 34):
 - FoundationLink: a move of the arms made on the run (ON_THE_RUN: strike, hook, hand pass, block, tackle...) keeps the
   motion capture's running legs ("upper"), above 0.8 m/s: the game's own legs, standing in its move while the body
   ran on, glided.
+
+## Done (0.22.0, 3 November 2026)
+
+- The shared crowd placement (the owner's all-games directive: "the crowd is sitting properly ... facing the right
+  direction, standing properly"), code 37: Stadium.venue_for declares each ground's sections as WsgCrowdVenue strips
+  (the benches as _stand builds them, SEAT_H/SEAT_D; the terraces in blocks behind their crush barriers; the parish
+  bank and rail; the stands under the camera and the stadium's corners as standing steps - no seats there, and new
+  seats would change the baked light); the 3D fans from crowd3d.build_venue, the rest (and all of Low) as
+  WsgCrowdCards in place of the game's own cut-outs; each fan's baked light from the probe at the old spot nearest
+  it (the bake's probes are per old spot). game/crowd_venues.gd registers the grounds: tools/wsg/crowd_audit.gd PASS
+  for all three (night is the county's stands), now a CI step. Tests read the venue's placement and the cards.

@@ -12,7 +12,10 @@ extends Node3D
 
 var kind := "county"
 var time := "day"
-var crowd: Crowd
+## The cut-out crowd: the shared foundation's cards (WsgCrowdCards) where the venue's declared sections put the fans -
+## every fan on Low, the stands the 3D fans do not reach on Medium and High.
+var crowd: WsgCrowdCards
+var venue: WsgCrowdVenue       # the ground's spectator sections (crowd_venue)
 ## On Medium and High the nearer fans are whole 3D people (the foundation's WsgCrowd3D), the rest stay cut-outs.
 var crowd3d: WsgCrowd3D
 var _seats := {}            # spot index -> how far behind the feet the step behind rises above the seat (m; INF: it
@@ -94,9 +97,9 @@ func _ready() -> void:
 
 ## The crowd, as many as the graphics level seats.
 func _crowd() -> void:
-	crowd = Crowd.new()
-	build_crowd(CROWD_FOCUS, int(Game.settings.graphics))
+	crowd = WsgCrowdCards.new()
 	add_child(crowd)
+	build_crowd(CROWD_FOCUS, int(Game.settings.graphics))
 	_flags()
 
 
@@ -155,49 +158,145 @@ func _baked_light() -> void:
 		grass_m.set_shader_parameter("shade_on", true)
 
 
-## The crowd: on Medium and High the 3D fans take the spots nearest focus (as many as quality's budget: 1 Medium,
-## 2 High, 3 Close - a practice or a shoot-out, the camera near one goal and few players to draw), the cut-outs the
-## rest; on Low all cut-outs. Built again when the camera's place changes (the shoot-out, the practice: behind the
-## goal they shoot at).
+## The crowd, on the shared foundation's placement (the owner: every fan on their seat, not in it or floating, soles
+## on the floor, facing the play): the ground's sections declared (crowd_venue), placed and fitted by WsgCrowdVenue. On
+## Medium and High the 3D fans take the places nearest focus (as many as quality's budget: 1 Medium, 2 High, 3 Close -
+## a practice or a shoot-out, the camera near one goal and few players to draw), the cards the rest; on Low all cards.
+## Built again when the camera's place changes (the shoot-out, the practice: behind the goal they shoot at).
 func build_crowd(focus: Vector3, quality: int) -> void:
-	var palette := home_colours.duplicate()
-	if _shirt_of.size() != _spots.size():
-		_shirt_of = _shirts()
-		_light_of = WsgLightBake.probes(_built_mesh, LIGHT_DIR + "%s_%s" % [kind, time], _spots.size())
+	if venue == null:
+		venue = crowd_venue()
+	var seed := hash(kind)
+	var placed := venue.place(seed)
+	var spots: Array = placed.spots
+	var shirts := _shirts(spots)
+	var lights := _lights(spots)
 	var density := Game.crowd_density() * (0.55 if kind == "parish" else 1.0)
-	var flat := _spots
-	var flat_i := range(_spots.size())
 	if crowd3d:
 		crowd3d.queue_free()
 		crowd3d = null
+	var rest := PackedInt32Array()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
 	if quality > Game.GFX_LOW and WsgCrowd3D.available() and not OS.has_environment("WSG_OFF"):
 		crowd3d = WsgCrowd3D.new()
 		add_child(crowd3d)
-		var facings := _spots.map(func(p): return Crowd.facing_at(p))
-		var seated := []
-		var room := []
-		for i in _spots.size():
-			seated.append(SEAT_H if _seats.has(i) else 0.0)
-			room.append(_seats.get(i, INF))
-		var used := crowd3d.build(_spots, facings, density, hash(kind), seated, quality, focus, room, _shirt_of, Array(_light_of))
-		crowd3d.set_teams(home_colours[0], away_colours[0] if not away_colours.is_empty() else home_colours[1])
+		var used := crowd3d.build_venue(venue, quality, focus, density, seed, shirts, lights)
+		if not home_colours.is_empty():
+			crowd3d.set_teams(home_colours[0], away_colours[0] if not away_colours.is_empty() else home_colours[-1])
+		placed = crowd3d.placed
 		var taken := {}
 		for i in used:
 			taken[i] = true
-		flat = []
-		flat_i = []
-		for i in _spots.size():
-			if not taken.has(i):
-				flat.append(_spots[i])
-				flat_i.append(i)
-	var shirts := []
-	var lights := []
-	for i in flat_i:
-		shirts.append(_shirt_of[i])
-		if not _light_of.is_empty():
-			lights.append(_light_of[i])
-	crowd.build(flat, density, palette, hash(kind),
-		away_colours if kind != "parish" else [], 0.75 if kind != "parish" and not away_colours.is_empty() else 0.45, shirts, lights)
+		for i in spots.size():
+			if not taken.has(i) and rng.randf() < density:
+				rest.append(i)
+	else:
+		for i in spots.size():
+			if rng.randf() < density:
+				rest.append(i)
+	if rest.is_empty():
+		crowd.visible = false
+		return
+	crowd.visible = true
+	crowd.brightness = {"day": 1.0, "dusk": 0.72, "night": 0.75}.get(time, 1.0)
+	crowd.build(placed, rest, seed, shirts, lights)
+	if not home_colours.is_empty():
+		crowd.set_teams(home_colours[0], away_colours[0] if not away_colours.is_empty() else home_colours[-1])
+
+
+## The ground's spectators as sections (the shared foundation's WsgCrowdVenue): each a strip of rows of benches or of
+## standing room, its front edge a to b at the first row's floor, as the stands are built (_stand, _terrace, the
+## banks, the rails). The benches as _stand builds them (SEAT_H high, SEAT_D deep, at the back of each step). The
+## stands under the camera and the stadium's corners are steps without seats: their fans stand. The terraces in
+## blocks of rows, each behind its crush barrier.
+func crowd_venue() -> WsgCrowdVenue:
+	return venue_for(kind, int(Game.settings.graphics) > Game.GFX_LOW, Ultra.active())
+
+
+static func venue_for(k: String, hd := true, pack := false) -> WsgCrowdVenue:
+	var v := WsgCrowdVenue.new(Vector3.ZERO, Vector2(Pitch.LENGTH, Pitch.WIDTH))
+	var pitch := 0.52 if pack else 0.62
+	var bench := func(name: String, x0: float, x1: float, z0: float, rows: int, rise: float, depth: float, base: float) -> void:
+		v.add({"name": name, "a": Vector3(x0, base, z0), "b": Vector3(x1, base, z0), "rows": rows, "tread": depth,
+			"rise": rise, "seat": "bench", "height": SEAT_H, "depth": SEAT_D, "pitch": pitch})
+	# A terrace across an end (as _terrace builds it): its front at x0, rising away (dir), in blocks behind the crush
+	# barriers (every fourth row from the fourth).
+	var terrace := func(name: String, z0: float, z1: float, x0: float, dir: float, rows: int) -> void:
+		var starts := [0]
+		for r in range(3, rows, 4):
+			starts.append(r)
+		for bi in starts.size():
+			var r0: int = starts[bi]
+			var r1: int = starts[bi + 1] if bi + 1 < starts.size() else rows
+			var x := x0 + dir * r0 * 0.7
+			var sec := {"name": "%s %d" % [name, bi], "a": Vector3(x, 0.6 + r0 * 0.32, z0), "b": Vector3(x, 0.6 + r0 * 0.32, z1),
+				"rows": r1 - r0, "tread": 0.7, "rise": 0.32, "seat": "terrace", "pitch": 0.6}
+			if r0 > 0:
+				sec.barrier = {"height": 1.0, "gap": 0.0}
+			v.add(sec)
+	match k:
+		"parish":
+			bench.call("stand", -22.0, 22.0, -W - 6.0, 8, 0.38, 0.75, 0.8)
+			for side: float in [-1.0, 1.0]:
+				v.add({"name": "bank %d" % int(side), "a": Vector3(26.0 * side, 0.3, -W - 4.2), "b": Vector3((H + 4.0) * side, 0.3, -W - 4.2),
+					"rows": 4, "tread": 1.6, "rise": 0.55, "seat": "terrace", "pitch": 1.4})
+			v.add({"name": "rail", "a": Vector3(-H, 0.0, W + 4.0), "b": Vector3(H, 0.0, W + 4.0), "rows": 2, "tread": 0.75,
+				"rise": 0.0, "seat": "rail", "pitch": 1.2, "barrier": {"height": 1.0, "gap": 1.0}})
+		"county", "night":
+			bench.call("far stand", -62.0, 62.0, -W - 6.0, 24, 0.42, 0.8, 1.4)
+			for s: float in [-1.0, 1.0]:
+				terrace.call("end terrace %d" % int(s), -W + 2.0, W - 2.0, (H + 8.0) * s, s, 16)
+				v.add({"name": "side terrace %d" % int(s), "a": Vector3(64.0 * s, 0.6, -W - 6.0), "b": Vector3((H + 8.0) * s, 0.6, -W - 6.0),
+					"rows": 10, "tread": 0.7, "rise": 0.32, "seat": "terrace", "pitch": 0.6})
+			v.add({"name": "near stand", "a": Vector3(-H, 0.8, W + 6.0), "b": Vector3(H, 0.8, W + 6.0), "rows": 6, "tread": 0.8,
+				"rise": 0.42, "seat": "terrace", "pitch": 0.7})
+		"stadium":
+			bench.call("far lower", -80.0, 80.0, -W - 6.0, 22, 0.42, 0.8, 1.4)
+			bench.call("far upper", -80.0, 80.0, -W - 26.0, 24, 0.6, 0.85, 14.0 if hd else 11.0)
+			v.add({"name": "end stand", "a": Vector3(H + 9.0, 1.4, -48.3), "b": Vector3(H + 9.0, 1.4, 48.3), "rows": 30, "tread": 0.85,
+				"rise": 0.55, "seat": "bench", "height": SEAT_H, "depth": SEAT_D, "pitch": 0.6})
+			terrace.call("terrace", -50.0, 50.0, -H - 9.0, -1.0, 26)
+			v.add({"name": "near lower", "a": Vector3(-H - 10.0, 1.4, W + 6.0), "b": Vector3(H + 10.0, 1.4, W + 6.0), "rows": 8,
+				"tread": 0.8, "rise": 0.42, "seat": "terrace", "pitch": 0.7})
+			for sx: float in [-1.0, 1.0]:
+				var c := Vector3((H + 12.0) * sx, 1.4, -(W + 12.0))
+				var along := Vector3(1, 0, sx).normalized()
+				v.add({"name": "corner %d" % int(sx), "a": c - along * 12.0, "b": c + along * 12.0, "rows": 20, "tread": 0.85,
+					"rise": 0.6, "seat": "terrace", "pitch": 0.72})
+	return v
+
+
+## Each fan's baked light (Low and Medium): the bake's probe at the old spot nearest them (the probes were baked at
+## the spots _stand and _terrace laid out; the venue's places are near them).
+func _lights(spots: Array) -> Array:
+	if _light_of.size() != _spots.size():
+		_light_of = WsgLightBake.probes(_built_mesh, LIGHT_DIR + "%s_%s" % [kind, time], _spots.size())
+	if _light_of.is_empty():
+		return []
+	# (A grid of the old spots, 2 m cells, for the nearest.)
+	var grid := {}
+	for i in _spots.size():
+		var p: Vector3 = _spots[i]
+		var key := Vector3i(floori(p.x / 2.0), floori(p.y / 2.0), floori(p.z / 2.0))
+		if not grid.has(key):
+			grid[key] = []
+		grid[key].append(i)
+	var out := []
+	for p: Vector3 in spots:
+		var c := Vector3i(floori(p.x / 2.0), floori(p.y / 2.0), floori(p.z / 2.0))
+		var best := -1
+		var bd := INF
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				for dz in range(-1, 2):
+					for i in grid.get(c + Vector3i(dx, dy, dz), []):
+						var d := p.distance_squared_to(_spots[i])
+						if d < bd:
+							bd = d
+							best = i
+		out.append(_light_of[best] if best >= 0 else 1.0)
+	return out
 
 
 ## Flags behind each goal (the shared foundation's WsgFlags): a few fans at each end holding their county's flag, in
@@ -238,15 +337,15 @@ var _sky: Sky
 ## Each spot's fan's shirt, decided once by the spot (the 3D fan there and the cut-out wear the same: a fan keeps it
 ## when the crowd is built again round another focus): a share in the counties' colours - on a championship day in
 ## sections of the stand leaning one way, as at Croke Park - the rest anything.
-func _shirts() -> Array:
+func _shirts(spots: Array) -> Array:
 	var away := away_colours if kind != "parish" else []
 	var share := 0.75 if kind != "parish" and not away.is_empty() else 0.45
 	var out := []
 	var rng := RandomNumberGenerator.new()
-	for i in _spots.size():
+	for i in spots.size():
 		rng.seed = hash([hash(kind), i])
 		var col := Color(rng.randf(), rng.randf(), rng.randf())
-		var p0: Vector3 = _spots[i]
+		var p0: Vector3 = spots[i]
 		if not home_colours.is_empty() and absf(p0.x) > H + 6.0:
 			# Behind the goals, an end each, as on a championship day: the home county's end (+x) and the
 			# visitors' (or the home county's again), nearly all in its colours.
@@ -256,7 +355,7 @@ func _shirts() -> Array:
 		elif not home_colours.is_empty() and rng.randf() < share:
 			var pal: Array = home_colours
 			if not away.is_empty():
-				var p: Vector3 = _spots[i]
+				var p: Vector3 = spots[i]
 				var sec := hash(Vector2i(floori(p.x / 12.0), floori(p.z / 10.0)))
 				pal = home_colours if (rng.randf() < 0.8) == ((sec % 100) < 50) else away
 			col = pal[rng.randi_range(0, pal.size() - 1)]

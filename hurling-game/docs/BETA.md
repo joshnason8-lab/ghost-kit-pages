@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.22.0
+
+- **The crowd sits and stands properly at every ground** (the shared foundation's crowd placement): fans in the
+  seated stands sit on the benches (not in them, not floating), the terraces and the banks stand with their feet on
+  the steps, and everyone faces square to their stand and turned toward the play (they faced the exact centre of the
+  pitch, so the ends of the long stands looked sideways). On Low the fans are whole people now, seated where there
+  are seats. Their heads follow the ball.
+
 ## New in 0.21.2
 
 - **The seated fans look right close up** (Medium and High): the 3D fans past the nearest few hundred were a cut-down

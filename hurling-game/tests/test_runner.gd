@@ -791,30 +791,34 @@ func _scenery() -> void:
 		check(sc.get_child_count() <= 13, "Scenery %s: %d draw calls" % [v, sc.get_child_count()])
 		if v != "parish":
 			check(sc.count("floodlight") >= 4, "Scenery %s: the floodlights (%d)" % [v, sc.count("floodlight")])
-		# The crowd faces the play: every spectator toward the centre of the field; from the television gantry (behind
-		# the near stand) the near stand is seen from behind, the far one from the front (round four: "the crowd to the
-		# near side is looking the wrong direction").
-		var cr: Crowd = st.crowd
-		check(cr.material_override is ShaderMaterial and (cr.material_override as ShaderMaterial).get_shader_parameter("mask") != null and Crowd.sheet().get_width() == Crowd.FIG_W * Crowd.FIGS * 2, "Crowd %s: the rendered fans and their shirt mask" % v)
+		# The crowd faces the play: every spectator toward the field (the shared placement: square to their row, turned
+		# toward the play's nearest part); from the television gantry (behind the near stand) the near stand is seen
+		# from behind, the far one from the front (round four: "the crowd to the near side is looking the wrong
+		# direction"). The cut-outs are the shared foundation's cards, in one draw call.
+		var cr: WsgCrowdCards = st.crowd
+		check(cr.mm_instance != null and cr.mm_instance.multimesh.instance_count > 0, "Crowd %s: the cards drawn (%d)" % [v, cr.mm_instance.multimesh.instance_count if cr.mm_instance else 0])
+		var pl: Dictionary = st.venue.place(hash(st.kind))
 		var wrong := 0
 		var near_back := 0
 		var near := 0
 		var far_front := 0
 		var far := 0
 		var gantry := Vector3(0.0, CameraRig.GANTRY_H, CameraRig.GANTRY_Z)
-		for i in cr.spots.size():
-			var sp: Vector3 = cr.spots[i]
-			var f: Vector3 = cr.facings[i]
-			if f.dot(Vector3(-sp.x, 0.0, -sp.z).normalized()) <= 0.7:
+		for i in (pl.spots as Array).size():
+			var sp: Vector3 = pl.spots[i]
+			var f: Vector3 = pl.facings[i]
+			var to_play: Vector3 = st.venue.nearest_play(sp) - sp
+			if to_play.length() > 0.5 and f.dot(Vector3(to_play.x, 0.0, to_play.z).normalized()) <= 0.5:
 				wrong += 1
-			# Opposite the gantry (people further along face the centre at an angle, so a camera at halfway is in front).
+			var to_cam := gantry - sp
+			var behind := f.dot(Vector3(to_cam.x, 0.0, to_cam.z)) < 0.0
 			if sp.z > Pitch.HALF_W and absf(sp.x) < 20.0:
 				near += 1
-				near_back += 1 if Crowd.seen_from_behind(sp, f, gantry) else 0
+				near_back += 1 if behind else 0
 			elif sp.z < -Pitch.HALF_W and absf(sp.x) < 20.0:
 				far += 1
-				far_front += 0 if Crowd.seen_from_behind(sp, f, gantry) else 1
-		check(cr.spots.size() > 0 and wrong == 0, "Crowd %s: all %d face the field (%d do not)" % [v, cr.spots.size(), wrong])
+				far_front += 0 if behind else 1
+		check((pl.spots as Array).size() > 0 and wrong == 0, "Crowd %s: all %d face the field (%d do not)" % [v, (pl.spots as Array).size(), wrong])
 		check(near > 0 and near_back == near and far_front == far, "Crowd %s: from the gantry the near side's %d seen from behind, the far side's %d from the front" % [v, near, far])
 		var we: WorldEnvironment = st.find_children("*", "WorldEnvironment", false, false)[0]
 		check(we.environment.sky.sky_material is PanoramaSkyMaterial, "Scenery %s: a real sky (%s)" % [v, st.sky_name()])
@@ -1045,7 +1049,7 @@ func _hd_textures() -> void:
 			check(ok, "Graphics %d: the %s, %d triangles, a %d texture" % [g, who, tris, tex.get_width()])
 			pb.free()
 	Game.settings.graphics = Game.GFX_HIGH
-	check(Crowd.material().get_shader_parameter("figs") == float(Crowd.FIGS_HD) and Crowd.sheet().get_width() == 128 * Crowd.FIGS_HD, "Crowd on High: the 24 figures")
+	check(WsgCrowdCards.available(), "Crowd: the shared cards are there")
 	Ultra.removed = false
 	Game.settings.graphics = keep
 
@@ -1751,7 +1755,7 @@ func _auto_graphics() -> void:
 	m.set_meta("test", true)
 	add_child(m)
 	await frames(60)
-	var crowd0: int = m.stadium.crowd.multimesh.instance_count
+	var crowd0: int = m.stadium.crowd.mm_instance.multimesh.instance_count
 	var sun_shadow0: bool = m.stadium._sun.shadow_enabled
 	# About 45 frames a second, with a stall of a tenth of a second every twentieth frame (some two a second).
 	var steps := []
@@ -1768,8 +1772,8 @@ func _auto_graphics() -> void:
 	check(steps.size() == 2 and steps[0][0] == Game.GFX_MEDIUM and steps[1][0] == Game.GFX_LOW and float(steps[0][1]) <= 5.5
 		and float(steps[1][1]) - float(steps[0][1]) <= 5.5, "Auto graphics: a hitching match steps High -> Medium -> Low within ~5 s each, then stays (%s)" % [steps])
 	await frames(2)
-	check(m.stadium.crowd.multimesh.instance_count < crowd0 and not m.stadium._sun.shadow_enabled and m.shadows == null
-		and is_instance_valid(m.stadium._we), "Auto graphics: the whole level applied at once (crowd %d -> %d, the sun's shadows %s -> off, the men's shadows gone, the sky made again)" % [crowd0, m.stadium.crowd.multimesh.instance_count, sun_shadow0])
+	check(m.stadium.crowd.mm_instance.multimesh.instance_count < crowd0 and not m.stadium._sun.shadow_enabled and m.shadows == null
+		and is_instance_valid(m.stadium._we), "Auto graphics: the whole level applied at once (crowd %d -> %d, the sun's shadows %s -> off, the men's shadows gone, the sky made again)" % [crowd0, m.stadium.crowd.mm_instance.multimesh.instance_count, sun_shadow0])
 	m.queue_free()
 	await frames(2)
 	# The phone decides until the player chooses: an install over an older beta (no gfx_detect) is decided again once,

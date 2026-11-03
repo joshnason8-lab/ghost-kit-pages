@@ -35,8 +35,8 @@ func _ready() -> void:
 			var ms := float(Time.get_ticks_usec() - t0) / 1000.0 / n
 			var crowd := 0
 			var m: Node = Game.current
-			if m.stadium.crowd.multimesh:
-				crowd = m.stadium.crowd.multimesh.instance_count
+			if m.stadium.crowd.mm_instance:
+				crowd = m.stadium.crowd.mm_instance.multimesh.instance_count
 			print("%s graphics %d: up to %d draw calls, %d triangles, %d objects; %d in the crowd; scale %.2f; %.1f ms a frame here; video memory %.1f MB (textures %.1f MB)" % [venue, g,
 				draws, prims, objs, crowd, get_viewport().scaling_3d_scale, ms,
 				rs.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0,

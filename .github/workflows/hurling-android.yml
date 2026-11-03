@@ -184,6 +184,13 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
 
+      - name: Crowd audit (every fan on their seat or their feet on the steps, none inside a seat or a rail, all facing the play)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 1800 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd crowd_audit 2>&1 | tee crowd_audit.log
+          if grep -q "SCRIPT ERROR" crowd_audit.log; then grep -A4 "SCRIPT ERROR" crowd_audit.log; exit 1; fi
+
       # The beta key: the owner's (the BETA_KEYSTORE_B64 secret, a PKCS12 keystore, alias androiddebugkey, password
       # android), the same for every build so each beta installs over the last and keeps the player's saves.
       - name: Configure Android export
