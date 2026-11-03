@@ -353,6 +353,15 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				hw = maxf(hw, smoothstep(0.0, 1.0, float(_across[i])))
 			var vw: float = _w[i] * _w[i]
 			target = Vector3(lerpf(ank.x, _hold[i].x, hw), lerpf(ank.y, _hold[i].y, vw), lerpf(ank.z, _hold[i].z, hw))
+			if not down and stepping == Vector3.INF and not (_lifted[i] and float(_step[i]) < 0.0) and float(_across[i]) <= 0.0 \
+					and _chase_from[i] != Vector3.ZERO:
+				# Released as the clip lifts it: across, an even share of what is left between where it was drawn and
+				# the clip's foot each frame the release has left - a steady catch-up, never still then a stride at once
+				# (stopping from a sprint it stood, then crossed 30-90 cm in a frame: read as a jump).
+				var from: Vector3 = _chase_from[i]
+				var left := maxf(1.0, ceilf(_w[i] * release / maxf(_tick_dt, 0.0001) - 0.001))
+				target.x = from.x + (ank.x - from.x) / left
+				target.z = from.z + (ank.z - from.z) / left
 			if not down and stepping == Vector3.INF:
 				# Across to a clip's foot that is on the ground some way off, it goes over, not along: "up first" is the
 				# ground there (a foot held across while let go, then eased 10-70 cm along the floor - Hurling's walk
