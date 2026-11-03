@@ -19,6 +19,7 @@ const MIN_TILT := 2.0
 var down := 0.0          # radians to turn each foot toe-down
 var _ix := []            # [foot, toe base] for each side
 var _ankle_rest := 0.0
+var _toe_rest := 0.0
 static var _tilt := {}   # mesh -> degrees
 
 
@@ -42,6 +43,7 @@ func _process_modification_with_delta(_delta: float) -> void:
 		for side in ["Left", "Right"]:
 			_ix.append([sk.find_bone(side + "Foot"), sk.find_bone(side + "ToeBase")])
 		_ankle_rest = sk.get_bone_global_rest(_ix[0][0]).origin.y
+		_toe_rest = sk.get_bone_global_rest(_ix[0][1]).origin.y if _ix[0][1] >= 0 else 0.0
 	for pair in _ix:
 		if pair[0] < 0 or pair[1] < 0:
 			continue
@@ -57,6 +59,16 @@ func _process_modification_with_delta(_delta: float) -> void:
 		var low := clampf(1.0 - (fp.origin.y - _ankle_rest) / 0.06, 0.0, 1.0)
 		g.origin.y -= _ankle_rest * (1.0 - cos(down)) * 0.6 * low
 		sk.set_bone_global_pose(pair[0], g)
+		# The turn is about the ankle: as a planted foot rolls heel to toe, the turned toe swung over the floor (a jog
+		# step 2.3 cm, 0.2 without this modifier). Moved back by what the turn moved the toe across, as much as the toe
+		# is on the ground (within 4 cm of its standing height) - Floorball's SoleFlat.
+		var toe_now := sk.get_bone_global_pose(pair[1]).origin
+		var on := clampf(1.0 - (toe_now.y - _toe_rest) / 0.04, 0.0, 1.0)
+		if on > 0.0:
+			var moved := toe_now - tp.origin
+			moved.y = 0.0
+			g.origin -= moved * on
+			sk.set_bone_global_pose(pair[0], g)
 
 
 ## How far the model's boots' soles rise from heel to toe as it stands at rest (degrees, TOE_SPRING taken off), from

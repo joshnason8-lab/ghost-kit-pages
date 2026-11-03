@@ -44,13 +44,35 @@ func events() -> Array:
 
 
 ## Every body on the field now: [{"name", "pos": Vector3 (feet), "radius", "height", "body": WsgBody (or null),
-## "active": bool (in play and meant to be moving), "target": Vector3 (where its AI sends it; INF: none)}].
+## "active": bool (in play and meant to be moving), "target": Vector3 (where its AI sends it; INF: none)}], and
+## optionally "pose_excuse": why this body's arms are out straight by design now (a pole turn: one hand on the pole,
+## the other out) - its T/A-pose readings are counted in the result, not failed. Keep the order the same all match: the
+## sampled quarter is chosen by place in this list.
 func bodies() -> Array:
 	return []
 
 
 ## The ball now: {"pos": Vector3, "radius": float, "live": bool} (empty: no ball, or none in play).
 func ball() -> Dictionary:
+	return {}
+
+
+## Checks put off for this game until a time, each with the lead's or owner's note: {"foot slip": ["2026-11-06T12:00Z",
+## "the lead, 2026-11-03: planter slips 3.5-4.1 cm under our AI; foundation fix pending"]}. Until then a failure of
+## that check is reported as deferred (under Warnings, with its reason), not failed; from then on it fails again. Only
+## for a foundation fault the game cannot fix itself, and only with the lead's or owner's word.
+func deferred() -> Dictionary:
+	return {}
+
+
+## The fetch-behind-prop case (WsgSim.FETCH_KIND, in every smoke batch): WsgSim puts SPOT behind one of the venue's
+## largest props (the side away from the field's middle, where a body can stand) and the game sends the ball (or what
+## its bodies fetch) there, dead, as a ball gone out would be, and one of its bodies to fetch it as its AI would.
+## Returns {"who": that body's name (as bodies() gives it), "seconds": how long it may take (WsgSim.FETCH_S),
+## "arrive": m from SPOT that counts as there (WsgSim.FETCH_ARRIVE_M)}; {}: not wired (the match ends, noted, no fail).
+## The body must get there within the time, never into a prop on the way (Sepak Takraw's fetcher froze, turning back
+## and forth in front of a bench).
+func fetch(_spot: Vector3) -> Dictionary:
 	return {}
 
 
