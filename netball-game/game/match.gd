@@ -494,6 +494,10 @@ func _run_setup(_dt: float) -> void:
 		_give(taker, false)
 		from_free = String(restart.kind) == Rules.FREE or (String(restart.kind) == Rules.PENALTY and not bool(restart.shot))
 		taker.stopped = true
+		var out: Player = restart.get("out")
+		if out and is_instance_valid(out):
+			# Beside her where she has stopped (a step from the mark at most).
+			restart.out_at = Rules.out_of_play_spot(out.pos, out.dir, taker.landing, taker.dir)
 	if held:
 		return    # under the loading overlay: the whistle waits for kick_off()
 	if ball.state == "held" and holder == taker:
@@ -504,10 +508,10 @@ func _run_setup(_dt: float) -> void:
 				_go_live()
 		else:
 			# A free or penalty pass, a throw-in: taken as soon as the taker is on her spot (and the penalised player
-			# beside her).
+			# beside her, the others 0.9 m and more off her: the umpire waits for them).
 			var out: Player = restart.get("out")
-			var ready := out == null or not is_instance_valid(out) or out.p.distance_to(out.target) < 0.4
-			if (phase_t > 0.5 and ready) or phase_t > 2.5:
+			var ready := (out == null or not is_instance_valid(out) or out.p.distance_to(restart.get("out_at", out.target)) < 0.15) and ai.nearest_opponent(taker) >= Court.DEFEND_DIST
+			if (phase_t > 0.5 and ready) or phase_t > 4.0:
 				_go_live()
 	elif phase_t > 9.0 and taker.p.distance_to(spot) < 1.5:
 		# Near enough (another player stood on the spot): the pass is taken from where she is.
@@ -688,12 +692,10 @@ func _run_flight() -> void:
 func _arrive() -> void:
 	var to: Player = pass_info.to
 	var from: Player = pass_info.from
-	var at := ball.court_pos()
+	var at := Vector2(ball.f_to.x, ball.f_to.z)
 	if to.p.distance_to(at) > 1.3:
-		# She was not there: the ball runs on.
-		var v := (ball.f_to - ball.f_from).normalized() * 4.0
-		v.y = 0.0
-		ball.loose(ball.pos, v)
+		# She was not there: the ball goes on as it was going, falls, bounces and rolls (Ball._fall).
+		ball.loose(ball.pos, ball.velocity())
 		stats[String(from.data.id)].turnovers += 1
 		pass_info = {}
 		return
@@ -742,9 +744,7 @@ func _run_loose() -> void:
 	var b := ball.court_pos()
 	if not Court.on_court(b) and ball.pos.y < 0.4:
 		var crossed := Court.clamp_court(b)
-		var v := ball.vel
-		_award(Rules.throw_in(last_touch, crossed), null, "throw_in")
-		ball.dead(ball.pos, v)   # (it rolls on after the whistle, off the boards or the bench it reaches)
+		_award(Rules.throw_in(last_touch, crossed), null, "throw_in")   # (it rolls on, off the boards or the bench)
 		return
 	if ball.pos.y > 2.6:
 		return
@@ -845,9 +845,7 @@ func _on_struck(hit: Dictionary) -> void:
 		pass_info = {}
 	if not outside:
 		return
-	var v := ball.vel
-	_award(Rules.throw_in(last_touch, Court.clamp_court(Vector2(at.x, at.z))), null, "throw_in")
-	ball.dead(ball.pos, v)
+	_award(Rules.throw_in(last_touch, Court.clamp_court(Vector2(at.x, at.z))), null, "throw_in")   # (rolling on from it)
 
 
 ## Footsteps of the players running near the ball, and indoors the squeak of a shoe on a hard cut. Kept sparse (a
@@ -880,7 +878,7 @@ func _movement_sounds(dt: float) -> void:
 
 ## A shot by the holder (GS or GA, in her circle; not from a free pass). Its chance follows the distance from the
 ## post, her shooting, and a defender's arm over the ball from 0.9 m. The ball leaves her hands 0.75 s into the
-## shot (_run_shot).
+## shot (_run_shot), counted from when she faces the post (Player.squaring: one who caught facing away pivots first).
 func shoot() -> void:
 	if holder == null or phase != "live" or shot_info.get("by") == holder:
 		return
@@ -911,6 +909,8 @@ const SHOT_CLEAR := 0.45
 ## The shot's flight, frame by frame: released at 0.75 s, through the ring (or off it) when it arrives.
 func _run_shot(dt: float) -> void:
 	var pl: Player = shot_info.by
+	if not shot_info.released and pl.squaring:
+		return      # (she turns to the post first: Player.squaring)
 	shot_info.t = float(shot_info.t) + dt
 	if not shot_info.released:
 		if float(shot_info.t) >= 0.75:
@@ -1125,8 +1125,10 @@ func _award(a: Dictionary, by: Player, kind: String) -> void:
 	shot_info = {}
 	if holder:
 		holder.stopped = false
+	var had: Player = ball.holder if ball.state == "held" else null
 	holder = null
-	ball.dead(ball.pos if ball.state != "held" else ball.pos)
+	# (In the air or rolling when the whistle goes, it carries on and falls; in her hands, she keeps it: Ball.dead.)
+	ball.dead(ball.pos, had == null, had)
 	_enter("stop")
 	var at: Vector2 = a.at
 	for u in umpires:
@@ -1159,22 +1161,21 @@ static func _signal_for(kind: String) -> String:
 
 
 ## After the call: the restart is set up. For a penalty the infringer stands out of play beside the thrower until
-## the ball is released (R6).
+## the ball is released (R6): an arm's length and more to her side (Rules.OUT_OF_PLAY_GAP, never touching her), square
+## to her line to the goal she attacks or a little behind it, never in front of her (out_of_play_spot). Everyone
+## else keeps 0.9 m and more off the spot as it is set up (TeamAI.keep_clear).
 func _apply_award(a: Dictionary) -> void:
 	restart = {"to": int(a.to), "kind": String(a.kind), "at": a.at, "shot": bool(a.shot), "why": String(a.get("why", ""))}
 	_choose_taker()
+	if ball.state == "dead" and ball.carrier and ball.carrier != restart.taker:
+		# She hands it on: a toss to the spot, a bounce on the way.
+		var to_spot := Vector3(restart.spot.x, Ball.R, restart.spot.y)
+		ball.toss(to_spot, clampf(ball.pos.distance_to(to_spot) / 7.0, 0.35, 0.9))
 	var by: Player = a.get("by")
 	if String(a.kind) == Rules.PENALTY and by and is_instance_valid(by) and by.suspended <= 0.0:
 		var taker: Player = restart.taker
-		# Beside her: square to her line to the goal she attacks (never in it), on the court's middle side.
-		var u: Vector2 = Court.goal_post(taker.dir) - Vector2(restart.spot)
-		u = u.normalized() if u.length() > 0.1 else Vector2(taker.dir, 0)
-		var dirv := Vector2(-u.y, u.x)
-		if dirv.y * (1.0 if taker.p.y < 0 else -1.0) < 0.0:
-			dirv = -dirv
-		var spot: Vector2 = restart.spot + dirv * Rules.OUT_OF_PLAY_GAP
-		spot = Rules.onside_point(by.pos, spot, by.dir, 0.05)
-		by.target = spot
+		restart.out_at = Rules.out_of_play_spot(by.pos, by.dir, restart.spot, taker.dir)
+		by.target = restart.out_at
 		by.out_until = 99.0
 		restart.out = by
 	_enter("setup")
@@ -1214,7 +1215,8 @@ func _end_period() -> void:
 	holder = null
 	pass_info = {}
 	shot_info = {}
-	ball.dead(ball.pos)
+	var had: Player = ball.holder if ball.state == "held" else null
+	ball.dead(ball.pos, had == null, had)
 
 
 ## Seconds of the teams going to their huddles before the interval screen comes up over them: once they are all

@@ -9,6 +9,17 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.3-beta
+
+- **Passes come down**: a pass nobody reaches carries on along its arc and drops to the floor under gravity, then
+  bounces and rolls; a whistle in mid-pass lets the ball fall (it never hangs in the air), and a held ball stays in
+  the player's hands. Long passes fly higher and a little slower, as real ones do.
+- **The net really moves**: a goal balloons the rope net round the ball and swings it about 25 cm before it
+  settles; a ball off the ring sways it too. Visible on every camera.
+- **Room at penalties and obstructions**: the penalised player stands about 1.3 m away, beside the thrower (never
+  in front of her), and every other defender keeps at least 0.9 m from the ball; the umpire waits until they have.
+  In open play the defender marking the ball keeps her 0.9 m too.
+
 ## New in 0.9.2-beta
 
 - **The stick goes exactly where you push it, diagonals too**: pushing up-right now moves your player up-right on

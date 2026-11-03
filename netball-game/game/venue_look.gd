@@ -305,10 +305,12 @@ shader_type spatial;
 render_mode unshaded, cull_disabled;
 """ + COMMON + """
 // The goal nets (NET faces whose UV2.y is the post's side, -1 or 1): their rings' centres; the foot's swing (xy, x
-// and z), a ripple's size (z) and phase (w); the ball in that net (xyz, w 1) or not (Arena._nets).
+// and z), a ripple's size (z) and phase (w); the ball in that net (xyz, w 1) or not; how far each net's lower cords
+// billow out (Arena._nets).
 uniform vec4 net_ring[2];
 uniform vec4 net_swing[2];
 uniform vec4 net_ball[2];
+uniform vec2 net_billow;
 void vertex() {
 	vec3 w = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	if (UV2.x > 5.5 && UV2.x < 6.5 && abs(UV2.y) > 0.5) {
@@ -321,15 +323,19 @@ void vertex() {
 		vec2 rd = r / rl;
 		// Hung from the ring: the foot swings most, and rises a little as it swings out (a pendulum 42 cm long).
 		vec3 off = vec3(sw.x, dot(sw.xy, sw.xy) * 1.2, sw.y) * pow(f, 1.4);
-		// A ripple running down the cords.
+		// A ripple running down the cords, and the lower net billowing out (and up a little) as the ball goes through.
 		off.xz += rd * sw.z * f * sin(sw.w - f * 7.0 + 2.0 * atan(r.y, r.x));
-		// The ball in it: the cords pushed out round it (a size 5 ball fills the net), pulled down as it goes.
+		float bil = s == 1 ? net_billow.y : net_billow.x;
+		off.xz += rd * bil * f * f;
+		off.y += bil * 0.5 * f * f;
+		// The ball in it: the cords stretched out round it, a bulge a little wider than the ball (the net holds it
+		// back: Ball._fall), pulled down as it goes.
 		vec4 b = net_ball[s];
 		if (b.w > 0.5) {
-			float near = exp(-pow((f - (c.y - b.y) / 0.42) * 3.2, 2.0));
-			float need = 0.128 + dot(b.xz - c.xz, rd);
-			off.xz += rd * max(0.0, need - rl) * near * 1.15;
-			off.y -= 0.06 * near * f;
+			float near = exp(-pow((f - (c.y - b.y) / 0.42) * 2.6, 2.0));
+			float need = 0.165 + dot(b.xz - c.xz, rd);
+			off.xz += rd * max(0.0, need - rl * 0.85) * near * 1.2 * min(1.0, f * 4.0);
+			off.y -= 0.08 * near * f;
 		}
 		w += off;
 		VERTEX += (vec4(off, 0.0) * MODEL_MATRIX).xyz;

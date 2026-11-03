@@ -342,6 +342,50 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   arena) the longest: the coordinator moves it onto build_venue_async. tests/loading_probe.tscn prints each start's
   WSG_LOADING line in a window; test_runner `_loading_overlay` (-- loading), input_test `_start_tap`, fit audit
   `loading_tip_*`.
+- Feel (November 2026, the owner's playtest notes on 0.8.9, checked on 0.9.0 by measuring and rendering). **The
+  ball**: 0.9.0's flights were already parabolas at g, but a ball nobody caught did not fall like one: when the
+  whistle went with it in the air (a contact on a pass, an offside, a quarter's end) it stopped dead where it was
+  and hung there through the stoppage (34 still frames over 0.4 m in four 5-minute AI matches; every whistle in
+  mid-pass; and a whistle with the ball held left it floating where her hands had been, 1.5-1.7 s, as she moved
+  off); a pass the receiver did not reach was let go level at 4 m/s from the catch height, whatever its speed;
+  every pass stood still at its catch point for its last frame; and a long shoulder pass was flat (20 m in 1.25 s,
+  its top 1.7 m over the hands). Now (Ball): a pass carries on along its own parabola past the catch, a ball let go
+  (unreached, deflected, fumbled, off the ring) or dead in the air goes on at the speed it had and falls at g,
+  meets the floor at the exact point of the parabola (worked out within the step), bounces and rolls to a stop;
+  a ball in her hands when the whistle goes stays in her hands, and she tosses it to the thrower's spot (it lands
+  and bounces there) unless she is the thrower; only a dead ball put on its spot stays still. Shoulder pass 11.5-16 m/s across (20 m: 1.38 s, top 2.1 m over the
+  hands; 25 m: 1.56 s, 2.75 m); no throw crosses the floor faster than Ball.FLAT_MAX 16 m/s (a long lob goes higher
+  instead). Tests `_ball_uncaught`, `_ball_free_in_play` (every free frame of an AI match at g within 2%, no pass
+  over 17 m/s, nothing hung in the air, a pass to nobody on its arc and down within its range, a whistle mid-pass).
+  **The nets**: 0.9.0 swung a goal's net 9.9 cm at its foot and a rim miss 2.4 cm, and the ball (narrower than the
+  net's foot) never bulged it: hard to see on the close shot, invisible on the wide one. Now a goal whips it 22-26
+  cm (out as the ball drops out of it, harder the faster it came in), ripples it, billows its lower cords out and
+  bulges it round the ball; a shot off the ring shakes it 13 cm and more. Still the one glow shader on every level
+  (uniforms only: no draw call, the same on Low). Contact sheets of a goal and a rim miss on the TV camera's wide
+  shot and on its close shot of the post, Low and High, before and after, were reviewed frame by frame (the net
+  leans and bulges plainly in stills from both). **Restarts**: the penalised player was placed 0.9 m (centre to
+  centre) from the thrower, bodies nearly touching, and stood 0.64-0.81 m (closest, median) from her landing foot
+  from the whistle to the pass, up to 0.48 m in front of her; free passes
+  had a defender within 0.9 m of the thrower in 11 of 17 (median 0.64 m), penalties 10 of 40; in open play the
+  marker on the ball was inside 0.9 m in 16% of frames (her place pushed in by a line she may not cross). Now the
+  penalised player stands 1.35 m to the thrower's side (Rules.out_of_play_spot: square to her line to goal, round to
+  the other side or behind where a line is in the way, never in front: measured 1.26-1.32 m, at most 0.09 m
+  forward), the umpire waits until she is there and nobody else is within 0.9 m, and TeamAI.keep_clear keeps every
+  defender 0.95 m and more off the thrower's landing foot, walking round her rather than through (Player.keep_out):
+  0 restarts with anyone inside 0.9 m, open play 0.6% of frames (stepping out after a catch). Test
+  `_restart_spacing`.
+- **Arms and the shooter's turn** (found by the owner notes; branch `netball-arms`): defending's arms were out at
+  110 degrees with the elbows 20 bent (a T-pose to the eye and to the world check's `pose` rule), and laid over the
+  run by an angle lerp they passed through 60-87 degrees straight out as a defender closed in or moved off (the
+  owner's "arms just stretched out when running"; Low and the foundation alike, which reads the game's pose). Now
+  `Poses.defend_ball` raises both arms forward-up over the ball (134 degrees, elbows 34 bent; the shot defence
+  148/124, elbows 36), `Player._animate` bends the elbows the more while the arms go between moves or between the
+  run's and the move's, marking's and posting's arm out keep soft elbows, and a chest-height catch reaches with soft
+  elbows. AI matches (arena 11, hall 12, 1800 frames each), moving frames with an arm 60+ degrees out and the elbow
+  under 30 bent: Low 405 -> 5, Medium 310 -> 3, High 310 -> 3, every one left arms up overhead (117-153 degrees: a
+  shot defence, a leap); both-arm T/A frames moving 265/226/226 -> 1/0/0. A shooter who caught facing away now
+  pivots to the post before the shot (`Player.squaring` holds the shot's clock and pose till her body faces it within
+  8 degrees, 0.6 s at most): 140 -> 0 degrees off. test_runner `_arms` (-- arms) checks both on Low, Medium, High.
 
 ## Next
 

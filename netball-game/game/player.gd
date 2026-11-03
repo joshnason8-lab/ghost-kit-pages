@@ -56,6 +56,8 @@ var stride_phase: float:
 	get:
 		return gait.phase if gait else 0.0
 var out_until := 0.0         # standing out of play beside the thrower of a penalty pass
+var keep_out := Vector3.ZERO # a ring she does not step into (x, y its middle, z its radius; 0: none): 0.9 m and more
+                             # off the landing foot of an opponent with the ball (TeamAI.keep_clear)
 var suspended := 0.0         # seconds of playing time left on a suspension (R18): off the court, by the bench
 var warned := false          # the umpire has warned her (R18)
 var suspensions := 0         # how many times she has been suspended
@@ -80,6 +82,13 @@ var _solid_memo := {}         # her side round a prop in her way (WsgSolidProps.
 var held_off := Vector2.ZERO  # how far a prop held the ball she holds off her hands (Ball.step): she gives way by it
 var _way := PackedVector3Array()   # an out-of-play walk's waypoints round the props (WsgSolidProps.path)
 var _way_to := Vector2.INF
+## Set to shoot and still turning to the post (pivoting on her landing foot): the shot waits (act_t held at 0, and
+## Match._run_shot's clock) until her body faces the post within SQUARE_DEG, or SQUARE_MAX seconds have gone.
+var squaring := false
+var _square_t := 0.0
+const SQUARE_DEG := 8.0
+const SQUARE_MAX := 0.6
+var _arm_travel := [0.0, 0.0]  # how far each upper arm is from her move's still (0 there .. 1 a long way: Player._animate)
 
 
 func _init(p_team: int, p_data: Dictionary, p_pos: String) -> void:
@@ -175,6 +184,15 @@ func advance(dt: float) -> void:
 		if q.distance_squared_to(next) > 1e-10:
 			next = q
 			solid_moved = true
+	if keep_out.z > 0.0:
+		# Not a step nearer the player with the ball once inside 0.9 m and a little of her (obstruction): round her.
+		var kc := Vector2(keep_out.x, keep_out.y)
+		var nd := next.distance_to(kc)
+		var floor_d := minf(keep_out.z, p.distance_to(kc))
+		if nd < floor_d and nd > 0.001:
+			# (Never a longer step than the one she was taking.)
+			next = p + (kc + (next - kc) / nd * floor_d - p).limit_length((next - p).length())
+			vel = (next - p) / maxf(dt, 0.001)
 	if fenced and Rules.offside(pos, next, dir) and not Rules.offside(pos, p, dir):
 		# At the line: she stops on her side of it.
 		next = Rules.onside_point(pos, next, dir, 0.02)
@@ -312,11 +330,26 @@ func _room_along(d: Vector2) -> float:
 ## what she is doing laid over it (Poses: the catch, the pass, holding the ball, defending, the leap); nothing jumps.
 func _animate(dt: float) -> void:
 	act_t += dt
+	if squaring:
+		# (The owner: "a player shooting ... facing the wrong direction and not at the hoop": a shooter who caught
+		# facing away, 1 m out from the post, shot 140 degrees off it. The shot starts once she has turned.)
+		_square_t += dt
+		if post_off() <= deg_to_rad(SQUARE_DEG) or _square_t >= SQUARE_MAX or act != "shoot":
+			squaring = false
+		else:
+			act_t = 0.0
 	var spd := vel.length()
 	var k := 1.0 - exp(-14.0 * dt)
 	_idle_t += dt
 	_ready_hands = move_toward(_ready_hands, 1.0 if _wants_pass() else 0.0, dt / 0.35)
-	_pose = Poses.blend(_pose, _act_pose(), k)
+	var want := _act_pose()
+	_pose = Poses.blend(_pose, want, k)
+	# How far each upper arm still has to go to her move's (one move to the next: marking's or the ready hands' to
+	# arms up over the ball): its elbow is bent the more on the way (see the lay below).
+	for i in 2:
+		var b: String = ["upperarm_l", "upperarm_r"][i]
+		var d := HeroBody.turn(_pose.get(b, Vector3.ZERO)).angle_to(HeroBody.turn(want.get(b, Vector3.ZERO)))
+		_arm_travel[i] = smoothstep(deg_to_rad(6.0), deg_to_rad(40.0), d)
 	# How much of her arms (and, standing, her lean and crouch) are the move's: the move's own, a catch, a pass, the
 	# ball held, the shot, the leap; on the run her arms swing with her legs, whatever she means to do when she stops.
 	var aw := _arms_want(spd)
@@ -340,11 +373,14 @@ func _animate(dt: float) -> void:
 	# Her elbows bent the more while her arms go between the run's (or hanging) and her move's (arms rising over the
 	# ball, out to take a pass, an arm into the lane): the two lerped at their angles straightened the elbow on the way,
 	# arms held straight out to the sides as she closed in or moved off (the owner's "arms just stretched out").
+	# And so while her arms go from one move's to the next's.
 	var mid := 4.0 * arms_w * (1.0 - arms_w)
-	if mid > 0.01:
-		for s in ["forearm_l", "forearm_r"]:
-			out[s] = HeroBody.turn(out.get(s, Vector3.ZERO)) * HeroBody.turn(Vector3(-36.0 * mid, 0, 0)) if out.get(s) is Quaternion \
-				else (out.get(s, Vector3.ZERO) as Vector3) + Vector3(-36.0 * mid, 0, 0)
+	for i in 2:
+		var bend := 36.0 * maxf(mid, _arm_travel[i] * arms_w)
+		if bend > 0.3:
+			var s: String = ["forearm_l", "forearm_r"][i]
+			out[s] = HeroBody.turn(out.get(s, Vector3.ZERO)) * HeroBody.turn(Vector3(-bend, 0, 0)) if out.get(s) is Quaternion \
+				else (out.get(s, Vector3.ZERO) as Vector3) + Vector3(-bend, 0, 0)
 	if act in ["shoot", "leap"]:
 		out.hips_y = float(_pose.get("hips_y", 0.0))
 	# (Her weight shifting from foot to foot standing: not on the run.)
@@ -478,7 +514,8 @@ func _body_yaw(dt: float) -> void:
 	if spd > 0.4:
 		var w := smoothstep(2.6, 4.0, spd) * (1.0 - arms_w)
 		want = lerp_angle(facing, atan2(vel.x, vel.y), w)
-	body_yaw = rotate_toward(body_yaw, want, TURN * dt)
+	# (Turning to shoot: a pivot, as quick as her facing turns.)
+	body_yaw = rotate_toward(body_yaw, want, (TURN * 1.6 if act == "shoot" else TURN) * dt)
 	if body:
 		body.rotation.y = angle_difference(facing, body_yaw)
 
@@ -535,6 +572,16 @@ func set_act(a: String, kind := "") -> void:
 	act = a
 	act_kind = kind
 	act_t = 0.0
+	squaring = a == "shoot"
+	_square_t = 0.0
+
+
+## How far (radians) her body as drawn (body_yaw) is turned from the post she shoots at.
+func post_off() -> float:
+	var d := Court.goal_post(dir) - p
+	if d.length() < 0.05:
+		return 0.0
+	return absf(angle_difference(body_yaw, atan2(d.x, d.y)))
 
 
 ## Where her hands hold the ball, in the world: the drawn hands' (the foundation's) when it draws her holding it.
