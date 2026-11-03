@@ -11,3 +11,4 @@ ad83891	2026-11-03	loading.gd	static func warm_scene(	The owner: a loading delay
 a24408b	2026-11-03	loading.gd	a node the game frees during the warm-up is skipped	A node freed during the warm-up stopped it warming anything (Hurling 0.23).
 #from	1ef240f	2026-11-03T12:00Z	sim/sim.gd	shown[id] = [WsgNoteChecks.feet(body), WsgNoteChecks.t_or_a_pose(body)]	WsgSim measured the clip, not the drawn feet (every slip it reported); the planter to 2 cm a step (world rule: feet).
 #from	8dc70d9	2026-11-03T12:00Z	locomotor.gd	intent.length() > START_SPEED if want_velocity != Vector3.INF else want > START_SPEED and _accel > 0.5	Feet within 2 cm at every body size (the world rule: feet): no walk start mid-stop, the released toe held.
+#from	29f48296	2026-11-03T12:00Z	foot_planter.gd	_low_ticks[i] = int(_low_ticks[i]) + (1 if h < 0.03 * sc else 0)	A foot let go steps only if the clip keeps it down: 1ef240f doubled running landings (Kho Kho: 7.6 steps a second).
