@@ -53,6 +53,8 @@ var stride_phase: float:
 	get:
 		return gait.phase if gait else 0.0
 var out_until := 0.0         # standing out of play beside the thrower of a penalty pass
+var keep_out := Vector3.ZERO # a ring she does not step into (x, y its middle, z its radius; 0: none): 0.9 m and more
+                             # off the landing foot of an opponent with the ball (TeamAI.keep_clear)
 var suspended := 0.0         # seconds of playing time left on a suspension (R18): off the court, by the bench
 var warned := false          # the umpire has warned her (R18)
 var suspensions := 0         # how many times she has been suspended
@@ -157,6 +159,15 @@ func advance(dt: float) -> void:
 	var step := rate * dt
 	vel = vel + dv.limit_length(step)
 	var next := p + vel * dt
+	if keep_out.z > 0.0:
+		# Not a step nearer the player with the ball once inside 0.9 m and a little of her (obstruction): round her.
+		var kc := Vector2(keep_out.x, keep_out.y)
+		var nd := next.distance_to(kc)
+		var floor_d := minf(keep_out.z, p.distance_to(kc))
+		if nd < floor_d and nd > 0.001:
+			# (Never a longer step than the one she was taking.)
+			next = p + (kc + (next - kc) / nd * floor_d - p).limit_length((next - p).length())
+			vel = (next - p) / maxf(dt, 0.001)
 	if fenced and Rules.offside(pos, next, dir) and not Rules.offside(pos, p, dir):
 		# At the line: she stops on her side of it.
 		next = Rules.onside_point(pos, next, dir, 0.02)

@@ -33,14 +33,18 @@ var _lamps: Array[Vector3] = []   # lights reflected in the floor (at most 8)
 var _look := {}                   # the shaders' settings for this venue (VenueLook uniforms)
 var _glow_mat: ShaderMaterial
 # The two nets (index 0 the post at -x, 1 at +x): the foot's swing (m, x and z) and how fast it swings, a ripple's
-# size and phase, the ball's last position, whether it was in the net, and a moment's rest after a touch.
+# size and phase, how far its lower cords billow out, the ball's last position, whether it was in the net, and a
+# moment's rest after a touch.
 var nets: Array = []
 var _ball_was := Vector3.INF
+var _ball_v := Vector3.ZERO      # the ball's speed a frame ago (a shot's last step to the ring is a short one)
 
 const NET_ROWS := 6               # the net's rows of faces (it bends between them)
 const NET_HZ := 1.3               # the net's sway: a rope skirt 42 cm deep swings about 1.3 times a second
-const NET_DAMP := 0.1             # ... and dies away over two or three seconds (damping ratio)
-const NET_MAX := 0.13             # m: the foot swings no further than this
+const NET_DAMP := 0.12            # ... and dies away over two or three seconds (damping ratio)
+const NET_MAX := 0.34             # m: the foot swings no further than this
+const NET_GOAL_KICK := Vector2(1.2, 2.8)   # m/s: a goal's kick to the foot, least and most (a 15-34 cm swing)
+const NET_RIM_KICK := Vector2(1.3, 2.0)    # m/s: off the ring (a 16-24 cm shake)
 
 
 func _init(p_venue := "arena", p_home_colors := []) -> void:
@@ -95,7 +99,7 @@ func build_draw() -> void:
 		_apply(m)
 	_glow_mat = glow
 	for s in 2:
-		nets.append({"sw": Vector2.ZERO, "sv": Vector2.ZERO, "amp": 0.0, "ph": 0.0, "in": false, "rest": 0.0, "ball": Vector4.ZERO})
+		nets.append({"sw": Vector2.ZERO, "sv": Vector2.ZERO, "amp": 0.0, "ph": 0.0, "bil": 0.0, "whip": Vector2.ZERO, "in": false, "rest": 0.0, "ball": Vector4.ZERO})
 	glow.set_shader_parameter("net_ring", [Vector4(Court.ring_centre(-1).x, Court.RING_H, 0, 0), Vector4(Court.ring_centre(1).x, Court.RING_H, 0, 0)])
 	_net_uniforms()
 	add_child(_lit.commit(lit))
@@ -182,10 +186,12 @@ func _process(delta: float) -> void:
 
 # ---------------------------------------------------------------- the nets
 
-## The nets, a frame on: the ball dropping through one swings it the way the ball was going, ripples it down its
-## cords, pushes it out round the ball and drags it down as it passes; the ball off the ring or brushing the net
-## stirs it a little; then each settles, a damped swing of about 1.3 a second (the glow shader moves the net's faces:
-## no more draw calls, the same on every level). Wherever the ball is shown, a replay too.
+## The nets, a frame on: the ball dropping through one whips it the way the ball was going (its foot out 15-34 cm,
+## more the harder the ball comes in), ripples it down its cords, billows the lower net out and bulges it round the
+## ball, and drags it down as the ball passes; the ball off the ring or brushing the net shakes it (16-24 cm); then each
+## settles, a damped swing of about 1.3 a second. Big enough to see from the TV camera's wide shot as well as its
+## close shot of the post. (The glow shader moves the net's faces: no more draw calls, the same on every level.)
+## Wherever the ball is shown, a replay too.
 func _nets(dt: float, at: Vector3) -> void:
 	if dt <= 0.0 or nets.is_empty():
 		return
@@ -195,6 +201,8 @@ func _nets(dt: float, at: Vector3) -> void:
 		if v.length() > 40.0:
 			v = Vector3.ZERO   # (a jump: the ball placed for a restart or a replay's cut)
 	_ball_was = at
+	var v_in := v if v.length() >= _ball_v.length() else _ball_v
+	_ball_v = v
 	var w := TAU * NET_HZ
 	var busy := false
 	for s in 2:
@@ -211,18 +219,33 @@ func _nets(dt: float, at: Vector3) -> void:
 			if inside:
 				ball = Vector4(at.x, at.y, at.z, 1.0)
 				if not n.in:
-					# Through the ring: a swing the way it was going, and a ripple down the cords.
-					n.sv += vh * 0.3 + off.normalized() * 0.25 * minf(absf(v.y), 4.0) * off.length() / Court.RING_R
-					n.amp = maxf(float(n.amp), 0.012 + 0.004 * minf(absf(v.y), 5.0))
+					# Through the ring: a ripple down the cords and the lower net billowing out; the whip it will
+					# give the net as it drops out, the way it was going (straight down: out to the side it came
+					# in on), harder the faster it came.
+					var vh_in := Vector2(v_in.x, v_in.z)
+					var way := vh_in if vh_in.length() > 0.3 else (off if off.length() > 0.02 else Vector2(-c.x, 0.0))
+					var kick := clampf(0.6 * vh_in.length() + 0.35 * absf(v_in.y), NET_GOAL_KICK.x, NET_GOAL_KICK.y)
+					n.whip = way.normalized() * kick
+					n.sv += n.whip * 0.25
+					n.amp = maxf(float(n.amp), 0.03 + 0.007 * minf(absf(v_in.y), 6.0))
+					n.bil = maxf(float(n.bil), 0.05)
 				# The ball in the net carries its foot along.
 				n.sv += (off * 1.6 - n.sw) * 9.0 * dt
 			elif n.rest <= 0.0 and v.length() > 0.8 and absf(depth - 0.12) < 0.3 and off.length() > Court.RING_R - 0.03:
 				# Off the ring, or brushing the net's outside: a stir.
 				var gap := off.length() - Court.RING_R * lerpf(1.0, 0.68, clampf(depth / Ball.NET_DEPTH, 0.0, 1.0))
 				if gap < Ball.R + 0.04:
-					n.sv += vh.limit_length(4.0) * 0.05 - off.normalized() * 0.08
-					n.amp = maxf(float(n.amp), 0.008)
+					# Hit sideways, the ring and the net hung from it shake: away from the ball, and the way it went.
+					var kick := clampf(0.3 * v_in.length(), NET_RIM_KICK.x, NET_RIM_KICK.y)
+					n.sv += (vh.normalized() * 0.4 - off.normalized()).normalized() * kick
+					n.amp = maxf(float(n.amp), 0.03)
+					n.bil = maxf(float(n.bil), 0.015)
 					n.rest = 0.35
+		if n.in and not inside and n.whip != Vector2.ZERO:
+			# Out of the bottom (or back out of the top): the net whips on the way the ball went, and ripples again.
+			n.sv += n.whip
+			n.whip = Vector2.ZERO
+			n.amp = maxf(float(n.amp), 0.035)
 		n.in = inside
 		# The swing: a damped spring, a few steps a frame.
 		var steps := maxi(1, ceili(dt / 0.012))
@@ -233,13 +256,15 @@ func _nets(dt: float, at: Vector3) -> void:
 		if n.sw.length() > NET_MAX:
 			n.sw = n.sw.limit_length(NET_MAX)
 			n.sv *= 0.6
-		n.amp = float(n.amp) * exp(-dt / 0.7)
+		n.amp = float(n.amp) * exp(-dt / 0.9)
+		n.bil = float(n.bil) * exp(-dt / 0.45)
 		n.ph = fmod(float(n.ph) + dt * 14.0, TAU * 8.0)
-		var moving: bool = n.sw.length() > 0.0005 or n.sv.length() > 0.002 or float(n.amp) > 0.0005 or inside
+		var moving: bool = n.sw.length() > 0.0005 or n.sv.length() > 0.002 or float(n.amp) > 0.0005 or float(n.bil) > 0.0005 or inside
 		if not moving:
 			n.sw = Vector2.ZERO
 			n.sv = Vector2.ZERO
 			n.amp = 0.0
+			n.bil = 0.0
 		busy = busy or moving or n.ball != ball
 		n.ball = ball
 	if busy:
@@ -256,6 +281,7 @@ func _net_uniforms() -> void:
 		bl.append(n.ball)
 	_glow_mat.set_shader_parameter("net_swing", sw)
 	_glow_mat.set_shader_parameter("net_ball", bl)
+	_glow_mat.set_shader_parameter("net_billow", Vector2(nets[0].bil, nets[1].bil))
 
 
 ## Whether this venue has the LED boards, wordmark and goal lights: indoors, on Medium and High.
