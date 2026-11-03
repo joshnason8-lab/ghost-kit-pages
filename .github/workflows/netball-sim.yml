@@ -6,7 +6,12 @@ name: Netball Unleashed · simulated matches
 # to the runner's temp folder and the run's artifacts: never into the project, never a release. The game's adapter is
 # res://game/wsg_sim.gd (res://game/sim.gd is the game's results simulator for the cup and season).
 
+# The foundation's nightly dispatcher (wsg-nightly.yml) starts this through workflow_dispatch on the game's branch,
+# with no inputs (a schedule fires only from the default branch). The push trigger only lets GitHub learn of the
+# workflow when this file changes: no job runs on it.
 on:
+  push:
+    paths: [.github/workflows/netball-sim.yml]
   schedule:
     - cron: "41 3 * * *"
   workflow_dispatch:
@@ -73,7 +78,7 @@ jobs:
         with: {name: netball-sim-smoke, path: "${{ runner.temp }}/sim"}
 
   nightly:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'nightly')
+    if: github.event_name != 'push' && (github.event_name == 'schedule' || inputs.mode != 'smoke')
     runs-on: ubuntu-latest
     timeout-minutes: 300
     strategy:
