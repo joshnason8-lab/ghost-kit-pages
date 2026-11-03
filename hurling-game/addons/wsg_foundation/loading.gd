@@ -17,10 +17,20 @@ extends CanvasLayer
 ##       ld.step("Match", func(): _match = ld.res("res://game/match.tscn").instantiate())
 ##       ld.step("Pitch", func(): _match.build_pitch())
 ##       ld.step("Crowd", _build_crowd)                  # may itself `await ld.checkpoint()` between chunks
+##       ld.step("Show", func(): get_tree().root.add_child(_match))   # or the game's own swap, behind the overlay
+##       ld.warm(func(): return _match)                 # every new look drawn once behind it, a few a frame
 ##       if not await ld.run():                          # draws first, loads, builds; false if a file failed
 ##           return                                      # (the overlay has gone and the buttons are live again)
-##       get_tree().root.add_child(_match)               # or the game's own swap
-##       ld.done()                                       # fades out
+##       await ld.done()                                 # stays until the frames settle, then fades out
+##       _match.kick_off()                               # the clock starts on a smooth first visible frame
+##
+## On the GL Compatibility renderer every new material's shader compiles on the main thread the first time it is drawn
+## (Sepak Takraw: 5.5 to 12 s tap to first frame with no shader cache, all of it in the first draw). warm() draws the
+## scene's looks a batch a frame from a camera that sees each batch, behind the opaque overlay, so the compiles spread
+## over frames and the bar moves; done() then holds the overlay until settle_frames frames in a row come in under
+## settle_ms (the first frames after a load: Floorball's 0.3 to 1 s), up to settle_cap seconds. prewarm() starts the
+## likely next match's files loading while the menu is up; a later run() picks them up where they are. A boot screen
+## can call warm_scene() on a venue, a player and the crowd to compile their shaders before the menu.
 ##
 ## A lambda cannot set the caller's local variables (GDScript copies them): keep what a step makes in a member, or
 ## in a Dictionary the lambdas share. The overlay sits on the host's viewport, not in the menu, so it stays up across
@@ -51,12 +61,22 @@ var slice_ms := 50.0
 var log_label := "load"
 ## Threaded loads use the loader's sub-threads (faster on many cores; off by default, as Godot's own default).
 var use_sub_threads := false
+## done() holds the overlay until this many frames in a row come in under settle_ms (0: no wait) ...
+var settle_frames := 3
+var settle_ms := 50.0
+## ... or this many seconds have gone.
+var settle_cap := 3.0
+## A load (and settle) shorter than this many ms closes at once, without the fade (a rematch).
+var quick_ms := 300.0
 
 ## The latest run's measurements: total_ms, load_ms, longest_frame_ms, longest_slice_ms, longest_slice, steps
-## ({label: ms of main-thread work}), frames, failed (paths that did not load).
+## ({label: ms of main-thread work}), frames, failed (paths that did not load), prewarmed (paths the menu had
+## started), warm ({nodes, looks, frames, ms}), and from done(): settle_ms, settled, settle_longest_frame_ms.
+## done() prints it as the WSG_LOADING line.
 var report := {}
 
 static var _current: WsgLoading = null
+static var _pre := {}            # path -> true: requested by prewarm(), not yet taken by a run()
 
 var _buttons: Array = []
 var _paths: PackedStringArray = PackedStringArray()
@@ -76,6 +96,11 @@ var _step_ms := {}
 var _frames := 0
 var _tip_i := 0
 var _tip_t := 0.0
+var _ok := false
+var _closing := false
+var _warm := {}
+var _has_warm := false
+var _3d_off := false
 
 var _root: Control
 var _dim: ColorRect
@@ -127,6 +152,64 @@ func step(label: String, work: Callable, weight := 1.0) -> void:
 	_steps.append([label, work, maxf(weight, 0.0)])
 
 
+## While the menu is up: starts PATHS loading on the loader's thread (the likely next match: the last venue, the
+## players, the crowd), so a tap finds them loaded or part way. A run() that requests them takes them where they are.
+## The menu keeps its frame rate (the loading is on another thread); no shader is compiled by this (warm_scene, from
+## a boot screen, does that).
+static func prewarm(paths: Array) -> void:
+	for p in paths:
+		var path := String(p)
+		if _pre.has(path) or ResourceLoader.has_cached(path):
+			continue
+		if ResourceLoader.load_threaded_request(path) == OK:
+			_pre[path] = true
+
+
+## A step that draws every look under a node once, behind the opaque overlay, a batch a frame (warm_scene). WHAT: the
+## node, or a Callable that returns it (when an earlier step makes it). It must be in the tree by then.
+## A run with a warm step draws no 3D from its first step until the warm-up (the viewport's disable_3d), so a scene
+## swapped in by an earlier step is not drawn whole, every shader at once, before the warm-up can hide it.
+func warm(what: Variant, label := "Warming up", weight := 2.0) -> void:
+	_has_warm = true
+	step(label, func():
+		var node: Node = (what as Callable).call() if what is Callable else what
+		# A deferred swap (change_scene_to_node) puts it in the tree a frame later.
+		for i in 3:
+			if node != null and node.is_inside_tree():
+				break
+			await _frame()
+		if node == null or not node.is_inside_tree():
+			push_warning("WsgLoading.warm: the node is not in the tree; nothing warmed")
+			_set_3d(true)
+			return
+		opaque()
+		_warm = await WsgLoading.warm_scene(node, func(f: float):
+			_t_resume = Time.get_ticks_usec()
+			_step_fraction(f), max_batch_looks, func(): _set_3d(true)), weight)
+
+
+## The most looks a warm-up batch draws in one frame.
+var max_batch_looks := 64
+
+
+func _set_3d(on: bool) -> void:
+	var vp := get_viewport()
+	if vp == null:
+		return
+	if not on and not vp.disable_3d:
+		vp.disable_3d = true
+		_3d_off = true
+	elif on and _3d_off:
+		vp.disable_3d = false
+		_3d_off = false
+
+
+## The dim goes fully opaque (nothing behind it shows: a warm-up's camera, the first frames of the match).
+func opaque() -> void:
+	if _dim:
+		_dim.color.a = 1.0
+
+
 ## A loaded file (after the load part of run(), so in any step).
 func res(path: String) -> Resource:
 	return _res.get(path)
@@ -146,11 +229,17 @@ func run() -> bool:
 	_longest_frame = 0.0
 	load_started.emit()
 	var failed := PackedStringArray()
+	var prewarmed := []
+	for p in _paths:
+		if _pre.has(p):
+			prewarmed.append(p)
 	var t_load := Time.get_ticks_usec()
 	_t_resume = t_load
 	if not _paths.is_empty():
 		_set_label("")
 		for p in _paths:
+			if _pre.has(p):
+				continue           # the menu's prewarm() has it on the way
 			if ResourceLoader.load_threaded_request(p, "", use_sub_threads) != OK:
 				failed.append(p)
 		var waiting := true
@@ -165,11 +254,13 @@ func run() -> bool:
 				var st := ResourceLoader.load_threaded_get_status(p, prog)
 				if st == ResourceLoader.THREAD_LOAD_LOADED:
 					_res[p] = ResourceLoader.load_threaded_get(p)
+					_pre.erase(p)
 					sum += 1.0
 				elif st == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 					sum += float(prog[0]) if not prog.is_empty() else 0.0
 					waiting = true
 				else:
+					_pre.erase(p)
 					failed.append(p)
 					sum += 1.0
 			_set_target(load_share * sum / float(_paths.size()))
@@ -182,6 +273,8 @@ func run() -> bool:
 			total_w += float(s[2])
 		var base := load_share if not _paths.is_empty() else 0.0
 		var done_w := 0.0
+		if _has_warm:
+			_set_3d(false)
 		for s in _steps:
 			_set_label(String(s[0]))
 			_t_resume = Time.get_ticks_usec()
@@ -189,7 +282,10 @@ func run() -> bool:
 			done_w += float(s[2])
 			_set_target(base + (1.0 - base) * (done_w / total_w if total_w > 0.0 else 1.0))
 			await _frame()
-	_set_target(1.0 if ok else _target)
+	_set_3d(true)
+	# The bar's last bit is the settle (done()).
+	_set_target((1.0 if settle_frames <= 0 else 0.96) if ok else _target)
+	_ok = ok
 	report = {
 		"label": log_label,
 		"total_ms": snappedf((Time.get_ticks_usec() - t0) / 1000.0, 0.1),
@@ -200,8 +296,9 @@ func run() -> bool:
 		"steps": _step_ms.duplicate(),
 		"frames": _frames,
 		"failed": Array(failed),
+		"prewarmed": prewarmed,
+		"warm": _warm,
 	}
-	print("WSG_LOADING ", JSON.stringify(report))
 	if _longest_slice > STALL_MS:
 		push_warning("WsgLoading: '%s' held the main thread %.0f ms (over %.0f): cut it with checkpoint()" % [_longest_slice_label, _longest_slice, STALL_MS])
 	_running = false
@@ -221,13 +318,54 @@ func checkpoint(fraction := -1.0) -> void:
 		await _frame()
 
 
-## Fades the overlay out and frees it; the buttons that are still there come back on.
+## After a run that loaded: holds the overlay (opaque, the bar at its last step) until settle_frames frames in a row
+## come in under settle_ms, or settle_cap seconds; prints the WSG_LOADING line; then fades out (at once if the whole
+## load was under quick_ms) and frees it. The buttons that are still there come back on. Await it to start play on a
+## smooth first frame (or wait for `finished`).
 func done() -> void:
+	if _closing:
+		return
+	_closing = true
+	var settle := 0.0
+	var settled := true
+	var worst := 0.0
+	if _ok and settle_frames > 0:
+		opaque()
+		var t0 := Time.get_ticks_usec()
+		var prev := t0
+		var good := 0
+		var steady := INF
+		while good < settle_frames:
+			if (Time.get_ticks_usec() - t0) / 1e6 > settle_cap:
+				settled = false
+				break
+			await get_tree().process_frame
+			var now := Time.get_ticks_usec()
+			var gap := (now - prev) / 1000.0
+			prev = now
+			worst = maxf(worst, gap)
+			# Under settle_ms; or, on a phone slower than that all the time, within 30% of its quickest frame here, up
+			# to twice settle_ms (compile stalls are hundreds of ms: they never pass).
+			steady = minf(steady, gap)
+			good = good + 1 if gap < clampf(steady * 1.3, settle_ms, settle_ms * 2.0) else 0
+		settle = (Time.get_ticks_usec() - t0) / 1000.0
+		_set_target(1.0)
+	if not report.is_empty():
+		report["settle_ms"] = snappedf(settle, 0.1)
+		report["settled"] = settled
+		report["settle_longest_frame_ms"] = snappedf(worst, 0.1)
+		print("WSG_LOADING ", JSON.stringify(report))
 	if _current == self:
 		_current = null
 	for b in _buttons:
 		if is_instance_valid(b) and b is BaseButton:
 			(b as BaseButton).disabled = false
+	if float(report.get("total_ms", 0.0)) + settle < quick_ms:
+		visible = false
+		await get_tree().process_frame
+		finished.emit()
+		queue_free()
+		return
 	var tw := create_tween()
 	tw.tween_property(_root, "modulate:a", 0.0, 0.2)
 	tw.tween_callback(func():
@@ -405,6 +543,134 @@ func _step_fraction(fraction: float) -> void:
 		return
 	var base := load_share if not _paths.is_empty() else 0.0
 	_set_target(base + (1.0 - base) * (before + mine * clampf(fraction, 0.0, 1.0)) / total_w)
+
+
+## Draws every look under ROOT (each mesh and its materials, by kind: mesh, multimesh, particles) once, a batch a
+## frame, from a camera of its own aimed at the batch, everything else hidden (render layers 0) and visibility ranges
+## off, so on the GL Compatibility renderer each new shader compiles in a frame of its own (or a few together) instead
+## of all in the match's first frame. Batches double after three quick frames in a row (under 40 ms, or 1.5 times the
+## quickest frame so far) and drop to one look after a slow one. HIDDEN is called once everything is hidden. Puts every layer, range and the game's camera back. AFTER_FRAME(fraction 0..1) is called after each frame.
+## Returns {nodes, looks, frames, ms}. Behind an opaque overlay (WsgLoading.warm does this), or from a boot screen.
+static func warm_scene(root: Node, after_frame: Callable = Callable(), max_batch := 64, hidden: Callable = Callable()) -> Dictionary:
+	var t0 := Time.get_ticks_usec()
+	var vp := root.get_viewport()
+	var game_cam := vp.get_camera_3d()
+	var mask: int = game_cam.cull_mask if game_cam else 0xFFFFF
+	var geoms: Array = []
+	var all: Array = root.find_children("*", "GeometryInstance3D", true, false)
+	if root is GeometryInstance3D:
+		all.append(root)
+	for n in all:
+		var g := n as GeometryInstance3D
+		if g.is_visible_in_tree() and (g.layers & mask) != 0:
+			geoms.append(g)
+	var groups := {}
+	for g: GeometryInstance3D in geoms:
+		var k := _look_key(g)
+		if not groups.has(k):
+			groups[k] = []
+		(groups[k] as Array).append(g)
+	var saved := {}
+	for g: GeometryInstance3D in geoms:
+		saved[g] = [g.layers, g.visibility_range_begin, g.visibility_range_end]
+		g.layers = 0
+		g.visibility_range_begin = 0.0
+		g.visibility_range_end = 0.0
+	if hidden.is_valid():
+		hidden.call()
+	var cam := Camera3D.new()
+	cam.top_level = true
+	cam.cull_mask = mask
+	if game_cam:
+		cam.fov = game_cam.fov
+		cam.environment = game_cam.environment
+		cam.attributes = game_cam.attributes
+	root.add_child(cam)
+	cam.make_current()
+	var keys := groups.keys()
+	var i := 0
+	var n := 1
+	var frames := 0
+	var quickest := INF
+	var quick_run := 0
+	while i < keys.size():
+		var box := AABB()
+		var first := true
+		for k in keys.slice(i, i + n):
+			for g in groups[k]:      # (untyped: a body freed during the warm-up is skipped, not an error)
+				if not is_instance_valid(g):
+					continue
+				g.layers = int(saved[g][0])
+				var b: AABB = g.global_transform * g.get_aabb()
+				box = b if first else box.merge(b)
+				first = false
+		i = mini(i + n, keys.size())
+		if not first:
+			_aim(cam, box)
+		var tf := Time.get_ticks_usec()
+		await root.get_tree().process_frame
+		frames += 1
+		# After three frames in a row with no new shader (about the phone's own frame time), twice as many a frame (the
+		# looks are shared or cached); after a compile, one (two compiles in one frame make a frame twice as long).
+		var ms := (Time.get_ticks_usec() - tf) / 1000.0
+		quickest = minf(quickest, ms)
+		quick_run = quick_run + 1 if ms < maxf(40.0, quickest * 1.5) else 0
+		if quick_run == 0:
+			n = 1
+		elif quick_run >= 3:
+			n = mini(n * 2, max_batch)
+		if after_frame.is_valid():
+			after_frame.call(float(i) / float(keys.size()))
+	for g in saved:
+		if is_instance_valid(g):
+			(g as GeometryInstance3D).layers = int(saved[g][0])
+			(g as GeometryInstance3D).visibility_range_begin = float(saved[g][1])
+			(g as GeometryInstance3D).visibility_range_end = float(saved[g][2])
+	cam.queue_free()
+	if is_instance_valid(game_cam):
+		game_cam.make_current()
+	return {"nodes": geoms.size(), "looks": keys.size(), "frames": frames,
+		"ms": snappedf((Time.get_ticks_usec() - t0) / 1000.0, 0.1)}
+
+
+## What makes a node's draw need its own shaders: its kind, its mesh and every material on it.
+static func _look_key(g: GeometryInstance3D) -> String:
+	var k := g.get_class()
+	var mesh: Mesh = null
+	if g is MeshInstance3D:
+		var mi := g as MeshInstance3D
+		mesh = mi.mesh
+		for si in mi.get_surface_override_material_count():
+			k += ",s%d" % _id(mi.get_surface_override_material(si))
+	elif g is MultiMeshInstance3D:
+		var mm := (g as MultiMeshInstance3D).multimesh
+		mesh = mm.mesh if mm else null
+	elif g is GPUParticles3D:
+		var gp := g as GPUParticles3D
+		mesh = gp.draw_pass_1
+		k += ",p%d" % _id(gp.process_material)
+	elif g is CPUParticles3D:
+		mesh = (g as CPUParticles3D).mesh
+	k += ",m%d,o%d,v%d" % [_id(mesh), _id(g.material_override), _id(g.material_overlay)]
+	if mesh:
+		for si in mesh.get_surface_count():
+			k += ",%d" % _id(mesh.surface_get_material(si))
+	return k
+
+
+static func _id(o: Object) -> int:
+	return o.get_instance_id() if o else 0
+
+
+## The camera back from BOX along a fixed diagonal, far enough to see all of it.
+static func _aim(cam: Camera3D, box: AABB) -> void:
+	var c := box.get_center()
+	var r := maxf(box.size.length() * 0.5, 0.25)
+	var dist := r / sin(deg_to_rad(cam.fov * 0.5)) * 1.1
+	var dir := Vector3(0.35, 0.45, 1.0).normalized()
+	cam.near = maxf(0.02, (dist - r) * 0.5)
+	cam.far = dist + r * 2.0 + 10.0
+	cam.global_transform = Transform3D(Basis.IDENTITY, c + dir * dist).looking_at(c, Vector3.UP)
 
 
 static var _shader: Shader = null

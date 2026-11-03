@@ -856,3 +856,13 @@ The owner's 0.20 playtest (code 34):
   (Practice.use_practice_graphics). Longest slices here (xvfb, software rendering, Low): quick county Ground 345 ms,
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
+
+## Done (0.23.1, 3 November 2026)
+
+- Foundation synced to ad83891 (WsgLoading v2), code 40: ld.warm on the match (every look drawn once behind the
+  overlay) and await ld.done() (held until the frames come under 50 ms, 3 s at most). The vendored loading.gd's
+  warm_scene loop made untyped (a node freed during the warm-up raised a script error and ended the warm-up: reported
+  to the Foundation). Practice's close crowd at High's budget (1,200), not Close (2,400): Match.close_crowd_quality.
+  Here (xvfb, warm caches): quick county longest slice Ground 406 ms, worst frame after the overlay 108 ms (no
+  hitch); practice (still High) Ground 1,413 ms, Teams 1,042, Crowd 638 - its forced High graphics are the owner's
+  call (round four asked for the best look), the lead's view is the player's tier: asked.

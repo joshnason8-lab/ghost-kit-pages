@@ -9,6 +9,13 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.23.1
+
+- **No stutter as a match begins**: the graphics are prepared behind the loading screen, and it stays up until the
+  game runs smoothly.
+- **Free-taking practice starts faster**: the crowd behind the posts is the normal High crowd, not twice as many
+  3D fans.
+
 ## New in 0.23.0
 
 - **A loading screen when a match starts**: tap Throw-in, Watch AI, a championship match or free-taking practice and

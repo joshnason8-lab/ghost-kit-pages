@@ -2950,9 +2950,17 @@ func _rank_detail(dt: float) -> void:
 func _close_crowd() -> void:
 	if stadium and int(Game.settings.graphics) == Game.GFX_HIGH:
 		var f := Vector3(_shootout_goal_dir() * (Pitch.HALF_L + 14.0), 3.0, 0.0)
-		if stadium.crowd_key == [f, 3]:
+		var q := close_crowd_quality()
+		if stadium.crowd_key == [f, q]:
 			return      # (built so already: the loading overlay's crowd step)
-		stadium.build_crowd(f, 3)
+		stadium.build_crowd(f, q)
+
+
+## The close crowd's budget: the shoot-out's Close (more full figures, few players to draw); the practice's High's
+## own - its forced High graphics with the Close budget were 2,400 full 3D fans to build and draw on a budget phone
+## (9.7 s to start, a 1.8 s hitch: the lead's measure).
+func close_crowd_quality() -> int:
+	return 2 if is_practice() else 3
 
 
 var _pen_view: Camera3D     # the shoot-out's camera, low behind the taker

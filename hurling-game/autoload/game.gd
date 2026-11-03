@@ -420,7 +420,7 @@ func start_match_loading(config: Dictionary, buttons: Array = []) -> void:
 	ld.step("Crowd", func():
 		if practice and int(settings.graphics) == GFX_HIGH:
 			# Built as the practice shoots it: close behind the goal it attacks, at the Close budget (Match._close_crowd).
-			(built.stadium as Stadium).build_deferred_crowd(Vector3(Pitch.attack_dir(0, 1) * (Pitch.HALF_L + 14.0), 3.0, 0.0), 3)
+			(built.stadium as Stadium).build_deferred_crowd(Vector3(Pitch.attack_dir(0, 1) * (Pitch.HALF_L + 14.0), 3.0, 0.0), 2)
 		else:
 			(built.stadium as Stadium).build_deferred_crowd(), 2.0)
 	ld.step("Teams", func():
@@ -433,11 +433,14 @@ func start_match_loading(config: Dictionary, buttons: Array = []) -> void:
 		Sfx.music(false)
 		_swap(m)
 		built.match = m, 3.0)
+	# Every look in the match drawn once behind the overlay (its shaders made now, not on the first frames of play).
+	ld.warm(func(): return built.get("match"))
 	if not await ld.run():
 		if built.has("stadium") and is_instance_valid(built.stadium) and not built.has("match"):
 			(built.stadium as Node).queue_free()
 		return
-	ld.done()
+	# Held up until the frames come smooth (or 3 s), then gone: play starts on an even frame.
+	await ld.done()
 
 
 ## The loading overlay in the game's own colours, with a tip about hurling while it loads.
