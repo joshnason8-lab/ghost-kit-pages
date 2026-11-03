@@ -202,10 +202,9 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          # (A fresh install's own user dir: XDG_DATA_HOME empty. Not yet WSG_NOTES_FRESH=1: Hurling's first launch saves
-          # the graphics level it picks for the device - Game._ready - so a fresh user:// holds settings.json; asked of
-          # the foundation.)
-          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_STRICT=1 timeout 1500 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee owner_notes.log
+          # (A fresh install's own user dir: XDG_DATA_HOME empty, and WSG_NOTES_FRESH=1 checks it held nothing from before
+          # the run - the settings.json Hurling's first launch writes, Game._ready, is the run's own.)
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 1500 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee owner_notes.log
           if grep -q "SCRIPT ERROR" owner_notes.log; then grep -A4 "SCRIPT ERROR" owner_notes.log; exit 1; fi
 
       - name: Props audit (nobody walks through a bench, a wall, a flag or a post; the ball goes through none of them)
