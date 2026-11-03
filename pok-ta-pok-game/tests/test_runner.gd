@@ -1574,10 +1574,17 @@ func _foundation_match(g: int, have: bool) -> void:
 		await frames(2)
 		return
 	check(linked == bodies.size(), "Foundation (graphics %d): every player and judge is drawn by the foundation (%d of %d)" % [g, linked, bodies.size()])
+	# The drawn feet, read as drawn: inside the skeleton's update (after it the bones are back to the clip's).
+	var drawn := {}
 	for b in bodies:
 		var l: FoundationLink = (b as Body).link
 		if l:
 			l.measure = true
+			var wb := l.body
+			var key: String = String(b.get_parent().name) if b.get_parent() is Player else String(b.name)
+			wb.skeleton.skeleton_updated.connect(func():
+				if is_instance_valid(wb):
+					drawn[key] = [WsgNoteChecks.feet(wb), Engine.get_process_frames()])
 	var worst_place := 0.0
 	var worst_hip := 0.0
 	var hits := 0
@@ -1624,21 +1631,34 @@ func _foundation_match(g: int, have: bool) -> void:
 			# A planted foot under the motion capture: still from one pose to the next.
 			for fi in 2:
 				var k: String = "%s%d" % [pl.name, fi]
-				var at: Vector3 = l.loco.planter.ankle_world[fi]
+				var dr: Array = drawn.get(String(pl.name), [])
+				if dr.is_empty() or int(dr[1]) < Engine.get_process_frames() - 1:
+					feet.erase(k)
+					continue
+				var at: Vector3 = (dr[0] as Array)[fi * 2]       # the drawn ankle
+				var toe: Vector3 = (dr[0] as Array)[fi * 2 + 1]  # and the ball of the foot
 				var planted: bool = l.mode == "move" and float(l.last.w) <= 0.0 and float(l.last.pw) <= 0.0 \
 					and float(l.loco.planter.contact[fi]) > 0.5 \
 					and at.y < pl.global_position.y + (l.body.joints["LeftFoot"] as Vector3).y * pl.body.scale.x + 0.04
 				if planted and feet.has(k):
-					# (Per frame: a far player is posed every second frame.)
-					var gap := maxf(1.0, float(int(l.last.frame) - int(feet[k][1])))
-					var sl := Vector2(at.x - feet[k][0].x, at.z - feet[k][0].z).length() / gap
+					# (Per frame: a far player is posed every second frame.) A planted foot's slide is the least its
+					# ankle or its ball moved: the heel rolling up over a held ball (the planter, 1ef240f) is a step,
+					# not a slide (WsgNoteChecks.foot_slip measures the same).
+					var gap := float(int(dr[1]) - int(feet[k][1]))
+					if gap <= 0.0:
+						continue   # (not drawn again since: a far player is posed every second or third frame)
+					var moved := minf(Vector2(at.x - feet[k][0].x, at.z - feet[k][0].z).length(), Vector2(toe.x - feet[k][2].x, toe.z - feet[k][2].z).length())
+					if moved > 0.4:
+						feet[k] = [at, int(dr[1]), toe]
+						continue   # put somewhere new (the walk-on, a restart): a cut, not a slide (as foot_slip counts it)
+					var sl := moved / gap
 					if sl > worst_slide:
 						slide_why = "%s state %d speed %.2f gap %d frame %d" % [pl.name, l.loco.state, pl.vel.length(), gap, n]
 					worst_slide = maxf(worst_slide, sl)
 					slide_all.append(sl * 30.0 * 100.0)
 					slides += 1
 				if planted:
-					feet[k] = [at, int(l.last.frame)]
+					feet[k] = [at, int(dr[1]), toe]
 				else:
 					feet.erase(k)
 		if m.phase == m.P.SERVE and m.ball.held and m.server and m.server.body.link:

@@ -222,6 +222,14 @@ func human_team() -> int:
 	return int(m.user_team) if is_instance_valid(m) else -1
 
 
+## Paused (the pause menu up: the player's pause, or the app sent to the background) - the input fuzzer then taps the
+## pause key once, as a person taps Resume.
+func paused() -> int:
+	if not is_instance_valid(m) or not m.built:
+		return -1
+	return 1 if bool(m.paused) else 0
+
+
 func input_actions() -> Array:
 	TouchControls.ensure_actions()
 	return ["pok_a", "pok_b", "pok_switch"]

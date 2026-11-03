@@ -95,6 +95,8 @@ func _ready() -> void:
 	var lod := 0 if int(Game.settings.graphics) >= Game.GFX_HIGH else 1
 	body = WsgBody.new(WsgBody.load_character(DIR, file), RiggedBody.make_material(file, gb.look, true), lod)
 	add_child(body)
+	if kind == "judge":
+		body.add_to_group("wsg_official")   # a match official (the shared world check's officials rule)
 	body.set_manual(true)
 	body.visible = false        # till its first pose
 	body.mesh_instance.cast_shadow = gb.mesh_instance.cast_shadow

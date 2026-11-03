@@ -817,13 +817,20 @@ func _user_input() -> void:
 func screen_to_world(j: Vector2, at := Vector3.INF) -> Vector3:
 	if j.length() < 0.001:
 		return Vector3.ZERO
-	var c := cam.camera
+	if at == Vector3.INF:
+		at = user_player.global_position if user_player else cam.focus_point()
+	return stick_to_world(j, cam.camera, at)
+
+
+## The stick (x right, y down) as a direction on the court seen through camera C at the body's place AT: the way the
+## stick points on the screen there (screen_to_world; the shared world check's joystick rule reads this too).
+static func stick_to_world(j: Vector2, c: Camera3D, at: Vector3) -> Vector3:
+	if j.length() < 0.001:
+		return Vector3.ZERO
 	var b := c.global_transform.basis
 	var right := Vector3(b.x.x, 0, b.x.z).normalized()
 	var fwd := Vector3(-b.z.x, 0, -b.z.z).normalized()
 	var flat := (right * j.x - fwd * j.y).limit_length(1.0)
-	if at == Vector3.INF:
-		at = user_player.global_position if user_player else cam.focus_point()
 	if not c.is_inside_tree() or c.is_position_behind(at):
 		return flat
 	var s0 := c.unproject_position(at)

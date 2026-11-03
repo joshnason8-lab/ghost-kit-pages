@@ -25,7 +25,7 @@ env:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
@@ -140,6 +140,22 @@ jobs:
           set -o pipefail
           timeout 1200 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 1 120 2>&1 | tee prop.log
           if grep -q "SCRIPT ERROR" prop.log; then grep -A4 "SCRIPT ERROR" prop.log; exit 1; fi
+
+      # The world rules every game keeps (docs/WORLD_RULES.md: props, crowd, feet, poses, officials, sounds, loading,
+      # the joystick, nothing licensed in a Web build), on this game's own code (game/world.gd).
+      - name: World rules (wsg_world_check)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | tail -40
+
+      - name: Upload the world check
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-check
+          path: ${{ runner.temp }}/world
+          if-no-files-found: ignore
 
       - name: Upload the props audit's sheets
         if: failure()

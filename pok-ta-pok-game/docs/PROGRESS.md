@@ -322,6 +322,16 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   fuzzer, and a gamepad, play through it. First batch's finding fixed: a player who had just stopped turned at once
   to face the ball while his stop's steps were still landing, his planted feet swinging round with him (53 cm); he
   now settles 0.4 s first (Player.STOP_SETTLE) and the legs step the turn. rng_lint clean.
+- **0.6.13-beta: the world rules wired; planted feet measured as drawn.** The shared foundation synced to 0a3add8: its
+  planter now holds the ball of a planted foot, rolls the heel over it, steps a foot beyond the leg's reach and holds
+  its direction up to 40 degrees of twist. Our own test of the drawn feet now reads them as drawn (inside the
+  skeleton's update; after it the bones are back to the clip's) and counts the least the ankle or the ball moved (the
+  shared foot_slip's measure): 0.5 cm/s on average, at most 1 cm a frame (was 5.4 cm/s). game/world.gd wires every
+  world rule (docs/WORLD_RULES.md) to the game's own code: the quick match, Watch AI, the tournament and the night
+  court each started through Game.start_match, the judges as officials (FoundationLink puts the judge's drawn body in
+  wsg_official), a player as the walker, the match's own stick (Match.stick_to_world, the code screen_to_world runs)
+  on the court-side, high and end cameras, the props' and crowd's audits; it runs in CI (warnings till 12:00 UTC).
+  The simulator's pause hook (paused()) for its input fuzzer.
 
 ## Next
 
