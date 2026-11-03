@@ -119,7 +119,14 @@ func walker_low(parent: Node) -> Variant:
 		else:
 			m.move_fwd = lerpf(m.move_fwd, 1.0, k)
 			m.move_side = lerpf(m.move_side, 0.0, k)
+	# As drawn: read as the skeleton finishes each pose (a planter modifier's result exists only then).
+	var drawn := []
+	if m.rig and m.rig.skeleton:
+		m.rig.skeleton.skeleton_updated.connect(func():
+			drawn.assign([m.rig.anchor("foot_l"), m.rig.anchor("toe_l"), m.rig.anchor("foot_r"), m.rig.anchor("toe_r")]))
 	var feet := func() -> Array:
+		if not drawn.is_empty():
+			return drawn.duplicate()
 		if m.rig == null:
 			return [m.anchor("foot_l"), m.anchor("toe_l"), m.anchor("foot_r"), m.anchor("toe_r")]
 		return [m.rig.anchor("foot_l"), m.rig.anchor("toe_l"), m.rig.anchor("foot_r"), m.rig.anchor("toe_r")]

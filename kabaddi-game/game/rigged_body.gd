@@ -93,6 +93,13 @@ var _names := []      # index -> bone name
 var _leg_bones := {}  # indices of the thighs, shins and feet: all that can touch the floor standing up
 var _side_bones := {"l": {}, "r": {}}   # side -> indices of that leg's thigh, shin and foot
 var _hidden_head := false
+## Low (what the A16 draws, ADOPTING 5.21): the foundation's planter on this skeleton instead of _plant_feet - the
+## world check's feet_low rule measured _plant_feet's feet sliding 7-16 cm a step. Null on Medium and High (the
+## foundation's own body is drawn there, planted by its own) and when LOW_PLANTER is off.
+var planter: WsgFootPlanter = null
+const LOW_PLANTER := true
+var _planter_pos := Vector3.INF
+var _planter_free := false   # this frame the feet are the planter's (where _plant_feet would plant them; _ground)
 # Planted feet: a foot flat on the floor keeps its place in the world until it lifts (see _plant_feet).
 const PLANT_DOWN := 0.03     # m: heel and toe this close to the floor and the foot is planted
 const PLANT_SLIP := 0.2      # m: furthest a planted foot is held from where the motion puts it
@@ -532,7 +539,23 @@ func setup(skin: Color, jersey: Color, shorts: Color, hair: Color, height: float
 		else:
 			skeleton.set_bone_rest(i, Transform3D(Basis(), head))
 		skin_res.add_named_bind(String(b.name), Transform3D(Basis(), head).affine_inverse())
+	if LOW_PLANTER and int(Game.settings.graphics) == Game.GFX_LOW and body.soles.has("l") and body.soles.has("r") \
+			and (body.soles.l[1] as PackedVector3Array).size() >= 3 and (body.soles.r[1] as PackedVector3Array).size() >= 3:
+		# A toe bone under each foot, at the tip of its sole (the planter reads the ball and toe from it); the mesh has
+		# no weights on it, so it draws nothing.
+		for sd in ["l", "r"]:
+			var fi: int = body.soles[sd][0]
+			var t := skeleton.get_bone_count()
+			skeleton.add_bone("toe_" + sd)
+			skeleton.set_bone_parent(t, fi)
+			skeleton.set_bone_rest(t, Transform3D(Basis(), (body.soles[sd][1] as PackedVector3Array)[2]))
+		planter = WsgFootPlanter.new()
+		planter.bone_map = {"Hips": "hips", "LeftUpLeg": "thigh_l", "LeftLeg": "shin_l", "LeftFoot": "foot_l",
+			"LeftToeBase": "toe_l", "RightUpLeg": "thigh_r", "RightLeg": "shin_r", "RightFoot": "foot_r",
+			"RightToeBase": "toe_r"}
 	skeleton.reset_bone_poses()
+	if planter:
+		skeleton.add_child(planter)
 	mesh_instance = MeshInstance3D.new()
 	mesh_instance.mesh = low_mesh(body, file) if int(Game.settings.graphics) == Game.GFX_LOW else body.mesh
 	mesh_instance.skin = skin_res
@@ -663,6 +686,18 @@ func drive(h: Node3D) -> void:
 		var local: Basis = g[name] if p < 0 else (g[_name_of(p)].inverse() * g[name])
 		skeleton.set_bone_pose_rotation(i, local.get_rotation_quaternion())
 	skeleton.set_bone_pose_position(0, hips)
+	if planter:
+		# The planter, once a step of the motion's clock (it runs as the skeleton is drawn): the floor under him, his
+		# speed over it, and let go of everything when he is put somewhere new (more than a metre in a frame).
+		var at: Vector3 = h.global_position
+		if _planter_pos != Vector3.INF and Vector2(at.x - _planter_pos.x, at.z - _planter_pos.z).length() > 1.0:
+			planter.reset()
+		_planter_pos = at
+		planter.ground_y = at.y
+		planter.body_speed = float(h.speed)
+		# Anything of ours posing the legs (lying, diving, held, a kick, sitting, in the air): the legs as we have them.
+		planter.keep_pose = not _planter_free
+		planter.tick(clampf(get_process_delta_time(), 1.0 / 120.0, 0.1))
 	if _hidden_head:
 		skeleton.set_bone_pose_scale(_bone.head, Vector3.ONE * 0.001)
 	else:
@@ -698,6 +733,7 @@ func _limit_turns(g: Dictionary, now: float) -> void:
 ## stands on the other one, and the held leg reaches for the hold, in the air too.
 ## Returns the hips' position; turns the feet and legs in g.
 func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
+	_planter_free = false
 	if not grounding or (body.get("contacts", []) as Array).is_empty():
 		_mid_y = INF
 		return hips
@@ -715,7 +751,7 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 	# floor four frames in five in a hold he drove against, and a raider caught by three at once, then taken down, had
 	# his feet sliding 1.8 m/s.
 	var ath := h.get_parent()
-	var stride := 1.0 if ath == null or String(ath.get("state")) in RUN_STATES else 0.0
+	var stride := 1.0 if ath == null or str(ath.get("state")) in RUN_STATES else 0.0
 	var dt := clampf(float(h._t) - _plant_t, 0.0, 0.1) if _plant_t >= 0.0 else 0.0
 	_plant_t = float(h._t)
 	var held := _held_legs(dt)
@@ -775,9 +811,13 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 		on_feet = ((g.get("hips", Basis()) as Basis) * (body.rest_dirs.hips as Vector3)).y > 0.5
 	if on_feet and hips.y > 0.35 * float(body.leg_len):
 		# Standing ready (not moving off, nothing holding him): a foot left out of place steps back under him.
-		var settling := ath != null and String(ath.get("state")) in SETTLE_STATES and float(h.speed) < 0.35 \
+		var settling := ath != null and str(ath.get("state")) in SETTLE_STATES and float(h.speed) < 0.35 \
 			and held.is_empty() and foot_goal.is_empty()
-		_plant_feet(g, fk, dt, settling)
+		if planter == null:
+			_plant_feet(g, fk, dt, settling)
+		else:
+			# Its feet for the planter only when nothing of ours has them: no leg held or reaching for a hold, no kick.
+			_planter_free = held.is_empty() and foot_goal.is_empty() and kick_w <= 0.0
 	else:
 		_release_plants(g, fk, dt)
 	# Back on the floor after the feet were laid flat and planted, then down for a held leg to reach its hold,
@@ -1421,7 +1461,7 @@ func _ik_two(g: Dictionary, fk: Array, upper: String, lower: String, end: String
 ## and tackles, a fist to celebrate.
 func _finger_curl(h: Node3D, s: String) -> float:
 	var ath := h.get_parent()
-	var st := String(ath.get("state")) if ath != null and ath.get("state") != null else ""
+	var st := str(ath.get("state")) if ath != null and ath.get("state") != null else ""
 	match st:
 		"holding", "held", "dive", "shove", "shoved":
 			return 1.4

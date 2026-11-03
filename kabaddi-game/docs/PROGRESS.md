@@ -599,3 +599,17 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
 - The beta is published in place (ADOPTING 5.19): the workflow token may no longer create tag names here, so the new
   APK goes up beside the old on the same release, the old comes off, and the notes carry a "Commit:" line.
 
+## 0.14.14: the foundation's planter at Low
+
+- At Low (what the A16 draws) RiggedBody now plants the feet with the foundation's WsgFootPlanter on its own skeleton
+  (ADOPTING 5.21: bone_map hips/thigh/shin/foot, and a toe bone added under each foot at the tip of its sole - our
+  skeleton had none; the mesh has no weights on it). RiggedBody._plant_feet is off there; the planter stands aside
+  (keep_pose) whenever ours poses the legs - lying, diving, a leg held or reaching for a hold, a kick, in the air - and
+  is reset when the body is put somewhere new. Medium and High are unchanged (the foundation's own body).
+- feet_low (the world check's Low walker), measured on the same walk: own planter standing 0.2 / walk 2.6 / jog 6.8 /
+  jog turned 6.8 / run 4.8 / stop 4.0 cm slip a step, skid up to 6.0, jump up to 19.4 cm; the foundation's planter 0.6 /
+  0.9 / 0.2 / 0.1 / 1.2 / 0.1 cm, skid 0.1 at most, jump 16.5 at most: PASS. (0.14.13's first Low numbers, 2.3-16.4 cm,
+  were taken with an error in RiggedBody._ground for a body with no Athlete - String(null) - that stopped it partway; it
+  reads str() now.) Its cost: 37 us a body a frame on the CI-class machine, 0.8 ms for all 21 bodies.
+- The walker_low hook reads the feet as drawn (in skeleton_updated).
+

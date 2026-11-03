@@ -1,4 +1,9 @@
-**New in 0.14.13: steadier stops.** On Medium and High, a player stopping hard from a run plants his feet where
+**New in 0.14.14: feet that stay put on Low (the A16's setting).** On Low graphics the players' feet no longer slide
+along the floor as they walk, jog, turn and stop: a foot that comes down stays where it lands until it lifts, as on
+Medium and High. (Measured on the test walk: a planted foot moved 2-7 cm a step and a flat foot up to 6 cm in a frame;
+now 1 cm at most.)
+
+**In 0.14.13: steadier stops.** On Medium and High, a player stopping hard from a run plants his feet where
 they land instead of one foot lurching after him.
 
 **In 0.14.12: feet that step, not slide.** On Medium and High, a foot taking its own step moves evenly across
