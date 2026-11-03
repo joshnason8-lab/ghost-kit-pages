@@ -18,6 +18,7 @@ uniform float excite = 0.0;
 uniform vec4 team_a : source_color = vec4(0.1, 0.45, 0.2, 1.0);
 uniform vec4 team_b : source_color = vec4(0.8, 0.15, 0.1, 1.0);
 uniform float light = 1.0;
+uniform float brightness = 1.0;       // WsgCrowdCards.brightness
 uniform vec3 ref_skin[8];
 uniform vec3 ref_hair[8];
 uniform vec3 ref_legs[8];
@@ -59,7 +60,7 @@ void vertex() {
 	float y = 1.0 - UV.y;
 	VERTEX = origin + right * (x * size.x * h) + vec3(0.0, y * size.y * h, 0.0);
 	// INSTANCE_CUSTOM: r the fan's own random number, g which fan (their first cell / poses), b the seat's light
-	// (positive seated, negative standing), a their shirt's code.
+	// (positive seated, negative standing). COLOR (the instance's): the shirt, alpha 1 if the game gave one.
 	float id = float(INSTANCE_ID) + INSTANCE_CUSTOM.r * 1000.0;
 	fan = int(INSTANCE_CUSTOM.g + 0.5);
 	float thr = mix(0.32, 0.86, hash(id * 1.31));
@@ -76,10 +77,9 @@ void vertex() {
 	float r5 = hash(id * 7.77);
 	vec3 own = mix(vec3(0.5), 0.5 + 0.5 * cos(6.2832 * (r5 + vec3(0.0, 0.33, 0.67))), 0.45) * 0.75;
 	shirt = hash(id * 5.13) < 0.55 ? team : own;
-	float code = INSTANCE_CUSTOM.a;
-	if (code > 0.0005) {
-		shirt = vec3(fract(code * 7.13), fract(code * 3.77), fract(code * 5.31));
-		shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
+	// The game's own shirt for this spot, exactly (the instance colour; alpha 0: none given).
+	if (COLOR.a > 0.5) {
+		shirt = COLOR.rgb;
 	}
 	int si = min(int(hash(id * 13.7) * float(n_skins)), n_skins - 1);
 	skin_c = n_skins > 0 ? skins[si] : vec3(-1.0);
@@ -119,5 +119,5 @@ void fragment() {
 	}
 	float folds = clamp(luma(t.rgb) * 1.15, 0.5, 1.0);
 	c = mix(c, shirt * folds, m.r);
-	ALBEDO = as_written(pow(max(min(c, vec3(0.9)), vec3(0.0)), vec3(2.2)) * light * seat_light);
+	ALBEDO = as_written(pow(max(min(c, vec3(0.95)), vec3(0.0)), vec3(2.2)) * light * seat_light * brightness);
 }

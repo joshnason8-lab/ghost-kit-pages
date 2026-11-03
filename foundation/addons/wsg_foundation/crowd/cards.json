@@ -1,79 +1,169 @@
 {
 	"cell": [
-		96,
-		192
+		128,
+		256
 	],
 	"cells": [
 		{
 			"fan": "fan",
+			"head": [
+				64,
+				113,
+				10
+			],
 			"pose": "sit"
 		},
 		{
 			"fan": "fan",
+			"head": [
+				64,
+				71,
+				10
+			],
 			"pose": "stand"
 		},
 		{
 			"fan": "fan",
+			"head": [
+				64,
+				72,
+				10
+			],
 			"pose": "cheer"
 		},
 		{
 			"fan": "fan2",
+			"head": [
+				63,
+				114,
+				10
+			],
 			"pose": "sit"
 		},
 		{
 			"fan": "fan2",
+			"head": [
+				63,
+				70,
+				10
+			],
 			"pose": "stand"
 		},
 		{
 			"fan": "fan2",
+			"head": [
+				63,
+				71,
+				10
+			],
 			"pose": "cheer"
 		},
 		{
 			"fan": "fan3",
+			"head": [
+				64,
+				113,
+				10
+			],
 			"pose": "sit"
 		},
 		{
 			"fan": "fan3",
+			"head": [
+				64,
+				75,
+				10
+			],
 			"pose": "stand"
 		},
 		{
 			"fan": "fan3",
+			"head": [
+				64,
+				76,
+				10
+			],
 			"pose": "cheer"
 		},
 		{
 			"fan": "fan4",
+			"head": [
+				64,
+				116,
+				10
+			],
 			"pose": "sit"
 		},
 		{
 			"fan": "fan4",
+			"head": [
+				64,
+				74,
+				10
+			],
 			"pose": "stand"
 		},
 		{
 			"fan": "fan4",
+			"head": [
+				64,
+				75,
+				10
+			],
 			"pose": "cheer"
 		},
 		{
 			"fan": "fan5",
+			"head": [
+				64,
+				115,
+				10
+			],
 			"pose": "sit"
 		},
 		{
 			"fan": "fan5",
+			"head": [
+				64,
+				72,
+				10
+			],
 			"pose": "stand"
 		},
 		{
 			"fan": "fan5",
+			"head": [
+				64,
+				73,
+				10
+			],
 			"pose": "cheer"
 		},
 		{
 			"fan": "fan6",
+			"head": [
+				64,
+				116,
+				10
+			],
 			"pose": "sit"
 		},
 		{
 			"fan": "fan6",
+			"head": [
+				64,
+				76,
+				10
+			],
 			"pose": "stand"
 		},
 		{
 			"fan": "fan6",
+			"head": [
+				64,
+				77,
+				10
+			],
 			"pose": "cheer"
 		}
 	],

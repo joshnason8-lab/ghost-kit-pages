@@ -6,6 +6,8 @@ shader_type spatial;
 render_mode unshaded, cull_disabled;
 
 uniform int mode = 0;
+uniform bool textured = false;       // mode 0 from the fan's own texture (their whole model), not vertex colours
+uniform sampler2D albedo : filter_linear_mipmap;
 varying vec3 wn;
 varying vec4 parts;
 
@@ -18,7 +20,7 @@ void vertex() {
 void fragment() {
 	if (mode == 0) {
 		float k = mix(0.72, 1.0, smoothstep(-0.35, 0.3, dot(normalize(wn), normalize(vec3(0.3, 0.8, 0.6)))));
-		vec3 c = min(COLOR.rgb, vec3(0.9)) * k;
+		vec3 c = min(textured ? texture(albedo, UV).rgb : COLOR.rgb, vec3(0.9)) * k;
 #if CURRENT_RENDERER == RENDERER_COMPATIBILITY
 		ALBEDO = c;
 #else

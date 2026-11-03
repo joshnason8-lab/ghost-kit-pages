@@ -58,6 +58,7 @@ func _initialize() -> void:
 				fails.append("%s: %s" % [v[0], f])
 			cards.free()
 		crowd.free()
+	fails.append_array(_card_faces())
 	# The old way: the same places taken as feet, every seat SEAT high, no venue - the audit must catch it.
 	var v := arena()
 	var crowd := WsgCrowd3D.new()
@@ -76,3 +77,68 @@ func _initialize() -> void:
 		printerr("FAIL: ", f)
 	print("CROWD VENUE TEST: ", "PASS" if fails.is_empty() else "FAIL (%d)" % fails.size())
 	quit(0 if fails.is_empty() else 1)
+
+
+## The cards' art: every cell shows its fan's face - where the head is drawn (cards.json: from the posed skeleton),
+## at least a fifth of the pixels have the fan's skin's hue (the back of a head is hair). The cards were once baked
+## from the crowd's few-vertex figure: dark-haired and bearded heads read as backs (Pok Ta Pok's Low).
+const FACE_DETAIL := 0.055
+
+
+func _card_faces() -> Array:
+	var fails := []
+	if not WsgCrowdCards.available():
+		return fails
+	var layout: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(WsgCrowdCards.DIR + "cards.json"))
+	var atlas := (load(WsgCrowdCards.DIR + "cards.png") as Texture2D).get_image()
+	atlas.decompress()
+	var cw := int(layout.cell[0])
+	var chh := int(layout.cell[1])
+	var worst := 1.0
+	var least_detail := INF
+	var w := Vector3(0.3, 0.59, 0.11)
+	for n in layout.cells.size():
+		var cell: Dictionary = layout.cells[n]
+		if not cell.has("head"):
+			fails.append("cards: %s %s has no head recorded (re-bake: tools/bake_cards.gd)" % [cell.fan, cell.pose])
+			continue
+		var x0: int = (n % int(layout.cols)) * cw
+		var y0: int = (n / int(layout.cols)) * chh
+		var ref_a: Array = layout.fans[cell.fan].looks.skin
+		var ref := Vector3(ref_a[0], ref_a[1], ref_a[2])
+		var lr := ref.dot(w)
+		var hx: int = cell.head[0]
+		var hy: int = cell.head[1]
+		var r: int = cell.head[2]
+		var seen := 0
+		var skin := 0
+		var grad := 0.0
+		var pairs := 0
+		for y in range(hy - r, hy + r + 1):
+			for x in range(hx - r, hx + r + 1):
+				if (x - hx) * (x - hx) + (y - hy) * (y - hy) > r * r or x < 0 or y < 0 or x >= cw - 1 or y >= chh:
+					continue
+				var c := atlas.get_pixel(x0 + x, y0 + y)
+				if c.a < 0.5:
+					continue
+				seen += 1
+				var v := Vector3(c.r, c.g, c.b)
+				var lc := v.dot(w)
+				if lc > 0.45 * lr and lc < 2.2 * lr and (v / maxf(lc, 0.001)).distance_to(ref / lr) < 0.35:
+					skin += 1
+				var c2 := atlas.get_pixel(x0 + x + 1, y0 + y)
+				if c2.a >= 0.5:
+					grad += absf(lc - Vector3(c2.r, c2.g, c2.b).dot(w))
+					pairs += 1
+		var share := float(skin) / maxf(1, seen)
+		# Features: the mean step between neighbouring pixels. The few-vertex faces were smooth blobs (0.016-0.044);
+		# the textured ones have eyes, brows and a hairline (0.066 and up).
+		var features := grad / maxf(1, pairs)
+		worst = minf(worst, share)
+		least_detail = minf(least_detail, features)
+		if share < 0.2:
+			fails.append("cards: %s %s shows no face (%.0f%% of the head is skin)" % [cell.fan, cell.pose, share * 100.0])
+		if features < FACE_DETAIL:
+			fails.append("cards: %s %s has a featureless face (detail %.3f, under %.3f)" % [cell.fan, cell.pose, features, FACE_DETAIL])
+	print("cards: every cell's head at least %.0f%% skin, detail at least %.3f (a face, not a blob)" % [worst * 100.0, least_detail])
+	return fails
