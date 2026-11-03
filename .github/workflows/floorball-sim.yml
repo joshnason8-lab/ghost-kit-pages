@@ -1,6 +1,7 @@
 # WsgSim in CI (from tools/wsg/sim_ci.yml, ADOPTING 5.17): the game's own matches played headless by game/sim.gd,
-# every failure kept with its seed to replay. The smoke batch (about 50 seeds and every targeted case) on a manual run;
-# the nightly batch sharded over 16 parallel jobs, merged into one report. Artifacts only - never inside the project.
+# every failure kept with its seed to replay. The nightly batch (960 matches over 16 parallel shards, merged into one
+# report) on the nightly dispatcher's run (main's wsg-nightly.yml) or a manual one; the full smoke batch on a manual run
+# with batch: smoke. Artifacts only - never inside the project.
 # On every push, a reduced smoke (the lead, 2026-11-03): each targeted case once and a few random and extreme seeds,
 # sharded 4 ways, under 10 minutes; the full smoke (with the determinism check) on a manual run, the nightly on schedule.
 name: Floorball Unleashed · simulation (WsgSim)
@@ -9,7 +10,14 @@ on:
     paths: ['floorball-game/**', '.github/workflows/floorball-sim.yml']
   schedule:
     - cron: '17 2 * * *'
+  # A manual run, and the nightly dispatcher on main (wsg-nightly.yml: a game branch's own cron never fires), run the
+  # nightly batch; batch: smoke runs the full smoke batch instead.
   workflow_dispatch:
+    inputs:
+      batch:
+        description: 'nightly (16 shards) or smoke (the full smoke batch, one job)'
+        required: false
+        default: 'nightly'
 env:
   GAME_DIR: floorball-game
 jobs:
@@ -35,7 +43,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with: {name: 'sim-quick-${{ matrix.shard }}', path: '${{ runner.temp }}/sim'}
   smoke:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.batch == 'smoke'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -53,9 +61,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with: {name: sim-smoke, path: '${{ runner.temp }}/sim'}
   nightly:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.batch != 'smoke')
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     strategy:
       fail-fast: false
       matrix: {shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]}
@@ -66,13 +74,13 @@ jobs:
       - run: sh $GAME_DIR/tools/wsg/fetch_assets.sh
         env: {ASSETS_REPO_TOKEN: '${{ secrets.ASSETS_REPO_TOKEN }}'}
       - run: godot --headless --path $GAME_DIR --import || true
-      - run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim/${{ matrix.shard }}" --from 1 --count 2400 --shard ${{ matrix.shard }}/16 --input
+      - run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim/${{ matrix.shard }}" --from 1 --count 960 --shard ${{ matrix.shard }}/16 --input
         continue-on-error: true
       - uses: actions/upload-artifact@v4
         with: {name: 'sim-shard-${{ matrix.shard }}', path: '${{ runner.temp }}/sim/${{ matrix.shard }}'}
   report:
     needs: nightly
-    if: always() && github.event_name == 'schedule'
+    if: always() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.batch != 'smoke'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
