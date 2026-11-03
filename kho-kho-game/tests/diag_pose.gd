@@ -6,6 +6,7 @@ extends SceneTree
 ##   godot --headless --fixed-fps 30 --path . -s res://tests/diag_pose.gd -- KIND SEED
 
 var _lines := 0
+var _was_at := {}   # athlete -> where he stood last frame
 
 
 func _say(s: String) -> void:
@@ -62,12 +63,20 @@ func _initialize() -> void:
 						for a3 in m.everyone():
 							if g._who(a3) == b.name:
 								_say("f%d %s still 4 s, target %s m away: act '%s', pos %s, goal %s, want %s, vel %s, d_state %s, to_square %s, phase %s" % [frame, b.name, snappedf(Vector2(tgt.x - bp.x, tgt.z - bp.z).length(), 0.1), a3.act, bp.snappedf(0.01), a3.goal, a3.want.snappedf(0.01), a3.vel.snappedf(0.01), m.d_state.get(a3, "-"), m._to_square.get(a3, "-"), m.phase])
+								# What moves him if not his own run: how far he went last frame against vel * dt, how fast he may go, and
+								# every body within 2.5 m of him (WsgSim's stuck: random 29, only with the licensed clips).
+								var moved: Vector3 = a3.position - (_was_at.get(a3, a3.position) as Vector3)
+								_say("   moved %s last frame (vel*dt %s), top %.2f, busy %s, act_t %.2f/%.2f, in squares %s, active %s" % [moved.snappedf(0.001), (a3.vel / 30.0).snappedf(0.001), a3.top, a3.busy(), a3.act_t, a3.act_len, m.squares.has(a3), a3 == m.active])
+								for o in m.everyone():
+									if o != a3 and Vector2(o.position.x - bp.x, o.position.z - bp.z).length() < 2.5:
+										_say("   near: %s at %s, act '%s', vel %s, d_state %s" % [g._who(o), o.position.snappedf(0.01), o.act, o.vel.snappedf(0.01), m.d_state.get(o, "-")])
 				else:
 					sv = [bp, 0.0]
 				still[b.name] = sv
 			else:
 				still.erase(b.name)
 		for a2 in m.everyone():
+			_was_at[a2] = a2.position
 			var av: Array = acts.get(a2, ["", "", 0])
 			if String(av[1]) != String(a2.act):
 				acts[a2] = [av[1], a2.act, Engine.get_process_frames()]
