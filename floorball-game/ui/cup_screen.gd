@@ -12,6 +12,9 @@ func setup(_args: Dictionary) -> void:
 
 func _ready() -> void:
 	UI.screen(self)
+	# The next match's files start loading now, on the loader's thread (WsgLoading.prewarm): a tap on Play finds them
+	# loaded or part way.
+	WsgLoading.prewarm(Game.match_files())
 	var cup = Game.get_cup()
 	if cup == null:
 		_choose()

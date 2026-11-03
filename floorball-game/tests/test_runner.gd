@@ -780,6 +780,9 @@ func _loading_overlay() -> void:
 		if p.has("bar"):
 			widths.append((p.bar as Control).size.x)
 	var grew: bool = widths.size() > 2 and widths[-1] > widths[0]
+	await get_tree().process_frame
+	check(Game.current != null and Game.current.is_physics_processing() and ld.report.has("settle_ms"),
+		"start: the match plays once the overlay has settled and gone (%s)" % ld.report.get("settle_ms", "-"))
 	check(grew and Game.current != null and Game.current.get_script().resource_path == "res://game/match.gd"
 		and Game.current.arena != null and Game.current.arena.get_parent() == Game.current,
 		"start: the bar moves, the venue built ahead is the match's, the match in (%d frames)" % widths.size())
@@ -1341,6 +1344,8 @@ func _matches() -> void:
 						var step: float = (p.pos - last[k]).length()
 						if step > Player.MAX_SPEED * (1.0 / 60.0) * 1.4 + 0.02:
 							audit.fast += 1
+							if audit.fast <= 5:
+								print("fast: %s %s%d %.2f m in a frame, %s to %s, phase %s, act %s" % [c[0], p.role, p.slot, step, last[k], p.pos, m.phase, p.act])
 					last[k] = p.pos
 			audit.frames += 1
 		check(done[0], "%s v %s: the match finishes" % [c[0], c[1]])

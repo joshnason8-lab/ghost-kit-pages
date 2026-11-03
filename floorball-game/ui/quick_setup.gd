@@ -26,6 +26,9 @@ func setup(args: Dictionary) -> void:
 
 func _ready() -> void:
 	UI.screen(self)
+	# The next match's files start loading now, on the loader's thread (WsgLoading.prewarm): a tap on Play finds them
+	# loaded or part way.
+	WsgLoading.prewarm(Game.match_files())
 	var title := tr("SHOOTOUT_TITLE") if _shootout else (tr("WATCH_TITLE") if _watch else tr("QUICK_TITLE"))
 	var v := UI.page(self, title, func(): Game.goto_menu(), tr("MENU_SHOOTOUT") if _shootout else (tr("MENU_WATCH") if _watch else tr("MENU_QUICK")))
 	var cols := HBoxContainer.new()

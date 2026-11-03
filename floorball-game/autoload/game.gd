@@ -420,7 +420,7 @@ func play_match(config: Dictionary, buttons: Array = []) -> void:
 		buttons = host.find_children("*", "BaseButton", true, false)   # every button on the screen
 	var ld := WsgLoading.cover(host, buttons, _load_look())
 	ld.log_label = "match " + String(config.get("mode", "quick"))
-	ld.request(_match_files(config))
+	ld.request(match_files())
 	# The venue (its hall, stands and crowd) built first, out of sight under the overlay; then the match (its players,
 	# ball and camera: Match._ready) takes it over and is put in.
 	var built := {}
@@ -436,10 +436,19 @@ func play_match(config: Dictionary, buttons: Array = []) -> void:
 		m.config = config
 		m.prebuilt_arena = built.get("arena")
 		Sfx.music(false)
-		_swap(m), 2.0)
+		_swap(m)
+		# (Held still until the overlay has gone: the clock starts on a smooth first frame.)
+		m.set_physics_process(false)
+		built.match = m, 2.0)
+	# Every look in the hall drawn once behind the overlay, a few a frame (the shaders compiled there, not on the first
+	# frame of play); then the overlay stays until the frames come in smooth.
+	ld.warm(func(): return built.get("match"))
 	if not await ld.run():
 		return
-	ld.done()
+	await ld.done()
+	var m: Node = built.get("match")
+	if m and is_instance_valid(m):
+		m.set_physics_process(true)
 
 
 func _load_look() -> Dictionary:
@@ -450,7 +459,7 @@ func _load_look() -> Dictionary:
 ## What a match draws, loaded on the loader's thread before it is built (so the build finds them in the cache): the
 ## players', goalkeeper's and referees' models and textures, the shared foundation's bodies and motion, the venue's
 ## sheet, the crowd's cards.
-func _match_files(config: Dictionary) -> Array:
+func match_files() -> Array:
 	var hd := int(settings.graphics) != GFX_LOW
 	var out := ["res://game/match.gd", "res://game/arena.gd", "res://game/hud.gd"]
 	for dir: String in ["res://assets/characters/", "res://assets/foundation/", "res://assets/shared/", "res://assets/crowd/",

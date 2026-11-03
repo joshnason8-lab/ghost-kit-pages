@@ -227,18 +227,30 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
-### 0.9.7-beta: a loading screen on every start (3 November 2026)
+### 0.9.7-beta: a loading screen on every start; doors in the boards, solid goals (3 November 2026)
 
-The owner's rule for every game (through the lead): a tap on Start or Play shows a loading screen at once, with a bar
-that moves, never a frozen menu. The foundation synced to edebcd5 (its shared loading screen, WsgLoading):
+The owner's rules for every game (through the lead): a tap on Start or Play shows a loading screen at once, with a bar
+that moves, never a frozen menu; and nobody ever walks through a table, a bench or the boards, every asset solid.
+The foundation synced to ad83891 (its shared loading screen, WsgLoading, with the settle and shader warm-up):
 - **Every way into a match** (Quick match, Watch a match, Penalty shots, a cup or season game, Rematch) goes through
   Game.play_match: the loading screen (the menus' colours and font) is up in the frame of the tap and the buttons
   are off, the match's files load on threads, then the venue is built ("Venue") and the match set up ("Match"), each
-  in its own slice so the bar moves between them; the match takes over the venue built ahead.
-- **Measured** (desktop, Low, cold): longest slice "Match", 121 ms ("Venue" 95 ms); the 0.6 s first frame after is
-  the GPU compiling the hall's shaders, which no slice can split. The WSG_LOADING line is in the log of every load.
-- A test taps Watch and checks the overlay and the disabled button in that frame, the bar growing, and the match in
-  with the venue built ahead. 0.9.7-beta, code 22.
+  in its own slice so the bar moves between them; the match takes over the venue built ahead. Then every look in
+  the hall is drawn once behind the screen ("Warming up": the shaders compile there, a few a frame, not on the
+  first frame of play), and the screen stays until the frames come in smooth; the match's clock starts after it.
+- The quick match, cup and season screens start the match's files loading as they open (WsgLoading.prewarm).
+- **Measured** (desktop, Low, cold, before the warm-up): longest slice "Match", 121 ms ("Venue" 95 ms); the 0.6 s
+  first frame after it is what the warm-up and settle now cover. The WSG_LOADING line is in the log of every load.
+- **Doors in the boards**: two to each team's bench and one to each penalty bench, white board panels on hinges that
+  swing out as a player comes to them and shut behind him. A penalised player walks to his penalty bench's door,
+  through it once it is open, to his place on the bench (before, he walked through the boards and a plexiglass end),
+  and comes back on through it; a line change and a goalkeeper off for a sixth attacker go off at a bench door. A
+  shut door turns the ball as the boards do; through an open one it goes out of play.
+- **The goals solid**: the frame and net stop a player from behind and the sides (the mouth stays open for the
+  goalkeeper); the ball already came off them.
+- Tests: the overlay and the disabled button in the tap's frame, the bar growing, the match in with the venue built
+  ahead and playing once the screen has settled; the penalty bench reached only through its open door, shut behind
+  him; a body against the goal; the ball at a shut and an open door. 0.9.7-beta, code 22.
 
 ### 0.9.6-beta: the APK back to its size (3 November 2026)
 
