@@ -35,6 +35,9 @@ func modes() -> Array:
 
 ## The tap: the setup screen's own start, as its button calls it (Game.play_match puts WsgLoading.cover up at once).
 func start_mode(mode: String, parent: Node) -> void:
+	# A tap replaces what was on the screen: the last mode's match (or its setup screen) goes, as Game._swap does.
+	if Game.current and is_instance_valid(Game.current):
+		Game.current.queue_free()
 	Game.main = parent
 	Game.current = null
 	var watch := mode == "watch AI"
