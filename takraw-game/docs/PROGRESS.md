@@ -682,6 +682,12 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   leak in and any saved settings fail the run. They are run locally the same way. Our single job is the release gate the
   foundation asks for (`needs: [build, owner-notes]`): the notes step comes before the export and the publish, so a
   failing note stops the beta.
+- **The publish tries each call three times.** 0.15.16's publish got a 500 from GitHub on its last call: the release
+  held 0.15.16's APK but still had 0.15.15's title and notes. Every call in that step is safe to repeat (view, upload
+  with --clobber, delete-asset, edit), so each gets three tries 15 and 30 s apart before the step fails. The script
+  was tested against a fake `gh` failing each call once (it publishes) and failing the edit every time (it fails).
+- **RealBody**: the skeleton_updated hook no longer reads feet from a body leaving the tree (264 error lines a suite
+  run, nothing in play).
 
 ## The mixed quadrant (0.15.16)
 

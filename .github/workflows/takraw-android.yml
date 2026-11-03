@@ -288,18 +288,28 @@ jobs:
           # (the workflow token is refused new tag names since about 17:00 that day): the new APK up beside the old,
           # then the old one off, then the title and notes. It always holds an APK; a failed step leaves it as it was,
           # or holding both.
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
+          # (GitHub's API answers a 500 now and then: 0.15.16's title and notes, 2026-11-03, left saying 0.15.15 over the
+          # new APK. Every call below is safe to repeat, so each gets three tries before the step fails.)
+          again() {
+            for t in 1 2 3; do
+              "$@" && return 0
+              [ "$t" = 3 ] || { echo "again: '$1 $2 $3' failed; retrying in $((t * 15)) s" >&2; sleep $((t * 15)); }
+            done
+            return 1
+          }
+          has_apk() { gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$(basename "$APK")"; }
+          if ! again gh release view "$TAG" >/dev/null; then
             gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
               --title "Sepak Takraw Unleashed ${VERSION} (latest beta)" --notes-file notes.md
             exit 0
           fi
-          OLD=$(gh release view "$TAG" --json assets -q '.assets[].name')
-          gh release upload "$TAG" "$APK" --clobber
-          gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$(basename "$APK")"
+          OLD=$(again gh release view "$TAG" --json assets -q '.assets[].name')
+          again gh release upload "$TAG" "$APK" --clobber
+          again has_apk
           for n in $OLD; do
-            case "$n" in "$(basename "$APK")") ;; *) gh release delete-asset "$TAG" "$n" --yes || true ;; esac
+            case "$n" in "$(basename "$APK")") ;; *) again gh release delete-asset "$TAG" "$n" --yes || true ;; esac
           done
-          gh release edit "$TAG" --title "Sepak Takraw Unleashed ${VERSION} (latest beta)" --notes-file notes.md --prerelease
+          again gh release edit "$TAG" --title "Sepak Takraw Unleashed ${VERSION} (latest beta)" --notes-file notes.md --prerelease
 
       # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
       - name: Publish the foundation pilot
