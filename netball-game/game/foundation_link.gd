@@ -243,6 +243,12 @@ func update(dt: float, vel: Vector2, want_vel: Vector2, yaw: float, act: String,
 	elif act in UPPER or (act in ["ready", "run"] and vel.length() < 0.6):
 		# Marking, posting, or standing ready (her hands up at her chest to take a pass): her arms over the capture.
 		want = "upper"
+	# Hands on the ball (or still easing off it) are held hands (WsgLegacyPose.held): their turn is the game's exactly,
+	# the arm swivelled about its shoulder-to-wrist line until the forearm can give it (within WRIST_MAX). Left free, a
+	# hand the game turned past WRIST_MAX about its forearm was turned back and its palm came off the ball: a bounce
+	# pass taken low (Ball.plan, at 0.95 m: the catch pose's arms down, her body bent over it) and held there, the
+	# palms 1.5-2.9 cm off it.
+	reader.held = _BOTH if holding_ball(ball) or _hold_w > 0.0 else {}
 	var pose := reader.read() if want != "move" else {}
 	match want:
 		"upper":
@@ -303,6 +309,7 @@ func update(dt: float, vel: Vector2, want_vel: Vector2, yaw: float, act: String,
 
 
 var _yaw := 0.0              # the yaw it was last given
+const _BOTH := {"Left": true, "Right": true}
 
 
 func holding_ball(ball: Vector3) -> bool:
