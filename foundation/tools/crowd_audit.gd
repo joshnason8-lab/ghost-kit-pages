@@ -9,7 +9,8 @@ extends SceneTree
 ## "venue": WsgCrowdVenue, "scene": optional path of the venue's scene (drawn instead of the plain boxes)}.
 ## Writes <out>/<venue>.png and <out>/crowd_audit.json; exits 1 if any venue fails.
 
-const CELL := Vector2i(480, 300)
+## Each close-up (phone-legible: two a row, the owner reads them on a phone).
+const CELL := Vector2i(720, 450)
 
 
 func _initialize() -> void:
@@ -90,11 +91,11 @@ func _venue(name: String, venue: WsgCrowdVenue, scene: String, quality: int, out
 	cam.fov = 50
 	vp.add_child(cam)
 	var label := Label.new()
-	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_font_size_override("font_size", 24)
 	label.add_theme_color_override("font_color", Color.WHITE)
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.add_theme_constant_override("outline_size", 4)
-	label.position = Vector2(8, 6)
+	label.position = Vector2(10, 8)
 	vp.add_child(label)
 	# Each section: [in front, seated], [side, seated], [in front, up], [side, up].
 	var shots := []
@@ -111,12 +112,18 @@ func _venue(name: String, venue: WsgCrowdVenue, scene: String, quality: int, out
 		var side_at: Vector3 = s.a + along * 0.6 + deep + Vector3.UP * 0.5
 		if s.has("barrier"):
 			front += Vector3.UP * float(s.barrier.get("height", 1.0))
+		# The cards: from in front and from three quarters (a card faces the play: side on it is a sliver).
+		var three_q: Vector3 = mid + (-away * 4.5).rotated(Vector3.UP, 0.6) + Vector3.UP * 1.3
+		if s.has("barrier"):
+			three_q += Vector3.UP * float(s.barrier.get("height", 1.0))
 		for as_cards in [false, true]:
-			shots.append([s, front, mid + Vector3.UP * 0.4, false, as_cards])
-			shots.append([s, side, side_at, false, as_cards])
-			shots.append([s, front, mid + Vector3.UP * 0.6, true, as_cards])
-			shots.append([s, side, side_at, true, as_cards])
-	var cols := 4
+			var v2: Vector3 = three_q if as_cards else side
+			var v2_at: Vector3 = mid + Vector3.UP * 0.4 if as_cards else side_at
+			shots.append([s, front, mid + Vector3.UP * 0.4, false, as_cards, "front"])
+			shots.append([s, v2, v2_at, false, as_cards, "three quarters" if as_cards else "side"])
+			shots.append([s, front, mid + Vector3.UP * 0.6, true, as_cards, "front"])
+			shots.append([s, v2, v2_at, true, as_cards, "three quarters" if as_cards else "side"])
+	var cols := 2
 	var sheet := Image.create(CELL.x * cols, CELL.y * shots.size() / cols, false, Image.FORMAT_RGBA8)
 	var up_now := false
 	for n in shots.size():
@@ -128,14 +135,15 @@ func _venue(name: String, venue: WsgCrowdVenue, scene: String, quality: int, out
 			WsgCrowd3D.set_excite(1.0 if up_now else 0.0)
 			for k in 90:
 				await process_frame
+			cards._excite = 1.0 if up_now else 0.0
 		cam.look_at_from_position(sh[1], sh[2], Vector3.UP)
 		var r: Dictionary = res.sections[sh[0].name]
+		var head := "%s - %s\n%s, %s, %s" % [name, sh[0].name, "LOW (cards)" if sh[4] else "3D", sh[5], "on their feet" if up_now else "seated"]
 		if sh[4]:
-			label.text = "%s  LOW cards  %s, %s\ncards: hips %s  facing <= %.0f deg" % [sh[0].name, "side" if n % 2 == 1 else "front",
-				"on their feet" if up_now else "seated", _range(low.hips), low.facing]
+			label.text = head + "\nhips on seat %s m   facing <= %.0f deg" % [_range(low.hips), low.facing]
 		else:
-			label.text = "%s  %s, %s\nhips %s  feet %s\ninside %.3f  facing <= %.0f deg" % [sh[0].name, "side" if n % 2 == 1 else "front",
-				"on their feet" if up_now else "seated", _range(r.hips), _range(r.feet), r.inside, r.facing]
+			label.text = head + "\nhips on seat %s m   soles %s m\ninto seats/rails <= %.3f m   facing <= %.0f deg" % [_range(r.hips),
+				_range(r.feet), r.inside, r.facing]
 		for k in 4:
 			await process_frame
 		sheet.blit_rect(vp.get_texture().get_image(), Rect2i(Vector2i.ZERO, CELL), Vector2i((n % cols) * CELL.x, (n / cols) * CELL.y))

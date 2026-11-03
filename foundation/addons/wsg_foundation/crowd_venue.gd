@@ -238,11 +238,17 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 	for s in venue.sections:
 		out.sections[s.name] = {"fans": 0, "hips": [INF, -INF], "feet": [INF, -INF], "inside": 0.0, "facing": 0.0, "backwards": 0}
 	# The frames tried: the first and middle of sitting and of clapping seated; standing, clapping standing and cheering.
-	var rows := {"sit": [], "stand": []}
+	var rows := {"sit": [], "stand": [], "rise": []}
 	for c in ["sit_idle", "sit_clap"]:
 		rows.sit.append_array([int(md.clips[c].row), int(md.clips[c].row) + int(md.clips[c].frames) / 2])
 	for c in ["stand_idle", "stand_clap", "cheer"]:
 		rows.stand.append_array([int(md.clips[c].row), int(md.clips[c].row) + int(md.clips[c].frames) / 2])
+	# Getting up (the owner's "in the seat" was most often mid-way): a quarter, half and three quarters up, drawn as
+	# the shader draws them - the lift and the shins' reach going, the step forward coming, as they rise.
+	var st_c: Dictionary = md.clips.sit_to_stand
+	var rise_up := [0.25, 0.5, 0.75]
+	for u in rise_up:
+		rows.rise.append(int(st_c.row) + int(round(u * (int(st_c.frames) - 1))))
 	# Which fans: every drawn one, or per_section of each spread along it.
 	var drawn := []           # [mesh index, instance]
 	var by_sec := {}
@@ -268,7 +274,7 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 		var mm: MultiMesh = crowd.meshes[mi].multimesh
 		var fan := String(mm.mesh.resource_path.get_file()).get_slice("_crowd", 0)
 		if not frames.has(fan):
-			frames[fan] = _frames(fan, rows.sit + rows.stand)
+			frames[fan] = _frames(fan, rows.sit + rows.stand + rows.rise)
 		var fr: Dictionary = frames[fan]
 		var mask := WsgCrowd3D.seat_mask(fan)
 		var i: int = crowd.spot_of[mi][k]
@@ -280,7 +286,6 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 		var seated: bool = pl.seat[i] > 0.0
 		var dangle: bool = pl.dangle[i]
 		var knee := WsgCrowd3D.seat_of(fan).x * 0.9
-		var reach := 0.0 if dangle else clampf(lift, 0.0, WsgCrowd3D.REACH)
 		var floor_y: float = pl.floor[i]
 		var seat_y: float = floor_y + pl.seat[i]
 		out.fans += 1
@@ -296,16 +301,22 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 				near.append([oxf.affine_inverse() * xf, sz * 0.5, ob.what])
 		var deepest := 0.0
 		var deep_what := ""
-		for pose in (["sit", "stand"] if seated else ["stand"]):
-			for r in rows[pose]:
+		var fwd_up := float(crowd.stand_fwd.get(fan, 0.0)) if seated else 0.0
+		for pose in (["sit", "rise", "stand"] if seated else ["stand"]):
+			for ri in rows[pose].size():
+				var r: int = rows[pose][ri]
 				var pts: PackedVector3Array = fr[r]
-				var up := Vector3(0, lift, 0) if pose == "sit" else Vector3(0, 0, float(crowd.stand_fwd.get(fan, 0.0)) if seated else 0.0)
+				# How far up they are (0 seated, 1 standing), and so their lift, reach and step forward.
+				var u: float = 0.0 if pose == "sit" else (1.0 if pose == "stand" else float(rise_up[ri]))
+				var l := lift * (1.0 - u)
+				var rch := 0.0 if dangle else clampf(l, 0.0, WsgCrowd3D.REACH)
+				var up := Vector3(0, l, fwd_up * u)
 				var lowest := INF
 				var hips := INF
 				for v in pts.size():
 					var p: Vector3 = pts[v] + up
-					if pose == "sit" and reach > 0.0:
-						p.y -= reach * (1.0 - smoothstep(0.0, knee, pts[v].y))
+					if rch > 0.0:
+						p.y -= rch * (1.0 - smoothstep(0.0, knee, pts[v].y))
 					var wy := (xf * p).y
 					lowest = minf(lowest, wy)
 					if pose == "sit" and mask.size() > v and mask[v] == 1:
@@ -321,7 +332,7 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 								deep_what += " fan-local %s, obstacle-local %s" % [str(p), str(lp)]
 				var fe := lowest - floor_y
 				sec.feet = [minf(sec.feet[0], fe), maxf(sec.feet[1], fe)]
-				if fe < FEET_TOL[0] or (fe > FEET_TOL[1] and not (dangle and pose == "sit")):
+				if fe < FEET_TOL[0] or (fe > FEET_TOL[1] and not (dangle and pose != "stand")):
 					_note(out, "feet", fe, where + " " + pose)
 				if pose == "sit" and hips < INF:
 					var he := hips - seat_y
