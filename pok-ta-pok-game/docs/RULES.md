@@ -1,11 +1,13 @@
 # The rules
 
-Pok Ta Pok Rivals plays two games:
+Pok Ta Pok Rivals plays three games:
 
 - **Ulama de cadera (hip ulama).** This is the main mode. It is the living game, still played in the villages of
   southern Sinaloa, Mexico.
 - **The classic court.** This mode is clearly labelled *reconstructed*. It is the old stone-court game as scholars
   rebuild it from the 16th-century chroniclers.
+- **The pelota maya revival.** The pok-ta-pok game played again today in Guatemala, Belize, Yucatán and Quintana Roo,
+  with Guatemala's numbers. Where the sources are silent the game uses ulama's rule, labelled *reconstructed*.
 
 No single international rulebook exists. Ulama's rules are oral, and villages play them differently. Aguilar-Moreno
 notes that Escuinapa and Los Llanitos apply them differently. Every rule below names its source. Each one says
@@ -42,6 +44,15 @@ Main sources:
 - **[MET]** The Met, "The Mesoamerican Ballgame". <https://www.metmuseum.org/essays/the-mesoamerican-ballgame>
 - **[TERM]** Termómetro en línea, 2022 national ulama meet (4 or 5 a side, 30 minutes).
   <https://www.termometroenlinea.com.mx/vernoticiashistorial.php?artid=99557>
+- **[GT21]** A 2021 news story on pelota maya in Guatemala (transcript): the end line, the referee, the hip only, one
+  strike a side, 4 a side, two 13-minute halves, a hard surface, the ceremony before a match.
+  <https://resources.sensationsenglish.com/transcript/9n3yvq/5>
+- **[AFP]** AFP / France 24, "La pelota maya, una tradición que rebota de cadera en cadera en Guatemala" (2021).
+  <https://www.france24.com/es/minuto-a-minuto/20210622-la-pelota-maya-una-tradici%C3%B3n-que-rebota-de-cadera-en-cadera-en-guatemala>
+- **[HT]** Honduras Trascendental, the 2025 world cup in Copán (halves of 13 minutes).
+  <https://www.hondurastrascendental.com/post/mundial-juego-pelota-maya-honduras>
+- **[JSFD]** JSFD, "Chaaj, pok-ta-pok and chajchaay" (2023).
+  <https://jsfd.org/2023/09/13/chaaj-pok-ta-pok-and-chajchaay-rubber-ballgames-from-middle-america-to-the-world/>
 
 ## Ulama de cadera
 
@@ -170,21 +181,76 @@ Penn Museum's summary [PENN], and on the courts themselves [MET].
 | **In the game** | (1) R6 as in ulama. (2) R16: the ball landing in an end court, or going over its wall: the point goes to the side driving it that way (`Rules.end_court`). (3) R8 as in ulama. R15: the ball going out over the top of a side wall is a fault against the side that last struck it. The ball plays off the taluds and walls. |
 | **Reconstructed** | R15 is the game's own: the chroniclers do not say. |
 
+## The pelota maya revival (M1–M6)
+
+The game labels this mode **"Pelota maya (revival)"**. The revival is played today in Guatemala, Belize, Yucatán and
+Quintana Roo, and at a world cup held since 2015. Tournaments set their own rules. The game follows **Guatemala's**
+[GT21] [AFP]. Where those sources do not cover a case, it uses ulama's rule (R8) and labels it **reconstructed**.
+
+All the numbers are together at the top of `game/rules.gd` (`MAYA_END_POINTS`, `MAYA_POINT`, `MAYA_FAULT_POINTS`,
+`SIDE_MAYA`, `MAYA_HALF_MIN`), so a better source can correct them in one place. `tests/test_runner.gd`
+(`_rules_maya`) checks each rule.
+
+**Status (0.6.27):** the rules module and its checks are in. The match, the menus and How to Play come next, so the
+mode cannot be chosen yet.
+
+Other tournaments differ. The 2021 Copa del Sureste plays 4 a side, 2 × 15 minutes and 5 points over the end line.
+Belize plays 5 a side. Some tournaments score the ring 5 or 10 points instead of the match, and take points off for
+fouls (a non-hip touch −1, a kick −2, sitting on the ball −3) [AFP] [JSFD].
+
+### M1. Winning, and the ring
+
+| | |
+|---|---|
+| **Documented** | Points add up for each side. Passing the ball through the ring wins the match outright [GT21] [AFP]. |
+| **In the game** | Each side has its own points, with no target. The side ahead when time runs out wins (M6). The ball through a ring wins at once, whatever the points (`Rules.award_ring`, as R13). |
+
+### M2. Over the end line
+
+| | |
+|---|---|
+| **Documented** | The ball crossing the opponents' end line scores **4 points** [GT21]. |
+| **In the game** | The ball's centre passing beyond an end line, or into an end court: 4 points to the side driving it that way (`Rules.points_for`, reason `"end"`). |
+
+### M3. The ball dies, goes out at the side, or is not returned
+
+| | |
+|---|---|
+| **Documented** | Nothing in the sources found. |
+| **In the game** | As ulama's R8 and R10: the ball stopping in a half gives **1 point** to the other side; the ball out at the side gives 1 point against the side that last struck it. |
+| **Reconstructed** | The value of 1 and the cases themselves are ulama's rule (R8 [AM-AI], R10 [WP-U]), not the revival's. So is the ball driven over the striker's *own* end line, which counts as M2 for the other side. |
+
+### M4. The hip only, one strike a side
+
+| | |
+|---|---|
+| **Documented** | The ball is played with the hip only. Each team strikes once in a row before the turn passes [GT21] [AFP]. A referee judges the play [GT21]. |
+| **In the game** | A touch with anything but the hip (R6), or a second strike by the same side before the ball has crossed the analco, gives **1 point** to the other side (`Rules.second_strike`). |
+| **Reconstructed** | The value of 1 point for a fault. Some tournaments take points off the side at fault instead [AFP]; the game gives the point to the other side, as R6 does. |
+
+### M5. The players
+
+| | |
+|---|---|
+| **Documented** | **4 a side** in Guatemala [GT21] and at the 2021 Copa del Sureste; 5 in Belize. |
+| **In the game** | 4 a side. |
+
+### M6. Time
+
+| | |
+|---|---|
+| **Documented** | **Two halves of 13 minutes** [GT21]; the 2025 world cup in Copán used the same [HT]. |
+| **In the game** | Two halves of 13 minutes of play. At time the side ahead on points wins. If the points are level, the next point wins, as R14. |
+| **Reconstructed** | The level-at-time rule is ulama's R14, the game's own. |
+
+### The court and the serve
+
+| | |
+|---|---|
+| **Documented** | A hard surface [GT21]. Matches open with a ceremony led by a spiritual guide [GT21]. |
+| **In the game** | The stone courts. The serve is thrown down to bounce, as on the classic court (R11, "Stone court"). |
+| **Reconstructed** | The serve: the sources do not describe it. The game uses the bounce serve seen in the Yucatán videos the owner sent. The ceremony is not shown. |
+
 ## Not in the initial build
 
-- **The pok-ta-pok / pelota maya revival** played in Yucatán, Quintana Roo, Belize and Guatemala, and at the world
-  cup held since 2015. Tournaments set their own rules:
-  - **Teams:** 4 a side in Guatemala and at the 2021 Copa del Sureste; 5 in Belize.
-  - **Time:** halves of 13 minutes at the 2025 world cup in Copán; 2 × 15 at the Copa del Sureste.
-  - **Contact:** hip and buttocks only. One strike per side before the ball crosses (AFP).
-  - **Points:** the ball over the opponents' end line scores 4 (Guatemala) or 5 (Copa del Sureste). Fouls
-    (non-hip touch −1, kick −2, sitting on the ball −3) go to the opponents.
-  - **Ring:** a double ring about 3–4 m up wins the match outright (Guatemala) or scores 5 or 10 points.
-
-  It is first in docs/PROGRESS.md's next steps, as a third rule set on the festival court.
-  Sources: [AFP/France 24](https://www.france24.com/es/minuto-a-minuto/20210622-la-pelota-maya-una-tradici%C3%B3n-que-rebota-de-cadera-en-cadera-en-guatemala),
-  [Mestizo QRoo](https://mestizoqroocom.wordpress.com/2021/10/12/todo-lo-que-debes-saber-para-disfrutar-la-1er-copa-del-sureste-mexicano-de-pok-ta-pok/),
-  [Smithsonian](https://www.smithsonianmag.com/travel/in-belize-maya-descendants-are-reviving-an-ancient-sacred-ballgame-180987058/),
-  [Honduras Trascendental](https://www.hondurastrascendental.com/post/mundial-juego-pelota-maya-honduras),
-  [JSFD](https://jsfd.org/2023/09/13/chaaj-pok-ta-pok-and-chajchaay-rubber-ballgames-from-middle-america-to-the-world/).
 - **Ulama de brazo** (the forearm game of northern Sinaloa) and **ulama de mazo** (with a mallet).

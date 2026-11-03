@@ -4,18 +4,23 @@ extends RefCounted
 ## source, numbered as here). No scene, no physics: the match tells the rules what happened (the ball stopped here, it
 ## went over that line, it touched him without his hip) and the rules say who wins the raya, and what the count is.
 ##
-## Two rule sets:
+## Three rule sets:
 ##   ULAMA   ulama de cadera, the hip game still played in southern Sinaloa: a long earth court (the taste) split by
 ##           the analco; the oscillating count of rayas to eight, with urria (documented, with its local variations).
 ##   CLASSIC the stone court with sloped walls and rings, as scholars reconstruct the old game from the chroniclers
 ##           (Durán): points for the ball dying in the other half, landing in or over an end court, or touching any
 ##           part but the hip; the ball through a ring wins outright. Reconstructed, and labelled so.
+##   MAYA    the pok-ta-pok / pelota maya revival as Guatemala plays it today (a 2021 news story: the ball over the
+##           opponents' end line scores 4, the hip only, each side strikes once before the turn passes, 4 a side,
+##           two 13-minute halves, on a hard surface; the ring wins outright), on the stone courts. What the sources do
+##           not cover (the ball dying in a half, out at the side) is ulama's R8: reconstructed, and labelled so.
 ##
 ## Courts are laid along x: team 0 defends the end at -x and drives the ball toward +x; the analco (centre line) is
 ## x = 0. A team's half is the side of the analco it defends.
 
 const ULAMA := "ulama"
 const CLASSIC := "classic"
+const MAYA := "maya"
 
 ## R1. Ulama de cadera: the first side to eight rayas wins (Aguilar-Moreno; CONADE; every source agrees).
 const TARGET := 8
@@ -32,16 +37,35 @@ const URRIA_SETS := {"3_7": [3, 7], "3_5_7": [3, 5, 7], "none": []}
 const SIDE_ULAMA := [4, 5]
 const SIDE_CLASSIC := [2, 3, 4]
 
+## M1-M6. The revival's numbers (Guatemala, 2021: docs/RULES.md "Pelota maya revival"), kept together so a better
+## source can correct them in one place.
+const MAYA_END_POINTS := 4      # M2. The ball over the opponents' end line (documented).
+const MAYA_POINT := 1           # M3. A rally lost otherwise: dying in a half, out at the side (reconstructed: R8).
+const MAYA_FAULT_POINTS := 1    # M4. A touch with anything but the hip, a second strike in a row: to the other side.
+const SIDE_MAYA := [4]          # M5. Four a side (documented).
+const MAYA_HALF_MIN := 13.0     # M6. Two halves of 13 minutes (documented, the 2025 world cup in Copan too).
+
 
 static func target(rules: String) -> int:
+	if rules == MAYA:
+		return 0   # M6: no target; the clock decides (or the ring)
 	return CLASSIC_TARGET if rules == CLASSIC else TARGET
 
 
+## Counted in points (each side its own): the classic court and the revival; ulama's count goes up and down.
+static func by_points(rules: String) -> bool:
+	return rules == CLASSIC or rules == MAYA
+
+
 static func side_sizes(rules: String) -> Array:
+	if rules == MAYA:
+		return SIDE_MAYA
 	return SIDE_CLASSIC if rules == CLASSIC else SIDE_ULAMA
 
 
 static func default_side(rules: String) -> int:
+	if rules == MAYA:
+		return 4
 	return 3 if rules == CLASSIC else 5
 
 
@@ -84,7 +108,7 @@ class Count:
 
 	## A side's rayas or points now (the side not holding the ulama count has none).
 	func of(team: int) -> int:
-		if rules == Rules.CLASSIC:
+		if Rules.by_points(rules):
 			return int(points[team])
 		return rayas if holder == team else 0
 
@@ -96,13 +120,25 @@ class Count:
 			"ring": ring}
 
 
+## Points a raya is worth: M2 the ball over the opponents' end line 4 in the revival; everything else 1.
+static func points_for(c: Count, reason: String) -> int:
+	if c.rules == MAYA:
+		return MAYA_END_POINTS if reason == "end" else (MAYA_FAULT_POINTS if reason in ["touch", "twice"] else MAYA_POINT)
+	return 1
+
+
 ## A raya (or a classic point) to team. Returns what happened: "add" (the holder's count goes up; also the first raya
 ## from level), "cancel" (one taken off the other side's count), "urria" (the other side's whole count wiped out),
 ## "win" (the eighth), and the count after.
-static func award(c: Count, team: int) -> Dictionary:
+static func award(c: Count, team: int, n := 1) -> Dictionary:
 	var what := ""
 	if c.winner >= 0:
 		return {"what": "over", "team": team}
+	if c.rules == MAYA:
+		# M1: points add up, each side its own; no target (M6: the clock, or the ring).
+		c.points[team] = int(c.points[team]) + n
+		c.history.append([team, "add", n])
+		return {"what": "add", "team": team, "points": n, "holder": c.holder, "rayas": c.rayas}
 	if c.rules == CLASSIC:
 		c.points[team] = int(c.points[team]) + 1
 		what = "add"
@@ -147,7 +183,7 @@ static func award_ring(c: Count, team: int) -> Dictionary:
 static func at_time(c: Count) -> int:
 	if c.winner >= 0:
 		return c.winner
-	if c.rules == CLASSIC:
+	if by_points(c.rules):
 		if int(c.points[0]) != int(c.points[1]):
 			return 0 if int(c.points[0]) > int(c.points[1]) else 1
 		return -1
@@ -209,7 +245,7 @@ static func legal_strike(part: String) -> bool:
 ## The stone court (classic): the server throws the ball down so it bounces short of the other side and comes up to
 ## them, who play it off the bounce ("bote"), as the Yucatán games played today do.
 static func serve_kind(c: Count) -> String:
-	if c.rules == CLASSIC:
+	if c.rules == CLASSIC or c.rules == MAYA:
 		return "bote"
 	return "abajo" if c.holder < 0 else "arriba"
 
@@ -224,3 +260,10 @@ static func server(c: Count) -> int:
 ## A serve that does not cross the analco (thrown short, rolled out of strength) gives the raya to the other side.
 static func serve_short(server_team: int) -> int:
 	return other(server_team)
+
+
+## M4 (the revival). Each side strikes once before the turn passes (documented: "once in a row"): a second strike by
+## the same side before the ball has crossed the analco is a fault, the point to the other side.
+static func second_strike(team: int) -> int:
+	return other(team)
+

@@ -426,10 +426,18 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   driver carrying the planted feet, or a planter on the toon) is asked of the foundation. The pelota maya revival
   waits on its sources (the hosts are outside this environment's network) or the lead's word on the rally point.
 
+- **0.6.27-beta: the pelota maya revival's rules (step 1 of 3).** A third rule set in game/rules.gd, `Rules.MAYA`,
+  with Guatemala's numbers (the lead's call): the ball over the end line 4 points, the ring wins outright, the hip
+  only and one strike a side (a second strike in a row is a point to the other side), 4 a side, two 13-minute halves,
+  no target. The cases the sources do not cover (the ball dying in a half, out at the side, the serve, the fault's
+  value) use ulama's rules and are labelled *reconstructed* in docs/RULES.md (M1-M6) with the source. The numbers sit
+  together at the top of rules.gd so a better source can change them in one place; RuleChecks and nine new tests
+  cover them. Not yet playable: the match (step 2) and the menus and How to Play (step 3) come next.
+
 ## Next
 
-1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
-   documented: one strike per side, end line +4 or +5, foul points, a ring that wins outright, halves of 13 minutes.
+1. **The pok-ta-pok / pelota maya revival**, steps 2 and 3: the match (end line 4 points, the second-strike fault, the
+   AI striking once a side, two halves, 4 a side, the stone courts), then the menus, How to Play and the cup.
 2. Yucatec Maya touches: the judges' count on the stone court (*jun, ka', óox…*). It is listed for a native speaker
    in docs/CULTURE.md.
 3. Field recordings the open sites do not have (docs/SOUNDS.md, "Not found").

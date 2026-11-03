@@ -33,6 +33,7 @@ func _ready() -> void:
 	_rules_urria()
 	_rules_rayas()
 	_rules_classic()
+	_rules_maya()
 	_rules_serve()
 	_court()
 	_ball()
@@ -184,6 +185,29 @@ func _rules_classic() -> void:
 	check(Court.RING_IN * 2.0 < Ball.RADIUS * 4.2, "R13: the ring's hole is barely twice the ball's width (rare)")
 	check(court.out_side(Vector3(0, Court.WALL_H + 0.5, Court.TALUD_Z + 0.5), Ball.RADIUS, false), "R15: over the top of a side wall is out")
 	check(not court.out_side(Vector3(0, 2.0, 3.0), Ball.RADIUS, false), "R15: in the alley it is in")
+
+
+## M1-M6: the pelota maya revival (Guatemala's numbers).
+func _rules_maya() -> void:
+	var c := Rules.Count.new(Rules.MAYA)
+	Rules.award(c, 0, Rules.points_for(c, "end"))
+	Rules.award(c, 1, Rules.points_for(c, "dead"))
+	Rules.award(c, 1, Rules.points_for(c, "touch"))
+	check(c.of(0) == 4 and c.of(1) == 2, "M2-M4: over the end line 4, a rally 1, a fault 1 to the other side")
+	for i in 30:
+		Rules.award(c, 0, Rules.points_for(c, "end"))
+	check(c.winner < 0, "M6: no target: the revival plays to the clock")
+	check(Rules.at_time(c) == 0, "M6: at time, the side ahead on points wins")
+	var lvl := Rules.Count.new(Rules.MAYA)
+	Rules.award(lvl, 0, 4)
+	Rules.award(lvl, 1, 4)
+	check(Rules.at_time(lvl) == -1, "M6: level at time: no winner yet (the next point, R14)")
+	var r := Rules.award_ring(c, 1)
+	check(String(r.what) == "ring" and c.winner == 1, "M1: the ring wins outright, whatever the points (Guatemala)")
+	check(Rules.side_sizes(Rules.MAYA) == [4] and Rules.default_side(Rules.MAYA) == 4, "M5: four a side")
+	check(Rules.second_strike(0) == 1 and Rules.second_strike(1) == 0, "M4: a second strike in a row: the point to the other side")
+	check(Rules.serve_kind(Rules.Count.new(Rules.MAYA)) == "bote", "M3: the serve thrown down to bounce, as on the stone court (reconstructed)")
+	check(Rules.by_points(Rules.MAYA) and Rules.target(Rules.MAYA) == 0, "M1: counted in points, no target")
 
 
 ## R11: the serve.

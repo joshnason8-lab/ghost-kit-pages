@@ -30,7 +30,14 @@ func step(m: Node, dt := 1.0 / 30.0) -> Array:
 	var c: Rules.Count = m.count
 	var classic: bool = m.court.classic()
 	# The count, legal.
-	if c.rules == Rules.CLASSIC:
+	if c.rules == Rules.MAYA:
+		# M1-M6: points only up, no target: a winner only by the ring or at time.
+		for k in 2:
+			if int(c.points[k]) < 0:
+				out.append("points %s below zero" % str(c.points))
+		if c.winner >= 0 and not c.ring and not _at_time(m) and not bool(m.sudden):
+			out.append("side %d won on %d points before time (the revival plays to the clock)" % [c.winner, int(c.points[c.winner])])
+	elif c.rules == Rules.CLASSIC:
 		for k in 2:
 			if int(c.points[k]) < 0 or int(c.points[k]) > Rules.CLASSIC_TARGET:
 				out.append("points %s outside 0..%d" % [str(c.points), Rules.CLASSIC_TARGET])
@@ -53,7 +60,7 @@ func step(m: Node, dt := 1.0 / 30.0) -> Array:
 			if String(h[1]) == "ring":
 				Rules.award_ring(again, int(h[0]))
 			else:
-				Rules.award(again, int(h[0]))
+				Rules.award(again, int(h[0]), int(h[2]) if (h as Array).size() > 2 else 1)
 		# Sudden death (R14): time up and level, the next raya wins the match whatever the count.
 		if bool(m.sudden) and again.winner < 0 and c.history.size() > 0:
 			again.winner = int(c.history[-1][0])
