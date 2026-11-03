@@ -133,3 +133,42 @@ func step(m: Node, dt := 1.0 / 30.0) -> Array:
 ## Time is up (R14): the side holding the count, or ahead on points, wins as it stands.
 func _at_time(m: Node) -> bool:
 	return float(m.limit_s) > 0.0 and float(m.clock) >= float(m.limit_s) - 0.001
+
+
+## The cup after the person's game (R: the town tournament, game/cup.gd): the game's winner in the draw, the round
+## played out, and every round from the last one's winners; once the town is out, played through to a champion.
+static func cup(c, r: Dictionary) -> Array:
+	var out := []
+	var rounds: Array = (c.history as Array).duplicate()
+	if not (c.draw as Array).is_empty():
+		rounds.append(c.draw)
+	if rounds.is_empty():
+		return ["the cup has no rounds"]
+	var mine := false
+	for pair in rounds[0]:
+		if String(pair[0]) == String(r.home) and String(pair[1]) == String(r.away):
+			mine = true
+			if int(pair[2]) != int(r.winner):
+				out.append("the cup has %s v %s won by %d, the game by %d" % [pair[0], pair[1], int(pair[2]), int(r.winner)])
+	if not mine:
+		out.append("the cup's first round has no %s v %s" % [r.home, r.away])
+	for k in range(1, rounds.size()):
+		var winners := []
+		for pair in rounds[k - 1]:
+			if int(pair[2]) < 0 or int(pair[2]) > 1:
+				out.append("round %d: %s v %s not played (%d)" % [k, pair[0], pair[1], int(pair[2])])
+				continue
+			winners.append(String(pair[int(pair[2])]))
+		var drawn := []
+		for pair in rounds[k]:
+			drawn.append(String(pair[0]))
+			drawn.append(String(pair[1]))
+		if drawn != winners:
+			out.append("round %d drawn %s, the winners were %s" % [k + 1, str(drawn), str(winners)])
+	var team_won := int(r.winner) == int(r.user_team)
+	if team_won == bool(c.out):
+		out.append("the town %s the game but the cup has it %s" % ["won" if team_won else "lost", "out" if c.out else "in"])
+	if bool(c.out) and String(c.champion) == "":
+		out.append("the town is out and the cup was not played to a champion")
+	return out
+

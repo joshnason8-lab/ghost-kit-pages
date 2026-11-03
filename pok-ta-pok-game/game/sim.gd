@@ -21,7 +21,7 @@ func game_name() -> String:
 
 func scenarios() -> Array:
 	return ["random", "extreme", "targeted:scoring", "targeted:timer", "targeted:possession", "targeted:collisions",
-		"targeted:completion", "targeted:ring", "targeted:copal", "targeted:fair"]
+		"targeted:completion", "targeted:ring", "targeted:copal", "targeted:fair", "targeted:cup"]
 
 
 func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
@@ -75,6 +75,11 @@ func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 			c.length = 1.0
 		"targeted:fair":
 			c.levels = [1, 1]
+		"targeted:cup":
+			# The town tournament: a cup drawn from the seed for the home town, its first game played as the menu plays
+			# it (mode cup, the town's side the person's), the rest of the cup played on from its result and checked.
+			c.cup = true
+			c.user_team = 0
 	return c
 
 
@@ -98,6 +103,16 @@ func start(cfg: Dictionary, seed: int, tree: SceneTree) -> Node:
 	mc.seed = seed
 	mc.difficulty = int((cfg.levels as Array).max())
 	mc.mode = "quick" if int(cfg.get("user_team", -1)) >= 0 else "watch"
+	_cup_done = false
+	if bool(cfg.get("cup", false)):
+		Game.cup = Cup.create(String(cfg.home), String(cfg.rules), seed)
+		var fx: Dictionary = Game.cup.next_fixture()
+		mc.home = fx.home
+		mc.away = fx.away
+		mc.venue = fx.venue
+		mc.mode = "cup"
+		mc.stage = fx.stage
+		mc.user_team = 0 if String(fx.home) == String(cfg.home) else 1
 	m.config = mc
 	Game.current = m
 	_main.add_child(m)
@@ -119,6 +134,12 @@ func state() -> Dictionary:
 	var live: bool = m.phase == m.P.LIVE and not m.paused
 	# (The rule checks: each frame's, kept for rules().)
 	_rc_out = _rc.step(m) if live or m.phase != m.P.REPLAY else []
+	# The cup's game over: its result recorded as the game records it (Game.on_match_finished), the cup played on.
+	if m.phase == m.P.OVER and String(m.config.get("mode", "")) == "cup" and not _cup_done:
+		_cup_done = true
+		var cup = Game.get_cup()
+		cup.record_user_result(m.result())
+		_rc_out = _rc_out + RuleChecks.cup(cup, m.result())
 	# What happened: each raya called.
 	var log: Array = m.log_rayas
 	while _logged < log.size():
@@ -130,6 +151,7 @@ func state() -> Dictionary:
 
 
 var _rc_out: Array = []
+var _cup_done := false
 
 
 func events() -> Array:
@@ -199,8 +221,17 @@ func result() -> Dictionary:
 	return {"winner": c.winner, "score": won}
 
 
+## Checks put off with the lead's word (WsgSimGame.deferred): planted feet, the foundation's planter (its let-go fix,
+## c4fdcd6, cleared the replayed slips; a few at 2.1 cm remain).
+func deferred() -> Dictionary:
+	return {"foot slip": ["2026-11-06T12:00Z", "the lead, 2026-11-03: the foundation planter, Foundation owns (after its c4fdcd6 the replayed 3.8-4.0 cm slips are gone; 2.1 cm ones remain)"]}
+
+
 func balance_keys(cfg: Dictionary) -> Dictionary:
-	return {"fair": int(cfg.levels[0]) == int(cfg.levels[1]), "levels": "%d-%d" % [int(cfg.levels[0]), int(cfg.levels[1])],
+	# Who plays home: a person (the harness's input: random, or idle without --input) or the computer. A person's side
+	# is the harness's play, not the game's balance (home lost all 23 such matches in the first smoke batch).
+	return {"home_played_by": "person" if int(cfg.get("user_team", -1)) >= 0 else "computer",
+		"fair": int(cfg.levels[0]) == int(cfg.levels[1]), "levels": "%d-%d" % [int(cfg.levels[0]), int(cfg.levels[1])],
 		"venue": String(cfg.venue), "side": int(cfg.side), "length": float(cfg.length)}
 
 

@@ -540,6 +540,17 @@ func _cup() -> void:
 				check(saved.round == c.round and saved.team == c.team and saved.draw.size() == c.draw.size(), "Cup: it saves and loads")
 			check(c.done() and c.champion != "", "Cup (%s, %s): played to a champion (%s)" % [rules, team, c.champion])
 			check(c.history.size() == 3, "Cup: three rounds")
+	# Seeded (the simulations replay a cup): the same seed draws and plays the same cup, the seed kept in the save; your
+	# town out at once, the rest is the seed's alone.
+	var cups := []
+	for k in 3:
+		var c := Cup.create("ESC", Rules.ULAMA, 77 if k < 2 else 78)
+		c = Cup.from_dict(JSON.parse_string(JSON.stringify(c.to_dict())))
+		var f := c.next_fixture()
+		c.record_user_result({"home": f.home, "away": f.away, "winner": 1 if f.home == "ESC" else 0, "count": {}})
+		cups.append(JSON.stringify(c.to_dict()))
+	check(cups[0] == cups[1] and cups[0] != cups[2] and int(JSON.parse_string(cups[0]).seed) == 77,
+		"Cup: the same seed, the same draw and results (saved with it); another seed, another cup")
 
 
 func _sim() -> void:

@@ -15,9 +15,10 @@ config's `seed`:
 A match given no seed draws one (`randi()`) and keeps it in `rng.seed`, so it can be replayed. A run with the same seed
 plays the same, which `test_runner`'s "the match plays exactly as without the foundation" checks.
 
-Not yet reproducible: the tournament's draw (`Cup`) is seeded from the clock. The other cup matches' simulated results
-(`Sim`) are seeded from the clock too, unless a seed is passed. A cup seed in its config is the fix, and it comes
-before the cup's sim scenarios.
+The tournament (since 0.6.15): `Cup.create(team, rules, seed)` draws from the seed, and each of the other games'
+simulated results (`ResultSim`) is played from the seed, its round and its place in the draw. The seed is saved with
+the cup. A new cup from the menu is still a fresh draw each time (its seed taken from the clock, then kept), and a cup
+saved before 0.6.15 has no seed, so its other games are played as before.
 
 The foundation's locomotor fidgets were the one unseeded roll in what is drawn. Since 0.6.11 they are seeded from each
 body's look.
@@ -25,7 +26,7 @@ body's look.
 Left unseeded on purpose, because none of them touch play:
 - the sounds' pitch and variant (`Sfx`);
 - the main menu's choice of attract match;
-- `Sim.new()` with no seed, used only for a cup's results when no seed is given.
+- a new cup's seed from the menu (kept with the cup from then on).
 
 ## 2. Speed
 
@@ -100,6 +101,10 @@ Each comes from the real menus' configs (`Game.start_match`) and a seed:
   - app backgrounding (`NOTIFICATION_APPLICATION_PAUSED`);
   - the camera cycled mid-rally;
   - SKIP spammed through the copal and the replays.
+- **The tournament** (`targeted:cup`, in the WsgSim adapter): a cup drawn from the seed for the home town, its first
+  game played as the menu plays it (mode cup, the town's side the person's), the result recorded as the game records
+  it, then checked (`RuleChecks.cup`): the game's winner in the draw, every later round drawn from the winners, the
+  town in or out as it played, and played through to a champion once it is out.
 - **Menu paths:**
   - the tournament from the draw to the final, saved and resumed;
   - quick match and play again;
@@ -117,3 +122,12 @@ Each comes from the real menus' configs (`Game.start_match`) and a seed:
 - `fit_audit`.
 - `prop_audit`.
 - The owner's notes (18).
+
+## 6. Balance
+
+WsgSim's report splits its balance by `home_played_by`: in a third of the generated configs the home side is the
+person's (the harness's random or idle input), and that side lost all 23 such matches in the first smoke batch: the
+harness's play, not the game's balance. Computer against computer, one cell of levels at a time, with a 95% interval:
+
+    godot --headless --path . --fixed-fps 30 res://tests/balance_sim.tscn -- <home level> <away level> <first seed> <count> [minutes]
+

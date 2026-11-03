@@ -13,17 +13,20 @@ var draw: Array = []          # this round's pairs: [[home, away, winner (-1 unp
 var history: Array = []       # earlier rounds, as draw
 var champion := ""
 var out := false              # your town is out
+var seed := 0                 # the draw's and every other game's dice (the simulations replay a cup from it)
 
 
-static func create(p_team: String, p_rules := "") -> Cup:
+## A new cup for P_TEAM. P_SEED 0: a fresh draw each time (the clock's); any other: the same cup every time.
+static func create(p_team: String, p_rules := "", p_seed := 0) -> Cup:
 	var c := Cup.new()
+	c.seed = p_seed if p_seed != 0 else hash(p_team + str(Time.get_unix_time_from_system()))   # wsg-rng-ok (a new cup's draw)
 	c.team = p_team
 	c.rules = p_rules if p_rules != "" else String(Game.settings.get("mode", Rules.ULAMA))
 	var pool: Array = DB.teams_for(c.rules)
 	pool.erase(p_team)
 	var field := [p_team] + pool.slice(0, 7)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(p_team + c.rules + str(Time.get_unix_time_from_system()))
+	rng.seed = hash("%d|%s|draw" % [c.seed, c.rules])
 	for i in range(field.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
 		var t = field[i]
@@ -43,13 +46,14 @@ static func from_dict(d: Dictionary) -> Cup:
 	c.history = d.get("history", [])
 	c.champion = String(d.get("champion", ""))
 	c.out = bool(d.get("out", false))
+	c.seed = int(d.get("seed", 0))
 	for pair in c.draw:
 		pair[2] = int(pair[2])
 	return c
 
 
 func to_dict() -> Dictionary:
-	return {"team": team, "rules": rules, "round": round, "draw": draw, "history": history, "champion": champion, "out": out}
+	return {"team": team, "rules": rules, "round": round, "draw": draw, "history": history, "champion": champion, "out": out, "seed": seed}
 
 
 func done() -> bool:
@@ -82,12 +86,14 @@ func record_user_result(r: Dictionary) -> void:
 
 ## Plays every unplayed game of the round that is not yours (all of them once you are out), then moves on.
 func play_others() -> void:
-	for pair in draw:
+	for i in draw.size():
+		var pair: Array = draw[i]
 		if int(pair[2]) >= 0:
 			continue
 		if (pair[0] == team or pair[1] == team) and not out:
 			continue
-		var s := ResultSim.play(String(pair[0]), String(pair[1]), rules)
+		# Each game's own dice from the cup's (a cup saved before 0.6.15 has none: the clock's, as then).
+		var s := ResultSim.play(String(pair[0]), String(pair[1]), rules, hash("%d|%d|%d" % [seed, round, i]) if seed != 0 else 0)
 		pair[2] = int(s.winner)
 		pair[3] = s.count
 	_advance()
