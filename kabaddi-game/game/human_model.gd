@@ -546,7 +546,9 @@ func _animate(delta: float) -> void:
 	# the ground the body moves and the feet do not skate. Moving sideways is a crouched
 	# shuffle; moving away from where he is looking is a backpedal.
 	var cycle_len := clampf(0.9 + 0.48 * gait, 0.9, 3.2)
-	var side_w := clampf(absf(move_side) * 1.4 - 0.25, 0.0, 1.0) if gait > 0.25 else 0.0
+	# Faded in with the gait, not switched on past a speed: getting up while slid aside, his gait (scaled down while he
+	# still lies) peeked over the old 0.25 for a frame and the whole shuffle (knees +21, thighs +15 degrees) came and went.
+	var side_w := clampf(absf(move_side) * 1.4 - 0.25, 0.0, 1.0) * smoothstep(0.15, 0.4, gait)
 	var back := move_fwd < -0.3 and side_w < 0.6
 	var fwd_w := 1.0 - side_w
 	_phase = fmod(_phase + delta * gait / cycle_len * TAU * (-1.0 if back else 1.0) + TAU, TAU)

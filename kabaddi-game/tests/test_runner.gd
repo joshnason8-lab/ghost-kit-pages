@@ -410,7 +410,11 @@ func _run() -> void:
 	check(is_instance_valid(mds) and mds.picked.size() == 7, "match day opens with your seven")
 	Game.show_screen("res://ui/main_menu.gd")
 	await frames(3)
-	check(not Game.current.find_children("*", "NewsTicker", true, false).is_empty(), "the home screen runs the news ticker")
+	var tickers := Game.current.find_children("*", "NewsTicker", true, false).size()
+	Game.show_screen("res://ui/season_hub.gd")
+	await frames(3)
+	tickers += Game.current.find_children("*", "NewsTicker", true, false).size()
+	check(tickers == 0, "no scrolling news ticker on the home screen or the season hub, with a season going (%d)" % tickers)
 	Game.delete_season()
 
 	# 6d. Nations Cup: the squad of twelve and a captain, what you need, the awards, the underdog.
@@ -1298,6 +1302,24 @@ func _run() -> void:
 	check(walked_f >= 25 and straight_steps == 0 and upright_f == 0,
 		"the raider walks the cover low, after a touch too: crouched walk, never both knees near straight (the more bent at least %.0f deg over %d frames)" % [least, walked_f])
 	Game.go_back()
+	await frames(3)
+
+	# Defending, a tag on you buzzes the phone firmly (a double knock), a tag on a team-mate lightly.
+	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
+		"difficulty": 1, "first_raider": 1, "passive": true})
+	var dm: Node = Game.current
+	var dg := 0
+	while dm.phase != "raid" and dg < 1200:
+		await get_tree().process_frame
+		dg += 1
+	var dme: Athlete = dm.controlled
+	var dmate: Athlete = dm.defenders().filter(func(a): return a != dme)[0]
+	dm.haptics.clear()
+	dm._touch(dme)
+	dm._touch(dmate)
+	check(dme != dm.raider and dm.haptics == ["touched", "team_touched"] and (Game.HAPTICS.touched[0] is Array),
+		"defending, a tag on you buzzes the phone (a double knock), one on a team-mate lightly (%s)" % str(dm.haptics))
+	dm.queue_free()
 	await frames(3)
 
 	# The stick is the screen's in every camera: up, right, down and left on it move the raider up, right, down and left

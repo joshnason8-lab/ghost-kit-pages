@@ -163,23 +163,7 @@ func _build_ui() -> void:
 		var t := UI.tile(tr(md[0]), tr(md[1]), md[3], md[4], func(): _go(path2), false, md[5])
 		stack.add_child(t)
 		_cards.append(t)
-	# The news from your season and your cup, along the foot of the screen.
-	var stories := _menu_news()
-	if not stories.is_empty():
-		var tk := NewsTicker.make(stories)
-		outer.add_child(tk)
-		_cards.append(tk)
-
-
-func _menu_news() -> Array:
-	var out := []
-	var s = Game.get_season()
-	if s != null:
-		out.append_array(News.latest(s.news, 8))
-	var c = Game.get_cup()
-	if c != null:
-		out.append_array(News.latest(c.news, 6))
-	return out
+	# (No news ticker along the foot of the screen: the owner, 2026-11. The season and cup hubs keep their front page.)
 
 
 ## Pick up where you left off: a season or cup in progress.

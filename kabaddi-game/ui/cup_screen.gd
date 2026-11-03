@@ -175,8 +175,6 @@ func _hub() -> void:
 	right.add_child(UI.label(tr("KNOCKOUTS").to_upper(), "EyebrowLabel"))
 	right.add_child(_bracket())
 	cols.add_child(right)
-	if not cup.news.is_empty():
-		v.add_child(NewsTicker.make(News.latest(cup.news, 12)))
 
 
 ## What you need from your last group match.

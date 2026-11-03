@@ -41,7 +41,8 @@ const FPS_MAX := 2
 ## pattern, buzzes and the gaps between them in milliseconds.
 const HAPTICS := {
 	"touch": [24, 0.55],                         # your hand or foot on a defender
-	"touched": [16, 0.35],                       # the raider's on you
+	"touched": [[45, 0.85], 60, [30, 0.7]],     # the raider tags you: a firm double knock (16 ms at 0.35 went unfelt)
+	"team_touched": [30, 0.6],                   # he tags a team-mate, as you defend
 	"hold": [45, 0.8],                           # your hold on the raider
 	"team_hold": [20, 0.35],                     # a team-mate's, as you defend
 	"held": [70, 1.0],                           # the first hold on you

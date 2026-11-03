@@ -93,6 +93,7 @@ var accel := 18.0
 # can, quicker standing than at a sprint.
 const TURN_STILL := 900.0    # deg/s, pivoting on the spot
 const TURN_SPRINT := 420.0   # deg/s at 5 m/s
+const READY_CROUCH := 0.85    # a defender's crouch, ready (and what getting up rises into)
 const BRACE := 0.1            # how far a held raider crouches into his struggle, caught (and BRACE_LOSS more as his balance
 const BRACE_LOSS := 0.15      # goes); his hips go back over it (HumanModel.HELD_HINGE)
 var move_vel := Vector3.ZERO
@@ -392,7 +393,7 @@ func _pose(delta: float) -> void:
 	var waiting := st_t < wait
 	match state:
 		"ready":
-			want_crouch = 0.85
+			want_crouch = READY_CROUCH
 		"raid":
 			# Hips about 0.9 of their standing height, as the footage's raider works the cover; past HumanModel's 0.55, so
 			# working the cover slowly he walks on the crouched walks (on the upright ones his knees passed straight at
@@ -454,6 +455,8 @@ func _pose(delta: float) -> void:
 			want_lean = 0.25
 		"recover":
 			want_fallen = 1.0 - clampf((p - 0.55) * 2.2, 0.0, 1.0)
+			# Up into the ready crouch he goes on in (stood up straight, then dropping into it, he bobbed).
+			want_crouch = READY_CROUCH * clampf((p - 0.55) * 2.2, 0.0, 1.0)
 			if waiting:
 				# Flat on the floor where the leg was torn from his hands, reaching after it, before he gets up.
 				want_dive = 1.0
@@ -462,7 +465,7 @@ func _pose(delta: float) -> void:
 			# Up off his knees, or out of the bend he went down with the raider in: the crouch and the reach for
 			# the hold come out of him as he comes up (an ease, slow at both ends).
 			var q := 1.0 - p * p * (3.0 - 2.0 * p)
-			want_crouch = q
+			want_crouch = lerpf(READY_CROUCH, 1.0, q)   # up into the ready crouch he goes on in, not up straight and down again
 			want_dive = 0.55 * q * q
 			want_hold = 0.4 * q
 		"fallen":

@@ -74,6 +74,7 @@ const LIE_TIME := 0.9          # s a tackled raider stays down once he hits the 
 const COUNTER_REACT := 0.18    # s a touched defender takes to grab back ...
 const COUNTER_STEP := 0.5      # ... with a step in toward him (m)
 const GETUP_RAIDER := 1.4      # s he takes to get up (the get-up clips' own pace)
+const GETUP_MIN := 1.0        # s a defender takes at least to get up from a dive (his get-up clip at most 1.4 times its pace)
 const GETUP_HOLDER := 1.2      # s a holder lying on the floor takes to get up after a takedown ...
 const RISE_KNEES := 0.75       # ... one down on his knees or crouched over a leg, to come up off them ...
 const RISE_BENT := 0.4         # ... and one still on his feet, bent over the raider, to straighten up
@@ -1843,7 +1844,9 @@ func _land(d: Athlete, getup: float) -> void:
 	# ankle dive): two who went down together were up together, to the frame.
 	var depth: float = {"ankle": 1.0, "thigh": 0.72, "waist": 0.45, "dash": 0.3}.get(d.kind(), 0.8)
 	var pace := 0.9 + 0.25 * float(absi(hash(d.pid())) % 100) / 100.0
-	d.set_state("recover", getup * pace * (0.7 + 0.3 * depth))
+	# (At least GETUP_MIN: quicker, his 1.4 s captured get-up played at up to 2.4 times its pace, and the leg he steps
+	# up on flicked through 60 degrees in a tenth of a second.)
+	d.set_state("recover", maxf(GETUP_MIN, getup * pace * (0.7 + 0.3 * depth)))
 	if Grapple.style_of(d.kind()) != "":
 		d.reach_t = ARMS_OUT_AFTER
 
@@ -2858,7 +2861,9 @@ func _touch(d: Athlete, via := "") -> void:
 	if raider == controlled:
 		_haptic("touch")
 	elif d == controlled:
-		_haptic("touched")
+		_haptic("touched")   # you are tagged
+	elif controlled != null and controlled.team == d.team:
+		_haptic("team_touched")   # a team-mate is, as you defend
 
 
 func _attach(d: Athlete, block := false, slot := "", reached := false) -> void:

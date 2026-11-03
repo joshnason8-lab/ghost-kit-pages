@@ -101,11 +101,6 @@ func _front_page(v: Control, small := false) -> void:
 		v.add_child(NewsTicker.front_page(top, small))
 
 
-func _ticker(v: Control) -> void:
-	if not season.news.is_empty():
-		v.add_child(NewsTicker.make(News.latest(season.news, 14)))
-
-
 func _auction_gate() -> void:
 	var v := UI.page(self, tr("SEASON").format({"n": season.year}), func(): Game.goto_menu(), tr("MENU_SEASON"))
 	_header_buttons()
@@ -144,7 +139,6 @@ func _auction_gate() -> void:
 		_reload())
 	reset.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	col.add_child(reset)
-	_ticker(v)
 
 
 func _header_buttons() -> void:
@@ -235,7 +229,6 @@ func _hub() -> void:
 	right.add_child(UI.label(tr("TABLE").to_upper(), "EyebrowLabel"))
 	right.add_child(UI.scroll(UI.table(self, season.standings(), season.team)))
 	cols.add_child(right)
-	_ticker(v)
 
 
 ## The last league round's awards: raider, defender and team of the week.
@@ -353,5 +346,4 @@ func _season_done() -> bool:
 	right.add_child(UI.label(tr("TABLE").to_upper(), "EyebrowLabel"))
 	right.add_child(UI.scroll(UI.table(self, season.standings(), season.team)))
 	cols.add_child(right)
-	_ticker(v)
 	return false
