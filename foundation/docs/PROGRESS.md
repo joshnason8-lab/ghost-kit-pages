@@ -669,3 +669,26 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   to answer. WsgWorldGame.walker_low() and the feet_low rule (deferred to 2026-11-08 12:00 UTC, then failed; unwired
   reads DEFERRED, never skipped); WsgSim's "feet" callable for a body the game draws; WsgFootPlanter.bone_map - the
   planter on a game's own skeleton (planter_bone_map_test). ADOPTING 5.21.
+- **The planter under game AI: Floorball's referees and Kho Kho's 57-60 cm jumps (the lead, 2026-11-03 18:12)**
+  (7def933a). Reproduced on the games' own trees with the deferrals lifted (WSG_NOW past 11-06):
+  - Floorball extreme#2 ref0 slide 3.6 / jump 27.3 -> clean; completion#6 slide 3.4 -> clean; random#3 ref1 8 jumps
+    over 25 cm (worst 51.2, hidden by the deferral: the match line read "ok") -> clean.
+  - Kho Kho #103: scoring ump_b 3.2, defender 2 4.1 / 27.6 -> slide 2.1; dream defender 9 55.7, defender 6 48.5 /
+    30.6 skid -> slide 2.5; fair, fouls -> slides 2.1. No jump or skid left.
+  - Causes: a landing planted a 60 Hz tick after the rule reads it down; a clip change carrying a landing foot 28-40
+    cm; the planter's own step dumping 28-54 cm in its last tick or swinging 33 cm round; a foot left 1.5 legs
+    behind a 7 m/s stop re-planted 66-85 cm away (Kho Kho's jumps); a let-go foot eased along the floor after its hold
+    ran out (7.6-30.6 cm skids; Sepak Takraw's flat let-go). Tried and dropped: planting every landing where drawn
+    (new 3-4 cm slides at reach), a toe aim that lifts (Takraw's walker toes 0.5 cm up, a 14.2 cm skid), ending a
+    step's move at 0.8 (Kho Kho's running cadence 4.75 -> 5.0 steps a second, its suite's check).
+  - Walkers (the feet rule): Kabaddi's stop 20.7 -> 8.9 cm (my earlier "3.1" was feet_calibrate's stop from 8, not
+    the rule's: corrected to the lead); the other six unchanged. Every game's feet rule, owner notes (Floorball's 3
+    pre-existing on my older copy) and suite pass; the foundation's tests pass.
+  - Left: planted slides 2.1-2.5 cm (a locked toe creeping 1 mm a frame over an 80-frame ball-of-foot stance at the
+    leg's reach) - the lead: Floorball and Kho Kho defer only "planted slip" up to 2.5 cm until 2026-11-13 12:00 UTC,
+    jumps and skids enforced from 11-06 12:00; the fix before 11-13 with a targeted test.
+  - Also: WsgFootPlanter.bone_prefix and contact_fn (Takraw's Low); WsgSim cuts a run at a body unposed for over 3
+    frames (Hurling's metre "slides" - not reproduced in the demo) and at a "feet" callable returning nothing
+    (Takraw's Low replay); "planted slip" deferral with a bound; ADOPTING 5.19 publishes in place (the token is
+    refused new tags since about 17:00) with the gate skipping its own commit's build (Sepak Takraw's race).
+  - World check on CI: Kabaddi 829 s, Takraw 574, Floorball 332 (--reuse), Kho Kho 649 locally - all under 15 min.
