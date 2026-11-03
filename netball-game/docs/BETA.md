@@ -9,6 +9,41 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.4-beta
+
+- **Solid props**: nobody walks through a table, bench, board, sign or post, and the ball bounces off them (each
+  at its own bounce: the post's pad soft, the boards hard).
+- **Defenders' arms**: a defender over the ball lifts both arms up toward it with soft elbows, never held straight
+  out to the sides; running into a defence or changing moves no longer flings an arm out straight.
+- **Shooters face the post**: a shooter who catches facing away turns to the post before she shoots.
+- **Smoother on Medium and High**: only the players nearest the camera are drawn in full detail (14 on Medium, 22
+  on High); the reserves and far players use the lighter model.
+- Fixed: after a throw-in over the goal line beyond the circle, the player taking it could stand at the circle's
+  edge for good and the match never restarted; she now goes round it. The player taking a restart waits for a
+  tossed ball to come down instead of taking it out of the air.
+
+## New in 0.9.3-beta
+
+- **Passes come down**: a pass nobody reaches carries on along its arc and drops to the floor under gravity, then
+  bounces and rolls; a whistle in mid-pass lets the ball fall (it never hangs in the air), and a held ball stays in
+  the player's hands. Long passes fly higher and a little slower, as real ones do.
+- **The net really moves**: a goal balloons the rope net round the ball and swings it about 25 cm before it
+  settles; a ball off the ring sways it too. Visible on every camera.
+- **Room at penalties and obstructions**: the penalised player stands about 1.3 m away, beside the thrower (never
+  in front of her), and every other defender keeps at least 0.9 m from the ball; the umpire waits until they have.
+  In open play the defender marking the ball keeps her 0.9 m too.
+
+## New in 0.9.2-beta
+
+- **The stick goes exactly where you push it, diagonals too**: pushing up-right now moves your player up-right on
+  the screen from every camera (before, diagonals drifted 15 to 20 degrees off).
+
+## New in 0.9.1-beta
+
+- **A loading screen when you tap Start**: the screen dims at once with a moving bar, the buttons switch off so a
+  second tap does nothing, and the match is built a piece at a time so the phone never looks frozen (Quick Match,
+  Nations Cup, Club Season, Watch AI and Rematch).
+
 ## New in 0.9.0-beta
 
 - **Rope nets that sway**: the ball bulges the net as it drops through and the net swings and settles; a ball off

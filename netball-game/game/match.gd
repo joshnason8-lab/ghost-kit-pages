@@ -88,7 +88,25 @@ var _step_gap := 0.0
 var _squeak_gap := 0.0
 
 
+## Built by the loading overlay's steps (Game.start_match_loading: build_steps, each followed by a drawn frame) rather
+## than all at once in _ready. The same parts, in the same order, either way.
+var staged := false
+## Under the loading overlay's warm-up and settle: the match runs (the bodies posed, the camera on the court) but the
+## centre pass's whistle, the HUD (its team card) and the graphics' auto level wait for kick_off().
+var held := false
+
+
 func _ready() -> void:
+	_setup()
+	if staged:
+		held = true
+		return
+	for s in build_steps():
+		(s[1] as Callable).call()
+
+
+## The match's rules and the umpires' toss, from its config (no nodes made).
+func _setup() -> void:
 	demo = bool(config.get("demo", false)) or int(config.get("user_team", 0)) < 0
 	user_team = -1 if demo else int(config.get("user_team", 0))
 	watch = demo and bool(config.get("watch", false))
@@ -107,40 +125,107 @@ func _ready() -> void:
 	# The umpires' toss: the winner takes the first centre pass (R4); ends at random.
 	cp_first = rng.randi_range(0, 1)
 	first_dir = 1 if rng.randf() < 0.5 else -1
+
+
+## The match's building, in order, as [label, work, weight] steps: the venue, its draw calls, the crowd, each team's
+## seven (a player at a time), the bench, the officials and ball and camera, the HUD, and the last touches. _ready runs
+## them straight through; the loading overlay (LD, Game.start_match_loading) runs each in a frame of its own, the
+## teams and the bench cut between players (WsgLoading.checkpoint), so no slice holds the main thread long on a slow
+## phone. Under the overlay the teams' flags (the scoreboard's and the team card's) are drawn on a worker thread
+## meanwhile (nothing of that in the match: the card finds them made).
+func build_steps(ld: WsgLoading = null) -> Array:
+	var steps := [
+		["Venue", _build_venue, 2.0],
+		["Court", func(): arena.build_draw(), 1.0],
+		["Crowd", func(): arena.build_crowd(), 2.0],
+		["Home team", func(): await _build_team(0, ld), 3.0],
+		["Away team", func(): await _build_team(1, ld), 3.0],
+		["Bench", func(): await _build_bench(ld), 1.0],
+		["Umpires", _build_officials, 1.0],
+		["Scoreboard", _build_hud, 1.0],
+		["Centre pass", _build_last, 1.0],
+	]
+	if ld:
+		var jobs := []
+		for id in [String(config.get("home", "AUS")), String(config.get("away", "NZL"))]:
+			if String(DB.team(id).get("kind", "")) == "country":
+				jobs.append_array([[id, 300, 200], [id, 72, 48]])     # TeamCard's flag (150 x 100), the scoreboard's
+		if not jobs.is_empty():
+			var job := Flags.draw_async(jobs)
+			steps.insert(steps.size() - 2, ["Flags", func(): await Flags.collect(job), 0.5])
+	return steps
+
+
+## The loading overlay has gone (Game.start_match_loading, after its warm-up and settle): the HUD and its team card
+## come up and the centre pass's count starts, as on the first frame of a match built at once.
+func kick_off() -> void:
+	if not held:
+		return
+	held = false
+	phase_t = 0.0
+	if hud:
+		hud.process_mode = Node.PROCESS_MODE_INHERIT
+		hud.visible = true
+
+
+func _build_venue() -> void:
+	var home := String(config.get("home", "AUS"))
+	arena = Arena.new(String(config.get("venue", "arena")), [DB.team(home).get("c1", Color.WHITE), DB.team(home).get("c2", Color.WHITE)])
+	arena.staged = true
+	add_child(arena)
+	arena.build_venue()
+
+
+## Team T's seven on court (a step's worth each player under the overlay), her stats, and the squad left on the bench.
+func _build_team(t: int, ld: WsgLoading = null) -> void:
 	var home := String(config.get("home", "AUS"))
 	var away := String(config.get("away", "NZL"))
-	arena = Arena.new(String(config.get("venue", "arena")), [DB.team(home).get("c1", Color.WHITE), DB.team(home).get("c2", Color.WHITE)])
-	add_child(arena)
-	for t in 2:
-		var squad: Array = DB.squad(home if t == 0 else away)
-		var lineup: Array = config.get("lineup_%d" % t, [])
-		for i in 7:
-			var entry: Dictionary = squad[i]
-			if lineup.size() == 7:
-				entry = lineup[i]
-			var pl := Player.new(t, entry, Rules.POSITIONS[i])
-			pl.match_ref = self
-			add_child(pl)
-			players[t].append(pl)
-			stats[String(entry.id)] = _blank_stats(t, entry)
-		for entry in squad:
-			if not _on_court(String(entry.id)):
-				bench[t].append(entry)
-	_reserves()
+	var squad: Array = DB.squad(home if t == 0 else away)
+	var lineup: Array = config.get("lineup_%d" % t, [])
+	for i in 7:
+		var entry: Dictionary = squad[i]
+		if lineup.size() == 7:
+			entry = lineup[i]
+		var pl := Player.new(t, entry, Rules.POSITIONS[i])
+		pl.match_ref = self
+		add_child(pl)
+		players[t].append(pl)
+		stats[String(entry.id)] = _blank_stats(t, entry)
+		if ld:
+			await ld.checkpoint((i + 1) / 7.0)
+	for entry in squad:
+		if not _on_court(String(entry.id)):
+			bench[t].append(entry)
+
+
+func _build_bench(ld: WsgLoading = null) -> void:
+	await _reserves(ld)
+
+
+func _build_officials() -> void:
 	for h in [-1, 1]:
 		var u := Umpire.new(h)
 		add_child(u)
 		umpires.append(u)
 	ball = Ball.new()
+	ball.solid = arena.solid   # off the venue's props (WsgSolidProps)
+	ball.struck.connect(_on_struck)
 	add_child(ball)
 	cam = CameraRig.new()
 	cam.mode = Game.CAM_TV if watch else int(Game.settings.camera)   # Watch AI: the broadcast's camera
 	add_child(cam)
 	ai = TeamAI.new(self)
 	_set_ends()
+
+
+func _build_hud() -> void:
 	if not bool(config.get("attract", false)) and not bool(config.get("headless_hud", false)) or not demo:
 		hud = (load("res://game/hud.gd") as Script).new(self)
 		add_child(hud)
+		# Under the loading overlay: the HUD (and its team card's time) waits for kick_off().
+		if held:
+			hud.visible = false
+			hud.process_mode = Node.PROCESS_MODE_DISABLED
 	if not demo:
 		controls = TouchControls.new()
 		controls.action.connect(_on_action)
@@ -148,6 +233,9 @@ func _ready() -> void:
 		_pick_me()
 	elif watch:
 		hud.add_watch_bar()
+
+
+func _build_last() -> void:
 	Game.apply_graphics(get_viewport())
 	_setup_centre(true)
 	if heard():
@@ -167,7 +255,7 @@ func _ready() -> void:
 
 ## The reserves (bench) standing in a row in front of their team's bench, in tracksuits (the code-built figure, one
 ## shared mesh a team, no shadow): Medium and High only, so Low draws what it did. Rebuilt after a team change.
-func _reserves() -> void:
+func _reserves(ld: WsgLoading = null) -> void:
 	var old := get_node_or_null("Reserves")
 	if old:
 		old.name = "ReservesOld"
@@ -177,6 +265,8 @@ func _reserves() -> void:
 	var root := Node3D.new()
 	root.name = "Reserves"
 	add_child(root)
+	var all: int = bench[0].size() + bench[1].size()
+	var made := 0
 	for t in 2:
 		var tm := DB.team(team_id(t))
 		var n: int = bench[t].size()
@@ -188,7 +278,8 @@ func _reserves() -> void:
 			root.add_child(b)
 			b.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			var at := TeamAI.bench_spot(t) + Vector2((float(i) - (n - 1) * 0.5) * 0.75, 1.3)
-			b.position = Vector3(at.x, 0.0, at.y)
+			# On the floor in front of the bench, clear of it and the boards (never in a prop: WsgSolidProps.free_spot).
+			b.position = arena.solid.free_spot(Vector3(at.x, 0.0, at.y), Player.BODY_R, Player.BODY_H)
 			b.rotation.y = PI
 			b.apply(Poses.at_ease())
 			# On the player's model in a tracksuit of the team's colours (the foundation, Medium and High): posed once.
@@ -196,6 +287,12 @@ func _reserves() -> void:
 				var l := FoundationLink.new(b, b, "reserve")
 				root.add_child(l)
 				l.update(1.0 / 60.0, Vector2.ZERO, Vector2.ZERO, PI, "")
+				# (On the bench, always the light mesh: the tier's full-detail bodies are the players' and umpires'.)
+				if l.body:
+					l.body.set_detail(false)
+			made += 1
+			if ld:
+				await ld.checkpoint(float(made) / all)    # the loading overlay: a frame between reserves
 
 
 func _blank_stats(t: int, entry: Dictionary) -> Dictionary:
@@ -245,7 +342,8 @@ func _process(delta: float) -> void:
 	if phase == "replay":
 		_replay_step(delta)
 		return
-	_auto_graphics(delta)
+	if not held:
+		_auto_graphics(delta)    # (not the warm-up's and settle's frames)
 	# Watch AI at 2x: the match takes two of its steps a frame, each exactly the step it takes at 1x (the same dt, cut
 	# at 0.05 s as always), so the AI, the players and their bodies, the ball, the umpires, the clock and the sounds
 	# they make all run twice as fast together and play as they would at 1x. A replay keeps its own slowed pace (a tap
@@ -391,14 +489,22 @@ func _run_setup(_dt: float) -> void:
 		_choose_taker()
 		taker = restart.taker
 	var spot: Vector2 = restart.get("spot", restart.at)
-	taker.target = spot
+	taker.target = round_circles(taker.pos, taker.dir, taker.p, spot)
 	taker.want_speed = 4.5
 	var there := taker.p.distance_to(spot) < 0.35
-	if there and ball.state != "held":
+	# (A ball tossed on to her is hers once it has come down, not out of the air above her.)
+	var down := not (ball.state == "dead" and ball._moving and ball.carrier == null and ball.pos.y > Ball.R + 0.05)
+	if there and down and ball.state != "held" and (_out_clear(taker) or phase_t > 3.0):
 		taker.target = taker.p
 		_give(taker, false)
 		from_free = String(restart.kind) == Rules.FREE or (String(restart.kind) == Rules.PENALTY and not bool(restart.shot))
 		taker.stopped = true
+		var out: Player = restart.get("out")
+		if out and is_instance_valid(out):
+			# Beside her where she has stopped (a step from the mark at most), clear of her body and her landing foot.
+			restart.out_at = Rules.out_of_play_spot(out.pos, out.dir, taker.landing, taker.dir, taker.p)
+	if held:
+		return    # under the loading overlay: the whistle waits for kick_off()
 	if ball.state == "held" and holder == taker:
 		if String(restart.kind) == Rules.CENTRE:
 			# The centre pass: everyone in her third, then the whistle.
@@ -407,14 +513,51 @@ func _run_setup(_dt: float) -> void:
 				_go_live()
 		else:
 			# A free or penalty pass, a throw-in: taken as soon as the taker is on her spot (and the penalised player
-			# beside her).
+			# beside her, the others 0.9 m and more off her: the umpire waits for them).
 			var out: Player = restart.get("out")
-			var ready := out == null or not is_instance_valid(out) or out.p.distance_to(out.target) < 0.4
-			if (phase_t > 0.5 and ready) or phase_t > 2.5:
+			var ready := (out == null or not is_instance_valid(out) or out.p.distance_to(restart.get("out_at", out.target)) < 0.15) and ai.nearest_opponent(taker) >= Court.DEFEND_DIST
+			if (phase_t > 0.5 and ready) or phase_t > 4.0:
 				_go_live()
 	elif phase_t > 9.0 and taker.p.distance_to(spot) < 1.5:
 		# Near enough (another player stood on the spot): the pass is taken from where she is.
 		restart.spot = taker.p
+
+
+## At a penalty pass the thrower takes the ball on her spot once the penalised player has stepped clear of her
+## (Rules.OUT_OF_PLAY_MIN and more off her and the spot, and not in front of her): the umpire sees to it first.
+func _out_clear(taker: Player) -> bool:
+	var out: Player = restart.get("out")
+	if out == null or not is_instance_valid(out) or not out.away():
+		return true
+	var spot: Vector2 = restart.get("spot", restart.at)
+	var near := Rules.OUT_OF_PLAY_MIN - 0.02
+	if out.p.distance_to(taker.p) < near or out.p.distance_to(spot) < near:
+		return false
+	var u := (Court.goal_post(taker.dir) - taker.p).normalized()
+	var rel := out.p - taker.p
+	return not (rel.dot(u) > 0.25 and absf(rel.cross(u)) < 0.8)
+
+
+## The next point on the way from p to spot for a player in position pos (attacking toward dir): round a goal circle she
+## may not enter, along its edge, rather than straight at it (she would stop at the line and never get there: a
+## throw-in over the goal line beyond the circle, a stall). The spot itself once the straight way is clear.
+static func round_circles(pos: String, dir: int, p: Vector2, spot: Vector2) -> Vector2:
+	var a: Array = Rules.AREAS[pos]
+	for end: int in [dir, -dir]:
+		var circle := Court.A_ATT_CIRCLE if end == dir else Court.A_DEF_CIRCLE
+		if circle in a:
+			continue
+		var c := Court.goal_post(end)
+		var seg := spot - p
+		var t := clampf((c - p).dot(seg) / maxf(seg.length_squared(), 1e-6), 0.0, 1.0)
+		if (p + seg * t).distance_to(c) >= Court.CIRCLE_R + Court.LINE_W:
+			continue   # (the straight way stays out of it: a spot just outside the circle is reached straight)
+		# Along the edge (a little outside it), a step of the arc at a time, the short way round toward the spot.
+		var a0 := (p - c).angle()
+		var turn := wrapf((spot - c).angle() - a0, -PI, PI)
+		var r := maxf(Court.CIRCLE_R + 0.5, (p - c).length())
+		return c + Vector2.from_angle(a0 + clampf(turn, -0.35, 0.35)) * r
+	return spot
 
 
 func _choose_taker() -> void:
@@ -591,12 +734,10 @@ func _run_flight() -> void:
 func _arrive() -> void:
 	var to: Player = pass_info.to
 	var from: Player = pass_info.from
-	var at := ball.court_pos()
+	var at := Vector2(ball.f_to.x, ball.f_to.z)
 	if to.p.distance_to(at) > 1.3:
-		# She was not there: the ball runs on.
-		var v := (ball.f_to - ball.f_from).normalized() * 4.0
-		v.y = 0.0
-		ball.loose(ball.pos, v)
+		# She was not there: the ball goes on as it was going, falls, bounces and rolls (Ball._fall).
+		ball.loose(ball.pos, ball.velocity())
 		stats[String(from.data.id)].turnovers += 1
 		pass_info = {}
 		return
@@ -645,7 +786,7 @@ func _run_loose() -> void:
 	var b := ball.court_pos()
 	if not Court.on_court(b) and ball.pos.y < 0.4:
 		var crossed := Court.clamp_court(b)
-		_award(Rules.throw_in(last_touch, crossed), null, "throw_in")
+		_award(Rules.throw_in(last_touch, crossed), null, "throw_in")   # (it rolls on, off the boards or the bench)
 		return
 	if ball.pos.y > 2.6:
 		return
@@ -723,6 +864,32 @@ func _on_bounce(at: Vector3, speed: float) -> void:
 	Sfx.play_at("bounce_floor" if arena.indoor() else "bounce_court", at, -10.0 + 4.0 * clampf(speed / 6.0, 0.0, 1.0), randf_range(0.95, 1.05))
 
 
+## The ball off one of the venue's props (Ball.struck, WsgSolidProps): its knock, and the rules. The goal post, its
+## pad and the ring are in play (R: a ball off the post is play on); anything else stands outside the court, so a ball
+## in play that touches it is out of court there (a throw-in from where it crossed), and rolls on from it, dead.
+const GOAL_PROPS := ["goal post", "post pad", "ring", "ring arm", "goal light"]
+
+
+func _on_struck(hit: Dictionary) -> void:
+	var at: Vector3 = hit.pos
+	var speed := float(hit.get("speed", 0.0))
+	if heard() and speed > 0.8 and not (ball.f_struck and ball.state == "flight"):
+		var metal := String(hit.get("sound", "")) == "clang"
+		Sfx.play_at("rim" if metal else "bounce", at, -14.0 + 6.0 * clampf(speed / 8.0, 0.0, 1.0), randf_range(0.92, 1.08))
+	if phase != "live" or ball.state == "flight":
+		return
+	var outside := not (String(hit.name) in GOAL_PROPS)
+	if not pass_info.is_empty():
+		# A pass that met a prop on its way is loose from there (and lost, if it went out).
+		var from: Player = pass_info.get("from")
+		if from and outside:
+			stats[String(from.data.id)].turnovers += 1
+		pass_info = {}
+	if not outside:
+		return
+	_award(Rules.throw_in(last_touch, Court.clamp_court(Vector2(at.x, at.z))), null, "throw_in")   # (rolling on from it)
+
+
 ## Footsteps of the players running near the ball, and indoors the squeak of a shoe on a hard cut. Kept sparse (a
 ## step at most every 0.12 s, a squeak every 0.9 s) so fourteen players never make a din.
 func _movement_sounds(dt: float) -> void:
@@ -753,7 +920,7 @@ func _movement_sounds(dt: float) -> void:
 
 ## A shot by the holder (GS or GA, in her circle; not from a free pass). Its chance follows the distance from the
 ## post, her shooting, and a defender's arm over the ball from 0.9 m. The ball leaves her hands 0.75 s into the
-## shot (_run_shot).
+## shot (_run_shot), counted from when she faces the post (Player.squaring: one who caught facing away pivots first).
 func shoot() -> void:
 	if holder == null or phase != "live" or shot_info.get("by") == holder:
 		return
@@ -776,9 +943,16 @@ func shoot() -> void:
 	game_event.emit("shot_start", {"by": pl.pos, "dist": dist, "value": value})
 
 
+## How far (m, across the floor) from the ring's middle a shot leaves the hands at least: the ring's tube and the ball
+## as it rises past the tube's level.
+const SHOT_CLEAR := 0.45
+
+
 ## The shot's flight, frame by frame: released at 0.75 s, through the ring (or off it) when it arrives.
 func _run_shot(dt: float) -> void:
 	var pl: Player = shot_info.by
+	if not shot_info.released and pl.squaring:
+		return      # (she turns to the post first: Player.squaring)
 	shot_info.t = float(shot_info.t) + dt
 	if not shot_info.released:
 		if float(shot_info.t) >= 0.75:
@@ -790,12 +964,22 @@ func _run_shot(dt: float) -> void:
 				# On the ring's rim (the ball's middle just outside its inside edge).
 				var off := Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)).normalized() * rng.randf_range(0.21, 0.29)
 				to += Vector3(off.x, 0.0, off.y)
-			ball.throw("shot", pl.hand_point() + Vector3(0, 0.15, 0), to)
+			var from := pl.hand_point() + Vector3(0, 0.15, 0)
+			# Released over her head, not from under the ring (it goes up past the ring's tube, never through it).
+			var off_r := Vector2(from.x - ring.x, from.z - ring.z)
+			var axis := Vector2(pl.p.x - ring.x, pl.p.y - ring.z)
+			if off_r.length() < SHOT_CLEAR and axis.length() > off_r.length():
+				var k := clampf((SHOT_CLEAR - off_r.length()) / (axis.length() - off_r.length()), 0.0, 1.0)
+				var o := off_r.lerp(axis, k)
+				from = Vector3(ring.x + o.x, from.y, ring.z + o.y)
+			ball.throw("shot", from, to)
+			ball.through_ring = bool(shot_info.goal)   # (in, by the rules' call: through the ring's middle)
 			Sfx.play("pass", -12.0, 0.9)
 		return
 	if ball.state == "flight" and ball.f_t >= ball.f_dur:
 		var ring := Court.ring_centre(pl.dir)
-		if shot_info.goal:
+		# (A miss stops where it touched the ring, the post or its arm (Ball.f_struck), so the rebound starts clear of it.)
+		if shot_info.goal and not ball.f_struck:
 			_goal(pl, int(shot_info.value))
 			return
 		# Off the ring: a rebound. The shooter may take it herself (it touched the goal post).
@@ -983,8 +1167,10 @@ func _award(a: Dictionary, by: Player, kind: String) -> void:
 	shot_info = {}
 	if holder:
 		holder.stopped = false
+	var had: Player = ball.holder if ball.state == "held" else null
 	holder = null
-	ball.dead(ball.pos if ball.state != "held" else ball.pos)
+	# (In the air or rolling when the whistle goes, it carries on and falls; in her hands, she keeps it: Ball.dead.)
+	ball.dead(ball.pos, had == null, had)
 	_enter("stop")
 	var at: Vector2 = a.at
 	for u in umpires:
@@ -1017,22 +1203,21 @@ static func _signal_for(kind: String) -> String:
 
 
 ## After the call: the restart is set up. For a penalty the infringer stands out of play beside the thrower until
-## the ball is released (R6).
+## the ball is released (R6): an arm's length and more to her side (Rules.OUT_OF_PLAY_GAP, never touching her), square
+## to her line to the goal she attacks or a little behind it, never in front of her (out_of_play_spot). Everyone
+## else keeps 0.9 m and more off the spot as it is set up (TeamAI.keep_clear).
 func _apply_award(a: Dictionary) -> void:
 	restart = {"to": int(a.to), "kind": String(a.kind), "at": a.at, "shot": bool(a.shot), "why": String(a.get("why", ""))}
 	_choose_taker()
+	if ball.state == "dead" and ball.carrier and ball.carrier != restart.taker:
+		# She hands it on: a toss to the spot, a bounce on the way.
+		var to_spot := Vector3(restart.spot.x, Ball.R, restart.spot.y)
+		ball.toss(to_spot, clampf(ball.pos.distance_to(to_spot) / 7.0, 0.35, 0.9))
 	var by: Player = a.get("by")
 	if String(a.kind) == Rules.PENALTY and by and is_instance_valid(by) and by.suspended <= 0.0:
 		var taker: Player = restart.taker
-		# Beside her: square to her line to the goal she attacks (never in it), on the court's middle side.
-		var u: Vector2 = Court.goal_post(taker.dir) - Vector2(restart.spot)
-		u = u.normalized() if u.length() > 0.1 else Vector2(taker.dir, 0)
-		var dirv := Vector2(-u.y, u.x)
-		if dirv.y * (1.0 if taker.p.y < 0 else -1.0) < 0.0:
-			dirv = -dirv
-		var spot: Vector2 = restart.spot + dirv * Rules.OUT_OF_PLAY_GAP
-		spot = Rules.onside_point(by.pos, spot, by.dir, 0.05)
-		by.target = spot
+		restart.out_at = Rules.out_of_play_spot(by.pos, by.dir, restart.spot, taker.dir)
+		by.target = restart.out_at
 		by.out_until = 99.0
 		restart.out = by
 	_enter("setup")
@@ -1072,7 +1257,8 @@ func _end_period() -> void:
 	holder = null
 	pass_info = {}
 	shot_info = {}
-	ball.dead(ball.pos)
+	var had: Player = ball.holder if ball.state == "held" else null
+	ball.dead(ball.pos, had == null, had)
 
 
 ## Seconds of the teams going to their huddles before the interval screen comes up over them: once they are all
@@ -1412,7 +1598,30 @@ func _rank_detail(dt: float) -> void:
 				var d: float = who.global_position.distance_to(camp)
 				who.pose_every = 1 if d < float(near[0]) else (2 if d < float(near[1]) else 3)
 	if not bodies.is_empty():
-		WsgFoundation.rank_detail(bodies, camp)
+		_rank_full(bodies, camp)
+
+
+## The players' and umpires' full detail: the nearest to the camera, WsgFoundation.full_bodies() of them at most (the
+## tier's cap), the rest on the light mesh. A body near the cut keeps what it has (it changes only when its place in
+## the order moves two or more), so none flickers between the two meshes as the play moves.
+func _rank_full(bodies: Array, camp: Vector3) -> void:
+	var n := WsgFoundation.full_bodies()
+	var order := bodies.duplicate()
+	order.sort_custom(func(a, b): return (a as Node3D).global_position.distance_squared_to(camp) < (b as Node3D).global_position.distance_squared_to(camp))
+	var want := []
+	for i in order.size():
+		var b: WsgBody = order[i]
+		if i < n - 1 or (i <= n and b.full):
+			want.append(b)
+	# (At most the cap, nearest first; any place left, the next nearest.)
+	want = want.slice(0, n)
+	for b in order:
+		if want.size() >= n:
+			break
+		if not want.has(b):
+			want.append(b)
+	for b: WsgBody in order:
+		b.set_detail(want.has(b))
 
 
 ## Metres from the camera within which a player is posed every frame, and every second (beyond: every third), by

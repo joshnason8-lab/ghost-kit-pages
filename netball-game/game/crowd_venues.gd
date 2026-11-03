@@ -205,8 +205,8 @@ const AISLE_W := 1.0
 const MITRE := 0.7
 const WALKWAY := 0.7          # the walkway behind the lower tier, m deep
 const FASCIA := 1.3           # the fascia under the upper tier's front row, m high
-## Who came, in the bowl, at each level (Low, Medium, High): a full house, the aisles and a seat here and there empty
-## (the courtside stands keep Game.crowd_density).
+## Who came, in the bowl's filled sections, at each level (Low, Medium, High): the aisles and a seat here and there
+## empty (the courtside stands keep Game.crowd_density).
 const BOWL_DENSITY := [0.7, 0.8, 0.9]
 
 
@@ -246,9 +246,11 @@ static func bowl_first(half_d: float) -> int:
 
 ## The bowl's people (v: the venue, the courtside sections already in it; first: the lower tier's first row clear of
 ## the courtside stands on the far side and ends; level: Low 0, Medium 1, High 2). A section a side of a tier, or a
-## band of its rows (each row to the corner's mitre); the stairs empty (Venue.place). Who are 3D people ("solid": from which level): the lower tier behind the
-## courtside stands from Medium, the upper tier's front rows on the far side (the broadcast camera's backdrop) on High;
-## the rest are cards on every level (behind the cameras, or far up).
+## band of its rows (each row to the corner's mitre); the stairs empty (Venue.place). Low fills every section with
+## cards. Medium and High fill only what they draw as real 3D people ("solid": from which level; within the 3D
+## budget, 700 and 1,200 with the courtside stands): the lower tier behind the courtside stands on the far side and
+## the ends from Medium (the broadcast camera's backdrop, behind the posts in a goal's close shot), and the far upper
+## tier's front rows on High; the rest of the bowl is empty seats there (the owner: real people, never cards).
 static func bowl(v: Venue, x0: float, z0: float, front: float, first: int, level: int) -> void:
 	var tiers := bowl_tiers(front)
 	var names := ["far side", "east end", "near side", "west end"]

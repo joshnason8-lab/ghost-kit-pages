@@ -81,7 +81,7 @@ func _ready() -> void:
 		row.add_child(UI.button(tr("REMATCH"), false, func():
 			var c := cfg.duplicate()
 			c.erase("seed")
-			Game.start_match(c)))
+			Game.start_match_loading(c)))
 		row.add_child(UI.button(tr("HOME"), true, func(): Game.goto_menu()))
 
 

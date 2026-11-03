@@ -19,9 +19,15 @@ func _initialize() -> void:
 		printerr("crowd_audit: -- <registry.gd> <out dir> [quality]")
 		quit(2)
 		return
-	var reg: GDScript = load(a[0])
+	var reg: GDScript = load(a[0]) if ResourceLoader.exists(a[0]) else null
+	if reg == null or not reg.can_instantiate():
+		printerr("crowd_audit: no registry at %s (or it does not compile)" % a[0])
+		quit(2)
+		return
 	var out_dir: String = a[1]
 	var quality := int(a[2]) if a.size() > 2 else 2
+	# (The audit looks at the crowd a phone at the top tier draws: the cap - WsgFoundation.crowd_quality - follows it.)
+	WsgFoundation.tier = WsgFoundation.HIGH
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	var report := {}
 	var failed := false

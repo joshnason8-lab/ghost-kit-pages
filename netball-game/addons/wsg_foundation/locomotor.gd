@@ -420,9 +420,11 @@ func drive(delta: float, velocity: Vector3, facing: float, want_velocity := Vect
 				_shot_len = maxf(_shot_len, 0.3)
 			elif state == State.JUMP and _shot.ends_with("_Air") and in_air:
 				_shot_t = minf(_shot_t, _shot_len * 0.5)
-			elif (state == State.STOP and _shot_t > 0.25 or state == State.TURN) and want > START_SPEED:
+			elif (state == State.STOP and _shot_t > 0.25 or state == State.TURN) and (intent.length() > START_SPEED if want_velocity != Vector3.INF else want > START_SPEED and _accel > 0.5):
 				# Asked to go while stopping or turning on the spot: set off at once (turning on the spot while the
-				# game carries the body away would drag the planted feet).
+				# game carries the body away would drag the planted feet). Asked: the game's wanted velocity when it
+				# gives one, else speeding up - a body still sliding to a stop at 5 m/s is not asking to go (it took
+				# a walk start mid-stop, which set a foot down 47 cm off: a 2.8 cm slip).
 				_start(flat, _want_speed)
 			elif state == State.START and (left < 0.35 or want < STOP_SPEED and _shot_t > 0.3):
 				_enter_move()

@@ -12,6 +12,9 @@ const TURN := 9.0            # rad/s
 const TOP := 7.2             # m/s, a sprint at speed 99
 const LAND_DECEL := 40.0     # m/s² at most, landing with the ball: the landing's own pace (it takes about a step)
 const LAND_MIN := 1.5        # m/s: caught slower than this, she simply stops (no landing)
+const BODY_R := 0.25         # m: her body, as the props keep her out of them (WsgSolidProps)
+const BODY_H := 1.8
+const SPOT_R := BODY_R + 0.08  # a spot she heads for keeps this clear of the props (she reaches it without scraping one)
 
 var match_ref = null         # the Match
 var team := 0
@@ -53,6 +56,8 @@ var stride_phase: float:
 	get:
 		return gait.phase if gait else 0.0
 var out_until := 0.0         # standing out of play beside the thrower of a penalty pass
+var keep_out := Vector3.ZERO # a ring she does not step into (x, y its middle, z its radius; 0: none): 0.9 m and more
+                             # off the landing foot of an opponent with the ball (TeamAI.keep_clear)
 var suspended := 0.0         # seconds of playing time left on a suspension (R18): off the court, by the bench
 var warned := false          # the umpire has warned her (R18)
 var suspensions := 0         # how many times she has been suspended
@@ -73,6 +78,17 @@ var _ready_hands := 0.0       # her hands up to take a pass (0 hanging relaxed .
 var _idle_t := 0.0            # seconds she has been about (her breathing, her weight shifting: never restarting)
 var _var := Vector4(0.5, 0.5, 0.5, 0.5)   # her own way of standing (each 0-1: Poses.idle), from her name
 var _ball_c := Vector3.INF    # the ball's centre between her palms this frame (world), while she holds it
+var _solid_memo := {}         # her side round a prop in her way (WsgSolidProps.move)
+var held_off := Vector2.ZERO  # how far a prop held the ball she holds off her hands (Ball.step): she gives way by it
+var _way := PackedVector3Array()   # an out-of-play walk's waypoints round the props (WsgSolidProps.path)
+var _way_to := Vector2.INF
+## Set to shoot and still turning to the post (pivoting on her landing foot): the shot waits (act_t held at 0, and
+## Match._run_shot's clock) until her body faces the post within SQUARE_DEG, or SQUARE_MAX seconds have gone.
+var squaring := false
+var _square_t := 0.0
+const SQUARE_DEG := 8.0
+const SQUARE_MAX := 0.6
+var _arm_travel := [0.0, 0.0]  # how far each upper arm is from her move's still (0 there .. 1 a long way: Player._animate)
 
 
 func _init(p_team: int, p_data: Dictionary, p_pos: String) -> void:
@@ -131,16 +147,19 @@ func place(at: Vector2, face_dir := 0.0) -> void:
 ## The one place her position changes, once a frame.
 func advance(dt: float) -> void:
 	moves += 1
-	var to := target - p
-	var dist := to.length()
+	var solid := _solid()
+	# Where she heads: her target (moved out of a prop it is in), or the next corner of an out-of-play walk round them.
+	var goal := _goal(solid)
+	var to := goal - p
+	var dist := to.length() + (goal.distance_to(target) if goal != target and not _way.is_empty() else 0.0)
 	var cap := minf(want_speed, speed_cap())
 	if stopped:
 		cap = 0.0
 	# The speed she wants: slowing as she arrives, so she stops on the spot rather than past it.
 	var desired := Vector2.ZERO
-	if dist > 0.05 and cap > 0.0:
+	if dist > 0.05 and cap > 0.0 and to.length() > 0.001:
 		var arrive := sqrt(2.0 * DECEL * 0.8 * dist)
-		desired = to / dist * minf(cap, arrive)
+		desired = to / to.length() * minf(cap, arrive)
 	# Pulling up at a line she may not cross: no faster than she can stop before it.
 	if fenced and desired.length() > 0.1:
 		var room := _room_along(desired.normalized())
@@ -157,10 +176,38 @@ func advance(dt: float) -> void:
 	var step := rate * dt
 	vel = vel + dv.limit_length(step)
 	var next := p + vel * dt
+	var solid_moved := false     # the props turned or stopped her step (else it stands exactly as she meant it)
+	if solid:
+		# Her step among the venue's props (WsgSolidProps.move: steered round what is in her way, never into it).
+		var m := solid.move(Vector3(p.x, 0, p.y), Vector3(vel.x, 0, vel.y), dt, BODY_R, BODY_H, Vector3(goal.x, 0, goal.y), _solid_memo)
+		var q := Vector2(m[0].x, m[0].z)
+		if q.distance_squared_to(next) > 1e-10:
+			next = q
+			solid_moved = true
+	if keep_out.z > 0.0:
+		# Not a step nearer the player with the ball once inside 0.9 m and a little of her (obstruction): round her.
+		var kc := Vector2(keep_out.x, keep_out.y)
+		var nd := next.distance_to(kc)
+		var floor_d := minf(keep_out.z, p.distance_to(kc))
+		if nd < floor_d and nd > 0.001:
+			# (Never a longer step than the one she was taking.)
+			next = p + (kc + (next - kc) / nd * floor_d - p).limit_length((next - p).length())
+			vel = (next - p) / maxf(dt, 0.001)
 	if fenced and Rules.offside(pos, next, dir) and not Rules.offside(pos, p, dir):
 		# At the line: she stops on her side of it.
 		next = Rules.onside_point(pos, next, dir, 0.02)
 		vel = (next - p) / maxf(dt, 0.001)
+	if solid:
+		# The ball in her hands met a prop (Ball.step held it off them): she gives way, a step back from it.
+		var kept := next + held_off.limit_length(0.15)
+		held_off = Vector2.ZERO
+		# On the venue's floor (inside its boards, walls or fences), and out of every prop whatever moved her.
+		kept = _keep_clear(solid, kept)
+		if kept.distance_squared_to(next) > 1e-10:
+			next = kept
+			solid_moved = true
+		if solid_moved and dt > 0.0:
+			vel = (next - p) / dt   # the velocity she really moved at (her gait steps with it)
 	if land_clip != "":
 		land_d += (next - p).length() / _scale()
 	p = next
@@ -186,6 +233,44 @@ func advance(dt: float) -> void:
 	_update_cap_legs(dt)
 	if link:
 		_pose_link(dt)
+
+
+## The venue's solid props (Arena.solid), or null (a body without a match: the tests' views).
+func _solid() -> WsgSolidProps:
+	if match_ref == null or match_ref.arena == null:
+		return null
+	return match_ref.arena.solid
+
+
+## Where she heads this frame: her target, or the nearest spot clear of the props to it; on an out-of-play walk (to
+## and from the bench, to a break's huddle) the next corner of her way round the props (WsgSolidProps.path).
+func _goal(solid: WsgSolidProps) -> Vector2:
+	if solid == null:
+		return target
+	var g := target
+	var g3 := Vector3(g.x, 0, g.y)
+	if float(solid.penetration(g3, SPOT_R, BODY_H)[0]) > 0.0:
+		g3 = solid.free_spot(g3, SPOT_R, BODY_H)
+		g = Vector2(g3.x, g3.z)
+	if not (away() or match_ref.phase == "break"):
+		_way = PackedVector3Array()
+		_way_to = Vector2.INF
+		return g
+	if _way_to.distance_to(g) > 0.25:
+		_way = solid.path(Vector3(p.x, 0, p.y), g3, BODY_R, BODY_H)
+		_way_to = g
+	while _way.size() > 1 and Vector2(_way[0].x, _way[0].z).distance_to(p) < 0.4:
+		_way.remove_at(0)
+	return Vector2(_way[0].x, _way[0].z) if not _way.is_empty() else g
+
+
+## A step's end kept on the venue's floor (Arena.floor_rect: the user's player with Keep me onside off has no line to
+## pull up at) and out of every prop.
+func _keep_clear(solid: WsgSolidProps, at: Vector2) -> Vector2:
+	var r: Rect2 = match_ref.arena.floor_rect
+	at = Vector2(clampf(at.x, r.position.x + BODY_R, r.end.x - BODY_R), clampf(at.y, r.position.y + BODY_R, r.end.y - BODY_R))
+	var q := solid.push_out(Vector3(at.x, 0, at.y), BODY_R, BODY_H)
+	return Vector2(q.x, q.z)
 
 
 ## The foundation's body: posed on her frames only (pose_every, set by the match by her distance from the camera;
@@ -245,11 +330,26 @@ func _room_along(d: Vector2) -> float:
 ## what she is doing laid over it (Poses: the catch, the pass, holding the ball, defending, the leap); nothing jumps.
 func _animate(dt: float) -> void:
 	act_t += dt
+	if squaring:
+		# (The owner: "a player shooting ... facing the wrong direction and not at the hoop": a shooter who caught
+		# facing away, 1 m out from the post, shot 140 degrees off it. The shot starts once she has turned.)
+		_square_t += dt
+		if post_off() <= deg_to_rad(SQUARE_DEG) or _square_t >= SQUARE_MAX or act != "shoot":
+			squaring = false
+		else:
+			act_t = 0.0
 	var spd := vel.length()
 	var k := 1.0 - exp(-14.0 * dt)
 	_idle_t += dt
 	_ready_hands = move_toward(_ready_hands, 1.0 if _wants_pass() else 0.0, dt / 0.35)
-	_pose = Poses.blend(_pose, _act_pose(), k)
+	var want := _act_pose()
+	_pose = Poses.blend(_pose, want, k)
+	# How far each upper arm still has to go to her move's (one move to the next: marking's or the ready hands' to
+	# arms up over the ball): its elbow is bent the more on the way (see the lay below).
+	for i in 2:
+		var b: String = ["upperarm_l", "upperarm_r"][i]
+		var d := HeroBody.turn(_pose.get(b, Vector3.ZERO)).angle_to(HeroBody.turn(want.get(b, Vector3.ZERO)))
+		_arm_travel[i] = smoothstep(deg_to_rad(6.0), deg_to_rad(40.0), d)
 	# How much of her arms (and, standing, her lean and crouch) are the move's: the move's own, a catch, a pass, the
 	# ball held, the shot, the leap; on the run her arms swing with her legs, whatever she means to do when she stops.
 	var aw := _arms_want(spd)
@@ -270,6 +370,17 @@ func _animate(dt: float) -> void:
 	gait.update(dt, p, vel, body_yaw)
 	var body_w := maxf(1.0 - gait.move, 1.0 if act in ["shoot", "leap"] else 0.0)
 	var out := Gait.lay(gait.loco_pose(), _pose, arms_w, maxf(body_w, arms_w * 0.6), angle_difference(body_yaw, facing))
+	# Her elbows bent the more while her arms go between the run's (or hanging) and her move's (arms rising over the
+	# ball, out to take a pass, an arm into the lane): the two lerped at their angles straightened the elbow on the way,
+	# arms held straight out to the sides as she closed in or moved off (the owner's "arms just stretched out").
+	# And so while her arms go from one move's to the next's.
+	var mid := 4.0 * arms_w * (1.0 - arms_w)
+	for i in 2:
+		var bend := 36.0 * maxf(mid, _arm_travel[i] * arms_w)
+		if bend > 0.3:
+			var s: String = ["forearm_l", "forearm_r"][i]
+			out[s] = HeroBody.turn(out.get(s, Vector3.ZERO)) * HeroBody.turn(Vector3(-bend, 0, 0)) if out.get(s) is Quaternion \
+				else (out.get(s, Vector3.ZERO) as Vector3) + Vector3(-bend, 0, 0)
 	if act in ["shoot", "leap"]:
 		out.hips_y = float(_pose.get("hips_y", 0.0))
 	# (Her weight shifting from foot to foot standing: not on the run.)
@@ -403,7 +514,8 @@ func _body_yaw(dt: float) -> void:
 	if spd > 0.4:
 		var w := smoothstep(2.6, 4.0, spd) * (1.0 - arms_w)
 		want = lerp_angle(facing, atan2(vel.x, vel.y), w)
-	body_yaw = rotate_toward(body_yaw, want, TURN * dt)
+	# (Turning to shoot: a pivot, as quick as her facing turns.)
+	body_yaw = rotate_toward(body_yaw, want, (TURN * 1.6 if act == "shoot" else TURN) * dt)
 	if body:
 		body.rotation.y = angle_difference(facing, body_yaw)
 
@@ -460,6 +572,16 @@ func set_act(a: String, kind := "") -> void:
 	act = a
 	act_kind = kind
 	act_t = 0.0
+	squaring = a == "shoot"
+	_square_t = 0.0
+
+
+## How far (radians) her body as drawn (body_yaw) is turned from the post she shoots at.
+func post_off() -> float:
+	var d := Court.goal_post(dir) - p
+	if d.length() < 0.05:
+		return 0.0
+	return absf(angle_difference(body_yaw, atan2(d.x, d.y)))
 
 
 ## Where her hands hold the ball, in the world: the drawn hands' (the foundation's) when it draws her holding it.

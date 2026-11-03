@@ -289,6 +289,144 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   the goal that makes a two-goal lead now ends it. Tests `_ball_flight`, `_ball_in_play`, `_net_sway`,
   `_advantage_clear`, `_two_goal_lead` (`test_runner.tscn -- ball` runs only these); tests/ball_shots.tscn renders a goal at the post frame by frame and
   a lob and a chest pass from the side with their paths, the old ones beside them.
+- **Solid props** (the owner: "There will NEVER be a time when a player or referee should walk through a table or
+  bench etc. A ball should also bounce off these items."): foundation synced to 8f688ff (WsgSolidProps, prop_audit;
+  CI's foundation step now fails without a required commit). Arena.solid: each builder declares what it builds where
+  it builds it (posts r 0.05, pads r 0.19 "padding", ring arms and the rings' tubes, goal lights, LED boards, tables,
+  chairs, benches, the arena bowl's front wall and stepped rows, the hall's walls, wall pads, stand, portable boards,
+  backboards and their rings, scoreboard, ball cage; the park's chain-link fences and floodlight poles) and every
+  VenueProps model from its own bounds (`placed`, `bounds()`); what is not solid is skipped with a reason (nets,
+  overhead lights and trusses, wall clocks, tree cut-outs). Bodies: Player.advance and Umpire.advance step through
+  `solid.move()` (one memo each), then the venue's floor (Arena.floor_rect: inside the boards, walls or fences; the
+  crowd is not a prop) and `push_out`; their velocity is the step they really took only when a prop turned it (so a
+  match away from props plays exactly as before). Out-of-play walks (to and from the bench, huddles, umpires to the
+  middle) follow `solid.path()`. A target or catch point in a prop moves to the nearest free spot. The ball: loose
+  balls and dead balls still rolling through `solid.bounce()` (each prop's restitution and friction, Ball's own floor);
+  a flight that meets a prop comes off it loose (a shot stops where it touched the ring, post or arm: the rebound
+  starts clear of it); a held ball never goes into a prop (the holder gives way); a shot that is in passes the ring
+  only coming down, and is released at least 0.45 m out from under the ring. Rules: a ball in play that touches a prop
+  outside the court is out of court there, and a ball called out rolls on after the whistle (off the boards, the
+  bench); the goal post, pad and ring are in play; a goal-line throw-in by the post is taken clear of its pad. The
+  arena's reserves stand clear in front of the boards (their benches are behind them). tests/prop_runs.gd and
+  tools/wsg/prop_audit.gd (CI, after the tests) over a 240 s Watch-AI match at the arena, hall and park (Medium) and the
+  arena at Low: 0 bodies in a prop, 0 ball steps through one. Test `_solid_props` (`test_runner.tscn -- solid`).
+  `_gait_in_match` measures arms only when they are the run's (arms_w < 0.5): a leap's arms coming down at a mark
+  read as "out" once a prop changed the match's course. Cost: 26 bodies and the ball about 0.3 ms a frame here; no
+  draw call (colliders are not drawn). `_matches` counts the umpires' calls over its three short AI matches (a 5-minute
+  match's two or three calls can come to none, as one did once props changed its course).
+- **World check** (ADOPTING §5.18; foundation synced to 637662a: planted feet, the world rules, graphics tiers):
+  `game/world.gd` (WsgWorldGame) starts each mode with its screen's own Play handler (quick, cup, league, Watch AI),
+  two umpires (their foundation bodies), our player's model as the walker, Sfx's key sounds (Sfx.BRIGHT: the rim,
+  the net, the whistles and the ball's bounces now carry no distance filter and are heard from 30 m at most), the
+  stick through CameraRig.court_dir on the TV, Low and End cameras, the props and crowd registries, set_tier as the
+  Settings screen sets it. CI runs it after the props audit (artifact `world-check`); the job's timeout is 120 min.
+  Foundation now d4e3107 (the planter's feet within 2 cm, no doubled running landings); netball-arms' defend (arms up
+  toward the ball, soft elbows) merged. Our model on the planter: walk 1.6 cm worst slip, jog 0.5, turned 1.1, run
+  0.2, stop 0.0; cadence sprinting and cutting at 6 m/s 3.1 landings a second. perf_probe Low peaks (draw calls /
+  triangles): arena 99/53.9k, hall 100/72.4k, park 99/56.9k (draw calls as before; the solids are not drawn).
+- **A loading screen on every Start button** (the owner: "when you click start game there is a loading delay ...
+  users might think the game has frozen"; it was one main-thread stall, 238-1252 ms desktop Low, 600-1040 Medium):
+  the foundation synced to 2cd59a7 for its WsgLoading (ADOPTING 5.14). `Game.start_match_loading(config)` serves
+  Quick Match's Play, Watch AI's Watch, the Nations Cup's and Club Season's Play and the result screen's Rematch (no
+  screen calls start_match itself). The tap's own frame dims the screen to the night indigo with the icon, the game's
+  name, "Marking out the court…" (LOADING, all 19 languages), a lime bar and spinner and a rule of the game as a tip
+  (existing strings); every button on the screen goes off, Back waits. The match's files (venue surfaces, props, sky,
+  hero, crowd, the clips, hud.gd) load on the loader's thread; the teams' flags are drawn on a worker thread
+  (Flags.draw_async: their pixel work was 140 ms of the HUD); `Match.build_steps()` builds what _ready built, in the
+  same order, a frame after each step (Venue, Court, Crowd, Home team, Away team a player a slice, Bench a reserve a
+  slice, Umpires, Scoreboard, Centre pass; Arena.build_venue/build_draw/build_crowd); then WsgLoading's warm-up swaps
+  it in and draws its looks a few a frame (the shader compiles spread), done() waits for smooth frames, and
+  `Match.kick_off()` starts the team card and the centre pass's count (`held` till then). Desktop llvmpipe, cold
+  shader cache, longest main-thread slice: Low 12-33 ms (the hall's Venue), the longest frame 65-134 ms (was a
+  1.3-2.1 s frozen frame); Medium 54-88 ms and High 52-136 ms, the Crowd step (WsgCrowd3D.build, 770 fans in the
+  arena) the longest: the coordinator moves it onto build_venue_async. tests/loading_probe.tscn prints each start's
+  WSG_LOADING line in a window; test_runner `_loading_overlay` (-- loading), input_test `_start_tap`, fit audit
+  `loading_tip_*`.
+- Feel (November 2026, the owner's playtest notes on 0.8.9, checked on 0.9.0 by measuring and rendering). **The
+  ball**: 0.9.0's flights were already parabolas at g, but a ball nobody caught did not fall like one: when the
+  whistle went with it in the air (a contact on a pass, an offside, a quarter's end) it stopped dead where it was
+  and hung there through the stoppage (34 still frames over 0.4 m in four 5-minute AI matches; every whistle in
+  mid-pass; and a whistle with the ball held left it floating where her hands had been, 1.5-1.7 s, as she moved
+  off); a pass the receiver did not reach was let go level at 4 m/s from the catch height, whatever its speed;
+  every pass stood still at its catch point for its last frame; and a long shoulder pass was flat (20 m in 1.25 s,
+  its top 1.7 m over the hands). Now (Ball): a pass carries on along its own parabola past the catch, a ball let go
+  (unreached, deflected, fumbled, off the ring) or dead in the air goes on at the speed it had and falls at g,
+  meets the floor at the exact point of the parabola (worked out within the step), bounces and rolls to a stop;
+  a ball in her hands when the whistle goes stays in her hands, and she tosses it to the thrower's spot (it lands
+  and bounces there) unless she is the thrower; only a dead ball put on its spot stays still. Shoulder pass 11.5-16 m/s across (20 m: 1.38 s, top 2.1 m over the
+  hands; 25 m: 1.56 s, 2.75 m); no throw crosses the floor faster than Ball.FLAT_MAX 16 m/s (a long lob goes higher
+  instead). Tests `_ball_uncaught`, `_ball_free_in_play` (every free frame of an AI match at g within 2%, no pass
+  over 17 m/s, nothing hung in the air, a pass to nobody on its arc and down within its range, a whistle mid-pass).
+  **The nets**: 0.9.0 swung a goal's net 9.9 cm at its foot and a rim miss 2.4 cm, and the ball (narrower than the
+  net's foot) never bulged it: hard to see on the close shot, invisible on the wide one. Now a goal whips it 22-26
+  cm (out as the ball drops out of it, harder the faster it came in), ripples it, billows its lower cords out and
+  bulges it round the ball; a shot off the ring shakes it 13 cm and more. Still the one glow shader on every level
+  (uniforms only: no draw call, the same on Low). Contact sheets of a goal and a rim miss on the TV camera's wide
+  shot and on its close shot of the post, Low and High, before and after, were reviewed frame by frame (the net
+  leans and bulges plainly in stills from both). **Restarts**: the penalised player was placed 0.9 m (centre to
+  centre) from the thrower, bodies nearly touching, and stood 0.64-0.81 m (closest, median) from her landing foot
+  from the whistle to the pass, up to 0.48 m in front of her; free passes
+  had a defender within 0.9 m of the thrower in 11 of 17 (median 0.64 m), penalties 10 of 40; in open play the
+  marker on the ball was inside 0.9 m in 16% of frames (her place pushed in by a line she may not cross). Now the
+  penalised player stands 1.35 m to the thrower's side (Rules.out_of_play_spot: square to her line to goal, round to
+  the other side or behind where a line is in the way, never in front: measured 1.26-1.32 m, at most 0.09 m
+  forward), the umpire waits until she is there and nobody else is within 0.9 m, and TeamAI.keep_clear keeps every
+  defender 0.95 m and more off the thrower's landing foot, walking round her rather than through (Player.keep_out):
+  0 restarts with anyone inside 0.9 m, open play 0.6% of frames (stepping out after a catch). Test
+  `_restart_spacing`.
+- **Arms and the shooter's turn** (found by the owner notes; branch `netball-arms`): defending's arms were out at
+  110 degrees with the elbows 20 bent (a T-pose to the eye and to the world check's `pose` rule), and laid over the
+  run by an angle lerp they passed through 60-87 degrees straight out as a defender closed in or moved off (the
+  owner's "arms just stretched out when running"; Low and the foundation alike, which reads the game's pose). Now
+  `Poses.defend_ball` raises both arms forward-up over the ball (134 degrees, elbows 34 bent; the shot defence
+  148/124, elbows 36), `Player._animate` bends the elbows the more while the arms go between moves or between the
+  run's and the move's, marking's and posting's arm out keep soft elbows, and a chest-height catch reaches with soft
+  elbows. AI matches (arena 11, hall 12, 1800 frames each), moving frames with an arm 60+ degrees out and the elbow
+  under 30 bent: Low 405 -> 5, Medium 310 -> 3, High 310 -> 3, every one left arms up overhead (117-153 degrees: a
+  shot defence, a leap); both-arm T/A frames moving 265/226/226 -> 1/0/0. A shooter who caught facing away now
+  pivots to the post before the shot (`Player.squaring` holds the shot's clock and pose till her body faces it within
+  8 degrees, 0.6 s at most): 140 -> 0 degrees off. test_runner `_arms` (-- arms) checks both on Low, Medium, High.
+- **Simulated matches (November 2026, the owner's project; docs/SIM.md)**: the shared foundation synced to 7239d54
+  (WsgSim) and adopted: `game/wsg_sim.gd` (the adapter; `game/sim.gd` stays the cup's results simulator), the netball
+  rules checked every frame (`tests/sim/netball_checks.gd`: scoring, clock, periods and the end, centre pass, three
+  seconds and footwork, offside, out of court, free and penalty passes, obstruction, changes and time-outs, and the
+  impossible states), the game's own batch runner (`tests/sim/run_batch.tscn`: several steps a frame, CPU timing,
+  `repro=1`), and the nightly workflow `.github/workflows/netball-sim.yml` (16 shards, 2,400 matches, merged; or the
+  smoke batch on request). Seeding: every match's config now carries its seed (`Game.start_match`); cups and seasons
+  take a seed and save their generator's state (`rng_state`; older saves load as before); the season's draw no longer
+  uses the global generator; the foundation bodies' idle fidgets have their own dice. The RNG audit, the speed
+  measurements (about 12x real time a CPU core without the foundation, 3.8x with it at one step a frame), the first
+  batches' findings (no rule broken; rebounds popping into the hands, defenders inside 0.9 m, slip calls without the
+  infringement) and the scenario list with its gaps are in docs/SIM.md. No gameplay or balance change.
+- **The owner's notes as permanent tests** (the owner: "the regressions are getting worse"; foundation synced
+  2cd59a7 -> ed3c181 in its own commit, ADOPTING §5.16). Every note the owner has given is a test in
+  `tests/owner_notes/<date>_<slug>.gd` (WsgOwnerNote: the owner's words, the date, the version), listed in
+  `tests/owner_notes/INDEX.json`, each measuring the symptom over its whole range (every level, venue, camera,
+  screen shape, speed as the note needs), most through test_runner's own sections (`lib/harness.gd` runs a section
+  and gathers its checks). 24 notes, back-filled from this file and the code's comments too (the crowd facing away,
+  0.4.2; "failure conflict" updates, the beta key). `lib/run_one.gd -- <part of a name>` runs some. CI runs
+  `tools/wsg/owner_notes_guard.sh` (no note ever removed) and the notes with WSG_NOTES_STRICT=1. The props note
+  ("a player or referee should never walk through a table or bench") waits in `tests/owner_notes/pending/` until
+  the props are solid (WsgOwnerNote has no expected-fail). Failing when written, with the measured numbers: the
+  nets (a goal moves the net 4.8 px on the close shot, 2.5 courtside), the arena's painted bowl (1-2% of its crowd
+  real people on Medium/High), a ball held in the air after a whistle (1.5-1.7 s), the penalised player 0.3-0.85 m
+  from a penalty pass's thrower (fixes in progress); and three found by the notes: the stick's diagonals 15.6
+  degrees off on the screen at 16:9 and 20.8 at 20:9 on every camera (CameraRig._through_lens steps along the stick
+  in the lens's units, not the screen's: the x step wants dividing by the aspect), a shooter right under the post
+  who caught facing away shoots without turning (140 degrees off), and the foundation's body on Medium/High
+  defending on the move at 3 m/s with both arms straight out (T-pose measure, 85-87 degrees; the game's own body
+  keeps them by her sides). Found on the way: the netball-loading merge left game.gd warming `Crowd.SHEET_HD` and
+  test_runner's `_match_sig` reading `crowd.spots`, both removed by the crowd placement (the game did not compile).
+- **Penalty spacing** (owner note 2026-11-03-penalty-spacing: "the defender is almost on top of the passer").
+  The penalised player stood 1.03-1.17 m from the thrower's body (the note wants 1.2 m and more) and, for the C at
+  the centre and a GS by the GK's post, in front of her. Causes: her place (`Rules.out_of_play_spot`, 1.35 m) and her
+  keep-out ring (1.15 m) were round the landing foot only, so from the body, where she is seen, she was nearer; the
+  ring let her walk on it at 1.13 m; the way round it took the short side, across the front; and the thrower took the
+  ball as soon as she was on her spot, the penalised player still walking. Now: OUT_OF_PLAY_GAP 1.42 m and
+  OUT_OF_PLAY_MIN 1.32 m off the body and the landing foot both (out_of_play_spot takes the body; TeamAI.out_ring is
+  round both); `clear_path` with the thrower's line to goal goes round behind her, never across her line ahead; and
+  `Match._out_clear` holds the thrower's taking of the ball until the penalised player is clear (3 s at most). The
+  other defenders keep 0.9 m from the landing foot as before. After: 1.30-1.64 m in all three venues, never in front.
 - **The arena's bowl is real people** (the owner: "most of the crowd is still just squares"). The lower and upper
   tiers all round were a slope with people painted on by VenueLook's stand shader; now each row is a tread and a
   riser, a plastic seat (pan, edge, back; one back a seat on Medium/High, one strip on Low) along the back of it,

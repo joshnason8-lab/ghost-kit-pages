@@ -19,10 +19,11 @@ var medals := {}
 var rng := RandomNumberGenerator.new()
 
 
-static func create(country: String) -> Cup:
+## p_seed: the other matches' results from this seed (the simulations' reproducible cups); -1, a new one each time.
+static func create(country: String, p_seed := -1) -> Cup:
 	var c := Cup.new()
 	c.user = country
-	c.rng.seed = hash(country) + Time.get_ticks_msec()
+	c.rng.seed = p_seed if p_seed >= 0 else hash(country) + Time.get_ticks_msec()
 	# The user's team and the seven nearest it in the ranking, so every pool is a contest.
 	var ids: Array = DB.team_ids()
 	ids.sort_custom(func(a, b): return absf(DB.team_rating(a) - DB.team_rating(country)) < absf(DB.team_rating(b) - DB.team_rating(country)))
@@ -161,7 +162,7 @@ func pool_table(p: int) -> Array:
 
 func to_dict() -> Dictionary:
 	return {"user": user, "teams": teams, "pools": pools, "fixtures": fixtures, "knockout": knockout, "stage": stage,
-		"round": round, "medals": medals}
+		"round": round, "medals": medals, "rng_state": str(rng.state)}
 
 
 static func from_dict(d: Dictionary) -> Cup:
@@ -174,7 +175,11 @@ static func from_dict(d: Dictionary) -> Cup:
 	c.stage = String(d.get("stage", "pools"))
 	c.round = int(d.get("round", 0))
 	c.medals = d.get("medals", {})
-	c.rng.randomize()
+	# Saved before 0.9.1 without the generator's state: a new one.
+	if d.has("rng_state"):
+		c.rng.state = String(d.rng_state).to_int()
+	else:
+		c.rng.randomize()
 	for f in c.fixtures:
 		f.round = int(f.round)
 		f.pool = int(f.pool)

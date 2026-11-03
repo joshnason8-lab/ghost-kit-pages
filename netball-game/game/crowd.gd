@@ -3,16 +3,16 @@ extends Node3D
 ## The spectators, where the venue declares them (CrowdVenues: the shared foundation's WsgCrowdVenue), placed, sized
 ## to their seats and turned to the play by the shared foundation. On Medium and High they are whole 3D people
 ## (WsgCrowd3D: about a dozen draw calls) who sit on their seats or stand on the floor, get up and cheer a goal, clap
-## at the breaks and turn their heads to the ball (the match's, a replay's too); on Low, and any the level does not draw
-## in 3D (the venue's sections that are not "solid" at it, as the arena bowl's far rows, or past the 3D budget), the
-## same people as flat cards (WsgCrowdCards: one draw call), getting up and cheering with them. One
-## shirt a place, decided once, about half in the two teams' colours.
+## at the breaks and turn their heads to the ball (the match's, a replay's too), in the venue's sections the level
+## draws in 3D ("solid": the arena bowl's other rows are empty seats there); on Low everyone, the same people as flat
+## cards (WsgCrowdCards: one draw call), getting up and cheering with them. One shirt a place, decided once, about half
+## in the two teams' colours.
 
 var venue: CrowdVenues.Venue
 var placed := {}                 # the places with someone in them (WsgCrowdVenue.place: spots, facings, seats...)
 var shirts: Array = []           # each place's shirt
 var people: WsgCrowd3D           # Medium and High: the 3D people (null on Low)
-var used := PackedInt32Array()   # which places they are (the rest: cards)
+var used := PackedInt32Array()   # which places they are (Medium, High)
 var cards: WsgCrowdCards         # Low: everyone; Medium and High: any the 3D budget left out (null: none)
 var _match: Node                 # whose ball they watch and whose play they cheer
 var _cheer := 0.0                # seconds of a cheer left (a goal, the end of a quarter)
@@ -34,52 +34,36 @@ func build(v: CrowdVenues.Venue, palette: Array, seed_ := 1, away: Array = [], t
 	venue = v
 	var hd := Game.hd() and WsgCrowd3D.available() and not OS.has_environment("WSG_OFF")
 	var level := clampi(int(Game.settings.graphics), 1, 2)
+	# Medium and High fill only the places the level draws in 3D (the venue's "solid" sections: the courtside stands,
+	# the arena bowl's nearer rows), all real people (the owner: never cards there); the bowl's other seats stay empty.
+	# Low: every place, as cards.
+	v.solid = level if hd else 0
 	placed = v.place(seed_)
 	shirts = _shirts(placed.id, palette, away, seed_)
 	var lights := _lights(v, placed.spots)
-	var rest := PackedInt32Array()
 	if hd:
 		people = WsgCrowd3D.new()
 		people.name = "People"
 		add_child(people)
 		# A netball crowd: about two thirds of them the two women of the shared fans (as the venue's seats allow).
 		people.fan_weights = v.fan_weights
-		# Only the places this level draws in 3D (the venue's "solid" sections: the courtside stands, the arena bowl's
-		# nearer rows), the same people in the same shirts as the cards would be (by the place). (density 1: the
-		# places are already the ones with someone in them.)
-		v.solid = level
-		var sub: Dictionary = v.place(seed_)
-		var at := {}
-		for k in placed.id.size():
-			at[placed.id[k]] = k
-		var sub_shirts := []
-		var sub_lights := []
-		for i in sub.id:
-			sub_shirts.append(shirts[at[i]])
-			sub_lights.append(lights[at[i]])
-		var drawn := people.build_venue(v, level, Vector3.ZERO, 1.0, seed_, sub_shirts, sub_lights)
-		v.solid = 0
-		used = PackedInt32Array()
-		var taken := {}
-		for n in drawn:
-			used.append(at[sub.id[n]])
-			taken[at[sub.id[n]]] = true
+		# (density 1: the places are already the ones with someone in them; any past the level's 3D budget are left
+		# out, an empty seat, not drawn as a card.)
+		used = people.build_venue(v, level, Vector3.ZERO, 1.0, seed_, shirts, lights)
 		# Each their own skin, hair and trousers, skirt or shorts (no draw calls, no CPU: in the crowd's shader).
 		people.set_looks(WsgCrowd3D.LOOKS.skin, WsgCrowd3D.LOOKS.hair, WsgCrowd3D.LOOKS.legs)
 		if teams.size() >= 2:
 			people.set_teams(teams[0], teams[1])
-		for i in placed.spots.size():
-			if not taken.has(i):
-				rest.append(i)
-	if (not hd or not rest.is_empty()) and WsgCrowdCards.available() and not placed.spots.is_empty():
+	elif WsgCrowdCards.available() and not placed.spots.is_empty():
 		cards = WsgCrowdCards.new()
 		cards.name = "Cards"
 		cards.fan_weights = v.fan_weights
 		add_child(cards)
-		cards.build(placed, rest, seed_, shirts, lights)
+		cards.build(placed, PackedInt32Array(), seed_, shirts, lights)
 		cards.set_looks(WsgCrowd3D.LOOKS.skin, WsgCrowd3D.LOOKS.hair, WsgCrowd3D.LOOKS.legs)
 		if teams.size() >= 2:
 			cards.set_teams(teams[0], teams[1])
+	v.solid = 0
 	# Lit as the venue lights its stands (the arena's dim blue night, a hall's white light, the park's evening sun).
 	WsgCrowd3D.set_light(clampf(_tint.get_luminance(), 0.3, 1.0))
 	set_excite(0.0)

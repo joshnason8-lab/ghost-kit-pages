@@ -30,6 +30,12 @@ const HD_TAKES := {"crowd_cheer": 4, "crowd_cheer_small": 3, "applause": 3, "app
 const HD_DIR := "res://assets/audio/hd/"
 ## Sounds on court come from where they happen, through this many speakers at most (the oldest gives way).
 const VOICES_3D := 8
+## The key hits (the ball off the ring and post, the net, the umpire's whistle, the ball off the boards), kept crisp at
+## any distance (the owner: the post's clang could not be heard): no distance filter on them, and from further than
+## BRIGHT_DISTANCE they are heard from that far, the way they come (the broadcast's mics are by the play). The
+## foundation's WsgAudio.bright_kinds, for Sfx; the world check reads it (game/world.gd).
+const BRIGHT := ["rim", "swish", "bounce", "whistle_short", "whistle_long", "whistle_double", "whistle_final", "whistle_gym"]
+const BRIGHT_DISTANCE := 30.0
 
 var streams := {}
 var _pool: Array[AudioStreamPlayer] = []
@@ -157,6 +163,15 @@ func _play_at(sound: String, at: Vector3, volume_db: float, pitch: float) -> voi
 	_next3d = (_next3d + 1) % _pool3d.size()
 	p.stream = streams[sound]
 	p.global_position = at
+	# A key hit: crisp at any distance (no distance filter; heard from BRIGHT_DISTANCE at most, the way it comes).
+	var bright := BRIGHT.has(sound) or BRIGHT.has(sound.get_slice("_", 0)) or BRIGHT.has(sound.rsplit("_", true, 1)[0])
+	p.attenuation_filter_db = 0.0 if bright else -24.0
+	var cam := p.get_viewport().get_camera_3d() if p.is_inside_tree() else null
+	if bright and cam:
+		var ear := cam.global_position
+		var d := ear.distance_to(at)
+		if d > BRIGHT_DISTANCE:
+			p.global_position = ear + (at - ear) * (BRIGHT_DISTANCE / d)
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
 	p.stream_paused = false

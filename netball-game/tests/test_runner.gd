@@ -37,13 +37,47 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "setup" in OS.get_cmdline_user_args():
+		# (Only the restarts' setup and the rules in play: tests/test_runner.tscn -- setup)
+		_setup_route()
+		await _rules_in_play()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "ball" in OS.get_cmdline_user_args():
 		# (Only the ball, the nets and advantage: tests/test_runner.tscn -- ball)
 		_ball_flight()
+		_ball_uncaught()
 		await _ball_in_play()
+		await _ball_free_in_play()
 		await _net_sway()
 		await _advantage_clear()
+		await _restart_spacing()
 		await _two_goal_lead()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
+	if "hands" in OS.get_cmdline_user_args():
+		# (Only the shooters' turn and the ball in her hands: tests/test_runner.tscn -- hands)
+		await _shots_and_hands()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
+	if "solid" in OS.get_cmdline_user_args():
+		# (Only the props: tests/test_runner.tscn -- solid)
+		await _solid_props()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
+	if "loading" in OS.get_cmdline_user_args():
+		# (Only the loading overlay on the Start buttons: tests/test_runner.tscn -- loading)
+		await _loading_overlay()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
+	if "arms" in OS.get_cmdline_user_args():
+		# (Only the arms and the shooter's turn on every path: tests/test_runner.tscn -- arms)
+		await _arms()
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
@@ -56,21 +90,26 @@ func _ready() -> void:
 	await _screens()
 	await _about_pages()
 	_rules()
+	_setup_route()
 	_footwork()
 	_ball_flight()
+	_ball_uncaught()
 	_sim()
 	_cup()
 	_league()
 	await _matches()
 	await _rules_in_play()
 	await _ball_in_play()
+	await _ball_free_in_play()
 	await _net_sway()
 	await _advantage_clear()
+	await _restart_spacing()
 	await _two_goal_lead()
 	await _motion()
 	await _mocap()
 	await _gait_steps()
 	await _body_checks()
+	await _arms()
 	await _controls()
 	await _stick_camera()
 	await _league_options()
@@ -83,6 +122,7 @@ func _ready() -> void:
 	await _umpire_goal_line()
 	await _huddle()
 	await _reserves()
+	await _solid_props()
 	_tags()
 	await _coach()
 	await _navigation()
@@ -92,6 +132,7 @@ func _ready() -> void:
 	await _low_unchanged()
 	await _venue_study()
 	await _watch_ai()
+	await _loading_overlay()
 	FoundationLink.off = false
 	await _foundation(foundation_ok)
 	await _replays()
@@ -453,10 +494,17 @@ func _ball_in_play() -> void:
 	await frames(2)
 
 
-## The nets are rope: a goal swings and ripples the net it drops through, then it settles; the other net is still. In
-## every venue, by the glow shader's uniforms (no draw call of its own).
+## The nets are rope: a goal whips the net it drops through (its foot out 18 cm and more, enough to see from the TV
+## camera's wide shot), ripples and billows it, then it settles; the other net is still. A shot off the ring shakes
+## it (12 cm and more). In every venue, on Low as on High, by the glow shader's uniforms (no draw call of its own).
 func _net_sway() -> void:
-	for venue in ["arena", "hall", "outdoor"]:
+	var was: int = int(Game.settings.graphics)
+	for run: Array in [["arena", "goal", Game.GFX_HIGH], ["hall", "goal", Game.GFX_HIGH], ["outdoor", "goal", Game.GFX_HIGH],
+			["arena", "goal", Game.GFX_LOW], ["arena", "miss", Game.GFX_HIGH], ["hall", "miss", Game.GFX_LOW]]:
+		var venue: String = run[0]
+		var goal: bool = run[1] == "goal"
+		Game.settings.graphics = int(run[2])
+		var lv := "Low" if int(run[2]) == Game.GFX_LOW else "High"
 		var m := _study_match(37, {"venue": venue})
 		await _wait_live(m)
 		var guard := 0
@@ -473,30 +521,435 @@ func _net_sway() -> void:
 		m._give(gs)
 		m.ai._decide[gs] = 99.0
 		m.shoot()
-		m.shot_info.goal = true
+		m.shot_info.goal = goal
 		var s := 1 if gs.dir > 0 else 0
 		var peak := 0.0
+		var ripple := 0.0
+		var billow := 0.0
 		var other := 0.0
-		var goal_f := -1
+		var hit_f := -1
 		var stuck := 0.0
+		var shader_peak := 0.0
 		for f in 210:
 			await frames(1)
-			if goal_f < 0 and m.phase == "goal":
-				goal_f = f
+			if hit_f < 0 and (m.phase == "goal" or m.shot_info.get("rebound", false) or (m.ball.state == "loose" and not goal)):
+				hit_f = f
 			var n: Dictionary = m.arena.nets[s]
 			peak = maxf(peak, (n.sw as Vector2).length())
+			ripple = maxf(ripple, float(n.amp))
+			billow = maxf(billow, float(n.bil))
 			other = maxf(other, (m.arena.nets[1 - s].sw as Vector2).length())
-			if goal_f >= 0 and f > goal_f + 150:
+			var u: Array = m.arena._glow_mat.get_shader_parameter("net_swing")
+			shader_peak = maxf(shader_peak, Vector2((u[s] as Vector4).x, (u[s] as Vector4).y).length())
+			if hit_f >= 0 and f > hit_f + 150:
 				stuck = maxf(stuck, (n.sw as Vector2).length())
-		var sw: Array = m.arena._glow_mat.get_shader_parameter("net_swing")
-		print("  net: %s, a goal swings its foot %.1f cm; 5 s on, %.1f mm" % [venue, peak * 100.0, stuck * 1000.0])
-		check(goal_f >= 0 and peak > 0.02 and peak <= Arena.NET_MAX + 0.001,
-			"%s: a goal swings the net (%.1f cm at its foot)" % [venue, peak * 100.0])
-		check(stuck < 0.004, "%s: then it settles within five seconds (%.1f mm)" % [venue, stuck * 1000.0])
-		check(other < 0.001, "%s: the other net is still" % venue)
-		check(sw.size() == 2, "%s: the glow shader is given the nets' swing" % venue)
+		var what := "a goal" if goal else "a shot off the ring"
+		print("  net: %s, %s, %s swings its foot %.1f cm (ripple %.1f cm, billow %.1f cm); 5 s on, %.1f mm" % [venue, lv, what, peak * 100.0, ripple * 100.0, billow * 100.0, stuck * 1000.0])
+		if goal:
+			check(hit_f >= 0 and peak >= 0.18 and peak <= Arena.NET_MAX + 0.001 and ripple >= 0.03 and billow >= 0.03,
+				"%s, %s: a goal whips the net (%.1f cm at its foot, ripple %.1f cm, billow %.1f cm)" % [venue, lv, peak * 100.0, ripple * 100.0, billow * 100.0])
+		else:
+			check(hit_f >= 0 and peak >= 0.12, "%s, %s: a shot off the ring shakes the net (%.1f cm at its foot)" % [venue, lv, peak * 100.0])
+		check(absf(shader_peak - peak) < 0.002, "%s, %s: the glow shader is given the swing (%.1f cm)" % [venue, lv, shader_peak * 100.0])
+		check(stuck < 0.004, "%s, %s: then it settles within five seconds (%.1f mm)" % [venue, lv, stuck * 1000.0])
+		check(other < 0.001, "%s, %s: the other net is still" % [venue, lv])
+		check(String((m.arena._glow_mat as ShaderMaterial).shader.code).contains("net_billow"), "%s, %s: the nets move in the one glow shader" % [venue, lv])
 		m.queue_free()
 		await frames(2)
+	Game.settings.graphics = was
+
+
+## No throw crosses the floor faster than a real one (Ball.FLAT_MAX, about 17 m/s at most), however long; a long
+## shoulder pass is a high throw (20 m: 1.2-1.5 s in the air, its top 2-3 m over the hands). A pass nobody catches
+## carries on along its own parabola, is let go at its own speed (as Match lets it go), falls at g, lands where that
+## parabola meets the floor (never further than its flight carries it) and bounces and rolls to a stop; a ball in the
+## air when the whistle goes falls the same way (Ball.dead, moving), and a dead ball put on its spot stays there.
+func _ball_uncaught() -> void:
+	var dt := 1.0 / 30.0
+	var hand := Vector3(0.0, 1.6, 0.0)
+	var fastest := 0.0
+	var fast_name := ""
+	for kind: String in ["chest", "shoulder", "lob", "bounce"]:
+		for i in 30:
+			var d := 1.0 + i
+			var to := Vector3(d * 0.8, 2.05 if kind == "lob" else (0.95 if kind == "bounce" else 1.3), d * 0.6)
+			var pl := Ball.plan(kind, hand, to)
+			for k: float in [0.0, 0.3, 0.7, 0.999]:
+				var v := Ball.plan_vel(pl, k)
+				var flat := Vector2(v.x, v.z).length()
+				if flat > fastest:
+					fastest = flat
+					fast_name = "%s %.0f m" % [kind, d]
+	check(fastest <= 17.0, "ball: no pass crosses the floor faster than 17 m/s, 1-30 m of every kind (fastest %.1f, a %s)" % [fastest, fast_name])
+	for d: float in [15.0, 20.0, 25.0]:
+		var sh := Ball.plan("shoulder", Vector3(0, 1.9, 0), Vector3(d, 1.4, 0))
+		var v0 := Ball.plan_vel(sh, 0.0)
+		var apex := v0.y * v0.y / (2.0 * Ball.G)
+		print("  ball: shoulder %.0f m: %.2f s, %.1f m/s across, %.2f m over the hands at the top" % [d, float(sh.dur), Vector2(v0.x, v0.z).length(), apex])
+		if d == 20.0:
+			check(float(sh.dur) >= 1.2 and float(sh.dur) <= 1.5 and apex >= 2.0 and apex <= 3.0,
+				"ball: a 20 m shoulder pass is in the air 1.2-1.5 s, its top 2-3 m over the hands (%.2f s, %.2f m)" % [float(sh.dur), apex])
+	# Nobody catches it.
+	for c: Array in [["chest", 7.0], ["shoulder", 18.0], ["lob", 9.0], ["bounce", 5.0]]:
+		var kind: String = c[0]
+		var d: float = c[1]
+		var b := Ball.new()
+		add_child(b)
+		var lands: Array = []
+		var fc := {"f": 0, "at": []}
+		b.bounced.connect(func(at: Vector3, _sp: float):
+			lands.append(at)
+			fc.at.append(fc.f))
+		var from := hand
+		var to := Vector3(d, 2.05 if kind == "lob" else (0.95 if kind == "bounce" else 1.3), 1.0)
+		b.throw(kind, from, to)
+		var lg: Array = b.f_legs[b.f_legs.size() - 1]
+		var p0: Vector3 = lg[1]
+		var v0: Vector3 = lg[2]
+		var tl := (v0.y + sqrt(v0.y * v0.y + 2.0 * Ball.G * (p0.y - Ball.R))) / Ball.G
+		var meet := Vector2(p0.x + v0.x * tl, p0.z + v0.z * tl)   # where its parabola meets the floor
+		var ps: Array = []
+		var let_go := false
+		for f in 360:
+			fc.f = f
+			b.step(dt)
+			if b.state == "flight" and b.f_t >= b.f_dur:
+				b.loose(b.pos, b.velocity())   # (as Match lets a pass she did not reach go)
+				let_go = true
+			ps.append(b.pos)
+		var worst := 0.0
+		var n := 0
+		for i in range(1, ps.size() - 1):
+			if minf(minf(ps[i - 1].y, ps[i].y), ps[i + 1].y) <= Ball.R + 0.01 or fc.at.has(i) or fc.at.has(i + 1) or (kind == "bounce" and absf(i * dt - b.f_dur * b.f_bounce) < 0.1):
+				continue
+			worst = maxf(worst, absf((ps[i + 1].y - 2.0 * ps[i].y + ps[i - 1].y) / (dt * dt) + Ball.G) / Ball.G)
+			n += 1
+		# (A bounce pass's first touch is its planned bounce: its landing is the next.)
+		var first: Vector3 = lands[1 if kind == "bounce" else 0] if lands.size() > (1 if kind == "bounce" else 0) else Vector3.INF
+		var at := Vector2(first.x, first.z)
+		var reach := Vector2(from.x, from.z).distance_to(meet)
+		var rest: Vector3 = ps[ps.size() - 1]
+		var still: bool = (ps[ps.size() - 1] as Vector3).distance_to(ps[ps.size() - 2]) < 0.0005
+		check(let_go and n > 10 and worst < 0.02, "ball: a %s nobody catches falls at g all the way down (%d frames, worst %.1f%% off)" % [kind, n, worst * 100.0])
+		check(first != Vector3.INF and at.distance_to(meet) < 0.3 and Vector2(from.x, from.z).distance_to(at) <= reach + 0.3,
+			"ball: and lands where its flight's parabola meets the floor, within its range (%.2f m off; %.1f m out of %.1f)" % [at.distance_to(meet), Vector2(from.x, from.z).distance_to(at), reach])
+		check(lands.size() >= 2 and still and absf(rest.y - Ball.R) < 0.002, "ball: then bounces (%d times) and rolls to a stop on the floor" % lands.size())
+		b.free()
+	# The whistle with the ball in the air: dead, it carries on and falls; put on a spot, it stays.
+	var b2 := Ball.new()
+	add_child(b2)
+	b2.throw("shoulder", hand, Vector3(16.0, 1.4, 0.0))
+	for f in 8:
+		b2.step(dt)
+	var v_then := b2.velocity()
+	b2.dead(b2.pos, true)
+	var ys: Array = []
+	for f in 150:
+		b2.step(dt)
+		ys.append(b2.pos)
+	var bad := 0.0
+	for i in range(1, 12):
+		bad = maxf(bad, absf((ys[i + 1].y - 2.0 * ys[i].y + ys[i - 1].y) / (dt * dt) + Ball.G) / Ball.G)
+	check(bad < 0.02 and absf((ys[1].x - ys[0].x) / dt - v_then.x) < 0.2 and absf(ys[ys.size() - 1].y - Ball.R) < 0.002,
+		"ball: the whistle with it in the air: it goes on as it was going, falls at g (%.1f%% off) and comes to rest on the floor" % [bad * 100.0])
+	b2.dead(Vector3(0, Ball.R, 0))
+	b2.step(dt)
+	check(b2.pos == Vector3(0, Ball.R, 0), "ball: a dead ball put on its spot stays there")
+	b2.free()
+
+
+## In a match: every frame the ball is free (in flight, loose, or dead and still falling) it falls at g, except in a
+## net (the cords hold it) or as it meets the floor; no pass crosses the floor faster than 17 m/s; nothing holds it in
+## the air (it hung where it was when the whistle went, before). Then a pass to nobody and a whistle in mid-pass.
+func _ball_free_in_play() -> void:
+	var m := _study_match(39)
+	await _wait_live(m)
+	var top := {"flat": 0.0}
+	m.game_event.connect(func(k, _info):
+		if k == "pass":
+			var v: Vector3 = m.ball.flight_vel(0.0)
+			top.flat = maxf(float(top.flat), Vector2(v.x, v.z).length()))
+	var hist: Array = []
+	var n := {"flight": 0, "loose": 0, "dead": 0}
+	var off := {"flight": 0, "loose": 0, "dead": 0}
+	var worst := 0.0
+	var hung := 0
+	var fr := {"f": 0, "at": []}
+	m.ball.bounced.connect(func(_at, _sp): fr.at.append(fr.f))
+	m.ball.struck.connect(func(_h): fr.at.append(fr.f))   # (off a prop: a bounce, as off the floor)
+	for f in 7200:
+		# (2400 frames at least, and on until the match has given enough free frames of each kind: how many a match
+		# gives depends on its course.)
+		if f >= 2400 and n.flight > 200 and n.loose + n.dead > 20:
+			break
+		fr.f = f + 1
+		await frames(1)
+		var b: Ball = m.ball
+		hist.append([b.state, b.position, m.phase, b.f_kind, b.f_t > b.f_dur, b.f_bounce, b.f_t / maxf(b.f_dur, 0.001), b._moving])
+		if hist.size() < 3:
+			continue
+		var a: Array = hist[-3]
+		var bb: Array = hist[-2]
+		var c: Array = hist[-1]
+		if b.state == "dead" and not b._moving and b.carrier == null and b.position.y > 0.3:
+			hung += 1
+		if not (a[0] == bb[0] and bb[0] == c[0] and a[2] == c[2]) or a[0] == "held" or c[2] == "replay":
+			continue
+		if a[0] == "dead" and not (a[7] and c[7]):
+			continue
+		var p0: Vector3 = a[1]
+		var p1: Vector3 = bb[1]
+		var p2: Vector3 = c[1]
+		if minf(minf(p0.y, p1.y), p2.y) <= Ball.R + 0.01 or p0.distance_to(p2) < 0.001 or fr.at.has(f) or fr.at.has(f + 1):
+			continue
+		if c[3] == "shot" and c[4]:
+			continue   # (a shot stops on the ring: Match takes it on)
+		if float(c[5]) > 0.0 and absf(float(bb[6]) - float(c[5])) < 0.08:
+			continue   # (a bounce pass's bounce)
+		var in_net := false
+		for s: int in [-1, 1]:
+			var rc := Court.ring_centre(s)
+			if Vector2(p1.x - rc.x, p1.z - rc.z).length() < Court.RING_R + 0.05 and p1.y < rc.y + 0.1 and p1.y > rc.y - 0.6:
+				in_net = true
+		if in_net:
+			continue
+		var acc := (p2.y - 2.0 * p1.y + p0.y) * 900.0
+		n[a[0]] += 1
+		var e := absf(acc + Ball.G) / Ball.G
+		worst = maxf(worst, e)
+		if e > 0.02:
+			off[a[0]] += 1
+	check(n.flight > 200 and n.loose + n.dead > 20 and off.flight + off.loose + off.dead == 0,
+		"ball in play: free, it falls at g every frame (checked %s; off by more than 2%%: %s, worst %.1f%%)" % [n, off, worst * 100.0])
+	check(float(top.flat) > 5.0 and float(top.flat) <= 17.0, "ball in play: no pass faster across the floor than 17 m/s (fastest %.1f)" % float(top.flat))
+	check(hung == 0, "ball in play: never left hanging in the air at a whistle (%d frames)" % hung)
+	# A pass to nobody (she is back by the thrower): on along its own parabola past the catch, let go at its own
+	# speed, down where that parabola meets the floor (unless someone takes it first), at g all the way.
+	for trial in 2:
+		var guard := 0
+		while (m.holder == null or m.phase != "live" or m.shot_info.has("by")) and guard < 900:
+			await frames(1)
+			guard += 1
+		var h: Player = m.holder
+		m.ai._decide[h] = 99.0
+		var to: Player = null
+		for o: Player in m.players[h.team]:
+			if o != h and not o.away() and o.p.distance_to(h.p) > 4.0 and o.p.distance_to(h.p) < 14.0 and (to == null or o.p.distance_to(h.p) > to.p.distance_to(h.p)):
+				to = o
+		if to == null:
+			check(false, "ball in play: a team-mate to pass to")
+			break
+		m.restart["cp_done"] = true
+		m.throw_pass(to, "shoulder" if trial == 0 else "chest")
+		m.pass_info.cut = null
+		var from := m.ball.f_from
+		var lg: Array = m.ball.f_legs[0]
+		var p00: Vector3 = lg[1]
+		var v00: Vector3 = lg[2]
+		var tl := (v00.y + sqrt(v00.y * v00.y + 2.0 * Ball.G * (p00.y - Ball.R))) / Ball.G
+		var meet := Vector2(p00.x + v00.x * tl, p00.z + v00.z * tl)
+		var reach := Vector2(from.x, from.z).distance_to(meet)
+		to.p = Rules.onside_point(to.pos, h.p + (h.p - to.p).normalized() * 1.5, to.dir, 0.3)
+		to.vel = Vector2.ZERO
+		var off_arc := 0.0
+		var land := {"at": Vector3.INF}
+		var on_floor := func(at: Vector3, _sp: float):
+			if land.at == Vector3.INF:
+				land.at = at
+		m.ball.bounced.connect(on_floor)
+		var k := 0
+		var let_go := false
+		while k < 75 and (m.ball.state == "flight" or m.ball.state == "loose") and land.at == Vector3.INF:
+			await frames(1)
+			k += 1
+			to.target = to.p
+			if m.ball.state == "loose":
+				let_go = true
+			if m.ball.state == "held" or land.at != Vector3.INF:
+				break
+			var want := p00 + v00 * (k / 30.0) + Vector3(0, -0.5 * Ball.G * (k / 30.0) * (k / 30.0), 0)
+			off_arc = maxf(off_arc, m.ball.position.distance_to(want))
+		m.ball.bounced.disconnect(on_floor)
+		var first: Vector3 = land.at
+		var at := Vector2(first.x, first.z) if first != Vector3.INF else Vector2.INF
+		var how := "lands %.2f m off the floor point, %.1f m out of %.1f" % [at.distance_to(meet), Vector2(from.x, from.z).distance_to(at), reach] if first != Vector3.INF else "taken first"
+		check(let_go and off_arc < 0.03 and (first == Vector3.INF or (at.distance_to(meet) < 0.35 and Vector2(from.x, from.z).distance_to(at) <= reach + 0.35)),
+			"ball in play: a pass to nobody flies on along its arc (%.3f m off it) and comes down within its range (%s)" % [off_arc, how])
+	# A whistle in mid-pass: the ball carries on and falls.
+	var guard2 := 0
+	while (m.holder == null or m.phase != "live" or m.shot_info.has("by")) and guard2 < 900:
+		await frames(1)
+		guard2 += 1
+	var h2: Player = m.holder
+	m.ai._decide[h2] = 99.0
+	var to2: Player = null
+	for o: Player in m.players[h2.team]:
+		if o != h2 and not o.away() and (to2 == null or o.p.distance_to(h2.p) > to2.p.distance_to(h2.p)) and o.p.distance_to(h2.p) < 14.0:
+			to2 = o
+	m.restart["cp_done"] = true
+	m.throw_pass(to2, "chest")
+	m.pass_info.cut = null
+	await frames(3)
+	var y0 := m.ball.position.y
+	var someone: Player = m.players[1 - h2.team][2]
+	m._infringe("offside", someone, someone.p)
+	var ys: Array = []
+	var bounces: Array = []
+	m.ball.bounced.connect(func(_at, _sp): bounces.append(m.phase))
+	var low := INF
+	var stop_f := 0
+	while m.ball.state == "dead" and bounces.is_empty() and stop_f < 75:
+		await frames(1)
+		stop_f += 1
+		ys.append(m.ball.position)
+		low = minf(low, m.ball.position.y)
+	check(ys.size() > 10 and y0 > 0.8 and low < 0.35 and not bounces.is_empty() and (ys[1] as Vector3).distance_to(ys[0]) > 0.05,
+		"ball in play: the whistle in mid-pass: the ball goes on and falls to the floor, play stopped (from %.2f m, down to %.2f m and bouncing in %d frames)" % [y0, low, stop_f])
+	# A whistle with the ball in her hands: she keeps it through the stoppage, then hands it on to the thrower (a toss
+	# that lands and bounces, or the thrower is she): never left in the air.
+	var guard3 := 0
+	while (m.holder == null or m.phase != "live" or m.shot_info.has("by")) and guard3 < 900:
+		await frames(1)
+		guard3 += 1
+	var h3: Player = m.holder
+	m.ai._decide[h3] = 99.0
+	m._infringe("held_ball", h3, h3.p)
+	var in_hands := 0
+	var stop_n := 0
+	var floating := 0
+	var handed := false
+	var tossed := {"n": 0}
+	var on_floor := func(_at, _sp): tossed.n += 1
+	m.ball.bounced.connect(on_floor)
+	for f in 150:
+		await frames(1)
+		if m.phase == "stop":
+			stop_n += 1
+			if m.ball.carrier == h3 and m.ball.position.distance_to(h3.hand_point()) < 0.05:
+				in_hands += 1
+		if m.ball.state == "dead" and m.ball.carrier == null and not m.ball._moving and m.ball.position.y > 0.3:
+			floating += 1
+		if m.ball.state == "held":
+			handed = true
+			break
+	m.ball.bounced.disconnect(on_floor)
+	m.ai._decide.clear()
+	check(stop_n > 10 and in_hands == stop_n and floating == 0 and handed and (tossed.n > 0 or m.holder == h3),
+		"ball in play: a whistle with the ball in her hands: she keeps it (%d of %d frames), then hands it on (%d bounces; %d frames in the air on its own)" % [in_hands, stop_n, tossed.n, floating])
+	m.queue_free()
+	await frames(2)
+
+
+## Whether the ball met the floor between three frames (it came down to them and went up after).
+static func _bounce_between(a: Vector3, b: Vector3, c: Vector3) -> bool:
+	return b.y < 0.6 and b.y - a.y < 0.0 and c.y - b.y > 0.0
+
+
+## Penalty and free passes and throw-ins, as the umpire sets them: the penalised player stands out of play beside the
+## thrower, 1.2-1.5 m off her (not touching, not crowding her) and never in front of her; nobody else of her side
+## within 0.9 m of the thrower's landing foot from the whistle to the pass (obstruction, the game's own rule); in open
+## play the AI never sets a defender nearer the ball than that, and stays out (TeamAI.keep_clear).
+func _restart_spacing() -> void:
+	var bad := 0
+	var tried := 0
+	var cramped := 0
+	var worst := ""
+	for i in 11:
+		for j in 9:
+			var spot := Vector2(-14.0 + 2.8 * i, -7.2 + 1.8 * j)
+			for td: int in [-1, 1]:
+				for pos: String in Rules.POSITIONS:
+					if Rules.offside(pos, spot, -td):
+						continue
+					tried += 1
+					var q := Rules.out_of_play_spot(pos, -td, spot, td)
+					var u := (Court.goal_post(td) - spot).normalized()
+					var d := q.distance_to(spot)
+					if d < 1.2 or d > 1.55 or (q - spot).dot(u) > 0.3 or Rules.offside(pos, q, -td):
+						# (Wrong unless no such place exists there: a corner of her areas by a line.)
+						var could := false
+						for a in 72:
+							for r: float in [1.2, 1.3, 1.4, 1.5]:
+								var c := Rules.onside_point(pos, spot + Vector2.from_angle(TAU * a / 72.0) * r, -td, 0.05)
+								if c.distance_to(spot) >= 1.2 and c.distance_to(spot) <= 1.55 and (c - spot).dot(u) <= 0.3:
+									could = true
+						if could:
+							bad += 1
+							worst = "%s at %s: %.2f m, %.2f in front" % [pos, spot, d, (q - spot).dot(u)]
+						else:
+							cramped += 1
+	check(bad == 0, "penalty: the penalised player's place beside the thrower is 1.2-1.5 m off her, not in front, on her own ground, all over the court (%d of %d wrong: %s; %d where none fits)" % [bad, tried, worst, cramped])
+	var m := _study_match(41)
+	await _wait_live(m)
+	for kind: String in ["contact", "held_ball", "throw_in", "contact", "obstruction"]:
+		var guard := 0
+		while (m.holder == null or m.phase != "live" or m.shot_info.has("by") or (m.holder.pos in ["GS", "GA"] and Court.in_circle(m.holder.landing, m.holder.dir))) and guard < 1200:
+			await frames(1)
+			guard += 1
+		var h: Player = m.holder
+		if h == null:
+			check(false, "restarts: a player with the ball")
+			break
+		m.ai._decide[h] = 99.0
+		var dm: Player = m.ai.marker_of(h)
+		if kind == "throw_in":
+			m._award(Rules.throw_in(1 - h.team, Vector2(clampf(h.p.x, -12.0, 12.0), Court.HALF_W)), null, "throw_in")
+		elif kind == "held_ball":
+			m._infringe("held_ball", h, h.p)   # (a free pass to the other side, where she stands)
+		else:
+			dm.p = h.landing + (Court.goal_post(-dm.dir) - h.landing).normalized() * 1.0
+			m._infringe(kind, dm, dm.p)
+		m.ai._decide.clear()   # (the taker passes when she would)
+		guard = 0
+		while m.phase != "live" and guard < 400:
+			await frames(1)
+			guard += 1
+		var taker: Player = m.holder
+		var out: Player = m.restart.get("out")
+		var out_d := INF
+		var out_front := -INF
+		var near := INF
+		var frames_n := 0
+		while m.holder == taker and taker != null and m.phase == "live" and frames_n < 150:
+			var u := (Court.goal_post(taker.dir) - taker.landing).normalized()
+			if out:
+				out_d = minf(out_d, out.p.distance_to(taker.landing))
+				out_front = maxf(out_front, (out.p - taker.landing).dot(u))
+			for o: Player in m.players[1 - taker.team]:
+				if o != out and o.suspended <= 0.0:
+					near = minf(near, o.p.distance_to(taker.landing))
+			await frames(1)
+			frames_n += 1
+		var what := String(m.restart.get("kind", ""))
+		print("  restart: %s (%s): penalised player %s m off, %s m in front; nearest other %.2f m; %d frames to the pass" % [kind, what,
+			"%.2f" % out_d if out else "-", "%.2f" % out_front if out else "-", near, frames_n])
+		check(taker != null and frames_n > 0, "restart after %s: taken (%s)" % [kind, what])
+		if what == Rules.PENALTY:
+			check((out == null and dm.suspended > 0.0) or out != null and out_d >= 1.15 and out_d <= 1.55 and out_front <= 0.3,
+				"restart after %s: the penalised player beside the thrower, 1.2-1.5 m off, not in front (%.2f m, %.2f in front)" % [kind, out_d, out_front])
+		check(near >= Court.DEFEND_DIST, "restart after %s (%s): nobody else within 0.9 m of the thrower until the pass (%.2f m)" % [kind, what, near])
+		m.ai._decide.clear()
+	# Open play: no AI defender is sent nearer than 0.9 m to the ball, and after a second of holding none is there.
+	var aimed := INF
+	var held_close := 0
+	var held_n := 0
+	for f in 900:
+		await frames(1)
+		var h: Player = m.holder
+		if h == null or m.phase != "live":
+			continue
+		for o: Player in m.players[1 - h.team]:
+			if o.away() or o.suspended > 0.0 or m.ai._give_way.has(o):
+				continue
+			aimed = minf(aimed, o.target.distance_to(h.landing))
+			if m.hold_t > 1.0:
+				held_n += 1
+				if o.p.distance_to(h.landing) < Court.DEFEND_DIST:
+					held_close += 1
+	check(aimed >= Court.DEFEND_DIST, "open play: no defender is sent within 0.9 m of the ball (nearest %.2f m)" % aimed)
+	check(held_n > 100 and held_close <= held_n / 100, "open play: after a second's hold, no defender within 0.9 m (%d of %d)" % [held_close, held_n])
+	m.queue_free()
+	await frames(2)
 
 
 ## Advantage on a contact (R7): the defender who made it steps clear of the shooter: past 1.5 m within a second and
@@ -638,6 +1091,7 @@ func _matches() -> void:
 	var cases := [["AUS", "NZL", "arena"], ["RSA", "MWI", "outdoor"], ["SGP", "SRI", "hall"]]
 	var all_shots := 0
 	var all_goals := 0
+	var all_calls := {}
 	for c in cases:
 		var res := await _play({"home": c[0], "away": c[1], "venue": c[2], "user_team": -1, "demo": true, "seed": 11,
 			"quarter_s": 75.0, "quarter": 15, "mode": "quick"})
@@ -656,7 +1110,11 @@ func _matches() -> void:
 		all_shots += shots
 		all_goals += goals
 		var calls: Dictionary = res.calls
-		check(calls.size() > 0, "%s v %s: the umpires call infringements (%s)" % [c[0], c[1], calls])
+		for k in calls:
+			all_calls[k] = int(all_calls.get(k, 0)) + int(calls[k])
+		print("  %s v %s: calls %s" % [c[0], c[1], calls])
+	# (Over the three: a short match's handful of calls can come to none, as a real one's can.)
+	check(all_calls.size() > 1, "the umpires call infringements in AI matches (%s)" % [all_calls])
 	var pct := float(all_goals) / maxf(1.0, float(all_shots))
 	check(pct > 0.65 and pct < 0.95, "shooting at a real rate over three matches (%d%% of %d)" % [int(pct * 100), all_shots])
 	check(all_goals >= 18, "goals at about a real rate (%d in three 5-minute matches)" % all_goals)
@@ -987,7 +1445,8 @@ func _gait_in_match(venue: String, seed: int) -> void:
 				all[q].erase("at_l")
 				all[q].erase("at_r")
 		for q in people:
-			var running: bool = q.vel.length() > 3.0 and (not (q is Player) or q.act in ["run", "mark", "post", "ready", "defend", "defend_shot", "out_of_play", "huddle"])
+			# (Her arms the run's: not on the frame they are still coming down from a move, a leap's or a catch's.)
+			var running: bool = q.vel.length() > 3.0 and (not (q is Player) or q.act in ["run", "mark", "post", "ready", "defend", "defend_shot", "out_of_play", "huddle"] and q.arms_w < 0.5)
 			var st: Dictionary = all[q]
 			var abd0: float = st.abd
 			var slip0: float = st.slip
@@ -1081,24 +1540,35 @@ func _stick_camera() -> void:
 			waited += 1
 			await get_tree().process_frame
 		var worst := 0.0
-		for d in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
-			var me: Player = m.me
-			# In her own half of the centre third, room to move every way (she does not have the ball).
-			me.place(Vector2(-me.dir * 2.4, 0.0), 0.0)
-			for f in 20:
-				m.controls.joystick = Vector2.ZERO
-				await get_tree().process_frame
-			var cam3 := get_viewport().get_camera_3d()
-			still.global_transform = cam3.global_transform
-			still.fov = cam3.fov
-			var a: Vector2 = still.unproject_position(me.global_position)
-			for f in 18:
-				m.controls.joystick = d
-				await get_tree().process_frame
-			var moved: Vector2 = still.unproject_position(me.global_position) - a
-			if OS.get_cmdline_user_args().has("stick"):
-				print("cam %d team %d stick %s: moved %s" % [cm[0], cm[1], d, moved])
-			var off := rad_to_deg(absf(angle_difference(moved.angle(), d.angle()))) if moved.length() > 2.0 else 180.0
+		for d in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(1, -1).normalized(),
+				Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(), Vector2(-1, -1).normalized()]:
+			var off := 180.0
+			# (A sample cut by a whistle or a restart, which puts everyone back on her spot, is taken again.)
+			for attempt in 4:
+				while m.phase != "live":
+					await get_tree().process_frame
+				var me: Player = m.me
+				# In her own half of the centre third, room to move every way (she does not have the ball).
+				me.place(Vector2(-me.dir * 2.4, 0.0), 0.0)
+				for f in 20:
+					m.controls.joystick = Vector2.ZERO
+					await get_tree().process_frame
+				var cam3 := get_viewport().get_camera_3d()
+				still.global_transform = cam3.global_transform
+				still.fov = cam3.fov
+				var a: Vector2 = still.unproject_position(me.global_position)
+				var cut := false
+				for f in 18:
+					m.controls.joystick = d
+					await get_tree().process_frame
+					cut = cut or m.phase != "live" or m.me != me
+				var moved: Vector2 = still.unproject_position(me.global_position) - a
+				if OS.get_cmdline_user_args().has("stick"):
+					print("cam %d team %d stick %s: moved %s%s" % [cm[0], cm[1], d, moved, " (cut)" if cut else ""])
+				if cut:
+					continue
+				off = rad_to_deg(absf(angle_difference(moved.angle(), d.angle()))) if moved.length() > 2.0 else 180.0
+				break
 			worst = maxf(worst, off)
 		if cm[0] == Game.CAM_TV:
 			# The camera changing mid-run (to behind the goal): the stick's way turns over about 0.2 s, not at once.
@@ -1320,7 +1790,10 @@ func _cp_drive() -> void:
 	# Through play: the GS posts (stands holding, arm out) when the ball is in her goal third.
 	var posts := 0
 	var deep := 0
-	for f in 1800:
+	# (Till 300 such frames are seen, or three minutes: a few dozen frames are too few to judge a share by.)
+	for f in 5400:
+		if deep >= 300:
+			break
 		await frames(1)
 		if m.phase != "live":
 			continue
@@ -1565,6 +2038,76 @@ func _reserves() -> void:
 	Game.settings.graphics = was
 
 
+## The venues' props are solid (WsgSolidProps, the owner: "nobody walks through a table or bench; the ball bounces off
+## these items"): a player with Keep me onside off run at the officials' table, a bench, the far boards or fence and a
+## goal post never goes into one and stays on the venue's floor; a goal-line throw-in near the post is taken clear of
+## its pad; a ball rolled at the near boards comes back off them; a missed shot stops clear of the ring; the reserves
+## stand clear of their benches. (tools/wsg/prop_audit.gd checks whole matches: CI.)
+func _solid_props() -> void:
+	var was := int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_HIGH
+	for venue in ["arena", "hall", "outdoor"]:
+		var m := _study_match(5, {"venue": venue})
+		await frames(3)
+		m.set_process(false)
+		var solid: WsgSolidProps = m.arena.solid
+		check(solid.props.size() > 20, "%s: its props are solid (%d)" % [venue, solid.props.size()])
+		var pl: Player = m.player_at(0, "WD")
+		var worst := 0.0
+		var on_floor := true
+		var reached := true
+		for run: Array in [[Vector2(-1.0, 8.0), Vector2(0.0, 30.0)], [Vector2(5.5, 8.0), Vector2(6.5, 30.0)],
+				[Vector2(-5.0, -8.0), Vector2(-5.0, -30.0)], [Vector2(12.5, 0.3), Vector2(19.0, -0.2)], [Vector2(-14.0, 3.0), Vector2(-40.0, 3.0)]]:
+			pl.place(run[0])
+			pl.fenced = false
+			for f in 150:
+				pl.target = run[1]
+				pl.want_speed = 7.0
+				pl.set_act("run")
+				pl.advance(1.0 / 30.0)
+				worst = maxf(worst, float(solid.penetration(Vector3(pl.p.x, 0, pl.p.y), Player.BODY_R)[0]))
+				on_floor = on_floor and m.arena.floor_rect.grow(0.01).has_point(pl.p)
+			reached = reached and pl.p.distance_to(run[0]) > 2.0
+		check(worst <= 0.02 and on_floor and reached, "%s: run at the table, a bench, the boards and a post, she goes round or stops (%.3f m into a prop at worst, on the floor %s)" % [venue, worst, on_floor])
+		# A throw-in from the goal line beside the post: clear of its pad.
+		var spot := Rules.throw_in_spot(Vector2(Court.HALF_L, 0.05))
+		check(float(solid.penetration(Vector3(spot.x, 0, spot.y), Player.BODY_R)[0]) <= 0.0 and spot.x > Court.HALF_L,
+			"%s: a throw-in by the post is taken from outside the line, clear of its pad (%s)" % [venue, spot])
+		# The reserves: clear of the benches and the boards.
+		var rs := m.get_node_or_null("Reserves")
+		var clear := rs != null
+		if rs:
+			for b in rs.get_children():
+				if b is ToonBody:
+					clear = clear and float(solid.penetration((b as Node3D).position, Player.BODY_R)[0]) <= 0.0
+		check(clear, "%s: the reserves stand clear of their bench and the boards" % venue)
+		# A ball knocked hard at the near side, low, comes back off what is there (the boards, the bench).
+		m.ball.loose(Vector3(4.6, 0.45, 10.2), Vector3(0, 0.5, 7.0))
+		var back := false
+		var deepest := 0.0
+		for f in 90:
+			m.ball.step(1.0 / 30.0)
+			back = back or m.ball.vel.z < -0.3
+			var h := solid.sweep(m.ball.pos, m.ball.pos, Ball.R)
+			if h.hit:
+				deepest = maxf(deepest, float(h.get("depth", 0.0)))
+		if venue != "outdoor":   # (the park's near side is open: the crowd stands there)
+			check(back and deepest < 0.01, "%s: a ball knocked at the near side comes back off it (in %.3f m at most)" % [venue, deepest])
+		# A missed shot: it stops where it touched the ring, clear of it, for the rebound.
+		var ring := Court.ring_centre(1)
+		m.ball.through_ring = false
+		m.ball.throw("shot", Vector3(12.0, 2.3, 0.5), ring + Vector3(0.25, 0.05, 0.0))
+		for f in 60:
+			m.ball.step(1.0 / 30.0)
+			if m.ball.f_struck:
+				break
+		check(m.ball.f_struck and not solid.sweep(m.ball.pos, m.ball.pos, Ball.R).hit,
+			"%s: a missed shot stops against the ring, clear of it (%s)" % [venue, m.ball.pos])
+		m.queue_free()
+		await frames(2)
+	Game.settings.graphics = was
+
+
 ## Name tags over players standing together are stacked, not printed over each other (playtest: "GSK", "GD/D").
 func _tags() -> void:
 	var rs := [Rect2(100, 200, 40, 22), Rect2(110, 205, 40, 22), Rect2(300, 200, 40, 22), Rect2(105, 190, 40, 22)]
@@ -1667,6 +2210,26 @@ func _league() -> void:
 	var back = Game.get_league()
 	check(back != null and back.champion == l.champion and back.fixtures.size() == 28, "the season saves and loads")
 	Game.delete_league()
+	# Seeded (docs/SIM.md): a season from a seed draws and plays out the same every time, and one saved part way goes
+	# on as it would have.
+	var runs := []
+	for k in 3:
+		var s := League.create("SKF", 77)
+		s.sim_next()
+		if k == 2:
+			s = League.from_dict(JSON.parse_string(JSON.stringify(s.to_dict())))
+		s.sim_next()
+		runs.append(JSON.stringify(JSON.parse_string(JSON.stringify([s.teams, s.fixtures]))))   # (numbers as a load reads them)
+	check(runs[0] == runs[1] and runs[1] == runs[2], "a season from a seed: the same draw and results, saved and loaded part way too")
+	var cups := []
+	for k in 3:
+		var c := Cup.create("ENG", 78)
+		c.sim_next()
+		if k == 2:
+			c = Cup.from_dict(JSON.parse_string(JSON.stringify(c.to_dict())))
+		c.sim_next()
+		cups.append(JSON.stringify(JSON.parse_string(JSON.stringify(c.fixtures))))
+	check(cups[0] == cups[1] and cups[1] == cups[2], "a cup from a seed: the same results, saved and loaded part way too")
 
 
 ## Pausing and going back (playtest: the pause button sat off screen; Esc did nothing in a browser; Back with the
@@ -1761,11 +2324,8 @@ func _crowd_facing() -> void:
 						off += 1
 			var lv := "Low" if g == Game.GFX_LOW else "High"
 			check(n > 0 and bad == 0, "%s, %s: every spectator faces the court (%d of %d do not)" % [lv, venue, bad, n])
-			# (High: all 3D but in the arena, where the bowl's far rows are cards and its nearer rows and the courtside
-			# stands 3D people.)
-			var want_cards := as_cards == n if g == Game.GFX_LOW else (as_cards > 0 and as_cards < n - 500 if venue == "arena" else as_cards == 0)
-			check(want_cards, "%s, %s: %s (%d cards of %d)" % [lv, venue,
-				"cards" if g == Game.GFX_LOW else ("3D people and the bowl's far rows as cards" if venue == "arena" else "3D people"), as_cards, n])
+			check(as_cards == (n if g == Game.GFX_LOW else 0), "%s, %s: %s (%d cards of %d)" % [lv, venue,
+				"cards" if g == Game.GFX_LOW else "3D people", as_cards, n])
 			check(off == 0, "%s, %s: every spectator stands on the ground or sits on a seat (%d off)" % [lv, venue, off])
 			if g == Game.GFX_LOW and venue == "outdoor" and not crowds.is_empty():
 				# A camera just behind the near side's crowd: the cards within 6 m of it left out, no others.
@@ -2230,6 +2790,163 @@ func _body_checks() -> void:
 	await _shots_and_hands()
 
 
+## No arms held straight out (the owner's "arms just stretched out when running", and the world check's T/A pose), on
+## Low, Medium and High (the foundation's bodies, with the licensed clips; Low only without them): a player defending
+## from rest up to 3 m/s, closing in at 1.7 m/s, edging and stopping on the holder, defending a shot, marking sideways
+## and posting on the move, and every moving player (over 0.5 m/s) through AI matches, never has an arm out past
+## ARM_OUT degrees from hanging with its elbow under ARM_BENT degrees bent (an inside angle over 150), save arms up
+## overhead (ARM_UP degrees or more) in a move that reaches up: defending the ball or a shot, a leap, a catch, the
+## shot. Standing on the holder, a defender's arms rise up toward the ball (ARM_UP or more), the elbows soft. And a
+## shooter who caught right under the post facing away (1 m out, both ends) turns to the post before the ball leaves
+## her hands: her drawn body within SHOT_FACE of it at the release and from 0.25 s into the shot.
+const ARM_OUT := 60.0
+const ARM_BENT := 30.0
+const ARM_UP := 115.0
+const ARM_OVERHEAD := ["defend", "defend_shot", "leap", "catch", "shoot"]
+
+
+## A body's arms as drawn: [[left: degrees out from hanging, degrees the elbow is bent], [right: ...]] (Low: the game's
+## body; with a link: the foundation's, read as it is posed).
+static func _arm_angles(pl: Player) -> Array:
+	var out := []
+	var linked := pl.link != null and pl.link.body.visible
+	var down := -pl.link.body.global_transform.basis.y.normalized() if linked else Vector3.DOWN
+	for side in ["Left", "Right"]:
+		var s := "l" if side == "Left" else "r"
+		var sh: Vector3 = pl.link.body.bone_world(side + "Arm").origin if linked else pl.body.bone_world("upperarm_" + s)
+		var el: Vector3 = pl.link.body.bone_world(side + "ForeArm").origin if linked else pl.body.bone_world("forearm_" + s)
+		var wr: Vector3 = pl.link.body.bone_world(side + "Hand").origin if linked else pl.body.bone_world("hand_" + s)
+		var up := (el - sh).normalized()
+		out.append([rad_to_deg(up.angle_to(down)), rad_to_deg(up.angle_to((wr - el).normalized()))])
+	return out
+
+
+## What is wrong with her arms now ("" if nothing): an arm straight out (see _arms).
+static func _arm_fault(pl: Player, a: Array) -> String:
+	for i in 2:
+		var out: float = a[i][0]
+		var bent: float = a[i][1]
+		if out > ARM_OUT and bent < ARM_BENT and not (out >= ARM_UP and pl.act in ARM_OVERHEAD):
+			return "%s %s arm %.0f deg out, elbow %.0f bent (%s, %.1f m/s, t %.2f)" % [pl.pos, ["left", "right"][i], out, bent, pl.act, pl.vel.length(), pl.act_t]
+	return ""
+
+
+func _arms() -> void:
+	var was: int = int(Game.settings.graphics)
+	var was_off := FoundationLink.off
+	var levels := [Game.GFX_LOW]
+	if WsgClips.available() and ResourceLoader.exists(FoundationLink.DIR + "hero_rig.json"):
+		levels += [Game.GFX_MEDIUM, Game.GFX_HIGH]
+	else:
+		print("arms: Medium and High skipped (no licensed clips here)")
+	var sq: Array = DB.squad("NZL")
+	for g in levels:
+		Game.settings.graphics = g
+		FoundationLink.off = g == Game.GFX_LOW
+		var lv: String = ["Low", "Medium", "High"][g]
+		# One player at a time, [act, speed, sideways]: 2.5 s on the move from rest, then stopping on the spot.
+		for case: Array in [["defend", 3.0, false], ["defend", 1.7, false], ["defend", 0.6, false], ["defend_shot", 1.0, false],
+				["mark", 4.0, true], ["post", 1.0, false]]:
+			var pl := Player.new(0, sq[2], "WA")
+			add_child(pl)
+			await frames(1)
+			pl.fenced = false
+			pl.place(Vector2.ZERO, 0.0)
+			var st := {"n": 0, "bad": "", "up": 999.0, "bent": 999.0}
+			var take := func():
+				var a := _arm_angles(pl)
+				st.n += 1
+				var moving := pl.vel.length() > 0.5
+				if moving and st.bad == "":
+					st.bad = _arm_fault(pl, a)
+				if not moving and st.get("stop", false) and pl.act == "defend":
+					st.up = minf(st.up, minf(a[0][0], a[1][0]))
+					st.bent = minf(st.bent, minf(a[0][1], a[1][1]))
+			if pl.link:
+				pl.link.body.posed.connect(take)
+			var go := Vector2(1, 0) if case[2] else Vector2(0, 1)
+			for f in 120:
+				var stop: bool = f >= 75
+				st.stop = stop and f >= 105
+				pl.set_act(case[0], "l" if case[0] == "post" else "")
+				pl.target = pl.p if stop else pl.p + go * 8.0
+				pl.want_speed = 0.0 if stop else float(case[1])
+				pl.look_on = case[2]
+				pl.look_at_p = pl.p + Vector2(0, 10)
+				pl.advance(1.0 / 30.0)
+				await get_tree().process_frame
+				if pl.link == null:
+					take.call()
+			var what := "%s, a player %s at %.1f m/s then stopping" % [lv, case[0], case[1]]
+			check(st.n > 60 and st.bad == "", "%s: no arm held straight out on the move (%s)" % [what, st.bad if st.bad != "" else "%d poses" % st.n])
+			if case[0] == "defend":
+				check(st.up >= ARM_UP and st.bent >= 20.0 and st.bent < 90.0, "%s: standing on the holder, her arms up toward the ball, elbows soft (%.0f deg up, elbows %.0f bent)" % [what, st.up, st.bent])
+			pl.queue_free()
+			await frames(1)
+		# Every moving player in an AI match.
+		var m := _study_match(11 if g != Game.GFX_MEDIUM else 12, {"venue": "arena" if g != Game.GFX_MEDIUM else "hall"})
+		await frames(3)
+		var ms := {"n": 0, "bad": 0, "first": ""}
+		var see := func(pl: Player):
+			if m.phase != "live" or pl.vel.length() <= 0.5:
+				return
+			ms.n += 1
+			var why := _arm_fault(pl, _arm_angles(pl))
+			if why != "":
+				ms.bad += 1
+				if ms.first == "":
+					ms.first = why
+		for pl: Player in m.players[0] + m.players[1]:
+			if pl.link:
+				pl.link.body.posed.connect(see.bind(pl))
+		for f in 1200:
+			await get_tree().process_frame
+			if g == Game.GFX_LOW:
+				for pl: Player in m.players[0] + m.players[1]:
+					see.call(pl)
+		check(ms.n > 3000 and ms.bad == 0, "%s, an AI match: no moving player's arm held straight out (%d of %d frames: %s)" % [lv, ms.bad, ms.n, ms.first])
+		print("arms: %s, an AI match: %d moving frames, %d with an arm straight out" % [lv, ms.n, ms.bad])
+		# The shooter who caught facing away, right under the post, at both ends.
+		var worst := 0.0
+		var at_release := 0.0
+		var seen := 0
+		for t in 2:
+			for spot: Vector2 in [Vector2(-1.0, 0.0), Vector2(-0.8, 0.6)]:
+				await _wait_live(m, 1800)
+				var gs: Player = m.player_at(t, "GS")
+				var post := Court.goal_post(gs.dir)
+				m.pass_info = {}
+				m.shot_info = {}
+				m._release_holder()
+				gs.p = post + Vector2(spot.x * gs.dir, spot.y)
+				gs.vel = Vector2.ZERO
+				gs.target = gs.p
+				gs.facing = atan2(-gs.dir, 0.0)
+				gs.body_yaw = gs.facing
+				m._give(gs)
+				m.ai._decide[gs] = 99.0
+				m.shoot()
+				var last := INF
+				for f in 60:
+					await get_tree().process_frame
+					if gs.act != "shoot" or not gs.has_ball():
+						break
+					var bz: Vector3 = gs.link.body.global_transform.basis.z if gs.link and gs.link.body.visible else gs.body.global_transform.basis.z
+					last = absf(rad_to_deg(angle_difference(atan2(bz.x, bz.z), atan2(post.x - gs.p.x, post.y - gs.p.y))))
+					if gs.act_t >= 0.25:
+						worst = maxf(worst, last)
+						seen += 1
+				at_release = maxf(at_release, last)
+				m.ai._decide.erase(gs)
+				await frames(15)
+		check(seen > 40 and at_release < SHOT_FACE and worst < SHOT_FACE, "%s: a shooter who caught facing away turns to the post before the shot (%.0f deg off at the release, %.0f from 0.25 s in; %d frames)" % [lv, at_release, worst, seen])
+		print("arms: %s: the shooter caught facing away, %.0f deg off the post at the release (%.0f at most from 0.25 s in)" % [lv, at_release, worst])
+		m.queue_free()
+		await frames(2)
+	Game.settings.graphics = was
+	FoundationLink.off = was_off
+
+
 ## Every shot in AI matches, on Low and (with the licensed clips) Medium: the shooter's drawn body faces the post from
 ## her set to the release (within SHOT_FACE; the owner: "a player shooting, the woman facing the wrong direction and
 ## not at the hoop"); and every frame the ball is held, the ball in her hands, not her forearms: Low, each palm's skin
@@ -2622,7 +3339,7 @@ func _watch_ai() -> void:
 	if go == null:
 		return
 	go.pressed.emit()
-	await frames(3)
+	await _loaded()
 	var m = Game.current
 	check(m is Match, "watch: Watch starts a match")
 	if not (m is Match):
@@ -2699,7 +3416,7 @@ func _watch_ai() -> void:
 	await frames(3)
 	_button_with(setup, tr("WATCH_GO")).pressed.emit()
 	Game.test_quarter_s = 0.0
-	await frames(2)
+	await _loaded()
 	m = Game.current
 	check(m is Match and m.speed == 1 and m.watch, "watch: a new match starts at 1x")
 	m.set_speed(2)
@@ -2816,8 +3533,213 @@ func _howto_positions() -> void:
 
 
 ## The first button under n whose text is t.
+## The loading overlay on every Start button (Game.start_match_loading: the shared foundation's WsgLoading). The owner:
+## "when you click start game there is a loading delay ... users might think the game has frozen". Quick Match's Play,
+## Watch AI's Watch, the Nations Cup's and the Club Season's Play and the result screen's Rematch: the tap puts the
+## overlay up in its own frame and turns the screen's buttons off; a second tap and Back start nothing; the work
+## starts two frames later; the bar only moves forward and reaches the end; the match takes the screen's place and
+## plays. The match built in steps is the one start_match builds at once.
+func _loading_overlay() -> void:
+	for f in DirAccess.get_files_at("res://ui"):
+		if f.ends_with(".gd"):
+			check(not FileAccess.get_file_as_string("res://ui/" + f).contains("Game.start_match("),
+				"loading: ui/%s starts its matches under the overlay (Game.start_match_loading)" % f)
+	Game.delete_cup()
+	Game.new_cup("ENG")
+	Game.delete_league()
+	Game.new_league(String(DB.club_ids()[0]))
+	var fake: Dictionary = (load("res://tests/fit_audit.gd") as Script).fake_result()
+	var paths := [["quick", "res://ui/quick_setup.gd", {}, "PLAY"], ["watch", "res://ui/watch_setup.gd", {}, "WATCH_GO"],
+		["cup", "res://ui/cup_screen.gd", {}, "PLAY"], ["league", "res://ui/league_screen.gd", {}, "PLAY"],
+		["rematch", "res://ui/result_screen.gd", {"result": fake}, "REMATCH"]]
+	var want_steps := ["Match", "Venue", "Court", "Crowd", "Home team", "Away team", "Bench", "Umpires", "Scoreboard", "Centre pass", "Warming up"]
+	for pth in paths:
+		var e: String = pth[0]
+		var s := Game.show_screen(pth[1], pth[2])
+		await frames(3)
+		var b := _button_with(s, tr(pth[3]))
+		check(b != null and b.is_visible_in_tree() and not b.disabled, "loading: %s: the screen has its %s button" % [e, pth[3]])
+		if b == null:
+			continue
+		var live := []
+		for x in s.find_children("*", "BaseButton", true, false):
+			if not (x as BaseButton).disabled:
+				live.append(x)
+		var f0 := Engine.get_process_frames()
+		b.pressed.emit()
+		var ld := WsgLoading.current()
+		check(ld != null and ld.is_inside_tree() and Engine.get_process_frames() == f0 and (ld.parts().root as Control).is_visible_in_tree(),
+			"loading: %s: the tap puts the overlay up in its own frame" % e)
+		check(live.all(func(x): return (x as BaseButton).disabled), "loading: %s: the screen's %d buttons go off" % [e, live.size()])
+		if ld == null:
+			continue
+		var name_l: Label = ld.parts().root.find_child("GameName", true, false)
+		check(name_l != null and name_l.text == tr("GAME_TITLE") and (ld.parts().title as Label).text == tr("LOADING")
+			and (ld.parts().bar as ColorRect).color == Game.C_ACCENT and (ld.parts().tip as Label).text != "",
+			"loading: %s: the game's name, its loading line, the lime bar and a tip" % e)
+		var started := [-1]
+		ld.load_started.connect(func(): started[0] = Engine.get_process_frames())
+		var fr := []
+		ld.progressed.connect(func(f, _l): fr.append(f))
+		var rep_ := {}
+		ld.finished.connect(func(): rep_.merge(ld.report))
+		check(not await Game.start_match_loading({"home": "AUS", "away": "NZL"}), "loading: %s: a second start is refused" % e)
+		b.pressed.emit()
+		check(WsgLoading.current() == ld, "loading: %s: a second tap starts nothing" % e)
+		Game.go_back()
+		check(Game.current == s and WsgLoading.current() == ld, "loading: %s: Back does nothing while it loads" % e)
+		var shown := []
+		var guard := 0
+		var held_ok := true
+		var held_frames := 0
+		while WsgLoading.busy() and guard < 60000:
+			shown.append(ld.shown())
+			var hm = Game.current
+			if hm is Match and hm.held:
+				held_frames += 1
+				held_ok = held_ok and hm.phase == "setup" and (hm.hud == null or not hm.hud.visible)
+			await frames(1)
+			guard += 1
+		check(held_ok and held_frames > 0, "loading: %s: behind the overlay the match waits (%d frames: no whistle, no HUD)" % [e, held_frames])
+		if is_instance_valid(ld) and rep_.is_empty():
+			rep_.merge(ld.report)    # (done() has written it: the settle over, the fade under way)
+		var mono := true
+		for i in range(1, fr.size()):
+			mono = mono and float(fr[i]) >= float(fr[i - 1])
+		for i in range(1, shown.size()):
+			mono = mono and float(shown[i]) >= float(shown[i - 1])
+		check(started[0] - f0 >= 2, "loading: %s: the work starts once the overlay has been drawn (frame %d after the tap)" % [e, started[0] - f0])
+		check(mono and not fr.is_empty() and is_equal_approx(float(fr[-1]), 1.0) and shown.size() > 5,
+			"loading: %s: the bar only moves forward and reaches the end (%d steps, %d frames, last %.2f)" % [e, fr.size(), shown.size(), fr[-1] if not fr.is_empty() else -1.0])
+		await frames(2)
+		check(not rep_.is_empty() and (rep_.failed as Array).is_empty() and want_steps.all(func(k): return (rep_.steps as Dictionary).has(k))
+			and int((rep_.get("warm", {}) as Dictionary).get("looks", 0)) > 0 and rep_.has("settled"),
+			"loading: %s: every step ran, the warm-up and the settle (%s, %s)" % [e, (rep_.get("steps", {}) as Dictionary).keys(), rep_.get("warm")])
+		var m = Game.current
+		var matches := get_children().filter(func(n): return n is Match).size()
+		check(m is Match and matches == 1 and not is_instance_valid(s) and m.process_mode == Node.PROCESS_MODE_INHERIT and not m.held
+			and m.cam.current and (m.hud == null or (m.hud.visible and m.hud.process_mode == Node.PROCESS_MODE_INHERIT)) and not get_viewport().disable_3d,
+			"loading: %s: the match takes the screen's place and kicks off, one match (%d)" % [e, matches])
+		if not (m is Match):
+			continue
+		check(String(m.config.mode) == {"quick": "quick", "watch": "watch", "cup": "cup", "league": "league", "rematch": "quick"}[e],
+			"loading: %s: the %s match" % [e, m.config.mode])
+		await frames(12)
+		var layers_ok := true
+		for g in m.find_children("*", "GeometryInstance3D", true, false):
+			layers_ok = layers_ok and (g as GeometryInstance3D).layers != 0
+		check(m.find_children("*", "Camera3D", true, false).size() == 1 and layers_ok,
+			"loading: %s: nothing of the warm-up left in the match (its camera, hidden layers)" % e)
+		check(ld == null or not is_instance_valid(ld), "loading: %s: the overlay has gone" % e)
+		if m.hud and m.hud.card:
+			m.hud.card.close()
+		await _wait_live(m)
+		var c0: float = m.clock
+		await frames(20)
+		check(m.phase != "setup" and m.clock > c0, "loading: %s: the match plays (%s, %.2f s)" % [e, m.phase, m.clock - c0])
+	# The same match, built in steps or all at once.
+	var cfg := {"home": "JAM", "away": "RSA", "venue": "outdoor", "quarter": 15, "mode": "quick", "user_team": 0, "seed": 21, "difficulty": 1}
+	Game.show_screen("res://ui/quick_setup.gd")
+	await frames(2)
+	# (As built: when the warm-up starts, before it has run a frame; and at once.)
+	var sig := []
+	Game.start_match_loading(cfg.duplicate())
+	WsgLoading.current().progressed.connect(func(_f, l):
+		if l == "Warming up" and sig.is_empty():
+			for c in get_children():
+				if c is Match:
+					sig.append(_match_sig(c)))
+	await _loaded()
+	var a: Array = sig[0] if sig.size() == 1 else []
+	Game.start_match(cfg.duplicate())
+	var bsig := _match_sig(Game.current)
+	check(a == bsig and a.size() > 20, "loading: the match built in steps is the one built at once (%d parts)" % a.size())
+	if a != bsig:
+		for i in mini(a.size(), bsig.size()):
+			if a[i] != bsig[i]:
+				print("  first difference: %s / %s" % [a[i], bsig[i]])
+				break
+	Game.goto_menu()
+	await frames(3)
+	Game.delete_cup()
+	Game.delete_league()
+
+
+## What a match is made of, as built: the toss, the players and where they stand, the bench, the venue's nodes and
+## their meshes, the crowd, the officials, the HUD's parts, the match's random state.
+func _match_sig(m: Match) -> Array:
+	var rs := m.restart.duplicate()
+	for k in rs:
+		if rs[k] is Player:
+			rs[k] = (rs[k] as Player).data.id
+	var out := [m.cp_first, m.first_dir, m.rng.state, m.phase, rs, m.me.data.id if m.me else ""]
+	for t in 2:
+		for pl in m.players[t]:
+			out.append([pl.data.id, pl.pos, pl.position.snapped(Vector3.ONE * 0.001), pl.dir, pl.body.get_class()])
+		out.append(m.bench[t].map(func(x): return x.id))
+	for c in m.arena.get_children():
+		var v := [c.get_class(), String(c.name).get_slice("@", 1) if String(c.name).begins_with("@") else String(c.name)]  # (made-up names: their kind)
+		if c is MeshInstance3D and (c as MeshInstance3D).mesh:
+			var mesh: Mesh = (c as MeshInstance3D).mesh
+			for i in mesh.get_surface_count():
+				v.append(mesh.surface_get_arrays(i)[Mesh.ARRAY_VERTEX].size())
+		out.append(v)
+	if m.arena.crowd:
+		var cr: Crowd = m.arena.crowd
+		out.append([(cr.placed.get("spots", []) as Array).size(), cr.used.size(), cr.shirts.size(), cr.people != null, cr.cards != null])
+	for u in m.umpires:
+		out.append(u.position.snapped(Vector3.ONE * 0.001))
+	out.append(m.ball.position.snapped(Vector3.ONE * 0.001))
+	for c in m.get_children():
+		out.append([c.get_class(), String(c.name).get_slice("@", 1) if String(c.name).begins_with("@") else String(c.name)])
+	out.append(m.hud.root.find_children("*", "Control", true, false).size() if m.hud else -1)
+	return out
+
+
+## A Start button's match: till the loading overlay (Game.start_match_loading) has built it and gone.
+func _loaded(limit := 60000) -> void:
+	var guard := 0
+	while WsgLoading.busy() and guard < limit:
+		await frames(1)
+		guard += 1
+	await frames(1)
+
+
 func _button_with(n: Node, t: String) -> Button:
 	for b in n.find_children("*", "Button", true, false):
 		if (b as Button).text == t:
 			return b
 	return null
+
+
+## A restart taker whose straight way to the spot crosses a goal circle she may not enter goes round it (she stood at
+## its edge for good before: a throw-in over the goal line beyond the circle stalled the match).
+func _setup_route() -> void:
+	var stuck := []
+	var tried := 0
+	for dir: int in [1, -1]:
+		for pos: String in ["WA", "C", "WD", "GD", "GK", "GA", "GS"]:
+			for end: int in [1, -1]:
+				var circle := Court.A_ATT_CIRCLE if end == dir else Court.A_DEF_CIRCLE
+				if circle in Rules.AREAS[pos]:
+					continue
+				for side: float in [1.0, -1.0]:
+					var spot := Vector2(end * (Court.HALF_L + 0.1), side * 5.24)
+					var from := Vector2(end * (Court.HALF_L - 3.55), -side * 3.39)
+					if Rules.offside(pos, Rules.onside_point(pos, spot, dir, 0.02), dir):
+						continue
+					var p := Rules.onside_point(pos, from, dir, 0.05)
+					var goal := Rules.onside_point(pos, spot, dir, 0.02)
+					tried += 1
+					var steps := 0
+					while p.distance_to(goal) > 0.3 and steps < 600:
+						var to := Match.round_circles(pos, dir, p, goal)
+						var nxt := p + (to - p).limit_length(0.12)
+						if Rules.offside(pos, nxt, dir):
+							break   # (she pulls up at a line she may not cross, as Player.advance does: stuck there)
+						p = nxt
+						steps += 1
+					if p.distance_to(goal) > 0.3:
+						stuck.append("%s dir %d end %d at %s" % [pos, dir, end, p])
+	check(tried > 8 and stuck.is_empty(), "a restart taker goes round a circle she may not enter to the spot (%d ways, stuck: %s)" % [tried, stuck])
+

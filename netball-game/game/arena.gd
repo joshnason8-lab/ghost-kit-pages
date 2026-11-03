@@ -33,14 +33,25 @@ var _lamps: Array[Vector3] = []   # lights reflected in the floor (at most 8)
 var _look := {}                   # the shaders' settings for this venue (VenueLook uniforms)
 var _glow_mat: ShaderMaterial
 # The two nets (index 0 the post at -x, 1 at +x): the foot's swing (m, x and z) and how fast it swings, a ripple's
-# size and phase, the ball's last position, whether it was in the net, and a moment's rest after a touch.
+# size and phase, how far its lower cords billow out, the ball's last position, whether it was in the net, and a
+# moment's rest after a touch.
 var nets: Array = []
 var _ball_was := Vector3.INF
+## The venue's props as solid shapes (the shared foundation's WsgSolidProps, ADOPTING §5.15): every body's step keeps
+## out of them and the ball bounces off them (the owner: "Every asset was built to be a tangible object"). Each
+## builder declares what it builds where it builds it (Geo's parts); the models (VenueProps) from their own bounds.
+var solid := WsgSolidProps.new()
+## The floor bodies may use (x, z): inside the boards, the walls or the fences (the crowd beyond is not a prop).
+var floor_rect := Rect2(-Court.HALF_L - Court.RUNOFF, -Court.HALF_W - Court.RUNOFF, Court.LENGTH + Court.RUNOFF * 2.0,
+	Court.WIDTH + Court.RUNOFF * 2.0)
+var _ball_v := Vector3.ZERO      # the ball's speed a frame ago (a shot's last step to the ring is a short one)
 
 const NET_ROWS := 6               # the net's rows of faces (it bends between them)
 const NET_HZ := 1.3               # the net's sway: a rope skirt 42 cm deep swings about 1.3 times a second
-const NET_DAMP := 0.1             # ... and dies away over two or three seconds (damping ratio)
-const NET_MAX := 0.13             # m: the foot swings no further than this
+const NET_DAMP := 0.12            # ... and dies away over two or three seconds (damping ratio)
+const NET_MAX := 0.34             # m: the foot swings no further than this
+const NET_GOAL_KICK := Vector2(1.2, 2.8)   # m/s: a goal's kick to the foot, least and most (a 15-34 cm swing)
+const NET_RIM_KICK := Vector2(1.3, 2.0)    # m/s: off the ring (a 16-24 cm shake)
 
 
 func _init(p_venue := "arena", p_home_colors := []) -> void:
@@ -48,7 +59,21 @@ func _init(p_venue := "arena", p_home_colors := []) -> void:
 	home_colors = p_home_colors
 
 
+## Built by the match's loading steps (Match.build_steps: build_venue, build_draw, build_crowd, each in a frame of its
+## own under the loading overlay), not all at once when it enters the tree. The same parts in the same order.
+var staged := false
+
+
 func _ready() -> void:
+	if staged:
+		return
+	build_venue()
+	build_draw()
+	build_crowd()
+
+
+## The venue's structure, court and posts: its geometry, light and sky (nothing drawn yet).
+func build_venue() -> void:
 	_lit = Geo.new()
 	_glow = Geo.new()
 	_fx = Geo.new()
@@ -66,9 +91,16 @@ func _ready() -> void:
 		"outdoor":
 			_outdoor()
 	_posts()
+	_solid_models()
+	# The floor, for the record: the ball's own (Ball.step bounces and rolls it on it); bodies stand on it.
+	solid.add({"name": "floor", "kind": "floor", "y": 0.0, "ball": false})
 	if not home_colors.is_empty():
 		_look["team_a"] = home_colors[0]
 		_look["team_b"] = home_colors[min(1, home_colors.size() - 1)]
+
+
+## The venue's meshes and materials: its structure, glow, props, glass, boards and lights, each one draw call.
+func build_draw() -> void:
 	var lit := VenueLook.lit()
 	var glow := VenueLook.glow()
 	var props := _props.material()
@@ -77,7 +109,7 @@ func _ready() -> void:
 		_apply(m)
 	_glow_mat = glow
 	for s in 2:
-		nets.append({"sw": Vector2.ZERO, "sv": Vector2.ZERO, "amp": 0.0, "ph": 0.0, "in": false, "rest": 0.0, "ball": Vector4.ZERO})
+		nets.append({"sw": Vector2.ZERO, "sv": Vector2.ZERO, "amp": 0.0, "ph": 0.0, "bil": 0.0, "whip": Vector2.ZERO, "in": false, "rest": 0.0, "ball": Vector4.ZERO})
 	glow.set_shader_parameter("net_ring", [Vector4(Court.ring_centre(-1).x, Court.RING_H, 0, 0), Vector4(Court.ring_centre(1).x, Court.RING_H, 0, 0)])
 	_net_uniforms()
 	add_child(_lit.commit(lit))
@@ -104,6 +136,11 @@ func _ready() -> void:
 	var fxi := _fx.commit(fx)
 	fxi.sorting_offset = 50.0
 	add_child(fxi)
+
+
+## The crowd in the venue's places (CrowdVenues, declared by the venue's builder): Low's cards, and on Medium and
+## High the 3D people, built in a loading step of its own.
+func build_crowd() -> void:
 	if crowd_venue and not crowd_off:
 		crowd = Crowd.new()
 		Crowd.set_tint(_look.get("stand_tint", Color.WHITE))
@@ -159,10 +196,12 @@ func _process(delta: float) -> void:
 
 # ---------------------------------------------------------------- the nets
 
-## The nets, a frame on: the ball dropping through one swings it the way the ball was going, ripples it down its
-## cords, pushes it out round the ball and drags it down as it passes; the ball off the ring or brushing the net
-## stirs it a little; then each settles, a damped swing of about 1.3 a second (the glow shader moves the net's faces:
-## no more draw calls, the same on every level). Wherever the ball is shown, a replay too.
+## The nets, a frame on: the ball dropping through one whips it the way the ball was going (its foot out 15-34 cm,
+## more the harder the ball comes in), ripples it down its cords, billows the lower net out and bulges it round the
+## ball, and drags it down as the ball passes; the ball off the ring or brushing the net shakes it (16-24 cm); then each
+## settles, a damped swing of about 1.3 a second. Big enough to see from the TV camera's wide shot as well as its
+## close shot of the post. (The glow shader moves the net's faces: no more draw calls, the same on every level.)
+## Wherever the ball is shown, a replay too.
 func _nets(dt: float, at: Vector3) -> void:
 	if dt <= 0.0 or nets.is_empty():
 		return
@@ -172,6 +211,8 @@ func _nets(dt: float, at: Vector3) -> void:
 		if v.length() > 40.0:
 			v = Vector3.ZERO   # (a jump: the ball placed for a restart or a replay's cut)
 	_ball_was = at
+	var v_in := v if v.length() >= _ball_v.length() else _ball_v
+	_ball_v = v
 	var w := TAU * NET_HZ
 	var busy := false
 	for s in 2:
@@ -188,18 +229,33 @@ func _nets(dt: float, at: Vector3) -> void:
 			if inside:
 				ball = Vector4(at.x, at.y, at.z, 1.0)
 				if not n.in:
-					# Through the ring: a swing the way it was going, and a ripple down the cords.
-					n.sv += vh * 0.3 + off.normalized() * 0.25 * minf(absf(v.y), 4.0) * off.length() / Court.RING_R
-					n.amp = maxf(float(n.amp), 0.012 + 0.004 * minf(absf(v.y), 5.0))
+					# Through the ring: a ripple down the cords and the lower net billowing out; the whip it will
+					# give the net as it drops out, the way it was going (straight down: out to the side it came
+					# in on), harder the faster it came.
+					var vh_in := Vector2(v_in.x, v_in.z)
+					var way := vh_in if vh_in.length() > 0.3 else (off if off.length() > 0.02 else Vector2(-c.x, 0.0))
+					var kick := clampf(0.6 * vh_in.length() + 0.35 * absf(v_in.y), NET_GOAL_KICK.x, NET_GOAL_KICK.y)
+					n.whip = way.normalized() * kick
+					n.sv += n.whip * 0.25
+					n.amp = maxf(float(n.amp), 0.03 + 0.007 * minf(absf(v_in.y), 6.0))
+					n.bil = maxf(float(n.bil), 0.05)
 				# The ball in the net carries its foot along.
 				n.sv += (off * 1.6 - n.sw) * 9.0 * dt
 			elif n.rest <= 0.0 and v.length() > 0.8 and absf(depth - 0.12) < 0.3 and off.length() > Court.RING_R - 0.03:
 				# Off the ring, or brushing the net's outside: a stir.
 				var gap := off.length() - Court.RING_R * lerpf(1.0, 0.68, clampf(depth / Ball.NET_DEPTH, 0.0, 1.0))
 				if gap < Ball.R + 0.04:
-					n.sv += vh.limit_length(4.0) * 0.05 - off.normalized() * 0.08
-					n.amp = maxf(float(n.amp), 0.008)
+					# Hit sideways, the ring and the net hung from it shake: away from the ball, and the way it went.
+					var kick := clampf(0.3 * v_in.length(), NET_RIM_KICK.x, NET_RIM_KICK.y)
+					n.sv += (vh.normalized() * 0.4 - off.normalized()).normalized() * kick
+					n.amp = maxf(float(n.amp), 0.03)
+					n.bil = maxf(float(n.bil), 0.015)
 					n.rest = 0.35
+		if n.in and not inside and n.whip != Vector2.ZERO:
+			# Out of the bottom (or back out of the top): the net whips on the way the ball went, and ripples again.
+			n.sv += n.whip
+			n.whip = Vector2.ZERO
+			n.amp = maxf(float(n.amp), 0.035)
 		n.in = inside
 		# The swing: a damped spring, a few steps a frame.
 		var steps := maxi(1, ceili(dt / 0.012))
@@ -210,13 +266,15 @@ func _nets(dt: float, at: Vector3) -> void:
 		if n.sw.length() > NET_MAX:
 			n.sw = n.sw.limit_length(NET_MAX)
 			n.sv *= 0.6
-		n.amp = float(n.amp) * exp(-dt / 0.7)
+		n.amp = float(n.amp) * exp(-dt / 0.9)
+		n.bil = float(n.bil) * exp(-dt / 0.45)
 		n.ph = fmod(float(n.ph) + dt * 14.0, TAU * 8.0)
-		var moving: bool = n.sw.length() > 0.0005 or n.sv.length() > 0.002 or float(n.amp) > 0.0005 or inside
+		var moving: bool = n.sw.length() > 0.0005 or n.sv.length() > 0.002 or float(n.amp) > 0.0005 or float(n.bil) > 0.0005 or inside
 		if not moving:
 			n.sw = Vector2.ZERO
 			n.sv = Vector2.ZERO
 			n.amp = 0.0
+			n.bil = 0.0
 		busy = busy or moving or n.ball != ball
 		n.ball = ball
 	if busy:
@@ -233,6 +291,7 @@ func _net_uniforms() -> void:
 		bl.append(n.ball)
 	_glow_mat.set_shader_parameter("net_swing", sw)
 	_glow_mat.set_shader_parameter("net_ball", bl)
+	_glow_mat.set_shader_parameter("net_billow", Vector2(nets[0].bil, nets[1].bil))
 
 
 ## Whether this venue has the LED boards, wordmark and goal lights: indoors, on Medium and High.
@@ -375,6 +434,12 @@ func _posts() -> void:
 		_lit.kind = Vector2(VenueLook.GLOSS, 0)
 		_lit.cylinder(base, base + Vector3(0, 1.75, 0), 0.19, 0.19, pad, 14)
 		_lit.cylinder(base + Vector3(0, 1.75, 0), base + Vector3(0, 1.9, 0), 0.19, 0.19, Color("ff6a1a"), 14)
+		solid.add({"name": "goal post", "kind": "cylinder", "position": base, "radius": Court.POST_R, "height": Court.RING_H + 0.02, "material": "metal"})
+		# The pad, its top rounded (a ball dropping out of the net onto its edge rolls off it, as off a real pad's soft
+		# top, rather than sitting on a hard rim).
+		solid.add({"name": "post pad", "kind": "cylinder", "position": base, "radius": 0.19, "height": 1.71, "material": "padding"})
+		solid.add({"name": "post pad", "kind": "capsule", "a": base + Vector3(0, 1.71, 0), "b": base + Vector3(0, 1.711, 0),
+			"radius": 0.19, "material": "padding"})
 		var ring_c := Vector3((Court.HALF_L - Court.RING_OUT - Court.RING_R) * sx, Court.RING_H, 0)
 		var orange := Color("ff7b1c")
 		_lit.box(Vector3((Court.HALF_L - Court.RING_OUT * 0.5 + 0.02) * sx, Court.RING_H - 0.02, 0), Vector3(Court.RING_OUT + 0.08, 0.05, 0.07), orange)
@@ -387,6 +452,10 @@ func _posts() -> void:
 			var p1 := ring_c + Vector3(cos(a1), 0, sin(a1)) * (Court.RING_R + 0.01)
 			_lit.cylinder(p0, p1, 0.011, 0.011, orange, 4 if _low else 6, false)
 		_lit.kind = Vector2.ZERO
+		# The arm from the post out to the ring, and the ring's tube: a ball through the middle passes, one onto it comes off.
+		solid.add({"name": "ring arm", "kind": "capsule", "a": Vector3(base.x, Court.RING_H - 0.02, 0),
+			"b": Vector3((Court.HALF_L - Court.RING_OUT + 0.03) * sx, Court.RING_H - 0.02, 0), "radius": 0.03, "material": "metal"})
+		solid.add_ring({"name": "ring", "centre": ring_c, "radius": Court.RING_R + 0.01, "tube": 0.011, "material": "metal"})
 		if _leds():
 			_goal_light(base, sx)
 		# The net: a corded skirt from the ring down to a narrower opening 42 cm below (the shader knots the cords), in
@@ -416,6 +485,7 @@ func _goal_light(base: Vector3, sx: float) -> void:
 	var c := base + Vector3(0, 2.62, 0.1)
 	_led.kind = Vector2(2, 0)
 	_led.box(c, Vector3(0.14, 0.22, 0.1), Color("23262c"))
+	solid.add({"name": "goal light", "kind": "box", "xf": Transform3D(Basis.IDENTITY, c), "size": Vector3(0.14, 0.22, 0.1), "material": "plastic"})
 	_led.kind = Vector2(2, 1)
 	var h := Vector3(0, 0.085, 0)
 	# Toward the broadcast side (+z) and toward the court (-sx).
@@ -432,15 +502,20 @@ func _goal_light(base: Vector3, sx: float) -> void:
 func _bench(table: Color, seat: Color, accent: Color) -> void:
 	var z := Court.HALF_W + Court.RUNOFF + 0.9
 	_lit.box(Vector3(0, 0.38, z), Vector3(3.2, 0.76, 0.7), table)
+	_solid_box("officials' table", Vector3(0, 0.38, z), Vector3(3.2, 0.76, 0.7), "plastic")
 	_glow.kind = Vector2(VenueLook.LED, 0.2)
 	_glow.wall(Vector3(1.55, 0, z - 0.36), Vector3(-1.55, 0, z - 0.36), 0.42, 0.68, accent)
 	_glow.kind = Vector2.ZERO
 	for sx: float in [-1.0, 1.0]:
 		_lit.box(Vector3(6.5 * sx, 0.23, z + 0.2), Vector3(4.0, 0.45, 0.45), seat)
 		_lit.box(Vector3(6.5 * sx, 0.6, z + 0.42), Vector3(4.0, 0.7, 0.08), accent.darkened(0.25))
+		_solid_box("team bench seat", Vector3(6.5 * sx, 0.23, z + 0.2), Vector3(4.0, 0.45, 0.45), "plastic")
+		_solid_box("team bench back", Vector3(6.5 * sx, 0.6, z + 0.42), Vector3(4.0, 0.7, 0.08), "plastic")
 		if not _low:
 			for i in 3:
 				_lit.box(Vector3(-0.9 + i * 0.9, 0.5, z + 0.6), Vector3(0.45, 1.0, 0.45), seat.darkened(0.2))
+				if sx > 0.0:   # (the loop draws them twice, in one place)
+					_solid_box("officials' chair",Vector3(-0.9 + i * 0.9, 0.5, z + 0.6), Vector3(0.45, 1.0, 0.45), "plastic")
 
 
 # ---------------------------------------------------------------- stands
@@ -525,6 +600,7 @@ func _arena() -> void:
 	_lit.kind = Vector2.ZERO
 	_ring(_lit, x0, z0, 0.0, 0.0, 0.0, front, wall)
 	_bowl_tier(x0, z0, lower, first)
+	_solid_bowl(x0, z0, lower, first)
 	_ring(_glow, x0, z0, -0.02, front - 0.07, -0.02, front, Color("ff7a2a"), Vector2(VenueLook.LED, 0.6))
 	# The walkway behind the lower tier, and the fascia under the upper tier with its strip of light.
 	var fo: float = upper[0]
@@ -547,6 +623,10 @@ func _arena() -> void:
 	_rigs(x0, z0)
 	_twinkles(x0, z0, fo, fy, uo, uy)
 	_bench(Color("161e4a"), Color("232c66"), Color("29d8ea"))
+	# Bodies stay inside the boards (the gap at the officials' table has the table in it).
+	var bx := Court.HALF_L + Court.RUNOFF + 0.45
+	var bz := Court.HALF_W + Court.RUNOFF + 0.45
+	floor_rect = Rect2(-bx, -bz, bx * 2.0, bz * 2.0)
 	# Courtside stands in front of the lower tier on the far side and both ends, people in their seats (CrowdVenues.arena):
 	# on Low the owner's light three-row bleacher, on Medium and High the dark metal one. And the bowl's people, all
 	# round both tiers (CrowdVenues.bowl), darkening going up as the stands do into the night.
@@ -597,17 +677,12 @@ func _bowl_tier(x0: float, z0: float, tier: Array, first: int) -> void:
 			var lim: float = float(sd[3]) + o - CrowdVenues.MITRE
 			var at := func(u: float, off: float, up: float) -> Vector3: return mid + along * u + out * off + Vector3.UP * up
 			# The stairs, and the blocks of seats between them.
-			var cuts := [-lim]
-			var k := ceili(-lim / CrowdVenues.AISLE_EVERY - 0.5)
-			while (k + 0.5) * CrowdVenues.AISLE_EVERY < lim:
-				var u := (k + 0.5) * CrowdVenues.AISLE_EVERY
+			var cuts := _bowl_cuts(lim)
+			for u: float in _bowl_aisles(lim):
 				_face(_lit, at.call(u - w, t * 0.5, rise * 0.5), at.call(u + w, t * 0.5, rise * 0.5), at.call(u + w, t, rise * 0.5),
 					at.call(u - w, t, rise * 0.5), Vector3.UP, stair_col)
 				_face(_lit, at.call(u - w, t * 0.5, 0.0), at.call(u + w, t * 0.5, 0.0), at.call(u + w, t * 0.5, rise * 0.5),
 					at.call(u - w, t * 0.5, rise * 0.5), -out, stair_col.darkened(0.3))
-				cuts.append_array([u - w, u + w])
-				k += 1
-			cuts.append(lim)
 			for i in range(0, cuts.size(), 2):
 				var u0: float = cuts[i]
 				var u1: float = cuts[i + 1]
@@ -628,6 +703,25 @@ func _bowl_tier(x0: float, z0: float, tier: Array, first: int) -> void:
 					_face(_lit, at.call(c - 0.22, f1, h), at.call(c + 0.22, f1, h), at.call(c + 0.22, f1, h + s.back),
 						at.call(c - 0.22, f1, h + s.back), -out, seat_col.lightened(0.06))
 					c += 0.5
+
+
+## Where the stairs are along a row of the bowl that reaches lim each way from its side's middle (their middles).
+static func _bowl_aisles(lim: float) -> Array:
+	var out := []
+	var k := ceili(-lim / CrowdVenues.AISLE_EVERY - 0.5)
+	while (k + 0.5) * CrowdVenues.AISLE_EVERY < lim:
+		out.append((k + 0.5) * CrowdVenues.AISLE_EVERY)
+		k += 1
+	return out
+
+
+## The blocks of seats along such a row, between the stairs: [from, to, from, to, ...] (m from the side's middle).
+static func _bowl_cuts(lim: float) -> Array:
+	var cuts := [-lim]
+	for u: float in _bowl_aisles(lim):
+		cuts.append_array([u - CrowdVenues.AISLE_W * 0.5, u + CrowdVenues.AISLE_W * 0.5])
+	cuts.append(lim)
+	return cuts
 
 
 ## A four-sided face (a b c d in order round it) facing n.
@@ -678,6 +772,9 @@ func _boards() -> void:
 			_glow.wall(a + inward * 0.01, b + inward * 0.01, 0.18, h - 0.1, cols[int(r[2]) % 3])
 			_glow.kind = Vector2.ZERO
 		var t0 := a - inward * 0.08
+		# Solid: the board from its face back to its frame's back (8 cm), 0.9 m high.
+		var mid := (a + b) * 0.5 - inward * 0.04
+		_solid_box("LED board", mid + Vector3(0, h * 0.5, 0), Vector3(maxf(absf(b.x - a.x), 0.08), h, maxf(absf(b.z - a.z), 0.08)), "plastic")
 		_lit.quad(Vector3(a.x, h, a.z), Vector3(t0.x, h, t0.z), Vector3(t0.x + b.x - a.x, h, t0.z + b.z - a.z), Vector3(b.x, h, b.z), Color("1a2350"))
 
 
@@ -803,6 +900,12 @@ func _hall() -> void:
 	_hall_wall(Vector3(-hl, 0, nz), Vector3(-hl, 0, fz), h, true)
 	_hall_wall(Vector3(hl, 0, fz), Vector3(hl, 0, nz), h, true)
 	_hall_wall(Vector3(hl, 0, nz), Vector3(-hl, 0, nz), h, false)
+	# Solid: the four walls (30 cm of block behind each face), up to the roof.
+	_solid_box("far wall", Vector3(0, h * 0.5, fz - 0.15), Vector3(hl * 2.0 + 0.6, h, 0.3), "concrete")
+	_solid_box("near wall", Vector3(0, h * 0.5, nz + 0.15), Vector3(hl * 2.0 + 0.6, h, 0.3), "concrete")
+	for sx: float in [-1.0, 1.0]:
+		_solid_box("end wall", Vector3((hl + 0.15) * sx, h * 0.5, (fz + nz) * 0.5), Vector3(0.3, h, nz - fz + 0.6), "concrete")
+	floor_rect = Rect2(-hl, fz, hl * 2.0, Court.HALF_W + Court.RUNOFF + 1.4 - fz)
 	# Blue pads behind each goal line, in panels.
 	for sx: float in [-1.0, 1.0]:
 		_lit.kind = Vector2(VenueLook.GLOSS, 0)
@@ -810,6 +913,7 @@ func _hall() -> void:
 			var z := -8.4 + i * 1.4 + 0.7
 			_lit.box(Vector3((hl - 0.04) * sx, 1.05, z), Vector3(0.07, 1.9, 1.38), Color("1d4fa0"))
 		_lit.kind = Vector2.ZERO
+		_solid_box("wall pads", Vector3((hl - 0.04) * sx, 1.05, 0.0), Vector3(0.07, 1.9, 16.8), "padding")
 	_roof(hl, fz, nz, h)
 	# The far wall: cross-court boards, the main doors with the clock over them, a scoreboard, fire exits, benches.
 	for x: float in [-13.0, 13.0]:
@@ -828,6 +932,7 @@ func _hall() -> void:
 	# The main court's boards, winched up to the roof over the basketball court's ends, as for a netball session.
 	for sx: float in [-1.0, 1.0]:
 		_stowed_board(Vector3(12.8 * sx, 0, 0), Vector3(-sx, 0, 0), h)
+	solid.skip("stowed boards, roof trusses", "under the roof, 9 m up and more")
 	# The stand: a retractable stand down the near side, its rows stepped, blue tip-up seats on each, a rail in front.
 	var z0 := hw + 0.4
 	var rows := 7
@@ -837,6 +942,14 @@ func _hall() -> void:
 	var ax := hl * 0.72
 	var grey := Color("2b2f36")
 	_lit.wall(Vector3(ax, 0, z0), Vector3(-ax, 0, z0), 0.0, front, grey, true)
+	# Solid: the stand's front and its rows, each row's box up to its tread, back to the stand's back.
+	for r in rows:
+		var za := z0 + r * depth
+		_solid_box("stand front" if r == 0 else "stand row", Vector3(0, (front + r * rise) * 0.5, (za + z0 + rows * depth) * 0.5),
+			Vector3(ax * 2.0, front + r * rise, z0 + rows * depth - za), "concrete")
+	for sx: float in [-1.0, 1.0]:
+		solid.add({"name": "stand rail", "kind": "cylinder", "position": Vector3(ax * sx, 0, z0), "radius": 0.025, "height": front + 1.0, "material": "metal"})
+	solid.skip("the stand's seats", "on the treads of the stand's rows (solid), the people in them")
 	_declare(CrowdVenues.hall(z0, depth, rise, front, ax))
 	_hall_stand(z0, rows, depth, rise, front, ax)
 	for sx: float in [-1.0, 1.0]:
@@ -859,8 +972,10 @@ func _hall_boards() -> void:
 		var b := Vector3(-15.0 + 30.0 * (i + 1) / n - 0.08, 0, z)
 		_lit.wall(a, b, 0.0, h, Color("1e2228"), true)
 		_lit.box((a + b) * 0.5 + Vector3(0, h + 0.02, -0.04), Vector3(b.x - a.x, 0.04, 0.12), Color("2a2f36"))
+		_solid_box("portable LED board", (a + b) * 0.5 + Vector3(0, (h + 0.04) * 0.5, -0.04), Vector3(b.x - a.x, h + 0.04, 0.12), "plastic")
 		for x: float in [a.x + 0.3, b.x - 0.3]:
 			_lit.box(Vector3(x, 0.03, z - 0.25), Vector3(0.08, 0.06, 0.5), Color("2a2f36"))
+			_solid_box("board's foot", Vector3(x, 0.03, z - 0.25), Vector3(0.08, 0.06, 0.5), "plastic")
 		_led_band(a + Vector3(0, 0, 0.01), b + Vector3(0, 0, 0.01), 0.16, h - 0.08)
 
 
@@ -1043,6 +1158,9 @@ func _backboard(w: Vector3, f: Vector3, off: float) -> void:
 		_lit.cylinder(wp + Vector3(0, 2.4, 0), bp + Vector3(0, 3.0, 0), 0.045, 0.045, STEEL, 6)
 		_lit.cylinder(wp + Vector3(0, 2.4, 0), bp + Vector3(0, 3.9, 0), 0.03, 0.03, STEEL, 4, false)
 		_lit.cylinder(wp + Vector3(0, 4.7, 0), (wp + bp) * 0.5 + Vector3(0, 3.0, 0), 0.03, 0.03, STEEL, 4, false)
+		_solid_box("backboard bracket", wp + Vector3(0, 3.5, 0), Vector3(0.1, 2.6, 0.1), "metal", yaw)
+		for ch: Array in [[wp + Vector3(0, 4.7, 0), bp + Vector3(0, 3.9, 0)], [wp + Vector3(0, 2.4, 0), bp + Vector3(0, 3.0, 0)]]:
+			solid.add({"name": "backboard bracket", "kind": "capsule", "a": ch[0], "b": ch[1], "radius": 0.045, "material": "metal"})
 	_lit.cylinder(w + f * 0.06 + side * -0.55 + Vector3(0, 4.7, 0), w + f * 0.06 + side * 0.55 + Vector3(0, 4.7, 0), 0.04, 0.04, STEEL, 4, false)
 	_lit.cylinder(w + f * 0.06 + side * -0.55 + Vector3(0, 2.4, 0), w + f * 0.06 + side * 0.55 + Vector3(0, 2.4, 0), 0.04, 0.04, STEEL, 4, false)
 	_lit.kind = Vector2.ZERO
@@ -1081,8 +1199,13 @@ func _board(c: Vector3, f: Vector3, y0: float, ring := true) -> void:
 	_lit.kind = Vector2(VenueLook.GLOSS, 0)
 	_lit.box(c + Vector3(0, y0 - 0.03, 0), Vector3(1.84, 0.07, 0.07), Color("1f2329"), yaw)
 	_lit.kind = Vector2.ZERO
+	# Solid: the glass and its frame behind (a pane 8 cm deep), the pad along its foot.
+	_solid_box("backboard", c - f * 0.03 + Vector3(0, (y0 + top) * 0.5, 0), Vector3(hw * 2.0, top - y0, 0.08), "glass", yaw)
+	_solid_box("backboard pad", c + Vector3(0, y0 - 0.03, 0), Vector3(1.84, 0.07, 0.07), "padding", yaw)
 	if not ring:
 		return
+	solid.add_ring({"name": "basketball ring", "centre": c + f * (0.15 + 0.225) + Vector3(0, 3.05, 0), "radius": 0.235, "tube": 0.01, "material": "metal"})
+	_solid_box("basketball ring's plate", c + f * 0.08 + Vector3(0, 3.0, 0), Vector3(0.24, 0.16, 0.16), "metal", yaw)
 	# The ring: an orange tube on a mounting plate, 15 cm off the board, and a white net below it.
 	var rc := c + f * (0.15 + 0.225) + Vector3(0, 3.05, 0)
 	var orange := Color("ff5a12")
@@ -1176,6 +1299,7 @@ func _door(w: Vector3, f: Vector3, width: float, main: bool) -> void:
 func _scoreboard(w: Vector3) -> void:
 	var f := Vector3(0, 0, 1)
 	_lit.box(w + f * 0.08, Vector3(2.6, 1.1, 0.14), Color("16181c"))
+	_solid_box("scoreboard", w + f * 0.08, Vector3(2.6, 1.1, 0.14), "plastic")
 	var amber := Color("ffb02a")
 	var red := Color("ff3b2a")
 	var z := w.z + 0.155
@@ -1208,6 +1332,7 @@ func _ball_cage(p: Vector3) -> void:
 	var w := 1.0
 	var d := 0.6
 	var top := 1.0
+	_solid_box("ball cage", p + Vector3(0, top * 0.5, 0), Vector3(w, top, d), "chainlink")
 	_lit.kind = Vector2(VenueLook.METAL, 0)
 	for cx: float in [-0.5, 0.5]:
 		for cz: float in [-0.5, 0.5]:
@@ -1235,6 +1360,10 @@ func _ball_cage(p: Vector3) -> void:
 func _hall_bench(z: float, model := "painted_bench", start := 4.6, step := 1.25) -> void:
 	_lit.box(Vector3(0, 0.735, z), Vector3(2.8, 0.05, 0.75), Color("e8e4dc"))
 	_lit.box(Vector3(0, 0.38, z - 0.33), Vector3(2.7, 0.62, 0.03), Color("2c4f8c"))
+	# Solid: the table (its modesty panel to the floor at the front), its three chairs.
+	_solid_box("officials' table", Vector3(0, 0.38, z), Vector3(2.8, 0.76, 0.75), "plastic")
+	for i in 3:
+		_solid_box("officials' chair", Vector3(-0.9 + i * 0.9, 0.485, z + 0.66), Vector3(0.45, 0.97, 0.46), "plastic")
 	_lit.kind = Vector2(VenueLook.METAL, 0)
 	for sx: float in [-1.3, 1.3]:
 		for sz: float in [-0.3, 0.3]:
@@ -1371,6 +1500,11 @@ func _fence(fx: float, fz: float, nz: float) -> void:
 			_lit.cylinder(Vector3(fx * sx, 0, z), Vector3(fx * sx, 1.25, z), 0.035, 0.035, post, 6)
 		_lit.cylinder(Vector3(fx * sx, 1.2, fz), Vector3(fx * sx, 1.2, nz), 0.022, 0.022, post, 4, false)
 	_lit.kind = Vector2.ZERO
+	# Solid: the chain-link panels (its posts stand in them), the far one 3.6 m, the ends 1.2 m and their posts.
+	_solid_box("far fence", Vector3(0, top * 0.5, fz), Vector3(fx * 2.0 + 0.08, top, 0.08), "chainlink")
+	for sx: float in [-1.0, 1.0]:
+		_solid_box("end fence", Vector3(fx * sx, 0.625, (fz + nz) * 0.5), Vector3(0.08, 1.25, nz - fz + 0.08), "chainlink")
+	floor_rect = Rect2(-fx, fz, fx * 2.0, Court.HALF_W + Court.RUNOFF - fz)
 	_glow.kind = Vector2(VenueLook.FENCE, 0)
 	_glow.quad(Vector3(-fx, top, fz), Vector3(fx, top, fz), Vector3(fx, 0, fz), Vector3(-fx, 0, fz), wire,
 		[Vector2(-fx, top), Vector2(fx, top), Vector2(fx, 0), Vector2(-fx, 0)])
@@ -1418,6 +1552,7 @@ func _floodlights(hl: float, hw: float) -> void:
 		_lit.kind = Vector2(VenueLook.METAL, 0)
 		_lit.cylinder(Vector3(p.x, 0, p.y), Vector3(p.x, top, p.y), 0.14, 0.09, Color("a0a6ae"), 8)
 		_lit.kind = Vector2.ZERO
+		solid.add({"name": "floodlight pole", "kind": "cylinder", "position": Vector3(p.x, 0, p.y), "radius": 0.14, "height": top, "material": "metal"})
 		var inward := Vector3(-p.x, 0, -p.y).normalized()
 		var yaw := atan2(inward.x, inward.z)
 		var head := Vector3(p.x, top + 0.3, p.y) + inward * 0.3
@@ -1433,3 +1568,89 @@ func _floodlights(hl: float, hw: float) -> void:
 				_fx.sprite(lp + inward * 0.1, 0.8 if not _low else 0.65, Color("fff2dc"), 0.8)
 		if p.y < 0.0:
 			_lamps.append(head)
+	solid.skip("floodlights' heads", "8.5-10 m up on their poles")
+
+
+# ---------------------------------------------------------------- solid props (WsgSolidProps)
+
+## A solid box (centre c, size, material; turned yaw about up): one of Geo's parts as the bodies and the ball meet it.
+func _solid_box(name: String, c: Vector3, size: Vector3, material: String, yaw := 0.0) -> void:
+	solid.add({"name": name, "kind": "box", "xf": Transform3D(Basis(Vector3.UP, yaw), c), "size": size, "material": material})
+
+
+## The arena bowl's lower tier as the ball meets it, as Arena._bowl_tier draws it (tier: CrowdVenues.bowl_tiers'
+## first): the front wall round the court and each row behind it, a box up to that row's tread (its riser the box's
+## front), back to the walkway; on each row the seats of each block between the stairs (the pan, and its back above
+## it) and each stair's half step. No seats on the rows under the courtside stands (first; the stands are solid in
+## _solid_models).
+func _solid_bowl(x0: float, z0: float, tier: Array, first: int) -> void:
+	var o0: float = tier[0]
+	var front: float = tier[1]
+	var rows: int = tier[2]
+	var rise: float = tier[3]
+	var t := CrowdVenues.TREAD
+	var s: Dictionary = CrowdVenues.BOWL_SEAT
+	var back := o0 + rows * t
+	for r in rows:
+		var o := o0 + r * t
+		var y := front + r * rise
+		var name := "bowl front wall" if r == 0 else "bowl seating"
+		for sz: float in [-1.0, 1.0]:
+			_solid_box(name, Vector3(0, y * 0.5, sz * (z0 + (o + back) * 0.5)), Vector3((x0 + back) * 2.0, y, back - o), "concrete")
+		for sx: float in [-1.0, 1.0]:
+			_solid_box(name, Vector3(sx * (x0 + (o + back) * 0.5), y * 0.5, 0), Vector3(back - o, y, (z0 + back) * 2.0), "concrete")
+		for side in 4:
+			if r < first and side != 2:
+				continue
+			var sd := CrowdVenues.bowl_side(side, x0, z0)
+			var along: Vector3 = sd[1]
+			var out: Vector3 = sd[2]
+			var yaw := atan2(-along.z, along.x)
+			var mid: Vector3 = sd[0] + out * o + Vector3.UP * y
+			var lim: float = float(sd[3]) + o - CrowdVenues.MITRE
+			for u: float in _bowl_aisles(lim):
+				_solid_box("bowl stairs", mid + along * u + out * (t * 0.75) + Vector3.UP * (rise * 0.25),
+					Vector3(CrowdVenues.AISLE_W, rise * 0.5, t * 0.5), "concrete", yaw)
+			var cuts := _bowl_cuts(lim)
+			for i in range(0, cuts.size(), 2):
+				var u0: float = cuts[i]
+				var u1: float = cuts[i + 1]
+				if u1 - u0 < 0.45:
+					continue
+				var c := mid + along * (u0 + u1) * 0.5
+				_solid_box("bowl seats", c + out * (float(s.setback) + float(s.depth) * 0.5) + Vector3.UP * (float(s.height) * 0.5),
+					Vector3(u1 - u0, s.height, s.depth), "plastic", yaw)
+				_solid_box("bowl seats", c + out * (float(s.setback) + float(s.depth) + 0.02) + Vector3.UP * (float(s.height) + float(s.back) * 0.5),
+					Vector3(u1 - u0, s.back, 0.04), "plastic", yaw)
+	solid.skip("bowl's walkway, upper tier and roof", "behind and above the lower tier, 4.4 m up and more: out of any ball's reach")
+	solid.skip("floodlight rigs", "15 m up")
+
+
+## The venue's models (VenueProps: benches, stands, a sign, lamps, a hoop, houses) where they were put, each its own
+## bounds turned as it stands (a street lamp: its pole). What is not solid is noted, with the reason.
+func _solid_models() -> void:
+	const MATERIAL := {"bleacher_metal": "metal", "bleacher_hall": "wood", "gym_bench": "wood", "painted_bench": "wood",
+		"park_bench": "wood", "wet_floor_sign": "plastic", "basketball_hoop": "metal", "terrace_row": "stone"}
+	const NOT_SOLID := {"fluorescent_light": "under the roof, 10 m up", "wall_clock": "on the wall (the wall is solid)",
+		"fire_alarm": "on the wall (the wall is solid)", "oak_tree_card": "trees beyond the fences (cut-outs)",
+		"jacaranda_card": "trees beyond the fences (cut-outs)", "small_broadleaf_card": "trees beyond the fences (cut-outs)",
+		"grass_clumps_card": "grass along the fences' feet (soft)"}
+	var noted := {}
+	for pl: Array in _props.placed:
+		var name: String = pl[0]
+		var xf: Transform3D = pl[1]
+		if NOT_SOLID.has(name):
+			if not noted.has(name):
+				noted[name] = true
+				solid.skip(name, NOT_SOLID[name])
+			continue
+		var ab := _props.bounds(name)
+		if name == "street_lamp_tall":
+			solid.add({"name": name, "kind": "cylinder", "position": xf.origin, "radius": 0.08,
+				"height": ab.size.y * xf.basis.get_scale().y, "material": "metal"})
+			continue
+		solid.add({"name": name, "kind": "box", "xf": Transform3D(xf.basis.orthonormalized(), xf * ab.get_center()),
+			"size": ab.size * xf.basis.get_scale(), "material": MATERIAL.get(name, "wood")})
+	solid.skip("goal nets", "rope: Ball.step holds a ball dropping through a net itself")
+	solid.skip("lines, decals, the wordmark", "painted on the floor")
+	solid.skip("doors, exit signs", "flush in the walls (solid)")

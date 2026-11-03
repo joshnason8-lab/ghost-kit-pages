@@ -171,6 +171,6 @@ func _champions(league) -> Control:
 func _play(league, nm: Dictionary) -> void:
 	# Clubs play in their own halls; the grand final fills the arena.
 	var venue := "arena" if String(nm.stage) == "GRAND_FINAL" else "hall"
-	Game.start_match({"home": nm.home, "away": nm.away, "venue": venue, "quarter": Game.quarter_minutes(),
+	Game.start_match_loading({"home": nm.home, "away": nm.away, "venue": venue, "quarter": Game.quarter_minutes(),
 		"difficulty": int(Game.settings.difficulty), "mode": "league", "card": true, "user_team": 0 if nm.home == league.user else 1,
 		"stage": _stage_name(nm), "need_winner": bool(nm.need_winner), "double_zone": false})
