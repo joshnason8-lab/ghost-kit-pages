@@ -1592,7 +1592,7 @@ func _rank_detail(dt: float) -> void:
 	var camp := cam3.global_position if cam3 else Vector3.ZERO
 	var near: Array = POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)]
 	for who in players[0] + players[1] + umpires:
-		if who.link and who.link.body and who.is_visible_in_tree():
+		if who.link and who.link.body:   # (hidden ones too: under the loading overlay, she is shown at full detail else)
 			bodies.append(who.link.body)
 			if who is Player:
 				var d: float = who.global_position.distance_to(camp)

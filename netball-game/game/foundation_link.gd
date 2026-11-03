@@ -69,6 +69,9 @@ func _ready() -> void:
 	add_child(body)
 	body.set_manual(true)
 	body.visible = false        # till its first pose (the rig's T-pose otherwise, for a frame)
+	# On the light mesh till the match ranks her (Match._rank_full: the nearest to the camera in full, as many as the
+	# tier allows), so a match never shows more in full than the tier's cap, its first frames included.
+	body.set_detail(false)
 	_scale_body()
 	_make_material()
 	body.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if kind == "reserve" or not Game.shadows_enabled() \
