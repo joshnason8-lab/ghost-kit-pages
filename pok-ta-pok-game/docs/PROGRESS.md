@@ -377,6 +377,10 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   furniture (bce6f30; crowd audit PASS). world.gd turns the game's own graphics step-down off too (ADOPTING 5.18).
   0.6.17's CI world check: PASS, 10 rules, feet DEFERRED until 2026-11-06 12:00 UTC with the lead's word.
 
+- **0.6.19-beta: shared foundation 284bef5.** WsgFootFlat pins a planted toe only as it reaches the floor (2 cm, not
+  4: a foot just landed slid at the heel); the sim no longer measures feet while a replay plays back. 0.6.18's CI:
+  build, release gate and world check all green.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
