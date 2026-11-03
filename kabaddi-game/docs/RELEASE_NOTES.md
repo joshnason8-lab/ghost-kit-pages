@@ -1,4 +1,8 @@
-**New in 0.14.10: steadier feet.** A player stopping or turning sharply no longer has a foot jump a stride along
+**New in 0.14.11: Android only.** The browser version of the game is retired: it is no longer built, and its page
+(kabaddi-raid-beta.netlify.app) is being taken down. The Privacy policy in Settings > About no longer mentions it.
+Nothing changes in the Android game.
+
+**In 0.14.10: steadier feet.** A player stopping or turning sharply no longer has a foot jump a stride along
 the floor; a foot set down while still easing into place stays where it lands.
 
 **In 0.14.9: tidier arms, and a lighter village.**

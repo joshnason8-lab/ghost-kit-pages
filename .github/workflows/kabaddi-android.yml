@@ -214,19 +214,12 @@ jobs:
           # What is new in this version (docs/RELEASE_NOTES.md), when there is something to say.
           NEW=""
           [ -f "${PROJECT_DIR}/docs/RELEASE_NOTES.md" ] && NEW=$(cat "${PROJECT_DIR}/docs/RELEASE_NOTES.md")
-          # The browser version is named only while its site really serves the game.
-          WEB=""
-          if curl -sfL --max-time 20 -o web.html https://kabaddi-raid-beta.netlify.app/ && grep -qi "<title>Kabaddi Raid" web.html; then
-            WEB="**iPhone, iPad or a computer**: play the web version at https://kabaddi-raid-beta.netlify.app (on a phone, turn it sideways; tap once to start the sound)."
-          fi
           cat > notes.md <<EOF
           The latest beta of **Kabaddi Raid** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
 
           **Android** (64-bit phones): tap \`kabaddi-raid-${VERSION}.apk\` under Assets below. When it has
           downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
           any earlier Kabaddi Raid beta and keeps your saves.
-
-          ${WEB}
 
           ${NEW}
 
@@ -257,7 +250,7 @@ jobs:
           gh release view "$TAG"
 
   # wsg_world_check (ADOPTING 5.18): the world rules every World Stage game keeps - props, crowd, feet, poses,
-  # officials, key sounds, loading, the joystick on every camera, the web build, the graphics levels - on the game's
+  # officials, key sounds, loading, the joystick on every camera, no Web preset shipping licensed data, the graphics levels - on the game's
   # own code (game/world.gd). Its own job: it draws (xvfb, the crowd's and the props' sheets) and takes a while, so
   # the APK does not wait on it; from 2026-11-03 12:00 UTC a failed rule fails this job, and so the run.
   world-check:
@@ -306,18 +299,11 @@ jobs:
           godot --headless --path . --import || true
           godot --headless --path . --import
 
-      - name: Web build (the world check reads what it packs)
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          mkdir -p build/web
-          godot --headless --path . --export-release "Web" build/web/index.html
-          ls -la build/web
-
       - name: World check (wsg_world_check)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           timeout 4800 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- \
-            --out "$RUNNER_TEMP/world" --web-pck build/web/index.pck
+            --out "$RUNNER_TEMP/world"
           cat "$RUNNER_TEMP/world/WORLD_CHECK.md" >> "$GITHUB_STEP_SUMMARY"
 
       - if: always()

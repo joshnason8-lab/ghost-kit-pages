@@ -566,3 +566,13 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   and WsgSim's smoke counted these as A-poses in 8 matches on d5c525c, each a defender or raider shuffling at
   3.2-3.5 m/s. A shuffle now takes 80% of his own ready arms (hands in front, elbows bent), eased over the clips'
   cross-fade (HumanModel._apply_moves).
+
+## 0.14.11: the web version retired
+
+The owner's decision (3 November 2026, through the lead): no more web version. The Web export preset is gone from
+export_presets.cfg; CI no longer builds a Web pack for the world check (its web rule now finds no Web preset, which
+passes) and no longer names a browser version on the release page; tools/web/netlify.toml is deleted; the keyboard
+hints no longer start shown in a browser (they still appear when a key is pressed); the in-game Privacy policy drops
+its browser-version paragraph (dated 3 November 2026); README, PLAY_STORE and GRAPHICS no longer point to it. Builds up
+to 0.8.6 opened the Netlify site's privacy.html and support.html: those old betas' View online buttons stop working
+once the site is taken down.

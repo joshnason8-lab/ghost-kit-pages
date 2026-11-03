@@ -43,8 +43,8 @@ Everything else is ready (below). These steps need you, your Google account or y
     `/kabaddi-raid/support/` (all HTTP 200 on 27 October 2026);
   - in the game too, readable offline (Settings > About: Help, Privacy policy, Licences, since 0.12.2), each with a
     View online button for the web page;
-  - the web version's old addresses (https://kabaddi-raid-beta.netlify.app/privacy.html and `/support.html`, which
-    builds up to 0.8.6 open) forward there (`tools/web/netlify.toml`).
+  - builds up to 0.8.6 opened the old web version's privacy.html and support.html on Netlify; the web version is
+    retired (3 November 2026, the owner's decision), so those old betas' View online buttons no longer reach a page.
 - **The store listing** in all eight of the game's languages (`store/listing/`: English, Hindi, Marathi, Tamil,
   Telugu, Kannada, Bengali, Punjabi; `tools/check_listing.py` checks Play's length limits), the 512 × 512 icon,
   the 1024 × 500 feature graphic and eight 1920 × 1080 screenshots rendered from the game on High
@@ -192,7 +192,7 @@ and shows no ads, but the 13+ groups are the simpler start.
   Singapore and Thailand since September 2026, and worldwide from 2027. Before then, either point testers to Play,
   or sign the beta with your own key and register it in Play Console.
 - **The privacy policy's address must keep working** while the game is on Play: keep
-  https://thekabaddipulse.com/kabaddi-raid/privacy/ where it is. Builds up to 0.8.6 link to the Netlify site, which
-  forwards there, so keep that site too.
+  https://thekabaddipulse.com/kabaddi-raid/privacy/ where it is. (Builds up to 0.8.6 linked to the retired Netlify
+  site; none of them is on Play.)
 - **Names**: the league, franchises and players in the game are made up, and real players' names are blocked
   (`autoload/db.gd`), so no league's or player's rights are involved. Do not add real logos or names.

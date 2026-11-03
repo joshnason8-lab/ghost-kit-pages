@@ -53,7 +53,7 @@ var _places_key := ""    # ... and what they were worked out for
 
 ## Each button shows its key: from the start in a computer's browser, after the first key press anywhere else,
 ## and off again with a finger's touch (not one the mouse makes).
-static var keys_shown := OS.has_feature("web") and not (OS.has_feature("web_android") or OS.has_feature("web_ios"))
+static var keys_shown := false   # shown once a key is pressed (a keyboard on the phone)
 
 const STICK_R := 92.0
 const STICK_SIDE := 0.45   # the share of the screen's width on the joystick's side: a touch there moves, no button goes

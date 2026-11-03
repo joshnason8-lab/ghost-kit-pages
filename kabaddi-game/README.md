@@ -52,7 +52,7 @@ On a phone:
   the match is shown with his number. Settings → Display → Player tags puts names over everyone, or turns the
   tags off.
 
-On a keyboard (the browser version on a computer, or the editor), each on-screen button shows its key:
+On a keyboard (a keyboard on the phone, or the editor), each on-screen button shows its key:
 
 - **Move.** WASD or arrow keys.
 - **J.** Hand touch (defending: ankle hold).
@@ -85,15 +85,6 @@ installs over the other. Shipping to the Play Store needs a release keystore. Se
 This folder is self-contained. To give the game its own repo, make a new repo, copy everything inside
 `kabaddi-game/` to its root (including the hidden `.github/` folder), and push. `.github/workflows/android.yml`
 is already set up for that layout and builds the APK on every push.
-
-## Play it in a browser
-
-The **Web** export preset builds a browser version: single-threaded WebGL 2, so any static host serves it with no
-special headers. Export it with `godot --headless --path . --export-release "Web" build/web/index.html`, serve
-`build/web/` (for example `python3 -m http.server` in that folder) and open it. About 75 MB loads the first time.
-Phones and tablets play by touch, computers by keyboard. Sound starts after the first tap or key, and saves stay in
-that browser. Online, the export goes up to Netlify with `tools/web/netlify.toml` beside it, which forwards the old
-privacy and help addresses to thekabaddipulse.com.
 
 ## Run it on a computer
 
@@ -132,8 +123,7 @@ tools/      build_i18n.py, check_pages.py (an APK's or bundle's 16 KB pages), st
             rig/ (auto-rigging the player model), audio/ (crowd and player sounds),
             mocap/ (animation clips from Mixamo, Meshy and the CMU library, and movement measured from match video), bake_lighting/ (the grounds'
             baked lighting), ground_art/ (the mat's texture), crowd/ (the crowd's sprite sheets, front and back),
-            scenery/ (the grounds' models and surfaces, from the shared assets), web/ (the web version's Netlify
-            settings)
+            scenery/ (the grounds' models and surfaces, from the shared assets)
 store/      PLAY_STORE.md (every step to Google Play, and the answers to its forms), listing/ (the store text),
             graphics/ (icon, feature graphic, screenshots). The privacy policy and help pages are in ../kabaddi-raid/
 docs/       ASSETS.md (how to drop in real humans), KABADDI.md (the rules), BETA.md (testing on a phone), ROADMAP.md,

@@ -4,7 +4,7 @@ extends Control
 ## for those who want it. In English, as the Licences and Help pages are.
 
 const CONTACT := "https://thekabaddipulse.com/contact/"
-const UPDATED := "27 October 2026"
+const UPDATED := "3 November 2026"
 
 const TEXT := """[b]Kabaddi Raid privacy policy[/b]
 Last updated %s. Kabaddi Raid is a kabaddi game for Android phones and tablets, made by Josh Nason.
@@ -20,9 +20,6 @@ The game asks for one permission: vibration, so the phone can buzz at a tackle o
 
 [b]Links[/b]
 A few buttons (View online on this page and on Help) open a page in your phone's web browser. The game sends nothing when you tap one; the page is covered by the policy of the site it is on.
-
-[b]The browser version[/b]
-A version of the game also runs in a web browser, at kabaddi-raid-beta.netlify.app. That page is served by Netlify, which keeps standard server logs (such as your IP address and browser type) under Netlify's privacy policy. The game sends nothing to us there either; its settings and saved games stay in your browser's storage on your device.
 
 [b]Children[/b]
 Kabaddi Raid is a sports game for players of all ages. It collects no personal information from anyone, children included.

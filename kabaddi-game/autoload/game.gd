@@ -6,8 +6,7 @@ const CAREER_PATH := "user://career.json"
 const CUP_PATH := "user://cup.json"
 const SEASON_PATH := "user://season.json"
 
-## The game's privacy policy and help pages (Settings > About), on thekabaddipulse.com. Earlier builds open the web
-## version's privacy.html and support.html, which forward here (tools/web/netlify.toml).
+## The game's privacy policy and help pages (Settings > About), on thekabaddipulse.com.
 const PRIVACY_URL := "https://thekabaddipulse.com/kabaddi-raid/privacy/"
 const SUPPORT_URL := "https://thekabaddipulse.com/kabaddi-raid/support/"
 

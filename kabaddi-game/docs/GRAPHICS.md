@@ -143,7 +143,7 @@ compressed for the GPU (ETC2 on a phone), so the video memory stays in reach of 
 - **What it costs**: Godot keeps GPU-compressed textures uncompressed in the APK, so each costs its full size there:
   the eight players' albedos 12.6 MB, the mat and two court surfaces 8.2 MB, the crowd's second sheet 6 MB. (At 2048
   px for every body and five surfaces, with a sixteen-person sheet, the first build of 0.12.0 came to 136 MB.)
-- **The web version** leaves these files out (`export_presets.cfg`, the Web preset's exclude filter): a browser
+- **The web version** (retired 3 November 2026) left these files out (`export_presets.cfg`, the Web preset's exclude filter): a browser
   downloads all of it before the game starts, in two texture formats, and the game falls back to Low's textures
   where a file is missing.
 
