@@ -62,7 +62,7 @@ func _ready() -> void:
 	FoundationLink.frozen = false
 	WsgFoundation.tier = int(Game.settings.graphics)
 	user_team = int(config.get("user_team", -1))
-	rng.seed = int(config.get("seed", randi()))
+	rng.seed = int(config.get("seed", randi()))   # wsg-rng-ok: no seed given, one drawn and kept (rng.seed) to replay it
 	var vid := String(config.get("venue", "village"))
 	rules = String(config.get("rules", DB.venue(vid).rules))
 	court = Court.new(rules)
@@ -146,6 +146,9 @@ func build_sides(ld: WsgLoading) -> void:
 		var lvl := level if k != user_team else 1
 		if user_team < 0:
 			lvl = clampi(level, 1, 2)
+		if config.has("levels"):
+			# Each side its own level (the simulations' strong against weak; the game's menus give one for both).
+			lvl = clampi(int(config.levels[k]), 0, 2)
 		var ai := TeamAI.new(self, k, ps, lvl, int(rng.seed))
 		for i in ps.size():
 			(ps[i] as Player).role = ai.role_of(i)
@@ -528,7 +531,7 @@ func _footsteps() -> void:
 		if pl.stepped and pl in near and not attract:
 			var d := pl.global_position.distance_to(cam_at)
 			var speed := Vector2(pl.vel.x, pl.vel.z).length()
-			Sfx.play_var(kind, -16.0 - clampf((d - 8.0) * 0.6, 0.0, 14.0) + clampf(speed - 3.0, 0.0, 3.0), randf_range(0.9, 1.1))
+			Sfx.play_var(kind, -16.0 - clampf((d - 8.0) * 0.6, 0.0, 14.0) + clampf(speed - 3.0, 0.0, 3.0), randf_range(0.9, 1.1))   # wsg-rng-ok: a sound's pitch
 		pl.stepped = false
 
 

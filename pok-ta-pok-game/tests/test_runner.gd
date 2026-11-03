@@ -533,7 +533,7 @@ func _cup() -> void:
 					continue
 				check(f.home == team or f.away == team, "Cup: your next game is yours")
 				check(DB.venue(String(f.venue)).rules == rules, "Cup: played on a court of its rules")
-				var s := Sim.play(String(f.home), String(f.away), rules)
+				var s := ResultSim.play(String(f.home), String(f.away), rules)
 				c.record_user_result({"home": f.home, "away": f.away, "winner": s.winner, "count": s.count})
 				var saved := Cup.from_dict(JSON.parse_string(JSON.stringify(c.to_dict())))
 				check(saved.round == c.round and saved.team == c.team and saved.draw.size() == c.draw.size(), "Cup: it saves and loads")
@@ -545,7 +545,7 @@ func _sim() -> void:
 	var wins := [0, 0]
 	var lens := []
 	for i in 60:
-		var s := Sim.play("ESC", "LLA", Rules.ULAMA, 100 + i)
+		var s := ResultSim.play("ESC", "LLA", Rules.ULAMA, 100 + i)
 		wins[int(s.winner)] += 1
 		lens.append(int(s.rayas))
 		check(int(s.count.rayas) == 8 and int(s.count.holder) == int(s.winner), "Sim: a simulated ulama game ends on eight rayas")

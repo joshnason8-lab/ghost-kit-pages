@@ -537,7 +537,7 @@ func _cup() -> void:
 			if f.is_empty():
 				c.play_others()
 				continue
-			var s := Sim.play(String(f.home), String(f.away), c.rules)
+			var s := ResultSim.play(String(f.home), String(f.away), c.rules)
 			c.record_user_result({"home": f.home, "away": f.away, "winner": s.winner, "count": s.count})
 			Game.save_cup()
 			Game.show_screen("res://ui/cup_screen.gd")

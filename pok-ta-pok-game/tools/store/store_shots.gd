@@ -282,6 +282,6 @@ func _cup_under_way() -> void:
 	Game.new_cup("PIS")
 	var c: Cup = Game.get_cup()
 	var f := c.next_fixture()
-	var r := Sim.play(String(f.home), String(f.away), c.rules, 3)
+	var r := ResultSim.play(String(f.home), String(f.away), c.rules, 3)
 	c.record_user_result({"home": f.home, "away": f.away, "winner": 0 if f.home == "PIS" else 1, "count": r.count})
 	Game.save_cup()

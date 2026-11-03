@@ -87,7 +87,7 @@ func play_others() -> void:
 			continue
 		if (pair[0] == team or pair[1] == team) and not out:
 			continue
-		var s := Sim.play(String(pair[0]), String(pair[1]), rules)
+		var s := ResultSim.play(String(pair[0]), String(pair[1]), rules)
 		pair[2] = int(s.winner)
 		pair[3] = s.count
 	_advance()

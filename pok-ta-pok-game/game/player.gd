@@ -47,6 +47,8 @@ var action_ring := 0
 var stepped := false
 var offering := 0.0           # 0-1: arms raised to receive the copal's smoke before the game (Ritual)          # a foot came down this frame (Match plays the step for the players it hears)          # a strike aimed at the ring on that side (classic court), or 0
 var steps_taken := 0          # steps since the tests last read it
+const STOP_SETTLE := 0.4      # s after stopping before he turns to face the ball (his stop's steps land first)
+var _stood := 1.0
 var blocked := false          # stopped by a line or wall this frame (the audit counts these apart)
 var written := Vector3.INF     # where update() last put him (the movement audit: nothing else moves him)
 var low := 0.5                # how low he sits: lower as the ball comes
@@ -245,6 +247,7 @@ func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 	global_position = keep
 	written = keep
 	# Facing: where he runs; standing, the ball; striking, as he was.
+	_stood = (_stood + dt) if Vector2(vel.x, vel.z).length() < 0.3 else 0.0
 	if not busy():
 		var face := yaw
 		var hs := Vector2(vel.x, vel.z).length()
@@ -252,7 +255,10 @@ func update(dt: float, court: Court, dirn: float, can_cross := false) -> void:
 			face = face_yaw
 		elif hs > 1.2:
 			face = atan2(vel.x, vel.z)
-		elif face_to != Vector3.INF:
+		elif face_to != Vector3.INF and _stood >= STOP_SETTLE:
+			# (Just stopped, he settles his feet first, then turns to the ball: turned while the stop's steps were
+			# still landing, his planted feet swung round with him - the simulations, 53 cm. Turned from standing,
+			# the legs step round: WsgLocomotor's turn on the spot.)
 			var f := face_to - global_position
 			if Vector2(f.x, f.z).length() > 0.3:
 				face = atan2(f.x, f.z)

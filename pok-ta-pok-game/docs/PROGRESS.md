@@ -314,6 +314,14 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   the serve, the halves, the bounds, the ball never inside stone or a prop, the hip's cap, no play after a win, no
   phase forever); match_sim runs them and fails on any. The foundation's locomotor fidgets seeded from each body (the
   one unseeded roll in what is drawn). 8.5x real time headless today.
+- **0.6.12-beta: plugged into WsgSim** (the shared match simulator; foundation 7239d54). game/sim.gd is the adapter:
+  the real match from a seed at any venue, rules, side size, length, urria set, graphics level and per-side AI level
+  (Match config "levels"), the copal on or off, a person's side played through the game's own touch layer; the
+  sport's checks (RuleChecks) every frame. The cup's results simulator is now ResultSim (game/result_sim.gd). The
+  touch layer answers input actions too (pok_a, pok_b, pok_switch, pause: a gamepad's A, B, Y, Start), so the input
+  fuzzer, and a gamepad, play through it. First batch's finding fixed: a player who had just stopped turned at once
+  to face the ball while his stop's steps were still landing, his planted feet swinging round with him (53 cm); he
+  now settles 0.4 s first (Player.STOP_SETTLE) and the legs step the turn. rng_lint clean.
 
 ## Next
 

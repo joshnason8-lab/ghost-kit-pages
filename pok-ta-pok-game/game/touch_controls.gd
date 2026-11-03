@@ -31,7 +31,22 @@ var _drag_slot := -1
 var _drag_touch := -1
 
 
+## The input actions (InputMap): the buttons by slot, as the keyboard's Space/J/K/L press them, and pause; a gamepad's
+## A, B, Y and Start (and the simulations' input fuzzer, WsgSimInput) press them.
+const ACTIONS := [["pok_a", JOY_BUTTON_A], ["pok_b", JOY_BUTTON_B], ["pok_switch", JOY_BUTTON_Y], ["pause", JOY_BUTTON_START]]
+
+
+static func ensure_actions() -> void:
+	for a in ACTIONS:
+		if not InputMap.has_action(a[0]):
+			InputMap.add_action(a[0])
+			var e := InputEventJoypadButton.new()
+			e.button_index = a[1]
+			InputMap.action_add_event(a[0], e)
+
+
 func _ready() -> void:
+	ensure_actions()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(queue_redraw)
@@ -137,7 +152,24 @@ func reset_positions() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Pause (and resume: the layer is hidden under the pause menu) as Back does.
+	if event.is_action_pressed("pause"):
+		Game.go_back()
+		get_viewport().set_input_as_handled()
+		return
 	if not is_visible_in_tree():
+		return
+	for k in 2:
+		if event.is_action_pressed(["pok_a", "pok_b"][k]):
+			var shown: Array = ids.filter(func(x): return String(x) != "SWITCH")
+			if k < shown.size():
+				_fire(String(shown[k]))
+			elif k == 0 and tap_skips:
+				_fire("SKIP")
+			return
+	if event.is_action_pressed("pok_switch"):
+		if "SWITCH" in ids:
+			_fire("SWITCH")
 		return
 	if edit:
 		_edit_input(event)
