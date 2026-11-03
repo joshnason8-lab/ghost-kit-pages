@@ -27,7 +27,14 @@ func setup(_args: Dictionary) -> void:
 	pass
 
 
+## What a match loads, fetched on the loader's thread while the menu is up (WsgLoading.prewarm): a Start then finds it.
+const PREWARM := ["res://game/match.gd", "res://game/hud.gd", "res://addons/wsg_foundation/crowd/cards.png",
+	"res://addons/wsg_foundation/crowd/cards_mask.png", "res://addons/wsg_foundation/crowd/cards_back.png",
+	"res://addons/wsg_foundation/crowd/cards_back_mask.png"]
+
+
 func _ready() -> void:
+	WsgLoading.prewarm(PREWARM)
 	UI.screen(self, true)
 	Sfx.stop_all()
 	_pick = randi() % ATTRACT.size()

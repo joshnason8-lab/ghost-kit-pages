@@ -1380,11 +1380,11 @@ func _loading() -> void:
 	Game.play_match(cfg)
 	check(WsgLoading.current() == ld and Game.current == menu, "a second tap while it loads starts nothing")
 	var guard := 0
-	while not (Game.current != menu and Game.current.get("built") == true) and guard < 900:
+	while not (Game.current != menu and Game.current.get("live") == true) and guard < 900:
 		await frames(1)
 		guard += 1
 	var m: Node = Game.current
-	check(m != menu and m.get("built") == true and m.phase != "", "the match is built, in steps, and starts (%d frames)" % guard)
+	check(m != menu and m.get("live") == true and m.phase != "", "the match is built, in steps, warmed, and starts (%d frames)" % guard)
 	var forward := bar.size() > 2
 	for i in range(1, bar.size()):
 		forward = forward and float(bar[i]) >= float(bar[i - 1])

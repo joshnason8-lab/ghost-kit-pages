@@ -250,6 +250,11 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   saved place that overlaps; foul whistle FOUL_REMIND 2.5 s; no out replays; school birds -26 dB; _bench_pos in
   front of the benches.
 
+- 0.12.3: foundation synced to 2cd59a7 (WsgLoading v2; cut_from_heading kept true): ld.warm on the match, await
+  ld.done() (frames settled), then match.kick_off() starts play (match.live); the home screen prewarms the match's
+  files (main_menu.PREWARM). Desktop, Low, cold: overlay up in 44-54 ms; longest frame 157 ms at the village (was
+  644 ms), 106 ms at the stadium.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from

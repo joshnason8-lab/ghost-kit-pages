@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.3
+
+- **A smoother start.** The loading screen now also gets the match's graphics ready behind it, a few at a time, and
+  waits until the match runs smoothly before it goes, so the first second of play no longer stutters (the first
+  frame of a match was over half a second on its own). The match's files are fetched while you are on the home
+  screen, and the clock starts only once you can see the play.
+
 ## What's new in 0.12.2
 
 - **A loading screen on every Start.** Quick match, the toss, a championship match and Watch AI: "Loading…" and a

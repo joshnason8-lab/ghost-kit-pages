@@ -55,7 +55,7 @@ func _ready() -> void:
 			worst = maxi(worst, now - last)
 			last = now
 			var m: Node = Game.current
-			if m and m.get("built") == true:
+			if m and m.get("live") == true:
 				first = now - t0
 				break
 			if (now - t0) / 1e6 > PLAY_TIMEOUT:

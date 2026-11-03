@@ -96,7 +96,8 @@ var _last_kho_t := 0.0
 var _kho_armed := {}           # a kho pressed a moment early: {i, until}
 var _min_turns := 0            # minimum-chase turns played, plus one
 var staged := false            # built in steps (Game.play_match, under the loading overlay), not all in _ready
-var built := false             # all of it built: the match runs
+var built := false             # all of it built ...
+var live := false              # ... and running: the clock, the AI, the play (kick_off, once the loading overlay settles)
 var replay: MatchReplay = null # the moments shown again (the shared foundation's WsgReplay: Medium and High), else null
 var _detail_t := 0.0
 
@@ -128,11 +129,18 @@ func _ready() -> void:
 	if user >= 0:
 		_diff[1 - user] = ai_k
 	_foul_rate = [0.05, 0.035, 0.02, 0.012][clampi(diff, 0, 3)]
+	live = not staged
 	if staged:
 		return   # built in steps under the loading overlay (Game.play_match): build_ground, build_players, build_rest
 	build_ground()
 	build_players()
 	build_rest()
+
+
+## Play starts (Game.play_match, once the loading overlay has warmed the shaders and the frames have settled): the
+## first frame the player sees is smooth play, not the clock already running behind the overlay.
+func kick_off() -> void:
+	live = true
 
 
 ## The ground, its stands and its crowd (the longest part of a match's start).
@@ -584,8 +592,8 @@ func _log(kind: String, extra_data := {}) -> void:
 # ---------------------------------------------------------------- the frame
 
 func _process(delta: float) -> void:
-	if not built:
-		return   # still being built under the loading overlay
+	if not built or not live:
+		return   # still being built, or warmed and settled, under the loading overlay
 	if paused:
 		return
 	_rank_detail(delta)

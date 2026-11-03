@@ -350,7 +350,7 @@ func play_match(config: Dictionary, buttons: Array = []) -> void:
 		"bar_back": Color(C_INK, 0.15), "title": tr("LOADING"), "font": font_bold,
 		"logo": load("res://assets/icon/icon_192.png") if ResourceLoader.exists("res://assets/icon/icon_192.png") else null})
 	ld.log_label = "match %s" % String(config.get("venue", ""))
-	ld.request(["res://game/match.gd", "res://game/hud.gd"])
+	ld.request((load("res://ui/main_menu.gd") as Script).get_script_constant_map().get("PREWARM", ["res://game/match.gd", "res://game/hud.gd"]))
 	var b := {}
 	ld.step("Match", func():
 		var m: Node = (ld.res("res://game/match.gd") as Script).new()
@@ -362,9 +362,14 @@ func play_match(config: Dictionary, buttons: Array = []) -> void:
 	ld.step("Ground", func(): b.m.build_ground(), 3.0)
 	ld.step("Players", func(): b.m.build_players(), 2.0)
 	ld.step("Ready", func(): b.m.build_rest())
+	# Its looks drawn once, a batch a frame, behind the overlay (each shader's first compile on GL Compatibility is a
+	# frame of its own: drawn whole, the first frame of a match was 0.6 s here, more on the phone).
+	ld.warm(func(): return b.m)
 	if not await ld.run():
 		return
-	ld.done()
+	await ld.done()   # held up until the frames come smooth
+	if is_instance_valid(b.m):
+		b.m.kick_off()
 
 
 func on_match_finished(result: Dictionary) -> void:
