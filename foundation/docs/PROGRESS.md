@@ -432,3 +432,13 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   longest slice and frame in a `WSG_LOADING {json}` line (warning over 250 ms), themeable, portrait and landscape,
   spinner in its shader. `tests/loading_test.gd` (a real tap in a 1280x720 SubViewport: the headless window is 64
   px), ADOPTING §5.14.
+- WsgLoading v2 (the lead's three inputs and Takraw's measurements):
+  - `warm()`/`warm_scene()`: 3D off (disable_3d) from the first step, every look drawn once, a batch a frame, from
+    its own camera.
+  - `done()` holds until the frames settle.
+  - `prewarm()` for the menu.
+  - Quick loads close at once.
+  - Cold bench (software GL, 66 looks, no shader cache): before, one 48–50 s frame; after, 57–66 covered frames,
+    the longest 1.1–1.8 s.
+  - Doubling batches after one quick frame merged compiles (2.6 s), so batches now grow only after three quick
+    frames in a row.

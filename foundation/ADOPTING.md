@@ -699,11 +699,17 @@ func _on_play_pressed() -> void:
 	ld.step("Venue", func(): _built.match.set_venue(ld.res("res://venues/%s.glb" % venue)), 2.0)
 	ld.step("Crowd", func(): await _built.match.build_crowd(ld), 3.0)   # weight 3: the bar's biggest share
 	ld.step("Light", func(): _built.match.apply_light())
+	ld.warm(func():                    # your swap, inside the warm-up (the overlay sits on the viewport: it stays up)
+		Game.swap_to(_built.match)
+		return _built.match)
 	if not await ld.run():             # false: a file failed; the overlay has gone, the buttons are back
 		return
-	Game.swap_to(_built.match)         # your own swap: the overlay sits on the viewport and stays up through it
-	ld.done()                          # fades out
+	await ld.done()                    # holds until the frames settle, then fades out
+	_built.match.kick_off()            # start the clock here: the first frame the player sees is smooth play
 ```
+
+Your match's clock, AI and cut-scenes should start on `kick_off()` (or on `ld.finished`), not in `_ready()`. They run
+behind the overlay during the warm-up and the settle.
 
 **Cut a long step.** Anything over about 250 ms on the A16 (Low) reads as frozen. Between chunks of a long build,
 `await ld.checkpoint(i / float(n))`: it moves the bar within the step's share, and once 50 ms of work have run
@@ -722,6 +728,57 @@ overlay, `ld` is null and the build runs straight through as before.
 **A big scene's instantiate() is one call, and its `_ready()`s run when you add it.** If either alone is over budget,
 split the scene. Request the parts (`venue.tscn`, `teams.tscn`, `stands.tscn`) and instantiate each in its own step.
 Keep `_ready()` light, and move the heavy setup into a method a step calls.
+
+**Shaders: the warm-up (`ld.warm`).** On GL Compatibility, every new material's shader compiles on the main thread
+the first time it is drawn. Sepak Takraw measured 5.5–12 s from tap to first frame with no shader cache, all of it in
+one frame. A bar can't move through that. `ld.warm(node or callable)` handles it like this:
+
+- From the first step until the warm-up, the viewport draws no 3D (`disable_3d`). So a scene added by an earlier step
+  is not drawn whole, every shader in one frame.
+- The warm-up hides everything under the node: render layers 0, visibility ranges off.
+- It then draws the scene's looks a batch a frame from its own camera, aimed so each batch is in view. A look is a
+  mesh and its materials, by kind: mesh, multimesh or particles.
+- Each new shader compiles in a frame of its own, and the bar moves after each one.
+- Batches double while frames stay quick, and drop to one look after a slow frame.
+- It then puts back every layer, every range and your camera.
+
+Do your swap inside the callable you pass to warm, as above. A deferred swap (`change_scene_to_node`) is waited for,
+up to 3 frames. The report's `warm` gives `{nodes, looks, frames, ms}`. A boot screen can call
+`await WsgLoading.warm_scene(node)` on a venue, a player and the crowd, so the first match finds them compiled.
+
+The warm-up spreads the compiles out but doesn't make them shorter. One shader that takes 400 ms to compile on the
+A16 is still a 400 ms frame behind the overlay. A cold bench on software GL (66 looks, the foundation's crowd and
+flag shaders among them, no shader cache) measured:
+
+| | while covered | after the overlay goes |
+|---|---|---|
+| Before | | one frozen first frame of 48–50 s |
+| After | 57–66 frames, the longest 1.1–1.8 s | frames of 60–330 ms |
+
+On the software renderer:
+
+- each shader compiles in about 0.75 s, far slower than on a phone;
+- the total time was the same, about 50 s;
+- its frames swing between 60 and 330 ms even without the overlay's fade.
+
+The A16 numbers have to come from your own WSG_LOADING line.
+
+**Frames settle before play (`done()`).** The first frames after a load still stall on cold resources and leftover
+shader variants: Floorball measured 0.3–1 s on the A16. So `await ld.done()` keeps the overlay up, opaque with the bar
+at its last step, until `settle_frames` (3) frames in a row come in under `settle_ms` (50). It stops waiting after
+`settle_cap` (3 s) either way.
+
+A phone that is slow on every frame passes too. A frame within 30% of its quickest frame counts, up to twice
+`settle_ms`, so compile stalls never pass. A load under `quick_ms` (300 ms, such as a rematch) closes at once, with no
+fade.
+
+**Pre-warm on the menu (`WsgLoading.prewarm(paths)`).** While the menu is up, start the likely next match's files:
+the last-used or default venue, the players, the crowd, and your copy of the motion-capture library. They load on the
+loader's thread, and the menu keeps its frame rate. A later `run()` that requests the same paths takes them as they
+are, loaded or part way, without asking again; the report's `prewarmed` lists them.
+
+This pre-warms files, not shaders. A compile on the menu would be a menu stall, so do shader warm-up in your boot
+screen with `warm_scene`.
 
 **The look.** Every key is optional:
 
@@ -747,12 +804,17 @@ why the steps are cut.
 ```
 WSG_LOADING {"label":"match","total_ms":2310.4,"load_ms":820.1,"longest_frame_ms":181.0,"longest_slice_ms":163.2,
              "longest_slice":"Crowd","steps":{"(loading files)":4.1,"Match":96.0,"Venue":140.2,"Crowd":702.5,...},
-             "frames":41,"failed":[]}
+             "frames":41,"failed":[],"prewarmed":[],"warm":{"nodes":412,"looks":57,"frames":31,"ms":2900.0},
+             "settle_ms":180.2,"settled":true,"settle_longest_frame_ms":61.0}
 ```
+
+`done()` prints it, so call done() on every path.
 
 - `longest_slice_ms` and `longest_slice` give the longest stretch of main-thread work between two frames, and the
   step it was in.
-- `longest_frame_ms` gives the longest gap between frames: what the player saw.
+- `longest_frame_ms` gives the longest gap between frames: what the player saw. With a warm-up, this includes its
+  compiles.
+- `settle_longest_frame_ms` gives the longest of the first frames after the match is in.
 - A slice over 250 ms also logs a warning naming the step. Cut that step.
 
 The foundation's test (`tests/loading_test.gd`) checks the following, with timings from a desktop rather than a phone:
@@ -763,7 +825,17 @@ The foundation's test (`tests/loading_test.gd`) checks the following, with timin
 - the bar only goes forward and reaches the end;
 - a sliced step holds the main thread about 60 ms, and an unsliced 300 ms one is reported by name;
 - a missing file brings the menu back;
-- the overlay fits 720×1280, 1280×720 and 480×854.
+- the overlay fits 720×1280, 1280×720 and 480×854;
+- settle:
+  - five 150 ms frames are waited out;
+  - endless ones stop at the cap, reported as not settled;
+  - a steady 70 ms phone settles at once;
+- warm-up:
+  - 12 nodes in 9 looks, each one drawn inside the warm-up camera's view;
+  - layers, ranges and the camera are put back;
+  - 3D is off from the first step to the warm-up;
+- a prewarmed file is taken without a second request;
+- a 20 ms load closes at once.
 
 ## 6. What the owner does once (all games share it)
 
