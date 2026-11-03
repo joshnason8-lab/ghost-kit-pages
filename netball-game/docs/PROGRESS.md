@@ -307,6 +307,18 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   arena) the longest: the coordinator moves it onto build_venue_async. tests/loading_probe.tscn prints each start's
   WSG_LOADING line in a window; test_runner `_loading_overlay` (-- loading), input_test `_start_tap`, fit audit
   `loading_tip_*`.
+- **Arms and the shooter's turn** (found by the owner notes; branch `netball-arms`): defending's arms were out at
+  110 degrees with the elbows 20 bent (a T-pose to the eye and to the world check's `pose` rule), and laid over the
+  run by an angle lerp they passed through 60-87 degrees straight out as a defender closed in or moved off (the
+  owner's "arms just stretched out when running"; Low and the foundation alike, which reads the game's pose). Now
+  `Poses.defend_ball` raises both arms forward-up over the ball (134 degrees, elbows 34 bent; the shot defence
+  148/124, elbows 36), `Player._animate` bends the elbows the more while the arms go between moves or between the
+  run's and the move's, marking's and posting's arm out keep soft elbows, and a chest-height catch reaches with soft
+  elbows. AI matches (arena 11, hall 12, 1800 frames each), moving frames with an arm 60+ degrees out and the elbow
+  under 30 bent: Low 405 -> 5, Medium 310 -> 3, High 310 -> 3, every one left arms up overhead (117-153 degrees: a
+  shot defence, a leap); both-arm T/A frames moving 265/226/226 -> 1/0/0. A shooter who caught facing away now
+  pivots to the post before the shot (`Player.squaring` holds the shot's clock and pose till her body faces it within
+  8 degrees, 0.6 s at most): 140 -> 0 degrees off. test_runner `_arms` (-- arms) checks both on Low, Medium, High.
 
 ## Next
 

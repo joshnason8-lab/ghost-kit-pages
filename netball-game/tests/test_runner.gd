@@ -53,6 +53,12 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "arms" in OS.get_cmdline_user_args():
+		# (Only the arms and the shooter's turn on every path: tests/test_runner.tscn -- arms)
+		await _arms()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -77,6 +83,7 @@ func _ready() -> void:
 	await _mocap()
 	await _gait_steps()
 	await _body_checks()
+	await _arms()
 	await _controls()
 	await _stick_camera()
 	await _league_options()
@@ -2243,6 +2250,163 @@ func _foundation(available: bool) -> void:
 func _body_checks() -> void:
 	await _foundation_steps()
 	await _shots_and_hands()
+
+
+## No arms held straight out (the owner's "arms just stretched out when running", and the world check's T/A pose), on
+## Low, Medium and High (the foundation's bodies, with the licensed clips; Low only without them): a player defending
+## from rest up to 3 m/s, closing in at 1.7 m/s, edging and stopping on the holder, defending a shot, marking sideways
+## and posting on the move, and every moving player (over 0.5 m/s) through AI matches, never has an arm out past
+## ARM_OUT degrees from hanging with its elbow under ARM_BENT degrees bent (an inside angle over 150), save arms up
+## overhead (ARM_UP degrees or more) in a move that reaches up: defending the ball or a shot, a leap, a catch, the
+## shot. Standing on the holder, a defender's arms rise up toward the ball (ARM_UP or more), the elbows soft. And a
+## shooter who caught right under the post facing away (1 m out, both ends) turns to the post before the ball leaves
+## her hands: her drawn body within SHOT_FACE of it at the release and from 0.25 s into the shot.
+const ARM_OUT := 60.0
+const ARM_BENT := 30.0
+const ARM_UP := 115.0
+const ARM_OVERHEAD := ["defend", "defend_shot", "leap", "catch", "shoot"]
+
+
+## A body's arms as drawn: [[left: degrees out from hanging, degrees the elbow is bent], [right: ...]] (Low: the game's
+## body; with a link: the foundation's, read as it is posed).
+static func _arm_angles(pl: Player) -> Array:
+	var out := []
+	var linked := pl.link != null and pl.link.body.visible
+	var down := -pl.link.body.global_transform.basis.y.normalized() if linked else Vector3.DOWN
+	for side in ["Left", "Right"]:
+		var s := "l" if side == "Left" else "r"
+		var sh: Vector3 = pl.link.body.bone_world(side + "Arm").origin if linked else pl.body.bone_world("upperarm_" + s)
+		var el: Vector3 = pl.link.body.bone_world(side + "ForeArm").origin if linked else pl.body.bone_world("forearm_" + s)
+		var wr: Vector3 = pl.link.body.bone_world(side + "Hand").origin if linked else pl.body.bone_world("hand_" + s)
+		var up := (el - sh).normalized()
+		out.append([rad_to_deg(up.angle_to(down)), rad_to_deg(up.angle_to((wr - el).normalized()))])
+	return out
+
+
+## What is wrong with her arms now ("" if nothing): an arm straight out (see _arms).
+static func _arm_fault(pl: Player, a: Array) -> String:
+	for i in 2:
+		var out: float = a[i][0]
+		var bent: float = a[i][1]
+		if out > ARM_OUT and bent < ARM_BENT and not (out >= ARM_UP and pl.act in ARM_OVERHEAD):
+			return "%s %s arm %.0f deg out, elbow %.0f bent (%s, %.1f m/s, t %.2f)" % [pl.pos, ["left", "right"][i], out, bent, pl.act, pl.vel.length(), pl.act_t]
+	return ""
+
+
+func _arms() -> void:
+	var was: int = int(Game.settings.graphics)
+	var was_off := FoundationLink.off
+	var levels := [Game.GFX_LOW]
+	if WsgClips.available() and ResourceLoader.exists(FoundationLink.DIR + "hero_rig.json"):
+		levels += [Game.GFX_MEDIUM, Game.GFX_HIGH]
+	else:
+		print("arms: Medium and High skipped (no licensed clips here)")
+	var sq: Array = DB.squad("NZL")
+	for g in levels:
+		Game.settings.graphics = g
+		FoundationLink.off = g == Game.GFX_LOW
+		var lv: String = ["Low", "Medium", "High"][g]
+		# One player at a time, [act, speed, sideways]: 2.5 s on the move from rest, then stopping on the spot.
+		for case: Array in [["defend", 3.0, false], ["defend", 1.7, false], ["defend", 0.6, false], ["defend_shot", 1.0, false],
+				["mark", 4.0, true], ["post", 1.0, false]]:
+			var pl := Player.new(0, sq[2], "WA")
+			add_child(pl)
+			await frames(1)
+			pl.fenced = false
+			pl.place(Vector2.ZERO, 0.0)
+			var st := {"n": 0, "bad": "", "up": 999.0, "bent": 999.0}
+			var take := func():
+				var a := _arm_angles(pl)
+				st.n += 1
+				var moving := pl.vel.length() > 0.5
+				if moving and st.bad == "":
+					st.bad = _arm_fault(pl, a)
+				if not moving and st.get("stop", false) and pl.act == "defend":
+					st.up = minf(st.up, minf(a[0][0], a[1][0]))
+					st.bent = minf(st.bent, minf(a[0][1], a[1][1]))
+			if pl.link:
+				pl.link.body.posed.connect(take)
+			var go := Vector2(1, 0) if case[2] else Vector2(0, 1)
+			for f in 120:
+				var stop: bool = f >= 75
+				st.stop = stop and f >= 105
+				pl.set_act(case[0], "l" if case[0] == "post" else "")
+				pl.target = pl.p if stop else pl.p + go * 8.0
+				pl.want_speed = 0.0 if stop else float(case[1])
+				pl.look_on = case[2]
+				pl.look_at_p = pl.p + Vector2(0, 10)
+				pl.advance(1.0 / 30.0)
+				await get_tree().process_frame
+				if pl.link == null:
+					take.call()
+			var what := "%s, a player %s at %.1f m/s then stopping" % [lv, case[0], case[1]]
+			check(st.n > 60 and st.bad == "", "%s: no arm held straight out on the move (%s)" % [what, st.bad if st.bad != "" else "%d poses" % st.n])
+			if case[0] == "defend":
+				check(st.up >= ARM_UP and st.bent >= 20.0 and st.bent < 90.0, "%s: standing on the holder, her arms up toward the ball, elbows soft (%.0f deg up, elbows %.0f bent)" % [what, st.up, st.bent])
+			pl.queue_free()
+			await frames(1)
+		# Every moving player in an AI match.
+		var m := _study_match(11 if g != Game.GFX_MEDIUM else 12, {"venue": "arena" if g != Game.GFX_MEDIUM else "hall"})
+		await frames(3)
+		var ms := {"n": 0, "bad": 0, "first": ""}
+		var see := func(pl: Player):
+			if m.phase != "live" or pl.vel.length() <= 0.5:
+				return
+			ms.n += 1
+			var why := _arm_fault(pl, _arm_angles(pl))
+			if why != "":
+				ms.bad += 1
+				if ms.first == "":
+					ms.first = why
+		for pl: Player in m.players[0] + m.players[1]:
+			if pl.link:
+				pl.link.body.posed.connect(see.bind(pl))
+		for f in 1200:
+			await get_tree().process_frame
+			if g == Game.GFX_LOW:
+				for pl: Player in m.players[0] + m.players[1]:
+					see.call(pl)
+		check(ms.n > 3000 and ms.bad == 0, "%s, an AI match: no moving player's arm held straight out (%d of %d frames: %s)" % [lv, ms.bad, ms.n, ms.first])
+		print("arms: %s, an AI match: %d moving frames, %d with an arm straight out" % [lv, ms.n, ms.bad])
+		# The shooter who caught facing away, right under the post, at both ends.
+		var worst := 0.0
+		var at_release := 0.0
+		var seen := 0
+		for t in 2:
+			for spot: Vector2 in [Vector2(-1.0, 0.0), Vector2(-0.8, 0.6)]:
+				await _wait_live(m, 1800)
+				var gs: Player = m.player_at(t, "GS")
+				var post := Court.goal_post(gs.dir)
+				m.pass_info = {}
+				m.shot_info = {}
+				m._release_holder()
+				gs.p = post + Vector2(spot.x * gs.dir, spot.y)
+				gs.vel = Vector2.ZERO
+				gs.target = gs.p
+				gs.facing = atan2(-gs.dir, 0.0)
+				gs.body_yaw = gs.facing
+				m._give(gs)
+				m.ai._decide[gs] = 99.0
+				m.shoot()
+				var last := INF
+				for f in 60:
+					await get_tree().process_frame
+					if gs.act != "shoot" or not gs.has_ball():
+						break
+					var bz: Vector3 = gs.link.body.global_transform.basis.z if gs.link and gs.link.body.visible else gs.body.global_transform.basis.z
+					last = absf(rad_to_deg(angle_difference(atan2(bz.x, bz.z), atan2(post.x - gs.p.x, post.y - gs.p.y))))
+					if gs.act_t >= 0.25:
+						worst = maxf(worst, last)
+						seen += 1
+				at_release = maxf(at_release, last)
+				m.ai._decide.erase(gs)
+				await frames(15)
+		check(seen > 40 and at_release < SHOT_FACE and worst < SHOT_FACE, "%s: a shooter who caught facing away turns to the post before the shot (%.0f deg off at the release, %.0f from 0.25 s in; %d frames)" % [lv, at_release, worst, seen])
+		print("arms: %s: the shooter caught facing away, %.0f deg off the post at the release (%.0f at most from 0.25 s in)" % [lv, at_release, worst])
+		m.queue_free()
+		await frames(2)
+	Game.settings.graphics = was
+	FoundationLink.off = was_off
 
 
 ## Every shot in AI matches, on Low and (with the licensed clips) Medium: the shooter's drawn body faces the post from
