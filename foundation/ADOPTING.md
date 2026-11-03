@@ -1351,7 +1351,7 @@ any of these fail:
 |---|---|
 | signature | Every signer's certificate SHA-256 is the owner's key `6F:23:A9:…:7B:A3`. apksigner verifies when the runner's Android build-tools have it; otherwise the certificates are read from the APK's v1/v2/v3 signatures. |
 | version | `project.binary`'s `application/config/version` is the release's version, and the APK's file name carries it. |
-| licensed | `mobility.res` and `actorcore.res` are in the APK, and nothing licensed is in the Web build or pack. |
+| licensed | `mobility.res` and `actorcore.res` are in the APK. Nothing licensed is in the Web build or pack, or in the downloadable High pack (`--pack`). |
 | clean | No tests, docs, tools, audit output or contact sheets in the export. |
 | textures | No texture over 2 MB that isn't GPU-compressed (ETC2/ASTC). |
 | files | No non-game files (`.blend`, `.psd`, `.fbx`, `.zip`, `.py`, `.sh`, `.md`, `.log`…), and no file of 64 KB or more twice. |
@@ -1377,6 +1377,59 @@ if you map the stick with `WsgNoteChecks.stick_world`.
 
 Checked on Kho Kho Rush 0.12.4-beta (the release APK): every check passes. The key is the owner's in v1, v2 and v3;
 the largest texture that isn't GPU-compressed is 1.6 MB; there are no duplicates.
+
+## 5.20 The downloadable High pack: WsgAssetPack (games with a High pack)
+
+High's extra assets (8K skies, 4K pitch textures, the HD player textures) can come as a separate download instead of
+in the APK. The pack is a Godot `.pck`, published as a public GitHub release asset next to the APK; the owner has
+OK'd this, since the same assets ship in the APK today. **The pack may carry only our own, Meshy and CC assets: never
+licensed MoCap Online, ActorCore or Mixamo-derived data, which ship only inside the APK.** The release gate fails a
+pack that holds any (`--pack`).
+
+**CI**, before the APK is exported, because the APK carries the pack's checksum:
+
+```yaml
+      - name: High pack
+        run: |
+          godot --headless --path <game> --export-pack "High pack" build/<game>-$VERSION-high.pck
+          SHA=$(sha256sum build/<game>-$VERSION-high.pck | cut -d' ' -f1)
+          SIZE=$(stat -c %s build/<game>-$VERSION-high.pck)
+          URL="https://github.com/joshnason8-lab/ghost-kit-pages/releases/download/<tag>/<game>-$VERSION-high.pck"
+          printf '{"url":"%s","sha256":"%s","size":%s,"name":"high-%s.pck"}' "$URL" "$SHA" "$SIZE" "$VERSION" > <game>/wsg_pack.json
+      # ... export the APK (wsg_pack.json goes in it), run the release gate with --pack, upload both to the release
+```
+
+The "High pack" preset includes only the High assets (its `include_filter`), and your Android preset excludes them.
+Name the file `*.pck`: Obtainium's default filter takes the `.apk` from the release and leaves the pack, which the
+game fetches itself.
+
+**In the game**, when the player picks High (or at the first start on a High phone):
+
+```gdscript
+var pack := WsgAssetPack.from_manifest()            # res://wsg_pack.json
+if pack and not pack.mount():                       # here and checked already: mounted
+	var ld := WsgLoading.cover(menu, [high_button], {"title": "Downloading High graphics"})
+	ld.step("Downloading", func(): await pack.fetch(ld))
+	await ld.run()
+	await ld.done()
+	if pack.error != "":
+		show_message(pack.error)                    # stay on Medium; it resumes next time
+```
+
+How `fetch` behaves:
+- It follows GitHub's redirect.
+- It resumes a part already downloaded (a Range request), so a dropped connection or a closed app costs nothing.
+- It checks the SHA-256 and mounts the pack with `load_resource_pack(..., replace_files = true)`, so its files
+  replace the APK's.
+- On a bad checksum, it deletes the download and starts again next time.
+
+Call `mount()` at every start, before anything High is loaded. `remove()` frees the space (Settings).
+
+The pack's assets' licences go in the shared credits screen (item 8).
+
+`tests/asset_pack_test.gd` runs against a local server: a download dropped halfway resumes with a Range request and
+fetches only the rest; the pack mounts and its file reads; the next start finds it without downloading; a wrong
+checksum is refused and the download deleted.
 
 ## 6. What the owner does once (all games share it)
 

@@ -500,3 +500,8 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   (mobility/actorcore in the APK, none in the Web build), clean, textures (no non-GPU-compressed one over 2 MB), files
   (non-game types, duplicates over 64 KB), size diff (top 20 grown; no cap); --allow with the owner's note. Kho Kho
   0.12.4-beta's release APK passes every check. Part 2 next: WsgAssetPack (the downloadable High pack).
+- **1, part 2: WsgAssetPack** (asset_pack.gd; tests/asset_pack_test.gd with tests/asset_pack_server.py; ADOPTING
+  §5.20): the High pack as a public release .pck - follows GitHub's redirect, resumes with Range, SHA-256, mounted
+  with load_resource_pack(replace), behind WsgLoading's bar; res://wsg_pack.json written by CI; the gate's --pack
+  fails a pack holding licensed data. Found: get_response_headers_as_dictionary() comes back empty on 4.7.2 (parsed
+  by hand). Credits for the pack's assets: item 8.

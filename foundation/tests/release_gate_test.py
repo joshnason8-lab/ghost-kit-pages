@@ -124,6 +124,15 @@ def main():
         print("%-26s exit %d, failed %s %s" % ("web " + wname, code, failed or "nothing", "ok" if ok else "WRONG"))
         if not ok:
             fails.append(wname)
+    # The High pack: one holding licensed data fails; a clean one passes.
+    for pname, content, bad in [("pack_bad.pck", b"GDPC..res://addons/wsg_foundation/data/actorcore.res..", True), ("pack_ok.pck", b"GDPC..res://hd/sky_8k.ctex..", False)]:
+        pp = os.path.join(tmp, pname)
+        open(pp, "wb").write(content)
+        code, failed, out = run(os.path.join(tmp, "out_" + pname), "--apk", clean, "--cert", cert, "--version", "1.2.3-beta", "--pack", pp)
+        ok = (failed == ["licensed"]) if bad else (code == 0)
+        print("%-26s exit %d, failed %s %s" % ("pack " + pname, code, failed or "nothing", "ok" if ok else "WRONG"))
+        if not ok:
+            fails.append(pname)
     # The size diff against the previous release.
     prev = os.path.join(tmp, "prev.apk")
     files = dict(base)

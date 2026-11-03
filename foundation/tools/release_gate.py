@@ -12,7 +12,8 @@ The checks:
   version    project.binary's application/config/version is --version (or the version in --tag), and the APK's file
              name carries it.
   licensed   the licensed motion (addons/wsg_foundation/data/mobility.res, actorcore.res) is in the APK - and in no
-             Web build or pack (MoCap Online, ActorCore and Mixamo-derived data may ship only inside an APK/AAB).
+             Web build or downloadable pack (--pack) (MoCap Online, ActorCore and Mixamo-derived data may ship only
+             inside an APK/AAB).
   clean      no tests, docs, tools, audit or contact-sheet output, CI or source files in the export (the foundation's
              own test-time scripts are listed as a warning: exclude them unless your game uses them).
   textures   no texture over 2 MB that is not GPU-compressed (a PNG/WebP/raw import is decoded whole into memory).
@@ -176,6 +177,7 @@ def main():
     ap.add_argument("--tag", help="the release tag, if it carries the version (e.g. kabaddi-raid-0.14.6-beta)")
     ap.add_argument("--web", help="the Web build: its .pck, a .zip of it, or its folder")
     ap.add_argument("--previous", help="the previous release's APK (the size diff)")
+    ap.add_argument("--pack", help="the downloadable High pack (.pck): public, so it must hold no licensed data")
     ap.add_argument("--allow", help="owner-excused paths: '<glob>\\t<the owner's note>' a line")
     ap.add_argument("--cert", default=CERT)
     ap.add_argument("--out", required=True)
@@ -265,6 +267,12 @@ def main():
             fails.append("licensed data in the Web build: %s (never on a public page)" % f)
     else:
         lines.append("no Web build given")
+    if a.pack:
+        blob = open(a.pack, "rb").read()
+        found = [m.decode() for m in LICENSED_MARKS if m in blob]
+        lines.append("High pack %s (%.1f MB): %s" % (os.path.basename(a.pack), len(blob) / 1048576, "no licensed data" if not found else "LICENSED DATA: " + ", ".join(found)))
+        for f in found:
+            fails.append("licensed data in the downloadable pack: %s (a public release asset: only our own, Meshy and CC assets)" % f)
     check("licensed", fails, lines)
 
     # clean: no tests/docs/tools/audit output in the export
