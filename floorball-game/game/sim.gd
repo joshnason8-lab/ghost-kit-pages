@@ -154,6 +154,12 @@ func deferred() -> Dictionary:
 		"referee planter slip under game AI, 2.6-3.4 cm; Foundation planter fix pending (lead approved 11:31Z)"]}
 
 
+## WsgSim's fetch-behind-prop case: exempt. In floorball a ball that leaves the rink is not fetched: play restarts with
+## another ball, and no one goes behind the benches or the stands for it.
+func fetch(_spot: Vector3) -> Dictionary:
+	return {"exempt": "floorball restarts with a new ball; no one fetches one out of the rink (lead, 2026-11-03 19:20Z)"}
+
+
 func solid() -> WsgSolidProps:
 	if m == null or not is_instance_valid(m) or m.arena == null:
 		return null
