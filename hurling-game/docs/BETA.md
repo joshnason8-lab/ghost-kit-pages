@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.3
+
+- **Steadier feet**: a foot that has just landed no longer slides as the toe comes down (the shared animation
+  foundation's fix); the worst slide in a step when walking is down from 2.2 cm to 1.7 cm.
+
 ## New in 0.24.2
 
 - **Gates in the club ground's rail**: the rail round the parish field now has a gate near each corner of every

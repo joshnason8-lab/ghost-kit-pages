@@ -857,6 +857,11 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.3, 3 November 2026)
+
+- **Foundation 8f49aee**: WsgFootFlat's toe pin weighs in only as the toe comes within 2 cm of the floor (63b8d62's
+  pin moved a just-landed heel 1.4 then 0.9 cm). Suite 707/0; owner notes 21/21 (gliding worst 2.3 cm, mean 0.42).
+
 ## Done (0.24.2, 3 November 2026)
 
 - **WsgSimGame.fetch wired** (the fetch-behind-prop case, enforced from 2026-11-04 12:00): Match.send_fetch puts the
