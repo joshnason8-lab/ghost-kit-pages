@@ -556,3 +556,12 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   players 57, the officials 20, about 41 with the sun's pass, the four houses 18 (3 parts each, drawn twice in the lit
   pass). The houses are in the lightmapped shell scene (assets/grounds/village/village.tscn): merging them into four
   draws needs the shell and its lightmap baked again - next.
+- **The village under 120 draw calls, no rebake needed.** The houses' shadows are already in the lightmap, and they stand
+  well off the court, so drawing them again into the sun's shadow map only cost draw calls. Arena turns their shadow
+  casting off in the village. Season at Medium went from 126 to 114 draw calls (High 129 to 117). The tiers rule passes
+  everywhere (Low 90-101 draw calls and 137-177k triangles, Medium 104-114, High 104-117), so its deferral is removed
+  and every world rule is enforced (game/world.gd).
+- **Side-shuffles: his own arms.** The captured side-shuffles hold the arms out straight, 35-54 degrees from the sides,
+  and WsgSim's smoke counted these as A-poses in 8 matches on d5c525c, each a defender or raider shuffling at
+  3.2-3.5 m/s. A shuffle now takes 80% of his own ready arms (hands in front, elbows bent), eased over the clips'
+  cross-fade (HumanModel._apply_moves).

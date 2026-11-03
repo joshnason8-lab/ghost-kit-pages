@@ -94,6 +94,12 @@ func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text
 			if n is WorldEnvironment or n is Light3D or n.has_meta("bake_only"):
 				shell.remove_child(n)
 				n.free()
+		# The village's huts are well off the court and their shadows are in the lightmap: drawn again into the sun's
+		# shadow map they only cost (a draw call each, every frame: Medium drew 126 against its 120, wsg_world_check's
+		# tiers rule, 2026-11-03).
+		if arena_id == "village":
+			for mi: MeshInstance3D in shell.find_children("*", "MeshInstance3D", true, false):
+				mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		baked = true
 	else:
 		shell = Node3D.new()

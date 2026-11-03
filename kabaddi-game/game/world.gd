@@ -12,12 +12,11 @@ func _init() -> void:
 	set_tier(Game.GFX_MEDIUM)
 
 
-## Put off with the lead's word (2026-11-03): tiers, till the Low bodies and shadows and the village's draw calls are cut.
+## Nothing put off: every world rule is enforced.
 func deferred() -> Dictionary:
-	return {"tiers": ["2026-11-04T12:00Z", "the lead, 2026-11-03: Low draws 625-665k triangles against 200k (21 bodies of "
-		+ "15k and a flattened copy of each for its floor shadow: lighter Low bodies and cheaper shadows to come), the "
-		+ "village 127 draw calls at Medium against 120, High's 700 3D fans against 500 pending the Foundation's "
-		+ "budget-profile check"]}
+	# (tiers: deferred to 2026-11-04 12:00 by the lead; met on 2026-11-03 - Low's lighter bodies, the village's huts out
+	# of the sun's shadow map: season at Medium 126 -> 114 draw calls.)
+	return {}
 
 
 func game_name() -> String:
