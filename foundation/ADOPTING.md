@@ -781,13 +781,21 @@ On the software renderer:
 
 The A16 numbers have to come from your own WSG_LOADING line.
 
+**In headless tests, wait on the clock, not on frames.** Under `--fixed-fps` a headless run turns hundreds of frames a
+second, so a test that waits a fixed number of frames times out before the load finishes (Kabaddi). Wait for
+`finished`, or for a time.
+
 **Frames settle before play (`done()`).** The first frames after a load still stall on cold resources and leftover
 shader variants: Floorball measured 0.3–1 s on the A16. So `await ld.done()` keeps the overlay up, opaque with the bar
 at its last step, until `settle_frames` (3) frames in a row come in under `settle_ms` (50). It stops waiting after
 `settle_cap` (3 s) either way.
 
-A phone that is slow on every frame passes too. A frame within 30% of its quickest frame counts, up to twice
-`settle_ms`, so compile stalls never pass. A load under `quick_ms` (300 ms, such as a rematch) closes at once, with no
+A phone that is slow on every frame passes too:
+- a frame within 30% of its quickest frame counts, up to twice `settle_ms`;
+- or the last 6 frames all fall within 20% of each other, however slow. Netball's software renderer, steady at 250–450
+  ms, used to wait the full cap.
+
+Compile stalls are uneven, so they never pass. A load under `quick_ms` (300 ms, such as a rematch) closes at once, with no
 fade.
 
 **Pre-warm on the menu (`WsgLoading.prewarm(paths)`).** While the menu is up, start the likely next match's files:

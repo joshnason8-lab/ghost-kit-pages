@@ -124,7 +124,7 @@ func _initialize() -> void:
 	# Settle: the match's first frames stall (shader compiles, cold resources: 150 ms each here); the overlay stays
 	# until 3 frames in a row come in under 50 ms, and no longer than settle_cap when they never do. A phone that is
 	# slow every frame (70 ms, steady) settles at once.
-	for case in [[5, 3.0, 150], [1000, 0.5, 150], [1000, 3.0, 70]]:
+	for case in [[5, 3.0, 150], [1000, 0.5, -1], [1000, 3.0, 70], [1000, 3.0, 300]]:
 		var staller := Staller.new()
 		staller.left = case[0]
 		staller.ms = case[2]
@@ -135,15 +135,16 @@ func _initialize() -> void:
 		var t_done := Time.get_ticks_msec()
 		await l4.done()
 		var r4 := l4.report
-		print("settle (%d frames of %d ms, cap %.1f s): %s ms, settled %s, longest %s ms; the stalls ended at %d ms" % [case[0], case[2], case[1], r4.settle_ms, r4.settled, r4.settle_longest_frame_ms, staller.ended - t_done if staller.ended else -1])
+		print("settle (%d frames of %d ms (-1: uneven stalls), cap %.1f s): %s ms, settled %s, longest %s ms; the stalls ended at %d ms" % [case[0], case[2], case[1], r4.settle_ms, r4.settled, r4.settle_longest_frame_ms, staller.ended - t_done if staller.ended else -1])
 		if case[0] < 100:
 			if not r4.settled or staller.ended == 0 or Time.get_ticks_msec() < staller.ended:
 				fails.append("the overlay did not wait for the slow frames to end: %s" % r4)
 			if float(r4.settle_ms) < 3 * 150.0:
 				fails.append("settled in %.0f ms over five 150 ms frames (one may fall in the load)" % r4.settle_ms)
-		elif case[2] < 100:
-			if not r4.settled or float(r4.settle_ms) > 6 * 70.0:
-				fails.append("a steady 70 ms phone did not settle at once: %s" % r4)
+		elif case[2] > 0:
+			# A device steady at 70 or 300 ms a frame: settled within a few frames, not held to the cap.
+			if not r4.settled or float(r4.settle_ms) > 8 * float(case[2]):
+				fails.append("a steady %d ms device did not settle at once: %s" % [case[2], r4])
 		elif r4.settled or float(r4.settle_ms) > 1000.0:
 			fails.append("frames that never settle: the overlay held %s ms (cap 0.5 s), settled %s" % [r4.settle_ms, r4.settled])
 		staller.queue_free()
@@ -387,7 +388,8 @@ class Staller extends Node:
 
 	func _process(_d: float) -> void:
 		if left > 0:
-			OS.delay_msec(ms)
+			# (ms -1: compile stalls, uneven - 60 to 300 ms, never two alike in a row.)
+			OS.delay_msec(ms if ms > 0 else [60, 300, 110, 240, 80, 190][left % 6])
 			left -= 1
 			if left == 0:
 				ended = Time.get_ticks_msec()
