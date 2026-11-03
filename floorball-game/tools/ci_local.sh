@@ -11,6 +11,7 @@ fail=0
 step() { echo "== $1"; }
 bad() { echo "FAILED: $1"; fail=1; }
 
+step "owner notes guard";  sh tools/wsg/owner_notes_guard.sh > "$LOG/notes_guard.log" 2>&1 || bad "owner_notes_guard (see $LOG/notes_guard.log)"
 step "scripts parse";      python3 tools/check_scripts.py > "$LOG/check_scripts.log" 2>&1 || bad "check_scripts (see $LOG/check_scripts.log)"
 step "translations";       python3 tools/build_i18n.py > "$LOG/i18n.log" 2>&1 || bad "build_i18n"
 step "import";             timeout 600 godot --headless --path . --import > "$LOG/import.log" 2>&1
