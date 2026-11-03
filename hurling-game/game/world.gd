@@ -70,6 +70,9 @@ func walker(parent: Node) -> Array:
 	parent.add_child(p)
 	if p.link == null:
 		return []
+	# (In a match the game poses its bodies itself - WsgBody.set_manual, advanced by FoundationLink.update each frame
+	# it draws them; driven alone here, the skeleton poses itself each frame, as the check reads it.)
+	p.link.body.set_manual(false)
 	return [p.link.body, p.link.loco]
 
 
