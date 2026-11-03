@@ -1076,7 +1076,7 @@ test_runner); it is not a second copy of your game.
 | `start(config, seed, tree)` | builds the match with your own code, every random roll from `seed`, and returns its root; shortens the halves if `config.short` |
 | `state()` | `{score, clock, clock_running, phase, possession, finished}` |
 | `events()` | what happened since the last call |
-| `bodies()` | `[{name, pos, radius, height, body (WsgBody), active, target}]` |
+| `bodies()` | `[{name, pos, radius, height, body (WsgBody), active, target}]`, the same order all match (the sampled quarter is picked by place in the list); optionally `pose_excuse`: why the arms are out straight by design now (counted, not failed) |
 | `ball()` | the ball's position, radius and whether it's in play |
 | `solid()` | your WsgSolidProps |
 | `fetch(spot)` | the ball dead at `spot` (behind a big prop) and one body sent for it: `{who, seconds, arrive}` |
@@ -1121,8 +1121,8 @@ For the human and the menus:
      spot that count as there (default 1)}`.
   4. The body must get there in time, and never go into a prop on the way.
 
-  Not wired (`{}`, the default), the match ends at once and the report says so under Warnings. Nothing fails yet; wire
-  it. A targeted kind of your own can run the same case by setting `fetch_behind_prop: true` in its config.
+  Not wired (`{}`, the default), the match ends at once. Until **2026-11-04 12:00 UTC** the report notes it under
+  Warnings; from then on it fails (`fetch: not wired`; the lead's decision). REQUIRED carries it from that time. A targeted kind of your own can run the same case by setting `fetch_behind_prop: true` in its config.
 - **Steering back and forth** (a warning, not a failure): WsgSolidProps counts a body changing sides round one prop
   4 times within 90 `steer` calls. It warns once per body and prop (`flip_warnings`, and a `push_warning`), and the
   report lists it under Warnings. The usual cause is a goal straight behind a long prop with the body's `memo` lost

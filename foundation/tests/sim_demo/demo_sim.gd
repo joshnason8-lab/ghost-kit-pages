@@ -97,8 +97,21 @@ func ball() -> Dictionary:
 	return {"pos": m.ball_pos, "radius": 0.11, "live": m.holder < 0 and m.fetch_spot == Vector3.INF}
 
 
+## Checks put off (tests/sim_test.gd sets it).
+var defer := {}
+
+
+func deferred() -> Dictionary:
+	return defer
+
+
 ## The fetch-behind-prop case: the ball dead at SPOT, the nearest player sent for it.
+var no_fetch := false
+
+
 func fetch(spot: Vector3) -> Dictionary:
+	if no_fetch:
+		return {}
 	var i: int = m.fetch(spot)
 	return {"who": "%s %d" % [["home", "away"][m.players[i].team], i % 3 + 1], "seconds": 20.0}
 

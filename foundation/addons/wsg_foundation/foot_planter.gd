@@ -47,6 +47,7 @@ var _lifted := [false, false]               # let go at its reach's end: lifting
 ## stop harder than its clips), kept it on the ground behind, and it slid there 3 to 13 cm (WsgSim's demo).
 const STEP_TIME := 0.2
 var _low_ticks := [0, 0]                     # ticks a foot let go has stayed on the ground (it steps at 2)
+var _waited := [0, 0]                        # ticks since it was let go, neither stepping nor lifted (at 3: to the clip)
 var _step_toe := [Vector3.INF, Vector3.INF] # the held toe from the ankle as the step began
 var _toe_hold := [Vector3.INF, Vector3.INF] # where its toe was held (a foot released keeps its toe's place across)
 ## How far a planted foot's leg may twist (radians) before the foot turns with the body.
@@ -86,6 +87,7 @@ func reset() -> void:
 	_hold = [Vector3.INF, Vector3.INF]
 	_step = [-1.0, -1.0]
 	_low_ticks = [0, 0]
+	_waited = [0, 0]
 	_toe_hold = [Vector3.INF, Vector3.INF]
 	_yaw = [NAN, NAN]
 	_hip_prev = [Vector3.INF, Vector3.INF]
@@ -153,6 +155,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			is_down = h < 0.05 * sc if was else (h < 0.03 * sc and vel < 0.6 + body_speed * 0.8)
 			# A foot let go at the end of its reach is lifting: not down again until it has left the ground.
 			if _lifted[i] and float(_step[i]) < 0.0:
+				_waited[i] = int(_waited[i]) + 1
 				if h > 0.05 * sc or vel < 0.2:
 					_lifted[i] = false
 				else:
@@ -160,11 +163,15 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 					# Let go, and the clip keeps it on the ground (its stride too short for the body: a sharp turn, a
 					# start or stop harder than its clips): it steps. A foot the clip is lifting - every running
 					# stride's toe-off is let go at the leg's reach - just goes with the clip (stepping those too
-					# doubled the landings: Kho Kho's runners at 7.6 steps a second).
+					# doubled the landings: Kho Kho's runners at 7.6 steps a second). Kept where it was across while
+					# that is told (the release below).
 					_low_ticks[i] = int(_low_ticks[i]) + (1 if h < 0.03 * sc else 0)
 					if int(_low_ticks[i]) >= 2:
 						_step[i] = 0.0
 						_step_from[i] = ankle_world[i]
+					elif int(_waited[i]) >= 3:
+						# (Skimming, neither lifted nor kept down: to the clip.)
+						_lifted[i] = false
 			if is_down and not was:
 				landed.emit(i)
 			contact[i] = 1.0 if is_down else 0.0
@@ -279,6 +286,10 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# Held, or easing back to the clip from where it was held: up first, then across, so a foot let go does
 			# not skate over the ground catching up.
 			var hw: float = smoothstep(0.0, 0.6, _w[i])
+			# (Let go and not yet told whether the clip lifts it or keeps it down - a tick or two: kept where it was
+			# across, not eased over the ground toward the clip's foot - 7 cm in a frame, Hurling's gliding note.)
+			if _lifted[i] and float(_step[i]) < 0.0:
+				hw = 1.0
 			var vw: float = _w[i] * _w[i]
 			target = Vector3(lerpf(ank.x, _hold[i].x, hw), lerpf(ank.y, _hold[i].y, vw), lerpf(ank.z, _hold[i].z, hw))
 		# Never through the ground.
@@ -344,6 +355,7 @@ func _let_go(i: int) -> void:
 	_lock[i] = Vector3.INF
 	contact[i] = 0.0
 	_low_ticks[i] = 0
+	_waited[i] = 0
 	# (If the clip then keeps it on the ground it steps - see tick's lifted case; its toe goes with the ankle from
 	# where it was held, the clip's foot taking over as the step goes on: it snapped 4 cm across at the step's start.)
 	_step_toe[i] = _toe_lock[i] - ankle_world[i] if _toe_lock[i] != Vector3.INF else Vector3.INF

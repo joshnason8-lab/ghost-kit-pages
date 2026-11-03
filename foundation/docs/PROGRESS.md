@@ -533,3 +533,14 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   - The demo's `bug:fetch_dither` is caught by all three.
   - ADOPTING §5.17. The tiers rule now reports triangles left outside start_mode's parent (Hurling's trap; §5.18).
   - The demo smoke's one failure, `extreme#40` out of bounds, predates this change: the previous commit fails it too.
+- **Kho Kho's "T-pose" kneelers, Hurling's 6.6 cm lift-to-run slide (2026-11-03):**
+  - The 90/90 T-pose was a reading artefact. WsgSim's sampled pose switches off every modifier on three bodies in
+    four, the game-pose layer included, so a body in FoundationLink "full" mode shows the rig's rest T. Kho Kho's
+    diag_pose read every body; WsgSim reads only the sampled quarter and never flagged a kneel.
+  - In the real game the kneeling arms read 13-37 degrees.
+  - Pole turns are a designed move. `bodies()` may carry a `pose_excuse` with its reason: counted, not failed.
+  - `WsgSimGame.deferred()`: a check put off until a time with the lead's note (warned, not failed).
+  - Planter: a foot let go is held across while the planter tells whether the clip lifts it (at most 3 ticks). It
+    had eased 7 cm over the ground toward the clip's foot (29f4829's wait). Gliding note 6.6 -> 4.0 (limit 4); feet
+    sweep and cadence unchanged.
+  - The fetch hook is enforced from 2026-11-04 12:00 UTC (`FETCH_ENFORCED_FROM`; REQUIRED from then).

@@ -35,6 +35,9 @@ const FETCH_PROPS := 3
 const FETCH_AT_S := 1.0
 const FETCH_S := 20.0
 const FETCH_ARRIVE_M := 1.0
+## From then on (the lead, 2026-11-03), a game whose fetch() is not wired fails the case ("fetch: not wired"); before,
+## it is noted only. WSG_NOW (YYYY-MM-DDTHH:MMZ) stands in for the time.
+const FETCH_ENFORCED_FROM := "2026-11-04T12:00Z"
 const FOOT_SLIP_CM := 2.0
 const EVENTS_KEPT := 300
 const MAX_FAILS := 3
@@ -43,6 +46,7 @@ const SEVERITY := {"script error": 5, "nan": 5, "out of bounds": 4, "score": 5, 
 	"no progress": 3, "fetch": 4, "prop": 3, "ball through": 3, "foot slip": 2, "pose": 3, "rule": 4, "start": 5, "determinism": 5, "timestep": 5}
 
 static var _log: WsgSimLog = null
+var _deferred := {}       # check -> "reason until time" (WsgSimGame.deferred, before its time)
 static var _warm := false
 
 ## Options: stop_frame (replay: stop there and print the state), verbose, realtime (1x: the determinism check),
@@ -89,6 +93,13 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	var events := []
 	# (A copy: a start() that shortens its config in place changed the saved one, and its replay shortened it again -
 	# Kho Kho's replays diverged.)
+	_deferred = {}
+	var now := OS.get_environment("WSG_NOW") if OS.get_environment("WSG_NOW") != "" else Time.get_datetime_string_from_system(true).left(16) + "Z"
+	var dd := game.deferred()
+	for c in dd:
+		var d: Array = dd[c]
+		if d.size() >= 2 and String(d[1]).strip_edges() != "" and now < String(d[0]):
+			_deferred[String(c)] = "%s until %s" % [d[1], d[0]]
 	var root: Node = await game.start(cfg.duplicate(true), seed, tree)
 	if root == null:
 		_fail(out, "start", "the match did not start", 0.0, 0, {}, events)
@@ -259,7 +270,15 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 					elif not (runs.back() as Array).is_empty():
 						runs.append([])
 					if seen[1] != "":
-						_fail(out, "pose", "%s stands in a %s" % [nm, seen[1]], t, frame, st, events)
+						# (A pose the game declares by design, with its reason - Kho Kho's pole turn, one hand on the
+						# pole and the other arm out - is counted, not failed.)
+						var why := String(b.get("pose_excuse", ""))
+						if why != "":
+							var ex: Dictionary = out.get("pose_excused", {})
+							ex[why] = int(ex.get(why, 0)) + 1
+							out["pose_excused"] = ex
+						else:
+							_fail(out, "pose", "%s stands in a %s" % [nm, seen[1]], t, frame, st, events)
 		if (kind == FETCH_KIND or bool(cfg.get("fetch_behind_prop", false))) and t >= FETCH_AT_S:
 			if fetch.is_empty():
 				var spots := fetch_spots(solid, bounds) if solid else []
@@ -267,6 +286,8 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				if spots.is_empty() or g.is_empty():
 					out["fetch"] = "no props to fetch behind" if spots.is_empty() else "not wired (WsgSimGame.fetch)"
 					print("sim: %s seed %d: %s" % [kind, seed, out.fetch])
+					if not spots.is_empty() and now >= FETCH_ENFORCED_FROM:
+						_fail(out, "fetch", "not wired: WsgSimGame.fetch(spot) returns {} (required from %s, ADOPTING 5.17)" % FETCH_ENFORCED_FROM, t, frame, st, events)
 					break
 				var sp: Array = spots[seed % spots.size()]
 				fetch = {"who": String(g.get("who", "")), "spot": sp[0], "prop": sp[1], "by": t + float(g.get("seconds", FETCH_S)),
@@ -432,6 +453,14 @@ func _finish(out: Dictionary, game: WsgSimGame, t_wall: int, t: float, frame: in
 
 func _fail(out: Dictionary, check: String, msg: String, t: float, frame: int, st: Dictionary, events: Array) -> void:
 	var sig := check + ": " + _signature(msg)
+	if _deferred.has(check):
+		# (Put off for this game, with its reason, until a time: reported, not failed.)
+		var w := "deferred %s: %s (%s)" % [check, msg, _deferred[check]]
+		var ws: Array = out.get("warnings", [])
+		if not ws.has(w) and ws.size() < 20:
+			ws.append(w)
+		out["warnings"] = ws
+		return
 	for f: Dictionary in out.failures:
 		if f.signature == sig:
 			return

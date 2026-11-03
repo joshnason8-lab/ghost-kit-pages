@@ -48,11 +48,35 @@ func _initialize() -> void:
 		print("fetch #%d: %s%s" % [sd, r.get("fetch", "-"), "" if r.ok else " FAILED %s" % [(r.failures as Array).map(func(f: Dictionary) -> String: return f.message)]])
 		if not r.ok or not String(r.get("fetch", "")).contains("reached") or r.has("warnings"):
 			fails.append("a clean fetch behind a prop (seed %d): %s %s %s" % [sd, r.get("fetch", "-"), r.failures, r.get("warnings", [])])
+	# Not wired: noted before the lead's time, failed from it.
+	var unwired := Demo.new()
+	unwired.no_fetch = true
+	OS.set_environment("WSG_NOW", "2026-11-04T11:59Z")
+	var ru1: Dictionary = await sim.run(unwired, WsgSim.FETCH_KIND, 1, self)
+	OS.set_environment("WSG_NOW", "2026-11-04T12:00Z")
+	var ru2: Dictionary = await sim.run(unwired, WsgSim.FETCH_KIND, 1, self)
+	OS.set_environment("WSG_NOW", "")
+	var u1: bool = ru1.ok and String(ru1.get("fetch", "")).contains("not wired")
+	var u2: bool = (ru2.failures as Array).any(func(f: Dictionary) -> bool: return f.check == "fetch" and String(f.message).contains("not wired"))
+	print("fetch not wired: before 2026-11-04 12:00 %s, from it %s" % ["noted" if u1 else "WRONG", "failed" if u2 else "WRONG"])
+	if not u1 or not u2:
+		fails.append("fetch not wired: before %s, from %s" % [ru1, ru2.failures])
 	var rd: Dictionary = await sim.run(game, "bug:fetch_dither", 3, self)
 	var dchecks := (rd.failures as Array).map(func(f: Dictionary) -> String: return f.check)
 	print("bug fetch_dither -> %s, warnings %s" % [dchecks, rd.get("warnings", [])])
 	if not dchecks.has("no progress") or not dchecks.has("fetch") or not str(rd.get("warnings", [])).contains("steer flip"):
 		fails.append("the fetcher turning back and forth was not caught (no progress, fetch, steer flip): %s %s" % [dchecks, rd.get("warnings", [])])
+	# A check put off for the game until a time, with its reason: reported, not failed, before it; failed after it.
+	game.defer = {"stuck": ["2999-01-01T00:00Z", "the lead, a test: foundation fix pending"]}
+	var rdf: Dictionary = await sim.run(game, "bug:stuck", 3, self)
+	game.defer = {"stuck": ["2000-01-01T00:00Z", "the lead, a test: foundation fix pending"]}
+	var rdp: Dictionary = await sim.run(game, "bug:stuck", 3, self)
+	game.defer = {}
+	var before_ok: bool = not (rdf.failures as Array).any(func(f: Dictionary) -> bool: return f.check == "stuck") and str(rdf.get("warnings", [])).contains("deferred stuck")
+	var after_ok: bool = (rdp.failures as Array).any(func(f: Dictionary) -> bool: return f.check == "stuck")
+	print("deferred stuck: before its time %s, after it %s" % ["reported, not failed" if before_ok else "WRONG", "failed" if after_ok else "WRONG"])
+	if not before_ok or not after_ok:
+		fails.append("a deferred check: before %s %s, after %s" % [rdf.failures, rdf.get("warnings", []), rdp.failures])
 	# The endless match also ends as "endless" (the clock stood still, then the limit).
 	if not (caught.endless as Array).has("endless"):
 		fails.append("an endless match was not reported as endless: %s" % [caught.endless])
