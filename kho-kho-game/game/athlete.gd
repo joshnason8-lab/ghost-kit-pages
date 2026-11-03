@@ -31,6 +31,12 @@ var _knelt := false
 var _stride := 0.0          # through his stride: a footstep at each half
 var _dive_v0 := 0.0         # m/s he leaves the ground at in a dive
 var dive_target: Node3D = null      # the runner his dive goes for (Match._dive_at), whose leg his hand reaches for
+## The ground's solid things (Arena.solid: poles, the table, benches, barricades...), for every body (the owner: nobody
+## ever walks through a table or a bench). Set by the match that owns the ground.
+static var solid: WsgSolidProps = null
+const BODY_R := 0.25        # m: a body's radius against them
+var goal := Vector3.INF     # where he walks to off the field (his bench, his square, the field): steered round them
+var _props_memo := {}
 var _reach_lock := Vector3.INF      # where his hand touched the runner: it stays there as he lands (lock_reach)
 var swing := {}             # round the pole, a hand on it: {c: the pole, r, a0, a1, v: speed out} (pole_swing)
 
@@ -134,7 +140,15 @@ func integrate(dt: float) -> void:
 		dv = -vel
 		rate = 8.0
 	vel += dv.limit_length(rate * agility * dt)
-	position += vel * dt
+	if solid and goal != Vector3.INF:
+		# Walking somewhere off the play (his bench, his square): round whatever is in the way.
+		var mv := solid.move(position, vel, dt, BODY_R, 1.8, goal, _props_memo)
+		position = mv[0]
+	else:
+		position += vel * dt
+		if solid:
+			# Whatever else: never inside a pole, a table, a bench or a barricade (a dive slides round the pole).
+			position = solid.push_out(position, BODY_R)
 	position.y = 0.0
 	# Facing: where he runs, or the point he watches when still.
 	var spd := Vector2(vel.x, vel.z).length()

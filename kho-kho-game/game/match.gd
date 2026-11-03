@@ -105,6 +105,8 @@ var _detail_t := 0.0
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
 	Crowd.watch_target = Vector3.INF
+	if arena and Athlete.solid == arena.solid:
+		Athlete.solid = null
 	WsgCrowd3D.set_excite(0.0)
 	WsgCrowd3D.set_tension(0.0)
 	FoundationLink.in_match = false
@@ -145,8 +147,10 @@ func kick_off() -> void:
 
 ## The ground, its stands and its crowd (the longest part of a match's start).
 func build_ground() -> void:
+	arena = null
 	arena = Arena.new(String(config.get("venue", "maidan")), fmt, [DB.kit(teams[0])[0], DB.kit(teams[1])[0]])
 	add_child(arena)
+	Athlete.solid = arena.solid
 	# The shared foundation draws the bodies made from here on (Medium and High: FoundationLink), not behind the menus.
 	FoundationLink.in_match = not attract
 	FoundationLink.frozen = false
@@ -342,7 +346,8 @@ func _bench_pos(side: int, i: int) -> Vector3:
 	# + 0.4): until 0.12.2 they knelt on the benches' own place, inside them (the owner: nobody through a bench).
 	var z: float = -(W + f.lobby + 1.0)
 	var s := -1.0 if side == 0 else 1.0
-	return Vector3(s * (4.6 + i * 0.75), 0, z)
+	var spot := Vector3(s * (4.6 + i * 0.75), 0, z)
+	return arena.solid.free_spot(spot, Athlete.BODY_R + 0.05) if arena else spot
 
 
 ## Where the next batch waits: standing in the lobby on the far side, ready to come on.
@@ -352,6 +357,8 @@ func _wait_pos(i: int) -> Vector3:
 
 
 func _start_turn() -> void:
+	for a in everyone():
+		a.goal = Vector3.INF
 	chasing = int(order[turn])
 	_turn_out_count = 0
 	powerplay_used = false
@@ -818,6 +825,7 @@ func _play(dt: float) -> void:
 	for a in d_state.keys():
 		if d_state[a] == "out":
 			var home := _bench_pos(defending(), roster[defending()].find(a))
+			a.goal = home   # walked round the table, the tents' poles and the benches
 			var to: Vector3 = home - a.position
 			to.y = 0
 			if to.length() < 0.25:

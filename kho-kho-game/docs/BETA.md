@@ -9,6 +9,15 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.4
+
+- **Everything round the field is solid** (the owner: "every asset was built to be a tangible object"). Nobody -
+  chaser, defender, umpire or anyone walking off - goes through the poles, the officials' table, the teams'
+  benches, the barricades, the tents' poles, the arena's boards or anything else: a defender who is out walks
+  round the table and the tents to his place in front of his bench, a dive slides round the pole, an overrun stops
+  at the barricade. The foundation's prop check plays a match at every ground and measures every body every frame;
+  the build fails if one is inside anything.
+
 ## What's new in 0.12.3
 
 - **A smoother start.** The loading screen now also gets the match's graphics ready behind it, a few at a time, and

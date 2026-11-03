@@ -23,6 +23,9 @@ var kind := ""
 var _chairs: Array = []    # monobloc chairs under the front row of a village crowd
 var _benches: Array = []   # painted benches (pupils at the school, the teams at a ground)
 var dressing: Array = []   # what was put up for the tournament (_tournament, _stage), for the tests
+## Everything solid round the field, as the shared foundation's simple shapes (WsgSolidProps: the owner's rule that
+## nobody walks through a table, a bench, a pole or a barricade): declared where each is built, below.
+var solid := WsgSolidProps.new()
 var near_side: Node3D      # the near side line's crowd and stands: only the camera behind the pole sees them (show_near)
 
 
@@ -77,6 +80,8 @@ func _ready() -> void:
 			_stands(16 if not low else 10, false)
 			_floodlights()
 			_skyline(low, 80.0, 6 if not low else 4)
+	solid.skip("trees, huts, the temple, the school building, the skyline, the floodlight towers and roofs",
+		"beyond the barricades and stands, where no player, official or ball goes")
 	if kind != "arena":
 		_tournament(low)
 	if kind == "village":
@@ -131,10 +136,13 @@ func _near_side(low: bool) -> void:
 			var d := r * 0.85
 			var hgt := 0.45 + r * 0.45
 			g.box(Vector3(0, hgt - 0.22, W + d), Vector3(L * 2 + d * 2, 0.45, 0.85), seat if r % 2 == 0 else riser)
+		solid.add({"name": "near stand", "kind": "box", "position": Vector3(0, 0, W - 0.425 + rows * 0.85 * 0.5),
+			"size": Vector3(2.0 * (L + rows * 0.85), 0.45 + rows * 0.45, rows * 0.85), "material": "concrete"})
 		var back := W + rows * 0.85 + 0.5
 		g.wall(Vector3(L + rows, 0, back), Vector3(-L - rows, 0, back), 0.0, rows * 0.45 + 4.0, Color("151a28") if indoor else Color("23262e"))
 		if indoor:
 			var bz: float = f.width * 0.5 + f.lobby + 0.6
+			solid.add({"name": "ad boards (near side)", "kind": "panel", "position": Vector3(0, 0, bz), "size": Vector3(2.0 * L, 0.9, 0.08), "material": "plastic"})
 			for i in 12:
 				var x0 := -L + i * (L * 2.0 / 12.0)
 				g.box(Vector3(x0 + L / 12.0, 0.45, bz), Vector3(L * 2.0 / 12.0 - 0.1, 0.9, 0.08), [Color("2f86c9"), Color("f2e6c8"), Color("ff8a1f")][i % 3])
@@ -153,6 +161,7 @@ func _near_side(low: bool) -> void:
 		for i in (5 if low else 9):
 			var p := Vector3(-22.0 + i * 44.0 / float((5 if low else 9) - 1), 0, W + 10.5)
 			g.cylinder(p, p + Vector3(0, 6.5, 0), 0.04, 0.03, Color("d8d4cc"), 5, false)
+			solid.add({"name": "flag pole", "kind": "cylinder", "position": p, "radius": 0.04, "height": 6.5, "material": "metal"})
 			g.box(p + Vector3(0.62, 6.05, 0), Vector3(1.2, 0.8, 0.02), flag_cols[i % flag_cols.size()], 0.25 * sin(float(i) * 1.3), false)
 	if not g.verts.is_empty():
 		near_side.add_child(g.commit(Geo.material(true)))
@@ -400,6 +409,7 @@ func _poles() -> void:
 	for s: float in [-1.0, 1.0]:
 		_lit.cylinder(Vector3(s * pg, 0, 0), Vector3(s * pg, f.pole_h, 0), r, r * 0.92, Color("d8b07a"), 10, true)
 		_lit.cylinder(Vector3(s * pg, 0, 0), Vector3(s * pg, 0.04, 0), r * 1.8, r * 1.8, Color("8a5a2b"), 10, true)
+		solid.add({"name": "pole", "kind": "cylinder", "position": Vector3(s * pg, 0, 0), "radius": r, "height": f.pole_h, "material": "wood"})
 
 
 ## Where the timekeeper sits: the officials' table, at his whistle's height.
@@ -414,21 +424,26 @@ func _table() -> void:
 		# The hall's: a draped table and the teams' benches.
 		_lit.box(Vector3(0, 0.38, z), Vector3(3.2, 0.06, 0.8), Color("e9e2d0"))
 		_lit.box(Vector3(0, 0.2, z - 0.05), Vector3(3.1, 0.38, 0.7), Color("2c5a8a"))
+		solid.add({"name": "officials' table", "kind": "box", "position": Vector3(0, 0, z), "size": Vector3(3.2, 0.41, 0.8), "material": "fabric"})
 		for s: float in [-1.0, 1.0]:
+			solid.add({"name": "team bench", "kind": "box", "position": Vector3(s * 6.5, 0, z - 0.3), "size": Vector3(5.0, 0.26, 0.5), "material": "wood"})
 			_lit.box(Vector3(s * 6.5, 0.22, z - 0.3), Vector3(5.0, 0.08, 0.5), Color("7a5432"))
 			for k in 3:
 				_lit.box(Vector3(s * 6.5 - 2.0 + k * 2.0, 0.1, z - 0.3), Vector3(0.08, 0.2, 0.4), Color("5a3a20"))
 	else:
 		# A ground's: the scorers' trestle table and painted wooden benches for the teams (the shared assets).
 		Props.place(self, "props/scorers_table", [Props.at(Vector3(0, 0, z))])
+		solid.add({"name": "scorers' table", "kind": "box", "position": Vector3(0, 0, z), "size": Vector3(1.8, 0.76, 0.8), "material": "wood"})
 		for s: float in [-1.0, 1.0]:
 			for k in 4:
 				_benches.append(Props.at(Vector3(s * 6.5 - 1.8 + k * 1.2, 0, z - 0.3)))
+				solid.add({"name": "team bench", "kind": "box", "position": Vector3(s * 6.5 - 1.8 + k * 1.2, 0, z - 0.3), "size": Vector3(1.2, 0.45, 0.4), "material": "wood"})
 	# A shamiana over the table: a striped canopy on four poles.
 	if int(Game.settings.graphics) > Game.GFX_LOW and surface() != "mat" and kind != "school":
 		for sx: float in [-1.8, 1.8]:
 			for sz: float in [-0.9, 0.9]:
 				_lit.cylinder(Vector3(sx, 0, z + sz), Vector3(sx, 2.4, z + sz), 0.03, 0.03, Color("d8d0c0"), 6, false)
+				solid.add({"name": "canopy pole", "kind": "cylinder", "position": Vector3(sx, 0, z + sz), "radius": 0.03, "height": 2.4, "material": "metal"})
 		for i in 6:
 			var c := Color("d63a2a") if i % 2 == 0 else Color("f2e6c8")
 			_lit.box(Vector3(-1.8 + 0.6 * i + 0.3, 2.42, z), Vector3(0.6, 0.04, 2.0), c)
@@ -465,11 +480,19 @@ func _stands(rows: int, indoor: bool) -> Array:
 			for s: float in [-1.0, 1.0]:
 				spots.append(Vector3(s * (L + d + SEAT_BACK), hgt, z))
 			z += 0.62
+	# The tiers as solid blocks (front edge at their first step's front), far side and ends.
+	var deep := rows * 0.85
+	solid.add({"name": "far stand", "kind": "box", "position": Vector3(0, 0, -(W - 0.425 + deep * 0.5)),
+		"size": Vector3(2.0 * (L + deep), 0.45 + rows * 0.45, deep), "material": "concrete"})
+	for s: float in [-1.0, 1.0]:
+		solid.add({"name": "end stand", "kind": "box", "position": Vector3(s * (L - 0.425 + deep * 0.5), 0, 0),
+			"size": Vector3(deep, 0.45 + rows * 0.45, 2.0 * W), "material": "concrete"})
 	var back := -W - rows * 0.85 - 0.5
 	_lit.wall(Vector3(-L - rows, 0, back), Vector3(L + rows, 0, back), 0.0, rows * 0.45 + 4.0, Color("151a28") if indoor else Color("23262e"))
 	# Boards round the lobby: plain coloured panels (no names).
 	if indoor:
 		var bz: float = f.width * 0.5 + f.lobby + 0.6
+		solid.add({"name": "ad boards", "kind": "panel", "position": Vector3(0, 0, -bz), "size": Vector3(2.0 * L, 0.9, 0.08), "material": "plastic"})
 		for i in 12:
 			var x0 := -L + i * (L * 2.0 / 12.0)
 			_glow.box(Vector3(x0 + L / 12.0, 0.45, -bz), Vector3(L * 2.0 / 12.0 - 0.1, 0.9, 0.08), [Color("ff8a1f"), Color("2f86c9"), Color("f2e6c8")][i % 3])
@@ -725,6 +748,7 @@ func _tournament(low: bool) -> Array:
 				flag_spots.append(Vector3(sx * (end_x + 0.8), 0, sz * (W + 2.2) if sz > 0 else far_z - 0.8))
 	for i in flag_spots.size():
 		var p: Vector3 = flag_spots[i]
+		solid.add({"name": "flag pole", "kind": "cylinder", "position": p, "radius": 0.04, "height": 6.5 if p.y == 0.0 else 4.0, "material": "metal"})
 		var hgt := 6.5 if p.y == 0.0 else 4.0
 		_lit.cylinder(p, p + Vector3(0, hgt, 0), 0.04, 0.03, Color("d8d4cc"), 5, false)
 		var fc: Color = flag_cols[(i * 3) % flag_cols.size()]
@@ -773,6 +797,9 @@ func _scaffold(sx: float, low: bool) -> Array:
 	var x0: float = f.length * 0.5 + f.lobby + 7.0
 	var zr := 8.5
 	var rows := 3 if low else 5
+	var depth := (rows - 1) * 0.85 + 0.8
+	solid.add({"name": "scaffold stand", "kind": "box", "position": Vector3(sx * (x0 - 0.4 + depth * 0.5), 0, 0),
+		"size": Vector3(depth, 0.6 + (rows - 1) * 0.55 + 1.1, zr * 2.0), "material": "metal"})
 	var step := 4.25 if low else 2.125
 	for r in rows:
 		var x := sx * (x0 + r * 0.85)
@@ -818,6 +845,7 @@ func _second_court() -> void:
 	for s: float in [-1.0, 1.0]:
 		_lit.floor_rect(c.x + s * pg - lw * 0.5, c.z - W, c.x + s * pg + lw * 0.5, c.z + W, 0.008, line)
 		_lit.cylinder(Vector3(c.x + s * pg, 0, c.z), Vector3(c.x + s * pg, f.pole_h, c.z), 0.05, 0.045, Color("d8b07a"), 8, true)
+		solid.add({"name": "second court's pole", "kind": "cylinder", "position": Vector3(c.x + s * pg, 0, c.z), "radius": 0.05, "height": f.pole_h, "material": "wood"})
 
 
 ## A beach umbrella over the scorers' table, green and white, as at the day match.
@@ -826,6 +854,7 @@ func _umbrella(c: Vector3, low: bool) -> void:
 	var hgt := 2.5
 	var r := 1.7
 	_lit.cylinder(c, c + Vector3(0, hgt + 0.35, 0), 0.025, 0.025, Color("e8e8e8"), 5, false)
+	solid.add({"name": "umbrella pole", "kind": "cylinder", "position": c, "radius": 0.025, "height": hgt + 0.35, "material": "metal"})
 	var apex := c + Vector3(0, hgt + 0.4, 0)
 	for i in seg:
 		var a0 := TAU * i / seg
@@ -849,6 +878,7 @@ func _scoreboard(base: Vector3) -> void:
 		for d: float in [-0.5, 0.5]:
 			var foot := base + right * sxz + fwd * d
 			_lit.cylinder(foot, foot + Vector3(0, 6.6, 0), 0.04, 0.04, tube, 4, false)
+			solid.add({"name": "scoreboard leg", "kind": "cylinder", "position": foot, "radius": 0.04, "height": 6.6, "material": "metal"})
 	_lit.box(base + Vector3(0, 3.0, 0), Vector3(3.6, 0.06, 1.2), Color("8a6a48"), yaw)
 	var screen := base + Vector3(0, 5.2, 0) + fwd * 0.55
 	_lit.box(screen, Vector3(4.2, 2.4, 0.2), Color("15171c"), yaw)
@@ -871,6 +901,7 @@ func _barricade(p0: Vector3, p1: Vector3, low: bool) -> void:
 	var dir := d / length
 	var yaw := atan2(-dir.z, dir.x)   # a box's length (its x) along the line
 	var mid := (p0 + p1) * 0.5
+	solid.add({"name": "barricade", "kind": "panel", "position": Vector3(mid.x, 0, mid.z), "yaw": yaw, "size": Vector3(length, 1.1, 0.06), "material": "metal"})
 	for hgt: float in ([1.08, 0.12] if not low else [1.08, 0.55, 0.12]):
 		_lit.box(mid + Vector3(0, hgt, 0), Vector3(length, 0.04, 0.04), steel, yaw)
 	var n := maxi(1, int(round(length / 2.0)))
@@ -891,6 +922,7 @@ func _tent(c: Vector3, w: float, d: float, low: bool) -> void:
 	for sx: float in [-0.5, 0.5]:
 		for sz: float in [-0.5, 0.5]:
 			_lit.cylinder(c + Vector3(sx * w, 0, sz * d), c + Vector3(sx * w, eave, sz * d), 0.035, 0.035, Color("d8d4cc"), 5, false)
+			solid.add({"name": "tent pole", "kind": "cylinder", "position": c + Vector3(sx * w, 0, sz * d), "radius": 0.035, "height": eave, "material": "metal"})
 	_lit.prism(c + Vector3(0, eave, 0), w + 0.3, d + 0.3, 0.75, cloth)
 	# The valance: a band round the eaves, and its scallops.
 	for sz: float in [-1.0, 1.0]:
@@ -916,6 +948,7 @@ func _stage(low: bool) -> Array:
 	var w := 12.0
 	var top := 1.2
 	_lit.box(Vector3(0, top * 0.5, z), Vector3(w, top, 4.0), Color("5a1e26"))
+	solid.add({"name": "stage", "kind": "box", "position": Vector3(0, 0, z), "size": Vector3(w, top, 4.0), "material": "wood"})
 	_lit.box(Vector3(0, top + 0.01, z), Vector3(w - 0.2, 0.02, 3.8), Color("a8302f"), 0.0, false)
 	# The backdrop, lit: a sunset of colour, a band, an emblem and blocks where the lettering would be.
 	var bz := z - 1.95
@@ -930,6 +963,7 @@ func _stage(low: bool) -> Array:
 	var truss := Color("b8bcc2")
 	for sx: float in [-1.0, 1.0]:
 		_lit.box(Vector3(sx * (w * 0.5 + 0.2), 3.6, bz), Vector3(0.3, 7.2, 0.3), truss)
+		solid.add({"name": "stage truss", "kind": "box", "position": Vector3(sx * (w * 0.5 + 0.2), 0, bz), "size": Vector3(0.3, 7.2, 0.3), "material": "metal"})
 	_lit.box(Vector3(0, 7.1, bz), Vector3(w + 0.7, 0.3, 0.3), truss)
 	for i in (5 if low else 9):
 		var x := -w * 0.5 + 0.8 + i * (w - 1.6) / float((5 if low else 9) - 1)
@@ -945,12 +979,14 @@ func _stage(low: bool) -> Array:
 	for sx: float in [-1.0, 1.0]:
 		var sp := Vector3(sx * (w * 0.5 + 1.2), 0, z + 1.0)
 		_lit.cylinder(sp, sp + Vector3(0, 1.6, 0), 0.03, 0.03, Color("2a2a2e"), 5, false)
+		solid.add({"name": "speaker stand", "kind": "cylinder", "position": sp, "radius": 0.28, "height": 2.6, "material": "metal"})
 		_lit.box(sp + Vector3(0, 2.1, 0), Vector3(0.55, 0.95, 0.45), Color("1c1c20"))
 	# Truss towers of lamps at the far corners.
 	var L: float = f.length * 0.5 + f.lobby
 	for sx: float in [-1.0, 1.0]:
 		var b := Vector3(sx * (L + 8.0), 0, -(W + 5.5))
 		_lit.box(b + Vector3(0, 4.5, 0), Vector3(0.45, 9.0, 0.45), truss)
+		solid.add({"name": "lamp tower", "kind": "box", "position": b, "size": Vector3(0.45, 9.0, 0.45), "material": "metal"})
 		var yaw := atan2(-b.x, -b.z)
 		_lit.box(b + Vector3(0, 9.1, 0), Vector3(1.8, 1.0, 0.25), Color("2a2a2e"), yaw)
 		var fwd := Vector3(sin(yaw), 0, cos(yaw))

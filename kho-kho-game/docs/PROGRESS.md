@@ -255,6 +255,13 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   files (main_menu.PREWARM). Desktop, Low, cold: overlay up in 44-54 ms; longest frame 157 ms at the village (was
   644 ms), 106 ms at the stadium.
 
+- 0.12.4: foundation synced to a24408b (cut_from_heading kept true). Arena.solid (WsgSolidProps) declares every prop
+  where it is built (poles, the table and its canopy, benches, barricades, tent, umbrella, scoreboard and flag poles,
+  the second court's poles, stands, ad boards, the stage, its truss and speakers, lamp towers, scaffolds; scenery
+  beyond skipped with its reason). Athlete.integrate: push_out every frame; a body with a goal (an outed defender to
+  his bench spot, free_spot) moves with solid.move. game/prop_runs.gd registers the four grounds for
+  tools/wsg/prop_audit.gd (CI, 2 seeds x 120 s): 0 bodies inside a prop.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from

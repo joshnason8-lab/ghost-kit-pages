@@ -1,0 +1,93 @@
+class_name WsgPropAudit
+extends RefCounted
+## The props' audit (tools/prop_audit.gd runs it over a game's Watch-AI matches): every frame a game hands it its
+## bodies and its ball, and it notes every body more than PEN_TOL into a prop (WsgSolidProps.penetration) and every
+## ball step that went through one (the straight way between two of the ball's frames more than PEN_TOL inside a
+## prop: a ball that bounced off never does).
+##   var audit := WsgPropAudit.new(solid)
+##   audit.body("home 7", pos, 0.3, 1.8)      # each body, each frame
+##   audit.ball(ball_pos, 0.11)               # the ball, each frame
+##   audit.ball_reset()                       # the ball put somewhere new (a restart): no step from the old place
+##   audit.report()                           # {pass, body_cases, ball_tunnels, worst: [...], skipped}
+
+const PEN_TOL := 0.02
+## The worst cases kept for the report and its close-ups.
+const KEEP := 24
+
+var solid: WsgSolidProps
+var body_checks := 0
+var ball_steps := 0
+var body_cases := 0
+var ball_tunnels := 0
+## The worst: {kind ("body" | "ball"), who, prop (name), depth (m), pos, from (a ball's step), time}.
+var worst: Array = []
+var time := 0.0
+
+var _last := {}       # a ball -> its last position
+
+
+func _init(p_solid: WsgSolidProps = null) -> void:
+	solid = p_solid
+
+
+func body(who: String, pos: Vector3, radius: float, height := 1.8) -> void:
+	body_checks += 1
+	var pen := solid.penetration(pos, radius, height)
+	if float(pen[0]) > PEN_TOL:
+		body_cases += 1
+		_keep({"kind": "body", "who": who, "prop": String(solid.props[int(pen[1])].name), "depth": float(pen[0]),
+			"pos": pos, "radius": radius, "height": height, "time": time})
+
+
+func ball(pos: Vector3, radius: float, who := "ball") -> void:
+	if _last.has(who):
+		ball_steps += 1
+		var p0: Vector3 = _last[who]
+		var h := solid.sweep(p0, pos, radius)
+		if h.hit:
+			# How deep the straight way goes: from where it meets the prop to where it leaves it, its middle.
+			var back := solid.sweep(pos, p0, radius)
+			var t_out := 1.0 - float(back.t) if back.hit else 1.0
+			var t_in := float(h.t)
+			if t_out > t_in:
+				var mid := p0.lerp(pos, (t_in + t_out) * 0.5)
+				var inside := solid.sweep(mid, mid, radius)
+				if inside.hit and float(inside.get("depth", 0.0)) > PEN_TOL:
+					ball_tunnels += 1
+					_keep({"kind": "ball", "who": who, "prop": String(h.name), "depth": float(inside.depth), "pos": mid,
+						"from": p0, "to": pos, "radius": radius, "time": time})
+	_last[who] = pos
+
+
+func ball_reset(who := "ball") -> void:
+	_last.erase(who)
+
+
+## Advance the audit's clock (for the report's times): a game calls it once a frame with its delta.
+func tick(delta: float) -> void:
+	time += delta
+
+
+func report() -> Dictionary:
+	return {"pass": body_cases == 0 and ball_tunnels == 0, "body_checks": body_checks, "ball_steps": ball_steps,
+		"body_cases": body_cases, "ball_tunnels": ball_tunnels, "worst": worst.map(func(c: Dictionary) -> Dictionary:
+			var o := c.duplicate()
+			for k in ["pos", "from", "to"]:
+				if o.has(k):
+					o[k] = [snappedf(o[k].x, 0.01), snappedf(o[k].y, 0.01), snappedf(o[k].z, 0.01)]
+			o.depth = snappedf(o.depth, 0.001)
+			return o), "skipped": solid.skipped}
+
+
+func _keep(c: Dictionary) -> void:
+	# One a body and prop (the deepest), the deepest KEEP in all.
+	for k in worst.size():
+		var w: Dictionary = worst[k]
+		if w.kind == c.kind and w.who == c.who and w.prop == c.prop:
+			if c.depth > w.depth:
+				worst[k] = c
+			return
+	worst.append(c)
+	worst.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return float(x.depth) > float(y.depth))
+	if worst.size() > KEEP:
+		worst.resize(KEEP)
