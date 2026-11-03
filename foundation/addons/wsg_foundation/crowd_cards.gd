@@ -31,6 +31,8 @@ var _mask: Texture2D
 var _back: Texture2D        # the same cells from behind (none: the front is shown from behind too)
 var _back_mask: Texture2D
 var _excite := 0.0
+## How often each fan is drawn (as WsgCrowd3D.fan_weights: its name, any not given 1), set before build().
+var fan_weights := {}
 ## How bright the cards are drawn (1: as the 3D fans; a game whose own crowd was painted brighter can match it).
 var brightness := 1.0:
 	set(v):
@@ -85,21 +87,13 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 		var fwd: Vector3 = placed.facings[i]
 		fwd = Vector3(fwd.x, 0, fwd.z).normalized()
 		var seat_h: float = placed.seat[i] if i < placed.seat.size() else 0.0
-		var fi := rng.randi() % fans.size()
+		# Which fan: at random among those whose legs fit the seat (sized within FIT_MIN..FIT_MAX), weighted by
+		# fan_weights; standing, among all. (Picking the single best fit put the same fan on every seat of a stand -
+		# Kho Kho: "nearly every card reads as the same long-haired figure".)
+		var fi := _pick(fans, seat_h, rng)
 		var h := rng.randf_range(0.93, 1.07)
 		var at := spot
 		if seat_h > 0.0:
-			# The fan whose legs fit the seat best, sized to it; the card just in front of the seat (its knees), so
-			# the seat does not cut through it.
-			var best := fi
-			var err := INF
-			for n in fans.size():
-				var want: float = seat_h / float(_layout.fans[fans[n]].seat)
-				var e := absf(want - 1.0) + rng.randf() * 0.06
-				if e < err:
-					err = e
-					best = n
-			fi = best
 			h = clampf(seat_h / float(_layout.fans[fans[fi]].seat), WsgCrowd3D.FIT_MIN, WsgCrowd3D.FIT_MAX)
 			var half: float = placed.half_depth[i] if placed.has("half_depth") and i < placed.half_depth.size() else 0.2
 			at = spot + fwd * (half + 0.12)
@@ -144,6 +138,27 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 
 
 var _looks := {}
+
+
+func _pick(fans: Array, seat_h: float, rng: RandomNumberGenerator) -> int:
+	var cum := PackedFloat32Array()
+	var tot := 0.0
+	var best := 0
+	var err := INF
+	for n in fans.size():
+		var w := maxf(float(fan_weights.get(fans[n], 1.0)), 0.0)
+		if seat_h > 0.0:
+			var need: float = seat_h / float(_layout.fans[fans[n]].seat)
+			if absf(need - 1.0) < err:
+				err = absf(need - 1.0)
+				best = n
+			if need < WsgCrowd3D.FIT_MIN or need > WsgCrowd3D.FIT_MAX * 1.03:
+				w = 0.0
+		tot += w
+		cum.append(tot)
+	if tot <= 0.0:
+		return best
+	return mini(cum.bsearch(rng.randf() * tot, false), fans.size() - 1)
 
 
 ## As WsgCrowd3D.set_looks: each fan's skin, hair and legs' clothes from these lists (dark to light, up to 8).
