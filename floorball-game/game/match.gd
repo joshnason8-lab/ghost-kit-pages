@@ -399,11 +399,13 @@ func _separate() -> void:
 		all.append_array(players[t])
 	for i in all.size():
 		var a: Player = all[i]
-		if a.in_box or not a.on_rink:
+		# (Not the hidden: Penalty shots keeps its idle skaters off the screen but on the rink, and one by the spot
+		# pushed the shooter sideways as he came back for his next shot - the owner's "his body contorts".)
+		if a.in_box or not a.on_rink or not a.visible:
 			continue
 		for j in range(i + 1, all.size()):
 			var b: Player = all[j]
-			if b.in_box or not b.on_rink:
+			if b.in_box or not b.on_rink or not b.visible:
 				continue
 			var d := a.pos - b.pos
 			var l := d.length()
