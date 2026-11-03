@@ -440,6 +440,13 @@ Web export made by hand from that checkout would otherwise ship them. Kabaddi's 
   with `layer.arms = WsgLegacyPose.arm_maker(body.joints)` if you have no 17-bone reader. It is aimed lower by
   `lift_after` itself; `layer.hold_point_reach` says when a hand cannot reach (Kho Kho's pole turn).
 
+**Boots resting toe-up** (`WsgFootFlat`): a model whose soles rise from heel to toe at rest (Hurling's HD hurler by
+10.6 degrees after its bake) shows the toes off the ground in every move. Call `WsgFootFlat.attach(body)` once your
+body's modifiers are all in place (the locomotor, the layers, your own): it measures the model's sole tilt from its
+mesh (`WsgFootFlat.sole_tilt(body)`, a boot's 1.5 degrees of toe spring allowed) and, if it is 2 degrees or more, adds
+itself as the skeleton's LAST modifier, turning each foot down by it and setting a planted heel back on the ground.
+A model standing flat gets none. (From Hurling's FootFlat, 0.21.1: its match audit's ankle frames 86 -> 7.)
+
 **Your pose over the whole body**
 - **A body you pose from its first frame never runs the locomotor**, so nothing switches its planter for you. Set it
   every update: under your whole-body pose, `loco.planter.keep_pose = true` (the legs exactly as you pose them, the
