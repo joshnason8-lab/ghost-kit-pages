@@ -49,7 +49,7 @@ jobs:
         run: git apply $GAME_DIR/tools/balance/${{ matrix.variant }}.patch && git diff --stat
       - name: Import
         run: godot --headless --path $GAME_DIR --import || true
-      - name: 25 matches (seeds ${{ 100 + matrix.shard * 25 }} on)
+      - name: 25 matches (shard ${{ matrix.shard }} of 8)
         run: |
           mkdir -p "$RUNNER_TEMP/out/${{ matrix.variant }}-${{ matrix.fmt }}-${{ matrix.shard }}"
           cd $GAME_DIR
