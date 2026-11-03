@@ -641,3 +641,25 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     first update and drawn a frame in a T-pose (Hurling's home 13). replay_test.
   - WsgSim reads no pose from a body under an active replay (each frame was read live; Kho Kho's replayed pole turn,
     one arm out by design, read as an A-pose).
+- **The 11-06 feet batch (the AI seeds) and the world check under 15 minutes** (the lead and the owner, 2026-11-03).
+  - Measure, WsgSim: a body posed every 2nd or 3rd frame read per frame (each sample's frame gap: skid and jump per
+    frame, the cut's bound scaled - Kabaddi's officials read three frames as one, 2.7 cm); a planter.reset() a cut,
+    not a slide (Hurling's umpires snapped 20-35 cm), reset counts per body; the skid counts only a foot the planter
+    holds (WsgFootPlanter.holding - a clip's own low swing before landing, posed every 2nd frame, read 13.3 cm: Pok Ta
+    Pok fair#102); no pose read under an active replay.
+  - Planter: a foot's own step crosses an even share of what is left each frame (Floorball ref0's 44 cm jump in it);
+    a let-go foot lifts over the release's time from its first frame (Sepak Takraw's 7.3 cm flat landing move).
+    Tried and dropped: a held foot past its reach stepping (Takraw's stop 20.9 -> 36.5, Pok Ta Pok's walk 3.7 -> 21.3);
+    a chase lift off the floor (Takraw's stop -> 37.9).
+  - Walkers (jump, cm, 68a16daa -> this): Kabaddi stop from 8 21.7 -> 3.1 (the lead's under-20); Hurling cut 180 12.7
+    -> 8.1; Kho Kho cut 180 9.6 -> 4.6; Takraw 20.9 -> 20.9; every feet rule passes; owner notes unchanged.
+  - AI seeds (Pok Ta Pok, its game on this machine, pushed -> this): completion#101 ESC_2 jump 33.0 -> clean;
+    random#17 COP_2 skid 26.6 -> clean (jump 25.8 stays), VAL_2 skid 13.2 / jump 25.5 -> slip 5.1 (seen now that a
+    far body's samples are not cut every frame). fair#102 CHL_1 13.3 skid / 3.2 slip -> clean.
+  - Open (calibration-only, the same on 68a16daa): Hurling jog 2 skid 5.5, Netball sprint skid 10.0, Kho Kho jog slip
+    4.0; Kabaddi's official whose drawn foot misses its hold by 35 cm (extreme#16: the IK, not the drag); Kho Kho's
+    57-60 cm AI jumps; Floorball's refs - for the games' re-smoke on this batch.
+  - World check: modes undrawn (Kabaddi 918 -> 17 s, every rule's result the same), tiers the worst of 5 frames with
+    no warm-up (633 -> 158 s, the same counts and verdicts), props capped at [1, 30 s], --reuse, --merge (parallel
+    jobs), per-rule seconds; a reading near its bound warns; no Web build is N/A. Kabaddi's modes and tiers 1551 ->
+    175 s on this machine.
