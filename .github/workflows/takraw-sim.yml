@@ -4,7 +4,7 @@
 #   - on every push: the RNG lint, a determinism check, and the smoke batch (50 general seeds, every targeted kind x 3,
 #     every adopted case), with the input fuzzer playing a person's side. The batch runs as four shards side by side
 #     on the runner's four cores, merged into one report.
-#   - nightly: 2,400 matches over 16 parallel jobs, merged into one report.
+#   - nightly (the WSG dispatcher, 03:43 UTC): 2,400 matches over 16 parallel jobs, merged into one report.
 # Reports and failures are artifacts only, never inside the project.
 name: Sepak Takraw Unleashed · simulation
 
@@ -13,9 +13,7 @@ on:
     paths:
       - "takraw-game/**"
       - ".github/workflows/takraw-sim.yml"
-  schedule:
-    - cron: "17 2 * * *"
-  workflow_dispatch:
+  workflow_dispatch:   # (nightly: the WSG nightly dispatcher on main dispatches it at 03:43 UTC)
 
 concurrency:
   group: takraw-sim-${{ github.ref }}-${{ github.event_name }}
