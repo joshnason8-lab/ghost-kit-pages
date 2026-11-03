@@ -309,6 +309,11 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   (tests/note_run.gd: a match run once however many notes read it). CI runs them strictly (no skips) and fails if a
   note ever listed is gone (owner_notes_guard.sh), and fails without a commit the foundation requires
   (check_foundation.sh, no longer a warning only).
+- **0.6.11-beta: ready for the simulations** (the lead: thousands of headless matches on the real code, docs/SIM.md).
+  The sport's rules checked after every step (game/rule_checks.gd: the count replayed from its history, the clock,
+  the serve, the halves, the bounds, the ball never inside stone or a prop, the hip's cap, no play after a win, no
+  phase forever); match_sim runs them and fails on any. The foundation's locomotor fidgets seeded from each body (the
+  one unseeded roll in what is drawn). 8.5x real time headless today.
 
 ## Next
 

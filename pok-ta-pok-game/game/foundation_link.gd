@@ -114,6 +114,8 @@ func _ready() -> void:
 	# Its own dice for the idle's fidgets (the foundation's opt-in since 79b346e; this game's pilot had it built in):
 	# the global ones are the game's, and a seeded match must play the same with the foundation as without it.
 	loco.rng = RandomNumberGenerator.new()
+	# Seeded from the body's own look, so the same match draws the same fidgets every run (the simulations replay it).
+	loco.rng.seed = hash("%s|%s|%s" % [file, gb.look.get("seed", 0), gb.look.get("team", Color.WHITE)])
 	# The strides for this body's legs in the world: the locomotor reads the rig's leg, not the body node's scale (a
 	# player is drawn at his own height, Body.scale: a 1.62 m man's strides were a tenth too long, his feet dragged).
 	# Its hips' lift and its root motion stay in the skeleton's own space.

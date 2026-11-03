@@ -1,5 +1,6 @@
 extends Node
-## AI matches, start to finish, headless, to see how they go: the count, the rayas and why, the rallies.
+## AI matches, start to finish, headless, to see how they go: the count, the rayas and why, the rallies; and the
+## sport's rules checked after every step (RuleChecks): any violation fails the run.
 ##   godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- [matches] [minutes] [rules]
 
 func _ready() -> void:
@@ -10,13 +11,16 @@ func _ready() -> void:
 	var mins := float(args[1]) if args.size() > 1 else 6.0
 	var rules := String(args[2]) if args.size() > 2 else "ulama"
 	var venue := "village" if rules == "ulama" else "stone"
+	var bad := 0
 	for i in n:
+		var rc := RuleChecks.new()
 		var m: Node = load("res://game/match.gd").new()
 		m.config = {"home": "ESC", "away": "LLA", "venue": venue, "rules": rules, "user_team": -1, "seed": 11 + i, "length": mins, "mode": "test", "difficulty": 1}
 		add_child(m)
 		var frames := 0
 		while m.phase != m.P.OVER and frames < int(mins * 60 * 30) + 30 * 60:
 			await get_tree().process_frame
+			rc.step(m)
 			# (Frames of play: a replay, shown on Medium and High, holds the match.)
 			if m.phase != m.P.REPLAY:
 				frames += 1
@@ -27,6 +31,10 @@ func _ready() -> void:
 		print("match %d (%s): winner %d after %.1f min, %d rayas %s, longest rally %d, count %s" % [i, rules, int(r.winner), float(r.minutes),
 			r.log.size(), JSON.stringify(why), int(r.longest_rally), JSON.stringify(r.count)])
 		print("  strikes %s dives %s" % [[r.tstats[0].strikes, r.tstats[1].strikes], [r.tstats[0].dives, r.tstats[1].dives]])
+		print("  rules: %d violations" % rc.violations.size())
+		for v in rc.violations.slice(0, 12):
+			print("  RULE: ", v)
+		bad += rc.violations.size()
 		m.queue_free()
 		await get_tree().process_frame
-	get_tree().quit()
+	get_tree().quit(1 if bad > 0 else 0)
