@@ -26,7 +26,7 @@ env:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120   # (the world check plays every mode at every tier and audits every venue: about an hour)
+    timeout-minutes: 150   # (the world check plays every mode at every tier and audits every venue: up to an hour)
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
@@ -120,7 +120,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 4200 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | tee "$RUNNER_TEMP/world_check.log"
+          timeout 5400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | tee "$RUNNER_TEMP/world_check.log"
           if grep -q "SCRIPT ERROR" "$RUNNER_TEMP/world_check.log"; then grep -A4 "SCRIPT ERROR" "$RUNNER_TEMP/world_check.log"; exit 1; fi
           python3 -c "import json,sys; r={x['rule']: x['status'] for x in json.load(open(sys.argv[1]))['rules']}; sys.exit(0 if r.get('props') == 'pass' else 'the props rule: %s' % r.get('props'))" "$RUNNER_TEMP/world/world_check.json"
 

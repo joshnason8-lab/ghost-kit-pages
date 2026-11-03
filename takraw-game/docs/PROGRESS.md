@@ -782,7 +782,7 @@ where the player is drawn, which was the lead's 0.14.4 change. The check's refer
 diagonals, which the picture foreshortens. Measured: the game's mapping is within 0.3 degrees of the screen-true way
 on all 3 cameras x 9 spots x 8 sticks. The foundation added the screen-true way as a reference (15abaa3).
 
-CI runs the world check in place of the prop audit step, with the props at the same 90 s a venue. It uploads
+CI runs the world check in place of the prop audit step, with the props at 45 s a venue (the owner's props note plays 40 s more at each). It uploads
 WORLD_CHECK.md and the audits' sheets. A failing rule fails the build from 2026-11-03 12:00 UTC; the props fail it now,
 as before.
 

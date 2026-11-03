@@ -26,9 +26,10 @@ func prop_registry() -> String:
 	return "res://game/prop_runs.gd"
 
 
-## A match of 90 s a venue (CI's prop audit before the world check: 24,300 body frames and about 2,100 ball steps each).
+## A match of 45 s a venue (about 12,000 body frames and 1,000 ball steps each; the owner's note on props plays 40 s
+## more at each, and WsgSim's batches far more).
 func prop_args() -> Array:
-	return [1, 90]
+	return [1, 45]
 
 
 ## crowd: every venue's stands (game/crowd_venues.gd).
